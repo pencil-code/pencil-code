@@ -60,7 +60,7 @@ subroutine helper_loop(f,p)
   use Equ, only: perform_diagnostics
 !$ use General, only: signal_wait, signal_send
   use Snapshot, only: perform_powersnap, perform_wsnap_ext
-!   use, intrinsic :: iso_fortran_env
+   use, intrinsic :: iso_fortran_env
 !
   real, dimension (mx,my,mz,mfarray) :: f
   type (pencil_case) :: p
@@ -69,24 +69,28 @@ subroutine helper_loop(f,p)
 !
 !$  do while(lhelper_run)
 
-!$    if (.not.any(lhelperflags)) cycle
+!!$    if (.not.any(lhelperflags)) cycle
 
-!$    if (lhelper_run) then
-!$      if (lhelperflags(PERF_DIAGS)) then
-!$        call signal_wait(lhelperflags(PERF_DIAGS),lhelper_run)
-!$        call perform_diagnostics(f,p)
-!$      endif
-
-!$     if (lhelperflags(PERF_WSNAP)) then 
-!$       call signal_wait(lhelperflags(PERF_WSNAP),lhelper_run)
-!$       call perform_wsnap_ext(f)
-!$     endif
-
-!$      if (lhelperflags(PERF_POWERSNAP)) then 
-!$        call signal_wait(lhelperflags(PERF_POWERSNAP),lhelper_run)
-!$        call perform_powersnap(f)
-!$      endif
-!$    endif
+!!$    if (lhelper_run) then
+!!$      if (lhelperflags(PERF_DIAGS)) then
+!$        call signal_wait(lhelper_perf,lhelper_run)
+!$        if(lhelper_run .and. lhelperflags(PERF_DIAGS)) then 
+                call perform_diagnostics(f,p)
+!$        else 
+                lhelperflags(PERF_DIAGS) = .false.
+          endif
+!$        if(lhelper_run .and. lhelperflags(PERF_WSNAP)) then 
+                call perform_wsnap_ext(f)
+!$        else 
+                lhelperflags(PERF_WSNAP) = .false.
+          endif
+!$        if(lhelper_run .and. lhelperflags(PERF_POWERSNAP)) then 
+                call perform_powersnap(f)
+!$        else 
+                lhelperflags(PERF_POWERSNAP) = .false.
+          endif
+!!$      endif
+      call signal_send(lhelper_perf,.false.)
 
 !$  enddo
 
@@ -102,7 +106,7 @@ subroutine timeloop(f,df,p)
   use Density,         only: boussinesq
   use Diagnostics,     only: write_1daverages_prepare, save_name, report_undefined_diagnostics, &
                              diagnostics_clean_up, write_2daverages_prepare
-  use Equ,             only: write_diagnostics
+  use Equ,             only: write_diagnostics 
   use Filter,          only: rmwig, rmwig_xyaverage
   use Fixed_point,     only: fixed_points_prepare, wfixed_points
   use Forcing,         only: addforce, forcing_clean_up
@@ -132,6 +136,7 @@ subroutine timeloop(f,df,p)
   use Streamlines,     only: tracers_prepare, wtracers
 !$ use OMP_lib
 !$ use General, only: signal_send, signal_wait
+!$ use, intrinsic :: iso_fortran_env
 !
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension (mx,my,mz,mvar) :: df
@@ -499,10 +504,21 @@ subroutine timeloop(f,df,p)
 !
     it=it+1
     headt=.false.
+    if(lfarray_copied) then
+            lhelperflags(PERF_DIAGS) = lmasterflags(PERF_DIAGS)
+            lhelperflags(PERF_WSNAP) = lmasterflags(PERF_WSNAP)
+            lhelperflags(PERF_POWERSNAP) = lmasterflags(PERF_POWERSNAP)
+
+            lmasterflags(PERF_DIAGS) =.false. 
+            lmasterflags(PERF_WSNAP) =.false. 
+            lmasterflags(PERF_POWERSNAP) = .false.
+            call signal_send(lhelper_perf,.true.)
+            lfarray_copied = .false.
+    endif
 
   enddo Time_loop
 
-!$ call signal_wait(lhelperflags, (/.false., .false., .false./))
+!$ call signal_wait(lhelper_perf, .false.)
 !$ call signal_send(lhelper_run,.false.)
 
 endsubroutine timeloop

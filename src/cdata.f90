@@ -809,8 +809,12 @@ module Cdata
 !!$ type(TaskHandle) :: last_pushed_task = TaskHandle(task_id=-1)
 
   integer, parameter :: n_helperflags=3
-  logical, dimension(n_helperflags) :: lhelperflags=(/.false.,.false.,.false./)
+  logical, volatile, dimension(n_helperflags) :: lhelperflags=(/.false.,.false.,.false./)
+  logical, volatile, dimension(n_helperflags) :: lmasterflags=(/.false.,.false.,.false./)
   integer, parameter :: PERF_DIAGS=1, PERF_WSNAP=2, PERF_POWERSNAP=3
+  logical, volatile :: lfarray_copied = .false.
+  logical, dimension(npencils) :: lpencil_save = .false.
+  logical, volatile :: lhelper_perf
 
   integer :: num_helper_threads=1, thread_id=1
 ! 

@@ -82,8 +82,9 @@ module Snapshot
       if (lsnap_down) then
 !
         if (.not.lstart.and.lgpu) then
-          call copy_farray_from_GPU(a)
-!$        call signal_send(ldummy,.false.)
+
+           call copy_farray_from_GPU(a)
+!!$        call signal_send(ldummy,.false.)
         endif
 !
 !  Set the range for the variable index.
@@ -318,7 +319,8 @@ module Snapshot
           call safe_character_assign(file,trim(chsnap)//ch)
           if (lmultithread) then
             extpars%ind1=nv1_capitalvar; extpars%ind2=msnap; extpars%file=file
-!$          if (.not.lstart) call signal_send(lhelperflags(PERF_WSNAP),.true.)
+!!$          if (.not.lstart) call signal_send(lhelperflags(PERF_WSNAP),.true.)
+             lmasterflags(PERF_WSNAP) = .true.
           else
             call perform_wsnap(a,nv1_capitalvar,msnap,file)
           endif
@@ -342,7 +344,8 @@ module Snapshot
         call safe_character_assign(file,trim(chsnap))
         if (lmultithread) then
           extpars%ind1=1; extpars%ind2=msnap; extpars%file=file
-!$        if (.not.lstart) call signal_send(lhelperflags(PERF_WSNAP),.true.)
+!!$        if (.not.lstart) call signal_send(lhelperflags(PERF_WSNAP),.true.)
+           lmasterflags(PERF_WSNAP) = .true.
         else
           call perform_wsnap(a,1,msnap,file)
         endif
@@ -383,7 +386,8 @@ module Snapshot
       call output_snap_finalize
       if (lroot) call delete_file(trim(workdir)//'/WRITING')
 
-!$    if (.not. lstart) call signal_send(lhelperflags(PERF_WSNAP),.false.)
+!!$    if (.not. lstart) call signal_send(lhelperflags(PERF_WSNAP),.false.)
+       lhelperflags(PERF_WSNAP) = .false.
 
     endsubroutine perform_wsnap
 !***********************************************************************
@@ -741,7 +745,8 @@ module Snapshot
         if (ldo_all) call update_ghosts(f)
 !
         if (lmultithread) then
-!$        call signal_send(lhelperflags(PERF_POWERSNAP),.true.)
+!!$        call signal_send(lhelperflags(PERF_POWERSNAP),.true.)
+           lmasterflags(PERF_POWERSNAP) = .true.
         else
           call perform_powersnap(f)
         endif
@@ -1020,7 +1025,8 @@ module Snapshot
         if (Hm_specflux) call power_transfer_mag(f,'Hm')
         if (Hc_specflux) call power_transfer_mag(f,'Hc')
 !
-!$      call signal_send(lhelperflags(PERF_POWERSNAP),.false.)
+!!$      call signal_send(lhelperflags(PERF_POWERSNAP),.false.)
+         lhelperflags(PERF_POWERSNAP) = .false.
 
     endsubroutine perform_powersnap
 !***********************************************************************

@@ -80,6 +80,7 @@ module Timestep
           solid_cells_timestep_second
       use Shear, only: advance_shear
       use Sub, only: set_dt, shift_dt
+!$ use General, only: signal_wait, signal_send
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -118,14 +119,14 @@ module Timestep
 
         headtt = headt .and. lfirst .and. lroot
 
-        if (lfirst) then
-          if (.not.lgpu) df=0.0
-          ds=0.0
-        else
-          if (.not.lgpu) df=alpha_ts(itsub)*df !(could be subsumed into pde, but is dangerous!)
-          ds=alpha_ts(itsub)*ds
-          if (it_rmv>0) lrmv=.false.
-        endif
+          if (lfirst) then
+            if(.not. lgpu) df=0.0
+            ds=0.0
+          else
+            if(.not. lgpu) df=alpha_ts(itsub)*df !(could be subsumed into pde, but is dangerous!)
+            ds=alpha_ts(itsub)*ds
+            if (it_rmv>0) lrmv=.false.
+          endif
 !
 !  Set up particle derivative array.
 !
@@ -137,7 +138,7 @@ module Timestep
 !
 !  Set up ODE derivatives array
 !
-        if (lode) call ode_timestep_first
+        if (lode .and. .not. lgpu) call ode_timestep_first
 !
 !  Set up solid_cells time advance
 !
@@ -147,7 +148,7 @@ module Timestep
 !
         call pde(f,df,p)
 
-        if (lode) call ode
+        if (lode .and. .not. lgpu) call ode
 
         ds=ds+1.0
 !
@@ -176,7 +177,7 @@ module Timestep
 !
 ! Time evolution of ODE variables.
 !
-        if (lode) call ode_timestep_second
+        if (lode .and. .not. lgpu) call ode_timestep_second
 !
 !  Time evolution of solid_cells.
 !

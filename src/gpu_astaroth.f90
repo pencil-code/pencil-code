@@ -92,18 +92,14 @@ contains
 !
     endsubroutine finalize_GPU
 !**************************************************************************
-    subroutine rhs_GPU(f,isubstep,early_finalize)
+    subroutine rhs_GPU(f,isubstep)
 !
       use General, only: notanumber
 
       real, dimension (mx,my,mz,mfarray), intent(INOUT) :: f
       integer,                            intent(IN)    :: isubstep
-      logical,                            intent(IN)    :: early_finalize
 !
-      integer :: ll, mm, nn
-      logical, save :: lvery_first = .true.
-      call rhs_gpu_c(isubstep,.false.,early_finalize)
-      lvery_first=.false.
+      call rhs_gpu_c(isubstep)
 !
     endsubroutine rhs_GPU
 !**************************************************************************
@@ -126,8 +122,12 @@ contains
 !
 !      Have to wait since if doing diagnostics don't want to overwrite f.
 !
-!$     call signal_wait(lhelperflags, (/.false., .false., .false./))
+       if(lfarray_copied) return
+!!$     call signal_wait(lhelperflags, (/.false., .false., .false./))
+!$     call signal_wait(lhelper_perf, .false.)
        call copy_farray_c(f)
+       lfarray_copied = .true.
+
 
     endsubroutine copy_farray_from_GPU
 !**************************************************************************

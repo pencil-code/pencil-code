@@ -91,7 +91,7 @@ module Equ
 !$    use, intrinsic :: iso_c_binding
 !      use, intrinsic :: iso_fortran_env
 !!$    use mt, only: push_task, depend_on_all, default_task_type, wait_all_thread_pool
-!$    use General, only: signal_send
+!$    use General, only: signal_send, signal_wait
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -141,7 +141,7 @@ module Equ
 !  time-step. Useful for smearing out possible x-dependent numerical
 !  diffusion, e.g. in a linear shear flow.
 !
-      if (lfirst .and. lshift_datacube_x) then
+      if (lfirst .and. lshift_datacube_x .and. .not. lgpu) then
         call boundconds_x(f)
         do  n=n1,n2; do m=m1,m2
           f(:,m,n,:)=cshift(f(:,m,n,:),1,1)
@@ -167,170 +167,172 @@ module Equ
 !  The user must have set crash_file_dtmin_factor>0.0 in &run_pars for
 !  this to be done.
 !
-      if (crash_file_dtmin_factor > 0.0) call output_crash_files(f)
+      if(.not. lgpu) then
+        if (crash_file_dtmin_factor > 0.0) call output_crash_files(f)
 !
-!  For debugging purposes impose minimum or maximum value on certain variables.
+!  For   debugging purposes impose minimum or maximum value on certain variables.
 !
-      call impose_floors_ceilings(f)   !MR: too early, f modifications come below
+        call impose_floors_ceilings(f)   !MR: too early, f modifications come below
 !
-!  Apply global boundary conditions to particle positions and communicate
-!  migrating particles between the processors.
+!  App  ly global boundary conditions to particle positions and communicate
+!  mig  rating particles between the processors.
 !
-      if (lparticles) call particles_boundconds(f)
-      if (lpointmasses) call boundconds_pointmasses
+        if (lparticles) call particles_boundconds(f)
+        if (lpointmasses) call boundconds_pointmasses
 !
-!  Calculate the potential of the self gravity. Must be done before
-!  communication in order to be able to take the gradient of the potential
-!  later.
+!  Cal  culate the potential of the self gravity. Must be done before
+!  com  munication in order to be able to take the gradient of the potential
+!  lat  er.
 !
-      call calc_selfpotential(f)
+        call calc_selfpotential(f)
 !
-!  Call "before_boundary" hooks (for f array precalculation)
+!  Cal  l "before_boundary" hooks (for f array precalculation)
 !
-      if (ldustdensity)  call dustdensity_before_boundary(f) 
-      if (linterstellar) call interstellar_before_boundary(f)
-      if (ldensity.or.lboussinesq) call density_before_boundary(f)
-      if (lhydro.or.lhydro_kinematic) call hydro_before_boundary(f)
-      if (lmagnetic)     call magnetic_before_boundary(f)
-                         call energy_before_boundary(f)
-      if (lshear)        call shear_before_boundary(f)
-      if (lchiral)       call chiral_before_boundary(f)
-      if (lspecial)      call special_before_boundary(f)
-      if (ltestflow)     call testflow_before_boundary(f)
-      if (ltestfield)    call testfield_before_boundary(f)
-      if (lparticles)    call particles_before_boundary(f)
-      if (lpscalar)      call pscalar_before_boundary(f)
-      if (ldetonate)     call detonate_before_boundary(f)
-      if (lchemistry)    call chemistry_before_boundary(f)
-      if (lparticles.and.lspecial) call particles_special_bfre_bdary(f)
-      if (lshock)        call shock_before_boundary(f)
+        if (ldustdensity)  call dustdensity_before_boundary(f) 
+        if (linterstellar) call interstellar_before_boundary(f)
+        if (ldensity.or.lboussinesq) call density_before_boundary(f)
+        if (lhydro.or.lhydro_kinematic) call hydro_before_boundary(f)
+        if (lmagnetic)     call magnetic_before_boundary(f)
+                           call energy_before_boundary(f)
+        if (lshear)        call shear_before_boundary(f)
+        if (lchiral)       call chiral_before_boundary(f)
+        if (lspecial)      call special_before_boundary(f)
+        if (ltestflow)     call testflow_before_boundary(f)
+        if (ltestfield)    call testfield_before_boundary(f)
+        if (lparticles)    call particles_before_boundary(f)
+        if (lpscalar)      call pscalar_before_boundary(f)
+        if (ldetonate)     call detonate_before_boundary(f)
+        if (lchemistry)    call chemistry_before_boundary(f)
+        if (lparticles.and.lspecial) call particles_special_bfre_bdary(f)
+        if (lshock)        call shock_before_boundary(f)
 !
-!  Prepare x-ghost zones; required before f-array communication
-!  AND shock calculation
+!  Pre  pare x-ghost zones; required before f-array communication
+!  AND   shock calculation
 !
-      call boundconds_x(f)
+        if(.not. lgpu) call boundconds_x(f)
 !
-!  Initiate (non-blocking) communication and do boundary conditions.
-!  Required order:
-!  1. x-boundaries (x-ghost zones will be communicated) - done above
-!  2. communication
-!  3. y- and z-boundaries
+!  Ini  tiate (non-blocking) communication and do boundary conditions.
+!  Req  uired order:
+!  1.   x-boundaries (x-ghost zones will be communicated) - done above
+!  2.   communication
+!  3.   y- and z-boundaries
 !
-      if (.not. lgpu) then
-        if (nghost>0) then
-          if (ldebug) print*,'pde: before initiate_isendrcv_bdry'
-          call initiate_isendrcv_bdry(f)
-          if (early_finalize) then
-            call finalize_isendrcv_bdry(f)
-            if (lcoarse) call coarsegrid_interp(f)   ! after boundconds_x???
-            call boundconds_y(f)
-            call boundconds_z(f)
+        if (.not. lgpu) then
+          if (nghost>0) then
+            if (ldebug) print*,'pde: before initiate_isendrcv_bdry'
+            call initiate_isendrcv_bdry(f)
+            if (early_finalize) then
+              call finalize_isendrcv_bdry(f)
+              if (lcoarse) call coarsegrid_interp(f)   ! after boundconds_x???
+              call boundconds_y(f)
+              call boundconds_z(f)
+            endif
           endif
         endif
-      endif
 !
-! update solid cell "ghost points". This must be done in order to get the
-! correct boundary layer close to the solid geometry, i.e. no-slip conditions.
+! upda  te solid cell "ghost points". This must be done in order to get the
+! corr  ect boundary layer close to the solid geometry, i.e. no-slip conditions.
 !
-      call update_solid_cells(f)
+        call update_solid_cells(f)
 !
-!  For sixth order momentum-conserving, symmetric hyperviscosity with positive
-!  definite heating rate we need to precalculate the viscosity term. The
-!  restivitity term for sixth order hyperresistivity with positive definite
-!  heating rate must also be precalculated.
+!  For   sixth order momentum-conserving, symmetric hyperviscosity with positive
+!  def  inite heating rate we need to precalculate the viscosity term. The
+!  res  tivitity term for sixth order hyperresistivity with positive definite
+!  hea  ting rate must also be precalculated.
 !
-      if (lhyperviscosity_strict)   call hyperviscosity_strict(f)
-      if (lhyperresistivity_strict) call hyperresistivity_strict(f)
+        if (lhyperviscosity_strict)   call hyperviscosity_strict(f)
+        if (lhyperresistivity_strict) call hyperresistivity_strict(f)
 !
-!  Dynamically set the (hyper-)diffusion coefficients
+!  Dyn  amically set the (hyper-)diffusion coefficients
 !
-      if (ldynamical_diffusion) call set_dyndiff_coeff(f)
+        if (ldynamical_diffusion) call set_dyndiff_coeff(f)
 !
-!  Calculate the characteristic velocity
-!  for slope limited diffusion
+!  Cal  culate the characteristic velocity
+!  for   slope limited diffusion
 !
-!      if (lslope_limit_diff.and.llast) then
-!        f(2:mx-2,2:my-2,2:mz-2,iFF_char_c)=0.
-!print*,'vor magnetic:', maxval(f(2:mx-2,2:my-2,2:mz-2,iFF_char_c))
-!        call update_char_vel_energy(f)
-!        call update_char_vel_magnetic(f)
-!        call update_char_vel_hydro(f)
-        !call update_char_vel_density(f)
-        !f(2:mx-2,2:my-2,2:mz-2,iFF_char_c)=sqrt(f(2:mx-2,2:my-2,2:mz-2,iFF_char_c))
-!  JW: for hydro it is done without sqrt
-        !if (ldiagnos) print*, 'max(char_c)=', maxval(f(2:mx-2,2:my-2,2:mz-2,iFF_char_c))
-!      endif
+!        if (lslope_limit_diff.and.llast) then
+!          f(2:mx-2,2:my-2,2:mz-2,iFF_char_c)=0.
+!print  *,'vor magnetic:', maxval(f(2:mx-2,2:my-2,2:mz-2,iFF_char_c))
+!          call update_char_vel_energy(f)
+!          call update_char_vel_magnetic(f)
+!          call update_char_vel_hydro(f)
+          !call update_char_vel_density(f)
+          !f(2:mx-2,2:my-2,2:mz-2,iFF_char_c)=sqrt(f(2:mx-2,2:my-2,2:mz-2,iFF_char_c))
+!  JW:   for hydro it is done without sqrt
+          !if (ldiagnos) print*, 'max(char_c)=', maxval(f(2:mx-2,2:my-2,2:mz-2,iFF_char_c))
+!        endif
 !
-!  For calculating the pressure gradient directly from the pressure (which is
-!  derived from the basic thermodynamical variables), we need to fill in the
-!  pressure in the f array.
+!  For   calculating the pressure gradient directly from the pressure (which is
+!  der  ived from the basic thermodynamical variables), we need to fill in the
+!  pre  ssure in the f array.
 !
-      call fill_farray_pressure(f)
+        call fill_farray_pressure(f)
 !
-!  Set inverse timestep to zero before entering loop over m and n.
-!  If we want to have a logarithmic time advance, we want set this here
-!  as the maximum. All other routines can then still make it shorter.
+!  Set   inverse timestep to zero before entering loop over m and n.
+!  If   we want to have a logarithmic time advance, we want set this here
+!  as   the maximum. All other routines can then still make it shorter.
 !
-      if (lfirst.and.ldt) then
-        if (dtmax/=0.0) then
-          if (lfractional_tstep_advance) then
-            dt1_max=1./(dt_incr*t)
+        if (lfirst.and.ldt) then
+          if (dtmax/=0.0) then
+            if (lfractional_tstep_advance) then
+              dt1_max=1./(dt_incr*t)
+            else
+              dt1_max=1./dtmax
+            endif
           else
-            dt1_max=1./dtmax
+            dt1_max=0.0
           endif
-        else
-          dt1_max=0.0
         endif
+!
+!  Cal  culate ionization degree (needed for thermodynamics)
+!  Rad  iation transport along rays. If lsingle_ray, then this
+!  is   only used for visualization and only needed when lvideo
+!  (bu  t this is decided in radtransfer itself)
+!
+        if (leos_ionization.or.leos_temperature_ionization) call ioncalc(f)
+        if (lradiation_ray) call radtransfer(f)     ! -> after_boundary or before_boundary?
+!
+!  Cal  culate shock profile (simple).
+!
+        if (lshock) call calc_shock_profile_simple(f)
+!
+!  Cal  l "after" hooks (for f array precalculation). This may imply
+!  cal  culating averages (some of which may only be required for certain
+!  set  tings in hydro of the testfield procedure (only when lsoca=.false.),
+!  for   example. They used to be or are still called hydro_after_boundary etc,
+!  and   will soon be renamed to hydro_after_boundary.
+!
+!  Imp  ortant to note that the processor boundaries are not full updated 
+!  at   this point, even if the name 'after_boundary' suggesting this.
+!  Use   early_finalize in this case.
+!  MR+  joern+axel, 8.10.2015
+!
+        call timing('pde','before "after_boundary" calls')
+!
+        if (lhydro)                 call hydro_after_boundary(f)
+        if (lviscosity)             call viscosity_after_boundary(f)
+        if (lmagnetic)              call magnetic_after_boundary(f)
+        if (ldustdensity)           call dustdensity_after_boundary(f)
+        if (lenergy)                call energy_after_boundary(f)
+        if (lgrav)                  call gravity_after_boundary(f)
+        if (lforcing)               call forcing_after_boundary(f)
+        if (lpolymer)               call calc_polymer_after_boundary(f)
+        if (ltestscalar)            call testscalar_after_boundary(f)
+        if (ltestfield)             call testfield_after_boundary(f)
+!AB: q  uick fix
+        !if (ltestfield)             call testfield_after_boundary(f,p)
+        if (ldensity)               call density_after_boundary(f)
+        if (lneutraldensity)        call neutraldensity_after_boundary(f)
+        if (ltestflow)              call calc_ltestflow_nonlin_terms(f,df)  ! should not use df!
+        if (lmagn_mf)               call meanfield_after_boundary(f)
+        if (lspecial)               call special_after_boundary(f)
+!
+!  Cal  culate quantities for a chemical mixture. This is done after
+!  com  munication has finalized since many of the arrays set up here
+!  are   not communicated, and in this subroutine also ghost zones are calculated.
+!
+        if (lchemistry .and. ldensity) call calc_for_chem_mixture(f)
       endif
-!
-!  Calculate ionization degree (needed for thermodynamics)
-!  Radiation transport along rays. If lsingle_ray, then this
-!  is only used for visualization and only needed when lvideo
-!  (but this is decided in radtransfer itself)
-!
-      if (leos_ionization.or.leos_temperature_ionization) call ioncalc(f)
-      if (lradiation_ray) call radtransfer(f)     ! -> after_boundary or before_boundary?
-!
-!  Calculate shock profile (simple).
-!
-      if (lshock) call calc_shock_profile_simple(f)
-!
-!  Call "after" hooks (for f array precalculation). This may imply
-!  calculating averages (some of which may only be required for certain
-!  settings in hydro of the testfield procedure (only when lsoca=.false.),
-!  for example. They used to be or are still called hydro_after_boundary etc,
-!  and will soon be renamed to hydro_after_boundary.
-!
-!  Important to note that the processor boundaries are not full updated 
-!  at this point, even if the name 'after_boundary' suggesting this.
-!  Use early_finalize in this case.
-!  MR+joern+axel, 8.10.2015
-!
-      call timing('pde','before "after_boundary" calls')
-!
-      if (lhydro)                 call hydro_after_boundary(f)
-      if (lviscosity)             call viscosity_after_boundary(f)
-      if (lmagnetic)              call magnetic_after_boundary(f)
-      if (ldustdensity)           call dustdensity_after_boundary(f)
-      if (lenergy)                call energy_after_boundary(f)
-      if (lgrav)                  call gravity_after_boundary(f)
-      if (lforcing)               call forcing_after_boundary(f)
-      if (lpolymer)               call calc_polymer_after_boundary(f)
-      if (ltestscalar)            call testscalar_after_boundary(f)
-      if (ltestfield)             call testfield_after_boundary(f)
-!AB: quick fix
-      !if (ltestfield)             call testfield_after_boundary(f,p)
-      if (ldensity)               call density_after_boundary(f)
-      if (lneutraldensity)        call neutraldensity_after_boundary(f)
-      if (ltestflow)              call calc_ltestflow_nonlin_terms(f,df)  ! should not use df!
-      if (lmagn_mf)               call meanfield_after_boundary(f)
-      if (lspecial)               call special_after_boundary(f)
-!
-!  Calculate quantities for a chemical mixture. This is done after
-!  communication has finalized since many of the arrays set up here
-!  are not communicated, and in this subroutine also ghost zones are calculated.
-!
-      if (lchemistry .and. ldensity) call calc_for_chem_mixture(f)
 !
       call timing('pde','after "after_boundary" calls')
 !
@@ -342,11 +344,12 @@ module Equ
 !         Not done for the first step since we haven't loaded any data to the GPU yet
           call copy_farray_from_GPU(f)
 !$        call save_diagnostic_controls
-!$        call signal_send(lhelperflags(PERF_DIAGS),.true.)
+!!$        call signal_send(lhelperflags(PERF_DIAGS),.true.)
+          lmasterflags(PERF_DIAGS) = .true.
 !!$        last_pushed_task = push_task(c_funloc(calc_all_module_diagnostics_wrapper),&
 !!$        last_pushed_task, 1, default_task_type, 1, depend_on_all, f, mx, my, mz, mfarray)
         endif
-        call rhs_gpu(f,itsub,early_finalize)
+        call rhs_gpu(f,itsub)
       else
         call rhs_cpu(f,df,p,mass_per_proc,early_finalize)
 !
@@ -441,41 +444,41 @@ module Equ
 
       endif     ! if (.not. lgpu)
 
-      if (lmultithread) then
-        if (ldiagnos.or.l1davgfirst.or.l1dphiavg.or.l2davgfirst) then
-!!$        last_pushed_task = push_task(c_funloc(finalize_diagnostics_wrapper),&
-!!$        last_pushed_task, 1, default_task_type, 1, depend_on_all)
-        endif
-      elseif (lfirst) then
-        if (lout) then
-          tdiagnos  = t
-          itdiagnos = it
-          dtdiagnos = dt
-        endif
-        call finalize_diagnostics
-      endif
-!
-!  Calculate rhoccm and cc2m (this requires that these are set in print.in).
-!  Broadcast result to other processors. This is needed for calculating PDFs.
-!
-!      if (idiag_rhoccm/=0) then
-!        if (iproc==0) rhoccm=fname(idiag_rhoccm)
-!        call mpibcast_real(rhoccm)
-!      endif
-!
-!      if (idiag_cc2m/=0) then
-!        if (iproc==0) cc2m=fname(idiag_cc2m)
-!        call mpibcast_real(cc2m)
-!      endif
-!
-!      if (idiag_gcc2m/=0) then
-!        if (iproc==0) gcc2m=fname(idiag_gcc2m)
-!        call mpibcast_real(gcc2m)
-!      endif
-!
-!  Reset lwrite_prof.
-!
-      lwrite_prof=.false.
+              if (lmultithread) then
+                if (ldiagnos.or.l1davgfirst.or.l1dphiavg.or.l2davgfirst) then
+        !!$        last_pushed_task = push_task(c_funloc(finalize_diagnostics_wrapper),&
+        !!$        last_pushed_task, 1, default_task_type, 1, depend_on_all)
+                endif
+              elseif (lfirst) then
+                if (lout) then
+                  tdiagnos  = t
+                  itdiagnos = it
+                  dtdiagnos = dt
+                endif
+                call finalize_diagnostics
+              endif
+        !
+        !  Calculate rhoccm and cc2m (this requires that these are set in print.in).
+        !  Broadcast result to other processors. This is needed for calculating PDFs.
+        !
+        !      if (idiag_rhoccm/=0) then
+        !        if (iproc==0) rhoccm=fname(idiag_rhoccm)
+        !        call mpibcast_real(rhoccm)
+        !      endif
+        !
+        !      if (idiag_cc2m/=0) then
+        !        if (iproc==0) cc2m=fname(idiag_cc2m)
+        !        call mpibcast_real(cc2m)
+        !      endif
+        !
+        !      if (idiag_gcc2m/=0) then
+        !        if (iproc==0) gcc2m=fname(idiag_gcc2m)
+        !        call mpibcast_real(gcc2m)
+        !      endif
+        !
+        !  Reset lwrite_prof.
+        !
+              lwrite_prof=.false.
 !
     endsubroutine pde
 !***********************************************************************
@@ -506,6 +509,7 @@ module Equ
       itdiagnos = it_save
       eps_rkf_diagnos = eps_rkf_save
     endif
+    lpencil = lpencil_save
 
     endsubroutine restore_diagnostic_controls
 !***********************************************************************
@@ -609,6 +613,7 @@ module Equ
       it_save = it
       eps_rkf_save = eps_rkf
     endif
+    lpencil_save = lpencil
 
     endsubroutine save_diagnostic_controls
 !***********************************************************************
@@ -783,7 +788,8 @@ module Equ
         call finalize_diagnostics                 ! by diagmaster (MPI comm.)
         call write_diagnostics(f)                 !       ~
 
-!$      call signal_send(lhelperflags(PERF_DIAGS),.false.)
+!!$      call signal_send(lhelperflags(PERF_DIAGS),.false.)
+        lhelperflags(PERF_DIAGS) = .false.
 
       endsubroutine perform_diagnostics
 !*****************************************************************************

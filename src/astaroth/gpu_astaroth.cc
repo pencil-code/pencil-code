@@ -433,7 +433,7 @@ has_nans(AcMesh mesh_in)
   return res;
 }
 /***********************************************************************************************/
-extern "C" void substepGPU(int isubstep, bool full = false, bool early_finalize = false)
+extern "C" void substepGPU(int isubstep)
 //
 //  Do the 'isubstep'th integration step on all GPUs on the node and handle boundaries.
 //
@@ -446,6 +446,8 @@ extern "C" void substepGPU(int isubstep, bool full = false, bool early_finalize 
   if (lfirst && ldt)
   {
     AcReal dt1_advec = max_advec()/cdt;
+    //Example of how to get the kernel reduce output for Matthias
+    AcReal alfven_speed = acGridGetDevice()->output.real_outputs[AC_alfven_speed];
     AcReal dt1_diffus = max_diffus()/cdtv;
     AcReal dt1_ = sqrt(pow(dt1_advec, 2) + pow(dt1_diffus, 2));
     set_dt(dt1_);
@@ -453,22 +455,22 @@ extern "C" void substepGPU(int isubstep, bool full = false, bool early_finalize 
   acGridSynchronizeStream(STREAM_DEFAULT);
   //Transfer the updated ghost zone to the device(s) in the node
 
-  if (full)
-  {
-    if (has_nans(mesh))
-    {
-      acLogFromRootProc(rank,"had nans before starting GPU comp\n");
-      exit(0);
-    }
-    acLogFromRootProc(rank,"doing full i.e. loading\n");
-    acGridSynchronizeStream(STREAM_ALL);
-    acDeviceLoadMesh(acGridGetDevice(), STREAM_DEFAULT, mesh);
-    acGridSynchronizeStream(STREAM_ALL);
-    //set output buffer to 0 since if we are reading from it we don't want NaNs
-    AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
-    acGridLaunchKernel(STREAM_DEFAULT, AC_BUILTIN_RESET, dims.n0, dims.n1);
-    acGridSynchronizeStream(STREAM_ALL);
-  }
+  //if (full)
+  //{
+  //  if (has_nans(mesh))
+  //  {
+  //    acLogFromRootProc(rank,"had nans before starting GPU comp\n");
+  //    exit(0);
+  //  }
+  //  acLogFromRootProc(rank,"doing full i.e. loading\n");
+  //  acGridSynchronizeStream(STREAM_ALL);
+  //  acDeviceLoadMesh(acGridGetDevice(), STREAM_DEFAULT, mesh);
+  //  acGridSynchronizeStream(STREAM_ALL);
+  //  //set output buffer to 0 since if we are reading from it we don't want NaNs
+  //  AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
+  //  acGridLaunchKernel(STREAM_DEFAULT, AC_BUILTIN_RESET, dims.n0, dims.n1);
+  //  acGridSynchronizeStream(STREAM_ALL);
+  //}
   acGridSynchronizeStream(STREAM_ALL);
   if (isubstep == 1)
   {
@@ -479,6 +481,7 @@ extern "C" void substepGPU(int isubstep, bool full = false, bool early_finalize 
   }
   if (isubstep == 2) acGridExecuteTaskGraph(graph_2, 1);
   if (isubstep == 3) acGridExecuteTaskGraph(graph_3, 1);
+  if (isubstep == 3) acGridFinalizeReduce(graph_3);
 
   acGridSynchronizeStream(STREAM_ALL);
   // acLogFromRootProc(rank,"Done substep: %d\n",isubstep);
@@ -1028,23 +1031,23 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out, int c
   auto single_loader0= [](ParamLoadingInfo p)
   {
 	  p.params -> singlepass_solve.step_num = 0;
-	  p.params -> singlepass_solve.dt = p.device->local_config.real_params[AC_dt];
+	  p.params -> singlepass_solve._dt = p.device->local_config.real_params[AC_dt];
   };
   auto single_loader1= [](ParamLoadingInfo p)
   {
 	  p.params -> singlepass_solve.step_num = 1;
-	  p.params -> singlepass_solve.dt = p.device->local_config.real_params[AC_dt];
+	  p.params -> singlepass_solve._dt = p.device->local_config.real_params[AC_dt];
   };
   auto single_loader2= [](ParamLoadingInfo p)
   {
 	  p.params -> singlepass_solve.step_num = 2;
-	  p.params -> singlepass_solve.dt = p.device->local_config.real_params[AC_dt];
+	  p.params -> singlepass_solve._dt = p.device->local_config.real_params[AC_dt];
   };
 #else
   auto intermediate_loader_0= [](ParamLoadingInfo p)
   {
 	  p.params -> twopass_solve_intermediate.step_num = 0;
-	  p.params -> twopass_solve_intermediate.dt = p.device->local_config.real_params[AC_dt];
+	  p.params -> twopass_solve_intermediate._dt = p.device->local_config.real_params[AC_dt];
   };
   auto final_loader_0 = [](ParamLoadingInfo p)
   {
@@ -1053,7 +1056,7 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out, int c
   auto intermediate_loader_1= [](ParamLoadingInfo p)
   {
 	  p.params -> twopass_solve_intermediate.step_num = 1;
-	  p.params -> twopass_solve_intermediate.dt = p.device->local_config.real_params[AC_dt];
+	  p.params -> twopass_solve_intermediate._dt = p.device->local_config.real_params[AC_dt];
   };
   auto final_loader_1 = [](ParamLoadingInfo p)
   {
@@ -1062,7 +1065,7 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out, int c
   auto intermediate_loader_2= [](ParamLoadingInfo p)
   {
 	  p.params -> twopass_solve_intermediate.step_num = 2;
-	  p.params -> twopass_solve_intermediate.dt = p.device->local_config.real_params[AC_dt];
+	  p.params -> twopass_solve_intermediate._dt = p.device->local_config.real_params[AC_dt];
   };
   auto final_loader_2= [](ParamLoadingInfo p)
   {
@@ -1129,6 +1132,7 @@ extern "C" void copyFarray(AcReal* f)
 
   acGridSynchronizeStream(STREAM_ALL);
   acDeviceStoreMesh(acGridGetDevice(), STREAM_DEFAULT, &mesh_to_copy);
+  //acDeviceStoreMesh(acGridGetDevice(), STREAM_DEFAULT, &mesh);
   acGridSynchronizeStream(STREAM_ALL);
 }
 /***********************************************************************************************/
