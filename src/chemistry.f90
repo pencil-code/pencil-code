@@ -1204,7 +1204,7 @@ module Chemistry
       elseif (lSIO) then
 print*,'AXEL1'
         final_massfrac_SIO = 0.
-        final_massfrac_SIO2 = 2.*mSIO2/mSIO * init_SIO
+        final_massfrac_SIO2 = mSIO2/mSIO * init_SIO
         final_massfrac_O2 = 1. - final_massfrac_SIO2 - init_N2
       endif
 !
@@ -1217,6 +1217,7 @@ print*,'AXEL1'
         if (lH2O) print*, 'H2O :',  init_H2O, final_massfrac_H2O
         if (lCO2)  print*, 'CO2 :', 0., final_massfrac_CO2
         if (lSIO) print*, 'SiO :',  init_SIO, 0.
+        if (lSIO2) print*, 'SIO2 :',  init_SIO2, final_massfrac_SIO2
      endif
 !
 !  Initialize temperature and species
@@ -1254,6 +1255,7 @@ print*,'AXEL1'
             if (lH2 .and. .not. lCH4) f(k,:,:,i_H2) = init_H2* &
                 (exp(f(k,:,:,ilnTT))-init_TT2)/(init_TT1-init_TT2)
             if (lCH4) f(k,:,:,i_CH4) = init_CH4*(exp(f(k,:,:,ilnTT))-init_TT2)/(init_TT1-init_TT2)
+            if (lSIO) f(k,:,:,i_SIO) = init_SIO*(exp(f(k,:,:,ilnTT))-init_TT2)/(init_TT1-init_TT2)
           endif
         endif
 !
@@ -1321,15 +1323,17 @@ print*,'AXEL1'
 !
 !  Find logaritm of density at inlet
 !
-      initial_mu1 = &
+     initial_mu1 = &
           initial_massfractions(ichem_O2)/(mO2) &
-          +initial_massfractions(ichem_H2O)/(mH2O) &
           +initial_massfractions(ichem_N2)/(mN2)
-      if (lH2 .and. .not. lCH4) initial_mu1 = initial_mu1+ &
+     if (lH2 .and. .not. lCH4) initial_mu1 = initial_mu1+ &
           initial_massfractions(ichem_H2)/(mH2)
-      if (lCO2) initial_mu1 = initial_mu1+init_CO2/(mCO2)
-      if (lCH4) initial_mu1 = initial_mu1+init_CH4/(mCH4)
-      log_inlet_density = log(init_pressure)-log(Rgas)-log(init_TT1)-log(initial_mu1)
+     if (lCO2) initial_mu1 = initial_mu1+init_CO2/(mCO2)
+     if (lCH4) initial_mu1 = initial_mu1+init_CH4/(mCH4)
+     if (lH2O) initial_mu1 = initial_mu1+init_H2O/(mH2O)
+     if (lSIO) initial_mu1 = initial_mu1+init_SIO/(mSIO)
+     if (lSIO2) initial_mu1 = initial_mu1+init_SIO2/(mSIO2)
+     log_inlet_density = log(init_pressure)-log(Rgas)-log(init_TT1)-log(initial_mu1)
 !
 !  Initialize density
 !
@@ -4148,8 +4152,16 @@ print*,'AXEL1'
         if (lwrite_first)  open (file_id,file=input_file)
 !
 !  p is in atm units; atm/bar=1./10.13
+!  NILS: I think the conversion constant to calories is 4.184 instead 4.14
 !
-        Rcal = Rgas_unit_sys/4.14*1e-7
+        if (unit_system/="cgs") call fatal_error("get_reaction_rate","Unit system must be cgs.")
+
+        !if (chemkin_units=="SI") then
+        !   
+        !endif
+        
+        Rcal = Rgas_unit_sys/4.184*1e-7
+        print*,"NILS: Rcal, Rgas_unit_sys=",Rcal, Rgas_unit_sys
         Rcal1 = 1./Rcal
         lnRgas = log(Rgas)
         l10 = log(10.)
@@ -5340,7 +5352,7 @@ print*,'AXEL1'
         print*, 'Air mean weight, g/mol', air_mass
         print*, 'R', k_B_cgs/m_u_cgs
       endif
-
+      
       close(file_id)
 !
     endsubroutine air_field
