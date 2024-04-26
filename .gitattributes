@@ -668,6 +668,9 @@ doc/implementation/anelastic/anelastic_hurdle.pdf -text
 doc/implementation/anelastic/anelastic_hurdle.tex -text
 doc/implementation/bound_cond/Makefile -text
 doc/implementation/bound_cond/radiative.tex -text
+doc/implementation/chemistry/Makefile -text
+doc/implementation/chemistry/notes.pdf -text
+doc/implementation/chemistry/notes.tex -text
 doc/implementation/correlation_time_uut/Makefile -text
 doc/implementation/correlation_time_uut/README -text
 doc/implementation/correlation_time_uut/fig/pcortime.eps -text
