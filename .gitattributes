@@ -4057,7 +4057,6 @@ src/astaroth/forcing.h -text
 src/astaroth/gpu_astaroth.cc -text
 src/astaroth/loadStore.cc -text
 src/astaroth/loadStore.h -text
-src/astaroth_sgl.so -text
 src/bfield.f90 -text
 src/border_profiles.f90 -text
 src/border_profiles.h -text
@@ -4731,8 +4730,6 @@ src/read_videofiles.f90 -text
 src/record_types.h -text
 src/register.f90 -text
 src/run.f90 -text
-src/run_dynamic.h -text
-src/run_static.h -text
 src/scripts/adapt-mkfile -text
 src/scripts/boundcond2c -text
 src/scripts/cdata.sed -text
