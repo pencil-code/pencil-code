@@ -82,7 +82,6 @@ module Special
 !
   include 'special.h'
 !
-!
 ! Declare index of new variables in f array (if any).
 !
 !!   integer :: ispecial=0
@@ -666,9 +665,25 @@ module Special
       call keep_compiler_quiet(Ntot)
 !
     endsubroutine  set_init_parameters
-!*********************************************************************** 
-    subroutine copyin_special
+!***********************************************************************
+    subroutine input_persist_special_id(id,done)
 !
-    endsubroutine copyin_special
+      integer :: id
+      logical :: done
+
+      call keep_compiler_quiet(id)
+      call keep_compiler_quiet(done)
+
+    endsubroutine input_persist_special_id
+!***********************************************************************
+    subroutine input_persist_special
+            
+    endsubroutine input_persist_special
+!***********************************************************************
+    logical function output_persistent_special()
+
+      output_persistent_special=.false.
+
+    endfunction output_persistent_special
 !***********************************************************************
 endmodule Special

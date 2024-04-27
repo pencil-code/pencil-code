@@ -150,6 +150,8 @@ module Chemistry
 !
       integer, intent(out) :: iostat
 !
+      iostat=0
+
     endsubroutine read_chemistry_init_pars
 !***********************************************************************
     subroutine write_chemistry_init_pars(unit)
@@ -164,6 +166,8 @@ module Chemistry
 !
       integer, intent(out) :: iostat
 !
+      iostat=0
+
     endsubroutine read_chemistry_run_pars
 !***********************************************************************
     subroutine write_chemistry_run_pars(unit)

@@ -14,10 +14,13 @@
 
     implicit none
 
-    external caller, caller0, caller1, caller2, caller3, caller4, caller5, caller5_str5
+    include 'special.h'
+
+    external caller, caller0, caller1, caller2, caller3, caller4, caller5, caller5_str5, caller6, &
+             func_int_caller0
     integer(KIND=ikind8), external :: dlopen_c, dlsym_c
     external dlclose_c
-
+!
     integer, parameter :: I_REGISTER_SPECIAL=1,  &
                           I_REGISTER_PARTICLES_SPECIAL=2,  &
                           I_INITIALIZE_SPECIAL=3,  &
@@ -30,7 +33,7 @@
                           I_GET_SLICES_SPECIAL=10,  &
                           I_INIT_SPECIAL=11,  &
                           I_DSPECIAL_DT=12,  &
-                          I_DSPECIAL_DT_ODE=31,  &
+                          I_DSPECIAL_DT_ODE=32,  &
                           I_CALC_PENCILS_SPECIAL=13,  &
                           I_PENCIL_CRITERIA_SPECIAL=14,  &
                           I_PENCIL_INTERDEP_SPECIAL=15,  &
@@ -49,9 +52,13 @@
                           I_SPECIAL_AFTER_TIMESTEP=28,  &
                           I_SET_INIT_PARAMETERS=29, &
                           I_SPECIAL_CALC_SPECTRA=30, &
-                          I_COPYIN_SPECIAL=32
+                          I_SPECIAL_CALC_SPECTRA_BYTE=31, &
+                          I_INPUT_PERSIST_SPECIAL=33, &
+                          I_INPUT_PERSIST_SPECIAL_ID=34, &
+                          I_OUTPUT_PERSISTENT_SPECIAL=35, &
+                          I_SPECIAL_PARTICLES_AFTER_DTSUB=36
     
-    integer, parameter :: n_subroutines=32
+    integer, parameter :: n_subroutines=36
     integer, parameter :: n_special_modules_max=2
 !
     integer :: n_special_modules
@@ -86,9 +93,13 @@
                            'special_after_boundary      ', &
                            'special_after_timestep      ', &
                            'set_init_parameters         ', &
+                           'special_calc_spectra        ', &
                            'special_calc_spectra_byte   ', &
                            'dspecial_dt_ode             ', &
-                           'copyin_special              ' /)
+                           'input_persist_special       ', &
+                           'input_persist_special_id    ', &
+                           'output_persistent_special   ', &
+                           'special_particles_after_dtsub'   /)
 
     integer(KIND=ikind8) :: libhandle
     integer(KIND=ikind8), dimension(n_special_modules_max,n_subroutines) :: special_sub_handles
@@ -702,14 +713,72 @@
 
     endsubroutine special_calc_spectra
 !*********************************************************************** 
-    subroutine copyin_special
+    subroutine special_calc_spectra_byte(f,spec,spec_hel,lfirstcall,kind,len)
+
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:) :: spec,spec_hel
+      logical :: lfirstcall
+      integer(KIND=ikind1), dimension(3) :: kind
+      integer :: len
 !
       integer :: i
-!
       do i=1,n_special_modules
-        call caller0(special_sub_handles(i,I_COPYIN_SPECIAL))
+        call caller6(special_sub_handles(i,I_SPECIAL_CALC_SPECTRA_BYTE),f, &
+                     spec,spec_hel,lfirstcall,kind,len)
+      enddo
+
+    endsubroutine special_calc_spectra_byte
+!*********************************************************************** 
+    subroutine input_persist_special_id(id,done)
+!
+      integer :: id
+      logical :: done
+
+      integer :: i
+      do i=1,n_special_modules
+        call caller2(special_sub_handles(i,I_INPUT_PERSIST_SPECIAL_ID),id,done)
+      enddo
+
+    endsubroutine input_persist_special_id
+!*********************************************************************** 
+    subroutine input_persist_special
+!
+      integer :: i
+      do i=1,n_special_modules
+        call caller0(special_sub_handles(i,I_INPUT_PERSIST_SPECIAL))
+      enddo
+
+    endsubroutine input_persist_special
+!*********************************************************************** 
+    function output_persistent_special() result(ret)
+
+      logical :: ret
+      integer :: func_int_caller0
+      integer :: i
+
+      ret=.true.
+      do i=1,n_special_modules
+        ret=ret.and.func_int_caller0(special_sub_handles(i,I_OUTPUT_PERSISTENT_SPECIAL))
+      enddo
+
+    endfunction output_persistent_special        
+!***********************************************************************
+    subroutine special_particles_after_dtsub(f, dtsub, fp, dfp, ineargrid)
+!
+!  Possibility to modify fp in the end of a sub-time-step.
+!
+!  28-aug-18/ccyang: coded
+!
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, intent(in) :: dtsub
+      real, dimension(:,:), intent(in) :: fp, dfp
+      integer, dimension(:,:), intent(in) :: ineargrid
+!
+      integer :: i
+      do i=1,n_special_modules
+        call caller5(special_sub_handles(i,I_SPECIAL_PARTICLES_AFTER_DTSUB),f,dtsub,fp,dfp,ineargrid)
       enddo
 !
-    endsubroutine copyin_special
+    endsubroutine special_particles_after_dtsub
 !*********************************************************************** 
   endmodule Special

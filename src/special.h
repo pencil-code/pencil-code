@@ -39,4 +39,9 @@
   public :: special_particles_after_dtsub
   
   public :: set_init_parameters
-  public :: copyin_special
+  public :: input_persistent_special, output_persistent_special
+
+  interface input_persistent_special
+     module procedure input_persist_special_id
+     module procedure input_persist_special
+  endinterface
