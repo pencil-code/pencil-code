@@ -102,7 +102,7 @@ sub find_implemented_routines {
     while( my $line = <SRC> ) {
           chop($line);
           my $lout = $line;
-          if(  $line =~ /^\s*subroutine/i || $line =~ /^\s*function/i || $line =~ /^\s*integer\s*function/i || $line =~ /^\s*elemental/i ) {
+          if(  $line =~ /^\s*subroutine/i || $line =~ /^\s*function/i || $line =~ /^\s*logical\s*function/i || $line =~ /^\s*integer\s*function/i || $line =~ /^\s*elemental/i ) {
               my $subname;
               my @words = split " ", $line;
               if( $words[1] =~ /^\s*function/i || $words[1] =~ /^\s*subroutine/i ) {
@@ -162,7 +162,7 @@ sub write_dummies {
 # with subroutine, ignoring whatever blank spaces between the start of the 
 # line and 'subroutine'" 
 #
-          if(  $line =~ /^\s*subroutine/i || $line =~ /^\s*function/i ||
+          if(  $line =~ /^\s*subroutine/i || $line =~ /^\s*function/i || $line =~ /^\s*logical\s*function/i ||
                $line =~ /^\s*integer\s*function/i || $line =~ /^\s*elemental/i ) {
 #
 # Define subname
@@ -211,7 +211,7 @@ sub write_dummies {
 # the line containing "input XXX_dummies.inc" and "endmodule XXX" onto the XXX_dummies.inc. 
 # This, in turn, causes an infinite loop. 
 #
-          if ($write_line && !$interface_open && ($line =~ /^\s*endsubroutine/i || $line =~ /^s\*function/i)) {
+          if ($write_line && !$interface_open && ($line =~ /^\s*end\s*subroutine/i || $line =~ /^\s*end\s*function/i)) {
 #
               print OUT "!*********************************************************************** \n";
               $write_line = 0;
