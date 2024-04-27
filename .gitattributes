@@ -4584,7 +4584,6 @@ src/noshear.f90 -text
 src/noshock.f90 -text
 src/nosignal_handling.f90 -text
 src/noslices.f90 -text
-src/noslices_methods.f90 -text
 src/nosolid_cells.f90 -text
 src/nosolid_cells_mpicomm.f90 -text
 src/nosolid_cells_ogrid_cdata.f90 -text
@@ -4775,7 +4774,6 @@ src/shock_highorder.f90 -text
 src/signal_handling.f90 -text
 src/slices.f90 -text
 src/slices_methods.f90 -text
-src/slices_methods.h -text
 src/snapshot.f90 -text
 src/solid_cells.f90 -text
 src/solid_cells.h -text
