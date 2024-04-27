@@ -1458,6 +1458,6 @@ module Energy
 !**  copies dummy routines from nospecial.f90 for any Special      **
 !**  routines not implemented in this file                         **
 !**                                                                **
-    include 'energy_common.inc'
+    include 'energy_dummies.inc'
 !***********************************************************************
 endmodule Energy

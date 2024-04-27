@@ -3269,8 +3269,8 @@ initial_condition_dummies.inc:  Makefile.local noinitial_condition.f90 $(INITIAL
 file_io_common.inc:  Makefile.local $(FILE_IO).f90 file_io_common.f90
 	scripts/mkdummyinc -d file_io_common.f90 -s $(FILE_IO).f90 -o file_io_common.inc
 #
-energy_common.inc:  Makefile.local noentropy.f90 $(ENERGY).f90
-	scripts/mkdummyinc -d noentropy.f90 -s $(ENERGY).f90 -o energy_common.inc
+energy_dummies.inc:  Makefile.local noentropy.f90 $(ENERGY).f90
+	scripts/mkdummyinc -d noentropy.f90 -s $(ENERGY).f90 -o energy_dummies.inc
 #
 eos_common.inc:  Makefile.local noeos.f90 $(EOS).f90
 	scripts/mkdummyinc -d noeos.f90 -s $(EOS).f90 -o eos_common.inc
