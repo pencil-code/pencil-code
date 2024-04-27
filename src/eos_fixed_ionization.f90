@@ -1273,6 +1273,6 @@ module EquationOfState
 !**  copies dummy routines from nospecial.f90 for any Special      **
 !**  routines not implemented in this file                         **
 !**                                                                **
-    include 'eos_common.inc'
+    include 'eos_dummies.inc'
 !***********************************************************************
 endmodule EquationOfState

@@ -6,7 +6,7 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! CPARAM logical, parameter :: leos = .true., leos_ionization=.false., leos_temperature_ionization=.false.
+! CPARAM logical, parameter :: leos = .true., leos_ionization=.false., leos_fixed_ionization=.false., leos_temperature_ionization=.false.
 ! CPARAM logical, parameter :: leos_idealgas = .true., leos_chemistry = .false.
 !
 ! MVAR CONTRIBUTION 0
@@ -2145,7 +2145,7 @@ module EquationOfState
             call set_ghosts_for_onesided_ders(f,topbot,iss,3,.true.)
           else
             do i=1,nghost
-              call getdlnrho_z(f(:,:,:,ilnrho),n1,i,rho_xy)        ! rho_xy=del_z ln(rho)
+              call getdlnrho_z(f(:,:,:,ilnrho),n1,i,rho_xy)           ! rho_xy=del_z ln(rho)
               f(:,:,n1-i,iss)=f(:,:,n1+i,iss)+cp*(cp-cv)*(rho_xy+dz2_bound(-i)*tmp_xy)
             enddo
           endif
@@ -2671,8 +2671,7 @@ module EquationOfState
 !  ============
 !
       case(TOP)
-!
-         call not_implemented("bc_ss_flux_condturb_x","for the top boundary")
+        call not_implemented("bc_ss_flux_condturb_x","for the top boundary")
 !
 !  capture undefined entries
 !
@@ -2864,7 +2863,7 @@ module EquationOfState
           TT_xy=f(:,:,n1,iss)                                ! here TT_xy = entropy
           if (lreference_state) TT_xy(l1:l2,:) = TT_xy(l1:l2,:) + spread(reference_state(:,iref_s),2,my)
           TT_xy=cs20*exp(gamma_m1*(rho_xy-lnrho0)+cv1*TT_xy) ! here TT_xy = cs2
-          TT_xy=TT_xy/(cp*gamma_m1)                          ! here TT_xy temperature
+          TT_xy=TT_xy/(cp*gamma_m1)                          ! here TT_xy = temperature
 !
           call getrho(f(:,:,n1,ilnrho),rho_xy)               ! here rho_xy = rho
 !
@@ -2898,8 +2897,7 @@ module EquationOfState
 !  ============
 !
       case(TOP)
-!
-         call not_implemented("bc_ss_flux_condturb_z","for top boundary")
+        call not_implemented("bc_ss_flux_condturb_z","for top boundary")
 !
 !  capture undefined entries
 !
@@ -3235,11 +3233,12 @@ module EquationOfState
           if (lreference_state) &
             f(l1:l2,:,n1,iss) = f(l1:l2,:,n1,iss) - spread(reference_state(:,iref_s),2,my)
 !
-!  Distinguish cases for linear and logarithmic density
-!
           if (loptest(lone_sided)) then
             call set_ghosts_for_onesided_ders(f,topbot,iss,3,.true.)
           else
+!
+!  Distinguish cases for linear and logarithmic density
+!
             if (ldensity_nolog) then
 !
               do i=1,nghost
@@ -3942,8 +3941,8 @@ module EquationOfState
 !
 !  25-2010/fred: adapted from bc_ss_stemp_z
 !
-      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
+      integer, intent(IN) :: topbot
       integer :: i
 !
       if (ldebug) print*,'bc_ss_a2stemp_z: cs20,cs0=',cs20,cs0
@@ -3987,9 +3986,8 @@ module EquationOfState
 !  11-jul-2002/nils: moved into the entropy module
 !  26-aug-2003/tony: distributed across ionization modules
 !
-!
-      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
+      integer, intent(IN) :: topbot
       real, dimension (size(f,1),size(f,2)) :: cs2_2d
       integer :: i
 !
@@ -4029,8 +4027,8 @@ module EquationOfState
 !***********************************************************************
     subroutine bc_stellar_surface(f,topbot)
 !
-      integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
+      integer, intent(IN) :: topbot
 !
       call not_implemented("bc_stellar_surface","in eos_idealgas")
       call keep_compiler_quiet(f)
@@ -4059,6 +4057,7 @@ module EquationOfState
 !
       real, dimension (:,:,:,:), intent (inout) :: f
       integer, intent(IN) :: topbot
+
       real, dimension (size(f,2),size(f,3)) :: cs2,gravterm,centterm,uphi,rho
       real :: potp,potm,rad,step
       integer :: i
@@ -4671,6 +4670,6 @@ module EquationOfState
 !**  copies dummy routines from nospecial.f90 for any Special      **
 !**  routines not implemented in this file                         **
 !**                                                                **
-    include 'eos_common.inc'
+    include 'eos_dummies.inc'
 !***********************************************************************
 endmodule EquationOfState
