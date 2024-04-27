@@ -119,7 +119,7 @@ module Solid_Cells
         call fatal_error('initialize_solid_cells_ogrid', &
             'All cylinders must have non-zero radii!')
       endif
-      if(r_ogrid <= 0) r_ogrid=3.*cylinder_radius
+      if (r_ogrid <= 0) r_ogrid=3.*cylinder_radius
 !
       if (r_int_inner_vid <= cylinder_radius) &
           r_int_inner_vid = cylinder_radius+0.05*cylinder_radius
@@ -145,7 +145,7 @@ module Solid_Cells
 !
 !  Currently only implemented for single cylinder 
 !
-      if(ALWAYS_FALSE) print*, ncylinders
+      if (ALWAYS_FALSE) print*, ncylinders
 !
 ! Try to find flow direction
 !
@@ -183,10 +183,10 @@ module Solid_Cells
 !
 !  If velocity for initial potential flow is not set, use boundary condition to set this
 !
-      if(init_uu==0.) then
-        if(flow_dir==1)     then; init_uu=fbcx(1,1)
-        elseif(flow_dir==2) then; init_uu=fbcy(2,1)
-        elseif(flow_dir==3) then; init_uu=fbcz(3,1)
+      if (init_uu==0.) then
+        if (flow_dir==1)     then; init_uu=fbcx(1,1)
+        elseif (flow_dir==2) then; init_uu=fbcy(2,1)
+        elseif (flow_dir==3) then; init_uu=fbcz(3,1)
         endif
         print*, 'By using fbc[x,y,z] I set the initial velocity to ',init_uu
       endif
@@ -233,13 +233,13 @@ module Solid_Cells
 !
 !  Factor difference between timestep on background grid and overset grid 
 !
-      if(lock_dt) then
+      if (lock_dt) then
         timestep_factor = 1
       else
 !Jorgen:  Removed +1 from timestep_factor, still not safe if ogrid limited by
 !         diffusive timestep
         timestep_factor = ceiling(dxmin/dxmin_ogrid)*reduce_timestep
-        if(timestep_factor < 1)  then
+        if (timestep_factor < 1)  then
           timestep_factor = 1
         endif
         !timestep_factor = timestep_factor*timestep_factor
@@ -251,8 +251,8 @@ module Solid_Cells
 !
 !  Inform user
 !
-      if(lroot) then
-        if(.not.lequidist_ogrid(1)) then
+      if (lroot) then
+        if (.not.lequidist_ogrid(1)) then
           print*, ''
           print*, 'Non-linear grid in radial direction - dx_rcyl, dx_rogrid:', &
               0.5*(xglobal_ogrid(nghost+1)-xglobal_ogrid(nghost-1)), &
@@ -284,10 +284,10 @@ module Solid_Cells
           print*, 'Cartesian grid spacing - dx, dy, dz:', dx,dy,dz
         endif
         print*, 'Timestep factor:', timestep_factor
-        if(.not.lequidist_ogrid(2)) then
+        if (.not.lequidist_ogrid(2)) then
           call fatal_error('initialize_solid_cells','non-linear grid in theta direction not allowed')
         endif
-        if(.not.lequidist_ogrid(3))  print*, 'Non-linear grid in z-direction'
+        if (.not.lequidist_ogrid(3))  print*, 'Non-linear grid in z-direction'
       endif
 
 !
@@ -295,7 +295,7 @@ module Solid_Cells
 !  Snapshot data are saved in the data subdirectory.
 !  This directory must exist, but may be linked to another disk.
 !
-      if(lrun) call rsnap_ogrid('ogvar.dat',lread_nogrid)
+      if (lrun) call rsnap_ogrid('ogvar.dat',lread_nogrid)
 !
 !  The following is here to avoid division in sub.f90 for diagnostic
 !  outputs of integrated values in the non equidistant case.
@@ -309,12 +309,12 @@ module Solid_Cells
 !
 !  Construct summation by parts-stencils, if SBP is on
 !
-      if(BDRY5) then 
-        if(lroot) print*, 'Cylinder boundary condition: Fifth order boundary closures'
+      if (BDRY5) then 
+        if (lroot) print*, 'Cylinder boundary condition: Fifth order boundary closures'
         SBP=.false.
-      elseif(SBP) then
-        if(.not. SBP_optimized .and. .not. SBP_reduced_to2) then
-          if(lroot) print*, 'Cylinder boundary condition: Third order SBP boundary closures'
+      elseif (SBP) then
+        if (.not. SBP_optimized .and. .not. SBP_reduced_to2) then
+          if (lroot) print*, 'Cylinder boundary condition: Third order SBP boundary closures'
           D1_SBP(1,:)=(/ -21600./13649.  , 104009./54596.  , 30443./81894.   , & 
                          -33311./27298.  , 16863./27298.   , -15025./163788. , &
                          0.              , 0.              , 0.              /)
@@ -351,8 +351,8 @@ module Solid_Cells
           D2_SBP(6,:)=(/ 21035./525612.  , -24641./131403. ,  30409./87602.  , & 
                          -54899./131403. ,  820271./525612., -117600./43801. , &
                          64800./43801.   , -6480./43801.   , 480./43801.     /)
-        elseif(SBP_reduced_to2) then
-          if(lroot) print*, 'Cylinder boundary condition: Second order SBP boundary closures'
+        elseif (SBP_reduced_to2) then
+          if (lroot) print*, 'Cylinder boundary condition: Second order SBP boundary closures'
           D1_SBP(1,:)=(/-24./17.         , 59./34.         , -4./17.      , &
                         -3./34.          , 0.              , 0.           , &
                          0.              , 0.              , 0.              /)
@@ -458,7 +458,7 @@ module Solid_Cells
 !  If filterint is used, initialize additional boundary zones (halos) needed for high order filter
 !  Must be done before initialization of mpicomm
 !
-      if(lfilter_solution) call initialize_pade_filter(f_ogrid)
+      if (lfilter_solution) call initialize_pade_filter(f_ogrid)
 ! 
 !  Allocate arrays used for communications across processors internally on the curvilinear grid
 !
@@ -467,44 +467,44 @@ module Solid_Cells
 !  If particles are used in the simulation, set up 'local' arrays of f_ogrid variables to use
 !  when computing particle velocities (etc.) for particles inside r_ogrid
 !
-      if(lparticles) then
+      if (lparticles) then
         call initialize_particles_ogrid(ivar1_part,ivar2_part)
       endif
 
-      if(lroot) then
+      if (lroot) then
         print*, 'Interpolation zone: r_ogrid, r_int_outer, r_int_inner',r_ogrid,r_int_outer,r_int_inner
       endif
 ! Check interpolation method
-      if(lroot) then
-        if(interpolation_method==1) then
+      if (lroot) then
+        if (interpolation_method==1) then
           print*, 'interpolation_method==1: Linear interpolation used'
-        elseif(interpolation_method==3) then
+        elseif (interpolation_method==3) then
           print*, 'interpolation_method==3: Quadratic spline interpolation for velocities, T and species'
-        elseif(interpolation_method==5) then
+        elseif (interpolation_method==5) then
           print*, 'interpolation_method==5: Polynomial interpolation'
           print*, 'WARNING                : ONLY SERIAL AT THE MOMENT!!'
-        elseif(mod(interpolation_method,2)==0) then
+        elseif (mod(interpolation_method,2)==0) then
           print*, 'interpolation_method==',interpolation_method,': ',interpolation_method,&
                   'th order Lagrangian interpolation used'
         endif
-        if(lparticles) then
+        if (lparticles) then
             print*, ''
-          if(particle_interpolate==1) then
+          if (particle_interpolate==1) then
             print*, 'particle_interpolate==1: Linear particle interpolation'
-          elseif(particle_interpolate==4) then
+          elseif (particle_interpolate==4) then
             print*, 'particle_interpolate==4: Qubic particle interpolation'
             print*, 'WARNING                : NOT PROPERLY TESTED YET!'
           else
-            if(particle_interpolate==2) then
+            if (particle_interpolate==2) then
               print*, 'particle_interpolate==2: Pseudo-quadratic particle interpolation'
-            elseif(particle_interpolate==3) then
+            elseif (particle_interpolate==3) then
               print*, 'particle_interpolate==3: Quadratic particle interpolation'
             else
               call fatal_error('initialize_solid_cells','particle interpolation does not exist') 
             endif
-            if(lparticle_uradonly) print*, '                       : Only for radial direction'
+            if (lparticle_uradonly) print*, '                       : Only for radial direction'
           endif
-          if(lspecial_rad_int_mom) then
+          if (lspecial_rad_int_mom) then
             print*, 'Particle interpolation with special handling near surface,'
             print*, 'withing (momentum thickness + radius):', delta_momentum
           endif
@@ -533,9 +533,11 @@ module Solid_Cells
         call get_shared_variable('p_init',p_init)
       endif
 !
-!  If TVD Runge-Kutta method is used, temoporary array is needed for storage
+!  If TVD Runge-Kutta method is used, temporary array is needed for storage.
 !
-      if (lrk_tvd) allocate(f_tmp(mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid))
+      if (lrk_tvd) then
+        if (.not.allocated(f_tmp)) allocate(f_tmp(mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid))
+      endif
 !
     end subroutine initialize_solid_cells
 !***********************************************************************
@@ -576,7 +578,7 @@ module Solid_Cells
 !  Cartesian array f:
 !
 !  Set up variables in the appropriate direction of the flow
-      if(abs(flow_dir)==1.or.initsolid_cells=='cylinderstream_x') then
+      if (abs(flow_dir)==1.or.initsolid_cells=='cylinderstream_x') then
         iflow= iux
         iorth= iuy
         Lorth= Lxyz(2)
@@ -587,7 +589,7 @@ module Solid_Cells
           print*,'zero offset in y-direction!'
           call fatal_error('init_solid_cells:','')
         endif
-      elseif(abs(flow_dir)==2.or.initsolid_cells=='cylinderstream_y') then
+      elseif (abs(flow_dir)==2.or.initsolid_cells=='cylinderstream_y') then
         iflow= iuy
         iorth= iux
         Lorth= Lxyz(1)
@@ -710,7 +712,7 @@ module Solid_Cells
           f_ogrid(:,:,:,ichemspec(k)) = f(l1,m1,n1,ichemspec(k))    
         enddo
       endif
-      if(ldensity_nolog) then
+      if (ldensity_nolog) then
         f_ogrid(:,:,:,irho)=init_rho_cyl
       else
         call fatal_error('init_solid_cells','Must use linear density for solid_cells_ogrid')
@@ -984,13 +986,13 @@ module Solid_Cells
 !
 !  Set the length of the interpolation stencil based on choice of method 
 !
-      if(interpolation_method==1) then
+      if (interpolation_method==1) then
         inter_len=2    
-      elseif(interpolation_method==3) then
+      elseif (interpolation_method==3) then
         inter_len=3
-      elseif(interpolation_method==5) then
+      elseif (interpolation_method==5) then
         inter_len=interpol_order_poly
-      elseif(mod(interpolation_method,2)==0) then
+      elseif (mod(interpolation_method,2)==0) then
         inter_len=interpolation_method+1
       else
         call fatal_error('initialize_interpolate_points','selected interpolation method does not exist!')
@@ -1003,7 +1005,7 @@ module Solid_Cells
 !  If interpolation point requires data from outside this processors domain,
 !  set find the grid points and processor id for communication.
 !
-      if(llast_proc_x) then
+      if (llast_proc_x) then
         n_ip_cart_to_curv=ny_ogrid*nz_ogrid*nghost
         allocate(cartesian_to_curvilinear(n_ip_cart_to_curv))
 !
@@ -1023,7 +1025,7 @@ module Solid_Cells
 !  If higher order interpolation is used, adjust nearest index to be the index to point actually nearest
 !  the interpolation point, NOT the index of bottom left point in cell containing interpolation point
 !
-              if(interpolation_method>1) then
+              if (interpolation_method>1) then
                 call adjust_inear_cart_glob(cartesian_to_curvilinear(ii)%ind_global_neighbour,xyz)
               endif
 !
@@ -1053,7 +1055,7 @@ module Solid_Cells
         do j=m1,m2
           do i=l1,l2
             rthz(1)=radius_ogrid(x(i),y(j))
-            if((rthz(1)<=r_int_outer) .and. rthz(1)>=r_int_inner_vid) then
+            if ((rthz(1)<=r_int_outer) .and. rthz(1)>=r_int_inner_vid) then
               n_ip_curv_to_cart=n_ip_curv_to_cart+1
             endif
           enddo
@@ -1067,7 +1069,7 @@ module Solid_Cells
         do j=m1,m2
           do i=l1,l2
             call get_polar_coords(x(i),y(j),z(k),rthz)
-            if((rthz(1)<=r_int_outer) .and. rthz(1)>=r_int_inner) then
+            if ((rthz(1)<=r_int_outer) .and. rthz(1)>=r_int_inner) then
               ii=ii+1
               curvilinear_to_cartesian(ii)%i_xyz = (/ i,j,k /)
               curvilinear_to_cartesian(ii)%xyz = rthz
@@ -1078,7 +1080,7 @@ module Solid_Cells
 !  the interpolation point, NOT the index of bottom left point in cell containing interpolation point
 !  Also, make sure that no interpolation points try to use points inside the cylinder
 !
-              if(interpolation_method>1) then
+              if (interpolation_method>1) then
                 call adjust_inear_curv_glob(curvilinear_to_cartesian(ii)%ind_global_neighbour,rthz)
               endif
 !
@@ -1086,7 +1088,7 @@ module Solid_Cells
                              yglobal_ogrid(curvilinear_to_cartesian(ii)%ind_global_neighbour(2)), &
                              zglobal_ogrid(curvilinear_to_cartesian(ii)%ind_global_neighbour(3)) /)
               call find_proc_curvilinear(rthz_neigh,curvilinear_to_cartesian(ii)%from_proc)
-              if(curvilinear_to_cartesian(ii)%from_proc==iproc) then
+              if (curvilinear_to_cartesian(ii)%from_proc==iproc) then
                 call ind_global_to_local_curv(curvilinear_to_cartesian(ii)%ind_global_neighbour, &
                       curvilinear_to_cartesian(ii)%ind_local_neighbour,lcheck_init_interpolation)
               endif
@@ -1099,7 +1101,7 @@ module Solid_Cells
         do j=m1,m2
           do i=l1,l2
             call get_polar_coords(x(i),y(j),z(k),rthz)
-            if((rthz(1)<r_int_inner) .and. rthz(1)>=r_int_inner_vid) then
+            if ((rthz(1)<r_int_inner) .and. rthz(1)>=r_int_inner_vid) then
               ii=ii+1
               curvilinear_to_cartesian(ii)%i_xyz = (/ i,j,k /)
               curvilinear_to_cartesian(ii)%xyz = rthz
@@ -1110,7 +1112,7 @@ module Solid_Cells
 !  the interpolation point, NOT the index of bottom left point in cell containing interpolation point
 !  Also, make sure that no interpolation points try to use points inside the cylinder
 !
-              if(interpolation_method>1) then
+              if (interpolation_method>1) then
                 call adjust_inear_curv_glob(curvilinear_to_cartesian(ii)%ind_global_neighbour,rthz)
               endif
 !
@@ -1118,7 +1120,7 @@ module Solid_Cells
                              yglobal_ogrid(curvilinear_to_cartesian(ii)%ind_global_neighbour(2)), &
                              zglobal_ogrid(curvilinear_to_cartesian(ii)%ind_global_neighbour(3)) /)
               call find_proc_curvilinear(rthz_neigh,curvilinear_to_cartesian(ii)%from_proc)
-              if(curvilinear_to_cartesian(ii)%from_proc==iproc) then
+              if (curvilinear_to_cartesian(ii)%from_proc==iproc) then
                 call ind_global_to_local_curv(curvilinear_to_cartesian(ii)%ind_global_neighbour, &
                       curvilinear_to_cartesian(ii)%ind_local_neighbour,lcheck_init_interpolation)
               endif
@@ -1168,10 +1170,10 @@ module Solid_Cells
       real, dimension(:,:,:), allocatable :: xyz_from_curv_to_cart
 
 
-      if(n_ip_curv_to_cart>0) then
+      if (n_ip_curv_to_cart>0) then
         do i=1,n_ip_curv_to_cart
           from_proc=curvilinear_to_cartesian(i)%from_proc
-          if(from_proc/=iproc) then
+          if (from_proc/=iproc) then
 ! Must access from_proc+1 instead of from_proc, to avoid accessing element 0
             from_proc_curv_to_cart(from_proc+1)=from_proc_curv_to_cart(from_proc+1)+1
           endif
@@ -1180,15 +1182,15 @@ module Solid_Cells
 !
       max_from_proc=maxval(from_proc_curv_to_cart)
 
-      if(max_from_proc>0) then
+      if (max_from_proc>0) then
         allocate(ind_from_proc_curv(ncpus,max_from_proc,3))
         allocate(ip_id_curv_to_cart(ncpus,max_from_proc))
         allocate(xyz_from_curv_to_cart(ncpus,max_from_proc,3))
         do iip=0,ncpus-1
-          if(from_proc_curv_to_cart(iip+1)>0) then
+          if (from_proc_curv_to_cart(iip+1)>0) then
             npoint=0
             do i=1,n_ip_curv_to_cart
-              if(curvilinear_to_cartesian(i)%from_proc==iip) then
+              if (curvilinear_to_cartesian(i)%from_proc==iip) then
                 npoint=npoint+1
 ! Must access iip+1 instead of iip, to avoid accessing element 0
                 ind_from_proc_curv(iip+1,npoint,:)=curvilinear_to_cartesian(i)%ind_global_neighbour
@@ -1200,10 +1202,10 @@ module Solid_Cells
         enddo
       endif
 !
-      if(n_ip_cart_to_curv>0) then
+      if (n_ip_cart_to_curv>0) then
         do i=1,n_ip_cart_to_curv
           from_proc=cartesian_to_curvilinear(i)%from_proc
-          if(from_proc/=iproc) then
+          if (from_proc/=iproc) then
 ! Must access from_proc+1 instead of from_proc, to avoid accessing element 0
             from_proc_cart_to_curv(from_proc+1)=from_proc_cart_to_curv(from_proc+1)+1
           endif
@@ -1211,14 +1213,14 @@ module Solid_Cells
       endif
 !
       max_from_proc=maxval(from_proc_cart_to_curv)
-      if(max_from_proc>0) then
+      if (max_from_proc>0) then
         allocate(ind_from_proc_cart(ncpus,max_from_proc,3))
         allocate(ip_id_cart_to_curv(ncpus,max_from_proc))
         do iip=0,ncpus-1
-         if(from_proc_cart_to_curv(iip+1)>0) then
+         if (from_proc_cart_to_curv(iip+1)>0) then
             npoint=0
             do i=1,n_ip_cart_to_curv
-              if(cartesian_to_curvilinear(i)%from_proc==iip) then
+              if (cartesian_to_curvilinear(i)%from_proc==iip) then
                 npoint=npoint+1
 ! Must access iip+1 instead of iip, to avoid accessing element 0
                 ind_from_proc_cart(iip+1,npoint,:)=cartesian_to_curvilinear(i)%ind_global_neighbour
@@ -1274,26 +1276,26 @@ module Solid_Cells
       allocate(procs_send_cart_to_curv(n_procs_send_cart_to_curv))
       iter=1
       do iip=0,ncpus-1
-        if(from_proc_curv_to_cart_glob(iip+1,iproc+1)>0) then
+        if (from_proc_curv_to_cart_glob(iip+1,iproc+1)>0) then
           procs_send_curv_to_cart(iter)=iip
           iter=iter+1
         endif
       enddo
       iter=1
       do iip=0,ncpus-1
-        if(from_proc_cart_to_curv_glob(iip+1,iproc+1)>0) then
+        if (from_proc_cart_to_curv_glob(iip+1,iproc+1)>0) then
           procs_send_cart_to_curv(iter)=iip
           iter=iter+1
         endif
       enddo
       !max_send_ip_curv_to_cart=maxval(n_ip_to_proc_curv_to_cart)
       !max_send_ip_cart_to_curv=maxval(n_ip_to_proc_cart_to_curv)
-      if(n_procs_send_curv_to_cart>0) then
+      if (n_procs_send_curv_to_cart>0) then
         max_send_ip_curv_to_cart=maxval(n_ip_to_proc_curv_to_cart)
       else
         max_send_ip_curv_to_cart=0
       endif
-      if(n_procs_send_cart_to_curv>0) then
+      if (n_procs_send_cart_to_curv>0) then
         max_send_ip_cart_to_curv=maxval(n_ip_to_proc_cart_to_curv)
       else
         max_send_ip_cart_to_curv=0
@@ -1309,26 +1311,26 @@ module Solid_Cells
       allocate(procs_recv_cart_to_curv(n_procs_recv_cart_to_curv))
       iter=1
       do iip=0,ncpus-1
-        if(from_proc_curv_to_cart(iip+1)>0) then
+        if (from_proc_curv_to_cart(iip+1)>0) then
           procs_recv_curv_to_cart(iter)=iip
           iter=iter+1
         endif
       enddo
       iter=1
       do iip=0,ncpus-1
-        if(from_proc_cart_to_curv(iip+1)>0) then
+        if (from_proc_cart_to_curv(iip+1)>0) then
           procs_recv_cart_to_curv(iter)=iip
           iter=iter+1
         endif
       enddo
       !max_recv_ip_curv_to_cart=maxval(n_ip_recv_proc_curv_to_cart)
       !max_recv_ip_cart_to_curv=maxval(n_ip_recv_proc_cart_to_curv)
-      if(n_procs_recv_curv_to_cart>0) then
+      if (n_procs_recv_curv_to_cart>0) then
         max_recv_ip_curv_to_cart=maxval(n_ip_recv_proc_curv_to_cart)
       else
         max_recv_ip_curv_to_cart=0
       endif
-      if(n_procs_recv_cart_to_curv>0) then
+      if (n_procs_recv_cart_to_curv>0) then
         max_recv_ip_cart_to_curv=maxval(n_ip_recv_proc_cart_to_curv)
       else
         max_recv_ip_cart_to_curv=0
@@ -1511,12 +1513,12 @@ module Solid_Cells
       i_rthz_local(2) = i_rthz_global(2) - ny_ogrid*ipy
       i_rthz_local(3) = i_rthz_global(3) - nz_ogrid*ipz
 !
-      if(lcheck) then
-        if(abs(x_ogrid(i_rthz_local(1))-xglobal_ogrid(i_rthz_global(1)))>1.e-12) &
+      if (lcheck) then
+        if (abs(x_ogrid(i_rthz_local(1))-xglobal_ogrid(i_rthz_global(1)))>1.e-12) &
           print*, 'ERROR: incorrect transformation of global to local coordinates in r-direction'
-        if(abs(y_ogrid(i_rthz_local(2))-yglobal_ogrid(i_rthz_global(2)))>1.e-12) &
+        if (abs(y_ogrid(i_rthz_local(2))-yglobal_ogrid(i_rthz_global(2)))>1.e-12) &
           print*, 'ERROR: incorrect transformation of global to local coordinates in th-direction'
-        if(abs(z_ogrid(i_rthz_local(3))-zglobal_ogrid(i_rthz_global(3)))>1.e-12) &
+        if (abs(z_ogrid(i_rthz_local(3))-zglobal_ogrid(i_rthz_global(3)))>1.e-12) &
           print*, 'ERROR: incorrect transformation of global to local coordinates in z-direction'
       endif
 !
@@ -1536,12 +1538,12 @@ module Solid_Cells
       i_xyz_local(2) = i_xyz_global(2) - ny*ipy
       i_xyz_local(3) = i_xyz_global(3) - nz*ipz
 
-      if(lcheck) then
-        if(abs(x(i_xyz_local(1))-xglobal(i_xyz_global(1)))>1.e-12) &
+      if (lcheck) then
+        if (abs(x(i_xyz_local(1))-xglobal(i_xyz_global(1)))>1.e-12) &
           print*, 'ERROR: incorrect transformation of global to local coordinates in r-direction'
-        if(abs(y(i_xyz_local(2))-yglobal(i_xyz_global(2)))>1.e-12) &
+        if (abs(y(i_xyz_local(2))-yglobal(i_xyz_global(2)))>1.e-12) &
           print*, 'ERROR: incorrect transformation of global to local coordinates in th-direction'
-        if(abs(z(i_xyz_local(3))-zglobal(i_xyz_global(3)))>1.e-12) &
+        if (abs(z(i_xyz_local(3))-zglobal(i_xyz_global(3)))>1.e-12) &
           print*, 'ERROR: incorrect transformation of global to local coordinates in z-direction'
       endif
 !
@@ -1601,7 +1603,7 @@ module Solid_Cells
       call mpireduce_sum(c_dragx,c_dragx_all)
       call mpireduce_sum(c_dragy,c_dragy_all)
 !
-      if(lroot) then
+      if (lroot) then
         c_dragx=c_dragx_all*norm
         c_dragy=c_dragy_all*norm
         if (idiag_c_dragx /= 0) fname(idiag_c_dragx)=c_dragx
@@ -1640,7 +1642,7 @@ module Solid_Cells
 !
       call mpireduce_sum(Nusselt,Nusselt_all)
 !
-      if(lroot) then
+      if (lroot) then
         Nusselt=Nusselt_all*norm
         if (idiag_Nusselt /= 0) fname(idiag_Nusselt)=Nusselt
       endif
@@ -1671,7 +1673,7 @@ module Solid_Cells
       call mpireduce_sum(mdot_C(2),mdot_CO2_all)
       call mpireduce_sum(mdot_C(3),mdot_O2_all)
 !
-      if(lroot) then
+      if (lroot) then
         !*(-10) to change units from g/cm^2/s to kg/m^2/s and the opposite
         ! sign is needed for production -> consumption
         mdot_C(1)=mdot_C_all/(nzgrid_ogrid*nygrid_ogrid)*(-10)
@@ -1727,7 +1729,7 @@ module Solid_Cells
 !
 !  Dummy variable
 !
-      if(loptest(lwrite)) print*, lwrite
+      if (loptest(lwrite)) print*, lwrite
 !
 !  Reset everything in case of reset
 !
@@ -1787,7 +1789,7 @@ module Solid_Cells
 !
 !
       do i=l1,l2
-        if(radius_ogrid(x(i),y(m)) <= r_int_outer) then
+        if (radius_ogrid(x(i),y(m)) <= r_int_outer) then
           df(i,m,n,:)=0.
         endif
       enddo
@@ -1808,7 +1810,7 @@ module Solid_Cells
     in_solid_cell = .false.
 !
     r_solid_par = radius_ogrid(part_pos(1),part_pos(2)) 
-    if(r_solid_par<=(xyz0_ogrid(1)+part_rad)) then
+    if (r_solid_par<=(xyz0_ogrid(1)+part_rad)) then
       in_solid_cell=.true.
     endif
 !
@@ -1851,17 +1853,17 @@ module Solid_Cells
     integer :: ind, ipoly
     integer :: ipp_int=0, iRR_int=0
 !
-    if(interpolation_method==1) then
+    if (interpolation_method==1) then
       nbuf_farr(1:3)=2
       ii1=0; ii2=1; jj1=0; jj2=1; kk1=0; kk2=1
-    elseif(interpolation_method==3) then
+    elseif (interpolation_method==3) then
       nbuf_farr(1:3)=3
       ii1=1; ii2=1; jj1=1; jj2=1; kk1=1; kk2=1
-    elseif(interpolation_method==5) then
+    elseif (interpolation_method==5) then
       nbuf_farr(1:3)=interpol_order_poly
       ipoly=floor((interpol_order_poly)*0.5)
       ii1=ipoly; ii2=ipoly; jj1=ipoly; jj2=ipoly; kk1=ipoly; kk2=ipoly
-    elseif(mod(interpolation_method,2)==0) then
+    elseif (mod(interpolation_method,2)==0) then
       nbuf_farr(1:3)=interpolation_method+1
       ii1=interpolation_method/2; ii2=ii1; jj1=ii1; jj2=ii1; kk1=ii1; kk2=ii1
     endif
@@ -1902,7 +1904,7 @@ module Solid_Cells
 !
     do iter=n_procs_recv_cart_to_curv,1,-1
       recv_from=procs_recv_cart_to_curv(iter)
-      if(recv_from<iproc) then
+      if (recv_from<iproc) then
         nbuf_farr(5)=n_ip_recv_proc_cart_to_curv(iter)
         call mpirecv_int(id_bufi(1:nbuf_farr(5)),nbuf_farr(5),recv_from,iproc)
         call mpirecv_real(f_bufi(:,:,:,:,1:nbuf_farr(5)),nbuf_farr,recv_from,iproc+ncpus)
@@ -1919,7 +1921,7 @@ module Solid_Cells
     do iter=1,n_procs_send_cart_to_curv
       ind_send_last=n_ip_to_proc_cart_to_curv(iter)+ind_send_first-1
       send_to=send_cartesian_to_curvilinear(ind_send_last)%send_to_proc
-      if(send_to<iproc) then
+      if (send_to<iproc) then
         nbuf_farr(5)=ind_send_last-ind_send_first+1
         do ipq=1,nbuf_farr(5)
           ind=ind_send_first+ipq-1
@@ -1943,7 +1945,7 @@ module Solid_Cells
 !
     do iter=n_procs_recv_cart_to_curv,1,-1
       recv_from=procs_recv_cart_to_curv(iter)
-      if(recv_from>iproc) then
+      if (recv_from>iproc) then
         nbuf_farr(5)=n_ip_recv_proc_cart_to_curv(iter)
         call mpirecv_int(id_bufi(1:nbuf_farr(5)),nbuf_farr(5),recv_from,iproc)
         call mpirecv_real(f_bufi(:,:,:,:,1:nbuf_farr(5)),nbuf_farr,recv_from,iproc+ncpus)
@@ -1957,7 +1959,7 @@ module Solid_Cells
 !  Interpolate remaining points 
 !
     do id=1,n_ip_cart_to_curv
-      if(cartesian_to_curvilinear(id)%from_proc==iproc) then
+      if (cartesian_to_curvilinear(id)%from_proc==iproc) then
         inear_loc=cartesian_to_curvilinear(id)%ind_local_neighbour
           if (lchemistry .and. linterp_pressure) then
             farr(:,:,:,ipp_int)=f_cartesian(inear_loc(1)-ii1:inear_loc(1)+ii2, &
@@ -1999,17 +2001,17 @@ module Solid_Cells
     integer :: ind, ipoly
     integer :: igpx_int=0, igpy_int=0, ipp_int=0, iRR_int=0
 !
-    if(interpolation_method==1) then
+    if (interpolation_method==1) then
       nbuf_farr(1:3)=2
       ii1=0; ii2=1; jj1=0; jj2=1; kk1=0; kk2=1
-    elseif(interpolation_method==3) then
+    elseif (interpolation_method==3) then
       nbuf_farr(1:3)=3
       ii1=1; ii2=1; jj1=1; jj2=1; kk1=1; kk2=1
-    elseif(interpolation_method==5) then
+    elseif (interpolation_method==5) then
       nbuf_farr(1:3)=interpol_order_poly
       ipoly=floor((interpol_order_poly)*0.5)
       ii1=ipoly; ii2=ipoly; jj1=ipoly; jj2=ipoly; kk1=ipoly; kk2=ipoly
-    elseif(mod(interpolation_method,2)==0) then
+    elseif (mod(interpolation_method,2)==0) then
       nbuf_farr(1:3)=interpolation_method+1
       ii1=interpolation_method/2; ii2=ii1; jj1=ii1; jj2=ii1; kk1=ii1; kk2=ii1
     endif
@@ -2062,7 +2064,7 @@ module Solid_Cells
 !
     do iter=n_procs_recv_curv_to_cart,1,-1
       recv_from=procs_recv_curv_to_cart(iter)
-      if(recv_from<iproc) then
+      if (recv_from<iproc) then
         nbuf_farr(5)=n_ip_recv_proc_curv_to_cart(iter)
         call mpirecv_int(id_bufi(1:nbuf_farr(5)),nbuf_farr(5),recv_from,iproc)
         call mpirecv_real(f_bufi(:,:,:,:,1:nbuf_farr(5)),nbuf_farr,recv_from,iproc+ncpus)
@@ -2080,7 +2082,7 @@ module Solid_Cells
     do iter=1,n_procs_send_curv_to_cart
       ind_send_last=n_ip_to_proc_curv_to_cart(iter)+ind_send_first-1
       send_to=send_curvilinear_to_cartesian(ind_send_last)%send_to_proc
-      if(send_to<iproc) then
+      if (send_to<iproc) then
         nbuf_farr(5)=ind_send_last-ind_send_first+1
         do ipq=1,nbuf_farr(5)
           ind=ind_send_first+ipq-1
@@ -2108,7 +2110,7 @@ module Solid_Cells
 !
     do iter=n_procs_recv_curv_to_cart,1,-1
       recv_from=procs_recv_curv_to_cart(iter)
-      if(recv_from>iproc) then
+      if (recv_from>iproc) then
         nbuf_farr(5)=n_ip_recv_proc_curv_to_cart(iter)
         call mpirecv_int(id_bufi(1:nbuf_farr(5)),nbuf_farr(5),recv_from,iproc)
         call mpirecv_real(f_bufi(:,:,:,:,1:nbuf_farr(5)),nbuf_farr,recv_from,iproc+ncpus)
@@ -2125,7 +2127,7 @@ module Solid_Cells
     if (lvideo .and. lwrite_slices) then
       do id=1,n_ip_curv_to_cart
       ! TODO: Make more efficient
-        if(curvilinear_to_cartesian(id)%from_proc==iproc) then
+        if (curvilinear_to_cartesian(id)%from_proc==iproc) then
           inear_loc=curvilinear_to_cartesian(id)%ind_local_neighbour
           if (lpres_grad) then
             farr(:,:,:,igpx_int)=f_ogrid(inear_loc(1)-ii1:inear_loc(1)+ii2, &
@@ -2147,7 +2149,7 @@ module Solid_Cells
       enddo
     else
       do id=1,interpol_max
-        if(curvilinear_to_cartesian(id)%from_proc==iproc) then
+        if (curvilinear_to_cartesian(id)%from_proc==iproc) then
           inear_loc=curvilinear_to_cartesian(id)%ind_local_neighbour
           if (lpres_grad) then
             farr(:,:,:,igpx_int)=f_ogrid(inear_loc(1)-ii1:inear_loc(1)+ii2, &
@@ -2194,15 +2196,15 @@ module Solid_Cells
 ! 
 !  Perform interpolation on cartesian grid
 !
-    if(interpolation_method==1) then
-      if(.not. linear_interpolate_cartesian(farr,ivar1,ivar2,xyz_ip,inear_glob,f_ip,lcheck_interpolation)) then
+    if (interpolation_method==1) then
+      if (.not. linear_interpolate_cartesian(farr,ivar1,ivar2,xyz_ip,inear_glob,f_ip,lcheck_interpolation)) then
         call fatal_error('linear_interpolate_cartesian','interpolation from cartesian to curvilinear')
       endif
-    elseif(mod(interpolation_method,2)==0) then
-      if(.not. interp_lagrange(farr,ivar1,ivar2,xyz_ip,inear_glob,f_ip,.true.,.false.,lcheck_interpolation)) then
+    elseif (mod(interpolation_method,2)==0) then
+      if (.not. interp_lagrange(farr,ivar1,ivar2,xyz_ip,inear_glob,f_ip,.true.,.false.,lcheck_interpolation)) then
         call fatal_error('interp_lagrange','interpolation from cartesian to curvilinear')
       endif
-    elseif(interpolation_method==3) then
+    elseif (interpolation_method==3) then
       call interpolate_quadratic_spline(farr,ivar1,ivar2,xyz_ip,f_ip,inear_glob)
       !call interpolate_quadratic_spline(farr(:,:,:,iux:iuz),iux,iuz,xyz_ip,f_ip(iux:iuz),inear_glob)
       ! Adjust coordinates, if necessary
@@ -2224,11 +2226,11 @@ module Solid_Cells
       else
         kk=2
       endif
-      if(.not. linear_interpolate_cartesian(farr(ii:ii+1,jj:jj+1,2:3,4),4,4, &
+      if (.not. linear_interpolate_cartesian(farr(ii:ii+1,jj:jj+1,2:3,4),4,4, &
               xyz_ip,inear_glob,f_ip(irho),lcheck_interpolation)) then
         call fatal_error('linear_interpolate_cartesian','interpolation from cartesian to curvilinear')
       endif
-    elseif(interpolation_method==5) then
+    elseif (interpolation_method==5) then
       call poly_interp_cart(ivar1,ivar2,xyz_ip,f_ip,id,f_cartesian,interpol_order_poly)
     endif
 !
@@ -2278,15 +2280,15 @@ module Solid_Cells
     xyz_ip=curvilinear_to_cartesian(id)%xyz
     inear_glob=curvilinear_to_cartesian(id)%ind_global_neighbour
 !
-    if(interpolation_method==1) then
-      if(.not. linear_interpolate_curvilinear(farr,ivar1,ivar2,xyz_ip,inear_glob,f_ip,lcheck_interpolation)) then
+    if (interpolation_method==1) then
+      if (.not. linear_interpolate_curvilinear(farr,ivar1,ivar2,xyz_ip,inear_glob,f_ip,lcheck_interpolation)) then
         call fatal_error('linear_interpolate_curvilinear','interpolation from curvilinear to cartesian')
       endif
-    elseif(mod(interpolation_method,2)==0) then
-      if(.not. interp_lagrange(farr,ivar1,ivar2,xyz_ip,inear_glob,f_ip,.false.,.true.,lcheck_interpolation)) then
+    elseif (mod(interpolation_method,2)==0) then
+      if (.not. interp_lagrange(farr,ivar1,ivar2,xyz_ip,inear_glob,f_ip,.false.,.true.,lcheck_interpolation)) then
         call fatal_error('interp_lagrange','interpolation from curvilinear to cartesian')
       endif
-    elseif(interpolation_method==3) then
+    elseif (interpolation_method==3) then
       call interpolate_quadratic_sp_og(farr,ivar1,ivar2,xyz_ip,f_ip,inear_glob)
       !call interpolate_quadratic_sp_og(farr(:,:,:,iux:iuz),iux,iuz,xyz_ip,f_ip(iux:iuz),inear_glob)
       ! Adjust coordinates, if necessary
@@ -2308,12 +2310,12 @@ module Solid_Cells
       else
         kk=2
       endif
-      if(.not. linear_interpolate_curvilinear(farr(ii:ii+1,jj:jj+1,kk:kk+1,irho),irho,irho,&
+      if (.not. linear_interpolate_curvilinear(farr(ii:ii+1,jj:jj+1,kk:kk+1,irho),irho,irho,&
             xyz_ip,inear_glob,f_ip(irho),lcheck_interpolation)) then
         call fatal_error('linear_interpolate_curvilinear','interpolation from curvilinear to cartesian ')
       endif
-    elseif(interpolation_method==5) then
-      if(xyz_ip(1)>=r_int_inner_poly) then 
+    elseif (interpolation_method==5) then
+      if (xyz_ip(1)>=r_int_inner_poly) then 
         call poly_interp_curv(ivar1,ivar2,xyz_ip,f_ip,id,interpol_order_poly)
       else
 !
@@ -2322,26 +2324,26 @@ module Solid_Cells
 !
         ii=floor(interpol_order_poly*0.5)
         jj=floor(interpol_order_poly*0.5)
-        if(xyz_ip(1)<xglobal_ogrid(inear_glob(1))) then
-          if(xyz_ip(2)<yglobal_ogrid(inear_glob(2))) then
-            if(.not. linear_interpolate_curvilinear(farr(ii-1:ii,ii-1:ii,ii:ii+1,:),iux,irho,&
+        if (xyz_ip(1)<xglobal_ogrid(inear_glob(1))) then
+          if (xyz_ip(2)<yglobal_ogrid(inear_glob(2))) then
+            if (.not. linear_interpolate_curvilinear(farr(ii-1:ii,ii-1:ii,ii:ii+1,:),iux,irho,&
                   xyz_ip,(/inear_glob(1)-1,inear_glob(2)-1,inear_glob(3)/),f_ip,lcheck_interpolation)) then
               call fatal_error('linear_interpolate_curvilinear','interpolation from curvilinear to cartesian ')
             endif
           else
-            if(.not. linear_interpolate_curvilinear(farr(ii-1:ii,ii:ii+1,ii:ii+1,:),iux,irho,&
+            if (.not. linear_interpolate_curvilinear(farr(ii-1:ii,ii:ii+1,ii:ii+1,:),iux,irho,&
                   xyz_ip,(/inear_glob(1)-1,inear_glob(2),inear_glob(3)/),f_ip,lcheck_interpolation)) then
               call fatal_error('linear_interpolate_curvilinear','interpolation from curvilinear to cartesian ')
             endif
           endif
         else
-          if(xyz_ip(2)<yglobal_ogrid(inear_glob(2))) then
-            if(.not. linear_interpolate_curvilinear(farr(ii:ii+1,ii-1:ii,ii:ii+1,:),iux,irho,&
+          if (xyz_ip(2)<yglobal_ogrid(inear_glob(2))) then
+            if (.not. linear_interpolate_curvilinear(farr(ii:ii+1,ii-1:ii,ii:ii+1,:),iux,irho,&
                   xyz_ip,(/inear_glob(1),inear_glob(2)-1,inear_glob(3)/),f_ip,lcheck_interpolation)) then
               call fatal_error('linear_interpolate_curvilinear','interpolation from curvilinear to cartesian ')
             endif
           else
-            if(.not. linear_interpolate_curvilinear(farr(ii:ii+1,ii:ii+1,ii:ii+1,:),iux,irho,&
+            if (.not. linear_interpolate_curvilinear(farr(ii:ii+1,ii:ii+1,ii:ii+1,:),iux,irho,&
                   xyz_ip,(/inear_glob(1),inear_glob(2),inear_glob(3)/),f_ip,lcheck_interpolation)) then
               call fatal_error('linear_interpolate_curvilinear','interpolation from curvilinear to cartesian ')
             endif
@@ -2390,14 +2392,14 @@ module Solid_Cells
     real, dimension(inter_len,inter_len,inter_len,ivar2-ivar1+1), intent(in) :: farr
     real, dimension(ivar2-ivar1+1), intent(out) :: f_ip
 !
-    if(interpolation_method==1) then
-      if(.not. linear_interpolate_curvilinear(farr,ivar1,ivar2,xyz_ip,inear_glob,f_ip,lcheck_interpolation)) then
+    if (interpolation_method==1) then
+      if (.not. linear_interpolate_curvilinear(farr,ivar1,ivar2,xyz_ip,inear_glob,f_ip,lcheck_interpolation)) then
         call fatal_error('linear_interpolate_curvilinear','interpolation from curvilinear to cartesian')
       endif
-    elseif(interpolation_method==3) then
+    elseif (interpolation_method==3) then
       call interpolate_quadratic_sp_og(farr,ivar1,ivar2,xyz_ip,f_ip,inear_glob)
-    elseif(mod(interpolation_method,2)==0) then
-      if(.not. interp_lagrange(farr,ivar1,ivar2,xyz_ip,inear_glob,f_ip,.false.,.true.,lcheck_interpolation)) then
+    elseif (mod(interpolation_method,2)==0) then
+      if (.not. interp_lagrange(farr,ivar1,ivar2,xyz_ip,inear_glob,f_ip,.false.,.true.,lcheck_interpolation)) then
         call fatal_error('interp_lagrange','interpolation from curvilinear to cartesian')
       endif
     endif
@@ -2651,7 +2653,7 @@ module Solid_Cells
 !
       dx1=1/(xglobal(ix0+1)-xglobal(ix0))
       dy1=1/(yglobal(iy0+1)-yglobal(iy0))
-      if(nzgrid/=1) then
+      if (nzgrid/=1) then
         dz1=1/(zglobal(iz0+1)-zglobal(iz0))
       else 
         dz1=1
@@ -2763,10 +2765,10 @@ module Solid_Cells
 !
 !  Get grid points
 !
-      if(lcart_to_curv) then
+      if (lcart_to_curv) then
         xglob(-half_order:half_order) = xglobal(inear_glob(1)-interpolation_method/2:inear_glob(1)+interpolation_method/2)
         yglob(-half_order:half_order) = yglobal(inear_glob(2)-interpolation_method/2:inear_glob(2)+interpolation_method/2)
-      elseif(lcurv_to_cart) then
+      elseif (lcurv_to_cart) then
         xglob(-half_order:half_order) = xglobal_ogrid(inear_glob(1)-interpolation_method/2:inear_glob(1)+interpolation_method/2)
         yglob(-half_order:half_order) = yglobal_ogrid(inear_glob(2)-interpolation_method/2:inear_glob(2)+interpolation_method/2)
       else
@@ -2785,7 +2787,7 @@ module Solid_Cells
 !
 !  Check that inear_glob actually points to the grid point closest to xxp
 !
-      if(lcheck) then
+      if (lcheck) then
         if ((any(abs(deltax)<abs(deltax(0)))) .or. (any(abs(deltay)<abs(deltay(0))))) then 
           print*, 'interp_lagrange: Interpolation point does not lie closest to center grid point.' 
           print*, 'ix0, iy0, iz0 = ', inear_glob(1:3)
@@ -2866,17 +2868,17 @@ module Solid_Cells
 !  Compensate for overshoots by linear interpolation
 !
             ix0=0; ix1=1; iy0=0; iy1=1
-            if(xglob(0)>xxp(1)) then
+            if (xglob(0)>xxp(1)) then
               ix0=half_order; ix1=half_order+1
             else
               ix0=half_order+1; ix1=half_order+2
             endif
-            if(yglob(0)>xxp(2)) then
+            if (yglob(0)>xxp(2)) then
               iy0=half_order; iy1=half_order+1
             else
               iy0=half_order+1; iy1=half_order+2
             endif
-            if(lcart_to_curv) then
+            if (lcart_to_curv) then
               interp_lagrange= linear_interpolate_cartesian(farr_in(ix0:ix1,iy0:iy1,half_order+1:half_order+2,i),i,i,xxp, &
                                            (/inear_glob(1)+ix0-(half_order+1),inear_glob(2)+iy0-(half_order+1),inear_glob(3)/),&
                                            gp(0,i),lcheck_interpolation)
@@ -2979,7 +2981,7 @@ module Solid_Cells
 !
       dx1=1/(xglobal_ogrid(ix0+1)-xglobal_ogrid(ix0))
       dy1=1/(yglobal_ogrid(iy0+1)-yglobal_ogrid(iy0))
-      if(nzgrid/=1) then
+      if (nzgrid/=1) then
         dz1=1/(zglobal_ogrid(iz0+1)-zglobal_ogrid(iz0))
       else 
         dz1=1
@@ -3970,7 +3972,7 @@ module Solid_Cells
     real, dimension(3) :: alpha_ts_ogrid=0.,beta_ts_ogrid=0.,dt_beta_ts_ogrid=0.
 
   !call  run_tests_ogrid
-    if(.not.lrk_tvd) then
+    if (.not.lrk_tvd) then
 !
 !  Coefficients for up to order 3.
 !
@@ -4005,7 +4007,7 @@ module Solid_Cells
     !print*, 'dt_ogrid', dt_ogrid
     !print*, 'convective timestep', dxmin_ogrid/maxval(f_ogrid(:,:,4,iux:iuy))
     !print*, 'viscous timestep', dxmin_ogrid**2/1.e-3
-    if(.not. lrk_tvd) dt_beta_ts_ogrid=dt_ogrid*beta_ts_ogrid
+    if (.not. lrk_tvd) dt_beta_ts_ogrid=dt_ogrid*beta_ts_ogrid
 !
 !  Perform a number of timestep equal to timestep_factor, such that the
 !  endtime t_ogrid is equal to t after the timesteps
@@ -4016,7 +4018,7 @@ module Solid_Cells
 !  Set up df for each time sub.
 !
       df_ogrid=0.0
-      if(lrk_tvd) then
+      if (lrk_tvd) then
 !  First subtimestep
         call pde_ogrid(f_ogrid,df_ogrid,dt_ogrid)
         do j=1,mvar 
@@ -4062,7 +4064,7 @@ module Solid_Cells
           enddo
         enddo
       endif
-  !    if(lfilter_solution) then
+  !    if (lfilter_solution) then
   !      call communicate_filter_zones(f_ogrid,f_filterH_lowerx,f_filterH_upperx,f_filterH_lowery,f_filterH_uppery)
   !      call pade_filter(f_ogrid)
   !      call update_ghosts_ogrid(f_ogrid)
@@ -4077,7 +4079,7 @@ module Solid_Cells
 !
 !  Filter solution if this option is set
 !
-    if(mod(tss,filter_frequency)==0 .and. lfilter_solution) then
+    if (mod(tss,filter_frequency)==0 .and. lfilter_solution) then
       call communicate_filter_zones(f_ogrid,f_filterH_lowerx,f_filterH_upperx,f_filterH_lowery,f_filterH_uppery)
       call pade_filter(f_ogrid)
       call update_ghosts_ogrid(f_ogrid)
@@ -4093,7 +4095,7 @@ module Solid_Cells
 ! 
 !     !TODO: Should use the particle flow info in the interpolation point
 !     !      computation above
-     if(lparticles)  call update_ogrid_flow_info(ivar1_part,ivar2_part)
+     if (lparticles)  call update_ogrid_flow_info(ivar1_part,ivar2_part)
 !
     call wsnap_ogrid('OGVAR',ENUM=.true.,FLIST='ogvarN.list')
     if (llast .and. lwrite_mdotc) call write_reactions(heter_reaction_rate(:,4,:))
@@ -4104,7 +4106,7 @@ module Solid_Cells
 ! do ii=l1,l2
 ! do jj=m1,m2
 ! do kk=n1,n2
-!       if(radius_ogrid(x(ii),y(jj))<(r_int_inner)) then
+!       if (radius_ogrid(x(ii),y(jj))<(r_int_inner)) then
 !         f_cartesian(ii,jj,:,:)=huge_real
 !       endif
 ! enddo
@@ -4183,7 +4185,7 @@ module Solid_Cells
 !
         call calc_pencils_hydro_ogrid(f_og)
         call calc_pencils_density_ogrid(f_og)
-        if(.not. lchemistry) then
+        if (.not. lchemistry) then
           call calc_pencils_eos_ogrid(f_og)
         else
           call calc_pencils_eos_ogrid_chem(f_og)
@@ -4210,7 +4212,7 @@ module Solid_Cells
 !
 !  Compute drag and lift coefficient, if this is the last sub-timestep
 !
-        if(llast_ogrid.and.lfirst_proc_x) then
+        if (llast_ogrid.and.lfirst_proc_x) then
           if ((idiag_c_dragx/=0).or.(idiag_c_dragy/=0)) then
             call drag_force_pencils(c_dragx,c_dragy)
           endif
@@ -4226,7 +4228,7 @@ module Solid_Cells
 !
       enddo mn_loop
 !
-      if(llast_ogrid) then
+      if (llast_ogrid) then
         if ((idiag_c_dragx/=0).or.(idiag_c_dragy/=0)) then
           call drag_coeffs(c_dragx,c_dragy)
         endif
@@ -4247,7 +4249,7 @@ module Solid_Cells
 !  Freezing boundary conditions in x (radial direction), only on points
 !  at the surface
 !
-      if(lfirst_proc_x) then
+      if (lfirst_proc_x) then
         do imn_ogrid=1,nyz_ogrid
           n_ogrid=nn_ogrid(imn_ogrid)
           m_ogrid=mm_ogrid(imn_ogrid)
@@ -4408,9 +4410,9 @@ module Solid_Cells
       if (lpencil_ogrid(i_og_ugu2)) call dot2_mn_ogrid(p_ogrid%ugu,p_ogrid%ugu2)
       if (lpencil_ogrid(i_og_graddivu).and.lpencil_ogrid(i_og_del2u)) then
         call gij_etc_ogrid(f_og   ,iuu,p_ogrid%uu,p_ogrid%uij,DEL2=p_ogrid%del2u,GRADDIV=p_ogrid%graddivu)
-      elseif(lpencil_ogrid(i_og_graddivu)) then
+      elseif (lpencil_ogrid(i_og_graddivu)) then
         call gij_etc_ogrid(f_og   ,iuu,p_ogrid%uu,p_ogrid%uij,GRADDIV=p_ogrid%graddivu)
-      elseif(lpencil_ogrid(i_og_del2u)) then
+      elseif (lpencil_ogrid(i_og_del2u)) then
         call gij_etc_ogrid(f_og   ,iuu,p_ogrid%uu,p_ogrid%uij,DEL2=p_ogrid%del2u)
       endif
 !
@@ -4613,11 +4615,11 @@ module Solid_Cells
       real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), intent(inout) ::  f_og
       integer :: k
 !
-      if(lfirst_proc_x) then
-        if(SBP) then
+      if (lfirst_proc_x) then
+        if (SBP) then
           ! chemistry BCs are taken care of here
           call bval_from_neumann_SBP(f_og)
-        elseif(BDRY5) then
+        elseif (BDRY5) then
           call bval_from_neumann_bdry5(f_og)
           if (lchemistry .and. lreac_heter) call fatal_error('boundconds_x_ogrid', &
           'chemistry BCs with heterogeneous reactions set correctly only when SBP=T')
@@ -4639,8 +4641,8 @@ module Solid_Cells
       !    if (lreac_heter) call fatal_error('boundconds_x_ogrid', &
       !    'chemistry BCs set correctly only when SBP=T')
         endif
-        !if(lupw_lnrho) then
-        !  if(lexpl_rho) call bval_from_neumann_upw_ogrid
+        !if (lupw_lnrho) then
+        !  if (lexpl_rho) call bval_from_neumann_upw_ogrid
         !  call set_ghosts_onesided_upw_ogrid(irho)
         !endif
       endif
@@ -4817,13 +4819,13 @@ module Solid_Cells
 !  If ghost points are included, check first current processor for the point
 !
       if (present(incl_gp)) then
-        if(interpolation_method==1) then
+        if (interpolation_method==1) then
           ishift=0
         else
           ishift=1
         endif
-        if(incl_gp) then
-          if( ((xyz(1)>(x(1+ishift))).and.(xyz(1)<(x(mx-ishift)))) .and. &
+        if (incl_gp) then
+          if ( ((xyz(1)>(x(1+ishift))).and.(xyz(1)<(x(mx-ishift)))) .and. &
               ((xyz(2)>(y(1+ishift))).and.(xyz(2)<(y(my-ishift)))) .and. &
               ((xyz(3)>(z(1+ishift))).and.(xyz(3)<(z(mz-ishift)))) )  then
               from_proc=iproc
@@ -4833,7 +4835,7 @@ module Solid_Cells
         endif
       endif
       do i=1,ncpus
-        if( ((xyz(1)>=(xyz0_loc_all(i,1)-fDP)).and.(xyz(1)<=(xyz1_loc_all(i,1)+fDP))) .and. &
+        if ( ((xyz(1)>=(xyz0_loc_all(i,1)-fDP)).and.(xyz(1)<=(xyz1_loc_all(i,1)+fDP))) .and. &
             ((xyz(2)>=(xyz0_loc_all(i,2)-fDP)).and.(xyz(2)<=(xyz1_loc_all(i,2)+fDP))) .and. &
             ((xyz(3)>=(xyz0_loc_all(i,3)-fDP)).and.(xyz(3)<=(xyz1_loc_all(i,3)+fDP))) )  then
             from_proc=i-1
@@ -4841,7 +4843,7 @@ module Solid_Cells
             exit
         endif
       enddo
-      if(.not.found_proc) then
+      if (.not.found_proc) then
         print*, 'find_proc_cartesian: error when searching for interpolation point'
         print*, 'find_proc_cartesian: x,y,z',xyz
         print*, 'find_proc_cartesian: x0_loc_all',xyz0_loc_all(:,1)
@@ -4873,7 +4875,7 @@ module Solid_Cells
 !
       found_proc=.false.
       do i=1,ncpus
-        if( ((rthz(1)>=(xyz0_loc_all_ogrid(i,1)-fDP)).and.(rthz(1)<=(xyz1_loc_all_ogrid(i,1)+fDP))) .and. &
+        if ( ((rthz(1)>=(xyz0_loc_all_ogrid(i,1)-fDP)).and.(rthz(1)<=(xyz1_loc_all_ogrid(i,1)+fDP))) .and. &
             ((rthz(2)>=(xyz0_loc_all_ogrid(i,2)-fDP)).and.(rthz(2)<=(xyz1_loc_all_ogrid(i,2)+fDP))) .and. &
             ((rthz(3)>=(xyz0_loc_all_ogrid(i,3)-fDP)).and.(rthz(3)<=(xyz1_loc_all_ogrid(i,3)+fDP))) )  then
             from_proc=i-1
@@ -4881,7 +4883,7 @@ module Solid_Cells
             exit
         endif
       enddo
-      if(.not.found_proc) then
+      if (.not.found_proc) then
         call fatal_error('find_proc_curvilinear', &
           'could not locate interpolation point on any processor!')
       endif
@@ -5102,7 +5104,7 @@ module Solid_Cells
 !  Default values in case of missing directions.
 !
       ix0=nghost+1; iy0=nghost+1; iz0=nghost+1
-      if(lfirstcall) then
+      if (lfirstcall) then
         dx1=dx_1(l1) 
         dy1=dy_1(m1) 
         dz1=dz_1(n1)
@@ -5143,14 +5145,14 @@ module Solid_Cells
 !
 !  If requested, check if the correct grid points are found
 !
-      !if(lcheck) then
+      !if (lcheck) then
       !  if ((xglobal(ineargrid(1))-xxp(1)  )>1.e-14 .or. &
       !      (xxp(1)-xglobal(ineargrid(1)+1))>1.e-14 .or. &
       !      (yglobal(ineargrid(2))-xxp(2)  )>1.e-14 .or. & 
       !      (xxp(2)-yglobal(ineargrid(2)+1))>1.e-14 .or. & 
       !      (zglobal(ineargrid(3))-xxp(3)  )>1.e-14 .or. & 
       !      (xxp(3)-zglobal(ineargrid(3)+1))>1.e-14) then
-      if(lcheck) then
+      if (lcheck) then
         if ((xglobal(ineargrid(1))-xxp(1)  )>0. .or. &
             (xxp(1)-xglobal(ineargrid(1)+1))>0. .or. &
             (yglobal(ineargrid(2))-xxp(2)  )>0. .or. &
@@ -5249,7 +5251,7 @@ module Solid_Cells
 !
       ix0=nghost+1; iy0=nghost+1; iz0=nghost+1
 !
-      if(lfirstcall) then
+      if (lfirstcall) then
         dx1_ogrid=dx_1_ogrid(l1_ogrid) 
         dy1_ogrid=dy_1_ogrid(m1_ogrid) 
         dz1_ogrid=dz_1_ogrid(n1_ogrid)
@@ -5290,7 +5292,7 @@ module Solid_Cells
 !
 !  If requested, check if the correct grid points are found
 !
-      if(lcheck) then
+      if (lcheck) then
         if ((xglobal_ogrid(ineargrid(1))-xxp(1)  )>0. .or. & !1.e-14 .or. &  
             (xxp(1)-xglobal_ogrid(ineargrid(1)+1))>0. .or. & !1.e-14 .or. &  
             (yglobal_ogrid(ineargrid(2))-xxp(2)  )>0. .or. & !1.e-14 .or. &  
@@ -5714,7 +5716,7 @@ module Solid_Cells
 !  Setting time is done in main snap reading rountine
 !  Check that time read from overlapping grids match
 !  
-          if(t_sp/=t) then
+          if (t_sp/=t) then
             call fatal_error ('read_snap_single_ogrid', 'time differs for cylindrical and cartesian snapshot')
           endif
         endif
@@ -5842,7 +5844,7 @@ module Solid_Cells
 !  Setting time is done in main snap reading rountine
 !  Check that time read from overlapping grids match
 !  
-          if(t_sp/=t) then
+          if (t_sp/=t) then
             call fatal_error ('read_snap_double_ogrid', 'time differs for cylindrical and cartesian snapshot')
           endif
         endif
@@ -6032,7 +6034,7 @@ module Solid_Cells
       do i=l1,l2
         do j=m1,m2
           rr = radius_ogrid(x(i),y(j))
-          if(rr<=r_int_outer .and. rr>=cylinder_radius) then
+          if (rr<=r_int_outer .and. rr>=cylinder_radius) then
             do k=n1,n2
               call get_polar_coords(x(i),y(j),z(k),rthz)
               call find_proc_curvilinear(rthz,from_proc)
@@ -6049,7 +6051,7 @@ module Solid_Cells
 !  array when using point from specific processor
 !
       procs_needed = count(linside_proc)
-      if(procs_needed>0) then
+      if (procs_needed>0) then
         allocate(f_ogrid_procs(procs_needed,mx_ogrid,my_ogrid,mz_ogrid,ivar2-ivar1+1+maux))
         allocate(ip_proc(procs_needed,3))
         allocate(recv_part_data_from(procs_needed))
@@ -6057,7 +6059,7 @@ module Solid_Cells
         ip_proc_pointer = -1
         k=1
         do iip=0,ncpus-1
-          if(linside_proc(iip+1)) then
+          if (linside_proc(iip+1)) then
             recv_part_data_from(k)=iip
             if (lprocz_slowest) then
               ip_proc(k,1) = modulo(iip, nprocx)
@@ -6078,7 +6080,7 @@ module Solid_Cells
 !
       if (lroot) then
         do iip=0,ncpus-1
-          if(iip/=root) then
+          if (iip/=root) then
             call mpirecv_logical(part_data_comm_glob(iip+1,:),ncpus,iip,899)
           else
             part_data_comm_glob(root+1,:)=linside_proc
@@ -6093,15 +6095,15 @@ module Solid_Cells
 !  Never send data to onself
 !
       n_procs_send_part_data = count(part_data_comm_glob(:,iproc+1))
-      if(part_data_comm_glob(iproc+1,iproc+1)) then
+      if (part_data_comm_glob(iproc+1,iproc+1)) then
         n_procs_send_part_data = n_procs_send_part_data-1
       endif
-      if(n_procs_send_part_data>0) then
+      if (n_procs_send_part_data>0) then
         allocate(send_part_data_to(n_procs_send_part_data))
         k=1
         do iip=0,ncpus-1
-          if(part_data_comm_glob(iip+1,iproc+1)) then
-            if(iip/=iproc) then
+          if (part_data_comm_glob(iip+1,iproc+1)) then
+            if (iip/=iproc) then
               send_part_data_to(k)=iip
               k=k+1
             endif
@@ -6124,7 +6126,7 @@ module Solid_Cells
       !    *(2*cylinder_radius)+cylinder_radius
       delta_momentum = cylinder_radius
 !  Use only one type of special handling near the surface
-      if(lspecial_rad_int_mom) lspecial_rad_int=.false.
+      if (lspecial_rad_int_mom) lspecial_rad_int=.false.
 !
     endsubroutine initialize_particles_ogrid
 !***********************************************************************
@@ -6160,7 +6162,7 @@ module Solid_Cells
 !
       do iter=1,n_procs_recv_part_data
         recv_from = recv_part_data_from(iter)
-        if(recv_from /= iproc) then
+        if (recv_from /= iproc) then
           do ivar=ivar1,ivar2
             call mpirecv_real(fbufi(:,:,:,ivar),flow_buf_size,recv_from,800+ivar)
           enddo
@@ -6200,32 +6202,32 @@ module Solid_Cells
       intent(in)  :: ivar1, ivar2, xxp, inear_glob
       intent(out) :: gp
 !
-      if(ivar1==iux) then
-         if(ivar2/=iuz) call fatal_error('interpolate_particels_ogrid','should not interpolate rho here!')
-         if(particle_interpolate==1) then
+      if (ivar1==iux) then
+         if (ivar2/=iuz) call fatal_error('interpolate_particels_ogrid','should not interpolate rho here!')
+         if (particle_interpolate==1) then
             call interpolate_linear_ogrid(ivar1,ivar1+1,xxp,gp(:),inear_glob)
-         elseif(particle_interpolate==2) then
+         elseif (particle_interpolate==2) then
             call interpolate_pseudoquad(ivar1,xxp,gp(iux),inear_glob)
-            if(lparticle_uradonly) then
+            if (lparticle_uradonly) then
                call interpolate_linear_ogrid(ivar1+1,ivar1+1,xxp,gp(iux+1),inear_glob)
             else
                call interpolate_pseudoquad(ivar1+1,xxp,gp(iux+1),inear_glob)
             endif
-         elseif(particle_interpolate==3) then
+         elseif (particle_interpolate==3) then
             call interpolate_quad_ogrid(ivar1,xxp,gp(iux),inear_glob)
-            if(lparticle_uradonly) then
+            if (lparticle_uradonly) then
                call interpolate_linear_ogrid(ivar1+1,ivar1+1,xxp,gp(iux+1),inear_glob)
             else
                call interpolate_quad_ogrid(ivar1+1,xxp,gp(iux+1),inear_glob)
             endif
-         elseif(particle_interpolate==4) then
+         elseif (particle_interpolate==4) then
             call interpolate_pseudocubic(ivar1,xxp,gp(iux),inear_glob)
             call interpolate_pseudocubic(ivar1+1,xxp,gp(iux+1),inear_glob)
          endif
 !
 ! Only update z-velocity if 3D run
 !
-         if(nzgrid_ogrid/=1) then
+         if (nzgrid_ogrid/=1) then
             call interpolate_linear_ogrid(ivar2,ivar2,xxp,gp(iuz),inear_glob)
          else
             gp(iuz)=0.
@@ -6234,12 +6236,12 @@ module Solid_Cells
 ! Override interpolation scheme if special handling for particles very close to the surface
 ! is activated
 !
-         if(lspecial_rad_int) then
-            if((xglobal_ogrid(inear_glob(1))==xyz0_ogrid(1))) then
+         if (lspecial_rad_int) then
+            if ((xglobal_ogrid(inear_glob(1))==xyz0_ogrid(1))) then
                call interpolate_ogrid_near(iux,iux,xxp,gp(iux),inear_glob)
             endif
-         elseif(lspecial_rad_int_mom) then
-            if((xglobal_ogrid(inear_glob(1))<delta_momentum)) then
+         elseif (lspecial_rad_int_mom) then
+            if ((xglobal_ogrid(inear_glob(1))<delta_momentum)) then
                call interpolate_ogrid_near_mom(iux,iux,xxp,gp(iux),inear_glob)
             endif
          endif
@@ -6248,7 +6250,7 @@ module Solid_Cells
          gp(iuy)=tmp*sin(xxp(2))+gp(iuy)*cos(xxp(2))
       else
          call interpolate_linear_ogrid(ivar1,ivar2,xxp,gp,inear_glob)
-         if(ivar1<irho) then
+         if (ivar1<irho) then
             call fatal_error('interpolate_particels_ogrid','should not interpolate anything but rho here!')
          endif
       endif
@@ -6289,7 +6291,7 @@ module Solid_Cells
     real :: dxx0,dxx1,dyy0,dyy1
     ix0=inear_glob(1); iy0=inear_glob(2); iz0=inear_glob(3); proc=inear_glob(4)
     ind_proc = ip_proc_pointer(proc+1)
-    if(ind_proc<1) then
+    if (ind_proc<1) then
        print*, 'ERROR: Pointing to f_array that does not exist'
        print*, 'This can be due to too many processors in parralelization'
     endif
@@ -6325,7 +6327,7 @@ module Solid_Cells
 !
       dx1=1./(xglobal_ogrid(ix0+1)-xglobal_ogrid(ix0))
       dy1=1./(yglobal_ogrid(iy0+1)-yglobal_ogrid(iy0))
-      if(nzgrid_ogrid/=1) then
+      if (nzgrid_ogrid/=1) then
         dz1=1./(zglobal_ogrid(iz0+1)-zglobal_ogrid(iz0))
       else 
         dz1=1.
@@ -6344,7 +6346,7 @@ module Solid_Cells
       iy0_proc=iy0-ny_ogrid*ip_proc(ind_proc,2)
       iz0_proc=iz0-nz_ogrid*ip_proc(ind_proc,3)
       !TODO TODO : REMOVE THIS
-      !if(ivar2>irho) then
+      !if (ivar2>irho) then
         !print*, 'Debug', shape(f_ogrid_procs), 'ivars',ivar1,ivar2,irho,iTT
         !print*, 'ERROR: Variable not existing on f_ogrid requested'
       !endif
@@ -6361,7 +6363,7 @@ module Solid_Cells
       f1=g3*dxx1*(-dx1)+g4*dxx0*dx1
       gp=f0*dyy1*(-dy1)+f1*dyy0*dy1
 !!       gp2 = g1 + xp0*dx1*(-g1+g2) + yp0*dy1*(-g1+g3) + xp0*yp0*dxdy1*(g1-g2-g3+g4)
-!!       if(gp(1)/=gp2(1)) then
+!!       if (gp(1)/=gp2(1)) then
 !! print*, 'ERROR IN LINEAR INTERPOLATION'
 !! print*, 'gp:',gp
 !! print*, 'gp2:',gp2
@@ -6439,7 +6441,7 @@ module Solid_Cells
 !
       ix0=inear_glob(1); iy0=inear_glob(2); iz0=inear_glob(3); proc=inear_glob(4)
       ind_proc = ip_proc_pointer(proc+1)
-      if(ind_proc<1) then
+      if (ind_proc<1) then
          print*, 'ERROR: Pointing to f_array that does not exist'
          print*, 'This may be due to too many processors in parallel'
       endif
@@ -6477,7 +6479,7 @@ module Solid_Cells
       !dx1=1./(xglobal_ogrid(ix0+1)-xyz0_ogrid(1))
       dx1=1./(xglobal_ogrid(ix0+1)-xglobal_ogrid(ix0))
       dy1=1./(yglobal_ogrid(iy0+1)-yglobal_ogrid(iy0))
-      if(nzgrid_ogrid/=1) then
+      if (nzgrid_ogrid/=1) then
         dz1=1./(zglobal_ogrid(iz0+1)-zglobal_ogrid(iz0))
       else 
         dz1=1.
@@ -6506,14 +6508,14 @@ module Solid_Cells
 !  Interpolation formula.
 !  Linear interpolation along theta(y) and z-direction
 !
-      if(nzgrid_ogrid/=1) then
+      if (nzgrid_ogrid/=1) then
         call fatal_error('interpolate_ogrid_near','not implemented in 3D')
       endif
       
       f0 = g1 + yp0*dy1*(-g1+g3)
       f1 = g2 + yp0*dy1*(-g2+g4)
       
-      if(any(f0/=0.)) then
+      if (any(f0/=0.)) then
         call fatal_error('interpolate_ogrid_near','interpolated value should be zero at the surface')
       endif
       
@@ -6581,7 +6583,7 @@ module Solid_Cells
 !
       ix0=inear_glob(1); iy0=inear_glob(2); iz0=inear_glob(3); proc=inear_glob(4)
       ind_proc = ip_proc_pointer(proc+1)
-      if(ind_proc<1) then
+      if (ind_proc<1) then
          print*, 'ERROR: Pointing to f_array that does not exist'
          print*, 'This can be due to too many processors in parralelization'
       endif
@@ -6619,7 +6621,7 @@ module Solid_Cells
       dx1=1./(xglobal_ogrid(ix0+1)-xyz0_ogrid(1))
       !dx1=1./(xglobal_ogrid(ix0+1)-xglobal_ogrid(ix0))
       dy1=1./(yglobal_ogrid(iy0+1)-yglobal_ogrid(iy0))
-      if(nzgrid_ogrid/=1) then
+      if (nzgrid_ogrid/=1) then
         dz1=1./(zglobal_ogrid(iz0+1)-zglobal_ogrid(iz0))
       else 
         dz1=1.
@@ -6648,14 +6650,14 @@ module Solid_Cells
 !  Interpolation formula.
 !  Linear interpolation along theta(y) and z-direction
 !
-      if(nzgrid_ogrid/=1) then
+      if (nzgrid_ogrid/=1) then
         call fatal_error('interpolate_ogrid_near_mom','not implemented in 3D')
       endif
       
       !f0 = g1 + yp0*dy1*(-g1+g3)
       f1 = g2 + yp0*dy1*(-g2+g4)
       
-      if(any(f0/=0.)) then
+      if (any(f0/=0.)) then
         call fatal_error('interpolate_ogrid_near_mom','interpolated value should be zero at the surface')
       endif
       
@@ -6724,7 +6726,7 @@ module Solid_Cells
 !
       ix0=inear_glob(1); iy0=inear_glob(2); iz0=inear_glob(3); proc=inear_glob(4)
       ind_proc = ip_proc_pointer(proc+1)
-      if(ind_proc<1) then
+      if (ind_proc<1) then
          print*, 'ERROR: Pointing to f_array that does not exist'
          print*, 'This can be due to too many processors in parralelization'
       endif
@@ -6754,7 +6756,7 @@ module Solid_Cells
 !
       dxx0=xxp(1)-xglobal_ogrid(ix0)
       dxx1=xxp(1)-xglobal_ogrid(ix1)
-      if((abs(dxx0)<abs(dxx1)).and.(xglobal_ogrid(ix0)>xyz0_ogrid(1))) then
+      if ((abs(dxx0)<abs(dxx1)).and.(xglobal_ogrid(ix0)>xyz0_ogrid(1))) then
         ix1=ix0
         ix0=ix0-1
         dxx0=xxp(1)-xglobal_ogrid(ix0)
@@ -6785,7 +6787,7 @@ module Solid_Cells
 !
 !  Simplify if only a 2D-run
 !
-      if(nzgrid_ogrid==1) then
+      if (nzgrid_ogrid==1) then
         f00=g000*dxx1*dxx2*dx10_1*dx20_1+g100*dxx0*dxx2*dx10_1*(-dx21_1)+g200*dxx0*dxx1*dx20_1*dx21_1
         f10=g010*dxx1*dxx2*dx10_1*dx20_1+g110*dxx0*dxx2*dx10_1*(-dx21_1)+g210*dxx0*dxx1*dx20_1*dx21_1
         gp=f00*dyy1*(-dy_1)+f10*dyy0*dy_1
@@ -6869,7 +6871,7 @@ module Solid_Cells
 !
       ix0=inear_glob(1); iy0=inear_glob(2); iz0=inear_glob(3); proc=inear_glob(4)
       ind_proc = ip_proc_pointer(proc+1)
-      if(ind_proc<1) then
+      if (ind_proc<1) then
          print*, 'ERROR: Pointing to f_array that does not exist'
          print*, 'This can be due to too many processors in parralelization'
       endif
@@ -6899,7 +6901,7 @@ module Solid_Cells
 !
       dxx0=xxp(1)-xglobal_ogrid(ix0)
       dxx1=xxp(1)-xglobal_ogrid(ix1)
-      if((abs(dxx0)<abs(dxx1)).and.(xglobal_ogrid(ix0)>xyz0_ogrid(1))) then
+      if ((abs(dxx0)<abs(dxx1)).and.(xglobal_ogrid(ix0)>xyz0_ogrid(1))) then
         ix1=ix0
         ix0=ix0-1
         dxx0=xxp(1)-xglobal_ogrid(ix0)
@@ -6940,17 +6942,17 @@ module Solid_Cells
 !
 !  Simplify if only a 2D-run
 !
-      if(xglobal_ogrid(ix0)<xyz0_ogrid(1)) then
+      if (xglobal_ogrid(ix0)<xyz0_ogrid(1)) then
           call fatal_error('interpolate_pseudocubic',&
             'illegal inteprolation point, inside cylinder')
       endif
-      if(nzgrid_ogrid==1) then 
+      if (nzgrid_ogrid==1) then 
         f00=g000*dyy1*(-dy_1)+g010*dyy0*dy_1 !x0
         f01=g100*dyy1*(-dy_1)+g110*dyy0*dy_1 !x1
         f02=g200*dyy1*(-dy_1)+g210*dyy0*dy_1 !x2
         f03=g300*dyy1*(-dy_1)+g310*dyy0*dy_1 !x3
 
-        if(xglobal_ogrid(ix0)==xyz0_ogrid(1)) then
+        if (xglobal_ogrid(ix0)==xyz0_ogrid(1)) then
           gp=f00*dxx1*dxx2*(-dx10_1)*(-dx20_1) + &
              f01*dxx0*dxx2*( dx10_1)*(-dx21_1) + &
              f02*dxx0*dxx1*( dx20_1)*( dx21_1)
@@ -7045,7 +7047,7 @@ module Solid_Cells
 !
       ix0=inear_glob(1); iy0=inear_glob(2); iz0=inear_glob(3); proc=inear_glob(4)
       ind_proc = ip_proc_pointer(proc+1)
-      if(ind_proc<1) then
+      if (ind_proc<1) then
          print*, 'ERROR: Pointing to f_array that does not exist'
          print*, 'This may be due to too many processors in parallel'
       endif
@@ -7075,7 +7077,7 @@ module Solid_Cells
 !
       dxx0=xxp(1)-xglobal_ogrid(ix0)
       dxx1=xxp(1)-xglobal_ogrid(ix1)
-      if((abs(dxx0)<abs(dxx1)).and.(xglobal_ogrid(ix0)>xyz0_ogrid(1))) then
+      if ((abs(dxx0)<abs(dxx1)).and.(xglobal_ogrid(ix0)>xyz0_ogrid(1))) then
         ix1=ix0
         ix0=ix0-1
         dxx0=xxp(1)-xglobal_ogrid(ix0)
@@ -7090,7 +7092,7 @@ module Solid_Cells
 !
       dyy0=xxp(2)-yglobal_ogrid(iy0)
       dyy1=xxp(2)-yglobal_ogrid(iy1)
-      if((abs(dyy0)<abs(dyy1))) then
+      if ((abs(dyy0)<abs(dyy1))) then
         iy1=iy0
         iy0=iy0-1
         dyy0=xxp(2)-yglobal_ogrid(iy0)
@@ -7119,7 +7121,7 @@ module Solid_Cells
 !
 !  Simplify if only a 2D-run
 !
-      if(nzgrid_ogrid==1) then
+      if (nzgrid_ogrid==1) then
         fN(1:3,1)=gN(1,:,1)*dxx1*dxx2*dx10_1*dx20_1+gN(2,:,1)*dxx0*dxx2*dx10_1*(-dx21_1)+gN(3,:,1)*dxx0*dxx1*dx20_1*dx21_1
         gp=fN(1,1)*dyy1*dyy2*dy10_1*dy20_1+fN(2,1)*dyy0*dyy2*dy10_1*(-dy21_1)+fN(3,1)*dyy0*dyy1*dy20_1*dy21_1
         !f10=g(1,2,1)*dxx1*dxx2*dx10_1*dx20_1+g(2,2,1)*dxx0*dxx2*dx10_1*(-dx21_1)+g(3,2,1)*dxx0*dxx1*dx20_1*dx21_1
@@ -7667,10 +7669,10 @@ module Solid_Cells
       integer, dimension(3),intent(inout) :: inear
       real, dimension(3), intent(in) :: xxp
 !
-      if((xxp(1)-x(inear(1)))>(x(inear(1)+1)-xxp(1))) inear(1) = inear(1)+1
-      if((xxp(2)-y(inear(2)))>(y(inear(2)+1)-xxp(2))) inear(2) = inear(2)+1
-      if(nzgrid_ogrid>1) then
-        if((xxp(3)-z(inear(3)))>(z(inear(3)+1)-xxp(3))) inear(3) = inear(3)+1
+      if ((xxp(1)-x(inear(1)))>(x(inear(1)+1)-xxp(1))) inear(1) = inear(1)+1
+      if ((xxp(2)-y(inear(2)))>(y(inear(2)+1)-xxp(2))) inear(2) = inear(2)+1
+      if (nzgrid_ogrid>1) then
+        if ((xxp(3)-z(inear(3)))>(z(inear(3)+1)-xxp(3))) inear(3) = inear(3)+1
       endif
 !
     endsubroutine adjust_inear_cart
@@ -7686,10 +7688,10 @@ module Solid_Cells
       integer, dimension(3),intent(inout) :: inear
       real, dimension(3), intent(in) :: xxp
 !
-      if((xxp(1)-x_ogrid(inear(1)))>(x_ogrid(inear(1)+1)-xxp(1))) inear(1) = inear(1)+1
-      if((xxp(2)-y_ogrid(inear(2)))>(y_ogrid(inear(2)+1)-xxp(2))) inear(2) = inear(2)+1
-      if(nzgrid_ogrid>1) then
-        if((xxp(3)-z_ogrid(inear(3)))>(z_ogrid(inear(3)+1)-xxp(3))) inear(3) = inear(3)+1
+      if ((xxp(1)-x_ogrid(inear(1)))>(x_ogrid(inear(1)+1)-xxp(1))) inear(1) = inear(1)+1
+      if ((xxp(2)-y_ogrid(inear(2)))>(y_ogrid(inear(2)+1)-xxp(2))) inear(2) = inear(2)+1
+      if (nzgrid_ogrid>1) then
+        if ((xxp(3)-z_ogrid(inear(3)))>(z_ogrid(inear(3)+1)-xxp(3))) inear(3) = inear(3)+1
       endif
 !
     endsubroutine adjust_inear_curv
@@ -7705,10 +7707,10 @@ module Solid_Cells
       integer, dimension(3),intent(inout) :: inear_glob
       real, dimension(3), intent(in) :: xxp
 !
-      if((xxp(1)-xglobal(inear_glob(1)))>(xglobal(inear_glob(1)+1)-xxp(1))) inear_glob(1) = inear_glob(1)+1
-      if((xxp(2)-yglobal(inear_glob(2)))>(yglobal(inear_glob(2)+1)-xxp(2))) inear_glob(2) = inear_glob(2)+1
-      if(nzgrid>1) then
-        if((xxp(3)-zglobal(inear_glob(3)))>(zglobal(inear_glob(3)+1)-xxp(3))) inear_glob(3) = inear_glob(3)+1
+      if ((xxp(1)-xglobal(inear_glob(1)))>(xglobal(inear_glob(1)+1)-xxp(1))) inear_glob(1) = inear_glob(1)+1
+      if ((xxp(2)-yglobal(inear_glob(2)))>(yglobal(inear_glob(2)+1)-xxp(2))) inear_glob(2) = inear_glob(2)+1
+      if (nzgrid>1) then
+        if ((xxp(3)-zglobal(inear_glob(3)))>(zglobal(inear_glob(3)+1)-xxp(3))) inear_glob(3) = inear_glob(3)+1
       endif
 !
     endsubroutine adjust_inear_cart_glob
@@ -7724,10 +7726,10 @@ module Solid_Cells
       integer, dimension(3),intent(inout) :: inear_glob
       real, dimension(3), intent(in) :: xxp
 !
-      if((xxp(1)-xglobal_ogrid(inear_glob(1)))>(xglobal_ogrid(inear_glob(1)+1)-xxp(1))) inear_glob(1) = inear_glob(1)+1
-      if((xxp(2)-yglobal_ogrid(inear_glob(2)))>(yglobal_ogrid(inear_glob(2)+1)-xxp(2))) inear_glob(2) = inear_glob(2)+1
-      if(nzgrid_ogrid>1) then
-        if((xxp(3)-zglobal_ogrid(inear_glob(3)))>(zglobal_ogrid(inear_glob(3)+1)-xxp(3))) inear_glob(3) = inear_glob(3)+1
+      if ((xxp(1)-xglobal_ogrid(inear_glob(1)))>(xglobal_ogrid(inear_glob(1)+1)-xxp(1))) inear_glob(1) = inear_glob(1)+1
+      if ((xxp(2)-yglobal_ogrid(inear_glob(2)))>(yglobal_ogrid(inear_glob(2)+1)-xxp(2))) inear_glob(2) = inear_glob(2)+1
+      if (nzgrid_ogrid>1) then
+        if ((xxp(3)-zglobal_ogrid(inear_glob(3)))>(zglobal_ogrid(inear_glob(3)+1)-xxp(3))) inear_glob(3) = inear_glob(3)+1
       endif
 !
     endsubroutine adjust_inear_curv_glob
@@ -7741,20 +7743,20 @@ module Solid_Cells
       real :: dx_outer, tmp_rad, min_rad, min_tmp_rad
       integer :: ii,jj,i3,j3
 
-        if(lroot) then
+        if (lroot) then
           dx_outer = 1./dx1grid_ogrid(nxgrid_ogrid)
-          if(interpolation_method==1) then
+          if (interpolation_method==1) then
             r_int_outer=r_ogrid-dx_outer*0.01-dx_outer*interp_shift
           elseif (interpolation_method==3 .or. interpolation_method==5) then
             r_int_outer=r_ogrid-dx_outer*0.51-dx_outer*interp_shift
-            if((xgrid_ogrid(nxgrid_ogrid)-r_int_outer)<(r_int_outer-xgrid_ogrid(nxgrid_ogrid-1))) then
+            if ((xgrid_ogrid(nxgrid_ogrid)-r_int_outer)<(r_int_outer-xgrid_ogrid(nxgrid_ogrid-1))) then
               print*, 'WARNING: An error occured when setting interpolation zone.'
               print*, '         Zone adjusted.'
               print*, 'iproc, r_int_outer first, r_int_outer second',&
                 iproc,r_int_outer,r_ogrid-dx_outer*1.01
               r_int_outer=r_ogrid-dx_outer*1.01-dx_outer*interp_shift
             endif
-            if(interpolation_method==5) then
+            if (interpolation_method==5) then
               print*, 'WARNING: Polynomal interpolation used, you better know what you are doing!'
             endif
           elseif (mod(interpolation_method,2)==0) then
@@ -7762,7 +7764,7 @@ module Solid_Cells
           !  r_int_outer=min(r_ogrid-dx_outer*((interpolation_method/2-0.5)+0.01),&
           !                  r_ogrid+dx_outer-dxmax*((interpolation_method/2+0.5)+0.01))
             r_int_outer=r_int_outer-dx_outer*interp_shift 
-            if((xgrid_ogrid(nxgrid_ogrid-1)-r_int_outer)<(r_int_outer-xgrid_ogrid(nxgrid_ogrid-2))) then
+            if ((xgrid_ogrid(nxgrid_ogrid-1)-r_int_outer)<(r_int_outer-xgrid_ogrid(nxgrid_ogrid-2))) then
               print*, 'WARNING: An error occured when setting interpolation zone.'
               print*, '         Zone adjusted.'
               r_int_outer=r_ogrid-dx_outer*((interpolation_method/2)+0.01)-dx_outer*interp_shift
@@ -7778,17 +7780,17 @@ module Solid_Cells
 !
 !  Set limit of the interpolation zone, r_int_inner
 !
-        if(interpolation_method<5 .or. interpolation_method>5) then
+        if (interpolation_method<5 .or. interpolation_method>5) then
           min_rad=r_int_outer
           do ii = l1,l2
             do jj = m1,m2
               tmp_rad = radius_ogrid(x(ii),y(jj))
 
-              if(tmp_rad>r_int_outer.and.tmp_rad<(r_int_outer+5*dxmax)) then
+              if (tmp_rad>r_int_outer.and.tmp_rad<(r_int_outer+5*dxmax)) then
                 do i3=-2,2
                   do j3=-2,2
                     min_tmp_rad = radius_ogrid(x(ii+i3),y(jj+j3))
-                    if(min_tmp_rad<min_rad) min_rad=min_tmp_rad
+                    if (min_tmp_rad<min_rad) min_rad=min_tmp_rad
                   enddo
                 enddo
               endif
@@ -8058,13 +8060,13 @@ module Solid_Cells
 !
 !  Print two-norms
 !
-    if(SBP) then
+    if (SBP) then
       open(10,file='runinfo.dat',status='unknown')
       open(1,file='SBP2norm_df.dat',status='unknown')
       open(2,file='SBP2norm_df2.dat',status='unknown')
       open(3,file='SBP2norm_df2ij.dat',status='unknown')
       write(10,*) '% Summation by parts'
-    elseif(BDRY5) then
+    elseif (BDRY5) then
       open(10,file='runinfo.dat',status='unknown')
       open(1,file='BDRY5norm_df.dat',status='unknown')
       open(2,file='BDRY5norm_df2.dat',status='unknown')
@@ -8154,12 +8156,12 @@ module Solid_Cells
 !
     real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), intent(in)::  f_og
     
-    if(filter_Hsize==0) then 
+    if (filter_Hsize==0) then 
       print*, 'WARNING: No need for filter halos, ghost zone large enough'
       print*, '         This will not work for parallel runs with current implemtation'
-    elseif(filter_Hsize<0) then
+    elseif (filter_Hsize<0) then
       call fatal_error('initialize_pade_filter','Negative filter halo size!')
-    elseif(filter_Hsize>nghost) then
+    elseif (filter_Hsize>nghost) then
       ! Requres a modification of mpi-buffers, not yet implemented
       call fatal_error('initialize_pade_filter','Filter halo too large!')
     endif
@@ -8222,7 +8224,7 @@ module Solid_Cells
     real, save :: a0, a1, a2, a3, a4, a5
     real, save :: a0_6, a1_6, a2_6, a3_6
     logical :: lfirstcall = .true.
-    if(lfirstcall) then
+    if (lfirstcall) then
       a0=(193+126*af)/256.
       a1=(105+302*af)/256.
       a2=15*(-1+2*af)/64.
@@ -8242,13 +8244,13 @@ module Solid_Cells
       aPx = 1.
       aEx = af
 !  Since we do not filter the point at the boundary
-      if(ipx==0) then
+      if (ipx==0) then
         aWx(1) = 0.
         aPx(1) = 1.
         aEx(1) = 0.
       endif
 !  Also, do not filter values in the interpolation region 
-      if(ipx<nprocx-1) then
+      if (ipx<nprocx-1) then
         jj=0
       else
         jj=interpol_filter
@@ -8298,23 +8300,23 @@ module Solid_Cells
                + a3*0.5*(f_og(i,m2_ogrid-3,4,:) + f_og(i,m2_ogrid+3,4,:)) &
                + a4*0.5*(f_og(i,m2_ogrid-4,4,:) + f_filterH_uppery(i,1,1,:)) &
                + a5*0.5*(f_og(i,m2_ogrid-5,4,:) + f_filterH_uppery(i,2,1,:))
-      if(nprocy>1) then
-        if(.not. lfilter_rhoonly) then
+      if (nprocy>1) then
+        if (.not. lfilter_rhoonly) then
           call cyclic_parallel_y(aWy,aPy,aEy,af,af,by(:,iux),f_og(i,m1_ogrid:m2_ogrid,4,iux),ny_ogrid)
           call cyclic_parallel_y(aWy,aPy,aEy,af,af,by(:,iuy),f_og(i,m1_ogrid:m2_ogrid,4,iuy),ny_ogrid)
           call cyclic_parallel_y(aWy,aPy,aEy,af,af,by(:,iuz),f_og(i,m1_ogrid:m2_ogrid,4,iuz),ny_ogrid)
         endif
-        if(lfilter_TT) then
+        if (lfilter_TT) then
            call cyclic_parallel_y(aWy,aPy,aEy,af,af,by(:,iTT),f_og(i,m1_ogrid:m2_ogrid,4,iTT),ny_ogrid)
         endif
         call cyclic_parallel_y(aWy,aPy,aEy,af,af,by(:,irho),f_og(i,m1_ogrid:m2_ogrid,4,irho),ny_ogrid)
       else
-        if(.not. lfilter_rhoonly) then
+        if (.not. lfilter_rhoonly) then
           call cyclic(aWy,aPy,aEy,af,af,by(:,iux),f_og(i,m1_ogrid:m2_ogrid,4,iux),ny_ogrid)
           call cyclic(aWy,aPy,aEy,af,af,by(:,iuy),f_og(i,m1_ogrid:m2_ogrid,4,iuy),ny_ogrid)
           call cyclic(aWy,aPy,aEy,af,af,by(:,iuz),f_og(i,m1_ogrid:m2_ogrid,4,iuz),ny_ogrid)
         endif
-        if(lfilter_TT) then
+        if (lfilter_TT) then
            call cyclic(aWy,aPy,aEy,af,af,by(:,iTT),f_og(i,m1_ogrid:m2_ogrid,4,iTT),ny_ogrid)
         endif
         call cyclic(aWy,aPy,aEy,af,af,by(:,irho),f_og(i,m1_ogrid:m2_ogrid,4,irho),ny_ogrid)
@@ -8328,7 +8330,7 @@ module Solid_Cells
 !  Surface point is not filtered, and neither are points in the 'filter'-zone between interpolations
 !
     do i=m1_ogrid,m2_ogrid
-      if(ipx==0) then
+      if (ipx==0) then
 !
 !  Special filtering near surface
 !
@@ -8366,7 +8368,7 @@ module Solid_Cells
                  + a4*0.5*(f_og(l1_ogrid-2:l2_ogrid-6,i,4,:) + f_og(l1_ogrid+6:l2_ogrid+2,i,4,:)) &
                  + a5*0.5*(f_og(l1_ogrid-3:l2_ogrid-7,i,4,:) + f_og(l1_ogrid+7:l2_ogrid+3,i,4,:))
       endif
-      if(ipx<nprocx-1) then
+      if (ipx<nprocx-1) then
         bx(nx_ogrid-1,:) = a0*f_og(l2_ogrid-1,i,4,:) &
                     + a1*0.5*(f_og(l2_ogrid-2,i,4,:) + f_og(l2_ogrid  ,i,4,:)) &
                     + a2*0.5*(f_og(l2_ogrid-3,i,4,:) + f_og(l2_ogrid+1,i,4,:)) &
@@ -8386,8 +8388,8 @@ module Solid_Cells
                                   + a3_6*0.5*(f_og(l2_ogrid-4:l2_ogrid-3,i,4,:) + f_og(l2_ogrid+2:l2_ogrid+3,i,4,:)) 
         bx(nx_ogrid-jj,:) = f_og(l2_ogrid-jj,i,4,:)
       endif
-      if(nprocx>1) then
-        if(.not. lfilter_rhoonly) then
+      if (nprocx>1) then
+        if (.not. lfilter_rhoonly) then
           call tridag_parallel_x(aWx(1:nx_ogrid-jj),aPx(1:nx_ogrid-jj),aEx(1:nx_ogrid-jj),bx(1:nx_ogrid-jj,iux), &
             f_og(l1_ogrid:l2_ogrid-jj,i,4,iux), nx_ogrid-jj)
           call tridag_parallel_x(aWx(1:nx_ogrid-jj),aPx(1:nx_ogrid-jj),aEx(1:nx_ogrid-jj),bx(1:nx_ogrid-jj,iuy), &
@@ -8395,14 +8397,14 @@ module Solid_Cells
           call tridag_parallel_x(aWx(1:nx_ogrid-jj),aPx(1:nx_ogrid-jj),aEx(1:nx_ogrid-jj),bx(1:nx_ogrid-jj,iuz), &
                f_og(l1_ogrid:l2_ogrid-jj,i,4,iuz), nx_ogrid-jj)
         endif
-        if(lfilter_TT) then
+        if (lfilter_TT) then
            call tridag_parallel_x(aWx(1:nx_ogrid-jj),aPx(1:nx_ogrid-jj),aEx(1:nx_ogrid-jj),bx(1:nx_ogrid-jj,iTT), &
                 f_og(l1_ogrid:l2_ogrid-jj,i,4,iTT), nx_ogrid-jj)
         endif
         call tridag_parallel_x(aWx(1:nx_ogrid-jj),aPx(1:nx_ogrid-jj),aEx(1:nx_ogrid-jj),bx(1:nx_ogrid-jj,irho), &
           f_og(l1_ogrid:l2_ogrid-jj,i,4,irho), nx_ogrid-jj)
       else
-        if(.not. lfilter_rhoonly) then
+        if (.not. lfilter_rhoonly) then
           call tridag(aWx(1:nx_ogrid-jj),aPx(1:nx_ogrid-jj),aEx(1:nx_ogrid-jj), & 
             bx(1:nx_ogrid-jj,iux),f_og(l1_ogrid:l2_ogrid-jj,i,4,iux))
           call tridag(aWx(1:nx_ogrid-jj),aPx(1:nx_ogrid-jj),aEx(1:nx_ogrid-jj), & 
@@ -8410,7 +8412,7 @@ module Solid_Cells
           call tridag(aWx(1:nx_ogrid-jj),aPx(1:nx_ogrid-jj),aEx(1:nx_ogrid-jj), & 
             bx(1:nx_ogrid-jj,iuz),f_og(l1_ogrid:l2_ogrid-jj,i,4,iuz))
         endif
-        if(lfilter_TT) then
+        if (lfilter_TT) then
            call tridag(aWx(1:nx_ogrid-jj),aPx(1:nx_ogrid-jj),aEx(1:nx_ogrid-jj), & 
                 bx(1:nx_ogrid-jj,iTT),f_og(l1_ogrid:l2_ogrid-jj,i,4,iTT))
         endif
@@ -8436,7 +8438,7 @@ module Solid_Cells
     integer :: j
     logical :: lfirstcall = .true.
 !
-    if(lfirstcall) then
+    if (lfirstcall) then
       aB_10(2,1)  = (1   +1022*af)/1024.
       aB_10(2,2)  = (507 + 10*af)/512.
       aB_10(2,3)  = (45  +934*af)/1024.
@@ -8523,7 +8525,7 @@ module Solid_Cells
     integer :: j
     logical :: lfirstcall = .true.
 !
-    if(lfirstcall) then
+    if (lfirstcall) then
       a0_8=(93+70*af)/128.
       a1_8=(7+18*af)/16.
       a2_8=(-7+14*af)/32.
@@ -8599,7 +8601,7 @@ module Solid_Cells
     real, save :: a0_6, a1_6, a2_6, a3_6
     logical :: lfirstcall = .true.
 !
-    if(lfirstcall) then
+    if (lfirstcall) then
       a0_6=11./16.+5.*af/8.
       a1_6=15./32.+17.*af/16.
       a2_6=-3./16.+3.*af/8.
@@ -8664,7 +8666,7 @@ module Solid_Cells
     real, save :: a0_2, a1_2
     logical :: lfirstcall = .true.
 !
-    if(lfirstcall) then
+    if (lfirstcall) then
       a0_8=(93+70*af)/128.
       a1_8=(7+18*af)/16.
       a2_8=(-7+14*af)/32.
@@ -8722,7 +8724,7 @@ module Solid_Cells
     logical :: lfirstcall = .true.
     integer :: j
 !
-    if(lfirstcall) then
+    if (lfirstcall) then
       a0_8=(93+70*af)/128.
       a1_8=(7+18*af)/16.
       a2_8=(-7+14*af)/32.
@@ -9069,7 +9071,7 @@ module Solid_Cells
 !!         endif
 !!       enddo
 !!     endif
-!!     if(iproc==root) then
+!!     if (iproc==root) then
 !!       fgrid_ogrid(nghost+1:mxgrid_ogrid-nghost,nghost+1:mygrid_ogrid-nghost, &
 !!         nghost+1:mzgrid_ogrid-nghost,ivar1:ivar2) = fgrid_ogrid_tmp
 !!       fgrid_cartesian(nghost+1:mxgrid-nghost,nghost+1:mygrid-nghost, &
@@ -9177,10 +9179,10 @@ module Solid_Cells
 !      integer, dimension(3*(ncpus-1)) :: ireq2D
 !      integer :: iter1,iter2
 !! TODO: COULD THIS BE MOVED INTO SOLID_CELLS_OGRID_MPICOMM?
-!      if(n_ip_curv_to_cart>0) then
+!      if (n_ip_curv_to_cart>0) then
 !        do i=1,n_ip_curv_to_cart
 !          from_proc=curvilinear_to_cartesian(i)%from_proc
-!          if(from_proc/=iproc) then
+!          if (from_proc/=iproc) then
 !! Must access from_proc+1 instead of from_proc, to avoid accessing element 0
 !            from_proc_curv_to_cart(from_proc+1)=from_proc_curv_to_cart(from_proc+1)+1
 !          endif
@@ -9188,14 +9190,14 @@ module Solid_Cells
 !      endif
 !!
 !      max_from_proc=maxval(from_proc_curv_to_cart)
-!      if(max_from_proc>0) then
+!      if (max_from_proc>0) then
 !        allocate(ind_from_proc_curv(ncpus,max_from_proc,3))
 !        allocate(ip_id_curv_to_cart(ncpus,max_from_proc))
 !        do iip=0,ncpus-1
-!          if(from_proc_curv_to_cart(iip+1)>0) then
+!          if (from_proc_curv_to_cart(iip+1)>0) then
 !            npoint=0
 !            do i=1,n_ip_curv_to_cart
-!              if(curvilinear_to_cartesian(i)%from_proc==iip) then
+!              if (curvilinear_to_cartesian(i)%from_proc==iip) then
 !                npoint=npoint+1
 !! Must access iip+1 instead of iip, to avoid accessing element 0
 !                ind_from_proc_curv(iip+1,npoint,:)=curvilinear_to_cartesian(i)%ind_global_neighbour
@@ -9206,10 +9208,10 @@ module Solid_Cells
 !        enddo
 !      endif
 !!
-!      if(n_ip_cart_to_curv>0) then
+!      if (n_ip_cart_to_curv>0) then
 !        do i=1,n_ip_cart_to_curv
 !          from_proc=cartesian_to_curvilinear(i)%from_proc
-!          if(from_proc/=iproc) then
+!          if (from_proc/=iproc) then
 !! Must access from_proc+1 instead of from_proc, to avoid accessing element 0
 !            from_proc_cart_to_curv(from_proc+1)=from_proc_cart_to_curv(from_proc+1)+1
 !          endif
@@ -9217,14 +9219,14 @@ module Solid_Cells
 !      endif
 !!
 !      max_from_proc=maxval(from_proc_cart_to_curv)
-!      if(max_from_proc>0) then
+!      if (max_from_proc>0) then
 !        allocate(ind_from_proc_cart(ncpus,max_from_proc,3))
 !        allocate(ip_id_cart_to_curv(ncpus,max_from_proc))
 !        do iip=0,ncpus-1
-!         if(from_proc_cart_to_curv(iip+1)>0) then
+!         if (from_proc_cart_to_curv(iip+1)>0) then
 !            npoint=0
 !            do i=1,n_ip_cart_to_curv
-!              if(cartesian_to_curvilinear(i)%from_proc==iip) then
+!              if (cartesian_to_curvilinear(i)%from_proc==iip) then
 !                npoint=npoint+1
 !! Must access iip+1 instead of iip, to avoid accessing element 0
 !                ind_from_proc_cart(iip+1,npoint,:)=cartesian_to_curvilinear(i)%ind_global_neighbour
@@ -9252,10 +9254,10 @@ module Solid_Cells
 !!  Send number of points requested from each processors, and send what points are requested
 !!  if the number of points is larger than zero.
 !!  Avoid sending to oneself
-!        if(iip/=iproc) then
+!        if (iip/=iproc) then
 !          nreq0D=nreq0D+1
 !          call mpisend_nonblock_int(from_proc_curv_to_cart(iip+1),iip,iip,ireq0D(nreq0D))
-!          if(from_proc_curv_to_cart(iip+1)>0) then
+!          if (from_proc_curv_to_cart(iip+1)>0) then
 !            nelements=(/ from_proc_curv_to_cart(iip+1),3 /)
 !            do i=1,3
 !              nreq2D=nreq2D+1
@@ -9272,11 +9274,11 @@ module Solid_Cells
 !      do iip=0,ncpus-1
 !!  Recieve data from all processors. If any points are requested, create array of request.
 !!  Avoid recieving from oneself
-!        if(iip/=iproc) then
+!        if (iip/=iproc) then
 !          call mpirecv_int(npoints_requested,iip,iproc)
 !!  Allocation/deallocation in a very inefficient manner, but this is only done during pre-processing
 !!  so memory effieient code is a priority.
-!          if(npoints_requested>0) then
+!          if (npoints_requested>0) then
 !!  Expand array
 !            size_arr=size(send_to_curv_to_cart)
 !            allocate(tmp_arr1D(size_arr))
@@ -9330,10 +9332,10 @@ module Solid_Cells
 !!  Send number of points requested from each processors, and send what points are requested
 !!  if the number of points is larger than zero.
 !!  Avoid sending to oneself
-!        if(iip/=iproc) then
+!        if (iip/=iproc) then
 !          nreq1D=nreq1D+1
 !          call mpisend_nonblock_int(from_proc_cart_to_curv(iip+1),iip,iip+3*ncpus,ireq1D(nreq1D))
-!          if(from_proc_cart_to_curv(iip+1)>0) then
+!          if (from_proc_cart_to_curv(iip+1)>0) then
 !            nelements=(/ from_proc_cart_to_curv(iip+1),3 /)
 !            nreq2D=nreq2D+2
 !            call mpisend_nonblock_int(ind_from_proc_cart(iip+1,1:nelements(1),:),nelements,iip,iip+4*ncpus,ireq2D(nreq2D-1))
@@ -9347,11 +9349,11 @@ module Solid_Cells
 !      do iip=0,ncpus-1
 !!  Recieve data from all processors. If any points are requested, create array of request.
 !!  Avoid recieving from oneself
-!        if(iip/=iproc) then
+!        if (iip/=iproc) then
 !          call mpirecv_int(npoints_requested,iip,iproc+3*ncpus)
 !!  Allocation/deallocation in a very inefficient manner, but this is only done during pre-processing
 !!  so memory effieient code is a priority.
-!          if(npoints_requested>0) then
+!          if (npoints_requested>0) then
 !!  Expand array
 !            size_arr=size(send_to_cart_to_curv)
 !            allocate(tmp_arr1D(size_arr))
@@ -9386,10 +9388,10 @@ module Solid_Cells
 !!
 !!  Deallocate arrays not not needed later
 !!
-!      if(allocated(ind_from_proc_curv))  deallocate(ind_from_proc_curv)
-!      if(allocated(ind_from_proc_cart))  deallocate(ind_from_proc_cart)
-!      if(allocated(ip_id_curv_to_cart))  deallocate(ip_id_curv_to_cart)
-!      if(allocated(ip_id_cart_to_curv))  deallocate(ip_id_cart_to_curv)
+!      if (allocated(ind_from_proc_curv))  deallocate(ind_from_proc_curv)
+!      if (allocated(ind_from_proc_cart))  deallocate(ind_from_proc_cart)
+!      if (allocated(ip_id_curv_to_cart))  deallocate(ip_id_curv_to_cart)
+!      if (allocated(ip_id_cart_to_curv))  deallocate(ip_id_cart_to_curv)
 !!
 !!  Translate recieved global indices to local indices and save the module variables for communication 
 !!
@@ -9415,10 +9417,10 @@ module Solid_Cells
 !!
 !      size_arr=size(send_data_curv_to_cart(:,1))
 !      n_procs_send_curv_to_cart=0
-!      if(size_arr>0) then
+!      if (size_arr>0) then
 !        n_procs_send_curv_to_cart=1
 !        do i=2,size_arr
-!          if(send_curvilinear_to_cartesian(i)%send_to_proc /= &
+!          if (send_curvilinear_to_cartesian(i)%send_to_proc /= &
 !              send_curvilinear_to_cartesian(i-1)%send_to_proc) then
 !            n_procs_send_curv_to_cart=n_procs_send_curv_to_cart+1
 !          endif
@@ -9427,17 +9429,17 @@ module Solid_Cells
 !      allocate(n_ip_to_proc_curv_to_cart(n_procs_send_curv_to_cart))
 !      n_ip_to_proc_curv_to_cart=1
 !      do i=2,size_arr
-!        if(send_curvilinear_to_cartesian(i)%send_to_proc == &
+!        if (send_curvilinear_to_cartesian(i)%send_to_proc == &
 !            send_curvilinear_to_cartesian(i-1)%send_to_proc) then
 !          n_ip_to_proc_curv_to_cart=n_ip_to_proc_curv_to_cart+1
 !        endif
 !      enddo
 !      size_arr=size(send_data_cart_to_curv(:,1))
 !      n_procs_send_cart_to_curv=0
-!      if(size_arr>0) then
+!      if (size_arr>0) then
 !        n_procs_send_cart_to_curv=1
 !        do i=2,size_arr
-!          if(send_cartesian_to_curvilinear(i)%send_to_proc /= &
+!          if (send_cartesian_to_curvilinear(i)%send_to_proc /= &
 !              send_cartesian_to_curvilinear(i-1)%send_to_proc) then
 !            n_procs_send_cart_to_curv=n_procs_send_cart_to_curv+1
 !          endif
@@ -9446,7 +9448,7 @@ module Solid_Cells
 !      allocate(n_ip_to_proc_cart_to_curv(n_procs_send_cart_to_curv))
 !      n_ip_to_proc_cart_to_curv=1
 !      do i=2,size_arr
-!        if(send_cartesian_to_curvilinear(i)%send_to_proc == &
+!        if (send_cartesian_to_curvilinear(i)%send_to_proc == &
 !            send_cartesian_to_curvilinear(i-1)%send_to_proc) then
 !          n_ip_to_proc_cart_to_curv=n_ip_to_proc_cart_to_curv+1
 !        endif
@@ -9463,11 +9465,11 @@ module Solid_Cells
 !      iter1=1
 !      iter2=1
 !      do iip=0,ncpus-1
-!        if(from_proc_cart_to_curv(iip+1)>0) then 
+!        if (from_proc_cart_to_curv(iip+1)>0) then 
 !          procs_recv_cart_to_curv(iter1)=iip
 !          iter1=iter1+1
 !        endif
-!        if(from_proc_curv_to_cart(iip+1)>0) then
+!        if (from_proc_curv_to_cart(iip+1)>0) then
 !          procs_recv_curv_to_cart(iter2)=iip
 !          iter2=iter2+1
 !        endif
@@ -9522,16 +9524,16 @@ module Solid_Cells
 !    integer :: ind, ipoly
 !    real, dimension(3) :: xyz_ip
 !!
-!    if(interpolation_method==1) then
+!    if (interpolation_method==1) then
 !      ii1=0; ii2=1; jj1=0; jj2=1; kk1=0; kk2=1
-!    elseif(interpolation_method==2 .or. interpolation_method==3) then
+!    elseif (interpolation_method==2 .or. interpolation_method==3) then
 !      ii1=1; ii2=1; jj1=1; jj2=1; kk1=1; kk2=1
-! !   elseif(interpolation_method==4) then
+! !   elseif (interpolation_method==4) then
 ! !     ii1=2; ii2=2; jj1=2; jj2=2; kk1=2; kk2=2
-!    elseif(interpolation_method==5) then
+!    elseif (interpolation_method==5) then
 !      ipoly=floor((interpol_order_poly)*0.5)
 !      ii1=ipoly; ii2=ipoly; jj1=ipoly; jj2=ipoly; kk1=ipoly; kk2=ipoly
-!    elseif(mod(interpolation_method,2)==0) then
+!    elseif (mod(interpolation_method,2)==0) then
 !      ii1=interpolation_method/2; ii2=ii1; jj1=ii1; jj2=ii1; kk1=ii1; kk2=ii1
 !    endif
 !    nbuf_farr(5)=ivar2-ivar1+1
@@ -9576,7 +9578,7 @@ module Solid_Cells
 !!  Interpolate remaining points 
 !!
 !    do id=1,n_ip_curv_to_cart
-!      if(curvilinear_to_cartesian(id)%from_proc==iproc) then
+!      if (curvilinear_to_cartesian(id)%from_proc==iproc) then
 !        inear_loc=curvilinear_to_cartesian(id)%ind_local_neighbour
 !        farr(:,:,:,:)=f_ogrid(inear_loc(1)-ii1:inear_loc(1)+ii2, &
 !          inear_loc(2)-jj1:inear_loc(2)+jj2,inear_loc(3)-kk1:inear_loc(3)+kk2,ivar1:ivar2)
@@ -9639,10 +9641,10 @@ module Solid_Cells
 !
 !!  Get grid points
 !!
-!      if(lcart_to_curv) then
+!      if (lcart_to_curv) then
 !        xglob(-2:2) = xglobal(inear_glob(1)-2:inear_glob(1)+2)
 !        yglob(-2:2) = yglobal(inear_glob(2)-2:inear_glob(2)+2)
-!      elseif(lcurv_to_cart) then
+!      elseif (lcurv_to_cart) then
 !        xglob(-2:2) = xglobal_ogrid(inear_glob(1)-2:inear_glob(1)+2)
 !        yglob(-2:2) = yglobal_ogrid(inear_glob(2)-2:inear_glob(2)+2)
 !      else
@@ -9668,8 +9670,8 @@ module Solid_Cells
 !!
 !!  Check that inear_glob actually points to the grid point closest to xxp
 !!
-!      if(lcheck) then
-!        if((abs(deltax0)<=min(abs(deltax_2),abs(deltax_1),abs(deltax1),abs(deltax2))) .or. &
+!      if (lcheck) then
+!        if ((abs(deltax0)<=min(abs(deltax_2),abs(deltax_1),abs(deltax1),abs(deltax2))) .or. &
 !           (abs(deltay0)<=min(abs(deltay_2),abs(deltay_1),abs(deltay1),abs(deltay2)))) then 
 !        ! Everything okay
 !        else
@@ -9783,17 +9785,17 @@ module Solid_Cells
 !!  Compensate for overshoots by linear interpolation
 !!
 !            ix0=0; ix1=1; iy0=0; iy1=1
-!            if(xglob(0)>xxp(1)) then
+!            if (xglob(0)>xxp(1)) then
 !              ix0=2; ix1=3
 !            else
 !              ix0=3; ix1=4
 !            endif
-!            if(yglob(0)>xxp(2)) then
+!            if (yglob(0)>xxp(2)) then
 !              iy0=2; iy1=3
 !            else
 !              iy0=3; iy1=4
 !            endif
-!            if(lcart_to_curv) then
+!            if (lcart_to_curv) then
 !              interp_lagrange4= linear_interpolate_cartesian(farr_in(ix0:ix1,iy0:iy1,3:4,i),i,i,xxp, &
 !                                           (/inear_glob(1)+ix0-3,inear_glob(2)+iy0-3,inear_glob(3)/),&
 !                                           gp(0,i),lcheck_interpolation)
@@ -9910,7 +9912,7 @@ module Solid_Cells
 !!
 !!  Check that gridspacing is correct
 !!
-!    if((xN-x0 - (order-1)*dx)<10.e-10 .and. (yN-y0 - (order-1)*dy)<10.e-10) then
+!    if ((xN-x0 - (order-1)*dx)<10.e-10 .and. (yN-y0 - (order-1)*dy)<10.e-10) then
 !      !Do nothing
 !    else
 !      print*, 'HO_interp_curv_loc: Grid spacing error'
@@ -9993,7 +9995,7 @@ module Solid_Cells
 !      do i=1,order
 !        xi = x0+dx*(i-1)
 !        do j=1,order
-!          if(i/=j) then
+!          if (i/=j) then
 !            l(i) = l(i)*(xp-(x0+dx*(j-1)))/(xi-(x0+dx*(j-1)))
 !          endif
 !        enddo
@@ -10072,7 +10074,7 @@ module Solid_Cells
 !      do j=m1,m2
 !        do i=l1,l2
 !          call get_polar_coords(x(i),y(j),z(k),rthz)
-!          if((rthz(1)<=r_int_outer) .and.(rthz(1)>r_int_inner)) then  
+!          if ((rthz(1)<=r_int_outer) .and.(rthz(1)>r_int_inner)) then  
 !            call find_near_ind_local_curv(inear,rthz,lcheck_interpolation)  
 !            if ( .not. linear_interpolate_ogrid(ivar1,ivar2,rthz,gp,inear,lcheck_interpolation) ) then
 !              call fatal_error('linear_interpolate_ogrid','interpolation from curvilinear to cartesian')
