@@ -31,6 +31,8 @@ module Special
   implicit none
 !
   include '../special.h'
+  include '../record_types.h'
+!
 !
 ! Declare index of variables
 !
@@ -203,13 +205,12 @@ module Special
 !
 !  19-feb-2019/axel: coded
 !
-      use Mpicomm, only: mpibcast
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real :: lnH, lna, a
       real :: kmax=2., lnkmax, lnk0=1.
       real :: Q, Qdot, chi, chidot, phi, phidot
-      real :: U, V, lnkmin0_new, beta
+      real :: U, V, beta
       integer :: ik
 !
 !  Initialize any module variables which are parameter dependent
@@ -219,12 +220,12 @@ module Special
       if (lconf_time .and. lhubble) then
           call fatal_error("initialize_special","with lconf_time, lhubble not yet implemented")
       endif
-      a=ascale_ini
 !
 !  Compute lnkmin0 and lnkmax0. Even for a linear k-range, dlnk
 !  is needed to determine the output of k-range and grand etc.
 !  Possibility to evolve the Hubble parameter (in cosmic time)
 !
+      a=ascale_ini
       if (lhubble) then
         phidot=0.
         select case (V_choice)
@@ -239,48 +240,38 @@ module Special
       endif
       lna=alog(a)
       lnH=alog(H)
-      lnkmin0=nmin0+lnH+lna
-      lnkmax0=nmax0+lnH+lna
+      if (lstart) then
+        lnkmin0=nmin0+lnH+lna
+        lnkmax0=nmax0+lnH+lna
+      endif
       if (nxgrid==1) then
         dlnk=1.
       else
-        dlnk=(lnkmax0-lnkmin0)/(nxgrid-1)
+        dlnk=(nmax0-nmin0)/(nxgrid-1)
       endif
-      if (lroot .and. .not. lstart) then
-        open(1,file=trim(datadir)//'/lnkmin0.dat')
-        read(1,*) lnkmin0_new
-        close(1)
-      endif
-      call mpibcast(lnkmin0_new)
 !
 !  Initialize lnkmin0 and lnkmax0
 !
       if (llnk_spacing_adjustable) then
         if (ldo_adjust_krange) then
-          if (.not. lstart) lnkmin0=lnkmin0_new
           do ik=1,nx
             lnk(ik)=lnkmin0+dlnk*(ik-1+ipx*nx)
             k(ik)=exp(lnk(ik))
           enddo
         else
           do ik=1,nx
-            lnk(ik)=lnkmin0+dlnk*(ik-1+ipx*nx)
+            lnk(ik)=nmin0+lnH+lna+dlnk*(ik-1+ipx*nx)
             k(ik)=exp(lnk(ik))
           enddo
-          if (.not. lstart) lnkmin0=lnkmin0_new
           if (ip<10) print*,'iproc,lnk=',iproc,lnk
           kindex_array=nint((lnk-lnkmin0)/dlnk)
         endif
       elseif (llnk_spacing) then
         do ik=1,nx
-          lnk(ik)=lnkmin0+dlnk*(ik-1+ipx*nx)
+          lnk(ik)=nmin0+lnH+lna+dlnk*(ik-1+ipx*nx)
           k(ik)=exp(lnk(ik))
         enddo
-        if (.not. lstart) then
-          lnkmin0_dummy=lnkmin0_new
-        else
-          lnkmin0_dummy=lnkmin0
-        endif
+        lnkmin0_dummy=lnkmin0
         if (ip<10) print*,'iproc,lnk=',iproc,lnk
         kindex_array=nint((lnk-lnkmin0)/dlnk)
       else
@@ -428,15 +419,6 @@ module Special
           enddo
           enddo 
           write(6,1000) 'iproc,TR=',iproc,TR
-          lna=alog(a)
-          lnH=alog(H)
-          lnkmin0=nmin0+lnH+lna
-          if (lroot) then
-            open(1,file=trim(datadir)//'/lnkmin0.dat')
-            write(1,*) lnkmin0
-            close(1)
-          endif
-
 !
         case default
           call fatal_error("init_special","no such init_axionSU2back: "//trim(init_axionSU2back))
@@ -1109,6 +1091,51 @@ module Special
 !
     endsubroutine write_special_run_pars
 !***********************************************************************
+    subroutine input_persist_special_id(id,done)
+!
+      use IO, only: read_persist
+!
+      integer :: id
+      logical :: done
+!
+      print*,'ram_persist',id
+      select case (id)
+        case (id_record_SPECIAL_LNKMIN0)
+          done=read_persist ('SPECIAL_LNKMIN0', lnkmin0)
+          if (lroot .and. .not. done) print *, 'input_persist_special: ', lnkmin0
+      endselect
+!
+    endsubroutine input_persist_special_id
+!***********************************************************************
+    subroutine input_persist_special
+!
+!  Read in the persistent special variables.
+!
+      use IO, only: read_persist
+!
+      logical :: error
+!
+      error = read_persist ('SPECIAL_LNKMIN0', lnkmin0)
+      if (lroot .and. .not. error) print *, 'input_persist_special: lnkmin0: ', lnkmin0
+!
+    endsubroutine input_persist_special
+!***********************************************************************
+    logical function output_persistent_special()
+!
+      use IO, only: write_persist
+!
+      if (ip<=6.and.lroot .and. (lnkmin0>=0.)) print *,'output_persistent_special: ',lnkmin0
+!
+!  write details
+!
+      output_persistent_special = .true.
+!
+      if (write_persist ('SPECIAL_LNKMIN0', id_record_SPECIAL_LNKMIN0, lnkmin0)) return
+!
+      output_persistent_special = .false.
+!
+    endfunction output_persistent_special
+!***********************************************************************
     subroutine special_before_boundary(f)
 !
 !  Possibility to modify the f array before the boundaries are
@@ -1323,11 +1350,6 @@ module Special
         else
           nswitch=0
         endif
-        if (lroot) then
-          open(1,file=trim(datadir)//'/lnkmin0.dat')
-          write(1,*) lnkmin0
-          close(1)
-        endif
 !
 !  for llnk_spacing=T, we still want output at the same times as in
 !  the adjustable case, so her nswitch means just "output", but no switch
@@ -1349,11 +1371,6 @@ module Special
           lnkmin0_dummy=lnkmin0_dummy+dlnk
         else
           nswitch=0
-        endif
-        if (lroot) then
-          open(1,file=trim(datadir)//'/lnkmin0.dat')
-          write(1,*) lnkmin0_dummy
-          close(1)
         endif
       endif
 !

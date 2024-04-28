@@ -60,3 +60,5 @@ integer, parameter :: id_record_SHEAR_DELTA_Y    = 320
 integer, parameter :: id_record_TIME_STEP        = 330
 integer, parameter :: id_record_EPS_RKF          = 331
 
+! special/axionSU2back.f90
+integer, parameter :: id_record_SPECIAL_LNKMIN0         = 340
