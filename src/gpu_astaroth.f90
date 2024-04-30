@@ -122,12 +122,11 @@ contains
 !
 !      Have to wait since if doing diagnostics don't want to overwrite f.
 !
-       if(lfarray_copied) return
+      if (lfarray_copied) return
 !!$     call signal_wait(lhelperflags, (/.false., .false., .false./))
-!$     call signal_wait(lhelper_perf, .false.)
-       call copy_farray_c(f)
-       lfarray_copied = .true.
-
+!$    call signal_wait(lhelper_perf, .false.)
+      call copy_farray_c(f)
+      lfarray_copied = .true.
 
     endsubroutine copy_farray_from_GPU
 !**************************************************************************
@@ -141,7 +140,7 @@ contains
 !**************************************************************************
     subroutine reload_GPU_config
 
-       call reload_gpu_config_c
+      call reload_gpu_config_c
 
     endsubroutine reload_GPU_config
 !**************************************************************************

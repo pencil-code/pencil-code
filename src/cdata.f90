@@ -814,9 +814,8 @@ module Cdata
   integer, parameter :: PERF_DIAGS=1, PERF_WSNAP=2, PERF_POWERSNAP=3, PERF_WSNAP_DOWN=4
   logical, volatile :: lfarray_copied = .false.
   logical, dimension(npencils) :: lpencil_save = .false.
-  logical, volatile :: lhelper_perf
   integer :: num_helper_threads=1, thread_id=1
-!$ logical, volatile :: lhelper_run=.true.
+!$ logical, volatile :: lhelper_run=.true., lhelper_perf
 ! 
 ! threadprivate definitions for OpenMP
 !

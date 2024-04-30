@@ -56,11 +56,9 @@ contains
 !***********************************************************************
 subroutine helper_loop(f,p)
 !
-  use Mpicomm
   use Equ, only: perform_diagnostics
 !$ use General, only: signal_wait, signal_send
   use Snapshot, only: perform_powersnap, perform_wsnap_ext, perform_wsnap_down
-  !use, intrinsic :: iso_fortran_env
 !
   real, dimension (mx,my,mz,mfarray) :: f
   type (pencil_case) :: p
@@ -119,7 +117,7 @@ subroutine timeloop(f,df,p)
   use IO,              only: output_globals
   use Magnetic,        only: rescaling_magnetic
   use Messages,        only: timing, fatal_error_local_collect
-  use Mpicomm,         only: mpibcast_logical, mpiwtime, MPI_COMM_WORLD
+  use Mpicomm,         only: mpibcast_logical, mpiwtime, MPI_COMM_WORLD, mpibarrier
   use Param_IO,        only: read_all_run_pars, write_all_run_pars
   use Particles_main,  only: particles_rprint_list, write_snapshot_particles, particles_initialize_modules, & 
                              particles_load_balance, particles_stochastic
@@ -506,14 +504,15 @@ subroutine timeloop(f,df,p)
 !
     it=it+1
     headt=.false.
-!$  if(lfarray_copied) then
-!$          do i =1,n_helperflags
-!$              lhelperflags(i) = lmasterflags(i)
-!$              lmasterflags(i) = .false.
-!$          enddo
-!$          call signal_send(lhelper_perf,.true.)
-!$          lfarray_copied = .false.
-!$  endif
+
+!    call mpibarrier
+!write(80+iproc,*) lmasterflags
+    if (lfarray_copied) then
+      lhelperflags = lmasterflags
+      lmasterflags = .false.
+      call signal_send(lhelper_perf,.true.)
+      lfarray_copied = .false.
+    endif
 
   !flush(output_unit)
   enddo Time_loop

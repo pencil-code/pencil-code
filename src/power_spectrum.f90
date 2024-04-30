@@ -360,7 +360,10 @@ outer:  do ikz=1,nz
   !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
   !  Added power spectra of rho^(1/2)*u and rho^(1/3)*u.
   !
-!$omp parallel private(ivec,k,k2) num_threads(num_helper_threads) reduction(+:spectrum) copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM,MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+!if (lroot) print*, 'in power vor parallel sp='//sp, num_helper_threads, thread_id
+!flush(6)
+!$omp parallel num_threads(num_helper_threads) private(ivec,k,k2) reduction(+:spectrum) &
+!$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM,MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
 !$ thread_id = omp_get_thread_num()+1
 
   do ivec=1,3

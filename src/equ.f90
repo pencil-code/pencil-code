@@ -59,7 +59,7 @@ module Equ
 ! To check ghost cell consistency, please uncomment the following line:
 !     use Ghost_check, only: check_ghosts_consistency
       use GhostFold, only: fold_df, fold_df_3points
-      use Gpu
+      use Gpu, only: rhs_gpu, copy_farray_from_GPU
       use Gravity
       use Hydro
       use Interstellar, only: interstellar_before_boundary
@@ -86,7 +86,7 @@ module Equ
       use Testscalar
       use Viscosity, only: viscosity_after_boundary
       use Grid, only: coarsegrid_interp
-      use OMP_lib
+!$    use OMP_lib
       use Mpicomm
 !$    use, intrinsic :: iso_c_binding
 !      use, intrinsic :: iso_fortran_env
