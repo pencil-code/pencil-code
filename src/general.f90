@@ -70,6 +70,35 @@ module General
   public :: point_and_get_size, allocate_using_dims
 !$ public :: signal_wait, signal_send, signal_init
 ! 
+!
+!  State and default generator of random numbers.
+!
+  integer, save, dimension(mseed) :: rstate=0, rstate2=0
+  character (len=labellen) :: random_gen='min_std'
+!
+!  Indicators for situations in which the interpolation stencil overlaps with
+!  the
+!  present and the neighboring processor domain: L/R - at left/right domain
+!  bound; GAP - in gap; MARG/MARG2 - one/two cell(s) away from domain bound; 
+!  NEIGH/NEIGH2 - in domain of neighboring processor one/two cell(s) away from
+!  domain bound. 
+!                
+  integer, parameter :: LGAP=-3, RGAP=3, NOGAP=0, LNEIGH=-4, RNEIGH=4, LMARG=-2, RMARG=2, &          
+                        LMARG2=-1, RMARG2=1, LNEIGH2=-5, RNEIGH2=5
+!
+!  Global parameters related to the scale factor.
+!  The input data file contains: t_file, scl_factor, Hp_file, appa_file
+!  We use logarithmic interpolation for t_file, scl_factor, and Hp_file,
+!  but not for appa_file, because its value is zero for matter domination.
+!
+ !real, dimension(:), allocatable :: t_file, scl_factor, Hp_file, appa_file
+ !real, dimension(:), allocatable :: lgt_file, lgff, lgff2, lgff3, lgff4, lgff5
+ !logical :: lread_scl_factor_file_exists
+ !integer :: idt_file_safety=12
+ !integer :: nt_file, it_file, iTij=0
+ !real :: lgt0, dlgt, H0=1.
+ !real :: lgt1, lgt2, lgf1, lgf2, lgf
+ !real :: lgt_ini, a_ini, Hp_ini, app_om=0
 !$  interface signal_wait
 !$    module procedure signal_wait_single
 !$    module procedure signal_wait_multi
@@ -291,35 +320,6 @@ module General
   endinterface
 !
   integer, parameter :: DIAG_COND = 1
-!
-!  State and default generator of random numbers.
-!
-  integer, save, dimension(mseed) :: rstate=0, rstate2=0
-  character (len=labellen) :: random_gen='min_std'
-!
-!  Indicators for situations in which the interpolation stencil overlaps with
-!  the
-!  present and the neighboring processor domain: L/R - at left/right domain
-!  bound; GAP - in gap; MARG/MARG2 - one/two cell(s) away from domain bound; 
-!  NEIGH/NEIGH2 - in domain of neighboring processor one/two cell(s) away from
-!  domain bound. 
-!                
-  integer, parameter :: LGAP=-3, RGAP=3, NOGAP=0, LNEIGH=-4, RNEIGH=4, LMARG=-2, RMARG=2, &          
-                        LMARG2=-1, RMARG2=1, LNEIGH2=-5, RNEIGH2=5
-!
-!  Global parameters related to the scale factor.
-!  The input data file contains: t_file, scl_factor, Hp_file, appa_file
-!  We use logarithmic interpolation for t_file, scl_factor, and Hp_file,
-!  but not for appa_file, because its value is zero for matter domination.
-!
- !real, dimension(:), allocatable :: t_file, scl_factor, Hp_file, appa_file
- !real, dimension(:), allocatable :: lgt_file, lgff, lgff2, lgff3, lgff4, lgff5
- !logical :: lread_scl_factor_file_exists
- !integer :: idt_file_safety=12
- !integer :: nt_file, it_file, iTij=0
- !real :: lgt0, dlgt, H0=1.
- !real :: lgt1, lgt2, lgf1, lgf2, lgf
- !real :: lgt_ini, a_ini, Hp_ini, app_om=0
 !
   include 'general.h'
   !include 'general_f2003.h'

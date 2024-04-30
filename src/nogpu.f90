@@ -41,7 +41,7 @@ contains
 !
     endsubroutine finalize_GPU
 !**************************************************************************
-    subroutine rhs_GPU(f,itsub,early_finalize)
+    subroutine rhs_GPU(f,itsub)
 !
       real, dimension (:,:,:,:) :: f
       integer :: itsub
@@ -49,7 +49,6 @@ contains
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(itsub)
-      call keep_compiler_quiet(early_finalize)
 !
     endsubroutine rhs_GPU
 !**************************************************************************

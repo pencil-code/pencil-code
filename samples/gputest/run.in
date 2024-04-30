@@ -5,12 +5,18 @@
 &run_pars
   cvsid='$Id$',
   ip=13,
-  nt=200, it1=10, isave=500, itorder=3,
-  nt=20, it1=4, isave=500, itorder=3,
-  nt=21, it1=10, isave=10, itorder=3,
-  cdt=0.4, cdtv=0.3, dtmin=1e-6, dt=1.e-3
-  dspec=5e-3, vel_spec=T, ab_spec=T
-  dvid=4e-3
+
+  nt=2001, it1=20, isave=100, itorder=3,
+  !nt=21, it1=1, isave=100, itorder=3
+
+  cdt=0.4, cdtv=0.3, dtmin=1e-6, dt=1.e-6
+
+  dspec=2e-5, vel_spec=T, ab_spec=T
+
+  dvid=1e-5
+
+  dsnap=8e-5
+
   random_gen='nr_f90',
   slice_position='e'
   lpencil_check=F

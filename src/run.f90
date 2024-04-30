@@ -70,27 +70,30 @@ subroutine helper_loop(f,p)
 !$  do while(lhelper_run)
 !$        call signal_wait(lhelper_perf,lhelper_run)
 !$        if(lhelper_run .and. lhelperflags(PERF_DIAGS)) then 
+                print*,"doing diag"
                 call perform_diagnostics(f,p)
 !$        else 
-                lhelperflags(PERF_DIAGS) = .false.
-          endif
+!$              lhelperflags(PERF_DIAGS) = .false.
+!$        endif
 !$        if(lhelper_run .and. lhelperflags(PERF_WSNAP)) then 
+                print*,"doing wsnap"
                 call perform_wsnap_ext(f)
 !$        else 
-                lhelperflags(PERF_WSNAP) = .false.
-          endif
+!$              lhelperflags(PERF_WSNAP) = .false.
+!$        endif
 !$        if(lhelper_run .and. lhelperflags(PERF_WSNAP_DOWN)) then 
+                print*,"doing down"
                 call perform_wsnap_down(f)
 !$        else 
-                lhelperflags(PERF_WSNAP_DOWN) = .false.
-          endif
+!$              lhelperflags(PERF_WSNAP_DOWN) = .false.
+!$        endif
 !$        if(lhelper_run .and. lhelperflags(PERF_POWERSNAP)) then 
+                print*,"doing power"
                 call perform_powersnap(f)
 !$        else 
-                lhelperflags(PERF_POWERSNAP) = .false.
-          endif
-!!$      endif
-      call signal_send(lhelper_perf,.false.)
+!$              lhelperflags(PERF_POWERSNAP) = .false.
+!$        endif
+!$      call signal_send(lhelper_perf,.false.)
 !$  enddo
 
 endsubroutine helper_loop
@@ -503,17 +506,19 @@ subroutine timeloop(f,df,p)
 !
     it=it+1
     headt=.false.
-    if(lfarray_copied) then
-            do i =1,n_helperflags
-                lhelperflags(i) = lmasterflags(i)
-                lmasterflags(i) = .false.
-            enddo
-            call signal_send(lhelper_perf,.true.)
-            lfarray_copied = .false.
-    endif
+!$  if(lfarray_copied) then
+!$          do i =1,n_helperflags
+!$              lhelperflags(i) = lmasterflags(i)
+!$              lmasterflags(i) = .false.
+!$          enddo
+!$          call signal_send(lhelper_perf,.true.)
+!$          lfarray_copied = .false.
+!$  endif
 
+  !flush(output_unit)
   enddo Time_loop
 
+print*,"master done"
 !$ call signal_wait(lhelper_perf, .false.)
 !$ call signal_send(lhelper_run,.false.)
 
