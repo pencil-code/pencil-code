@@ -375,8 +375,8 @@ module Snapshot
       real, dimension(:,:,:,:) :: a
 
       call perform_wsnap(a,extpars%ind1,extpars%ind2,extpars%file)
-!!$   call signal_send(lhelperflags(PERF_WSNAP),.false.)
-      lhelperflags(PERF_WSNAP) = .false.
+!!$    if (.not. lstart) call signal_send(lhelperflags(PERF_WSNAP),.false.)
+       lhelperflags(PERF_WSNAP) = .false.
 
     endsubroutine perform_wsnap_ext
 !***********************************************************************
@@ -399,8 +399,6 @@ module Snapshot
       call output_snap_finalize
       if (lroot) call delete_file(trim(workdir)//'/WRITING')
 
-!!$    if (.not. lstart) call signal_send(lhelperflags(PERF_WSNAP),.false.)
-       lhelperflags(PERF_WSNAP) = .false.
     endsubroutine perform_wsnap
 !***********************************************************************
     subroutine read_predef_snaptimes(file,snaptimes)

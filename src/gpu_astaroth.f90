@@ -123,7 +123,6 @@ contains
 !      Have to wait since if doing diagnostics don't want to overwrite f.
 !
       if (lfarray_copied) return
-!!$     call signal_wait(lhelperflags, (/.false., .false., .false./))
 !$    call signal_wait(lhelper_perf, .false.)
       call copy_farray_c(f)
       lfarray_copied = .true.

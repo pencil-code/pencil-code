@@ -505,13 +505,15 @@ subroutine timeloop(f,df,p)
     it=it+1
     headt=.false.
 
-!    call mpibarrier
-!write(80+iproc,*) lmasterflags
+!if (any(lmasterflags)) then
+!write(60+iproc,*) it, lmasterflags
+!flush(60+iproc)
+!endif
     if (lfarray_copied) then
-      lhelperflags = lmasterflags
-      lmasterflags = .false.
-      call signal_send(lhelper_perf,.true.)
-      lfarray_copied = .false.
+!$    lhelperflags = lmasterflags
+!$    lmasterflags = .false.
+!$    call signal_send(lhelper_perf,.true.)
+!$    lfarray_copied = .false.
     endif
 
   !flush(output_unit)

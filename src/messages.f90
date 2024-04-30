@@ -206,6 +206,7 @@ module Messages
       character(len=*), optional :: location
       character(len=*)           :: message
 !
+!$    if (omp_in_parallel()) return
       !$omp single
       if (present(location)) scaller=location
 !

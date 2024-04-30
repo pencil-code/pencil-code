@@ -5356,6 +5356,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 
       call touch_file('ERROR')
 !
+!$    if (.not.omp_in_parallel()) &
       call mpifinalize
       if (lroot) then
         STOP 1                    ! Return nonzero exit status
