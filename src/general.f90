@@ -70,11 +70,6 @@ module General
   public :: point_and_get_size, allocate_using_dims
 !$ public :: signal_wait, signal_send, signal_init
 ! 
-!$  interface signal_wait
-!$    module procedure signal_wait_single
-!$    module procedure signal_wait_multi
-!$  endinterface
-! 
   interface random_number_wrapper
     module procedure random_number_wrapper_0
     module procedure random_number_wrapper_1
@@ -6716,7 +6711,7 @@ iloop:do i=1,size(list2)
 
     endsubroutine
 !***********************************************************************
-!$  subroutine signal_wait_single(lflag, lvalue)
+!$  subroutine signal_wait(lflag, lvalue)
 !
 !  Makes the current thread wait until lflag = lvalue.
 !
@@ -6726,7 +6721,7 @@ iloop:do i=1,size(list2)
 !
 !$    call cond_wait_single(DIAG_COND,lflag,lvalue)
 
-!$  endsubroutine signal_wait_single
+!$  endsubroutine signal_wait
 !***********************************************************************
 !$  subroutine signal_wait_multi(lflags, lvalues)
 !

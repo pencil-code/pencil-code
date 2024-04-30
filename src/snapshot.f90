@@ -70,7 +70,7 @@ module Snapshot
         if (.not.lstart.and.lgpu) call copy_farray_from_GPU(a)
         if (lmultithread) then
 !!$        call signal_send(lhelperflags(PERF_WSNAP_DOWN),.false.)
-           lmasterflags(PERF_WSNAP_DOWN) = .true.
+          lmasterflags(PERF_WSNAP_DOWN) = .true.
         else
           call perform_wsnap_down(a)
         endif
@@ -332,7 +332,7 @@ module Snapshot
           if (lmultithread) then
             extpars%ind1=nv1_capitalvar; extpars%ind2=msnap; extpars%file=file
 !!$          if (.not.lstart) call signal_send(lhelperflags(PERF_WSNAP),.true.)
-             lmasterflags(PERF_WSNAP) = .true.
+            lmasterflags(PERF_WSNAP) = .true.
           else
             call perform_wsnap(a,nv1_capitalvar,msnap,file)
           endif
@@ -357,7 +357,7 @@ module Snapshot
         if (lmultithread) then
           extpars%ind1=1; extpars%ind2=msnap; extpars%file=file
 !!$        if (.not.lstart) call signal_send(lhelperflags(PERF_WSNAP),.true.)
-           lmasterflags(PERF_WSNAP) = .true.
+          lmasterflags(PERF_WSNAP) = .true.
         else
           call perform_wsnap(a,1,msnap,file)
         endif
@@ -758,7 +758,7 @@ module Snapshot
 !
         if (lmultithread) then
 !!$        call signal_send(lhelperflags(PERF_POWERSNAP),.true.)
-           lmasterflags(PERF_POWERSNAP) = .true.
+          lmasterflags(PERF_POWERSNAP) = .true.
         else
           call perform_powersnap(f)
         endif

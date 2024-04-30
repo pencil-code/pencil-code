@@ -56,11 +56,9 @@ contains
 !***********************************************************************
 subroutine helper_loop(f,p)
 !
-  use Mpicomm
   use Equ, only: perform_diagnostics
 !$ use General, only: signal_wait, signal_send
   use Snapshot, only: perform_powersnap, perform_wsnap_ext, perform_wsnap_down
-  !use, intrinsic :: iso_fortran_env
 !
   real, dimension (mx,my,mz,mfarray) :: f
   type (pencil_case) :: p
@@ -68,29 +66,30 @@ subroutine helper_loop(f,p)
 ! 7-feb-24/TP: coded
 !
 !$  do while(lhelper_run)
-!$        call signal_wait(lhelper_perf,lhelper_run)
-!$        if(lhelper_run .and. lhelperflags(PERF_DIAGS)) then 
-                call perform_diagnostics(f,p)
-!$        else 
-                lhelperflags(PERF_DIAGS) = .false.
-          endif
-!$        if(lhelper_run .and. lhelperflags(PERF_WSNAP)) then 
-                call perform_wsnap_ext(f)
-!$        else 
-                lhelperflags(PERF_WSNAP) = .false.
-          endif
-!$        if(lhelper_run .and. lhelperflags(PERF_WSNAP_DOWN)) then 
-                call perform_wsnap_down(f)
-!$        else 
-                lhelperflags(PERF_WSNAP_DOWN) = .false.
-          endif
-!$        if(lhelper_run .and. lhelperflags(PERF_POWERSNAP)) then 
-                call perform_powersnap(f)
-!$        else 
-                lhelperflags(PERF_POWERSNAP) = .false.
-          endif
-!!$      endif
-      call signal_send(lhelper_perf,.false.)
+!$    call signal_wait(lhelper_perf,lhelper_run)
+
+!$    if (lhelper_run .and. lhelperflags(PERF_DIAGS)) then 
+        call perform_diagnostics(f,p)
+!$    else 
+!$      lhelperflags(PERF_DIAGS) = .false.
+!$    endif
+!$    if (lhelper_run .and. lhelperflags(PERF_WSNAP)) then 
+        call perform_wsnap_ext(f)
+!$    else 
+!$      lhelperflags(PERF_WSNAP) = .false.
+!$    endif
+!$    if (lhelper_run .and. lhelperflags(PERF_WSNAP_DOWN)) then 
+        call perform_wsnap_down(f)
+!$    else 
+!$      lhelperflags(PERF_WSNAP_DOWN) = .false.
+!$    endif
+!$    if (lhelper_run .and. lhelperflags(PERF_POWERSNAP)) then 
+        call perform_powersnap(f)
+!$    else 
+!$      lhelperflags(PERF_POWERSNAP) = .false.
+!$    endif
+
+!$    call signal_send(lhelper_perf,.false.)
 !$  enddo
 
 endsubroutine helper_loop
@@ -116,7 +115,7 @@ subroutine timeloop(f,df,p)
   use IO,              only: output_globals
   use Magnetic,        only: rescaling_magnetic
   use Messages,        only: timing, fatal_error_local_collect
-  use Mpicomm,         only: mpibcast_logical, mpiwtime, MPI_COMM_WORLD
+  use Mpicomm,         only: mpibcast_logical, mpiwtime, MPI_COMM_WORLD, mpibarrier
   use Param_IO,        only: read_all_run_pars, write_all_run_pars
   use Particles_main,  only: particles_rprint_list, write_snapshot_particles, particles_initialize_modules, & 
                              particles_load_balance, particles_stochastic
@@ -503,13 +502,14 @@ subroutine timeloop(f,df,p)
 !
     it=it+1
     headt=.false.
-    if(lfarray_copied) then
-            do i =1,n_helperflags
-                lhelperflags(i) = lmasterflags(i)
-                lmasterflags(i) = .false.
-            enddo
-            call signal_send(lhelper_perf,.true.)
-            lfarray_copied = .false.
+
+!    call mpibarrier
+!write(80+iproc,*) lmasterflags
+    if (lfarray_copied) then
+      lhelperflags = lmasterflags
+      lmasterflags = .false.
+      call signal_send(lhelper_perf,.true.)
+      lfarray_copied = .false.
     endif
 
   enddo Time_loop
