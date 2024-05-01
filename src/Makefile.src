@@ -3003,19 +3003,13 @@ endif
 #
 # writes moduleflags in $(CUDA_INCDIR)/PC_moduleflags.h, list of needed physics module source files in $(CUDA_MAKEDIR)/PC_modulesources.h
 # 
-##$(CUDA_INCDIR)/PC_modulesources.h: .sentinel
-##$(CUDA_MAKEDIR)/Makefile.vendor: .sentinel
-##$(DSL_WORKDIR)/fieldecs.h: .sentinel
-##$(DSL_WORKDIR)/equations.h: .sentinel
-##$(DSL_WORKDIR)/solve.ac: Makefile.local
-#
-#$(CUDA_INCDIR)/PC_moduleflags.h: Makefile.local
 #$(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/PC_modulesources.h $(CUDA_MAKEDIR)/Makefile.vendor $(DSL_WORKDIR)/fieldecs.h $(DSL_WORKDIR)/equations.h $(DSL_WORKDIR)/solve.ac: 
 $(DSL_WORKDIR)/solve.ac: $(CUDA_INCDIR)/PC_moduleflags.h
 $(DSL_WORKDIR)/equations.h: $(CUDA_INCDIR)/PC_moduleflags.h
 $(DSL_WORKDIR)/fieldecs.h: $(CUDA_INCDIR)/PC_moduleflags.h
 $(CUDA_MAKEDIR)/Makefile.vendor: $(CUDA_INCDIR)/PC_moduleflags.h
 $(CUDA_INCDIR)/PC_modulesources.h: $(CUDA_INCDIR)/PC_moduleflags.h
+#
 $(CUDA_INCDIR)/PC_moduleflags.h: Makefile.local $(CPARAM_OBJ) $(CDATA_OBJ)
 	@rm -f $(CUDA_INCDIR)/PC_moduleflags.h
 	@echo '#pragma once' > $(CUDA_INCDIR)/PC_moduleflags.h
@@ -3064,9 +3058,9 @@ endif
 	      prefix=; \
 	      init="return 0."; \
 	    fi; \
-	    echo '  '$$prefix'write( '$$fieldname', rk3'$$suffix'('$$prefix'previous('$$fieldname'), '$$prefix'value('$$fieldname'), '$$funcname'(), step_num, dt) )' >> $(DSL_WORKDIR)/solve.ac; \
-	    if ( ! grep $$funcname' *( *) *{' $(DSL_WORKDIR)/equations.h > /dev/null ); then \
-	      echo $$funcname'(){'$$init'}' >> $(DSL_WORKDIR)/equations.h; \
+	    echo '  '$$prefix'write( '$$fieldname', rk3'$$suffix'('$$prefix'previous('$$fieldname'), '$$prefix'value('$$fieldname'), '$$funcname'(step_num), step_num, dt) )' >> $(DSL_WORKDIR)/solve.ac; \
+	    if ( ! grep $$funcname' *( *step_num *) *{' $(DSL_WORKDIR)/equations.h > /dev/null ); then \
+	      echo $$funcname'(int step_num){'$$init'}' >> $(DSL_WORKDIR)/equations.h; \
 	      echo '' >> $(DSL_WORKDIR)/equations.h; \
 	    fi \
 	  fi \
