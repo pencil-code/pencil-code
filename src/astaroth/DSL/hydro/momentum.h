@@ -10,7 +10,7 @@
     cs2 = cs20 * exp(gamma * value(SS)/cp + gamma_m1 * (value(LNRHO) - lnrho0))
     advec2 = advec2 + cs2
 #endif
-    reduce_max(step_num==0, length(vecvalue(UU)) + sqrt(advec2), AC_maxadvec)
+    reduce_max(step_num==2, length(vecvalue(UU)) + sqrt(advec2), AC_maxadvec)
 
     return - gradients(UU) * vecvalue(UU)
 #if LENTROPY
