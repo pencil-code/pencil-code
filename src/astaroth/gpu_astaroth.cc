@@ -23,6 +23,7 @@
 #include "astaroth.h"
 #include "kernels.h"
 #include "task.h"
+#include "loaders.h"
 #define real AcReal
 #define EXTERN
 #define FINT int
@@ -445,9 +446,6 @@ extern "C" void substepGPU(int isubstep)
 #endif
   if (lfirst && ldt)
   {
-    AcReal dt1_advec = max_advec()/cdt;
-    //Example of how to get the kernel reduce output for Matthias
-    AcReal alfven_speed = acGridGetDevice()->output.real_outputs[AC_alfven_speed];
     AcReal dt1_diffus = max_diffus()/cdtv;
     AcReal dt1_ = sqrt(pow(dt1_advec, 2) + pow(dt1_diffus, 2));
     set_dt(dt1_);
@@ -1027,51 +1025,6 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out, int c
   //    acCompute(twopass_solve_final, all_fields)};
   //rhs_test_graph = acGridBuildTaskGraphWithIterations(rhs_ops,3);
   
-#if SINGLEPASS
-  auto single_loader0= [](ParamLoadingInfo p)
-  {
-	  p.params -> singlepass_solve.step_num = 0;
-	  p.params -> singlepass_solve._dt = p.device->local_config.real_params[AC_dt];
-  };
-  auto single_loader1= [](ParamLoadingInfo p)
-  {
-	  p.params -> singlepass_solve.step_num = 1;
-	  p.params -> singlepass_solve._dt = p.device->local_config.real_params[AC_dt];
-  };
-  auto single_loader2= [](ParamLoadingInfo p)
-  {
-	  p.params -> singlepass_solve.step_num = 2;
-	  p.params -> singlepass_solve._dt = p.device->local_config.real_params[AC_dt];
-  };
-#else
-  auto intermediate_loader_0= [](ParamLoadingInfo p)
-  {
-	  p.params -> twopass_solve_intermediate.step_num = 0;
-	  p.params -> twopass_solve_intermediate._dt = p.device->local_config.real_params[AC_dt];
-  };
-  auto final_loader_0 = [](ParamLoadingInfo p)
-  {
-	  p.params -> twopass_solve_final.step_num = 0;
-  };
-  auto intermediate_loader_1= [](ParamLoadingInfo p)
-  {
-	  p.params -> twopass_solve_intermediate.step_num = 1;
-	  p.params -> twopass_solve_intermediate._dt = p.device->local_config.real_params[AC_dt];
-  };
-  auto final_loader_1 = [](ParamLoadingInfo p)
-  {
-	  p.params -> twopass_solve_final.step_num = 1;
-  };
-  auto intermediate_loader_2= [](ParamLoadingInfo p)
-  {
-	  p.params -> twopass_solve_intermediate.step_num = 2;
-	  p.params -> twopass_solve_intermediate._dt = p.device->local_config.real_params[AC_dt];
-  };
-  auto final_loader_2= [](ParamLoadingInfo p)
-  {
-	  p.params -> twopass_solve_final.step_num = 2;
-  };
-#endif
   graph_1 = acGridBuildTaskGraph(
     {
       acHaloExchange(all_fields),
