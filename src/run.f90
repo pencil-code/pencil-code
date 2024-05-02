@@ -167,6 +167,7 @@ subroutine timeloop(f,df,p)
         endif
         resubmit=control_file_exists('RESUBMIT',DELETE=.true.)
         if (resubmit) print*, 'Cannot be resubmitted'
+!$      if (lfarray_copied) call signal_send(lhelper_perf,.true.)
         exit Time_loop
       endif
 !
@@ -297,6 +298,7 @@ subroutine timeloop(f,df,p)
     if (t >= tmax) then
       if (lonemorestep .or. .not. (lout .or. lvideo .or. l2davg)) then
         if (lroot) print *, 'Maximum simulation time exceeded'
+!$      if (lfarray_copied) call signal_send(lhelper_perf,.true.)
         exit Time_loop
       endif
       lonemorestep = .true.
@@ -481,6 +483,7 @@ subroutine timeloop(f,df,p)
     if ((it<nt) .and. (dt<dtmin)) then
       if (lroot) write(*,*) ' Time step has become too short: dt = ', dt
       save_lastsnap=.false.
+!$    if (lfarray_copied) call signal_send(lhelper_perf,.true.)
       exit Time_loop
     endif
 !
@@ -494,6 +497,7 @@ subroutine timeloop(f,df,p)
           print*
           print*, 'Maximum walltime exceeded'
         endif
+!$      if (lfarray_copied) call signal_send(lhelper_perf,.true.)
         exit Time_loop
       endif
     endif
