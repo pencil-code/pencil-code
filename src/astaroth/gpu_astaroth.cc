@@ -476,6 +476,7 @@ extern "C" void substepGPU(int isubstep)
     acGridExecuteTaskGraph(graph_3, 1);
     if (ldt)
     {
+      acGridFinalizeReduceLocal(graph_3);
       AcReal maxadvec = dev->output.real_outputs[AC_maxadvec]/cdt;
 //printf("cdt, maxadvec= %e %e\n", cdt, maxadvec);
       AcReal maxdiffus = max_diffus()/cdtv;
@@ -483,7 +484,6 @@ extern "C" void substepGPU(int isubstep)
       set_dt(dt1_);
       dev->local_config.real_params[AC_dt] = dt;
     }
-    //acGridFinalizeReduce(graph_3);
   }
   acGridSynchronizeStream(STREAM_ALL);
   // acLogFromRootProc(rank,"Done substep: %d\n",isubstep);
