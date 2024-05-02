@@ -441,16 +441,10 @@ extern "C" void substepGPU(int isubstep)
 {
 #if LFORCING
   //Update forcing params
-
    if (isubstep == itorder) forcing_params.Update();  // calculate on CPU and load into GPU
 #endif
-  if (lfirst && ldt)
-  {
-    AcReal dt1_diffus = max_diffus()/cdtv;
-    AcReal dt1_ = sqrt(pow(dt1_advec, 2) + pow(dt1_diffus, 2));
-    set_dt(dt1_);
-  }
-  acGridSynchronizeStream(STREAM_DEFAULT);
+
+  //acGridSynchronizeStream(STREAM_DEFAULT);
   //Transfer the updated ghost zone to the device(s) in the node
 
   //if (full)
@@ -470,17 +464,27 @@ extern "C" void substepGPU(int isubstep)
   //  acGridSynchronizeStream(STREAM_ALL);
   //}
   acGridSynchronizeStream(STREAM_ALL);
+  Device dev = acGridGetDevice();
   if (isubstep == 1)
   {
-    Device dev = acGridGetDevice();
     dev->local_config.real_params[AC_dt] = dt;
     acGridSynchronizeStream(STREAM_ALL);
     acGridExecuteTaskGraph(graph_1, 1);
   }
   if (isubstep == 2) acGridExecuteTaskGraph(graph_2, 1);
-  if (isubstep == 3) acGridExecuteTaskGraph(graph_3, 1);
-  if (isubstep == 3) acGridFinalizeReduce(graph_3);
-
+  if (isubstep == 3) {
+    acGridExecuteTaskGraph(graph_3, 1);
+    if (ldt)
+    {
+      AcReal maxadvec = dev->output.real_outputs[AC_maxadvec]/cdt;
+//printf("cdt, maxadvec= %e %e\n", cdt, maxadvec);
+      AcReal maxdiffus = max_diffus()/cdtv;
+      AcReal dt1_ = sqrt(pow(maxadvec, 2) + pow(maxdiffus, 2));
+      set_dt(dt1_);
+      dev->local_config.real_params[AC_dt] = dt;
+    }
+    //acGridFinalizeReduce(graph_3);
+  }
   acGridSynchronizeStream(STREAM_ALL);
   // acLogFromRootProc(rank,"Done substep: %d\n",isubstep);
   // fflush(stdout);
@@ -941,6 +945,10 @@ void setupConfig(AcMeshInfo &config)
   config.real_params[AC_xorig] = xyz0[0];
   config.real_params[AC_yorig] = xyz0[1];
   config.real_params[AC_zorig] = xyz0[2];
+  /*config.real_params[AC_cdt] = cdt;
+  config.real_params[AC_cdtv] = cdtv;
+  config.real_params[AC_cdts] = cdts;
+  config.real_params[AC_cdtsrc] = cdtsrc;*/
   config.real_params[AC_mu0] = mu0;
 
   // Enter physics related parameters in config.
