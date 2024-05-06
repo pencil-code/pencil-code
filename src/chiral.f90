@@ -137,16 +137,19 @@ module Chiral
 !  28-may-04/axel: adapted from pscalar
 !
       use Sub
+      use General
       use Initcond
       use InitialCondition, only: initial_condition_chiral
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz) :: r
 !
 !  check first for initXX_chiral
 !
       select case (initXX_chiral)
         case ('zero'); f(:,:,:,iXX_chiral)=0.
         case ('const'); f(:,:,:,iXX_chiral)=amplXX_chiral
+        case ('random_minus1_to1'); call random_number_wrapper(r); f(:,:,:,iXX_chiral)=2.*r-1.
         case ('blob'); call blob(amplXX_chiral,f,iXX_chiral,radiusXX_chiral,xposXX_chiral,yposXX_chiral,zposXX_chiral)
         case ('hat-x'); call hat(amplXX_chiral,f,iXX_chiral,widthXX_chiral,kx=kx_XX_chiral)
         case ('hat-y'); call hat(amplXX_chiral,f,iXX_chiral,widthXX_chiral,ky=ky_XX_chiral)
@@ -172,6 +175,7 @@ module Chiral
       select case (initYY_chiral)
         case ('zero'); f(:,:,:,iYY_chiral)=0.
         case ('const'); f(:,:,:,iYY_chiral)=amplYY_chiral
+        case ('random_0to_pi'); call random_number_wrapper(r); f(:,:,:,iYY_chiral)=2.*pi*r
         case ('blob'); call blob(amplYY_chiral,f,iYY_chiral,radiusYY_chiral,xposYY_chiral,yposYY_chiral,zposYY_chiral)
         case ('hat-x'); call hat(amplYY_chiral,f,iYY_chiral,widthYY_chiral,kx=kx_YY_chiral)
         case ('hat-y'); call hat(amplYY_chiral,f,iYY_chiral,widthYY_chiral,ky=ky_YY_chiral)
