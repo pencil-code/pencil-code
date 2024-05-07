@@ -64,41 +64,41 @@
     integer :: n_special_modules
     character(LEN=256) :: special_modules_list = ''
     character(LEN=29), dimension(n_subroutines) :: special_subroutines=(/ &
-                           'register_special            ', &
-                           'register_particles_special  ', &
-                           'initialize_special          ', &
-                           'finalize_special            ', &
-                           'read_special_init_pars      ', &
-                           'write_special_init_pars     ', &
-                           'read_special_run_pars       ', &
-                           'write_special_run_pars      ', &
-                           'rprint_special              ', &
-                           'get_slices_special          ', &
-                           'init_special                ', &
-                           'dspecial_dt                 ', &
-                           'calc_pencils_special        ', &
-                           'pencil_criteria_special     ', &
-                           'pencil_interdep_special     ', &
-                           'special_calc_hydro          ', &
-                           'special_calc_density        ', &
-                           'special_calc_dustdensity    ', &
-                           'special_calc_energy         ', &
-                           'special_calc_magnetic       ', &
-                           'special_calc_pscalar        ', &
-                           'special_calc_particles      ', &
-                           'special_calc_chemistry      ', &
-                           'special_boundconds          ', &
-                           'special_before_boundary     ', &
-                           'special_particles_bfre_bdary', &
-                           'special_after_boundary      ', &
-                           'special_after_timestep      ', &
-                           'set_init_parameters         ', &
-                           'special_calc_spectra        ', &
-                           'special_calc_spectra_byte   ', &
-                           'dspecial_dt_ode             ', &
-                           'input_persist_special       ', &
-                           'input_persist_special_id    ', &
-                           'output_persistent_special   ', &
+                           'register_special             ', &
+                           'register_particles_special   ', &
+                           'initialize_special           ', &
+                           'finalize_special             ', &
+                           'read_special_init_pars       ', &
+                           'write_special_init_pars      ', &
+                           'read_special_run_pars        ', &
+                           'write_special_run_pars       ', &
+                           'rprint_special               ', &
+                           'get_slices_special           ', &
+                           'init_special                 ', &
+                           'dspecial_dt                  ', &
+                           'calc_pencils_special         ', &
+                           'pencil_criteria_special      ', &
+                           'pencil_interdep_special      ', &
+                           'special_calc_hydro           ', &
+                           'special_calc_density         ', &
+                           'special_calc_dustdensity     ', &
+                           'special_calc_energy          ', &
+                           'special_calc_magnetic        ', &
+                           'special_calc_pscalar         ', &
+                           'special_calc_particles       ', &
+                           'special_calc_chemistry       ', &
+                           'special_boundconds           ', &
+                           'special_before_boundary      ', &
+                           'special_particles_bfre_bdary ', &
+                           'special_after_boundary       ', &
+                           'special_after_timestep       ', &
+                           'set_init_parameters          ', &
+                           'special_calc_spectra         ', &
+                           'special_calc_spectra_byte    ', &
+                           'dspecial_dt_ode              ', &
+                           'input_persist_special        ', &
+                           'input_persist_special_id     ', &
+                           'output_persistent_special    ', &
                            'special_particles_after_dtsub'   /)
 
     integer(KIND=ikind8) :: libhandle
@@ -758,7 +758,7 @@
 
       ret=.true.
       do i=1,n_special_modules
-        ret=ret.and.func_int_caller0(special_sub_handles(i,I_OUTPUT_PERSISTENT_SPECIAL))
+        ret=ret.and.(func_int_caller0(special_sub_handles(i,I_OUTPUT_PERSISTENT_SPECIAL))==1)
       enddo
 
     endfunction output_persistent_special        
