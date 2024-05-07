@@ -3460,7 +3460,7 @@ module Interstellar
       endif
       SNR%feat%rhom=rhom
       if (lroot.and.ip==1963) print &
-          "(1x,'explode_SN: total old kinetic energy =',e10.3)", ekintot
+          "(1x,'explode_SN: total old kinetic energy =',e12.5)", ekintot
 !
 !  Calculate effective Sedov evolution time and shell speed diagnostic.
 !
@@ -3475,8 +3475,8 @@ module Interstellar
       SNR%feat%t_SF = SFt_norm/SNR%feat%rhom**(4./7)*ampl_SN**(3./14)
       RPDS=SFr_norm*ampl_SN**(2./7)/SNR%feat%rhom**(3./7)
       if (lroot.and.ip==1963) then
-        print "(1x,'explode_SN: Shell forming start t_SF',e10.3)",SNR%feat%t_SF
-        print "(1x,'explode_SN: Elapsed shell formation',e11.3)", &
+        print "(1x,'explode_SN: Shell forming start t_SF',e12.5)",SNR%feat%t_SF
+        print "(1x,'explode_SN: Elapsed shell formation',e13.5)", &
             SNR%feat%t_sedov-SNR%feat%t_SF
         print "(1x,'explode_SN: Shell forming radius RPDS vs radius',2f7.4)",RPDS,SNR%feat%radius
       endif
@@ -3550,7 +3550,7 @@ module Interstellar
       else
         cmass_SN=0.
       endif
-      if (lroot.and.ip==1963) print "(1x,'explode_SN: cmass_SN =',e10.3)",cmass_SN
+      if (lroot.and.ip==1963) print "(1x,'explode_SN: cmass_SN =',e12.5)",cmass_SN
 !
 !  Velocity insertion normalization.
 !  26-aug-10/fred:
@@ -3576,7 +3576,7 @@ module Interstellar
       else
         cvelocity_SN=0.
       endif
-      if (lroot.and.ip==1963) print"(1x,'explode_SN: cvelocity_SN =',e10.3)",cvelocity_SN
+      if (lroot.and.ip==1963) print"(1x,'explode_SN: cvelocity_SN =',e12.5)",cvelocity_SN
 !
 !  Validate the explosion.
 !
@@ -3700,7 +3700,7 @@ module Interstellar
         maxTT=exp(maxlnTT)
         call mpiallreduce_max(max_cmass,cmass_SN)
         if (lroot.and.ip==1963) print &
-            "(1x,'explode_SN: validating cmass_SN =',e10.3)",cmass_SN
+            "(1x,'explode_SN: validating cmass_SN =',e12.5)",cmass_SN
         if (cmass_SN>0) then
           SNR%feat%MM=0.
           do n=n1,n2
@@ -3715,9 +3715,9 @@ module Interstellar
           SNR%feat%MM=dmpi2(1)
           SNR%feat%EE=dmpi2(2) !without added kinetic energy
           if (SNR%feat%MM>Nsol_added*solar_mass) then
-            if (lroot.and.ip==1963) print '("explode_SN: SNR%feat%MM > ",f5.1," solar mass",f11.3)', &
+            if (lroot.and.ip==1963) print '("explode_SN: SNR%feat%MM > ",f5.1," solar mass",f12.4)', &
                                           Nsol_added,SNR%feat%MM/solar_mass
-            if (lroot.and.ip==1963) print '("explode_SN: SNR%feat%EE = ",f7.3," SNE")', &
+            if (lroot.and.ip==1963) print '("explode_SN: SNR%feat%EE = ",f8.4," SNE")', &
                 SNR%feat%EE/ampl_SN
             ierr=iEXPLOSION_TOO_HOT
             if (.not.lSN_list) return
@@ -3725,7 +3725,7 @@ module Interstellar
           else
             ierr=iEXPLOSION_OK
             if (lroot.and.ip==1963) &
-                print "(1x,'explode_SN: SNR%feat%MM = ',f7.3,' solar mass')",SNR%feat%MM/solar_mass
+                print "(1x,'explode_SN: SNR%feat%MM = ',f8.4,' solar mass')",SNR%feat%MM/solar_mass
           endif
         endif
         call get_props_check(f,SNR,rhom,ekintot_new,cvelocity_SN,cmass_SN)
@@ -3765,9 +3765,9 @@ module Interstellar
 !  Remnant parameters pass, so now implement the explosion
 !
       if (lroot.and.ip==1963) then
-        print "(1x,'explode_SN:         c_SN finally =',e11.4)",c_SN
-        print "(1x,'explode_SN:     cmass_SN finally =',e10.3)",cmass_SN
-        print "(1x,'explode_SN: cvelocity_SN finally =',e10.3)",cvelocity_SN
+        print "(1x,'explode_SN:         c_SN finally =',e12.5)",c_SN
+        print "(1x,'explode_SN:     cmass_SN finally =',e12.5)",cmass_SN
+        print "(1x,'explode_SN: cvelocity_SN finally =',e12.5)",cvelocity_SN
       endif
       SNR%feat%EE=0.
       SNR%feat%MM=0.
@@ -3852,9 +3852,9 @@ module Interstellar
 !
       call get_properties(f,SNR,rhom,ekintot_new,rhomin,ierr)
       if (lroot.and.ip==1963) print &
-          "(1x,'explode_SN: total new kinetic energy =',e10.3)", ekintot_new
+          "(1x,'explode_SN: total new kinetic energy =',e12.5)", ekintot_new
       if (lroot.and.ip==1963) print &
-          "(1x,'explode_SN: total kinetic energy change =',e10.3)",ekintot_new-ekintot
+          "(1x,'explode_SN: total kinetic energy change =',e12.5)",ekintot_new-ekintot
 !
 !  Sum and share diagnostics etc. amongst processors.
 !
@@ -3871,10 +3871,10 @@ module Interstellar
 ! and the energy budget applied to the SNR similar to kinetic energy?
 !
       if (lroot.and.ip==1963) then
-        print "(1x,'explode_SN: SNR%feat%MM = ',f7.3)",SNR%feat%MM/solar_mass
-        print "(1x,'explode_SN: SNR%feat%EE = ',f7.3)",SNR%feat%EE/ampl_SN
-        print "(1x,'explode_SN: SNR%feat%EK = ',f7.3)",(ekintot_new-ekintot)/ampl_SN
-        print "(1x,'explode_SN: SNR%feat%CR = ',f7.3)",SNR%feat%CR/ampl_SN
+        print "(1x,'explode_SN: SNR%feat%MM = ',f8.4)",SNR%feat%MM/solar_mass
+        print "(1x,'explode_SN: SNR%feat%EE = ',f8.4)",SNR%feat%EE/ampl_SN
+        print "(1x,'explode_SN: SNR%feat%EK = ',f8.4)",(ekintot_new-ekintot)/ampl_SN
+        print "(1x,'explode_SN: SNR%feat%CR = ',f8.4)",SNR%feat%CR/ampl_SN
       endif
       if (.not. lSN_list) then
         if (SNR%indx%SN_type==1) then
@@ -3896,7 +3896,7 @@ module Interstellar
 !
       if (lOB_cluster) then
         if (lroot) then
-          print "(1x,'explode_SN: t_cluster',e10.3)", t_cluster
+          print "(1x,'explode_SN: t_cluster',e12.5)", t_cluster
           print "(1x,'explode_SN: x_cluster', f7.3)", x_cluster
           print "(1x,'explode_SN: z_cluster', f7.3)", z_cluster
         endif
@@ -3913,24 +3913,24 @@ module Interstellar
         if (lfirst_warning) &
             call warning('sn_series.dat','new columns added_Nsol 27.05.21 '//&
             'continuation of old data may need header and extra columns appended')
-        print "(1x,'explode_SN:    step, time = ',i8,e10.3)",it,t
-        print "(1x,'explode_SN:          dVol = ',   e10.3)",dVol(1)
+        print "(1x,'explode_SN:    step, time = ',i8,e12.5)",it,t
+        print "(1x,'explode_SN:          dVol = ',   e12.5)",dVol(1)
         print "(1x,'explode_SN:       SN type = ',      i3)",SNR%indx%SN_type
         print "(1x,'explode_SN: proc, l, m, n = ',     4i6)",SNR%indx%iproc,&
             SNR%indx%l,SNR%indx%m,SNR%indx%n
         print "(1x,'explode_SN:       x, y, z = ',   3f7.3)",SNR%feat%x,&
             SNR%feat%y,SNR%feat%z
         print "(1x,'explode_SN:remnant radius = ',    f7.3)",SNR%feat%radius
-        print "(1x,'explode_SN:       rho, TT = ',  2e10.3)",SNR%site%rho,&
+        print "(1x,'explode_SN:       rho, TT = ',  2e11.4)",SNR%site%rho,&
             SNR%site%TT
-        print "(1x,'explode_SN:    maximum TT = ',   e10.3)",maxTT
-        print "(1x,'explode_SN:  Mean density = ',   e10.3)",SNR%feat%rhom
-        print "(1x,'explode_SN:  Total energy = ',   e10.3)",SNR%feat%EE+SNR%feat%CR
-        print "(1x,'explode_SN:    CR energy  = ',   e10.3)",SNR%feat%CR
-        print "(1x,'explode_SN:    Added mass = ',   e10.3)",SNR%feat%MM/solar_mass
-        print "(1x,'explode_SN:  Ambient Nsol = ',   e10.3)",site_mass/solar_mass
-        print "(1x,'explode_SN:    Sedov time = ',   e10.3)", SNR%feat%t_sedov
-        print "(1x,'explode_SN:   Shell speed = ',   e10.3)",uu_sedov
+        print "(1x,'explode_SN:    maximum TT = ',   e12.5)",maxTT
+        print "(1x,'explode_SN:  Mean density = ',   e12.5)",SNR%feat%rhom
+        print "(1x,'explode_SN:  Total energy = ',   e12.5)",SNR%feat%EE+SNR%feat%CR
+        print "(1x,'explode_SN:    CR energy  = ',   e12.5)",SNR%feat%CR
+        print "(1x,'explode_SN:    Added mass = ',   e12.5)",SNR%feat%MM/solar_mass
+        print "(1x,'explode_SN:  Ambient Nsol = ',   e12.5)",site_mass/solar_mass
+        print "(1x,'explode_SN:    Sedov time = ',   e12.5)", SNR%feat%t_sedov
+        print "(1x,'explode_SN:   Shell speed = ',   e12.5)",uu_sedov
         write(1,'(i10,E16.8,5i6,16E13.5)') &
             it, t, SNR%indx%SN_type, SNR%indx%iproc, SNR%indx%l, SNR%indx%m, &
             SNR%indx%n, SNR%feat%x, SNR%feat%y, SNR%feat%z, SNR%site%rho, &
