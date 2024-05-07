@@ -15,6 +15,7 @@
     implicit none
 
     include 'special.h'
+    public :: special_calc_spectra_byte
 
     external caller, caller0, caller1, caller2, caller3, caller4, caller5, caller5_str5, caller6, &
              func_int_caller0
@@ -714,6 +715,16 @@
       enddo
 
     endsubroutine special_calc_spectra
+!***********************************************************************
+    subroutine special_calc_spectra_byte(f,spec,spec_hel,lfirstcall,kind,len)
+
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:) :: spec,spec_hel
+      logical :: lfirstcall
+      integer :: len
+      character, dimension(len) :: kind
+
+    endsubroutine special_calc_spectra_byte
 !*********************************************************************** 
     subroutine input_persist_special_id(id,done)
 !
