@@ -1679,7 +1679,7 @@ module Special
                     spectrum_hel=aimag(spectra%complex_Str_T)
       case ('StX'); spectrum=real(spectra%complex_Str_X)
                     spectrum_hel=aimag(spectra%complex_Str_X)
-      case default; if (lroot) call warning('special_calc_spectra', &
+      case default; call warning('special_calc_spectra', &
                       'kind of spectrum "'//kind//'" not implemented')
       endselect
 
@@ -1694,7 +1694,7 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nk) :: spectrum,spectrum_hel
       logical :: lfirstcall
-      integer(KIND=ikind1), dimension(3) :: kind
+      character, dimension(3) :: kind
       integer :: len
 
       character(LEN=3) :: kindstr
@@ -1704,7 +1704,7 @@ module Special
         lfirstcall=.false.
       endif
 
-      kindstr=char(kind(1))//char(kind(2))//char(kind(3))
+      kindstr=kind(1)//kind(2)//kind(3)
 
       select case(kindstr)
       case ('GWs'); spectrum=spectra%GWs; spectrum_hel=spectra%GWshel
@@ -1716,7 +1716,7 @@ module Special
       case ('VCT'); spectrum=spectra%VCT; spectrum_hel=0.
       case ('Tpq'); spectrum=spectra%Tpq; spectrum_hel=0.
       case ('TGW'); spectrum=spectra%TGW; spectrum_hel=0.
-      case default; if (lroot) call warning('special_calc_spectra', &
+      case default; call warning('special_calc_spectra', &
                       'kind of spectrum "'//kindstr//'" not implemented')
       endselect
 

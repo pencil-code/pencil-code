@@ -707,27 +707,13 @@
 !
       integer :: i
       do i=1,n_special_modules
-        call caller5_str5(special_sub_handles(i,I_SPECIAL_CALC_SPECTRA),f, &
-                         spec, spec_hel, lfirstcall, kind)
+        call caller6(special_sub_handles(i,I_SPECIAL_CALC_SPECTRA_BYTE),f, &
+                     spec,spec_hel,lfirstcall,kind,3)
+!        call caller5_str5(special_sub_handles(i,I_SPECIAL_CALC_SPECTRA),f, &
+!                         spec, spec_hel, lfirstcall, kind)
       enddo
 
     endsubroutine special_calc_spectra
-!*********************************************************************** 
-    subroutine special_calc_spectra_byte(f,spec,spec_hel,lfirstcall,kind,len)
-
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (:) :: spec,spec_hel
-      logical :: lfirstcall
-      integer(KIND=ikind1), dimension(3) :: kind
-      integer :: len
-!
-      integer :: i
-      do i=1,n_special_modules
-        call caller6(special_sub_handles(i,I_SPECIAL_CALC_SPECTRA_BYTE),f, &
-                     spec,spec_hel,lfirstcall,kind,len)
-      enddo
-
-    endsubroutine special_calc_spectra_byte
 !*********************************************************************** 
     subroutine input_persist_special_id(id,done)
 !
