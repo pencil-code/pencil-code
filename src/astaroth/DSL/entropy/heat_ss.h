@@ -9,5 +9,5 @@
            + 2. * nu * contract(stress_tensor(UU)) 
            + zeta * divergence(UU) * divergence(UU))*exp(-lnTT)
 
-    return -dot(vecvalue(UU), gradient(SS)) + rhs + heat_conduction()
+    return -dot(vecvalue(UU), gradient(SS)) + rhs + heat_conduction(step_num)
 

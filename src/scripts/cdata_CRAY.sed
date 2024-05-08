@@ -23,9 +23,9 @@ s/\([^0-9a-zA-Z_]\)zgrid$/\1/
 #make everything lowercase
 #!!!s/.*/\L&/g
 #use 3-vector types
-s/integer *, *dimension *( *3 *) *::/int3arr/
-s/logical *, *dimension *( *3 *) *::/int3arr/
-s/real *, *dimension *( *3 *) *::/real3arr/
+s/integer *, *dimension *( *3 *) *::/extern int3arr,/
+s/logical *, *dimension *( *3 *) *::/extern int3arr,/
+s/real *, *dimension *( *3 *) *::/extern real3arr,/
 #remove array initializations
 s/(\/.*\/)//g
 #replace double precision exponent symbol by single precision one
@@ -45,11 +45,11 @@ s/^ *module .*$/  #pragma once \n  #include "headers_c.h" \n/
 s/, *dimension(\([^,:]*\)) *:: *\([a-zA-Z0-9_]*\)/:: \2[\1]/
 s/, *dimension.*::/*::/
 #transform parameter attribute to const
-s/integer *, *parameter *\([\*]*\):: */const FINT \1/
-s/real *, *parameter *\([\*]*\):: */const REAL \1/
+s/integer *, *parameter *\([\*]*\):: */const int \1/
+s/real *, *parameter *\([\*]*\):: */const real \1/
 #transform integer, real, logical, double precision with and without * into extern <type>, replace :: by ,. * remains
-s/integer *\([*]*\):: */extern FINT \1,/
-s/real *\([*]*\):: */extern REAL \1,/
+s/integer *\([*]*\):: */extern int \1,/
+s/real *\([*]*\):: */extern real \1,/
 s/logical *\([*]*\):: */extern int \1,/
 s/double  *precision *\([*]*\):: */extern double \1,/
 s/integer *( *kind *= *ikind8 *) *\([*]*\)::/extern long long \1,/
@@ -77,3 +77,16 @@ s/\([^&">]\) *$/\1;/
 s/& *$//
 #remove endmodule
 /^ *endmodule.*$/ d
+#change all variable names to lowercase and create defines for those, which contain uppercase letters
+/[A-Z]/ {:loop
+         s/\([A-Za-z_0-9]*[A-Z][A-Za-z_0-9]*\)\([,;]\)/#define \1 \L\1\2\1\2/
+         t cont
+         b
+         :cont
+         h
+         s/^.*\(#[^,;]*\)[;,].*$/\1/
+         w tmp
+         x
+         s/\(.*\)#define[^;,]*[;,]\(.*\)/\1\2/
+         b loop
+        }

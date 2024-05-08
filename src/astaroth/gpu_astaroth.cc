@@ -477,10 +477,16 @@ extern "C" void substepGPU(int isubstep)
     if (ldt)
     {
       acGridFinalizeReduceLocal(graph_3);
+#if LHYDRO
       AcReal maxadvec = dev->output.real_outputs[AC_maxadvec]/cdt;
-//printf("cdt, maxadvec= %e %e\n", cdt, maxadvec);
-      AcReal maxdiffus = max_diffus()/cdtv;
+#endif
+      AcReal maxdiffus = max_diffus();
+#if LENTROPY
+      AcReal maxchi    = dev->output.real_outputs[AC_maxchi];
+      maxdiffus = (maxdiffus+maxchi)/pow(dx,2)/cdtv;
+#endif
       AcReal dt1_ = sqrt(pow(maxadvec, 2) + pow(maxdiffus, 2));
+//printf("maxadvec, maxchi,maxdiffus= %e %e %e \n", maxadvec, maxchi, maxdiffus);
       set_dt(dt1_);
       dev->local_config.real_params[AC_dt] = dt;
     }
@@ -945,10 +951,7 @@ void setupConfig(AcMeshInfo &config)
   config.real_params[AC_xorig] = xyz0[0];
   config.real_params[AC_yorig] = xyz0[1];
   config.real_params[AC_zorig] = xyz0[2];
-  /*config.real_params[AC_cdt] = cdt;
-  config.real_params[AC_cdtv] = cdtv;
-  config.real_params[AC_cdts] = cdts;
-  config.real_params[AC_cdtsrc] = cdtsrc;*/
+  //config.real_params[AC_cdt] = cdt;
   config.real_params[AC_mu0] = mu0;
 
   // Enter physics related parameters in config.
@@ -967,6 +970,9 @@ void checkConfig(AcMeshInfo &config)
 #if LENTROPY
  acLogFromRootProc(rank,"lpressuregradientgas= %d %d \n", lpressuregradient_gas, config.int_params[AC_lpressuregradient_gas]);
  acLogFromRootProc(rank,"chi= %f %f \n", chi, config.real_params[AC_chi]);
+ acLogFromRootProc(rank,"nkramers= %f %f \n", nkramers, config.real_params[AC_nkramers]);
+ acLogFromRootProc(rank,"hcond0_kramers= %f %f \n", hcond0_kramers, config.real_params[AC_hcond0_kramers]);
+ acLogFromRootProc(rank,"hcond_Kconst= %f %f \n", hcond_Kconst, config.real_params[AC_hcond_Kconst]);
 #endif
 #if LVISCOSITY
  acLogFromRootProc(rank,"nu= %f %f \n", nu, config.real_params[AC_nu]);
@@ -1076,12 +1082,12 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out, int c
 /***********************************************************************************************/
 extern "C" void copyFarray(AcReal* f)
 {
-  /**
+  /*
   if (has_nans(mesh)){
     acLogFromRootProc(rank,"found nans while copying\n");
     exit(0);
   }
-  **/
+  */
   AcMesh mesh_to_copy;
   size_t offset = 0;
   for (int i = 0; i < NUM_VTXBUF_HANDLES; ++i)

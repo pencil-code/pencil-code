@@ -3,16 +3,22 @@
 
 #include "PC_nghost.h"
 #define nghost NGHOST
+#include "../../PC_moduleflags.h"
 
 // declare here reduction results needed for the timestep
+
+#ifdef LHYDRO
 output real AC_maxadvec    // for all velocities - fluid and wave
+#endif
+#ifdef LENTROPY
+output real AC_maxchi
+#endif
 
 #include "fieldecs.h"
 #include "../stdlib/operators.h"
 #include "../stdlib/integrators.h"
 #include "../stdlib/units.h"
 #include "../stdlib/utils.h"
-#include "../../PC_moduleflags.h"
 #include "../phys_consts.h"
 #include "PC_modulepardecs.h"
 #ifdef LFORCING
