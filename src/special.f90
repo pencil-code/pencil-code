@@ -15,7 +15,6 @@
     implicit none
 
     include 'special.h'
-    public :: special_calc_spectra_byte
 
     external caller, caller0, caller1, caller2, caller3, caller4, caller5, caller5_str5, caller6, &
              func_int_caller0
