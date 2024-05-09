@@ -184,7 +184,7 @@ endelse
 openr, unit, datatopdir+'/'+file1, /get_lun
 
   if ltrue_binning1 then begin
-    imax=0 & readf,unit,imax
+    imax=0L & readf,unit,imax
     k2s=fltarr(imax) & readf,unit,k2s
   endif
   
