@@ -29,7 +29,7 @@ module Special
   real, dimension(my,mz) :: mu_ss=0.
   real, dimension(my) :: lat  ! latitude in [rad]
   real, dimension(mz) :: lon  ! longitude in [rad]
-  real, dimension(mx,my,mz) :: rr1,siny,cosy  !  1/r,sin(th) and cos(th)
+  real, dimension(mx,my,mz) :: rr,rr1,siny,cosy  !  r,1/r,sin(th) and cos(th)
   real, dimension(mx,my,mz,3) :: Bext=0.  !  time-dependent external field
 !  constants for unit conversion
   real :: gamma=1.
@@ -118,7 +118,8 @@ module Special
 !
 !  3d coordinates for convenience
 !
-      rr1 = 1./spread(spread(x,2,my),3,mz)
+      rr = spread(spread(x,2,my),3,mz)
+      rr1 = 1./rr
       siny = spread(spread(sin(y),1,mx),3,mz)
       cosy = spread(spread(cos(y),1,mx),3,mz)
 !
@@ -556,6 +557,8 @@ module Special
 !
 !  13-nov-23/hongzhe: coded
 !
+      real :: r0,r1,th0,th1
+!
       select case (iBext)
       case ('nothing')
         Bext = 0.
@@ -564,6 +567,16 @@ module Special
         !        = mu0/(4pi) * m * { 2*costh/r^3, sinth/r^3, 0 }
         Bext(:,:,:,1) = Bext_ampl * 2.*cosy * (xyz0(1)*rr1)**3.
         Bext(:,:,:,2) = Bext_ampl * siny    * (xyz0(1)*rr1)**3.
+        Bext(:,:,:,3) = 0.
+      case ('dipole2')
+        ! mimic initaa='dipole' to account for b.c.
+        ! A_phi ~ (r-r0)(r-r1)(sin(theta)-sin(theta0))(sin(theta)-sin(theta1))
+        r0 = xyz0(1)
+        r1 = xyz1(1)
+        th0 = xyz0(2)
+        th1 = xyz1(2)
+        Bext(:,:,:,1) = Bext_ampl * cosy*(r0-rr)*(r1-rr)*(siny*(3.*siny-2.*sin(th1))+sin(th0)*(-2.*siny+sin(th1)))/rr/siny
+        Bext(:,:,:,2) = Bext_ampl * (r0*r1-2.*(r0+r1)*rr+3.*rr**2)*(-siny+sin(th0))*(siny-sin(th1))/rr
         Bext(:,:,:,3) = 0.
       case default
         call fatal_error('calc_Bext','no such iBext')
