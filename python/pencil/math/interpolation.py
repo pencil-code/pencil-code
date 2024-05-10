@@ -49,9 +49,7 @@ def vec_int(xyz, field, dxyz, oxyz, nxyz, interpolation="trilinear", splines=Non
         if (xyz[p] < oxyz[p]):
             xyz[p] = oxyz[p]
         if (xyz[p] > oxyz[p] + dxyz[p]*(nxyz[p]-1)):
-            print("before {0}: {1}".format(p, xyz[p]))
             xyz[p] = oxyz[p] + dxyz[p]*(nxyz[p]-1)
-            print("after {0}: {1}".format(p, xyz[p]))
 
     if (interpolation == "mean") or (interpolation == "trilinear"):
         # Find the adjacent indices.
@@ -123,10 +121,4 @@ def vec_int(xyz, field, dxyz, oxyz, nxyz, interpolation="trilinear", splines=Non
         return np.sum(sub_field * weight, axis=(1, 2, 3)) / np.sum(weight)
 
     if interpolation == 'tricubic':
-        try:
-            return np.array([splines[0].ev(xyz[2], xyz[1], xyz[0]), splines[1].ev(xyz[2], xyz[1], xyz[0]), splines[2].ev(xyz[2], xyz[1], xyz[0])])
-        except:
-            print("xyz = {0}".format(xyz))
-            print("oxyz = {0}".format(oxyz))
-            print("dxyz = {0}".format(dxyz))
-            print("nxyz = {0}".format(nxyz))
+        return np.array([splines[0].ev(xyz[2], xyz[1], xyz[0]), splines[1].ev(xyz[2], xyz[1], xyz[0]), splines[2].ev(xyz[2], xyz[1], xyz[0])])
