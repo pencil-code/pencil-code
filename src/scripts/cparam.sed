@@ -26,9 +26,9 @@ s/integer *( *kind *= *ikind8 *) *, *parameter *::/const long long /
 s/integer *( *kind *= *ikind4 *) *, *parameter *::/const long /
 s/real *( *kind *= *rkind8 *) *, *parameter *::/const double /
 s/int *(\([a-zA-Z0-9_]*\) *, *kind *= *ikind8 *)/(long long)\1/g
-s/integer *, *parameter *::/const FINT /
-s/logical *, *parameter *::/const int /
-s/real *, *parameter *::/const REAL /
+s/integer *, *parameter *::/const int /
+s/logical *, *parameter *::/const bool /
+s/real *, *parameter *::/const real /
 s/\([^0-9a-zA-Z_]\)min(/\1MIN(/g
 s/\([^0-9a-zA-Z_]\)max(/\1MAX(/g
 s/double  *precision *, *parameter *::/const double /
@@ -39,9 +39,9 @@ s/& *$//
 s/dbl_max/DBL_MAX/g 
 s/\.or\./ | /g
 s/\.and\./ & /g
-/const  *FINT  *nghost *=/ {
+/const  *int  *nghost *=/ {
 h
-s/const  *FINT  *nghost *= *\([0-9]*\) *;/#undef NGHOST\n#define NGHOST \1\n#undef STENCIL_ORDER\nhostdefine STENCIL_ORDER (2*NGHOST)\n/
+s/const  *int  *nghost *= *\([0-9]*\) *;/#undef NGHOST\n#define NGHOST \1\n#undef STENCIL_ORDER\nhostdefine STENCIL_ORDER (2*NGHOST)\n/
 t cont
 b end
 : cont

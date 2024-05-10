@@ -38,10 +38,11 @@ s/^ *module .*$/  #pragma once \n  #include "headers_c.h" \n  #include "defines_
 s/, *dimension.*::/*::/
 #transform parameter attribute to const
 s/integer *, *parameter *\([\*]*\):: */const FINT \1/
+s/logical *, *parameter *\([\*]*\):: */const bool \1/
 #transform integer, real, logical, double precision with and without * into extern <type>, replace :: by ,. * remains
 s/integer *\([*]*\):: */extern FINT \1,/
 s/real *\([*]*\):: */extern REAL \1,/
-s/logical *\([*]*\):: */extern int \1,/
+s/logical *\([*]*\):: */extern bool \1,/
 s/double  *precision *\([*]*\):: */extern double \1,/
 s/integer *( *kind *= *ikind8 *) *\([*]*\):: */extern long long \1,/
 s/real *( *kind *= *rkind8 *) *\([*]*\):: */extern double \1,/ 

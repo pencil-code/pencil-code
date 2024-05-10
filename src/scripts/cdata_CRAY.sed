@@ -24,7 +24,7 @@ s/\([^0-9a-zA-Z_]\)zgrid$/\1/
 #!!!s/.*/\L&/g
 #use 3-vector types
 s/integer *, *dimension *( *3 *) *::/extern int3arr,/
-s/logical *, *dimension *( *3 *) *::/extern int3arr,/
+s/logical *, *dimension *( *3 *) *::/extern bool3arr,/
 s/real *, *dimension *( *3 *) *::/extern real3arr,/
 #remove array initializations
 s/(\/.*\/)//g
@@ -50,7 +50,7 @@ s/real *, *parameter *\([\*]*\):: */const real \1/
 #transform integer, real, logical, double precision with and without * into extern <type>, replace :: by ,. * remains
 s/integer *\([*]*\):: */extern int \1,/
 s/real *\([*]*\):: */extern real \1,/
-s/logical *\([*]*\):: */extern int \1,/
+s/logical *\([*]*\):: */extern bool \1,/
 s/double  *precision *\([*]*\):: */extern double \1,/
 s/integer *( *kind *= *ikind8 *) *\([*]*\)::/extern long long \1,/
 s/real *( *kind *= *rkind8 *) *\([*]*\)::/extern double \1,/
