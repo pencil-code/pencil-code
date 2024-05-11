@@ -1583,7 +1583,8 @@ module EquationOfState
 !  18-oct-03/tobi: distributed across ionization modules
 !
       real, intent(in) :: T0
-      real, dimension(mx,my,mz) :: lnrho_arr,ss_arr
+      real, dimension(mx,my,mz), intent(in) :: lnrho_arr
+      real, dimension(mx,my,mz), intent(out):: ss_arr
 
       real, dimension(nx) :: lnrho,yH,K,sqrtK,yH_term,one_yH_term
 !

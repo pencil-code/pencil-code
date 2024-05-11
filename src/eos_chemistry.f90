@@ -694,7 +694,8 @@ module EquationOfState
 !  17-oct-03/nils: works also with leos_ionization=T
 !  18-oct-03/tobi: distributed across ionization modules
 !
-      real, dimension (mx,my,mz), intent(out) :: lnrho,ss
+      real, dimension (mx,my,mz), intent(in) :: lnrho
+      real, dimension (mx,my,mz), intent(out):: ss
       real, intent(in) :: T0
 !
       cs2top=cs2bot

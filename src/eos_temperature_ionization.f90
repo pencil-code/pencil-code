@@ -728,7 +728,9 @@ module EquationOfState
 !  18-oct-03/tobi: distributed across ionization modules
 !
       real, intent(in) :: T0
-      real, dimension(mx,my,mz) :: lnrho,ss
+      real, dimension(mx,my,mz), intent(in) :: lnrho
+      real, dimension(mx,my,mz), intent(out):: ss
+
       real :: ss_offset
 !
       call fatal_error('isothermal_entropy','gamma_m1 undefined')

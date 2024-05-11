@@ -465,7 +465,9 @@ module EquationOfState
 !  18-oct-03/tobi: distributed across ionization modules
 !
       real, intent(in) :: T0
-      real, dimension(mx,my,mz) :: lnrho,ss
+      real, dimension(mx,my,mz), intent(in) :: lnrho
+      real, dimension(mx,my,mz), intent(out):: ss
+
       real :: ss_offset
 !
 !  if T0 is different from unity, we interpret
