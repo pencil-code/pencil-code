@@ -14,7 +14,8 @@
 ! MVAR CONTRIBUTION 3
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED e2; edot2; el(3); a0; ga0(3); del2ee(3); curlE(3); BcurlE; divJ
+! PENCILS PROVIDED e2; edot2; el(3); a0; ga0(3); del2ee(3); curlE(3); BcurlE
+! PENCILS PROVIDED divJ, divE, gGamma(3)
 ! PENCILS EXPECTED infl_phi, infl_dphi, gphi(3), infl_a2
 !***************************************************************
 !
@@ -43,9 +44,10 @@ module Special
   real :: ampla0=0.0, initpower_a0=0.0, initpower2_a0=0.0
   real :: cutoff_a0=0.0, ncutoff_a0=0.0, kpeak_a0=0.0
   real :: relhel_a0=0.0, kgaussian_a0=0.0, eta_ee=0.0
+  real :: weight_longitudinalE=0.0
   real, pointer :: eta, eta_tdep
-  integer :: ia0=0, idiva_name=0, ieedot=0, iedotx=0, iedoty=0, iedotz=0
-  logical :: llorenz_gauge_disp=.false., lskip_projection_ee=.false.
+  integer :: iGamma=0, ia0=0, idiva_name=0, ieedot=0, iedotx=0, iedoty=0, iedotz=0
+  logical :: llongitudinalE=.false., llorenz_gauge_disp=.false., lskip_projection_ee=.false.
   logical :: lscale_tobox=.true., lskip_projection_a0=.false.
   logical :: lvectorpotential=.false., lphi_hom=.false.
   logical :: loverride_ee_prev=.false.
@@ -60,18 +62,20 @@ module Special
     kz_ex, kz_ey, kz_ez, &
     kx_a0, ky_a0, kz_a0, &
     phase_ex, phase_ey, phase_ez, phase_a0, &
-    llorenz_gauge_disp, lphi_hom, &
+    llongitudinalE, llorenz_gauge_disp, lphi_hom, &
     amplee, initpower_ee, initpower2_ee, lscale_tobox, &
     cutoff_ee, ncutoff_ee, kpeak_ee, relhel_ee, kgaussian_ee, &
     ampla0, initpower_a0, initpower2_a0, &
     cutoff_a0, ncutoff_a0, kpeak_a0, relhel_a0, kgaussian_a0, &
-    leedot_as_aux, lsolve_chargedensity
+    leedot_as_aux, lsolve_chargedensity, &
+    weight_longitudinalE
 !
   ! run parameters
   real :: beta_inflation=0.
   namelist /special_run_pars/ &
-    alpf, llorenz_gauge_disp, lphi_hom, &
-    leedot_as_aux, eta_ee, lcurlyA, beta_inflation
+    alpf, llongitudinalE, llorenz_gauge_disp, lphi_hom, &
+    leedot_as_aux, eta_ee, lcurlyA, beta_inflation, &
+    weight_longitudinalE
 !
 ! Declare any index variables necessary for main or
 !
@@ -126,6 +130,10 @@ module Special
       if (llorenz_gauge_disp) then
         call farray_register_pde('a0',ia0)
         call farray_register_pde('diva_name',idiva_name)
+      endif
+!
+      if (llongitudinalE) then
+        call farray_register_pde('Gamma',iGamma)
       endif
 !
       call put_shared_variable('alpf',alpf,caller='register_disp_current')
@@ -202,6 +210,12 @@ module Special
           call stop_it("")
       endselect
 !
+!  Initial condition for Gama
+!
+      if (llongitudinalE) then
+        f(:,:,:,iGamma)=0.
+      endif
+!
 !  Initialize diva_name if llorenz_gauge_disp=T
 !
       if (llorenz_gauge_disp) then
@@ -262,6 +276,13 @@ module Special
         lpenc_requested(i_diva)=.true.
       endif
 !
+!  Terms for Gamma evolution.
+!
+      if (llongitudinalE) then
+        lpenc_requested(i_divE)=.true.
+        lpenc_requested(i_gGamma)=.true.
+      endif
+!
 !  charge density
 !
       if (lsolve_chargedensity) then
@@ -311,7 +332,7 @@ module Special
 !
 !   24-nov-04/tony: coded
 !
-      use Sub
+      use Sub, only: grad, div, curl, del2v, dot2_mn, dot
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -319,6 +340,16 @@ module Special
 !
       intent(in) :: f
       intent(inout) :: p
+!
+!  Terms for Gamma evolution.
+!
+      if (llongitudinalE) then
+        call div(f,iee,p%divE)
+        call grad(f,iGamma,p%gGamma)
+        p%curlb=-p%del2a+p%gGamma
+      else
+        p%curlb=p%jj
+      endif
 !
 ! el: choice of either replacing E by the MHD value -uxB+J/sigma
 ! (with constant or time-dependent eta), or the advanced E field.
@@ -381,6 +412,12 @@ module Special
         call grad(f,ia0,p%ga0)
       endif
 !
+! divJ (using Ohm's law)
+!
+      if (lpenc_requested(i_divJ)) then
+        call fatal_error('disp_current', "calc_pencils_special: divJ not ready")
+      endif
+!
     endsubroutine calc_pencils_special
 !***********************************************************************
     subroutine dspecial_dt(f,df,p)
@@ -417,11 +454,25 @@ module Special
       if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dSPECIAL_dt'
       if (headtt) call identify_bcs('ee',iee)
 !
+!  Calculate rhs of Gamma equation and update curl
+!
+      if (llongitudinalE) then
+        if (alpf/=0.) then
+          call dot(p%bb,p%gphi,tmp)
+          tmp=-alpf*tmp
+        else
+          tmp=0.
+        endif
+        if (lsolve_chargedensity) tmp=tmp+f(l1:l2,m,n,irhoe)
+        df(l1:l2,m,n,iGamma)=df(l1:l2,m,n,iGamma) &
+          -(1.-weight_longitudinalE)*p%divE &
+          -weight_longitudinalE*tmp
+      endif
+!
 !  solve: dE/dt = curlB - ...
 !  Calculate curlB as -del2a, because curlB leads to instability.
 !
       if (lmagnetic) then
-
         if (.not.loverride_ee) df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-p%el
         df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)+c_light2*(p%curlb-mu0*p%jj_ohm)
 if (m==5) then
@@ -465,6 +516,7 @@ endif
 !
 !  helical term:
 !  dEE/dt = ... -alp/f (dphi*BB + gradphi x E)
+!  Use the combined routine multsv_add if both terms are included.
 !
         if (alpf/=0.) then
           if (lphi_hom) then
@@ -484,6 +536,9 @@ endif
               call dot_mn(p%gphi,p%bb,tmp)
               df(l1:l2,m,n,idiva_name)=df(l1:l2,m,n,idiva_name)+alpf*tmp+del2a0
             endif
+!
+!  Evolution of the equation for the scalar potential.
+!
             !df(l1:l2,m,n,ia0)=df(l1:l2,m,n,ia0)+p%diva
             df(l1:l2,m,n,ia0)=df(l1:l2,m,n,ia0)+f(l1:l2,m,n,idiva_name)
             df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+p%ga0

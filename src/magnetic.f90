@@ -3889,6 +3889,10 @@ module Magnetic
 !!           if (lpenc_loc(i_del2a)) call del2v(f,iaa,p%del2a,p%aij,p%aa)
 !        endif
 !      endif
+!
+!  In the following, we assume that there is no displacement current,
+!  so curlb=jj, so we should replace p%jj by p%curlb.
+!
       if (lpenc_loc(i_bij).and.lpenc_loc(i_del2a)) then
         if (lcartesian_coords) then
           call gij_etc(f,iaa,BIJ=p%bij,DEL2=p%del2a)
@@ -3949,11 +3953,16 @@ module Magnetic
 !
       if (lpenc_loc(i_jj)) then
 !
-!  Here, p%jj is just curlb (so we could have just called it that),
+!  Here, if we don't solve for the displacement current,
+!  p%jj is just curlb (so we could have just called it that),
 !  but when the displacement current is being computed, then p%jj
 !  should be computed from p%el using Ohm's law.
+!  In the second option, grad(Gamma) needs to be added when solving for
+!  the displacement current
 !
-        p%curlb=p%jj
+        if (iee==0) then
+          p%curlb=p%jj
+        endif
 !
 !  Check whether or not the displacement current is being computed.
 !  Note that the previously calculated p%jj would then be overwritten
@@ -4008,6 +4017,7 @@ module Magnetic
 !  Go here in standard MHD if no displacement current exists.
 !  In that case, no ohmic current is needed or used.
 !
+          p%curlb=p%jj
           p%jj=mu01*p%curlb
           p%jj_ohm=0.
         endif
