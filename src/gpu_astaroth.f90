@@ -44,19 +44,14 @@ contains
       if (lhyperviscosity_strict) str=trim(str)//', '//'hypervisc_strict'
       if (lADI) str=trim(str)//', '//'implicit_physics'
       if (llorenz_gauge) str=trim(str)//', '//'lorenz_gauge'
-      if (ldustvelocity) str=trim(str)//', '//'dustvelocity'
-      if (ldustdensity) str=trim(str)//', '//'dustdensity'
       if (ltestscalar) str=trim(str)//', '//'testscalar'
       if (ltestfield) str=trim(str)//', '//'testfield'
       if (ltestflow) str=trim(str)//', '//'testflow'
       if (linterstellar) str=trim(str)//', '//'interstellar'
       if (lshear) str=trim(str)//', '//'shear'
-      if (lpscalar) str=trim(str)//', '//'pscalar'
       if (lradiation) str=trim(str)//', '//'radiation'
-      if (lchemistry) str=trim(str)//', '//'chemistry'
       if (ldetonate) str=trim(str)//', '//'detonate'
       if (lopacity) str=trim(str)//', '//'opacity'
-      if (lpolymer) str=trim(str)//', '//'polymer'
       if (lpointmasses) str=trim(str)//', '//'pointmasses'
       if (lpoisson) str=trim(str)//', '//'poisson'
       if (lselfgravity) str=trim(str)//', '//'selfgravity'
@@ -65,7 +60,7 @@ contains
       if (lspecial) str=trim(str)//', '//'special'
       if (lparticles) str=trim(str)//', '//'particles'
 
-      if (str/='') call fatal_error('initialize_GPU','no GPU implementation for module(s) "'// &
+      if (str/='') call fatal_error('initialize_GPU','no GPU implementation possible for module(s) "'// &
                                     trim(str(3:))//'"')
 !
       if (dt<=0.) dt = dtmin

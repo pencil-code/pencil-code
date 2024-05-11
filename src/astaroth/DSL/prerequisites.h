@@ -14,6 +14,7 @@ output real AC_maxadvec    // for all velocities - fluid and wave
 output real AC_maxchi
 #endif
 
+//#include "../../../cparam.inc_c.h"
 #include "fieldecs.h"
 #include "../stdlib/operators.h"
 #include "../stdlib/integrators.h"

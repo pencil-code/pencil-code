@@ -139,17 +139,16 @@ module Dustvelocity
       use General, only: itoa
       use SharedVariables, only: put_shared_variable
 !
-      integer :: k, uud_tmp
+      integer :: k, iuud_tmp
 !
 !  Identify version number (generated automatically by SVN).
 !
       if (lroot) call svn_id( &
           "$Id$")
 !
-      call farray_index_append('nuud',ndustspec)
-      call farray_register_pde('uud',uud_tmp,vector=3,array=ndustspec)
+      call farray_register_pde('uud',iuud_tmp,vector=3,array=ndustspec)
       do k=1, ndustspec
-        iuud(k) = uud_tmp + (k-1)*3
+        iuud(k) = iuud_tmp + (k-1)*3
         iudx(k) = iuud(k)
         iudy(k) = iuud(k)+1
         iudz(k) = iuud(k)+2
@@ -242,7 +241,6 @@ module Dustvelocity
 
       case default
         call fatal_error('initialize_dustvelocity','no valid dust chemistry specified')
-
       endselect
 
       mumon1=1/mumon
@@ -804,7 +802,6 @@ module Dustvelocity
 !
         case default
           call fatal_error('init_uud','no such inituud: '//trim(inituud(j)))
-
         endselect
 !
 !  End loop over initial conditions
@@ -1247,8 +1244,8 @@ module Dustvelocity
               enddo
             enddo
             if (lfirst .and. ldt) then
-               advec_hypermesh_uud=nud_hyper3_mesh(k)*pi5_1*sqrt(dxyz_2)
-               advec2_hypermesh=advec2_hypermesh+advec_hypermesh_uud**2
+              advec_hypermesh_uud=nud_hyper3_mesh(k)*pi5_1*sqrt(dxyz_2)
+              advec2_hypermesh=advec2_hypermesh+advec_hypermesh_uud**2
              endif
           endif
 !
