@@ -109,6 +109,8 @@ indices = [ $
   { name:'ics', label:'Sound speed as auxiliary variable', dims:1 }, $
   { name:'ivarphi', label:'Bernoulli', dims:1 }, $
   { name:'ilnrho', label:'Log density', dims:1 }, $
+  { name:'iGamma', label:'Constraint Gamma', dims:1 }, $
+  { name:'irhoe', label:'Charge density', dims:1 }, $
   { name:'irho', label:'Density', dims:1 }, $
   { name:'irho_b', label:'Base density', dims:1 }, $
   { name:'irhs', label:'RHS', dims:3 }, $
