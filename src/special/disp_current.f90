@@ -604,7 +604,7 @@ endif
         call sum_mn_name(p%BcurlE,idiag_BcurlEm)
         if (lsolve_chargedensity) then
           call sum_mn_name(p%rhoe,idiag_rhoem)
-          if (idiag_rhoerm/=0) call sum_mn_name(p%rhoe**2,idiag_rhoerms,lsqrt=.true.)
+          if (idiag_rhoerms/=0) call sum_mn_name(p%rhoe**2,idiag_rhoerms,lsqrt=.true.)
         endif
         if (idiag_divErms/=0) call sum_mn_name(p%divE**2,idiag_divErms,lsqrt=.true.)
         if (idiag_divJrms/=0) call sum_mn_name(p%divJ**2,idiag_divJrms,lsqrt=.true.)
