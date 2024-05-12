@@ -15,7 +15,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED e2; edot2; el(3); a0; ga0(3); del2ee(3); curlE(3); BcurlE
-! PENCILS PROVIDED divJ, divE, gGamma(3)
+! PENCILS PROVIDED rhoe, divJ, divE, gGamma(3)
 ! PENCILS EXPECTED infl_phi, infl_dphi, gphi(3), infl_a2
 !***************************************************************
 !
@@ -92,6 +92,12 @@ module Special
   integer :: idiag_grms=0       ! DIAG_DOC: $\left<C-\nabla\cdot\Av\right>^{1/2}$
   integer :: idiag_da0rms=0     ! DIAG_DOC: $\left<C-\nabla\cdot\Av\right>^{1/2}$
   integer :: idiag_BcurlEm=0    ! DIAG_DOC: $\left<\Bv\cdot\nabla\times\Ev\right>$
+  integer :: idiag_divJrms=0    ! DIAG_DOC: $\left<\nab\Jv^2\right>^{1/2}$
+  integer :: idiag_divErms=0    ! DIAG_DOC: $\left<\nab\Ev^2\right>^{1/2}$
+  integer :: idiag_rhoerms=0    ! DIAG_DOC: $\left<\rho_e^2\right>^{1/2}$
+  integer :: idiag_divJm=0      ! DIAG_DOC: $\left<\nab\Jv\right>$
+  integer :: idiag_divEm=0      ! DIAG_DOC: $\left<\nab\Ev\right>$
+  integer :: idiag_rhoem=0      ! DIAG_DOC: $\left<\rho_e\right>$
   integer :: idiag_mfpf=0       ! DIAG_DOC: $-f'/f$
   integer :: idiag_fppf=0       ! DIAG_DOC: $f''/f$
   integer :: idiag_afact=0      ! DIAG_DOC: $a$ (scale factor)
@@ -360,6 +366,7 @@ module Special
         call div(f,iee,p%divE)
         call grad(f,iGamma,p%gGamma)
         p%curlb=-p%del2a+p%gGamma
+        p%rhoe=f(l1:l2,m,n,irhoe)
       else
         p%curlb=p%jj
       endif
@@ -595,6 +602,12 @@ endif
         call max_mn_name(p%e2,idiag_emax,lsqrt=.true.)
         call sum_mn_name(p%a0**2,idiag_a0rms,lsqrt=.true.)
         call sum_mn_name(p%BcurlE,idiag_BcurlEm)
+        call sum_mn_name(p%rhoe**2,idiag_rhoerms,lsqrt=.true.)
+        call sum_mn_name(p%divE**2,idiag_divErms,lsqrt=.true.)
+        call sum_mn_name(p%divJ**2,idiag_divJrms,lsqrt=.true.)
+        call sum_mn_name(p%rhoe,idiag_rhoem)
+        call sum_mn_name(p%divE,idiag_divEm)
+        call sum_mn_name(p%divJ,idiag_divJm)
         call save_name(mfpf,idiag_mfpf)
         call save_name(fppf,idiag_fppf)
         call save_name(scl_factor_target,idiag_afact)
@@ -673,6 +686,8 @@ endif
         idiag_EEEM=0; idiag_erms=0; idiag_edotrms=0; idiag_emax=0
         idiag_a0rms=0; idiag_grms=0; idiag_da0rms=0; idiag_BcurlEm=0
         idiag_mfpf=0; idiag_fppf=0; idiag_afact=0
+        idiag_rhoerms=0.; idiag_divErms=0.; idiag_divJrms=0.
+        idiag_rhoem=0.; idiag_divEm=0.; idiag_divJm=0.
         cformv=''
       endif
 !
@@ -687,6 +702,12 @@ endif
         call parse_name(iname,cname(iname),cform(iname),'grms',idiag_grms)
         call parse_name(iname,cname(iname),cform(iname),'da0rms',idiag_da0rms)
         call parse_name(iname,cname(iname),cform(iname),'BcurlEm',idiag_BcurlEm)
+        call parse_name(iname,cname(iname),cform(iname),'divErms',idiag_divErms)
+        call parse_name(iname,cname(iname),cform(iname),'divJrms',idiag_divJrms)
+        call parse_name(iname,cname(iname),cform(iname),'rhoerms',idiag_rhoerms)
+        call parse_name(iname,cname(iname),cform(iname),'divEm',idiag_divEm)
+        call parse_name(iname,cname(iname),cform(iname),'divJm',idiag_divJm)
+        call parse_name(iname,cname(iname),cform(iname),'rhoem',idiag_rhoem)
         call parse_name(iname,cname(iname),cform(iname),'mfpf',idiag_mfpf)
         call parse_name(iname,cname(iname),cform(iname),'fppf',idiag_fppf)
         call parse_name(iname,cname(iname),cform(iname),'afact',idiag_afact)
