@@ -366,7 +366,7 @@ module Special
         call div(f,iee,p%divE)
         call grad(f,iGamma,p%gGamma)
         p%curlb=-p%del2a+p%gGamma
-        p%rhoe=f(l1:l2,m,n,irhoe)
+        if (lsolve_chargedensity) p%rhoe=f(l1:l2,m,n,irhoe)
       else
         p%curlb=p%jj
       endif
@@ -596,24 +596,26 @@ endif
 !  diagnostics
 !
       if (ldiagnos) then
-        call sum_mn_name(.5*(p%e2+p%b2),idiag_EEEM)
+        if (idiag_EEEM/=0) call sum_mn_name(.5*(p%e2+p%b2),idiag_EEEM)
         call sum_mn_name(p%e2,idiag_erms,lsqrt=.true.)
         call sum_mn_name(p%edot2,idiag_edotrms,lsqrt=.true.)
         call max_mn_name(p%e2,idiag_emax,lsqrt=.true.)
-        call sum_mn_name(p%a0**2,idiag_a0rms,lsqrt=.true.)
+        if (idiag_a0rms/=0) call sum_mn_name(p%a0**2,idiag_a0rms,lsqrt=.true.)
         call sum_mn_name(p%BcurlE,idiag_BcurlEm)
-        call sum_mn_name(p%rhoe**2,idiag_rhoerms,lsqrt=.true.)
-        call sum_mn_name(p%divE**2,idiag_divErms,lsqrt=.true.)
-        call sum_mn_name(p%divJ**2,idiag_divJrms,lsqrt=.true.)
-        call sum_mn_name(p%rhoe,idiag_rhoem)
+        if (lsolve_chargedensity) then
+          call sum_mn_name(p%rhoe,idiag_rhoem)
+          if (idiag_rhoerm/=0) call sum_mn_name(p%rhoe**2,idiag_rhoerms,lsqrt=.true.)
+        endif
+        if (idiag_divErms/=0) call sum_mn_name(p%divE**2,idiag_divErms,lsqrt=.true.)
+        if (idiag_divJrms/=0) call sum_mn_name(p%divJ**2,idiag_divJrms,lsqrt=.true.)
         call sum_mn_name(p%divE,idiag_divEm)
         call sum_mn_name(p%divJ,idiag_divJm)
         call save_name(mfpf,idiag_mfpf)
         call save_name(fppf,idiag_fppf)
         call save_name(scl_factor_target,idiag_afact)
         if (idiva_name>0) then
-          call sum_mn_name((f(l1:l2,m,n,idiva_name)-p%diva)**2,idiag_grms,lsqrt=.true.)
-          call sum_mn_name(f(l1:l2,m,n,idiva_name)**2,idiag_da0rms,lsqrt=.true.)
+          if (idiag_grms/=0) call sum_mn_name((f(l1:l2,m,n,idiva_name)-p%diva)**2,idiag_grms,lsqrt=.true.)
+          if (idiag_da0rms/=0) call sum_mn_name(f(l1:l2,m,n,idiva_name)**2,idiag_da0rms,lsqrt=.true.)
         endif
 !
         call xysum_mn_name_z(p%el(:,1),idiag_exmz)
