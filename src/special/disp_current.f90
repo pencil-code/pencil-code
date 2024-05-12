@@ -52,6 +52,7 @@ module Special
   logical :: lvectorpotential=.false., lphi_hom=.false.
   logical :: loverride_ee_prev=.false.
   logical :: leedot_as_aux=.false., lcurlyA=.true., lsolve_chargedensity=.false.
+  logical :: lswitch_off_divJ=.false., lswitch_off_Gamma=.false.
   logical, pointer :: loverride_ee, lresi_eta_tdep
   character(len=50) :: initee='zero', inita0='zero'
   namelist /special_init_pars/ &
@@ -75,7 +76,7 @@ module Special
   namelist /special_run_pars/ &
     alpf, llongitudinalE, llorenz_gauge_disp, lphi_hom, &
     leedot_as_aux, eta_ee, lcurlyA, beta_inflation, &
-    weight_longitudinalE
+    weight_longitudinalE, lswitch_off_divJ, lswitch_off_Gamma
 !
 ! Declare any index variables necessary for main or
 !
@@ -216,6 +217,12 @@ module Special
         f(:,:,:,iGamma)=0.
       endif
 !
+!  Initial condition for rhoe
+!
+      if (lsolve_chargedensity) then
+        f(:,:,:,irhoe)=0.
+      endif
+!
 !  Initialize diva_name if llorenz_gauge_disp=T
 !
       if (llorenz_gauge_disp) then
@@ -287,6 +294,10 @@ module Special
 !
       if (lsolve_chargedensity) then
         lpenc_requested(i_divJ)=.true.
+        lpenc_requested(i_uij)=.true.
+        lpenc_requested(i_bij)=.true.
+        lpenc_requested(i_uu)=.true.
+        lpenc_requested(i_bb)=.true.
       endif
 !
 !  diffusion term.
@@ -332,11 +343,13 @@ module Special
 !
 !   24-nov-04/tony: coded
 !
-      use Sub, only: grad, div, curl, del2v, dot2_mn, dot
+      use Sub, only: grad, div, curl, del2v, dot2_mn, dot, levi_civita
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-!      logical, dimension(:),              intent(in)   :: lpenc_loc
+!
+      real, dimension (nx) :: tmp
+      integer :: i,j,k
 !
       intent(in) :: f
       intent(inout) :: p
@@ -413,9 +426,23 @@ module Special
       endif
 !
 ! divJ (using Ohm's law)
+! divJ=sigma*[divE+eps_ijk*(u_j,i * b_k + u_j * b_k,i)]
 !
       if (lpenc_requested(i_divJ)) then
-        call fatal_error('disp_current', "calc_pencils_special: divJ not ready")
+        tmp=0.
+        do i=1,3
+        do j=1,3
+        do k=1,3
+          tmp=tmp+levi_civita(i,j,k)* &
+            (p%uij(:,j,i)*p%bb(:,k)+p%uu(:,j)*p%bij(:,k,i))
+        enddo
+        enddo
+        enddo
+        if (lswitch_off_divJ) then
+          p%divJ=0.
+        else
+          p%divJ=(p%divE+tmp)/(mu0*eta)
+        endif
       endif
 !
     endsubroutine calc_pencils_special
@@ -464,9 +491,11 @@ module Special
           tmp=0.
         endif
         if (lsolve_chargedensity) tmp=tmp+f(l1:l2,m,n,irhoe)
-        df(l1:l2,m,n,iGamma)=df(l1:l2,m,n,iGamma) &
-          -(1.-weight_longitudinalE)*p%divE &
-          -weight_longitudinalE*tmp
+        if (.not.lswitch_off_Gamma) then
+          df(l1:l2,m,n,iGamma)=df(l1:l2,m,n,iGamma) &
+            -(1.-weight_longitudinalE)*p%divE &
+            -weight_longitudinalE*tmp
+        endif
       endif
 !
 !  solve: dE/dt = curlB - ...
