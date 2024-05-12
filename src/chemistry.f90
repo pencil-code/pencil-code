@@ -173,10 +173,10 @@ module Chemistry
 !
 !   Diagnostics
 !
-  real, allocatable, dimension(:,:) :: net_react_m, net_react_p
+  real, allocatable, dimension(:,:), target :: net_react_m, net_react_p
   !$omp threadprivate(net_react_m,net_react_p)
 ! For concurrency
-  real, pointer :: p_net_react_m, p_net_react_p
+  real, dimension(:,:), pointer :: p_net_react_m, p_net_react_p
 !
   real, dimension(nchemspec) :: Ythresh=0.
   logical :: lchemistry_diag=.false.

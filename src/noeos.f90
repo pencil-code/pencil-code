@@ -266,12 +266,13 @@ module EquationOfState
 !   02-apr-04/tony: dummy
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (nx), intent(out) :: cs2,cp1tilde
+      real, dimension (nx), intent(out) :: cs2,
+      real, dimension (nx), intent(out), optional :: cp1tilde
 !
       call not_implemented('presssure_gradient_farray','for this EOS')
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(cs2,cp1tilde)
+      call keep_compiler_quiet(cs2)
 !
     endsubroutine pressure_gradient_farray
 !***********************************************************************
