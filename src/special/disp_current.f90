@@ -11,7 +11,7 @@
 !
 ! CPARAM logical, parameter :: lspecial = .true.
 !
-! MVAR CONTRIBUTION 3
+! MVAR CONTRIBUTION 4
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED e2; edot2; el(3); a0; ga0(3); del2ee(3); curlE(3); BcurlE
@@ -47,7 +47,7 @@ module Special
   real :: weight_longitudinalE=0.0
   real, pointer :: eta, eta_tdep
   integer :: iGamma=0, ia0=0, idiva_name=0, ieedot=0, iedotx=0, iedoty=0, iedotz=0
-  logical :: llongitudinalE=.false., llorenz_gauge_disp=.false., lskip_projection_ee=.false.
+  logical :: llongitudinalE=.true., llorenz_gauge_disp=.false., lskip_projection_ee=.false.
   logical :: lscale_tobox=.true., lskip_projection_a0=.false.
   logical :: lvectorpotential=.false., lphi_hom=.false.
   logical :: loverride_ee_prev=.false.
