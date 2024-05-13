@@ -59,7 +59,12 @@ module Timestep
       endif
 
       if (dt0 < 0.) dt = 0
-      ldt = (dt==0.)
+      if (lgpu.and.dt0>0.) then
+        ldt = .true.
+        dt0=0.
+      else
+        ldt = (dt==0.)
+      endif
 
     endsubroutine initialize_timestep
 !***********************************************************************

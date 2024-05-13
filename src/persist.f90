@@ -166,7 +166,8 @@ module Persist
         case (id_record_TIME_STEP)
           if (dt0==0) then
             done=read_persist ('TIME_STEP', dtmp)
-            if (.not.done) dt=dtmp
+            if (.not.done) dt=abs(dtmp)
+            if (lgpu.and.dtmp<0) dt0=-dtmp
           endif
         case (id_record_EPS_RKF)
           if (eps_rkf0==0) then
@@ -263,8 +264,8 @@ module Persist
             output_persistent_general = .true.
       endif
 !
-      if (.not.ldt.or.lgpu) then
-        if (write_persist ('TIME_STEP', id_record_TIME_STEP, dt)) &
+      if (.not.lstart.and.(.not.ldt.or.lgpu)) then
+        if (write_persist ('TIME_STEP', id_record_TIME_STEP, merge(-dt,dt,lgpu.and.ldt))) &
           output_persistent_general = .true.
       endif
 !
