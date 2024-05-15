@@ -349,6 +349,7 @@ module Cdata
   integer :: iuxb=0,iuxbx=0,iuxby=0,iuxbz=0
   integer :: iugb=0,iugbx=0,iugby=0,iugbz=0
   integer :: ibgu=0,ibgux=0,ibguy=0,ibguz=0
+  integer :: ibdivu=0,ibdivux=0,ibdivuy=0,ibdivuz=0
   integer :: ibxf=0,ibyf=0,ibzf=0,ibbf=0
   integer :: ipotself=0
   integer :: iaa=0,iax=0,iay=0,iaz=0
