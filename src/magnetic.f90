@@ -23,7 +23,7 @@
 ! PENCILS PROVIDED uxj(3); chibp; beta; beta1; uga(3); uuadvec_gaa(3); djuidjbi; jo
 ! PENCILS PROVIDED StokesI; StokesQ; StokesU; StokesQ1; StokesU1
 ! PENCILS PROVIDED ujxb; oxuxb(3); jxbxb(3); jxbrxb(3)
-! PENCILS PROVIDED gb22(3); ugb22; bgb(3); bgbp(3); ubgbp
+! PENCILS PROVIDED gb22(3); ugb(3); ugb22; bgu(3); bgb(3); bgbp(3); ubgbp
 ! PENCILS PROVIDED glnrhoxb(3); del4a(3); del6a(3); oxj(3); diva
 ! PENCILS PROVIDED jij(3,3); sj; ss12; d6ab
 ! PENCILS PROVIDED etava; etaj; etaj2; etajrho
@@ -230,6 +230,7 @@ module Magnetic
   logical :: lforcing_cont_aa_local=.false.
   logical :: lee_as_aux=.false., ladd_disp_current_from_aux=.false.
   logical :: lbb_as_aux=.false., ljj_as_aux=.false., ljxb_as_aux=.false.
+  logical :: luxb_as_aux=.false., lugb_as_aux=.false., lbgu_as_aux=.false.
   logical :: lbbt_as_aux=.false., ljjt_as_aux=.false., lua_as_aux=.false.
   logical :: letasmag_as_aux=.false.,ljj_as_comaux=.false.
   logical :: lbb_as_comaux=.false., lB_ext_in_comaux=.true.
@@ -265,6 +266,7 @@ module Magnetic
       ladd_disp_current_from_aux, &
       lbb_as_aux, lbb_as_comaux, lB_ext_in_comaux, lee_as_aux, &
       ljxb_as_aux, ljj_as_aux, lbext_curvilinear, lbbt_as_aux, ljjt_as_aux, &
+      luxb_as_aux, lugb_as_aux, lbgu_as_aux, &
       lua_as_aux, lneutralion_heat, center1_x, center1_y, center1_z, &
       fluxtube_border_width, va2max_jxb, va2max_boris, cmin,va2power_jxb, eta_jump, &
       lpress_equil_alt, rnoise_int, rnoise_ext, mix_factor, damp, &
@@ -395,6 +397,7 @@ module Magnetic
       eta_spitzer, borderaa, ljj_as_comaux, lsmooth_jj, &
       eta_aniso_hyper3, lelectron_inertia, inertial_length, &
       lbext_curvilinear, lbb_as_aux, lbb_as_comaux, lB_ext_in_comaux, ljj_as_aux, &
+      luxb_as_aux, lugb_as_aux, lbgu_as_aux, &
       lkinematic, lbbt_as_aux, ljjt_as_aux, lua_as_aux, ljxb_as_aux, &
       lneutralion_heat, lreset_aa, daareset, eta_shock2, &
       lignore_Bext_in_b2, luse_Bext_in_b2, ampl_fcont_aa, &
@@ -1121,6 +1124,9 @@ module Magnetic
 !
       if (lua_as_aux ) call register_report_aux('ua',iua,communicated=.true.)
       if (ljxb_as_aux) call register_report_aux('jxb',ijxb,ijxbx,ijxby,ijxbz)
+      if (luxb_as_aux) call register_report_aux('uxb',iuxb,iuxbx,iuxby,iuxbz)
+      if (lugb_as_aux) call register_report_aux('ugb',iugb,iugbx,iugby,iugbz)
+      if (lbgu_as_aux) call register_report_aux('bgu',ibgu,ibgux,ibguy,ibguz)
 !
 !PJK: moved back to initialize_magnetic at least temporarily
 !      if (lbb_sph_as_aux) &
@@ -2730,6 +2736,13 @@ module Magnetic
         lpenc_requested(i_jj)=.true.
       endif
 !
+!  For diagnostics u.grad(b)
+!
+      if (lugb_as_aux) then
+        lpenc_requested(i_ugb)=.true.
+        lpenc_requested(i_bij)=.true.
+      endif
+!
       if (lupw_aa) then
         lpenc_requested(i_uu)=.true.
         lpenc_requested(i_aij)=.true.
@@ -2743,6 +2756,14 @@ module Magnetic
         lpenc_requested(i_aij)=.true.
         lpenc_requested(i_uij)=.true.
       endif
+!
+!  For diagnostics b.grad(u)
+!
+      if (lbgu_as_aux) then
+        lpenc_requested(i_bgu)=.true.
+        lpenc_requested(i_uij)=.true.
+      endif
+!
       if (lresi_shell.or.lresi_xdep.or.lresi_ydep.or.lresi_xydep.or. &
           lresi_rdep.or.lresi_smagorinsky.or.lresi_smagorinsky_nusmag) &
            lpenc_requested(i_diva)=.true.
@@ -4207,9 +4228,13 @@ module Magnetic
       if (lpenc_loc(i_ujxb)) call dot_mn(p%uu,p%jxb,p%ujxb)
 ! Bk*Bk,i = grad(b^2/2)
       if (lpenc_loc(i_gb22)) call multmv_transp(p%bij,p%bb,p%gb22)
+! u.grad(b)
+      if (lpenc_loc(i_ugb)) call multmv(p%bij,p%uu,p%ugb)
 ! u.grad(b^2)
       if (lpenc_loc(i_ugb22)) call dot_mn(p%uu,p%gb22,p%ugb22)
 !
+! b.grad(u)
+      if (lpenc_loc(i_bgu)) call multmv(p%uij,p%bb,p%bgu)
 ! bgb
       if (lpenc_loc(i_bgb)) then
         call multmv(p%bij,p%bb,p%bgb)
@@ -4307,6 +4332,12 @@ module Magnetic
       if (ljj_as_aux .and. .not. ljj_as_comaux) f(l1:l2,m,n,ijx:ijz) = p%jj
       if (ljxb_as_aux) f(l1:l2,m,n,ijxbx:ijxbz)=p%jxb
       if (lpenc_loc(i_bb_sph).and.lbb_sph_as_aux) p%bb_sph(:,1:3)=f(l1:l2,m,n,ibb_sphr:ibb_sphp)
+!
+!  Store uxb, ugb, or bgu in auxiliary variable if requested
+!
+      if (luxb_as_aux) f(l1:l2,m,n,iuxbx:iuxbz) = p%uxb
+      if (lugb_as_aux) f(l1:l2,m,n,iugbx:iugbz) = p%ugb
+      if (lbgu_as_aux) f(l1:l2,m,n,ibgux:ibguz) = p%bgu
 !
 !  Calculate magnetic mean-field pencils.
 !  This should always be done after calculating magnetic pencils.
