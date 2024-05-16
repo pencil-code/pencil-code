@@ -79,6 +79,9 @@ module Mpicomm
 !
     endsubroutine initialize_mpicomm
 !***********************************************************************
+    subroutine create_communicators
+    endsubroutine create_communicators
+!***********************************************************************
     subroutine update_neighbors
 !
 ! Update neighbor processes for communication.
