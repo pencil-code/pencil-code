@@ -25,7 +25,7 @@ module Grid
   public :: pencil_interdep_grid
   public :: calc_pencils_grid
   public :: initialize_grid
-  public :: get_grid_mn
+  public :: get_grid_mn, get_dVol
   public :: box_vol
   public :: save_grid
   public :: coords_aux
@@ -2598,6 +2598,16 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
 !      endif obsolete
 !
     endsubroutine get_grid_mn
+!**********************************************************************
+    subroutine get_dVol(mm,nn)
+!$omp declare target
+!
+      integer,             intent(in ) :: mm,nn
+      !real, dimension(nx), intent(out) :: dV
+
+      dVol = dVol_x(l1:l2)*dVol_y(mm)*dVol_z(nn)
+!
+    endsubroutine get_dVol
 !***********************************************************************
     subroutine calc_bound_coeffs(coors,coeffs)
 !
