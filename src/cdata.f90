@@ -811,6 +811,7 @@ module Cdata
 
 !$ logical, target :: ldiag_perform_diagnostics=.false.
   integer :: num_helper_threads=1, thread_id=1
+  integer, dimension(20) :: core_ids
 ! 
 ! threadprivate definitions for OpenMP
 !
