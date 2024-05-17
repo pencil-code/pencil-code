@@ -4658,7 +4658,7 @@ mn_loop:do n=n1,n2
 !*****************************************************************************
     subroutine pushpars2c(p_par)
 
-    use Syscalls, only: copy_addr
+    use Syscalls, only: copy_addr, copy_addr_dble_1D
 
     integer, parameter :: n_pars=7
     integer(KIND=ikind8), dimension(n_pars) :: p_par
@@ -4669,7 +4669,7 @@ mn_loop:do n=n1,n2
     call copy_addr(ncool,p_par(4))
 !
     call copy_addr(lncoolT,p_par(5))  ! (len_cool)
-    call copy_addr(lncoolH,p_par(6))  ! (len_cool)
+    call copy_addr_dble_1D(lncoolH,p_par(6))  ! (len_cool)
     call copy_addr(coolB,p_par(7))    ! (len_cool)
 !    call copy_addr(heat_z,p_par(8))   ! (mz)
 
