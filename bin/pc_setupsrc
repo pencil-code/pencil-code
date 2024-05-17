@@ -59,7 +59,7 @@ link_src_files()
   cd $src
   n=0
   to_link=
-  for file in $srcdir/*.f90 $srcdir/*.f $srcdir/*.c \
+  for file in $srcdir/*.f90 $srcdir/*.f $srcdir/*.c $srcdir/*.cpp \
               $srcdir/Makefile.src $srcdir/Makefile.depend \
               $srcdir/Makefile.library $srcdir/Makefile.machine \
               $srcdir/*.h $srcdir/*.inc $srcdir/scripts $srcdir/*.sed $srcdir/.cvsignore
