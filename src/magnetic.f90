@@ -2212,6 +2212,12 @@ module Magnetic
         case ('coswave-Az-kz'); call coswave(amplaa(j),f,iaz,kz=kz_aa(j))
         case ('sinwave-Ay-kz'); call sinwave_phase(f,iay,amplaa(j),kx_aa(j),ky_aa(j),kz_aa(j),phasez_aa(j))
         case ('dipole'); call dipole(f,iax,amplaa(j))
+        case ('dipole-sph')
+          do n=n1,n2; do m=m1,m2
+             f(l1:l2,m,n,iax)=0.
+             f(l1:l2,m,n,iay)=0.
+             f(l1:l2,m,n,iaz)=amplaa(j)*sin(y(m))*(xyz0(1)/x(l1:l2))**2.
+          enddo; enddo
         case ('dipole_general'); call dipole(f,iax,amplaa(j),r_inner,r_outer)
         case ('switchback'); call switchback(f,iax,amplaa(j),amplaa2(j),r_inner,r_outer)
         case ('dipole_tor'); call dipole_tor(f,iax,amplaa(j))    !,ladd=.true.)
