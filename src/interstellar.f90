@@ -3172,9 +3172,10 @@ mn_loop:do n=n1,n2
           elseif (lentropy) then
             call eoscalc(irho_ss,rho,f(l1:l2,m,n,iss), lnTT=lnTT)
           endif
+          call get_dVol(m,n)
           do l=1,nx
             if (rho(l)>=cloud_rho .and. lnTT(l)<=lncloud_TT) then
-              cum_mass=cum_mass+rho(l)     !!!MR: what is cum_mass? what about dVol?
+              cum_mass=cum_mass+rho(l)*dVol(l)
               if (franSN(1) <= cum_mass/cloud_mass_proc) then
 ! hit -> leave the loop
                 !$omp critical
