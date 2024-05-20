@@ -244,8 +244,8 @@ module Interstellar
   real, parameter :: mass_SN_progenitor_cgs=10.*solar_mass_cgs
   real, parameter :: frac_converted=0.02, frac_heavy=0.10
 !  real, parameter :: tosolarMkpc3=1.483E7
-  real :: cloud_rho=impossible, cloud_TT=impossible
-  !$omp target enter data map(cloud_rho,cloud_TT)
+  real :: cloud_rho=impossible, lncloud_TT, cloud_TT=impossible
+  !$omp target enter data map(cloud_rho,lncloud_TT)
   real :: cloud_tau=impossible
   real :: mass_SN_progenitor=impossible
 !
@@ -660,6 +660,7 @@ module Interstellar
         if (rho0ts == impossible) rho0ts=rho0ts_cgs/unit_density
         if (cloud_rho==impossible) cloud_rho=cloud_rho_cgs / unit_density
         if (cloud_TT==impossible) cloud_TT=cloud_TT_cgs / unit_temperature
+        lncloud_TT = log(cloud_TT)
         if (cloud_tau==impossible) cloud_tau=cloud_tau_cgs / unit_time
         if (mass_SN==impossible) mass_SN=mass_SN_cgs / unit_mass
         if (mass_SN_progenitor==impossible) &
@@ -2055,7 +2056,7 @@ module Interstellar
         where (lncoolT(i) <= lnTT .and. lnTT < lncoolT(i+1))
           cool=cool+exp(lncoolH(i)+lnrho+lnTT*coolB(i))
         endwhere
-      enddo 
+      enddo
 
     endsubroutine calc_cool_func
 !*****************************************************************************
@@ -2507,33 +2508,36 @@ module Interstellar
 !  SNI rate=4.7E-14 mass(H1+HII)/solar_mass + 0.35 x SNII rate
 !  Mannucci et al A&A 433, 807-814 (2005)
 !
-      call find_index_range(z(n1:n2),nz,-2.*h_SNII,2.*h_SNII,nz1,nz2)
+      call find_index_range(z,mz,-2.*h_SNII,2.*h_SNII,nz1,nz2)
+      disk_massII=0.
+      if (nz1>nz2) then
 !
-      if (ldensity_nolog) then
-        if (lcartesian_coords.and.all(lequidist)) then
-          disk_massII=sum(f(l1:l2,m1:m2,nz1:nz2,irho))*dVol(1)
+        if (ldensity_nolog) then
+          if (lcartesian_coords.and.all(lequidist)) then
+            disk_massII=sum(f(l1:l2,m1:m2,nz1:nz2,irho))*dVol(1)
+          else
+            !$omp target map(from: disk_massII) has_device_addr(f)  ! globals: dVol, irho
+            !$omp teams distribute parallel do collapse(2) reduction(+:disk_massII)
+            do n=nz1,nz2; do m=m1,m2
+              call get_dVol(m,n)
+              disk_massII=disk_massII+sum(f(l1:l2,m,n,irho)*dVol)
+            enddo; enddo
+            !$omp end teams distribute parallel do
+            !$omp end target
+          endif
         else
-          !$omp target map(from: disk_massII) has_device_addr(f)  ! globals: dVol, irho
-          !$omp teams distribute parallel do collapse(2) reduction(+:disk_massII)
-          do n=nz1,nz2; do m=m1,m2
-            call get_dVol(m,n)
-            disk_massII=disk_massII+sum(f(l1:l2,m,n,irho)*dVol)
-          enddo; enddo
-          !$omp end teams distribute parallel do
-          !$omp end target
-        endif
-      else
-        if (lcartesian_coords.and.all(lequidist)) then
-          disk_massII=sum(exp(f(l1:l2,m1:m2,nz1:nz2,ilnrho)))*dVol(1)
-        else
-          !$omp target map(from: disk_massII) has_device_addr(f) ! globals: ilnrho, dVol
-          !$omp teams distribute parallel do collapse(2) reduction(+:disk_massII)
-          do n=nz1,nz2; do m=m1,m2
-            call get_dVol(m,n)
-            disk_massII=disk_massII+sum(exp(f(l1:l2,m,n,ilnrho))*dVol)
-          enddo; enddo
-          !$omp end teams distribute parallel do
-          !$omp end target
+          if (lcartesian_coords.and.all(lequidist)) then
+            disk_massII=sum(exp(f(l1:l2,m1:m2,nz1:nz2,ilnrho)))*dVol(1)
+          else
+            !$omp target map(from: disk_massII) has_device_addr(f) ! globals: ilnrho, dVol
+            !$omp teams distribute parallel do collapse(2) reduction(+:disk_massII)
+            do n=nz1,nz2; do m=m1,m2
+              call get_dVol(m,n)
+              disk_massII=disk_massII+sum(exp(f(l1:l2,m,n,ilnrho))*dVol)
+            enddo; enddo
+            !$omp end teams distribute parallel do
+            !$omp end target
+          endif
         endif
       endif
 !
@@ -2596,7 +2600,7 @@ module Interstellar
 !  Calculate the total mass in locations where the temperature is below
 !  cloud_TT and the density is above cloud_rho, i.e. cold and dense.
 !
-        !$omp target map(from: cloud_mass) !map(to: cloud_rho, cloud_TT)  ! both to: init-static
+        !$omp target map(from: cloud_mass) !map(to: cloud_rho, lncloud_TT)  ! both to: init-static
         !!$omp has_device_addr(f) ! globals: irho, ilnrho, iss, ilnTT, dVol, lcartesian_coords, lequidist
         !$omp teams distribute parallel do collapse(2) private(rho,lnTT) reduction(+:cloud_mass)
         do n=n1,n2
@@ -2615,7 +2619,7 @@ module Interstellar
 !
 !  Multiply by volume element dVol to find total mass.
 !
-          cloud_mass=cloud_mass+sum(rho*dVol,mask=(rho >= cloud_rho .and. exp(lnTT) <= cloud_TT))
+          cloud_mass=cloud_mass+sum(rho*dVol,mask=(rho >= cloud_rho .and. lnTT <= lncloud_TT))
         enddo
         enddo
         !$omp end teams distribute parallel do
@@ -3102,7 +3106,6 @@ module Interstellar
     real, dimension(nx) :: rho,lnTT
     integer :: icpu,l,m,n, ipsn
     logical :: lfound
-    real :: ln_cloud_TT
 !
 !  identifier
 !
@@ -3150,10 +3153,9 @@ module Interstellar
       if (iproc==SNR%indx%iproc) then
         cum_mass=0.
         cloud_mass_proc=cloud_mass_byproc(SNR%indx%iproc+1)
-        ln_cloud_TT = log(cloud_TT)
         lfound = .false.
 !NEW CHANGES
-        !$omp target map(from: ierr,cum_mass) map(tofrom: SNR,lfound) map(to: cloud_rho,ln_cloud_TT,franSN,preSN,cloud_mass_proc) &
+        !$omp target map(from: ierr,cum_mass) map(tofrom: SNR,lfound) map(to: cloud_rho,lncloud_TT,franSN,preSN,cloud_mass_proc) &
         !!static: preSN
         !$           has_device_addr(f)  ! globasl: ip, irho,ilnrho,ilnTT,iss,ldensity_nolog  ! cloud* init-static
         !$omp teams distribute parallel do collapse(2) private(rho,lnTT,l,ipsn) reduction(+:cum_mass)  !!!reduction unclear
@@ -3171,7 +3173,7 @@ mn_loop:do n=n1,n2
             call eoscalc(irho_ss,rho,f(l1:l2,m,n,iss), lnTT=lnTT)
           endif
           do l=1,nx
-            if (rho(l)>=cloud_rho .and. lnTT(l)<=ln_cloud_TT) then
+            if (rho(l)>=cloud_rho .and. lnTT(l)<=lncloud_TT) then
               cum_mass=cum_mass+rho(l)     !!!MR: what is cum_mass? what about dVol?
               if (franSN(1) <= cum_mass/cloud_mass_proc) then
 ! hit -> leave the loop
@@ -3188,7 +3190,7 @@ mn_loop:do n=n1,n2
                       (SNR%indx%n==preSN(3,ipsn)) .and. &
                       (SNR%indx%iproc==preSN(4,ipsn))) then
                     ierr=iEXPLOSION_TOO_HOT
-                    if (.not.lgpu.and.ip==1963) & 
+                    if (.not.lgpu.and.ip==1963) &
                       print*,'position_by_cloudmass: iEXPLOSION_TOO_HOT, iproc,it,preSN=',iproc,it,preSN(:,ipsn)
                    endif
                 enddo
