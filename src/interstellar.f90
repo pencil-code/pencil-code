@@ -3091,6 +3091,7 @@ module Interstellar
     use General, only: random_seed_wrapper,  random_number_wrapper
     use EquationOfState, only: eoscalc
     use Mpicomm, only: mpibcast_int, mpibcast_real
+    use Grid, only: get_dVol
     !$ use omp_lib
 !
     real, intent(in), dimension(mx,my,mz,mfarray) :: f
