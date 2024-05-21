@@ -3194,7 +3194,7 @@ mn_loop:do n=n1,n2
                     ierr=iEXPLOSION_TOO_HOT
                     if (.not.lgpu.and.ip==1963) &
                       print*,'position_by_cloudmass: iEXPLOSION_TOO_HOT, iproc,it,preSN=',iproc,it,preSN(:,ipsn)
-                   endif
+                  endif
                 enddo
                 !DEC$ if OPENMP
                 !$ lfound = .true.
@@ -3205,7 +3205,8 @@ mn_loop:do n=n1,n2
             endif
           enddo
         enddo
-        enddo mn_loop   !!!MR: whatif lfound=.false.?
+        enddo mn_loop   !!!MR: whatif lfound=.false.? FG: cum_mass in (0,1) as is franSN(1) I've noticed ") map(" scattered amongst
+!!FG: prints and comments. Are these typos?
         !$omp end teams distribute parallel do
         !$omp end target
         if (ip==1963) then
@@ -3216,7 +3217,7 @@ mn_loop:do n=n1,n2
                              cum_mass,cum_mass/cloud_mass_proc,franSN(1)
         endif
       endif
-!END NEW CHANGES
+!END NEW CHANGES FG: OK
 !
       call mpibcast_int(ierr,SNR%indx%iproc)
       if (ierr==iEXPLOSION_TOO_HOT) then
@@ -3283,8 +3284,9 @@ mn_loop:do n=n1,n2
         if (leos_ionization.or.leos_temperature_ionization) then
           SNR%site%lnTT=f(SNR%indx%l+1,m,n,ilnTT)
         else
-          call eoscalc(f,nx,lnTT=lnTT)   !MR: better eoscalc_point
-          SNR%site%lnTT=lnTT(SNR%indx%l-l1+1)
+          !call eoscalc(f,nx,lnTT=lnTT)   !MR: better eoscalc_point
+          call eoscalc(irho_ss,SNR%site%rho,f(SNR%indx%l,SNR%indx%m,SNR%indx%n,iss),lnTT=SNR%site%lnTT)
+          !SNR%site%lnTT=lnTT(SNR%indx%l-l1+1)
         endif
         !$omp end target
         SNR%feat%x=0.; SNR%feat%y=0.; SNR%feat%z=0.
@@ -3639,7 +3641,8 @@ mn_loop:do n=n1,n2
               if (lSN_coolingmass) then
                 rho_max=maxval(rho_old)*maxTT/SN_TT_ratio/TT_SN_max
                 do i=1,nx
-                  if (exp(maskedlnTT(i))==maxTT) then   !!!MR: exact equality not reliable
+                  !if (exp(maskedlnTT(i))==maxTT) then   !!!MR: exact equality not reliable
+                  if (abs(exp(maskedlnTT(i))-maxTT)<tini) then   !!!FG: exact equality not reliable
                     if (rho_old(i)*maxTT/SN_TT_ratio/TT_SN_max<=rho_max) then
                       rho_max=rho_old(i)*maxTT/SN_TT_ratio/TT_SN_max
                       rad_hot=dr2_SN(i)
@@ -3695,7 +3698,7 @@ mn_loop:do n=n1,n2
           do n=n1,n2
           do m=m1,m2
             call proximity_SN(SNR)
-            call injectmass_SN(deltarho,width_mass,cmass_SN,SNR%feat%MM)  !!!MR: deltarho unused
+            call injectmass_SN(deltarho,width_mass,cmass_SN,SNR%feat%MM)  !!!MR: deltarho unused FG: call required for SNR%feat%MM
           enddo
           enddo
           !$omp end teams distribute parallel do
@@ -3979,7 +3982,7 @@ mn_loop:do n=n1,n2
       real, dimension(nx,3) :: uu
       integer, dimension(nx) :: mask
       logical, dimension(nx) :: lmask
-      real, dimension(3) :: tmp,tmp2
+      real, dimension(2) :: tmp,tmp2
 !
 !  inner rad defined to determine mean density inside rad and smooth if desired
 !
@@ -4022,16 +4025,8 @@ mn_loop:do n=n1,n2
 !
 !  compute kinetic energy everywhere before applying the mask
 !
-!!! NEW CHANGES
-        tmp(3)=tmp(3)+sum(rho*u2*dVol)
-        !mask=1
-        !where (dr2_SN > radius2)
-        !  rho=0.   !!! simplify? only rho, no mask
-        !  mask=0
-        !endwhere
+        tmp(2)=tmp(2)+sum(rho*u2*dVol)
         tmp(1)=tmp(1)+sum(rho*dVol,mask=(dr2_SN <= radius2))
-        !tmp(2)=tmp(2)+sum(mask)     !!!MR: needed ?
-!!! END NEW CHANGES
       enddo
       enddo  !  mn-loop
       !$omp end teams distribute parallel do
@@ -4040,9 +4035,8 @@ mn_loop:do n=n1,n2
 !  Calculate mean density inside the remnant and return error if the volume is
 !  zero.
 !
-      call mpiallreduce_sum(tmp,tmp2,3)
-      ekintot=0.5*tmp2(3)
-      !if ((lSN_velocity).and.(abs(tmp2(2)) < tini)) then
+      call mpiallreduce_sum(tmp,tmp2,2)
+      ekintot=0.5*tmp2(2)
       if ((lSN_velocity).and.(abs(tmp2(1)) < tini)) then
         if (lroot) print*,'enclosed mass) map(total kinetic energy = ', tmp2(1), ekintot
         call fatal_error("interstellar.get_properties","dividing by zero?")
@@ -4092,7 +4086,7 @@ mn_loop:do n=n1,n2
       real, dimension(nx,3) :: uu
       real, dimension(nx,3) :: deltauu
       integer, dimension(nx) :: mask
-      real, dimension(3) :: tmp,tmp2
+      real, dimension(2) :: tmp,tmp2
 !
 !  inner rad defined to determine mean density inside rad and smooth if desired
 !
@@ -4137,14 +4131,8 @@ mn_loop:do n=n1,n2
 !
 !  compute kinetic energy everywhere before applying the mask
 !
-        tmp(3)=tmp(3)+sum(rho*u2*dVol)
-!        mask=1
-!        where (dr2_SN > radius2)
-!          rho=0.
-!          mask=0
-!        endwhere
+        tmp(2)=tmp(2)+sum(rho*u2*dVol)
         tmp(1)=tmp(1)+sum(rho*dVol,mask=(dr2_SN <= radius2))
-!        tmp(2)=tmp(2)+sum(mask)  !!! MR: needed?
       enddo
       enddo  !  mn-loop
       !$omp end teams distribute parallel do
@@ -4153,10 +4141,8 @@ mn_loop:do n=n1,n2
 !  Calculate mean density inside the remnant and return zero if the volume is
 !  zero.
 !
-      call mpiallreduce_sum(tmp,tmp2,3)
-      ekintot=0.5*tmp2(3)
-!      if ((lSN_velocity).and.(abs(tmp2(2)) < tini)) then
-!        write(0,*) 'tmp2 = ', tmp2
+      call mpiallreduce_sum(tmp,tmp2,2)
+      ekintot=0.5*tmp2(2)
       if ((lSN_velocity).and.(abs(tmp2(1)) < tini)) then
         call fatal_error("interstellar.get_props_check","dividing by zero?")
       else
@@ -4164,7 +4150,7 @@ mn_loop:do n=n1,n2
       endif
       if (lroot.and.ip==1963) print"(1x,'get_props_check: rhom =',e10.3,' ekintot =',f7.3)",rhom,ekintot
 !
-!END NEW CHANGES
+!END NEW CHANGES OK
     endsubroutine get_props_check
 !*****************************************************************************
     subroutine get_lowest_rho(f,SNR,radius,rho_lowest)
@@ -4199,7 +4185,8 @@ mn_loop:do n=n1,n2
       enddo
       enddo
 !
-      tmp=-exp(rho_lowest)
+      !tmp=-exp(rho_lowest) !!!FG: make sense now?
+      tmp=rho_lowest
       call mpiallreduce_max(tmp,rho_lowest) !!!MR:  -???
 !
     endsubroutine get_lowest_rho
