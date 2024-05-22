@@ -5,12 +5,13 @@
 &run_pars
   cvsid="fe0309a94"
   !nt=250000, it1=250, isave=5000, it1d=2500, itorder=3, tmax=0.05, dtmin=1e-10
-  nt=5, it1=1, isave=1000, it1d=5000, itorder=3, tmax=0.005, dtmin=1e-10
-  dt=1e-7, dt_epsi=1e-13, leps_fixed=F
-  eps_rkf = 0.01
+  nt=30, it1=2, isave=1000, it1d=5000, itorder=3, tmax=0.005, dtmin=1e-10
+  dt_epsi=1e-9, dtdec=0.5, dtinc=0.5, dt_ratio=1e-2
+  leps_fixed=T
+  eps_rkf0=0.01
   timestep_scaling="cons_frac_err","cons_frac_err","cons_frac_err","cons_frac_err","cons_frac_err","cons_frac_err","cons_frac_err","cons_frac_err"
   dsnap=.001, dvid=.00025, slice_position='m'
-  bcz = 's','s','ubs','ism','ism','s','s','a','cop'
+  bcz = 's','s','ubs','ism','ism','s','s','a','a2'
   ip=1963
   lpencil_check=T
   lpencil_check_small=T
@@ -23,33 +24,36 @@
 /
 &viscosity_run_pars
   ivisc='nu-shock','hyper3-nu-const','nu-const'
-  nu_shock=2., nu_hyper3=5e-12, nu=4e-3
+  nu_shock=1., nu_hyper3=7.5e-12, nu=4e-3
 /
 &density_run_pars
   diffrho_shock=1.
   lmassdiff_fix=T
-  idiff='shock','hyper3'
+  idiff='shock',''
   diffrho_hyper3=5e-12
   total_mass=1.1134865e-3
   lconserve_total_mass=T
-  density_floor=1e-7
 /
 &grav_run_pars
 /
 &entropy_run_pars
   iheatcond='shock','hyper3'
   chi_shock=1.
-  chi_hyper3=5e-12
+  chi_hyper3=7.5e-12
+  lrhs_max=F
 /
 &magnetic_run_pars
   iresistivity='hyper3','eta-const'
-  eta_hyper3=5e-12,eta=8e-4
+  eta_hyper3=7.5e-12,eta=8e-4
+  lrhs_max=F
 /
 &interstellar_run_pars
 !! adjust SN radius above rfactor_SN for diffuse ISM
   lSN_scale_rad=T
   N_mass=60.0
   rfactor_SN=2.5
+  lSN_autofrackin=F
+  lSN_coolingmass=F
 !! override persistent variables read in from varfile
 !  lSNII=T, l_persist_overwrite_lSNII=T
 !  lSNI=T, l_persist_overwrite_lSNI=T
@@ -63,10 +67,11 @@
   qshear = 1.0
 /
 &shock_run_pars
+  ishock_max=1
   lmax_shock=F
   lgaussian_smooth=T
   lconvergence_only=F
-  shock_div_pow=3.0
-  dtfactor=2e-3
-  con_bias=0.5
+  shock_div_pow=1.75
+  dtfactor=0.2!2.5e-2
+  con_bias=0.05
 /

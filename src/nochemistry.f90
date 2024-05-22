@@ -297,6 +297,9 @@ module Chemistry
       character (len=*), intent(in) :: species_name
       logical, intent(out) :: found_specie
 !
+      call keep_compiler_quiet(ind_glob)
+      call keep_compiler_quiet(found_specie)
+
    endsubroutine find_species_index
 !***********************************************************************
 endmodule Chemistry
