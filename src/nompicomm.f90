@@ -2842,6 +2842,19 @@ module Mpicomm
 !
     endsubroutine mpigather_xy
 !***********************************************************************
+    subroutine mpigather_z_1D(sendbuf,recvbuf)
+!
+!  Gathers the chunks of a 1D array from each processor along a z-beam and broadcasts it.
+!
+!  25-nov-10/MR: coded
+!
+      real, dimension(:), intent(in)  :: sendbuf
+      real, dimension(:), intent(out) :: recvbuf
+!
+      recvbuf = sendbuf
+!
+    endsubroutine mpigather_z_1D
+!***********************************************************************
     subroutine mpigather_z(sendbuf,recvbuf,n1,lproc)
 !
 !  21-dec-10/MR: coded

@@ -9466,6 +9466,20 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         call MPI_GATHER(sendbuf, ncnt, mpi_precision, recvbuf, ncnt, mpi_precision, root, MPI_COMM_XYPLANE, mpierr)
 !
     endsubroutine mpigather_xy
+ !***********************************************************************
+    subroutine mpigather_z_1D(sendbuf,recvbuf)
+!
+!  Gathers the chunks of a 1D array from each processor along a z-beam and broadcasts it.
+!
+!  25-nov-10/MR: coded
+!
+      real, dimension(:), intent(in)  :: sendbuf
+      real, dimension(:), intent(out) :: recvbuf
+
+      call MPI_GATHER(sendbuf, size(sendbuf), mpi_precision, recvbuf, size(sendbuf), mpi_precision, 0, &
+                      MPI_COMM_ZBEAM, mpierr)
+
+    endsubroutine mpigather_z_1D
 !***********************************************************************
     subroutine mpigather_z(sendbuf,recvbuf,n1,lproc)
 !
