@@ -569,7 +569,7 @@ module Interstellar
         SNI_mass_rate=SNI_mass_rate_cgs*unit_time
         solar_mass=solar_mass_cgs / unit_mass
         if (lroot.and.ip==1963) print &
-            "(1x,'initialize_interstellar: solar_mass =',e10.3)",solar_mass
+            "(1x,'initialize_interstellar: solar_mass =',e11.4)",solar_mass
         r_SNI =r_SNI_yrkpc2  * (unit_time/yr_cgs) * (unit_length/kpc_cgs)**2
         r_SNII=r_SNII_yrkpc2 * (unit_time/yr_cgs) * (unit_length/kpc_cgs)**2
 !
@@ -594,10 +594,10 @@ module Interstellar
                    ampl_SN_cgs/unit_energy*(unit_length/pc_cgs)**5*&
                    (kyr_cgs/unit_time)**2
         if (lroot.and.lSN_autofrackin.and.ip==1963) then
-            print "(1x,'initialize_interstellar:   SFt_norm =',e10.3)",SFt_norm
-            print "(1x,'initialize_interstellar:   SFr_norm =',e10.3)",SFr_norm
-            print "(1x,'initialize_interstellar: sedov_norm =',e10.3)",sedov_norm
-            print "(1x,'initialize_interstellar: kfrac_norm =',e10.3)",kfrac_norm
+            print "(1x,'initialize_interstellar:   SFt_norm =',e11.4)",SFt_norm
+            print "(1x,'initialize_interstellar:   SFr_norm =',e11.4)",SFr_norm
+            print "(1x,'initialize_interstellar: sedov_norm =',e11.4)",sedov_norm
+            print "(1x,'initialize_interstellar: kfrac_norm =',e11.4)",kfrac_norm
         endif
         if (lSN_coolingmass) then
           if (.not.lSN_eth) then
@@ -630,7 +630,7 @@ module Interstellar
             call fatal_error('initialize_interstellar','energy fractions not to be > 1')
         endif
         if (lroot) print &
-            "(1x,'initialize_interstellar: eampl_SN, kampl_SN = ',2e10.3)", eampl_SN, kampl_SN
+            "(1x,'initialize_interstellar: eampl_SN, kampl_SN = ',2e11.4)", eampl_SN, kampl_SN
         if (energy_Nsigma==impossible) then
           if (thermal_profile=="gaussian3") then
             energy_Nsigma=1.25
@@ -653,7 +653,7 @@ module Interstellar
            if (thermal_profile=="gaussian3") &
                Lxyzmin=min(minval(Lxyz)/2, &
                            minval(Lxyz)/cnorm_SN(dimensionality))
-           if (lroot) print "(1x,'initialize_interstellar: Lxyzmin = ',e10.3)", Lxyzmin
+           if (lroot) print "(1x,'initialize_interstellar: Lxyzmin = ',e11.4)", Lxyzmin
         endif
         if (rho_min == impossible) rho_min=rho_min_cgs/unit_temperature
         if (T_init == impossible) T_init=T_init_cgs/unit_temperature
@@ -678,8 +678,8 @@ module Interstellar
 !
       call select_cooling(cooling_select,lncoolT,lncoolH,coolB)
 !
-      if (lroot) print "(1x,'initialize_interstellar: unit_Lambda',e10.3)",unit_Lambda
-      if (lroot) print "(1x,'initialize_interstellar: unit_Gamma',e10.3)",unit_Gamma
+      if (lroot) print "(1x,'initialize_interstellar: unit_Lambda',e11.4)",unit_Lambda
+      if (lroot) print "(1x,'initialize_interstellar: unit_Gamma',e11.4)",unit_Gamma
 !
       heating_rate_code=heating_rate*real(unit_length/unit_velocity**3)
 !
@@ -709,18 +709,18 @@ module Interstellar
       if (average_SNII_heating == impossible) average_SNII_heating = &
           r_SNII*ampl_SN/(sqrt(2*pi)*h_SNII*SN_interval_rhom)
       if (lroot.and.ip==1963) print &
-          "(1x,'initialize_interstellar: t_interval_SNI, SNI rate =',2e10.3)", &
+          "(1x,'initialize_interstellar: t_interval_SNI, SNI rate =',2e11.4)", &
           t_interval_SNI,SNI_factor*SNI_area_rate
       if (laverage_SNI_heating) then
         if (lSNI.or.lSNII) then
           if (lroot.and.ip==1963) print &
-              "(1x,'initialize_interstellar: average_SNI_heating =',e10.3)", &
+              "(1x,'initialize_interstellar: average_SNI_heating =',e11.4)", &
               average_SNI_heating*sqrt(2*pi)*h_SNI*SN_interval_rhom* &
               t_interval_SNI/(t_interval_SNI+t*heatingfunction_fadefactor)* &
               heatingfunction_scalefactor
         else
           if (lroot.and.ip==1963) print &
-              "(1x,'initialize_interstellar: average_SNI_heating =',e10.3)", &
+              "(1x,'initialize_interstellar: average_SNI_heating =',e11.4)", &
               average_SNI_heating*sqrt(2*pi)*h_SNI*SN_interval_rhom* &
               heatingfunction_scalefactor
         endif
@@ -730,13 +730,13 @@ module Interstellar
       if (laverage_SNII_heating) then
         if (lSNI.or.lSNII) then
           if (lroot.and.ip==1963) print &
-              "(1x,'initialize_interstellar: average_SNII_heating =',e10.3)", &
+              "(1x,'initialize_interstellar: average_SNII_heating =',e11.4)", &
               average_SNII_heating*sqrt(2*pi)*h_SNII*SN_interval_rhom* &
               t_interval_SNII/(t_interval_SNII+t*heatingfunction_fadefactor)* &
               heatingfunction_scalefactor
         else
           if (lroot.and.ip==1963) print &
-              "(1x,'initialize_interstellar: average_SNII_heating =',e10.3)", &
+              "(1x,'initialize_interstellar: average_SNII_heating =',e11.4)", &
               average_SNII_heating*sqrt(2*pi)*h_SNII*SN_interval_rhom* &
               heatingfunction_scalefactor
         endif
@@ -2238,17 +2238,17 @@ module Interstellar
             exit
           elseif (ierr==iEXPLOSION_TOO_HOT) then
             if (lroot.and.ip==1963) print &
-                "(1x,'check_SNI: TOO HOT, (x,y,z) =',3f7.3,', rho, rad =',2e10.3)",&
+                "(1x,'check_SNI: TOO HOT, (x,y,z) =',3f8.4,', rho, rad =',2e11.4)",&
                 SNRs(iSNR)%feat%x, SNRs(iSNR)%feat%y, SNRs(iSNR)%feat%z,&
                 SNRs(iSNR)%site%rho, SNRs(iSNR)%feat%radius
           elseif (ierr==iEXPLOSION_TOO_UNEVEN) then
             if (lroot.and.ip==1963) print &
-                "(1x,'check_SNI: TOO UNEVEN, (x,y,z) =',3f7.3,', rho, rad =',2e10.3)",&
+                "(1x,'check_SNI: TOO UNEVEN, (x,y,z) =',3f8.4,', rho, rad =',2e11.4)",&
                 SNRs(iSNR)%feat%x, SNRs(iSNR)%feat%y, SNRs(iSNR)%feat%z,&
                 SNRs(iSNR)%site%rho, SNRs(iSNR)%feat%radius
           elseif (ierr==iEXPLOSION_TOO_RARIFIED) then
             if (lroot.and.ip==1963) print &
-                "(1x,'check_SNI: TOO RARIFIED, (x,y,z) =',3f7.3,', rho, rad =',2e10.3)",&
+                "(1x,'check_SNI: TOO RARIFIED, (x,y,z) =',3f8.4,', rho, rad =',2e11.4)",&
                 SNRs(iSNR)%feat%x, SNRs(iSNR)%feat%y, SNRs(iSNR)%feat%z,&
                 SNRs(iSNR)%site%rho, SNRs(iSNR)%feat%radius
           endif
@@ -2327,17 +2327,17 @@ module Interstellar
             exit
           elseif (ierr==iEXPLOSION_TOO_HOT) then
             if (lroot.and.ip==1963) print &
-                "(1x,'check_SNIIb: TOO HOT, (x,y,z) =',3f7.3,', rho, rad =',2e10.3)",&
+                "(1x,'check_SNIIb: TOO HOT, (x,y,z) =',3f8.4,', rho, rad =',2e11.4)",&
                 SNRs(iSNR)%feat%x, SNRs(iSNR)%feat%y, SNRs(iSNR)%feat%z,&
                 SNRs(iSNR)%site%rho, SNRs(iSNR)%feat%radius
           elseif (ierr==iEXPLOSION_TOO_UNEVEN) then
             if (lroot.and.ip==1963) print &
-                "(1x,'check_SNIIb: TOO UNEVEN, (x,y,z) =',3f7.3,', rho, rad =',2e10.3)",&
+                "(1x,'check_SNIIb: TOO UNEVEN, (x,y,z) =',3f8.4,', rho, rad =',2e11.4)",&
                 SNRs(iSNR)%feat%x, SNRs(iSNR)%feat%y, SNRs(iSNR)%feat%z,&
                 SNRs(iSNR)%site%rho, SNRs(iSNR)%feat%radius
           elseif (ierr==iEXPLOSION_TOO_RARIFIED) then
             if (lroot.and.ip==1963) print &
-                "(1x,'check_SNIIb: TOO RARIFIED, (x,y,z) =',3f7.3,', rho, rad =',2e10.3)",&
+                "(1x,'check_SNIIb: TOO RARIFIED, (x,y,z) =',3f8.4,', rho, rad =',2e11.4)",&
                 SNRs(iSNR)%feat%x, SNRs(iSNR)%feat%y, SNRs(iSNR)%feat%z,&
                 SNRs(iSNR)%site%rho, SNRs(iSNR)%feat%radius
           endif
@@ -2546,10 +2546,10 @@ module Interstellar
       if (l_SNI) then
 !        t_interval=solar_mass/(SNI_mass_rate+0.35*SNII_mass_rate)/surface_massII/mu
         t_interval=7.5*solar_mass/SNII_mass_rate/surface_massII/mu
-        if (lroot.and.ip==1963) print"(1x,'set_interval: expected interval for SNI =',e10.3)",t_interval
+        if (lroot.and.ip==1963) print"(1x,'set_interval: expected interval for SNI =',e11.4)",t_interval
       else
         t_interval=solar_mass/surface_massII/SNII_mass_rate/mu
-        if (lroot.and.ip==1963) print"(1x,'set_interval: expected interval for SNII =',e10.3)",t_interval
+        if (lroot.and.ip==1963) print"(1x,'set_interval: expected interval for SNII =',e11.4)",t_interval
       endif
 !
     endsubroutine set_interval
@@ -2781,13 +2781,19 @@ module Interstellar
 !
 !  parameters required to determine the vertical centre of mass of the disk
 !
-    real, dimension(nprocz) :: tmpz
-    real, dimension(nz) :: rhotmp
-    integer, dimension(nprocx*nprocy) :: xyproc
-    real :: rhomax, rhosum, hSN
-    real :: mpirho, mpiz
-    real, dimension(ncpus):: tmpxyz
-    integer :: itmp, icpu, lm_range, ii1, ii2, ii3
+! FG: REPLACE
+    real, dimension(nzgrid) :: mpirho, rhotot
+    real, dimension(nz) :: rhosum
+    real :: rhomax, hSN
+    integer :: lm_range, ii1, ii2, ii3
+!    real, dimension(nprocz) :: tmpz
+!    real, dimension(nz) :: rhotmp
+!    integer, dimension(nprocx*nprocy) :: xyproc
+!    real :: rhomax, rhosum, hSN
+!    real :: mpirho, mpiz
+!    real, dimension(ncpus):: tmpxyz
+!    integer :: itmp, icpu, lm_range, ii1, ii2, ii3
+! FG: REPLACE END
     integer :: previous_SNl, previous_SNm, previous_SNn
 !
 !  parameters for random location of SN - about zdisk
@@ -2803,121 +2809,170 @@ module Interstellar
 !  The disk oscillates. To keep the random dist centred at the disk find
 !  zdisk where the peak mean density(z) resides and shift gaussian up/down
 !
-    rhomax=0.0
+! FG: REPLACE
+!    rhomax=0.0
+! FG: REPLACE end
 !
     Get_zdisk: if (lfirst_zdisk) then
 !
 !  sum the mass on each processor
 !
       rhosum=0.0
+      mpirho=0.0
+      rhotot=0.0
       if (.not.lcartesian_coords.or..not.all(lequidist)) then
         !$omp target map(from: rhosum) has_device_addr(f)   ! globals: irho, ilnrho, dVol, ldensity_nolog
         !$omp teams distribute parallel do collapse(2) reduction(+:rhosum)
+! FG: REPLACE
+!        do n=n1,n2; do m=m1,m2
+!          call get_dVol(m,n)
+!          if (ldensity_nolog) then
+!            rhosum=rhosum+sum(f(l1:l2,m,n,irho)*dVol)
+!          else
+!            rhosum=rhosum+sum(exp(f(l1:l2,m,n,ilnrho))*dVol)
+!          endif
+!        enddo; enddo
+!        !$omp end teams distribute parallel do
+!        !$omp end target
+!      else
+!        if (ldensity_nolog) then
+!          rhosum=sum(f(l1:l2,m1:m2,n1:n2,irho))*dVol(1)
+!        else
+!          rhosum=sum(exp(f(l1:l2,m1:m2,n1:n2,ilnrho)))*dVol(1)
+!        endif
         do n=n1,n2; do m=m1,m2
           call get_dVol(m,n)
           if (ldensity_nolog) then
-            rhosum=rhosum+sum(f(l1:l2,m,n,irho)*dVol)
+            rhosum(n-n1+1)=rhosum(n-n1+1)+sum(f(l1:l2,m,n,irho)*dVol)
           else
-            rhosum=rhosum+sum(exp(f(l1:l2,m,n,ilnrho))*dVol)
+            rhosum(n-n1+1)=rhosum(n-n1+1)+sum(exp(f(l1:l2,m,n,ilnrho))*dVol)
           endif
         enddo; enddo
         !$omp end teams distribute parallel do
         !$omp end target
       else
-        if (ldensity_nolog) then
-          rhosum=sum(f(l1:l2,m1:m2,n1:n2,irho))*dVol(1)
-        else
-          rhosum=sum(exp(f(l1:l2,m1:m2,n1:n2,ilnrho)))*dVol(1)
-        endif
+        do n=n1,n2
+          if (ldensity_nolog) then
+            rhosum(n-n1+1)=sum(f(l1:l2,m1:m2,n,irho))*dVol(1)
+          else
+            rhosum(n-n1+1)=sum(exp(f(l1:l2,m1:m2,n,ilnrho)))*dVol(1)
+          endif
+        enddo
+! FG: REPLACE END
       endif
 !
 !  broadcast the mass on each processor for all in tmpxyz array and
 !  sum the mass on each horizontal processor array to tmpz array
 !MR: simplify?
+! FG: REPLACE
+!      do icpu=1,ncpus
+!        mpirho=rhosum
+!        call mpibcast_real(mpirho,icpu-1)
+!        tmpxyz(icpu)=mpirho
+!      enddo
+!      do i=1,nprocz
+!        tmpz(i)=sum(tmpxyz((i-1)*nprocx*nprocy+1:i*nprocx*nprocy))
+!      enddo
 !
-      do icpu=1,ncpus
-        mpirho=rhosum
-        call mpibcast_real(mpirho,icpu-1)
-        tmpxyz(icpu)=mpirho
-      enddo
-      do i=1,nprocz
-        tmpz(i)=sum(tmpxyz((i-1)*nprocx*nprocy+1:i*nprocx*nprocy))
-      enddo
+!  mpi sum rhosum(iz) on each horizontal slice to rhotot(iz) then
+!  mpi sum rhotot along z to complete array over nzgrid
+!
+      !rhotot(ipz*nz+1:(ipz+1)*nz)=rhosum
+      call mpiallreduce_sum(rhosum,rhotot(ipz*nz+1:(ipz+1)*nz),nz,idir=12)
+      mpirho=rhotot
+      call mpiallreduce_sum(mpirho,rhotot,nzgrid,idir=3)
+! FG: REPLACE END
 !
 !  identify which horizontal processor set has the most mass and alternate
 !  the loop direction to avoid N-S bias when more than one matches max value
 !  and allocate their processor index to the array yxproc
 !
-      rhomax=maxval(tmpz)
-      itmp=-1
-      if (mod(it,2)==0.and..not.lstart) then  ! for reproducibility: it=1 -> it=0 initially
-        ii1=1; ii2=nprocz; ii3=1
+! FG: REPLACE
+!      rhomax=maxval(tmpz)
+!      itmp=-1
+!      if (mod(it,2)==0.and..not.lstart) then  ! for reproducibility: it=1 -> it=0 initially
+!        ii1=1; ii2=nprocz; ii3=1
+!      else
+!        ii1=nprocz; ii2=1; ii3=-1
+!      endif
+!      do i=ii1,ii2,ii3
+!        if (tmpz(i)==rhomax) itmp=(i-1)*nprocx*nprocy
+!      enddo
+!      do i=1,nprocx*nprocy
+!        xyproc(i)=i+itmp-1
+!      enddo
+!!
+!!  Sum the mass for each z among the yxproc processors and then identify the
+!!  z corresponding to the maximum density to set zdisk
+!!MR: simplify?
+!!
+!      rhomax=0.
+!      rhotmp=0.
+!      if (mod(it,2)==0.and..not.lstart) then
+!        ii1=n1;ii2=n2;ii3=1
+!      else
+!        ii1=n2;ii2=n1;ii3=-1
+!      endif
+!      do n=ii1,ii2,ii3
+!        if (ANY(xyproc==iproc)) then
+!          if (.not.lcartesian_coords.or..not.all(lequidist)) then
+!            do m=m1,m2
+!              call get_dVol(m,n)
+!              if (ldensity_nolog) then
+!                rhotmp(n-nghost)=rhotmp(n-nghost)+sum(f(l1:l2,m,n,irho)*dVol)
+!              else
+!                rhotmp(n-nghost)=rhotmp(n-nghost)+sum(exp(f(l1:l2,m,n,ilnrho))*dVol)
+!              endif
+!            enddo
+!          else
+!            if (ldensity_nolog) then
+!              rhotmp(n-nghost)=sum(f(l1:l2,m1:m2,n,irho))*dVol(1)
+!            else
+!              rhotmp(n-nghost)=sum(exp(f(l1:l2,m1:m2,n,ilnrho)))*dVol(1)
+!            endif
+!          endif
+!        endif
+!        call mpiallreduce_sum(rhotmp(n-nghost),mpirho)
+!        rhotmp(n-nghost)=mpirho
+!        rhomax=max(rhomax,rhotmp(n-nghost))
+!      enddo
+!      if (lh_SNII_adjust) then
+!        mpirho = rhomax*dz_1(n)/(Lxyz(1)*Lxyz(2))
+!        call mpibcast_real(mpirho,xyproc(1))
+!        maxrho=mpirho
+!      endif
+!      if (ANY(xyproc==iproc)) then
+!        do n=ii1,ii2,ii3
+!          if (rhotmp(n-nghost)==rhomax) zdisk=z(n)
+!        enddo
+!      endif
+!      mpiz=zdisk
+!      call mpibcast_real(mpiz,xyproc(1))
+!      zdisk=mpiz
+      rhomax=maxval(rhotot)
+      if (mod(it,2)==0.and..not.lstart) then ! for reproducibility: it=1 -> it=0 initially
+        ii1=nzgrid/2+1;ii2=nzgrid;ii3=1
       else
-        ii1=nprocz; ii2=1; ii3=-1
-      endif
-      do i=ii1,ii2,ii3
-        if (tmpz(i)==rhomax) itmp=(i-1)*nprocx*nprocy
-      enddo
-      do i=1,nprocx*nprocy
-        xyproc(i)=i+itmp-1
-      enddo
-!
-!  Sum the mass for each z among the yxproc processors and then identify the
-!  z corresponding to the maximum density to set zdisk
-!MR: simplify?
-!
-      rhomax=0.
-      rhotmp=0.
-      if (mod(it,2)==0.and..not.lstart) then
-        ii1=n1;ii2=n2;ii3=1
-      else
-        ii1=n2;ii2=n1;ii3=-1
+        ii1=nzgrid/2;ii2=1;ii3=-1
       endif
       do n=ii1,ii2,ii3
-        if (ANY(xyproc==iproc)) then
-          if (.not.lcartesian_coords.or..not.all(lequidist)) then
-            do m=m1,m2
-              call get_dVol(m,n)
-              if (ldensity_nolog) then
-                rhotmp(n-nghost)=rhotmp(n-nghost)+sum(f(l1:l2,m,n,irho)*dVol)
-              else
-                rhotmp(n-nghost)=rhotmp(n-nghost)+sum(exp(f(l1:l2,m,n,ilnrho))*dVol)
-              endif
-            enddo
-          else
-            if (ldensity_nolog) then
-              rhotmp(n-nghost)=sum(f(l1:l2,m1:m2,n,irho))*dVol(1)
-            else
-              rhotmp(n-nghost)=sum(exp(f(l1:l2,m1:m2,n,ilnrho)))*dVol(1)
-            endif
+        if (abs(rhotot(n)-rhomax)<tini) then
+          zdisk=zgrid(n)
+          if (lh_SNII_adjust) then
+            maxrho = rhomax*dz_1(n)/(Lxyz(1)*Lxyz(2))
           endif
         endif
-        call mpiallreduce_sum(rhotmp(n-nghost),mpirho)
-        rhotmp(n-nghost)=mpirho
-        rhomax=max(rhomax,rhotmp(n-nghost))
       enddo
-      if (lh_SNII_adjust) then
-        mpirho = rhomax*dz_1(n)/(Lxyz(1)*Lxyz(2))
-        call mpibcast_real(mpirho,xyproc(1))
-        maxrho=mpirho
-      endif
-      if (ANY(xyproc==iproc)) then
-        do n=ii1,ii2,ii3
-          if (rhotmp(n-nghost)==rhomax) zdisk=z(n)
-        enddo
-      endif
-      mpiz=zdisk
-      call mpibcast_real(mpiz,xyproc(1))
-      zdisk=mpiz
+! FG: REPLACE END
     endif Get_zdisk
 !
-    if (lroot.and.ip==1963) print"(1x,'position_SN_gaussianz: zdisk =',f7.3)",zdisk
+    if (lroot.and.ip==1963) print"(1x,'position_SN_gaussianz: zdisk =',f8.4)",zdisk
     if (lh_SNII_adjust .and. h_SN==h_SNII) then
       hSN = h_SN * cloud_rho/maxrho
       if (lroot.and.ip==1963) then
-        print "(1x,'position_SN_gaussianz: hSN vs h_SNII =',2e10.3)",hSN,h_SN
-        print "(1x,'position_SN_gaussianz: maxrho =',e10.3)",maxrho
-        print "(1x,'position_SN_gaussianz: cloud_rho =',e10.3)",cloud_rho
+        print "(1x,'position_SN_gaussianz: hSN vs h_SNII =',2e11.4)",hSN,h_SN
+        print "(1x,'position_SN_gaussianz: maxrho =',e11.4)",maxrho
+        print "(1x,'position_SN_gaussianz: cloud_rho =',e11.4)",cloud_rho
       endif
     else
       hSN = h_SN
@@ -2941,13 +2996,13 @@ module Interstellar
       if (lOB_cluster .and. h_SN==h_SNII) then
 !  If OB clustering for SNII, while within time span of current cluster
         if (t < t_cluster) then ! still using current cluster coords
-          if (ip==1963) print "(1x,'position_SN_gaussianz: cluster lifetime until',e10.3)",t_cluster
+          if (ip==1963) print "(1x,'position_SN_gaussianz: cluster lifetime until',e11.4)",t_cluster
           previous_SNl = int(( x_cluster - xyz0(1) )/Lx)*nxgrid +1
           previous_SNm = int(( y_cluster - xyz0(2) )/Ly)*nygrid +1
           previous_SNn = int(( z_cluster - xyz0(3) )/Lz)*nzgrid +1
           lm_range = 2*int(SN_clustering_radius*nxgrid/Lx)
           if (fran3(1) < p_OB) then ! checks whether the SN is in a cluster
-            if (ip==1963) print "(1x,'position_SN_gaussianz: in cluster x, y, z =',3e10.3)", &
+            if (ip==1963) print "(1x,'position_SN_gaussianz: in cluster x, y, z =',3e11.4)", &
                                            x_cluster,y_cluster,z_cluster
             i=int(fran3(1)*lm_range/p_OB)+previous_SNl+1
             j=int(fran3(2)*lm_range/p_OB)+previous_SNm+1
@@ -3348,8 +3403,8 @@ mn_loop:do n=n1,n2
       if (lroot.and.ip==1963) then
         print "(1x,'share_SN_parameters: iproc, l, m, n =',i8,3i6)", &
               SNR%indx%iproc,SNR%indx%l,SNR%indx%m,SNR%indx%n
-        print "(1x,'share_SN_parameters: x_SN, y_SN, z_SN =',3f7.3)", SNR%feat%x,SNR%feat%y,SNR%feat%z
-        print "(1x,'share_SN_parameters: rho, ss, TT =',3e10.3)", SNR%site%rho,SNR%site%ss,SNR%site%TT
+        print "(1x,'share_SN_parameters: x_SN, y_SN, z_SN =',3f8.4)", SNR%feat%x,SNR%feat%y,SNR%feat%z
+        print "(1x,'share_SN_parameters: rho, ss, TT =',3e11.4)", SNR%site%rho,SNR%site%ss,SNR%site%TT
         print "(1x,'share_SN_parameters: SN radius, SN dr =',2f8.5)", SNR%feat%radius,SNR%feat%dr
       endif
 !
@@ -3433,9 +3488,9 @@ mn_loop:do n=n1,n2
               print "(1x,'explode_SN: i          ',   i6)",i
               print "(1x,'explode_SN: radius_min ', f9.6)",radius_min
               print "(1x,'explode_SN: radius_max ', f9.6)",radius_max
-              print "(1x,'explode_SN: Rmax-Rmin  ',e10.3)",radius_max-radius_min
+              print "(1x,'explode_SN: Rmax-Rmin  ',e11.4)",radius_max-radius_min
               print "(1x,'explode_SN: radius_best', f9.6)",radius_best
-              print "(1x,'explode_SN: Nsol       ',e10.3)",Nsol_ratio*sol_mass_tot/solar_mass
+              print "(1x,'explode_SN: Nsol       ',e11.4)",Nsol_ratio*sol_mass_tot/solar_mass
             endif
             if (radius_max-radius_min<SNR%feat%dr*0.01) exit
           enddo
@@ -3889,8 +3944,8 @@ mn_loop:do n=n1,n2
 !
         if (lOB_cluster) then
           print "(1x,'explode_SN: t_cluster',e12.5)", t_cluster
-          print "(1x,'explode_SN: x_cluster', f7.3)", x_cluster
-          print "(1x,'explode_SN: z_cluster', f7.3)", z_cluster
+          print "(1x,'explode_SN: x_cluster', f8.4)", x_cluster
+          print "(1x,'explode_SN: z_cluster', f8.4)", z_cluster
         endif
 !
         if (lfirst_warning) then
@@ -3907,8 +3962,8 @@ mn_loop:do n=n1,n2
         print "(1x,'explode_SN:          dVol = ',   e12.5)",dVol(1)
         print "(1x,'explode_SN:       SN type = ',      i3)",SNR%indx%SN_type
         print "(1x,'explode_SN: proc, l, m, n = ',     4i6)",SNR%indx%iproc,SNR%indx%l,SNR%indx%m,SNR%indx%n
-        print "(1x,'explode_SN:       x, y, z = ',   3f7.3)",SNR%feat%x,SNR%feat%y,SNR%feat%z
-        print "(1x,'explode_SN:remnant radius = ',    f7.3)",SNR%feat%radius
+        print "(1x,'explode_SN:       x, y, z = ',   3f8.4)",SNR%feat%x,SNR%feat%y,SNR%feat%z
+        print "(1x,'explode_SN:remnant radius = ',    f8.4)",SNR%feat%radius
         print "(1x,'explode_SN:       rho, TT = ',  2e11.4)",SNR%site%rho,SNR%site%TT
         print "(1x,'explode_SN:    maximum TT = ',   e12.5)",maxTT
         print "(1x,'explode_SN:  Mean density = ',   e12.5)",SNR%feat%rhom
@@ -3944,15 +3999,15 @@ mn_loop:do n=n1,n2
         select case (ierr)
           case (iEXPLOSION_TOO_HOT)
             if (lroot.and.ip==1963) print &
-                "(1x,'explode_SN: TOO HOT, (x,y,z) =',3f7.3,', rho, rad =',2e10.3)", &
+                "(1x,'explode_SN: TOO HOT, (x,y,z) =',3f8.4,', rho, rad =',2e11.4)", &
                 SNR%feat%x, SNR%feat%y, SNR%feat%z,SNR%site%rho, SNR%feat%radius
           case (iEXPLOSION_TOO_UNEVEN)
             if (lroot.and.ip==1963) print &
-                "(1x,'explode_SN: TOO UNEVEN, (x,y,z) =',3f7.3,', rho, rad =',2e10.3)", &
+                "(1x,'explode_SN: TOO UNEVEN, (x,y,z) =',3f8.4,', rho, rad =',2e11.4)", &
                 SNR%feat%x, SNR%feat%y, SNR%feat%z,SNR%site%rho, SNR%feat%radius
           case (iEXPLOSION_TOO_RARIFIED)
             if (lroot.and.ip==1963) print &
-                "(1x,'explode_SN: TOO RARIFIED, (x,y,z) =',3f7.3,', rho, rad =',2e10.3)", &
+                "(1x,'explode_SN: TOO RARIFIED, (x,y,z) =',3f8.4,', rho, rad =',2e11.4)", &
                 SNR%feat%x, SNR%feat%y, SNR%feat%z,SNR%site%rho, SNR%feat%radius
         endselect
       endif
@@ -4053,11 +4108,11 @@ mn_loop:do n=n1,n2
       if (present(ierr)) then
         if (rhomax/rhomin > SN_rho_ratio) ierr=iEXPLOSION_TOO_UNEVEN
         if (lroot.and.ip==1963) then
-          print "(1x,'get_properties: rhomax =',e10.3)",rhomax
-          print "(1x,'get_properties: rhomin =',e10.3)",rhomin
+          print "(1x,'get_properties: rhomax =',e11.4)",rhomax
+          print "(1x,'get_properties: rhomin =',e11.4)",rhomin
           print "(1x,'get_properties: ierr   =',   i3)",ierr
-          print "(1x,'get_properties: radius =', f7.3)",remnant%feat%radius
-          print "(1x,'get_properties: ekintot =', f7.3)",ekintot
+          print "(1x,'get_properties: radius =', f8.4)",remnant%feat%radius
+          print "(1x,'get_properties: ekintot =', f8.4)",ekintot
         endif
       endif
 !
@@ -4148,7 +4203,7 @@ mn_loop:do n=n1,n2
       else
         rhom=tmp2(1)*0.75*pi_1/radius2**1.5
       endif
-      if (lroot.and.ip==1963) print"(1x,'get_props_check: rhom =',e10.3,' ekintot =',f7.3)",rhom,ekintot
+      if (lroot.and.ip==1963) print"(1x,'get_props_check: rhom =',e11.4,' ekintot =',f8.4)",rhom,ekintot
 !
 !END NEW CHANGES OK
     endsubroutine get_props_check
@@ -4233,11 +4288,11 @@ mn_loop:do n=n1,n2
 !  Avoid dr_SN = 0 above to avoid div by zero below.
 !
         outward_normal_OB(:,1)=dx_OB/dr_OB
-        where (dr2_OB == 0.) outward_normal_OB(:,1)=0.0
+        where (dr2_OB <tini) outward_normal_OB(:,1)=0.0
         outward_normal_OB(:,2)=dy_OB/dr_OB
-        where (dr2_OB == 0.) outward_normal_OB(:,2)=0.0
+        where (dr2_OB <tini) outward_normal_OB(:,2)=0.0
         outward_normal_OB(:,3)=dz_OB/dr_OB
-        where (dr2_OB == 0.) outward_normal_OB(:,3)=0.0
+        where (dr2_OB <tini) outward_normal_OB(:,3)=0.0
       endif
 !
     endsubroutine proximity_OB
@@ -4310,7 +4365,7 @@ mn_loop:do n=n1,n2
 !  Avoid dr_SN = 0 above to avoid div by zero below.
 !
         outward_normal_SN(:,1)=dx_SN/dr_SN
-        where (dr2_SN == 0.) outward_normal_SN(:,1)=0.0
+        where (dr2_SN <tini) outward_normal_SN(:,1)=0.0
         if (lshear) then
           do l=l1,l2
             if (x(l)-SNR%feat%x> Lx/2) then
@@ -4347,10 +4402,10 @@ mn_loop:do n=n1,n2
           enddo
         else
           outward_normal_SN(:,2)=dy_SN/dr_SN
-          where (dr2_SN == 0.) outward_normal_SN(:,2)=0.0
+          where (dr2_SN <tini) outward_normal_SN(:,2)=0.0
         endif
         outward_normal_SN(:,3)=dz_SN/dr_SN
-        where (dr2_SN == 0.) outward_normal_SN(:,3)=0.0
+        where (dr2_SN <tini) outward_normal_SN(:,3)=0.0
       endif
 !
     endsubroutine proximity_SN
@@ -4636,14 +4691,14 @@ mn_loop:do n=n1,n2
 !
 !  Pre-determine time for next OB.
 !
-      if (lroot) print"(1x,'set_next_OB: Old t_next_OB =',e10.3)",t_cluster
+      if (lroot) print"(1x,'set_next_OB: Old t_next_OB =',e11.4)",t_cluster
       call random_number_wrapper(franSN)
 !
 !  Time interval follows Poisson process with rate 1/t_interval_OB
 !
       t_cluster=t-log(franSN(1))*t_interval_OB
 !
-      if (lroot) print"(1x,'set_next_OB: Next OB at time =',e10.3)",t_cluster
+      if (lroot) print"(1x,'set_next_OB: Next OB at time =',e11.4)",t_cluster
 !
     endsubroutine set_next_OB
 !*****************************************************************************
