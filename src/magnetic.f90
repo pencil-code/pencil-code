@@ -3269,6 +3269,7 @@ module Magnetic
 !
       if (lpencil_in(i_StokesQ).or.lpencil_in(i_StokesU).or.&
           lpencil_in(i_StokesQ1).or.lpencil_in(i_StokesU1)) then
+        lpencil_in(i_b2)=.true.
         lpencil_in(i_chibp)=.true.
         lpencil_in(i_StokesI)=.true.
       endif
@@ -4204,6 +4205,8 @@ module Magnetic
 ! uxj
       if (lpenc_loc(i_uxj)) call cross_mn(p%uu,p%jj,p%uxj)
 ! chibp
+!  FG: 23-05-24 GNU Fortran (Ubuntu 11.4.0-1ubuntu1~22.04) 11.4.0
+!  This breaks the pencil check on interstellar sample for above version, works on 9.4.0 and 11.2.0 ???
       if (lpenc_loc(i_chibp)) p%chibp=atan2(p%bb(:,2),p%bb(:,1))+.5*pi
 ! StokesI
       if (lpenc_loc(i_StokesI)) p%StokesI=(p%bb(:,1)**2+p%bb(:,2)**2)**exp_epspb
@@ -4228,7 +4231,7 @@ module Magnetic
         if (lpenc_loc(i_StokesQ1)) p%StokesQ1=+p%StokesI*sin(2.*p%chibp)*p%bb(:,3)
         if (lpenc_loc(i_StokesU1)) p%StokesU1=-p%StokesI*cos(2.*p%chibp)*p%bb(:,3)
       endif
-!
+
 ! beta1
       if (lpenc_loc(i_beta1)) p%beta1=0.5*p%b2*mu01/p%pp
 ! beta
@@ -10766,7 +10769,7 @@ module Magnetic
       endif
 !
     endsubroutine get_bext
-!*********************************************************************** 
+!***********************************************************************
     real function get_B0_ext_z(pz)
 !
 !  Get the external magnetic field stratification along z.
