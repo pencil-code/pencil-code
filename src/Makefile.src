@@ -2889,8 +2889,6 @@ endif
 #
 .c.o:
 	$(CC) $(CFLAGS) $(CFLAGS_GENERAL) $(CPPFLAGS) $(CFLAGS_FOURIER) $(CSTD) -o $*.o -c $*.c
-$(PTHREAD_OBJ): pthread.cpp
-	$(CC) $(CFLAGS) $(CFLAGS_GENERAL) $(CPPFLAGS) $(CFLAGS_FOURIER) $(CSTD) -o $*.o -c $*.cpp
 #
 #  Explicitly targeted rules.
 #
