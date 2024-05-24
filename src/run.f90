@@ -546,7 +546,7 @@ subroutine run_start() bind(C)
   use Farray_alloc
   use Forcing,         only: forcing_clean_up
   use General,         only: random_seed_wrapper, touch_file, itoa
-!$ use General,        only: signal_init
+!$ use General,        only: signal_init,get_cpu
   use Grid,            only: construct_grid, box_vol, grid_bound_data, set_coorsys_dimmask, &
                              construct_serial_arrays, coarsegrid_interp
   use Gpu,             only: gpu_init, register_gpu, load_farray_to_GPU, initialize_gpu
@@ -589,8 +589,11 @@ subroutine run_start() bind(C)
   logical :: suppress_pencil_check=.false.
   logical :: lnoreset_tzero=.false.
   logical :: lexist
-  integer :: num_helpers=1
-  integer :: i
+  integer, parameter :: num_helpers=1
+  integer :: i,j
+  integer :: master_core_id
+  integer :: helper_core_id
+  integer, dimension(max_threads_possible) :: tmp_core_ids
 !
   lrun = .true.
 !
@@ -1000,10 +1003,39 @@ subroutine run_start() bind(C)
 !  Trim 1D-averages for times past the current time.
 !
   call trim_averages
+  
+!$ call mpibarrier
+
+  !$omp parallel copyin(fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz,phiavg_norm)
+     core_ids(omp_get_thread_num()+1) = get_cpu()
+  !$omp end parallel
+
 !
 !$ call mpibarrier
 !$omp parallel num_threads(num_helpers+1) copyin(fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz,phiavg_norm)
 !
+
+!TP: remove master id from core ids since no one should run on master core and make sure new core ids indexing start from 1
+if(omp_get_thread_num() == 1) then
+        helper_core_id = get_cpu()
+     endif
+!$omp barrier
+     if(omp_get_thread_num() == 0) then
+        master_core_id = get_cpu()
+        tmp_core_ids = 0
+        tmp_core_ids(1) = helper_core_id
+        j = 2
+        do i = 1,20
+                if(core_ids(i) /= master_core_id .and. core_ids(i) /= helper_core_id) then
+                        tmp_core_ids(j) = core_ids(i)
+                        j = j +1
+                endif
+        enddo
+        core_ids = tmp_core_ids
+     endif
+!$omp barrier
+
+
 !$   do i=1,num_helpers
 !
 ! Ensures that all MPI processes call create_communicators with the same thread.

@@ -815,6 +815,8 @@ module Cdata
   logical, volatile :: lfarray_copied = .false.
   logical, dimension(npencils) :: lpencil_save = .false.
   integer :: num_helper_threads=1, thread_id=1
+  integer, parameter :: max_threads_possible = 200
+  integer, dimension(max_threads_possible) :: core_ids
 !$ logical, volatile :: lhelper_run=.true., lhelper_perf
 ! 
 ! threadprivate definitions for OpenMP

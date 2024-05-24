@@ -68,7 +68,7 @@ module General
             qualify_position_biquin
   public :: binomial,merge_lists,reallocate
   public :: point_and_get_size, allocate_using_dims
-!$ public :: signal_wait, signal_send, signal_init
+!$ public :: signal_wait, signal_send, signal_init,get_cpu, set_cpu
 ! 
 !
 !  State and default generator of random numbers.
@@ -317,6 +317,17 @@ module General
     subroutine cond_signal(cond_handle)
       integer :: cond_handle
     endsubroutine
+  endinterface
+
+   interface
+  integer function get_cpu_c()
+    endfunction get_cpu_c
+  endinterface
+
+  interface
+    subroutine set_cpu_c(core_id)
+            integer :: core_id
+    endsubroutine set_cpu_c
   endinterface
 !
   integer, parameter :: DIAG_COND = 1
@@ -6756,5 +6767,14 @@ iloop:do i=1,size(list2)
 !$  subroutine signal_init
 !$    call cond_init
 !$  endsubroutine
+!***********************************************************************
+!$  integer function get_cpu()
+!$    get_cpu = get_cpu_c()
+!$  endfunction get_cpu
+!***********************************************************************
+!$  subroutine set_cpu(cpu_id)
+!$    integer :: cpu_id
+!$    call set_cpu_c(cpu_id)
+!$  endsubroutine set_cpu
 !***********************************************************************
   endmodule General

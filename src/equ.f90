@@ -696,6 +696,7 @@ module Equ
       use Viscosity, only: calc_diagnostics_viscosity
       use Diagnostics
 !$    use OMP_lib
+!$    use General, only: get_cpu, set_cpu
 
       real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
       type (pencil_case) :: p
@@ -710,7 +711,7 @@ module Equ
 !$    call restore_diagnostic_controls
 
       lfirstpoint=.true.
-!!$    print*,"TP thread num: ",omp_get_thread_num()
+!$    if(omp_get_thread_num() /= 0) call set_cpu(core_ids(omp_get_thread_num()+1))
 
       !$omp do
       do imn=1,nyz
