@@ -2599,13 +2599,17 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
 !
     endsubroutine get_grid_mn
 !**********************************************************************
-    subroutine get_dVol(mm,nn)
+    subroutine get_dVol(mm,nn,dV)
 !$omp declare target
 !
       integer,             intent(in ) :: mm,nn
-      !real, dimension(nx), intent(out) :: dV
+      real, dimension(nx), intent(out) :: dV
 
-      dVol = dVol_x(l1:l2)*dVol_y(mm)*dVol_z(nn)
+      if (lcartesian_coords.and.all(lequidist)) then
+        dV = dVol_x(l1)*dVol_y(m1)*dVol_z(n1)
+      else
+        dV = dVol_x(l1:l2)*dVol_y(mm)*dVol_z(nn)
+      endif
 !
     endsubroutine get_dVol
 !***********************************************************************
