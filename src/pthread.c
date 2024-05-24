@@ -1,4 +1,3 @@
-#define __GNU_SOURCE
 #include <assert.h>
 #include <stdbool.h>
 #include <stdio.h>
