@@ -2889,7 +2889,7 @@ contains
 !!      mpirho=rhotot
 !!    call mpiallreduce_sum(mpirho,rhotot,nzgrid,idir=3)
       call mpireduce_sum(rhosum,mpisum,nz,idir=12)
-      if (lfirst_proc_xy) then 
+      if (lfirst_proc_xy) then
         call mpigather_z_1D(mpisum,rhotot)
         if (lroot) print*, 'iproc=', iproc, rhotot
 ! FG: REPLACE END
@@ -3276,7 +3276,7 @@ mn_loop:do n=n1,n2
             endif
           enddo
         enddo
-        enddo mn_loop   !!!MR: whatif lfound=.false.? FG: cum_mass in (0,1) as is franSN(1) 
+        enddo mn_loop   !!!MR: whatif lfound=.false.? FG: cum_mass in (0,1) as is franSN(1)
         !$omp end teams distribute parallel do
         !$omp end target
         if (ip==1963) then
@@ -3447,7 +3447,7 @@ mn_loop:do n=n1,n2
       real :: rhom, rhomin, ekintot, radius_best
       real :: ekintot_new, ambient_mass
       real :: Nsol_ratio, Nsol_ratio_best, radius_min, radius_max, sol_mass_tot
-      real :: uu_sedov, rad_hot, rho_hot
+      real :: uu_sedov, rad_hot, deltarho_hot
       real :: radius2, radius3, SNvol, radius2mass
 !
       real, dimension(nx) :: deltarho, deltaEE, deltaCR, rho_new, dV
@@ -3653,7 +3653,7 @@ mn_loop:do n=n1,n2
       lfound = .false.
       !$omp target if(loffload) map(tofrom: SNR) has_device_addr(f)  ! needs: irho,ilnrho,iss,ilnTT,frac_eth,dr2_SN,rfactor_SN,TT_SN_max, switches;
       !$omp teams distribute parallel do collapse(2) &
-      !$omp private(dV,rho_old,rho_new,deltarho,deltauu,deltaEE,deltaCR,ee_old,lnTT,outward_normal_SN,maxTT,rad_hot,rho_hot,ind_maxTT,ierr), &
+      !$omp private(dV,rho_old,rho_new,deltarho,deltauu,deltaEE,deltaCR,ee_old,lnTT,outward_normal_SN,maxTT,rad_hot,deltarho_hot,ind_maxTT,ierr), &
       !$omp    reduction(+:site_mass,SNR%feat%MM,SNR%feat%EE) reduction(max:maxlnTT,max_cmass)
 mnloop:do n=n1,n2
       do m=m1,m2
@@ -3716,8 +3716,8 @@ mnloop:do n=n1,n2
               if (lSN_coolingmass) then
                 if ( rho_old(ind_maxTT)<=maxval(rho_old) ) then
                   rad_hot=dr2_SN(ind_maxTT)
-                  rho_hot=rho_old(ind_maxTT)*(maxTT/SN_TT_ratio_max - 1.)
-                  call getmass_SN(rho_hot,rad_hot,width_mass,cmass_tmp)
+                  deltarho_hot=rho_old(ind_maxTT)*(maxTT/SN_TT_ratio_max - 1.)
+                  call getmass_SN(deltarho_hot,rad_hot,width_mass,cmass_tmp)
                 endif
                 max_cmass=max(max_cmass,cmass_tmp)
                 maxTT=SN_TT_ratio_max
