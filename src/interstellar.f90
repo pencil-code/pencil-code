@@ -16,821 +16,822 @@
 !
 !*****************************************************************************
 module Interstellar
-!
-  use Cdata
-  use General, only: keep_compiler_quiet
-  use Messages
-!
-  implicit none
-!
-  include 'interstellar.h'
-  include 'record_types.h'
-  include 'eos_params.h'
-!
-  interface input_persistent_interstellar
-    module procedure input_persist_interstellar_id
-    module procedure input_persist_interstellar
-  endinterface
-!
-  type ExplosionSite
-    real :: rho, lnrho, yH, lnTT, TT, ss, ee
-  endtype
-!
-  type RemnantFeature
-    real :: x, y, z, t    ! Time and location
-    real :: MM, EE, CR    ! Mass, energy & CR injected
-    real :: rhom          ! Local mean density and energy at explosion time
-    real :: radius, dr    ! Injection radius and resolution
-    real :: t_sedov, t_SF ! Sedov time shell formation time
-  endtype
-!
-  type RemnantIndex
-    integer :: l,m,n           ! Grid position
-    integer :: iproc,ipx,ipy,ipz
-    integer :: SN_type
-    integer :: state
-  endtype
-!
-  type SNRemnant
-    type (RemnantFeature) :: feat
-    type (RemnantIndex) :: indx
-    type (ExplosionSite) :: site
-  endtype
-!
-!  Add cluster type
-!
-  type ClusterFeature
-    real :: x, y, z, t ! Location and end time
-    real :: radius     ! OB radius
-    real :: rhom0      ! Mean density at OB initiation
-    real :: rhom       ! Mean density in OB currently
-    real :: tnextOB    ! Sedov time shell formation time
-  endtype
-!
-  type ClusterIndex
-    integer :: l,m,n             ! Grid position
-    integer :: iproc,ipx,ipy,ipz ! Processor location
-    integer :: SN_number, iSN_remain ! Total SN in OB and SN remaining
-    integer :: iOB               ! OB identifier
-    integer :: state
-  endtype
-!
-  type SNCluster
-    type (ClusterFeature) :: feat
-    type (ClusterIndex) :: indx
-  endtype
-!
-!  Enumeration of Supernovae types.
-!
-  integer, parameter :: SNtype_I = 1, SNtype_II = 2
-!
-!  Enumeration of Supernovae states.
-!
-  integer, parameter :: SNstate_invalid   = 0
-  integer, parameter :: SNstate_waiting   = 1
-  integer, parameter :: SNstate_exploding = 2
-  integer, parameter :: SNstate_finished  = 3
-!
-!  Enumeration of Explosion Errors
-!
-  integer, parameter :: iEXPLOSION_OK           = 0
-  integer, parameter :: iEXPLOSION_TOO_HOT      = 1
-  integer, parameter :: iEXPLOSION_TOO_RARIFIED = 2
-  integer, parameter :: iEXPLOSION_TOO_UNEVEN   = 3
-!
-!  Enumeration of OB cluster states.
-!
-  integer, parameter :: OBstate_invalid   = 0
-  integer, parameter :: OBstate_waiting   = 1
-  integer, parameter :: OBstate_active    = 2
-  integer, parameter :: OBstate_finished  = 3
-!
-!  04-sep-09/fred: amended xsi_sedov
-!  ref Dyson & Williams Ch7 value = (25/3/pi)**(1/5)=1.215440704 for gamma=5/3
-!  2nd ref Ostriker & McKee 1988 Rev.Mod.Phys 60,1 1.15166956^5=2.206
-!  Est'd value for similarity variable at shock
-!
-!  real :: xsi_sedov=1.215440704
-!  real :: xsi_sedov=1.15166956, mu
-  real :: xsi_sedov=2.026, mu, SFt_norm, SFr_norm, sedov_norm, kfrac_norm
-!
-!  'Current' SN Explosion site parameters
-!
-  integer, parameter :: mSNR = 100, mOB = 20
-  integer :: nSNR = 0, nOB = 0
-  type (SNRemnant), dimension(mSNR) :: SNRs
-  type (SNCluster), dimension(mOB) :: OBs
-  integer, dimension(mSNR) :: SNR_index
-  integer, dimension(mOB) :: OB_index
-  integer, parameter :: npreSN = 5
-  integer, dimension(4,npreSN) :: preSN
-!
-!  Squared distance to the SNe site along the current pencil
-!  Outward normal vector from SNe site along the current pencil
-!
-  real, dimension(nx) :: dr2_SN, dr2_OB
-  real, dimension(nx,3) :: outward_normal_SN, outward_normal_OB
-!
-!  Allocate time of next SNI/II and intervals until next
-!
-  real :: t_next_SNI=0.0, t_next_SNII=0.0
-  real :: x_cluster=0.0, y_cluster=0.0, z_cluster=0.0, t_cluster=0.0
-  real :: t_interval_SNI=impossible, t_interval_SNII=impossible
-  real :: t_interval_OB=impossible
-  real :: zdisk, maxrho !varying location of centre of mass of the disk
-  logical :: lfirst_zdisk
-!
-  logical :: lfirst_warning=.true.
-!  normalisation factors for 1-d, 2-d, and 3-d profiles like exp(-r^6)
-!  ( 1d: 2    int_0^infty exp(-(r/a)^6)     dr) / a
-!    2d: 2 pi int_0^infty exp(-(r/a)^6) r   dr) / a^2
-!    3d: 4 pi int_0^infty exp(-(r/a)^6) r^2 dr) / a^3 )
-!  ( cf. 3.128289613 -- from where ?!? )
-!  NB: 1d and 2d results just from numerical integration -- calculate
-!      exact integrals at some point...
-!  3-D  was 3.71213666 but replaced with Maple result....
-!
-  real, parameter, dimension(3) :: &
-             cnorm_gaussian_SN  =  (/ 0.8862269254527579, pi, 5.568327996831708  /)
-  real, parameter, dimension(3) :: &
-             cnorm_gaussian2_SN =  (/ 0.9064024770554771, 2.784163998415854, 3.849760110050832  /)
-  real, parameter, dimension(3) :: &
-             cnorm_SN           =  (/ 0.9277193336300392, 2.805377873352155, 3.712218664554472  /)
-  real, parameter, dimension(3) :: &
-             cnorm_para_SN =       (/  fourthird,        1.570796326794897, 1.6755161          /)
-  real, parameter, dimension(3) :: &
-             cnorm_quar_SN =       (/  0.,                2.0943951,         0.                 /)
-  ! kinetic energy with lmass_SN=F
-  real, parameter, dimension(3) :: &
-             vnormEj_gaussian_SN =  (/ 0.5116633539732443, 1.047197551196598, 1.0716252226356386 /)
-  ! kinetic energy addition lmass_SN=T
-  real, parameter, dimension(3) :: &
-             vnorm_gaussian_SN =    (/ 0.6266570686577501, 1.570796326794897, 1.9687012432153024 /)
-  real, parameter, dimension(3) :: &
-             vnormEj_gaussian2_SN = (/ 0.6887169476297503, 1.607437833953458, 1.6888564123130090 /)
-  ! kinetic energy addition lmass_SN=T
-  real, parameter, dimension(3) :: &
-             vnorm_gaussian2_SN =   (/ 0.7621905937330379, 1.968701243215302, 2.2890810569630537 /)
-  real, parameter, dimension(3) :: &
-             vnormEj_SN =           (/ 0.7724962826996008, 1.945140377302524, 2.1432504452712773 /)
-  ! kinetic energy addition lmass_SN=T
-  real, parameter, dimension(3) :: &
-             vnorm_SN =           (/ 0.8265039651250117, 2.226629893663761, 2.624934990953737  /)
-!
-!  cp1=1/cp used to convert TT (and ss) into interstellar code units
-!  (useful, as many conditions conveniently expressed in terms of TT)
-!  code units based on:
-!    [length]  = 1kpc  = 3.09 10^21 cm
-!    [time]    = 1Gyr  = 3.15 10^16 s             !no, on [u]=1km/s...
-!    [rho]     =       = 1.00 10^-24 g/cm^3
-!  Lambdaunits converts coolH into interstellar code units.
-!
-  real :: unit_Lambda, unit_Gamma
-!
-!  SNe placement limitations (for code stability)
-!  Minimum resulting central temperature of a SN explosion.
-!  If this is not reached then consider moving mass to achieve this.
-!  10-aug-10/fred:
-!  As per joung et al apj653 2005 min temp 1E6 to avoid excess radiative
-!  energy losses in early stages.
-!
-  real, parameter :: rho_SN_min_cgs=1E-28,rho_SN_max_cgs=2.364E-23
-!  fred: max rho intended to avoid explosion sites that are difficult to
-!  resolve, but can lead to persistent high density structures that cannot be
-!  destroyed by SN, so may be better to allow unrestricted
-  real, parameter :: TT_SN_min_cgs=1., TT_SN_max_cgs=5E6
-  real :: rho_SN_min=impossible, rho_SN_max=impossible
-  real :: TT_SN_min=impossible, TT_SN_max=impossible
-  real :: SN_rho_ratio=1e4, SN_TT_ratio=1.0e1
-!
-!  SNI per (x,y)-area explosion rate
-!
-  real(KIND=rkind8), parameter :: SNI_area_rate_cgs=1.330982784D-56
-  real(KIND=rkind8), parameter :: OB_area_rate_cgs=1.576417151D-57
-  real :: SNI_area_rate=impossible, SNII_area_rate=impossible
-  real :: OB_area_rate=impossible
-  real :: SNI_factor=1.0, SNII_factor=1.0
-!
-!  SNII rate=5.E-12 mass(H1+HII)/solar_mass
-!  van den Bergh/Tammann Annu. Rev Astron. Astrophys. 1991 29:363-407
-!  SNI rate=4.7E-14/solar_mass + 0.35 x SNII rate
-!  Mannucci et al A&A 433, 807-814 (2005)
-!
-  real, parameter :: SNII_mass_rate_cgs=1.584434515E-19
-  real, parameter :: SNI_mass_rate_cgs=1.489368444E-21
-  real :: SNII_mass_rate, SNI_mass_rate, Lxyzmin
-  real :: SN_interval_rhom=impossible, SN_interval_rhom_cgs=2.8e-25
-  logical :: lSN_mass_rate=.false., lscale_SN_interval=.false.
-  real :: iSNdx=4.
-!
-!  Some useful constants
-!
-  real, parameter :: kpc_cgs=3.086E+21, pc_cgs=3.086E+18 ! [cm]
-  real, parameter :: yr_cgs=3.155692E7, kyr_cgs=3.155692E10, &
-                     Myr_cgs=3.155692E13 ! [s]
-  real, parameter :: solar_mass_cgs=1.989E33 ! [g]
-  real :: solar_mass
-!
-!  Scale heights for SNI/II with Gaussian z distributions
-!
-  real, parameter :: h_SNI_cgs=1.00295E21, h_SNII_cgs=2.7774E20
-  real :: h_SNI=impossible, h_SNII=impossible
-  logical :: lh_SNII_adjust=.false.
-!
-!  Self regulating SNII explosion coefficients
-!
-  real, parameter :: cloud_rho_cgs=1.67262158E-24, cloud_TT_cgs=4000.
-  real, parameter :: cloud_tau_cgs=2.E7 * yr_cgs, minTT_cgs = 0.75E2
-  real, parameter :: mass_SN_progenitor_cgs=10.*solar_mass_cgs
-  real, parameter :: frac_converted=0.02, frac_heavy=0.10
-!  real, parameter :: tosolarMkpc3=1.483E7
-  real :: cloud_rho=impossible, lncloud_TT, cloud_TT=impossible
-  !$omp target enter data map(cloud_rho,lncloud_TT)
-  real :: cloud_tau=impossible
-  real :: mass_SN_progenitor=impossible
-!
-!  Total SNe energy
-!
-  real(KIND=rkind8), parameter :: ampl_SN_cgs=1D51
-  real :: frac_ecr=0.0, frac_eth=1.0, frac_kin=0.0, kin_max=0.075
-  real :: ampl_SN=impossible, campl_SN=0.0, eampl_SN=0.0, kampl_SN=0.0, &
-      kperp=0.05, kpara=0.025
-!
-!  SNe composition
-!
-  logical :: lSN_eth=.true., lSN_ecr=.false., lSN_mass=.false., &
-      lSN_velocity=.false., lSN_fcr=.false., lSN_autofrackin=.true., &
-      lSN_momentum=.true., lSN_coolingmass=.false.
-!
-!  Total mass added by a SNe
-!
-  real, parameter :: mass_SN_cgs=10.*solar_mass_cgs
-  real :: mass_SN=impossible
-!
-!  Size of SN insertion site (energy and mass) and shell in mass movement
-!
-  real :: sigma_SN, sigma_SN1
-  real, parameter :: width_SN_cgs=6.172E19
-  real :: energy_width_ratio=1.
-  real :: mass_width_ratio=1.
-  real :: velocity_width_ratio=1.
-  real :: outer_shell_proportion = 1.2
-  real :: inner_shell_proportion = 1.
-  real :: width_SN=impossible
-  real :: energy_Nsigma=impossible, energy_Nsigma2
-!
-!  Set SN by predefined list of time and coordinates for direct comparison
-!  between models
-!
-  logical :: lSN_list=.false.
-  real, dimension(:,:), allocatable :: SN_list
-  integer, dimension(:), allocatable :: SN_type
-  integer :: type_list, nlist, SNfirst
-!
-!  Parameters for 'averaged'-SN heating
-!
-  real :: r_SNI_yrkpc2=4.E-6, r_SNII_yrkpc2=3.E-5
-  real :: r_SNI, r_SNII
-  real :: average_SNI_heating=impossible, average_SNII_heating=impossible
-!
-!  Limit placed of minimum density resulting from cavity creation and
-!  parameters for thermal_hse(hydrostatic equilibrium) assuming RBNr
-!
-  real, parameter :: rho_min_cgs=1.E-34, rho0ts_cgs=3.5E-24, T_init_cgs=1.E3
-  real :: rho0ts=impossible, T_init=impossible, rho_min=impossible
-!
-!  Time of most recent SNII event
-!
-  real :: last_SN_t=0.
-!
-!  Time to wait before allowing SN to begin firing
-!
-  real :: t_settle=0.
-!
-!  Initial dist'n of explosions
-!
-  character (len=labellen), dimension(ninit) :: initinterstellar='nothing'
-!
-!  Number of randomly placed SNe to generate to mix the initial medium
-!
-  integer :: initial_SNI=0
-!
-!  Parameters for UV heating of Wolfire et al.
-!
-  real, parameter :: rhoUV_cgs=0.1
-  real, parameter :: GammaUV_cgs=0.0147
-  real, parameter :: TUV_cgs=7000., T0UV_cgs=20000., cUV_cgs=5.E-4
-  real :: GammaUV=impossible, T0UV=impossible, cUV=impossible
-!
-!  04-jan-10/fred:
-!  Amended cool dim from 7 to 11 to accomodate WSW dimension.
-!  Appended null last term to all arrays for RBN and SS cooling
-!
-  integer, parameter :: len_cool=11
-  real(KIND=rkind8), dimension(len_cool) :: lncoolH, coolH_cgs
-  real, dimension(len_cool) :: coolT_cgs, coolB, lncoolT
-  integer :: ncool
-!
-!  TT & z-dependent uv-heating profile
-!
-  real, dimension(mz) :: heat_z
-  logical :: lthermal_hse=.false., lheatz_min=.true.
-!
-  real :: coolingfunction_scalefactor=1.
-  real :: heatingfunction_scalefactor=1.
-  real :: heatingfunction_fadefactor=1.
-!
-  real :: heating_rate = 0.015
-  real :: heating_rate_code = impossible
-!
-  real :: heatcool_shock_cutoff_rate = 0.
-  real :: heatcool_shock_cutoff_rate1 = 0.0
-!
-!  Set .true. to smoothly turn off the heating and cooling where the
-!  shock_profile is > 0 if  heatcool_shock_cutoff_rate/=0
-!  Fred: revealed too high timestep for large df(u) source of code instability
-!  rather than cooling timestep or shock instability, so this device no longer
-!  recommended.
-!
-  logical :: lheatcool_shock_cutoff = .false., lcooling_revert=.false.
-!
-!  SN type flags
-!
-  logical :: lSNI=.true., lSNII=.true.
-!
-!  Cooling & heating flags
-!
-  logical :: laverage_SNI_heating = .false.
-  logical :: laverage_SNII_heating = .false.
-!
-!  Remnant location flags
-!
-  logical :: luniform_zdist_SNI = .false., lSNII_gaussian=.true.
-  logical :: lOB_cluster = .false. ! SN clustering
-  real    :: p_OB=0.7 ! Probability that an SN is in a cluster
-  real    :: SN_clustering_radius=impossible
-  real    :: SN_clustering_time=impossible
-  real    :: SN_clustering_radius_cgs=1.25e20 ! cm (~40 pc)
-  real    :: SN_clustering_time_cgs=1.6e14 ! cm (~5 Myr)
-!
-!  Adjust SNR%feat%radius inversely with density
-!
-  logical :: lSN_scale_rad=.false.
-  real :: N_mass=250.0, eps_mass=0.05, rfactor_SN=5.0, Nsol_added=30.
-!
-!  Requested SNe location (used for test SN)
-!
-  real :: center_SN_x = impossible
-  real :: center_SN_y = impossible
-  real :: center_SN_z = impossible
-!
-!  Cooling time diagnostic
-!
-  integer :: idiag_taucmin=0  ! DIAG_DOC: $\min(\tau_{\rm cool})$
-  integer :: idiag_Hmax_ism=0 ! DIAG_DOC: $\max(\Gamma-\rho\Lambda)$
-  integer :: idiag_Lamm=0     ! DIAG_DOC: $\left<\Lambda\right>$
-  integer :: idiag_nrhom=0    ! DIAG_DOC: TBC
-  integer :: idiag_rhoLm=0    ! DIAG_DOC: $\left<\rho\Lambda\right>$
-  integer :: idiag_Gamm=0     ! DIAG_DOC: $\left<\Gamma\right>$
-  integer :: idiag_rhoHCmz=0  ! XYAVG_DOC: $\left<\rho\Gamma-\rho^2\Lambda\right>_{xy}$
-!
-!  Heating function, cooling function and mass movement
-!  method selection.
-!
-  character (len=labellen) :: cooling_select  = 'WSW'
-  character (len=labellen) :: heating_select  = 'wolfire'
-  character (len=labellen) :: thermal_profile = 'gaussian'
-  character (len=labellen) :: velocity_profile= 'gaussian'
-  character (len=labellen) :: mass_profile    = 'gaussian'
-!
-!  Variables required for returning mass to disk given no inflow
-!  boundary condition used in addmassflux
-!
-  real :: boldmass=0.0, old_rhom=1.0
-  logical :: ladd_massflux = .false.
-!  switches required to override the persistent values when continuing a run
-  logical :: l_persist_overwrite_lSNI=.false., l_persist_overwrite_lSNII=.false.
-  logical :: l_persist_overwrite_tSNI=.false., l_persist_overwrite_tSNII=.false.
-  logical :: l_persist_overwrite_tcluster=.false., l_persist_overwrite_xcluster=.false.
-  logical :: l_persist_overwrite_ycluster=.false., l_persist_overwrite_zcluster=.false.
-  logical :: lreset_ism_seed=.false.
-  integer :: seed_reset=1963
-!
-!  Gravity constansts - required for pre-2015 vertical heating profile
-!
-  real :: a_S, a_D
-  real, parameter :: a_S_cgs=4.4e-9, a_D_cgs=1.7e-9
-  real :: z_S, z_D, H_z
-  real, parameter :: z_S_cgs=6.172e20, z_D_cgs=3.086e21, H_z_cgs=9.258E20
-!
-!  start parameters
-!
-  namelist /interstellar_init_pars/ &
-      initinterstellar, initial_SNI, h_SNI, h_SNII, lSNII, lSNI, &
-      lSN_scale_rad, ampl_SN, mass_SN, width_SN, &
-      mass_width_ratio, energy_width_ratio, velocity_width_ratio, &
-      t_next_SNI, t_next_SNII, center_SN_x, center_SN_y, center_SN_z, &
-      lSN_eth, lSN_ecr, lSN_fcr, lSN_mass, lSN_list, &
-      frac_ecr, frac_kin, thermal_profile, velocity_profile, mass_profile, &
-      luniform_zdist_SNI, inner_shell_proportion, outer_shell_proportion, &
-      SNI_factor, SNII_factor, lSN_autofrackin, kin_max, &
-      cooling_select, heating_select, heating_rate, GammaUV, rho0ts, &
-      T_init, TT_SN_max, rho_SN_min, N_mass, lSNII_gaussian, rho_SN_max, &
-      lthermal_hse, lheatz_min, kperp, kpara, average_SNII_heating, &
-      average_SNI_heating, SN_rho_ratio, SN_TT_ratio, &
-      eps_mass, rfactor_SN, &
-      energy_Nsigma, lSN_momentum, lSN_coolingmass, Nsol_added
-!
-! run parameters
-!
-  namelist /interstellar_run_pars/ &
-      ampl_SN, mass_SN, t_next_SNI, t_next_SNII, lSN_list, &
-      mass_width_ratio, energy_width_ratio, velocity_width_ratio, &
-      lSN_eth, lSN_ecr, lSN_fcr, lSN_mass, width_SN, lSNI, lSNII, &
-      luniform_zdist_SNI, SNI_area_rate, SNII_area_rate, &
-      SNI_factor, SNII_factor, lSN_autofrackin, kin_max, &
-      frac_ecr, frac_kin, thermal_profile,velocity_profile, mass_profile, &
-      h_SNI, h_SNII, TT_SN_min, lSN_scale_rad, lh_SNII_adjust, &
-      mass_SN_progenitor, cloud_tau, cloud_rho, cloud_TT, &
-      laverage_SNI_heating, laverage_SNII_heating, coolingfunction_scalefactor, &
-      heatingfunction_scalefactor, heatingfunction_fadefactor, t_settle, &
-      center_SN_x, center_SN_y, center_SN_z, rho_SN_min, TT_SN_max, &
-      cooling_select, heating_select, heating_rate, GammaUV, &
-      heatcool_shock_cutoff_rate, ladd_massflux, lcooling_revert, &
-      N_mass, T_init, rho0ts, &
-      lSNII_gaussian, rho_SN_max, lSN_mass_rate, lthermal_hse, lheatz_min, &
-      p_OB, SN_clustering_time, SN_clustering_radius, lOB_cluster, kperp, &
-      average_SNII_heating, average_SNI_heating, seed_reset, &
-      l_persist_overwrite_lSNI, l_persist_overwrite_lSNII, &
-      l_persist_overwrite_tSNI, l_persist_overwrite_tSNII, &
-      l_persist_overwrite_tcluster, l_persist_overwrite_xcluster, &
-      l_persist_overwrite_ycluster, l_persist_overwrite_zcluster, &
-      lreset_ism_seed, SN_rho_ratio, SN_TT_ratio, eps_mass, &
-      lscale_SN_interval, SN_interval_rhom, rfactor_SN, iSNdx, &
-      energy_Nsigma, lSN_momentum, lSN_coolingmass, Nsol_added
-!
-  real :: gamma
-!
-  contains
-!
-!***********************************************************************
+    !
+    use Cdata
+    use General, only: keep_compiler_quiet
+    use Messages
+    !
+    implicit none
+    !
+    include 'interstellar.h'
+    include 'record_types.h'
+    include 'eos_params.h'
+    !
+    interface input_persistent_interstellar
+      module procedure input_persist_interstellar_id
+      module procedure input_persist_interstellar
+    endinterface
+    !
+    type ExplosionSite
+      real :: rho, lnrho, yH, lnTT, TT, ss, ee
+    endtype
+    !
+    type RemnantFeature
+      real :: x, y, z, t    ! Time and location
+      real :: MM, EE, CR    ! Mass, energy & CR injected
+      real :: rhom          ! Local mean density and energy at explosion time
+      real :: radius, dr    ! Injection radius and resolution
+      real :: t_sedov, t_SF ! Sedov time shell formation time
+    endtype
+    !
+    type RemnantIndex
+      integer :: l,m,n           ! Grid position
+      integer :: iproc,ipx,ipy,ipz
+      integer :: SN_type
+      integer :: state
+    endtype
+    !
+    type SNRemnant
+            type (RemnantFeature) :: feat
+            type (RemnantIndex) :: indx
+            type (ExplosionSite) :: site
+    endtype
+    !
+    !  Add cluster type
+    !
+    type ClusterFeature
+            real :: x, y, z, t ! Location and end time
+            real :: radius     ! OB radius
+            real :: rhom0      ! Mean density at OB initiation
+            real :: rhom       ! Mean density in OB currently
+            real :: tnextOB    ! Sedov time shell formation time
+    endtype
+    !
+    type ClusterIndex
+            integer :: l,m,n             ! Grid position
+            integer :: iproc,ipx,ipy,ipz ! Processor location
+            integer :: SN_number, iSN_remain ! Total SN in OB and SN remaining
+            integer :: iOB               ! OB identifier
+            integer :: state
+    endtype
+    !
+    type SNCluster
+            type (ClusterFeature) :: feat
+            type (ClusterIndex) :: indx
+    endtype
+    !
+    !  Enumeration of Supernovae types.
+    !
+    integer, parameter :: SNtype_I = 1, SNtype_II = 2
+    !
+    !  Enumeration of Supernovae states.
+    !
+    integer, parameter :: SNstate_invalid   = 0
+    integer, parameter :: SNstate_waiting   = 1
+    integer, parameter :: SNstate_exploding = 2
+    integer, parameter :: SNstate_finished  = 3
+    !
+    !  Enumeration of Explosion Errors
+    !
+    integer, parameter :: iEXPLOSION_OK           = 0
+    integer, parameter :: iEXPLOSION_TOO_HOT      = 1
+    integer, parameter :: iEXPLOSION_TOO_RARIFIED = 2
+    integer, parameter :: iEXPLOSION_TOO_UNEVEN   = 3
+    !
+    !  Enumeration of OB cluster states.
+    !
+    integer, parameter :: OBstate_invalid   = 0
+    integer, parameter :: OBstate_waiting   = 1
+    integer, parameter :: OBstate_active    = 2
+    integer, parameter :: OBstate_finished  = 3
+    !
+    !  04-sep-09/fred: amended xsi_sedov
+    !  ref Dyson & Williams Ch7 value = (25/3/pi)**(1/5)=1.215440704 for gamma=5/3
+    !  2nd ref Ostriker & McKee 1988 Rev.Mod.Phys 60,1 1.15166956^5=2.206
+    !  Est'd value for similarity variable at shock
+    !
+    !  real :: xsi_sedov=1.215440704
+    !  real :: xsi_sedov=1.15166956, mu
+    real :: xsi_sedov=2.026, mu, SFt_norm, SFr_norm, sedov_norm, kfrac_norm
+    !
+    !  'Current' SN Explosion site parameters
+    !
+    integer, parameter :: mSNR = 100, mOB = 20
+    integer :: nSNR = 0, nOB = 0
+    type (SNRemnant), dimension(mSNR) :: SNRs
+    type (SNCluster), dimension(mOB) :: OBs
+    integer, dimension(mSNR) :: SNR_index
+    integer, dimension(mOB) :: OB_index
+    integer, parameter :: npreSN = 5
+    integer, dimension(4,npreSN) :: preSN
+    !
+    !  Squared distance to the SNe site along the current pencil
+    !  Outward normal vector from SNe site along the current pencil
+    !
+    real, dimension(nx) :: dr2_SN, dr2_OB
+    !
+    !  Allocate time of next SNI/II and intervals until next
+    !
+    real :: t_next_SNI=0.0, t_next_SNII=0.0
+    real :: x_cluster=0.0, y_cluster=0.0, z_cluster=0.0, t_cluster=0.0
+    real :: t_interval_SNI=impossible, t_interval_SNII=impossible
+    real :: t_interval_OB=impossible
+    real :: zdisk, maxrho !varying location of centre of mass of the disk
+    logical :: lfirst_zdisk
+    !
+    logical :: lfirst_warning=.true.
+    !  normalisation factors for 1-d, 2-d, and 3-d profiles like exp(-r^6)
+    !  ( 1d: 2    int_0^infty exp(-(r/a)^6)     dr) / a
+    !    2d: 2 pi int_0^infty exp(-(r/a)^6) r   dr) / a^2
+    !    3d: 4 pi int_0^infty exp(-(r/a)^6) r^2 dr) / a^3 )
+    !  ( cf. 3.128289613 -- from where ?!? )
+    !  NB: 1d and 2d results just from numerical integration -- calculate
+    !      exact integrals at some point...
+    !  3-D  was 3.71213666 but replaced with Maple result....
+    !
+    real, parameter, dimension(3) :: &
+            cnorm_gaussian_SN  =  (/ 0.8862269254527579, pi, 5.568327996831708  /)
+    real, parameter, dimension(3) :: &
+            cnorm_gaussian2_SN =  (/ 0.9064024770554771, 2.784163998415854, 3.849760110050832  /)
+    real, parameter, dimension(3) :: &
+            cnorm_SN           =  (/ 0.9277193336300392, 2.805377873352155, 3.712218664554472  /)
+    real, parameter, dimension(3) :: &
+            cnorm_para_SN =       (/  fourthird,        1.570796326794897, 1.6755161          /)
+    real, parameter, dimension(3) :: &
+            cnorm_quar_SN =       (/  0.,                2.0943951,         0.                 /)
+    ! kinetic energy with lmass_SN=F
+    real, parameter, dimension(3) :: &
+            vnormEj_gaussian_SN =  (/ 0.5116633539732443, 1.047197551196598, 1.0716252226356386 /)
+    ! kinetic energy addition lmass_SN=T
+    real, parameter, dimension(3) :: &
+            vnorm_gaussian_SN =    (/ 0.6266570686577501, 1.570796326794897, 1.9687012432153024 /)
+    real, parameter, dimension(3) :: &
+            vnormEj_gaussian2_SN = (/ 0.6887169476297503, 1.607437833953458, 1.6888564123130090 /)
+    ! kinetic energy addition lmass_SN=T
+    real, parameter, dimension(3) :: &
+            vnorm_gaussian2_SN =   (/ 0.7621905937330379, 1.968701243215302, 2.2890810569630537 /)
+    real, parameter, dimension(3) :: &
+            vnormEj_SN =           (/ 0.7724962826996008, 1.945140377302524, 2.1432504452712773 /)
+    ! kinetic energy addition lmass_SN=T
+    real, parameter, dimension(3) :: &
+            vnorm_SN =           (/ 0.8265039651250117, 2.226629893663761, 2.624934990953737  /)
+    !
+    !  cp1=1/cp used to convert TT (and ss) into interstellar code units
+    !  (useful, as many conditions conveniently expressed in terms of TT)
+    !  code units based on:
+    !    [length]  = 1kpc  = 3.09 10^21 cm
+    !    [time]    = 1Gyr  = 3.15 10^16 s             !no, on [u]=1km/s...
+    !    [rho]     =       = 1.00 10^-24 g/cm^3
+    !  Lambdaunits converts coolH into interstellar code units.
+    !
+    real :: unit_Lambda, unit_Gamma
+    !
+    !  SNe placement limitations (for code stability)
+    !  Minimum resulting central temperature of a SN explosion.
+    !  If this is not reached then consider moving mass to achieve this.
+    !  10-aug-10/fred:
+    !  As per joung et al apj653 2005 min temp 1E6 to avoid excess radiative
+    !  energy losses in early stages.
+    !
+    real, parameter :: rho_SN_min_cgs=1E-28,rho_SN_max_cgs=2.364E-23
+    !  fred: max rho intended to avoid explosion sites that are difficult to
+    !  resolve, but can lead to persistent high density structures that cannot be
+    !  destroyed by SN, so may be better to allow unrestricted
+    real, parameter :: TT_SN_min_cgs=1., TT_SN_max_cgs=5E6
+    real :: rho_SN_min=impossible, rho_SN_max=impossible
+    real :: TT_SN_min=impossible, TT_SN_max=impossible
+    real :: SN_rho_ratio=1e4, SN_TT_ratio=1.0e1
+    !
+    !  SNI per (x,y)-area explosion rate
+    !
+    real(KIND=rkind8), parameter :: SNI_area_rate_cgs=1.330982784D-56
+    real(KIND=rkind8), parameter :: OB_area_rate_cgs=1.576417151D-57
+    real :: SNI_area_rate=impossible, SNII_area_rate=impossible
+    real :: OB_area_rate=impossible
+    real :: SNI_factor=1.0, SNII_factor=1.0
+    !
+    !  SNII rate=5.E-12 mass(H1+HII)/solar_mass
+    !  van den Bergh/Tammann Annu. Rev Astron. Astrophys. 1991 29:363-407
+    !  SNI rate=4.7E-14/solar_mass + 0.35 x SNII rate
+    !  Mannucci et al A&A 433, 807-814 (2005)
+    !
+    real, parameter :: SNII_mass_rate_cgs=1.584434515E-19
+    real, parameter :: SNI_mass_rate_cgs=1.489368444E-21
+    real :: SNII_mass_rate, SNI_mass_rate, Lxyzmin
+    real :: SN_interval_rhom=impossible, SN_interval_rhom_cgs=2.8e-25
+    logical :: lSN_mass_rate=.false., lscale_SN_interval=.false.
+    real :: iSNdx=4.
+    !
+    !  Some useful constants
+    !
+    real, parameter :: kpc_cgs=3.086E+21, pc_cgs=3.086E+18 ! [cm]
+    real, parameter :: yr_cgs=3.155692E7, kyr_cgs=3.155692E10, &
+            Myr_cgs=3.155692E13 ! [s]
+    real, parameter :: solar_mass_cgs=1.989E33 ! [g]
+    real :: solar_mass
+    !
+    !  Scale heights for SNI/II with Gaussian z distributions
+    !
+    real, parameter :: h_SNI_cgs=1.00295E21, h_SNII_cgs=2.7774E20
+    real :: h_SNI=impossible, h_SNII=impossible
+    logical :: lh_SNII_adjust=.false.
+    !
+    !  Self regulating SNII explosion coefficients
+    !
+    real, parameter :: cloud_rho_cgs=1.67262158E-24, cloud_TT_cgs=4000.
+    real, parameter :: cloud_tau_cgs=2.E7 * yr_cgs, minTT_cgs = 0.75E2
+    real, parameter :: mass_SN_progenitor_cgs=10.*solar_mass_cgs
+    real, parameter :: frac_converted=0.02, frac_heavy=0.10
+    !  real, parameter :: tosolarMkpc3=1.483E7
+    real :: cloud_rho=impossible, cloud_TT=impossible, lncloud_TT
+    !!$omp target if(loffload) enter data map(cloud_rho,lncloud_TT)
+    real :: cloud_tau=impossible
+    real :: mass_SN_progenitor=impossible
+    !
+    !  Total SNe energy
+    !
+    real(KIND=rkind8), parameter :: ampl_SN_cgs=1D51
+    real :: frac_ecr=0.0, frac_eth=1.0, frac_kin=0.0, kin_max=0.075
+    real :: ampl_SN=impossible, campl_SN=0.0, eampl_SN=0.0, kampl_SN=0.0, &
+            kperp=0.05, kpara=0.025
+    !
+    !  SNe composition
+    !
+    logical :: lSN_eth=.true., lSN_ecr=.false., lSN_mass=.false., &
+               lSN_velocity=.false., lSN_fcr=.false., lSN_autofrackin=.true., &
+               lSN_momentum=.true., lSN_coolingmass=.false.
+    !
+    !  Total mass added by a SNe
+    !
+    real, parameter :: mass_SN_cgs=10.*solar_mass_cgs
+    real :: mass_SN=impossible
+    !
+    !  Size of SN insertion site (energy and mass) and shell in mass movement
+    !
+    real :: sigma_SN, sigma_SN1
+    real, parameter :: width_SN_cgs=6.172E19
+    real :: energy_width_ratio=1.
+    real :: mass_width_ratio=1.
+    real :: velocity_width_ratio=1.
+    real :: outer_shell_proportion = 1.2
+    real :: inner_shell_proportion = 1.
+    real :: width_SN=impossible
+    real :: energy_Nsigma=impossible, energy_Nsigma2
+    !
+    !  Set SN by predefined list of time and coordinates for direct comparison
+    !  between models
+    !
+    logical :: lSN_list=.false.
+    real, dimension(:,:), allocatable :: SN_list
+    integer, dimension(:), allocatable :: SN_type
+    integer :: type_list, nlist, SNfirst
+    !
+    !  Parameters for 'averaged'-SN heating
+    !
+    real :: r_SNI_yrkpc2=4.E-6, r_SNII_yrkpc2=3.E-5
+    real :: r_SNI, r_SNII
+    real :: average_SNI_heating=impossible, average_SNII_heating=impossible
+    !
+    !  Limit placed of minimum density resulting from cavity creation and
+    !  parameters for thermal_hse(hydrostatic equilibrium) assuming RBNr
+    !
+    real, parameter :: rho_min_cgs=1.E-34, rho0ts_cgs=3.5E-24, T_init_cgs=1.E3
+    real :: rho0ts=impossible, T_init=impossible, rho_min=impossible
+    !
+    !  Time of most recent SNII event
+    !
+    real :: last_SN_t=0.
+    !
+    !  Time to wait before allowing SN to begin firing
+    !
+    real :: t_settle=0.
+    !
+    !  Initial dist'n of explosions
+    !
+    character (len=labellen), dimension(ninit) :: initinterstellar='nothing'
+    !
+    !  Number of randomly placed SNe to generate to mix the initial medium
+    !
+    integer :: initial_SNI=0
+    !
+    !  Parameters for UV heating of Wolfire et al.
+    !
+    real, parameter :: rhoUV_cgs=0.1
+    real, parameter :: GammaUV_cgs=0.0147
+    real, parameter :: TUV_cgs=7000., T0UV_cgs=20000., cUV_cgs=5.E-4
+    real :: GammaUV=impossible, T0UV=impossible, cUV=impossible
+    !
+    !  04-jan-10/fred:
+    !  Amended cool dim from 7 to 11 to accomodate WSW dimension.
+    !  Appended null last term to all arrays for RBN and SS cooling
+    !
+    integer, parameter :: len_cool=11
+    real(KIND=rkind8), dimension(len_cool) :: lncoolH, coolH_cgs
+    real, dimension(len_cool) :: coolT_cgs, coolB, lncoolT
+    integer :: ncool
+    !
+    !  TT & z-dependent uv-heating profile
+    !
+    real, dimension(mz) :: heat_z
+    logical :: lthermal_hse=.false., lheatz_min=.true.
+    !
+    real :: coolingfunction_scalefactor=1.
+    real :: heatingfunction_scalefactor=1.
+    real :: heatingfunction_fadefactor=1.
+    !
+    real :: heating_rate = 0.015
+    real :: heating_rate_code = impossible
+    !
+    real :: heatcool_shock_cutoff_rate = 0.
+    real :: heatcool_shock_cutoff_rate1 = 0.0
+    !
+    !  Set .true. to smoothly turn off the heating and cooling where the
+    !  shock_profile is > 0 if  heatcool_shock_cutoff_rate/=0
+    !  Fred: revealed too high timestep for large df(u) source of code instability
+    !  rather than cooling timestep or shock instability, so this device no longer
+    !  recommended.
+    !
+    logical :: lheatcool_shock_cutoff = .false., lcooling_revert=.false.
+    !
+    !  SN type flags
+    !
+    logical :: lSNI=.true., lSNII=.true.
+    !
+    !  Cooling & heating flags
+    !
+    logical :: laverage_SNI_heating = .false.
+    logical :: laverage_SNII_heating = .false.
+    !
+    !  Remnant location flags
+    !
+    logical :: luniform_zdist_SNI = .false., lSNII_gaussian=.true.
+    logical :: lOB_cluster = .false. ! SN clustering
+    real    :: p_OB=0.7 ! Probability that an SN is in a cluster
+    real    :: SN_clustering_radius=impossible
+    real    :: SN_clustering_time=impossible
+    real    :: SN_clustering_radius_cgs=1.25e20 ! cm (~40 pc)
+    real    :: SN_clustering_time_cgs=1.6e14 ! cm (~5 Myr)
+    !
+    !  Adjust SNR%feat%radius inversely with density
+    !
+    logical :: lSN_scale_rad=.false.
+    real :: N_mass=250.0, eps_mass=0.05, rfactor_SN=5.0, Nsol_added=30.
+    !
+    !  Requested SNe location (used for test SN)
+    !
+    real :: center_SN_x = impossible
+    real :: center_SN_y = impossible
+    real :: center_SN_z = impossible
+    !
+    !  Cooling time diagnostic
+    !
+    integer :: idiag_taucmin=0  ! DIAG_DOC: $\min(\tau_{\rm cool})$
+    integer :: idiag_Hmax_ism=0 ! DIAG_DOC: $\max(\Gamma-\rho\Lambda)$
+    integer :: idiag_Lamm=0     ! DIAG_DOC: $\left<\Lambda\right>$
+    integer :: idiag_nrhom=0    ! DIAG_DOC: TBC
+    integer :: idiag_rhoLm=0    ! DIAG_DOC: $\left<\rho\Lambda\right>$
+    integer :: idiag_Gamm=0     ! DIAG_DOC: $\left<\Gamma\right>$
+    integer :: idiag_rhoHCmz=0  ! XYAVG_DOC: $\left<\rho\Gamma-\rho^2\Lambda\right>_{xy}$
+    !
+    !  Heating function, cooling function and mass movement
+    !  method selection.
+    !
+    character (len=labellen) :: cooling_select  = 'WSW'
+    character (len=labellen) :: heating_select  = 'wolfire'
+    character (len=labellen) :: thermal_profile = 'gaussian'
+    character (len=labellen) :: velocity_profile= 'gaussian'
+    character (len=labellen) :: mass_profile    = 'gaussian'
+    !
+    !  Variables required for returning mass to disk given no inflow
+    !  boundary condition used in addmassflux
+    !
+    real :: boldmass=0.0, old_rhom=1.0
+    logical :: ladd_massflux = .false.
+    !  switches required to override the persistent values when continuing a run
+    logical :: l_persist_overwrite_lSNI=.false., l_persist_overwrite_lSNII=.false.
+    logical :: l_persist_overwrite_tSNI=.false., l_persist_overwrite_tSNII=.false.
+    logical :: l_persist_overwrite_tcluster=.false., l_persist_overwrite_xcluster=.false.
+    logical :: l_persist_overwrite_ycluster=.false., l_persist_overwrite_zcluster=.false.
+    logical :: lreset_ism_seed=.false.
+    integer :: seed_reset=1963
+    !
+    !  Gravity constansts - required for pre-2015 vertical heating profile
+    !
+    real :: a_S, a_D
+    real, parameter :: a_S_cgs=4.4e-9, a_D_cgs=1.7e-9
+    real :: z_S, z_D, H_z
+    real, parameter :: z_S_cgs=6.172e20, z_D_cgs=3.086e21, H_z_cgs=9.258E20
+    !
+    logical :: loffload=.false.
+    !
+    !  start parameters
+    !
+    namelist /interstellar_init_pars/ &
+            initinterstellar, initial_SNI, h_SNI, h_SNII, lSNII, lSNI, &
+            lSN_scale_rad, ampl_SN, mass_SN, width_SN, &
+            mass_width_ratio, energy_width_ratio, velocity_width_ratio, &
+            t_next_SNI, t_next_SNII, center_SN_x, center_SN_y, center_SN_z, &
+            lSN_eth, lSN_ecr, lSN_fcr, lSN_mass, lSN_list, &
+            frac_ecr, frac_kin, thermal_profile, velocity_profile, mass_profile, &
+            luniform_zdist_SNI, inner_shell_proportion, outer_shell_proportion, &
+            SNI_factor, SNII_factor, lSN_autofrackin, kin_max, &
+            cooling_select, heating_select, heating_rate, GammaUV, rho0ts, &
+            T_init, TT_SN_max, rho_SN_min, N_mass, lSNII_gaussian, rho_SN_max, &
+            lthermal_hse, lheatz_min, kperp, kpara, average_SNII_heating, &
+            average_SNI_heating, SN_rho_ratio, SN_TT_ratio, &
+            eps_mass, rfactor_SN, &
+            energy_Nsigma, lSN_momentum, lSN_coolingmass, Nsol_added
+    !
+    ! run parameters
+    !
+    namelist /interstellar_run_pars/ &
+            ampl_SN, mass_SN, t_next_SNI, t_next_SNII, lSN_list, &
+            mass_width_ratio, energy_width_ratio, velocity_width_ratio, &
+            lSN_eth, lSN_ecr, lSN_fcr, lSN_mass, width_SN, lSNI, lSNII, &
+            luniform_zdist_SNI, SNI_area_rate, SNII_area_rate, &
+            SNI_factor, SNII_factor, lSN_autofrackin, kin_max, &
+            frac_ecr, frac_kin, thermal_profile,velocity_profile, mass_profile, &
+            h_SNI, h_SNII, TT_SN_min, lSN_scale_rad, lh_SNII_adjust, &
+            mass_SN_progenitor, cloud_tau, cloud_rho, cloud_TT, &
+            laverage_SNI_heating, laverage_SNII_heating, coolingfunction_scalefactor, &
+            heatingfunction_scalefactor, heatingfunction_fadefactor, t_settle, &
+            center_SN_x, center_SN_y, center_SN_z, rho_SN_min, TT_SN_max, &
+            cooling_select, heating_select, heating_rate, GammaUV, &
+            heatcool_shock_cutoff_rate, ladd_massflux, lcooling_revert, &
+            N_mass, T_init, rho0ts, &
+            lSNII_gaussian, rho_SN_max, lSN_mass_rate, lthermal_hse, lheatz_min, &
+            p_OB, SN_clustering_time, SN_clustering_radius, lOB_cluster, kperp, &
+            average_SNII_heating, average_SNI_heating, seed_reset, &
+            l_persist_overwrite_lSNI, l_persist_overwrite_lSNII, &
+            l_persist_overwrite_tSNI, l_persist_overwrite_tSNII, &
+            l_persist_overwrite_tcluster, l_persist_overwrite_xcluster, &
+            l_persist_overwrite_ycluster, l_persist_overwrite_zcluster, &
+            lreset_ism_seed, SN_rho_ratio, SN_TT_ratio, eps_mass, &
+            lscale_SN_interval, SN_interval_rhom, rfactor_SN, iSNdx, &
+            energy_Nsigma, lSN_momentum, lSN_coolingmass, Nsol_added, loffload
+    !
+    real :: gamma
+    !
+contains
+    !
+    !***********************************************************************
     subroutine register_interstellar()
-!
-!  19-nov-02/tony: coded
-!
-      use FArrayManager
-!
-!      call farray_register_auxiliary('netheat',inetheat,communicated=.true.)
-      call farray_register_auxiliary('netheat',inetheat)
-      call farray_register_auxiliary('cooling',icooling)
-!
-!  identify version number
-!
-      if (lroot) call svn_id( &
-           "$Id$")
-!
-!  Invalidate all SNRs
-!
-      nSNR=0
-      SNRs%indx%state=SNstate_invalid
-!
-!  Writing files for use with IDL
-!
-!      if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=',netheat $'
-!      if (naux+naux_com == maux+maux_com) aux_var(aux_count)=',netheat'
-!      aux_count=aux_count+1
-!      if (lroot) write(15,*) 'netheat = fltarr(mx,my,mz)*one'
-!
+    !
+    !  19-nov-02/tony: coded
+    !
+    use FArrayManager
+    !
+    !      call farray_register_auxiliary('netheat',inetheat,communicated=.true.)
+    call farray_register_auxiliary('netheat',inetheat)
+    call farray_register_auxiliary('cooling',icooling)
+    !
+    !  identify version number
+    !
+    if (lroot) call svn_id( &
+            "$Id$")
+    !
+    !  Invalidate all SNRs
+    !
+    nSNR=0
+    SNRs%indx%state=SNstate_invalid
+    !
+    !  Writing files for use with IDL
+    !
+    !      if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=',netheat $'
+    !      if (naux+naux_com == maux+maux_com) aux_var(aux_count)=',netheat'
+    !      aux_count=aux_count+1
+    !      if (lroot) write(15,*) 'netheat = fltarr(mx,my,mz)*one'
+    !
     endsubroutine register_interstellar
-!***********************************************************************
+    !***********************************************************************
     subroutine initialize_interstellar(f)
-!
-!  Perform any post-parameter-read initialization eg. set derived
-!  parameters
-!
-!  24-nov-02/tony: coded
-!
-!  10-feb-23/fred: timing and location of series of SNe shall be read
-!                  from formated file ./sn_series.in
-!                  containing same format as data/sn_series.dat typically
-!                  from previous run, if lSN_list.
-!
-      use EquationOfState, only: getmu, get_gamma_etc
-      use General, only: random_seed_wrapper
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      integer :: i, int1_list, stat
-      integer, dimension(4) :: int4_list
-      real, dimension(13) :: real13_list
-      real :: t_list,x_list,y_list,z_list
-      logical :: exist
-!
-      f(:,:,:,icooling)=0.0
-      f(:,:,:,inetheat)=0.0
-!
-      if (lroot) print"(1x,'initialize_interstellar: t_next_SNI =',e15.8)",t_next_SNI
-!
-      if (lroot.and.luniform_zdist_SNI) &
-        print*,'initialize_interstellar: using UNIFORM z-distribution of SNI'
+    !
+    !  Perform any post-parameter-read initialization eg. set derived
+    !  parameters
+    !
+    !  24-nov-02/tony: coded
+    !
+    !  10-feb-23/fred: timing and location of series of SNe shall be read
+    !                  from formated file ./sn_series.in
+    !                  containing same format as data/sn_series.dat typically
+    !                  from previous run, if lSN_list.
+    !
+    use EquationOfState, only: getmu, get_gamma_etc
+    use General, only: random_seed_wrapper
+    !
+    real, dimension (mx,my,mz,mfarray) :: f
+    integer :: i, int1_list, stat
+    integer, dimension(4) :: int4_list
+    real, dimension(13) :: real13_list
+    real :: t_list,x_list,y_list,z_list
+    logical :: exist
+    !
+    f(:,:,:,icooling)=0.0
+    f(:,:,:,inetheat)=0.0
+    !
+    if (lroot) print"(1x,'initialize_interstellar: t_next_SNI =',e15.8)",t_next_SNI
+    !
+    if (lroot.and.luniform_zdist_SNI) &
+                print*,'initialize_interstellar: using UNIFORM z-distribution of SNI'
 
-      call get_gamma_etc(gamma)
-      if (leos_idealgas) then
-        call getmu(f,mu)
-      else
-        mu = 0.62
-        if (lroot) print*, 'initialize_interstellar: mu not set by eos:',mu
-      endif
+    lSN_ecr=lcosmicray.and.lSN_ecr
+    lSN_fcr=lcosmicrayflux.and.lSN_fcr.and.lSN_ecr
 !
-      if (unit_system=='cgs') then
+    call get_gamma_etc(gamma)
+    if (leos_idealgas) then
+      call getmu(f,mu)
+    else
+      mu = 0.62
+      if (lroot) print*, 'initialize_interstellar: mu not set by eos:',mu
+    endif
+!
+    if (unit_system=='cgs') then
 !
 !  this Lambda as such enters as n^2*Lambda(T) on the rhs of the
 !  energy equation per unit volume (n Gamma(T))
-        unit_Lambda = unit_velocity**2 / unit_density / unit_time
-        unit_Gamma  = unit_velocity**3 / unit_length
 !
-        T0UV=T0UV_cgs / unit_temperature
-        cUV=cUV_cgs * unit_temperature
-        if (GammaUV==impossible) &
-            GammaUV=GammaUV_cgs / unit_Gamma
+      unit_Lambda = unit_velocity**2 / unit_density / unit_time
+      unit_Gamma  = unit_velocity**3 / unit_length
 !
-        if (rho_SN_min==impossible) rho_SN_min=rho_SN_min_cgs / unit_density
-        if (rho_SN_max==impossible) rho_SN_max=rho_SN_max_cgs / unit_density
-        if (TT_SN_max==impossible) TT_SN_max=TT_SN_max_cgs/unit_temperature
-        if (TT_SN_min==impossible) TT_SN_min=TT_SN_min_cgs / unit_temperature
-        if (OB_area_rate==impossible) &
-            OB_area_rate=OB_area_rate_cgs * unit_length**2 * unit_time
-        if (SNI_area_rate==impossible) &
-            SNI_area_rate=SNI_area_rate_cgs * unit_length**2 * unit_time
-        if (SNII_area_rate==impossible) &
-            SNII_area_rate=7.5*SNI_area_rate_cgs * unit_length**2 * unit_time
-        if (h_SNI==impossible) h_SNI=h_SNI_cgs / unit_length
-        if (h_SNII==impossible) h_SNII=h_SNII_cgs / unit_length
-        SNII_mass_rate=SNII_mass_rate_cgs*unit_time
-        SNI_mass_rate=SNI_mass_rate_cgs*unit_time
-        solar_mass=solar_mass_cgs / unit_mass
-        if (lroot.and.ip==1963) print &
-            "(1x,'initialize_interstellar: solar_mass =',e11.4)",solar_mass
-        r_SNI =r_SNI_yrkpc2  * (unit_time/yr_cgs) * (unit_length/kpc_cgs)**2
-        r_SNII=r_SNII_yrkpc2 * (unit_time/yr_cgs) * (unit_length/kpc_cgs)**2
+      T0UV=T0UV_cgs / unit_temperature
+      cUV=cUV_cgs * unit_temperature
+      if (GammaUV==impossible) GammaUV=GammaUV_cgs / unit_Gamma
+!
+      if (rho_SN_min==impossible) rho_SN_min=rho_SN_min_cgs / unit_density
+      if (rho_SN_max==impossible) rho_SN_max=rho_SN_max_cgs / unit_density
+      if (TT_SN_max==impossible) TT_SN_max=TT_SN_max_cgs/unit_temperature
+      if (TT_SN_min==impossible) TT_SN_min=TT_SN_min_cgs / unit_temperature
+      if (OB_area_rate==impossible) &
+          OB_area_rate=OB_area_rate_cgs * unit_length**2 * unit_time
+      if (SNI_area_rate==impossible) &
+          SNI_area_rate=SNI_area_rate_cgs * unit_length**2 * unit_time
+      if (SNII_area_rate==impossible) &
+          SNII_area_rate=7.5*SNI_area_rate_cgs * unit_length**2 * unit_time
+      if (h_SNI==impossible) h_SNI=h_SNI_cgs / unit_length
+      if (h_SNII==impossible) h_SNII=h_SNII_cgs / unit_length
+      SNII_mass_rate=SNII_mass_rate_cgs*unit_time
+      SNI_mass_rate=SNI_mass_rate_cgs*unit_time
+      solar_mass=solar_mass_cgs / unit_mass
+      if (lroot.and.ip==1963) print &
+          "(1x,'initialize_interstellar: solar_mass =',e11.4)",solar_mass
+      r_SNI =r_SNI_yrkpc2  * (unit_time/yr_cgs) * (unit_length/kpc_cgs)**2
+      r_SNII=r_SNII_yrkpc2 * (unit_time/yr_cgs) * (unit_length/kpc_cgs)**2
 !
 !   set SN parameters self-consistently
 !
-        if (ampl_SN==impossible) ampl_SN=ampl_SN_cgs / unit_energy
+      if (ampl_SN==impossible) ampl_SN=ampl_SN_cgs / unit_energy
 !  dimensional norm for Sedov-Taylor relations
-        sedov_norm=unit_density/1e-24*ampl_SN_cgs/unit_energy
+      sedov_norm=unit_density/1e-24*ampl_SN_cgs/unit_energy
 !  parameters for energy losses prior to SN initialisation
 !  ref Kim & Ostriker 2015 Eq 7 dimensional norm shell formation time
 !  ref Simpson et al. 2015 Eq 17
-        SFt_norm = 26.5*kyr_cgs/unit_time*&
-                   (1.4*m_H_cgs/unit_density)**(4./7)*&
-                   (unit_energy/ampl_SN_cgs)**(3./14)
+      SFt_norm = 26.5*kyr_cgs/unit_time*&
+                 (1.4*m_H_cgs/unit_density)**(4./7)*&
+                 (unit_energy/ampl_SN_cgs)**(3./14)
 !  ref Kim & Ostriker 2015 Eq 8 dimensional norm shell formation radius
 !  ref Simpson et al. 2015 Eq 18
-        SFr_norm = 18.5*pc_cgs/unit_length*&
-                   (unit_energy/ampl_SN_cgs)**(2./7)*&
-                   (1.4*m_H_cgs/unit_density)**(3./7)
+      SFr_norm = 18.5*pc_cgs/unit_length*&
+                 (unit_energy/ampl_SN_cgs)**(2./7)*&
+                 (1.4*m_H_cgs/unit_density)**(3./7)
 !  ref Simpson 15 Eq 16 dimensional norm kinetic energy fraction
-        kfrac_norm=3.97e-6*mu/1.4/m_H_cgs*unit_density*& !RPDS
-                   ampl_SN_cgs/unit_energy*(unit_length/pc_cgs)**5*&
-                   (kyr_cgs/unit_time)**2
-        if (lroot.and.lSN_autofrackin.and.ip==1963) then
-            print "(1x,'initialize_interstellar:   SFt_norm =',e11.4)",SFt_norm
-            print "(1x,'initialize_interstellar:   SFr_norm =',e11.4)",SFr_norm
-            print "(1x,'initialize_interstellar: sedov_norm =',e11.4)",sedov_norm
-            print "(1x,'initialize_interstellar: kfrac_norm =',e11.4)",kfrac_norm
-        endif
-        if (lSN_coolingmass) then
-          if (.not.lSN_eth) then
-            if (lroot) print*,&
-              'initialize_interstellar: lSN_coolingmass false if not lSN_eth'
-            lSN_coolingmass = .false.
-          else
-            lSN_mass = .false.
-          endif
-        endif
-        if (lSN_autofrackin) lSN_velocity = .true.
-        if (lSN_eth) then
-          if (lcosmicray .and. lSN_ecr) then
-            if (frac_ecr==0) frac_ecr=0.1
-            campl_SN=frac_ecr*ampl_SN
-          endif
-          frac_eth=1.-frac_ecr-frac_kin
-          if (frac_eth<0.) call fatal_error('initialize_interstellar','energy fractions must sum to 1')
-          kampl_SN=frac_kin*ampl_SN
-          eampl_SN=frac_eth*ampl_SN
-          if (frac_kin >0.0) lSN_velocity = .true.
-        else
-          if (lcosmicray .and. lSN_ecr) then
-            if (frac_ecr==0) frac_ecr=0.1
-            campl_SN=frac_ecr*ampl_SN
-          endif
-          if (frac_kin >0.0) lSN_velocity = .true.
-          kampl_SN=frac_kin*ampl_SN
-          if (frac_kin+frac_ecr>1) &
-            call fatal_error('initialize_interstellar','energy fractions not to be > 1')
-        endif
-        if (lroot) print &
-            "(1x,'initialize_interstellar: eampl_SN, kampl_SN = ',2e11.4)", eampl_SN, kampl_SN
-        if (energy_Nsigma==impossible) then
-          if (thermal_profile=="gaussian3") then
-            energy_Nsigma=1.25
-          elseif (thermal_profile=="gaussian2") then
-            energy_Nsigma=1.75
-          elseif (thermal_profile=="gaussian") then
-            energy_Nsigma=2.25
-          else
-            energy_Nsigma=1.5
-          endif
-        endif
-        energy_Nsigma2=energy_Nsigma**2
-        if (lSN_scale_rad) then
-           if (thermal_profile=="gaussian")  &
-               Lxyzmin=min(minval(Lxyz)/2, &
-                           minval(Lxyz)/cnorm_gaussian_SN(dimensionality))
-           if (thermal_profile=="gaussian2") &
-               Lxyzmin=min(minval(Lxyz)/2, &
-                           minval(Lxyz)/cnorm_gaussian2_SN(dimensionality))
-           if (thermal_profile=="gaussian3") &
-               Lxyzmin=min(minval(Lxyz)/2, &
-                           minval(Lxyz)/cnorm_SN(dimensionality))
-           if (lroot) print "(1x,'initialize_interstellar: Lxyzmin = ',e11.4)", Lxyzmin
-        endif
-        if (rho_min == impossible) rho_min=rho_min_cgs/unit_temperature
-        if (T_init == impossible) T_init=T_init_cgs/unit_temperature
-        if (rho0ts == impossible) rho0ts=rho0ts_cgs/unit_density
-        if (cloud_rho==impossible) cloud_rho=cloud_rho_cgs / unit_density
-        if (cloud_TT==impossible) cloud_TT=cloud_TT_cgs / unit_temperature
-        lncloud_TT = log(cloud_TT)
-        if (cloud_tau==impossible) cloud_tau=cloud_tau_cgs / unit_time
-        if (mass_SN==impossible) mass_SN=mass_SN_cgs / unit_mass
-        if (mass_SN_progenitor==impossible) &
-            mass_SN_progenitor=mass_SN_progenitor_cgs / unit_mass
-        if (width_SN==impossible) width_SN= &
-            min(width_SN_cgs / real(unit_length),rfactor_SN*dxmin)
-        if (SN_clustering_radius==impossible) &
-            SN_clustering_radius=SN_clustering_radius_cgs / unit_length
-        if (SN_clustering_time==impossible) &
-            SN_clustering_time=SN_clustering_time_cgs / unit_time
-        t_interval_OB   = 1./(OB_area_rate * Lx * Ly)
-      else
-        call not_implemented('initialize_interstellar','SI unit conversions')
+      kfrac_norm=3.97e-6*mu/1.4/m_H_cgs*unit_density*& !RPDS
+                 ampl_SN_cgs/unit_energy*(unit_length/pc_cgs)**5*&
+                 (kyr_cgs/unit_time)**2
+      if (lroot.and.lSN_autofrackin.and.ip==1963) then
+          print "(1x,'initialize_interstellar:   SFt_norm =',e11.4)",SFt_norm
+          print "(1x,'initialize_interstellar:   SFr_norm =',e11.4)",SFr_norm
+          print "(1x,'initialize_interstellar: sedov_norm =',e11.4)",sedov_norm
+          print "(1x,'initialize_interstellar: kfrac_norm =',e11.4)",kfrac_norm
       endif
+      if (lSN_coolingmass) then
+        if (.not.lSN_eth) then
+          if (lroot) print*,&
+            'initialize_interstellar: lSN_coolingmass false if not lSN_eth'
+          lSN_coolingmass = .false.
+        else
+          lSN_mass = .false.
+        endif
+      endif
+      if (lSN_autofrackin) lSN_velocity = .true.
+      if (lSN_eth) then
+        if (lSN_ecr) then
+          if (frac_ecr==0) frac_ecr=0.1
+          campl_SN=frac_ecr*ampl_SN
+        endif
+        frac_eth=1.-frac_ecr-frac_kin
+        if (frac_eth<0.) call fatal_error('initialize_interstellar','energy fractions must sum to 1')
+        kampl_SN=frac_kin*ampl_SN
+        eampl_SN=frac_eth*ampl_SN
+        if (frac_kin >0.0) lSN_velocity = .true.
+      else
+        if (lSN_ecr) then
+          if (frac_ecr==0) frac_ecr=0.1
+          campl_SN=frac_ecr*ampl_SN
+        endif
+        if (frac_kin >0.0) lSN_velocity = .true.
+        kampl_SN=frac_kin*ampl_SN
+        if (frac_kin+frac_ecr>1) &
+          call fatal_error('initialize_interstellar','energy fractions not to be > 1')
+      endif
+      if (lroot) print &
+          "(1x,'initialize_interstellar: eampl_SN, kampl_SN = ',2e11.4)", eampl_SN, kampl_SN
+      if (energy_Nsigma==impossible) then
+        if (thermal_profile=="gaussian3") then
+          energy_Nsigma=1.25
+        elseif (thermal_profile=="gaussian2") then
+          energy_Nsigma=1.75
+        elseif (thermal_profile=="gaussian") then
+          energy_Nsigma=2.25
+        else
+          energy_Nsigma=1.5
+        endif
+      endif
+      energy_Nsigma2=energy_Nsigma**2
+      if (lSN_scale_rad) then
+         if (thermal_profile=="gaussian")  &
+             Lxyzmin=min(minval(Lxyz)/2, minval(Lxyz)/cnorm_gaussian_SN(dimensionality))
+         if (thermal_profile=="gaussian2") &
+             Lxyzmin=min(minval(Lxyz)/2, minval(Lxyz)/cnorm_gaussian2_SN(dimensionality))
+         if (thermal_profile=="gaussian3") &
+             Lxyzmin=min(minval(Lxyz)/2, minval(Lxyz)/cnorm_SN(dimensionality))
+         if (lroot) print "(1x,'initialize_interstellar: Lxyzmin = ',e11.4)", Lxyzmin
+      endif
+      if (rho_min == impossible) rho_min=rho_min_cgs/unit_temperature
+      if (T_init == impossible) T_init=T_init_cgs/unit_temperature
+      if (rho0ts == impossible) rho0ts=rho0ts_cgs/unit_density
+      if (cloud_rho==impossible) cloud_rho=cloud_rho_cgs / unit_density
+      if (cloud_TT==impossible) cloud_TT=cloud_TT_cgs / unit_temperature
+      lncloud_TT = log(cloud_TT)
+      if (cloud_tau==impossible) cloud_tau=cloud_tau_cgs / unit_time
+      if (mass_SN==impossible) mass_SN=mass_SN_cgs / unit_mass
+      if (mass_SN_progenitor==impossible) &
+          mass_SN_progenitor=mass_SN_progenitor_cgs / unit_mass
+      if (width_SN==impossible) width_SN= &
+          min(width_SN_cgs / real(unit_length),rfactor_SN*dxmin)
+      if (SN_clustering_radius==impossible) &
+          SN_clustering_radius=SN_clustering_radius_cgs / unit_length
+      if (SN_clustering_time==impossible) &
+          SN_clustering_time=SN_clustering_time_cgs / unit_time
+      t_interval_OB   = 1./(OB_area_rate * Lx * Ly)
+    else
+      call not_implemented('initialize_interstellar','SI unit conversions')
+    endif
 !
-      call select_cooling(cooling_select,lncoolT,lncoolH,coolB)
+    call select_cooling(cooling_select,lncoolT,lncoolH,coolB)
 !
-      if (lroot) print "(1x,'initialize_interstellar: unit_Lambda',e11.4)",unit_Lambda
-      if (lroot) print "(1x,'initialize_interstellar: unit_Gamma',e11.4)",unit_Gamma
+    if (lroot) print "(1x,'initialize_interstellar: unit_Lambda',e11.4)",unit_Lambda
+    if (lroot) print "(1x,'initialize_interstellar: unit_Gamma',e11.4)",unit_Gamma
 !
-      heating_rate_code=heating_rate*real(unit_length/unit_velocity**3)
+    heating_rate_code=heating_rate*real(unit_length/unit_velocity**3)
 !
-      if (heating_select == 'thermal-hs') call heat_interstellar(f,heat_z)
+    if (heating_select == 'thermal-hs') call heat_interstellar(f,heat_z)
 !
 !  Cooling cutoff in shocks
 !
-      if (heatcool_shock_cutoff_rate/=0.) then
-        lheatcool_shock_cutoff=.true.
-        heatcool_shock_cutoff_rate1=1.0/heatcool_shock_cutoff_rate
-      else
-        lheatcool_shock_cutoff=.false.
-      endif
+    if (heatcool_shock_cutoff_rate/=0.) then
+      lheatcool_shock_cutoff=.true.
+      heatcool_shock_cutoff_rate1=1.0/heatcool_shock_cutoff_rate
+    else
+      lheatcool_shock_cutoff=.false.
+    endif
 !
 !  Slopeyness used for tanh rounding profiles etc.
 !
-      sigma_SN=dxmax*3
-      sigma_SN1=1./sigma_SN
+    sigma_SN=dxmax*3
+    sigma_SN1=1./sigma_SN
 !
-      preSN=0
+    preSN=0
 !
-      if (SN_interval_rhom==impossible) SN_interval_rhom=SN_interval_rhom_cgs/unit_density
-      t_interval_SNI  = 1./( SNI_factor *  SNI_area_rate * Lx * Ly)
-      t_interval_SNII = 1./(SNII_factor * SNII_area_rate * Lx * Ly)
-      if (average_SNI_heating == impossible) average_SNI_heating = &
-          r_SNI *ampl_SN/(sqrt(2*pi)*h_SNI*SN_interval_rhom)
-      if (average_SNII_heating == impossible) average_SNII_heating = &
-          r_SNII*ampl_SN/(sqrt(2*pi)*h_SNII*SN_interval_rhom)
-      if (lroot.and.ip==1963) print &
-          "(1x,'initialize_interstellar: t_interval_SNI, SNI rate =',2e11.4)", &
-          t_interval_SNI,SNI_factor*SNI_area_rate
-      if (laverage_SNI_heating) then
-        if (lSNI.or.lSNII) then
-          if (lroot.and.ip==1963) print &
-              "(1x,'initialize_interstellar: average_SNI_heating =',e11.4)", &
-              average_SNI_heating*sqrt(2*pi)*h_SNI*SN_interval_rhom* &
-              t_interval_SNI/(t_interval_SNI+t*heatingfunction_fadefactor)* &
-              heatingfunction_scalefactor
-        else
-          if (lroot.and.ip==1963) print &
-              "(1x,'initialize_interstellar: average_SNI_heating =',e11.4)", &
-              average_SNI_heating*sqrt(2*pi)*h_SNI*SN_interval_rhom* &
-              heatingfunction_scalefactor
-        endif
+    if (SN_interval_rhom==impossible) SN_interval_rhom=SN_interval_rhom_cgs/unit_density
+    t_interval_SNI  = 1./( SNI_factor *  SNI_area_rate * Lx * Ly)
+    t_interval_SNII = 1./(SNII_factor * SNII_area_rate * Lx * Ly)
+    if (average_SNI_heating == impossible) average_SNI_heating = &
+        r_SNI *ampl_SN/(sqrt(2*pi)*h_SNI*SN_interval_rhom)
+    if (average_SNII_heating == impossible) average_SNII_heating = &
+        r_SNII*ampl_SN/(sqrt(2*pi)*h_SNII*SN_interval_rhom)
+    if (lroot.and.ip==1963) print &
+        "(1x,'initialize_interstellar: t_interval_SNI, SNI rate =',2e11.4)", &
+        t_interval_SNI,SNI_factor*SNI_area_rate
+    if (laverage_SNI_heating) then
+      if (lSNI.or.lSNII) then
+        if (lroot.and.ip==1963) print &
+            "(1x,'initialize_interstellar: average_SNI_heating =',e11.4)", &
+            average_SNI_heating*sqrt(2*pi)*h_SNI*SN_interval_rhom* &
+            t_interval_SNI/(t_interval_SNI+t*heatingfunction_fadefactor)* &
+            heatingfunction_scalefactor
       else
-        if (lroot.and.ip==1963) print*, 'initialize_interstellar: average_SNI_heating = 0'
+        if (lroot.and.ip==1963) print &
+            "(1x,'initialize_interstellar: average_SNI_heating =',e11.4)", &
+            average_SNI_heating*sqrt(2*pi)*h_SNI*SN_interval_rhom* &
+            heatingfunction_scalefactor
       endif
-      if (laverage_SNII_heating) then
-        if (lSNI.or.lSNII) then
-          if (lroot.and.ip==1963) print &
-              "(1x,'initialize_interstellar: average_SNII_heating =',e11.4)", &
-              average_SNII_heating*sqrt(2*pi)*h_SNII*SN_interval_rhom* &
-              t_interval_SNII/(t_interval_SNII+t*heatingfunction_fadefactor)* &
-              heatingfunction_scalefactor
-        else
-          if (lroot.and.ip==1963) print &
-              "(1x,'initialize_interstellar: average_SNII_heating =',e11.4)", &
-              average_SNII_heating*sqrt(2*pi)*h_SNII*SN_interval_rhom* &
-              heatingfunction_scalefactor
-        endif
+    else
+      if (lroot.and.ip==1963) print*, 'initialize_interstellar: average_SNI_heating = 0'
+    endif
+    if (laverage_SNII_heating) then
+      if (lSNI.or.lSNII) then
+        if (lroot.and.ip==1963) print &
+            "(1x,'initialize_interstellar: average_SNII_heating =',e11.4)", &
+            average_SNII_heating*sqrt(2*pi)*h_SNII*SN_interval_rhom* &
+            t_interval_SNII/(t_interval_SNII+t*heatingfunction_fadefactor)* &
+            heatingfunction_scalefactor
       else
-        if (lroot.and.ip==1963) print*,'initialize_interstellar: average_SNII_heating =0'
+        if (lroot.and.ip==1963) print &
+            "(1x,'initialize_interstellar: average_SNII_heating =',e11.4)", &
+            average_SNII_heating*sqrt(2*pi)*h_SNII*SN_interval_rhom* &
+            heatingfunction_scalefactor
       endif
+    else
+      if (lroot.and.ip==1963) print*,'initialize_interstellar: average_SNII_heating =0'
+    endif
 !
-      if (lroot.and.ip==1963) then
-        print*,'initialize_interstellar: nseed,seed',nseed,seed(1:nseed)
-        print*,'initialize_interstellar: finished'
-      endif
-      if (ladd_massflux) call warning('initialize_interstellar','ladd_massflux now redundant,' // &
-                                      'set lconserve_total_mass) map(total_mass in density_run_pars instead')
+    if (lroot.and.ip==1963) then
+      print*,'initialize_interstellar: nseed,seed',nseed,seed(1:nseed)
+      print*,'initialize_interstellar: finished'
+    endif
+    if (ladd_massflux) call warning('initialize_interstellar','ladd_massflux now redundant,' // &
+                                    'set lconserve_total_mass, total_mass in density_run_pars instead')
 !
 !  Fred: 06-Nov-17 added SN_rate column and changed site_mass to site_Nsol
 !        Note changes may affect reading/meaning of pre-existing file contents
 !
-      if (lroot .and. lstart) then
-        open(1,file=trim(datadir)//'/sn_series.dat',position='append')
-        write(1,'("#",5A)')  &
-            '---it-----------t------------itype-iproc---l-----m-----n-------x-',&
-            '-----------y------------z-----------rho---------rhom---------',&
-            '-TT-----------EE----------Ekin----------Ecr--------t_sedov---',&
-            '---radius------site_Nsol----added_Nsol-------maxTT---', &
-            '---t_interval----SN_rate--'
-        close(1)
-      endif
+    if (lroot .and. lstart) then
+      open(1,file=trim(datadir)//'/sn_series.dat',position='append')
+      write(1,'("#",5A)')  &
+          '---it-----------t------------itype-iproc---l-----m-----n-------x-',&
+          '-----------y------------z-----------rho---------rhom---------',&
+          '-TT-----------EE----------Ekin----------Ecr--------t_sedov---',&
+          '---radius------site_Nsol----added_Nsol-------maxTT---', &
+          '---t_interval----SN_rate--'
+      close(1)
+    endif
 !
-      if (lSN_list) then
-        inquire(file='sn_series.in',exist=exist)
-        if (exist) then
-          open(33,file='sn_series.in')
-        else
-          call fatal_error('initialize_interstellar','error - no sn_series input file')
-        endif
+    if (lSN_list) then
+      inquire(file='sn_series.in',exist=exist)
+      if (exist) then
+        open(33,file='sn_series.in')
+      else
+        call fatal_error('initialize_interstellar','error - no sn_series input file')
+      endif
 !
 !  Read profiles.
 !
-        nlist=0
-        read(33,*,iostat=stat)
-        do while(1==1)
-          read(33,*,iostat=stat) int1_list,t_list,type_list,int4_list,x_list,y_list,z_list,real13_list
-          !Ignore int1_list=0, applying under START and t_list<t to avoid repeating previous explosions
-          if (t<=t_list.and.int1_list/=0) nlist=nlist+1
-          if (stat<0) exit
-        enddo
-        close(33)
-        if (lroot) print*,"initialize_interstellar: nlist =",nlist
-        if (nlist<2) call fatal_error('initialize_interstellar',&
-            'sn_series.in list needs extending or set lSN_list=F to continue')
-        if (allocated(SN_list) ) deallocate(SN_list)
-        allocate(SN_list(4,nlist))
-        if (allocated(SN_type) ) deallocate(SN_type)
-        allocate(SN_type(  nlist))
+      nlist=0
+      read(33,*,iostat=stat)
+      do while(1==1)
+        read(33,*,iostat=stat) int1_list,t_list,type_list,int4_list,x_list,y_list,z_list,real13_list
+        !Ignore int1_list=0, applying under START and t_list<t to avoid repeating previous explosions
+        if (t<=t_list.and.int1_list/=0) nlist=nlist+1
+        if (stat<0) exit
+      enddo
+      close(33)
+      if (lroot) print*,"initialize_interstellar: nlist =",nlist
+      if (nlist<2) call fatal_error('initialize_interstellar',&
+          'sn_series.in list needs extending or set lSN_list=F to continue')
+      if (allocated(SN_list) ) deallocate(SN_list)
+      allocate(SN_list(4,nlist))
+      if (allocated(SN_type) ) deallocate(SN_type)
+      allocate(SN_type(  nlist))
 !
-        open(33,file='sn_series.in')
-        read(33,*,iostat=stat)
-        i=1
-        do while(i<=nlist)
-          read(33,*,iostat=stat) int1_list,t_list,type_list,int4_list,x_list,y_list,z_list,real13_list
-          if (stat<0) exit
-          !Ignore int1_list=0, applying under START and t_list<t to avoid repeating previous explosions
-          if (t_list>=t.and.int1_list/=0) then
-            SN_list(1,i)=t_list
-            SN_list(2,i)=x_list
-            SN_list(3,i)=y_list
-            SN_list(4,i)=z_list
-            SN_type(  i)=type_list
-            if (lroot.and.i==1) print*,"i,int1_list,t_list,t",i,int1_list,t_list,t
-            if (lroot.and.i>=nlist-10) print*,"i,int1_list,t_list,t",i,int1_list,t_list,t
-            i=i+1
-          endif
-        enddo
-        close(33)
-        SNfirst=1
-        t_next_SNI = SN_list(1,1)
-        t_next_SNII = SN_list(1,1)
-      endif
+      open(33,file='sn_series.in')
+      read(33,*,iostat=stat)
+      i=1
+      do while(i<=nlist)
+        read(33,*,iostat=stat) int1_list,t_list,type_list,int4_list,x_list,y_list,z_list,real13_list
+        if (stat<0) exit
+        !Ignore int1_list=0, applying under START and t_list<t to avoid repeating previous explosions
+        if (t_list>=t.and.int1_list/=0) then
+          SN_list(1,i)=t_list
+          SN_list(2,i)=x_list
+          SN_list(3,i)=y_list
+          SN_list(4,i)=z_list
+          SN_type(  i)=type_list
+          if (lroot.and.i==1) print*,"i,int1_list,t_list,t",i,int1_list,t_list,t
+          if (lroot.and.i>=nlist-10) print*,"i,int1_list,t_list,t",i,int1_list,t_list,t
+          i=i+1
+        endif
+      enddo
+      close(33)
+      SNfirst=1
+      t_next_SNI = SN_list(1,1)
+      t_next_SNII = SN_list(1,1)
+    endif
 
-      if (leos_ionization) &
+    if (leos_ionization) &
         call warning('initialize_interstellar','using T/e instead of cv1 '// &
-                     'for diagnostics. Not yet implemented cv1 for ionization')
-!
-!  Write unit_Lambda to pc_constants file
-!
-      if (lroot) then
-        print "(1x,'initialize_interstellar: t_next_SNI, t_next_SNII=',2e15.8)", &
+        'for diagnostics. Not yet implemented cv1 for ionization')
+    !
+    !  Write unit_Lambda to pc_constants file
+    !
+    if (lroot) then
+      print "(1x,'initialize_interstellar: t_next_SNI, t_next_SNII=',2e15.8)", &
             t_next_SNI, t_next_SNII
-        open (1,file=trim(datadir)//'/pc_constants.pro',position="append")
-        write (1,'(a,1pd26.16)') 'unit_Lambda=',unit_Lambda
-        write (1,'(a,1pd26.16)') 'unit_Gamma=',unit_Gamma
-        close (1)
-      endif
-!
+      open (1,file=trim(datadir)//'/pc_constants.pro',position="append")
+      write (1,'(a,1pd26.16)') 'unit_Lambda=',unit_Lambda
+      write (1,'(a,1pd26.16)') 'unit_Gamma=',unit_Gamma
+      close (1)
+    endif
+
     endsubroutine initialize_interstellar
 !*****************************************************************************
     subroutine select_cooling(cooling_select,lncoolT,lncoolH,coolB)
@@ -1720,8 +1721,10 @@ module Interstellar
 !
 !  01-aug-06/tony: coded
 !
+!$    use OMP_lib
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
+!$    call OMP_set_num_threads(num_threads)
       if (lfirst.and..not.lpencil_check_at_work) call check_SN(f)
 !
     endsubroutine interstellar_before_boundary
@@ -1764,7 +1767,6 @@ module Interstellar
     subroutine calc_1d_diag_interstellar(p)
 !
       use Diagnostics, only: max_mn_name, sum_mn_name, xysum_mn_name_z
-      use Sub, only: cross, dot2
 !
       type(pencil_case) :: p
 !
@@ -1908,21 +1910,21 @@ module Interstellar
 !
       if (laverage_SNI_heating) then
         if (lSNI.or.lSNII) then
-          heat=heat+average_SNI_heating *exp(-(2.0*z(n)/h_SNI )**2)*&
-              t_interval_SNI /(t_interval_SNI +t*heatingfunction_fadefactor)&
+          heat=heat+average_SNI_heating *exp(-(2.0*z(n)/h_SNI )**2)* &
+              t_interval_SNI /(t_interval_SNI +t*heatingfunction_fadefactor) &
                                          *heatingfunction_scalefactor
         else
-          heat=heat+average_SNI_heating *exp(-(2.0*z(n)/h_SNI )**2)*&
+          heat=heat+average_SNI_heating *exp(-(2.0*z(n)/h_SNI )**2)* &
                     heatingfunction_scalefactor
         endif
       endif
       if (laverage_SNII_heating) then
         if (lSNI.or.lSNII) then
-          heat=heat+average_SNII_heating*exp(-(2.0*z(n)/h_SNII)**2)*&
-              t_interval_SNII/(t_interval_SNII+t*heatingfunction_fadefactor)&
+          heat=heat+average_SNII_heating*exp(-(2.0*z(n)/h_SNII)**2)* &
+              t_interval_SNII/(t_interval_SNII+t*heatingfunction_fadefactor) &
                                          *heatingfunction_scalefactor
         else
-          heat=heat+average_SNII_heating*exp(-(2.0*z(n)/h_SNII)**2)*&
+          heat=heat+average_SNII_heating*exp(-(2.0*z(n)/h_SNII)**2)* &
                     heatingfunction_scalefactor
         endif
       endif
@@ -2064,7 +2066,7 @@ module Interstellar
 !
 !  This routine adds UV heating, cf. Wolfire et al., ApJ, 443, 152, 1995
 !  with the values above, this gives about 0.012 erg/g/s (T < ~1.E4 K)
-!  Nb: need rho0 from density_[init/run]_pars) map(to implement the arm/interarm
+!  Nb: need rho0 from density_[init/run]_pars to implement the arm/interarm
 !  scaling.
 !
 !  Control with heating_select in interstellar_init_pars/run_pars.
@@ -2146,7 +2148,7 @@ module Interstellar
           enddo
           call check_SNI(f,l_SNI)
           if (t>=tmax) then
-            if (lroot) print*, 'check_SN: sn_series.in list needs',&
+            if (lroot) print*, 'check_SN: sn_series.in list needs', &
                              ' extending or set lSN_list=F to continue'
           endif
         endif
@@ -2238,18 +2240,18 @@ module Interstellar
             exit
           elseif (ierr==iEXPLOSION_TOO_HOT) then
             if (lroot.and.ip==1963) print &
-                "(1x,'check_SNI: TOO HOT, (x,y,z) =',3f8.4,', rho, rad =',2e11.4)",&
-                SNRs(iSNR)%feat%x, SNRs(iSNR)%feat%y, SNRs(iSNR)%feat%z,&
+                "(1x,'check_SNI: TOO HOT, (x,y,z) =',3f8.4,', rho, rad =',2e11.4)", &
+                SNRs(iSNR)%feat%x, SNRs(iSNR)%feat%y, SNRs(iSNR)%feat%z, &
                 SNRs(iSNR)%site%rho, SNRs(iSNR)%feat%radius
           elseif (ierr==iEXPLOSION_TOO_UNEVEN) then
             if (lroot.and.ip==1963) print &
-                "(1x,'check_SNI: TOO UNEVEN, (x,y,z) =',3f8.4,', rho, rad =',2e11.4)",&
+                "(1x,'check_SNI: TOO UNEVEN, (x,y,z) =',3f8.4,', rho, rad =',2e11.4)", &
                 SNRs(iSNR)%feat%x, SNRs(iSNR)%feat%y, SNRs(iSNR)%feat%z,&
                 SNRs(iSNR)%site%rho, SNRs(iSNR)%feat%radius
           elseif (ierr==iEXPLOSION_TOO_RARIFIED) then
             if (lroot.and.ip==1963) print &
                 "(1x,'check_SNI: TOO RARIFIED, (x,y,z) =',3f8.4,', rho, rad =',2e11.4)",&
-                SNRs(iSNR)%feat%x, SNRs(iSNR)%feat%y, SNRs(iSNR)%feat%z,&
+                SNRs(iSNR)%feat%x, SNRs(iSNR)%feat%y, SNRs(iSNR)%feat%z, &
                 SNRs(iSNR)%site%rho, SNRs(iSNR)%feat%radius
           endif
         enddo
@@ -2327,17 +2329,17 @@ module Interstellar
             exit
           elseif (ierr==iEXPLOSION_TOO_HOT) then
             if (lroot.and.ip==1963) print &
-                "(1x,'check_SNIIb: TOO HOT, (x,y,z) =',3f8.4,', rho, rad =',2e11.4)",&
-                SNRs(iSNR)%feat%x, SNRs(iSNR)%feat%y, SNRs(iSNR)%feat%z,&
+                "(1x,'check_SNIIb: TOO HOT, (x,y,z) =',3f8.4,', rho, rad =',2e11.4)", &
+                SNRs(iSNR)%feat%x, SNRs(iSNR)%feat%y, SNRs(iSNR)%feat%z, &
                 SNRs(iSNR)%site%rho, SNRs(iSNR)%feat%radius
           elseif (ierr==iEXPLOSION_TOO_UNEVEN) then
             if (lroot.and.ip==1963) print &
-                "(1x,'check_SNIIb: TOO UNEVEN, (x,y,z) =',3f8.4,', rho, rad =',2e11.4)",&
+                "(1x,'check_SNIIb: TOO UNEVEN, (x,y,z) =',3f8.4,', rho, rad =',2e11.4)", &
                 SNRs(iSNR)%feat%x, SNRs(iSNR)%feat%y, SNRs(iSNR)%feat%z,&
                 SNRs(iSNR)%site%rho, SNRs(iSNR)%feat%radius
           elseif (ierr==iEXPLOSION_TOO_RARIFIED) then
             if (lroot.and.ip==1963) print &
-                "(1x,'check_SNIIb: TOO RARIFIED, (x,y,z) =',3f8.4,', rho, rad =',2e11.4)",&
+                "(1x,'check_SNIIb: TOO RARIFIED, (x,y,z) =',3f8.4,', rho, rad =',2e11.4)", &
                 SNRs(iSNR)%feat%x, SNRs(iSNR)%feat%y, SNRs(iSNR)%feat%z,&
                 SNRs(iSNR)%site%rho, SNRs(iSNR)%feat%radius
           endif
@@ -2364,8 +2366,7 @@ module Interstellar
 !
       use General, only:  random_seed_wrapper, random_number_wrapper
 !
-      real, dimension(1) :: franSN
-      real :: scaled_interval
+      real :: franSN, scaled_interval
 !
       intent(out) :: scaled_interval
 !
@@ -2387,7 +2388,7 @@ module Interstellar
 !
 !  Time interval follows Poisson process with rate 1/interval_SNI
 !
-      scaled_interval=-log(franSN(1))*t_interval_SNI
+      scaled_interval=-log(franSN)*t_interval_SNI
 !
       t_next_SNI=t+scaled_interval
       if (lroot) print"(1x,'set_next_SNI: Next SNI at time =',e15.8)",t_next_SNI
@@ -2401,11 +2402,13 @@ module Interstellar
       use Grid, only: get_dVol
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(1) :: franSN
-      real :: rhom, scaled_interval, tmp_interval
+      real :: franSN, rhom, scaled_interval, tmp_interval
 !
       intent(in) :: f
       intent(out) :: scaled_interval
+
+      real, dimension(nx) :: dV
+      integer :: m,n
 !
 !  Pre-determine time for next SNII
 !  Check_SNII has a selfregulating random rate governed by the parameters of
@@ -2423,7 +2426,7 @@ module Interstellar
 !  fred: the SN rate can be varied to reduce with mass outflows and increase
 !        with inflows to regulate the mass in the disk
 !        a high index iSNdx can be used to increase the sensitivity, but once
-!        net mass loss occurs the index is set to 1) map(to avoid over heating
+!        net mass loss occurs the index is set to 1, to avoid overheating
 !
       rhom=0.
       if (lscale_SN_interval) then
@@ -2431,11 +2434,11 @@ module Interstellar
           if (lcartesian_coords.and.all(lequidist)) then
             rhom=sum(f(l1:l2,m1:m2,n1:n2,irho)*dVol(1))
           else
-            !$omp target map(from:rhom) has_device_addr(f) !globals: irho, dVol
-            !$omp teams distribute parallel do collapse(2) reduction(+:rhom)
+            !$omp target if(loffload) map(from:rhom) has_device_addr(f) !globals: irho
+            !$omp teams distribute parallel do collapse(2) private(dV) reduction(+:rhom)
             do n=n1,n2; do m=m1,m2
-              call get_dVol(m,n)
-              rhom=rhom+sum(f(l1:l2,m,n,irho)*dVol)
+              call get_dVol(m,n,dV)
+              rhom=rhom+sum(f(l1:l2,m,n,irho)*dV)
             enddo; enddo
             !$omp end teams distribute parallel do
             !$omp end target
@@ -2444,11 +2447,11 @@ module Interstellar
           if (lcartesian_coords.and.all(lequidist)) then
             rhom=sum(exp(f(l1:l2,m1:m2,n1:n2,ilnrho))*dVol(1))
           else
-            !$omp target map(from:rhom) has_device_addr(f)   ! globals: irho, dVol
-            !$omp teams distribute parallel do collapse(2) reduction(+:rhom)
+            !$omp target if(loffload) map(from:rhom) has_device_addr(f)   ! globals: ilnrho
+            !$omp teams distribute parallel do collapse(2) private(dV) reduction(+:rhom)
             do n=n1,n2; do m=m1,m2
-              call get_dVol(m,n)
-              rhom=rhom+sum(exp(f(l1:l2,m,n,ilnrho))*dVol)
+              call get_dVol(m,n,dV)
+              rhom=rhom+sum(exp(f(l1:l2,m,n,ilnrho))*dV)
             enddo; enddo
             !$omp end teams distribute parallel do
             !$omp end target
@@ -2473,7 +2476,7 @@ module Interstellar
 !
 !  Time interval follows Poisson process with rate 1/interval_SNII
 !
-      scaled_interval=-log(franSN(1))*tmp_interval
+      scaled_interval=-log(franSN)*tmp_interval
 !
       t_next_SNII=t+scaled_interval
       if (lroot) print"(1x,'check_SNII: Next SNII at time =',e15.8)",t_next_SNII
@@ -2494,7 +2497,8 @@ module Interstellar
       intent(OUT) :: t_interval
 !
       real :: surface_massII, disk_massII
-      integer :: nz1,nz2
+      integer :: m,n,nz1,nz2
+      real, dimension(nx) :: dV
 !
 !  Identifier
 !
@@ -2510,17 +2514,17 @@ module Interstellar
 !
       call find_index_range(z,mz,-2.*h_SNII,2.*h_SNII,nz1,nz2)
       disk_massII=0.
-      if (nz1>nz2) then
+      if (nz1<=nz2) then
 !
         if (ldensity_nolog) then
           if (lcartesian_coords.and.all(lequidist)) then
             disk_massII=sum(f(l1:l2,m1:m2,nz1:nz2,irho))*dVol(1)
           else
-            !$omp target map(from: disk_massII) has_device_addr(f)  ! globals: dVol, irho
+            !$omp target if(loffload) map(from: disk_massII) has_device_addr(f)  ! globals: irho
             !$omp teams distribute parallel do collapse(2) reduction(+:disk_massII)
             do n=nz1,nz2; do m=m1,m2
-              call get_dVol(m,n)
-              disk_massII=disk_massII+sum(f(l1:l2,m,n,irho)*dVol)
+              call get_dVol(m,n,dV)
+              disk_massII=disk_massII+sum(f(l1:l2,m,n,irho)*dV)
             enddo; enddo
             !$omp end teams distribute parallel do
             !$omp end target
@@ -2529,16 +2533,17 @@ module Interstellar
           if (lcartesian_coords.and.all(lequidist)) then
             disk_massII=sum(exp(f(l1:l2,m1:m2,nz1:nz2,ilnrho)))*dVol(1)
           else
-            !$omp target map(from: disk_massII) has_device_addr(f) ! globals: ilnrho, dVol
-            !$omp teams distribute parallel do collapse(2) reduction(+:disk_massII)
+            !$omp target if(loffload) map(from: disk_massII) has_device_addr(f) ! globals: ilnrho
+            !$omp teams distribute parallel do collapse(2) private(dV) reduction(+:disk_massII)
             do n=nz1,nz2; do m=m1,m2
-              call get_dVol(m,n)
-              disk_massII=disk_massII+sum(exp(f(l1:l2,m,n,ilnrho))*dVol)
+              call get_dVol(m,n,dV)
+              disk_massII=disk_massII+sum(exp(f(l1:l2,m,n,ilnrho))*dV)
             enddo; enddo
             !$omp end teams distribute parallel do
             !$omp end target
           endif
         endif
+!
       endif
 !
       call mpiallreduce_sum(disk_massII,surface_massII)
@@ -2566,7 +2571,7 @@ module Interstellar
       use Grid, only: get_dVol
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(nx) :: rho, lnTT
+      real, dimension(nx) :: rho, lnTT, dV
       real :: cloud_mass, cloud_mass_dim, freq_SNII, prob_SNII
       real :: franSN, fmpi1
       real, dimension(ncpus) :: cloud_mass_byproc
@@ -2600,12 +2605,12 @@ module Interstellar
 !  Calculate the total mass in locations where the temperature is below
 !  cloud_TT and the density is above cloud_rho, i.e. cold and dense.
 !
-        !$omp target map(from: cloud_mass) !map(to: cloud_rho, lncloud_TT)  ! both to: init-static
-        !!$omp has_device_addr(f) ! globals: irho, ilnrho, iss, ilnTT, dVol, lcartesian_coords, lequidist
-        !$omp teams distribute parallel do collapse(2) private(rho,lnTT) reduction(+:cloud_mass)
+        !$omp target if(loffload) map(from: cloud_mass) & !needs: cloud_rho, lncloud_TT
+        !$omp        has_device_addr(f) ! globals: irho, ilnrho, iss, ilnTT
+        !$omp teams distribute parallel do collapse(2) private(rho,lnTT,dV) reduction(+:cloud_mass)
         do n=n1,n2
         do m=m1,m2
-          if (.not.lcartesian_coords.or..not.all(lequidist)) call get_dVol(m,n)
+          call get_dVol(m,n,dV)
           if (ldensity_nolog) then
             rho=f(l1:l2,m,n,irho)
           else
@@ -2617,9 +2622,9 @@ module Interstellar
             call eoscalc(irho_ss,rho,f(l1:l2,m,n,iss),lnTT=lnTT)
           endif
 !
-!  Multiply by volume element dVol to find total mass.
+!  Multiply by volume element dV to find total mass.
 !
-          cloud_mass=cloud_mass+sum(rho*dVol,mask=(rho >= cloud_rho .and. lnTT <= lncloud_TT))
+          cloud_mass=cloud_mass+sum(rho*dV,mask=(rho >= cloud_rho .and. lnTT <= lncloud_TT))
         enddo
         enddo
         !$omp end teams distribute parallel do
@@ -2663,7 +2668,7 @@ module Interstellar
         if (franSN <= prob_SNII) then
 !
 !  The position_SN_bycloudmass needs the cloud_masses for each processor.
-!  Communicate and store them here) map(to avoid recalculation.
+!  Communicate and store them here to avoid recalculation.
 !
           cloud_mass_byproc=0.
 !
@@ -2771,9 +2776,11 @@ module Interstellar
 !                  each processor - use mpi on all procs not just root
 !
     use General, only: random_number_wrapper, random_seed_wrapper, find_proc
-    use Mpicomm, only: mpiallreduce_max, mpireduce_min, mpireduce_max,&
-                       mpiallreduce_sum, mpibcast_real
+    use Mpicomm, only: mpiallreduce_max, mpireduce_min, mpireduce_max, &
+                       mpireduce_sum, mpibcast_real, mpigather_z_1D
     use Grid, only: get_dVol
+!
+    real, dimension(nx) :: dV
 !
     real, intent(in), dimension(mx,my,mz,mfarray) :: f
     real, intent(in) :: h_SN
@@ -2782,8 +2789,8 @@ module Interstellar
 !  parameters required to determine the vertical centre of mass of the disk
 !
 ! FG: REPLACE
-    real, dimension(nzgrid) :: mpirho, rhotot
-    real, dimension(nz) :: rhosum
+    real, dimension(nzgrid) :: rhotot
+    real, dimension(nz) :: rhosum, mpisum
     real :: rhomax, hSN
     integer :: lm_range, ii1, ii2, ii3
 !    real, dimension(nprocz) :: tmpz
@@ -2802,7 +2809,7 @@ module Interstellar
     real, dimension(3) :: fran3
     real, dimension(4) :: mpicluster
     logical :: lgauss, lnew_cluster
-    integer :: i, j, k, nzskip=10 !prevent SN from being too close to boundaries
+    integer :: i,j,k,m,n,indrhomax, nzskip=10 !prevent SN from being too close to boundaries
 !
     if (headtt.and.ip==1963) print*,'position_SN_gaussianz: ENTER'
 !
@@ -2818,11 +2825,9 @@ module Interstellar
 !  sum the mass on each processor
 !
       rhosum=0.0
-      mpirho=0.0
-      rhotot=0.0
+      !mpirho=0.0
+      !rhotot=0.0
       if (.not.lcartesian_coords.or..not.all(lequidist)) then
-        !$omp target map(from: rhosum) has_device_addr(f)   ! globals: irho, ilnrho, dVol, ldensity_nolog
-        !$omp teams distribute parallel do collapse(2) reduction(+:rhosum)
 ! FG: REPLACE
 !        do n=n1,n2; do m=m1,m2
 !          call get_dVol(m,n)
@@ -2840,12 +2845,14 @@ module Interstellar
 !        else
 !          rhosum=sum(exp(f(l1:l2,m1:m2,n1:n2,ilnrho)))*dVol(1)
 !        endif
+        !$omp target if(loffload) map(from: rhosum) has_device_addr(f)   ! globals: irho, ilnrho, ldensity_nolog
+        !$omp teams distribute parallel do collapse(2) private(dV) reduction(+:rhosum)
         do n=n1,n2; do m=m1,m2
-          call get_dVol(m,n)
+          call get_dVol(m,n,dV)
           if (ldensity_nolog) then
-            rhosum(n-n1+1)=rhosum(n-n1+1)+sum(f(l1:l2,m,n,irho)*dVol)
+            rhosum(n-n1+1)=rhosum(n-n1+1)+sum(f(l1:l2,m,n,irho)*dV)
           else
-            rhosum(n-n1+1)=rhosum(n-n1+1)+sum(exp(f(l1:l2,m,n,ilnrho))*dVol)
+            rhosum(n-n1+1)=rhosum(n-n1+1)+sum(exp(f(l1:l2,m,n,ilnrho))*dV)
           endif
         enddo; enddo
         !$omp end teams distribute parallel do
@@ -2878,9 +2885,13 @@ module Interstellar
 !  mpi sum rhotot along z to complete array over nzgrid
 !
       !rhotot(ipz*nz+1:(ipz+1)*nz)=rhosum
-      call mpiallreduce_sum(rhosum,rhotot(ipz*nz+1:(ipz+1)*nz),nz,idir=12)
-      mpirho=rhotot
-      call mpiallreduce_sum(mpirho,rhotot,nzgrid,idir=3)
+!!      call mpiallreduce_sum(rhosum,rhotot(ipz*nz+1:(ipz+1)*nz),nz,idir=12)
+!!      mpirho=rhotot
+!!    call mpiallreduce_sum(mpirho,rhotot,nzgrid,idir=3)
+      call mpireduce_sum(rhosum,mpisum,nz,idir=12)
+      if (lfirst_proc_xy) then 
+        call mpigather_z_1D(mpisum,rhotot)
+        if (lroot) print*, 'iproc=', iproc, rhotot
 ! FG: REPLACE END
 !
 !  identify which horizontal processor set has the most mass and alternate
@@ -2949,20 +2960,26 @@ module Interstellar
 !      mpiz=zdisk
 !      call mpibcast_real(mpiz,xyproc(1))
 !      zdisk=mpiz
-      rhomax=maxval(rhotot)
+      !rhomax=maxval(rhotot)
+      if (lroot) then
+      indrhomax=maxloc(rhotot,dim=1)
       if (mod(it,2)==0.and..not.lstart) then ! for reproducibility: it=1 -> it=0 initially
-        ii1=nzgrid/2+1;ii2=nzgrid;ii3=1
+        if (indrhomax>=nzgrid/2+1 .and. indrhomax <= nzgrid) zdisk=zgrid(indrhomax)
+!        ii1=nzgrid/2+1;ii2=nzgrid;ii3=1
       else
-        ii1=nzgrid/2;ii2=1;ii3=-1
+        if (indrhomax>=1 .and. indrhomax <= nzgrid/2) zdisk=zgrid(indrhomax)
+!        ii1=nzgrid/2;ii2=1;ii3=-1
       endif
-      do n=ii1,ii2,ii3
-        if (abs(rhotot(n)-rhomax)<tini) then
-          zdisk=zgrid(n)
-          if (lh_SNII_adjust) then
-            maxrho = rhomax*dz_1(n)/(Lxyz(1)*Lxyz(2))
-          endif
-        endif
-      enddo
+      endif
+      endif
+      call mpibcast_real(zdisk)
+
+!      do n=ii1,ii2,ii3
+!        if (abs(rhotot(n)-rhomax)<tini) then
+!          zdisk=zgrid(n)
+!          if (lh_SNII_adjust) maxrho = rhomax*dz_1(n)/(Lxyz(1)*Lxyz(2))
+!        endif
+!      enddo
 ! FG: REPLACE END
     endif Get_zdisk
 !
@@ -3144,6 +3161,7 @@ module Interstellar
 !  It is repeatable given fixed nprocy/z though.
 !
     use General, only: random_seed_wrapper,  random_number_wrapper
+    use Grid, only: get_dVol
     use EquationOfState, only: eoscalc
     use Mpicomm, only: mpibcast_int, mpibcast_real
     use Grid, only: get_dVol
@@ -3156,10 +3174,9 @@ module Interstellar
     integer :: ierr
 
     real, dimension(0:ncpus) :: cum_prob_byproc
-    real, dimension(1) :: franSN
     integer, dimension(4) :: tmpsite
-    real :: cloud_mass,cum_mass,cloud_mass_proc
-    real, dimension(nx) :: rho,lnTT
+    real :: franSN, cloud_mass,cum_mass,cloud_mass_proc
+    real, dimension(nx) :: dV,rho,lnTT
     integer :: icpu,l,m,n, ipsn
     logical :: lfound
 !
@@ -3185,7 +3202,7 @@ module Interstellar
       endif
 !
 !  Use random number to detemine which processor SN is on.
-!  (Use root processor for rand) map(to ensure repeatability.)
+!  (Use root processor for rand to ensure repeatability.)
 !
       if (lreset_ism_seed) then
         seed=seed_reset
@@ -3194,13 +3211,13 @@ module Interstellar
       endif
       call random_number_wrapper(franSN)
       do icpu=1,ncpus
-        if (cum_prob_byproc(icpu-1)<=franSN(1) .and. franSN(1) < cum_prob_byproc(icpu)) then
+        if (cum_prob_byproc(icpu-1)<=franSN .and. franSN < cum_prob_byproc(icpu)) then
           SNR%indx%iproc=icpu-1
           exit
         endif
       enddo
       if (lroot.and.ip==1963) &
-          print*, 'position_SN_bycloudmass: franSN(1),SNR%indx%iproc=',franSN(1),SNR%indx%iproc
+          print*, 'position_SN_bycloudmass: franSN,SNR%indx%iproc=',franSN,SNR%indx%iproc
 !
 !  Use random number to pick SNII location on the right processor.
 !  (No obvious reason to re-use the original random number for this.)
@@ -3211,10 +3228,9 @@ module Interstellar
         cloud_mass_proc=cloud_mass_byproc(SNR%indx%iproc+1)
         lfound = .false.
 !NEW CHANGES
-        !$omp target map(from: ierr,cum_mass) map(tofrom: SNR,lfound) map(to: cloud_rho,lncloud_TT,franSN,preSN,cloud_mass_proc) &
-        !!static: preSN
-        !$           has_device_addr(f)  ! globasl: ip, irho,ilnrho,ilnTT,iss,ldensity_nolog  ! cloud* init-static
-        !$omp teams distribute parallel do collapse(2) private(rho,lnTT,l,ipsn) reduction(+:cum_mass)  !!!reduction unclear
+        !$omp target if(loffload) map(from: ierr,cum_mass) map(tofrom: SNR) & !needs: cloud_rho,lncloud_TT,preSN) &
+        !$omp        has_device_addr(f)  !globals: ip, irho,ilnrho,ilnTT,iss,ldensity_nolog
+        !$omp teams distribute parallel do collapse(2) private(dV,rho,lnTT,l,ipsn) reduction(+:cum_mass)  !!!reduction unclear
 mn_loop:do n=n1,n2
         do m=m1,m2
           !$ if (lfound) cycle
@@ -3228,11 +3244,11 @@ mn_loop:do n=n1,n2
           elseif (lentropy) then
             call eoscalc(irho_ss,rho,f(l1:l2,m,n,iss), lnTT=lnTT)
           endif
-          call get_dVol(m,n)
+          call get_dVol(m,n,dV)
           do l=1,nx
             if (rho(l)>=cloud_rho .and. lnTT(l)<=lncloud_TT) then
-              cum_mass=cum_mass+rho(l)*dVol(l)
-              if (franSN(1) <= cum_mass/cloud_mass_proc) then
+              cum_mass=cum_mass+rho(l)*dV(l)
+              if (franSN <= cum_mass/cloud_mass_proc) then
 ! hit -> leave the loop
                 !$omp critical
                 SNR%indx%l=l+l1-1; SNR%indx%m=m; SNR%indx%n=n
@@ -3251,25 +3267,24 @@ mn_loop:do n=n1,n2
                       print*,'position_by_cloudmass: iEXPLOSION_TOO_HOT, iproc,it,preSN=',iproc,it,preSN(:,ipsn)
                   endif
                 enddo
-                !DEC$ if OPENMP
+                !!DEC$ if OPENMP
                 !$ lfound = .true.
-                !DEC$ else
-                  exit mn_loop
-                !DEC$ endif
+                !!DEC$ else
+                exit mn_loop
+                !!DEC$ endif
               endif
             endif
           enddo
         enddo
-        enddo mn_loop   !!!MR: whatif lfound=.false.? FG: cum_mass in (0,1) as is franSN(1) I've noticed ") map(" scattered amongst
-!!FG: prints and comments. Are these typos?
+        enddo mn_loop   !!!MR: whatif lfound=.false.? FG: cum_mass in (0,1) as is franSN(1) 
         !$omp end teams distribute parallel do
         !$omp end target
         if (ip==1963) then
           tmpsite=(/SNR%indx%l,SNR%indx%m,SNR%indx%n,SNR%indx%iproc/)
           print*, 'position_by_cloudmass: preSN,iproc,it =',preSN,iproc,it
           print*, 'position_SN_bycloudmass: l,m,n,SNRproc =',tmpsite
-          if (lroot) print*, 'position_SN_bycloudmass:cum_mass,cum_prob_onproc,franSN(1)=', &
-                             cum_mass,cum_mass/cloud_mass_proc,franSN(1)
+          if (lroot) print*, 'position_SN_bycloudmass:cum_mass,cum_prob_onproc,franSN=', &
+                             cum_mass,cum_mass/cloud_mass_proc,franSN
         endif
       endif
 !END NEW CHANGES FG: OK
@@ -3324,7 +3339,7 @@ mn_loop:do n=n1,n2
 !  With current SN scheme, we need rho at the SN location.
 !
       if (iproc==SNR%indx%iproc) then
-        !$omp target map(tofrom: SNR) has_device_addr(f)  ! globals: irho, ilnrho  !?single
+        !$omp target if(loffload) map(tofrom: SNR) has_device_addr(f)  ! globals: irho, ilnrho  !?single
         if (ldensity_nolog) then
           SNR%site%lnrho=log(f(SNR%indx%l,SNR%indx%m,SNR%indx%n,irho))
         else
@@ -3335,7 +3350,7 @@ mn_loop:do n=n1,n2
 !
         m=SNR%indx%m
         n=SNR%indx%n
-        !$omp target map(tofrom: SNR) has_device_addr(f) ! map(to: m,n)  ! globals: ilnTT   !?single
+        !$omp target if(loffload) map(tofrom: SNR) has_device_addr(f) ! map(to: m,n)  ! globals: ilnTT   !?single
         if (leos_ionization.or.leos_temperature_ionization) then
           SNR%site%lnTT=f(SNR%indx%l+1,m,n,ilnTT)
         else
@@ -3432,17 +3447,17 @@ mn_loop:do n=n1,n2
       real :: rhom, rhomin, ekintot, radius_best
       real :: ekintot_new, ambient_mass
       real :: Nsol_ratio, Nsol_ratio_best, radius_min, radius_max, sol_mass_tot
-      real :: uu_sedov, rad_hot, rho_hot, rho_max
+      real :: uu_sedov, rad_hot, rho_hot
       real :: radius2, radius3, SNvol, radius2mass
 !
-      real, dimension(nx) :: deltarho, deltaEE, deltaCR, rho_new
-      real, dimension(nx,3) :: deltauu=0., deltafcr=0.
+      real, dimension(nx) :: deltarho, deltaEE, deltaCR, rho_new, dV
+      real, dimension(nx,3) :: deltafcr, deltauu, outward_normal_SN
       real, dimension(3) :: dmpi2, dmpi2_tmp
-      real, dimension(nx) ::  yH, maskedlnTT, lnTT, rho_old, ee_old
-      real, dimension(nx,3) :: fcr=0.
-      real :: maxlnTT, site_mass, maxTT, mmpi, mpi_tmp, etmp, ktmp, max_cmass
-      real :: t_interval_SN, SNrate, frackin, RPDS
-      integer :: i, mpiierr
+      real, dimension(nx) :: yH, lnTT, rho_old, ee_old
+      real :: maxlnTT, site_mass, maxTT, mmpi, etmp, ktmp, max_cmass
+      real :: t_interval_SN, SNrate, frackin, RPDS, SN_TT_ratio_max
+      integer :: i, mpiierr, ind_maxTT
+      logical :: lfound
 !
       SNR%indx%state=SNstate_exploding
       c_SN=0.;cmass_SN=0.;cvelocity_SN=0.;ecr_SN=0.;cmass_tmp=0.
@@ -3508,18 +3523,17 @@ mn_loop:do n=n1,n2
           if (.not.lSN_list) return
         endif
         SNR%feat%rhom=rhom
-      endif
-      if (present(ierr)) then
         call get_properties(f,SNR,rhom,ekintot,rhomin,ierr)
       else
         call get_properties(f,SNR,rhom,ekintot,rhomin)
       endif
+
       SNR%feat%rhom=rhom
       if (lroot.and.ip==1963) print "(1x,'explode_SN: total old kinetic energy =',e12.5)", ekintot
 !
 !  Calculate effective Sedov evolution time and shell speed diagnostic.
 !
-      SNR%feat%t_sedov=sqrt(SNR%feat%radius**(2+dimensionality)*&
+      SNR%feat%t_sedov=sqrt(SNR%feat%radius**(2+dimensionality)* &
                             SNR%feat%rhom/ampl_SN/xsi_sedov*sedov_norm)
       uu_sedov=2./(2.+dimensionality)*SNR%feat%radius/SNR%feat%t_sedov
 !
@@ -3604,16 +3618,16 @@ mn_loop:do n=n1,n2
 !
       if (lSN_velocity) then
         if (velocity_profile=="gaussian3") then
-          cvelocity_SN=sqrt(2*ktmp/(&
-                            SNR%feat%rhom*vnorm_SN(dimensionality)*&
+          cvelocity_SN=sqrt(2*ktmp/( &
+                            SNR%feat%rhom*vnorm_SN(dimensionality)* &
                             width_velocity**dimensionality))
         elseif (velocity_profile=="gaussian2") then
-          cvelocity_SN=sqrt(2*ktmp/(&
-                            SNR%feat%rhom*vnorm_gaussian2_SN(dimensionality)*&
+          cvelocity_SN=sqrt(2*ktmp/( &
+                            SNR%feat%rhom*vnorm_gaussian2_SN(dimensionality)* &
                             width_velocity**dimensionality))
         elseif (velocity_profile=="gaussian") then
-          cvelocity_SN=sqrt(2*ktmp/(&
-                            SNR%feat%rhom*vnorm_gaussian_SN(dimensionality)*&
+          cvelocity_SN=sqrt(2*ktmp/( &
+                            SNR%feat%rhom*vnorm_gaussian_SN(dimensionality)* &
                             width_velocity**dimensionality))
         endif
         if (lroot) print*,'explode_SN: cvelocity_SN is uu_sedov, velocity profile = ', &
@@ -3630,18 +3644,22 @@ mn_loop:do n=n1,n2
       radius2mass=SNR%feat%radius**2
       site_mass=0.0
       maxlnTT=-10.0
-      maxTT=exp(maxlnTT)
       max_cmass=0.
       SNR%feat%EE=0.
       SNR%feat%MM=0.
       SNR%feat%CR=0.
-      !$omp target map(tofrom: SNR) map(to: width_energy,width_mass,cmass_SN,c_SN,frac_eth) has_device_addr(f)  ! static: dr2_SN
-      !$omp teams distribute parallel do collapse(2) private(rho_old,rho_new,deltarho,deltaEE,ee_old), &
-      !$    reduction(+:site_mass) reduction(max:maxlnTT,max_cmass)
-      do n=n1,n2
+      SNR%indx%state=SNstate_waiting
+      SN_TT_ratio_max = SN_TT_ratio*TT_SN_max
+      lfound = .false.
+      !$omp target if(loffload) map(tofrom: SNR) has_device_addr(f)  ! needs: irho,ilnrho,iss,ilnTT,frac_eth,dr2_SN,rfactor_SN,TT_SN_max, switches;
+      !$omp teams distribute parallel do collapse(2) &
+      !$omp private(dV,rho_old,rho_new,deltarho,deltauu,deltaEE,deltaCR,ee_old,lnTT,outward_normal_SN,maxTT,rad_hot,rho_hot,ind_maxTT,ierr), &
+      !$omp    reduction(+:site_mass,SNR%feat%MM,SNR%feat%EE) reduction(max:maxlnTT,max_cmass)
+mnloop:do n=n1,n2
       do m=m1,m2
-        if (.not.lcartesian_coords.or..not.all(lequidist)) call get_dVol(m,n)
-        SNR%indx%state=SNstate_waiting
+!
+        !$ if (lfound) cycle
+        call get_dVol(m,n,dV)
 !
 !  Calculate the distances to the SN origin for all points in the current
 !  pencil and store in the dr2_SN global array.
@@ -3657,9 +3675,10 @@ mn_loop:do n=n1,n2
           rho_old=exp(f(l1:l2,m,n,ilnrho))
         endif
         rho_new=rho_old
-        site_mass=site_mass+sum(rho_old*dVol,mask=dr2_SN<=radius2mass)
+        site_mass=site_mass+sum(rho_old*dV,mask=dr2_SN<=radius2mass)
         if (lSN_mass.and.cmass_SN>0.) then
-          call injectmass_SN(deltarho,width_mass,cmass_SN,SNR%feat%MM)
+          call injectmass_SN(deltarho,width_mass,cmass_SN)
+          SNR%feat%MM = SNR%feat%MM + sum(deltarho*dV)
           rho_new=rho_old+deltarho
         endif
 !
@@ -3669,58 +3688,54 @@ mn_loop:do n=n1,n2
 !  not exceed TT_SN_max*SN_TT_ratio.
 !
         if (lSN_eth) then
-          call injectenergy_SN(deltaEE,width_energy,c_SN,SNR%feat%EE)
+          call injectenergy_SN(deltaEE,width_energy,c_SN)
+          SNR%feat%EE=SNR%feat%EE+sum(deltaEE*dV)
           if (ltemperature) then
             call eoscalc(irho_lnTT,rho_old,f(l1:l2,m,n,ilnTT),ee=ee_old)
-            call eoscalc(irho_ee,rho_new,real((ee_old*rho_old+deltaEE*frac_eth)/rho_new),lnTT=lnTT)
           elseif (lentropy) then
             call eoscalc(irho_ss,rho_old,f(l1:l2,m,n,iss),ee=ee_old)
-            call eoscalc(irho_ee,rho_new,real((ee_old*rho_old+deltaEE*frac_eth)/rho_new),lnTT=lnTT)
           endif
-          maskedlnTT=lnTT
-          where (dr2_SN>radius3) maskedlnTT=-10.0
-          maxTT=exp(maxval(maskedlnTT))
+          call eoscalc(irho_ee,rho_new,(ee_old*rho_old+deltaEE*frac_eth)/rho_new,lnTT=lnTT)
+          ind_maxTT=maxloc( lnTT, mask = (dr2_SN<=radius3), dim=1 )
+          maxTT=exp(lnTT(ind_maxTT))
+          maxlnTT=max(lnTT(ind_maxTT),maxlnTT)
           if (SNR%feat%radius<=1.01*rfactor_SN*SNR%feat%dr) then
             !dense remnant
             if (maxTT>TT_SN_max) then
               if (present(ierr)) then
                 ierr=iEXPLOSION_TOO_HOT
-                maxlnTT=max(log(maxTT),maxlnTT)
-                if (.not.lSN_list) exit
-              endif
-            endif
-            maxlnTT=max(log(maxTT),maxlnTT)
-          else
-            !diffuse remnants
-            if (maxTT>SN_TT_ratio*TT_SN_max) then
-              if (lSN_coolingmass) then
-                rho_max=maxval(rho_old)*maxTT/SN_TT_ratio/TT_SN_max
-                do i=1,nx
-                  !if (exp(maskedlnTT(i))==maxTT) then   !!!MR: exact equality not reliable
-                  if (abs(exp(maskedlnTT(i))-maxTT)<tini) then   !!!FG: exact equality not reliable
-                    if (rho_old(i)*maxTT/SN_TT_ratio/TT_SN_max<=rho_max) then
-                      rho_max=rho_old(i)*maxTT/SN_TT_ratio/TT_SN_max
-                      rad_hot=dr2_SN(i)
-                      rho_hot=rho_old(i)*maxTT/SN_TT_ratio/TT_SN_max - rho_old(i)
-                      call getmass_SN(rho_hot,rad_hot,width_mass,cmass_tmp)
-                    endif
-                  endif
-                enddo
-                max_cmass=max(max_cmass,cmass_tmp)
-                maxTT=SN_TT_ratio*TT_SN_max
-              else
-                if (present(ierr)) then
-                  ierr=iEXPLOSION_TOO_HOT
-                  maxlnTT=max(log(maxTT),maxlnTT)
-                  if (.not.lSN_list) exit
+                if (.not.lSN_list) then
+                  !$ lfound = .true.
+                  exit mnloop   !MR: from which loop?
                 endif
               endif
             endif
-            maxlnTT=max(log(maxTT),maxlnTT)
+          else
+            !diffuse remnants
+            if (maxTT>SN_TT_ratio_max) then
+              if (lSN_coolingmass) then
+                if ( rho_old(ind_maxTT)<=maxval(rho_old) ) then
+                  rad_hot=dr2_SN(ind_maxTT)
+                  rho_hot=rho_old(ind_maxTT)*(maxTT/SN_TT_ratio_max - 1.)
+                  call getmass_SN(rho_hot,rad_hot,width_mass,cmass_tmp)
+                endif
+                max_cmass=max(max_cmass,cmass_tmp)
+                maxTT=SN_TT_ratio_max
+                maxlnTT=max(log(maxTT),maxlnTT)
+              else
+                if (present(ierr)) then
+                  ierr=iEXPLOSION_TOO_HOT
+                  if (.not.lSN_list) then
+                    !$ lfound = .true.
+                    exit mnloop   !MR: from which loop?
+                  endif
+                endif
+              endif
+            endif
           endif
         endif
       enddo
-      enddo   !  mn-loop
+      enddo mnloop
       !$omp end teams distribute parallel do
       !$omp end target
 !
@@ -3748,12 +3763,13 @@ mn_loop:do n=n1,n2
         if (lroot.and.ip==1963) print "(1x,'explode_SN: validating cmass_SN =',e12.5)",cmass_SN
         if (cmass_SN>0) then
           SNR%feat%MM=0.
-          !$omp target map(tofrom: SNR) has_device_addr(f)  !map(to: width_mass,cmass_SN)
-          !$omp teams distribute parallel do collapse(2) private(deltarho)
+          !$omp target if(loffload) map(tofrom: SNR) has_device_addr(f)  ! gives: m,n
+          !$omp teams distribute parallel do collapse(2) private(deltarho) reduction(+:SNR%feat%MM)
           do n=n1,n2
           do m=m1,m2
             call proximity_SN(SNR)
-            call injectmass_SN(deltarho,width_mass,cmass_SN,SNR%feat%MM)  !!!MR: deltarho unused FG: call required for SNR%feat%MM
+            call injectmass_SN(deltarho,width_mass,cmass_SN)
+            SNR%feat%MM=SNR%feat%MM+sum(deltarho*dV)
           enddo
           enddo
           !$omp end teams distribute parallel do
@@ -3816,20 +3832,27 @@ mn_loop:do n=n1,n2
         print "(1x,'explode_SN:     cmass_SN finally =',e12.5)",cmass_SN
         print "(1x,'explode_SN: cvelocity_SN finally =',e12.5)",cvelocity_SN
       endif
+
       SNR%feat%EE=0.
       SNR%feat%MM=0.
       SNR%feat%CR=0.
 
-      !$omp target map(from: SNR) has_device_addr(f) !map(to: irho,ilnrho,iss,ilnTT)
-      !$omp teams distribute parallel do collapse(2) private(rho_old,rho_new,deltauu,deltarho,deltaEE,yH,lnTT)
+      !$omp target if(loffload) map(tofrom: SNR) has_device_addr(f)  ! needs: irho,ilnrho,iss,ilnTT,iyH,iecr,ifcr, frac_eth, switches;  gives: m,n
+      !$omp teams distribute parallel do collapse(2) reduction(+:SNR%feat%MM,SNR%feat%CR,SNR%feat%EE) &
+      !$omp private(rho_old,rho_new,deltauu,deltarho,deltaEE,ee_old,yH,lnTT,deltafcr,deltaCR,outward_normal_SN,dV)
       do n=n1,n2
       do m=m1,m2
-        if (.not.lcartesian_coords.or..not.all(lequidist)) call get_dVol(m,n)
+!
+        call get_dVol(m,n,dV)
 !
 !  Calculate the distances to the SN origin for all points in the current
 !  pencil and store in the dr2_SN global array.
 !
-        call proximity_SN(SNR)
+        if (lSN_velocity.and.cvelocity_SN>0. .or. lSN_fcr) then
+          call proximity_SN(SNR,outward_normal_SN)
+        else
+          call proximity_SN(SNR)
+        endif
 !
 !  Calculate the unperturbed mass and multiply by volume element to derive
 !  mass, and sum for the remnant ambient mass, and add ejecta if lSN_mass.
@@ -3843,7 +3866,8 @@ mn_loop:do n=n1,n2
         rho_new=rho_old
 
         if ((lSN_mass.and.cmass_SN>0).or.(lSN_coolingmass.and.cmass_SN>0)) then
-          call injectmass_SN(deltarho,width_mass,cmass_SN,SNR%feat%MM)
+          call injectmass_SN(deltarho,width_mass,cmass_SN)
+          SNR%feat%MM=SNR%feat%MM+sum(deltarho*dV)
           rho_new=rho_old+deltarho
           if (ldensity_nolog) then
             f(l1:l2,m,n,irho)=rho_new
@@ -3856,7 +3880,8 @@ mn_loop:do n=n1,n2
 !  Save changes to f-array.
 !
         if (lSN_eth) then
-          call injectenergy_SN(deltaEE,width_energy,c_SN,SNR%feat%EE)
+          call injectenergy_SN(deltaEE,width_energy,c_SN)
+          SNR%feat%EE=SNR%feat%EE+sum(deltaEE*dV)
           if (ltemperature) then
             call eoscalc(irho_lnTT,rho_old,f(l1:l2,m,n,ilnTT),ee=ee_old)
             call eoscalc(irho_ee,rho_new,real((ee_old*rho_old+deltaEE*frac_eth)/rho_new),lnTT=f(l1:l2,m,n,ilnTT),yH=yH)
@@ -3872,7 +3897,7 @@ mn_loop:do n=n1,n2
 !  Save changes to f-array.
 !
         if (lSN_velocity.and.cvelocity_SN>0.) then
-          call injectvelocity_SN(deltauu,width_velocity,cvelocity_SN,SNR,rho_new)
+          call injectvelocity_SN(deltauu,width_velocity,cvelocity_SN,SNR,rho_new,outward_normal_SN)
           f(l1:l2,m,n,iux:iuz)=f(l1:l2,m,n,iux:iuz)+deltauu
         endif
 !
@@ -3883,13 +3908,13 @@ mn_loop:do n=n1,n2
 !  Still experimental/in testing.
 !  Save changes to f-array.
 !
-        if (lcosmicray.and.lSN_ecr) then
-          call injectenergy_SN(deltaCR,width_energy,ecr_SN,SNR%feat%CR)
+        if (lSN_ecr) then
+          call injectenergy_SN(deltaCR,width_energy,ecr_SN)
+          SNR%feat%CR=SNR%feat%CR+sum(deltaCR*dV)
           f(l1:l2,m,n,iecr) = f(l1:l2,m,n,iecr) + deltaCR
-          if (lcosmicrayflux .and. lSN_fcr) then
-            fcr=f(l1:l2,m,n,ifcr:ifcr+2)
-            call injectfcr_SN(deltafcr,width_energy,ecr_SN)
-            f(l1:l2,m,n,ifcr:ifcr+2)=fcr + deltafcr
+          if (lSN_fcr) then
+            call injectfcr_SN(deltafcr,width_energy,ecr_SN,outward_normal_SN)
+            f(l1:l2,m,n,ifcr:ifcr+2)=f(l1:l2,m,n,ifcr:ifcr+2) + deltafcr
           endif
         endif
       enddo
@@ -3949,11 +3974,11 @@ mn_loop:do n=n1,n2
         endif
 !
         if (lfirst_warning) then
-          call warning('sn_series.dat','new column SN_rate added 19.10.17 '//&
+          call warning('sn_series.dat','new column SN_rate added 19.10.17 '// &
           'continuation of old data may need header and extra column appended')
-          call warning('sn_series.dat','new columns rhom, Ekin, Ecr 20.03.19 '//&
+          call warning('sn_series.dat','new columns rhom, Ekin, Ecr 20.03.19 '// &
           'continuation of old data may need header and extra columns appended')
-          call warning('sn_series.dat','new columns added_Nsol 27.05.21 '//&
+          call warning('sn_series.dat','new columns added_Nsol 27.05.21 '// &
           'continuation of old data may need header and extra columns appended')
         endif
 
@@ -4016,14 +4041,14 @@ mn_loop:do n=n1,n2
 !
     endsubroutine explode_SN
 !***********************************************************************
-    subroutine get_properties(f,remnant,rhom,ekintot,rhomin,ierr)
+    subroutine get_properties(f,remnant,rhom,ekintot,rhomin,ierr)   !needs dr2_SN
 !
 !  Calculate integral of mass cavity profile and total kinetic energy.
 !
 !  22-may-03/tony: coded
 !  10-oct-09/axel: return zero density if the volume is zero
 !
-      use Sub
+      use Sub, only: dot2
       use Mpicomm, only: mpiallreduce_sum,mpiallreduce_min,mpiallreduce_max
       use Grid, only: get_dVol
 !
@@ -4033,7 +4058,7 @@ mn_loop:do n=n1,n2
       integer, optional :: ierr
 
       real :: rhotmp, rhomax, radius2
-      real, dimension(nx) :: rho, u2
+      real, dimension(nx) :: rho, u2, dV
       real, dimension(nx,3) :: uu
       integer, dimension(nx) :: mask
       logical, dimension(nx) :: lmask
@@ -4049,11 +4074,11 @@ mn_loop:do n=n1,n2
 !  Obtain distance to SN and sum all points inside SNR radius and
 !  divide by number of points.
 !
-      !$omp target map(from: rhomin,rhomax) map(to: remnant) has_device_addr(f)  ! to: irho,ilnrho,iuu
-      !$omp teams distribute parallel do collapse(2) private(rho,lmask), reduction(min:rhomin) reduction(max:rhomax) reduction(+:tmp)
+      !$omp target if(loffload) map(from: rhomin,rhomax,tmp) map(to: remnant) has_device_addr(f)  ! needs: irho,ilnrho,iuu,dr2_SN, switches;  gives: m,n
+      !$omp teams distribute parallel do collapse(2) private(rho,uu,u2,lmask,dV), reduction(min:rhomin) reduction(max:rhomax) reduction(+:tmp)
       do n=n1,n2
       do m=m1,m2
-        if (.not.lcartesian_coords.or..not.all(lequidist)) call get_dVol(m,n)
+        call get_dVol(m,n,dV)
         call proximity_SN(remnant)
 !
 !  get rho from existing ambient density everywhere
@@ -4080,8 +4105,8 @@ mn_loop:do n=n1,n2
 !
 !  compute kinetic energy everywhere before applying the mask
 !
-        tmp(2)=tmp(2)+sum(rho*u2*dVol)
-        tmp(1)=tmp(1)+sum(rho*dVol,mask=(dr2_SN <= radius2))
+        tmp(2)=tmp(2)+sum(rho*u2*dV)
+        tmp(1)=tmp(1)+sum(rho*dV,mask=(dr2_SN <= radius2))
       enddo
       enddo  !  mn-loop
       !$omp end teams distribute parallel do
@@ -4093,7 +4118,7 @@ mn_loop:do n=n1,n2
       call mpiallreduce_sum(tmp,tmp2,2)
       ekintot=0.5*tmp2(2)
       if ((lSN_velocity).and.(abs(tmp2(1)) < tini)) then
-        if (lroot) print*,'enclosed mass) map(total kinetic energy = ', tmp2(1), ekintot
+        if (lroot) print*,'enclosed mass, total kinetic energy = ', tmp2(1), ekintot
         call fatal_error("interstellar.get_properties","dividing by zero?")
       else
         rhom=tmp2(1)*0.75*pi_1/radius2**1.5
@@ -4118,14 +4143,14 @@ mn_loop:do n=n1,n2
 !
     endsubroutine get_properties
 !*****************************************************************************
-    subroutine get_props_check(f,remnant,rhom,ekintot,cvelocity_SN,cmass_SN)
+    subroutine get_props_check(f,remnant,rhom,ekintot,cvelocity_SN,cmass_SN)   !needs dr2_SN
 !
 !  Calculate integral of mass cavity profile and total kinetic energy.
 !
 !  22-may-03/tony: coded
 !  10-oct-09/axel: return zero density if the volume is zero
 !
-      use Sub
+      use Sub, only: dot2
       use Mpicomm, only: mpiallreduce_sum
       use Grid, only: get_dVol
 !
@@ -4134,33 +4159,31 @@ mn_loop:do n=n1,n2
       real, intent(in) :: cvelocity_SN, cmass_SN
       real, intent(out) :: ekintot, rhom
 
-      real :: radius2
-      real :: MMtot
-      real :: width_mass, width_velocity
-      real, dimension(nx) :: rho, u2, deltarho
-      real, dimension(nx,3) :: uu
-      real, dimension(nx,3) :: deltauu
-      integer, dimension(nx) :: mask
+      real :: radius2, width_mass, width_velocity
+      real, dimension(nx) :: rho, u2, deltarho, dV, mask
+      real, dimension(nx,3) :: uu,deltauu, outward_normal_SN
       real, dimension(2) :: tmp,tmp2
 !
 !  inner rad defined to determine mean density inside rad and smooth if desired
 !
       width_mass     = remnant%feat%radius*mass_width_ratio
       width_velocity = remnant%feat%radius*velocity_width_ratio
-      radius2 = energy_Nsigma2*remnant%feat%radius**2
-      tmp=0.0
-      MMtot=0.
+      radius2        = energy_Nsigma2*remnant%feat%radius**2
 !
-!  Obtain distance to SN and sum all points inside SNR radius and
-!  divide by number of points.
+!  Obtain distance to SN and sum all points inside SNR radius and divide by number of points.
 !
 !NEW CHANGES
-      !$omp target map(from: tmp) map(to: remnant) has_device_addr(f)    ! to:irho,ilnrho,iuu,remnant,width_mass,cmass)
-      !$omp teams distribute parallel do collapse(2) private(uu,u2,rho,deltauu,deltarho), reduction(+:tmp)
+      tmp=0.
+      !$omp target if(loffload) map(from: tmp) map(to: remnant) has_device_addr(f)  ! needs: irho,ilnrho,iuu,dr2_SN, switches;  gives: m,n
+      !$omp teams distribute parallel do collapse(2) private(uu,u2,rho,deltauu,deltarho,dV,outward_normal_SN) reduction(+:tmp)
       do n=n1,n2
       do m=m1,m2
-        if (.not.lcartesian_coords.or..not.all(lequidist)) call get_dVol(m,n)
-        call proximity_SN(remnant)
+        call get_dVol(m,n,dV)
+        if (lSN_velocity.and.cvelocity_SN>0) then
+          call proximity_SN(remnant,outward_normal_SN)
+        else
+          call proximity_SN(remnant)
+        endif
 !
 !  get rho from existing ambient density everywhere
 !
@@ -4169,25 +4192,25 @@ mn_loop:do n=n1,n2
         else
           rho=exp(f(l1:l2,m,n,ilnrho))
         endif
-        if ((lSN_mass.and.cmass_SN>0).or.(lSN_coolingmass.and.cmass_SN>0)) then
-          call injectmass_SN(deltarho,width_mass,cmass_SN,MMtot)  !!! Mtot not used
+        if ((lSN_mass.or.lSN_coolingmass).and.cmass_SN>0) then
+          call injectmass_SN(deltarho,width_mass,cmass_SN)
           rho=rho+deltarho
         endif
         uu=f(l1:l2,m,n,iuu:iuu+2)
         if (lSN_velocity.and.cvelocity_SN>0) then
-          call injectvelocity_SN(deltauu,width_velocity,cvelocity_SN,remnant,rho)
+          call injectvelocity_SN(deltauu,width_velocity,cvelocity_SN,remnant,rho,outward_normal_SN)
           uu=uu+deltauu
         endif
 !
-!  avoid NaN where uu less than tini
+!  avoid NaN where uu less than tini  MR: needed?
 !
-        where (abs(f(l1:l2,m,n,iuu:iuu+2))<sqrt(tini)) uu=0.0
+        where (abs(f(l1:l2,m,n,iuu:iuu+2))<sqrt(tini)) uu=0.
         call dot2(uu,u2)
 !
 !  compute kinetic energy everywhere before applying the mask
 !
-        tmp(2)=tmp(2)+sum(rho*u2*dVol)
-        tmp(1)=tmp(1)+sum(rho*dVol,mask=(dr2_SN <= radius2))
+        tmp(2)=tmp(2)+sum(rho*u2*dV)
+        tmp(1)=tmp(1)+sum(rho*dV,mask=(dr2_SN <= radius2))
       enddo
       enddo  !  mn-loop
       !$omp end teams distribute parallel do
@@ -4205,10 +4228,9 @@ mn_loop:do n=n1,n2
       endif
       if (lroot.and.ip==1963) print"(1x,'get_props_check: rhom =',e11.4,' ekintot =',f8.4)",rhom,ekintot
 !
-!END NEW CHANGES OK
     endsubroutine get_props_check
 !*****************************************************************************
-    subroutine get_lowest_rho(f,SNR,radius,rho_lowest)
+    subroutine get_lowest_rho(f,SNR,radius,rho_lowest)   !needs dr2_SN
 !
 !  Calculate integral of mass cavity profile.
 !
@@ -4246,14 +4268,15 @@ mn_loop:do n=n1,n2
 !
     endsubroutine get_lowest_rho
 !*****************************************************************************
-    subroutine proximity_OB(OB)
-!$omp declare target
+    subroutine proximity_OB(OB,outward_normal)    ! make pars: m,n, dr2_SN
+!$omp declare target    ! needs: x,y,z, L[xyz, lperi; gives: dr2_OB
 !
 !  Calculate pencil of distance to OB cluster origin.
 !
 !  06-aug-19/fred: cloned from proximity_SN
 !
-      type (SNCluster), intent(inout) :: OB
+      type (SNCluster),      intent(inout) :: OB
+      real, dimension(nx,3), intent(out), optional :: outward_normal
 !
       real,dimension(nx) :: dx_OB, dr_OB
       real :: dy_OB
@@ -4281,31 +4304,32 @@ mn_loop:do n=n1,n2
 !
       dr2_OB=dx_OB**2 + dy_OB**2 + dz_OB**2
 !
-      if (lSN_velocity) then
+      if (present(outward_normal)) then
         dr_OB=sqrt(dr2_OB)
         dr_OB=max(dr_OB,tiny(0.0))
 !
 !  Avoid dr_SN = 0 above to avoid div by zero below.
 !
-        outward_normal_OB(:,1)=dx_OB/dr_OB
-        where (dr2_OB <tini) outward_normal_OB(:,1)=0.0
-        outward_normal_OB(:,2)=dy_OB/dr_OB
-        where (dr2_OB <tini) outward_normal_OB(:,2)=0.0
-        outward_normal_OB(:,3)=dz_OB/dr_OB
-        where (dr2_OB <tini) outward_normal_OB(:,3)=0.0
+        outward_normal(:,1)=dx_OB/dr_OB
+        where (dr2_OB < tini) outward_normal(:,1)=0.0
+        outward_normal(:,2)=dy_OB/dr_OB
+        where (dr2_OB < tini) outward_normal(:,2)=0.0
+        outward_normal(:,3)=dz_OB/dr_OB
+        where (dr2_OB < tini) outward_normal(:,3)=0.0
       endif
 !
     endsubroutine proximity_OB
 !*****************************************************************************
-    subroutine proximity_SN(SNR)
-!$omp declare target
+    subroutine proximity_SN(SNR,outward_normal)    ! make pars: m,n, dr2_SN
+!$omp declare target    ! needs: x,y,z, L[xyz], deltay
 !
 !  Calculate pencil of distance to SN explosion site.
 !
 !  20-may-03/tony: extracted from explode_SN code written by grs
 !  22-may-03/tony: pencil formulation
 !
-      type (SNRemnant), intent(in) :: SNR
+      type (SNRemnant),                intent(in) :: SNR
+      real, dimension(nx,3), optional, intent(out) :: outward_normal
 !
       real,dimension(nx) :: dx_SN, dr_SN
       real :: dy_SN
@@ -4358,42 +4382,43 @@ mn_loop:do n=n1,n2
         dr2_SN=dx_SN**2 + dy_SN**2 + dz_SN**2
       endif
 !
-      if (lSN_velocity) then
+      if (present(outward_normal)) then
+!
         dr_SN=sqrt(dr2_SN)
-        dr_SN=max(dr_SN,tiny(0.0))
+        dr_SN=max(dr_SN,tiny(0.))
 !
 !  Avoid dr_SN = 0 above to avoid div by zero below.
 !
-        outward_normal_SN(:,1)=dx_SN/dr_SN
-        where (dr2_SN <tini) outward_normal_SN(:,1)=0.0
+        outward_normal(:,1)=dx_SN/dr_SN
+        where (dr2_SN < tini) outward_normal(:,1)=0.0
         if (lshear) then
           do l=l1,l2
             if (x(l)-SNR%feat%x> Lx/2) then
               if (y(m)-SNR%feat%y >  Ly/2) then
-                outward_normal_SN(l-nghost,2)=(y(m)-SNR%feat%y+deltay-Ly)/&
+                outward_normal(l-nghost,2)=(y(m)-SNR%feat%y+deltay-Ly)/ &
                     sqrt(dx_SN(l-nghost)**2 + (y(m)-SNR%feat%y+deltay-Ly)**2 + dz_SN**2)
               elseif (y(m)-SNR%feat%y < -Ly/2) then
-                outward_normal_SN(l-nghost,2)=(y(m)-SNR%feat%y+deltay+Ly)/&
+                outward_normal(l-nghost,2)=(y(m)-SNR%feat%y+deltay+Ly)/ &
                     sqrt(dx_SN(l-nghost)**2 + (y(m)-SNR%feat%y+deltay+Ly)**2 + dz_SN**2)
               else
                 if (dr2_SN(l-nghost)==0) then
-                  outward_normal_SN(l-nghost,2)=0.0
+                  outward_normal(l-nghost,2)=0.0
                 else
-                  outward_normal_SN(l-nghost,2)=dy_SN/dr_SN(l-nghost)
+                  outward_normal(l-nghost,2)=dy_SN/dr_SN(l-nghost)
                 endif
               endif
             elseif (x(l)-SNR%feat%x< -Lx/2) then
               if (y(m)-SNR%feat%y >  Ly/2) then
-                outward_normal_SN(l-nghost,2)=(y(m)-SNR%feat%y-deltay-Ly)/&
+                outward_normal(l-nghost,2)=(y(m)-SNR%feat%y-deltay-Ly)/ &
                     sqrt(dx_SN(l-nghost)**2 + (y(m)-SNR%feat%y-deltay-Ly)**2 + dz_SN**2)
               elseif (y(m)-SNR%feat%y < -Ly/2) then
-                outward_normal_SN(l-nghost,2)=(y(m)-SNR%feat%y-deltay+Ly)/&
+                outward_normal(l-nghost,2)=(y(m)-SNR%feat%y-deltay+Ly)/ &
                     sqrt(dx_SN(l-nghost)**2 + (y(m)-SNR%feat%y-deltay+Ly)**2 + dz_SN**2)
               else
                 if (dr2_SN(l-nghost)==0) then
-                  outward_normal_SN(l-nghost,2)=0.0
+                  outward_normal(l-nghost,2)=0.0
                 else
-                  outward_normal_SN(l-nghost,2)=dy_SN/dr_SN(l-nghost)
+                  outward_normal(l-nghost,2)=dy_SN/dr_SN(l-nghost)
                 endif
               endif
             else
@@ -4401,20 +4426,19 @@ mn_loop:do n=n1,n2
             endif
           enddo
         else
-          outward_normal_SN(:,2)=dy_SN/dr_SN
-          where (dr2_SN <tini) outward_normal_SN(:,2)=0.0
+          outward_normal(:,2)=dy_SN/dr_SN
+          where (dr2_SN < tini) outward_normal(:,2)=0.0
         endif
-        outward_normal_SN(:,3)=dz_SN/dr_SN
-        where (dr2_SN <tini) outward_normal_SN(:,3)=0.0
+        outward_normal(:,3)=dz_SN/dr_SN
+        where (dr2_SN <tini) outward_normal(:,3)=0.0
       endif
 !
     endsubroutine proximity_SN
 !*****************************************************************************
-    subroutine injectenergy_SN(deltaEE,width,c_SN,EEtot_SN)
-!$omp declare target
+    subroutine injectenergy_SN(deltaEE,width,c_SN)
+!$omp declare target    ! needs: dr2_SN, sigma_SN1
 !
       real, intent(in) :: width,c_SN
-      real, intent(inout) :: EEtot_SN
       real, intent(out), dimension(nx) :: deltaEE
 !
       real, dimension(nx) :: profile_SN
@@ -4438,17 +4462,14 @@ mn_loop:do n=n1,n2
       endif
 !
       deltaEE=c_SN*profile_SN ! spatial energy density
-      EEtot_SN=EEtot_SN+sum(deltaEE*dVol)
 !
     endsubroutine injectenergy_SN
 !*****************************************************************************
-    subroutine injectmass_SN(deltarho,width,cmass_SN,MMtot_SN)
-!$omp declare target
+    subroutine injectmass_SN(deltarho,width,cmass_SN)
+!$omp declare target     ! needs: dr2_SN, sigma_SN1
 !
       real, intent(in) :: width,cmass_SN
-      real, intent(inout) :: MMtot_SN
       real, intent(out), dimension(nx) :: deltarho
-!
       real, dimension(nx) :: profile_SN
 !
 !  Inject mass.
@@ -4469,12 +4490,11 @@ mn_loop:do n=n1,n2
       endif
 !
       deltarho=cmass_SN*profile_SN ! spatial mass density
-      MMtot_SN=MMtot_SN+sum(deltarho*dVol)
 !
     endsubroutine injectmass_SN
 !*****************************************************************************
     subroutine getmass_SN(deltarho,rad,width,cmass_SN)
-!$omp declare target
+!$omp declare target     ! needs: sigma_SN1; switches
 !
       real, intent(in) :: width, rad, deltarho
       real, intent(out) :: cmass_SN
@@ -4502,10 +4522,11 @@ mn_loop:do n=n1,n2
 !
     endsubroutine getmass_SN
 !***********************************************************************
-    subroutine injectvelocity_SN(deltauu,width,cvelocity_SN,SNR,rho)
-!$omp declare target
+    subroutine injectvelocity_SN(deltauu,width,cvelocity_SN,SNR,rho,outward_normal)
+!$omp declare target    ! needs: dr2_SN; switches
 !
       real, intent(in) :: width,cvelocity_SN
+      real, intent(in), dimension(nx,3) :: outward_normal
       real, intent(out), dimension(nx,3) :: deltauu
       type (SNRemnant), intent(in) :: SNR
       real, dimension(nx), intent(in) :: rho
@@ -4538,15 +4559,16 @@ mn_loop:do n=n1,n2
         ekin_scale=cvelocity_SN
       endif
       do j=1,3
-        deltauu(:,j)=ekin_scale*profile_SN*outward_normal_SN(:,j) ! spatial outflow
+        deltauu(:,j)=ekin_scale*profile_SN*outward_normal(:,j) ! spatial outflow
       enddo
 !
     endsubroutine injectvelocity_SN
 !***********************************************************************
-    subroutine injectfcr_SN(deltafcr,width,cfcr_SN)
-!$omp declare target
+    subroutine injectfcr_SN(deltafcr,width,cfcr_SN,outward_normal)
+!$omp declare target   ! needs: dr2_SN,kperp, switches
 !
       real, intent(in) :: width,cfcr_SN
+      real, intent(in), dimension(nx,3) :: outward_normal
       real, intent(out), dimension(nx,3) :: deltafcr
 !
       real, dimension(nx) :: profile_SN
@@ -4568,7 +4590,7 @@ mn_loop:do n=n1,n2
       endif
 !
       do j=1,3
-        deltafcr(:,j)=cfcr_SN*profile_SN*kperp * outward_normal_SN(:,j) ! spatial CR flux
+        deltafcr(:,j)=cfcr_SN*profile_SN*kperp * outward_normal(:,j) ! spatial CR flux
       enddo
 !
     endsubroutine injectfcr_SN
@@ -4684,10 +4706,9 @@ mn_loop:do n=n1,n2
 !
       use General, only:  random_seed_wrapper, random_number_wrapper
 !
-      real, dimension(1) :: franSN
-      real :: t_interval_OB
+      real, intent(in) :: t_interval_OB
 !
-      intent(in) :: t_interval_OB
+      real :: franSN
 !
 !  Pre-determine time for next OB.
 !
@@ -4696,7 +4717,7 @@ mn_loop:do n=n1,n2
 !
 !  Time interval follows Poisson process with rate 1/t_interval_OB
 !
-      t_cluster=t-log(franSN(1))*t_interval_OB
+      t_cluster=t-log(franSN)*t_interval_OB
 !
       if (lroot) print"(1x,'set_next_OB: Next OB at time =',e11.4)",t_cluster
 !
@@ -4714,9 +4735,9 @@ mn_loop:do n=n1,n2
     call copy_addr(T0UV,p_par(3))
     call copy_addr(ncool,p_par(4))
 !
-    call copy_addr(lncoolT,p_par(5))  ! (len_cool)
-    call copy_addr_dble_1D(lncoolH,p_par(6))  ! (len_cool)
-    call copy_addr(coolB,p_par(7))    ! (len_cool)
+    call copy_addr(lncoolT,p_par(5))  ! (11)
+    call copy_addr_dble_1D(lncoolH,p_par(6))  ! (11)
+    call copy_addr(coolB,p_par(7))    ! (11)
 !    call copy_addr(heat_z,p_par(8))   ! (mz)
 
 ! and other stuff from calc_heat_cool_interstellar
