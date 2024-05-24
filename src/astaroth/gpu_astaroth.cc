@@ -23,7 +23,7 @@
 #include "astaroth.h"
 #include "kernels.h"
 #include "task.h"
-#include "loaders.h"
+#include "user_loaders.h"
 #define real AcReal
 #define EXTERN
 #define FINT int
@@ -54,12 +54,12 @@ AcReal cpu_pow(AcReal const val, AcReal exponent)
 // Astaroth objects instantiation.
 static AcMesh mesh;
 //static AcMesh test_mesh;
-static AcTaskGraph *graph_1;
-static AcTaskGraph *graph_2;
-static AcTaskGraph *graph_3;
+static AcTaskGraph *rhs_0;
+static AcTaskGraph *rhs_1;
+static AcTaskGraph *rhs_2;
 static AcTaskGraph *randomize_graph;
 static AcTaskGraph *rhs_test_graph;
-static AcTaskGraph *rhs_test_graph_2;
+static AcTaskGraph *rhs_test_rhs_1;
 
 // Other.
 static int rank;
@@ -467,16 +467,16 @@ extern "C" void substepGPU(int isubstep)
   Device dev = acGridGetDevice();
   if (isubstep == 1)
   {
-    dev->local_config.real_params[AC_dt] = dt;
+    acDeviceSetRealInput(acGridGetDevice(), AC_dt, dt);
     acGridSynchronizeStream(STREAM_ALL);
-    acGridExecuteTaskGraph(graph_1, 1);
+    acGridExecuteTaskGraph(rhs_0, 1);
   }
-  if (isubstep == 2) acGridExecuteTaskGraph(graph_2, 1);
+  if (isubstep == 2) acGridExecuteTaskGraph(rhs_1, 1);
   if (isubstep == 3) {
-    acGridExecuteTaskGraph(graph_3, 1);
+    acGridExecuteTaskGraph(rhs_2, 1);
     if (ldt)
     {
-      acGridFinalizeReduceLocal(graph_3);
+      acGridFinalizeReduceLocal(rhs_2);
 #if LHYDRO
       AcReal maxadvec = dev->output.real_outputs[AC_maxadvec]/cdt;
 #endif
@@ -488,7 +488,7 @@ extern "C" void substepGPU(int isubstep)
       AcReal dt1_ = sqrt(pow(maxadvec, 2) + pow(maxdiffus, 2));
 //printf("maxadvec, maxchi,maxdiffus= %e %e %e \n", maxadvec, maxchi, maxdiffus);
       set_dt(dt1_);
-      dev->local_config.real_params[AC_dt] = dt;
+      acDeviceSetRealInput(acGridGetDevice(), AC_dt, dt);
     }
   }
   acGridSynchronizeStream(STREAM_ALL);
@@ -690,11 +690,11 @@ extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
   // acGridSynchronizeStream(STREAM_ALL);
 
   // acGridExecuteTaskGraph(rhs_test_graph,1);
-  acGridExecuteTaskGraph(graph_1,1);
+  acGridExecuteTaskGraph(rhs_0,1);
   acGridSynchronizeStream(STREAM_ALL);
-  acGridExecuteTaskGraph(graph_2,1);
+  acGridExecuteTaskGraph(rhs_1,1);
   acGridSynchronizeStream(STREAM_ALL);
-  acGridExecuteTaskGraph(graph_3,1);
+  acGridExecuteTaskGraph(rhs_2,1);
 
   acGridSynchronizeStream(STREAM_ALL);
   acDeviceLoadMesh(acGridGetDevice(), STREAM_DEFAULT, mesh_test);
@@ -765,16 +765,16 @@ extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
   acGridSynchronizeStream(STREAM_ALL);
   // acGridExecuteTaskGraph(rhs_test_graph, 1);
   // acGridSynchronizeStream(STREAM_ALL);
-  // acGridExecuteTaskGraph(rhs_test_graph_2, 1);
+  // acGridExecuteTaskGraph(rhs_test_rhs_1, 1);
   // acGridSynchronizeStream(STREAM_ALL);
 
   //actual run
   for (int i=0;i<num_of_steps;i++){
-    acGridExecuteTaskGraph(graph_1,1);
+    acGridExecuteTaskGraph(rhs_0,1);
     acGridSynchronizeStream(STREAM_ALL);
-    acGridExecuteTaskGraph(graph_2,1);
+    acGridExecuteTaskGraph(rhs_1,1);
     acGridSynchronizeStream(STREAM_ALL);
-    acGridExecuteTaskGraph(graph_3,1);
+    acGridExecuteTaskGraph(rhs_2,1);
     acGridSynchronizeStream(STREAM_ALL);
     acGridSynchronizeStream(STREAM_ALL);
     acDeviceStoreMesh(acGridGetDevice(), STREAM_DEFAULT, &mesh);
@@ -1038,43 +1038,10 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out, int c
   //    acCompute(twopass_solve_intermediate, all_fields),
   //    acCompute(twopass_solve_final, all_fields)};
   //rhs_test_graph = acGridBuildTaskGraphWithIterations(rhs_ops,3);
-  
-  graph_1 = acGridBuildTaskGraph(
-    {
-      acHaloExchange(all_fields),
-      acBoundaryCondition(BOUNDARY_XYZ, BOUNDCOND_PERIODIC, all_fields),
-#if SINGLEPASS
-      acComputeWithParams(KERNEL_singlepass_solve, all_fields,single_loader0),
-#else
-      acComputeWithParams(KERNEL_twopass_solve_intermediate, all_fields,intermediate_loader_0),
-      acComputeWithParams(KERNEL_twopass_solve_final, all_fields,final_loader_0),
-#endif
-    });
-
-  graph_2 = acGridBuildTaskGraph(
-    {
-      acHaloExchange(all_fields),
-      acBoundaryCondition(BOUNDARY_XYZ, BOUNDCOND_PERIODIC, all_fields),
-#if SINGLEPASS
-      acComputeWithParams(KERNEL_singlepass_solve, all_fields,single_loader1),
-#else
-      acComputeWithParams(KERNEL_twopass_solve_intermediate, all_fields,intermediate_loader_1),
-      acComputeWithParams(KERNEL_twopass_solve_final,all_fields,final_loader_1),
-#endif
-    });
-
-  graph_3 = acGridBuildTaskGraph(
-    {
-      acHaloExchange(all_fields),
-      acBoundaryCondition(BOUNDARY_XYZ, BOUNDCOND_PERIODIC, all_fields),
-#if SINGLEPASS
-      acComputeWithParams(KERNEL_singlepass_solve, all_fields,single_loader2),
-#else
-      acComputeWithParams(KERNEL_twopass_solve_intermediate, all_fields,intermediate_loader_2),
-      acComputeWithParams(KERNEL_twopass_solve_final, all_fields,final_loader_2),
-#endif
-    });
-
+#include "user_taskgraphs.h"
+  rhs_0 = AC_rhs_0;
+  rhs_1 = AC_rhs_1;
+  rhs_2 = AC_rhs_2;
   acGridSynchronizeStream(STREAM_ALL);
   acLogFromRootProc(rank, "DONE initializeGPU\n");
   fflush(stdout);
