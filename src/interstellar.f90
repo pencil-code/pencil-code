@@ -2961,16 +2961,22 @@ contains
 !      call mpibcast_real(mpiz,xyproc(1))
 !      zdisk=mpiz
       !rhomax=maxval(rhotot)
-      if (lroot) then
-      indrhomax=maxloc(rhotot,dim=1)
-      if (mod(it,2)==0.and..not.lstart) then ! for reproducibility: it=1 -> it=0 initially
-        if (indrhomax>=nzgrid/2+1 .and. indrhomax <= nzgrid) zdisk=zgrid(indrhomax)
-!        ii1=nzgrid/2+1;ii2=nzgrid;ii3=1
-      else
-        if (indrhomax>=1 .and. indrhomax <= nzgrid/2) zdisk=zgrid(indrhomax)
-!        ii1=nzgrid/2;ii2=1;ii3=-1
-      endif
-      endif
+        if (lroot) then
+          indrhomax=maxloc(rhotot,dim=1); rhomax=rhotot(indrhomax)
+          if (mod(it,2)==0.and..not.lstart) then ! for reproducibility: it=1 -> it=0 initially
+            if (indrhomax>=nzgrid/2+1 .and. indrhomax <= nzgrid) then
+              zdisk=zgrid(indrhomax)
+              if (lh_SNII_adjust) maxrho = rhomax*dz_1(indrhomax)/(Lxyz(1)*Lxyz(2))
+            endif
+!            ii1=nzgrid/2+1;ii2=nzgrid;ii3=1
+          else
+            if (indrhomax>=1 .and. indrhomax <= nzgrid/2) then
+              zdisk=zgrid(indrhomax)
+              if (lh_SNII_adjust) maxrho = rhomax*dz_1(indrhomax)/(Lxyz(1)*Lxyz(2))
+            endif
+!            ii1=nzgrid/2;ii2=1;ii3=-1
+          endif
+        endif
       endif
       call mpibcast_real(zdisk)
 
@@ -3642,8 +3648,9 @@ mn_loop:do n=n1,n2
       radius2=energy_Nsigma2*SNR%feat%radius**2
       radius3=2.25*energy_Nsigma2*SNR%feat%radius**2
       radius2mass=SNR%feat%radius**2
-      site_mass=0.0
-      maxlnTT=-10.0
+
+      site_mass=0.
+      maxlnTT=-10.
       max_cmass=0.
       SNR%feat%EE=0.
       SNR%feat%MM=0.
@@ -3651,6 +3658,7 @@ mn_loop:do n=n1,n2
       SNR%indx%state=SNstate_waiting
       SN_TT_ratio_max = SN_TT_ratio*TT_SN_max
       lfound = .false.
+
       !$omp target if(loffload) map(tofrom: SNR) has_device_addr(f)  ! needs: irho,ilnrho,iss,ilnTT,frac_eth,dr2_SN,rfactor_SN,TT_SN_max, switches;
       !$omp teams distribute parallel do collapse(2) &
       !$omp private(dV,rho_old,rho_new,deltarho,deltauu,deltaEE,deltaCR,ee_old,lnTT,outward_normal_SN,maxTT,rad_hot,deltarho_hot,ind_maxTT,ierr), &
@@ -4060,7 +4068,6 @@ mnloop:do n=n1,n2
       real :: rhotmp, rhomax, radius2
       real, dimension(nx) :: rho, u2, dV
       real, dimension(nx,3) :: uu
-      integer, dimension(nx) :: mask
       logical, dimension(nx) :: lmask
       real, dimension(2) :: tmp,tmp2
 !
@@ -4160,7 +4167,7 @@ mnloop:do n=n1,n2
       real, intent(out) :: ekintot, rhom
 
       real :: radius2, width_mass, width_velocity
-      real, dimension(nx) :: rho, u2, deltarho, dV, mask
+      real, dimension(nx) :: rho, u2, deltarho, dV
       real, dimension(nx,3) :: uu,deltauu, outward_normal_SN
       real, dimension(2) :: tmp,tmp2
 !
@@ -4727,7 +4734,7 @@ mnloop:do n=n1,n2
 
     use Syscalls, only: copy_addr, copy_addr_dble_1D
 
-    integer, parameter :: n_pars=7
+    integer, parameter :: n_pars=15
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 !
     call copy_addr(GammaUV,p_par(1))
@@ -4735,12 +4742,19 @@ mnloop:do n=n1,n2
     call copy_addr(T0UV,p_par(3))
     call copy_addr(ncool,p_par(4))
 !
-    call copy_addr(lncoolT,p_par(5))  ! (11)
-    call copy_addr_dble_1D(lncoolH,p_par(6))  ! (11)
-    call copy_addr(coolB,p_par(7))    ! (11)
-!    call copy_addr(heat_z,p_par(8))   ! (mz)
+    call copy_addr(heatingfunction_fadefactor,p_par(5))
+    call copy_addr(heatingfunction_scalefactor,p_par(6))
+    call copy_addr(average_SNI_heating,p_par(7))
+    call copy_addr(average_SNII_heating,p_par(8))
+    call copy_addr(h_SNI,p_par(9))
+    call copy_addr(h_SNII,p_par(10))
+    call copy_addr(t_interval_SNI,p_par(11))
+    call copy_addr(t_interval_SNII,p_par(12))
 
-! and other stuff from calc_heat_cool_interstellar
+    call copy_addr(lncoolT,p_par(13))  ! (11)
+    call copy_addr_dble_1D(lncoolH,p_par(14))  ! (11)
+    call copy_addr(coolB,p_par(15))    ! (11)
+!    call copy_addr(heat_z,p_par(16))   ! (mz)
 
     endsubroutine pushpars2c
 !*******************************************************************
