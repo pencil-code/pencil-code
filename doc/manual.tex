@@ -6689,6 +6689,30 @@ should say where it looks for 'mpif.h'.
 If those directories don't exist, it's no wonder that it doesn't work,
 and it is time to complain.
 
+%%%
+\subsubsection{Compilation fails on MacOS Sonoma}
+
+I am getting an error which hasn't been resolved yet.
+It has something to do with my Mac setup and no one has been able
+to figure out how to fix it.
+Maybe you've seen this before (at the pc\_build stage):
+\begin{Verbatim}
+'make -j FFLAGS_DOUBLE=-fdefault-real-8 -fdefault-double-8
+CFLAGS_DOUBLE=-DDOUBLE_PRECISION LD_MPI= CFLAGS_FFTW3= FFLAGS_FFTW3=
+LD_FFTW3= CFLAGS_FFTW2= FFLAGS_FFTW2= LD_FFTW2= FC=gfortran F77=$(FC)
+FFLAGS=-O LDFLAGS_HELPER=-dynamic OMPFFLAGS=-fopenmp OMPLFLAGS=-lgomp
+PPFLAGS=-cpp FSTD_95=-std=f95 FSTD_2003=-std=f2003 CC=gcc
+CFLAGS=-DFUNDERSC=1 default_to_be' failed: <Inappropriate ioctl for device>
+\end{Verbatim}
+
+%\begin{Verbatim}
+%\end{Verbatim}
+
+\medskip
+
+{\bf A}: You have to use gcc-14.
+Default (plain gcc) does not work; it is wrongly set up.
+
 % ---------------------------------------------------------------------- %
 
 \subsection{Pencil check}
@@ -7367,13 +7391,27 @@ Note: the above way to get svn works. It takes a while however, so there
 are certainly faster ways out there. If you already have a non-obsolete svn
 version, use that instead.
 
+\subsubsection{Wrong user-id in commit emails}
+
+Why does it say
+\begin{Verbatim}
+From: 'Philippe Bourdin' via pencil-code-commits
+      <pencil-code-commits@googlegroups.com>
+\end{Verbatim}
+when the commiting author is not Philippe?
+
+\medskip
+
+{\bf A}: The associated email addresses in account.pencil-code.org should
+be the same as what is registered in github as your primary email address.
+
 \subsubsection{Pencil Code discussion forum}
 
 Do I just need to send an email somewhere to subscribe or what?
 
 \medskip
 
-{\bf A}" The answer is yes; just go to:
+{\bf A}: The answer is yes; just go to:
 \begin{Verbatim}
    http://groups.google.com/group/pencil-code-discuss
 \end{Verbatim}
