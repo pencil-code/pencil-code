@@ -582,7 +582,7 @@ module Grid
           dxyz_step(2,3)=(y00+Ly-xyz_step(2,2))/&
               (merge(nygrid+0.,nygrid-1.,lpole(2))-xi_step(2,2))
 !
-          if (lpole(2)) then 
+          if (lpole(2)) then
             do i=1,my
               xi2(i)=0.5-nghost+0.5+(ipy*ny+i-1)*&
                 (nygrid+2.*(nghost-0.5)-1)/(nygrid+2.*nghost-1)
@@ -639,7 +639,7 @@ module Grid
 ! corresponding r and rsin\theta factors for equ.f90 (where CFL timesteps
 ! are estimated) are removed.
 !
-        if (lpole(2)) then                       !apply grid symmetry across the poles 
+        if (lpole(2)) then                       !apply grid symmetry across the poles
           if (lfirst_proc_y) then
             y(     1:nghost) = -y(     m1i:m1:-1)
             yprim( 1:nghost) =  yprim( m1i:m1:-1)
@@ -836,7 +836,7 @@ module Grid
       call grid_bound_data
 !
 !  Fargo (orbital advection acceleration) is implemented for polar coordinates only.
-!  Die otherwise.       
+!  Die otherwise.
 !
       if (lfargo_advection.and.coord_system=='cartesian') then
         if (lroot) then
@@ -915,10 +915,10 @@ module Grid
 !                coordinates into coords_aux; set coordinate switches at the
 !                beginning
 !   9-jun-15/MR: calculation of Area_* added
-!  18-dec-15/MR: outsourced setting of switches to set_coords_switches; added 
+!  18-dec-15/MR: outsourced setting of switches to set_coords_switches; added
 !                initialization of Yin-Yang grid; added dimensionality mask:
-!                lists the indices of the non-degenerate directions in the first 
-!                dimensionality elements of dim_mask 
+!                lists the indices of the non-degenerate directions in the first
+!                dimensionality elements of dim_mask
 !  10-oct-17/MR: avoided communication in calculation of r_int and r_ext
 !  10-jan-17/MR: moved call construct_serial_arrays to beginning
 !
@@ -992,13 +992,15 @@ module Grid
 
       call mpiallreduce_max(dxmax,dxmax_x)
       dxmax=dxmax_x
-!       
+!
 !  Grid spacing. For non-equidistant grid or non-Cartesian coordinates
 !  the grid spacing is calculated in the (m,n) loop.
 !
-      if (lcartesian_coords .and. all(lequidist)) then
+      lcart_equi=(lcartesian_coords .and. all(lequidist))
+      if (lcart_equi) then
+
 !
-!  FAG replaced old_cdtv flag with more general coordinate independent lmaximal   
+!  FAG replaced old_cdtv flag with more general coordinate independent lmaximal
 !        if (old_cdtv) then
 !          dxyz_2 = max(dx_1(l1:l2)**2,dy_1(m1)**2,dz_1(n1)**2)
 !        else
@@ -1266,12 +1268,12 @@ module Grid
 !
 !  Define inner and outer radii for non-cartesian coords.
 !  If the user did not specify them yet (in start.in),
-!  r_int and r_ext can be taken from the domain's x-extent as periodic BC can't 
+!  r_int and r_ext can be taken from the domain's x-extent as periodic BC can't
 !  appear for r.
 !
         if (r_int == 0)          r_int=xyz0(1)
         if (r_ext == impossible) r_ext=xyz1(1)
-        
+
         if (lroot.and.ip<14) print*,'initialize_grid, r_int,r_ext=',r_int,r_ext
       elseif (r_ext == impossible) then
 !       call warning('initialize_grid','Cartesian coords - no meaningful r_ext given.'// &
@@ -1314,7 +1316,7 @@ module Grid
 !
       lcoarse=lspherical_coords .and. lpole(2) .and. ncoarse>1 .and. nprocy>1
       if (.not.lcoarse) ncoarse=1
-   
+
       if (lcoarse.and.(lfirst_proc_y.or.llast_proc_y)) then
 
 !MR: TB generalized to more than two procs, in which coarsening happens.
@@ -1678,7 +1680,7 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
 !
 !  Spherical coordinate system
 !
-      elseif (lspherical_coords) then 
+      elseif (lspherical_coords) then
 !
 !  Assume that sinth=1 if there is no theta extent.
 !  This should always give a volume of 4pi/3*(r2^3-r1^3) for constant integrand
@@ -2081,11 +2083,11 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
         g=(-alog(exp(param*(xi-xistep(1)))+exp(-param*(xi-xistep(1))))/param+ &
             alog(exp(param*(xi-xistep(2)))+exp(-param*(xi-xistep(2))))/param+   &
             (2.+delta(1))*xi)/(2.+delta(1))
-        if (present(gder1)) then 
+        if (present(gder1)) then
           gder1=(2.+delta(1)-tanh(param*(xi-xistep(1)))+ &
                 tanh(param*(xi-xistep(2))))/(2.+delta(1))
         endif
-        if (present(gder2)) then 
+        if (present(gder2)) then
           gder2=(-param*(1.-(tanh(param*(xi-xistep(1))))**2)+ &
                  param*(1.-(tanh(param*(xi-xistep(2))))**2))/ &
                 (2.+delta(1))
@@ -2206,8 +2208,8 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
 !
 !  Give some output in case of error:
 !
-      print*,'iproc,xi_star=',iproc,xi_star 
-      print*,'iproc,grid_func=',iproc,grid_func 
+      print*,'iproc,xi_star=',iproc,xi_star
+      print*,'iproc,grid_func=',iproc,grid_func
       print*,'iproc,xi_lo, xi_up, x_lo, x_up, x_star=', iproc,xi_lo, xi_up, x_lo, x_up, x_star
       call fatal_error('find_star','maximum number of iterations exceeded')
 !
@@ -2295,7 +2297,7 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
         if (loc) shift = nz * ipz
         if (loc) inear_max = nghost + nz
       case default ckdir
-        call fatal_error('inverse_grid','unknown direction dir: '//trim(itoa(dir))) 
+        call fatal_error('inverse_grid','unknown direction dir: '//trim(itoa(dir)))
       endselect ckdir
 !
 !  Make the inversion according to the grid function.
@@ -2405,7 +2407,7 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
 !
         do jx=0,nprocx-1
 !
-          iproc_recv=find_proc(jx,0,0) 
+          iproc_recv=find_proc(jx,0,0)
           !avoid send-to-self
           if (iproc_recv/=root) then
 !
@@ -2451,7 +2453,7 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
         endif
       else
         do jy=0,nprocy-1
-          iproc_recv=find_proc(0,jy,0) 
+          iproc_recv=find_proc(0,jy,0)
           if (iproc_recv/=root) then
             call mpirecv_real(yrecv,ny,iproc_recv,221)
             call mpirecv_real(y1recv,ny,iproc_recv,222)
@@ -2485,7 +2487,7 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
         endif
       else
         do jz=0,nprocz-1
-          iproc_recv=find_proc(0,0,jz) 
+          iproc_recv=find_proc(0,0,jz)
           if (iproc_recv/=root) then
             call mpirecv_real(zrecv,nz,iproc_recv,331)
             call mpirecv_real(z1recv,nz,iproc_recv,332)
@@ -2605,7 +2607,7 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
       integer,             intent(in ) :: mm,nn
       real, dimension(nx), intent(out) :: dV
 
-      if (lcartesian_coords.and.all(lequidist)) then
+      if (lcart_equi) then
         dV = dVol_x(l1)*dVol_y(m1)*dVol_z(n1)
       else
         dV = dVol_x(l1:l2)*dVol_y(mm)*dVol_z(nn)

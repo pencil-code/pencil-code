@@ -115,7 +115,7 @@ module Cdata
                            lshift_origin=.false., lshift_origin_lower=.false., & ! don't shift origin
                            lpole=.false., &                                      ! in spherical coords: pole excluded
                            lequidist=.true.                                      ! grid equidistant in every direction
-  logical :: lignore_nonequi=.false.
+  logical :: lignore_nonequi=.false., lcart_equi=.true.
   character (len=labellen), dimension(3) :: grid_func='linear'
   character (len=labellen) :: pipe_func='error_function'
   integer :: nghost_read_fewer=0
