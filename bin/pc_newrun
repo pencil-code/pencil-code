@@ -158,6 +158,8 @@ if [ -n "`ls *.py 2>/dev/null`" ]; then cp *.py $targetdir; fi
 [ -f pc_commands.log ] && cp pc_commands.log $targetdir && echo -e "\n# `date +'%Y-%m-%d %H:%M:%S'`\n# copied from '$olddir'" >>  $targetdir/pc_commands.log
 [ -f src/.moduleinfo ] && cp src/.moduleinfo $targetdir/src
 [ -f src/.config-files ] && cp src/.config-files $targetdir/src
+[ -d src/astaroth/DSL/local ] && cp src/astaroth/DSL/local/* $targetdir/src/astaroth/DSL/local
+
 #
 #  if same_source, then link all *.x files from the original directory.
 #  (We don't want to use a link to the entire src directory, because

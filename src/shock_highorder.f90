@@ -76,7 +76,7 @@ module Shock
     module procedure shock_divu_perp_pencil
   endinterface
 !
-  real :: dt_div_pow
+  real :: dt_div_pow=0.
 
   contains
 !***********************************************************************
