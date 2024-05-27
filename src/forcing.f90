@@ -1142,6 +1142,10 @@ module Forcing
         elseif (iforcing_cont(i)=='1-(4/3)(1-r^2/4)*r^2') then
           if (lroot) print*,'forcing_cont: 1-(4/3)(1-r^2/4)*r^2'
           profx_ampl=ampl_ff(i)*(1.-4./3.*(1.-.25*x(l1:l2)**2)*x(l1:l2)**2)
+        elseif (iforcing_cont(i)=='tidal') then
+          if (lroot) print*, 'forcing_cont: tidal'
+          sinx(:,i)=sin(kf_fcont_x(i)*x)
+          siny(:,i)=sin(kf_fcont_y(i)*y)
        elseif (iforcing_cont(i)=='from_file') then
           if (allocated(fcont_from_file)) deallocate(fcont_from_file)
           allocate(fcont_from_file(3,nxgrid,nygrid,nzgrid))
@@ -6120,6 +6124,20 @@ module Forcing
         force(:,1)=0.
         force(:,2)=0.
         force(:,3)=profx_ampl
+!
+!  Tidal forcing in a convective box; a reference will be added.
+!  phi_tidal is used as the colatitude of the box and has to be
+!  the same as theta of Omega in the hydro module.
+!
+      case ('tidal')
+        force(:,1) = ampl_ff(i) * ( &
+            sinx(l1:l2,i)*cos(2.*phi_tidal)*cos(omega_ff*t) &
+            + 2.*siny(m,i)*cos(phi_tidal)*sin(omega_ff*t) )
+        force(:,2) = ampl_ff(i) * ( &
+            sinx(l1:l2,i)*cos(phi_tidal)*sin(omega_ff*t) &
+            - 2.*siny(m,i)*cos(omega_ff*t) )
+        force(:,3) = 0.
+!
 !
 !  possibility of putting zero, e.g., for purely magnetic forcings
 !
