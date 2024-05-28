@@ -1077,7 +1077,10 @@ module Grid
 !
 !  single value volume element dVol applicable only to Cartesian equidistant grid
 !
-        if (all(lequidist)) dVol=dVol_x(l1:l2)*dVol_y(m1)*dVol_z(n1)
+        if (all(lequidist)) then
+          dVol=dVol_x(l1:l2)*dVol_y(m1)*dVol_z(n1)
+          dVol_glob = dVol_x(l1)*dVol_y(m1)*dVol_z(n1)
+        endif
 !
 !  Spherical coordinate system
 !
@@ -2608,7 +2611,7 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
       real, dimension(nx), intent(out) :: dV
 
       if (lcart_equi) then
-        dV = dVol_x(l1)*dVol_y(m1)*dVol_z(n1)
+        dV = dVol_glob
       else
         dV = dVol_x(l1:l2)*dVol_y(mm)*dVol_z(nn)
       endif

@@ -35,6 +35,7 @@ module Cdata
   real, dimension (nx) :: dxyz_2, dxyz_4, dxyz_6, dVol
   real, dimension (nx) :: dxmax_pencil,dxmin_pencil
 !BEGIN C BINDING
+  real :: dVol_glob
   real, dimension (mx) :: x,dx_1,dx2,dx_tilde,xprim,dVol_x,dVol1_x
   real, dimension (my) :: y,dy_1,dy2,dy_tilde,yprim,dVol_y,dVol1_y
   real, dimension (mz) :: z,dz_1,dz2,dz_tilde,zprim,dVol_z,dVol1_z
@@ -810,8 +811,8 @@ module Cdata
 !
 ! threadprivate definitions for OpenMP
 !
-!$omp threadprivate(dxyz_2,dxyz_4,dxyz_6,dvol,dxmax_pencil&
-!$omp ,dxmin_pencil,dline_1,lcoarse_mn, seed, m, n)
+!!$omp threadprivate(dxyz_2,dxyz_4,dxyz_6,dvol,dxmax_pencil,dxmin_pencil,dline_1,lcoarse_mn, seed, m, n)
+!$omp threadprivate(dxyz_2,dxyz_4,dxyz_6,dxmax_pencil,dxmin_pencil,dline_1,lcoarse_mn, seed, m, n)
 !$omp threadprivate(lfirstpoint)
 !$omp threadprivate(fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound)
 !$omp threadprivate(l1dphiavg, l1davgfirst, l2davgfirst, ldiagnos)
