@@ -150,31 +150,31 @@ module Interstellar
 !  3-D  was 3.71213666 but replaced with Maple result....
 !
   real, parameter, dimension(3) :: &
-      cnorm_gaussian_SN  =  (/ 0.8862269254527579, pi, 5.568327996831708  /)
+      cnorm_gaussian_SN    = (/ 0.8862269254527579, pi,                5.568327996831708  /)
   real, parameter, dimension(3) :: &
-      cnorm_gaussian2_SN =  (/ 0.9064024770554771, 2.784163998415854, 3.849760110050832  /)
+      cnorm_gaussian2_SN   = (/ 0.9064024770554771, 2.784163998415854, 3.849760110050832  /)
   real, parameter, dimension(3) :: &
-      cnorm_SN           =  (/ 0.9277193336300392, 2.805377873352155, 3.712218664554472  /)
+      cnorm_SN             = (/ 0.9277193336300392, 2.805377873352155, 3.712218664554472  /)
   real, parameter, dimension(3) :: &
-      cnorm_para_SN =       (/  fourthird,        1.570796326794897, 1.6755161          /)
+      cnorm_para_SN        = (/ fourthird,          1.570796326794897, 1.6755161          /)
   real, parameter, dimension(3) :: &
-      cnorm_quar_SN =       (/  0.,                2.0943951,         0.                 /)
-! kinetic energy with lmass_SN=F
+      cnorm_quar_SN        = (/  0.,                2.0943951,         0.                 /)
+!  kinetic energy with lmass_SN=F
   real, parameter, dimension(3) :: &
-      vnormEj_gaussian_SN =  (/ 0.5116633539732443, 1.047197551196598, 1.0716252226356386 /)
-! kinetic energy addition lmass_SN=T
+      vnormEj_gaussian_SN  = (/ 0.5116633539732443, 1.047197551196598, 1.0716252226356386 /)
+!  kinetic energy addition lmass_SN=T
   real, parameter, dimension(3) :: &
-      vnorm_gaussian_SN =    (/ 0.6266570686577501, 1.570796326794897, 1.9687012432153024 /)
+      vnorm_gaussian_SN    = (/ 0.6266570686577501, 1.570796326794897, 1.9687012432153024 /)
   real, parameter, dimension(3) :: &
       vnormEj_gaussian2_SN = (/ 0.6887169476297503, 1.607437833953458, 1.6888564123130090 /)
-! kinetic energy addition lmass_SN=T
+!  kinetic energy addition lmass_SN=T
   real, parameter, dimension(3) :: &
-      vnorm_gaussian2_SN =   (/ 0.7621905937330379, 1.968701243215302, 2.2890810569630537 /)
+      vnorm_gaussian2_SN   = (/ 0.7621905937330379, 1.968701243215302, 2.2890810569630537 /)
   real, parameter, dimension(3) :: &
-      vnormEj_SN =           (/ 0.7724962826996008, 1.945140377302524, 2.1432504452712773 /)
-! kinetic energy addition lmass_SN=T
+      vnormEj_SN           = (/ 0.7724962826996008, 1.945140377302524, 2.1432504452712773 /)
+!  kinetic energy addition lmass_SN=T
   real, parameter, dimension(3) :: &
-      vnorm_SN =           (/ 0.8265039651250117, 2.226629893663761, 2.624934990953737  /)
+      vnorm_SN             = (/ 0.8265039651250117, 2.226629893663761, 2.624934990953737  /)
 !
 !  cp1=1/cp used to convert TT (and ss) into interstellar code units
 !  (useful, as many conditions conveniently expressed in terms of TT)
@@ -350,6 +350,9 @@ module Interstellar
 !  Fred: revealed too high timestep for large df(u) source of code instability
 !  rather than cooling timestep or shock instability, so this device no longer
 !  recommended.
+!  2009 simulations used mu=0.62 for partially ionized medium. Direct comparison
+!  using alternate mu with ideal gas can be used with lcooling_revert=.true., now
+!  somewhat redundant as more recent simulations more robust.
 !
   logical :: lheatcool_shock_cutoff = .false., lcooling_revert=.false.
 !
@@ -442,7 +445,7 @@ module Interstellar
       eps_mass, rfactor_SN, &
       energy_Nsigma, lSN_momentum, lSN_coolingmass, Nsol_added
 !
-! run parameters
+!  run parameters
 !
   namelist /interstellar_run_pars/ &
       ampl_SN, mass_SN, t_next_SNI, t_next_SNII, lSN_list, &
@@ -479,21 +482,21 @@ module Interstellar
 !
 !  19-nov-02/tony: coded
 !
-    use FArrayManager
+      use FArrayManager
 !
-!    call farray_register_auxiliary('netheat',inetheat,communicated=.true.)
-    call farray_register_auxiliary('netheat',inetheat)
-    call farray_register_auxiliary('cooling',icooling)
+!      call farray_register_auxiliary('netheat',inetheat,communicated=.true.)
+      call farray_register_auxiliary('netheat',inetheat)
+      call farray_register_auxiliary('cooling',icooling)
 !
 !  identify version number
 !
-    if (lroot) call svn_id( &
-            "$Id$")
+      if (lroot) call svn_id( &
+              "$Id$")
 !
 !  Invalidate all SNRs
 !
-    nSNR=0
-    SNRs%indx%state=SNstate_invalid
+      nSNR=0
+      SNRs%indx%state=SNstate_invalid
 !
 !  Writing files for use with IDL
 !
@@ -516,321 +519,321 @@ module Interstellar
 !                  containing same format as data/sn_series.dat typically
 !                  from previous run, if lSN_list.
 !
-    use EquationOfState, only: getmu, get_gamma_etc
-    use General, only: random_seed_wrapper
+      use EquationOfState, only: getmu, get_gamma_etc
+      use General, only: random_seed_wrapper
 !
-    real, dimension (mx,my,mz,mfarray) :: f
-    integer :: i, int1_list, stat
-    integer, dimension(4) :: int4_list
-    real, dimension(13) :: real13_list
-    real :: t_list,x_list,y_list,z_list
-    logical :: exist
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: i, int1_list, stat
+      integer, dimension(4) :: int4_list
+      real, dimension(13) :: real13_list
+      real :: t_list,x_list,y_list,z_list
+      logical :: exist
 !
-    f(:,:,:,icooling)=0.0
-    f(:,:,:,inetheat)=0.0
+      f(:,:,:,icooling)=0.0
+      f(:,:,:,inetheat)=0.0
 !
-    if (lroot) print"(1x,'initialize_interstellar: t_next_SNI =',e15.8)",t_next_SNI
+      if (lroot) print"(1x,'initialize_interstellar: t_next_SNI =',e15.8)",t_next_SNI
 !
-    if (lroot.and.luniform_zdist_SNI) &
-                print*,'initialize_interstellar: using UNIFORM z-distribution of SNI'
+      if (lroot.and.luniform_zdist_SNI) &
+          print*,'initialize_interstellar: using UNIFORM z-distribution of SNI'
 
-    lSN_ecr=lcosmicray.and.lSN_ecr
-    lSN_fcr=lcosmicrayflux.and.lSN_fcr.and.lSN_ecr
+      lSN_ecr=lcosmicray.and.lSN_ecr
+      lSN_fcr=lcosmicrayflux.and.lSN_fcr.and.lSN_ecr
 !
-    call get_gamma_etc(gamma)
-    if (leos_idealgas) then
-      call getmu(f,mu)
-    else
-      mu = 0.62
-      if (lroot) print*, 'initialize_interstellar: mu not set by eos:',mu
-    endif
+      call get_gamma_etc(gamma)
+      if (leos_idealgas) then
+        call getmu(f,mu)
+      else
+        mu = 0.62
+        if (lroot) print*, 'initialize_interstellar: mu not set by eos:',mu
+      endif
 !
-    if (unit_system=='cgs') then
+      if (unit_system=='cgs') then
 !
 !  this Lambda as such enters as n^2*Lambda(T) on the rhs of the
 !  energy equation per unit volume (n Gamma(T))
 !
-      unit_Lambda = unit_velocity**2 / unit_density / unit_time
-      unit_Gamma  = unit_velocity**3 / unit_length
+        unit_Lambda = unit_velocity**2 / unit_density / unit_time
+        unit_Gamma  = unit_velocity**3 / unit_length
 !
-      T0UV=T0UV_cgs / unit_temperature
-      cUV=cUV_cgs * unit_temperature
-      if (GammaUV==impossible) GammaUV=GammaUV_cgs / unit_Gamma
+        T0UV=T0UV_cgs / unit_temperature
+        cUV=cUV_cgs * unit_temperature
+        if (GammaUV==impossible) GammaUV=GammaUV_cgs / unit_Gamma
 !
-      if (rho_SN_min==impossible) rho_SN_min=rho_SN_min_cgs / unit_density
-      if (rho_SN_max==impossible) rho_SN_max=rho_SN_max_cgs / unit_density
-      if (TT_SN_max==impossible) TT_SN_max=TT_SN_max_cgs/unit_temperature
-      if (TT_SN_min==impossible) TT_SN_min=TT_SN_min_cgs / unit_temperature
-      if (OB_area_rate==impossible) &
-          OB_area_rate=OB_area_rate_cgs * unit_length**2 * unit_time
-      if (SNI_area_rate==impossible) &
-          SNI_area_rate=SNI_area_rate_cgs * unit_length**2 * unit_time
-      if (SNII_area_rate==impossible) &
-          SNII_area_rate=7.5*SNI_area_rate_cgs * unit_length**2 * unit_time
-      if (h_SNI==impossible) h_SNI=h_SNI_cgs / unit_length
-      if (h_SNII==impossible) h_SNII=h_SNII_cgs / unit_length
-      SNII_mass_rate=SNII_mass_rate_cgs*unit_time
-      SNI_mass_rate=SNI_mass_rate_cgs*unit_time
-      solar_mass=solar_mass_cgs / unit_mass
-      if (lroot.and.ip==1963) print &
-          "(1x,'initialize_interstellar: solar_mass =',e11.4)",solar_mass
-      r_SNI =r_SNI_yrkpc2  * (unit_time/yr_cgs) * (unit_length/kpc_cgs)**2
-      r_SNII=r_SNII_yrkpc2 * (unit_time/yr_cgs) * (unit_length/kpc_cgs)**2
+        if (rho_SN_min==impossible) rho_SN_min=rho_SN_min_cgs / unit_density
+        if (rho_SN_max==impossible) rho_SN_max=rho_SN_max_cgs / unit_density
+        if (TT_SN_max==impossible) TT_SN_max=TT_SN_max_cgs/unit_temperature
+        if (TT_SN_min==impossible) TT_SN_min=TT_SN_min_cgs / unit_temperature
+        if (OB_area_rate==impossible) &
+            OB_area_rate=OB_area_rate_cgs * unit_length**2 * unit_time
+        if (SNI_area_rate==impossible) &
+            SNI_area_rate=SNI_area_rate_cgs * unit_length**2 * unit_time
+        if (SNII_area_rate==impossible) &
+            SNII_area_rate=7.5*SNI_area_rate_cgs * unit_length**2 * unit_time
+        if (h_SNI==impossible) h_SNI=h_SNI_cgs / unit_length
+        if (h_SNII==impossible) h_SNII=h_SNII_cgs / unit_length
+        SNII_mass_rate=SNII_mass_rate_cgs*unit_time
+        SNI_mass_rate=SNI_mass_rate_cgs*unit_time
+        solar_mass=solar_mass_cgs / unit_mass
+        if (lroot.and.ip==1963) print &
+            "(1x,'initialize_interstellar: solar_mass =',e11.4)",solar_mass
+        r_SNI =r_SNI_yrkpc2  * (unit_time/yr_cgs) * (unit_length/kpc_cgs)**2
+        r_SNII=r_SNII_yrkpc2 * (unit_time/yr_cgs) * (unit_length/kpc_cgs)**2
 !
-!   set SN parameters self-consistently
+!  set SN parameters self-consistently
 !
-      if (ampl_SN==impossible) ampl_SN=ampl_SN_cgs / unit_energy
+        if (ampl_SN==impossible) ampl_SN=ampl_SN_cgs / unit_energy
 !  dimensional norm for Sedov-Taylor relations
-      sedov_norm=unit_density/1e-24*ampl_SN_cgs/unit_energy
+        sedov_norm=unit_density/1e-24*ampl_SN_cgs/unit_energy
 !  parameters for energy losses prior to SN initialisation
 !  ref Kim & Ostriker 2015 Eq 7 dimensional norm shell formation time
 !  ref Simpson et al. 2015 Eq 17
-      SFt_norm = 26.5*kyr_cgs/unit_time*&
-                 (1.4*m_H_cgs/unit_density)**(4./7)*&
-                 (unit_energy/ampl_SN_cgs)**(3./14)
+        SFt_norm = 26.5*kyr_cgs/unit_time*&
+                   (1.4*m_H_cgs/unit_density)**(4./7)*&
+                   (unit_energy/ampl_SN_cgs)**(3./14)
 !  ref Kim & Ostriker 2015 Eq 8 dimensional norm shell formation radius
 !  ref Simpson et al. 2015 Eq 18
-      SFr_norm = 18.5*pc_cgs/unit_length*&
-                 (unit_energy/ampl_SN_cgs)**(2./7)*&
-                 (1.4*m_H_cgs/unit_density)**(3./7)
+        SFr_norm = 18.5*pc_cgs/unit_length*&
+                   (unit_energy/ampl_SN_cgs)**(2./7)*&
+                   (1.4*m_H_cgs/unit_density)**(3./7)
 !  ref Simpson 15 Eq 16 dimensional norm kinetic energy fraction
-      kfrac_norm=3.97e-6*mu/1.4/m_H_cgs*unit_density*& !RPDS
-                 ampl_SN_cgs/unit_energy*(unit_length/pc_cgs)**5*&
-                 (kyr_cgs/unit_time)**2
-      if (lroot.and.lSN_autofrackin.and.ip==1963) then
-          print "(1x,'initialize_interstellar:   SFt_norm =',e11.4)",SFt_norm
-          print "(1x,'initialize_interstellar:   SFr_norm =',e11.4)",SFr_norm
-          print "(1x,'initialize_interstellar: sedov_norm =',e11.4)",sedov_norm
-          print "(1x,'initialize_interstellar: kfrac_norm =',e11.4)",kfrac_norm
-      endif
-      if (lSN_coolingmass) then
-        if (.not.lSN_eth) then
-          if (lroot) print*,&
-            'initialize_interstellar: lSN_coolingmass false if not lSN_eth'
-          lSN_coolingmass = .false.
+        kfrac_norm=3.97e-6*mu/1.4/m_H_cgs*unit_density*& !RPDS
+                   ampl_SN_cgs/unit_energy*(unit_length/pc_cgs)**5*&
+                   (kyr_cgs/unit_time)**2
+        if (lroot.and.lSN_autofrackin.and.ip==1963) then
+            print "(1x,'initialize_interstellar:   SFt_norm =',e11.4)",SFt_norm
+            print "(1x,'initialize_interstellar:   SFr_norm =',e11.4)",SFr_norm
+            print "(1x,'initialize_interstellar: sedov_norm =',e11.4)",sedov_norm
+            print "(1x,'initialize_interstellar: kfrac_norm =',e11.4)",kfrac_norm
+        endif
+        if (lSN_coolingmass) then
+          if (.not.lSN_eth) then
+            if (lroot) print*,&
+              'initialize_interstellar: lSN_coolingmass false if not lSN_eth'
+            lSN_coolingmass = .false.
+          else
+            lSN_mass = .false.
+          endif
+        endif
+        if (lSN_autofrackin) lSN_velocity = .true.
+        if (lSN_eth) then
+          if (lSN_ecr) then
+            if (frac_ecr==0) frac_ecr=0.1
+            campl_SN=frac_ecr*ampl_SN
+          endif
+          frac_eth=1.-frac_ecr-frac_kin
+          if (frac_eth<0.) call fatal_error('initialize_interstellar','energy fractions must sum to 1')
+          kampl_SN=frac_kin*ampl_SN
+          eampl_SN=frac_eth*ampl_SN
+          if (frac_kin >0.0) lSN_velocity = .true.
         else
-          lSN_mass = .false.
+          if (lSN_ecr) then
+            if (frac_ecr==0) frac_ecr=0.1
+            campl_SN=frac_ecr*ampl_SN
+          endif
+          if (frac_kin >0.0) lSN_velocity = .true.
+          kampl_SN=frac_kin*ampl_SN
+          if (frac_kin+frac_ecr>1) &
+            call fatal_error('initialize_interstellar','energy fractions not to be > 1')
         endif
-      endif
-      if (lSN_autofrackin) lSN_velocity = .true.
-      if (lSN_eth) then
-        if (lSN_ecr) then
-          if (frac_ecr==0) frac_ecr=0.1
-          campl_SN=frac_ecr*ampl_SN
+        if (lroot) print &
+            "(1x,'initialize_interstellar: eampl_SN, kampl_SN = ',2e11.4)", eampl_SN, kampl_SN
+        if (energy_Nsigma==impossible) then
+          if (thermal_profile=="gaussian3") then
+            energy_Nsigma=1.25
+          elseif (thermal_profile=="gaussian2") then
+            energy_Nsigma=1.75
+          elseif (thermal_profile=="gaussian") then
+            energy_Nsigma=2.25
+          else
+            energy_Nsigma=1.5
+          endif
         endif
-        frac_eth=1.-frac_ecr-frac_kin
-        if (frac_eth<0.) call fatal_error('initialize_interstellar','energy fractions must sum to 1')
-        kampl_SN=frac_kin*ampl_SN
-        eampl_SN=frac_eth*ampl_SN
-        if (frac_kin >0.0) lSN_velocity = .true.
+        energy_Nsigma2=energy_Nsigma**2
+        if (lSN_scale_rad) then
+           if (thermal_profile=="gaussian")  &
+               Lxyzmin=min(minval(Lxyz)/2, minval(Lxyz)/cnorm_gaussian_SN(dimensionality))
+           if (thermal_profile=="gaussian2") &
+               Lxyzmin=min(minval(Lxyz)/2, minval(Lxyz)/cnorm_gaussian2_SN(dimensionality))
+           if (thermal_profile=="gaussian3") &
+               Lxyzmin=min(minval(Lxyz)/2, minval(Lxyz)/cnorm_SN(dimensionality))
+           if (lroot) print "(1x,'initialize_interstellar: Lxyzmin = ',e11.4)", Lxyzmin
+        endif
+        if (rho_min == impossible) rho_min=rho_min_cgs/unit_temperature
+        if (T_init == impossible) T_init=T_init_cgs/unit_temperature
+        if (rho0ts == impossible) rho0ts=rho0ts_cgs/unit_density
+        if (cloud_rho==impossible) cloud_rho=cloud_rho_cgs / unit_density
+        if (cloud_TT==impossible) cloud_TT=cloud_TT_cgs / unit_temperature
+        lncloud_TT = log(cloud_TT)
+        if (cloud_tau==impossible) cloud_tau=cloud_tau_cgs / unit_time
+        if (mass_SN==impossible) mass_SN=mass_SN_cgs / unit_mass
+        if (mass_SN_progenitor==impossible) &
+            mass_SN_progenitor=mass_SN_progenitor_cgs / unit_mass
+        if (width_SN==impossible) width_SN= &
+            min(width_SN_cgs / real(unit_length),rfactor_SN*dxmin)
+        if (SN_clustering_radius==impossible) &
+            SN_clustering_radius=SN_clustering_radius_cgs / unit_length
+        if (SN_clustering_time==impossible) &
+            SN_clustering_time=SN_clustering_time_cgs / unit_time
+        t_interval_OB   = 1./(OB_area_rate * Lx * Ly)
       else
-        if (lSN_ecr) then
-          if (frac_ecr==0) frac_ecr=0.1
-          campl_SN=frac_ecr*ampl_SN
-        endif
-        if (frac_kin >0.0) lSN_velocity = .true.
-        kampl_SN=frac_kin*ampl_SN
-        if (frac_kin+frac_ecr>1) &
-          call fatal_error('initialize_interstellar','energy fractions not to be > 1')
+        call not_implemented('initialize_interstellar','SI unit conversions')
       endif
-      if (lroot) print &
-          "(1x,'initialize_interstellar: eampl_SN, kampl_SN = ',2e11.4)", eampl_SN, kampl_SN
-      if (energy_Nsigma==impossible) then
-        if (thermal_profile=="gaussian3") then
-          energy_Nsigma=1.25
-        elseif (thermal_profile=="gaussian2") then
-          energy_Nsigma=1.75
-        elseif (thermal_profile=="gaussian") then
-          energy_Nsigma=2.25
-        else
-          energy_Nsigma=1.5
-        endif
-      endif
-      energy_Nsigma2=energy_Nsigma**2
-      if (lSN_scale_rad) then
-         if (thermal_profile=="gaussian")  &
-             Lxyzmin=min(minval(Lxyz)/2, minval(Lxyz)/cnorm_gaussian_SN(dimensionality))
-         if (thermal_profile=="gaussian2") &
-             Lxyzmin=min(minval(Lxyz)/2, minval(Lxyz)/cnorm_gaussian2_SN(dimensionality))
-         if (thermal_profile=="gaussian3") &
-             Lxyzmin=min(minval(Lxyz)/2, minval(Lxyz)/cnorm_SN(dimensionality))
-         if (lroot) print "(1x,'initialize_interstellar: Lxyzmin = ',e11.4)", Lxyzmin
-      endif
-      if (rho_min == impossible) rho_min=rho_min_cgs/unit_temperature
-      if (T_init == impossible) T_init=T_init_cgs/unit_temperature
-      if (rho0ts == impossible) rho0ts=rho0ts_cgs/unit_density
-      if (cloud_rho==impossible) cloud_rho=cloud_rho_cgs / unit_density
-      if (cloud_TT==impossible) cloud_TT=cloud_TT_cgs / unit_temperature
-      lncloud_TT = log(cloud_TT)
-      if (cloud_tau==impossible) cloud_tau=cloud_tau_cgs / unit_time
-      if (mass_SN==impossible) mass_SN=mass_SN_cgs / unit_mass
-      if (mass_SN_progenitor==impossible) &
-          mass_SN_progenitor=mass_SN_progenitor_cgs / unit_mass
-      if (width_SN==impossible) width_SN= &
-          min(width_SN_cgs / real(unit_length),rfactor_SN*dxmin)
-      if (SN_clustering_radius==impossible) &
-          SN_clustering_radius=SN_clustering_radius_cgs / unit_length
-      if (SN_clustering_time==impossible) &
-          SN_clustering_time=SN_clustering_time_cgs / unit_time
-      t_interval_OB   = 1./(OB_area_rate * Lx * Ly)
-    else
-      call not_implemented('initialize_interstellar','SI unit conversions')
-    endif
 !
-    call select_cooling(cooling_select,lncoolT,lncoolH,coolB)
+      call select_cooling(cooling_select,lncoolT,lncoolH,coolB)
 !
-    if (lroot) print "(1x,'initialize_interstellar: unit_Lambda',e11.4)",unit_Lambda
-    if (lroot) print "(1x,'initialize_interstellar: unit_Gamma',e11.4)",unit_Gamma
+      if (lroot) print "(1x,'initialize_interstellar: unit_Lambda',e11.4)",unit_Lambda
+      if (lroot) print "(1x,'initialize_interstellar: unit_Gamma',e11.4)",unit_Gamma
 !
-    heating_rate_code=heating_rate*real(unit_length/unit_velocity**3)
+      heating_rate_code=heating_rate*real(unit_length/unit_velocity**3)
 !
-    if (heating_select == 'thermal-hs') call heat_interstellar(f,heat_z)
+      if (heating_select == 'thermal-hs') call heat_interstellar(f,heat_z)
 !
 !  Cooling cutoff in shocks
 !
-    if (heatcool_shock_cutoff_rate/=0.) then
-      lheatcool_shock_cutoff=.true.
-      heatcool_shock_cutoff_rate1=1.0/heatcool_shock_cutoff_rate
-    else
-      lheatcool_shock_cutoff=.false.
-    endif
+      if (heatcool_shock_cutoff_rate/=0.) then
+        lheatcool_shock_cutoff=.true.
+        heatcool_shock_cutoff_rate1=1.0/heatcool_shock_cutoff_rate
+      else
+        lheatcool_shock_cutoff=.false.
+      endif
 !
 !  Slopeyness used for tanh rounding profiles etc.
 !
-    sigma_SN=dxmax*3
-    sigma_SN1=1./sigma_SN
+      sigma_SN=dxmax*3
+      sigma_SN1=1./sigma_SN
 !
-    preSN=0
+      preSN=0
 !
-    if (SN_interval_rhom==impossible) SN_interval_rhom=SN_interval_rhom_cgs/unit_density
-    t_interval_SNI  = 1./( SNI_factor *  SNI_area_rate * Lx * Ly)
-    t_interval_SNII = 1./(SNII_factor * SNII_area_rate * Lx * Ly)
-    if (average_SNI_heating == impossible) average_SNI_heating = &
-        r_SNI *ampl_SN/(sqrt(2*pi)*h_SNI*SN_interval_rhom)
-    if (average_SNII_heating == impossible) average_SNII_heating = &
-        r_SNII*ampl_SN/(sqrt(2*pi)*h_SNII*SN_interval_rhom)
-    if (lroot.and.ip==1963) print &
-        "(1x,'initialize_interstellar: t_interval_SNI, SNI rate =',2e11.4)", &
-        t_interval_SNI,SNI_factor*SNI_area_rate
-    if (laverage_SNI_heating) then
-      if (lSNI.or.lSNII) then
-        if (lroot.and.ip==1963) print &
-            "(1x,'initialize_interstellar: average_SNI_heating =',e11.4)", &
-            average_SNI_heating*sqrt(2*pi)*h_SNI*SN_interval_rhom* &
-            t_interval_SNI/(t_interval_SNI+t*heatingfunction_fadefactor)* &
-            heatingfunction_scalefactor
+      if (SN_interval_rhom==impossible) SN_interval_rhom=SN_interval_rhom_cgs/unit_density
+      t_interval_SNI  = 1./( SNI_factor *  SNI_area_rate * Lx * Ly)
+      t_interval_SNII = 1./(SNII_factor * SNII_area_rate * Lx * Ly)
+      if (average_SNI_heating == impossible) average_SNI_heating = &
+          r_SNI *ampl_SN/(sqrt(2*pi)*h_SNI*SN_interval_rhom)
+      if (average_SNII_heating == impossible) average_SNII_heating = &
+          r_SNII*ampl_SN/(sqrt(2*pi)*h_SNII*SN_interval_rhom)
+      if (lroot.and.ip==1963) print &
+          "(1x,'initialize_interstellar: t_interval_SNI, SNI rate =',2e11.4)", &
+          t_interval_SNI,SNI_factor*SNI_area_rate
+      if (laverage_SNI_heating) then
+        if (lSNI.or.lSNII) then
+          if (lroot.and.ip==1963) print &
+              "(1x,'initialize_interstellar: average_SNI_heating =',e11.4)", &
+              average_SNI_heating*sqrt(2*pi)*h_SNI*SN_interval_rhom* &
+              t_interval_SNI/(t_interval_SNI+t*heatingfunction_fadefactor)* &
+              heatingfunction_scalefactor
+        else
+          if (lroot.and.ip==1963) print &
+              "(1x,'initialize_interstellar: average_SNI_heating =',e11.4)", &
+              average_SNI_heating*sqrt(2*pi)*h_SNI*SN_interval_rhom* &
+              heatingfunction_scalefactor
+        endif
       else
-        if (lroot.and.ip==1963) print &
-            "(1x,'initialize_interstellar: average_SNI_heating =',e11.4)", &
-            average_SNI_heating*sqrt(2*pi)*h_SNI*SN_interval_rhom* &
-            heatingfunction_scalefactor
+        if (lroot.and.ip==1963) print*, 'initialize_interstellar: average_SNI_heating = 0'
       endif
-    else
-      if (lroot.and.ip==1963) print*, 'initialize_interstellar: average_SNI_heating = 0'
-    endif
-    if (laverage_SNII_heating) then
-      if (lSNI.or.lSNII) then
-        if (lroot.and.ip==1963) print &
-            "(1x,'initialize_interstellar: average_SNII_heating =',e11.4)", &
-            average_SNII_heating*sqrt(2*pi)*h_SNII*SN_interval_rhom* &
-            t_interval_SNII/(t_interval_SNII+t*heatingfunction_fadefactor)* &
-            heatingfunction_scalefactor
+      if (laverage_SNII_heating) then
+        if (lSNI.or.lSNII) then
+          if (lroot.and.ip==1963) print &
+              "(1x,'initialize_interstellar: average_SNII_heating =',e11.4)", &
+              average_SNII_heating*sqrt(2*pi)*h_SNII*SN_interval_rhom* &
+              t_interval_SNII/(t_interval_SNII+t*heatingfunction_fadefactor)* &
+              heatingfunction_scalefactor
+        else
+          if (lroot.and.ip==1963) print &
+              "(1x,'initialize_interstellar: average_SNII_heating =',e11.4)", &
+              average_SNII_heating*sqrt(2*pi)*h_SNII*SN_interval_rhom* &
+              heatingfunction_scalefactor
+        endif
       else
-        if (lroot.and.ip==1963) print &
-            "(1x,'initialize_interstellar: average_SNII_heating =',e11.4)", &
-            average_SNII_heating*sqrt(2*pi)*h_SNII*SN_interval_rhom* &
-            heatingfunction_scalefactor
+        if (lroot.and.ip==1963) print*,'initialize_interstellar: average_SNII_heating =0'
       endif
-    else
-      if (lroot.and.ip==1963) print*,'initialize_interstellar: average_SNII_heating =0'
-    endif
 !
-    if (lroot.and.ip==1963) then
-      print*,'initialize_interstellar: nseed,seed',nseed,seed(1:nseed)
-      print*,'initialize_interstellar: finished'
-    endif
-    if (ladd_massflux) call warning('initialize_interstellar','ladd_massflux now redundant,' // &
+      if (lroot.and.ip==1963) then
+        print*,'initialize_interstellar: nseed,seed',nseed,seed(1:nseed)
+        print*,'initialize_interstellar: finished'
+      endif
+      if (ladd_massflux) call warning('initialize_interstellar','ladd_massflux now redundant,' // &
                                     'set lconserve_total_mass, total_mass in density_run_pars instead')
 !
 !  Fred: 06-Nov-17 added SN_rate column and changed site_mass to site_Nsol
 !        Note changes may affect reading/meaning of pre-existing file contents
 !
-    if (lroot .and. lstart) then
-      open(1,file=trim(datadir)//'/sn_series.dat',position='append')
-      write(1,'("#",5A)')  &
-          '---it-----------t------------itype-iproc---l-----m-----n-------x-',&
-          '-----------y------------z-----------rho---------rhom---------',&
-          '-TT-----------EE----------Ekin----------Ecr--------t_sedov---',&
-          '---radius------site_Nsol----added_Nsol-------maxTT---', &
-          '---t_interval----SN_rate--'
-      close(1)
-    endif
-!
-    if (lSN_list) then
-      inquire(file='sn_series.in',exist=exist)
-      if (exist) then
-        open(33,file='sn_series.in')
-      else
-        call fatal_error('initialize_interstellar','error - no sn_series input file')
+      if (lroot .and. lstart) then
+        open(1,file=trim(datadir)//'/sn_series.dat',position='append')
+        write(1,'("#",5A)')  &
+            '---it-----------t------------itype-iproc---l-----m-----n-------x-',&
+            '-----------y------------z-----------rho---------rhom---------',&
+            '-TT-----------EE----------Ekin----------Ecr--------t_sedov---',&
+            '---radius------site_Nsol----added_Nsol-------maxTT---', &
+            '---t_interval----SN_rate--'
+        close(1)
       endif
+!
+      if (lSN_list) then
+        inquire(file='sn_series.in',exist=exist)
+        if (exist) then
+          open(33,file='sn_series.in')
+        else
+          call fatal_error('initialize_interstellar','error - no sn_series input file')
+        endif
 !
 !  Read profiles.
 !
-      nlist=0
-      read(33,*,iostat=stat)
-      do while(1==1)
-        read(33,*,iostat=stat) int1_list,t_list,type_list,int4_list,x_list,y_list,z_list,real13_list
-        !Ignore int1_list=0, applying under START and t_list<t to avoid repeating previous explosions
-        if (t<=t_list.and.int1_list/=0) nlist=nlist+1
-        if (stat<0) exit
-      enddo
-      close(33)
-      if (lroot) print*,"initialize_interstellar: nlist =",nlist
-      if (nlist<2) call fatal_error('initialize_interstellar',&
-          'sn_series.in list needs extending or set lSN_list=F to continue')
-      if (allocated(SN_list) ) deallocate(SN_list)
-      allocate(SN_list(4,nlist))
-      if (allocated(SN_type) ) deallocate(SN_type)
-      allocate(SN_type(  nlist))
+        nlist=0
+        read(33,*,iostat=stat)
+        do while(1==1)
+          read(33,*,iostat=stat) int1_list,t_list,type_list,int4_list,x_list,y_list,z_list,real13_list
+          !Ignore int1_list=0, applying under START and t_list<t to avoid repeating previous explosions
+          if (t<=t_list.and.int1_list/=0) nlist=nlist+1
+          if (stat<0) exit
+        enddo
+        close(33)
+        if (lroot) print*,"initialize_interstellar: nlist =",nlist
+        if (nlist<2) call fatal_error('initialize_interstellar',&
+            'sn_series.in list needs extending or set lSN_list=F to continue')
+        if (allocated(SN_list) ) deallocate(SN_list)
+        allocate(SN_list(4,nlist))
+        if (allocated(SN_type) ) deallocate(SN_type)
+        allocate(SN_type(  nlist))
 !
-      open(33,file='sn_series.in')
-      read(33,*,iostat=stat)
-      i=1
-      do while(i<=nlist)
-        read(33,*,iostat=stat) int1_list,t_list,type_list,int4_list,x_list,y_list,z_list,real13_list
-        if (stat<0) exit
-        !Ignore int1_list=0, applying under START and t_list<t to avoid repeating previous explosions
-        if (t_list>=t.and.int1_list/=0) then
-          SN_list(1,i)=t_list
-          SN_list(2,i)=x_list
-          SN_list(3,i)=y_list
-          SN_list(4,i)=z_list
-          SN_type(  i)=type_list
-          if (lroot.and.i==1) print*,"i,int1_list,t_list,t",i,int1_list,t_list,t
-          if (lroot.and.i>=nlist-10) print*,"i,int1_list,t_list,t",i,int1_list,t_list,t
-          i=i+1
-        endif
-      enddo
-      close(33)
-      SNfirst=1
-      t_next_SNI = SN_list(1,1)
-      t_next_SNII = SN_list(1,1)
-    endif
+        open(33,file='sn_series.in')
+        read(33,*,iostat=stat)
+        i=1
+        do while(i<=nlist)
+          read(33,*,iostat=stat) int1_list,t_list,type_list,int4_list,x_list,y_list,z_list,real13_list
+          if (stat<0) exit
+          !Ignore int1_list=0, applying under START and t_list<t to avoid repeating previous explosions
+          if (t_list>=t.and.int1_list/=0) then
+            SN_list(1,i)=t_list
+            SN_list(2,i)=x_list
+            SN_list(3,i)=y_list
+            SN_list(4,i)=z_list
+            SN_type(  i)=type_list
+            if (lroot.and.i==1) print*,"i,int1_list,t_list,t",i,int1_list,t_list,t
+            if (lroot.and.i>=nlist-10) print*,"i,int1_list,t_list,t",i,int1_list,t_list,t
+            i=i+1
+          endif
+        enddo
+        close(33)
+        SNfirst=1
+        t_next_SNI = SN_list(1,1)
+        t_next_SNII = SN_list(1,1)
+      endif
 
-    if (leos_ionization) &
-        call warning('initialize_interstellar','using T/e instead of cv1 '// &
-        'for diagnostics. Not yet implemented cv1 for ionization')
+      if (leos_ionization) &
+          call warning('initialize_interstellar','using T/e instead of cv1 '// &
+          'for diagnostics. Not yet implemented cv1 for ionization')
  !
  !  Write unit_Lambda to pc_constants file
  !
-    if (lroot) then
-      print "(1x,'initialize_interstellar: t_next_SNI, t_next_SNII=',2e15.8)", &
-            t_next_SNI, t_next_SNII
-      open (1,file=trim(datadir)//'/pc_constants.pro',position="append")
-      write (1,'(a,1pd26.16)') 'unit_Lambda=',unit_Lambda
-      write (1,'(a,1pd26.16)') 'unit_Gamma=',unit_Gamma
-      close (1)
-    endif
+      if (lroot) then
+        print "(1x,'initialize_interstellar: t_next_SNI, t_next_SNII=',2e15.8)", &
+              t_next_SNI, t_next_SNII
+        open (1,file=trim(datadir)//'/pc_constants.pro',position="append")
+        write (1,'(a,1pd26.16)') 'unit_Lambda=',unit_Lambda
+        write (1,'(a,1pd26.16)') 'unit_Gamma=',unit_Gamma
+        close (1)
+      endif
 
     endsubroutine initialize_interstellar
 !*****************************************************************************
