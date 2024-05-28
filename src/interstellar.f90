@@ -3574,6 +3574,8 @@ mnloop:do n=n1,n2
         mmpi=maxlnTT
         call mpiallreduce_max(mmpi,maxlnTT)
         maxTT=exp(maxlnTT)
+      else
+        maxTT=cloud_TT
       endif
       if (lSN_eth.and..not.lSN_coolingmass) then
         if (present(ierr)) then
