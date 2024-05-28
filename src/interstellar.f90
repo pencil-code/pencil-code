@@ -1142,11 +1142,11 @@ module Interstellar
         coolB=tiny(0.)
       endif
 !
-! BEGIN TEMPORARY
+!  BEGIN TEMPORARY
       if (any(coolH_cgs(1:ncool) == 0) .or. any(coolT_cgs(1:ncool+1) == 0)) &
         call fatal_error('select_cooling', &
                          'Calculating lncoolH and lncoolT: One of the cooling coefficient is zero')
-! END TEMPORARY
+!  END TEMPORARY
       lncoolH(1:ncool) = real(log(coolH_cgs(1:ncool)) - log(unit_Lambda) &
                               + log(unit_temperature**coolB(1:ncool)) &
                               - lnmu2 &
@@ -1641,11 +1641,7 @@ module Interstellar
       endif
       if (idiag_rhoHCmz/=0) lpenc_diagnos(i_heatcool)=.true.
       if (idiag_Lamm/=0) lpenc_diagnos(i_rho1)=.true.
-!
-!  Diagnostic pencils
-!
-!  AB:
-!      if (idiag_nrhom/=0) lpenc_diagnos(i_rho)=.true.
+      if (idiag_nrhom/=0) lpenc_diagnos(i_ee)=.true.
 !
     endsubroutine pencil_criteria_interstellar
 !***********************************************************************
@@ -1683,6 +1679,9 @@ module Interstellar
       if (lpencil(i_cool)) call calc_cool_func(p%cool,p%lnTT,p%lnrho)
 !
       if (lpencil(i_heat)) call calc_heat(p%heat,p%lnTT)
+!
+!  For clarity with lentropy we have constructed the rhs in erg/s/g [=T*Ds/Dt]
+!  so therefore we now need to multiply by TT1, or otherwise.
 !
       if (ltemperature) then
         if (ltemperature_nolog) then
@@ -1897,11 +1896,6 @@ module Interstellar
       if (ltemperature_nolog.and.any(p%cv1 == impossible)) &
         call fatal_error("calc_heat_cool_interstellar","p%cv1 not set by eos")
 !
-!  13-jul-15/fred
-!  Removed obsolete calls to spatial and temporal smoothing
-!
-      !call calc_cool_func(cool,p%lnTT,p%lnrho)
-      !call calc_heat(heat,p%lnTT)
       heat=p%heat
       cool=p%cool
 !
@@ -1932,9 +1926,10 @@ module Interstellar
         endif
       endif
 !
-!  Prevent unresolved heating/cooling in shocks. This is recommended as
-!  early cooling in the shock prematurely inhibits the strength of the
-!  shock wave and also drives down the timestep. Fred
+!  Prevent unresolved heating/cooling in shocks. This is deprecated as
+!  use of RKF timestep control or the mor coarse RHS timestep control
+!  appended to the Courant timestep control is effective without
+!  unphysical artefacts. Fred
 !
       if (lheatcool_shock_cutoff) then
         call dot2(p%gshock,gsh2)
@@ -1943,31 +1938,8 @@ module Interstellar
 !
         cool=cool*damp_profile
         heat=heat*damp_profile
-        !heatcool=heatcool*damp_profile
       endif
 !
-!  For clarity we have constructed the rhs in erg/s/g [=T*Ds/Dt] so therefore
-!  we now need to multiply by TT1.
-!
-      !if (ltemperature) then
-      !  if (ltemperature_nolog) then
-      !    heat=heat*p%cv1
-      !    cool=cool*p%cv1
-      !    !heatcool=(heat-cool)*p%cv1
-      !  else
-      !    heat=heat/p%ee
-      !    cool=cool/p%ee
-      !    !heatcool=(heat-cool)/p%ee
-      !  endif
-      !elseif (pretend_lnTT) then
-      !  heat=heat*gamma
-      !  cool=cool*gamma
-      !  !heatcool=p%TT1*(heat-cool)*gamma
-      !else
-      !  heat=heat*p%TT1
-      !  cool=cool*p%TT1
-      !  !heatcool=p%TT1*(heat-cool)
-      !endif
       heatcool=heat-cool
 !
 !  Save result in aux variables
@@ -1976,45 +1948,16 @@ module Interstellar
       f(l1:l2,m,n,icooling) = cool
       f(l1:l2,m,n,inetheat) = heatcool
 !
-!  Prepare diagnostic output
-!  Since these variables are divided by Temp when applied it is useful to
-!  monitor the actual applied values for diagnostics so TT1 included.
-!
       call calc_diagnostics_interstellar(p)
-      !if (ldiagnos) then
-      !  if (idiag_Hmax_ism/=0) then
-      !    netheat=heatcool
-      !    where (heatcool<0.0) netheat=0.0
-      !    if (ltemperature.and.ltemperature_nolog) then
-      !      call max_mn_name(netheat*p%TT1,idiag_Hmax_ism)
-      !    elseif (pretend_lnTT) then
-      !      call max_mn_name(netheat,idiag_Hmax_ism)
-      !    else
-      !      call max_mn_name(netheat*p%TT/p%ee,idiag_Hmax_ism)
-      !    endif
-      !  endif
-      !  if (idiag_taucmin/=0) then
-      !    netcool=-heatcool
-      !    where (heatcool>=0.0) netcool=1.0e-6
-      !    if (ltemperature.and.ltemperature_nolog) then
-      !      call max_mn_name(netcool*p%TT1,idiag_taucmin,lreciprocal=.true.)
-      !    elseif (pretend_lnTT) then
-      !      call max_mn_name(netcool,idiag_taucmin,lreciprocal=.true.)
-      !    else
-      !      call max_mn_name(netcool*p%TT/p%ee,idiag_taucmin,lreciprocal=.true.)
-      !    endif
-      !  endif
-      !  if (idiag_Lamm/=0) call sum_mn_name(p%rho1*cool,idiag_Lamm)
-      !  if (idiag_nrhom/=0) call sum_mn_name(cool/p%ee,idiag_nrhom)
-      !  call sum_mn_name(cool,idiag_rhoLm)
-      !  call sum_mn_name(heat,idiag_Gamm)
-      !endif
-      !if (l1davgfirst) then
-      !  call xysum_mn_name_z(heatcool,idiag_rhoHCmz)
-      !endif
 !
 !  Limit timestep by the cooling time (having subtracted any heating)
 !
+!  FG: todo this applies a primarily negative heatcool to positive Hmax
+!      which controls the ldt time step in energy RHS. Require to sum
+!      Hmax with abs(heatcool) or to compute cooling timestep separately
+!      Hmax may need to be max(abs(Hmax)) for ldt??
+!
+
       if (ldt.and.lfirst .or. ldiagnos) then
         if (ltemperature.or.pretend_lnTT) then
           Hmax=Hmax+heatcool
@@ -2105,11 +2048,12 @@ module Interstellar
 !  Checks for SNe, and implements appropriately:
 !  relevant subroutines in entropy.f90
 !
-    use General, only: touch_file
+      use General, only: touch_file
 !
       real, dimension(mx,my,mz,mfarray) :: f
 !
 !  Only allow SNII if no SNI this step (may not be worth keeping).
+!  This is depricated, both types can occur in same step
 !
       logical :: l_SNI=.false.
 !
@@ -2461,12 +2405,8 @@ module Interstellar
           endif
         endif
         call mpiallreduce_sum(rhom/box_volume,rhom)
-        !if (rhom<old_rhom .and. rhom>SN_interval_rhom) then
-        !  scaled_interval=t_interval_SNII*(SN_interval_rhom/rhom)
-        !else
-          tmp_interval=t_interval_SNII*(SN_interval_rhom/rhom)**iSNdx
-        !endif
-        old_rhom=rhom
+        tmp_interval=t_interval_SNII*(SN_interval_rhom/rhom)**iSNdx
+        old_rhom=rhom !not used FG: to be removed
       else
         tmp_interval=t_interval_SNII
       endif
@@ -2722,51 +2662,51 @@ module Interstellar
 !
 !  Determine position for next SN (w/ fixed scale-height).
 !
-    use General, only: find_proc
+      use General, only: find_proc
 
-    real, intent(in), dimension(mx,my,mz,mfarray) :: f
-    type (SNRemnant), intent(inout) :: SNR
+      real, intent(in), dimension(mx,my,mz,mfarray) :: f
+      type (SNRemnant), intent(inout) :: SNR
 !
-    real :: z00, x00, y00
-    integer :: i
+      real :: z00, x00, y00
+      integer :: i
 !
-    if (headtt) print*,'position_SN_testposition: ENTER'
+      if (headtt) print*,'position_SN_testposition: ENTER'
 !
 !  Calculate the global (nzgrid) lower z-coordinate.
 !
-    if (lperi(1)) then; x00=xyz0(1)+.5*dx; else; x00=xyz0(1); endif
-    if (lperi(2)) then; y00=xyz0(2)+.5*dy; else; y00=xyz0(2); endif
-    if (lperi(3)) then; z00=xyz0(3)+.5*dz; else; z00=xyz0(3); endif
+      if (lperi(1)) then; x00=xyz0(1)+.5*dx; else; x00=xyz0(1); endif
+      if (lperi(2)) then; y00=xyz0(2)+.5*dy; else; y00=xyz0(2); endif
+      if (lperi(3)) then; z00=xyz0(3)+.5*dz; else; z00=xyz0(3); endif
 !
 !  Pick SN position (SNR%indx%l,SNR%indx%m,SNR%indx%n).
 !
-    if (lroot) then
-      if (center_SN_x==impossible) then
-        i=max(int(nxgrid/2)+1,1)
-      else
-        i=int((center_SN_x-x00)/dx)+1
-      endif
-      SNR%indx%ipx=(i-1)/nx ! uses integer division
-      SNR%indx%l=i-(SNR%indx%ipx*nx)+nghost
+      if (lroot) then
+        if (center_SN_x==impossible) then
+          i=max(int(nxgrid/2)+1,1)
+        else
+          i=int((center_SN_x-x00)/dx)+1
+        endif
+        SNR%indx%ipx=(i-1)/nx ! uses integer division
+        SNR%indx%l=i-(SNR%indx%ipx*nx)+nghost
 !
-      if (center_SN_y==impossible) then
-        i=max(int(nygrid/2)+1,1)
-      else
-        i=int((center_SN_y-y00)/dy)+1
-      endif
-      SNR%indx%ipy=(i-1)/ny ! uses integer division
-      SNR%indx%m=i-(SNR%indx%ipy*ny)+nghost
+        if (center_SN_y==impossible) then
+          i=max(int(nygrid/2)+1,1)
+        else
+          i=int((center_SN_y-y00)/dy)+1
+        endif
+        SNR%indx%ipy=(i-1)/ny ! uses integer division
+        SNR%indx%m=i-(SNR%indx%ipy*ny)+nghost
 !
-      if (center_SN_z==impossible) then
-        i=max(int(nzgrid/2)+1,1)
-      else
-        i=int((center_SN_z-z00)/dz)+1
+        if (center_SN_z==impossible) then
+          i=max(int(nzgrid/2)+1,1)
+        else
+          i=int((center_SN_z-z00)/dz)+1
+        endif
+        SNR%indx%ipz=(i-1)/nz   ! uses integer division
+        SNR%indx%n=i-(SNR%indx%ipz*nz)+nghost
+        SNR%indx%iproc=find_proc(SNR%indx%ipx,SNR%indx%ipy,SNR%indx%ipz)
       endif
-      SNR%indx%ipz=(i-1)/nz   ! uses integer division
-      SNR%indx%n=i-(SNR%indx%ipz*nz)+nghost
-      SNR%indx%iproc=find_proc(SNR%indx%ipx,SNR%indx%ipy,SNR%indx%ipz)
-    endif
-    call share_SN_parameters(f,SNR)
+      call share_SN_parameters(f,SNR)
 !
     endsubroutine position_SN_testposition
 !*****************************************************************************
@@ -2778,70 +2718,70 @@ module Interstellar
 !  27-oct-16/fred: z-location revised to use non-equidistant grid needs z from
 !                  each processor - use mpi on all procs not just root
 !
-    use General, only: random_number_wrapper, random_seed_wrapper, find_proc
-    use Mpicomm, only: mpiallreduce_max, mpireduce_min, mpireduce_max, &
-                       mpireduce_sum, mpibcast_real, mpigather_z_1D
-    use Grid, only: get_dVol
+      use General, only: random_number_wrapper, random_seed_wrapper, find_proc
+      use Mpicomm, only: mpiallreduce_max, mpireduce_min, mpireduce_max, &
+                         mpireduce_sum, mpibcast_real, mpigather_z_1D
+      use Grid, only: get_dVol
 !
-    real, dimension(nx) :: dV
+      real, dimension(nx) :: dV
 !
-    real, intent(in), dimension(mx,my,mz,mfarray) :: f
-    real, intent(in) :: h_SN
-    type (SNRemnant), intent(inout) :: SNR
+      real, intent(in), dimension(mx,my,mz,mfarray) :: f
+      real, intent(in) :: h_SN
+      type (SNRemnant), intent(inout) :: SNR
 !
 !  parameters required to determine the vertical centre of mass of the disk
 !
-    real, dimension(nzgrid) :: rhotot
-    real, dimension(nz) :: rhosum, mpisum
-    real :: rhomax, hSN
-    real, dimension(2) :: mpizspan
-    integer :: lm_range, previous_SNl, previous_SNm, previous_SNn
+      real, dimension(nzgrid) :: rhotot
+      real, dimension(nz) :: rhosum, mpisum
+      real :: rhomax, hSN
+      real, dimension(2) :: mpizspan
+      integer :: lm_range, previous_SNl, previous_SNm, previous_SNn
 !
 !  parameters for random location of SN - about zdisk
 !
-    real, dimension(nzgrid) :: cum_prob_SN
-    real, dimension(3) :: fran3
-    real, dimension(4) :: mpicluster
-    logical :: lgauss, lnew_cluster
-    integer :: i,j,k,m,n,indrhomax, nzskip=10 !prevent SN from being too close to boundaries
+      real, dimension(nzgrid) :: cum_prob_SN
+      real, dimension(3) :: fran3
+      real, dimension(4) :: mpicluster
+      logical :: lgauss, lnew_cluster
+      integer :: i,j,k,m,n,indrhomax, nzskip=10 !prevent SN from being too close to boundaries
 !
-    if (headtt.and.ip==1963) print*,'position_SN_gaussianz: ENTER'
+      if (headtt.and.ip==1963) print*,'position_SN_gaussianz: ENTER'
 !
-!  The disk oscillates. To keep the random dist centred at the disk find
+!  The disk oscillates. To keep the SN random dist centered about centre of mass find
 !  zdisk where the peak mean density(z) resides and shift gaussian up/down
 !
-    Get_zdisk: if (lfirst_zdisk) then
+      Get_zdisk: if (lfirst_zdisk) then
 !
 !  sum the mass on each processor
 !
-      rhosum=0.0
-      if (.not.lcart_equi) then
-        !$omp target if(loffload) map(from: rhosum) has_device_addr(f)   ! globals: irho, ilnrho, ldensity_nolog
-        !$omp teams distribute parallel do collapse(2) private(dV) reduction(+:rhosum)
-        do n=n1,n2; do m=m1,m2
-          call get_dVol(m,n,dV)
-          if (ldensity_nolog) then
-            rhosum(n-n1+1)=rhosum(n-n1+1)+sum(f(l1:l2,m,n,irho)*dV)
-          else
-            rhosum(n-n1+1)=rhosum(n-n1+1)+sum(exp(f(l1:l2,m,n,ilnrho))*dV)
-          endif
-        enddo; enddo
-        !$omp end teams distribute parallel do
-        !$omp end target
-      else
-        !$omp target if(loffload) map(from: rhosum) has_device_addr(f)   ! globals: irho, ilnrho, ldensity_nolog
-        !$omp teams distribute parallel do
-        do n=n1,n2
-          !call get_dVol(m,n,dV)
-          if (ldensity_nolog) then
-            rhosum(n-n1+1)=sum(f(l1:l2,m1:m2,n,irho))*dVol(1) !dV
-          else
-            rhosum(n-n1+1)=sum(exp(f(l1:l2,m1:m2,n,ilnrho)))*dVol(1) !dV
-          endif
-        enddo
-        !$omp end teams distribute parallel do
-        !$omp end target
-      endif
+        rhosum=0.0
+        if (.not.lcart_equi) then
+          !$omp target if(loffload) map(from: rhosum) has_device_addr(f)   ! globals: irho, ilnrho, ldensity_nolog
+          !$omp teams distribute parallel do collapse(2) private(dV) reduction(+:rhosum)
+          do n=n1,n2; do m=m1,m2
+            call get_dVol(m,n,dV)
+            if (ldensity_nolog) then
+              rhosum(n-n1+1)=rhosum(n-n1+1)+sum(f(l1:l2,m,n,irho)*dV)
+            else
+              rhosum(n-n1+1)=rhosum(n-n1+1)+sum(exp(f(l1:l2,m,n,ilnrho))*dV)
+            endif
+          enddo; enddo
+          !$omp end teams distribute parallel do
+          !$omp end target
+        else
+          !$omp target if(loffload) map(from: rhosum) has_device_addr(f)   ! globals: irho, ilnrho, ldensity_nolog
+          !$omp teams distribute parallel do
+          do n=n1,n2
+            !call get_dVol(m,n,dV)
+            if (ldensity_nolog) then
+              rhosum(n-n1+1)=sum(f(l1:l2,m1:m2,n,irho))*dVol(1) !dV
+            else
+              rhosum(n-n1+1)=sum(exp(f(l1:l2,m1:m2,n,ilnrho)))*dVol(1) !dV
+            endif
+          enddo
+          !$omp end teams distribute parallel do
+          !$omp end target
+        endif
 !
 !  broadcast the mass on xy-plane and then collect rhosum on first processor
 !  in each plane.
@@ -2849,142 +2789,142 @@ module Interstellar
 !  mpi sum rhosum(iz) on each horizontal slice to mpisum(iz) then
 !  collect each mpisum into rhotot along z to complete array over nzgrid
 !
-      call mpireduce_sum(rhosum,mpisum,nz,idir=12)
-      if (lfirst_proc_xy) then
-        call mpigather_z_1D(mpisum,rhotot)
-        if (lroot) then
-          if (mod(it,2)==0.and..not.lstart) then ! for reproducibility: it=1 -> it=0 initially
-            indrhomax=maxloc(rhotot,dim=1); rhomax=rhotot(indrhomax)
-          else
-            indrhomax=maxloc(rhotot(nzgrid:1:-1),dim=1); rhomax=rhotot(indrhomax)
+        call mpireduce_sum(rhosum,mpisum,nz,idir=12)
+        if (lfirst_proc_xy) then
+          call mpigather_z_1D(mpisum,rhotot)
+          if (lroot) then
+            if (mod(it,2)==0.and..not.lstart) then ! for reproducibility: it=1 -> it=0 initially
+              indrhomax=maxloc(rhotot,dim=1); rhomax=rhotot(indrhomax)
+            else
+              indrhomax=maxloc(rhotot(nzgrid:1:-1),dim=1); rhomax=rhotot(indrhomax)
+            endif
+            mpizspan(1)=zgrid(indrhomax)
+            if (lh_SNII_adjust) mpizspan(2) = rhomax*dz_1(indrhomax)/(Lxyz(1)*Lxyz(2))
           endif
-          mpizspan(1)=zgrid(indrhomax)
-          if (lh_SNII_adjust) mpizspan(2) = rhomax*dz_1(indrhomax)/(Lxyz(1)*Lxyz(2))
         endif
-      endif
-      call mpibcast_real(mpizspan,2)
-      zdisk=mpizspan(1)
-      if (lh_SNII_adjust) maxrho=mpizspan(2)
-    endif Get_zdisk
+        call mpibcast_real(mpizspan,2)
+        zdisk=mpizspan(1)
+        if (lh_SNII_adjust) maxrho=mpizspan(2)
+      endif Get_zdisk
 !
-    if (lroot.and.ip==1963) print"(1x,'position_SN_gaussianz: zdisk =',f8.4)",zdisk
-    if (lh_SNII_adjust .and. h_SN==h_SNII) then
-      hSN = h_SN * cloud_rho/maxrho
-      if (lroot.and.ip==1963) then
-        print "(1x,'position_SN_gaussianz: hSN vs h_SNII =',2e11.4)",hSN,h_SN
-        print "(1x,'position_SN_gaussianz: maxrho =',e11.4)",maxrho
-        print "(1x,'position_SN_gaussianz: cloud_rho =',e11.4)",cloud_rho
+      if (lroot.and.ip==1963) print"(1x,'position_SN_gaussianz: zdisk =',f8.4)",zdisk
+      if (lh_SNII_adjust .and. h_SN==h_SNII) then
+        hSN = h_SN * cloud_rho/maxrho
+        if (lroot.and.ip==1963) then
+          print "(1x,'position_SN_gaussianz: hSN vs h_SNII =',2e11.4)",hSN,h_SN
+          print "(1x,'position_SN_gaussianz: maxrho =',e11.4)",maxrho
+          print "(1x,'position_SN_gaussianz: cloud_rho =',e11.4)",cloud_rho
+        endif
+      else
+        hSN = h_SN
       endif
-    else
-      hSN = h_SN
-    endif
 !
 !  Pick SN position (SNR%indx%l,SNR%indx%m,SNR%indx%n).
 !
 !  Get 3 random numbers on all processors to keep rnd. generators in sync.
 !
-    if (lreset_ism_seed) then
-      seed=seed_reset
-      call random_seed_wrapper(PUT=seed)
-      lreset_ism_seed=.false.
-    endif
-    call random_number_wrapper(fran3)
+      if (lreset_ism_seed) then
+        seed=seed_reset
+        call random_seed_wrapper(PUT=seed)
+        lreset_ism_seed=.false.
+      endif
+      call random_number_wrapper(fran3)
 !
 !  13-jul-15/fred: NB need to revisit OB clustering x,y not updated or time
 !  constrained. May need to include z also
 !
-    Get_z: if (lroot) then
-      if (lOB_cluster .and. h_SN==h_SNII) then
+      Get_z: if (lroot) then
+        if (lOB_cluster .and. h_SN==h_SNII) then
 !  If OB clustering for SNII, while within time span of current cluster
-        if (t < t_cluster) then ! still using current cluster coords
-          if (ip==1963) print "(1x,'position_SN_gaussianz: cluster lifetime until',e11.4)",t_cluster
-          previous_SNl = int(( x_cluster - xyz0(1) )/Lx)*nxgrid +1
-          previous_SNm = int(( y_cluster - xyz0(2) )/Ly)*nygrid +1
-          previous_SNn = int(( z_cluster - xyz0(3) )/Lz)*nzgrid +1
-          lm_range = 2*int(SN_clustering_radius*nxgrid/Lx)
-          if (fran3(1) < p_OB) then ! checks whether the SN is in a cluster
-            if (ip==1963) print "(1x,'position_SN_gaussianz: in cluster x, y, z =',3e11.4)", &
-                                           x_cluster,y_cluster,z_cluster
-            i=int(fran3(1)*lm_range/p_OB)+previous_SNl+1
-            j=int(fran3(2)*lm_range/p_OB)+previous_SNm+1
-            k=int(fran3(3)*lm_range/p_OB)+previous_SNn+1
-            if (k>nxgrid) k=k-nz
-            SNR%indx%ipz=(k-1)/nz  ! uses integer division
-            SNR%indx%n=k-(SNR%indx%ipz*nz)+nghost
-            lgauss = .true.
-            lnew_cluster = .false.
-          else ! outside cluster
-            i=int(fran3(1)*(nxgrid-lm_range)/(1.0-p_OB))+previous_SNl+1
-            j=int(fran3(2)*(nygrid-lm_range)/(1.0-p_OB))+previous_SNm+1
-            lgauss = .true.
-            lnew_cluster = .false.
-          endif
-        else
+          if (t < t_cluster) then ! still using current cluster coords
+            if (ip==1963) print "(1x,'position_SN_gaussianz: cluster lifetime until',e11.4)",t_cluster
+            previous_SNl = int(( x_cluster - xyz0(1) )/Lx)*nxgrid +1
+            previous_SNm = int(( y_cluster - xyz0(2) )/Ly)*nygrid +1
+            previous_SNn = int(( z_cluster - xyz0(3) )/Lz)*nzgrid +1
+            lm_range = 2*int(SN_clustering_radius*nxgrid/Lx)
+            if (fran3(1) < p_OB) then ! checks whether the SN is in a cluster
+              if (ip==1963) print "(1x,'position_SN_gaussianz: in cluster x, y, z =',3e11.4)", &
+                                             x_cluster,y_cluster,z_cluster
+              i=int(fran3(1)*lm_range/p_OB)+previous_SNl+1
+              j=int(fran3(2)*lm_range/p_OB)+previous_SNm+1
+              k=int(fran3(3)*lm_range/p_OB)+previous_SNn+1
+              if (k>nxgrid) k=k-nz
+              SNR%indx%ipz=(k-1)/nz  ! uses integer division
+              SNR%indx%n=k-(SNR%indx%ipz*nz)+nghost
+              lgauss = .true.
+              lnew_cluster = .false.
+            else ! outside cluster
+              i=int(fran3(1)*(nxgrid-lm_range)/(1.0-p_OB))+previous_SNl+1
+              j=int(fran3(2)*(nygrid-lm_range)/(1.0-p_OB))+previous_SNm+1
+              lgauss = .true.
+              lnew_cluster = .false.
+            endif
+          else
 !  If OB clustering for SNII, time to set new cluster location and duration
+            i=int(fran3(1)*nxgrid)+1
+            j=int(fran3(2)*nygrid)+1
+            lgauss = .true.
+            lnew_cluster = .true.
+            call set_next_OB(t_interval_OB)
+          endif
+        else ! clustering not used
           i=int(fran3(1)*nxgrid)+1
           j=int(fran3(2)*nygrid)+1
           lgauss = .true.
-          lnew_cluster = .true.
-          call set_next_OB(t_interval_OB)
+          lnew_cluster = .false.
         endif
-      else ! clustering not used
-        i=int(fran3(1)*nxgrid)+1
-        j=int(fran3(2)*nygrid)+1
-        lgauss = .true.
-        lnew_cluster = .false.
-      endif
 !
 !  Cumulative probability function in z calculated each time for moving zdisk.
 !
-      if (lgauss) then
-        cum_prob_SN=0.0
-        do k=1,nzgrid
-          if (k<nzskip) then
-            cum_prob_SN(k)=0.0
-          elseif (k>nzgrid-nzskip) then
-            cum_prob_SN(k)=cum_prob_SN(k-1)
-          else
-            cum_prob_SN(k)=cum_prob_SN(k-1)+exp(-0.5*((k * Lz/nzgrid + xyz0(3)-zdisk)/hSN)**2)
-          endif
-        enddo
-        cum_prob_SN = cum_prob_SN / max(cum_prob_SN(nzgrid-nzskip), tini)
+        if (lgauss) then
+          cum_prob_SN=0.0
+          do k=1,nzgrid
+            if (k<nzskip) then
+              cum_prob_SN(k)=0.0
+            elseif (k>nzgrid-nzskip) then
+              cum_prob_SN(k)=cum_prob_SN(k-1)
+            else
+              cum_prob_SN(k)=cum_prob_SN(k-1)+exp(-0.5*((k * Lz/nzgrid + xyz0(3)-zdisk)/hSN)**2)
+            endif
+          enddo
+          cum_prob_SN = cum_prob_SN / max(cum_prob_SN(nzgrid-nzskip), tini)
 !
 !  The following should never be needed, but just in case floating point
 !  errors ever lead to cum_prob_SNI(nzgrid-nzskip) < rnd < 1.
 !
-        cum_prob_SN(nzgrid-nzskip+1:nzgrid)=1.0
+          cum_prob_SN(nzgrid-nzskip+1:nzgrid)=1.0
 !
-        do k=nzskip+1,nzgrid-nzskip
-          if (cum_prob_SN(k-1)<=fran3(3) .and. fran3(3)<cum_prob_SN(k)) then
-            SNR%indx%ipz=(k-1)/nz  ! uses integer division
-            SNR%indx%n=k-(SNR%indx%ipz*nz)+nghost
-            exit
-          endif
-        enddo
-      endif
+          do k=nzskip+1,nzgrid-nzskip
+            if (cum_prob_SN(k-1)<=fran3(3) .and. fran3(3)<cum_prob_SN(k)) then
+              SNR%indx%ipz=(k-1)/nz  ! uses integer division
+              SNR%indx%n=k-(SNR%indx%ipz*nz)+nghost
+              exit
+            endif
+          enddo
+        endif
 !
-      if (i>nxgrid) i=i-nxgrid
-      SNR%indx%ipx=(i-1)/nx  ! uses integer division
-      SNR%indx%l=i-(SNR%indx%ipx*nx)+nghost
-      if (j>nygrid) j=j-nygrid
-      SNR%indx%ipy=(j-1)/ny  ! uses integer division
-      SNR%indx%m=j-(SNR%indx%ipy*ny)+nghost
-      SNR%indx%iproc=find_proc(SNR%indx%ipx,SNR%indx%ipy,SNR%indx%ipz)
-      if (lnew_cluster) then
-        x_cluster = (SNR%indx%l-1) * Lx/nxgrid + xyz0(1)
-        y_cluster = (SNR%indx%m-1) * Ly/nygrid + xyz0(2)
-        z_cluster = zdisk
-      endif
-    endif Get_z
+        if (i>nxgrid) i=i-nxgrid
+        SNR%indx%ipx=(i-1)/nx  ! uses integer division
+        SNR%indx%l=i-(SNR%indx%ipx*nx)+nghost
+        if (j>nygrid) j=j-nygrid
+        SNR%indx%ipy=(j-1)/ny  ! uses integer division
+        SNR%indx%m=j-(SNR%indx%ipy*ny)+nghost
+        SNR%indx%iproc=find_proc(SNR%indx%ipx,SNR%indx%ipy,SNR%indx%ipz)
+        if (lnew_cluster) then
+          x_cluster = (SNR%indx%l-1) * Lx/nxgrid + xyz0(1)
+          y_cluster = (SNR%indx%m-1) * Ly/nygrid + xyz0(2)
+          z_cluster = zdisk
+        endif
+      endif Get_z
 
-    mpicluster = (/x_cluster,y_cluster,z_cluster,t_cluster/)
-    call mpibcast_real(mpicluster,4)
-    x_cluster=mpicluster(1)
-    y_cluster=mpicluster(2)
-    z_cluster=mpicluster(3)
-    t_cluster=mpicluster(4)
+      mpicluster = (/x_cluster,y_cluster,z_cluster,t_cluster/)
+      call mpibcast_real(mpicluster,4)
+      x_cluster=mpicluster(1)
+      y_cluster=mpicluster(2)
+      z_cluster=mpicluster(3)
+      t_cluster=mpicluster(4)
 !
-    call share_SN_parameters(f,SNR)
+      call share_SN_parameters(f,SNR)
 !
     endsubroutine position_SN_gaussianz
 !*****************************************************************************
