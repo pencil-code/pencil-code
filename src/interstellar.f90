@@ -3052,7 +3052,6 @@ module Interstellar
         cum_mass=0.
         cloud_mass_proc=cloud_mass_byproc(SNR%indx%iproc+1)
         lfound = .false.
-!NEW CHANGES
         !$omp target if(loffload) map(from: ierr,cum_mass) map(tofrom: SNR) & !needs: cloud_rho,lncloud_TT,preSN) &
         !$omp        has_device_addr(f)  !globals: ip, irho,ilnrho,ilnTT,iss,ldensity_nolog
         !$omp teams distribute parallel do collapse(2) private(dV,rho,lnTT,l,ipsn) reduction(+:cum_mass)  !!!reduction unclear
@@ -3101,7 +3100,7 @@ mn_loop:do n=n1,n2
             endif
           enddo
         enddo
-        enddo mn_loop   !!!MR: whatif lfound=.false.? FG: cum_mass in (0,1) as is franSN(1)
+        enddo mn_loop   !!!MR: whatif lfound=.false.? FG: cum_mass in (0,1) as is franSN(1) but needs to be checked before use
         !$omp end teams distribute parallel do
         !$omp end target
         if (ip==1963) then
@@ -3112,7 +3111,6 @@ mn_loop:do n=n1,n2
                              cum_mass,cum_mass/cloud_mass_proc,franSN
         endif
       endif
-!END NEW CHANGES FG: OK
 !
       call mpibcast_int(ierr,SNR%indx%iproc)
       if (ierr==iEXPLOSION_TOO_HOT) then
@@ -4033,6 +4031,8 @@ mnloop:do n=n1,n2
         endif
 !
 !  avoid NaN where uu less than tini  MR: needed?
+!  FG: experienced underflow errors for velocities close to zero for dot2,
+!      particularly for sedov test with momentum injection
 !
         where (abs(f(l1:l2,m,n,iuu:iuu+2))<sqrt(tini)) uu=0.
         call dot2(uu,u2)
@@ -4555,29 +4555,29 @@ mnloop:do n=n1,n2
 !*****************************************************************************
     subroutine pushpars2c(p_par)
 
-    use Syscalls, only: copy_addr, copy_addr_dble_1D
+      use Syscalls, only: copy_addr, copy_addr_dble_1D
 
-    integer, parameter :: n_pars=15
-    integer(KIND=ikind8), dimension(n_pars) :: p_par
+      integer, parameter :: n_pars=15
+      integer(KIND=ikind8), dimension(n_pars) :: p_par
 !
-    call copy_addr(GammaUV,p_par(1))
-    call copy_addr(cUV,p_par(2))
-    call copy_addr(T0UV,p_par(3))
-    call copy_addr(ncool,p_par(4))
+      call copy_addr(GammaUV,p_par(1))
+      call copy_addr(cUV,p_par(2))
+      call copy_addr(T0UV,p_par(3))
+      call copy_addr(ncool,p_par(4))
 !
-    call copy_addr(heatingfunction_fadefactor,p_par(5))
-    call copy_addr(heatingfunction_scalefactor,p_par(6))
-    call copy_addr(average_SNI_heating,p_par(7))
-    call copy_addr(average_SNII_heating,p_par(8))
-    call copy_addr(h_SNI,p_par(9))
-    call copy_addr(h_SNII,p_par(10))
-    call copy_addr(t_interval_SNI,p_par(11))
-    call copy_addr(t_interval_SNII,p_par(12))
+      call copy_addr(heatingfunction_fadefactor,p_par(5))
+      call copy_addr(heatingfunction_scalefactor,p_par(6))
+      call copy_addr(average_SNI_heating,p_par(7))
+      call copy_addr(average_SNII_heating,p_par(8))
+      call copy_addr(h_SNI,p_par(9))
+      call copy_addr(h_SNII,p_par(10))
+      call copy_addr(t_interval_SNI,p_par(11))
+      call copy_addr(t_interval_SNII,p_par(12))
 
-    call copy_addr(lncoolT,p_par(13))  ! (11)
-    call copy_addr_dble_1D(lncoolH,p_par(14))  ! (11)
-    call copy_addr(coolB,p_par(15))    ! (11)
-!    call copy_addr(heat_z,p_par(16))   ! (mz)
+      call copy_addr(lncoolT,p_par(13))  ! (11)
+      call copy_addr_dble_1D(lncoolH,p_par(14))  ! (11)
+      call copy_addr(coolB,p_par(15))    ! (11)
+!      call copy_addr(heat_z,p_par(16))   ! (mz)
 
     endsubroutine pushpars2c
 !*******************************************************************
