@@ -3921,8 +3921,10 @@ mnloop:do n=n1,n2
 !
         if (lSN_scale_rad) then
           lmask = (dr2_SN <= radius2)
-          rhomin=min(rhomin,minval(rho,mask=lmask))
-          rhomax=max(rhomax,maxval(rho,mask=lmask))
+          if (any(lmask)) then
+            rhomin=min(rhomin,minval(rho,mask=lmask))
+            rhomax=max(rhomax,maxval(rho,mask=lmask))
+          endif
         endif
         uu=f(l1:l2,m,n,iuu:iuu+2)
 !
