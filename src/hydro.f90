@@ -1950,6 +1950,15 @@ module Hydro
             f(l1:l2,m,n,iuz)=ampluu(j)*(ABC_C*sin(ky_uu*y(m))    +ABC_B*cos(kx_uu*x(l1:l2)))
           enddo; enddo
 !
+        case ('potential')
+          if (headtt) print*,'potential flow'
+! uu
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,iux)=-ampluu(j)*sin(kx_uu*x(l1:l2))*cos(ky_uu*y(m))*cos(kz_uu*z(n))
+            f(l1:l2,m,n,iuy)=-ampluu(j)*cos(kx_uu*x(l1:l2))*sin(ky_uu*y(m))*cos(kz_uu*z(n))
+            f(l1:l2,m,n,iuz)=-ampluu(j)*cos(kx_uu*x(l1:l2))*cos(ky_uu*y(m))*sin(kz_uu*z(n))
+          enddo; enddo
+!
         case ('Schur_3D3D1D')
           if (headtt) print*,'Schur_3D3D1D flow'
 ! uu
@@ -3099,8 +3108,7 @@ module Hydro
               where(real(t) < f(l1:l2,m,n,ihless)) tmp_rho=tmp_rho-eps_hless
             endif
             if (lmagnetic) then
-!print*,'AXEL6: need to have B_ext2'
-!XX
+!
               if (full_3D) then
                 DD=(f(l1:l2,m,n,irho)-.5*B_ext2)/(1.-.25/f(l1:l2,m,n,ilorentz))+B_ext2
                 call invmat_DB(DD,p%bb,tmp33)
@@ -3131,13 +3139,17 @@ module Hydro
 !  the iuu slot does not correspond to the actual velocity, which is the
 !  case when lconservative or lrelativity.
 !
-      if (lvv_as_aux .or. lvv_as_comaux) f(l1:l2,m,n,ivx:ivz) = p%uu
-!
+!--   if (lvv_as_aux .or. lvv_as_comaux) f(l1:l2,m,n,ivx:ivz) = p%uu
+!XX
 ! u2
       if (lpenc_loc(i_u2)) call dot2_mn(p%uu,p%u2)
 ! uij
       if (lpenc_loc(i_uij)) then
-        call gij(f,iuu,p%uij,1)
+        if (lvv_as_aux .or. lvv_as_comaux) then
+          call gij(f,ivv,p%uij,1)
+        else
+          call gij(f,iuu,p%uij,1)
+        endif
 !
 !  if gradu is to be stored as auxiliary then we store it now
 !
@@ -4964,14 +4976,14 @@ module Hydro
 !  gamma for the nonmagnetic case.
 !
       if (lconservative) then
-        if (iTij==0) call fatal_error("hydro_before_boundary","must compute Tij for lconservative")
+        if (iTij==0) call fatal_error("hydro_after_boundary","must compute Tij for lconservative")
         cs201=cs20+1.
         cs2011=1./cs201
         do n=1,mz
         do m=1,my
           if (ldensity) then
             if (lmagnetic) then
-              if (ibx==0) call fatal_error("hydro_before_boundary","must use lbb_as_comaux=T")
+              if (ibx==0) call fatal_error("hydro_after_boundary","must use lbb_as_comaux=T")
               call dot2(f(:,m,n,ibx:ibz),Bsquared)
 if (m==4.and.n==4) then
   print*,'AXEL: after hydro: bb(:,1)=', f(:,4,4,ibx)
@@ -5091,6 +5103,14 @@ endif
           f(:,m,n,iTij+3+0)=rho_gam21*f(:,m,n,iuu+0)*f(:,m,n,iuu+1)
           f(:,m,n,iTij+3+1)=rho_gam21*f(:,m,n,iuu+1)*f(:,m,n,iuu+2)
           f(:,m,n,iTij+3+2)=rho_gam21*f(:,m,n,iuu+2)*f(:,m,n,iuu+0)
+!
+!  compute velocity, if as comaux
+!
+          if (lvv_as_aux .or. lvv_as_comaux) then
+            do j=0,2
+              f(:,m,n,ivv+j)=rho_gam21*f(:,m,n,iuu+j)
+            enddo
+          endif
 !
 !  The following hasn't been prepared yet.
 !
