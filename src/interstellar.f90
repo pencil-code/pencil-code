@@ -80,10 +80,6 @@ module Interstellar
     type (ClusterIndex) :: indx
   endtype
 !
-!  Enumeration of Supernovae types.
-!
-  integer, parameter :: SNtype_I = 1, SNtype_II = 2
-!
 !  Enumeration of Supernovae states.
 !
   integer, parameter :: SNstate_invalid   = 0
@@ -129,12 +125,13 @@ module Interstellar
 !  Outward normal vector from SNe site along the current pencil
 !
   real, dimension(nx) :: dr2_SN, dr2_OB
+  !$omp threadprivate(dr2_SN, dr2_OB)
 !
 !  Allocate time of next SNI/II and intervals until next
 !
   real :: t_next_SNI=0.0, t_next_SNII=0.0
   real :: x_cluster=0.0, y_cluster=0.0, z_cluster=0.0, t_cluster=0.0
-  real :: t_interval_SNI=impossible, t_interval_SNII=impossible
+  real, dimension(2) :: t_interval=impossible
   real :: t_interval_OB=impossible
   real :: zdisk, maxrho !varying location of centre of mass of the disk
   logical :: lfirst_zdisk
@@ -201,6 +198,10 @@ module Interstellar
   real :: rho_SN_min=impossible, rho_SN_max=impossible
   real :: TT_SN_min=impossible, TT_SN_max=impossible
   real :: SN_rho_ratio=1e4, SN_TT_ratio=1.0e1
+!
+!  Enumeration of Supernovae types.
+!
+  integer, parameter :: SNI=1, SNII=2
 !
 !  SNI per (x,y)-area explosion rate
 !
@@ -337,6 +338,7 @@ module Interstellar
 !
   real :: coolingfunction_scalefactor=1.
   real :: heatingfunction_scalefactor=1.
+  real, dimension(2) :: heatingfunction_scale
   real :: heatingfunction_fadefactor=1.
 !
   real :: heating_rate = 0.015
@@ -706,21 +708,21 @@ module Interstellar
       preSN=0
 !
       if (SN_interval_rhom==impossible) SN_interval_rhom=SN_interval_rhom_cgs/unit_density
-      t_interval_SNI  = 1./( SNI_factor *  SNI_area_rate * Lx * Ly)
-      t_interval_SNII = 1./(SNII_factor * SNII_area_rate * Lx * Ly)
+      t_interval(SNI )= 1./( SNI_factor *  SNI_area_rate * Lx * Ly)
+      t_interval(SNII)= 1./(SNII_factor * SNII_area_rate * Lx * Ly)
       if (average_SNI_heating == impossible) average_SNI_heating = &
           r_SNI *ampl_SN/(sqrt(2*pi)*h_SNI*SN_interval_rhom)
       if (average_SNII_heating == impossible) average_SNII_heating = &
           r_SNII*ampl_SN/(sqrt(2*pi)*h_SNII*SN_interval_rhom)
       if (lroot.and.ip==1963) print &
           "(1x,'initialize_interstellar: t_interval_SNI, SNI rate =',2e11.4)", &
-          t_interval_SNI,SNI_factor*SNI_area_rate
+          t_interval(SNI),SNI_factor*SNI_area_rate
       if (laverage_SNI_heating) then
         if (lSNI.or.lSNII) then
           if (lroot.and.ip==1963) print &
               "(1x,'initialize_interstellar: average_SNI_heating =',e11.4)", &
               average_SNI_heating*sqrt(2*pi)*h_SNI*SN_interval_rhom* &
-              t_interval_SNI/(t_interval_SNI+t*heatingfunction_fadefactor)* &
+              t_interval(SNI)/(t_interval(SNI)+t*heatingfunction_fadefactor)* &
               heatingfunction_scalefactor
         else
           if (lroot.and.ip==1963) print &
@@ -736,7 +738,7 @@ module Interstellar
           if (lroot.and.ip==1963) print &
               "(1x,'initialize_interstellar: average_SNII_heating =',e11.4)", &
               average_SNII_heating*sqrt(2*pi)*h_SNII*SN_interval_rhom* &
-              t_interval_SNII/(t_interval_SNII+t*heatingfunction_fadefactor)* &
+              t_interval(SNII)/(t_interval(SNII)+t*heatingfunction_fadefactor)* &
               heatingfunction_scalefactor
         else
           if (lroot.and.ip==1963) print &
@@ -747,6 +749,8 @@ module Interstellar
       else
         if (lroot.and.ip==1963) print*,'initialize_interstellar: average_SNII_heating =0'
       endif
+      if ((laverage_SNI_heating.or.laverage_SNII_heating).and..not.(lSNI.or.lSNII)) &
+          heatingfunction_scale = heatingfunction_scalefactor
 !
       if (lroot.and.ip==1963) then
         print*,'initialize_interstellar: nseed,seed',nseed,seed(1:nseed)
@@ -1672,13 +1676,12 @@ module Interstellar
 !  Calculate Interstellar pencils.
 !  Most basic pencils should come first, as others may depend on them.
 !
-!
       real, dimension(mx,my,mz,mfarray), intent(IN)   :: f
       type(pencil_case),                 intent(INOUT):: p
 !
       if (lpencil(i_cool)) call calc_cool_func(p%cool,p%lnTT,p%lnrho)
 !
-      if (lpencil(i_heat)) call calc_heat(p%heat,p%lnTT)
+      if (lpencil(i_heat)) call calc_heat(p%heat,p%TT)
 !
 !  For clarity with lentropy we have constructed the rhs in erg/s/g [=T*Ds/Dt]
 !  so therefore we now need to multiply by TT1, or otherwise.
@@ -1729,6 +1732,15 @@ module Interstellar
 !$    call OMP_set_num_threads(num_threads)
       if (lfirst.and..not.lpencil_check_at_work) call check_SN(f)
 !
+      if (lSNI.or.lSNII) then
+        if (laverage_SNI_heating) &
+          heatingfunction_scale(SNI) =  t_interval(SNI) /(t_interval(SNI) +t*heatingfunction_fadefactor) &
+                                      * heatingfunction_scalefactor
+        if (laverage_SNII_heating) &
+          heatingfunction_scale(SNII)=  t_interval(SNII)/(t_interval(SNII)+t*heatingfunction_fadefactor) &
+                                      * heatingfunction_scalefactor
+      endif
+
     endsubroutine interstellar_before_boundary
 !***********************************************************************
     subroutine calc_0d_diag_interstellar(p)
@@ -1845,7 +1857,7 @@ module Interstellar
         zheat(n)=GammaUV*exp(-abs(z(n))/H_z)
       enddo
       do j=1,ncool
-        if (lncoolT(j) >= lncoolT(j+1)) exit
+        !!!if (lncoolT(j) >= lncoolT(j+1)) exit
         where (lncoolT(j)<=lnTT.and.lnTT<lncoolT(j+1)) lambda=lambda+exp(lncoolH(j)+lnTT*coolB(j))
       enddo
       if (lthermal_hse) zheat=lambda*zrho
@@ -1905,26 +1917,10 @@ module Interstellar
 !  initial condition is in equilibrium prepared in 1D
 !  Division by density to balance LHS of entropy equation
 !
-      if (laverage_SNI_heating) then
-        if (lSNI.or.lSNII) then
-          heat=heat+average_SNI_heating *exp(-(2.0*z(n)/h_SNI )**2)* &
-              t_interval_SNI /(t_interval_SNI +t*heatingfunction_fadefactor) &
-                                         *heatingfunction_scalefactor
-        else
-          heat=heat+average_SNI_heating *exp(-(2.0*z(n)/h_SNI )**2)* &
-                    heatingfunction_scalefactor
-        endif
-      endif
-      if (laverage_SNII_heating) then
-        if (lSNI.or.lSNII) then
-          heat=heat+average_SNII_heating*exp(-(2.0*z(n)/h_SNII)**2)* &
-              t_interval_SNII/(t_interval_SNII+t*heatingfunction_fadefactor) &
-                                         *heatingfunction_scalefactor
-        else
-          heat=heat+average_SNII_heating*exp(-(2.0*z(n)/h_SNII)**2)* &
-                    heatingfunction_scalefactor
-        endif
-      endif
+      if (laverage_SNI_heating) &
+          heat=heat+average_SNI_heating *exp(-(2.0*z(n)/h_SNI )**2)*heatingfunction_scale(SNI)
+      if (laverage_SNII_heating) &
+          heat=heat+average_SNII_heating*exp(-(2.0*z(n)/h_SNII)**2)*heatingfunction_scale(SNII)
 !
 !  Prevent unresolved heating/cooling in shocks. This is deprecated as
 !  use of RKF timestep control or the mor coarse RHS timestep control
@@ -2000,7 +1996,7 @@ module Interstellar
 !
       cool=0.0
       do i=1,ncool
-        if (lncoolT(i) >= lncoolT(i+1)) exit
+        !!!if (lncoolT(i) >= lncoolT(i+1)) exit
         where (lncoolT(i) <= lnTT .and. lnTT < lncoolT(i+1))
           cool=cool+exp(lncoolH(i)+lnrho+lnTT*coolB(i))
         endwhere
@@ -2008,7 +2004,7 @@ module Interstellar
 
     endsubroutine calc_cool_func
 !*****************************************************************************
-    subroutine calc_heat(heat,lnTT)
+    subroutine calc_heat(heat,TT)
 !
 !  This routine adds UV heating, cf. Wolfire et al., ApJ, 443, 152, 1995
 !  with the values above, this gives about 0.012 erg/g/s (T < ~1.E4 K)
@@ -2019,16 +2015,16 @@ module Interstellar
 !  Default heating_rate GammaUV = 0.015.
 !
       real, dimension (nx), intent(out) :: heat
-      real, dimension (nx), intent(in) :: lnTT
+      real, dimension (nx), intent(in) :: TT
 !
 !  Constant heating with a rate heating_rate[erg/g/s].
 !
       if (heating_select == 'cst') then
         heat = heating_rate_code
       else if (heating_select == 'wolfire') then
-        heat = GammaUV*0.5*(1.0+tanh(cUV*(T0UV-exp(lnTT))))
+        heat = GammaUV*0.5*(1.0+tanh(cUV*(T0UV-TT)))
       else if (heating_select == 'wolfire_min') then
-        heat = GammaUV*0.5*(1.0+tanh(cUV*(T0UV-exp(lnTT))))
+        heat = GammaUV*0.5*(1.0+tanh(cUV*(T0UV-TT)))
         heat = max(heat,heating_rate_code)
 !
 !  If using thermal-hs in initial entropy this must also be specified for
@@ -2036,7 +2032,7 @@ module Interstellar
 !  by vertical gravity profile 'Ferriere'.
 !
       else if (heating_select == 'thermal-hs') then
-        heat = heat_z(n)*0.5*(1.0+tanh(cUV*(T0UV-exp(lnTT))))
+        heat = heat_z(n)*0.5*(1.0+tanh(cUV*(T0UV-TT)))
       else if (heating_select == 'off') then
         heat = 0.
       endif
@@ -2329,13 +2325,13 @@ module Interstellar
       !      stellar mass, routine to accrete stellar mass function of
       !      ISM density, explode SN based on stellar mass distribution
       !if (lSN_mass_rate) then
-      !  call set_interval(f,t_interval_SNI,l_SNI)
+      !  call set_interval(f,t_interval(SNI),l_SNI)
       !endif
       call random_number_wrapper(franSN)
 !
 !  Time interval follows Poisson process with rate 1/interval_SNI
 !
-      scaled_interval=-log(franSN)*t_interval_SNI
+      scaled_interval=-log(franSN)*t_interval(SNI)
 !
       t_next_SNI=t+scaled_interval
       if (lroot) print"(1x,'set_next_SNI: Next SNI at time =',e15.8)",t_next_SNI
@@ -2379,7 +2375,7 @@ module Interstellar
       if (lscale_SN_interval) then
         if (ldensity_nolog) then
           if (lcart_equi) then
-            rhom=sum(f(l1:l2,m1:m2,n1:n2,irho)*dVol(1))
+            rhom=sum(f(l1:l2,m1:m2,n1:n2,irho))*dVol_glob
           else
             !$omp target if(loffload) map(from:rhom) has_device_addr(f) !globals: irho
             !$omp teams distribute parallel do collapse(2) private(dV) reduction(+:rhom)
@@ -2392,7 +2388,7 @@ module Interstellar
           endif
         else
           if (lcart_equi) then
-            rhom=sum(exp(f(l1:l2,m1:m2,n1:n2,ilnrho))*dVol(1))
+            rhom=sum(exp(f(l1:l2,m1:m2,n1:n2,ilnrho)))*dVol_glob
           else
             !$omp target if(loffload) map(from:rhom) has_device_addr(f)   ! globals: ilnrho
             !$omp teams distribute parallel do collapse(2) private(dV) reduction(+:rhom)
@@ -2405,16 +2401,16 @@ module Interstellar
           endif
         endif
         call mpiallreduce_sum(rhom/box_volume,rhom)
-        tmp_interval=t_interval_SNII*(SN_interval_rhom/rhom)**iSNdx
+        tmp_interval=t_interval(SNII)*(SN_interval_rhom/rhom)**iSNdx
         old_rhom=rhom !not used FG: to be removed
       else
-        tmp_interval=t_interval_SNII
+        tmp_interval=t_interval(SNII)
       endif
       !Fred: plan to time and locate SN via stellar mass, add variable
       !      stellar mass, routine to accrete stellar mass function of
       !      ISM density, explode SN based on stellar mass distribution
       !if (lSN_mass_rate) then
-      !  call set_interval(f,t_interval_SNII,l_SNI)
+      !  call set_interval(f,t_interval(SNII),l_SNI)
       !endif
 !
 !  Time interval follows Poisson process with rate 1/interval_SNII
@@ -2461,7 +2457,7 @@ module Interstellar
 !
         if (ldensity_nolog) then
           if (lcart_equi) then
-            disk_massII=sum(f(l1:l2,m1:m2,nz1:nz2,irho))*dVol(1)
+            disk_massII=sum(f(l1:l2,m1:m2,nz1:nz2,irho))*dVol_glob
           else
             !$omp target if(loffload) map(from: disk_massII) has_device_addr(f)  ! globals: irho
             !$omp teams distribute parallel do collapse(2) reduction(+:disk_massII)
@@ -2474,7 +2470,7 @@ module Interstellar
           endif
         else
           if (lcart_equi) then
-            disk_massII=sum(exp(f(l1:l2,m1:m2,nz1:nz2,ilnrho)))*dVol(1)
+            disk_massII=sum(exp(f(l1:l2,m1:m2,nz1:nz2,ilnrho)))*dVol_glob
           else
             !$omp target if(loffload) map(from: disk_massII) has_device_addr(f) ! globals: ilnrho
             !$omp teams distribute parallel do collapse(2) private(dV) reduction(+:disk_massII)
@@ -2643,7 +2639,7 @@ module Interstellar
           SNRs(iSNR)%indx%SN_type=2
           call explode_SN(f,SNRs(iSNR),ierr,preSN)
           if (ierr==iEXPLOSION_OK) then
-            if (lSN_mass_rate) call set_interval(f,t_interval_SNII,l_SNI)
+            if (lSN_mass_rate) call set_interval(f,t_interval(SNII),l_SNI)
             last_SN_t=t
           endif
 !
@@ -2772,11 +2768,10 @@ module Interstellar
           !$omp target if(loffload) map(from: rhosum) has_device_addr(f)   ! globals: irho, ilnrho, ldensity_nolog
           !$omp teams distribute parallel do
           do n=n1,n2
-            !call get_dVol(m,n,dV)
             if (ldensity_nolog) then
-              rhosum(n-n1+1)=sum(f(l1:l2,m1:m2,n,irho))*dVol(1) !dV
+              rhosum(n-n1+1)=sum(f(l1:l2,m1:m2,n,irho))*dVol_glob
             else
-              rhosum(n-n1+1)=sum(exp(f(l1:l2,m1:m2,n,ilnrho)))*dVol(1) !dV
+              rhosum(n-n1+1)=sum(exp(f(l1:l2,m1:m2,n,ilnrho)))*dVol_glob
             endif
           enddo
           !$omp end teams distribute parallel do
@@ -3779,18 +3774,18 @@ mnloop:do n=n1,n2
       if (.not. lSN_list) then
         if (SNR%indx%SN_type==1) then
           call set_next_SNI(t_interval_SN)
-          SNrate = t_interval_SNI
+          SNrate = t_interval(SNI)
         else
           call set_next_SNII(f,t_interval_SN)
-          SNrate = t_interval_SNII
+          SNrate = t_interval(SNII)
         endif
       else
         if (SNR%indx%SN_type==1) then
-          t_interval_SN=t_interval_SNI
-          SNrate = t_interval_SNI
+          t_interval_SN=t_interval(SNI)
+          SNrate = t_interval(SNI)
         else
-          t_interval_SN=t_interval_SNII
-          SNrate = t_interval_SNII
+          t_interval_SN=t_interval(SNII)
+          SNrate = t_interval(SNII)
         endif
       endif
 !
@@ -3813,7 +3808,7 @@ mnloop:do n=n1,n2
 
         open(1,file=trim(datadir)//'/sn_series.dat',position='append')
         print "(1x,'explode_SN:    step, time = ',i8,e12.5)",it,t
-        print "(1x,'explode_SN:          dVol = ',   e12.5)",dVol(1)
+        print "(1x,'explode_SN:          dVol = ',   e12.5)",dVol_glob
         print "(1x,'explode_SN:       SN type = ',      i3)",SNR%indx%SN_type
         print "(1x,'explode_SN: proc, l, m, n = ',     4i6)",SNR%indx%iproc,SNR%indx%l,SNR%indx%m,SNR%indx%n
         print "(1x,'explode_SN:       x, y, z = ',   3f8.4)",SNR%feat%x,SNR%feat%y,SNR%feat%z
@@ -4565,21 +4560,21 @@ mnloop:do n=n1,n2
       call copy_addr(GammaUV,p_par(1))
       call copy_addr(cUV,p_par(2))
       call copy_addr(T0UV,p_par(3))
-      call copy_addr(ncool,p_par(4))
+      call copy_addr(ncool,p_par(4))                  ! int
 !
-      call copy_addr(heatingfunction_fadefactor,p_par(5))
-      call copy_addr(heatingfunction_scalefactor,p_par(6))
-      call copy_addr(average_SNI_heating,p_par(7))
-      call copy_addr(average_SNII_heating,p_par(8))
-      call copy_addr(h_SNI,p_par(9))
-      call copy_addr(h_SNII,p_par(10))
-      call copy_addr(t_interval_SNI,p_par(11))
-      call copy_addr(t_interval_SNII,p_par(12))
+      call copy_addr(laverage_SNI_heating,p_par(5))   ! int
+      call copy_addr(laverage_SNII_heating,p_par(6))  ! int
+      call copy_addr(heatingfunction_scale,p_par(7))  ! (2)
+      call copy_addr(average_SNI_heating,p_par(8))
+      call copy_addr(average_SNII_heating,p_par(9))
+      call copy_addr(h_SNI,p_par(10))
+      call copy_addr(h_SNII,p_par(11))
 
-      call copy_addr(lncoolT,p_par(13))  ! (11)
-      call copy_addr_dble_1D(lncoolH,p_par(14))  ! (11)
-      call copy_addr(coolB,p_par(15))    ! (11)
-!      call copy_addr(heat_z,p_par(16))   ! (mz)
+      call copy_addr(lncoolT,p_par(12))          ! (ncool+1)
+      call copy_addr_dble_1D(lncoolH,p_par(13))  ! (ncool)
+      call copy_addr(coolB,p_par(14))            ! (ncool))
+      call copy_addr(heating_rate_code,p_par(15))
+!      call copy_addr(heat_z,p_par(15))   ! (mz)
 
     endsubroutine pushpars2c
 !*******************************************************************
