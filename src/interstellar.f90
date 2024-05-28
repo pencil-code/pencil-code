@@ -2932,46 +2932,46 @@ module Interstellar
 !
 !  Determine position for next SN (w/ fixed scale-height).
 !
-    use General, only: random_seed_wrapper, random_number_wrapper, find_proc
+      use General, only: random_seed_wrapper, random_number_wrapper, find_proc
 !
-    real, intent(in), dimension(mx,my,mz,mfarray) :: f
-    type (SNRemnant), intent(inout) :: SNR
+      real, intent(in), dimension(mx,my,mz,mfarray) :: f
+      type (SNRemnant), intent(inout) :: SNR
 !
-    real, dimension(3) :: fran3
-    integer :: i   !prevent SN from being too close to boundaries
+      real, dimension(3) :: fran3
+      integer :: i   !prevent SN from being too close to boundaries
 !
-    if (headtt) print*,'position_SN_uniformz: ENTER'
+      if (headtt) print*,'position_SN_uniformz: ENTER'
 !
 !  Pick SN position (SNR%indx%l,SNR%indx%m,SNR%indx%n).
 !
-    if (lreset_ism_seed) then
-      seed=seed_reset
-      call random_seed_wrapper(PUT=seed)
-      lreset_ism_seed=.false.
-    endif
-    call random_number_wrapper(fran3)
+      if (lreset_ism_seed) then
+        seed=seed_reset
+        call random_seed_wrapper(PUT=seed)
+        lreset_ism_seed=.false.
+      endif
+      call random_number_wrapper(fran3)
 !
 !  Get 3 random numbers on all processors to keep rnd. generators in sync.
 !
-    if (lroot) then
-      i=int(fran3(1)*nxgrid)+1
-      if (nxgrid==1) i=1
-      SNR%indx%ipx=(i-1)/nx ! uses integer division
-      SNR%indx%l=i-(SNR%indx%ipx*nx)+nghost
+      if (lroot) then
+        i=int(fran3(1)*nxgrid)+1
+        if (nxgrid==1) i=1
+        SNR%indx%ipx=(i-1)/nx ! uses integer division
+        SNR%indx%l=i-(SNR%indx%ipx*nx)+nghost
 !
-      i=int(fran3(2)*nygrid)+1
-      if (nygrid==1) i=1
-      SNR%indx%ipy=(i-1)/ny  ! uses integer division
-      SNR%indx%m=i-(SNR%indx%ipy*ny)+nghost
+        i=int(fran3(2)*nygrid)+1
+        if (nygrid==1) i=1
+        SNR%indx%ipy=(i-1)/ny  ! uses integer division
+        SNR%indx%m=i-(SNR%indx%ipy*ny)+nghost
 !
-      i=int(fran3(3)*nzgrid)+1
-      if (nzgrid==1) i=1
-      SNR%indx%ipz=(i-1)/nz   ! uses integer division
-      SNR%indx%n=i-(SNR%indx%ipz*nz)+nghost
-      SNR%indx%iproc=find_proc(SNR%indx%ipx,SNR%indx%ipy,SNR%indx%ipz)
-    endif
+        i=int(fran3(3)*nzgrid)+1
+        if (nzgrid==1) i=1
+        SNR%indx%ipz=(i-1)/nz   ! uses integer division
+        SNR%indx%n=i-(SNR%indx%ipz*nz)+nghost
+        SNR%indx%iproc=find_proc(SNR%indx%ipx,SNR%indx%ipy,SNR%indx%ipz)
+      endif
 !
-    call share_SN_parameters(f,SNR)
+      call share_SN_parameters(f,SNR)
 !
     endsubroutine position_SN_uniformz
 !*****************************************************************************
@@ -2984,25 +2984,25 @@ module Interstellar
 !  the SN position is *not* independent of ncpus (nor of nprocy and nprocz).
 !  It is repeatable given fixed nprocy/z though.
 !
-    use General, only: random_seed_wrapper,  random_number_wrapper
-    use Grid, only: get_dVol
-    use EquationOfState, only: eoscalc
-    use Mpicomm, only: mpibcast_int, mpibcast_real
-    use Grid, only: get_dVol
-    !$ use omp_lib
+      use General, only: random_seed_wrapper,  random_number_wrapper
+      use Grid, only: get_dVol
+      use EquationOfState, only: eoscalc
+      use Mpicomm, only: mpibcast_int, mpibcast_real
+      use Grid, only: get_dVol
+      !$ use omp_lib
 !
-    real, intent(in), dimension(mx,my,mz,mfarray) :: f
-    real, intent(in) , dimension(ncpus) :: cloud_mass_byproc
-    type (SNRemnant), intent(inout) :: SNR
-    integer, intent(in), dimension(4,npreSN)::preSN
-    integer :: ierr
+      real, intent(in), dimension(mx,my,mz,mfarray) :: f
+      real, intent(in) , dimension(ncpus) :: cloud_mass_byproc
+      type (SNRemnant), intent(inout) :: SNR
+      integer, intent(in), dimension(4,npreSN)::preSN
+      integer :: ierr
 
-    real, dimension(0:ncpus) :: cum_prob_byproc
-    integer, dimension(4) :: tmpsite
-    real :: franSN, cloud_mass,cum_mass,cloud_mass_proc
-    real, dimension(nx) :: dV,rho,lnTT
-    integer :: icpu,l,m,n, ipsn
-    logical :: lfound
+      real, dimension(0:ncpus) :: cum_prob_byproc
+      integer, dimension(4) :: tmpsite
+      real :: franSN, cloud_mass,cum_mass,cloud_mass_proc
+      real, dimension(nx) :: dV,rho,lnTT
+      integer :: icpu,l,m,n, ipsn
+      logical :: lfound
 !
 !  identifier
 !
@@ -3027,6 +3027,7 @@ module Interstellar
 !
 !  Use random number to detemine which processor SN is on.
 !  (Use root processor for rand to ensure repeatability.)
+!  All processors must be at the same rand seed or MPI will hang so above line incorrect
 !
       if (lreset_ism_seed) then
         seed=seed_reset
