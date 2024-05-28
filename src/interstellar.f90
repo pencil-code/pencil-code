@@ -3580,37 +3580,39 @@ mnloop:do n=n1,n2
           endif
           call eoscalc(irho_ee,rho_new,(ee_old*rho_old+deltaEE*frac_eth)/rho_new,lnTT=lnTT)
           ind_maxTT=maxloc( lnTT, mask = (dr2_SN<=radius3), dim=1 )
-          maxTT=exp(lnTT(ind_maxTT))
-          maxlnTT=max(lnTT(ind_maxTT),maxlnTT)
-          if (SNR%feat%radius<=1.01*rfactor_SN*SNR%feat%dr) then
-            !dense remnant
-            if (maxTT>TT_SN_max) then
-              if (present(ierr)) then
-                ierr=iEXPLOSION_TOO_HOT
-                if (.not.lSN_list) then
-                  !$ lfound = .true.
-                  exit mnloop   !MR: from which loop?
-                endif
-              endif
-            endif
-          else
-            !diffuse remnants
-            if (maxTT>SN_TT_ratio_max) then
-              if (lSN_coolingmass) then
-                if ( rho_old(ind_maxTT)<=maxval(rho_old) ) then
-                  rad_hot=dr2_SN(ind_maxTT)
-                  deltarho_hot=rho_old(ind_maxTT)*(maxTT/SN_TT_ratio_max - 1.)
-                  call getmass_SN(deltarho_hot,rad_hot,width_mass,cmass_tmp)
-                endif
-                max_cmass=max(max_cmass,cmass_tmp)
-                maxTT=SN_TT_ratio_max
-                maxlnTT=max(log(maxTT),maxlnTT)
-              else
+          if (ind_maxTT>0) then
+            maxTT=exp(lnTT(ind_maxTT))
+            maxlnTT=max(lnTT(ind_maxTT),maxlnTT)
+            if (SNR%feat%radius<=1.01*rfactor_SN*SNR%feat%dr) then
+              !dense remnant
+              if (maxTT>TT_SN_max) then
                 if (present(ierr)) then
                   ierr=iEXPLOSION_TOO_HOT
                   if (.not.lSN_list) then
                     !$ lfound = .true.
-                    exit mnloop   !MR: from which loop?
+                    exit mnloop
+                  endif
+                endif
+              endif
+            else
+              !diffuse remnants
+              if (maxTT>SN_TT_ratio_max) then
+                if (lSN_coolingmass) then
+                  if ( rho_old(ind_maxTT)<=maxval(rho_old) ) then
+                    rad_hot=dr2_SN(ind_maxTT)
+                    deltarho_hot=rho_old(ind_maxTT)*(maxTT/SN_TT_ratio_max - 1.)
+                    call getmass_SN(deltarho_hot,rad_hot,width_mass,cmass_tmp)
+                  endif
+                  max_cmass=max(max_cmass,cmass_tmp)
+                  maxTT=SN_TT_ratio_max
+                  maxlnTT=max(log(maxTT),maxlnTT)
+                else
+                  if (present(ierr)) then
+                    ierr=iEXPLOSION_TOO_HOT
+                    if (.not.lSN_list) then
+                      !$ lfound = .true.
+                      exit mnloop
+                    endif
                   endif
                 endif
               endif
