@@ -1857,7 +1857,6 @@ module Interstellar
         zheat(n)=GammaUV*exp(-abs(z(n))/H_z)
       enddo
       do j=1,ncool
-        !!!if (lncoolT(j) >= lncoolT(j+1)) exit
         where (lncoolT(j)<=lnTT.and.lnTT<lncoolT(j+1)) lambda=lambda+exp(lncoolH(j)+lnTT*coolB(j))
       enddo
       if (lthermal_hse) zheat=lambda*zrho
@@ -1996,7 +1995,6 @@ module Interstellar
 !
       cool=0.0
       do i=1,ncool
-        !!!if (lncoolT(i) >= lncoolT(i+1)) exit
         where (lncoolT(i) <= lnTT .and. lnTT < lncoolT(i+1))
           cool=cool+exp(lncoolH(i)+lnrho+lnTT*coolB(i))
         endwhere
