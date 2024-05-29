@@ -981,17 +981,6 @@ subroutine run_start() bind(C)
         (.not.lpencil_check.and.lpencil_check_small)) .and. nt>0 ) &
     call pencil_consistency_check(f,df,p)
 !
-!  Start timing for final timing statistics.
-!  Initialize timestep diagnostics during the run (whether used or not,
-!  see idiag_timeperstep).
-!
-  if (lroot) then
-    time1=mpiwtime()
-    time_last_diagnostic=time1
-    icount=0
-    it_last_diagnostic=icount
-  endif
-!
 !  Globally catch eventual 'stop_it_if_any' call from single MPI ranks
 !
   call stop_it_if_any(.false.,'')
@@ -1045,6 +1034,17 @@ if(omp_get_thread_num() == 1) then
 !$   enddo
 !$omp barrier
 !$   if (omp_get_thread_num() == 0) then
+!
+!  Start timing for final timing statistics.
+!  Initialize timestep diagnostics during the run (whether used or not,
+!  see idiag_timeperstep).
+!
+      if (lroot) then
+        icount=0
+        it_last_diagnostic=icount
+        time1=mpiwtime()
+        time_last_diagnostic=time1
+      endif
        call timeloop(f,df,p)
 !$   else
 !$     call helper_loop(f,p)
@@ -1053,10 +1053,11 @@ if(omp_get_thread_num() == 1) then
 !$omp end parallel
 !
   if (lroot) then
-    print*
-    print*, 'Simulation finished after ', icount, ' time-steps'
 !
     time2=mpiwtime()
+!
+    print*
+    print*, 'Simulation finished after ', icount, ' time-steps'
 !
 !  Write data at end of run for restart.
 !
