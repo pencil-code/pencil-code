@@ -566,10 +566,8 @@ module Interstellar
         if (rho_SN_max==impossible) rho_SN_max=rho_SN_max_cgs / unit_density
         if (TT_SN_max==impossible) TT_SN_max=TT_SN_max_cgs/unit_temperature
         if (TT_SN_min==impossible) TT_SN_min=TT_SN_min_cgs / unit_temperature
-        if (OB_area_rate==impossible) &
-            OB_area_rate=OB_area_rate_cgs * unit_length**2 * unit_time
-        if (SNI_area_rate==impossible) &
-            SNI_area_rate=SNI_area_rate_cgs * unit_length**2 * unit_time
+        if (OB_area_rate==impossible) OB_area_rate=OB_area_rate_cgs * unit_length**2 * unit_time
+        if (SNI_area_rate==impossible) SNI_area_rate=SNI_area_rate_cgs * unit_length**2 * unit_time
         if (SNII_area_rate==impossible) &
             SNII_area_rate=7.5*SNI_area_rate_cgs * unit_length**2 * unit_time
         if (h_SNI==impossible) h_SNI=h_SNI_cgs / unit_length
@@ -577,8 +575,7 @@ module Interstellar
         SNII_mass_rate=SNII_mass_rate_cgs*unit_time
         SNI_mass_rate=SNI_mass_rate_cgs*unit_time
         solar_mass=solar_mass_cgs / unit_mass
-        if (lroot.and.ip==1963) print &
-            "(1x,'initialize_interstellar: solar_mass =',e11.4)",solar_mass
+        if (lroot.and.ip==1963) print"(1x,'initialize_interstellar: solar_mass =',e11.4)",solar_mass
         r_SNI =r_SNI_yrkpc2  * (unit_time/yr_cgs) * (unit_length/kpc_cgs)**2
         r_SNII=r_SNII_yrkpc2 * (unit_time/yr_cgs) * (unit_length/kpc_cgs)**2
 !
@@ -610,8 +607,7 @@ module Interstellar
         endif
         if (lSN_coolingmass) then
           if (.not.lSN_eth) then
-            if (lroot) print*,&
-              'initialize_interstellar: lSN_coolingmass false if not lSN_eth'
+            if (lroot) print*,'initialize_interstellar: lSN_coolingmass false if not lSN_eth'
             lSN_coolingmass = .false.
           else
             lSN_mass = .false.
@@ -1271,7 +1267,8 @@ module Interstellar
             call warning('input_persist_interstellar','lSNII from run.in ' // &
                          'overwritten. Set l_persist_overwrite_lSNII=T to update')
             done=read_persist ('ISM_TOGGLE_SNII', lSNII)
-            if (lroot.and..not.done) print *, 'input_persist_interstellar: lSNII = ', lSNII, ' t_next_SNII = ', t_next_SNII
+            if (lroot.and..not.done) print *, 'input_persist_interstellar: lSNII = ', lSNII, &
+                                              ' t_next_SNII = ', t_next_SNII
           endif
       endselect
 !
@@ -1305,7 +1302,7 @@ module Interstellar
         call warning('input_persist_interstellar','t_next_SNI from run.in overwritten. ' // &
                      'Set l_persist_overwrite_tSNI=T to update', 0)
         error = read_persist ('ISM_T_NEXT_SNI', t_next_SNI)
-        if (lroot .and. .not. error) print *, 'input_persist_interstellar: t_next_SNI = ', t_next_SNI
+        if (lroot .and. .not. error) print*, 'input_persist_interstellar: t_next_SNI = ', t_next_SNI
       endif
 !
       if (.not. l_persist_overwrite_tSNII) then
@@ -1319,28 +1316,28 @@ module Interstellar
         call warning('input_persist_interstellar','x_cluster from run.in overwritten. ' // &
                      'Set l_persist_overwrite_xcluster=T to update', 0)
         error = read_persist ('ISM_X_CLUSTER', x_cluster)
-        if (lOB_cluster .and. lroot .and. .not. error) print *, 'input_persist_interstellar: x_cluster = ', x_cluster
+        if (lOB_cluster .and. lroot .and. .not. error) print*,'input_persist_interstellar: x_cluster = ',x_cluster
       endif
 !
       if (.not. l_persist_overwrite_ycluster) then
         call warning('input_persist_interstellar','y_cluster from run.in overwritten. ' // &
                      'Set l_persist_overwrite_ycluster=T to update', 0)
         error = read_persist ('ISM_Y_CLUSTER', y_cluster)
-        if (lOB_cluster .and. lroot .and. .not. error) print *, 'input_persist_interstellar: y_cluster = ', y_cluster
+        if (lOB_cluster .and. lroot .and. .not. error) print*,'input_persist_interstellar: y_cluster = ',y_cluster
       endif
 !
       if (.not. l_persist_overwrite_zcluster) then
         call warning('input_persist_interstellar','z_cluster from run.in overwritten. ' // &
                      'Set l_persist_overwrite_zcluster=T to update', 0)
         error = read_persist ('ISM_Z_CLUSTER', z_cluster)
-        if (lOB_cluster .and. lroot .and. .not. error) print *, 'input_persist_interstellar: z_cluster = ', z_cluster
+        if (lOB_cluster .and. lroot .and. .not. error) print*,'input_persist_interstellar: z_cluster = ',z_cluster
       endif
 !
       if (.not. l_persist_overwrite_tcluster) then
         call warning('input_persist_interstellar','t_cluster from run.in overwritten. '// &
                      'Set l_persist_overwrite_tcluster=T to update', 0)
         error = read_persist ('ISM_T_CLUSTER', t_cluster)
-        if (lOB_cluster .and. lroot .and. .not. error) print *, 'input_persist_interstellar: t_cluster = ', t_cluster
+        if (lOB_cluster .and. lroot .and. .not. error) print*,'input_persist_interstellar: t_cluster = ',t_cluster
       endif
 !
     endsubroutine input_persist_interstellar
@@ -1697,7 +1694,7 @@ module Interstellar
       elseif (pretend_lnTT) then
         p%heat=p%heat*gamma
         p%cool=p%cool*gamma
-      else
+      else   !? if (lentropy) then
         p%heat=p%heat*p%TT1
         p%cool=p%cool*p%TT1
         !heatcool=p%TT1*(heat-cool)
@@ -1734,11 +1731,11 @@ module Interstellar
 !
       if (lSNI.or.lSNII) then
         if (laverage_SNI_heating) &
-          heatingfunction_scale(SNI) =  t_interval(SNI) /(t_interval(SNI) +t*heatingfunction_fadefactor) &
-                                      * heatingfunction_scalefactor
+          heatingfunction_scale(SNI) = t_interval(SNI) /(t_interval(SNI) +t*heatingfunction_fadefactor) &
+                                      *heatingfunction_scalefactor
         if (laverage_SNII_heating) &
-          heatingfunction_scale(SNII)=  t_interval(SNII)/(t_interval(SNII)+t*heatingfunction_fadefactor) &
-                                      * heatingfunction_scalefactor
+          heatingfunction_scale(SNII)= t_interval(SNII)/(t_interval(SNII)+t*heatingfunction_fadefactor) &
+                                      *heatingfunction_scalefactor
       endif
 
     endsubroutine interstellar_before_boundary
@@ -1952,7 +1949,6 @@ module Interstellar
 !      Hmax with abs(heatcool) or to compute cooling timestep separately
 !      Hmax may need to be max(abs(Hmax)) for ldt??
 !
-
       if (ldt.and.lfirst .or. ldiagnos) then
         if (ltemperature.or.pretend_lnTT) then
           Hmax=Hmax+heatcool
@@ -2090,7 +2086,7 @@ module Interstellar
           call check_SNI(f,l_SNI)
           if (t>=tmax) then
             if (lroot) print*, 'check_SN: sn_series.in list needs', &
-                             ' extending or set lSN_list=F to continue'
+                               ' extending or set lSN_list=F to continue'
           endif
         endif
       else
@@ -2542,8 +2538,8 @@ module Interstellar
 !  Calculate the total mass in locations where the temperature is below
 !  cloud_TT and the density is above cloud_rho, i.e. cold and dense.
 !
-        !$omp target if(loffload) map(from: cloud_mass) & !needs: cloud_rho, lncloud_TT FG: irho_ss?
-        !$omp        has_device_addr(f) ! globals: irho, ilnrho, iss, ilnTT, FG: ldensity_nolog, ltemperature, lentropy
+        !$omp target if(loffload) map(from: cloud_mass) & !needs: cloud_rho, lncloud_TT 
+        !$omp        has_device_addr(f) ! globals: irho, ilnrho, iss, ilnTT, FG: ldensity_nolog
         !$omp teams distribute parallel do collapse(2) private(rho,lnTT,dV) reduction(+:cloud_mass)
         do n=n1,n2
         do m=m1,m2
@@ -2763,7 +2759,7 @@ module Interstellar
           !$omp end teams distribute parallel do
           !$omp end target
         else
-          !$omp target if(loffload) map(from: rhosum) has_device_addr(f)   ! globals: irho, ilnrho, ldensity_nolog, FG: dVol
+          !$omp target if(loffload) map(from: rhosum) has_device_addr(f)   ! globals: irho, ilnrho, ldensity_nolog, FG: dVol_glob
           !$omp teams distribute parallel do
           do n=n1,n2
             if (ldensity_nolog) then
@@ -3046,7 +3042,7 @@ module Interstellar
         cloud_mass_proc=cloud_mass_byproc(SNR%indx%iproc+1)
         lfound = .false.
         !$omp target if(loffload) map(from: ierr,cum_mass) map(tofrom: SNR) & !needs: cloud_rho,lncloud_TT,preSN) &
-        !$omp        has_device_addr(f)  !globals: ip, irho,ilnrho,ilnTT,iss,ldensity_nolog, FG: irho_ss, lentropy, nx, lgpu, iEXPLOSION_TOO_HOT priv ierr
+        !$omp        has_device_addr(f)  !globals: ip, irho,ilnrho,ilnTT,iss,ldensity_nolog
         !$omp teams distribute parallel do collapse(2) private(dV,rho,lnTT,l,ipsn) reduction(+:cum_mass)  !!!reduction unclear
 mn_loop:do n=n1,n2
         do m=m1,m2
@@ -3079,6 +3075,7 @@ mn_loop:do n=n1,n2
                       (SNR%indx%m==preSN(2,ipsn)) .and. &
                       (SNR%indx%n==preSN(3,ipsn)) .and. &
                       (SNR%indx%iproc==preSN(4,ipsn))) then
+                    !$omp atomic
                     ierr=iEXPLOSION_TOO_HOT
                     if (.not.lgpu.and.ip==1963) &
                       print*,'position_by_cloudmass: iEXPLOSION_TOO_HOT, iproc,it,preSN=',iproc,it,preSN(:,ipsn)
@@ -3392,21 +3389,18 @@ mn_loop:do n=n1,n2
 !
       if (thermal_profile=="gaussian3") then
         c_SN=etmp/(cnorm_SN(dimensionality)*width_energy**dimensionality)
-        if (frac_ecr>0.) &
-            ecr_SN=campl_SN/(cnorm_SN(dimensionality)*width_energy**dimensionality)
+        if (frac_ecr>0.) ecr_SN=campl_SN/(cnorm_SN(dimensionality)*width_energy**dimensionality)
         c_SNmax=ampl_SN/(cnorm_SN(dimensionality)*rfactor_SN*SNR%feat%dr**dimensionality)
       elseif (thermal_profile=="gaussian2") then
         c_SN=etmp/(cnorm_gaussian2_SN(dimensionality)*width_energy**dimensionality)
         if (frac_ecr>0.) &
             ecr_SN=campl_SN/(cnorm_gaussian2_SN(dimensionality)*width_energy**dimensionality)
-        c_SNmax=ampl_SN/(cnorm_gaussian2_SN(dimensionality)*rfactor_SN* &
-            SNR%feat%dr**dimensionality)
+        c_SNmax=ampl_SN/(cnorm_gaussian2_SN(dimensionality)*rfactor_SN*SNR%feat%dr**dimensionality)
       elseif (thermal_profile=="gaussian") then
         c_SN=etmp/(cnorm_gaussian_SN(dimensionality)*width_energy**dimensionality)
         if (frac_ecr>0.) &
             ecr_SN=campl_SN/(cnorm_gaussian_SN(dimensionality)*width_energy**dimensionality)
-        c_SNmax=ampl_SN/(cnorm_gaussian_SN(dimensionality)*rfactor_SN* &
-            SNR%feat%dr**dimensionality)
+        c_SNmax=ampl_SN/(cnorm_gaussian_SN(dimensionality)*rfactor_SN*SNR%feat%dr**dimensionality)
       endif
       if (lroot.and.ip==1963) print "(1x,'explode_SN: c_SN =',e11.4)",c_SN
 !
@@ -3469,10 +3463,10 @@ mn_loop:do n=n1,n2
 
       !$omp target if(loffload) map(tofrom: SNR) has_device_addr(f)  ! needs:
       !irho,ilnrho,iss,ilnTT,frac_eth,dr2_SN,rfactor_SN,TT_SN_max, switches FG radius2mass, c_SN, width_energy, width_mass,&
-      !irho_lnTT, irho_ss, irho_ee, SN_TT_ratio_max, iEXPLOSION_TOO_HOT ; FG: private cmass_tmp
+      !irho_lnTT, irho_ss, irho_ee, SN_TT_ratio_max
       !$omp teams distribute parallel do collapse(2) &
-      !$omp private(dV,rho_old,rho_new,deltarho,deltauu,deltaEE,deltaCR,ee_old,lnTT,outward_normal_SN,maxTT,rad_hot,deltarho_hot,ind_maxTT,ierr), &
-      !$omp    reduction(+:site_mass,SNR%feat%MM,SNR%feat%EE) reduction(max:maxlnTT,max_cmass)
+      !$omp private(dV,rho_old,rho_new,deltarho,deltauu,deltaEE,deltaCR,ee_old,lnTT,outward_normal_SN,maxTT,rad_hot,deltarho_hot,ind_maxTT,cmass_tmp) &
+      !$omp reduction(+:site_mass,SNR%feat%MM,SNR%feat%EE) reduction(max:maxlnTT,max_cmass)
 mnloop:do n=n1,n2
       do m=m1,m2
 !
@@ -3522,6 +3516,7 @@ mnloop:do n=n1,n2
               !dense remnant
               if (maxTT>TT_SN_max) then
                 if (present(ierr)) then
+                  !$omp atomic
                   ierr=iEXPLOSION_TOO_HOT
                   if (.not.lSN_list) then
                     !$ lfound = .true.
@@ -3533,16 +3528,15 @@ mnloop:do n=n1,n2
               !diffuse remnants
               if (maxTT>SN_TT_ratio_max) then
                 if (lSN_coolingmass) then
-                  if ( rho_old(ind_maxTT)<=maxval(rho_old) ) then
-                    rad_hot=dr2_SN(ind_maxTT)
-                    deltarho_hot=rho_old(ind_maxTT)*(maxTT/SN_TT_ratio_max - 1.)
-                    call getmass_SN(deltarho_hot,rad_hot,width_mass,cmass_tmp)
-                  endif
+                  rad_hot=dr2_SN(ind_maxTT)
+                  deltarho_hot=rho_old(ind_maxTT)*(maxTT/SN_TT_ratio_max - 1.)
+                  call getmass_SN(deltarho_hot,rad_hot,width_mass,cmass_tmp)
                   max_cmass=max(max_cmass,cmass_tmp)
                   maxTT=SN_TT_ratio_max
                   maxlnTT=max(log(maxTT),maxlnTT)
                 else
                   if (present(ierr)) then
+                    !$omp atomic
                     ierr=iEXPLOSION_TOO_HOT
                     if (.not.lSN_list) then
                       !$ lfound = .true.
@@ -3586,9 +3580,10 @@ mnloop:do n=n1,n2
         if (cmass_SN>0) then
           SNR%feat%MM=0.
           !$omp target if(loffload) map(tofrom: SNR) has_device_addr(f)  ! gives: m,n FG global width_mass, cmass_SN
-          !$omp teams distribute parallel do collapse(2) private(deltarho) reduction(+:SNR%feat%MM) FG: priv dV
+          !$omp teams distribute parallel do collapse(2) private(deltarho,dV) reduction(+:SNR%feat%MM)
           do n=n1,n2
           do m=m1,m2
+            call get_dVol(m,n,dV)
             call proximity_SN(SNR)
             call injectmass_SN(deltarho,width_mass,cmass_SN)
             SNR%feat%MM=SNR%feat%MM+sum(deltarho*dV)
@@ -3662,8 +3657,7 @@ mnloop:do n=n1,n2
       !$omp target if(loffload) map(tofrom: SNR) has_device_addr(f)  ! needs: irho,ilnrho,iss,ilnTT,iyH,iecr,ifcr, frac_eth, switches;  gives: m,n
       !$omp teams distribute parallel do collapse(2) reduction(+:SNR%feat%MM,SNR%feat%CR,SNR%feat%EE) &
       !$omp private(rho_old,rho_new,deltauu,deltarho,deltaEE,ee_old,yH,lnTT,deltafcr,deltaCR,outward_normal_SN,dV)
-!FG: global width_mass, cmass_SN, irho_lnTT, irho_ss, irho_ee, width_energy, c_SN, width_velocity, cvelocity_SN, ecr_SN (cfcr_SN? to
-!do)
+!FG: global width_mass, cmass_SN, width_energy, c_SN, width_velocity, cvelocity_SN, ecr_SN (cfcr_SN? to do)
       do n=n1,n2
       do m=m1,m2
 !
@@ -3899,7 +3893,7 @@ mnloop:do n=n1,n2
 !  divide by number of points.
 !
       !$omp target if(loffload) map(from: rhomin,rhomax,tmp) map(to: remnant) has_device_addr(f)  ! needs: irho,ilnrho,iuu,dr2_SN, switches;  gives: m,n
-! FG: radius2, tini
+! FG: radius2
       !$omp teams distribute parallel do collapse(2) private(rho,uu,u2,lmask,dV), reduction(min:rhomin) reduction(max:rhomax) reduction(+:tmp)
       do n=n1,n2
       do m=m1,m2
@@ -4002,7 +3996,7 @@ mnloop:do n=n1,n2
 !NEW CHANGES
       tmp=0.
       !$omp target if(loffload) map(from: tmp) map(to: remnant) has_device_addr(f)  ! needs: irho,ilnrho,iuu,dr2_SN, switches;  gives: m,n
-!FG: cvelocity_SN, cmass_SN, width_mass, width_velocity, tini, radius2
+!FG: cvelocity_SN, cmass_SN, width_mass, width_velocity, radius2
       !$omp teams distribute parallel do collapse(2) private(uu,u2,rho,deltauu,deltarho,dV,outward_normal_SN) reduction(+:tmp)
       do n=n1,n2
       do m=m1,m2
@@ -4092,9 +4086,8 @@ mnloop:do n=n1,n2
       enddo
       enddo
 !
-      !tmp=-exp(rho_lowest) !!!FG: make sense now?
       tmp=rho_lowest
-      call mpiallreduce_max(tmp,rho_lowest) !!!MR:  -???
+      call mpiallreduce_max(tmp,rho_lowest)
 !
     endsubroutine get_lowest_rho
 !*****************************************************************************
@@ -4483,8 +4476,7 @@ mnloop:do n=n1,n2
       integer :: get_free_OB
       integer :: i,iOB
 !
-      if (nOB>=mOB) &
-        call fatal_error("get_free_OB","run out of OB slots. Increase mOB")
+      if (nOB>=mOB) call fatal_error("get_free_OB","run out of OB slots. Increase mOB")
 !
       iOB=-1
       do i=1,mOB
