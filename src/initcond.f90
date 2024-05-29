@@ -321,26 +321,29 @@ module Initcond
 !
 !  29-may-24/axel: coded
 !
+      use General, only: roptest
+!
       integer :: i
       real, dimension (mx,my,mz,mfarray) :: f
       real,optional :: kx,ky,kz,phasey
-      real :: ampl,kx1=pi/2.,ky1=0.,kz1=pi/2., phasey1=0.
+!
+      real :: ampl,kx1,ky1,kz1,phasey1
 !
 !  wavenumber k, helicity H=ampl (can be either sign)
 !
 !  sinx(kx*x)*sin(kz*z)
 !
-      if (present(kx)) kx1=kx
-      if (present(ky)) ky1=ky
-      if (present(kz)) kz1=kz
-      if (present(phasey)) phasey1=phasey
       if (ampl==0) then
         if (lroot) print*,'x32_siny_cosz: ampl=0'
       else
-        if (lroot) write(*,wave_fmt1) 'x32_siny_cosz: ampl,kx,ky,kz=', &
-                                      ampl,kx1,ky1,kz1
-        f(:,:,:,i)=f(:,:,:,i)+ampl*(spread(spread(1./x**3-x**2,2,my),3,mz)&
-                                   *spread(spread(sin(ky1*y+phasey1),1,mx),3,mz)&
+        kx1 = roptest(kx,pi/2.)
+        ky1 = roptest(ky,0.)
+        kz1 = roptest(kz,pi/2.)
+        phasey1 = roptest(phasey,0.)
+
+        if (lroot) write(*,wave_fmt1) 'x32_siny_cosz: ampl,kx,ky,kz=',ampl,kx1,ky1,kz1
+        f(:,:,:,i)=f(:,:,:,i)+ampl*(spread(spread(1./x**3-x**2,2,my),3,mz) &
+                                   *spread(spread(sin(ky1*y+phasey1),1,mx),3,mz) &
                                    *spread(spread(cos(kz1*z),1,mx),2,my))
       endif
 !
