@@ -2147,6 +2147,7 @@ module Magnetic
         case ('sinxsiny'); call sinx_siny_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
         case ('xsiny'); call x_siny_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
         case ('x1siny'); call x1_siny_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.,phasey_aa(j))
+        case ('x32siny'); call x32_siny_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.,phasey_aa(j))
         case ('sinxcosz'); call sinx_siny_cosz(amplaa(j),f,iay,kx_aa(j),ky_aa(j),kz_aa(j))
         case ('sinycosz'); call cosx_siny_cosz(amplaa(j),f,iax,kx_aa(j),ky_aa(j),0.)
         case ('Ax_cosxcosycosz'); call cosx_cosy_cosz(amplaa(j),f,iax,kx_aa(j),ky_aa(j),0.)
@@ -4619,6 +4620,7 @@ module Magnetic
         if (.not.lkinematic) then
           if (llorentzforce) then
             if (lboris_correction) then
+print*,'AXEL1'
 !
 !  Following Eq. 34 of Gombosi et al. 2002 for Boris correction. Can work with
 !  only const gravity at present
@@ -6063,9 +6065,17 @@ module Magnetic
         call sum_mn_name(fb,idiag_fbm)
       endif
 !
+!         if (lpenc_loc(i_rho1gpp)) then
+!           call fatal_error('calc_pencils_eos','rho1gpp not available 2')
+!         endif
+!
+!  Give zero if there is no magnetic forcing
+!
       if (idiag_fxbxm/=0) then
-        fxbx=p%fcont(:,1,iforcing_cont_aa)*p%bb(:,1)
-        call sum_mn_name(fxbx,idiag_fxbxm)
+        if (iforcing_cont_aa>0) then
+          fxbx=p%fcont(:,1,iforcing_cont_aa)*p%bb(:,1)
+          call sum_mn_name(fxbx,idiag_fxbxm)
+        endif
       endif
 !
 !  Cross helicity (linkage between vortex tubes and flux tubes).
