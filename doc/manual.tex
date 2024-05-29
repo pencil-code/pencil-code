@@ -4583,6 +4583,33 @@ To visualize with \name{IDL} just type
 power spectrum. See head of \file[power.pro]{\$PENCIL_HOME/idl/power.pro}
 for options to \cmd{power}.
 
+By default, the spectra for the initial times time is not outputted,
+but it can sometimes be useful to have it.
+In that case, one can put \cmd{lspec_start=T}.
+
+\subsection{Other power spectra}
+
+Over the years, many more spectra have been outputted and not
+everything is immediately documented.
+Here some examples:
+\begin{verbatim}
+  data/powerhel_mag.dat
+  data/powerhel_kin.dat
+  data/power_saffman_ub.dat
+  data/power_saffman_mag.dat
+  data/power_mag.dat
+  data/power_krms.dat
+  data/power_kin.dat
+\end{verbatim}
+Here, the first two are helicity spectra that come ``for free''
+(in addition to those with \cmd{_kin} and \cmd{_mag}) when
+one invokes \cmd{ou_spec=T} and \cmd{ab_spec=T}.
+The ones with \cmd{_saffman} refer to the spectra related to Saffman-like
+invariants such as the Hosking integral (which refers to \cmd{power_mag.dat})
+and the cross-helicity Saffman-like invariant (\cmd{power_saffman_ub.dat}).
+Their slopes for $k\to0$ are the invariants divided by $2\pi^2$; see
+the papers by Hosking \& Schekochihin (2021) as well as Zhou et al.\ (2022).
+
 % ---------------------------------------------------------------------- %
 
 \subsection{Structure functions}
@@ -6662,6 +6689,30 @@ should say where it looks for 'mpif.h'.
 If those directories don't exist, it's no wonder that it doesn't work,
 and it is time to complain.
 
+%%%
+\subsubsection{Compilation fails on MacOS Sonoma}
+
+I am getting an error which hasn't been resolved yet.
+It has something to do with my Mac setup and no one has been able
+to figure out how to fix it.
+Maybe you've seen this before (at the pc\_build stage):
+\begin{Verbatim}
+'make -j FFLAGS_DOUBLE=-fdefault-real-8 -fdefault-double-8
+CFLAGS_DOUBLE=-DDOUBLE_PRECISION LD_MPI= CFLAGS_FFTW3= FFLAGS_FFTW3=
+LD_FFTW3= CFLAGS_FFTW2= FFLAGS_FFTW2= LD_FFTW2= FC=gfortran F77=$(FC)
+FFLAGS=-O LDFLAGS_HELPER=-dynamic OMPFFLAGS=-fopenmp OMPLFLAGS=-lgomp
+PPFLAGS=-cpp FSTD_95=-std=f95 FSTD_2003=-std=f2003 CC=gcc
+CFLAGS=-DFUNDERSC=1 default_to_be' failed: <Inappropriate ioctl for device>
+\end{Verbatim}
+
+%\begin{Verbatim}
+%\end{Verbatim}
+
+\medskip
+
+{\bf A}: You have to use gcc-14.
+Default (plain gcc) does not work; it is wrongly set up.
+
 % ---------------------------------------------------------------------- %
 
 \subsection{Pencil check}
@@ -7340,13 +7391,27 @@ Note: the above way to get svn works. It takes a while however, so there
 are certainly faster ways out there. If you already have a non-obsolete svn
 version, use that instead.
 
+\subsubsection{Wrong user-id in commit emails}
+
+Why does it say
+\begin{Verbatim}
+From: 'Philippe Bourdin' via pencil-code-commits
+      <pencil-code-commits@googlegroups.com>
+\end{Verbatim}
+when the commiting author is not Philippe?
+
+\medskip
+
+{\bf A}: The associated email addresses in account.pencil-code.org should
+be the same as what is registered in github as your primary email address.
+
 \subsubsection{Pencil Code discussion forum}
 
 Do I just need to send an email somewhere to subscribe or what?
 
 \medskip
 
-{\bf A}" The answer is yes; just go to:
+{\bf A}: The answer is yes; just go to:
 \begin{Verbatim}
    http://groups.google.com/group/pencil-code-discuss
 \end{Verbatim}
@@ -8759,7 +8824,7 @@ where \code{nw=nx*ny*nz}.
 9216&Triolith&$1.30{\!\times\!}10^{-4}$&$2304^3$&magn/noentro&4x32x72& 1-mar-14 & AB \\
 16384&Hermit&$6.4{\!\times\!}10^{-4}$&$1024{\!\times\!}2048{\!\times\!}1024$&spherical conv/magn&16x32x32&22-aug-13&PJK\\
 16384&Dardel&$1.37{\!\times\!}10^{-4}$&$16384{\!\times\!}16384$&2D-MHD-6th&128x128&6-feb-24&AB\\
-16384&Dardel&$2.05{\!\times\!}10^{-4}$&$16384{\!\times\!}16384$&2D-MHD-10th&128x128&6-feb-24&AB\\
+16384&Dardel&$2.05{\!\times\!}10^{-4}$&$16384{\!\times\!}16384$&2D-MHD-10th&128x128&6-feb-24&AB\\ %(=50% slower)
 18432 & Kraken& 0.00316  &$384{\!\times\!}768{\!\times\!}256$ & magn/noentro & 24x48x16 &13-jan-12 & WL\\
 18432 & Kraken&$8.8{\!\times\!}10^{-4}$  &$768{\!\times\!}1536{\!\times\!}512$ & magn/noentro & 24x48x16 &17-jan-12 & WL\\
 18432 & Kraken& $4.0{\!\times\!}10^{-4}$ &$1536{\!\times\!}3072{\!\times\!}1024$ & magn/noentro & 24x48x16 &18-jan-12 & WL\\
@@ -14223,9 +14288,9 @@ information on wavenumbers and $z$ positions.\\
 \midrule
 
 \var{inz} [0] & Compute the power_x at a given z. \\
-\var{ckxrange} [''] & Define the $k_x$ range. \\
-\var{ckyrange} [''] &  Define the $k_y$ range.\\
-\var{czrange} [''] & Define the $k_z$ range. \\
+\var{ckxrange} [''] & Define the $k_x$ range for \code{power_xy}. \\
+\var{ckyrange} [''] &  Define the $k_y$ range for \code{power_xy}. \\
+\var{czrange} [''] & Define the $z$ range for \code{power_xy}. \\
 \var{lintegrate_z} [T] & Compute the z-integrated power spectra. \\
 \var{lintegrate_shell} [T] & Compute the shell-integrated power spectra. \\
 \var{lcomplex} [F] & outputs the complex Fourier transform. \\
@@ -14235,7 +14300,7 @@ information on wavenumbers and $z$ positions.\\
 total(S)$=\half$gg2m. \\
 \var{pdf_max} [30.] &  Maximum value of the pdf. \\
 \var{pdf_min} [-30.] &  Minimum value of the pdf.\\
-\var{pdf_min_logscale} [3.0] &  Miniimum value of the logarithmic pdf.\\
+\var{pdf_min_logscale} [3.0] &  Minimum value of the logarithmic pdf.\\
 \var{pdf_max_logscale} [-3.0] &  Maximum value of the logarithmic pdf.\\
 \var{lread_gauss_quadrature} [F] &  if  \code[T], generates polar coordinates 
 in gauss-legendre quadrature; need to provide file gauss_legendre_quadrature.dat

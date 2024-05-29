@@ -26,6 +26,7 @@
 %%   disp_current.f90
 %%   dustdensity.f90
 %%   entropy_anelastic.f90
+%%   forcing.f90
 %%   gravitational_waves.f90
 %%   gravitational_waves_hTXk.f90
 %%   gravitational_waves_hTXk_no_xpara.f90
@@ -160,6 +161,16 @@
   \var{uxuy2m}    & $\left<u_x^2u_y^2\right>$ \\
   \var{uyuz2m}    & $\left<u_y^2u_z^2\right>$ \\
   \var{uzux2m}    & $\left<u_z^2u_x^2\right>$ \\
+  \var{T00m}      & $\left< T_{00} \right>$ \\
+  \var{Txxm}      & $\left< T_{xx} \right>$ \\
+  \var{Tyym}      & $\left< T_{yy} \right>$ \\
+  \var{Tzzm}      & $\left< T_{zz} \right>$ \\
+  \var{Txym}      & $\left< T_{xy} \right>$ \\
+  \var{Tyzm}      & $\left< T_{yz} \right>$ \\
+  \var{Tzxm}      & $\left< T_{zx} \right>$ \\
+  \var{T0x2m}     & $\left< T_{0x}^2 \right>$ \\
+  \var{T0y2m}     & $\left< T_{0y}^2 \right>$ \\
+  \var{T0z2m}     & $\left< T_{0z}^2 \right>$ \\
   \var{ux2ccm}    & $\left<u_x^2\cos^2kz\right>$ \\
   \var{ux2ssm}    & $\left<u_x^2\sin^2kz\right>$ \\
   \var{uy2ccm}    & $\left<u_y^2\cos^2kz\right>$ \\
@@ -233,7 +244,7 @@
   \var{ourms}     & $\left<(\boldsymbol{\omega}\cdot\uv)^2\right>^{1/2}$ \\
   \var{oxurms}    & $\left<(\boldsymbol{\omega}\times\uv)^2\right>^{1/2}$ \\
   \var{ou_int}    & $\int_V\boldsymbol{\omega}\cdot\uv\,dV$ \\
-  \var{fum}       & $\left<\fv\cdot\uv\right>$ \\
+  \var{fum}       & $\left<\fv\cdot\uv\right>$ (continuous forcing only) \\
   \var{odel2um}   & $\left<\boldsymbol{\omega}\nabla^2\uv\right>$ \\
   \var{o2m}       & $\left<\boldsymbol{\omega}^2\right>
                     \equiv \left<(\curl\uv)^2\right>$ \\
@@ -564,9 +575,14 @@
   \var{betam}     & $\langle\beta\rangle$ \\
   \var{betamax}   & $\max\beta$ \\
   \var{betamin}   & $\min\beta$ \\
+  \var{Azmid_min} & $\min A_z^{\rm mid}$ \\
+  \var{Azmid_max} & $\max A_z^{\rm mid}$ \\
   \var{bxm}       & $\left<B_x\right>$ \\
   \var{bym}       & $\left<B_y\right>$ \\
   \var{bzm}       & $\left<B_z\right>$ \\
+  \var{jxm}       & $\left<J_x\right>$ \\
+  \var{jym}       & $\left<J_y\right>$ \\
+  \var{jzm}       & $\left<J_z\right>$ \\
   \var{bxbym}     & $\left<B_x B_y\right>$ \\
   \var{bxbzm}     & $\left<B_x B_z\right>$ \\
   \var{bybzm}     & $\left<B_y B_z\right>$ \\
@@ -765,6 +781,10 @@
 \midrule
   \multicolumn{2}{c}{Module \file{axionSU2back.f90}} \\
 \midrule
+  \var{a}         & $a$ \\
+  \var{phi}       & $phi$ \\
+  \var{phidot}    & $phidot$ \\
+  \var{H}         & $Hubble_parameter$ \\
   \var{Q}         & $Q$ \\
   \var{Qdot}      & $\dot{Q}$ \\
   \var{Qddot}     & $\ddot{Q}$ \\
@@ -887,6 +907,7 @@
   \var{mu5min}    & $\min\mu_5$ \\
   \var{mu5max}    & $\max\mu_5$ \\
   \var{mu5abs}    & $\max|\mu_5|$ \\
+  \var{srce5m}    & $\left<S_5\right>$ \\
   \var{gamf5m}    & $\left<\Gamma_5\right>$ \\
   \var{gmu5rms}   & $\left<(\nabla\mu_5)^2\right>^{1/2}$ \\
   \var{gmuSrms}   & $\left<(\nabla\mu_S)^2\right>^{1/2}$ \\
@@ -955,6 +976,12 @@
   \var{grms}      & $\left<C-\nabla\cdot\Av\right>^{1/2}$ \\
   \var{da0rms}    & $\left<C-\nabla\cdot\Av\right>^{1/2}$ \\
   \var{BcurlEm}   & $\left<\Bv\cdot\nabla\times\Ev\right>$ \\
+  \var{divJrms}   & $\left<\nab\Jv^2\right>^{1/2}$ \\
+  \var{divErms}   & $\left<\nab\Ev^2\right>^{1/2}$ \\
+  \var{rhoerms}   & $\left<\rho_e^2\right>^{1/2}$ \\
+  \var{divJm}     & $\left<\nab\Jv\right>$ \\
+  \var{divEm}     & $\left<\nab\Ev\right>$ \\
+  \var{rhoem}     & $\left<\rho_e\right>$ \\
   \var{mfpf}      & $-f'/f$ \\
   \var{fppf}      & $f''/f$ \\
   \var{afact}     & $a$ (scale factor) \\
@@ -998,6 +1025,12 @@
                     see \S~\ref{time-step}) \\
   \var{ssmxy}     & $\left< s \right>_{z}$ \\
   \var{ssmxz}     & $\left< s \right>_{y}$ \\
+\midrule
+  \multicolumn{2}{c}{Module \file{forcing.f90}} \\
+\midrule
+  \var{rufm}      & $\left<\rho\fv\cdot\uv\right>$ \\
+  \var{ufm}       & $\left<\fv\cdot\uv\right>$ \\
+  \var{ofm}       & $\left<\ov\cdot\fv\right>$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{gravitational_waves.f90}} \\
 \midrule

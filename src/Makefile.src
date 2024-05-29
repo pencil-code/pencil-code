@@ -2406,6 +2406,7 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #CC=cc #(uan02*)
 #FFLAGS=-O1 #-mcmodel=large #-s integer64 #-march=native   #target-cpu=x86-milan #-fimplicit-none #(uan02*)
 #FFLAGS_DOUBLE=-s real64 #(uan02*)
+#FFLAGS_DOUBLE=-fdefault-real-8 #(uan02*)
 #CFLAGS=-DFUNDERSC=1 -O1 #-march=native #(uan02*)
 ##
 ## Parker: UFMG, BH, Brasil
@@ -3287,11 +3288,11 @@ initial_condition_dummies.inc:  Makefile.local noinitial_condition.f90 $(INITIAL
 file_io_common.inc:  Makefile.local $(FILE_IO).f90 file_io_common.f90
 	scripts/mkdummyinc -d file_io_common.f90 -s $(FILE_IO).f90 -o file_io_common.inc
 #
-energy_common.inc:  Makefile.local noentropy.f90 $(ENERGY).f90
-	scripts/mkdummyinc -d noentropy.f90 -s $(ENERGY).f90 -o energy_common.inc
+energy_dummies.inc:  Makefile.local noentropy.f90 $(ENERGY).f90
+	scripts/mkdummyinc -d noentropy.f90 -s $(ENERGY).f90 -o energy_dummies.inc
 #
 eos_common.inc:  Makefile.local noeos.f90 $(EOS).f90
-	scripts/mkdummyinc -d noeos.f90 -s $(EOS).f90 -o eos_common.inc
+	scripts/mkdummyinc -d noeos.f90 -s $(EOS).f90 -o eos_dummies.inc
 #
 MAIN_EXECUTABLES=start.x run.x
 HELPER_EXECS_MIN=combine_videofiles.x read_videofiles.x read_all_videofiles.x read_vectorfiles.x

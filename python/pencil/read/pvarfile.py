@@ -1,186 +1,378 @@
+import numpy as np
+
 def pvar(*args, **kwargs):
     """
-    Read PVAR files from Pencil Code using IDL. Does also work with block decomposition.
-    Uses IDL<->Python Bridge, this must be activated manually!
+    pvar(pvarfile='', datadir='data', proc=-1, ipvar=-1, quiet=True,
+        ID=False, pflist=None, sim=None, precision='f', dtype=np.float64)
 
-    !! WARNING: SHAPE IS AS IN IDL: (X, Y, Z) !!
+    Read PVAR files from Pencil Code. If proc < 0, then load all data
+    and assemble, otherwise load VAR file from specified processor.
 
-    Args:
-        - varfile       put 'PVARXYZ' or just number here, 'VAR' will be replaced by 'PVAR' autom.
-        - npar_max      maximal number of particles to be read in
+    The file format written by output() (and used, e.g. in pvar.dat)
+    consists of the followinig Fortran records:
+    1. [npar]
+    2. indices(npar)
+    3. pdata(npvar, npar)
+    Here npvar denotes the number of slots, i.e. 1 for one scalar field, 3 for
+    one vector field, 6 for pvar.dat in the case of npar particles with 3
+    coordinates and 3 velocity components.
 
-        - datadir      specify datadir, default False
-        - sim           specify simulation from which you want to read
-        - proc          read from single proc, set number here
-        - swap_endian   change if needed to True, default False
-        - quiet         verbosity, default False
+    Parameters
+    ----------
+     pvarfile : string
+         Name of the VAR file.
+         If not specified, use var.dat (which is the latest snapshot of the fields)
 
-    If needed add manually to this script:
-        - rmv, irmv, trmv, oldrmv are used for ???
-        - solid_object is used for ???
-        - theta_arr is used for ???
-        - savefile is used for ???
+     datadir : string
+         Directory where the data is stored.
 
+     proc : int
+         Processor to be read. If -1 read all and assemble to one array.
+
+     ipvar : int
+       Index of the VAR file, if var_file is not specified.
+
+     quiet : bool
+         Flag for switching off output.
+
+     ID : bool
+         Flag for including the particle IDs in the object.
+
+     pflist : bool
+         If present list of exclusive basic pfarrays to include
+
+     sim : pencil code simulation object
+         Contains information about the local simulation.
+
+     precision : string
+         Float 'f', double 'd' or half 'half'.
+
+     lpersist : bool
+         Read the persistent variables if they exist
+
+    Returns
+    -------
+    DataCube
+        Instance of the pencil.read.var.DataCube class.
+        All of the computed fields are imported as class members.
+
+    Examples
+    --------
+    Read the latest var.dat file and print the shape of the uu array:
+    >>> pvar = pc.read.pvar()
+    >>> print(pvar.px.shape)
+
+    Read the PVAR2 file, and include only the x coordinates and velocity
+    e.g., for instance to reduce memory load for large arrays.
+    >>> pvar = pc.read.pvar(pvar_file='PVAR2', pflist=['px','pvx'])
+    >>> print(pvar.pvx.shape)
     """
 
-    var_tmp = ParticleData(*args, **kwargs)
-    return var_tmp
+    from pencil.sim import __Simulation__
 
+    started = None
+
+    for a in args:
+        if isinstance(a, __Simulation__):
+            started = a.started()
+            break
+
+    if "sim" in kwargs.keys():
+        # started = kwargs['sim'].started()
+
+        started = True
+    elif "datadir" in kwargs.keys():
+        from os.path import join, exists
+
+        if exists(join(kwargs["datadir"], "time_series.dat")):
+            started = True
+    else:
+        from os.path import join, exists
+
+        if exists(join("data", "time_series.dat")):
+            started = True
+
+    if not started:
+        if "ipvar" in kwargs:
+            if kwargs["ipvar"] != 0:
+                print("ERROR: Simulation has not yet started. There are no pvar files.")
+                return False
+
+    pvar_tmp = ParticleData()
+    pvar_tmp.read(*args, **kwargs)
+    return pvar_tmp
 
 class ParticleData(object):
     """
-    Read PVAR files from Pencil Code using IDL.
-    Uses IDL<->Python Bridge, this must be activated manually!
-
-    !! WARNING: SHAPE IS AS IN IDL: (X, Y, Z) !!
-
-    Args:
-        - datadir      specify datadir, default False
-        - sim           specify simulation from which you want to read
-        - varfile       put 'PVARXYZ' or just number here, 'VAR' will be replaced by 'PVAR' autom.
-        - npar_max      maximal number of particles to be read in
-
-        - proc          read from single proc, set number here
-        - swap_endian   change if needed to True, default False
-        - quiet         verbosity, default False
-
-    If needed add manually to this script:
-        - rmv, irmv, trmv, oldrmv are used for ???
-        - solid_object is used for ???
-        - theta_arr is used for ???
-        - savefile is used for ???
-
+    ParticleData -- holds Pencil Code PVAR file data.
     """
 
-    def __init__(
+
+    def __init__(self):
+        """
+        Fill members with default values.
+        """
+
+    def keys(self):
+        for i in self.__dict__.keys():
+            print(i)
+
+    def read(
         self,
-        varfile="pvar.dat",
-        npar_max=-1,
-        datadir=False,
-        sim=False,
+        pvarfile="",
+        datadir="data",
         proc=-1,
-        swap_endian=False,
-        quiet=False,
-        DEBUG=False,
+        proclist=0,
+        ipvar=-1,
+        quiet=True,
+        pflist=None,
+        ID=False,
+        sim=None,
+        precision="f",
+        dtype=np.float64,
     ):
         """
-        Read PVAR files from Pencil Code using IDL.
-        Uses IDL<->Python Bridge, this must be activated manually!
+        pvar(pvar_file='', datadir='data', proc=-1, ipvar=-1, quiet=True,
+            pflist=None, sim=None, precision='f', dtype=np.float64)
 
-        Args:
-            - datadir      specify datadir, default False
-            - sim           specify simulation from which you want to read
-            - varfile       put 'PVARXYZ' or just number here, 'VAR' will be replaced by 'PVAR' autom.
-            - npar_max      maximal number of particles to be read in
+        Read PVAR files from Pencil Code. If proc < 0, then load all data
+        and assemble, otherwise load VAR file from specified processor.
 
-            - proc          read from single proc, set number here
-            - swap_endian   change if needed to True, default False
-            - quiet         verbosity, default False
+        The file format written by output() (and used, e.g. in pvar.dat)
+        consists of the followinig Fortran records:
+        1. [npar]
+        2. indices(npar)
+        3. pdata(npvar, npar)
+        Here npvar denotes the number of slots, i.e. 1 for one scalar field, 3 for
+        one vector field, 6 for pvar.dat in the case of npar particles with 3
+        coordinates and 3 velocity components.
 
+        Parameters
+        ----------
+         pvarfile : string
+             Name of the VAR file.
+             If not specified, use var.dat (which is the latest snapshot of the fields)
+
+         datadir : string
+             Directory where the data is stored.
+
+         proc : int
+             Processor to be read. If -1 read all and assemble to one array.
+
+         ipvar : int
+           Index of the VAR file, if var_file is not specified.
+
+         quiet : bool
+             Flag for switching off output.
+
+         ID : bool
+             Flag for including the particle IDs in the object.
+
+         pflist : bool
+             If present list of exclusive basic pfarrays to include
+
+         sim : pencil code simulation object
+             Contains information about the local simulation.
+
+         precision : string
+             Float 'f', double 'd' or half 'half'.
+
+         lpersist : bool
+             Read the persistent variables if they exist
+
+        Returns
+        -------
+        DataCube
+            Instance of the pencil.read.var.DataCube class.
+            All of the computed fields are imported as class members.
+
+        Examples
+        --------
+        Read the latest var.dat file and print the shape of the uu array:
+        >>> pvar = pc.read.pvar()
+        >>> print(pvar.px.shape)
+
+        Read the PVAR2 file, and include only the x coordinates and velocity
+        e.g., for instance to reduce memory load for large arrays.
+        >>> pvar = pc.read.pvar(pvar_file='PVAR2', pflist=['px','pvx'])
+        >>> print(pvar.pvx.shape)
         """
 
-        import numpy as np
-        import os
-        from pencil import get_sim
+        from os.path import expanduser, isdir, join
+        from scipy.io import FortranFile
+        from pencil import read
         from pencil.math import is_number
-        from sys import byteorder
 
-        ####### interpret parameters
-        if datadir == False:
-            if sim == False:
-                sim = get_sim()
-        datadir = sim.datadir
+        if sim is None:
+            datadir = expanduser(datadir)
+            dim = read.dim(datadir, proc=proc)
+            pdim = read.pdim(datadir)
+            param = read.param(datadir=datadir, quiet=quiet, conflicts_quiet=True)
+            pindex = read.index(datadir=datadir,filename="particle_index.pro")
+        else:
+            datadir = expanduser(sim.datadir)
+            dim = read.dim(datadir, proc=proc)
+            pdim = read.pdim(datadir)
+            param = read.param(datadir=sim.datadir, quiet=True, conflicts_quiet=True)
+            pindex = read.index(datadir=datadir,filename="particle_index.pro")
 
-        if not param:
-            param = read.param(datadir=datadir, quiet=True)
+        #constrain selection of particle variables
+        pfkeys = dict()
+        if pflist:
+            if not isinstance(pflist, list):
+                pflist = list(pflist)
+        else:
+            pflist=list(pindex.__dict__.keys())
+        for key in pflist:
+            if key in pindex.__dict__.keys():
+                pfkeys[key]=pindex.__getattribute__(key)
+        npvar = len(pfkeys)
+        if ID:
+            pfkeys["ID"] = -1
+        print(pfkeys.keys())
 
-        if param.io_strategy != "HDF5":
-            try:
-                cwd = os.getcwd()
-                from idlpy import IDL
-
-                os.chdir(cwd)
-
-            except:
-                print(
-                    "! ERROR: no idl<->python bridge found. Try whats written in pstalk-comment to fix that issue."
-                )
-                print("! ")
-                print("! Use something like: (ensure you have IDL 8.5.1 or larger)")
-                print(
-                    "! export PYTHONPATH=$PYTHONPATH:$IDL_HOME/lib/bridges:$IDL_HOME/bin/bin.linux.x86_64"
-                )
-                print(
-                    "! export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/lib64:$IDL_HOME/bin/bin.linux.x86_64"
-                )
-                print("! in your .bashrc")
-                print("! ")
-                return None
-
-        if param.io_strategy != "HDF5":
-            if quiet == False:
-                quiet = "0"
-            else:
-                quiet = "1"
-
-            if swap_endian == False:
-                if byteorder == "little":
-                    swap_endian = "0"
-                elif byteorder == "big":
-                    swap_endian = "1"
-            else:
-                print("? WARNING: Couldnt determine endianness!")
-
-        ####### preparing IDL call
-        # cleanup of varfile string
-        if is_number(varfile):
-            varfile = "PVAR" + str(varfile)
-        varfile = str(varfile)
-        if varfile == "var.dat":
-            varfile = "pvar.dat"
-        if varfile[:3] == "VAR":
-            varfile = "P" + varfile
+        #cleanup of varfile string
+        if not ipvar<0:
+            pvarfile=ipvar
+        if is_number(pvarfile):
+            pvarfile = "PVAR" + str(pvarfile)
+        pvarfile = str(pvarfile)
+        if pvarfile == "var.dat":
+            pvarfile = "pvar.dat"
+        if pvarfile[:3] == "VAR":
+            pvarfile = "P" + varfile
+        if len(pvarfile)==0:
+            pvarfile = "pvar.dat"
         if param.io_strategy == "HDF5":
             import h5py
-            varfile = str.strip(varfile, ".dat") + ".h5"
-            with h5py.File(os.path.join(datadir, "allprocs", varfile), "r") as hf:
+            pvarfile = str.strip(pvarfile, ".dat") + ".h5"
+            with h5py.File(join(datadir, "allprocs", pvarfile), "r") as hf:
                 for key in hf["part"].keys():
-                    setattr(self, key.lower(), hf["part"][key][()])
+                    if key in pfkeys.keys():
+                        setattr(self, key.lower(), hf["part"][key][()])
         #
         else:
-            idl_call = ", ".join(
-                [
-                    "pc_read_pvar",
-                    "obj=pvar",
-                    'varfile="' + varfile + '"',
-                    'datadir="' + datadir + '"',
-                    "quiet=" + quiet,
-                    "swap_endian=" + swap_endian,
-                    "proc=" + str(proc),
-                ]
-            )
+            if dim.precision == "D":
+                read_precision = "d"
+            else:
+                read_precision = "f"
 
-            # reduce number of particles to be read in
-            if npar_max > 0:
-                idl_call = idl_call + ", npar_max=" + str(npar_max)
+            if isinstance(proclist, list):
+                proc = 0
+            if proc < 0:
+                proc_dirs = self.__natural_sort(
+                    filter(lambda s: s.startswith("proc"), os.listdir(datadir))
+                )
+                if proc_dirs.count("proc_bounds.dat") > 0:
+                    proc_dirs.remove("proc_bounds.dat")
+                if param.lcollective_io:
+                    # A collective IO strategy is being used
+                    proc_dirs = ["allprocs"]
+            #                else:
+            #                    proc_dirs = proc_dirs[::dim.nprocx*dim.nprocy]
+                ptmp=np.zeros((npvar,pdim.npar), dtype=dtype)
+                if ID:
+                    idtmp=np.zeros((pdim.npar), dtype=dtype)
 
-            ####### show idl_call string if DEBUG
-            if DEBUG == True:
-                print("~ DEBUG: idl_call: " + idl_call)
+                ind0, ind1 = 0, 0
+                for directory in proc_dirs:
+                    file_name = join(datadir, directory, pvarfile)
+                    # Read the data.
+                    infile = FortranFile(file_name)
+                    ind1 = infile.read_record(dtype='i')[0]
+                    tmp = infile.read_record(dtype='i')
+                    if ID:
+                        idtmp[ind0:ind0+ind1] = tmp
+                    tmp = dtype(infile.read_record(dtype=read_precision))
+                    tmp = tmp.reshape((pdim.mpvar,ind1))
+                    for idx, key in zip(range(npvar),pfkeys.keys()):
+                        ptmp[idx, ind0:ind0+ind1] = tmp[pfkeys[key]-1]
+                    ind0 += ind1
+                    infile.close()
+            elif isinstance(proclist, list):
+                ind1 = 0
+                proc_dirs = list()
+                for idir in proclist:
+                    if isdir(join(datadir, "proc"+str(idir))):
+                        proc_dirs.append("proc" + str(idir))
+                        file_name = join(datadir,"proc"+str(idir), pvarfile)
+                        infile = FortranFile(file_name)
+                        ind1 += infile.read_record(dtype='i')[0]
+                        infile.close()
+                    else:
+                        print("{} is not a valid proc directory".format(idir))
+                ptmp=np.zeros((npvar,ind1), dtype=dtype)
+                if ID:
+                    idtmp=np.zeros((ind1), dtype=dtype)
 
-            ###### read in var file in IDL
-            print("~ reading " + varfile + " in IDL..")
-            IDL.run(idl_call)
+                ind0, ind1 = 0, 0
+                for directory in proc_dirs:
+                    file_name = join(datadir, directory, pvarfile)
+                    # Read the data.
+                    infile = FortranFile(file_name)
+                    ind1 = infile.read_record(dtype='i')[0]
+                    tmp = infile.read_record(dtype='i')
+                    if ID:
+                        idtmp[ind0:ind0+ind1] = tmp
+                    tmp = dtype(infile.read_record(dtype=read_precision))
+                    tmp = tmp.reshape((pdim.mpvar,ind1))
+                    for idx, key in zip(range(npvar),pfkeys.keys()):
+                        ptmp[idx, ind0:ind0+ind1] = tmp[pfkeys[key]-1]
+                    ind0 += ind1
+                    infile.close()
+            else:
+                file_name = join(datadir, "proc" + str(proc), pvarfile)
+                infile = FortranFile(file_name)
+                ind1 = infile.read_record(dtype='i')
+                tmp = infile.read_record(dtype='i')
+                if ID:
+                    idtmp = tmp
+                tmp = dtype(infile.read_record(dtype=read_precision))
+                tmp = tmp.reshape((pdim.mpvar,ind1))
+                infile.close()
+                for idx, key in zip(range(npvar),pfkeys.keys()):
+                    ptmp[idx] = tmp[pfkeys[key]-1]
 
-            ####### parse to python
-            print("~ parsing PVAR from IDL to python..")
-            pvar = IDL.pvar
+            for idx, key in zip(range(npvar),pfkeys.keys()):
+                if "ID" in key:
+                    setattr(self, key.lower(), idtmp)
+                else:
+                    setattr(self, key.lower(), ptmp[idx])
+        try:
+            #Position vector
+            setattr(self, "xxp", np.array([self.xp, self.yp, self.zp]))
+        except:
+            pass
+        try:
+            #Velocity vector
+            setattr(self, "vvp", np.array([self.vpx,self.vpy,self.vpz]))
+        except:
+            pass
+        try:
+            #Magnetic vector
+            setattr(self, "bbp", np.array([self.bpx,self.bpy,self.bpz]))
+        except:
+            pass
+        try:
+            #Spin vector
+            setattr(self, "ssp", np.array([self.psx,self.psy,self.psz]))
+        except:
+            pass
+        try:
+            #Rate if strain tensor
+            setattr(self, "wij", np.array([self.up11,self.up12,self.up13],
+                                          [self.up21,self.up22,self.up23],
+                                          [self.up31,self.up32,self.up33]))
+        except:
+            pass
 
-            for key in pvar.keys():
-                setattr(self, key.lower(), pvar[key])
-            setattr(self, "xp", pvar["XX"][0])
-            setattr(self, "yp", pvar["XX"][1])
-            setattr(self, "zp", pvar["XX"][2])
-            setattr(self, "vpx", pvar["VV"][0])
-            setattr(self, "vpy", pvar["VV"][1])
-            setattr(self, "vpz", pvar["VV"][2])
+    def __natural_sort(self, procs_list):
+        """
+        Sort array in a more natural way, e.g. 9VAR < 10VAR
+        """
+
+        import re
+
+        convert = lambda text: int(text) if text.isdigit() else text.lower()
+        alphanum_key = lambda key: [convert(c) for c in re.split("([0-9]+)", key)]
+        return sorted(procs_list, key=alphanum_key)

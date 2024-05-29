@@ -42,6 +42,7 @@ module EquationOfState
 !
   real :: xHe=0.1, yH_const=0.0, yMetals=0.0, tau_relax=1.0
   real :: chiH_eV=13.6, chiHminus_eV=0.754
+  real :: lnTT0=impossible, TT0=impossible
   logical :: lrevise_chiH_eV=.false., lrevise_chiHminus_eV=.false.
   logical :: lconst_yH=.false., lHminus_opacity_correction=.false.
 !
@@ -727,7 +728,9 @@ module EquationOfState
 !  18-oct-03/tobi: distributed across ionization modules
 !
       real, intent(in) :: T0
-      real, dimension(mx,my,mz) :: lnrho,ss
+      real, dimension(mx,my,mz), intent(in) :: lnrho
+      real, dimension(mx,my,mz), intent(out):: ss
+
       real :: ss_offset
 !
       call fatal_error('isothermal_entropy','gamma_m1 undefined')
@@ -2085,6 +2088,6 @@ module EquationOfState
 !**  copies dummy routines from nospecial.f90 for any Special      **
 !**  routines not implemented in this file                         **
 !**                                                                **
-    include 'eos_common.inc'
+    include 'eos_dummies.inc'
 !***********************************************************************
 endmodule EquationOfState

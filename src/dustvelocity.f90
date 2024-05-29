@@ -234,6 +234,7 @@ module Dustvelocity
 !
 !  for the following few items, no action is needed
 !
+      case ('microsilica')
       case ('pscalar')
       case ('hat(om*t)')
       case ('cos(om*t)')

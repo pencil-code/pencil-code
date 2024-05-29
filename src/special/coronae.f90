@@ -22,7 +22,10 @@ module Special
 !
   implicit none
 !
+  include '../special.h'
+!
 ! external magnetic field from the magnetic module
+!
   real, dimension(:), pointer :: B_ext
 !
   real :: Kpara=0.,Kperp=0.,Kc=0.,Ksat=0.,Kiso=0.

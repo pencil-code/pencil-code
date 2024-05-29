@@ -11,10 +11,11 @@
 !
 ! CPARAM logical, parameter :: lspecial = .true.
 !
-! MVAR CONTRIBUTION 3
+! MVAR CONTRIBUTION 4
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED e2; edot2; el(3); a0; ga0(3); del2ee(3); curlE(3); BcurlE; divJ
+! PENCILS PROVIDED e2; edot2; el(3); a0; ga0(3); del2ee(3); curlE(3); BcurlE
+! PENCILS PROVIDED rhoe, divJ, divE, gGamma(3)
 ! PENCILS EXPECTED infl_phi, infl_dphi, gphi(3), infl_a2
 !***************************************************************
 !
@@ -43,13 +44,15 @@ module Special
   real :: ampla0=0.0, initpower_a0=0.0, initpower2_a0=0.0
   real :: cutoff_a0=0.0, ncutoff_a0=0.0, kpeak_a0=0.0
   real :: relhel_a0=0.0, kgaussian_a0=0.0, eta_ee=0.0
+  real :: weight_longitudinalE=0.0
   real, pointer :: eta, eta_tdep
-  integer :: ia0=0, idiva_name=0, ieedot=0, iedotx=0, iedoty=0, iedotz=0
-  logical :: llorenz_gauge_disp=.false., lskip_projection_ee=.false.
+  integer :: iGamma=0, ia0=0, idiva_name=0, ieedot=0, iedotx=0, iedoty=0, iedotz=0
+  logical :: llongitudinalE=.true., llorenz_gauge_disp=.false., lskip_projection_ee=.false.
   logical :: lscale_tobox=.true., lskip_projection_a0=.false.
   logical :: lvectorpotential=.false., lphi_hom=.false.
   logical :: loverride_ee_prev=.false.
   logical :: leedot_as_aux=.false., lcurlyA=.true., lsolve_chargedensity=.false.
+  logical :: lswitch_off_divJ=.false., lswitch_off_Gamma=.false.
   logical, pointer :: loverride_ee, lresi_eta_tdep
   character(len=50) :: initee='zero', inita0='zero'
   namelist /special_init_pars/ &
@@ -60,18 +63,20 @@ module Special
     kz_ex, kz_ey, kz_ez, &
     kx_a0, ky_a0, kz_a0, &
     phase_ex, phase_ey, phase_ez, phase_a0, &
-    llorenz_gauge_disp, lphi_hom, &
+    llongitudinalE, llorenz_gauge_disp, lphi_hom, &
     amplee, initpower_ee, initpower2_ee, lscale_tobox, &
     cutoff_ee, ncutoff_ee, kpeak_ee, relhel_ee, kgaussian_ee, &
     ampla0, initpower_a0, initpower2_a0, &
     cutoff_a0, ncutoff_a0, kpeak_a0, relhel_a0, kgaussian_a0, &
-    leedot_as_aux, lsolve_chargedensity
+    leedot_as_aux, lsolve_chargedensity, &
+    weight_longitudinalE
 !
   ! run parameters
   real :: beta_inflation=0.
   namelist /special_run_pars/ &
-    alpf, llorenz_gauge_disp, lphi_hom, &
-    leedot_as_aux, eta_ee, lcurlyA, beta_inflation
+    alpf, llongitudinalE, llorenz_gauge_disp, lphi_hom, &
+    leedot_as_aux, eta_ee, lcurlyA, beta_inflation, &
+    weight_longitudinalE, lswitch_off_divJ, lswitch_off_Gamma
 !
 ! Declare any index variables necessary for main or
 !
@@ -87,6 +92,12 @@ module Special
   integer :: idiag_grms=0       ! DIAG_DOC: $\left<C-\nabla\cdot\Av\right>^{1/2}$
   integer :: idiag_da0rms=0     ! DIAG_DOC: $\left<C-\nabla\cdot\Av\right>^{1/2}$
   integer :: idiag_BcurlEm=0    ! DIAG_DOC: $\left<\Bv\cdot\nabla\times\Ev\right>$
+  integer :: idiag_divJrms=0    ! DIAG_DOC: $\left<\nab\Jv^2\right>^{1/2}$
+  integer :: idiag_divErms=0    ! DIAG_DOC: $\left<\nab\Ev^2\right>^{1/2}$
+  integer :: idiag_rhoerms=0    ! DIAG_DOC: $\left<\rho_e^2\right>^{1/2}$
+  integer :: idiag_divJm=0      ! DIAG_DOC: $\left<\nab\Jv\right>$
+  integer :: idiag_divEm=0      ! DIAG_DOC: $\left<\nab\Ev\right>$
+  integer :: idiag_rhoem=0      ! DIAG_DOC: $\left<\rho_e\right>$
   integer :: idiag_mfpf=0       ! DIAG_DOC: $-f'/f$
   integer :: idiag_fppf=0       ! DIAG_DOC: $f''/f$
   integer :: idiag_afact=0      ! DIAG_DOC: $a$ (scale factor)
@@ -126,6 +137,10 @@ module Special
       if (llorenz_gauge_disp) then
         call farray_register_pde('a0',ia0)
         call farray_register_pde('diva_name',idiva_name)
+      endif
+!
+      if (llongitudinalE) then
+        call farray_register_pde('Gamma',iGamma)
       endif
 !
       call put_shared_variable('alpf',alpf,caller='register_disp_current')
@@ -202,6 +217,18 @@ module Special
           call stop_it("")
       endselect
 !
+!  Initial condition for Gama
+!
+      if (llongitudinalE) then
+        f(:,:,:,iGamma)=0.
+      endif
+!
+!  Initial condition for rhoe
+!
+      if (lsolve_chargedensity) then
+        f(:,:,:,irhoe)=0.
+      endif
+!
 !  Initialize diva_name if llorenz_gauge_disp=T
 !
       if (llorenz_gauge_disp) then
@@ -262,10 +289,21 @@ module Special
         lpenc_requested(i_diva)=.true.
       endif
 !
+!  Terms for Gamma evolution.
+!
+      if (llongitudinalE) then
+        lpenc_requested(i_divE)=.true.
+        lpenc_requested(i_gGamma)=.true.
+      endif
+!
 !  charge density
 !
       if (lsolve_chargedensity) then
         lpenc_requested(i_divJ)=.true.
+        lpenc_requested(i_uij)=.true.
+        lpenc_requested(i_bij)=.true.
+        lpenc_requested(i_uu)=.true.
+        lpenc_requested(i_bb)=.true.
       endif
 !
 !  diffusion term.
@@ -311,16 +349,30 @@ module Special
 !
 !   24-nov-04/tony: coded
 !
-      use Sub
+      use Sub, only: grad, div, curl, del2v, dot2_mn, dot, levi_civita
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-!      logical, dimension(:),              intent(in)   :: lpenc_loc
+!
+      real, dimension (nx) :: tmp
+      integer :: i,j,k
 !
       intent(in) :: f
       intent(inout) :: p
 !
-! el
+!  Terms for Gamma evolution.
+!
+      if (llongitudinalE) then
+        call div(f,iee,p%divE)
+        call grad(f,iGamma,p%gGamma)
+        p%curlb=-p%del2a+p%gGamma
+        if (lsolve_chargedensity) p%rhoe=f(l1:l2,m,n,irhoe)
+      else
+        p%curlb=p%jj
+      endif
+!
+! el: choice of either replacing E by the MHD value -uxB+J/sigma
+! (with constant or time-dependent eta), or the advanced E field.
 !
       if (loverride_ee) then
         if (lresi_eta_tdep) then
@@ -380,6 +432,26 @@ module Special
         call grad(f,ia0,p%ga0)
       endif
 !
+! divJ (using Ohm's law)
+! divJ=sigma*[divE+eps_ijk*(u_j,i * b_k + u_j * b_k,i)]
+!
+      if (lpenc_requested(i_divJ)) then
+        tmp=0.
+        do i=1,3
+        do j=1,3
+        do k=1,3
+          tmp=tmp+levi_civita(i,j,k)* &
+            (p%uij(:,j,i)*p%bb(:,k)+p%uu(:,j)*p%bij(:,k,i))
+        enddo
+        enddo
+        enddo
+        if (lswitch_off_divJ) then
+          p%divJ=0.
+        else
+          p%divJ=(p%divE+tmp)/(mu0*eta)
+        endif
+      endif
+!
     endsubroutine calc_pencils_special
 !***********************************************************************
     subroutine dspecial_dt(f,df,p)
@@ -416,13 +488,33 @@ module Special
       if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dSPECIAL_dt'
       if (headtt) call identify_bcs('ee',iee)
 !
+!  Calculate rhs of Gamma equation and update curl
+!
+      if (llongitudinalE) then
+        if (alpf/=0.) then
+          call dot(p%bb,p%gphi,tmp)
+          tmp=-alpf*tmp
+        else
+          tmp=0.
+        endif
+        if (lsolve_chargedensity) tmp=tmp+f(l1:l2,m,n,irhoe)
+        if (.not.lswitch_off_Gamma) then
+          df(l1:l2,m,n,iGamma)=df(l1:l2,m,n,iGamma) &
+            -(1.-weight_longitudinalE)*p%divE &
+            -weight_longitudinalE*tmp
+        endif
+      endif
+!
 !  solve: dE/dt = curlB - ...
 !  Calculate curlB as -del2a, because curlB leads to instability.
 !
       if (lmagnetic) then
-
         if (.not.loverride_ee) df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-p%el
         df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)+c_light2*(p%curlb-mu0*p%jj_ohm)
+if (m==5) then
+  !print*,'AXEL: p%curlb(:,1)=',p%curlb(:,1)
+  !print*,'AXEL: p%jj_ohm(:,1)=',p%jj_ohm(:,1)
+endif
 !
 !  Solve for charge density
 !
@@ -460,6 +552,7 @@ module Special
 !
 !  helical term:
 !  dEE/dt = ... -alp/f (dphi*BB + gradphi x E)
+!  Use the combined routine multsv_add if both terms are included.
 !
         if (alpf/=0.) then
           if (lphi_hom) then
@@ -479,6 +572,9 @@ module Special
               call dot_mn(p%gphi,p%bb,tmp)
               df(l1:l2,m,n,idiva_name)=df(l1:l2,m,n,idiva_name)+alpf*tmp+del2a0
             endif
+!
+!  Evolution of the equation for the scalar potential.
+!
             !df(l1:l2,m,n,ia0)=df(l1:l2,m,n,ia0)+p%diva
             df(l1:l2,m,n,ia0)=df(l1:l2,m,n,ia0)+f(l1:l2,m,n,idiva_name)
             df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+p%ga0
@@ -500,18 +596,26 @@ module Special
 !  diagnostics
 !
       if (ldiagnos) then
-        call sum_mn_name(.5*(p%e2+p%b2),idiag_EEEM)
+        if (idiag_EEEM/=0) call sum_mn_name(.5*(p%e2+p%b2),idiag_EEEM)
         call sum_mn_name(p%e2,idiag_erms,lsqrt=.true.)
         call sum_mn_name(p%edot2,idiag_edotrms,lsqrt=.true.)
         call max_mn_name(p%e2,idiag_emax,lsqrt=.true.)
-        call sum_mn_name(p%a0**2,idiag_a0rms,lsqrt=.true.)
+        if (idiag_a0rms/=0) call sum_mn_name(p%a0**2,idiag_a0rms,lsqrt=.true.)
         call sum_mn_name(p%BcurlE,idiag_BcurlEm)
+        if (lsolve_chargedensity) then
+          call sum_mn_name(p%rhoe,idiag_rhoem)
+          if (idiag_rhoerms/=0) call sum_mn_name(p%rhoe**2,idiag_rhoerms,lsqrt=.true.)
+        endif
+        if (idiag_divErms/=0) call sum_mn_name(p%divE**2,idiag_divErms,lsqrt=.true.)
+        if (idiag_divJrms/=0) call sum_mn_name(p%divJ**2,idiag_divJrms,lsqrt=.true.)
+        call sum_mn_name(p%divE,idiag_divEm)
+        call sum_mn_name(p%divJ,idiag_divJm)
         call save_name(mfpf,idiag_mfpf)
         call save_name(fppf,idiag_fppf)
         call save_name(scl_factor_target,idiag_afact)
         if (idiva_name>0) then
-          call sum_mn_name((f(l1:l2,m,n,idiva_name)-p%diva)**2,idiag_grms,lsqrt=.true.)
-          call sum_mn_name(f(l1:l2,m,n,idiva_name)**2,idiag_da0rms,lsqrt=.true.)
+          if (idiag_grms/=0) call sum_mn_name((f(l1:l2,m,n,idiva_name)-p%diva)**2,idiag_grms,lsqrt=.true.)
+          if (idiag_da0rms/=0) call sum_mn_name(f(l1:l2,m,n,idiva_name)**2,idiag_da0rms,lsqrt=.true.)
         endif
 !
         call xysum_mn_name_z(p%el(:,1),idiag_exmz)
@@ -584,6 +688,8 @@ module Special
         idiag_EEEM=0; idiag_erms=0; idiag_edotrms=0; idiag_emax=0
         idiag_a0rms=0; idiag_grms=0; idiag_da0rms=0; idiag_BcurlEm=0
         idiag_mfpf=0; idiag_fppf=0; idiag_afact=0
+        idiag_rhoerms=0.; idiag_divErms=0.; idiag_divJrms=0.
+        idiag_rhoem=0.; idiag_divEm=0.; idiag_divJm=0.
         cformv=''
       endif
 !
@@ -598,6 +704,12 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'grms',idiag_grms)
         call parse_name(iname,cname(iname),cform(iname),'da0rms',idiag_da0rms)
         call parse_name(iname,cname(iname),cform(iname),'BcurlEm',idiag_BcurlEm)
+        call parse_name(iname,cname(iname),cform(iname),'divErms',idiag_divErms)
+        call parse_name(iname,cname(iname),cform(iname),'divJrms',idiag_divJrms)
+        call parse_name(iname,cname(iname),cform(iname),'rhoerms',idiag_rhoerms)
+        call parse_name(iname,cname(iname),cform(iname),'divEm',idiag_divEm)
+        call parse_name(iname,cname(iname),cform(iname),'divJm',idiag_divJm)
+        call parse_name(iname,cname(iname),cform(iname),'rhoem',idiag_rhoem)
         call parse_name(iname,cname(iname),cform(iname),'mfpf',idiag_mfpf)
         call parse_name(iname,cname(iname),cform(iname),'fppf',idiag_fppf)
         call parse_name(iname,cname(iname),cform(iname),'afact',idiag_afact)

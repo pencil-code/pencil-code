@@ -129,8 +129,10 @@ program start
 !  limits), but they did and now don't. Also, the present approach runs
 !  up to nx=ny=nz=135, but not for even slightly larger grids.
 !
-  allocate( f(mx,my,mz,mfarray),STAT=stat)
-  if (stat>0) call fatal_error('start','Could not allocate f')
+  if (.not.lnowrite) then
+    allocate(f(mx,my,mz,mfarray),STAT=stat)
+    if (stat>0) call fatal_error('start','Could not allocate f')
+  endif
 !
 !  Pre-initialize f and df to absurd value (to crash the code should we
 !  later use uninitialized slots of those fields).
@@ -526,6 +528,7 @@ program start
   elseif (lmodify) then
     call wsnap(modify_filename,f,mvar_io,ENUM=.false.,noghost=.true.)
   endif
+
   call wdim('dim.dat')
   if (lroot) then
     if (lparticles) call write_dim_particles(trim(datadir))

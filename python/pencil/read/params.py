@@ -226,15 +226,12 @@ class Param(object):
                                 "in",
                                 param_conflicts[key][subkey][1],
                             )
-            # Create object container for nested contents
-            class Foo(object):
-                pass
 
             # Construct class Params object attributes
             for key in param_list.keys():
                 # Nest only parameters with name conflicts
                 if key in super_name_list:
-                    ext_object = Foo()
+                    ext_object = _Foo()
                     setattr(self, key, ext_object)
                     for subkey in param_list[key].keys():
                         if not quiet:
@@ -466,3 +463,5 @@ class Param(object):
                                 )
 
         return params, param_conflicts, name_list, super_name_list
+
+class _Foo(object): pass

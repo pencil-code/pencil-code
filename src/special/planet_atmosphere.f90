@@ -29,18 +29,24 @@ module Special
   real, dimension(my,mz) :: mu_ss=0.
   real, dimension(my) :: lat  ! latitude in [rad]
   real, dimension(mz) :: lon  ! longitude in [rad]
-  real, dimension(mx,my,mz) :: rr1,siny,cosy  !  1/r,sin(th) and cos(th)
+  real, dimension(mx,my,mz) :: rr,rr1,siny,cosy  !  r,1/r,sin(th) and cos(th)
   real, dimension(mx,my,mz,3) :: Bext=0.  !  time-dependent external field
 !  constants for unit conversion
   real :: gamma=1.
   real :: r2m=1., rho2kg_m3=1., u2m_s=1., cp2si=1.
   real :: pp2Pa=1., TT2K=1., tt2s=1., g2m3_s2=1.
 !
-! variables in the reference profile
+! variables in the temperature reference profile
 !
-  real :: dlogp_ref, logp_ref_min, logp_ref_max
-  real, dimension(:), allocatable :: p_temp_ref,tau_rad,temp_ref,logp_ref,dTeq,Teq_night
-  integer :: nref
+  real :: dlog10p_T_ref, log10p_T_ref_min, log10p_T_ref_max
+  real, dimension(:), allocatable :: tau_rad,logp_ref,dTeq,Teq_night
+  integer :: n_T_ref
+!
+! variables in the magnetic diffusivity reference profile
+!
+  real :: dlog10p_eta_ref, log10p_eta_ref_min, log10p_eta_ref_max
+  real, dimension(:), allocatable :: log10p_eta_ref, eta_ref
+  integer :: n_eta_ref
 !
 ! Init parameters
 !
@@ -50,25 +56,27 @@ module Special
   real :: cs_ref=2.e3      !  unit: [m/s]
   real :: cp_ref=1.44e4    !  unit: [J/(kg*K)]
   real :: T_ref=1533       !  unit: [K]
+  real :: eta0_ref=1.12314e6  !  [m^2/s], eta at T_ref
   !
   real :: lon_ss=0., lat_ss=0.            ! unit: [degree]
   real :: dTeqbot=0., dTeqtop=100.        ! unit: [K]
   real :: peqtop=1.d2, peqbot=1.d6        ! unit: [Pa]
   real :: tauradtop=1.d4, tauradbot=1.d7  ! unit: [s]
   real :: pradtop=1.d3, pradbot=1.d6      ! unit: [Pa]
-  real :: pbot0=1.e7                       ! unit: [Pa]
-  real :: q_damping=0.0
+  real :: pbot0=1.e7                      ! unit: [Pa]
+  real :: q_drag=0.0
+  real :: q_sponge=0.0
   !
-  integer :: n_damping=0
+  integer :: n_sponge=0
   !
   logical :: linit_equilibrium=.false.
-  logical :: lsponge_top=.false.,lsponge_bottom=.false.,lvelocity_drag=.false.
+  logical :: lsponge_top=.false.,lsponge_bottom=.false.,lvelocity_drag=.false.,lsponge_dt=.false.
 !
 ! Run parameters
 !
-  real :: tau_slow_heating=-1.,t0_slow_heating=0.
-  real :: Bext_ampl=0.
-  character (len=labellen) :: iBext='nothing'
+  real :: tau_slow_heating=-1.,t0_slow_heating=0.,dTeq_max=1000.
+  real :: Bext_ampl=0.,f_eta=0.
+  character (len=labellen) :: iBext='nothing',ietaPT='nothing',ieta_order='1'
 !
 !
 !
@@ -76,11 +84,13 @@ module Special
       R_planet,rho_ref,cs_ref,cp_ref,T_ref,pbot0,&
       lon_ss,lat_ss,peqtop,peqbot,tauradtop,tauradbot,&
       pradtop,pradbot,dTeqbot,dTeqtop,linit_equilibrium,&
-      Bext_ampl,iBext,n_damping,lsponge_top,lsponge_bottom,lvelocity_drag,q_damping
+      Bext_ampl,iBext,n_sponge,lsponge_top,lsponge_bottom,&
+      lvelocity_drag,q_drag,q_sponge,lsponge_dt,eta0_ref
 !
   namelist /special_run_pars/ &
-      tau_slow_heating,t0_slow_heating,Bext_ampl,iBext,n_damping,&
-      lsponge_top,lsponge_bottom,lvelocity_drag,q_damping
+      tau_slow_heating,t0_slow_heating,Bext_ampl,iBext,n_sponge,&
+      lsponge_top,lsponge_bottom,lvelocity_drag,q_drag,q_sponge,lsponge_dt,&
+      dTeq_max,dTeqtop,dTeqbot,ietaPT,f_eta,ieta_order
 !
 !
 ! Declare index of new variables in f array (if any).
@@ -108,7 +118,8 @@ module Special
 !
 !  3d coordinates for convenience
 !
-      rr1 = 1./spread(spread(x,2,my),3,mz)
+      rr = spread(spread(x,2,my),3,mz)
+      rr1 = 1./rr
       siny = spread(spread(sin(y),1,mx),3,mz)
       cosy = spread(spread(cos(y),1,mx),3,mz)
 !
@@ -119,6 +130,19 @@ module Special
 !  read in the reference P-T profile, and calculate Teq and tau_rad etc.
 !
       call prepare_Tref_and_tau
+!
+!  read in the reference eta(P,T) profile
+!
+      if (lmagnetic) then
+        select case (ietaPT)
+        case ('nothing')
+          !  do nothing
+        case ('eta_P')
+          call prepare_eta_P
+        case default
+          call fatal_error('initialize_special','no such ietaPT')
+        endselect
+      endif
 !
       call keep_compiler_quiet(f)
 !
@@ -149,7 +173,7 @@ module Special
           p_tmp = pbot0  !  in [Pa]
           do i=1,(ipx+1)*nx
             do isub=1,nsub  !  use small length step, dx/nsub
-              call calc_Teq_tau_pmn(Teq_tmp,tau_tmp,p_tmp,j,k) ! Teq in [K]
+              call calc_Teq_tau_pmn(Teq_tmp,tau_tmp,p_tmp,j,k,1.) ! Teq in [K]
               rhoeq_tmp = p_tmp/Teq_tmp/(cp_ref*(gamma-1.)/gamma) / rho2kg_m3  !  in code unit
               dp = -rhoeq_tmp * g0/xglobal(i+nghost)**2 * dx/nsub * pp2Pa  ! in [Pa]
               p_tmp = p_tmp+dp
@@ -177,6 +201,17 @@ module Special
     lpenc_requested(i_rho)=.true.
     lpenc_requested(i_pp)=.true.
     lpenc_requested(i_uu)=.true.
+!
+    if (lmagnetic .and. ietaPT/='nothing') then
+      select case (ieta_order)
+      case ('1')
+        lpenc_requested(i_del2a)=.true.
+      case ('3')
+        lpenc_requested(i_del6a)=.true.
+      case default
+        call fatal_error('pencil_criteria_special','no such ieta_order')
+      endselect
+    endif
 !
     endsubroutine pencil_criteria_special
 !***********************************************************************
@@ -219,10 +254,11 @@ module Special
     subroutine special_calc_hydro(f,df,p)
 !
 !  Add damping layers near the top and bottom boundaries. Ref: Dowling (1998).
-!  ksp in his work is equal to n_damping.
-!  q(j) is correspond to mu0(n_damping+1-j) in eq(57).
+!  ksp in his work is equal to n_sponge.
+!  q(j) is correspond to mu0(n_sponge+1-j) in eq(57).
 !
 !  24-nov-23/kuan,hongzhe: coded
+!  21-feb-24/kuan: revised sponge layer
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
@@ -231,34 +267,39 @@ module Special
       real, dimension(:), allocatable :: q
       integer :: i, j
 !
-      if (n_damping>0 .and. (lsponge_top.or.lsponge_bottom)) then
-        allocate(q(n_damping))
+      if (n_sponge>0 .and. (lsponge_top.or.lsponge_bottom)) then
+        allocate(q(n_sponge))
         q=0.
       endif
 !
-      if (it>1 .and. lsponge_top .and. llast_proc_x) then
-        do j=1,n_damping
-          q=0.5*(1.-cos(pi*j/n_damping)) ! from 0 to 2
-        enddo
+!  Add top or bottom sponge layer
 !
+      if (lsponge_top .and. llast_proc_x .and. it>1) then
+        do j=1,n_sponge
+          q=q_sponge*(1.-cos(pi*j/n_sponge))
+        enddo
+        if (lsponge_dt) q=q/dt
+        !
         do i=iux,iuz
-          df(l2-n_damping+1:l2,m,n,i) = -q * f(l2-n_damping+1:l2,m,n,i) ! from bottom to top
+          df(l2-n_sponge+1:l2,m,n,i) = df(l2-n_sponge+1:l2,m,n,i) - q * f(l2-n_sponge+1:l2,m,n,i)
         enddo
       endif
 !
-      if (it>1 .and. lsponge_bottom .and. lfirst_proc_x) then
-        do j=1,n_damping
-          q=0.5*(1.-cos(pi*(n_damping-j+1)/n_damping)) ! from 2 to 0
+      if (lsponge_bottom .and. lfirst_proc_x .and. it>1) then
+        do j=1,n_sponge
+          q=q_sponge*(1.-cos(pi*(n_sponge-j+1)/n_sponge))
         enddo
-!
+        if (lsponge_dt) q=q/dt
+        !
         do i=iux,iuz
-          df(l1:l1+n_damping-1,m,n,i) = -q * f(l1:l1+n_damping-1,m,n,i) ! from bottom to top
+          df(l1:l1+n_sponge-1,m,n,i) = df (l1:l1+n_sponge-1,m,n,i) - q * f(l1:l1+n_sponge-1,m,n,i)
         enddo
       endif
 !
-! add velocity drag, dudt = ... - q_damping * u
+! Add velocity drag, dudt = ... - q_drag * u
 !
-      if (lvelocity_drag) df(l1:l2,m,n,iux:iuz) = -q_damping * f(l1:l2,m,n,iux:iuz)
+      if (lvelocity_drag) &
+        df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - q_drag * f(l1:l2,m,n,iux:iuz)
 !
     endsubroutine special_calc_hydro
 !***********************************************************************
@@ -267,6 +308,7 @@ module Special
 !  08-sep-23/hongzhe: specific things for planet atmospheres.
 !                     Reference: Rogers & Komacek (2014)
 !  27-sep-23/hongzhe: outsourced from temperature_idealgas.f90
+!  26-feb-24/kuan: Possibility of slowly turning on the heating term
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
@@ -280,18 +322,16 @@ module Special
 !  for all l at m,n, given the local pressure.
 !  Teq_x is in [K] and tau_rad_x is in [s].
 !
-      call calc_Teq_tau_mn(Teq_x,tau_rad_x,p%pp*pp2Pa,m,n)
-!
-!  Possibility of slowly turning on the heating term
-!
       if (tau_slow_heating>0) then
-        f_slow_heating = min(1.d0,(t-t0_slow_heating)/tau_slow_heating)
+        f_slow_heating = min(1.0d0*dTeq_max/dTeqtop,1.0+(t-t0_slow_heating)/tau_slow_heating*(dTeq_max-dTeqtop)/dTeqtop)
       else
         f_slow_heating = 1.
       endif
-      if (t<t0_slow_heating) f_slow_heating=0.
+      if (t<t0_slow_heating) f_slow_heating=1.
 !
-      df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) - f_slow_heating*(p%TT-Teq_x/TT2K)/(tau_rad_x/tt2s)
+      call calc_Teq_tau_mn(Teq_x,tau_rad_x,p%pp*pp2Pa,m,n,f_slow_heating)
+!
+      df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) - (p%TT-Teq_x/TT2K)/(tau_rad_x/tt2s)
 !
     endsubroutine special_calc_energy
 !***********************************************************************
@@ -305,10 +345,35 @@ module Special
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      real, dimension (nx,3) :: uxb_ext
+      real, dimension (nx,3) :: uxb_ext,fres
+      real, dimension (nx) :: eta_x
 !
       call cross_mn(p%uu,Bext(l1:l2,m,n,:),uxb_ext)
       df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + uxb_ext
+!
+!  add customized eta profile
+!
+      select case (ietaPT)
+      case ('nothing')
+        ! do nothing
+      case ('eta_P')
+        call calc_eta_p(eta_x,p%pp*pp2Pa)
+      case default
+        call fatal_error('special_calc_magnetic','no such ietaPT')
+      endselect
+!
+      if (ietaPT/='nothing') then
+        select case (ieta_order)
+        case ('1')
+          df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + &
+              f_eta * p%del2a * spread(eta_x,2,3)
+        case ('3')
+          df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + &
+              f_eta * p%del6a * spread(eta_x,2,3)
+        case default
+          call fatal_error('special_calc_magnetic','no such ieta_order')
+        endselect
+      endif
 !
     endsubroutine special_calc_magnetic
 !***********************************************************************
@@ -372,9 +437,10 @@ module Special
 !
 !   28-sep-23/xianyu,hongzhe: coded
 !
-    real :: alpha
-    integer :: i
-    logical :: lTref_file_exists
+      real, dimension(:), allocatable :: p_temp_ref,temp_ref
+      real :: alpha
+      integer :: i
+      logical :: lTref_file_exists
 !
 !  read in Tref, in physical unit.
 !
@@ -385,18 +451,17 @@ module Special
 !
       open(1,file='iro-teq-tint100K-regrid-Pa.txt')
       read(1,*)
-      read(1,*) dlogp_ref, logp_ref_min, logp_ref_max  ! in log10(bar)
-      read(1,*) nref
+      read(1,*) dlog10p_T_ref, log10p_T_ref_min, log10p_T_ref_max
+      read(1,*) n_T_ref
       if(allocated(logp_ref)) deallocate(logp_ref)
-      if(allocated(temp_ref)) deallocate(temp_ref)
-      allocate(logp_ref(nref),temp_ref(nref))
+      allocate(logp_ref(n_T_ref),temp_ref(n_T_ref))
       read(1,*) logp_ref,temp_ref
       if (lroot) then
-        print*, 'nref=',nref
+        print*, 'n_T_ref=',n_T_ref
         print *,'Here is the baseline radiative equil T profile'
         print *,'used in the Newtonian relaxation:'
         print *,'p [Pa] and T_eq[K]:'
-        do i=1,nref
+        do i=1,n_T_ref
           print*, 'logp_ref,temp_ref=',logp_ref(i),temp_ref(i)
         enddo
       endif
@@ -404,11 +469,10 @@ module Special
 !
 !  convert units, and calculate tau_rad, dTeq, and Teq_night
 !
-      if(allocated(p_temp_ref)) deallocate(p_temp_ref)
       if(allocated(tau_rad))    deallocate(tau_rad)
       if(allocated(dTeq))       deallocate(dTeq)
       if(allocated(Teq_night))  deallocate(Teq_night)
-      allocate( p_temp_ref(nref), tau_rad(nref), dTeq(nref),Teq_night(nref) )
+      allocate( p_temp_ref(n_T_ref), tau_rad(n_T_ref), dTeq(n_T_ref),Teq_night(n_T_ref) )
       p_temp_ref = 10.**logp_ref
   !
       where (p_temp_ref>=peqtop .and. p_temp_ref<=peqbot)
@@ -489,9 +553,11 @@ module Special
     subroutine calc_Bext
 !
 !  Calculate the external B field originated from the planet interior.
-!  This contributes an extra uxb term in du/dt.
+!  This contributes an extra uxb term in dA/dt.
 !
 !  13-nov-23/hongzhe: coded
+!
+      real :: r0,r1,th0,th1
 !
       select case (iBext)
       case ('nothing')
@@ -499,8 +565,18 @@ module Special
       case ('dipole')
         ! dipole = mu0/(4pi) * ( 3*rhat*(rhat dot m)-m ) / |r|^3
         !        = mu0/(4pi) * m * { 2*costh/r^3, sinth/r^3, 0 }
-        Bext(:,:,:,1) = Bext_ampl * 2.*cosy*rr1**3.
-        Bext(:,:,:,2) = Bext_ampl * siny*rr1**3.
+        Bext(:,:,:,1) = Bext_ampl * 2.*cosy * (xyz0(1)*rr1)**3.
+        Bext(:,:,:,2) = Bext_ampl * siny    * (xyz0(1)*rr1)**3.
+        Bext(:,:,:,3) = 0.
+      case ('dipole2')
+        ! mimic initaa='dipole' to account for b.c.
+        ! A_phi ~ (r-r0)(r-r1)(sin(theta)-sin(theta0))(sin(theta)-sin(theta1))
+        r0 = xyz0(1)
+        r1 = xyz1(1)
+        th0 = xyz0(2)
+        th1 = xyz1(2)
+        Bext(:,:,:,1) = Bext_ampl * cosy*(r0-rr)*(r1-rr)*(siny*(3.*siny-2.*sin(th1))+sin(th0)*(-2.*siny+sin(th1)))/rr/siny
+        Bext(:,:,:,2) = Bext_ampl * (r0*r1-2.*(r0+r1)*rr+3.*rr**2)*(-siny+sin(th0))*(siny-sin(th1))/rr
         Bext(:,:,:,3) = 0.
       case default
         call fatal_error('calc_Bext','no such iBext')
@@ -508,7 +584,7 @@ module Special
 !
     endsubroutine  calc_Bext
 !***********************************************************************
-    subroutine calc_Teq_tau_pmn(T_local,tau_local,press,m,n)
+    subroutine calc_Teq_tau_pmn(T_local,tau_local,press,m,n,f_slow)
 !
 !  Given the local pressure p and position m,n, calculate the equilibrium
 !  temperature T_local and the radiative cooling time tau_local, by
@@ -517,9 +593,10 @@ module Special
 !  the input press is in [Pa].
 !
 !  23-oct-23/hongzhe: outsourced from special_calc_energy
+!  26-feb-24/kuan: added slow heating term
 !
       real, intent(out) :: T_local,tau_local
-      real, intent(in) :: press
+      real, intent(in) :: press,f_slow
       integer, intent(in) :: m,n
 !
       real :: log10pp,Teq_local1,Teq_local2
@@ -528,22 +605,22 @@ module Special
 !  Index of the logp_ref that is just smaller than log10(pressure)
 !
       log10pp = log10(press)
-      ip = 1+floor((log10pp-logp_ref_min)/dlogp_ref)
+      ip = 1+floor((log10pp-log10p_T_ref_min)/dlog10p_T_ref)
 !
 !  Interpolation for T_local and tau_local
 !
-      if (ip>=nref) then
-        T_local = Teq_night(nref) + dTeq(nref)*max(0.,mu_ss(m,n))
-        tau_local = tau_rad(nref)
+      if (ip>=n_T_ref) then
+        T_local = (Teq_night(n_T_ref)-0.5*(f_slow-1.)*dTeq(n_T_ref)) + dTeq(n_T_ref)*max(0.,mu_ss(m,n))*f_slow
+        tau_local = tau_rad(n_T_ref)
       elseif (ip<=1) then
-        T_local = Teq_night(1)    + dTeq(1)*max(0.,mu_ss(m,n))
+        T_local = (Teq_night(1)-0.5*(f_slow-1.)*dTeq(1)) + dTeq(1)*max(0.,mu_ss(m,n))*f_slow
         tau_local = tau_rad(1)
       else
 !
 !  The two closest values of equilibrium T given press,m,n
 !
-        Teq_local1 = Teq_night(ip)   + dTeq(ip)  *max(0.,mu_ss(m,n))
-        Teq_local2 = Teq_night(ip+1) + dTeq(ip+1)*max(0.,mu_ss(m,n))
+        Teq_local1 = (Teq_night(ip)  -0.5*(f_slow-1.)*dTeq(ip))   + dTeq(ip)  *max(0.,mu_ss(m,n))*f_slow
+        Teq_local2 = (Teq_night(ip+1)-0.5*(f_slow-1.)*dTeq(ip+1)) + dTeq(ip+1)*max(0.,mu_ss(m,n))*f_slow
         T_local = Teq_local1+(Teq_local2-Teq_local1)*   &
                   (log10pp-logp_ref(ip))/   &
                   (logp_ref(ip+1)-logp_ref(ip))   ! unit of K
@@ -557,7 +634,7 @@ module Special
 !
     endsubroutine calc_Teq_tau_pmn
 !***********************************************************************
-    subroutine calc_Teq_tau_mn(T_local,tau_local,press,m,n)
+    subroutine calc_Teq_tau_mn(T_local,tau_local,press,m,n,f_slow)
 !
 !  Same as calc_Teq_tau_pmn, but for an array of pressure values
 !
@@ -565,15 +642,104 @@ module Special
 !
     real, dimension(nx), intent(out) :: T_local,tau_local
     real, dimension(nx), intent(in) :: press
+    real, intent(in) :: f_slow
     integer, intent(in) :: m,n
 !
     integer :: i
 !
     do i=1,nx
-      call calc_Teq_tau_pmn( T_local(i),tau_local(i), press(i),m,n )
+      call calc_Teq_tau_pmn( T_local(i),tau_local(i), press(i),m,n,f_slow)
     enddo
 !
     endsubroutine calc_Teq_tau_mn
+!***********************************************************************
+    subroutine prepare_eta_P
+!
+!   Read the reference eta profile.
+!   All quantities in this subroutine are in SI units.
+!
+!   13-mar-24/hongzhe: coded
+!
+      integer :: i
+      logical :: leta_file_exists
+!
+!  read in eta, in SI unit
+!
+      inquire(FILE='eta_P.txt', EXIST=leta_file_exists)
+      if (.not.leta_file_exists) call fatal_error('prepare_eta_P', &
+          'Must provide an eta(P) file')
+!
+      open(1,file='eta_P.txt')
+      read(1,*)
+      read(1,*) dlog10p_eta_ref, log10p_eta_ref_min, log10p_eta_ref_max
+      read(1,*) n_eta_ref
+      if(allocated(log10p_eta_ref)) deallocate(log10p_eta_ref)
+      if(allocated(eta_ref)) deallocate(eta_ref)
+      allocate(log10p_eta_ref(n_eta_ref),eta_ref(n_eta_ref))
+      read(1,*) log10p_eta_ref,eta_ref
+      if (lroot) then
+        print*, 'n_eta_ref=',n_eta_ref
+        print *,'Here is the eta(P) profile:'
+        print *,'p [Pa] and eta[m^2/s]:'
+        do i=1,n_eta_ref
+          print*, 'log10p_eta_ref,eta_ref=',log10p_eta_ref(i),eta_ref(i)
+        enddo
+      endif
+      close(1)
+!
+!  normalize by eta at T=T_ref
+!
+      eta_ref=eta_ref/eta0_ref
+!
+!  for debug purpose, output the result
+!
+      if (lroot) then
+        open(1,file=trim(datadir)//'/eta_P_normalized.dat',status='replace')
+        write(1,*) log10p_eta_ref
+        write(1,*) eta_ref
+        close(1)
+      endif
+!
+    endsubroutine  prepare_eta_P
+!***********************************************************************
+    subroutine calc_eta_p(eta_local,press)
+!
+!  Given the local pressure p, calculate the magnetic diffusivity
+!  eta_local by interpolation. The output eta_local is dimensionless.
+!
+!  15-mar-24/hongzhe: coded
+!
+      real, dimension(nx), intent(out) :: eta_local
+      real, dimension(nx), intent(in) :: press
+!
+      real :: log10pp
+      integer :: ix,ip
+!
+!  Index of the logp_ref that is just smaller than log10(pressure)
+!
+      do ix=1,nx
+        log10pp = log10(press(ix))
+        ip = 1+floor((log10pp-log10p_eta_ref_min)/dlog10p_eta_ref)
+!
+!  Interpolation for eta_local
+!
+        if (ip>=n_eta_ref) then
+          eta_local(ix) = eta_ref(n_eta_ref)
+        elseif (ip<=1) then
+          eta_local(ix) = eta_ref(1)
+        else
+!
+!  The two closest values of eta(P) given the pressure
+!
+          eta_local(ix) = log10(eta_ref(ip))+  &
+                      (log10(eta_ref(ip+1))-log10(eta_ref(ip))) * &
+                      (log10pp-log10p_eta_ref(ip))/   &
+                      (log10p_eta_ref(ip+1)-log10p_eta_ref(ip))
+          eta_local(ix) = 10.**eta_local(ix)
+        endif
+      enddo
+!
+    endsubroutine calc_eta_p
 !***********************************************************************
 !********************************************************************
 !********************************************************************

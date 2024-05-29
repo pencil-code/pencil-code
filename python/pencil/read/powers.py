@@ -72,33 +72,33 @@ class Power(object):
         for i in self.__dict__.keys():
             print(i)
 
-    def read(self, datadir="data", file_name=None, quiet=False):
+    def read(self, datadir="data", file_name=None, quiet=False, time_range=None):
         """
         read(datadir='data', file_name='', quiet=False)
-    
+
         Read the power spectra.
-    
+
         Parameters
         ----------
         datadir : string
             Directory where the data is stored.
-    
+
         file_name : string
             Filename to read.
             If a filename is given, only that power spectrum is read.
             By default it reads all the power spectrum files.
-    
+
         quiet : bool
             Flag for switching off output.
-    
+
         Returns
         -------
         Class containing the different power spectrum as attributes.
-    
+
         Notes
         -----
         Use the attribute keys to get a list of attributes
-    
+
         Examples
         --------
         >>> pw = pc.read.power()
@@ -164,6 +164,27 @@ class Power(object):
                 self._read_power_krms(power_name, file_name, datadir)
             else:
                 self._read_power(power_name, file_name, datadir)
+        if time_range:
+            if isinstance(time_range, list):
+                time_range = time_range
+            else:
+                time_range = [time_range]
+            if len(time_range) == 1:
+                start_time = 0.
+                end_time = time_range[0]
+            elif len(time_range) == 2:
+                start_time = time_range[0]
+                end_time = time_range[1]
+            ilist = list()
+            for i, time in zip(range(self.t.size),self.t):
+                if time >= start_time:
+                    if time <= end_time:
+                        ilist.append(i)
+            for key in self.__dict__.keys():
+                if not key=="krms":
+                    tmp = self.__getattribute__(key)[ilist]
+                    self.__delattr__(key)
+                    setattr(self, key, tmp)
 
     def _read_power2d(self, power_name, file_name, datadir):
         """
@@ -240,7 +261,10 @@ class Power(object):
 
             # Now read the rest of the file
             time = []
-            power_array = []
+            if param.lcomplex:
+                power_array = np.array([], dtype=np.csingle)
+            else:
+                power_array = np.array([], dtype=np.single)
 
             if param.lintegrate_shell:
                 block_size = np.ceil(nk / 8) * nzpos + 1
@@ -250,6 +274,9 @@ class Power(object):
             for line_idx, line in enumerate(f):
                 if line_idx % block_size == 0:
                     time.append(float(line.strip()))
+
+                    power_array.resize([len(time), nzpos*nk])
+                    ik = 0
                 else:
                     lsp = line.strip().split()
 
@@ -258,24 +285,21 @@ class Power(object):
                         real = lsp[0::2]
                         imag = lsp[1::2]
                         for a, b in zip(real, imag):
-                            power_array.append(ffloat(a) + 1j * ffloat(b))
+                            power_array[-1,ik] = ffloat(a) + 1j * ffloat(b)
+                            ik += 1
                     else:
                         for value_string in lsp:
-                            power_array.append(ffloat(value_string))
+                            power_array[-1,ik] = ffloat(value_string)
+                            ik += 1
 
         time = np.array(time)
-
-        if param.lcomplex:
-            power_array = np.array(power_array, dtype=complex)
-        else:
-            power_array = np.array(power_array, dtype=np.float32)
 
         if param.lintegrate_shell or (dim.nxgrid == 1 or dim.nygrid == 1):
             power_array = power_array.reshape([len(time), nzpos, nk])
         else:
             power_array = power_array.reshape([len(time), nzpos, nky, nkx])
 
-        self.t = time.astype(np.float32)
+        self.t = time.astype(np.single)
         self.nzpos = nzpos
         setattr(self, power_name, power_array)
 
@@ -359,7 +383,7 @@ class Power(object):
         self.t = time.astype(np.float32)
         setattr(self, power_name, power_array)
 
-    @functools.lru_cache
+    @functools.lru_cache(maxsize=128)
     def _get_nk_xyz(self, datadir):
         """
         See variable nk_xyz in power_spectrum.f90.

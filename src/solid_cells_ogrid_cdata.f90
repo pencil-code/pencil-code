@@ -322,9 +322,6 @@ module solid_cells_ogrid_cdata
 !  Summation by parts arrays
   real, dimension(6,9) :: D1_SBP, D2_SBP
 
-!  EOS parameters
-  real ::  lnTT0!,rho0, lnrho0
-
 !  Energy parameters
   real, pointer :: chi
   logical, pointer :: ladvection_temperature, lheatc_chiconst, lupw_lnTT

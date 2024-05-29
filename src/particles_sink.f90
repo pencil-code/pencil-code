@@ -15,8 +15,7 @@
 module Particles_sink
 !
   use Cdata
-  use Cparam
-  use General, only: keep_compiler_quiet,find_proc
+  use General, only: keep_compiler_quiet,find_proc,itoa
   use Messages
   use Particles_cdata
   use Particles_map
@@ -64,7 +63,7 @@ module Particles_sink
 !
   contains
 !***********************************************************************
-    subroutine register_particles_sink()
+    subroutine register_particles_sink
 !
 !  Set up indices for access to the fp and dfp arrays
 !
@@ -97,17 +96,15 @@ module Particles_sink
         call fatal_error("initialize_particles_sink", &
             "lsink_create_one_per_cell and lsink_create_one_per_27_cells are mutually exclusive")
 !
-!
       if (lsink_radius_dx_unit) then
         sink_radius=sink_birth_radius*dx
       else
         sink_radius=sink_birth_radius
       endif
 !
-      if (lroot) print*, 'initialize_particles_sink: sink_radius=', &
-          sink_radius
+      if (lroot) print*, 'initialize_particles_sink: sink_radius=', sink_radius
 !
-      call get_shared_variable( 'tausp_species', tausp_species)
+      call get_shared_variable('tausp_species', tausp_species)
       call get_shared_variable('tausp1_species',tausp1_species)
 !
       if (lselfgravity) then
@@ -146,10 +143,8 @@ module Particles_sink
           fp(1:npar_loc,iaps)=0.0
 !
         case ('constant')
-          if (lroot) then
-            print*, 'init_particles_sink: constant sink particle radius'
-            print*, 'init_particles_sink: aps0=', aps0
-          endif
+          if (lroot) &
+            print*, 'init_particles_sink: constant sink particle radius; aps0=', aps0
           if (lsink_radius_dx_unit) then
             fp(1:npar_loc,iaps)=aps0*dx
           else
@@ -157,10 +152,8 @@ module Particles_sink
           endif
 !
         case ('constant-1')
-          if (lroot) then
-            print*, 'init_particles_sink: set particle 1 sink radius'
-            print*, 'init_particles_sink: aps1=', aps1
-          endif
+          if (lroot) &
+            print*, 'init_particles_sink: set particle 1 sink radius; aps1=', aps1
           do k=1,npar_loc
             if (lsink_radius_dx_unit) then
               if (ipar(k)==1) fp(k,iaps)=aps1*dx
@@ -170,10 +163,8 @@ module Particles_sink
           enddo
 !
         case ('constant-2')
-          if (lroot) then
-            print*, 'init_particles_sink: set particle 2 sink radius'
-            print*, 'init_particles_sink: aps2=', aps2
-          endif
+          if (lroot) &
+            print*, 'init_particles_sink: set particle 2 sink radius;  aps2=', aps2
           do k=1,npar_loc
             if (lsink_radius_dx_unit) then
               if (ipar(k)==2) fp(k,iaps)=aps2*dx
@@ -183,10 +174,8 @@ module Particles_sink
           enddo
 !
         case ('constant-3')
-          if (lroot) then
-            print*, 'init_particles_sink: set particle 3 sink radius'
-            print*, 'init_particles_sink: aps3=', aps3
-          endif
+          if (lroot) &
+            print*, 'init_particles_sink: set particle 3 sink radius; aps3=', aps3
           do k=1,npar_loc
             if (lsink_radius_dx_unit) then
               if (ipar(k)==3) fp(k,iaps)=aps3*dx
@@ -196,10 +185,7 @@ module Particles_sink
           enddo
 !
         case ('random')
-          if (lroot) then
-            print*, 'init_particles_sink: random sink radii'
-            print*, 'init_particles_sink: aps0=', aps0
-          endif
+          if (lroot) print*, 'init_particles_sink: random sink radii; aps0=', aps0
           do k=1,npar_loc
             call random_number_wrapper(r)
             if (lsink_radius_dx_unit) then
@@ -210,9 +196,7 @@ module Particles_sink
           enddo
 !
         case default
-          if (lroot) print*, 'init_particles_sink: '// &
-              'No such such value for initaps: ', trim(initaps(j))
-          call fatal_error('init_particles_sink','')
+          call fatal_error('init_particles_sink','no such initaps: '//trim(initaps(j)))
         endselect
 !
       enddo
@@ -241,7 +225,7 @@ module Particles_sink
           rhs_poisson = rhs_poisson + f(l1:l2,m1:m2,n1:n2,ipotself)
         endif
 !
-      endif  ! if (t>=tstart_selfgrav) then
+      endif
 !
     endsubroutine calc_selfpot_sinkparticles
 !***********************************************************************
@@ -253,7 +237,6 @@ module Particles_sink
 !  25-aug-15/ccyang: added switch to create at most one sink per cell
 !  03-jan-23/urs: added switch to create at most one sink in each cube of 3x3x3 cells
 !
-      use Boundcond
       use Diagnostics
 !
       real, dimension(mx,my,mz,mfarray) :: f
@@ -269,23 +252,17 @@ module Particles_sink
       integer :: k, ix0, iy0, iz0, npar_sink_loc, iblock
       real :: rhoc,rhop_interp_diag
 !
-      if (ip<=6) then
-        print*, 'create_particles_sink: entering, iproc, it, itsub=', &
-            iproc, it, itsub
-      endif
+      if (ip<=6) print*, 'create_particles_sink: entering, iproc, it, itsub=', iproc, it, itsub
 !
 !  Leave the subroutine if new sink particles are never created.
 !
       if (rhop_sink_create==-1.0) return
 !
-!
 !  If lsink_create_one_per_27_cells, sink particle are created at local
 !  minima of the gravitational potential. Therefore, only create them
 !  if self-gravity has attained its full strength.
 !
-      if (lsink_create_one_per_27_cells &
-          .and. t<tstart_selfgrav+tselfgrav_gentle) return
-!
+      if (lsink_create_one_per_27_cells .and. t<tstart_selfgrav+tselfgrav_gentle) return
 !
 !  Allocate working arrays.
 !
@@ -355,8 +332,7 @@ module Particles_sink
                   if (ip<=6) then
                     print*, 'create_particles_sink: created '// &
                         'sink particle at density rhop=', rhop_interp(1)
-                    print*, 'iproc, it, itsub, xp     =', &
-                        iproc, it, itsub, fp(k,ixp:izp)
+                    print*, 'iproc, it, itsub, xp     =', iproc, it, itsub, fp(k,ixp:izp)
                   endif
                   if (.not. lsink_create_one_per_27_cells) fp(k,iaps)=sink_radius
                   recb: if (lsink_create_one_per_cell) then
@@ -385,7 +361,6 @@ module Particles_sink
 !
                 if (ldiagnos.and.idiag_rhopinterp/=0) &
                      rhop_interp_diag = max(rhop_interp_diag,rhop_interp(1))
-!
               endif
             enddo
           endif
@@ -423,8 +398,7 @@ module Particles_sink
                   endif
                 else
                   rhop_interp=f(ix0,iy0,iz0,irhop:irhop)
-                  if (lsink_create_one_per_27_cells) &
-                    gpotself_interp=f(ix0,iy0,iz0,ipotself:ipotself)
+                  if (lsink_create_one_per_27_cells) gpotself_interp=f(ix0,iy0,iz0,ipotself:ipotself)
                 endif
                 if (lsink_create_one_per_cell) rhoc = max(rhop_sink_create, srhop(ix0,iy0,iz0))
                 creat: if (rhop_interp(1) >= rhoc) then
@@ -483,10 +457,7 @@ module Particles_sink
 !
       endif
 !
-      if (ip<=6) then
-        print*, 'create_particles_sink: leaving, iproc, it, itsub=', &
-            iproc, it, itsub
-      endif
+      if (ip<=6) print*, 'create_particles_sink: leaving, iproc, it, itsub=', iproc, it, itsub
 !
     endsubroutine create_particles_sink
 !***********************************************************************
@@ -515,10 +486,7 @@ module Particles_sink
       integer :: dipx, dipx1, dipx2, dipy, dipy1, dipy2, dipz, dipz1, dipz2
       logical :: lproc_higher_sends
 !
-      if (ip<=6) then
-        print*, 'remove_particles_sink: entering, iproc, it, itsub=', &
-            iproc, it, itsub
-      endif
+      if (ip<=6) print*, 'remove_particles_sink: entering, iproc, it, itsub=', iproc, it, itsub
 !
 !  ineargrid (and inearblock) neads to be updated.
 !
@@ -555,7 +523,7 @@ module Particles_sink
             ipar(npar_loc+npar_sink_loc)=ipar(k)
           endif
         enddo
-        call fatal_error_local_collect()
+        call fatal_error_local_collect
 !
 !  Communicate the number of sink particles to the root processor.
 !
@@ -563,8 +531,7 @@ module Particles_sink
           npar_sink_proc(0)=npar_sink_loc
           npar_sink=npar_sink_loc
           do iproc_recv=1,ncpus-1
-            call mpirecv_int(npar_sink_proc(iproc_recv), &
-                iproc_recv,itag_npar+iproc_recv)
+            call mpirecv_int(npar_sink_proc(iproc_recv), iproc_recv,itag_npar+iproc_recv)
             npar_sink=npar_sink+npar_sink_proc(iproc_recv)
           enddo
         else
@@ -585,7 +552,7 @@ module Particles_sink
               npar_loc, npar_sink, npar_sink_loc, mpar_loc
           call fatal_error_local('remove_particles_sink','')
         endif
-        call fatal_error_local_collect()
+        call fatal_error_local_collect
 !
 !  Return if there are no sink particles at all.
 !
@@ -594,10 +561,9 @@ module Particles_sink
 !  Communicate the sink particle data to the root processor.
 !
         if (.not.lroot) then
-          if (npar_sink_loc/=0) then
+          if (npar_sink_loc/=0) &
             call mpisend_real(fp(npar_loc+1:npar_loc+npar_sink_loc,:), &
                 (/npar_sink_loc,mparray/),0,itag_fpar+iproc)
-          endif
         else
           npar_sink=npar_sink_loc
           do iproc_recv=1,ncpus-1
@@ -614,10 +580,9 @@ module Particles_sink
 !  Communicate the sink particle indices to the root processor.
 !
         if (.not.lroot) then
-          if (npar_sink_loc/=0) then
+          if (npar_sink_loc/=0) &
             call mpisend_int(ipar(npar_loc+1:npar_loc+npar_sink_loc), &
                 npar_sink_loc,0,itag_ipar+iproc)
-          endif
         else
           npar_sink=npar_sink_loc
           do iproc_recv=1,ncpus-1
@@ -651,22 +616,16 @@ module Particles_sink
 !
 !  Send sink particle information to processors.
 !
-        call mpibcast_real(fp(npar_loc+1:npar_loc+npar_sink,:), &
-            (/npar_sink,mparray/))
-        call mpibcast_int(ipar(npar_loc+1:npar_loc+npar_sink), &
-            npar_sink)
-        call mpibcast_real(dfp(npar_loc+1:npar_loc+npar_sink,iaps), &
-            npar_sink)
+        call mpibcast_real(fp(npar_loc+1:npar_loc+npar_sink,:), (/npar_sink,mparray/))
+        call mpibcast_int(ipar(npar_loc+1:npar_loc+npar_sink), npar_sink)
+        call mpibcast_real(dfp(npar_loc+1:npar_loc+npar_sink,iaps), npar_sink)
 !
 !  Store sink particle state in dfp, to allow us to calculate the added
 !  centre-of-mass, momentum and mass later.
 !
-        dfp(npar_loc+1:npar_loc+npar_sink,ixp:izp)= &
-            fp(npar_loc+1:npar_loc+npar_sink,ixp:izp)
-        dfp(npar_loc+1:npar_loc+npar_sink,ivpx:ivpz)= &
-            fp(npar_loc+1:npar_loc+npar_sink,ivpx:ivpz)
-        dfp(npar_loc+1:npar_loc+npar_sink,irhopswarm)= &
-            fp(npar_loc+1:npar_loc+npar_sink,irhopswarm)
+        dfp(npar_loc+1:npar_loc+npar_sink,ixp:izp) = fp(npar_loc+1:npar_loc+npar_sink,ixp:izp)
+        dfp(npar_loc+1:npar_loc+npar_sink,ivpx:ivpz) = fp(npar_loc+1:npar_loc+npar_sink,ivpx:ivpz)
+        dfp(npar_loc+1:npar_loc+npar_sink,irhopswarm) = fp(npar_loc+1:npar_loc+npar_sink,irhopswarm)
 !
 !  Let sink particles accrete.
 !
@@ -674,8 +633,7 @@ module Particles_sink
         j2=npar_loc+1
         k1=npar_loc
         k2=1
-        call sink_particle_accretion(f,fp,dfp,ineargrid,j1,j2,k1,k2, &
-            nosink_in=.true.)
+        call sink_particle_accretion(f,fp,dfp,ineargrid,j1,j2,k1,k2, nosink_in=.true.)
 !
 !  Calculate the added centre-of-mass, momentum, and mass density for each
 !  sink particle.
@@ -711,8 +669,7 @@ module Particles_sink
 !  from accretion during the previous accretion step.
 !
         call mpireduce_sum(dfp(npar_loc+1:npar_loc+npar_sink,ixp:irhopswarm), &
-            dfp(npar_loc+1:npar_loc+npar_sink,ixp:irhopswarm), &
-            (/npar_sink,7/))
+            dfp(npar_loc+1:npar_loc+npar_sink,ixp:irhopswarm), (/npar_sink,7/))
 !
 !  Calculate new state of particles, given the added centre-of-mass, momentum,
 !  and mass density.
@@ -841,10 +798,7 @@ module Particles_sink
           if (ipar(k)<0) then
             ipar(k)=-ipar(k)
             krmv=int(dfp(k,iaps))
-            if (ip<=6) then
-              print*, 'remove_particles_sink: removed particle ', ipar(k), &
-                  'on proc', iproc
-            endif
+            if (ip<=6) print*, 'remove_particles_sink: removed particle ', ipar(k), 'on proc', iproc
             if ( (krmv < 1) .or. (krmv > mpar_loc) ) then
               print*, 'remove_particles_sink: error in sink particle index'
               print*, 'remove_particles_sink: iproc, it, itsub, k, ks', &
@@ -929,11 +883,9 @@ module Particles_sink
               iproc_send_list(nproc_comm)>ncpus-1) then
             print*, 'remove_particles_sink: error in processor list'
             print*, 'remove_particles_sink: ipx_send, ipy_send, ipz_send, '// &
-                'iproc_send=', ipx_send, ipy_send, ipz_send, &
-                iproc_send_list(nproc_comm)
+                'iproc_send=', ipx_send, ipy_send, ipz_send, iproc_send_list(nproc_comm)
             print*, 'remove_particles_sink: ipx_recv, ipy_recv, ipz_recv, '// &
-                'iproc_recv=', ipx_recv, ipy_recv, ipz_recv, &
-                iproc_recv_list(nproc_comm)
+                'iproc_recv=', ipx_recv, ipy_recv, ipz_recv, iproc_recv_list(nproc_comm)
             call fatal_error('remove_particles_sink','')
           endif
 !
@@ -968,10 +920,8 @@ module Particles_sink
                 ipar(npar_loc+npar_sink_loc)=ipar(k)
               endif
             enddo
-            if (ip<=6) then
-              print*, 'remove_particles_sink: sink particles on proc', &
+            if (ip<=6) print*, 'remove_particles_sink: sink particles on proc', &
                   iproc, ':', ipar(npar_loc+1:npar_loc+npar_sink_loc)
-            endif
           endif
 !
 !  Two processors are not allowed to take particles from each other
@@ -1027,13 +977,11 @@ module Particles_sink
             j2=npar_loc+npar_sink_loc+1
           endif
 !
-!
-!
           call sink_particle_accretion(f,fp,dfp,ineargrid,j1,j2,npar_loc,1)
 !
 !  Catch fatal errors during particle accretion.
 !
-          call fatal_error_local_collect()
+          call fatal_error_local_collect
 !
 !  Send new sink particle state back to the parent processor.
 !
@@ -1073,10 +1021,8 @@ module Particles_sink
           do while (k<=npar_loc)
             if (ipar(k)<0) then
               ipar(k)=-ipar(k)
-              if (ip<=6) then
-                print*, 'remove_particles_sink: removed particle ', ipar(k), &
-                    'on proc', iproc
-              endif
+              if (ip<=6) &
+                print*, 'remove_particles_sink: removed particle ', ipar(k), 'on proc', iproc
               call remove_particle(fp,ipar,k,dfp,ineargrid)
             else
               k=k+1
@@ -1089,25 +1035,19 @@ module Particles_sink
 !  Do a quick reality check.
 !
       do k=1,npar_loc
-        if (ipar(k)<0) then
-          print*, 'remove_particles_sink: ipar(k) is negative!!!'
-          stop
-        endif
+        if (ipar(k)<0) &
+          call fatal_error('remove_particles_sink','ipar('//trim(itoa(k))//' is negative')
       enddo
 !
 !  Apply boundary conditions to the newly updated sink particle positions.
 !
       call boundconds_particles(fp,ipar,dfp=dfp)
 !
-      if (ip<=6) then
-        print*, 'remove_particles_sink: leaving, iproc, it, itsub=', &
-            iproc, it, itsub
-      endif
+      if (ip<=6) print*, 'remove_particles_sink: leaving, iproc, it, itsub=', iproc, it, itsub
 !
     endsubroutine remove_particles_sink
 !***********************************************************************
-    subroutine sink_particle_accretion(f,fp,dfp,ineargrid,j1,j2,k1,k2, &
-        nosink_in)
+    subroutine sink_particle_accretion(f,fp,dfp,ineargrid,j1,j2,k1,k2,nosink_in)
 !
 !  Determine whether particle is in vicinity of a sink particle and remove
 !  it if certain criteria are met.
@@ -1132,7 +1072,7 @@ module Particles_sink
       integer :: j, k
       logical :: nosink, laccrete
 !
-      if (ip<=6) then
+      if (ip<=6) &
         print*, 'sink_particle_accretion: iproc, it, itsub, sum(x*rho), '// &
             'sum(v*rho), sum(rho) [BEFORE] =', iproc, it, itsub, &
             sum(fp(k2:j1,ixp)*fp(k2:j1,irhopswarm),mask=ipar(k2:j1)>0), &
@@ -1142,7 +1082,6 @@ module Particles_sink
             sum(fp(k2:j1,ivpy)*fp(k2:j1,irhopswarm),mask=ipar(k2:j1)>0), &
             sum(fp(k2:j1,ivpz)*fp(k2:j1,irhopswarm),mask=ipar(k2:j1)>0), &
             sum(fp(k2:j1,irhopswarm),mask=ipar(k2:j1)>0)
-      endif
 !
       if (.not.laccrete_sink_sink) then
         nosink=.true.
@@ -1173,8 +1112,7 @@ module Particles_sink
 !  Loop over local particles to see which ones are removed by the sink particle.
 !
          do while (k>=k2)
-           if (j/=k .and. ipar(k)>0 .and. &
-               ( (.not.nosink) .or. (fp(k,iaps)==0.0) )) then
+           if (j/=k .and. ipar(k)>0 .and. ( .not.nosink .or. fp(k,iaps)==0.0 )) then
 !
 !  Find minimum distance by directional splitting. This makes it easier to
 !  take into account periodic and shear-periodic boundary conditions.
@@ -1259,20 +1197,16 @@ module Particles_sink
 !
                     if (lsubgrid_accretion .and. fp(k,iaps)==0.0) then
                       if (dist2<=rads2) call subgrid_accretion( &
-                          f,fp,ineargrid,mindistx,mindisty,mindistz, &
-                          j,k,laccrete)
+                          f,fp,ineargrid,mindistx,mindisty,mindistz,j,k,laccrete)
                     endif
 !
                     if (dist2<=rads2 .and. laccrete) then
                       if (ip<=6) then
-                        print*, 'remove_particles_sink: sink particle', &
-                            ipar(j)
+                        print*, 'remove_particles_sink: sink particle', ipar(j)
                         if (fp(k,iaps)>0.0) then
-                          print*, '    tagged sink particle', ipar(k), &
-                              'for removal on proc', iproc
+                          print*, '    tagged sink particle', ipar(k), 'for removal on proc', iproc
                         else
-                          print*, '    tagged particle', ipar(k), &
-                              'for removal on proc', iproc
+                          print*, '    tagged particle', ipar(k), 'for removal on proc', iproc
                         endif
                       endif
                       if (lparticles_density) then
@@ -1302,16 +1236,12 @@ module Particles_sink
                             Lz*dis(izmin)/)
                         if (sum((xxps-xxkghost)**2)>rads2) then
                           print*, 'remove_particles_sink: sink particle', &
-                               ipar(j), 'attempts to accrete particle '// &
-                               'that is too far away!'
-                          print*, 'it, itsub, t, deltay=', t, it, itsub, &
-                              deltay
+                               ipar(j), 'attempts to accrete particle that is too far away!'
+                          print*, 'it, itsub, t, deltay=', t, it, itsub, deltay
                           print*, 'iproc, j, k, disx, disy, disz=', iproc, &
-                              ipar(j), ipar(k), dis(ixmin), dis(iymin), &
-                              dis(izmin)
+                              ipar(j), ipar(k), dis(ixmin), dis(iymin), dis(izmin)
                           print*, 'xj, rhoj, radsj=', xxps, rhops, rads
-                          print*, 'xk, rhok, radsk=', fp(k,ixp:izp), &
-                              fp(k,irhopswarm), fp(k,iaps)
+                          print*, 'xk, rhok, radsk=', fp(k,ixp:izp), fp(k,irhopswarm), fp(k,iaps)
                           print*, 'xkghost=', xxkghost
                           call fatal_error_local('remove_particles_sink','')
                         endif
@@ -1349,7 +1279,7 @@ module Particles_sink
         j=j-1
       enddo
 !
-      if (ip<=6) then
+      if (ip<=6) &
         print*, 'sink_particle_accretion: iproc, it, itsub, sum(x*rho), '// &
             'sum(v*rho), sum(rho) [AFTER]  =', iproc, it, itsub, &
             sum(fp(k2:j1,ixp)*fp(k2:j1,irhopswarm),mask=ipar(k2:j1)>0), &
@@ -1359,7 +1289,6 @@ module Particles_sink
             sum(fp(k2:j1,ivpy)*fp(k2:j1,irhopswarm),mask=ipar(k2:j1)>0), &
             sum(fp(k2:j1,ivpz)*fp(k2:j1,irhopswarm),mask=ipar(k2:j1)>0), &
             sum(fp(k2:j1,irhopswarm),mask=ipar(k2:j1)>0)
-      endif
 !
     endsubroutine sink_particle_accretion
 !***********************************************************************
@@ -1393,10 +1322,9 @@ module Particles_sink
         lsubgrid_accretion_attempt(k)=.true.
       endif
 !
-      if (ip<=6) then
+      if (ip<=6) &
         print*, 'subgrid_accretion: entering, iproc, it, itsub, '// &
             'ipar(j), ipar(k)=', iproc, it, itsub, ipar(j), ipar(k)
-      endif
 !
 !  Calculate the particle's nearest grid point.
 !
@@ -1426,8 +1354,7 @@ module Particles_sink
       endif
 !
       if (lparticlemesh_cic .or. lparticlemesh_tsc) then
-        call interpolate_linear( &
-            f,iux,iuz,fp(k,ixp:izp),uu_gas,ineargrid(k,:),iblock,ipar(k))
+        call interpolate_linear(f,iux,iuz,fp(k,ixp:izp),uu_gas,ineargrid(k,:),iblock,ipar(k))
       else
         uu_gas=f(ineargrid(k,1),ineargrid(k,2),ineargrid(k,3),iux:iuz)
       endif
@@ -1494,10 +1421,8 @@ module Particles_sink
         if (tausp1/=0.0) dtsub = min(dtsub,cdtsubgrid*tausp)
         if (Omega/=0.0)  dtsub = min(dtsub,cdtsubgrid*1/Omega)
 !
-        if (ldebug_subgrid_accretion) then
-          write(1,'(8e16.7)') tsub, dtsub, xk, yk, zk, vxk, vyk, vzk, &
-              uu_gas(1), uu_gas(2), uu_gas(3)
-        endif
+        if (ldebug_subgrid_accretion) &
+          write(1,'(8e16.7)') tsub, dtsub, xk, yk, zk, vxk, vyk, vzk, uu_gas(1), uu_gas(2), uu_gas(3)
 !
 !  Initialise the fourth-order Runge-Kutta integration.
 !
@@ -1613,10 +1538,8 @@ module Particles_sink
         fp(k,ivpz)=fp(j,ivpz)+vzk
       endif
 !
-      if (ip<=6) then
-        print*, 'subgrid_accretion: leaving, iproc, it, itsub, '// &
-            'ipar(j), ipar(k)=', iproc, it, itsub, ipar(j), ipar(k)
-      endif
+      if (ip<=6) print*, 'subgrid_accretion: leaving, iproc, it, itsub, '// &
+                         'ipar(j), ipar(k)=', iproc, it, itsub, ipar(j), ipar(k)
 !
     endsubroutine subgrid_accretion
 !***********************************************************************
@@ -1671,14 +1594,9 @@ module Particles_sink
 !
 !  Run through all possible names that may be listed in print.in.
 !
-      if (lroot .and. ip<14) &
-          print*, 'rprint_particles_sink: run through parse list'
-!
       do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'nparsink', &
-            idiag_nparsink)
-        call parse_name(iname,cname(iname),cform(iname),'rhopinterp', &
-            idiag_rhopinterp)
+        call parse_name(iname,cname(iname),cform(iname),'nparsink',idiag_nparsink)
+        call parse_name(iname,cname(iname),cform(iname),'rhopinterp',idiag_rhopinterp)
       enddo
 !
     endsubroutine rprint_particles_sink

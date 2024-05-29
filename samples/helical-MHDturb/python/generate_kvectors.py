@@ -52,12 +52,12 @@ with open("k.dat", 'w') as f:
 	"""
 	Documention for list-directed IO (which forcing.f90 uses to read k.dat):
 	https://docs.oracle.com/cd/E19957-01/805-4939/6j4m0vnc5/index.html
-	
+
 	Apparently tabs cause problems in some Fortran compilers, so we have to use spaces in the output.
 	"""
 	f.write("    {}    {}".format(len(kx_list), kav) )
 	f.write("\n")
-	
+
 	def print_list(f, l):
 		nrec = 6 #number of records per line
 		for i in range(0,len(l)):
@@ -65,21 +65,21 @@ with open("k.dat", 'w') as f:
 				f.write('\n')
 			f.write("    {}".format(l[i]))
 		f.write('\n')
-	
+
 	print_list(f, kx_list)
 	print_list(f, ky_list)
 	print_list(f, kz_list)
 
 if debug:
 	import matplotlib.pyplot as plt
-	
+
 	kkx = np.array(kx_list)
 	kky = np.array(ky_list)
 	kkz = np.array(kz_list)
-	
+
 	print("<k> = ", np.average(kkx), np.average(kky), np.average(kkz))
 	print("<k^2> = ", np.average(kkx**2), np.average(kky**2), np.average(kkz**2))
-	
+
 	kkxm = np.where(kky<0.4, kkx, np.nan)
 	kkzm = np.where(kky<0.4, kkz, np.nan)
 	fig,ax = plt.subplots()

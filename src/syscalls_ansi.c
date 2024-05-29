@@ -149,6 +149,12 @@ void FTNIZE(caller5_str5)
   (*func)(par1,par2,par3,par4,str,&len);
 }
 /* ---------------------------------------------------------------------- */
+void FTNIZE(caller6)
+     (void (**func)(void*,void*,void*,void*,void*,void*), void* par1, void* par2, void* par3, void* par4, void* par5, void* par6)
+{
+  (*func)(par1,par2,par3,par4,par5,par6);
+}
+/* ---------------------------------------------------------------------- */
 void FTNIZE(caller7_str67)
      (void (**func)(void*,void*,void*,void*,void*,char*,int*,char*,int*), 
       void* par1, void* par2, void* par3, void* par4, void* par5, char* str1, int len1, char* str2, int len2)
@@ -179,6 +185,12 @@ void FTNIZE(caller0)
      (void (**func)(void))
 {
    (*func)(); 
+}
+/* ---------------------------------------------------------------------- */
+int FTNIZE(func_int_caller0)
+     (int (**func)(void))
+{
+   return (*func)(); 
 }
 /* ---------------------------------------------------------------------- */
 void *FTNIZE(dlopen_c)(const char *filename, FINT *flag)

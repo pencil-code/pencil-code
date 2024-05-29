@@ -49,7 +49,7 @@ module Energy
   real :: chi_hyper3_mesh=5.0, chi_rho=0.0
   real :: Kgperp=0.0, Kgpara=0.0, tdown=0.0, allp=2.0, TT_powerlaw=1.0
   real :: ss_left=1.0, ss_right=1.0
-  real :: khor_ss=1.0, ss_const=0.0
+  real :: khor_ss=1.0, ss_const=0.0, TT_const=0.0
   real :: pp_const=0.0
   real :: tau_ss_exterior=0.0, T0=0.0, T0_cgs=0.0
   real :: ampl_imp_ss=0.01
@@ -196,7 +196,7 @@ module Energy
       widthss, epsilon_ss, &
       mixinglength_flux, entropy_flux, &
       chi_t, chi_rho, pp_const, ss_left, ss_right, &
-      ss_const, mpoly0, mpoly1, mpoly2, isothtop, khor_ss, &
+      ss_const, TT_const, mpoly0, mpoly1, mpoly2, isothtop, khor_ss, &
 !      ss_const, mpoly0, mpoly1, mpoly2, khor_ss, &
       thermal_background, thermal_peak, thermal_scaling, cs2cool, cs2cool2, &
       center1_x, center1_y, center1_z, center2_x, center2_y, center2_z, &
@@ -216,7 +216,7 @@ module Energy
       luminosity, wheat, cooling_profile, cooltype, cool, cool1, cs2cool, rcool, &
       rcool1, rcool2, deltaT, cs2cool2, cool2, zcool, ppcool, wcool, wcool1, &
       wcool2, Fbot, lcooling_general, gradS0_imposed, &
-      ss_const, chi_t, chi_rho, chit_prof1, zcool1, zcool2, &
+      ss_const, TT_const, chi_t, chi_rho, chit_prof1, zcool1, zcool2, &
       chit_prof2, chi_shock, chi_shock2, chi, iheatcond, Kgperp, Kgpara, cool_RTV, &
       tau_ss_exterior, lmultilayer, Kbot, tau_cor, TT_cor, z_cor, &
       tauheat_buffer, TTheat_buffer, zheat_buffer, dheat_buffer1, &
@@ -420,7 +420,7 @@ module Energy
   integer :: idiag_uyTTmx=0     ! YZAVG_DOC: $\left< u_y T \right>_{yz}$
   integer :: idiag_uzTTmx=0     ! YZAVG_DOC: $\left< u_z T \right>_{yz}$
   integer :: idiag_fconvxmx=0   ! YZAVG_DOC: $\left< c_p \varrho u_x T \right>_{yz}$
-  integer :: idiag_fradmx=0     ! YZAVG_DOC: $\left<F_{\rm rad}\right>_{yz}$
+  integer :: idiag_fradmx=0     ! YZAVG_DOC: $\left<F_{\rm rad}\right>_{yz}$ (for K-profile or constant K)
   integer :: idiag_fturbmx=0    ! YZAVG_DOC: $\left<\varrho T \chi_t \nabla_x
                                 ! YZAVG_DOC: s\right>_{yz}$ \quad(turbulent
                                 ! YZAVG_DOC: heat flux)
@@ -428,6 +428,7 @@ module Energy
   integer :: idiag_dcoolx=0     ! YZAVG_DOC: surface cooling flux
   integer :: idiag_fradx_kramers=0 ! YZAVG_DOC: $F_{\rm rad}$ (from Kramers'
                                    ! YZAVG_DOC: opacity)
+  integer :: idiag_fradx_constchi=0     ! YZAVG_DOC: $\left<F_{\rm rad}\right>_{yz}$ (for chi-const)
 !
 ! y averaged diagnostics given in yaver.in
 !
@@ -623,6 +624,8 @@ module Energy
       call put_shared_variable('chit_prof1',chit_prof1)
       call put_shared_variable('chit_prof2',chit_prof2)
       call put_shared_variable('lmultilayer',lmultilayer)
+      call put_shared_variable('lheatc_Kprof',lheatc_Kprof)
+      call put_shared_variable('lheatc_Kconst',lheatc_Kconst)
       call put_shared_variable('lheatc_chiconst',lheatc_chiconst)
       call put_shared_variable('lviscosity_heat',lviscosity_heat)
       call put_shared_variable('lheatc_kramers',lheatc_kramers)
@@ -1323,6 +1326,7 @@ module Energy
         idiag_fradr_constchixy=0
       endif
       if (.not.(lheatc_Kprof.or.lheatc_Kconst)) idiag_fradmx=0
+      if (.not.lheatc_chiconst) idiag_fradx_constchi=0
 
       if (.not.lheatc_Kprof) then
         idiag_fradz_Kprof=0; idiag_fturbmx=0; idiag_fradxy_Kprof=0
@@ -1460,7 +1464,9 @@ module Energy
 !  20-jan-2015/MR: changes for use of reference state
 !
       use SharedVariables, only: get_shared_variable
-      use EquationOfState, only: isothermal_entropy, eoscalc, isothermal_lnrho_ss
+      use EquationOfState, only: isothermal_entropy, eoscalc, isothermal_lnrho_ss, cs20, lnrho0, lnTT0
+      use Density, only: mean_density
+!
       use General, only: itoa
       use Gravity
       use Initcond
@@ -1501,6 +1507,9 @@ module Energy
 !
           case ('zero', '0'); f(:,:,:,iss) = 0.
           case ('const_ss'); f(:,:,:,iss)=f(:,:,:,iss)+ss_const
+          case ('const_TT')
+            ss_const=cv*(alog(TT_const)-lnTT0-gamma_m1*(alog(mean_density(f))-lnrho0))
+            f(:,:,:,iss)=f(:,:,:,iss)+ss_const
           case ('gaussian-noise'); call gaunoise(ampl_ss(j),f,iss,iss)
           case ('blob')
             call blob(ampl_ss(j),f,iss,radius_ss(j),center1_x(j),center1_y(j),center1_z(j),radius_ss_x(j))
@@ -1543,6 +1552,21 @@ module Energy
           case('x-y-jump'); call jump(f,iss,ss_left,ss_right,widthss,xjump_mid,yjump_mid,zjump_mid,'x-y')
           case('sinxsinz'); call sinxsinz(ampl_ss(j),f,iss,kx_ss,ky_ss,kz_ss)
           case('cosx_cosy_cosz'); call cosx_cosy_cosz(ampl_ss(j),f,iss,kx_ss,ky_ss,kz_ss)
+
+        !  28-feb-2024/sambit: sinwave & coswave ICs
+          case ('sinwave-x')
+            call sinwave(ampl_ss(j),f,ilnrho,kx=kx_ss)
+          case ('sinwave-y')
+            call sinwave(ampl_ss(j),f,ilnrho,ky=ky_ss)
+          case ('sinwave-z')
+            call sinwave(ampl_ss(j),f,ilnrho,kz=kz_ss)
+          case ('coswave-x')
+            call coswave(ampl_ss(j),f,ilnrho,kx=kx_ss)
+          case ('coswave-y')
+            call coswave(ampl_ss(j),f,ilnrho,ky=ky_ss)
+          case ('coswave-z')
+            call coswave(ampl_ss(j),f,ilnrho,kz=kz_ss)
+
           case('hor-fluxtube')
             call htube(ampl_ss(j),f,iss,iss,radius_ss(j),epsilon_ss,center1_x(j),center1_z(j))
           case ('hor-tube')
@@ -3301,7 +3325,7 @@ module Energy
         if (lpressuregradient_gas) then
           if (notanumber(p%fpres)) then
             if (lproc_print) then
-              print*, 'denergy_dt: p%fpres contains a NaN at iproc=', iproc
+              print*, 'denergy_dt: it',it,'t',t,'p%fpres contains a NaN at iproc=', iproc
               if (.not.allproc_print) lproc_print=.false.
             endif
             if (ip<6) print*, 'p%fpres =',p%fpres
@@ -3750,8 +3774,9 @@ module Energy
 ! from calc_heatcond_smagorinsky
           if (lheatc_smagorinsky) call xysum_mn_name_z(-Pr_smag1*p%nu_smag*p%rho*p%TT*gss1(:,3),idiag_fturbz)
 ! from calc_heatcond_constchi, calc_heatcond_kramers, calc_heatcond
-          if (lheatc_Kprof.or.lheatc_chiconst.or.lheatc_kramers) &
-            call xysum_mn_name_z(-chi_t*chit_prof*p%rho*p%TT*p%gss(:,3),idiag_fturbz)
+          if (lheatc_Kprof.or.lheatc_chiconst.or.lheatc_kramers) then
+            if (idiag_fturbz/=0) call xysum_mn_name_z(-chi_t*chit_prof*p%rho*p%TT*p%gss(:,3),idiag_fturbz)
+          endif
         endif
 
 ! from calc_heatcond_chit
@@ -3766,17 +3791,27 @@ module Energy
 !  Radiative flux.
 !
 ! from calc_heatcond
-        if (hcond0/=0.) then
+        if (lheatc_Kprof) then
+!         if statement above guards against using uninitialized hcond
+!         Note that when lread_hcond=T, hcond is read from a file, and
+!         so hcond0 is irrelevant.
           if (idiag_fradz_Kprof/=0) call xysum_mn_name_z(-hcond*p%TT*p%glnTT(:,3),idiag_fradz_Kprof)
           if (idiag_fradmx/=0) call yzsum_mn_name_x(-hcond*p%TT*p%glnTT(:,1),idiag_fradmx)
         endif
 ! from calc_heatcond_constK
-        if (idiag_fradmx/=0) call yzsum_mn_name_x(-hcond_Kconst*p%TT*p%glnTT(:,1),idiag_fradmx)
+        if (lheatc_Kconst) then
+!         if statement above guards against using uninitialized hcond_Kconst
+!         (initializing it to zero would still presumably lead to lots of
+!         unnecessary computation).
+          if (idiag_fradmx/=0) call yzsum_mn_name_x(-hcond_Kconst*p%TT*p%glnTT(:,1),idiag_fradmx)
+        endif
 ! from calc_heatcond_kramers
         if (idiag_fradz_kramers/=0) call xysum_mn_name_z(-K_kramers*p%TT*p%glnTT(:,3),idiag_fradz_kramers)
         call xysum_mn_name_z(K_kramers, idiag_Kkramersmz)
         call yzsum_mn_name_x(K_kramers, idiag_Kkramersmx)
         if (idiag_fradx_kramers/=0) call yzsum_mn_name_x(-K_kramers*p%rho*p%TT*p%glnTT(:,1),idiag_fradx_kramers)
+! from calc_heatcond_constchi
+        if (idiag_fradx_constchi/=0) call yzsum_mn_name_x(-chi*p%rho*p%TT*p%glnTT(:,1)/p%cp1,idiag_fradx_constchi)
 
       endif
 !
@@ -5790,8 +5825,9 @@ module Energy
 !  Spherical gravity in spherical coordinate case:
 !  heat at centre, cool outer layers.
 !
-      if (lgravx .and. lspherical_coords .and. (luminosity/=0 .or. cool/=0)) &
-          call get_heat_cool_gravx_spherical(heat,p)
+      if (lgravx .and. lspherical_coords .and. (.not.lcooling_general) .and. &
+        (luminosity/=0 .or. cool/=0)) &
+        call get_heat_cool_gravx_spherical(heat,p)
 !
 !  In Cartesian coordinates, but with the gravity in the
 !  x-direction the same module may be used.
@@ -6027,6 +6063,11 @@ module Energy
       case ('surface_z')
         prof=spread(.5*(1.+erfunc((z(n)-zcool)/wcool)),1,l2-l1+1)
 !
+!  Error function cooling profile in x direction
+!
+      case ('surface_x')
+        prof=.5*(1.+erfunc((x(l1:l2)-rcool)/wcool))
+!
 !  Error function cooling profile (two-layer).
 !
       case ('two-layer')
@@ -6068,27 +6109,30 @@ module Energy
 !  will clarify this. - Dhruba
 !  AB: not sure; in general we need to multiply with cv, as in 'corona'
 !
-     select case (cooltype)
-     case('constant')
-       heat=heat-cool*prof
-     case('corona')
-       heat=heat-cool*prof*p%cv*p%rho*(p%TT-TT_cor)
-     case ('Temp')
-       if (headtt) print*, 'get_heat_cool_general: cs20,cs2cool=', cs20, cs2cool
-       heat=heat-cool*(p%cs2-(cs20-prof*cs2cool))/cs2cool
-     case('Temp2')
-       heat=heat-cool*prof*(p%cs2-cs2cool)/cs2cool
-     case('rho_cs2')
-       heat=heat-cool*prof*p%rho*(p%cs2-cs2cool)
-     case ('two-layer')
-       heat = heat - cool *prof *p%rho*(p%cs2-cs2cool) - cool2*prof2*p%rho*(p%cs2-cs2cool2)
-     case ('square-well')
-       heat = heat - cool *prof *p%rho*(p%cs2-cs2cool)
-     case('plain')
-       heat=heat-cool*prof
-     case default
-       call fatal_error('get_heat_cool_general','no such cooltype: '//trim(cooltype))
-     endselect
+      select case (cooltype)
+      case('constant')
+        heat=heat-cool*prof
+      case('corona')
+        heat=heat-cool*prof*p%cv*p%rho*(p%TT-TT_cor)
+      case ('Temp')
+        if (headtt) print*, 'get_heat_cool_general: cs20,cs2cool=', cs20, cs2cool
+        heat=heat-cool*(p%cs2-(cs20-prof*cs2cool))/cs2cool
+      case('Temp2')
+        heat=heat-cool*prof*(p%cs2-cs2cool)/cs2cool
+      case('rho_cs2', 'square-well')
+        heat=heat-cool*prof*p%rho*(p%cs2-cs2cool)
+      case ('two-layer')
+        heat = heat - cool *prof *p%rho*(p%cs2-cs2cool) - cool2*prof2*p%rho*(p%cs2-cs2cool2)
+      case('two-layer-mean')
+        if (.not.lcalc_cs2mz_mean) call fatal_error('get_heat_cool_general', &
+          'cooltype=two-layer-mean requires lcalc_cs2mz_mean=T')
+        heat = heat - cool*prof*p%rho*(cs2mz(n)-cs2cool) &
+                    - cool2*prof2*p%rho*(cs2mz(n)-cs2cool2)
+      case('plain')
+        heat=heat-cool*prof
+      case default
+        call fatal_error('get_heat_cool_general','no such cooltype: '//trim(cooltype))
+      endselect
 !
     endsubroutine get_heat_cool_general
 !***********************************************************************
@@ -6740,7 +6784,8 @@ module Energy
         idiag_uxTTmx=0; idiag_uyTTmx=0; idiag_uzTTmx=0;
         idiag_fturbxy=0; idiag_fturbrxy=0; idiag_fturbthxy=0; idiag_fturbmx=0
         idiag_fradxy_Kprof=0; idiag_fconvxy=0; idiag_fradmx=0
-        idiag_fradx_kramers=0; idiag_fradz_kramers=0; idiag_fradxy_kramers=0
+        idiag_fradx_kramers=0; idiag_fradx_constchi=0
+        idiag_fradz_kramers=0; idiag_fradxy_kramers=0
         idiag_fconvyxy=0; idiag_fconvzxy=0; idiag_dcoolx=0; idiag_dcoolxy=0
         idiag_dcoolmphi=0; idiag_divcoolmphi=0; idiag_divheatmphi=0
         idiag_fradrsphmphi_kramers=0; idiag_fradrsphmphi_Kconst=0
@@ -6825,6 +6870,7 @@ module Energy
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'Kkramersmx',idiag_Kkramersmx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'dcoolx',idiag_dcoolx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'fradx_kramers',idiag_fradx_kramers)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'fradx_constchi',idiag_fradx_constchi)
       enddo
 !
 !  Check for those quantities for which we want xz-averages.
@@ -8045,6 +8091,6 @@ module Energy
 !**  copies dummy routines from nospecial.f90 for any Special      **
 !**  routines not implemented in this file                         **
 !**                                                                **
-    include 'energy_common.inc'
+    include 'energy_dummies.inc'
 !***********************************************************************
 endmodule Energy

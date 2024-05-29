@@ -7,6 +7,7 @@ import sys
 sys.path.append('../../../python')
 import matplotlib
 matplotlib.use('agg')
+import numpy as np
 import pencil as pc
 
 

@@ -95,8 +95,9 @@ module Special
    real :: diffmu5=0., diffmuS=0., diffmuSmax=0.
    real :: diffmu5_hyper2=0., diffmuS_hyper2=0.
    real :: diffmu5_hyper3=0., diffmuS_hyper3=0.
-   real :: mu5_const=0., gammaf5=0.
+   real :: mu5_const=0., gammaf5=0., source5=0.
    real :: gammaf5_input=0., t1_gammaf5=0., t2_gammaf5=0.
+   real :: source5_input=0., t1_source5=0., t2_source5=0.
    real :: muS_const=0., coef_muS=0., coef_mu5=0., Cw=0.
    real :: meanmu5=0., flucmu5=0., meanB2=0., Brms=0.
    real :: initpower_mu5=0., cutoff_mu5=0.
@@ -129,6 +130,7 @@ module Special
 !
   character (len=labellen) :: initspecial='nothing'
   character (len=labellen) :: gammaf5_tdep='const'
+  character (len=labellen) :: source5_tdep='const'
 !
   namelist /special_init_pars/ &
       initspecial, mu5_const, cdtchiral, &
@@ -144,13 +146,14 @@ module Special
       diffmu5, diffmuS, diffmuSmax, diffmuSmax, ldt_chiral_mhd, &
       initspecial, mu5_const, &
       diffmu5, diffmuS, diffmuSmax, diffmuSmax, &
-      lambda5, cdtchiral, gammaf5, diffmu5_hyper2, diffmuS_hyper2, &
+      lambda5, cdtchiral, gammaf5, source5, diffmu5_hyper2, diffmuS_hyper2, &
       ldiffmu5_hyper2_simplified, ldiffmuS_hyper2_simplified, &
       diffmu5_hyper3, diffmuS_hyper3, &
       ldiffmu5_hyper3_simplified, ldiffmuS_hyper3_simplified, &
       coef_muS, coef_mu5, Cw, lmuS, lCVE, lmu5adv, &
       lmu5divu_term, lmuSdivu_term, &
       reinitialize_mu5, rescale_mu5, gammaf5_tdep, t1_gammaf5, t2_gammaf5, &
+      source5_tdep, t1_source5, t2_source5, &
       ldiffmu5_tdep, diffmu5_tdep_toffset, &
       diffmu5_tdep_t0, diffmu5_tdep_exponent, &
       lupw_mu5, lupw_muS
@@ -168,6 +171,7 @@ module Special
   integer :: idiag_mu5min=0    ! DIAG_DOC: $\min\mu_5$
   integer :: idiag_mu5max=0    ! DIAG_DOC: $\max\mu_5$
   integer :: idiag_mu5abs=0    ! DIAG_DOC: $\max|\mu_5|$
+  integer :: idiag_srce5m=0    ! DIAG_DOC: $\left<S_5\right>$
   integer :: idiag_gamf5m=0    ! DIAG_DOC: $\left<\Gamma_5\right>$
   integer :: idiag_gmu5rms=0   ! DIAG_DOC: $\left<(\nabla\mu_5)^2\right>^{1/2}$     
   integer :: idiag_gmuSrms=0   ! DIAG_DOC: $\left<(\nabla\mu_S)^2\right>^{1/2}$     
@@ -231,8 +235,10 @@ module Special
       integer :: ierr
 !
 !  set gammaf5_input to input value (which was gammaf5)
+!  and similarly for source5_input
 !
       gammaf5_input=gammaf5
+      source5_input=source5
 !
 !  Reinitialize GW field using a small selection of perturbations
 !  that were mostly also available as initial conditions.
@@ -513,7 +519,7 @@ module Special
 !  Evolution of mu5
 !
       df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) &
-          +lambda5*EB-gammaf5*p%mu5
+          +lambda5*EB-gammaf5*p%mu5+source5
 !
 !  Different diffusion operators.
 !
@@ -657,6 +663,7 @@ module Special
         if (idiag_mu5max/=0) call max_mn_name(p%mu5,idiag_mu5max)
         if (idiag_mu5abs/=0) call max_mn_name(abs(p%mu5),idiag_mu5abs)
         if (idiag_gamf5m/=0) call save_name(gammaf5,idiag_gamf5m)
+        if (idiag_srce5m/=0) call save_name(source5,idiag_srce5m)
         if (idiag_gmu5rms/=0) then
           call dot2_mn(p%gmu5,gmu52)
           call sum_mn_name(gmu52,idiag_gmu5rms,lsqrt=.true.)
@@ -767,7 +774,7 @@ module Special
         idiag_muSm=0; idiag_muSrms=0; idiag_muSmax=0;
         idiag_mu5m=0; idiag_mu51m=0; idiag_mu53m=0; idiag_mu54m=0; idiag_mu5rms=0;
         idiag_mu5min=0; idiag_mu5max=0; idiag_mu5abs=0;
-        idiag_gamf5m=0; idiag_gmu5rms=0; idiag_gmuSrms=0; 
+        idiag_gamf5m=0; idiag_srce5m=0; idiag_gmu5rms=0; idiag_gmuSrms=0; 
         idiag_bgmu5rms=0; idiag_bgmuSrms=0;
         idiag_mu5bjm=0; idiag_mu5bjrms=0;
         idiag_gmu5mx=0; idiag_gmu5my=0; idiag_gmu5mz=0;
@@ -789,6 +796,7 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'mu5min',idiag_mu5min)
         call parse_name(iname,cname(iname),cform(iname),'mu5max',idiag_mu5max)
         call parse_name(iname,cname(iname),cform(iname),'mu5abs',idiag_mu5abs)
+        call parse_name(iname,cname(iname),cform(iname),'srce5m',idiag_srce5m)
         call parse_name(iname,cname(iname),cform(iname),'gamf5m',idiag_gamf5m)
         call parse_name(iname,cname(iname),cform(iname),'gmu5rms',idiag_gmu5rms)
         call parse_name(iname,cname(iname),cform(iname),'gmuSrms',idiag_gmuSrms)
@@ -858,7 +866,7 @@ module Special
           gammaf5=gammaf5_input
           if (headtt.or.ldebug) print*,'gammaf5=const=',gammaf5
 !
-!  Time-dependent profile for sigma.
+!  Time-dependent profile for Gamma.
 !
         case ('step')
           if (t<=t1_gammaf5) then
@@ -873,6 +881,30 @@ module Special
 !
         case default
           call fatal_error("daa_dt: No such value for gammaf5_tdep:",trim(gammaf5_tdep))
+      endselect
+!
+!  Choice of source5_tdep profiles.
+!
+      select case (source5_tdep)
+        case ('const')
+          source5=source5_input
+          if (headtt.or.ldebug) print*,'source5=const=',source5
+!
+!  Time-dependent profile for Gamma.
+!
+        case ('step')
+          if (t<=t1_source5) then
+            source5=0.
+          elseif (t<=t2_source5) then
+            source5=source5_input
+          else
+            source5=0.
+          endif
+!
+!  Default.
+!
+        case default
+          call fatal_error("daa_dt: No such value for source5_tdep:",trim(source5_tdep))
       endselect
 !
 !  The option ldiffmu5_tdep=T allows for a time-dependent diffusivity.

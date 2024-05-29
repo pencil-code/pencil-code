@@ -2149,6 +2149,7 @@ module Boundcond
 !  Don't combine rel=T and sgn=1, that wouldn't make much sense.
 !
 !  11-nov-02/wolf: coded
+!  18-feb-24/axel: adapted from bc_sym_x to model Comisso+15; use -cos instead of +cos(ky).
 !
       integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
@@ -2160,15 +2161,13 @@ module Boundcond
       real :: ky
 !
       ky=2.*pi/Lxyz(2)
-!print*,'AXEL: t,m,y(m)=',t,m,y(m)
 !
       if (present(rel)) then; relative=rel; else; relative=.false.; endif
 !
       select case (topbot)
 !
       case(BOT)               ! bottom boundary
-        !if (present(val)) f(l1,:,:,j)=val(j)
-        if (present(val)) f(l1,:,:,j)=-.5+val(j)*spread(cos(ky*y),2,mz)
+        if (present(val)) f(l1,:,:,j)=-.5-val(j)*spread(cos(ky*y),2,mz)
         if (relative) then
           do i=1,nghost; f(l1-i,:,:,j)=2*f(l1,:,:,j)+sgn*f(l1+i,:,:,j); enddo
         else
@@ -2177,8 +2176,7 @@ module Boundcond
         endif
 !
       case(TOP)               ! top boundary
-        !if (present(val)) f(l2,:,:,j)=val(j)
-        if (present(val)) f(l2,:,:,j)=-.5+val(j)*spread(cos(ky*y),2,mz)
+        if (present(val)) f(l2,:,:,j)=-.5-val(j)*spread(cos(ky*y),2,mz)
         if (relative) then
           do i=1,nghost; f(l2+i,:,:,j)=2*f(l2,:,:,j)+sgn*f(l2-i,:,:,j); enddo
         else
@@ -2187,7 +2185,7 @@ module Boundcond
         endif
 !
       case default
-        call fatal_error("bc_sym_x: ","topbot should be BOT or TOP")
+        call fatal_error("bc_sym_x_ydep: ","topbot should be BOT or TOP")
 !
       endselect
 !
@@ -3000,11 +2998,11 @@ module Boundcond
       select case (topbot)
       case(BOT)
         za=rad*costh(m1)
-        H=cs0*rad
+        H=cs0*rad/sqrt(gamma)
         do i=1,nghost
           zg=rad*costh(m1-i)
           do in=1,size(f,3)
-            if (ldensity_nolog) then 
+            if (ldensity_nolog) then
               lnrho = alog(f(:,m1,in,j)) - (zg**2-za**2)/(2*H**2)
               f(:,m1-i,in,j) = exp(lnrho)
             else
@@ -3016,7 +3014,7 @@ module Boundcond
 !
       case(TOP)
         za=rad*costh(m2)
-        H=cs0*rad
+        H=cs0*rad/sqrt(gamma)
         do i=1,nghost
           zg=rad*costh(m2+i)
           do in=1,size(f,3)
@@ -3036,6 +3034,64 @@ module Boundcond
       endselect
 !
     endsubroutine bc_stratified_y
+!***********************************************************************
+    subroutine bc_stratified_z(f,topbot,j)
+!
+!  Boundary condition that maintains hydrostatic equilibrium in the meriodional direction.
+!  This boundary is coded only for spherical coordinates.
+!
+!  11-apr-24/wlad: coded
+!
+      use EquationOfState, only: cs0
+!
+      integer, intent(IN) :: topbot
+      real, dimension (:,:,:,:) :: f
+      real, dimension(size(f,1)) :: lnrho
+      real :: za,zg,H
+      integer :: i,im,j
+!
+      if (.not.(j==irho.or.j==ilnrho)) &
+           call fatal_error("bc_stratified_z","This boundary condition is specific for density")
+!
+      H=cs0/Omega/sqrt(gamma)
+!
+      select case (topbot)
+      case(BOT)
+        za=z(n1)
+        do i=1,nghost
+          zg=z(n1-i)
+          do im=1,size(f,2)
+            if (ldensity_nolog) then
+              lnrho = alog(f(:,im,n1,j)) - (zg**2-za**2)/(2*H**2)
+              f(:,im,n1-i,j) = exp(lnrho)
+            else
+              lnrho = f(:,im,n1,j) - (zg**2-za**2)/(2*H**2)
+              f(:,im,n1-i,j) = lnrho
+            endif
+          enddo
+        enddo
+!
+      case(TOP)
+        za=z(n2)
+        do i=1,nghost
+          zg=z(n2+i)
+          do im=1,size(f,3)
+            if (ldensity_nolog) then
+              lnrho = alog(f(:,im,n2,j)) - (zg**2-za**2)/(2*H**2)
+              f(:,im,n2+i,j) = exp(lnrho)
+            else
+              lnrho = f(:,im,n2,j) - (zg**2-za**2)/(2*H**2)
+              f(:,im,n2+i,j) = lnrho
+            endif
+          enddo
+        enddo
+!
+      case default
+        call fatal_error("bc_sym_z: ","topbot should be BOT or TOP")
+!
+      endselect
+!
+    endsubroutine bc_stratified_z
 !***********************************************************************
     subroutine bc_symset_y(f,sgn,topbot,j,rel,val)
 !
@@ -6432,6 +6488,7 @@ module Boundcond
 !                introduced heatflux_boundcond_x (necessary for nonequidistant grid)
 !   5-feb-15/MR: added reference state
 !  11-feb-15/MR: corrected use of reference state
+!  27-feb-2024/Kishore: implemented for iheatcond=chi-const
 !
       use EquationOfState, only: lnrho0, cs20
       use SharedVariables, only: get_shared_variable
@@ -6441,8 +6498,9 @@ module Boundcond
 !
       real, dimension (:,:), allocatable :: tmp_yz,work_yz
       real, pointer :: FbotKbot, FtopKtop, Fbot, Ftop, cp
-      real, pointer :: hcond0_kramers, nkramers
-      logical, pointer :: lheatc_kramers
+      real, pointer :: hcond0_kramers, nkramers, chi
+      logical, pointer :: lheatc_kramers, lheatc_chiconst
+      logical, pointer :: lheatc_Kprof, lheatc_Kconst
       integer :: i,stat
       real, dimension (:,:), pointer :: reference_state
       real :: fac
@@ -6450,6 +6508,11 @@ module Boundcond
 !  Do the 'c1' boundary condition (constant heat flux) for entropy.
 !
       call get_shared_variable('lheatc_kramers',lheatc_kramers, caller='bc_ss_flux_x')
+      call get_shared_variable('lheatc_chiconst',lheatc_chiconst, caller='bc_ss_flux_x')
+      call get_shared_variable('lheatc_Kprof',lheatc_Kprof)
+      call get_shared_variable('lheatc_Kconst',lheatc_Kconst)
+      if (lheatc_kramers.and.lheatc_chiconst) call fatal_error('bc_ss_flux_x', &
+        'Having both Kramers and chi-const at the same time is not supported')
 !
 !  Allocate memory for large arrays.
 !
@@ -6461,10 +6524,15 @@ module Boundcond
 !
         call get_shared_variable('hcond0_kramers',hcond0_kramers)
         call get_shared_variable('nkramers',nkramers)
+        call get_shared_variable('cp',cp)
 !
       endif
+      if (lheatc_chiconst) then
+        call get_shared_variable('chi',chi)
+        call get_shared_variable('cp',cp)
+      endif
 !
-      if (lheatc_kramers.or.lreference_state) then
+      if (lheatc_kramers.or.lheatc_chiconst.or.lreference_state) then
         allocate(work_yz(size(f,2),size(f,3)),stat=stat)
         if (stat>0) call fatal_error('bc_ss_flux_x', &
                                      'Could not allocate memory for work_yz')
@@ -6484,8 +6552,15 @@ module Boundcond
 !
       case(BOT)
 !
-        call get_shared_variable('FbotKbot',FbotKbot)
-        if ((headtt) .and. (lroot)) print*,'bc_ss_flux_x: FbotKbot=',FbotKbot
+        if (pretend_lnTT.or..not.(lheatc_chiconst.or.lheatc_kramers)) then
+          if (headtt.and..not.(lheatc_Kprof.or.lheatc_Kconst)) then
+!           Kishore: I am not sure if FbotKbot is correctly set for any
+!           other iheatcond, so I will leave this as a warning for now.
+            call warning('bc_ss_flux_x', 'FbotKbot may not be correctly set. Please check it.')
+          endif
+          call get_shared_variable('FbotKbot',FbotKbot)
+          if (headtt) print*,'bc_ss_flux_x: FbotKbot=',FbotKbot
+        endif
 !
 !  Deal with the simpler pretend_lnTT=T case first. Now ss is actually
 !  lnTT and the boundary condition reads glnTT=FbotKbot/T
@@ -6503,7 +6578,7 @@ module Boundcond
 !  Both, bottom and top boundary conditions are corrected for linear density
 !
           if (ldensity_nolog) then
-            if (lheatc_kramers) work_yz=f(l1,:,:,irho)
+            if (lheatc_kramers.or.lheatc_chiconst) work_yz=f(l1,:,:,irho)
             if (lreference_state) then
               tmp_yz= cs20*exp(gamma_m1*(log(f(l1,:,:,irho)+reference_state(1,iref_rho))-lnrho0)  &
                      +gamma*(f(l1,:,:,iss)+reference_state(1,iref_s)))
@@ -6511,19 +6586,20 @@ module Boundcond
               tmp_yz=cs20*exp(gamma_m1*(log(f(l1,:,:,irho))-lnrho0)+gamma*f(l1,:,:,iss))
             endif
           else
-            if (lheatc_kramers) work_yz=exp(f(l1,:,:,ilnrho))
-!print*, 'bc_ss_flux_x: iproc, lnrho, ss=', iproc, maxval(f(l1,:,:,ilnrho)), &
-!minval(f(l1,:,:,ilnrho)), maxval(f(l1,:,:,iss)), minval(f(l1,:,:,iss))
+            if (lheatc_kramers.or.lheatc_chiconst) work_yz=exp(f(l1,:,:,ilnrho))
             tmp_yz=cs20*exp(gamma_m1*(f(l1,:,:,ilnrho)-lnrho0)+gamma*f(l1,:,:,iss))
           endif
-          if (lheatc_kramers) then
 !
+          if (lheatc_kramers.or.lheatc_chiconst) then
             call get_shared_variable('Fbot',Fbot)
             if ((headtt) .and. (lroot)) print*,'bc_ss_flux_x: Fbot=',Fbot
+          endif
 !
+          if (lheatc_kramers) then
             tmp_yz = Fbot*work_yz**(2*nkramers)*(cp*gamma_m1)**(6.5*nkramers)/ &
                      (hcond0_kramers*tmp_yz**(6.5*nkramers+1.))
-!
+          else if (lheatc_chiconst) then
+            tmp_yz=Fbot/(work_yz*chi*cp*tmp_yz)
           else
             tmp_yz=FbotKbot/tmp_yz
           endif
@@ -6547,8 +6623,15 @@ module Boundcond
 !
       case(TOP)
 !
-        call get_shared_variable('FtopKtop',FtopKtop)
-         if ((headtt) .and. (lroot)) print*,'bc_ss_flux_x: FtopKtop=',FtopKtop
+        if (pretend_lnTT.or..not.(lheatc_chiconst.or.lheatc_kramers)) then
+          if (headtt.and..not.(lheatc_Kprof.or.lheatc_Kconst)) then
+!           Kishore: I am not sure if FtopKtop is correctly set for any
+!           other iheatcond, so I will leave this as a warning for now.
+            call warning('bc_ss_flux_x', 'FtopKtop may not be correctly set. Please check it.')
+          endif
+          call get_shared_variable('FtopKtop',FtopKtop)
+          if (headtt) print*,'bc_ss_flux_x: FtopKtop=',FtopKtop
+        endif
 !
 !  Deal with the simpler pretend_lnTT=T case first. Now ss is actually
 !  lnTT and the boundary condition reads glnTT=FtopKtop/T
@@ -6562,7 +6645,7 @@ module Boundcond
 !  calculate Ftop/(K*cs2)
 !
           if (ldensity_nolog) then
-            if (lheatc_kramers) work_yz=f(l2,:,:,irho)
+            if (lheatc_kramers.or.lheatc_chiconst) work_yz=f(l2,:,:,irho)
             if (lreference_state) then
               tmp_yz=cs20*exp(gamma_m1*(log(f(l2,:,:,irho)+reference_state(nx,iref_rho))-lnrho0) &
                      +gamma*(f(l2,:,:,iss)+reference_state(nx,iref_s)))
@@ -6570,16 +6653,20 @@ module Boundcond
               tmp_yz=cs20*exp(gamma_m1*(log(f(l2,:,:,irho))-lnrho0)+gamma*f(l2,:,:,iss))
             endif
           else
-            if (lheatc_kramers) work_yz=exp(f(l2,:,:,ilnrho))
+            if (lheatc_kramers.or.lheatc_chiconst) work_yz=exp(f(l2,:,:,ilnrho))
             tmp_yz=cs20*exp(gamma_m1*(f(l2,:,:,ilnrho)-lnrho0)+gamma*f(l2,:,:,iss))
           endif
+!
+          if (lheatc_kramers.or.lheatc_chiconst) then
+            call get_shared_variable('Fbot',Fbot)
+            if ((headtt) .and. (lroot)) print*,'bc_ss_flux_x: Fbot=',Fbot
+          endif
+!
           if (lheatc_kramers) then
-!
-            call get_shared_variable('Ftop',Ftop)
-            if ((headtt) .and. (lroot)) print*,'bc_ss_flux_x: Ftop=',Ftop
-!
             tmp_yz = Ftop*work_yz**(2*nkramers)*(cp*gamma_m1)**(6.5*nkramers)/ &
                      (hcond0_kramers*tmp_yz**(6.5*nkramers+1.))
+          else if (lheatc_chiconst) then
+            tmp_yz=Ftop/(work_yz*chi*cp*tmp_yz)
           else
             tmp_yz=FtopKtop/tmp_yz
           endif

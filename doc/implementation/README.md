@@ -10,3 +10,10 @@ the code, it is necessary to check on the actual source code and the
 comments therein.
 
 ?to remove sample (hyper check Nils...)
+
+Note the special meaning of *.inc file:
+---------------------------------------
+
+*.inc 
+eos_common.inc automatically generated --> to include "_autocommon" in the name
+chemistry_common.inc is not automatically generated

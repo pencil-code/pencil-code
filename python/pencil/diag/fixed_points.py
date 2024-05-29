@@ -1,8 +1,6 @@
 # fixed_points.py
 #
 # Find the fixed points to a given field.
-#
-# Written by Simon Candelaresi (iomsn1@gmail.com)
 """
 Find the fixed points of a given field.
 """
@@ -247,6 +245,7 @@ class FixedPoint(object):
                         [var.x[0], var.y[0], var.z[0]],
                         [len(var.x), len(var.y), len(var.z)],
                         interpolation=self.params.interpolation,
+                        splines=self.tracers.splines
                     )
                     field_strength_z0 = np.sqrt(np.sum(field_strength_z0 ** 2))
                     time = np.linspace(0, 4 * self.params.Lz / field_strength_z0, 500)
@@ -262,6 +261,7 @@ class FixedPoint(object):
                                 [var.x[0], var.y[0], var.z[0]],
                                 [len(var.x), len(var.y), len(var.z)],
                                 interpolation=self.params.interpolation,
+                                splines=self.tracers.splines
                             )
                             curly_A += np.dot(
                                 aaInt, (stream.tracers[l + 1] - stream.tracers[l])
@@ -277,6 +277,7 @@ class FixedPoint(object):
                                 [var.x[0], var.y[0], var.z[0]],
                                 [len(var.x), len(var.y), len(var.z)],
                                 interpolation=self.params.interpolation,
+                                splines=self.tracers.splines
                             )
                             ee_p += np.dot(
                                 eeInt, (stream.tracers[l + 1] - stream.tracers[l])
@@ -374,6 +375,7 @@ class FixedPoint(object):
                             [var.x[0], var.y[0], var.z[0]],
                             [len(var.x), len(var.y), len(var.z)],
                             interpolation=self.params.interpolation,
+                            splines=self.tracers.splines
                         )
                         field_strength_z0 = np.sqrt(np.sum(field_strength_z0 ** 2))
                         time = np.linspace(
@@ -427,6 +429,7 @@ class FixedPoint(object):
                         [var.x[0], var.y[0], var.z[0]],
                         [len(var.x), len(var.y), len(var.z)],
                         interpolation=self.params.interpolation,
+                        splines=self.tracers.splines
                     )
                     field_strength_z0 = np.sqrt(np.sum(field_strength_z0 ** 2))
                     time = np.linspace(0, 4 * self.params.Lz / field_strength_z0, 500)
@@ -483,6 +486,7 @@ class FixedPoint(object):
                 [self.params.Ox, self.params.Oy, self.params.Oz],
                 [self.params.nx, self.params.ny, self.params.nz],
                 interpolation=self.params.interpolation,
+                splines=self.tracers.splines
             )
             field_strength_z0 = np.sqrt(np.sum(field_strength_z0 ** 2))
             time = np.linspace(0, 4 * self.params.Lz / field_strength_z0, 500)
@@ -530,6 +534,7 @@ class FixedPoint(object):
                     [var.x[0], var.y[0], var.z[0]],
                     [len(var.x), len(var.y), len(var.z)],
                     interpolation=self.params.interpolation,
+                    splines=self.tracers.splines
                 )
                 field_strength_z0 = np.sqrt(np.sum(field_strength_z0 ** 2))
                 time = np.linspace(0, 4 * self.params.Lz / field_strength_z0, 500)
@@ -599,12 +604,10 @@ class FixedPoint(object):
             # Check root convergence.
             if sum(abs(dpoint)) < 1e-3 * np.min([self.params.dx, self.params.dy]):
                 fixed_point = point
-                print("Root finding converged.")
                 break
 
             if it > 20:
                 fixed_point = point
-                print("Root finding did not converge.")
                 break
 
             it += 1
@@ -777,13 +780,13 @@ class FixedPoint(object):
         """
 
         import os
+        from pencil.diag.tracers import TracersParameterClass
+        from pencil.diag.tracers import Tracers
 
         try:
             import h5py
         except:
             print("Error in diag/fixed_points.py: Dependency of h5py not fullfilled.")
-        from pencil.diag.tracers import TracersParameterClass
-        from pencil.diag.tracers import Tracers
 
         # Open the file.
         f = h5py.File(os.path.join(datadir, file_name), "r")

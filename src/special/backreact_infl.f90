@@ -87,7 +87,7 @@ module Special
 !
 !  integer :: iinfl_phi=0, iinfl_dphi=0, iinfl_hubble=0, iinfl_lna=0, Ndiv=100
   integer :: iinfl_phi=0, iinfl_dphi=0, iinfl_lna=0, Ndiv=100
-  real :: ncutoff_phi=1.
+  real :: ncutoff_phi=1., infl_v=.1
   real :: axionmass=1.06e-6, axionmass2, ascale_ini=1.
   real :: phi0=.44, dphi0=-1e-5, c_light_axion=1., lambda_axion=0., eps=.01
   real :: amplphi=.1, ampldphi=.0, kx_phi=1., ky_phi=0., kz_phi=0., phase_phi=0., width=.1, offset=0.
@@ -114,12 +114,12 @@ module Special
       kx_phi, ky_phi, kz_phi, phase_phi, width, offset, &
       initpower_phi, initpower2_phi, cutoff_phi, kgaussian_phi, kpeak_phi, &
       initpower_dphi, initpower2_dphi, cutoff_dphi, kpeak_dphi, &
-      ncutoff_phi, lscale_tobox, Hscript0, Hscript_choice
+      ncutoff_phi, lscale_tobox, Hscript0, Hscript_choice, infl_v
 !
   namelist /special_run_pars/ &
       initspecial, phi0, dphi0, axionmass, eps, ascale_ini, &
       lbackreact_infl, c_light_axion, lambda_axion, Vprime_choice, &
-      lzeroHubble, ldt_backreact_infl, Ndiv, Hscript0, Hscript_choice
+      lzeroHubble, ldt_backreact_infl, Ndiv, Hscript0, Hscript_choice, infl_v
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -191,7 +191,7 @@ module Special
       use Initcond, only: gaunoise, sinwave_phase, hat, power_randomphase_hel, power_randomphase
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: Vpotential, Hubble_ini, lnascale
+      real :: Vpotential, Hubble_ini, lnascale, infl_gam
       integer :: j
 !
       intent(inout) :: f
@@ -209,8 +209,13 @@ module Special
             f(:,:,:,iinfl_phi)=f(:,:,:,iinfl_phi) &
               +spread(spread(.5*amplphi*(1.+tanh(kx_phi*(x-offset))),2,my),3,mz)
           case ('phi=atan_exp_kx')
+            infl_gam=1./sqrt(1.-infl_v**2)
             f(:,:,:,iinfl_phi)=f(:,:,:,iinfl_phi) &
-              +spread(spread(4.*amplphi*atan(exp(kx_phi*(x-offset))),2,my),3,mz)
+              +spread(spread(4.*amplphi*atan(exp(infl_gam*kx_phi*(x-offset))),2,my),3,mz)
+            f(:,:,:,iinfl_dphi)=f(:,:,:,iinfl_dphi)+spread(spread( &
+              -4.*amplphi*kx_phi*infl_gam*infl_v*exp(infl_gam*kx_phi*(x-offset)) &
+              /(exp(2.*infl_gam*kx_phi*(x-offset))+1.) &
+              ,2,my),3,mz)
           case ('nophi')
             Vpotential=.5*axionmass2*phi0**2
             dphi0=0.
@@ -317,7 +322,8 @@ module Special
 !***********************************************************************
     subroutine dspecial_dt(f,df,p)
 !
-!  calculate right hand side of ONE OR MORE extra coupled PDEs
+!  The entire module could be renamed to Klein-Gordon or Scalar field equation.
+!  Calculate right hand side of ONE OR MORE extra coupled PDEs
 !  along the 'current' Pencil, i.e. f(l1:l2,m,n) where
 !  m,n are global variables looped over in equ.f90
 !
@@ -376,7 +382,8 @@ module Special
         Hscript=0.
       endif
 !
-!  Choice of different potentials
+!  Choice of different potentials.
+!  For the 1-cos profile, -Vprime (on the rhs) enters with -sin().
 !
       select case (Vprime_choice)
         case ('quadratic'); Vprime=axionmass2*phi
@@ -389,6 +396,7 @@ module Special
 !  Update df.
 !  dphi/dt = psi
 !  dpsi/dt = - ...
+!  To re-include the dlna/dt and dcalH/dt, we need to add a switch.
 !
         df(l1:l2,m,n,iinfl_phi)=df(l1:l2,m,n,iinfl_phi)+f(l1:l2,m,n,iinfl_dphi)
         df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)-2.*Hscript*dphi-a2scale*Vprime

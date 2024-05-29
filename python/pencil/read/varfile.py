@@ -20,7 +20,7 @@ from pencil.math import natural_sort
 def var(*args, **kwargs):
     """
     var(var_file='', datadir='data', proc=-1, ivar=-1, quiet=True,
-        trimall=False, magic=None, sim=None, precision='f')
+        trimall=False, flist=None, magic=None, sim=None, precision='f')
 
     Read VAR files from Pencil Code. If proc < 0, then load all data
     and assemble, otherwise load VAR file from specified processor.
@@ -55,8 +55,11 @@ def var(*args, **kwargs):
      trimall : bool
          Trim the data cube to exclude ghost zones.
 
+     flist : bool
+         If present list of exclusive basic farrays to include
+
      magic : bool
-         Values to be computed from the data, e.g. B = curl(A).
+         If present list of derived values to be computed from the data, e.g. B = curl(A).
 
      sim : pencil code simulation object
          Contains information about the local simulation.
@@ -158,6 +161,7 @@ class DataCube(object):
         ivar=-1,
         quiet=True,
         trimall=False,
+        flist=None,
         magic=None,
         sim=None,
         precision="d",
@@ -286,9 +290,9 @@ class DataCube(object):
         else:
             datadir = os.path.expanduser(sim.datadir)
             dim = sim.dim
-            param = read.param(datadir=sim.datadir, quiet=True, conflicts_quiet=True)
-            index = read.index(datadir=sim.datadir)
-            grid = sim.grid
+            param = read.param(datadir=datadir, quiet=True, conflicts_quiet=True)
+            index = read.index(datadir=datadir)
+            grid = read.grid(datadir=datadir, quiet=True) # we can't use sim.grid because we want the untrimmed one
 
         if var_file[0:2].lower() == "og":
             dim = read.ogdim(datadir, proc)

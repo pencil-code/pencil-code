@@ -358,16 +358,16 @@ module Hydro
   integer :: idiag_uxuy2m=0     ! DIAG_DOC: $\left<u_x^2u_y^2\right>$
   integer :: idiag_uyuz2m=0     ! DIAG_DOC: $\left<u_y^2u_z^2\right>$
   integer :: idiag_uzux2m=0     ! DIAG_DOC: $\left<u_z^2u_x^2\right>$
-  integer :: idiag_T00m=0       ! ZAVG_DOC: $\left< T_{00} \right>$
-  integer :: idiag_Txxm=0       ! ZAVG_DOC: $\left< T_{xx} \right>$
-  integer :: idiag_Tyym=0       ! ZAVG_DOC: $\left< T_{yy} \right>$
-  integer :: idiag_Tzzm=0       ! ZAVG_DOC: $\left< T_{zz} \right>$
-  integer :: idiag_Txym=0       ! ZAVG_DOC: $\left< T_{xy} \right>$
-  integer :: idiag_Tyzm=0       ! ZAVG_DOC: $\left< T_{yz} \right>$
-  integer :: idiag_Tzxm=0       ! ZAVG_DOC: $\left< T_{zx} \right>$
-  integer :: idiag_T0x2m=0      ! ZAVG_DOC: $\left< T_{0x}^2 \right>$
-  integer :: idiag_T0y2m=0      ! ZAVG_DOC: $\left< T_{0y}^2 \right>$
-  integer :: idiag_T0z2m=0      ! ZAVG_DOC: $\left< T_{0z}^2 \right>$
+  integer :: idiag_T00m=0       ! DIAG_DOC: $\left< T_{00} \right>$
+  integer :: idiag_Txxm=0       ! DIAG_DOC: $\left< T_{xx} \right>$
+  integer :: idiag_Tyym=0       ! DIAG_DOC: $\left< T_{yy} \right>$
+  integer :: idiag_Tzzm=0       ! DIAG_DOC: $\left< T_{zz} \right>$
+  integer :: idiag_Txym=0       ! DIAG_DOC: $\left< T_{xy} \right>$
+  integer :: idiag_Tyzm=0       ! DIAG_DOC: $\left< T_{yz} \right>$
+  integer :: idiag_Tzxm=0       ! DIAG_DOC: $\left< T_{zx} \right>$
+  integer :: idiag_T0x2m=0      ! DIAG_DOC: $\left< T_{0x}^2 \right>$
+  integer :: idiag_T0y2m=0      ! DIAG_DOC: $\left< T_{0y}^2 \right>$
+  integer :: idiag_T0z2m=0      ! DIAG_DOC: $\left< T_{0z}^2 \right>$
   integer :: idiag_ux2ccm=0     ! DIAG_DOC: $\left<u_x^2\cos^2kz\right>$
   integer :: idiag_ux2ssm=0     ! DIAG_DOC: $\left<u_x^2\sin^2kz\right>$
   integer :: idiag_uy2ccm=0     ! DIAG_DOC: $\left<u_y^2\cos^2kz\right>$
@@ -481,7 +481,7 @@ module Hydro
   integer :: idiag_ourms=0      ! DIAG_DOC: $\left<(\boldsymbol{\omega}\cdot\uv)^2\right>^{1/2}$
   integer :: idiag_oxurms=0     ! DIAG_DOC: $\left<(\boldsymbol{\omega}\times\uv)^2\right>^{1/2}$
   integer :: idiag_ou_int=0     ! DIAG_DOC: $\int_V\boldsymbol{\omega}\cdot\uv\,dV$
-  integer :: idiag_fum=0        ! DIAG_DOC: $\left<\fv\cdot\uv\right>$
+  integer :: idiag_fum=0        ! DIAG_DOC: $\left<\fv\cdot\uv\right>$ (continuous forcing only)
   integer :: idiag_odel2um=0    ! DIAG_DOC: $\left<\boldsymbol{\omega}\nabla^2\uv\right>$
   integer :: idiag_o2m=0        ! DIAG_DOC: $\left<\boldsymbol{\omega}^2\right>
                                 ! DIAG_DOC:   \equiv \left<(\curl\uv)^2\right>$
@@ -725,8 +725,8 @@ module Hydro
   integer :: idiag_uguxmx=0     ! YZAVG_DOC:
   integer :: idiag_uguymx=0     ! YZAVG_DOC:
   integer :: idiag_uguzmx=0     ! YZAVG_DOC:
-  integer :: idiag_ekinmx=0     ! YZAVG_DOC: $\langle{1\over2}\rho u^2\rangle_{xy}$
-  integer :: idiag_fkinxmx=0    ! XYAVG_DOC: $\left<{1\over2}\varrho\uv^2 u_x\right>_{yz}$
+  integer :: idiag_ekinmx=0     ! YZAVG_DOC: $\langle{1\over2}\rho u^2\rangle_{yz}$
+  integer :: idiag_fkinxmx=0    ! YZAVG_DOC: $\left<{1\over2}\varrho\uv^2 u_x\right>_{yz}$
 !
 ! y averaged diagnostics given in yaver.in
 !
@@ -741,6 +741,9 @@ module Hydro
   integer :: idiag_uyuzmxz=0    ! YAVG_DOC: $\left< u_y u_z \right>_{y}$
   integer :: idiag_oumxz=0      ! YAVG_DOC: $\left<\boldsymbol{\omega}
                                 ! YAVG_DOC: \cdot\uv\right>_{y}$
+  integer :: idiag_ox2mxz=0     ! YAVG_DOC: $\left< \omega_x^2 \right>_{y}$
+  integer :: idiag_oy2mxz=0     ! YAVG_DOC: $\left< \omega_y^2 \right>_{y}$
+  integer :: idiag_oz2mxz=0     ! YAVG_DOC: $\left< \omega_z^2 \right>_{y}$
 !
 ! z averaged diagnostics given in zaver.in
 !
@@ -1429,8 +1432,7 @@ module Hydro
             call fatal_error("initialize_hydro","you need to set lcalc_uumeanxy=T for uuprof='damp_corona'")
           prof_amp1=0.5*(tanh((x(l1:l2)-rdampext)/wdamp)+1.)
         elseif (lcartesian_coords) then
-          zbot=xyz0(3)
-          prof_amp3=0.5*(tanh((z-zbot)/wdamp)+1.)
+          prof_amp3=0.5*(tanh((z-rdampext)/wdamp)+1.)
         endif
 
       case ('damp_horiz_vel')
@@ -1946,6 +1948,15 @@ module Hydro
             f(l1:l2,m,n,iux)=ampluu(j)*(ABC_A*sin(kz_uu*z(n))    +ABC_C*cos(ky_uu*y(m))    )
             f(l1:l2,m,n,iuy)=ampluu(j)*(ABC_B*sin(kx_uu*x(l1:l2))+ABC_A*cos(kz_uu*z(n))    )
             f(l1:l2,m,n,iuz)=ampluu(j)*(ABC_C*sin(ky_uu*y(m))    +ABC_B*cos(kx_uu*x(l1:l2)))
+          enddo; enddo
+!
+        case ('potential')
+          if (headtt) print*,'potential flow'
+! uu
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,iux)=-ampluu(j)*sin(kx_uu*x(l1:l2))*cos(ky_uu*y(m))*cos(kz_uu*z(n))
+            f(l1:l2,m,n,iuy)=-ampluu(j)*cos(kx_uu*x(l1:l2))*sin(ky_uu*y(m))*cos(kz_uu*z(n))
+            f(l1:l2,m,n,iuz)=-ampluu(j)*cos(kx_uu*x(l1:l2))*cos(ky_uu*y(m))*sin(kz_uu*z(n))
           enddo; enddo
 !
         case ('Schur_3D3D1D')
@@ -2749,7 +2760,8 @@ module Hydro
       lpenc_diagnos(i_uu)=.true.
       if (idiag_oumphi/=0 .or. idiag_oumxy/=0 .or. &
           idiag_oumxz/=0) lpenc_diagnos2d(i_ou)=.true.
-      if (idiag_ozmphi/=0) lpenc_diagnos2d(i_oo)=.true.
+      if (idiag_ozmphi/=0 .or. idiag_ox2mxz/=0 .or. &
+          idiag_oy2mxz/=0 .or. idiag_oz2mxz/=0) lpenc_diagnos2d(i_oo)=.true.
       if (idiag_u2mphi/=0) lpenc_diagnos2d(i_u2)=.true.
       if (idiag_ox2m/=0 .or. idiag_oy2m/=0 .or. idiag_oz2m/=0 .or. &
           idiag_ox3m/=0 .or. idiag_oy3m/=0 .or. idiag_oz3m/=0 .or. &
@@ -2894,6 +2906,8 @@ module Hydro
         lpenc_diagnos(i_uu)=.true.
         lpenc_diagnos(i_fpres)=.true.
       endif
+!
+      if (idiag_fum/=0) lpenc_diagnos(i_fcont)=.true.
 !
 ! check whether right variables are set for half-box calculations.
 !
@@ -3094,8 +3108,7 @@ module Hydro
               where(real(t) < f(l1:l2,m,n,ihless)) tmp_rho=tmp_rho-eps_hless
             endif
             if (lmagnetic) then
-!print*,'AXEL6: need to have B_ext2'
-!XX
+!
               if (full_3D) then
                 DD=(f(l1:l2,m,n,irho)-.5*B_ext2)/(1.-.25/f(l1:l2,m,n,ilorentz))+B_ext2
                 call invmat_DB(DD,p%bb,tmp33)
@@ -3126,13 +3139,17 @@ module Hydro
 !  the iuu slot does not correspond to the actual velocity, which is the
 !  case when lconservative or lrelativity.
 !
-      if (lvv_as_aux .or. lvv_as_comaux) f(l1:l2,m,n,ivx:ivz) = p%uu
-!
+!--   if (lvv_as_aux .or. lvv_as_comaux) f(l1:l2,m,n,ivx:ivz) = p%uu
+!XX
 ! u2
       if (lpenc_loc(i_u2)) call dot2_mn(p%uu,p%u2)
 ! uij
       if (lpenc_loc(i_uij)) then
-        call gij(f,iuu,p%uij,1)
+        if (lvv_as_aux .or. lvv_as_comaux) then
+          call gij(f,ivv,p%uij,1)
+        else
+          call gij(f,iuu,p%uij,1)
+        endif
 !
 !  if gradu is to be stored as auxiliary then we store it now
 !
@@ -3950,12 +3967,12 @@ module Hydro
       real, dimension(:,:,:,:) :: f
       type(pencil_case), intent(in) :: p
 !
-      real, dimension (nx,3) :: uxo
+      real, dimension (nx,3) :: uxo,temp
       real, dimension (nx) :: space_part_re,space_part_im,u2t,uot,out,fu
       real, dimension (nx) :: odel2um,uref,curlo2,qo,quxo,graddivu2
       real, dimension (nx,Nmodes_SH) :: urlm
       real, dimension (nx) :: rmask
-      real :: kx
+      real :: kx,zbot
       integer :: k
       logical :: lcorr_zero_dt
 
@@ -4252,9 +4269,10 @@ module Hydro
         endif
 
         if (idiag_quysm/=0) then
-          call sum_mn_name( tau_diffrot1*(prof_amp3(n)-p%uu(:,2))*p%curlo(:,2),idiag_quysm)
+          !call sum_mn_name( tau_diffrot1*(prof_amp3(n)-p%uu(:,2))*p%curlo(:,2),idiag_quysm)
+          call sum_mn_name(-kz_diffrot*ampl1_diffrot* &
+                  sin(kz_diffrot*(z(n)-xyz0(3))-phase_diffrot)*p%uu(:,3)*p%curlo(:,2),idiag_quysm)
         endif
-
 !
 !  Mach number, rms and max
 !
@@ -4694,6 +4712,9 @@ module Hydro
         if (idiag_uxuzmxz/=0) call ysum_mn_name_xz(p%uu(:,1)*p%uu(:,3),idiag_uxuzmxz)
         if (idiag_uyuzmxz/=0) call ysum_mn_name_xz(p%uu(:,2)*p%uu(:,3),idiag_uyuzmxz)
         call ysum_mn_name_xz(p%ou,idiag_oumxz)
+        call ysum_mn_name_xz(p%oo(:,1)**2,idiag_ox2mxz)
+        call ysum_mn_name_xz(p%oo(:,2)**2,idiag_oy2mxz)
+        call ysum_mn_name_xz(p%oo(:,3)**2,idiag_oz2mxz)
 !
         call zsum_mn_name_xy(p%uu(:,1),idiag_uxmxy)
 !
@@ -4961,14 +4982,14 @@ module Hydro
 !  gamma for the nonmagnetic case.
 !
       if (lconservative) then
-        if (iTij==0) call fatal_error("hydro_before_boundary","must compute Tij for lconservative")
+        if (iTij==0) call fatal_error("hydro_after_boundary","must compute Tij for lconservative")
         cs201=cs20+1.
         cs2011=1./cs201
         do n=1,mz
         do m=1,my
           if (ldensity) then
             if (lmagnetic) then
-              if (ibx==0) call fatal_error("hydro_before_boundary","must use lbb_as_comaux=T")
+              if (ibx==0) call fatal_error("hydro_after_boundary","must use lbb_as_comaux=T")
               call dot2(f(:,m,n,ibx:ibz),Bsquared)
 if (m==4.and.n==4) then
   print*,'AXEL: after hydro: bb(:,1)=', f(:,4,4,ibx)
@@ -5088,6 +5109,14 @@ endif
           f(:,m,n,iTij+3+0)=rho_gam21*f(:,m,n,iuu+0)*f(:,m,n,iuu+1)
           f(:,m,n,iTij+3+1)=rho_gam21*f(:,m,n,iuu+1)*f(:,m,n,iuu+2)
           f(:,m,n,iTij+3+2)=rho_gam21*f(:,m,n,iuu+2)*f(:,m,n,iuu+0)
+!
+!  compute velocity, if as comaux
+!
+          if (lvv_as_aux .or. lvv_as_comaux) then
+            do j=0,2
+              f(:,m,n,ivv+j)=rho_gam21*f(:,m,n,iuu+j)
+            enddo
+          endif
 !
 !  The following hasn't been prepared yet.
 !
@@ -6238,6 +6267,9 @@ endif
         idiag_uxuymxz=0
         idiag_uxuzmxz=0
         idiag_uyuzmxz=0
+        idiag_ox2mxz=0
+        idiag_oy2mxz=0
+        idiag_oz2mxz=0
         idiag_uxmxy=0
         idiag_uymxy=0
         idiag_uzmxy=0
@@ -6831,6 +6863,9 @@ endif
         call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'uxuzmxz',idiag_uxuzmxz)
         call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'uyuzmxz',idiag_uyuzmxz)
         call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'oumxz',idiag_oumxz)
+        call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'ox2mxz',idiag_ox2mxz)
+        call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'oy2mxz',idiag_oy2mxz)
+        call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'oz2mxz',idiag_oz2mxz)
       enddo
 !
 !  check for those quantities for which we want z-averages

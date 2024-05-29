@@ -49,6 +49,7 @@ module EquationOfState
   real :: cs20=impossible, lnrho0=impossible
   logical :: lpp_as_aux=.false., lcp_as_aux=.false.
   real :: gamma=impossible
+  real :: lnTT0=impossible, TT0=impossible
   real :: cs2bot=impossible, cs2top=impossible
 ! input parameters
   namelist /eos_init_pars/ xHe,yMetals,yHacc,lpp_as_aux,lcp_as_aux
@@ -1582,7 +1583,8 @@ module EquationOfState
 !  18-oct-03/tobi: distributed across ionization modules
 !
       real, intent(in) :: T0
-      real, dimension(mx,my,mz) :: lnrho_arr,ss_arr
+      real, dimension(mx,my,mz), intent(in) :: lnrho_arr
+      real, dimension(mx,my,mz), intent(out):: ss_arr
 
       real, dimension(nx) :: lnrho,yH,K,sqrtK,yH_term,one_yH_term
 !
@@ -2316,6 +2318,6 @@ module EquationOfState
 !**  copies dummy routines from nospecial.f90 for any Special      **
 !**  routines not implemented in this file                         **
 !**                                                                **
-    include 'eos_common.inc'
+    include 'eos_dummies.inc'
 !***********************************************************************
 endmodule EquationOfState

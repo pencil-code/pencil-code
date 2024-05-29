@@ -3128,10 +3128,6 @@ outer:  do ikz=1,nz
   if (lhorizontal_spectra) call mpireduce_sum(hor_spectrum,hor_spectrum_sum,nk)
   if (lvertical_spectra) call mpireduce_sum(ver_spectrum,ver_spectrum_sum,nk)
   !
-  !  on root processor, write global result to file
-  !  multiply by 1/2, so \int E(k) dk = (1/2) <u^2>
-  !  ok for helicity, so \int F(k) dk = <o.u> = 1/2 <o*.u+o.u*>
-  !
   !  append to diagnostics file
   !
   if (lroot) then

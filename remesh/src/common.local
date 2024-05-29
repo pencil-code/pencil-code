@@ -5,7 +5,7 @@
 !  mul[xyz] are the factors by which processor numbers
 !  are increased, div[xyz] ~ are decreased.
 !  Code checks for allowed combinations of mul and div. 
-!  Note: remesh.x needs to be run with
+!  Note: If not run serially (with MPI on, but one processor), remesh.x needs to be run with
 !  nprocx_src/divx * nprocy_src/divy * nprocz_src/divz processors
 !  (is checked by code).
 !

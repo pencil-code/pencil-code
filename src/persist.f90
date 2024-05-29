@@ -46,6 +46,7 @@ module Persist
       use Interstellar, only: input_persistent_interstellar
       use Forcing, only: input_persistent_forcing
       use Magnetic, only: input_persistent_magnetic
+      use Special, only: input_persistent_special
 !
       character (len=*), intent(in), optional :: file
 !
@@ -61,6 +62,7 @@ module Persist
         call input_persistent_interstellar
         call input_persistent_forcing
         call input_persistent_magnetic
+        call input_persistent_special
         return
       endif
 !
@@ -92,6 +94,7 @@ module Persist
         if (.not. done) call input_persistent_interstellar (id, done)
         if (.not. done) call input_persistent_forcing (id, done)
         if (.not. done) call input_persistent_magnetic (id, done)
+        if (.not. done) call input_persistent_special (id, done)
         if (read_persist_id ('NEXT_BLOCK_ID', id)) return
       enddo
 !
@@ -114,6 +117,7 @@ module Persist
       use Interstellar, only: output_persistent_interstellar
       use Forcing, only: output_persistent_forcing
       use Magnetic, only: output_persistent_magnetic
+      use Special, only: output_persistent_special
 !
       character (len=*), intent(in) :: file
 !
@@ -132,6 +136,7 @@ module Persist
       if (output_persistent_interstellar()) return
       if (output_persistent_forcing()) return
       if (output_persistent_magnetic()) return
+      if (output_persistent_special()) return
 !
     endsubroutine output_persistent
 !***********************************************************************

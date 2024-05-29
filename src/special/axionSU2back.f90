@@ -31,6 +31,8 @@ module Special
   implicit none
 !
   include '../special.h'
+  include '../record_types.h'
+!
 !
 ! Declare index of variables
 !
@@ -39,17 +41,20 @@ module Special
   integer :: iaxi_psiL=0, iaxi_psiLdot=0, iaxi_TL=0, iaxi_TLdot=0
   integer :: iaxi_impsi=0, iaxi_impsidot=0, iaxi_imTR=0, iaxi_imTRdot=0
   integer :: iaxi_impsiL=0, iaxi_impsiLdot=0, iaxi_imTL=0, iaxi_imTLdot=0
+  integer :: iaxi_lna=0, iaxi_phi=0, iaxi_phidot=0
 !
   ! input parameters
   real :: a, k0=1e-2, dk=1e-2, ascale_ini=1.
   real :: fdecay=.003, g=1.11e-2, lam=500., mu=1.5e-4
   real :: Q0=3e-4, Qdot0=0., chi_prefactor=.49, chidot0=0., H=1.04e-6
-  real :: Mpl2=1., Hdot=0., lamf, Hscript
+  real :: Mpl2=1., Hdot=0., lamf, Hscript, epsilon_sr=0.
+  real :: m_inflaton=1.275e-7, m_phi=1.275e-7, inflaton_ini=16., phi_ini=16.
+  real :: alpha=0.1, m_alpha=3.285e-11, n_alpha=1.5
   real, dimension (nx) :: grand, grant, dgrant
   real, dimension (nx) :: xmask_axion
   real, dimension (2) :: axion_sum_range=(/0.,1./)
   integer, dimension (nx) :: kindex_array
-  real :: grand_sum, grant_sum, dgrant_sum
+  real :: grand_sum, grant_sum, dgrant_sum, inflaton
   real :: TRdoteff2km_sum, TRdoteff2m_sum, TReff2km_sum, TReff2m_sum
   real :: TLdoteff2km_sum, TLdoteff2m_sum, TLeff2km_sum, TLeff2m_sum
   real :: TRpsim_sum, TRpsikm_sum, TRpsidotm_sum, TRdotpsim_sum
@@ -63,12 +68,15 @@ module Special
   logical :: lconf_time=.false., lanalytic=.false., lvariable_k=.false.
   logical :: llnk_spacing_adjustable=.false., llnk_spacing=.false.
   logical :: lim_psi_TR=.false., lleft_psiL_TL=.false., lkeep_mQ_const=.false.
+  logical :: lhubble_var=.false., lhubble=.false.
   character(len=50) :: init_axionSU2back='standard'
+  character (len=labellen) :: V_choice='quadratic'
   namelist /special_init_pars/ &
     k0, dk, fdecay, g, lam, mu, Q0, Qdot0, chi_prefactor, chidot0, H, &
     lconf_time, Ndivt, lanalytic, lvariable_k, axion_sum_range, &
     llnk_spacing_adjustable, llnk_spacing, lim_psi_TR, lleft_psiL_TL, &
-    nmin0, nmax0, ldo_adjust_krange, lswap_sign, sgn
+    nmin0, nmax0, ldo_adjust_krange, lswap_sign, sgn, m_inflaton, m_phi, &
+    inflaton_ini, lhubble, V_choice, phi_ini, alpha, m_alpha, n_alpha
 !
   ! run parameters
   namelist /special_run_pars/ &
@@ -76,13 +84,18 @@ module Special
     lbackreact, sbackreact_Q, sbackreact_chi, tback, dtback, lconf_time, &
     Ndivt, lanalytic, lvariable_k, llnk_spacing_adjustable, llnk_spacing, &
     nmin0, nmax0, horizon_factor, axion_sum_range, lkeep_mQ_const, &
-    ldo_adjust_krange, lswap_sign, lwrite_krange, lwrite_backreact, sgn
+    ldo_adjust_krange, lswap_sign, lwrite_krange, lwrite_backreact, sgn, &
+    lhubble_var, lhubble
 !
   ! k array
   real, dimension (nx) :: k
 !
 ! other variables (needs to be consistent with reset list below)
 !
+  integer :: idiag_a =0 ! DIAG_DOC: $a$
+  integer :: idiag_phi   =0 ! DIAG_DOC: $phi$
+  integer :: idiag_phidot   =0 ! DIAG_DOC: $phidot$
+  integer :: idiag_H =0 ! DIAG_DOC: $Hubble_parameter$
   integer :: idiag_Q   =0 ! DIAG_DOC: $Q$
   integer :: idiag_Qdot=0 ! DIAG_DOC: $\dot{Q}$
   integer :: idiag_Qddot=0! DIAG_DOC: $\ddot{Q}$
@@ -129,7 +142,7 @@ module Special
 !***********************************************************************
     subroutine register_special()
 !
-!  Configure pre-initialised (i.e. before parameter read) variables
+!  Configure pre-initialized (i.e. before parameter read) variables
 !  which should be know to be able to evaluate
 !
 !  19-feb-2019/axel: coded
@@ -148,6 +161,14 @@ module Special
       call farray_register_ode('axi_Qdot'  ,iaxi_Qdot)
       call farray_register_ode('axi_chi'   ,iaxi_chi)
       call farray_register_ode('axi_chidot',iaxi_chidot)
+!
+!  Possibility to evolve the Hubble parameter (in cosmic time)
+!
+      if (lhubble) then
+        call farray_register_ode('axi_lna'   ,iaxi_lna)
+        call farray_register_ode('axi_phi'   ,iaxi_phi)
+        call farray_register_ode('axi_phidot',iaxi_phidot)
+      endif
 !
       call farray_register_pde('axi_psi'   ,iaxi_psi)
       call farray_register_pde('axi_psidot',iaxi_psidot)
@@ -184,51 +205,70 @@ module Special
 !
 !  19-feb-2019/axel: coded
 !
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real :: lnH, lna, a
       real :: kmax=2., lnkmax, lnk0=1.
+      real :: Q, Qdot, chi, chidot, phi, phidot
+      real :: U, V, beta
       integer :: ik
 !
 !  Initialize any module variables which are parameter dependent
 !
       lamf=lam/fdecay
 !
-      if (lconf_time) then
-!
-!  Reset tstart if conformal time.
-!
-        tstart=-1./(ascale_ini*H)
-        t=tstart
-        a=ascale_ini
-      else
-        a=exp(H*t)
+      if (lconf_time .and. lhubble) then
+          call fatal_error("initialize_special","with lconf_time, lhubble not yet implemented")
       endif
 !
 !  Compute lnkmin0 and lnkmax0. Even for a linear k-range, dlnk
 !  is needed to determine the output of k-range and grand etc.
+!  Possibility to evolve the Hubble parameter (in cosmic time)
 !
+      a=ascale_ini
+      if (lhubble) then
+        phidot=0.
+        select case (V_choice)
+        case ('alpha_attractors')
+            beta=sqrt(2./(3.*alpha))
+            V=alpha*m_alpha*(tanh(beta*phi_ini/2)**2)**n_alpha
+          case ('quadratic') ; V=.5*(m_phi*phi_ini)**2
+          case default
+            call fatal_error("initialize_special: No such V_choice: ", trim(V_choice))
+        endselect
+        H=sqrt(onethird*(.5*phidot**2+V))
+      endif
       lna=alog(a)
       lnH=alog(H)
-      lnkmin0=nmin0+lnH+lna
-      lnkmax0=nmax0+lnH+lna
+      if (lstart) then
+        lnkmin0=nmin0+lnH+lna
+        lnkmax0=nmax0+lnH+lna
+      endif
       if (nxgrid==1) then
         dlnk=1.
       else
-        dlnk=(lnkmax0-lnkmin0)/(nxgrid-1)
+        dlnk=(nmax0-nmin0)/(nxgrid-1)
       endif
 !
 !  Initialize lnkmin0 and lnkmax0
 !
       if (llnk_spacing_adjustable) then
-        do ik=1,nx
-          lnk(ik)=lnkmin0+dlnk*(ik-1+ipx*nx)
-          k(ik)=exp(lnk(ik))
-        enddo
-        if (ip<10) print*,'iproc,lnk=',iproc,lnk
-        kindex_array=nint((lnk-lnkmin0)/dlnk)
+        if (ldo_adjust_krange) then
+          do ik=1,nx
+            lnk(ik)=lnkmin0+dlnk*(ik-1+ipx*nx)
+            k(ik)=exp(lnk(ik))
+          enddo
+        else
+          do ik=1,nx
+            lnk(ik)=nmin0+lnH+lna+dlnk*(ik-1+ipx*nx)
+            k(ik)=exp(lnk(ik))
+          enddo
+          if (ip<10) print*,'iproc,lnk=',iproc,lnk
+          kindex_array=nint((lnk-lnkmin0)/dlnk)
+        endif
       elseif (llnk_spacing) then
         do ik=1,nx
-          lnk(ik)=lnkmin0+dlnk*(ik-1+ipx*nx)
+          lnk(ik)=nmin0+lnH+lna+dlnk*(ik-1+ipx*nx)
           k(ik)=exp(lnk(ik))
         enddo
         lnkmin0_dummy=lnkmin0
@@ -255,7 +295,7 @@ module Special
           xmask_axion = 0.
         endwhere
       endif
-!
+ !
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_special
@@ -270,7 +310,7 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: psi, psidot, TR, TRdot
       real, dimension (nx) :: impsi, impsidot, imTR, imTRdot
-      real :: chi0, Uprime0
+      real :: chi0, V, Uprime0, beta
       real :: lnt, lnH, lna, a
       real :: kmax=2., lnkmax, lnk0=1.
       integer :: ik
@@ -282,8 +322,16 @@ module Special
       select case (init_axionSU2back)
         case ('nothing'); if (lroot) print*,'nothing'
         case ('standard')
+          chi0=chi_prefactor*pi*fdecay
+          Uprime0=-mu**4/fdecay*sin(chi0/fdecay)
+          a=ascale_ini
           if (lconf_time) then
+            tstart=-1/(a*H)
+            t=tstart
             if (ip<10) print*,'k=',k
+            if (lhubble) then
+              call fatal_error("init_special","with lconf_time, lhubble not yet implemented")
+            endif
             psi=(1./sqrt(2.*k))*cos(-k*t)
             psidot=(k/sqrt(2.*k))*sin(-k*t)
             TR=(1./sqrt(2.*k))*cos(-k*t)
@@ -296,23 +344,52 @@ module Special
             endif
           else
             if (ip<10) print*,'k=',k
-            a=exp(H*t)
+            if (lhubble) then
+              f_ode(iaxi_lna)=alog(ascale_ini)
+              f_ode(iaxi_phi)=phi_ini
+              f_ode(iaxi_phidot)=0.
+              select case (V_choice)
+                case ('alpha_attractors')
+                  beta=sqrt(2./(3.*alpha))
+                  V=alpha*m_alpha*(tanh(beta*phi_ini/2)**2)**n_alpha
+                case ('quadratic') ; V=.5*(m_phi*phi_ini)**2
+                case default
+                  call fatal_error("init_special: No such V_choice: ", trim(V_choice))
+              endselect
+              H=sqrt(onethird*(.5*f_ode(iaxi_phidot)**2+V))
+              Uprime0=-mu**4/fdecay*sin(chi0/fdecay)
+              Q0=(-Uprime0/(3.*g*lamf*H))**onethird
+            else
+              a=exp(H*t)
+            endif
+!
+!  need k
+!
             psi=(ascale_ini/sqrt(2.*k))*cos(k/(ascale_ini*H))
             psidot=(k/sqrt(2.*k))*sin(k/(ascale_ini*H))
             TR=(ascale_ini/sqrt(2.*k))*cos(k/(ascale_ini*H))
             TRdot=(k/sqrt(2.*k))*sin(k/(ascale_ini*H))
+            if (lim_psi_TR) then
+              impsi=(ascale_ini/sqrt(2.*k))*sin(k/(ascale_ini*H))
+              impsidot=(-k/sqrt(2.*k))*cos(k/(ascale_ini*H))
+              imTR=(ascale_ini/sqrt(2.*k))*sin(k/(ascale_ini*H))
+              imTRdot=(-k/sqrt(2.*k))*cos(k/(ascale_ini*H))
+            endif
           endif
 !
 !  ODE variables (exist only on root processor)
 !
           if (lroot) then
-            chi0=chi_prefactor*pi*fdecay
-            Uprime0=-mu**4/fdecay*sin(chi0/fdecay)
             Q0=(-Uprime0/(3.*g*lamf*H))**onethird
             f_ode(iaxi_Q)=Q0
             f_ode(iaxi_Qdot)=Qdot0
             f_ode(iaxi_chi)=chi0
             f_ode(iaxi_chidot)=chidot0
+!
+!  Possibility to evolve the Hubble parameter (in cosmic time)
+!
+            if (lhubble) then
+            endif
           endif
 !
 !  PDE variables
@@ -414,8 +491,9 @@ module Special
       real, dimension (nx) :: psi_anal, psidot_anal, TR_anal, TRdot_anal
       real, dimension (nx) :: impsi , impsidot , impsiddot , imTR, imTRdot, imTRddot
       real, dimension (nx) :: impsiL, impsiLdot, impsiLddot, imTL, imTLdot, imTLddot
-      real, dimension (nx) :: Uprime, mQ, xi, epsQE, epsQB
-      real :: Q, Qdot, chi, chidot
+      real, dimension (nx) :: epsQE, epsQB
+      real :: Q, Qdot, chi, chidot, phi, phidot
+      real :: U, Uprime, mQ, xi, V, beta
       real :: fact=1., sign_swap=1.
       integer :: ik
       type (pencil_case) :: p
@@ -462,6 +540,24 @@ module Special
       chi=f_ode(iaxi_chi)
       chidot=f_ode(iaxi_chidot)
 !
+!  Possibility to evolve the Hubble parameter (in cosmic time)
+!
+      if (lhubble) then
+        phi=f_ode(iaxi_phi)
+        U=mu**4*(1.+cos(chi/fdecay))
+        select case (V_choice)
+          case ('alpha_attractors')
+            beta=sqrt(2./(3.*alpha))
+            V=alpha*m_alpha*(tanh(beta*phi/2)**2)**n_alpha
+          case ('quadratic') ; V=.5*(m_phi*phi)**2
+          case default
+            call fatal_error("dspecial_dt: No such V_choice: ", trim(V_choice))
+        endselect
+        a=exp(f_ode(iaxi_lna))
+        phidot=f_ode(iaxi_phidot)
+        H=sqrt(onethird*(.5*phidot**2+V+.5*chidot**2+U+1.5*(Qdot+H*Q)**2+1.5*g**2*Q**4))
+      endif
+!
 !  Possibility of keeping mQ constant, i,e., we keep mQ=g*Q0/H
 !  Need to have Q on all processors.
 !
@@ -479,14 +575,32 @@ module Special
 !
       Uprime=-mu**4/fdecay*sin(chi/fdecay)
       if (lconf_time) then
-        a=-1./(H*t)
-        Hscript=a*H
+        if (lhubble_var) then
+          epsilon_sr=0.8*(1+tanh(0.3*(alog(-1/(H*t))-18)))*0.5
+          a=-1./(H*t*(1-epsilon_sr))
+          Hscript=a*H
+          if (.not.lkeep_mQ_const) then
+            xi=lamf*chidot*(0.5/Hscript)
+            epsQE=(Qdot/a+H*Q)**2/(Mpl2*H**2)
+          endif
+        else
+          a=-1./(H*t)
+          Hscript=a*H
+          if (.not.lkeep_mQ_const) then
+            xi=lamf*chidot*(-0.5*t)
+            epsQE=(Qdot/a+H*Q)**2/(Mpl2*H**2)
+          endif
+        endif
+      elseif (lhubble_var) then
+        inflaton=inflaton_ini-sqrt(2./3.)*m_inflaton*t
+        a=exp((inflaton_ini**2-inflaton**2)*0.25)
+        H=0.41*m_inflaton*inflaton
         if (.not.lkeep_mQ_const) then
-          xi=lamf*chidot*(-0.5*t)
-          epsQE=(Qdot/a+H*Q)**2/(Mpl2*H**2)
+          xi=lamf*chidot/(2.*H)
+          epsQE=(Qdot+H*Q)**2/(Mpl2*H**2)
         endif
       else
-        a=exp(H*t)
+        if (.not.lhubble) a=exp(H*t)
         if (.not.lkeep_mQ_const) then
           xi=lamf*chidot/(2.*H)
           epsQE=(Qdot+H*Q)**2/(Mpl2*H**2)
@@ -646,30 +760,85 @@ module Special
               +2.*Q*H**2*psi+2.*mQ*Q*H**2*(mQ-k/(a*H))*psi
           endwhere
         else
-          df(l1:l2,m,n,iaxi_psi)=df(l1:l2,m,n,iaxi_psi)+psidot
-          df(l1:l2,m,n,iaxi_TR )=df(l1:l2,m,n,iaxi_TR )+TRdot
           if (lwith_eps) then
             psiddot=-H*psidot-(k**2/a**2-2.*H**2)*psi-2.*H*sqrt(epsQE)*TRdot &
-              +2.*H**2*sqrt(epsQB)*(mQ-k/(a*H))*TR
+              +2.*H**2*sqrt(epsQB)*(mQ-sgn*k/(a*H))*TR
+            TRddot=-H*TRdot-(k**2/a**2+2.*H**2*(mQ*xi-sgn*k/(a*H)*(mQ+xi)))*TR &
+              +2.*H*sqrt(epsQE)*psidot &
+              +2.*H**2*(sqrt(epsQB)*(mQ-sgn*k/(a*H))+sqrt(epsQE))*psi
+            if (lim_psi_TR) then
+              impsiddot=-H*impsidot-(k**2/a**2-2.*H**2)*impsi-2.*H*sqrt(epsQE)*imTRdot &
+                +2.*H**2*sqrt(epsQB)*(mQ-sgn*k/(a*H))*imTR
+              imTRddot=-H*imTRdot-(k**2/a**2+2.*H**2*(mQ*xi-sgn*k/(a*H)*(mQ+xi)))*imTR &
+                +2.*H*sqrt(epsQE)*impsidot &
+                +2.*H**2*(sqrt(epsQB)*(mQ-sgn*k/(a*H))+sqrt(epsQE))*impsi
+            endif
+            if (lleft_psiL_TL) then
+              psiLddot=-H*psiLdot-(k**2/a**2-2.*H**2)*psiL-2.*H*sqrt(epsQE)*TLdot &
+                +2.*H**2*sqrt(epsQB)*(mQ+sgn*k/(a*H))*TL
+              TLddot=-H*TLdot-(k**2/a**2+2.*H**2*(mQ*xi+sgn*k/(a*H)*(mQ+xi)))*TL &
+                +2.*H*sqrt(epsQE)*psiLdot &
+                +2.*H**2*(sqrt(epsQB)*(mQ+sgn*k/(a*H))+sqrt(epsQE))*psiL
+              impsiLddot=-H*impsiLdot-(k**2/a**2-2.*H**2)*impsiL-2.*H*sqrt(epsQE)*imTLdot &
+                +2.*H**2*sqrt(epsQB)*(mQ+sgn*k/(a*H))*imTL
+              imTLddot=-H*imTLdot-(k**2/a**2+2.*H**2*(mQ*xi+sgn*k/(a*H)*(mQ+xi)))*imTL &
+                +2.*H*sqrt(epsQE)*impsiLdot &
+                +2.*H**2*(sqrt(epsQB)*(mQ+sgn*k/(a*H))+sqrt(epsQE))*impsiL
+            endif
           else
             psiddot=-H*psidot-(k**2/a**2-2.*H**2+2.*Q**2*H**2*(mQ**2-1.))*psi &
-              -2.*H*Q*TRdot+2.*mQ*Q*H**2*(mQ-k/(a*H))*TR
+              -2.*H*Q*TRdot+2.*mQ*Q*H**2*(mQ-sgn*k/(a*H))*TR
+            TRddot=-H*TRdot-(k**2/a**2+2.*H**2*(mQ*xi-sgn*k/(a*H)*(mQ+xi)))*TR+2.*H*Q*psidot &
+              +2.*Q*H**2*psi+2.*mQ*Q*H**2*(mQ-sgn*k/(a*H))*psi
+            if (lim_psi_TR) then
+              impsiddot=-H*impsidot-(k**2/a**2-2.*H**2+2.*Q**2*H**2*(mQ**2-1.))*impsi &
+                -2.*H*Q*imTRdot+2.*mQ*Q*H**2*(mQ-sgn*k/(a*H))*imTR
+              imTRddot=-H*imTRdot-(k**2/a**2+2.*H**2*(mQ*xi-sgn*k/(a*H)*(mQ+xi)))*imTR+2.*H*Q*impsidot &
+                +2.*Q*H**2*impsi+2.*mQ*Q*H**2*(mQ-sgn*k/(a*H))*impsi
+            endif
+            if (lleft_psiL_TL) then
+              psiLddot=-H*psiLdot-(k**2/a**2-2.*H**2+2.*Q**2*H**2*(mQ**2-1.))*psiL &
+                -2.*H*Q*TLdot+2.*mQ*Q*H**2*(mQ+sgn*k/(a*H))*TL
+              TLddot=-H*TLdot-(k**2/a**2+2.*H**2*(mQ*xi+sgn*k/(a*H)*(mQ+xi)))*TL+2.*H*Q*psiLdot &
+                +2.*Q*H**2*psiL+2.*mQ*Q*H**2*(mQ+sgn*k/(a*H))*psiL
+              impsiLddot=-H*impsiLdot-(k**2/a**2-2.*H**2+2.*Q**2*H**2*(mQ**2-1.))*impsiL &
+                -2.*H*Q*imTLdot+2.*mQ*Q*H**2*(mQ+sgn*k/(a*H))*imTL
+              imTLddot=-H*imTLdot-(k**2/a**2+2.*H**2*(mQ*xi+sgn*k/(a*H)*(mQ+xi)))*imTL+2.*H*Q*impsiLdot &
+                +2.*Q*H**2*impsiL+2.*mQ*Q*H**2*(mQ+sgn*k/(a*H))*impsiL
+            endif
           endif
-          if (lwith_eps) then
-            TRddot=-H*TRdot-(k**2/a**2+2.*H**2*(mQ*xi-k/(a*H)*(mQ+xi)))*TR &
-              +2.*H*sqrt(epsQE)*psidot &
-              +2.*H**2*(sqrt(epsQB)*(mQ-k/(a*H))+sqrt(epsQE))*psi
-          else
-            TRddot=-H*TRdot-(k**2/a**2+2.*H**2*(mQ*xi-k/(a*H)*(mQ+xi)))*TR+2.*H*Q*psidot &
-              +2.*Q*H**2*psi+2.*mQ*Q*H**2*(mQ-k/(a*H))*psi
-          endif
+          df(l1:l2,m,n,iaxi_psi)=df(l1:l2,m,n,iaxi_psi)+psidot
+          df(l1:l2,m,n,iaxi_TR )=df(l1:l2,m,n,iaxi_TR )+TRdot
           df(l1:l2,m,n,iaxi_psidot)=df(l1:l2,m,n,iaxi_psidot)+psiddot
           df(l1:l2,m,n,iaxi_TRdot)=df(l1:l2,m,n,iaxi_TRdot)+TRddot
+          if (lim_psi_TR) then
+            df(l1:l2,m,n,iaxi_impsi   )=df(l1:l2,m,n,iaxi_impsi   )+impsidot
+            df(l1:l2,m,n,iaxi_impsidot)=df(l1:l2,m,n,iaxi_impsidot)+impsiddot
+            df(l1:l2,m,n,iaxi_imTR    )=df(l1:l2,m,n,iaxi_imTR    )+imTRdot
+            df(l1:l2,m,n,iaxi_imTRdot )=df(l1:l2,m,n,iaxi_imTRdot )+imTRddot
+          endif
+!
+!  left-handed modes (to be checked, not finalized)
+!
+          if (lleft_psiL_TL) then
+            df(l1:l2,m,n,iaxi_psiL     )=df(l1:l2,m,n,iaxi_psiL     )+psiLdot
+            df(l1:l2,m,n,iaxi_psiLdot  )=df(l1:l2,m,n,iaxi_psiLdot  )+psiLddot
+            df(l1:l2,m,n,iaxi_TL       )=df(l1:l2,m,n,iaxi_TL       )+TLdot
+            df(l1:l2,m,n,iaxi_TLdot    )=df(l1:l2,m,n,iaxi_TLdot    )+TLddot
+            df(l1:l2,m,n,iaxi_impsiL   )=df(l1:l2,m,n,iaxi_impsiL   )+impsiLdot
+            df(l1:l2,m,n,iaxi_impsiLdot)=df(l1:l2,m,n,iaxi_impsiLdot)+impsiLddot
+            df(l1:l2,m,n,iaxi_imTL     )=df(l1:l2,m,n,iaxi_imTL     )+imTLdot
+            df(l1:l2,m,n,iaxi_imTLdot  )=df(l1:l2,m,n,iaxi_imTLdot  )+imTLddot
+          endif
         endif
       endif
 !
-      if (lfirst.and.ldt.and.lconf_time) then
-        dt1_special = Ndivt*abs(Hscript)
+      if (lfirst.and.ldt) then
+        if (lconf_time) then
+          dt1_special = Ndivt*abs(Hscript)
+        else
+          dt1_special = Ndivt*abs(H)
+        endif
         dt1_max=max(dt1_max,dt1_special)
       endif
 !
@@ -701,15 +870,15 @@ module Special
         call save_name(TLdoteff2km_sum,idiag_TLdoteff2km)
         call save_name(grand_sum,idiag_grand2)
         call save_name(dgrant_sum,idiag_dgrant)
-        call sum_mn_name(dgrant*xmask_axion,idiag_dgrant_up,lplain=.true.)
+        if (idiag_dgrant_up/=0) call sum_mn_name(dgrant*xmask_axion,idiag_dgrant_up,lplain=.true.)
         call save_name(fact,idiag_fact)
         call save_name(k0,idiag_k0)
         call save_name(dk,idiag_dk)
       endif
 !
       if (l2davgfirst) then
-        if (idiag_grandxy/=0)   call zsum_mn_name_xy(grand,idiag_grandxy)
-        if (idiag_grantxy/=0)   call zsum_mn_name_xy(grant,idiag_grantxy)
+        call zsum_mn_name_xy(grand,idiag_grandxy)
+        call zsum_mn_name_xy(grant,idiag_grantxy)
       endif
 !
     endsubroutine dspecial_dt
@@ -728,13 +897,15 @@ module Special
       use Mpicomm
       use Sub
 !
-      real :: Q, Qdot, Qddot, chi, chidot, chiddot
-      real :: Uprime, mQ, xi
+      real :: Q, Qdot, Qddot, chi, chidot, chiddot, phi, phidot, phiddot
+      real :: U, Uprime, mQ, xi, V, Vprime, beta
+      !real :: U, Uprime, mQ, xi, V, Vprime
       real :: fact=1., sign_swap=1.
 !
 !  identify module and boundary conditions
 !
       if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dSPECIAL_dt'
+!print*,'AXEL: dspecial_dt_ode, bef.', Q, U, V, a, phi, phidot, H, Hdot
 !
 !  Set the all variable
 !
@@ -742,6 +913,26 @@ module Special
       Qdot=f_ode(iaxi_Qdot)
       chi=f_ode(iaxi_chi)
       chidot=f_ode(iaxi_chidot)
+!
+!  Possibility to evolve the Hubble parameter (in cosmic time)
+!
+      if (lhubble) then
+        phi=f_ode(iaxi_phi)
+        phidot=f_ode(iaxi_phidot)
+        U=mu**4*(1.+cos(chi/fdecay))
+        select case (V_choice)
+          case ('alpha_attractors')
+            beta=sqrt(2./(3.*alpha))
+            V=alpha*m_alpha*(tanh(beta*phi/2)**2)**n_alpha
+          case ('quadratic') ; V=.5*(m_phi*phi)**2
+          case default
+            call fatal_error("dspecial_dt_ode: No such V_choice: ", trim(V_choice))
+        endselect
+        a=exp(f_ode(iaxi_lna))
+        H=sqrt(onethird*(.5*phidot**2+V+.5*chidot**2+U+1.5*(Qdot+H*Q)**2+1.5*g**2*Q**4))
+        Hdot=-.5*phidot**2-.5*chidot**2-((Qdot+H*Q)**2+g**2*Q**4)
+!print*,'AXEL: dspecial_dt_ode, aft.', Q, U, V, a, phi, phidot, H, Hdot
+      endif
 !
 !  Possibility of keeping mQ constant, i,e., we keep mQ=g*Q0/H
 !
@@ -755,11 +946,27 @@ module Special
 !
       Uprime=-mu**4/fdecay*sin(chi/fdecay)
       if (lconf_time) then
-        a=-1./(H*t)
-        Hscript=a*H
-        xi=lamf*chidot*(-0.5*t)
+        if (lhubble_var) then
+          epsilon_sr=0.8*(1+tanh(0.3*(alog(-1/(H*t))-18)))*0.5
+          a=-1./(H*t*(1-epsilon_sr))
+          Hscript=a*H
+          xi=lamf*chidot*(0.5/Hscript)
+          Hdot=-epsilon_sr*H**2
+        else
+          a=-1./(H*t)
+          Hscript=a*H
+          xi=lamf*chidot*(-0.5*t)
+        endif
+      elseif (lhubble_var) then
+        inflaton=inflaton_ini-sqrt(2./3.)*m_inflaton*t
+        a=exp((inflaton_ini**2-inflaton**2)*0.25)
+        H=0.41*m_inflaton*inflaton
+        xi=lamf*chidot/(2.*H)
+        Hdot=-(2/inflaton**2)*H**2
       else
-        a=exp(H*t)
+        if (.not.lhubble) then
+          a=exp(H*t)
+        endif
         xi=lamf*chidot/(2.*H)
       endif
 !
@@ -771,6 +978,21 @@ module Special
       else
         Qddot=g*lamf*chidot*Q**2-3.*H*Qdot-(Hdot+2*H**2)*Q-2.*g**2*Q**3
         chiddot=-3.*g*lamf*Q**2*(Qdot+H*Q)-3.*H*chidot-Uprime
+!
+!  Possibility to evolve the Hubble parameter (in cosmic time)
+!
+        if (lhubble) then
+        select case (V_choice)
+          case ('alpha_attractors')
+            beta=sqrt(2./(3.*alpha))
+            Vprime=alpha*m_alpha*n_alpha*beta*tanh(beta*phi/2)*(1./cosh(beta*phi/2)**2)
+          case ('quadratic') ; Vprime=m_phi**2*phi
+          case default
+            call fatal_error("special_dspecial_dt_ode: No such V_choice: ", trim(V_choice))
+        endselect
+          phiddot=-3.*H*phidot-Vprime
+        endif
+
       endif
 !
 !  Optionally, include backreaction
@@ -803,17 +1025,31 @@ module Special
         df_ode(iaxi_chi)   =df_ode(iaxi_chi   )+chidot
         df_ode(iaxi_Qdot)  =df_ode(iaxi_Qdot  )+Qddot
         df_ode(iaxi_chidot)=df_ode(iaxi_chidot)+chiddot
+!
+!  Possibility to evolve the Hubble parameter (in cosmic time)
+!
+        if (lhubble) then
+          df_ode(iaxi_lna)=df_ode(iaxi_lna)+H
+          df_ode(iaxi_phi)=df_ode(iaxi_phi)+phidot
+          df_ode(iaxi_phidot)=df_ode(iaxi_phidot)+phiddot
+        endif
       endif
 !
 !  diagnostics
 !
       if (ldiagnos) then
-        call save_name(Q   ,idiag_Q)
-        call save_name(Qdot,idiag_Qdot)
-        call save_name(Qddot,idiag_Qddot)
-        call save_name(chi   ,idiag_chi)
-        call save_name(chidot,idiag_chidot)
+        call save_name(Q      ,idiag_Q)
+        call save_name(Qdot   ,idiag_Qdot)
+        call save_name(Qddot  ,idiag_Qddot)
+        call save_name(chi    ,idiag_chi)
+        call save_name(chidot ,idiag_chidot)
         call save_name(chiddot,idiag_chiddot)
+        if (lhubble) then
+          call save_name(a     ,idiag_a)
+          call save_name(phi   ,idiag_phi)
+          call save_name(phidot,idiag_phidot)
+          call save_name(H     ,idiag_H)
+        endif
       endif
 !
     endsubroutine dspecial_dt_ode
@@ -855,6 +1091,51 @@ module Special
 !
     endsubroutine write_special_run_pars
 !***********************************************************************
+    subroutine input_persist_special_id(id,done)
+!
+      use IO, only: read_persist
+!
+      integer :: id
+      logical :: done
+!
+      print*,'ram_persist',id
+      select case (id)
+        case (id_record_SPECIAL_LNKMIN0)
+          done=read_persist ('SPECIAL_LNKMIN0', lnkmin0)
+          if (lroot .and. .not. done) print *, 'input_persist_special: ', lnkmin0
+      endselect
+!
+    endsubroutine input_persist_special_id
+!***********************************************************************
+    subroutine input_persist_special
+!
+!  Read in the persistent special variables.
+!
+      use IO, only: read_persist
+!
+      logical :: error
+!
+      error = read_persist ('SPECIAL_LNKMIN0', lnkmin0)
+      if (lroot .and. .not. error) print *, 'input_persist_special: lnkmin0: ', lnkmin0
+!
+    endsubroutine input_persist_special
+!***********************************************************************
+    logical function output_persistent_special()
+!
+      use IO, only: write_persist
+!
+      if (ip<=6.and.lroot .and. (lnkmin0>=0.)) print *,'output_persistent_special: ',lnkmin0
+!
+!  write details
+!
+      output_persistent_special = .true.
+!
+      if (write_persist ('SPECIAL_LNKMIN0', id_record_SPECIAL_LNKMIN0, lnkmin0)) return
+!
+      output_persistent_special = .false.
+!
+    endfunction output_persistent_special
+!***********************************************************************
     subroutine special_before_boundary(f)
 !
 !  Possibility to modify the f array before the boundaries are
@@ -891,8 +1172,8 @@ module Special
       real, dimension (nx) :: tmp_psiL, tmp_psiLdot, tmp_TL, tmp_TLdot
       real, dimension (nx) :: tmp_impsi, tmp_impsidot, tmp_imTR, tmp_imTRdot
       real, dimension (nx) :: tmp_impsiL, tmp_impsiLdot, tmp_imTL, tmp_imTLdot
-      real :: Q, Qdot, chi, chidot
-      real :: mQ, xi
+      real :: Q, Qdot, chi, chidot, phi, phidot
+      real :: mQ, xi, U, V, beta
       real :: lnt, lnH, lna, a, lnkmin, lnkmax
       integer :: ik, nswitch
 !
@@ -901,6 +1182,28 @@ module Special
       Q=f_ode(iaxi_Q)
       Qdot=f_ode(iaxi_Qdot)
       chidot=f_ode(iaxi_chidot)
+!
+!  Possibility to evolve the Hubble parameter (in cosmic time)
+!
+      if (lhubble) then
+        phi=f_ode(iaxi_phi)
+        phidot=f_ode(iaxi_phidot)
+        U=mu**4*(1.+cos(chi/fdecay))
+        select case (V_choice)
+          case ('alpha_attractors')
+            beta=sqrt(2./(3.*alpha))
+            V=alpha*m_alpha*(tanh(beta*phi/2)**2)**n_alpha
+          case ('quadratic') ; V=.5*(m_phi*phi)**2
+          case default
+            call fatal_error("special_after_boundary: No such V_choice: ", trim(V_choice))
+        endselect
+        a=exp(f_ode(iaxi_lna))
+    !   H=sqrt(onethird*(.5*phidot**2+V+.5*chidot**2+U+1.5*(Qdot+H*Q)**2+1.5*g**2*Q**4))
+
+        H=((-Q*Qdot)-sqrt((-Q*Qdot)**2+4.*(1.-.5*Q**2)*(.5*g**2*Q**4+onethird*(U+V) &
+          +.5*Qdot**2+onesixth*(phidot**2+chidot**2))))/(-2.+Q**2)
+        Hdot=-.5*phidot**2-.5*chidot**2-((Qdot+H*Q)**2+g**2*Q**4)
+      endif
 !
 !  Possibility of keeping mQ constant
 !
@@ -913,10 +1216,21 @@ module Special
 !  For conformal time, there is a 1/a factor in Qdot/a+H
 !
       if (lconf_time) then
-        a=-1./(H*t)
-        xi=lamf*chidot*(-0.5*t)
+        if (lhubble_var) then
+          epsilon_sr=0.8*(1+tanh(0.3*(alog(-1/(H*t))-18)))*0.5
+          a=-1./(H*t*(1-epsilon_sr))
+          xi=lamf*chidot*(0.5/(a*H))
+        else
+          a=-1./(H*t)
+          xi=lamf*chidot*(-0.5*t)
+        endif
+      elseif (lhubble_var) then
+        inflaton=inflaton_ini-sqrt(2./3.)*m_inflaton*t
+        a=exp((inflaton_ini**2-inflaton**2)*0.25)
+        H=0.41*m_inflaton*inflaton
+        xi=lamf*chidot/(2.*H)
       else
-        a=exp(H*t)
+        if (.not.lhubble) a=exp(H*t)
         xi=lamf*chidot/(2.*H)
       endif
 !
@@ -1011,6 +1325,10 @@ module Special
             write(1,*) t, lnk, f(l1:l2,m1,n1,iaxi_psi), f(l1:l2,m1,n1,iaxi_impsi), &
                                f(l1:l2,m1,n1,iaxi_TR), f(l1:l2,m1,n1,iaxi_imTR)
             close(1)
+            open (1, file=trim(directory_snap)//'/krange_deriv.dat', form='formatted', position='append')
+            write(1,*) t, lnk, f(l1:l2,m1,n1,iaxi_psidot), f(l1:l2,m1,n1,iaxi_impsidot), &
+                               f(l1:l2,m1,n1,iaxi_TRdot), f(l1:l2,m1,n1,iaxi_imTRdot)
+            close(1)
 !
 !  output for left-handed modes
 !
@@ -1018,6 +1336,10 @@ module Special
               open (1, file=trim(directory_snap)//'/krange_left.dat', form='formatted', position='append')
               write(1,*) t, lnk, f(l1:l2,m1,n1,iaxi_psiL), f(l1:l2,m1,n1,iaxi_impsiL), &
                                  f(l1:l2,m1,n1,iaxi_TL),   f(l1:l2,m1,n1,iaxi_imTL)
+              close(1)
+              open (1, file=trim(directory_snap)//'/krange_deriv_left.dat', form='formatted', position='append')
+              write(1,*) t, lnk, f(l1:l2,m1,n1,iaxi_psiLdot), f(l1:l2,m1,n1,iaxi_impsiLdot), &
+                                 f(l1:l2,m1,n1,iaxi_TLdot),   f(l1:l2,m1,n1,iaxi_imTLdot)
               close(1)
             endif
           endif
@@ -1153,10 +1475,10 @@ module Special
           TLeff2km=(4.*pi*k**3*dlnk)*TLeff2*(k/a)
           TLeff2m=(4.*pi*k**3*dlnk)*TLeff2
           !grand=grand+(4.*pi*k**3*dlnk)*(xi*H-k/a)*TLeff2*(+   g/(3.*a**2))/twopi**3
-          !grant=grant+(4.*pi*k**3*dlnk)*(mQ*H-k/a)*TLeff2*(-lamf/(2.*a**2))/twopi**3
 !AB: here, for TL, we use the opposite sign in front of the k/a terms.
           grand=grand+(4.*pi*k**3*dlnk)*(xi*H+k/a)*TLeff2*(+   g/(3.*a**2))/twopi**3
           grant=grant+(4.*pi*k**3*dlnk)*(mQ*H+k/a)*TLeff2*(-lamf/(2.*a**2))/twopi**3
+!print*,'AXEL: dlnk,k=',dlnk,k(1:5)
         endif
         if (lconf_time) then
           dgrant=(4.*pi*k**3*dlnk)*(-lamf/(2.*a**3))*( &
@@ -1275,6 +1597,9 @@ module Special
         idiag_TLeff2m=0; idiag_TLeff2km=0; idiag_TLdoteff2m=0; idiag_TLdoteff2km=0
         idiag_grand2=0; idiag_dgrant=0; idiag_dgrant_up=0; idiag_fact=0
         idiag_grandxy=0; idiag_grantxy=0; idiag_k0=0; idiag_dk=0
+        if (lhubble) then
+          idiag_a=0; idiag_phi=0; idiag_phidot=0; idiag_H=0
+        endif
       endif
 !
       do iname=1,nname
@@ -1313,6 +1638,12 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'fact' ,idiag_fact)
         call parse_name(iname,cname(iname),cform(iname),'k0' ,idiag_k0)
         call parse_name(iname,cname(iname),cform(iname),'dk' ,idiag_dk)
+        if (lhubble) then
+          call parse_name(iname,cname(iname),cform(iname),'a' ,idiag_a)
+          call parse_name(iname,cname(iname),cform(iname),'phi' ,idiag_phi)
+          call parse_name(iname,cname(iname),cform(iname),'phidot' ,idiag_phidot)
+          call parse_name(iname,cname(iname),cform(iname),'H' ,idiag_H)
+        endif
       enddo
 !
 !  Check for those quantities for which we want z-averages.

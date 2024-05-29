@@ -21,12 +21,16 @@
 ;		total number of snapshots in the list.
 ;	PARTICLES:	Set this keyword to read the list of particle
 ;		data instead of fluid.
+;	TIME:   Set this keyword to a variable that will contain the
+;		times when the snapshots are written
 ;
 ; MODIFICATION HISTORY:
 ;       Written by:     Chao-Chin Yang, February 18, 2013.
+;	Modified by:	 Johannes Tschernitz, March 22, 2024. Added keyword time
+;
 ;-
 
-function pc_read_varlist, datadir=datadir, nvar=nvar, particles=particles, allprocs=allprocs
+function pc_read_varlist, datadir=datadir, nvar=nvar, particles=particles, allprocs=allprocs, time=time
   compile_opt idl2
 
   default, procdir, '/proc0/'
@@ -45,10 +49,12 @@ function pc_read_varlist, datadir=datadir, nvar=nvar, particles=particles, allpr
 ; Read the file name of each snapshot.
   nvar = file_lines (list_file)
   var_list = strarr (nvar)
+  if arg_present(time) then time = dblarr(nvar)
   openr, lun, list_file, /get_lun
   for i = 0, nvar-1 do begin
     entry = ''
     readf, lun, entry
+    if arg_present(time) then time[i] = double((stregex(entry,'([0-9]\.[0-9]+).*$',/SUBEXPR,/EXTRACT))[0])
     var_list[i] = (stregex(entry,'([A-Z]+[0-9]+).*$',/SUBEXPR,/EXTRACT))[1]
   end
   close, lun

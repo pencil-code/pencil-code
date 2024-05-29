@@ -1,5 +1,5 @@
 def change_value_in_file(
-    filename, quantity, newValue, sim=False, filepath=False, DEBUG=False
+    filename, quantity, newValue, sim=None, filepath=None, DEBUG=False
 ):
     """Use to change a quantity in
         - *.in

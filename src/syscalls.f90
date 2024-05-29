@@ -9,6 +9,8 @@ module Syscalls
   implicit none
 !
   !integer, parameter :: ikind8=selected_int_kind(14)  ! 8-byte integer kind
+  integer, parameter :: rkind8=selected_real_kind(12) ! 8-byte real kind
+
   external directory_exists_c
   external get_PID_c
   external get_env_var_c
@@ -361,6 +363,15 @@ module Syscalls
     call copy_addr_c(var,caddr)
 
     endsubroutine copy_addr_real_1D
+!***********************************************************************
+    subroutine copy_addr_dble_1D(var, caddr)
+
+    real(KIND=rkind8), dimension(:), intent(IN) :: var
+    integer(KIND=ikind8), intent(OUT) :: caddr
+
+    call copy_addr_c(var,caddr)
+
+    endsubroutine copy_addr_dble_1D
 !***********************************************************************
     subroutine copy_addr_real(var, caddr)
 

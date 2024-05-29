@@ -9,7 +9,7 @@
   xyz0=-0.032,-0.032,-1.998
   xyz1=+0.032,+0.032,+1.998
   lperi=T,T,F
-  bcz = 's','s','ubs','ism','ism','s','s','a','s'
+  bcz = 's','s','ubs','ism','ism','s','s','a','a2'
   lwrite_aux=T
   lfix_unit_std=T
   ip=1963

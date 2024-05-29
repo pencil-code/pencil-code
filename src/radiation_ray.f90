@@ -85,6 +85,7 @@ module Radiation
   real :: Frad_boundary_ref=0.0
   real :: cdtrad=0.1, cdtrad_thin=1.0, cdtrad_thick=0.25, cdtrad_cgam=0.25
   real :: scalefactor_cooling=1.0, scalefactor_radpressure=1.0
+  real :: scalefactor_radpressure1=1.0, scalefactor_radpressure2=1.0
   real :: expo_rho_opa=0.0, expo_temp_opa=0.0, expo_temp_opa_buff=0.0
   real :: expo2_rho_opa=0.0, expo2_temp_opa=0.0
   real :: ref_rho_opa=1.0, ref_temp_opa=1.0
@@ -178,6 +179,7 @@ module Radiation
       ref_rho_opa, expo_temp_opa_buff, ref_temp_opa, knee_temp_opa, &
       width_temp_opa, ampl_Isurf, radius_Isurf, &
       scalefactor_cooling, scalefactor_radpressure, &
+      scalefactor_radpressure1, scalefactor_radpressure2, &
       lread_source_function, kapparho_floor, lcutoff_opticallythin, &
       lcutoff_zconst,z_cutoff,cool_wid,lno_rad_heating,qrad_max,zclip_dwn, &
       zclip_up, TT_bump, sigma_bump, ampl_bump, kappa_ceiling, &
@@ -687,7 +689,7 @@ module Radiation
                   ij=ij_table(i,j)
                   k=iKR_press+(ij-1)
                   f(:,:,:,k)=f(:,:,:,k)+weightn(idir)*unit_vec(idir,i)*unit_vec(idir,j) &
-                    *(Qrad+Srad)*f(:,:,:,ikapparho)
+                    *(Qrad+Srad)*f(:,:,:,ikapparho)/c_light
                 enddo
                 enddo
               endif
@@ -1678,8 +1680,9 @@ module Radiation
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
+      real, dimension (nx) :: alpha
       real, dimension (nx,3) :: radpressure
-      integer :: j,k
+      integer :: i, j, k, kpres, kvel, ij
 !
 !  Radiative pressure force = kappa*Frad/c = (kappa*rho)*rho1*Frad/c.
 !  Moved multiplication with opacity to earlier Frad calculation to
@@ -1690,9 +1693,48 @@ module Radiation
       if (lradpressure) then
         do j=1,3
           k=iKR_Frad+(j-1)
-          radpressure(:,j)=scalefactor_radpressure*p%rho1*f(l1:l2,m,n,k)/c_light
+          radpressure(:,j)=scalefactor_radpressure*p%rho1*f(l1:l2,m,n,k)
         enddo
-        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+radpressure
+        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+radpressure/c_light
+!
+!  perhaps allow here for a switch, do here (chi/c)*(-v*rhoR)
+!
+!  ramkishor: radiation energy density is 4*pi/c times Srad. That is why, there is a
+!  4*pi/c_light factor in the expression below.
+!
+        if (ldoppler_rad) then
+          do j=1,3
+            k=iuu+(j-1)
+            radpressure(:,j)=-scalefactor_radpressure1*p%rho1* &
+              f(l1:l2,m,n,ikapparho)*f(l1:l2,m,n,k)*4*pi/c_light*Srad(l1:l2,m,n)
+          enddo
+          if (ip<11) then
+            if (m==m1.and.n==n1) then
+              alpha=scalefactor_radpressure1*p%rho1*f(l1:l2,m,n,ikapparho)*4*pi/c_light &
+                *Srad(l1:l2,m,n)/c_light
+              print*,'AXEL: Srad=',Srad(l1:l2,m,n)
+              print*,'AXEL: kappa=',p%rho1*f(l1:l2,m,n,ikapparho)
+              print*,'AXEL: alpha=',alpha
+            endif
+          endif
+          df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+radpressure/c_light
+!
+!  now do third term, (chi/c)*(-P.v/c) = (chi/c)*(-P.v/c) = 
+!  Note that kappa*rho is already included in (l1:l2,m,n,kpres).
+!
+          do j=1,3
+            radpressure(:,j)=0.
+            do i=1,3
+              ij=ij_table(i,j)
+              kpres=iKR_press+(ij-1)
+              kvel=iuu+(i-1)
+              radpressure(:,j)=radpressure(:,j)-scalefactor_radpressure2*p%rho1* &
+                f(l1:l2,m,n,kpres)*f(l1:l2,m,n,kvel)
+            enddo
+          enddo
+          df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+radpressure/c_light
+        endif
+!
       endif
 !--     call multmv_sym(PP,uu,PPuu)
 !--     df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+radpressure-uu*4*pi*Srad-PPuu

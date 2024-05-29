@@ -18,7 +18,10 @@
 !***************************************************************
     subroutine read_python_run_pars(iostat)
 !
+      use General, only: keep_compiler_quiet
       integer, intent(out) :: iostat
+      
+      call keep_compiler_quiet(iostat)
 
     endsubroutine read_python_run_pars
 !***************************************************************

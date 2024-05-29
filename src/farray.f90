@@ -67,6 +67,10 @@ module FArrayManager
   integer, public, parameter :: iFARRAY_ERR_INDEXMISMATCH=6
   integer, public, parameter :: iFARRAY_ERR_OUTOFSPACE=7
 !
+! For future use.
+!
+  integer, public, parameter :: SCALAR=0,VECTOR=3,VECTOR2=2,VECTOR4=4,TENSOR2=9,TENSOR2SYM=6,TENSOR3=27
+!
   type pp
     integer, pointer :: p
   endtype pp

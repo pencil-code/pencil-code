@@ -2,8 +2,8 @@ def get_value_from_file(
     filename,
     quantity,
     change_quantity_to=None,
-    sim=False,
-    filepath=False,
+    sim=None,
+    filepath=None,
     DEBUG=False,
     silent=False,
 ):
@@ -66,20 +66,19 @@ def get_value_from_file(
     ######## prepare filename and quantity
     filename = filename.strip()  # get rid of whitespaces
     quantity = quantity.strip()
-    q_type = False  # q_type will store the type of the quantity value once found and identified
+    q_type = None  # q_type will store the type of the quantity value once found and identified
 
     split_filename = split(filename)
-    if sim == False and split_filename[0] != "" and filepath == False:
+    if sim is None and split_filename[0] != "" and filepath is None:
         filepath = split_filename[0]
         filename = split_filename[1]
 
     ######## find correct file
     # prepare search_path list to search filename in
-    if filepath == False:
-        if sim == False:
+    if filepath is None:
+        if sim is None:
             sim = get_sim()
-        else:
-            filepath = sim.path
+        filepath = sim.path
         search_paths = [
             sim.path,
             join(sim.path, "src"),
@@ -294,7 +293,7 @@ def get_value_from_file(
             if is_number(q[0]):
                 q_type = "STRING"
 
-    if q_type == False:  # catch if type of q was not recognized
+    if q_type is None:  # catch if type of q was not recognized
         print(
             "! ERROR: Couldnt identify the data type of the quantity value: " + str(q)
         )

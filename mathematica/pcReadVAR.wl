@@ -16,7 +16,7 @@ BeginPackage["pcReadVAR`","pcReadBasic`","pcDerivative`"]
 
 
 readVARNProc::usage="readVARNProc[sim,iproc,iVAR,nVar,lVar:{},lshear,Options] reads a VAR file
-from a single processor.
+from a single processor. There is now a new and faster implementation readVARProc.
 Input:
   sim: String. Directory of the run.
   iproc: Index of the processor, starting from 0.
@@ -35,6 +35,24 @@ Output:
 Example:
   readVARNProc[sim,1,2,7,{\"lnrho\"},False] will read the \"lnrho\" variable in proc1/VAR2 for
   a non-shear run. The inner ghost zones will be removed but not the outermost ones."
+
+readVARProc::usage="readVARProc[sim,iproc,iVAR,globalInfo] is a new and faster implementation
+of readVARNProc. It reads a VAR file from a single processor.
+Input:
+  sim: String. Directory of the run.
+  iproc: Index of the processor, starting from 0.
+  iVAR: Integer. Index of the VARN file, starting from 0. If iVAR==-1 then will read var.dat,
+        i.e., the last snapshot.
+  globalInfo: List. Optional. If provided it should be {nProc[sim],varName[sim]//Keys}.
+Options:
+  \"ltrimInner\": Trim the inner ghost zones or not. False by default.
+  \"ltrimOuter\": Trim the outer ghost zones or not. False by default.
+  \"imagic\": List of magic variables. Possible ones are \"oo\", \"bb\", and \"jj\".
+              They will be labeled by upcase letters like \"OO1\",\"OO2\",\"OO3\" in the output.
+Output:
+  An Association object.
+Example:
+  readVARProc[sim,1,2,\"ltrimInner\"->True,\"ltrimOuter\"->True,\"imagic\"->{\"oo\",\"jj\"}]"
 
 readVARN::usage="readVARN[sim,iVAR,addOn,\"ltrim\"->False,\"lOnly\"->False] reads the iVARth VARN file
 from all processors. Works for io_dist. For io_hdf5, simply use Import[\".../VAR1.h5\"].
@@ -62,6 +80,21 @@ Examples:
     to read only one component of the magnetic field. Similarly for oo and jj.
   readVARN[sim,0,{\"uu1\"},\"lOnly\"->True] will only read the uu1 component.
   readVAR[sim,0,{\"uu1\"},\"lOnly\"->False] is the same as readVAR[sim,0]."
+
+readVAR::usage="readVAR[sim,iVAR] is a new and faster implementation of readVARN. It reads a VAR
+file for all the processors. Works for io_dist. For io_hdf5, simply use Import[\".../VAR1.h5\"].
+Input:
+  sim: String. Directory of the run
+  iVAR: Integer. Index of the VARN file, starting from 0. If iVAR==-1 then will read var.dat,
+        i.e., the last snapshot.
+Options:
+  \"ltrim\": Trim the outer ghost zones or not. True by default.
+  \"imagic\": List of magic variables. Possible ones are \"oo\", \"bb\", and \"jj\".
+              They will be labeled by upcase letters like \"OO1\",\"OO2\",\"OO3\" in the output.
+Output:
+  An Association object.
+Examples:
+  readVAR[sim,0,\"ltrim\"->False,\"imagic\"->{\"oo\",\"jj\"}]"
 
 tSnap::usage="tSnap[sim,iproc:0] returns time of VARN files in the ith processor."
 
@@ -246,8 +279,11 @@ readVARN[sim_,iVAR_,addOn_List:{},OptionsPattern[]]:=Module[{
   lVar,vars=varName[sim]//Keys,varPos,raw,i2d,
   grid,values,tmp,mx,my,mz,dx,dy,dz,gh1,gh2,gh3,trim,trimx,trimy,trimz,
   oo,bb,jj},
+  readVARN::newone="Warning: there is a now a faster and more robust implementation readVAR.";
   readVARN::ghvalues="Warning: ghost zone values are computed assuming periodic boundary conditions.";
   readVARN::trimmore="Error: Cannot do ltrim=More because of insufficient inner grid cells.";
+  
+  Message[readVARN::newone];
   
   (*If lOnly==True, we read only variables in addOn*)
   If[lonly,
@@ -314,6 +350,124 @@ readVARN[sim_,iVAR_,addOn_List:{},OptionsPattern[]]:=Module[{
 
 
 (* ::Section:: *)
+(*New implementations of readVARProc and readVAR*)
+
+
+Options[readVARProc]={"ltrimInner"->False,"ltrimOuter"->False,"imagic"->{}};
+readVARProc[sim_,iproc_,iVAR_,globalInfo_List:{},OptionsPattern[]]:=Module[{
+  mx,my,mz,pre,ipx,ipy,ipz,gh1,gh2,gh3,
+  nprocx,nprocy,nprocz,varList,nvar,dx,dy,dz,
+  file,stream,read,var,t,
+  magic,tmp,
+  ltrimI,ltrimO
+},
+  
+  With[{dim=readDim[sim,iproc]},
+    {mx,my,mz,pre,gh1,gh2,gh3}=dim/@{"mx","my","mz","precision","gh1","gh2","gh3"};
+    {ipx,ipy,ipz}=dim/@{"ipx","ipy","ipz"};
+  ];
+  
+  {{nprocx,nprocy,nprocz},varList}=If[globalInfo=={},
+    {nProc[sim],varName[sim]//Keys},
+    globalInfo
+  ];
+  nvar=varList//Length;
+  
+  (* on a single proc, VAR contains: mz*mx*my data of nvar, t,x,y,z,dx,dy,dz,(deltay) *)
+  file=If[iVAR==-1,
+    StringJoin[sim,"/data/proc",ToString@iproc,"/var.dat"],
+    StringJoin[sim,"/data/proc",ToString@iproc,"/VAR",ToString@iVAR]
+  ];
+  Close[file]//Quiet;
+  stream=OpenRead[file,BinaryFormat->True];
+  read[type_List]:=BinaryReadList[stream,type,1,ByteOrdering->-1][[1]];
+  read[type_]:=BinaryRead[stream,type,ByteOrdering->-1];
+  
+  read["Integer32"];
+  var=read[ConstantArray[pre,mx*my*mz*nvar]]//ArrayReshape[#,{nvar,mz,my,mx}]&;
+  read[{"Integer32","Integer32"}];
+  t=read[pre];
+  read[ConstantArray[pre,mx+my+mz]];
+  {dx,dy,dz}=read[{pre,pre,pre}];
+  Close[file];
+  
+  var=Transpose[var,{1,4,3,2}];
+  
+  (* compute magic variables oo, bb, or jj *)
+  magic=OptionValue["imagic"];
+  If[MemberQ[magic,"oo"],
+    varList=Flatten@{varList,"OO1","OO2","OO3"};
+    tmp=curl[
+      var[[varName[sim]/@{"uu1","uu2","uu3"}]]//ArrayReshape[#,{3,mx*my*mz}]&,
+      mx,my,mz,gh1,gh2,gh3,dx,dy,dz
+    ]//ArrayReshape[#,{3,mx,my,mz}]&;
+    var=Join[var,tmp]
+  ];
+  If[MemberQ[magic,"bb"],
+    varList=Flatten@{varList,"BB1","BB2","BB3"};
+    tmp=curl[
+      var[[varName[sim]/@{"aa1","aa2","aa3"}]]//ArrayReshape[#,{3,mx*my*mz}]&,
+      mx,my,mz,gh1,gh2,gh3,dx,dy,dz
+    ]//ArrayReshape[#,{3,mx,my,mz}]&;
+    var=Join[var,tmp]
+  ];
+  If[MemberQ[magic,"jj"],
+    varList=Flatten@{varList,"JJ1","JJ2","JJ3"};
+    tmp=curl2[
+      var[[varName[sim]/@{"aa1","aa2","aa3"}]]//ArrayReshape[#,{3,mx*my*mz}]&,
+      mx,my,mz,gh1,gh2,gh3,dx,dy,dz
+    ]//ArrayReshape[#,{3,mx,my,mz}]&;
+    var=Join[var,tmp]
+  ];
+  
+  (* take out ghost zones *)
+  ltrimI=OptionValue["ltrimInner"];
+  ltrimO=OptionValue["ltrimOuter"];
+  If[(ltrimI && ipz<nprocz-1 ) || (ltrimO && ipz==nprocz-1), var=Map[Drop[#,-gh3]&,var,{1}]];
+  If[(ltrimI && ipz>0 )        || (ltrimO && ipz==0),        var=Map[Drop[#,gh3]&,var,{1}]];
+  If[(ltrimI && ipy<nprocy-1 ) || (ltrimO && ipy==nprocy-1), var=Map[Drop[#,-gh2]&,var,{2}]];
+  If[(ltrimI && ipy>0 )        || (ltrimO && ipy==0),        var=Map[Drop[#,gh2]&,var,{2}]];
+  If[(ltrimI && ipx<nprocx-1 ) || (ltrimO && ipx==nprocx-1), var=Map[Drop[#,-gh1]&,var,{3}]];
+  If[(ltrimI && ipx>0 )        || (ltrimO && ipx==0),        var=Map[Drop[#,gh1]&,var,{3}]];
+  
+  Join[
+    Association["ipxyz"->{ipx,ipy,ipz}],
+    Association["t"->t],
+    Association["varList"->varList],
+    Association["var"->var]
+  ]
+]
+
+
+Options[readVAR]={"ltrim"->True,"imagic"->{}};
+readVAR[sim_,iVAR_,OptionsPattern[]]:=Module[{nprocx,nprocy,nprocz,varList,varAll,var},
+  {nprocx,nprocy,nprocz}=nProc[sim];
+  varList=varName[sim]//Keys;
+  
+  varAll=ConstantArray[{},{nprocx,nprocy,nprocz}];
+  Monitor[
+    Do[
+      var=readVARProc[sim,iproc,iVAR,{{nprocx,nprocy,nprocz},varList},
+        "ltrimInner"->True,"ltrimOuter"->OptionValue["ltrim"],
+        "imagic"->OptionValue["imagic"]
+      ];
+      varAll[[Sequence@@(1+var["ipxyz"])]]=var["var"],
+      {iproc,Range[0,nprocx*nprocy*nprocz-1]}
+    ],StringJoin["Reading proc: ",ToString@(1+iproc)," / ",ToString[nprocx*nprocy*nprocz]]
+  ];
+  
+  (* varAll is of size (nprocx,nprocy,nprocz,nvar,sx,sy,sz) *)
+  (* where sxyz can be mxyz-ghxyz or mxyz-2ghxyz depending on ipxyz *)
+  varAll=Flatten[varAll,{{4},{1,5},{2,6},{3,7}}];
+  
+  Join[
+  Association["t"->var["t"]],
+  AssociationThread[var["varList"]->varAll]
+  ]
+]
+
+
+(* ::Section:: *)
 (*Interpolation*)
 
 
@@ -330,7 +484,9 @@ End[]
 
 
 Protect[
-  readVARNProc,readVARN,tSnap,
+  readVARNProc,readVARN,
+  readVARProc,readVAR,
+  tSnap,
   pcIntpltVar
 ]
 

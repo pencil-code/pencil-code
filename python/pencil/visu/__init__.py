@@ -32,6 +32,7 @@ try:
     from . import pv_plotter
     from . import pv_plotter_utils
     from . import pv_volume_plotter
+#    from . import rvid_box_vista
 except Exception as e:
     if rank == 0:
         print(f"Exception while loading PyVista plotter tools. Exception: {e}")

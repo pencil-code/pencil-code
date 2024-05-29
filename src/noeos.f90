@@ -38,6 +38,7 @@ module EquationOfState
   real :: cs2bot=1.0, cs2top=1.0
   real :: Cp_const=impossible
   real :: Pr_number=0.7
+  real :: lnTT0=impossible, TT0=impossible
   logical :: lpres_grad=.false.
 
   contains
@@ -266,7 +267,7 @@ module EquationOfState
 !   02-apr-04/tony: dummy
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (nx), intent(out) :: cs2,
+      real, dimension (nx), intent(out) :: cs2
       real, dimension (nx), intent(out), optional :: cp1tilde
 !
       call not_implemented('presssure_gradient_farray','for this EOS')
@@ -465,7 +466,9 @@ module EquationOfState
 !  18-oct-03/tobi: distributed across ionization modules
 !
       real, intent(in) :: T0
-      real, dimension(mx,my,mz) :: lnrho,ss
+      real, dimension(mx,my,mz), intent(in) :: lnrho
+      real, dimension(mx,my,mz), intent(out):: ss
+
       real :: ss_offset
 !
 !  if T0 is different from unity, we interpret

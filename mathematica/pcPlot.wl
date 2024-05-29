@@ -45,6 +45,30 @@ Input:
 Options:
   All options inherit those of ArrayPlot."
 
+pcPolarDensityPlot::usage="pcPolarDensityPlot[r,theta,f,opts] plots 2D color plots in the polar coordinates
+using Graphics combined with Annulus. It has better performance than using ListDensityPlot.
+Input:
+  r: The radial coordinates. E.g., readGrid[sim][[1]].
+  theta: The polar coordinates. E.g., readGrid[sim][[2]].
+  f: A 2D array of dimension {Length[r],Length[theta]}.
+Options:
+  \"DataOptions\" should be a List with the following possible Rules:
+    \"DownSamplingFractions\": A List with two positive real numbers {dsr,dsth}, to down-sample data.
+    \"ColorFunction\": Could be ColorData[...] or pcColors[...]. The default is pcColors[\"Rainbow\"].
+  \"PlotOptions\" will be inherited by the output Graphics[...].
+Example:
+  pcPolarDensityPlot[{r,theta,lnrho},\[IndentingNewLine]    \"DataOptions\"->{\"DownSamplingFractions\"->{2,3},\"ColorFunction\"->ColorData[\"BlueGreenYellow\"]},\[IndentingNewLine]    \"PlotOptions\"->{FrameLabel->{\"x\",\"y\"}}\[IndentingNewLine]  ]"
+
+pcLICPlot::usage="pcLICPlot[array,regionFunc,opts] is a wrapper for ListLineIntegralConvolutionPlot.
+Input:
+  array: A List of form { {{x,y},{vx,vy}},... }.
+  regionFunc: Optional. This should be a Function like
+                Between[Norm[{#1,#2}],r//MinMax] && Between[ArcCos[#2/Norm[{#1,#2}]],theta//MinMax] &
+              which specifies which region should be plotted, as a temporary solution since there is
+              no RegionFunction option for ListLineIntegralConvolutionPlot. The arguments of regionFunc
+              are x and y.
+  opts: Options that will be inherited by ListLineIntegralConvolutionPlot."
+
 spaceTimeDiag::usage="spaceTimeDiag[sim,plane,var,plotStyle:] makes a butterfly diagram from planar averaged data.
 Input:
   sim: String. Directory of the simulation.
@@ -121,8 +145,11 @@ pcColors[name_String]:=Switch[name,
   "Blue",RGBColor[{28,77,124}/255],
   "Green",RGBColor[{1,113,0}/255],
   "Magenta",RGBColor[{151,14,83}/255],
-  "RainbowR",ColorData[{"Rainbow","Reversed"}],
+  "Rainbow",Blend[{pcHexColor["#032D75"],pcHexColor["#01B1FA"],pcHexColor["#F4BD18"],pcHexColor["#ED1B24"]},#]&,
+  "RainbowR",Blend[Reverse@{pcHexColor["#032D75"],pcHexColor["#01B1FA"],pcHexColor["#F4BD18"],pcHexColor["#ED1B24"]},#]&,
+  (*"RainbowR",ColorData[{"Rainbow","Reversed"}],*)
   "BlueBlackRed",Blend[{pcColors["Blue"],pcHexColor["#006C65"],Black,pcHexColor["#E2792E"],pcColors["Red"]},#]&,
+  "BlueWhiteRed",Blend[{pcColors["Blue"],pcHexColor["#6C96CC"],pcHexColor["#EDAE92"],pcColors["Red"]},#]&,
   _,ColorData[name]
 ]
 pcColors[name_,{min_,max_}]:=pcColors[name][If[Abs[min]>=max,-0.5/min*(#-min),0.5/max*(#-max)+1]]&
@@ -137,19 +164,26 @@ pcPlotStyle[]:=Module[{setOps},
   setOps[ops_List,funcs_List]:=Map[SetOptions[#,ops]&,funcs];
   (*General options for all plots*)
   setOps[{
-      PlotRange->All,Frame->True,LabelStyle->pcLabelStyle,
+      PlotRange->All,Frame->True,Axes->None,LabelStyle->pcLabelStyle,
       FrameStyle->pcLabelStyle,ImageSize->{360,360/GoldenRatio},
-      ImagePadding->{{60,10},{40,10}}
+      ImagePadding->{{50,50},{50,10}}
     },{
       Plot,LogPlot,LogLogPlot,LogLinearPlot,DensityPlot,
       ListPlot,ListLogPlot,ListLogLogPlot,ListLogLinearPlot,ListLinePlot,
-      ListDensityPlot,ListVectorPlot,ListStreamPlot,
+      ListDensityPlot,ListVectorPlot,ListStreamPlot,ListLineIntegralConvolutionPlot,
+      Histogram,SmoothHistogram
+    }];
+  (*Options for 1D plots*)
+  setOps[{
+      Method->"DefaultPlotStyle"->Directive[Black,AbsoluteThickness[1]]
+    },{
+      Plot,LogPlot,LogLogPlot,LogLinearPlot,
+      ListPlot,ListLogPlot,ListLogLogPlot,ListLogLinearPlot,ListLinePlot,
       SmoothHistogram
     }];
-  (*Options for 1D ListPlot's*)
+  (*Options for 1D List plots*)
   setOps[{
-      Joined->True,
-      Method->"DefaultPlotStyle"->Directive[Black,AbsoluteThickness[1]]
+      Joined->True
     },{
       ListPlot,ListLogPlot,ListLogLogPlot,ListLogLinearPlot,ListLinePlot
     }];
@@ -158,7 +192,12 @@ pcPlotStyle[]:=Module[{setOps},
       PlotLegends->Automatic,ColorFunction->pcColors["Rainbow"],
       PlotRangePadding->None
     },{
-      DensityPlot,ListDensityPlot
+      DensityPlot,ListDensityPlot,ListLineIntegralConvolutionPlot
+    }];
+  setOps[{
+      RegionBoundaryStyle->None,RegionFillingStyle->None
+    },{
+      ListVectorPlot,ListStreamPlot,ListVectorDensityPlot,ListStreamDensityPlot
     }];
   (*Options for ListDensity Plot*)
   setOps[{
@@ -176,6 +215,9 @@ pcPopup[plot_]:=CreateDocument[plot,
 
 pcTicks["10^i",max_:99]:=Table[{10^i,Superscript["10",ToString@i]},{i,-max,max}]
 pcTicks["Log10i",max_:99]:=Table[{10^i,ToString@i},{i,-max,max}]
+pcTicks["Range"][range_,pd_]:=List[
+  {#,StringPadRight[ToString[#],pd,"0"]}&/@range, Automatic
+]
 
 pcInset[str_String,posx_,posy_]:=Inset[Style[str,pcLabelStyle],Scaled[{posx,posy}]]
 
@@ -214,7 +256,8 @@ pcDensityPlot[{gridx_,gridy_,data_},opts:OptionsPattern[]]:=Module[{x,y,f,frameL
     ]
   ];
   ArrayPlot[f,FrameLabel->frameLabel,opts,
-    DataRange->{x//MinMax,y//MinMax},AspectRatio->Length[y//Union]/Length[x//Union],
+    DataRange->{x//MinMax,y//MinMax},
+    AspectRatio->Abs[(Subtract@@MinMax[y])/(Subtract@@MinMax[x])],
     PlotRangePadding->None,ColorFunction->pcColors["Rainbow"],
     FrameTicks->{{Subdivide[Sequence@@MinMax[y],4],Automatic},{Subdivide[Sequence@@MinMax[x],4],Automatic}},
     FrameStyle->Directive[Black,AbsoluteThickness[1]],
@@ -223,6 +266,73 @@ pcDensityPlot[{gridx_,gridy_,data_},opts:OptionsPattern[]]:=Module[{x,y,f,frameL
   ]
 ]
 pcDensityPlot[data_List,opts:OptionsPattern[]]:=pcDensityPlot[Transpose[data],opts]/;Dimensions[data][[-1]]==3
+
+
+(* ::Section:: *)
+(*Density plot in polar coordinates*)
+
+
+Options[pcPolarDensityPlot]={"DataOptions"->{},"PlotOptions"->{Frame->True}};
+pcPolarDensityPlot[{r0_List,theta0_List,f0_List},OptionsPattern[]]:=Module[{optsD,optsP,dsr,dsth,r,th,f,minmax,cf,dr,dth,ann},
+  optsD=Association[OptionValue["DataOptions"]];
+  optsP=Association[OptionValue["PlotOptions"]];
+  
+  (* remap polar angle from [0,\[Pi]] to [\[Pi]/2,-\[Pi]/2] *)
+  r=r0;
+  th=Reverse[\[Pi]/2-theta0];
+  f=Reverse/@f0;
+  
+  (* down-sampling fractions *)
+  (* e.g. If dsr==2 then down-sample r direction every 2 mesh points *)
+  {dsr,dsth}=Lookup[optsD,"DownSamplingFactor",{1,1}];
+  r=ArrayResample[r,Scaled[1/dsr]];
+  th=ArrayResample[th,Scaled[1/dsth]];
+  f=ArrayResample[f,Scaled[1/#]&/@{dsr,dsth}];
+  dr=1.02*Flatten@{0,r//Differences,0};
+  dth=1.02Flatten@{0,th//Differences,0};
+  
+  (* color function *)
+  minmax=Lookup[optsP,PlotRange,f//Flatten//MinMax];
+  cf[x_]:=Lookup[optsP,ColorFunction,pcColors["Rainbow"]]@Rescale[x,minmax];
+  
+  (* generate cells *)
+  ann=Table[
+    {EdgeForm[],cf[f[[i,j]]],Annulus[{0,0},{r[[i]]-dr[[i]]/2,r[[i]]+dr[[i+1]]/2},{th[[j]]-dth[[j]]/2,th[[j]]+dth[[j+1]]/2}]},
+    {i,1,r//Length},{j,1,th//Length}
+  ]//Flatten[#,1]&;
+  
+  (* plot *)
+  Graphics[ann,
+    DeleteCases[OptionValue["PlotOptions"], ( ColorFunction | PlotRange )->_],
+    Frame->True,LabelStyle->pcLabelStyle,FrameStyle->pcLabelStyle,
+    ImagePadding->{{50,50},{50,10}},Background->Transparent
+  ]
+]
+
+
+(* ::Section:: *)
+(*Wrapper for ListLineIntegralConvolutionPlot*)
+
+
+pcLICPlot[arr_,regionFunc_Function:(True&),opts:OptionsPattern[]]:=Module[{minmax,mask},
+  minmax["x"]=arr[[;;,1,1]]//MinMax;
+  minmax["y"]=arr[[;;,1,2]]//MinMax;
+  minmax["norm"]=MinMax[Norm/@(arr[[;;,2]])];
+  
+  mask=RegionPlot[Not[regionFunc[x,y]],{x,Sequence@@minmax["x"]},{y,Sequence@@minmax["y"]},
+    PlotStyle->White, BoundaryStyle->None
+  ];
+  
+  Show[
+    ListLineIntegralConvolutionPlot[arr,opts,
+      AspectRatio->Differences[minmax["x"]]/Differences[minmax["y"]],
+      ColorFunctionScaling->False,
+      ColorFunction->Function[{x,y,vx,vy,n},ColorData["BlueGreenYellow"][Rescale[n//Log10,minmax["norm"]//Log10]]],
+      LightingAngle->{0,Pi/2}
+    ],
+    mask
+  ]
+]
 
 
 (* ::Section:: *)
@@ -249,18 +359,17 @@ spaceTimeDiag[sim_,sl_,var_,plotStyle___Rule]:=Module[{t,f,nt,nx,gf},
 (*Plot a slice from a readVARN[sim,iVAR] data*)
 
 
-showSlice[data_,var_String,{sp_String,loc_?NumericQ},plotStyle___Rule]:=
-  Module[{f,x1,x2,x3,pos,plotData},
+showSlice[data_,var_String,{sp_String,loc_?NumericQ},opts:OptionsPattern[]]:=
+  Module[{f,x1,x2,x3,x30,pos,plotData},
     f=data[var];
     {x1,x2,x3}=data/@Switch[sp,
         "x",{"y","z","x"},"y",{"x","z","y"},"z",{"x","y","z"}
       ];
-    pos=Nearest[x3->"Index",loc];
-    Print["Plotting the slice at ",sp,"=",x3[[pos//First]]];
-    plotData=Transpose[Extract[#,List/@pos]&/@{x1,x2,f}];
-    ListDensityPlot[plotData,plotStyle,
-      AspectRatio->Abs[(Subtract@@MinMax[x2])/(Subtract@@MinMax[x1])]
-    ]
+    x30=Nearest[x3//Union,loc][[1]];
+    pos=Position[x3,x30];
+    Print["Plotting the slice at ",sp,"=",x30];
+    plotData=Transpose[Extract[#,pos]&/@{x1,x2,f}];
+    pcDensityPlot[plotData,opts]
   ]
 
 (*plot from VAR data*)
@@ -375,7 +484,7 @@ Protect[
   pcHexColor,pcColors,
   pcLabelStyle,pcPlotStyle,pcPopup,pcTicks,pcInset,
   pcLegend,
-  pcDensityPlot,
+  pcDensityPlot,pcPolarDensityPlot,pcLICPlot,
   spaceTimeDiag,
   showVideo,
   showSlice,showSliceVector,

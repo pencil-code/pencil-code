@@ -55,6 +55,7 @@ module Chemistry
   real :: Cv_const=impossible
   logical :: lfix_Sc=.false., lfix_Pr=.false.
   logical :: init_from_file, reinitialize_chemistry=.false.
+  logical :: lchem_detailed=.true.
   character(len=30) :: reac_rate_method = 'chemkin'
 ! parameters for initial conditions
   real :: init_x1=-0.2, init_x2=0.2
@@ -102,8 +103,7 @@ module Chemistry
 !
 !  The stociometric factors need to be reals for arbitrary reaction orders
 !
-  real, allocatable, dimension(:,:) :: stoichio, Sijm, Sijp
-!     integer, allocatable, dimension(:,:) :: stoichio,Sijm,Sijp
+  real, allocatable, dimension(:,:) :: stoichio, Sijm, Sijp, Sijm_, Sijp_, Sijm_mod, Sijp_mod
   real, allocatable, dimension(:,:) :: kreactions_z
   real, allocatable, dimension(:) :: kreactions_m, kreactions_p
   logical, allocatable, dimension(:) :: back
@@ -200,7 +200,7 @@ module Chemistry
       linit_density, init_rho2, &
       file_name, lreac_as_aux, init_zz1, init_zz2, flame_pos, &
       reac_rate_method,global_phi, lSmag_heat_transport, Pr_turb, lSmag_diffusion, z_cloud, &
-      lhotspot
+      lhotspot, lchem_detailed
 !
 !
 ! run parameters
@@ -213,7 +213,7 @@ module Chemistry
       lfilter_strict,init_TT1,init_TT2,init_x1,init_x2, linit_temperature, &
       linit_density, &
       ldiff_corr, lDiff_fick, lreac_as_aux, reac_rate_method,global_phi, &
-      Ythresh
+      Ythresh, lchem_detailed
 !
 ! diagnostic variables (need to be consistent with reset list below)
 !
@@ -1116,18 +1116,23 @@ module Chemistry
       real, dimension(mx,my,mz,mfarray) :: f
       integer :: i, j,k
 !
-      real :: mO2=0., mH2=0., mN2=0., mH2O=0., mCH4=0., mCO2=0.
+      real :: mO2=0., mH2=0., mN2=0., mH2O=0., mCH4=0., mCO2=0., mSIO=0., mSIO2=0.
       real :: log_inlet_density, del, PP
-      integer :: i_H2=0, i_O2=0, i_H2O=0, i_N2=0
-      integer :: ichem_H2=0, ichem_O2=0, ichem_N2=0, ichem_H2O=0
+      integer :: i_H2=0, i_O2=0, i_H2O=0, i_N2=0, i_SIO=0, i_SIO2=0
+      integer :: ichem_H2=0, ichem_O2=0, ichem_N2=0, ichem_H2O=0, ichem_SIO=0, ichem_SIO2=0
       integer :: i_CH4=0, i_CO2=0, ichem_CH4=0, ichem_CO2=0
       real :: initial_mu1, final_massfrac_O2, final_massfrac_CH4, &
-          final_massfrac_H2O, final_massfrac_CO2
+          final_massfrac_H2O, final_massfrac_CO2, &
+          final_massfrac_SIO, final_massfrac_SIO2
       real :: init_H2, init_O2, init_N2, init_H2O, init_CO2, init_CH4
+      real :: init_SIO, init_SIO2
       logical :: lH2=.false., lO2=.false., lN2=.false., lH2O=.false.
       logical :: lCH4=.false., lCO2=.false.
+      logical :: lSIO=.false., lSIO2=.false.
 !
       lflame_front = .true.
+!
+!  Cal air_field to set logicals
 !
       call air_field(f,PP)
 !
@@ -1151,6 +1156,20 @@ module Chemistry
         init_N2 = initial_massfractions(ichem_N2)
       else
         init_N2 = 0
+      endif
+      call find_species_index('SIO',i_SIO,ichem_SIO,lSIO)
+      if (lSIO) then
+        mSIO = species_constants(ichem_SIO,imass)
+        init_SIO = initial_massfractions(ichem_SIO)
+      else
+        init_SIO = 0
+      endif
+      call find_species_index('SIO2',i_SIO2,ichem_SIO2,lSIO2)
+      if (lSIO2) then
+        mSIO2 = species_constants(ichem_SIO2,imass)
+        init_SIO2 = initial_massfractions(ichem_SIO2)
+      else
+        init_SIO2 = 0
       endif
       call find_species_index('H2O',i_H2O,ichem_H2O,lH2O)
       if (lH2O) then
@@ -1186,6 +1205,10 @@ module Chemistry
         final_massfrac_H2O = 2.*mH2O/mCH4 * init_CH4
         final_massfrac_CO2 = mCO2/mCH4 * init_CH4
         final_massfrac_O2 = 1. - final_massfrac_CO2 - final_massfrac_H2O - init_N2
+      elseif (lSIO) then
+        final_massfrac_SIO = 0.
+        final_massfrac_SIO2 = mSIO2/mSIO * init_SIO
+        final_massfrac_O2 = 1. - final_massfrac_SIO2 - init_N2
       endif
 !
       if (final_massfrac_O2 < 0.) final_massfrac_O2 = 0.
@@ -1196,7 +1219,9 @@ module Chemistry
         if (lO2) print*, 'O2 :',    init_O2, final_massfrac_O2
         if (lH2O) print*, 'H2O :',  init_H2O, final_massfrac_H2O
         if (lCO2)  print*, 'CO2 :', 0., final_massfrac_CO2
-      endif
+        if (lSIO) print*, 'SiO :',  init_SIO, 0.
+        if (lSIO2) print*, 'SIO2 :',  init_SIO2, final_massfrac_SIO2
+     endif
 !
 !  Initialize temperature and species
 !
@@ -1233,6 +1258,7 @@ module Chemistry
             if (lH2 .and. .not. lCH4) f(k,:,:,i_H2) = init_H2* &
                 (exp(f(k,:,:,ilnTT))-init_TT2)/(init_TT1-init_TT2)
             if (lCH4) f(k,:,:,i_CH4) = init_CH4*(exp(f(k,:,:,ilnTT))-init_TT2)/(init_TT1-init_TT2)
+            if (lSIO) f(k,:,:,i_SIO) = init_SIO*(exp(f(k,:,:,ilnTT))-init_TT2)/(init_TT1-init_TT2)
           endif
         endif
 !
@@ -1265,43 +1291,59 @@ module Chemistry
           endif
         enddo
 !
-      elseif (.not. l1step_test) then
-        do k = 1,mx
-          if (x(k) >= init_x1 .and. x(k) < init_x2) then
-            f(k,:,:,i_H2O) = (x(k)-init_x1)/(init_x2-init_x1) &
-                *final_massfrac_H2O
-            if (lCO2) f(k,:,:,i_CO2) = (x(k)-init_x1)/(init_x2-init_x1) &
-                *final_massfrac_CO2
-          elseif (x(k) >= init_x2) then
-            if (lCO2) f(k,:,:,i_CO2) = final_massfrac_CO2
-            if (lH2O) f(k,:,:,i_H2O) = final_massfrac_H2O
-          endif
-        enddo
+     elseif (.not. l1step_test) then
+        if (lH2O) then
+           do k = 1,mx
+              if (x(k) >= init_x1 .and. x(k) < init_x2) then
+                 f(k,:,:,i_H2O) = (x(k)-init_x1)/(init_x2-init_x1) &
+                      *final_massfrac_H2O
+                 if (lCO2) f(k,:,:,i_CO2) = (x(k)-init_x1)/(init_x2-init_x1) &
+                      *final_massfrac_CO2
+              elseif (x(k) >= init_x2) then
+                 if (lCO2) f(k,:,:,i_CO2) = final_massfrac_CO2
+                 if (lH2O) f(k,:,:,i_H2O) = final_massfrac_H2O
+              endif
+           enddo
+        elseif (lSIO2) then
+           do k = 1,mx
+              if (x(k) >= init_x1 .and. x(k) < init_x2) then
+                 f(k,:,:,i_SIO2) = (x(k)-init_x1)/(init_x2-init_x1) &
+                      *final_massfrac_SIO2
+                 if (lCO2) f(k,:,:,i_CO2) = (x(k)-init_x1)/(init_x2-init_x1) &
+                      *final_massfrac_CO2
+              elseif (x(k) >= init_x2) then
+                 if (lCO2) f(k,:,:,i_CO2) = final_massfrac_CO2
+                 if (lSIO2) f(k,:,:,i_SIO2) = final_massfrac_SIO2
+              endif
+           enddo
+        end if
       endif
 !
       if (unit_system == 'cgs') then
         Rgas_unit_sys = k_B_cgs/m_u_cgs
         Rgas = Rgas_unit_sys/unit_energy
-      endif
+     endif
 !
 !  Find logaritm of density at inlet
 !
-      initial_mu1 = &
+     initial_mu1 = &
           initial_massfractions(ichem_O2)/(mO2) &
-          +initial_massfractions(ichem_H2O)/(mH2O) &
           +initial_massfractions(ichem_N2)/(mN2)
-      if (lH2 .and. .not. lCH4) initial_mu1 = initial_mu1+ &
+     if (lH2 .and. .not. lCH4) initial_mu1 = initial_mu1+ &
           initial_massfractions(ichem_H2)/(mH2)
-      if (lCO2) initial_mu1 = initial_mu1+init_CO2/(mCO2)
-      if (lCH4) initial_mu1 = initial_mu1+init_CH4/(mCH4)
-      log_inlet_density = log(init_pressure)-log(Rgas)-log(init_TT1)-log(initial_mu1)
+     if (lCO2) initial_mu1 = initial_mu1+init_CO2/(mCO2)
+     if (lCH4) initial_mu1 = initial_mu1+init_CH4/(mCH4)
+     if (lH2O) initial_mu1 = initial_mu1+init_H2O/(mH2O)
+     if (lSIO) initial_mu1 = initial_mu1+init_SIO/(mSIO)
+     if (lSIO2) initial_mu1 = initial_mu1+init_SIO2/(mSIO2)
+     log_inlet_density = log(init_pressure)-log(Rgas)-log(init_TT1)-log(initial_mu1)
 !
 !  Initialize density
 !
       call getmu_array(f,mu1_full)
       f(l1:l2,m1:m2,n1:n2,ilnrho) = log(init_pressure)-log(Rgas)  &
           -f(l1:l2,m1:m2,n1:n2,ilnTT)-log(mu1_full(l1:l2,m1:m2,n1:n2))
-!
+      !
 !  Initialize velocity
 !
 !      f(l1:l2,m1:m2,n1:n2,iux)=exp(log_inlet_density - f(l1:l2,m1:m2,n1:n2,ilnrho)) &
@@ -1338,6 +1380,7 @@ module Chemistry
       integer :: i, j,k
 !
       real :: mO2=0., mH2=0., mN2=0., mH2O=0., mCH4=0., mCO2=0.
+
       real :: log_inlet_density, del, PP
       integer :: i_H2=0, i_O2=0, i_H2O=0, i_N2=0
       integer :: ichem_H2=0, ichem_O2=0, ichem_N2=0, ichem_H2O=0
@@ -2980,6 +3023,8 @@ module Chemistry
           sum_hhk_DYDt_reac = 0.
           sum_dk_ghk = 0.
 !
+!  Reaction terms
+!
           do k = 1,nchemspec
             if (species_constants(k,imass) > 0.) then
               sum_DYDt = sum_DYDt+Rgas/species_constants(k,imass)*(p%DYDt_reac(:,k)+p%DYDt_diff(:,k))
@@ -3616,6 +3661,14 @@ module Chemistry
         if (stat > 0) call fatal_error('chemkin_data',"Couldn't allocate Sijm")
         allocate(Sijp(nchemspec,mreactions),STAT=stat)
         if (stat > 0) call fatal_error('chemkin_data',"Couldn't allocate Sijp")
+        allocate(Sijm_(nchemspec,mreactions),STAT=stat)
+        if (stat > 0) call fatal_error('chemkin_data',"Couldn't allocate Sijm_")
+        allocate(Sijp_(nchemspec,mreactions),STAT=stat)
+        if (stat > 0) call fatal_error('chemkin_data',"Couldn't allocate Sijp_")
+        allocate(Sijm_mod(nchemspec,mreactions),STAT=stat)
+        if (stat > 0) call fatal_error('chemkin_data',"Couldn't allocate Sijm_mod")
+        allocate(Sijp_mod(nchemspec,mreactions),STAT=stat)
+        if (stat > 0) call fatal_error('chemkin_data',"Couldn't allocate Sijp_mod")
         allocate(reaction_name(mreactions),STAT=stat)
         if (stat > 0) call fatal_error('chemkin_data',"Couldn't allocate reaction_name")
         allocate(back(mreactions),STAT=stat)
@@ -3653,13 +3706,27 @@ module Chemistry
 !  Initialize data
 !
       Sijp = 0.
-      Sijm = 0.0
+      Sijm = 0.
+      Sijp_mod = 0.
+      Sijm_mod = 0.
       back = .true.
 !
 !  read chemistry data
 !
       call read_reactions(input_file)
       call write_reactions
+!
+!  Possibility of modification for the power part in case of global (not detailed) reactions.
+!
+      if (lchem_detailed) then
+        Sijp_=Sijp
+        Sijm_=Sijm
+      else
+        call read_reactions_mod
+        Sijp_=Sijp+Sijp_mod
+        Sijm_=Sijm+Sijm_mod
+        call write_matrices
+      endif
 !
 !  calculate stoichio and nreactions
 !
@@ -3797,7 +3864,7 @@ module Chemistry
 !
 ! End of the photochemical case
 !
-! Find reactant side stoichiometric coefficients
+! Find reactant side stoichiometric coefficients (if =>, then backward reaction to false)
 !
                 SeparatorInd=index(ChemInpLine(StartInd:),'<=')
                 if (SeparatorInd==0) then
@@ -4066,6 +4133,65 @@ module Chemistry
 !
     endsubroutine read_reactions
 !***********************************************************************
+    subroutine read_reactions_mod
+!
+!  Read Sijp_mod.dat and Sijm_mod.dat, but so far only Sijp_mod.dat.
+!
+!  26-apr-24/nils+axel: coded
+!
+    integer :: lun=23
+!
+    open(lun,file='Sijp_mod.dat')
+    read(lun,*) Sijp_mod
+    close(lun)
+!
+    endsubroutine read_reactions_mod
+!***********************************************************************
+    subroutine write_matrices
+!
+!  Print Sijp_mod.dat and others
+!
+!  26-apr-24/nils+axel: coded
+!
+    integer :: ireactions
+!
+    if (lroot) then
+      write(*,*) 'Sijp and Sijm based on chem.inp file'
+      write(*,*) 'Sijp_mod based on the Sijp_mod.dat file (read only if lchem_detailed=F)'
+      write(*,*) 'Sijp_ is the sum of those (used to change power of in reaction equations)'
+      write(*,*) 'Sijp_mod ='
+      write(*,1000) varname(ichemspec(:))
+      do ireactions=1,mreactions
+        write(*,1001) ireactions,Sijp_mod(:,ireactions)
+      enddo
+      write(*,*)
+!
+      write(*,*) 'Sijp='
+      write(*,1000) varname(ichemspec(:))
+      do ireactions=1,mreactions
+        write(*,1001) ireactions,Sijp(:,ireactions)
+      enddo
+      write(*,*)
+!
+      write(*,*) 'Sijp_='
+      write(*,1000) varname(ichemspec(:))
+      do ireactions=1,mreactions
+        write(*,1001) ireactions,Sijp_(:,ireactions)
+      enddo
+      write(*,*)
+!
+      write(*,*) 'Sijm_='
+      write(*,1000) varname(ichemspec(:))
+      do ireactions=1,mreactions
+        write(*,1001) ireactions,Sijm_(:,ireactions)
+      enddo
+      write(*,*)
+    endif
+!
+1000 format(5x,20a6)
+1001 format(i2,20f6.1)
+    endsubroutine write_matrices
+!***********************************************************************
     subroutine get_reaction_rate(f,vreact_p,vreact_m,p)
 !
 !  This subroutine calculates forward and reverse reaction rates,
@@ -4108,8 +4234,15 @@ module Chemistry
         if (lwrite_first)  open (file_id,file=input_file)
 !
 !  p is in atm units; atm/bar=1./10.13
+!  NILS: I think the conversion constant to calories is 4.184 instead 4.14
 !
-        Rcal = Rgas_unit_sys/4.14*1e-7
+        if (unit_system/="cgs") call fatal_error("get_reaction_rate","Unit system must be cgs.")
+
+        !if (chemkin_units=="SI") then
+        !   
+        !endif
+        
+        Rcal = Rgas_unit_sys/4.184*1e-7
         Rcal1 = 1./Rcal
         lnRgas = log(Rgas)
         l10 = log(10.)
@@ -4127,29 +4260,23 @@ module Chemistry
           prod1 = 1.
           prod2 = 1.
           do k = 1,nchemspec
-            if (abs(Sijp(k,reac)) == 1) then
-              prod1 = prod1*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:) &
-                  /species_constants(k,imass))
-            elseif (abs(Sijp(k,reac)) == 2) then
-              prod1 = prod1*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:) &
-                  /species_constants(k,imass))*(f(l1:l2,m,n,ichemspec(k)) &
-                  *rho_cgs(:)/species_constants(k,imass))
-            elseif (abs(Sijp(k,reac)) > 0) then
-              prod1 = prod1*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:) &
-                  /species_constants(k,imass))**Sijp(k,reac)
+            if (abs(Sijp_(k,reac)) == 1) then
+              prod1 = prod1*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)/species_constants(k,imass))
+            elseif (abs(Sijp_(k,reac)) == 2) then
+              prod1 = prod1*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)/species_constants(k,imass)) &
+                           *(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)/species_constants(k,imass))
+            elseif (abs(Sijp_(k,reac)) > 0) then
+              prod1 = prod1*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)/species_constants(k,imass))**Sijp_(k,reac)
             endif
           enddo
           do k = 1,nchemspec
-            if (abs(Sijm(k,reac)) == 1.0) then
-              prod2 = prod2*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:) &
-                  /species_constants(k,imass))
-            elseif (abs(Sijm(k,reac)) == 2.0) then
-              prod2 = prod2*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:) &
-                  /species_constants(k,imass))*(f(l1:l2,m,n,ichemspec(k)) &
-                  *rho_cgs(:)/species_constants(k,imass))
-            elseif (abs(Sijm(k,reac)) > 0.0) then
-              prod2 = prod2*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:) &
-                  /species_constants(k,imass))**Sijm(k,reac)
+            if (abs(Sijm_(k,reac)) == 1.0) then
+              prod2 = prod2*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)/species_constants(k,imass))
+            elseif (abs(Sijm_(k,reac)) == 2.0) then
+              prod2 = prod2*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)/species_constants(k,imass)) &
+                           *(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)/species_constants(k,imass))
+            elseif (abs(Sijm_(k,reac)) > 0.0) then
+              prod2 = prod2*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)/species_constants(k,imass))**Sijm_(k,reac)
             endif
           enddo
 !
@@ -5283,7 +5410,7 @@ module Chemistry
         print*, 'Air mean weight, g/mol', air_mass
         print*, 'R', k_B_cgs/m_u_cgs
       endif
-
+      
       close(file_id)
 !
     endsubroutine air_field

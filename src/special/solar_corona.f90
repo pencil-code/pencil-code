@@ -53,7 +53,7 @@ module Special
   real :: nc_lnrho_num_magn=0.0, nc_lnrho_trans_width=0.0
   real :: vel_time_offset=0.0, mag_time_offset=0.0
   real :: swamp_fade_start=0.0, swamp_fade_end=0.0
-  real :: swamp_diffrho=0.0, swamp_chi=0.0, swamp_eta=0.0
+  real :: swamp_diffrho=0.0, swamp_chi=0.0, swamp_eta=0.0, swamp_nu=0.0
   real :: lnrho_min=-max_real, lnrho_min_tau=1.0,uu_tau1_quench=0.0, lnTT_hotplate_tau=1.0
   real :: lnrho_max=max_real
   real, dimension(2) :: nwave=(/0.,0./),w_ff=(/0.,0./),z_ff=(/0.,0./)
@@ -103,7 +103,7 @@ module Special
       nc_z_max,nc_z_min,nc_z_trans_width,nc_lnrho_num_magn,nc_lnrho_trans_width, nc_z_min_trans_width, &
       lnc_density_depend, lnc_intrin_energy_depend, &
       init_time_fade_start, init_time_hcond_fade_start, &
-      swamp_fade_start, swamp_fade_end, swamp_diffrho, swamp_chi, swamp_eta, &
+      swamp_fade_start, swamp_fade_end, swamp_diffrho, swamp_chi, swamp_eta, swamp_nu, &
       vel_time_offset, mag_time_offset, lnrho_min, lnrho_min_tau, &
       cool_RTV_cutoff, T_crit, deltaT_crit, & 
       lflux_emerg_bottom, uu_emerg, bb_emerg, uu_drive,flux_type,lslope_limited_special, &
@@ -731,6 +731,10 @@ module Special
         lpenc_requested(i_diva) = .true.
       endif
 !
+      if (swamp_nu > 0.0) then
+        lpenc_requested(i_del2u) = .true.
+      endif
+!      
       if (hcond1 /= 0.0) then
         lpenc_requested(i_b2) = .true.
         lpenc_requested(i_bij) = .true.
@@ -978,6 +982,8 @@ module Special
       if (lmassflux) call force_solar_wind(df,p)
 !
       if (swamp_eta > 0.0) call calc_swamp_eta(df,p)
+!
+      if (swamp_nu > 0.0) call calc_swamp_nu(df,p) !maybe needs to be in their own special_calc_xxx subroutine
 !
     endsubroutine special_calc_hydro
 !***********************************************************************
@@ -1633,6 +1639,26 @@ module Special
       endif
 !
     endsubroutine calc_swamp_eta
+!***********************************************************************
+    subroutine calc_swamp_nu(df,p)
+!
+!   Additional hight-dependant viscosity (swamp layer at top).
+!
+!   14-Jun-2021/joh-tsch: coded, adapted from calc_swamp_eta
+!
+      real, dimension(mx,my,mz,mvar), intent(inout) :: df
+      type (pencil_case), intent(in) :: p
+!
+      real :: swamp_fade_fact, dfade_fact
+!
+      swamp_fade_fact = swamp_nu * get_swamp_fade_fact (z(n), dfade_fact)
+      if (swamp_fade_fact > 0.0) then
+        df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + swamp_fade_fact * p%del2u(:,1)
+        df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + swamp_fade_fact * p%del2u(:,2)
+        df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + swamp_fade_fact * p%del2u(:,3)
+      endif
+!
+    endsubroutine calc_swamp_nu
 !***********************************************************************
     subroutine update_vel_field (time_offset, times_dat, field_dat, time_l, time_r, Ux_l, Uy_l, Ux_r, Uy_r)
 !

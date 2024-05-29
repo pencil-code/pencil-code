@@ -32,6 +32,7 @@ class Tracers(object):
         self.aa = None
         self.ee = None
         self.curly_A = None
+        self.splines = None
 
     def find_tracers(
         self, var_file="VAR0", datadir="data", trace_field="bb", ti=-1, tf=-1
@@ -228,6 +229,29 @@ class Tracers(object):
                     self.y1[ix, iy, t_idx] = self.y0[ix, iy, t_idx].copy()
                     self.z1[ix, iy, t_idx] = grid.z[0]
 
+            # Prepare the splines for the tricubis interpolation.
+            if self.params.interpolation == "tricubic":
+                try:
+                    from eqtools.trispline import Spline
+
+                    x = np.linspace(
+                        self.params.Ox, self.params.Ox + self.params.Lx, self.params.nx
+                    )
+                    y = np.linspace(
+                        self.params.Oy, self.params.Oy + self.params.Ly, self.params.ny
+                    )
+                    z = np.linspace(
+                        self.params.Oz, self.params.Oz + self.params.Lz, self.params.nz
+                    )
+                    field_x = Spline(z, y, x, field[0, ...])
+                    field_y = Spline(z, y, x, field[1, ...])
+                    field_z = Spline(z, y, x, field[2, ...])
+                    self.splines = np.array([field_x, field_y, field_z])
+                except:
+                    self.splines = None
+            else:
+                self.splines = None
+
             proc = []
             sub_data = []
             for i_proc in range(self.params.n_proc):
@@ -266,17 +290,6 @@ class Tracers(object):
                     ][8]
             for i_proc in range(self.params.n_proc):
                 proc[i_proc].terminate()
-            print("find_tracers: self.tracers.shape = {0}".format(self.tracers.shape))
-            print(
-                "find_tracers: self.tracers[0, 0, 0].shape = {0}".format(
-                    self.tracers[0, 0, 0].shape
-                )
-            )
-            print(
-                "find_tracers: self.tracers[5, 5, 0].shape = {0}".format(
-                    self.tracers[5, 5, 0].shape
-                )
-            )
             return 0
 
     # Return the tracers for the specified starting locations.
@@ -284,29 +297,6 @@ class Tracers(object):
         import numpy as np
         from pencil.calc.streamlines import Stream
         from pencil.math.interpolation import vec_int
-
-        # Prepare the splines for the tricubis interpolation.
-        if self.params.interpolation == "tricubic":
-            try:
-                from eqtools.trispline import Spline
-
-                x = np.linspace(
-                    self.params.Ox, self.params.Ox + self.params.Lx, self.params.nx
-                )
-                y = np.linspace(
-                    self.params.Oy, self.params.Oy + self.params.Ly, self.params.ny
-                )
-                z = np.linspace(
-                    self.params.Oz, self.params.Oz + self.params.Lz, self.params.nz
-                )
-                field_x = Spline(z, y, x, field[0, ...])
-                field_y = Spline(z, y, x, field[1, ...])
-                field_z = Spline(z, y, x, field[2, ...])
-                splines = np.array([field_x, field_y, field_z])
-            except:
-                splines = None
-        else:
-            splines = None
 
         xx = np.zeros(
             [(self.x0.shape[0] + n_proc - 1 - i_proc) // n_proc, self.x0.shape[1], 3]
@@ -332,7 +322,7 @@ class Tracers(object):
                     self.params,
                     xx=xx[int(ix / n_proc), iy, :],
                     time=time,
-                    splines=splines,
+                    splines=self.splines,
                 )
                 sub_x1[int(ix / n_proc), iy] = stream.tracers[-1, 0]
                 sub_y1[int(ix / n_proc), iy] = stream.tracers[-1, 1]
@@ -348,6 +338,7 @@ class Tracers(object):
                             [self.params.Ox, self.params.Oy, self.params.Oz],
                             [self.params.nx, self.params.ny, self.params.nz],
                             interpolation=self.params.interpolation,
+                            splines=self.splines
                         )
                         sub_curly_A[int(ix / n_proc), iy] += np.dot(
                             aaInt, (stream.tracers[l + 1] - stream.tracers[l])
@@ -361,6 +352,7 @@ class Tracers(object):
                             [self.params.Ox, self.params.Oy, self.params.Oz],
                             [self.params.nx, self.params.ny, self.params.nz],
                             interpolation=self.params.interpolation,
+                            splines=self.splines
                         )
                         sub_ee[int(ix / n_proc), iy] += np.dot(
                             eeInt, (stream.tracers[l + 1] - stream.tracers[l])
@@ -521,12 +513,10 @@ class Tracers(object):
             for j in range(self.tracers.shape[1]):
                 if self.tracers.ndim == 3:
                     for k in range(self.tracers.shape[2]):
-                        print(self.tracers[i, j].shape)
                         self.tracers[i, j, k] = self.tracers[i, j, k].reshape(
                             [int(self.tracers[i, j, k].shape[0] / 3), 3]
                         )
                 else:
-                    print("self.tracers[i, j].shape = {0}".format(self.tracers[i, j]))
                     self.tracers[i, j] = self.tracers[i, j].reshape(
                         [int(self.tracers[i, j].shape[0] / 3), 3]
                     )

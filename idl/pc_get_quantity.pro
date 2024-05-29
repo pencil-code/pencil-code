@@ -655,6 +655,7 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		Rz = spread (pc_compute_quantity (vars, index, 'dz'), [0,1], [nx,ny]) * abs (uu[*,*,*,2])
 		return, ((Rx > Ry) > Rz) / (nu * unit.length^2/unit.time)
 	end
+;vpandey 7 Sept 2022
 	if (strcmp (quantity, 'Heat_cool_compression', /fold_case)) then begin
 		; Heating/cooling due to compression  ;[J/m^3]
 		gamma = pc_get_parameter ('isentropic_exponent', label=quantity)
@@ -812,6 +813,37 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		tmp                  = newton * tmp_tau
 		return, (rho * (exp(lnTT + tmp) - exp(lnTT)) * cp_SI)/gamma
 	end
+;vpandey 15 May 2023
+	if (strcmp (quantity, 'B0_strat_z', /fold_case)) then begin
+		;Get the external magnetic field stratification along z.
+		z_SI               = pc_compute_quantity (vars, index, 'z', ghost=ghost)
+		B0_ext_z           = pc_get_parameter ('B0_ext_z', label=quantity) * unit.magnetic_field
+		B0_ext_z_H         = pc_get_parameter ('B0_ext_z_H', label=quantity) * unit.length
+		return, B0_ext_z * exp(-z_SI / B0_ext_z_H)
+	end
+;vpandey 3 July 2023
+	if (strcmp (quantity, 'P_mag', /fold_case)) then begin
+		; Magnetic pressure
+		if (n_elements (B_2) eq 0) then B_2 = pc_compute_quantity (vars, index, 'B_2')
+		mu0_SI = pc_get_parameter ('mu0_SI', label=quantity)
+		return, B_2/(2 * mu0_SI)
+	end
+	if (strcmp (quantity, 'grad_P_mag', /fold_case)) then begin
+		; Gradient of magnetic pressure
+		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
+		if (n_elements (grad_B) eq 0) then grad_B = pc_compute_quantity (vars, index, 'grad_B')
+		mu0_SI = pc_get_parameter ('mu0_SI', label=quantity)
+		if (n_elements (grad_P_mag) eq 0) then begin
+			fact = 1/(2 * mu0_SI)
+			grad_P_mag = fact * (grad_B * bb + bb * grad_B)
+		end
+		return, grad_P_mag
+	end
+	if (strcmp (quantity, 'grad_P_mag_abs', /fold_case)) then begin
+		; Absolute value of Gradient of magnetic pressure
+		if (n_elements (grad_P_mag) eq 0) then grad_P_mag = pc_compute_quantity (vars, index, 'grad_P_mag')
+		return, sqrt (dot2 (grad_P_mag))
+	end
 	if (any (strcmp (quantity, ['A', 'A_contour'], /fold_case))) then begin
 		; Magnetic vector potential [T * m]
 		return, vars[gl1:gl2,gm1:gm2,gn1:gn2,index.aa] * (unit.magnetic_field*unit.length)
@@ -844,7 +876,22 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		end else begin
 			if (n_elements (bb) eq 0) then bb = (curl (vars[*,*,*,index.aa]))[l1:l2,m1:m2,n1:n2,*] * unit.magnetic_field
 		end
+		B_ext = pc_compute_quantity (vars, index, 'B_ext')
+		if (size (B_ext, /n_dimensions) ge 1) then begin
+			bb += B_ext
+		end
 		return, bb
+	end
+	if (strcmp (quantity, 'B_ext', /fold_case)) then begin
+		; External magnetic field vector [Tesla]
+		B0_ext_z = pc_get_parameter ('B0_ext_z', label=quantity)
+		if (B0_ext_z gt 0.0) then begin
+			; Add external magnetic field B_ext_z
+			B0_strat_z = pc_compute_quantity (vars, index, 'B0_strat_z', ghost=ghost)
+			B_ext = spread (B0_strat_z, [0,1], [mx,my])
+			return, B_ext
+		endif
+		return, 0
 	end
 	if (strcmp (quantity, 'B_abs', /fold_case)) then begin
 		; Magnetic field strengh [T]
@@ -901,7 +948,16 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 	end
 	if (strcmp (quantity, 'grad_B', /fold_case)) then begin
 		; Magnetic field gradient [T / m]
-		if (n_elements (grad_B) eq 0) then grad_B = (gradcurl (pc_compute_quantity (vars, index, 'A', /ghost)))[l1:l2,m1:m2,n1:n2,*] / unit.length^2
+		if (n_elements (grad_B) eq 0) then begin
+			grad_B = ((gradcurl (pc_compute_quantity (vars, index, 'A', /ghost))))[l1:l2,m1:m2,n1:n2,*] / unit.length^2
+			; External magnetic field gradient
+			B_ext_z = pc_get_parameter ('B0_ext_z', label=quantity)
+			if (B_ext_z gt 0.0) then begin
+				; Add external magnetic field B_ext_z
+				B_ext = pc_compute_quantity (vars, index, 'B_ext', /ghost)
+				grad_B += (grad (B_ext))[l1:l2,m1:m2,n1:n2,*] / unit.length
+			end
+		end
 		return, grad_B
 	end
 	if (strcmp (quantity, 'grad_B_abs', /fold_case)) then begin

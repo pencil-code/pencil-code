@@ -85,7 +85,7 @@ class Averages(object):
 
     @t.setter
     def t(self, arr):
-        if len(self.t) > 0 and np.any(self.t != arr):
+        if len(self.t) > 0 and (len(self.t) != len(arr) or np.any(self.t != arr)):
             warnings.warn("Mismatch between the times of different kinds of averages (usually happens when 1D and 2D averages are stored at different times). Please use the t attributes of the respective planes (e.g. av.xy.t, rather than av.t).")
         self._t = arr
 
@@ -269,7 +269,7 @@ class Averages(object):
 
             if not quiet:
                 print(plane_list, in_file_name_list, aver_file_name_list)
-            
+
             for plane, in_file_name, aver_file_name in zip(
                 plane_list, in_file_name_list, aver_file_name_list
             ):
@@ -394,7 +394,7 @@ class Averages(object):
                         else:
                             plane_list.remove(prefix)
                 if len(av_files_in) == 0:
-                    raise RuntimeError(f"read.aver error: {plane_list =} and {av_files = } have no match.")
+                    raise RuntimeError(f"read.aver error: {plane_list} and {av_files} have no match.")
             else:
                 plane_list = list()
                 for av_file in av_files:
@@ -406,7 +406,7 @@ class Averages(object):
                         av_files_in.append(av_file)
                         plane_list.append(av_file.split('/')[-1].split('_')[-1][:-3])
                 if len(av_files_in) == 0:
-                    raise RuntimeError(f"read.aver error: {avfile_list =} has no match in {av_files = }")
+                    raise RuntimeError(f"read.aver error: {avfile_list} has no match in {av_files}")
 
             if not quiet:
                 print(av_files_in)
@@ -469,8 +469,7 @@ class Averages(object):
         ]  # Ignore commented variables and blank lines in the .in file.
         with h5py.File(av_file, "r") as tmp:
             n_times = len(tmp.keys()) - 1
-            if tmp['last'][()].item() < n_times-2:
-                n_times = tmp['last'][()].item() + 1
+            n_times = min(n_times,tmp['last'][()].item() + 1)
             start_time, end_time = 0, tmp[str(n_times-1)]['time'][()].item()
             if time_range:
                 if isinstance(time_range, list):
@@ -812,7 +811,7 @@ class Averages(object):
                     raw_idx += 1
                 line_idx += 1
         except:
-            raise RuntimeError(f"Error: There was a problem reading {aver_file_name} at line {line_idx}.\nCalculated values: {n_vars = }, {n_w = }.\nAre these correct?")
+            raise RuntimeError(f"Error: There was a problem reading {aver_file_name} at line {line_idx}.\nCalculated values: {n_vars}, {n_w}.\nAre these correct?")
 
         # Restructure the raw data and add it to the Averages object.
         raw_data = np.reshape(raw_data, [n_times, n_vars, nw])

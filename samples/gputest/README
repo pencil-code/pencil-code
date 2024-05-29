@@ -44,3 +44,33 @@ on LUMI/Dardel:
 Also, there are usually separate partitions for GPU use.
 On some imperfectly configured machines, additional settings are required.
 [which OMP/MPI enironment settings?]
+#git checkout master
+
+
+
+# Touko's demonstration session on Dardel:
+git clone git@github.com:pencil-code/pencil-code.git pencil-code
+cd pencil-code
+source sourceme.sh
+# => alternative to "pc_build":
+# use "csh" variant to prepare for a later "make":
+### source sourceme.csh
+git checkout gputestv5
+git submodule update --init --remote
+cd src/astaroth/submodule
+git checkout PCinterface_2019-8-12
+cd ../../../samples/gputest
+pc_setupsrc
+pc_build -f hosts/lumi/host-uan01-GNU_Linux
+# => alternative to "pc_build":
+# configure your "Makefile.src" and then execute:
+### make
+cd src/astaroth
+module load rocm craype-accel-amd-gfx90a cmake/3.20.1
+make
+cd ../..
+pc_build -f hosts/lumi/host-uan01-GNU_Linux
+# => alternative to "pc_build":
+### make
+# => adapt settings in "disbatch.sh"
+sbatch disbatch.sh

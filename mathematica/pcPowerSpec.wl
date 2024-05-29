@@ -15,6 +15,9 @@ BeginPackage["pcPowerSpec`"]
 (*Usage messages*)
 
 
+pcFourier::usage="pcFourier[ts] computes the Fourier transform, fft=\\int f*Exp[I k x] dx,
+for wave modes k={-n/2,...,0,1,...,n/2-1}*2\[Pi]/L."
+
 powerTS::usage="powerTS[ts] computes PSD of light curves. The normalization is
 Total[psd] = mean of flux^2.
 Input:
@@ -53,39 +56,45 @@ Begin["`Private`"]
 
 
 (* ::Section:: *)
+(*FFT*)
+
+
+pcFourier[ts_]:=Module[{t,f,n,T},
+  If[OddQ[Length[ts]],
+    Print["Length of data is odd. Dropping the first data point."];
+    {t,f}=Transpose@SortBy[ts//Rest,First],
+    {t,f}=Transpose@SortBy[ts,First]
+  ];
+  n=Length[t];
+  T=t[[-1]]-t[[1]];
+
+  Fourier[f*Exp[I*n*Pi*Range[0,n-1]/(n-1)],FourierParameters->{1,-n/(n-1)}]*T/(n-1)*Exp[I*Pi*t[[1]]/T*(n+2-2*Range[n])]
+]
+
+
+(* ::Section:: *)
 (*1D power spectrum*)
 
 
-Options[powerTS]={"lFTbyHand"->False}
-powerTS[ts_List,OptionsPattern[]]:=Module[{t,f,n,n2,T,dt,k,fft,psd},
-  {t,f}=Transpose[ts];
-  dt=t//Differences//Mean;
-  n=Length[t];
-
-  If[OptionValue["lFTbyHand"],
-    (* do integration by hand *)
-    If[EvenQ[n],{t,f}=Rest/@{t,f}];
-    {t,f}=Rest/@{t,f};
-    T=t[[-1]]-t[[1]];
-    n=n-1;
-    
-    k=2\[Pi]/T*Range[0,n/2];
-    fft=Total[f*Exp[-I*#*t]*dt]&/@k;
-    psd=Abs[fft]^2;
-    psd[[2;;]]=2*psd[[2;;]],
-    
-    (* use built-in Fourier *)
-    T=t[[-1]]-t[[1]];
-    t=Flatten@{0,t};
-    f=Flatten@{0,f};
-    n=n+1;
-    n2=Floor[n/2];
-    k=2\[Pi]/T*Range[0,n2];
-    fft=Fourier[f,FourierParameters->{-1,-1}];
-    psd=Abs[fft[[2;;n2+1]]]^2+Abs[fft[[-1;;-n2;;-1]]]^2;
-    psd=Flatten@{Abs[fft[[1]]]^2,psd};
+powerTS[ts_List,OptionsPattern[]]:=Module[{t,f,n,T,k,fft,psd,abs2},
+  If[OddQ[Length[ts]],
+    Print["Length of data is odd. Dropping the first data point."];
+    {t,f}=Transpose@SortBy[ts//Rest,First],
+    {t,f}=Transpose@SortBy[ts,First]
   ];
-  psd=psd/Total[psd*2\[Pi]/T]*Total[f^2*dt];
+  n=Length[t];
+  T=t[[-1]]-t[[1]];
+  
+  k=2\[Pi]/T*Range[0,n/2-1];
+  fft=pcFourier@Transpose[{t,f}];
+  abs2=Abs[fft]^2;
+  psd=Flatten[{
+    (* 0 mode *)
+    abs2[[n/2+1]],
+    (* wave number = 1,2,...,n/2-1 *)
+    abs2[[n/2+2;;]]+abs2[[n/2;;2;;-1]]
+  }];
+
   Transpose[{k,psd}]
 ]
 
@@ -165,7 +174,7 @@ End[]
 
 
 Protect[
-  powerTS,power1D,power1DintZ
+  pcFourier,powerTS,power1D,power1DintZ
 ]
 
 

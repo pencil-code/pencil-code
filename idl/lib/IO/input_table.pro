@@ -145,12 +145,14 @@ function input_table, filename, $
 
         point_lun,-in_file,fileposition ; Save file position
         stop_at=line                    ; Return the line
-        found_stop=-1                   ; Exit the loop
-        if (verb) then begin
-          print, 'Found stop regexp at'
-          print, '  position ', strtrim(fileposition,2)
-          print, '  line no. ', strtrim(iline,2), ' (starting from 0)'
-          print, '  line = <'+line+'>'
+        if (idat gt 0) then begin
+	  found_stop=-1                   ; Exit the loop
+          if (verb) then begin
+            print, 'Found stop regexp at'
+            print, '  position ', strtrim(fileposition,2)
+            print, '  line no. ', strtrim(iline,2), ' (starting from 0)'
+            print, '  line = <'+line+'>'
+          endif
         endif
 
       endif
@@ -207,7 +209,6 @@ function input_table, filename, $
         endif
       endif
     
-
       ;; Read one line and store in data[:,:]
       if (not found_stop) then begin
         is_empty = (strlen(line) eq 0)

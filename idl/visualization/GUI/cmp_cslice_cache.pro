@@ -1463,7 +1463,10 @@ pro cmp_cslice_cache, set_names, set_content=set_content, set_files=set_files, l
 	; minimum size of crosshairs
 	af_minimum = 6
 	af_maximum = 32
-
+	;get run directory to print in window title
+	run_dir_end = strpos (datadir, "data", /REVERSE_SEARCH)
+	rundir = strmid (datadir, 0, run_dir_end)
+	if (strmid (rundir, strlen(rundir)-1, 1) eq "/") then rundir = strmid (rundir, 0, strlen(rundir)-1)
 
 	resolve_routine, 'pc_slicer', /COMPILE_FULL_FILE, /NO_RECOMPILE
 
@@ -1584,7 +1587,7 @@ pro cmp_cslice_cache, set_names, set_content=set_content, set_files=set_files, l
 
 	sl_size	= ((2*num_x*bin_x+num_y*bin_y)/2.5 > (400+max([num_x*bin_x,num_y*bin_y,num_z*bin_z]))/2) < 500
 
-	MOTHER	= WIDGET_BASE (title='compare cube-slices')
+	MOTHER	= WIDGET_BASE (title='compare cube-slices'+ ' ' +rundir)
 	BASE	= WIDGET_BASE (MOTHER, /col)
 	CTRL	= WIDGET_BASE (BASE, /row)
 

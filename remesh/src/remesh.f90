@@ -102,7 +102,7 @@ program remesh
 
   call mpicomm_init
   if (lroot) print*,'Per process memory for arrays f:',mmw_grid*mvar,', ff:',mmw*mvar*mprocs, &
-             ', acoll:',mvar*mwcoll,' (Multiply with no of bytes per element!)'
+             ', acoll:',mvar*mwcoll,' (Multiply with number of bytes per element!)'
 
   if (divx<=0) then
     if (lroot) print*, 'Error: divx<=0 not allowed, set it to 1!'
@@ -249,10 +249,10 @@ program remesh
    endif
 
    layout_dst=(/mulx*layout_src(1)/divx,muly*layout_src(2)/divy,mulz*layout_src(3)/divz/)
-   layout_rem=layout_src/(/divx,divy,divz/)
-   nprocs_rem=product(layout_rem)
+   layout_rem=layout_src/(/divx,divy,divz/)    ! proc layout for remesh.x
+   nprocs_rem=product(layout_rem)              ! number of processors for remesh.x
 
-   if (nprocs/=nprocs_rem) then
+   if (nprocs>1 .and. nprocs/=nprocs_rem) then
      if (lroot) print*, 'Inappropriate number of ranks: nprocs/=nprocs_rem', nprocs,nprocs_rem
      call mpibarrier
      stop

@@ -74,13 +74,16 @@ module Gravity
   logical :: lcoriolis_force_gravity=.true.
   logical :: lcentrifugal_force_gravity=.true.
   real, target :: t_start_secondary = -impossible
+  logical :: lconservative_gravity=.true.
+  real :: non_conservative_index=2.0
 !
   namelist /grav_init_pars/ &
       ipotential,g0,r0_pot,r1_pot1,n_pot,n_pot1,lnumerical_equilibrium, &
       qgshear,lgravity_gas,g01,rpot,gravz_profile,gravz,nu_epicycle, &
       lgravity_neutrals,g1,rp1_smooth,lindirect_terms,lramp_mass,t_ramp_mass, &
       ipotential_secondary,lsecondary_wait,t_start_secondary,iramp_function, &
-      lcoriolis_force_gravity,lcentrifugal_force_gravity,frac_smooth
+      lcoriolis_force_gravity,lcentrifugal_force_gravity,frac_smooth,&
+      lconservative_gravity,non_conservative_index
 !
   namelist /grav_run_pars/ &
       ipotential,g0,r0_pot,n_pot,lnumerical_equilibrium, &
@@ -296,6 +299,10 @@ module Gravity
             rs = 2*g0/c_light**2
             lpade=.false.
 !
+          case ('non-conservative')
+            if (lroot) print*,'initialize_gravity: non-conservative gravity'
+            lpade=.false.
+!
           case default
 !
 !  Catch unknown values
@@ -361,6 +368,11 @@ module Gravity
                                   5*cpot2(6,j),  6*cpot2(7,j),  7*cpot2(8,j),  8*cpot2(9,j),  &
                                   9*cpot2(10,j),10*cpot2(11,j),11*cpot2(12,j),12*cpot2(13,j), &
                                  13*cpot2(14,j),14*cpot2(15,j),15*cpot2(16,j) /), rr_mn)
+                elseif (ipotential(j) == 'non-conservative') then
+                  if (lconservative_gravity) call fatal_error("initialize_gravity",&
+                       "if you are using non-conservative gravity, "// &
+                       "switch lconservative_gravity=F in grav_init_pars")
+                  call non_conservative_gravity(rr_cyl,rr_sph,gg_mn)
                 else
 !
 !  smoothed 1/r potential in a spherical shell
@@ -376,7 +388,8 @@ module Gravity
                 endif
               endif
 !
-              call get_gravity_field(g_r,gg_mn,rr_mn)
+              if (lconservative_gravity) &
+                   call get_gravity_field(g_r,gg_mn,rr_mn)
               f(l1:l2,m,n,iglobal_gg:iglobal_gg+2) = &
                   f(l1:l2,m,n,iglobal_gg:iglobal_gg+2) + gg_mn
 !
@@ -1189,6 +1202,36 @@ module Gravity
       endif
 !
     endsubroutine secondary_body_gravity
+!***********************************************************************
+    subroutine non_conservative_gravity(rr_cyl,rr_sph,gg_mn)
+!
+!  The (unphysical) gravitational force of Klahr et al.(2023) that
+!  balances a stratified non-baroclinic disk yet with no vertical shear.
+!  To be used with initial_condition/novertical_shear.f90
+!  non_conservative_index is the same as temperature_power_law
+!
+!  22-may-24/wlyra : coded
+!
+      real, dimension(nx,3), intent(out) :: gg_mn
+      real, dimension(nx), intent(in) :: rr_cyl,rr_sph
+      real, dimension(nx) :: g_rad, g_zed
+!
+      if (lspherical_coords) then
+        g_rad=-g0/rr_cyl**2 * (1 - .5*(3-non_conservative_index)*cotth(m)**2)
+        g_zed=-g0/rr_cyl**3 * rr_sph*costh(m)
+        gg_mn(:,1) = sinth(m)*g_rad + costh(m)*g_zed
+        gg_mn(:,2) = costh(m)*g_rad - sinth(m)*g_zed
+        gg_mn(:,3) = 0.
+      else if (lcylindrical_coords) then
+        gg_mn(:,1) = -g0/rr_cyl**2 * (1 - .5*(3-non_conservative_index)*(z(n)/rr_cyl)**2)
+        gg_mn(:,2) = 0.
+        gg_mn(:,3) = -g0/rr_cyl**3 * z(n)
+      else
+        call fatal_error("non_conservative_gravity",&
+             "not coded for Cartesian")
+      endif
+!
+    endsubroutine non_conservative_gravity
 !***********************************************************************
     subroutine calc_torque(p)
 !
