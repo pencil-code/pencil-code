@@ -9,6 +9,8 @@
            + 2. * nu * contract(stress_tensor(UU)) 
            + zeta * divergence(UU) * divergence(UU))*exp(-lnTT)
 
-    #include "heatcool.h"
-
+#if LINTERSTELLAR
+    #include "heatcool.h" 
+    rhs += heatcool
+#endif
     return -dot(vecvalue(UU), gradient(SS)) + rhs + heat_conduction(step_num)
