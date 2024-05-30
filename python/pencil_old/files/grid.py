@@ -159,20 +159,20 @@ class Grid(object):
             self.z = z[dim.n1:dim.n2+1]
             self.dx_1 = dx_1[dim.l1:dim.l2+1]
             self.dy_1 = dy_1[dim.m1:dim.m2+1]
-            self.dx_1 = dz_1[dim.n1:dim.n2+1]
+            self.dz_1 = dz_1[dim.n1:dim.n2+1]
             self.dx_tilde = dx_tilde[dim.l1:dim.l2+1]
             self.dy_tilde = dy_tilde[dim.m1:dim.m2+1]
-            self.dx_tilde = dz_tilde[dim.n1:dim.n2+1]
+            self.dz_tilde = dz_tilde[dim.n1:dim.n2+1]
         else:
             self.x = x
             self.y = y
             self.z = z
             self.dx_1 = dx_1
             self.dy_1 = dy_1
-            self.dx_1 = dz_1
+            self.dz_1 = dz_1
             self.dx_tilde = dx_tilde
             self.dy_tilde = dy_tilde
-            self.dx_tilde = dz_tilde
+            self.dz_tilde = dz_tilde
 
         self.t = t
         self.dx = dx
