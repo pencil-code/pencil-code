@@ -410,7 +410,7 @@ module Interstellar
 !  Variables required for returning mass to disk given no inflow
 !  boundary condition used in addmassflux
 !
-  real :: boldmass=0.0, old_rhom=1.0
+  real :: boldmass=0.0
   logical :: ladd_massflux = .false.
 !  switches required to override the persistent values when continuing a run
   logical :: l_persist_overwrite_lSNI=.false., l_persist_overwrite_lSNII=.false.
@@ -2402,7 +2402,6 @@ module Interstellar
         endif
         call mpiallreduce_sum(rhom/box_volume,rhom)
         tmp_interval=t_interval(SNII)*(SN_interval_rhom/rhom)**iSNdx
-        old_rhom=rhom !not used FG: to be removed
       else
         tmp_interval=t_interval(SNII)
       endif
@@ -2544,8 +2543,10 @@ module Interstellar
 !  Calculate the total mass in locations where the temperature is below
 !  cloud_TT and the density is above cloud_rho, i.e. cold and dense.
 !
-        !$omp target if(loffload) map(from: cloud_mass) & !needs: cloud_rho, lncloud_TT FG: irho_ss?
-        !$omp        has_device_addr(f) ! globals: irho, ilnrho, iss, ilnTT, FG: ldensity_nolog, ltemperature, lentropy
+!  FG notes for omp: irho_ss?, ldensity_nolog, ltemperature, lentropy
+!
+        !$omp target if(loffload) map(from: cloud_mass) & !needs: cloud_rho, lncloud_TT
+        !$omp        has_device_addr(f) ! globals: irho, ilnrho, iss, ilnTT
         !$omp teams distribute parallel do collapse(2) private(rho,lnTT,dV) reduction(+:cloud_mass)
         do n=n1,n2
         do m=m1,m2
@@ -2765,7 +2766,8 @@ module Interstellar
           !$omp end teams distribute parallel do
           !$omp end target
         else
-          !$omp target if(loffload) map(from: rhosum) has_device_addr(f)   ! globals: irho, ilnrho, ldensity_nolog, FG: dVol
+! FG note for omp: dVol_glob ?
+          !$omp target if(loffload) map(from: rhosum) has_device_addr(f)   ! globals: irho, ilnrho, ldensity_nolog
           !$omp teams distribute parallel do
           do n=n1,n2
             if (ldensity_nolog) then
@@ -3047,8 +3049,9 @@ module Interstellar
         cum_mass=0.
         cloud_mass_proc=cloud_mass_byproc(SNR%indx%iproc+1)
         lfound = .false.
+! FG notes for omp: irho_ss, lentropy, nx, lgpu, iEXPLOSION_TOO_HOT priv ierr 
         !$omp target if(loffload) map(from: ierr,cum_mass) map(tofrom: SNR) & !needs: cloud_rho,lncloud_TT,preSN) &
-        !$omp        has_device_addr(f)  !globals: ip, irho,ilnrho,ilnTT,iss,ldensity_nolog, FG: irho_ss, lentropy, nx, lgpu, iEXPLOSION_TOO_HOT priv ierr
+        !$omp        has_device_addr(f)  !globals: ip, irho,ilnrho,ilnTT,iss,ldensity_nolog
         !$omp teams distribute parallel do collapse(2) private(dV,rho,lnTT,l,ipsn) reduction(+:cum_mass)  !!!reduction unclear
 mn_loop:do n=n1,n2
         do m=m1,m2
@@ -3468,10 +3471,8 @@ mn_loop:do n=n1,n2
       SNR%indx%state=SNstate_waiting
       SN_TT_ratio_max = SN_TT_ratio*TT_SN_max
       lfound = .false.
-
-      !$omp target if(loffload) map(tofrom: SNR) has_device_addr(f)  ! needs:
-      !irho,ilnrho,iss,ilnTT,frac_eth,dr2_SN,rfactor_SN,TT_SN_max, switches FG radius2mass, c_SN, width_energy, width_mass,&
-      !irho_lnTT, irho_ss, irho_ee, SN_TT_ratio_max, iEXPLOSION_TOO_HOT ; FG: private cmass_tmp
+! FG notes for omp: radius2mass, c_SN, width_energy, width_mass, irho_lnTT, irho_ss, irho_ee, SN_TT_ratio_max, iEXPLOSION_TOO_HOT; private cmass_tmp
+      !$omp target if(loffload) map(tofrom: SNR) has_device_addr(f)  ! needs: irho,ilnrho,iss,ilnTT,frac_eth,dr2_SN,rfactor_SN,TT_SN_max, switches
       !$omp teams distribute parallel do collapse(2) &
       !$omp private(dV,rho_old,rho_new,deltarho,deltauu,deltaEE,deltaCR,ee_old,lnTT,outward_normal_SN,maxTT,rad_hot,deltarho_hot,ind_maxTT,ierr), &
       !$omp    reduction(+:site_mass,SNR%feat%MM,SNR%feat%EE) reduction(max:maxlnTT,max_cmass)
@@ -3587,8 +3588,9 @@ mnloop:do n=n1,n2
         if (lroot.and.ip==1963) print "(1x,'explode_SN: validating cmass_SN =',e12.5)",cmass_SN
         if (cmass_SN>0) then
           SNR%feat%MM=0.
-          !$omp target if(loffload) map(tofrom: SNR) has_device_addr(f)  ! gives: m,n FG global width_mass, cmass_SN
-          !$omp teams distribute parallel do collapse(2) private(deltarho) reduction(+:SNR%feat%MM) FG: priv dV
+! FG notes for omp: global width_mass, cmass_SN; priv dV 
+          !$omp target if(loffload) map(tofrom: SNR) has_device_addr(f)  ! gives: m,n
+          !$omp teams distribute parallel do collapse(2) private(deltarho) reduction(+:SNR%feat%MM)
           do n=n1,n2
           do m=m1,m2
             call proximity_SN(SNR)
@@ -3660,12 +3662,10 @@ mnloop:do n=n1,n2
       SNR%feat%EE=0.
       SNR%feat%MM=0.
       SNR%feat%CR=0.
-
+!FG notes for omp: global width_mass, cmass_SN, irho_lnTT, irho_ss, irho_ee, width_energy, c_SN, width_velocity, cvelocity_SN, ecr_SN (cfcr_SN? to do)
       !$omp target if(loffload) map(tofrom: SNR) has_device_addr(f)  ! needs: irho,ilnrho,iss,ilnTT,iyH,iecr,ifcr, frac_eth, switches;  gives: m,n
       !$omp teams distribute parallel do collapse(2) reduction(+:SNR%feat%MM,SNR%feat%CR,SNR%feat%EE) &
       !$omp private(rho_old,rho_new,deltauu,deltarho,deltaEE,ee_old,yH,lnTT,deltafcr,deltaCR,outward_normal_SN,dV)
-!FG: global width_mass, cmass_SN, irho_lnTT, irho_ss, irho_ee, width_energy, c_SN, width_velocity, cvelocity_SN, ecr_SN (cfcr_SN? to
-!do)
       do n=n1,n2
       do m=m1,m2
 !
@@ -3900,8 +3900,8 @@ mnloop:do n=n1,n2
 !  Obtain distance to SN and sum all points inside SNR radius and
 !  divide by number of points.
 !
+! FG notes for omp: radius2, tini
       !$omp target if(loffload) map(from: rhomin,rhomax,tmp) map(to: remnant) has_device_addr(f)  ! needs: irho,ilnrho,iuu,dr2_SN, switches;  gives: m,n
-! FG: radius2, tini
       !$omp teams distribute parallel do collapse(2) private(rho,uu,u2,lmask,dV), reduction(min:rhomin) reduction(max:rhomax) reduction(+:tmp)
       do n=n1,n2
       do m=m1,m2
@@ -4001,10 +4001,9 @@ mnloop:do n=n1,n2
 !
 !  Obtain distance to SN and sum all points inside SNR radius and divide by number of points.
 !
-!NEW CHANGES
       tmp=0.
+!FG notes for omp: cvelocity_SN, cmass_SN, width_mass, width_velocity, tini, radius2
       !$omp target if(loffload) map(from: tmp) map(to: remnant) has_device_addr(f)  ! needs: irho,ilnrho,iuu,dr2_SN, switches;  gives: m,n
-!FG: cvelocity_SN, cmass_SN, width_mass, width_velocity, tini, radius2
       !$omp teams distribute parallel do collapse(2) private(uu,u2,rho,deltauu,deltarho,dV,outward_normal_SN) reduction(+:tmp)
       do n=n1,n2
       do m=m1,m2
