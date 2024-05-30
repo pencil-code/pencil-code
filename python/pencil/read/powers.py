@@ -145,14 +145,7 @@ class Power(object):
             if not quiet:
                 print(file_name)
 
-            if (
-                file_name == "powero.dat"
-                or file_name == "powerb.dat"
-                or file_name == "powera.dat"
-                ):
-                # Exclude some incompatible files.
-                pass
-            elif re.match("power.*_xy.dat", file_name):
+            if re.match("power.*_xy.dat", file_name):
                 self._read_power2d(power_name, file_name, datadir)
             elif (
                 file_name == "poweruz_x.dat"
