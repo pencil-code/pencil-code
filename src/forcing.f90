@@ -1239,6 +1239,7 @@ module Forcing
         select case (iforce2)
         case ('diffrot');      call forcing_diffrot(f,force2)
         case ('fountain');     call forcing_fountain(f)
+        case ('gaussianpot');  call forcing_gaussianpot(f,force2)
         case ('helical');      call forcing_hel(f)
         case ('helical_both'); call forcing_hel_both(f)
         case ('horiz-shear');  call forcing_hshear(f)
