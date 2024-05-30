@@ -731,6 +731,7 @@ module Interstellar
               heatingfunction_scalefactor
         endif
       else
+        average_SNI_heating = 0.
         if (lroot.and.ip==1963) print*, 'initialize_interstellar: average_SNI_heating = 0'
       endif
       if (laverage_SNII_heating) then
@@ -747,6 +748,7 @@ module Interstellar
               heatingfunction_scalefactor
         endif
       else
+        average_SNII_heating = 0.
         if (lroot.and.ip==1963) print*,'initialize_interstellar: average_SNII_heating =0'
       endif
       if ((laverage_SNI_heating.or.laverage_SNII_heating).and..not.(lSNI.or.lSNII)) &
@@ -4557,7 +4559,7 @@ mnloop:do n=n1,n2
 
       use Syscalls, only: copy_addr, copy_addr_dble_1D
 
-      integer, parameter :: n_pars=15
+      integer, parameter :: n_pars=13
       integer(KIND=ikind8), dimension(n_pars) :: p_par
 !
       call copy_addr(GammaUV,p_par(1))
@@ -4565,18 +4567,16 @@ mnloop:do n=n1,n2
       call copy_addr(T0UV,p_par(3))
       call copy_addr(ncool,p_par(4))                  ! int
 !
-      call copy_addr(laverage_SNI_heating,p_par(5))   ! int
-      call copy_addr(laverage_SNII_heating,p_par(6))  ! int
-      call copy_addr(heatingfunction_scale,p_par(7))  ! (2)
-      call copy_addr(average_SNI_heating,p_par(8))
-      call copy_addr(average_SNII_heating,p_par(9))
-      call copy_addr(h_SNI,p_par(10))
-      call copy_addr(h_SNII,p_par(11))
+      call copy_addr(heatingfunction_scale,p_par(5))  ! (2)
+      call copy_addr(average_SNI_heating,p_par(6))
+      call copy_addr(average_SNII_heating,p_par(7))
+      call copy_addr(h_SNI,p_par(8))
+      call copy_addr(h_SNII,p_par(9))
 
-      call copy_addr(lncoolT,p_par(12))          ! (ncool+1)
-      call copy_addr_dble_1D(lncoolH,p_par(13))  ! (ncool)
-      call copy_addr(coolB,p_par(14))            ! (ncool))
-      call copy_addr(heating_rate_code,p_par(15))
+      call copy_addr(lncoolT,p_par(10))          ! (ncool+1)
+      call copy_addr_dble_1D(lncoolH,p_par(11))  ! (ncool)
+      call copy_addr(coolB,p_par(12))            ! (ncool))
+      call copy_addr(heating_rate_code,p_par(13))
 !      call copy_addr(heat_z,p_par(15))   ! (mz)
 
     endsubroutine pushpars2c
