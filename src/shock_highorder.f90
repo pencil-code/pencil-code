@@ -438,8 +438,7 @@ module Shock
             f(l1:l2,m,n,ishock) = abs(penc)
           endif
         endif
-        if (shock_div_pow /= 1.) f(l1:l2,m,n,ishock)=&
-            dt_div_pow*f(l1:l2,m,n,ishock)**shock_div_pow
+        if (shock_div_pow /= 1.) f(l1:l2,m,n,ishock)=dt_div_pow*f(l1:l2,m,n,ishock)**shock_div_pow
 !
 !  Add the linear term if requested
 !

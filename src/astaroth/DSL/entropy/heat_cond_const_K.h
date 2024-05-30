@@ -12,7 +12,7 @@ heat_conduction(int step_num) {
 
     chi = hcond_Kconst/(exp(value(LNRHO)) * cp)
 
-    reduce_max(step_num==2,chi,AC_maxchi)
+    reduce_max(step_num==0,chi,AC_maxchi)
 
     return cp * chi * (first_term + dot(second_term, third_term))
 }

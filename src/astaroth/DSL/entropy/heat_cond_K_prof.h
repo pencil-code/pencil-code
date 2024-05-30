@@ -9,7 +9,7 @@ heat_conduction(int step_num) {
 
     chi = exp(-value(LNRHO)) * hcond_prof[ind_z]
 
-    reduce_max(step_num==2,chi,AC_maxchi)
+    reduce_max(step_num==0,chi,AC_maxchi)
 
     return chi * ( del2_lnTT + dot(grad_lnTT,glnThcond) )
 

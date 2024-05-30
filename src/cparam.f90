@@ -263,5 +263,7 @@ module Cparam
   real(KIND=rkind8), parameter :: density_scale_cgs=1.2435d21 ![cm] 403pc Reynolds 91, etc
 
 !$omp threadprivate(lpencil)
+!
+  logical :: loffload=.false.
 
 endmodule Cparam

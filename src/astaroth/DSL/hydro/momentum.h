@@ -11,7 +11,7 @@
     advec2 = advec2 + cs2
 #endif
     uu=vecvalue(UU)
-    reduce_max(step_num==2, abs(uu.x/AC_dsx+uu.y/AC_dsy+uu.z/AC_dsz) + sqrt(advec2)/AC_dsx, AC_maxadvec)
+    reduce_max(step_num==0, abs(uu.x/AC_dsx+uu.y/AC_dsy+uu.z/AC_dsz) + sqrt(advec2)/AC_dsx, AC_maxadvec)
 
     return - gradients(UU) * uu
 #if LENTROPY

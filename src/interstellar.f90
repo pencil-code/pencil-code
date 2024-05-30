@@ -20,6 +20,7 @@ module Interstellar
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
+!$ use OMP_lib
 !
   implicit none
 !
@@ -426,8 +427,6 @@ module Interstellar
   real, parameter :: a_S_cgs=4.4e-9, a_D_cgs=1.7e-9
   real :: z_S, z_D, H_z
   real, parameter :: z_S_cgs=6.172e20, z_D_cgs=3.086e21, H_z_cgs=9.258E20
-!
-  logical :: loffload=.false.
 !
 !  start parameters
 !
@@ -1725,10 +1724,8 @@ module Interstellar
 !
 !  01-aug-06/tony: coded
 !
-!$    use OMP_lib
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-!$    call OMP_set_num_threads(num_threads)
       if (lfirst.and..not.lpencil_check_at_work) call check_SN(f)
 !
       if (lSNI.or.lSNII) then
@@ -2373,27 +2370,27 @@ module Interstellar
           if (lcart_equi) then
             rhom=sum(f(l1:l2,m1:m2,n1:n2,irho))*dVol_glob
           else
-            !$omp target if(loffload) map(from:rhom) has_device_addr(f) !globals: irho
+           !!$omp target if(loffload) !map(from:rhom) has_device_addr(f) !globals: irho
             !$omp teams distribute parallel do collapse(2) private(dV) reduction(+:rhom)
             do n=n1,n2; do m=m1,m2
               call get_dVol(m,n,dV)
               rhom=rhom+sum(f(l1:l2,m,n,irho)*dV)
             enddo; enddo
             !$omp end teams distribute parallel do
-            !$omp end target
+           !!$omp end target
           endif
         else
           if (lcart_equi) then
             rhom=sum(exp(f(l1:l2,m1:m2,n1:n2,ilnrho)))*dVol_glob
           else
-            !$omp target if(loffload) map(from:rhom) has_device_addr(f)   ! globals: ilnrho
+           !!$omp target if(loffload) !map(from:rhom) has_device_addr(f)   ! globals: ilnrho
             !$omp teams distribute parallel do collapse(2) private(dV) reduction(+:rhom)
             do n=n1,n2; do m=m1,m2
               call get_dVol(m,n,dV)
               rhom=rhom+sum(exp(f(l1:l2,m,n,ilnrho))*dV)
             enddo; enddo
             !$omp end teams distribute parallel do
-            !$omp end target
+           !!$omp end target
           endif
         endif
         call mpiallreduce_sum(rhom/box_volume,rhom)
@@ -2450,31 +2447,32 @@ module Interstellar
       disk_massII=0.
       if (nz1<=nz2) then
 !
+!$    call OMP_set_num_threads(num_helper_threads+1)
         if (ldensity_nolog) then
           if (lcart_equi) then
             disk_massII=sum(f(l1:l2,m1:m2,nz1:nz2,irho))*dVol_glob
           else
-            !$omp target if(loffload) map(from: disk_massII) has_device_addr(f)  ! globals: irho
+           !!$omp target if(loffload) !map(from: disk_massII) has_device_addr(f)  ! globals: irho
             !$omp teams distribute parallel do collapse(2) reduction(+:disk_massII)
             do n=nz1,nz2; do m=m1,m2
               call get_dVol(m,n,dV)
               disk_massII=disk_massII+sum(f(l1:l2,m,n,irho)*dV)
             enddo; enddo
             !$omp end teams distribute parallel do
-            !$omp end target
+           !!$omp end target
           endif
         else
           if (lcart_equi) then
             disk_massII=sum(exp(f(l1:l2,m1:m2,nz1:nz2,ilnrho)))*dVol_glob
           else
-            !$omp target if(loffload) map(from: disk_massII) has_device_addr(f) ! globals: ilnrho
+           !!$omp target if(loffload) !map(from: disk_massII) has_device_addr(f) ! globals: ilnrho
             !$omp teams distribute parallel do collapse(2) private(dV) reduction(+:disk_massII)
             do n=nz1,nz2; do m=m1,m2
               call get_dVol(m,n,dV)
               disk_massII=disk_massII+sum(exp(f(l1:l2,m,n,ilnrho))*dV)
             enddo; enddo
             !$omp end teams distribute parallel do
-            !$omp end target
+           !!$omp end target
           endif
         endif
 !
@@ -2539,8 +2537,9 @@ module Interstellar
 !  Calculate the total mass in locations where the temperature is below
 !  cloud_TT and the density is above cloud_rho, i.e. cold and dense.
 !
-        !$omp target if(loffload) map(from: cloud_mass) & !needs: cloud_rho, lncloud_TT 
-        !$omp        has_device_addr(f) ! globals: irho, ilnrho, iss, ilnTT, ldensity_nolog
+!$      call OMP_set_num_threads(num_helper_threads+1)
+       !!$omp target if(loffload) !map(from: cloud_mass) & !needs: cloud_rho, lncloud_TT 
+        !!$omp        has_device_addr(f) ! globals: irho, ilnrho, iss, ilnTT, ldensity_nolog
         !$omp teams distribute parallel do collapse(2) private(rho,lnTT,dV) reduction(+:cloud_mass)
         do n=n1,n2
         do m=m1,m2
@@ -2562,7 +2561,7 @@ module Interstellar
         enddo
         enddo
         !$omp end teams distribute parallel do
-        !$omp end target
+       !!$omp end target
 !
 !  Sum the total over all processors to find total mass.
 !
@@ -2746,8 +2745,9 @@ module Interstellar
 !  sum the mass on each processor
 !
         rhosum=0.0
+!$      call OMP_set_num_threads(num_helper_threads+1)
         if (.not.lcart_equi) then
-          !$omp target if(loffload) map(from: rhosum) has_device_addr(f)   ! globals: irho, ilnrho, ldensity_nolog
+         !!$omp target if(loffload) !map(from: rhosum) has_device_addr(f)   ! globals: irho, ilnrho, ldensity_nolog
           !$omp teams distribute parallel do collapse(2) private(dV) reduction(+:rhosum)
           do n=n1,n2; do m=m1,m2
             call get_dVol(m,n,dV)
@@ -2758,9 +2758,9 @@ module Interstellar
             endif
           enddo; enddo
           !$omp end teams distribute parallel do
-          !$omp end target
+         !!$omp end target
         else
-          !$omp target if(loffload) map(from: rhosum) has_device_addr(f)   ! globals: irho, ilnrho, ldensity_nolog, dVol_glob
+         !!$omp target if(loffload) !map(from: rhosum) has_device_addr(f)   ! globals: irho, ilnrho, ldensity_nolog, dVol_glob
           !$omp teams distribute parallel do
           do n=n1,n2
             if (ldensity_nolog) then
@@ -2770,7 +2770,7 @@ module Interstellar
             endif
           enddo
           !$omp end teams distribute parallel do
-          !$omp end target
+         !!$omp end target
         endif
 !
 !  broadcast the mass on xy-plane and then collect rhosum on first processor
@@ -3043,8 +3043,9 @@ module Interstellar
         cloud_mass_proc=cloud_mass_byproc(SNR%indx%iproc+1)
         lfound = .false.
 ! FG notes for omp: irho_ss, lentropy, nx, lgpu, iEXPLOSION_TOO_HOT priv ierr 
-        !$omp target if(loffload) map(from: ierr,cum_mass) map(tofrom: SNR) & !needs: cloud_rho,lncloud_TT,preSN) &
-        !$omp        has_device_addr(f)  !globals: ip, irho,ilnrho,ilnTT,iss,ldensity_nolog
+!$      call OMP_set_num_threads(num_helper_threads+1)
+        !!$omp target if(loffload) !map(from: ierr,cum_mass) map(tofrom: SNR) & !needs: cloud_rho,lncloud_TT,preSN) &
+        !!$omp        has_device_addr(f)  !globals: ip, irho,ilnrho,ilnTT,iss,ldensity_nolog
         !$omp teams distribute parallel do collapse(2) private(dV,rho,lnTT,l,ipsn) reduction(+:cum_mass)  !!!reduction unclear
 mn_loop:do n=n1,n2
         do m=m1,m2
@@ -3077,7 +3078,7 @@ mn_loop:do n=n1,n2
                       (SNR%indx%m==preSN(2,ipsn)) .and. &
                       (SNR%indx%n==preSN(3,ipsn)) .and. &
                       (SNR%indx%iproc==preSN(4,ipsn))) then
-                    !$omp atomic
+                    !!$omp atomic
                     ierr=iEXPLOSION_TOO_HOT
                     if (.not.lgpu.and.ip==1963) &
                       print*,'position_by_cloudmass: iEXPLOSION_TOO_HOT, iproc,it,preSN=',iproc,it,preSN(:,ipsn)
@@ -3094,7 +3095,7 @@ mn_loop:do n=n1,n2
         enddo
         enddo mn_loop   !!!MR: whatif lfound=.false.? FG: cum_mass in (0,1) as is franSN(1) but needs to be checked before use
         !$omp end teams distribute parallel do
-        !$omp end target
+        !!$omp end target
         if (ip==1963) then
           tmpsite=(/SNR%indx%l,SNR%indx%m,SNR%indx%n,SNR%indx%iproc/)
           print*, 'position_by_cloudmass: preSN,iproc,it =',preSN,iproc,it
@@ -3154,24 +3155,24 @@ mn_loop:do n=n1,n2
 !  With current SN scheme, we need rho at the SN location.
 !
       if (iproc==SNR%indx%iproc) then
-        !$omp target if(loffload) map(tofrom: SNR) has_device_addr(f)  ! globals: irho, ilnrho  !?single
+        !!$omp target if(loffload) !map(tofrom: SNR) has_device_addr(f)  ! globals: irho, ilnrho  !?single
         if (ldensity_nolog) then
           SNR%site%lnrho=log(f(SNR%indx%l,SNR%indx%m,SNR%indx%n,irho))
         else
           SNR%site%lnrho=f(SNR%indx%l,SNR%indx%m,SNR%indx%n,ilnrho)
         endif
-        !$omp end target
+        !!$omp end target
         SNR%site%rho=exp(SNR%site%lnrho);
 !
         m=SNR%indx%m
         n=SNR%indx%n
-        !$omp target if(loffload) map(tofrom: SNR) has_device_addr(f) ! map(to: m,n)  ! globals: ilnTT   !?single
+        !!$omp target if(loffload) !map(tofrom: SNR) has_device_addr(f) ! map(to: m,n)  ! globals: ilnTT   !?single
         if (leos_ionization.or.leos_temperature_ionization) then
           SNR%site%lnTT=f(SNR%indx%l+1,m,n,ilnTT)
         else
           call eoscalc(irho_ss,SNR%site%rho,f(SNR%indx%l,SNR%indx%m,SNR%indx%n,iss),lnTT=SNR%site%lnTT)
         endif
-        !$omp end target
+        !!$omp end target
         SNR%feat%x=0.; SNR%feat%y=0.; SNR%feat%z=0.
         sndx=0.; sndy=0.; sndz=0.
         if (nxgrid/=1) then
@@ -3267,7 +3268,7 @@ mn_loop:do n=n1,n2
       real, dimension(nx,3) :: deltafcr, deltauu, outward_normal_SN
       real, dimension(3) :: dmpi2, dmpi2_tmp
       real, dimension(nx) :: yH, lnTT, rho_old, ee_old
-      real :: maxlnTT, site_mass, maxTT, mmpi, etmp, ktmp, max_cmass
+      real :: maxlnTT, site_mass, maxTT, mmpi, etmp, ktmp, max_cmass, cum_mm, cum_ee, cum_cr
       real :: t_interval_SN, SNrate, frackin, RPDS, SN_TT_ratio_max
       integer :: i, mpiierr, ind_maxTT
       logical :: lfound
@@ -3456,18 +3457,18 @@ mn_loop:do n=n1,n2
       site_mass=0.
       maxlnTT=-10.
       max_cmass=0.
-      SNR%feat%EE=0.
-      SNR%feat%MM=0.
-      SNR%feat%CR=0.
+      cum_ee = 0.
+      cum_mm = 0.
       SNR%indx%state=SNstate_waiting
       SN_TT_ratio_max = SN_TT_ratio*TT_SN_max
       lfound = .false.
-      !$omp target if(loffload) map(tofrom: SNR) has_device_addr(f)  ! needs:
+!$    call OMP_set_num_threads(num_helper_threads+1)
+     !!$omp target if(loffload) !map(tofrom: SNR) has_device_addr(f)  ! needs:
       !irho,ilnrho,iss,ilnTT,frac_eth,dr2_SN,rfactor_SN,TT_SN_max, switches FG radius2mass, c_SN, width_energy, width_mass,&
       !irho_lnTT, irho_ss, irho_ee, SN_TT_ratio_max
       !$omp teams distribute parallel do collapse(2) &
       !$omp private(dV,rho_old,rho_new,deltarho,deltauu,deltaEE,deltaCR,ee_old,lnTT,outward_normal_SN,maxTT,rad_hot,deltarho_hot,ind_maxTT,cmass_tmp) &
-      !$omp reduction(+:site_mass,SNR%feat%MM,SNR%feat%EE) reduction(max:maxlnTT,max_cmass)
+      !$omp reduction(+:site_mass,cum_mm,cum_ee) reduction(max:maxlnTT,max_cmass)
 mnloop:do n=n1,n2
       do m=m1,m2
 !
@@ -3491,7 +3492,7 @@ mnloop:do n=n1,n2
         site_mass=site_mass+sum(rho_old*dV,mask=dr2_SN<=radius2mass)
         if (lSN_mass.and.cmass_SN>0.) then
           call injectmass_SN(deltarho,width_mass,cmass_SN)
-          SNR%feat%MM = SNR%feat%MM + sum(deltarho*dV)
+          cum_mm = cum_mm + sum(deltarho*dV)
           rho_new=rho_old+deltarho
         endif
 !
@@ -3502,7 +3503,7 @@ mnloop:do n=n1,n2
 !
         if (lSN_eth) then
           call injectenergy_SN(deltaEE,width_energy,c_SN)
-          SNR%feat%EE=SNR%feat%EE+sum(deltaEE*dV)
+          cum_ee=cum_ee+sum(deltaEE*dV)
           if (ltemperature) then
             call eoscalc(irho_lnTT,rho_old,f(l1:l2,m,n,ilnTT),ee=ee_old)
           elseif (lentropy) then
@@ -3517,7 +3518,7 @@ mnloop:do n=n1,n2
               !dense remnant
               if (maxTT>TT_SN_max) then
                 if (present(ierr)) then
-                  !$omp atomic
+                  !!$omp atomic
                   ierr=iEXPLOSION_TOO_HOT
                   if (.not.lSN_list) then
                     !$ lfound = .true.
@@ -3537,7 +3538,7 @@ mnloop:do n=n1,n2
                   maxlnTT=max(log(maxTT),maxlnTT)
                 else
                   if (present(ierr)) then
-                    !$omp atomic
+                    !!$omp atomic
                     ierr=iEXPLOSION_TOO_HOT
                     if (.not.lSN_list) then
                       !$ lfound = .true.
@@ -3552,7 +3553,9 @@ mnloop:do n=n1,n2
       enddo
       enddo mnloop
       !$omp end teams distribute parallel do
-      !$omp end target
+     !!$omp end target
+      SNR%feat%MM=cum_mm
+      SNR%feat%EE=cum_ee
 !
 !  Broadcast maxlnTT from remnant to all processors so all take the same path
 !  after these checks.
@@ -3579,19 +3582,20 @@ mnloop:do n=n1,n2
         call mpiallreduce_max(max_cmass,cmass_SN)
         if (lroot.and.ip==1963) print "(1x,'explode_SN: validating cmass_SN =',e12.5)",cmass_SN
         if (cmass_SN>0) then
-          SNR%feat%MM=0.
-          !$omp target if(loffload) map(tofrom: SNR) has_device_addr(f)  ! gives: m,n FG global width_mass, cmass_SN
-          !$omp teams distribute parallel do collapse(2) private(deltarho,dV) reduction(+:SNR%feat%MM)
+          cum_mm = 0.
+         !!$omp target if(loffload) !map(tofrom: SNR) has_device_addr(f)  ! gives: m,n FG global width_mass, cmass_SN
+          !$omp teams distribute parallel do collapse(2) private(deltarho,dV) reduction(+:cum_mm)
           do n=n1,n2
           do m=m1,m2
             call get_dVol(m,n,dV)
             call proximity_SN(SNR)
             call injectmass_SN(deltarho,width_mass,cmass_SN)
-            SNR%feat%MM=SNR%feat%MM+sum(deltarho*dV)
+            cum_mm=cum_mm+sum(deltarho*dV)
           enddo
           enddo
           !$omp end teams distribute parallel do
-          !$omp end target
+         !!$omp end target
+          SNR%feat%MM=cum_mm
           dmpi2_tmp=(/ SNR%feat%MM, SNR%feat%EE, SNR%feat%CR /)
           call mpiallreduce_sum(dmpi2_tmp,dmpi2,3)
           SNR%feat%MM=dmpi2(1)
@@ -3651,11 +3655,11 @@ mnloop:do n=n1,n2
         print "(1x,'explode_SN: cvelocity_SN finally =',e12.5)",cvelocity_SN
       endif
 
-      SNR%feat%EE=0.
-      SNR%feat%MM=0.
-      SNR%feat%CR=0.
-      !$omp target if(loffload) map(tofrom: SNR) has_device_addr(f)  ! needs: irho,ilnrho,iss,ilnTT,iyH,iecr,ifcr, frac_eth, switches;  gives: m,n
-      !$omp teams distribute parallel do collapse(2) reduction(+:SNR%feat%MM,SNR%feat%CR,SNR%feat%EE) &
+      cum_mm = 0.
+      cum_ee = 0.
+      cum_cr = 0.
+     !!$omp target if(loffload) !map(tofrom: SNR) has_device_addr(f)  ! needs: irho,ilnrho,iss,ilnTT,iyH,iecr,ifcr, frac_eth, switches;  gives: m,n
+      !$omp teams distribute parallel do collapse(2) reduction(+:cum_mm,cum_ee,cum_cr) &
       !$omp private(rho_old,rho_new,deltauu,deltarho,deltaEE,ee_old,yH,lnTT,deltafcr,deltaCR,outward_normal_SN,dV)
 !FG: global width_mass, cmass_SN, width_energy, c_SN, width_velocity, cvelocity_SN, ecr_SN (cfcr_SN? to do)
       do n=n1,n2
@@ -3685,7 +3689,7 @@ mnloop:do n=n1,n2
 
         if ((lSN_mass.and.cmass_SN>0).or.(lSN_coolingmass.and.cmass_SN>0)) then
           call injectmass_SN(deltarho,width_mass,cmass_SN)
-          SNR%feat%MM=SNR%feat%MM+sum(deltarho*dV)
+          cum_mm=cum_mm+sum(deltarho*dV)
           rho_new=rho_old+deltarho
           if (ldensity_nolog) then
             f(l1:l2,m,n,irho)=rho_new
@@ -3699,7 +3703,7 @@ mnloop:do n=n1,n2
 !
         if (lSN_eth) then
           call injectenergy_SN(deltaEE,width_energy,c_SN)
-          SNR%feat%EE=SNR%feat%EE+sum(deltaEE*dV)
+          cum_ee=cum_ee+sum(deltaEE*dV)
           if (ltemperature) then
             call eoscalc(irho_lnTT,rho_old,f(l1:l2,m,n,ilnTT),ee=ee_old)
             call eoscalc(irho_ee,rho_new,real((ee_old*rho_old+deltaEE*frac_eth)/rho_new),lnTT=f(l1:l2,m,n,ilnTT),yH=yH)
@@ -3728,7 +3732,7 @@ mnloop:do n=n1,n2
 !
         if (lSN_ecr) then
           call injectenergy_SN(deltaCR,width_energy,ecr_SN)
-          SNR%feat%CR=SNR%feat%CR+sum(deltaCR*dV)
+          cum_cr=cum_cr+sum(deltaCR*dV)
           f(l1:l2,m,n,iecr) = f(l1:l2,m,n,iecr) + deltaCR
           if (lSN_fcr) then
             call injectfcr_SN(deltafcr,width_energy,ecr_SN,outward_normal_SN)
@@ -3739,7 +3743,10 @@ mnloop:do n=n1,n2
       enddo
       enddo  !  mn-loop
       !$omp end teams distribute parallel do
-      !$omp end target
+     !!$omp end target
+      SNR%feat%EE=cum_ee
+      SNR%feat%MM=cum_mm
+      SNR%feat%CR=cum_cr
 !
       call get_properties(f,SNR,rhom,ekintot_new,rhomin,ierr)
       if (lroot.and.ip==1963) then
@@ -3892,7 +3899,8 @@ mnloop:do n=n1,n2
 !  Obtain distance to SN and sum all points inside SNR radius and
 !  divide by number of points.
 !
-      !$omp target if(loffload) map(from: rhomin,rhomax,tmp) map(to: remnant) has_device_addr(f)  ! needs: irho,ilnrho,iuu,dr2_SN, switches;  gives: m,n
+!$    call OMP_set_num_threads(num_helper_threads+1)
+     !!$omp target if(loffload) !map(from: rhomin,rhomax,tmp) map(to: remnant) has_device_addr(f)  ! needs: irho,ilnrho,iuu,dr2_SN, switches;  gives: m,n
       !$omp teams distribute parallel do collapse(2) private(rho,uu,u2,lmask,dV), reduction(min:rhomin) reduction(max:rhomax) reduction(+:tmp)
       do n=n1,n2
       do m=m1,m2
@@ -3930,7 +3938,7 @@ mnloop:do n=n1,n2
       enddo
       enddo  !  mn-loop
       !$omp end teams distribute parallel do
-      !$omp end target
+     !!$omp end target
 !
 !  Calculate mean density inside the remnant and return error if the volume is
 !  zero.
@@ -3993,7 +4001,8 @@ mnloop:do n=n1,n2
 !  Obtain distance to SN and sum all points inside SNR radius and divide by number of points.
 !
       tmp=0.
-      !$omp target if(loffload) map(from: tmp) map(to: remnant) has_device_addr(f)  ! needs: irho,ilnrho,iuu,dr2_SN, switches;  gives: m,n
+!$    call OMP_set_num_threads(num_helper_threads+1)
+     !!$omp target if(loffload) !map(from: tmp) map(to: remnant) has_device_addr(f)  ! needs: irho,ilnrho,iuu,dr2_SN, switches;  gives: m,n
 !FG: cvelocity_SN, cmass_SN
       !$omp teams distribute parallel do collapse(2) private(uu,u2,rho,deltauu,deltarho,dV,outward_normal_SN) reduction(+:tmp)
       do n=n1,n2
@@ -4036,7 +4045,7 @@ mnloop:do n=n1,n2
       enddo
       enddo  !  mn-loop
       !$omp end teams distribute parallel do
-      !$omp end target
+     !!$omp end target
 !
 !  Calculate mean density inside the remnant and return zero if the volume is
 !  zero.
@@ -4090,7 +4099,7 @@ mnloop:do n=n1,n2
     endsubroutine get_lowest_rho
 !*****************************************************************************
     subroutine proximity_OB(OB,outward_normal)    ! make pars: m,n, dr2_SN
-!$omp declare target    ! needs: x,y,z, L[xyz, lperi; gives: dr2_OB
+!!$omp declare target device_type(host)   ! needs: x,y,z, L[xyz], lperi; gives: dr2_OB
 !
 !  Calculate pencil of distance to OB cluster origin.
 !
@@ -4142,7 +4151,7 @@ mnloop:do n=n1,n2
     endsubroutine proximity_OB
 !*****************************************************************************
     subroutine proximity_SN(SNR,outward_normal)    ! make pars: m,n, dr2_SN
-!$omp declare target    ! needs: x,y,z, L[xyz], deltay
+!!$omp declare target device_type(host)    ! needs: x,y,z, L[xyz], deltay
 !
 !  Calculate pencil of distance to SN explosion site.
 !
@@ -4257,7 +4266,7 @@ mnloop:do n=n1,n2
     endsubroutine proximity_SN
 !*****************************************************************************
     subroutine injectenergy_SN(deltaEE,width,c_SN)
-!$omp declare target    ! needs: dr2_SN, sigma_SN1
+!!$omp declare target device_type(host)   ! needs: dr2_SN, sigma_SN1
 !
       real, intent(in) :: width,c_SN
       real, intent(out), dimension(nx) :: deltaEE
@@ -4287,7 +4296,7 @@ mnloop:do n=n1,n2
     endsubroutine injectenergy_SN
 !*****************************************************************************
     subroutine injectmass_SN(deltarho,width,cmass_SN)
-!$omp declare target     ! needs: dr2_SN, sigma_SN1
+!!$omp declare target device_type(host)    ! needs: dr2_SN, sigma_SN1
 !
       real, intent(in) :: width,cmass_SN
       real, intent(out), dimension(nx) :: deltarho
@@ -4315,7 +4324,7 @@ mnloop:do n=n1,n2
     endsubroutine injectmass_SN
 !*****************************************************************************
     subroutine getmass_SN(deltarho,rad,width,cmass_SN)
-!$omp declare target     ! needs: sigma_SN1; switches
+!!$omp declare target device_type(host)    ! needs: sigma_SN1; switches
 !
       real, intent(in) :: width, rad, deltarho
       real, intent(out) :: cmass_SN
@@ -4344,7 +4353,7 @@ mnloop:do n=n1,n2
     endsubroutine getmass_SN
 !***********************************************************************
     subroutine injectvelocity_SN(deltauu,width,cvelocity_SN,SNR,rho,outward_normal)
-!$omp declare target    ! needs: dr2_SN; switches
+!!$omp declare target device_type(host)   ! needs: dr2_SN; switches
 !
       real, intent(in) :: width,cvelocity_SN
       real, intent(in), dimension(nx,3) :: outward_normal
@@ -4386,7 +4395,7 @@ mnloop:do n=n1,n2
     endsubroutine injectvelocity_SN
 !***********************************************************************
     subroutine injectfcr_SN(deltafcr,width,cfcr_SN,outward_normal)
-!$omp declare target   ! needs: dr2_SN,kperp, switches
+!!$omp declare target device_type(host)  ! needs: dr2_SN,kperp, switches
 !
       real, intent(in) :: width,cfcr_SN
       real, intent(in), dimension(nx,3) :: outward_normal

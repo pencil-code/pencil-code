@@ -1509,7 +1509,7 @@ module EquationOfState
     endsubroutine eoscalc_farray
 !***********************************************************************
     subroutine eoscalc_point(ivars,var1,var2,iz,lnrho,ss,yH,lnTT,ee,pp,cs2)
-!$omp declare target
+!!$omp declare target
 !
 !   Calculate thermodynamical quantities
 !

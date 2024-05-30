@@ -2605,7 +2605,7 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
     endsubroutine get_grid_mn
 !**********************************************************************
     subroutine get_dVol(mm,nn,dV)
-!$omp declare target
+!!$omp declare target
 !
       integer,             intent(in ) :: mm,nn
       real, dimension(nx), intent(out) :: dV
