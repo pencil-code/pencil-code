@@ -508,10 +508,7 @@ ifneq ($(GPU),nogpu)
 	LIBGPU_NAME = astaroth_sgl
       endif
 
-#  GPU_DEPS = $(LIBGPU) gpu_preps
-
-      gpu_preps = $(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/Makefile.vendor $(CUDA_MAKEDIR)/PC_modulesources.h $(DSL_WORKDIR)/fieldecs.h $(DSL_WORKDIR)/equations.h $(DSL_WORKDIR)/solve.ac $(LIBGPU)
-      GPU_DEPS = $(gpu_preps)
+      GPU_DEPS = $(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/Makefile.vendor $(CUDA_MAKEDIR)/PC_modulesources.h $(DSL_WORKDIR)/fieldecs.h $(DSL_WORKDIR)/equations.h $(DSL_WORKDIR)/solve.ac
       #LDFLAGS_MAIN = -Bdynamic -Wl,--export-dynamic
       LDFLAGS_MAIN = -h dynamic -Wl,--export-dynamic
       #TP: mpi_gtl_hsa and pe/lib64 is to enable CUDA_AWARE_MPI
@@ -2935,10 +2932,11 @@ start.x: start.o | $(SPECIAL_DEPS)
 	$(LD) $(start) start.o $(LDFLAGS) $(LDFLAGS_MAIN) $(LD_MPI) $(LD_FOURIER) $(LD_GSL) -o start.x
 #
 run.o: $(run) Makefile.local
-run.x: run.o | $(SPECIAL_DEPS) $(GPU_DEPS)
+run.x: run.o | $(SPECIAL_DEPS) $(LIBGPU)
 	$(LD) $(run) run.o $(LDFLAGS) $(LDFLAGS_MAIN) $(LDFLAGS_LIB) $(LD_MPI) $(LD_FOURIER) $(LIBSIG) $(LD_GSL) -o run.x
 #needs LIBGPU as prerequisite, this in turn needs a rule
 $(LIBGPU): $(CUDA_INCDIR)/PC_moduleflags.h
+#$(LIBGPU): $(GPU_DEPS)
 	cd astaroth && make
 
 special_preps:
@@ -3004,13 +3002,13 @@ endif
 #
 # writes moduleflags in $(CUDA_INCDIR)/PC_moduleflags.h, list of needed physics module source files in $(CUDA_MAKEDIR)/PC_modulesources.h
 # 
-#$(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/PC_modulesources.h $(CUDA_MAKEDIR)/Makefile.vendor $(DSL_WORKDIR)/fieldecs.h $(DSL_WORKDIR)/equations.h $(DSL_WORKDIR)/solve.ac: 
 $(DSL_WORKDIR)/solve.ac: $(CUDA_INCDIR)/PC_moduleflags.h
 $(DSL_WORKDIR)/equations.h: $(CUDA_INCDIR)/PC_moduleflags.h
 $(DSL_WORKDIR)/fieldecs.h: $(CUDA_INCDIR)/PC_moduleflags.h
 $(CUDA_MAKEDIR)/Makefile.vendor: $(CUDA_INCDIR)/PC_moduleflags.h
 $(CUDA_INCDIR)/PC_modulesources.h: $(CUDA_INCDIR)/PC_moduleflags.h
 #
+#$(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/PC_modulesources.h $(CUDA_MAKEDIR)/Makefile.vendor $(DSL_WORKDIR)/fieldecs.h $(DSL_WORKDIR)/equations.h $(DSL_WORKDIR)/solve.ac: Makefile.local $(CPARAM_OBJ) $(CDATA_OBJ)
 $(CUDA_INCDIR)/PC_moduleflags.h: Makefile.local $(CPARAM_OBJ) $(CDATA_OBJ)
 	@rm -f $(CUDA_INCDIR)/PC_moduleflags.h
 	@echo '#pragma once' > $(CUDA_INCDIR)/PC_moduleflags.h
@@ -3028,6 +3026,7 @@ ifeq ($(EOS),noeos)
 else
 	@echo ' ' >> $(CUDA_MAKEDIR)/PC_modulesources.h
 endif
+	@echo ' ' >> $(CUDA_INCDIR)/PC_moduleflags.h
 #
 #  Generation of field (PDE variable) declarations for DSL code obeying the registration order: fieldecs.h .
 #  Generation of (empty) RHS functions and integration kernel: equations.h and solve.ac .
@@ -3045,7 +3044,8 @@ endif
 	@sed -e's/MODULESOURCES=/MODULESOURCES="/' -e'$$ s/$$/"/' -e's/\.\.\///' $(CUDA_MAKEDIR)/PC_modulesources.h > tmp; source ./tmp; rm tmp; \
 	for file in $$MODULESOURCES; do \
 	  modname=`grep '^ *module [a-zA-Z0-9_]* *$$' $$file | sed -e's/ *module *//' -e's/\([^ ]\) */\L\1/g'`; \
-	  replcmt=`sed -f dsl.sed $$file`; \
+	  replcmt=`sed -f dsl_pde.sed $$file`; \
+	      echo REPLACEMT=$$replcmt; \
 	  if [[ "$$replcmt" != "" ]]; then \
 	    sed -i -e's/\/\/ *'"$$modname"'/'"$$replcmt"'/' $(DSL_WORKDIR)/fieldecs.h; \
 	    fieldname=`echo $$replcmt | sed -e's/.*\\\\\/ *\\\\\/ *\([a-zA-Z0-9_]*\).*$$/\U\1/'`; \
@@ -3064,13 +3064,26 @@ endif
 	      echo $$funcname'(int step_num){'$$init'}' >> $(DSL_WORKDIR)/equations.h; \
 	      echo '' >> $(DSL_WORKDIR)/equations.h; \
 	    fi \
-	  fi \
+	  fi; \
+	  if [[ "$$file" == "interstellar.f90" ]]; then \
+	    replcmt=`sed -f dsl_aux.sed $$file`;\
+	    if [[ "$$replcmt" != "" ]]; then \
+	      sed -i -e's/\/\/ *'"$$modname"'/'"$$replcmt"'/' $(DSL_WORKDIR)/fieldecs.h; \
+	    fi; \
+	  fi; \
 	done 
 	@sed -i -e'/^ *\/\// d' $(DSL_WORKDIR)/fieldecs.h
 	@echo '}' >> $(DSL_WORKDIR)/solve.ac
-	@cp $(DSL_WORKDIR)/solve.ac $(DSL_WORKDIR)/solve.ac.single
-	@sed -f $(CUDA_MAKEDIR)/solve.sed $(DSL_WORKDIR)/solve.ac > $(DSL_WORKDIR)/solve.ac.two
+	@echo 'ComputeSteps rhs_STEP_NUM(boundconds) {' >> $(DSL_WORKDIR)/solve.ac
+	@echo '  singlepass_solve(STEP_NUM,dt),' >> $(DSL_WORKDIR)/solve.ac
+	@echo '}' >> $(DSL_WORKDIR)/solve.ac
+	@echo 'BoundConds boundconds{' >> $(DSL_WORKDIR)/solve.ac
+	@echo '  periodic_boundconds(BOUNDARY_XYZ),' >> $(DSL_WORKDIR)/solve.ac
+	@echo '}' >> $(DSL_WORKDIR)/solve.ac
+	@sed -f $(CUDA_MAKEDIR)/solve.sed $(DSL_WORKDIR)/solve.ac > $(DSL_WORKDIR)/solve_two.ac
+	@mv $(DSL_WORKDIR)/solve.ac $(DSL_WORKDIR)/solve_single.ac
 
+#	    echo REPLACEMT=$$replcmt; \
 #	    echo FIELDNAME=$$fieldname; \
 #	@sed -e':loop' -e'N' -e'$$!b loop' -e's/\#pragma  *once//' -e's/\# *define *\([A-Z0-9_][A-Z0-9_]*\)/..\/..\/\L\1.f90 /g' -e's/\n/ /g' < $(CUDA_INCDIR)/PC_moduleflags.h >> $(CUDA_MAKEDIR)/PC_modulesources.h
 #

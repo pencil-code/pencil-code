@@ -993,47 +993,40 @@ subroutine run_start() bind(C)
 !
   call trim_averages
   
-!$ call mpibarrier
-
+  !$ call mpibarrier
   !$omp parallel copyin(fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz,phiavg_norm)
-     core_ids(omp_get_thread_num()+1) = get_cpu()
+  !$ core_ids(omp_get_thread_num()+1) = get_cpu()
   !$omp end parallel
-
+  !$ call mpibarrier
 !
-!$ call mpibarrier
 !$omp parallel num_threads(num_helpers+1) copyin(fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz,phiavg_norm)
 !
-
 !TP: remove master id from core ids since no one should run on master core and make sure new core ids indexing start from 1
-if(omp_get_thread_num() == 1) then
-        helper_core_id = get_cpu()
-     endif
+!$ if (omp_get_thread_num() == 1) helper_core_id = get_cpu()
 !$omp barrier
-     if(omp_get_thread_num() == 0) then
-        master_core_id = get_cpu()
-        tmp_core_ids = 0
-        tmp_core_ids(1) = helper_core_id
-        j = 2
-        do i = 1,20
-                if(core_ids(i) /= master_core_id .and. core_ids(i) /= helper_core_id) then
-                        tmp_core_ids(j) = core_ids(i)
-                        j = j +1
-                endif
-        enddo
-        core_ids = tmp_core_ids
-     endif
+!$ if (omp_get_thread_num() == 0) then
+!$   master_core_id = get_cpu()
+!$   tmp_core_ids = 0
+!$   tmp_core_ids(1) = helper_core_id
+!$   j = 2
+!$   do i = 1,20
+!$     if (core_ids(i) /= master_core_id .and. core_ids(i) /= helper_core_id) then
+!$       tmp_core_ids(j) = core_ids(i)
+!$       j = j +1
+!$     endif
+!$   enddo
+!$   core_ids = tmp_core_ids
+!$ endif
 !$omp barrier
-
-
-!$   do i=1,num_helpers
 !
 ! Ensures that all MPI processes call create_communicators with the same thread.
 !
+!$  do i=1,num_helpers
 !$omp barrier
-!$     if (omp_get_thread_num() == i) call create_communicators
-!$   enddo
+!$    if (omp_get_thread_num() == i) call create_communicators
+!$  enddo
 !$omp barrier
-!$   if (omp_get_thread_num() == 0) then
+!$  if (omp_get_thread_num() == 0) then
 !
 !  Start timing for final timing statistics.
 !  Initialize timestep diagnostics during the run (whether used or not,
@@ -1045,10 +1038,10 @@ if(omp_get_thread_num() == 1) then
         time1=mpiwtime()
         time_last_diagnostic=time1
       endif
-       call timeloop(f,df,p)
-!$   else
-!$     call helper_loop(f,p)
-!$   endif
+      call timeloop(f,df,p)
+!$  else
+!$    call helper_loop(f,p)
+!$  endif
 !$omp barrier
 !$omp end parallel
 !

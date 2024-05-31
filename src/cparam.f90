@@ -264,6 +264,6 @@ module Cparam
 
 !$omp threadprivate(lpencil)
 !
-  logical :: loffload=.false.
+  logical, parameter :: loffload=.false.
 
 endmodule Cparam

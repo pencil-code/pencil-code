@@ -55,7 +55,6 @@ contains
       if (lpointmasses) str=trim(str)//', '//'pointmasses'
       if (lpoisson) str=trim(str)//', '//'poisson'
       if (lselfgravity) str=trim(str)//', '//'selfgravity'
-      if (lshock) str=trim(str)//', '//'shock'
       if (lsolid_cells) str=trim(str)//', '//'solid_cells'
       if (lspecial) str=trim(str)//', '//'special'
       if (lparticles) str=trim(str)//', '//'particles'

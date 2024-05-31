@@ -385,10 +385,9 @@ AcReal max_diffus()
 #endif
 #if LMAGNETIC
   maxdiffus_ = std::max(maxdiffus_, eta * dxyz_2_val);
-  //maxdiffus_=nu*dxyz_2[nghost-1];
 #endif
 #if LENTROPY
-  maxdiffus_ = std::max(maxdiffus_, chi * dxyz_2_val);
+  maxdiffus_ = std::max(maxdiffus_, gamma * chi * dxyz_2_val);
 #endif
   return maxdiffus_;
 }
@@ -472,8 +471,9 @@ extern "C" void substepGPU(int isubstep)
     acGridExecuteTaskGraph(rhs_0, 1);
   }
   if (isubstep == 2) acGridExecuteTaskGraph(rhs_1, 1);
-  if (isubstep == 3) {
-    acGridExecuteTaskGraph(rhs_2, 1);
+  if (isubstep == 3) acGridExecuteTaskGraph(rhs_2, 1);
+  if (isubstep == 1)
+  {
     if (ldt)
     {
       acGridFinalizeReduceLocal(rhs_2);
@@ -482,11 +482,13 @@ extern "C" void substepGPU(int isubstep)
 #endif
       AcReal maxdiffus = max_diffus();
 #if LENTROPY
-      AcReal maxchi    = dev->output.real_outputs[AC_maxchi];
-      maxdiffus = (maxdiffus+maxchi)/pow(dx,2)/cdtv;
+      //AcReal maxchi    = dev->output.real_outputs[AC_maxchi];
+      //maxdiffus = maxdiffus+maxchi/pow(dx,2)
 #endif
+      maxdiffus = maxdiffus/cdtv;
       AcReal dt1_ = sqrt(pow(maxadvec, 2) + pow(maxdiffus, 2));
 //printf("maxadvec, maxchi,maxdiffus= %e %e %e \n", maxadvec, maxchi, maxdiffus);
+//printf("maxadvec, maxdiffus= %e %e %e \n", maxadvec, maxdiffus);
       set_dt(dt1_);
       acDeviceSetRealInput(acGridGetDevice(), AC_dt, dt);
     }
@@ -956,6 +958,14 @@ void setupConfig(AcMeshInfo &config)
 
   // Enter physics related parameters in config.
   #include "PC_modulepars.h"
+
+  Device dev = acGridGetDevice();
+#if LHYDRO
+  //dev->output.real_outputs[AC_maxadvec]=0.;
+#endif
+#if LENTROPY
+  //dev->output.real_outputs[AC_maxchi]=0.;
+#endif
 
   acLogFromRootProc(rank, "Done setupConfig\n");
   fflush(stdout);
