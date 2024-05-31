@@ -3078,7 +3078,7 @@ endif
 	@echo '  singlepass_solve(STEP_NUM,dt),' >> $(DSL_WORKDIR)/solve.ac
 	@echo '}' >> $(DSL_WORKDIR)/solve.ac
 	@echo 'BoundConds boundconds{' >> $(DSL_WORKDIR)/solve.ac
-	@echo '  periodic_boundconds(BOUNDARY_XYZ),' >> $(DSL_WORKDIR)/solve.ac
+	@echo '  periodic_boundconds(BOUNDARY_XYZ)' >> $(DSL_WORKDIR)/solve.ac
 	@echo '}' >> $(DSL_WORKDIR)/solve.ac
 	@sed -f $(CUDA_MAKEDIR)/solve.sed $(DSL_WORKDIR)/solve.ac > $(DSL_WORKDIR)/solve_two.ac
 	@mv $(DSL_WORKDIR)/solve.ac $(DSL_WORKDIR)/solve_single.ac
