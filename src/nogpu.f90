@@ -14,6 +14,7 @@ module GPU
   implicit none
 
   include 'gpu.h'
+  public :: copy_farray_c_
 
 contains
 !***********************************************************************
@@ -52,7 +53,7 @@ contains
 !
     endsubroutine rhs_GPU
 !**************************************************************************
-    subroutine copy_farray_c(f)
+    subroutine copy_farray_c_(f) bind(C)
       real, dimension (:,:,:,:), intent(OUT) :: f
       call keep_compiler_quiet(f)
     endsubroutine

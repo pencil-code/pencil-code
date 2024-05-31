@@ -447,7 +447,6 @@ module Register
       call finalize_boundcond(f)
       call finalize_deriv
       call finalize_io
-      call finalize_gpu
 !
     endsubroutine finalize_modules
 !***********************************************************************

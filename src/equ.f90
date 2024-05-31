@@ -711,7 +711,11 @@ module Equ
 !$    call restore_diagnostic_controls
 
       lfirstpoint=.true.
-!$    if(omp_get_thread_num() /= 0) call set_cpu(core_ids(omp_get_thread_num()+1))
+      !TP: example code to explicitly set and get cores the thread are running on
+      !TP: the flexible way to set this is with OMP_PROC_BIND=close,spread, but in case that fails one can be sure by using the code
+      !below
+!!$    if(omp_get_thread_num() /= 0) call set_cpu(core_ids(omp_get_thread_num()+1))
+      !print*,"omp_id,cpu_id,mpi_id: ",omp_get_thread_num(), get_cpu(), iproc
 
       !$omp do
       do imn=1,nyz

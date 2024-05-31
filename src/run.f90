@@ -549,7 +549,7 @@ subroutine run_start() bind(C)
 !$ use General,        only: signal_init,get_cpu
   use Grid,            only: construct_grid, box_vol, grid_bound_data, set_coorsys_dimmask, &
                              construct_serial_arrays, coarsegrid_interp
-  use Gpu,             only: gpu_init, register_gpu, load_farray_to_GPU, initialize_gpu
+  use Gpu,             only: gpu_init, register_gpu, load_farray_to_GPU, initialize_gpu, finalize_gpu
   use HDF5_IO,         only: init_hdf5, initialize_hdf5, wdim
   use IO,              only: rgrid, wgrid, directory_names, rproc_bounds, wproc_bounds, output_globals, input_globals
   use Messages
@@ -1032,6 +1032,7 @@ subroutine run_start() bind(C)
 !  Initialize timestep diagnostics during the run (whether used or not,
 !  see idiag_timeperstep).
 !
+      !print*,"Master core: ",get_cpu(), iproc
       if (lroot) then
         icount=0
         it_last_diagnostic=icount
@@ -1135,6 +1136,7 @@ subroutine run_start() bind(C)
 !  Give all modules the possibility to exit properly.
 !
   call finalize_modules(f)
+  call finalize_gpu
 !
 !  Write success file, if the requested simulation is complete.
 !

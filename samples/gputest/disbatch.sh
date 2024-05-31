@@ -11,7 +11,7 @@
 #SBATCH --mem=0
 
 export OMP_NUM_THREADS=7
-export OMP_PROC_BIND=true
+export OMP_PROC_BIND=close,spread
 export OMP_MAX_ACTIVE_LEVELS=2
 export OMP_WAIT_POLICY=PASSIVE
 ./start.csh
