@@ -466,7 +466,7 @@ extern "C" void substepGPU(int isubstep)
   Device dev = acGridGetDevice();
   if (isubstep == 1)
   {
-    acDeviceSetRealInput(acGridGetDevice(), AC_dt, dt);
+    acDeviceSetInput(acGridGetDevice(), AC_dt,dt);
     acGridSynchronizeStream(STREAM_ALL);
     acGridExecuteTaskGraph(rhs_0, 1);
   }
@@ -478,7 +478,7 @@ extern "C" void substepGPU(int isubstep)
     {
       acGridFinalizeReduceLocal(rhs_2);
 #if LHYDRO
-      AcReal maxadvec = dev->output.real_outputs[AC_maxadvec]/cdt;
+      AcReal maxadvec = acDeviceGetOutput(acGridGetDevice(), AC_maxadvec)/cdt;
 #endif
       AcReal maxdiffus = max_diffus();
 #if LENTROPY
@@ -490,7 +490,7 @@ extern "C" void substepGPU(int isubstep)
 //printf("maxadvec, maxchi,maxdiffus= %e %e %e \n", maxadvec, maxchi, maxdiffus);
 //printf("maxadvec, maxdiffus= %e %e %e \n", maxadvec, maxdiffus);
       set_dt(dt1_);
-      acDeviceSetRealInput(acGridGetDevice(), AC_dt, dt);
+      acDeviceSetInput(acGridGetDevice(),AC_dt,dt);
     }
   }
   acGridSynchronizeStream(STREAM_ALL);
@@ -658,7 +658,7 @@ extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
   // constexpr AcReal epsilon = 0.0;
   constexpr AcReal local_dt = 0.001;
   Device dev = acGridGetDevice();
-  dev->local_config.real_params[AC_dt] = local_dt;
+  acDeviceSetInput(acGridGetDevice(),AC_dt,local_dt);
   acGridSynchronizeStream(STREAM_ALL);
 
   size_t offset = 0;
