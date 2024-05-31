@@ -1630,6 +1630,7 @@ module Density
       if (ldensity_nolog .and. (.not.lread_oldsnap) .and. (.not.ldensity_linearstart)) &
            f(:,:,:,irho)=exp(f(:,:,:,ilnrho))   !???
 !AB: Wlad, why the question marks on Dec 7, 2020?
+!PAB: If you want to initialize rho_const, then it should be done directly; see ENTROPY module.
 !
 !  Impose density floor or ceiling if requested.
 !
