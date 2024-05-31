@@ -244,7 +244,6 @@ module Register
       use Viscosity,        only: initialize_viscosity
       use ImplicitPhysics,  only: initialize_implicit_physics
       use Grid,             only: initialize_grid
-      use GPU,              only: initialize_gpu
 !$    use OMP_lib
 !!$    use mt
 !
