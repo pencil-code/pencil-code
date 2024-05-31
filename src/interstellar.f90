@@ -472,7 +472,7 @@ module Interstellar
       l_persist_overwrite_ycluster, l_persist_overwrite_zcluster, &
       lreset_ism_seed, SN_rho_ratio, SN_TT_ratio, eps_mass, &
       lscale_SN_interval, SN_interval_rhom, rfactor_SN, iSNdx, &
-      energy_Nsigma, lSN_momentum, lSN_coolingmass, Nsol_added, loffload
+      energy_Nsigma, lSN_momentum, lSN_coolingmass, Nsol_added!, loffload
 !
   real :: gamma
 !
