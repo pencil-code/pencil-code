@@ -17,3 +17,4 @@
 # first array then vector par
 /call  *farray_register_auxiliary/ s/^[^!]*farray_register_auxiliary *( *[']\([0-9a-zA-Z_][0-9a-zA-Z_]*\)['] *,[^=]*array *= *\([a-zA-Z_0-9][a-zA-Z_0-9]*\) *,[^=]*vector *= *\([0-9][0-9]*\).*$/Field \U\1X[\L\2],\U\1Y[\L\2],\U\1Z[\L\2] \\\/\\\/ \L\1\\n\\\/\\\/#define \U\1\L F\Lield\3(\U\1X,\U\1Y,\U\1Z)\\n/
 #
+q
