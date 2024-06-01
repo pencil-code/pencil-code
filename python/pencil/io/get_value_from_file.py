@@ -144,7 +144,7 @@ def get_value_from_file(
                 list(
                     re.finditer(
                         # Does it appear at the beginning of a line (ignoring whitespace)?
-                        f"^[\s]*{quantity}[^0-9a-zA-Z_=]*=",
+                        rf"^[\s]*{quantity}[^0-9a-zA-Z_=]*=",
                         line.split(SYM_COMMENT)[0],
                     )
                 )
