@@ -40,7 +40,7 @@
 ! MVAR CONTRIBUTION 2
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED infl_phi; infl_dphi; infl_a2; infl_a21; gphi(3)
+! PENCILS PROVIDED infl_phi; infl_dphi; gphi(3)
 !***************************************************************
 !
 ! HOW TO USE THIS FILE
@@ -95,11 +95,11 @@ module Special
   real :: initpower_dphi=0., cutoff_dphi=0., initpower2_dphi=0.
   real :: kgaussian_phi=0.,kpeak_phi=0., kgaussian_dphi=0., kpeak_dphi=0.
   real :: relhel_phi=0.
-  real :: ddotam, a2rhopm, a2rhopm_all, a2rhom, a2rhom_all, edotbm, edotbm_all
+  real :: ddotam, a2rhopm, a2rhopm_all, a2rhom, a2rhom_all, edotbm, edotbm_all, a2rhophim, a2rhophim_all
+  real :: lnascale, ascale, a2, a21, Hscript
   real :: Hscript0=0.
   real, target :: ddotam_all
   real, pointer :: alpf
-  real , dimension (nx) :: lnascale, ascale, a2, a21, Hscript
   real, dimension (nx) :: dt1_special
   logical :: lbackreact_infl=.true., lem_backreact=.true., lzeroHubble=.false.
   logical :: lscale_tobox=.true.,ldt_backreact_infl=.true.
@@ -115,12 +115,13 @@ module Special
       kx_phi, ky_phi, kz_phi, phase_phi, width, offset, &
       initpower_phi, initpower2_phi, cutoff_phi, kgaussian_phi, kpeak_phi, &
       initpower_dphi, initpower2_dphi, cutoff_dphi, kpeak_dphi, &
-      ncutoff_phi, lscale_tobox, Hscript0, Hscript_choice, infl_v
+      ncutoff_phi, lscale_tobox, Hscript0, Hscript_choice, infl_v, lflrw
 !
   namelist /special_run_pars/ &
       initspecial, phi0, dphi0, axionmass, eps, ascale_ini, &
       lbackreact_infl, lem_backreact, c_light_axion, lambda_axion, Vprime_choice, &
-      lzeroHubble, ldt_backreact_infl, Ndiv, Hscript0, Hscript_choice, infl_v
+      lzeroHubble, ldt_backreact_infl, Ndiv, Hscript0, Hscript_choice, infl_v, &
+      lflrw
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -135,6 +136,7 @@ module Special
   integer :: idiag_ddotam=0    ! DIAG_DOC: $a''/a$
   integer :: idiag_a2rhopm=0   ! DIAG_DOC: $a^2 (rho+p)$
   integer :: idiag_a2rhom=0   ! DIAG_DOC: $a^2 rho$
+  integer :: idiag_a2rhophim=0   ! DIAG_DOC: $a^2 rho$
 !
   contains
 !****************************************************************************
@@ -153,8 +155,8 @@ module Special
       call farray_register_pde('infl_dphi',iinfl_dphi)
 !
      if (lflrw) then
-!     call farray_register_pde('infl_hubble',iinfl_hubble)
-       call farray_register_pde('infl_lna',iinfl_lna)
+!     call farray_register_ode('infl_hubble',iinfl_hubble)
+       call farray_register_ode('infl_lna',iinfl_lna)
      endif
 !
 !  for power spectra, it is convenient to use ispecialvar and
@@ -176,10 +178,17 @@ module Special
 !
       axionmass2=axionmass**2
 !
-      call put_shared_variable('ddotam',ddotam_all,caller='initialize_backreact_infl')
+      call put_shared_variable('ddotam',ddotam_all,caller='initialize_backreact_infl_ode')
 !
-      if (lmagnetic .and. lem_backreact) call get_shared_variable('alpf',alpf)
-      if (lmagnetic .and. lem_backreact) call get_shared_variable('lphi_hom',lphi_hom)
+      if (lmagnetic .and. lem_backreact) then
+        call get_shared_variable('alpf',alpf)
+        call get_shared_variable('lphi_hom',lphi_hom)
+      else
+        allocate(alpf)
+        allocate(lphi_hom)
+        alpf=0.
+        lphi_hom=.false.
+      endif
 !
       call keep_compiler_quiet(f)
 !
@@ -191,9 +200,10 @@ module Special
 !  06-oct-2003/tony: coded
 !
       use Initcond, only: gaunoise, sinwave_phase, hat, power_randomphase_hel, power_randomphase
+      use Mpicomm, only: mpibcast_real
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: Vpotential, Hubble_ini, lnascale, infl_gam
+      real :: Vpotential, Hubble_ini, infl_gam
       integer :: j
 !
       intent(inout) :: f
@@ -225,9 +235,9 @@ module Special
             t=tstart
             Hubble_ini=sqrt(8.*pi/3.*(.5*dphi0**2+.5*axionmass2*phi0**2*ascale_ini**2))
             lnascale=log(ascale_ini)
-            if (lflrw) then
-              f(:,:,:,iinfl_lna)=f(:,:,:,iinfl_lna)+lnascale
-!              f(:,:,:,iinfl_hubble)=f(:,:,:,iinfl_hubble)+Hubble_ini
+            if (lroot .and. lflrw) then
+              f_ode(iinfl_lna) =lnascale
+!              f(iinfl_hubble) =Hubble_ini
             endif
           case ('default')
             Vpotential=.5*axionmass2*phi0**2
@@ -238,9 +248,11 @@ module Special
             lnascale=log(ascale_ini)
             f(:,:,:,iinfl_phi)   =f(:,:,:,iinfl_phi)   +phi0
             f(:,:,:,iinfl_dphi)  =f(:,:,:,iinfl_dphi)  +dphi0
-            if (lflrw) then
-              f(:,:,:,iinfl_lna)   =f(:,:,:,iinfl_lna)   +lnascale
-!            f(:,:,:,iinfl_hubble)=f(:,:,:,iinfl_hubble)+Hubble_ini
+            if (lroot .and. lflrw) then
+              f_ode(iinfl_lna)   =lnascale
+              a2                 =exp(f_ode(iinfl_lna))**2
+              Hscript            =Hubble_ini/exp(lnascale)
+!              f(iinfl_hubble)   =Hscript
             endif
           case ('gaussian-noise')
             call gaunoise(amplphi,f,iinfl_phi)
@@ -264,6 +276,8 @@ module Special
             call fatal_error("init_special: No such initspecial: ", trim(initspecial(j)))
         endselect
       enddo
+      call mpibcast_real(a2)
+      call mpibcast_real(Hscript)
 !
     endsubroutine init_special
 !***********************************************************************
@@ -273,7 +287,7 @@ module Special
 !
 !  18-07-06/tony: coded
 !
-      if (lmagnetic .and. lbackreact_infl) lpenc_requested(i_infl_a21)=.true.
+!      if (lmagnetic .and. lbackreact_infl) lpenc_requested(i_infl_a21)=.true.
 !
 !  pencil for gradient of phi
 !
@@ -309,22 +323,6 @@ module Special
 ! infl_dphi
       if (lpencil(i_infl_dphi)) p%infl_dphi=f(l1:l2,m,n,iinfl_dphi)
 !
-! infl_a2
-     if (lflrw .and. lpencil(i_infl_a2)) then
-       p%infl_a2=exp(2.*f(l1:l2,m,n,iinfl_lna))
-     else
-       p%infl_a2=1
-     endif
-!
-! infl_a21
-      if (lpencil(i_infl_a21)) then
-        if (lpencil(i_infl_a2)) then
-          p%infl_a21=1./p%infl_a2
-        else
-         p%infl_a21=exp(-2.*f(l1:l2,m,n,iinfl_lna))
-        endif
-      endif
-!
 ! infl_gphi
       if (lpencil(i_gphi)) call grad(f,iinfl_phi,p%gphi)
 !
@@ -351,10 +349,9 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      type (pencil_case) :: p
-!
-      real, dimension (nx) :: phi, dphi, a2rhop, Vprime
+      real, dimension (nx) :: phi, dphi, Vprime
       real, dimension (nx) :: tmp, del2phi
+      type (pencil_case) :: p
 !
       intent(in) :: f,p
       intent(inout) :: df
@@ -369,7 +366,6 @@ module Special
 !  Choice of prescription for Hscript
 !
       select case (Hscript_choice)
-!       Hscript=f(l1:l2,m,n,iinfl_hubble)
         case ('default')
           Hscript=sqrt((8.*pi/3.)*a2rhom_all)
         case ('set')
@@ -379,10 +375,7 @@ module Special
         case default
           call fatal_error("dspecial_dt: No such Hscript_choice: ", trim(Hscript_choice))
       endselect
-      
-!     a2rhop=dphi**2
-!     a2rhopm=<dphi**2+gphi**2+(4./3.)*a^(-2)*(E^2+B^2)/2
-!
+
 !  Possibility of turning off evolution of scale factor and Hubble parameter
 !  By default, lzeroHubble=F, so we use the calculation from above.
 !
@@ -406,15 +399,9 @@ module Special
 !  Update df.
 !  dphi/dt = psi
 !  dpsi/dt = - ...
-!  To re-include the dlna/dt and dcalH/dt, we need to add a switch.
 !
         df(l1:l2,m,n,iinfl_phi)=df(l1:l2,m,n,iinfl_phi)+f(l1:l2,m,n,iinfl_dphi)
         df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)-2.*Hscript*dphi-a2*Vprime
-        if (lflrw) then
-!          df(l1:l2,m,n,iinfl_hubble)=df(l1:l2,m,n,iinfl_hubble)-4.*pi*a2rhopm_all+Hscript**2
-!          df(l1:l2,m,n,iinfl_hubble)=df(l1:l2,m,n,iinfl_hubble)-4.*pi*a2rhopm_all+(8.*pi/3.)*a2rhom_all
-          df(l1:l2,m,n,iinfl_lna)=df(l1:l2,m,n,iinfl_lna)+Hscript
-        endif
 !
 !  speed of light term
 !
@@ -427,10 +414,10 @@ module Special
 !
       if (lmagnetic .and. lem_backreact) then
         if (lphi_hom) then
-          df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)+alpf*p%infl_a21*edotbm_all
+          df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)+alpf*edotbm_all*a21
         else
           call dot_mn(p%el,p%bb,tmp)
-          df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)+alpf*p%infl_a21*tmp
+          df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)+alpf*tmp*a21
         endif
       endif
 !
@@ -450,14 +437,30 @@ module Special
         call sum_mn_name(dphi,idiag_dphim)
         if (idiag_dphi2m/=0) call sum_mn_name(dphi**2,idiag_dphi2m)
         if (idiag_dphirms/=0) call sum_mn_name(dphi**2,idiag_dphirms,lsqrt=.true.)
-        call sum_mn_name(Hscript,idiag_Hubblem)
-        call sum_mn_name(lnascale,idiag_lnam)
+      endif
+!
+    endsubroutine dspecial_dt
+!***********************************************************************
+    subroutine dspecial_dt_ode
+!
+      use Diagnostics, only: save_name
+!
+      if (lflrw) then
+        df_ode(iinfl_lna)=df_ode(iinfl_lna)+Hscript
+      endif
+!
+!  Diagnostics
+!
+      if (ldiagnos) then
+        call save_name(Hscript,idiag_Hubblem)
+        call save_name(lnascale,idiag_lnam)
         call save_name(ddotam_all,idiag_ddotam)
         call save_name(a2rhopm_all,idiag_a2rhopm)
         call save_name(a2rhom_all,idiag_a2rhom)
+        call save_name(a2rhophim_all,idiag_a2rhophim)
       endif
-
-    endsubroutine dspecial_dt
+!
+    endsubroutine dspecial_dt_ode
 !***********************************************************************
     subroutine read_special_init_pars(iostat)
 !
@@ -513,7 +516,7 @@ module Special
         idiag_phim=0; idiag_phi2m=0; idiag_phirms=0
         idiag_dphim=0; idiag_dphi2m=0; idiag_dphirms=0
         idiag_Hubblem=0; idiag_lnam=0; idiag_ddotam=0
-        idiag_a2rhopm=0; idiag_a2rhom=0
+        idiag_a2rhopm=0; idiag_a2rhom=0; idiag_a2rhophim=0
       endif
 !
       do iname=1,nname
@@ -528,6 +531,7 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'ddotam',idiag_ddotam)
         call parse_name(iname,cname(iname),cform(iname),'a2rhopm',idiag_a2rhopm)
         call parse_name(iname,cname(iname),cform(iname),'a2rhom',idiag_a2rhom)
+        call parse_name(iname,cname(iname),cform(iname),'a2rhophim',idiag_a2rhophim)
       enddo
 !!
 !!!  write column where which magnetic variable is stored
@@ -544,7 +548,58 @@ module Special
 !
 !  06-jul-06/tony: coded
 !
-      use Mpicomm, only: mpiallreduce_sum
+      use Mpicomm, only: mpireduce_sum, mpiallreduce_sum, mpibcast_real
+      use Sub, only: dot2_mn, grad, curl, dot_mn
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+!      real, dimension (nx,3) :: el, bb, gphi
+!      real, dimension (nx) :: e2, b2, gphi2, dphi, a21, a2rhop, a2rho
+!      real, dimension (nx) :: ddota, phi, a2, Vpotential, edotb
+!
+!  if requested, calculate here <dphi**2+gphi**2+(4./3.)*(E^2+B^2)/a^2>
+!
+      if (lroot) then
+        if(lflrw) then
+          lnascale=f_ode(iinfl_lna)
+          a2=exp(2*lnascale)
+        else
+          a2=1.
+        endif
+      endif
+      a21=1./a2
+      call mpibcast_real(a2)
+      call mpibcast_real(a21)
+!
+      ddotam=0.; a2rhopm=0.; a2rhom=0.; edotbm=0; a2rhophim=0.;
+      do n=n1,n2
+      do m=m1,m2
+        call prep_ode_right(f)
+      enddo
+      enddo
+!
+      a2rhopm=a2rhopm/nwgrid
+      a2rhom=a2rhom/nwgrid
+      a2rhophim=a2rhophim/nwgrid
+      ddotam=(four_pi_over_three/nwgrid)*ddotam
+      if (lphi_hom) then
+!          edotbm=edotbm/nwgrid
+          call mpireduce_sum(edotbm,edotbm_all)
+      endif
+!
+      call mpireduce_sum(a2rhopm,a2rhopm_all)
+      call mpiallreduce_sum(a2rhom,a2rhom_all)
+      call mpireduce_sum(a2rhophim,a2rhophim_all)
+      call mpireduce_sum(ddotam,ddotam_all)
+!
+      if (lroot .and. lflrw) then
+        Hscript=(8.*pi/3.)*sqrt(a2rhom_all)
+      endif
+      call mpibcast_real(Hscript)
+!
+    endsubroutine special_after_boundary
+!***********************************************************************
+    subroutine prep_ode_right(f)
+!
       use Sub, only: dot2_mn, grad, curl, dot_mn
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
@@ -554,72 +609,48 @@ module Special
 !
 !  if requested, calculate here <dphi**2+gphi**2+(4./3.)*(E^2+B^2)/a^2>
 !
-      ddotam=0.; a2rhopm=0.; a2rhom=0.; edotbm=0;
+      phi=f(l1:l2,m,n,iinfl_phi)
+      dphi=f(l1:l2,m,n,iinfl_dphi)
+      call grad(f,iinfl_phi,gphi)    !MR: the ghost zones are not necessarily updated!!!
+      call dot2_mn(gphi,gphi2)
+      a2rhop=dphi**2+gphi2
+      a2rho=0.5*(dphi**2+gphi2)
+      a2rhophim=a2rhophim+sum(a2rho)
 
-      do n=n1,n2
-      do m=m1,m2
-        
-        phi=f(l1:l2,m,n,iinfl_phi)
-        dphi=f(l1:l2,m,n,iinfl_dphi)
-        call grad(f,iinfl_phi,gphi)    !MR: the ghost zones are not necessarily updated!!!
-        call dot2_mn(gphi,gphi2)
-        a2rhop=dphi**2+gphi2
-        a2rho=0.5*(dphi**2+gphi2)
-
-        if (iex/=0.and.lem_backreact) then
-          if (lflrw) then
-            lnascale=f(l1:l2,m,n,iinfl_lna)
-            a2=exp(2.*lnascale)
-          else
-            a2=1.
-          endif
-          a21=1./a2
-          el=f(l1:l2,m,n,iex:iez)
-          call curl(f,iaa,bb)          !MR: the ghost zones are not necessarily updated!!!
-          call dot2_mn(bb,b2)
-          call dot2_mn(el,e2)
-          a2rhop=a2rhop+(.5*fourthird)*(e2+b2)*a21
-          a2rho=a2rho+.5*(e2+b2)*a21
-        endif
-
-        a2rhopm=a2rhopm+sum(a2rhop)
+!
+      if (iex/=0 .and. lem_backreact) then
+        el=f(l1:l2,m,n,iex:iez)
+        call curl(f,iaa,bb)          !MR: the ghost zones are not necessarily updated!!!
+        call dot2_mn(bb,b2)
+        call dot2_mn(el,e2)
+        a2rhop=a2rhop+(.5*fourthird)*(e2+b2)*a21
+        a2rho=a2rho+.5*(e2+b2)*a21
+      endif
+!
+      a2rhopm=a2rhopm+sum(a2rhop)
 !
 !  Choice of different potentials
 !
-        select case (Vprime_choice)
-          case ('quadratic')  ; Vpotential=.5*axionmass2*phi**2
-          case ('quartic')    ; Vpotential=axionmass2*phi+(lambda_axion/6.)*phi**3  !(to be corrected)
-          case ('cos-profile'); Vpotential=axionmass2*lambda_axion*sin(lambda_axion*phi)  !(to be corrected)
-          case default
-            call fatal_error("special_after_boundary: No such Vprime_choice: ",trim(Vprime_choice))
-        endselect
+      select case (Vprime_choice)
+        case ('quadratic')  ; Vpotential=.5*axionmass2*phi**2
+        case ('quartic')    ; Vpotential=axionmass2*phi+(lambda_axion/6.)*phi**3  !(to be corrected)
+        case ('cos-profile'); Vpotential=axionmass2*lambda_axion*sin(lambda_axion*phi)  !(to be corrected)
+        case default
+          call fatal_error("special_after_boundary: No such Vprime_choice: ",trim(Vprime_choice))
+      endselect
 !
 !  compute ddotam = a"/a (needed for GW module)
 !
-        ddota=-dphi**2-gphi2+4.*a2*Vpotential
-        ddotam=ddotam+sum(ddota)
-        a2rho=a2rho+a2*Vpotential
-        a2rhom=a2rhom+sum(a2rho)
-        if (lmagnetic .and. lem_backreact .and. lphi_hom) then
-          call dot_mn(el,bb,edotb)
-          edotbm=edotbm+sum(edotb)
-        endif
-      enddo
-      enddo
-     
-      a2rhopm=a2rhopm/nwgrid
-      a2rhom=a2rhom/nwgrid
-      ddotam=(four_pi_over_three/nwgrid)*ddotam
+      ddota=-dphi**2-gphi2+4.*a2*Vpotential
+      ddotam=ddotam+sum(ddota)
+      a2rho=a2rho+a2*Vpotential
+      a2rhom=a2rhom+sum(a2rho)
       if (lmagnetic .and. lem_backreact .and. lphi_hom) then
-          edotbm=edotbm/nwgrid
-          call mpiallreduce_sum(edotbm,edotbm_all)
+        call dot_mn(el,bb,edotb)
+        edotbm=edotbm+sum(edotb)
       endif
-
-      call mpiallreduce_sum(a2rhopm,a2rhopm_all)
-      call mpiallreduce_sum(a2rhom,a2rhom_all)
-      call mpiallreduce_sum(ddotam,ddotam_all)
 !
-    endsubroutine special_after_boundary
+    endsubroutine prep_ode_right
 !********************************************************************
 !********************************************************************
 !************        DO NOT DELETE THE FOLLOWING        *************
