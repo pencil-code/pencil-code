@@ -99,10 +99,11 @@ module Special
   real :: Hscript0=0.
   real, target :: ddotam_all
   real, pointer :: alpf
+  real , dimension (nx) :: lnascale, ascale, a2, a21, Hscript
   real, dimension (nx) :: dt1_special
-  logical :: lbackreact_infl=.true., lzeroHubble=.false.
+  logical :: lbackreact_infl=.true., lem_backreact=.true., lzeroHubble=.false.
   logical :: lscale_tobox=.true.,ldt_backreact_infl=.true.
-  logical :: lskip_projection_phi=.false., lvectorpotential=.false.
+  logical :: lskip_projection_phi=.false., lvectorpotential=.false., lflrw=.false.
   logical, pointer :: lphi_hom
 !
   character (len=labellen) :: Vprime_choice='quadratic', Hscript_choice='default'
@@ -118,7 +119,7 @@ module Special
 !
   namelist /special_run_pars/ &
       initspecial, phi0, dphi0, axionmass, eps, ascale_ini, &
-      lbackreact_infl, c_light_axion, lambda_axion, Vprime_choice, &
+      lbackreact_infl, lem_backreact, c_light_axion, lambda_axion, Vprime_choice, &
       lzeroHubble, ldt_backreact_infl, Ndiv, Hscript0, Hscript_choice, infl_v
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
@@ -151,9 +152,10 @@ module Special
       call farray_register_pde('infl_phi',iinfl_phi)
       call farray_register_pde('infl_dphi',iinfl_dphi)
 !
-!     if (...)
+     if (lflrw) then
 !     call farray_register_pde('infl_hubble',iinfl_hubble)
-!     call farray_register_pde('infl_lna',iinfl_lna)
+       call farray_register_pde('infl_lna',iinfl_lna)
+     endif
 !
 !  for power spectra, it is convenient to use ispecialvar and
 !
@@ -176,8 +178,8 @@ module Special
 !
       call put_shared_variable('ddotam',ddotam_all,caller='initialize_backreact_infl')
 !
-      if (lmagnetic .and. lbackreact_infl) call get_shared_variable('alpf',alpf)
-      if (lmagnetic .and. lbackreact_infl) call get_shared_variable('lphi_hom',lphi_hom)
+      if (lmagnetic .and. lem_backreact) call get_shared_variable('alpf',alpf)
+      if (lmagnetic .and. lem_backreact) call get_shared_variable('lphi_hom',lphi_hom)
 !
       call keep_compiler_quiet(f)
 !
@@ -223,8 +225,10 @@ module Special
             t=tstart
             Hubble_ini=sqrt(8.*pi/3.*(.5*dphi0**2+.5*axionmass2*phi0**2*ascale_ini**2))
             lnascale=log(ascale_ini)
-!            f(:,:,:,iinfl_hubble)=f(:,:,:,iinfl_hubble)+Hubble_ini
-!            f(:,:,:,iinfl_lna)=f(:,:,:,iinfl_lna)+lnascale
+            if (lflrw) then
+              f(:,:,:,iinfl_lna)=f(:,:,:,iinfl_lna)+lnascale
+!              f(:,:,:,iinfl_hubble)=f(:,:,:,iinfl_hubble)+Hubble_ini
+            endif
           case ('default')
             Vpotential=.5*axionmass2*phi0**2
             dphi0=-ascale_ini*sqrt(2*eps/3.*Vpotential)
@@ -234,8 +238,10 @@ module Special
             lnascale=log(ascale_ini)
             f(:,:,:,iinfl_phi)   =f(:,:,:,iinfl_phi)   +phi0
             f(:,:,:,iinfl_dphi)  =f(:,:,:,iinfl_dphi)  +dphi0
+            if (lflrw) then
+              f(:,:,:,iinfl_lna)   =f(:,:,:,iinfl_lna)   +lnascale
 !            f(:,:,:,iinfl_hubble)=f(:,:,:,iinfl_hubble)+Hubble_ini
-!           f(:,:,:,iinfl_lna)   =f(:,:,:,iinfl_lna)   +lnascale
+            endif
           case ('gaussian-noise')
             call gaunoise(amplphi,f,iinfl_phi)
           case ('sinwave-phase')
@@ -304,14 +310,18 @@ module Special
       if (lpencil(i_infl_dphi)) p%infl_dphi=f(l1:l2,m,n,iinfl_dphi)
 !
 ! infl_a2
-  !   if (lpencil(i_infl_a2)) p%infl_a2=exp(2.*f(l1:l2,m,n,iinfl_lna))
+     if (lflrw .and. lpencil(i_infl_a2)) then
+       p%infl_a2=exp(2.*f(l1:l2,m,n,iinfl_lna))
+     else
+       p%infl_a2=1
+     endif
 !
 ! infl_a21
       if (lpencil(i_infl_a21)) then
         if (lpencil(i_infl_a2)) then
           p%infl_a21=1./p%infl_a2
         else
-   !      p%infl_a21=exp(-2.*f(l1:l2,m,n,iinfl_lna))
+         p%infl_a21=exp(-2.*f(l1:l2,m,n,iinfl_lna))
         endif
       endif
 !
@@ -343,7 +353,7 @@ module Special
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: phi, dphi, Hscript, lnascale, ascale, a2scale, a2rhop, Vprime
+      real, dimension (nx) :: phi, dphi, a2rhop, Vprime
       real, dimension (nx) :: tmp, del2phi
 !
       intent(in) :: f,p
@@ -360,17 +370,16 @@ module Special
 !
       select case (Hscript_choice)
 !       Hscript=f(l1:l2,m,n,iinfl_hubble)
-        case ('default'); Hscript=sqrt((8.*pi/3.)*a2rhom_all)
-        case ('set'); Hscript=Hscript0
+        case ('default')
+          Hscript=sqrt((8.*pi/3.)*a2rhom_all)
+        case ('set')
+          Hscript=Hscript0
+          a2=1.
+          a21=1./a2
         case default
           call fatal_error("dspecial_dt: No such Hscript_choice: ", trim(Hscript_choice))
       endselect
       
-  !   lnascale=f(l1:l2,m,n,iinfl_lna)
-  !AB: temporary fix for now; should solve as ode in future; we should then have lnascale=0. as default
-      lnascale=0.
-      ascale=exp(lnascale)
-      a2scale=ascale**2
 !     a2rhop=dphi**2
 !     a2rhopm=<dphi**2+gphi**2+(4./3.)*a^(-2)*(E^2+B^2)/2
 !
@@ -378,7 +387,8 @@ module Special
 !  By default, lzeroHubble=F, so we use the calculation from above.
 !
       if (lzeroHubble) then
-        a2scale=1.
+        a2=1.
+        a21=1./a2
         Hscript=0.
       endif
 !
@@ -399,10 +409,12 @@ module Special
 !  To re-include the dlna/dt and dcalH/dt, we need to add a switch.
 !
         df(l1:l2,m,n,iinfl_phi)=df(l1:l2,m,n,iinfl_phi)+f(l1:l2,m,n,iinfl_dphi)
-        df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)-2.*Hscript*dphi-a2scale*Vprime
-!        df(l1:l2,m,n,iinfl_hubble)=df(l1:l2,m,n,iinfl_hubble)-4.*pi*a2rhopm_all+Hscript**2
-!        df(l1:l2,m,n,iinfl_hubble)=df(l1:l2,m,n,iinfl_hubble)-4.*pi*a2rhopm_all+(8.*pi/3.)*a2rhom_all
-   !    df(l1:l2,m,n,iinfl_lna)=df(l1:l2,m,n,iinfl_lna)+Hscript
+        df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)-2.*Hscript*dphi-a2*Vprime
+        if (lflrw) then
+!          df(l1:l2,m,n,iinfl_hubble)=df(l1:l2,m,n,iinfl_hubble)-4.*pi*a2rhopm_all+Hscript**2
+!          df(l1:l2,m,n,iinfl_hubble)=df(l1:l2,m,n,iinfl_hubble)-4.*pi*a2rhopm_all+(8.*pi/3.)*a2rhom_all
+          df(l1:l2,m,n,iinfl_lna)=df(l1:l2,m,n,iinfl_lna)+Hscript
+        endif
 !
 !  speed of light term
 !
@@ -413,7 +425,7 @@ module Special
 !
 !  magnetic terms, add (alpf/a^2)*(E.B) to dphi'/dt equation
 !
-      if (lmagnetic .and. lbackreact_infl) then
+      if (lmagnetic .and. lem_backreact) then
         if (lphi_hom) then
           df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)+alpf*p%infl_a21*edotbm_all
         else
@@ -537,8 +549,8 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (nx,3) :: el, bb, gphi
-      real, dimension (nx) :: e2, b2, gphi2, dphi, a21, a2rhop, a2rho
-      real, dimension (nx) :: ddota, phi, a2, Vpotential, edotb
+      real, dimension (nx) :: e2, b2, gphi2, dphi, a2rhop, a2rho
+      real, dimension (nx) :: ddota, phi, Vpotential, edotb
 !
 !  if requested, calculate here <dphi**2+gphi**2+(4./3.)*(E^2+B^2)/a^2>
 !
@@ -554,8 +566,13 @@ module Special
         a2rhop=dphi**2+gphi2
         a2rho=0.5*(dphi**2+gphi2)
 
-        if (iex/=0.and.lbackreact_infl) then
-          a2=exp(2.*f(l1:l2,m,n,iinfl_lna))
+        if (iex/=0.and.lem_backreact) then
+          if (lflrw) then
+            lnascale=f(l1:l2,m,n,iinfl_lna)
+            a2=exp(2.*lnascale)
+          else
+            a2=1.
+          endif
           a21=1./a2
           el=f(l1:l2,m,n,iex:iez)
           call curl(f,iaa,bb)          !MR: the ghost zones are not necessarily updated!!!
@@ -583,7 +600,7 @@ module Special
         ddotam=ddotam+sum(ddota)
         a2rho=a2rho+a2*Vpotential
         a2rhom=a2rhom+sum(a2rho)
-        if (lmagnetic.and.lphi_hom) then
+        if (lmagnetic .and. lem_backreact .and. lphi_hom) then
           call dot_mn(el,bb,edotb)
           edotbm=edotbm+sum(edotb)
         endif
@@ -593,7 +610,7 @@ module Special
       a2rhopm=a2rhopm/nwgrid
       a2rhom=a2rhom/nwgrid
       ddotam=(four_pi_over_three/nwgrid)*ddotam
-      if (lmagnetic.and.lphi_hom) then
+      if (lmagnetic .and. lem_backreact .and. lphi_hom) then
           edotbm=edotbm/nwgrid
           call mpiallreduce_sum(edotbm,edotbm_all)
       endif
