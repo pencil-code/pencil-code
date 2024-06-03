@@ -2044,7 +2044,7 @@ module Interstellar
 !  relevant subroutines in entropy.f90
 !
       use General, only: touch_file
-      use Gpu, only: copy_farray_from_GPU, load_farray_to_GPU
+      use Gpu, only: load_farray_to_GPU
 !
       real, dimension(mx,my,mz,mfarray) :: f
 !
@@ -2089,7 +2089,6 @@ module Interstellar
               exit
             endif
           enddo
-          if (lgpu) call copy_farray_from_GPU(f)
           call check_SNI(f,l_SNI)
           if (lgpu) call load_farray_to_GPU(f)
           if (t>=tmax) then
@@ -2099,7 +2098,6 @@ module Interstellar
       else
         if (t < t_settle) return
         call tidy_SNRs
-        if (lgpu) call copy_farray_from_GPU(f)
         if (lSNI) call check_SNI(f,l_SNI)
 !
 !  Do separately for SNI (simple scheme) and SNII (Boris' scheme).
@@ -2145,6 +2143,7 @@ module Interstellar
 !
         call free_SNR(iSNR)
         ierr=iEXPLOSION_OK
+        l_SNI=.true.
         return
       endif
       if (t >= t_next_SNI) then
@@ -2272,6 +2271,7 @@ module Interstellar
 !
           call explode_SN(f,SNRs(iSNR),ierr,preSN)
           if (ierr==iEXPLOSION_OK) then
+            l_SNI=.true.
             exit
           elseif (ierr==iEXPLOSION_TOO_HOT) then
             if (lroot.and.ip==1963) print &
@@ -2304,7 +2304,6 @@ module Interstellar
 !
         ierr=iEXPLOSION_OK
       endif
-      l_SNI=.true.
 !
     endsubroutine check_SNIIb
 !***********************************************************************
@@ -2507,10 +2506,11 @@ module Interstellar
 !
 !  03-feb-10/fred: Tested and working correctly.
 !
-      use General, only: random_seed_wrapper,  random_number_wrapper
-      use Mpicomm, only: mpiallreduce_sum, mpibcast_real
       use EquationOfState, only: eoscalc
+      use General, only: random_seed_wrapper,  random_number_wrapper
+      use Gpu, only: copy_farray_from_GPU
       use Grid, only: get_dVol
+      use Mpicomm, only: mpiallreduce_sum, mpibcast_real
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(nx) :: rho, lnTT, dV
@@ -2527,7 +2527,7 @@ module Interstellar
 !
       if (headtt.and.ip==1963) print*,'check_SNII: ENTER'
 !
-      if (l_SNI) return         ! Only do if no SNI this step.
+      !if (l_SNI) return         ! Only do if no SNI this step.
 !
 !  13-jul-15/fred:
 !  Location by mass was found to lose too much energy due to the numerically
@@ -2543,12 +2543,13 @@ module Interstellar
 !
       if (t >= t_next_SNII) then
         cloud_mass=0.0
+        if (lgpu) call copy_farray_from_GPU(f)
 !
 !  Calculate the total mass in locations where the temperature is below
 !  cloud_TT and the density is above cloud_rho, i.e. cold and dense.
 !
 !$      call OMP_set_num_threads(num_helper_threads+1)
-       !!$omp target if(loffload) !map(from: cloud_mass) & !needs: cloud_rho, lncloud_TT 
+        !!$omp target if(loffload) !map(from: cloud_mass) & !needs: cloud_rho, lncloud_TT 
         !!$omp        has_device_addr(f) ! globals: irho, ilnrho, iss, ilnTT, ldensity_nolog
         !$omp teams distribute parallel do collapse(2) private(rho,lnTT,dV) reduction(+:cloud_mass)
         do n=n1,n2
@@ -2719,9 +2720,10 @@ module Interstellar
 !                  each processor - use mpi on all procs not just root
 !
       use General, only: random_number_wrapper, random_seed_wrapper, find_proc
+      use Gpu, only: copy_farray_from_GPU
+      use Grid, only: get_dVol
       use Mpicomm, only: mpiallreduce_max, mpireduce_min, mpireduce_max, &
                          mpireduce_sum, mpibcast_real, mpigather_z_1D
-      use Grid, only: get_dVol
 !
       real, dimension(nx) :: dV
 !
@@ -2755,6 +2757,7 @@ module Interstellar
 !  sum the mass on each processor
 !
         rhosum=0.0
+        if (lgpu.and..not.lSN_list) call copy_farray_from_GPU(f)
 !$      call OMP_set_num_threads(num_helper_threads+1)
         if (.not.lcart_equi) then
          !!$omp target if(loffload) !map(from: rhosum) has_device_addr(f)   ! globals: irho, ilnrho, ldensity_nolog
@@ -3142,6 +3145,7 @@ mn_loop:do n=n1,n2
 !  27-aug-2003/tony: coded
 !
       use EquationOfState, only: eoscalc
+      use Gpu, only: copy_farray_from_GPU
       use Mpicomm, only: mpibcast_int, mpibcast_real
 !
       real, intent(in), dimension(mx,my,mz,mfarray) :: f
@@ -3165,6 +3169,7 @@ mn_loop:do n=n1,n2
 !  With current SN scheme, we need rho at the SN location.
 !
       if (iproc==SNR%indx%iproc) then
+        if (lgpu) call copy_farray_from_GPU(f)
         !!$omp target if(loffload) !map(tofrom: SNR) has_device_addr(f)  ! globals: irho, ilnrho  !?single
         if (ldensity_nolog) then
           SNR%site%lnrho=log(f(SNR%indx%l,SNR%indx%m,SNR%indx%n,irho))
@@ -3259,6 +3264,7 @@ mn_loop:do n=n1,n2
       use EquationOfState, only: eoscalc
       use Mpicomm, only: mpiallreduce_max, mpiallreduce_sum
       use General, only: keep_compiler_quiet
+      use Gpu, only: copy_farray_from_GPU
       use Grid, only: get_dVol
 !
       real, intent(inout), dimension(mx,my,mz,mfarray) :: f
@@ -3292,6 +3298,7 @@ mn_loop:do n=n1,n2
 !
 !  Calculate explosion site mean density.
 !
+      if (lgpu) call copy_farray_from_GPU(f)
       call get_properties(f,SNR,rhom,ekintot,rhomin)
       SNR%feat%rhom=rhom
 !
