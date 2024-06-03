@@ -28,7 +28,10 @@ module GPU
   external load_farray_c 
   external reload_gpu_config_c
   external test_rhs_c
+
   include 'gpu.h'
+
+  real :: timestamp_farray = impossible
 
 contains
 !***********************************************************************
@@ -47,7 +50,6 @@ contains
       if (ltestscalar) str=trim(str)//', '//'testscalar'
       if (ltestfield) str=trim(str)//', '//'testfield'
       if (ltestflow) str=trim(str)//', '//'testflow'
-      if (linterstellar) str=trim(str)//', '//'interstellar'
       if (lshear) str=trim(str)//', '//'shear'
       if (lradiation) str=trim(str)//', '//'radiation'
       if (ldetonate) str=trim(str)//', '//'detonate'

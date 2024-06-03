@@ -24,4 +24,7 @@
 #endif
            + nu * (veclaplace(UU) + (1./3.) * gradient_of_divergence(UU) + 2. * stress_tensor(UU) * gradient(LNRHO))
            + zeta * gradient_of_divergence(UU)
+#if LGRAVITY
+           + gravz_zpencil(vertexIdx.z-NGHOST)
+#endif
 
