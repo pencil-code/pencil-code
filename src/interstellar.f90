@@ -2666,7 +2666,7 @@ module Interstellar
 !
       use General, only: find_proc
 
-      real, intent(in), dimension(mx,my,mz,mfarray) :: f
+      real, intent(inout), dimension(mx,my,mz,mfarray) :: f
       type (SNRemnant), intent(inout) :: SNR
 !
       real :: z00, x00, y00
@@ -2728,7 +2728,7 @@ module Interstellar
 !
       real, dimension(nx) :: dV
 !
-      real, intent(in), dimension(mx,my,mz,mfarray) :: f
+      real, intent(inout), dimension(mx,my,mz,mfarray) :: f
       real, intent(in) :: h_SN
       type (SNRemnant), intent(inout) :: SNR
 !
@@ -2938,7 +2938,7 @@ module Interstellar
 !
       use General, only: random_seed_wrapper, random_number_wrapper, find_proc
 !
-      real, intent(in), dimension(mx,my,mz,mfarray) :: f
+      real, intent(inout), dimension(mx,my,mz,mfarray) :: f
       type (SNRemnant), intent(inout) :: SNR
 !
       real, dimension(3) :: fran3
@@ -2995,7 +2995,7 @@ module Interstellar
       use Grid, only: get_dVol
       !$ use omp_lib
 !
-      real, intent(in), dimension(mx,my,mz,mfarray) :: f
+      real, intent(inout), dimension(mx,my,mz,mfarray) :: f
       real, intent(in) , dimension(ncpus) :: cloud_mass_byproc
       type (SNRemnant), intent(inout) :: SNR
       integer, intent(in), dimension(4,npreSN)::preSN
@@ -3149,7 +3149,7 @@ mn_loop:do n=n1,n2
       use Gpu, only: copy_farray_from_GPU
       use Mpicomm, only: mpibcast_int, mpibcast_real
 !
-      real, intent(in), dimension(mx,my,mz,mfarray) :: f
+      real, intent(inout), dimension(mx,my,mz,mfarray) :: f
       type (SNRemnant), intent(inout) :: SNR
 !
       real, dimension(nx) :: lnTT
