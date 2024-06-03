@@ -4564,6 +4564,7 @@ mnloop:do n=n1,n2
 !*****************************************************************************
     subroutine pushpars2c(p_par)
 
+      use General,  only: numeric_precision
       use Syscalls, only: copy_addr, copy_addr_dble_1D
 
       integer, parameter :: n_pars=11

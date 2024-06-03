@@ -2,7 +2,7 @@ cool=0.0
 for i in 0:ncool-1
 {
     if (lncoolT[i] <= lnTT && lnTT < lncoolT[i+1]) {
-      cool += exp(lncoolH[i]+lnrho+lnTT*coolB[i])
+      cool = exp(lncoolH[i]+lnrho+lnTT*coolB[i])
     }
 }
 heat=0.
