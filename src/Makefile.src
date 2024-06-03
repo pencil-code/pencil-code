@@ -31,6 +31,7 @@ IO_IN              =
 MPICOMM            = nompicomm
 NSCBC              = noNSCBC
 POWER              = nopower_spectrum
+PTHREAD            = 
 PYTHON             = nopython
 SOLID_CELLS        = nosolid_cells
 SOLID_CELLS_MPICOMM= nosolid_cells_mpicomm
@@ -535,6 +536,9 @@ else
 endif
 #
 ifneq ($(filter openmp OpenMP,$(MULTITHREADING)),)
+
+  PTHREAD=pthread
+#
   override FFLAGS += $(OMPFFLAGS)
   override LDFLAGS += $(OMPLFLAGS)
 #  OMP_PREREQ = copyin.inc
@@ -651,9 +655,6 @@ FILTER_SRC=filter.f90
 MORTON_HELPER_OBJ=morton_helper.o
 MORTON_HELPER_SRC=morton_helper.c
 #
-PTHREAD_OBJ=pthread.o
-PTHREAD_SRC=pthread.c
-#
 GENERAL_OBJ=general.o
 GENERAL_SRC=general.f90
 #
@@ -677,6 +678,9 @@ GHOSTL_CHECK_SRC=ghost_check.f90
 #
 PERSIST_OBJ=persist.o
 PERSIST_SRC=persist.f90
+#
+PTHREAD_OBJ=$(PTHREAD).o
+PTHREAD_SRC=$(PTHREAD).c
 #
 REGISTER_OBJ=register.o
 REGISTER_SRC=register.f90
@@ -2403,7 +2407,7 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #CC=cc #(uan02*)
 #FFLAGS=-O1 #-mcmodel=large #-s integer64 #-march=native   #target-cpu=x86-milan #-fimplicit-none #(uan02*)
 #FFLAGS_DOUBLE=-s real64 #(uan02*)
-#FFLAGS_DOUBLE=-fdefault-real-8 #(uan02*)
+##FFLAGS_DOUBLE=-fdefault-real-8 #(uan02*)
 #CFLAGS=-DFUNDERSC=1 -O1 #-march=native #(uan02*)
 ##
 ## Parker: UFMG, BH, Brasil
@@ -3045,7 +3049,6 @@ endif
 	for file in $$MODULESOURCES; do \
 	  modname=`grep '^ *module [a-zA-Z0-9_]* *$$' $$file | sed -e's/ *module *//' -e's/\([^ ]\) */\L\1/g'`; \
 	  replcmt=`sed -f dsl_pde.sed $$file`; \
-	      echo REPLACEMT=$$replcmt; \
 	  if [[ "$$replcmt" != "" ]]; then \
 	    sed -i -e's/\/\/ *'"$$modname"'/'"$$replcmt"'/' $(DSL_WORKDIR)/fieldecs.h; \
 	    fieldname=`echo $$replcmt | sed -e's/.*\\\\\/ *\\\\\/ *\([a-zA-Z0-9_]*\).*$$/\U\1/'`; \
@@ -3074,15 +3077,16 @@ endif
 	done 
 	@sed -i -e'/^ *\/\// d' $(DSL_WORKDIR)/fieldecs.h
 	@echo '}' >> $(DSL_WORKDIR)/solve.ac
-	@echo 'ComputeSteps rhs_STEP_NUM(boundconds) {' >> $(DSL_WORKDIR)/solve.ac
-	@echo '  singlepass_solve(STEP_NUM,dt),' >> $(DSL_WORKDIR)/solve.ac
-	@echo '}' >> $(DSL_WORKDIR)/solve.ac
-	@echo 'BoundConds boundconds{' >> $(DSL_WORKDIR)/solve.ac
-	@echo '  periodic_boundconds(BOUNDARY_XYZ)' >> $(DSL_WORKDIR)/solve.ac
-	@echo '}' >> $(DSL_WORKDIR)/solve.ac
 	@sed -f $(CUDA_MAKEDIR)/solve.sed $(DSL_WORKDIR)/solve.ac > $(DSL_WORKDIR)/solve_two.ac
+	@echo '#include "steps_two.h"' >> $(DSL_WORKDIR)/solve_two.ac
 	@mv $(DSL_WORKDIR)/solve.ac $(DSL_WORKDIR)/solve_single.ac
-
+	@echo '#include "steps_single.h"' >> $(DSL_WORKDIR)/solve_single.ac
+	if [ ! -f $(DSL_WORKDIR)/steps_single.h ]; then \
+	  cp $(DSL_WORKDIR)/../steps_single.h $(DSL_WORKDIR); \
+	fi
+	if [ ! -f $(DSL_WORKDIR)/steps_two.h ]; then \
+	  cp $(DSL_WORKDIR)/../steps_two.h $(DSL_WORKDIR); \
+	fi
 #	    echo REPLACEMT=$$replcmt; \
 #	    echo FIELDNAME=$$fieldname; \
 #	@sed -e':loop' -e'N' -e'$$!b loop' -e's/\#pragma  *once//' -e's/\# *define *\([A-Z0-9_][A-Z0-9_]*\)/..\/..\/\L\1.f90 /g' -e's/\n/ /g' < $(CUDA_INCDIR)/PC_moduleflags.h >> $(CUDA_MAKEDIR)/PC_modulesources.h
@@ -3498,6 +3502,21 @@ distclean: cleanall
 	rm -rf semiauto-conf* *.log history
 	find .. -type l -print0 | xargs -0 rm -f
 #
+$(CUDA_MAKEDIR)/Makefile.vendor: Makefile.local
+	@echo GPU_VENDOR=$(GPU_VENDOR) > $(CUDA_MAKEDIR)/Makefile.vendor
+
+	@echo MODULE_PREFIX=$(MODULE_PREFIX) > $(CUDA_MAKEDIR)/Makefile.module_info
+	@echo export MODULE_PREFIX=$(MODULE_PREFIX) >> $(CUDA_MAKEDIR)/Makefile.module_info
+
+	@echo MODULE_INFIX=$(MODULE_INFIX) >> $(CUDA_MAKEDIR)/Makefile.module_info
+	@echo export MODULE_INFIX=$(MODULE_INFIX) >> $(CUDA_MAKEDIR)/Makefile.module_info
+
+	@echo MODULE_SUFFIX=$(MODULE_SUFFIX) >> $(CUDA_MAKEDIR)/Makefile.module_info
+	@echo export MODULE_SUFFIX=$(MODULE_SUFFIX) >> $(CUDA_MAKEDIR)/Makefile.module_info
+
+	@echo MODULE_NAME_ORDER=$(MODULE_NAME_ORDER) >> $(CUDA_MAKEDIR)/Makefile.module_info
+	@echo export MODULE_NAME_ORDER=$(MODULE_NAME_ORDER) >> $(CUDA_MAKEDIR)/Makefile.module_info
+#
 #  Common dependencies used in Makefile.library and Makefile.depend.
 #
 COMMON_DEPS=$(CDATA_OBJ) $(GENERAL_OBJ) $(MPICOMM_OBJ) $(SUB_OBJ) $(DIAGNOSTICS_OBJ) $(MESSAGES_OBJ)
@@ -3508,22 +3527,6 @@ include Makefile.library
 #
 #  Dependencies for regular files.
 #
-ifneq ($(findstring gpu_astaroth, $(GPU)),)
-$(CUDA_MAKEDIR)/Makefile.vendor: Makefile.local
-	@echo GPU_VENDOR=$(GPU_VENDOR) > ./astaroth/Makefile.vendor
-
-	@echo MODULE_PREFIX=$(MODULE_PREFIX) > ./astaroth/Makefile.module_info
-	@echo export MODULE_PREFIX=$(MODULE_PREFIX) >> ./astaroth/Makefile.module_info
-
-	@echo MODULE_INFIX=$(MODULE_INFIX) >> ./astaroth/Makefile.module_info
-	@echo export MODULE_INFIX=$(MODULE_INFIX) >> ./astaroth/Makefile.module_info
-
-	@echo MODULE_SUFFIX=$(MODULE_SUFFIX) >> ./astaroth/Makefile.module_info
-	@echo export MODULE_SUFFIX=$(MODULE_SUFFIX) >> ./astaroth/Makefile.module_info
-
-	@echo MODULE_NAME_ORDER=$(MODULE_NAME_ORDER) >> ./astaroth/Makefile.module_info
-	@echo export MODULE_NAME_ORDER=$(MODULE_NAME_ORDER) >> ./astaroth/Makefile.module_info
-endif
 include Makefile.depend
-
+#
 # DO NOT DELETE

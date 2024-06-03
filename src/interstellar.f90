@@ -340,6 +340,7 @@ module Interstellar
   real :: coolingfunction_scalefactor=1.
   real :: heatingfunction_scalefactor=1.
   real, dimension(2) :: heatingfunction_scale
+  real, dimension(nz) :: heat_SNI_profile, heat_SNII_profile
   real :: heatingfunction_fadefactor=1.
 !
   real :: heating_rate = 0.015
@@ -472,7 +473,7 @@ module Interstellar
       l_persist_overwrite_ycluster, l_persist_overwrite_zcluster, &
       lreset_ism_seed, SN_rho_ratio, SN_TT_ratio, eps_mass, &
       lscale_SN_interval, SN_interval_rhom, rfactor_SN, iSNdx, &
-      energy_Nsigma, lSN_momentum, lSN_coolingmass, Nsol_added!, loffload
+      energy_Nsigma, lSN_momentum, lSN_coolingmass, Nsol_added
 !
   real :: gamma
 !
@@ -749,6 +750,11 @@ module Interstellar
       if ((laverage_SNI_heating.or.laverage_SNII_heating).and..not.(lSNI.or.lSNII)) &
           heatingfunction_scale = heatingfunction_scalefactor
 !
+      if (laverage_SNI_heating) &
+          heat_SNI_profile = average_SNI_heating *exp(-(2.0*z(n1:n2)/h_SNI )**2)
+      if (laverage_SNII_heating) &
+          heat_SNII_profile = average_SNII_heating*exp(-(2.0*z(n1:n2)/h_SNII)**2)
+
       if (lroot.and.ip==1963) then
         print*,'initialize_interstellar: nseed,seed',nseed,seed(1:nseed)
         print*,'initialize_interstellar: finished'
@@ -1727,14 +1733,16 @@ module Interstellar
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       if (lfirst.and..not.lpencil_check_at_work) call check_SN(f)
-!
-      if (lSNI.or.lSNII) then
-        if (laverage_SNI_heating) &
-          heatingfunction_scale(SNI) = t_interval(SNI) /(t_interval(SNI) +t*heatingfunction_fadefactor) &
-                                      *heatingfunction_scalefactor
-        if (laverage_SNII_heating) &
-          heatingfunction_scale(SNII)= t_interval(SNII)/(t_interval(SNII)+t*heatingfunction_fadefactor) &
-                                      *heatingfunction_scalefactor
+
+      if (lfirst) then
+        if (lSNI.or.lSNII) then
+          if (laverage_SNI_heating) &
+            heatingfunction_scale(SNI) = t_interval(SNI) /(t_interval(SNI) +t*heatingfunction_fadefactor) &
+                                        *heatingfunction_scalefactor
+          if (laverage_SNII_heating) &
+            heatingfunction_scale(SNII)= t_interval(SNII)/(t_interval(SNII)+t*heatingfunction_fadefactor) &
+                                        *heatingfunction_scalefactor
+        endif
       endif
 
     endsubroutine interstellar_before_boundary
@@ -1912,10 +1920,8 @@ module Interstellar
 !  initial condition is in equilibrium prepared in 1D
 !  Division by density to balance LHS of entropy equation
 !
-      if (laverage_SNI_heating) &
-          heat=heat+average_SNI_heating *exp(-(2.0*z(n)/h_SNI )**2)*heatingfunction_scale(SNI)
-      if (laverage_SNII_heating) &
-          heat=heat+average_SNII_heating*exp(-(2.0*z(n)/h_SNII)**2)*heatingfunction_scale(SNII)
+      if (laverage_SNI_heating)  heat=heat+heat_SNI_profile (n-nghost)*heatingfunction_scale(SNI)
+      if (laverage_SNII_heating) heat=heat+heat_SNII_profile(n-nghost)*heatingfunction_scale(SNII)
 !
 !  Prevent unresolved heating/cooling in shocks. This is deprecated as
 !  use of RKF timestep control or the mor coarse RHS timestep control
@@ -2038,6 +2044,7 @@ module Interstellar
 !  relevant subroutines in entropy.f90
 !
       use General, only: touch_file
+      use Gpu, only: copy_farray_from_GPU, load_farray_to_GPU
 !
       real, dimension(mx,my,mz,mfarray) :: f
 !
@@ -2082,15 +2089,17 @@ module Interstellar
               exit
             endif
           enddo
+          if (lgpu) call copy_farray_from_GPU(f)
           call check_SNI(f,l_SNI)
+          if (lgpu) call load_farray_to_GPU(f)
           if (t>=tmax) then
-            if (lroot) print*, 'check_SN: sn_series.in list needs', &
-                               ' extending or set lSN_list=F to continue'
+            if (lroot) print*,'check_SN: sn_series.in list needs extending or set lSN_list=F to continue'
           endif
         endif
       else
         if (t < t_settle) return
         call tidy_SNRs
+        if (lgpu) call copy_farray_from_GPU(f)
         if (lSNI) call check_SNI(f,l_SNI)
 !
 !  Do separately for SNI (simple scheme) and SNII (Boris' scheme).
@@ -2102,6 +2111,7 @@ module Interstellar
             call check_SNII(f,l_SNI)
           endif
         endif
+        if (lgpu) call load_farray_to_GPU(f)
       endif
 !
     endsubroutine check_SN
@@ -4556,7 +4566,7 @@ mnloop:do n=n1,n2
 
       use Syscalls, only: copy_addr, copy_addr_dble_1D
 
-      integer, parameter :: n_pars=13
+      integer, parameter :: n_pars=11
       integer(KIND=ikind8), dimension(n_pars) :: p_par
 !
       call copy_addr(GammaUV,p_par(1))
@@ -4565,16 +4575,14 @@ mnloop:do n=n1,n2
       call copy_addr(ncool,p_par(4))                  ! int
 !
       call copy_addr(heatingfunction_scale,p_par(5))  ! (2)
-      call copy_addr(average_SNI_heating,p_par(6))
-      call copy_addr(average_SNII_heating,p_par(7))
-      call copy_addr(h_SNI,p_par(8))
-      call copy_addr(h_SNII,p_par(9))
+      call copy_addr(heat_SNI_profile,p_par(6))        ! (nz)
+      call copy_addr(heat_SNII_profile,p_par(7))       ! (nz)
 
-      call copy_addr(lncoolT,p_par(10))          ! (11)
-      call copy_addr_dble_1D(lncoolH,p_par(11))  ! (11)
-      call copy_addr(coolB,p_par(12))            ! (11)
-      call copy_addr(heating_rate_code,p_par(13))
-!      call copy_addr(heat_z,p_par(15))   ! (mz)
+      call copy_addr(lncoolT,p_par(8))          ! (11)
+      call copy_addr_dble_1D(lncoolH,p_par(9))  ! (11)
+      call copy_addr(coolB,p_par(10))            ! (11)
+      call copy_addr(heating_rate_code,p_par(11))
+!      call copy_addr(heat_z,p_par(13))   ! (mz)
 
     endsubroutine pushpars2c
 !*******************************************************************

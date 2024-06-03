@@ -140,7 +140,7 @@ module Shock
                      ' not between 1 and nghost. We set it to '//trim(itoa(ishock_max)))
       endif
 !
-      if (shock_div_pow /= 1.) thena
+      if (shock_div_pow /= 1.) then
         if (dtfactor>0.) then
           dt_div_pow = dtfactor**(shock_div_pow-1)
         else
