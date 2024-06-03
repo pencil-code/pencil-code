@@ -2090,7 +2090,7 @@ module Interstellar
             endif
           enddo
           call check_SNI(f,l_SNI)
-          if (lgpu) call load_farray_to_GPU(f)
+          if (lgpu.and.l_SNI) call load_farray_to_GPU(f)
           if (t>=tmax) then
             if (lroot) print*,'check_SN: sn_series.in list needs extending or set lSN_list=F to continue'
           endif
@@ -2109,7 +2109,7 @@ module Interstellar
             call check_SNII(f,l_SNI)
           endif
         endif
-        if (lgpu) call load_farray_to_GPU(f)
+        if (lgpu.and.l_SNI) call load_farray_to_GPU(f)
       endif
 !
     endsubroutine check_SN
