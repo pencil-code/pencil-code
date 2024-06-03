@@ -44,9 +44,9 @@ CMAKE_PACKED=OFF
 CMAKE_SINGLEPASS = OFF
 OBJECTS = $(SOURCES:.cc=.o) 
 
-DSL_MODULE_DIR=samples/gputest
-#DSL_MODULE_DIR = ../../DSL/local
-#EXT_SOURCES = ../../DSL/*/*.h
+#DSL_MODULE_DIR=samples/gputest
+DSL_MODULE_DIR = ../../DSL/local
+EXT_SOURCES = ../../DSL/*/*.h
 
 # C headers in submodule
 AC_HEADERS=submodule/include/astaroth.h submodule/acc-runtime/api/math_utils.h
