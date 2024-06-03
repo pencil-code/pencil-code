@@ -2490,7 +2490,7 @@ module Interstellar
 !
       call mpiallreduce_sum(disk_massII,surface_massII)
 !
-      if (l_SNI) then
+      if (SNind==SNI) then
 !        t_interval=solar_mass/(SNI_mass_rate+0.35*SNII_mass_rate)/surface_massII/mu
         t_interval=7.5*solar_mass/SNII_mass_rate/surface_massII/mu
         if (lroot.and.ip==1963) print"(1x,'set_interval: expected interval for SNI =',e11.4)",t_interval
