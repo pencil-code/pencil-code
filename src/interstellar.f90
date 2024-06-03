@@ -2062,6 +2062,7 @@ module Interstellar
 !
 !  If SN are listed in source file then obtain parameters from list
 !
+      lfarray_copied=.false.
       if (lSN_list) then
         if (t>=t_next_SNI.or.t>=t_next_SNII) then
           call tidy_SNRs
@@ -2327,7 +2328,7 @@ module Interstellar
       !      stellar mass, routine to accrete stellar mass function of
       !      ISM density, explode SN based on stellar mass distribution
       !if (lSN_mass_rate) then
-      !  call set_interval(f,t_interval(SNI),l_SNI)
+      !  call set_interval(f,t_interval(SNI),SNI)
       !endif
       call random_number_wrapper(franSN)
 !
@@ -2411,7 +2412,7 @@ module Interstellar
       !      stellar mass, routine to accrete stellar mass function of
       !      ISM density, explode SN based on stellar mass distribution
       !if (lSN_mass_rate) then
-      !  call set_interval(f,t_interval(SNII),l_SNI)
+      !  call set_interval(f,t_interval(SNII),SNII)
       !endif
 !
 !  Time interval follows Poisson process with rate 1/interval_SNII
@@ -2423,7 +2424,7 @@ module Interstellar
 !
     endsubroutine set_next_SNII
 !*****************************************************************************
-    subroutine set_interval(f,t_interval,l_SNI)
+    subroutine set_interval(f,t_interval,SNind)
 !
       use General, only: find_index_range
       use Grid, only: get_dVol
@@ -2431,9 +2432,9 @@ module Interstellar
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real :: t_interval
-      logical :: l_SNI
+      integer :: SNind
 !
-      intent(IN) :: f, l_SNI
+      intent(IN) :: f, SNind
       intent(OUT) :: t_interval
 !
       real :: surface_massII, disk_massII
@@ -2494,7 +2495,7 @@ module Interstellar
         t_interval=7.5*solar_mass/SNII_mass_rate/surface_massII/mu
         if (lroot.and.ip==1963) print"(1x,'set_interval: expected interval for SNI =',e11.4)",t_interval
       else
-        t_interval=solar_mass/surface_massII/SNII_mass_rate/mu
+        t_interval=    solar_mass/SNII_mass_rate/surface_massII/mu
         if (lroot.and.ip==1963) print"(1x,'set_interval: expected interval for SNII =',e11.4)",t_interval
       endif
 !
@@ -2644,7 +2645,8 @@ module Interstellar
           SNRs(iSNR)%indx%SN_type=2
           call explode_SN(f,SNRs(iSNR),ierr,preSN)
           if (ierr==iEXPLOSION_OK) then
-            if (lSN_mass_rate) call set_interval(f,t_interval(SNII),l_SNI)
+            l_SNI=.true.
+            if (lSN_mass_rate) call set_interval(f,t_interval(SNII),SNII)
             last_SN_t=t
           endif
 !
@@ -2655,7 +2657,6 @@ module Interstellar
 !
       ierr=iEXPLOSION_OK
       call free_SNR(iSNR)
-      l_SNI=.true.
 !
     endsubroutine check_SNII
 !*****************************************************************************
