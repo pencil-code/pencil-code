@@ -2051,7 +2051,7 @@ module Interstellar
 !  Only allow SNII if no SNI this step (may not be worth keeping).
 !  This is depricated, both types can occur in same step
 !
-      logical :: l_SNI=.false.
+      logical :: l_SNI
 !
       intent(inout) :: f
       integer :: i
@@ -2059,6 +2059,8 @@ module Interstellar
 !  Identifier
 !
       if (headtt) print*,'check_SN: ENTER'
+
+      l_SNI=.false.
 !
 !  If SN are listed in source file then obtain parameters from list
 !
@@ -2233,6 +2235,7 @@ module Interstellar
       if (headtt.and.ip==1963) print*,'check_SNIIb: ENTER'
 !
       if (t >= t_next_SNII) then
+!
         iSNR=get_free_SNR()
         SNRs(iSNR)%site%TT=1E20
         SNRs(iSNR)%site%rho=0.0
@@ -2244,6 +2247,7 @@ module Interstellar
         zdisk=0.
 !
         do while (try_count>0)
+!
           ierr=iEXPLOSION_OK
           try_count=try_count-1
 !
@@ -2304,6 +2308,7 @@ module Interstellar
 !  timesteps never to be reset.
 !
         ierr=iEXPLOSION_OK
+!
       endif
 !
     endsubroutine check_SNIIb
@@ -2543,12 +2548,13 @@ module Interstellar
 !  SNe are prevalent. Only check if t_next_SNII exceeded (see set_next_SNII).
 !
       if (t >= t_next_SNII) then
-        cloud_mass=0.0
+!
         if (lgpu) call copy_farray_from_GPU(f)
 !
 !  Calculate the total mass in locations where the temperature is below
 !  cloud_TT and the density is above cloud_rho, i.e. cold and dense.
 !
+        cloud_mass=0.0
 !$      call OMP_set_num_threads(num_helper_threads+1)
         !!$omp target if(loffload) !map(from: cloud_mass) & !needs: cloud_rho, lncloud_TT 
         !!$omp        has_device_addr(f) ! globals: irho, ilnrho, iss, ilnTT, ldensity_nolog
@@ -2573,7 +2579,7 @@ module Interstellar
         enddo
         enddo
         !$omp end teams distribute parallel do
-       !!$omp end target
+        !!$omp end target
 !
 !  Sum the total over all processors to find total mass.
 !
@@ -2837,7 +2843,7 @@ module Interstellar
 !  13-jul-15/fred: NB need to revisit OB clustering x,y not updated or time
 !  constrained. May need to include z also
 !
-      Get_z: if (lroot) then
+Get_z:if (lroot) then
         if (lOB_cluster .and. h_SN==h_SNII) then
 !  If OB clustering for SNII, while within time span of current cluster
           if (t < t_cluster) then ! still using current cluster coords
