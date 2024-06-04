@@ -1,2 +1,4 @@
-    return cross(vecvalue(UU), curl(AA)) + eta * veclaplace(AA)
+rhs=0.
+#include "../magnetic/magnetic_diffusivity.h"
+return rhs + cross(vecvalue(UU), curl(AA))
 

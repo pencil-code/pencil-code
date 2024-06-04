@@ -12,19 +12,21 @@
 #endif
     uu=vecvalue(UU)
     reduce_max(step_num==0, abs(uu.x/AC_dsx+uu.y/AC_dsy+uu.z/AC_dsz) + sqrt(advec2)/AC_dsx, AC_maxadvec)
-
-    return - gradients(UU) * uu
+    glnrho = gradient(LNRHO)
+    rhs=0.
+#if LVISCOSITY
+#include "../hydro/viscosity.h"
+#endif
+    return rhs 
+           - gradients(UU) * uu
 #if LENTROPY
-           - cs2 * (gradient(SS)/cp + gradient(LNRHO))
+           - cs2 * (gradient(SS)/cp + glnrho)
 #else
-	   - cs20 * gradient(LNRHO)
+	   - cs20 * glnrho
 #endif
 #if LMAGNETIC
            + rho1 * cross(jj,bb)
 #endif
-           + nu * (veclaplace(UU) + (1./3.) * gradient_of_divergence(UU) + 2. * stress_tensor(UU) * gradient(LNRHO))
-           + zeta * gradient_of_divergence(UU)
 #if LGRAVITY
            + gravz_zpencil(vertexIdx.z-NGHOST)
 #endif
-

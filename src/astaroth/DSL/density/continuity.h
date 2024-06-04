@@ -1,2 +1,5 @@
-    return -dot(vecvalue(UU), gradient(LNRHO)) - divergence(UU)
+rhs=0.
+glnrho = gradient(LNRHO)
+#include "../density/diffusivity.h"
+return rhs - dot(vecvalue(UU), glnrho) - divergence(UU)
 
