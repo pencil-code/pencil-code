@@ -1,19 +1,12 @@
+#include "../shock/utils.h"
 
 Kernel shock_1_divu()
 {
-    for field in 0:NUM_FIELDS {
-        write(Field(field), value(field))
-    }
-
     write(SHOCK, divu_shock())
 }
 
 Kernel shock_2_max()
 {
-    for field in 0:NUM_FIELDS {
-        write(Field(field), value(field))
-    }
-
     write(SHOCK, max5_shock())
 }
 
@@ -22,10 +15,6 @@ Kernel shock_3_smooth()
     cshock = 1.0
 
     out_shock = cshock*AC_dsmin*AC_dsmin*smooth_kernel(SHOCK) // Add scaling constant cshock
-
-    for field in 0:NUM_FIELDS {
-        write(Field(field), value(field))
-    }
 
     write(SHOCK, out_shock)
 }

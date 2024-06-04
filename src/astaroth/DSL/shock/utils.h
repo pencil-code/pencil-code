@@ -16,4 +16,7 @@ max5_shock()
 {
     return max5(SHOCK)
 }
+smooth_shock()
+{
+}
 
