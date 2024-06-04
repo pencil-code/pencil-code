@@ -82,8 +82,8 @@ module InitialCondition
       integer, pointer :: iglobal_cs2
       integer :: ics2
 !
-      if (.not.lspherical_coords) call fatal_error("initial_condition_uu",&
-           "This method is only for spherical coordinates. Use centrifugal_balance for cylindrical.")
+      if (lcartesian_coords) call fatal_error("initial_condition_uu",&
+           "This method cannot be used for Cartesian coordinates.")
 !
 !  Set the sound speed
 !
@@ -122,7 +122,11 @@ module InitialCondition
 !
         OO2=OOK2*(1 + H2/rr_cyl**2*(p+q))
 !
-        f(:,m,n,iuz) = f(:,m,n,iuz) + rr_cyl*sqrt(OO2)
+        if (lspherical_coords) then
+           f(:,m,n,iuz) = f(:,m,n,iuz) + rr_cyl*sqrt(OO2)
+        else if (lcylindrical_coords) then
+           f(:,m,n,iuy) = f(:,m,n,iuy) + rr_cyl*sqrt(OO2)
+        endif
 !
       enddo;enddo
 !
@@ -191,7 +195,14 @@ module InitialCondition
 !  Vertical stratification
 !
           cs2=f(:,m,n,ics2)
-          strat = -.5*gamma*cotth(m)**2/(cs2*rr_cyl)
+          if (lspherical_coords) then
+            strat = -.5*gamma*cotth(m)**2/(cs2*rr_cyl)
+          elseif (lcylindrical_coords) then
+            strat = -.5*g0*gamma*z(n)**2/(cs2*rr_cyl**3)
+          else
+            call fatal_error("initial_condition_lnrho",&
+                 "stratification not coded for Cartesian")
+          endif
           f(:,m,n,ilnrho) = f(:,m,n,ilnrho)+strat
 !
         enddo
@@ -281,12 +292,20 @@ module InitialCondition
 !
 !  Same for the temperature gradient
 !
-          if (llocal_iso) then             
-            f(:,m,n,iglnTT  )=q/rr_sph
-            f(:,m,n,iglnTT+1)=q/rr_sph*cotth(m)
-            f(:,m,n,iglnTT+2)=0.
+          if (llocal_iso) then
+            if (lspherical_coords) then
+              f(:,m,n,iglnTT  )=q/rr_sph
+              f(:,m,n,iglnTT+1)=q/rr_sph*cotth(m)
+              f(:,m,n,iglnTT+2)=0.
+           else if (lcylindrical_coords) then
+              f(l1:l2,m,n,iglobal_glnTT  )=-q/rr_cyl
+              f(l1:l2,m,n,iglobal_glnTT+1)=0.
+              f(l1:l2,m,n,iglobal_glnTT+2)=0.
+            else
+              call fatal_error("set_sound_speed",&
+                   "glnT not coded for Cartesian")
+            endif
           endif
-!
         enddo
       enddo
 !
