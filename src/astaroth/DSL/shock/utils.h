@@ -1,4 +1,6 @@
 // Get divergence of velocity.
+#include "../stdlib/smooth_max.h"
+
 divu_shock()
 {
     // Discard values which do not contain negative divergence.

@@ -3068,7 +3068,7 @@ endif
 	      echo '' >> $(DSL_WORKDIR)/equations.h; \
 	    fi \
 	  fi; \
-	  if [[ "$$file" == "interstellar.f90" ]]; then \
+	  if [[ "$$file" == "interstellar.f90" || "$$file" == "shock_highorder.f90" ]]; then \
 	    replcmt=`sed -f dsl_aux.sed $$file`;\
 	    if [[ "$$replcmt" != "" ]]; then \
 	      sed -i -e's/\/\/ *'"$$modname"'/'"$$replcmt"'/' $(DSL_WORKDIR)/fieldecs.h; \
@@ -3081,13 +3081,15 @@ endif
 	@echo '#include "steps_two.h"' >> $(DSL_WORKDIR)/solve_two.ac
 	@mv $(DSL_WORKDIR)/solve.ac $(DSL_WORKDIR)/solve_single.ac
 	@echo '#include "steps_single.h"' >> $(DSL_WORKDIR)/solve_single.ac
-	if [ ! -f $(DSL_WORKDIR)/steps_single.h ]; then \
-	  cp $(DSL_WORKDIR)/../steps_single.h $(DSL_WORKDIR); \
-	fi
-	if [ ! -f $(DSL_WORKDIR)/steps_two.h ]; then \
-	  cp $(DSL_WORKDIR)/../steps_two.h $(DSL_WORKDIR); \
-	fi
-#	    echo REPLACEMT=$$replcmt; \
+	@cp $(DSL_WORKDIR)/../steps_single.h $(DSL_WORKDIR)
+	@cp $(DSL_WORKDIR)/../steps_two.h $(DSL_WORKDIR)
+ifeq ($(SHOCK),shock_highorder)
+	sed -i -e'1 i   #include "../shock/kernels.ac"' $(DSL_WORKDIR)/steps_two.h
+	sed -i -e'1 i   #include "../shock/kernels.ac"' $(DSL_WORKDIR)/steps_single.h
+	sed -i -e'/twopass_solve_intermediate/ i   shock_1_div(),\n  shock_2_max(),\n  shock_3_smooth(),' $(DSL_WORKDIR)/steps_two.h
+	sed -i -e'/singlepass_solve/ i   shock_1_div(),\n  shock_2_max(),\n  shock_3_smooth(),' $(DSL_WORKDIR)/steps_single.h
+endif
+#
 #	    echo FIELDNAME=$$fieldname; \
 #	@sed -e':loop' -e'N' -e'$$!b loop' -e's/\#pragma  *once//' -e's/\# *define *\([A-Z0-9_][A-Z0-9_]*\)/..\/..\/\L\1.f90 /g' -e's/\n/ /g' < $(CUDA_INCDIR)/PC_moduleflags.h >> $(CUDA_MAKEDIR)/PC_modulesources.h
 #
