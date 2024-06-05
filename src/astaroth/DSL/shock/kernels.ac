@@ -1,20 +1,13 @@
-#include "../shock/utils.h"
+#include "../shock/highorder.h"
 
 Kernel shock_1_divu()
 {
     write(SHOCK, divu_shock())
 }
 
-Kernel shock_2_max()
+Kernel shock_2_smooth()
 {
-    write(SHOCK, max5_shock())
-}
-
-Kernel shock_3_smooth()
-{
-    cshock = 1.0
-
-    out_shock = cshock*AC_dsmin*AC_dsmin*smooth_kernel(SHOCK) // Add scaling constant cshock
+    out_shock = AC_dsmin*AC_dsmin*smooth_kernel(SHOCK) // Add scaling constant cshock
 
     write(SHOCK, out_shock)
 }
