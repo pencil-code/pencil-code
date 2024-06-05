@@ -12,13 +12,3 @@ divu_shock()
     return dt_div_pow * pow(tmp,shock_div_pow)
 }
 
-// Calculate local maximum.
-/*max5_shock()
-{
-    return max5(SHOCK)
-}*/
-// Apply gaussian smoothing to SHOCK
-smooth_shock()
-{
-
-}

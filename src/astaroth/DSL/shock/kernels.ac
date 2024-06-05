@@ -7,7 +7,7 @@ Kernel shock_1_divu()
 
 Kernel shock_2_smooth()
 {
-    out_shock = AC_dsmin*AC_dsmin*smooth_kernel(SHOCK) // Add scaling constant cshock
+    out_shock = AC_dsmin*AC_dsmin*smooth(SHOCK) // Add scaling constant cshock
 
     write(SHOCK, out_shock)
 }
