@@ -10,6 +10,6 @@ if (ldiff_shock) {
 	  else
 */
             
-            rhs = diffrho_shock * value(SHOCK) * (del2(LNRHO) + norm2(glnrho) + dot(gradient(SHOCK),glnrho))
+            rhs = diffrho_shock * value(SHOCK) * (laplace(LNRHO) + norm2(glnrho) + dot(gradient(SHOCK),glnrho))
 }
 #endif

@@ -1,5 +1,5 @@
 // Get divergence of velocity.
-//#include "../stdlib/smooth_max.h"
+#include "../stdlib/smooth_max.h"
 
 divu_shock()
 {
@@ -8,7 +8,7 @@ divu_shock()
     // <1 divergence used with reduced factor con_bias**shock_div_pow 
     dt_div_pow = pow(dtfactor,shock_div_pow-1)
     divu = divergence(UU)
-    tmp = std::max(-divu, con_bias*divu)
+    tmp = max(-divu, con_bias*divu)
     return dt_div_pow * pow(tmp,shock_div_pow)
 }
 
@@ -20,4 +20,5 @@ divu_shock()
 // Apply gaussian smoothing to SHOCK
 smooth_shock()
 {
+
 }
