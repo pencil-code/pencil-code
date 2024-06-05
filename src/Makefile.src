@@ -3084,8 +3084,8 @@ endif
 ifeq ($(SHOCK),shock_highorder)
 	@sed -i -e'1 i   #include "../shock/kernels.ac"' $(DSL_WORKDIR)/steps_two.h
 	@sed -i -e'1 i   #include "../shock/kernels.ac"' $(DSL_WORKDIR)/steps_single.h
-	@sed -i -e'/twopass_solve_intermediate/ i   shock_1_div(),\n  shock_2_max(),\n  shock_3_smooth(),' $(DSL_WORKDIR)/steps_two.h
-	@sed -i -e'/singlepass_solve/ i   shock_1_div(),\n  shock_2_max(),\n  shock_3_smooth(),' $(DSL_WORKDIR)/steps_single.h
+	@sed -i -e'/twopass_solve_intermediate/ i   shock_1_divu(),\n  shock_3_smooth(),' $(DSL_WORKDIR)/steps_two.h
+	@sed -i -e'/singlepass_solve/ i   shock_1_divu(),\n  shock_3_smooth(),' $(DSL_WORKDIR)/steps_single.h
 endif
 #
 #	    echo FIELDNAME=$$fieldname; \
