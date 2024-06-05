@@ -31,7 +31,6 @@ IO_IN              =
 MPICOMM            = nompicomm
 NSCBC              = noNSCBC
 POWER              = nopower_spectrum
-PTHREAD            = 
 PYTHON             = nopython
 SOLID_CELLS        = nosolid_cells
 SOLID_CELLS_MPICOMM= nosolid_cells_mpicomm
@@ -537,7 +536,8 @@ endif
 #
 ifneq ($(filter openmp OpenMP,$(MULTITHREADING)),)
 
-  PTHREAD=pthread
+  PTHREAD_OBJ=pthread.o
+  PTHREAD_SRC=pthread.c
 #
   override FFLAGS += $(OMPFFLAGS)
   override LDFLAGS += $(OMPLFLAGS)
@@ -556,6 +556,7 @@ ifneq ($(filter openmp OpenMP,$(MULTITHREADING)),)
 # done
 else
   MULTITHREADING = 
+  PTHREAD_OBJ=
 endif
 #
 ifneq ($(filter $(IO) $(IO_IN), io_hdf5),)
@@ -678,9 +679,6 @@ GHOSTL_CHECK_SRC=ghost_check.f90
 #
 PERSIST_OBJ=persist.o
 PERSIST_SRC=persist.f90
-#
-PTHREAD_OBJ=$(PTHREAD).o
-PTHREAD_SRC=$(PTHREAD).c
 #
 REGISTER_OBJ=register.o
 REGISTER_SRC=register.f90
