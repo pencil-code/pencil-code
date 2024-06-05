@@ -1239,6 +1239,7 @@ module Forcing
         select case (iforce2)
         case ('diffrot');      call forcing_diffrot(f,force2)
         case ('fountain');     call forcing_fountain(f)
+        case ('gaussianpot');  call forcing_gaussianpot(f,force2)
         case ('helical');      call forcing_hel(f)
         case ('helical_both'); call forcing_hel_both(f)
         case ('horiz-shear');  call forcing_hshear(f)
@@ -1452,8 +1453,6 @@ module Forcing
       complex, dimension (3) :: ikk
       integer :: ik,j,jf
 !
-      call keep_compiler_quiet(force_ampl)
-!
       do
         call random_number_wrapper(fran,CHANNEL=channel_force)
         phase=pi*(2*fran(1)-1.)
@@ -1516,7 +1515,7 @@ module Forcing
 !  Divide also by kav, so it would be ffnorm=force*sqrt(kav/dt)*dt/kav,
 !  but this can be simplified to give:
 !
-      ffnorm=force*sqrt(dt/kav)
+      ffnorm=force_ampl*sqrt(dt/kav)
 !
 !  pre-calculate for the contributions e^(ikx*x), e^(iky*y), e^(ikz*z),
 !  as well as the phase factor.

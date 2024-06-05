@@ -2187,7 +2187,7 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
       if (xi_lo>=xi_up) &
           call fatal_error('find_star','xi1 >= xi2 -- this should not happen')
 !
-      tol=epsi*(xi_up-xi_lo)
+      tol=max(epsi*(xi_up-xi_lo),epsi)
       xi_star= (xi_up+xi_lo)/2
 !
       lreturn=.false.

@@ -37,6 +37,7 @@ module FArrayManager
   public :: farray_size_by_name
   public :: farray_type_by_name
   public :: farray_index_by_name
+  public :: farray_index_by_name_ode
   public :: farray_get_name
 !
   public :: farray_check_maux
@@ -953,6 +954,23 @@ module FArrayManager
       endif
 !
     endfunction farray_index_by_name
+!***********************************************************************
+    function farray_index_by_name_ode(varname,component) result(indx)
+
+      integer :: indx
+      character (len=*), intent(IN) :: varname
+      integer, optional, intent(OUT):: component
+
+      type (ode_vars_list), pointer :: item
+!
+      item=>find_by_name_ode(varname)
+      if (associated(item)) then
+        indx=item%ivar(1)%p
+      else
+        indx=-1
+      endif
+!
+    endfunction farray_index_by_name_ode
 !***********************************************************************
     subroutine farray_check_maux
 !

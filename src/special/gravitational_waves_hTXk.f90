@@ -39,7 +39,8 @@
 ! MAUX CONTRIBUTION 18
 !
 ! PENCILS PROVIDED stress_ij(6)
-! PENCILS PROVIDED gphi(3), infl_a2
+!! PENCILS EXPECTED gphi(3), infl_a2
+! PENCILS EXPECTED gphi(3)
 !
 !***************************************************************
 !
@@ -135,7 +136,7 @@ module Special
   real :: t_ini=60549
 !
   logical :: lread_scl_factor_file_exists
-  integer :: nt_file, it_file, iTij=0
+  integer :: nt_file, it_file, iTij=0, iinfl_lna=0
   real :: lgt0, dlgt, H0, dummy
   real :: lgt1, lgt2, lgf1, lgf2, lgf, lgt_current
   real :: lgt_ini, a_ini, Hp_ini, appa_om=0
@@ -363,6 +364,10 @@ module Special
 !  Get base indix for Tij, if different from zero.
 !
       iTij=farray_index_by_name('Tij')
+!
+      if (lscalar) then
+        iinfl_lna=farray_index_by_name_ode('infl_lna')
+      endif
 !
     endsubroutine register_special
 !***********************************************************************
@@ -810,7 +815,7 @@ module Special
 !
       if (lscalar) then
         lpenc_requested(i_gphi)=.true.
-        lpenc_requested(i_infl_a2)=.true.
+!        lpenc_requested(i_infl_a2)=.true.
       endif
 !
     endsubroutine pencil_criteria_special
@@ -886,7 +891,9 @@ module Special
               endif
               if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)-p%bb(:,i)*p%bb(:,j)
               if (lelectmag) p%stress_ij(:,ij)=p%stress_ij(:,ij)-p%el(:,i)*p%el(:,j)
-              if (lscalar_phi)   p%stress_ij(:,ij)=p%stress_ij(:,ij)+p%infl_a2*p%gphi(:,i)*p%gphi(:,j)
+!              if (lscalar_phi)   p%stress_ij(:,ij)=p%stress_ij(:,ij)+p%infl_a2*p%gphi(:,i)*p%gphi(:,j)
+              if (lscalar_phi)   p%stress_ij(:,ij)=p%stress_ij(:,ij) &
+                +exp(2*f_ode(iinfl_lna))*p%gphi(:,i)*p%gphi(:,j)
             endif
 !
 !  Remove trace.
@@ -981,7 +988,8 @@ module Special
       elseif (ldark_energy_GW) then
         scale_factor=t_acceleration**3/(t*t_equality)
       elseif (lscalar) then
-        scale_factor=sqrt(p%infl_a2(1))
+!        scale_factor=sqrt(p%infl_a2(1))
+        scale_factor=exp(f_ode(iinfl_lna))
       else
         if (t+tshift==0.) then
           scale_factor=1.

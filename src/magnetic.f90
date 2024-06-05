@@ -2833,6 +2833,10 @@ module Magnetic
         endif
       endif
 !
+      if (llocal_friction) then
+        lpenc_requested(i_aa)=.true.
+      endif
+!
       if (hall_term/=0.0) lpenc_requested(i_jxb)=.true.
 !
       if (ldiamagnetism) lpenc_requested(i_gb22)=.true.

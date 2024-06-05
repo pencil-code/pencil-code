@@ -8,7 +8,7 @@
 *)
 
 
-BeginPackage["pcPlot`","pcReadBasic`","pcRead1D`","pcRead2D`"]
+BeginPackage["pcPlot`","pcReadBasic`","pcRead1D`","pcRead2D`","pcUtils`"]
 
 
 (* ::Chapter:: *)
@@ -218,6 +218,14 @@ pcTicks["Log10i",max_:99]:=Table[{10^i,ToString@i},{i,-max,max}]
 pcTicks["Range"][range_,pd_]:=List[
   {#,StringPadRight[ToString[#],pd,"0"]}&/@range, Automatic
 ]
+pcTicks["Range2"][minmax_]:=Module[{mean,d,r,ticks},
+  d=-Subtract@@minmax/4*0.9;
+  r=Min[1,10.^Floor[Log10[d]]];
+  d=Round[d,r];
+  mean= minmax//Mean//Round[#,r]&;
+  ticks=mean+d*Range[-2,2];
+  ReplaceAll[ticks,x_/;StringEndsQ[ToString[x],"."]:>{x,ToString[x]<>"0"}]
+]
 
 pcInset[str_String,posx_,posy_]:=Inset[Style[str,pcLabelStyle],Scaled[{posx,posy}]]
 
@@ -226,16 +234,25 @@ pcInset[str_String,posx_,posy_]:=Inset[Style[str,pcLabelStyle],Scaled[{posx,posy
 (*Bar legend*)
 
 
-pcLegend[l_List,opt:OptionsPattern[]]:=DensityPlot[y,{x,0,1},{y,Sequence@@MinMax[l]},opt,
-  ColorFunction->pcColors["Rainbow"],PlotLegends->None,
-  FrameTicks->{{None,All},{None,None}},PlotRangePadding->None,
-  AspectRatio->12,ImagePadding->{{5,40},{5,5}},ImageSize->{80,240}
-]
+pcLegend[l_List,opt:OptionsPattern[]]:=Module[{data,minmax},
+  minmax=l//MinMax;
+  data=Table[{x,y,y},{x,{0,1}},{y,Subdivide[Sequence@@minmax,127]}]//Flatten[#,1]&;
+  pcDensityPlot[data,opt,
+    ColorFunction->pcColors["Rainbow"],PlotLegends->None,
+    FrameTicks->{{None,pcTicks["Range2"][minmax]},{None,None}},PlotRangePadding->None,
+    AspectRatio->12,ImagePadding->{{5,40},{5,5}},ImageSize->{80,240},
+    FrameTicksStyle->Automatic
+  ]
+];
 
-pcLegend[l_List,"h",opt:OptionsPattern[]]:=DensityPlot[x,{x,Sequence@@MinMax[l]},{y,0,1},opt,
-  ColorFunction->ColorData[{"Rainbow","Reversed"}],PlotLegends->None,
-  FrameTicks->{{None,None},{All,None}},PlotRangePadding->None,
-  AspectRatio->1/12,ImagePadding->{{5,5},{40,5}},ImageSize->{240,80}
+pcLegend[l_List,"h",opt:OptionsPattern[]]:=Module[{data,minmax},
+  minmax=l//MinMax;
+  data=Table[{x,y,x},{x,Subdivide[Sequence@@minmax,127]},{y,{0,1}}]//Flatten[#,1]&;
+  pcDensityPlot[data,
+    ColorFunction->ColorData[{"Rainbow","Reversed"}],PlotLegends->None,
+    FrameTicks->{{None,None},{pcTicks["Range2"][minmax],None}},PlotRangePadding->None,
+    AspectRatio->1/12,ImagePadding->{{5,5},{40,5}},ImageSize->{240,80}
+  ]
 ]
 
 
