@@ -2522,7 +2522,7 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #FC=xlf90 #(Nils)
 #F77=xlf  #(Nils)
 #FFLAGS= -w -qsuppress=1501-510  #(Nils)
-#F90FLAGS=-qsuffix=f=f90 #(Nils)
+##F90FLAGS=-qsuffix=f=f90 #(Nils)
 #CFLAGS=-O3 -DFUNDERSC=0 #(Nils)
 #LD_MPI=-lSystemStubs #(easymac)
 ##
