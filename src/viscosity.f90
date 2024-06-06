@@ -109,7 +109,7 @@ module Viscosity
   logical :: limplicit_viscosity=.false.
   logical :: lmeanfield_nu=.false.
   logical :: lmagfield_nu=.false.
-  logical :: llambda_effect=.false.
+  logical :: llambda_effect=.false., llambda_scale_with_nu=.false.
   logical :: luse_nu_rmn_prof=.false.
   logical :: lvisc_smag_Ma=.false.
   logical, pointer:: lviscosity_heat, lshear_rateofstrain
@@ -126,7 +126,8 @@ module Viscosity
       lvisc_nu_tdep_t0_norm, nu_tdep_t0, nu_tdep_toffset, &
       zeta, nu_hyper2, nu_hyper3, ivisc, nu_mol, C_smag, gamma_smag, nu_shock, &
       nu_aniso_hyper3, lvisc_heat_as_aux,nu_jump,znu,xnu,xnu2,widthnu,widthnu2, &
-      pnlaw,llambda_effect,Lambda_V0,Lambda_V1,Lambda_H1, nu_hyper3_mesh, &
+      nu_hyper3_mesh, &
+      pnlaw,llambda_effect, llambda_scale_with_nu, Lambda_V0,Lambda_V1,Lambda_H1, &
       lambda_profile,rzero_lambda,wlambda,r1_lambda,r2_lambda,rmax_lambda, &
       offamp_lambda,lambda_jump,lmeanfield_nu,lmagfield_nu,meanfield_nuB, &
       PrM_turb, roffset_lambda, nu_spitzer, nu_jump2, nu_spitzer_max, &
@@ -299,6 +300,7 @@ module Viscosity
 ! more variables are shared inside initialize_lambda.
 !
       call put_shared_variable('llambda_effect',llambda_effect)
+      call put_shared_variable('llambda_scale_with_nu',llambda_scale_with_nu)
       if (llambda_effect) then
         call put_shared_variable('Lambda_V0t',Lambda_V0t)
         call put_shared_variable('Lambda_V1t',Lambda_V1t)
@@ -2205,11 +2207,16 @@ module Viscosity
         p%fvisc(:,1:2)=p%fvisc(:,1:2)-nu*p%d2uidxj(:,1:2,3)
       endif
 !
-!  Calculate Lambda effect
+!  Calculate Lambda effect. Allow for the possibility of the
+!  Lambda profiles to be scaled with nu (not currently the default)
 !
       if (llambda_effect) then
         call calc_lambda(p,lambda_phi)
-        p%fvisc(:,iuz)=p%fvisc(:,iuz) + lambda_phi
+        if (llambda_scale_with_nu) then
+          p%fvisc(:,iuz)=p%fvisc(:,iuz) + nu*lambda_phi
+        else
+          p%fvisc(:,iuz)=p%fvisc(:,iuz) + lambda_phi
+        endif
       endif
 !
 !  Store viscous heating rate in auxiliary variable if requested.
@@ -2868,6 +2875,9 @@ module Viscosity
       real,dimension(nx) :: lomega,dlomega_dr,dlomega_dtheta,lver,lhor,dlver_dr,dlhor_dtheta
 !
       lomega=p%uu(:,3)/(sinth(m)*x(l1:l2))+Omega
+!
+!  dlomega_dr = u_3,1/(r*sinth) - u_3/(r^2*sinth)
+!  dlomega_dtheta = u_3,2/(r*sinth) - u_3*costh/(r*sinth)
 !
       dlomega_dr=(x(l1:l2)*p%uij(:,3,1)-p%uu(:,3))/(sinth(m)*x(l1:l2)*x(l1:l2))
       dlomega_dtheta=(p%uij(:,3,2)*x(l1:l2)-p%uu(:,3)*cotth(m))/(sinth(m)*x(l1:l2)*x(l1:l2))

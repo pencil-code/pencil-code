@@ -3820,6 +3820,7 @@ module Boundcond
 !
 !  25-Aug-2007/dhruba: coded
 !  21-Mar-2009/axel: get llambda_effect using get_shared_variable
+!   6-Jun-2024/axel+petri: included llambda_scale_with_nu when scaled with nu
 !
       use SharedVariables, only : get_shared_variable
 !
@@ -3828,7 +3829,7 @@ module Boundcond
       integer, intent (in) :: j
 !
       real, pointer :: nu,Lambda_V0t,Lambda_V0b,Lambda_V1t,Lambda_V1b
-      logical, pointer :: llambda_effect
+      logical, pointer :: llambda_effect, llambda_scale_with_nu
       integer :: iy, k
       real :: fac,sth,lambda_exp
 !
@@ -3837,10 +3838,11 @@ module Boundcond
       call get_shared_variable('nu',nu,caller='bc_set_sfree_x')
       call get_shared_variable('llambda_effect',llambda_effect)
       if (llambda_effect) then
-         call get_shared_variable('Lambda_V0t',Lambda_V0t)
-         call get_shared_variable('Lambda_V1t',Lambda_V1t)
-         call get_shared_variable('Lambda_V0b',Lambda_V0b)
-         call get_shared_variable('Lambda_V1b',Lambda_V1b)
+        call get_shared_variable('llambda_scale_with_nu',llambda_scale_with_nu)
+        call get_shared_variable('Lambda_V0t',Lambda_V0t)
+        call get_shared_variable('Lambda_V1t',Lambda_V1t)
+        call get_shared_variable('Lambda_V0b',Lambda_V0b)
+        call get_shared_variable('Lambda_V1b',Lambda_V1b)
       endif
 !
       select case (topbot)
@@ -3852,7 +3854,11 @@ module Boundcond
         if ((llambda_effect).and.(j==iuz)) then
           do iy=1,size(f,2)
             sth=sinth(iy)
-            lambda_exp=1.+(Lambda_V0b+Lambda_V1b*sth*sth)/nu
+            if (llambda_scale_with_nu) then
+              lambda_exp=1.+(Lambda_V0b+Lambda_V1b*sth*sth)
+            else
+              lambda_exp=1.+(Lambda_V0b+Lambda_V1b*sth*sth)/nu
+            endif
             do k=1,nghost
                fac=(1.-dx2_bound(-k)/x(l1+k))**lambda_exp
                if (Omega==0) then
@@ -3879,7 +3885,11 @@ module Boundcond
         if ((llambda_effect).and.(j==iuz)) then
           do iy=1,size(f,2)
             sth=sinth(iy)
-            lambda_exp=1.+(Lambda_V0t+Lambda_V1t*sth*sth)/nu
+            if (llambda_scale_with_nu) then
+              lambda_exp=1.+(Lambda_V0t+Lambda_V1t*sth*sth)
+            else
+              lambda_exp=1.+(Lambda_V0t+Lambda_V1t*sth*sth)/nu
+            endif
             do k=1,nghost
               fac=(1.+dx2_bound(k)/x(l2-k))**lambda_exp
               if (Omega==0) then
@@ -4104,6 +4114,7 @@ module Boundcond
 !  S_{\theta \phi} component of the strain matrix to be zero in spherical
 !  coordinate system. This subroutine sets only the first part of this
 !  boundary condition for 'j'-th component of f.
+!  Note that llambda_scale_with_nu is not implemented here yet.
 !
 !  25-Aug-2007/dhruba: coded
 !
@@ -4114,7 +4125,7 @@ module Boundcond
       integer, intent (in) :: j
       real, pointer :: Lambda_H1,nu
       real, pointer :: LH1_rprof(:)
-      logical, pointer :: llambda_effect
+      logical, pointer :: llambda_effect, llambda_scale_with_nu
       integer :: k,ix
       real :: cos2thm_k,cos2thmpk,somega
       real,dimension(size(f,1)):: LH1
@@ -4124,6 +4135,7 @@ module Boundcond
       call get_shared_variable('nu',nu,caller='bc_set_sfree_y')
       call get_shared_variable('llambda_effect',llambda_effect)
       if (llambda_effect) then
+        call get_shared_variable('llambda_scale_with_nu',llambda_scale_with_nu)
         call get_shared_variable('Lambda_H1',Lambda_H1)
         call get_shared_variable('LH1_rprof',LH1_rprof)
         LH1=Lambda_H1*LH1_rprof
@@ -4135,27 +4147,43 @@ module Boundcond
         if (llambda_effect.and.(j==iuz)) then
           if (Lambda_H1/=0.) then
             do k=1,nghost
-                cos2thm_k= costh(m1-k)**2-sinth(m1-k)**2
-                cos2thmpk= costh(m1+k)**2-sinth(m1+k)**2
+              cos2thm_k= costh(m1-k)**2-sinth(m1-k)**2
+              cos2thmpk= costh(m1+k)**2-sinth(m1+k)**2
               if (Omega==0) then
-                 do ix=1,size(f,1)
+                do ix=1,size(f,1)
+                  if (llambda_scale_with_nu) then
+                    f(ix,m1-k,:,j)= f(ix,m1+k,:,j)* &
+                         (exp(LH1(ix)*cos2thmpk/(4.))*sin1th(m1+k)) &
+                         *(exp(-LH1(ix)*cos2thm_k/(4.))*sinth(m1-k))
+                  else
                     f(ix,m1-k,:,j)= f(ix,m1+k,:,j)* &
                          (exp(LH1(ix)*cos2thmpk/(4.*nu))*sin1th(m1+k)) &
                          *(exp(-LH1(ix)*cos2thm_k/(4.*nu))*sinth(m1-k))
-                 enddo
+                  endif
+                enddo
               else
                 do ix=1,size(f,1)
 ! DM+GG: temporally commented out
 !                somega=x(ix)*Omega*sinth(m1-k)*( &
 !                   exp(2*cos2thm_k*LH1(ix)/(4.*nu))&
 !                        -exp((cos2thmpk+cos2thm_k)*LH1(ix)/(4.*nu)) )
-                  somega=x(ix)*Omega*sinth(m1-k)*( &
-                     exp(cos2thmpk*LH1(ix)/(4.*nu))&
-                          /exp((cos2thm_k)*LH1(ix)/(4.*nu)) -1.)
-                  f(ix,m1-k,:,j)= f(ix,m1+k,:,j)* &
-                     (exp(LH1(ix)*cos2thmpk/(4.*nu))*sin1th(m1+k)) &
-                     *(exp(-LH1(ix)*cos2thm_k/(4.*nu))*sinth(m1-k)) &
-                        +somega
+                  if (llambda_scale_with_nu) then
+                    somega=x(ix)*Omega*sinth(m1-k)*( &
+                       exp(cos2thmpk*LH1(ix)/(4.))&
+                            /exp((cos2thm_k)*LH1(ix)/(4.)) -1.)
+                    f(ix,m1-k,:,j)= f(ix,m1+k,:,j)* &
+                       (exp(LH1(ix)*cos2thmpk/(4.))*sin1th(m1+k)) &
+                       *(exp(-LH1(ix)*cos2thm_k/(4.))*sinth(m1-k)) &
+                          +somega
+                  else
+                    somega=x(ix)*Omega*sinth(m1-k)*( &
+                       exp(cos2thmpk*LH1(ix)/(4.*nu))&
+                            /exp((cos2thm_k)*LH1(ix)/(4.*nu)) -1.)
+                    f(ix,m1-k,:,j)= f(ix,m1+k,:,j)* &
+                       (exp(LH1(ix)*cos2thmpk/(4.*nu))*sin1th(m1+k)) &
+                       *(exp(-LH1(ix)*cos2thm_k/(4.*nu))*sinth(m1-k)) &
+                          +somega
+                  endif
                 enddo
               endif
             enddo
@@ -4172,26 +4200,42 @@ module Boundcond
               cos2thm_k= costh(m2-k)**2-sinth(m2-k)**2
               cos2thmpk= costh(m2+k)**2-sinth(m2+k)**2
               if (Omega==0)then
-                 do ix=1,size(f,1)
+                do ix=1,size(f,1)
+                  if (llambda_scale_with_nu) then
+                    f(ix,m2+k,:,j)= f(ix,m2-k,:,j)* &
+                     (exp(LH1(ix)*cos2thm_k/(4.))*sin1th(m2-k)) &
+                    *(exp(-LH1(ix)*cos2thmpk/(4.))*sinth(m2+k))
+                  else
                     f(ix,m2+k,:,j)= f(ix,m2-k,:,j)* &
                      (exp(LH1(ix)*cos2thm_k/(4.*nu))*sin1th(m2-k)) &
                     *(exp(-LH1(ix)*cos2thmpk/(4.*nu))*sinth(m2+k))
-                 enddo
-               else
+                  endif
+                enddo
+              else
                 do ix=1,size(f,1)
 ! DM+GG: Temporally comented out
 !                somega=x(ix)*Omega*sinth(m2+k)*( &
 !                   exp(2*cos2thmpk*LH1(ix)/(4.*nu))&
 !                        -exp((cos2thmpk+cos2thm_k)*LH1(ix)/(4.*nu)) )
-                   somega=x(ix)*Omega*sinth(m2+k)*( &
-                        exp(cos2thm_k*LH1(ix)/(4.*nu))    &
-                        / exp(cos2thmpk*LH1(ix)/(4.*nu))-1.)
-                  f(ix,m2+k,:,j)= f(ix,m2-k,:,j)* &
+                  if (llambda_scale_with_nu) then
+                    somega=x(ix)*Omega*sinth(m2+k)*( &
+                      exp(cos2thm_k*LH1(ix)/(4.))    &
+                     /exp(cos2thmpk*LH1(ix)/(4.))-1.)
+                    f(ix,m2+k,:,j)= f(ix,m2-k,:,j)* &
+                       (exp(LH1(ix)*cos2thm_k/(4.))*sin1th(m2-k)) &
+                      *(exp(-LH1(ix)*cos2thmpk/(4.))*sinth(m2+k)) &
+                        +somega
+                  else
+                    somega=x(ix)*Omega*sinth(m2+k)*( &
+                      exp(cos2thm_k*LH1(ix)/(4.*nu))    &
+                     /exp(cos2thmpk*LH1(ix)/(4.*nu))-1.)
+                    f(ix,m2+k,:,j)= f(ix,m2-k,:,j)* &
                        (exp(LH1(ix)*cos2thm_k/(4.*nu))*sin1th(m2-k)) &
                       *(exp(-LH1(ix)*cos2thmpk/(4.*nu))*sinth(m2+k)) &
                         +somega
+                  endif
                 enddo
-               endif
+              endif
             enddo
           endif
         else
