@@ -19,7 +19,7 @@ output real AC_maxchi
 #include "../stdlib/operators.h"
 #include "../stdlib/integrators.h"
 #include "../stdlib/units.h"
-#include "../stdlib/utils.h"
+#include "../stdlib/utils/kernels.h"
 #include "../phys_consts.h"
 #include "PC_modulepardecs.h"
 #ifdef LFORCING
