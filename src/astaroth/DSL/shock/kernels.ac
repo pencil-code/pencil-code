@@ -1,5 +1,4 @@
 #include "../shock/highorder.h"
-
 Kernel shock_1_divu()
 {
   write( SHOCK, divu_shock() )
