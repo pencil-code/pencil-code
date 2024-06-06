@@ -25,9 +25,9 @@ output real AC_maxchi
 #ifdef LFORCING
   #include "../forcing/pcstyleforcing.h"
 #endif
-#ifdef LSHOCK
-  #include "../shock/highorder.h"
-#endif
+//#ifdef LSHOCK
+//  #include "../shock/highorder.h"
+//#endif
 #ifdef LDENSITY
   #define LNRHO RHO
 #endif
