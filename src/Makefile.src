@@ -3062,7 +3062,10 @@ endif
 	    fi; \
 	    echo '  '$$prefix'write( '$$fieldname', rk3'$$suffix'('$$prefix'previous('$$fieldname'), '$$prefix'value('$$fieldname'), '$$funcname'(step_num), step_num, dt) )' >> $(DSL_WORKDIR)/solve.ac; \
 	    if ( ! grep $$funcname' *( *int *step_num *) *{' $(DSL_WORKDIR)/equations.h > /dev/null ); then \
-	      echo $$funcname'(int step_num){'$$init'}' >> $(DSL_WORKDIR)/equations.h; \
+	      echo $$funcname'(int step_num){' >> $(DSL_WORKDIR)/equations.h; \
+	      echo '    void(step_num)' >> $(DSL_WORKDIR)/equations.h; \
+	      echo '    '$$init >> $(DSL_WORKDIR)/equations.h; \
+	      echo '}' >> $(DSL_WORKDIR)/equations.h; \
 	      echo '' >> $(DSL_WORKDIR)/equations.h; \
 	    fi \
 	  fi; \

@@ -95,7 +95,7 @@ include Makefile.extern
 $(PC_HEADERS): .sentinel
 
 .sentinel: ../scripts/phys_modules2c PC_modulesources.h $(MODULESOURCES)
-	@rm -f $(PCHEADER_DIR)/PC_modulepars.h submodule/acc-runtime/$(DSL_MODULE_DIR)/PC_modulepardecs.h 
+	@rm -f $(PCHEADER_DIR)/PC_modulepars.h $(PCHEADER_DIR)/PC_module*funcs.h submodule/acc-runtime/$(DSL_MODULE_DIR)/PC_modulepardecs.h 
 	@echo '// automatically generated; do not edit!' > $(PCHEADER_DIR)/PC_modulepars.h
 	@echo '// automatically generated; do not edit!' > submodule/acc-runtime/$(DSL_MODULE_DIR)/PC_modulepardecs.h
 	@export DSL_MODULE_DIR=$(DSL_MODULE_DIR); \
