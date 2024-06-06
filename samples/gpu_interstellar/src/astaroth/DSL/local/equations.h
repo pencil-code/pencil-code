@@ -18,12 +18,3 @@ daa_dt(int step_num){
 denergy_dt(int step_num){
 #include "../entropy/heat_ss.h"
 }
-
-dlnrhon_dt(int step_num){return 0.}
-
-duun_dt(int step_num){return real3(0.,0.,0.)}
-
-dlncc_dt(int step_num){return 0.}
-
-daan_dt(int step_num){return real3(0.,0.,0.)}
-
