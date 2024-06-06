@@ -1,13 +1,12 @@
-#include "../shock/highorder.h"
+#include "../prerequisites.h"
 
 Kernel shock_1_divu()
 {
-    write(SHOCK, divu_shock())
+  write( SHOCK, divu_shock() )
 }
 
 Kernel shock_2_smooth()
 {
-    out_shock = AC_dsmin*AC_dsmin*smooth(SHOCK) // Add scaling constant cshock
-
-    write(SHOCK, out_shock)
+  write( SHOCK, AC_dsmin*AC_dsmin*smooth(SHOCK) )
 }
+#include "../shock/highorder.h"
