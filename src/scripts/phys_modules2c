@@ -32,10 +32,7 @@ fi
 #
 modfuncs=PC_module_$1funcs.h
 rm -f tmp
-if [ -f $modfuncs ]; then
-  sed -e'/'$modname'/ d' < $modfuncs > tmp
-  mv -f tmp $modfuncs
-else
+if [ ! -f $modfuncs ]; then
   echo '// automatically generated; do not edit!' > $modfuncs
 fi
 #

@@ -3073,8 +3073,10 @@ endif
 	    fi; \
 	  fi; \
 	done 
-	@sed -i -e'/^ *\/\// d' $(DSL_WORKDIR)/fieldecs.h
 	@echo '}' >> $(DSL_WORKDIR)/solve.ac
+	@sed -e'/auxiliary / ! d' $(DSL_WORKDIR)/fieldecs.h > tmpdec
+	@sed -i -e'/^ *\/\// d' -e'/auxiliary/ d' $(DSL_WORKDIR)/fieldecs.h
+	@cat tmpdec | sed -e's/communicated //' -e's/auxiliary //' >> $(DSL_WORKDIR)/fieldecs.h; rm tmpdec
 	@sed -f $(CUDA_MAKEDIR)/solve.sed $(DSL_WORKDIR)/solve.ac > $(DSL_WORKDIR)/solve_two.ac
 	@echo '#include "steps_two.h"' >> $(DSL_WORKDIR)/solve_two.ac
 	@mv $(DSL_WORKDIR)/solve.ac $(DSL_WORKDIR)/solve_single.ac
@@ -3084,9 +3086,10 @@ endif
 ifeq ($(SHOCK),shock_highorder)
 	@sed -i -e'1 i   #include "../shock/kernels.ac"' $(DSL_WORKDIR)/steps_two.h
 	@sed -i -e'1 i   #include "../shock/kernels.ac"' $(DSL_WORKDIR)/steps_single.h
-	@sed -i -e'/twopass_solve_intermediate/ i   shock_1_divu(),\n  shock_3_smooth(),' $(DSL_WORKDIR)/steps_two.h
-	@sed -i -e'/singlepass_solve/ i   shock_1_divu(),\n  shock_3_smooth(),' $(DSL_WORKDIR)/steps_single.h
+	@sed -i -e'/twopass_solve_intermediate/ i   shock_1_divu(),\n  shock_2_smooth(),' $(DSL_WORKDIR)/steps_two.h
+	@sed -i -e'/singlepass_solve/ i   shock_1_divu(),\n   shock_2_smooth(),' $(DSL_WORKDIR)/steps_single.h
 endif
+
 #
 #	    echo FIELDNAME=$$fieldname; \
 #	@sed -e':loop' -e'N' -e'$$!b loop' -e's/\#pragma  *once//' -e's/\# *define *\([A-Z0-9_][A-Z0-9_]*\)/..\/..\/\L\1.f90 /g' -e's/\n/ /g' < $(CUDA_INCDIR)/PC_moduleflags.h >> $(CUDA_MAKEDIR)/PC_modulesources.h
