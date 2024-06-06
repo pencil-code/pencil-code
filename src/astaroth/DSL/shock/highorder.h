@@ -1,6 +1,4 @@
 // Get divergence of velocity.
-#include "../stdlib/smooth_max.h"
-
 divu_shock()
 {
     // con_bias in (0,1) 0 discards values which do not contain negative divergence
@@ -11,4 +9,3 @@ divu_shock()
     tmp = max(-divu, con_bias*divu)
     return dt_div_pow * pow(tmp,shock_div_pow)
 }
-
