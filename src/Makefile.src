@@ -497,6 +497,21 @@ ifneq ($(GPU),nogpu)
 #
   ifneq ($(findstring gpu_astaroth, $(GPU)),)
 #
+    LD_LIB_PATH_OK := $(shell (echo $(LD_LIBRARY_PATH) |& grep 'src/astaroth') )
+    ifeq ($(LD_LIB_PATH_OK),)
+      $(warning Environment variable LD_LIBRARY_PATH doesn't contain paths "src/astaroth" etc!)
+      $(info Execution of [start|run].x might fail!)
+
+      YESNO := $(shell bash -c 'read -p "Continue? (Y/N) " yesno; echo $$yesno')
+      ifeq ($(YESNO),N)
+        $(error Exit)
+      else
+        ifeq ($(YESNO),n)
+          $(error Exit)
+        endif
+      endif
+
+    endif
     ifneq ($(wildcard $(PENCIL_HOME)/src/astaroth/submodule/*),)
       #FFLAGS_GENERAL += -mcmodel=medium
       GPU_INTERFACE = gpu_astaroth_ansi.o
