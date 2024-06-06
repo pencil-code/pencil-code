@@ -1041,6 +1041,8 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out, int c
   {
     all_fields[i] = (VertexBufferHandle)i;
   }
+  acGridGetDevice()->vba.kernel_input_params.twopass_solve_final.step_num = 0;
+  acGridGetDevice()->vba.kernel_input_params.twopass_solve_intermediate.step_num = 0;
 
   //AcTaskDefinition rhs_ops[] =  {
   //    acHaloExchange(all_fields),
