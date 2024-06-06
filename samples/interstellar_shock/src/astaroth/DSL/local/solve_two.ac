@@ -1,0 +1,15 @@
+#include "../prerequisites.h"
+
+Kernel twopass_solve_intermediate(int step_num, real dt) {
+  vecwrite( UU, rk3_intermediate_vector(vecprevious(UU),  duu_dt(step_num), step_num, dt) )
+  write( RHO, rk3_intermediate(previous(RHO),  dlnrho_dt(step_num), step_num, dt) )
+  vecwrite( AA, rk3_intermediate_vector(vecprevious(AA),  daa_dt(step_num), step_num, dt) )
+  write( SS, rk3_intermediate(previous(SS),  denergy_dt(step_num), step_num, dt) )
+}
+Kernel twopass_solve_final(int step_num){
+  vecwrite( UU, rk3_final_vector(vecprevious(UU), vecvalue(UU), step_num) )
+  write( RHO, rk3_final(previous(RHO), value(RHO), step_num) )
+  vecwrite( AA, rk3_final_vector(vecprevious(AA), vecvalue(AA), step_num) )
+  write( SS, rk3_final(previous(SS), value(SS), step_num) )
+}
+#include "steps_two.h"
