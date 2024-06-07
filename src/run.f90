@@ -138,7 +138,7 @@ subroutine timeloop(f,df,p)
   use Streamlines,     only: tracers_prepare, wtracers
 !$ use OMP_lib
 !$ use General, only: signal_send, signal_wait
-!$ use, intrinsic :: iso_fortran_env
+!!$ use, intrinsic :: iso_fortran_env
 !
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension (mx,my,mz,mvar) :: df
@@ -523,7 +523,7 @@ subroutine timeloop(f,df,p)
     endif
 
   enddo Time_loop
-
+!$ lmultithread = .false.
 !$ call signal_wait(lhelper_perf, .false.)
 !$ call signal_send(lhelper_run,.false.)
 
@@ -574,7 +574,7 @@ subroutine run_start() bind(C)
 !
 !$ use OMP_lib
 !$ use, intrinsic :: iso_c_binding
-!!$ use, intrinsic :: iso_fortran_env
+!$ use, intrinsic :: iso_fortran_env
 !!$ use mt, only: wait_all_thread_pool, push_task, free_thread_pool, depend_on_all, default_task_type
 !
   implicit none
@@ -978,8 +978,13 @@ subroutine run_start() bind(C)
   it = 1          ! needed for pencil check
   suppress_pencil_check = control_file_exists("NO-PENCIL-CHECK")
   if ( ((lpencil_check .and. .not. suppress_pencil_check) .or. &
-        (.not.lpencil_check.and.lpencil_check_small)) .and. nt>0 ) &
-    call pencil_consistency_check(f,df,p)
+        (.not.lpencil_check.and.lpencil_check_small)) .and. nt>0 ) then
+    if(lgpu) then
+        call warning('run',"Pencil consistency check not supported on the GPU.    You can consider running it on a CPU-only compilation if needed")
+    else 
+        call pencil_consistency_check(f,df,p)
+    endif
+  endif
 !
 !  Globally catch eventual 'stop_it_if_any' call from single MPI ranks
 !

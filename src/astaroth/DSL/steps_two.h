@@ -1,17 +1,7 @@
-ComputeSteps AC_rhs_0(boundconds)
+ComputeSteps AC_rhs(boundconds)
 {
-        twopass_solve_intermediate(0,AC_dt),
-        twopass_solve_final(0)
-}
-ComputeSteps AC_rhs_1(boundconds)
-{
-        twopass_solve_intermediate(1,AC_dt),
-        twopass_solve_final(1)
-}
-ComputeSteps AC_rhs_2(boundconds)
-{
-        twopass_solve_intermediate(2,AC_dt),
-        twopass_solve_final(2)
+        twopass_solve_intermediate(AC_step_num,AC_dt),
+        twopass_solve_final(AC_step_num)
 }
 BoundConds boundconds{
   periodic(BOUNDARY_XYZ)

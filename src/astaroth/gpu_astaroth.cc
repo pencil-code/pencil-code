@@ -54,9 +54,7 @@ AcReal cpu_pow(AcReal const val, AcReal exponent)
 // Astaroth objects instantiation.
 static AcMesh mesh;
 //static AcMesh test_mesh;
-static AcTaskGraph *rhs_0;
-static AcTaskGraph *rhs_1;
-static AcTaskGraph *rhs_2;
+static AcTaskGraph *rhs;
 static AcTaskGraph *randomize_graph;
 static AcTaskGraph *rhs_test_graph;
 static AcTaskGraph *rhs_test_rhs_1;
@@ -462,21 +460,16 @@ extern "C" void substepGPU(int isubstep)
   //  acGridLaunchKernel(STREAM_DEFAULT, AC_BUILTIN_RESET, dims.n0, dims.n1);
   //  acGridSynchronizeStream(STREAM_ALL);
   //}
+  acDeviceSetInput(acGridGetDevice(), AC_step_num,isubstep-1);
   acGridSynchronizeStream(STREAM_ALL);
   Device dev = acGridGetDevice();
   if (isubstep == 1)
-  {
     acDeviceSetInput(acGridGetDevice(), AC_dt,dt);
-    acGridSynchronizeStream(STREAM_ALL);
-    acGridExecuteTaskGraph(rhs_0, 1);
-  }
-  if (isubstep == 2) acGridExecuteTaskGraph(rhs_1, 1);
-  if (isubstep == 3) acGridExecuteTaskGraph(rhs_2, 1);
-  if (isubstep == 1)
+  acGridExecuteTaskGraph(rhs, 1);
+  if (isubstep == 1 && ldt)
   {
-    if (ldt)
-    {
-      acGridFinalizeReduceLocal(rhs_2);
+      acGridSynchronizeStream(STREAM_ALL);
+      acGridFinalizeReduceLocal(rhs);
 #if LHYDRO
       AcReal maxadvec = acDeviceGetOutput(acGridGetDevice(), AC_maxadvec)/cdt;
 #endif
@@ -491,9 +484,9 @@ extern "C" void substepGPU(int isubstep)
 //printf("maxadvec, maxdiffus= %e %e %e \n", maxadvec, maxdiffus);
       set_dt(dt1_);
       acDeviceSetInput(acGridGetDevice(),AC_dt,dt);
-    }
   }
   acGridSynchronizeStream(STREAM_ALL);
+  //acGridSynchronizeStream(STREAM_ALL);
   // acLogFromRootProc(rank,"Done substep: %d\n",isubstep);
   // fflush(stdout);
   // int found_nan;
@@ -692,11 +685,12 @@ extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
   // acGridSynchronizeStream(STREAM_ALL);
 
   // acGridExecuteTaskGraph(rhs_test_graph,1);
-  acGridExecuteTaskGraph(rhs_0,1);
-  acGridSynchronizeStream(STREAM_ALL);
-  acGridExecuteTaskGraph(rhs_1,1);
-  acGridSynchronizeStream(STREAM_ALL);
-  acGridExecuteTaskGraph(rhs_2,1);
+  for(int i = 0; i < 3; ++i)
+  {
+  	acDeviceSetInput(acGridGetDevice(), AC_step_num, i);
+  	acGridExecuteTaskGraph(rhs,1);
+  	acGridSynchronizeStream(STREAM_ALL);
+  }
 
   acGridSynchronizeStream(STREAM_ALL);
   acDeviceLoadMesh(acGridGetDevice(), STREAM_DEFAULT, mesh_test);
@@ -772,12 +766,12 @@ extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
 
   //actual run
   for (int i=0;i<num_of_steps;i++){
-    acGridExecuteTaskGraph(rhs_0,1);
-    acGridSynchronizeStream(STREAM_ALL);
-    acGridExecuteTaskGraph(rhs_1,1);
-    acGridSynchronizeStream(STREAM_ALL);
-    acGridExecuteTaskGraph(rhs_2,1);
-    acGridSynchronizeStream(STREAM_ALL);
+    for(int i = 0; i < 3; ++i)
+    {
+    	acDeviceSetInput(acGridGetDevice(), AC_step_num, i);
+    	acGridExecuteTaskGraph(rhs,1);
+    	acGridSynchronizeStream(STREAM_ALL);
+    }
     acGridSynchronizeStream(STREAM_ALL);
     acDeviceStoreMesh(acGridGetDevice(), STREAM_DEFAULT, &mesh);
   //  acGridSynchronizeStream(STREAM_ALL);
@@ -1051,9 +1045,7 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out, int c
   //    acCompute(twopass_solve_final, all_fields)};
   //rhs_test_graph = acGridBuildTaskGraphWithIterations(rhs_ops,3);
 #include "user_taskgraphs.h"
-  rhs_0 = AC_rhs_0;
-  rhs_1 = AC_rhs_1;
-  rhs_2 = AC_rhs_2;
+  rhs = AC_rhs;
   acGridSynchronizeStream(STREAM_ALL);
   acLogFromRootProc(rank, "DONE initializeGPU\n");
   fflush(stdout);
