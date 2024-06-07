@@ -3,7 +3,7 @@
 ! Initialisation parameters for interstellar
 !
 &init_pars
-  cvsid="1b38a8bcf"
+  cvsid="0c189c0ea"
   unit_length=3.08567758e21, unit_velocity=9.778122994895071e4
   unit_density=1.6737236e-24
   xyz0=-0.130,-0.130,-0.130
@@ -36,19 +36,16 @@
   amplaa=1e-4 
 /
 &interstellar_init_pars
-  initinterstellar='single'
-  center_SN_x=0.0
-  center_SN_y=0.0
-  center_SN_z=0.0
+  initinterstellar='multiple'
+  initial_SNI=1
   lSN_scale_rad=T
   N_mass=60.0
-  rfactor_SN=2.5
+  rfactor_SN=1.5
   frac_kin=0.0
   frac_ecr=0.0
   lSN_ecr=F
   cooling_select='WSW'
   heating_select='wolfire'
-  SNII_factor=25.
 /
 &shear_init_pars
   Sshear=-25.0
