@@ -50,13 +50,13 @@
 !! adjust SN radius above rfactor_SN for diffuse ISM
   lSN_scale_rad=T
   N_mass=60.0
-  rfactor_SN=2.5
+  rfactor_SN=1.5
   lSN_autofrackin=F
   lSN_coolingmass=F
 !! override persistent variables read in from varfile
 !  lSNII=T, l_persist_overwrite_lSNII=T
 !  lSNI=T, l_persist_overwrite_lSNI=T
-!  t_next_SNI=9e-4, l_persist_overwrite_tSNI=T
+  t_next_SNI=1e-8, l_persist_overwrite_tSNI=T
 !  t_next_SNII=9e-4, l_persist_overwrite_tSNII=T
 !! rest random number after crash for new SN site
 !  lreset_ism_seed=T

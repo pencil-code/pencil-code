@@ -36,13 +36,11 @@
   amplaa=1e-4 
 /
 &interstellar_init_pars
-  initinterstellar='single'
-  center_SN_x=0.0
-  center_SN_y=0.0
-  center_SN_z=0.0
+  initinterstellar='multiple'
+  initial_SNI=1
   lSN_scale_rad=T
   N_mass=60.0
-  rfactor_SN=2.5
+  rfactor_SN=1.5
   frac_kin=0.0
   frac_ecr=0.0
   lSN_ecr=F
