@@ -28,6 +28,12 @@
 #define EXTERN
 #define FINT int
 
+#if DOUBLE_PRECISION
+  #define REAL_MAX DBL_MAX
+#else
+  #define REAL_MAX FLT_MAX
+#endif
+
 __thread int tp_int;
 typedef void (*rangefunc)(const int a, const int b);
 
@@ -1044,7 +1050,9 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out, int c
   //    acCompute(twopass_solve_intermediate, all_fields),
   //    acCompute(twopass_solve_final, all_fields)};
   //rhs_test_graph = acGridBuildTaskGraphWithIterations(rhs_ops,3);
+
 #include "user_taskgraphs.h"
+
   rhs = AC_rhs;
   acGridSynchronizeStream(STREAM_ALL);
   acLogFromRootProc(rank, "DONE initializeGPU\n");

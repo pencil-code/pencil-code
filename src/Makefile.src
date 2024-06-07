@@ -2951,11 +2951,11 @@ start.x: start.o | $(SPECIAL_DEPS)
 run.o: $(run) Makefile.local
 run.x: run.o | $(SPECIAL_DEPS) $(LIBGPU)
 	$(LD) $(run) run.o $(LDFLAGS) $(LDFLAGS_MAIN) $(LDFLAGS_LIB) $(LD_MPI) $(LD_FOURIER) $(LIBSIG) $(LD_GSL) -o run.x
-#needs LIBGPU as prerequisite, this in turn needs a rule
+#
 $(LIBGPU): $(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/Makefile.vendor
 #$(LIBGPU): $(GPU_DEPS)
 	cd astaroth && make
-
+#
 special_preps:
 ifeq ($(SPECIAL_MULT),1)
 	@sed -e '/module  *procedure/ ! s/^\( *module  *\)[a-zA-Z0-9_]* */\1Special/' \

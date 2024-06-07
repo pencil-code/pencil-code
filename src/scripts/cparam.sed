@@ -4,7 +4,7 @@ s/.*/\L&/g
 #s/huge *(0)/std::numeric_limits<FINT>::max()/g 
 s/huge *(0)/INT_MAX/g 
 s/huge *(int.*)/INT_MAX/g 
-s/huge *(0\.0*)/FLT_MAX/g 
+s/huge *(0\.0*)/REAL_MAX/g 
 s/huge *(0\.*0*d0)/DBL_MAX/g 
 s/^\(.*rkind8.*\)huge *( *[a-zA-Z0-9_]* *)/\1HUGE_VAL/g
 s/\([0-9.]\) *[dD] *\([-0-9]\)/\1E\2/g
