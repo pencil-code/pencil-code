@@ -28,5 +28,5 @@
            + rho1 * cross(jj,bb)
 #endif
 #if LGRAVITY
-           + gravz_zpencil(vertexIdx.z-NGHOST)
+           + gravz_zpencil[vertexIdx.z-NGHOST]
 #endif
