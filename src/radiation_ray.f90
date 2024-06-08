@@ -95,7 +95,7 @@ module Radiation
   real :: TT_bump=0.0, sigma_bump=1.0, ampl_bump=0.0
   real :: z_cutoff=impossible,cool_wid=impossible, qrad_max=0.0,  &
           zclip_dwn=-max_real,zclip_up=max_real,kappa_ceiling=max_real
-  real :: Qderfact
+  real :: Qderfact, Qfact, Q2fact
 !
   integer :: radx=0, rady=0, radz=1, rad2max=1, nnu=1
   integer, dimension (maxdir,3) :: dir
@@ -123,7 +123,8 @@ module Radiation
   logical :: lcutoff_opticallythin=.false.,lcutoff_zconst=.false.
   logical :: lcdtrad_old=.true.
   logical :: ldoppler_rad=.false., ldoppler_rad_includeQ=.false.
-  logical :: ldoppler_rad_includeQder=.false.
+  logical :: ldoppler_rad_includeQder=.false., ldoppler_rad_includeQfact=.true.
+  logical :: ldoppler_rad_includeQ2fact=.true.
 !
   character (len=2*bclen+1), dimension(3) :: bc_rad=(/'0:0','0:0','S:0'/)
   character (len=bclen), dimension(3) :: bc_rad1, bc_rad2
@@ -160,7 +161,8 @@ module Radiation
       ref_rho_opa, ref_temp_opa, knee_temp_opa, width_temp_opa, &
       lread_source_function, kapparho_floor,lcutoff_opticallythin, &
       lcutoff_zconst,z_cutoff,cool_wid, TT_bump, sigma_bump, ampl_bump, &
-      kappa_ceiling, ldoppler_rad, ldoppler_rad_includeQ, ldoppler_rad_includeQder
+      kappa_ceiling, ldoppler_rad, ldoppler_rad_includeQ, &
+      ldoppler_rad_includeQder, ldoppler_rad_includeQfact, ldoppler_rad_includeQ2fact
 !
   namelist /radiation_run_pars/ &
       radx, rady, radz, rad2max, bc_rad, lrad_debug, kapparho_cst, &
@@ -183,7 +185,8 @@ module Radiation
       lread_source_function, kapparho_floor, lcutoff_opticallythin, &
       lcutoff_zconst,z_cutoff,cool_wid,lno_rad_heating,qrad_max,zclip_dwn, &
       zclip_up, TT_bump, sigma_bump, ampl_bump, kappa_ceiling, &
-      ldoppler_rad, ldoppler_rad_includeQ, ldoppler_rad_includeQder
+      ldoppler_rad, ldoppler_rad_includeQ, &
+      ldoppler_rad_includeQder, ldoppler_rad_includeQfact, ldoppler_rad_includeQ2fact
 !
   real :: gamma
   real, dimension(nx) :: dt1_rad, diffus_chi
@@ -469,6 +472,22 @@ module Radiation
         Qderfact=1.
       else
         Qderfact=0.
+      endif
+!
+!  Switch second factor for Doppler term
+!
+      if (ldoppler_rad_includeQfact) then
+        Qfact=1.
+      else
+        Qfact=0.
+      endif
+!
+!  Switch third factor for Doppler term
+!
+      if (ldoppler_rad_includeQ2fact) then
+        Q2fact=1.
+      else
+        Q2fact=0.
       endif
 !
       call get_gamma_etc(gamma)
@@ -827,6 +846,7 @@ module Radiation
       real :: Qrad1st,dQdtau_m,dQdtau_p
       real :: dtau_m,dtau_p,emdtau1,emdtau2,emdtau
       real :: u_dot_n, u_dot_n_p, u_dot_n_m, u_dot_n_1st, dudtau_p, dudtau_m
+      real :: hemisign
 !
 !  Identifier.
 !
@@ -852,20 +872,25 @@ module Radiation
       do m=mmstart,mmstop,msign
       do l=llstart,llstop,lsign
         dtau_m=sqrt(f(l-lrad,m-mrad,n-nrad,ikapparho)* &
-                    f(l,m,n,ikapparho))*0.5*(dlength(n-nrad)+dlength(n))
-        dtau_p=sqrt(f(l,m,n,ikapparho)* &
-                    f(l+lrad,m+mrad,n+nrad,ikapparho))* &
+                    f(l,m,n,ikapparho))* &
+                    0.5*(dlength(n-nrad)+dlength(n))
+        dtau_p=sqrt(f(l+lrad,m+mrad,n+nrad,ikapparho)* &
+                    f(l,m,n,ikapparho))* &
                     0.5*(dlength(n)+dlength(n+nrad))
 !
 !  Avoid divisions by zero when the optical depth is such.
 !
         dtau_m = max(dtau_m,epsi)
         dtau_p = max(dtau_p,epsi)
+!print*,'AXEL: dtau_m, dtau_p=',dtau_m, dtau_p
 !
         dSdtau_m=(Srad(l,m,n)-Srad(l-lrad,m-mrad,n-nrad))/dtau_m
         dSdtau_p=(Srad(l+lrad,m+mrad,n+nrad)-Srad(l,m,n))/dtau_p
 !
 !  Compute terms for intrinsic calculation
+!  Note that, compared to Eq.(A.9), the 2 in dtau/2 gets canceled
+!  against the 2 in the division by dtaubar=(..+..)/2.
+!  p and m refers to +1/2 or -1/2.
 !
         Srad1st=(dSdtau_p*dtau_m+dSdtau_m*dtau_p)/(dtau_m+dtau_p)
         Srad2nd=2*(dSdtau_p-dSdtau_m)/(dtau_m+dtau_p)
@@ -878,14 +903,22 @@ module Radiation
           emdtau=1-emdtau1
           emdtau2=-dtau_m**2*(0.5-dtau_m/3)
         else
+!AB 2-jun-24 why only -dtau_m and not -dtau_p?
           emdtau=exp(-dtau_m)
           emdtau1=1-emdtau
           emdtau2=emdtau*(1+dtau_m)-1
         endif
         tau(l,m,n)=tau(l-lrad,m-mrad,n-nrad)+dtau_m
+!
+!  -(1-emdtau)*dS/dtau -[emdtau*(1+dtau_m)-1]*d2S/dtau2
+!  In the code, we talk about a, b, and c, for Qn^up/dn, where
+!  -(1-emdtau) = -b_{n+1/2} and -[emdtau*(1+dtau_m)-1] = +c_{n+1/2}.
+!  This is based on either Qn^up or Qn^dn.
+!  Srad1st = ??
+!
         Qrad(l,m,n)=Qrad(l-lrad,m-mrad,n-nrad)*emdtau-Srad1st*emdtau1-Srad2nd*emdtau2
 !
-!  Q derivative term
+!  Q derivative term (included in order to deal with Doppler terms)
 !
         dQdtau_m=(Qrad(l,m,n)-Qrad(l-lrad,m-mrad,n-nrad))/dtau_m
         dQdtau_p=(Qrad(l+lrad,m+mrad,n+nrad)-Qrad(l,m,n))/dtau_p
@@ -900,6 +933,25 @@ module Radiation
           u_dot_n=f(l,m,n,iux)*unit_vec(idir,1) &
                  +f(l,m,n,iuy)*unit_vec(idir,2) &
                  +f(l,m,n,iuz)*unit_vec(idir,3)
+!
+!  Different signs for different hemispheres
+!  If nz /= 0, then the hemisphere is given by the sign of nz.
+!  In all other cases, nz=0, so we are in the xy plane.
+!  Then, again, if ny /= 0, then the hemisphere is given by the sign of ny.
+!  Finally, if ny=0, then the hemisphere is given by the sign of nx.
+!
+          if (unit_vec(idir,3)/=0.) then
+            hemisign=sign(1.,unit_vec(idir,3))
+          else
+            if (unit_vec(idir,2)/=0.) then
+              hemisign=sign(1.,unit_vec(idir,2))
+            else
+              hemisign=sign(1.,unit_vec(idir,1))
+            endif
+          endif
+!
+!  Two versions of u.n needed for derivative of u.n.
+!
           u_dot_n_p=f(l+lrad,m+mrad,n+nrad,iux)*unit_vec(idir,1) &
                    +f(l+lrad,m+mrad,n+nrad,iuy)*unit_vec(idir,2) &
                    +f(l+lrad,m+mrad,n+nrad,iuz)*unit_vec(idir,3)
@@ -908,15 +960,30 @@ module Radiation
                    +f(l-lrad,m-mrad,n-nrad,iuz)*unit_vec(idir,3)
           dudtau_m=(u_dot_n-u_dot_n_m)/dtau_m
           dudtau_p=(u_dot_n_p-u_dot_n)/dtau_p
+!
+!  note that dtau_m and dtau_p are both positive (but in general different from each other)
+!
           u_dot_n_1st=(dudtau_p*dtau_m+dudtau_m*dtau_p)/(dtau_m+dtau_p)
 !
 !  compute extra terms: 4*S*u.n and its derivative
 !
           if (ldoppler_rad_includeQ) then
-            Qrad(l,m,n)=Qrad(l,m,n)+emdtau1*u_dot_n*(4.*Srad(l,m,n)+Qrad(l,m,n)) &
-                   +4.*emdtau2*(u_dot_n*Srad1st+u_dot_n_1st*Srad(l,m,n)) &
+!if (l==l1+1.and.m==m1+1) print*,'AXEL: idir,u_dot_n=',idir,u_dot_n,hemisign
+            Qrad(l,m,n)=Qrad(l,m,n) &
+                     !+emdtau1* u_dot_n*(4.*Srad(l,m,n)+Qrad(l,m,n))*Q2fact &
+                     !+emdtau1*(u_dot_n*4.*Srad(l,m,n)-u_dot_n0*Qrad(l,m,n))*Q2fact &
+!
+                      +emdtau1* u_dot_n*(4.*Srad(l,m,n)+hemisign*Qrad(l,m,n))*Q2fact &
+                   +4.*emdtau2*(u_dot_n*Srad1st+u_dot_n_1st*Srad(l,m,n))*Qfact &
                    +   emdtau2*(u_dot_n*Qrad1st+u_dot_n_1st*Qrad(l,m,n))*Qderfact
+!
+       !              +hemisign*emdtau1* u_dot_n*(4.*Srad(l,m,n)+Qrad(l,m,n))*Q2fact &
+       !           +4.*emdtau2*(u_dot_n*Srad1st+u_dot_n_1st*Srad(l,m,n))*Qfact &
+       !           +   emdtau2*(u_dot_n*Qrad1st+u_dot_n_1st*Qrad(l,m,n))*Qderfact
           else
+!
+!  Test version without Q. (Unclear why we looked into this.)
+!
             Qrad(l,m,n)=Qrad(l,m,n)+emdtau1*u_dot_n*4.*Srad(l,m,n) &
                    +4.*emdtau2*(u_dot_n*Srad1st+u_dot_n_1st*Srad(l,m,n))
           endif
@@ -1341,6 +1408,8 @@ module Radiation
 !  upstream boundary of this processor.
 !
         Qrad0(llstart-lrad,m1:m2,n1:n2)=Qrad_tot_yz/emtau1_tot_yz
+!print*,'AXEL: Qrad0(llstart-lrad,m1:m2,n1:n2), Qrad_tot_yz, emtau1_tot_yz=', &
+!              Qrad0(llstart-lrad,m1:m2,n1:n2), Qrad_tot_yz, emtau1_tot_yz
       endif
 !
 !  y-direction
@@ -1427,9 +1496,15 @@ module Radiation
       do l=llstart,llstop,lsign
         Qrad0(l,m,n)=Qrad0(l-lrad,m-mrad,n-nrad)
         Qrad(l,m,n)=Qrad(l,m,n)+Qrad0(l,m,n)*exp(-tau(l,m,n))
+!print*,'AXEL: exp(-tau(l,m,n))=',exp(-tau(l,m,n))
+!print*,'AXEL: Qrad0(l,m,n)=',Qrad0(l,m,n)
+!print*,'AXEL: Qrad(l,m,n)=',Qrad(l,m,n)
       enddo
       enddo
       enddo
+!print*,'AXEL: exp(-tau(:,4,4))=',exp(-tau(:,4,4))
+!print*,'AXEL: Qrad0(:,4,4)=',Qrad0(:,4,4)
+!print*,'AXEL: Qrad(:,4,4)=',Qrad(:,4,4)
 !
 !  Calculate surface intensity for upward rays.
 !
@@ -1689,6 +1764,7 @@ module Radiation
 !  allow opacities to be non-gray. This implies that Frad is not actually
 !  the radiative flux, but the radiative flux multiplied by kappa*rho.
 !  The auxiliary array is therefore now called KR_Frad.
+!  This is the first term.
 !
       if (lradpressure) then
         do j=1,3
@@ -1696,11 +1772,17 @@ module Radiation
           radpressure(:,j)=scalefactor_radpressure*p%rho1*f(l1:l2,m,n,k)
         enddo
         df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+radpressure/c_light
+        if (ip<11) then
+          if (m==m1.and.n==n1) then
+!           print*,'AXEL: 1st term=',radpressure/c_light
+          endif
+        endif
 !
 !  perhaps allow here for a switch, do here (chi/c)*(-v*rhoR)
 !
 !  ramkishor: radiation energy density is 4*pi/c times Srad. That is why, there is a
 !  4*pi/c_light factor in the expression below.
+!  These are the second and third terms.
 !
         if (ldoppler_rad) then
           do j=1,3
@@ -1712,9 +1794,10 @@ module Radiation
             if (m==m1.and.n==n1) then
               alpha=scalefactor_radpressure1*p%rho1*f(l1:l2,m,n,ikapparho)*4*pi/c_light &
                 *Srad(l1:l2,m,n)/c_light
-              print*,'AXEL: Srad=',Srad(l1:l2,m,n)
-              print*,'AXEL: kappa=',p%rho1*f(l1:l2,m,n,ikapparho)
-              print*,'AXEL: alpha=',alpha
+!             print*,'AXEL: Srad=',Srad(l1:l2,m,n)
+!             print*,'AXEL: kappa=',p%rho1*f(l1:l2,m,n,ikapparho)
+!             print*,'AXEL: alpha=',alpha
+!             print*,'AXEL: 2nd term=',radpressure/c_light
             endif
           endif
           df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+radpressure/c_light
@@ -1733,6 +1816,11 @@ module Radiation
             enddo
           enddo
           df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+radpressure/c_light
+          if (ip<11) then
+            if (m==m1.and.n==n1) then
+!             print*,'AXEL: 3rd term=',radpressure/c_light
+            endif
+          endif
         endif
 !
       endif
@@ -1952,8 +2040,14 @@ module Radiation
         do m=m1-rady,m2+rady
           call eoscalc(f,mx,lnrho=lnrho)
           f(:,m,n,ikapparho)=kapparho_floor+kappa_cst(inu)*exp(lnrho)
+!print*,'AXEL m,n,kappa_cst(inu),exp(lnrho)=',m,n,kappa_cst(inu),exp(lnrho)
         enddo
         enddo
+!print*,'AXEL lnrho=',lnrho
+!print*,'AXEL kapparho_floor=',kapparho_floor
+!print*,'AXEL kappa_cst(inu)=',inu,kappa_cst(inu),kappa_cst(inu)
+!print*,'AXEL f(:,4,4,ikapparho)=',inu,kappa_cst(inu),f(:,4,4,ikapparho)
+!print*,'AXEL f(:,4,4,ilnrho)=',inu,kappa_cst(inu),f(:,4,4,ilnrho)
 !
       case ('kapparho_cst')
         do n=n1-radz,n2+radz
