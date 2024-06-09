@@ -28,7 +28,7 @@ import os
 from ..math import dot, dot2, cross
 from ..math.derivatives import div, curl, curl2, grad, del2, del6
 import numpy as np
-from scipy.ndimage.filters import gaussian_filter1d, gaussian_filter
+from scipy.ndimage import gaussian_filter1d, gaussian_filter
 from pencil.ism_dyn import is_vector
 
 
