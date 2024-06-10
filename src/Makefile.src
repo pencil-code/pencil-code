@@ -530,7 +530,7 @@ ifneq ($(GPU),nogpu)
       #good that this is still here
       LDFLAGS_LIB = -L astaroth -L astaroth/submodule/build/src/core -L astaroth/submodule/build/src/core/kernels -lastaroth_core -lkernels -l$(LIBGPU_NAME)
       ifneq ($(IS_CRAY),)
-        LDFLAGS_LIB +=	-L /opt/cray/pe/lib64 -lmpi_gtl_hsa
+        LDFLAGS_LIB += -L /opt/cray/pe/lib64 -lmpi_gtl_hsa
       endif
 #      override LDFLAGS += -l:libmt-fortran.a -l:libmt.a -lstdc++
 #      override LDFLAGS_LIB += -L astaroth/scheduler-build/src
