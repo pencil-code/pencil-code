@@ -751,7 +751,7 @@ module Interstellar
           heatingfunction_scale = heatingfunction_scalefactor
 !
       if (laverage_SNI_heating) &
-          heat_SNI_profile = average_SNI_heating *exp(-(2.0*z(n1:n2)/h_SNI )**2)
+          heat_SNI_profile  = average_SNI_heating *exp(-(2.0*z(n1:n2)/h_SNI )**2)
       if (laverage_SNII_heating) &
           heat_SNII_profile = average_SNII_heating*exp(-(2.0*z(n1:n2)/h_SNII)**2)
 
@@ -1920,8 +1920,10 @@ module Interstellar
 !  initial condition is in equilibrium prepared in 1D
 !  Division by density to balance LHS of entropy equation
 !
-      if (laverage_SNI_heating)  heat=heat+heat_SNI_profile (n-nghost)*heatingfunction_scale(SNI)
-      if (laverage_SNII_heating) heat=heat+heat_SNII_profile(n-nghost)*heatingfunction_scale(SNII)
+      if (lSNI.or.lSNII) then
+        if (laverage_SNI_heating)  heat=heat+heat_SNI_profile (n-nghost)*heatingfunction_scale(SNI)
+        if (laverage_SNII_heating) heat=heat+heat_SNII_profile(n-nghost)*heatingfunction_scale(SNII)
+      endif
 !
 !  Prevent unresolved heating/cooling in shocks. This is deprecated as
 !  use of RKF timestep control or the mor coarse RHS timestep control
