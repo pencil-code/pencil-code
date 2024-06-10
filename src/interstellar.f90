@@ -3175,8 +3175,8 @@ mn_loop:do n=n1,n2
 !
 !  With current SN scheme, we need rho at the SN location.
 !
+      if (lgpu) call copy_farray_from_GPU(f)
       if (iproc==SNR%indx%iproc) then
-        if (lgpu) call copy_farray_from_GPU(f)
         !!$omp target if(loffload) !map(tofrom: SNR) has_device_addr(f)  ! globals: irho, ilnrho  !?single
         if (ldensity_nolog) then
           SNR%site%lnrho=log(f(SNR%indx%l,SNR%indx%m,SNR%indx%n,irho))
@@ -3584,6 +3584,8 @@ mnloop:do n=n1,n2
 !  Broadcast maxlnTT from remnant to all processors so all take the same path
 !  after these checks.
 !
+if (lroot) print*, "SNR%indx%iproc:",SNR%indx%iproc
+print*,"Fred was here, explode_SN: iproc, ierr, exp(maxlnTT)/TT_SN_max",iproc, ierr, exp(maxlnTT)/TT_SN_max
       if (lSN_eth.or.lSN_coolingmass) then
         mmpi=maxlnTT
         call mpiallreduce_max(mmpi,maxlnTT)
@@ -3591,6 +3593,7 @@ mnloop:do n=n1,n2
       else
         maxTT=cloud_TT
       endif
+print*,"Fred was here, after MPI explode_SN: iproc, exp(maxlnTT)/TT_SN_max",iproc, exp(maxlnTT)/TT_SN_max
       if (lSN_eth.and..not.lSN_coolingmass) then
         if (present(ierr)) then
           mpiierr=ierr
