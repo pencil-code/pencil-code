@@ -1,4 +1,5 @@
 rho1 = 0.
+lnrho = 0.
 glnrho = real3(0.,0.,0.)
 if (ldensity_nolog) {
         rho1 = 1/value(RHO)

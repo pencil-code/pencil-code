@@ -12,8 +12,6 @@ if (ldiff_shock) {
               call dot_mn(p%gshock,p%grho,tmp)
               rhs =  exp(-value(LNRHO)) * diffrho_shock * (value(SHOCK) * laplace(exp(LNRHO)) + dot(gradient(SHOCK),glnrho))
   	}else
-              fdiff = fdiff + p%rho1 * diffrho_shock * (p%shock * p%del2rho + tmp)
-  	  else
   */
               rhs += diffrho_shock * (value(SHOCK) * (laplace(LNRHO) + norm2(glnrho)) + dot(gradient(SHOCK),glnrho))
   
