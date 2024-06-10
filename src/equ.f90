@@ -167,7 +167,7 @@ module Equ
 !  The user must have set crash_file_dtmin_factor>0.0 in &run_pars for
 !  this to be done.
 !
-      if(.not. lgpu) then
+!      if(.not. lgpu) then
         if (crash_file_dtmin_factor > 0.0) call output_crash_files(f)
 !
 !  For   debugging purposes impose minimum or maximum value on certain variables.
@@ -332,7 +332,7 @@ module Equ
 !  are   not communicated, and in this subroutine also ghost zones are calculated.
 !
         if (lchemistry .and. ldensity) call calc_for_chem_mixture(f)
-      endif
+!      endif
 !
       call timing('pde','after "after_boundary" calls')
 !

@@ -8071,7 +8071,7 @@ module Energy
 
     use Syscalls, only: copy_addr
 
-    integer, parameter :: n_pars=12
+    integer, parameter :: n_pars=13
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call copy_addr(chi,p_par(1))
@@ -8086,6 +8086,7 @@ module Energy
     if (allocated(dchit_prof_stored)) call copy_addr(dchit_prof_stored,p_par(10)) ! (nz)
     call copy_addr(lheatc_hyper3ss,p_par(11)) ! int
     call copy_addr(lheatc_shock,p_par(12)) ! int
+    call copy_addr(chi_shock,p_par(13))
 
     endsubroutine pushpars2c
 !***********************************************************************

@@ -26,6 +26,8 @@ output real AC_maxchi
   #include "../forcing/pcstyleforcing.h"
 #endif
 #ifdef LDENSITY
+  int AC_ldensity_nolog
   #define LNRHO RHO
+  #define ldensity_nolog AC_ldensity_nolog
 #endif
 #include "equations.h"

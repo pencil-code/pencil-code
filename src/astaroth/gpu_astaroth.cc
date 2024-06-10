@@ -958,7 +958,10 @@ void setupConfig(AcMeshInfo &config)
 
   // Enter physics related parameters in config.
   #include "PC_modulepars.h"
-
+  #if LDENSITY
+    config.int_params[AC_ldensity_nolog] = 1;//ldensity_nolog;
+    //printf("ldensity_nolog is %d \n",config.int_params[AC_ldensity_nolog]);//ldensity_nolog);
+  #endif
   Device dev = acGridGetDevice();
 #if LHYDRO
   //dev->output.real_outputs[AC_maxadvec]=0.;
@@ -1077,8 +1080,8 @@ extern "C" void copyFarray(AcReal* f)
   mesh_to_copy.info = mesh.info;
 
   acGridSynchronizeStream(STREAM_ALL);
-  acDeviceStoreMesh(acGridGetDevice(), STREAM_DEFAULT, &mesh_to_copy);
-  //acDeviceStoreMesh(acGridGetDevice(), STREAM_DEFAULT, &mesh);
+  //acDeviceStoreMesh(acGridGetDevice(), STREAM_DEFAULT, &mesh_to_copy);
+  acDeviceStoreMesh(acGridGetDevice(), STREAM_DEFAULT, &mesh);
   acGridSynchronizeStream(STREAM_ALL);
 }
 /***********************************************************************************************/

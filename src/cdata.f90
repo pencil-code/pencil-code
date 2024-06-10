@@ -27,8 +27,33 @@ module Cdata
   integer, dimension(2) :: mexts=(/-1,-1/)
   integer, dimension(:), allocatable :: nphis
   real, dimension(:), allocatable :: nphis1, nphis2
+  real(KIND=rkind8) :: t=0., toutoff=0.
+  real :: tslice, eps_rkf=1e-5, eps_stiff=1e-6, eps_rkf0=0.
+  real :: dsound=0., tsound=0., soundeps=1.e-4
+!
+!  Units (need to be in real(KIND=rkind8)).
+!
+  character (len=3) :: unit_system='cgs'
+  logical :: lfix_unit_std=.false.
+  real(KIND=rkind8) :: unit_length=impossible,unit_velocity=impossible
+  real(KIND=rkind8) :: unit_density=impossible,unit_temperature=impossible
+  real(KIND=rkind8) :: unit_magnetic=impossible
+!
+!  Derived units
+!
+  real(KIND=rkind8) :: unit_mass,unit_energy,unit_time,unit_flux
+  real(KIND=rkind8) :: k_B,m_u,m_p,m_e,m_H,m_He,eV, &
+                      chiH,chiH_,sigmaH_,sigmaSB,kappa_es
+  real(KIND=rkind8) :: c_light=impossible,G_Newton=impossible,hbar=impossible
+!
+!  Derived units
+!
+  real(KIND=rkind8) :: sigmaSB_set=1., c_light_set=1., cp_set=1.
+  real(KIND=rkind8) :: k_B_set=1., m_u_set=1.
   integer, dimension(:,:), allocatable :: nexts
   integer, dimension(:,:,:), allocatable :: ninds
+  integer, target :: m,n
+  logical :: lfirstpoint=.false.
 !
 !  Cartesian coordinate system.
 !
@@ -188,10 +213,6 @@ module Cdata
   integer, parameter :: num_after_timestep=5
   integer, dimension(2,2*num_after_timestep) :: updated_var_ranges=0
   integer :: ighosts_updated=-1
-!END C BINDING
-  integer, target :: m,n
-  real(KIND=rkind8) :: t=0., toutoff=0.
-  real :: tslice, eps_rkf=1e-5, eps_stiff=1e-6, eps_rkf0=0.
 !
 !  Box dimensions.
 !
@@ -208,7 +229,6 @@ module Cdata
   real, dimension (5) :: alpha_ts=0.0,beta_ts=0.0,dt_beta_ts=1.0
   logical :: lfractional_tstep_advance=.false.
   logical :: lfractional_tstep_negative=.true.
-  logical :: lfirstpoint=.false.
   logical :: lmaxadvec_sum=.false.,old_cdtv=.false.,leps_fixed=.true.
   logical :: lmaximal_cdtv=.false., lmaximal_cdt=.false.
   character (len=20), dimension(mvar) :: timestep_scaling='cons_frac_err'
@@ -231,7 +251,6 @@ module Cdata
   character (len=fmtlen) :: fmt_avgs='e14.5e3'
   logical :: lsnap=.false., lsnap_down=.false., lspec=.false., lspec_start=.false., lspec_at_tplusdt=.false.
   real :: dsnap=100., dsnap_down=0., d1davg=impossible, d2davg=100., dvid=0., dspec=impossible
-  real :: dsound=0., tsound=0., soundeps=1.e-4
   real :: dtracers=0., dfixed_points=0.
   real :: crash_file_dtmin_factor=-1.0
   integer :: farray_smooth_width=6
@@ -285,26 +304,6 @@ module Cdata
 !
   integer :: ip=14
 !
-!  Units (need to be in real(KIND=rkind8)).
-!
-  character (len=3) :: unit_system='cgs'
-  logical :: lfix_unit_std=.false.
-  real(KIND=rkind8) :: unit_length=impossible,unit_velocity=impossible
-  real(KIND=rkind8) :: unit_density=impossible,unit_temperature=impossible
-  real(KIND=rkind8) :: unit_magnetic=impossible
-!
-!  Derived units
-!
-  real(KIND=rkind8) :: unit_mass,unit_energy,unit_time,unit_flux
-  real(KIND=rkind8) :: k_B,m_u,m_p,m_e,m_H,m_He,eV, &
-                      chiH,chiH_,sigmaH_,sigmaSB,kappa_es
-  real(KIND=rkind8) :: c_light=impossible,G_Newton=impossible,hbar=impossible
-!
-!  Derived units
-!
-  real(KIND=rkind8) :: sigmaSB_set=1., c_light_set=1., cp_set=1.
-  real(KIND=rkind8) :: k_B_set=1., m_u_set=1.
-!
 !  Rotation and shear parameters.
 !
   real :: Omega=0.0, theta=0.0, phi=0.0, qshear=0.0, Sshear=0.0, deltay=0.0
@@ -352,6 +351,7 @@ module Cdata
   logical :: lghostfold_usebspline = .false.
   logical :: lcooling_ss_mz = .false.
   logical :: lshock_heat = .true.
+!END C BINDING
 !
 !  Type counters.
 !
