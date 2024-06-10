@@ -3,7 +3,7 @@
 ! Initialisation parameters for interstellar
 !
 &init_pars
-  cvsid="0c189c0ea"
+  cvsid="8a1dc9355"
   unit_length=3.08567758e21, unit_velocity=9.778122994895071e4
   unit_density=1.6737236e-24
   xyz0=-0.130,-0.130,-0.130
@@ -38,9 +38,10 @@
 &interstellar_init_pars
   initinterstellar='multiple'
   initial_SNI=1
+  luniform_zdist_SNI=T
   lSN_scale_rad=T
   N_mass=60.0
-  rfactor_SN=1.5
+  rfactor_SN=2.5
   frac_kin=0.0
   frac_ecr=0.0
   lSN_ecr=F
