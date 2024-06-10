@@ -1,11 +1,13 @@
 rhs = 0.
 rho1 = 0.
 lnrho = 0.
+grho = real3(0.,0.,0.)
 glnrho = real3(0.,0.,0.)
 if (ldensity_nolog){
     lnrho = log(value(RHO))
     rho1 =  1./value(RHO)
     glnrho = gradient(RHO)/value(RHO)
+    grho = gradient(RHO)
 }
 else
 {
