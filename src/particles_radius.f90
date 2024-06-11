@@ -53,6 +53,7 @@ module Particles_radius
   logical :: lfixed_particles_radius=.false.
   logical :: ltauascalar = .false., ldust_condensation=.false.
   logical :: ldust_accretion = .false., lreinitialize_ap=.false.
+  logical :: lfree_molecule=.false.
   character(len=labellen), dimension(ninit) :: initap='nothing'
   character(len=labellen) :: condensation_coefficient_type='constant'
 !
@@ -82,7 +83,7 @@ module Particles_radius
       ltauascalar, modified_vapor_diffusivity, ldt_evaporation, &
       ldt_condensation, ldt_condensation_off, &
       ldust_condensation, xi_accretion, ldust_accretion, &
-      tstart_condensation_par
+      tstart_condensation_par, lfree_molecule
 !
   integer :: idiag_apm=0, idiag_ap2m=0, idiag_ap3m=0,idiag_apmin=0, idiag_apmax=0
   integer :: idiag_dvp12m=0, idiag_dtsweepp=0, idiag_npswarmm=0
@@ -799,6 +800,8 @@ module Particles_radius
               endif
             else
 !                    
+!  Condensation options
+!                    
               if (lcondensation_simplified) then
                 if (ldust_accretion) then
                   dapdt = xi_accretion*p%rho(ix)/rho0
@@ -807,7 +810,11 @@ module Particles_radius
 !                    dapdt = dapdt + xi_accretion*(1.- ap3m)
 !                  endif
                 else
-                  dapdt = GS_condensation/fp(k,iap)
+                  if (lfree_molecule) then
+                    dapdt = GS_condensation
+                  else
+                    dapdt = GS_condensation/fp(k,iap)
+                  endif
                 endif
               elseif (lascalar) then
                 if (ltauascalar) dapdt = G_condensation*f(ix,m,n,iacc)/fp(k,iap)
@@ -838,6 +845,7 @@ module Particles_radius
             endif
 !
             dfp(k,iap) = dfp(k,iap)+dapdt
+if (ip<10 .and. k==1) print*,'AXEL: t,fp(k,iap)=',t,fp(k,iap)
 !
 !  Vapor monomers are added to the gas or removed from the gas.
 !
