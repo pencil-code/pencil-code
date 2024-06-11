@@ -1216,7 +1216,7 @@ module Chemistry
         if (lH2O) print*, 'H2O :',  init_H2O, final_massfrac_H2O
         if (lCO2)  print*, 'CO2 :', 0., final_massfrac_CO2
         if (lSIO) print*, 'SiO :',  init_SIO, 0.
-        if (lSIO2) print*, 'SIO2 :',  init_SIO2, final_massfrac_SIO2
+        if (lSIO2) print*, 'SiO2 :',  init_SIO2, final_massfrac_SIO2
      endif
 !
 !  Initialize temperature and species
@@ -1360,7 +1360,7 @@ module Chemistry
             f(i,j,k,ichemspec) = f(i,j,k,ichemspec)/sum(f(i,j,k,ichemspec))
           enddo
         enddo
-      enddo
+     enddo
 !
     endsubroutine flame_front
 !***********************************************************************
@@ -5299,10 +5299,10 @@ module Chemistry
             StartInd=verify(ChemInpLine(StopInd:),' ')+StopInd-1
             StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
             read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)') YY_k
-            if (lroot) print*, ' volume fraction, %,    ', YY_k, &
+            if (lroot) print*, ' mass fraction, %,    ', YY_k, &
                 species_constants(ind_chem,imass)
             if (species_constants(ind_chem,imass)>0.) then
-             air_mass=air_mass+YY_k*0.01/species_constants(ind_chem,imass)
+             air_mass=air_mass+YY_k/species_constants(ind_chem,imass)
             endif
 
             if (StartInd==80) exit
@@ -5353,7 +5353,7 @@ module Chemistry
           endif
           if (nxgrid>1) f(:,:,:,iux)=f(:,:,:,iux)+init_ux
         endif
-      endif
+     endif
 
       if (init_from_file) then
         if (lroot) print*, 'Velocity field read from file, initialization' // &
