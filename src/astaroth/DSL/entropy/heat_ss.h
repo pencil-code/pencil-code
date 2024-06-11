@@ -27,10 +27,10 @@ glnrho = real3(0.,0.,0.)
 #endif
 
 #if LINTERSTELLAR
-    //#include "../entropy/heatcool.h"
-    //rhs += heatcool
+    #include "../entropy/heatcool.h"
+    rhs += heatcool
 #endif
 
     rhs *= exp(-lnTT)
-    //#include "../entropy/heat_cond_hyper3.h"
+    #include "../entropy/heat_cond_hyper3.h"
     return -dot(vecvalue(UU), gradient(SS)) + rhs //+ heat_conduction(step_num)

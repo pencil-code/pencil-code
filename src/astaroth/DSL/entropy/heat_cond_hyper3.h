@@ -24,5 +24,5 @@ del2lnrho = laplace(RHO)/value(RHO)-norm2(gradient(RHO))/(value(RHO)*value(RHO))
              (p%shock*(exp(twothird*p%lnrho)*p%del2ss+g2)+gshockgss)
     else*/
       rhs += chi_shock*value(SHOCK) * (cv1*laplace(SS) + gamma_m1*del2lnrho + dot(glnrho+glnTT,glnTT) + dot(gradient(SHOCK),glnTT))
-}
+//}
 #endif

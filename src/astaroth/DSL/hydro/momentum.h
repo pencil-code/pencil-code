@@ -26,7 +26,7 @@ else{
     reduce_max(step_num==0, abs(uu.x/AC_dsx+uu.y/AC_dsy+uu.z/AC_dsz) + sqrt(advec2)/AC_dsx, AC_maxadvec)
     rhs=real3(0.,0.,0.)
 #if LVISCOSITY
-//#include "../hydro/viscosity.h"
+#include "../hydro/viscosity.h"
 #endif
     return rhs 
            - gradients(UU) * uu
