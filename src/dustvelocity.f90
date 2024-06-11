@@ -825,7 +825,8 @@ module Dustvelocity
 !
 !  MR: this restriction is in general not correct as, e.g. dustdensity uses pencils from here
 !      without restriction.
-      if (.not. lchemistry) then
+  !-  if (.not. lchemistry) then
+!AB: Nils and I agree with Matthias and commented this out.
 !
         lpenc_requested(i_uud)=.true.
         if (ladvection_dust.and..not.ldustvelocity_shorttausd) &
@@ -894,7 +895,7 @@ module Dustvelocity
             maxval(idiag_od2m)/=0) lpenc_diagnos(i_od2)=.true.
         if (maxval(idiag_oudm)/=0) lpenc_diagnos(i_oud)=.true.
 !
-      endif   ! if (.not.lchemistry)
+ !-   endif   ! if (.not.lchemistry)
 !
     endsubroutine pencil_criteria_dustvelocity
 !***********************************************************************
