@@ -2333,9 +2333,9 @@ module Dustdensity
 !
           if (lfree_molecule) then
             do k=2,ndustspec-1
-              coefkm=mfluxcondm/(ad(k+1)-ad(k))
+              coefkm=mfluxcond/(ad(k)-ad(k-1))
               df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) &
-                -coefk0*(f(l1:l2,m,n,ind(k))-f(l1:l2,m,n,ind(k-1)))
+                -coefkm*(f(l1:l2,m,n,ind(k))-f(l1:l2,m,n,ind(k-1)))
             enddo
           else
 !
