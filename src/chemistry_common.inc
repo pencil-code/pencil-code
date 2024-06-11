@@ -115,7 +115,7 @@
         MolMass=4.0026
       case ('S')
         MolMass=32.0655
-      case ('SI')	
+      case ('Si','SI')
         MolMass=28.085
       case ('CLOUD')
         MolMass=0.
