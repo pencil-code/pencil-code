@@ -170,10 +170,11 @@ module Persist
           done=read_persist ('SHEAR_DELTA_Y', dely)
           if (.not.done) deltay=dely
         case (id_record_TIME_STEP)
-          if (dt0==0) then
-            done=read_persist ('TIME_STEP', dtmp)
-            if (.not.done) dt=dtmp
-          endif
+   !AB: the following prevents one from changing the timestep from one run to the next
+   !      if (dt0==0) then
+   !        done=read_persist ('TIME_STEP', dtmp)
+   !        if (.not.done) dt=dtmp
+   !      endif
         case (id_record_EPS_RKF)
           if (eps_rkf0==0) then
             done=read_persist ('EPS_RKF', deps)
