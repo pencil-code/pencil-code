@@ -110,7 +110,7 @@ module Dustdensity
   real    :: dlnmd, dlnad, GS_condensparam, GS_condensparam0, rotat_position=0.
   real    :: r_lucky=0., r_collected=0., f_lucky=0.
   real :: tstart_droplet_coagulation=impossible
-  real :: nd0_luck=0.
+  real :: nd0_luck=0., chem_conc_sat_SIO2=.1
 !
   namelist /dustdensity_init_pars/ &
       rhod0, initnd, eps_dtog, nd_const, dkern_cst, nd0,  mdave0, Hnd, &
@@ -126,8 +126,7 @@ module Dustdensity
       advec_ddensity, dustdensity_floor, init_x1, init_x2, lsubstep, a0, a1, &
       ldustcondensation_simplified, ldustcoagulation_simplified,lradius_binning, &
       lzero_upper_kern, rotat_position, dt_substep, &
-      r_lucky, r_collected, f_lucky, nd0_luck
- 
+      r_lucky, r_collected, f_lucky, nd0_luck, chem_conc_sat_SIO2
 !
   namelist /dustdensity_run_pars/ &
       rhod0, diffnd, diffnd_hyper3, diffnd_hyper3_mesh, diffmd, diffmi, lno_deltavd, initnd, &
@@ -143,7 +142,7 @@ module Dustdensity
       lsemi_chemistry, lradius_binning, dkern_cst, lzero_upper_kern, &
       llog10_for_admom_above10,lmomcons, lmomconsb, lmomcons2, lmomcons3, lmomcons3b, &
       lkernel_mean, lpiecewise_constant_kernel, momcons_term_frac, &
-      tstart_droplet_coagulation, lfree_molecule
+      tstart_droplet_coagulation, lfree_molecule, chem_conc_sat_SIO2
 !
   integer :: idiag_KKm=0     ! DIAG_DOC: $\sum {\cal T}_k^{\rm coag}$
   integer :: idiag_KK2m=0    ! DIAG_DOC: $\sum {\cal T}_k^{\rm coag}$
@@ -2503,6 +2502,7 @@ module Dustdensity
 !
       use Diagnostics, only: max_mn_name, sum_mn_name
       use EquationOfState, only: getmu,eoscalc,getpressure
+      use Chemistry, only: find_species_index
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: mfluxcond,rho,TT1,cc
@@ -2510,6 +2510,10 @@ module Dustdensity
 
       real, dimension (nx) :: supsatratio1,pp,ppmon,ppsat,vth
       real :: mu
+      real :: molar_mass_SIO2_cgs=60.08, true_density_microsilica_cgs=2.196
+      real :: molar_mass_SIO2, atomic_mSIO2, A_SIO2, true_density_microsilica
+      integer :: i_sio2, ichem_sio2
+      logical :: lsio2
 !
       select case (dust_chemistry)
 !
@@ -2552,8 +2556,17 @@ module Dustdensity
 !
 !  Condensation obtained from passive scalar equation.
 !
-      case ('microsilica')
+      case ('microsilica_test')
         mfluxcond=G_condensparam
+!
+      case ('microsilica')
+        call find_species_index('SIO2',i_SIO2,ichem_SIO2,lSIO2)
+        molar_mass_SIO2=molar_mass_SIO2_cgs/unit_mass
+        true_density_microsilica=true_density_microsilica_cgs/unit_density
+        atomic_mSIO2=molar_mass_SIO2*m_u
+        A_SIO2=sqrt(8.*k_B/(pi*atomic_mSIO2))*molar_mass_SIO2/(4.*true_density_microsilica)
+print*,'A_SIO2= ?0.128 =',A_SIO2
+        mfluxcond=A_SIO2*(p%chem_conc(:,ichem_SIO2)-chem_conc_sat_SIO2)
 !
 !  Assume a hat(om*t) time behavior
 !
