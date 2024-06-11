@@ -1,19 +1,19 @@
-if (lheatc_hyper3ss){
+//if (lheatc_hyper3ss){
       rhs += chi_hyper3 * del6(SS)
-}
+//}
 #if LSHOCK
 del2lnrho = 0.
 glnTT = real3(0.,0.,0.)
-if (lheatc_shock){
-if (ldensity_nolog){
+//if (lheatc_shock){
+//if (ldensity_nolog){
 glnTT = cv1*gradient(SS)+gamma_m1*gradient(RHO)/value(RHO)
 del2lnrho = laplace(RHO)/value(RHO)-norm2(gradient(RHO))/(value(RHO)*value(RHO))
-}
-else
-{
-glnTT = cv1*gradient(SS)+gamma_m1*gradient(LNRHO)
-del2lnrho = laplace(LNRHO)
-}
+//}
+//else
+//{
+//glnTT = cv1*gradient(SS)+gamma_m1*gradient(LNRHO)
+//del2lnrho = laplace(LNRHO)
+//}
 /*  if (pretend_lnTT) then
     thdiff=gamma*chi_shock*(p%shock*(p%del2lnrho+g2)+gshockglnTT)
   else
