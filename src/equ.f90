@@ -25,8 +25,9 @@ module Equ
   real, dimension(:,:,:)  , pointer :: p_fnamex, p_fnamey, p_fnamez, p_fnamexy, p_fnamexz
   real, dimension(:,:,:,:), pointer :: p_fnamerz
   integer, dimension(:,:) , pointer :: p_ncountsz
-  real ::  dt_save,eps_rkf_save
+  real ::  dt_save,eps_rkf_save,sum_time=0
   integer :: it_save
+  integer :: n_iterations=0
 !
   contains
 !***********************************************************************
@@ -102,6 +103,7 @@ module Equ
 !
       logical :: early_finalize
       real, dimension(1)  :: mass_per_proc
+      real :: start_time, end_time
 !
 !  Print statements when they are first executed.
 !
@@ -349,7 +351,13 @@ module Equ
 !!$        last_pushed_task = push_task(c_funloc(calc_all_module_diagnostics_wrapper),&
 !!$        last_pushed_task, 1, default_task_type, 1, depend_on_all, f, mx, my, mz, mfarray)
         endif
+        start_time = mpiwtime()
         call rhs_gpu(f,itsub)
+        end_time = mpiwtime()
+        if (lroot) print*,"iteration on gpu:",end_time-start_time
+        sum_time = sum_time + end_time-start_time
+        n_iterations = n_iterations + 1
+        if (lroot) print*,"nth iteration: average time on gpu:",n_iterations, sum_time/n_iterations
       else
         call rhs_cpu(f,df,p,mass_per_proc,early_finalize)
 !
