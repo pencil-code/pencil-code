@@ -16,7 +16,7 @@
 ! MAUX CONTRIBUTION 1
 !
 ! PENCILS PROVIDED cv; cv1; cp; cp1; glncp(3);  gXXk(3,nchemspec); gamma
-! PENCILS PROVIDED nu; gradnu(3); gYYk(3,nchemspec)
+! PENCILS PROVIDED nu; gradnu(3); gYYk(3,nchemspec); chem_conc(nchemspec)
 ! PENCILS PROVIDED DYDt_reac(nchemspec); DYDt_diff(nchemspec)
 ! PENCILS PROVIDED lambda; glambda(3); lambda1
 ! PENCILS PROVIDED Diff_penc_add(nchemspec); H0_RT(nchemspec); hhk_full(nchemspec)
@@ -722,7 +722,12 @@ module Chemistry
             lpenc_requested(i_glnmu) = .true.
           endif
         endif
+!
       endif
+!
+!  Needed for microsilica.
+!
+      if (ldustdensity) lpenc_requested(i_chem_conc) = .true.
 !
     endsubroutine pencil_criteria_chemistry
 !***********************************************************************
@@ -764,6 +769,10 @@ module Chemistry
       endif
       if (lpencil_in(i_ppwater))  then
         lpencil_in(i_TT) = .true.
+        lpencil_in(i_rho) = .true.
+      endif
+      if (lpencil_in(i_chem_conc))  then
+        lpencil_in(i_mu1) = .true.
         lpencil_in(i_rho) = .true.
       endif
 !
@@ -810,6 +819,14 @@ module Chemistry
       if (lpencil(i_mukmu1)) then
         do k = 1,nchemspec
           p%mukmu1(:,k) = species_constants(k,imass)/unit_mass*p%mu1(:)
+        enddo
+      endif
+!
+!  compute chem_conc pencil
+!
+      if (lpencil(i_chem_conc)) then
+        do k = 1,nchemspec
+          p%chem_conc(:,k)=XX_full(l1:l2,m,n,k)*p%mu1*p%rho
         enddo
       endif
 !
