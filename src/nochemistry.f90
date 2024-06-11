@@ -9,7 +9,7 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED Ywater, lambda
+! PENCILS PROVIDED Ywater, lambda; chem_conc(nchemspec)
 !
 !***************************************************************
 module Chemistry
