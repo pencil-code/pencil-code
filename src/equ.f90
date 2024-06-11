@@ -116,7 +116,6 @@ module Equ
 !  Initialize counter for calculating and communicating print results.
 !  Do diagnostics only in the first of the itorder substeps.
 !
-
       ldiagnos   =lfirst.and.lout
       l1davgfirst=lfirst.and.l1davg
       l2davgfirst=lfirst.and.l2davg
@@ -169,7 +168,7 @@ module Equ
 !  The user must have set crash_file_dtmin_factor>0.0 in &run_pars for
 !  this to be done.
 !
-!      if(.not. lgpu) then
+!      if (.not. lgpu) then
         if (crash_file_dtmin_factor > 0.0) call output_crash_files(f)
 !
 !  For   debugging purposes impose minimum or maximum value on certain variables.
@@ -208,16 +207,16 @@ module Equ
         if (lparticles.and.lspecial) call particles_special_bfre_bdary(f)
         if (lshock)        call shock_before_boundary(f)
 !
-!  Pre  pare x-ghost zones; required before f-array communication
-!  AND   shock calculation
+!  Prepare x-ghost zones; required before f-array communication
+!  AND shock calculation
 !
-        if(.not. lgpu) call boundconds_x(f)
+        if (.not. lgpu) call boundconds_x(f)
 !
-!  Ini  tiate (non-blocking) communication and do boundary conditions.
-!  Req  uired order:
-!  1.   x-boundaries (x-ghost zones will be communicated) - done above
-!  2.   communication
-!  3.   y- and z-boundaries
+!  Initiate (non-blocking) communication and do boundary conditions.
+!  Required order:
+!  1. x-boundaries (x-ghost zones will be communicated) - done above
+!  2. communication
+!  3. y- and z-boundaries
 !
         if (.not. lgpu) then
           if (nghost>0) then
@@ -232,47 +231,47 @@ module Equ
           endif
         endif
 !
-! upda  te solid cell "ghost points". This must be done in order to get the
-! corr  ect boundary layer close to the solid geometry, i.e. no-slip conditions.
+! update solid cell "ghost points". This must be done in order to get the
+! correct boundary layer close to the solid geometry, i.e. no-slip conditions.
 !
         call update_solid_cells(f)
 !
-!  For   sixth order momentum-conserving, symmetric hyperviscosity with positive
-!  def  inite heating rate we need to precalculate the viscosity term. The
-!  res  tivitity term for sixth order hyperresistivity with positive definite
-!  hea  ting rate must also be precalculated.
+!  For sixth order momentum-conserving, symmetric hyperviscosity with positive
+!  definite heating rate we need to precalculate the viscosity term. The
+!  restivitity term for sixth order hyperresistivity with positive definite
+!  heating rate must also be precalculated.
 !
         if (lhyperviscosity_strict)   call hyperviscosity_strict(f)
         if (lhyperresistivity_strict) call hyperresistivity_strict(f)
 !
-!  Dyn  amically set the (hyper-)diffusion coefficients
+!  Dynamically set the (hyper-)diffusion coefficients
 !
-        if (ldynamical_diffusion) call set_dyndiff_coeff(f)
+      if (ldynamical_diffusion) call set_dyndiff_coeff(f)
 !
-!  Cal  culate the characteristic velocity
-!  for   slope limited diffusion
+!  Calculate the characteristic velocity
+!  for slope limited diffusion
 !
-!        if (lslope_limit_diff.and.llast) then
-!          f(2:mx-2,2:my-2,2:mz-2,iFF_char_c)=0.
-!print  *,'vor magnetic:', maxval(f(2:mx-2,2:my-2,2:mz-2,iFF_char_c))
-!          call update_char_vel_energy(f)
-!          call update_char_vel_magnetic(f)
-!          call update_char_vel_hydro(f)
-          !call update_char_vel_density(f)
-          !f(2:mx-2,2:my-2,2:mz-2,iFF_char_c)=sqrt(f(2:mx-2,2:my-2,2:mz-2,iFF_char_c))
-!  JW:   for hydro it is done without sqrt
-          !if (ldiagnos) print*, 'max(char_c)=', maxval(f(2:mx-2,2:my-2,2:mz-2,iFF_char_c))
-!        endif
+!      if (lslope_limit_diff.and.llast) then
+!        f(2:mx-2,2:my-2,2:mz-2,iFF_char_c)=0.
+!print*,'vor magnetic:', maxval(f(2:mx-2,2:my-2,2:mz-2,iFF_char_c))
+!        call update_char_vel_energy(f)
+!        call update_char_vel_magnetic(f)
+!        call update_char_vel_hydro(f)
+        !call update_char_vel_density(f)
+        !f(2:mx-2,2:my-2,2:mz-2,iFF_char_c)=sqrt(f(2:mx-2,2:my-2,2:mz-2,iFF_char_c))
+!  JW: for hydro it is done without sqrt
+        !if (ldiagnos) print*, 'max(char_c)=', maxval(f(2:mx-2,2:my-2,2:mz-2,iFF_char_c))
+!      endif
 !
-!  For   calculating the pressure gradient directly from the pressure (which is
-!  der  ived from the basic thermodynamical variables), we need to fill in the
-!  pre  ssure in the f array.
+!  For calculating the pressure gradient directly from the pressure (which is
+!  derived from the basic thermodynamical variables), we need to fill in the
+!  pressure in the f array.
 !
         call fill_farray_pressure(f)
 !
-!  Set   inverse timestep to zero before entering loop over m and n.
-!  If   we want to have a logarithmic time advance, we want set this here
-!  as   the maximum. All other routines can then still make it shorter.
+!  Set inverse timestep to zero before entering loop over m and n.
+!  If we want to have a logarithmic time advance, we want set this here
+!  as the maximum. All other routines can then still make it shorter.
 !
         if (lfirst.and.ldt) then
           if (dtmax/=0.0) then
@@ -286,28 +285,28 @@ module Equ
           endif
         endif
 !
-!  Cal  culate ionization degree (needed for thermodynamics)
-!  Rad  iation transport along rays. If lsingle_ray, then this
-!  is   only used for visualization and only needed when lvideo
-!  (bu  t this is decided in radtransfer itself)
+!  Calculate ionization degree (needed for thermodynamics)
+!  Radiation transport along rays. If lsingle_ray, then this
+!  is only used for visualization and only needed when lvideo
+!  (but this is decided in radtransfer itself)
 !
         if (leos_ionization.or.leos_temperature_ionization) call ioncalc(f)
         if (lradiation_ray) call radtransfer(f)     ! -> after_boundary or before_boundary?
 !
-!  Cal  culate shock profile (simple).
+!  Calculate shock profile (simple).
 !
         if (lshock) call calc_shock_profile_simple(f)
 !
-!  Cal  l "after" hooks (for f array precalculation). This may imply
-!  cal  culating averages (some of which may only be required for certain
-!  set  tings in hydro of the testfield procedure (only when lsoca=.false.),
-!  for   example. They used to be or are still called hydro_after_boundary etc,
-!  and   will soon be renamed to hydro_after_boundary.
+!  Call "after" hooks (for f array precalculation). This may imply
+!  calculating averages (some of which may only be required for certain
+!  settings in hydro of the testfield procedure (only when lsoca=.false.),
+!  for example. They used to be or are still called hydro_after_boundary etc,
+!  and will soon be renamed to hydro_after_boundary.
 !
-!  Imp  ortant to note that the processor boundaries are not full updated 
-!  at   this point, even if the name 'after_boundary' suggesting this.
-!  Use   early_finalize in this case.
-!  MR+  joern+axel, 8.10.2015
+!  Important to note that the processor boundaries are not full updated 
+!  at this point, even if the name 'after_boundary' suggesting this.
+!  Use early_finalize in this case.
+!  MR+joern+axel, 8.10.2015
 !
         call timing('pde','before "after_boundary" calls')
 !
@@ -321,7 +320,7 @@ module Equ
         if (lpolymer)               call calc_polymer_after_boundary(f)
         if (ltestscalar)            call testscalar_after_boundary(f)
         if (ltestfield)             call testfield_after_boundary(f)
-!AB: q  uick fix
+!AB: quick fix
         !if (ltestfield)             call testfield_after_boundary(f,p)
         if (ldensity)               call density_after_boundary(f)
         if (lneutraldensity)        call neutraldensity_after_boundary(f)
@@ -329,9 +328,9 @@ module Equ
         if (lmagn_mf)               call meanfield_after_boundary(f)
         if (lspecial)               call special_after_boundary(f)
 !
-!  Cal  culate quantities for a chemical mixture. This is done after
-!  com  munication has finalized since many of the arrays set up here
-!  are   not communicated, and in this subroutine also ghost zones are calculated.
+!  Calculate quantities for a chemical mixture. This is done after
+!  communication has finalized since many of the arrays set up here
+!  are not communicated, and in this subroutine also ghost zones are calculated.
 !
         if (lchemistry .and. ldensity) call calc_for_chem_mixture(f)
 !      endif

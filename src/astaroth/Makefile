@@ -47,7 +47,7 @@ OBJECTS = $(SOURCES:.cc=.o)
 #DSL_MODULE_DIR=samples/gputest
 DSL_MODULE_DIR = ../../DSL/local
 DSL_MODULE_FILE = solve_two.ac
-EXT_SOURCES = ../../DSL/*/*.h
+EXT_SOURCES = ../../DSL/*/*.h ../../DSL/*/*.ac
 
 # C headers in submodule
 AC_HEADERS=submodule/include/astaroth.h submodule/acc-runtime/api/math_utils.h
