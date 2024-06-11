@@ -13,3 +13,16 @@ grho = real3(0.,0.,0.)
 //  return rhs - dot(vecvalue(UU), glnrho) - divergence(UU)
 //}
 //
+
+//=======
+//glnrho = gradient(LNRHO)   // grad(rho) or grad(lnrho)!
+//
+//#include "../density/diffusivity.h"
+//
+//if (ldensity_nolog){
+//  return rhs - dot(vecvalue(UU), glnrho) - value(RHO)*divergence(UU)
+//}
+//else{
+//  return rhs - dot(vecvalue(UU), glnrho) - divergence(UU)
+//}
+//>>>>>>> b63cfac73 (MR: minor)
