@@ -158,16 +158,10 @@ module Dustvelocity
 !  Need deltamd for normalization purposes in dustdensity.
 !
       call put_shared_variable('llin_radiusbins',llin_radiusbins,caller='register_dustvelocity')
-      if (ldustdensity) call put_shared_variable('deltamd',deltamd)
-!
-!  The integration scheme should be the same for different width schemes
-!
-      if (llin_radiusbins) then
-        dustbin_width=ad1
-      elseif (llog_massbins) then
-        dustbin_width=deltamd
+      if (ldustdensity) then
+        call put_shared_variable('deltamd',deltamd)
+        call put_shared_variable('dustbin_width',dustbin_width)
       endif
-      if (ldustdensity) call put_shared_variable('dustbin_width',dustbin_width)
 !
     endsubroutine register_dustvelocity
 !***********************************************************************
@@ -270,6 +264,14 @@ module Dustvelocity
       if (ad0/=0.) md0 = 4/3.*pi*ad0**3*rhods/unit_md
       if (ad1/=0.) md0 = 8*pi/(3*(1.+deltamd))*ad1**3*rhods
       if (lroot) print*,'recalculated: md0=',md0
+!
+!  The integration scheme should be the same for different width schemes
+!
+      if (llin_radiusbins) then
+        dustbin_width=ad1
+      elseif (llog_massbins) then
+        dustbin_width=deltamd
+      endif
 !
 !  Choice between different spacings.
 !  Currently, there are only 2 choices.
