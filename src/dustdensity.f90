@@ -110,7 +110,8 @@ module Dustdensity
   real    :: dlnmd, dlnad, GS_condensparam, GS_condensparam0, rotat_position=0.
   real    :: r_lucky=0., r_collected=0., f_lucky=0.
   real :: tstart_droplet_coagulation=impossible
-  real :: nd0_luck=0., chem_conc_sat_SIO2=.1
+  real :: nd0_luck=0.
+  real :: chem_conc_sat_SIO2=1e-8 !units of mol/cmˆ3
 !
   namelist /dustdensity_init_pars/ &
       rhod0, initnd, eps_dtog, nd_const, dkern_cst, nd0,  mdave0, Hnd, &
@@ -2565,8 +2566,7 @@ module Dustdensity
         true_density_microsilica=true_density_microsilica_cgs/unit_density
         atomic_mSIO2=molar_mass_SIO2*m_u
         A_SIO2=sqrt(8.*k_B/(pi*atomic_mSIO2))*molar_mass_SIO2/(4.*true_density_microsilica)
-print*,'A_SIO2= ?0.128 =',A_SIO2
-        mfluxcond=A_SIO2*(p%chem_conc(:,ichem_SIO2)-chem_conc_sat_SIO2)
+        mfluxcond=A_SIO2*(p%chem_conc(:,ichem_SIO2)-chem_conc_sat_SIO2)*sqrt(p%TT)
 !
 !  Assume a hat(om*t) time behavior
 !
