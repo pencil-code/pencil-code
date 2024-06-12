@@ -180,7 +180,6 @@ module Dustvelocity
 !
       use EquationOfState, only: cs20
       use BorderProfiles, only: request_border_driving
-      use SharedVariables, only: put_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
