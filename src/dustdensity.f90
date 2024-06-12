@@ -47,6 +47,7 @@ module Dustdensity
   real, dimension(nx,ndustspec,ndustspec0) :: dndr_full, ppsf_full
 !  real, dimension(ndustspec0)  :: Ntot_i
   real, dimension(nx,ndustspec,ndustspec) :: dkern
+  real, dimension (nx) :: nucleation_rmin
   real, dimension(ndustspec,ndustspec0) :: init_distr_ki
   real, dimension(ndustspec0) :: BB=0.
   real, dimension(ndustspec) :: dsize,init_distr2,amplnd_rel=0.
@@ -152,6 +153,7 @@ module Dustdensity
   integer :: idiag_MMxm=0    ! DIAG_DOC: $\sum {\cal M}^x_{k,{\rm coag}}$
   integer :: idiag_MMym=0    ! DIAG_DOC: $\sum {\cal M}^y_{k,{\rm coag}}$
   integer :: idiag_MMzm=0    ! DIAG_DOC: $\sum {\cal M}^z_{k,{\rm coag}}$
+  integer :: idiag_nuclrmin=0! DIAG_DOC: $\< r_{\min} \>$
   integer :: idiag_ndmt=0,idiag_rhodmt=0,idiag_rhoimt=0
   integer :: idiag_ssrm=0,idiag_ssrmax=0,idiag_adm=0,idiag_mdmtot=0
   integer :: idiag_rhodmxy=0, idiag_ndmxy=0
@@ -2174,6 +2176,7 @@ module Dustdensity
         if (idiag_adm/=0)  &
           call sum_mn_name(sum(spread((md/(4/3.*pi*rhods))**(1/3.),1,nx)*p%nd,2)/sum(p%nd,2), idiag_adm)
         if (idiag_mdmtot/=0) call sum_mn_name(sum(spread(md,1,nx)*p%nd,2), idiag_mdmtot)
+        call sum_mn_name(nucleation_rmin,idiag_nuclrmin)
 !
 !  compute moments, works independently of lmdvar
 !
@@ -2538,8 +2541,11 @@ module Dustdensity
       type (pencil_case) :: p
 
       real, dimension (nx) :: supsatratio1,pp,ppmon,ppsat,vth
+      real, dimension (nx) :: sat_ratio_SIO2
       real :: mu
-      real :: molar_mass_SIO2_cgs=60.08
+      real :: molar_mass_SIO2_cgs=60.08, gam_surf_energy_cgs=32.
+      real :: volume_SIO2_cgs=4.5e-23
+      real :: gam_surf_energy, volume_sio2
       real :: molar_mass_SIO2, atomic_mSIO2, A_SIO2
       integer :: ichem_SIO2
       logical :: lSIO2
@@ -2595,6 +2601,13 @@ module Dustdensity
         A_SIO2=sqrt(8.*k_B/(pi*atomic_mSIO2))*molar_mass_SIO2/(4.*true_density_microsilica)
         if (ip<10) print*,'A_SIO2=',A_SIO2
         mfluxcond=A_SIO2*(p%chem_conc(:,ichem_SIO2)-chem_conc_sat_SIO2)*sqrt(p%TT)
+!
+!  compute rmin
+!
+        gam_surf_energy=gam_surf_energy_cgs/(unit_mass/unit_time)
+        volume_SIO2=volume_SIO2_cgs/unit_length**3
+        sat_ratio_SIO2=p%chem_conc(:,ichem_SIO2)/chem_conc_sat_SIO2
+        nucleation_rmin=4.*gam_surf_energy*volume_SIO2/(k_B*p%TT*alog(sat_ratio_SIO2))
 !
 !  Assume a hat(om*t) time behavior
 !
@@ -3115,6 +3128,7 @@ module Dustdensity
 !
       if (lreset) then
         idiag_mdm=0; idiag_KKm=0; idiag_KK2m=0; idiag_MMxm=0; idiag_MMym=0; idiag_MMzm=0
+        idiag_nuclrmin=0
         idiag_ndm=0; idiag_ndmin=0; idiag_ndmax=0; idiag_ndmt=0; idiag_rhodm=0
         idiag_rhodmin=0; idiag_rhodmax=0; idiag_rhodmxy=0; idiag_ndmxy=0
         idiag_nd2m=0; idiag_rhodmt=0; idiag_rhoimt=0; idiag_epsdrms=0
@@ -3201,6 +3215,7 @@ module Dustdensity
         call parse_name(iname,cname(iname),cform(iname),'ssrmax',idiag_ssrmax)
         call parse_name(iname,cname(iname),cform(iname),'adm',idiag_adm)
         call parse_name(iname,cname(iname),cform(iname),'mdmtot',idiag_mdmtot)
+        call parse_name(iname,cname(iname),cform(iname),'nuclrmin',idiag_nuclrmin)
         do k=0,mmom
           sdust=itoa(k)
           call parse_name(iname,cname(iname),cform(iname),'rmom'//trim(sdust),idiag_rmom(k))
