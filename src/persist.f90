@@ -170,9 +170,9 @@ module Persist
           done=read_persist ('SHEAR_DELTA_Y', dely)
           if (.not.done) deltay=dely
         case (id_record_TIME_STEP)
-          if (lgpu.and.dt0==0) then
+          if (dt0==0) then
             done=read_persist ('TIME_STEP', dtmp)
-            if (.not.done) dt=dtmp
+            if (.not.done.and.lgpu) dt=dtmp
           endif
         case (id_record_EPS_RKF)
           if (eps_rkf0==0) then
