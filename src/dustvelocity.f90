@@ -59,6 +59,7 @@ module Dustvelocity
   real :: dust_pressure_factor=1.
   real :: shorttauslimit=0.0, shorttaus1limit=0.0
   real :: scaleHtaus=1.0, z0taus=0.0, widthtaus=1.0
+  real :: dustbin_width
   logical :: llin_radiusbins=.false., llog_massbins=.true.
   logical :: ladvection_dust=.true.,lcoriolisforce_dust=.true.
   logical :: ldragforce_dust=.true.,ldragforce_gas=.false.
@@ -159,6 +160,15 @@ module Dustvelocity
       call put_shared_variable('llin_radiusbins',llin_radiusbins,caller='register_dustvelocity')
       if (ldustdensity) call put_shared_variable('deltamd',deltamd)
 !
+!  The integration scheme should be the same for different width schemes
+!
+      if (llin_radiusbins) then
+        dustbin_width=ad1
+      elseif (llog_massbins) then
+        dustbin_width=deltamd
+      endif
+      if (ldustdensity) call put_shared_variable('dustbin_width',dustbin_width)
+!
     endsubroutine register_dustvelocity
 !***********************************************************************
     subroutine initialize_dustvelocity(f)
@@ -176,7 +186,6 @@ module Dustvelocity
 !
       integer :: i, j, k
       real :: gsurften, Eyoung, nu_Poisson, Eyoungred
-      real :: dustbin_width
 !
 !  Copy boundary condition on first dust species to all others.
 !
@@ -268,10 +277,9 @@ module Dustvelocity
 !  First, linearly spaced radius bins:
 !
       if (llin_radiusbins) then
-        dustbin_width=ad1
         do k=1,ndustspec
           ad(k)=ad0+dustbin_width*(k-1)
-        enddo
+       enddo
         md=4/3.*pi*ad**3*rhods
         llog_massbins=.false.
 !
@@ -279,7 +287,6 @@ module Dustvelocity
 !  (Do we really need unit_md? When would it not be 1?)
 !
       elseif (llog_massbins) then
-        dustbin_width=deltamd  !(to be checked)
         do k=1,ndustspec
           mdminus(k) = md0*deltamd**(k-1)
           mdplus(k)  = md0*deltamd**k
@@ -289,7 +296,6 @@ module Dustvelocity
         llin_radiusbins=.false.
       endif
       if (lroot) print*,'initialize_dustvelocity: ad=',ad
-      if (ldustdensity) call put_shared_variable('dustbin_width',dustbin_width)
 !
 !  Reinitialize dustvelocity
 !  'all_to_first' = reinitialize heavier particles to lightest one.
@@ -332,19 +338,22 @@ module Dustvelocity
       endselect
 !
 !  Grain geometry
+!  This is recalculating the radius based on mass bins, but only make
+!  sense if mass bins are set
 !
-      select case (dust_geometry)
+      if (.not. llin_radiusbins) then
+        select case (dust_geometry)
+        case ('sphere')
+          dimd1 = onethird
+          if (lroot) print*, 'initialize_dustvelocity: dust geometry = sphere'
+          call get_dustsurface
+          call get_dustcrosssection
+          surfmon = surfd(1)*(mmon/(md(1)*unit_md))**(1.-dimd1)
 
-      case ('sphere')
-        dimd1 = onethird
-        if (lroot) print*, 'initialize_dustvelocity: dust geometry = sphere'
-        call get_dustsurface
-        call get_dustcrosssection
-        surfmon = surfd(1)*(mmon/(md(1)*unit_md))**(1.-dimd1)
-
-      case default
-        call fatal_error('initialize_dustvelocity','no such dust_geometry: '//trim(dust_geometry))
-      endselect
+        case default
+          call fatal_error('initialize_dustvelocity','no such dust_geometry: '//trim(dust_geometry))
+        endselect
+      endif
 !
 !  Auxiliary variables necessary for different drag laws
 !
@@ -365,7 +374,7 @@ module Dustvelocity
           if (lroot) print*, 'initialize_dustvelocity: doing nothing for draglaw='//trim(draglaw)
 
         endselect
-      endif
+     endif
 !
 !  If *_all set, make all primordial *(:) = *_all
 !
@@ -439,7 +448,7 @@ module Dustvelocity
           call fatal_error('initialize_dustvelocity','no such iviscd: '//trim(iviscd(i)))
         endselect
       enddo
-
+      
       if (ldust_pressure.and.dust_pressure_factor==0.0) &
           call fatal_error('initialize_dustvelocity','dust_pressure_factor should not be 0')
 

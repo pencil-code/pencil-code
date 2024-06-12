@@ -268,7 +268,7 @@ module Dustdensity
 !  Need deltamd for computing the radius differential in dustdensity.
 !
       if (ldustvelocity) then
-        call get_shared_variable('dustbin_width',dustbin_width,caller='initialize_dustdensity')
+         call get_shared_variable('dustbin_width',dustbin_width,caller='initialize_dustdensity')
         call get_shared_variable('deltamd',deltamd,caller='initialize_dustdensity')
         call get_shared_variable('llin_radiusbins',llin_radiusbins)
         if (llin_radiusbins.and..not.lradius_binning) call fatal_error('initialize_dustdensity', &
@@ -931,7 +931,7 @@ module Dustdensity
 !
           call fatal_error('initnd','no such initnd: '//trim(initnd(j)))
 !
-        endselect
+       endselect
 !
 !  End loop over initial conditions.
 !
@@ -1937,14 +1937,13 @@ module Dustdensity
             ff_cond=0.
             ff_cond_fact=4.*pi*mfluxcond*true_density_microsilica
             if (llin_radiusbins.and.lradius_binning) then
-              print*,'AXEL: dustbin_width=',dustbin_width
             else
               call fatal_error('initialize_dustdensity', 'currently only one option')
             endif
             do k=1,ndustspec
               ff_cond=ff_cond+ff_cond_fact*ad(k)**2*f(l1:l2,m,n,ind(k))*dustbin_width
             enddo
-            df(l1:l2,m,n,i_SIO2) = df(l1:l2,m,n,i_SIO2) + ff_cond
+            df(l1:l2,m,n,i_SIO2) = df(l1:l2,m,n,i_SIO2) - ff_cond
           endif
         endif
       endif   !if (latm_chemistry .or. lsemi_chemistry)
@@ -3544,11 +3543,11 @@ module Dustdensity
             f(:,:,:,ind(k))= amplnd*exp(-0.5*(alog(ad(k))-alog(a0))**2/sigmad**2)*fac
           else
             f(:,:,:,ind(k))=f(:,:,:,ind(k))+amplnd*exp(-0.5*(alog(ad(k))-alog(a0))**2/sigmad**2)*fac
-          endif
+         endif
         else
           call fatal_error('initnd_lognormal','no lognormal with a1/=1')
         endif
-      enddo
+     enddo
 !
     endsubroutine initnd_lognormal
 !***********************************************************************
