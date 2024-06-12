@@ -72,8 +72,10 @@ module Dustdensity
   real :: nd_reuni=0.,init_x1=0., init_x2=0., a0=0., a1=0.
   real :: dndfac_sum, dndfac_sum2, momcons_sum_x, momcons_sum_y, momcons_sum_z
   real :: momcons_term_frac=1.
+  real :: true_density_microsilica_cgs=2.196, true_density_microsilica
   integer :: iglobal_nd=0
   integer :: spot_number=1
+  integer :: i_SIO2=0
   character (len=labellen), dimension (ninit) :: initnd='nothing'
   character (len=labellen), dimension (ndiffd_max) :: idiffd=''
   character (len=labellen) :: bordernd='nothing'
@@ -103,7 +105,7 @@ module Dustdensity
   logical :: lfree_molecule=.false.
   integer :: iadvec_ddensity=0
   logical, pointer :: llin_radiusbins
-  real, pointer :: deltamd
+  real, pointer :: deltamd, dustbin_width
   real    :: dustdensity_floor=-1, Kern_min=0., Kern_max=0.
   real    :: G_condensparam=0., supsatratio_given=0., supsatratio_given0=0.
   real    :: supsatratio_omega=0., self_collision_factor=1.
@@ -266,6 +268,7 @@ module Dustdensity
 !  Need deltamd for computing the radius differential in dustdensity.
 !
       if (ldustvelocity) then
+        call get_shared_variable('dustbin_width',dustbin_width,caller='initialize_dustdensity')
         call get_shared_variable('deltamd',deltamd,caller='initialize_dustdensity')
         call get_shared_variable('llin_radiusbins',llin_radiusbins)
         if (llin_radiusbins.and..not.lradius_binning) call fatal_error('initialize_dustdensity', &
@@ -597,6 +600,12 @@ module Dustdensity
 !
 !MR: ad-hoc correction to fix the auto-test; needs to be checked!
       ppsf_full = 0.
+!
+!  true_density_microsilica
+!
+      if (dust_chemistry=='microsilica') then
+        true_density_microsilica=true_density_microsilica_cgs/unit_density
+      endif
 !
 !  No derivatives in 0D case.
 !
@@ -1733,7 +1742,7 @@ module Dustdensity
 !        p%nd(:,ndustspec)=(Nd_rho(:,ndustspec)-CoagS(:,ndustspec)*dt)/(dsize(ndustspec)-dsize(ndustspec-1))/p%rho
 !
       endif  
-        
+!
     endsubroutine calc_pencils_dustdensity
 !***********************************************************************
     subroutine dndmd_dt(f,df,p)
@@ -1754,6 +1763,7 @@ module Dustdensity
 !
       real, dimension (nx) :: mfluxcond,fdiffd,gshockgnd, Imr, tmp1, tmp2
       real, dimension (nx) :: diffus_diffnd,diffus_diffnd3,advec_hypermesh_nd
+      real, dimension (nx) :: ff_cond, ff_cond_fact
       real, dimension (nx,ndustspec) :: dndr_tmp=0.,  dndr
       real, dimension (nx,ndustspec) :: nd_substep, nd_substep_0, K1,K2,K3,K4
       integer :: k,i,j
@@ -1916,8 +1926,27 @@ module Dustdensity
 !  Dust growth due to condensation on grains
 !  (This is not used by Natalia's routines, although it is not obvious why.)
 !
-        if (ldustcondensation) call dust_condensation(f,df,p,mfluxcond)
+        if (ldustcondensation) then
+          call dust_condensation(f,df,p,mfluxcond)
 !
+          if (dust_chemistry=='microsilica') then
+            if (i_SIO2==0) call fatal_error('dndmd_dt','there is no SIO2')
+!
+!  All the bins consume.
+!
+            ff_cond=0.
+            ff_cond_fact=4.*pi*mfluxcond*true_density_microsilica
+            if (llin_radiusbins.and.lradius_binning) then
+              print*,'AXEL: dustbin_width=',dustbin_width
+            else
+              call fatal_error('initialize_dustdensity', 'currently only one option')
+            endif
+            do k=1,ndustspec
+              ff_cond=ff_cond+ff_cond_fact*ad(k)**2*f(l1:l2,m,n,ind(k))*dustbin_width
+            enddo
+            df(l1:l2,m,n,i_SIO2) = df(l1:l2,m,n,i_SIO2) + ff_cond
+          endif
+        endif
       endif   !if (latm_chemistry .or. lsemi_chemistry)
 !
 !  Loop over dust layers
@@ -2511,10 +2540,10 @@ module Dustdensity
 
       real, dimension (nx) :: supsatratio1,pp,ppmon,ppsat,vth
       real :: mu
-      real :: molar_mass_SIO2_cgs=60.08, true_density_microsilica_cgs=2.196
-      real :: molar_mass_SIO2, atomic_mSIO2, A_SIO2, true_density_microsilica
-      integer :: i_sio2, ichem_sio2
-      logical :: lsio2
+      real :: molar_mass_SIO2_cgs=60.08
+      real :: molar_mass_SIO2, atomic_mSIO2, A_SIO2
+      integer :: ichem_SIO2
+      logical :: lSIO2
 !
       select case (dust_chemistry)
 !
@@ -2563,9 +2592,9 @@ module Dustdensity
       case ('microsilica')
         call find_species_index('SIO2',i_SIO2,ichem_SIO2,lSIO2)
         molar_mass_SIO2=molar_mass_SIO2_cgs/unit_mass
-        true_density_microsilica=true_density_microsilica_cgs/unit_density
         atomic_mSIO2=molar_mass_SIO2*m_u
         A_SIO2=sqrt(8.*k_B/(pi*atomic_mSIO2))*molar_mass_SIO2/(4.*true_density_microsilica)
+        if (ip<10) print*,'A_SIO2=',A_SIO2
         mfluxcond=A_SIO2*(p%chem_conc(:,ichem_SIO2)-chem_conc_sat_SIO2)*sqrt(p%TT)
 !
 !  Assume a hat(om*t) time behavior

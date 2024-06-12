@@ -170,11 +170,13 @@ module Dustvelocity
 !
       use EquationOfState, only: cs20
       use BorderProfiles, only: request_border_driving
+      use SharedVariables, only: put_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
       integer :: i, j, k
       real :: gsurften, Eyoung, nu_Poisson, Eyoungred
+      real :: dustbin_width
 !
 !  Copy boundary condition on first dust species to all others.
 !
@@ -262,11 +264,13 @@ module Dustvelocity
       if (lroot) print*,'recalculated: md0=',md0
 !
 !  Choice between different spacings.
+!  Currently, there are only 2 choices.
 !  First, linearly spaced radius bins:
 !
       if (llin_radiusbins) then
+        dustbin_width=ad1
         do k=1,ndustspec
-          ad(k)=ad0+ad1*(k-1)
+          ad(k)=ad0+dustbin_width*(k-1)
         enddo
         md=4/3.*pi*ad**3*rhods
         llog_massbins=.false.
@@ -275,6 +279,7 @@ module Dustvelocity
 !  (Do we really need unit_md? When would it not be 1?)
 !
       elseif (llog_massbins) then
+        dustbin_width=deltamd  !(to be checked)
         do k=1,ndustspec
           mdminus(k) = md0*deltamd**(k-1)
           mdplus(k)  = md0*deltamd**k
@@ -284,6 +289,7 @@ module Dustvelocity
         llin_radiusbins=.false.
       endif
       if (lroot) print*,'initialize_dustvelocity: ad=',ad
+      if (ldustdensity) call put_shared_variable('dustbin_width',dustbin_width)
 !
 !  Reinitialize dustvelocity
 !  'all_to_first' = reinitialize heavier particles to lightest one.
