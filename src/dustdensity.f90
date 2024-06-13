@@ -47,7 +47,7 @@ module Dustdensity
   real, dimension(nx,ndustspec,ndustspec0) :: dndr_full, ppsf_full
 !  real, dimension(ndustspec0)  :: Ntot_i
   real, dimension(nx,ndustspec,ndustspec) :: dkern
-  real, dimension (nx) :: nucleation_rmin
+  real, dimension (nx) :: nucleation_rmin, nucleation_rate
   real, dimension(ndustspec,ndustspec0) :: init_distr_ki
   real, dimension(ndustspec0) :: BB=0.
   real, dimension(ndustspec) :: dsize,init_distr2,amplnd_rel=0.
@@ -2541,9 +2541,11 @@ module Dustdensity
       type (pencil_case) :: p
 
       real, dimension (nx) :: supsatratio1,pp,ppmon,ppsat,vth
-      real, dimension (nx) :: sat_ratio_SIO2
+      real, dimension (nx) :: sat_ratio_SIO2, tmp2
+      real :: nucleation_rate_coeff, tmp1
       real :: mu
       real :: molar_mass_SIO2_cgs=60.08, gam_surf_energy_cgs=32.
+      real :: nucleation_rate_coeff_cgs=1e19
       real :: volume_SIO2_cgs=4.5e-23
       real :: gam_surf_energy, volume_sio2
       real :: molar_mass_SIO2, atomic_mSIO2, A_SIO2
@@ -2608,6 +2610,13 @@ module Dustdensity
         volume_SIO2=volume_SIO2_cgs/unit_length**3
         sat_ratio_SIO2=p%chem_conc(:,ichem_SIO2)/chem_conc_sat_SIO2
         nucleation_rmin=4.*gam_surf_energy*volume_SIO2/(k_B*p%TT*alog(sat_ratio_SIO2))
+!
+!  Compute nucleation rate (of nucleii with r=rmin)
+!
+        nucleation_rate_coeff=nucleation_rate_coeff_cgs*unit_length**3
+        tmp1=-16.*pi*gam_surf_energy**3*volume_SIO2**2
+        tmp2=2*(k_B*p%TT)**3*(alog(sat_ratio_SIO2))**2
+        nucleation_rate=nucleation_rate_coeff*exp(tmp1/tmp2)
 !
 !  Assume a hat(om*t) time behavior
 !
