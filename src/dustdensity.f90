@@ -270,8 +270,8 @@ module Dustdensity
 !  Need deltamd for computing the radius differential in dustdensity.
 !
       if (ldustvelocity) then
-         call get_shared_variable('dustbin_width',dustbin_width,caller='initialize_dustdensity')
-        call get_shared_variable('deltamd',deltamd,caller='initialize_dustdensity')
+        call get_shared_variable('dustbin_width',dustbin_width)
+        call get_shared_variable('deltamd',deltamd)
         call get_shared_variable('llin_radiusbins',llin_radiusbins)
         if (llin_radiusbins.and..not.lradius_binning) call fatal_error('initialize_dustdensity', &
                 'must not use llin_radiusbins=T with lradius_binning=F')
@@ -279,7 +279,7 @@ module Dustdensity
 
       if ((latm_chemistry .or. lsemi_chemistry).and. ndustspec<3) &
         call fatal_error('initialize_dustdensity', 'Number of dust species < 3')
-
+!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !NB:  this part destroys latm_chemistry case
