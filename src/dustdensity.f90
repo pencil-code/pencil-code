@@ -83,7 +83,7 @@ module Dustdensity
   character (len=labellen) :: advec_ddensity='normal'
   character (len=labellen) :: diffnd_law='const'
   character (len=labellen) :: self_collisions='nothing'
-  logical :: ludstickmax=.false., lno_deltavd=.false.
+  logical :: ludstickmax=.false., lno_deltavd=.false., ldustnucleation=.false.
   logical :: lcalcdkern=.true., lkeepinitnd=.false., ldustcontinuity=.true.
   logical :: ldustnulling=.false., lupw_ndmdmi=.false.
   logical :: ldeltavd_thermal=.false., ldeltavd_turbulent=.false.
@@ -105,7 +105,7 @@ module Dustdensity
   logical :: lkernel_mean=.false., lpiecewise_constant_kernel=.false.
   logical :: lfree_molecule=.false.
   integer :: iadvec_ddensity=0
-  logical, pointer :: llin_radiusbins
+  logical, pointer :: llin_radiusbins, llog_massbins
   real, pointer :: deltamd, dustbin_width
   real    :: dustdensity_floor=-1, Kern_min=0., Kern_max=0.
   real    :: G_condensparam=0., supsatratio_given=0., supsatratio_given0=0.
@@ -130,7 +130,7 @@ module Dustdensity
       advec_ddensity, dustdensity_floor, init_x1, init_x2, lsubstep, a0, a1, &
       ldustcondensation_simplified, ldustcoagulation_simplified,lradius_binning, &
       lzero_upper_kern, rotat_position, dt_substep, &
-      r_lucky, r_collected, f_lucky, nd0_luck, chem_conc_sat_SIO2
+      r_lucky, r_collected, f_lucky, nd0_luck, chem_conc_sat_SIO2, ldustnucleation
 !
   namelist /dustdensity_run_pars/ &
       rhod0, diffnd, diffnd_hyper3, diffnd_hyper3_mesh, diffmd, diffmi, lno_deltavd, initnd, &
@@ -146,7 +146,7 @@ module Dustdensity
       lsemi_chemistry, lradius_binning, dkern_cst, lzero_upper_kern, &
       llog10_for_admom_above10,lmomcons, lmomconsb, lmomcons2, lmomcons3, lmomcons3b, &
       lkernel_mean, lpiecewise_constant_kernel, momcons_term_frac, &
-      tstart_droplet_coagulation, lfree_molecule, chem_conc_sat_SIO2
+      tstart_droplet_coagulation, lfree_molecule, chem_conc_sat_SIO2, ldustnucleation
 !
   integer :: idiag_KKm=0     ! DIAG_DOC: $\sum {\cal T}_k^{\rm coag}$
   integer :: idiag_KK2m=0    ! DIAG_DOC: $\sum {\cal T}_k^{\rm coag}$
@@ -154,6 +154,7 @@ module Dustdensity
   integer :: idiag_MMym=0    ! DIAG_DOC: $\sum {\cal M}^y_{k,{\rm coag}}$
   integer :: idiag_MMzm=0    ! DIAG_DOC: $\sum {\cal M}^z_{k,{\rm coag}}$
   integer :: idiag_nuclrmin=0! DIAG_DOC: $\< r_{\min} \>$
+  integer :: idiag_nuclrate=0! DIAG_DOC: $\< J \>$
   integer :: idiag_ndmt=0,idiag_rhodmt=0,idiag_rhoimt=0
   integer :: idiag_ssrm=0,idiag_ssrmax=0,idiag_adm=0,idiag_mdmtot=0
   integer :: idiag_rhodmxy=0, idiag_ndmxy=0
@@ -273,6 +274,7 @@ module Dustdensity
         call get_shared_variable('dustbin_width',dustbin_width)
         call get_shared_variable('deltamd',deltamd)
         call get_shared_variable('llin_radiusbins',llin_radiusbins)
+        call get_shared_variable('llog_massbins',llog_massbins)
         if (llin_radiusbins.and..not.lradius_binning) call fatal_error('initialize_dustdensity', &
                 'must not use llin_radiusbins=T with lradius_binning=F')
       endif
@@ -1768,7 +1770,7 @@ module Dustdensity
       real, dimension (nx) :: ff_cond, ff_cond_fact
       real, dimension (nx,ndustspec) :: dndr_tmp=0.,  dndr
       real, dimension (nx,ndustspec) :: nd_substep, nd_substep_0, K1,K2,K3,K4
-      integer :: k,i,j
+      integer :: k,i,j,kk
 !
       intent(in)  :: f,p
       intent(inout) :: df
@@ -1947,7 +1949,23 @@ module Dustdensity
             enddo
             df(l1:l2,m,n,i_SIO2) = df(l1:l2,m,n,i_SIO2) - ff_cond
           endif
-        endif
+       endif
+!
+!  Nucleation of SiO2 into microsilica particles
+!
+       if (ldustnucleation) then
+          if (llin_radiusbins) then
+             do i=1,nx
+               kk=max(1,int(2+(nucleation_rmin(i)-a0)/dustbin_width))
+               if (kk >= ndustspec) call fatal_error('dndmd_dt','k_xdep is too large')
+               !print*,"NILS: ad(i), nucleation_rmin, ad(i+1), i=",ad(k_xdep(i)), nucleation_rmin, ad(k_xdep(i)+1), k_xdep(i)
+               df(l1+i-1,m,n,ind(kk))=df(l1+i-1,m,n,ind(kk))+nucleation_rate(i)/dustbin_width
+               !print*,'NILS: nucleation_rate(i)=',nucleation_rate(i)
+             enddo
+          elseif (llog_massbins) then
+             call fatal_error('dndmd_dt','not implemented for llog_massbins yet')
+          endif
+       endif
       endif   !if (latm_chemistry .or. lsemi_chemistry)
 !
 !  Loop over dust layers
@@ -2177,6 +2195,7 @@ module Dustdensity
           call sum_mn_name(sum(spread((md/(4/3.*pi*rhods))**(1/3.),1,nx)*p%nd,2)/sum(p%nd,2), idiag_adm)
         if (idiag_mdmtot/=0) call sum_mn_name(sum(spread(md,1,nx)*p%nd,2), idiag_mdmtot)
         call sum_mn_name(nucleation_rmin,idiag_nuclrmin)
+        call sum_mn_name(nucleation_rate,idiag_nuclrate)
 !
 !  compute moments, works independently of lmdvar
 !
@@ -2184,7 +2203,8 @@ module Dustdensity
           if (idiag_rmom(k)/=0) call sum_mn_name(sum(p%md**(k/3.)*p%nd,2),idiag_rmom(k))
           if (idiag_admom(k)/=0) then
             if (lradius_binning) then
-              call sum_mn_name(sum(p%ad**k*p%nd,2)*dlnad,idiag_admom(k))
+               call sum_mn_name(sum(p%ad**k*p%nd,2)*dlnad,idiag_admom(k))
+               !call sum_mn_name(sum(p%ad**k*p%nd,2)*dustbin_width,idiag_admom(k))
             else
               if (llog10_for_admom_above10.and.k>10) then
                 call sum_mn_name(sum(p%ad**k*p%nd,2),idiag_admom(k),llog10=.true.)
@@ -2613,10 +2633,12 @@ module Dustdensity
 !
 !  Compute nucleation rate (of nucleii with r=rmin)
 !
-        nucleation_rate_coeff=nucleation_rate_coeff_cgs*unit_length**3
-        tmp1=-16.*pi*gam_surf_energy**3*volume_SIO2**2
-        tmp2=2*(k_B*p%TT)**3*(alog(sat_ratio_SIO2))**2
-        nucleation_rate=nucleation_rate_coeff*exp(tmp1/tmp2)
+        if (ldustnucleation) then
+          nucleation_rate_coeff=nucleation_rate_coeff_cgs*unit_length**3
+          tmp1=-16.*pi*gam_surf_energy**3*volume_SIO2**2
+          tmp2=2*(k_B*p%TT)**3*(alog(sat_ratio_SIO2))**2
+          nucleation_rate=nucleation_rate_coeff*exp(tmp1/tmp2)
+        endif
 !
 !  Assume a hat(om*t) time behavior
 !
@@ -3137,7 +3159,7 @@ module Dustdensity
 !
       if (lreset) then
         idiag_mdm=0; idiag_KKm=0; idiag_KK2m=0; idiag_MMxm=0; idiag_MMym=0; idiag_MMzm=0
-        idiag_nuclrmin=0
+        idiag_nuclrmin=0; idiag_nuclrate=0
         idiag_ndm=0; idiag_ndmin=0; idiag_ndmax=0; idiag_ndmt=0; idiag_rhodm=0
         idiag_rhodmin=0; idiag_rhodmax=0; idiag_rhodmxy=0; idiag_ndmxy=0
         idiag_nd2m=0; idiag_rhodmt=0; idiag_rhoimt=0; idiag_epsdrms=0
@@ -3225,6 +3247,7 @@ module Dustdensity
         call parse_name(iname,cname(iname),cform(iname),'adm',idiag_adm)
         call parse_name(iname,cname(iname),cform(iname),'mdmtot',idiag_mdmtot)
         call parse_name(iname,cname(iname),cform(iname),'nuclrmin',idiag_nuclrmin)
+        call parse_name(iname,cname(iname),cform(iname),'nuclrate',idiag_nuclrate)
         do k=0,mmom
           sdust=itoa(k)
           call parse_name(iname,cname(iname),cform(iname),'rmom'//trim(sdust),idiag_rmom(k))

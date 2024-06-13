@@ -158,6 +158,7 @@ module Dustvelocity
 !  Need deltamd for normalization purposes in dustdensity.
 !
       call put_shared_variable('llin_radiusbins',llin_radiusbins,caller='register_dustvelocity')
+      call put_shared_variable('llog_massbins',llog_massbins,caller='register_dustvelocity')
       if (ldustdensity) then
         call put_shared_variable('deltamd',deltamd)
         call put_shared_variable('dustbin_width',dustbin_width)
