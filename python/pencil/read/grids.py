@@ -147,6 +147,10 @@ class Grid(object):
                 if param.lcollective_io:
                     # A collective IO strategy is being used
                     proc_dirs = ["allprocs"]
+
+                if len(proc_dirs) == 0:
+                    raise FileNotFoundError("Assumed io_dist, but could not find processor directories")
+
             else:
                 proc_dirs = ["proc" + str(proc)]
 
@@ -160,9 +164,6 @@ class Grid(object):
             dx_tilde = np.zeros(dim.mx, dtype=precision)
             dy_tilde = np.zeros(dim.my, dtype=precision)
             dz_tilde = np.zeros(dim.mz, dtype=precision)
-
-            if len(proc_dirs) == 0:
-                raise FileNotFoundError("Assumed io_dist, but could not find processor directories")
 
             for directory in proc_dirs:
                 if not param.lcollective_io:
