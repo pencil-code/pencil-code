@@ -228,7 +228,7 @@ module Ascalar
 ! 
       lpenc_diagnos(i_acc)=.true.
 !
-! temperaature
+! temperature
 !
       if (lttc) then
         do i=1,3

@@ -1940,10 +1940,6 @@ module Dustdensity
 !
             ff_cond=0.
             ff_cond_fact=4.*pi*mfluxcond*true_density_microsilica
-            if (llin_radiusbins.and.lradius_binning) then
-            else
-              call fatal_error('initialize_dustdensity', 'currently only one option')
-            endif
             do k=1,ndustspec
               ff_cond=ff_cond+ff_cond_fact*ad(k)**2*f(l1:l2,m,n,ind(k))*dustbin_width
             enddo
@@ -2203,8 +2199,9 @@ module Dustdensity
           if (idiag_rmom(k)/=0) call sum_mn_name(sum(p%md**(k/3.)*p%nd,2),idiag_rmom(k))
           if (idiag_admom(k)/=0) then
             if (lradius_binning) then
-               call sum_mn_name(sum(p%ad**k*p%nd,2)*dlnad,idiag_admom(k))
-               !call sum_mn_name(sum(p%ad**k*p%nd,2)*dustbin_width,idiag_admom(k))
+               !call sum_mn_name(sum(p%ad**k*p%nd,2)*dlnad,idiag_admom(k))
+! 2024-06-14/AB: the thing above seems wrong, and would affect earlier work.
+               call sum_mn_name(sum(p%ad**k*p%nd,2)*dustbin_width,idiag_admom(k))
             else
               if (llog10_for_admom_above10.and.k>10) then
                 call sum_mn_name(sum(p%ad**k*p%nd,2),idiag_admom(k),llog10=.true.)
@@ -2437,7 +2434,7 @@ module Dustdensity
 !
           if (lfree_molecule) then
             do k=2,ndustspec-1
-              coefk0=3.*mfluxcond/(ad(k)*dlnmd)
+              coefk0=mfluxcond/dustbin_width
               df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) &
                 -coefk0*(f(l1:l2,m,n,ind(k))-f(l1:l2,m,n,ind(k-1)))
             enddo

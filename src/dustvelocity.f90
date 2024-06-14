@@ -80,7 +80,7 @@ module Dustvelocity
   character (len=labellen), dimension(nvisc_max) :: iviscd=''
   character (len=labellen) :: draglaw='epstein_cst', viscd_law='const'
   character (len=labellen) :: dust_geometry='sphere', dust_chemistry='nothing'
-  character (len=labellen) :: iefficiency_type='nothing'
+  character (len=labellen) :: iefficiency_type='nothing', dust_binning='log_mass'
 !
   namelist /dustvelocity_init_pars/ &
       uudx0, uudy0, uudz0, ampl_udx, ampl_udy, ampl_udz, &
@@ -93,7 +93,7 @@ module Dustvelocity
       llin_radiusbins, llog_massbins, &
       lvshear_dust_global_eps, cdtd, &
       ldustvelocity_shorttausd, scaleHtaus, z0taus, betad0,&
-      lstokes_highspeed_corr, iefficiency_type
+      lstokes_highspeed_corr, iefficiency_type, dust_binning
 !
   namelist /dustvelocity_run_pars/ &
       nud, nud_all, iviscd, betad, betad_all, tausd, tausd_all, draglaw, &
@@ -155,10 +155,28 @@ module Dustvelocity
         iudz(k) = iuud(k)+2
       enddo
 !
-!  Need deltamd for normalization purposes in dustdensity.
+!  The integration scheme should be the same for different width schemes
 !
-      call put_shared_variable('llin_radiusbins',llin_radiusbins,caller='register_dustvelocity')
-      call put_shared_variable('llog_massbins',llog_massbins,caller='register_dustvelocity')
+      select case (dust_binning)
+!
+      case ('lin_radius')
+        llin_radiusbins=.true.
+        dustbin_width=ad1
+!
+      case ('log_radius')
+        dustbin_width=alog(deltamd)/3.
+
+      case ('log_mass')
+        llog_massbins=.true.
+        dustbin_width=alog(deltamd)
+
+      case default
+        call fatal_error('register_dustvelocity','no valid dust_binning')
+
+      endselect
+!
+      call put_shared_variable('llin_radiusbins',llin_radiusbins)
+      call put_shared_variable('llog_massbins',llog_massbins)
       if (ldustdensity) then
         call put_shared_variable('deltamd',deltamd)
         call put_shared_variable('dustbin_width',dustbin_width)
@@ -180,6 +198,7 @@ module Dustvelocity
 !
       integer :: i, j, k
       real :: gsurften, Eyoung, nu_Poisson, Eyoungred
+      real :: lnad
 !
 !  Copy boundary condition on first dust species to all others.
 !
@@ -266,29 +285,36 @@ module Dustvelocity
       if (ad1/=0.) md0 = 8*pi/(3*(1.+deltamd))*ad1**3*rhods
       if (lroot) print*,'recalculated: md0=',md0
 !
-!  The integration scheme should be the same for different width schemes
-!
-      if (llin_radiusbins) then
-        dustbin_width=ad1
-      elseif (llog_massbins) then
-        dustbin_width=deltamd
-      endif
-!
 !  Choice between different spacings.
 !  Currently, there are only 2 choices.
 !  First, linearly spaced radius bins:
 !
-      if (llin_radiusbins) then
+      select case (dust_binning)
+!
+      case ('lin_radius')
         do k=1,ndustspec
           ad(k)=ad0+dustbin_width*(k-1)
-       enddo
+        enddo
         md=4/3.*pi*ad**3*rhods
         llog_massbins=.false.
+!
+!  Logarithmically spaced radius bins:
+!
+      case ('log_radius')
+        do k=1,ndustspec
+          lnad=alog(ad0)+dustbin_width*(k-1)
+          ad(k)=exp(lnad)
+   !--    adminus(k) = md0*deltard**(k-1)
+   !--    adplus(k)  = md0*deltard**k
+   !--    ad(k) = 0.5*(mdminus(k)+mdplus(k))
+        enddo
+        md=4/3.*pi*ad**3*rhods
+        llin_radiusbins=.false.
 !
 !  Logarithmically spaced mass bins:
 !  (Do we really need unit_md? When would it not be 1?)
 !
-      elseif (llog_massbins) then
+      case ('log_mass')
         do k=1,ndustspec
           mdminus(k) = md0*deltamd**(k-1)
           mdplus(k)  = md0*deltamd**k
@@ -296,7 +322,11 @@ module Dustvelocity
         enddo
         ad=(0.75*md*unit_md/(pi*rhods))**onethird
         llin_radiusbins=.false.
-      endif
+
+      case default
+        call fatal_error('register_dustvelocity','no valid dust_binning')
+
+      endselect
       if (lroot) print*,'initialize_dustvelocity: ad=',ad
 !
 !  Reinitialize dustvelocity
