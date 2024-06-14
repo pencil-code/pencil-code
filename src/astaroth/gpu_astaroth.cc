@@ -467,7 +467,7 @@ extern "C" void substepGPU(int isubstep)
   //  acGridSynchronizeStream(STREAM_ALL);
   //}
   acDeviceSetInput(acGridGetDevice(), AC_step_num,isubstep-1);
-  acGridSynchronizeStream(STREAM_ALL);
+  //acGridSynchronizeStream(STREAM_ALL);
   Device dev = acGridGetDevice();
   if (isubstep == 1)
     acDeviceSetInput(acGridGetDevice(), AC_dt,dt);
@@ -491,7 +491,7 @@ extern "C" void substepGPU(int isubstep)
       set_dt(dt1_);
       acDeviceSetInput(acGridGetDevice(),AC_dt,dt);
   }
-  acGridSynchronizeStream(STREAM_ALL);
+  //acGridSynchronizeStream(STREAM_ALL);
   //acGridSynchronizeStream(STREAM_ALL);
   // acLogFromRootProc(rank,"Done substep: %d\n",isubstep);
   // fflush(stdout);
@@ -1106,6 +1106,38 @@ extern "C" void loadFarray()
   acGridSynchronizeStream(STREAM_ALL);
 }
 /***********************************************************************************************/
+extern "C" void updateInConfigArr(int index)
+{
+     if (mesh.info.real_arrays[index] != nullptr)
+        acDeviceLoadRealArray(acGridGetDevice(),STREAM_DEFAULT,mesh.info,static_cast<AcRealArrayParam>(index));
+}
+/***********************************************************************************************/
+extern "C" void updateInConfigScal(int index, AcReal value)
+{
+     Device device=acGridGetDevice();
+     acLoadRealUniform(device->streams[STREAM_DEFAULT],static_cast<AcRealParam>(index), value);
+}
+/***********************************************************************************************/
+extern "C" int updateInConfigArrName(char *name)
+{
+    int ind = -1;
+    for (int i=0; i<NUM_REAL_ARRAYS; i++){
+       if (strcmp(real_array_param_names[i],name)==0) ind=i;
+    }
+    if (ind>-1) updateInConfigArr(ind);
+    return ind;
+}
+/***********************************************************************************************/
+extern "C" int updateInConfigScalName(char *name, AcReal value)
+{
+    int ind = -1;
+    for (int i=0; i<NUM_REAL_PARAMS; i++){
+       if (strcmp(realparam_names[i],name)==0) ind=i;
+    }
+    if (ind>-1) updateInConfigScal(ind, value);
+    return ind;
+}
+/**********************************************************************************************/
 extern "C" void finalizeGPU()
 {
 #if PACKED_DATA_TRANSFERS
