@@ -2908,7 +2908,7 @@ module Hydro
         lpenc_diagnos(i_fpres)=.true.
       endif
 !
-      if (idiag_fum/=0) lpenc_diagnos(i_fcont)=.true.
+      if (lforcing_cont_uu.and.idiag_fum/=0) lpenc_diagnos(i_fcont)=.true.
 !
 ! check whether right variables are set for half-box calculations.
 !
