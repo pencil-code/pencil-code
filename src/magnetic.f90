@@ -4624,7 +4624,6 @@ module Magnetic
         if (.not.lkinematic) then
           if (llorentzforce) then
             if (lboris_correction) then
-print*,'AXEL1'
 !
 !  Following Eq. 34 of Gombosi et al. 2002 for Boris correction. Can work with
 !  only const gravity at present
