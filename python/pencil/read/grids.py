@@ -161,6 +161,9 @@ class Grid(object):
             dy_tilde = np.zeros(dim.my, dtype=precision)
             dz_tilde = np.zeros(dim.mz, dtype=precision)
 
+            if len(proc_dirs) == 0:
+                raise FileNotFoundError("Assumed io_dist, but could not find processor directories")
+
             for directory in proc_dirs:
                 if not param.lcollective_io:
                     proc = int(directory[4:])
