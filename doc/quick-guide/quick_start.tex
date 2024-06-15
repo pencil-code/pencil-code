@@ -18,7 +18,16 @@
 %\usepackage{bibtex}
 %\usepackage{wrapfig}
 \usepackage{color}
-\usepackage[breaklinks=true]{hyperref}
+\RequirePackage{hyperref}
+\hypersetup{
+	breaklinks = true,
+	colorlinks = true,
+	linkcolor = blue,
+	citecolor = green,
+	filecolor = green,
+	urlcolor = red,
+	pdfborder = {0 0 0}
+}
 %\usepackage{fmtcount}
 \usepackage{parskip}
 
@@ -61,6 +70,7 @@ For HDF5 and MPI support, you need to install the package \directory{libhdf5-ope
 \end{verbatim}
 
 \subsection{\name{MacOS X}}
+WARNING: This section is not up-to-date and not tested!
 For \name{Mac}, you first need to install \name{Xcode} from the
 website \url{http://developer.apple.com/}, where you have to register as a member.
 In addition to that it might be necessary to install a \name{fortran} \name{open-mpi} compiler which can be done by first installing \name{homebrew} (available at \url{https://brew.sh}) and then through the terminal command:
@@ -327,11 +337,11 @@ If you miss some physical quantities, you might want to extend the two IDL routi
 Please check the documentation inside these files:
 \begin{center}
 \begin{tabular}{|l|l|}\hline
-  \file{pencil-code/idl/read/pc\_read\_var\_raw.pro} & efficient reading of raw data\\\hline
-  \file{pencil-code/idl/read/pc\_read\_subvol\_raw.pro} & reading of sub-volumes\\\hline
-  \file{pencil-code/idl/read/pc\_read\_slice\_raw.pro} & reading of any 2D slice from 3D snapshots\\\hline
-  \file{pencil-code/idl/pc\_get\_quantity.pro} & compute physical quantities out of raw data\\\hline
-  \file{pencil-code/idl/pc\_check\_quantities.pro} & dependency checking of physical quantities\\\hline
+  \command{pencil-code/idl/read/pc\_read\_var\_raw.pro} & efficient reading of raw data\\\hline
+  \command{pencil-code/idl/read/pc\_read\_subvol\_raw.pro} & reading of sub-volumes\\\hline
+  \command{pencil-code/idl/read/pc\_read\_slice\_raw.pro} & reading of any 2D slice from 3D snapshots\\\hline
+  \command{pencil-code/idl/pc\_get\_quantity.pro} & compute physical quantities out of raw data\\\hline
+  \command{pencil-code/idl/pc\_check\_quantities.pro} & dependency checking of physical quantities\\\hline
 \end{tabular}
 \end{center}
 in order to read data efficiently and compute quantities in physical units.
@@ -410,11 +420,9 @@ import pencil as pc
 Some useful functions:
 \begin{center}
 \begin{tabular}{|l|l|}\hline
-\file{pc.read.ts} & read \file{time\_series.dat} file. Parameters are added as 
-members of the class\\\hline
-\file{pc.read.slices} & read 2D slice files and return two arrays: 
-(nslices,vsize,hsize) and (time)\\\hline
-\file{pc.visu.animate\_interactive} & assemble a 2D animation from a 3D 
+\command{pc.read.ts} & read \file{time\_series.dat}. Parameters are added as members of the class\\\hline
+\command{pc.read.slices} & read 2D slice files and return two arrays: (nslices,vsize,hsize) and (time)\\\hline
+\command{pc.visu.animate\_interactive} & assemble a 2D animation from a 3D 
 array\\\hline
 %× & ×\\\hline
 %× & ×\\\hline
