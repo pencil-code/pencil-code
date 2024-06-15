@@ -209,7 +209,20 @@ If you prefer to use a different compiler package (e.g. with \name{MPI} support 
 
 More pre-defined configurations are found in the directory \file{pencil-code/config/compilers/*.conf}.
 
-\subsubsection{Changing compiler options (optional)}
+\subsubsection{Debugging and testing options}
+
+During code development and testing phase, there is a common set of debug options that one should use for compiling.
+These debug options are available as predefined sets for all major compilers.
+E.g., if you use the \name{GNU-GCC} compilers, you would use this extension:
+\begin{verbatim}
+  pc_build -f GNU-GCC,GNU-GCC_debug
+\end{verbatim}
+Alternatively, if you require to use MPI:
+\begin{verbatim}
+  pc_build -f GNU-GCC_MPI,GNU-GCC_debug
+\end{verbatim}
+
+\subsubsection{Individual compiler setup (optional)}
 
 Of course you can also create a configuration file in any subdirectory of \directory{pencil-code/config/hosts/}.
 By default, \command{pc\_build} looks for a config file that is based on your \code{host-ID}, which you may see with the command:
