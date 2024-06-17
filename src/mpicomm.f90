@@ -724,7 +724,7 @@ print*,'AXEL: patch_neigh_left, patch_neigh_right, patch_neigh_top, patch_neigh_
       call MPI_Type_commit(type_get,mpierr)
       call MPI_Type_commit(type_store,mpierr)
 
-      size=nxgrid*nygrid*nzgrid*size_of_real
+      size=nwgrid*size_of_real
 
       if (lroot) then   ! data tb scattered is on root
         call MPI_Win_create(a, size, 1, MPI_INFO_NULL, MPI_COMM_WORLD, win, mpierr)
