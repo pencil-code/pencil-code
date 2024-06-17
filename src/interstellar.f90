@@ -3587,7 +3587,7 @@ mnloop:do n=n1,n2
 !  after these checks.
 !
 if (lroot) print*, "SNR%indx%iproc:",SNR%indx%iproc
-print*,"Fred was here, explode_SN: iproc, ierr, exp(maxlnTT)/TT_SN_max",iproc, ierr, exp(maxlnTT)/TT_SN_max
+print*,"Fred was here, explode_SN: iproc, ierr, exp(maxlnTT)/TT_SN_max",iproc, exp(maxlnTT)/TT_SN_max
       if (lSN_eth.or.lSN_coolingmass) then
         mmpi=maxlnTT
         call mpiallreduce_max(mmpi,maxlnTT)
