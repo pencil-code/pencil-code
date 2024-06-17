@@ -78,6 +78,18 @@ contains
 
     endsubroutine reload_GPU_config
 !**************************************************************************
+    subroutine update_on_gpu(index,varname,value)
+
+      integer :: index
+      character(LEN=*), optional :: varname
+      real, optional :: value
+
+      call keep_compiler_quiet(index)
+      if (present(varname)) call keep_compiler_quiet(varname)
+      if (present(value)) call keep_compiler_quiet(value)
+
+    endsubroutine update_on_gpu
+!**************************************************************************
     subroutine test_rhs_gpu(f,df,p,mass_per_proc,early_finalize,cpu_version)
 !
 !  Used to test different implementations of rhs_cpu.

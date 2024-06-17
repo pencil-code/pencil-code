@@ -377,23 +377,30 @@ AcReal max_advec()
 #if LHYDRO
   acGridReduceVec(STREAM_DEFAULT, RTYPE_MAX, UUX, UUY, UUZ, &umax);
 #endif
-  return umax/sqrt(get_dxyz_2());
+  return umax/sqrt(get_dxyzs().x);
 }
 /***********************************************************************************************/
 AcReal max_diffus()
 {
-  AcReal dxyz_2_val = get_dxyz_2();
-  AcReal maxdiffus_ = 0.;
+  AcReal3 dxyz_vals = get_dxyzs();
+  AcReal maxdiffus=0., maxdiffus2=0., maxdiffus3=0.;
+
 #if LVISCOSITY
-  maxdiffus_ = nu * dxyz_2_val;
+  maxdiffus = nu;
+  //maxdiffus2 = nu_hyper2;
+  maxdiffus3 = nu_hyper3;
 #endif
 #if LMAGNETIC
-  maxdiffus_ = std::max(maxdiffus_, eta * dxyz_2_val);
+  maxdiffus = std::max(maxdiffus, eta);
+  //maxdiffus2 = std::max(maxdiffus2, eta_hyper2);
+  maxdiffus3 = std::max(maxdiffus3, eta_hyper3);
 #endif
 #if LENTROPY
-  maxdiffus_ = std::max(maxdiffus_, gamma * chi * dxyz_2_val);
+  maxdiffus = std::max(maxdiffus, gamma * chi);
+  //maxdiffus2 = std::max(maxdiffus2, gamma * chi_hyper2);
+  maxdiffus3 = std::max(maxdiffus3, gamma * chi_hyper3);
 #endif
-  return maxdiffus_;
+  return maxdiffus*dxyz_vals.x/cdtv + maxdiffus2*dxyz_vals.y/cdtv2 + maxdiffus3*dxyz_vals.z/cdtv3;
 }
 /***********************************************************************************************/
 int id_to_tag(int3 id)
@@ -479,15 +486,13 @@ extern "C" void substepGPU(int isubstep)
 #if LHYDRO
       AcReal maxadvec = acDeviceGetOutput(acGridGetDevice(), AC_maxadvec)/cdt;
 #endif
-      AcReal maxdiffus = max_diffus();
 #if LENTROPY
       //AcReal maxchi    = dev->output.real_outputs[AC_maxchi];
       //maxdiffus = maxdiffus+maxchi/pow(dx,2)
 #endif
-      maxdiffus = maxdiffus/cdtv;
-      AcReal dt1_ = sqrt(pow(maxadvec, 2) + pow(maxdiffus, 2));
+      AcReal dt1_ = sqrt(pow(maxadvec, 2) + pow(max_diffus(), 2));
 //printf("maxadvec, maxchi,maxdiffus= %e %e %e \n", maxadvec, maxchi, maxdiffus);
-//printf("maxadvec, maxdiffus= %e %e %e \n", maxadvec, maxdiffus);
+//printf("maxadvec, maxdiffus= %e %e %e \n", maxadvec, max_diffus());
       set_dt(dt1_);
       acDeviceSetInput(acGridGetDevice(),AC_dt,dt);
   }
@@ -1114,8 +1119,7 @@ extern "C" void updateInConfigArr(int index)
 /***********************************************************************************************/
 extern "C" void updateInConfigScal(int index, AcReal value)
 {
-     Device device=acGridGetDevice();
-     acLoadRealUniform(device->streams[STREAM_DEFAULT],static_cast<AcRealParam>(index), value);
+     acDeviceLoadScalarUniform(acGridGetDevice(),STREAM_DEFAULT,static_cast<AcRealParam>(index),value);
 }
 /***********************************************************************************************/
 extern "C" int updateInConfigArrName(char *name)

@@ -24,10 +24,14 @@ void initGPU();
 void registerGPU(REAL*);
 void initializeGPU(REAL**,REAL**,FINT);
 void finalizeGPU();
-void substepGPU(int isubstep);
-void copyFarray(REAL* f);
+void substepGPU(int );
+void copyFarray(REAL*);
 void loadFarray();
 void reloadConfig();
+void updateInConfigArr(int);
+int updateInConfigArrName(char *);
+void updateInConfigScal(int,REAL);
+int updateInConfigScalName(char *, REAL);
 void testRHS(REAL*,REAL*);
 void random_initial_condition(void);
 
@@ -138,6 +142,26 @@ void FTNIZE(load_farray_c)()
 void FTNIZE(reload_gpu_config_c)()
 {
   reloadConfig();
+}
+/* ---------------------------------------------------------------------- */
+void FTNIZE(update_on_gpu_scal_by_ind_c)(int *index, REAL* value)
+{
+  updateInConfigScal(*index,*value);
+}
+/* ---------------------------------------------------------------------- */
+void FTNIZE(update_on_gpu_arr_by_ind_c)(int *index)
+{
+  updateInConfigArr(*index);
+}
+/* ---------------------------------------------------------------------- */
+int FTNIZE(update_on_gpu_scal_by_name_c)(char *varname, REAL* value)
+{
+  return updateInConfigScalName(varname,*value);
+}
+/* ---------------------------------------------------------------------- */
+int FTNIZE(update_on_gpu_arr_by_name_c)(char *varname)
+{
+  return updateInConfigArrName(varname);
 }
 /* ---------------------------------------------------------------------- */
 void FTNIZE(test_rhs_c)(REAL* f_in, REAL* df_truth)

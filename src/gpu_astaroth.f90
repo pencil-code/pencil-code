@@ -28,6 +28,10 @@ module GPU
   external load_farray_c 
   external reload_gpu_config_c
   external test_rhs_c
+  external update_on_gpu_arr_by_ind_c
+  external update_on_gpu_scal_by_ind_c
+  external update_on_gpu_arr_by_name_c
+  external update_on_gpu_scal_by_name_c
 
   include 'gpu.h'
 
@@ -140,6 +144,29 @@ contains
       call reload_gpu_config_c
 
     endsubroutine reload_GPU_config
+!**************************************************************************
+    subroutine update_on_gpu(index, varname, value)
+
+      integer, intent(inout) :: index
+      character(LEN=*),optional :: varname
+      real, optional :: value
+
+      if (index>=0) then
+        if (present(value)) then
+          call update_on_gpu_scal_by_ind_c(index,value)
+        else
+          call update_on_gpu_arr_by_ind_c(index)
+        endif
+      else
+        if (present(value)) then
+          index = update_on_gpu_scal_by_name_c(varname//char(0),value)
+        else
+          index = update_on_gpu_arr_by_name_c(varname//char(0))
+        endif
+        if (index<0) call fatal_error('update_on_gpu','variable "'//trim(varname)//'" not found')
+      endif
+
+    endsubroutine update_on_gpu
 !**************************************************************************
  subroutine test_rhs_gpu(f,df,p,mass_per_proc,early_finalize,cpu_version)
 !

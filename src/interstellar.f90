@@ -1730,11 +1730,14 @@ module Interstellar
 !
 !  01-aug-06/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-!
-      if (lfirst.and..not.lpencil_check_at_work) call check_SN(f)
+      use Gpu, only: update_on_gpu
 
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      integer, save :: ind_scale=-1
+!
       if (lfirst) then
+        if (.not.lpencil_check_at_work) call check_SN(f)
+
         if (lSNI.or.lSNII) then
           if (laverage_SNI_heating) &
             heatingfunction_scale(SNI) = t_interval(SNI) /(t_interval(SNI) +t*heatingfunction_fadefactor) &
@@ -1742,6 +1745,7 @@ module Interstellar
           if (laverage_SNII_heating) &
             heatingfunction_scale(SNII)= t_interval(SNII)/(t_interval(SNII)+t*heatingfunction_fadefactor) &
                                         *heatingfunction_scalefactor
+          if (lgpu) call update_on_gpu(ind_scale,'AC_heatingfunction_scale')
         endif
       endif
 
@@ -4583,11 +4587,10 @@ print*,"Fred was here, after MPI explode_SN: iproc, exp(maxlnTT)/TT_SN_max",ipro
 !*****************************************************************************
     subroutine pushpars2c(p_par)
 
-      use General,  only: numeric_precision
       use Syscalls, only: copy_addr, copy_addr_dble_1D
 
       integer, parameter :: n_pars=11
-      integer(KIND=ikind8), dimension(n_pars) :: p_par
+      integer(KIND=ikind8), dimension(n_pars), intent(out) :: p_par
 !
       call copy_addr(GammaUV,p_par(1))
       call copy_addr(cUV,p_par(2))

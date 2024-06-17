@@ -116,7 +116,7 @@ module Sub
   public :: vortex
   public :: find_index_by_bisection
   public :: calc_scl_factor
-!$ public :: get_dxyz_2
+!$ public :: get_dxyzs
 !
   interface poly                ! Overload the `poly' function
     module procedure poly_0
@@ -9166,10 +9166,15 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
 !
     endsubroutine calc_scl_factor
 !***********************************************************************    
-!$    real function get_dxyz_2() bind(C)
+!$  function get_dxyzs() result(res) bind(C)
 
-!$      get_dxyz_2 = dxyz_2(nghost)
+!$    type :: real3
+!$      real :: x, y, z
+!$    endtype real3
+!$    type(real3) :: res
 
-!$    end function get_dxyz_2
+!$    res%x = dxyz_2(nghost); res%y=dxyz_4(nghost); res%z=dxyz_6(nghost)
+
+!$  end function get_dxyzs
 !***********************************************************************    
 endmodule Sub
