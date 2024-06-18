@@ -30,7 +30,7 @@ module Special
   real, dimension(my) :: lat  ! latitude in [rad]
   real, dimension(mz) :: lon  ! longitude in [rad]
   real, dimension(mx,my,mz) :: rr,rr1,siny,cosy  !  r,1/r,sin(th) and cos(th)
-  real, dimension(mx,my,mz,3) :: Bext=0.  !  time-dependent external field
+  real, dimension(mx,my,mz,3) :: Bext=0.,Jext=0.  !  time-dependent external fields
 !  constants for unit conversion
   real :: gamma=1.
   real :: r2m=1., rho2kg_m3=1., u2m_s=1., cp2si=1.
@@ -202,12 +202,18 @@ module Special
     lpenc_requested(i_pp)=.true.
     lpenc_requested(i_uu)=.true.
 !
+    if (lmagnetic .and. iBext/='nothing') then
+      lpenc_requested(i_rho1)=.true.
+      lpenc_requested(i_bb)=.true.
+      lpenc_requested(i_jj)=.true.
+    endif
+!
     if (lmagnetic .and. ietaPT/='nothing') then
       select case (ieta_order)
       case ('1')
-        lpenc_requested(i_del2a)=.true.
+        !lpenc_requested(i_del2a)=.true.
       case ('3')
-        lpenc_requested(i_del6a)=.true.
+        !lpenc_requested(i_del6a)=.true.
       case default
         call fatal_error('pencil_criteria_special','no such ieta_order')
       endselect
@@ -260,11 +266,14 @@ module Special
 !  24-nov-23/kuan,hongzhe: coded
 !  21-feb-24/kuan: revised sponge layer
 !
+      use Sub, only: cross_mn,multsv_mn
+!
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
       real, dimension(:), allocatable :: q
+      real, dimension (nx,3) :: jtot,btot,jxbtot,jxbtotr
       integer :: i, j
 !
       if (n_sponge>0 .and. (lsponge_top.or.lsponge_bottom)) then
@@ -296,10 +305,18 @@ module Special
         enddo
       endif
 !
-! Add velocity drag, dudt = ... - q_drag * u
+!  Add velocity drag, dudt = ... - q_drag * u
 !
       if (lvelocity_drag) &
         df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - q_drag * f(l1:l2,m,n,iux:iuz)
+!
+!  Add Lorentz force from the background field
+!
+      jtot = p%jj + Jext(l1:l2,m,n,:)
+      btot = p%bb + Bext(l1:l2,m,n,:)
+      call cross_mn(jtot,btot,jxbtot)
+      call multsv_mn(p%rho1,jxbtot,jxbtotr)
+      df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + jxbtotr
 !
     endsubroutine special_calc_hydro
 !***********************************************************************
@@ -368,8 +385,8 @@ module Special
           df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + &
               f_eta * p%del2a * spread(eta_x,2,3)
         case ('3')
-          df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + &
-              f_eta * p%del6a * spread(eta_x,2,3)
+          !df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + &
+          !    f_eta * p%del6a * spread(eta_x,2,3)
         case default
           call fatal_error('special_calc_magnetic','no such ieta_order')
         endselect
@@ -562,12 +579,14 @@ module Special
       select case (iBext)
       case ('nothing')
         Bext = 0.
+        Jext = 0.
       case ('dipole')
         ! dipole = mu0/(4pi) * ( 3*rhat*(rhat dot m)-m ) / |r|^3
         !        = mu0/(4pi) * m * { 2*costh/r^3, sinth/r^3, 0 }
         Bext(:,:,:,1) = Bext_ampl * 2.*cosy * (xyz0(1)*rr1)**3.
         Bext(:,:,:,2) = Bext_ampl * siny    * (xyz0(1)*rr1)**3.
         Bext(:,:,:,3) = 0.
+        Jext = 0.
       case ('dipole2')
         ! mimic initaa='dipole' to account for b.c.
         ! A_phi ~ (r-r0)(r-r1)(sin(theta)-sin(theta0))(sin(theta)-sin(theta1))
@@ -578,6 +597,7 @@ module Special
         Bext(:,:,:,1) = Bext_ampl * cosy*(r0-rr)*(r1-rr)*(siny*(3.*siny-2.*sin(th1))+sin(th0)*(-2.*siny+sin(th1)))/rr/siny
         Bext(:,:,:,2) = Bext_ampl * (r0*r1-2.*(r0+r1)*rr+3.*rr**2)*(-siny+sin(th0))*(siny-sin(th1))/rr
         Bext(:,:,:,3) = 0.
+        call fatal_error('calc_Bext','Jext not implemented for iBext=dipole2')
       case default
         call fatal_error('calc_Bext','no such iBext')
       endselect
