@@ -362,7 +362,7 @@ module Interstellar
 !
 !  SN type flags
 !
-  logical :: lSNI=.true., lSNII=.true.
+  logical :: lSNI=.true., lSNII=.true., lSN=.true.
 !
 !  Cooling & heating flags
 !
@@ -539,6 +539,7 @@ module Interstellar
       if (lroot.and.luniform_zdist_SNI) &
           print*,'initialize_interstellar: using UNIFORM z-distribution of SNI'
 
+      lSN = lSNI.or.lSNII
       lSN_ecr=lcosmicray.and.lSN_ecr
       lSN_fcr=lcosmicrayflux.and.lSN_fcr.and.lSN_ecr
 !
@@ -714,7 +715,7 @@ module Interstellar
           "(1x,'initialize_interstellar: t_interval_SNI, SNI rate =',2e11.4)", &
           t_interval(SNI),SNI_factor*SNI_area_rate
       if (laverage_SNI_heating) then
-        if (lSNI.or.lSNII) then
+        if (lSN) then
           if (lroot.and.ip==1963) print &
               "(1x,'initialize_interstellar: average_SNI_heating =',e11.4)", &
               average_SNI_heating*sqrt(2*pi)*h_SNI*SN_interval_rhom* &
@@ -731,7 +732,7 @@ module Interstellar
         if (lroot.and.ip==1963) print*, 'initialize_interstellar: average_SNI_heating = 0'
       endif
       if (laverage_SNII_heating) then
-        if (lSNI.or.lSNII) then
+        if (lSN) then
           if (lroot.and.ip==1963) print &
               "(1x,'initialize_interstellar: average_SNII_heating =',e11.4)", &
               average_SNII_heating*sqrt(2*pi)*h_SNII*SN_interval_rhom* &
@@ -747,7 +748,7 @@ module Interstellar
         average_SNII_heating = 0.
         if (lroot.and.ip==1963) print*,'initialize_interstellar: average_SNII_heating =0'
       endif
-      if ((laverage_SNI_heating.or.laverage_SNII_heating).and..not.(lSNI.or.lSNII)) &
+      if ((laverage_SNI_heating.or.laverage_SNII_heating).and..not.(lSN)) &
           heatingfunction_scale = heatingfunction_scalefactor
 !
       if (laverage_SNI_heating) &
@@ -1738,7 +1739,7 @@ module Interstellar
       if (lfirst) then
         if (.not.lpencil_check_at_work) call check_SN(f)
 
-        if (lSNI.or.lSNII) then
+        if (lSN) then
           if (laverage_SNI_heating) &
             heatingfunction_scale(SNI) = t_interval(SNI) /(t_interval(SNI) +t*heatingfunction_fadefactor) &
                                         *heatingfunction_scalefactor
@@ -1924,7 +1925,7 @@ module Interstellar
 !  initial condition is in equilibrium prepared in 1D
 !  Division by density to balance LHS of entropy equation
 !
-      if (lSNI.or.lSNII) then
+      if (lSN) then
         if (laverage_SNI_heating)  heat=heat+heat_SNI_profile (n-nghost)*heatingfunction_scale(SNI)
         if (laverage_SNII_heating) heat=heat+heat_SNII_profile(n-nghost)*heatingfunction_scale(SNII)
       endif
@@ -4589,7 +4590,7 @@ print*,"Fred was here, after MPI explode_SN: iproc, exp(maxlnTT)/TT_SN_max",ipro
 
       use Syscalls, only: copy_addr, copy_addr_dble_1D
 
-      integer, parameter :: n_pars=11
+      integer, parameter :: n_pars=12
       integer(KIND=ikind8), dimension(n_pars), intent(out) :: p_par
 !
       call copy_addr(GammaUV,p_par(1))
@@ -4605,6 +4606,7 @@ print*,"Fred was here, after MPI explode_SN: iproc, exp(maxlnTT)/TT_SN_max",ipro
       call copy_addr_dble_1D(lncoolH,p_par(9))  ! (11)
       call copy_addr(coolB,p_par(10))            ! (11)
       call copy_addr(heating_rate_code,p_par(11))
+      call copy_addr(lSN,p_par(12))              ! int
 !      call copy_addr(heat_z,p_par(13))   ! (mz)
 
     endsubroutine pushpars2c

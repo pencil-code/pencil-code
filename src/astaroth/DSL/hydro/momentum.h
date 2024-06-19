@@ -1,25 +1,30 @@
+//checked 18.6.
+
 rho1 = 0.
 lnrho = 0.
-glnrho = real3(0.,0.,0.)
+glnrho = gradient(LNRHO)     // grad(rho) or grad(lnrho)!
+grho = real3(0.,0.,0.)
+	
 if (ldensity_nolog){
-        rho1 = 1/value(RHO)
-        glnrho = rho1*gradient(RHO)
-        lnrho = log(value(RHO))
+    rho1 = 1./value(RHO)
+    grho = glnrho
+    glnrho = grho*rho1
+    lnrho = log(value(RHO))
 }
 else{
-        rho1 = exp(-value(LNRHO))
-        glnrho = gradient(LNRHO)
-        lnrho = value(LNRHO)
-}
+    rho1 = exp(-value(LNRHO))
+    grho = glnrho/rho1
+    lnrho = value(LNRHO)
+}   // v
 #if LMAGNETIC
-    jj =  (gradient_of_divergence(AA) - veclaplace(AA))/mu0
+    jj = (gradient_of_divergence(AA) - veclaplace(AA))/mu0
     bb = curl(AA)
     advec2 = norm2(bb)*rho1/mu0
 #else
     advec2 = 0.
 #endif
 #if LENTROPY
-    cs2 = cs20 * exp(gamma * value(SS)/cp + gamma_m1 * (lnrho - lnrho0))
+    cs2 = cs20 * exp(value(SS)/cv + gamma_m1 * (lnrho - lnrho0))  //v
     advec2 = advec2 + cs2
 #endif
     uu=vecvalue(UU)
@@ -28,8 +33,13 @@ else{
 #if LVISCOSITY
 #include "../hydro/viscosity.h"
 #endif
+#if LGRAVITY
+    if (lgravz_gas){
+      rhs.z += gravz_zpencil[vertexIdx.z-NGHOST]
+    }
+#endif
     return rhs 
-           - gradients(UU) * uu
+           - gradients(UU) * uu   // order?
 #if LENTROPY
            - cs2 * (gradient(SS)/cp + glnrho)
 #else
@@ -37,7 +47,4 @@ else{
 #endif
 #if LMAGNETIC
            + rho1 * cross(jj,bb)
-#endif
-#if LGRAVITY
-           + gravz_zpencil[vertexIdx.z-NGHOST]
 #endif

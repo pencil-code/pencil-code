@@ -1367,11 +1367,12 @@ module Gravity
 
     use Syscalls, only: copy_addr
 
-    integer, parameter :: n_pars=2
+    integer, parameter :: n_pars=3
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call copy_addr(gravz,p_par(1))
     call copy_addr(gravz_zpencil,p_par(2)) ! (mz)
+    call copy_addr(lgravz_gas,p_par(3))    ! int
 
     endsubroutine pushpars2c
 !***********************************************************************
