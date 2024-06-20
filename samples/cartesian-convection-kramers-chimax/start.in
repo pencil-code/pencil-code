@@ -1,0 +1,31 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Convection in vertically stratified atmosphere/solar convection zone
+! with Kramers opacity.
+!
+! Initialisation parameters
+!
+&init_pars
+  xyz0  = -1., -1., -0.45,         ! first corner of box
+  Lxyz  =  2.,  2.,  1.5,          ! box size
+  lperi =  T ,   T ,   F,          ! periodic direction?
+  bcz = 's','s','a','a2','c1:cT'
+/
+&eos_init_pars
+  cs0=0.3, gamma=1.6666666,
+  rho0=1.
+/
+&hydro_init_pars
+  urand=1e-5
+/
+&density_init_pars
+initlnrho='piecew-poly', widthlnrho=0.025
+/
+&grav_init_pars
+  gravz_profile='const',z1=0., z2=1., zref=1.05, gravz=-1.,
+/
+&entropy_init_pars
+  initss='piecew-poly', widthss=0.025
+  mpoly0=1.5, mpoly1=3.25, mpoly2=0., isothtop=1,
+  cs2cool=0.09
+/
