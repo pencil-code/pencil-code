@@ -5131,6 +5131,7 @@ module Energy
 !
 !  23-feb-11/pete: coded
 !  24-aug-15/MR: bounds for chi introduced
+!  20-jun-2024/KG: fix implementation of the chi bounds
 !
       use Diagnostics
       use Sub, only: dot
@@ -5143,7 +5144,7 @@ module Energy
       intent(in) :: p
       intent(inout) :: df
 !
-      real, dimension(nx) :: thdiff, chix, g2
+      real, dimension(nx) :: thdiff, chix, g2, g2_chi
       real, dimension(nx) :: Krho1, del2ss1
       real, dimension(nx,3) :: gradchit_prof
       integer :: j
@@ -5156,9 +5157,29 @@ module Energy
 !
       K_kramers = hcond0_kramers*p%rho1**(2.*nkramers)*p%TT**(6.5*nkramers)
       Krho1 = K_kramers*p%rho1   ! = K/rho
-      !Krho1 = hcond0_kramers*exp(-p%lnrho*(2.*nkramers+1.)+p%lnTT*(6.5*nkramers))   ! = K/rho
-      if (chimax_kramers>0.) Krho1 = max(min(Krho1,chimax_kramers/p%cp1),chimin_kramers/p%cp1)
+!
+!  g2 is grad(ln(K) + ln(T)).grad(ln(T))
+!  We are not accounting for the gradient of cp, so the below will
+!  be wrong if you use eos_ionization or eos_idealgas_vapor
+!
       call dot(-2.*nkramers*p%glnrho+(6.5*nkramers+1)*p%glnTT,p%glnTT,g2)
+      call dot(p%glnrho+p%glnTT, p%glnTT, g2_chi)
+!
+      if (chimax_kramers>0.) then
+        where (Krho1 > chimax_kramers/p%cp1)
+          Krho1 = chimax_kramers/p%cp1
+          K_kramers = chimax_kramers*p%rho/p%cp1
+          g2 = g2_chi
+        endwhere
+      endif
+      if (chimin_kramers>0.) then
+        where (Krho1 < chimin_kramers/p%cp1)
+          Krho1 = chimin_kramers/p%cp1
+          K_kramers = chimin_kramers*p%rho/p%cp1
+          g2 = g2_chi
+        endwhere
+      endif
+!
       thdiff = Krho1*(p%del2lnTT+g2)
 !
 ! MR: Why here? conductivities are cumulative!
