@@ -155,6 +155,7 @@ my %tests = (
                          2d-tests/2d_methane_flame
                          2d-tests/boussinesq_convection
                          2d-tests/chiral_dynamo
+                         cartesian-convection-kramers-chimax
                          continuous-forcing-from-file
                          conv-slab
                          interlocked-fluxrings
