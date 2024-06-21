@@ -2060,20 +2060,21 @@ module EquationOfState
 !  13-mar-2011/pete: c1 condition for z-boundaries with Kramers' opacity
 !   4-jun-2015/MR: factor cp added in front of tmp_xy
 !  30-sep-2016/MR: changes for use of one-sided BC formulation (chosen by setting new optional switch lone_sided)
+!  21-jun-2024/Kishore: account for bounds on Kramers conductivity
 !
       use DensityMethods, only: getdlnrho_z, getderlnrho_z
       use Deriv, only: bval_from_neumann, set_ghosts_for_onesided_ders
       use General, only: loptest
 !
       real, pointer :: Fbot,Ftop,FtopKtop,FbotKbot,chi
-      real, pointer :: hcond0_kramers, nkramers
+      real, pointer :: hcond0_kramers, nkramers, chimax_kramers, chimin_kramers
       logical, pointer :: lmultilayer, lheatc_chiconst, lheatc_kramers
 !
       integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       logical, optional :: lone_sided
 !
-      real, dimension (size(f,1),size(f,2)) :: tmp_xy,cs2_xy,rho_xy
+      real, dimension (size(f,1),size(f,2)) :: tmp_xy, cs2_xy, rho_xy, Krho1kr_xy
       integer :: i
 !
       if (ldebug) print*,'bc_ss_flux: ENTER - cs20,cs0=',cs20,cs0
@@ -2094,6 +2095,8 @@ module EquationOfState
       if (lheatc_kramers) then
         call get_shared_variable('hcond0_kramers',hcond0_kramers)
         call get_shared_variable('nkramers',nkramers)
+        call get_shared_variable('chimax_kramers',chimax_kramers)
+        call get_shared_variable('chimin_kramers',chimin_kramers)
       endif
 !
       select case (topbot)
@@ -2131,8 +2134,12 @@ module EquationOfState
           if (lheatc_chiconst) then
             tmp_xy=Fbot/(rho_xy*chi*cs2_xy)
           else if (lheatc_kramers) then
-            tmp_xy=Fbot*rho_xy**(2*nkramers)*(cp*gamma_m1)**(6.5*nkramers) &
-                   /(hcond0_kramers*cs2_xy**(6.5*nkramers+1.))
+            Krho1kr_xy = hcond0_kramers*rho_xy**(-2*nkramers-1)*(cs2_xy/(cp*gamma_m1))**(6.5*nkramers)
+!
+            if (chimin_kramers>0) Krho1kr_xy = max(Krho1kr_xy, chimin_kramers*cp)
+            if (chimax_kramers>0) Krho1kr_xy = min(Krho1kr_xy, chimax_kramers*cp)
+!
+            tmp_xy=Fbot/(rho_xy*Krho1kr_xy*cs2_xy)
           else
             tmp_xy=FbotKbot/cs2_xy
           endif
@@ -2185,8 +2192,12 @@ module EquationOfState
           if (lheatc_chiconst) then
             tmp_xy=Ftop/(rho_xy*chi*cs2_xy)
           else if (lheatc_kramers) then
-            tmp_xy=Ftop*rho_xy**(2*nkramers)*(cp*gamma_m1)**(6.5*nkramers) &
-                   /(hcond0_kramers*cs2_xy**(6.5*nkramers+1.))
+            Krho1kr_xy = hcond0_kramers*rho_xy**(-2*nkramers-1)*(cs2_xy/(cp*gamma_m1))**(6.5*nkramers)
+!
+            if (chimin_kramers>0) Krho1kr_xy = max(Krho1kr_xy, chimin_kramers*cp)
+            if (chimax_kramers>0) Krho1kr_xy = min(Krho1kr_xy, chimax_kramers*cp)
+!
+            tmp_xy=Ftop/(rho_xy*Krho1kr_xy*cs2_xy)
           else
             tmp_xy=FtopKtop/cs2_xy
           endif
