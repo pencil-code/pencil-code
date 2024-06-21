@@ -1310,6 +1310,8 @@ module Energy
       if (lheatc_kramers) then
         call put_shared_variable('hcond0_kramers',hcond0_kramers)
         call put_shared_variable('nkramers',nkramers)
+        call put_shared_variable('chimax_kramers',chimax_kramers)
+        call put_shared_variable('chimin_kramers',chimin_kramers)
       else
         idiag_Kkramersm=0; idiag_Kkramersmx=0; idiag_Kkramersmz=0
         idiag_fradz_kramers=0; idiag_fradx_kramers=0; idiag_fradxy_kramers=0
