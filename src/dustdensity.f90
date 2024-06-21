@@ -1768,9 +1768,10 @@ module Dustdensity
       real, dimension (nx) :: mfluxcond,fdiffd,gshockgnd, Imr, tmp1, tmp2
       real, dimension (nx) :: diffus_diffnd,diffus_diffnd3,advec_hypermesh_nd
       real, dimension (nx) :: ff_cond, ff_cond_fact
+      real :: ff_nucl
       real, dimension (nx,ndustspec) :: dndr_tmp=0.,  dndr
       real, dimension (nx,ndustspec) :: nd_substep, nd_substep_0, K1,K2,K3,K4
-      integer :: k,i,j,kk
+      integer :: k,i,j,kk,ichem, kkk
 !
       intent(in)  :: f,p
       intent(inout) :: df
@@ -1942,8 +1943,17 @@ module Dustdensity
             ff_cond_fact=4.*pi*mfluxcond*true_density_microsilica
             do k=1,ndustspec
               ff_cond=ff_cond+ff_cond_fact*ad(k)**2*f(l1:l2,m,n,ind(k))*dustbin_width
+           enddo
+            !df(l1:l2,m,n,i_SIO2) = df(l1:l2,m,n,i_SIO2) - ff_cond/p%rho
+            do ichem = 1,nchemspec
+               kkk=ichemspec(ichem)
+               if (kkk==i_SIO2) then
+                  df(l1:l2,m,n,kkk) = df(l1:l2,m,n,kkk) + ff_cond*(f(l1:l2,m,n,kkk)-1.)/p%rho
+               else
+                  df(l1:l2,m,n,kkk) = df(l1:l2,m,n,kkk) + ff_cond*f(l1:l2,m,n,kkk)/p%rho
+               endif
             enddo
-            df(l1:l2,m,n,i_SIO2) = df(l1:l2,m,n,i_SIO2) - ff_cond
+            df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) - ff_cond
           endif
        endif
 !
@@ -1952,11 +1962,23 @@ module Dustdensity
        if (ldustnucleation) then
           if (llin_radiusbins) then
              do i=1,nx
-               kk=max(1,int(2+(nucleation_rmin(i)-a0)/dustbin_width))
-               if (kk >= ndustspec) call fatal_error('dndmd_dt','k_xdep is too large')
-               !print*,"NILS: ad(i), nucleation_rmin, ad(i+1), i=",ad(k_xdep(i)), nucleation_rmin, ad(k_xdep(i)+1), k_xdep(i)
-               df(l1+i-1,m,n,ind(kk))=df(l1+i-1,m,n,ind(kk))+nucleation_rate(i)/dustbin_width
-               !print*,'NILS: nucleation_rate(i)=',nucleation_rate(i)
+                if (nucleation_rmin(i)>ad(1) .and. nucleation_rmin(i)<ad(ndustspec)) then 
+                   kk=max(1,int(1+(nucleation_rmin(i)-ad(1))/dustbin_width))
+                   if (kk .gt. ndustspec) call fatal_error('dndmd_dt','kk is too large')
+                   df(l1+i-1,m,n,ind(kk))=df(l1+i-1,m,n,ind(kk))+nucleation_rate(i)/dustbin_width
+                   ff_nucl=nucleation_rate(i)*4.*pi*true_density_microsilica/3.*ad(kk)**3
+                   do ichem = 1,nchemspec
+                      kkk=ichemspec(ichem)
+                      if (kkk==i_SIO2) then
+                         df(l1+i-1,m,n,kkk) = df(l1+i-1,m,n,kkk) + ff_nucl*(f(l1+i-1,m,n,kkk)-1.)/p%rho(i)
+                      else
+                         df(l1+i-1,m,n,kkk) = df(l1+i-1,m,n,kkk) + ff_nucl*f(l1+i-1,m,n,kkk)/p%rho(i)
+                      endif
+                   enddo
+                   df(l1+i-1,m,n,irho) = df(l1+i-1,m,n,irho) - ff_nucl
+                else
+                   nucleation_rate(i)=0.
+                endif
              enddo
           elseif (llog_massbins) then
              call fatal_error('dndmd_dt','not implemented for llog_massbins yet')
