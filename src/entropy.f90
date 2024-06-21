@@ -5144,7 +5144,7 @@ module Energy
       intent(in) :: p
       intent(inout) :: df
 !
-      real, dimension(nx) :: thdiff, chix, g2, g2_chi
+      real, dimension(nx) :: thdiff, g2, g2_chi
       real, dimension(nx) :: Krho1, del2ss1
       real, dimension(nx,3) :: gradchit_prof
       integer :: j
