@@ -6533,6 +6533,7 @@ module Boundcond
 !   5-feb-15/MR: added reference state
 !  11-feb-15/MR: corrected use of reference state
 !  27-feb-2024/Kishore: implemented for iheatcond=chi-const
+!  21-jun-2024/Kishore: account for bounds on Kramers conductivity
 !
       use EquationOfState, only: lnrho0, cs20
       use SharedVariables, only: get_shared_variable
@@ -6540,9 +6541,9 @@ module Boundcond
       real, dimension (:,:,:,:) :: f
       integer, intent(IN) :: topbot
 !
-      real, dimension (:,:), allocatable :: tmp_yz,work_yz
-      real, pointer :: FbotKbot, FtopKtop, Fbot, Ftop, cp
-      real, pointer :: hcond0_kramers, nkramers, chi
+      real, dimension (:,:), allocatable :: tmp_yz, work_yz, Krho1kr_yz
+      real, pointer :: FbotKbot, FtopKtop, Fbot, Ftop, cp, chi
+      real, pointer :: hcond0_kramers, nkramers, chimax_kramers, chimin_kramers
       logical, pointer :: lheatc_kramers, lheatc_chiconst
       logical, pointer :: lheatc_Kprof, lheatc_Kconst
       integer :: i,stat
@@ -6569,6 +6570,8 @@ module Boundcond
         call get_shared_variable('hcond0_kramers',hcond0_kramers)
         call get_shared_variable('nkramers',nkramers)
         call get_shared_variable('cp',cp)
+        call get_shared_variable('chimax_kramers',chimax_kramers)
+        call get_shared_variable('chimin_kramers',chimin_kramers)
 !
       endif
       if (lheatc_chiconst) then
@@ -6580,6 +6583,11 @@ module Boundcond
         allocate(work_yz(size(f,2),size(f,3)),stat=stat)
         if (stat>0) call fatal_error('bc_ss_flux_x', &
                                      'Could not allocate memory for work_yz')
+      endif
+      if (lheatc_kramers) then
+        allocate(Krho1kr_yz(size(f,2),size(f,3)),stat=stat)
+        if (stat>0) call fatal_error('bc_ss_flux_x', &
+                                     'Could not allocate memory for Krho1kr_yz')
       endif
 !
       if (lreference_state) &
@@ -6640,8 +6648,12 @@ module Boundcond
           endif
 !
           if (lheatc_kramers) then
-            tmp_yz = Fbot*work_yz**(2*nkramers)*(cp*gamma_m1)**(6.5*nkramers)/ &
-                     (hcond0_kramers*tmp_yz**(6.5*nkramers+1.))
+            Krho1kr_yz = hcond0_kramers*work_yz**(-2*nkramers-1)*(tmp_yz/(cp*gamma_m1))**(6.5*nkramers)
+!
+            if (chimin_kramers>0) Krho1kr_yz = max(Krho1kr_yz, chimin_kramers*cp)
+            if (chimax_kramers>0) Krho1kr_yz = min(Krho1kr_yz, chimax_kramers*cp)
+!
+            tmp_yz=Fbot/(work_yz*Krho1kr_yz*tmp_yz)
           else if (lheatc_chiconst) then
             tmp_yz=Fbot/(work_yz*chi*cp*tmp_yz)
           else
@@ -6707,8 +6719,12 @@ module Boundcond
           endif
 !
           if (lheatc_kramers) then
-            tmp_yz = Ftop*work_yz**(2*nkramers)*(cp*gamma_m1)**(6.5*nkramers)/ &
-                     (hcond0_kramers*tmp_yz**(6.5*nkramers+1.))
+            Krho1kr_yz = hcond0_kramers*work_yz**(-2*nkramers-1)*(tmp_yz/(cp*gamma_m1))**(6.5*nkramers)
+!
+            if (chimin_kramers>0) Krho1kr_yz = max(Krho1kr_yz, chimin_kramers*cp)
+            if (chimax_kramers>0) Krho1kr_yz = min(Krho1kr_yz, chimax_kramers*cp)
+!
+            tmp_yz=Ftop/(work_yz*Krho1kr_yz*tmp_yz)
           else if (lheatc_chiconst) then
             tmp_yz=Ftop/(work_yz*chi*cp*tmp_yz)
           else
