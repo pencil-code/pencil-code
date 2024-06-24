@@ -33,6 +33,7 @@ module Dustvelocity
   real, dimension(nx,ndustspec) :: tausd1
   real, dimension(ndustspec) :: md=1.0, mdplus=0.0, mdminus=0.0, surfd=0.0
   real, dimension(ndustspec) :: ad=1.0, tausd=0.0
+  character (len=labellen) :: dust_binning='log_mass'
   real :: dimd1=0.0, rhods=0.0, ustcst=0.0, unit_md=0.0
   real :: mumon=0.0, mmon=0.0
   !! SHOULDN'T REALLY BE PUBLIC!!
