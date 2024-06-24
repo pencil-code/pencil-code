@@ -310,6 +310,7 @@ module Dustvelocity
         enddo
         md=4/3.*pi*ad**3*rhods
         llin_radiusbins=.false.
+        llog_massbins=.false.
 !
 !  Logarithmically spaced mass bins:
 !  (Do we really need unit_md? When would it not be 1?)
