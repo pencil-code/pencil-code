@@ -1944,7 +1944,6 @@ module Dustdensity
             do k=1,ndustspec
               ff_cond=ff_cond+ff_cond_fact*ad(k)**2*f(l1:l2,m,n,ind(k))*dustbin_width
            enddo
-            !df(l1:l2,m,n,i_SIO2) = df(l1:l2,m,n,i_SIO2) - ff_cond/p%rho
             do ichem = 1,nchemspec
                kkk=ichemspec(ichem)
                if (kkk==i_SIO2) then
@@ -1953,17 +1952,30 @@ module Dustdensity
                   df(l1:l2,m,n,kkk) = df(l1:l2,m,n,kkk) + ff_cond*f(l1:l2,m,n,kkk)/p%rho
                endif
             enddo
-            df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) - ff_cond
+            if (ldensity_nolog) then
+               df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) - ff_cond
+            else
+               df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - log(ff_cond)
+            endif
           endif
        endif
 !
 !  Nucleation of SiO2 into microsilica particles
 !
        if (ldustnucleation) then
-          if (llin_radiusbins) then
+          !if (llin_radiusbins) then
              do i=1,nx
-                if (nucleation_rmin(i)>ad(1) .and. nucleation_rmin(i)<ad(ndustspec)) then 
-                   kk=max(1,int(1+(nucleation_rmin(i)-ad(1))/dustbin_width))
+                if (nucleation_rmin(i)>ad(1) .and. nucleation_rmin(i)<ad(ndustspec)) then
+                   select case (dust_binning)
+                   case ('lin_radius')
+                      kk=max(1,int(1+(nucleation_rmin(i)-ad(1))/dustbin_width))                      
+                   case ('log_radius')
+                      kk=max(1,int(1+alog(nucleation_rmin(i)/ad(1))/dustbin_width))
+                   case ('log_mass')
+                      call fatal_error('dndmd_dt','not implemented for llog_massbins yet')        
+                   case default
+                      call fatal_error('register_dustvelocity','no valid dust_binning')
+                   endselect
                    if (kk .gt. ndustspec) call fatal_error('dndmd_dt','kk is too large')
                    df(l1+i-1,m,n,ind(kk))=df(l1+i-1,m,n,ind(kk))+nucleation_rate(i)/dustbin_width
                    ff_nucl=nucleation_rate(i)*4.*pi*true_density_microsilica/3.*ad(kk)**3
@@ -1980,9 +1992,9 @@ module Dustdensity
                    nucleation_rate(i)=0.
                 endif
              enddo
-          elseif (llog_massbins) then
-             call fatal_error('dndmd_dt','not implemented for llog_massbins yet')
-          endif
+          !elseif (llog_massbins) then
+             !call fatal_error('dndmd_dt','not implemented for llog_massbins yet')
+          !endif
        endif
       endif   !if (latm_chemistry .or. lsemi_chemistry)
 !
@@ -2401,12 +2413,21 @@ module Dustdensity
 !  For k=1, nothing needs to be done, unless we want to introduce damping.
 !  This part is used for microsilica modeling.
 !
-          if (lfree_molecule) then
-            do k=2,ndustspec-1
-              coefkm=mfluxcond/(ad(k)-ad(k-1))
-              df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) &
-                -coefkm*(f(l1:l2,m,n,ind(k))-f(l1:l2,m,n,ind(k-1)))
-            enddo
+           if (lfree_molecule) then
+              select case (dust_binning)
+              case ('lin_radius')
+                 do k=2,ndustspec-1
+                    coefkm=mfluxcond/dustbin_width
+                    df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) &
+                         -coefkm*(f(l1:l2,m,n,ind(k))-f(l1:l2,m,n,ind(k-1)))
+                 enddo
+              case ('log_radius')
+                 do k=2,ndustspec-1
+                    coefkm=2.*mfluxcond/(dustbin_width*(ad(k)+ad(k-1)))
+                    df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) &
+                         -coefkm*(f(l1:l2,m,n,ind(k))-f(l1:l2,m,n,ind(k-1)))
+                 enddo
+              endselect
           else
 !
 !  Alternative I (does not work when coagulation is also used).
@@ -3586,7 +3607,7 @@ module Dustdensity
       logical :: loverwrite
 !
       real :: fac
-      integer :: k
+      integer :: k, pow
 !
 !  Impose the density floor.
 !
@@ -3595,13 +3616,22 @@ module Dustdensity
         print*, 'init_nd: amplnd   =',amplnd
         print*, 'init_nd: a0, a1, sigmad=',a0, a1, sigmad
       endif
+      !
+      ! Set correct power
+      !
+      select case (dust_binning)
+      case ('lin_radius')
+         pow=1
+      case ('log_radius')
+         pow=0
+      endselect
 !
 !  loop through the dust bins
 !
       do k=1,ndustspec
         if (a1 == 0) then
           if (lradius_binning) then
-            fac=1./(sqrt(twopi)*sigmad*ad(k))
+            fac=1./(sqrt(twopi)*sigmad*ad(k)**pow)
           else
             fac=dlnad/(sqrt(twopi)*sigmad)
           endif
@@ -3609,11 +3639,11 @@ module Dustdensity
             f(:,:,:,ind(k))= amplnd*exp(-0.5*(alog(ad(k))-alog(a0))**2/sigmad**2)*fac
           else
             f(:,:,:,ind(k))=f(:,:,:,ind(k))+amplnd*exp(-0.5*(alog(ad(k))-alog(a0))**2/sigmad**2)*fac
-         endif
+          endif
         else
           call fatal_error('initnd_lognormal','no lognormal with a1/=1')
         endif
-     enddo
+      enddo
 !
     endsubroutine initnd_lognormal
 !***********************************************************************
