@@ -59,7 +59,7 @@ module General
   public :: reduce_grad_dim
   public :: meshgrid
   public :: linspace
-  public :: linear_interpolate_2d, linear_interpolate_1d, get_linterp_weights_1D
+  public :: linear_interpolate_2d, linear_interpolate_1d, get_linterp_weights_1D, interpol_tabulated
   public :: chk_time
   public :: get_species_nr
   public :: get_from_nml_str,get_from_nml_log,get_from_nml_real,get_from_nml_int,convert_nml
@@ -99,6 +99,7 @@ module General
  !real :: lgt0, dlgt, H0=1.
  !real :: lgt1, lgt2, lgf1, lgf2, lgf
  !real :: lgt_ini, a_ini, Hp_ini, app_om=0
+! 
 !$  interface signal_wait
 !$    module procedure signal_wait_single
 !$    module procedure signal_wait_multi
@@ -6572,6 +6573,119 @@ iloop:do i=1,size(list2)
       len1=ind
 
     endsubroutine merge_lists
+!***********************************************************************
+    function interpol_tabulated (needle, haystack)
+!
+! Find the interpolated position of a given value in a tabulated values array.
+! Bisection search algorithm with preset range guessing by previous value.
+! Returns the interpolated position of the needle in the haystack.
+! If needle is not inside the haystack, an extrapolated position is returned.
+!
+! 09-feb-2011/Bourdin.KIS: coded
+! 17-may-2015/piyali.chatterjee : copied from special/solar_corona.f90
+
+      real :: interpol_tabulated
+      real, intent(in) :: needle
+      real, dimension (:), intent(in) :: haystack
+!
+      integer, save :: lower=1, upper=1
+      integer :: mid, num, inc
+!
+      num = size (haystack, 1)
+      interpol_tabulated = -impossible
+      if (num < 2) return
+
+      if (lower >= num) lower = num - 1
+      if ((upper <= lower) .or. (upper > num)) upper = num
+!
+      if (haystack(lower) > haystack(upper)) then
+!
+!  Descending array:
+!
+        ! Search for lower limit, starting from last known position
+        inc = 2
+        do while ((lower > 1) .and. (needle > haystack(lower)))
+          upper = lower
+          lower = lower - inc
+          if (lower < 1) lower = 1
+          inc = inc * 2
+        enddo
+!
+        ! Search for upper limit, starting from last known position!
+        inc = 2
+        do while ((upper < num) .and. (needle < haystack(upper)))
+          lower = upper
+          upper = upper + inc
+          if (upper > num) upper = num
+          inc = inc * 2
+        enddo
+!
+        if (needle < haystack(upper)) then
+          ! Extrapolate needle value below range
+          lower = num - 1
+        elseif (needle > haystack(lower)) then
+          ! Extrapolate needle value above range
+          lower = 1
+        else
+          ! Interpolate needle value
+          do while (lower+1 < upper)
+            mid = lower + (upper - lower) / 2
+            if (needle >= haystack(mid)) then
+              upper = mid
+            else
+              lower = mid
+            endif
+          enddo
+        endif
+        upper = lower + 1
+        interpol_tabulated = lower + (haystack(lower) - needle)/(haystack(lower) - haystack(upper))
+!
+      elseif (haystack(lower) < haystack(upper)) then
+!
+!  Ascending array:
+!
+        ! Search for lower limit, starting from last known position
+        inc = 2
+        do while ((lower > 1) .and. (needle < haystack(lower)))
+          upper = lower
+          lower = lower - inc
+          if (lower < 1) lower = 1
+          inc = inc * 2
+        enddo
+!
+        ! Search for upper limit, starting from last known position
+        inc = 2
+        do while ((upper < num) .and. (needle > haystack(upper)))
+          lower = upper
+          upper = upper + inc
+          if (upper > num) upper = num
+          inc = inc * 2
+        enddo
+!
+        if (needle > haystack(upper)) then
+          ! Extrapolate needle value above range
+          lower = num - 1
+        elseif (needle < haystack(lower)) then
+          ! Extrapolate needle value below range
+          lower = 1
+        else
+          ! Interpolate needle value
+          do while (lower+1 < upper)
+            mid = lower + (upper - lower) / 2
+            if (needle < haystack(mid)) then
+              upper = mid
+            else
+              lower = mid
+            endif
+          enddo
+        endif
+        upper = lower + 1
+        interpol_tabulated = lower + (needle - haystack(lower))/(haystack(upper) - haystack(lower))
+      else
+        interpol_tabulated = impossible
+      endif
+!
+    endfunction interpol_tabulated
 !***********************************************************************
     subroutine allocate_using_dims_1d(src, dims)
 !

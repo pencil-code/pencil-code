@@ -7914,6 +7914,8 @@ module Energy
 !  input: lnTT in SI units
 !  output: lnP  [p]=W/s * m^3
 !
+      use General, only: interpol_tabulated
+
       real, dimension (nx), intent(in) :: lnTT
       real, dimension (nx), intent(out) :: lnQ, delta_lnTT
 !
@@ -7941,6 +7943,8 @@ module Energy
 !
         do px = 1, nx
           pos = interpol_tabulated (lnTT(px), intlnT)
+          if (pos== impossible) call fatal_error('get_lnQ',"tabulated values in lnTT are invalid",.true.)
+          if (pos==-impossible) call fatal_error('get_lnQ',"too few tabulated values in lnTT",.true.)
           z_ref = floor (pos)
           if (z_ref < 1) then
             lnQ(px) = -max_real
@@ -7954,118 +7958,6 @@ module Energy
         enddo
 !
     endsubroutine get_lnQ
-!***********************************************************************
-    function interpol_tabulated (needle, haystack)
-!
-! Find the interpolated position of a given value in a tabulated values array.
-! Bisection search algorithm with preset range guessing by previous value.
-! Returns the interpolated position of the needle in the haystack.
-! If needle is not inside the haystack, an extrapolated position is returned.
-!
-! 09-feb-2011/Bourdin.KIS: coded
-! 17-may-2015/piyali.chatterjee : copied from special/solar_corona.f90
-
-      real :: interpol_tabulated
-      real, intent(in) :: needle
-      real, dimension (:), intent(in) :: haystack
-!
-      integer, save :: lower=1, upper=1
-      integer :: mid, num, inc
-!
-      num = size (haystack, 1)
-      if (num < 2) call fatal_error('interpol_tabulated',"too few tabulated values",.true.)
-      if (lower >= num) lower = num - 1
-      if ((upper <= lower) .or. (upper > num)) upper = num
-!
-      if (haystack(lower) > haystack(upper)) then
-!
-!  Descending array:
-!
-        ! Search for lower limit, starting from last known position
-        inc = 2
-        do while ((lower > 1) .and. (needle > haystack(lower)))
-          upper = lower
-          lower = lower - inc
-          if (lower < 1) lower = 1
-          inc = inc * 2
-        enddo
-!
-        ! Search for upper limit, starting from last known position!
-        inc = 2
-        do while ((upper < num) .and. (needle < haystack(upper)))
-          lower = upper
-          upper = upper + inc
-          if (upper > num) upper = num
-          inc = inc * 2
-        enddo
-!
-        if (needle < haystack(upper)) then
-          ! Extrapolate needle value below range
-          lower = num - 1
-        elseif (needle > haystack(lower)) then
-          ! Extrapolate needle value above range
-          lower = 1
-        else
-          ! Interpolate needle value
-          do while (lower+1 < upper)
-            mid = lower + (upper - lower) / 2
-            if (needle >= haystack(mid)) then
-              upper = mid
-            else
-              lower = mid
-            endif
-          enddo
-        endif
-        upper = lower + 1
-        interpol_tabulated = lower + (haystack(lower) - needle)/(haystack(lower) - haystack(upper))
-!
-      elseif (haystack(lower) < haystack(upper)) then
-!
-!  Ascending array:
-!
-        ! Search for lower limit, starting from last known position
-        inc = 2
-        do while ((lower > 1) .and. (needle < haystack(lower)))
-          upper = lower
-          lower = lower - inc
-          if (lower < 1) lower = 1
-          inc = inc * 2
-        enddo
-!
-        ! Search for upper limit, starting from last known position
-        inc = 2
-        do while ((upper < num) .and. (needle > haystack(upper)))
-          lower = upper
-          upper = upper + inc
-          if (upper > num) upper = num
-          inc = inc * 2
-        enddo
-!
-        if (needle > haystack(upper)) then
-          ! Extrapolate needle value above range
-          lower = num - 1
-        elseif (needle < haystack(lower)) then
-          ! Extrapolate needle value below range
-          lower = 1
-        else
-          ! Interpolate needle value
-          do while (lower+1 < upper)
-            mid = lower + (upper - lower) / 2
-            if (needle < haystack(mid)) then
-              upper = mid
-            else
-              lower = mid
-            endif
-          enddo
-        endif
-        upper = lower + 1
-        interpol_tabulated = lower + (needle - haystack(lower))/(haystack(upper) - haystack(lower))
-      else
-        interpol_tabulated = -1.0
-        call fatal_error('interpol_tabulated',"tabulated values are invalid",.true.)
-      endif
-!
-    endfunction interpol_tabulated
 !***********************************************************************
     subroutine pushpars2c(p_par)
 
