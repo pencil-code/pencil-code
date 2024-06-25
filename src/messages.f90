@@ -336,7 +336,7 @@ module Messages
       character (len=*)           :: message
       integer, optional :: ipr
 !
-      !$omp single
+      !!$omp single       !MR: tb improved - single is a "collective call"
       if (present(location)) scaller=location
 
       if (.not.llife_support) then
@@ -351,7 +351,7 @@ module Messages
         if (ldie_onwarning) call die_gracefully
 !
       endif
-      !$omp end single
+      !!$omp end single
 !
     endsubroutine warning
 !***********************************************************************

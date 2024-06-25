@@ -4063,6 +4063,8 @@ module EquationOfState
       real :: potp,potm,rad,step
       integer :: i
 !
+      if (.not.lcylindrical_coords) & 
+          call not_implemented("bc_lnrho_cfb_r_iso","for other than cylindrical coordinates")
       select case (topbot)
 !
 !  Bottom boundary

@@ -85,7 +85,6 @@ module Timestep
           solid_cells_timestep_second
       use Shear, only: advance_shear
       use Sub, only: set_dt, shift_dt
-!$ use General, only: signal_wait, signal_send
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
