@@ -878,6 +878,7 @@ module Magnetic
   integer :: idiag_obmz=0       ! XYAVG_DOC: $\left<\ov\cdot\Bv\right>|_{xy}$
   integer :: idiag_uamz=0       ! XYAVG_DOC: $\left<\uv\cdot\Av\right>|_{xy}$
   integer :: idiag_bzuamz=0     ! XYAVG_DOC: $\left<B_z\uv\cdot\Av\right>|_{xy}$
+  integer :: idiag_bzaymz=0     ! XYAVG_DOC: $\left<B_z A_y\right>|_{xy}$
   integer :: idiag_bzdivamz=0   ! XYAVG_DOC: $\left<B_z\nabla\cdot\Av\right>|_{xy}$
   integer :: idiag_bzLammz=0    ! XYAVG_DOC: $\left<B_z\Lambda\right>|_{xy}$
   integer :: idiag_divamz=0     ! XYAVG_DOC: $\left<\nabla\cdot\Av\right>|_{xy}$
@@ -6695,6 +6696,7 @@ module Magnetic
         call xysum_mn_name_z(p%ob,idiag_obmz)
         call xysum_mn_name_z(p%ua,idiag_uamz)
         call xysum_mn_name_z(p%bb(:,3)*p%ua,idiag_bzuamz)
+        call xysum_mn_name_z(p%bb(:,3)*p%aa(:,2),idiag_bzaymz)
         call xysum_mn_name_z(p%diva,idiag_divamz)
         if (idiag_bzdivamz/=0) call xysum_mn_name_z(p%bb(:,3)*p%diva,idiag_bzdivamz)
         if (idiag_bzLammz/=0) call xysum_mn_name_z(p%bb(:,3)*p%Lam,idiag_bzLammz)
@@ -9716,7 +9718,7 @@ module Magnetic
         idiag_aybxmz=0; idiag_ay2mz=0; idiag_bxbzmz=0; idiag_bybzmz=0
         idiag_b2mx=0; idiag_a2mz=0; idiag_b2mz=0; idiag_bf2mz=0; idiag_j2mz=0
         idiag_jbmz=0; idiag_bdel2amz=0; idiag_jdel2amz=0; idiag_abmz=0; idiag_ubmz=0; idiag_ujmz=0; idiag_obmz=0
-        idiag_uamz=0; idiag_bzuamz=0
+        idiag_uamz=0; idiag_bzuamz=0; idiag_bzaymz=0
         idiag_bzdivamz=0; idiag_bzlammz=0; idiag_divamz=0; idiag_d6abmz=0
         idiag_jem=0; idiag_aem=0; idiag_ujxbm=0
         idiag_uxbxmz=0; idiag_uybxmz=0; idiag_uzbxmz=0
@@ -10267,6 +10269,7 @@ module Magnetic
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'obmz',idiag_obmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uamz',idiag_uamz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'bzuamz',idiag_bzuamz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bzaymz',idiag_bzaymz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'bzdivamz',idiag_bzdivamz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'bzLammz',idiag_bzLammz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'divamz',idiag_divamz)
