@@ -47,7 +47,6 @@ module Dustdensity
   real, dimension(nx,ndustspec,ndustspec0) :: dndr_full, ppsf_full
 !  real, dimension(ndustspec0)  :: Ntot_i
   real, dimension(nx,ndustspec,ndustspec) :: dkern
-  real, dimension (nx) :: nucleation_rmin, nucleation_rate
   real, dimension(ndustspec,ndustspec0) :: init_distr_ki
   real, dimension(ndustspec0) :: BB=0.
   real, dimension(ndustspec) :: dsize,init_distr2,amplnd_rel=0.
@@ -73,7 +72,6 @@ module Dustdensity
   real :: nd_reuni=0.,init_x1=0., init_x2=0., a0=0., a1=0.
   real :: dndfac_sum, dndfac_sum2, momcons_sum_x, momcons_sum_y, momcons_sum_z
   real :: momcons_term_frac=1.
-  real :: true_density_microsilica_cgs=2.196, true_density_microsilica
   integer :: iglobal_nd=0
   integer :: spot_number=1
   integer :: i_SIO2=0
@@ -188,6 +186,7 @@ module Dustdensity
 !
       use FArrayManager, only: farray_register_pde, farray_index_append
       use General, only: itoa
+      use SharedVariables, only: put_shared_variable
 !
       integer :: k, i, ind_tmp
 !
@@ -234,6 +233,12 @@ module Dustdensity
         enddo
         call farray_index_append('ndc',ndustspec)
 !
+      endif
+      !
+      !  Shared variables
+      !
+      if (lchemistry) then
+        call put_shared_variable('ldustnucleation',ldustnucleation)
       endif
 !
 !  Identify version number (generated automatically by CVS).
@@ -604,12 +609,6 @@ module Dustdensity
 !
 !MR: ad-hoc correction to fix the auto-test; needs to be checked!
       ppsf_full = 0.
-!
-!  true_density_microsilica
-!
-      if (dust_chemistry=='microsilica') then
-        true_density_microsilica=true_density_microsilica_cgs/unit_density
-      endif
 !
 !  No derivatives in 0D case.
 !
@@ -1760,6 +1759,7 @@ module Dustdensity
       use Special, only: special_calc_dustdensity
       use General, only: spline_integral
       use Deriv, only: der6
+      use Chemistry, only: cond_spec_cond, cond_spec_nucl
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -1768,6 +1768,7 @@ module Dustdensity
       real, dimension (nx) :: mfluxcond,fdiffd,gshockgnd, Imr, tmp1, tmp2
       real, dimension (nx) :: diffus_diffnd,diffus_diffnd3,advec_hypermesh_nd
       real, dimension (nx) :: ff_cond, ff_cond_fact
+      integer, dimension(nx) :: kk_vec
       real :: ff_nucl
       real, dimension (nx,ndustspec) :: dndr_tmp=0.,  dndr
       real, dimension (nx,ndustspec) :: nd_substep, nd_substep_0, K1,K2,K3,K4
@@ -1933,70 +1934,37 @@ module Dustdensity
 !
         if (ldustcondensation) then
           call dust_condensation(f,df,p,mfluxcond)
-!
-          if (dust_chemistry=='microsilica') then
-            if (i_SIO2==0) call fatal_error('dndmd_dt','there is no SIO2')
-!
-!  All the bins consume.
-!
-            ff_cond=0.
-            ff_cond_fact=4.*pi*mfluxcond*true_density_microsilica
-            do k=1,ndustspec
-              ff_cond=ff_cond+ff_cond_fact*ad(k)**2*f(l1:l2,m,n,ind(k))*dustbin_width
-           enddo
-            do ichem = 1,nchemspec
-               kkk=ichemspec(ichem)
-               if (kkk==i_SIO2) then
-                  df(l1:l2,m,n,kkk) = df(l1:l2,m,n,kkk) + ff_cond*(f(l1:l2,m,n,kkk)-1.)/p%rho
-               else
-                  df(l1:l2,m,n,kkk) = df(l1:l2,m,n,kkk) + ff_cond*f(l1:l2,m,n,kkk)/p%rho
-               endif
-            enddo
-            if (ldensity_nolog) then
-               df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) - ff_cond
-            else
-               df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - log(ff_cond)
-            endif
+          !
+          ! Condensation on droplets will have a feedback on the species and continuity eqs.
+          !
+          if (dust_chemistry=='condensing_species') then
+            call cond_spec_cond(f,df,p,ad,dustbin_width,mfluxcond)
           endif
        endif
 !
-!  Nucleation of SiO2 into microsilica particles
+!  Nucleation of condensing species into droplets
 !
        if (ldustnucleation) then
-          !if (llin_radiusbins) then
-             do i=1,nx
-                if (nucleation_rmin(i)>ad(1) .and. nucleation_rmin(i)<ad(ndustspec)) then
-                   select case (dust_binning)
-                   case ('lin_radius')
-                      kk=max(1,int(1+(nucleation_rmin(i)-ad(1))/dustbin_width))                      
-                   case ('log_radius')
-                      kk=max(1,int(1+alog(nucleation_rmin(i)/ad(1))/dustbin_width))
-                   case ('log_mass')
-                      call fatal_error('dndmd_dt','not implemented for llog_massbins yet')        
-                   case default
-                      call fatal_error('register_dustvelocity','no valid dust_binning')
-                   endselect
-                   if (kk .gt. ndustspec) call fatal_error('dndmd_dt','kk is too large')
-                   df(l1+i-1,m,n,ind(kk))=df(l1+i-1,m,n,ind(kk))+nucleation_rate(i)/dustbin_width
-                   ff_nucl=nucleation_rate(i)*4.*pi*true_density_microsilica/3.*ad(kk)**3
-                   do ichem = 1,nchemspec
-                      kkk=ichemspec(ichem)
-                      if (kkk==i_SIO2) then
-                         df(l1+i-1,m,n,kkk) = df(l1+i-1,m,n,kkk) + ff_nucl*(f(l1+i-1,m,n,kkk)-1.)/p%rho(i)
-                      else
-                         df(l1+i-1,m,n,kkk) = df(l1+i-1,m,n,kkk) + ff_nucl*f(l1+i-1,m,n,kkk)/p%rho(i)
-                      endif
-                   enddo
-                   df(l1+i-1,m,n,irho) = df(l1+i-1,m,n,irho) - ff_nucl
-                else
-                   nucleation_rate(i)=0.
-                endif
-             enddo
-          !elseif (llog_massbins) then
-             !call fatal_error('dndmd_dt','not implemented for llog_massbins yet')
-          !endif
+         do i=1,nx
+           if (p%nucl_rmin(i)>ad(1) .and. p%nucl_rmin(i)<ad(ndustspec)) then
+             select case (dust_binning)
+             case ('lin_radius')
+               kk_vec(i)=max(1,int(1+(p%nucl_rmin(i)-ad(1))/dustbin_width))                      
+             case ('log_radius')
+               kk_vec(i)=max(1,int(1+alog(p%nucl_rmin(i)/ad(1))/dustbin_width))
+             case ('log_mass')
+               call fatal_error('dndmd_dt','not implemented for llog_massbins yet')        
+             case default
+               call fatal_error('register_dustvelocity','no valid dust_binning')
+             endselect
+           else
+             kk_vec(i)=0
+           endif
+         enddo
+!
+         call cond_spec_nucl(f,df,p,kk_vec,ad)
        endif
-      endif   !if (latm_chemistry .or. lsemi_chemistry)
+     endif   !if (latm_chemistry .or. lsemi_chemistry)
 !
 !  Loop over dust layers
 !  this is a non-atmospheric case (for latm_chemistry=F)
@@ -2224,8 +2192,8 @@ module Dustdensity
         if (idiag_adm/=0)  &
           call sum_mn_name(sum(spread((md/(4/3.*pi*rhods))**(1/3.),1,nx)*p%nd,2)/sum(p%nd,2), idiag_adm)
         if (idiag_mdmtot/=0) call sum_mn_name(sum(spread(md,1,nx)*p%nd,2), idiag_mdmtot)
-        call sum_mn_name(nucleation_rmin,idiag_nuclrmin)
-        call sum_mn_name(nucleation_rate,idiag_nuclrate)
+        call sum_mn_name(p%nucl_rmin,idiag_nuclrmin)
+        call sum_mn_name(p%nucl_rate,idiag_nuclrate)
 !
 !  compute moments, works independently of lmdvar
 !
@@ -2234,7 +2202,8 @@ module Dustdensity
           if (idiag_admom(k)/=0) then
             if (lradius_binning) then
                !call sum_mn_name(sum(p%ad**k*p%nd,2)*dlnad,idiag_admom(k))
-! 2024-06-14/AB: the thing above seems wrong, and would affect earlier work.
+              ! 2024-06-14/AB: the thing above seems wrong, and would affect earlier work.
+              print*,"p%ad,p%nd=",p%ad,p%nd
                call sum_mn_name(sum(p%ad**k*p%nd,2)*dustbin_width,idiag_admom(k))
             else
               if (llog10_for_admom_above10.and.k>10) then
@@ -2411,7 +2380,7 @@ module Dustdensity
 !
 !  In the free molecule regime, there is no 1/r in the condensation.
 !  For k=1, nothing needs to be done, unless we want to introduce damping.
-!  This part is used for microsilica modeling.
+!  This part is used for modeling of condensing species.
 !
            if (lfree_molecule) then
               select case (dust_binning)
@@ -2473,7 +2442,7 @@ module Dustdensity
 !
 !  in the free molecule regime, there is no 1/r in the condensation.
 !  For k=1, nothing needs to be done, unless we want to introduce damping.
-!  This part is used for microsilica modeling.
+!  This part is used for modeling of condensing species.
 !
           if (lfree_molecule) then
             do k=2,ndustspec-1
@@ -2594,23 +2563,14 @@ module Dustdensity
 !
       use Diagnostics, only: max_mn_name, sum_mn_name
       use EquationOfState, only: getmu,eoscalc,getpressure
-      use Chemistry, only: find_species_index
+      use Chemistry, only: find_species_index, condensing_species_rate
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: mfluxcond,rho,TT1,cc
       type (pencil_case) :: p
 
       real, dimension (nx) :: supsatratio1,pp,ppmon,ppsat,vth
-      real, dimension (nx) :: sat_ratio_SIO2, tmp2
-      real :: nucleation_rate_coeff, tmp1
       real :: mu
-      real :: molar_mass_SIO2_cgs=60.08, gam_surf_energy_cgs=32.
-      real :: nucleation_rate_coeff_cgs=1e19
-      real :: volume_SIO2_cgs=4.5e-23
-      real :: gam_surf_energy, volume_sio2
-      real :: molar_mass_SIO2, atomic_mSIO2, A_SIO2
-      integer :: ichem_SIO2
-      logical :: lSIO2
 !
       select case (dust_chemistry)
 !
@@ -2653,32 +2613,11 @@ module Dustdensity
 !
 !  Condensation obtained from passive scalar equation.
 !
-      case ('microsilica_test')
+      case ('condensing_species_test')
         mfluxcond=G_condensparam
 !
-      case ('microsilica')
-        call find_species_index('SIO2',i_SIO2,ichem_SIO2,lSIO2)
-        molar_mass_SIO2=molar_mass_SIO2_cgs/unit_mass
-        atomic_mSIO2=molar_mass_SIO2*m_u
-        A_SIO2=sqrt(8.*k_B/(pi*atomic_mSIO2))*molar_mass_SIO2/(4.*true_density_microsilica)
-        if (ip<10) print*,'A_SIO2=',A_SIO2
-        mfluxcond=A_SIO2*(p%chem_conc(:,ichem_SIO2)-chem_conc_sat_SIO2)*sqrt(p%TT)
-!
-!  compute rmin
-!
-        gam_surf_energy=gam_surf_energy_cgs/(unit_mass/unit_time)
-        volume_SIO2=volume_SIO2_cgs/unit_length**3
-        sat_ratio_SIO2=p%chem_conc(:,ichem_SIO2)/chem_conc_sat_SIO2
-        nucleation_rmin=4.*gam_surf_energy*volume_SIO2/(k_B*p%TT*alog(sat_ratio_SIO2))
-!
-!  Compute nucleation rate (of nucleii with r=rmin)
-!
-        if (ldustnucleation) then
-          nucleation_rate_coeff=nucleation_rate_coeff_cgs*unit_length**3
-          tmp1=-16.*pi*gam_surf_energy**3*volume_SIO2**2
-          tmp2=2*(k_B*p%TT)**3*(alog(sat_ratio_SIO2))**2
-          nucleation_rate=nucleation_rate_coeff*exp(tmp1/tmp2)
-        endif
+      case ('condensing_species')
+        call condensing_species_rate(p,mfluxcond)
 !
 !  Assume a hat(om*t) time behavior
 !
