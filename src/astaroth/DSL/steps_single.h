@@ -3,4 +3,5 @@ ComputeSteps AC_rhs(boundconds) {
 }
 BoundConds boundconds{
   periodic(BOUNDARY_XYZ)
+  //#include "boundconds.h"
 }

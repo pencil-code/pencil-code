@@ -1,0 +1,98 @@
+#!/bin/bash
+#
+declare -a bot
+declare -a top
+
+function boundcond_sed()
+{
+grep '^ *bc'$1' *=' ../start.in | sed -f scripts/bc2ast.sed
+bot=(`cat bot`)
+top=(`cat top`)
+rm -f top bot
+
+sed -e'/select  *case  *(bc'$1'12/,/end *select/ ! d' \
+    -e'/select *case/ d' \
+    -e'/end *select/ d' \
+    -e'/^ *!/ d' \
+    -e's/^ *case(\([^)]\)) *$/\1/' \
+    -e's/^ *call  *\(.*\) *$/\1/' \
+    -e'/case.*'nil'/,$ d' boundcond.f90 > tmp
+}
+#
+function make_ac_bound_cond()
+{
+    #echo $1 $2 $3 $4
+    sed -e'/case *( *[^ ]'$1'[^ ] *) *$/,/case/ ! d' -e'/case/ d' -e's/^.* *\(bc_[a-zA-Z_0-9]*\) *( *f/\1('$2'/' -e's/,j//' -e's/,topbot//' -e's/topbot/'$4'/' -e's/\.true\./true/' -e's/\.false\./false/' tmp | \
+	    sed -e's/\(fbc[xyz][a-zA-Z_0-9]*\) *( *j *,\([^)]*\))/\1['$2',\2]/' -e's/\(bc_[a-zA-Z_0-9]*\) *( *\('$2'.*\)) *$/boundaryCondition(BOUNDARY_'$3_$4', \1, \2);/' -e's/[A-Za-z0-9_]*=//g'>> astaroth/DSL/local/boundconds.h
+}
+#
+declare -a lperi
+grep_peri=`grep '^[^!]*lperi' ../start.in | sed -e's/^.*lperi *= *//' -e's/,/ /g'`
+if [[ $grep_peri == '' ]]; then
+  lperi=(T T T)
+else
+  lperi=($grep_peri)
+fi
+#echo lperi = ${lperi[0]} ${lperi[1]} ${lperi[2]}
+
+declare -a fields
+#fields=(`grep 'Field ' astaroth/DSL/local/fieldecs.h | sed -e's/Field *//' -e's/ \/\/.*$/ /' | tr -d '\n' |sed -e's/,/ /g'`)
+#echo FIELDS=${fields[0]}, ${fields[5]}
+fields=(`grep 'typedef  *enum.* Field;' ./astaroth/submodule/build/acc-runtime/api/user_defines.h | sed -e's/^.*typedef enum *{\([^}]*\) *} *Field;/\1/' -e' s/,/ /g' -e's/NUM_[A-Z_]*FIELDS *=//g'`)
+nfields=${fields[-2]}
+ncomm_fields=${fields[-1]}
+
+rm -f astaroth/DSL/local/boundconds.h
+touch astaroth/DSL/local/boundconds.h
+if [[ ${lperi[0]} == 'T' ]]; then
+  echo 'boundaryCondition(BOUNDARY_X, BOUNDCOND_PERIODIC, all_fields)' >> astaroth/DSL/local/boundconds.h
+else
+  boundcond_sed x
+  for (( i=0; i<$nfields ; i++ )); do 
+    #echo ${bot[$i]} ${top[$i]} ${fields[$i]};
+    make_ac_bound_cond ${bot[$i]} ${fields[$i]} X BOT
+    make_ac_bound_cond ${top[$i]} ${fields[$i]} X TOP
+  done
+  rm -f tmp
+fi
+
+if [[ ${lperi[1]} == 'T' ]]; then
+  echo 'boundaryCondition(BOUNDARY_Y, BOUNDCOND_PERIODIC, all_fields)' >> astaroth/DSL/local/boundconds.h
+else
+  boundcond_sed y
+  for (( i=0; i<$nfields ; i++ )); do 
+    make_ac_bound_cond ${bot[$i]} ${fields[$i]} Y BOT
+    make_ac_bound_cond ${top[$i]} ${fields[$i]} Y TOP
+  done
+  rm -f tmp
+fi
+
+if [[ ${lperi[2]} == 'T' ]]; then
+  echo 'boundaryCondition(BOUNDARY_Z, BOUNDCOND_PERIODIC, all_fields)' >> astaroth/DSL/local/boundconds.h
+else
+  boundcond_sed z
+  for (( i=0; i<$nfields ; i++ )); do 
+    make_ac_bound_cond ${bot[$i]} ${fields[$i]} Z BOT
+    make_ac_bound_cond ${top[$i]} ${fields[$i]} Z TOP
+  done
+  #rm -f tmp
+fi
+
+#typedef enum {UUX,UUY,UUZ,RHO,SS,AAX,AAY,AAZ,SHOCK,NUM_FIELDS=9,NUM_COMMUNICATED_FIELDS=9,} Field;
+#
+#         acBoundaryCondition(BOUNDARY_Y, BOUNDCOND_A2, all_fields),
+#         acBoundaryCondition(BOUNDARY_Z, BOUNDCOND_A2, all_fields)});
+#         acBoundaryCondition(BOUNDARY_X, BOUNDCOND_PRESCRIBED_DERIVATIVE, all_fields, bc_param),
+#         acBoundaryCondition(BOUNDARY_Y, BOUNDCOND_PRESCRIBED_DERIVATIVE, all_fields, bc_param),
+#         acBoundaryCondition(BOUNDARY_Z, BOUNDCOND_PRESCRIBED_DERIVATIVE, all_fields, bc_param)});
+#
+#
+#	 acBoundaryCondition(BOUNDARY_Z_TOP, BOUNDCOND_SYMMETRIC, ax_ay),
+#         acBoundaryCondition(BOUNDARY_Z_BOT, BOUNDCOND_ANTISYMMETRIC, ax_ay),
+#         acBoundaryCondition(BOUNDARY_Z_TOP, BOUNDCOND_ANTISYMMETRIC, az),
+#         acBoundaryCondition(BOUNDARY_Z_BOT, BOUNDCOND_SYMMETRIC, az)});
+#
+#
+#
+#         acBoundaryCondition(BOUNDARY_X_BOT, bc_sym_x, AAZ,-1);
+

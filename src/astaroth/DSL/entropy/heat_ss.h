@@ -20,7 +20,7 @@
   lnTT = lnTT0+cv1*value(SS)+gamma_m1*(lnrho-lnrho0)
   TT = exp(lnTT)
 
-  rhs +=  2. * nu * contract(stress_tensor(UU))
+  rhs +=  2. * nu * contract(traceless_rateof_strain(UU))
         + zeta * rho1 * divergence(UU) * divergence(UU)   // precalculated?
 
 #if LMAGNETIC

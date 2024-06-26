@@ -2,7 +2,6 @@
 // and finally for the definition of the solve kernel.
 
 #include "PC_nghost.h"
-#define nghost NGHOST
 #include "../../PC_moduleflags.h"
 
 // declare here reduction results needed for the timestep
@@ -14,7 +13,8 @@ output real AC_maxadvec    // for all velocities - fluid and wave
 output real AC_maxchi
 #endif
 
-//#include "../../../cparam.inc_c.h"
+#include "../../../cparam.inc_c.h"
+
 #include "fieldecs.h"
 #include "../stdlib/operators.h"
 #include "../stdlib/integrators.h"
@@ -30,4 +30,9 @@ output real AC_maxchi
   #define LNRHO RHO
   #define ldensity_nolog AC_ldensity_nolog
 #endif
+//int mcom = mvar+maux_com
+/*real fbcx[mcom][2], fbcx_2[mcom][2]
+real fbcy[mcom][2], fbcy_1[mcom][2], fbcy_2[mcom][2]
+real fbcz[mcom][2], fbcz_1[mcom][2], fbcz_2[mcom][2]
+*/  
 #include "equations.h"

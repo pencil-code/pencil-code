@@ -934,7 +934,7 @@ extern "C" void initGPU()
 /***********************************************************************************************/
 void setupConfig(AcMeshInfo &config)
 {
-  // Enter basic grid and geometry parameters in config.
+  // Enter basic parameters in config.
 
   config.int3_params[AC_domain_decomposition] = (int3) {nprocx, nprocy, nprocz};
   config.int_params[AC_nxgrid] = nxgrid;
@@ -947,7 +947,11 @@ void setupConfig(AcMeshInfo &config)
   else
     config.int_params[AC_proc_mapping_strategy] = (int)AcProcMappingStrategy::Linear;
   config.int_params[AC_MPI_comm_strategy] = (int)AcMPICommStrategy::DuplicateUserComm;
+
   config.comm = comm_pencil;
+
+// grid and geometry related parameters
+
   config.real_params[AC_dsx] = dx;
   config.real_params[AC_dsy] = dy;
   config.real_params[AC_dsz] = dz;
@@ -958,9 +962,22 @@ void setupConfig(AcMeshInfo &config)
   config.real_params[AC_xorig] = xyz0[0];
   config.real_params[AC_yorig] = xyz0[1];
   config.real_params[AC_zorig] = xyz0[2];
-  //config.real_params[AC_cdt] = cdt;
+
+// physics related parameters
+
   config.real_params[AC_mu0] = mu0;
 
+// parameter arrays for boundary conditions (hard coded in prerequisites)
+/*
+  config.real_arrays[AC_fbcx  ] = fbcx
+  config.real_arrays[AC_fbcx_2] = fbcx_2
+  config.real_arrays[AC_fbcy  ] = fbcy
+  config.real_arrays[AC_fbcy_1] = fbcy_1
+  config.real_arrays[AC_fbcy_2] = fbcy_2
+  config.real_arrays[AC_fbcz  ] = fbcz
+  config.real_arrays[AC_fbcz_1] = fbcz_1
+  config.real_arrays[AC_fbcz_2] = fbcz_2
+*/
   // Enter physics related parameters in config.
   #include "PC_modulepars.h"
   #if LDENSITY

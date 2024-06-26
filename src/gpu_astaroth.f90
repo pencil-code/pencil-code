@@ -121,9 +121,10 @@ contains
       real, dimension (mx,my,mz,mfarray), intent(OUT) :: f
       integer :: i
 !
-!      Have to wait since if doing diagnostics don't want to overwrite f.
-!
       if (lfarray_copied) return
+!
+! Have to wait since if doing diagnostics don't want to overwrite f.
+!
 !$    call signal_wait(lhelper_perf, .false.)
       call copy_farray_c(f)
       lfarray_copied = .true.

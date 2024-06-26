@@ -68,7 +68,7 @@ module General
             qualify_position_biquin
   public :: binomial,merge_lists,reallocate
   public :: point_and_get_size, allocate_using_dims
-!$ public :: signal_wait, signal_send, signal_init,get_cpu, set_cpu
+!$ public :: signal_wait, signal_send, signal_init, get_cpu, set_cpu, omp_single
 ! 
 !
 !  State and default generator of random numbers.
@@ -6890,5 +6890,16 @@ iloop:do i=1,size(list2)
 !$    integer :: cpu_id
 !$    call set_cpu_c(cpu_id)
 !$  endsubroutine set_cpu
+!***********************************************************************
+!$  logical function omp_single()
+
+!$    use OMP_lib
+
+!$    integer :: thread
+
+!$    thread = omp_get_thread_num()
+!$    omp_single = thread==0 .or. omp_get_level()==1.and.thread==1
+
+!$  end function omp_single
 !***********************************************************************
   endmodule General

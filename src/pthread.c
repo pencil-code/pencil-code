@@ -60,22 +60,22 @@ FTNIZE(cond_wait_single)(const int* cond_handle, volatile bool* flag, volatile b
    switch(*cond_handle)
    {
 	case DIAG_COND_HANDLE:
-		{
+	{
           const int res = pthread_mutex_lock(&diag_mutex);
 	  if (res != 0)
 	  {
 	    printf("lock error message: %d\n",res);
-	    printf("EBUSY: %d\n",EBUSY);
+	    printf("EBUSY: %d\n",EBUSY);   // only relevant for trylock
 	    printf("EINVAL: %d\n",EINVAL);
 	    printf("EAGAIN: %d\n",EAGAIN);
 	    printf("EDEADLK: %d\n",EDEADLK);
-	    printf("EPERM: %d\n",EPERM);
+	    printf("EPERM: %d\n",EPERM);   // only relevant for unlock
 	    fflush(stdout);
 	    assert(res == 0);
 	  }
 	  while (*flag != *val) pthread_cond_wait(&diag_cond, &diag_mutex);
-		}
-	  return;
+	}
+	return;
 	default:
 	  printf("Error - cond_wait: Incorrect cond_handle!!!\n");
 	  assert(false); //Incorrect cond var handle
@@ -125,7 +125,7 @@ FTNIZE(cond_signal)(const int* cond_handle)
    switch(*cond_handle)
    {
 	case DIAG_COND_HANDLE:
-		{
+	{
 	  pthread_cond_signal(&diag_cond);
 	  //pthread_cond_broadcast(&diag_cond);
 	  const int res = pthread_mutex_unlock(&diag_mutex);
@@ -140,8 +140,8 @@ FTNIZE(cond_signal)(const int* cond_handle)
 	    fflush(stdout);
 	    assert(res == 0);
 	  }
-		}
-	  return;
+	}
+	return;
 	default:
 	  printf("Error - cond_signal: Incorrect cond_handle!!!\n");
 	  assert(false); //Incorrect cond var handle
@@ -171,14 +171,14 @@ FTNIZE(cond_wait)(const int* cond_handle, volatile bool* flag, volatile bool* va
 {
    switch(*cond_handle)
    {
-	   case DIAG_COND_HANDLE:
-                   pthread_mutex_lock(&diag_mutex);
-		   while(*flag != *val)
-			   pthread_cond_wait(&diag_cond, &diag_mutex);
-		   return;
-	   default:
-		   printf("Incorrect cond var handle\n");
-		   assert(false); //Incorrect cond var handle
+   case DIAG_COND_HANDLE:
+           pthread_mutex_lock(&diag_mutex);
+	   while(*flag != *val)
+		   pthread_cond_wait(&diag_cond, &diag_mutex);
+	   return;
+   default:
+	   printf("Incorrect cond var handle\n");
+	   assert(false); //Incorrect cond var handle
    }
 }
 //}

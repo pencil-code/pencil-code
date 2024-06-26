@@ -244,6 +244,10 @@ else
   endif
 endif
 #
+# Get recent target.
+#
+target := $(firstword $(MAKECMDGOALS))
+#
 MODULE_CMD := $(shell command -v module 2> /dev/null)
 #
 # For gsl library.
@@ -252,13 +256,12 @@ ifeq ($(GSL),gsl_wrapper)
   ifneq ($(MODULE_CMD),)
     GSL_LOADED := $(shell (module list |& grep -i gsl) )
     ifeq ($(GSL_LOADED),)
-no_gsl_message:
-	@echo ";;;"
-	@echo ";;; No GSL module seems to be loaded! Exit."
-	@echo ";;; Try (one of) the following: $(shell (module spider |& grep -i gsl | sed -e's/^.* \([^ ]*[Gg][Ss][Ll][^ ]*\) .*$$/\1/') )"
-	@echo ";;;"
-	@exit 1
-
+      ifeq ($(filter clean,$(target)),)
+        $(info )
+        $(info No GSL module seems to be loaded!)
+        $(info Try (one of) the following: $(shell (module spider |& grep -i gsl | sed -e's/^.* \([^ ]*[Gg][Ss][Ll][^ ]*\) .*$$/\1/') ))
+        $(error )
+      endif
     endif
   endif
   LD_GSL = -lgsl -lgslcblas
@@ -420,23 +423,20 @@ ifeq ($(MPICOMM),$(filter $(MPICOMM), mpicomm))
   ifneq ($(and $(ncpus), $(nprocx), $(nprocy), $(nprocz)),)
     nprocs := $(shell echo $$(( $(nprocx) * $(nprocy) * $(nprocz))))
     ifneq ($(strip $(ncpus)),$(strip $(nprocs)))
-nproc_message:
-	@echo ";;; Cannot build: "
-	@echo ";;;    ncpus unequal nprocx*nprocy*nprocz"
-	@rm -f nprocs.inc
-	exit 1
-
+      ifeq ($(filter clean,$(target)),)
+        $(info )
+        $(error Cannot build: ncpus /= nprocx*nprocy*nprocz.)
+      endif
     endif
   endif
 else
   YINYANG = noyinyang
   ifneq ($(ncpus),) 
     ifneq ($(ncpus),1) 
-mpicomm_message:
-	@echo ";;; Cannot build:"
-	@echo ";;;    ncpus > 1, but MPICOMM = nompicomm"
-	exit 1
-
+      ifeq ($(filter clean,$(target)),)
+        $(info )
+        $(error Cannot build: ncpus > 1, but MPICOMM = nompicomm.)
+      endif
     endif
   endif
 endif
@@ -452,11 +452,10 @@ ifeq ($(SPECIAL),nospecial)
   SPECIAL_MODULES =
 else
   ifeq ($(SPECIAL),special)
-special_message:
-	@echo ";;; Cannot build:"
-	@echo ";;;    SPECIAL must not be set to special, but to individual module(s) in directory special."
-	exit 1
-
+    ifeq ($(filter clean,$(target)),)
+      $(info )
+      $(error Cannot build: SPECIAL must not be set to special, but to individual module(s) in directory special.)
+    endif
   else
     SPECIAL_MULT := $(words $(SPECIAL))
     SPECIAL_MODULES := $(strip $(SPECIAL))
@@ -481,15 +480,18 @@ ifneq ($(GPU),nogpu)
     CUDA_LOADED := $(shell (module list |& grep -i cuda) )
     ROCM_LOADED := $(shell (module list |& grep -i rocm) )
     ifeq ($(CUDA_LOADED)$(ROCM_LOADED),)
-      $(warning  No CUDA or ROCM module seems to be loaded!)
-      $(info Try (one of) the following: $(shell (module spider |& grep -i cuda | sed -e's/^.* \([^ ]*[Cc][Uu][Dd][Aa][^ ]*\) .*$$/\1/') ) )
-      $(info or: $(shell (module spider |& grep -i rocm | sed -e's/^.* \([^ ]*[Rr][Oo][Cc][Mm][^ ]*\) .*$$/\1/') ) )
-      YESNO := $(shell bash -c 'read -p "Continue? (Y/N) " yesno; echo $$yesno')
-      ifeq ($(YESNO),N)
-        $(error Exit)
-      else
-        ifeq ($(YESNO),n)
+      ifeq ($(filter clean,$(target)),)
+        $(info )
+        $(warning  No CUDA or ROCM module seems to be loaded!)
+        $(info Try (one of) the following: $(shell (module spider |& grep -i cuda | sed -e's/^.* \([^ ]*[Cc][Uu][Dd][Aa][^ ]*\) .*$$/\1/') ) )
+        $(info or: $(shell (module spider |& grep -i rocm | sed -e's/^.* \([^ ]*[Rr][Oo][Cc][Mm][^ ]*\) .*$$/\1/') ) )
+        YESNO := $(shell bash -c 'read -p "Continue? (Y/N) " yesno; echo $$yesno')
+        ifeq ($(YESNO),N)
           $(error Exit)
+        else
+          ifeq ($(YESNO),n)
+            $(error Exit)
+          endif
         endif
       endif
     endif
@@ -539,9 +541,11 @@ ifneq ($(GPU),nogpu)
   #-fzero-link  
 
     else
+      $(info )
       $(error Directory src/astaroth/submodule is empty! You need to pull Astaroth as a submodule and apply pc_setupsrc afterwards!)
     endif
   else
+    $(info )
     $(error No other GPU interfaces than gpu_astaroth* recently supported!)
   endif
 #
@@ -588,13 +592,11 @@ ifneq ($(filter $(SPECIAL) $(IO) $(IO_IN) $(IO_OUT), $(HDF5_MODULES)),)
   ifneq ($(MODULE_CMD),)
     HDF5_LOADED := $(shell (module list |& grep -i hdf5) || (module list |& grep -i hf5) )
     ifeq ($(HDF5_LOADED),)
-no_hdf5_message:
-	@echo ";;;"
-	@echo ";;; No HDF5 module seems to be loaded! Exit."
-	@echo ";;; Try (one of) the following: $(shell (module spider |& grep -i hdf5 | sed -e's/^.* \([^ ]*[Hh][Dd][Ff]5[^ ]*\) .*$$/\1/') )"
-	@echo ";;;"
-	@exit 1
-
+      ifeq ($(filter clean,$(target)),)
+	$(info )
+        $(info No HDF5 module seems to be loaded!) 
+	$(error Try (one of) the following: $(shell (module spider |& grep -i hdf5 | sed -e's/^.* \([^ ]*[Hh][Dd][Ff]5[^ ]*\) .*$$/\1/') ))
+      endif
     endif
   endif
 endif
@@ -3058,7 +3060,7 @@ endif
 	@echo '#include "../prerequisites.h"' > $(DSL_WORKDIR)/solve.ac
 	@echo '' >> $(DSL_WORKDIR)/solve.ac
 	@echo 'Kernel singlepass_solve(int step_num, real dt) {' >> $(DSL_WORKDIR)/solve.ac
-	@sed -e's/MODULESOURCES=/MODULESOURCES="/' -e'$$ s/$$/"/' -e's/\.\.\///' $(CUDA_MAKEDIR)/PC_modulesources.h > tmp; source ./tmp; rm tmp; \
+	@sed -e's/MODULESOURCES=/MODULESOURCES="/' -e'$$ s/$$/"/' -e's/\.\.\///' $(CUDA_MAKEDIR)/PC_modulesources.h > tmp; source ./tmp; rm -f tmp; \
 	for file in $$MODULESOURCES; do \
 	  modname=`grep '^ *module [a-zA-Z0-9_]* *$$' $$file | sed -e's/ *module *//' -e's/\([^ ]\) */\L\1/g'`; \
 	  replcmt=`sed -f dsl_pde.sed $$file`; \
@@ -3106,6 +3108,7 @@ ifeq ($(SHOCK),shock_highorder)
 	@sed -i -e'1 i   #include "../shock/kernels.ac"' $(DSL_WORKDIR)/steps_single.h
 	@sed -i -e'/twopass_solve_intermediate/ i   shock_1_divu(),\n  shock_2_smooth(),' $(DSL_WORKDIR)/steps_two.h
 	@sed -i -e'/singlepass_solve/ i   shock_1_divu(),\n   shock_2_smooth(),' $(DSL_WORKDIR)/steps_single.h
+	@bc2ast
 endif
 
 #
