@@ -5070,6 +5070,50 @@ module Chemistry
 !
     endsubroutine chemspec_normalization_N2
 !***********************************************************************
+    subroutine cond_spec_cond(f,df,p,ad,dustbin_width,mfluxcond)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+      real :: dustbin_width
+      real, dimension (nx) :: mfluxcond
+      real, dimension(ndustspec) :: ad
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
+      call keep_compiler_quiet(ad)
+      call keep_compiler_quiet(dustbin_width)
+      call keep_compiler_quiet(mfluxcond)
+!  
+    end subroutine cond_spec_cond
+!***********************************************************************
+    subroutine cond_spec_nucl(f,df,p,kk_vec,ad)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+      integer, dimension(nx) :: kk_vec
+      real, dimension(ndustspec) :: ad
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
+      call keep_compiler_quiet(ad)
+      call keep_compiler_quiet(kk_vec)
+!  
+    end subroutine cond_spec_nucl
+!***********************************************************************
+    subroutine condensing_species_rate(p,mfluxcond)
+!
+      real, dimension (nx) :: mfluxcond
+      type (pencil_case) :: p
+!
+      call keep_compiler_quiet(p)
+      call keep_compiler_quiet(mfluxcond)
+!      
+    end subroutine condensing_species_rate
+!***********************************************************************
     include 'chemistry_common.inc'
 !***********************************************************************
 endmodule Chemistry
