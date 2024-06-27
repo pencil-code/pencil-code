@@ -3591,6 +3591,7 @@ module Magnetic
           if (ljj_as_comaux) then
             if (irhoe/=0.and.ibb/=0) then
 !             p%jj_ohm=(p%el+p%uxb)*mu01/eta_total(1)
+!AB: rhoe is apparently not ready yet
 !  XXX
             else
               if (lcartesian_coords) then
@@ -3803,7 +3804,8 @@ module Magnetic
                         (lbb_as_comaux .and. lB_ext_in_comaux .and. ladd_global_field)
           endif
           ! The following does not happen if (lbb_as_comaux .and. lB_ext_in_comaux) !
-          forall(j = 1:3, j_ext(j) /= 0.0) p%jj(:,j) = p%jj(:,j) + j_ext(j)
+!AB: the following comes too early and is later done anyway
+!         forall(j = 1:3, j_ext(j) /= 0.0) p%jj(:,j) = p%jj(:,j) + j_ext(j)
         endif
 !
 !  Add a precessing dipole not in the Bext field
@@ -3936,26 +3938,33 @@ module Magnetic
 !
 !  In the following, we assume that there is no displacement current,
 !  so curlb=jj, so we should replace p%jj by p%curlb.
+!  2024-06-27/AB: done now
 !
       if (lpenc_loc(i_bij).and.lpenc_loc(i_del2a)) then
         if (lcartesian_coords) then
           call gij_etc(f,iaa,BIJ=p%bij,DEL2=p%del2a)
-          if (lpenc_loc(i_jj) .and. .not. ljj_as_comaux) call curl_mn(p%bij,p%jj)
+          !if (lpenc_loc(i_jj) .and. .not. ljj_as_comaux) call curl_mn(p%bij,p%jj)
+!AB: the outcommented line above should now be removed
+          if (lpenc_loc(i_curlb) .and. .not. ljj_as_comaux) call curl_mn(p%bij,p%curlb)
         else
           call gij_etc(f,iaa,AA=p%aa,AIJ=p%aij,BIJ=p%bij,DEL2=p%del2a, &
 !                               GRADDIV=p%graddiva,&
                                LCOVARIANT_DERIVATIVE=lcovariant_magnetic)
-          if (lpenc_loc(i_jj) .and. .not. ljj_as_comaux) &
-              call curl_mn(p%bij,p%jj,A=p%bb,LCOVARIANT_DERIVATIVE=lcovariant_magnetic)
+          if (lpenc_loc(i_curlb) .and. .not. ljj_as_comaux) &
+              !call curl_mn(p%bij,p%jj,A=p%bb,LCOVARIANT_DERIVATIVE=lcovariant_magnetic)
+              call curl_mn(p%bij,p%curlb,A=p%bb,LCOVARIANT_DERIVATIVE=lcovariant_magnetic)
         endif
       elseif (lpenc_loc(i_bij).and..not.lpenc_loc(i_del2a)) then
         if (lcartesian_coords) then
           call gij_etc(f,iaa,BIJ=p%bij)
-          if (lpenc_loc(i_jj).and. .not. ljj_as_comaux) call curl_mn(p%bij,p%jj)
+          !if (lpenc_loc(i_jj).and. .not. ljj_as_comaux) call curl_mn(p%bij,p%jj)
+          if (lpenc_loc(i_curlb).and. .not. ljj_as_comaux) call curl_mn(p%bij,p%curlb)
         else
           call gij_etc(f,iaa,AA=p%aa,AIJ=p%aij,BIJ=p%bij,LCOVARIANT_DERIVATIVE=lcovariant_magnetic)
-          if (lpenc_loc(i_jj).and. .not. ljj_as_comaux) &
-              call curl_mn(p%bij,p%jj,A=p%bb,LCOVARIANT_DERIVATIVE=lcovariant_magnetic)
+          !if (lpenc_loc(i_jj).and. .not. ljj_as_comaux) &
+          !    call curl_mn(p%bij,p%jj,A=p%bb,LCOVARIANT_DERIVATIVE=lcovariant_magnetic)
+          if (lpenc_loc(i_curlb).and. .not. ljj_as_comaux) &
+              call curl_mn(p%bij,p%curlb,A=p%bb,LCOVARIANT_DERIVATIVE=lcovariant_magnetic)
         endif
       elseif (lpenc_loc(i_del2a).and..not.lpenc_loc(i_bij)) then
         if (lcartesian_coords) then
@@ -4004,9 +4013,11 @@ module Magnetic
 !  In the second option, grad(Gamma) needs to be added when solving for
 !  the displacement current
 !
-        if (iee==0) then
-          p%curlb=p%jj
-        endif
+   !    if (iee==0) then
+   !      p%curlb=p%jj
+   !      p%jj=p%curlb
+   !    endif
+   ! 2024-06-27/AB: done below
 !
 !  Check whether or not the displacement current is being computed.
 !  Note that the previously calculated p%jj would then be overwritten
@@ -4061,7 +4072,8 @@ module Magnetic
 !  Go here in standard MHD if no displacement current exists.
 !  In that case, no ohmic current is needed or used.
 !
-          p%curlb=p%jj
+        ! p%curlb=p%jj
+!AB: the above is now not needed
           p%jj=mu01*p%curlb
           p%jj_ohm=0.
         endif
