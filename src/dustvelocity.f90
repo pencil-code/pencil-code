@@ -328,7 +328,8 @@ module Dustvelocity
         call fatal_error('register_dustvelocity','no valid dust_binning')
 
       endselect
-      if (lroot) print*,'initialize_dustvelocity: ad=',ad
+      if (lroot .and. ip<14) print*,'initialize_dustvelocity: ad=',ad
+      if (lroot) print*,'initialize_dustvelocity: minmax(ad)=',minval(ad),maxval(ad)
 !
 !  Reinitialize dustvelocity
 !  'all_to_first' = reinitialize heavier particles to lightest one.
@@ -362,7 +363,7 @@ module Dustvelocity
         else
           call fatal_error('initialize_dustvelocity','no betad calculation for draglaw='//trim(draglaw))
         endif
-        if (lroot) print*,'initialize_dustvelocity: betad=',betad
+        if (lroot .and. ip<14) print*,'initialize_dustvelocity: betad=',betad
 !
 !  Do nothing by default.
 !

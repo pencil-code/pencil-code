@@ -74,7 +74,6 @@ module Dustdensity
   real :: momcons_term_frac=1.
   integer :: iglobal_nd=0
   integer :: spot_number=1
-  integer :: i_SIO2=0
   character (len=labellen), dimension (ninit) :: initnd='nothing'
   character (len=labellen), dimension (ndiffd_max) :: idiffd=''
   character (len=labellen) :: bordernd='nothing'
@@ -112,8 +111,7 @@ module Dustdensity
   real    :: r_lucky=0., r_collected=0., f_lucky=0.
   real :: tstart_droplet_coagulation=impossible
   real :: nd0_luck=0.
-  real :: chem_conc_sat_SIO2=1e-8 !units of mol/cmˆ3
-!
+  !
   namelist /dustdensity_init_pars/ &
       rhod0, initnd, eps_dtog, nd_const, dkern_cst, nd0,  mdave0, Hnd, &
       adpeak, amplnd, amplnd_rel, phase_nd, kx_nd, ky_nd, kz_nd, &
@@ -128,7 +126,7 @@ module Dustdensity
       advec_ddensity, dustdensity_floor, init_x1, init_x2, lsubstep, a0, a1, &
       ldustcondensation_simplified, ldustcoagulation_simplified,lradius_binning, &
       lzero_upper_kern, rotat_position, dt_substep, &
-      r_lucky, r_collected, f_lucky, nd0_luck, chem_conc_sat_SIO2, ldustnucleation
+      r_lucky, r_collected, f_lucky, nd0_luck, ldustnucleation
 !
   namelist /dustdensity_run_pars/ &
       rhod0, diffnd, diffnd_hyper3, diffnd_hyper3_mesh, diffmd, diffmi, lno_deltavd, initnd, &
@@ -144,7 +142,7 @@ module Dustdensity
       lsemi_chemistry, lradius_binning, dkern_cst, lzero_upper_kern, &
       llog10_for_admom_above10,lmomcons, lmomconsb, lmomcons2, lmomcons3, lmomcons3b, &
       lkernel_mean, lpiecewise_constant_kernel, momcons_term_frac, &
-      tstart_droplet_coagulation, lfree_molecule, chem_conc_sat_SIO2, ldustnucleation
+      tstart_droplet_coagulation, lfree_molecule, ldustnucleation
 !
   integer :: idiag_KKm=0     ! DIAG_DOC: $\sum {\cal T}_k^{\rm coag}$
   integer :: idiag_KK2m=0    ! DIAG_DOC: $\sum {\cal T}_k^{\rm coag}$
@@ -437,7 +435,7 @@ module Dustdensity
       case default
         call fatal_error('initialize_dustdensity','no such diffnd_law: '//trim(diffnd_law))
       endselect
-      if (lroot) print*, 'initialize_dustdensity: diffnd_ndustspec=',diffnd_ndustspec
+      if (lroot .and. ip<14) print*, 'initialize_dustdensity: diffnd_ndustspec=',diffnd_ndustspec
 !
 !  check for self-collisions
 !
@@ -1957,6 +1955,8 @@ module Dustdensity
              case default
                call fatal_error('register_dustvelocity','no valid dust_binning')
              endselect
+             if (kk_vec(i) .gt. ndustspec) call fatal_error('dndmd_dt','kk is too large')
+             df(l1+i-1,m,n,ind(kk_vec(i)))=df(l1+i-1,m,n,ind(kk_vec(i)))+p%nucl_rate(i)/dustbin_width
            else
              kk_vec(i)=0
            endif
@@ -2203,7 +2203,6 @@ module Dustdensity
             if (lradius_binning) then
                !call sum_mn_name(sum(p%ad**k*p%nd,2)*dlnad,idiag_admom(k))
               ! 2024-06-14/AB: the thing above seems wrong, and would affect earlier work.
-              print*,"p%ad,p%nd=",p%ad,p%nd
                call sum_mn_name(sum(p%ad**k*p%nd,2)*dustbin_width,idiag_admom(k))
             else
               if (llog10_for_admom_above10.and.k>10) then
