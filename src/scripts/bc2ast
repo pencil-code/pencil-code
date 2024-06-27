@@ -5,7 +5,7 @@ declare -a top
 
 function boundcond_sed()
 {
-grep '^ *bc'$1' *=' ../start.in | sed -f scripts/bc2ast.sed
+grep '^ *bc'$1' *=' $bc_file | sed -f scripts/bc2ast.sed
 bot=(`cat bot`)
 top=(`cat top`)
 rm -f top bot
@@ -26,8 +26,30 @@ function make_ac_bound_cond()
 	    sed -e's/\(fbc[xyz][a-zA-Z_0-9]*\) *( *j *,\([^)]*\))/\1['$2',\2]/' -e's/\(bc_[a-zA-Z_0-9]*\) *( *\('$2'.*\)) *$/boundaryCondition(BOUNDARY_'$3_$4', \1, \2);/' -e's/[A-Za-z0-9_]*=//g'>> astaroth/DSL/local/boundconds.h
 }
 #
+bc_file=../run.in
+if [ ! -f ../start.in ]; then
+  if [ ! -f ../run.in ]; then
+    echo "Neither start.in nor run.in found ->  Boundary conditions cannot be encoded for Astaroth!!!"
+    exit
+  fi
+else
+  if [ -f ../run.in ]; then
+    grep_peri=`grep '^[^!]*lperi' $bc_file | sed -e's/^.*lperi *= *//' -e's/,/ /g'`
+    if [[ $grep_peri == '' ]]; then
+      bc_file=../start.in
+    else
+      echo "Both start.in and run.in found ->  Boundary conditions encoded for Astaroth from run.in!"
+    fi
+  else
+    bc_file=../start.in
+  fi
+fi
+if [[ $bc_file==../start.in ]]; then
+    echo "Boundary conditions encoded for Astaroth from start.in -> later change of them in run.in renders build invalid!"
+fi
+#
 declare -a lperi
-grep_peri=`grep '^[^!]*lperi' ../start.in | sed -e's/^.*lperi *= *//' -e's/,/ /g'`
+grep_peri=`grep '^[^!]*lperi' $bc_file | sed -e's/^.*lperi *= *//' -e's/,/ /g'`
 if [[ $grep_peri == '' ]]; then
   lperi=(T T T)
 else
@@ -36,9 +58,8 @@ fi
 #echo lperi = ${lperi[0]} ${lperi[1]} ${lperi[2]}
 
 declare -a fields
-#fields=(`grep 'Field ' astaroth/DSL/local/fieldecs.h | sed -e's/Field *//' -e's/ \/\/.*$/ /' | tr -d '\n' |sed -e's/,/ /g'`)
-#echo FIELDS=${fields[0]}, ${fields[5]}
 fields=(`grep 'typedef  *enum.* Field;' ./astaroth/submodule/build/acc-runtime/api/user_defines.h | sed -e's/^.*typedef enum *{\([^}]*\) *} *Field;/\1/' -e' s/,/ /g' -e's/NUM_[A-Z_]*FIELDS *=//g'`)
+#echo FIELDS=${fields[0]}, ${fields[5]}
 nfields=${fields[-2]}
 ncomm_fields=${fields[-1]}
 
