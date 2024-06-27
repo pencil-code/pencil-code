@@ -3216,7 +3216,9 @@ module Magnetic
 !
       if (lpencil_in(i_j2)) lpencil_in(i_jj)=.true.
 !
-      if (lpencil_in(i_curlb)) lpencil_in(i_jj)=.true.
+   !  if (lpencil_in(i_curlb)) lpencil_in(i_jj)=.true.
+   !AB: now the other way around
+      if (lpencil_in(i_jj)) lpencil_in(i_curlb)=.true.
 !
       if (lpencil_in(i_uxj)) then
         lpencil_in(i_uu)=.true.
