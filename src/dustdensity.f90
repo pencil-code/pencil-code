@@ -2192,8 +2192,10 @@ module Dustdensity
         if (idiag_adm/=0)  &
           call sum_mn_name(sum(spread((md/(4/3.*pi*rhods))**(1/3.),1,nx)*p%nd,2)/sum(p%nd,2), idiag_adm)
         if (idiag_mdmtot/=0) call sum_mn_name(sum(spread(md,1,nx)*p%nd,2), idiag_mdmtot)
-        call sum_mn_name(p%nucl_rmin,idiag_nuclrmin)
-        call sum_mn_name(p%nucl_rate,idiag_nuclrate)
+        if (ldustnucleation) then
+          call sum_mn_name(p%nucl_rmin,idiag_nuclrmin)
+          call sum_mn_name(p%nucl_rate,idiag_nuclrate)
+        endif
 !
 !  compute moments, works independently of lmdvar
 !
