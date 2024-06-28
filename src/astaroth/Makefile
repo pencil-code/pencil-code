@@ -77,6 +77,7 @@ astaroth_$(PREC).so: $(SOURCES) forcing.h $(AC_HEADERS) $(PC_HEADERS) $(CHEADERS
 #	cp -r ./NUMA-scheduler/include .
 
 # $(DSL_MODULE_DIR)/*.ac $(DSL_MODULE_DIR)/*.h
+# -DRUNTIME_COMPILE=$(PRODUCTION)
 astaroth_libs:
 	mkdir -p submodule/build && cd submodule/build && \
 	cmake -DMULTIGPU_ENABLED=OFF -DDSL_MODULE_DIR=../acc-runtime/$(DSL_MODULE_DIR) -DMPI_ENABLED=ON -DBUILD_SHARED_LIBS=ON -DSINGLEPASS_INTEGRATION=$(CMAKE_SINGLEPASS) -DUSE_CUDA_AWARE_MPI=ON \

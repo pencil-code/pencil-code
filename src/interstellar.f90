@@ -138,6 +138,7 @@ module Interstellar
   logical :: lfirst_zdisk
 !
   logical :: lfirst_warning=.true.
+!
 !  normalisation factors for 1-d, 2-d, and 3-d profiles like exp(-r^6)
 !  ( 1d: 2    int_0^infty exp(-(r/a)^6)     dr) / a
 !    2d: 2 pi int_0^infty exp(-(r/a)^6) r   dr) / a^2
@@ -2469,7 +2470,7 @@ module Interstellar
       disk_massII=0.
       if (nz1<=nz2) then
 !
-!$    call OMP_set_num_threads(num_helper_threads+1)
+!$    call OMP_set_num_threads(num_helper_threads)
         if (ldensity_nolog) then
           if (lcart_equi) then
             disk_massII=sum(f(l1:l2,m1:m2,nz1:nz2,irho))*dVol_glob
@@ -2562,7 +2563,7 @@ module Interstellar
 !  cloud_TT and the density is above cloud_rho, i.e. cold and dense.
 !
         cloud_mass=0.0
-!$      call OMP_set_num_threads(num_helper_threads+1)
+!$      call OMP_set_num_threads(num_helper_threads)
         !!$omp target if(loffload) !map(from: cloud_mass) & !needs: cloud_rho, lncloud_TT 
         !!$omp        has_device_addr(f) ! globals: irho, ilnrho, iss, ilnTT, ldensity_nolog
         !$omp teams distribute parallel do collapse(2) private(rho,lnTT,dV) reduction(+:cloud_mass)
@@ -2772,7 +2773,7 @@ module Interstellar
 !
         rhosum=0.0
         if (lgpu.and..not.lSN_list) call copy_farray_from_GPU(f)
-!$      call OMP_set_num_threads(num_helper_threads+1)
+!$      call OMP_set_num_threads(num_helper_threads)
         if (.not.lcart_equi) then
          !!$omp target if(loffload) !map(from: rhosum) has_device_addr(f)   ! globals: irho, ilnrho, ldensity_nolog
           !$omp teams distribute parallel do collapse(2) private(dV) reduction(+:rhosum)
@@ -3070,7 +3071,7 @@ Get_z:if (lroot) then
         cloud_mass_proc=cloud_mass_byproc(SNR%indx%iproc+1)
         lfound = .false.
 ! FG notes for omp: irho_ss, lentropy, nx, lgpu, iEXPLOSION_TOO_HOT priv ierr 
-!$      call OMP_set_num_threads(num_helper_threads+1)
+!$      call OMP_set_num_threads(num_helper_threads)
         !!$omp target if(loffload) !map(from: ierr,cum_mass) map(tofrom: SNR) & !needs: cloud_rho,lncloud_TT,preSN) &
         !!$omp        has_device_addr(f)  !globals: ip, irho,ilnrho,ilnTT,iss,ldensity_nolog
         !$omp teams distribute parallel do collapse(2) private(dV,rho,lnTT,l,ipsn) reduction(+:cum_mass)  !!!reduction unclear
@@ -3493,7 +3494,7 @@ mn_loop:do n=n1,n2
       SNR%indx%state=SNstate_waiting
       SN_TT_ratio_max = SN_TT_ratio*TT_SN_max
       lfound = .false.
-!$    call OMP_set_num_threads(num_helper_threads+1)
+!$    call OMP_set_num_threads(num_helper_threads)
      !!$omp target if(loffload) !map(tofrom: SNR) has_device_addr(f)  ! needs:
       !irho,ilnrho,iss,ilnTT,frac_eth,dr2_SN,rfactor_SN,TT_SN_max, switches FG radius2mass, c_SN, width_energy, width_mass,&
       !irho_lnTT, irho_ss, irho_ee, SN_TT_ratio_max
@@ -3778,6 +3779,7 @@ print*,"Fred was here, after MPI explode_SN: iproc, exp(maxlnTT)/TT_SN_max",ipro
       enddo  !  mn-loop
       !$omp end teams distribute parallel do
      !!$omp end target
+
       SNR%feat%EE=cum_ee
       SNR%feat%MM=cum_mm
       SNR%feat%CR=cum_cr
@@ -3840,9 +3842,9 @@ print*,"Fred was here, after MPI explode_SN: iproc, exp(maxlnTT)/TT_SN_max",ipro
           'continuation of old data may need header and extra columns appended')
           call warning('sn_series.dat','new columns added_Nsol 27.05.21 '// &
           'continuation of old data may need header and extra columns appended')
+          lfirst_warning=.false.
         endif
 
-        open(1,file=trim(datadir)//'/sn_series.dat',position='append')
         print "(1x,'explode_SN:    step, time = ',i8,e12.5)",it,t
         print "(1x,'explode_SN:          dVol = ',   e12.5)",dVol_glob
         print "(1x,'explode_SN:       SN type = ',      i3)",SNR%indx%SN_type
@@ -3858,6 +3860,8 @@ print*,"Fred was here, after MPI explode_SN: iproc, exp(maxlnTT)/TT_SN_max",ipro
         print "(1x,'explode_SN:  Ambient Nsol = ',   e12.5)",site_mass/solar_mass
         print "(1x,'explode_SN:    Sedov time = ',   e12.5)", SNR%feat%t_sedov
         print "(1x,'explode_SN:   Shell speed = ',   e12.5)",uu_sedov
+
+        open(1,file=trim(datadir)//'/sn_series.dat',position='append')
         write(1,'(i10,E16.8,5i6,16E13.5)') &
             it, t, SNR%indx%SN_type, SNR%indx%iproc, SNR%indx%l, SNR%indx%m, &
             SNR%indx%n, SNR%feat%x, SNR%feat%y, SNR%feat%z, SNR%site%rho, &
@@ -3867,7 +3871,6 @@ print*,"Fred was here, after MPI explode_SN: iproc, exp(maxlnTT)/TT_SN_max",ipro
             maxTT, t_interval_SN, SNrate
         close(1)
       endif
-      lfirst_warning=.false.
 !
       if (present(preSN)) then
         do i=2,npreSN
@@ -3933,7 +3936,7 @@ print*,"Fred was here, after MPI explode_SN: iproc, exp(maxlnTT)/TT_SN_max",ipro
 !  Obtain distance to SN and sum all points inside SNR radius and
 !  divide by number of points.
 !
-!$    call OMP_set_num_threads(num_helper_threads+1)
+!$    call OMP_set_num_threads(num_helper_threads)
      !!$omp target if(loffload) !map(from: rhomin,rhomax,tmp) map(to: remnant) has_device_addr(f)  ! needs: irho,ilnrho,iuu,dr2_SN, switches;  gives: m,n
       !$omp teams distribute parallel do collapse(2) private(rho,uu,u2,lmask,dV), reduction(min:rhomin) reduction(max:rhomax) reduction(+:tmp)
       do n=n1,n2
@@ -4035,7 +4038,7 @@ print*,"Fred was here, after MPI explode_SN: iproc, exp(maxlnTT)/TT_SN_max",ipro
 !  Obtain distance to SN and sum all points inside SNR radius and divide by number of points.
 !
       tmp=0.
-!$    call OMP_set_num_threads(num_helper_threads+1)
+!$    call OMP_set_num_threads(num_helper_threads)
      !!$omp target if(loffload) !map(from: tmp) map(to: remnant) has_device_addr(f)  ! needs: irho,ilnrho,iuu,dr2_SN, switches;  gives: m,n
 !FG: cvelocity_SN, cmass_SN
       !$omp teams distribute parallel do collapse(2) private(uu,u2,rho,deltauu,deltarho,dV,outward_normal_SN) reduction(+:tmp)
@@ -4068,6 +4071,7 @@ print*,"Fred was here, after MPI explode_SN: iproc, exp(maxlnTT)/TT_SN_max",ipro
 !  avoid NaN where uu less than tini  MR: needed?
 !  FG: experienced underflow errors for velocities close to zero for dot2,
 !      particularly for sedov test with momentum injection
+!  MR: but which operation would create the underflow?
 !
         where (abs(f(l1:l2,m,n,iuu:iuu+2))<sqrt(tini)) uu=0.
         call dot2(uu,u2)

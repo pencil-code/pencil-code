@@ -22,13 +22,16 @@ output real AC_maxchi
 #include "../stdlib/utils/kernels.h"
 #include "../phys_consts.h"
 #include "PC_modulepardecs.h"
-#ifdef LFORCING
-  #include "../forcing/pcstyleforcing.h"
-#endif
 #ifdef LDENSITY
   int AC_ldensity_nolog
   #define LNRHO RHO
   #define ldensity_nolog AC_ldensity_nolog
+#endif
+#ifdef LFORCING
+  #include "../forcing/pcstyleforcing.h"
+  #define ADDFORCE if (step_num==2) {uu += forcing()}
+#else
+  #define ADDFORCE 
 #endif
 //int mcom = mvar+maux_com
 /*real fbcx[mcom][2], fbcx_2[mcom][2]

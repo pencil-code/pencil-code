@@ -46,6 +46,9 @@ AcReal cpu_pow(AcReal const val, AcReal exponent)
 #include "PC_moduleflags.h"
 #include "../cparam_c.h"
 #include "../cdata_c.h"
+#if LFORCING
+  #include "../forcing_c.h"     // provides forcing_pars_hel
+#endif
 #include "../sub_c.h"           // provides set_dt
 #include "../boundcond_c.h"     // provides boundconds[xyz] etc.
 #include "../mpicomm_c.h"       // provides finalize_sendrcv_bdry

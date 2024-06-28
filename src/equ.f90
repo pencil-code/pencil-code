@@ -92,7 +92,7 @@ module Equ
 !$    use, intrinsic :: iso_c_binding
 !      use, intrinsic :: iso_fortran_env
 !!$    use mt, only: push_task, depend_on_all, default_task_type, wait_all_thread_pool
-!$    use General, only: signal_send, signal_wait
+!$    use General, only: signal_send
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -353,10 +353,12 @@ module Equ
         start_time = mpiwtime()
         call rhs_gpu(f,itsub)
         end_time = mpiwtime()
-        if (lroot) print*,"iteration on gpu:",end_time-start_time
+        !if (lroot) print*,"iteration on gpu:",end_time-start_time
+        !if (lroot) flush(6)
         sum_time = sum_time + end_time-start_time
         n_iterations = n_iterations + 1
-        if (lroot) print*,"nth iteration: average time on gpu:",n_iterations, sum_time/n_iterations
+        !if (lroot) print*,"nth iteration: average time on gpu:",n_iterations, sum_time/n_iterations
+        !if (lroot) flush(6)
       else
         call rhs_cpu(f,df,p,mass_per_proc,early_finalize)
 !
@@ -791,7 +793,7 @@ module Equ
 !*****************************************************************************
       subroutine perform_diagnostics(f,p)
 
-!$    use General, only: signal_send, signal_wait
+!$    use General, only: signal_send
 
       real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
       type (pencil_case) :: p

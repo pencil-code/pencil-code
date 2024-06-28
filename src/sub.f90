@@ -9166,15 +9166,15 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
 !
     endsubroutine calc_scl_factor
 !***********************************************************************    
-!$  function get_dxyzs() result(res) bind(C)
-
-!$    type :: real3
-!$      real :: x, y, z
-!$    endtype real3
-!$    type(real3) :: res
-
-!$    res%x = dxyz_2(nghost); res%y=dxyz_4(nghost); res%z=dxyz_6(nghost)
-
-!$  end function get_dxyzs
+    function get_dxyzs() result(res)
+  
+      type :: real3
+        real :: x, y, z
+      endtype real3
+      type(real3) :: res
+  
+      res%x = dxyz_2(nghost); res%y=dxyz_4(nghost); res%z=dxyz_6(nghost)
+  
+    endfunction get_dxyzs
 !***********************************************************************    
 endmodule Sub
