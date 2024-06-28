@@ -3296,7 +3296,7 @@ module Magnetic
       endif
 !
       if (lpencil_in(i_b2)) lpencil_in(i_bb)=.true.
-      if ((lpencil_in(i_jj)) .and. .not. (ljj_as_comaux)) lpencil_in(i_bij)=.true.
+      if ((lpencil_in(i_curlb)) .and. .not. (ljj_as_comaux)) lpencil_in(i_bij)=.true.
 !
       if (lpencil_in(i_djuidjbi)) then
         lpencil_in(i_uij)=.true.
