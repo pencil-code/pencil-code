@@ -612,7 +612,7 @@ endif
           if (idiag_da0rms/=0) call sum_mn_name(f(l1:l2,m,n,idiva_name)**2,idiag_da0rms,lsqrt=.true.)
         endif
         if (llongitudinalE) then
-          if (idiag_weylgcond) call sum_mn_name(weylgcond,idiag_weylgcond)
+          if (idiag_weylgcond/=0) call sum_mn_name(weylgcond,idiag_weylgcond)
         endif
 !
         call xysum_mn_name_z(p%el(:,1),idiag_exmz)
