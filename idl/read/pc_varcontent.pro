@@ -170,6 +170,9 @@ indices = [ $
   { name:'ivx', label:'x-velocity when conservative', dims:1 }, $
   { name:'ivy', label:'y-velocity when conservative', dims:1 }, $
   { name:'ivz', label:'z-velocity when conservative', dims:1 }, $
+  { name:'iox', label:'x-velocity when conservative', dims:1 }, $
+  { name:'ioy', label:'y-velocity when conservative', dims:1 }, $
+  { name:'ioz', label:'z-velocity when conservative', dims:1 }, $
   { name:'iuun', label:'Velocity of neutrals', dims:3 }, $
   { name:'ispitzer', label:'Heat flux vector according to Spitzer', dims:3 }, $
   { name:'iqq', label:'heatflux vector', dims:3 }, $
@@ -182,6 +185,8 @@ indices = [ $
   { name:'iXX_chiral', label:'XX chiral', dims:1 }, $
   { name:'iYY_chiral', label:'YY chiral', dims:1 }, $
   { name:'iZZ_chiral', label:'ZZ chiral', dims:1 }, $
+  { name:'iXX2_chiral', label:'XX2 chiral', dims:1 }, $
+  { name:'iYY2_chiral', label:'YY2 chiral', dims:1 }, $
   { name:'ispecial', label:'Special', dims:1 }, $
   { name:'ispec_3vec', label:'Special vector', dims:3 }, $
   { name:'ilorentz', label:'Lorentz factor', dims:1 }, $
