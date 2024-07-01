@@ -31,6 +31,8 @@ module Special
   real, dimension(mz) :: lon  ! longitude in [rad]
   real, dimension(mx,my,mz) :: rr,rr1,siny,cosy  !  r,1/r,sin(th) and cos(th)
   real, dimension(mx,my,mz,3) :: Bext=0.,Jext=0.  !  time-dependent external fields
+  real, dimension(mx) :: fact_near_topbot=0.
+  real, dimension(my) :: fact_near_polar=0.
 !  constants for unit conversion
   real :: gamma=1.
   real :: r2m=1., rho2kg_m3=1., u2m_s=1., cp2si=1.
@@ -65,12 +67,12 @@ module Special
   real :: pradtop=1.d3, pradbot=1.d6      ! unit: [Pa]
   real :: pbot0=1.e7                      ! unit: [Pa]
   real :: q_drag=0.0
-  real :: q_sponge=0.0
-  !
-  integer :: n_sponge=0
+  real :: q_sponge_r=0.0
+  real :: q_sponge_polar=0.0
+  real :: frac_sponge_r=0
+  real :: frac_sponge_polar=0
   !
   logical :: linit_equilibrium=.false.
-  logical :: lsponge_top=.false.,lsponge_bottom=.false.,lvelocity_drag=.false.,lsponge_dt=.false.
 !
 ! Run parameters
 !
@@ -84,12 +86,12 @@ module Special
       R_planet,rho_ref,cs_ref,cp_ref,T_ref,pbot0,&
       lon_ss,lat_ss,peqtop,peqbot,tauradtop,tauradbot,&
       pradtop,pradbot,dTeqbot,dTeqtop,linit_equilibrium,&
-      Bext_ampl,iBext,n_sponge,lsponge_top,lsponge_bottom,&
-      lvelocity_drag,q_drag,q_sponge,lsponge_dt,eta0_ref
+      Bext_ampl,iBext,frac_sponge_r,frac_sponge_polar,q_sponge_polar,&
+      q_drag,q_sponge_r,eta0_ref
 !
   namelist /special_run_pars/ &
-      tau_slow_heating,t0_slow_heating,Bext_ampl,iBext,n_sponge,&
-      lsponge_top,lsponge_bottom,lvelocity_drag,q_drag,q_sponge,lsponge_dt,&
+      tau_slow_heating,t0_slow_heating,Bext_ampl,iBext,frac_sponge_r,&
+      q_drag,q_sponge_r,&
       dTeq_max,dTeqtop,dTeqbot,ietaPT,f_eta,ieta_order
 !
 !
@@ -143,6 +145,11 @@ module Special
           call fatal_error('initialize_special','no such ietaPT')
         endselect
       endif
+!
+!  define sponge layer factors
+!
+      where ( (xyz1(1)-x <= frac_sponge_r*Lxyz(1)) .or. (x-xyz0(1) <= frac_sponge_r*Lxyz(1)) ) fact_near_topbot = 1.
+      where ( (xyz1(2)-y <= frac_sponge_polar*Lxyz(2)) .or. (y-xyz1(2) <= frac_sponge_polar*Lxyz(2)) ) fact_near_polar = 1.
 !
       call keep_compiler_quiet(f)
 !
@@ -260,8 +267,6 @@ module Special
     subroutine special_calc_hydro(f,df,p)
 !
 !  Add damping layers near the top and bottom boundaries. Ref: Dowling (1998).
-!  ksp in his work is equal to n_sponge.
-!  q(j) is correspond to mu0(n_sponge+1-j) in eq(57).
 !
 !  24-nov-23/kuan,hongzhe: coded
 !  21-feb-24/kuan: revised sponge layer
@@ -272,43 +277,22 @@ module Special
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      real, dimension(:), allocatable :: q
       real, dimension (nx,3) :: jtot,btot,jxbtot,jxbtotr
       integer :: i, j
 !
-      if (n_sponge>0 .and. (lsponge_top.or.lsponge_bottom)) then
-        allocate(q(n_sponge))
-        q=0.
-      endif
-!
 !  Add top or bottom sponge layer
 !
-      if (lsponge_top .and. llast_proc_x .and. it>1) then
-        do j=1,n_sponge
-          q=q_sponge*(1.-cos(pi*j/n_sponge))
-        enddo
-        if (lsponge_dt) q=q/dt
-        !
-        do i=iux,iuz
-          df(l2-n_sponge+1:l2,m,n,i) = df(l2-n_sponge+1:l2,m,n,i) - q * f(l2-n_sponge+1:l2,m,n,i)
-        enddo
-      endif
+      do i=iux,iuz
+        df(l1:l2,m,n,i) = df(l1:l2,m,n,i) - fact_near_topbot(l1:l2) * q_sponge_r * f(l1:l2,m,n,i)
+      enddo
 !
-      if (lsponge_bottom .and. lfirst_proc_x .and. it>1) then
-        do j=1,n_sponge
-          q=q_sponge*(1.-cos(pi*(n_sponge-j+1)/n_sponge))
-        enddo
-        if (lsponge_dt) q=q/dt
-        !
-        do i=iux,iuz
-          df(l1:l1+n_sponge-1,m,n,i) = df (l1:l1+n_sponge-1,m,n,i) - q * f(l1:l1+n_sponge-1,m,n,i)
-        enddo
-      endif
+!  Add polar sponge layer of ur
+!
+      df(l1:l2,m,n,iux) = df (l1:l2,m,n,iux) - fact_near_polar(m) * q_sponge_polar * f(l1:l2,m,n,iux)
 !
 !  Add velocity drag, dudt = ... - q_drag * u
 !
-      if (lvelocity_drag) &
-        df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - q_drag * f(l1:l2,m,n,iux:iuz)
+      df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - q_drag * f(l1:l2,m,n,iux:iuz)
 !
 !  Add Lorentz force from the background field
 !
@@ -384,8 +368,8 @@ module Special
       if (ietaPT/='nothing') then
         select case (ieta_order)
         case ('1')
-          df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + &
-              f_eta * p%del2a * spread(eta_x,2,3)
+          !df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + &
+          !    f_eta * p%del2a * spread(eta_x,2,3)
         case ('3')
           !df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + &
           !    f_eta * p%del6a * spread(eta_x,2,3)
@@ -577,7 +561,6 @@ module Special
 !  13-nov-23/hongzhe: coded
 !
       real :: r0,r1,th0,th1
-!
       select case (iBext)
       case ('nothing')
         Bext = 0.
