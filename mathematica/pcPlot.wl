@@ -152,7 +152,8 @@ pcColors[name_String]:=Switch[name,
   "BlueWhiteRed",Blend[{pcColors["Blue"],pcHexColor["#6C96CC"],pcHexColor["#EDAE92"],pcColors["Red"]},#]&,
   _,ColorData[name]
 ]
-pcColors[name_,{min_,max_}]:=pcColors[name][If[Abs[min]>=max,-0.5/min*(#-min),0.5/max*(#-max)+1]]&
+pcColors[name_String,{min_,max_}]:=pcColors[name][If[Abs[min]>=max,-0.5/min*(#-min),0.5/max*(#-max)+1]]&/;NumericQ[min]&&NumericQ[max]
+pcColors[cf_,list_List]:=pcColors[cf]/@Rescale[list//Length//Range]
 
 
 (* ::Section:: *)
