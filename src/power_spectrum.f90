@@ -1038,7 +1038,7 @@ outer:  do ikz=1,nz
     use Fourier, only: fft_xyz_parallel
     use Mpicomm, only: mpireduce_sum
     use Sub, only: del2vi_etc, del2v_etc, cross, grad, curli, curl, dot2
-    use Chiral, only: iXX_chiral, iYY_chiral
+    use Chiral, only: iXX_chiral, iYY_chiral, iXX2_chiral, iYY2_chiral
     use Magnetic, only: magnetic_calc_spectra
 !
   integer, parameter :: nk=nxgrid/2
@@ -1047,7 +1047,7 @@ outer:  do ikz=1,nz
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
   real, dimension(nx) :: bbi, jji, b2, j2
-  real, dimension(nx,3) :: bb, bbEP, jj
+  real, dimension(nx,3) :: bb, bbEP, hhEP, jj
   real, dimension(nk) :: nks=0.,nks_sum=0.
   real, dimension(nk) :: k2m=0.,k2m_sum=0.,krms
   real, dimension(nk) :: spectrum,spectrum_sum
@@ -1370,6 +1370,26 @@ outer:  do ikz=1,nz
             b_re(:,im,in)=bbEP(:,ivec)  !(this corresponds to magnetic field)
             a_re(:,im,in)=.5*(f(l1:l2,m,n,iXX_chiral)*gtmp2(:,ivec) &
                              -f(l1:l2,m,n,iYY_chiral)*gtmp1(:,ivec))
+          enddo
+        enddo
+        a_im=0.
+        b_im=0.
+      endif
+!
+!  magnetic energy spectra based on fields with Euler potentials (Higgs case)
+!
+    elseif (sp=='hEP') then
+      if (iXX2_chiral/=0.and.iYY2_chiral/=0) then
+        do n=n1,n2
+          do m=m1,m2
+            call grad(f,iXX2_chiral,gtmp1)
+            call grad(f,iYY2_chiral,gtmp2)
+            call cross(gtmp1,gtmp2,hhEP)
+            im=m-nghost
+            in=n-nghost
+            b_re(:,im,in)=hhEP(:,ivec)  !(this corresponds to magnetic field)
+            a_re(:,im,in)=.5*(f(l1:l2,m,n,iXX2_chiral)*gtmp2(:,ivec) &
+                             -f(l1:l2,m,n,iYY2_chiral)*gtmp1(:,ivec))
           enddo
         enddo
         a_im=0.
@@ -3139,7 +3159,7 @@ outer:  do ikz=1,nz
 !
     spectrumx(:,2:nk)=2*spectrumx(:,2:nk)
 !
-!  Doing fourier spectra in all directions if onedall=T
+!  Doing Fourier spectra in all directions if onedall=T
 !
     if (onedall) then
 !
@@ -4368,7 +4388,7 @@ endsubroutine pdf
     use Fourier, only: fft_xyz_parallel
     use Mpicomm, only: mpireduce_sum
     use Sub, only: del2vi_etc, del2v_etc, cross, grad, curli, curl, dot2
-    use Chiral, only: iXX_chiral, iYY_chiral
+    use Chiral, only: iXX_chiral, iYY_chiral, iXX2_chiral, iYY2_chiral
 !
   integer, parameter :: nk=nxgrid/2
   integer :: i, ikx, iky, ikz, im, in, ivec

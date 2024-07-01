@@ -10,4 +10,4 @@
   public :: pencil_criteria_chiral, pencil_interdep_chiral
   public :: calc_pencils_chiral, calc_diagnostics_chiral
   public :: chiral_before_boundary
-  public :: iXX_chiral,iYY_chiral
+  public :: iXX_chiral,iYY_chiral,iXX2_chiral,iYY2_chiral

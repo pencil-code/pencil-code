@@ -754,6 +754,7 @@ module Snapshot
         if (jj2_spec) call powerhel(f,'jj2',lfirstcall_powerhel)
         if (uzs_spec) call powerhel(f,'uzs',lfirstcall_powerhel)
         if (EP_spec)  call powerhel(f,'bEP',lfirstcall_powerhel)
+        if (hEP_spec) call powerhel(f,'hEP',lfirstcall_powerhel)
         if (a0_spec)  call powerscl(f,'a0')
         if (ro_spec)  call powerscl(f,'ro')
         if (abs_u_spec) call powerscl(f,'u_m')
