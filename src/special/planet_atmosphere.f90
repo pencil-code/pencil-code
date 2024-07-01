@@ -312,11 +312,13 @@ module Special
 !
 !  Add Lorentz force from the background field
 !
-      jtot = p%jj + Jext(l1:l2,m,n,:)
-      btot = p%bb + Bext(l1:l2,m,n,:)
-      call cross_mn(jtot,btot,jxbtot)
-      call multsv_mn(p%rho1,jxbtot,jxbtotr)
-      df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + jxbtotr
+      if (lmagnetic) then
+        jtot = p%jj + Jext(l1:l2,m,n,:)
+        btot = p%bb + Bext(l1:l2,m,n,:)
+        call cross_mn(jtot,btot,jxbtot)
+        call multsv_mn(p%rho1,jxbtot,jxbtotr)
+        df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + jxbtotr
+      endif
 !
     endsubroutine special_calc_hydro
 !***********************************************************************
