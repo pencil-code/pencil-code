@@ -167,6 +167,7 @@ corrTimePowercor[sim_,tsat_,file_,lFit_,nFit_,OptionsPattern[]]:=Module[{tvart,t
   spec=Switch[OptionValue["lNormalization"],
     None,spec,
     "t",spec/t,
+    "u2",spec/2/read1D[sim,"power_kin.dat"][[2,2;;]],
     _,Return["No such normalization option available"]
   ];
   (*find positions of tvart*)
