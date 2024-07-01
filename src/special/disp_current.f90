@@ -16,7 +16,7 @@
 !
 ! PENCILS PROVIDED e2; edot2; el(3); a0; ga0(3); del2ee(3); curlE(3); BcurlE
 ! PENCILS PROVIDED rhoe, divJ, divE, gGamma(3)
-! PENCILS EXPECTED infl_phi, infl_dphi, gphi(3), infl_a2
+! PENCILS EXPECTED infl_phi, infl_dphi, gphi(3)
 !***************************************************************
 !
 module Special
@@ -44,7 +44,7 @@ module Special
   real :: ampla0=0.0, initpower_a0=0.0, initpower2_a0=0.0
   real :: cutoff_a0=0.0, ncutoff_a0=0.0, kpeak_a0=0.0
   real :: relhel_a0=0.0, kgaussian_a0=0.0, eta_ee=0.0
-  real :: weight_longitudinalE=0.0
+  real :: weight_longitudinalE=2.0
   real, pointer :: eta, eta_tdep
   integer :: iGamma=0, ia0=0, idiva_name=0, ieedot=0, iedotx=0, iedoty=0, iedotz=0
   logical :: llongitudinalE=.true., llorenz_gauge_disp=.false., lskip_projection_ee=.false.
@@ -101,6 +101,7 @@ module Special
   integer :: idiag_mfpf=0       ! DIAG_DOC: $-f'/f$
   integer :: idiag_fppf=0       ! DIAG_DOC: $f''/f$
   integer :: idiag_afact=0      ! DIAG_DOC: $a$ (scale factor)
+  integer :: idiag_weylgcond=0  ! DIAG_DOC: $<deldotE+>$
 !
 ! xy averaged diagnostics given in xyaver.in
 !
@@ -220,7 +221,11 @@ module Special
 !  Initial condition for Gama
 !
       if (llongitudinalE) then
-        f(:,:,:,iGamma)=0.
+!        f(:,:,:,iGamma)=0.
+         do n=n1,n2; do m=m1,m2
+           call div(f,iaa,diva)
+           f(l1:l2,m,n,iGamma)=diva
+         enddo; enddo
       endif
 !
 !  Initial condition for rhoe
@@ -275,7 +280,6 @@ module Special
         lpenc_requested(i_infl_phi)=.true.
         lpenc_requested(i_infl_dphi)=.true.
         lpenc_requested(i_gphi)=.true.
-        lpenc_requested(i_infl_a2)=.true.
       endif
 !
 !  compulsory pencils
@@ -287,6 +291,10 @@ module Special
 !
       if (llorenz_gauge_disp) then
         lpenc_requested(i_diva)=.true.
+      endif
+!
+      if (loverride_ee) then
+        lpenc_requested(i_jj)=.true.
       endif
 !
 !  Terms for Gamma evolution.
@@ -308,13 +316,11 @@ module Special
 !
 !  diffusion term.
 !
-      lpenc_requested(i_jj_ohm)=.true.
       if (eta_ee/=0.) lpenc_requested(i_del2ee)=.true.
 !
 !  Diagnostics pencils:
 !
       if (eta_ee/=0.) lpenc_requested(i_del2ee)=.true.
-      lpenc_requested(i_jj_ohm)=.true.
       if (eta_ee/=0.) lpenc_requested(i_del2ee)=.true.
 
       if (idiag_BcurlEm/=0) then
@@ -367,8 +373,11 @@ module Special
         call grad(f,iGamma,p%gGamma)
         p%curlb=-p%del2a+p%gGamma
         if (lsolve_chargedensity) p%rhoe=f(l1:l2,m,n,irhoe)
-      else
-        p%curlb=p%jj
+!      else
+!        p%curlb=p%jj
+!        p%curlb=p%graddiva-p%del2a
+!        print*,'ram=p%graddiva',p%graddiva
+!        print*,'ram=p%del2a',p%del2a
       endif
 !
 ! el: choice of either replacing E by the MHD value -uxB+J/sigma
@@ -403,22 +412,6 @@ module Special
       if (idiag_BcurlEm/=0) then
         call curl(f,iex,p%curle)
         call dot(p%bb,p%curle,p%BcurlE)
-      endif
-!
-! edot2
-!
-      if (leedot_as_aux) then
-        call dot2_mn(f(l1:l2,m,n,iedotx:iedotz),p%edot2)
-      endif
-!
-!  del2ee
-!
-      if (eta_ee/=0.) call del2v(f,iex,p%del2ee)
-!
-! edot2
-!
-      if (leedot_as_aux) then
-        call dot2_mn(f(l1:l2,m,n,iedotx:iedotz),p%edot2)
       endif
 !
 !  del2ee
@@ -477,7 +470,7 @@ module Special
       type (pencil_case) :: p
 !
       real, dimension (nx,3) :: gtmp
-      real, dimension (nx) :: tmp, del2a0
+      real, dimension (nx) :: tmp, del2a0, weylgcond
       real :: inflation_factor=0., mfpf=0., fppf=0.
 !
       intent(in) :: p
@@ -502,6 +495,7 @@ module Special
           df(l1:l2,m,n,iGamma)=df(l1:l2,m,n,iGamma) &
             -(1.-weight_longitudinalE)*p%divE &
             -weight_longitudinalE*tmp
+          weylgcond=p%divE-tmp
         endif
       endif
 !
@@ -617,6 +611,9 @@ endif
           if (idiag_grms/=0) call sum_mn_name((f(l1:l2,m,n,idiva_name)-p%diva)**2,idiag_grms,lsqrt=.true.)
           if (idiag_da0rms/=0) call sum_mn_name(f(l1:l2,m,n,idiva_name)**2,idiag_da0rms,lsqrt=.true.)
         endif
+        if (llongitudinalE) then
+          if (idiag_weylgcond) call sum_mn_name(weylgcond,idiag_weylgcond)
+        endif
 !
         call xysum_mn_name_z(p%el(:,1),idiag_exmz)
         call xysum_mn_name_z(p%el(:,2),idiag_eymz)
@@ -689,7 +686,7 @@ endif
         idiag_a0rms=0; idiag_grms=0; idiag_da0rms=0; idiag_BcurlEm=0
         idiag_mfpf=0; idiag_fppf=0; idiag_afact=0
         idiag_rhoerms=0.; idiag_divErms=0.; idiag_divJrms=0.
-        idiag_rhoem=0.; idiag_divEm=0.; idiag_divJm=0.
+        idiag_rhoem=0.; idiag_divEm=0.; idiag_divJm=0.; idiag_weylgcond=0.
         cformv=''
       endif
 !
@@ -713,6 +710,7 @@ endif
         call parse_name(iname,cname(iname),cform(iname),'mfpf',idiag_mfpf)
         call parse_name(iname,cname(iname),cform(iname),'fppf',idiag_fppf)
         call parse_name(iname,cname(iname),cform(iname),'afact',idiag_afact)
+        call parse_name(iname,cname(iname),cform(iname),'weylgcond',idiag_weylgcond)
       enddo
 !
       do inamez=1,nnamez

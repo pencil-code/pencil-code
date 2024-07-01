@@ -39,7 +39,6 @@
 ! MAUX CONTRIBUTION 18
 !
 ! PENCILS PROVIDED stress_ij(6)
-!! PENCILS EXPECTED gphi(3), infl_a2
 ! PENCILS EXPECTED gphi(3)
 !
 !***************************************************************
