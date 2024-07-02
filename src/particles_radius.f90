@@ -53,7 +53,7 @@ module Particles_radius
   logical :: lfixed_particles_radius=.false.
   logical :: ltauascalar = .false., ldust_condensation=.false.
   logical :: ldust_accretion = .false., lreinitialize_ap=.false.
-  logical :: lfree_molecule=.false.
+  logical :: lfree_molecule=.false., lcondensing_species=.false.
   character(len=labellen), dimension(ninit) :: initap='nothing'
   character(len=labellen) :: condensation_coefficient_type='constant'
 !
@@ -83,7 +83,7 @@ module Particles_radius
       ltauascalar, modified_vapor_diffusivity, ldt_evaporation, &
       ldt_condensation, ldt_condensation_off, &
       ldust_condensation, xi_accretion, ldust_accretion, &
-      tstart_condensation_par, lfree_molecule
+      tstart_condensation_par, lfree_molecule,lcondensing_species
 !
   integer :: idiag_apm=0, idiag_ap2m=0, idiag_ap3m=0,idiag_apmin=0, idiag_apmax=0
   integer :: idiag_dvp12m=0, idiag_dtsweepp=0, idiag_npswarmm=0
@@ -183,7 +183,7 @@ module Particles_radius
       endif
 !
       if ((lsweepup_par .or. lcondensation_par).and. .not. lpscalar &
-          .and. .not. lascalar .and. .not. lcondensation_simplified) then
+          .and. .not. lascalar .and. .not. lcondensation_simplified .and. .not. lcondensing_species) then
         call fatal_error('initialize_particles_radius', &
             'must have passive scalar module for sweep-up and condensation')
       endif
@@ -720,6 +720,7 @@ module Particles_radius
 !
       use EquationOfState, only: rho0
       use Particles_number
+      use Chemistry, only: condensing_species_rate, cond_spec_cond_lagr
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
@@ -730,10 +731,10 @@ module Particles_radius
 !
       real, dimension(nx) :: ap_equi, vth, dt1_condensation, rhovap
       real, dimension(nx) :: total_surface_area, ppsat
-      real, dimension(nx) :: rhocond_tot, rhosat, np_total
+      real, dimension(nx) :: rhocond_tot, rhosat, np_total, mfluxcond
       real, dimension(nx) :: tau_phase1, tau_evaporation1, tau_evaporation
-      real :: dapdt, drhocdt, alpha_cond_par
-      integer :: k, ix, ix0
+      real :: dapdt, drhocdt, alpha_cond_par,rp
+      integer :: k, ix, ix0, kkk, ichem
 !
       intent(in) :: f, fp
       intent(inout) :: dfp
@@ -758,6 +759,13 @@ module Particles_radius
             tau_evaporation1 = 0.0
             tau_evaporation = 0.0
           endif
+          !
+          ! Calculate the condensation rate for condensing species
+          !
+          if (lcondensing_species) then
+            call condensing_species_rate(p,mfluxcond)
+          endif
+          !
           do k = k1_imn(imn),k2_imn(imn)
             ix0 = ineargrid(k,1)
             ix = ix0-nghost
@@ -828,6 +836,15 @@ module Particles_radius
                   endif
                 endif
                 if (lcondensation_rate .and. ldust_condensation) dapdt = G_condensation*f(ix,m,n,issat)
+              elseif (lcondensing_species) then
+                if (lfree_molecule) then
+                  !print*,"NNN: mfluxcond,dapdt=",mfluxcond(ix),dapdt,fp(k,iap)
+                  dapdt = mfluxcond(ix)
+                  !dapdt=0.0
+                else
+                  call fatal_error("dap_dt_condensation_pencil",&
+                       "free mol not impl. for cond_spec")
+                endif
               else
                 dapdt = 0.25*vth(ix)*rhopmat1*(rhovap(ix)-rhosat(ix))*alpha_cond_par
               endif
@@ -852,6 +869,14 @@ if (ip<10 .and. k==1) print*,'AXEL: t,fp(k,iap)=',t,fp(k,iap)
             if (lparticles_number) np_swarm = fp(k,inpswarm)
             if (lcondensation_simplified .or. lcondensation_rate) then
               drhocdt = 0.
+            elseif (lcondensing_species) then
+              !
+              ! For the case with condensing chemical species, the feedback on the
+              ! species and continuity equations are handled in the chemistry module.
+              !
+              rp=fp(k,iap)
+              call cond_spec_cond_lagr(f,df,p,rp,ix0,ix,np_swarm,dapdt)
+              drhocdt =0.0
             else
               drhocdt = -dapdt*4*pi*fp(k,iap)**2*rhopmat*np_swarm
             endif
@@ -865,18 +890,22 @@ if (ip<10 .and. k==1) print*,'AXEL: t,fp(k,iap)=',t,fp(k,iap)
 !
 !  feedback, but should not be used if we don't have density
 !
-            if (ldensity) then
-              if (ldensity_nolog) then
-                df(ix0,m,n,irho)   = df(ix0,m,n,irho)   + drhocdt
-              else
-                df(ix0,m,n,ilnrho) = df(ix0,m,n,ilnrho) + drhocdt*p%rho1(ix)
+            if (.not. lcondensing_species) then
+              if (ldensity) then
+                if (ldensity_nolog) then
+                  df(ix0,m,n,irho)   = df(ix0,m,n,irho)   + drhocdt
+                else
+                  df(ix0,m,n,ilnrho) = df(ix0,m,n,ilnrho) + drhocdt*p%rho1(ix)
+                endif
               endif
-            endif
 !
-            if (lpscalar_nolog) then
-              df(ix0,m,n,icc)   = df(ix0,m,n,icc)   + (1.0-p%cc(ix))*p%rho1(ix)*drhocdt
-            elseif (lpscalar) then
-              df(ix0,m,n,ilncc) = df(ix0,m,n,ilncc) + (p%cc1(ix)-1.0)*p%rho1(ix)*drhocdt
+! Feedback to scalar equation
+!
+              if (lpscalar_nolog) then
+                df(ix0,m,n,icc)   = df(ix0,m,n,icc)   + (1.0-p%cc(ix))*p%rho1(ix)*drhocdt
+              elseif (lpscalar) then
+                df(ix0,m,n,ilncc) = df(ix0,m,n,ilncc) + (p%cc1(ix)-1.0)*p%rho1(ix)*drhocdt
+              endif
             endif
 !
 !  Release latent heat to gas / remove heat from gas.
