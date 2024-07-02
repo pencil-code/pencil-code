@@ -421,7 +421,7 @@ logical, pointer :: ldustnucleation
             call fatal_error('initialize_chemistry', 'no H2O has been found')
           endif
         endif
-        if (ldustdensity) then
+        if (ldustdensity .or. lparticles_radius) then
           call find_species_index(condensing_species,i_cond_spec,ichem_cond_spec,found_specie)
           if (.not. found_specie) then
             print*,"condensing_species=",condensing_species
@@ -559,6 +559,9 @@ logical, pointer :: ldustnucleation
       if (ldustdensity) then
         true_density_cond_spec=true_density_cond_spec_cgs/unit_density
         call get_shared_variable('ldustnucleation',ldustnucleation)
+      endif
+      if (lparticles_radius) then
+        true_density_cond_spec=true_density_cond_spec_cgs/unit_density
       endif
 !
 !  write array dimension to chemistry diagnostics file
@@ -755,6 +758,12 @@ logical, pointer :: ldustnucleation
           lpenc_requested(i_nucl_rate) = .true.
           lpenc_requested(i_nucl_rmin) = .true.
         endif
+      endif
+      !
+      if (lparticles_radius) then
+        lpenc_requested(i_chem_conc) = .true.
+        lpenc_requested(i_nucl_rate) = .true.
+        lpenc_requested(i_nucl_rmin) = .true.
       endif
 !
     endsubroutine pencil_criteria_chemistry
@@ -6350,10 +6359,42 @@ logical, pointer :: ldustnucleation
       if (ldensity_nolog) then
         df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) - ff_cond
       else
-        df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - log(ff_cond)
+        df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - ff_cond*p%rho1
       endif
-!  
+! 
     end subroutine cond_spec_cond
+!***********************************************************************
+    subroutine cond_spec_cond_lagr(f,df,p,rp,ix0,ix,np_swarm,dapdt)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+      integer :: ichem, kkk,ix0,ix
+      real :: rp,dapdt,np_swarm,drhocdt
+!
+! Modify continuity equation
+!
+      drhocdt = dapdt*4*pi*rp**2*true_density_cond_spec*np_swarm
+      !print*,"NILS:", drhocdt,dapdt,rp,true_density_cond_spec,np_swarm
+      if (ldensity_nolog) then
+        df(ix0,m,n,irho)   = df(ix0,m,n,irho)   - drhocdt
+      else
+        df(ix0,m,n,ilnrho) = df(ix0,m,n,ilnrho) - drhocdt*p%rho1(ix)
+      endif
+!
+! Loop over all species and modify the species equation
+! 
+      do ichem = 1,nchemspec
+        kkk=ichemspec(ichem)
+        if (kkk==i_cond_spec) then
+          df(ix0,m,n,kkk) = df(ix0,m,n,kkk) + drhocdt*(f(ix0,m,n,kkk)-1.)*p%rho1(ix)
+!          print*,"drhocdt,f(ix0,m,n,kkk),p%rho1(ix0)=",drhocdt,f(ix0,m,n,kkk),p%rho1(ix)
+        else
+          df(ix0,m,n,kkk) = df(ix0,m,n,kkk) + drhocdt*f(ix0,m,n,kkk)*p%rho1(ix)
+        endif
+      enddo
+!
+    end subroutine cond_spec_cond_lagr
 !***********************************************************************
     subroutine cond_spec_nucl(f,df,p,kk_vec,ad)
 !
@@ -6375,10 +6416,6 @@ logical, pointer :: ldustnucleation
           !  Generating the nucleii consumes the condensing species
           !
           ff_nucl=p%nucl_rate(i)*4.*pi*true_density_cond_spec/3.*ad(kk_vec(i))**3
-
-!print*,"ff_nucl=",ff_nucl,i_cond_spec
-
-          
           do ichem = 1,nchemspec
             kkk=ichemspec(ichem)
             if (kkk==i_cond_spec) then

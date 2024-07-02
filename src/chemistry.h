@@ -49,3 +49,4 @@
   public :: lreactions, species_constants, find_species_index
 
   public :: cond_spec_cond, cond_spec_nucl, condensing_species_rate
+  public :: cond_spec_cond_lagr
