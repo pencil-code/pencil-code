@@ -36,7 +36,7 @@ module Special
 !  constants for unit conversion
   real :: gamma=1.
   real :: r2m=1., rho2kg_m3=1., u2m_s=1., cp2si=1.
-  real :: pp2Pa=1., TT2K=1., tt2s=1., g2m3_s2=1.
+  real :: pp2Pa=1., TT2K=1., tt2s=1., g2m3_s2=1., eta2si=1.
 !
 ! variables in the temperature reference profile
 !
@@ -46,9 +46,11 @@ module Special
 !
 ! variables in the magnetic diffusivity reference profile
 !
-  real :: dlog10p_eta_ref, log10p_eta_ref_min, log10p_eta_ref_max
-  real, dimension(:), allocatable :: log10p_eta_ref, eta_ref
-  integer :: n_eta_ref
+  real :: dlog10p_eta_P_ref, log10p_eta_P_ref_min, log10p_eta_P_ref_max
+  real, dimension(:), allocatable :: log10p_eta_P_ref,TT_eta_T_ref,eta_ref
+  real, dimension(:,:), allocatable :: eta_PT_ref
+  integer :: n_eta_P_ref  !  for eta(P) or eta(P,T) relation
+  integer :: n_eta_T_ref  !  for eta(P,T) relation
 !
 ! Init parameters
 !
@@ -58,7 +60,6 @@ module Special
   real :: cs_ref=2.e3      !  unit: [m/s]
   real :: cp_ref=1.44e4    !  unit: [J/(kg*K)]
   real :: T_ref=1533       !  unit: [K]
-  real :: eta0_ref=1.12314e6  !  [m^2/s], eta at T_ref
   !
   real :: lon_ss=0., lat_ss=0.            ! unit: [degree]
   real :: dTeqbot=0., dTeqtop=100.        ! unit: [K]
@@ -77,8 +78,8 @@ module Special
 ! Run parameters
 !
   real :: tau_slow_heating=-1.,t0_slow_heating=0.,dTeq_max=1000.
-  real :: Bext_ampl=0.,f_eta=0.
-  character (len=labellen) :: iBext='nothing',ietaPT='nothing',ieta_order='1'
+  real :: Bext_ampl=0.
+  character (len=labellen) :: iBext='nothing',ieta_PT='nothing'
 !
 !
 !
@@ -87,12 +88,12 @@ module Special
       lon_ss,lat_ss,peqtop,peqbot,tauradtop,tauradbot,&
       pradtop,pradbot,dTeqbot,dTeqtop,linit_equilibrium,&
       Bext_ampl,iBext,frac_sponge_r,frac_sponge_polar,q_sponge_polar,&
-      q_drag,q_sponge_r,eta0_ref
+      q_drag,q_sponge_r
 !
   namelist /special_run_pars/ &
       tau_slow_heating,t0_slow_heating,Bext_ampl,iBext,frac_sponge_r,&
       q_drag,q_sponge_r,&
-      dTeq_max,dTeqtop,dTeqbot,ietaPT,f_eta,ieta_order
+      dTeq_max,dTeqtop,dTeqbot,ieta_PT
 !
 !
 ! Declare index of new variables in f array (if any).
@@ -136,13 +137,15 @@ module Special
 !  read in the reference eta(P,T) profile
 !
       if (lmagnetic) then
-        select case (ietaPT)
+        select case (ieta_PT)
         case ('nothing')
           !  do nothing
         case ('eta_P')
           call prepare_eta_P
+        case ('eta_PT')
+          call prepare_eta_PT
         case default
-          call fatal_error('initialize_special','no such ietaPT')
+          call fatal_error('initialize_special','no such ieta_PT')
         endselect
       endif
 !
@@ -215,15 +218,12 @@ module Special
       lpenc_requested(i_jj)=.true.
     endif
 !
-    if (lmagnetic .and. ietaPT/='nothing') then
-      select case (ieta_order)
-      case ('1')
-        !lpenc_requested(i_del2a)=.true.
-      case ('3')
-        !lpenc_requested(i_del6a)=.true.
-      case default
-        call fatal_error('pencil_criteria_special','no such ieta_order')
-      endselect
+    if (lmagnetic .and. ieta_PT/='nothing') then
+      lpenc_requested(i_rho1)=.true.
+      lpenc_requested(i_cv1)=.true.
+      lpenc_requested(i_TT)=.true.
+      lpenc_requested(i_j2)=.true.
+      lpenc_requested(i_del2a)=.true.
     endif
 !
     endsubroutine pencil_criteria_special
@@ -356,26 +356,23 @@ module Special
 !
 !  add customized eta profile
 !
-      select case (ietaPT)
+      select case (ieta_PT)
       case ('nothing')
         ! do nothing
       case ('eta_P')
         call calc_eta_p(eta_x,p%pp*pp2Pa)
+      case ('eta_PT')
+        call calc_eta_pt(eta_x,p%pp*pp2Pa,p%TT*TT2K)
       case default
-        call fatal_error('special_calc_magnetic','no such ietaPT')
+        call fatal_error('special_calc_magnetic','no such ieta_PT')
       endselect
 !
-      if (ietaPT/='nothing') then
-        select case (ieta_order)
-        case ('1')
-          !df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + &
-          !    f_eta * p%del2a * spread(eta_x,2,3)
-        case ('3')
-          !df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + &
-          !    f_eta * p%del6a * spread(eta_x,2,3)
-        case default
-          call fatal_error('special_calc_magnetic','no such ieta_order')
-        endselect
+      if (ieta_PT/='nothing') then
+        df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + spread(eta_x,2,3) * p%del2a
+!
+!  Add Ohmic heating
+!
+        df(l1:l2,m,n,iTT)   = df(l1:l2,m,n,iTT) + p%cv1*eta_x*mu0*p%j2*p%rho1
       endif
 !
     endsubroutine special_calc_magnetic
@@ -423,11 +420,12 @@ module Special
       TT2K = u2m_s**2. / cp2si       !  temperature to [K]
       tt2s = r2m / u2m_s             !  time to [s]
       g2m3_s2 = r2m * u2m_s**2.      !  GM to [m3/s2]
+      eta2si = r2m**2./tt2s          !  eta to m^2/s
 !
       if (lroot) then
-        print*,'Constants for uit conversion: gamma,r2m,rho2kg_m3,u2m_s,cp2si = ', &
+        print*,'Constants for uit conversion: gamma,r2m,rho2kg_m3,u2m_s,cp2si,eta2si= ', &
                 gamma,r2m,rho2kg_m3,u2m_s,cp2si
-        print*,'Constants for uit conversion: pp2Pa,TT2K,tt2s, g2m3_s2 = ', &
+        print*,'Constants for uit conversion: pp2Pa,TT2K,tt2s, g2m3_s2,eta2si= ', &
                 pp2Pa,TT2K,tt2s,g2m3_s2
       endif
 !
@@ -604,13 +602,13 @@ module Special
       real, intent(in) :: press,f_slow
       integer, intent(in) :: m,n
 !
-      real :: log10pp,Teq_local1,Teq_local2
+      real :: log10p_local,Teq_local1,Teq_local2
       integer :: ip
 !
 !  Index of the logp_ref that is just smaller than log10(pressure)
 !
-      log10pp = log10(press)
-      ip = 1+floor((log10pp-log10p_T_ref_min)/dlog10p_T_ref)
+      log10p_local = log10(press)
+      ip = 1+floor((log10p_local-log10p_T_ref_min)/dlog10p_T_ref)
 !
 !  Interpolation for T_local and tau_local
 !
@@ -627,12 +625,12 @@ module Special
         Teq_local1 = (Teq_night(ip)  -0.5*(f_slow-1.)*dTeq(ip))   + dTeq(ip)  *max(0.,mu_ss(m,n))*f_slow
         Teq_local2 = (Teq_night(ip+1)-0.5*(f_slow-1.)*dTeq(ip+1)) + dTeq(ip+1)*max(0.,mu_ss(m,n))*f_slow
         T_local = Teq_local1+(Teq_local2-Teq_local1)*   &
-                  (log10pp-logp_ref(ip))/   &
+                  (log10p_local-logp_ref(ip))/   &
                   (logp_ref(ip+1)-logp_ref(ip))   ! unit of K
 !
         tau_local = log10(tau_rad(ip))+  &
                     (log10(tau_rad(ip+1))-log10(tau_rad(ip)))*   &
-                    (log10pp-logp_ref(ip))/   &
+                    (log10p_local-logp_ref(ip))/   &
                     (logp_ref(ip+1)-logp_ref(ip))
         tau_local = 10.**tau_local  ! unit of s
       endif
@@ -676,36 +674,90 @@ module Special
 !
       open(1,file='eta_P.txt')
       read(1,*)
-      read(1,*) dlog10p_eta_ref, log10p_eta_ref_min, log10p_eta_ref_max
-      read(1,*) n_eta_ref
-      if(allocated(log10p_eta_ref)) deallocate(log10p_eta_ref)
+      read(1,*) dlog10p_eta_P_ref, log10p_eta_P_ref_min, log10p_eta_P_ref_max
+      read(1,*) n_eta_P_ref
+      if(allocated(log10p_eta_P_ref)) deallocate(log10p_eta_P_ref)
       if(allocated(eta_ref)) deallocate(eta_ref)
-      allocate(log10p_eta_ref(n_eta_ref),eta_ref(n_eta_ref))
-      read(1,*) log10p_eta_ref,eta_ref
+      allocate(log10p_eta_P_ref(n_eta_P_ref),eta_ref(n_eta_P_ref))
+      read(1,*) log10p_eta_P_ref,eta_ref
       if (lroot) then
-        print*, 'n_eta_ref=',n_eta_ref
+        print*, 'n_eta_P_ref=',n_eta_P_ref
         print *,'Here is the eta(P) profile:'
         print *,'p [Pa] and eta[m^2/s]:'
-        do i=1,n_eta_ref
-          print*, 'log10p_eta_ref,eta_ref=',log10p_eta_ref(i),eta_ref(i)
+        do i=1,n_eta_P_ref
+          print*, 'log10p_eta_P_ref,eta_ref=',log10p_eta_P_ref(i),eta_ref(i)
         enddo
       endif
       close(1)
 !
 !  normalize by eta at T=T_ref
 !
-      eta_ref=eta_ref/eta0_ref
+      eta_ref=eta_ref/eta2si
 !
 !  for debug purpose, output the result
 !
       if (lroot) then
         open(1,file=trim(datadir)//'/eta_P_normalized.dat',status='replace')
-        write(1,*) log10p_eta_ref
+        write(1,*) log10p_eta_P_ref
         write(1,*) eta_ref
         close(1)
       endif
 !
     endsubroutine  prepare_eta_P
+!***********************************************************************
+    subroutine prepare_eta_PT
+!
+!   Read the reference eta profile.
+!   All quantities in this subroutine are in SI units.
+!
+!   2-jul-24/hongzhe: coded
+!
+      integer :: i,j
+      logical :: leta_file_exists
+!
+!  read in eta, in SI unit
+!
+      inquire(FILE='eta_PT.txt', EXIST=leta_file_exists)
+      if (.not.leta_file_exists) call fatal_error('prepare_eta_PT', &
+          'Must provide an eta(P,T) file')
+!
+      open(1,file='eta_PT.txt')
+      read(1,*) ! skip the comment line
+      ! pressure
+      read(1,*) n_eta_P_ref
+      if(allocated(log10p_eta_P_ref)) deallocate(log10p_eta_P_ref)
+      allocate(log10p_eta_P_ref(n_eta_P_ref))
+      read(1,*) log10p_eta_P_ref
+      log10p_eta_P_ref = log10(log10p_eta_P_ref)
+      ! temperature
+      read(1,*) n_eta_T_ref
+      if(allocated(TT_eta_T_ref)) deallocate(TT_eta_T_ref)
+      allocate(TT_eta_T_ref(n_eta_T_ref))
+      read(1,*) TT_eta_T_ref
+      ! eta, has n_eta_T_ref lines
+      if(allocated(eta_PT_ref)) deallocate(eta_PT_ref)
+      allocate(eta_PT_ref(n_eta_P_ref,n_eta_T_ref))
+      do i=1,n_eta_T_ref
+        read(1,*) eta_PT_ref(:,i)
+      enddo
+!
+      close(1)
+!
+!  convert to code unit
+!
+      eta_PT_ref=eta_PT_ref/eta2si
+!
+!  for debug purpose, output the result
+!
+      if (lroot) then
+        open(1,file=trim(datadir)//'/eta_PT_normalized.dat',status='replace')
+        write(1,*) log10p_eta_P_ref
+        write(1,*) TT_eta_T_ref
+        write(1,*) eta_PT_ref
+        close(1)
+      endif
+!
+    endsubroutine  prepare_eta_PT
 !***********************************************************************
     subroutine calc_eta_p(eta_local,press)
 !
@@ -717,19 +769,19 @@ module Special
       real, dimension(nx), intent(out) :: eta_local
       real, dimension(nx), intent(in) :: press
 !
-      real :: log10pp
+      real :: log10p_local
       integer :: ix,ip
 !
 !  Index of the logp_ref that is just smaller than log10(pressure)
 !
       do ix=1,nx
-        log10pp = log10(press(ix))
-        ip = 1+floor((log10pp-log10p_eta_ref_min)/dlog10p_eta_ref)
+        log10p_local = log10(press(ix))
+        ip = 1+floor((log10p_local-log10p_eta_P_ref_min)/dlog10p_eta_P_ref)
 !
 !  Interpolation for eta_local
 !
-        if (ip>=n_eta_ref) then
-          eta_local(ix) = eta_ref(n_eta_ref)
+        if (ip>=n_eta_P_ref) then
+          eta_local(ix) = eta_ref(n_eta_P_ref)
         elseif (ip<=1) then
           eta_local(ix) = eta_ref(1)
         else
@@ -738,14 +790,130 @@ module Special
 !
           eta_local(ix) = log10(eta_ref(ip))+  &
                       (log10(eta_ref(ip+1))-log10(eta_ref(ip))) * &
-                      (log10pp-log10p_eta_ref(ip))/   &
-                      (log10p_eta_ref(ip+1)-log10p_eta_ref(ip))
+                      (log10p_local-log10p_eta_P_ref(ip))/   &
+                      (log10p_eta_P_ref(ip+1)-log10p_eta_P_ref(ip))
           eta_local(ix) = 10.**eta_local(ix)
         endif
       enddo
 !
     endsubroutine calc_eta_p
 !***********************************************************************
+    subroutine calc_eta_PT(eta_local,press,temp)
+!
+!  Given the local pressure p [pa] and temperature [K], calculate
+!  the magnetic diffusivity by interpolation. The output will be normalized
+!  by eta0_ref.
+!
+!  2-jul-24/hongzhe: coded
+!
+      real, dimension(nx), intent(out) :: eta_local
+      real, dimension(nx), intent(in) :: press,temp
+!
+      integer :: i
+!
+      do i=1,nx
+        call interpolation2d(log10p_eta_P_ref,TT_eta_T_ref,log10(eta_PT_ref),log10(press(i)),temp(i),eta_local(i))
+      enddo
+      eta_local = 10.**eta_local/eta2si
+!
+    endsubroutine calc_eta_PT
+!***********************************************************************
+    subroutine interpolation1d(xref,yref,xlocal,ylocal)
+!
+!  Linear interpolation from the reference table (xref,yref).
+!
+      real, dimension(:), intent(in) :: xref,yref
+      real, intent(in) :: xlocal
+      real, intent(out) :: ylocal
+!
+      real :: x1,x2,y1,y2
+      integer :: nref,ix
+!
+      nref = size(xref)
+!
+      if (xlocal>=xref(nref)) then
+        ylocal = yref(nref)
+      elseif (xlocal<xref(1)) then
+        ylocal = yref(1)
+      else
+!
+!  Find the index so that xref(ix) is just smaller than xlocal
+!
+        ix = nref
+        do while (ix>=1 .and. xref(ix)>xlocal)
+          ix = ix - 1
+        enddo
+!
+!  Linear interpolation
+!
+        x1 = xref(ix)
+        x2 = xref(ix+1)
+        y1 = yref(ix)
+        y2 = yref(ix+1)
+        ylocal = (-x2*y1+x1*y2)/(x1-x2) + (y1-y2)/(x1-x2)*xlocal
+      endif
+!
+    endsubroutine interpolation1d
+!***********************************************************************
+    subroutine interpolation2d(xref,yref,zref,xlocal,ylocal,zlocal)
+!
+!  Linear interpolation from the reference table (xref,yref,zref).
+!
+      real, dimension(:), intent(in) :: xref,yref
+      real, dimension(:,:), intent(in) :: zref
+      real, intent(in) :: xlocal,ylocal
+      real, intent(out) :: zlocal
+!
+      real :: x1,x2,y1,y2,z11,z12,z21,z22
+      real :: fact,a0,a1,a2,a3
+      integer :: nxref,nyref,ix,iy
+!
+      nxref = size(xref)
+      nyref = size(yref)
+!
+      if (xlocal>=xref(nxref)) then
+        call interpolation1d(yref,zref(nxref,:),ylocal,zlocal)
+      elseif (xlocal<xref(1)) then
+        call interpolation1d(yref,zref(1,:),ylocal,zlocal)
+      elseif (ylocal>=yref(nyref)) then
+        call interpolation1d(xref,zref(:,nyref),xlocal,zlocal)
+      elseif (ylocal<yref(1)) then
+        call interpolation1d(xref,zref(:,1),xlocal,zlocal)
+      else
+!
+!  Find the index so that xref(ix) is just smaller than xlocal,
+!  and similarly to y
+!
+        ix = nxref
+        do while (ix>=1 .and. xref(ix)>xlocal)
+          ix = ix - 1
+        enddo
+        iy = nyref
+        do while (iy>=1 .and. yref(iy)>ylocal)
+          iy = iy - 1
+        enddo
+!
+!  Polynomial interpolation: z=a0+a1*x+a2*y+a3*x*y
+!
+        x1 = xref(ix)
+        x2 = xref(ix+1)
+        y1 = yref(iy)
+        y2 = yref(iy+1)
+        z11 = zref(ix,iy)
+        z12 = zref(ix,iy+1)
+        z21 = zref(ix+1,iy)
+        z22 = zref(ix,iy)
+        !
+        fact = 1./(x1-x2)/(y1-y2)
+        a0 = (x2*y2*z11-x2*y1*z12-x1*y2*z21+x1*y1*z22)*fact
+        a1 = (y2*(z21-z11)+y1*(z12-z22))*fact
+        a2 = (x2*(z12-z11)+x1*(z21-z22))*fact
+        a3 = (z11-z12-z21+z22)*fact
+        !
+        zlocal = a0 + a1*xlocal + a2*ylocal + a3*xlocal*ylocal
+      endif
+!
+    endsubroutine interpolation2d
 !********************************************************************
 !********************************************************************
 !************        DO NOT DELETE THE FOLLOWING        *************
