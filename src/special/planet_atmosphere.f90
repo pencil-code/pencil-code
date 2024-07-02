@@ -762,47 +762,28 @@ module Special
     subroutine calc_eta_p(eta_local,press)
 !
 !  Given the local pressure p, calculate the magnetic diffusivity
-!  eta_local by interpolation. The output eta_local is dimensionless.
+!  eta_local by interpolation. The output is converted to code unit.
 !
 !  15-mar-24/hongzhe: coded
+!  2-jul-24/hongzhe: streamlined using interpolation1d
 !
       real, dimension(nx), intent(out) :: eta_local
       real, dimension(nx), intent(in) :: press
 !
-      real :: log10p_local
-      integer :: ix,ip
+      integer :: i
 !
-!  Index of the logp_ref that is just smaller than log10(pressure)
-!
-      do ix=1,nx
-        log10p_local = log10(press(ix))
-        ip = 1+floor((log10p_local-log10p_eta_P_ref_min)/dlog10p_eta_P_ref)
-!
-!  Interpolation for eta_local
-!
-        if (ip>=n_eta_P_ref) then
-          eta_local(ix) = eta_ref(n_eta_P_ref)
-        elseif (ip<=1) then
-          eta_local(ix) = eta_ref(1)
-        else
-!
-!  The two closest values of eta(P) given the pressure
-!
-          eta_local(ix) = log10(eta_ref(ip))+  &
-                      (log10(eta_ref(ip+1))-log10(eta_ref(ip))) * &
-                      (log10p_local-log10p_eta_P_ref(ip))/   &
-                      (log10p_eta_P_ref(ip+1)-log10p_eta_P_ref(ip))
-          eta_local(ix) = 10.**eta_local(ix)
-        endif
+      do i=1,nx
+        call interpolation1d(log10p_eta_P_ref,log10(eta_ref),log10(press(i)),eta_local(i))
       enddo
+      eta_local = 10.**eta_local/eta2si
 !
     endsubroutine calc_eta_p
 !***********************************************************************
     subroutine calc_eta_PT(eta_local,press,temp)
 !
 !  Given the local pressure p [pa] and temperature [K], calculate
-!  the magnetic diffusivity by interpolation. The output will be normalized
-!  by eta0_ref.
+!  the magnetic diffusivity by interpolation. The output is converted
+!  to code unit.
 !
 !  2-jul-24/hongzhe: coded
 !
