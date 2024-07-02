@@ -5114,6 +5114,22 @@ module Chemistry
 !      
     end subroutine condensing_species_rate
 !***********************************************************************
+    subroutine cond_spec_cond_lagr(f,df,p,rp,ix0,ix,np_swarm,dapdt)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+      real :: rp,np_swarm,dapdt
+      integer :: ix0,ix
+ !
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
+      call keep_compiler_quiet(dapdt)
+      call keep_compiler_quiet(ix0)
+!
+    end subroutine cond_spec_cond_lagr
+!***********************************************************************
     include 'chemistry_common.inc'
 !***********************************************************************
 endmodule Chemistry
