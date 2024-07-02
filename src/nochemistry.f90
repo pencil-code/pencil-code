@@ -361,7 +361,7 @@ module Chemistry
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(p)
-      call keep_compiler_quiet(drhocdt)
+      call keep_compiler_quiet(dapdt)
       call keep_compiler_quiet(ix0)
 !
     end subroutine cond_spec_cond_lagr
