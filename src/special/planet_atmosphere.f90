@@ -46,11 +46,10 @@ module Special
 !
 ! variables in the magnetic diffusivity reference profile
 !
-  real :: dlog10p_eta_P_ref, log10p_eta_P_ref_min, log10p_eta_P_ref_max
-  real, dimension(:), allocatable :: log10p_eta_P_ref,TT_eta_T_ref,eta_P_ref
-  real, dimension(:,:), allocatable :: eta_PT_ref
-  integer :: n_eta_P_ref  !  for eta(P) or eta(P,T) relation
-  integer :: n_eta_T_ref  !  for eta(P,T) relation
+  real :: ref_eta_dlog10p,ref_eta_log10p_min,ref_eta_log10p_max
+  real, dimension(:), allocatable :: ref_eta_log10p,ref_eta_T,ref_etaP
+  real, dimension(:,:), allocatable :: ref_etaPT
+  integer :: ref_eta_nP, ref_eta_nT
 !
 ! Init parameters
 !
@@ -690,42 +689,42 @@ module Special
 !
       open(1,file='eta_P.txt')
       read(1,*)
-      read(1,*) dlog10p_eta_P_ref, log10p_eta_P_ref_min, log10p_eta_P_ref_max
-      read(1,*) n_eta_P_ref
-      if(allocated(log10p_eta_P_ref)) deallocate(log10p_eta_P_ref)
-      if(allocated(eta_P_ref)) deallocate(eta_P_ref)
-      allocate(log10p_eta_P_ref(n_eta_P_ref),eta_P_ref(n_eta_P_ref))
-      read(1,*) log10p_eta_P_ref,eta_P_ref
+      read(1,*) ref_eta_dlog10p, ref_eta_log10p_min, ref_eta_log10p_max
+      read(1,*) ref_eta_nP
+      if(allocated(ref_eta_log10p)) deallocate(ref_eta_log10p)
+      if(allocated(ref_etaP)) deallocate(ref_etaP)
+      allocate(ref_eta_log10p(ref_eta_nP),ref_etaP(ref_eta_nP))
+      read(1,*) ref_eta_log10p,ref_etaP
       if (lroot) then
-        print*, 'n_eta_P_ref=',n_eta_P_ref
+        print*, 'ref_eta_nP=',ref_eta_nP
         print *,'Here is the eta(P) profile:'
         print *,'p [Pa] and eta[m^2/s]:'
-        do i=1,n_eta_P_ref
-          print*, 'log10p_eta_P_ref,eta_P_ref=',log10p_eta_P_ref(i),eta_P_ref(i)
+        do i=1,ref_eta_nP
+          print*, 'ref_eta_log10p,ref_etaP=',ref_eta_log10p(i),ref_etaP(i)
         enddo
       endif
       close(1)
 !
 !  convert to code unit
 !
-      eta_P_ref=eta_P_ref/eta2si
+      ref_etaP=ref_etaP/eta2si
 !
 !  add floor or ceiling
 !
       if (eta_floor>0.) then
-        where (eta_P_ref<eta_floor) eta_P_ref = eta_floor
+        where (ref_etaP<eta_floor) ref_etaP = eta_floor
       endif
       !
       if (eta_ceiling>0.) then
-        where (eta_P_ref>eta_ceiling) eta_P_ref = eta_ceiling
+        where (ref_etaP>eta_ceiling) ref_etaP = eta_ceiling
       endif
 !
 !  for debug purpose, output the result
 !
       if (lroot) then
         open(1,file=trim(datadir)//'/eta_P_normalized.dat',status='replace')
-        write(1,*) log10p_eta_P_ref
-        write(1,*) eta_P_ref
+        write(1,*) ref_eta_log10p
+        write(1,*) ref_etaP
         close(1)
       endif
 !
@@ -750,46 +749,46 @@ module Special
       open(1,file='eta_PT.txt')
       read(1,*) ! skip the comment line
       ! pressure
-      read(1,*) n_eta_P_ref
-      if(allocated(log10p_eta_P_ref)) deallocate(log10p_eta_P_ref)
-      allocate(log10p_eta_P_ref(n_eta_P_ref))
-      read(1,*) log10p_eta_P_ref
-      log10p_eta_P_ref = log10(log10p_eta_P_ref)
+      read(1,*) ref_eta_nP
+      if(allocated(ref_eta_log10p)) deallocate(ref_eta_log10p)
+      allocate(ref_eta_log10p(ref_eta_nP))
+      read(1,*) ref_eta_log10p
+      ref_eta_log10p = log10(ref_eta_log10p)
       ! temperature
-      read(1,*) n_eta_T_ref
-      if(allocated(TT_eta_T_ref)) deallocate(TT_eta_T_ref)
-      allocate(TT_eta_T_ref(n_eta_T_ref))
-      read(1,*) TT_eta_T_ref
-      ! eta, has n_eta_T_ref lines
-      if(allocated(eta_PT_ref)) deallocate(eta_PT_ref)
-      allocate(eta_PT_ref(n_eta_P_ref,n_eta_T_ref))
-      do i=1,n_eta_T_ref
-        read(1,*) eta_PT_ref(:,i)
+      read(1,*) ref_eta_nT
+      if(allocated(ref_eta_T)) deallocate(ref_eta_T)
+      allocate(ref_eta_T(ref_eta_nT))
+      read(1,*) ref_eta_T
+      ! eta, has ref_eta_nT lines
+      if(allocated(ref_etaPT)) deallocate(ref_etaPT)
+      allocate(ref_etaPT(ref_eta_nP,ref_eta_nT))
+      do i=1,ref_eta_nT
+        read(1,*) ref_etaPT(:,i)
       enddo
 !
       close(1)
 !
 !  convert to code unit
 !
-      eta_PT_ref=eta_PT_ref/eta2si
+      ref_etaPT=ref_etaPT/eta2si
 !
 !  add floor or ceiling
 !
       if (eta_floor>0.) then
-        where (eta_PT_ref<eta_floor) eta_PT_ref = eta_floor
+        where (ref_etaPT<eta_floor) ref_etaPT = eta_floor
       endif
       !
       if (eta_ceiling>0.) then
-        where (eta_PT_ref>eta_ceiling) eta_PT_ref = eta_ceiling
+        where (ref_etaPT>eta_ceiling) ref_etaPT = eta_ceiling
       endif
 !
 !  for debug purpose, output the result
 !
       if (lroot) then
         open(1,file=trim(datadir)//'/eta_PT_normalized.dat',status='replace')
-        write(1,*) log10p_eta_P_ref
-        write(1,*) TT_eta_T_ref
-        write(1,*) eta_PT_ref
+        write(1,*) ref_eta_log10p
+        write(1,*) ref_eta_T
+        write(1,*) ref_etaPT
         close(1)
       endif
 !
@@ -809,7 +808,7 @@ module Special
       integer :: i
 !
       do i=1,nx
-        call interpolation1d(log10p_eta_P_ref,log10(eta_P_ref),log10(press(i)),eta_local(i))
+        call interpolation1d(ref_eta_log10p,log10(ref_etaP),log10(press(i)),eta_local(i))
       enddo
       eta_local = 10.**eta_local/eta2si
 !
@@ -829,7 +828,7 @@ module Special
       integer :: i
 !
       do i=1,nx
-        call interpolation2d(log10p_eta_P_ref,TT_eta_T_ref,log10(eta_PT_ref),log10(press(i)),temp(i),eta_local(i))
+        call interpolation2d(ref_eta_log10p,ref_eta_T,log10(ref_etaPT),log10(press(i)),temp(i),eta_local(i))
       enddo
       eta_local = 10.**eta_local/eta2si
 !
