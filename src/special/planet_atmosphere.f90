@@ -47,7 +47,7 @@ module Special
 ! variables in the magnetic diffusivity reference profile
 !
   real :: dlog10p_eta_P_ref, log10p_eta_P_ref_min, log10p_eta_P_ref_max
-  real, dimension(:), allocatable :: log10p_eta_P_ref,TT_eta_T_ref,eta_ref
+  real, dimension(:), allocatable :: log10p_eta_P_ref,TT_eta_T_ref,eta_P_ref
   real, dimension(:,:), allocatable :: eta_PT_ref
   integer :: n_eta_P_ref  !  for eta(P) or eta(P,T) relation
   integer :: n_eta_T_ref  !  for eta(P,T) relation
@@ -79,6 +79,7 @@ module Special
 !
   real :: tau_slow_heating=-1.,t0_slow_heating=0.,dTeq_max=1000.
   real :: Bext_ampl=0.
+  real :: eta_floor=-1., eta_ceiling=-1.
   character (len=labellen) :: iBext='nothing',ieta_PT='nothing'
 !
 !
@@ -93,7 +94,7 @@ module Special
   namelist /special_run_pars/ &
       tau_slow_heating,t0_slow_heating,Bext_ampl,iBext,frac_sponge_r,&
       q_drag,q_sponge_r,&
-      dTeq_max,dTeqtop,dTeqbot,ieta_PT
+      dTeq_max,dTeqtop,dTeqbot,ieta_PT,eta_floor,eta_ceiling
 !
 !
 ! Declare index of new variables in f array (if any).
@@ -141,9 +142,9 @@ module Special
         case ('nothing')
           !  do nothing
         case ('eta_P')
-          call prepare_eta_P
+          call read_eta_P_file
         case ('eta_PT')
-          call prepare_eta_PT
+          call read_eta_PT_file
         case default
           call fatal_error('initialize_special','no such ieta_PT')
         endselect
@@ -151,8 +152,23 @@ module Special
 !
 !  define sponge layer factors
 !
-      where ( (xyz1(1)-x <= frac_sponge_r*Lxyz(1)) .or. (x-xyz0(1) <= frac_sponge_r*Lxyz(1)) ) fact_near_topbot = 1.
-      where ( (xyz1(2)-y <= frac_sponge_polar*Lxyz(2)) .or. (y-xyz1(2) <= frac_sponge_polar*Lxyz(2)) ) fact_near_polar = 1.
+      if (frac_sponge_r>0.) then
+!  bottom:
+        where ( (x-xyz0(1) <= frac_sponge_r*Lxyz(1)) ) &
+            fact_near_topbot = 0.5 + 0.5*cos(pi*(x-xyz1(0))/(frac_sponge_r*Lxyz(1)))
+!  top:
+        where ( (xyz1(1)-x <= frac_sponge_r*Lxyz(1)) ) &
+            fact_near_topbot = 0.5 + 0.5*cos(pi*(xyz1(1)-x)/(frac_sponge_r*Lxyz(1)))
+      endif
+      !
+      if (frac_sponge_polar>0.) then
+!  north:
+        where ( (y-xyz0(2) <= frac_sponge_polar*Lxyz(2)) ) &
+            fact_near_polar = 0.5 + 0.5*cos(pi*(y-xyz0(2))/(frac_sponge_polar*Lxyz(2)))
+!  south:
+        where ( (xyz1(2)-y <= frac_sponge_polar*Lxyz(2)) ) &
+            fact_near_polar = 0.5 + 0.5*cos(pi*(xyz1(2)-y)/(frac_sponge_polar*Lxyz(2)))
+      endif
 !
       call keep_compiler_quiet(f)
 !
@@ -656,7 +672,7 @@ module Special
 !
     endsubroutine calc_Teq_tau_mn
 !***********************************************************************
-    subroutine prepare_eta_P
+    subroutine read_eta_P_file
 !
 !   Read the reference eta profile.
 !   All quantities in this subroutine are in SI units.
@@ -669,7 +685,7 @@ module Special
 !  read in eta, in SI unit
 !
       inquire(FILE='eta_P.txt', EXIST=leta_file_exists)
-      if (.not.leta_file_exists) call fatal_error('prepare_eta_P', &
+      if (.not.leta_file_exists) call fatal_error('read_eta_P_file', &
           'Must provide an eta(P) file')
 !
       open(1,file='eta_P.txt')
@@ -677,35 +693,45 @@ module Special
       read(1,*) dlog10p_eta_P_ref, log10p_eta_P_ref_min, log10p_eta_P_ref_max
       read(1,*) n_eta_P_ref
       if(allocated(log10p_eta_P_ref)) deallocate(log10p_eta_P_ref)
-      if(allocated(eta_ref)) deallocate(eta_ref)
-      allocate(log10p_eta_P_ref(n_eta_P_ref),eta_ref(n_eta_P_ref))
-      read(1,*) log10p_eta_P_ref,eta_ref
+      if(allocated(eta_P_ref)) deallocate(eta_P_ref)
+      allocate(log10p_eta_P_ref(n_eta_P_ref),eta_P_ref(n_eta_P_ref))
+      read(1,*) log10p_eta_P_ref,eta_P_ref
       if (lroot) then
         print*, 'n_eta_P_ref=',n_eta_P_ref
         print *,'Here is the eta(P) profile:'
         print *,'p [Pa] and eta[m^2/s]:'
         do i=1,n_eta_P_ref
-          print*, 'log10p_eta_P_ref,eta_ref=',log10p_eta_P_ref(i),eta_ref(i)
+          print*, 'log10p_eta_P_ref,eta_P_ref=',log10p_eta_P_ref(i),eta_P_ref(i)
         enddo
       endif
       close(1)
 !
-!  normalize by eta at T=T_ref
+!  convert to code unit
 !
-      eta_ref=eta_ref/eta2si
+      eta_P_ref=eta_P_ref/eta2si
+!
+!  add floor or ceiling
+!
+      if (eta_floor>0.) then
+        where (eta_P_ref<eta_floor) eta_P_ref = eta_floor
+      endif
+      !
+      if (eta_ceiling>0.) then
+        where (eta_P_ref>eta_ceiling) eta_P_ref = eta_ceiling
+      endif
 !
 !  for debug purpose, output the result
 !
       if (lroot) then
         open(1,file=trim(datadir)//'/eta_P_normalized.dat',status='replace')
         write(1,*) log10p_eta_P_ref
-        write(1,*) eta_ref
+        write(1,*) eta_P_ref
         close(1)
       endif
 !
-    endsubroutine  prepare_eta_P
+    endsubroutine  read_eta_P_file
 !***********************************************************************
-    subroutine prepare_eta_PT
+    subroutine read_eta_PT_file
 !
 !   Read the reference eta profile.
 !   All quantities in this subroutine are in SI units.
@@ -718,7 +744,7 @@ module Special
 !  read in eta, in SI unit
 !
       inquire(FILE='eta_PT.txt', EXIST=leta_file_exists)
-      if (.not.leta_file_exists) call fatal_error('prepare_eta_PT', &
+      if (.not.leta_file_exists) call fatal_error('read_eta_PT_file', &
           'Must provide an eta(P,T) file')
 !
       open(1,file='eta_PT.txt')
@@ -747,6 +773,16 @@ module Special
 !
       eta_PT_ref=eta_PT_ref/eta2si
 !
+!  add floor or ceiling
+!
+      if (eta_floor>0.) then
+        where (eta_PT_ref<eta_floor) eta_PT_ref = eta_floor
+      endif
+      !
+      if (eta_ceiling>0.) then
+        where (eta_PT_ref>eta_ceiling) eta_PT_ref = eta_ceiling
+      endif
+!
 !  for debug purpose, output the result
 !
       if (lroot) then
@@ -757,7 +793,7 @@ module Special
         close(1)
       endif
 !
-    endsubroutine  prepare_eta_PT
+    endsubroutine  read_eta_PT_file
 !***********************************************************************
     subroutine calc_eta_p(eta_local,press)
 !
@@ -773,7 +809,7 @@ module Special
       integer :: i
 !
       do i=1,nx
-        call interpolation1d(log10p_eta_P_ref,log10(eta_ref),log10(press(i)),eta_local(i))
+        call interpolation1d(log10p_eta_P_ref,log10(eta_P_ref),log10(press(i)),eta_local(i))
       enddo
       eta_local = 10.**eta_local/eta2si
 !
