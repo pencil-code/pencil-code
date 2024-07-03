@@ -40,7 +40,7 @@ module Chiral
   real :: kx_YY_chiral=1.,ky_YY_chiral=1.,kz_YY_chiral=1.,radiusYY_chiral=0.
   real :: xposXX_chiral=0.,yposXX_chiral=0.,zposXX_chiral=0.
   real :: xposYY_chiral=0.,yposYY_chiral=0.,zposYY_chiral=0.
-  real :: initpowerYY_chiral=2., kpeakYY_chiral=0., cutoffYY_chiral=0.
+  real :: initpowerYY_chiral=2., cutoffYY_chiral=0.
 !
   namelist /chiral_init_pars/ &
        initXX_chiral, amplXX_chiral, kx_XX_chiral, ky_XX_chiral, kz_XX_chiral, &
@@ -50,7 +50,7 @@ module Chiral
        radiusYY_chiral, widthYY_chiral, &
        xposXX_chiral, yposXX_chiral, zposXX_chiral, &
        xposYY_chiral, yposYY_chiral, zposYY_chiral, &
-       initpowerYY_chiral, kpeakYY_chiral, cutoffYY_chiral
+       initpowerYY_chiral, cutoffYY_chiral
 !
   real :: chiral_diffXX=impossible, chiral_diff=0., chiral_crossinhibition=1.,chiral_fidelity=1.
   real :: chiral_diffZZ=impossible
@@ -105,7 +105,8 @@ module Chiral
 !
 !  extra fields for Higgs
 !
-      if (initYY_chiral=='power_randomphase_higgs') then
+      if (initYY_chiral=='power_randomphase_higgs' .or. &
+          initYY_chiral=='higgs_mono') then
         call farray_register_pde('XX2_chiral',iXX2_chiral)
         call farray_register_pde('YY2_chiral',iYY2_chiral)
       endif
@@ -206,19 +207,22 @@ module Chiral
         case ('cosx_siny_cosz'); call cosx_siny_cosz(amplYY_chiral,f,iYY_chiral,kx_YY_chiral,ky_YY_chiral,kz_YY_chiral)
         case ('chiral_list'); call chiral_list(amplYY_chiral,f,iYY_chiral,'chiral_list')
         case ('power_randomphase')
-          call power_randomphase(amplYY_chiral,initpowerYY_chiral,0.,kpeakYY_chiral,cutoffYY_chiral,&
+          call power_randomphase(amplYY_chiral,initpowerYY_chiral,0.,0.,cutoffYY_chiral,&
             f,iXX_chiral,iXX_chiral,lscale_tobox=.false.)
-          call power_randomphase(amplYY_chiral,initpowerYY_chiral,0.,kpeakYY_chiral,cutoffYY_chiral,&
+          call power_randomphase(amplYY_chiral,initpowerYY_chiral,0.,0.,cutoffYY_chiral,&
             f,iYY_chiral,iYY_chiral,lscale_tobox=.false.)
         case ('power_randomphase_higgs')
-          call power_randomphase(amplYY_chiral,initpowerYY_chiral,0.,kpeakYY_chiral,cutoffYY_chiral,&
+          call power_randomphase(amplYY_chiral,initpowerYY_chiral,0.,0.,cutoffYY_chiral,&
             f,iXX_chiral,iXX_chiral,lscale_tobox=.false.)
-          call power_randomphase(amplYY_chiral,initpowerYY_chiral,0.,kpeakYY_chiral,cutoffYY_chiral,&
+          call power_randomphase(amplYY_chiral,initpowerYY_chiral,0.,0.,cutoffYY_chiral,&
             f,iYY_chiral,iYY_chiral,lscale_tobox=.false.)
-          call power_randomphase(amplYY_chiral,initpowerYY_chiral,0.,kpeakYY_chiral,cutoffYY_chiral,&
+          call power_randomphase(amplYY_chiral,initpowerYY_chiral,0.,0.,cutoffYY_chiral,&
             f,iXX2_chiral,iXX2_chiral,lscale_tobox=.false.)
-          call power_randomphase(amplYY_chiral,initpowerYY_chiral,0.,kpeakYY_chiral,cutoffYY_chiral,&
+          call power_randomphase(amplYY_chiral,initpowerYY_chiral,0.,0.,cutoffYY_chiral,&
             f,iYY2_chiral,iYY2_chiral,lscale_tobox=.false.)
+!
+!  normalize
+!
           r=1./sqrt(f(:,:,:,iXX_chiral)**2 &
                    +f(:,:,:,iYY_chiral)**2 &
                    +f(:,:,:,iXX2_chiral)**2 &
@@ -227,6 +231,16 @@ module Chiral
           f(:,:,:,iYY_chiral) =r*f(:,:,:,iYY_chiral)
           f(:,:,:,iXX2_chiral)=r*f(:,:,:,iXX2_chiral)
           f(:,:,:,iYY2_chiral)=r*f(:,:,:,iYY2_chiral)
+        case ('higgs_mono')
+          r=sqrt(spread(spread(x**2,2,my),3,mz) &
+                +spread(spread(y**2,1,mx),3,mz) &
+                +spread(spread(z**2,1,mx),2,my))
+          f(:,:,:,iXX_chiral) =sqrt(.5*(spread(spread(z,1,mx),2,my)/r+1.))
+          f(:,:,:,iYY_chiral) =0.
+          f(:,:,:,iXX2_chiral)=sqrt(.5*(1.-(spread(spread(z,1,mx),2,my)/r))) &
+            *cos(atan2(spread(spread(y,1,mx),3,mz),spread(spread(x,2,my),3,mz)))
+          f(:,:,:,iYY2_chiral)=sqrt(.5*(1.-(spread(spread(z,1,mx),2,my)/r))) &
+            *sin(atan2(spread(spread(y,1,mx),3,mz),spread(spread(x,2,my),3,mz)))
         case default; call fatal_error('init_chiral','no such initYY_chiral: '//trim(initYY_chiral))
       endselect
 !
