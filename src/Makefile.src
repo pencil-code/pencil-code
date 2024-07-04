@@ -2288,23 +2288,23 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 ##
 ##  Dardel (Axel, gFortran compiler, uan01)
 ##
-#FC=ftn #(uan01*)
-#F90=$(FC) #(uan01*)
-#CC=cc #(uan01*)
-#CFLAGS=-DFUNDERSC=1 -O3 -mcmodel=large #(uan01*)
+#FC=ftn #(login1*)
+#F90=$(FC) #(login1*)
+#CC=cc #(login1*)
+#CFLAGS=-DFUNDERSC=1 -O3 -mcmodel=large #(login1*)
 ##NS: added compiler option -ffree-line-length-0
 ##NS: to allow for long lines in source codes (max col no def was 132)
-##FFLAGS=-O3 -ffree-line-length-0 -large #(uan01*)
-#FFLAGS=-O3 -ffree-line-length-0 #(uan01*)
-#FFLAGS=-O3 -mcmodel=large #(uan01*)
-##FFLAGS=-O0 -ffree-line-length-0 -mcmodel=large #(uan01*)
-#FFLAGS=-O1 -fallow-argument-mismatch #(uan01*)
-#FFLAGS=-O0 #(uan01*)
-#FFLAGS=-O2 #(uan01*)
-#FFLAGS=-O0 -fallow-argument-mismatch -mcmodel=large #(uan01*)
+##FFLAGS=-O3 -ffree-line-length-0 -large #(login1*)
+#FFLAGS=-O3 -ffree-line-length-0 #(login1*)
+#FFLAGS=-O3 -mcmodel=large #(login1*)
+##FFLAGS=-O0 -ffree-line-length-0 -mcmodel=large #(login1*)
+#FFLAGS=-O1 -fallow-argument-mismatch #(login1*)
+#FFLAGS=-O0 #(login1*)
+#FFLAGS=-O2 #(login1*)
+#FFLAGS=-O0 -fallow-argument-mismatch -mcmodel=large #(login1*)
 ##NS: use following for debugging the code
-##FFLAGS=-O3 -fcheck=all #(uan01*)
-#FFLAGS_DOUBLE=-fdefault-real-8 -fdefault-double-8 #(uan01*)
+##FFLAGS=-O3 -fcheck=all #(login1*)
+#FFLAGS_DOUBLE=-fdefault-real-8 -fdefault-double-8 #(login1*)
 ##
 ##
 ##HP CP4000 BL Proliant supercluster
