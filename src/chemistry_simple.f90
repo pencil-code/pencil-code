@@ -123,6 +123,10 @@ module Chemistry
   real :: m_H2O = 2.*1.00794+15.9994
   logical :: lback=.true.
   real :: scale_homo = 0.
+  !
+  ! Condensing species parameters
+  !
+  real :: true_density_cond_spec
 !
 !   Species constants
 !
@@ -325,6 +329,10 @@ module Chemistry
           call put_shared_variable('m_H2O',m_H2O)
         endif
 !
+      endif
+!
+      if (lparticles) then
+        call put_shared_variable('true_density_cond_spec',true_density_cond_spec)
       endif
 !
     endsubroutine register_chemistry
