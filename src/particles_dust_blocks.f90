@@ -1287,6 +1287,20 @@ k_loop:   do while (.not. (k>npar_loc))
 !
     endsubroutine insert_particles
 !***********************************************************************
+    subroutine insert_nucleii(f,fp,ineargrid)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mpar_loc,mparray) :: fp
+      integer, dimension (mpar_loc,3)    :: ineargrid
+!
+      intent (inout) :: fp,ineargrid
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(ineargrid)
+!
+    endsubroutine insert_nucleii
+!***********************************************************************
     subroutine particles_dragforce_stiff(f,fp,ineargrid)
 !
 !  10-june-11/anders: dummy
