@@ -5130,6 +5130,18 @@ module Chemistry
 !
     end subroutine cond_spec_cond_lagr
 !***********************************************************************
+    subroutine cond_spec_nucl_lagr(f,df,p)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
+!
+    end subroutine cond_spec_nucl_lagr
+!***********************************************************************
     include 'chemistry_common.inc'
 !***********************************************************************
 endmodule Chemistry

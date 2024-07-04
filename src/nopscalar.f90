@@ -10,7 +10,7 @@
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
-! PENCILS PROVIDED cc; cc1; gcc(3,0)
+! PENCILS PROVIDED cc(1); cc1(1); gcc(3,0)
 !
 !***************************************************************
 module Pscalar

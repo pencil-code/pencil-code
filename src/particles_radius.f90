@@ -660,13 +660,13 @@ module Particles_radius
 !  Allow boulders to sweep up small grains if relative velocity not too high.
             if (deltavp <= vthresh_sweepup .or. vthresh_sweepup < 0.0) then
 !  Radius increase due to sweep-up.
-              dfp(k,iap) = dfp(k,iap) + 0.25*deltavp*p%cc(ix)*p%rho(ix)*rhopmat1
+              dfp(k,iap) = dfp(k,iap) + 0.25*deltavp*p%cc(ix,1)*p%rho(ix)*rhopmat1
 !
 !  Deplete gas of small grains.
 !
               if (lparticles_number) np_swarm = fp(k,inpswarm)
               if (lpscalar_nolog) then
-                df(ix0,m,n,icc) = df(ix0,m,n,icc) - np_swarm*pi*fp(k,iap)**2*deltavp*p%cc(ix)
+                df(ix0,m,n,icc) = df(ix0,m,n,icc) - np_swarm*pi*fp(k,iap)**2*deltavp*p%cc(ix,1)
               else
                 df(ix0,m,n,ilncc) = df(ix0,m,n,ilncc) - np_swarm*pi*fp(k,iap)**2*deltavp
               endif
@@ -746,7 +746,7 @@ module Particles_radius
         if (npar_imn(imn) /= 0) then
 !          rhovap=p%cc(:,1)*p%rho
 !DMDM
-          rhovap = p%cc*p%rho
+          rhovap = p%cc(:,1)*p%rho
           ppsat = 6.035e11*exp(-5938*p%TT1)  ! Valid for water
           vth = sqrt(p%csvap2)
           rhosat = gamma*ppsat/p%csvap2
@@ -902,9 +902,9 @@ if (ip<10 .and. k==1) print*,'AXEL: t,fp(k,iap)=',t,fp(k,iap)
 ! Feedback to scalar equation
 !
               if (lpscalar_nolog) then
-                df(ix0,m,n,icc)   = df(ix0,m,n,icc)   + (1.0-p%cc(ix))*p%rho1(ix)*drhocdt
+                df(ix0,m,n,icc)   = df(ix0,m,n,icc)   + (1.0-p%cc(ix,1))*p%rho1(ix)*drhocdt
               elseif (lpscalar) then
-                df(ix0,m,n,ilncc) = df(ix0,m,n,ilncc) + (p%cc1(ix)-1.0)*p%rho1(ix)*drhocdt
+                df(ix0,m,n,ilncc) = df(ix0,m,n,ilncc) + (p%cc1(ix,1)-1.0)*p%rho1(ix)*drhocdt
               endif
             endif
 !

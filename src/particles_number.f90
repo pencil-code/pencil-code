@@ -269,7 +269,7 @@ module Particles_number
                       df(l,m,n,icc) = df(l,m,n,icc) + p%rho1(l-nghost)*4/3.*pi*rhopmat* &
                                       (fp(j,iap)**3+fp(k,iap)**3)*cdot
                     else
-                      df(l,m,n,ilncc) = df(l,m,n,ilncc) + p%cc1(l-nghost)*p%rho1(l-nghost)*4/3.*pi*rhopmat* &
+                      df(l,m,n,ilncc) = df(l,m,n,ilncc) + p%cc1(l-nghost,1)*p%rho1(l-nghost)*4/3.*pi*rhopmat* &
                                         (fp(j,iap)**3+fp(k,iap)**3)*cdot
                     endif
                   endif  ! fragmentation or coagulation
@@ -298,7 +298,7 @@ module Particles_number
                   if (lpscalar_nolog) then
                     df(l,m,n,icc) = df(l,m,n,icc) + p%rho1(l-nghost)*4/3.*pi*rhopmat*fp(k,iap)**3*cdot
                   else
-                    df(l,m,n,ilncc) = df(l,m,n,ilncc) + p%cc1(l-nghost)*p%rho1(l-nghost)*4/3.*pi* &
+                    df(l,m,n,ilncc) = df(l,m,n,ilncc) + p%cc1(l-nghost,1)*p%rho1(l-nghost)*4/3.*pi* &
                                       rhopmat*fp(k,iap)**3*cdot
                   endif
 !  Need to count collisions for diagnostics.

@@ -149,8 +149,6 @@ module Dustdensity
   integer :: idiag_MMxm=0    ! DIAG_DOC: $\sum {\cal M}^x_{k,{\rm coag}}$
   integer :: idiag_MMym=0    ! DIAG_DOC: $\sum {\cal M}^y_{k,{\rm coag}}$
   integer :: idiag_MMzm=0    ! DIAG_DOC: $\sum {\cal M}^z_{k,{\rm coag}}$
-  integer :: idiag_nuclrmin=0! DIAG_DOC: $\< r_{\min} \>$
-  integer :: idiag_nuclrate=0! DIAG_DOC: $\< J \>$
   integer :: idiag_ndmt=0,idiag_rhodmt=0,idiag_rhoimt=0
   integer :: idiag_ssrm=0,idiag_ssrmax=0,idiag_adm=0,idiag_mdmtot=0
   integer :: idiag_rhodmxy=0, idiag_ndmxy=0
@@ -2192,10 +2190,6 @@ module Dustdensity
         if (idiag_adm/=0)  &
           call sum_mn_name(sum(spread((md/(4/3.*pi*rhods))**(1/3.),1,nx)*p%nd,2)/sum(p%nd,2), idiag_adm)
         if (idiag_mdmtot/=0) call sum_mn_name(sum(spread(md,1,nx)*p%nd,2), idiag_mdmtot)
-        if (ldustnucleation) then
-          call sum_mn_name(p%nucl_rmin,idiag_nuclrmin)
-          call sum_mn_name(p%nucl_rate,idiag_nuclrate)
-        endif
 !
 !  compute moments, works independently of lmdvar
 !
@@ -3139,7 +3133,6 @@ module Dustdensity
 !
       if (lreset) then
         idiag_mdm=0; idiag_KKm=0; idiag_KK2m=0; idiag_MMxm=0; idiag_MMym=0; idiag_MMzm=0
-        idiag_nuclrmin=0; idiag_nuclrate=0
         idiag_ndm=0; idiag_ndmin=0; idiag_ndmax=0; idiag_ndmt=0; idiag_rhodm=0
         idiag_rhodmin=0; idiag_rhodmax=0; idiag_rhodmxy=0; idiag_ndmxy=0
         idiag_nd2m=0; idiag_rhodmt=0; idiag_rhoimt=0; idiag_epsdrms=0
@@ -3226,8 +3219,6 @@ module Dustdensity
         call parse_name(iname,cname(iname),cform(iname),'ssrmax',idiag_ssrmax)
         call parse_name(iname,cname(iname),cform(iname),'adm',idiag_adm)
         call parse_name(iname,cname(iname),cform(iname),'mdmtot',idiag_mdmtot)
-        call parse_name(iname,cname(iname),cform(iname),'nuclrmin',idiag_nuclrmin)
-        call parse_name(iname,cname(iname),cform(iname),'nuclrate',idiag_nuclrate)
         do k=0,mmom
           sdust=itoa(k)
           call parse_name(iname,cname(iname),cform(iname),'rmom'//trim(sdust),idiag_rmom(k))

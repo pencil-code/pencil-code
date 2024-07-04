@@ -55,6 +55,7 @@ module Chemistry
   real :: Cv_const=impossible
   logical :: lfix_Sc=.false., lfix_Pr=.false.
   logical :: init_from_file, reinitialize_chemistry=.false.
+  logical :: lnucleation
   logical :: lchem_detailed=.true.
   character(len=30) :: reac_rate_method = 'chemkin'
 ! parameters for initial conditions
@@ -159,7 +160,7 @@ module Chemistry
   integer :: i_cond_spec,ichem_cond_spec
   real :: true_density_cond_spec_cgs=2.196, true_density_cond_spec
   real :: chem_conc_sat_spec=1e-8 !units of mol/cmˆ3
-logical, pointer :: ldustnucleation
+logical, pointer :: ldustnucleation, lpartnucleation
 !
 !   Atmospheric physics
 !
@@ -204,7 +205,8 @@ logical, pointer :: ldustnucleation
       linit_density, init_rho2, &
       file_name, lreac_as_aux, init_zz1, init_zz2, flame_pos, &
       reac_rate_method,global_phi, lSmag_heat_transport, Pr_turb, lSmag_diffusion, z_cloud, &
-      lhotspot, lchem_detailed, condensing_species, chem_conc_sat_spec
+      lhotspot, lchem_detailed, condensing_species, chem_conc_sat_spec, &
+      true_density_cond_spec_cgs
 !
 !
 ! run parameters
@@ -232,6 +234,8 @@ logical, pointer :: ldustnucleation
   integer, dimension(nchemspec) :: idiag_diffm=0   ! DIAG_DOC: $\left<D_{x}\right>$
   integer, dimension(nchemspec) :: idiag_Ymz=0     ! DIAG_DOC: $\left<Y_x\right>_{xy}(z)$
   integer :: idiag_dtchem=0     ! DIAG_DOC: $dt_{chem}$
+  integer :: idiag_nuclrmin=0! DIAG_DOC: $\< r_{\min} \>$
+  integer :: idiag_nuclrate=0! DIAG_DOC: $\< J \>$
 !
   integer :: idiag_cpfull=0
   integer :: idiag_cvfull=0
@@ -329,6 +333,9 @@ logical, pointer :: ldustnucleation
       if (lroot) call svn_id( "$Id$")
 !
       call put_shared_variable('species_constants',species_constants,caller='register_chemistry')
+      if (lparticles) then
+        call put_shared_variable('true_density_cond_spec',true_density_cond_spec)
+      endif
 !
     endsubroutine register_chemistry
 !***********************************************************************
@@ -559,9 +566,14 @@ logical, pointer :: ldustnucleation
       if (ldustdensity) then
         true_density_cond_spec=true_density_cond_spec_cgs/unit_density
         call get_shared_variable('ldustnucleation',ldustnucleation)
+        lnucleation=ldustnucleation
       endif
-      if (lparticles_radius) then
-        true_density_cond_spec=true_density_cond_spec_cgs/unit_density
+      if (lparticles) then
+        call get_shared_variable('lpartnucleation',lpartnucleation)
+        lnucleation=lpartnucleation
+        if  (lparticles_radius) then
+          true_density_cond_spec=true_density_cond_spec_cgs/unit_density
+        endif
       endif
 !
 !  write array dimension to chemistry diagnostics file
@@ -752,18 +764,12 @@ logical, pointer :: ldustnucleation
 !
 !  Needed for condensing species
 !
-      if (ldustdensity) then
+      if (ldustdensity .or. lparticles_radius) then
         lpenc_requested(i_chem_conc) = .true.
-        if (ldustnucleation) then
+        if (lnucleation) then
           lpenc_requested(i_nucl_rate) = .true.
           lpenc_requested(i_nucl_rmin) = .true.
         endif
-      endif
-      !
-      if (lparticles_radius) then
-        lpenc_requested(i_chem_conc) = .true.
-        lpenc_requested(i_nucl_rate) = .true.
-        lpenc_requested(i_nucl_rmin) = .true.
       endif
 !
     endsubroutine pencil_criteria_chemistry
@@ -1161,8 +1167,8 @@ logical, pointer :: ldustnucleation
 !
 !  Nucleation rate of condensing species
       !
-      if (ldustdensity) then
-        if (ldustnucleation) then
+      if (ldustdensity .or. lparticles) then
+        if (lnucleation) then
           if (lpencil(i_nucl_rate) .or. lpencil(i_nucl_rmin)) then
             call cond_spec_nucl_rate(p,nucleation_rmin,nucleation_rate)
             p%nucl_rate=nucleation_rate
@@ -3285,6 +3291,10 @@ logical, pointer :: ldustnucleation
 !
         call sum_mn_name(lambda_full(l1:l2,m,n),idiag_lambdam) 
         call sum_mn_name(f(l1:l2,m,n,iviscosity),idiag_num)
+        if (lnucleation) then
+          call sum_mn_name(p%nucl_rmin,idiag_nuclrmin)
+          call sum_mn_name(p%nucl_rate,idiag_nuclrate)
+        endif
 !
 !  Sample for hard coded diffusion diagnostics
 !
@@ -3361,6 +3371,8 @@ logical, pointer :: ldustnucleation
         idiag_lambdam = 0
         idiag_num = 0
 !
+        idiag_nuclrmin=0
+        idiag_nuclrate=0
       endif
 !
 !  check for those quantities that we want to evaluate online
@@ -3390,6 +3402,8 @@ logical, pointer :: ldustnucleation
         call parse_name(iname,cname(iname),cform(iname),'dtchem',idiag_dtchem)
         call parse_name(iname,cname(iname),cform(iname),'cpfull',idiag_cpfull)
         call parse_name(iname,cname(iname),cform(iname),'cvfull',idiag_cvfull)
+        call parse_name(iname,cname(iname),cform(iname),'nuclrmin',idiag_nuclrmin)
+        call parse_name(iname,cname(iname),cform(iname),'nuclrate',idiag_nuclrate)
 !
 !   Sample for hard-coded heat capacity diagnostics 
 !
@@ -6388,7 +6402,6 @@ logical, pointer :: ldustnucleation
         kkk=ichemspec(ichem)
         if (kkk==i_cond_spec) then
           df(ix0,m,n,kkk) = df(ix0,m,n,kkk) + drhocdt*(f(ix0,m,n,kkk)-1.)*p%rho1(ix)
-!          print*,"drhocdt,f(ix0,m,n,kkk),p%rho1(ix0)=",drhocdt,f(ix0,m,n,kkk),p%rho1(ix)
         else
           df(ix0,m,n,kkk) = df(ix0,m,n,kkk) + drhocdt*f(ix0,m,n,kkk)*p%rho1(ix)
         endif
@@ -6419,9 +6432,7 @@ logical, pointer :: ldustnucleation
           do ichem = 1,nchemspec
             kkk=ichemspec(ichem)
             if (kkk==i_cond_spec) then
- !             print*,"1: df(l1+i-1,m,n,kkk)=",df(l1+i-1,m,n,kkk)
               df(l1+i-1,m,n,kkk) = df(l1+i-1,m,n,kkk) + ff_nucl*(f(l1+i-1,m,n,kkk)-1.)/p%rho(i)
-  !            print*,"2: df(l1+i-1,m,n,kkk)=",df(l1+i-1,m,n,kkk)
             else
               df(l1+i-1,m,n,kkk) = df(l1+i-1,m,n,kkk) + ff_nucl*f(l1+i-1,m,n,kkk)/p%rho(i)
             endif
@@ -6433,6 +6444,47 @@ logical, pointer :: ldustnucleation
       enddo
 !     
     end subroutine cond_spec_nucl
+!***********************************************************************
+    subroutine cond_spec_nucl_lagr(f,df,p)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+!
+      integer :: ichem, kkk,i
+      real, dimension(nx) :: ff_nucl
+      !
+      if (lnucleation) then
+        !
+        ! Calculate mass flux of nucleii
+        !
+        ff_nucl=p%nucl_rate*4.*pi*true_density_cond_spec*p%nucl_rmin**3/3.
+        !
+        ! The mass of the nucleii is added to the passive scalar equation 
+        !
+        df(l1:l2,m,n,icc) = df(l1:l2,m,n,icc) + ff_nucl*(1+p%cc(:,1))*p%rho1
+        !
+        !  Generating the nucleii consumes the condensing species
+        !
+        do ichem = 1,nchemspec
+          kkk=ichemspec(ichem)
+          if (kkk==i_cond_spec) then
+            df(l1:l2,m,n,kkk) = df(l1:l2,m,n,kkk) + ff_nucl*(f(l1:l2,m,n,kkk)-1.)*p%rho1
+          else
+            df(l1:l2,m,n,kkk) = df(l1:l2,m,n,kkk) + ff_nucl*f(l1:l2,m,n,kkk)*p%rho1
+          endif
+        enddo
+        !
+        ! The new nucleii also means that the density is reduced
+        !
+        df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) - ff_nucl
+        !
+        ! Fill auxilliary array with radius of nucleii (for use in insert_nucleii in particles_dust.f90)
+        !
+        f(l1:l2,m,n,inucl)=p%nucl_rmin
+      endif
+!     
+    end subroutine cond_spec_nucl_lagr
 !***********************************************************************
     subroutine condensing_species_rate(p,mfluxcond)
       !
@@ -6463,7 +6515,7 @@ logical, pointer :: ldustnucleation
       !
 !  compute rmin
 !
-      if (ldustnucleation) then
+      if (lnucleation) then
           gam_surf_energy=gam_surf_energy_cgs/(unit_mass/unit_time)
           volume_spec=volume_spec_cgs/unit_length**3
           sat_ratio_spec=p%chem_conc(:,ichem_cond_spec)/chem_conc_sat_spec

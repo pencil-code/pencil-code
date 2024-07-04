@@ -321,6 +321,20 @@ module Particles
 !
     endsubroutine insert_particles
 !***********************************************************************
+    subroutine insert_nucleii(f,fp,ineargrid)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mpar_loc,mparray) :: fp
+      integer, dimension (mpar_loc,3)    :: ineargrid
+!
+      intent (inout) :: fp,ineargrid
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(ineargrid)
+!
+    endsubroutine insert_nucleii
+!***********************************************************************
     subroutine rprint_particles(lreset,lwrite)
 !
 !  Read and register print parameters relevant for particles
