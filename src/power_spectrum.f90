@@ -828,6 +828,7 @@ outer:  do ikz=1,nz
 !
       spectrum2=0.
       spectrum2_sum=0.
+      spectrum2_global=0.
 !
     endif
 !
@@ -844,6 +845,7 @@ outer:  do ikz=1,nz
 !
     spectrum2=0.
     spectrum2_sum=0.
+    spectrum2_global=0.
 !
   else
 !
