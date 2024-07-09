@@ -47,6 +47,7 @@ module Special
 ! variables in the magnetic diffusivity reference profile
 !
   real :: ref_eta_dlog10p,ref_eta_log10p_min,ref_eta_log10p_max
+  real :: ref_eta_dT
   real, dimension(:), allocatable :: ref_eta_log10p,ref_eta_T,ref_etaP
   real, dimension(:,:), allocatable :: ref_etaPT
   integer :: ref_eta_nP, ref_eta_nT
@@ -754,11 +755,13 @@ module Special
       allocate(ref_eta_log10p(ref_eta_nP))
       read(1,*) ref_eta_log10p
       ref_eta_log10p = log10(ref_eta_log10p)
+      ref_eta_dlog10p = (ref_eta_log10p(ref_eta_nP) - ref_eta_log10p(1)) / (ref_eta_nP-1.)
       ! temperature
       read(1,*) ref_eta_nT
       if(allocated(ref_eta_T)) deallocate(ref_eta_T)
       allocate(ref_eta_T(ref_eta_nT))
       read(1,*) ref_eta_T
+      ref_eta_dT = (ref_eta_T(ref_eta_nT)-ref_eta_T(1)) / (ref_eta_nT-1.)
       ! eta, has ref_eta_nT lines
       if(allocated(ref_etaPT)) deallocate(ref_etaPT)
       allocate(ref_etaPT(ref_eta_nP,ref_eta_nT))
@@ -808,7 +811,7 @@ module Special
       integer :: i
 !
       do i=1,nx
-        call interpolation1d(ref_eta_log10p,log10(ref_etaP),log10(press(i)),eta_local(i))
+        call interpolation1d(ref_eta_log10p,log10(ref_etaP),ref_eta_dlog10p,log10(press(i)),eta_local(i))
       enddo
       eta_local = 10.**eta_local/eta2si
 !
@@ -828,18 +831,19 @@ module Special
       integer :: i
 !
       do i=1,nx
-        call interpolation2d(ref_eta_log10p,ref_eta_T,log10(ref_etaPT),log10(press(i)),temp(i),eta_local(i))
+        call interpolation2d(ref_eta_log10p,ref_eta_T,log10(ref_etaPT), &
+              ref_eta_dlog10p,ref_eta_dT,log10(press(i)),temp(i),eta_local(i))
       enddo
       eta_local = 10.**eta_local/eta2si
 !
     endsubroutine calc_eta_PT
 !***********************************************************************
-    subroutine interpolation1d(xref,yref,xlocal,ylocal)
+    subroutine interpolation1d(xref,yref,dxref,xlocal,ylocal)
 !
 !  Linear interpolation from the reference table (xref,yref).
 !
       real, dimension(:), intent(in) :: xref,yref
-      real, intent(in) :: xlocal
+      real, intent(in) :: dxref,xlocal
       real, intent(out) :: ylocal
 !
       real :: x1,x2,y1,y2
@@ -855,10 +859,7 @@ module Special
 !
 !  Find the index so that xref(ix) is just smaller than xlocal
 !
-        ix = nref
-        do while (ix>=1 .and. xref(ix)>xlocal)
-          ix = ix - 1
-        enddo
+        ix = 1+floor((xlocal-xref(1))/dxref)
 !
 !  Linear interpolation
 !
@@ -871,13 +872,13 @@ module Special
 !
     endsubroutine interpolation1d
 !***********************************************************************
-    subroutine interpolation2d(xref,yref,zref,xlocal,ylocal,zlocal)
+    subroutine interpolation2d(xref,yref,zref,dxref,dyref,xlocal,ylocal,zlocal)
 !
 !  Linear interpolation from the reference table (xref,yref,zref).
 !
       real, dimension(:), intent(in) :: xref,yref
       real, dimension(:,:), intent(in) :: zref
-      real, intent(in) :: xlocal,ylocal
+      real, intent(in) :: dxref,dyref,xlocal,ylocal
       real, intent(out) :: zlocal
 !
       real :: x1,x2,y1,y2,z11,z12,z21,z22
@@ -888,26 +889,20 @@ module Special
       nyref = size(yref)
 !
       if (xlocal>=xref(nxref)) then
-        call interpolation1d(yref,zref(nxref,:),ylocal,zlocal)
+        call interpolation1d(yref,zref(nxref,:),dyref,ylocal,zlocal)
       elseif (xlocal<xref(1)) then
-        call interpolation1d(yref,zref(1,:),ylocal,zlocal)
+        call interpolation1d(yref,zref(1,:),dyref,ylocal,zlocal)
       elseif (ylocal>=yref(nyref)) then
-        call interpolation1d(xref,zref(:,nyref),xlocal,zlocal)
+        call interpolation1d(xref,zref(:,nyref),dxref,xlocal,zlocal)
       elseif (ylocal<yref(1)) then
-        call interpolation1d(xref,zref(:,1),xlocal,zlocal)
+        call interpolation1d(xref,zref(:,1),dxref,xlocal,zlocal)
       else
 !
 !  Find the index so that xref(ix) is just smaller than xlocal,
 !  and similarly to y
 !
-        ix = nxref
-        do while (ix>=1 .and. xref(ix)>xlocal)
-          ix = ix - 1
-        enddo
-        iy = nyref
-        do while (iy>=1 .and. yref(iy)>ylocal)
-          iy = iy - 1
-        enddo
+        ix = 1+floor((xlocal-xref(1))/dxref)
+        iy = 1+floor((ylocal-yref(1))/dyref)
 !
 !  Polynomial interpolation: z=a0+a1*x+a2*y+a3*x*y
 !
