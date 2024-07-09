@@ -934,7 +934,7 @@ outer:  do ikz=1,nz
 !
   enddo ! (do ivec=iveca,iveca+ncomp-1)
 !
-  if (lintegrate_shell .and. firstout<n_spectra .and. ipz==0) call mpimerge_1d(kshell,nk,12) ! filling of the shell-wavenumber vector
+  if (lintegrate_shell .and. ipz==0) call mpimerge_1d(kshell,nk,12) ! filling of the shell-wavenumber vector
 !
   if (lroot) then
 !
