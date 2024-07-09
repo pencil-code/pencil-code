@@ -48,8 +48,7 @@ module Special
 !
   real :: ref_eta_dlog10p,ref_eta_log10p_min,ref_eta_log10p_max
   real :: ref_eta_dT
-  real, dimension(:), allocatable :: ref_eta_log10p,ref_eta_T,ref_etaP
-  real, dimension(:,:), allocatable :: ref_etaPT
+  real, dimension(:), allocatable :: ref_eta_log10p,ref_eta_T,ref_etaP,ref_etaPT
   integer :: ref_eta_nP, ref_eta_nT
 !
 ! Init parameters
@@ -376,9 +375,15 @@ module Special
       case ('nothing')
         ! do nothing
       case ('eta_P')
-        call calc_eta_p(eta_x,p%pp*pp2Pa)
+        call interpolation1d(ref_eta_log10p,log10(ref_etaP), &
+                             ref_eta_nP,ref_eta_dlog10p, &
+                             log10(p%pp*pp2Pa),eta_x )
+        eta_x = 10.**eta_x/eta2si
       case ('eta_PT')
-        call calc_eta_pt(eta_x,p%pp*pp2Pa,p%TT*TT2K)
+        call interpolation2d(ref_eta_log10p,ref_eta_T,log10(ref_etaPT), &
+                             ref_eta_nP,ref_eta_nT,ref_eta_dlog10p,ref_eta_dT, &
+                             log10(p%pp*pp2Pa),p%TT*TT2K,eta_x )
+        eta_x = 10.**eta_x/eta2si
       case default
         call fatal_error('special_calc_magnetic','no such ieta_PT')
       endselect
@@ -762,12 +767,10 @@ module Special
       allocate(ref_eta_T(ref_eta_nT))
       read(1,*) ref_eta_T
       ref_eta_dT = (ref_eta_T(ref_eta_nT)-ref_eta_T(1)) / (ref_eta_nT-1.)
-      ! eta, has ref_eta_nT lines
+      ! eta, reshaping into 1d array
       if(allocated(ref_etaPT)) deallocate(ref_etaPT)
-      allocate(ref_etaPT(ref_eta_nP,ref_eta_nT))
-      do i=1,ref_eta_nT
-        read(1,*) ref_etaPT(:,i)
-      enddo
+      allocate(ref_etaPT(ref_eta_nP*ref_eta_nT))
+      read(1,*) ref_etaPT
 !
       close(1)
 !
@@ -791,138 +794,82 @@ module Special
         open(1,file=trim(datadir)//'/eta_PT_normalized.dat',status='replace')
         write(1,*) ref_eta_log10p
         write(1,*) ref_eta_T
-        write(1,*) ref_etaPT
+        write(1,*) reshape(ref_etaPT,(/ref_eta_nP,ref_eta_nT/))
         close(1)
       endif
 !
     endsubroutine  read_eta_PT_file
 !***********************************************************************
-    subroutine calc_eta_p(eta_local,press)
-!
-!  Given the local pressure p, calculate the magnetic diffusivity
-!  eta_local by interpolation. The output is converted to code unit.
-!
-!  15-mar-24/hongzhe: coded
-!  2-jul-24/hongzhe: streamlined using interpolation1d
-!
-      real, dimension(nx), intent(out) :: eta_local
-      real, dimension(nx), intent(in) :: press
-!
-      integer :: i
-!
-      do i=1,nx
-        call interpolation1d(ref_eta_log10p,log10(ref_etaP),ref_eta_dlog10p,log10(press(i)),eta_local(i))
-      enddo
-      eta_local = 10.**eta_local/eta2si
-!
-    endsubroutine calc_eta_p
-!***********************************************************************
-    subroutine calc_eta_PT(eta_local,press,temp)
-!
-!  Given the local pressure p [pa] and temperature [K], calculate
-!  the magnetic diffusivity by interpolation. The output is converted
-!  to code unit.
-!
-!  2-jul-24/hongzhe: coded
-!
-      real, dimension(nx), intent(out) :: eta_local
-      real, dimension(nx), intent(in) :: press,temp
-!
-      integer :: i
-!
-      do i=1,nx
-        call interpolation2d(ref_eta_log10p,ref_eta_T,log10(ref_etaPT), &
-              ref_eta_dlog10p,ref_eta_dT,log10(press(i)),temp(i),eta_local(i))
-      enddo
-      eta_local = 10.**eta_local/eta2si
-!
-    endsubroutine calc_eta_PT
-!***********************************************************************
-    subroutine interpolation1d(xref,yref,dxref,xlocal,ylocal)
+    subroutine interpolation1d(xref,yref,nref,dxref,xlocal,ylocal)
 !
 !  Linear interpolation from the reference table (xref,yref).
 !
       real, dimension(:), intent(in) :: xref,yref
-      real, intent(in) :: dxref,xlocal
-      real, intent(out) :: ylocal
+      integer, intent(in) :: nref
+      real, intent(in) :: dxref
+      real, dimension(nx), intent(in) :: xlocal
+      real, dimension(nx), intent(out) :: ylocal
 !
-      real :: x1,x2,y1,y2
-      integer :: nref,ix
+      real, dimension(nx) :: xlocal2,x1,x2,y1,y2
+      integer, dimension(nx) :: ix
 !
-      nref = size(xref)
-!
-      if (xlocal>=xref(nref)) then
-        ylocal = yref(nref)
-      elseif (xlocal<xref(1)) then
-        ylocal = yref(1)
-      else
+      xlocal2 = min(max(xlocal,xref(1)),xref(nref))
 !
 !  Find the index so that xref(ix) is just smaller than xlocal
 !
-        ix = 1+floor((xlocal-xref(1))/dxref)
+      ix = 1+floor((xlocal2-xref(1))/dxref)
 !
 !  Linear interpolation
 !
-        x1 = xref(ix)
-        x2 = xref(ix+1)
-        y1 = yref(ix)
-        y2 = yref(ix+1)
-        ylocal = (-x2*y1+x1*y2)/(x1-x2) + (y1-y2)/(x1-x2)*xlocal
-      endif
+      x1 = xref(ix)
+      x2 = xref(ix+1)
+      y1 = yref(ix)
+      y2 = yref(ix+1)
+      ylocal = (-x2*y1+x1*y2)/(x1-x2) + (y1-y2)/(x1-x2)*xlocal2
 !
     endsubroutine interpolation1d
 !***********************************************************************
-    subroutine interpolation2d(xref,yref,zref,dxref,dyref,xlocal,ylocal,zlocal)
+    subroutine interpolation2d(xref,yref,zref,nxref,nyref,dxref,dyref,xlocal,ylocal,zlocal)
 !
 !  Linear interpolation from the reference table (xref,yref,zref).
 !
-      real, dimension(:), intent(in) :: xref,yref
-      real, dimension(:,:), intent(in) :: zref
-      real, intent(in) :: dxref,dyref,xlocal,ylocal
-      real, intent(out) :: zlocal
+      real, dimension(:), intent(in) :: xref,yref,zref
+      integer, intent(in) :: nxref,nyref
+      real, intent(in) :: dxref,dyref
+      real, dimension(nx), intent(in) :: xlocal,ylocal
+      real, dimension(nx), intent(out) :: zlocal
 !
-      real :: x1,x2,y1,y2,z11,z12,z21,z22
-      real :: fact,a0,a1,a2,a3
-      integer :: nxref,nyref,ix,iy
+      real, dimension(nx) :: x1,x2,y1,y2,z11,z12,z21,z22
+      real, dimension(nx) :: xlocal2,ylocal2,fact,a0,a1,a2,a3
+      integer, dimension(nx) :: ix,iy
 !
-      nxref = size(xref)
-      nyref = size(yref)
-!
-      if (xlocal>=xref(nxref)) then
-        call interpolation1d(yref,zref(nxref,:),dyref,ylocal,zlocal)
-      elseif (xlocal<xref(1)) then
-        call interpolation1d(yref,zref(1,:),dyref,ylocal,zlocal)
-      elseif (ylocal>=yref(nyref)) then
-        call interpolation1d(xref,zref(:,nyref),dxref,xlocal,zlocal)
-      elseif (ylocal<yref(1)) then
-        call interpolation1d(xref,zref(:,1),dxref,xlocal,zlocal)
-      else
+      xlocal2 = min(max(xlocal,xref(1)),xref(nxref))
+      ylocal2 = min(max(ylocal,yref(1)),yref(nyref))
 !
 !  Find the index so that xref(ix) is just smaller than xlocal,
 !  and similarly to y
 !
-        ix = 1+floor((xlocal-xref(1))/dxref)
-        iy = 1+floor((ylocal-yref(1))/dyref)
+      ix = 1+floor((xlocal2-xref(1))/dxref)
+      iy = 1+floor((ylocal2-yref(1))/dyref)
 !
 !  Polynomial interpolation: z=a0+a1*x+a2*y+a3*x*y
 !
-        x1 = xref(ix)
-        x2 = xref(ix+1)
-        y1 = yref(iy)
-        y2 = yref(iy+1)
-        z11 = zref(ix,iy)
-        z12 = zref(ix,iy+1)
-        z21 = zref(ix+1,iy)
-        z22 = zref(ix,iy)
-        !
-        fact = 1./(x1-x2)/(y1-y2)
-        a0 = (x2*y2*z11-x2*y1*z12-x1*y2*z21+x1*y1*z22)*fact
-        a1 = (y2*(z21-z11)+y1*(z12-z22))*fact
-        a2 = (x2*(z12-z11)+x1*(z21-z22))*fact
-        a3 = (z11-z12-z21+z22)*fact
-        !
-        zlocal = a0 + a1*xlocal + a2*ylocal + a3*xlocal*ylocal
-      endif
+      x1 = xref(ix)
+      x2 = xref(ix+1)
+      y1 = yref(iy)
+      y2 = yref(iy+1)
+      z11 = zref((nxref-1)*ix+iy)
+      z12 = zref((nxref-1)*ix+iy+1)
+      z21 = zref((nxref-1)*(ix+1)+iy)
+      z22 = zref((nxref-1)*(ix+1)+iy+1)
+      !
+      fact = 1./(x1-x2)/(y1-y2)
+      a0 = (x2*y2*z11-x2*y1*z12-x1*y2*z21+x1*y1*z22)*fact
+      a1 = (y2*(z21-z11)+y1*(z12-z22))*fact
+      a2 = (x2*(z12-z11)+x1*(z21-z22))*fact
+      a3 = (z11-z12-z21+z22)*fact
+      !
+      zlocal = a0 + a1*xlocal2 + a2*ylocal2 + a3*xlocal2*ylocal2
 !
     endsubroutine interpolation2d
 !********************************************************************
