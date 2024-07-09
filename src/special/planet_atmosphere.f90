@@ -154,7 +154,7 @@ module Special
       if (frac_sponge_r>0.) then
 !  bottom:
         where ( (x-xyz0(1) <= frac_sponge_r*Lxyz(1)) ) &
-            fact_near_topbot = 0.5 + 0.5*cos(pi*(x-xyz1(0))/(frac_sponge_r*Lxyz(1)))
+            fact_near_topbot = 0.5 + 0.5*cos(pi*(x-xyz0(1))/(frac_sponge_r*Lxyz(1)))
 !  top:
         where ( (xyz1(1)-x <= frac_sponge_r*Lxyz(1)) ) &
             fact_near_topbot = 0.5 + 0.5*cos(pi*(xyz1(1)-x)/(frac_sponge_r*Lxyz(1)))
