@@ -126,8 +126,8 @@ module Viscosity
       lvisc_nu_tdep_t0_norm, nu_tdep_t0, nu_tdep_toffset, &
       zeta, nu_hyper2, nu_hyper3, ivisc, nu_mol, C_smag, gamma_smag, nu_shock, &
       nu_aniso_hyper3, lvisc_heat_as_aux,nu_jump,znu,xnu,xnu2,widthnu,widthnu2, &
-      nu_hyper3_mesh, &
-      pnlaw,llambda_effect, llambda_scale_with_nu, Lambda_V0,Lambda_V1,Lambda_H1, &
+      nu_hyper3_mesh, pnlaw,llambda_effect, &
+      llambda_scale_with_nu, Lambda_V0, Lambda_V1, Lambda_H1, &
       lambda_profile,rzero_lambda,wlambda,r1_lambda,r2_lambda,rmax_lambda, &
       offamp_lambda,lambda_jump,lmeanfield_nu,lmagfield_nu,meanfield_nuB, &
       PrM_turb, roffset_lambda, nu_spitzer, nu_jump2, nu_spitzer_max, &
@@ -2211,11 +2211,22 @@ module Viscosity
 !  Lambda profiles to be scaled with nu (not currently the default)
 !
       if (llambda_effect) then
-        call calc_lambda(p,lambda_phi)
-        if (llambda_scale_with_nu) then
-          p%fvisc(:,iuz)=p%fvisc(:,iuz) + nu*lambda_phi
+        if (lspherical_coords) then
+          call calc_lambda(p,lambda_phi)
+          if (llambda_scale_with_nu) then
+            p%fvisc(:,iuz)=p%fvisc(:,iuz) + nu*lambda_phi
+          else
+            p%fvisc(:,iuz)=p%fvisc(:,iuz) + lambda_phi
+          endif
+        elseif (lcylindrical_coords) then
+          call calc_lambda_cylindric(p,lambda_phi)
+          if (llambda_scale_with_nu) then
+            p%fvisc(:,iuy)=p%fvisc(:,iuy) + nu*lambda_phi
+          else
+            p%fvisc(:,iuy)=p%fvisc(:,iuy) + lambda_phi
+          endif
         else
-          p%fvisc(:,iuz)=p%fvisc(:,iuz) + lambda_phi
+          call fatal_error("init_uu","coord_system should be spherical or cylindric")
         endif
       endif
 !
@@ -2888,12 +2899,54 @@ module Viscosity
       dlver_dr = -(Lambda_V0*der_LV0_rprof(l1:l2)+Lambda_V1*sinth(m)*sinth(m)*der_LV1_rprof(l1:l2))
       dlhor_dtheta = -Lambda_H1*LH1_rprof(l1:l2)*2.*costh(m)*sinth(m)/x(l1:l2)
 !
+!  Note that a 1/r term appears, because here, instead of writing pomega,
+!  we just have a sinth factor.
+!
       div_lambda = sinth(m)*(lver*(lomega*p%glnrho(:,1)+3.*lomega/x(l1:l2)+dlomega_dr)+lomega*dlver_dr) &
                   +costh(m)*(lhor*(lomega*p%glnrho(:,2) &
                   -1./cotth(m)*lomega/x(l1:l2) + 2.*cotth(m)*lomega/x(l1:l2) &
                   +dlomega_dtheta) + lomega*dlhor_dtheta)
 !
     endsubroutine calc_lambda
+!***********************************************************************
+    subroutine calc_lambda_cylindric(p,div_lambda)
+!
+!  Calculates the lambda effect. Uses only vertical Lambda effect with V(0).
+!  Note that we have coordinates (pomega, phi, z), so the angular velocity
+!  is the second index of u.
+!
+!  10-jul-24/axel: adapted from calc_lambda
+!
+      use cdata, only: Omega
+!
+      type (pencil_case) :: p
+      real,dimension(nx) :: div_lambda
+
+      real,dimension(nx) :: lomega, dlomega_dr, lver, dlver_dr
+!
+      lomega=p%uu(:,2)/x(l1:l2)+Omega
+!
+!  dlomega_dr = d/dr(u/r) = u_2,1/r - u_2/r^2
+!
+      dlomega_dr=(x(l1:l2)*p%uij(:,2,1)-p%uu(:,2))/x(l1:l2)**2
+!
+      lver = -Lambda_V0*LV0_rprof(l1:l2)
+!
+      dlver_dr = -Lambda_V0*der_LV0_rprof(l1:l2)
+!
+!  d/dt(rho*pomega^2*Omega) = -div(...+rho*pomega*Lambda*Omega), so
+!  four terms from (rho*pomega^3)^{-1}*d/dpomega(rho*pomega^2*Lambda*Omega)
+!  = glnrho*(Lambda*Omega)/pomega
+!  + (2/pomega)*(Lambda*Omega)/pomega
+!  + (dOmega/dr)/pomega
+!  + (dLambda/dr*Omega)/pomega.
+!  ?is there a 1/pomega factor missing (one pomega goes to the left because
+!  of duy/dt instead of dOmega/dt). Note that div=(pomega^-1)d/dpomega[pomega*()]
+!
+      div_lambda = (lver*(lomega*p%glnrho(:,1)+2.*lomega/x(l1:l2) &
+                        +dlomega_dr)+lomega*dlver_dr)/x(l1:l2)
+!
+    endsubroutine calc_lambda_cylindric
 !***********************************************************************
     subroutine pushpars2c(p_par)
 

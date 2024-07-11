@@ -170,7 +170,7 @@ module Hydro
   real :: rnoise_int=impossible,rnoise_ext=impossible
   real :: PrRa  !preliminary
   real :: amp_factor=0.,kx_uu_perturb=0.
-  real :: qirro_uu=0.
+  real :: qirro_uu=0., qini=0.
   integer, dimension(ninit) :: ll_sh=0, mm_sh=0, n_xprof=-1
 !
   namelist /hydro_init_pars/ &
@@ -195,7 +195,7 @@ module Hydro
       lvv_as_aux, lvv_as_comaux, &
       lfactors_uu, qirro_uu, lno_noise_uu, lrho_nonuni_uu, lpower_profile_file_uu, &
       llorentz_limiter, lhiggsless, lhiggsless_old, vwall, alpha_hless, &
-      xjump_mid, yjump_mid, zjump_mid
+      xjump_mid, yjump_mid, zjump_mid, qini
 !
 !  Run parameters.
 !
@@ -213,7 +213,7 @@ module Hydro
   real :: ekman_friction=0.0, friction_tdep_toffset=0.0, friction_tdep_tau0=0.
   real :: uzjet=0.0
   real :: ampl_forc=0., k_forc=impossible, w_forc=0., x_forc=0., dx_forc=0.1
-  real :: ampl_fcont_uu=1., k_diffrot=1., amp_centforce=1.
+  real :: ampl_fcont_uu=1., k_diffrot=1., amp_centforce=1., Sbaro0=0.
   real :: uphi_rbot=1., uphi_rtop=1., uphi_step_width=0.
   integer :: novec,novecmax=nx*ny*nz/4, niter_relB=1
   logical :: ldamp_fade=.false.,lOmega_int=.false.,lupw_uu=.false.
@@ -284,7 +284,7 @@ module Hydro
       interior_bc_hydro_profile, lhydro_bc_interior, z1_interior_bc_hydro, &
       velocity_ceiling, ampl_Omega, lcoriolis_xdep, &
       ekman_friction, friction_tdep, friction_tdep_toffset, friction_tdep_tau0, &
-      ampl_forc, k_forc, w_forc, x_forc, dx_forc, ampl_fcont_uu, &
+      ampl_forc, k_forc, w_forc, x_forc, dx_forc, ampl_fcont_uu, Sbaro0, &
       lno_meridional_flow, lrotation_xaxis, k_diffrot,Shearx, rescale_uu, &
       hydro_xaver_range, Ra, Pr, llinearized_hydro, lremove_mean_angmom, &
       lpropagate_borderuu, hydro_zaver_range, index_rSH, &
@@ -2240,13 +2240,26 @@ module Hydro
 !  constant x-velocity
 !
           if (lroot) print*,'init_uu: constant angular velocity omega_ini=',omega_ini
-          f(:,:,:,iux) = 0
-          f(:,:,:,iuy) = 0
-          do n=n1,n2
-            do m=m1,m2
-              f(l1:l2,m,n,iuz) = omega_ini*x(l1:l2)*sinth(m)
+          if (lspherical_coords) then
+            f(:,:,:,iux) = 0
+            f(:,:,:,iuy) = 0
+            do n=n1,n2
+              do m=m1,m2
+                f(l1:l2,m,n,iuz) = omega_ini*x(l1:l2)*sinth(m)
+              enddo
             enddo
-          enddo
+          elseif (lcylindrical_coords) then
+print*,'AXEL 33'
+            f(:,:,:,iux) = 0
+            do n=n1,n2
+              do m=m1,m2
+                f(l1:l2,m,n,iuy) = omega_ini*x(l1:l2)**(1.-qini)
+              enddo
+            enddo
+            f(:,:,:,iuz) = 0
+          else
+            call fatal_error("init_uu","coord_system should be spherical or cylindric")
+          endif
 !
         case ('tang-discont-z')
 !
@@ -3830,6 +3843,15 @@ module Hydro
 !  Coriolis force with in Cartesian domain with Omega=Omega(x)
 !
       if (lcoriolis_xdep) call coriolis_xdep(df,p)
+!
+!  Artificial baroclinic term, Tbaro=curl(Sbaro), where
+!  Sbaro=Sbaro0*(pomega^2/2)*grad(z^2/2), so that Tbaro=Sbaro0*pomega*\vec{z},
+!  i.e., Tbaro=Sbaro0*r*sinth*(costh, -sinth, 0).
+!
+      if (Sbaro0/=0.) then
+        df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+Sbaro0*x(l1:l2)*sinth(m1:m2)*costh(m)
+        df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-Sbaro0*x(l1:l2)*sinth(m1:m2)**2
+      endif
 !
 !  Interface for your personal subroutines calls
 !
