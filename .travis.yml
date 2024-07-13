@@ -22,6 +22,7 @@ cache:
   - $HOME/build/pencil-code/pencil-code/samples/dust-vortex/src
   - $HOME/build/pencil-code/pencil-code/samples/damped_alfven_waves/src
   - $HOME/build/pencil-code/pencil-code/samples/corona/src
+  - $HOME/build/pencil-code/pencil-code/samples/helical-MHDturb/src
 
 addons:
   apt:
