@@ -8,40 +8,23 @@
 *)
 
 
-BeginPackage["pcPlot3D`","pcReadBasic`","pcRead2D`","pcPlot`"]
+BeginPackage["pcPlot3D`","pcPlot`"]
 
 
 (* ::Chapter:: *)
 (*Usage messages*)
 
 
-makeBox::usage="makeBox[dataTop,dataLeft,dataRight,time,minmax:{},plotStyle:] visualizes data
-  in a 3D box.
+mk3DBox::usage="mk3DBox[dataLeft,dataRight,dataTop] visualizes data in a 3D box.
 Input:
-  dataTop: List. The values to be plotted on the top plane. Must have depth=3.
-  dataLeft: List. The values to be plotted on the left plane. Must have depth=3.
-  dataRight: List. The values to be plotted on the right plane. Must have depth=3.
-  time: NumericQ. Time will be displayed on the top right in the figure.
-  minmax: List, Optional. Must have the form {min,max}, which will then determine
-          the color range. If not provided then MinMax[{dataTop,dataLeft,dataRight}//Flatten]
-          will be used.
-  plotStyle: Rule, Optional. Will overwrite other options of the plot.
-Output:
-  An Image object."
-
-makeBoxes::usage="makeBoxes[T,L,R,minmax:,plotStyle:] reads video files and returns a list of
-  3D box view of var. You can then make the legend by hand using, e.g., DensityPlot[...].
-  Currently it is assumed that top at zmax, left at ymin, and right at xmax.
-  If not, you can change the ticks by hand by saying Ticks->{...}.
-  For non-cubic boxes, simply say, for example, BoxRatios->{1,1,2}, and correspondingly change AxesLabel; then
-  you will get a tall box, etc.
-Input:
-  T,L,R: Lists. Must be the returns of readSlices[...].
-  minmax: List of length 2. Specifies the plotting range. If not present, then the MinMax of the
-          data from all the three surfaces will be used.
-  plotStyle: Rule, Optional. Will overwrite other options of the plot.
-Output:
-  A list of Image objects."
+  dataLeft, dataRight, dataTop: The data to be plotted on the left, right, and top
+                                planes, respectively. These shall be 2D Lists.
+Options:
+  \"PlotStyle\": The options to be inherited by ArrayPlot for making the three images.
+  \"BoxStyle\": The options to be inherited by Show for making the 3D box.
+Example:
+  {l,r,t}=readSlice[sim,\"lnrho\",#][[1,-1]]&/@{\"xz\",\"yz\",\"xy\"};
+  mk3DBox[l,r,t,\"PlotStyle\"->{ColorFunction->pcColors[\"Rainbow\"]},\"BoxStyle\"->{Background->Black}]"
 
 
 Begin["`Private`"]
@@ -55,67 +38,38 @@ Begin["`Private`"]
 (*Make a 3D box snapshot*)
 
 
-makeBox[dataTop_,dataLeft_,dataRight_,time_,minmax_List:{},plotStyle___Rule]:=
-  Module[{minMax,cf,mkImg,img,mkSlice},
-    minMax=If[minmax!={},minmax,MinMax[Flatten[{dataTop,dataLeft,dataRight}]]];
-    cf=ColorData["Rainbow"][Rescale[#,minMax]]&;
-    mkImg[data_]:=ListDensityPlot[data,PlotRange->All,
-      PlotLegends->None,Frame->False,ColorFunction->cf,ColorFunctionScaling->False,
-      ImagePadding->None,PlotRangePadding->None,ImageMargins->None,ImageSize->{200,200}
-    ];
-    {img["T"],img["L"],img["R"]}=mkImg/@{dataTop,dataLeft,dataRight};
-    mkSlice[sp_]:=Module[{pol},
-      pol=Polygon[Switch[sp,
-          "T",{{1,0,1},{1,1,1},{0,1,1},{0,0,1}},
-          "L",{{1,0,0},{1,0,1},{0,0,1},{0,0,0}},
-          "R",{{1,1,0},{1,1,1},{1,0,1},{1,0,0}}
-        ],VertexTextureCoordinates->{{1,0}, {1,1}, {0,1}, {0,0}}];
-      Graphics3D[{Texture[img[sp]],pol}]
-    ];
-    Show[mkSlice["T"],mkSlice["L"],mkSlice["R"],plotStyle,
-      PlotRange->{{0,1},{0,1},{0,1}},Lighting->{"Ambient",White},
-      Axes->True,AxesLabel->{
-        \!\(\*
-TagBox[
-StyleBox["\"\<\\!\\(\\*StyleBox[\\\"x\\\",FontSlant->\\\"Italic\\\"]\\)/\\[Pi]\>\"",
-ShowSpecialCharacters->False,
-ShowStringCharacters->True,
-NumberMarks->True],
-FullForm]\),
-        \!\(\*
-TagBox[
-StyleBox["\"\<\\!\\(\\*StyleBox[\\\"y\\\",FontSlant->\\\"Italic\\\"]\\)/\\[Pi]\>\"",
-ShowSpecialCharacters->False,
-ShowStringCharacters->True,
-NumberMarks->True],
-FullForm]\),
-        \!\(\*
-TagBox[
-StyleBox["\"\<\\!\\(\\*StyleBox[\\\"z\\\",FontSlant->\\\"Italic\\\"]\\)/\\[Pi]\>\"",
-ShowSpecialCharacters->False,
-ShowStringCharacters->True,
-NumberMarks->True],
-FullForm]\)
-      },
-      Ticks->ConstantArray[{{0,-1},{0.5,0},{1,1}},3],
-      LabelStyle->pcLabelStyle,Frame->True,FrameStyle->pcLabelStyle,
-      ViewPoint->{2,-2,1.7},ImageSize->Medium,
-      Epilog->{Inset[Style[
-          "\!\(\*StyleBox[\"t\",\nFontSlant->\"Italic\"]\)="<>ToString@time,pcLabelStyle],
-        Scaled[{0.9,0.94}]]}
-    ]//Rasterize[#,ImageSize->500,RasterSize->1000]&
-  ]
-
-makeBoxes[slT_,slL_,slR_,minmax_List:{},plotStyle___Rule]:=Module[{top,left,right,t,minMax,i},
-  {top,t}=Most@slT;
-  {left,right}=First/@{slL,slR};
-  minMax=If[minmax!={},minmax,MinMax[Flatten[{top,left,right}]]];
-  Print["PlotRange is {All,All,All,",minMax,"}"];
-  SetSharedVariable[i];
-  i=0;
-  Monitor[
-    ParallelMap[(i++;makeBox[Sequence@@#,minmax,plotStyle])&,Transpose[{top,left,right,t}]],
-    StringJoin["Making box ",ToString@i,"/",top//Length//ToString]
+Options[mk3DBox]={"PlotStyle"->{ImageSize->Automatic},"BoxStyle"->{ImageSize->Automatic}};
+mk3DBox[dataLeft_,dataRight_,dataTop_,OptionsPattern[]]:=Module[{minmax,img,img3D},
+  minmax={-1,1}*Max[{dataLeft,dataRight,dataTop}//Flatten//Abs];
+  
+  {img["L"],img["R"],img["T"]}=ArrayPlot[
+    Reverse@Transpose[#],OptionValue["PlotStyle"],
+    ColorFunction->pcColors["BlueGreenYellow"],
+    ImagePadding->None,
+    Frame->None,
+    PlotRange->minmax
+  ]&/@{dataLeft,dataRight,dataTop};
+  
+  With[{tmp1={{0,1},{1,1},{1,0},{0,0}},tmp2={{0,0}, {1,0}, {1,1}, {0,1}}},
+    img3D["L"]= Graphics3D[{Texture[img["L"]],
+      Polygon[{#1,0,#2}&@@@tmp1,
+      VertexTextureCoordinates->tmp2]
+    }];
+    img3D["R"]= Graphics3D[{Texture[img["R"]],
+      Polygon[{1,#1,#2}&@@@tmp1,
+      VertexTextureCoordinates->tmp2]
+    }];
+    img3D["T"]= Graphics3D[{Texture[img["T"]],
+      Polygon[{#1,#2,1}&@@@tmp1,
+      VertexTextureCoordinates->tmp2]
+    }];
+  ];
+  
+  Show[img3D["L"],img3D["R"],img3D["T"],
+    OptionValue["BoxStyle"],
+    PlotRange->{{0,1},{0,1},{0,1}},
+    Lighting->{"Ambient",White}, ViewPoint->{2,-2,1.7},
+    Frame->None,Axes->None
   ]
 ]
 
@@ -128,7 +82,7 @@ End[]
 
 
 Protect[
-  makeBox,makeBoxes
+  mk3DBox
 ]
 
 
