@@ -137,16 +137,8 @@ module Special
 !  read in the reference eta(P,T) profile
 !
       if (lmagnetic) then
-        select case (ieta_PT)
-        case ('nothing')
-          !  do nothing
-        case ('eta_P')
-          call read_eta_P_file
-        case ('eta_PT')
-          call read_eta_PT_file
-        case default
-          call fatal_error('initialize_special','no such ieta_PT')
-        endselect
+        if (ieta_PT=='eta_P') call read_eta_P_file
+        if (ieta_PT=='eta_PT') call read_eta_PT_file
       endif
 !
 !  define sponge layer factors
@@ -384,6 +376,15 @@ module Special
                              ref_eta_nP,ref_eta_nT,ref_eta_dlog10p,ref_eta_dT, &
                              log10(p%pp*pp2Pa),p%TT*TT2K,eta_x )
         eta_x = 10.**eta_x/eta2si
+      case ('Perna+2010')
+        !  reference: Perna+2010, Eq. (1) and Menou+2012 Sec. 3.3
+        eta_x = 214.545 * exp(25188./p%TT/TT2K) * &
+            sqrt(cp_ref*p%rho*rho2kg_m3) * (p%TT*TT2K)**(-0.25) / eta2si
+        where (eta_x > eta_ceiling)
+          eta_x = eta_ceiling
+        elsewhere (eta_x < eta_floor)
+          eta_x = eta_floor
+        endwhere
       case default
         call fatal_error('special_calc_magnetic','no such ieta_PT')
       endselect
