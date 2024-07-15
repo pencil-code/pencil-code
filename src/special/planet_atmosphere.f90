@@ -395,7 +395,12 @@ module Special
 !  Add Ohmic heating
 !
         df(l1:l2,m,n,iTT)   = df(l1:l2,m,n,iTT) + p%cv1*eta_x*mu0*p%j2*p%rho1
-      endif
+!
+!  Constrain timestep
+!
+        if (lfirst.and.ldt) maxdiffus=max(maxdiffus,eta_x*dxyz_2)
+!
+      endif  ! if ieta_PT/='nothing'
 !
     endsubroutine special_calc_magnetic
 !***********************************************************************
