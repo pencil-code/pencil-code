@@ -33,6 +33,7 @@ module Special
   real, dimension(mx,my,mz,3) :: Bext=0.,Jext=0.  !  time-dependent external fields
   real, dimension(mx) :: fact_near_topbot=0.
   real, dimension(my) :: fact_near_polar=0.
+  real :: dyz_2
 !  constants for unit conversion
   real :: gamma=1.
   real :: r2m=1., rho2kg_m3=1., u2m_s=1., cp2si=1.
@@ -71,6 +72,7 @@ module Special
   real :: q_sponge_polar=0.0
   real :: frac_sponge_r=0
   real :: frac_sponge_polar=0
+  integer :: n_diff_substep=-1.
   !
   logical :: linit_equilibrium=.false.
 !
@@ -93,7 +95,7 @@ module Special
   namelist /special_run_pars/ &
       tau_slow_heating,t0_slow_heating,Bext_ampl,iBext,frac_sponge_r,&
       q_drag,q_sponge_r,&
-      dTeq_max,dTeqtop,dTeqbot,ieta_PT,eta_floor,eta_ceiling
+      dTeq_max,dTeqtop,dTeqbot,ieta_PT,eta_floor,eta_ceiling,n_diff_substep
 !
 !
 ! Declare index of new variables in f array (if any).
@@ -125,6 +127,8 @@ module Special
       rr1 = 1./rr
       siny = spread(spread(sin(y),1,mx),3,mz)
       cosy = spread(spread(cos(y),1,mx),3,mz)
+!
+      dyz_2 = 1./(xyz0(1)*sin(xyz0(2))*dz)**2.
 !
 !  unit conversion
 !
@@ -349,14 +353,20 @@ module Special
 !
 !  09-oct-23/hongzhe: add a background dipole field
 !
+      use Deriv, only: der_x,der2_x
       use Sub, only: cross_mn
+      use Mpicomm, only: mpiallreduce_sum
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      real, dimension (nx,3) :: uxb_ext,fres
-      real, dimension (nx) :: eta_x
+      real, dimension (mx) :: tmp
+      real, dimension (nx,3) :: uxb_ext,del2a_no_ddr
+      real, dimension (nx) :: eta_x,tmp2,tmp3
+      real, dimension (:,:), allocatable :: aa0,aa,del2aa
+      real, dimension (:), allocatable :: aalocal,etagridlocal,etagrid
+      integer :: i,j,ix,ll1,ll2,this_l1,this_l2
 !
       call cross_mn(p%uu,Bext(l1:l2,m,n,:),uxb_ext)
       df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + uxb_ext
@@ -389,20 +399,141 @@ module Special
         call fatal_error('special_calc_magnetic','no such ieta_PT')
       endselect
 !
-      if (ieta_PT/='nothing') then
-        df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + spread(eta_x,2,3) * p%del2a
+!  Timestep mainly limited by r, so do it in subtime steps
+!
+        if (ieta_PT/='nothing') then
+          if (n_diff_substep>0) then
+!
+!  do usual diffusion taking out the ddr parts from del2a
+!
+            do i=1,3
+              tmp = f(:,m,n,iax+i-1)
+              call der_x(tmp,tmp2)
+              call der2_x(tmp,tmp3)
+              del2a_no_ddr(:,i) = p%del2a(:,i) - 2.*tmp2/x(l1:l2) - tmp3
+            enddo
+            df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + spread(eta_x,2,3) * del2a_no_ddr
+            if (lfirst.and.ldt) maxdiffus=max(maxdiffus,eta_x*dyz_2)
+!
+!  sub-timestep for diffusion in the r direction
+!
+            if (llast) then
+              ! initialization; put all grid points in a dim=(mxgrid) array
+              ll1 = nghost+1
+              ll2 = mxgrid-nghost
+              this_l1 = nghost+ipx*nx+1
+              this_l2 = nghost+ipx*nx+nx
+              !
+              allocate(aalocal(mxgrid)); aalocal = 0.
+              allocate(aa(mxgrid,3)); aa = 0.
+              do i=1,3
+                if (lfirst_proc_x) then
+                  aalocal(1:l2) = f(1:l2,m,n,iax+i-1)
+                elseif (llast_proc_x) then
+                  aalocal(this_l1:mxgrid) = f(l1:mx,m,n,iax+i-1)
+                else
+                  aalocal(this_l1:this_l2) = f(l1:l2,m,n,iax+i-1)
+                endif
+                call mpiallreduce_sum(aalocal,aa(:,i),mxgrid,idir=1)
+              enddo
+              deallocate(aalocal)
+              !
+              allocate(etagridlocal(nxgrid)); etagridlocal = 0.
+              etagridlocal(ipx*nx+1:ipx*nx+nx) = eta_x
+              allocate(etagrid(nxgrid)); etagrid = 0.
+              call mpiallreduce_sum(etagridlocal,etagrid,nxgrid,idir=1)
+              deallocate(etagridlocal)
+              !
+              ! do sub time-stepping
+              !
+              allocate(aa0(mxgrid,3)); aa0 = aa
+              allocate(del2aa(nxgrid,3)); del2aa = 0.
+              etagrid = etagrid * dt/n_diff_substep
+              do i=1,n_diff_substep
+                call del2r_mxgrid(aa,del2aa)
+                do j=1,3
+                  aa(ll1:ll2,j) = aa(ll1:ll2,j) + etagrid * del2aa(:,j)
+                enddo
+                ! boundary conditions: 'spr:nfr','spr:nfr','s'
+                do j=1,2
+                  ! bot for aa1,aa2
+                  aa(ll1,j) = 0.
+                  do ix=1,nghost; aa(ll1-ix,j) = -aa(ll1+ix,j)*xglobal(ll1+ix)/xglobal(ll1-ix); enddo
+                  ! top for aa1,aa2
+                  aa(ll2,j) = 0.
+                  do ix=1,nghost; aa(ll2+ix,j) = -aa(ll2-ix,j)*xglobal(ll2-ix)/xglobal(ll2+ix); enddo
+                enddo
+                ! bot and top for aa3
+                do ix=1,nghost; aa(ll1-ix,3)= aa(ll1+ix,3); enddo
+                do ix=1,nghost; aa(ll2+ix,3)= aa(ll2-ix,3); enddo
+              enddo
+              !
+              df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + (aa(this_l1:this_l2,:)-aa0(this_l1:this_l2,:))/dt
+              !
+              deallocate(aa,del2aa,etagrid,aa0)
+            endif ! llast
+          else ! no sub-timestep
+            df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + spread(eta_x,2,3) * p%del2a
+            if (lfirst.and.ldt) maxdiffus=max(maxdiffus,eta_x*dxyz_2)
+          endif  ! n_diff_substep
 !
 !  Add Ohmic heating
 !
-        df(l1:l2,m,n,iTT)   = df(l1:l2,m,n,iTT) + p%cv1*eta_x*mu0*p%j2*p%rho1
-!
-!  Constrain timestep
-!
-        if (lfirst.and.ldt) maxdiffus=max(maxdiffus,eta_x*dxyz_2)
-!
-      endif  ! if ieta_PT/='nothing'
+          df(l1:l2,m,n,iTT)   = df(l1:l2,m,n,iTT) + p%cv1*eta_x*mu0*p%j2*p%rho1
+        endif  ! ieta_PT
 !
     endsubroutine special_calc_magnetic
+!***********************************************************************
+    subroutine ddr_mxgrid(a,da)
+!
+      real, dimension(mxgrid), intent(in) :: a
+      real, dimension(nxgrid), intent(out) :: da
+!
+      real, dimension(nxgrid) :: fac
+      integer :: i1,i2
+!
+      fac = (1./60)/dx
+      i1 = nghost+1
+      i2 = mxgrid-nghost
+      da = fac*(+ 45.0*(a(i1+1:i2+1)-a(i1-1:i2-1)) &
+                -  9.0*(a(i1+2:i2+2)-a(i1-2:i2-2)) &
+                +      (a(i1+3:i2+3)-a(i1-3:i2-3)))
+    endsubroutine ddr_mxgrid
+!***********************************************************************
+    subroutine d2dr2_mxgrid(a,da)
+!
+      real, dimension(mxgrid), intent(in) :: a
+      real, dimension(nxgrid), intent(out) :: da
+!
+      real, dimension(nxgrid) :: fac
+      integer :: i1,i2
+!
+      fac = (1./180)/dx**2
+      i1 = nghost+1
+      i2 = mxgrid-nghost
+      da = fac*(-490.0*a(i1:i2) &
+                 +270.0*(a(i1+1:i2+1)+a(i1-1:i2-1)) &
+                 - 27.0*(a(i1+2:i2+2)+a(i1-2:i2-2)) &
+                 +  2.0*(a(i1+3:i2+3)+a(i1-3:i2-3)))
+!
+    endsubroutine d2dr2_mxgrid
+!***********************************************************************
+    subroutine del2r_mxgrid(a,da)
+!
+      real, dimension(mxgrid,3), intent(in) :: a
+      real, dimension(nxgrid,3), intent(out) :: da
+!
+      real, dimension(nxgrid) :: fac1,fac2
+      integer :: i
+!
+      do i=1,3
+        call ddr_mxgrid(a(:,i),fac1)
+        call d2dr2_mxgrid(a(:,i),fac2)
+        da(:,i) = 2.0*fac1/xglobal(nghost+1:mxgrid-nghost) + fac2
+      enddo
+!
+    endsubroutine del2r_mxgrid
+!***********************************************************************
 !***********************************************************************
     subroutine special_after_boundary(f)
 !
