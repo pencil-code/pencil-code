@@ -129,6 +129,11 @@ module Special
       cosy = spread(spread(cos(y),1,mx),3,mz)
 !
       dyz_2 = 1./(xyz0(1)*sin(xyz0(2))*dz)**2.
+      if (n_diff_substep>0 .and. n_diff_substep<(xyz0(1)*sin(xyz0(2))*dz/dx)**2) then
+        print*,'n_diff_substep has to be greater than (dline_phi/dline_r)**2 = ', &
+            (xyz0(1)*sin(xyz0(2))*dz/dx)**2
+        call fatal_error('initialize_special','too small n_diff_substep')
+      endif
 !
 !  unit conversion
 !
