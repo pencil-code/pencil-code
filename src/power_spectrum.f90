@@ -676,10 +676,10 @@ outer:  do ikz=1,nz
        ar=f(l1:l2,m1:m2,n1:n2,iss)
     elseif (sp=='b') then
         if (iaa==0) call fatal_error('get_comp_spectrum','variable "b" not existent')
-        do n=n1-nghost,n2-nghost
-          do m=m1-nghost,m2-nghost
+        do n=n1,n2
+          do m=m1,m2
              call curli(f,iaa,bb,ivec)
-             ar(:,m,n)=bb
+             ar(:,m-nghost,n-nghost)=bb
           enddo
        enddo
     elseif (sp=='a') then
