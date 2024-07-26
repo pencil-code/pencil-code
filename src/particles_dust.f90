@@ -109,7 +109,7 @@ module Particles
   logical :: lcollisional_cooling_twobody=.false.
   logical :: lcollisional_dragforce_cooling=.false.
   logical :: ltau_coll_min_courant=.true.
-  logical :: ldragforce_equi_global_eps=.false., ldragforce_equi_noback=.false.
+  logical :: ldragforce_equi_global_eps=.false.
   logical :: ldraglaw_epstein=.true., ldraglaw_epstein_stokes_linear=.false.
   logical :: ldraglaw_simple=.false.
   logical :: ldraglaw_steadystate=.false., ldraglaw_variable=.false.
@@ -228,7 +228,7 @@ module Particles
       Lz0, lglobalrandom, lswap_radius_and_number, linsert_particles_continuously, &
       lrandom_particle_pencils, lnocalc_np, lnocalc_rhop, &
       np_const, rhop_const, particle_radius, lignore_rhop_swarm, &
-      ldragforce_equi_noback, rhopmat, Deltauy_gas_friction, xp1, &
+      rhopmat, Deltauy_gas_friction, xp1, &
       yp1, zp1, vpx1, vpy1, vpz1, xp2, yp2, zp2, vpx2, vpy2, vpz2, &
       xp3, yp3, zp3, vpx3, vpy3, vpz3, lsinkparticle_1, rsinkparticle_1, &
       lcalc_uup, temp_grad0, thermophoretic_eq, cond_ratio, interp_pol_gradTT, &
@@ -1951,10 +1951,9 @@ module Particles
 !
           if (ldragforce_equi_global_eps) eps = eps_dtog
 !
-          if (ldragforce_equi_noback) eps = 0.0
+          if (.not. ldragforce_gas_par) eps = 0.0
 !
-          if (lroot .and. (ldragforce_equi_global_eps .or. ldragforce_equi_noback)) &
-              print*, 'init_particles: average dust-to-gas ratio=', eps
+          if (lroot) print*, 'init_particles: average dust-to-gas ratio=', eps
 !
           uudrag: if (lhydro .and. (.not. lread_oldsnap .or. lread_oldsnap_nohydro)) then
 !  Set gas velocity field.
@@ -1975,15 +1974,13 @@ module Particles
 !  Set particle velocity field.
           do k = 1,npar_loc
 !  Take either global or local dust-to-gas ratio.
-            if (ldragforce_equi_noback) then
+            if (.not. ldragforce_gas_par) then
               eps = 0.0
-            else
-              if (.not. ldragforce_equi_global_eps) then
-                ix0 = ineargrid(k,1)
-                iy0 = ineargrid(k,2)
-                iz0 = ineargrid(k,3)
-                eps = f(ix0,iy0,iz0,irhop) / get_gas_density(f,ix0,iy0,iz0)
-              endif
+            else if (.not. ldragforce_equi_global_eps) then
+              ix0 = ineargrid(k,1)
+              iy0 = ineargrid(k,2)
+              iz0 = ineargrid(k,3)
+              eps = f(ix0,iy0,iz0,irhop) / get_gas_density(f,ix0,iy0,iz0)
             endif
 !
             fp(k,ivpx) = fp(k,ivpx) + beta_glnrho_global(1)*Omega*tausp/ &

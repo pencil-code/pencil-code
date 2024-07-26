@@ -30,6 +30,7 @@
   qshear=1.5
 /
 &particles_init_pars
+  ldragforce_dust_par=T, ldragforce_gas_par=T
   initxxp='gaussian-z',initvvp='dragforce_equilibrium'
   zp0=0.01
   tausp=0.5, eps_dtog=0.02
