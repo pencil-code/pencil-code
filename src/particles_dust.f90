@@ -1961,7 +1961,7 @@ module Particles
               do m = m1,m2
                 do n = n1,n2
 !  Take either global or local dust-to-gas ratio.
-                  if (.not. ldragforce_equi_global_eps) eps = f(l,m,n,irhop) / get_gas_density(f,l,m,n)
+                  if (ldragforce_gas_par .and. .not. ldragforce_equi_global_eps) eps = f(l,m,n,irhop) / get_gas_density(f,l,m,n)
 !
                   f(l,m,n,iux) = f(l,m,n,iux) - beta_glnrho_global(1)*eps*Omega*tausp/ &
                                                 ((1.0+eps)**2+(Omega*tausp)**2)*cs
