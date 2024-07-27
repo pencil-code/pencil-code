@@ -27,6 +27,7 @@
   qshear = 1.5
 /
 &particles_init_pars
+  ldragforce_dust_par = .true., ldragforce_gas_par = .true.
   particle_mesh = 'tsc'
   initxxp = 'random', lglobalrandom = .true.
   initvvp = 'dragforce_equilibrium', ldragforce_equi_global_eps = .false.
