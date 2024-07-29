@@ -153,7 +153,7 @@ module Chiral
       use InitialCondition, only: initial_condition_chiral
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: r
+      real, dimension (mx,my,mz) :: r, pom
       real, dimension (mx,my,mz) :: norm1
 !
 !  check first for initXX_chiral
@@ -231,16 +231,23 @@ module Chiral
           f(:,:,:,iYY_chiral) =r*f(:,:,:,iYY_chiral)
           f(:,:,:,iXX2_chiral)=r*f(:,:,:,iXX2_chiral)
           f(:,:,:,iYY2_chiral)=r*f(:,:,:,iYY2_chiral)
+!
+!  Higgs monopole
+!
         case ('higgs_mono')
+          pom=sqrt(spread(spread(x**2,2,my),3,mz) &
+                  +spread(spread(y**2,1,mx),3,mz))
           r=sqrt(spread(spread(x**2,2,my),3,mz) &
                 +spread(spread(y**2,1,mx),3,mz) &
                 +spread(spread(z**2,1,mx),2,my))
-          f(:,:,:,iXX_chiral) =sqrt(.5*(spread(spread(z,1,mx),2,my)/r+1.))
+          f(:,:,:,iXX_chiral) =sqrt(.5*(1.+spread(spread(z,1,mx),2,my)/r))
           f(:,:,:,iYY_chiral) =0.
           f(:,:,:,iXX2_chiral)=sqrt(.5*(1.-(spread(spread(z,1,mx),2,my)/r))) &
-            *cos(atan2(spread(spread(y,1,mx),3,mz),spread(spread(x,2,my),3,mz)))
+!--         *cos(atan2(spread(spread(y,1,mx),3,mz),spread(spread(x,2,my),3,mz)))
+            *spread(spread(x,2,my),3,mz)/pom
           f(:,:,:,iYY2_chiral)=sqrt(.5*(1.-(spread(spread(z,1,mx),2,my)/r))) &
-            *sin(atan2(spread(spread(y,1,mx),3,mz),spread(spread(x,2,my),3,mz)))
+!--         *sin(atan2(spread(spread(y,1,mx),3,mz),spread(spread(x,2,my),3,mz)))
+            *spread(spread(y,1,mx),3,mz)/pom
         case default; call fatal_error('init_chiral','no such initYY_chiral: '//trim(initYY_chiral))
       endselect
 !
