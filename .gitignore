@@ -207,3 +207,14 @@ samples/corona/driver
 !samples/1d-tests/axionSU2back_lhubble/.run_directories.log
 !samples/1d-tests/axionSU2back_lhubble/pc_build_tmp_*
 !samples/1d-tests/axionSU2back_lhubble/.pc_build_history
+!utils/philippe/.DS_Store
+!utils/philippe/*.directory
+!utils/philippe/*.pyc
+!utils/philippe/*~
+!utils/philippe/.*.swp
+!utils/philippe/host-ID
+!utils/philippe/revision.txt
+!utils/philippe/*-eps-converted-to.pdf
+!utils/philippe/.pc_build_history
+!utils/philippe/.run_directories.log
+!utils/philippe/pc_build_tmp_*
