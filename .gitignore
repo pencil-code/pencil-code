@@ -229,3 +229,14 @@ samples/corona/driver
 !utils/philippe/Hinode/.pc_build_history
 !utils/philippe/Hinode/.run_directories.log
 !utils/philippe/Hinode/pc_build_tmp_*
+!utils/philippe/LCT/.DS_Store
+!utils/philippe/LCT/*.directory
+!utils/philippe/LCT/*.pyc
+!utils/philippe/LCT/*~
+!utils/philippe/LCT/.*.swp
+!utils/philippe/LCT/host-ID
+!utils/philippe/LCT/revision.txt
+!utils/philippe/LCT/*-eps-converted-to.pdf
+!utils/philippe/LCT/.pc_build_history
+!utils/philippe/LCT/.run_directories.log
+!utils/philippe/LCT/pc_build_tmp_*
