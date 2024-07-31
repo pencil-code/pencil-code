@@ -484,11 +484,16 @@ module Special
 !  Calculate rhs of Gamma equation and update curl
 !
       if (llongitudinalE) then
-        if (alpf/=0.) then
-          call dot(p%bb,p%gphi,tmp)
-          tmp=-alpf*tmp
-        else
+        if (lphi_hom) then
           tmp=0.
+          weight_longitudinalE=0.
+        else
+          if (alpf/=0.) then
+            call dot(p%bb,p%gphi,tmp)
+            tmp=-alpf*tmp
+          else
+            tmp=0.
+          endif
         endif
         if (lsolve_chargedensity) tmp=tmp+f(l1:l2,m,n,irhoe)
         if (.not.lswitch_off_Gamma) then

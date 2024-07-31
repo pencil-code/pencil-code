@@ -352,6 +352,7 @@ module Special
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: phi, dphi, Vprime
       real, dimension (nx) :: tmp, del2phi
+!      real :: tmp2
       type (pencil_case) :: p
 !
       intent(in) :: f,p
@@ -410,7 +411,7 @@ module Special
 !
 !  speed of light term
 !
-        if (c_light_axion/=0.) then
+        if (c_light_axion/=0. .and. .not. lphi_hom) then
           call del2(f,iinfl_phi,del2phi)
           if (lconf_time) then
             df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)+c_light_axion**2*del2phi
@@ -443,8 +444,18 @@ module Special
 !
       if (lfirst.and.ldt.and.ldt_backreact_infl) then
         dt1_special = Ndiv*abs(Hscript)
-        dt1_max=max(dt1_max,dt1_special) 
+        dt1_max=max(dt1_max,dt1_special)
       endif
+!
+!      if (lfirst.and.ldt.and.ldt_backreact_infl) then
+!        tmp2 = axionmass*sqrt(a2)
+!        if (tmp2 > Hscript) then
+!          dt1_special = Ndiv*abs(tmp2)
+!        else
+!          dt1_special = Ndiv*abs(Hscript)
+!        endif
+!        dt1_max=max(dt1_max,dt1_special)
+!      endif
 !
 !  Diagnostics
 !
@@ -600,14 +611,14 @@ module Special
       a2rhophim=a2rhophim/nwgrid
       ddotam=(four_pi_over_three/nwgrid)*ddotam
       if (lphi_hom) then
-!          edotbm=edotbm/nwgrid
-          call mpireduce_sum(edotbm,edotbm_all)
+        edotbm=edotbm/nwgrid
+        call mpiallreduce_sum(edotbm,edotbm_all)
       endif
 !
       call mpireduce_sum(a2rhopm,a2rhopm_all)
       call mpiallreduce_sum(a2rhom,a2rhom_all)
       call mpireduce_sum(a2rhophim,a2rhophim_all)
-      call mpireduce_sum(ddotam,ddotam_all)
+      call mpiallreduce_sum(ddotam,ddotam_all)
 !
       if (lroot .and. lflrw) then
         Hscript=(8.*pi/3.)*sqrt(a2rhom_all)
@@ -629,11 +640,17 @@ module Special
 !
       phi=f(l1:l2,m,n,iinfl_phi)
       dphi=f(l1:l2,m,n,iinfl_dphi)
-      call grad(f,iinfl_phi,gphi)    !MR: the ghost zones are not necessarily updated!!!
-      call dot2_mn(gphi,gphi2)
-      a2rhop=dphi**2+gphi2
-      a2rho=0.5*(dphi**2+gphi2)
-      a2rhophim=a2rhophim+sum(a2rho)
+      if (lphi_hom) then
+        a2rhop=dphi**2
+        a2rho=0.5*dphi**2
+        a2rhophim=a2rhophim+sum(a2rho)
+      else
+        call grad(f,iinfl_phi,gphi)    !MR: the ghost zones are not necessarily updated!!!
+        call dot2_mn(gphi,gphi2)
+        a2rhop=dphi**2+gphi2
+        a2rho=0.5*(dphi**2+gphi2)
+        a2rhophim=a2rhophim+sum(a2rho)
+      endif
 
 !
       if (iex/=0 .and. lem_backreact) then
@@ -659,7 +676,11 @@ module Special
 !
 !  compute ddotam = a"/a (needed for GW module)
 !
-      ddota=-dphi**2-gphi2+4.*a2*Vpotential
+      if (lphi_hom) then
+        ddota=-dphi**2+4.*a2*Vpotential
+      else
+        ddota=-dphi**2-gphi2+4.*a2*Vpotential
+      endif
       ddotam=ddotam+sum(ddota)
       a2rho=a2rho+a2*Vpotential
       a2rhom=a2rhom+sum(a2rho)
