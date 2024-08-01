@@ -5476,16 +5476,6 @@ module Magnetic
               call fatal_error('daa_dt','must put lua_as_aux=T for advective_gauge2')
             endif
 !
-!  limp_alpha=T, add artificial z dependent alpha dynamo.
-!
-            if(limp_alpha) then
-              if (abs(z(n))<=imp_halpha/2) then
-                dAdt = dAdt+ p%uxb+fres+imp_alpha0*sin(pi*z(n)/imp_halpha)*p%bb
-              else
-                dAdt = dAdt+ p%uxb+fres+sign(imp_alpha0,z(n))*exp(-((2*z(n)-sign(imp_halpha,z(n)))/imp_halpha)**2)*p%bb
-              endif
-            endif
-!
 !  ladvective_gauge=F, so just the normal uxb term plus resistive term.
 !
           else
@@ -5495,10 +5485,10 @@ module Magnetic
 !
 !NS: added lnoinduction switch to suppress uxb term when needed
 !
-           if (lnoinduction) then
-             !print*,'no induction'
-              dAdt = dAdt - p%uxb
-           endif
+          if (lnoinduction) then
+            !print*,'no induction'
+             dAdt = dAdt - p%uxb
+          endif
         endif
       else
 !
@@ -5557,6 +5547,16 @@ module Magnetic
 !
         if (linduction) dAdt= dAdt + uxb_upw + fres
       endif
+!
+!  limp_alpha=T, add artificial z dependent alpha dynamo.
+!
+          if(limp_alpha) then
+            if (abs(z(n))<=imp_halpha/2) then
+              dAdt = dAdt+ p%uxb+fres+imp_alpha0*sin(pi*z(n)/imp_halpha)*p%bb
+            else
+              dAdt = dAdt+ p%uxb+fres+sign(imp_alpha0,z(n))*exp(-((2*z(n)-sign(imp_halpha,z(n)))/imp_halpha)**2)*p%bb
+            endif
+          endif
 !
 !  Add Hall term.
 !
