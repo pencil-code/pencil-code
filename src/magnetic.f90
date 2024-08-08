@@ -251,6 +251,7 @@ module Magnetic
   logical :: lcoulomb=.false.
   logical :: lfactors_aa=.false., lvacuum=.false.
   logical :: loverride_ee=.false., loverride_ee2=.false., loverride_ee_decide=.false.
+  logical :: lignore_1rho_in_Lorentz=.false.
 !
   namelist /magnetic_init_pars/ &
       B_ext, B0_ext, B0_ext_z, B0_ext_z_H, t_bext, t0_bext, J_ext, lohmic_heat, radius, epsilonaa, &
@@ -422,7 +423,7 @@ module Magnetic
       lnoinduction, lA_relprof_global, nlf_sld_magn, fac_sld_magn, div_sld_magn, &
       lbb_sph_as_aux, ltime_integrals_always, dtcor, lvart_in_shear_frame, &
       lbraginsky, eta_jump0, eta_jump1, lcoulomb, lvacuum, &
-      loverride_ee_decide, eta_tdep_loverride_ee, loverride_ee2, &
+      loverride_ee_decide, eta_tdep_loverride_ee, loverride_ee2, lignore_1rho_in_Lorentz, &
       lbext_moving_layer, zbot_moving_layer, ztop_moving_layer, speed_moving_layer, edge_moving_layer
 !
 ! Diagnostic variables (need to be consistent with reset list below)
@@ -4682,12 +4683,18 @@ module Magnetic
               else
                 if (iphiuu==0) then
 !
-!  add Lorentz force, JxB in the conservative case and JxB/rho otherwise.
+!  Add Lorentz force, JxB in the conservative case and JxB/rho otherwise.
+!  But also in the usual case, we have the option to *ignore* the 1/rho term
+!  in the Lorentz force if we want to test vorticity production from this term.
 !
                   if (lconservative) then
                     df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%jxb
                   else
-                    df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%jxbr
+                    if (lignore_1rho_in_Lorentz) then
+                      df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%jxb
+                    else
+                      df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%jxbr
+                    endif
                   endif
                 else
                   df(l1:l2,m,n,iphiuu)=df(l1:l2,m,n,iphiuu)-.5*(p%b2-B_ext2)

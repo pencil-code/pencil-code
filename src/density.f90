@@ -1683,7 +1683,9 @@ module Density
         enddo
         lnrhomz=fact*lnrhomz
         call finalize_aver(nprocxy,12,lnrhomz)
-
+!
+!  the following is only correct if we are using lnrho
+!
         if (lrho_flucz_as_aux) then
           do n=n1,n2
             f(l1:l2,m1:m2,n,irho_flucz)=exp(f(l1:l2,m1:m2,n,ilnrho))-exp(lnrhomz(n,1))
