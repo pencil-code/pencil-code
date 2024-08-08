@@ -134,7 +134,7 @@ module Special
 ! alberto: t_ini corresponds to the conformal time computed using a_0 = 1 at T_* = 100 GeV, g_S = 103 (EWPT)
   real :: t_ini=60549
 !
-  logical :: lread_scl_factor_file_exists
+  logical :: lread_scl_factor_file_exists, lread_pulsar=.false.
   integer :: nt_file, it_file, iTij=0, iinfl_lna=0
   real :: lgt0, dlgt, H0, dummy
   real :: lgt1, lgt2, lgf1, lgf2, lgf, lgt_current
@@ -144,6 +144,7 @@ module Special
   real, dimension (:,:,:,:), allocatable :: nonlinear_Tpq_re, nonlinear_Tpq_im
   real, dimension(:), allocatable :: t_file, scl_factor, Hp_file
   real, dimension(:), allocatable :: appa_file, lgt_file, lgff, lgff2, lgff3
+  real, dimension(:,:), allocatable :: nn_pulsar
   real :: kscale_factor, tau_stress_comp=0., exp_stress_comp=0.
   real :: tau_stress_kick=0., tnext_stress_kick=1., fac_stress_kick=2., accum_stress_kick=1.
   real :: nonlinear_source_fact=0., k_in_stress=1.
@@ -161,7 +162,7 @@ module Special
     lggTX_as_aux_boost, lhhTX_as_aux_boost, lno_noise_GW, &
     lscale_tobox, lfactors_GW, nfact_GWs, nfact_GWh, nfact_GW, &
     lcomp_GWs_k, lcomp_GWh_k, llogbranch_GW, initpower_med_GW, &
-    kpeak_log_GW, kbreak_GW, ldouble_GW, nfactd_GW
+    kpeak_log_GW, kbreak_GW, ldouble_GW, nfactd_GW, lread_pulsar
 !
 ! run parameters
   namelist /special_run_pars/ &
@@ -597,9 +598,58 @@ module Special
         endselect
       endif
 !
+!  Read pulsar data.
+!
+      if (lread_pulsar) call read_pulsar_data
+!
+!  Keep compiler quiet.
+!
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_special
+!***********************************************************************
+    subroutine read_pulsar_data
+!
+!  Read pulsar data
+!
+!   8-aug-2024/murman+axel: coded
+!
+      real, dimension(:), allocatable :: th, ph
+      real, dimension(:), allocatable :: cos_angle
+      integer :: npulsar, ipulsar, jpulsar, ncos_angle, icount
+!
+      open(9,file='pulsar.dat',status='old')
+      read(9,*) npulsar
+      if (allocated(th)) deallocate(th, ph, nn_pulsar)
+      allocate(th(npulsar), ph(npulsar), nn_pulsar(npulsar,3))
+      print*,'AXEL, iproc, npulsar=',iproc, npulsar
+      do ipulsar=1,npulsar
+        read(9,*) th(ipulsar), ph(ipulsar)
+      enddo
+      close(9)
+!
+!  Compute unit vector on the sphere.
+!
+      nn_pulsar(:,0)=sin(th*dtor)*cos(ph*dtor)
+      nn_pulsar(:,1)=sin(th*dtor)*sin(ph*dtor)
+      nn_pulsar(:,2)=cos(th*dtor)
+!
+      icount=1
+      ncos_angle=npulsar*(npulsar-1)/2
+      allocate(cos_angle(ncos_angle))
+!
+      do ipulsar=1,npulsar
+      do jpulsar=ipulsar+1,npulsar
+        cos_angle(icount)=nn_pulsar(ipulsar,1)*nn_pulsar(jpulsar,1) &
+                         +nn_pulsar(ipulsar,2)*nn_pulsar(jpulsar,2) &
+                         +nn_pulsar(ipulsar,3)*nn_pulsar(jpulsar,3)
+        icount=icount+1
+      enddo
+      enddo
+
+      print*,'AXEL, iproc, cos_angle=',iproc, cos_angle
+!
+    endsubroutine read_pulsar_data
 !***********************************************************************
     subroutine finalize_special(f)
 !
