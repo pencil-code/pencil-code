@@ -2255,7 +2255,7 @@ module Diagnostics
 !
     endsubroutine integrate_mn_name
 !***********************************************************************
-    subroutine xysum_mn_name_z(a,iname)
+    subroutine xysum_mn_name_z(a,iname,mask)
 !
 !   3-sep-13/MR: derived from xysum_mn_name_z
 !
@@ -2263,12 +2263,21 @@ module Diagnostics
 !
       real, dimension(nx), intent(IN) :: a
       integer,             intent(IN) :: iname
-
-      call xysum_mn_name_z_npar(a,n,iname)
+      logical, optional, dimension(nx), intent(IN) :: mask
+!
+      logical, dimension(nx) :: lmask
+!
+        if (present(mask)) then
+          lmask=mask
+        else
+          lmask=.true.
+        endif
+!
+      call xysum_mn_name_z_npar(a,n,iname,MASK=lmask)
 
     endsubroutine xysum_mn_name_z
 !***********************************************************************
-    subroutine xysum_mn_name_z_npar(a,n,iname)
+    subroutine xysum_mn_name_z_npar(a,n,iname,mask)
 !
 !  Successively calculate sum over x,y of a, which is supplied at each call.
 !  The result fnamez is z-dependent.
@@ -2278,6 +2287,7 @@ module Diagnostics
 !   3-sep-13/MR: derived from xysum_mn_name_z, index n now parameter
 !
       real, dimension(nx), intent(IN) :: a
+      logical, optional, dimension(nx), intent(IN) :: mask
       integer,             intent(IN) :: n,iname
 !
       integer :: nl
@@ -2300,7 +2310,7 @@ module Diagnostics
             fnamez(nl,ipz+1,iname)=fnamez(nl,ipz+1,iname)+ &
                                    sum(x(l1:ixav_max)*a(:ixav_max-nghost))
           else
-            fnamez(nl,ipz+1,iname)=fnamez(nl,ipz+1,iname)+sum(a(:ixav_max-nghost))
+            fnamez(nl,ipz+1,iname)=fnamez(nl,ipz+1,iname)+sum(a(:ixav_max-nghost),MASK=mask)
           endif
         endif
 !
