@@ -919,6 +919,42 @@ module Magnetic
   integer :: idiag_poynzmz=0    ! XYAVG_DOC: Averaged poynting flux in z direction
   integer :: idiag_epsMmz=0     ! XYAVG_DOC: $\left<\eta\mu_0\jv^2\right>_{xy}$
   integer :: idiag_vmagfricmz=0 ! XYAVG_DOC: $\left<1/\nu_{\rm mag}|\jv\times\Bv/\Bv^2|\right>_{xy}$
+  integer :: idiag_bxph1mz=0    ! XYAVG_DOC: $\left<{\cal B}_x\right>_{xy}|_{\rm phase 1}$
+  integer :: idiag_bxph2mz=0    ! XYAVG_DOC: $\left<{\cal B}_x\right>_{xy}|_{\rm phase 2}$
+  integer :: idiag_bxph3mz=0    ! XYAVG_DOC: $\left<{\cal B}_x\right>_{xy}|_{\rm phase 3}$
+  integer :: idiag_byph1mz=0    ! XYAVG_DOC: $\left<{\cal B}_y\right>_{xy}|_{\rm phase 1}$
+  integer :: idiag_byph2mz=0    ! XYAVG_DOC: $\left<{\cal B}_y\right>_{xy}|_{\rm phase 2}$
+  integer :: idiag_byph3mz=0    ! XYAVG_DOC: $\left<{\cal B}_y\right>_{xy}|_{\rm phase 3}$
+  integer :: idiag_bzph1mz=0    ! XYAVG_DOC: $\left<{\cal B}_z\right>_{xy}|_{\rm phase 1}$
+  integer :: idiag_bzph2mz=0    ! XYAVG_DOC: $\left<{\cal B}_z\right>_{xy}|_{\rm phase 2}$
+  integer :: idiag_bzph3mz=0    ! XYAVG_DOC: $\left<{\cal B}_z\right>_{xy}|_{\rm phase 3}$
+  integer :: idiag_bx2ph1mz=0    ! XYAVG_DOC: $\left<{\cal B}_x^2\right>_{xy}|_{\rm phase 1}$
+  integer :: idiag_bx2ph2mz=0    ! XYAVG_DOC: $\left<{\cal B}_x^2\right>_{xy}|_{\rm phase 2}$
+  integer :: idiag_bx2ph3mz=0    ! XYAVG_DOC: $\left<{\cal B}_x^2\right>_{xy}|_{\rm phase 3}$
+  integer :: idiag_by2ph1mz=0    ! XYAVG_DOC: $\left<{\cal B}_y^2\right>_{xy}|_{\rm phase 1}$
+  integer :: idiag_by2ph2mz=0    ! XYAVG_DOC: $\left<{\cal B}_y^2\right>_{xy}|_{\rm phase 2}$
+  integer :: idiag_by2ph3mz=0    ! XYAVG_DOC: $\left<{\cal B}_y^2\right>_{xy}|_{\rm phase 3}$
+  integer :: idiag_bz2ph1mz=0    ! XYAVG_DOC: $\left<{\cal B}_z^2\right>_{xy}|_{\rm phase 1}$
+  integer :: idiag_bz2ph2mz=0    ! XYAVG_DOC: $\left<{\cal B}_z^2\right>_{xy}|_{\rm phase 2}$
+  integer :: idiag_bz2ph3mz=0    ! XYAVG_DOC: $\left<{\cal B}_z^2\right>_{xy}|_{\rm phase 3}$
+  integer :: idiag_bx2rph1mz=0     ! XYAVG_DOC: $\left< B_x^2/\varrho \right>_{xy}|_{\rm phase 1}$
+  integer :: idiag_bx2rph2mz=0     ! XYAVG_DOC: $\left< B_x^2/\varrho \right>_{xy}|_{\rm phase 2}$
+  integer :: idiag_bx2rph3mz=0     ! XYAVG_DOC: $\left< B_x^2/\varrho \right>_{xy}|_{\rm phase 3}$
+  integer :: idiag_by2rph1mz=0     ! XYAVG_DOC: $\left< B_y^2/\varrho \right>_{xy}|_{\rm phase 1}$
+  integer :: idiag_by2rph2mz=0     ! XYAVG_DOC: $\left< B_y^2/\varrho \right>_{xy}|_{\rm phase 2}$
+  integer :: idiag_by2rph3mz=0     ! XYAVG_DOC: $\left< B_y^2/\varrho \right>_{xy}|_{\rm phase 3}$
+  integer :: idiag_bz2rph1mz=0     ! XYAVG_DOC: $\left< B_z^2/\varrho \right>_{xy}|_{\rm phase 1}$
+  integer :: idiag_bz2rph2mz=0     ! XYAVG_DOC: $\left< B_z^2/\varrho \right>_{xy}|_{\rm phase 2}$
+  integer :: idiag_bz2rph3mz=0     ! XYAVG_DOC: $\left< B_z^2/\varrho \right>_{xy}|_{\rm phase 3}$
+  integer :: idiag_abph1mz=0       ! XYAVG_DOC: $\left<\Av\cdot\Bv\right>|_{xy}|_{\rm phase 1}$
+  integer :: idiag_abph2mz=0       ! XYAVG_DOC: $\left<\Av\cdot\Bv\right>|_{xy}|_{\rm phase 2}$
+  integer :: idiag_abph3mz=0       ! XYAVG_DOC: $\left<\Av\cdot\Bv\right>|_{xy}|_{\rm phase 3}$
+  integer :: idiag_jbph1mz=0       ! XYAVG_DOC: $\left<\Jv\cdot\Bv\right>|_{xy}|_{\rm phase 1}$
+  integer :: idiag_jbph2mz=0       ! XYAVG_DOC: $\left<\Jv\cdot\Bv\right>|_{xy}|_{\rm phase 2}$
+  integer :: idiag_jbph3mz=0       ! XYAVG_DOC: $\left<\Jv\cdot\Bv\right>|_{xy}|_{\rm phase 3}$
+  integer :: idiag_poynzph1mz=0    ! XYAVG_DOC: Averaged poynting flux in z direction for phase 1
+  integer :: idiag_poynzph2mz=0    ! XYAVG_DOC: Averaged poynting flux in z direction for phase 2
+  integer :: idiag_poynzph3mz=0    ! XYAVG_DOC: Averaged poynting flux in z direction for phase 3
 !
 ! xz averaged diagnostics given in xzaver.in
 !
@@ -3130,6 +3166,18 @@ module Magnetic
       if (idiag_abumx/=0 .or. idiag_abumy/=0 .or. idiag_abumz/=0 &
           .or. idiag_abuxmz/=0 .or. idiag_abuymz/=0 .or. idiag_abuzmz/=0) &
           lpenc_diagnos(i_uu)=.true.
+      if (idiag_bxph1mz/=0 .or. idiag_bxph2mz/=0 .or. idiag_bxph3mz/=0  .or. &
+          idiag_byph1mz/=0 .or. idiag_byph2mz/=0 .or. idiag_byph3mz/=0  .or. &
+          idiag_bzph1mz/=0 .or. idiag_bzph2mz/=0 .or. idiag_bzph3mz/=0  .or. &
+          idiag_bx2ph1mz/=0 .or. idiag_bx2ph2mz/=0 .or. idiag_bx2ph3mz/=0 .or. &
+          idiag_by2ph1mz/=0 .or. idiag_by2ph2mz/=0 .or. idiag_by2ph3mz/=0 .or. &
+          idiag_bz2ph1mz/=0 .or. idiag_bz2ph2mz/=0 .or. idiag_bz2ph3mz/=0 .or. &
+          idiag_bx2rph1mz/=0 .or. idiag_bx2rph2mz/=0 .or. idiag_bx2rph3mz/=0 .or. &
+          idiag_by2rph1mz/=0 .or. idiag_by2rph2mz/=0 .or. idiag_by2rph3mz/=0 .or. &
+          idiag_bz2rph1mz/=0 .or. idiag_bz2rph2mz/=0 .or. idiag_bz2rph3mz/=0 .or. &
+          idiag_jbph1mz/=0 .or. idiag_jbph2mz/=0 .or. idiag_jbph3mz/=0 .or. &
+          idiag_poynzph1mz/=0 .or. idiag_poynzph2mz/=0 .or. idiag_poynzph3mz/=0 .or. &
+          idiag_abph1mz/=0 .or. idiag_abph2mz/=0 .or. idiag_abph3mz/=0) lpenc_diagnos(i_ss)=.true.
 !
 !  Check whether right variables are set for half-box calculations.
 !
@@ -6704,6 +6752,54 @@ module Magnetic
         call xysum_mn_name_z(p%beta1,idiag_beta1mz)
         call xysum_mn_name_z(p%beta, idiag_betamz)
         call xysum_mn_name_z(p%jb,idiag_jbmz)
+        if (idiag_bxph1mz/=0) call xysum_mn_name_z(p%bb(:,1),idiag_bxph1mz,MASK=(p%ss <=ssmask1))
+        if (idiag_bxph2mz/=0) call xysum_mn_name_z(p%bb(:,1),idiag_bxph2mz,MASK=(p%ss > ssmask1 .and. p%ss <= ssmask2))
+        if (idiag_bxph3mz/=0) call xysum_mn_name_z(p%bb(:,1),idiag_bxph3mz,MASK=(p%ss > ssmask2))
+        if (idiag_byph1mz/=0) call xysum_mn_name_z(p%bb(:,2),idiag_byph1mz,MASK=(p%ss <=ssmask1))
+        if (idiag_byph2mz/=0) call xysum_mn_name_z(p%bb(:,2),idiag_byph2mz,MASK=(p%ss > ssmask1 .and. p%ss <= ssmask2))
+        if (idiag_byph3mz/=0) call xysum_mn_name_z(p%bb(:,2),idiag_byph3mz,MASK=(p%ss > ssmask2))
+        if (idiag_bzph1mz/=0) call xysum_mn_name_z(p%bb(:,3),idiag_bzph1mz,MASK=(p%ss <=ssmask1))
+        if (idiag_bzph2mz/=0) call xysum_mn_name_z(p%bb(:,3),idiag_bzph2mz,MASK=(p%ss > ssmask1 .and. p%ss <= ssmask2))
+        if (idiag_bzph3mz/=0) call xysum_mn_name_z(p%bb(:,3),idiag_bzph3mz,MASK=(p%ss > ssmask2))
+        if (idiag_bx2ph1mz/=0) call xysum_mn_name_z(p%bb(:,1)**2,idiag_bx2ph1mz,MASK=(p%ss <=ssmask1))
+        if (idiag_bx2ph2mz/=0) call xysum_mn_name_z(p%bb(:,1)**2,idiag_bx2ph2mz,MASK=(p%ss > ssmask1 .and. p%ss <= ssmask2))
+        if (idiag_bx2ph3mz/=0) call xysum_mn_name_z(p%bb(:,1)**2,idiag_bx2ph3mz,MASK=(p%ss > ssmask2))
+        if (idiag_by2ph1mz/=0) call xysum_mn_name_z(p%bb(:,2)**2,idiag_by2ph1mz,MASK=(p%ss <=ssmask1))
+        if (idiag_by2ph2mz/=0) call xysum_mn_name_z(p%bb(:,2)**2,idiag_by2ph2mz,MASK=(p%ss > ssmask1 .and. p%ss <= ssmask2))
+        if (idiag_by2ph3mz/=0) call xysum_mn_name_z(p%bb(:,2)**2,idiag_by2ph3mz,MASK=(p%ss > ssmask2))
+        if (idiag_bz2ph1mz/=0) call xysum_mn_name_z(p%bb(:,3)**2,idiag_bz2ph1mz,MASK=(p%ss <=ssmask1))
+        if (idiag_bz2ph2mz/=0) call xysum_mn_name_z(p%bb(:,3)**2,idiag_bz2ph2mz,MASK=(p%ss > ssmask1 .and. p%ss <= ssmask2))
+        if (idiag_bz2ph3mz/=0) call xysum_mn_name_z(p%bb(:,3)**2,idiag_bz2ph3mz,MASK=(p%ss > ssmask2))
+        if (idiag_bx2rph1mz/=0) call xysum_mn_name_z(p%bb(:,1)**2*p%rho1,idiag_bx2rph1mz, &
+                MASK=(p%ss <=ssmask1))
+        if (idiag_bx2rph2mz/=0) call xysum_mn_name_z(p%bb(:,1)**2*p%rho1,idiag_bx2rph2mz, &
+                MASK=(p%ss > ssmask1 .and. p%ss <= ssmask2))
+        if (idiag_bx2rph3mz/=0) call xysum_mn_name_z(p%bb(:,1)**2*p%rho1,idiag_bx2rph3mz, &
+                MASK=(p%ss > ssmask2))
+        if (idiag_by2rph1mz/=0) call xysum_mn_name_z(p%bb(:,2)**2*p%rho1,idiag_by2rph1mz, &
+                MASK=(p%ss <=ssmask1))
+        if (idiag_by2rph2mz/=0) call xysum_mn_name_z(p%bb(:,2)**2*p%rho1,idiag_by2rph2mz, &
+                MASK=(p%ss > ssmask1 .and. p%ss <= ssmask2))
+        if (idiag_by2rph3mz/=0) call xysum_mn_name_z(p%bb(:,2)**2*p%rho1,idiag_by2rph3mz, &
+                MASK=(p%ss > ssmask2))
+        if (idiag_bz2rph1mz/=0) call xysum_mn_name_z(p%bb(:,3)**2*p%rho1,idiag_bz2rph1mz, &
+                MASK=(p%ss <=ssmask1))
+        if (idiag_bz2rph2mz/=0) call xysum_mn_name_z(p%bb(:,3)**2*p%rho1,idiag_bz2rph2mz, &
+                MASK=(p%ss > ssmask1 .and. p%ss <= ssmask2))
+        if (idiag_bz2rph3mz/=0) call xysum_mn_name_z(p%bb(:,3)**2*p%rho1,idiag_bz2rph3mz, &
+                MASK=(p%ss > ssmask2))
+        if (idiag_abph1mz/=0) call xysum_mn_name_z(p%ab,idiag_abph1mz,MASK=(p%ss <=ssmask1))
+        if (idiag_abph2mz/=0) call xysum_mn_name_z(p%ab,idiag_abph2mz,MASK=(p%ss > ssmask1 .and. p%ss <= ssmask2))
+        if (idiag_abph3mz/=0) call xysum_mn_name_z(p%ab,idiag_abph3mz,MASK=(p%ss > ssmask2))
+        if (idiag_jbph1mz/=0) call xysum_mn_name_z(p%jb,idiag_jbph1mz,MASK=(p%ss <=ssmask1))
+        if (idiag_jbph2mz/=0) call xysum_mn_name_z(p%jb,idiag_jbph2mz,MASK=(p%ss > ssmask1 .and. p%ss <= ssmask2))
+        if (idiag_jbph3mz/=0) call xysum_mn_name_z(p%jb,idiag_jbph3mz,MASK=(p%ss > ssmask2))
+        if (idiag_poynzph1mz/=0) call xysum_mn_name_z(eta_total*p%jxb(:,3)-mu01* &
+           (p%uxb(:,1)*p%bb(:,2)-p%uxb(:,2)*p%bb(:,1)),idiag_poynzph1mz,MASK=(p%ss <=ssmask1))
+        if (idiag_poynzph2mz/=0) call xysum_mn_name_z(eta_total*p%jxb(:,3)-mu01* &
+           (p%uxb(:,1)*p%bb(:,2)-p%uxb(:,2)*p%bb(:,1)),idiag_poynzph2mz,MASK=(p%ss > ssmask1 .and. p%ss <= ssmask2))
+        if (idiag_poynzph3mz/=0) call xysum_mn_name_z(eta_total*p%jxb(:,3)-mu01* &
+           (p%uxb(:,1)*p%bb(:,2)-p%uxb(:,2)*p%bb(:,1)),idiag_poynzph3mz,MASK=(p%ss >ssmask2))
 !
 !  Calculate <B.del2a>_{xy}.
 !
@@ -9835,7 +9931,18 @@ module Magnetic
         idiag_vmagfricmax=0; idiag_vmagfricrms=0; idiag_vmagfricmz=0
         ivid_aps=0; ivid_bb=0; ivid_jj=0; ivid_b2=0; ivid_j2=0; ivid_ab=0
         ivid_jb=0; ivid_beta1=0; ivid_poynting=0; ivid_bb_sph=0; idiag_dteta3=0
-        idiag_b2sphm=0
+        idiag_b2sphm=0; idiag_bxph1mz=0; idiag_bxph2mz=0; idiag_bxph3mz=0
+        idiag_byph1mz=0; idiag_byph2mz=0; idiag_byph3mz=0
+        idiag_bzph1mz=0; idiag_bzph2mz=0; idiag_bzph3mz=0
+        idiag_bx2ph1mz=0; idiag_bx2ph2mz=0; idiag_bx2ph3mz=0
+        idiag_by2ph1mz=0; idiag_by2ph2mz=0; idiag_by2ph3mz=0
+        idiag_bz2ph1mz=0; idiag_bz2ph2mz=0; idiag_bz2ph3mz=0
+        idiag_bx2rph1mz=0; idiag_bx2rph2mz=0; idiag_bx2rph3mz=0
+        idiag_by2rph1mz=0; idiag_by2rph2mz=0; idiag_by2rph3mz=0
+        idiag_bz2rph1mz=0; idiag_bz2rph2mz=0; idiag_bz2rph3mz=0
+        idiag_abph1mz=0; idiag_abph2mz=0; idiag_abph3mz=0
+        idiag_jbph1mz=0; idiag_jbph2mz=0; idiag_jbph3mz=0
+        idiag_poynzph1mz=0; idiag_poynzph2mz=0; idiag_poynzph3mz=0
       endif
 !
 !  Check for those quantities that we want to evaluate online.
@@ -10329,6 +10436,42 @@ module Magnetic
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'etatotalmz',idiag_etatotalmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'epsMmz',idiag_epsMmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'Rmmz',idiag_Rmmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bxph1mz',idiag_bxph1mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bxph2mz',idiag_bxph2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bxph3mz',idiag_bxph3mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'byph1mz',idiag_byph1mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'byph2mz',idiag_byph2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'byph3mz',idiag_byph3mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bzph1mz',idiag_bzph1mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bzph2mz',idiag_bzph2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bzph3mz',idiag_bzph3mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bx2ph1mz',idiag_bx2ph1mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bx2ph2mz',idiag_bx2ph2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bx2ph3mz',idiag_bx2ph3mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'by2ph1mz',idiag_by2ph1mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'by2ph2mz',idiag_by2ph2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'by2ph3mz',idiag_by2ph3mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bz2ph1mz',idiag_bz2ph1mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bz2ph2mz',idiag_bz2ph2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bz2ph3mz',idiag_bz2ph3mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bx2rph1mz',idiag_bx2rph1mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bx2rph2mz',idiag_bx2rph2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bx2rph3mz',idiag_bx2rph3mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'by2rph1mz',idiag_by2rph1mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'by2rph2mz',idiag_by2rph2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'by2rph3mz',idiag_by2rph3mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bz2rph1mz',idiag_bz2rph1mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bz2rph2mz',idiag_bz2rph2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bz2rph3mz',idiag_bz2rph3mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'abph1mz',idiag_abph1mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'abph2mz',idiag_abph2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'abph3mz',idiag_abph3mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'jbph1mz',idiag_jbph1mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'jbph2mz',idiag_jbph2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'jbph3mz',idiag_jbph3mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'poynzph1mz',idiag_poynzph1mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'poynzph2mz',idiag_poynzph2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'poynzph3mz',idiag_poynzph3mz)
       enddo
 !
 !  Check for those quantities for which we want y-averages.

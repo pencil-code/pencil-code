@@ -248,6 +248,12 @@ module Density
   integer :: idiag_ugrhomz=0    ! XYAVG_DOC: $\left<\uv\cdot\nabla\varrho\right>_{xy}$
   integer :: idiag_uygzlnrhomz=0! XYAVG_DOC: $\left<u_y\nabla_z\ln\varrho\right>_{xy}$
   integer :: idiag_uzgylnrhomz=0! XYAVG_DOC: $\left<u_z\nabla_y\ln\varrho\right>_{xy}$
+  integer :: idiag_rhoph1mz=0   ! XYAVG_DOC: $\left< \overline{n}^2 \right>_{xy}|_{\rm phase 1}$
+  integer :: idiag_rhoph2mz=0   ! XYAVG_DOC: $\left< \overline{n}^2 \right>_{xy}|_{\rm phase 2}$
+  integer :: idiag_rhoph3mz=0   ! XYAVG_DOC: $\left< \overline{n}^2 \right>_{xy}|_{\rm phase 3}$
+  integer :: idiag_rho2ph1mz=0   ! XYAVG_DOC: $\left< \overline{n^2} \right>_{xy}|_{\rm phase 1}$
+  integer :: idiag_rho2ph2mz=0   ! XYAVG_DOC: $\left< \overline{n^2} \right>_{xy}|_{\rm phase 2}$
+  integer :: idiag_rho2ph3mz=0   ! XYAVG_DOC: $\left< \overline{n^2} \right>_{xy}|_{\rm phase 3}$
 !
 ! xz averaged diagnostics given in xzaver.in
   integer :: idiag_rhomy=0      ! XZAVG_DOC: $\left<\varrho\right>_{xz}$
@@ -2070,6 +2076,8 @@ module Density
            idiag_rho2downmz/=0 .or. idiag_rhof2mz/=0 .or. idiag_rhof2upmz/=0 .or. &
            idiag_rhof2downmz/=0 .or. idiag_sphmass/=0) &
            lpenc_diagnos(i_rho)=.true.
+      if (idiag_rhoph1mz/=0 .or. idiag_rhoph2mz/=0 .or. idiag_rhoph3mz/=0) lpenc_diagnos(i_ss)=.true.
+      if (idiag_rho2ph1mz/=0 .or. idiag_rho2ph2mz/=0 .or. idiag_rho2ph3mz/=0) lpenc_diagnos(i_ss)=.true.
       if (idiag_rhomxy/=0 .or. idiag_rho2mxy/=0) lpenc_diagnos2d(i_rho)=.true.
 !AB: idiag_rhof2mz, idiag_rhodownmz, etc, shouldn't be here, right?
 !PJK: The up/down averages should actually appear above as well and they
@@ -2855,6 +2863,12 @@ module Density
         call phizsum_mn_name_r(p%rho,idiag_rhomr)
         call xysum_mn_name_z(p%rho,idiag_rhomz)
         if (idiag_rho2mz/=0) call xysum_mn_name_z(p%rho**2,idiag_rho2mz)
+        if (idiag_rhoph1mz/=0) call xysum_mn_name_z(p%rho,idiag_rhoph1mz,MASK=(p%ss<=ssmask1))
+        if (idiag_rhoph2mz/=0) call xysum_mn_name_z(p%rho,idiag_rhoph2mz,MASK=(p%ss>ssmask1 .and. p%ss<=ssmask2))
+        if (idiag_rhoph3mz/=0) call xysum_mn_name_z(p%rho,idiag_rhoph3mz,MASK=(p%ss>ssmask2))
+        if (idiag_rho2ph1mz/=0) call xysum_mn_name_z(p%rho**2,idiag_rho2ph1mz,MASK=(p%ss<=ssmask1))
+        if (idiag_rho2ph2mz/=0) call xysum_mn_name_z(p%rho**2,idiag_rho2ph2mz,MASK=(p%ss>ssmask1 .and. p%ss<=ssmask2))
+        if (idiag_rho2ph3mz/=0) call xysum_mn_name_z(p%rho**2,idiag_rho2ph3mz,MASK=(p%ss>ssmask2))
         call xysum_mn_name_z(p%glnrho(:,3),idiag_gzlnrhomz)
         call xysum_mn_name_z(p%uglnrho,idiag_uglnrhomz)
         call xysum_mn_name_z(p%ugrho,idiag_ugrhomz)
@@ -3473,6 +3487,8 @@ module Density
         idiag_inertiazz=0; idiag_inertiaxx_car=0; idiag_inertiayy_car=0
         idiag_inertiazz_car=0; idiag_rhomxmask=0; idiag_rhomzmask=0
         idiag_sigma=0; idiag_rho2mxy=0; idiag_sphmass=0
+        idiag_rhoph1mz=0; idiag_rhoph2mz=0; idiag_rhoph3mz=0
+        idiag_rho2ph1mz=0; idiag_rho2ph2mz=0; idiag_rho2ph3mz=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in.
@@ -3530,6 +3546,12 @@ module Density
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'ugrhomz',idiag_ugrhomz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uygzlnrhomz',idiag_uygzlnrhomz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uzgylnrhomz',idiag_uzgylnrhomz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'rhoph1mz',idiag_rhoph1mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'rhoph2mz',idiag_rhoph2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'rhoph3mz',idiag_rhoph3mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'rho2ph1mz',idiag_rho2ph1mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'rho2ph2mz',idiag_rho2ph2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'rho2ph3mz',idiag_rho2ph3mz)
       enddo
 !
 !  Check for those quantities for which we want xz-averages.
