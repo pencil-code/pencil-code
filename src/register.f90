@@ -264,6 +264,7 @@ module Register
       unit_energy=unit_mass*unit_velocity**2
       unit_time=unit_length/unit_velocity
       unit_flux=unit_energy/(unit_length**2*unit_time)
+      if (unit_temperature/=impossible) unit_entropy = unit_velocity**2/unit_temperature
 !
 !  Convert physical constants to code units.
 !
