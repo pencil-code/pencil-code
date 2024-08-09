@@ -51,7 +51,7 @@ module Energy
   real :: ss_left=1.0, ss_right=1.0
   real :: khor_ss=1.0, ss_const=0.0, TT_const=0.0
   real :: pp_const=0.0
-  real :: tau_ss_exterior=0.0, T0=0.0, T0_cgs=0.0
+  real :: tau_ss_exterior=0.0, T0=0.0, T0_cgs=0.0, ssmask1_cgs=3.7e8, ssmask2_cgs=2.32e9
   real :: ampl_imp_ss=0.01
   real :: mixinglength_flux=0.0, entropy_flux=0.0
   real, dimension(ninit) :: center1_x=0.0, center1_y=0.0, center1_z=0.0
@@ -173,7 +173,7 @@ module Energy
   character (len=labellen) :: ichit='nothing'
   character (len=intlen) :: iinit_str
   real, dimension (mz)  :: ss_mz
-  real, dimension (nx) :: chit_aniso_prof, dchit_aniso_prof
+  real, dimension (nx) :: chit_aniso_prof, dchit_aniso_prof, penc_ones=1.0
   real, dimension (:), allocatable :: hcond_prof,dlnhcond_prof
   real, dimension (:), allocatable :: chit_prof_stored,chit_prof_fluct_stored
   real, dimension (:), allocatable :: dchit_prof_stored,dchit_prof_fluct_stored
@@ -402,6 +402,9 @@ module Energy
   integer :: idiag_fpreszmz=0   ! XYAVG_DOC: $-\left<\frac{\nabla p}{\varrho}\right>_{xy}$
   integer :: idiag_gTT2mz=0     ! XYAVG_DOC: $\left< {\nabla T}^2 \right>_{xy}$
   integer :: idiag_gss2mz=0     ! XYAVG_DOC: $\left< {\nabla s}^2 \right>_{xy}$
+  integer :: idiag_fracvph1mz=0 ! XYAVG_DOC: $\left<f_{\rm v}\right>_{xy}|_{\rm phase 1}$\quad(phase 1 fractional volume)
+  integer :: idiag_fracvph2mz=0 ! XYAVG_DOC: $\left<f_{\rm v}\right>_{xy}|_{\rm phase 2}$\quad(phase 2 fractional volume)
+  integer :: idiag_fracvph3mz=0 ! XYAVG_DOC: $\left<f_{\rm v}\right>_{xy}|_{\rm phase 3}$\quad(phase 3 fractional volume)
 !
 ! xz averaged diagnostics given in xzaver.in
 !
@@ -714,6 +717,8 @@ module Energy
 !  =impossible, set it to the other's value.
 !
       if (T0_cgs/=0.) T0=T0_cgs/unit_temperature
+      if (ssmask1==0.) ssmask1=ssmask1_cgs/unit_entropy
+      if (ssmask2==0.) ssmask2=ssmask2_cgs/unit_entropy
       if (hcond0==impossible) then
         if (Kbot==impossible) then
           hcond0=0.0
@@ -3083,6 +3088,7 @@ module Energy
           idiag_ssf2mz/=0 .or. idiag_ssf2upmz/=0 .or. idiag_ssf2downmz/=0 .or. &
           idiag_uzTTupmz/=0 .or. idiag_uzTTdownmz/=0) &
         lpenc_diagnos(i_uu)=.true.
+      if (idiag_fracvph1mz/=0 .or. idiag_fracvph2mz/=0 .or. idiag_fracvph3mz/=0) lpenc_diagnos(i_ss)=.true.
       if (idiag_gTmax/=0) then
         lpenc_diagnos(i_glnTT) =.true.
         lpenc_diagnos(i_TT) =.true.
@@ -3754,6 +3760,9 @@ module Energy
           endif
           if (idiag_uzTTdownmz/=0) call xysum_mn_name_z(uzmask*p%uu(:,3)*p%TT,idiag_uzTTdownmz)
         endif
+        if (idiag_fracvph1mz/=0) call xysum_mn_name_z(penc_ones,idiag_fracvph1mz,MASK=(p%ss <= ssmask1))
+        if (idiag_fracvph2mz/=0) call xysum_mn_name_z(penc_ones,idiag_fracvph2mz,MASK=(p%ss > ssmask1 .and. p%ss <= ssmask2))
+        if (idiag_fracvph3mz/=0) call xysum_mn_name_z(penc_ones,idiag_fracvph3mz,MASK=(p%ss > ssmask2))
 !
 !  For the 1D averages of the baroclinic term
 !
@@ -6816,7 +6825,7 @@ module Energy
         idiag_chikrammin=0; idiag_chikrammax=0; idiag_fradr_constchixy=0
         idiag_Hmax=0; idiag_dtH=0; idiag_tauhmin=0; idiag_ethmz=0
         idiag_fpreszmz=0; idiag_gTT2mz=0; idiag_gss2mz=0; idiag_TT2m=0
-        idiag_fturbrsphmphi=0;
+        idiag_fturbrsphmphi=0; idiag_fracvph1mz=0; idiag_fracvph2mz=0; idiag_fracvph3mz=0;
      endif
 !
 !  iname runs through all possible names that may be listed in print.in.
@@ -6955,6 +6964,9 @@ module Energy
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'fpreszmz',idiag_fpreszmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'gTT2mz',idiag_gTT2mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'gss2mz',idiag_gss2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'fracvph1mz',idiag_fracvph1mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'fracvph2mz',idiag_fracvph2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'fracvph3mz',idiag_fracvph3mz)
       enddo
 !
       do inamer=1,nnamer

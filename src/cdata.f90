@@ -259,7 +259,7 @@ module Cdata
   logical :: lfix_unit_std=.false.
   real(KIND=rkind8) :: unit_length=impossible,unit_velocity=impossible
   real(KIND=rkind8) :: unit_density=impossible,unit_temperature=impossible
-  real(KIND=rkind8) :: unit_magnetic=impossible
+  real(KIND=rkind8) :: unit_magnetic=impossible,unit_entropy=impossible
 !
 !  Derived units
 !
@@ -317,6 +317,7 @@ module Cdata
   logical :: lghostfold_usebspline = .false.
   logical :: lcooling_ss_mz = .false.
   logical :: lshock_heat = .true.
+  logical :: lphase=.false.
 !
 !  Type counters.
 !
@@ -537,6 +538,8 @@ module Cdata
   character (len=30) :: cname_half(mname_half)
 !  Radius inside of which diagnostics are calculated for sphere_in_a_box models
   real :: radius_diag=1.0
+!  Phase boundaries for ISM
+  real :: ssmask1=0.0,ssmask2=0.0
 !  Coordinates of the point where some quantities can be printed.
   integer :: lpoint=(mx+1)/2,mpoint=(my+1)/2,npoint=(mz+1)/2
   integer :: lpoint2=(mx+1)/4,mpoint2=(my+1)/4,npoint2=(mz+1)/4

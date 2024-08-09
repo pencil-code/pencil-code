@@ -83,7 +83,7 @@ module Param_IO
       xyz_units, wav1, wav1z, coord_system, lpole, ncoarse, lfix_unit_std, &
       lequidist, coeff_grid, zeta_grid0, grid_func, xyz_star, lwrite_ic, lwrite_avg1d_binary, &
       lnowrite, luniform_z_mesh_aspect_ratio, unit_system, unit_length, &
-      lmodify,modify_filename, dvid, ldivu_perp, &
+      lmodify,modify_filename, dvid, ldivu_perp, ssmask1, ssmask2, &
       unit_velocity, unit_density, unit_temperature, unit_magnetic, c_light, &
       G_Newton, hbar, random_gen, seed0, lseed_global, lseed_procdependent, nfilter, lserial_io, der2_type, &
       lread_oldsnap, lwrite_var_anyway, lwrite_last_powersnap, &
@@ -145,7 +145,7 @@ module Param_IO
       cdtv, cdtv2, cdtv3, cdtsrc, cdts, cdtr, cdtf, &
       cdtc, isave, itorder, dsnap, dsnap_down, mvar_down, maux_down, &
       d1davg, d2davg, dvid, dsound, dtmin, dspec, tmax, toutoff, &
-      iwig, ldivu_perp, allproc_print, &
+      iwig, ldivu_perp, allproc_print, ssmask1, ssmask2, &
       dtracers, dfixed_points, unit_system, unit_length, &
       unit_velocity, unit_density, unit_temperature, unit_magnetic, &
       awig, ialive, max_walltime, dtmax, ldt_paronly, &
@@ -214,7 +214,7 @@ module Param_IO
       theta_lower_border, wborder_theta_lower, theta_upper_border, &
       wborder_theta_upper, fraction_tborder, lmeridional_border_drive, &
       lread_from_other_prec, downsampl, lfullvar_in_slices, ivar_omit, &
-      lread_scl_factor_file_new, &
+      lread_scl_factor_file_new, lphase, &
       lsubstract_reference_state, lzaver_on_input, &
       ldirect_access, lproper_averages, lmaximal_cdt, lmaximal_cdtv, &
       pipe_func, glnCrossSec0, CrossSec_x1, CrossSec_x2, CrossSec_w, &
