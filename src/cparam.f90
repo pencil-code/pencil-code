@@ -78,6 +78,10 @@ module Cparam
   integer, parameter :: nrcyl=nxgrid/2
   integer, parameter :: nrcylrun=max(nx/20,1)
 !
+!  Number of bins for Pulsar Timing Array
+!
+  integer, parameter :: nbin_angular=19
+!
 !  Array dimension for reduce operation (maxima and sums).
 !  Use here symbol mreduce, use nreduce in call.
 !

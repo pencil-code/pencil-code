@@ -2544,6 +2544,8 @@ outer:  do ikz=1,nz
   real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
   real, dimension(nk) :: nks=0.,nks_sum=0.
   real, dimension(nk) :: k2m=0.,k2m_sum=0.,krms
+  real, dimension(nk,nbin_angular) :: spectrum_2d, spectrumhel_2d
+  real, dimension(nk,nbin_angular) :: spectrum_2d_sum, spectrumhel_2d_sum
   real, allocatable, dimension(:) :: spectrum,spectrumhel
   real, allocatable, dimension(:) :: spectrum_sum,spectrumhel_sum
   real, dimension(nxgrid) :: kx
@@ -2571,7 +2573,9 @@ outer:  do ikz=1,nz
       allocate(spectrum(nk),spectrumhel(nk))
       allocate(spectrum_sum(nk),spectrumhel_sum(nk))
     endif
-    call special_calc_spectra(f,spectrum,spectrumhel,lfirstcall,sp)
+    call special_calc_spectra(f,spectrum,spectrumhel, &
+      spectrum_2d,spectrumhel_2d, &
+      lfirstcall,sp)
   else
     allocate(spectrum(nk),spectrumhel(nk))
 !
@@ -2726,6 +2730,12 @@ outer:  do ikz=1,nz
     !
     call mpireduce_sum(spectrum   ,spectrum_sum   ,nk)
     call mpireduce_sum(spectrumhel,spectrumhel_sum,nk)
+    !
+    if ( any(sp.eq.(/'Gab','Hab','Gnm','Gcs'/)) ) then
+      call mpireduce_sum(spectrum_2d   ,spectrum_2d_sum   ,(/nk,nbin_angular/))
+      call mpireduce_sum(spectrumhel_2d,spectrumhel_2d_sum,(/nk,nbin_angular/))
+    endif
+    !
   endif
 !
 !  compute krms only once
@@ -2761,7 +2771,11 @@ outer:  do ikz=1,nz
       enddo
     else
       write(1,*) t
-      write(1,power_format) spectrum_sum
+      if ( any(sp.eq.(/'Gab','Hab','Gnm','Gcs'/)) ) then
+        write(1,power_format) spectrum_2d_sum
+      else
+        write(1,power_format) spectrum_sum
+      endif
     endif
     close(1)
     !

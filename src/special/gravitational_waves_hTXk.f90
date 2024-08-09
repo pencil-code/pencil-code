@@ -135,6 +135,7 @@ module Special
   real :: t_ini=60549
 !
   logical :: lread_scl_factor_file_exists, lread_pulsar=.false.
+  integer :: npulsar
   integer :: nt_file, it_file, iTij=0, iinfl_lna=0
   real :: lgt0, dlgt, H0, dummy
   real :: lgt1, lgt2, lgf1, lgf2, lgf, lgt_current
@@ -255,6 +256,7 @@ module Special
     real, dimension(nk) :: GWs   ,GWh   ,GWm   ,Str   ,Stg
     real, dimension(nk) :: GWshel,GWhhel,GWmhel,Strhel,Stghel
     real, dimension(nk) :: SCL, VCT, Tpq, TGW
+    real, dimension(nk,nbin_angular) :: GWh_Gamma_ab, GWhhel_Gamma_ab, GWh_Gamma_num, GWh_Gamma_cos
     complex, dimension(nx) :: complex_Str_T, complex_Str_X
     ! emma added (dec 6) for boost:
     real, dimension(nk) :: GWs_boost   ,GWh_boost   ,GWm_boost   ,Str_boost   ,Stg_boost
@@ -611,18 +613,17 @@ module Special
     subroutine read_pulsar_data
 !
 !  Read pulsar data
-!
+!XX
 !   8-aug-2024/murman+axel: coded
 !
       real, dimension(:), allocatable :: th, ph
       real, dimension(:), allocatable :: cos_angle
-      integer :: npulsar, ipulsar, jpulsar, ncos_angle, icount
+      integer :: ipulsar, jpulsar, ncos_angle, icount
 !
       open(9,file='pulsar.dat',status='old')
       read(9,*) npulsar
       if (allocated(th)) deallocate(th, ph, nn_pulsar)
       allocate(th(npulsar), ph(npulsar), nn_pulsar(npulsar,3))
-      print*,'AXEL, iproc, npulsar=',iproc, npulsar
       do ipulsar=1,npulsar
         read(9,*) th(ipulsar), ph(ipulsar)
       enddo
@@ -630,14 +631,15 @@ module Special
 !
 !  Compute unit vector on the sphere.
 !
-      nn_pulsar(:,0)=sin(th*dtor)*cos(ph*dtor)
-      nn_pulsar(:,1)=sin(th*dtor)*sin(ph*dtor)
-      nn_pulsar(:,2)=cos(th*dtor)
+      nn_pulsar(:,1)=sin(th*dtor)*cos(ph*dtor)
+      nn_pulsar(:,2)=sin(th*dtor)*sin(ph*dtor)
+      nn_pulsar(:,3)=cos(th*dtor)
 !
       icount=1
       ncos_angle=npulsar*(npulsar-1)/2
       allocate(cos_angle(ncos_angle))
 !
+      cos_angle=0.
       do ipulsar=1,npulsar
       do jpulsar=ipulsar+1,npulsar
         cos_angle(icount)=nn_pulsar(ipulsar,1)*nn_pulsar(jpulsar,1) &
@@ -646,8 +648,6 @@ module Special
         icount=icount+1
       enddo
       enddo
-
-      print*,'AXEL, iproc, cos_angle=',iproc, cos_angle
 !
     endsubroutine read_pulsar_data
 !***********************************************************************
@@ -671,7 +671,7 @@ module Special
       use Fourier, only: kx_fft, ky_fft, kz_fft      
       real, dimension (mx,my,mz,mfarray) :: f
       real :: initpower_GWs,initpower2_GWs,initpower_med_GWs,compks,compkh,amplGWs
-      real :: ksqr, k1, k2, k3, k1sqr, k2sqr, k3sqr, ksqrt, om, om2
+      real :: ksqr, k1, k2, k3, k1sqr, k2sqr, k3sqr, om, om2
       real :: hhTre, hhTim
       integer :: ikx,iky,ikz
       complex :: om_cmplx, gcomplex_new
@@ -1334,8 +1334,10 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      integer :: ikx, iky, ikz, q, p, pq, ik
-      real :: k1, k2, k3, ksqr,one_over_k2,one_over_k4,sign_switch
+      integer :: ikx, iky, ikz, q, p, pq, ik, i, j, ij
+      integer :: ipulsar, jpulsar, ibin_angular, jvec
+      real :: ksqr, one_over_k2, one_over_k4, one_over_k
+      real :: k1, k2, k3, k1sqr, k2sqr, k3sqr
       real :: k1mNy, k2mNy, k3mNy, SCL_re, SCL_im
       real, dimension(3) :: VCT_re, VCT_im, kvec
 ! for boost (dec 7)
@@ -1346,6 +1348,12 @@ module Special
       real :: gamma_boost, v_boostsqr, kdotv
       real :: SCL_re_boost, SCL_im_boost, VCT_re_boost, VCT_im_boost
 !
+      real :: fact, facthel, cos_angle, sign_switch
+            
+      real :: DT_a, DT_b, DX_a, DX_b, khat_xhat_a, khat_xhat_b
+      real, dimension (6) :: e_T, e_X
+      real, dimension (3) :: e1, e2
+!
       spectra%GWs=0.; spectra%GWshel=0.
       spectra%GWh=0.; spectra%GWhhel=0.
       spectra%GWm=0.; spectra%GWmhel=0.
@@ -1353,6 +1361,9 @@ module Special
       spectra%Stg=0.; spectra%Stghel=0.
       spectra%SCL=0.; spectra%VCT=0.; spectra%Tpq=0.
       spectra%TGW=0.
+      spectra%GWh_Gamma_ab=0.; spectra%GWhhel_Gamma_ab=0.
+      spectra%GWh_Gamma_num=0.; spectra%GWh_Gamma_cos=0.
+!
       !added emma (dec 6) for boosted spectra
       spectra%GWs_boost=0.; spectra%GWshel_boost=0.
       spectra%GWh_boost=0.; spectra%GWhhel_boost=0.
@@ -1387,6 +1398,7 @@ module Special
             else
               one_over_k2=1./ksqr
             endif
+            one_over_k=sqrt(one_over_k2)
             one_over_k4=one_over_k2**2
 !
 !  possibility of swapping the sign
@@ -1445,15 +1457,15 @@ module Special
             endif
             one_over_k4_boost=one_over_k2_boost**2
 !
-
 !  set boosted k vector            
+!
             kvec_boost(1)=k1_boost
             kvec_boost(2)=k2_boost
             kvec_boost(3)=k3_boost
 !
-
             endif
 !
+!  SVT decomposition.
 !
             if (SCL_spec) then
               SCL_re=0.
@@ -1591,6 +1603,114 @@ module Special
                    *f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim) )
               endif
 !
+!  Hellings-Downs curve
+!
+              if (lread_pulsar) then
+                if (lroot.and.ikx==1.and.iky==1.and.ikz==1) then
+                  e1=0.
+                  e2=0.
+                else
+!
+!  compute e1 and e2 vectors (for lnonlinear_source only)
+!
+                  if(abs(k1)<abs(k2)) then
+                    if(abs(k1)<abs(k3)) then !(k1 is pref dir)
+                      e1=(/0.,-k3,+k2/)
+                      e2=(/k2sqr+k3sqr,-k2*k1,-k3*k1/)
+                    else !(k3 is pref dir)
+                      e1=(/k2,-k1,0./)
+                      e2=(/k1*k3,k2*k3,-(k1sqr+k2sqr)/)
+                    endif
+                  else !(k2 smaller than k1)
+                    if(abs(k2)<abs(k3)) then !(k2 is pref dir)
+                      e1=(/-k3,0.,+k1/)
+                      e2=(/+k1*k2,-(k1sqr+k3sqr),+k3*k2/)
+                    else !(k3 is pref dir)
+                      e1=(/k2,-k1,0./)
+                      e2=(/k1*k3,k2*k3,-(k1sqr+k2sqr)/)
+                    endif
+                  endif
+                  e1=e1/sqrt(e1(1)**2+e1(2)**2+e1(3)**2)
+                  e2=e2/sqrt(e2(1)**2+e2(2)**2+e2(3)**2)
+                endif
+!
+!  compute e_T and e_X
+!
+                do j=1,3
+                do i=1,3
+                  ij=ij_table(i,j)
+                  e_T(ij)=e1(i)*e1(j)-e2(i)*e2(j)
+                  e_X(ij)=e1(i)*e2(j)+e2(i)*e1(j)
+                enddo
+                enddo
+!
+!  possibility of swapping the sign of e_X
+!
+                if (lswitch_sign_e_X) then
+                  if (k3<0.) then
+                    e_X=-e_X
+                  elseif (k3==0.) then
+                    if (k2<0.) then
+                      e_X=-e_X
+                    elseif (k2==0.) then
+                      if (k1<0.) then
+                        e_X=-e_X
+                      endif
+                    endif
+                  endif
+                endif
+!
+!  Loop of each pair of pulsars.
+!
+                do ipulsar=1,npulsar
+                do jpulsar=ipulsar+1,npulsar
+                  do j=1,3
+                  do i=1,3
+                    ij=ij_table(i,j)
+!
+!  compute khat*xhat
+!
+                    khat_xhat_a=0.
+                    khat_xhat_b=0.
+                    do jvec=1,3
+                      khat_xhat_a=khat_xhat_a+nn_pulsar(ipulsar,jvec)*kvec(jvec)
+                      khat_xhat_b=khat_xhat_b+nn_pulsar(jpulsar,jvec)*kvec(jvec)
+                    enddo
+                    DT_a=.5*nn_pulsar(ipulsar,i)*nn_pulsar(ipulsar,j)*e_T(ij)/(1.+khat_xhat_a)
+                    DT_b=.5*nn_pulsar(jpulsar,i)*nn_pulsar(jpulsar,j)*e_T(ij)/(1.+khat_xhat_b)
+                    DX_a=.5*nn_pulsar(ipulsar,i)*nn_pulsar(ipulsar,j)*e_X(ij)/(1.+khat_xhat_a)
+                    DX_b=.5*nn_pulsar(jpulsar,i)*nn_pulsar(jpulsar,j)*e_X(ij)/(1.+khat_xhat_b)
+!
+!  Compute angle between pulsars
+!
+                    cos_angle=nn_pulsar(ipulsar,1)*nn_pulsar(jpulsar,1) &
+                             +nn_pulsar(ipulsar,2)*nn_pulsar(jpulsar,2) &
+                             +nn_pulsar(ipulsar,3)*nn_pulsar(jpulsar,3)
+                    ibin_angular=1+nint(.5*(1.+cos_angle)*(nbin_angular-1))
+                    fact   =DT_a*DT_b+DX_a*DX_b
+                    facthel=DT_a*DX_b-DX_a*DT_b
+!
+!  Sum up the 2-D histograms, GWh_Gamma_ab and GWhhel_Gamma_ab
+!
+                    spectra%GWh_Gamma_ab(ik,ibin_angular)=spectra%GWh_Gamma_ab(ik,ibin_angular) &
+                       +(f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  )**2 &
+                        +f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim)**2 &
+                        +f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  )**2 &
+                        +f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim)**2)*fact
+                    spectra%GWhhel_Gamma_ab(ik,ibin_angular)=spectra%GWhhel_Gamma_ab(ik,ibin_angular)+2*sign_switch*( &
+                        +f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim) &
+                        *f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  ) &
+                        -f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  ) &
+                        *f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim) )*facthel
+                    spectra%GWh_Gamma_num(ik,ibin_angular)=spectra%GWh_Gamma_num(ik,ibin_angular)+1.
+                    spectra%GWh_Gamma_cos(ik,ibin_angular)=spectra%GWh_Gamma_cos(ik,ibin_angular)+cos_angle
+print*,'AXEL: iproc,ik,ibin_angular=',iproc,ik,ibin_angular
+                  enddo
+                  enddo
+                enddo
+                enddo
+              endif
+!
 !  Boosted GW strain spectrumc computed from h
               if (lboost) then
               if (GWh_spec_boost) then
@@ -1706,7 +1826,9 @@ module Special
 
     endsubroutine make_spectra
 !***********************************************************************
-    subroutine special_calc_spectra(f,spectrum,spectrum_hel,lfirstcall,kind)
+    subroutine special_calc_spectra(f,spectrum,spectrum_hel,&
+      spectrum_2d,spectrum_2d_hel,&
+      lfirstcall,kind)
 !
 !  Calculates GW spectra. For use with a single special module.
 !
@@ -1714,6 +1836,7 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (:) :: spectrum,spectrum_hel
+      real, dimension (:,:) :: spectrum_2d,spectrum_2d_hel
       logical :: lfirstcall
       character(LEN=3) :: kind
 
@@ -1736,6 +1859,10 @@ module Special
                     spectrum_hel=aimag(spectra%complex_Str_T)
       case ('StX'); spectrum=real(spectra%complex_Str_X)
                     spectrum_hel=aimag(spectra%complex_Str_X)
+      case ('Gab'); spectrum_2d=spectra%GWh_Gamma_ab; spectrum_2d_hel=spectra%GWh_Gamma_ab
+      case ('Hab'); spectrum_2d=spectra%GWhhel_Gamma_ab; spectrum_2d_hel=spectra%GWhhel_Gamma_ab
+      case ('Gnm'); spectrum_2d=spectra%GWh_Gamma_num; spectrum_2d_hel=spectra%GWh_Gamma_num
+      case ('Gcs'); spectrum_2d=spectra%GWh_Gamma_cos; spectrum_2d_hel=spectra%GWh_Gamma_cos
       case default; call warning('special_calc_spectra', &
                       'kind of spectrum "'//kind//'" not implemented')
       endselect
@@ -1781,7 +1908,6 @@ module Special
 !***********************************************************************
     subroutine compute_gT_and_gX_from_gij(f,label)
 !
-!YYY
 !  Compute the transverse part of the stress tensor by going into Fourier space.
 !  It also allows for the inclusion of nonlinear corrections to the wave equation.
 !  Alternatively, we can also solve the Lighthill equation if lLighthill=T.

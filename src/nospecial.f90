@@ -538,15 +538,19 @@ module Special
 !
     endsubroutine special_calc_chemistry
 !***********************************************************************
-    subroutine special_calc_spectra(f,spectrum,spectrumhel,lfirstcall,kind)
+    subroutine special_calc_spectra(f,spectrum,spectrumhel, &
+      spectrum_2d,spectrum_2d_hel,&
+      lfirstcall,kind)
 
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (:) :: spectrum,spectrumhel
+      real, dimension (:,:) :: spectrum_2d,spectrum_2d_hel
       logical :: lfirstcall
       character(LEN=3) :: kind
 
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(spectrum,spectrumhel)
+      call keep_compiler_quiet(spectrum_2d,spectrum_2d_hel)
       call keep_compiler_quiet(lfirstcall)
       call keep_compiler_quiet(kind)
   
