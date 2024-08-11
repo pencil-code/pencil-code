@@ -234,8 +234,8 @@ logical, pointer :: ldustnucleation, lpartnucleation
   integer, dimension(nchemspec) :: idiag_diffm=0   ! DIAG_DOC: $\left<D_{x}\right>$
   integer, dimension(nchemspec) :: idiag_Ymz=0     ! DIAG_DOC: $\left<Y_x\right>_{xy}(z)$
   integer :: idiag_dtchem=0     ! DIAG_DOC: $dt_{chem}$
-  integer :: idiag_nuclrmin=0! DIAG_DOC: $\< r_{\min} \>$
-  integer :: idiag_nuclrate=0! DIAG_DOC: $\< J \>$
+  integer :: idiag_nuclrmin=0! DIAG_DOC: $\left< r_{\min} \right>$
+  integer :: idiag_nuclrate=0! DIAG_DOC: $\left< J \right>$
 !
   integer :: idiag_cpfull=0
   integer :: idiag_cvfull=0
