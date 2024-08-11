@@ -7447,12 +7447,13 @@ be contacted in case a code change breaks an auto-test or other code
 functionality.
 
 Several {\sc Pencil Code} committers have done several hundred check-ins,
-but many of the currently 68 registered people on the repository have
+but many of the currently 92 registered people on the repository have
 hardly done anything.
 To put a number to this, one can define an $h$ index, which gives the
 number of users, who have done at least as many as that number of check-ins.
-This $h$ index is currently 32, i.e., 32 users have done at least
-32 check-ins; see Figure~\ref{pencil-hindex}.
+This $h$ index is currently 37, i.e., 37 users have done at least
+37 check-ins; see Figure~\ref{pencil-hindex} from 2017, when the $h$ index
+was only 32.
 
 % ---------------------------------------------------------------------- %
 \begin{figure}[hbtp]
@@ -7460,7 +7461,7 @@ This $h$ index is currently 32, i.e., 32 users have done at least
   \includegraphics%
     [width=0.8\textwidth,keepaspectratio]%
     {pencil-hindex}
-  \caption{The $h$ index of {\sc Pencil Code} check-ins.
+  \caption{The $h$ index of {\sc Pencil Code} check-ins in 2017.
   }
   \label{pencil-hindex}
 \end{figure}
@@ -8165,10 +8166,36 @@ In the {\tt Makefile.local} file, the requested special modules are simply speci
 {\tt SPECIAL = special/$\langle${\it module 1}$\rangle$ special/$\langle${\it module 2}$\rangle\ldots$}.
 In contrast to the case with only a single special module, where the namelists' names are \\
 {\tt special_init_pars} and {\tt special_run_pars},
-these are individualized for multiple special modules, viz. $\langle${\it module name}$\rangle${\tt _init_pars} etc. .
+these are individualized for multiple special modules, viz.\ $\langle${\it module name}$\rangle${\tt _init_pars} etc. .
 As explicit linking at runtime is employed for multiple special modules, code errors, which normally would break the build, show possibly up only at runtime
 and are hence hard to debug. Therefore in case of unclear runtime failure, it is useful to perform tests with only one of the special modules at a time, thus
 guaranteeing full linking at build time.
+
+%AB: added
+\index{namelist}
+Note that in the namelists, references to special such as:
+\begin{verbatim}
+&special_run_pars
+/
+\end{verbatim}
+need to be replaced by:
+\begin{verbatim}
+&gravitational_waves_hTXk_run_pars
+/
+&chiral_mhd_run_pars
+/
+\end{verbatim}
+when
+\begin{verbatim}
+SPECIAL  =   special/gravitational_waves_hTXk special/chiral_mhd
+\end{verbatim}
+is used.
+Internally, a number of \textit{automatic} replacements occur in the code.
+Code that is automatically modified in this way is also automatically
+unmodified while checking in changes.
+But to facility comparison with the original code, one can do the unmodification
+also oneself using the {\tt pencil-code/utils/axel/pc\_mkspecial.sh} command.
+%AB.
 
 \subsection{Adding switchable modules}
 
