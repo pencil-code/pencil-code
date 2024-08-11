@@ -6397,7 +6397,7 @@ or
 This has solved the problems e.g., on a system with \emph{glibc-2.3.2}
 and kernel \emph{2.4.22}.
 
-Thanks to Leonardo J. Milano (\url{http://udel.edu/~lmilano/}) for part of
+Thanks to Leonardo J.\ Milano (\url{http://udel.edu/~lmilano/}) for part of
 this info.
 
 \subsubsection[Segmentation fault with \name{ifort} 8.0 under Linux]
@@ -8152,7 +8152,7 @@ in the \file[manual.tex]{pencil-code/doc/manual.tex} file.
 
 \index{multiple special modules}
 \paragraph
-{Using more than one special module} at a time requires that the environment
+{Using more than one special module at a time} requires that the environment
 variables {\tt \$MODULE_PREFIX}, {\tt \$MODULE_INFIX} and {\tt \$MODULE_SUFFIX}
 are set properly at runtime. They can be derived from the {\it qualified names}
 of module functions which have in general the form 
@@ -8166,33 +8166,32 @@ In the {\tt Makefile.local} file, the requested special modules are simply speci
 {\tt SPECIAL = special/$\langle${\it module 1}$\rangle$ special/$\langle${\it module 2}$\rangle\ldots$}.
 In contrast to the case with only a single special module, where the namelists' names are \\
 {\tt special_init_pars} and {\tt special_run_pars},
-these are individualized for multiple special modules, viz.\ $\langle${\it module name}$\rangle${\tt _init_pars} etc. .
+these are individualized for multiple special modules, viz.\ $\langle${\it module name}$\rangle${\tt _init_pars} etc.
 As explicit linking at runtime is employed for multiple special modules, code errors, which normally would break the build, show possibly up only at runtime
 and are hence hard to debug. Therefore in case of unclear runtime failure, it is useful to perform tests with only one of the special modules at a time, thus
 guaranteeing full linking at build time.
 
 %AB: added
 \index{namelist}
-Note that in the namelists, references to special such as:
+For example, when
+\begin{verbatim}
+SPECIAL  =   special/gravitational_waves_hTXk special/chiral_mhd
+\end{verbatim}
+is used, the namelist that is usually referenced as
 \begin{verbatim}
 &special_run_pars
 /
 \end{verbatim}
-need to be replaced by:
+needs to be replaced by:
 \begin{verbatim}
 &gravitational_waves_hTXk_run_pars
 /
 &chiral_mhd_run_pars
 /
 \end{verbatim}
-when
-\begin{verbatim}
-SPECIAL  =   special/gravitational_waves_hTXk special/chiral_mhd
-\end{verbatim}
-is used.
 Internally, a number of \textit{automatic} replacements occur in the code.
 Code that is automatically modified in this way is also automatically
-unmodified while checking in changes.
+unmodified while checking in changes to the repository.
 But to facility comparison with the original code, one can do the unmodification
 also oneself using the {\tt pencil-code/utils/axel/pc\_mkspecial.sh} command.
 %AB.
