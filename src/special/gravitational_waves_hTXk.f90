@@ -1390,8 +1390,10 @@ module Special
             k1=kx_fft(ikx+ipx*nx)
             k2=ky_fft(iky+ipy*ny)
             k3=kz_fft(ikz+ipz*nz)
-!
-            ksqr=k1**2+k2**2+k3**2
+            k1sqr=k1**2
+            k2sqr=k2**2
+            k3sqr=k3**2
+            ksqr=k1sqr+k2sqr+k3sqr
 !
             if (lroot.and.ikx==1.and.iky==1.and.ikz==1) then
               one_over_k2=0.
@@ -1673,8 +1675,8 @@ module Special
                     khat_xhat_a=0.
                     khat_xhat_b=0.
                     do jvec=1,3
-                      khat_xhat_a=khat_xhat_a+nn_pulsar(ipulsar,jvec)*kvec(jvec)
-                      khat_xhat_b=khat_xhat_b+nn_pulsar(jpulsar,jvec)*kvec(jvec)
+                      khat_xhat_a=khat_xhat_a+nn_pulsar(ipulsar,jvec)*kvec(jvec)*one_over_k
+                      khat_xhat_b=khat_xhat_b+nn_pulsar(jpulsar,jvec)*kvec(jvec)*one_over_k
                     enddo
                     DT_a=.5*nn_pulsar(ipulsar,i)*nn_pulsar(ipulsar,j)*e_T(ij)/(1.+khat_xhat_a)
                     DT_b=.5*nn_pulsar(jpulsar,i)*nn_pulsar(jpulsar,j)*e_T(ij)/(1.+khat_xhat_b)
@@ -1686,7 +1688,8 @@ module Special
                     cos_angle=nn_pulsar(ipulsar,1)*nn_pulsar(jpulsar,1) &
                              +nn_pulsar(ipulsar,2)*nn_pulsar(jpulsar,2) &
                              +nn_pulsar(ipulsar,3)*nn_pulsar(jpulsar,3)
-                    ibin_angular=1+nint(.5*(1.+cos_angle)*(nbin_angular-1))
+                    ibin_angular=1+nint((acos(cos_angle)/dtor)*(nbin_angular-1)/180.)
+if (ibin_angular<1 .or. ibin_angular>nbin_angular) print*,'AXEL: bad ibin_angular',ibin_angular
                     fact   =DT_a*DT_b+DX_a*DX_b
                     facthel=DT_a*DX_b-DX_a*DT_b
 !
@@ -1704,7 +1707,9 @@ module Special
                         *f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim) )*facthel
                     spectra%GWh_Gamma_num(ik,ibin_angular)=spectra%GWh_Gamma_num(ik,ibin_angular)+1.
                     spectra%GWh_Gamma_cos(ik,ibin_angular)=spectra%GWh_Gamma_cos(ik,ibin_angular)+cos_angle
-print*,'AXEL: iproc,ik,ibin_angular=',iproc,ik,ibin_angular
+if (ik==2 .and. ibin_angular==1) print*,'AXEL: DT_a, DT_b, DX_a, DX_b=',DT_a, DT_b, DX_a, DX_b
+!if (ik==2 .and. ibin_angular==1) print*,'AXEL: khat_xhat_a, khat_xhat_b=',khat_xhat_a, khat_xhat_b
+!if (ik==2 .and. ibin_angular==1) print*,'AXEL: e_T(ij), e_X(ij)=',k1,k2,k3,i,j,e_T(ij), e_X(ij)
                   enddo
                   enddo
                 enddo
