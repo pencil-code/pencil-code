@@ -157,7 +157,7 @@ module Hydro
   logical :: llorentz_limiter=.false., full_3D=.false.
   logical :: lhiggsless=.false., lhiggsless_old=.false.
   real, pointer :: profx_ffree(:),profy_ffree(:),profz_ffree(:)
-  real :: B_ext2
+  real, pointer :: B_ext2
   real :: incl_alpha = 0.0, rot_rr = 0.0
   real :: xsphere = 0.0, ysphere = 0.0, zsphere = 0.0
   real :: amp_meri_circ = 0.0
@@ -1521,7 +1521,7 @@ module Hydro
         call not_implemented("initialize_hydro","Fargo advection without Fourier shift")
 !
 !  Allocate Lorentz gamma squared as part of auxiliary f-array.
-!  In the magnetic case, also define Bsquared, if needed.
+!  In the magnetic case, also define Bsquared, if needed and get B_ext2 from magnetic module.
 !
       if (lconservative) then
         f(:,:,:,iTij:iTij+5)=0.
@@ -1530,6 +1530,7 @@ module Hydro
           if (ibx==0) call fatal_error("hydro_before_boundary","must use lbb_as_comaux=T for lconservative=T")
           if (allocated(Bsquared)) deallocate(Bsquared)
           allocate(Bsquared(mx))
+          call get_shared_variable('B_ext2',B_ext2)
         endif
       endif
 !

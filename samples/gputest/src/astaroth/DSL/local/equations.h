@@ -13,8 +13,7 @@ daa_dt(int step_num){
 #include "../magnetic/induction.h"
 }
 
-#include "../entropy/heat_cond_const_chi.h"
-
+//#include "../entropy/heat_cond_const_chi.h"
 denergy_dt(int step_num){
 #include "../entropy/heat_ss.h"
 }
