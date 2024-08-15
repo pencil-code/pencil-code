@@ -98,93 +98,19 @@ subroutine helper_loop(f,p)
 
 endsubroutine helper_loop
 !***********************************************************************
-subroutine timeloop(f,df,p)
-!
-!  Do loop in time.
-!
-! 26-feb-24/MR: carved out from main_sub
-!
-  use Boundcond,       only: update_ghosts, initialize_boundcond
-  use Density,         only: boussinesq
-  use Diagnostics,     only: write_1daverages_prepare, save_name, report_undefined_diagnostics, &
-                             diagnostics_clean_up, write_2daverages_prepare
-  use Equ,             only: write_diagnostics 
-  use Filter,          only: rmwig, rmwig_xyaverage
-  use Fixed_point,     only: fixed_points_prepare, wfixed_points
-  use Forcing,         only: addforce, forcing_clean_up
-  use GPU,             only: reload_GPU_config, copy_farray_from_GPU, load_farray_to_GPU
-  use HDF5_IO,         only: initialize_hdf5
-  use Hydro,           only: hydro_clean_up
-  use ImplicitPhysics, only: calc_heatcond_ADI
-  use IO,              only: output_globals
-  use Magnetic,        only: rescaling_magnetic
-  use Messages,        only: timing, fatal_error_local_collect
-  use Mpicomm,         only: mpibcast_logical, mpiwtime, MPI_COMM_WORLD, mpibarrier
-  use Param_IO,        only: read_all_run_pars, write_all_run_pars
-  use Particles_main,  only: particles_rprint_list, write_snapshot_particles, particles_initialize_modules, & 
-                             particles_load_balance, particles_stochastic
-  use PointMasses,     only: pointmasses_write_snapshot
-  use Register,        only: initialize_modules, rprint_list, choose_pencils
-  use Signal_handling, only: emergency_stop
-  use Sub,             only: control_file_exists, calc_scl_factor
-  use Testscalar,      only: rescaling_testscalar
-  use Testfield,       only: rescaling_testfield
-  use TestPerturb,     only: testperturb_begin, testperturb_finalize
-  use Timeavg,         only: ltavg, update_timeavgs, wsnap_timeavgs
-  use Timestep,        only: time_step, initialize_timestep
-  use Slices,          only: wvid_prepare
-  use Snapshot,        only: powersnap, powersnap_prepare, wsnap, wsnap_down, output_form
-  use Solid_Cells,     only: time_step_ogrid, wsnap_ogrid, solid_cells_clean_up
-  use Streamlines,     only: tracers_prepare, wtracers
-!$ use OMP_lib
-!$ use General, only: signal_send, signal_wait
-!!$ use, intrinsic :: iso_fortran_env
-!
-  real, dimension (mx,my,mz,mfarray) :: f
-  real, dimension (mx,my,mz,mvar) :: df
-  type (pencil_case) :: p
-!
-  logical :: lstop=.false., timeover=.false., resubmit=.false., lreload_file, lreload_always_file, &
-             lonemorestep=.false.
-  integer :: isave_shift=0, it_this_diagnostic, i
-  real :: wall_clock_time=0., tvar1, dtmp, time_per_step=0.
-  real(KIND=rkind8) :: time_this_diagnostic
+subroutine reload(f, lreload_file, lreload_always_file)
+        use GPU, only: copy_farray_from_GPU, reload_GPU_config, load_farray_to_GPU
+        use Register,        only: initialize_modules, rprint_list, choose_pencils
+        use Sub,             only: control_file_exists
+        use Param_IO,        only: read_all_init_pars, read_all_run_pars, write_all_run_pars, write_pencil_info, get_downpars
+        use Boundcond,       only: initialize_boundcond
+        use Timestep,        only: initialize_timestep
+        use HDF5_IO,         only: initialize_hdf5
+        use Diagnostics,     only: report_undefined_diagnostics
 
-  Time_loop: do while (it<=nt)
-!
-    lout = (mod(it-1,it1) == 0) .and. (it > it1start)
-!
-    if (lout .or. emergency_stop) then
-!
-!  Exit do loop if file `STOP' exists.
-!
-      lstop=control_file_exists('STOP',DELETE=.true.)
-      if (lstop .or. emergency_stop) then
-        if (lroot) then
-          print*
-          if (emergency_stop) print*, 'Emergency stop requested'
-          if (lstop) print*, 'Found STOP file'
-        endif
-        resubmit=control_file_exists('RESUBMIT',DELETE=.true.)
-        if (resubmit) print*, 'Cannot be resubmitted'
-!$      if (lfarray_copied) call signal_send(lhelper_perf,.true.)
-        exit Time_loop
-      endif
-!
-!  initialize timer
-!
-      call timing('run','entered Time_loop',INSTRUCT='initialize')
-!
-!  Re-read parameters if file `RELOAD' exists; then remove the file
-!  (this allows us to change parameters on the fly).
-!  Re-read parameters if file `RELOAD_ALWAYS' exists; don't remove file
-!  (only useful for debugging RELOAD issues).
-!
-      lreload_file       =control_file_exists('RELOAD')
-      lreload_always_file=control_file_exists('RELOAD_ALWAYS')
-      lreloading         =lreload_file .or. lreload_always_file
-!
-      if (lreloading) then
+        real, dimension (mx,my,mz,mfarray) :: f
+        logical :: lreload_file, lreload_always_file
+        real :: dtmp
         if (lroot) write(*,*) 'Found RELOAD file -- reloading parameters'
 !
 !  Re-read configuration
@@ -230,6 +156,91 @@ subroutine timeloop(f,df,p)
         lreload_file        = .false.
         lreload_always_file = .false.
         lreloading          = .false.
+endsubroutine reload
+!***********************************************************************
+subroutine timeloop(f,df,p)
+!
+!  Do loop in time.
+!
+! 26-feb-24/MR: carved out from main_sub
+!
+  use Density,         only: boussinesq
+  use Diagnostics,     only: write_1daverages_prepare, save_name, &
+                             diagnostics_clean_up, write_2daverages_prepare
+  use Equ,             only: write_diagnostics 
+  use Filter,          only: rmwig, rmwig_xyaverage
+  use Fixed_point,     only: fixed_points_prepare, wfixed_points
+  use Forcing,         only: addforce, forcing_clean_up
+  use Hydro,           only: hydro_clean_up
+  use ImplicitPhysics, only: calc_heatcond_ADI
+  use IO,              only: output_globals
+  use Magnetic,        only: rescaling_magnetic
+  use Messages,        only: timing, fatal_error_local_collect
+  use Mpicomm,         only: mpibcast_logical, mpiwtime, MPI_COMM_WORLD, mpibarrier
+  use Particles_main,  only: particles_rprint_list, write_snapshot_particles, particles_initialize_modules, & 
+                             particles_load_balance, particles_stochastic
+  use PointMasses,     only: pointmasses_write_snapshot
+  use Signal_handling, only: emergency_stop
+  use Sub,             only: control_file_exists, calc_scl_factor
+  use Testscalar,      only: rescaling_testscalar
+  use Testfield,       only: rescaling_testfield
+  use TestPerturb,     only: testperturb_begin, testperturb_finalize
+  use Timeavg,         only: ltavg, update_timeavgs, wsnap_timeavgs
+  use Timestep,        only: time_step, 
+  use Slices,          only: wvid_prepare
+  use Snapshot,        only: powersnap, powersnap_prepare, wsnap, wsnap_down, output_form
+  use Solid_Cells,     only: time_step_ogrid, wsnap_ogrid, solid_cells_clean_up
+  use Streamlines,     only: tracers_prepare, wtracers
+!$ use OMP_lib
+!$ use General, only: signal_send, signal_wait
+!!$ use, intrinsic :: iso_fortran_env
+!
+  real, dimension (mx,my,mz,mfarray) :: f
+  real, dimension (mx,my,mz,mvar) :: df
+  type (pencil_case) :: p
+!
+  logical :: lstop=.false., timeover=.false., resubmit=.false., lreload_file, lreload_always_file, &
+             lonemorestep=.false.
+  integer :: isave_shift=0, it_this_diagnostic, i
+  real :: wall_clock_time=0., tvar1, time_per_step=0.
+  real(KIND=rkind8) :: time_this_diagnostic
+
+  Time_loop: do while (it<=nt)
+!
+    lout = (mod(it-1,it1) == 0) .and. (it > it1start)
+!
+    if (lout .or. emergency_stop) then
+!
+!  Exit do loop if file `STOP' exists.
+!
+      lstop=control_file_exists('STOP',DELETE=.true.)
+      if (lstop .or. emergency_stop) then
+        if (lroot) then
+          print*
+          if (emergency_stop) print*, 'Emergency stop requested'
+          if (lstop) print*, 'Found STOP file'
+        endif
+        resubmit=control_file_exists('RESUBMIT',DELETE=.true.)
+        if (resubmit) print*, 'Cannot be resubmitted'
+!$      if (lfarray_copied) call signal_send(lhelper_perf,.true.)
+        exit Time_loop
+      endif
+!
+!  initialize timer
+!
+      call timing('run','entered Time_loop',INSTRUCT='initialize')
+!
+!  Re-read parameters if file `RELOAD' exists; then remove the file
+!  (this allows us to change parameters on the fly).
+!  Re-read parameters if file `RELOAD_ALWAYS' exists; don't remove file
+!  (only useful for debugging RELOAD issues).
+!
+      lreload_file       =control_file_exists('RELOAD')
+      lreload_always_file=control_file_exists('RELOAD_ALWAYS')
+      lreloading         =lreload_file .or. lreload_always_file
+!
+      if (lreloading) then
+              call reload(f, lreload_file, lreload_always_file)
       endif
     endif
 !
