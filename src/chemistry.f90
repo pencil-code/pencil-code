@@ -4775,11 +4775,12 @@ logical, pointer :: ldustnucleation, lpartnucleation
       real, dimension(mx,my,mz) :: lnTjk, lnTk_array
       integer :: k, j, j2, j3
       real :: eps_jk, sigma_jk, m_jk, delta_jk, delta_st
-      real :: Na=6.022E23, tmp_local, tmp_local2, delta_jk_star
+      real :: Na, tmp_local, tmp_local2, delta_jk_star
       character(len=7) :: omega
 !
 !  Find binary diffusion coefficients
 !
+      Na=N_avogadro_cgs
       tmp_local = 3./16.*sqrt(2.*k_B_cgs**3/pi)
       prefactor(ll1:ll2,mm1:mm2,nn1:nn2) = tmp_local*sqrt(TT_full(ll1:ll2,mm1:mm2,nn1:nn2)) &
           *unit_length**3/(Rgas_unit_sys*rho_full(ll1:ll2,mm1:mm2,nn1:nn2))
@@ -6511,7 +6512,10 @@ logical, pointer :: ldustnucleation, lpartnucleation
       real :: volume_spec_cgs=4.5e-23
       real :: gam_surf_energy, volume_spec
       real, dimension (nx) :: sat_ratio_spec, tmp2, nucleation_rate, nucleation_rmin
-      real :: nucleation_rate_coeff, tmp1          
+      real, dimension (nx) :: nucleation_rate_coeff
+      real :: tmp1
+      character(len=30) :: inucl_pre_exp="oxtoby"
+      real :: molar_mass_spec, atomic_m_spec
       !
 !  compute rmin
 !
@@ -6523,7 +6527,15 @@ logical, pointer :: ldustnucleation, lpartnucleation
 !
 !  Compute nucleation rate (of nucleii with r=rmin)
 !
-          nucleation_rate_coeff=nucleation_rate_coeff_cgs*unit_length**3
+          if (inucl_pre_exp .eq. "const") then
+            nucleation_rate_coeff=nucleation_rate_coeff_cgs*unit_length**3
+          elseif (inucl_pre_exp .eq. "oxtoby") then
+            molar_mass_spec = species_constants(ichem_cond_spec,imass)
+            atomic_m_spec=molar_mass_spec*m_u
+            tmp1=sqrt(2*gam_surf_energy/(pi*atomic_m_spec))
+            tmp2=(p%chem_conc(:,ichem_cond_spec)*N_avogadro_cgs)**2
+            nucleation_rate_coeff=tmp1*volume_spec*tmp2/sat_ratio_spec
+          endif
           tmp1=-16.*pi*gam_surf_energy**3*volume_spec**2
           tmp2=2*(k_B*p%TT)**3*(alog(sat_ratio_spec))**2
           nucleation_rate=nucleation_rate_coeff*exp(tmp1/tmp2)
@@ -6531,6 +6543,13 @@ logical, pointer :: ldustnucleation, lpartnucleation
           nucleation_rate=0.0
           nucleation_rmin=0.0
         endif
+
+        !print*,"S, rmin, gamma=",sat_ratio_spec,nucleation_rmin/100.,gam_surf_energy/1000.
+       ! print*,"nucleation_rate_coeff,nucleation_rate=",nucleation_rate_coeff*1e6,nucleation_rate*1e6
+       ! print*,"vol, m, Na =",volume_spec/1e6, atomic_m_spec/1000.,N_avogadro_cgs
+       ! print*,"pre =", sqrt(2*gam_surf_energy/(pi*atomic_m_spec))
+       ! print*,"fin=", (p%chem_conc(:,ichem_cond_spec)*N_avogadro_cgs)**2*1e12
+        
 !      
       end subroutine cond_spec_nucl_rate
 !***********************************************************************
