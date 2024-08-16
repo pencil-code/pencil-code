@@ -256,7 +256,7 @@ module Special
     real, dimension(nk) :: GWs   ,GWh   ,GWm   ,Str   ,Stg
     real, dimension(nk) :: GWshel,GWhhel,GWmhel,Strhel,Stghel
     real, dimension(nk) :: SCL, VCT, Tpq, TGW
-    real, dimension(nk,nbin_angular) :: GWh_Gamma_ab, GWhhel_Gamma_ab, GWh_Gamma_num, GWh_Gamma_cos
+    real, dimension(nk,nbin_angular) :: GWh_Gamma_ab, GWhhel_Gamma_ab, GWh_Gamma_ang, GWhhel_Gamma_ang
     complex, dimension(nx) :: complex_Str_T, complex_Str_X
     ! emma added (dec 6) for boost:
     real, dimension(nk) :: GWs_boost   ,GWh_boost   ,GWm_boost   ,Str_boost   ,Stg_boost
@@ -1348,7 +1348,7 @@ module Special
       real :: gamma_boost, v_boostsqr, kdotv
       real :: SCL_re_boost, SCL_im_boost, VCT_re_boost, VCT_im_boost
 !
-      real :: fact, facthel, cos_angle, sign_switch
+      real :: fact, facthel, cos_angle, angle, sign_switch
             
       real :: DT_a, DT_b, DX_a, DX_b, khat_xhat_a, khat_xhat_b
       real, dimension (6) :: e_T, e_X
@@ -1362,7 +1362,7 @@ module Special
       spectra%SCL=0.; spectra%VCT=0.; spectra%Tpq=0.
       spectra%TGW=0.
       spectra%GWh_Gamma_ab=0.; spectra%GWhhel_Gamma_ab=0.
-      spectra%GWh_Gamma_num=0.; spectra%GWh_Gamma_cos=0.
+      spectra%GWh_Gamma_ang=0.; spectra%GWhhel_Gamma_ang=0.
 !
       !added emma (dec 6) for boosted spectra
       spectra%GWs_boost=0.; spectra%GWshel_boost=0.
@@ -1678,36 +1678,47 @@ module Special
                       khat_xhat_a=khat_xhat_a+nn_pulsar(ipulsar,jvec)*kvec(jvec)*one_over_k
                       khat_xhat_b=khat_xhat_b+nn_pulsar(jpulsar,jvec)*kvec(jvec)*one_over_k
                     enddo
-                    DT_a=.5*nn_pulsar(ipulsar,i)*nn_pulsar(ipulsar,j)*e_T(ij)/(1.+khat_xhat_a)
-                    DT_b=.5*nn_pulsar(jpulsar,i)*nn_pulsar(jpulsar,j)*e_T(ij)/(1.+khat_xhat_b)
-                    DX_a=.5*nn_pulsar(ipulsar,i)*nn_pulsar(ipulsar,j)*e_X(ij)/(1.+khat_xhat_a)
-                    DX_b=.5*nn_pulsar(jpulsar,i)*nn_pulsar(jpulsar,j)*e_X(ij)/(1.+khat_xhat_b)
 !
-!  Compute angle between pulsars
+!  Avoid cases where pulsar and GW directions are aligned,
+!  although only in the anti-aligned case would we divide by zero.
 !
-                    cos_angle=nn_pulsar(ipulsar,1)*nn_pulsar(jpulsar,1) &
-                             +nn_pulsar(ipulsar,2)*nn_pulsar(jpulsar,2) &
-                             +nn_pulsar(ipulsar,3)*nn_pulsar(jpulsar,3)
-                    ibin_angular=1+nint((acos(cos_angle)/dtor)*(nbin_angular-1)/180.)
+                    if (.not. (abs(khat_xhat_a)==1. .or. abs(khat_xhat_b)==1.)) then
+                      DT_a=.5*nn_pulsar(ipulsar,i)*nn_pulsar(ipulsar,j)*e_T(ij)/(1.+khat_xhat_a)
+                      DT_b=.5*nn_pulsar(jpulsar,i)*nn_pulsar(jpulsar,j)*e_T(ij)/(1.+khat_xhat_b)
+                      DX_a=.5*nn_pulsar(ipulsar,i)*nn_pulsar(ipulsar,j)*e_X(ij)/(1.+khat_xhat_a)
+                      DX_b=.5*nn_pulsar(jpulsar,i)*nn_pulsar(jpulsar,j)*e_X(ij)/(1.+khat_xhat_b)
+!
+!  Compute angle (in degrees) between pulsars.
+!
+                      cos_angle=nn_pulsar(ipulsar,1)*nn_pulsar(jpulsar,1) &
+                               +nn_pulsar(ipulsar,2)*nn_pulsar(jpulsar,2) &
+                               +nn_pulsar(ipulsar,3)*nn_pulsar(jpulsar,3)
+                      angle=acos(cos_angle)/dtor
+                      ibin_angular=1+nint(angle*(nbin_angular-1)/180.)
 if (ibin_angular<1 .or. ibin_angular>nbin_angular) print*,'AXEL: bad ibin_angular',ibin_angular
-                    fact   =DT_a*DT_b+DX_a*DX_b
-                    facthel=DT_a*DX_b-DX_a*DT_b
+                      fact   =DT_a*DT_b+DX_a*DX_b
+                      facthel=DT_a*DX_b-DX_a*DT_b
 !
 !  Sum up the 2-D histograms, GWh_Gamma_ab and GWhhel_Gamma_ab
 !
-                    spectra%GWh_Gamma_ab(ik,ibin_angular)=spectra%GWh_Gamma_ab(ik,ibin_angular) &
-                       +(f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  )**2 &
-                        +f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim)**2 &
-                        +f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  )**2 &
-                        +f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim)**2)*fact
-                    spectra%GWhhel_Gamma_ab(ik,ibin_angular)=spectra%GWhhel_Gamma_ab(ik,ibin_angular)+2*sign_switch*( &
-                        +f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim) &
-                        *f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  ) &
-                        -f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  ) &
-                        *f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim) )*facthel
-                    spectra%GWh_Gamma_num(ik,ibin_angular)=spectra%GWh_Gamma_num(ik,ibin_angular)+1.
-                    spectra%GWh_Gamma_cos(ik,ibin_angular)=spectra%GWh_Gamma_cos(ik,ibin_angular)+cos_angle
-if (ik==2 .and. ibin_angular==1) print*,'AXEL: DT_a, DT_b, DX_a, DX_b=',DT_a, DT_b, DX_a, DX_b
+                      spectra%GWh_Gamma_ab(ik,ibin_angular)=spectra%GWh_Gamma_ab(ik,ibin_angular) &
+                         +(f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  )**2 &
+                          +f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim)**2 &
+                          +f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  )**2 &
+                          +f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim)**2)*fact
+                      spectra%GWhhel_Gamma_ab(ik,ibin_angular)=spectra%GWhhel_Gamma_ab(ik,ibin_angular)+2*sign_switch*( &
+                          +f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim) &
+                          *f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  ) &
+                          -f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  ) &
+                          *f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim) )*facthel
+!
+!  Sum the angles in GWh_Gamma_ang, and count the number of entries in GWhhel_Gamma_ang.
+!
+                      spectra%GWh_Gamma_ang(ik,ibin_angular)=spectra%GWh_Gamma_ang(ik,ibin_angular)+angle
+                      spectra%GWhhel_Gamma_ang(ik,ibin_angular)=spectra%GWhhel_Gamma_ang(ik,ibin_angular)+1.
+if (ik==2 .and. ibin_angular==4) print*,'AXEL: DT_a, DT_b, DX_a, DX_b=', &
+ipulsar, jpulsar, DT_a, DT_b, DX_a, DX_b, khat_xhat_a, khat_xhat_b
+                    endif
 !if (ik==2 .and. ibin_angular==1) print*,'AXEL: khat_xhat_a, khat_xhat_b=',khat_xhat_a, khat_xhat_b
 !if (ik==2 .and. ibin_angular==1) print*,'AXEL: e_T(ij), e_X(ij)=',k1,k2,k3,i,j,e_T(ij), e_X(ij)
                   enddo
@@ -1864,10 +1875,8 @@ if (ik==2 .and. ibin_angular==1) print*,'AXEL: DT_a, DT_b, DX_a, DX_b=',DT_a, DT
                     spectrum_hel=aimag(spectra%complex_Str_T)
       case ('StX'); spectrum=real(spectra%complex_Str_X)
                     spectrum_hel=aimag(spectra%complex_Str_X)
-      case ('Gab'); spectrum_2d=spectra%GWh_Gamma_ab; spectrum_2d_hel=spectra%GWh_Gamma_ab
-      case ('Hab'); spectrum_2d=spectra%GWhhel_Gamma_ab; spectrum_2d_hel=spectra%GWhhel_Gamma_ab
-      case ('Gnm'); spectrum_2d=spectra%GWh_Gamma_num; spectrum_2d_hel=spectra%GWh_Gamma_num
-      case ('Gcs'); spectrum_2d=spectra%GWh_Gamma_cos; spectrum_2d_hel=spectra%GWh_Gamma_cos
+      case ('Gab'); spectrum_2d=spectra%GWh_Gamma_ab; spectrum_2d_hel=spectra%GWhhel_Gamma_ab
+      case ('Gan'); spectrum_2d=spectra%GWh_Gamma_ang; spectrum_2d_hel=spectra%GWhhel_Gamma_ang
       case default; call warning('special_calc_spectra', &
                       'kind of spectrum "'//kind//'" not implemented')
       endselect
