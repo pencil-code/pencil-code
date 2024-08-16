@@ -4563,10 +4563,10 @@ module EquationOfState
             endif
           else if (j==iss) then
             if (ldensity_nolog) then
-              f(:,:,n1-k,j)=f(:,:,n1,j)+(cp-cv)*(log(f(:,:,n1,j-1))-log(f(:,:,n1-k,j-1))) + &
+              f(:,:,n1-k,j)=f(:,:,n1,j)+(cp-cv)*(log(f(:,:,n1,irho))-log(f(:,:,n1-k,irho))) + &
                             cv*log((z(n1)-z(n1-k))*density_scale+1.)
             else
-              f(:,:,n1-k,j)=f(:,:,n1,j)+(cp-cv)*(f(:,:,n1,j-1)-f(:,:,n1-k,j-1))+ &
+              f(:,:,n1-k,j)=f(:,:,n1,j)+(cp-cv)*(f(:,:,n1,ilnrho)-f(:,:,n1-k,ilnrho))+ &
                             cv*log((z(n1)-z(n1-k))*density_scale+1.)
             endif
           else
@@ -4584,10 +4584,10 @@ module EquationOfState
             endif
           else if (j==iss) then
             if (ldensity_nolog) then
-              f(:,:,n2+k,j)=f(:,:,n2,j)+(cp-cv)*(log(f(:,:,n2,j-1))-log(f(:,:,n2+k,j-1)))+ &
+              f(:,:,n2+k,j)=f(:,:,n2,j)+(cp-cv)*(log(f(:,:,n2,irho))-log(f(:,:,n2+k,irho)))+ &
                             cv*log((z(n2+k)-z(n2))*density_scale+1.)
             else
-              f(:,:,n2+k,j)=f(:,:,n2,j)+(cp-cv)*(f(:,:,n2,j-1)-f(:,:,n2+k,j-1))+ &
+              f(:,:,n2+k,j)=f(:,:,n2,j)+(cp-cv)*(f(:,:,n2,ilnrho)-f(:,:,n2+k,ilnrho))+ &
                             cv*log((z(n2+k)-z(n2))*density_scale+1.)
             endif
           else
