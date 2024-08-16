@@ -58,6 +58,7 @@ module Chemistry
   logical :: lnucleation
   logical :: lchem_detailed=.true.
   character(len=30) :: reac_rate_method = 'chemkin'
+  character(len=30) :: inucl_pre_exp="const"      
 ! parameters for initial conditions
   real :: init_x1=-0.2, init_x2=0.2
   real :: init_y1=-0.2, init_y2=0.2
@@ -219,7 +220,7 @@ logical, pointer :: ldustnucleation, lpartnucleation
       lfilter_strict,init_TT1,init_TT2,init_x1,init_x2, linit_temperature, &
       linit_density, &
       ldiff_corr, lDiff_fick, lreac_as_aux, reac_rate_method,global_phi, &
-      Ythresh, lchem_detailed, chem_conc_sat_spec
+      Ythresh, lchem_detailed, chem_conc_sat_spec, inucl_pre_exp
 !
 ! diagnostic variables (need to be consistent with reset list below)
 !
@@ -6514,7 +6515,6 @@ logical, pointer :: ldustnucleation, lpartnucleation
       real, dimension (nx) :: sat_ratio_spec, tmp2, nucleation_rate, nucleation_rmin
       real, dimension (nx) :: nucleation_rate_coeff
       real :: tmp1
-      character(len=30) :: inucl_pre_exp="oxtoby"
       real :: molar_mass_spec, atomic_m_spec
       !
 !  compute rmin
