@@ -6519,7 +6519,7 @@ logical, pointer :: ldustnucleation, lpartnucleation
           gam_surf_energy=gam_surf_energy_cgs/(unit_mass/unit_time)
           volume_spec=volume_spec_cgs/unit_length**3
           sat_ratio_spec=p%chem_conc(:,ichem_cond_spec)/chem_conc_sat_spec
-          nucleation_rmin=4.*gam_surf_energy*volume_spec/(k_B*p%TT*alog(sat_ratio_spec))
+          nucleation_rmin=2.*gam_surf_energy*volume_spec/(k_B*p%TT*alog(sat_ratio_spec))
 !
 !  Compute nucleation rate (of nucleii with r=rmin)
 !
