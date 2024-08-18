@@ -11,6 +11,8 @@ gmem real AC_y[AC_my]
 gmem real AC_z[AC_mz]
 
 const real  impossible=3.9085e37;
+const int BOT=0
+const int TOP=1
 
 #include "PC_nghost.h"
 #include "../../PC_moduleflags.h"

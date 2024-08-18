@@ -1203,14 +1203,9 @@ module Magnetic
 !
       if (lmagn_mf.or.lshock .or. leos .or. lspecial) call put_shared_variable('B_ext', B_ext)
 !
-!  Share the external magnetic field with mean field module and if conservative with hydro.
+!  Share the external magnetic field B_ext2 (used in mean field module and if conservative with hydro).
 !
-!  TP: we need get_shared_variable here since lconservative comes from hydro
-!  Not the nicest approach but has to be there since B_ext2 has to be available before initialize_hydro
-      if (lhydro.and..not.lhydro_potential) then
-        call get_shared_variable('lconservative', lconservative, caller='register_magnetic')
-        if (lmagn_mf .or. (lhydro.and.lconservative)) call put_shared_variable('B_ext2', B_ext2)
-      endif
+      call put_shared_variable('B_ext2', B_ext2)
 !
     endsubroutine register_magnetic
 !***********************************************************************

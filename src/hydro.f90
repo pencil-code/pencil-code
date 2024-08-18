@@ -1527,7 +1527,7 @@ module Hydro
         f(:,:,:,iTij:iTij+5)=0.
         if (llorentz_as_aux) f(:,:,:,ilorentz)=0.
         if (lmagnetic) then
-          if (ibx==0) call fatal_error("hydro_before_boundary","must use lbb_as_comaux=T for lconservative=T")
+          if (ibx==0) call fatal_error("initialize_hydro","must use lbb_as_comaux=T for lconservative=T")
           if (allocated(Bsquared)) deallocate(Bsquared)
           allocate(Bsquared(mx))
           call get_shared_variable('B_ext2',B_ext2)

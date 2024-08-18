@@ -3069,7 +3069,7 @@ Get_z:if (lroot) then
       if (iproc==SNR%indx%iproc) then
         cum_mass=0.
         cloud_mass_proc=cloud_mass_byproc(SNR%indx%iproc+1)
-        lfound = .false.
+        !$ lfound = .false.
 ! FG notes for omp: irho_ss, lentropy, nx, lgpu, iEXPLOSION_TOO_HOT priv ierr 
 !$      call OMP_set_num_threads(num_helper_threads)
         !!$omp target if(loffload) !map(from: ierr,cum_mass) map(tofrom: SNR) & !needs: cloud_rho,lncloud_TT,preSN) &
@@ -3112,11 +3112,9 @@ mn_loop:do n=n1,n2
                       print*,'position_by_cloudmass: iEXPLOSION_TOO_HOT, iproc,it,preSN=',iproc,it,preSN(:,ipsn)
                   endif
                 enddo
-                !!DEC$ if OPENMP
                 !$ lfound = .true.
-                !!DEC$ else
+                !$ if (.false.) &
                 exit mn_loop
-                !!DEC$ endif
               endif
             endif
           enddo
@@ -3495,7 +3493,7 @@ mn_loop:do n=n1,n2
       SN_TT_ratio_max = SN_TT_ratio*TT_SN_max
       lfound = .false.
 !$    call OMP_set_num_threads(num_helper_threads)
-     !!$omp target if(loffload) !map(tofrom: SNR) has_device_addr(f)  ! needs:
+      !!$omp target if(loffload) !map(tofrom: SNR) has_device_addr(f)  ! needs:
       !irho,ilnrho,iss,ilnTT,frac_eth,dr2_SN,rfactor_SN,TT_SN_max, switches FG radius2mass, c_SN, width_energy, width_mass,&
       !irho_lnTT, irho_ss, irho_ee, SN_TT_ratio_max
       !$omp teams distribute parallel do collapse(2) &
@@ -3554,6 +3552,7 @@ mnloop:do n=n1,n2
                   ierr=iEXPLOSION_TOO_HOT
                   if (.not.lSN_list) then
                     !$ lfound = .true.
+                    !$ if (.false.) &
                     exit mnloop
                   endif
                 endif
@@ -3574,6 +3573,7 @@ mnloop:do n=n1,n2
                     ierr=iEXPLOSION_TOO_HOT
                     if (.not.lSN_list) then
                       !$ lfound = .true.
+                      !$ if (.false.) &
                       exit mnloop
                     endif
                   endif
@@ -3584,7 +3584,7 @@ mnloop:do n=n1,n2
         endif
       enddo
       enddo mnloop
-      !$omp end teams distribute parallel do
+     !$omp end teams distribute parallel do
      !!$omp end target
       SNR%feat%MM=cum_mm
       SNR%feat%EE=cum_ee

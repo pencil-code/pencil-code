@@ -33,4 +33,5 @@
 
   rhs /= TT
   #include "../entropy/heat_cond_hyper3.h"
+  #include "../entropy/heat_cond_const_chi.h"
   return -dot(vecvalue(UU), gradient(SS)) + rhs //+ heat_conduction(step_num)
