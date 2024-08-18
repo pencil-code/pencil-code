@@ -106,7 +106,7 @@ subroutine reload(f, lreload_file, lreload_always_file)
         use Boundcond,       only: initialize_boundcond
         use Timestep,        only: initialize_timestep
         use HDF5_IO,         only: initialize_hdf5
-        use Diagnostics,     only: report_undefined_diagnostics
+        use Diagnostics,     only: report_undefined_diagnostics,diagnostics_clean_up
 
         real, dimension (mx,my,mz,mfarray) :: f
         logical :: lreload_file, lreload_always_file
@@ -186,7 +186,7 @@ subroutine timeloop(f,df,p)
   use Testfield,       only: rescaling_testfield
   use TestPerturb,     only: testperturb_begin, testperturb_finalize
   use Timeavg,         only: ltavg, update_timeavgs, wsnap_timeavgs
-  use Timestep,        only: time_step, 
+  use Timestep,        only: time_step
   use Slices,          only: wvid_prepare
   use Snapshot,        only: powersnap, powersnap_prepare, wsnap, wsnap_down, output_form
   use Solid_Cells,     only: time_step_ogrid, wsnap_ogrid, solid_cells_clean_up
@@ -551,7 +551,7 @@ subroutine run_start() bind(C)
 !
   use Boundcond,       only: update_ghosts, initialize_boundcond
   use Chemistry,       only: chemistry_clean_up
-  use Diagnostics,     only: phiavg_norm, report_undefined_diagnostics, trim_averages, diagnostics_clean_up
+  use Diagnostics,     only: phiavg_norm, report_undefined_diagnostics, trim_averages,diagnostics_clean_up
   use Equ,             only: initialize_pencils, debug_imn_arrays
   use FArrayManager,   only: farray_clean_up
   use Farray_alloc

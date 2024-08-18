@@ -958,7 +958,6 @@ void setupConfig(AcMeshInfo &config)
   config.real_params[AC_dsx] = dx;
   config.real_params[AC_dsy] = dy;
   config.real_params[AC_dsz] = dz;
-  config.real_params[AC_dsmin] = std::min(dx, std::min(dy, dz));
   config.real_params[AC_xlen] = Lxyz[0];
   config.real_params[AC_ylen] = Lxyz[1];
   config.real_params[AC_zlen] = Lxyz[2];
@@ -1146,7 +1145,7 @@ extern "C" int updateInConfigArrName(char *name)
 {
     int ind = -1;
     for (int i=0; i<NUM_REAL_ARRAYS; i++){
-       if (strcmp(real_array_param_names[i],name)==0) ind=i;
+       if (strcmp(get_array_info(static_cast<AcRealArrayParam>(i)).name,name)==0) ind=i;
     }
     if (ind>-1) updateInConfigArr(ind);
     return ind;

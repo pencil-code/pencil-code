@@ -430,6 +430,7 @@ make_astaroth_dir()
   adddir $src/astaroth/submodule
 ## subdirectories of submodule
   adddir $src/astaroth/submodule/acc-runtime 
+  adddir $src/astaroth/submodule/acc-runtime/built-in
   adddir $src/astaroth/submodule/acc-runtime/samples
   adddir $src/astaroth/submodule/acc-runtime/samples/mhd
   adddir $src/astaroth/submodule/acc-runtime/samples/mhd_modular
@@ -460,6 +461,7 @@ link_astaroth_files()
               $srcdir/astaroth/submodule/acc-runtime/CMakeLists.txt \
               $srcdir/astaroth/submodule/acc-runtime/acc \
               $srcdir/astaroth/submodule/acc-runtime/api \
+              $srcdir/astaroth/submodule/acc-runtime/built-in/* \
               $srcdir/astaroth/submodule/acc-runtime/samples/mhd/* \
               $srcdir/astaroth/submodule/acc-runtime/samples/gputest/* \
               $srcdir/astaroth/submodule/acc-runtime/samples/mhd_modular/* \

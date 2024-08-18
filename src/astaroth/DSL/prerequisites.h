@@ -1,8 +1,14 @@
 // Provides all declarations and functions needed for the formulation of the PDEs' rhss by DSL code
 // and finally for the definition of the solve kernel.
 
+real AC_xorig
+real AC_yorig
+real AC_zorig
+
 #include "PC_nghost.h"
 #include "../../PC_moduleflags.h"
+#include "../stdlib/math"
+#include "../stdlib/utils/intrinsics.h"
 
 // declare here reduction results needed for the timestep
 

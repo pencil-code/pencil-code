@@ -3068,7 +3068,7 @@ endif
 	    fieldname=`echo $$replcmt | sed -e's/.*\\\\\/ *\\\\\/ *\([a-zA-Z0-9_]*\).*$$/\U\1/'`; \
 	    funcname=`grep '^ *subroutine  *d[a-zA-Z_0-9_][a-zA-Z_0-9_]*_dt' $$file | sed -e's/^ *subroutine  *d/d/' -e's/ *(.*$$//'`; \
 	    if [[ "$$replcmt" =~ .*\#define[^a-zA-Z_].* ]]; then \
-	      suffix=_vector; \
+	      suffix=; \
 	      prefix=vec; \
 	      init="return real3(0.,0.,0.)"; \
 	    else \
@@ -3079,7 +3079,7 @@ endif
 	    echo '  '$$prefix'write( '$$fieldname', rk3'$$suffix'('$$prefix'previous('$$fieldname'), '$$prefix'value('$$fieldname'), '$$funcname'(step_num), step_num, dt) )' >> $(DSL_WORKDIR)/solve.ac; \
 	    if ( ! grep $$funcname' *( *int *step_num *) *{' $(DSL_WORKDIR)/equations.h > /dev/null ); then \
 	      echo $$funcname'(int step_num){' >> $(DSL_WORKDIR)/equations.h; \
-	      echo '    void(step_num)' >> $(DSL_WORKDIR)/equations.h; \
+	      echo '    suppress_unused_warning(step_num)' >> $(DSL_WORKDIR)/equations.h; \
 	      echo '    '$$init >> $(DSL_WORKDIR)/equations.h; \
 	      echo '}' >> $(DSL_WORKDIR)/equations.h; \
 	      echo '' >> $(DSL_WORKDIR)/equations.h; \
@@ -3105,8 +3105,8 @@ endif
 ifeq ($(SHOCK),shock_highorder)
 	@sed -i -e'1 i   #include "../shock/kernels.ac"' $(DSL_WORKDIR)/steps_two.h
 	@sed -i -e'1 i   #include "../shock/kernels.ac"' $(DSL_WORKDIR)/steps_single.h
-	@sed -i -e'/twopass_solve_intermediate/ i   shock_1_divu(),\n  shock_2_smooth(),' $(DSL_WORKDIR)/steps_two.h
-	@sed -i -e'/singlepass_solve/ i   shock_1_divu(),\n   shock_2_smooth(),' $(DSL_WORKDIR)/steps_single.h
+	@sed -i -e'/twopass_solve_intermediate/ i   shock_1_divu()\n  shock_2_smooth()' $(DSL_WORKDIR)/steps_two.h
+	@sed -i -e'/singlepass_solve/ i   shock_1_divu()\n   shock_2_smooth()' $(DSL_WORKDIR)/steps_single.h
 endif
 ifeq ($(HYDRO),hydro)
 ifneq ($(FORCING),noforcing)
