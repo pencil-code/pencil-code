@@ -99,63 +99,72 @@ subroutine helper_loop(f,p)
 endsubroutine helper_loop
 !***********************************************************************
 subroutine reload(f, lreload_file, lreload_always_file)
-        use GPU, only: copy_farray_from_GPU, reload_GPU_config, load_farray_to_GPU
-        use Register,        only: initialize_modules, rprint_list, choose_pencils
-        use Sub,             only: control_file_exists
-        use Param_IO,        only: read_all_init_pars, read_all_run_pars, write_all_run_pars, write_pencil_info, get_downpars
-        use Boundcond,       only: initialize_boundcond
-        use Timestep,        only: initialize_timestep
-        use HDF5_IO,         only: initialize_hdf5
-        use Diagnostics,     only: report_undefined_diagnostics,diagnostics_clean_up
 
-        real, dimension (mx,my,mz,mfarray) :: f
-        logical :: lreload_file, lreload_always_file
-        real :: dtmp
-        if (lroot) write(*,*) 'Found RELOAD file -- reloading parameters'
+    use GPU, only: copy_farray_from_GPU, reload_GPU_config, load_farray_to_GPU
+    use Register,        only: initialize_modules, rprint_list, choose_pencils
+    use Sub,             only: control_file_exists
+    use Param_IO,        only: read_all_init_pars, read_all_run_pars, write_all_run_pars
+    use Boundcond,       only: initialize_boundcond
+    use Timestep,        only: initialize_timestep
+    use HDF5_IO,         only: initialize_hdf5
+    use Diagnostics,     only: report_undefined_diagnostics,diagnostics_clean_up
+
+    real, dimension (mx,my,mz,mfarray) :: f
+    logical :: lreload_file, lreload_always_file
+    real :: dtmp
+
+    if (lroot) write(*,*) 'Found RELOAD file -- reloading parameters'
 !
 !  Re-read configuration
 !
 ! If rkf timestep retain the current dt for continuity rather than reset
 ! with option to initialize_timestep to dt0/=0 from run.in if intended.
 !
-        if (ldt) then
-          dt=0.0
-        else
-          dtmp=dt
-        endif
-        call read_all_run_pars
-        if (.not.ldt) dt=dtmp
+    if (ldt) then
+      dt=0.0
+    else
+      dtmp=dt
+    endif
+    call read_all_run_pars
+    if (.not.ldt) dt=dtmp
 !
 !  Before reading the rprint_list deallocate the arrays allocated for
 !  1-D and 2-D diagnostics.
 !
-        call diagnostics_clean_up
-        if (lforcing)            call forcing_clean_up
-        if (lhydro_kinematic)    call hydro_clean_up
-        if (lsolid_cells)        call solid_cells_clean_up
+    call diagnostics_clean_up
+    if (lforcing)            call forcing_clean_up
+    if (lhydro_kinematic)    call hydro_clean_up
+    if (lsolid_cells)        call solid_cells_clean_up
 
-        call rprint_list(LRESET=.true.) !(Re-read output list)
-        if (lparticles) call particles_rprint_list(.false.) !MR: shouldn't this be called with lreset=.true.?
-        call report_undefined_diagnostics
+    call rprint_list(LRESET=.true.) !(Re-read output list)
+    if (lparticles) call particles_rprint_list(.false.) !MR: shouldn't this be called with lreset=.true.?
+    call report_undefined_diagnostics
 
-        call initialize_hdf5
-        call initialize_timestep
-        if (lgpu) call copy_farray_from_GPU(f)
-        call initialize_modules(f)
-        call initialize_boundcond
-        if (lparticles) call particles_initialize_modules(f)
-        if (lgpu) then
-          call reload_GPU_config
-          call load_farray_to_GPU(f)
-        endif
-        call choose_pencils
-        call write_all_run_pars('IDL')       ! data to param2.nml
-        call write_all_run_pars              ! diff data to params.log
+    call initialize_hdf5
+    call initialize_timestep
+if (lgpu.and.lroot) print*, 'vor copy_farray_from_GPU'
+if (lroot) flush(6)
+    if (lgpu) call copy_farray_from_GPU(f)
+    call initialize_modules(f)
+    call initialize_boundcond
+    if (lparticles) call particles_initialize_modules(f)
+    if (lgpu) then
+if (lroot) print*, 'vor reload_GPU_config'
+if (lroot) flush(6)
+      call reload_GPU_config
+      call load_farray_to_GPU(f)
+if (lroot) print*, 'nach load_to_GPU'
+if (lroot) flush(6)
+    endif
+    call choose_pencils
+    call write_all_run_pars('IDL')       ! data to param2.nml
+    call write_all_run_pars              ! diff data to params.log
 !
-        lreload_file=control_file_exists('RELOAD', DELETE=.true.)
-        lreload_file        = .false.
-        lreload_always_file = .false.
-        lreloading          = .false.
+    lreload_file=control_file_exists('RELOAD', DELETE=.true.)
+    lreload_file        = .false.
+    lreload_always_file = .false.
+    lreloading          = .false.
+
 endsubroutine reload
 !***********************************************************************
 subroutine timeloop(f,df,p)
@@ -235,13 +244,13 @@ subroutine timeloop(f,df,p)
 !  Re-read parameters if file `RELOAD_ALWAYS' exists; don't remove file
 !  (only useful for debugging RELOAD issues).
 !
+if (lroot) print*, 'vor control RELOAD'
+if (lroot) flush(6)
       lreload_file       =control_file_exists('RELOAD')
       lreload_always_file=control_file_exists('RELOAD_ALWAYS')
       lreloading         =lreload_file .or. lreload_always_file
 !
-      if (lreloading) then
-              call reload(f, lreload_file, lreload_always_file)
-      endif
+      if (lreloading) call reload(f, lreload_file, lreload_always_file)
     endif
 !
 !  calculate scale factor of the universe
@@ -585,7 +594,7 @@ subroutine run_start() bind(C)
 !
 !$ use OMP_lib
 !$ use, intrinsic :: iso_c_binding
-!$ use, intrinsic :: iso_fortran_env
+!!$ use, intrinsic :: iso_fortran_env
 !!$ use mt, only: wait_all_thread_pool, push_task, free_thread_pool, depend_on_all, default_task_type
 !
   implicit none
@@ -990,10 +999,10 @@ subroutine run_start() bind(C)
   suppress_pencil_check = control_file_exists("NO-PENCIL-CHECK")
   if ( ((lpencil_check .and. .not. suppress_pencil_check) .or. &
         (.not.lpencil_check.and.lpencil_check_small)) .and. nt>0 ) then
-    if(lgpu) then
-        call warning('run',"Pencil consistency check not supported on the GPU.    You can consider running it on a CPU-only compilation if needed")
+    if (lgpu) then
+      call warning('run',"Pencil consistency check not supported on the GPU. You can consider running it on a CPU-only compilation")
     else 
-        call pencil_consistency_check(f,df,p)
+      call pencil_consistency_check(f,df,p)
     endif
   endif
 !
@@ -1056,11 +1065,16 @@ subroutine run_start() bind(C)
         time_last_diagnostic=time1
       endif
       call timeloop(f,df,p)
+!print*, 'nach timeloop', iproc
+!flush(6)
+!stop
 !$  else
 !$    call helper_loop(f,p)
 !$  endif
 !$omp barrier
 !$omp end parallel
+print*, 'nach parallel', iproc
+flush(6)
 !
   if (lroot) then
 !
