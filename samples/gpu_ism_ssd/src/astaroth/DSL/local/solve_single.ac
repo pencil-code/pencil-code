@@ -1,9 +1,9 @@
 #include "../prerequisites.h"
 
 Kernel singlepass_solve(int step_num, real dt) {
-  vecwrite( UU, rk3_vector(vecprevious(UU), vecvalue(UU), duu_dt(step_num), step_num, dt) )
+  vecwrite( UU, rk3(vecprevious(UU), vecvalue(UU), duu_dt(step_num), step_num, dt) )
   write( RHO, rk3(previous(RHO), value(RHO), dlnrho_dt(step_num), step_num, dt) )
-  vecwrite( AA, rk3_vector(vecprevious(AA), vecvalue(AA), daa_dt(step_num), step_num, dt) )
+  vecwrite( AA, rk3(vecprevious(AA), vecvalue(AA), daa_dt(step_num), step_num, dt) )
   write( SS, rk3(previous(SS), value(SS), denergy_dt(step_num), step_num, dt) )
 }
 #include "steps_single.h"
