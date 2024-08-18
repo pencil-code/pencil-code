@@ -185,7 +185,6 @@ module Cdata
   real :: ddt=0.0, dtinc=0.5, dtdec=0.5
   real :: dtmin=1.0e-6, dtmax=1.0e37, dt_epsi=1e-7, dt_ratio=0.01
   real :: nu_sts=0.1
-  real :: density_scale_factor=impossible
   integer :: permute_sts=0
   integer:: ireset_tstart=2
   integer :: nt=10000000, it=0, itorder=3, itsub=0, it_timing=0, it_rmv=0
@@ -351,6 +350,14 @@ module Cdata
   logical :: lghostfold_usebspline = .false.
   logical :: lcooling_ss_mz = .false.
   logical :: lshock_heat = .true.
+  real :: density_scale_factor=impossible
+!
+!  Used together with entropy, turns iss into ilntt (i.e., entropy
+!  becomes log temperature). It does the same as using the
+!  temperature_idealgas.f90 procedure, but draws on the more available
+!  functionality extent in entropy.f90.
+!
+  logical :: pretend_lnTT=.false.
 !END C BINDING
 !
 !  Type counters.
@@ -758,13 +765,6 @@ module Cdata
 !  when the velocity in the non-existent direction dominates.
 !
   logical :: lisotropic_advection=.false.
-!
-!  Used together with entropy, turns iss into ilntt (i.e., entropy
-!  becomes log temperature). It does the same as using the
-!  temperature_idealgas.f90 procedure, but draws on the more available
-!  functionality extent in entropy.f90.
-!
-  logical :: pretend_lnTT=.false.
 !
 !  Use lreport_undefined_diagnostics=F to suppress reporting of
 !  undefined diagnostics. It puts hashes, but sometimes incorrectly so.

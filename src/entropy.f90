@@ -7963,7 +7963,7 @@ module Energy
 
     use Syscalls, only: copy_addr
 
-    integer, parameter :: n_pars=13
+    integer, parameter :: n_pars=19
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call copy_addr(chi,p_par(1))
@@ -7979,6 +7979,15 @@ module Energy
     call copy_addr(lheatc_hyper3ss,p_par(11)) ! int
     call copy_addr(lheatc_shock,p_par(12)) ! int
     call copy_addr(chi_shock,p_par(13))
+
+    call copy_addr(FbotKbot,p_par(14))
+    call copy_addr(FtopKtop,p_par(15))
+
+
+    call copy_addr(Fbot,p_par(16))
+    call copy_addr(Ftop,p_par(17))
+    call copy_addr(lheatc_chiconst,p_par(18)) ! int
+    call copy_addr(lheatc_kramers,p_par(19))  ! int
 
     endsubroutine pushpars2c
 !***********************************************************************

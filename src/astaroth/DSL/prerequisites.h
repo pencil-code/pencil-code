@@ -5,6 +5,13 @@ real AC_xorig
 real AC_yorig
 real AC_zorig
 
+//TP: not loaded yet
+gmem real AC_x[AC_mx]
+gmem real AC_y[AC_my]
+gmem real AC_z[AC_mz]
+
+const real  impossible=3.9085e37;
+
 #include "PC_nghost.h"
 #include "../../PC_moduleflags.h"
 #include "../stdlib/math"

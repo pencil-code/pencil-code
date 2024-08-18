@@ -16,7 +16,6 @@
     rho1 =  exp(-lnrho)
     grho = glnrho/rho1
   }
-  cv1 = 1./cv
   lnTT = lnTT0+cv1*value(SS)+gamma_m1*(lnrho-lnrho0)
   TT = exp(lnTT)
 
