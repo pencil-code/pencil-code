@@ -109,11 +109,15 @@ class Dim(object):
                     raise RuntimeError(
                         "No downsampled snapshots were saved, so we cannot get their dimensions."
                     )
-                filename = os.path.basename(vardfiles[0])
+                filename = os.path.join(
+                    datadir,
+                    "allprocs",
+                    os.path.basename(vardfiles[0]),
+                    )
             else:
-                filename = "var.h5"
+                filename = os.path.join(datadir, "grid.h5")
 
-            with h5py.File(os.path.join(datadir, "allprocs", filename), "r") as tmp:
+            with h5py.File(filename, "r") as tmp:
                 self.mx = np.array(tmp["settings"]["mx"]).item()
                 self.my = np.array(tmp["settings"]["my"]).item()
                 self.mz = np.array(tmp["settings"]["mz"]).item()
