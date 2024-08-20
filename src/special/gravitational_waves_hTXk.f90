@@ -1350,7 +1350,7 @@ module Special
 !
       real :: fact, facthel, cos_angle, angle, sign_switch
             
-      real :: DT_a, DT_b, DX_a, DX_b, khat_xhat_a, khat_xhat_b
+      real :: DT_a, DT_b, DX_a, DX_b, khat_xhat_a, khat_xhat_b, DT_a_sum, DT_b_sum, DX_a_sum, DX_b_sum
       real, dimension (6) :: e_T, e_X
       real, dimension (3) :: e1, e2
 !
@@ -1666,6 +1666,10 @@ module Special
 !
                 do ipulsar=1,npulsar
                 do jpulsar=ipulsar+1,npulsar
+                  DT_a_sum=0.
+                  DT_b_sum=0.
+                  DX_a_sum=0.
+                  DX_b_sum=0.
                   do j=1,3
                   do i=1,3
                     ij=ij_table(i,j)
@@ -1687,42 +1691,42 @@ module Special
                       DT_b=.5*nn_pulsar(jpulsar,i)*nn_pulsar(jpulsar,j)*e_T(ij)/(1.+khat_xhat_b)
                       DX_a=.5*nn_pulsar(ipulsar,i)*nn_pulsar(ipulsar,j)*e_X(ij)/(1.+khat_xhat_a)
                       DX_b=.5*nn_pulsar(jpulsar,i)*nn_pulsar(jpulsar,j)*e_X(ij)/(1.+khat_xhat_b)
+                      DT_a_sum=DT_a_sum+DT_a
+                      DT_b_sum=DT_b_sum+DT_b
+                      DX_a_sum=DX_a_sum+DX_a
+                      DX_b_sum=DX_b_sum+DX_b
+                    endif
+                  enddo
+                  enddo
 !
 !  Compute angle (in degrees) between pulsars.
 !
-                      cos_angle=nn_pulsar(ipulsar,1)*nn_pulsar(jpulsar,1) &
-                               +nn_pulsar(ipulsar,2)*nn_pulsar(jpulsar,2) &
-                               +nn_pulsar(ipulsar,3)*nn_pulsar(jpulsar,3)
-                      angle=acos(cos_angle)/dtor
-                      ibin_angular=1+nint(angle*(nbin_angular-1)/180.)
+                  cos_angle=nn_pulsar(ipulsar,1)*nn_pulsar(jpulsar,1) &
+                           +nn_pulsar(ipulsar,2)*nn_pulsar(jpulsar,2) &
+                           +nn_pulsar(ipulsar,3)*nn_pulsar(jpulsar,3)
+                  angle=acos(cos_angle)/dtor
+                  ibin_angular=1+nint(angle*(nbin_angular-1)/180.)
 if (ibin_angular<1 .or. ibin_angular>nbin_angular) print*,'AXEL: bad ibin_angular',ibin_angular
-                      fact   =DT_a*DT_b+DX_a*DX_b
-                      facthel=DT_a*DX_b-DX_a*DT_b
+                  fact   =DT_a_sum*DT_b_sum+DX_a_sum*DX_b_sum
+                  facthel=DT_a_sum*DX_b_sum-DX_a_sum*DT_b_sum
 !
 !  Sum up the 2-D histograms, GWh_Gamma_ab and GWhhel_Gamma_ab
 !
-                      spectra%GWh_Gamma_ab(ik,ibin_angular)=spectra%GWh_Gamma_ab(ik,ibin_angular) &
-                         +(f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  )**2 &
-                          +f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim)**2 &
-                          +f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  )**2 &
-                          +f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim)**2)*fact
-                      spectra%GWhhel_Gamma_ab(ik,ibin_angular)=spectra%GWhhel_Gamma_ab(ik,ibin_angular)+2*sign_switch*( &
-                          +f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim) &
-                          *f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  ) &
-                          -f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  ) &
-                          *f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim) )*facthel
+                  spectra%GWh_Gamma_ab(ik,ibin_angular)=spectra%GWh_Gamma_ab(ik,ibin_angular) &
+                     +(f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  )**2 &
+                      +f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim)**2 &
+                      +f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  )**2 &
+                      +f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim)**2)*fact
+                  spectra%GWhhel_Gamma_ab(ik,ibin_angular)=spectra%GWhhel_Gamma_ab(ik,ibin_angular)+2*sign_switch*( &
+                      +f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim) &
+                      *f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  ) &
+                      -f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  ) &
+                      *f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim) )*facthel
 !
 !  Sum the angles in GWh_Gamma_ang, and count the number of entries in GWhhel_Gamma_ang.
 !
-                      spectra%GWh_Gamma_ang(ik,ibin_angular)=spectra%GWh_Gamma_ang(ik,ibin_angular)+angle
-                      spectra%GWhhel_Gamma_ang(ik,ibin_angular)=spectra%GWhhel_Gamma_ang(ik,ibin_angular)+1.
-if (ik==2 .and. ibin_angular==4) print*,'AXEL: DT_a, DT_b, DX_a, DX_b=', &
-ipulsar, jpulsar, DT_a, DT_b, DX_a, DX_b, khat_xhat_a, khat_xhat_b
-                    endif
-!if (ik==2 .and. ibin_angular==1) print*,'AXEL: khat_xhat_a, khat_xhat_b=',khat_xhat_a, khat_xhat_b
-!if (ik==2 .and. ibin_angular==1) print*,'AXEL: e_T(ij), e_X(ij)=',k1,k2,k3,i,j,e_T(ij), e_X(ij)
-                  enddo
-                  enddo
+                  spectra%GWh_Gamma_ang(ik,ibin_angular)=spectra%GWh_Gamma_ang(ik,ibin_angular)+angle
+                  spectra%GWhhel_Gamma_ang(ik,ibin_angular)=spectra%GWhhel_Gamma_ang(ik,ibin_angular)+1.
                 enddo
                 enddo
               endif
