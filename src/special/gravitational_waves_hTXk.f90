@@ -163,7 +163,8 @@ module Special
     lggTX_as_aux_boost, lhhTX_as_aux_boost, lno_noise_GW, &
     lscale_tobox, lfactors_GW, nfact_GWs, nfact_GWh, nfact_GW, &
     lcomp_GWs_k, lcomp_GWh_k, llogbranch_GW, initpower_med_GW, &
-    kpeak_log_GW, kbreak_GW, ldouble_GW, nfactd_GW, lread_pulsar
+    kpeak_log_GW, kbreak_GW, ldouble_GW, nfactd_GW, &
+    lread_pulsar !, nbin_angular
 !
 ! run parameters
   namelist /special_run_pars/ &
@@ -189,7 +190,8 @@ module Special
     lnonlinear_source, lnonlinear_Tpq_trans, nonlinear_source_fact, &
     lnophase_in_stress, llinphase_in_stress, slope_linphase_in_stress, &
     lread_scl_factor_file, t_ini, OmL0, OmM0, idt_file_safety, &
-    lconstmod_in_stress, k_in_stress, itorder_GW, lLighthill
+    lconstmod_in_stress, k_in_stress, itorder_GW, lLighthill, &
+    lread_pulsar !, nbin_angular
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -257,6 +259,7 @@ module Special
     real, dimension(nk) :: GWshel,GWhhel,GWmhel,Strhel,Stghel
     real, dimension(nk) :: SCL, VCT, Tpq, TGW
     real, dimension(nk,nbin_angular) :: GWh_Gamma_ab, GWhhel_Gamma_ab, GWh_Gamma_ang, GWhhel_Gamma_ang
+    !real, dimension (:,:), allocatable :: GWh_Gamma_ab, GWhhel_Gamma_ab, GWh_Gamma_ang, GWhhel_Gamma_ang
     complex, dimension(nx) :: complex_Str_T, complex_Str_X
     ! emma added (dec 6) for boost:
     real, dimension(nk) :: GWs_boost   ,GWh_boost   ,GWm_boost   ,Str_boost   ,Stg_boost
@@ -495,6 +498,15 @@ module Special
 !  calculate kscale_factor (for later binning)
 !
       kscale_factor=2*pi/Lx
+!
+!  allocate ...
+!
+    ! if (.not.allocated(GWh_Gamma_ab)) then
+    !   allocate(GWh_Gamma_ab(nk,nbin_angular),GWhhel_Gamma_ab(nk,nbin_angular), &
+    !            GWh_Gamma_ang(nk,nbin_angular),GWhhel_Gamma_ang(nk,nbin_angular), &
+    !    stat=stat)
+    !   if (stat>0) call fatal_error('initialize_special','Could not allocate memory for GWh_Gamma_ab etc')
+    ! endif
 !
 !  Possibility of reading scale factor file
 !

@@ -80,7 +80,7 @@ module Cparam
 !
 !  Number of bins for Pulsar Timing Array
 !
-  integer, parameter :: nbin_angular=19
+  integer, parameter :: nbin_angular=19*2
 !
 !  Array dimension for reduce operation (maxima and sums).
 !  Use here symbol mreduce, use nreduce in call.

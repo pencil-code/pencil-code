@@ -70,6 +70,9 @@ module power_spectrum
       lhorizontal_spectra, lvertical_spectra, ltrue_binning, max_k2, &
       specflux_pmin, specflux_pmax
 !
+! real, allocatable, dimension(:,:) :: spectrum_2d, spectrumhel_2d
+! real, allocatable, dimension(:,:) :: spectrum_2d_sum, spectrumhel_2d_sum
+!
   contains
 !***********************************************************************
     subroutine initialize_power_spectrum
@@ -202,6 +205,10 @@ outer:  do ikz=1,nz
 
       endif
  
+      !if (.not.allocated(spectrum_2d)) then
+      !  allocate(spectrum_2d(nk,nbin_angular), spectrumhel_2d(nk,nbin_angular), &
+      !           spectrum_2d_sum(nk,nbin_angular), spectrumhel_2d_sum(nk,nbin_angular))
+
     endsubroutine initialize_power_spectrum
 !***********************************************************************
     subroutine read_power_spectrum_run_pars(iostat)
@@ -1087,6 +1094,7 @@ outer:  do ikz=1,nz
   real :: k2
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
+  complex, dimension(nx,ny,nz) :: phi
   real, dimension(nx) :: bbi, jji, b2, j2
   real, dimension(nx,3) :: bb, bbEP, hhEP, jj
   real, dimension(nk) :: nks=0.,nks_sum=0.
@@ -1435,6 +1443,20 @@ outer:  do ikz=1,nz
         enddo
         a_im=0.
         b_im=0.
+      endif
+!
+!  Spectra based on Tanmay's flux method
+!
+    elseif (sp=='fEP') then
+      if (iXX2_chiral/=0.and.iYY2_chiral/=0) then
+        phi=cmplx(f(l1:l2,m1:m2,n1:n2,iXX2_chiral),f(l1:l2,m1:m2,n1:n2,iXX2_chiral))
+        if (ivec==1) then
+!         b_re=aimag(cshift(conj(phi),0,0,0)*cshift(phi,0,1,0) &
+!                   +cshift(conj(phi),0,1,0)*cshift(phi,0,1,1) &
+!                   +cshift(conj(phi),0,1,1)*cshift(phi,0,0,1) &
+!                   +cshift(conj(phi),0,0,1)*cshift(phi,0,0,0))
+          a_re=0.
+        endif
       endif
 !
 !  Spectrum of uxj
