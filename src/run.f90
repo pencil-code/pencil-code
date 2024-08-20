@@ -1024,7 +1024,8 @@ subroutine run_start() bind(C)
   !$omp end parallel
   !$ call mpibarrier
 !
-!$omp parallel num_threads(num_helpers+1) copyin(fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz,phiavg_norm)
+!$omp parallel num_threads(num_helpers+1) &
+!$omp copyin(fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz,phiavg_norm)
 !
 !TP: remove master id from core ids since no one should run on master core and make sure new core ids indexing start from 1
 !$ if (omp_get_thread_num() == 1) helper_core_id = get_cpu()

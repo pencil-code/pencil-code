@@ -20,8 +20,6 @@ s/\([^0-9a-zA-Z_]\)zgrid[ ,]/\1/
 s/\([^0-9a-zA-Z_]\)zgrid$/\1/
 #remove allocatable quantities
 /( *:/ d
-#make everything lowercase
-#!!!s/.*/\L&/g
 #use 3-vector types
 s/integer *, *dimension *( *3 *) *::/extern int3arr,/
 s/logical *, *dimension *( *3 *) *::/extern bool3arr,/
@@ -32,6 +30,8 @@ s/(\/.*\/)//g
 s/\([0-9.]\) *[dD] *\([-0-9]\)/\1E\2/g
 #remove lines containing implicit none
 /implicit  *none/ d
+#make KIND lowercase
+s/KIND *=/kind=/
 s/integer *( *kind *= *ikind8 *) *::/long long/
 s/real *( *kind *= *rkind8 *) *::/ double/
 #remove volatile

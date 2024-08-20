@@ -103,7 +103,6 @@ module Diagnostics
 !
   real, pointer, dimension(:) :: p_phiavg_norm
   real, dimension (nrcyl,nx) :: phiavg_profile=0.0
-  real, dimension (nrcyl) :: phiavg_norm
   real :: dVol_rel1, dA_xy_rel1, dA_yz_rel1, dA_xz_rel1
 
   character (len=intlen) :: ch1davg, ch2davg

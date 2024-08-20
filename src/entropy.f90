@@ -7963,7 +7963,7 @@ module Energy
 
     use Syscalls, only: copy_addr
 
-    integer, parameter :: n_pars=19
+    integer, parameter :: n_pars=20
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call copy_addr(chi,p_par(1))
@@ -7972,10 +7972,12 @@ module Energy
     call copy_addr(hcond_Kconst,p_par(4))
     call copy_addr(chi_hyper3,p_par(5))
     call copy_addr(chi_t0,p_par(6))
+
     if (allocated(hcond_prof))    call copy_addr(hcond_prof,p_par(7))      ! (nz)
     if (allocated(dlnhcond_prof)) call copy_addr(dlnhcond_prof,p_par(8))   ! (nz)
     if (allocated(chit_prof_stored)) call copy_addr(chit_prof_stored,p_par(9))   ! (nz)
     if (allocated(dchit_prof_stored)) call copy_addr(dchit_prof_stored,p_par(10)) ! (nz)
+
     call copy_addr(lheatc_hyper3ss,p_par(11)) ! int
     call copy_addr(lheatc_shock,p_par(12)) ! int
     call copy_addr(chi_shock,p_par(13))
@@ -7983,11 +7985,11 @@ module Energy
     call copy_addr(FbotKbot,p_par(14))
     call copy_addr(FtopKtop,p_par(15))
 
-
     call copy_addr(Fbot,p_par(16))
     call copy_addr(Ftop,p_par(17))
     call copy_addr(lheatc_chiconst,p_par(18)) ! int
     call copy_addr(lheatc_kramers,p_par(19))  ! int
+    call copy_addr(pretend_lnTT,p_par(20))  ! int
 
     endsubroutine pushpars2c
 !***********************************************************************

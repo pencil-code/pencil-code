@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <assert.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -162,8 +163,7 @@ FTNIZE(set_cpu_c)(int* core_id_in)
     cpu_set_t cpuset;
     CPU_ZERO(&cpuset);
     CPU_SET(core_id, &cpuset);
-    const int rc = pthread_setaffinity_np(pthread_self(),
-                                    sizeof(cpu_set_t), &cpuset);
+    const int rc = pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset);
     return (bool)(1-rc);
 }
 void

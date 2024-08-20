@@ -30,8 +30,8 @@ module GPU
   external test_rhs_c
   external update_on_gpu_arr_by_ind_c
   external update_on_gpu_scal_by_ind_c
-  external update_on_gpu_arr_by_name_c
-  external update_on_gpu_scal_by_name_c
+  integer, external :: update_on_gpu_arr_by_name_c
+  integer, external :: update_on_gpu_scal_by_name_c
 
   include 'gpu.h'
 

@@ -320,14 +320,14 @@ module General
     endsubroutine
   endinterface
 
-   interface
-  integer function get_cpu_c()
+  interface
+    integer function get_cpu_c()
     endfunction get_cpu_c
   endinterface
 
   interface
     subroutine set_cpu_c(core_id)
-            integer :: core_id
+      integer :: core_id
     endsubroutine set_cpu_c
   endinterface
 !

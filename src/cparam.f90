@@ -237,7 +237,6 @@ module Cparam
   real, parameter :: twopi = 6.2831853071795864769252867665590d0
   real, parameter :: dtor = pi/180.d0
 !
-!
 !  Physical constants, taken from
 !  http://physics.nist.gov/cuu/Constants/index.html.
 !
@@ -261,7 +260,7 @@ module Cparam
   real(KIND=rkind8), parameter :: c_light_cgs=2.99792458d10 ! [cm/s]
   real(KIND=rkind8), parameter :: G_Newton_cgs=6.6742d-8    ! [cm3/g/s2]
   real(KIND=rkind8), parameter :: density_scale_cgs=1.2435d21 ![cm] 403pc Reynolds 91, etc
-
+!
 !$omp threadprivate(lpencil)
 !
   logical, parameter :: loffload=.false.
