@@ -28,6 +28,7 @@ module GPU
   external load_farray_c 
   external reload_gpu_config_c
   external test_rhs_c
+  external copy_farray_c
   external update_on_gpu_arr_by_ind_c
   external update_on_gpu_scal_by_ind_c
   integer, external :: update_on_gpu_arr_by_name_c
@@ -108,26 +109,16 @@ contains
 
 !$    use General, only: signal_wait
 
-      interface 
-        subroutine copy_farray_c(f)
-          import mx
-          import my
-          import mz
-          import mfarray
-          real, dimension(mx,my,mz,mfarray) :: f
-        endsubroutine
-      endinterface
-
       real, dimension (mx,my,mz,mfarray), intent(OUT) :: f
       integer :: i
 !
-      if (lfarray_copied) return
+!$    if (lfarray_copied) return
 !
 ! Have to wait since if doing diagnostics don't want to overwrite f.
 !
 !$    call signal_wait(lhelper_perf, .false.)
       call copy_farray_c(f)
-      lfarray_copied = .true.
+!$    lfarray_copied = .true.
 
     endsubroutine copy_farray_from_GPU
 !**************************************************************************
@@ -136,7 +127,7 @@ contains
       real, dimension (mx,my,mz,mfarray), intent(OUT) :: f
 
       call load_farray_c
-      lfarray_copied=.false.
+!$    lfarray_copied=.false.
 
     endsubroutine load_farray_to_GPU
 !**************************************************************************

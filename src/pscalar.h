@@ -12,6 +12,7 @@
   public :: calc_diagnostics_pscalar
   public :: pscalar_before_boundary
   public :: calc_mpscalar
+  public :: pushpars2c
 
 !ajwm SHOULD NOT BE PUBLIC
 !axel: yes, but at the moment we need this to calculate PDFs.

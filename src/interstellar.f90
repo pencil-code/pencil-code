@@ -2072,7 +2072,7 @@ module Interstellar
 !
 !  If SN are listed in source file then obtain parameters from list
 !
-      lfarray_copied=.false.
+!$    lfarray_copied=.false.
       if (lSN_list) then
         if (t>=t_next_SNI.or.t>=t_next_SNII) then
           call tidy_SNRs
@@ -3113,8 +3113,8 @@ mn_loop:do n=n1,n2
                   endif
                 enddo
                 !$ lfound = .true.
-                !$ if (.false.) &
-                exit mn_loop
+                !!!!$ if (.false.) &
+                !!!exit mn_loop
               endif
             endif
           enddo
@@ -3299,7 +3299,7 @@ mn_loop:do n=n1,n2
       real, dimension(nx) :: yH, lnTT, rho_old, ee_old
       real :: maxlnTT, site_mass, maxTT, mmpi, etmp, ktmp, max_cmass, cum_mm, cum_ee, cum_cr
       real :: t_interval_SN, SNrate, frackin, RPDS, SN_TT_ratio_max
-      integer :: i, mpiierr, ind_maxTT
+      integer :: i, mpiierr, ind_maxTT, m, n
       logical :: lfound
 !
       SNR%indx%state=SNstate_exploding
@@ -3497,7 +3497,8 @@ mn_loop:do n=n1,n2
       !irho,ilnrho,iss,ilnTT,frac_eth,dr2_SN,rfactor_SN,TT_SN_max, switches FG radius2mass, c_SN, width_energy, width_mass,&
       !irho_lnTT, irho_ss, irho_ee, SN_TT_ratio_max
       !$omp teams distribute parallel do collapse(2) &
-      !$omp private(dV,rho_old,rho_new,deltarho,deltauu,deltaEE,deltaCR,ee_old,lnTT,outward_normal_SN,maxTT,rad_hot,deltarho_hot,ind_maxTT,cmass_tmp) &
+      !$omp private(dV,rho_old,rho_new,deltarho,deltauu,deltaEE,deltaCR,ee_old,lnTT, &
+      !$omp outward_normal_SN,maxTT,rad_hot,deltarho_hot,ind_maxTT,cmass_tmp) &
       !$omp reduction(+:site_mass,cum_mm,cum_ee) reduction(max:maxlnTT,max_cmass)
 mnloop:do n=n1,n2
       do m=m1,m2
@@ -3508,7 +3509,7 @@ mnloop:do n=n1,n2
 !  Calculate the distances to the SN origin for all points in the current
 !  pencil and store in the dr2_SN global array.
 !
-        call proximity_SN(SNR)
+        call proximity_SN(m,n,SNR)
 !
 !  Calculate the unperturbed mass and multiply by volume element to derive
 !  mass, and sum for the remnant ambient mass, and add ejecta if lSN_mass.
@@ -3552,8 +3553,8 @@ mnloop:do n=n1,n2
                   ierr=iEXPLOSION_TOO_HOT
                   if (.not.lSN_list) then
                     !$ lfound = .true.
-                    !$ if (.false.) &
-                    exit mnloop
+                    !!!!$ if (.false.) &
+                    !!!exit mnloop
                   endif
                 endif
               endif
@@ -3573,8 +3574,8 @@ mnloop:do n=n1,n2
                     ierr=iEXPLOSION_TOO_HOT
                     if (.not.lSN_list) then
                       !$ lfound = .true.
-                      !$ if (.false.) &
-                      exit mnloop
+                      !!!!$ if (.false.) &
+                      !!!exit mnloop
                     endif
                   endif
                 endif
@@ -3623,7 +3624,7 @@ print*,"Fred was here, after MPI explode_SN: iproc, exp(maxlnTT)/TT_SN_max",ipro
           do n=n1,n2
           do m=m1,m2
             call get_dVol(m,n,dV)
-            call proximity_SN(SNR)
+            call proximity_SN(m,n,SNR)
             call injectmass_SN(deltarho,width_mass,cmass_SN)
             cum_mm=cum_mm+sum(deltarho*dV)
           enddo
@@ -3706,9 +3707,9 @@ print*,"Fred was here, after MPI explode_SN: iproc, exp(maxlnTT)/TT_SN_max",ipro
 !  pencil and store in the dr2_SN global array.
 !
         if (lSN_velocity.and.cvelocity_SN>0. .or. lSN_fcr) then
-          call proximity_SN(SNR,outward_normal_SN)
+          call proximity_SN(m,n,SNR,outward_normal_SN)
         else
-          call proximity_SN(SNR)
+          call proximity_SN(m,n,SNR)
         endif
 !
 !  Calculate the unperturbed mass and multiply by volume element to derive
@@ -3925,6 +3926,7 @@ print*,"Fred was here, after MPI explode_SN: iproc, exp(maxlnTT)/TT_SN_max",ipro
       real, dimension(nx,3) :: uu
       logical, dimension(nx) :: lmask
       real, dimension(2) :: tmp,tmp2
+      integer :: m,n
 !
 !  inner rad defined to determine mean density inside rad and smooth if desired
 !
@@ -3938,11 +3940,12 @@ print*,"Fred was here, after MPI explode_SN: iproc, exp(maxlnTT)/TT_SN_max",ipro
 !
 !$    call OMP_set_num_threads(num_helper_threads)
      !!$omp target if(loffload) !map(from: rhomin,rhomax,tmp) map(to: remnant) has_device_addr(f)  ! needs: irho,ilnrho,iuu,dr2_SN, switches;  gives: m,n
-      !$omp teams distribute parallel do collapse(2) private(rho,uu,u2,lmask,dV), reduction(min:rhomin) reduction(max:rhomax) reduction(+:tmp)
+      !$omp teams distribute parallel do collapse(2) private(rho,uu,u2,lmask,dV), &
+      !$omp reduction(min:rhomin) reduction(max:rhomax) reduction(+:tmp)
       do n=n1,n2
       do m=m1,m2
         call get_dVol(m,n,dV)
-        call proximity_SN(remnant)
+        call proximity_SN(m,n,remnant)
 !
 !  get rho from existing ambient density everywhere
 !
@@ -4028,6 +4031,7 @@ print*,"Fred was here, after MPI explode_SN: iproc, exp(maxlnTT)/TT_SN_max",ipro
       real, dimension(nx) :: rho, u2, deltarho, dV
       real, dimension(nx,3) :: uu,deltauu, outward_normal_SN
       real, dimension(2) :: tmp,tmp2
+      integer :: m,n
 !
 !  inner rad defined to determine mean density inside rad and smooth if desired
 !
@@ -4046,9 +4050,9 @@ print*,"Fred was here, after MPI explode_SN: iproc, exp(maxlnTT)/TT_SN_max",ipro
       do m=m1,m2
         call get_dVol(m,n,dV)
         if (lSN_velocity.and.cvelocity_SN>0) then
-          call proximity_SN(remnant,outward_normal_SN)
+          call proximity_SN(m,n,remnant,outward_normal_SN)
         else
-          call proximity_SN(remnant)
+          call proximity_SN(m,n,remnant)
         endif
 !
 !  get rho from existing ambient density everywhere
@@ -4121,7 +4125,7 @@ print*,"Fred was here, after MPI explode_SN: iproc, exp(maxlnTT)/TT_SN_max",ipro
       radius2 = energy_Nsigma2*radius**2
       do n=n1,n2
       do m=m1,m2
-        call proximity_SN(SNR)
+        call proximity_SN(m,n,SNR)
         if (ldensity_nolog) then
           rho=f(l1:l2,m,n,irho)
         else
@@ -4188,7 +4192,7 @@ print*,"Fred was here, after MPI explode_SN: iproc, exp(maxlnTT)/TT_SN_max",ipro
 !
     endsubroutine proximity_OB
 !*****************************************************************************
-    subroutine proximity_SN(SNR,outward_normal)    ! make pars: m,n, dr2_SN
+    subroutine proximity_SN(m,n,SNR,outward_normal)    ! make pars: dr2_SN
 !!$omp declare target device_type(host)    ! needs: x,y,z, L[xyz], deltay
 !
 !  Calculate pencil of distance to SN explosion site.
@@ -4196,6 +4200,7 @@ print*,"Fred was here, after MPI explode_SN: iproc, exp(maxlnTT)/TT_SN_max",ipro
 !  20-may-03/tony: extracted from explode_SN code written by grs
 !  22-may-03/tony: pencil formulation
 !
+      integer,                         intent(in) :: m,n
       type (SNRemnant),                intent(in) :: SNR
       real, dimension(nx,3), optional, intent(out) :: outward_normal
 !

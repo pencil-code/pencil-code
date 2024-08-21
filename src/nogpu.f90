@@ -14,7 +14,6 @@ module GPU
   implicit none
 
   include 'gpu.h'
-  public :: copy_farray_c_
 
 contains
 !***********************************************************************
@@ -34,10 +33,6 @@ contains
 !
     endsubroutine register_GPU
 !**************************************************************************
-    subroutine finalize_gpu_c
-!
-    endsubroutine finalize_gpu_c
-!**************************************************************************
     subroutine finalize_GPU
 !
     endsubroutine finalize_GPU
@@ -52,11 +47,6 @@ contains
       call keep_compiler_quiet(itsub)
 !
     endsubroutine rhs_GPU
-!**************************************************************************
-    subroutine copy_farray_c_(f) bind(C)
-      real, dimension (mx,my,mz,mfarray), intent(OUT) :: f
-      call keep_compiler_quiet(f)
-    endsubroutine
 !**************************************************************************
     subroutine copy_farray_from_GPU(f)
 
@@ -102,25 +92,7 @@ contains
       real, dimension(1), intent(inout) :: mass_per_proc
       logical ,intent(in) :: early_finalize
 
-      interface
-        subroutine cpu_version(f,df,p,mass_per_proc,early_finalize)
-          import mx
-          import my
-          import mz
-          import mfarray
-          import pencil_case
-          real, dimension (mx,my,mz,mfarray) :: f
-          real, dimension (mx,my,mz,mfarray) :: df
-          type (pencil_case) :: p
-          real, dimension(1), intent(inout) :: mass_per_proc
-          logical ,intent(in) :: early_finalize
-
-          intent(inout) :: f
-          intent(inout) :: p
-          intent(out) :: df
-
-        endsubroutine cpu_version
-      endinterface
+      external cpu_version
 
     endsubroutine test_rhs_gpu
 !**************************************************************************

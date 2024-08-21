@@ -535,7 +535,7 @@ if (lroot) flush(6)
 !write(60+iproc,*) it, lmasterflags
 !flush(60+iproc)
 !endif
-    if (lfarray_copied) then
+!$  if (lfarray_copied) then
 !$    lhelperflags = lmasterflags
 !$    lmasterflags = .false.
 !$    call signal_send(lhelper_perf,.true.)

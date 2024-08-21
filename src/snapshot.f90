@@ -70,7 +70,7 @@ module Snapshot
         if (.not.lstart.and.lgpu) call copy_farray_from_GPU(a)
         if (lmultithread) then
 !!$        call signal_send(lhelperflags(PERF_WSNAP_DOWN),.false.)
-          lmasterflags(PERF_WSNAP_DOWN) = .true.
+!$        lmasterflags(PERF_WSNAP_DOWN) = .true.
         else
           call perform_wsnap_down(a)
         endif
@@ -255,7 +255,7 @@ module Snapshot
         call save_grid(lrestore=.true.)
         call initialize_hdf5
         ldownsampling=.false.
-        lhelperflags(PERF_WSNAP_DOWN) = .false.
+!$      lhelperflags(PERF_WSNAP_DOWN) = .false.
 
     endsubroutine perform_wsnap_down
 !***********************************************************************
@@ -332,7 +332,7 @@ module Snapshot
           if (lmultithread) then
             extpars%ind1=nv1_capitalvar; extpars%ind2=msnap; extpars%file=file
 !!$          if (.not.lstart) call signal_send(lhelperflags(PERF_WSNAP),.true.)
-            lmasterflags(PERF_WSNAP) = .true.
+!$          lmasterflags(PERF_WSNAP) = .true.
           else
             call perform_wsnap(a,nv1_capitalvar,msnap,file)
           endif
@@ -357,7 +357,7 @@ module Snapshot
         if (lmultithread) then
           extpars%ind1=1; extpars%ind2=msnap; extpars%file=file
 !!$        if (.not.lstart) call signal_send(lhelperflags(PERF_WSNAP),.true.)
-          lmasterflags(PERF_WSNAP) = .true.
+!$        lmasterflags(PERF_WSNAP) = .true.
         else
           call perform_wsnap(a,1,msnap,file)
         endif
@@ -376,7 +376,7 @@ module Snapshot
 
       call perform_wsnap(a,extpars%ind1,extpars%ind2,extpars%file)
 !!$    if (.not. lstart) call signal_send(lhelperflags(PERF_WSNAP),.false.)
-       lhelperflags(PERF_WSNAP) = .false.
+!$     lhelperflags(PERF_WSNAP) = .false.
 
     endsubroutine perform_wsnap_ext
 !***********************************************************************
@@ -756,7 +756,7 @@ module Snapshot
 !
         if (lmultithread) then
 !!$        call signal_send(lhelperflags(PERF_POWERSNAP),.true.)
-          lmasterflags(PERF_POWERSNAP) = .true.
+!$        lmasterflags(PERF_POWERSNAP) = .true.
         else
           call perform_powersnap(f)
         endif
@@ -779,10 +779,9 @@ module Snapshot
       real, dimension (mx,my,mz,mfarray) :: f
 
       real, dimension (:,:,:), allocatable :: b_vec
-      integer :: ivec,stat,ipos,ispec
+      integer :: ivec,stat,ipos,ispec,nloc,mloc
       character (LEN=40) :: str,sp1,sp2
       logical :: lfirstcall, lfirstcall_powerhel, lsqrt
-      integer :: loop_n, loop_m
       
 !!$     call signal_wait(lhelperflags(PERF_POWERSNAP),lhelper_run)
 
@@ -941,12 +940,12 @@ module Snapshot
             !$omp parallel num_threads(num_helper_threads)
             !$ thread_id = omp_get_thread_num()+1
             !$omp do collapse(2)
-            do loop_n=n1,n2
-              do loop_m=m1,m2
+            do nloc=n1,n2
+              do mloc=m1,m2
                 !TP: We have to do this stupid hack since n and m are threadprivate and at least some compilers do not let the loop variables be threadprivate
                 !TP: The real problem is that all der functions work on global n and m but that can't be changed easily
-                n = loop_n
-                m = loop_m
+                n=nloc
+                m=mloc
                 call curli(f,iaa,b_vec(:,m-nghost,n-nghost),ivec)
               enddo
             enddo
@@ -1043,7 +1042,7 @@ module Snapshot
         if (Hc_specflux) call power_transfer_mag(f,'Hc')
 !
 !!$      call signal_send(lhelperflags(PERF_POWERSNAP),.false.)
-         lhelperflags(PERF_POWERSNAP) = .false.
+!$       lhelperflags(PERF_POWERSNAP) = .false.
 
     endsubroutine perform_powersnap
 !***********************************************************************

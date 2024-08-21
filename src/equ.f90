@@ -346,7 +346,7 @@ module Equ
           call copy_farray_from_GPU(f)
 !$        call save_diagnostic_controls
 !!$        call signal_send(lhelperflags(PERF_DIAGS),.true.)
-          lmasterflags(PERF_DIAGS) = .true.
+!$        lmasterflags(PERF_DIAGS) = .true.
 !!$        last_pushed_task = push_task(c_funloc(calc_all_module_diagnostics_wrapper),&
 !!$        last_pushed_task, 1, default_task_type, 1, depend_on_all, f, mx, my, mz, mfarray)
         endif
@@ -716,7 +716,8 @@ module Equ
 !
       call init_reduc_pointers
 
-!$omp parallel private(p) num_threads(num_helper_threads) copyin(fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz,phiavg_norm)
+!$omp parallel private(p) num_threads(num_helper_threads) &
+!$omp copyin(fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz,phiavg_norm)
 !$    call restore_diagnostic_controls
 
       lfirstpoint=.true.
@@ -803,7 +804,7 @@ module Equ
         call write_diagnostics(f)                 !       ~
 
 !!$      call signal_send(lhelperflags(PERF_DIAGS),.false.)
-        lhelperflags(PERF_DIAGS) = .false.
+!$      lhelperflags(PERF_DIAGS) = .false.
 
       endsubroutine perform_diagnostics
 !*****************************************************************************
@@ -1695,6 +1696,7 @@ module Equ
       intent(inout) :: df
       logical :: passed
 
+      !external rhs_1, rhs_2
       interface
         subroutine rhs_1(f,df,p)
           import mx
@@ -1775,6 +1777,7 @@ module Equ
       logical :: passed
       real :: relative_diff,max_relative_diff
 
+      !external rhs_1, rhs_2
       interface
         subroutine rhs_1(f,df,p,mass_per_proc,early_finalize)
           import mx

@@ -376,44 +376,45 @@ void print_diagnostics(const int pid, const int step, const AcReal dt_, const Ac
 /***********************************************************************************************/
 AcReal max_advec()
 {
-  AcReal umax = 0.;
 #if LHYDRO
+  AcReal umax = 0.;
   acGridReduceVec(STREAM_DEFAULT, RTYPE_MAX, UUX, UUY, UUZ, &umax);
-#endif
   return umax/sqrt(get_dxyzs().x);
+#else
+  return 0.
+#endif
+  
 }
 /***********************************************************************************************/
 std::array<AcReal,3>
 visc_get_max_diffus()
 {
-	constexpr AcReal nu_hyper2 = 0.0;
 	return
 #if LVISCOSITY
-		{nu,nu_hyper2,nu_hyper3};
+	  {nu,nu_hyper2,nu_hyper3};
 #else
-		{0.0,0.0,0.0};
+	  {0.0,0.0,0.0};
 #endif
 }
 std::array<AcReal,3>
 magnetic_get_max_diffus()
 {
-	constexpr AcReal eta_hyper2 = 0.0;
 	return
 #if LMAGNETIC
-		{eta,eta_hyper2, eta_hyper3};
+	  {eta,eta_hyper2,eta_hyper3};
 #else
-		{0.0,0.0,0.0};
+	  {0.0,0.0,0.0};
 #endif
 }
 std::array<AcReal,3>
 energy_get_max_diffus()
 {
-	constexpr AcReal chi_hyper2 = 0.0;
+ 	constexpr AcReal chi_hyper2=0.;
 	return
 #if LENTROPY
-		{gamma*chi,gamma*chi_hyper2,gamma*chi_hyper3};
+	  {gamma*chi,gamma*chi_hyper2,gamma*chi_hyper3};
 #else
-		{0.0,0.0,0.0};
+	  {0.0,0.0,0.0};
 #endif
 }
 std::array<AcReal,3>
@@ -421,16 +422,15 @@ elem_wise_max(const std::array<AcReal,3>& a,const std::array<AcReal,3>& b,const 
 {
 	return 
 	{
-		std::max(std::max(a[0],b[0]),c[0]),
-		std::max(std::max(a[1],b[1]),c[1]),
-		std::max(std::max(a[2],b[2]),c[2])
+	  std::max(std::max(a[0],b[0]),c[0]),
+	  std::max(std::max(a[1],b[1]),c[1]),
+	  std::max(std::max(a[2],b[2]),c[2])
 	};
 }
 
 AcReal max_diffus()
 {
   AcReal3 dxyz_vals = get_dxyzs();
-  AcReal maxdiffus_val=0., maxdiffus2_val=0., maxdiffus3_val=0.;
   auto max_diffusions = elem_wise_max(visc_get_max_diffus(), magnetic_get_max_diffus(), energy_get_max_diffus());
   return max_diffusions[0]*dxyz_vals.x/cdtv + max_diffusions[1]*dxyz_vals.y/cdtv2 + max_diffusions[2]*dxyz_vals.z/cdtv3;
 }
@@ -860,12 +860,12 @@ extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
 
   bool passed = true;
   AcReal max_abs_not_passed_val=-1.0;
-  AcReal true_pair {};
+  AcReal true_pair;
   AcReal max_abs_relative_difference =-1.0;
   AcReal max_abs_value = -1.0;
   AcReal min_abs_value = 1.0;
-  AcReal gpu_val_for_largest_diff  {};
-  AcReal true_val_for_largest_diff {};
+  AcReal gpu_val_for_largest_diff;
+  AcReal true_val_for_largest_diff;
   int num_of_points_where_different[NUM_VTXBUF_HANDLES] = {0};
 
   for (int i = dims.n0.x; i < dims.n1.x; i++)
@@ -977,6 +977,7 @@ void setupConfig(AcMeshInfo &config)
   config.real_params[AC_dsx] = dx;
   config.real_params[AC_dsy] = dy;
   config.real_params[AC_dsz] = dz;
+  config.real_params[AC_dsmin] = std::min(dx,std::min(dy,dz));
   config.real_params[AC_xlen] = Lxyz[0];
   config.real_params[AC_ylen] = Lxyz[1];
   config.real_params[AC_zlen] = Lxyz[2];
@@ -988,21 +989,21 @@ void setupConfig(AcMeshInfo &config)
 
   config.real_params[AC_mu0] = mu0;
 
-// parameter arrays for boundary conditions (hard coded in prerequisites)
-/*
-  config.real_arrays[AC_fbcx  ] = fbcx
-  config.real_arrays[AC_fbcx_2] = fbcx_2
-  config.real_arrays[AC_fbcy  ] = fbcy
-  config.real_arrays[AC_fbcy_1] = fbcy_1
-  config.real_arrays[AC_fbcy_2] = fbcy_2
-  config.real_arrays[AC_fbcz  ] = fbcz
-  config.real_arrays[AC_fbcz_1] = fbcz_1
-  config.real_arrays[AC_fbcz_2] = fbcz_2
+// parameter arrays for boundary conditions
+
+/*  config.real_arrays[AC_fbcx  ] = fbcx;
+  config.real_arrays[AC_fbcx_2] = fbcx_2;
+  config.real_arrays[AC_fbcy  ] = fbcy;
+  config.real_arrays[AC_fbcy_1] = fbcy_1;
+  config.real_arrays[AC_fbcy_2] = fbcy_2;
+  config.real_arrays[AC_fbcz  ] = fbcz;
+  config.real_arrays[AC_fbcz_1] = fbcz_1;
+  config.real_arrays[AC_fbcz_2] = fbcz_2;
 */
   // Enter physics related parameters in config.
   #include "PC_modulepars.h"
   #if LDENSITY
-    config.int_params[AC_ldensity_nolog] = 1;//ldensity_nolog;
+    config.int_params[AC_ldensity_nolog] = ldensity_nolog;
     //printf("ldensity_nolog is %d \n",config.int_params[AC_ldensity_nolog]);//ldensity_nolog);
   #endif
   Device dev = acGridGetDevice();
@@ -1072,9 +1073,11 @@ extern "C" void copyVBApointers(AcReal **in, AcReal **out)
 extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out, int comm_fint)
 {
   //Setup configurations used for initializing and running the GPU code
+
 #if PACKED_DATA_TRANSFERS
   //initLoadStore();
 #endif
+
   comm_pencil = MPI_Comm_f2c(comm_fint);
   setupConfig(mesh.info);
   checkConfig(mesh.info);
@@ -1084,7 +1087,6 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out, int c
 
   acGridGetDevice()->vba.kernel_input_params.twopass_solve_final.step_num = 0;
   acGridGetDevice()->vba.kernel_input_params.twopass_solve_intermediate.step_num = 0;
-
 
 #include "user_taskgraphs.h"
 

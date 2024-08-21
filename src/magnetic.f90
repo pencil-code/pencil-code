@@ -10836,13 +10836,15 @@ print*,'AXEL1'
 
     use Syscalls, only: copy_addr
 
-    integer, parameter :: n_pars=4
+    integer, parameter :: n_pars=6
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call copy_addr(eta,p_par(1))
-    call copy_addr(eta_hyper3,p_par(2))
-    call copy_addr(lresi_eta_const,p_par(3)) ! int
-    call copy_addr(lresi_hyper3,p_par(4)) ! int
+    call copy_addr(eta_hyper2,p_par(2))
+    call copy_addr(eta_hyper3,p_par(3))
+    call copy_addr(lresi_eta_const,p_par(4)) ! int
+    call copy_addr(lresi_hyper2,p_par(5)) ! int
+    call copy_addr(lresi_hyper3,p_par(6)) ! int
 
     endsubroutine pushpars2c
 !***********************************************************************
