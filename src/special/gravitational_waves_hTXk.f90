@@ -523,7 +523,6 @@ module Special
                    lgt_file(nt_file), lgff(nt_file), lgff2(nt_file), lgff3(nt_file))
           do it_file=1,nt_file
             read(9,*) t_file(it_file), scl_factor(it_file), Hp_file(it_file), appa_file(it_file), dummy
-          !if (ip<14) print*,'AXEL: 't_file(it_file), scl_factor(it_file), Hp_file(it_file), appa_file(it_file), dummy
           enddo
           close(9)
           lgt_file=alog10(t_file)
@@ -1083,7 +1082,6 @@ module Special
           !if (ip<14) print*,'ALBERTO: ',it_file, t_file(it_file), t, t_file(it_file)+1, t_ini
           lgt1=lgt_file(it_file)
           lgt2=lgt_file(it_file+1)
-          if (ip<11.and.lroot) print*,'AXEL: ',lgt1, lgt_current, lgt2, lgt2-lgt_current
           lgf1=lgff(it_file)
           lgf2=lgff(it_file+1)
           lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
@@ -1355,7 +1353,6 @@ module Special
 ! for boost (dec 7)
       real :: k1_boost,k2_boost,k3_boost, ksqr_boost, ksqrt_boost
       real :: one_over_k2_boost,one_over_k4_boost
-      real :: vx_boost, vy_boost, vz_boost
       real, dimension(3) :: kvec_boost, vboost
       real :: gamma_boost, v_boostsqr, kdotv
       real :: SCL_re_boost, SCL_im_boost, VCT_re_boost, VCT_im_boost
@@ -1576,6 +1573,7 @@ module Special
               endif
 ! added by emma (dec 7) to include boosted spectra
               if (lboost) then
+                if (iggX_boost==0) call fatal_error('make_spectra','lggTX_as_aux_boost must be T to have iggX_boost/=0')
                 if (GWs_spec_boost) then
                         spectra%GWs_boost(ik)=spectra%GWs_boost(ik) &
                         +f(nghost+ikx,nghost+iky,nghost+ikz,iggX_boost)**2 &
@@ -1746,6 +1744,7 @@ if (ibin_angular<1 .or. ibin_angular>nbin_angular) print*,'AXEL: bad ibin_angula
 !  Boosted GW strain spectrumc computed from h
               if (lboost) then
               if (GWh_spec_boost) then
+                if (ihhX_boost==0) call fatal_error('make_spectra','lhhTX_as_aux_boost must be T to have ihhX_boost/=0')
                 spectra%GWh_boost(ik)=spectra%GWh_boost(ik) &
                    +f(nghost+ikx,nghost+iky,nghost+ikz,ihhX_boost  )**2 &
                    +f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim_boost)**2 &
@@ -1880,6 +1879,8 @@ if (ibin_angular<1 .or. ibin_angular>nbin_angular) print*,'AXEL: bad ibin_angula
       select case(kind)
       case ('GWs'); spectrum=spectra%GWs; spectrum_hel=spectra%GWshel
       case ('GWh'); spectrum=spectra%GWh; spectrum_hel=spectra%GWhhel
+      case ('GBs'); spectrum=spectra%GWs_boost; spectrum_hel=spectra%GWshel_boost
+      case ('GBh'); spectrum=spectra%GWh_boost; spectrum_hel=spectra%GWhhel_boost
       case ('GWm'); spectrum=spectra%GWm; spectrum_hel=spectra%GWmhel
       case ('Str'); spectrum=spectra%Str; spectrum_hel=spectra%Strhel
       case ('Stg'); spectrum=spectra%Stg; spectrum_hel=spectra%Stghel
@@ -2644,11 +2645,11 @@ if (ibin_angular<1 .or. ibin_angular>nbin_angular) print*,'AXEL: bad ibin_angula
               if (ldebug_print) then
                 if (nint(k1)==2.and.nint(k2)==0.and.nint(k3)==0) then
                   if (lhorndeski) then
-                    print*,'AXEL0 (horndeski): ',om1, coefA,coefB,hhTre,ggTre
-                    print*,'AXEL1 (horndeski): ',cosoth, cosotg, sinoth, sinotg
+                    print*,'(horndeski): ',om1, coefA,coefB,hhTre,ggTre
+                    print*,'(horndeski): ',cosoth, cosotg, sinoth, sinotg
                   else
-                    print*,'AXEL0: ',om1, coefAre,coefBre,hhTre,ggTre
-                    print*,'AXEL1: ',cosot, sinot
+                    print*,'(horndeski1): ',om1, coefAre,coefBre,hhTre,ggTre
+                    print*,'(horndeski2): ',cosot, sinot
                   endif
                 endif
               endif
