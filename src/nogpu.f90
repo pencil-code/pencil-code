@@ -54,7 +54,7 @@ contains
     endsubroutine rhs_GPU
 !**************************************************************************
     subroutine copy_farray_c_(f) bind(C)
-      real, dimension (:,:,:,:), intent(OUT) :: f
+      real, dimension (mx,my,mz,mfarray), intent(OUT) :: f
       call keep_compiler_quiet(f)
     endsubroutine
 !**************************************************************************

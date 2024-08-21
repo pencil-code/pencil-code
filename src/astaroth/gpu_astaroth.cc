@@ -383,27 +383,56 @@ AcReal max_advec()
   return umax/sqrt(get_dxyzs().x);
 }
 /***********************************************************************************************/
+std::array<AcReal,3>
+visc_get_max_diffus()
+{
+	constexpr AcReal nu_hyper2 = 0.0;
+	return
+#if LVISCOSITY
+		{nu,nu_hyper2,nu_hyper3};
+#else
+		{0.0,0.0,0.0};
+#endif
+}
+std::array<AcReal,3>
+magnetic_get_max_diffus()
+{
+	constexpr AcReal eta_hyper2 = 0.0;
+	return
+#if LMAGNETIC
+		{eta,eta_hyper2, eta_hyper3};
+#else
+		{0.0,0.0,0.0};
+#endif
+}
+std::array<AcReal,3>
+energy_get_max_diffus()
+{
+	constexpr AcReal chi_hyper2 = 0.0;
+	return
+#if LENTROPY
+		{gamma*chi,gamma*chi_hyper2,gamma*chi_hyper3};
+#else
+		{0.0,0.0,0.0};
+#endif
+}
+std::array<AcReal,3>
+elem_wise_max(const std::array<AcReal,3>& a,const std::array<AcReal,3>& b,const std::array<AcReal,3>& c)
+{
+	return 
+	{
+		std::max(std::max(a[0],b[0]),c[0]),
+		std::max(std::max(a[1],b[1]),c[1]),
+		std::max(std::max(a[2],b[2]),c[2])
+	};
+}
+
 AcReal max_diffus()
 {
   AcReal3 dxyz_vals = get_dxyzs();
-  AcReal maxdiffus=0., maxdiffus2=0., maxdiffus3=0.;
-
-#if LVISCOSITY
-  maxdiffus = nu;
-  //maxdiffus2 = nu_hyper2;
-  maxdiffus3 = nu_hyper3;
-#endif
-#if LMAGNETIC
-  maxdiffus = std::max(maxdiffus, eta);
-  //maxdiffus2 = std::max(maxdiffus2, eta_hyper2);
-  maxdiffus3 = std::max(maxdiffus3, eta_hyper3);
-#endif
-#if LENTROPY
-  maxdiffus = std::max(maxdiffus, gamma * chi);
-  //maxdiffus2 = std::max(maxdiffus2, gamma * chi_hyper2);
-  maxdiffus3 = std::max(maxdiffus3, gamma * chi_hyper3);
-#endif
-  return maxdiffus*dxyz_vals.x/cdtv + maxdiffus2*dxyz_vals.y/cdtv2 + maxdiffus3*dxyz_vals.z/cdtv3;
+  AcReal maxdiffus_val=0., maxdiffus2_val=0., maxdiffus3_val=0.;
+  auto max_diffusions = elem_wise_max(visc_get_max_diffus(), magnetic_get_max_diffus(), energy_get_max_diffus());
+  return max_diffusions[0]*dxyz_vals.x/cdtv + max_diffusions[1]*dxyz_vals.y/cdtv2 + max_diffusions[2]*dxyz_vals.z/cdtv3;
 }
 /***********************************************************************************************/
 int id_to_tag(int3 id)
@@ -651,16 +680,6 @@ extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
 
   AcMesh mesh_true;
   AcMesh mesh_test;
-  AcMesh df_mesh;
-  AcMesh ds_mesh;
-  AcMesh next_mesh;
-
-  for (int i = 0; i < NUM_VTXBUF_HANDLES; ++i)
-  {
-    ds_mesh.vertex_buffer[VertexBufferHandle(i)] = (AcReal *)malloc(sizeof(AcReal) * mw);
-    df_mesh.vertex_buffer[VertexBufferHandle(i)] = (AcReal *)malloc(sizeof(AcReal) * mw);
-    next_mesh.vertex_buffer[VertexBufferHandle(i)] = (AcReal *)malloc(sizeof(AcReal) * mw);
-  }
   const AcReal epsilon = pow(0.1,12);
   // constexpr AcReal epsilon = 0.0;
   constexpr AcReal local_dt = 0.001;
@@ -841,12 +860,12 @@ extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
 
   bool passed = true;
   AcReal max_abs_not_passed_val=-1.0;
-  AcReal true_pair;
+  AcReal true_pair {};
   AcReal max_abs_relative_difference =-1.0;
   AcReal max_abs_value = -1.0;
   AcReal min_abs_value = 1.0;
-  AcReal gpu_val_for_largest_diff;
-  AcReal true_val_for_largest_diff;
+  AcReal gpu_val_for_largest_diff  {};
+  AcReal true_val_for_largest_diff {};
   int num_of_points_where_different[NUM_VTXBUF_HANDLES] = {0};
 
   for (int i = dims.n0.x; i < dims.n1.x; i++)
@@ -1063,20 +1082,9 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out, int c
   acCheckDeviceAvailability();
   acGridInit(mesh.info);
 
-  VertexBufferHandle all_fields[NUM_VTXBUF_HANDLES];
-  for (int i = 0; i < NUM_VTXBUF_HANDLES; i++)
-  {
-    all_fields[i] = (VertexBufferHandle)i;
-  }
   acGridGetDevice()->vba.kernel_input_params.twopass_solve_final.step_num = 0;
   acGridGetDevice()->vba.kernel_input_params.twopass_solve_intermediate.step_num = 0;
 
-  //AcTaskDefinition rhs_ops[] =  {
-  //    acHaloExchange(all_fields),
-  //    acBoundaryCondition(BOUNDARY_XYZ, BOUNDCOND_PERIODIC, all_fields),
-  //    acCompute(twopass_solve_intermediate, all_fields),
-  //    acCompute(twopass_solve_final, all_fields)};
-  //rhs_test_graph = acGridBuildTaskGraphWithIterations(rhs_ops,3);
 
 #include "user_taskgraphs.h"
 

@@ -807,25 +807,6 @@ module Equ
 
       endsubroutine perform_diagnostics
 !*****************************************************************************
-!$    subroutine calc_all_module_diagnostics_wrapper(f,p) bind(C)
-!    
-!    7-feb-24/TP: needed since can't use bind(C) in general (only for threadpool)
-!
-!$    real, dimension(mx,my,mz,mfarray) :: f
-!$    type (pencil_case) :: p
-!
-!$      call calc_all_module_diagnostics(f,p)
-!
-!$    endsubroutine calc_all_module_diagnostics_wrapper 
-!***********************************************************************
-!$    subroutine finalize_diagnostics_wrapper() bind(C)
-!    
-!    7-feb-24/TP: needed since can't use bind(C) in general (only for threadpool)
-!
-!$      call finalize_diagnostics
-!
-!$    endsubroutine finalize_diagnostics_wrapper
-!****************************************************************************
     subroutine finalize_diagnostics
 !
 !  Finalizes all module diagnostics by MPI communication. 

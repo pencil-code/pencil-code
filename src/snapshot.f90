@@ -774,6 +774,7 @@ module Snapshot
       use Pscalar, only: cc2m, gcc2m, rhoccm
       use Struct_func, only: structure
       use Sub, only: curli
+!$    use OMP_lib
 
       real, dimension (mx,my,mz,mfarray) :: f
 
@@ -781,6 +782,7 @@ module Snapshot
       integer :: ivec,stat,ipos,ispec
       character (LEN=40) :: str,sp1,sp2
       logical :: lfirstcall, lfirstcall_powerhel, lsqrt
+      integer :: loop_n, loop_m
       
 !!$     call signal_wait(lhelperflags(PERF_POWERSNAP),lhelper_run)
 
@@ -939,8 +941,12 @@ module Snapshot
             !$omp parallel num_threads(num_helper_threads)
             !$ thread_id = omp_get_thread_num()+1
             !$omp do collapse(2)
-            do n=n1,n2
-              do m=m1,m2
+            do loop_n=n1,n2
+              do loop_m=m1,m2
+                !TP: We have to do this stupid hack since n and m are threadprivate and at least some compilers do not let the loop variables be threadprivate
+                !TP: The real problem is that all der functions work on global n and m but that can't be changed easily
+                n = loop_n
+                m = loop_m
                 call curli(f,iaa,b_vec(:,m-nghost,n-nghost),ivec)
               enddo
             enddo
