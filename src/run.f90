@@ -540,7 +540,7 @@ if (lroot) flush(6)
 !$    lmasterflags = .false.
 !$    call signal_send(lhelper_perf,.true.)
 !$    lfarray_copied = .false.
-    endif
+!$  endif
 
   enddo Time_loop
 !$ lmultithread = .false.
