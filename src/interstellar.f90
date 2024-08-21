@@ -758,7 +758,7 @@ module Interstellar
 !  Fred: 06-Nov-17 added SN_rate column and changed site_mass to site_Nsol
 !        Note changes may affect reading/meaning of pre-existing file contents
 !
-      if (lroot .and. lstart) then
+      if (lroot .and. (lstart .or. (it==0))) then
         open(1,file=trim(datadir)//'/sn_series.dat',position='append')
         write(1,'("#",5A)')  &
             '---it-----------t------------itype-iproc---l-----m-----n-------x-',&
@@ -2191,6 +2191,9 @@ module Interstellar
                 SNRs(iSNR)%feat%x, SNRs(iSNR)%feat%y, SNRs(iSNR)%feat%z, &
                 SNRs(iSNR)%site%rho, SNRs(iSNR)%feat%radius
           endif
+          center_SN_x=impossible
+          center_SN_y=impossible
+          center_SN_z=impossible
         enddo
 !
         if (try_count==0) then
@@ -2280,6 +2283,9 @@ module Interstellar
                 SNRs(iSNR)%feat%x, SNRs(iSNR)%feat%y, SNRs(iSNR)%feat%z,&
                 SNRs(iSNR)%site%rho, SNRs(iSNR)%feat%radius
           endif
+          center_SN_x=impossible
+          center_SN_y=impossible
+          center_SN_z=impossible
         enddo
 !
         if (try_count==0) then
@@ -2538,7 +2544,7 @@ module Interstellar
 !  Calculate the total mass in locations where the temperature is below
 !  cloud_TT and the density is above cloud_rho, i.e. cold and dense.
 !
-        !$omp target if(loffload) map(from: cloud_mass) & !needs: cloud_rho, lncloud_TT 
+        !$omp target if(loffload) map(from: cloud_mass) & !needs: cloud_rho, lncloud_TT
         !$omp        has_device_addr(f) ! globals: irho, ilnrho, iss, ilnTT, FG: ldensity_nolog
         !$omp teams distribute parallel do collapse(2) private(rho,lnTT,dV) reduction(+:cloud_mass)
         do n=n1,n2
