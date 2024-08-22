@@ -5,10 +5,10 @@ declare -a top
 
 function boundcond_sed()
 {
-grep '^ *bc'$1' *=' $bc_file | sed -f scripts/bc2ast.sed
+###grep '^ *bc'$1' *=' $bc_file | sed -f scripts/bc2ast.sed
 bot=(`cat bot`)
 top=(`cat top`)
-rm -f top bot
+###rm -f top bot
 
 sed -e'/select  *case  *(bc'$1'12/,/end *select/ ! d' \
     -e'/select *case/ d' \
@@ -58,10 +58,12 @@ fi
 #echo lperi = ${lperi[0]} ${lperi[1]} ${lperi[2]}
 
 declare -a fields
-fields=(`grep 'typedef  *enum.* Field;' ./astaroth/submodule/build/acc-runtime/api/user_defines.h | sed -e's/^.*typedef enum *{\([^}]*\) *} *Field;/\1/' -e' s/,/ /g' -e's/NUM_[A-Z_]*FIELDS *=//g'`)
+#fields=(`grep 'typedef  *enum.* Field;' ./astaroth/submodule/build/acc-runtime/api/fields_info.h | sed -e's/^.*typedef enum *{\([^}]*\) *} *Field;/\1/' -e' s/,/ /g' -e's/NUM_[A-Z_]*FIELDS *=//g'`)
+fields=(`grep '^ *Field' ./astaroth/DSL/local/fieldecs.h | sed -e's/Field //g' -e's/ *\/\/.*$/ /' -e's/,/ /g' | tr -d '\n'`)
+
+nfields=${#fields[@]}
 #echo FIELDS=${fields[0]}, ${fields[5]}
-nfields=${fields[-2]}
-ncomm_fields=${fields[-1]}
+#echo FIELDS=$nfields
 
 rm -f astaroth/DSL/local/boundconds.h
 touch astaroth/DSL/local/boundconds.h
