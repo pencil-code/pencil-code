@@ -328,12 +328,13 @@ module Special
 !
 !  boosted hT and hX in Fourier space
 !
-      if (lggTX_as_aux_boost) then
-        call farray_register_auxiliary('ggT_boost',iggT_boost)
-        call farray_register_auxiliary('ggX_boost',iggX_boost)
-        call farray_register_auxiliary('ggTim_boost',iggTim_boost)
-        call farray_register_auxiliary('ggXim_boost',iggXim_boost)
-      endif
+!      if (lggTX_as_aux_boost) then
+!        call farray_register_auxiliary('ggT_boost',iggT_boost)
+!        call farray_register_auxiliary('ggX_boost',iggX_boost)
+!        call farray_register_auxiliary('ggTim_boost',iggTim_boost)
+!        call farray_register_auxiliary('ggXim_boost',iggXim_boost)
+!print*,'AXEL0b, iggT_boost= ',iggT_boost
+!      endif
 !
       if (lhhTX_as_aux_boost) then
         call farray_register_auxiliary('hhT_boost',ihhT_boost)
@@ -1346,16 +1347,19 @@ module Special
 !
       integer :: ikx, iky, ikz, q, p, pq, ik, i, j, ij
       integer :: ipulsar, jpulsar, ibin_angular, jvec
-      real :: ksqr, one_over_k2, one_over_k4, one_over_k
+      real :: ksqr, ksqrt, one_over_k2, one_over_k4, one_over_k
       real :: k1, k2, k3, k1sqr, k2sqr, k3sqr
       real :: k1mNy, k2mNy, k3mNy, SCL_re, SCL_im
-      real, dimension(3) :: VCT_re, VCT_im, kvec
+      real, dimension (3) :: VCT_re, VCT_im, kvec
 ! for boost (dec 7)
-      real :: k1_boost,k2_boost,k3_boost, ksqr_boost, ksqrt_boost
-      real :: one_over_k2_boost,one_over_k4_boost
-      real, dimension(3) :: kvec_boost, vboost
+      real :: k1_boost, k1sqr_boost, k2_boost,k2sqr_boost,k3_boost, k3sqr_boost
+      real :: ksqr_boost, ksqrt_boost, one_over_k2_boost
+      real, dimension (3) :: e1_boost, e2_boost, vboost, kvec_boost, khat_boost
+      real, dimension (6) :: e_T_boost, e_X_boost
+      real :: eTT, eTX, eXT, eXX
       real :: gamma_boost, v_boostsqr, kdotv
       real :: SCL_re_boost, SCL_im_boost, VCT_re_boost, VCT_im_boost
+      real :: ggT_boost, ggTim_boost, ggX_boost, ggXim_boost
 !
       real :: fact, facthel, cos_angle, angle, sign_switch
             
@@ -1403,14 +1407,12 @@ module Special
             k2sqr=k2**2
             k3sqr=k3**2
             ksqr=k1sqr+k2sqr+k3sqr
+            ksqrt = sqrt(ksqr)
 !
-            if (lroot.and.ikx==1.and.iky==1.and.ikz==1) then
-              one_over_k2=0.
-            else
+            if (ksqr/=0.) then
               one_over_k2=1./ksqr
-            endif
-            one_over_k=sqrt(one_over_k2)
-            one_over_k4=one_over_k2**2
+              one_over_k=sqrt(one_over_k2)
+              one_over_k4=one_over_k2**2
 !
 !  possibility of swapping the sign
 !
@@ -1442,37 +1444,218 @@ module Special
             kvec(1)=k1
             kvec(2)=k2
             kvec(3)=k3
+!
+!  compute e1 and e2 vectors (for lnonlinear_source only)
+!
+                  if(abs(k1)<abs(k2)) then
+                    if(abs(k1)<abs(k3)) then !(k1 is pref dir)
+                      e1=(/0.,-k3,+k2/)
+                      e2=(/k2sqr+k3sqr,-k2*k1,-k3*k1/)
+                    else !(k3 is pref dir)
+                      e1=(/k2,-k1,0./)
+                      e2=(/k1*k3,k2*k3,-(k1sqr+k2sqr)/)
+                    endif
+                  else !(k2 smaller than k1)
+                    if(abs(k2)<abs(k3)) then !(k2 is pref dir)
+                      e1=(/-k3,0.,+k1/)
+                      e2=(/+k1*k2,-(k1sqr+k3sqr),+k3*k2/)
+                    else !(k3 is pref dir)
+                      e1=(/k2,-k1,0./)
+                      e2=(/k1*k3,k2*k3,-(k1sqr+k2sqr)/)
+                    endif
+                  endif
+                  e1=e1/sqrt(e1(1)**2+e1(2)**2+e1(3)**2)
+                  e2=e2/sqrt(e2(1)**2+e2(2)**2+e2(3)**2)
+!
+!  compute e_T and e_X
+!
+                do j=1,3
+                do i=1,3
+                  ij=ij_table(i,j)
+                  e_T(ij)=e1(i)*e1(j)-e2(i)*e2(j)
+                  e_X(ij)=e1(i)*e2(j)+e2(i)*e1(j)
+                enddo
+                enddo
+!
+!  possibility of swapping the sign of e_X
+!
+                if (lswitch_sign_e_X) then
+                  if (k3<0.) then
+                    e_X=-e_X
+                  elseif (k3==0.) then
+                    if (k2<0.) then
+                      e_X=-e_X
+                    elseif (k2==0.) then
+                      if (k1<0.) then
+                        e_X=-e_X
+                      endif
+                    endif
+                  endif
+                endif
 ! 
 ! Boosted k, added by emma (dec 7)
             if (lboost) then
-            v_boostsqr = vx_boost**2+vy_boost**2+vz_boost**2
-            gamma_boost=1./sqrt(1.-v_boostsqr)
-            vboost(1)=vx_boost
-            vboost(2)=vy_boost
-            vboost(3)=vz_boost
+              v_boostsqr = vx_boost**2+vy_boost**2+vz_boost**2
+              gamma_boost=1./sqrt(1.-v_boostsqr)
+              vboost(1)=vx_boost
+              vboost(2)=vy_boost
+              vboost(3)=vz_boost
+              if (v_boostsqr==0.) then
+                kdotv = 0.
+              else
+                kdotv = (gamma_boost-1)*(k1*vx_boost + k2*vy_boost + k3*vz_boost)/v_boostsqr
+              endif
+              k1_boost = k1+kdotv*vx_boost - gamma_boost*ksqrt*vx_boost
+              k2_boost = k2+kdotv*vy_boost - gamma_boost*ksqrt*vy_boost
+              k3_boost = k3+kdotv*vz_boost - gamma_boost*ksqrt*vz_boost
+
+              k1sqr_boost=k1_boost**2
+              k2sqr_boost=k2_boost**2
+              k3sqr_boost=k3_boost**2
+              ksqr_boost=k1sqr_boost+k2sqr_boost+k3sqr_boost
+              ksqrt_boost=sqrt(ksqr_boost)
+!
+!  set boosted k vector            
+!
+              kvec_boost(1)=k1_boost
+              kvec_boost(2)=k2_boost
+              kvec_boost(3)=k3_boost
+!
+!  boosted x components of k, and squared quantities.
+!
+            !added above component definitions for later computation, emma
+            !k1_boost=gamma_boost*(-vx_boost*ksqrt+kx_fft(ikx+ipx*nx))
+            !generalising the boost:
             if (v_boostsqr==0.) then
               kdotv = 0.
             else
               kdotv = (gamma_boost-1)*(k1*vx_boost + k2*vy_boost + k3*vz_boost)/v_boostsqr
             endif
-            k1_boost = k1+kdotv*vx_boost - gamma_boost*sqrt(ksqr)*vx_boost
-            k2_boost = k2+kdotv*vy_boost - gamma_boost*sqrt(ksqr)*vy_boost
-            k3_boost = k3+kdotv*vz_boost - gamma_boost*sqrt(ksqr)*vz_boost
-            ksqr_boost=k1_boost**2+k2_boost**2+k3_boost**2
-            ksqrt_boost=sqrt(ksqr_boost)
-!            
-            if (lroot.and.ikx==1.and.iky==1.and.ikz==1) then
-              one_over_k2_boost=0.
-            else
-              one_over_k2_boost=1./ksqr_boost
-            endif
-            one_over_k4_boost=one_over_k2_boost**2
+
+
+            !!!khat_boost = kvec_boost/ksqrt_boost    !MR: not used, but potential troublemaker for ksqrt_boost=0.
+!-----------------------------------------------------------------------------
+!  option of computing boosted hT, hX gT, gX
+!  back to real space: hTX
+!  re-utilize S_T_re, etc as workspace.
+!  begin by initilizing them to zero
+!  compute boosted e1 and e2 vectors
 !
-!  set boosted k vector            
+!emma: delete following if if decide to use second method below
+
+         !      e1dote3=0 !this is only for a test, emma
+         !      e2dote3=0
+         !      e2dote1=0
+!emma: changed if statements to keep construction choice consistent with un-boosted case (dec 9)                
+              if(abs(k1)<abs(k2)) then
+                if(abs(k1_boost)<abs(k3_boost)) then !(k1_boost is pref dir)
+                  e1_boost=(/0.,-k3_boost,+k2_boost/)
+                  e2_boost=(/k2sqr_boost+k3sqr_boost,-k2_boost*k1_boost,-k3_boost*k1_boost/)
+                else !(k3 is pref dir)
+                  e1_boost=(/k2_boost,-k1_boost,0./)
+                  e2_boost=(/k1_boost*k3_boost,k2_boost*k3_boost,-(k1sqr_boost+k2sqr_boost)/)
+                endif
+              else !(k2 smaller than k1_boost)
+                if(abs(k2)<abs(k3)) then !(k2 is pref dir)
+                  e1_boost=(/-k3_boost,0.,+k1_boost/)
+                  e2_boost=(/+k1_boost*k2_boost,-(k1sqr_boost+k3sqr_boost),+k3_boost*k2_boost/)
+                else !(k3 is pref dir)
+                  e1_boost=(/k2_boost,-k1_boost,0./)
+                  e2_boost=(/k1_boost*k3_boost,k2_boost*k3_boost,-(k1sqr_boost+k2sqr_boost)/)
+                endif
+              endif
 !
-            kvec_boost(1)=k1_boost
-            kvec_boost(2)=k2_boost
-            kvec_boost(3)=k3_boost
+!  normalize boosted e1 and e2 vectors
+!
+              e1_boost=e1_boost/sqrt(e1_boost(1)**2+e1_boost(2)**2+e1_boost(3)**2)
+              e2_boost=e2_boost/sqrt(e2_boost(1)**2+e2_boost(2)**2+e2_boost(3)**2)
+!
+! changed method for boosting e1 and e2
+               ! e1_boost(:2)=e1(:2); e2_boost(:2)=e2(:2)
+!                if (v_boostsqr/=0.) then
+!                  do i=1,3
+!                    e1_boost(i)=e1_boost(i)+(gamma_boost-1)*(e1(1)*vx_boost+e1(2)*vy_boost+e1(3)*vz_boost)*vboost(i)/v_boostsqr
+!                    e1_boost(i)=e1_boost(i)-gamma_boost*vboost(i)
+!                    e2_boost(i)=e2_boost(i)+(gamma_boost-1)*(e2(1)*vx_boost+e2(2)*vy_boost+e2(3)*vz_boost)*vboost(i)/v_boostsqr
+!                    e2_boost(i)=e2_boost(i)-gamma_boost*vboost(i)
+                   ! e1dote3=e1dote3+e1_boost(i)*khat_boost(i)
+                   ! e2dote3=e2dote3+e2_boost(i)*khat_boost(i)
+                   ! e2dote1=e2dote1+e2_boost(i)*e1_boost(i)
+!                  enddo
+!                endif
+              !test (emma, dec 9)
+              ! do i = 1,3
+              !    e1dote3=e1dote3+e1_boost(i)*khat_boost(i)
+              !    e2dote3=e2dote3+e2_boost(i)*khat_boost(i)
+              !    e2dote1=e2dote1+e2_boost(i)*e1_boost(i)
+              ! enddo
+              ! if (t>62.and.k1==1.and.k2==1.and.k3==1) print*,'13,23,21',e1dote3,e2dote3,e2dote1 !emma test nov4
+!
+!  compute e_T_boost and e_X_boost
+!
+              do j=1,3
+              do i=1,3
+                ij=ij_table(i,j)
+                e_T_boost(ij)=e1_boost(i)*e1_boost(j)-e2_boost(i)*e2_boost(j)
+                e_X_boost(ij)=e1_boost(i)*e2_boost(j)+e2_boost(i)*e1_boost(j)
+              enddo
+              enddo
+              !emma: following test, nov3
+              !if (t>61.and.k1==1.and.k2==1.and.k3==1) print*,'polar',e_T_boost(1),e_T_boost(2),e_T_boost(3),&
+              !e_T_boost(4),e_T_boost(5),e_T_boost(6)
+!
+!  possibility of swapping the sign of e_X
+!
+              if (lswitch_sign_e_X_boost) then
+                if (k3<0.) then
+                  e_X_boost=-e_X_boost
+                elseif (k3==0.) then
+                  if (k2<0.) then
+                    e_X_boost=-e_X_boost
+                  elseif (k2==0.) then
+                    if (k1_boost<0.) then
+                      e_X_boost=-e_X_boost
+                    endif
+                  endif
+                endif
+              endif
+!XXXX
+!
+!  compute 4 coefficients
+!
+              eTT=0.
+              eTX=0.
+              eXT=0.
+              eXX=0.
+              do j=1,3
+              do i=1,3
+                ij=ij_table(i,j)
+                eTT=eTT+e_T_boost(ij)*e_T(ij)
+                eTX=eTX+e_T_boost(ij)*e_X(ij)
+                eXT=eXT+e_X_boost(ij)*e_T(ij)
+                eXX=eXX+e_X_boost(ij)*e_X(ij)
+              enddo
+              enddo
+!
+!  apply transformation from unboosted to boosted h and g
+!
+     !        f(nghost+1,nghost+1,nghost+1,ihhT_boost  )=eTT*f(nghost+1,nghost+1,nghost+1,ihhT  ) &
+     !                                                  +eTX*f(nghost+1,nghost+1,nghost+1,ihhX  )
+     !        f(nghost+1,nghost+1,nghost+1,ihhTim_boost)=eTT*f(nghost+1,nghost+1,nghost+1,ihhTim) &
+     !                                                  +eTX*f(nghost+1,nghost+1,nghost+1,ihhXim)
+     !        f(nghost+1,nghost+1,nghost+1,ihhX_boost  )=eXT*f(nghost+1,nghost+1,nghost+1,ihhT  ) &
+     !                                                  +eXX*f(nghost+1,nghost+1,nghost+1,ihhX  )
+     !        f(nghost+1,nghost+1,nghost+1,ihhXim_boost)=eXT*f(nghost+1,nghost+1,nghost+1,ihhTim) &
+     !                                                  +eXX*f(nghost+1,nghost+1,nghost+1,ihhXim)
+              ggT_boost  =.5*(eTT*f(nghost+ikx,nghost+iky,nghost+ikz,iggT  ) &
+                             +eTX*f(nghost+ikx,nghost+iky,nghost+ikz,iggX  ))
+              ggTim_boost=.5*(eTT*f(nghost+ikx,nghost+iky,nghost+ikz,iggTim) &
+                             +eTX*f(nghost+ikx,nghost+iky,nghost+ikz,iggXim))
+!
+              ggX_boost  =.5*(eXT*f(nghost+ikx,nghost+iky,nghost+ikz,iggT  ) &
+                             +eXX*f(nghost+ikx,nghost+iky,nghost+ikz,iggX  ))
+              ggXim_boost=.5*(eXT*f(nghost+ikx,nghost+iky,nghost+ikz,iggTim) &
+                             +eXX*f(nghost+ikx,nghost+iky,nghost+ikz,iggXim))
 !
             endif
 !
@@ -1505,35 +1688,6 @@ module Special
               enddo
             endif
 ! 
-! repeat for boosted case? (emma, dec-7)
-! check if this is right, boost Tpq needed?
-!            if (lboost) then
-!            if (SCL_spec_boost) then
-!              SCL_re_boost=0.
-!              SCL_im_boost=0.
-!              do q=1,3
-!              do p=1,3
-!                pq=ij_table(p,q)
-!               SCL_re_boost=SCL_re_boost-1.5*kvec_boost(p)*kvec_boost(q)*one_over_k4_boost*Tpq_re(ikx,iky,ikz,pq)
-!                SCL_im_boost=SCL_im_boost-1.5*kvec_boost(p)*kvec_boost(q)*one_over_k4_boost*Tpq_im(ikx,iky,ikz,pq)
-!              enddo
-!              enddo
-!            endif
-!
-!            if (VCT_spec_boost) then
-!              do q=1,3
-!                VCT_re_boost(q)=+twothird*kvec_boost(q)*SCL_im_boost
-!                VCT_im_boost(q)=-twothird*kvec_boost(q)*SCL_re_boost
-!                do p=1,3
-!                  pq=ij_table(p,q)
-!                  VCT_re_boost(q)=VCT_re_boost(q)+2.*kvec_boost(p)*one_over_k2_boost*Tpq_im(ikx,iky,ikz,pq)
-!                  VCT_im_boost(q)=VCT_im_boost(q)-2.*kvec_boost(p)*one_over_k2_boost*Tpq_re(ikx,iky,ikz,pq)
-!                enddo
-!              enddo
-!            endif
-!            endif
-! above (boosted) section causing errors and don't need right now -emma
-!
             ik=1+nint(sqrt(ksqr)/kscale_factor)
 !
 !  Debug output
@@ -1573,18 +1727,16 @@ module Special
               endif
 ! added by emma (dec 7) to include boosted spectra
               if (lboost) then
-                if (iggX_boost==0) call fatal_error('make_spectra','lggTX_as_aux_boost must be T to have iggX_boost/=0')
                 if (GWs_spec_boost) then
-                        spectra%GWs_boost(ik)=spectra%GWs_boost(ik) &
-                        +f(nghost+ikx,nghost+iky,nghost+ikz,iggX_boost)**2 &
-                        +f(nghost+ikx,nghost+iky,nghost+ikz,iggXim_boost)**2 &
-                        +f(nghost+ikx,nghost+iky,nghost+ikz,iggT_boost)**2 &
-                        +f(nghost+ikx,nghost+iky,nghost+ikz,iggTim_boost)**2
-                        spectra%GWshel_boost(ik)=spectra%GWshel_boost(ik)+2*sign_switch*( &
-                        +f(nghost+ikx,nghost+iky,nghost+ikz,iggXim_boost) &
-                        *f(nghost+ikx,nghost+iky,nghost+ikz,iggT_boost) &
-                        -f(nghost+ikx,nghost+iky,nghost+ikz,iggX_boost) &
-                        *f(nghost+ikx,nghost+iky,nghost+ikz,iggTim_boost) )
+                  !if (iggX_boost==0) call fatal_error('make_spectra','lggTX_as_aux_boost must be T to have iggX_boost/=0')
+                  spectra%GWs_boost(ik)=spectra%GWs_boost(ik) &
+                   +ggX_boost  **2 &
+                   +ggXim_boost**2 &
+                   +ggT_boost  **2 &
+                   +ggTim_boost**2
+                  spectra%GWshel_boost(ik)=spectra%GWshel_boost(ik)+2*sign_switch*( &
+                    +ggXim_boost*ggT_boost &
+                    -ggX_boost  *ggTim_boost )
                 endif
                 if (GWs_spec_complex_boost) then
                         if (k2_boost==0. .and. k3_boost==0.) then
@@ -1849,7 +2001,10 @@ if (ibin_angular<1 .or. ibin_angular>nbin_angular) print*,'AXEL: bad ibin_angula
               enddo
               enddo
             endif
-
+            endif
+!
+!  endif from k^2=0
+!
           endif
         enddo
       enddo
@@ -1959,7 +2114,8 @@ if (ibin_angular<1 .or. ibin_angular>nbin_angular) print*,'AXEL: bad ibin_angula
       integer :: i,j,p,q,ik,ikx,iky,ikz,stat,ij,pq,ip,jq,jStress_ij
       real :: fact, delkt, om2_min, kmin
       real :: ksqr, one_over_k2, k1, k2, k3, k1sqr, k2sqr, k3sqr, ksqrt
-      real :: gamma_boost, v_boostsqr, kdotv, e1dote3,e2dote1,e2dote3!last added only for a test emma nov4
+      real :: gamma_boost, v_boostsqr, kdotv
+!, !e1dote3,e2dote1,e2dote3!last added only for a test emma nov4
       real :: k1_boost, k1sqr_boost, k2_boost,k2sqr_boost,k3_boost, k3sqr_boost, ksqr_boost, ksqrt_boost
       real :: hhTre, hhTim, hhXre, hhXim, coefAre, coefAim
       real :: ggTre, ggTim, ggXre, ggXim, coefBre, coefBim
@@ -2727,9 +2883,9 @@ if (ibin_angular<1 .or. ibin_angular>nbin_angular) print*,'AXEL: bad ibin_angula
 !emma: delete following if if decide to use second method below
 
             if (lboost) then
-                e1dote3=0 !this is only for a test, emma
-                e2dote3=0
-                e2dote1=0
+       !        e1dote3=0 !this is only for a test, emma
+       !        e2dote3=0
+       !        e2dote1=0
 !emma: changed if statements to keep construction choice consistent with un-boosted case (dec 9)                
               if(abs(k1)<abs(k2)) then
                 if(abs(k1_boost)<abs(k3_boost)) then !(k1_boost is pref dir)
@@ -2828,19 +2984,23 @@ if (ibin_angular<1 .or. ibin_angular>nbin_angular) print*,'AXEL: bad ibin_angula
                                                         +eTX*f(nghost+1,nghost+1,nghost+1,ihhX  )
               f(nghost+1,nghost+1,nghost+1,ihhTim_boost)=eTT*f(nghost+1,nghost+1,nghost+1,ihhTim) &
                                                         +eTX*f(nghost+1,nghost+1,nghost+1,ihhXim)
-              f(nghost+1,nghost+1,nghost+1,iggT_boost  )=eTT*f(nghost+1,nghost+1,nghost+1,iggT  ) &
-                                                        +eTX*f(nghost+1,nghost+1,nghost+1,iggX  )
-              f(nghost+1,nghost+1,nghost+1,iggTim_boost)=eTT*f(nghost+1,nghost+1,nghost+1,iggTim) &
-                                                        +eTX*f(nghost+1,nghost+1,nghost+1,iggXim)
+     !        f(nghost+1,nghost+1,nghost+1,iggT_boost  )=eTT*f(nghost+1,nghost+1,nghost+1,iggT  ) &
+          !   f(nghost+1,nghost+1,nghost+1,iggT_boost  )=    f(nghost+1,nghost+1,nghost+1,iggT  ) 
+     !                                                  +eTX*f(nghost+1,nghost+1,nghost+1,iggX  )
+     !        f(nghost+1,nghost+1,nghost+1,iggTim_boost)=eTT*f(nghost+1,nghost+1,nghost+1,iggTim) &
+          !   f(nghost+1,nghost+1,nghost+1,iggTim_boost)=    f(nghost+1,nghost+1,nghost+1,iggTim)
+     !                                                  +eTX*f(nghost+1,nghost+1,nghost+1,iggXim)
 !
               f(nghost+1,nghost+1,nghost+1,ihhX_boost  )=eXT*f(nghost+1,nghost+1,nghost+1,ihhT  ) &
                                                         +eXX*f(nghost+1,nghost+1,nghost+1,ihhX  )
               f(nghost+1,nghost+1,nghost+1,ihhXim_boost)=eXT*f(nghost+1,nghost+1,nghost+1,ihhTim) &
                                                         +eXX*f(nghost+1,nghost+1,nghost+1,ihhXim)
-              f(nghost+1,nghost+1,nghost+1,iggX_boost  )=eXT*f(nghost+1,nghost+1,nghost+1,iggT  ) &
-                                                        +eTX*f(nghost+1,nghost+1,nghost+1,iggX  )
-              f(nghost+1,nghost+1,nghost+1,iggXim_boost)=eXT*f(nghost+1,nghost+1,nghost+1,iggTim) &
-                                                        +eXX*f(nghost+1,nghost+1,nghost+1,iggXim)
+     !        f(nghost+1,nghost+1,nghost+1,iggX_boost  )=eXT*f(nghost+1,nghost+1,nghost+1,iggT  ) &
+          !   f(nghost+1,nghost+1,nghost+1,iggX_boost  )=    f(nghost+1,nghost+1,nghost+1,iggX  )
+     !                                                  +eTX*f(nghost+1,nghost+1,nghost+1,iggX  )
+          !   f(nghost+1,nghost+1,nghost+1,iggXim_boost)=    f(nghost+1,nghost+1,nghost+1,iggXim)
+     !        f(nghost+1,nghost+1,nghost+1,iggXim_boost)=eXT*f(nghost+1,nghost+1,nghost+1,iggTim) &
+     !                                                  +eXX*f(nghost+1,nghost+1,nghost+1,iggXim)
             endif
 !
 !  end of ikx, iky, and ikz loops
