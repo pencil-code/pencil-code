@@ -2294,7 +2294,6 @@ module Hydro
               enddo
             enddo
           elseif (lcylindrical_coords) then
-print*,'AXEL 33'
             f(:,:,:,iux) = 0
             do n=n1,n2
               do m=m1,m2
@@ -2303,7 +2302,14 @@ print*,'AXEL 33'
             enddo
             f(:,:,:,iuz) = 0
           else
-            call fatal_error("init_uu","coord_system should be spherical or cylindric")
+            !call fatal_error("init_uu","coord_system should be spherical or cylindric")
+            f(:,:,:,iux) = 0
+            do n=n1,n2
+              do m=m1,m2
+                f(l1:l2,m,n,iuy) = omega_ini*x(l1:l2)**(1.-qini)
+              enddo
+            enddo
+            f(:,:,:,iuz) = 0
           endif
 !
         case ('tang-discont-z')
@@ -4186,6 +4192,9 @@ print*,'AXEL 33'
         call sum_mn_name(p%ekin,idiag_ekin)
         call sum_mn_name(p%ekin,idiag_EEK)
         call integrate_mn_name(p%ekin,idiag_ekintot)
+!
+!  should be coordinate dependent
+!
         if (idiag_totangmom/=0) call sum_lim_mn_name(p%rho*(p%uu(:,2)*x(l1:l2)-p%uu(:,1)*y(m)),&
                                                      idiag_totangmom,p)
         if (idiag_uxglnrym/=0) call sum_mn_name(p%uu(:,1)*p%glnrho(:,2),idiag_uxglnrym)
@@ -4245,8 +4254,15 @@ print*,'AXEL 33'
 !
 !  Total angular momentum in spherical coordinates
 !
-        if (idiag_tot_ang_mom/=0) call integrate_mn_name( &
-            p%rho*x(l1:l2)*sin(y(m))*p%uu(:,3),idiag_tot_ang_mom)
+        if (idiag_tot_ang_mom/=0) then
+          if (lspherical_coords) then
+            call integrate_mn_name(p%rho*x(l1:l2)*sin(y(m))*p%uu(:,3),idiag_tot_ang_mom)
+          elseif (lcylindrical_coords) then
+            call integrate_mn_name(p%rho*x(l1:l2)*p%uu(:,2),idiag_tot_ang_mom)
+          else
+            call fatal_error("calc_0d_diagnostics_hydro","coord_system should be spherical or cylindric")
+          endif
+        endif
 !
 !  Mean dot product of forcing and velocity field, <f.u>.
 !
@@ -7914,6 +7930,8 @@ endif
 !  Compute volume integrals of angular momentum and rho*sin(theta)
 !
           call getrho(f(:,m,n,ilnrho),rho)
+!
+!  To be generalized to also do cyclindrical.
 !
           tmp=rho*wx
           wmn=sinth(m)*dVol_y(m)*dVol_z(n)

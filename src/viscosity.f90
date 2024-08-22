@@ -2926,7 +2926,7 @@ module Viscosity
 !
       lomega=p%uu(:,2)/x(l1:l2)+Omega
 !
-!  dlomega_dr = d/dr(u/r) = u_2,1/r - u_2/r^2
+!  dlomega_dr = d/dr(u_2/r) = u_2,1/r - u_2/r^2
 !
       dlomega_dr=(x(l1:l2)*p%uij(:,2,1)-p%uu(:,2))/x(l1:l2)**2
 !

@@ -2352,6 +2352,7 @@ module Magnetic
             f(l1:l2,m,n,iaz)=-.25*amplaaJ(j)*x2*(1.-.25*x2*RFPradJ12)
           enddo; enddo
 !
+        case ('Magnetosonic-x'); call magnetosonic_x(amplaa(j),f,iuu,iaa,ilnrho,kx_aa(j),mu0)
         case ('Alfven-x'); call alfven_x(amplaa(j),f,iuu,iaa,ilnrho,kx_aa(j),mu0)
         case ('Alfven-y'); call alfven_y(amplaa(j),f,iuu,iaa,ky_aa(j),mu0)
         case ('Alfven-z'); call alfven_z(amplaa(j),f,iuu,iaa,kz_aa(j),mu0)
@@ -8507,6 +8508,61 @@ module Magnetic
       first=.false.
 !
     endsubroutine calc_bmz_beltrami_phase
+!***********************************************************************
+    subroutine magnetosonic_x(ampl,f,iuu,iaa,ilnrho,kx,mu0)
+!
+!  Magnetosonic wave propagating in the x-direction
+!
+!  12-aug-24/axel: coded
+!
+      use EquationOfState, only: cs20
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: iuu,iaa,ilnrho
+      real :: ampl, kx, mu0, ampl0
+
+      real :: s, vA2, oA2, os2, cos2psi, term1, term2, om2, rho0=1.
+      real :: ampl_lr, ampl_ux, ampl_uy, ampl_Az, cospsi, sinpsi, om
+!
+!  Dispersion relation
+!
+      ampl0=abs(ampl)
+      s=sign(1.,ampl)
+      vA2=B_ext2/(mu0*rho0)
+      oA2=vA2*kx**2
+      os2=cs20*kx**2
+      cos2psi=B_ext(1)**2/B_ext2
+      term1=.5*(oA2+os2)
+      term2=os2*oA2*cos2psi
+      om2=term1+s*sqrt(term1**2-term2)
+      if (lroot) print*,'magnetosonic_x: s,cos2psi,om2=',s,cos2psi,om2
+!
+!  Amplitude factors
+!
+      om=sqrt(om2)
+      cospsi=sqrt(cos2psi)
+      sinpsi=sqrt(1.-cos2psi)
+      ampl_ux=(oA2*cos2psi-om2)*ampl0
+      ampl_uy=oA2*sinpsi*cospsi*ampl0
+      ampl_Az=om*sinpsi*ampl0
+      ampl_lr=om/kx*(oA2*cos2psi-om2)*ampl0
+      if (lroot) print*,'magnetosonic_x: ampl_uy=',ampl_uy
+!
+!  ux and Ay.
+!  Don't overwrite the density, just add to the log of it.
+!  In the lconservative case, lconservative=T, rho is at the moment really rho,
+!  not T^{00}, because the .5*B^2 term is added later.
+!
+      do n=n1,n2; do m=m1,m2
+        f(l1:l2,m,n,iuu+0 )=ampl_ux*cos(kx*x(l1:l2))
+        f(l1:l2,m,n,iuu+1 )=ampl_uy*cos(kx*x(l1:l2))
+        f(l1:l2,m,n,iaa+2 )=ampl_Az*sin(kx*x(l1:l2))
+        f(l1:l2,m,n,ilnrho)=ampl_lr*cos(kx*x(l1:l2))
+      enddo; enddo
+
+      if (lroot) print*,'magnetosonic_x: mu0, kx, ampl_Az=',mu0, kx, ampl_Az
+!
+    endsubroutine magnetosonic_x
 !***********************************************************************
     subroutine alfven_x(ampl,f,iuu,iaa,ilnrho,kx,mu0)
 !

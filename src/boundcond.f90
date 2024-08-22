@@ -3855,48 +3855,54 @@ module Boundcond
 !
 !  for spherical coordinates, uphi=p%uu(*,3)
 !
-          if (j==iuz) then
-            do iy=1,size(f,2)
-              sth=sinth(iy)
-              if (llambda_scale_with_nu) then
-                lambda_exp=1.+(Lambda_V0b+Lambda_V1b*sth*sth)
-              else
-                lambda_exp=1.+(Lambda_V0b+Lambda_V1b*sth*sth)/nu
-              endif
-              do k=1,nghost
-                 fac=(1.-dx2_bound(-k)/x(l1+k))**lambda_exp
-                 if (Omega==0) then
-                   f(l1-k,iy,:,j) = f(l1+k,iy,:,j)*fac
-                 else
-                   f(l1-k,iy,:,j) = (f(l1+k,iy,:,j)+Omega*x(l1+k)*sth)*fac &
-                                   -Omega*(x(l1+k)-dx2_bound(-k))*sth
-                 endif
+          if (lspherical_coords)then
+            if (j==iuz) then
+              do iy=1,size(f,2)
+                sth=sinth(iy)
+                if (llambda_scale_with_nu) then
+                  lambda_exp=1.+(Lambda_V0b+Lambda_V1b*sth*sth)
+                else
+                  lambda_exp=1.+(Lambda_V0b+Lambda_V1b*sth*sth)/nu
+                endif
+                do k=1,nghost
+                   fac=(1.-dx2_bound(-k)/x(l1+k))**lambda_exp
+                   if (Omega==0) then
+                     f(l1-k,iy,:,j) = f(l1+k,iy,:,j)*fac
+                   else
+                     f(l1-k,iy,:,j) = (f(l1+k,iy,:,j)+Omega*x(l1+k)*sth)*fac &
+                                     -Omega*(x(l1+k)-dx2_bound(-k))*sth
+                   endif
+                enddo
               enddo
-            enddo
+            endif
 !
 !  for cylindrical coordinates, uphi=p%uu(*,2)
 !
-          elseif (j==iuy) then
-            do iy=1,size(f,2)
-              sth=sinth(iy)
-              if (llambda_scale_with_nu) then
-                lambda_exp=1.+Lambda_V0b
-              else
-                lambda_exp=1.+Lambda_V0b/nu
-              endif
-              do k=1,nghost
-                 fac=(1.-dx2_bound(-k)/x(l1+k))**lambda_exp
-                 if (Omega==0) then
-                   f(l1-k,iy,:,j) = f(l1+k,iy,:,j)*fac
-                 else
-                   f(l1-k,iy,:,j) = (f(l1+k,iy,:,j)+Omega*x(l1+k))*fac
-                 endif
+          elseif (lcylindrical_coords) then
+            if (j==iuy) then
+              do iy=1,size(f,2)
+                if (llambda_scale_with_nu) then
+                  lambda_exp=1.+Lambda_V0b
+                else
+                  lambda_exp=1.+Lambda_V0b/nu
+                endif
+                do k=1,nghost
+                   fac=(1.-dx2_bound(-k)/x(l1+k))**lambda_exp
+                   if (Omega==0) then
+                     f(l1-k,iy,:,j) = f(l1+k,iy,:,j)*fac
+                   else
+                     f(l1-k,iy,:,j) = (f(l1+k,iy,:,j)+Omega*x(l1+k))*fac
+                   endif
+                enddo
               enddo
-            enddo
+            endif
           else
             call fatal_error('bc_set_sfree_x',"coords not ok?")
           endif
         else
+!
+!  No Lambda effect:
+!
           do k=1,nghost
             f(l1-k,:,:,j) = f(l1+k,:,:,j)*(1.-dx2_bound(-k)/x(l1+k))
 !
@@ -3913,43 +3919,47 @@ module Boundcond
 !
 !  for spherical coordinates, uphi=p%uu(*,3)
 !
-          if (j==iuz) then
-            do iy=1,size(f,2)
-              sth=sinth(iy)
-              if (llambda_scale_with_nu) then
-                lambda_exp=1.+(Lambda_V0t+Lambda_V1t*sth*sth)
-              else
-                lambda_exp=1.+(Lambda_V0t+Lambda_V1t*sth*sth)/nu
-              endif
-              do k=1,nghost
-                fac=(1.+dx2_bound(k)/x(l2-k))**lambda_exp
-                if (Omega==0) then
-                  f(l2+k,iy,:,j) = f(l2-k,iy,:,j)*fac
+          if (lspherical_coords)then
+            if (j==iuz) then
+              do iy=1,size(f,2)
+                sth=sinth(iy)
+                if (llambda_scale_with_nu) then
+                  lambda_exp=1.+(Lambda_V0t+Lambda_V1t*sth*sth)
                 else
-                  f(l2+k,iy,:,j) = (f(l2-k,iy,:,j)+Omega*x(l2-k)*sth)*fac &
-                                  -Omega*(x(l2-k)+dx2_bound(k))*sth
+                  lambda_exp=1.+(Lambda_V0t+Lambda_V1t*sth*sth)/nu
                 endif
+                do k=1,nghost
+                  fac=(1.+dx2_bound(k)/x(l2-k))**lambda_exp
+                  if (Omega==0) then
+                    f(l2+k,iy,:,j) = f(l2-k,iy,:,j)*fac
+                  else
+                    f(l2+k,iy,:,j) = (f(l2-k,iy,:,j)+Omega*x(l2-k)*sth)*fac &
+                                    -Omega*(x(l2-k)+dx2_bound(k))*sth
+                  endif
+                enddo
               enddo
-            enddo
+            endif
 !
 !  for cylindrical coordinates, uphi=p%uu(*,2)
 !
-          elseif (j==iuy) then
-            do iy=1,size(f,2)
-              if (llambda_scale_with_nu) then
-                lambda_exp=1.+Lambda_V0t
-              else
-                lambda_exp=1.+Lambda_V0t/nu
-              endif
-              do k=1,nghost
-                fac=(1.+dx2_bound(k)/x(l2-k))**lambda_exp
-                if (Omega==0) then
-                  f(l2+k,iy,:,j) = f(l2-k,iy,:,j)*fac
+          elseif (lcylindrical_coords) then
+            if (j==iuy) then
+              do iy=1,size(f,2)
+                if (llambda_scale_with_nu) then
+                  lambda_exp=1.+Lambda_V0t
                 else
-                  f(l2+k,iy,:,j) = (f(l2-k,iy,:,j)+Omega*x(l2-k))*fac
+                  lambda_exp=1.+Lambda_V0t/nu
                 endif
+                do k=1,nghost
+                  fac=(1.+dx2_bound(k)/x(l2-k))**lambda_exp
+                  if (Omega==0) then
+                    f(l2+k,iy,:,j) = f(l2-k,iy,:,j)*fac
+                  else
+                    f(l2+k,iy,:,j) = (f(l2-k,iy,:,j)+Omega*x(l2-k))*fac
+                  endif
+                enddo
               enddo
-            enddo
+            endif
           else
             call fatal_error('bc_set_sfree_x',"coords not ok?")
           endif
