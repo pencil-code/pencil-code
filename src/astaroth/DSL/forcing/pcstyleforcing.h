@@ -26,10 +26,15 @@ forcing(){
         fz = complex(sin(AC_kk.z * k1_ff * pos.z), 0.0)
     }
 
-    complex fxyz = fx * fy * fz
+    fxyz = fx * fy * fz
 
     force_ampl    = profx_ampl[vertexIdx.x - NGHOST] * profy_ampl[vertexIdx.y] * profz_ampl[vertexIdx.z]
     prof_hel_ampl = profx_hel [vertexIdx.x - NGHOST] * profy_hel [vertexIdx.y] * profz_hel [vertexIdx.z]
 
-    return force_ampl * AC_fda * (complex(AC_coef1.x, prof_hel_ampl * AC_coef2.x) * fxyz).x
+    ptx = complex(AC_coef1.x, prof_hel_ampl * AC_coef2.x) * fxyz
+    pty = complex(AC_coef1.y, prof_hel_ampl * AC_coef2.y) * fxyz
+    ptz = complex(AC_coef1.z, prof_hel_ampl * AC_coef2.z) * fxyz
+
+    return real3(force_ampl * AC_fda.x * ptx.x, force_ampl * AC_fda.y * pty.x, force_ampl * AC_fda.y * ptz.x)
+
 }

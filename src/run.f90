@@ -100,14 +100,17 @@ endsubroutine helper_loop
 !***********************************************************************
 subroutine reload(f, lreload_file, lreload_always_file)
 
-    use GPU, only: copy_farray_from_GPU, reload_GPU_config, load_farray_to_GPU
-    use Register,        only: initialize_modules, rprint_list, choose_pencils
-    use Sub,             only: control_file_exists
-    use Param_IO,        only: read_all_init_pars, read_all_run_pars, write_all_run_pars
-    use Boundcond,       only: initialize_boundcond
-    use Timestep,        only: initialize_timestep
-    use HDF5_IO,         only: initialize_hdf5
-    use Diagnostics,     only: report_undefined_diagnostics,diagnostics_clean_up
+    use GPU,         only: copy_farray_from_GPU, reload_GPU_config, load_farray_to_GPU
+    use Register,    only: initialize_modules, rprint_list, choose_pencils
+    use Sub,         only: control_file_exists
+    use Param_IO,    only: read_all_init_pars, read_all_run_pars, write_all_run_pars
+    use Boundcond,   only: initialize_boundcond
+    use Forcing,     only: forcing_clean_up
+    use Hydro,       only: hydro_clean_up
+    use Solid_cells, only: solid_cells_clean_up
+    use Timestep,    only: initialize_timestep
+    use HDF5_IO,     only: initialize_hdf5
+    use Diagnostics, only: report_undefined_diagnostics,diagnostics_clean_up
 
     real, dimension (mx,my,mz,mfarray) :: f
     logical :: lreload_file, lreload_always_file
@@ -179,8 +182,7 @@ subroutine timeloop(f,df,p)
   use Equ,             only: write_diagnostics 
   use Filter,          only: rmwig, rmwig_xyaverage
   use Fixed_point,     only: fixed_points_prepare, wfixed_points
-  use Forcing,         only: addforce, forcing_clean_up
-  use Hydro,           only: hydro_clean_up
+  use Forcing,         only: addforce
   use ImplicitPhysics, only: calc_heatcond_ADI
   use IO,              only: output_globals
   use Magnetic,        only: rescaling_magnetic
@@ -198,7 +200,7 @@ subroutine timeloop(f,df,p)
   use Timestep,        only: time_step
   use Slices,          only: wvid_prepare
   use Snapshot,        only: powersnap, powersnap_prepare, wsnap, wsnap_down, output_form
-  use Solid_Cells,     only: time_step_ogrid, wsnap_ogrid, solid_cells_clean_up
+  use Solid_Cells,     only: time_step_ogrid, wsnap_ogrid
   use Streamlines,     only: tracers_prepare, wtracers
 !$ use OMP_lib
 !$ use General, only: signal_send, signal_wait
@@ -564,7 +566,6 @@ subroutine run_start() bind(C)
   use Equ,             only: initialize_pencils, debug_imn_arrays
   use FArrayManager,   only: farray_clean_up
   use Farray_alloc
-  use Forcing,         only: forcing_clean_up
   use General,         only: random_seed_wrapper, touch_file, itoa
 !$ use General,        only: signal_init,get_cpu
   use Grid,            only: construct_grid, box_vol, grid_bound_data, set_coorsys_dimmask, &
@@ -585,7 +586,7 @@ subroutine run_start() bind(C)
   use Signal_handling, only: signal_prepare
   use Slices,          only: setup_slices
   use Snapshot,        only: powersnap, rsnap, powersnap_prepare, wsnap
-  use Solid_Cells,     only: solid_cells_clean_up, wsnap_ogrid
+  use Solid_Cells,     only: wsnap_ogrid
   use Special,         only: initialize_mult_special
   use Sub,             only: control_file_exists, get_nseed
   use Syscalls,        only: memusage
