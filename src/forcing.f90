@@ -1647,7 +1647,7 @@ module Forcing
 !***********************************************************************
     subroutine fconst_coefs_hel(force_fact,kkx,kky,kkz,nk,kav,coef1,coef2,coef3,kk,phase,fact,fda)
 !
-!  This routine is can be called with any values of kkx,kky,kkz
+!  This routine can be called with any values of kkx,kky,kkz
 !  to produce coef1,coef2,coef3,kk,phase,fact and fda.
 !
 !  08-aug-19/MR: modified to provide kk,phase,fact instead of fx,fy,fz

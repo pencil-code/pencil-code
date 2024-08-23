@@ -1,4 +1,5 @@
 // PC-style helical forcing with profiles
+//MR: checked 8/24
 
 real3 AC_kk
 real3 AC_coef1
@@ -12,6 +13,8 @@ real AC_fact
 // PC-style helical forcing with support for profiles
 forcing(){
     real3 pos = grid_position()
+
+//MR: no discrete phases yet considerd!
     complex fx = AC_fact * exp(complex(0.0, AC_kk.x * k1_ff * pos.x + AC_phase))
     complex fy = exp(complex(0.0, AC_kk.y * k1_ff * pos.y))
     complex fz
@@ -35,6 +38,5 @@ forcing(){
     pty = complex(AC_coef1.y, prof_hel_ampl * AC_coef2.y) * fxyz
     ptz = complex(AC_coef1.z, prof_hel_ampl * AC_coef2.z) * fxyz
 
-    return real3(force_ampl * AC_fda.x * ptx.x, force_ampl * AC_fda.y * pty.x, force_ampl * AC_fda.y * ptz.x)
-
+    return real3(force_ampl * AC_fda.x * ptx.x, force_ampl * AC_fda.y * pty.x, force_ampl * AC_fda.z * ptz.x)
 }
