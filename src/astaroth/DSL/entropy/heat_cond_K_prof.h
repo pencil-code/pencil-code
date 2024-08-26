@@ -1,5 +1,3 @@
-heat_conduction(int step_num) {
-
 // heat conduction for conductivity with profile.
 
     grad_lnTT = (gamma-1) * gradient(LNRHO)+ cv1 * gradient(SS)
@@ -11,6 +9,4 @@ heat_conduction(int step_num) {
 
     reduce_max(step_num==0,chi,AC_maxchi)
 
-    return chi * ( del2_lnTT + dot(grad_lnTT,glnThcond) )
-
-}
+    rhs += chi * ( del2_lnTT + dot(grad_lnTT,glnThcond) )

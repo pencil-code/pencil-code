@@ -1,5 +1,3 @@
-heat_conduction(int step_num) {
-
 // Kramers opacity-based heat conduction.
 
       cv1 = 1./cv    
@@ -15,5 +13,4 @@ heat_conduction(int step_num) {
       reduce_max(step_num==0,Krho1/cv1,AC_maxchi)
 
       g2 = dot(-2.*nkramers*glnrho+(6.5*nkramers+1.)*glnTT,glnTT)   // v
-      return Krho1*(del2lnTT+g2)    // v
-}
+      rhs += Krho1*(del2lnTT+g2)    // v

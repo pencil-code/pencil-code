@@ -1,5 +1,3 @@
-heat_conduction(int step_num) {
-
 // heat conduction for constant conductivity.
 
     cp1 = 1./cp
@@ -14,5 +12,4 @@ heat_conduction(int step_num) {
 
     reduce_max(step_num==0,chi,AC_maxchi)
 
-    return cp * chi * (first_term + dot(second_term, third_term))
-}
+    rhs += cp * chi * (first_term + dot(second_term, third_term))
