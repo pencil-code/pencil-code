@@ -241,6 +241,7 @@ module Register
       use TestPerturb,      only: initialize_testperturb
       use Testscalar,       only: initialize_testscalar
       use Timeavg,          only: initialize_timeavg
+      use Training,         only: initialize_training
       use Viscosity,        only: initialize_viscosity
       use ImplicitPhysics,  only: initialize_implicit_physics
       use Grid,             only: initialize_grid
@@ -414,6 +415,7 @@ module Register
       call initialize_implicit_physics(f)
       call initialize_heatflux(f)
       call initialize_pointmasses(f)
+      call initialize_training
 !
 !  Check if MAUX is consistent with what is required.
 !

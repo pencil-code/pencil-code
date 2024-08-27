@@ -4596,6 +4596,7 @@ src/notestflow.f90 -text
 src/notestperturb.f90 -text
 src/notestscalar.f90 -text
 src/notimeavg.f90 -text
+src/notraining.f90 -text
 src/noviscosity.f90 -text
 src/noweno_transport.f90 -text
 src/noyinyang.f90 -text
@@ -4892,6 +4893,8 @@ src/timestep_stiff.f90 -text
 src/timestep_strang.f90 -text
 src/timestep_sts.f90 -text
 src/timestep_subcycle.f90 -text
+src/training.h -text
+src/training_torchfort.f90 -text
 src/viscosity.f90 -text
 src/viscosity.h -text
 src/weno_transport.f90 -text
