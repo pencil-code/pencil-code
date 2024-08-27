@@ -6234,7 +6234,8 @@ module Energy
       if (lcalc_cs2mz_mean .and..not. lheat_cool_gravz) then
         heat = heat - cool*prof*(cs2mz(n)-cs2cool)/cs2cool
       else
-        heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool
+  !AB: the following seems incompatible with what has now been prepared above
+  !     heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool
       endif
 !
 !  Write out cooling profile (during first time step only) and apply.
