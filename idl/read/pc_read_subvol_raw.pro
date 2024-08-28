@@ -502,8 +502,8 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 				; Open a varfile and read some data!
                                   openr, lun, filename, swap_endian=swap_endian, /get_lun
 				  mx = long64 (procdim.mx)
-				  mxy = mx * procdim.my
-				  mxyz = procdim.mw
+				  mxy = long64 (mx * procdim.my)
+				  mxyz = long64(procdim.mw)
 				  for pos = 0, num_read-1 do begin
 				  	pa = indices[pos]
 				  	for pz = pz_start, pz_end do begin
