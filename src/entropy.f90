@@ -120,7 +120,7 @@ module Energy
   logical :: lheatc_shock=.false., lheatc_shock2=.false., lheatc_hyper3ss=.false.
   logical :: lheatc_hyper3ss_polar=.false., lheatc_hyper3ss_aniso=.false.
   logical :: lheatc_hyper3ss_mesh=.false., lheatc_shock_profr=.false.
-  logical :: lcooling_general=.false.
+  logical :: lcooling_general=.false., lcooling_to_cs2cool=.true.
   logical :: lupw_ss=.false.
   logical :: lcalc_ssmean=.false., lcalc_ss_volaverage=.false.
   logical :: lcalc_cs2mean=.false., lcalc_cs2mz_mean=.false.
@@ -215,7 +215,7 @@ module Energy
       hcond0, hcond1, hcond2, widthss, borderss, mpoly0, mpoly1, mpoly2, &
       luminosity, wheat, cooling_profile, cooltype, cool, cool1, cs2cool, rcool, &
       rcool1, rcool2, deltaT, cs2cool2, cool2, zcool, ppcool, wcool, wcool1, &
-      wcool2, Fbot, lcooling_general, gradS0_imposed, &
+      wcool2, Fbot, lcooling_general, lcooling_to_cs2cool, gradS0_imposed, &
       ss_const, TT_const, chi_t, chi_rho, chit_prof1, zcool1, zcool2, &
       chit_prof2, chi_shock, chi_shock2, chi, iheatcond, Kgperp, Kgpara, cool_RTV, &
       tau_ss_exterior, lmultilayer, Kbot, tau_cor, TT_cor, z_cor, &
@@ -6234,8 +6234,14 @@ module Energy
       if (lcalc_cs2mz_mean .and..not. lheat_cool_gravz) then
         heat = heat - cool*prof*(cs2mz(n)-cs2cool)/cs2cool
       else
-  !AB: the following seems incompatible with what has now been prepared above
-  !     heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool
+!
+!AB: the following seems incompatible with what has now been prepared above.
+!    But it breaks the auto-test (samples/conv-slab-noequi), so I enabled it
+!    with lcooling_to_cs2cool=.true. by default.
+!
+        if (lcooling_to_cs2cool) then
+          heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool
+        endif
       endif
 !
 !  Write out cooling profile (during first time step only) and apply.
