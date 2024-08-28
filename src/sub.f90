@@ -840,6 +840,7 @@ module Sub
     endsubroutine dot_0
 !***********************************************************************
     subroutine dot2_mn(a,b,fast_sqrt,precise_sqrt)
+!!$omp declare target
 !
 !  Dot product with itself, to calculate max and rms values of a vector.
 !  FAST_SQRT is only correct for ~1e-18 < |a| < 1e18 (for single precision);
@@ -849,38 +850,26 @@ module Sub
 !   1-apr-01/axel: adapted for cache-efficient sub-array formulation
 !  25-jun-05/bing: added optional args for calculating |a|
 !
+      use General, only: loptest
+
       real, dimension (nx,3) :: a
       real, dimension (nx) :: b,a_max
       logical, optional :: fast_sqrt,precise_sqrt
-      logical :: fast_sqrt1,precise_sqrt1
 !
       intent(in) :: a,fast_sqrt,precise_sqrt
       intent(out) :: b
-!
-!     ifc treats these variables as SAVE so we need to reset
-      if (present(fast_sqrt)) then
-        fast_sqrt1=fast_sqrt
-      else
-        fast_sqrt1=.false.
-      endif
-!
-      if (present(precise_sqrt)) then
-        precise_sqrt1=precise_sqrt
-      else
-        precise_sqrt1=.false.
-      endif
 !
 !  Rescale by factor a_max before taking sqrt.
 !  In single precision this increases the dynamic range from 1e18 to 1e36.
 !  To avoid division by zero when calculating a_max, we add tini.
 !
-      if (precise_sqrt1) then
+      if (loptest(precise_sqrt)) then
         a_max=tini+maxval(abs(a),dim=2)
         b=(a(:,1)/a_max)**2+(a(:,2)/a_max)**2+(a(:,3)/a_max)**2
         b=a_max*sqrt(b)
       else
         b=a(:,1)**2+a(:,2)**2+a(:,3)**2
-        if (fast_sqrt1) b=sqrt(b)
+        if (loptest(fast_sqrt)) b=sqrt(b)
       endif
 !
     endsubroutine dot2_mn
