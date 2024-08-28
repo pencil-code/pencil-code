@@ -75,6 +75,7 @@ module Equ
       use Testfield
       use Testflow
       use Testscalar
+      use Training, only: training_before_boundary
       use Viscosity, only: viscosity_after_boundary
       use Grid, only: coarsegrid_interp
 !
@@ -194,6 +195,7 @@ module Equ
       if (lchemistry)    call chemistry_before_boundary(f)
       if (lparticles.and.lspecial) call particles_special_bfre_bdary(f)
       if (lshock)        call shock_before_boundary(f)
+      if (ltraining)     call training_before_boundary(f)
 !
 !  Prepare x-ghost zones; required before f-array communication
 !  AND shock calculation
