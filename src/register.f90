@@ -68,6 +68,7 @@ module Register
       use Testflow,         only: register_testflow
       use TestPerturb,      only: register_testperturb
       use Testscalar,       only: register_testscalar
+      use Training,         only: register_training
       use Viscosity,        only: register_viscosity
       use ImplicitPhysics,  only: register_implicit_physics
       use Solid_Cells,      only: register_solid_cells
@@ -158,6 +159,8 @@ module Register
       call register_heatflux
       call register_solid_cells
       call register_pointmasses
+      call register_training
+
       call farray_finalize_ode
 !
 !  Writing files for use with IDL.
@@ -442,6 +445,7 @@ module Register
       use IO,             only: finalize_io
       use Particles_main, only: particles_finalize
       use Special,        only: finalize_special
+      use Training,       only: finalize_training
 !
       real, dimension(mx,my,mz,mfarray) :: f
 !
@@ -451,6 +455,7 @@ module Register
       call finalize_deriv
       call finalize_io
       call finalize_gpu
+      call finalize_training
 !
     endsubroutine finalize_modules
 !***********************************************************************

@@ -4,6 +4,7 @@
 ! functions
 !
     public :: initialize_training
+    public :: register_training
     public :: training_before_boundary
     public :: finalize_training
     public :: read_training_run_pars

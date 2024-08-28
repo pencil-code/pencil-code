@@ -489,10 +489,10 @@ ifeq ($(TRAINING),training_torchfort)
       endif
     endif
   endif
-  override FC = nvfortran
   ifneq ($(shell bash -c 'which nvfortran 2>& 1 >/dev/null | grep "which *: *no "'),)
     $(error nvfortran not available! Exit.)
   endif
+  override FC = nvfortran
   ifeq ($(TORCHFORT_PATH),)
     $(error TORCHFORT_PATH  not set! Exit.)
   else

@@ -17,6 +17,10 @@
  
     endsubroutine initialize_training
 !***********************************************************************
+    subroutine register_training
+
+    endsubroutine register_training
+!***********************************************************************
     subroutine read_training_run_pars(iostat)
 !
       integer, intent(out) :: iostat
