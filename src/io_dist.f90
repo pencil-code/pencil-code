@@ -129,7 +129,7 @@ module Io
       character (len=6) :: ch
       character (len=fnlen) :: file1, file2
       character (len=30) :: vname, vnm
-      integer, save :: icall=0
+      logical, save :: lcalled_ast=.false.
 !
       t_sp = real(t)
 !
@@ -154,7 +154,8 @@ module Io
           call fatal_error ('output_snap', 'lwrite_2d used for 3D simulation!')
         endif
       else
-        if (lastaroth_output .and. (lstart.and.icall==0 .or. lrun)) then
+        if (lastaroth_output .and. (lstart.and..not.lcalled_ast .or. lrun)) then
+          lcalled_ast=.true.
           if (astaroth_dest=='') then
             call safe_character_assign(file1,trim(datadir)//'/allprocs/VTXBUF_')
           else
@@ -207,7 +208,6 @@ module Io
       endif
 !
       if (lserial_io) call end_serialize
-      icall=icall+1
 
       if (lode) call output_ode(file)
 !
