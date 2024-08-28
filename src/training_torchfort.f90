@@ -13,12 +13,14 @@
 
     implicit none
 
-    character(LEN=fnlen) :: model='mymodel', config="config_mlp_native.yaml"
-    integer(KIND=ikind8) :: dummy
+    character(LEN=fnlen) :: model='mymodel', config_file="config_mlp_native.yaml"
+    
+    integer :: model_device=0
+    integer :: it_train
 
     real, allocatable, device :: input(:,:,:,:), label(:,:,:,:), output(:,:,:,:)
     
-    namelist /training_run_pars/ config
+    namelist /training_run_pars/ config_file, it_train
 !
     contains
 !***************************************************************
@@ -28,7 +30,7 @@
 
       integer :: istat
 
-      istat = torchfort_create_model(model, config, 0)
+      istat = torchfort_create_model(model, config_file, model_device)
       if (istat /= TORCHFORT_RESULT_SUCCESS) then
         call fatal_error("training_initialize","istat="//trim(itoa(istat)))
       else
@@ -61,24 +63,34 @@
 
     endsubroutine write_training_run_pars
 !***************************************************************
-    subroutine training_train(f)
+    subroutine training_before_boundary(f)
+     
+      real, dimension (mx,my,mz,mfarray) :: f
+
+      call train(f)
+
+    endsubroutine training_before_boundary
+!***************************************************************
+    subroutine train(f)
      
       real, dimension (mx,my,mz,mfarray) :: f
 
       integer :: istat
       real :: loss_val
 
-      ! Device to host
-      input(:,:,1,1) = f(l1:l2,m1:m2,n1,iux)
+      if (mod(it,it_train)==0) then
+        ! Device to host
+        input(:,:,1,1) = f(l1:l2,m1:m2,n1,iux)
 
-      istat = torchfort_train(model, input, label, loss_val)
-      if (istat /= TORCHFORT_RESULT_SUCCESS) then
-        call fatal_error("training_train","istat="//trim(itoa(istat)))
-      else
-        if (lroot) print*, "training loss:", loss_val
+        istat = torchfort_train(model, input, label, loss_val)
+        if (istat /= TORCHFORT_RESULT_SUCCESS) then
+          call fatal_error("training_train","istat="//trim(itoa(istat)))
+        else
+          if (lroot) print*, "training loss = ", loss_val
+        endif
       endif
 
-    endsubroutine training_train
+    endsubroutine train
 !***************************************************************
     subroutine finalize_training
 

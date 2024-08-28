@@ -472,6 +472,34 @@ endif
 #
 LIBGPU =
 GPU_DEPS =
+
+ifeq ($(TRAINING),training_torchfort)
+  ifneq ($(MODULE_CMD),)
+    CUDA_LOADED := $(shell (module list |& grep -i cuda) )
+    ifeq ($(CUDA_LOADED),)
+      $(warning  No CUDA module seems to be loaded (needed for training)!)
+      $(info Try (one of) the following: $(shell (module spider |& grep -i cuda | sed -e's/^.* \([^ ]*[Cc][Uu][Dd][Aa][^ ]*\) .*$$/\1/') ) )
+      YESNO := $(shell bash -c 'read -p "Continue? (Y/N) " yesno; echo $$yesno')
+      ifeq ($(YESNO),N)
+        $(error Exit)
+      else
+        ifeq ($(YESNO),n)
+          $(error Exit)
+        endif
+      endif
+    endif
+  endif
+  override FC = nvfortran
+  ifneq ($(shell bash -c 'which nvfortran 2>& 1 >/dev/null | grep "which *: *no "'),)
+    $(error nvfortran not available! Exit.)
+  endif
+  ifeq ($(TORCHFORT_PATH),)
+    $(error TORCHFORT_PATH  not set! Exit.)
+  else
+    override FFLAGS+=-cuda -noswitcherror -I$(TORCHFORT_PATH)/include/
+    override LDFLAGS+=-L$(TORCHFORT_PATH)/lib/ -ltorchfort_fort -ltorchfort -cuda
+  endif
+endif
 ifneq ($(GPU),nogpu)
 #
   ifneq ($(MODULE_CMD),)
