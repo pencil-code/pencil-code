@@ -1,5 +1,7 @@
 ! $Id$
-
+!
+! CPARAM logical, parameter :: ltavg = .true.
+!
 module Timeavg
 
 !
@@ -18,10 +20,7 @@ module Timeavg
   integer, dimension(mtavg) :: idx_tavg=0
   real :: tavg=0.
 
-  logical :: ltavg=.true.
-
   contains
-
 !***********************************************************************
     subroutine initialize_timeavg(a)
 !

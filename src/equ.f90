@@ -338,6 +338,7 @@ module Equ
 !  (At the moment relevant for anelastic and Schur flows.)
 !
       call density_after_mn(f, df, mass_per_proc)
+      call magnetic_after_mn(df)
 !
       call timing('pde','after the end of the mn_loop')
 !
@@ -364,20 +365,6 @@ module Equ
       endif
 !
       if (lpointmasses) call pointmasses_pde(f,df)
-!
-!  Electron inertia: our df(:,:,:,iax:iaz) so far is
-!  (1 - l_e^2\Laplace) daa, thus to get the true daa, we need to invert
-!  that operator.
-!  [wd-aug-2007: This should be replaced by the more general stuff with the
-!   Poisson solver (so l_e can be non-constant), so at some point, we can
-!   remove/replace this]
-!
-!      if (lelectron_inertia .and. inertial_length/=0.) then
-!        do iv = iax,iaz
-!          call inverse_laplacian_semispectral(df(:,:,:,iv), H=linertial_2)
-!        enddo
-!        df(:,:,:,iax:iaz) = -df(:,:,:,iax:iaz) * linertial_2
-!      endif
 !
 !  Take care of flux-limited diffusion
 !  This is now commented out, because we always use radiation_ray instead.

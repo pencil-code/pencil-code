@@ -10765,6 +10765,26 @@ module Magnetic
 !
     endsubroutine magnetic_after_timestep
 !****************************************************************************
+    subroutine magnetic_after_mn(df)
+!
+      real, dimension(mx,my,mz,mvar) :: df
+!
+!  Electron inertia: our df(:,:,:,iax:iaz) so far is
+!  (1 - l_e^2\Laplace) daa, thus to get the true daa, we need to invert
+!  that operator.
+!  [wd-aug-2007: This should be replaced by the more general stuff with the
+!   Poisson solver (so l_e can be non-constant), so at some point, we can
+!   remove/replace this]
+!
+!      if (lelectron_inertia .and. inertial_length/=0.) then
+!        do iv = iax,iaz
+!          call inverse_laplacian_semispectral(df(:,:,:,iv), H=linertial_2)
+!        enddo
+!        df(:,:,:,iax:iaz) = -df(:,:,:,iax:iaz) * linertial_2
+!      endif
+
+    endsubroutine magnetic_after_mn
+!****************************************************************************
     subroutine braginsky
 !
       call not_implemented('braginsky','in magnetic')

@@ -27,8 +27,6 @@ module Magnetic
 !
   real, dimension(3) :: B_ext_inv=(/0.0,0.0,0.0/)
   real, dimension (mz,3) :: aamz
-  real :: inertial_length=0.,linertial_2
-  logical :: lelectron_inertia=.false.
   logical :: lcalc_aameanz=.false., lcalc_aamean=.false.
   logical, dimension(7) :: lresi_dep=.false. 
   logical :: lcoulomb=.false.
@@ -403,6 +401,14 @@ module Magnetic
       call keep_compiler_quiet(dtsub)
 !
     endsubroutine magnetic_after_timestep
+!****************************************************************************
+    subroutine magnetic_after_mn(df)
+!
+      real, dimension(mx,my,mz,mvar) :: df
+!
+      call keep_compiler_quiet(f,df)
+!
+    endsubroutine magnetic_after_mn
 !***********************************************************************
     subroutine expand_shands_magnetic
 !

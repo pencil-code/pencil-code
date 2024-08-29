@@ -26,9 +26,11 @@
     character(LEN=fnlen) :: model_output_dir='data/ml_models/', checkpoint_output_dir='data/ml_models/', &
                             model_file = "model.pt", chkpt_file=""
 
+    logical :: luse_trained_tau
+
     integer :: idiag_tauerror=0        ! DIAG_DOC: $\sqrt{\left<(\sum_{i,j} u_i*u_j - tau_{ij})^2>}$
 
-    namelist /training_run_pars/ config_file, model_file, it_train, it_train_chkpt
+    namelist /training_run_pars/ config_file, model_file, it_train, it_train_chkpt, luse_trained_tau
 !
     integer :: istat, train_step_ckpt, val_step_ckpt   !, TORCHFORT_RESULT_SUCCESS=0
     logical :: ltrained=.false.
@@ -77,6 +79,8 @@
 
         endif
       endif
+
+      luse_trained_tau = luse_trained_tau.and.ltrained
 
       allocate(input(nx, ny, nz, 3, 1))
       allocate(output(nx, ny, nz, 6, 1))
@@ -178,6 +182,30 @@
 
     endsubroutine train
 !***************************************************************
+    subroutine div_reynolds_stress(f,df)
+
+      use Sub, only: div_other
+
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+
+      real, dimension(nx,3) :: divrey
+      real, dimension(mx,my,mz,3) :: tmp
+
+      if (luse_trained_tau) then 
+        call div_other(f(:,:,:,itauxx:itauxz),divrey(nx,1))
+
+        tmp=f(:,:,:,(/itauxy,itauyy,itauyz/))
+        call div_other(tmp,divrey(nx,2))
+
+        tmp=f(:,:,:,(/itauxz,itauyz,itauzz/))
+        call div_other(tmp,divrey(nx,3))
+
+        df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - divrey
+      endif
+
+    endsubroutine div_reynolds_stress
+!***************************************************************
     subroutine calc_diagnostics_training(f,p)
 
       use Diagnostics, only: sum_mn_name
@@ -188,7 +216,7 @@
       integer :: i,j,jtau
       real, dimension(nx) :: error
 
-      if (ldiagnos) then
+      if (ldiagnos.and.ltrained) then
         if (idiag_tauerror>0) then
 
           jtau=0
@@ -212,9 +240,7 @@
 !
       use Diagnostics, only: parse_name
 !
-      integer :: k
-      character (len=intlen) :: smode
-      integer :: iname,inamez,inamey,inamex,ixy,ixz,irz,inamer,iname_half,inamev,idum
+      integer :: iname
       logical :: lreset
 !
       if (lreset) then

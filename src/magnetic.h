@@ -19,14 +19,13 @@
   public :: rescaling_magnetic
   public :: B_ext_inv
   public :: bb_unitvec_shock
-  public :: lelectron_inertia, inertial_length, linertial_2
   public :: idiag_axmz,idiag_aymz
   public :: idiag_bxmz,idiag_bymz
   public :: dynamical_resistivity
   public :: split_update_magnetic
   public :: expand_shands_magnetic
   public :: update_char_vel_magnetic
-  public :: magnetic_after_timestep
+  public :: magnetic_after_timestep, magnetic_after_mn
   public :: pushpars2c, pushdiags2c
   public :: calc_diagnostics_magnetic
   public :: magnetic_calc_spectra
