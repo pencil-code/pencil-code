@@ -71,6 +71,7 @@ module Chemistry
   real :: str_thick=0.02
   real :: init_pressure=10.13e5
   real :: global_phi=impossible
+  real :: delta_chem, press
 !
   logical :: lone_spec=.false., lfilter_strict=.false.
 !
@@ -207,7 +208,7 @@ logical, pointer :: ldustnucleation, lpartnucleation
       file_name, lreac_as_aux, init_zz1, init_zz2, flame_pos, &
       reac_rate_method,global_phi, lSmag_heat_transport, Pr_turb, lSmag_diffusion, z_cloud, &
       lhotspot, lchem_detailed, condensing_species, chem_conc_sat_spec, &
-      true_density_cond_spec_cgs
+      true_density_cond_spec_cgs, delta_chem, press
 !
 !
 ! run parameters
@@ -596,7 +597,8 @@ logical, pointer :: ldustnucleation, lpartnucleation
       use InitialCondition, only: initial_condition_chemistry
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      real :: PP
+      real :: PP, prof, der, tmp1, tmp2, mol1, mol2, mean_molar_mass
+      real :: rho, TT
       integer :: j,k
       logical :: lnothing, air_exist
 !
@@ -688,6 +690,69 @@ logical, pointer :: ldustnucleation, lpartnucleation
           call FlameMaster_ini(f,file_name)
         case ('flame_front_new')
           call flame_front_new(f)
+        case ('double_shear_layer')
+!
+!  Double shear layer
+!
+          if (lroot) then
+            tmp1=0.
+            tmp2=0.
+            print*,'init_chemistry: Double shear layer'
+            write (*,'(A10, 2A23)')"species","mass frac jet","mass frac co-flow"
+            print*,"********************COMPOSITIONS****************************"
+            do k=1,nchemspec
+              write (*,'(A10,2F23.6)') trim(varname(ichemspec(k))), &
+                   amplchemk(k),amplchemk2(k)
+              tmp1=tmp1+amplchemk(k)  /species_constants(k,imass)
+              tmp2=tmp2+amplchemk2(k)/species_constants(k,imass)
+            enddo
+            write (*,'(A10,2F23.6)') "SUM",sum(amplchemk),sum(amplchemk2)
+
+            print*," "
+            
+            write (*,'(A10, 2A23)')"species","mol frac jet","mol frac co-flow"
+            print*,"********************COMPOSITIONS****************************"
+            do k=1,nchemspec
+              mol1=amplchemk(k)/species_constants(k,imass)/tmp1
+              mol2=amplchemk2(k)/species_constants(k,imass)/tmp2
+              write (*,'(A10,2F23.6)') trim(varname(ichemspec(k))), &
+                   mol1,mol2
+            enddo
+            write (*,'(A10,2F23.6)') "SUM",sum(amplchemk),sum(amplchemk2)
+
+          endif
+          do m=m1,m2
+            der=2./delta_chem
+            do k=1,nchemspec
+              prof=(tanh(der*(y(m)+widthchem))-   &
+                   tanh(der*(y(m)-widthchem)))/2.
+              do n=n1,n2
+                f(l1:l2,m,n,ichemspec(k))=amplchemk(k)*prof +amplchemk2(k)*(1-prof) 
+              enddo
+            enddo
+          enddo
+          !
+          ! Must also set density such that the pressure is correct
+          !
+          do m=m1,m2
+            tmp1=0
+            do k=1,nchemspec
+              tmp1=tmp1+f(l1,m,n1,ichemspec(k))/species_constants(k,imass)
+            enddo
+            mean_molar_mass=1./tmp1
+            if (ltemperature_nolog) then
+              TT=f(l1,m,n1,iTT)
+            else
+              TT=exp(f(l1,m,n1,ilnTT))
+            endif
+            rho=press*mean_molar_mass/(Rgas*TT)
+            if (ldensity_nolog) then
+              f(l1:l2,m,n1:n2,irho)=rho
+            else
+              f(l1:l2,m,n1:n2,ilnrho)=alog(rho)
+            endif
+          enddo
+!
         case default
 !
 !  Catch unknown values
@@ -1249,6 +1314,7 @@ logical, pointer :: ldustnucleation, lpartnucleation
       call find_species_index('H2O',i_H2O,ichem_H2O,lH2O)
       if (lH2O) then
         mH2O = species_constants(ichem_H2O,imass)
+        print*,"mH2O=", mH2O
         init_H2O = initial_massfractions(ichem_H2O)
       endif
       call find_species_index('CH4',i_CH4,ichem_CH4,lCH4)
@@ -1366,7 +1432,7 @@ logical, pointer :: ldustnucleation, lpartnucleation
           endif
         enddo
 !
-     elseif (.not. l1step_test) then
+      elseif (.not. l1step_test) then
         if (lH2O) then
            do k = 1,mx
               if (x(k) >= init_x1 .and. x(k) < init_x2) then
@@ -1378,8 +1444,9 @@ logical, pointer :: ldustnucleation, lpartnucleation
                  if (lCO2) f(k,:,:,i_CO2) = final_massfrac_CO2
                  if (lH2O) f(k,:,:,i_H2O) = final_massfrac_H2O
               endif
-           enddo
-        elseif (lSIO2) then
+            enddo
+          endif
+          if (lSIO2) then
            do k = 1,mx
               if (x(k) >= init_x1 .and. x(k) < init_x2) then
                  f(k,:,:,i_SIO2) = (x(k)-init_x1)/(init_x2-init_x1) &
@@ -1439,7 +1506,7 @@ logical, pointer :: ldustnucleation, lpartnucleation
             f(i,j,k,ichemspec) = f(i,j,k,ichemspec)/sum(f(i,j,k,ichemspec))
           enddo
         enddo
-     enddo
+      enddo
 !
     endsubroutine flame_front
 !***********************************************************************
@@ -3840,7 +3907,7 @@ logical, pointer :: ldustnucleation, lpartnucleation
         close (file_id)
       endif
 !
-100   format(I1,26f6.1)
+100   format(I3,26f6.1)
 101   format('    ',26A6)
 !
       call keep_compiler_quiet(f)
