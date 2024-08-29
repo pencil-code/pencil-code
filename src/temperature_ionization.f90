@@ -39,6 +39,7 @@ module Energy
   real :: heat_source_offset=0., heat_source_sigma=1.0, heat_source=0.0
   real :: pthresh=0., pbackground=0., pthreshnorm
   real :: xjump_mid=0.,yjump_mid=0.,zjump_mid=0.
+  real :: widthTT, amplTT1, amplTT2, delta_TT
   real, pointer :: reduce_cs2
   logical, pointer :: lreduced_sound_speed, lscale_to_cs2top
   logical, pointer :: lpressuregradient_gas
@@ -59,7 +60,8 @@ module Energy
       initlnTT,radius_lnTT,ampl_lnTT,widthlnTT, &
       lnTT_left,lnTT_right,lnTT_const,TT_const, &
       kx_lnTT,ky_lnTT,kz_lnTT,ltemperature_nolog,&
-      xjump_mid,yjump_mid,zjump_mid
+      xjump_mid,yjump_mid,zjump_mid, widthTT, &
+      amplTT1, delta_TT, amplTT2
 !
   namelist /entropy_run_pars/ &
       lupw_lnTT, ladvection_temperature, lviscosity_heat, &
@@ -303,6 +305,7 @@ module Energy
       use InitialCondition, only: initial_condition_ss
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real :: der, prof
 !
       integer :: j
       logical :: lnothing=.true.
@@ -339,6 +342,15 @@ module Energy
           case ('yjump'); call jump(f,ilnTT,lnTT_left,lnTT_right,widthlnTT,xjump_mid,yjump_mid,zjump_mid,'y')
           case ('zjump'); call jump(f,ilnTT,lnTT_left,lnTT_right,widthlnTT,xjump_mid,yjump_mid,zjump_mid,'z')
           case ('gaussian-noise'); call gaunoise(ampl_lnTT,f,ilnTT)
+          case ('double_shear_layer')
+            do m=m1,m2
+              der=2./delta_TT
+              prof=(tanh(der*(y(m)+widthTT))-   &
+                   tanh(der*(y(m)-widthTT)))/2.
+              do n=n1,n2
+                f(l1:l2,m,n,ilnTT)=alog(amplTT1*prof +amplTT2*(1-prof)) 
+              enddo
+            enddo
 !
           case default
 !
