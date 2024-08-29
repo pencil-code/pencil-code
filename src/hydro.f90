@@ -3759,6 +3759,7 @@ module Hydro
       use Sub, only: dot, dot2, identify_bcs, cross, multsv, multsv_mn_add
       use General, only: transform_thph_yy, notanumber
       use Deriv, only: der
+      use Training, only: div_reynolds_stress
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -4021,6 +4022,10 @@ module Hydro
 !  Apply border profiles
 !
       if (lborder_profiles) call set_border_hydro(f,df,p)
+!
+!  Divergence of Reynolds stresses from a trained SGS model.
+!      
+      if (ltraining) call div_reynolds_stress(f,df)
 !
 !  Fred: Option to constrain timestep for large forces
 !
