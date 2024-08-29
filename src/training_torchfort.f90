@@ -18,7 +18,7 @@
     integer :: model_device=0
     integer :: it_train=-1, it_train_chkpt=-1
 
-    real, dimension(:,:,:,:), allocatable, device :: input, label, output
+    real, dimension(:,:,:,:,:), allocatable, device :: input, label, output
 
     integer :: itau, itauxx, itauxy, itauxz, itauyy, itauyz, itauzz
 
@@ -51,7 +51,11 @@
       endif
       call mpibcast(ltrained)
 
-      istat = torchfort_create_model(model, config_file, model_device)
+      if (lmpicomm) then
+        istat = torchfort_create_distributed_model(model, config_file, MPI_COMM_WORLD, iproc)  !multinode?
+      else
+        istat = torchfort_create_model(model, config_file, model_device)
+      endif
       if (istat /= TORCHFORT_RESULT_SUCCESS) then
         call fatal_error("initialize_training","when creating model: istat="//trim(itoa(istat)))
       else
@@ -72,9 +76,9 @@
         endif
       endif
 
-      allocate(input(nx, ny, 1, 1))
-      allocate(output(nx, ny, 6, 1))
-      allocate(label(nx, ny, 1, 1))
+      allocate(input(nx, ny, nz, 3, 1))
+      allocate(output(nx, ny, nz, 6, 1))
+      allocate(label(nx, ny, nz, 3, 1))
 
     endsubroutine initialize_training
 !***********************************************************************
@@ -134,14 +138,14 @@
       real, dimension (mx,my,mz,mfarray) :: f
 
       ! Host to device
-      input(:,:,1,1) = f(l1:l2,m1:m2,n1,iux)
+      input(:,:,:,:,1) = f(l1:l2,m1:m2,n1:n2,iux:iuz)
 
-      istat = torchfort_inference(model, input(:,:,1,1), output(:,:,:,1))
+      istat = torchfort_inference(model, input(:,:,:,:,1), output(:,:,:,:,1))
       if (istat /= TORCHFORT_RESULT_SUCCESS) then
         call fatal_error("infer","istat="//trim(itoa(istat)))
       else
         ! Device to host
-        f(l1:l2,m1:m2,n1,itauxx:itauzz) = output(:,:,:,1)
+        f(l1:l2,m1:m2,n1:n2,itauxx:itauzz) = output(:,:,:,:,1)
       endif
 
     endsubroutine infer
@@ -154,7 +158,7 @@
 
       if (mod(it,it_train)==0) then
         ! Host to device
-        input(:,:,1,1) = f(l1:l2,m1:m2,n1,iux)
+        input(:,:,:,:,1) = f(l1:l2,m1:m2,n1:n2,iux:iuz)
 
         istat = torchfort_train(model, input, label, loss_val)
         if (istat /= TORCHFORT_RESULT_SUCCESS) then
@@ -181,6 +185,7 @@
         if (istat /= TORCHFORT_RESULT_SUCCESS) &
           call fatal_error("finalize_training","when saving model: istat="//trim(itoa(istat)))
       endif
+      deallocate(input,label,output)
 
     endsubroutine finalize_training
 !***************************************************************
