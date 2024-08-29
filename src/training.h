@@ -9,4 +9,4 @@
     public :: finalize_training
     public :: read_training_run_pars
     public :: write_training_run_pars
-
+    public :: calc_diagnostics_training, rprint_training

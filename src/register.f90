@@ -858,6 +858,7 @@ module Register
       use Viscosity,       only: rprint_viscosity
       use Shear,           only: rprint_shear
       use TestPerturb,     only: rprint_testperturb
+      use Training,        only: rprint_training
       use PointMasses,     only: rprint_pointmasses
       use File_io,         only: parallel_file_exists, parallel_count_lines
       use Io,              only: IO_strategy
@@ -1104,6 +1105,7 @@ module Register
       call rprint_viscosity       (lreset,LWRITE=lroot)
       call rprint_shear           (lreset,LWRITE=lroot)
       call rprint_testperturb     (lreset,LWRITE=lroot)
+      call rprint_training        (lreset)
       call rprint_pointmasses     (lreset,LWRITE=lroot)
 !
       if (lroot .and. (IO_strategy /= "HDF5").and.lwrite_phiaverages) then

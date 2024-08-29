@@ -11,14 +11,14 @@
     use Cdata
     use General, only: itoa
     use Messages
-    use Torchfort
+    !use Torchfort
 
     implicit none
 
     integer :: model_device=0
     integer :: it_train=-1, it_train_chkpt=-1
 
-    real, dimension(:,:,:,:,:), allocatable, device :: input, label, output
+    real, dimension(:,:,:,:,:), allocatable, device :: input, label, output   !, device :: input, label, output
 
     integer :: itau, itauxx, itauxy, itauxz, itauyy, itauyz, itauzz
 
@@ -26,9 +26,11 @@
     character(LEN=fnlen) :: model_output_dir='data/ml_models/', checkpoint_output_dir='data/ml_models/', &
                             model_file = "model.pt", chkpt_file=""
 
+    integer :: idiag_tauerror=0        ! DIAG_DOC: $\sqrt{\left<(\sum_{i,j} u_i*u_j - tau_{ij})^2>}$
+
     namelist /training_run_pars/ config_file, model_file, it_train, it_train_chkpt
 !
-    integer :: istat, train_step_ckpt, val_step_ckpt
+    integer :: istat, train_step_ckpt, val_step_ckpt   !, TORCHFORT_RESULT_SUCCESS=0
     logical :: ltrained=.false.
 
     contains
@@ -97,7 +99,7 @@
 !
 !  Indices to access tau.
 !
-      itauxx = itau; itauxy=itau+1; itauxz=itau+2; itauyy = itau+3; itauyz=itau+4; itauzz = itau+5
+      itauxx=itau; itauxy=itau+1; itauxz=itau+2; itauyy=itau+3; itauyz=itau+4; itauzz=itau+5
 
     endsubroutine register_training
 !***********************************************************************
@@ -175,6 +177,58 @@
       endif
 
     endsubroutine train
+!***************************************************************
+    subroutine calc_diagnostics_training(f,p)
+
+      use Diagnostics, only: sum_mn_name
+
+      real, dimension (mx,my,mz,mfarray) :: f
+      type(pencil_case) :: p
+
+      integer :: i,j,jtau
+      real, dimension(nx) :: error
+
+      if (ldiagnos) then
+        if (idiag_tauerror>0) then
+
+          jtau=0
+          error=0.
+          do i=1,3
+            do j=i,3
+              error=error+(p%uu(:,i)*p%uu(:,j)-f(l1:l2,m,n,itau+jtau))**2
+              jtau=jtau+1
+            enddo
+          enddo
+          call sum_mn_name(error,idiag_tauerror,lsqrt=.true.)
+
+        endif 
+      endif 
+
+    endsubroutine calc_diagnostics_training
+!***********************************************************************
+    subroutine rprint_training(lreset)
+!
+!  reads and registers print parameters relevant for training
+!
+      use Diagnostics, only: parse_name
+!
+      integer :: k
+      character (len=intlen) :: smode
+      integer :: iname,inamez,inamey,inamex,ixy,ixz,irz,inamer,iname_half,inamev,idum
+      logical :: lreset
+!
+      if (lreset) then
+        idiag_tauerror=0
+      endif
+!
+!  iname runs through all possible names that may be listed in print.in
+!
+      if (lroot.and.ip<14) print*,'rprint_training: run through parse list'
+      do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'tauerror',idiag_tauerror)
+      enddo
+
+    endsubroutine rprint_training
 !***************************************************************
     subroutine finalize_training
 

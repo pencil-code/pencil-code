@@ -45,6 +45,24 @@
 
     endsubroutine training_before_boundary
 !***************************************************************
+    subroutine calc_diagnostics_training(f,p)
+
+      real, dimension (mx,my,mz,mfarray) :: f
+      type(pencil_case) :: p
+
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
+
+    endsubroutine calc_diagnostics_training
+!***********************************************************************
+    subroutine rprint_training(lreset)
+!
+      logical :: lreset
+!
+      call keep_compiler_quiet(lreset)
+
+    endsubroutine rprint_training
+!***************************************************************
     subroutine finalize_training
 
     endsubroutine finalize_training

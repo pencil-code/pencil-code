@@ -750,6 +750,7 @@ module Equ
       use Testfield
       use Testflow
       use Testscalar
+      use Training, only: calc_diagnostics_training
 
       real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
       real, dimension (mx,my,mz,mvar)   ,intent(OUT  ) :: df
@@ -930,6 +931,8 @@ module Equ
         if (lparticles) call particles_pde_pencil(f,df,p)
 !
         if (lpointmasses) call pointmasses_pde_pencil(f,df,p)
+     
+        if (ltraining) call calc_diagnostics_training(f,p)
 !
 !  Call diagnostics that involves the full right hand side
 !  This must be done at the end of all calls that might modify df.
