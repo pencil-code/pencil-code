@@ -2348,7 +2348,7 @@ module Energy
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-      real, dimension (nx) :: lnrho,lnTT,TT,z_mn
+      real, dimension (nx) :: lnrho,TT
       real :: beta1
 !
 !  beta1 is the temperature gradient
@@ -2364,12 +2364,9 @@ module Energy
 !
       do m=m1,m2
       do n=n1,n2
-        z_mn = spread(z(n),1,nx)
-        TT = beta1*(z_mn-zinfty)
-
+        TT = beta1*(z(n)-zinfty)
         call getlnrho(f(:,m,n,ilnrho),lnrho)
-        lnTT=log(TT)
-        call eoscalc(ilnrho_lnTT,lnrho,lnTT,ss=f(l1:l2,m,n,iss))
+        call eoscalc(ilnrho_lnTT,lnrho,log(TT),ss=f(l1:l2,m,n,iss))
       enddo
       enddo
 !
@@ -5283,8 +5280,8 @@ module Energy
 !     rho*T*Ds/Dt = ... + nab.((nu_smag/Pr_smag)*rho*T*grads),
 !
       if (lcalc_ssmean) then
-        do j=1,3; gss1(:,j)=p%gss(:,j)-spread(gssmz(n-n1+1,j), 1, l2-l1+1); enddo
-        del2ss1=p%del2ss-spread(del2ssmz(n-n1+1), 1, l2-l1+1)
+        do j=1,3; gss1(:,j)=p%gss(:,j)-gssmz(n-n1+1,j); enddo
+        del2ss1=p%del2ss-del2ssmz(n-n1+1)
       else if (lcalc_ssmeanxy) then
         gss1=p%gss-gssmx
         del2ss1=p%del2ss-del2ssmx
@@ -5689,8 +5686,8 @@ module Energy
 !
         if (lchit_mean .and. (lcalc_ssmean .or. lcalc_ssmeanxy)) then
           if (lcalc_ssmean) then
-            do j=1,3; gss0(:,j)=spread(gssmz(n-n1+1,j), 1, l2-l1+1); enddo
-            del2ss0=spread(del2ssmz(n-n1+1), 1, l2-l1+1)
+            do j=1,3; gss0(:,j)=gssmz(n-n1+1,j); enddo
+            del2ss0=del2ssmz(n-n1+1)
           else if (lcalc_ssmeanxy) then
             do j=1,3; gss0(:,j)=gssmx(:,j); enddo
             del2ss0=del2ssmx
@@ -5830,7 +5827,7 @@ module Energy
 !
 !  General spatially distributed cooling profiles (independent of gravity).
 !
-      if (lcooling_general) call get_heat_cool_general(heat,p)
+      if (lcooling_general) call get_cool_general(heat,p)
 !
 !  Vertical gravity case: Heat at bottom, cool top layers
 !
@@ -5979,7 +5976,7 @@ module Energy
 !  Relax horizontally averaged entropy toward a cos(kz) profile
 !
       if (tau_relax_ss/=0.) then
-!       prof=spread(cos(kz_ss*z(n)), 1, l2-l1+1)
+!       prof=cos(kz_ss*z(n))
         prof=exp(-.5*(x(l1:l2)/radius_ss_x(1))**2)
         if (lcalc_ssmean) then
           df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-(ssmz(n)-ss_const-ampl_imp_ss*prof)/tau_relax_ss
@@ -6048,7 +6045,7 @@ module Energy
 !
     endsubroutine calc_heat_cool_variable
 !***********************************************************************
-    subroutine get_heat_cool_general(heat,p)
+    subroutine get_cool_general(heat,p)
 !
 !  Subroutine to do volume heating and cooling in a layer independent of
 !  gravity.
@@ -6060,34 +6057,32 @@ module Energy
 !
       use Sub, only: erfunc, cubic_step
 !
-      real, dimension (nx) :: heat
-      type (pencil_case) :: p
+      real, dimension (nx), intent(inout) :: heat
+      type (pencil_case),   intent(in) :: p
 !
       real, dimension (nx) :: prof,prof2
       real :: ztop, zbot
 !
-      intent(in) :: p
-!
-!  Calculate profile.   MR: move to initialize
+!  Calculate profile.
 !
       select case (cooling_profile)
       case ('gaussian-z')
-        prof=spread(exp(-0.5*((zcool-z(n))/wcool)**2), 1, l2-l1+1)
+        prof=exp(-0.5*((zcool-z(n))/wcool)**2)
 !
 !  Cooling with a profile linear in z (unstable).
 !
       case ('lin-z')
-        prof=spread(z(n)/wcool,1,l2-l1+1)
+        prof=z(n)/wcool
 !
 !  Sinusoidal cooling profile (periodic).
 !
       case ('sin-z')
-        prof=spread(sin(z(n)/wcool),1,l2-l1+1)
+        prof=sin(z(n)/wcool)
 !
 !  Error function cooling profile.
 !
       case ('surface_z')
-        prof=spread(.5*(1.+erfunc((z(n)-zcool)/wcool)),1,l2-l1+1)
+        prof=.5*(1.+erfunc((z(n)-zcool)/wcool))
 !
 !  Error function cooling profile in x direction
 !
@@ -6097,14 +6092,14 @@ module Energy
 !  Error function cooling profile (two-layer).
 !
       case ('two-layer')
-        prof =spread(.5*(1.+erfunc((z(n)-zcool )/wcool )),1,l2-l1+1)
-        prof2=spread(.5*(1.+erfunc((z(n)-zcool2)/wcool2)),1,l2-l1+1)
+        prof =.5*(1.+erfunc((z(n)-zcool )/wcool ))
+        prof2=.5*(1.+erfunc((z(n)-zcool2)/wcool2))
 !
 ! useful for accretion disc with hot corona; symmetric about z=0
 !
       case ('square-well')
-        prof=spread((1.+.5*(erfunc((z(n)-zcool)/wcool)- &
-                            erfunc((z(n)+zcool)/wcool))),1,l2-l1+1)
+        prof=1.+.5*(erfunc((z(n)-zcool)/wcool)- &
+                    erfunc((z(n)+zcool)/wcool))
 !
 !  add "coronal" heating (to simulate a hot corona; see temperature_ionization)
 !
@@ -6125,8 +6120,9 @@ module Energy
 !
       case ('surface_pp')
         prof=.5*(1.-erfunc((p%pp-ppcool)/wcool))
-!
       endselect
+      prof=cool*prof
+      prof2=cool2*prof2
 !
 !  Note: the cooltype 'Temp' used below was introduced by Axel for the
 !  aerosol runs. Although this 'Temp' does not match with the cooltype
@@ -6136,31 +6132,28 @@ module Energy
 !  AB: not sure; in general we need to multiply with cv, as in 'corona'
 !
       select case (cooltype)
-      case('constant')
-        heat=heat-cool*prof
+      case('constant','plain')
+        heat=heat-prof
       case('corona')
-        heat=heat-cool*prof*p%cv*p%rho*(p%TT-TT_cor)
+        heat=heat-prof*p%cv*p%rho*(p%TT-TT_cor)
       case ('Temp')
-        if (headtt) print*, 'get_heat_cool_general: cs20,cs2cool=', cs20, cs2cool
-        heat=heat-cool*(p%cs2-(cs20-prof*cs2cool))/cs2cool
+        if (headtt) print*, 'get_cool_general: cs20,cs2cool=', cs20, cs2cool
+        heat=heat-(cool*p%cs2-(cool*cs20-prof*cs2cool))/cs2cool
       case('Temp2')
-        heat=heat-cool*prof*(p%cs2-cs2cool)/cs2cool
+        heat=heat-prof*(p%cs2-cs2cool)/cs2cool
       case('rho_cs2', 'square-well')
-        heat=heat-cool*prof*p%rho*(p%cs2-cs2cool)
+        heat=heat-prof*p%rho*(p%cs2-cs2cool)
       case ('two-layer')
-        heat = heat - cool *prof *p%rho*(p%cs2-cs2cool) - cool2*prof2*p%rho*(p%cs2-cs2cool2)
+        heat = heat - prof*p%rho*(p%cs2-cs2cool) - prof2*p%rho*(p%cs2-cs2cool2)
       case('two-layer-mean')
-        if (.not.lcalc_cs2mz_mean) call fatal_error('get_heat_cool_general', &
+        if (.not.lcalc_cs2mz_mean) call fatal_error('get_cool_general', &
           'cooltype=two-layer-mean requires lcalc_cs2mz_mean=T')
-        heat = heat - cool*prof*p%rho*(cs2mz(n)-cs2cool) &
-                    - cool2*prof2*p%rho*(cs2mz(n)-cs2cool2)
-      case('plain')
-        heat=heat-cool*prof
+        heat = heat - prof*p%rho*(cs2mz(n)-cs2cool) - prof2*p%rho*(cs2mz(n)-cs2cool2)
       case default
-        call fatal_error('get_heat_cool_general','no such cooltype: '//trim(cooltype))
+        call fatal_error('get_cool_general','no such cooltype: '//trim(cooltype))
       endselect
 !
-    endsubroutine get_heat_cool_general
+    endsubroutine get_cool_general
 !***********************************************************************
     subroutine get_heat_cool_gravz(heat,p)
 !
@@ -6181,7 +6174,7 @@ module Energy
 !  Define top and bottom positions of the box.
 !
       zbot=xyz0(3)
-      ztop=xyz0(3)+Lxyz(3)
+      ztop=xyz1(3)
 !
 !  Add heat near bottom (we start by default from heat=0.0)
 !
@@ -6190,9 +6183,9 @@ module Energy
 !
       if (luminosity/=0.0) then
         if (nygrid==1) then
-          prof = spread(exp(-0.5*((z(n)-zbot)/wheat)**2), 1, l2-l1+1)/(sqrt(pi/2.)*wheat*Lx)
+          prof = exp(-0.5*((z(n)-zbot)/wheat)**2)/(sqrt(pi/2.)*wheat*Lx)
         else
-          prof = spread(exp(-0.5*((z(n)-zbot)/wheat)**2), 1, l2-l1+1)/(sqrt(pi/2.)*wheat*Lx*Ly)
+          prof = exp(-0.5*((z(n)-zbot)/wheat)**2)/(sqrt(pi/2.)*wheat*Lx*Ly)
         endif
         heat = luminosity*prof
 !
@@ -6207,26 +6200,26 @@ module Energy
       if (headtt) print*, 'cooling_profile,z2,wcool,cs2cool=',cooling_profile, z2, wcool, cs2cool
       select case (cooling_profile) !MR: move to initialize
       case ('gaussian')
-        prof = spread(exp(-0.5*((ztop-z(n))/wcool)**2), 1, l2-l1+1)
+        prof = exp(-0.5*((ztop-z(n))/wcool)**2)
       case ('step')
-        prof = spread(step(z(n),z2,wcool),1,nx)
+        prof = step(z(n),z2,wcool)
       case ('step2')
-        prof = spread(step(z(n),zcool,wcool),1,nx)
+        prof = step(z(n),zcool,wcool)
       case ('cubic_step')
-        prof = spread(cubic_step(z(n),z2,wcool),1,nx)
+        prof = cubic_step(z(n),z2,wcool)
       case ('surfcool')
-        prof = spread(1+tanh((z(n)-zcool)/(wcool)),1,l2-l1+1)
+        prof = 1.+tanh((z(n)-zcool)/(wcool))
         heat = heat - cool*prof
       case ('volheat_surfcool')
-        prof = spread(1+tanh((z(n)-zcool)/(wcool)),1,l2-l1+1)
+        prof = 1.+tanh((z(n)-zcool)/(wcool))
         heat = heat + cool*prof
-        prof = spread((1-(tanh((z(n)-zcool1)/(wcool1)))**2),1,l2-l1+1)
+        prof = 1.-(tanh((z(n)-zcool1)/(wcool1)))**2
         heat = heat + cool1*prof
 !
 !  Cooling with a profile linear in z (unstable).
 !
       case ('lin-z')
-        prof=spread(z(n)/wcool, 1, l2-l1+1)
+        prof=z(n)/wcool
       case default
         call fatal_error('get_heat_cool_gravz','no such cooling_profile: '//trim(cooling_profile))
       endselect
@@ -6269,27 +6262,23 @@ module Energy
       use Diagnostics, only: phisum_mn_name_rz
 !
       type (pencil_case) :: p
-      real, dimension (nx) :: heat, prof, theta_profile, div_heat, div_cool
+      real, dimension (nx) :: heat, prof, theta_profile, div_cool
 !      real :: zbot,ztop
       intent(in) :: p
 !
       select case (heattype)
-      case ('gaussian', 'Gaussian') ! heating with a sptially fixed Gaussian profile
+      case ('gaussian', 'Gaussian') ! heating with a spatially fixed Gaussian profile
         if (nzgrid == 1) then
           prof = exp(-0.5*(p%r_mn/wheat)**2) * (2*pi*wheat**2)**(-1.)  ! 2-D heating profile
         else
           prof = exp(-0.5*(p%r_mn/wheat)**2) * (2*pi*wheat**2)**(-1.5) ! 3-D one
         endif
-        heat = luminosity*prof
-        div_heat = luminosity*prof
       case ('cs2-rho') ! heating depending on ambient density and temperature
         prof = (p%rho/rho0)**nheat_rho*(p%cs2/cs20)**nheat_TT
-        heat = luminosity*prof
-        div_heat = luminosity*prof
-!
       case default
         call fatal_error('get_heat_cool_gravr','no such heattype: '//trim(heattype))
       endselect
+      heat = luminosity*prof
 !
       if (headt .and. lfirst .and. ip<=9) call output_pencil('heat.dat',heat,1)
 !
@@ -6309,19 +6298,19 @@ module Energy
 !
       select case (cooltype)
       case ('cs2', 'Temp')    ! cooling to reference temperature cs2cool
-        heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool
         div_cool = - cool*prof*(p%cs2-cs2cool)/cs2cool
+        heat = heat + div_cool
       case ('cs2-rho', 'Temp-rho') ! cool to reference temperature cs2cool
         ! in a more time-step neutral manner
-        heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool/p%rho1
         div_cool = - cool*prof*(p%cs2-cs2cool)/cs2cool/p%rho1
+        heat = heat + div_cool
       case ('entropy')        ! cooling to reference entropy (currently =0)
-        heat = heat - cool*prof*(p%ss-0.)
-        div_cool = - cool*prof*(p%ss-0.)
+        div_cool =  - cool*prof*(p%ss-0.)
+        heat = heat + div_cool
       case ('pressure')       ! cooling when pressure drops below a reference value
         prof= 0.5*(1.-tanh((p%pp-ppcool)/wpres))
-        heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool/p%rho1
         div_cool = - cool*prof*(p%cs2-cs2cool)/cs2cool/p%rho1
+        heat = heat + div_cool
       case ('shell')          !  heating/cooling at shell boundaries
 !
 !  Possibility of a latitudinal heating profile.
@@ -6336,17 +6325,17 @@ module Energy
           endif
           theta_profile=(onethird-(p%rcyl_mn/p%z_mn)**2)*deltaT_poleq
           prof = step(p%r_mn,r_ext,wcool)      ! outer heating/cooling step
-          heat = heat - cool_ext*prof*(p%cs2-cs2_ext)/cs2_ext*theta_profile
           div_cool = - cool_ext*prof*(p%cs2-cs2_ext)/cs2_ext*theta_profile
+          heat = heat + div_cool
           prof = 1. - step(p%r_mn,r_int,wcool) ! inner heating/cooling step
-          heat = heat - cool_int*prof*(p%cs2-cs2_int)/cs2_int*theta_profile
+          heat = heat         - cool_int*prof*(p%cs2-cs2_int)/cs2_int*theta_profile
           div_cool = div_cool - cool_int*prof*(p%cs2-cs2_int)/cs2_int*theta_profile
         else
           prof = step(p%r_mn,r_ext,wcool)      ! outer heating/cooling step
-          heat = heat - cool_ext*prof*(p%cs2-cs2_ext)/cs2_ext
           div_cool = - cool_ext*prof*(p%cs2-cs2_ext)/cs2_ext
+          heat = heat + div_cool
           prof = 1. - step(p%r_mn,r_int,wcool) ! inner heating/cooling step
-          heat = heat - cool_int*prof*(p%cs2-cs2_int)/cs2_int
+          heat = heat         - cool_int*prof*(p%cs2-cs2_int)/cs2_int
           div_cool = div_cool - cool_int*prof*(p%cs2-cs2_int)/cs2_int
         endif
 !
@@ -6355,9 +6344,9 @@ module Energy
       endselect
 !
       if (l2davgfirst) then
-         call phisum_mn_name_rz(heat,idiag_dcoolmphi)
-         call phisum_mn_name_rz(div_cool,idiag_divcoolmphi)
-         call phisum_mn_name_rz(div_heat,idiag_divheatmphi)
+        call phisum_mn_name_rz(heat,idiag_dcoolmphi)
+        call phisum_mn_name_rz(div_cool,idiag_divcoolmphi)
+        call phisum_mn_name_rz(heat,idiag_divheatmphi)
       endif
 !
     endsubroutine get_heat_cool_gravr
@@ -7777,16 +7766,16 @@ module Energy
 !***********************************************************************
     subroutine single_polytrope(f)
 !
-!  Note: both entropy and density are initialized there (compared to layer_ss)
-!
 !  06-sep-07/dintrans: coded a single polytrope of index mpoly0
+!
+!  Note: both entropy and density are initialized there (compared to layer_ss)
 !
       use EquationOfState, only: eoscalc
       use Gravity, only: gravz
       use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (nx) :: lnrho, TT, z_mn
+      real, dimension (nx) :: lnrho, TT
       real :: beta, cp1, zbot, ztop, TT0
       real, pointer :: gravx
 !
@@ -7798,7 +7787,7 @@ module Energy
         beta=cp1*gamma/gamma_m1*gravx/(mpoly0+1)
       else
         beta=cp1*gamma/gamma_m1*gravz/(mpoly0+1)
-        ztop=xyz0(3)+Lxyz(3)
+        ztop=xyz1(3)
         zbot=xyz0(3)
       endif
       TT0=cs20/gamma_m1
@@ -7810,8 +7799,7 @@ module Energy
         if (lcylindrical_coords) then
           TT = TT0+beta*(rcyl_mn-r_ext)
         else
-          z_mn = spread(z(n),1,nx)
-          TT = TT0+beta*(z_mn-ztop)
+          TT = TT0+beta*(z(n)-ztop)
         endif
         lnrho=lnrho0+mpoly0*log(TT/TT0)
 
