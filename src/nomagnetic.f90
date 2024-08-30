@@ -406,7 +406,7 @@ module Magnetic
 !
       real, dimension(mx,my,mz,mvar) :: df
 !
-      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(df)
 !
     endsubroutine magnetic_after_mn
 !***********************************************************************
