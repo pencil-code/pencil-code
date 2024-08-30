@@ -90,6 +90,7 @@ module Energy
   integer :: idiag_ppm=0      ! DIAG_DOC: $\left< p \right> $
   integer :: idiag_Tppm=0     ! DIAG_DOC: $\left<\max(p_{\rm thresh}-p,0)_{\rm norm}\right> $
   integer :: idiag_csm=0
+  integer :: idiag_csmax=0
   integer :: idiag_mum=0      ! DIAG_DOC:
   integer :: idiag_ppmax=0    ! DIAG_DOC:
   integer :: idiag_ppmin=0    ! DIAG_DOC:
@@ -511,6 +512,7 @@ module Energy
       endif
       if (idiag_dtchi/=0) lpenc_diagnos(i_cs2)=.true.
       if (idiag_csm/=0) lpenc_diagnos(i_cs2)=.true.
+      if (idiag_csmax/=0) lpenc_diagnos(i_cs2)=.true.
       if (idiag_eem/=0) lpenc_diagnos(i_ee)=.true.
       if (idiag_ppm/=0) lpenc_diagnos(i_pp)=.true.
       if (idiag_Tppm/=0) lpenc_diagnos(i_pp)=.true.
@@ -748,6 +750,7 @@ module Energy
         call max_mn_name(p%pp,idiag_ppmax)
         if (idiag_ppmin/=0) call max_mn_name(-p%pp,idiag_ppmin,lneg=.true.)
         call sum_mn_name(p%cs2,idiag_csm,lsqrt=.true.)
+        call max_mn_name(p%cs2,idiag_csmax,lsqrt=.true.)
         if (idiag_mum/=0) call sum_mn_name(1./p%mu1,idiag_mum)
         if (ldt) then
           if (idiag_dtchi/=0) call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
@@ -978,7 +981,8 @@ module Energy
         idiag_yHmax=0; idiag_yHmin=0; idiag_yHm=0
         idiag_ethm=0; idiag_ssm=0; idiag_cv=0; idiag_cp=0
         idiag_dtchi=0; idiag_dtc=0
-        idiag_eem=0; idiag_ppm=0; idiag_Tppm=0; idiag_csm=0; idiag_ppmax=0; idiag_ppmin=0
+        idiag_eem=0; idiag_ppm=0; idiag_Tppm=0
+        idiag_csm=0; idiag_csmax=0; idiag_ppmax=0; idiag_ppmin=0
         idiag_mum=0; idiag_mumz=0; idiag_TTmz=0; idiag_ssmz=0
         idiag_eemz=0; idiag_ppmz=0
         idiag_puzmz=0; idiag_pr1mz=0; idiag_eruzmz=0; idiag_ffakez=0
@@ -1005,6 +1009,7 @@ module Energy
         call parse_name(iname,cname(iname),cform(iname),'ppmax',idiag_ppmax)
         call parse_name(iname,cname(iname),cform(iname),'ppmin',idiag_ppmin)
         call parse_name(iname,cname(iname),cform(iname),'csm',idiag_csm)
+        call parse_name(iname,cname(iname),cform(iname),'csmax',idiag_csmax)
         call parse_name(iname,cname(iname),cform(iname),'mum',idiag_mum)
       enddo
 !
