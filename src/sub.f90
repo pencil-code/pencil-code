@@ -1852,13 +1852,11 @@ module Sub
 !
 !  Adjustments for spherical coordinate system.
 !
-      if (lspherical_coords) then
-        call fatal_error('div_mn_2tensor','not impelmented in sph-coordinate')
-      endif
+      if (lspherical_coords) &
+        call not_implemented('div_mn_2tensor','in spherical coordinates')
 !
-      if (lcylindrical_coords) then
-        call fatal_error('div_mn_2tensor','not impelmented in cyl-coordinate')
-      endif
+      if (lcylindrical_coords) &
+        call not_implemented('div_mn_2tensor','cylindrical coordinates')
 !
     endsubroutine div_mn_2tensor
 !***********************************************************************
