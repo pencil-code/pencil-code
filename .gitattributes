@@ -493,6 +493,7 @@ config/hosts/sintef/host-Copernicus-g95-debug.conf -text
 config/hosts/sintef/host-vsl229-GNU_Linux.conf -text
 config/hosts/sintef/host-vsl230-GNU_Linux.conf -text
 config/hosts/sintef/linux-32core.sintef.no.conf -text
+config/hosts/sintef/login-2.betzy.sigma2.no.conf -text
 config/hosts/sintef/unity.sintef.no.conf -text
 config/hosts/sintef/vsl176.cvos.cluster.conf -text
 config/hosts/surf/host-node02-GNU_Linux.conf -text
