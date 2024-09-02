@@ -3952,6 +3952,8 @@ module Hydro
             frict=ekman_friction
           case ('linear')
             frict=ekman_friction*max(min(real(t-friction_tdep_toffset)/friction_tdep_tau0,1.),0.)
+          case ('inverse')
+            frict=ekman_friction/max(real(t),friction_tdep_toffset)
           case default
         endselect
         df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-frict*p%uu
