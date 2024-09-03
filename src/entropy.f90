@@ -267,6 +267,8 @@ module Energy
   integer :: idiag_ssuzm=0      ! DIAG_DOC: $\left<s u_z/c_p\right>$
   integer :: idiag_ssm=0        ! DIAG_DOC: $\left<s/c_p\right>$
                                 ! DIAG_DOC:   \quad(mean entropy)
+  integer :: idiag_ssbycpm=0    ! DIAG_DOC: $\left<s/c_p\right>$
+                                ! DIAG_DOC:   \quad(mean entropy)
   integer :: idiag_ss2m=0       ! DIAG_DOC: $\left<(s/c_p)^2\right>$
                                 ! DIAG_DOC:   \quad(mean squared entropy)
   integer :: idiag_eem=0        ! DIAG_DOC: $\left<e\right>$
@@ -3140,6 +3142,7 @@ module Energy
         lpenc_diagnos(i_divu)=.true.
       endif
       if (idiag_ssruzm/=0 .or. idiag_ssuzm/=0 .or. idiag_ssm/=0 .or. &
+        idiag_ssbycpm/=0 .or. &
         idiag_ss2m/=0 .or. idiag_ssmz/=0 .or. idiag_ss2mz/=0 .or. &
         idiag_ssupmz/=0 .or. idiag_ssdownmz/=0 .or. &
         idiag_ss2upmz/=0 .or. idiag_ss2downmz/=0 .or. &
@@ -3147,7 +3150,8 @@ module Energy
         idiag_ssmy/=0 .or. idiag_ssmx/=0 .or. idiag_ss2mx/=0 .or. &
         idiag_ssmr/=0) &
         lpenc_diagnos(i_ss)=.true.
-
+      if (idiag_ssbycpm/=0) &
+        lpenc_diagnos(i_cp1)=.true.
       if (idiag_fpreszmz/=0) lpenc_diagnos(i_fpres)=.true.
       if (idiag_ppmx/=0 .or. idiag_ppmy/=0 .or. idiag_ppmz/=0) &
         lpenc_diagnos(i_pp)=.true.
@@ -3690,6 +3694,7 @@ module Energy
         if (idiag_ssruzm/=0) call sum_mn_name(p%ss*p%rho*p%uu(:,3),idiag_ssruzm)
         if (idiag_ssuzm/=0) call sum_mn_name(p%ss*p%uu(:,3),idiag_ssuzm)
         call sum_mn_name(p%ss,idiag_ssm)
+        call sum_mn_name(p%ss*p%cp1,idiag_ssbycpm)
         if (idiag_ss2m/=0) call sum_mn_name(p%ss**2,idiag_ss2m)
         call sum_mn_name(p%ee,idiag_eem)
         call sum_mn_name(p%pp,idiag_ppm)
@@ -6840,6 +6845,7 @@ module Energy
       if (lreset) then
         idiag_dtc=0; idiag_ethm=0; idiag_ethdivum=0; idiag_pdivumz=0
         idiag_ssruzm=0; idiag_ssuzm=0; idiag_ssm=0; idiag_ss2m=0
+        idiag_ssbycpm=0
         idiag_eem=0; idiag_ppm=0; idiag_csm=0; idiag_cgam=0; idiag_pdivum=0; idiag_heatm=0
         idiag_ugradpm=0; idiag_ethtot=0; idiag_dtchi=0; idiag_ssmphi=0; idiag_ss2mphi=0
         idiag_fradbot=0; idiag_fradtop=0; idiag_TTtop=0
@@ -6897,6 +6903,7 @@ module Energy
         call parse_name(iname,cname(iname),cform(iname),'ssruzm',idiag_ssruzm)
         call parse_name(iname,cname(iname),cform(iname),'ssuzm',idiag_ssuzm)
         call parse_name(iname,cname(iname),cform(iname),'ssm',idiag_ssm)
+        call parse_name(iname,cname(iname),cform(iname),'ssbycpm',idiag_ssbycpm)
         call parse_name(iname,cname(iname),cform(iname),'ss2m',idiag_ss2m)
         call parse_name(iname,cname(iname),cform(iname),'eem',idiag_eem)
         call parse_name(iname,cname(iname),cform(iname),'ppm',idiag_ppm)
