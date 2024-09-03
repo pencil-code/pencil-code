@@ -126,21 +126,10 @@ add_definitions(-DAC_DEFAULT_CONFIG="${CMAKE_SOURCE_DIR}/config/astaroth.conf")
 
 ## Includes
 include_directories(./submodule/include)                                  # Library headers
-include_directories(./submodule/build)
 include_directories(./submodule/build/acc-runtime/api)
 include_directories(./submodule/acc-runtime/api)
-include_directories(./..)
-#include_directories(${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}) # CUDA headers
-include_directories(./submodule/build/src/core)
-include_directories(./submodule/build/src/core/kernels)
-include_directories(./submodule/build/src/utils)
-include_directories(./submodule/src/core/kernels)
-include_directories(./submodule/src/core)
 
 link_directories(./submodule/build/src/core)
-link_directories(./submodule/build/src/core/kernels)
-link_directories(./submodule/build/src/utils)
-link_directories(./submodule/build/acc-runtime/api)
 
 add_compile_options(-DMODPRE=${MODULE_PREFIX} -DMODIN=${MODULE_INFIX} -DMODSUF=${MODULE_SUFFIX})
 if (DOUBLE_PRECISION)
@@ -156,5 +145,5 @@ if (PACKED_DATA_TRANSFERS)
 else()
   add_library(astaroth_${PREC} SHARED gpu_astaroth.cc)
 endif()
-target_link_libraries(astaroth_${PREC} astaroth_core kernels)
+target_link_libraries(astaroth_${PREC} astaroth_core)
 

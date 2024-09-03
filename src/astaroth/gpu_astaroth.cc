@@ -18,11 +18,8 @@
 #define CUDA_ERRCHK(X)
 
 // Astaroth headers.
-#include "errchk.h"
-#include "math_utils.h"
 #include "astaroth.h"
-#include "kernels.h"
-#include "task.h"
+#include "math_utils.h"
 #include "user_loaders.h"
 #define real AcReal
 #define EXTERN
@@ -911,6 +908,10 @@ extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
       }
     }
   }
+  auto volume_size = [](int3 a)
+  {
+	  return a.x*a.y*a.z;
+  };
   for (int ivar=0;ivar<NUM_VTXBUF_HANDLES;ivar++)
     acLogFromRootProc(rank,"ratio of values wrong for field: %d\t %f\n",ivar,(double)num_of_points_where_different[ivar]/volume_size(dims.n1-dims.n0));
   passed &= !has_nans(mesh);
@@ -968,35 +969,34 @@ void setupConfig(AcMeshInfo& config, AcCompInfo& comp_info)
 { 
   // Enter basic parameters in config.
 
-  config.int3_params[AC_domain_decomposition] = (int3) {nprocx, nprocy, nprocz};
-  config.int_params[AC_nxgrid] = nxgrid;
-  config.int_params[AC_nygrid] = nygrid;
-  config.int_params[AC_nzgrid] = nzgrid;
-  //use external decomp = 1
-  config.int_params[AC_decompose_strategy] = (int)AcDecomposeStrategy::External;
+  PCLoad(config,comp_info, AC_domain_decomposition, (int3) {nprocx,nprocy,nprocz});
+  PCLoad(config,comp_info, AC_nxgrid, nxgrid);
+  PCLoad(config,comp_info, AC_nygrid, nygrid);
+  PCLoad(config,comp_info, AC_nzgrid, nzgrid);
+  PCLoad(config,comp_info,AC_decompose_strategy,(int)AcDecomposeStrategy::External);
   if (lmorton_curve)
-    config.int_params[AC_proc_mapping_strategy] = (int)AcProcMappingStrategy::Morton;
+    PCLoad(config,comp_info,AC_proc_mapping_strategy,(int)AcProcMappingStrategy::Morton);
   else
-    config.int_params[AC_proc_mapping_strategy] = (int)AcProcMappingStrategy::Linear;
-  config.int_params[AC_MPI_comm_strategy] = (int)AcMPICommStrategy::DuplicateUserComm;
-
+    PCLoad(config,comp_info,AC_proc_mapping_strategy,(int)AcProcMappingStrategy::Linear);
+  PCLoad(config,comp_info,AC_MPI_comm_strategy,(int)AcMPICommStrategy::DuplicateUserComm);
   config.comm = comm_pencil;
 
 // grid and geometry related parameters
 
-  config.real_params[AC_dsx] = dx;
-  config.real_params[AC_dsy] = dy;
-  config.real_params[AC_dsz] = dz;
-  config.real_params[AC_xlen] = Lxyz[0];
-  config.real_params[AC_ylen] = Lxyz[1];
-  config.real_params[AC_zlen] = Lxyz[2];
-  config.real_params[AC_xorig] = xyz0[0];
-  config.real_params[AC_yorig] = xyz0[1];
-  config.real_params[AC_zorig] = xyz0[2];
+  PCLoad(config,comp_info,AC_dsx,dx);
+  PCLoad(config,comp_info,AC_dsy,dy);
+  PCLoad(config,comp_info,AC_dsz,dz);
+
+  PCLoad(config,comp_info,AC_xlen,  Lxyz[0]);
+  PCLoad(config,comp_info,AC_ylen,  Lxyz[1]);
+  PCLoad(config,comp_info,AC_zlen,  Lxyz[2]);
+  PCLoad(config,comp_info,AC_xorig, xyz0[0]);
+  PCLoad(config,comp_info,AC_yorig, xyz0[1]);
+  PCLoad(config,comp_info,AC_zorig, xyz0[2]);
 
 // physics related parameters
 
-  config.real_params[AC_mu0] = mu0;
+  PCLoad(config,comp_info,AC_mu0,mu0);
 
 // parameter arrays for boundary conditions
 
@@ -1012,7 +1012,7 @@ void setupConfig(AcMeshInfo& config, AcCompInfo& comp_info)
   // Enter physics related parameters in config.
   #include "PC_modulepars.h"
   #if LDENSITY
-    config.int_params[AC_ldensity_nolog] = ldensity_nolog;
+    PCLoad(config,comp_info,AC_ldensity_nolog,ldensity_nolog);
     //printf("ldensity_nolog is %d \n",config.int_params[AC_ldensity_nolog]);//ldensity_nolog);
   #endif
   Device dev = acGridGetDevice();
@@ -1068,15 +1068,16 @@ void checkConfig(AcMeshInfo &config)
 /***********************************************************************************************/
 extern "C" void getFArrayIn(AcReal **p_f_in)
 {
-  Device device = acGridGetDevice();
-  *p_f_in = device->vba.in[0];
+  auto VBA = acGridGetVBA();
+  *p_f_in = VBA.in[0];
 }
 /***********************************************************************************************/
 extern "C" void copyVBApointers(AcReal **in, AcReal **out)
 {
   Device device = acGridGetDevice();
-  *in = device->vba.in[0];
-  *out = device->vba.out[0];
+  auto VBA = acGridGetVBA();
+  *in =  VBA.in[0];
+  *out = VBA.out[0];
 }
 /***********************************************************************************************/
 extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out, int comm_fint)
@@ -1091,12 +1092,17 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out, int c
   AcCompInfo comp_info = acInitCompInfo();
   setupConfig(mesh.info,comp_info);
   checkConfig(mesh.info);
+#if AC_RUNTIME_COMPILATION
+  if(rank == 0)
+  {
+#include "cmake_options.h"
+	  acCompile(cmake_options,info);
+  }
+  MPI_Barrier(comm_pencil);
+#endif
 
   acCheckDeviceAvailability();
   acGridInit(mesh.info);
-
-  acGridGetDevice()->vba.kernel_input_params.twopass_solve_final.step_num = 0;
-  acGridGetDevice()->vba.kernel_input_params.twopass_solve_intermediate.step_num = 0;
 
 #include "user_taskgraphs.h"
 
@@ -1193,9 +1199,10 @@ extern "C" void finalizeGPU()
 /***********************************************************************************************/
 extern "C" void random_initial_condition()
 {
-  acGridSynchronizeStream(STREAM_ALL);
-  AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
-  acGridLaunchKernel(STREAM_DEFAULT, randomize, dims.n0, dims.n1);
-  acGridSynchronizeStream(STREAM_ALL);
+  return;
+  //acGridSynchronizeStream(STREAM_ALL);
+  //AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
+  //acGridLaunchKernel(STREAM_DEFAULT, randomize, dims.n0, dims.n1);
+  //acGridSynchronizeStream(STREAM_ALL);
 }
 /***********************************************************************************************/
