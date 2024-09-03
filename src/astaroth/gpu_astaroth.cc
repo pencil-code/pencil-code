@@ -74,6 +74,7 @@ static MPI_Comm comm_pencil;
 int halo_xz_size[2] = {0, 0}, halo_yz_size[2] = {0, 0};
 //static AcReal *xtop_buffer, *xbot_buffer, *ytop_buffer, *ybot_buffer;
 
+
 /***********************************************************************************************/
 int DCONST(const AcIntParam param)
 {
@@ -954,8 +955,17 @@ extern "C" void initGPU()
   AcResult res = acCheckDeviceAvailability();
 }
 /***********************************************************************************************/
-void setupConfig(AcMeshInfo &config)
+template <typename P, typename V>
+void
+PCLoad(AcMeshInfo& config, AcCompInfo& comp_info, P param, V val)
 {
+	if constexpr(IsCompParam(param))
+		acLoadCompInfo(param, val, &comp_info);
+	else
+		acPushToConfig(config, param, val);
+}
+void setupConfig(AcMeshInfo& config, AcCompInfo& comp_info)
+{ 
   // Enter basic parameters in config.
 
   config.int3_params[AC_domain_decomposition] = (int3) {nprocx, nprocy, nprocz};
@@ -977,7 +987,6 @@ void setupConfig(AcMeshInfo &config)
   config.real_params[AC_dsx] = dx;
   config.real_params[AC_dsy] = dy;
   config.real_params[AC_dsz] = dz;
-  config.real_params[AC_dsmin] = std::min(dx,std::min(dy,dz));
   config.real_params[AC_xlen] = Lxyz[0];
   config.real_params[AC_ylen] = Lxyz[1];
   config.real_params[AC_zlen] = Lxyz[2];
@@ -1079,7 +1088,8 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out, int c
 #endif
 
   comm_pencil = MPI_Comm_f2c(comm_fint);
-  setupConfig(mesh.info);
+  AcCompInfo comp_info = acInitCompInfo();
+  setupConfig(mesh.info,comp_info);
   checkConfig(mesh.info);
 
   acCheckDeviceAvailability();
@@ -1121,7 +1131,8 @@ extern "C" void copyFarray(AcReal* f)
 /***********************************************************************************************/
 extern "C" void reloadConfig()
 {
-  setupConfig(mesh.info);
+  AcCompInfo comp_info = acInitCompInfo();
+  setupConfig(mesh.info, comp_info);
   acGridSynchronizeStream(STREAM_ALL);
   acDeviceUpdate(acGridGetDevice(), mesh.info);
   acGridSynchronizeStream(STREAM_ALL);
