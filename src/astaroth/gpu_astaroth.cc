@@ -20,7 +20,6 @@
 // Astaroth headers.
 #include "astaroth.h"
 #include "math_utils.h"
-#include "user_loaders.h"
 #define real AcReal
 #define EXTERN
 #define FINT int
@@ -500,7 +499,6 @@ extern "C" void substepGPU(int isubstep)
   //  acGridSynchronizeStream(STREAM_ALL);
   //  //set output buffer to 0 since if we are reading from it we don't want NaNs
   //  AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
-  //  acGridLaunchKernel(STREAM_DEFAULT, AC_BUILTIN_RESET, dims.n0, dims.n1);
   //  acGridSynchronizeStream(STREAM_ALL);
   //}
   acDeviceSetInput(acGridGetDevice(), AC_step_num,isubstep-1);
@@ -788,12 +786,12 @@ extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
   }
 
   //set output buffer to 0 since if we are reading from it we don't want NaNs
-  acGridLaunchKernel(STREAM_DEFAULT, AC_BUILTIN_RESET, dims.n0, dims.n1);
-  acGridSynchronizeStream(STREAM_ALL);
   // acGridExecuteTaskGraph(rhs_test_graph, 1);
   // acGridSynchronizeStream(STREAM_ALL);
   // acGridExecuteTaskGraph(rhs_test_rhs_1, 1);
   // acGridSynchronizeStream(STREAM_ALL);
+  acGridLaunchKernel(STREAM_DEFAULT, acGetKernelByName("AC_BUILTIN_RESET"), dims.n0, dims.n1);
+  acGridSynchronizeStream(STREAM_ALL);
 
   //actual run
   for (int i=0;i<num_of_steps;i++){
@@ -953,7 +951,7 @@ extern "C" void registerGPU(AcReal *farray)
 extern "C" void initGPU()
 {
   // Initialize GPUs in the node
-  AcResult res = acCheckDeviceAvailability();
+  //AcResult res = acCheckDeviceAvailability();
 }
 /***********************************************************************************************/
 template <typename P, typename V>
@@ -1010,12 +1008,13 @@ void setupConfig(AcMeshInfo& config, AcCompInfo& comp_info)
   config.real_arrays[AC_fbcz_2] = fbcz_2;
 */
   // Enter physics related parameters in config.
+
   #include "PC_modulepars.h"
   #if LDENSITY
     PCLoad(config,comp_info,AC_ldensity_nolog,ldensity_nolog);
     //printf("ldensity_nolog is %d \n",config.int_params[AC_ldensity_nolog]);//ldensity_nolog);
   #endif
-  Device dev = acGridGetDevice();
+  //Device dev = acGridGetDevice();
 #if LHYDRO
   //dev->output.real_outputs[AC_maxadvec]=0.;
 #endif
@@ -1023,47 +1022,69 @@ void setupConfig(AcMeshInfo& config, AcCompInfo& comp_info)
   //dev->output.real_outputs[AC_maxchi]=0.;
 #endif
 
-  acLogFromRootProc(rank, "Done setupConfig\n");
-  fflush(stdout);
+}
+
+int
+get_int_param(const AcMeshInfo &config, AcCompInfo& comp_info, AcIntParam param)
+{
+	return config.int_params[(int)param];
+}
+
+int
+get_int_param(const AcMeshInfo &config, AcCompInfo& comp_info, AcIntCompParam param)
+{
+	return comp_info.config.int_params[(int)param];
+}
+
+AcReal
+get_real_param(const AcMeshInfo &config, AcCompInfo& comp_info, AcRealParam param)
+{
+	return config.real_params[(int)param];
+}
+
+AcReal
+get_real_param(const AcMeshInfo &config, AcCompInfo& comp_info, AcRealCompParam param)
+{
+	return comp_info.config.real_params[(int)param];
 }
 /***********************************************************************************************/
-void checkConfig(AcMeshInfo &config)
+void checkConfig(AcMeshInfo &config, AcCompInfo& comp_info)
 {
  acLogFromRootProc(rank,"Check that config is correct\n");
  acLogFromRootProc(rank,"n[xyz]grid, d[xyz]: %d %d %d %.14f %.14f %.14f \n", nxgrid, nygrid, nzgrid, dx, dy, dz);
  acLogFromRootProc(rank,"rank= %d: l1, l2, n1, n2, m1, m2= %d %d %d %d %d %d \n", rank, l1, l2, n1, n2, m1, m2);
 
 #if LENTROPY
- acLogFromRootProc(rank,"lpressuregradientgas= %d %d \n", lpressuregradient_gas, config.int_params[AC_lpressuregradient_gas]);
- acLogFromRootProc(rank,"chi= %f %f \n", chi, config.real_params[AC_chi]);
- acLogFromRootProc(rank,"nkramers= %f %f \n", nkramers, config.real_params[AC_nkramers]);
- acLogFromRootProc(rank,"hcond0_kramers= %f %f \n", hcond0_kramers, config.real_params[AC_hcond0_kramers]);
- acLogFromRootProc(rank,"hcond_Kconst= %f %f \n", hcond_Kconst, config.real_params[AC_hcond_Kconst]);
+ acLogFromRootProc(rank,"lpressuregradientgas= %d %d \n", lpressuregradient_gas, get_int_param(config,comp_info,AC_lpressuregradient_gas));
+ acLogFromRootProc(rank,"chi= %f %f \n", chi, get_real_param(config,comp_info,AC_chi));
+ acLogFromRootProc(rank,"nkramers= %f %f \n", nkramers, get_real_param(config,comp_info,AC_nkramers));
+ acLogFromRootProc(rank,"hcond0_kramers= %f %f \n", hcond0_kramers, get_real_param(config,comp_info,AC_hcond0_kramers));
+ acLogFromRootProc(rank,"hcond_Kconst= %f %f \n", hcond_Kconst, get_real_param(config,comp_info,AC_hcond_Kconst));
 #endif
 #if LVISCOSITY
- acLogFromRootProc(rank,"nu= %f %f \n", nu, config.real_params[AC_nu]);
- acLogFromRootProc(rank,"zeta= %f %f \n", zeta, config.real_params[AC_zeta]);
+ acLogFromRootProc(rank,"nu= %f %f \n", nu, get_real_param(config,comp_info,AC_nu));
+ acLogFromRootProc(rank,"zeta= %f %f \n", zeta, get_real_param(config,comp_info,AC_zeta));
 #endif
 #if LMAGNETIC
-  acLogFromRootProc(rank,"eta= %f %f \n", eta, config.real_params[AC_eta]);
+  acLogFromRootProc(rank,"eta= %f %f \n", eta, get_real_param(config,comp_info,AC_eta));
 #endif
 #if LEOS
-  acLogFromRootProc(rank,"cs20= %f %f \n", cs20, config.real_params[AC_cs20]);
-  //  acLogFromRootProc(rank,"gamma= %f %f \n", gamma, config.real_params[AC_gamma]);
-  acLogFromRootProc(rank,"gamma_m1= %f %f \n", gamma_m1, config.real_params[AC_gamma_m1]);
-  acLogFromRootProc(rank,"gamma1= %f %f \n", gamma1, config.real_params[AC_gamma1]);
-  acLogFromRootProc(rank,"cv= %f %f \n", cv, config.real_params[AC_cv]);
-  acLogFromRootProc(rank,"cp= %f %f \n", cp, config.real_params[AC_cp]);
-  acLogFromRootProc(rank,"lnT0= %f %f \n", lnTT0, config.real_params[AC_lnTT0]);
-  acLogFromRootProc(rank,"lnrho0= %f %f \n", lnrho0, config.real_params[AC_lnrho0]);
+  acLogFromRootProc(rank,"cs20= %f %f \n", cs20, get_real_param(config,comp_info,AC_cs20));
+  //  acLogFromRootProc(rank,"gamma= %f %f \n", gamma, get_real_param(config,comp_infoAC_gamma));
+  acLogFromRootProc(rank,"gamma_m1= %f %f \n", gamma_m1, get_real_param(config,comp_info,AC_gamma_m1));
+  acLogFromRootProc(rank,"gamma1= %f %f \n", gamma1, get_real_param(config,comp_info,AC_gamma1));
+  acLogFromRootProc(rank,"cv= %f %f \n", cv, get_real_param(config,comp_info,AC_cv));
+  acLogFromRootProc(rank,"cp= %f %f \n", cp, get_real_param(config,comp_info,AC_cp));
+  acLogFromRootProc(rank,"lnT0= %f %f \n", lnTT0, get_real_param(config,comp_info,AC_lnTT0));
+  acLogFromRootProc(rank,"lnrho0= %f %f \n", lnrho0, get_real_param(config,comp_info,AC_lnrho0));
 #endif
 #if LFORCING
-  acLogFromRootProc(rank,"iforcing_zsym= %f %f \n", iforcing_zsym, config.int_params[AC_iforcing_zsym]);
-  acLogFromRootProc(rank,"k1_ff= %f %f \n", k1_ff, config.real_params[AC_k1_ff]);
-  acLogFromRootProc(rank,"tforce_stop= %f %f \n", tforce_stop, config.real_params[AC_tforce_stop]);
+  acLogFromRootProc(rank,"iforcing_zsym= %f %f \n", iforcing_zsym, get_int_param(config,comp_info,AC_iforcing_zsym));
+  acLogFromRootProc(rank,"k1_ff= %f %f \n", k1_ff, get_real_param(config,comp_info,AC_k1_ff));
+  acLogFromRootProc(rank,"tforce_stop= %f %f \n", tforce_stop, get_real_param(config,comp_info,AC_tforce_stop));
   acLogFromRootProc(rank,"k1_ff,profx_ampl, val= %f %d %lf %lf\n", k1_ff, profx_ampl, profx_ampl[0], profx_ampl[nx-1]);
 #endif
-  acLogFromRootProc(rank,"mu0= %f %f \n", mu0, config.real_params[AC_mu0]);
+  acLogFromRootProc(rank,"mu0= %f %f \n", mu0, get_real_param(config,comp_info,AC_mu0));
 }
 /***********************************************************************************************/
 extern "C" void getFArrayIn(AcReal **p_f_in)
@@ -1091,22 +1112,24 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out, int c
   comm_pencil = MPI_Comm_f2c(comm_fint);
   AcCompInfo comp_info = acInitCompInfo();
   setupConfig(mesh.info,comp_info);
-  checkConfig(mesh.info);
 #if AC_RUNTIME_COMPILATION
   if(rank == 0)
   {
 #include "cmake_options.h"
-	  acCompile(cmake_options,info);
+	  acCompile(cmake_options,comp_info);
   }
   MPI_Barrier(comm_pencil);
+  acLoadLibrary();
+  acLogFromRootProc(rank, "Done setupConfig && acCompile\n");
+  fflush(stdout);
+#else
+  acLogFromRootProc(rank, "Done setupConfig\n");
+  fflush(stdout);
 #endif
-
+  checkConfig(mesh.info,comp_info);
   acCheckDeviceAvailability();
   acGridInit(mesh.info);
-
-#include "user_taskgraphs.h"
-
-  rhs = AC_rhs;
+  rhs = acGetDSLTaskGraph(AC_rhs);
   acGridSynchronizeStream(STREAM_ALL);
   acLogFromRootProc(rank, "DONE initializeGPU\n");
   fflush(stdout);

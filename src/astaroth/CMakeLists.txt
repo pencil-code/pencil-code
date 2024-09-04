@@ -11,6 +11,7 @@ option(USE_OMP                "Enables use of openmp"                           
 option(USE_DARDEL             "Target machine is Dardel(PDC, Stockholm"                 OFF)
 option(PACKED_DATA_TRANSFERS  "Enables kernel for packed data transfers"                OFF)
 option(SINGLEPASS_INTEGRATION "Enables single pass integration"                         OFF)
+option(RUNTIME_COMPILATION    "Enables runtime compilation"                         OFF)
 
 if (USE_HIP)
     find_program(CMAKE_HIP_COMPILER hipcc REQUIRED)
@@ -42,6 +43,8 @@ message(STATUS "Build type: " ${CMAKE_BUILD_TYPE})
 ## CUDA/HIP
 if (USE_HIP)
 add_definitions(-DAC_USE_HIP=1)
+
+	
 
 set(GPU_TARGETS "gfx908" CACHE STRING "GPU target")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --offload-arch=gfx908 --offload-arch=gfx90a")
@@ -138,6 +141,11 @@ if (DOUBLE_PRECISION)
 else()
   add_definitions(-DAC_DOUBLE_PRECISION=0)
   set(PREC "sgl")
+endif()
+if(RUNTIME_COMPILATION)
+	add_definitions(-DAC_RUNTIME_COMPILATION=1)
+else()
+	add_definitions(-DAC_RUNTIME_COMPILATION=0)
 endif()
 if (PACKED_DATA_TRANSFERS)
   add_compile_options(-DPACKED_DATA_TRANSFERS=1)
