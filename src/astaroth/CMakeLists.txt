@@ -11,6 +11,7 @@ option(USE_OMP                "Enables use of openmp"                           
 option(USE_DARDEL             "Target machine is Dardel(PDC, Stockholm"                 OFF)
 option(PACKED_DATA_TRANSFERS  "Enables kernel for packed data transfers"                OFF)
 option(SINGLEPASS_INTEGRATION "Enables single pass integration"                         OFF)
+option(RUNTIME_COMPILATION    "Enables runtime compilation"                         OFF)
 
 if (USE_HIP)
     find_program(CMAKE_HIP_COMPILER hipcc REQUIRED)
@@ -42,6 +43,8 @@ message(STATUS "Build type: " ${CMAKE_BUILD_TYPE})
 ## CUDA/HIP
 if (USE_HIP)
 add_definitions(-DAC_USE_HIP=1)
+
+	
 
 set(GPU_TARGETS "gfx908" CACHE STRING "GPU target")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --offload-arch=gfx908 --offload-arch=gfx90a")
@@ -126,21 +129,10 @@ add_definitions(-DAC_DEFAULT_CONFIG="${CMAKE_SOURCE_DIR}/config/astaroth.conf")
 
 ## Includes
 include_directories(./submodule/include)                                  # Library headers
-include_directories(./submodule/build)
 include_directories(./submodule/build/acc-runtime/api)
 include_directories(./submodule/acc-runtime/api)
-include_directories(./..)
-#include_directories(${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}) # CUDA headers
-include_directories(./submodule/build/src/core)
-include_directories(./submodule/build/src/core/kernels)
-include_directories(./submodule/build/src/utils)
-include_directories(./submodule/src/core/kernels)
-include_directories(./submodule/src/core)
 
 link_directories(./submodule/build/src/core)
-link_directories(./submodule/build/src/core/kernels)
-link_directories(./submodule/build/src/utils)
-link_directories(./submodule/build/acc-runtime/api)
 
 add_compile_options(-DMODPRE=${MODULE_PREFIX} -DMODIN=${MODULE_INFIX} -DMODSUF=${MODULE_SUFFIX})
 if (DOUBLE_PRECISION)
@@ -150,11 +142,16 @@ else()
   add_definitions(-DAC_DOUBLE_PRECISION=0)
   set(PREC "sgl")
 endif()
+if(RUNTIME_COMPILATION)
+	add_definitions(-DAC_RUNTIME_COMPILATION=1)
+else()
+	add_definitions(-DAC_RUNTIME_COMPILATION=0)
+endif()
 if (PACKED_DATA_TRANSFERS)
   add_compile_options(-DPACKED_DATA_TRANSFERS=1)
   add_library(astaroth_${PREC} SHARED gpu_astaroth.cc loadStore.cc)
 else()
   add_library(astaroth_${PREC} SHARED gpu_astaroth.cc)
 endif()
-target_link_libraries(astaroth_${PREC} astaroth_core kernels)
+target_link_libraries(astaroth_${PREC} astaroth_core)
 

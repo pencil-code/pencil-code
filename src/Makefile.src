@@ -20,6 +20,7 @@ FOURIER            = nofourier
 GEOMETRICAL_TYPES  =   geometrical_types
 GHOSTFOLD          = noghostfold
 GPU                = nogpu
+RUNTIME_COMPILATION = off
 GRID               =   grid
 GSL                = nogsl
 IMPLICIT_DIFFUSION = noimplicit_diffusion
@@ -527,7 +528,11 @@ ifneq ($(GPU),nogpu)
       GPU_DEPS = $(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/Makefile.vendor $(CUDA_MAKEDIR)/PC_modulesources.h $(DSL_WORKDIR)/fieldecs.h $(DSL_WORKDIR)/equations.h $(DSL_WORKDIR)/solve.ac
       LDFLAGS_MAIN = -Bdynamic -Wl,--export-dynamic
       #LDFLAGS_MAIN = -h dynamic -Wl,--export-dynamic
-      LDFLAGS_LIB = -L astaroth -L astaroth/submodule/build/src/core -L astaroth/submodule/build/src/core/kernels -lastaroth_core -lkernels -l$(LIBGPU_NAME)
+      ifeq ($(RUNTIME_COMPILATION),on)
+        LDFLAGS_LIB = -L astaroth -L astaroth/submodule/build/src/core -L astaroth/submodule/build/runtime_compilation -L astaroth/submodule/build/src/core/kernels -lacc_runtime_compiler -lastaroth_core -lkernels -l$(LIBGPU_NAME)
+      else
+        LDFLAGS_LIB = -L astaroth -L astaroth/submodule/build/src/core -L astaroth/submodule/build/src/core/kernels -lastaroth_core -lkernels -l$(LIBGPU_NAME)
+      endif
       ifneq ($(IS_CRAY),)
         #TP: mpi_gtl_hsa and pe/lib64 is to enable CUDA_AWARE_MPI
         #good that this is still here
@@ -2958,7 +2963,7 @@ run.x: run.o | $(SPECIAL_DEPS) $(LIBGPU)
 #
 $(LIBGPU): $(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/Makefile.vendor
 #$(LIBGPU): $(GPU_DEPS)
-	cd astaroth && make RUN_COMPILE=$(PRODUCTION)
+	cd astaroth && make RUNTIME_COMPILATION=$(RUNTIME_COMPILATION)
 #
 special_preps:
 ifeq ($(SPECIAL_MULT),1)
@@ -3539,7 +3544,6 @@ distclean: cleanall
 #
 $(CUDA_MAKEDIR)/Makefile.vendor: Makefile.local
 	@echo GPU_VENDOR=$(GPU_VENDOR) > $(CUDA_MAKEDIR)/Makefile.vendor
-
 	@echo MODULE_PREFIX=$(MODULE_PREFIX) > $(CUDA_MAKEDIR)/Makefile.module_info
 	@echo export MODULE_PREFIX=$(MODULE_PREFIX) >> $(CUDA_MAKEDIR)/Makefile.module_info
 
