@@ -993,6 +993,9 @@ void setupConfig(AcMeshInfo& config, AcCompInfo& comp_info)
   config.real_params[AC_xorig] = xyz0[0];
   config.real_params[AC_yorig] = xyz0[1];
   config.real_params[AC_zorig] = xyz0[2];
+  config.real_arrays[AC_x] = x;
+  config.real_arrays[AC_y] = y;
+  config.real_arrays[AC_z] = z;
 
 // physics related parameters
 
@@ -1000,7 +1003,7 @@ void setupConfig(AcMeshInfo& config, AcCompInfo& comp_info)
 
 // parameter arrays for boundary conditions
 
-/*  config.real_arrays[AC_fbcx  ] = fbcx;
+  config.real_arrays[AC_fbcx  ] = fbcx;
   config.real_arrays[AC_fbcx_2] = fbcx_2;
   config.real_arrays[AC_fbcy  ] = fbcy;
   config.real_arrays[AC_fbcy_1] = fbcy_1;
@@ -1008,11 +1011,11 @@ void setupConfig(AcMeshInfo& config, AcCompInfo& comp_info)
   config.real_arrays[AC_fbcz  ] = fbcz;
   config.real_arrays[AC_fbcz_1] = fbcz_1;
   config.real_arrays[AC_fbcz_2] = fbcz_2;
-*/
+
   // Enter physics related parameters in config.
   #include "PC_modulepars.h"
   #if LDENSITY
-    config.int_params[AC_ldensity_nolog] = ldensity_nolog;
+    config.int_params[AC_ldensity_nolog] = ldensity_nolog;   // from cdata
     //printf("ldensity_nolog is %d \n",config.int_params[AC_ldensity_nolog]);//ldensity_nolog);
   #endif
   Device dev = acGridGetDevice();
@@ -1032,6 +1035,7 @@ void checkConfig(AcMeshInfo &config)
  acLogFromRootProc(rank,"Check that config is correct\n");
  acLogFromRootProc(rank,"n[xyz]grid, d[xyz]: %d %d %d %.14f %.14f %.14f \n", nxgrid, nygrid, nzgrid, dx, dy, dz);
  acLogFromRootProc(rank,"rank= %d: l1, l2, n1, n2, m1, m2= %d %d %d %d %d %d \n", rank, l1, l2, n1, n2, m1, m2);
+ acLogFromRootProc(rank,"rank= %d: zlen= %.14f %.14f \n", config.real_params[AC_zlen], Lxyz[2]);
 
 #if LENTROPY
  acLogFromRootProc(rank,"lpressuregradientgas= %d %d \n", lpressuregradient_gas, config.int_params[AC_lpressuregradient_gas]);

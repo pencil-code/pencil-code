@@ -3106,15 +3106,16 @@ mn_loop:do n=n1,n2
                       (SNR%indx%m==preSN(2,ipsn)) .and. &
                       (SNR%indx%n==preSN(3,ipsn)) .and. &
                       (SNR%indx%iproc==preSN(4,ipsn))) then
-                    !!$omp atomic
+                    !$omp atomic
                     ierr=iEXPLOSION_TOO_HOT
                     if (.not.lgpu.and.ip==1963) &
                       print*,'position_by_cloudmass: iEXPLOSION_TOO_HOT, iproc,it,preSN=',iproc,it,preSN(:,ipsn)
                   endif
                 enddo
+                !$omp atomic
                 !$ lfound = .true.
-                !!!!$ if (.false.) &
-                !!!exit mn_loop
+                include 'exit_mn.h' !exits mn_loop if not multi-threaded, otherwise does nothing
+                                    !exit_mn.h is only temporarily created by make!
               endif
             endif
           enddo
@@ -3491,7 +3492,7 @@ mn_loop:do n=n1,n2
       cum_mm = 0.
       SNR%indx%state=SNstate_waiting
       SN_TT_ratio_max = SN_TT_ratio*TT_SN_max
-      lfound = .false.
+      !$ lfound = .false.
 !$    call OMP_set_num_threads(num_helper_threads)
       !!$omp target if(loffload) !map(tofrom: SNR) has_device_addr(f)  ! needs:
       !irho,ilnrho,iss,ilnTT,frac_eth,dr2_SN,rfactor_SN,TT_SN_max, switches FG radius2mass, c_SN, width_energy, width_mass,&
@@ -3500,7 +3501,7 @@ mn_loop:do n=n1,n2
       !$omp private(dV,rho_old,rho_new,deltarho,deltauu,deltaEE,deltaCR,ee_old,lnTT, &
       !$omp outward_normal_SN,maxTT,rad_hot,deltarho_hot,ind_maxTT,cmass_tmp) &
       !$omp reduction(+:site_mass,cum_mm,cum_ee) reduction(max:maxlnTT,max_cmass)
-mnloop:do n=n1,n2
+mn_loop:do n=n1,n2
       do m=m1,m2
 !
         !$ if (lfound) cycle
@@ -3549,12 +3550,13 @@ mnloop:do n=n1,n2
               !dense remnant
               if (maxTT>TT_SN_max) then
                 if (present(ierr)) then
-                  !!$omp atomic
+                  !$omp atomic
                   ierr=iEXPLOSION_TOO_HOT
                   if (.not.lSN_list) then
+                    !$omp atomic
                     !$ lfound = .true.
-                    !!!!$ if (.false.) &
-                    !!!exit mnloop
+                    include 'exit_mn.h'  !exits mn_loop if not multi-threaded, otherwise does nothing
+                                         !exit_mn.h is only temporarily created by make!
                   endif
                 endif
               endif
@@ -3570,12 +3572,13 @@ mnloop:do n=n1,n2
                   maxlnTT=max(log(maxTT),maxlnTT)
                 else
                   if (present(ierr)) then
-                    !!$omp atomic
+                    !$omp atomic
                     ierr=iEXPLOSION_TOO_HOT
                     if (.not.lSN_list) then
+                      !$omp atomic
                       !$ lfound = .true.
-                      !!!!$ if (.false.) &
-                      !!!exit mnloop
+                      include 'exit_mn.h' !exits mn_loop if not multi-threaded, otherwise does nothing
+                                          !exit_mn.h is only temporarily created by make!
                     endif
                   endif
                 endif
@@ -3584,7 +3587,7 @@ mnloop:do n=n1,n2
           endif
         endif
       enddo
-      enddo mnloop
+      enddo mn_loop
      !$omp end teams distribute parallel do
      !!$omp end target
       SNR%feat%MM=cum_mm
