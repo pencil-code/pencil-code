@@ -2290,7 +2290,7 @@ module Hydro
             f(:,:,:,iuy) = 0
             do n=n1,n2
               do m=m1,m2
-                f(l1:l2,m,n,iuz) = omega_ini*x(l1:l2)*sinth(m)
+                f(l1:l2,m,n,iuz) = omega_ini*x(l1:l2)**(1.-qini)*sinth(m)
               enddo
             enddo
           elseif (lcylindrical_coords) then
@@ -2403,6 +2403,8 @@ module Hydro
           f(:,:,:,iux) = f(:,:,:,iux) - 1/(2*Omega)*cs20*beta_glnrho_scaled(2)
           f(:,:,:,iuy) = f(:,:,:,iuy) + 1/(2*Omega)*cs20*beta_glnrho_scaled(1)
           ! superimpose here for the case of pressure bump special module chaning f as well
+!
+!  rigid rotation within a sphere
 !
         case ('rigid')
           do n=n1,n2; do m=m1,m2; do l=l1,l2

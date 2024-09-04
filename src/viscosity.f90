@@ -325,6 +325,7 @@ module Viscosity
       integer :: i
 !
 !  Default viscosity.
+!  nu-const (as opposed to mu=rho*nu=const) may still allow for a profile of nu.
 !
       if ( (nu/=0.0).and.(ivisc(1)=='') ) ivisc(1)='nu-const'  !MR: really?
 !
