@@ -796,6 +796,9 @@ module EquationOfState
           if (lpenc_loc(i_del2ss)) p%del2ss=0.0
           if (lpenc_loc(i_del6ss)) p%del6ss=0.0
           if (lpenc_loc(i_cs2)) p%cs2=cs20*exp(gamma_m1*(p%lnrho-lnrho0))
+          if (lpenc_loc(i_rho1gpp)) then
+            call fatal_error('calc_pencils_eos','rho1gpp not available')
+          endif
         elseif (leos_isothermal) then
           if (lpenc_loc(i_ss)) p%ss=-(cp-cv)*(p%lnrho-lnrho0)
           if (lpenc_loc(i_gss)) p%gss=-(cp-cv)*p%glnrho
@@ -832,6 +835,9 @@ module EquationOfState
             if (lreference_state) p%del6ss=p%del6ss+reference_state(:,iref_d6s)
           endif
           if (lpenc_loc(i_cs2)) p%cs2=cs20*exp(cv1*p%ss+gamma_m1*(p%lnrho-lnrho0))
+          if (lpenc_loc(i_rho1gpp)) then
+            call fatal_error('calc_pencils_eos','rho1gpp not available 2')
+          endif
         endif
 !
         if (lpenc_loc(i_lnTT)) p%lnTT=lnTT0+cv1*p%ss+gamma_m1*(p%lnrho-lnrho0)
