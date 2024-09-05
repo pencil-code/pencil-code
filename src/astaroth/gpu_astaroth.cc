@@ -954,15 +954,7 @@ extern "C" void initGPU()
   //AcResult res = acCheckDeviceAvailability();
 }
 /***********************************************************************************************/
-template <typename P, typename V>
-void
-PCLoad(AcMeshInfo& config, AcCompInfo& comp_info, P param, V val)
-{
-	if constexpr(IsCompParam(param))
-		acLoadCompInfo(param, val, &comp_info);
-	else
-		acPushToConfig(config, param, val);
-}
+#define PCLoad acPushToConfig
 void setupConfig(AcMeshInfo& config, AcCompInfo& comp_info)
 { 
   // Enter basic parameters in config.
