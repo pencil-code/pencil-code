@@ -170,6 +170,106 @@ if (lroot) flush(6)
 
 endsubroutine reload
 !***********************************************************************
+subroutine gen_output(f)
+
+!TP: 5.9.2024: extracted from timeloop
+  use Equ,             only: write_diagnostics 
+  use Snapshot,        only: powersnap, powersnap_prepare, wsnap, wsnap_down, output_form
+  use Particles_main,   only: write_snapshot_particles
+  use PointMasses,     only: pointmasses_write_snapshot
+  use Mpicomm,         only: mpiwtime
+  use Sub,             only: control_file_exists
+  use Solid_Cells,     only: wsnap_ogrid
+  use Timeavg,         only: wsnap_timeavgs
+  use Fixed_point,     only: wfixed_points
+  use Streamlines,     only: wtracers
+
+    real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+    integer :: isave_shift=0, i
+    real :: tvar1
+
+
+!
+!  Setting ialive=1 can be useful on flaky machines!
+!  The iteration number is written into the file "data/proc*/alive.info".
+!  Set ialive=0 to fully switch this off.
+!
+    if (ialive /= 0) then
+      if (mod(it,ialive)==0) call output_form('alive.info',it,.false.)
+    endif
+    if (lparticles) call write_snapshot_particles(f,ENUM=.true.)  !MR: no *.list file for particles?
+    if (lpointmasses) call pointmasses_write_snapshot('QVAR',ENUM=.true.,FLIST='qvarN.list')
+!
+!  Added possibility of outputting only the chunks starting
+!  from nv1_capitalvar in the capitalvar file.
+!
+    call wsnap('VAR',f,mvar_io,ENUM=.true.,FLIST='varN.list',nv1=nv1_capitalvar)
+    if (ldownsampl) call wsnap_down(f)
+    call wsnap_timeavgs('TAVG',ENUM=.true.,FLIST='tavgN.list')
+    !MR: what about ogrid data here?
+!
+!   Diagnostic output in concurrent thread.
+!
+    if (lmultithread) then
+      if (lout.or.l1davg.or.l1dphiavg.or.l2davg) then
+!!$      last_pushed_task= push_task(c_funloc(write_diagnostics_wrapper), last_pushed_task,&
+!!$      1, default_task_type, 1, depend_on_all, f, mx, my, mz, mfarray)
+      endif
+    else
+      call write_diagnostics(f)
+    endif
+!
+!  Write tracers (for animation purposes).
+!
+    if (ltracers.and.lwrite_tracers) call wtracers(f,trim(directory)//'/tracers_')
+!
+!  Write fixed points (for animation purposes).
+!
+    if (lfixed_points.and.lwrite_fixed_points) call wfixed_points(f,trim(directory)//'/fixed_points_')
+!
+!  Save snapshot every isnap steps in case the run gets interrupted or when SAVE file is found.
+!  The time needs also to be written.
+!
+    if (lout) lsave = control_file_exists('SAVE', DELETE=.true.)
+
+    if (lsave .or. ((isave /= 0) .and. .not. lnowrite)) then
+      if (lsave .or. (mod(it-isave_shift, isave) == 0)) then
+        lsave = .false.
+        if (ip<=12.and.lroot) tvar1=mpiwtime()
+        call wsnap('var.dat',f, mvar_io,ENUM=.false.,noghost=noghost_for_isave)
+        if (ip<=12.and.lroot) print*,'wsnap: written snapshot var.dat in ', &
+                                     mpiwtime()-tvar1,' seconds'
+        call wsnap_timeavgs('timeavg.dat',ENUM=.false.)
+        if (lparticles) call write_snapshot_particles(f,ENUM=.false.)
+        if (lpointmasses) call pointmasses_write_snapshot('qvar.dat',ENUM=.false.)
+        if (lsave) isave_shift = mod(it+isave-isave_shift, isave) + isave_shift
+        if (lsolid_cells) call wsnap_ogrid('ogvar.dat',ENUM=.false.)
+      endif
+    endif
+!
+!  Allow here for the possibility to have spectral output
+!  *after* the first time. As explained in the comment to
+!  the GW module, the stress spectrum is only available
+!  when the GW solver has advanced by one step, but the time
+!  of the stress spectrum is said to be t+dt, even though
+!  it really belongs to the time t. The GW spectra, on the
+!  other hand, are indeed at the correct d+dt. Therefore,
+!  when lspec_first=T, we output spectra for both t and t+dt.
+!
+    if (lspec_start .and. abs(t-(tstart+dt))<.1*dt ) lspec=.true.
+!
+!  Save spectrum snapshot.
+!
+    if (dspec/=impossible .or. itspec/=impossible_int) call powersnap(f)
+!
+!  Save global variables.
+!
+    if (isaveglobal/=0) then
+      if ((mod(it,isaveglobal)==0) .and. (mglobal/=0)) &
+        call output_globals('global.dat',f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal)
+    endif
+endsubroutine gen_output
+!***********************************************************************
 subroutine timeloop(f,df,p)
 !
 !  Do loop in time.
@@ -179,29 +279,27 @@ subroutine timeloop(f,df,p)
   use Density,         only: boussinesq
   use Diagnostics,     only: write_1daverages_prepare, save_name, &
                              diagnostics_clean_up, write_2daverages_prepare
-  use Equ,             only: write_diagnostics 
   use Filter,          only: rmwig, rmwig_xyaverage
-  use Fixed_point,     only: fixed_points_prepare, wfixed_points
+  use Fixed_point,     only: fixed_points_prepare
   use Forcing,         only: addforce
   use ImplicitPhysics, only: calc_heatcond_ADI
   use IO,              only: output_globals
   use Magnetic,        only: rescaling_magnetic
   use Messages,        only: timing, fatal_error_local_collect
   use Mpicomm,         only: mpibcast_logical, mpiwtime, MPI_COMM_WORLD, mpibarrier
-  use Particles_main,  only: particles_rprint_list, write_snapshot_particles, particles_initialize_modules, & 
+  use Particles_main,  only: particles_rprint_list, particles_initialize_modules, & 
                              particles_load_balance, particles_stochastic
-  use PointMasses,     only: pointmasses_write_snapshot
   use Signal_handling, only: emergency_stop
   use Sub,             only: control_file_exists, calc_scl_factor
   use Testscalar,      only: rescaling_testscalar
   use Testfield,       only: rescaling_testfield
   use TestPerturb,     only: testperturb_begin, testperturb_finalize
-  use Timeavg,         only: ltavg, update_timeavgs, wsnap_timeavgs
+  use Timeavg,         only: ltavg, update_timeavgs
   use Timestep,        only: time_step
   use Slices,          only: wvid_prepare
-  use Snapshot,        only: powersnap, powersnap_prepare, wsnap, wsnap_down, output_form
-  use Solid_Cells,     only: time_step_ogrid, wsnap_ogrid
-  use Streamlines,     only: tracers_prepare, wtracers
+  use Solid_Cells,     only: time_step_ogrid
+  use Streamlines,     only: tracers_prepare
+  use Snapshot,        only: powersnap_prepare
 !$ use OMP_lib
 !$ use General, only: signal_send, signal_wait
 !!$ use, intrinsic :: iso_fortran_env
@@ -212,9 +310,9 @@ subroutine timeloop(f,df,p)
 !
   logical :: lstop=.false., timeover=.false., resubmit=.false., lreload_file, lreload_always_file, &
              lonemorestep=.false.
-  integer :: isave_shift=0, it_this_diagnostic, i
-  real :: wall_clock_time=0., tvar1, time_per_step=0.
+  real :: wall_clock_time=0., time_per_step=0.
   real(KIND=rkind8) :: time_this_diagnostic
+  integer :: it_this_diagnostic
 
   Time_loop: do while (it<=nt)
 !
@@ -417,86 +515,8 @@ if (lroot) flush(6)
       time_last_diagnostic = time_this_diagnostic
       call save_name(time_per_step,idiag_timeperstep)
     endif
-!
-!  Setting ialive=1 can be useful on flaky machines!
-!  The iteration number is written into the file "data/proc*/alive.info".
-!  Set ialive=0 to fully switch this off.
-!
-    if (ialive /= 0) then
-      if (mod(it,ialive)==0) call output_form('alive.info',it,.false.)
-    endif
 
-    if (lparticles) call write_snapshot_particles(f,ENUM=.true.)  !MR: no *.list file for particles?
-    if (lpointmasses) call pointmasses_write_snapshot('QVAR',ENUM=.true.,FLIST='qvarN.list')
-!
-!  Added possibility of outputting only the chunks starting
-!  from nv1_capitalvar in the capitalvar file.
-!
-    call wsnap('VAR',f,mvar_io,ENUM=.true.,FLIST='varN.list',nv1=nv1_capitalvar)
-    if (ldownsampl) call wsnap_down(f)
-    call wsnap_timeavgs('TAVG',ENUM=.true.,FLIST='tavgN.list')
-    !MR: what about ogrid data here?
-!
-!   Diagnostic output in concurrent thread.
-!
-    if (lmultithread) then
-      if (lout.or.l1davg.or.l1dphiavg.or.l2davg) then
-!!$      last_pushed_task= push_task(c_funloc(write_diagnostics_wrapper), last_pushed_task,&
-!!$      1, default_task_type, 1, depend_on_all, f, mx, my, mz, mfarray)
-      endif
-    else
-      call write_diagnostics(f)
-    endif
-!
-!  Write tracers (for animation purposes).
-!
-    if (ltracers.and.lwrite_tracers) call wtracers(f,trim(directory)//'/tracers_')
-!
-!  Write fixed points (for animation purposes).
-!
-    if (lfixed_points.and.lwrite_fixed_points) call wfixed_points(f,trim(directory)//'/fixed_points_')
-!
-!  Save snapshot every isnap steps in case the run gets interrupted or when SAVE file is found.
-!  The time needs also to be written.
-!
-    if (lout) lsave = control_file_exists('SAVE', DELETE=.true.)
-
-    if (lsave .or. ((isave /= 0) .and. .not. lnowrite)) then
-      if (lsave .or. (mod(it-isave_shift, isave) == 0)) then
-        lsave = .false.
-        if (ip<=12.and.lroot) tvar1=mpiwtime()
-        call wsnap('var.dat',f, mvar_io,ENUM=.false.,noghost=noghost_for_isave)
-        if (ip<=12.and.lroot) print*,'wsnap: written snapshot var.dat in ', &
-                                     mpiwtime()-tvar1,' seconds'
-        call wsnap_timeavgs('timeavg.dat',ENUM=.false.)
-        if (lparticles) call write_snapshot_particles(f,ENUM=.false.)
-        if (lpointmasses) call pointmasses_write_snapshot('qvar.dat',ENUM=.false.)
-        if (lsave) isave_shift = mod(it+isave-isave_shift, isave) + isave_shift
-        if (lsolid_cells) call wsnap_ogrid('ogvar.dat',ENUM=.false.)
-      endif
-    endif
-!
-!  Allow here for the possibility to have spectral output
-!  *after* the first time. As explained in the comment to
-!  the GW module, the stress spectrum is only available
-!  when the GW solver has advanced by one step, but the time
-!  of the stress spectrum is said to be t+dt, even though
-!  it really belongs to the time t. The GW spectra, on the
-!  other hand, are indeed at the correct d+dt. Therefore,
-!  when lspec_first=T, we output spectra for both t and t+dt.
-!
-    if (lspec_start .and. abs(t-(tstart+dt))<.1*dt ) lspec=.true.
-!
-!  Save spectrum snapshot.
-!
-    if (dspec/=impossible .or. itspec/=impossible_int) call powersnap(f)
-!
-!  Save global variables.
-!
-    if (isaveglobal/=0) then
-      if ((mod(it,isaveglobal)==0) .and. (mglobal/=0)) &
-        call output_globals('global.dat',f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal)
-    endif
+    call gen_output(f)
 !
 !  Do exit when timestep has become too short.
 !  This may indicate an MPI communication problem, so the data are useless
