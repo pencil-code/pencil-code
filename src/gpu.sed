@@ -12,7 +12,7 @@
 /INITIAL_CONDITION/ b end
 /FIXED_POINT/ b end
 /LSODE/ b end
-/MPICOMM/ b end
+#/MPICOMM/ b end
 /NSCBC/ b end
 /POWER/ b end
 /SIGNAL/ b end

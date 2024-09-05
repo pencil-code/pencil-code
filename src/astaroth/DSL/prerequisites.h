@@ -35,6 +35,7 @@ const int mcom = mvar+maux_com
   #define LNRHO RHO
   #define ldensity_nolog AC_ldensity_nolog
 #endif
+#include "../bcs/funcs.h"
 
 #ifdef LFORCING
   #include "../forcing/pcstyleforcing.h"
