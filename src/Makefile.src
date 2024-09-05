@@ -526,8 +526,8 @@ ifneq ($(GPU),nogpu)
       LIBGPU = astaroth/lib$(LIBGPU_NAME).so
 
       GPU_DEPS = $(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/Makefile.vendor $(CUDA_MAKEDIR)/PC_modulesources.h $(DSL_WORKDIR)/fieldecs.h $(DSL_WORKDIR)/equations.h $(DSL_WORKDIR)/solve.ac
-      #LDFLAGS_MAIN = -Bdynamic -Wl,--export-dynamic
-      LDFLAGS_MAIN = -h dynamic -Wl,--export-dynamic
+      LDFLAGS_MAIN = -Bdynamic -Wl,--export-dynamic
+      #LDFLAGS_MAIN = -h dynamic -Wl,--export-dynamic
       ifeq ($(RUNTIME_COMPILATION),on)
         LDFLAGS_LIB = -L astaroth -L astaroth/submodule/build/src/core -L astaroth/submodule/build/runtime_compilation -L astaroth/submodule/build/src/core/kernels -lacc_runtime_compiler -lastaroth_core -lkernels -l$(LIBGPU_NAME)
       else
@@ -559,6 +559,7 @@ endif
 #
 ifneq ($(filter openmp OpenMP,$(MULTITHREADING)),)
 
+  $(shell bash -c 'rm -f exit_mn.h; touch exit_mn.h')
   PTHREAD_OBJ=pthread.o
   PTHREAD_SRC=pthread.c
 #
@@ -580,6 +581,7 @@ ifneq ($(filter openmp OpenMP,$(MULTITHREADING)),)
 else
   MULTITHREADING = 
   PTHREAD_OBJ=
+  $(shell bash -c 'echo "exit mn_loop" > exit_mn.h')
 endif
 #
 ifneq ($(filter $(IO) $(IO_IN), io_hdf5),)
@@ -597,9 +599,9 @@ ifneq ($(filter $(SPECIAL) $(IO) $(IO_IN) $(IO_OUT), $(HDF5_MODULES)),)
     HDF5_LOADED := $(shell (module list |& grep -i hdf5) || (module list |& grep -i hf5) )
     ifeq ($(HDF5_LOADED),)
       ifeq ($(filter clean,$(target)),)
-	$(info )
+        $(info )
         $(info No HDF5 module seems to be loaded!) 
-	$(error Try (one of) the following: $(shell (module spider |& grep -i hdf5 | sed -e's/^.* \([^ ]*[Hh][Dd][Ff]5[^ ]*\) .*$$/\1/') ))
+        $(error Try (one of) the following: $(shell (module spider |& grep -i hdf5 | sed -e's/^.* \([^ ]*[Hh][Dd][Ff]5[^ ]*\) .*$$/\1/') ))
       endif
     endif
   endif
@@ -2957,6 +2959,7 @@ start.x: start.o | $(SPECIAL_DEPS)
 run.o: $(run) Makefile.local
 run.x: run.o | $(SPECIAL_DEPS) $(LIBGPU)
 	$(LD) $(run) run.o $(LDFLAGS) $(LDFLAGS_MAIN) $(LDFLAGS_LIB) $(LD_MPI) $(LD_FOURIER) $(LIBSIG) $(LD_GSL) -o run.x
+	@rm -f exit_mn.h
 #
 $(LIBGPU): $(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/Makefile.vendor
 #$(LIBGPU): $(GPU_DEPS)
@@ -3101,8 +3104,6 @@ endif
 	@sed -e'/auxiliary / ! d' $(DSL_WORKDIR)/fieldecs.h > tmpdec
 	@sed -i -e'/^ *\/\// d' -e'/auxiliary/ d' $(DSL_WORKDIR)/fieldecs.h
 	@cat tmpdec | sed -e's/communicated //' -e's/auxiliary //' >> $(DSL_WORKDIR)/fieldecs.h; rm tmpdec
-	@sed -f $(CUDA_MAKEDIR)/solve.sed $(DSL_WORKDIR)/solve.ac > $(DSL_WORKDIR)/solve_two.ac
-	@echo '#include "steps_two.h"' >> $(DSL_WORKDIR)/solve_two.ac
 	@mv $(DSL_WORKDIR)/solve.ac $(DSL_WORKDIR)/solve_single.ac
 	@echo '#include "steps_single.h"' >> $(DSL_WORKDIR)/solve_single.ac
 	@cp $(DSL_WORKDIR)/../steps_single.h $(DSL_WORKDIR)
@@ -3115,12 +3116,14 @@ ifeq ($(SHOCK),shock_highorder)
 endif
 ifeq ($(HYDRO),hydro)
 ifneq ($(FORCING),noforcing)
-	@sed -i -e'/vecvalue(UU)/ i   uu = vecvalue(UU)\n  ADDFORCE' -e's/vecvalue(UU)/uu/' $(DSL_WORKDIR)/solve_single.ac
-	@sed -i -e'/vecvalue(UU)/ i   uu = vecvalue(UU)\n  ADDFORCE' -e's/vecvalue(UU)/uu/' $(DSL_WORKDIR)/solve_two.ac
+	@sed -i -e'/singlepass_solve/ a   #include "../forcing/getforce.h"\n' -e'/vecwrite( *UU/ s/) *$$/ ADDFORCE)/' $(DSL_WORKDIR)/solve_single.ac
+	@sed -i -e'/twopass_solve_final/ a   \#include "../forcing/getforce.h"\n' -e'/vecwrite( *UU.*final/ s/) *$$/ ADDFORCE)/' $(DSL_WORKDIR)/solve_two.ac
 endif
 endif
-	@bc2ast
+	@scripts/bc2ast
 
+###	@echo '#include "steps_two.h"' >> $(DSL_WORKDIR)/solve_two.ac
+###	@sed -f $(CUDA_MAKEDIR)/solve.sed $(DSL_WORKDIR)/solve.ac > $(DSL_WORKDIR)/solve_two.ac
 #	@sed -e':loop' -e'N' -e'$$!b loop' -e's/\#pragma  *once//' -e's/\# *define *\([A-Z0-9_][A-Z0-9_]*\)/..\/..\/\L\1.f90 /g' -e's/\n/ /g' < $(CUDA_INCDIR)/PC_moduleflags.h >> $(CUDA_MAKEDIR)/PC_modulesources.h
 #
 #  Compiler setting for OpenMP (gfortran and ifort only at the moment).
