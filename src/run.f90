@@ -171,24 +171,23 @@ if (lroot) flush(6)
 endsubroutine reload
 !***********************************************************************
 subroutine gen_output(f)
-
-!TP: 5.9.2024: extracted from timeloop
-  use Equ,             only: write_diagnostics 
-  use Snapshot,        only: powersnap, powersnap_prepare, wsnap, wsnap_down, output_form
-  use Particles_main,   only: write_snapshot_particles
-  use PointMasses,     only: pointmasses_write_snapshot
-  use Mpicomm,         only: mpiwtime
-  use Sub,             only: control_file_exists
-  use Solid_Cells,     only: wsnap_ogrid
-  use Timeavg,         only: wsnap_timeavgs
-  use Fixed_point,     only: wfixed_points
-  use Streamlines,     only: wtracers
+!
+! 5-sep-2024/TP: extracted from timeloop
+!
+    use Equ,             only: write_diagnostics 
+    use Snapshot,        only: powersnap, powersnap_prepare, wsnap, wsnap_down, output_form
+    use Particles_main,   only: write_snapshot_particles
+    use PointMasses,     only: pointmasses_write_snapshot
+    use Mpicomm,         only: mpiwtime
+    use Sub,             only: control_file_exists
+    use Solid_Cells,     only: wsnap_ogrid
+    use Timeavg,         only: wsnap_timeavgs
+    use Fixed_point,     only: wfixed_points
+    use Streamlines,     only: wtracers
 
     real, dimension (mx,my,mz,mfarray), intent(inout) :: f
     integer :: isave_shift=0, i
     real :: tvar1
-
-
 !
 !  Setting ialive=1 can be useful on flaky machines!
 !  The iteration number is written into the file "data/proc*/alive.info".
@@ -268,6 +267,7 @@ subroutine gen_output(f)
       if ((mod(it,isaveglobal)==0) .and. (mglobal/=0)) &
         call output_globals('global.dat',f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal)
     endif
+
 endsubroutine gen_output
 !***********************************************************************
 subroutine timeloop(f,df,p)
