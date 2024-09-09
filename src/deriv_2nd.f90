@@ -1659,56 +1659,7 @@ module Deriv
       intent(out) :: df
 !
       call fatal_error('deriv_2nd','der_upwind1st not implemented yet')
-!
-!debug      if (loptimise_ders) der_call_count(k,icount_der_upwind1st,j,1) = & !DERCOUNT
-!debug                          der_call_count(k,icount_der_upwind1st,j,1) + 1 !DERCOUNT
-!
-      if (.not. lequidist(j)) &
-        call fatal_error('der_upwind1st','NOT IMPLEMENTED for no equidistant grid')
-!
-      if (lspherical_coords.or.lcylindrical_coords) &
-           call fatal_error('der_upwind1st','NOT IMPLEMENTED for non-cartesian grid')
-!
-      if (j == 1) then
-        if (nxgrid /= 1) then
-          do l=1,nx
-            if (uu(3+l,1) > 0.) then
-              df(l) = (f(3+l,m,n,k) - f(3+l-1,m,n,k))/dx
-            else
-              df(l) = (f(3+l+1,m,n,k) - f(3+l,m,n,k))/dx
-            endif
-          enddo
-        else
-          df=0.
-          if (ip<=5) print*, 'der_upwind1st: Degenerate case in x-direction'
-        endif
-      elseif (j == 2) then
-        if (nygrid /= 1) then
-          do l=1,nx
-            if (uu(l,2) > 0.) then
-              df(l) = (f(3+l,m,n,k) - f(3+l,m-1,n,k))/dy
-            else
-              df(l) = (f(3+l,m+1,n,k) - f(3+l,m,n,k))/dy
-            endif
-          enddo
-        else
-          df=0.
-          if (ip<=5) print*, 'der_upwind1st: Degenerate case in y-direction'
-        endif
-      elseif (j == 3) then
-        if (nzgrid /= 1) then
-          do l=1,nx
-            if (uu(l,3) > 0.) then
-              df(l) = (f(3+l,m,n,k) - f(3+l,m,n-1,k))/dz
-            else
-              df(l) = (f(3+l,m,n+1,k) - f(3+l,m,n,k))/dz
-            endif
-          enddo
-        else
-          df=0.
-          if (ip<=5) print*, 'der_upwind1st: Degenerate case in z-direction'
-        endif
-      endif
+      call keep_compiler_quiet(df)
 !
     endsubroutine der_upwind1st
 !***********************************************************************
@@ -1735,45 +1686,8 @@ module Deriv
       intent(out) :: df
 !
       call fatal_error('deriv_2nd','der_onesided_4_slice_main not implemented yet')
+      call keep_compiler_quiet(df)
 !
-      if (j==1) then
-        if (nxgrid/=1) then
-          fac=1./12.*dx_1(pos)
-          df = fac*(-sgn*25*f(pos,m1:m2,n1:n2,k)&
-                  +sgn*48*f(pos+sgn*1,m1:m2,n1:n2,k)&
-                  -sgn*36*f(pos+sgn*2,m1:m2,n1:n2,k)&
-                  +sgn*16*f(pos+sgn*3,m1:m2,n1:n2,k)&
-                  -sgn*3 *f(pos+sgn*4,m1:m2,n1:n2,k))
-        else
-          df=0.
-          if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in x-directder_onesided_4_sliceion'
-        endif
-      elseif (j==2) then
-        if (nygrid/=1) then
-          fac=1./12.*dy_1(pos)
-          df = fac*(-sgn*25*f(l1:l2,pos,n1:n2,k)&
-                  +sgn*48*f(l1:l2,pos+sgn*1,n1:n2,k)&
-                  -sgn*36*f(l1:l2,pos+sgn*2,n1:n2,k)&
-                  +sgn*16*f(l1:l2,pos+sgn*3,n1:n2,k)&
-                  -sgn*3 *f(l1:l2,pos+sgn*4,n1:n2,k))
-        else
-          df=0.
-          if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in y-direction'
-        endif
-      elseif (j==3) then
-        if (nzgrid/=1) then
-          fac=1./12.*dz_1(pos)
-          df = fac*(-sgn*25*f(l1:l2,m1:m2,pos,k)&
-                  +sgn*48*f(l1:l2,m1:m2,pos+sgn*1,k)&
-                  -sgn*36*f(l1:l2,m1:m2,pos+sgn*1,k)&
-                  +sgn*16*f(l1:l2,m1:m2,pos+sgn*1,k)&
-                  -sgn*3 *f(l1:l2,m1:m2,pos+sgn*1,k))
-        else
-          df=0.
-          if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in z-direction'
-        endif
-      endif
-
     endsubroutine der_onesided_4_slice_main
 !***********************************************************************
    subroutine der_onesided_4_slice_other(f,sgn,df,pos,j)
@@ -1799,45 +1713,8 @@ module Deriv
       intent(out) :: df
 !
       call fatal_error('deriv_2nd','der_onesided_4_slice_other not implemented yet')
+      call keep_compiler_quiet(df)
 !
-      if (j==1) then
-        if (nxgrid/=1) then
-          fac=1./12.*dx_1(pos)
-          df = fac*(-sgn*25*f(pos,m1:m2,n1:n2)&
-                  +sgn*48*f(pos+sgn*1,m1:m2,n1:n2)&
-                  -sgn*36*f(pos+sgn*2,m1:m2,n1:n2)&
-                  +sgn*16*f(pos+sgn*3,m1:m2,n1:n2)&
-                  -sgn*3 *f(pos+sgn*4,m1:m2,n1:n2))
-        else
-          df=0.
-          if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in x-directder_onesided_4_sliceion'
-        endif
-      elseif (j==2) then
-        if (nygrid/=1) then
-          fac=1./12.*dy_1(pos)
-          df = fac*(-sgn*25*f(l1:l2,pos,n1:n2)&
-                  +sgn*48*f(l1:l2,pos+sgn*1,n1:n2)&
-                  -sgn*36*f(l1:l2,pos+sgn*2,n1:n2)&
-                  +sgn*16*f(l1:l2,pos+sgn*3,n1:n2)&
-                  -sgn*3 *f(l1:l2,pos+sgn*4,n1:n2))
-        else
-          df=0.
-          if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in y-direction'
-        endif
-      elseif (j==3) then
-        if (nzgrid/=1) then
-          fac=1./12.*dz_1(pos)
-          df = fac*(-sgn*25*f(l1:l2,m1:m2,pos)&
-                  +sgn*48*f(l1:l2,m1:m2,pos+sgn*1)&
-                  -sgn*36*f(l1:l2,m1:m2,pos+sgn*1)&
-                  +sgn*16*f(l1:l2,m1:m2,pos+sgn*1)&
-                  -sgn*3 *f(l1:l2,m1:m2,pos+sgn*1))
-        else
-          df=0.
-          if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in z-direction'
-        endif
-      endif
-
     endsubroutine der_onesided_4_slice_other
 !***********************************************************************
     subroutine der_onesided_4_slice_main_pt(f,sgn,k,df,lll,mmm,nnn,j)
@@ -1847,8 +1724,6 @@ module Deriv
 !
 !  15-oct-09/Natalia: coded.
 !
-      use General, only: keep_compiler_quiet
-
       real, dimension (mx,my,mz,mfarray) :: f
       real  :: df
       real :: fac
@@ -1856,10 +1731,10 @@ module Deriv
 !
       intent(in)  :: f,k,lll,mmm,nnn,sgn,j
       intent(out) :: df
-
+!
       call not_implemented('der_onesided_4_slice_main_pt','')
       call keep_compiler_quiet(df)
-
+!
    endsubroutine der_onesided_4_slice_main_pt
 !***********************************************************************
    subroutine der_onesided_4_slice_other_pt(f,sgn,df,lll,mmm,nnn,j)
@@ -1870,8 +1745,6 @@ module Deriv
 !  15-oct-09/Natalia: coded.
 !  15-oct-09/axel: changed file name to shorter version
 !
-      use General, only: keep_compiler_quiet
-
       real, dimension (mx,my,mz) :: f
       real :: df
       real :: fac
@@ -1879,10 +1752,10 @@ module Deriv
 !
       intent(in)  :: f,lll,mmm,nnn,sgn,j
       intent(out) :: df
-
+!
       call not_implemented('der_onesided_4_slice_other_pt','')
       call keep_compiler_quiet(df)
-
+!
    endsubroutine der_onesided_4_slice_other_pt
 !***********************************************************************
     subroutine der_z(f,df)
@@ -1951,10 +1824,7 @@ module Deriv
       real, dimension (nx), intent(out) :: df
 !
       call not_implemented("der_x","")
-!
-! To avoid compiler warnings:
-!
-      df=f(n1:n2)
+      call keep_compiler_quiet(df)
 !
     endsubroutine der_x
 !***********************************************************************
@@ -1969,16 +1839,15 @@ module Deriv
       real, dimension (nx), intent(out) :: df2
 !
       call not_implemented("der2_x","")
-!
-! To avoid compiler warnings:
-!
-      df2=f(n1:n2)
+      call keep_compiler_quiet(df2)
 !
     endsubroutine der2_x
 !***********************************************************************
     subroutine der2_minmod(f,j,delfk,delfkp1,delfkm1,k)
 !
 !  Dummy routine
+!
+!  09-Sep-2024/PABourdin: not yet implemented
 !
       intent(in) :: f,k,j
       intent(out) :: delfk,delfkp1,delfkm1
@@ -1988,9 +1857,9 @@ module Deriv
       integer :: j,k
 !
       call fatal_error('der2_minmod','Not implemented for deriv_2nd')
-!
-!  Fill with dummy values to keep compiler quiet
-      delfk(:) = j; delfkp1(:) = k; delfkm1(:) = f(l1,m1,n1,1)
+      call keep_compiler_quiet(delfk)
+      call keep_compiler_quiet(delfkp1)
+      call keep_compiler_quiet(delfkm1)
 !
     endsubroutine der2_minmod
 !***********************************************************************
@@ -2006,8 +1875,6 @@ module Deriv
 !
 !  26-mar-12/MR: coded
 !
-!      use General, only: keep_compiler_quiet
-
       real, dimension (mx,my,mz)          :: f
       real, dimension (nx)                :: df
       integer                             :: j
@@ -2017,28 +1884,24 @@ module Deriv
       intent(in)  :: f,j,inds,lignored,lnometric
       intent(out) :: df
 !
-!      call keep_compiler_quiet(df)
       call fatal_error('deri_3d_inds','Upwinding not implemented for nonuniform grids')
-!
-! dummy computation to avoid compiler warnings of unused variables
-      if (present(lignored).and.present(lnometric)) &
-          df  = inds + f(l1:l2,1,1) + j
+      call keep_compiler_quiet(df)
 !
     endsubroutine deri_3d_inds
 !************************************************************************
-    logical function heatflux_deriv_x( f, inh, fac, topbot )
+    logical function heatflux_deriv_x(f, inh, fac, topbot)
 !
 !   dummy routine
 !
 !  17-apr-12/MR: coded
 !
-     real, dimension(mx,my,mz,mfarray), intent(IN):: f
-     real, dimension(my,mz)           , intent(IN):: inh
-     real                             , intent(IN):: fac
-     integer                          , intent(IN):: topbot
+      real, dimension(mx,my,mz,mfarray), intent(IN):: f
+      real, dimension(my,mz)           , intent(IN):: inh
+      real                             , intent(IN):: fac
+      integer                          , intent(IN):: topbot
 !
-     heatflux_deriv_x = .false.
-
+      heatflux_deriv_x = .false.
+!
     endfunction heatflux_deriv_x
 !***********************************************************************
     subroutine set_ghosts_for_onesided_ders(f,topbot,j,idir,l2nd_)
@@ -2049,9 +1912,9 @@ module Deriv
       integer, intent(IN) :: topbot
       integer :: j,idir
       logical, optional :: l2nd_
-
+!
       call fatal_error('set_ghosts_for_onesided_ders','Not implemented for 2nd order.')
-
+!
     endsubroutine set_ghosts_for_onesided_ders
 !***********************************************************************
     subroutine bval_from_neumann_scl(f,topbot,j,idir,val)
@@ -2062,9 +1925,9 @@ module Deriv
       integer, intent(IN) :: topbot
       integer :: j,idir
       real :: val
-
+!
       call fatal_error('bval_from_neumann_scl','Not implemented for 2nd order.')
-
+!
     endsubroutine bval_from_neumann_scl
 !***********************************************************************
     subroutine bval_from_neumann_arr(f,topbot,j,idir,val)
@@ -2075,9 +1938,9 @@ module Deriv
       integer, intent(IN) :: topbot
       integer :: j,idir
       real, dimension(:,:) :: val
-
+!
       call fatal_error('bval_from_neumann_arr','Not implemented for 2nd order.')
-
+!
     endsubroutine bval_from_neumann_arr
 !***********************************************************************
     subroutine bval_from_3rd_scl(f,topbot,j,idir,val)
@@ -2088,9 +1951,9 @@ module Deriv
       integer, intent(IN) :: topbot
       integer :: j,idir
       real :: val
-
+!
       call fatal_error('bval_from_3rd_scl','Not implemented for 2nd order.')
-
+!
     endsubroutine bval_from_3rd_scl
 !***********************************************************************
     subroutine bval_from_3rd_arr(f,topbot,j,idir,val,func)
@@ -2107,7 +1970,7 @@ module Deriv
       external :: func
 !
       call fatal_error('bval_from_3rd_arr','not implemented for 2nd order')
-
+!
     endsubroutine bval_from_3rd_arr
 !***********************************************************************
     subroutine bval_from_4th_scl(f,topbot,j,idir,val)
@@ -2118,16 +1981,15 @@ module Deriv
       integer, intent(IN) :: topbot
       integer :: j,idir
       real :: val
-
+!
       call fatal_error('bval_from_4th_scl','Not implemented for 2nd order.')
-
+!
     endsubroutine bval_from_4th_scl
 !***********************************************************************
     subroutine bval_from_4th_arr(f,topbot,j,idir,val)
 !
 !  Calculates the boundary value from the 4th kind BC d^2 f/d x_i^2 = val*f
-!  employing
-!  one-sided difference formulae. val depends on x,y.
+!  employing one-sided difference formulae. val depends on x,y.
 !
 !  09-feb-17/Ivan: coded
 !
@@ -2135,9 +1997,9 @@ module Deriv
       integer, intent(IN) :: topbot
       integer :: j,idir
       real, dimension(:,:) :: val
-
+!
       call not_implemented('bval_from_4th_arr','')
-
+!
     endsubroutine bval_from_4th_arr
 !***********************************************************************
 endmodule Deriv
