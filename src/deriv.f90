@@ -1431,7 +1431,7 @@ module Deriv
         !
         if (i+j==3) then
           if (nxgrid/=1.and.nygrid/=1) then
-            fac=(1./60.**2)*dx_1(l1:l2)*dy_1(m)
+            fac=(1./3600)*dx_1(l1:l2)*dy_1(m)
             df=fac*( &
               45.*((45.*(f(l1+1:l2+1,m+1,n,k)-f(l1-1:l2-1,m+1,n,k))  &
                     -9.*(f(l1+2:l2+2,m+1,n,k)-f(l1-2:l2-2,m+1,n,k))  &
@@ -1458,7 +1458,7 @@ module Deriv
           endif
         elseif (i+j==5) then
           if (nygrid/=1.and.nzgrid/=1) then
-            facs=(1./60.**2)*dy_1(m)*dz_1(n)
+            facs=(1./3600)*dy_1(m)*dz_1(n)
             if (lcoarse_mn) then
               facs=facs*nphis1(m)
               df=facs*( &
@@ -1509,7 +1509,7 @@ module Deriv
           endif
         elseif ((i==3.and.j==1).or.(i==1.and.j==3)) then
           if (nzgrid/=1.and.nxgrid/=1) then
-            fac=(1./60.**2)*dz_1(n)*dx_1(l1:l2)
+            fac=(1./3600)*dz_1(n)*dx_1(l1:l2)
             if (lcoarse_mn) then
               fac=fac*nphis1(m)
               df=fac*( &
