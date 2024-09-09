@@ -554,12 +554,12 @@ module Deriv
 !
 !   3-oct-12/MR: coded
 !
-      real, dimension(:),  intent(in) :: f, dc1
-      integer           ,  intent(in) :: j
-
-      call not_implemented('der5_single','')
-      der5_single=0.
-
+      real, dimension(:), intent(in) :: f, dc1
+      integer, intent(in) :: j
+!
+      call fatal_error('deriv_2nd','der6_pencil not implemented yet')
+      call keep_compiler_quiet(der5_single)
+!
     endfunction der5_single
 !***********************************************************************
     subroutine derij_main(f, k, df, i, j, lwo_line_elem)
