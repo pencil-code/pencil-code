@@ -437,72 +437,15 @@ module Deriv
 !  25-aug-09/axel: added fatal_error, because it is not adapted yet
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: df,fac
+      real, dimension (nx) :: df
       integer :: j,k
       logical, optional :: ignoredx
-      logical :: igndx
 !
       intent(in)  :: f,k,j,ignoredx
       intent(out) :: df
 !
       call fatal_error('deriv_2nd','der3 not implemented yet')
-!
-!debug      if (loptimise_ders) der_call_count(k,icount_der5,j,1) = & !DERCOUNT
-!debug                          der_call_count(k,icount_der5,j,1) + 1 !DERCOUNT
-!
-      if (present(ignoredx)) then
-        igndx = ignoredx
-      else
-        igndx = .false.
-      endif
-!
-      if (.not. lequidist(j)) &
-          call fatal_error('der3','NOT IMPLEMENTED for non-equidistant grid')
-!
-      if (lspherical_coords) &
-           call fatal_error('der3','NOT IMPLEMENTED for spherical coordinates')
-!
-      if (j==1) then
-        if (nxgrid/=1) then
-          if (igndx) then
-            fac=(1.0/8)
-          else
-            fac=(1.0/8)*1./dx**3
-          endif
-          df=fac*(- 13.0*(f(l1+1:l2+1,m,n,k)-f(l1-1:l2-1,m,n,k)) &
-                  +  8.0*(f(l1+2:l2+2,m,n,k)-f(l1-2:l2-2,m,n,k)) &
-                  -  1.0*(f(l1+3:l2+3,m,n,k)-f(l1-3:l2-3,m,n,k)))
-        else
-          df=0.
-        endif
-      elseif (j==2) then
-        if (nygrid/=1) then
-          if (igndx) then
-            fac=(1.0/8)
-          else
-            fac=(1.0/8)*1./dy**3
-          endif
-          df=fac*(- 13.0*(f(l1:l2,m+1,n,k)-f(l1:l2,m-1,n,k)) &
-                  +  8.0*(f(l1:l2,m+2,n,k)-f(l1:l2,m-2,n,k)) &
-                  -  1.0*(f(l1:l2,m+3,n,k)-f(l1:l2,m-3,n,k)))
-          if (lcylindrical_coords)   df=df*rcyl_mn1**3
-        else
-          df=0.
-        endif
-      elseif (j==3) then
-        if (nzgrid/=1) then
-          if (igndx) then
-            fac=(1.0/8)
-          else
-            fac=(1.0/8)*1./dz**3
-          endif
-          df=fac*(- 13.0*(f(l1:l2,m,n+1,k)-f(l1:l2,m,n-1,k)) &
-                  +  8.0*(f(l1:l2,m,n+2,k)-f(l1:l2,m,n-2,k)) &
-                  -  1.0*(f(l1:l2,m,n+3,k)-f(l1:l2,m,n-3,k)))
-        else
-          df=0.
-        endif
-      endif
+      call keep_compiler_quiet(df)
 !
     endsubroutine der3
 !***********************************************************************
@@ -522,82 +465,14 @@ module Deriv
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df
-      real :: fac
       integer :: j,k
       logical, optional :: ignoredx,upwind
-      logical :: igndx,upwnd
 !
-      intent(in)  :: f,k,j,ignoredx
+      intent(in)  :: f,k,j,ignoredx,upwind
       intent(out) :: df
 !
       call fatal_error('deriv_2nd','der4 not implemented yet')
-!
-!debug      if (loptimise_ders) der_call_count(k,icount_der4,j,1) = & !DERCOUNT
-!debug                          der_call_count(k,icount_der4,j,1) + 1 !DERCOUNT
-!
-      if (.not. lequidist(j)) then
-        call fatal_error('der4','NOT IMPLEMENTED for no equidistant grid')
-      endif
-!
-      if (lspherical_coords) &
-           call fatal_error('der4','NOT IMPLEMENTED for spherical coordinates')
-!
-      if (present(ignoredx)) then
-        igndx = ignoredx
-      else
-        igndx = .false.
-      endif
-      if (present(upwind)) then
-        upwnd = upwind
-        call warning('der4','upwinding not implemented')
-      else
-        upwnd = .false.
-      endif
-!
-      if (j==1) then
-        if (nxgrid/=1) then
-          if (igndx) then
-            fac=(1.0/6)
-          else
-            fac=(1.0/6)*1/dx**4
-          endif
-          df=fac*(+ 56.0* f(l1:l2,m,n,k) &
-                  - 39.0*(f(l1+1:l2+1,m,n,k)+f(l1-1:l2-1,m,n,k)) &
-                  + 12.0*(f(l1+2:l2+2,m,n,k)+f(l1-2:l2-2,m,n,k)) &
-                  -      (f(l1+3:l2+3,m,n,k)+f(l1-3:l2-3,m,n,k)))
-        else
-          df=0.
-        endif
-      elseif (j==2) then
-        if (nygrid/=1) then
-          if (igndx) then
-            fac=(1.0/6)
-          else
-            fac=(1.0/6)*1/dy**4
-          endif
-          df=fac*(+ 56.0* f(l1:l2,m  ,n,k) &
-                  - 39.0*(f(l1:l2,m+1,n,k)+f(l1:l2,m-1,n,k)) &
-                  + 12.0*(f(l1:l2,m+2,n,k)+f(l1:l2,m-2,n,k)) &
-                  -      (f(l1:l2,m+3,n,k)+f(l1:l2,m-3,n,k)))
-          if (lcylindrical_coords)   df=df*rcyl_mn1**4
-        else
-          df=0.
-        endif
-      elseif (j==3) then
-        if (nzgrid/=1) then
-          if (igndx) then
-            fac=(1.0/6)
-          else
-            fac=(1.0/6)*1/dz**4
-          endif
-          df=fac*(+ 56.0* f(l1:l2,m,n  ,k) &
-                  - 39.0*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)) &
-                  + 12.0*(f(l1:l2,m,n+2,k)+f(l1:l2,m,n-2,k)) &
-                  -      (f(l1:l2,m,n+3,k)+f(l1:l2,m,n-3,k)))
-        else
-          df=0.
-        endif
-      endif
+      call keep_compiler_quiet(df)
 !
     endsubroutine der4
 !***********************************************************************
@@ -614,72 +489,15 @@ module Deriv
 !  25-aug-09/axel: added fatal_error, because it is not adapted yet
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: df,fac
+      real, dimension (nx) :: df
       integer :: j,k
       logical, optional :: ignoredx
-      logical :: igndx
 !
       intent(in)  :: f,k,j,ignoredx
       intent(out) :: df
 !
       call fatal_error('deriv_2nd','der5 not implemented yet')
-!
-!debug      if (loptimise_ders) der_call_count(k,icount_der5,j,1) = & !DERCOUNT
-!debug                          der_call_count(k,icount_der5,j,1) + 1 !DERCOUNT
-!
-      if (present(ignoredx)) then
-        igndx = ignoredx
-      else
-        igndx = .false.
-      endif
-!
-      if (.not. lequidist(j)) &
-          call fatal_error('der5','NOT IMPLEMENTED for no equidistant grid')
-!
-      if (lspherical_coords) &
-           call fatal_error('der5','NOT IMPLEMENTED for spherical coordinates')
-!
-      if (j==1) then
-        if (nxgrid/=1) then
-          if (igndx) then
-            fac=1.0
-          else
-            fac=1/dx**5
-          endif
-          df=fac*(+  2.5*(f(l1+1:l2+1,m,n,k)-f(l1-1:l2-1,m,n,k)) &
-                  -  2.0*(f(l1+2:l2+2,m,n,k)-f(l1-2:l2-2,m,n,k)) &
-                  +  0.5*(f(l1+3:l2+3,m,n,k)-f(l1-3:l2-3,m,n,k)))
-        else
-          df=0.
-        endif
-      elseif (j==2) then
-        if (nygrid/=1) then
-          if (igndx) then
-            fac=1.0
-          else
-            fac=1/dy**5
-          endif
-          df=fac*(+  2.5*(f(l1:l2,m+1,n,k)-f(l1:l2,m-1,n,k)) &
-                  -  2.0*(f(l1:l2,m+2,n,k)-f(l1:l2,m-2,n,k)) &
-                  +  0.5*(f(l1:l2,m+3,n,k)-f(l1:l2,m-3,n,k)))
-          if (lcylindrical_coords)   df=df*rcyl_mn1**5
-        else
-          df=0.
-        endif
-      elseif (j==3) then
-        if (nzgrid/=1) then
-          if (igndx) then
-            fac=1.0
-          else
-            fac=1/dz**5
-          endif
-          df=fac*(+  2.5*(f(l1:l2,m,n+1,k)-f(l1:l2,m,n-1,k)) &
-                  -  2.0*(f(l1:l2,m,n+2,k)-f(l1:l2,m,n-2,k)) &
-                  +  0.5*(f(l1:l2,m,n+3,k)-f(l1:l2,m,n-3,k)))
-        else
-          df=0.
-        endif
-      endif
+      call keep_compiler_quiet(df)
 !
     endsubroutine der5
 !***********************************************************************
@@ -698,91 +516,15 @@ module Deriv
 !  25-aug-09/axel: added fatal_error, because it is not adapted yet
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: df,fac
+      real, dimension (nx) :: df
       integer :: j,k
       logical, optional :: ignoredx,upwind
-      logical :: igndx,upwnd
-      logical, save :: lfirstcall=.true.
 !
-      intent(in)  :: f,k,j,ignoredx
+      intent(in)  :: f,k,j,ignoredx,upwind
       intent(out) :: df
 !
-      if (lfirstcall.and.headtt) then
-         call warning('deriv_2nd','der6 not implemented yet -- using 6th order')
-         lfirstcall=.false.
-      endif
-!
-!debug      if (loptimise_ders) der_call_count(k,icount_der6,j,1) = & !DERCOUNT
-!debug                          der_call_count(k,icount_der6,j,1) + 1 !DERCOUNT
-!
-      if (present(ignoredx)) then
-        igndx = ignoredx
-      else
-        igndx = .false.
-      endif
-      if (present(upwind)) then
-        upwnd = upwind
-      else
-        upwnd = .false.
-        if (.not. lequidist(j)) then
-          call fatal_error('der6','NOT IMPLEMENTED for non-equidistant grid')
-        endif
-        if ((.not.lcartesian_coords).and.(.not.igndx)) then
-          call fatal_error('der6','in non-cartesian coordinates '//&
-               'only works if upwinding is used')
-        endif
-     endif
-!
-!
-      if (j==1) then
-        if (nxgrid/=1) then
-          if (igndx) then
-            fac=1.0
-          else if (upwnd) then
-            fac=(1.0/60)*dx_1(l1:l2)
-          else
-            fac=1/dx**6
-          endif
-          df=fac*(- 20.0* f(l1:l2,m,n,k) &
-                  + 15.0*(f(l1+1:l2+1,m,n,k)+f(l1-1:l2-1,m,n,k)) &
-                  -  6.0*(f(l1+2:l2+2,m,n,k)+f(l1-2:l2-2,m,n,k)) &
-                  +      (f(l1+3:l2+3,m,n,k)+f(l1-3:l2-3,m,n,k)))
-        else
-          df=0.
-        endif
-      elseif (j==2) then
-        if (nygrid/=1) then
-          if (igndx) then
-            fac=1.0
-          else if (upwnd) then
-            fac=(1.0/60)*dy_1(m)
-          else
-            fac=1/dy**6
-          endif
-          df=fac*(- 20.0* f(l1:l2,m  ,n,k) &
-                  + 15.0*(f(l1:l2,m+1,n,k)+f(l1:l2,m-1,n,k)) &
-                  -  6.0*(f(l1:l2,m+2,n,k)+f(l1:l2,m-2,n,k)) &
-                  +      (f(l1:l2,m+3,n,k)+f(l1:l2,m-3,n,k)))
-         else
-          df=0.
-        endif
-      elseif (j==3) then
-        if (nzgrid/=1) then
-          if (igndx) then
-            fac=1.
-          else if (upwnd) then
-            fac=(1.0/60)*dz_1(n)
-          else
-            fac=1/dz**6
-          endif
-          df=fac*(- 20.0* f(l1:l2,m,n  ,k) &
-                  + 15.0*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)) &
-                  -  6.0*(f(l1:l2,m,n+2,k)+f(l1:l2,m,n-2,k)) &
-                  +      (f(l1:l2,m,n+3,k)+f(l1:l2,m,n-3,k)))
-         else
-          df=0.
-        endif
-      endif
+      call fatal_error('deriv_2nd','der5 not implemented yet')
+      call keep_compiler_quiet(df)
 !
     endsubroutine der6_main
 !***********************************************************************
@@ -801,85 +543,15 @@ module Deriv
 !  25-aug-09/axel: added fatal_error, because it is not adapted yet
 !
       real, dimension (mx,my,mz) :: f
-      real, dimension (nx) :: df,fac
+      real, dimension (nx) :: df
       integer :: j
       logical, optional :: ignoredx,upwind
-      logical :: igndx,upwnd
 !
-      intent(in)  :: f,j,ignoredx
+      intent(in)  :: f,j,ignoredx,upwind
       intent(out) :: df
 !
       call fatal_error('deriv_2nd','der6_other not implemented yet')
-!
-!debug      if (loptimise_ders) der_call_count(k,icount_der6,j,1) = & !DERCOUNT
-!debug                          der_call_count(k,icount_der6,j,1) + 1 !DERCOUNT
-!
-      if (present(ignoredx)) then
-        igndx = ignoredx
-      else
-        igndx = .false.
-      endif
-      if (present(upwind)) then
-        upwnd = upwind
-      else
-        upwnd = .false.
-        if (.not. lequidist(j)) &
-             call fatal_error('der6_other','NOT IMPLEMENTED for '//&
-             'non equidistant grid')
-        if (.not.lcartesian_coords) &
-             call fatal_error('der6_other','in non-cartesian coordinates '//&
-             'only works if upwiding is used')
-      endif
-!
-      if (j==1) then
-        if (nxgrid/=1) then
-          if (igndx) then
-            fac=1.0
-          else if (upwnd) then
-            fac=(1.0/60)*dx_1(l1:l2)
-          else
-            fac=1/dx**6
-          endif
-          df=fac*(- 20.0* f(l1:l2,m,n) &
-                  + 15.0*(f(l1+1:l2+1,m,n)+f(l1-1:l2-1,m,n)) &
-                  -  6.0*(f(l1+2:l2+2,m,n)+f(l1-2:l2-2,m,n)) &
-                  +      (f(l1+3:l2+3,m,n)+f(l1-3:l2-3,m,n)))
-        else
-          df=0.
-        endif
-      elseif (j==2) then
-        if (nygrid/=1) then
-          if (igndx) then
-            fac=1.0
-          else if (upwnd) then
-            fac=(1.0/60)*dy_1(m)
-          else
-            fac=1/dy**6
-          endif
-          df=fac*(- 20.0* f(l1:l2,m  ,n) &
-                  + 15.0*(f(l1:l2,m+1,n)+f(l1:l2,m-1,n)) &
-                  -  6.0*(f(l1:l2,m+2,n)+f(l1:l2,m-2,n)) &
-                  +      (f(l1:l2,m+3,n)+f(l1:l2,m-3,n)))
-        else
-          df=0.
-        endif
-      elseif (j==3) then
-        if (nzgrid/=1) then
-          if (igndx) then
-            fac=1.0
-          else if (upwnd) then
-            fac=(1.0/60)*dz_1(n)
-          else
-            fac=1/dz**6
-          endif
-          df=fac*(- 20.0* f(l1:l2,m,n  ) &
-                  + 15.0*(f(l1:l2,m,n+1)+f(l1:l2,m,n-1)) &
-                  -  6.0*(f(l1:l2,m,n+2)+f(l1:l2,m,n-2)) &
-                  +      (f(l1:l2,m,n+3)+f(l1:l2,m,n-3)))
-        else
-          df=0.
-        endif
-      endif
+      call keep_compiler_quiet(df)
 !
     endsubroutine der6_other
 !***********************************************************************
@@ -901,89 +573,8 @@ module Deriv
       intent(in)  :: j, pencil,ignoredx,upwind
       intent(out) :: df6
 !
-      if (lfirstcall.and.headtt) then
-         call warning('deriv_2nd','der6_pencil not implemented yet -- using 6th order')
-         lfirstcall=.false.
-      endif
-!
-      if (present(ignoredx)) then
-        igndx = ignoredx
-      else
-        igndx = .false.
-      endif
-!     
-      if (present(upwind)) then
-        if (.not. lequidist(j).and..not.lignore_nonequi) then
-          call fatal_error('der6','upwind cannot be used with '//&
-              'non-equidistant grid.')
-        endif
-        upwnd = upwind
-      else
-        upwnd = .false.
-      endif     
-!
-!  x-derivative
-!
-      if (j==1) then
-        if (size(pencil)/=mx) then
-          if (lroot) print*, 'der6_pencil: pencil must be of size mx for x derivative'
-          call fatal_error('der6_pencil','')
-        endif
-        if (igndx) then
-          facx=1.
-        elseif (upwnd) then
-          facx=(1.0/60)*dx_1(l1:l2)
-        else
-          facx=dx_1(l1:l2)**6
-        endif
-        df6=facx*(- 20.0* pencil(l1:l2) &
-                  + 15.0*(pencil(l1+1:l2+1)+pencil(l1-1:l2-1)) &
-                  -  6.0*(pencil(l1+2:l2+2)+pencil(l1-2:l2-2)) &
-                  +      (pencil(l1+3:l2+3)+pencil(l1-3:l2-3)))
-      else if (j==2) then
-!
-!  y-derivative
-!
-        if (size(pencil)/=my) then
-          if (lroot) &
-              print*, 'der6_pencil: pencil must be of size my for y derivative'
-          call fatal_error('der6_pencil','')
-        endif
-        if (igndx) then
-          facy=1.
-        else if (upwnd) then
-          facy=(1.0/60)*dy_1(m1:m2)
-        else
-          facy=dy_1(m1:m2)**6
-        endif
-        df6=facy*(- 20.0* pencil(m1:m2) &
-                  + 15.0*(pencil(m1+1:m2+1)+pencil(m1-1:m2-1)) &
-                  -  6.0*(pencil(m1+2:m2+2)+pencil(m1-2:m2-2)) &
-                  +      (pencil(m1+3:m2+3)+pencil(m1-3:m2-3)))
-      else if (j==3) then
-!
-!  z-derivative
-!
-        if (size(pencil)/=mz) then
-          if (lroot) &
-              print*, 'der6_pencil: pencil must be of size mz for z derivative'
-          call fatal_error('der6_pencil','')
-        endif
-        if (igndx) then
-          facz=1.
-        else if (upwnd) then
-          facz=(1.0/60)*dz_1(n1:n2)
-        else
-          facz=dz_1(n1:n2)**6
-        endif
-        df6=facz*(- 20.0* pencil(n1:n2) &
-                  + 15.0*(pencil(n1+1:n2+1)+pencil(n1-1:n2-1)) &
-                  -  6.0*(pencil(n1+2:n2+2)+pencil(n1-2:n2-2)) &
-                  +      (pencil(n1+3:n2+3)+pencil(n1-3:n2-3)))
-      else
-        if (lroot) print*, 'der6_pencil: no such direction j=', j
-        call fatal_error('der6_pencil','')
-      endif
+      call fatal_error('deriv_2nd','der6_other not implemented yet')
+      call keep_compiler_quiet(df6)
 !
     endsubroutine der6_pencil
 !***********************************************************************
