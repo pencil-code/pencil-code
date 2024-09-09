@@ -206,13 +206,12 @@ module Deriv
 !
 !  Dummy
 !
-    real, dimension(:,:) :: arr, der
-    integer :: idir
-    integer, optional :: order
+    real, dimension(:,:), intent(in) :: arr
+    integer, intent(in) :: idir
+    real, dimension(:,:), intent(out) :: der
+    integer, intent(in), optional :: order
 !
     call not_implemented('distr_der','for 2nd order')
-    call keep_compiler_quiet(idir)
-    call keep_compiler_quiet(arr)
     call keep_compiler_quiet(der)
 !
     endsubroutine distr_der
@@ -227,18 +226,16 @@ module Deriv
 !   1-apr-01/axel+wolf: pencil formulation
 !  25-jun-04/tobi+wolf: adapted for non-equidistant grids
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: df2,fac,df
-      real, parameter :: der2_coef0=-2., der2_coef1=1.
-      integer :: j,k
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      integer, intent(in) :: j, k
+      real, dimension (nx), intent(out) :: df2
       logical, intent(in), optional :: lwo_line_elem
 !
-      intent(in)  :: f,k,j
-      intent(out) :: df2
+      real, parameter :: der2_coef0=-2., der2_coef1=1.
+      real, dimension (nx) :: fac, df
 !
 !debug      if (loptimise_ders) der_call_count(k,icount_der2,j,1) = & !DERCOUNT
 !debug                          der_call_count(k,icount_der2,j,1) + 1 !DERCOUNT
-!
 !
       if (present(lwo_line_elem)) then
         if (lwo_line_elem) call fatal_error("der2_main", "lwo_line_elem=T is not implemented")
@@ -299,12 +296,11 @@ module Deriv
 !  25-jun-04/tobi+wolf: adapted for non-equidistant grids
 !  25-aug-09/axel: added fatal_error, because it is not adapted yet
 !
-      real, dimension (mx,my,mz) :: f
-      real, dimension (nx) :: df2,fac,df
-      integer :: j
+      real, dimension (mx,my,mz), intent(in) :: f
+      real, dimension (nx), intent(out) :: df2
+      integer, intent(in) :: j
 !
-      intent(in)  :: f,j
-      intent(out) :: df2
+      real, dimension (nx) :: fac, df
 !
       if (j==1) then
         if (nxgrid/=1) then
@@ -357,11 +353,9 @@ module Deriv
 !  01-nov-07/anders: adapted from der2
 !  25-aug-09/axel: added fatal_error, because it is not adapted yet
 !
-      real, dimension (:) :: pencil,df2
-      integer :: j
-!
-      intent(in)  :: j, pencil
-      intent(out) :: df2
+      real, dimension (:), intent(in) :: pencil
+      real, dimension (:), intent(out) :: df2
+      integer, intent(in) :: j
 !
 !  x-derivative
 !
@@ -433,13 +427,10 @@ module Deriv
 !  10-feb-06/anders: corrected sign and factor
 !  25-aug-09/axel: added fatal_error, because it is not adapted yet
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: df
-      integer :: j,k
-      logical, optional :: ignoredx,upwind
-!
-      intent(in)  :: f,k,j,ignoredx,upwind
-      intent(out) :: df
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (nx), intent(out) :: df
+      integer, intent(in) :: j, k
+      logical, intent(in), optional :: ignoredx,upwind
 !
       call fatal_error('deriv_2nd','der4 not implemented yet')
       call keep_compiler_quiet(df)
@@ -458,13 +449,10 @@ module Deriv
 !  29-oct-04/anders: adapted from der6
 !  25-aug-09/axel: added fatal_error, because it is not adapted yet
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: df
-      integer :: j,k
-      logical, optional :: ignoredx
-!
-      intent(in)  :: f,k,j,ignoredx
-      intent(out) :: df
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (nx), intent(out) :: df
+      integer, intent(in) :: j, k
+      logical, intent(in), optional :: ignoredx
 !
       call fatal_error('deriv_2nd','der5 not implemented yet')
       call keep_compiler_quiet(df)
@@ -485,13 +473,10 @@ module Deriv
 !   8-jul-02/wolf: coded
 !  25-aug-09/axel: added fatal_error, because it is not adapted yet
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: df
-      integer :: j,k
-      logical, optional :: ignoredx,upwind
-!
-      intent(in)  :: f,k,j,ignoredx,upwind
-      intent(out) :: df
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (nx), intent(out) :: df
+      integer, intent(in) :: j, k
+      logical, intent(in), optional :: ignoredx,upwind
 !
       call fatal_error('deriv_2nd','der5 not implemented yet')
       call keep_compiler_quiet(df)
@@ -512,13 +497,10 @@ module Deriv
 !   8-jul-02/wolf: coded
 !  25-aug-09/axel: added fatal_error, because it is not adapted yet
 !
-      real, dimension (mx,my,mz) :: f
-      real, dimension (nx) :: df
-      integer :: j
-      logical, optional :: ignoredx,upwind
-!
-      intent(in)  :: f,j,ignoredx,upwind
-      intent(out) :: df
+      real, dimension (mx,my,mz), intent(in) :: f
+      real, dimension (nx), intent(out) :: df
+      integer, intent(in) :: j
+      logical, intent(in), optional :: ignoredx, upwind
 !
       call fatal_error('deriv_2nd','der6_other not implemented yet')
       call keep_compiler_quiet(df)
@@ -531,17 +513,16 @@ module Deriv
 !
 !  20-jul-20/wlyra: adapted from der2_pencil
 !
-      real, dimension (:) :: pencil,df6
+      integer, intent(in) :: j
+      real, dimension (:), intent(in) :: pencil
+      real, dimension (:), intent(out) :: df6
+      logical, intent(in), optional :: ignoredx, upwind
+!
       real, dimension (nx) :: facx
       real, dimension (ny) :: facy
       real, dimension (nz) :: facz
-      integer :: j
-      logical, optional :: ignoredx,upwind
-      logical :: igndx,upwnd
+      logical :: igndx, upwnd
       logical, save :: lfirstcall
-!
-      intent(in)  :: j, pencil,ignoredx,upwind
-      intent(out) :: df6
 !
       call fatal_error('deriv_2nd','der6_other not implemented yet')
       call keep_compiler_quiet(df6)
@@ -573,10 +554,12 @@ module Deriv
 !  14-nov-06/wolf: implemented bidiagonal scheme
 !  25-aug-09/axel: added fatal_error, because it is not adapted yet
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: df,fac
-      integer :: i,j,k
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (nx), intent(out) :: df
+      integer, intent(in) :: i, j, k
       logical, intent(in), optional :: lwo_line_elem
+!
+      real, dimension (nx) :: fac
 !
 !debug      if (loptimise_ders) der_call_count(k,icount_derij,i,j) = & !DERCOUNT
 !debug                          der_call_count(k,icount_derij,i,j) + 1 !DERCOUNT
