@@ -160,13 +160,11 @@ module Deriv
 !  01-nov-07/anders: adapted from der
 !  25-aug-09/axel: added fatal_error, because it is not adapted yet
 !
-      real, dimension (:) :: pencil,df
+      real, dimension (:) :: pencil, df
       integer :: j
 !
       intent(in)  :: j, pencil
       intent(out) :: df
-!
-      call fatal_error('deriv_2nd','der_pencil not implemented yet')
 !
 !  x-derivative
 !
@@ -175,10 +173,7 @@ module Deriv
           if (lroot) print*, 'der_pencil: pencil must be of size mx for x derivative'
           call fatal_error('der_pencil','')
         endif
-        df(l1:l2)=(1./60)*dx_1(l1:l2)*( &
-            + 45.0*(pencil(l1+1:l2+1)-pencil(l1-1:l2-1)) &
-            -  9.0*(pencil(l1+2:l2+2)-pencil(l1-2:l2-2)) &
-            +      (pencil(l1+3:l2+3)-pencil(l1-3:l2-3)))
+        df(l1:l2)=0.5*dx_1(l1:l2)*(pencil(l1+1:l2+1)-pencil(l1-1:l2-1))
       else if (j==2) then
 !
 !  y-derivative
@@ -187,10 +182,7 @@ module Deriv
           if (lroot) print*, 'der_pencil: pencil must be of size my for y derivative'
           call fatal_error('der_pencil','')
         endif
-        df(m1:m2)=(1./60)*dy_1(m1:m2)*( &
-            + 45.0*(pencil(m1+1:m2+1)-pencil(m1-1:m2-1)) &
-            -  9.0*(pencil(m1+2:m2+2)-pencil(m1-2:m2-2)) &
-            +      (pencil(m1+3:m2+3)-pencil(m1-3:m2-3)))
+        df(m1:m2)=0.5*dy_1(m1:m2)*(pencil(m1+1:m2+1)-pencil(m1-1:m2-1))
       else if (j==3) then
 !
 !  z-derivative
@@ -199,10 +191,7 @@ module Deriv
           if (lroot) print*, 'der_pencil: pencil must be of size mz for z derivative'
           call fatal_error('der_pencil','')
         endif
-        df(n1:n2)=(1./60)*dz_1(n1:n2)*( &
-            + 45.0*(pencil(n1+1:n2+1)-pencil(n1-1:n2-1)) &
-            -  9.0*(pencil(n1+2:n2+2)-pencil(n1-2:n2-2)) &
-            +      (pencil(n1+3:n2+3)-pencil(n1-3:n2-3)))
+        df(n1:n2)=0.5*dz_1(n1:n2)*(pencil(n1+1:n2+1)-pencil(n1-1:n2-1))
       else
         if (lroot) print*, 'der_pencil: no such direction j=', j
         call fatal_error('der_pencil','')
@@ -259,7 +248,7 @@ module Deriv
         if (nxgrid/=1) then
           fac=dx_1(l1:l2)**2
           df2=fac*(der2_coef0*f (l1  :l2  ,m,n,k) &
-                  +der2_coef1*(f(l1+1:l2+1,m,n,k)+f(l1-1:l2-1,m,n,k)))
+                  +der2_coef1*(f(l1+1:l2+1,m,n,k)+f(l1-1:l2-1,m,n,k)) )
           if (.not.lequidist(j)) then
             call der(f,k,df,j)
             df2=df2+dx_tilde(l1:l2)*df
@@ -271,7 +260,7 @@ module Deriv
         if (nygrid/=1) then
           fac=dy_1(m)**2
           df2=fac*(der2_coef0*f(l1:l2,m  ,n,k) &
-                  +der2_coef1*(f(l1:l2,m+1,n,k)+f(l1:l2,m-1,n,k)))
+                  +der2_coef1*(f(l1:l2,m+1,n,k)+f(l1:l2,m-1,n,k)) )
           if (lspherical_coords)     df2=df2*r2_mn
           if (lcylindrical_coords)   df2=df2*rcyl_mn2
           if (.not.lequidist(j)) then
@@ -285,7 +274,7 @@ module Deriv
         if (nzgrid/=1) then
           fac=dz_1(n)**2
           df2=fac*(der2_coef0*f(l1:l2,m,n  ,k) &
-                  +der2_coef1*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)))
+                  +der2_coef1*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)) )
           if (lspherical_coords) df2=df2*r2_mn*sin2th(m)
           if (.not.lequidist(j)) then
             call der(f,k,df,j)
@@ -317,18 +306,11 @@ module Deriv
       intent(in)  :: f,j
       intent(out) :: df2
 !
-!debug      if (loptimise_ders) der_call_count(k,icount_der2,j,1) = & !DERCOUNT
-!debug                          der_call_count(k,icount_der2,j,1) + 1 !DERCOUNT
-!
-      call fatal_error('deriv_2nd','der2_other not implemented yet')
-!
       if (j==1) then
         if (nxgrid/=1) then
-          fac=(1./180)*dx_1(l1:l2)**2
-          df2=fac*(-490.0*f(l1:l2,m,n) &
-                   +270.0*(f(l1+1:l2+1,m,n)+f(l1-1:l2-1,m,n)) &
-                   - 27.0*(f(l1+2:l2+2,m,n)+f(l1-2:l2-2,m,n)) &
-                   +  2.0*(f(l1+3:l2+3,m,n)+f(l1-3:l2-3,m,n)))
+          fac=dx_1(l1:l2)**2
+          df2=fac*(-  2.0* f(l1:l2,m,n) &
+                   +      (f(l1+1:l2+1,m,n)+f(l1-1:l2-1,m,n)) )
           if (.not.lequidist(j)) then
             call der(f,df,j)
             df2=df2+dx_tilde(l1:l2)*df
@@ -338,11 +320,9 @@ module Deriv
         endif
       elseif (j==2) then
         if (nygrid/=1) then
-          fac=(1./180)*dy_1(m)**2
-          df2=fac*(-490.0*f(l1:l2,m,n) &
-                   +270.0*(f(l1:l2,m+1,n)+f(l1:l2,m-1,n)) &
-                   - 27.0*(f(l1:l2,m+2,n)+f(l1:l2,m-2,n)) &
-                   +  2.0*(f(l1:l2,m+3,n)+f(l1:l2,m-3,n)))
+          fac=dy_1(m)**2
+          df2=fac*(-  2.0* f(l1:l2,m,n) &
+                   +      (f(l1:l2,m+1,n)+f(l1:l2,m-1,n)) )
           if (lspherical_coords)     df2=df2*r2_mn
           if (lcylindrical_coords)   df2=df2*rcyl_mn2
           if (.not.lequidist(j)) then
@@ -354,11 +334,9 @@ module Deriv
         endif
       elseif (j==3) then
         if (nzgrid/=1) then
-          fac=(1./180)*dz_1(n)**2
-          df2=fac*(-490.0*f(l1:l2,m,n) &
-                   +270.0*(f(l1:l2,m,n+1)+f(l1:l2,m,n-1)) &
-                   - 27.0*(f(l1:l2,m,n+2)+f(l1:l2,m,n-2)) &
-                   +  2.0*(f(l1:l2,m,n+3)+f(l1:l2,m,n-3)))
+          fac=dz_1(n)**2
+          df2=fac*(-  2.0* f(l1:l2,m,n) &
+                   +      (f(l1:l2,m,n+1)+f(l1:l2,m,n-1)) )
           if (lspherical_coords) df2=df2*r2_mn*sin2th(m)
           if (.not.lequidist(j)) then
             call der(f,df,j)
@@ -385,8 +363,6 @@ module Deriv
       intent(in)  :: j, pencil
       intent(out) :: df2
 !
-      call fatal_error('deriv_2nd','der2_pencil not implemented yet')
-!
 !  x-derivative
 !
       if (j==1) then
@@ -394,10 +370,8 @@ module Deriv
           if (lroot) print*, 'der2_pencil: pencil must be of size mx for x derivative'
           call fatal_error('der2_pencil','')
         endif
-        df2=(1./180)*dx_1(l1:l2)**2*(-490.0*pencil(l1:l2) &
-               +270.0*(pencil(l1+1:l2+1)+pencil(l1-1:l2-1)) &
-               - 27.0*(pencil(l1+2:l2+2)+pencil(l1-2:l2-2)) &
-               +  2.0*(pencil(l1+3:l2+3)+pencil(l1-3:l2-3)))
+        df2=dx_1(l1:l2)**2*(-  2.0*pencil(l1:l2) &
+               +      (pencil(l1+1:l2+1)+pencil(l1-1:l2-1)) )
       else if (j==2) then
 !
 !  y-derivative
@@ -406,10 +380,8 @@ module Deriv
           if (lroot) print*, 'der2_pencil: pencil must be of size my for y derivative'
           call fatal_error('der2_pencil','')
         endif
-        df2=(1./180)*dy_1(m1:m2)**2*(-490.0*pencil(m1:m2) &
-               +270.0*(pencil(m1+1:m2+1)+pencil(m1-1:m2-1)) &
-               - 27.0*(pencil(m1+2:m2+2)+pencil(m1-2:m2-2)) &
-               +  2.0*(pencil(m1+3:m2+3)+pencil(m1-3:m2-3)))
+        df2=dy_1(m1:m2)**2*(-  2.0*pencil(m1:m2) &
+               +      (pencil(m1+1:m2+1)+pencil(m1-1:m2-1)) )
       else if (j==3) then
 !
 !  z-derivative
@@ -418,10 +390,8 @@ module Deriv
           if (lroot) print*, 'der2_pencil: pencil must be of size mz for z derivative'
           call fatal_error('der2_pencil','')
         endif
-        df2(n1:n2)=(1./180)*dz_1(n1:n2)**2*(-490.0*pencil(n1:n2) &
-               +270.0*(pencil(n1+1:n2+1)+pencil(n1-1:n2-1)) &
-               - 27.0*(pencil(n1+2:n2+2)+pencil(n1-2:n2-2)) &
-               +  2.0*(pencil(n1+3:n2+3)+pencil(n1-3:n2-3)))
+        df2(n1:n2)=dz_1(n1:n2)**2*(-  2.0*pencil(n1:n2) &
+               +      (pencil(n1+1:n2+1)+pencil(n1-1:n2-1)) )
       else
         if (lroot) print*, 'der2_pencil: no such direction j=', j
         call fatal_error('der2_pencil','')
