@@ -983,9 +983,9 @@ void setupConfig(AcMeshInfo& config, AcCompInfo& comp_info)
   PCLoad(config,comp_info,AC_xorig, xyz0[0]);
   PCLoad(config,comp_info,AC_yorig, xyz0[1]);
   PCLoad(config,comp_info,AC_zorig, xyz0[2]);
-  config.real_arrays[AC_x] = x;
-  config.real_arrays[AC_y] = y;
-  config.real_arrays[AC_z] = z;
+  PCLoad(config,comp_info,AC_x,     x);
+  PCLoad(config,comp_info,AC_y,     y);
+  PCLoad(config,comp_info,AC_z,     z);
 
 // physics related parameters
 
@@ -993,14 +993,14 @@ void setupConfig(AcMeshInfo& config, AcCompInfo& comp_info)
 
 // parameter arrays for boundary conditions
 
-  config.real_arrays[AC_fbcx  ] = fbcx;
-  config.real_arrays[AC_fbcx_2] = fbcx_2;
-  config.real_arrays[AC_fbcy  ] = fbcy;
-  config.real_arrays[AC_fbcy_1] = fbcy_1;
-  config.real_arrays[AC_fbcy_2] = fbcy_2;
-  config.real_arrays[AC_fbcz  ] = fbcz;
-  config.real_arrays[AC_fbcz_1] = fbcz_1;
-  config.real_arrays[AC_fbcz_2] = fbcz_2;
+  PCLoad(config,comp_info,AC_fbcx  , fbcx);
+  PCLoad(config,comp_info,AC_fbcx_2, fbcx_2);
+  PCLoad(config,comp_info,AC_fbcy  , fbcy);
+  PCLoad(config,comp_info,AC_fbcy_1, fbcy_1);
+  PCLoad(config,comp_info,AC_fbcy_2, fbcy_2);
+  PCLoad(config,comp_info,AC_fbcz  , fbcz);
+  PCLoad(config,comp_info,AC_fbcz_1, fbcz_1);
+  PCLoad(config,comp_info,AC_fbcz_2, fbcz_2);
 
   // Enter physics related parameters in config.
 
