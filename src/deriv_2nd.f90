@@ -938,7 +938,7 @@ module Deriv
       real, dimension (nx), intent(out) :: df
       integer, intent(in) :: i, j, k
 !
-      call fatal_error('deriv_2nd','der5i1j not implemented yet')
+      call fatal_error('der5i1j','not implemented in deriv_2nd')
       call keep_compiler_quiet(df)
 !
     endsubroutine der5i1j
