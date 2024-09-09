@@ -934,206 +934,12 @@ module Deriv
 !  05-dec-06/anders: adapted from derij
 !  25-aug-09/axel: added fatal_error, because it is not adapted yet
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: df,fac
-      integer :: i,j,k
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (nx), intent(out) :: df
+      integer, intent(in) :: i, j, k
 !
       call fatal_error('deriv_2nd','der5i1j not implemented yet')
-!
-!debug      if (loptimise_ders) der_call_count(k,icount_derij,i,j) = & !DERCOUNT
-!debug                          der_call_count(k,icount_derij,i,j) + 1 !DERCOUNT
-!
-      df=0.0
-      if ((i==1.and.j==1)) then
-        if (nxgrid/=1) then
-          call der6(f,k,df,j)
-        else
-          df=0.
-          if (ip<=5) print*, 'der5i1j: Degenerate case in x-direction'
-        endif
-      elseif ((i==2.and.j==2)) then
-        if (nygrid/=1) then
-          call der6(f,k,df,j)
-        else
-          df=0.
-          if (ip<=5) print*, 'der5i1j: Degenerate case in y-direction'
-        endif
-      elseif ((i==3.and.j==3)) then
-        if (nzgrid/=1) then
-          call der6(f,k,df,j)
-        else
-          df=0.
-          if (ip<=5) print*, 'der5i1j: Degenerate case in z-direction'
-        endif
-      elseif ((i==1.and.j==2)) then
-        if (nxgrid/=1.and.nygrid/=1) then
-          fac=dx_1(l1:l2)**5*1/60.0*dy_1(m)
-          df=fac*( &
-            2.5*((45.*(f(l1+1:l2+1,m+1,n,k)-f(l1+1:l2+1,m-1,n,k))  &
-                  -9.*(f(l1+1:l2+1,m+2,n,k)-f(l1+1:l2+1,m-2,n,k))  &
-                     +(f(l1+1:l2+1,m+3,n,k)-f(l1+1:l2+1,m-3,n,k))) &
-                -(45.*(f(l1-1:l2-1,m+1,n,k)-f(l1-1:l2-1,m-1,n,k))  &
-                  -9.*(f(l1-1:l2-1,m+2,n,k)-f(l1-1:l2-1,m-2,n,k))  &
-                     +(f(l1-1:l2-1,m+3,n,k)-f(l1-1:l2-1,m-3,n,k))))&
-           -2.0*((45.*(f(l1+2:l2+2,m+1,n,k)-f(l1+2:l2+2,m-1,n,k))  &
-                  -9.*(f(l1+2:l2+2,m+2,n,k)-f(l1+2:l2+2,m-2,n,k))  &
-                     +(f(l1+2:l2+2,m+3,n,k)-f(l1+2:l2+2,m-3,n,k))) &
-                -(45.*(f(l1-2:l2-2,m+1,n,k)-f(l1-2:l2-2,m-1,n,k))  &
-                  -9.*(f(l1-2:l2-2,m+2,n,k)-f(l1-2:l2-2,m-2,n,k))  &
-                     +(f(l1-2:l2-2,m+3,n,k)-f(l1-2:l2-2,m-3,n,k))))&
-           +0.5*((45.*(f(l1+3:l2+3,m+1,n,k)-f(l1+3:l2+3,m-1,n,k))  &
-                  -9.*(f(l1+3:l2+3,m+2,n,k)-f(l1+3:l2+3,m-2,n,k))  &
-                     +(f(l1+3:l2+3,m+3,n,k)-f(l1+3:l2+3,m-3,n,k))) &
-                -(45.*(f(l1-3:l2-3,m+1,n,k)-f(l1-3:l2-3,m-1,n,k))  &
-                  -9.*(f(l1-3:l2-3,m+2,n,k)-f(l1-3:l2-3,m-2,n,k))  &
-                     +(f(l1-3:l2-3,m+3,n,k)-f(l1-3:l2-3,m-3,n,k))))&
-                 )
-        else
-          df=0.
-          if (ip<=5) print*, 'der5i1j: Degenerate case in x- or y-direction'
-        endif
-      elseif ((i==2.and.j==1)) then
-        if (nygrid/=1.and.nxgrid/=1) then
-          fac=dy_1(m)**5*1/60.0*dx_1(l1:l2)
-          df=fac*( &
-            2.5*((45.*(f(l1+1:l2+1,m+1,n,k)-f(l1-1:l2-1,m+1,n,k))  &
-                  -9.*(f(l1+2:l2+2,m+1,n,k)-f(l1-2:l2-2,m+1,n,k))  &
-                     +(f(l1+3:l2+3,m+1,n,k)-f(l1-3:l2-3,m+1,n,k))) &
-                -(45.*(f(l1+1:l2+1,m-1,n,k)-f(l1-1:l2-1,m-1,n,k))  &
-                  -9.*(f(l1+2:l2+2,m-1,n,k)-f(l1-2:l2-2,m-1,n,k))  &
-                     +(f(l1+3:l2+3,m-1,n,k)-f(l1-3:l2-3,m-1,n,k))))&
-           -2.0*((45.*(f(l1+1:l2+1,m+2,n,k)-f(l1-1:l2-1,m+2,n,k))  &
-                  -9.*(f(l1+2:l2+2,m+2,n,k)-f(l1-2:l2-2,m+2,n,k))  &
-                     +(f(l1+3:l2+3,m+2,n,k)-f(l1-3:l2-3,m+2,n,k))) &
-                -(45.*(f(l1+1:l2+1,m-2,n,k)-f(l1-1:l2-1,m-2,n,k))  &
-                  -9.*(f(l1+2:l2+2,m-2,n,k)-f(l1-2:l2-2,m-2,n,k))  &
-                     +(f(l1+3:l2+3,m-2,n,k)-f(l1-3:l2-3,m-2,n,k))))&
-           +0.5*((45.*(f(l1+1:l2+1,m+3,n,k)-f(l1-1:l2-1,m+3,n,k))  &
-                  -9.*(f(l1+2:l2+2,m+3,n,k)-f(l1-2:l2-2,m+3,n,k))  &
-                     +(f(l1+3:l2+3,m+3,n,k)-f(l1-3:l2-3,m+3,n,k))) &
-                -(45.*(f(l1+1:l2+1,m-3,n,k)-f(l1-1:l2-1,m-3,n,k))  &
-                  -9.*(f(l1+2:l2+2,m-3,n,k)-f(l1-2:l2-2,m-3,n,k))  &
-                     +(f(l1+3:l2+3,m-3,n,k)-f(l1-3:l2-3,m-3,n,k))))&
-                 )
-        else
-          df=0.
-          if (ip<=5) print*, 'der5i1j: Degenerate case in y- or x-direction'
-        endif
-      elseif ((i==1.and.j==3)) then
-        if (nxgrid/=1.and.nzgrid/=1) then
-          fac=dx_1(l1:l2)**5*1/60.0*dz_1(n)
-          df=fac*( &
-            2.5*((45.*(f(l1+1:l2+1,m,n+1,k)-f(l1+1:l2+1,m,n-1,k))  &
-                  -9.*(f(l1+1:l2+1,m,n+2,k)-f(l1+1:l2+1,m,n-2,k))  &
-                     +(f(l1+1:l2+1,m,n+3,k)-f(l1+1:l2+1,m,n-3,k))) &
-                -(45.*(f(l1-1:l2-1,m,n+1,k)-f(l1-1:l2-1,m,n-1,k))  &
-                  -9.*(f(l1-1:l2-1,m,n+2,k)-f(l1-1:l2-1,m,n-2,k))  &
-                     +(f(l1-1:l2-1,m,n+3,k)-f(l1-1:l2-1,m,n-3,k))))&
-           -2.0*((45.*(f(l1+2:l2+2,m,n+1,k)-f(l1+2:l2+2,m,n-1,k))  &
-                  -9.*(f(l1+2:l2+2,m,n+2,k)-f(l1+2:l2+2,m,n-2,k))  &
-                     +(f(l1+2:l2+2,m,n+3,k)-f(l1+2:l2+2,m,n-3,k))) &
-                -(45.*(f(l1-2:l2-2,m,n+1,k)-f(l1-2:l2-2,m,n-1,k))  &
-                  -9.*(f(l1-2:l2-2,m,n+2,k)-f(l1-2:l2-2,m,n-2,k))  &
-                     +(f(l1-2:l2-2,m,n+3,k)-f(l1-2:l2-2,m,n-3,k))))&
-           +0.5*((45.*(f(l1+3:l2+3,m,n+1,k)-f(l1+3:l2+3,m,n-1,k))  &
-                  -9.*(f(l1+3:l2+3,m,n+2,k)-f(l1+3:l2+3,m,n-2,k))  &
-                     +(f(l1+3:l2+3,m,n+3,k)-f(l1+3:l2+3,m,n-3,k))) &
-                -(45.*(f(l1-3:l2-3,m,n+1,k)-f(l1-3:l2-3,m,n-1,k))  &
-                  -9.*(f(l1-3:l2-3,m,n+2,k)-f(l1-3:l2-3,m,n-2,k))  &
-                     +(f(l1-3:l2-3,m,n+3,k)-f(l1-3:l2-3,m,n-3,k))))&
-                 )
-        else
-          df=0.
-          if (ip<=5) print*, 'der5i1j: Degenerate case in x- or z-direction'
-        endif
-      elseif ((i==3.and.j==1)) then
-        if (nzgrid/=1.and.nygrid/=1) then
-          fac=dz_1(n)**5*1/60.0*dy_1(m)
-          df=fac*( &
-            2.5*((45.*(f(l1+1:l2+1,m,n+1,k)-f(l1-1:l2-1,m,n+1,k))  &
-                  -9.*(f(l1+2:l2+2,m,n+1,k)-f(l1-2:l2-2,m,n+1,k))  &
-                     +(f(l1+3:l2+3,m,n+1,k)-f(l1-3:l2-3,m,n+1,k))) &
-                -(45.*(f(l1+1:l2+1,m,n-1,k)-f(l1-1:l2-1,m,n-1,k))  &
-                  -9.*(f(l1+2:l2+2,m,n-1,k)-f(l1-2:l2-2,m,n-1,k))  &
-                     +(f(l1+3:l2+3,m,n-1,k)-f(l1-3:l2-3,m,n-1,k))))&
-           -2.0*((45.*(f(l1+1:l2+1,m,n+2,k)-f(l1-1:l2-1,m,n+2,k))  &
-                  -9.*(f(l1+2:l2+2,m,n+2,k)-f(l1-2:l2-2,m,n+2,k))  &
-                     +(f(l1+3:l2+3,m,n+2,k)-f(l1-3:l2-3,m,n+2,k))) &
-                -(45.*(f(l1+1:l2+1,m,n-2,k)-f(l1-1:l2-1,m,n-2,k))  &
-                  -9.*(f(l1+2:l2+2,m,n-2,k)-f(l1-2:l2-2,m,n-2,k))  &
-                     +(f(l1+3:l2+3,m,n-2,k)-f(l1-3:l2-3,m,n-2,k))))&
-           +0.5*((45.*(f(l1+1:l2+1,m,n+3,k)-f(l1-1:l2-1,m,n+3,k))  &
-                  -9.*(f(l1+2:l2+2,m,n+3,k)-f(l1-2:l2-2,m,n+3,k))  &
-                     +(f(l1+3:l2+3,m,n+3,k)-f(l1-3:l2-3,m,n+3,k))) &
-                -(45.*(f(l1+1:l2+1,m,n-3,k)-f(l1-1:l2-1,m,n-3,k))  &
-                  -9.*(f(l1+2:l2+2,m,n-3,k)-f(l1-2:l2-2,m,n-3,k))  &
-                     +(f(l1+3:l2+3,m,n-3,k)-f(l1-3:l2-3,m,n-3,k))))&
-                 )
-        else
-          df=0.
-          if (ip<=5) print*, 'der5i1j: Degenerate case in z- or x-direction'
-        endif
-      elseif ((i==2.and.j==3)) then
-        if (nygrid/=1.and.nzgrid/=1) then
-          fac=dy_1(m)**5*1/60.0*dz_1(n)
-          df=fac*( &
-            2.5*((45.*(f(l1:l2,m+1,n+1,k)-f(l1:l2,m+1,n-1,k))  &
-                  -9.*(f(l1:l2,m+1,n+2,k)-f(l1:l2,m+1,n-2,k))  &
-                     +(f(l1:l2,m+1,n+3,k)-f(l1:l2,m+1,n-3,k))) &
-                -(45.*(f(l1:l2,m-1,n+1,k)-f(l1:l2,m-1,n-1,k))  &
-                  -9.*(f(l1:l2,m-1,n+2,k)-f(l1:l2,m-1,n-2,k))  &
-                     +(f(l1:l2,m-1,n+3,k)-f(l1:l2,m-1,n-3,k))))&
-           -2.0*((45.*(f(l1:l2,m+2,n+1,k)-f(l1:l2,m+2,n-1,k))  &
-                  -9.*(f(l1:l2,m+2,n+2,k)-f(l1:l2,m+2,n-2,k))  &
-                     +(f(l1:l2,m+2,n+3,k)-f(l1:l2,m+2,n-3,k))) &
-                -(45.*(f(l1:l2,m-2,n+1,k)-f(l1:l2,m-2,n-1,k))  &
-                  -9.*(f(l1:l2,m-2,n+2,k)-f(l1:l2,m-2,n-2,k))  &
-                     +(f(l1:l2,m-2,n+3,k)-f(l1:l2,m-2,n-3,k))))&
-           +0.5*((45.*(f(l1:l2,m+3,n+1,k)-f(l1:l2,m+3,n-1,k))  &
-                  -9.*(f(l1:l2,m+3,n+2,k)-f(l1:l2,m+3,n-2,k))  &
-                     +(f(l1:l2,m+3,n+3,k)-f(l1:l2,m+3,n-3,k))) &
-                -(45.*(f(l1:l2,m-3,n+1,k)-f(l1:l2,m-3,n-1,k))  &
-                  -9.*(f(l1:l2,m-3,n+2,k)-f(l1:l2,m-3,n-2,k))  &
-                     +(f(l1:l2,m-3,n+3,k)-f(l1:l2,m-3,n-3,k))))&
-                 )
-        else
-          df=0.
-          if (ip<=5) print*, 'der5i1j: Degenerate case in y- or z-direction'
-        endif
-      elseif ((i==3.and.j==2)) then
-        if (nzgrid/=1.and.nygrid/=1) then
-          fac=dz_1(n)**5*1/60.0*dy_1(m)
-          df=fac*( &
-            2.5*((45.*(f(l1:l2,m+1,n+1,k)-f(l1:l2,m-1,n+1,k))  &
-                  -9.*(f(l1:l2,m+2,n+1,k)-f(l1:l2,m-2,n+1,k))  &
-                     +(f(l1:l2,m+3,n+1,k)-f(l1:l2,m-3,n+1,k))) &
-                -(45.*(f(l1:l2,m+1,n-1,k)-f(l1:l2,m-1,n-1,k))  &
-                  -9.*(f(l1:l2,m+2,n-1,k)-f(l1:l2,m-2,n-1,k))  &
-                     +(f(l1:l2,m+3,n-1,k)-f(l1:l2,m-3,n-1,k))))&
-           -2.0*((45.*(f(l1:l2,m+1,n+2,k)-f(l1:l2,m-1,n+2,k))  &
-                  -9.*(f(l1:l2,m+2,n+2,k)-f(l1:l2,m-2,n+2,k))  &
-                     +(f(l1:l2,m+3,n+2,k)-f(l1:l2,m-3,n+2,k))) &
-                -(45.*(f(l1:l2,m+1,n-2,k)-f(l1:l2,m-1,n-2,k))  &
-                  -9.*(f(l1:l2,m+2,n-2,k)-f(l1:l2,m-2,n-2,k))  &
-                     +(f(l1:l2,m+3,n-2,k)-f(l1:l2,m-3,n-2,k))))&
-           +0.5*((45.*(f(l1:l2,m+1,n+3,k)-f(l1:l2,m-1,n+3,k))  &
-                  -9.*(f(l1:l2,m+2,n+3,k)-f(l1:l2,m-2,n+3,k))  &
-                     +(f(l1:l2,m+3,n+3,k)-f(l1:l2,m-3,n+3,k))) &
-                -(45.*(f(l1:l2,m+1,n-3,k)-f(l1:l2,m-1,n-3,k))  &
-                  -9.*(f(l1:l2,m+2,n-3,k)-f(l1:l2,m-2,n-3,k))  &
-                     +(f(l1:l2,m+3,n-3,k)-f(l1:l2,m-3,n-3,k))))&
-                 )
-        else
-          df=0.
-          if (ip<=5) print*, 'der5i1j: Degenerate case in z- or y-direction'
-        endif
-      else
-        print*, 'der5i1j: no such value for i,j=', i, j
-        call fatal_error('der5i1j','')
-      endif
-!
-      if (lspherical_coords.or.lcylindrical_coords) &
-           call fatal_error('der5i1j','NOT IMPLEMENTED for non-cartesian coordinates')
+      call keep_compiler_quiet(df)
 !
     endsubroutine der5i1j
 !***********************************************************************
@@ -1143,11 +949,12 @@ module Deriv
 !
 !  02-apr-17/wlyra: adapted from der5i1j
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: df,fac
-      integer :: i,j,k
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (nx), intent(in) :: df
+      integer, intent(in) :: i, j, k
 !
       call fatal_error("der4i2j","not implemented in deriv_2nd")
+      call keep_compiler_quiet(df)
 !
     endsubroutine der4i2j
 !***********************************************************************
@@ -1159,7 +966,6 @@ module Deriv
 !  02-apr-17/wlyra: coded
 !
       real, dimension (mx,my,mz,mfarray),intent(in) :: f
-      real, dimension (nx) :: fac
       integer,intent(in) :: k
       real, dimension(nx), intent(out) :: df
 !
@@ -1170,9 +976,8 @@ module Deriv
 !***********************************************************************
     subroutine der3i3j(f,k,df,i,j)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (nx), intent(out) :: df
-      real, dimension (nx) :: fac
       integer, intent(in) :: k,i,j
 !
       call fatal_error("der3i3j","not implemented in deriv_2nd")
@@ -1182,9 +987,8 @@ module Deriv
 !***********************************************************************          
     subroutine der3i2j1k(f,ik,df,i,j,k)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (nx), intent(out) :: df
-      real, dimension (nx) :: fac
       integer, intent(in) :: ik,i,j,k
 !
       call fatal_error("der3i2j1k","not implemented in deriv_2nd")
@@ -1194,9 +998,8 @@ module Deriv
 !***********************************************************************
     subroutine der4i1j1k(f,ik,df,i,j,k)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (nx), intent(out) :: df
-      real, dimension (nx) :: fac
       integer, intent(in) :: ik,i,j,k
 !
       call fatal_error("der4i1j1k","not implemented in deriv_10th")
@@ -1211,13 +1014,10 @@ module Deriv
 !
 !  25-aug-09/axel: added fatal_error, because it is not adapted yet
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx,3) :: uu
-      real, dimension (nx) :: df
-      integer :: j,k,l
-!
-      intent(in)  :: f,uu,k,j
-      intent(out) :: df
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (nx,3), intent(in) :: uu
+      real, dimension (nx), intent(out) :: df
+      integer, intent(in) :: j, k
 !
       call fatal_error('deriv_2nd','der_upwind1st not implemented yet')
       call keep_compiler_quiet(df)
@@ -1238,13 +1038,9 @@ module Deriv
 !
 !   7-jul-08/arne: coded.
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (:,:) :: df
-      real :: fac
-      integer :: pos,k,sgn,j
-!
-      intent(in)  :: f,k,pos,sgn,j
-      intent(out) :: df
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (:,:), intent(out) :: df
+      integer, intent(in) :: pos, k, sgn, j
 !
       call fatal_error('deriv_2nd','der_onesided_4_slice_main not implemented yet')
       call keep_compiler_quiet(df)
@@ -1265,13 +1061,9 @@ module Deriv
 !
 !   7-jul-08/arne: coded.
 !
-      real, dimension (mx,my,mz) :: f
-      real, dimension (:,:) :: df
-      real :: fac
-      integer :: pos,sgn,j
-!
-      intent(in)  :: f,pos,sgn,j
-      intent(out) :: df
+      real, dimension (mx,my,mz), intent(in) :: f
+      real, dimension (:,:), intent(out) :: df
+      integer, intent(in) :: pos, sgn, j
 !
       call fatal_error('deriv_2nd','der_onesided_4_slice_other not implemented yet')
       call keep_compiler_quiet(df)
@@ -1285,13 +1077,9 @@ module Deriv
 !
 !  15-oct-09/Natalia: coded.
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real  :: df
-      real :: fac
-      integer :: lll,mmm,nnn,k,sgn,j
-!
-      intent(in)  :: f,k,lll,mmm,nnn,sgn,j
-      intent(out) :: df
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, intent(out) :: df
+      integer , intent(in):: lll, mmm, nnn, k, sgn, j
 !
       call not_implemented('der_onesided_4_slice_main_pt','')
       call keep_compiler_quiet(df)
@@ -1306,13 +1094,9 @@ module Deriv
 !  15-oct-09/Natalia: coded.
 !  15-oct-09/axel: changed file name to shorter version
 !
-      real, dimension (mx,my,mz) :: f
-      real :: df
-      real :: fac
-      integer :: lll,mmm,nnn,sgn,j
-!
-      intent(in)  :: f,lll,mmm,nnn,sgn,j
-      intent(out) :: df
+      real, dimension (mx,my,mz), intent(in) :: f
+      real, intent(out) :: df
+      integer, intent(in) :: lll, mmm, nnn, sgn, j
 !
       call not_implemented('der_onesided_4_slice_other_pt','')
       call keep_compiler_quiet(df)
