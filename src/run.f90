@@ -344,8 +344,6 @@ subroutine timeloop(f,df,p)
 !  Re-read parameters if file `RELOAD_ALWAYS' exists; don't remove file
 !  (only useful for debugging RELOAD issues).
 !
-if (lroot) print*, 'vor control RELOAD'
-if (lroot) flush(6)
       lreload_file       =control_file_exists('RELOAD')
       lreload_always_file=control_file_exists('RELOAD_ALWAYS')
       lreloading         =lreload_file .or. lreload_always_file
@@ -1095,8 +1093,8 @@ subroutine run_start() bind(C)
 !$  endif
 !$omp barrier
 !$omp end parallel
-print*, 'nach parallel', iproc
-flush(6)
+!print*, 'nach parallel', iproc
+!flush(6)
 !
   if (lroot) then
 !

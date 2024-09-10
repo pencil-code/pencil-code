@@ -23,7 +23,7 @@ function make_ac_bound_cond()
 {
     #echo $1 $2 $3 $4
     sed -e'/case *( *[^ ]'$1'[^ ] *) *$/,/case/ ! d' -e'/case/ d' -e's/^.* *\(bc_[a-zA-Z_0-9]*\) *( *f/\1('$2'/' -e's/,j//' -e's/,topbot//' -e's/topbot/'$4'/g' -e's/\.\([a-zA-Z]*\)\./\1/' tmp | \
-    sed -e's/\(fbc[xyz][a-zA-Z_0-9]*\) *( *j *,\([^)]*\))/\1['$2', \2]/' -e's/\(bc_[a-zA-Z_0-9]*\) *( *\('$2'.*\)) *$/\1(BOUNDARY_'$3_$4', \2)/' -e's/[A-Za-z0-9_]*=//g'>> astaroth/DSL/local/boundconds.h
+    sed -e's/\(fbc[xyz][a-zA-Z_0-9]*\) *( *j *,\([^)]*\))/\1['$2', \2]/' -e's/\(bc_[a-zA-Z_0-9]*\) *( *\('$2'\)\(.*\)) *$/\1(BOUNDARY_'$3_$4', \2,'$4'\3)/' -e's/[A-Za-z0-9_]*=//g'>> astaroth/DSL/local/boundconds.h
 }
 #
 bc_file=../run.in
@@ -68,7 +68,7 @@ nfields=${#fields[@]}
 rm -f astaroth/DSL/local/boundconds.h
 touch astaroth/DSL/local/boundconds.h
 if [[ ${lperi[0]} == 'T' ]]; then
-  echo 'periodic(BOUNDARY_X, all_fields)' >> astaroth/DSL/local/boundconds.h
+  echo 'periodic(BOUNDARY_X)' >> astaroth/DSL/local/boundconds.h
 else
   boundcond_sed x
   for (( i=0; i<$nfields ; i++ )); do 
@@ -80,7 +80,7 @@ else
 fi
 
 if [[ ${lperi[1]} == 'T' ]]; then
-  echo 'periodic(BOUNDARY_Y, all_fields)' >> astaroth/DSL/local/boundconds.h
+  echo 'periodic(BOUNDARY_Y)' >> astaroth/DSL/local/boundconds.h
 else
   boundcond_sed y
   for (( i=0; i<$nfields ; i++ )); do 
@@ -91,7 +91,7 @@ else
 fi
 
 if [[ ${lperi[2]} == 'T' ]]; then
-  echo 'periodic(BOUNDARY_Z, all_fields)' >> astaroth/DSL/local/boundconds.h
+  echo 'periodic(BOUNDARY_Z)' >> astaroth/DSL/local/boundconds.h
 else
   boundcond_sed z
   for (( i=0; i<$nfields ; i++ )); do 
@@ -100,19 +100,4 @@ else
   done
   rm -f tmp
 fi
-
-#typedef enum {UUX,UUY,UUZ,RHO,SS,AAX,AAY,AAZ,SHOCK,NUM_FIELDS=9,NUM_COMMUNICATED_FIELDS=9,} Field;
-#
-#         acBoundaryCondition(BOUNDARY_Y, BOUNDCOND_A2, all_fields),
-#         acBoundaryCondition(BOUNDARY_Z, BOUNDCOND_A2, all_fields)});
-#         acBoundaryCondition(BOUNDARY_X, BOUNDCOND_PRESCRIBED_DERIVATIVE, all_fields, bc_param),
-#         acBoundaryCondition(BOUNDARY_Y, BOUNDCOND_PRESCRIBED_DERIVATIVE, all_fields, bc_param),
-#         acBoundaryCondition(BOUNDARY_Z, BOUNDCOND_PRESCRIBED_DERIVATIVE, all_fields, bc_param)});
-#
-#	  acBoundaryCondition(BOUNDARY_Z_TOP, BOUNDCOND_SYMMETRIC, ax_ay),
-#         acBoundaryCondition(BOUNDARY_Z_BOT, BOUNDCOND_ANTISYMMETRIC, ax_ay),
-#         acBoundaryCondition(BOUNDARY_Z_TOP, BOUNDCOND_ANTISYMMETRIC, az),
-#         acBoundaryCondition(BOUNDARY_Z_BOT, BOUNDCOND_SYMMETRIC, az)});
-#
-#         acBoundaryCondition(BOUNDARY_X_BOT, bc_sym_x, AAZ,-1);
 

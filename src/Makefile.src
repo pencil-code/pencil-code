@@ -528,9 +528,11 @@ ifneq ($(GPU),nogpu)
       GPU_DEPS = $(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/Makefile.vendor $(CUDA_MAKEDIR)/PC_modulesources.h $(DSL_WORKDIR)/fieldecs.h $(DSL_WORKDIR)/equations.h $(DSL_WORKDIR)/solve.ac
       LDFLAGS_MAIN = -Bdynamic -Wl,--export-dynamic
       #LDFLAGS_MAIN = -h dynamic -Wl,--export-dynamic
-      ifeq ($(RUNTIME_COMPILATION),on)
+      ifneq ($(filter on yes,$RUNTIME_COMPILATION),)
+        RUNTIME_COMPILATION = on
         LDFLAGS_LIB = -L astaroth -L astaroth/submodule/build/src/core -L astaroth/submodule/build/runtime_compilation -L astaroth/submodule/build/src/core/kernels -lacc_runtime_compiler -lastaroth_core -lkernels -l$(LIBGPU_NAME)
       else
+        RUNTIME_COMPILATION = off
         LDFLAGS_LIB = -L astaroth -L astaroth/submodule/build/src/core -L astaroth/submodule/build/src/core/kernels -lastaroth_core -lkernels -l$(LIBGPU_NAME)
       endif
       ifneq ($(IS_CRAY),)
@@ -546,7 +548,7 @@ ifneq ($(GPU),nogpu)
 
     else
       $(info )
-      $(error Directory src/astaroth/submodule is empty! You need to pull Astaroth as a submodule and apply pc_setupsrc afterwards!)
+      $(error Directory $PENCIL_HOME/src/astaroth/submodule is empty! You need to pull Astaroth as a submodule and apply pc_setupsrc afterwards!)
     endif
   else
     $(info )
@@ -2963,7 +2965,7 @@ run.x: run.o | $(SPECIAL_DEPS) $(LIBGPU)
 #
 $(LIBGPU): $(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/Makefile.vendor
 #$(LIBGPU): $(GPU_DEPS)
-	cd astaroth && make RUNTIME_COMPILATION=$(RUNTIME_COMPILATION)
+	cd astaroth && make
 #
 special_preps:
 ifeq ($(SPECIAL_MULT),1)
@@ -3052,6 +3054,7 @@ ifeq ($(EOS),noeos)
 else
 	@echo ' ' >> $(CUDA_MAKEDIR)/PC_modulesources.h
 endif
+	@sed -e'1 i RUNTIME_COMPILATION='$(RUNTIME_COMPILATION) -i $(CUDA_MAKEDIR)/PC_modulesources.h
 	@echo ' ' >> $(CUDA_INCDIR)/PC_moduleflags.h
 #
 #  Generation of field (PDE variable) declarations for DSL code obeying the registration order: fieldecs.h .

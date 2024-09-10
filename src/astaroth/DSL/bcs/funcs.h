@@ -259,11 +259,6 @@ bc_sym_x(AC_TOP_BOT topbot,VtxBuffer field,real sgn,bool rel)
   }
 }
 
-bc_sym_x(AC_TOP_BOT topbot,VtxBuffer field,real sgn)
-{
-  bc_sym_x(topbot,field,sgn,false)
-}
-
 bc_sym_y(AC_TOP_BOT topbot,VtxBuffer field,real sgn,bool rel)
 {
   int i;
@@ -299,11 +294,6 @@ bc_sym_y(AC_TOP_BOT topbot,VtxBuffer field,real sgn,bool rel)
   }
   else {
   }
-}
-
-bc_sym_y(AC_TOP_BOT topbot,VtxBuffer field,real sgn)
-{
-  bc_sym_y(topbot,field,sgn,false)
 }
 
 bc_sym_z(AC_TOP_BOT topbot,VtxBuffer field,real sgn,bool rel)
@@ -342,11 +332,6 @@ bc_sym_z(AC_TOP_BOT topbot,VtxBuffer field,real sgn,bool rel)
   else {
   }
 }   
-
-bc_sym_z(AC_TOP_BOT topbot,VtxBuffer field,real sgn)
-{
-  bc_sym_z(topbot,field,sgn,false)
-}
 
 bc_set_der_x(topbot,VtxBuffer field,val)
 {

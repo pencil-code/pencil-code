@@ -29,8 +29,9 @@ ifneq ($(filter ../mpicomm.f90,$(MODULESOURCES)),)
   CMAKE_MPI = ON
   $(info MPI enabled)
 else
-  CMAKE_MPI = OFF
-  $(info MPI not enabled)
+  #CMAKE_MPI = OFF
+  #$(info MPI not enabled)
+  $(error interfaced version requires MPI)
 endif
 
 SOURCES = gpu_astaroth.cc 
