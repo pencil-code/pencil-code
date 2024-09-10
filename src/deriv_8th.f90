@@ -210,6 +210,7 @@ module Deriv
 !
 !  01-nov-07/anders: adapted from der
 !  25-aug-09/axel: adapted from deriv
+!  10-Sep-2024/PABourdin: fixed calculation to correct 8th order
 !
       use Cdata
 !
@@ -229,7 +230,8 @@ module Deriv
         df(l1:l2)=(1./840)*dx_1(l1:l2)*( &
             + 672.0*(pencil(l1+1:l2+1)-pencil(l1-1:l2-1)) &
             - 168.0*(pencil(l1+2:l2+2)-pencil(l1-2:l2-2)) &
-            +      (pencil(l1+3:l2+3)-pencil(l1-3:l2-3)))
+            +  32.0*(pencil(l1+3:l2+3)-pencil(l1-3:l2-3)) &
+            -   3.0*(pencil(l1+4:l2+4)-pencil(l1-4:l2-4)) )
       else if (j==2) then
 !
 !  y-derivative
@@ -241,7 +243,8 @@ module Deriv
         df(m1:m2)=(1./840)*dy_1(m1:m2)*( &
             + 672.0*(pencil(m1+1:m2+1)-pencil(m1-1:m2-1)) &
             - 168.0*(pencil(m1+2:m2+2)-pencil(m1-2:m2-2)) &
-            +      (pencil(m1+3:m2+3)-pencil(m1-3:m2-3)))
+            +  32.0*(pencil(m1+3:m2+3)-pencil(m1-3:m2-3)) &
+            -   3.0*(pencil(m1+4:m2+4)-pencil(m1-4:m2-4)) )
       else if (j==3) then
 !
 !  z-derivative
@@ -253,7 +256,8 @@ module Deriv
         df(n1:n2)=(1./840)*dz_1(n1:n2)*( &
             + 672.0*(pencil(n1+1:n2+1)-pencil(n1-1:n2-1)) &
             - 168.0*(pencil(n1+2:n2+2)-pencil(n1-2:n2-2)) &
-            +      (pencil(n1+3:n2+3)-pencil(n1-3:n2-3)))
+            +  32.0*(pencil(n1+3:n2+3)-pencil(n1-3:n2-3)) &
+            -   3.0*(pencil(n1+3:n2+3)-pencil(n1-3:n2-3)) )
       else
         if (lroot) print*, 'der_pencil: no such direction j=', j
         call fatal_error('der_pencil','')
