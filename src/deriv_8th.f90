@@ -510,6 +510,7 @@ module Deriv
 !
 !  10-feb-06/anders: adapted from der5
 !  25-aug-09/axel: copied from deriv, but not adapted yet
+!  10-Sep-2024/PABourdin: implemented 6th order accuracy
 !
       use Cdata
 !
@@ -540,26 +541,28 @@ module Deriv
       if (j==1) then
         if (nxgrid/=1) then
           if (igndx) then
-            fac=(1.0/8)
+            fac=(1.0/240)
           else
-            fac=(1.0/8)*1./dx**3
+            fac=(1.0/240)*1./dx**3
           endif
-          df=fac*(- 13.0*(f(l1+1:l2+1,m,n,k)-f(l1-1:l2-1,m,n,k)) &
-                  +  8.0*(f(l1+2:l2+2,m,n,k)-f(l1-2:l2-2,m,n,k)) &
-                  -  1.0*(f(l1+3:l2+3,m,n,k)-f(l1-3:l2-3,m,n,k)))
+          df=fac*(-488.0*(f(l1+1:l2+1,m,n,k)-f(l1-1:l2-1,m,n,k)) &
+                  +338.0*(f(l1+2:l2+2,m,n,k)-f(l1-2:l2-2,m,n,k)) &
+                  - 72.0*(f(l1+3:l2+3,m,n,k)-f(l1-3:l2-3,m,n,k)) &
+                  +  7.0*(f(l1+4:l2+4,m,n,k)-f(l1-4:l2-4,m,n,k)) )
         else
           df=0.
         endif
       elseif (j==2) then
         if (nygrid/=1) then
           if (igndx) then
-            fac=(1.0/8)
+            fac=(1.0/240)
           else
-            fac=(1.0/8)*1./dy**3
+            fac=(1.0/240)*1./dy**3
           endif
-          df=fac*(- 13.0*(f(l1:l2,m+1,n,k)-f(l1:l2,m-1,n,k)) &
-                  +  8.0*(f(l1:l2,m+2,n,k)-f(l1:l2,m-2,n,k)) &
-                  -  1.0*(f(l1:l2,m+3,n,k)-f(l1:l2,m-3,n,k)))
+          df=fac*(-488.0*(f(l1:l2,m+1,n,k)-f(l1:l2,m-1,n,k)) &
+                  +338.0*(f(l1:l2,m+2,n,k)-f(l1:l2,m-2,n,k)) &
+                  - 72.0*(f(l1:l2,m+3,n,k)-f(l1:l2,m-3,n,k)) &
+                  +  7.0*(f(l1:l2,m+4,n,k)-f(l1:l2,m-4,n,k)) )
           if (lcylindrical_coords)   df=df*rcyl_mn1**3
         else
           df=0.
@@ -567,13 +570,14 @@ module Deriv
       elseif (j==3) then
         if (nzgrid/=1) then
           if (igndx) then
-            fac=(1.0/8)
+            fac=(1.0/240)
           else
-            fac=(1.0/8)*1./dz**3
+            fac=(1.0/240)*1./dz**3
           endif
-          df=fac*(- 13.0*(f(l1:l2,m,n+1,k)-f(l1:l2,m,n-1,k)) &
-                  +  8.0*(f(l1:l2,m,n+2,k)-f(l1:l2,m,n-2,k)) &
-                  -  1.0*(f(l1:l2,m,n+3,k)-f(l1:l2,m,n-3,k)))
+          df=fac*(-488.0*(f(l1:l2,m,n+1,k)-f(l1:l2,m,n-1,k)) &
+                  +338.0*(f(l1:l2,m,n+2,k)-f(l1:l2,m,n-2,k)) &
+                  - 72.0*(f(l1:l2,m,n+3,k)-f(l1:l2,m,n-3,k)) &
+                  +  7.0*(f(l1:l2,m,n+4,k)-f(l1:l2,m,n-4,k)) )
         else
           df=0.
         endif
