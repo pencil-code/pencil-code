@@ -372,6 +372,7 @@ module Deriv
 !   1-apr-01/axel+wolf: pencil formulation
 !  25-jun-04/tobi+wolf: adapted for non-equidistant grids
 !  25-aug-09/axel: adapted from deriv
+!  10-Sep-2024/PABourdin: implemented 8th order accuracy
 !
       use Cdata
 !
@@ -445,6 +446,7 @@ module Deriv
 !
 !  01-nov-07/anders: adapted from der2
 !  25-aug-09/axel: adapted from deriv
+!  10-Sep-2024/PABourdin: implemented 8th order accuracy
 !
       use Cdata
 !
