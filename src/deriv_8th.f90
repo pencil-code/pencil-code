@@ -461,10 +461,12 @@ module Deriv
           if (lroot) print*, 'der2_pencil: pencil must be of size mx for x derivative'
           call fatal_error('der2_pencil','')
         endif
-        df2=(1./180)*dx_1(l1:l2)**2*(-490.0*pencil(l1:l2) &
-               +270.0*(pencil(l1+1:l2+1)+pencil(l1-1:l2-1)) &
-               - 27.0*(pencil(l1+2:l2+2)+pencil(l1-2:l2-2)) &
-               +  2.0*(pencil(l1+3:l2+3)+pencil(l1-3:l2-3)))
+        df2=dx_1(l1:l2)**2*( &
+                der2_coef0*pencil(l1:l2) &
+               +der2_coef1*(pencil(l1+1:l2+1)+pencil(l1-1:l2-1)) &
+               +der2_coef2*(pencil(l1+2:l2+2)+pencil(l1-2:l2-2)) &
+               +der2_coef3*(pencil(l1+3:l2+3)+pencil(l1-3:l2-3)) &
+               +der2_coef4*(pencil(l1+4:l2+4)+pencil(l1-4:l2-4)) )
       else if (j==2) then
 !
 !  y-derivative
@@ -473,10 +475,12 @@ module Deriv
           if (lroot) print*, 'der2_pencil: pencil must be of size my for y derivative'
           call fatal_error('der2_pencil','')
         endif
-        df2=(1./180)*dy_1(m1:m2)**2*(-490.0*pencil(m1:m2) &
-               +270.0*(pencil(m1+1:m2+1)+pencil(m1-1:m2-1)) &
-               - 27.0*(pencil(m1+2:m2+2)+pencil(m1-2:m2-2)) &
-               +  2.0*(pencil(m1+3:m2+3)+pencil(m1-3:m2-3)))
+        df2=dy_1(m1:m2)**2*( &
+                der2_coef0*pencil(m1:m2) &
+               +der2_coef1*(pencil(m1+1:m2+1)+pencil(m1-1:m2-1)) &
+               +der2_coef2*(pencil(m1+2:m2+2)+pencil(m1-2:m2-2)) &
+               +der2_coef3*(pencil(m1+3:m2+3)+pencil(m1-3:m2-3)) &
+               +der2_coef4*(pencil(m1+4:m2+4)+pencil(m1-4:m2-4)) )
       else if (j==3) then
 !
 !  z-derivative
@@ -485,10 +489,12 @@ module Deriv
           if (lroot) print*, 'der2_pencil: pencil must be of size mz for z derivative'
           call fatal_error('der2_pencil','')
         endif
-        df2(n1:n2)=(1./180)*dz_1(n1:n2)**2*(-490.0*pencil(n1:n2) &
-               +270.0*(pencil(n1+1:n2+1)+pencil(n1-1:n2-1)) &
-               - 27.0*(pencil(n1+2:n2+2)+pencil(n1-2:n2-2)) &
-               +  2.0*(pencil(n1+3:n2+3)+pencil(n1-3:n2-3)))
+        df2(n1:n2)=dz_1(n1:n2)**2*( &
+                der2_coef0*pencil(n1:n2) &
+               +der2_coef1*(pencil(n1+1:n2+1)+pencil(n1-1:n2-1)) &
+               +der2_coef2*(pencil(n1+2:n2+2)+pencil(n1-2:n2-2)) &
+               +der2_coef3*(pencil(n1+3:n2+3)+pencil(n1-3:n2-3)) &
+               +der2_coef4*(pencil(n1+4:n2+4)+pencil(n1-4:n2-4)) )
       else
         if (lroot) print*, 'der2_pencil: no such direction j=', j
         call fatal_error('der2_pencil','')
