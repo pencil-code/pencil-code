@@ -783,6 +783,7 @@ module Deriv
 !
 !   8-jul-02/wolf: coded
 !  25-aug-09/axel: copied from deriv, but not adapted yet
+!  10-Sep-2024/PABourdin: upgraded to 4th order accuracy
 !
       use Cdata
 !
@@ -820,48 +821,51 @@ module Deriv
       if (j==1) then
         if (nxgrid/=1) then
           if (igndx) then
-            fac=1.0
+            fac=1.0/4
           else if (upwnd) then
-            fac=(1.0/840)*dx_1(l1:l2)
+            fac=(1.0/4)*dx_1(l1:l2)
           else
-            fac=1/dx**6
+            fac=(1.0/4)/dx**6
           endif
-          df=fac*(- 20.0* f(l1:l2,m,n,k) &
-                  + 15.0*(f(l1+1:l2+1,m,n,k)+f(l1-1:l2-1,m,n,k)) &
-                  -  6.0*(f(l1+2:l2+2,m,n,k)+f(l1-2:l2-2,m,n,k)) &
-                  +      (f(l1+3:l2+3,m,n,k)+f(l1-3:l2-3,m,n,k)))
+          df=fac*(-150.0* f(l1:l2,m,n,k) &
+                  +116.0*(f(l1+1:l2+1,m,n,k)+f(l1-1:l2-1,m,n,k)) &
+                  - 52.0*(f(l1+2:l2+2,m,n,k)+f(l1-2:l2-2,m,n,k)) &
+                  + 12.0*(f(l1+3:l2+3,m,n,k)+f(l1-3:l2-3,m,n,k)) &
+                  -      (f(l1+4:l2+4,m,n,k)+f(l1-4:l2-4,m,n,k)) )
         else
           df=0.
         endif
       elseif (j==2) then
         if (nygrid/=1) then
           if (igndx) then
-            fac=1.0
+            fac=1.0/4
           else if (upwnd) then
-            fac=(1.0/840)*dy_1(m)
+            fac=(1.0/4)*dy_1(m)
           else
-            fac=1/dy**6
+            fac=(1.0/4)/dy**6
           endif
-          df=fac*(- 20.0* f(l1:l2,m  ,n,k) &
-                  + 15.0*(f(l1:l2,m+1,n,k)+f(l1:l2,m-1,n,k)) &
-                  -  6.0*(f(l1:l2,m+2,n,k)+f(l1:l2,m-2,n,k)) &
-                  +      (f(l1:l2,m+3,n,k)+f(l1:l2,m-3,n,k)))
+          df=fac*(-150.0* f(l1:l2,m  ,n,k) &
+                  +116.0*(f(l1:l2,m+1,n,k)+f(l1:l2,m-1,n,k)) &
+                  - 52.0*(f(l1:l2,m+2,n,k)+f(l1:l2,m-2,n,k)) &
+                  + 12.0*(f(l1:l2,m+3,n,k)+f(l1:l2,m-3,n,k)) &
+                  -      (f(l1:l2,m+4,n,k)+f(l1:l2,m-4,n,k)) )
          else
           df=0.
         endif
       elseif (j==3) then
         if (nzgrid/=1) then
           if (igndx) then
-            fac=1.
+            fac=1.0/4
           else if (upwnd) then
-            fac=(1.0/840)*dz_1(n)
+            fac=(1.0/4)*dz_1(n)
           else
-            fac=1/dz**6
+            fac=(1.0/4)/dz**6
           endif
-          df=fac*(- 20.0* f(l1:l2,m,n  ,k) &
-                  + 15.0*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)) &
-                  -  6.0*(f(l1:l2,m,n+2,k)+f(l1:l2,m,n-2,k)) &
-                  +      (f(l1:l2,m,n+3,k)+f(l1:l2,m,n-3,k)))
+          df=fac*(-150.0* f(l1:l2,m,n  ,k) &
+                  +116.0*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)) &
+                  - 52.0*(f(l1:l2,m,n+2,k)+f(l1:l2,m,n-2,k)) &
+                  + 12.0*(f(l1:l2,m,n+3,k)+f(l1:l2,m,n-3,k)) &
+                  -      (f(l1:l2,m,n+4,k)+f(l1:l2,m,n-4,k)) )
          else
           df=0.
         endif
