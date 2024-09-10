@@ -388,11 +388,12 @@ module Deriv
 !
       if (j==1) then
         if (nxgrid/=1) then
-          fac=(1./180)*dx_1(l1:l2)**2
-          df2=fac*(-490.0*f(l1:l2,m,n) &
-                   +270.0*(f(l1+1:l2+1,m,n)+f(l1-1:l2-1,m,n)) &
-                   - 27.0*(f(l1+2:l2+2,m,n)+f(l1-2:l2-2,m,n)) &
-                   +  2.0*(f(l1+3:l2+3,m,n)+f(l1-3:l2-3,m,n)))
+          fac=dx_1(l1:l2)**2
+          df2=fac*( der2_coef0*f(l1:l2,m,n) &
+                   +der2_coef1*(f(l1+1:l2+1,m,n)+f(l1-1:l2-1,m,n)) &
+                   +der2_coef2*(f(l1+2:l2+2,m,n)+f(l1-2:l2-2,m,n)) &
+                   +der2_coef3*(f(l1+3:l2+3,m,n)+f(l1-3:l2-3,m,n)) &
+                   +der2_coef4*(f(l1+4:l2+4,m,n)+f(l1-4:l2-4,m,n)) )
           if (.not.lequidist(j)) then
             call der(f,df,j)
             df2=df2+dx_tilde(l1:l2)*df
@@ -402,11 +403,12 @@ module Deriv
         endif
       elseif (j==2) then
         if (nygrid/=1) then
-          fac=(1./180)*dy_1(m)**2
-          df2=fac*(-490.0*f(l1:l2,m,n) &
-                   +270.0*(f(l1:l2,m+1,n)+f(l1:l2,m-1,n)) &
-                   - 27.0*(f(l1:l2,m+2,n)+f(l1:l2,m-2,n)) &
-                   +  2.0*(f(l1:l2,m+3,n)+f(l1:l2,m-3,n)))
+          fac=dy_1(m)**2
+          df2=fac*( der2_coef0*f(l1:l2,m,n) &
+                   +der2_coef1*(f(l1:l2,m+1,n)+f(l1:l2,m-1,n)) &
+                   +der2_coef2*(f(l1:l2,m+2,n)+f(l1:l2,m-2,n)) &
+                   +der2_coef3*(f(l1:l2,m+3,n)+f(l1:l2,m-3,n)) &
+                   +der2_coef4*(f(l1:l2,m+4,n)+f(l1:l2,m-4,n)) )
           if (lspherical_coords)     df2=df2*r2_mn
           if (lcylindrical_coords)   df2=df2*rcyl_mn2
           if (.not.lequidist(j)) then
@@ -418,11 +420,12 @@ module Deriv
         endif
       elseif (j==3) then
         if (nzgrid/=1) then
-          fac=(1./180)*dz_1(n)**2
-          df2=fac*(-490.0*f(l1:l2,m,n) &
-                   +270.0*(f(l1:l2,m,n+1)+f(l1:l2,m,n-1)) &
-                   - 27.0*(f(l1:l2,m,n+2)+f(l1:l2,m,n-2)) &
-                   +  2.0*(f(l1:l2,m,n+3)+f(l1:l2,m,n-3)))
+          fac=dz_1(n)**2
+          df2=fac*( der2_coef0*f(l1:l2,m,n) &
+                   +der2_coef1*(f(l1:l2,m,n+1)+f(l1:l2,m,n-1)) &
+                   +der2_coef2*(f(l1:l2,m,n+2)+f(l1:l2,m,n-2)) &
+                   +der2_coef3*(f(l1:l2,m,n+3)+f(l1:l2,m,n-3)) &
+                   +der2_coef4*(f(l1:l2,m,n+4)+f(l1:l2,m,n-4)) )
           if (lspherical_coords) df2=df2*r2_mn*sin2th(m)
           if (.not.lequidist(j)) then
             call der(f,df,j)
