@@ -1949,9 +1949,11 @@ module Particles
           endif
           cs = sqrt(cs20)
 !
-          if (ldragforce_equi_global_eps) eps = eps_dtog
-!
-          if (.not. ldragforce_gas_par) eps = 0.0
+          if (ldragforce_gas_par) then
+            eps = eps_dtog ! will be recomputed if ldragforce_equi_global_eps = .true.
+          else
+            eps = 0.0
+          endif
 !
           if (lroot) print*, 'init_particles: average dust-to-gas ratio=', eps
 !
