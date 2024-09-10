@@ -8,8 +8,7 @@ ComputeSteps AC_rhs(boundconds)
         twopass_solve_final(AC_step_num)
 }
 BoundConds boundconds{
-  periodic(BOUNDARY_XYZ)
-  //#include "boundconds.h"
+  #include "boundconds.h"
 }
 //TP: periodic in XY sym in Z
 //BoundConds boundconds{

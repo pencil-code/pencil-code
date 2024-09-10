@@ -3119,8 +3119,12 @@ ifeq ($(SHOCK),shock_highorder)
 endif
 ifeq ($(HYDRO),hydro)
 ifneq ($(FORCING),noforcing)
-	@sed -i -e'/singlepass_solve/ a   #include "../forcing/getforce.h"\n' -e'/vecwrite( *UU/ s/) *$$/ ADDFORCE)/' $(DSL_WORKDIR)/solve_single.ac
-	@sed -i -e'/twopass_solve_final/ a   \#include "../forcing/getforce.h"\n' -e'/vecwrite( *UU.*final/ s/) *$$/ ADDFORCE)/' $(DSL_WORKDIR)/solve_two.ac
+	@if ( ! grep 'forcing/getforce\.h' $(DSL_WORKDIR)/solve_single.ac > /dev/null ); then \
+	  sed -i -e'/singlepass_solve/ a   #include "../forcing/getforce.h"\n' -e'/vecwrite( *UU/ s/) *$$/ ADDFORCE)/' $(DSL_WORKDIR)/solve_single.ac; \
+	fi
+	@if ( ! grep 'forcing/getforce\.h' $(DSL_WORKDIR)/solve_two.ac> /dev/null ); then \
+	  sed -i -e'/twopass_solve_final/ a   \#include "../forcing/getforce.h"\n' -e'/vecwrite( *UU.*final/ s/) *$$/ ADDFORCE)/' $(DSL_WORKDIR)/solve_two.ac; \
+	fi
 endif
 endif
 	@scripts/bc2ast
