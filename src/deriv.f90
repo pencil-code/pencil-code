@@ -410,7 +410,7 @@ module Deriv
     use Mpicomm, only: mpisendrecv_real,IXBEAM,IYBEAM,IZBEAM
     use General, only: ioptest
 
-    real, dimension(:,:), intent(in) :: arr
+    real, dimension(:,:) :: arr
     real, dimension(:,:), intent(out) :: der
     integer, intent(in) :: idir
     integer, intent(in), optional :: order
