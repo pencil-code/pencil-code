@@ -333,13 +333,13 @@ module Deriv
 !  09-Sep-2024/PABourdin: copied from 2nd-order
 !
     real, dimension(:,:), intent(in) :: arr
-    real, dimension(:,:), intent(out) :: der
     integer, intent(in) :: idir
+    real, dimension(:,:), intent(out) :: der
     integer, intent(in), optional :: order
 !
     call not_implemented('distr_der','for 4th order')
-    call keep_compiler_quiet(idir)
     call keep_compiler_quiet(arr)
+    call keep_compiler_quiet(idir)
     call keep_compiler_quiet(der)
 !
   endsubroutine distr_der

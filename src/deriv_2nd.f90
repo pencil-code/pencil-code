@@ -212,6 +212,8 @@ module Deriv
     integer, intent(in), optional :: order
 !
     call not_implemented('distr_der','for 2nd order')
+    call keep_compiler_quiet(arr)
+    call keep_compiler_quiet(idir)
     call keep_compiler_quiet(der)
 !
     endsubroutine distr_der

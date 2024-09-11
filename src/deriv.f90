@@ -411,8 +411,8 @@ module Deriv
     use General, only: ioptest
 
     real, dimension(:,:), intent(inout) :: arr
-    real, dimension(:,:), intent(out) :: der
     integer, intent(in) :: idir
+    real, dimension(:,:), intent(out) :: der
     integer, intent(in), optional :: order
 !
     integer :: len,nc,j,ilneigh,iuneigh, &
@@ -437,8 +437,7 @@ module Deriv
       tagu_send=tagu+ipz; tagu_recv=tagl+iuneigh
 !
       ! send to left neighbor, recv from right
-!  [PABourdin] The following does not compile in Travis, but works on gfortran 9.4,
-!              if we put 'arr' as and "intent(in)" variable.
+!  [PABourdin] The following does not compile if we put 'arr' as and "intent(in)" variable.
       call mpisendrecv_real(arr(n1:n1i,        :),(/nghost,nc/),ilneigh,tagl_send, &
                             arr(n2+1:n2+nghost,:),              iuneigh,tagu_recv,idir=IZBEAM)
       if (ipz==0.and..not.lperi(3)) then
