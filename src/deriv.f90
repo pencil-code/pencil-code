@@ -411,7 +411,10 @@ module Deriv
     use General, only: ioptest
 
     real, dimension(:,:), intent(in) :: arr
-    real, dimension(:,:), intent(out) :: der
+!  [PABourdin] The following does not compile in Travis, but works on gfortran 9.4
+!              Fix needed in mpicomm?
+!    real, dimension(:,:), intent(out) :: der
+    real, dimension(:,:) :: der
     integer, intent(in) :: idir
     integer, intent(in), optional :: order
 !
