@@ -599,7 +599,7 @@ logical, pointer :: ldustnucleation, lpartnucleation
       real, dimension(mx,my,mz,mfarray) :: f
       real :: PP, prof, der, tmp1, tmp2, mol1, mol2, mean_molar_mass
       real :: rho, TT
-      integer :: j,k
+      integer :: l,j,k
       logical :: lnothing, air_exist
 !
       intent(inout) :: f
@@ -721,36 +721,40 @@ logical, pointer :: ldustnucleation, lpartnucleation
             write (*,'(A10,2F23.6)') "SUM",sum(amplchemk),sum(amplchemk2)
 
           endif
-          do m=m1,m2
+          do m=1,my
             der=2./delta_chem
             do k=1,nchemspec
               prof=(tanh(der*(y(m)+widthchem))-   &
                    tanh(der*(y(m)-widthchem)))/2.
-              do n=n1,n2
-                f(l1:l2,m,n,ichemspec(k))=amplchemk(k)*prof +amplchemk2(k)*(1-prof) 
+              do n=1,mz
+                f(1:mx,m,n,ichemspec(k))=amplchemk(k)*prof +amplchemk2(k)*(1-prof) 
               enddo
             enddo
           enddo
           !
           ! Must also set density such that the pressure is correct
           !
-          do m=m1,m2
-            tmp1=0
-            do k=1,nchemspec
-              tmp1=tmp1+f(l1,m,n1,ichemspec(k))/species_constants(k,imass)
+          do n=1,mz
+            do m=1,my
+              do l=1,mx
+                tmp1=0
+                do k=1,nchemspec
+                  tmp1=tmp1+f(l,m,n,ichemspec(k))/species_constants(k,imass)
+                enddo
+                mean_molar_mass=1./tmp1
+                if (ltemperature_nolog) then
+                  TT=f(l,m,n,iTT)
+                else
+                  TT=exp(f(l,m,n,ilnTT))
+                endif
+                rho=press*mean_molar_mass/(Rgas*TT)
+                if (ldensity_nolog) then
+                  f(l,m,n,irho)=rho
+                else
+                  f(l,m,n,ilnrho)=alog(rho)
+                endif
+              enddo
             enddo
-            mean_molar_mass=1./tmp1
-            if (ltemperature_nolog) then
-              TT=f(l1,m,n1,iTT)
-            else
-              TT=exp(f(l1,m,n1,ilnTT))
-            endif
-            rho=press*mean_molar_mass/(Rgas*TT)
-            if (ldensity_nolog) then
-              f(l1:l2,m,n1:n2,irho)=rho
-            else
-              f(l1:l2,m,n1:n2,ilnrho)=alog(rho)
-            endif
           enddo
 !
         case default
@@ -2707,12 +2711,18 @@ logical, pointer :: ldustnucleation, lpartnucleation
         write (file_id,'(7E12.4)') rho_full(l1,m1,n1)*unit_mass/unit_length**3, &
             rho_full(l2,m2,n2)*unit_mass/unit_length**3
         write (file_id,*) ''
-        write (file_id,*) 'Themperature, K'
+        write (file_id,*) 'Temperature, K'
 ! Commented the next line out because
 ! samples/2d-tests/chemistry_GrayScott apparently has no f(:,:,:,5)
-        if (ilnTT > 0) write (file_id,'(7E12.4)')  &
-            exp(f(l1,m1,n1,ilnTT))*unit_temperature, &
-            exp(f(l2,m2,n2,ilnTT))*unit_temperature
+        if (iTT > 0) then
+          write (file_id,'(7E12.4)')  &
+               f(l1,m1,n1,iTT)*unit_temperature, &
+               f(l2,m2,n2,iTT)*unit_temperature
+        else if (ilnTT > 0) then
+          write (file_id,'(7E12.4)')  &
+               exp(f(l1,m1,n1,ilnTT))*unit_temperature, &
+               exp(f(l2,m2,n2,ilnTT))*unit_temperature
+        endif
         write (file_id,*) ''
         write (file_id,*) 'Cp,  erg/mole/K'
         write (file_id,'(7E12.4)') cp_full(l1,m1,n1)/Rgas* &
