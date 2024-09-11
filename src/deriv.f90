@@ -279,13 +279,10 @@ module Deriv
 !  21-feb-07/axel: added 1/r and 1/pomega factors for non-coord basis
 !  30-sep-16/MR: allow results dimensions > nx
 !
-      real, dimension (mx,my,mz) :: f
-      real, dimension (:) :: df
-      integer :: j
+      real, dimension (mx,my,mz), intent(in) :: f
+      real, dimension (:), intent(out) :: df
+      integer, intent(in) :: j
 !
-      intent(in)  :: f,j
-      intent(out) :: df
-
       real, dimension (size(df)) :: fac
       real :: facs
       integer :: l1_,l2_,sdf
@@ -353,11 +350,9 @@ module Deriv
 !
       use General, only: itoa
 
-      real, dimension (:) :: pencil,df
-      integer :: j
-!
-      intent(in)  :: j, pencil
-      intent(out) :: df
+      real, dimension (:), intent(in) :: pencil
+      real, dimension (:), intent(out) :: df
+      integer, intent(in) :: j
 !
 !  x-derivative
 !
@@ -415,22 +410,23 @@ module Deriv
     use Mpicomm, only: mpisendrecv_real,IXBEAM,IYBEAM,IZBEAM
     use General, only: ioptest
 
-    real, dimension(:,:) :: arr, der
-    integer :: idir
-    integer, optional :: order
-
+    real, dimension(:,:), intent(in) :: arr
+    real, dimension(:,:), intent(out) :: der
+    integer, intent(in) :: idir
+    integer, intent(in), optional :: order
+!
     integer :: len,nc,j,ilneigh,iuneigh, &
                tagl_send,tagu_send,tagl_recv,tagu_recv
     integer, parameter :: tagl=nprocz, tagu=2*nprocz
-
+!
     len=size(arr,1); nc=size(arr,2)
-
+!
     select case(idir)
-
+!
     case(IXBEAM); call not_implemented('distr_der','for x-direction')
     case(IYBEAM); call not_implemented('distr_der','for y-direction')
     case(IZBEAM)
-
+!
       if (ipz==0) then
         ilneigh=nprocz-1
       else
@@ -439,14 +435,14 @@ module Deriv
       iuneigh=mod(ipz+1,nprocz)
       tagl_send=tagl+ipz; tagl_recv=tagu+ilneigh
       tagu_send=tagu+ipz; tagu_recv=tagl+iuneigh
-
+!
       ! send to left neighbor, recv from right
       call mpisendrecv_real(arr(n1:n1i,        :),(/nghost,nc/),ilneigh,tagl_send, &
                             arr(n2+1:n2+nghost,:),              iuneigh,tagu_recv,idir=IZBEAM)
       if (ipz==0.and..not.lperi(3)) then
         do j=1,nc; call set_ghosts_for_onesided_ders_1D(arr,BOT,j); enddo
       endif
-
+!
       ! send to right neighbor, recv from left
 !print*, iproc, 'sendrecv tom', ineigh, 'with', tagu_send, 'receives with ', tagu_recv
       call mpisendrecv_real(arr(n2i:n2,  :),(/nghost,nc/),iuneigh,tagu_send, &
@@ -454,7 +450,7 @@ module Deriv
       if (ipz==nprocz-1.and..not.lperi(3)) then
         do j=1,nc; call set_ghosts_for_onesided_ders_1D(arr,TOP,j); enddo
       endif
-
+!
       do j=1,nc
         if (ioptest(order,1)==2) then
           call der2_z(arr(:,j),der(:,j))
@@ -464,11 +460,11 @@ module Deriv
           call fatal_error('distr_der','only order=1|2 possible')
         endif
       enddo
-
+!
     case default; call fatal_error('distr_der','illegal derivative direction')
-
+!
     end select
-
+!
   endsubroutine distr_der
 !***********************************************************************
     subroutine der2_main(f,k,df2,j,lwo_line_elem)
@@ -488,14 +484,13 @@ module Deriv
 !
       use General, only: loptest
 
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: df2,fac,df
-      real :: facs
-      integer :: j,k
-      logical, optional :: lwo_line_elem
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (nx), intent(out) :: df2
+      integer, intent(in) :: j,k
+      logical, intent(in), optional :: lwo_line_elem
 !
-      intent(in)  :: f,k,j,lwo_line_elem
-      intent(out) :: df2
+      real, dimension (nx) :: fac,df
+      real :: facs
 !
 !debug      if (loptimise_ders) der_call_count(k,icount_der2,j,1) = & !DERCOUNT
 !debug                          der_call_count(k,icount_der2,j,1) + 1 !DERCOUNT
