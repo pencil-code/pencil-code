@@ -272,15 +272,16 @@ module Deriv
 !
 !  Dummy
 !
-    real, dimension(:,:) :: arr, der
-    integer :: idir
-    integer, optional :: order
-
+    real, dimension(:,:), intent(in) :: arr
+    real, dimension(:,:), intent(out) :: der
+    integer, intent(in) :: idir
+    integer, intent(in), optional :: order
+!
     call not_implemented('distr_der','for 8th order')
     call keep_compiler_quiet(idir)
     call keep_compiler_quiet(arr)
     call keep_compiler_quiet(der)
- 
+!
     endsubroutine distr_der
 !***********************************************************************
     subroutine der2_main(f,k,df2,j,lwo_line_elem)
