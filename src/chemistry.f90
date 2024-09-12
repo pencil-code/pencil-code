@@ -226,6 +226,7 @@ logical, pointer :: ldustnucleation, lpartnucleation
 ! diagnostic variables (need to be consistent with reset list below)
 !
   integer, dimension(nchemspec) :: idiag_Ym=0      ! DIAG_DOC: $\left<Y_x\right>$
+  integer, dimension(nchemspec) :: idiag_rhoYm=0   ! DIAG_DOC: $\left<\rho Y_x\right>$
   integer, dimension(nchemspec) :: idiag_TYm=0     ! DIAG_DOC: $\left<Y_{\rm thresh}-Y_x\right>$
   integer, dimension(nchemspec) :: idiag_dYm=0     ! DIAG_DOC: $\delta\left<Y_x\right>/\delta t$
   integer, dimension(nchemspec) :: idiag_dYmax=0   ! DIAG_DOC: $max\delta\left<Y_x\right>/\delta t$
@@ -3356,6 +3357,7 @@ logical, pointer :: ldustnucleation, lpartnucleation
 !
         do ii = 1,nchemspec
           call sum_mn_name(f(l1:l2,m,n,ichemspec(ii)),idiag_Ym(ii))
+          call sum_mn_name(f(l1:l2,m,n,irho)*f(l1:l2,m,n,ichemspec(ii)),idiag_rhoYm(ii))
           call max_mn_name(f(l1:l2,m,n,ichemspec(ii)),idiag_Ymax(ii))
           if (idiag_Ymin(ii)/= 0) &
             call max_mn_name(-f(l1:l2,m,n,ichemspec(ii)),idiag_Ymin(ii),lneg=.true.)
@@ -3412,7 +3414,7 @@ logical, pointer :: ldustnucleation, lpartnucleation
       integer :: iname, inamez,ii
       logical :: lreset, lwr
       logical, optional :: lwrite
-      character(len=6) :: diagn_Ym, number
+      character(len=6) :: diagn_Ym, diagn_rhoYm, number
       character(len=6) :: diagn_Ymax
       character(len=6) :: diagn_Ymin
       character(len=7) :: diagn_dYmax
@@ -3432,6 +3434,7 @@ logical, pointer :: ldustnucleation, lpartnucleation
       if (lreset) then
         idiag_dtchem = 0
         idiag_Ym = 0
+        idiag_rhoYm = 0
         idiag_TYm = 0
         idiag_dYm = 0
         idiag_Ymax = 0
@@ -3460,6 +3463,8 @@ logical, pointer :: ldustnucleation, lpartnucleation
           write (number,'(I2)') ii
           diagn_Ym = 'Y'//trim(adjustl(number))//'m'
           call parse_name(iname,cname(iname),cform(iname),trim(diagn_Ym),idiag_Ym(ii))
+          diagn_rhoYm = 'rhoY'//trim(adjustl(number))//'m'
+          call parse_name(iname,cname(iname),cform(iname),trim(diagn_rhoYm),idiag_rhoYm(ii))
           diagn_Ymax = 'Y'//trim(adjustl(number))//'max'
           call parse_name(iname,cname(iname),cform(iname),trim(diagn_Ymax),idiag_Ymax(ii))
           diagn_Ymin = 'Y'//trim(adjustl(number))//'min'
