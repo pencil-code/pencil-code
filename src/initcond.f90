@@ -251,7 +251,7 @@ module Initcond
 !
     endsubroutine x3_siny_cosz
 !***********************************************************************
-    subroutine x_siny_cosz(ampl,f,i,kx,ky,kz)
+    subroutine x_siny_cosz(ampl,f,i,kx,ky,kz,xbot)
 !
 !  sinusoidal wave, adapted from sinxsinz (that routine was already doing
 !  this, but under a different name)
@@ -260,8 +260,8 @@ module Initcond
 !
       integer :: i
       real, dimension (mx,my,mz,mfarray) :: f
-      real,optional :: kx,ky,kz
-      real :: ampl,kx1=pi/2.,ky1=0.,kz1=pi/2.
+      real,optional :: kx, ky, kz, xbot
+      real :: ampl, kx1=pi/2., ky1=0., kz1=pi/2., xbot1
 !
 !  wavenumber k, helicity H=ampl (can be either sign)
 !
@@ -270,12 +270,18 @@ module Initcond
       if (present(kx)) kx1=kx
       if (present(ky)) ky1=ky
       if (present(kz)) kz1=kz
+      if (present(xbot)) then
+        xbot1=xbot
+      else
+        xbot1=0.
+      endif
+!
       if (ampl==0) then
         if (lroot) print*,'x_siny_cosz: ampl=0'
       else
         if (lroot) write(*,wave_fmt1) 'x_siny_cosz: ampl,kx,ky,kz=', &
                                       ampl,kx1,ky1,kz1
-        f(:,:,:,i)=f(:,:,:,i)+ampl*(spread(spread(   (    x),2,my),3,mz)&
+        f(:,:,:,i)=f(:,:,:,i)+ampl*(spread(spread((x-xbot1),2,my),3,mz)&
                                    *spread(spread(sin(ky1*y),1,mx),3,mz)&
                                    *spread(spread(cos(kz1*z),1,mx),2,my))
       endif
