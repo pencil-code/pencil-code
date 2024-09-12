@@ -3357,7 +3357,7 @@ logical, pointer :: ldustnucleation, lpartnucleation
 !
         do ii = 1,nchemspec
           call sum_mn_name(f(l1:l2,m,n,ichemspec(ii)),idiag_Ym(ii))
-          call sum_mn_name(f(l1:l2,m,n,irho)*f(l1:l2,m,n,ichemspec(ii)),idiag_rhoYm(ii))
+          call sum_mn_name(p%rho*f(l1:l2,m,n,ichemspec(ii)),idiag_rhoYm(ii))
           call max_mn_name(f(l1:l2,m,n,ichemspec(ii)),idiag_Ymax(ii))
           if (idiag_Ymin(ii)/= 0) &
             call max_mn_name(-f(l1:l2,m,n,ichemspec(ii)),idiag_Ymin(ii),lneg=.true.)
@@ -3414,10 +3414,11 @@ logical, pointer :: ldustnucleation, lpartnucleation
       integer :: iname, inamez,ii
       logical :: lreset, lwr
       logical, optional :: lwrite
-      character(len=6) :: diagn_Ym, diagn_rhoYm, number
+      character(len=6) :: diagn_Ym, number
       character(len=6) :: diagn_Ymax
       character(len=6) :: diagn_Ymin
       character(len=7) :: diagn_dYmax
+      character(len=7) :: diagn_rhoYm
       character(len=6) :: diagn_TYm
       character(len=6) :: diagn_dYm
       character(len=6) :: diagn_hm
