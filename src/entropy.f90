@@ -5976,12 +5976,16 @@ module Energy
 !  Relax horizontally averaged entropy toward a cos(kz) profile
 !
       if (tau_relax_ss/=0.) then
-!       prof=cos(kz_ss*z(n))
-        prof=exp(-.5*(x(l1:l2)/radius_ss_x(1))**2)
+        prof=cos(kz_ss*z(n))
+!
+!AB: the following was checked in by myself on 2023-02-21 in r35030,
+!    but I don't remember the purpose. Outcommented conflicting change now.
+!
+!       prof=exp(-.5*(x(l1:l2)/radius_ss_x(1))**2)
         if (lcalc_ssmean) then
           df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-(ssmz(n)-ss_const-ampl_imp_ss*prof)/tau_relax_ss
         else
-          df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-(p%ss-ss_const-ampl_imp_ss*prof)*prof/tau_relax_ss
+          df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-(p%ss-ss_const-ampl_imp_ss*prof)/tau_relax_ss
         endif
       endif
 !
