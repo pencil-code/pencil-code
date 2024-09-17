@@ -251,7 +251,7 @@ module Initcond
 !
     endsubroutine x3_siny_cosz
 !***********************************************************************
-    subroutine x_siny_cosz(ampl,f,i,kx,ky,kz,xbot)
+    subroutine x_siny_cosz(ampl,f,i,kx,ky,kz,xbot, nexp)
 !
 !  sinusoidal wave, adapted from sinxsinz (that routine was already doing
 !  this, but under a different name)
@@ -260,20 +260,30 @@ module Initcond
 !
       integer :: i
       real, dimension (mx,my,mz,mfarray) :: f
-      real,optional :: kx, ky, kz, xbot
-      real :: ampl, kx1=pi/2., ky1=0., kz1=pi/2., xbot1
+      real, optional :: kx, ky, kz, xbot, nexp
+      real :: ampl, kx1=pi/2., ky1=0., kz1=pi/2., xbot_, nexp_
 !
 !  wavenumber k, helicity H=ampl (can be either sign)
 !
-!  sinx(kx*x)*sin(kz*z)
+!  sinx(kx*x)^nexp*sin(kz*z)
 !
       if (present(kx)) kx1=kx
       if (present(ky)) ky1=ky
       if (present(kz)) kz1=kz
       if (present(xbot)) then
-        xbot1=xbot
+        xbot_=xbot
       else
-        xbot1=0.
+        xbot_=0.
+      endif
+!
+!  If nexp=0, we have the usual sin(theta) dependence.
+!  To concentrate the field more strongly toward the equator,
+!  we can ut nexp=1 or larger. (The actual exponent must be even.)
+!
+      if (present(nexp)) then
+        nexp_=nexp
+      else
+        nexp_=0.
       endif
 !
       if (ampl==0) then
@@ -281,8 +291,8 @@ module Initcond
       else
         if (lroot) write(*,wave_fmt1) 'x_siny_cosz: ampl,kx,ky,kz=', &
                                       ampl,kx1,ky1,kz1
-        f(:,:,:,i)=f(:,:,:,i)+ampl*(spread(spread((x-xbot1),2,my),3,mz)&
-                                   *spread(spread(sin(ky1*y),1,mx),3,mz)&
+        f(:,:,:,i)=f(:,:,:,i)+ampl*(spread(spread((x-xbot_),2,my),3,mz)&
+                                   *spread(spread(sin(ky1*y)**(1.+2.*nexp_),1,mx),3,mz)&
                                    *spread(spread(cos(kz1*z),1,mx),2,my))
       endif
 !
