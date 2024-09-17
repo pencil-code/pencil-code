@@ -486,6 +486,8 @@ module Energy
   real, dimension (nx) :: Hmax,ssmax,diffus_chi,diffus_chi3,cs2cool_x, &
                           chit_prof,chit_prof_fluct,hcond,K_kramers
   real, dimension (nx,3) :: gss1, gss0
+  real, dimension (nz) :: profz_cool, profz1_cool, profz_heat
+  real, dimension (nx) :: profr_cool, profr1_cool, profr2_cool, profr_heat, profx_heat
   integer, parameter :: prof_nz=150
   real, dimension (prof_nz) :: prof_lnT,prof_z
   logical :: lcalc_heat_cool
@@ -654,19 +656,19 @@ module Energy
 !
       use BorderProfiles, only: request_border_driving
       use EquationOfState, only: get_soundspeed, select_eos_variable, get_gamma_etc
-      use Gravity, only: gravz, g0, compute_gravity_star
+      use Gravity, only: gravz, g0, compute_gravity_star, z1, z2
       use Initcond
-      use HDF5_IO, only: input_profile
+      use HDF5_IO, only: input_profile, output_profile
       use Mpicomm, only: mpibcast_real
       use SharedVariables, only: put_shared_variable, get_shared_variable
-      use Sub, only: blob, write_zprof
+      use Sub, only: blob, write_zprof, step, cubic_step
       use File_io, only: file_exists
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
       real, dimension (nzgrid) :: tmpz
       real, dimension (nx) :: tmpz_penc
-      real :: beta1, beta0, TT_bcz, star_cte, cs2top_from_cool
+      real :: beta1, beta0, TT_bcz, star_cte, cs2top_from_cool, ztop, zbot
       real :: dummy,cp
       integer :: i, j, n, m, stat, lend
       logical :: lnothing, exist, opend
@@ -764,7 +766,7 @@ module Energy
       if (lgravz .and. lrun) then
         if (cool+cool2==0.) then
           call warning('initialize_energy','cool+cool2==0 -> no meaningful cs2top_from_cool can be formed.' &
-                       //achar(10)//'Set to cs2top')
+                       //achar(10)//'Is set to cs2top')
           cs2top_from_cool=cs2top
         else
           cs2top_from_cool = (cool*cs2cool + cool2*cs2cool2)/(cool+cool2)
@@ -953,7 +955,6 @@ module Energy
           if (lroot) print*,'initialize_energy: set cs2cool=cs20'
           cs2cool=cs20
           cs2_ext=cs20
-          if (rcool==0.) rcool=r_ext
 !
 !  Compute the gravity profile inside the star.
 !
@@ -1063,7 +1064,7 @@ module Energy
         endif
       endif
 !
-      if (any((/'shell_mean_yz      ','shell_mean_yz2     ','shell_mean_downflow'/)==cooltype)) &
+      if (any(cooltype==(/'shell_mean_yz      ','shell_mean_yz2     ','shell_mean_downflow'/))) &
           call read_cooling_profile_x(cs2cool_x)
 !
 !  Initialize heat conduction.
@@ -1214,7 +1215,7 @@ module Energy
 !  Dynamical hyper-diffusivity operates only for mesh formulation of hyper-diffusion
 !
       if (ldynamical_diffusion.and..not.lheatc_hyper3ss_mesh) call fatal_error("initialize_energy", &
-             "Dynamical diffusion requires mesh hyper heat conductivity, switch iheatcond='hyper3-mesh'")
+             "Dynamical diffusion requires mesh hyper heat conductivity, set iheatcond='hyper3-mesh'")
 !
       lcalc_heat_cool = ((luminosity/=0.0) .or. (cool/=0.0) .or. &
                          (tau_cor/=0.0) .or. (tauheat_buffer/=0.0) .or. &
@@ -1230,6 +1231,151 @@ module Energy
       if (lcalc_heat_cool.and.ltau_cool_variable.and.tau_cool/=0.0) then
         tau1_cool=1./tau_cool
         if (lphotoelectric_heating) rho01=1./rho0
+      endif
+
+      if (lgravz .and. (.not.lcooling_general) .and. &
+          ( (luminosity/=0.) .or. (cool/=0.) .or. lheat_cool_gravz ) ) then
+!
+!  Allow for different cooling profile functions.
+!  The gaussian default is rather broad and disturbs the entire interior.
+!
+        if (lroot) print*, 'cooling_profile,z2,wcool,cs2cool=',cooling_profile, z2, wcool, cs2cool
+        select case (cooling_profile)
+        case ('gaussian')
+          ztop = xyz1(3)
+          profz_cool = exp(-0.5*((ztop-z(n1:n2))/wcool)**2)
+        case ('step')
+          profz_cool = step(z(n1:n2),z2,wcool)
+        case ('step2')
+          profz_cool = step(z(n1:n2),zcool,wcool)
+        case ('cubic_step')
+          profz_cool = cubic_step(z(n1:n2),z2,wcool)
+        case ('surfcool')
+          profz_cool = 1.+tanh((z(n1:n2)-zcool)/(wcool))
+        case ('volheat_surfcool')
+          profz_cool = 1.+tanh((z(n1:n2)-zcool)/(wcool))
+          profz1_cool = 1.-(tanh((z(n1:n2)-zcool1)/(wcool1)))**2
+!
+!  Cooling with a profile linear in z (unstable).
+!
+        case ('lin-z')
+          profz_cool=z(n1:n2)/wcool
+        case default
+          call fatal_error('initialize_energy','no such cooling_profile: '//trim(cooling_profile))
+        endselect
+        profz_cool = cool*profz_cool
+        profz1_cool = cool1*profz1_cool
+
+        if (luminosity/=0.0) then
+!
+!  Heating profile, normalised, so volume integral = 1.
+!
+          zbot = xyz0(3)
+          profz_heat = luminosity*exp(-0.5*((z(n1:n2)-zbot)/wheat)**2)/(sqrt(pi/2.)*wheat)
+          if (nygrid==1.and.nxgrid>1) then
+            profz_heat = profz_heat/Lx
+          elseif (nxgrid==1.and.nygrid>1) then
+            profz_heat = profz_heat/Ly
+          elseif (nxgrid>1.and.nygrid>1) then
+            profz_heat = profz_heat/(Lx*Ly)
+          endif
+        endif      
+!
+!  Write out cooling profile.
+!
+        call output_profile('cooling_profile',z(n1:n2),profz_cool,'z',lsave_name=.true.)
+      endif
+
+      if (rcool==0.) rcool=r_ext
+      if (rcool2==0.) rcool2=r_ext
+
+      if (lgravx .and. lspherical_coords .and. (.not.lcooling_general) .and. &
+          (luminosity/=0. .or. cool/=0)) then
+!
+!  Normalised central heating profile so volume integral = 1.
+!
+        if (nzgrid==1) then
+!
+!  2-D heating profile
+!
+          profr_heat = exp(-0.5*(x(l1:l2)/wheat)**2) * (2*pi*wheat**2)**(-1.)
+        else
+!
+!  3-D heating profile
+!
+          profr_heat = exp(-0.5*(x(l1:l2)/wheat)**2) * (2*pi*wheat**2)**(-1.5)
+        endif
+        profr_heat = luminosity*profr_heat
+!
+!  Pick type of cooling.
+!
+        select case (cooltype)
+        case ('shell2')
+!  
+!  Heating/cooling with two cooling layers on top of each other
+!  
+          profr2_cool= step(x(l1:l2),rcool2,wcool2)
+          profr_cool = step(x(l1:l2),rcool,wcool)-profr2_cool
+!  
+!  Similar to shell2, it cools/heats to defined profile
+!  
+        case ('shell3')
+          profr_cool = step(x(l1:l2),rcool,wcool)
+          profr2_cool = cs2cool + abs(cs2cool2-cs2cool)*step(x(l1:l2),rcool2,wcool2)
+!  
+!  Cool the mean temperature toward a specified profile stored in a file
+!  Cool only downflows toward a specified profile stored in a file
+!  
+        case ('shell','shell_mean_yz','shell_mean_yz2','shell_mean_downflow')
+!
+!  Heating/cooling at shell boundaries.
+!
+          profr_cool = step(x(l1:l2),rcool,wcool)
+!  
+!  Latitude dependent heating/cooling: imposes a latitudinal variation
+!  of temperature proportional to cos(theta) at each depth. deltaT gives
+!  the amplitude of the variation between theta_0 and the equator.
+!  
+        case ('latheat')
+          profr_cool = step(x(l1:l2),rcool1,wcool)-step(x(l1:l2),rcool2,wcool)
+          profr1_cool= 1.+deltaT*cos(2.*pi*(y(m)-y0)/Ly)
+!  
+!  Latitude dependent heating/cooling (see above) plus additional cooling
+!  layer on top.
+!  
+        case ('shell+latheat','shell+latss')
+!  
+!  Enforce latitudinal gradient of entropy plus additional cooling
+!  layer on top.
+!  
+          profr_cool = step(x(l1:l2),rcool1,wcool)-step(x(l1:l2),rcool2,wcool)
+          profr1_cool= 1.+deltaT*cos(2.*pi*(y(m)-y0)/Ly)
+          profr2_cool= step(x(l1:l2),rcool,wcool)
+!  
+        case default
+          call fatal_error('initialize_energy','no such cooltype: '//trim(cooltype))
+        endselect
+        profr_cool=cool*profr_cool
+
+      endif
+
+      if (lconvection_gravx) then
+!
+!  Normalised central heating profile so volume integral = 1.
+!
+        if (nzgrid == 1) then
+!  
+!  2-D heating profile.
+!
+          profx_heat = exp(-0.5*(x(l1:l2)/wheat)**2) * (2*pi*wheat**2)**(-1.)
+        else
+!
+!  3-D heating profile.
+!
+          profx_heat = exp(-0.5*(x(l1:l2)/wheat)**2) * (2*pi*wheat**2)**(-1.5)
+        endif
+        profx_heat = luminosity*profx_heat
+
       endif
 !
 !  Compute profiles of hcond and corresponding grad(log(hcond)).
@@ -5832,7 +5978,7 @@ module Energy
 !  Vertical gravity case: Heat at bottom, cool top layers
 !
       if (lgravz .and. (.not.lcooling_general) .and. &
-          ( (luminosity/=0.) .or. (cool/=0.) .or. (lheat_cool_gravz) ) ) &
+          ( (luminosity/=0.) .or. (cool/=0.) .or. lheat_cool_gravz ) ) &
           call get_heat_cool_gravz(heat,p)
 !
 !  Spherical gravity case: heat at centre, cool outer layers.
@@ -5849,7 +5995,7 @@ module Energy
 !  heat at centre, cool outer layers.
 !
       if (lgravx .and. lspherical_coords .and. (.not.lcooling_general) .and. &
-        (luminosity/=0 .or. cool/=0)) &
+          (luminosity/=0. .or. cool/=0.)) &
         call get_heat_cool_gravx_spherical(heat,p)
 !
 !  In Cartesian coordinates, but with the gravity in the
@@ -6167,31 +6313,21 @@ module Energy
 !
       use Diagnostics, only: sum_mn_name, xysum_mn_name_z
       use Gravity, only: z2
-      use HDF5_IO, only: output_profile
       use Sub, only: step, cubic_step
 !
       type (pencil_case) :: p
       real, dimension (nx) :: heat,prof
-      real :: zbot,ztop
+      real :: ztop
       intent(in) :: p
 !
 !  Define top and bottom positions of the box.
 !
-      zbot=xyz0(3)
       ztop=xyz1(3)
 !
 !  Add heat near bottom (we start by default from heat=0.0)
 !
-!  Heating profile, normalised, so volume integral = 1.
-!  Note: only the 3-D version is coded (Lx *and* Ly /= 0)
-!
-      if (luminosity/=0.0) then
-        if (nygrid==1) then
-          prof = exp(-0.5*((z(n)-zbot)/wheat)**2)/(sqrt(pi/2.)*wheat*Lx)
-        else
-          prof = exp(-0.5*((z(n)-zbot)/wheat)**2)/(sqrt(pi/2.)*wheat*Lx*Ly)
-        endif
-        heat = luminosity*prof
+      if (luminosity/=0.) then
+        heat = profz_heat(n-nghost)
 !
 !  Smoothly switch on heating if required.
 !
@@ -6204,47 +6340,30 @@ module Energy
       if (headtt) print*, 'cooling_profile,z2,wcool,cs2cool=',cooling_profile, z2, wcool, cs2cool
       select case (cooling_profile) !MR: move to initialize
       case ('gaussian')
-        prof = exp(-0.5*((ztop-z(n))/wcool)**2)
       case ('step')
-        prof = step(z(n),z2,wcool)
       case ('step2')
-        prof = step(z(n),zcool,wcool)
       case ('cubic_step')
-        prof = cubic_step(z(n),z2,wcool)
       case ('surfcool')
-        prof = 1.+tanh((z(n)-zcool)/(wcool))
-        heat = heat - cool*prof
+        heat = heat - profz_cool(n-nghost)
       case ('volheat_surfcool')
-        prof = 1.+tanh((z(n)-zcool)/(wcool))
-        heat = heat + cool*prof
-        prof = 1.-(tanh((z(n)-zcool1)/(wcool1)))**2
-        heat = heat + cool1*prof
+        heat = heat + profz_cool(n-nghost) + profz1_cool(n-nghost)
 !
 !  Cooling with a profile linear in z (unstable).
 !
       case ('lin-z')
-        prof=z(n)/wcool
-      case default
-        call fatal_error('get_heat_cool_gravz','no such cooling_profile: '//trim(cooling_profile))
       endselect
 !
       if (lcalc_cs2mz_mean .and..not. lheat_cool_gravz) then
-        heat = heat - cool*prof*(cs2mz(n)-cs2cool)/cs2cool
+        heat = heat - profz_cool(n-nghost)*(cs2mz(n)-cs2cool)/cs2cool
       else
 !
 !AB: the following seems incompatible with what has now been prepared above.
 !    But it breaks the auto-test (samples/conv-slab-noequi), so I enabled it
 !    with lcooling_to_cs2cool=.true. by default.
 !
-        if (lcooling_to_cs2cool) then
-          heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool
-        endif
+        if (lcooling_to_cs2cool) heat = heat - profz_cool(n-nghost)*(p%cs2-cs2cool)/cs2cool
+
       endif
-!
-!  Write out cooling profile (during first time step only) and apply.
-!  MR: Later to be moved to initialization!
-!
-      if (m==m1) call output_profile('cooling_profile',z(n:n),prof(1:1),'z', lsave_name=(n==n1))
 !
 !  Write divergence of cooling flux.
 !
@@ -6291,7 +6410,6 @@ module Energy
 !
 !       prof = 0.5*(1+tanh((r_mn-1.)/wcool))
 !
-      if (rcool==0.) rcool=r_ext
       if (lcylindrical_coords) then
         prof = step(p%rcyl_mn,rcool,wcool)
       else
@@ -6371,25 +6489,11 @@ module Energy
 !
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: heat,prof,prof2,cs2_tmp,fac_tmp
-      real :: prof1
+      real, dimension (nx) :: heat,cs2_tmp,fac_tmp
 !
       intent(in) :: p
 !
-!  Normalised central heating profile so volume integral = 1.
-!
-      if (nzgrid==1) then
-!
-!  2-D heating profile
-!
-        prof = exp(-0.5*(x(l1:l2)/wheat)**2) * (2*pi*wheat**2)**(-1.)
-      else
-        prof = exp(-0.5*(x(l1:l2)/wheat)**2) * (2*pi*wheat**2)**(-1.5)
-!
-!  3-D heating profile
-!
-      endif
-      heat = luminosity*prof
+      heat = profr_heat
       if (headt .and. lfirst .and. ip<=9) call output_pencil('heat.dat',heat,1)
 !
 !  Surface cooling: entropy or temperature
@@ -6402,97 +6506,65 @@ module Energy
 !  Heating/cooling at shell boundaries.
 !
       case ('shell')
-        if (rcool==0.0) rcool=r_ext
-        prof = step(x(l1:l2),rcool,wcool)
-        heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool
+        heat = heat - profr_cool*(p%cs2-cs2cool)/cs2cool
 !
 !  Heating/cooling with two cooling layers on top of each other
 !
       case ('shell2')
-        if (rcool==0.0) rcool=r_ext
-        if (rcool2==0.0) rcool2=r_ext
-        prof2= step(x(l1:l2),rcool2,wcool2)
-        prof = step(x(l1:l2),rcool,wcool)-prof2
-        heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool-cool2*prof2*(p%cs2-cs2cool2)/cs2cool2
+        heat = heat - profr_cool*(p%cs2-cs2cool)/cs2cool-cool2*profr2_cool*(p%cs2-cs2cool2)/cs2cool2
 !
 !  Similar to shell2, it cools/heats to defined profile
 !
       case ('shell3')
-        if (rcool==0.0) rcool=r_ext
-        if (rcool2==0.0) rcool2=r_ext
-        prof = step(x(l1:l2),rcool,wcool)
-        prof2 = cs2cool + abs(cs2cool2-cs2cool)*step(x(l1:l2),rcool2,wcool2)
-        heat = heat - cool*prof*(p%cs2-prof2)/prof2
+        heat = heat - profr_cool*(p%cs2-profr2_cool)/profr2_cool
 !
 !  Cool the mean temperature toward a specified profile stored in a file
 !
       case ('shell_mean_yz')
-        if (rcool==0.0) rcool=r_ext
-        prof = step(x(l1:l2),rcool,wcool)
         if (lcalc_cs2mean) then
-          heat = heat - cool*prof*(cs2mx-cs2cool_x)
+          heat = heat - profr_cool*(cs2mx-cs2cool_x)
         else
-          heat = heat - cool*prof*(p%cs2-cs2cool_x)
+          heat = heat - profr_cool*(p%cs2-cs2cool_x)
         endif
 !
 !  Cool (and not heat) toward a specified profile stored in a file
 !
       case ('shell_mean_yz2')
-        if (rcool==0.0) rcool=r_ext
-        prof = step(x(l1:l2),rcool,wcool)
         cs2_tmp=p%cs2-cs2cool_x
         where (cs2_tmp < 0.) cs2_tmp=0.
-        heat = heat - cool*prof*(p%cs2-cs2cool_x)
+        heat = heat - profr_cool*(p%cs2-cs2cool_x)
 !
 !  Cool only downflows toward a specified profile stored in a file
 !
       case ('shell_mean_downflow')
-        if (rcool==0.0) rcool=r_ext
-        prof = step(x(l1:l2),rcool,wcool)
         cs2_tmp=p%cs2-cs2cool_x
-        where (p%uu(:,1) .gt. 0.)
+        where (p%uu(:,1) > 0.)
           fac_tmp=0.
         elsewhere
           fac_tmp=1.
         endwhere
-        heat = heat - cool*prof*fac_tmp*(p%cs2-downflow_cs2cool_fac*cs2cool_x)
+        heat = heat - profr_cool*fac_tmp*(p%cs2-downflow_cs2cool_fac*cs2cool_x)
 !
 !  Latitude dependent heating/cooling: imposes a latitudinal variation
 !  of temperature proportional to cos(theta) at each depth. deltaT gives
 !  the amplitude of the variation between theta_0 and the equator.
 !
       case ('latheat')
-        if (rcool==0.0) rcool=r_ext
-        prof = step(x(l1:l2),rcool1,wcool)-step(x(l1:l2),rcool2,wcool)
-        prof1= 1.+deltaT*cos(2.*pi*(y(m)-y0)/Ly)
-        heat = heat - cool*prof*(cs2mxy(:,m)-prof1*cs2mx)
+        heat = heat - profr_cool*(cs2mxy(:,m)-profr1_cool*cs2mx)
 !
 !  Latitude dependent heating/cooling (see above) plus additional cooling
 !  layer on top.
 !
       case ('shell+latheat')
-        if (rcool==0.0) rcool=r_ext
-        prof = step(x(l1:l2),rcool1,wcool)-step(x(l1:l2),rcool2,wcool)
-        prof1= 1.+deltaT*cos(2.*pi*(y(m)-y0)/Ly)
-        heat = heat - cool*prof*(cs2mxy(:,m)-prof1*cs2mx)
-!
-        prof2= step(x(l1:l2),rcool,wcool)
-        heat = heat - cool*prof2*(p%cs2-cs2cool)/cs2cool
+        heat = heat - profr_cool*(cs2mxy(:,m)-profr1_cool*cs2mx)
+        heat = heat - cool*profr2_cool*(p%cs2-cs2cool)/cs2cool
 !
 !  Enforce latitudinal gradient of entropy plus additional cooling
 !  layer on top.
 !
       case ('shell+latss')
-        if (rcool==0.0) rcool=r_ext
-        prof = step(x(l1:l2),rcool1,wcool)-step(x(l1:l2),rcool2,wcool)
-        prof1= 1.+deltaT*cos(2.*pi*(y(m)-y0)/Ly)
-        heat = heat - cool*prof*(ssmxy(:,m)-prof1*ssmx(l1+nghost:l2+nghost))
-!
-        prof2= step(x(l1:l2),rcool,wcool)
-        heat = heat - cool*prof2*(p%cs2-cs2cool)/cs2cool
-!
-      case default
-        call fatal_error('get_heat_cool_gravx_spherical','no such cooltype: '//trim(cooltype))
+        heat = heat - profr_cool*(ssmxy(:,m)-profr1_cool*ssmx(l1+nghost:l2+nghost))
+        heat = heat - cool*profr2_cool*(p%cs2-cs2cool)/cs2cool
       endselect
 !
 !  Write divergence of cooling flux.
@@ -6514,26 +6586,12 @@ module Energy
       use Debug_IO, only: output_pencil
       use Sub, only: step
 !
-      type (pencil_case) :: p
+      type (pencil_case), intent(in) :: p
+      real, dimension (nx) :: heat
 !
-      real, dimension (nx) :: heat,prof
-!
-      intent(in) :: p
-!
-!  Normalised central heating profile so volume integral = 1.
-!
-      if (nzgrid == 1) then
-        prof = exp(-0.5*(x(l1:l2)/wheat)**2) * (2*pi*wheat**2)**(-1.)
-!
-!  2-D heating profile.
-!
-      else
-!
-!  3-D heating profile.
-!
-        prof = exp(-0.5*(x(l1:l2)/wheat)**2) * (2*pi*wheat**2)**(-1.5)
-      endif
-      heat = luminosity*prof
+      real, dimension (nx) :: prof
+
+      heat = profx_heat
       if (headt .and. lfirst .and. ip<=9) call output_pencil('heat.dat',heat,1)
 !
 !  Surface cooling: entropy or temperature
@@ -6546,7 +6604,6 @@ module Energy
 !  Heating/cooling at shell boundaries.
 !
       case ('top_layer')
-        if (rcool==0.) rcool=r_ext
         prof = step(x(l1:l2),rcool,wcool)
         heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool
       case default
@@ -8099,12 +8156,18 @@ module Energy
 
     use Syscalls, only: copy_addr
 
-    integer, parameter :: n_pars=3
+    integer, parameter :: n_pars=9
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call copy_addr(chi,p_par(1))
     if (allocated(hcond_prof))    call copy_addr(hcond_prof,p_par(2))      ! (nz)
     if (allocated(dlnhcond_prof)) call copy_addr(dlnhcond_prof,p_par(3))   ! (nz)
+    call copy_addr(profz_cool,p_par(4))    ! (nz)
+    call copy_addr(profz1_cool,p_par(5))   ! (nz)
+    call copy_addr(profr_cool,p_par(6))    ! (nx)
+    call copy_addr(profr1_cool,p_par(7))   ! (nx)
+    call copy_addr(profr2_cool,p_par(8))   ! (nx)
+    call copy_addr(profr_heat,p_par(9))    ! (nx)
 
     endsubroutine pushpars2c
 !***********************************************************************
