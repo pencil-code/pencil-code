@@ -406,6 +406,7 @@ module Interstellar
   character (len=labellen) :: thermal_profile = 'gaussian'
   character (len=labellen) :: velocity_profile= 'gaussian'
   character (len=labellen) :: mass_profile    = 'gaussian'
+  character (len=labellen) :: clabel=' '
 !
 !  Variables required for returning mass to disk given no inflow
 !  boundary condition used in addmassflux
@@ -2073,9 +2074,13 @@ module Interstellar
               endif
               t_next_SNI=SN_list(1,i+1)
               t_next_SNII=SN_list(1,i+1)
-              if (lroot) print"(1x,'check_SN: t_next_SNI on list =',e16.8)",t_next_SNI
               SNfirst=i+1
-              if (lroot) print"(1x,'check_SN: SNfirst at t =',i7,e16.8)",SNfirst,t
+              if (lroot) then
+                open(1,file=trim(datadir)//'/sn_history.dat',position='append')
+                write(1,'("check_SN: t_next_SNI on list =",e16.8)') t_next_SNI
+                write(1,'("check_SN: SNfirst at t =",i7,e16.8)') SNfirst,t
+                close(1)
+              endif
               if (i==nlist-2) then
                 !Check whether the list has been extended since last reading
                 call touch_file('RELOAD')
@@ -2176,20 +2181,18 @@ module Interstellar
             l_SNI=.true.
             exit
           elseif (ierr==iEXPLOSION_TOO_HOT) then
-            if (lroot.and.ip==1963) print &
-                "(1x,'check_SNI: TOO HOT, (x,y,z) =',3f8.4,', rho, rad =',2e11.4)", &
-                SNRs(iSNR)%feat%x, SNRs(iSNR)%feat%y, SNRs(iSNR)%feat%z, &
-                SNRs(iSNR)%site%rho, SNRs(iSNR)%feat%radius
+            clabel = "TOO HOT"
           elseif (ierr==iEXPLOSION_TOO_UNEVEN) then
-            if (lroot.and.ip==1963) print &
-                "(1x,'check_SNI: TOO UNEVEN, (x,y,z) =',3f8.4,', rho, rad =',2e11.4)", &
-                SNRs(iSNR)%feat%x, SNRs(iSNR)%feat%y, SNRs(iSNR)%feat%z,&
-                SNRs(iSNR)%site%rho, SNRs(iSNR)%feat%radius
+            clabel = "TOO UNEVEN"
           elseif (ierr==iEXPLOSION_TOO_RARIFIED) then
-            if (lroot.and.ip==1963) print &
-                "(1x,'check_SNI: TOO RARIFIED, (x,y,z) =',3f8.4,', rho, rad =',2e11.4)",&
+            clabel = "TOO RARIFIED"
+          endif
+          if (lroot) then
+            open(1,file=trim(datadir)//'/sn_history.dat',position='append')
+            write(1,'("check_SNI: '//trim(clabel)//', (x,y,z) =",3f8.4," rho, rad =",2e11.4)') &
                 SNRs(iSNR)%feat%x, SNRs(iSNR)%feat%y, SNRs(iSNR)%feat%z, &
                 SNRs(iSNR)%site%rho, SNRs(iSNR)%feat%radius
+            close(1)
           endif
           center_SN_x=impossible
           center_SN_y=impossible
@@ -2197,7 +2200,11 @@ module Interstellar
         enddo
 !
         if (try_count==0) then
-          if (lroot.and.ip==1963) print*,"check_SNI: 10 RETRIES OCCURED - skipping SNI insertion"
+          if (lroot) then
+            open(1,file=trim(datadir)//'/sn_history.dat',position='append')
+            write(1,'("check_SNI: 10 RETRIES OCCURED - skipping SNI insertion")')
+            close(1)
+          endif
         endif
 !
 !  Free up slots in case loop fails repeatedly over many time steps.
@@ -2268,20 +2275,18 @@ module Interstellar
           if (ierr==iEXPLOSION_OK) then
             exit
           elseif (ierr==iEXPLOSION_TOO_HOT) then
-            if (lroot.and.ip==1963) print &
-                "(1x,'check_SNIIb: TOO HOT, (x,y,z) =',3f8.4,', rho, rad =',2e11.4)", &
+            clabel = "TOO HOT"
+          elseif (ierr==iEXPLOSION_TOO_UNEVEN) then
+            clabel = "TOO UNEVEN"
+          elseif (ierr==iEXPLOSION_TOO_RARIFIED) then
+            clabel = "TOO RARIFIED"
+          endif
+          if (lroot) then
+            open(1,file=trim(datadir)//'/sn_history.dat',position='append')
+            write(1,'("check_SNIIb: '//trim(clabel)//', (x,y,z) =",3f8.4," rho, rad =",2e11.4)') &
                 SNRs(iSNR)%feat%x, SNRs(iSNR)%feat%y, SNRs(iSNR)%feat%z, &
                 SNRs(iSNR)%site%rho, SNRs(iSNR)%feat%radius
-          elseif (ierr==iEXPLOSION_TOO_UNEVEN) then
-            if (lroot.and.ip==1963) print &
-                "(1x,'check_SNIIb: TOO UNEVEN, (x,y,z) =',3f8.4,', rho, rad =',2e11.4)", &
-                SNRs(iSNR)%feat%x, SNRs(iSNR)%feat%y, SNRs(iSNR)%feat%z,&
-                SNRs(iSNR)%site%rho, SNRs(iSNR)%feat%radius
-          elseif (ierr==iEXPLOSION_TOO_RARIFIED) then
-            if (lroot.and.ip==1963) print &
-                "(1x,'check_SNIIb: TOO RARIFIED, (x,y,z) =',3f8.4,', rho, rad =',2e11.4)", &
-                SNRs(iSNR)%feat%x, SNRs(iSNR)%feat%y, SNRs(iSNR)%feat%z,&
-                SNRs(iSNR)%site%rho, SNRs(iSNR)%feat%radius
+            close(1)
           endif
           center_SN_x=impossible
           center_SN_y=impossible
@@ -2289,7 +2294,11 @@ module Interstellar
         enddo
 !
         if (try_count==0) then
-          if (lroot.and.ip==1963) print*,"check_SNIIb: 10 RETRIES OCCURED - skipping SNII insertion"
+          if (lroot) then
+            open(1,file=trim(datadir)//'/sn_history.dat',position='append')
+            write(1,'("check_SNIIb: 10 RETRIES OCCURED - skipping SNII insertion")')
+            close(1)
+          endif
         endif
 !
 !  Free up slots in case loop fails repeatedly over many time steps.
@@ -2315,7 +2324,11 @@ module Interstellar
 !
 !  Pre-determine time for next SNI.
 !
-      if (lroot) print"(1x,'set_next_SNI: Old t_next_SNI =',e15.8)",t_next_SNI
+      if (lroot) then
+        open(1,file=trim(datadir)//'/sn_history.dat',position='append')
+        write(1,'("set_next_SNI: Old t_next_SNI =",e15.8)') t_next_SNI
+        close(1)
+      endif
       if (lreset_ism_seed) then
         seed=seed_reset
         call random_seed_wrapper(PUT=seed)
@@ -2334,7 +2347,11 @@ module Interstellar
       scaled_interval=-log(franSN)*t_interval(SNI)
 !
       t_next_SNI=t+scaled_interval
-      if (lroot) print"(1x,'set_next_SNI: Next SNI at time =',e15.8)",t_next_SNI
+      if (lroot) then
+        open(1,file=trim(datadir)//'/sn_history.dat',position='append')
+        write(1,'("set_next_SNI: Next SNI at time =",e15.8)') t_next_SNI
+        close(1)
+      endif
 !
     endsubroutine set_next_SNI
 !*****************************************************************************
@@ -2358,7 +2375,11 @@ module Interstellar
 !  cloud mass and cloud temperature, but this is very hard to regulate to test
 !  different regimes, so this acts as a contraint on the rate.
 !
-      if (lroot) print "(1x,'check_SNII: Old t_next_SNII =',e15.8)",t_next_SNII
+      if (lroot) then
+        open(1,file=trim(datadir)//'/sn_history.dat',position='append')
+        write(1,'("check_SNII: Old t_next_SNII =",e15.8)') t_next_SNII
+        close(1)
+      endif
       if (lreset_ism_seed) then
         seed=seed_reset
         call random_seed_wrapper(PUT=seed)
@@ -2418,7 +2439,11 @@ module Interstellar
       scaled_interval=-log(franSN)*tmp_interval
 !
       t_next_SNII=t+scaled_interval
-      if (lroot) print"(1x,'check_SNII: Next SNII at time =',e15.8)",t_next_SNII
+      if (lroot) then
+        open(1,file=trim(datadir)//'/sn_history.dat',position='append')
+        write(1,'("check_SNII: Next SNII at time =",e15.8)') t_next_SNII
+        close(1)
+      endif
 !
     endsubroutine set_next_SNII
 !*****************************************************************************
@@ -2490,10 +2515,15 @@ module Interstellar
       if (l_SNI) then
 !        t_interval=solar_mass/(SNI_mass_rate+0.35*SNII_mass_rate)/surface_massII/mu
         t_interval=7.5*solar_mass/SNII_mass_rate/surface_massII/mu
-        if (lroot.and.ip==1963) print"(1x,'set_interval: expected interval for SNI =',e11.4)",t_interval
+        clabel ="SNI"
       else
         t_interval=solar_mass/surface_massII/SNII_mass_rate/mu
-        if (lroot.and.ip==1963) print"(1x,'set_interval: expected interval for SNII =',e11.4)",t_interval
+        clabel ="SNII"
+      endif
+      if (lroot) then
+        open(1,file=trim(datadir)//'/sn_history.dat',position='append')
+        write(1,'("set_interval: expected interval for '//trim(clabel)//' =",e11.4)') t_interval
+        close(1)
       endif
 !
     endsubroutine set_interval
@@ -2575,7 +2605,12 @@ module Interstellar
 !
         if (ip==1963) print*,'check_SNII: cloud_mass,it,iproc=',cloud_mass,it,iproc
 !
-        if (lroot .and. ip ==1963) print*,'check_SNII: cloud_mass_dim,fsum(1):', cloud_mass_dim
+        !if (lroot .and. ip ==1963) print*,'check_SNII: cloud_mass_dim,fsum(1):', cloud_mass_dim
+        if (lroot) then
+          open(1,file=trim(datadir)//'/sn_history.dat',position='append')
+          write(1,'("check_SNII: cloud_mass_dim,fsum(1)=",2e11.4)') cloud_mass_dim
+          close(1)
+        endif
 !
 !  Additional contraint on the interval between SNII events. The total time
 !  elapsed since last SNII is dtsn. Probability of next event increases with
@@ -2594,11 +2629,13 @@ module Interstellar
         endif
         call random_number_wrapper(franSN)
 !
-        if (lroot.and.ip==1963) then
-          if (cloud_mass_dim>0.0.and.franSN<=2.0*prob_SNII) then
-            print*,'check_SNII: freq,prob,rnd,dtsn:',freq_SNII,prob_SNII,franSN,dtsn
-            print*,'check_SNII: frac_heavy,frac_converted,cloud_mass_dim,mass_SN,cloud_tau', &
-                                frac_heavy,frac_converted,cloud_mass_dim,mass_SN,cloud_tau
+        if (cloud_mass_dim>0.0.and.franSN<=2.0*prob_SNII) then
+          if (lroot) then
+            open(1,file=trim(datadir)//'/sn_history.dat',position='append')
+            write(1,'("check_SNII: freq,prob,rnd,dtsn:",2e11.4,2i9,e11.4)') freq_SNII,prob_SNII,franSN,dtsn
+            write(1,'("check_SNII: frac_heavy,frac_converted,cloud_mass_dim,mass_SN,cloud_tau:",2e11.4)') &
+                                                 frac_heavy,frac_converted,cloud_mass_dim,mass_SN,cloud_tau
+            close(1)
           endif
         endif
 !
@@ -2621,7 +2658,11 @@ module Interstellar
 !
 !  Locate the next explosion.
 !
-          if (lroot.and.ip==1963) print*,'check_SNII: cloud_mass_byproc:',cloud_mass_byproc
+          if (lroot) then
+            open(1,file=trim(datadir)//'/sn_history.dat',position='append')
+            write(1,'("check_SNII: cloud_mass_byproc:",e11.4)') cloud_mass_byproc
+            close(1)
+          endif
           call position_SN_bycloudmass(f,cloud_mass_byproc,SNRs(iSNR),preSN,ierr)
 !
 !  If location too hot reset ierr and return to program.
@@ -2802,13 +2843,19 @@ module Interstellar
         if (lh_SNII_adjust) maxrho=mpizspan(2)
       endif Get_zdisk
 !
-      if (lroot.and.ip==1963) print"(1x,'position_SN_gaussianz: zdisk =',f8.4)",zdisk
+      if (lroot) then
+        open(1,file=trim(datadir)//'/sn_history.dat',position='append')
+        write(1,'("position_SN_gaussianz: zdisk =",f8.4)') zdisk
+        close(1)
+      endif
       if (lh_SNII_adjust .and. h_SN==h_SNII) then
         hSN = h_SN * cloud_rho/maxrho
-        if (lroot.and.ip==1963) then
-          print "(1x,'position_SN_gaussianz: hSN vs h_SNII =',2e11.4)",hSN,h_SN
-          print "(1x,'position_SN_gaussianz: maxrho =',e11.4)",maxrho
-          print "(1x,'position_SN_gaussianz: cloud_rho =',e11.4)",cloud_rho
+        if (lroot) then
+          open(1,file=trim(datadir)//'/sn_history.dat',position='append')
+          write(1,'("position_SN_gaussianz: hSN vs h_SNII =",2e11.4)') hSN,h_SN
+          write(1,'("position_SN_gaussianz: maxrho =",e11.4)') maxrho
+          write(1,'("position_SN_gaussianz: cloud_rho =",e11.4)') cloud_rho
+          close(1)
         endif
       else
         hSN = h_SN
@@ -2832,14 +2879,21 @@ module Interstellar
         if (lOB_cluster .and. h_SN==h_SNII) then
 !  If OB clustering for SNII, while within time span of current cluster
           if (t < t_cluster) then ! still using current cluster coords
-            if (ip==1963) print "(1x,'position_SN_gaussianz: cluster lifetime until',e11.4)",t_cluster
+            if (lroot) then
+              open(1,file=trim(datadir)//'/sn_history.dat',position='append')
+              write(1,'("position_SN_gaussianz: cluster lifetime until ",e11.4)') t_cluster
+              close(1)
+            endif
             previous_SNl = int(( x_cluster - xyz0(1) )/Lx)*nxgrid +1
             previous_SNm = int(( y_cluster - xyz0(2) )/Ly)*nygrid +1
             previous_SNn = int(( z_cluster - xyz0(3) )/Lz)*nzgrid +1
             lm_range = 2*int(SN_clustering_radius*nxgrid/Lx)
             if (fran3(1) < p_OB) then ! checks whether the SN is in a cluster
-              if (ip==1963) print "(1x,'position_SN_gaussianz: in cluster x, y, z =',3e11.4)", &
-                                             x_cluster,y_cluster,z_cluster
+              if (lroot) then
+                open(1,file=trim(datadir)//'/sn_history.dat',position='append')
+                write(1,'("position_SN_gaussianz: in cluster x, y, z =",3e11.4)') x_cluster,y_cluster,z_cluster
+                close(1)
+              endif
               i=int(fran3(1)*lm_range/p_OB)+previous_SNl+1
               j=int(fran3(2)*lm_range/p_OB)+previous_SNm+1
               k=int(fran3(3)*lm_range/p_OB)+previous_SNn+1
@@ -3014,10 +3068,12 @@ module Interstellar
         cum_prob_byproc(icpu)=cum_prob_byproc(icpu-1)+cloud_mass_byproc(icpu)
       enddo
       cum_prob_byproc=cum_prob_byproc/cum_prob_byproc(ncpus)
-      if (lroot.and.ip==1963) then
-        print*,'position_SN_bycloudmass: cloud_mass_byproc=',cloud_mass_byproc
-        print*,'position_SN_bycloudmass: cum_prob_byproc=',cum_prob_byproc
-        print*,'position_SN_bycloudmass: cloud_mass=',cloud_mass
+      if (lroot) then
+        open(1,file=trim(datadir)//'/sn_history.dat',position='append')
+        write(1,'("position_SN_bycloudmass: cloud_mass_byproc=",e11.4)') cloud_mass_byproc
+        write(1,'("position_SN_bycloudmass: cum_prob_byproc=",e11.4)') cum_prob_byproc
+        write(1,'("position_SN_bycloudmass: cloud_mass=",e11.4)') cloud_mass
+        close(1)
       endif
 !
 !  Use random number to detemine which processor SN is on.
@@ -3036,8 +3092,11 @@ module Interstellar
           exit
         endif
       enddo
-      if (lroot.and.ip==1963) &
-          print*, 'position_SN_bycloudmass: franSN,SNR%indx%iproc=',franSN,SNR%indx%iproc
+      if (lroot) then
+        open(1,file=trim(datadir)//'/sn_history.dat',position='append')
+        write(1,'("position_SN_bycloudmass: franSN,SNR%indx%iproc=",e11.4)') franSN,SNR%indx%iproc
+        close(1)
+      endif
 !
 !  Use random number to pick SNII location on the right processor.
 !  (No obvious reason to re-use the original random number for this.)
@@ -3110,7 +3169,11 @@ mn_loop:do n=n1,n2
 !
       call mpibcast_int(ierr,SNR%indx%iproc)
       if (ierr==iEXPLOSION_TOO_HOT) then
-        if (lroot.and.ip==1963) print*,'position_SN_bycloudmass: iEXPLOSION_TOO_HOT,ierr',ierr
+        if (lroot) then
+          open(1,file=trim(datadir)//'/sn_history.dat',position='append')
+          write(1,'("position_SN_bycloudmass: iEXPLOSION_TOO_HOT, ierr=",i3)') ierr
+          close(1)
+        endif
         return
       endif
 !
@@ -3232,12 +3295,17 @@ mn_loop:do n=n1,n2
       call eoscalc(ilnrho_lnTT,SNR%site%lnrho,SNR%site%lnTT,yH=SNR%site%yH,ss=SNR%site%ss,ee=SNR%site%ee)
       SNR%site%TT=exp(SNR%site%lnTT)
 !
-      if (lroot.and.ip==1963) then
-        print "(1x,'share_SN_parameters: iproc, l, m, n =',i8,3i6)", &
-              SNR%indx%iproc,SNR%indx%l,SNR%indx%m,SNR%indx%n
-        print "(1x,'share_SN_parameters: x_SN, y_SN, z_SN =',3f8.4)", SNR%feat%x,SNR%feat%y,SNR%feat%z
-        print "(1x,'share_SN_parameters: rho, ss, TT =',3e11.4)", SNR%site%rho,SNR%site%ss,SNR%site%TT
-        print "(1x,'share_SN_parameters: SN radius, SN dr =',2f8.5)", SNR%feat%radius,SNR%feat%dr
+      if (lroot) then
+        open(1,file=trim(datadir)//'/sn_history.dat',position='append')
+        write(1,'("share_sn_parameters: iproc, l, m, n =",i8,3i6)') &
+                             snr%indx%iproc,snr%indx%l,snr%indx%m,snr%indx%n
+        write(1,'("share_sn_parameters: x_sn, y_sn, z_sn =",3f8.4)') &
+                             snr%feat%x,snr%feat%y,snr%feat%z
+        write(1,'("share_sn_parameters: rho, ss, tt =",3e11.4)') &
+                             snr%site%rho,snr%site%ss,snr%site%tt
+        write(1,'("share_sn_parameters: sn radius, sn dr =",2f8.5)') &
+                             snr%feat%radius,snr%feat%dr
+        close(1)
       endif
 !
     endsubroutine share_SN_parameters
@@ -3281,7 +3349,11 @@ mn_loop:do n=n1,n2
 !
 !  Identifier
 !
-      if (lroot.and.ip==1963) print*,'explode_SN: SN type =',SNR%indx%SN_type
+      if (lroot) then
+        open(1,file=trim(datadir)//'/sn_history.dat',position='append')
+        write(1,'("explode_SN: SN type =",i6)') SNR%indx%SN_type
+        close(1)
+      endif
 !
 !  Calculate explosion site mean density.
 !
@@ -3316,13 +3388,15 @@ mn_loop:do n=n1,n2
               Nsol_ratio_best=Nsol_ratio
               radius_best=SNR%feat%radius
             endif
-            if (lroot.and.ip==1963) then
-              print "(1x,'explode_SN: i          ',   i6)",i
-              print "(1x,'explode_SN: radius_min ', f9.6)",radius_min
-              print "(1x,'explode_SN: radius_max ', f9.6)",radius_max
-              print "(1x,'explode_SN: Rmax-Rmin  ',e11.4)",radius_max-radius_min
-              print "(1x,'explode_SN: radius_best', f9.6)",radius_best
-              print "(1x,'explode_SN: Nsol       ',e11.4)",Nsol_ratio*sol_mass_tot/solar_mass
+            if (lroot) then
+              open(1,file=trim(datadir)//'/sn_history.dat',position='append')
+              write(1,'("explode_SN: i          ",   i6)') i
+              write(1,'("explode_SN: radius_min ", f9.6)') radius_min
+              write(1,'("explode_SN: radius_max ", f9.6)') radius_max
+              write(1,'("explode_SN: Rmax-Rmin  ",e11.4)') radius_max-radius_min
+              write(1,'("explode_SN: radius_best", f9.6)') radius_best
+              write(1,'("explode_SN: Nsol       ",e11.4)') Nsol_ratio*sol_mass_tot/solar_mass
+              close(1)
             endif
             if (radius_max-radius_min<SNR%feat%dr*0.01) exit
           enddo
@@ -3346,7 +3420,11 @@ mn_loop:do n=n1,n2
       endif
 
       SNR%feat%rhom=rhom
-      if (lroot.and.ip==1963) print "(1x,'explode_SN: total old kinetic energy =',e12.5)", ekintot
+      if (lroot) then
+        open(1,file=trim(datadir)//'/sn_history.dat',position='append')
+        write(1,'("explode_SN: total old kinetic energy =",e12.5)') ekintot
+        close(1)
+      endif
 !
 !  Calculate effective Sedov evolution time and shell speed diagnostic.
 !
@@ -3360,10 +3438,12 @@ mn_loop:do n=n1,n2
 !
       SNR%feat%t_SF = SFt_norm/SNR%feat%rhom**(4./7)*ampl_SN**(3./14)
       RPDS=SFr_norm*ampl_SN**(2./7)/SNR%feat%rhom**(3./7)
-      if (lroot.and.ip==1963) then
-        print "(1x,'explode_SN: Shell forming start t_SF',e12.5)",SNR%feat%t_SF
-        print "(1x,'explode_SN: Elapsed shell formation',e13.5)",SNR%feat%t_sedov-SNR%feat%t_SF
-        print "(1x,'explode_SN: Shell forming radius RPDS vs radius',2f7.4)",RPDS,SNR%feat%radius
+      if (lroot) then
+        open(1,file=trim(datadir)//'/sn_history.dat',position='append')
+        write(1,'("explode_SN: Shell forming start t_SF",e12.5)') SNR%feat%t_SF
+        write(1,'("explode_SN: Elapsed shell formation",e13.5)') SNR%feat%t_sedov-SNR%feat%t_SF
+        write(1,'("explode_SN: Shell forming radius RPDS vs radius",2f7.4)') RPDS,SNR%feat%radius
+        close(1)
       endif
 !
 !  Calculate the SN kinetic energy fraction for shell formation energy
@@ -3380,10 +3460,17 @@ mn_loop:do n=n1,n2
         frackin=min(kin_max,frackin)
         etmp=(1.-frackin-frac_ecr)*ampl_SN
         ktmp=frackin*ampl_SN
-        if (lroot.and.ip==1963) print "(1x,'explode_SN: Reset fractions SNE frackin',f7.4)",frackin
+        if (lroot) then
+          open(1,file=trim(datadir)//'/sn_history.dat',position='append')
+          write(1,'("explode_SN: Reset fractions SNE frackin",f7.4)') frackin
+          close(1)
+        endif
       endif
-      if (lroot.and.ip==1963) print &
-          "(1x,'explode_SN: SNE fractional energy kampl_SN, eampl_SN',2e9.2)", ktmp, etmp
+      if (lroot) then
+        open(1,file=trim(datadir)//'/sn_history.dat',position='append')
+        write(1,'("explode_SN: SNE fractional energy kampl_SN, eampl_SN",2e9.2)') ktmp, etmp
+        close(1)
+      endif
 !
 !  Adjust radial scale if different from SNR%feat%radius.
 !
@@ -3408,7 +3495,11 @@ mn_loop:do n=n1,n2
             ecr_SN=campl_SN/(cnorm_gaussian_SN(dimensionality)*width_energy**dimensionality)
         c_SNmax=ampl_SN/(cnorm_gaussian_SN(dimensionality)*rfactor_SN*SNR%feat%dr**dimensionality)
       endif
-      if (lroot.and.ip==1963) print "(1x,'explode_SN: c_SN =',e11.4)",c_SN
+      if (lroot) then
+        open(1,file=trim(datadir)//'/sn_history.dat',position='append')
+        write(1,'("explode_SN: c_SN =",e11.4)') c_SN
+        close(1)
+      endif
 !
 !  Mass insertion normalization.
 !
@@ -3423,7 +3514,11 @@ mn_loop:do n=n1,n2
       else
         cmass_SN=0.
       endif
-      if (lroot.and.ip==1963) print "(1x,'explode_SN: cmass_SN =',e12.5)",cmass_SN
+      if (lroot) then
+        open(1,file=trim(datadir)//'/sn_history.dat',position='append')
+        write(1,'("explode_SN: cmass_SN =",e11.4)') cmass_SN
+        close(1)
+      endif
 !
 !  Velocity insertion normalization.
 !  26-aug-10/fred:
@@ -3444,12 +3539,19 @@ mn_loop:do n=n1,n2
                             SNR%feat%rhom*vnorm_gaussian_SN(dimensionality)* &
                             width_velocity**dimensionality))
         endif
-        if (lroot) print*,'explode_SN: cvelocity_SN is uu_sedov, velocity profile = ', &
-                          velocity_profile
+        if (lroot) then
+          open(1,file=trim(datadir)//'/sn_history.dat',position='append')
+          write(1,'("explode_SN: cvelocity_SN is uu_sedov, velocity profile =",a11)') velocity_profile
+          close(1)
+        endif
       else
         cvelocity_SN=0.
       endif
-      if (lroot.and.ip==1963) print"(1x,'explode_SN: cvelocity_SN =',e12.5)",cvelocity_SN
+      if (lroot) then
+        open(1,file=trim(datadir)//'/sn_history.dat',position='append')
+        write(1,'("explode_SN: cvelocity_SN =",e12.5)') cvelocity_SN
+        close(1)
+      endif
 !
 !  Validate the explosion.
 !
@@ -3582,7 +3684,11 @@ mnloop:do n=n1,n2
 !
       if (lSN_coolingmass) then
         call mpiallreduce_max(max_cmass,cmass_SN)
-        if (lroot.and.ip==1963) print "(1x,'explode_SN: validating cmass_SN =',e12.5)",cmass_SN
+        if (lroot) then
+          open(1,file=trim(datadir)//'/sn_history.dat',position='append')
+          write(1,'("explode_SN: validating cmass_SN =",e12.5)') cmass_SN
+          close(1)
+        endif
         if (cmass_SN>0) then
           SNR%feat%MM=0.
           !$omp target if(loffload) map(tofrom: SNR) has_device_addr(f)  ! gives: m,n FG global width_mass, cmass_SN
@@ -3602,16 +3708,22 @@ mnloop:do n=n1,n2
           SNR%feat%MM=dmpi2(1)
           SNR%feat%EE=dmpi2(2) !without added kinetic energy
           if (SNR%feat%MM>Nsol_added*solar_mass) then
-            if (lroot.and.ip==1963) print '("explode_SN: SNR%feat%MM > ",f5.1," solar mass",f12.4)', &
-                                          Nsol_added,SNR%feat%MM/solar_mass
-            if (lroot.and.ip==1963) print'("explode_SN: SNR%feat%EE = ",f8.4," SNE")',SNR%feat%EE/ampl_SN
+            if (lroot) then
+              open(1,file=trim(datadir)//'/sn_history.dat',position='append')
+              write(1,'("explode_SN: SNR%feat%MM > ",f5.1," solar mass",f12.4)') Nsol_added,SNR%feat%MM/solar_mass
+              write(1,'("explode_SN: SNR%feat%EE = ",f8.4," SNE")') SNR%feat%EE/ampl_SN
+              close(1)
+            endif
             ierr=iEXPLOSION_TOO_HOT
             if (.not.lSN_list) return
             cmass_SN = cmass_SN*Nsol_added*solar_mass/SNR%feat%MM
           else
             ierr=iEXPLOSION_OK
-            if (lroot.and.ip==1963) &
-                print "(1x,'explode_SN: SNR%feat%MM = ',f8.4,' solar mass')",SNR%feat%MM/solar_mass
+            if (lroot) then
+              open(1,file=trim(datadir)//'/sn_history.dat',position='append')
+              write(1,'("explode_SN: SNR%feat%MM =",f8.4," solar mass")') SNR%feat%MM/solar_mass
+              close(1)
+            endif
           endif
         endif
         call get_props_check(f,SNR,rhom,ekintot_new,cvelocity_SN,cmass_SN)
@@ -3650,10 +3762,12 @@ mnloop:do n=n1,n2
 !
 !  Remnant parameters pass, so now implement the explosion
 !
-      if (lroot.and.ip==1963) then
-        print "(1x,'explode_SN:         c_SN finally =',e12.5)",c_SN
-        print "(1x,'explode_SN:     cmass_SN finally =',e12.5)",cmass_SN
-        print "(1x,'explode_SN: cvelocity_SN finally =',e12.5)",cvelocity_SN
+      if (lroot) then
+        open(1,file=trim(datadir)//'/sn_history.dat',position='append')
+        write(1,'("explode_SN:         c_SN finally =",e12.5)') c_SN
+        write(1,'("explode_SN:     cmass_SN finally =",e12.5)') cmass_SN
+        write(1,'("explode_SN: cvelocity_SN finally =",e12.5)') cvelocity_SN
+        close(1)
       endif
 
       SNR%feat%EE=0.
@@ -3748,9 +3862,11 @@ mnloop:do n=n1,n2
       !$omp end target
 !
       call get_properties(f,SNR,rhom,ekintot_new,rhomin,ierr)
-      if (lroot.and.ip==1963) then
-        print"(1x,'explode_SN: total new kinetic energy =',e12.5)", ekintot_new
-        print"(1x,'explode_SN: total kinetic energy change =',e12.5)",ekintot_new-ekintot
+      if (lroot) then
+        open(1,file=trim(datadir)//'/sn_history.dat',position='append')
+        write(1,'("explode_SN: total new kinetic energy    =",e12.5)') ekintot_new
+        write(1,'("explode_SN: total kinetic energy change =",e12.5)') ekintot_new-ekintot
+        close(1)
       endif
 !
 !  Sum and share diagnostics etc. amongst processors.
@@ -3766,11 +3882,13 @@ mnloop:do n=n1,n2
 ! FAG need to consider effect of CR and fcr on total energy for data collection
 ! and the energy budget applied to the SNR similar to kinetic energy?
 !
-      if (lroot.and.ip==1963) then
-        print "(1x,'explode_SN: SNR%feat%MM = ',f8.4)",SNR%feat%MM/solar_mass
-        print "(1x,'explode_SN: SNR%feat%EE = ',f8.4)",SNR%feat%EE/ampl_SN
-        print "(1x,'explode_SN: SNR%feat%EK = ',f8.4)",(ekintot_new-ekintot)/ampl_SN
-        print "(1x,'explode_SN: SNR%feat%CR = ',f8.4)",SNR%feat%CR/ampl_SN
+      if (lroot) then
+        open(1,file=trim(datadir)//'/sn_history.dat',position='append')
+        write(1,'("explode_SN: SNR%feat%MM =",f8.4)') SNR%feat%MM/solar_mass
+        write(1,'("explode_SN: SNR%feat%EE =",f8.4)') SNR%feat%EE/ampl_SN
+        write(1,'("explode_SN: SNR%feat%EK =",f8.4)') (ekintot_new-ekintot)/ampl_SN
+        write(1,'("explode_SN: SNR%feat%CR =",f8.4)') SNR%feat%CR/ampl_SN
+        close(1)
       endif
       if (.not. lSN_list) then
         if (SNR%indx%SN_type==1) then
@@ -3793,9 +3911,12 @@ mnloop:do n=n1,n2
       if (lroot) then
 !
         if (lOB_cluster) then
-          print "(1x,'explode_SN: t_cluster',e12.5)", t_cluster
-          print "(1x,'explode_SN: x_cluster', f8.4)", x_cluster
-          print "(1x,'explode_SN: z_cluster', f8.4)", z_cluster
+          open(1,file=trim(datadir)//'/sn_history.dat',position='append')
+          write(1,'("explode_SN: t_cluster",e12.5)') t_cluster
+          write(1,'("explode_SN: x_cluster", f8.4)') x_cluster
+          write(1,'("explode_SN: y_cluster", f8.4)') y_cluster
+          write(1,'("explode_SN: z_cluster", f8.4)') z_cluster
+          close(1)
         endif
 !
         if (lfirst_warning) then
@@ -3807,22 +3928,25 @@ mnloop:do n=n1,n2
           'continuation of old data may need header and extra columns appended')
         endif
 
-        open(1,file=trim(datadir)//'/sn_series.dat',position='append')
         print "(1x,'explode_SN:    step, time = ',i8,e12.5)",it,t
-        print "(1x,'explode_SN:          dVol = ',   e12.5)",dVol_glob
-        print "(1x,'explode_SN:       SN type = ',      i3)",SNR%indx%SN_type
-        print "(1x,'explode_SN: proc, l, m, n = ',     4i6)",SNR%indx%iproc,SNR%indx%l,SNR%indx%m,SNR%indx%n
-        print "(1x,'explode_SN:       x, y, z = ',   3f8.4)",SNR%feat%x,SNR%feat%y,SNR%feat%z
-        print "(1x,'explode_SN:remnant radius = ',    f8.4)",SNR%feat%radius
-        print "(1x,'explode_SN:       rho, TT = ',  2e11.4)",SNR%site%rho,SNR%site%TT
-        print "(1x,'explode_SN:    maximum TT = ',   e12.5)",maxTT
-        print "(1x,'explode_SN:  Mean density = ',   e12.5)",SNR%feat%rhom
-        print "(1x,'explode_SN:  Total energy = ',   e12.5)",SNR%feat%EE+SNR%feat%CR
-        print "(1x,'explode_SN:    CR energy  = ',   e12.5)",SNR%feat%CR
-        print "(1x,'explode_SN:    Added mass = ',   e12.5)",SNR%feat%MM/solar_mass
-        print "(1x,'explode_SN:  Ambient Nsol = ',   e12.5)",site_mass/solar_mass
-        print "(1x,'explode_SN:    Sedov time = ',   e12.5)", SNR%feat%t_sedov
-        print "(1x,'explode_SN:   Shell speed = ',   e12.5)",uu_sedov
+        open(1,file=trim(datadir)//'/sn_history.dat',position='append')
+        write(1,'("explode_SN:     step, time =",i8,e12.5)') it,t
+        write(1,'("explode_SN:           dVol =",   e12.5)') dVol_glob
+        write(1,'("explode_SN:        SN type =",      i3)') SNR%indx%SN_type
+        write(1,'("explode_SN:  proc, l, m, n =",     4i6)') SNR%indx%iproc,SNR%indx%l,SNR%indx%m,SNR%indx%n
+        write(1,'("explode_SN:        x, y, z =",   3f8.4)') SNR%feat%x,SNR%feat%y,SNR%feat%z
+        write(1,'("explode_SN: remnant radius =",    f8.4)') SNR%feat%radius
+        write(1,'("explode_SN:        rho, TT =",  2e11.4)') SNR%site%rho,SNR%site%TT
+        write(1,'("explode_SN:     maximum TT =",   e12.5)') maxTT
+        write(1,'("explode_SN:   Mean density =",   e12.5)') SNR%feat%rhom
+        write(1,'("explode_SN:   Total energy =",   e12.5)') SNR%feat%EE+SNR%feat%CR
+        write(1,'("explode_SN:     CR energy  =",   e12.5)') SNR%feat%CR
+        write(1,'("explode_SN:     Added mass =",   e12.5)') SNR%feat%MM/solar_mass
+        write(1,'("explode_SN:   Ambient Nsol =",   e12.5)') site_mass/solar_mass
+        write(1,'("explode_SN:     Sedov time =",   e12.5)') SNR%feat%t_sedov
+        write(1,'("explode_SN:    Shell speed =",   e12.5)') uu_sedov
+        close(1)
+        open(1,file=trim(datadir)//'/sn_series.dat',position='append')
         write(1,'(i10,E16.8,5i6,16E13.5)') &
             it, t, SNR%indx%SN_type, SNR%indx%iproc, SNR%indx%l, SNR%indx%m, &
             SNR%indx%n, SNR%feat%x, SNR%feat%y, SNR%feat%z, SNR%site%rho, &
@@ -3848,18 +3972,18 @@ mnloop:do n=n1,n2
       if (present(ierr).and.lSN_list) then
         select case (ierr)
           case (iEXPLOSION_TOO_HOT)
-            if (lroot.and.ip==1963) print &
-                "(1x,'explode_SN: TOO HOT, (x,y,z) =',3f8.4,', rho, rad =',2e11.4)", &
-                SNR%feat%x, SNR%feat%y, SNR%feat%z,SNR%site%rho, SNR%feat%radius
+            clabel = "TOO HOT"
           case (iEXPLOSION_TOO_UNEVEN)
-            if (lroot.and.ip==1963) print &
-                "(1x,'explode_SN: TOO UNEVEN, (x,y,z) =',3f8.4,', rho, rad =',2e11.4)", &
-                SNR%feat%x, SNR%feat%y, SNR%feat%z,SNR%site%rho, SNR%feat%radius
+            clabel = "TOO UNEVEN"
           case (iEXPLOSION_TOO_RARIFIED)
-            if (lroot.and.ip==1963) print &
-                "(1x,'explode_SN: TOO RARIFIED, (x,y,z) =',3f8.4,', rho, rad =',2e11.4)", &
-                SNR%feat%x, SNR%feat%y, SNR%feat%z,SNR%site%rho, SNR%feat%radius
+            clabel = "TOO RARIFIED"
         endselect
+        if (lroot) then
+          open(1,file=trim(datadir)//'/sn_history.dat',position='append')
+          write(1,'("explode_SN: '//trim(clabel)//', (x,y,z) =",3f8.4," rho, rad =",2e11.4)') &
+              SNR%feat%x, SNR%feat%y, SNR%feat%z,SNR%site%rho, SNR%feat%radius
+          close(1)
+        endif
       endif
 !
       if (present(ierr)) ierr=iEXPLOSION_OK
@@ -3959,12 +4083,14 @@ mnloop:do n=n1,n2
       call mpiallreduce_max(rhotmp,rhomax)
       if (present(ierr)) then
         if (rhomax/rhomin > SN_rho_ratio) ierr=iEXPLOSION_TOO_UNEVEN
-        if (lroot.and.ip==1963) then
-          print "(1x,'get_properties: rhomax =',e11.4)",rhomax
-          print "(1x,'get_properties: rhomin =',e11.4)",rhomin
-          print "(1x,'get_properties: ierr   =',   i3)",ierr
-          print "(1x,'get_properties: radius =', f8.4)",remnant%feat%radius
-          print "(1x,'get_properties: ekintot =', f8.4)",ekintot
+        if (lroot) then
+          open(1,file=trim(datadir)//'/sn_history.dat',position='append')
+          write(1,'("get_properties: rhomax  =",e11.4)') rhomax
+          write(1,'("get_properties: rhomin  =",e11.4)') rhomin
+          write(1,'("get_properties: ierr    =",   i3)') ierr
+          write(1,'("get_properties: radius  =", f8.4)') remnant%feat%radius
+          write(1,'("get_properties: ekintot =", f8.4)') ekintot
+          close(1)
         endif
       endif
 !
@@ -4056,7 +4182,11 @@ mnloop:do n=n1,n2
       else
         rhom=tmp2(1)*0.75*pi_1/radius2**1.5
       endif
-      if (lroot.and.ip==1963) print"(1x,'get_props_check: rhom =',e11.4,' ekintot =',f8.4)",rhom,ekintot
+      if (lroot) then
+        open(1,file=trim(datadir)//'/sn_history.dat',position='append')
+        write(1,'("get_props_check: rhom =",e11.4," ekintot =",f8.4)') rhom,ekintot
+        close(1)
+      endif
 !
     endsubroutine get_props_check
 !*****************************************************************************
@@ -4540,14 +4670,22 @@ mnloop:do n=n1,n2
 !
 !  Pre-determine time for next OB.
 !
-      if (lroot) print"(1x,'set_next_OB: Old t_next_OB =',e11.4)",t_cluster
+      if (lroot) then
+        open(1,file=trim(datadir)//'/sn_history.dat',position='append')
+        write(1,'("set_next_OB: Old t_next_OB =",e11.4)') t_cluster
+        close(1)
+      endif
       call random_number_wrapper(franSN)
 !
 !  Time interval follows Poisson process with rate 1/t_interval_OB
 !
       t_cluster=t-log(franSN)*t_interval_OB
 !
-      if (lroot) print"(1x,'set_next_OB: Next OB at time =',e11.4)",t_cluster
+      if (lroot) then
+        open(1,file=trim(datadir)//'/sn_history.dat',position='append')
+        write(1,'("set_next_OB: Next OB at time =",e11.4)') t_cluster
+        close(1)
+      endif
 !
     endsubroutine set_next_OB
 !*****************************************************************************
