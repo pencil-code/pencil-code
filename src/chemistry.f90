@@ -833,10 +833,12 @@ logical, pointer :: ldustnucleation, lpartnucleation
             lpenc_requested(i_mukmu1) = .true.
             lpenc_requested(i_glnmu) = .true.
           endif
-!          if (lcorr_vel) then
-            lpenc_requested(i_gdiffk) = .true.
-            lpenc_requested(i_g2XXk) = .true.
-!          endif
+          lpenc_requested(i_gdiffk) = .true.
+          lpenc_requested(i_g2XXk) = .true.
+          lpenc_requested(i_glnrho) = .true.
+          if (lcorr_vel) then
+            lpenc_requested(i_grho) = .true.
+          endif
         endif
 !
       endif
