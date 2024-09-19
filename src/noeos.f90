@@ -13,7 +13,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED ss; gss(3); ee; pp; lnTT; cs2; cv1; cp1; cp1tilde
-! PENCILS PROVIDED glnTT(3); TT; TT1; cp; cv; gTT(3); mu1; glnmu(3)
+! PENCILS PROVIDED glnTT(3); TT; TT1; cp; cv; gTT(3); mu1; glnmu(3); gmu1(3)
 ! PENCILS PROVIDED yH; hss(3,3); hlnTT(3,3); del2ss; del6ss; del2TT; del2lnTT; del6TT; del6lnTT
 ! PENCILS PROVIDED glnmumol(3); csvap2; rho_anel
 ! PENCILS PROVIDED rho1gpp(3)

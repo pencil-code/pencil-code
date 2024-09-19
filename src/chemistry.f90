@@ -833,10 +833,10 @@ logical, pointer :: ldustnucleation, lpartnucleation
             lpenc_requested(i_mukmu1) = .true.
             lpenc_requested(i_glnmu) = .true.
           endif
-          if (lcorr_vel) then
+!          if (lcorr_vel) then
             lpenc_requested(i_gdiffk) = .true.
             lpenc_requested(i_g2XXk) = .true.
-          endif
+!          endif
         endif
 !
       endif
@@ -3114,7 +3114,7 @@ logical, pointer :: ldustnucleation, lpartnucleation
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
-      real, dimension(nx,3) :: gchemspec, dk_D, sum_diff=0., corr_vel, tmp1
+      real, dimension(nx,3) :: dk_D, sum_diff=0., corr_vel, tmp1
       real, dimension(nx) :: ugchemspec, sum_DYDT, sum_dhhk=0., gXkgDk, gXkgmu1
       real, dimension(nx) :: sum_dk_ghk, dk_dhhk, sum_hhk_DYDt_reac, div_corr_vel
       real, dimension(nx) :: div_rho_Vc_Yk, rho_Yk_divVc, vc_grad_rho_yk
@@ -3170,8 +3170,8 @@ logical, pointer :: ldustnucleation, lpartnucleation
 !  advection terms
 !
         if (lhydro .and. ladvection .and.(.not. lchemonly)) then
-          call grad(f,ichemspec(k),gchemspec)
-          call dot_mn(p%uu,gchemspec,ugchemspec)
+!          call grad(f,ichemspec(k),gchemspec)
+          call dot_mn(p%uu,p%gYYk(:,:,k),ugchemspec)
           if (lmobility) ugchemspec = ugchemspec*mobility(k)
           df(l1:l2,m,n,ichemspec(k)) = df(l1:l2,m,n,ichemspec(k))-ugchemspec
         endif
@@ -3265,9 +3265,9 @@ logical, pointer :: ldustnucleation, lpartnucleation
 !
               if (ldiffusion2) then
                 if (lDiff_fick) then
-                  call grad(f,ichemspec(k),gchemspec)
+                  !call grad(f,ichemspec(k),gchemspec)
                   do i = 1,3
-                    dk_D(:,i) = gchemspec(:,i)*p%Diff_penc_add(:,k)
+                    dk_D(:,i) = p%gYYk(:,i,k)*p%Diff_penc_add(:,k)
                   enddo
                 elseif (lFlux_simple) then
                   do i = 1,3
@@ -5169,7 +5169,7 @@ logical, pointer :: ldustnucleation, lpartnucleation
       type (pencil_case) :: p
 
       real, dimension(nx) :: Xk_Yk
-      real, dimension(nx,3) :: gDiff_full_add, gchemspec, gXk_Yk
+      real, dimension(nx,3) :: gXk_Yk
       real, dimension(nx) :: del2chemspec
       real, dimension(nx) :: diff_op, diff_op1, diff_op2, diff_op3, del2XX, del2lnpp
       real, dimension(nx) :: glnpp_gXkYk, glnrho_glnpp, gD_glnpp, glnpp_glnpp
@@ -5195,9 +5195,9 @@ logical, pointer :: ldustnucleation, lpartnucleation
             diff_k = chem_diff*chem_diff_prefactor(k)
             if (headtt) print*,'dchemistry_dt: k,diff_k=',k,diff_k
             call del2(f,ichemspec(k),del2chemspec)
-            call grad(f,ichemspec(k),gchemspec)
+            !call grad(f,ichemspec(k),gchemspec)
             if (ldensity) then
-              call dot_mn(p%glnrho,gchemspec,diff_op)
+              call dot_mn(p%glnrho,p%gYYk(:,:,k),diff_op)
               diff_op = diff_op+del2chemspec
             else
               diff_op = del2chemspec
@@ -5210,31 +5210,6 @@ logical, pointer :: ldustnucleation, lpartnucleation
 !
           if (ldiffusion) then
 !
-!  Calculate diffusion coefficient gradients gDiff_full_add in 3 cases:
-!    1) Simplified diffusion coefficients
-!    2) Constant Lewis numbers and heat conductivity
-!    3) Detailed transport
-!
-            if (lDiff_simple) then
-              do i = 1,3
-                gDiff_full_add(:,i) = p%Diff_penc_add(:,k) *(0.7*p%glnTT(:,i)-p%glnrho(:,i))
-              enddo
-            elseif (lDiff_lewis .and. lew_exist) then
-              do i = 1,3
-                gDiff_full_add(:,i) = &
-                    (p%glambda(:,i)*p%lambda1(:)-p%glncp(:,i)-p%glnrho(:,i)) &
-                    *p%Diff_penc_add(:,k)
-              enddo
-            elseif (lDiff_lewis .and. l1step_test) then
-              do i = 1,3
-                gDiff_full_add(:,i) = &
-                    (p%glambda(:,i)*p%lambda1(:)-p%glncp(:,i)-p%glnrho(:,i)) &
-                    *p%Diff_penc_add(:,k)
-              enddo
-            else
-              call grad(Diff_full_add(:,:,:,k),gDiff_full_add)
-            endif
-!
 !  Calculate the terms needed by the diffusion fluxes in 3 cases:
 !    1) Fickian diffusion law (gradient of species MASS fractions)
 !    2) Simplified fluxes (gradient of species MOLAR fractions)
@@ -5242,18 +5217,18 @@ logical, pointer :: ldustnucleation, lpartnucleation
 !
             if (lDiff_fick) then
               call del2(f,ichemspec(k),del2chemspec)
-              call grad(f,ichemspec(k),gchemspec)
-              call dot_mn(p%glnrho,gchemspec,diff_op1)
-              call dot_mn(gDiff_full_add,gchemspec,diff_op2)
+!              call grad(f,ichemspec(k),gchemspec)
+              call dot_mn(p%glnrho,p%gYYk(:,:,k),diff_op1)
+              call dot_mn(p%gdiffk(:,:,k),p%gYYk(:,:,k),diff_op2)
             elseif (lFlux_simple) then
-              call del2(XX_full(:,:,:,k),del2XX)
+              !call del2(XX_full(:,:,:,k),del2XX)
               call dot_mn(p%glnrho,p%gXXk(:,:,k),diff_op1)
-              call dot_mn(gDiff_full_add,p%gXXk(:,:,k),diff_op2)
+              call dot_mn(p%gdiffk(:,:,k),p%gXXk(:,:,k),diff_op2)
               call dot_mn(p%glnmu,p%gXXk(:,:,k),diff_op3)
             else
-              call del2(XX_full(:,:,:,k),del2XX)
+              !call del2(XX_full(:,:,:,k),del2XX)
               call dot_mn(p%glnrho,p%gXXk(:,:,k),diff_op1)
-              call dot_mn(gDiff_full_add,p%gXXk(:,:,k),diff_op2)
+              call dot_mn(p%gdiffk(:,:,k),p%gXXk(:,:,k),diff_op2)
               call dot_mn(p%glnmu,p%gXXk(:,:,k),diff_op3)
               call dot_mn(p%glnpp,p%glnpp,glnpp_glnpp)
               do i = 1,3
@@ -5262,7 +5237,7 @@ logical, pointer :: ldustnucleation, lpartnucleation
               del2lnpp = p%del2pp/p%pp-glnpp_glnpp
               Xk_Yk = XX_full(l1:l2,m,n,k)-f(l1:l2,m,n,ichemspec(k))
               call dot_mn(p%glnrho,p%glnpp,glnrho_glnpp)
-              call dot_mn(gDiff_full_add,p%glnpp,gD_glnpp)
+              call dot_mn(p%gdiffk(:,:,k),p%glnpp,gD_glnpp)
               call dot_mn(gXk_Yk,p%glnpp,glnpp_gXkYk)
               call dot_mn(p%glnmu,p%glnpp,glnmu_glnpp)
             endif
@@ -5278,17 +5253,17 @@ logical, pointer :: ldustnucleation, lpartnucleation
             if (lDiff_fick) then
               p%DYDt_diff(:,k) = p%Diff_penc_add(:,k)*(del2chemspec+diff_op1) + diff_op2
               do i = 1,3
-                dk_D(:,i) = p%Diff_penc_add(:,k)*gchemspec(:,i)
+                dk_D(:,i) = p%Diff_penc_add(:,k)*p%gYYk(:,i,k)
               enddo
             elseif (lFlux_simple) then
               p%DYDt_diff(:,k) = p%Diff_penc_add(:,k)*p%mukmu1(:,k) &
-                  *(del2XX+diff_op1-diff_op3) + p%mukmu1(:,k)*diff_op2
+                  *(p%g2XXk(:,k)+diff_op1-diff_op3) + p%mukmu1(:,k)*diff_op2
               do i = 1,3
                 dk_D(:,i) = p%Diff_penc_add(:,k)*p%mukmu1(:,k)*p%gXXk(:,i,k)
               enddo
             else
               p%DYDt_diff(:,k) = p%Diff_penc_add(:,k)*p%mukmu1(:,k) &
-                   *(del2XX+diff_op1-diff_op3)+ &
+                   *(p%g2XXk(:,k)+diff_op1-diff_op3)+ &
                    p%mukmu1(:,k)*diff_op2
               !
               ! Include terms due to pressure gradient
@@ -5319,8 +5294,8 @@ logical, pointer :: ldustnucleation, lpartnucleation
 !
       if (ldiffusion .and. ldiff_corr) then
         do k = 1,nchemspec
-          call grad(f,ichemspec(k),gchemspec)
-          call dot_mn(gchemspec(:,:),sum_diff,gY_sumdiff)
+          !call grad(f,ichemspec(k),gchemspec)
+          call dot_mn(p%gYYk(:,:,k),sum_diff,gY_sumdiff)
           p%DYDt_diff(:,k) = p%DYDt_diff(:,k) - (gY_sumdiff+f(l1:l2,m,n,ichemspec(k))*sum_gdiff(:))
         enddo
       endif
