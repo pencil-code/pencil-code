@@ -651,6 +651,15 @@ module Hydro
   integer :: idiag_ekinph1mz=0     ! XYAVG_DOC: $\left<{1\over2}\varrho\uv^2\right>_{xy}|_{\rm phase 1}$
   integer :: idiag_ekinph2mz=0     ! XYAVG_DOC: $\left<{1\over2}\varrho\uv^2\right>_{xy}|_{\rm phase 2}$
   integer :: idiag_ekinph3mz=0     ! XYAVG_DOC: $\left<{1\over2}\varrho\uv^2\right>_{xy}|_{\rm phase 3}$
+  integer :: idiag_oxph1mz=0       ! XYAVG_DOC: $\left< \omega_x \right>_{xy}|_{\rm phase 1}$
+  integer :: idiag_oxph2mz=0       ! XYAVG_DOC: $\left< \omega_x \right>_{xy}|_{\rm phase 2}$
+  integer :: idiag_oxph3mz=0       ! XYAVG_DOC: $\left< \omega_x \right>_{xy}|_{\rm phase 3}$
+  integer :: idiag_oyph1mz=0       ! XYAVG_DOC: $\left< \omega_y \right>_{xy}|_{\rm phase 1}$
+  integer :: idiag_oyph2mz=0       ! XYAVG_DOC: $\left< \omega_y \right>_{xy}|_{\rm phase 2}$
+  integer :: idiag_oyph3mz=0       ! XYAVG_DOC: $\left< \omega_y \right>_{xy}|_{\rm phase 3}$
+  integer :: idiag_ozph1mz=0       ! XYAVG_DOC: $\left< \omega_z \right>_{xy}|_{\rm phase 1}$
+  integer :: idiag_ozph2mz=0       ! XYAVG_DOC: $\left< \omega_z \right>_{xy}|_{\rm phase 2}$
+  integer :: idiag_ozph3mz=0       ! XYAVG_DOC: $\left< \omega_z \right>_{xy}|_{\rm phase 3}$
   integer :: idiag_ouph1mz=0       ! XYAVG_DOC: $\left<\boldsymbol{\omega}\cdot\uv\right>_{xy}|_{\rm phase 1}$
   integer :: idiag_ouph2mz=0       ! XYAVG_DOC: $\left<\boldsymbol{\omega}\cdot\uv\right>_{xy}|_{\rm phase 2}$
   integer :: idiag_ouph3mz=0       ! XYAVG_DOC: $\left<\boldsymbol{\omega}\cdot\uv\right>_{xy}|_{\rm phase 3}$
@@ -2996,6 +3005,9 @@ module Hydro
           idiag_rux2ph1mz/=0 .or. idiag_rux2ph2mz/=0 .or. idiag_rux2ph3mz/=0 .or. &
           idiag_ruy2ph1mz/=0 .or. idiag_ruy2ph2mz/=0 .or. idiag_ruy2ph3mz/=0 .or. &
           idiag_ruz2ph1mz/=0 .or. idiag_ruz2ph2mz/=0 .or. idiag_rux2ph3mz/=0 .or. &
+          idiag_oxph1mz/=0 .or. idiag_oxph2mz/=0 .or. idiag_oxph3mz/=0 .or. &
+          idiag_oyph1mz/=0 .or. idiag_oyph2mz/=0 .or. idiag_oyph3mz/=0 .or. &
+          idiag_ozph1mz/=0 .or. idiag_ozph2mz/=0 .or. idiag_ozph3mz/=0 .or. &
           idiag_ouph1mz/=0 .or. idiag_ouph2mz/=0 .or. idiag_ouph3mz/=0 .or. &
           idiag_u2ph1mz/=0 .or. idiag_u2ph2mz/=0 .or. idiag_u2ph3mz/=0) lpenc_diagnos(i_ss)=.true.
 !
@@ -4717,6 +4729,15 @@ module Hydro
         if (idiag_ruz2ph1mz/=0) call xysum_mn_name_z(p%rho*p%uu(:,3)**2,idiag_ruz2ph1mz,MASK=(p%ss <=ssmask1))
         if (idiag_ruz2ph2mz/=0) call xysum_mn_name_z(p%rho*p%uu(:,3)**2,idiag_ruz2ph2mz,MASK=(p%ss > ssmask1 .and. p%ss <= ssmask2))
         if (idiag_ruz2ph3mz/=0) call xysum_mn_name_z(p%rho*p%uu(:,3)**2,idiag_ruz2ph3mz,MASK=(p%ss > ssmask2))
+        if (idiag_oxph1mz/=0) call xysum_mn_name_z(p%oo(:,1),idiag_oxph1mz,MASK=(p%ss <=ssmask1))
+        if (idiag_oxph2mz/=0) call xysum_mn_name_z(p%oo(:,1),idiag_oxph2mz,MASK=(p%ss > ssmask1 .and. p%ss <= ssmask2))
+        if (idiag_oxph3mz/=0) call xysum_mn_name_z(p%oo(:,1),idiag_oxph3mz,MASK=(p%ss > ssmask2))
+        if (idiag_oyph1mz/=0) call xysum_mn_name_z(p%oo(:,2),idiag_oyph1mz,MASK=(p%ss <=ssmask1))
+        if (idiag_oyph2mz/=0) call xysum_mn_name_z(p%oo(:,2),idiag_oyph2mz,MASK=(p%ss > ssmask1 .and. p%ss <= ssmask2))
+        if (idiag_oyph3mz/=0) call xysum_mn_name_z(p%oo(:,2),idiag_oyph3mz,MASK=(p%ss > ssmask2))
+        if (idiag_ozph1mz/=0) call xysum_mn_name_z(p%oo(:,3),idiag_ozph1mz,MASK=(p%ss <=ssmask1))
+        if (idiag_ozph2mz/=0) call xysum_mn_name_z(p%oo(:,3),idiag_ozph2mz,MASK=(p%ss > ssmask1 .and. p%ss <= ssmask2))
+        if (idiag_ozph3mz/=0) call xysum_mn_name_z(p%oo(:,3),idiag_ozph3mz,MASK=(p%ss > ssmask2))
 !
         if (idiag_totalforcezmz/=0) then
           uus = p%rho*(p%fpres(:,3) + p%fvisc(:,3))
@@ -6298,57 +6319,12 @@ endif
         idiag_ruxmz=0
         idiag_ruymz=0
         idiag_ruzmz=0
-        idiag_ruxph1mz=0
-        idiag_ruxph2mz=0
-        idiag_ruxph3mz=0
-        idiag_ruyph1mz=0
-        idiag_ruyph2mz=0
-        idiag_ruyph3mz=0
-        idiag_ruzph1mz=0
-        idiag_ruzph2mz=0
-        idiag_ruzph3mz=0
-        idiag_rux2ph1mz=0
-        idiag_rux2ph2mz=0
-        idiag_rux2ph3mz=0
-        idiag_ruy2ph1mz=0
-        idiag_ruy2ph2mz=0
-        idiag_ruy2ph3mz=0
-        idiag_ruz2ph1mz=0
-        idiag_ruz2ph2mz=0
-        idiag_ruz2ph3mz=0
         idiag_rux2mz=0
         idiag_ruy2mz=0
         idiag_ruz2mz=0
         idiag_uxmz=0
         idiag_uymz=0
         idiag_uzmz=0
-        idiag_ekinph1mz=0
-        idiag_ekinph2mz=0
-        idiag_ekinph3mz=0
-        idiag_uxph1mz=0
-        idiag_uxph2mz=0
-        idiag_uxph3mz=0
-        idiag_uyph1mz=0
-        idiag_uyph2mz=0
-        idiag_uyph3mz=0
-        idiag_uzph1mz=0
-        idiag_uzph2mz=0
-        idiag_uzph3mz=0
-        idiag_u2ph1mz=0
-        idiag_u2ph2mz=0
-        idiag_u2ph3mz=0
-        idiag_ux2ph1mz=0
-        idiag_ux2ph2mz=0
-        idiag_ux2ph3mz=0
-        idiag_uy2ph1mz=0
-        idiag_uy2ph2mz=0
-        idiag_uy2ph3mz=0
-        idiag_uz2ph1mz=0
-        idiag_uz2ph2mz=0
-        idiag_uz2ph3mz=0
-        idiag_ouph1mz=0
-        idiag_ouph2mz=0
-        idiag_ouph3mz=0
         idiag_uymz=0
         idiag_uymz=0
         idiag_uymz=0
@@ -6658,6 +6634,60 @@ endif
         idiag_nshift=0
         idiag_frict=0
         ivid_oo=0; ivid_o2=0; ivid_ou=0; ivid_divu=0; ivid_u2=0; ivid_Ma2=0; ivid_uu_sph=0
+        idiag_ruxph1mz=0
+        idiag_ruxph2mz=0
+        idiag_ruxph3mz=0
+        idiag_ruyph1mz=0
+        idiag_ruyph2mz=0
+        idiag_ruyph3mz=0
+        idiag_ruzph1mz=0
+        idiag_ruzph2mz=0
+        idiag_ruzph3mz=0
+        idiag_rux2ph1mz=0
+        idiag_rux2ph2mz=0
+        idiag_rux2ph3mz=0
+        idiag_ruy2ph1mz=0
+        idiag_ruy2ph2mz=0
+        idiag_ruy2ph3mz=0
+        idiag_ruz2ph1mz=0
+        idiag_ruz2ph2mz=0
+        idiag_ruz2ph3mz=0
+        idiag_ekinph1mz=0
+        idiag_ekinph2mz=0
+        idiag_ekinph3mz=0
+        idiag_uxph1mz=0
+        idiag_uxph2mz=0
+        idiag_uxph3mz=0
+        idiag_uyph1mz=0
+        idiag_uyph2mz=0
+        idiag_uyph3mz=0
+        idiag_uzph1mz=0
+        idiag_uzph2mz=0
+        idiag_uzph3mz=0
+        idiag_u2ph1mz=0
+        idiag_u2ph2mz=0
+        idiag_u2ph3mz=0
+        idiag_ux2ph1mz=0
+        idiag_ux2ph2mz=0
+        idiag_ux2ph3mz=0
+        idiag_uy2ph1mz=0
+        idiag_uy2ph2mz=0
+        idiag_uy2ph3mz=0
+        idiag_uz2ph1mz=0
+        idiag_uz2ph2mz=0
+        idiag_uz2ph3mz=0
+        idiag_oxph1mz=0
+        idiag_oxph2mz=0
+        idiag_oxph3mz=0
+        idiag_oyph1mz=0
+        idiag_oyph2mz=0
+        idiag_oyph3mz=0
+        idiag_ozph1mz=0
+        idiag_ozph2mz=0
+        idiag_ozph3mz=0
+        idiag_ouph1mz=0
+        idiag_ouph2mz=0
+        idiag_ouph3mz=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -7025,6 +7055,15 @@ endif
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'ruz2ph1mz',idiag_ruz2ph1mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'ruz2ph2mz',idiag_ruz2ph2mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'ruz2ph3mz',idiag_ruz2ph3mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'oxmz',idiag_oxph1mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'oxmz',idiag_oxph2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'oxmz',idiag_oxph3mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'oymz',idiag_oyph1mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'oymz',idiag_oyph2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'oymz',idiag_oyph3mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ozmz',idiag_ozph1mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ozmz',idiag_ozph2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ozmz',idiag_ozph3mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'rux2mz',idiag_rux2mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'ruy2mz',idiag_ruy2mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'ruz2mz',idiag_ruz2mz)
