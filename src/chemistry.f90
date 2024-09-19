@@ -18,7 +18,8 @@
 ! PENCILS PROVIDED cv; cv1; cp; cp1; glncp(3);  gXXk(3,nchemspec); gamma
 ! PENCILS PROVIDED nu; gradnu(3); gYYk(3,nchemspec); chem_conc(nchemspec)
 ! PENCILS PROVIDED DYDt_reac(nchemspec); DYDt_diff(nchemspec)
-! PENCILS PROVIDED lambda; glambda(3); lambda1
+! PENCILS PROVIDED lambda; glambda(3); lambda1; gdiffk(3,nchemspec)
+! PENCILS PROVIDED g2XXk(nchemspec)
 ! PENCILS PROVIDED Diff_penc_add(nchemspec); H0_RT(nchemspec); hhk_full(nchemspec)
 ! PENCILS PROVIDED ghhk(3,nchemspec); S0_R(nchemspec); cs2
 ! PENCILS PROVIDED glnpp(3); del2pp; mukmu1(nchemspec)
@@ -55,8 +56,9 @@ module Chemistry
   real :: Cv_const=impossible
   logical :: lfix_Sc=.false., lfix_Pr=.false.
   logical :: init_from_file, reinitialize_chemistry=.false.
-  logical :: lnucleation
+  logical :: lnucleation, lcorr_vel=.false.
   logical :: lchem_detailed=.true.
+  logical :: lgradP_terms=.true.
   character(len=30) :: reac_rate_method = 'chemkin'
   character(len=30) :: inucl_pre_exp="const"      
 ! parameters for initial conditions
@@ -95,7 +97,8 @@ module Chemistry
   logical, save :: lew_exist=.false.
   logical :: lSmag_heat_transport=.false.
   logical :: lSmag_diffusion=.false.
-!
+  logical :: lnormalize_chemspec=.false., lnormalize_chemspec_N2=.false.
+  !
   logical :: lfilter=.false.
   logical :: lkreactions_profile=.false., lkreactions_alpha=.false.
   integer :: nreactions=0, nreactions1=0, nreactions2=0
@@ -221,7 +224,8 @@ logical, pointer :: ldustnucleation, lpartnucleation
       lfilter_strict,init_TT1,init_TT2,init_x1,init_x2, linit_temperature, &
       linit_density, &
       ldiff_corr, lDiff_fick, lreac_as_aux, reac_rate_method,global_phi, &
-      Ythresh, lchem_detailed, chem_conc_sat_spec, inucl_pre_exp
+      Ythresh, lchem_detailed, chem_conc_sat_spec, inucl_pre_exp, lcorr_vel, &
+      lgradP_terms, lnormalize_chemspec, lnormalize_chemspec_N2
 !
 ! diagnostic variables (need to be consistent with reset list below)
 !
@@ -724,9 +728,9 @@ logical, pointer :: ldustnucleation, lpartnucleation
           endif
           do m=1,my
             der=2./delta_chem
+            prof=(tanh(der*(y(m)+widthchem))-   &
+                 tanh(der*(y(m)-widthchem)))/2.
             do k=1,nchemspec
-              prof=(tanh(der*(y(m)+widthchem))-   &
-                   tanh(der*(y(m)-widthchem)))/2.
               do n=1,mz
                 f(1:mx,m,n,ichemspec(k))=amplchemk(k)*prof +amplchemk2(k)*(1-prof) 
               enddo
@@ -829,6 +833,10 @@ logical, pointer :: ldustnucleation, lpartnucleation
             lpenc_requested(i_mukmu1) = .true.
             lpenc_requested(i_glnmu) = .true.
           endif
+          if (lcorr_vel) then
+            lpenc_requested(i_gdiffk) = .true.
+            lpenc_requested(i_g2XXk) = .true.
+          endif
         endif
 !
       endif
@@ -906,7 +914,7 @@ logical, pointer :: ldustnucleation, lpartnucleation
 !   13-aug-07/steveb: coded
 !   10-jan-11/julien: adapted for the case where chemistry is solved by LSODE
 !
-      use Sub, only: grad
+      use Sub, only: grad, del2, dot_mn
 !
       real, dimension(mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -932,6 +940,12 @@ logical, pointer :: ldustnucleation, lpartnucleation
       if (lpencil(i_gXXk)) then
         do k = 1,nchemspec
           call grad(XX_full(:,:,:,k),p%gXXk(:,:,k))
+        enddo
+      endif
+!
+      if (lpencil(i_g2XXk)) then
+        do k = 1,nchemspec
+          call del2(XX_full(:,:,:,k),p%g2XXk(:,k))
         enddo
       endif
 !
@@ -1161,11 +1175,11 @@ logical, pointer :: ldustnucleation, lpartnucleation
               if (lcloud) then
                 if (z(n)>=z_cloud) then
                   do k = 1,nchemspec
-                     p%Diff_penc_add(:,k) = (0.15*dxmax)**2.*sqrt(2*p%sij2)/Sc_number
+                    p%Diff_penc_add(:,k) = (0.15*dxmax)**2.*sqrt(2*p%sij2)/Sc_number
                   enddo
                 else
                   do k = 1,nchemspec
-                     p%Diff_penc_add(:,k) = Diff_coef_const*p%rho1
+                    p%Diff_penc_add(:,k) = Diff_coef_const*p%rho1
                   enddo
                 endif
               else
@@ -1177,7 +1191,7 @@ logical, pointer :: ldustnucleation, lpartnucleation
               do k = 1,nchemspec
                 p%Diff_penc_add(:,k) = Diff_coef_const*p%rho1
               enddo
-            endif 
+            endif
 !
 !  Diffusion coefficient of a mixture with constant Lewis numbers and 
 !  given heat conductivity
@@ -1197,7 +1211,33 @@ logical, pointer :: ldustnucleation, lpartnucleation
             enddo
           endif
         endif
-      endif
+        !
+        ! Calculate gradient of diffusivity
+        !
+        if (lpencil(i_gdiffk)) then
+          do k=1,nchemspec
+            if (lDiff_simple) then
+              do i = 1,3
+                p%gdiffk(:,i,k) = p%Diff_penc_add(:,k) *(0.7*p%glnTT(:,i)-p%glnrho(:,i))
+              enddo
+            elseif (lDiff_lewis .and. lew_exist) then
+              do i = 1,3
+                p%gdiffk(:,i,k) = &
+                     (p%glambda(:,i)*p%lambda1(:)-p%glncp(:,i)-p%glnrho(:,i)) &
+                     *p%Diff_penc_add(:,k)
+              enddo
+            elseif (lDiff_lewis .and. l1step_test) then
+              do i = 1,3
+                p%gdiffk(:,i,k) = &
+                     (p%glambda(:,i)*p%lambda1(:)-p%glncp(:,i)-p%glnrho(:,i)) &
+                     *p%Diff_penc_add(:,k)
+              enddo
+            else
+              call grad(Diff_full_add(:,:,:,k),p%gdiffk(:,:,k))
+            endif
+          enddo
+        endif
+      endif      
 !
 !  More initialization of pencils
 !
@@ -2783,7 +2823,8 @@ logical, pointer :: ldustnucleation, lpartnucleation
 !
       real, dimension(mx,my,mz,mfarray) :: f
 
-      if (ldustdensity) call chemspec_normalization(f)
+      if (ldustdensity .or. lnormalize_chemspec) &
+           call chemspec_normalization(f)
 !
 !  Remove unphysical values of the mass fractions. This must be done
 !  before the call to update_solid_cells in order to avoid corrections
@@ -2791,7 +2832,8 @@ logical, pointer :: ldustnucleation, lpartnucleation
 !  There is no reason why this call should only be active in the
 !  combination with solid cells....
 !
-      if (lsolid_cells) call chemspec_normalization_N2(f)
+      if (lsolid_cells .or. lnormalize_chemspec_N2) &
+           call chemspec_normalization_N2(f)
 
     endsubroutine chemistry_before_boundary
 !***********************************************************************
@@ -3072,9 +3114,10 @@ logical, pointer :: ldustnucleation, lpartnucleation
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
-      real, dimension(nx,3) :: gchemspec, dk_D, sum_diff=0.
-      real, dimension(nx) :: ugchemspec, sum_DYDT, sum_dhhk=0.
-      real, dimension(nx) :: sum_dk_ghk, dk_dhhk, sum_hhk_DYDt_reac
+      real, dimension(nx,3) :: gchemspec, dk_D, sum_diff=0., corr_vel, tmp1
+      real, dimension(nx) :: ugchemspec, sum_DYDT, sum_dhhk=0., gXkgDk, gXkgmu1
+      real, dimension(nx) :: sum_dk_ghk, dk_dhhk, sum_hhk_DYDt_reac, div_corr_vel
+      real, dimension(nx) :: div_rho_Vc_Yk, rho_Yk_divVc, vc_grad_rho_yk
       type (pencil_case) :: p
       real, dimension(nx) :: RHS_T_full, diffus_chem
 !
@@ -3102,6 +3145,24 @@ logical, pointer :: ldustnucleation, lpartnucleation
 !
       if (lspecial) call special_calc_chemistry(f,df,p)
 !
+! Calculate correction velocity to ensure that the sum of all mass fractions is unit
+!
+      if (lcorr_vel) then
+        corr_vel=0.0
+        div_corr_vel=0.0
+        do k = 1,nchemspec
+          do i=1,3
+            corr_vel(:,i)=corr_vel(:,i)+p%gXXk(:,i,k)*p%mukmu1(:,k)*p%Diff_penc_add(:,k)
+          enddo
+          call dot_mn(p%gXXk(:,:,k),p%gdiffk(:,:,k),gXkgDk)
+          call dot_mn(p%gXXk(:,:,k),p%gmu1,gXkgmu1)
+          div_corr_vel=div_corr_vel&
+               +p%mukmu1(:,k)*gXkgDk&
+               +p%mukmu1(:,k)*p%Diff_penc_add(:,k)*p%g2XXk(:,k) &
+               +p%Diff_penc_add(:,k)*gXkgmu1*species_constants(k,imass)
+        enddo
+      endif
+!
 !  loop over all chemicals
 !
       do k = 1,nchemspec
@@ -3122,7 +3183,22 @@ logical, pointer :: ldustnucleation, lpartnucleation
 !  binary diffusion coefficients!
 !
         if (ldiffusion2) &
-          df(l1:l2,m,n,ichemspec(k)) = df(l1:l2,m,n,ichemspec(k))+p%DYDt_diff(:,k)
+             df(l1:l2,m,n,ichemspec(k)) = df(l1:l2,m,n,ichemspec(k))+p%DYDt_diff(:,k)
+!
+!  Add correction velocity to account for the fact that the species mass fractions
+!  are not guaranteed to sum to unity for any of the implemented diffusion operators.
+!  If the correction velocity does not ensure unit mass fractions, one must set
+!  lnormalize_chemspec or lnormalize_chemspec_N2 to true in run.in.
+!
+        if (lcorr_vel) then
+          rho_Yk_divVc=p%rho*f(l1:l2,m,n,ichemspec(k))*div_corr_vel
+          do i=1,3
+            tmp1(:,i)=f(l1:l2,m,n,ichemspec(k))*p%grho(:,i)+p%rho*p%gYYk(:,i,k)
+          enddo
+          call dot_mn(corr_vel,tmp1,Vc_grad_rho_Yk)
+          div_rho_Vc_Yk=rho_Yk_divVc+Vc_grad_rho_Yk
+          df(l1:l2,m,n,ichemspec(k)) = df(l1:l2,m,n,ichemspec(k))-div_rho_Vc_Yk*p%rho1
+        endif
 !
 !  chemical reactions:
 !  multiply with stoichiometric matrix with reaction speed
@@ -5212,12 +5288,18 @@ logical, pointer :: ldustnucleation, lpartnucleation
               enddo
             else
               p%DYDt_diff(:,k) = p%Diff_penc_add(:,k)*p%mukmu1(:,k) &
-                  *(del2XX+diff_op1-diff_op3)+ &
-                  p%mukmu1(:,k)*diff_op2+ &
-                  p%Diff_penc_add(:,k)*p%mukmu1(:,k)*Xk_Yk(:) &
-                  *(del2lnpp+glnrho_glnpp-glnmu_glnpp)+ &
-                  Xk_Yk(:)*p%mukmu1(:,k)*gD_glnpp+p%Diff_penc_add(:,k) &
-                  *p%mukmu1(:,k)*glnpp_gXkYk
+                   *(del2XX+diff_op1-diff_op3)+ &
+                   p%mukmu1(:,k)*diff_op2
+              !
+              ! Include terms due to pressure gradient
+              !
+              if (lgradP_terms) then
+                p%DYDt_diff(:,k) = p%DYDt_diff(:,k) + &
+                     p%Diff_penc_add(:,k)*p%mukmu1(:,k)*Xk_Yk(:) &
+                     *(del2lnpp+glnrho_glnpp-glnmu_glnpp)+ &
+                     Xk_Yk(:)*p%mukmu1(:,k)*gD_glnpp+p%Diff_penc_add(:,k) &
+                     *p%mukmu1(:,k)*glnpp_gXkYk
+              endif
               do i = 1,3
                 dk_D(:,i) = p%Diff_penc_add(:,k)*p%mukmu1(:,k)*(p%gXXk(:,i,k) + Xk_Yk(:)*p%glnpp(:,i))
               enddo
