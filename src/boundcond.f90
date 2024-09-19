@@ -6412,7 +6412,7 @@ module Boundcond
 !  Do the 'c1' boundary condition (constant heat flux) for entropy.
 !
       call get_shared_variable('lheatc_kramers',lheatc_kramers, caller='bc_ss_flux_x')
-      call get_shared_variable('lheatc_chiconst',lheatc_chiconst, caller='bc_ss_flux_x')
+      call get_shared_variable('lheatc_chiconst',lheatc_chiconst)
       call get_shared_variable('lheatc_Kprof',lheatc_Kprof)
       call get_shared_variable('lheatc_Kconst',lheatc_Kconst)
       if (lheatc_kramers.and.lheatc_chiconst) call fatal_error('bc_ss_flux_x', &

@@ -1,5 +1,3 @@
-//TP: for the examples below include this file
-//#include "../bcs" 
 input real AC_dt
 input int AC_step_num
 ComputeSteps AC_rhs(boundconds)

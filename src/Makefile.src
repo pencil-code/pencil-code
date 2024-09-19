@@ -3107,7 +3107,9 @@ endif
 	@sed -e'/auxiliary / ! d' $(DSL_WORKDIR)/fieldecs.h > tmpdec
 	@sed -i -e'/^ *\/\// d' -e'/auxiliary/ d' $(DSL_WORKDIR)/fieldecs.h
 	@cat tmpdec | sed -e's/communicated //' -e's/auxiliary //' >> $(DSL_WORKDIR)/fieldecs.h; rm tmpdec
+	@sed -f $(CUDA_MAKEDIR)/solve.sed $(DSL_WORKDIR)/solve.ac > $(DSL_WORKDIR)/solve_two.ac
 	@mv $(DSL_WORKDIR)/solve.ac $(DSL_WORKDIR)/solve_single.ac
+	@echo '#include "steps_two.h"' >> $(DSL_WORKDIR)/solve_two.ac
 	@echo '#include "steps_single.h"' >> $(DSL_WORKDIR)/solve_single.ac
 	@cp $(DSL_WORKDIR)/../steps_single.h $(DSL_WORKDIR)
 	@cp $(DSL_WORKDIR)/../steps_two.h $(DSL_WORKDIR)
@@ -3129,8 +3131,6 @@ endif
 endif
 	@scripts/bc2ast
 
-###	@echo '#include "steps_two.h"' >> $(DSL_WORKDIR)/solve_two.ac
-###	@sed -f $(CUDA_MAKEDIR)/solve.sed $(DSL_WORKDIR)/solve.ac > $(DSL_WORKDIR)/solve_two.ac
 #	@sed -e':loop' -e'N' -e'$$!b loop' -e's/\#pragma  *once//' -e's/\# *define *\([A-Z0-9_][A-Z0-9_]*\)/..\/..\/\L\1.f90 /g' -e's/\n/ /g' < $(CUDA_INCDIR)/PC_moduleflags.h >> $(CUDA_MAKEDIR)/PC_modulesources.h
 #
 #  Compiler setting for OpenMP (gfortran and ifort only at the moment).
