@@ -956,6 +956,15 @@ module Magnetic
   integer :: idiag_poynzph1mz=0    ! XYAVG_DOC: Averaged poynting flux in z direction for phase 1
   integer :: idiag_poynzph2mz=0    ! XYAVG_DOC: Averaged poynting flux in z direction for phase 2
   integer :: idiag_poynzph3mz=0    ! XYAVG_DOC: Averaged poynting flux in z direction for phase 3
+  integer :: idiag_jxph1mz=0       ! XYAVG_DOC: $\left<{\cal J}_x\right>_{xy}|_{\rm phase 1}$
+  integer :: idiag_jxph2mz=0       ! XYAVG_DOC: $\left<{\cal J}_x\right>_{xy}|_{\rm phase 2}$
+  integer :: idiag_jxph3mz=0       ! XYAVG_DOC: $\left<{\cal J}_x\right>_{xy}|_{\rm phase 3}$
+  integer :: idiag_jyph1mz=0       ! XYAVG_DOC: $\left<{\cal J}_y\right>_{xy}|_{\rm phase 1}$
+  integer :: idiag_jyph2mz=0       ! XYAVG_DOC: $\left<{\cal J}_y\right>_{xy}|_{\rm phase 2}$
+  integer :: idiag_jyph3mz=0       ! XYAVG_DOC: $\left<{\cal J}_y\right>_{xy}|_{\rm phase 3}$
+  integer :: idiag_jzph1mz=0       ! XYAVG_DOC: $\left<{\cal J}_z\right>_{xy}|_{\rm phase 1}$
+  integer :: idiag_jzph2mz=0       ! XYAVG_DOC: $\left<{\cal J}_z\right>_{xy}|_{\rm phase 2}$
+  integer :: idiag_jzph3mz=0       ! XYAVG_DOC: $\left<{\cal J}_z\right>_{xy}|_{\rm phase 3}$
 !
 ! xz averaged diagnostics given in xzaver.in
 !
@@ -3109,6 +3118,9 @@ module Magnetic
       if (idiag_oxuxbm/=0) lpenc_diagnos(i_oxuxb)=.true.
       if (idiag_exaym2/=0 .or. idiag_exjm2/=0 &
           .or. idiag_jxmz/=0 .or. idiag_jymz/=0 &
+          .or. idiag_jxph1mz/=0 .or. idiag_jyph1mz/=0 .or. idiag_jzph1mz/=0 &
+          .or. idiag_jxph2mz/=0 .or. idiag_jyph2mz/=0 .or. idiag_jzph2mz/=0 &
+          .or. idiag_jxph3mz/=0 .or. idiag_jyph3mz/=0 .or. idiag_jzph3mz/=0 &
           .or. idiag_jxpt/=0 .or. idiag_jypt/=0 .or. idiag_jzpt/=0 &
           .or. idiag_jxp2/=0 .or. idiag_jyp2/=0 .or. idiag_jzp2/=0 &
           .or. idiag_jmx/=0 .or. idiag_jmy/=0 .or. idiag_jmz/=0 &
@@ -3182,6 +3194,9 @@ module Magnetic
           idiag_bz2rph1mz/=0 .or. idiag_bz2rph2mz/=0 .or. idiag_bz2rph3mz/=0 .or. &
           idiag_jbph1mz/=0 .or. idiag_jbph2mz/=0 .or. idiag_jbph3mz/=0 .or. &
           idiag_poynzph1mz/=0 .or. idiag_poynzph2mz/=0 .or. idiag_poynzph3mz/=0 .or. &
+          idiag_jxph1mz/=0 .or. idiag_jyph1mz/=0 .or. idiag_jzph1mz/=0 .or. &
+          idiag_jxph2mz/=0 .or. idiag_jyph2mz/=0 .or. idiag_jzph2mz/=0 .or. &
+          idiag_jxph3mz/=0 .or. idiag_jyph3mz/=0 .or. idiag_jzph3mz/=0 .or. &
           idiag_abph1mz/=0 .or. idiag_abph2mz/=0 .or. idiag_abph3mz/=0) lpenc_diagnos(i_ss)=.true.
 !
 !  Check whether right variables are set for half-box calculations.
@@ -6777,6 +6792,15 @@ module Magnetic
         if (idiag_bz2ph1mz/=0) call xysum_mn_name_z(p%bb(:,3)**2,idiag_bz2ph1mz,MASK=(p%ss <=ssmask1))
         if (idiag_bz2ph2mz/=0) call xysum_mn_name_z(p%bb(:,3)**2,idiag_bz2ph2mz,MASK=(p%ss > ssmask1 .and. p%ss <= ssmask2))
         if (idiag_bz2ph3mz/=0) call xysum_mn_name_z(p%bb(:,3)**2,idiag_bz2ph3mz,MASK=(p%ss > ssmask2))
+        if (idiag_jxph1mz/=0) call xysum_mn_name_z(p%jj(:,1),idiag_jxph1mz,MASK=(p%ss <=ssmask1))
+        if (idiag_jxph2mz/=0) call xysum_mn_name_z(p%jj(:,1),idiag_jxph2mz,MASK=(p%ss > ssmask1 .and. p%ss <= ssmask2))
+        if (idiag_jxph3mz/=0) call xysum_mn_name_z(p%jj(:,1),idiag_jxph3mz,MASK=(p%ss > ssmask2))
+        if (idiag_jyph1mz/=0) call xysum_mn_name_z(p%jj(:,2),idiag_jyph1mz,MASK=(p%ss <=ssmask1))
+        if (idiag_jyph2mz/=0) call xysum_mn_name_z(p%jj(:,2),idiag_jyph2mz,MASK=(p%ss > ssmask1 .and. p%ss <= ssmask2))
+        if (idiag_jyph3mz/=0) call xysum_mn_name_z(p%jj(:,2),idiag_jyph3mz,MASK=(p%ss > ssmask2))
+        if (idiag_jzph1mz/=0) call xysum_mn_name_z(p%jj(:,3),idiag_jzph1mz,MASK=(p%ss <=ssmask1))
+        if (idiag_jzph2mz/=0) call xysum_mn_name_z(p%jj(:,3),idiag_jzph2mz,MASK=(p%ss > ssmask1 .and. p%ss <= ssmask2))
+        if (idiag_jzph3mz/=0) call xysum_mn_name_z(p%jj(:,3),idiag_jzph3mz,MASK=(p%ss > ssmask2))
         if (idiag_bx2rph1mz/=0) call xysum_mn_name_z(p%bb(:,1)**2*p%rho1,idiag_bx2rph1mz, &
                 MASK=(p%ss <=ssmask1))
         if (idiag_bx2rph2mz/=0) call xysum_mn_name_z(p%bb(:,1)**2*p%rho1,idiag_bx2rph2mz, &
@@ -10005,6 +10029,9 @@ module Magnetic
         idiag_abph1mz=0; idiag_abph2mz=0; idiag_abph3mz=0
         idiag_jbph1mz=0; idiag_jbph2mz=0; idiag_jbph3mz=0
         idiag_poynzph1mz=0; idiag_poynzph2mz=0; idiag_poynzph3mz=0
+        idiag_jxph1mz=0; idiag_jyph1mz=0; idiag_jzph1mz=0
+        idiag_jxph2mz=0; idiag_jyph2mz=0; idiag_jzph2mz=0
+        idiag_jxph3mz=0; idiag_jyph3mz=0; idiag_jzph3mz=0
       endif
 !
 !  Check for those quantities that we want to evaluate online.
@@ -10534,6 +10561,15 @@ module Magnetic
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'poynzph1mz',idiag_poynzph1mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'poynzph2mz',idiag_poynzph2mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'poynzph3mz',idiag_poynzph3mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'jxph1mz',idiag_jxph1mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'jyph1mz',idiag_jyph1mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'jzph1mz',idiag_jzph1mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'jxph2mz',idiag_jxph2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'jyph2mz',idiag_jyph2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'jzph2mz',idiag_jzph2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'jxph3mz',idiag_jxph3mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'jyph3mz',idiag_jyph3mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'jzph3mz',idiag_jzph3mz)
       enddo
 !
 !  Check for those quantities for which we want y-averages.
