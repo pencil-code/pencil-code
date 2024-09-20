@@ -5562,27 +5562,27 @@ module Initcond
         else  ! (ldouble)
           !  alberto: changing sign of nfact allows to use spectral shapes with
           !           initpower - initpower2 > 0
-          !if ((initpower-initpower2)<0) then
-          !  nexp1=-nexp1
-          !  nexp2=-nexp2
-          !endif
-          !if ((initpower*initpower2)<0) then
-          !  D1=-initpower/initpower2
-          !  D2=D1
-          !elseif ((initpower*initpower2)==0) then
-          !  if ((initpower==0).and.(initpower2)==0) then
-          !    fact=fact*(1+D2)**nexp2
-          !  elseif (initpower2==0) then
-          !    fact=fact*D2**nexp2
-          !  endif
-          !else
-          !  fact=fact*(1+D2)**nexp2
-          !endif
-          D1=abs(initpower/initpower2)
-          D2=-1/initpower2
-          if (initpower/=0) then
-            D2=D2*abs(initpower)
+          if ((initpower-initpower2)<0) then
+            nexp1=-nexp1
+            nexp2=-nexp2
           endif
+          if ((initpower*initpower2)<0) then
+            D1=-initpower/initpower2
+            D2=D1
+          elseif ((initpower*initpower2)==0) then
+            if ((initpower==0).and.(initpower2)==0) then
+              fact=fact*(1+D2)**nexp2
+            elseif (initpower2==0) then
+              fact=fact*D2**nexp2
+            endif
+          else
+            fact=fact*(1+D2)**nexp2
+          endif
+          !D1=abs(initpower/initpower2)
+          !D2=-1/initpower2
+          !if (initpower/=0) then
+          !  D2=D2*abs(initpower)
+          !endif
         endif
       endif  ! (lfactors)
 !
@@ -5604,6 +5604,8 @@ module Initcond
         ! alberto: compensate for contribution due to helicity
         ! taking into account generic qirro
         fact=fact/(1 + relhel**2*(1 - qirro1))**0.5
+        ! compensate when compk is non-zero
+        fact=fact*kpeak21**compk
         !fact=fact*(kpeak1*scale_factor)
       else
         fact=fact*(kpeak1*scale_factor)**1.5
