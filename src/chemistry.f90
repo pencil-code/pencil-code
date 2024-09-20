@@ -603,7 +603,7 @@ logical, pointer :: ldustnucleation, lpartnucleation
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real :: PP, prof, der, tmp1, tmp2, mol1, mol2, mean_molar_mass
-      real :: rho, TT
+      real :: rho, TT, Ysum
       integer :: l,j,k
       logical :: lnothing, air_exist
 !
@@ -737,26 +737,34 @@ logical, pointer :: ldustnucleation, lpartnucleation
             enddo
           enddo
           !
+          call getmu_array(f,mu1_full)
+          !
           ! Must also set density such that the pressure is correct
           !
           do n=1,mz
             do m=1,my
               do l=1,mx
-                tmp1=0
-                do k=1,nchemspec
-                  tmp1=tmp1+f(l,m,n,ichemspec(k))/species_constants(k,imass)
-                enddo
+                !tmp1=0
+                !do k=1,nchemspec
+                !  tmp1=tmp1+f(l,m,n,ichemspec(k))/species_constants(k,imass)
+                !enddo
                 mean_molar_mass=1./tmp1
                 if (ltemperature_nolog) then
                   TT=f(l,m,n,iTT)
                 else
                   TT=exp(f(l,m,n,ilnTT))
                 endif
-                rho=press*mean_molar_mass/(Rgas*TT)
+                rho=press/(mu1_full(l,m,n)*Rgas*TT)
                 if (ldensity_nolog) then
                   f(l,m,n,irho)=rho
                 else
                   f(l,m,n,ilnrho)=alog(rho)
+                endif
+
+                Ysum=sum(f(l,m,n,ichemspec(1:nchemspec)))
+                if ((Ysum  > 1+1e-5) .or. (Ysum < 1-1e-5)) then
+                  print*,"l,m,n,Ysum=",l,m,n,Ysum
+                  call fatal_error("init_chemistry","The sum of all mass fractions should be unit!")
                 endif
               enddo
             enddo
