@@ -5595,14 +5595,18 @@ module Initcond
 !  alberto: if lfactor is chosen, the amplitude of the spectrum is
 !           independent of kpeak instead of the integrated energy,
 !           and it takes the value ampl at kpeak (tested for hydro
-!           fields, to be checked for magnetic)
+!           fields, for magnetic one can choose compk_aa=-.5 to obtain
+!           a magnetic field spectrum with value ampl at kpeak)
 !
       if (lfactors) then
-        print*,'TEST Lx, kpeak',Lx,kpeak
+        !print*,'TEST Lx, kpeak',Lx,kpeak
         !fact=fact*(2*pi/Lx)**0.5*(kpeak1*Lx)**2
         fact=fact*kpeak1*scale_factor**1.5/(2*pi*ampl)**0.5
+        !
         ! alberto: compensate for contribution due to helicity
-        ! taking into account generic qirro
+        ! taking into account generic qirro (only correct when
+        ! lsqrt_qirro is true)
+        !
         fact=fact/(1 + relhel**2*(1 - qirro1))**0.5
         ! compensate when compk is non-zero
         fact=fact*kpeak21**compk
