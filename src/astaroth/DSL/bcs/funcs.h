@@ -31,7 +31,7 @@ int AC_n2
 int AC_m1
 int AC_m2
 
-bc_steady_z(topbot,VtxBuffer field)
+bc_steady_z(topbot, VtxBuffer field)
 {
   int i;
   if (topbot == AC_bot) {
@@ -162,7 +162,7 @@ bc_ss_flux(topbot)
   }
 }
 
-bc_ism(topbot,VtxBuffer field)
+bc_ism(topbot, VtxBuffer field)
 {
   int k;
   real density_scale1;
@@ -222,7 +222,7 @@ bc_ism(topbot,VtxBuffer field)
   }
 }
 
-bc_sym_x(VtxBuffer field,AC_TOP_BOT topbot,int sgn,bool rel)
+bc_sym_x(AC_TOP_BOT topbot, VtxBuffer field,int sgn,bool rel)
 {
   int i;
   if (topbot == AC_bot) {
@@ -259,7 +259,7 @@ bc_sym_x(VtxBuffer field,AC_TOP_BOT topbot,int sgn,bool rel)
   }
 }
 
-bc_sym_y(VtxBuffer field,AC_TOP_BOT topbot,int sgn,bool rel)
+bc_sym_y(AC_TOP_BOT topbot, VtxBuffer field,int sgn,bool rel)
 {
   int i;
   if (topbot == AC_bot) {
@@ -296,7 +296,7 @@ bc_sym_y(VtxBuffer field,AC_TOP_BOT topbot,int sgn,bool rel)
   }
 }
 
-bc_sym_z(VtxBuffer field,AC_TOP_BOT topbot,int sgn,bool rel)
+bc_sym_z(AC_TOP_BOT topbot, VtxBuffer field,int sgn,bool rel)
 {
   int i;
   if (topbot == AC_bot) {
@@ -333,7 +333,7 @@ bc_sym_z(VtxBuffer field,AC_TOP_BOT topbot,int sgn,bool rel)
   }
 }   
 
-bc_set_der_x(topbot,VtxBuffer field,val)
+bc_set_der_x(topbot, VtxBuffer field,val)
 {
   int i;
   if (topbot == AC_bot) {
@@ -350,7 +350,7 @@ bc_set_der_x(topbot,VtxBuffer field,val)
   }
 }
 
-bc_set_der_y(topbot,VtxBuffer field,val)
+bc_set_der_y(topbot, VtxBuffer field,val)
 {
   int i;
   if (topbot == AC_bot) {
@@ -367,7 +367,7 @@ bc_set_der_y(topbot,VtxBuffer field,val)
   }
 }
 
-bc_set_der_z(topbot,VtxBuffer field,val)
+bc_set_der_z(topbot, VtxBuffer field,val)
 {
   int i;
   if (topbot == AC_bot) {
