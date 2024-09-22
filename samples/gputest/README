@@ -1,15 +1,21 @@
 To clone Pencil Code together with Astaroth:
 --------------------------------------------
-git clone --recurse-submodules https://<github username>@github.com/pencil-code/pencil-code.git
-cd $PENCIL_HOME/src/astaroth/submodule
-git merge origin/master
+git clone -b gputestv6 --recurse-submodules https://<github username>@github.com/pencil-code/pencil-code.git
+or
+git clone -b gputestv6 --recurse-submodules https://USERNAME@pencil-code.org/git/ pencil-code
+cd $PENCIL_HOME
+cd src/astaroth/submodule
+git checkout PCinterface_2019-8-12
 
 To add Astaroth later to already installed Pencil Code:
 -------------------------------------------------------
 cd $PENCIL_HOME
+git checkout gputestv6
 git submodule update --init --recursive
 cd src/astaroth/submodule 
 git checkout PCinterface_2019-8-12
+
+Don't forget to set $PENCIL_HOME correctly - missing this is a common source of mess.
 
 To build with Astaroth:
 -----------------------
@@ -22,13 +28,13 @@ MULTITHREADING = openmp
 
 in Makefile.local. At first time, this implies to repeat pc_setupsrc.
 
-The build has three stages:
-1) build Pencil Code as usual by make or pc_build
+Build Pencil Code as usual by make or pc_build
    - when building with make, you need to set the MODULE_[PRE|IN|SUF]FIX environment variables as given in the config file for the chosen compiler on the given machine
-   - when building with pc_build, you must use the flag -s|--serial as make can't correctly parallelize for this sample
-   The build will fail at first during link stage because shared object libastaroth_[sgl|dbl].so is found to be missing;
-2) to obtain the missing object, go to src/astaroth and call make - will build three shared objects (in case of unclear trouble, do "make clean" first)
-3) return to working directory and repeat build of Pencil Code - only the linker stage will be performed (fast)
+   - when building with pc_build, use the flag -s|--serial for safety 
+
+For gfortran:  the compilation flag  std95 must be set to f2003,
+               you must have LDFLAGS_MAIN = -Bdynamic -Wl,--export-dynamic in Makefile.src
+For CRAY:  you must have LDFLAGS_MAIN = -h dynamic -Wl,--export-dynamic in Makefile.src
 
 To run:
 -------
@@ -44,7 +50,16 @@ on LUMI/Dardel:
 Also, there are usually separate partitions for GPU use.
 On some imperfectly configured machines, additional settings are required.
 [which OMP/MPI enironment settings?]
-#git checkout master
+
+
+
+
+
+
+
+
+
+
 
 
 
