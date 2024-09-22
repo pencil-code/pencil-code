@@ -57,8 +57,12 @@ list(APPEND CMAKE_PREFIX_PATH /opt/rocm/hip /opt/rocm)
 #link_directories(/opt/rocm/lib)
 
 # Roctracer
-include_directories(/opt/rocm/roctracer/include)
-link_directories(/opt/rocm/roctracer/lib)
+set(ROC_TRACER_PATH "/opt/rocm/include/roctracer")
+include_directories(${ROC_TRACER_PATH})
+link_directories(${ROC_TRACER_PATH})
+list(APPEND CMAKE_PREFIX_PATH ${ROC_TRACER_PATH})
+#include_directories(/opt/rocm/roctracer/include)
+#link_directories(/opt/rocm/roctracer/lib)
 
 # Rocrand
 include_directories(/opt/rocm/hiprand/include)

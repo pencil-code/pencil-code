@@ -487,7 +487,6 @@ module Cdata
   integer :: nr_directions=1
   integer :: itdiagnos
   real :: tdiagnos,dtdiagnos,t1ddiagnos,t2davgfirst,eps_rkf_diagnos
-  integer, parameter :: mname=100
   real, dimension (mname) :: fweight=0.0
   integer, dimension(:)   , allocatable :: itype_name
   real, dimension(:)      , allocatable, target :: fname,fname_keep
@@ -539,7 +538,6 @@ module Cdata
 !
   real :: yequator=0.,zequator=0.
   logical :: lequatory,lequatorz
-  integer, parameter :: mname_half=20
   integer, dimension (mname_half) :: itype_name_half=0
   real, dimension (mname_half,2) :: fname_half
   integer :: name_half_max=0
@@ -606,7 +604,6 @@ module Cdata
   logical :: j_spec=.false., jb_spec=.false., ja_spec=.false., oo_spec=.false., relvel_spec=.false.
   logical :: vel_phispec=.false.,mag_phispec=.false.,uxj_phispec=.false.,vec_phispec=.false.
   logical :: uxy_spec=.false., bxy_spec=.false., jxbxy_spec=.false.
-  integer, parameter :: n_xy_specs_max=10,nk_max=10, nz_max=10
   character (LEN=labellen*4) :: xy_spec=''
   character (LEN=labellen), dimension(n_xy_specs_max) :: xy_specs=''
   logical :: EP_spec=.false., nd_spec=.false., ud_spec=.false., abs_u_spec=.false.
@@ -813,14 +810,11 @@ module Cdata
   real :: t1ddiagnos_save,t2davgfirst_save,tslice_save,tsound_save
 !!$ type(TaskHandle) :: last_pushed_task = TaskHandle(task_id=-1)
 
-  integer, parameter :: n_helperflags=4
 !$ logical, volatile, dimension(n_helperflags) :: lhelperflags=(/.false.,.false.,.false.,.false./)
 !$ logical, volatile, dimension(n_helperflags) :: lmasterflags=(/.false.,.false.,.false.,.false./)
-  integer, parameter :: PERF_DIAGS=1, PERF_WSNAP=2, PERF_POWERSNAP=3, PERF_WSNAP_DOWN=4
 !$ logical, volatile :: lfarray_copied = .false.
   logical, dimension(npencils) :: lpencil_save = .false.
   integer :: num_helper_threads=1, thread_id=1
-  integer, parameter :: max_threads_possible = 200
   integer, dimension(max_threads_possible) :: core_ids
 !$ logical, volatile :: lhelper_run=.true., lhelper_perf
 ! 

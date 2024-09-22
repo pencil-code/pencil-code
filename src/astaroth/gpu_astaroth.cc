@@ -41,7 +41,7 @@ AcReal cpu_pow(AcReal const val, AcReal exponent)
 // PC interface headers.
 #include "PC_moduleflags.h"
 #include "../cparam_c.h"
-#include "../cdata_c.h"
+//#include "../cdata_c.h"
 #if LFORCING
   #include "../forcing_c.h"     // provides forcing_pars_hel
 #endif
@@ -49,6 +49,8 @@ AcReal cpu_pow(AcReal const val, AcReal exponent)
 #include "../boundcond_c.h"     // provides boundconds[xyz] etc.
 #include "../mpicomm_c.h"       // provides finalize_sendrcv_bdry
 #include "PC_module_parfuncs.h" // provides stuff from physics modules
+				//
+//TP: x,y and z macros are too general
 
 #if PACKED_DATA_TRANSFERS
   #include "loadStore.h"
@@ -371,17 +373,7 @@ void print_diagnostics(const int pid, const int step, const AcReal dt_, const Ac
 }
 ***/
 /***********************************************************************************************/
-AcReal max_advec()
-{
-#if LHYDRO
-  AcReal umax = 0.;
-  acGridReduceVec(STREAM_DEFAULT, RTYPE_MAX, UUX, UUY, UUZ, &umax);
-  return umax/sqrt(get_dxyzs().x);
-#else
-  return 0.
-#endif
-  
-}
+AcReal max_advec();
 /***********************************************************************************************/
 std::array<AcReal,3>
 visc_get_max_diffus()
@@ -425,53 +417,11 @@ elem_wise_max(const std::array<AcReal,3>& a,const std::array<AcReal,3>& b,const 
 	};
 }
 
-AcReal max_diffus()
-{
-  AcReal3 dxyz_vals = get_dxyzs();
-  auto max_diffusions = elem_wise_max(visc_get_max_diffus(), magnetic_get_max_diffus(), energy_get_max_diffus());
-  return max_diffusions[0]*dxyz_vals.x/cdtv + max_diffusions[1]*dxyz_vals.y/cdtv2 + max_diffusions[2]*dxyz_vals.z/cdtv3;
-}
+AcReal max_diffus();
 /***********************************************************************************************/
-int id_to_tag(int3 id)
-{
-  return ((3 + id.x) % 3) * 9 + ((3 + id.y) % 3) * 3 + (3 + id.z) % 3;
-}
-/***********************************************************************************************/
-int3 tag_to_id(int _tag)
-{
-  int3 _id = (int3){(_tag) / 9, ((_tag) % 9) / 3, (_tag) % 3};
-  _id.x = _id.x == 2 ? -1 : _id.x;
-  _id.y = _id.y == 2 ? -1 : _id.y;
-  _id.z = _id.z == 2 ? -1 : _id.z;
-  ERRCHK_ALWAYS(id_to_tag(_id) == _tag);
-  return _id;
-}
-/***********************************************************************************************/
+
 bool
-has_nans(AcMesh mesh_in)
-{
-  bool res = false;
-  AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
-  for (int i = dims.n0.x; i < dims.n1.x; i++)
-  {
-    for (int j = dims.n0.y; j < dims.n1.y; j++)
-    {
-      for (int k = dims.n0.z; k < dims.n1.z; k++)
-      {
-        for (int ivar = 0; ivar < NUM_VTXBUF_HANDLES; ivar++)
-        {
-          if (isnan(mesh_in.vertex_buffer[ivar][DEVICE_VTXBUF_IDX(i, j, k)]))
-          {
-            res = true;
-            acLogFromRootProc(rank,"nan at %d,%d,%d\n", i, j, k);
-            acLogFromRootProc(rank,"field = %d", ivar);
-          }
-        }
-      }
-    }
-  }
-  return res;
-}
+has_nans(AcMesh mesh_in);
 /***********************************************************************************************/
 extern "C" void substepGPU(int isubstep)
 //
@@ -534,6 +484,7 @@ extern "C" void substepGPU(int isubstep)
   return;
 }
 /***********************************************************************************************/
+/**
 extern "C" void testBcKernel(AcReal *farray_in, AcReal *farray_truth)
 {
   AcMesh mesh_true;
@@ -659,7 +610,13 @@ extern "C" void testBcKernel(AcReal *farray_in, AcReal *farray_truth)
   }
   return;
 }
+**/
 /***********************************************************************************************/
+extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
+{
+}
+/**
+
 extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
 {
   // __energy_MOD_pushpars2c(p_par_energy);
@@ -790,7 +747,7 @@ extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
   // acGridSynchronizeStream(STREAM_ALL);
   // acGridExecuteTaskGraph(rhs_test_rhs_1, 1);
   // acGridSynchronizeStream(STREAM_ALL);
-  acGridLaunchKernel(STREAM_DEFAULT, acGetKernelByName("AC_BUILTIN_RESET"), dims.n0, dims.n1);
+  acGridLaunchKernel(STREAM_DEFAULT, KERNEL_AC_BUILTIN_RESET, dims.n0, dims.n1);
   acGridSynchronizeStream(STREAM_ALL);
 
   //actual run
@@ -927,6 +884,7 @@ extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
   acLogFromRootProc(rank,"abs range: %.7e-%7e\n",min_abs_value,max_abs_value);
   fflush(stdout);
 }
+**/
 /***********************************************************************************************/
 extern "C" void registerGPU(AcReal *farray)
 {
@@ -958,6 +916,7 @@ extern "C" void initGPU()
 void setupConfig(AcMeshInfo& config, AcCompInfo& comp_info)
 { 
   // Enter basic parameters in config.
+  #include "PC_modulepars.h"
 
   PCLoad(config,comp_info, AC_domain_decomposition, (int3) {nprocx,nprocy,nprocz});
   PCLoad(config,comp_info, AC_nxgrid, nxgrid);
@@ -977,34 +936,8 @@ void setupConfig(AcMeshInfo& config, AcCompInfo& comp_info)
   PCLoad(config,comp_info,AC_dsy,dy);
   PCLoad(config,comp_info,AC_dsz,dz);
 
-  PCLoad(config,comp_info,AC_xlen,  Lxyz[0]);
-  PCLoad(config,comp_info,AC_ylen,  Lxyz[1]);
-  PCLoad(config,comp_info,AC_zlen,  Lxyz[2]);
-  PCLoad(config,comp_info,AC_xorig, xyz0[0]);
-  PCLoad(config,comp_info,AC_yorig, xyz0[1]);
-  PCLoad(config,comp_info,AC_zorig, xyz0[2]);
-  PCLoad(config,comp_info,AC_x,     x);
-  PCLoad(config,comp_info,AC_y,     y);
-  PCLoad(config,comp_info,AC_z,     z);
-
-// physics related parameters
-
-  PCLoad(config,comp_info,AC_mu0,mu0);
-
-// parameter arrays for boundary conditions
-
-  PCLoad(config,comp_info,AC_fbcx  , fbcx);
-  PCLoad(config,comp_info,AC_fbcx_2, fbcx_2);
-  PCLoad(config,comp_info,AC_fbcy  , fbcy);
-  PCLoad(config,comp_info,AC_fbcy_1, fbcy_1);
-  PCLoad(config,comp_info,AC_fbcy_2, fbcy_2);
-  PCLoad(config,comp_info,AC_fbcz  , fbcz);
-  PCLoad(config,comp_info,AC_fbcz_1, fbcz_1);
-  PCLoad(config,comp_info,AC_fbcz_2, fbcz_2);
-
   // Enter physics related parameters in config.
 
-  #include "PC_modulepars.h"
   #if LDENSITY
     PCLoad(config,comp_info,AC_ldensity_nolog,ldensity_nolog);
     //printf("ldensity_nolog is %d \n",config.int_params[AC_ldensity_nolog]);//ldensity_nolog);
@@ -1018,6 +951,10 @@ void setupConfig(AcMeshInfo& config, AcCompInfo& comp_info)
 #endif
 
 }
+
+#undef x
+#undef y
+#undef z
 
 int
 get_int_param(const AcMeshInfo &config, AcCompInfo& comp_info, AcIntParam param)
@@ -1047,8 +984,8 @@ void checkConfig(AcMeshInfo &config, AcCompInfo& comp_info)
 {
  acLogFromRootProc(rank,"Check that config is correct\n");
  acLogFromRootProc(rank,"n[xyz]grid, d[xyz]: %d %d %d %.14f %.14f %.14f \n", nxgrid, nygrid, nzgrid, dx, dy, dz);
- acLogFromRootProc(rank,"rank= %d: l1, l2, n1, n2, m1, m2= %d %d %d %d %d %d \n", rank, l1, l2, n1, n2, m1, m2);
- acLogFromRootProc(rank,"rank= %d: zlen= %.14f %.14f \n", config.real_params[AC_zlen], Lxyz[2]);
+// acLogFromRootProc(rank,"rank= %d: l1, l2, n1, n2, m1, m2= %d %d %d %d %d %d \n", rank, l1, l2, n1, n2, m1, m2);
+ acLogFromRootProc(rank,"rank= %d: zlen= %.14f %.14f \n", config.real_params[AC_zlen], lxyz[2]);
 
 #if LENTROPY
  acLogFromRootProc(rank,"lpressuregradientgas= %d %d \n", lpressuregradient_gas, get_int_param(config,comp_info,AC_lpressuregradient_gas));
@@ -1225,3 +1162,45 @@ extern "C" void random_initial_condition()
   //acGridSynchronizeStream(STREAM_ALL);
 }
 /***********************************************************************************************/
+bool
+has_nans(AcMesh mesh_in)
+{
+  bool res = false;
+  AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
+  for (int i = dims.n0.x; i < dims.n1.x; i++)
+  {
+    for (int j = dims.n0.y; j < dims.n1.y; j++)
+    {
+      for (int k = dims.n0.z; k < dims.n1.z; k++)
+      {
+        for (int ivar = 0; ivar < NUM_VTXBUF_HANDLES; ivar++)
+        {
+          if (isnan(mesh_in.vertex_buffer[ivar][DEVICE_VTXBUF_IDX(i, j, k)]))
+          {
+            res = true;
+            acLogFromRootProc(rank,"nan at %d,%d,%d\n", i, j, k);
+            acLogFromRootProc(rank,"field = %d", ivar);
+          }
+        }
+      }
+    }
+  }
+  return res;
+}
+AcReal max_diffus()
+{
+  AcReal3 dxyz_vals = get_dxyzs();
+  auto max_diffusions = elem_wise_max(visc_get_max_diffus(), magnetic_get_max_diffus(), energy_get_max_diffus());
+  return max_diffusions[0]*dxyz_vals.x/cdtv + max_diffusions[1]*dxyz_vals.y/cdtv2 + max_diffusions[2]*dxyz_vals.z/cdtv3;
+}
+AcReal max_advec()
+{
+#if LHYDRO
+  AcReal umax = 0.;
+  acGridReduceVec(STREAM_DEFAULT, RTYPE_MAX, UUX, UUY, UUZ, &umax);
+  return umax/sqrt(get_dxyzs().x);
+#else
+  return 0.
+#endif
+  
+}

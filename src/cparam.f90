@@ -227,7 +227,7 @@ module Cparam
 !  pi and its derivatives.
 !
   real, parameter :: pi=3.14159265358979323846264338327950d0
-  real, parameter :: pi_1=1./pi,pi4_1=pi**(-4),pi5_1=pi**(-5)
+  real, parameter :: pi_1=1./pi,pi4_1=(1.0)/(pi*pi*pi*pi),pi5_1=1.0/(pi*pi*pi*pi*pi)
   real, parameter :: sqrtpi=1.77245385090551602729816748334115d0
   real, parameter :: sqrt2=1.41421356237309504880168872420970d0
   real, parameter :: sqrt2pi=sqrt2*sqrtpi
@@ -264,5 +264,12 @@ module Cparam
 !$omp threadprivate(lpencil)
 !
   logical, parameter :: loffload=.false.
+
+  integer, parameter :: max_threads_possible = 200
+  integer, parameter :: PERF_DIAGS=1, PERF_WSNAP=2, PERF_POWERSNAP=3, PERF_WSNAP_DOWN=4
+  integer, parameter :: n_helperflags=4
+  integer, parameter :: n_xy_specs_max=10,nk_max=10, nz_max=10
+  integer, parameter :: mname=100
+  integer, parameter :: mname_half=20
 
 endmodule Cparam

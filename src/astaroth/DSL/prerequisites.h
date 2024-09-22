@@ -2,24 +2,32 @@
 // and finally for the definition of the solve kernel.
 #define IN_DSL 1
 
+#define double real
+#define cpu_pow pow
+#define REAL_MAX AC_REAL_MAX
+
 #include "PC_nghost.h"
 #include "../../PC_moduleflags.h"
 #include "../stdlib/math"
 #include "../stdlib/utils/intrinsics.h"
 
-#include "../../../cparam.inc_c.h"
-const real impossible=3.9085e37;
-const int mcom = mvar+maux_com
-#define mcom 9  //!!!
-//#include "../../../cparam_c.h"
+#include "../../../cparam_c.h"
+
+#define AC_mxgrid mxgrid
+#define AC_mygrid mygrid
+#define AC_mzgrid mzgrid
 
 #include "fieldecs.h"
+#include "../stdlib/grid.h"
 #include "../stdlib/operators.h"
 #include "../stdlib/integrators.h"
 #include "../stdlib/units.h"
 #include "../stdlib/utils/kernels.h"
-#include "../phys_consts.h"
 #include "PC_modulepardecs.h"
+//TP: x,y and z are too generic macros
+#undef x
+#undef y
+#undef z
 
 // declare here reduction results needed for the timestep
 

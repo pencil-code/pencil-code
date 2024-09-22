@@ -86,10 +86,12 @@ if [[ $1 == 'par' ]]; then
   sed -n '
           /^[^!]*call  *copy_addr[a-zA-Z0-9_]* *(/ {
 	    s/^[^!]*call  *copy_addr[a-zA-Z0-9_]* *( *\([a-zA-Z0-9_]*\) *, *p_par(\([0-9]*\))) *$/ PCLoad(config,comp_info,\uA\uC\l_\1,\1); \/\/ [\2-1] \1 real/w tmp1
+	    s/PCLoad(config,comp_info,AC_dt,dt);.*//
             t cont
 	    s/^[^!]*call  *copy_addr[a-zA-Z0-9_]* *( *\([a-zA-Z0-9_]*\) *, *p_par(\([0-9]*\))) *! *\([a-zA-Z][a-zA-Z]*\) *$/ PCLoad(config,comp_info,\uA\uC\l_\1,\1); \/\/ [\2-1] \1 \3/w tmp1
             t cont
 	    s/^[^!]*call  *copy_addr[a-zA-Z0-9_]* *( *\([a-zA-Z0-9_]*\) *, *p_par(\([0-9]*\))) *! *( *\([a-zA-Z0-9_][a-zA-Z0-9_]*\) *) *$/ PCLoad(config,comp_info,\uA\uC\l_\1,\1); \/\/ [\2-1] \1 real(\3)/w tmp1
+	    s/^[^!]*call  *copy_addr[a-zA-Z0-9_]* *( *\([a-zA-Z0-9_]*\) *, *p_par(\([0-9]*\))) *! *( *\([a-zA-Z0-9_][a-zA-Z0-9_]*\) *) *( *\([a-zA-Z0-9_][a-zA-Z0-9_]*\) *) *$/ PCLoad(config,comp_info,\uA\uC\l_\1,\1); \/\/ [\2-1] \1 real(\3) (\4)/w tmp1
 #            s/call  *copy_addr[a-zA-Z0-9_]* *( *\([a-zA-Z0-9_]*\) *, *p_par(\([0-9]*\))) *! *( *\([a-zA-Z0-9_][a-zA-Z0-9_]*\) *) *$/ \/\/memcpy(config.real_arr_params[\uA\uC\l_\1],\1,\3*sizeof(real)); \/\/ [\2-1] \1 real(\3)/w tmp1
             t cont
 	    s/^[^!]*call  *copy_addr[a-zA-Z0-9_]* *( *\([a-zA-Z0-9_]*\) *, *p_par(\([0-9]*\))) *! *\([a-zA-Z]*\) *( *\([a-zA-Z0-9_][a-zA-Z0-9_]*\) *) *$/ PCLoad(config,\uA\uC\l_\1,\1);  \/\/ [\2-1] \1 \3(\4)/w tmp1
@@ -141,13 +143,17 @@ if [ -f tmp1 ]; then
          : cont
          p
          s/^#define *\([a-zA-Z0-9_]*\).*(( *\([a-zA-Z0-9_]*\) .*$/run_const \2 AC_\1 \/\/ from '$modname'\n#define \1 \AC_\1/
+	 s/.*run_const real AC_dt //
+	 s/#define dt AC_dt//
          H
          b end
          : dimen
          s/^.*\/\/ *\(\[.*\]\) *\([a-zA-Z0-9_]*\)  *\([a-zA-Z0-9_]*\) *\(( *[a-zA-Z0-9_]* *)\) *$/#define \2 ((\3 *) p_'$1'_'$modname'\1) \/\/ \4/
+         s/^.*\/\/ *\(\[.*\]\) *\([a-zA-Z0-9_]*\)  *\([a-zA-Z0-9_]*\) *\(( *[a-zA-Z0-9_]* *)\) *\(( *[a-zA-Z0-9_]* *)\) *$/#define \2 ((\3 *) p_'$1'_'$modname'\1) \/\/ \4 \5/ 
          p
-         s/^#define *\([a-zA-Z0-9_]*\) (( *\([a-zA-Z0-9_]*\) \*).*\/\/ *(\([mn]\)\([xyz]*\)) *$/gmem real AC_\1[AC_\3\4] \/\/ from '$modname'\n#define \1 \AC_\1/
+         s/^#define *\([a-zA-Z0-9_]*\) (( *\([a-zA-Z0-9_]*\) \*).*\/\/ *(\([mn]\)\([xyz]*\)\(grid\)\?) *$/gmem real AC_\1[AC_\3\4\5] \/\/ from '$modname'\n#define \1 \AC_\1/
          s/^#define *\([a-zA-Z0-9_]*\) (( *\([a-zA-Z0-9_]*\) \*).*\/\/ *(\([a-zA-Z0-9_][a-zA-Z0-9_]*\)) *$/real AC_\1[\3] \/\/ from '$modname'\n#define \1 \AC_\1/
+         s/^#define *\([a-zA-Z0-9_]*\) (( *\([a-zA-Z0-9_]*\) \*).*\/\/ *(\([a-zA-Z0-9_][a-zA-Z0-9_]*\)) *(\([a-zA-Z0-9_][a-zA-Z0-9_]*\)) *$/real AC_\1[\3][\4] \/\/ from '$modname'\n#define \1 \AC_\1/
          H
          : end
          $ {

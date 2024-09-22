@@ -4665,7 +4665,6 @@ module EquationOfState
     call copy_addr(gamma_m1,p_par(7))
     call copy_addr(gamma1,p_par(8))
     call copy_addr(cv1,p_par(9))
-    call copy_addr(density_scale_factor,p_par(10))
 !
     endsubroutine pushpars2c
 !***********************************************************************
