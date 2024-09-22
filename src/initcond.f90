@@ -5159,7 +5159,7 @@ module Initcond
       k1hel, k2hel,lremain_in_fourier,lpower_profile_file,qexp, &
       lno_noise,nfact0,lfactors0,compk0,llogbranch0,initpower_med0, &
       kpeak_log0,kbreak0,ldouble0,nfactd0,qirro,lsqrt_qirro,time, &
-      cs,lreinit,ltime_old,ltime_new,lrho_nonuni,ilnr,l2d)
+      cs,lreinit,ltime_old,ltime_new,lrho_nonuni,ilnr,l2d,lnot_amp)
 !
 !  Produces helical (q**n * (1+q)**(N-n))*exp(-k**l/cutoff**l) spectrum
 !  when kgaussian=0, where q=k/kpeak, n=initpower, N=initpower2,
@@ -5188,12 +5188,12 @@ module Initcond
       use General, only: loptest, roptest
 !
       logical, intent(in), optional :: lscale_tobox, lsquash, lremain_in_fourier, ltime_old
-      logical, intent(in), optional :: ltime_new, lrho_nonuni
+      logical, intent(in), optional :: ltime_new, lrho_nonuni, lnot_amp
       logical, intent(in), optional :: lpower_profile_file, lno_noise, lfactors0
       logical, intent(in), optional :: llogbranch0,ldouble0, lreinit, l2d, lsqrt_qirro
       logical :: lvectorpotential, lscale_tobox1, lsquash1, lremain_in_fourier1, lno_noise1
       logical :: lskip_projection,lfactors,llogbranch,ldouble, ltime, ltime_old1
-      logical :: ltime_new1, lrho_nonuni1, l2d1, lsqrt_qirro1
+      logical :: ltime_new1, lrho_nonuni1, l2d1, lsqrt_qirro1, lnot_amp1
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i, i1, i2, ikx, iky, ikz, stat, ik, nk, ilnr1
       integer, intent(in), optional :: ilnr
@@ -5281,6 +5281,7 @@ module Initcond
 !
      nfact = roptest(nfact0,4.)
      lfactors = loptest(lfactors0)
+     lnot_amp1 = loptest(lnot_amp)
 !
 !  alberto: added option to include additional logarithmic branch
 !
@@ -5600,20 +5601,24 @@ module Initcond
 !
       if (lfactors) then
         !print*,'TEST Lx, kpeak',Lx,kpeak
-        !fact=fact*(2*pi/Lx)**0.5*(kpeak1*Lx)**2
-        fact=fact*kpeak1*scale_factor**1.5/(2*pi*ampl)**0.5
-        !
-        ! alberto: compensate for contribution due to helicity
-        ! taking into account generic qirro (only correct when
-        ! lsqrt_qirro is true)
-        !
-        fact=fact/(1 + relhel**2*(1 - qirro1))**0.5
-        ! compensate when compk is non-zero
-        fact=fact*kpeak21**compk
-        !fact=fact*(kpeak1*scale_factor)
+        if (lnot_amp1) then
+          fact=fact*(2*pi/Lx)**0.5
+        else
+          fact=fact*kpeak1*scale_factor**1.5/(2*pi*ampl)**0.5
+          !
+          ! alberto: compensate for contribution due to helicity
+          ! taking into account generic qirro (only correct when
+          ! lsqrt_qirro is true)
+          !
+          fact=fact/(1 + relhel**2*(1 - qirro1))**0.5
+          ! compensate when compk is non-zero
+          fact=fact*kpeak21**compk
+          !fact=fact*(kpeak1*scale_factor)
+        endif
       else
         fact=fact*(kpeak1*scale_factor)**1.5
       endif
+ 
       if (lvectorpotential) then
         fact=fact*kpeak1
         if (kgaussian /= 0.) fact=fact*kgaussian**(-.5*(initpower+3.))

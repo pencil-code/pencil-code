@@ -120,6 +120,7 @@ module Special
   logical :: lscale_tobox=.false., lskip_projection_GW=.false., lvectorpotential=.false.
   logical :: lnophase_in_stress=.false., llinphase_in_stress=.false., lconstmod_in_stress=.false.
   logical :: lno_noise_GW=.false., lfactors_GW=.false.,lcomp_GWs_k=.false.,lcomp_GWh_k=.false.
+  logical :: lnot_amp_GW=.true.
   logical :: llogbranch_GW=.false., ldouble_GW=.false., lLighthill=.false.
   real, dimension(3,3) :: ij_table
   real :: c_light2=1., delk=0., tdelk=0., tau_delk=1.
@@ -747,7 +748,7 @@ module Special
             lskip_projection_GW, lvectorpotential, &
             lscale_tobox=lscale_tobox, k1hel=k1hel, k2hel=k2hel, &
             lremain_in_fourier=.true., lno_noise=lno_noise_GW, &
-            lfactors0=lfactors_GW, nfact0=nfact_GWh, compk0=compkh, &
+            lfactors0=lfactors_GW, lnot_amp=lnot_amp_GW, nfact0=nfact_GWh, compk0=compkh, &
             llogbranch0=llogbranch_GW,initpower_med0=initpower_med_GW, &
             kpeak_log0=kpeak_log_GW,kbreak0=kbreak_GW,ldouble0=ldouble_GW, &
             nfactd0=nfact_GW)
@@ -756,7 +757,7 @@ module Special
             lskip_projection_GW, lvectorpotential, &
             lscale_tobox=lscale_tobox, k1hel=k1hel, k2hel=k2hel, &
             lremain_in_fourier=.true., lno_noise=lno_noise_GW, &
-            lfactors0=lfactors_GW, nfact0=nfact_GWs, compk0=compks, &
+            lfactors0=lfactors_GW, lnot_amp=lnot_amp_GW, nfact0=nfact_GWs, compk0=compks, &
             llogbranch0=llogbranch_GW,initpower_med0=initpower_med_GWs, &
             kpeak_log0=kpeak_log_GW,kbreak0=kbreak_GW,ldouble0=ldouble_GW, &
             nfactd0=nfact_GW)
@@ -766,7 +767,7 @@ module Special
             lskip_projection_GW, lvectorpotential, &
             lscale_tobox=lscale_tobox, k1hel=k1hel, k2hel=k2hel, &
             lremain_in_fourier=.true., lno_noise=lno_noise_GW, &
-            lfactors0=lfactors_GW, nfact0=nfact_GWh, compk0=compkh, &
+            lfactors0=lfactors_GW, lnot_amp=lnot_amp_GW, nfact0=nfact_GWh, compk0=compkh, &
             llogbranch0=llogbranch_GW,initpower_med0=initpower_med_GW, &
             kpeak_log0=kpeak_log_GW,kbreak0=kbreak_GW,ldouble0=ldouble_GW, &
             nfactd0=nfact_GW)
@@ -798,7 +799,7 @@ module Special
             lskip_projection_GW, lvectorpotential, &
             lscale_tobox=lscale_tobox, k1hel=k1hel, k2hel=k2hel, &
             lremain_in_fourier=.true., lno_noise=lno_noise_GW, &
-            lfactors0=lfactors_GW, nfact0=nfact_GWh, compk0=compkh, &
+            lfactors0=lfactors_GW, lnot_amp=lnot_amp_GW, nfact0=nfact_GWh, compk0=compkh, &
             llogbranch0=llogbranch_GW,initpower_med0=initpower_med_GW, &
             kpeak_log0=kpeak_log_GW,kbreak0=kbreak_GW,ldouble0=ldouble_GW, &
             nfactd0=nfact_GW)
