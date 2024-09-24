@@ -594,9 +594,11 @@ module Special
         if (lCVE) then   
           call dot(p%oo,p%bb,oobb)
           call dot(p%oo,p%gmuS,oogmuS)
-!          call dot(p%oo,p%gmu5,oogmu5)
+          call dot(p%oo,p%gmu5,oogmu5)
           df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) - lambda5*eta*muSmu5*oobb &
             -2.*Cw*p%muS*oogmuS
+          df(l1:l2,m,n,imuS) = df(l1:l2,m,n,imuS) &
+            -Cw*p%mu5*oogmuS -Cw*p%muS*oogmu5
         endif
 !  Contributions to timestep from muS equation
         dt1_CMW = sqrt(coef_mu5*coef_muS)*sqrt(p%b2)*sqrt(dxyz_2)
