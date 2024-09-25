@@ -239,6 +239,8 @@ logical, pointer :: ldustnucleation, lpartnucleation
   integer, dimension(nchemspec) :: idiag_hm=0      ! DIAG_DOC: $\left<H_{x,max}\right>$
   integer, dimension(nchemspec) :: idiag_cpm=0     ! DIAG_DOC: $\left<c_{p,x}\right>$
   integer, dimension(nchemspec) :: idiag_diffm=0   ! DIAG_DOC: $\left<D_{x}\right>$
+  integer, dimension(nchemspec) :: idiag_diffmax=0 ! DIAG_DOC: $\left<D_{x,max}\right>$
+  integer, dimension(nchemspec) :: idiag_diffmin=0 ! DIAG_DOC: $\left<D_{x,min}\right>$
   integer, dimension(nchemspec) :: idiag_Ymz=0     ! DIAG_DOC: $\left<Y_x\right>_{xy}(z)$
   integer :: idiag_dtchem=0     ! DIAG_DOC: $dt_{chem}$
   integer :: idiag_nuclrmin=0! DIAG_DOC: $\left< r_{\min} \right>$
@@ -248,8 +250,8 @@ logical, pointer :: ldustnucleation, lpartnucleation
   integer :: idiag_cvfull=0
   integer :: idiag_e_intm=0
 !
-  integer :: idiag_lambdam=0
-  integer :: idiag_num=0
+  integer :: idiag_lambdam=0,idiag_lambdamax=0,idiag_lambdamin=0
+  integer :: idiag_num=0,idiag_numax=0,idiag_numin=0
 !
 !  Auxiliaries.
 !
@@ -3450,16 +3452,28 @@ logical, pointer :: ldustnucleation, lpartnucleation
           if (idiag_TYm(ii)/= 0) &
             call sum_mn_name(max(1.-f(l1:l2,m,n,ichemspec(ii))/Ythresh(ii),0.),idiag_TYm(ii))
           if (idiag_diffm(ii)/= 0) call sum_mn_name(Diff_full_add(l1:l2,m,n,ii),idiag_diffm(ii))
+          if (idiag_diffmax(ii)/= 0) call max_mn_name(Diff_full_add(l1:l2,m,n,ii),idiag_diffmax(ii))
+          if (idiag_diffmin(ii)/= 0) call max_mn_name(-Diff_full_add(l1:l2,m,n,ii),idiag_diffmin(ii),lneg=.true.)
         enddo
 !
         call sum_mn_name(cp_full(l1:l2,m,n),idiag_cpfull)
         call sum_mn_name(cv_full(l1:l2,m,n),idiag_cvfull)
 !
-        call sum_mn_name(lambda_full(l1:l2,m,n),idiag_lambdam) 
-        call sum_mn_name(f(l1:l2,m,n,iviscosity),idiag_num)
+        if (idiag_lambdam/=0) &
+             call sum_mn_name(lambda_full(l1:l2,m,n),idiag_lambdam) 
+        if (idiag_lambdamax/=0) &
+             call max_mn_name(lambda_full(l1:l2,m,n),idiag_lambdamax) 
+        if (idiag_lambdamin/=0) &
+             call max_mn_name(-lambda_full(l1:l2,m,n),idiag_lambdamin,lneg=.true.) 
+        if (idiag_num/=0) &
+             call sum_mn_name(f(l1:l2,m,n,iviscosity),idiag_num)
+        if (idiag_numax/=0) &
+             call max_mn_name(f(l1:l2,m,n,iviscosity),idiag_numax)
+        if (idiag_numin/=0) &
+             call max_mn_name(-f(l1:l2,m,n,iviscosity),idiag_numin,lneg=.true.)
         if (lnucleation) then
-          call sum_mn_name(p%nucl_rmin,idiag_nuclrmin)
-          call sum_mn_name(p%nucl_rate,idiag_nuclrate)
+          if (idiag_nuclrmin/=0) call sum_mn_name(p%nucl_rmin,idiag_nuclrmin)
+          if (idiag_nuclrate/=0) call sum_mn_name(p%nucl_rate,idiag_nuclrate)
         endif
 !
 !  Sample for hard coded diffusion diagnostics
@@ -3510,6 +3524,8 @@ logical, pointer :: ldustnucleation, lpartnucleation
       character(len=6) :: diagn_hm
       character(len=6) :: diagn_cpm
       character(len=7) :: diagn_diffm
+      character(len=7) :: diagn_diffmax
+      character(len=7) :: diagn_diffmin
       character(len=fmtlen) :: sname
 !
       lwr = .false.
@@ -3530,6 +3546,8 @@ logical, pointer :: ldustnucleation, lpartnucleation
         idiag_hm = 0
         idiag_cpm = 0
         idiag_diffm = 0
+        idiag_diffmax = 0
+        idiag_diffmin = 0
 !
         idiag_cpfull = 0
         idiag_cvfull = 0
@@ -3537,7 +3555,11 @@ logical, pointer :: ldustnucleation, lpartnucleation
         idiag_Ymz = 0
 !
         idiag_lambdam = 0
+        idiag_lambdamax = 0
+        idiag_lambdamin = 0
         idiag_num = 0
+        idiag_numax = 0
+        idiag_numin = 0
 !
         idiag_nuclrmin=0
         idiag_nuclrate=0
@@ -3568,6 +3590,10 @@ logical, pointer :: ldustnucleation, lpartnucleation
           call parse_name(iname,cname(iname),cform(iname),trim(diagn_cpm),idiag_cpm(ii))
           diagn_diffm = 'diff'//trim(adjustl(number))//'m'
           call parse_name(iname,cname(iname),cform(iname),trim(diagn_diffm),idiag_diffm(ii))
+          diagn_diffmax = 'diff'//trim(adjustl(number))//'max'
+          call parse_name(iname,cname(iname),cform(iname),trim(diagn_diffmax),idiag_diffmax(ii))
+          diagn_diffmin = 'diff'//trim(adjustl(number))//'min'
+          call parse_name(iname,cname(iname),cform(iname),trim(diagn_diffmin),idiag_diffmin(ii))
         enddo
         call parse_name(iname,cname(iname),cform(iname),'dtchem',idiag_dtchem)
         call parse_name(iname,cname(iname),cform(iname),'cpfull',idiag_cpfull)
@@ -3580,7 +3606,11 @@ logical, pointer :: ldustnucleation, lpartnucleation
 !        call parse_name(iname,cname(iname),cform(iname),'cp1m',idiag_cp1m)
         call parse_name(iname,cname(iname),cform(iname),'e_intm',idiag_e_intm)
         call parse_name(iname,cname(iname),cform(iname),'lambdam',idiag_lambdam)
+        call parse_name(iname,cname(iname),cform(iname),'lambdamax',idiag_lambdamax)
+        call parse_name(iname,cname(iname),cform(iname),'lambdamin',idiag_lambdamin)
         call parse_name(iname,cname(iname),cform(iname),'num',idiag_num)
+        call parse_name(iname,cname(iname),cform(iname),'numax',idiag_numax)
+        call parse_name(iname,cname(iname),cform(iname),'numin',idiag_numin)
 !
 !  Sample for hard-coded diffusion diagnostics
 !
