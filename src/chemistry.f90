@@ -251,6 +251,7 @@ logical, pointer :: ldustnucleation, lpartnucleation
   integer :: idiag_e_intm=0
 !
   integer :: idiag_lambdam=0,idiag_lambdamax=0,idiag_lambdamin=0
+  integer :: idiag_alpham=0,idiag_alphamax=0,idiag_alphamin=0
   integer :: idiag_num=0,idiag_numax=0,idiag_numin=0
 !
 !  Auxiliaries.
@@ -3451,8 +3452,8 @@ logical, pointer :: ldustnucleation, lpartnucleation
             call max_mn_name(-f(l1:l2,m,n,ichemspec(ii)),idiag_Ymin(ii),lneg=.true.)
           if (idiag_TYm(ii)/= 0) &
             call sum_mn_name(max(1.-f(l1:l2,m,n,ichemspec(ii))/Ythresh(ii),0.),idiag_TYm(ii))
-          if (idiag_diffm(ii)/= 0) call sum_mn_name(Diff_full_add(l1:l2,m,n,ii),idiag_diffm(ii))
-          if (idiag_diffmax(ii)/= 0) call max_mn_name(Diff_full_add(l1:l2,m,n,ii),idiag_diffmax(ii))
+          if (idiag_diffm(ii)/= 0)   call sum_mn_name( Diff_full_add(l1:l2,m,n,ii),idiag_diffm(ii))
+          if (idiag_diffmax(ii)/= 0) call max_mn_name( Diff_full_add(l1:l2,m,n,ii),idiag_diffmax(ii))
           if (idiag_diffmin(ii)/= 0) call max_mn_name(-Diff_full_add(l1:l2,m,n,ii),idiag_diffmin(ii),lneg=.true.)
         enddo
 !
@@ -3464,7 +3465,13 @@ logical, pointer :: ldustnucleation, lpartnucleation
         if (idiag_lambdamax/=0) &
              call max_mn_name(lambda_full(l1:l2,m,n),idiag_lambdamax) 
         if (idiag_lambdamin/=0) &
-             call max_mn_name(-lambda_full(l1:l2,m,n),idiag_lambdamin,lneg=.true.) 
+             call max_mn_name(-lambda_full(l1:l2,m,n),idiag_lambdamin,lneg=.true.)
+         if (idiag_alpham/=0) &
+             call sum_mn_name(lambda_full(l1:l2,m,n)/(p%rho*cp_full(l1:l2,m,n)),idiag_alpham) 
+        if (idiag_alphamax/=0) &
+             call max_mn_name(lambda_full(l1:l2,m,n)/(p%rho*cp_full(l1:l2,m,n)),idiag_alphamax) 
+        if (idiag_alphamin/=0) &
+             call max_mn_name(-lambda_full(l1:l2,m,n)/(p%rho*cp_full(l1:l2,m,n)),idiag_alphamin,lneg=.true.) 
         if (idiag_num/=0) &
              call sum_mn_name(f(l1:l2,m,n,iviscosity),idiag_num)
         if (idiag_numax/=0) &
@@ -3524,8 +3531,8 @@ logical, pointer :: ldustnucleation, lpartnucleation
       character(len=6) :: diagn_hm
       character(len=6) :: diagn_cpm
       character(len=7) :: diagn_diffm
-      character(len=7) :: diagn_diffmax
-      character(len=7) :: diagn_diffmin
+      character(len=8) :: diagn_diffmax
+      character(len=8) :: diagn_diffmin
       character(len=fmtlen) :: sname
 !
       lwr = .false.
@@ -3557,6 +3564,9 @@ logical, pointer :: ldustnucleation, lpartnucleation
         idiag_lambdam = 0
         idiag_lambdamax = 0
         idiag_lambdamin = 0
+        idiag_alpham = 0
+        idiag_alphamax = 0
+        idiag_alphamin = 0
         idiag_num = 0
         idiag_numax = 0
         idiag_numin = 0
@@ -3608,6 +3618,9 @@ logical, pointer :: ldustnucleation, lpartnucleation
         call parse_name(iname,cname(iname),cform(iname),'lambdam',idiag_lambdam)
         call parse_name(iname,cname(iname),cform(iname),'lambdamax',idiag_lambdamax)
         call parse_name(iname,cname(iname),cform(iname),'lambdamin',idiag_lambdamin)
+        call parse_name(iname,cname(iname),cform(iname),'alpham',idiag_alpham)
+        call parse_name(iname,cname(iname),cform(iname),'alphamax',idiag_alphamax)
+        call parse_name(iname,cname(iname),cform(iname),'alphamin',idiag_alphamin)
         call parse_name(iname,cname(iname),cform(iname),'num',idiag_num)
         call parse_name(iname,cname(iname),cform(iname),'numax',idiag_numax)
         call parse_name(iname,cname(iname),cform(iname),'numin',idiag_numin)
