@@ -1878,6 +1878,7 @@ samples/1d-tests/anelastic_decay/src/cparam.local -text
 samples/1d-tests/anelastic_decay/start.in -text
 samples/1d-tests/anelastic_decay/video.in -text
 samples/1d-tests/axionSU2back/NEVERLOCK -text
+samples/1d-tests/axionSU2back/README.md -text
 samples/1d-tests/axionSU2back/parameters.pro -text
 samples/1d-tests/axionSU2back/print.in -text
 samples/1d-tests/axionSU2back/reference.out -text
