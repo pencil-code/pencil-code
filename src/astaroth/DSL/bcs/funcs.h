@@ -73,7 +73,7 @@ bc_steady_z(topbot, VtxBuffer field)
   else {
   }
 }
-
+#if LENTROPY
 bc_ss_flux(topbot)
 {
   real tmp_xy;
@@ -161,7 +161,7 @@ bc_ss_flux(topbot)
   else {
   }
 }
-
+#endif
 bc_ism(topbot, VtxBuffer field)
 {
   int k;
