@@ -1890,6 +1890,7 @@ module Hydro
         case ('xjump')
           call jump(f,iux,uu_left,uu_right,widthuu,xjump_mid,yjump_mid,zjump_mid,'x')
           call jump(f,iuy,uy_left,uy_right,widthuu,xjump_mid,yjump_mid,zjump_mid,'x')
+        case ('gaussian-x'); call gaussian(ampluu(j),f,iuu,kx=kx_uu)
         case ('Beltrami-x'); call beltrami(ampluu(j),f,iuu,kx=kx_uu,sigma=relhel_uu)
         case ('Beltrami-y'); call beltrami(ampluu(j),f,iuu,ky=ky_uu,sigma=relhel_uu)
         case ('Beltrami-z'); call beltrami(ampluu(j),f,iuu,kz=kz_uu,sigma=relhel_uu)
