@@ -765,9 +765,13 @@ logical, pointer :: ldustnucleation, lpartnucleation
                 endif
 
                 Ysum=sum(f(l,m,n,ichemspec(1:nchemspec)))
-                if ((Ysum  > 1+1e-5) .or. (Ysum < 1-1e-5)) then
+                if ((Ysum  > 1+1e-3) .or. (Ysum < 1-1e-3)) then
                   print*,"l,m,n,Ysum=",l,m,n,Ysum
                   call fatal_error("init_chemistry","The sum of all mass fractions should be unit!")
+                else
+                  ! Normalize the sum of all species to unity
+                  f(l,m,n,ichemspec(1:nchemspec))=&
+                       f(l,m,n,ichemspec(1:nchemspec))/Ysum
                 endif
               enddo
             enddo
