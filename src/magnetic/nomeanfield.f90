@@ -72,6 +72,8 @@ module Magnetic_meanfield
 !
 !  Dummy routine
 !
+      use Cdata
+
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !

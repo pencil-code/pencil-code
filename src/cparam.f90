@@ -261,8 +261,6 @@ module Cparam
   real(KIND=rkind8), parameter :: G_Newton_cgs=6.6742d-8    ! [cm3/g/s2]
   real(KIND=rkind8), parameter :: density_scale_cgs=1.2435d21 ![cm] 403pc Reynolds 91, etc
 !
-!$omp threadprivate(lpencil)
-!
   logical, parameter :: loffload=.false.
 
   integer, parameter :: max_threads_possible = 200

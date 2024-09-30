@@ -464,6 +464,16 @@ module Cdata
   integer :: necessary_imn=0
   integer, dimension (my,mz) :: imn_array
 !
+!  Parameters related to the pencils
+!
+  logical, dimension(npencils) :: lpenc_diagnos   = .false.
+  logical, dimension(npencils) :: lpenc_diagnos2d = .false.
+  logical, dimension(npencils) :: lpenc_video     = .false.
+  logical, dimension(npencils) :: lpenc_requested = .false.
+  logical, dimension(npencils) :: lpencil         = .false.
+!$omp threadprivate(lpencil)
+!
+!
 !  Parameters related to the pencil check.
 !
   real :: penc0=2.345678 ! `impossible' value -- must not be
