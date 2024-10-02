@@ -28,7 +28,7 @@
 
     logical :: luse_trained_tau
 
-    integer :: idiag_tauerror=0        ! DIAG_DOC: $\sqrt{\left<(\sum_{i,j} u_i*u_j - tau_{ij})^2>}$
+    integer :: idiag_tauerror=0        ! DIAG_DOC: $\sqrt{\left<(\sum_{i,j} u_i*u_j - tau_{ij})^2\right>}$
 
     namelist /training_run_pars/ config_file, model_file, it_train, it_train_chkpt, luse_trained_tau
 !
