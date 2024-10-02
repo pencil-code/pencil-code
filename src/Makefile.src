@@ -3096,10 +3096,12 @@ endif
 	    fi; \
 	    echo '  '$$prefix'write( '$$fieldname', rk3'$$suffix'('$$prefix'previous('$$fieldname'), '$$prefix'value('$$fieldname'), '$$funcname'(step_num), step_num, dt) )' >> $(DSL_WORKDIR)/solve.ac; \
 	    if ( ! grep $$funcname' *( *int *step_num *) *{' $(DSL_WORKDIR)/equations.h > /dev/null ); then \
+	      echo '#if '`echo $$modname | sed -e's/\(.*\)/L\U\1/'` >> $(DSL_WORKDIR)/equations.h; \
 	      echo $$funcname'(int step_num){' >> $(DSL_WORKDIR)/equations.h; \
 	      echo '    suppress_unused_warning(step_num)' >> $(DSL_WORKDIR)/equations.h; \
 	      echo '    '$$init >> $(DSL_WORKDIR)/equations.h; \
 	      echo '}' >> $(DSL_WORKDIR)/equations.h; \
+	      echo '#endif' >> $(DSL_WORKDIR)/equations.h; \
 	      echo '' >> $(DSL_WORKDIR)/equations.h; \
 	    fi \
 	  fi; \

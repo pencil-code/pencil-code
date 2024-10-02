@@ -461,8 +461,9 @@ extern "C" void substepGPU(int isubstep)
   {
       acGridSynchronizeStream(STREAM_ALL);
       acGridFinalizeReduceLocal(rhs);
+      AcReal maxadvec = 0.;
 #if LHYDRO
-      AcReal maxadvec = acDeviceGetOutput(acGridGetDevice(), AC_maxadvec)/cdt;
+      maxadvec = acDeviceGetOutput(acGridGetDevice(), AC_maxadvec)/cdt;
 #endif
 #if LENTROPY
       //AcReal maxchi    = dev->output.real_outputs[AC_maxchi];
@@ -987,8 +988,10 @@ void checkConfig(AcMeshInfo &config, AcCompInfo& comp_info)
 // acLogFromRootProc(rank,"rank= %d: l1, l2, n1, n2, m1, m2= %d %d %d %d %d %d \n", rank, l1, l2, n1, n2, m1, m2);
  acLogFromRootProc(rank,"rank= %d: zlen= %.14f %.14f \n", config.real_params[AC_zlen], lxyz[2]);
 
-#if LENTROPY
+#if LHYDRO
  acLogFromRootProc(rank,"lpressuregradientgas= %d %d \n", lpressuregradient_gas, get_int_param(config,comp_info,AC_lpressuregradient_gas));
+#endif
+#if LENTROPY
  acLogFromRootProc(rank,"chi= %f %f \n", chi, get_real_param(config,comp_info,AC_chi));
  acLogFromRootProc(rank,"nkramers= %f %f \n", nkramers, get_real_param(config,comp_info,AC_nkramers));
  acLogFromRootProc(rank,"hcond0_kramers= %f %f \n", hcond0_kramers, get_real_param(config,comp_info,AC_hcond0_kramers));
@@ -1200,7 +1203,7 @@ AcReal max_advec()
   acGridReduceVec(STREAM_DEFAULT, RTYPE_MAX, UUX, UUY, UUZ, &umax);
   return umax/sqrt(get_dxyzs().x);
 #else
-  return 0.
+  return 0.;
 #endif
   
 }

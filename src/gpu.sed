@@ -5,7 +5,6 @@
 /BORDER_PROFILES/ b end
 /DEBUG/ b end
 /DERIV/ b end
-/DSL_MODULE/ b end
 /FOURIER/ b end
 /GHOSTFOLD/ b end
 /GSL/ b end
@@ -22,6 +21,7 @@
 /SYSCALLS/ b end
 /TESTPERTURB/ b end
 /TIMEAVG/ b end
+/VISCOSITY/ b end
 /WENO_TRANSPORT/ b end
 /STREAMLINES/ b end
 /YINYANG/ b end
@@ -30,7 +30,7 @@
 /MULTITHREADING/ b end
 /GPU_VENDOR/ b end
 /RUNTIME_COMPILATION/ b end
-s/^ *[A-Z0-9_]* *= *noviscosity *$/#undef LVISCOSITY/ 
+#s/^ *VISCOSITY *= *noviscosity *$/#undef LVISCOSITY/ 
 t prin
 b cont0
 : prin
