@@ -23,7 +23,7 @@
         + zeta * rho1 * divergence(UU) * divergence(UU)   // precalculated?
 #endif
 #if LMAGNETIC
-  j = (gradient_of_divergence(AA) - veclaplace(AA))/mu0
+  j = (gradient_of_divergence(AA) - laplace(AA))/mu0
   rhs += eta * mu0 * dot(j,j)*rho1
 #endif
 
@@ -36,6 +36,6 @@
   #include "../entropy/heat_cond_const_chi.h"
 
 #if LHYDRO
-  rhs += -dot(vecvalue(UU), gradient(SS))
+  rhs += -dot(UU, gradient(SS))
 #endif
   return rhs

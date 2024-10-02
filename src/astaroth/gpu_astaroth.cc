@@ -920,6 +920,11 @@ void setupConfig(AcMeshInfo& config, AcCompInfo& comp_info)
   #include "PC_modulepars.h"
 
   PCLoad(config,comp_info, AC_domain_decomposition, (int3) {nprocx,nprocy,nprocz});
+//TP: TODO deprecate AC_nx loading that AC_nxgrid loading becomes the default
+  PCLoad(config,comp_info, AC_nx, nx);
+  PCLoad(config,comp_info, AC_ny, ny);
+  PCLoad(config,comp_info, AC_nz, nz);
+
   PCLoad(config,comp_info, AC_nxgrid, nxgrid);
   PCLoad(config,comp_info, AC_nygrid, nygrid);
   PCLoad(config,comp_info, AC_nzgrid, nzgrid);

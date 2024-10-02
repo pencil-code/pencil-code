@@ -17,7 +17,7 @@ else{
     lnrho = value(LNRHO)
 }   // v
 #if LMAGNETIC
-    jj = (gradient_of_divergence(AA) - veclaplace(AA))/mu0
+    jj = (gradient_of_divergence(AA) - laplace(AA))/mu0
     bb = curl(AA)
     advec2 = norm2(bb)*rho1/mu0
 #else
@@ -39,7 +39,7 @@ else{
     }
 #endif
     return rhs 
-           - gradients(UU) * uu   // order?
+           - gradient(UU) * uu   // order?
 #if LENTROPY
            - cs2 * (gradient(SS)/cp + glnrho)
 #else
