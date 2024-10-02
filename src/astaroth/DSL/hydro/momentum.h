@@ -39,7 +39,7 @@ else{
     }
 #endif
     return rhs 
-           - gradient(UU) * uu   // order?
+           - gradient_tensor(UU) * uu   // order?
 #if LENTROPY
            - cs2 * (gradient(SS)/cp + glnrho)
 #else
