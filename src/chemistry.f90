@@ -5587,7 +5587,9 @@ logical, pointer :: ldustnucleation, lpartnucleation
             if (lroot) print*, ' mass fraction, %,    ', YY_k, &
                 species_constants(ind_chem,imass)
             if (species_constants(ind_chem,imass)>0.) then
-             air_mass=air_mass+YY_k/species_constants(ind_chem,imass)
+              air_mass=air_mass+YY_k*0.01/species_constants(ind_chem,imass)
+              print*,"ind_chem,YY_k,species_constants(ind_chem,imass),air_mass=",&
+                   ind_chem,YY_k,species_constants(ind_chem,imass),air_mass
             endif
 
             if (StartInd==80) exit
@@ -5712,7 +5714,7 @@ logical, pointer :: ldustnucleation, lpartnucleation
         print*, 'Air mean weight, g/mol', air_mass
         print*, 'R', k_B_cgs/m_u_cgs
       endif
-      
+
       close(file_id)
 !
     endsubroutine air_field
