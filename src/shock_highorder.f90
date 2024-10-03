@@ -112,7 +112,6 @@ module Shock
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      real, dimension (-min(nghost,3):min(nghost,3)) :: weights
       integer :: i,j,k,idum
 !
 !  Initialize shock profile to zero
