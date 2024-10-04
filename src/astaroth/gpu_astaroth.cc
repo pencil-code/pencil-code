@@ -1069,8 +1069,10 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out, int c
 #endif
   checkConfig(mesh.info,comp_info);
   acCheckDeviceAvailability();
-  acGridInit(mesh.info);
+  acGridInit(mesh);
   rhs = acGetDSLTaskGraph(AC_rhs);
+  //TP: TODO call this taskgraph and compare the result to calling PC funcs
+  auto boundconds_graph = acGetDSLTaskGraph(boundconds);
   acGridSynchronizeStream(STREAM_ALL);
   acLogFromRootProc(rank, "DONE initializeGPU\n");
   fflush(stdout);
