@@ -2915,6 +2915,11 @@ samples/ascalar/src/.current-precision -text
 samples/ascalar/src/Makefile.local -text
 samples/ascalar/src/cparam.local -text
 samples/ascalar/start.in -text
+samples/backreact_infl/print.in -text
+samples/backreact_infl/run.in -text
+samples/backreact_infl/src/Makefile.local -text
+samples/backreact_infl/src/cparam.local -text
+samples/backreact_infl/start.in -text
 samples/backwards-compatible/IDL.csh -text
 samples/backwards-compatible/NEVERLOCK -text
 samples/backwards-compatible/NOSTART -text
