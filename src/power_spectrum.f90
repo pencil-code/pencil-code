@@ -3452,7 +3452,7 @@ outer:  do ikz=1,nz
    pdf_yy=0
    pdf_scl=1./pdf_rms
 !
-!$omp parallel private(pdf_var,logscale,gcc,gcc2,l,l1,l2,pdf_dx,pdf_dx1,i_pdf) num_threads(num_helper_threads) copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM,MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+!$omp parallel private(pdf_var,logscale,gcc,gcc2,l,l2,pdf_dx,pdf_dx1,i_pdf) num_threads(num_helper_threads) copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM,MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
 !$ thread_id = omp_get_thread_num()+1
 !
 !  m-n loop
