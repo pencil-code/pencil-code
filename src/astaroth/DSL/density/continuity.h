@@ -1,10 +1,10 @@
 // checked 17.6.
 rhs=0. 
+glnrho = gradient(LNRHO)   // grad(rho) or grad(lnrho)!
 
 #include "../density/diffusivity.h"
 
 #if LHYDRO
-  glnrho = gradient(LNRHO)   // grad(rho) or grad(lnrho)!
   if (ldensity_nolog){
     rhs += - value(RHO)*divergence(UU)
   }

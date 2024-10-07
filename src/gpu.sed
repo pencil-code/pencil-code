@@ -23,6 +23,7 @@
 /TIMEAVG/ b end
 /VISCOSITY/ b end
 /WENO_TRANSPORT/ b end
+/SHEAR/ b end
 /STREAMLINES/ b end
 /YINYANG/ b end
 /PARTICLES/ b end
@@ -30,6 +31,7 @@
 /MULTITHREADING/ b end
 /GPU_VENDOR/ b end
 /RUNTIME_COMPILATION/ b end
+/FARRAY/ b end
 #s/^ *VISCOSITY *= *noviscosity *$/#undef LVISCOSITY/ 
 t prin
 b cont0
