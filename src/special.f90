@@ -709,7 +709,8 @@
       integer :: i
       do i=1,n_special_modules
         call caller6(special_sub_handles(i,I_SPECIAL_CALC_SPECTRA_BYTE),f, &
-                     spec,spec_hel,lfirstcall,kind,3)
+                     spec,spec_hel,spec_2d,spec_2d_hel,lfirstcall,kind,3)
+!                    spec,spec_hel,lfirstcall,kind,3)
 !        call caller5_str5(special_sub_handles(i,I_SPECIAL_CALC_SPECTRA),f, &
 !                         spec, spec_hel, lfirstcall, kind)
       enddo
