@@ -4102,7 +4102,9 @@ module Magnetic
 ! The Ohm's current is independent of loverride_ee2, etc.
 ! AB: eta_total and the rest are pencils, but it complains about inconsistent ranks. So I put (1).
 !
-            p%jj_ohm=(p%el+p%uxb)*mu01/eta_total(1)
+            do j=1,3
+              p%jj_ohm(:,j)=(p%el(:,j)+p%uxb(:,j))*mu01/eta_total
+            enddo
 !
 !  Compute current for Lorentz force.
 !  Note that loverride_ee2 is a "permanent" switch,
