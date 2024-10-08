@@ -61,6 +61,15 @@ module Power_spectrum
   logical :: lpowerdat_existed=.false.
   real :: L_min, L_min_xy
   integer :: nk_xyz, nk_xy
+  real, dimension(nxgrid) :: kx
+  real, dimension(nygrid) :: ky
+  real, dimension(nzgrid) :: kz
+!TP: work buffers for power funcs
+!TP: TODO allocate these at initialize func based on are they actually used
+  real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im,c_re,c_im,d_re,d_im, h_re,h_im
+  real, dimension(nx,ny,nz,3) :: a_vec_re,a_vec_im, b_vec_re
+  real, dimension(nx,ny,nz) :: a2
+!
 !
   namelist /power_spectrum_run_pars/ &
       lintegrate_shell, lintegrate_z, lcomplex, ckxrange, ckyrange, czrange, &
@@ -81,9 +90,6 @@ module Power_spectrum
 
       integer :: ikr, ikmu, ind, ikx, iky, ikz, i, len
       real :: k2
-      real, dimension(nxgrid) :: kx
-      real, dimension(nygrid) :: ky
-      real, dimension(nzgrid) :: kz
       integer, dimension(:), allocatable :: order
 
       !!! the following warnings should become fatal errors
@@ -162,6 +168,17 @@ outer:  do ikz=1,nz
         call quick_sort(k2s(:nk_truebin),order)
 
       endif
+
+      !
+      !  Define wave vector, defined here for the *full* mesh.
+      !  Each processor will see only part of it.
+      !  Ignore *2*pi/Lx factor, because later we want k to be integers
+      !
+      if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
+        call warning("initialize_power_spectrum", "computation of wavevector wrong for non-cubical domains")
+      kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
+      ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
+      kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
  
     endsubroutine initialize_power_spectrum
 !***********************************************************************
@@ -337,9 +354,9 @@ outer:  do ikz=1,nz
 ! integer, pointer :: inp,irhop,iapn(:)
   integer :: nk
   integer :: i,k,ikx,iky,ikz,im,in,ivec
-  real, dimension(nx,ny,nz) :: a1,b1
+  real, save, dimension(nx,ny,nz) :: a1,b1
   real :: k2
-  real, dimension(:), allocatable :: spectrum,spectrum_sum
+  real, dimension(:), save, allocatable :: spectrum,spectrum_sum
   character(LEN=fnlen) :: filename
   logical :: lwrite_ks
   !
@@ -353,7 +370,8 @@ outer:  do ikz=1,nz
   else
     nk=nk_xyz
   endif
-  allocate(spectrum(nk),spectrum_sum(nk))
+  if(.not. allocated(spectrum)) allocate(spectrum(nk),spectrum_sum(nk))
+
   spectrum=0.
   !
   !  In fft, real and imaginary parts are handled separately.
@@ -446,12 +464,12 @@ outer:  do ikz=1,nz
          enddo
        enddo
      endif
-  enddo !(loop over ivec)
-  !$omp end parallel
-  !
-  !  Summing up the results from the different processors
-  !  The result is available only on root
-  !
+ enddo !(loop over ivec)
+ !$omp end parallel
+ !
+ !  Summing up the results from the different processors
+ !  The result is available only on root
+ !
   call mpireduce_sum(spectrum,spectrum_sum,nk)
   !
   !  on root processor, write global result to file
@@ -501,11 +519,7 @@ outer:  do ikz=1,nz
   integer, parameter :: nk=nx/2
   integer :: i,k,ikx,iky,ikz,im,in,ivec
   real, dimension (mx,my,mz,mfarray) :: f
-  real, dimension(nx,ny,nz) :: a1,b1
   real, dimension(nk) :: spectrum,spectrum_sum
-  real, dimension(nxgrid) :: kx
-  real, dimension(nygrid) :: ky
-  real, dimension(nzgrid) :: kz
   character (len=1) :: sp
   !
   !  identify version
@@ -513,18 +527,7 @@ outer:  do ikz=1,nz
   if (lroot .AND. ip<10) call svn_id( &
        "$Id$")
 !
-! KG: added warning about wrong computation of wavenumbers.
 ! KG: See the function get_k2 for an example of how to calculate k2.
-  if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
-    call warning("power_2d", "computation of wavevector wrong for non-cubical domains")
-  !
-  !  Define wave vector, defined here for the *full* mesh.
-  !  Each processor will see only part of it.
-  !  Ignore *2*pi/Lx factor, because later we want k to be integers
-  !
-  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
-  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
-  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
   !
   spectrum=0.
   !
@@ -537,31 +540,31 @@ outer:  do ikz=1,nz
      !
     if (sp=='u') then
       !$omp workshare
-      a1 =f(l1:l2,m1:m2,n1:n2,iux+ivec-1)
+      a_re =f(l1:l2,m1:m2,n1:n2,iux+ivec-1)
       !$omp end workshare
     elseif (sp=='b') then
       !$omp do collapse(2)
       do n=n1,n2
         do m=m1,m2
-          call curli(f,iaa,a1(:,m-nghost,n-nghost),ivec)
+          call curli(f,iaa,a_re(:,m-nghost,n-nghost),ivec)
         enddo
       enddo
     elseif (sp=='a') then
       !$omp workshare
-      a1 =f(l1:l2,m1:m2,n1:n2,iax+ivec-1)
+      a_re =f(l1:l2,m1:m2,n1:n2,iax+ivec-1)
       !$omp end workshare
     else
       call warning('power_2D','no such sp: '//trim(sp))
     endif
      !$omp workshare
-     b1=0.
+     a_im=0.
      !$omp end workshare
 !
 !  Doing the Fourier transform
 !
      !print*, 'ivec1=', ivec
      
-     call fourier_transform_xz(a1,b1)    !!!! MR: causes error - ivec is set back from 1 to 0
+     call fourier_transform_xz(a_re,a_im)    !!!! MR: causes error - ivec is set back from 1 to 0
      !print*, 'ivec2=', ivec
 !    to be replaced by comp_spectrum( f, sp, ivec, ar, ai, fourier_transform_xz )
 !
@@ -573,9 +576,9 @@ outer:  do ikz=1,nz
        do iky=1,ny
          do ikx=1,nx
            k=nint(sqrt(kx(ikx)**2+kz(ikz+ipz*nz)**2))
-           if (k>=0 .and. k<=(nk-1)) spectrum(k+1)=spectrum(k+1)+a1(ikx,iky,ikz)**2+b1(ikx,iky,ikz)**2
+           if (k>=0 .and. k<=(nk-1)) spectrum(k+1)=spectrum(k+1)+a_re(ikx,iky,ikz)**2+a_im(ikx,iky,ikz)**2
 !           if (iky==16 .and. ikx==16) &
-!           print*, 'power_2d:', ikx,iky,ikz,k,nk,a1(ikx,iky,ikz),b1(ikx,iky,ikz),spectrum(k+1)
+!           print*, 'power_2d:', ikx,iky,ikz,k,nk,a_re(ikx,iky,ikz),a_im(ikx,iky,ikz),spectrum(k+1)
          enddo
        enddo
      enddo
@@ -617,14 +620,10 @@ outer:  do ikz=1,nz
 !
     implicit none
 !
-    real, dimension(mx,my,mz,mfarray) :: f
-    character (LEN=*)                 :: sp
-    integer, optional                 :: ivecp
-    real, dimension(nx,ny,nz)         :: ar, ai
-!
-    intent(in)  :: sp, f, ivecp
-    intent(out) :: ar
-    intent(out) :: ai
+    real, dimension(mx,my,mz,mfarray), intent(in) :: f
+    character (LEN=*), intent(in)                 :: sp
+    integer, optional, intent(in)                 :: ivecp
+    real, dimension(nx,ny,nz), intent(out) :: ar, ai
 !
     real, dimension(nx) :: bb
     integer :: m,n,ind,ivec,i,la,le,ndelx
@@ -1085,21 +1084,21 @@ outer:  do ikz=1,nz
   integer :: i, k, ikx, iky, ikz, jkz, im, in, ivec, ivec_jj
   real :: k2
   real, dimension (mx,my,mz,mfarray) :: f
-  real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
   real, dimension(nx) :: jji, b2, j2
   real, dimension(nx,3) :: bb, bbEP, jj, gtmp1, gtmp2
   real, dimension(nk) :: nks,nks_sum
   real, dimension(nk) :: k2m,k2m_sum,krms
   real, dimension(nk) :: spectrum,spectrum_sum
   real, dimension(nk) :: spectrumhel,spectrumhel_sum
-  real, dimension(nk,nzgrid) :: cyl_spectrum, cyl_spectrum_sum
-  real, dimension(nk,nzgrid) :: cyl_spectrumhel, cyl_spectrumhel_sum
-  real, dimension(nxgrid) :: kx
-  real, dimension(nygrid) :: ky
-  real, dimension(nzgrid) :: kz
+  real, allocatable, dimension(:,:), save :: cyl_spectrum, cyl_spectrum_sum
+  real, allocatable, dimension(:,:), save :: cyl_spectrumhel, cyl_spectrumhel_sum
   character (len=3) :: sp
   logical, save :: lwrite_krms=.true.
   logical :: lfirstcall
+
+  if(.not. allocated(cyl_spectrum)) then
+          allocate(cyl_spectrum(nk,nzgrid), cyl_spectrum_sum(nk,nzgrid), cyl_spectrumhel(nk,nzgrid), cyl_spectrumhel_sum(nk,nzgrid))
+  endif
 !
 !  identify version
 !
@@ -1115,14 +1114,6 @@ outer:  do ikz=1,nz
   if (iaakim>0.or.ieekim>0) then
     call magnetic_calc_spectra(f,spectrum,spectrumhel,lfirstcall,sp)
   else
-  !
-  !  Define wave vector, defined here for the *full* mesh.
-  !  Each processor will see only part of it.
-  !  Ignore *2*pi/Lx factor, because later we want k to be integers
-  !
-  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
-  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
-  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
   !
 !$omp parallel private(ivec,jji,bb,jj,b2,j2,gtmp1,gtmp2,bbEP,k2,k,jkz) num_threads(num_helper_threads) copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM,MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
 !$ thread_id = omp_get_thread_num()+1
@@ -1664,16 +1655,12 @@ outer:  do ikz=1,nz
   real, dimension(mx,my,mz,3) :: Lor
   real, dimension(:,:,:,:), allocatable :: tmpv, scrv
   real, dimension(:,:,:), allocatable :: c_re, c_im
-  real, dimension(nx,ny,nz) :: a_re, a_im, b_re, b_im
   real, dimension(nx,3) :: aa,bb,jj,jxb
   real, dimension(nx,3,3) :: aij,bij
   real, dimension(nk) :: nks,nks_sum
   real, dimension(nk) :: k2m,k2m_sum,krms
   real, dimension(nk) :: spectrum, spectrum_sum, spectrum2, spectrum2_sum
   real, dimension(nk) :: spectrumhel, spectrumhel_sum, spectrum2hel, spectrum2hel_sum
-  real, dimension(nxgrid) :: kx
-  real, dimension(nygrid) :: ky
-  real, dimension(nzgrid) :: kz
   character (len=3) :: sp
   logical, save :: lwrite_krms=.true.
 !
@@ -1682,18 +1669,7 @@ outer:  do ikz=1,nz
   if (lroot .AND. ip<10) call svn_id( &
        "$Id$")
 !
-! KG: added warning about wrong computation of wavenumbers.
 ! KG: See the function get_k2 for an example of how to calculate k2.
-  if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
-    call warning("powerLor", "computation of wavevector wrong for non-cubic domains")
-  !
-  !  Define wave vector, defined here for the *full* mesh.
-  !  Each processor will see only part of it.
-  !  Ignore *2*pi/Lx factor, because later we want k to be integers
-  !
-  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
-  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
-  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
   !
   !  Note, if lhydro=F, then f(:,:,:,1:3) does no longer contain
   !  velocity. In that case, we want the magnetic field instead.
@@ -1937,16 +1913,12 @@ outer:  do ikz=1,nz
   real, dimension(mx,my,mz,3) :: Lor
   real, dimension(:,:,:,:), allocatable :: tmpv, scrv
   real, dimension(:,:,:), allocatable :: c_re, c_im
-  real, dimension(nx,ny,nz) :: a_re, a_im, b_re, b_im
   real, dimension(nx,3) :: aa,bb,jj,jxb
   real, dimension(nx,3,3) :: aij,bij
   real, dimension(nk) :: nks,nks_sum
   real, dimension(nk) :: k2m,k2m_sum,krms
   real, dimension(nk) :: spectrum,spectrum_sum
   real, dimension(nk) :: spectrumhel,spectrumhel_sum
-  real, dimension(nxgrid) :: kx
-  real, dimension(nygrid) :: ky
-  real, dimension(nzgrid) :: kz
   character (len=3) :: sp
   logical, save :: lwrite_krms=.true.
 !
@@ -1955,18 +1927,7 @@ outer:  do ikz=1,nz
   if (lroot .AND. ip<10) call svn_id( &
        "$Id$")
 !
-! KG: added warning about wrong computation of wavenumbers.
 ! KG: See the function get_k2 for an example of how to calculate k2.
-  if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
-    call warning("powerLor_OLD", "computation of wavevector wrong for non-cubical domains")
-  !
-  !  Define wave vector, defined here for the *full* mesh.
-  !  Each processor will see only part of it.
-  !  Ignore *2*pi/Lx factor, because later we want k to be integers
-  !
-  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
-  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
-  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
   !
   !  Note, if lhydro=F, then f(:,:,:,1:3) does no longer contain
   !  velocity. In that case, we want the magnetic field instead.
@@ -2152,37 +2113,23 @@ outer:  do ikz=1,nz
   integer :: i,k,ikx,iky,ikz,ivec
   real :: k2
   real, dimension (mx,my,mz,mfarray) :: f
-  real, dimension (mx,my,mz,3) :: EMF,JJJ,EMB,BBB
-  real, dimension(nx,ny,nz) :: a_re,a_im, b_re,b_im, c_re,c_im, d_re,d_im
+  real, save, dimension (mx,my,mz,3) :: EMF,JJJ,EMB,BBB
   real, dimension(nx,3) :: uu,aa,bb,jj,uxb,uxj
   real, dimension(nx,3,3) :: aij,bij
   real, dimension(nk) :: nks,nks_sum
   real, dimension(nk) :: k2m,k2m_sum,krms
   real, dimension(nk) :: spectrum,spectrum_sum
   real, dimension(nk) :: spectrumhel,spectrumhel_sum
-  real, dimension(nxgrid) :: kx
-  real, dimension(nygrid) :: ky
-  real, dimension(nzgrid) :: kz
   character (len=3) :: sp
   logical, save :: lwrite_krms=.true.
+
 !
 !  identify version
 !
   if (lroot .AND. ip<10) call svn_id( &
        "$Id$")
 !
-! KG: added warning about wrong computation of wavenumbers.
 ! KG: See the function get_k2 for an example of how to calculate k2.
-  if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
-    call warning("powerEMF", "computation of wavevector wrong for non-cubic domains")
-  !
-  !  Define wave vector, defined here for the *full* mesh.
-  !  Each processor will see only part of it.
-  !  Ignore *2*pi/Lx factor, because later we want k to be integers
-  !
-  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
-  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
-  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
 
 !$omp parallel private(ivec,uu,aa,aij,bij,bb,jj,uxb,uxj,k,k2) num_threads(num_helper_threads) copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM,MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
 !$ thread_id = omp_get_thread_num()+1
@@ -2358,16 +2305,12 @@ outer:  do ikz=1,nz
   real :: k2
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension (mx,my,mz,3) :: Adv, Str, BBB
-  real, dimension(nx,ny,nz) :: a_re,a_im, b_re,b_im, c_re,c_im
   real, dimension(nx,3) :: uu, aa, bb, divu, bbdivu, bgradu, ugradb
   real, dimension(nx,3,3) :: uij, aij, bij
   real, dimension(nk) :: nks,nks_sum
   real, dimension(nk) :: k2m,k2m_sum,krms
   real, dimension(nk) :: spectrum,spectrum_sum
   real, dimension(nk) :: spectrumhel,spectrumhel_sum
-  real, dimension(nxgrid) :: kx
-  real, dimension(nygrid) :: ky
-  real, dimension(nzgrid) :: kz
   character (len=3) :: sp
   logical, save :: lwrite_krms=.true.
 !
@@ -2376,18 +2319,7 @@ outer:  do ikz=1,nz
   if (lroot .AND. ip<10) call svn_id( &
        "$Id$")
 !
-! KG: added warning about wrong computation of wavenumbers.
 ! KG: See the function get_k2 for an example of how to calculate k2.
-  if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
-    call warning("powerTra", "computation of wavevector wrong for non-cubic domains")
-  !
-  !  Define wave vector, defined here for the *full* mesh.
-  !  Each processor will see only part of it.
-  !  Ignore *2*pi/Lx factor, because later we want k to be integers
-  !
-  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
-  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
-  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
 
 !$omp parallel private(ivec,uu,aa,uij,aij,bij,divu,bb,bbdivu,ugradb,bgradu,k,k2) num_threads(num_helper_threads) copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM,MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
 !$ thread_id = omp_get_thread_num()+1
@@ -2567,14 +2499,10 @@ outer:  do ikz=1,nz
 
   integer :: i,k,ikx,iky,ikz
   real :: k2
-  real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
   real, dimension(nk) :: nks,nks_sum
   real, dimension(nk) :: k2m,k2m_sum,krms
   real, allocatable, dimension(:) :: spectrum,spectrumhel
   real, allocatable, dimension(:) :: spectrum_sum,spectrumhel_sum
-  real, dimension(nxgrid) :: kx
-  real, dimension(nygrid) :: ky
-  real, dimension(nzgrid) :: kz
   logical, save :: lwrite_krms_GWs=.false.
   real :: sign_switch, kk1, kk2, kk3
 !
@@ -2600,14 +2528,6 @@ outer:  do ikz=1,nz
     call special_calc_spectra(f,spectrum,spectrumhel,lfirstcall,sp)
   else
     allocate(spectrum(nk),spectrumhel(nk))
-!
-!  Define wave vector, defined here for the *full* mesh.
-!  Each processor will see only part of it.
-!  Ignore *2*pi/Lx factor, because later we want k to be integers
-!
-    kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
-    ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
-    kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
 
 !$omp parallel private(k,k2,kk1,kk2,kk3,sign_switch) num_threads(num_helper_threads) copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM,MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
 !$ thread_id = omp_get_thread_num()+1
@@ -2844,13 +2764,9 @@ outer:  do ikz=1,nz
   integer :: i,k,ikx,iky,ikz, ivec, im, in, ia0
   real :: k2,fact
   real, dimension (mx,my,mz,mfarray) :: f
-  real, dimension(nx,ny,nz) :: a_re,a_im
   real, dimension(nk) :: spectrum,spectrum_sum
   real, dimension(nk) :: hor_spectrum, hor_spectrum_sum
   real, dimension(nk) :: ver_spectrum, ver_spectrum_sum
-  real, dimension(nxgrid) :: kx
-  real, dimension(nygrid) :: ky
-  real, dimension(nzgrid) :: kz
   real, dimension(nx) :: bbi
   real, dimension(nx,3) :: gLam
   character (len=*) :: sp
@@ -2872,14 +2788,6 @@ outer:  do ikz=1,nz
   elseif (sp=='rp') then
     call get_shared_variable('irhop', irhop, caller='powerscl')
   endif
-  !
-  !  Define wave vector, defined here for the *full* mesh.
-  !  Each processor will see only part of it.
-  !  Ignore *2*pi/Lx factor, because later we want k to be integers
-  !
-  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
-  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
-  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
   if (nzgrid==1) kz=0. !(needed for 2-D runs)
 
 !$omp parallel private(ia0,k,k2,bbi,fact,gLam) num_threads(num_helper_threads) copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM,MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
@@ -3177,10 +3085,10 @@ outer:  do ikz=1,nz
     character (len=1) :: sp
     integer :: ivec
     integer, optional :: ivar
+    real, dimension(nx,ny,nz), save :: a2
 !
     integer, parameter :: nk=nx/2
     integer :: ix,iy,iz,im,in,ikx,iky,ikz,nc
-    real, dimension(nx,ny,nz) :: a1,b1,a2
     real, dimension(:,:), allocatable :: spectrumx,spectrumx_sum
     real, dimension(nk) :: spectrumy,spectrumy_sum
     real, dimension(nk) :: spectrumz,spectrumz_sum
@@ -3215,7 +3123,7 @@ outer:  do ikz=1,nz
     if (sp=='u') then
       if (lhydro .or. lhydro_kinematic.and.iuu /= 0) then
         !$omp workshare
-        a1=f(l1:l2,m1:m2,n1:n2,iux+ivec-1)
+        a_re=f(l1:l2,m1:m2,n1:n2,iux+ivec-1)
         !$omp end workshare
       else
         call fatal_error('power_1d','must have velocity in f-array for velocity power')
@@ -3224,7 +3132,7 @@ outer:  do ikz=1,nz
       if (iaa>0) then
         !$omp do collapse(2)
         do n=n1,n2; do m=m1,m2
-          call curli(f,iaa,a1(:,m-nghost,n-nghost),ivec)
+          call curli(f,iaa,a_re(:,m-nghost,n-nghost),ivec)
         enddo; enddo
       else
         call fatal_error('power_1d','must have iaa>0 for magnetic power')
@@ -3232,7 +3140,7 @@ outer:  do ikz=1,nz
     elseif (sp=='a') then
       if (iaa>0) then
         !$omp workshare
-        a1=f(l1:l2,m1:m2,n1:n2,iax+ivec-1)
+        a_re=f(l1:l2,m1:m2,n1:n2,iax+ivec-1)
         !$omp end workshare
       else
         call fatal_error('power_1d','must have iaa>0 for magnetic power')
@@ -3241,7 +3149,7 @@ outer:  do ikz=1,nz
       if (present(ivar)) then
         if (ivar>0) then
           !$omp workshare
-          a1=f(l1:l2,m1:m2,n1:n2,ivar)
+          a_re=f(l1:l2,m1:m2,n1:n2,ivar)
           !$omp end workshare
         else
           call fatal_error('power_1d','ivar must be >0, ivar='//trim(itoa(ivar)))
@@ -3253,13 +3161,13 @@ outer:  do ikz=1,nz
       call fatal_error('power_1d','no such spectra variable: sp='//trim(sp))
     endif
     !$omp workshare
-    b1=0.
-    a2=a1
+    a_im=0.
+    a2=a_re
     !$omp end workshare
 !
 !  Do the Fourier transform
 !
-    call fourier_transform_x(a1,b1)
+    call fourier_transform_x(a_re,a_im)
 !
 !  Spectra in x-direction
 !
@@ -3267,18 +3175,18 @@ outer:  do ikz=1,nz
       !$omp do collapse(2) reduction(+:spectrumx)
       do ikx=1,nk; do iy=1,ny
         if (lcomplex) then
-          spectrumx(:,ikx) = spectrumx(:,ikx) + (/a1(ikx,iy,inz), b1(ikx,iy,inz)/)
+          spectrumx(:,ikx) = spectrumx(:,ikx) + (/a_re(ikx,iy,inz), a_im(ikx,iy,inz)/)
         else
-          spectrumx(1,ikx) = spectrumx(1,ikx) + sqrt(a1(ikx,iy,inz)**2 + b1(ikx,iy,inz)**2)
+          spectrumx(1,ikx) = spectrumx(1,ikx) + sqrt(a_re(ikx,iy,inz)**2 + a_im(ikx,iy,inz)**2)
         endif
       enddo; enddo
     else
       !$omp do collapse(3) reduction(+:spectrumx)
       do ikx=1,nk; do iy=1,ny; do iz=1,nz
         if (lcomplex) then
-          spectrumx(:,ikx) = spectrumx(:,ikx) + (/a1(ikx,iy,iz), b1(ikx,iy,iz)/)
+          spectrumx(:,ikx) = spectrumx(:,ikx) + (/a_re(ikx,iy,iz), a_im(ikx,iy,iz)/)
         else
-          spectrumx(1,ikx) = spectrumx(1,ikx) + sqrt(a1(ikx,iy,iz)**2 + b1(ikx,iy,iz)**2)
+          spectrumx(1,ikx) = spectrumx(1,ikx) + sqrt(a_re(ikx,iy,iz)**2 + a_im(ikx,iy,iz)**2)
         endif
       enddo; enddo; enddo
     endif
@@ -3297,14 +3205,14 @@ outer:  do ikz=1,nz
 !
       if (nygrid/=1) then
         !$omp workshare
-        a1=a2
-        b1=0.
+        a_re=a2
+        a_im=0.
         !$omp end workshare
-        call transp(a1,'y')
-        call fourier_transform_x(a1,b1)
+        call transp(a_re,'y')
+        call fourier_transform_x(a_re,a_im)
         !$omp do collapse(3) reduction(+:spectrumy)
         do iky=1,nk; do ix=1,nxgrid/nprocy; do iz=1,nz
-          spectrumy(iky) = spectrumy(iky) + sqrt(a1(iky,ix,iz)**2 + b1(iky,ix,iz)**2)
+          spectrumy(iky) = spectrumy(iky) + sqrt(a_re(iky,ix,iz)**2 + a_im(iky,ix,iz)**2)
         enddo; enddo; enddo
 !  Multiply all modes, except the constant mode, by two.
         !$omp workshare
@@ -3316,14 +3224,14 @@ outer:  do ikz=1,nz
 !
       if (nzgrid/=1) then
         !$omp workshare
-        a1=a2
-        b1=0.
+        a_re=a2
+        a_im=0.
         !$omp end workshare
-        call transp(a1,'z')
-        call fourier_transform_x(a1,b1)
+        call transp(a_re,'z')
+        call fourier_transform_x(a_re,a_im)
         !$omp do collapse(3) reduction(+:spectrumz)
         do ikz=1,nk; do ix=1,nxgrid/nprocz; do iy=1,ny
-          spectrumz(ikz) = spectrumz(ikz) + sqrt(a1(ikz,iy,ix)**2 + b1(ikz,iy,ix)**2)
+          spectrumz(ikz) = spectrumz(ikz) + sqrt(a_re(ikz,iy,ix)**2 + a_im(ikz,iy,ix)**2)
         enddo; enddo; enddo
 !  Multiply all modes, except the constant mode, by two.
         !$omp workshare
@@ -3553,24 +3461,12 @@ endsubroutine pdf
   integer :: i,ivec,ikx,iky,ikz,kr,ipdf
   integer, dimension(nk-1,npdf) :: pdf_ang,pdf_ang_sum
   real :: ang
-  real, dimension(nx,ny,nz,3) :: a_re,b_re
-  real, dimension(nx,ny,nz) :: ak,bk,aa,bb,ab
+  real, dimension(nx,ny,nz), save :: ak,bk,aa,bb,ab
   real, dimension(nx,3) :: bbi
-  real, dimension(nxgrid) :: kx
-  real, dimension(nygrid) :: ky
-  real, dimension(nzgrid) :: kz
   !
   !  identify version
   !
   if (lroot .AND. ip<10) call svn_id("$Id$")
-  !
-  !  Define wave vector, defined here for the *full* mesh.
-  !  Each processor will see only part of it.
-  !  Ignore *2*pi/Lx factor, because later we want k to be integers
-  !
-  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
-  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
-  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
   !
   !  Obtain vector fields
   !
@@ -3582,28 +3478,28 @@ endsubroutine pdf
     !$omp do collapse(2)
     do n=n1,n2; do m=m1,m2
       call curl(f,iaa,bbi)
-      b_re(:,m-nghost,n-nghost,:)=bbi  !  magnetic field
+      b_vec_re(:,m-nghost,n-nghost,:)=bbi  !  magnetic field
       call del2v_etc(f,iaa,curlcurl=bbi)
-      a_re(:,m-nghost,n-nghost,:)=bbi  !  current density
+      a_vec_re(:,m-nghost,n-nghost,:)=bbi  !  current density
     enddo; enddo
   elseif (sp=='ub') then
     if (iaa==0)  call fatal_error('pdf_ang_1d','iaa=0')
     !$omp do collapse(2)
     do n=n1,n2; do m=m1,m2
       call curl(f,iaa,bbi)
-      b_re(:,m-nghost,n-nghost,:)=bbi  !  magnetic field
+      b_vec_re(:,m-nghost,n-nghost,:)=bbi  !  magnetic field
     enddo; enddo
     !$omp workshare
-    a_re(:,:,:,:)=f(l1:l2,m1:m2,n1:n2,iuu:(iuu+2))
+    a_vec_re(:,:,:,:)=f(l1:l2,m1:m2,n1:n2,iuu:(iuu+2))
     !$omp end workshare
   elseif (sp=='ou') then
     !$omp do collapse(2)
     do n=n1,n2; do m=m1,m2
       call curl(f,iuu,bbi)
-      b_re(:,m-nghost,n-nghost,:)=bbi  !  vorticity field
+      b_vec_re(:,m-nghost,n-nghost,:)=bbi  !  vorticity field
     enddo; enddo
     !$omp workshare
-    a_re(:,:,:,:)=f(l1:l2,m1:m2,n1:n2,iuu:(iuu+2))
+    a_vec_re(:,:,:,:)=f(l1:l2,m1:m2,n1:n2,iuu:(iuu+2))
     !$omp end workshare
   endif  !  sp
   !
@@ -3623,8 +3519,8 @@ endsubroutine pdf
       !
       !  Obtain filtered fields.
       !
-      call power_shell_filter(a_re(:,:,:,ivec),ak,kr)
-      call power_shell_filter(b_re(:,:,:,ivec),bk,kr)
+      call power_shell_filter(a_vec_re(:,:,:,ivec),ak,kr)
+      call power_shell_filter(b_vec_re(:,:,:,ivec),bk,kr)
       !
       !  dot products
       !
@@ -3685,7 +3581,7 @@ endsubroutine pdf
 !
   integer :: j,l,im,in,ivec,ispec,ifirst_fft
   real, dimension (mx,my,mz,mfarray) :: f
-  real, dimension(nx,ny,nz) :: a1
+  real, dimension(nx,ny,nz), save :: a1
   real, dimension(nygrid/2) :: spectrumy,spectrumy_sum
   real, dimension(nzgrid/2) :: spectrum,spectrum_sum
   real, dimension(nygrid) :: aatempy
@@ -3852,7 +3748,7 @@ endsubroutine pdf
 !
   integer :: j,l,im,in,ivec,ispec,ifirst_fft
   real, dimension (mx,my,mz,mfarray) :: f
-  real, dimension(nx,ny,nz) :: a1,b1
+  real, dimension(nx,ny,nz), save :: a1,b1
   real, dimension(nzgrid/2) :: spectrum,spectrum_sum
   real, dimension(nzgrid/2) :: spectrumhel,spectrumhel_sum
   real, dimension(nzgrid) :: aatemp,bbtemp
@@ -3990,9 +3886,6 @@ endsubroutine pdf
   real, dimension(nx,ny,nz,3) :: a1,b1
   real, dimension(nx,3) :: tmp_a1
   real, dimension(nk) :: spectrum,spectrum_sum
-  real, dimension(nxgrid) :: kx
-  real, dimension(nygrid) :: ky
-  real, dimension(nzgrid) :: kz
   character (len=*) :: sp
   !
   !  identify version
@@ -4000,18 +3893,7 @@ endsubroutine pdf
   if (lroot .AND. ip<10) call svn_id( &
        "$Id$")
 !
-! KG: added warning about wrong computation of wavenumbers.
 ! KG: See the function get_k2 for an example of how to calculate k2.
-  if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
-    call warning("power_vec", "computation of wavevector wrong for non-cubical domains")
-  !
-  !  Define wave vector, defined here for the *full* mesh.
-  !  Each processor will see only part of it.
-  !  Ignore *2*pi/Lx factor, because later we want k to be integers
-  !
-  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
-  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
-  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
   !
   spectrum=0.
   !
@@ -4113,12 +3995,11 @@ endsubroutine pdf
   real, allocatable, dimension(:,:) :: kmu, dmu
   real :: k2, mu, mu_offset, kmu2
   real, dimension (mx,my,mz,mfarray) :: f
-  real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
   !
-  real, dimension(nx,ny,nz) :: ux_re, ux_im
-  real, dimension(nx,ny,nz) :: uy_re, uy_im
-  real, dimension(nx,ny,nz) :: uz_re, uz_im
-  real, dimension(nx,ny,nz) :: h_re, ht_re
+  real, dimension(nx,ny,nz), save :: ux_re, ux_im
+  real, dimension(nx,ny,nz), save :: uy_re, uy_im
+  real, dimension(nx,ny,nz), save :: uz_re, uz_im
+  real, dimension(nx,ny,nz), save :: h_re, ht_re
   real, allocatable, dimension(:,:) :: vxx, vxy, vzz
   real, allocatable, dimension(:,:) :: coeff_a, coeff_b, coeff_c
   real, dimension(legendre_lmax+1,nk) :: legendre_al_a, legendre_al_a_sum
@@ -4130,9 +4011,6 @@ endsubroutine pdf
   real, allocatable, dimension(:,:) :: polar_spechel, polar_spechel_sum
   real, dimension(legendre_lmax+1,nk) :: legendre_al, legendre_al_sum
   real, dimension(legendre_lmax+1,nk) :: legendre_alhel, legendre_alhel_sum
-  real, dimension(nxgrid) :: kx
-  real, dimension(nygrid) :: ky
-  real, dimension(nzgrid) :: kz
   integer, dimension(1) :: temploc
   character (len=*) :: sp
 !
@@ -4140,18 +4018,7 @@ endsubroutine pdf
 !
   if (lroot .AND. ip<10) call svn_id("$Id$")
 !
-! KG: added warning about wrong computation of wavenumbers.
 ! KG: See the function get_k2 for an example of how to calculate k2.
-  if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
-    call warning("polar_spectrum", "computation of wavevector wrong for non-cubical domains")
-  !
-  !  Define wave vector, defined here for the *full* mesh.
-  !  Each processor will see only part of it.
-  !  Ignore *2*pi/Lx factor, because later we want k to be integers
-  !
-  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
-  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
-  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
 !
 ! mesh for polar representation
 !
@@ -4596,25 +4463,13 @@ endsubroutine pdf
   integer :: i, ikx, iky, ikz, im, in, ivec
   integer :: k3,k
   real, dimension (mx,my,mz,mfarray) :: f
-  real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
   real, dimension(nk) :: spectrum,spectrum_sum
   real, dimension(nk) :: spectrumhel,spectrumhel_sum
-  real, dimension(nxgrid) :: kx
-  real, dimension(nygrid) :: ky
-  real, dimension(nzgrid) :: kz
   character (len=3) :: sp
 !
 !  identify version
 !
   if (lroot .AND. ip<10) call svn_id("$Id$")
-  !
-  !  Define wave vector, defined here for the *full* mesh.
-  !  Each processor will see only part of it.
-  !  Ignore *2*pi/Lx factor, because later we want k to be integers
-  !
-  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
-  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
-  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
 
 !$omp parallel private(ivec,k3,iky,ikx) num_threads(num_helper_threads) copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM,MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
 !$ thread_id = omp_get_thread_num()+1
@@ -4762,21 +4617,17 @@ endsubroutine pdf
   real :: k2
   real, pointer :: t_cor
   real, dimension (mx,my,mz,mfarray) :: f
-  real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
   real, dimension(nk) :: nks,nks_sum
   real, dimension(nk) :: k2m,k2m_sum,krms
   real, dimension(nk) :: spectrum,spectrum_sum
   real, dimension(nk) :: spectrumhel,spectrumhel_sum
   real, dimension(nxgrid) :: correlation,correlation_sum
   real, dimension(nxgrid) :: correlationhel,correlationhel_sum
-  real, dimension(nk,nzgrid) :: cyl_spectrum, cyl_spectrum_sum
-  real, dimension(nk,nzgrid) :: cyl_spectrumhel, cyl_spectrumhel_sum
-  real, dimension(nxgrid) :: kx
-  real, dimension(nygrid) :: ky
-  real, dimension(nzgrid) :: kz
+  real, save, dimension(nk,nzgrid) :: cyl_spectrum, cyl_spectrum_sum
+  real, save, dimension(nk,nzgrid) :: cyl_spectrumhel, cyl_spectrumhel_sum
   character (len=*) :: sp
   logical, save :: lwrite_krms=.true.
-!
+
 !  identify version
 !
   if (lroot .AND. ip<10) call svn_id("$Id$")
@@ -4790,14 +4641,6 @@ endsubroutine pdf
     if (.not. lshear) call fatal_error('power_cor','lshear=F; cannot do frame transform')
     call get_shared_variable('t_cor',t_cor,caller='power_cor')
   endif
-  !
-  !  Define wave vector, defined here for the *full* mesh.
-  !  Each processor will see only part of it.
-  !  Ignore *2*pi/Lx factor, because later we want k to be integers
-  !
-  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
-  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
-  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
   !
   !  loop over all the components
   !
@@ -5100,18 +4943,18 @@ endsubroutine pdf
   integer :: i,ivec,ikx,iky,ikz,jkx,jkz,k
   real :: k2
   real, pointer :: t_cor
-  real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
-  real, dimension(nx,ny,nz) :: h_re,ht_re,h_im,ht_im
+  real, save, dimension(nx,ny,nz) :: h_re,ht_re,h_im,ht_im
   real, dimension(nk) :: spectrum,spectrum_sum
   real, dimension(nk) :: spectrumhel,spectrumhel_sum
   real, dimension(nxgrid) :: correlation,correlation_sum
   real, dimension(nxgrid) :: correlationhel,correlationhel_sum
-  real, dimension(nk,nzgrid) :: cyl_spectrum, cyl_spectrum_sum
-  real, dimension(nk,nzgrid) :: cyl_spectrumhel, cyl_spectrumhel_sum
-  real, dimension(nxgrid) :: kx
-  real, dimension(nygrid) :: ky
-  real, dimension(nzgrid) :: kz
+  real, allocatable, dimension(:,:), save :: cyl_spectrum, cyl_spectrum_sum
+  real, allocatable, dimension(:,:), save :: cyl_spectrumhel, cyl_spectrumhel_sum
   logical :: lconvol
+
+  if(.not. allocated(cyl_spectrum)) then
+          allocate(cyl_spectrum(nk,nzgrid), cyl_spectrum_sum(nk,nzgrid), cyl_spectrumhel(nk,nzgrid), cyl_spectrumhel_sum(nk,nzgrid))
+  endif
 !
   if (lroot .AND. ip<10) call svn_id("$Id$")
 !
@@ -5119,18 +4962,7 @@ endsubroutine pdf
     if (.not. lshear) call fatal_error('power_cor_scl','lshear=F; cannot do frame transform')
     call get_shared_variable('t_cor',t_cor)
   endif
-! KG: added warning about wrong computation of wavenumbers.
 ! KG: See the function get_k2 for an example of how to calculate k2.
-  if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
-    call warning("power_cor_scl", "computation of wavevector wrong for non-cubical domains")
-  !
-  !  Define wave vector, defined here for the *full* mesh.
-  !  Each processor will see only part of it.
-  !  Ignore *2*pi/Lx factor, because later we want k to be integers
-  !
-  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
-  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
-  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
   !
   select case (sp)
     case ('ouout')
@@ -5382,16 +5214,12 @@ endsubroutine pdf
   real :: k2, rr, k, j0, j0x, j0y, j0z, j1, dx_2pi_box
   real, dimension(4) :: w
   real, dimension (mx,my,mz,mfarray) :: f
-  real, dimension(nx,ny,nz) :: a_re,b_re,h_re,h_im
-  real, dimension(nx,ny,nz) :: gLam
+  real, save, dimension(nx,ny,nz) :: gLam
   real, dimension(nx,3) :: gLam_tmp
   real, dimension(4,nk) :: correl,correl_sum
   real, dimension(nk) :: spectrum,spectrum_sum
   real, allocatable, dimension(:,:,:) :: hv,hv_sum
   real, allocatable, dimension(:) :: Iv
-  real, dimension(nxgrid) :: kx
-  real, dimension(nygrid) :: ky
-  real, dimension(nzgrid) :: kz
   character (len=*) :: sp
 !
   !
@@ -5399,19 +5227,7 @@ endsubroutine pdf
   !
   if (lroot .AND. ip<10) call svn_id("$Id$")
 !
-! KG: added warning about wrong computation of wavenumbers.
 ! KG: See the function get_k2 for an example of how to calculate k2.
-  if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
-    call warning("quadratic_invariants", "computation of wavevector wrong for non-cubical domains")
-  !
-  !  Define wave vector, defined here for the *full* mesh.
-  !  Each processor will see only part of it.
-  !  Ignore *2*pi/Lx factor, because later we want k to be integers
-  !  Note that this must also be taken into account when using dx -> dx_2pi_box.
-  !
-  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
-  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
-  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
 
   nv=1+nint(log(1.*nxgrid)/log(2.))
   nvmin=max(1,1+nint(log(nxgrid/256.)/log(2.)))
@@ -5660,26 +5476,14 @@ endsubroutine pdf
 !
   integer :: ncomp,i,ivec,ikx,iky,ikz,jkx,jky,jkz
   integer :: kkout,kkoutx,kkouty,kkoutz
-  real, dimension(nx,ny,nz) :: a_re,a_im
   real, allocatable, dimension(:,:,:,:) :: fft,fft_sum
-  real, dimension(nxgrid) :: kx
-  real, dimension(nygrid) :: ky
-  real, dimension(nzgrid) :: kz
   character (len=1) :: spxyz
   logical :: lfft
 !
 !  identify version
 !
   if (lroot .AND. ip<10) call svn_id("$Id$")
-  !
-  !  Define wave vector, defined here for the *full* mesh.
-  !  Each processor will see only part of it.
-  !  Ignore *2*pi/Lx factor, because later we want k to be integers
-  !
-  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
-  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
-  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
-  !
+!
   kkout=2*kout_max+1
   select case (sp2)
     case ('kxyz'); kkoutx=kkout; kkouty=kkout; kkoutz=kkout
@@ -5858,24 +5662,9 @@ endsubroutine pdf
 !
   integer, parameter :: nk=nxgrid/2
   integer :: i,ikx,iky,ikz,k
-  real, dimension(nx,ny,nz) :: a_re,a_im
   real :: k2
-  real, dimension(nxgrid) :: kx
-  real, dimension(nygrid) :: ky
-  real, dimension(nzgrid) :: kz
 !
-! KG: added warning about wrong computation of wavenumbers.
 ! KG: See the function get_k2 for an example of how to calculate k2.
-  if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
-    call warning("power_shell_filter", "computation of wavevector wrong for non-cubical domains")
-!
-!  Define wave vector, defined here for the *full* mesh.
-!  Each processor will see only part of it.
-!  Ignore *2*pi/Lx factor, because later we want k to be integers
-!
-  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
-  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
-  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
 !
   !$omp workshare
   a_re=a
@@ -5924,8 +5713,8 @@ endsubroutine pdf
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,3) :: uu,aa,bb,uxb,jj,curljj
   real, dimension(nx,3,3) :: aij,bij
-  real, dimension(nx,ny,nz,3) :: uuu,bbb,jjj,curljjj
-  real, dimension(nx,ny,nz,3) :: tmp_p,u_tmp,b_tmp,emf_q
+  real, save, dimension(nx,ny,nz,3) :: uuu,bbb,jjj,curljjj
+  real, save, dimension(nx,ny,nz,3) :: tmp_p,u_tmp,b_tmp,emf_q
   real, allocatable, dimension(:,:) :: Tpq,Tpq_sum
   character (len=2) :: sp
   logical :: lTpq_anti_symmetric
