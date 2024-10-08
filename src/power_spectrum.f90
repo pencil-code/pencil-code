@@ -27,8 +27,10 @@
 module Power_spectrum
 !
   use Cdata
-  use Messages, only: svn_id, warning, fatal_error, information
-  use Mpicomm, only: MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM,MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE
+  use Messages,only: svn_id, warning, fatal_error, information
+  use Mpicomm, only: MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+                     MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE
+!$ use OMP_lib
 !
   implicit none
 !
@@ -64,12 +66,13 @@ module Power_spectrum
   real, dimension(nxgrid) :: kx
   real, dimension(nygrid) :: ky
   real, dimension(nzgrid) :: kz
+!
 !TP: work buffers for power funcs
 !TP: TODO allocate these at initialize func based on are they actually used
-  real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im,c_re,c_im,d_re,d_im, h_re,h_im
+!
+  real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im,c_re,c_im,d_re,d_im,h_re,h_im
   real, dimension(nx,ny,nz,3) :: a_vec_re,a_vec_im, b_vec_re
   real, dimension(nx,ny,nz) :: a2
-!
 !
   namelist /power_spectrum_run_pars/ &
       lintegrate_shell, lintegrate_z, lcomplex, ckxrange, ckyrange, czrange, &
@@ -169,13 +172,14 @@ outer:  do ikz=1,nz
 
       endif
 
-      !
-      !  Define wave vector, defined here for the *full* mesh.
-      !  Each processor will see only part of it.
-      !  Ignore *2*pi/Lx factor, because later we want k to be integers
-      !
+!
+!  Define wave vectors, defined here for the *full* mesh.
+!  Each processor will see only part of it.
+!  Ignore *2*pi/Lx factor, because later we want k to be integers.
+!
       if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
         call warning("initialize_power_spectrum", "computation of wavevector wrong for non-cubical domains")
+
       kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
       ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
       kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
@@ -345,7 +349,6 @@ outer:  do ikz=1,nz
       use General, only: itoa
       use Sub, only: curli
       use File_io, only: file_exists
-!$    use OMP_lib
 !
   real, dimension (mx,my,mz,mfarray) :: f
   character (len=*) :: sp
@@ -381,7 +384,8 @@ outer:  do ikz=1,nz
 !if (lroot) print*, 'in power vor parallel sp='//sp, num_helper_threads, thread_id
 !flush(6)
 !$omp parallel num_threads(num_helper_threads) private(ivec,k,k2) reduction(+:spectrum) &
-!$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM,MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+!$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+!$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
 !$ thread_id = omp_get_thread_num()+1
 
   do ivec=1,3
@@ -534,7 +538,9 @@ outer:  do ikz=1,nz
   !  In fft, real and imaginary parts are handled separately.
   !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
   !
-!$omp parallel private(ivec,k) num_threads(num_helper_threads) reduction(+:spectrum) copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM,MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+!$omp parallel private(ivec,k) num_threads(num_helper_threads) reduction(+:spectrum) &
+!$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+!$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
 !$ thread_id = omp_get_thread_num()+1
   do ivec=1,3
      !
@@ -632,7 +638,9 @@ outer:  do ikz=1,nz
     if (sp == 'rho' .and. ivec>1) return
     if (sp == 's' .and. ivec>1) return
 !
-!$omp parallel private(bb,i,la,le,ndelx) num_threads(num_helper_threads) copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM,MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+!$omp parallel private(bb,i,la,le,ndelx) num_threads(num_helper_threads) &
+!$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+!$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
 !$ thread_id = omp_get_thread_num()+1
     if (sp=='u') then
       if (iuu==0) call fatal_error('comp_spectrum_xy','variable "u" not existent')
@@ -1114,8 +1122,10 @@ outer:  do ikz=1,nz
   if (iaakim>0.or.ieekim>0) then
     call magnetic_calc_spectra(f,spectrum,spectrumhel,lfirstcall,sp)
   else
-  !
-!$omp parallel private(ivec,jji,bb,jj,b2,j2,gtmp1,gtmp2,bbEP,k2,k,jkz) num_threads(num_helper_threads) copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM,MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+!
+!$omp parallel private(ivec,jji,bb,jj,b2,j2,gtmp1,gtmp2,bbEP,k2,k,jkz) num_threads(num_helper_threads) &
+!$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+!$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
 !$ thread_id = omp_get_thread_num()+1
 !
   !  initialize power spectrum to zero
@@ -1685,7 +1695,9 @@ outer:  do ikz=1,nz
     if (stat>0) call fatal_error('powerLor','Cannot allocate c_im')
   endif
 
-!$omp parallel private(ivec,jxb,bb,jj,bij,aij,aa,k,k2) num_threads(num_helper_threads) copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM,MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+!$omp parallel private(ivec,jxb,bb,jj,bij,aij,aa,k,k2) num_threads(num_helper_threads) &
+!$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+!$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
 !$ thread_id = omp_get_thread_num()+1
   !
   !  initialize power spectrum to zero
@@ -2131,7 +2143,9 @@ outer:  do ikz=1,nz
 !
 ! KG: See the function get_k2 for an example of how to calculate k2.
 
-!$omp parallel private(ivec,uu,aa,aij,bij,bb,jj,uxb,uxj,k,k2) num_threads(num_helper_threads) copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM,MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+!$omp parallel private(ivec,uu,aa,aij,bij,bb,jj,uxb,uxj,k,k2) num_threads(num_helper_threads) &
+!$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+!$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
 !$ thread_id = omp_get_thread_num()+1
   !
   !  initialize power spectrum to zero
@@ -2321,7 +2335,9 @@ outer:  do ikz=1,nz
 !
 ! KG: See the function get_k2 for an example of how to calculate k2.
 
-!$omp parallel private(ivec,uu,aa,uij,aij,bij,divu,bb,bbdivu,ugradb,bgradu,k,k2) num_threads(num_helper_threads) copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM,MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+!$omp parallel private(ivec,uu,aa,uij,aij,bij,divu,bb,bbdivu,ugradb,bgradu,k,k2) num_threads(num_helper_threads) &
+!$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+!$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
 !$ thread_id = omp_get_thread_num()+1
   !
   !  initialize power spectrum to zero
@@ -2529,7 +2545,9 @@ outer:  do ikz=1,nz
   else
     allocate(spectrum(nk),spectrumhel(nk))
 
-!$omp parallel private(k,k2,kk1,kk2,kk3,sign_switch) num_threads(num_helper_threads) copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM,MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+!$omp parallel private(k,k2,kk1,kk2,kk3,sign_switch) num_threads(num_helper_threads) &
+!$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+!$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
 !$ thread_id = omp_get_thread_num()+1
 !
 !  Initialize power spectrum to zero. The following lines only apply to
@@ -2790,7 +2808,9 @@ outer:  do ikz=1,nz
   endif
   if (nzgrid==1) kz=0. !(needed for 2-D runs)
 
-!$omp parallel private(ia0,k,k2,bbi,fact,gLam) num_threads(num_helper_threads) copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM,MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+!$omp parallel private(ia0,k,k2,bbi,fact,gLam) num_threads(num_helper_threads) &
+!$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+!$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
 !$ thread_id = omp_get_thread_num()+1
   !
   !  initialize power spectrum to zero
@@ -3106,7 +3126,9 @@ outer:  do ikz=1,nz
     endif
     allocate(spectrumx(nc,nk), spectrumx_sum(nc,nk) )
 
-!$omp parallel num_threads(num_helper_threads) copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM,MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+!$omp parallel num_threads(num_helper_threads) &
+!$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+!$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
 !$ thread_id = omp_get_thread_num()+1
 !
 ! Initialize spectra.
@@ -3360,7 +3382,9 @@ outer:  do ikz=1,nz
    pdf_yy=0
    pdf_scl=1./pdf_rms
 !
-!$omp parallel private(pdf_var,logscale,gcc,gcc2,l,l2,pdf_dx,pdf_dx1,i_pdf) num_threads(num_helper_threads) copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM,MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+!$omp parallel private(pdf_var,logscale,gcc,gcc2,l,pdf_dx,pdf_dx1,i_pdf) num_threads(num_helper_threads) &
+!$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+!$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
 !$ thread_id = omp_get_thread_num()+1
 !
 !  m-n loop
@@ -3470,7 +3494,9 @@ endsubroutine pdf
   !
   !  Obtain vector fields
   !
-!$omp parallel private(bbi,aa,bb,ab,ak,bk,ang,ipdf,kr,ivec,ikx,iky,ikz) num_threads(num_helper_threads) copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM,MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+!$omp parallel private(bbi,aa,bb,ab,ak,bk,ang,ipdf,kr,ivec,ikx,iky,ikz) num_threads(num_helper_threads) &
+!$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+!$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
 !$ thread_id = omp_get_thread_num()+1
 
   if (sp=='jb') then
@@ -3604,7 +3630,9 @@ endsubroutine pdf
   !
   nVol2d=0.
 
-!$omp parallel private(ivec,ispec,aatemp,aatempy,spectrumy,spectrum,spec_real,spec_imag) num_threads(num_helper_threads) copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM,MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+!$omp parallel private(ivec,ispec,aatemp,aatempy,spectrumy,spectrum,spec_real,spec_imag) num_threads(num_helper_threads) &
+!$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+!$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
 !$ thread_id = omp_get_thread_num()+1
 !
   !$omp workshare
@@ -3767,7 +3795,10 @@ endsubroutine pdf
 !  Each processor will see only part of it.
 !  Ignore *2*pi/Lx factor, because later we want k to be integers
 !
-!$omp parallel private(ivec,spectrum,spectrumhel,aatemp,bbtemp,ispec,spec_reala,spec_imaga,spec_realb,spec_imagb) num_threads(num_helper_threads) copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM,MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+!$omp parallel private(ivec,spectrum,spectrumhel,aatemp,bbtemp,ispec,spec_reala,spec_imaga,spec_realb,spec_imagb) &
+!$omp num_threads(num_helper_threads) &
+!$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+!$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
 !$ thread_id = omp_get_thread_num()+1
   !$omp workshare
   spectrum=0.
@@ -3901,7 +3932,9 @@ endsubroutine pdf
   !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
   !  Added power spectra of rho^(1/2)*u and rho^(1/3)*u.
   !
-!$omp parallel private(ivec,k,tmp_a1) num_threads(num_helper_threads) copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM,MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+!$omp parallel private(ivec,k,tmp_a1) num_threads(num_helper_threads) &
+!$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+!$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
 !$ thread_id = omp_get_thread_num()+1
 
   if (trim(sp)=='j') then
@@ -3999,7 +4032,7 @@ endsubroutine pdf
   real, dimension(nx,ny,nz), save :: ux_re, ux_im
   real, dimension(nx,ny,nz), save :: uy_re, uy_im
   real, dimension(nx,ny,nz), save :: uz_re, uz_im
-  real, dimension(nx,ny,nz), save :: h_re, ht_re
+  real, dimension(nx,ny,nz), save :: ht_re
   real, allocatable, dimension(:,:) :: vxx, vxy, vzz
   real, allocatable, dimension(:,:) :: coeff_a, coeff_b, coeff_c
   real, dimension(legendre_lmax+1,nk) :: legendre_al_a, legendre_al_a_sum
@@ -4471,7 +4504,9 @@ endsubroutine pdf
 !
   if (lroot .AND. ip<10) call svn_id("$Id$")
 
-!$omp parallel private(ivec,k3,iky,ikx) num_threads(num_helper_threads) copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM,MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+!$omp parallel private(ivec,k3,iky,ikx) num_threads(num_helper_threads) &
+!$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+!$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
 !$ thread_id = omp_get_thread_num()+1
   !
   !  initialize power spectrum to zero
@@ -4644,7 +4679,10 @@ endsubroutine pdf
   !
   !  loop over all the components
   !
-!$omp parallel private(ivec,k,k2,jkx,jkz) num_threads(num_helper_threads) reduction(+:spectrum, spectrumhel,correlation,correlationhel,cyl_spectrum,cyl_spectrumhel,k2m,nks) copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM,MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+!$omp parallel private(ivec,k,k2,jkx,jkz) num_threads(num_helper_threads) reduction(+:spectrum, &
+!$omp spectrumhel,correlation,correlationhel,cyl_spectrum,cyl_spectrumhel,k2m,nks) &
+!$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+!$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
 !$ thread_id = omp_get_thread_num()+1
   !
   !  initialize power spectrum to zero
@@ -4943,7 +4981,7 @@ endsubroutine pdf
   integer :: i,ivec,ikx,iky,ikz,jkx,jkz,k
   real :: k2
   real, pointer :: t_cor
-  real, save, dimension(nx,ny,nz) :: h_re,ht_re,h_im,ht_im
+  real, save, dimension(nx,ny,nz) :: ht_re,ht_im
   real, dimension(nk) :: spectrum,spectrum_sum
   real, dimension(nk) :: spectrumhel,spectrumhel_sum
   real, dimension(nxgrid) :: correlation,correlation_sum
@@ -4992,7 +5030,10 @@ endsubroutine pdf
       lconvol=.true.
   end select
   !
-!$omp parallel private(ivec,k,k2,jkx,jkz) num_threads(num_helper_threads) reduction(+:spectrum,spectrumhel,correlation,correlationhel,cyl_spectrum,cyl_spectrumhel) copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM,MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+!$omp parallel private(ivec,k,k2,jkx,jkz) num_threads(num_helper_threads) &
+!$omp reduction(+:spectrum,spectrumhel,correlation,correlationhel,cyl_spectrum,cyl_spectrumhel) &
+!$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+!$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
 !$ thread_id = omp_get_thread_num()+1
   !
   !  initialize
@@ -5236,7 +5277,9 @@ endsubroutine pdf
     Iv=0.
   endif
 
-!$omp parallel private(ivec,im,in,gLam_tmp,ikr,rr,dx_2pi_box) num_threads(num_helper_threads) copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM,MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+!$omp parallel private(ivec,im,in,gLam_tmp,ikr,rr,dx_2pi_box) num_threads(num_helper_threads) &
+!$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+!$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
 !$ thread_id = omp_get_thread_num()+1
   !
   !  initialize
@@ -5502,7 +5545,9 @@ endsubroutine pdf
   !
   !  loop over all components
   !
-!$omp parallel private(ivec,ikx,iky,jkx,jky,jkz) num_threads(num_helper_threads) reduction(+:fft) copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM,MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+!$omp parallel private(ivec,ikx,iky,jkx,jky,jkz) num_threads(num_helper_threads) reduction(+:fft) &
+!$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+!$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
 !$ thread_id = omp_get_thread_num()+1
   do ivec=1,ncomp
     !
@@ -5748,7 +5793,9 @@ endsubroutine pdf
   lTpq_anti_symmetric=.false.
   if (specflux_dp==specflux_dq .and. nlk_p==nlk_q .and. sp=='Hm') lTpq_anti_symmetric=.true.
 
-!$omp parallel private(uu,aa,bb,jj,aij,bij,curljj,lp,lq,p,q,ivec,uxb) num_threads(num_helper_threads) copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM,MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+!$omp parallel private(uu,aa,bb,jj,aij,bij,curljj,lp,lq,p,q,ivec,uxb) num_threads(num_helper_threads) &
+!$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+!$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
 !$ thread_id = omp_get_thread_num()+1
 !
 !  initialize spectral flux to zero

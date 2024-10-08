@@ -116,7 +116,7 @@ module Sub
   public :: vortex
   public :: find_index_by_bisection
   public :: calc_scl_factor
-!$ public :: get_dxyzs
+  public :: get_dxyzs
 !
   interface poly                ! Overload the `poly' function
     module procedure poly_0

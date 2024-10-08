@@ -1054,10 +1054,10 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out, int c
   AcCompInfo comp_info = acInitCompInfo();
   setupConfig(mesh.info,comp_info);
 #if AC_RUNTIME_COMPILATION
-  if(rank == 0)
+  if (rank == 0)
   {
 #include "cmake_options.h"
-	  acCompile(cmake_options,comp_info);
+    acCompile(cmake_options,comp_info);
   }
   MPI_Barrier(comm_pencil);
   acLoadLibrary();
