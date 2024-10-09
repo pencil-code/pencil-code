@@ -46,7 +46,7 @@ AcReal cpu_pow(AcReal const val, AcReal exponent)
   #include "../forcing_c.h"     // provides forcing_pars_hel
 #endif
 #include "../sub_c.h"           // provides set_dt
-#include "../boundcond_c.h"     // provides boundconds[xyz] etc.
+//#include "../boundcond_c.h"     // provides boundconds[xyz] etc.
 #include "../mpicomm_c.h"       // provides finalize_sendrcv_bdry
 #include "PC_module_parfuncs.h" // provides stuff from physics modules
 				//
