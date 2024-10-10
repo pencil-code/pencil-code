@@ -87,18 +87,18 @@ module EquationOfState
 !
     endsubroutine select_eos_variable
 !***********************************************************************
-    subroutine getmu(f,mu)
+    subroutine getmu(f,mu_tmp)
 !
 !  Calculate mean molecular weight.
 !
 !   12-aug-03/tony: dummy
 !
       real, dimension (mx,my,mz,mfarray), optional :: f
-      real, intent(out) :: mu
+      real, intent(out) :: mu_tmp
 !
       call not_implemented('getmu','for this EOS')
 !
-      mu=0.0
+      mu_tmp=0.0
 !
       call keep_compiler_quiet(present(f))
 !
