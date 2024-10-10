@@ -34,22 +34,18 @@ def get(path=".", quiet=False):
             import os
 
             print(
-                "? Warning: sim.dill in "
-                + path
-                + " is not up to date, recreating simulation object.."
+                f"? Warning: sim.dill in {path} is not up to date, recreating simulation object.."
             )
-            os.system("rm " + join(path, "pc/sim.dill"))
+            os.system(f"rm {join(path, "pc/sim.dill")}")
 
     if is_sim_dir(path):
         if not quiet:
             print(
-                "~ Found simulation in "
-                + path
-                + " and simulation object is created for the first time. May take some time.. "
+                f"~ Found simulation in {path} and simulation object is created for the first time. May take some time.. "
             )
         return simulation(path, quiet=quiet)
     else:
-        print("? WARNING: No simulation found in " + path + " -> try get_sims maybe?")
+        print(f"? WARNING: No simulation found in {path} -> try get_sims maybe?")
         return False
 
 
@@ -107,7 +103,7 @@ def get_sims(path_root=".", depth=0, unhide_all=True, quiet=False):
             sd = join(path, sdir)
             if is_sim_dir(sd) and not basename(sd).startswith("."):
                 if not quiet:
-                    print("# Found Simulation in " + sd)
+                    print(f"# Found Simulation in {sd}")
                 sim_paths.append(sd)
     if is_sim_dir("."):
         sim_paths.append(".")
