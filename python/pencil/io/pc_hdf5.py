@@ -16,6 +16,7 @@ import h5py
 import numpy as np
 from pencil.io import mkdir
 from os.path import exists, join
+import pathlib
 from os import remove
 import subprocess as sub
 
@@ -42,28 +43,22 @@ def open_h5(
         overwrite: flag to replace existing file.
         rank:      processor rank with root = 0.
     """
-    if "/" in filename:
-        fname = filename.split("/")[-1]
-        path = filename.split(fname)[0]
-    else:
-        fname = filename
-        path = "./"
+    filename = pathlib.Path(filename)
+    
+    fname = filename.name
+    path = filename.parent
+    
     if not (".h5" == filename[-3:] or ".hdf5" == filename[-5:]):
         if np.mod(rank, size) == 0:
             print(
-                "Relabelling h5 "
-                + fname
-                + " to "
-                + str.strip(fname, ".dat")
-                + ".h5 on path "
-                + path
+                f"Relabelling h5 {fname} to {str.strip(fname, ".dat")}.h5 on path {path}"
             )
         fname = str.strip(fname, ".dat") + ".h5"
     mkdir(path, lfs=lfs, MB=MB, count=count)
     if status == "w" and exists(join(path, fname)):
         if not overwrite:
             try:
-                cmd = "mv " + join(path, fname) + " " + join(path, fname + ".bak")
+                cmd = f"mv {join(path, fname)} {join(path, fname + ".bak")}"
                 process = sub.Popen(cmd.split(), stdout=sub.PIPE)
                 output, error = process.communicate()
                 print(cmd, output, error)
