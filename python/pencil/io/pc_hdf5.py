@@ -48,7 +48,7 @@ def open_h5(
     fname = filename.name
     path = filename.parent
     
-    if not (".h5" == filename[-3:] or ".hdf5" == filename[-5:]):
+    if not (".h5" == fname[-3:] or ".hdf5" == fname[-5:]):
         if np.mod(rank, size) == 0:
             print(
                 f"Relabelling h5 {fname} to {str.strip(fname, ".dat")}.h5 on path {path}"
