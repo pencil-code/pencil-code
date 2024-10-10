@@ -471,6 +471,7 @@ module Cdata
   logical, dimension (ny*nz) :: necessary=.false.
   integer :: necessary_imn=0
   integer, dimension (my,mz) :: imn_array
+  character(LEN=labellen) :: shared_mem_name=''
 !
 !  Parameters related to the pencils
 !
