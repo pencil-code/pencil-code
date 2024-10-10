@@ -13,6 +13,10 @@
 
 #include "../../../cparam_c.h"
 
+#define AC_n1 n1
+#define AC_m1 m1
+#define AC_l1 l1
+
 #define AC_mxgrid mxgrid
 #define AC_mygrid mygrid
 #define AC_mzgrid mzgrid

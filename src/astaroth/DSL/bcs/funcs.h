@@ -20,17 +20,6 @@ real AC_dx2_bound[7]
 real AC_dy2_bound[7]
 real AC_dz2_bound[7]
 
-//TP: either make cparam_c.h DSL compatible or load these in gpu_astaroth.cc
-//LOADABLE VARIABLES START
-int AC_l1
-int AC_l2
-
-int AC_n1
-int AC_n2
-
-int AC_m1
-int AC_m2
-
 bc_steady_z(topbot, VtxBuffer field)
 {
   int i;

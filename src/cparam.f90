@@ -70,14 +70,8 @@ module Cparam
   integer, parameter :: l1i=l1+nghost-1
   integer, parameter :: m1i=m1+nghost-1
   integer, parameter :: n1i=n1+nghost-1
-!BEGIN C BINDING  
-  integer :: l2i=mx-2*nghost+1
-  integer :: m2i=my-2*nghost+1
-  integer :: n2i=mz-2*nghost+1
-  integer :: l2=mx-nghost
-  integer :: m2=my-nghost
-  integer :: n2=mz-nghost
-!END C BINDING  
+
+
   integer, parameter :: nrcyl=nxgrid/2
   integer, parameter :: nrcylrun=max(nx/20,1)
 !

@@ -5,6 +5,7 @@
 module General
 !
   use Cparam
+  use Cdata, only: n2,m2,l2,n2i,m2i,l2i
 !
   implicit none
 !

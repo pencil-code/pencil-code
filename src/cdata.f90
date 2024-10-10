@@ -61,6 +61,14 @@ module Cdata
   real, dimension (nx) :: dxyz_2, dxyz_4, dxyz_6, dVol
   real, dimension (nx) :: dxmax_pencil,dxmin_pencil
 !BEGIN C BINDING
+
+  integer :: l2i=mx-2*nghost+1
+  integer :: m2i=my-2*nghost+1
+  integer :: n2i=mz-2*nghost+1
+  integer :: l2=mx-nghost
+  integer :: m2=my-nghost
+  integer :: n2=mz-nghost
+
   real :: dVol_glob
   real, dimension (mx) :: x,dx_1,dx2,dx_tilde,xprim,dVol_x,dVol1_x
   real, dimension (my) :: y,dy_1,dy2,dy_tilde,yprim,dVol_y,dVol1_y
@@ -198,7 +206,7 @@ module Cdata
   integer :: ix_loc=1,iy_loc=1, iy2_loc=1
   integer :: iz_loc=1,iz2_loc=1, iz3_loc=1, iz4_loc=1
   integer :: iproc=0,ipx=0,ipy=0,ipz=0,iproc_world=0,ipatch=0
-  logical :: lprocz_slowest=.true., lzorder=.false., lmorton_curve=.false.
+  logical :: lprocz_slowest=.true., lzorder=.false., lmorton_curve=.false., ltest_bcs=.true.
   integer :: xlneigh,ylneigh,zlneigh ! `lower' processor neighbours
   integer :: xuneigh,yuneigh,zuneigh ! `upper' processor neighbours
   integer :: poleneigh               ! `pole' processor neighbours

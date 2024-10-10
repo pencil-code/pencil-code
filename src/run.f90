@@ -2260,6 +2260,13 @@ call copy_addr(tsound_save,p_par(1144))
 call copy_addr(num_helper_threads,p_par(1145)) ! int
 call copy_addr(thread_id,p_par(1146)) ! int
 call copy_addr(dt,p_par(1147))
+call copy_addr(l2,p_par(1148))  ! int 
+call copy_addr(m2,p_par(1149))  ! int 
+call copy_addr(n2,p_par(1150))  ! int 
+call copy_addr(l2i,p_par(1151)) ! int
+call copy_addr(m2i,p_par(1152)) ! int
+call copy_addr(n2i,p_par(1153)) ! int
+call copy_addr(ltest_bcs,p_par(1154)) !bool
     endsubroutine pushpars2c
 !***********************************************************************
 endmodule Run_module
