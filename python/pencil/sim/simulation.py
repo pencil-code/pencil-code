@@ -81,7 +81,7 @@ class __Simulation__(object):
         self.name = self.path.name  # find out name and store it
 
         if not quiet:
-            print("# Creating Simulation object for " + self.path)
+            print(f"# Creating Simulation object for {self.path}")
         self.datadir = join(self.path, "data")
         self.pc_dir = join(self.path, "pc")
         self.pc_datadir = join(self.path, "data", "pc")
