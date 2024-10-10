@@ -578,14 +578,13 @@ class __Simulation__(object):
                 else:
                     if not quiet:
                         print(
-                            "? WARNING: for "
-                            + self.path
-                            + "\n? Simulation has "
-                            + "not run yet! Meaning: No param.nml found!"
+                            f"? WARNING: for {self.path}",
+                            + "? Simulation has not run yet! Meaning: No param.nml found!",
+                            sep='\n',
                         )
                     REEXPORT = True
             except:
-                print("! ERROR: while reading param.nml for " + self.path)
+                print(f"! ERROR: while reading param.nml for {self.path}")
                 self.param = False
                 REEXPORT = True
 
@@ -618,7 +617,7 @@ class __Simulation__(object):
                         + "was not successfull, since run has not yet started."
                     )
                 if self.started() or (not quiet):
-                    print("? WARNING: Couldnt load grid for " + self.path)
+                    print(f"? WARNING: Couldnt load grid for {self.path}")
                 self.grid = False
                 self.ghost_grid = False
                 self.dim = False
@@ -714,7 +713,7 @@ class __Simulation__(object):
         if hostfile:
             command.append(" -f " + hostfile)
         if verbose != False:
-            print("! Compiling " + self.path)
+            print(f"! Compiling {self.path}")
 
         return self.bash(
             command=" ".join(command),
@@ -826,7 +825,7 @@ class __Simulation__(object):
         if hostfile:
             command.append(" -f " + hostfile)
         if verbose != False:
-            print("! Cleaning " + self.path)
+            print(f"! Cleaning {self.path}")
 
         return self.bash(
             command=" ".join(command),
@@ -1154,7 +1153,7 @@ class __Simulation__(object):
         if hostfile:
             command.append(" -f " + hostfile)
         if verbose:
-            print("! Running " + self.path)
+            print(f"! Running {self.path}")
 
         if cleardata:
             if verbose:
