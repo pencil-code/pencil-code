@@ -1,3 +1,5 @@
+from pathlib import Path
+
 def get(path=".", quiet=False):
     """
     get(path=".", quiet=False)
@@ -25,7 +27,7 @@ def get(path=".", quiet=False):
             sim = load("sim", folder=join(path, "pc"))
             sim.update(quiet=quiet)
 
-            if sim.path != abspath(path):
+            if sim.path != Path(path).absolute():
                 # The name of the directory containing the simulation has somehow changed (maybe the user renamed it). Better to just try to reload the sim from scratch.
                 raise RuntimeError
 
