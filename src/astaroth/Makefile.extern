@@ -1,5 +1,3 @@
-CHEADERS = ../cparam_c.h ../cdata_c.h ../defines_cdata.h ../diagnostics_c.h ../forcing_c.h ../sub_c.h ../boundcond_c.h ../mpicomm_c.h
-
 ../cparam_c.h: ../cparam.f90 ../cparam.inc ../cparam.local ../scripts/cparam2c ../scripts/cparam.sed
 	@cd ..; scripts/cparam2c
 ../cdata_c.h: ../defines_cdata.h ../cdata.f90 ../scripts/cdata2c ../scripts/cdata.sed

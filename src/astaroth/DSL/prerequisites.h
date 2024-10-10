@@ -22,8 +22,8 @@
 #define AC_mzgrid mzgrid
 
 #include "fieldecs.h"
-#include "../stdlib/derivs.h"
 #include "../stdlib/grid.h"
+#include "../stdlib/derivs.h"
 #include "../stdlib/operators.h"
 #include "../stdlib/integrators.h"
 #include "../stdlib/units.h"
