@@ -11,7 +11,7 @@
   public :: f,df
   public :: initialize, finalize
 
-  external :: allocate_shm, register_exit_cleanup
+  external :: allocate_shm
 
   contains
 !******************************************************************************
@@ -42,7 +42,7 @@
     !mvar=nvar; maux=naux; maux_com=naux_com; mscratch=nscratch; mglobal=nglobal
 
     if (shared_mem_name/='') then
-      fp = allocate_shm(nelems,shared_mem_name)
+      fp = allocate_shm(nelems,shared_mem_name//char(0))
       call c_f_pointer(fp,f,(/mx,my,mz,mfarray/))
     else
       allocate(f_arr(mx,my,mz,mfarray),STAT=stat)

@@ -399,8 +399,8 @@ module File_io
 !***********************************************************************
     subroutine read_zaver(f,k1,k2,source,nav,indav,nstart_,ltaver)
     
-      use Cparam, only: nx,ny,nz,l1,l2,m1,m2,n1,n2,lactive_dimension
-      use Cdata, only: directory_snap
+      use Cparam, only: nx,ny,nz,l1,m1,n1,lactive_dimension
+      use Cdata, only: directory_snap, l2, m2, n2
       use General, only: directory_names_std, loptest, ioptest
       use Messages, only: warning
 
