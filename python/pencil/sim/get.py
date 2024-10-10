@@ -1,4 +1,20 @@
 from pathlib import Path
+from os.path import (
+    isdir,
+    join,
+    exists,
+    basename,
+    abspath,
+    )
+import numpy as np
+
+from pencil.io import (
+    load,
+    save,
+    walklevel,
+    )
+from pencil.util import is_sim_dir
+from pencil.sim import simulation
 
 def get(path=".", quiet=False):
     """
@@ -15,13 +31,6 @@ def get(path=".", quiet=False):
     quiet : bool
         Switches out the output of the function. Default: False.
     """
-
-    from os.path import isdir, join, exists, basename, abspath
-
-    from pencil.io import load
-    from pencil.sim.simulation import simulation
-    from pencil import is_sim_dir
-
     if exists(join(path, "pc/sim.dill")):
         try:
             sim = load("sim", folder=join(path, "pc"))
@@ -74,14 +83,6 @@ def get_sims(path_root=".", depth=0, unhide_all=True, quiet=False):
     quiet : bool
         Switches out the output of the function. Default: False.
     """
-    from os.path import join, basename
-    import numpy as np
-
-    from pencil.io import load
-    from pencil.io import save
-    from pencil.sim import simulation
-    from pencil.io import walklevel
-    from pencil import is_sim_dir
 
     # from pen.intern.class_simdict import Simdict
     # from intern import get_simdict
