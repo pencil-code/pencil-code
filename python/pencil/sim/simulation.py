@@ -5,6 +5,7 @@ manipulate simulations.
 """
 
 import os
+import pathlib
 from os.path import join, exists, split, islink, realpath, abspath, basename
 import numpy as np
 
@@ -76,14 +77,9 @@ class __Simulation__(object):
     def __init__(self, path=".", hidden=False, hard=False, quiet=False):
         # from pen.intern.hash_sim import hash_sim
 
-        path = path.strip()
-        if path.endswith("/"):
-            path = path[:-1]
-        self.name = split(path)[-1]  # find out name and store it
-        if self.name == "." or self.name == "":
-            self.name = split(os.getcwd())[-1]
+        self.path = pathlib.Path(path).absolute()
+        self.name = self.path.name  # find out name and store it
 
-        self.path = os.path.abspath(path)  # store paths
         if not quiet:
             print("# Creating Simulation object for " + self.path)
         self.datadir = join(self.path, "data")
