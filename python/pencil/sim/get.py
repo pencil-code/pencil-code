@@ -41,7 +41,7 @@ def get(path=".", quiet=False):
             os.system("rm " + join(path, "pc/sim.dill"))
 
     if is_sim_dir(path):
-        if quiet == False:
+        if not quiet:
             print(
                 "~ Found simulation in "
                 + path
