@@ -83,9 +83,9 @@ class __Simulation__(object):
 
         if not quiet:
             print(f"# Creating Simulation object for {self.path}")
-        self.datadir = join(self.path, "data")
-        self.pc_dir = join(self.path, "pc")
-        self.pc_datadir = join(self.path, "data", "pc")
+        self.datadir = self.path/"data"
+        self.pc_dir = self.path/"pc"
+        self.pc_datadir = self.path/"data"/"pc"
 
         # core files of a simulation run
         self.components = [
