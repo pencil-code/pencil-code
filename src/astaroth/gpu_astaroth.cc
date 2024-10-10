@@ -1068,6 +1068,7 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out, int c
   checkConfig(mesh.info,comp_info);
   acCheckDeviceAvailability();
   acGridInit(mesh);
+  mesh.info = acGridDecomposeMeshInfo(mesh.info);
   rhs = acGetDSLTaskGraph(AC_rhs);
   if(ltest_bcs) testBCs();
   acGridSynchronizeStream(STREAM_ALL);
@@ -1236,6 +1237,10 @@ testBCs()
   AcMesh mesh_to_copy;
   acHostMeshCopy(mesh, &mesh_to_copy);
 
+  acGridSynchronizeStream(STREAM_ALL);
+  acDeviceLoadMesh(acGridGetDevice(), STREAM_DEFAULT, mesh);
+  acGridSynchronizeStream(STREAM_ALL);
+
   int ivar1 = 1;
   int ivar2 = NUM_VTXBUF_HANDLES;
   boundconds_x_c(mesh.vertex_buffer[0],&ivar1,&ivar2);
@@ -1243,9 +1248,6 @@ testBCs()
   boundconds_z_c(mesh.vertex_buffer[0],&ivar1,&ivar2);
   auto bcs = acGetDSLTaskGraph(boundconds);
 
-  acGridSynchronizeStream(STREAM_ALL);
-  acDeviceLoadMesh(acGridGetDevice(), STREAM_DEFAULT, mesh);
-  acGridSynchronizeStream(STREAM_ALL);
 
   acGridSynchronizeStream(STREAM_ALL);
   acGridExecuteTaskGraph(bcs,1);
