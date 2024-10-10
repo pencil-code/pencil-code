@@ -94,7 +94,7 @@ module Param_IO
       lread_oldsnap_onlyA, lastaroth_output, astaroth_dest, &
       ireset_tstart, tstart, lghostfold_usebspline, &
       lread_aux, lwrite_aux, lkinflow_as_aux, lenforce_maux_check, &
-      lreport_undefined_diagnostics, pretend_lnTT, lprocz_slowest,lmorton_curve, ltest_bcs, nprocx_node, nprocy_node, nprocz_node, &
+      lreport_undefined_diagnostics, pretend_lnTT, lprocz_slowest, lmorton_curve, ltest_bcs, nprocx_node, nprocy_node, nprocz_node, &
       lcopysnapshots_exp, bcx, bcy, bcz, r_int, r_ext, r_ref, rsmooth, &
       r_int_border, r_ext_border, mu0, force_lower_bound, force_upper_bound, &
       lseparate_persist, ldistribute_persist, lpersist, lomit_add_data, &
@@ -225,7 +225,8 @@ module Param_IO
       saffman_ub, saffman_mag, saffman_mag_c, saffman_aa, saffman_aa_c, saffman_bb, &
       uu_fft3d, oo_fft3d, bb_fft3d, jj_fft3d, uu_xkyz, oo_xkyz, bb_xkyz, jj_xkyz, &
       uu_kx0z, oo_kx0z, bb_kx0z, jj_kx0z, bb_k00z, ee_k00z, gwT_fft3d, &
-      Em_specflux, Hm_specflux, Hc_specflux, density_scale_factor, radius_diag
+      Em_specflux, Hm_specflux, Hc_specflux, density_scale_factor, radius_diag, &
+      lmorton_curve, ltest_bcs
 !
   namelist /IO_pars/ &
       lcollective_IO, IO_strategy
