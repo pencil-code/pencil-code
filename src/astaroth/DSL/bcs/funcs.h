@@ -14,7 +14,7 @@ enum AC_TOP_BOT
 #define TOP AC_top
 
 //TP: note in Fortran this is (-nghost:nghost) so in C this will then be  of length 3*2+1
-//Also one has to index into it index+NGHOST_VAL
+//Also one has to index into it index+NGHOST
 
 real AC_dx2_bound[7]
 real AC_dy2_bound[7]
@@ -25,7 +25,7 @@ bc_steady_z(topbot, VtxBuffer field)
   int i;
   if (topbot == AC_bot) {
     if (field[vertexIdx.x][vertexIdx.y][AC_n1-1] <= 0.0) {
-      for i in 1:NGHOST_VAL+1 {
+      for i in 1:NGHOST+1 {
         field[vertexIdx.x][vertexIdx.y][AC_n1-i-1]=field[vertexIdx.x][vertexIdx.y][AC_n1-1];
       }
     }
@@ -36,14 +36,14 @@ bc_steady_z(topbot, VtxBuffer field)
       else {
         field[vertexIdx.x][vertexIdx.y][AC_n1-1-1]=2.0* field[vertexIdx.x][vertexIdx.y][AC_n1-1]    -field[vertexIdx.x][vertexIdx.y][1+AC_n1-1];
       }
-      for i in 2:NGHOST_VAL+1 {
+      for i in 2:NGHOST+1 {
         field[vertexIdx.x][vertexIdx.y][AC_n1-i-1]=2.0* field[vertexIdx.x][vertexIdx.y][AC_n1-i+1-1]-field[vertexIdx.x][vertexIdx.y][AC_n1-i+2-1];
       }
     }
   }
   else if (topbot == AC_top) {
     if (field[vertexIdx.x][vertexIdx.y][AC_n2-1] >= 0.0) {
-      for i in 1:NGHOST_VAL+1 {
+      for i in 1:NGHOST+1 {
         field[vertexIdx.x][vertexIdx.y][AC_n2+i-1]=field[vertexIdx.x][vertexIdx.y][AC_n2-1];
       }
     }
@@ -54,7 +54,7 @@ bc_steady_z(topbot, VtxBuffer field)
       else {
         field[vertexIdx.x][vertexIdx.y][1+AC_n2-1]=2.0* field[vertexIdx.x][vertexIdx.y][AC_n2-1]    -field[vertexIdx.x][vertexIdx.y][AC_n2-1-1];
       }
-      for i in 2:NGHOST_VAL+1 {
+      for i in 2:NGHOST+1 {
         field[vertexIdx.x][vertexIdx.y][AC_n2+i-1]=2.0* field[vertexIdx.x][vertexIdx.y][AC_n2+i-1-1]-field[vertexIdx.x][vertexIdx.y][AC_n2+i-2-1];
       }
     }
@@ -72,8 +72,8 @@ bc_ss_flux(topbot)
   if (topbot == AC_bot) {
     if (AC_pretend_lnTT) {
       tmp_xy=-FbotKbot/exp(SS[vertexIdx.x][vertexIdx.y][AC_n1-1]);
-      for i in 1:NGHOST_VAL+1 {
-        SS[vertexIdx.x][vertexIdx.y][AC_n1-i-1]=SS[vertexIdx.x][vertexIdx.y][AC_n1+i-1]-AC_dz2_bound[-i+NGHOST_VAL]*tmp_xy;
+      for i in 1:NGHOST+1 {
+        SS[vertexIdx.x][vertexIdx.y][AC_n1-i-1]=SS[vertexIdx.x][vertexIdx.y][AC_n1+i-1]-AC_dz2_bound[-i+NGHOST]*tmp_xy;
       }
     }
     else {
@@ -99,20 +99,20 @@ bc_ss_flux(topbot)
       else {
         tmp_xy=FbotKbot/cs2_xy;
       }
-      for i in 1:NGHOST_VAL+1 {
+      for i in 1:NGHOST+1 {
         rho_xy = LNRHO[vertexIdx.x][vertexIdx.y][AC_n1+i-1]-LNRHO[vertexIdx.x][vertexIdx.y][AC_n1-i-1];
         if (AC_ldensity_nolog) {
             rho_xy = rho_xy/LNRHO[vertexIdx.x][vertexIdx.y][AC_n1-1];
         }
-        SS[vertexIdx.x][vertexIdx.y][AC_n1-i-1]=SS[vertexIdx.x][vertexIdx.y][AC_n1+i-1]+AC_cp*(AC_cp-AC_cv)*(rho_xy+AC_dz2_bound[-i+NGHOST_VAL]*tmp_xy);
+        SS[vertexIdx.x][vertexIdx.y][AC_n1-i-1]=SS[vertexIdx.x][vertexIdx.y][AC_n1+i-1]+AC_cp*(AC_cp-AC_cv)*(rho_xy+AC_dz2_bound[-i+NGHOST]*tmp_xy);
       }
     }
   }
   else if (topbot == AC_top) {
     if (AC_pretend_lnTT) {
       tmp_xy=-FtopKtop/exp(SS[vertexIdx.x][vertexIdx.y][AC_n2-1]);
-      for i in 1:NGHOST_VAL+1 {
-        SS[vertexIdx.x][vertexIdx.y][AC_n2-i-1]=SS[vertexIdx.x][vertexIdx.y][AC_n2+i-1]-AC_dz2_bound[i+NGHOST_VAL]*tmp_xy;
+      for i in 1:NGHOST+1 {
+        SS[vertexIdx.x][vertexIdx.y][AC_n2-i-1]=SS[vertexIdx.x][vertexIdx.y][AC_n2+i-1]-AC_dz2_bound[i+NGHOST]*tmp_xy;
       }
     }
     else {
@@ -138,12 +138,12 @@ bc_ss_flux(topbot)
       else {
         tmp_xy=FtopKtop/cs2_xy;
       }
-      for i in 1:NGHOST_VAL+1 {
+      for i in 1:NGHOST+1 {
         rho_xy = LNRHO[vertexIdx.x][vertexIdx.y][AC_n2+i-1]-LNRHO[vertexIdx.x][vertexIdx.y][AC_n2-i-1];
         if (AC_ldensity_nolog) {
             rho_xy = rho_xy/LNRHO[vertexIdx.x][vertexIdx.y][AC_n2-1];
         }
-        SS[vertexIdx.x][vertexIdx.y][AC_n2+i-1]=SS[vertexIdx.x][vertexIdx.y][AC_n2-i-1]+AC_cp*(AC_cp-AC_cv)*(-rho_xy-AC_dz2_bound[i+NGHOST_VAL]*tmp_xy);
+        SS[vertexIdx.x][vertexIdx.y][AC_n2+i-1]=SS[vertexIdx.x][vertexIdx.y][AC_n2-i-1]+AC_cp*(AC_cp-AC_cv)*(-rho_xy-AC_dz2_bound[i+NGHOST]*tmp_xy);
       }
     }
   }
@@ -164,7 +164,7 @@ bc_ism(topbot, VtxBuffer field)
   }
   density_scale1=1./density_scale;
   if (topbot == AC_bot) {
-    for k in 1:NGHOST_VAL+1 {
+    for k in 1:NGHOST+1 {
       if (j==RHO  ||  j==LNRHO) {
         if (AC_ldensity_nolog) {
           field[vertexIdx.x][vertexIdx.y][k-1]=field[vertexIdx.x][vertexIdx.y][AC_n1-1]*exp(-(AC_z[AC_n1]-AC_z[k])*density_scale1);
@@ -186,7 +186,7 @@ bc_ism(topbot, VtxBuffer field)
     }
   }
   else if (topbot == AC_top) {
-    for k in 1:NGHOST_VAL+1 {
+    for k in 1:NGHOST+1 {
       if (j==RHO  ||  j==LNRHO) {
         if (AC_ldensity_nolog) {
           field[vertexIdx.x][vertexIdx.y][AC_n2+k-1]=field[vertexIdx.x][vertexIdx.y][AC_n2-1]*exp(-(AC_z[AC_n2+k]-AC_z[AC_n2])*density_scale1);
@@ -216,12 +216,12 @@ bc_sym_x(AC_TOP_BOT topbot, VtxBuffer field,int sgn,bool rel)
   int i;
   if (topbot == AC_bot) {
     if (rel) {
-      for i in 1:NGHOST_VAL+1 {
+      for i in 1:NGHOST+1 {
         field[AC_l1-i-1][vertexIdx.y][vertexIdx.z]=2*field[AC_l1-1][vertexIdx.y][vertexIdx.z]+sgn*field[AC_l1+i-1][vertexIdx.y][vertexIdx.z];
       }
     }
     else {
-      for i in 1:NGHOST_VAL+1 {
+      for i in 1:NGHOST+1 {
         field[AC_l1-i-1][vertexIdx.y][vertexIdx.z]=              sgn*field[AC_l1+i-1][vertexIdx.y][vertexIdx.z];
       }
       if (sgn<0) {
@@ -231,12 +231,12 @@ bc_sym_x(AC_TOP_BOT topbot, VtxBuffer field,int sgn,bool rel)
   }
   else if (topbot == AC_top) {
     if (rel) {
-      for i in 1:NGHOST_VAL+1 {
+      for i in 1:NGHOST+1 {
         field[AC_l2+i-1][vertexIdx.y][vertexIdx.z]=2*field[AC_l2-1][vertexIdx.y][vertexIdx.z]+sgn*field[AC_l2-i-1][vertexIdx.y][vertexIdx.z];
       }
     }
     else {
-      for i in 1:NGHOST_VAL+1 {
+      for i in 1:NGHOST+1 {
         field[AC_l2+i-1][vertexIdx.y][vertexIdx.z] = sgn*field[AC_l2-i-1][vertexIdx.y][vertexIdx.z];
       }
       if (sgn<0) {
@@ -253,12 +253,12 @@ bc_sym_y(AC_TOP_BOT topbot, VtxBuffer field,int sgn,bool rel)
   int i;
   if (topbot == AC_bot) {
     if (rel) {
-      for i in 1:NGHOST_VAL+1 {
+      for i in 1:NGHOST+1 {
         field[vertexIdx.x][AC_m1-i-1][vertexIdx.z]=2*field[vertexIdx.x][AC_m1-1][vertexIdx.z]+sgn*field[vertexIdx.x][AC_m1+i-1][vertexIdx.z];
       }
     }
     else {
-      for i in 1:NGHOST_VAL+1 {
+      for i in 1:NGHOST+1 {
         field[vertexIdx.x][AC_m1-i-1][vertexIdx.z]=              sgn*field[vertexIdx.x][AC_m1+i-1][vertexIdx.z];
       }
       if (sgn<0) {
@@ -268,12 +268,12 @@ bc_sym_y(AC_TOP_BOT topbot, VtxBuffer field,int sgn,bool rel)
   }
   else if (topbot == AC_top) {
     if (rel) {
-      for i in 1:NGHOST_VAL+1 {
+      for i in 1:NGHOST+1 {
         field[vertexIdx.x][AC_m2+i-1][vertexIdx.z]=2*field[vertexIdx.x][AC_m2-1][vertexIdx.z]+sgn*field[vertexIdx.x][AC_m2-i-1][vertexIdx.z];
       }
     }
     else {
-      for i in 1:NGHOST_VAL+1 {
+      for i in 1:NGHOST+1 {
         field[vertexIdx.x][AC_m2+i-1][vertexIdx.z]=              sgn*field[vertexIdx.x][AC_m2-i-1][vertexIdx.z];
       }
       if (sgn<0) {
@@ -290,12 +290,12 @@ bc_sym_z(AC_TOP_BOT topbot, VtxBuffer field,int sgn,bool rel)
   int i;
   if (topbot == AC_bot) {
     if (rel) {
-      for i in 1:NGHOST_VAL+1 {
+      for i in 1:NGHOST+1 {
         field[vertexIdx.x][vertexIdx.y][AC_n1-i-1]=2*field[vertexIdx.x][vertexIdx.y][AC_n1-1]+sgn*field[vertexIdx.x][vertexIdx.y][AC_n1+i-1];
       }
     }
     else {
-      for i in 1:NGHOST_VAL+1 {
+      for i in 1:NGHOST+1 {
         field[vertexIdx.x][vertexIdx.y][AC_n1-i-1] = sgn*field[vertexIdx.x][vertexIdx.y][AC_n1+i-1];
       }
       if (sgn<0) {
@@ -305,12 +305,12 @@ bc_sym_z(AC_TOP_BOT topbot, VtxBuffer field,int sgn,bool rel)
   }
   else if (topbot == AC_top) {
     if (rel) {
-      for i in 1:NGHOST_VAL+1 {
+      for i in 1:NGHOST+1 {
         field[vertexIdx.x][vertexIdx.y][AC_n2+i-1]=field[vertexIdx.x][vertexIdx.y][AC_n2-1]+(field[vertexIdx.x][vertexIdx.y][AC_n2-1]+sgn*field[vertexIdx.x][vertexIdx.y][AC_n2-i-1]);
       }
     }
     else { 
-      for i in 1:NGHOST_VAL+1 {
+      for i in 1:NGHOST+1 {
         field[vertexIdx.x][vertexIdx.y][AC_n2+i-1] = sgn*field[vertexIdx.x][vertexIdx.y][AC_n2-i-1];
       }
       if (sgn<0) {
@@ -326,13 +326,13 @@ bc_set_der_x(topbot, VtxBuffer field,val)
 {
   int i;
   if (topbot == AC_bot) {
-    for i in 1:NGHOST_VAL+1 {
-      field[AC_l1-i-1][vertexIdx.y][vertexIdx.z] = field[AC_l1+i-1][vertexIdx.y][vertexIdx.z] - AC_dx2_bound[-i+NGHOST_VAL+1-1]*val;
+    for i in 1:NGHOST+1 {
+      field[AC_l1-i-1][vertexIdx.y][vertexIdx.z] = field[AC_l1+i-1][vertexIdx.y][vertexIdx.z] - AC_dx2_bound[-i+NGHOST+1-1]*val;
     }
   }
   else if (topbot == AC_top) {
-    for i in 1:NGHOST_VAL+1 {
-      field[AC_l2+i-1][vertexIdx.y][vertexIdx.z] = field[AC_l2-i-1][vertexIdx.y][vertexIdx.z] + AC_dx2_bound[i+1+NGHOST_VAL-1]*val;
+    for i in 1:NGHOST+1 {
+      field[AC_l2+i-1][vertexIdx.y][vertexIdx.z] = field[AC_l2-i-1][vertexIdx.y][vertexIdx.z] + AC_dx2_bound[i+1+NGHOST-1]*val;
     }
   }
   else {
@@ -343,13 +343,13 @@ bc_set_der_y(topbot, VtxBuffer field,val)
 {
   int i;
   if (topbot == AC_bot) {
-    for i in 1:NGHOST_VAL+1 {
-      field[vertexIdx.x][AC_m1-i-1][vertexIdx.z] = field[vertexIdx.x][AC_m1+i-1][vertexIdx.z] - AC_dy2_bound[-i+NGHOST_VAL+1-1]*val;
+    for i in 1:NGHOST+1 {
+      field[vertexIdx.x][AC_m1-i-1][vertexIdx.z] = field[vertexIdx.x][AC_m1+i-1][vertexIdx.z] - AC_dy2_bound[-i+NGHOST+1-1]*val;
     }
   }
   else if (topbot == AC_top) {
-    for i in 1:NGHOST_VAL+1 {
-      field[vertexIdx.x][AC_m2+i-1][vertexIdx.z] = field[vertexIdx.x][AC_m2-i-1][vertexIdx.z] + AC_dy2_bound[i+1+NGHOST_VAL-1]*val;
+    for i in 1:NGHOST+1 {
+      field[vertexIdx.x][AC_m2+i-1][vertexIdx.z] = field[vertexIdx.x][AC_m2-i-1][vertexIdx.z] + AC_dy2_bound[i+1+NGHOST-1]*val;
     }
   }
   else {
@@ -360,13 +360,13 @@ bc_set_der_z(topbot, VtxBuffer field,val)
 {
   int i;
   if (topbot == AC_bot) {
-    for i in 1:NGHOST_VAL+1 {
-      field[vertexIdx.x][vertexIdx.y][AC_n1-i-1] = field[vertexIdx.x][vertexIdx.y][AC_n1+i-1] - AC_dz2_bound[-i+NGHOST_VAL+1-1]*val;
+    for i in 1:NGHOST+1 {
+      field[vertexIdx.x][vertexIdx.y][AC_n1-i-1] = field[vertexIdx.x][vertexIdx.y][AC_n1+i-1] - AC_dz2_bound[-i+NGHOST+1-1]*val;
     }
   }
   else if (topbot == AC_top) {
-    for i in 1:NGHOST_VAL+1 {
-      field[vertexIdx.x][vertexIdx.y][AC_n2+i-1] = field[vertexIdx.x][vertexIdx.y][AC_n2-i-1] + AC_dz2_bound[i+1+NGHOST_VAL-1]*val;
+    for i in 1:NGHOST+1 {
+      field[vertexIdx.x][vertexIdx.y][AC_n2+i-1] = field[vertexIdx.x][vertexIdx.y][AC_n2-i-1] + AC_dz2_bound[i+1+NGHOST-1]*val;
     }
   }
   else {
