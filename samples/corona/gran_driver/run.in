@@ -1,0 +1,29 @@
+!                     -*-f90-*-   (for emacs)
+!  run parameters for driver_test 256 parallel
+!
+&run_pars
+  ip=14
+  cvsid='$Id: run.in,v 1.5 2011-08-26 09:02:31 bingert Exp $'
+  nt=1000000, it1=100, isave=1000
+!  cdt=0.4, cdtv=0.08, cdts=1., itorder=3
+  dsnap=3600.
+  tmax= 7740.
+  dtmin =1e-7
+!
+  lpencil_check=F
+  lpencil_check_small=F
+/
+&hydro_run_pars
+/
+&viscosity_run_pars
+  ivisc='nu-const'
+  nu=100.0
+/
+&special_run_pars
+  lgranulation = T
+  dt_gran = 10.0  ! update interval [s]
+  vorticity_factor = 12.5     ! vorticity increase factor
+  tau_inv = 0.5   ! inverse time scale
+  lquench = F     ! quenching of velocities
+  lwrite_driver = T
+/

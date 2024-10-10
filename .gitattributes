@@ -3052,6 +3052,12 @@ samples/corona/driver/mag_field.dat -text
 samples/corona/driver/mag_times.dat -text
 samples/corona/driver/vel_field.dat -text
 samples/corona/driver/vel_times.dat -text
+samples/corona/gran_driver/print.in -text
+samples/corona/gran_driver/run.in -text
+samples/corona/gran_driver/src/Makefile.local -text
+samples/corona/gran_driver/src/cparam.local -text
+samples/corona/gran_driver/start.in -text
+samples/corona/gran_driver/video.in -text
 samples/corona/print.in -text
 samples/corona/reference.out -text
 samples/corona/reference.pro -text
