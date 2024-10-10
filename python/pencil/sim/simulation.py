@@ -279,8 +279,7 @@ class __Simulation__(object):
         # check existence of path_root+name, a reason to stop and not overwrite
         if OVERWRITE == False and exists(path_newsim):
             print(
-                "! ERROR: Folder to copy simulation to already exists!\n! -> "
-                + path_newsim
+                f"! ERROR: Folder to copy simulation to already exists!\n! -> {path_newsim}"
             )
             return False
 
@@ -339,25 +338,19 @@ class __Simulation__(object):
         # create folders
         if mkdir(path_newsim) == False and OVERWRITE == False:
             print(
-                "! ERROR: Couldnt create new simulation directory "
-                + path_newsim
-                + " !!"
+                f"! ERROR: Couldnt create new simulation directory {path_newsim} !!"
             )
             return False
 
         if mkdir(path_newsim_src) == False and OVERWRITE == False:
             print(
-                "! ERROR: Couldnt create new simulation src directory "
-                + path_newsim_src
-                + " !!"
+                f"! ERROR: Couldnt create new simulation src directory {path_newsim_src} !!"
             )
             return False
 
         if mkdir(path_newsim_data) == False and OVERWRITE == False:
             print(
-                "! ERROR: Couldnt create new simulation data directory "
-                + path_newsim_data
-                + " !!"
+                f"! ERROR: Couldnt create new simulation data directory {path_newsim_data} !!"
             )
             return False
         if link_data:
@@ -391,10 +384,7 @@ class __Simulation__(object):
         if has_initial_condition_dir:
             if mkdir(path_newsim_initcond) == False and OVERWRITE == False:
                 print(
-                    "! ERROR: Couldnt create new simulation initial_condition"
-                    + " directory "
-                    + path_newsim_initcond
-                    + " !!"
+                    f"! ERROR: Couldnt create new simulation initial_condition directory {path_newsim_initcond} !!"
                 )
                 return False
 
