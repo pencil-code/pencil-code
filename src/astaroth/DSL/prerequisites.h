@@ -33,6 +33,7 @@
 #undef x
 #undef y
 #undef z
+#define AC_NGHOST NGHOST
 
 // declare here reduction results needed for the timestep
 

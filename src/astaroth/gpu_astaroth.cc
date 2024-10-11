@@ -916,14 +916,17 @@ void setupConfig(AcMeshInfo& config, AcCompInfo& comp_info)
   #include "PC_modulepars.h"
 
   PCLoad(config,comp_info, AC_domain_decomposition, (int3) {nprocx,nprocy,nprocz});
-//TP: TODO deprecate AC_nx loading that AC_nxgrid loading becomes the default
-  PCLoad(config,comp_info, AC_nx, nx);
-  PCLoad(config,comp_info, AC_ny, ny);
-  PCLoad(config,comp_info, AC_nz, nz);
-
   PCLoad(config,comp_info, AC_nxgrid, nxgrid);
   PCLoad(config,comp_info, AC_nygrid, nygrid);
   PCLoad(config,comp_info, AC_nzgrid, nzgrid);
+
+  //TP: important this is correct even though we set AC_nx = nxgrid.
+  //This is stupid but needed for now.
+  //Hopefully in future we can deprecate AC_nx loading that AC_nxgrid loading becomes the default
+  PCLoad(config,comp_info, AC_nx, nxgrid);
+  PCLoad(config,comp_info, AC_ny, nygrid);
+  PCLoad(config,comp_info, AC_nz, nzgrid);
+
   PCLoad(config,comp_info,AC_decompose_strategy,(int)AcDecomposeStrategy::External);
   if (lmorton_curve)
     PCLoad(config,comp_info,AC_proc_mapping_strategy,(int)AcProcMappingStrategy::Morton);
@@ -1219,15 +1222,125 @@ AcReal max_advec()
 //TP: this is not written the the most optimally since it needs two extra copies of the mesh where at least the tmp
 //could be circumvented by temporarily using the output buffers on the GPU to store the f-array and load back from there
 //but if we truly hit the mem limit for now the user can of course simply test the bcs with a smaller mesh and skip the test with a larger mesh
+
+void
+sym_z(AcMesh mesh_in)
+{
+  const auto DEVICE_VTXBUF_IDX = [&](const int x, const int y, const int z)
+  				{
+					return acVertexBufferIdx(x,y,z,acGridGetLocalMeshInfo());
+  				};
+  AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
+  for (int i = 0; i < dims.m1.x; i++)
+  {
+    for (int j = 0; j < dims.m1.y; j++)
+    {
+      for (int k = 0; k < dims.m1.z; k++)
+      {
+	if(
+	   i >= NGHOST && i < dims.n1.x &&
+	   j >= NGHOST && j < dims.n1.y &&
+	   k >= NGHOST && k < dims.n1.z
+	  )continue;
+	 if(k >= NGHOST && k < dims.n1.z) continue;
+        for (int ivar = 0; ivar < NUM_VTXBUF_HANDLES; ivar++)
+        {
+	 //BOT
+	 if(k < NGHOST)
+	 {
+	 	const auto idx = DEVICE_VTXBUF_IDX(i,j,k);
+		const auto offset = NGHOST-k;
+	 	const auto domain_z= NGHOST+offset;
+	 	const auto domain_idx = DEVICE_VTXBUF_IDX(i,j,domain_z);
+		mesh_in.vertex_buffer[ivar][idx] = mesh_in.vertex_buffer[ivar][domain_idx];
+		//mesh_in.vertex_buffer[ivar][idx] = mesh.vertex_buffer[ivar][idx];
+	 }
+	 //TOP:
+	 else
+	 {
+	 	const auto idx = DEVICE_VTXBUF_IDX(i,j,k);
+		const auto offset = k-mesh_in.info.int_params[AC_nz_max]+1;
+	 	const auto domain_z= mesh_in.info.int_params[AC_nz_max]-offset;
+	 	const auto domain_idx = DEVICE_VTXBUF_IDX(i,j,domain_z);
+		mesh_in.vertex_buffer[ivar][idx] = mesh_in.vertex_buffer[ivar][domain_idx];
+		//mesh_in.vertex_buffer[ivar][idx] = mesh.vertex_buffer[ivar][idx];
+	 }
+	}
+      }
+    }
+  }
+}
+void
+check_sym_z(AcMesh mesh_in)
+{
+  const auto DEVICE_VTXBUF_IDX = [&](const int x, const int y, const int z)
+  				{
+					return acVertexBufferIdx(x,y,z,acGridGetLocalMeshInfo());
+  				};
+  if(rank == 1)
+  {
+  	//printf("HMM: %14e\n",mesh_in.vertex_buffer[0][DEVICE_VTXBUF_IDX(14,15,2)]);
+  	//printf("HMM: %14e\n",mesh_in.vertex_buffer[0][DEVICE_VTXBUF_IDX(14,15,2)]);
+  	printf("HMM: %14e\n",mesh_in.vertex_buffer[0][DEVICE_VTXBUF_IDX(26,14,1)]);
+  	printf("HMM: %14e\n",mesh_in.vertex_buffer[0][DEVICE_VTXBUF_IDX(26,14,5)]);
+  }
+  AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
+  for (int i = 0; i < dims.m1.x; i++)
+  {
+    for (int j = 0; j < dims.m1.y; j++)
+    {
+      for (int k = 0; k < dims.m1.z; k++)
+      {
+	if(
+	   i >= NGHOST && i < dims.n1.x &&
+	   j >= NGHOST && j < dims.n1.y &&
+	   k >= NGHOST && k < dims.n1.z
+	  )continue;
+	 if(k >= NGHOST && k < dims.n1.z) continue;
+        for (int ivar = 0; ivar < NUM_VTXBUF_HANDLES; ivar++)
+        {
+	 //BOT
+	 if(k < NGHOST)
+	 {
+	 	const auto idx = DEVICE_VTXBUF_IDX(i,j,k);
+		const auto offset = NGHOST-k;
+	 	const auto domain_z= NGHOST+offset;
+	 	const auto domain_idx = DEVICE_VTXBUF_IDX(i,j,domain_z);
+		if(mesh_in.vertex_buffer[ivar][idx] !=  mesh_in.vertex_buffer[ivar][domain_idx])
+			printf("WRONG\n");
+	 }
+	 //TOP:
+	 else
+	 {
+	 	const auto idx = DEVICE_VTXBUF_IDX(i,j,k);
+		const auto offset = k-mesh_in.info.int_params[AC_nz_max]+1;
+	 	const auto domain_z= mesh_in.info.int_params[AC_nz_max]-offset;
+	 	const auto domain_idx = DEVICE_VTXBUF_IDX(i,j,domain_z);
+		mesh_in.vertex_buffer[ivar][idx] = mesh.vertex_buffer[ivar][domain_idx];
+		if(mesh_in.vertex_buffer[ivar][idx] !=  mesh_in.vertex_buffer[ivar][domain_idx])
+			printf("WRONG\n");
+	 }
+	}
+      }
+    }
+  }
+}
 void
 testBCs()
 {
+  // Set random seed for reproducibility
+  srand(321654987);
+  const auto DEVICE_VTXBUF_IDX = [&](const int x, const int y, const int z)
+  				{
+					return acVertexBufferIdx(x,y,z,acGridGetLocalMeshInfo());
+  				};
   const bool all_periodic = 
   				acGridTaskGraphHasPeriodicBoundcondsX(rhs) && 
   				acGridTaskGraphHasPeriodicBoundcondsY(rhs) && 
   				acGridTaskGraphHasPeriodicBoundcondsZ(rhs) 
 				;
   if(all_periodic) return;
+  auto bcs = acGetDSLTaskGraph(boundconds);
 
   AcMesh tmp_mesh_to_store;
   acHostMeshCopy(mesh, &tmp_mesh_to_store);
@@ -1246,23 +1359,21 @@ testBCs()
   boundconds_x_c(mesh.vertex_buffer[0],&ivar1,&ivar2);
   boundconds_y_c(mesh.vertex_buffer[0],&ivar1,&ivar2);
   boundconds_z_c(mesh.vertex_buffer[0],&ivar1,&ivar2);
-  auto bcs = acGetDSLTaskGraph(boundconds);
+
 
 
   acGridSynchronizeStream(STREAM_ALL);
   acGridExecuteTaskGraph(bcs,1);
   acGridSynchronizeStream(STREAM_ALL);
 
+
   acGridSynchronizeStream(STREAM_ALL);
   acDeviceStoreMesh(acGridGetDevice(), STREAM_DEFAULT, &mesh_to_copy);
   acGridSynchronizeStream(STREAM_ALL);
 
 
+
   AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
-  const auto DEVICE_VTXBUF_IDX = [&](const int x, const int y, const int z)
-  				{
-					return acVertexBufferIdx(x,y,z,mesh.info);
-  				};
   bool passed = true;
   AcReal max_abs_not_passed_val=-1.0;
   AcReal true_pair;
@@ -1272,16 +1383,23 @@ testBCs()
   AcReal gpu_val_for_largest_diff;
   AcReal true_val_for_largest_diff;
   AcReal epsilon = pow(10.0,-12.0);
+  int3 largest_diff_point;
   //AcReal epsilon = 0.0;
-  auto start_x = acGridTaskGraphHasPeriodicBoundcondsX(rhs) ? NGHOST : 0;
-  auto start_y = acGridTaskGraphHasPeriodicBoundcondsY(rhs) ? NGHOST : 0;
-  auto start_z = acGridTaskGraphHasPeriodicBoundcondsZ(rhs) ? NGHOST : 0;
 
-  auto end_x = acGridTaskGraphHasPeriodicBoundcondsX(rhs) ? dims.n1.x : dims.m1.x;
-  auto end_y = acGridTaskGraphHasPeriodicBoundcondsY(rhs) ? dims.n1.y : dims.m1.y;
-  auto end_z = acGridTaskGraphHasPeriodicBoundcondsZ(rhs) ? dims.n1.z : dims.m1.z;
+  auto skip_x = acGridTaskGraphHasPeriodicBoundcondsX(rhs) || false;
+  auto skip_y = acGridTaskGraphHasPeriodicBoundcondsY(rhs) || false;
+  auto skip_z = acGridTaskGraphHasPeriodicBoundcondsZ(rhs) || false;
+
+  auto start_x =  skip_x ? NGHOST : 0;
+  auto start_y =  skip_y ? NGHOST : 0;
+  auto start_z =  skip_z ? NGHOST : 0;
+
+  auto end_x =  skip_x ? dims.n1.x : dims.m1.x;
+  auto end_y =  skip_y ? dims.n1.y : dims.m1.y;
+  auto end_z =  skip_z ? dims.n1.z : dims.m1.z;
 
   int num_of_points_where_different[NUM_VTXBUF_HANDLES] = {0};
+  int num_of_points = 0;
 
   for (int i = start_x; i < end_x; i++)
   {
@@ -1289,6 +1407,13 @@ testBCs()
     {
       for (int k = start_z; k < end_z; k++)
       {
+	if(
+	   i >= NGHOST && i < dims.n1.x &&
+	   j >= NGHOST && j < dims.n1.y &&
+	   k >= NGHOST && k < dims.n1.z
+	  )continue;
+	  //if(i < NGHOST | i > dims.n1.x  || j < NGHOST || j > dims.n1.y) continue;
+	++num_of_points;
         for (int ivar = 0; ivar < NUM_VTXBUF_HANDLES; ivar++)
         {
           AcReal out_val = mesh_to_copy.vertex_buffer[ivar][DEVICE_VTXBUF_IDX(i, j, k)];
@@ -1300,10 +1425,6 @@ testBCs()
           {
             passed = false;
             num_of_points_where_different[ivar]++;
-             //acLogFromRootProc(rank,"rhs val wrong at %d,%d,%d\n", i, j, k);
-             //acLogFromRootProc(rank,"field = %d", ivar);
-             //acLogFromRootProc(rank,"GPU val: %.7e\tTRUE val: %.7e\n", out_val, true_val);
-             //acLogFromRootProc(rank,"PID: %d\n", rank);
             if (max_abs_not_passed_val<abs(out_val)){
               max_abs_not_passed_val = abs(out_val);
               true_pair = true_val;
@@ -1313,6 +1434,7 @@ testBCs()
                 max_abs_relative_difference=(abs_diff/true_val);
                 gpu_val_for_largest_diff = out_val;
                 true_val_for_largest_diff = true_val;
+		largest_diff_point = (int3){i,j,k};
               }
             }  
           }
@@ -1334,12 +1456,15 @@ testBCs()
   if(!passed)
   {
   	for (int ivar=0;ivar<NUM_VTXBUF_HANDLES;ivar++)
-    		acLogFromRootProc(rank,"ratio of values wrong for field: %d\t %f\n",ivar,(double)num_of_points_where_different[ivar]/volume_size(dims.m1));
+    		acLogFromRootProc(rank,"ratio of values wrong for field: %d\t %f\n",ivar,(double)num_of_points_where_different[ivar]/num_of_points);
   	acLogFromRootProc(rank,"max abs not passed val: %.7e\t%.7e\n",max_abs_not_passed_val, fabs(true_pair));
   	acLogFromRootProc(rank,"max abs relative difference val: %.7e\n",max_abs_relative_difference);
+  	acLogFromRootProc(rank,"Point where biggest rel diff: %d,%d,%d\n",largest_diff_point.x,largest_diff_point.y,largest_diff_point.z);
   	acLogFromRootProc(rank,"largest difference: %.7e\t%.7e\n",gpu_val_for_largest_diff, true_val_for_largest_diff);
   	acLogFromRootProc(rank,"abs range: %.7e-%7e\n",min_abs_value,max_abs_value);
     	acLogFromRootProc(rank,"Did not pass BC test :(\n");
+	fprintf(stderr,"Did not pass BC\n");
+
     	exit(EXIT_FAILURE);
   }
   fflush(stdout);

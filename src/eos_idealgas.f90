@@ -4653,7 +4653,7 @@ module EquationOfState
 !
     use Syscalls, only: copy_addr
 
-    integer, parameter :: n_pars=10
+    integer, parameter :: n_pars=100
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 !
     call copy_addr(cs20,p_par(1))
@@ -4665,6 +4665,8 @@ module EquationOfState
     call copy_addr(gamma_m1,p_par(7))
     call copy_addr(gamma1,p_par(8))
     call copy_addr(cv1,p_par(9))
+    call copy_addr(cs2bot,p_par(10))
+    call copy_addr(cs2top,p_par(11))
 !
     endsubroutine pushpars2c
 !***********************************************************************

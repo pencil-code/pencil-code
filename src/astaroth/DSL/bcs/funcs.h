@@ -13,6 +13,10 @@ enum AC_TOP_BOT
 #define BOT AC_bot
 #define TOP AC_top
 
+present(var)
+{
+	return true
+}
 //TP: note in Fortran this is (-nghost:nghost) so in C this will then be  of length 3*2+1
 //Also one has to index into it index+NGHOST
 
@@ -151,65 +155,6 @@ bc_ss_flux(topbot)
   }
 }
 #endif
-bc_ism(topbot, VtxBuffer field)
-{
-  int k;
-  real density_scale1;
-  real density_scale;
-  if (AC_density_scale_factor==impossible) {
-    density_scale=density_scale_cgs/AC_unit_length;
-  }
-  else {
-    density_scale=AC_density_scale_factor;
-  }
-  density_scale1=1./density_scale;
-  if (topbot == AC_bot) {
-    for k in 1:NGHOST+1 {
-      if (j==RHO  ||  j==LNRHO) {
-        if (AC_ldensity_nolog) {
-          field[vertexIdx.x][vertexIdx.y][k-1]=field[vertexIdx.x][vertexIdx.y][AC_n1-1]*exp(-(AC_z[AC_n1]-AC_z[k])*density_scale1);
-        }
-        else {
-          field[vertexIdx.x][vertexIdx.y][k-1]=field[vertexIdx.x][vertexIdx.y][AC_n1-1] - (AC_z[AC_n1]-AC_z[k])*density_scale1;
-        }
-      }
-      else if (j==SS) {
-        if (AC_ldensity_nolog) {
-          field[vertexIdx.x][vertexIdx.y][AC_n1-k-1]=field[vertexIdx.x][vertexIdx.y][AC_n1-1]+(AC_cp-AC_cv)*(log(RHO[vertexIdx.x][vertexIdx.y][AC_n1-1])-log(RHO[vertexIdx.x][vertexIdx.y][AC_n1-k-1])) +  AC_cv*log((AC_z[AC_n1]-AC_z[AC_n1-k])*density_scale+1.);
-        }
-        else {
-          field[vertexIdx.x][vertexIdx.y][AC_n1-k-1]=field[vertexIdx.x][vertexIdx.y][AC_n1-1]+(AC_cp-AC_cv)*(LNRHO[vertexIdx.x][vertexIdx.y][AC_n1-1]-LNRHO[vertexIdx.x][vertexIdx.y][AC_n1-k-1])+  AC_cv*log((AC_z[AC_n1]-AC_z[AC_n1-k])*density_scale+1.);
-        }
-      }
-      else {
-      }
-    }
-  }
-  else if (topbot == AC_top) {
-    for k in 1:NGHOST+1 {
-      if (j==RHO  ||  j==LNRHO) {
-        if (AC_ldensity_nolog) {
-          field[vertexIdx.x][vertexIdx.y][AC_n2+k-1]=field[vertexIdx.x][vertexIdx.y][AC_n2-1]*exp(-(AC_z[AC_n2+k]-AC_z[AC_n2])*density_scale1);
-        }
-        else {
-          field[vertexIdx.x][vertexIdx.y][AC_n2+k-1]=field[vertexIdx.x][vertexIdx.y][AC_n2-1] - (AC_z[AC_n2+k]-AC_z[AC_n2])*density_scale1;
-        }
-      }
-      else if (j==SS) {
-        if (AC_ldensity_nolog) {
-          field[vertexIdx.x][vertexIdx.y][AC_n2+k-1]=field[vertexIdx.x][vertexIdx.y][AC_n2-1]+(AC_cp-AC_cv)*(log(RHO[vertexIdx.x][vertexIdx.y][AC_n2-1])-log(RHO[vertexIdx.x][vertexIdx.y][AC_n2+k-1]))+  AC_cv*log((AC_z[AC_n2+k]-AC_z[AC_n2])*density_scale+1.);
-        }
-        else {
-          field[vertexIdx.x][vertexIdx.y][AC_n2+k-1]=field[vertexIdx.x][vertexIdx.y][AC_n2-1]+(AC_cp-AC_cv)*(LNRHO[vertexIdx.x][vertexIdx.y][AC_n2-1]-LNRHO[vertexIdx.x][vertexIdx.y][AC_n2+k-1])+  AC_cv*log((AC_z[AC_n2+k]-AC_z[AC_n2])*density_scale+1.);
-        }
-      }
-      else {
-      }
-    }
-  }
-  else {
-  }
-}
 
 bc_sym_x(AC_TOP_BOT topbot, VtxBuffer field,int sgn,bool rel)
 {
@@ -372,3 +317,169 @@ bc_set_der_z(topbot, VtxBuffer field,val)
   else {
   }
 }
+
+bc_ss_temp_z(AC_TOP_BOT topbot,bool lone_sided)
+{
+real tmp
+real lnrho_xy
+if(topbot == AC_bot) {;
+if (lentropy  &&  ! AC_pretend_lntt) {;
+tmp = 2*AC_cv*log(AC_cs2bot/AC_cs20);
+if (AC_ldensity_nolog) {;
+if (AC_lreference_state) {;
+}
+else {
+lnrho_xy=log(LNRHO[vertexIdx.x][vertexIdx.y][AC_n1-1]);
+}
+}
+else {
+lnrho_xy=LNRHO[vertexIdx.x][vertexIdx.y][AC_n1-1];
+}
+SS[vertexIdx.x][vertexIdx.y][AC_n1-1] = 0.5*tmp - (AC_cp-AC_cv)*(lnrho_xy-AC_lnrho0);
+loptest_return_value_1 = false;
+if (present(lone_sided)) {;
+loptest_return_value_1=lone_sided;
+}
+else if (false) {;
+}
+if (loptest_return_value_1) {;
+print("not implemented set_ghosts_for_onesided_ders");
+}
+else {
+if (AC_ldensity_nolog) {;
+for i in 1:AC_NGHOST+1 {
+SS[vertexIdx.x][vertexIdx.y][AC_n1-i-1] = -SS[vertexIdx.x][vertexIdx.y][AC_n1+i-1] + tmp  - 2*(AC_cp-AC_cv)*(lnrho_xy-AC_lnrho0);
+}
+}
+else {
+for i in 1:AC_NGHOST+1 {
+SS[vertexIdx.x][vertexIdx.y][AC_n1-i-1] = -SS[vertexIdx.x][vertexIdx.y][AC_n1+i-1] + tmp  - (AC_cp-AC_cv)*(LNRHO[vertexIdx.x][vertexIdx.y][AC_n1+i-1]+LNRHO[vertexIdx.x][vertexIdx.y][AC_n1-i-1]-2*AC_lnrho0);
+}
+}
+}
+}
+else if (lentropy  &&  AC_pretend_lntt) {;
+SS[vertexIdx.x][vertexIdx.y][AC_n1-1] = log(AC_cs2bot/AC_gamma_m1);
+loptest_return_value_2 = false;
+if (present(lone_sided)) {;
+loptest_return_value_2=lone_sided;
+}
+else if (false) {;
+}
+if (loptest_return_value_2) {;
+print("not implemented set_ghosts_for_onesided_ders");
+}
+else {
+for i in 1:AC_NGHOST+1 {
+SS[vertexIdx.x][vertexIdx.y][AC_n1-i-1]=2*SS[vertexIdx.x][vertexIdx.y][AC_n1-1]-SS[vertexIdx.x][vertexIdx.y][AC_n1+i-1];
+}
+}
+}
+else if (ltemperature) {;
+if (ltemperature_nolog) {;
+TT[vertexIdx.x][vertexIdx.y][AC_n1-1]   = AC_cs2bot/AC_gamma_m1;
+}
+else {
+LNTT[vertexIdx.x][vertexIdx.y][AC_n1-1] = log(AC_cs2bot/AC_gamma_m1);
+}
+loptest_return_value_3 = false;
+if (present(lone_sided)) {;
+loptest_return_value_3=lone_sided;
+}
+else if (false) {;
+}
+if (loptest_return_value_3) {;
+print("not implemented set_ghosts_for_onesided_ders");
+}
+else {
+for i in 1:AC_NGHOST+1 {
+LNTT[vertexIdx.x][vertexIdx.y][AC_n1-i-1]=2*LNTT[vertexIdx.x][vertexIdx.y][AC_n1-1]-LNTT[vertexIdx.x][vertexIdx.y][AC_n1+i-1];
+}
+}
+}
+}
+else if(topbot == AC_top) {;
+if (AC_lread_oldsnap) {;
+cs2top=AC_cs20*exp(AC_gamma*SS[AC_l2-1][AC_m2-1][AC_n2-1]/AC_cp+AC_gamma_m1*(LNRHO[AC_l2-1][AC_m2-1][AC_n2-1]-AC_lnrho0));
+}
+if (lentropy  &&  ! AC_pretend_lntt) {;
+tmp = 2*AC_cv*log(cs2top/AC_cs20);
+if (AC_ldensity_nolog) {;
+if (AC_lreference_state) {;
+}
+else {
+lnrho_xy=log(LNRHO[vertexIdx.x][vertexIdx.y][AC_n2-1]);
+}
+}
+else {
+lnrho_xy=LNRHO[vertexIdx.x][vertexIdx.y][AC_n2-1];
+}
+SS[vertexIdx.x][vertexIdx.y][AC_n2-1] = 0.5*tmp - (AC_cp-AC_cv)*(lnrho_xy-AC_lnrho0);
+loptest_return_value_5 = false;
+if (present(lone_sided)) {;
+loptest_return_value_5=lone_sided;
+}
+else if (false) {;
+}
+if (loptest_return_value_5) {;
+print("not implemented set_ghosts_for_onesided_ders");
+}
+else {
+if (AC_ldensity_nolog) {;
+for i in 1:AC_NGHOST+1 {
+SS[vertexIdx.x][vertexIdx.y][AC_n2+i-1] = -SS[vertexIdx.x][vertexIdx.y][AC_n2-i-1] + tmp  - 2*(AC_cp-AC_cv)*(lnrho_xy-AC_lnrho0);
+}
+}
+else {
+for i in 1:AC_NGHOST+1 {
+SS[vertexIdx.x][vertexIdx.y][AC_n2+i-1] = -SS[vertexIdx.x][vertexIdx.y][AC_n2-i-1] + tmp  - (AC_cp-AC_cv)*(LNRHO[vertexIdx.x][vertexIdx.y][AC_n2-i-1]+LNRHO[vertexIdx.x][vertexIdx.y][AC_n2+i-1]-2*AC_lnrho0);
+}
+}
+}
+}
+else if (lentropy  &&  AC_pretend_lntt) {;
+SS[vertexIdx.x][vertexIdx.y][AC_n2-1] = log(cs2top/AC_gamma_m1);
+loptest_return_value_6 = false;
+if (present(lone_sided)) {;
+loptest_return_value_6=lone_sided;
+}
+else if (false) {;
+}
+if (loptest_return_value_6) {;
+print("not implemented set_ghosts_for_onesided_ders");
+}
+else {
+for i in 1:AC_NGHOST+1 {
+SS[vertexIdx.x][vertexIdx.y][AC_n2+i-1]=2*SS[vertexIdx.x][vertexIdx.y][AC_n2-1]-SS[vertexIdx.x][vertexIdx.y][AC_n2-i-1];
+}
+}
+}
+else if (ltemperature) {;
+if (ltemperature_nolog) {;
+TT[vertexIdx.x][vertexIdx.y][AC_n2-1]   = cs2top/AC_gamma_m1;
+}
+else {
+LNTT[vertexIdx.x][vertexIdx.y][AC_n2-1] = log(cs2top/AC_gamma_m1);
+}
+loptest_return_value_7 = false;
+if (present(lone_sided)) {;
+loptest_return_value_7=lone_sided;
+}
+else if (false) {;
+}
+if (loptest_return_value_7) {;
+print("not implemented set_ghosts_for_onesided_ders");
+}
+else {
+for i in 1:AC_NGHOST+1 {
+LNTT[vertexIdx.x][vertexIdx.y][AC_n2+i-1]=2*LNTT[vertexIdx.x][vertexIdx.y][AC_n2-1]-LNTT[vertexIdx.x][vertexIdx.y][AC_n2-i-1];
+}
+}
+}
+}
+else {
+}
+}
+
+
+

@@ -25,3 +25,7 @@ bc_sym_z(AC_TOP_BOT topbot, VtxBuffer field)
 {
   bc_sym_z(topbot,field,1)
 }
+bc_ss_temp_z(AC_TOP_BOT topbot)
+{
+	bc_ss_temp_z(topbot,false)
+}
