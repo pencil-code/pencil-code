@@ -8241,10 +8241,11 @@ endif
 
     use Syscalls, only: copy_addr
 
-    integer, parameter :: n_pars=1
+    integer, parameter :: n_pars=2
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call copy_addr(lpressuregradient_gas,p_par(1))  ! int
+    call copy_addr(lupw_uu,p_par(2))  ! int
 
     endsubroutine pushpars2c
 !***********************************************************************

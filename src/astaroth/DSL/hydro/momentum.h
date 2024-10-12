@@ -38,8 +38,14 @@ else{
       rhs.z += gravz_zpencil[vertexIdx.z-NGHOST]
     }
 #endif
+    if (lupw_uu){
+      rhs -= real3(ugrad_upw(UUX,UU), ugrad_upw(UUY,UU), ugrad_upw(UUZ,UU))
+    }
+    else{
+      rhs -= gradient_tensor(UU) * uu     // order?
+    }
+
     return rhs 
-           - gradient_tensor(UU) * uu   // order?
 #if LENTROPY
            - cs2 * (gradient(SS)/cp + glnrho)
 #else

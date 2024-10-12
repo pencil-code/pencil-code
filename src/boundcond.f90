@@ -1073,7 +1073,9 @@ module Boundcond
           endif
 !
           jdone=0
-          do j=ivar1,ivar2
+          if (ip_ok) then
+
+            do j=ivar1,ivar2
 !
 ! Natalia: the next line is for the dustdensity case.
 ! If ndustspec is large, it is stupid to set bc for all dust species
@@ -1086,8 +1088,6 @@ module Boundcond
 !
             if (ldebug) write(*,'(A,I1,A,I2,A,A)') ' bcy',topbot,'(',j,')=',bcy12(j,topbot)
 
-            if (ip_ok) then
-           
               is_vec = var_is_vec(j)
               select case (bcy12(j,topbot))
               case ('0')
@@ -1270,8 +1270,8 @@ module Boundcond
                 if (.not.bc%done) call fatal_error_local("boundconds_y", &
                   "no such boundary condition bcy1/2 = "//trim(bcy12(j,topbot))//" for j="//trim(itoa(j)))
               endselect
-            endif
-          enddo
+            enddo
+          endif
         enddo
       endselect
 !
@@ -1338,9 +1338,9 @@ module Boundcond
           endif
 !
           jdone=0
-          do j=ivar1,ivar2
-            if (ldebug) write(*,'(A,I1,A,I2,A,A)') ' bcz',topbot,'(',j,')=',bcz12(j,topbot)
-            if (ip_ok) then
+          if (ip_ok) then
+            do j=ivar1,ivar2
+              if (ldebug) write(*,'(A,I1,A,I2,A,A)') ' bcz',topbot,'(',j,')=',bcz12(j,topbot)
 
               is_vec = var_is_vec(j)
 
@@ -1673,8 +1673,8 @@ module Boundcond
                 if (.not.bc%done) call fatal_error_local("boundconds_z", &
                   "no such boundary condition bcz1/2 = "//trim(bcz12(j,topbot))//" for j="//trim(itoa(j)))
               endselect
-            endif
-          enddo
+            enddo
+          endif
         enddo
       endselect
 !

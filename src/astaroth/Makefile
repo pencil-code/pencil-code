@@ -31,7 +31,7 @@ ifneq ($(filter ../mpicomm.f90,$(MODULESOURCES)),)
 else
   #CMAKE_MPI = OFF
   #$(info MPI not enabled)
-  $(error interfaced version requires MPI)
+  #$(error interfaced version requires MPI)
 endif
 
 SOURCES = gpu_astaroth.cc 
@@ -62,7 +62,7 @@ EXT_SOURCES = ../../DSL/*/*.h ../../DSL/*/*.ac
 AC_HEADERS=submodule/include/astaroth.h submodule/acc-runtime/api/math_utils.h
 
 # C headers in pencil-code/src 
-CHEADERS = ../cparam_c.h ../cdata_c.h ../defines_cdata.h ../diagnostics_c.h ../forcing_c.h ../sub_c.h ../mpicomm_c.h
+CHEADERS = ../cparam_c.h ../cdata_c.h ../boundcond_c.h ../defines_cdata.h ../diagnostics_c.h ../forcing_c.h ../sub_c.h ../mpicomm_c.h
 
 # Pencil Code related C headers in . (pencil-code/src/astaroth)
 PCHEADER_DIR = .
@@ -73,7 +73,7 @@ astaroth_$(PREC).so: $(SOURCES) forcing.h $(AC_HEADERS) $(PC_HEADERS) $(CHEADERS
 	mkdir -p build && \
 	echo USE_HIP=$(USE_HIP) && \
 	echo PRECISION=$(CMAKE_PREC) && \
-	cd build && \
+	cd build && export LDFLAGS="" && \
 	cmake -DDOUBLE_PRECISION=$(CMAKE_PREC) -DRUNTIME_COMPILATION=$(RUNTIME_COMPILATION) -DUSE_HIP=$(USE_HIP) -DSINGLEPASS_INTEGRATION=$(CMAKE_SINGLEPASS) -DUSE_DARDEL=$(USE_DARDEL) .. && \
 	make -j && \
 	cd .. && \
@@ -91,17 +91,17 @@ astaroth_$(PREC).so: $(SOURCES) forcing.h $(AC_HEADERS) $(PC_HEADERS) $(CHEADERS
 
 CMAKE_OPTIONS = -DMULTIGPU_ENABLED=OFF -DMPI_ENABLED=$(CMAKE_MPI) -DBUILD_SHARED_LIBS=ON -DSINGLEPASS_INTEGRATION=$(CMAKE_SINGLEPASS) -DUSE_CUDA_AWARE_MPI=ON -DMAX_THREADS_PER_BLOCK=512 \
                 -DPACKED_DATA_TRANSFERS=$(CMAKE_PACKED) -DDOUBLE_PRECISION=$(CMAKE_PREC) -DBUILD_SAMPLES=OFF -DADJACENT_VERTEX_BUFFERS=OFF -DUSE_HIP=$(USE_HIP) \
-		-DVERBOSE=OFF -DOPTIMIZE_MEM_ACCESSES=ON -DOPTIMIZE_ARRAYS=OFF\
+		-DVERBOSE=OFF -DOPTIMIZE_MEM_ACCESSES=ON -DOPTIMIZE_ARRAYS=OFF \
 	        -DBUILD_STANDALONE=OFF -DBUILD_UTILS=OFF -DUSE_DARDEL=$(USE_DARDEL) -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DEXT_SOURCES=$(EXT_SOURCES) -DDSL_MODULE_FILE=$(DSL_MODULE_FILE)
 astaroth_libs:
 	echo "const char* cmake_options = \"-DDSL_MODULE_DIR=../$(DSL_MODULE_DIR)  $(CMAKE_OPTIONS)\";" > cmake_options.h
-	mkdir -p submodule/build && cd submodule/build && \
+	mkdir -p submodule/build  && cd submodule/build && export LDFLAGS=""  && \
 	cmake  $(CMAKE_OPTIONS) -DDSL_MODULE_DIR=../acc-runtime/$(DSL_MODULE_DIR) -DRUNTIME_COMPILATION=$(RUNTIME_COMPILATION) .. \
 	&& make -j -I../../.. VERBOSE=0 # Build the core Astaroth library
 	@echo PRECISION=$(CMAKE_PREC)
 
 update_astaroth_libs:
-	cd submodule/build && \
+	cd submodule/build && export LDFLAGS="" && \
 	make -I../../.. VERBOSE=0 # Build the core Astaroth library with existing Makefile.
 	@echo PRECISION=$(CMAKE_PREC)
 

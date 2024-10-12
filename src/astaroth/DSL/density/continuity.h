@@ -11,7 +11,12 @@ glnrho = gradient(LNRHO)   // grad(rho) or grad(lnrho)!
   else{
     rhs += - divergence(UU)
   }
-  return rhs - dot(vecvalue(UU), glnrho)
+  if (lupw_lnrho){
+    return rhs - ugrad_upw(LNRHO,UU)
+  }
+  else{
+    return rhs - dot(vecvalue(UU), glnrho)
+  }
 #else
   return rhs
 #endif
