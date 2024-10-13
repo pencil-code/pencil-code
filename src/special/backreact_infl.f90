@@ -96,6 +96,7 @@ module Special
   real :: kgaussian_phi=0.,kpeak_phi=0., kgaussian_dphi=0., kpeak_dphi=0.
   real :: relhel_phi=0.
   real :: ddotam, a2rhopm, a2rhopm_all, a2rhom, a2rhom_all, edotbm, edotbm_all, a2rhophim, a2rhophim_all
+  real :: a2rhogphim, a2rhogphim_all
   real :: lnascale, ascale, a2, a21, Hscript
   real :: Hscript0=0.
   real, target :: ddotam_all
@@ -137,6 +138,7 @@ module Special
   integer :: idiag_a2rhopm=0   ! DIAG_DOC: $a^2 (rho+p)$
   integer :: idiag_a2rhom=0   ! DIAG_DOC: $a^2 rho$
   integer :: idiag_a2rhophim=0   ! DIAG_DOC: $a^2 rho$
+  integer :: idiag_a2rhogphim=0   ! DIAG_DOC: $0.5 <grad phi^2>$
 !
   contains
 !****************************************************************************
@@ -487,6 +489,7 @@ module Special
         call save_name(a2rhopm_all,idiag_a2rhopm)
         call save_name(a2rhom_all,idiag_a2rhom)
         call save_name(a2rhophim_all,idiag_a2rhophim)
+        call save_name(a2rhogphim_all,idiag_a2rhogphim)
       endif
 !
     endsubroutine dspecial_dt_ode
@@ -546,6 +549,7 @@ module Special
         idiag_dphim=0; idiag_dphi2m=0; idiag_dphirms=0
         idiag_Hscriptm=0; idiag_lnam=0; idiag_ddotam=0
         idiag_a2rhopm=0; idiag_a2rhom=0; idiag_a2rhophim=0
+        idiag_a2rhogphim=0;
       endif
 !
       do iname=1,nname
@@ -561,6 +565,7 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'a2rhopm',idiag_a2rhopm)
         call parse_name(iname,cname(iname),cform(iname),'a2rhom',idiag_a2rhom)
         call parse_name(iname,cname(iname),cform(iname),'a2rhophim',idiag_a2rhophim)
+        call parse_name(iname,cname(iname),cform(iname),'a2rhogphim',idiag_a2rhogphim)
       enddo
 !!
 !!!  write column where which magnetic variable is stored
@@ -599,7 +604,7 @@ module Special
       call mpibcast_real(a2)
       call mpibcast_real(a21)
 !
-      ddotam=0.; a2rhopm=0.; a2rhom=0.; edotbm=0; a2rhophim=0.;
+      ddotam=0.; a2rhopm=0.; a2rhom=0.; edotbm=0; a2rhophim=0.; a2rhogphim=0.
       do n=n1,n2
       do m=m1,m2
         call prep_ode_right(f)
@@ -609,6 +614,7 @@ module Special
       a2rhopm=a2rhopm/nwgrid
       a2rhom=a2rhom/nwgrid
       a2rhophim=a2rhophim/nwgrid
+      a2rhogphim=a2rhogphim/nwgrid
       ddotam=(four_pi_over_three/nwgrid)*ddotam
       if (lphi_hom) then
         edotbm=edotbm/nwgrid
@@ -618,6 +624,7 @@ module Special
       call mpireduce_sum(a2rhopm,a2rhopm_all)
       call mpiallreduce_sum(a2rhom,a2rhom_all)
       call mpireduce_sum(a2rhophim,a2rhophim_all)
+      call mpireduce_sum(a2rhogphim,a2rhogphim_all)
       call mpiallreduce_sum(ddotam,ddotam_all)
 !
       if (lroot .and. lflrw) then
@@ -647,7 +654,8 @@ module Special
       else
         call grad(f,iinfl_phi,gphi)    !MR: the ghost zones are not necessarily updated!!!
         call dot2_mn(gphi,gphi2)
-        a2rhop=dphi**2+gphi2
+        a2rhogphim=a2rhogphim+sum(0.5*gphi2)
+        a2rhop=dphi**2+onethird*gphi2
         a2rho=0.5*(dphi**2+gphi2)
         a2rhophim=a2rhophim+sum(a2rho)
       endif

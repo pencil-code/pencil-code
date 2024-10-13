@@ -101,7 +101,7 @@ module Special
   integer :: idiag_mfpf=0       ! DIAG_DOC: $-f'/f$
   integer :: idiag_fppf=0       ! DIAG_DOC: $f''/f$
   integer :: idiag_afact=0      ! DIAG_DOC: $a$ (scale factor)
-  integer :: idiag_weylgcond=0  ! DIAG_DOC: $<deldotE+>$
+  integer :: idiag_constrainteqn=0  ! DIAG_DOC: $<deldotE+>$
 !
 ! xy averaged diagnostics given in xyaver.in
 !
@@ -470,7 +470,7 @@ module Special
       type (pencil_case) :: p
 !
       real, dimension (nx,3) :: gtmp
-      real, dimension (nx) :: tmp, del2a0, weylgcond
+      real, dimension (nx) :: tmp, del2a0, constrainteqn, constrainteqn1
       real :: inflation_factor=0., mfpf=0., fppf=0.
 !
       intent(in) :: p
@@ -483,24 +483,25 @@ module Special
 !
 !  Calculate rhs of Gamma equation and update curl
 !
-      if (llongitudinalE) then
-        if (lphi_hom) then
-          tmp=0.
-          weight_longitudinalE=0.
+      if (lphi_hom) then
+        tmp=0.
+        weight_longitudinalE=0.
+      else
+        if (alpf/=0.) then
+          call dot(p%bb,p%gphi,tmp)
+          tmp=-alpf*tmp
         else
-          if (alpf/=0.) then
-            call dot(p%bb,p%gphi,tmp)
-            tmp=-alpf*tmp
-          else
-            tmp=0.
-          endif
+          tmp=0.
         endif
+      endif
+      constrainteqn1=sqrt(p%divE**2+tmp**2)
+      constrainteqn=(p%divE-tmp)/constrainteqn1
+      if (llongitudinalE) then
         if (lsolve_chargedensity) tmp=tmp+f(l1:l2,m,n,irhoe)
         if (.not.lswitch_off_Gamma) then
           df(l1:l2,m,n,iGamma)=df(l1:l2,m,n,iGamma) &
             -(1.-weight_longitudinalE)*p%divE &
             -weight_longitudinalE*tmp
-          weylgcond=p%divE-tmp
         endif
       endif
 !
@@ -613,12 +614,11 @@ endif
         call save_name(fppf,idiag_fppf)
         call save_name(scl_factor_target,idiag_afact)
         if (idiva_name>0) then
-          if (idiag_grms/=0) call sum_mn_name((f(l1:l2,m,n,idiva_name)-p%diva)**2,idiag_grms,lsqrt=.true.)
+          if (idiag_grms/=0) call sum_mn_name((f(l1:l2,m,n,idiva_name)-p%diva)**2/ &
+            (f(l1:l2,m,n,idiva_name)**2+p%diva**2),idiag_grms,lsqrt=.true.)
           if (idiag_da0rms/=0) call sum_mn_name(f(l1:l2,m,n,idiva_name)**2,idiag_da0rms,lsqrt=.true.)
         endif
-        if (llongitudinalE) then
-          if (idiag_weylgcond/=0) call sum_mn_name(weylgcond,idiag_weylgcond)
-        endif
+        if (idiag_constrainteqn/=0) call sum_mn_name(constrainteqn,idiag_constrainteqn)
 !
         call xysum_mn_name_z(p%el(:,1),idiag_exmz)
         call xysum_mn_name_z(p%el(:,2),idiag_eymz)
@@ -691,7 +691,7 @@ endif
         idiag_a0rms=0; idiag_grms=0; idiag_da0rms=0; idiag_BcurlEm=0
         idiag_mfpf=0; idiag_fppf=0; idiag_afact=0
         idiag_rhoerms=0.; idiag_divErms=0.; idiag_divJrms=0.
-        idiag_rhoem=0.; idiag_divEm=0.; idiag_divJm=0.; idiag_weylgcond=0.
+        idiag_rhoem=0.; idiag_divEm=0.; idiag_divJm=0.; idiag_constrainteqn=0.
         cformv=''
       endif
 !
@@ -715,7 +715,7 @@ endif
         call parse_name(iname,cname(iname),cform(iname),'mfpf',idiag_mfpf)
         call parse_name(iname,cname(iname),cform(iname),'fppf',idiag_fppf)
         call parse_name(iname,cname(iname),cform(iname),'afact',idiag_afact)
-        call parse_name(iname,cname(iname),cform(iname),'weylgcond',idiag_weylgcond)
+        call parse_name(iname,cname(iname),cform(iname),'constrainteqn',idiag_constrainteqn)
       enddo
 !
       do inamez=1,nnamez
