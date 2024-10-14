@@ -174,11 +174,11 @@ module Cdata
   real, dimension (nx) :: dt1_max
   real, dimension (nx) :: reac_chem, reac_dust
   real                 :: trelax_poly, reac_pchem
-  real, dimension (5) :: alpha_ts=0.0,beta_ts=0.0,dt_beta_ts=1.0
+  real, dimension (5) :: alpha_ts=0.0,beta_ts=0.0,dt_beta_ts=1.0,bhat_ts=0.0,dt_bhat_ts=1.0
   logical :: lfractional_tstep_advance=.false.
   logical :: lfractional_tstep_negative=.true.
   logical :: lmaxadvec_sum=.false.,old_cdtv=.false.,leps_fixed=.true.
-  logical :: lmaximal_cdtv=.false., lmaximal_cdt=.false.
+  logical :: lmaximal_cdtv=.false., lmaximal_cdt=.false.,lreiterate=.true.
   character (len=20), dimension(mvar) :: timestep_scaling='cons_frac_err'
 !
 !  Use of LSODE to solve the chemistry in a separate step
