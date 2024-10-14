@@ -25,12 +25,12 @@ else
   USE_HIP = OFF
 endif
 
-ifneq ($(filter ../mpicomm.f90,$(MODULESOURCES)),)
+ifeq ($(MPICOMM),mpicomm)
   CMAKE_MPI = ON
   $(info MPI enabled)
 else
-  #CMAKE_MPI = OFF
-  #$(info MPI not enabled)
+  CMAKE_MPI = OFF
+  $(info MPI not enabled)
   #$(error interfaced version requires MPI)
 endif
 

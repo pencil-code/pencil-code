@@ -245,7 +245,7 @@ module Mpicomm
       call MPI_COMM_DUP(MPI_COMM_PENCIL,MPI_COMM_GRID,mpierr)
       iproc_world=iproc
 !
-!  Remeber the sizes of some MPI elementary types.
+!  Remember the sizes of some MPI elementary types.
 !
       call MPI_TYPE_SIZE(MPI_INTEGER, size_of_int, mpierr)
       call stop_it_if_any(mpierr /= MPI_SUCCESS, "unable to find MPI_INTEGER size")
@@ -294,6 +294,7 @@ module Mpicomm
            call stop_it('Overlapping ghost zones in z-direction: reduce nprocz')
 !
       call MPI_TYPE_CONTIGUOUS(max_int, mpi_precision, REAL_ARR_MAXSIZE, mpierr)
+      call MPI_TYPE_COMMIT(REAL_ARR_MAXSIZE, mpierr)
 
     endsubroutine mpicomm_init
 !***********************************************************************
@@ -4451,13 +4452,14 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 
       call MPI_TYPE_CREATE_SUBARRAY(2, (/src_sz1,src_sz2/), (/dest_sz1,dest_sz2/), (/0,0/), &
                                     MPI_ORDER_FORTRAN, mpi_precision, block, mpierr)
-
+      call MPI_TYPE_COMMIT(block,mpierr)
       call MPI_TYPE_SIZE(mpi_precision, sizeofreal, mpierr)
       call MPI_TYPE_CREATE_RESIZED(block, 0, dest_sz1*sizeofreal, segment, mpierr)
       call MPI_TYPE_COMMIT(segment,mpierr)
 
       call MPI_SCATTERV(src_array,sendcounts,displs,segment,dest_array,dest_sz1*dest_sz2, &
                         mpi_precision,ioptest(proc,root),comm_,mpierr)
+      call MPI_TYPE_FREE(block,mpierr)
       call MPI_TYPE_FREE(segment,mpierr)
 
     endsubroutine mpiscatter_real_arr2
@@ -5310,6 +5312,8 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       if (lforeign.and.lroot) &
         call MPI_SEND(.true.,1,MPI_LOGICAL,frgn_setup%root,tag_foreign,MPI_COMM_WORLD,mpierr)
+
+      call MPI_TYPE_FREE(REAL_ARR_MAXSIZE, mpierr)
 
       call MPI_BARRIER(MPI_COMM_WORLD, mpierr)
       call MPI_FINALIZE(mpierr)

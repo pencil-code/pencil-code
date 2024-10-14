@@ -66,7 +66,7 @@ bc_steady_z(topbot, VtxBuffer field)
   else {
   }
 }
-#if LENTROPY
+#if LENERGY
 bc_ss_flux(topbot)
 {
   real tmp_xy;
@@ -318,6 +318,7 @@ bc_set_der_z(topbot, VtxBuffer field,val)
   }
 }
 
+#if LENERGY
 bc_ss_temp_z(AC_TOP_BOT topbot,bool lone_sided)
 {
 real tmp
@@ -480,6 +481,6 @@ LNTT[vertexIdx.x][vertexIdx.y][AC_n2+i-1]=2*LNTT[vertexIdx.x][vertexIdx.y][AC_n2
 else {
 }
 }
-
+#endif
 
 
