@@ -3814,6 +3814,7 @@ module Sub
 !
     endsubroutine read_snaptime
 !***********************************************************************
+!    subroutine update_snaptime(file,tout,nout,dtout,t,lout,ch,nowrite,itout)
     subroutine update_snaptime(file,tout,nout,dtout,t,lout,ch,nowrite)
 !
 !  Check whether we need to write snapshot; if so, update the snapshot
@@ -3835,12 +3836,13 @@ module Sub
       real(KIND=rkind8), intent(in) :: t
       logical, intent(inout) :: lout
       logical, intent(in), optional :: nowrite
+!      integer, intent(in), optional :: itout
       logical :: exist
       character (len=intlen), intent(out), optional :: ch
 !
       integer, parameter :: lun = 31
       integer ::  ntsnap=0, jtsnap=0
-      logical :: lwrite
+      logical :: lwrite, litsnap = .false.
       real :: t_sp   ! t in single precision for backwards compatibility
       logical, save :: lfirstcall=.true.
       real, save :: deltat_threshold
@@ -3883,9 +3885,26 @@ module Sub
         lfirstcall=.false.
       endif
 !
+!      if (present(itout) .and. mod(it,itout) == 0) then
+!        litsnap=.true.
+!        tout=huge_real
+!      else
+!        litsnap=.false.
+!      endif
+
+      if (itsnap/=impossible_int) then
+        if (mod(it,itsnap) == 0)  then
+          litsnap=.true.
+          tout=huge_real
+        else
+          litsnap=.false.
+        endif
+      endif
+!
       if ((t_sp >= tout) .or. &
 !      if (lout.or.t_sp    >= tout             .or. &
-          (abs(t_sp-tout) <  deltat_threshold)) then
+          (abs(t_sp-tout) <  deltat_threshold) .or. &
+          (litsnap)) then
         inquire(FILE='tsnap_list.dat',EXIST=exist)
         if (exist) then
           open(1,FILE='tsnap_list.dat')
@@ -3907,6 +3926,8 @@ module Sub
           if (dtout<0.0) then
             !tout=toutoff+(tout-toutoff)*10.**onethird
             tout=toutoff+(tout-toutoff)*10.**onesixth
+          elseif (itsnap/=impossible_int) then
+            tout=huge_real
           else
             tout=tout+abs(dtout)
 !           if (.not.lout) tout=tout+abs(dtout)

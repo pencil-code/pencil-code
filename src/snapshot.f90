@@ -302,6 +302,13 @@ module Snapshot
 !  update ghost zones for var.dat (cheap, since done infrequently).
 !
         call update_snaptime(file,tsnap,nsnap,dsnap,t,lsnap,ch)
+!
+!        if (itsnap/=impossible_int) then
+!          call update_snaptime(file,tsnap,nsnap,dsnap,t,lsnap,ch,itout=itsnap)
+!        else
+!          call update_snaptime(file,tsnap,nsnap,dsnap,t,lsnap,ch)
+!        endif
+!
         if (lsnap) then
           if (.not.lstart.and.lgpu) call copy_farray_from_GPU(a)
           call update_ghosts(a)
