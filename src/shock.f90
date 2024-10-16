@@ -590,8 +590,8 @@ module Shock
 !  Max over external region
 !
           if (lshock_max3_interp) then
-            do n=3,mz-2; do jj=2,4
-              m=1+jj
+            do n=n1-1,n2+1; do jj=0,2
+              m=m1-1+jj
               call shock_max3_interp(f,ishock,penc)
               tmp(:,m,n)=penc
               if (ldivu_perp) then
@@ -599,13 +599,13 @@ module Shock
                 !tobi: this needs to be commented out
                 !tmp_perp(:,m,n)=penc_perp
               endif
-              m=my-jj
-              if (m <= 5) cycle
+              m=m2-1+jj
+              if (m <= m1+1) cycle
               call shock_max3_interp(f,ishock,penc)
               tmp(:,m,n)=penc
             enddo; enddo
-            do kk=2,4; do m=6,my-5
-              n=1+kk
+            do kk=0,2; do m=m1+2,m2-2
+              n=n1-1+kk
               call shock_max3_interp(f,ishock,penc)
               tmp(:,m,n)=penc
               if (ldivu_perp) then
@@ -613,8 +613,8 @@ module Shock
                 !tobi: this needs to be commented out
                 !tmp_perp(:,m,n)=penc_perp
               endif
-              n=mz-kk
-              if (n <= 5) cycle
+              n=n2-1+kk
+              if (n <= n1+1) cycle
               call shock_max3_interp(f,ishock,penc)
               tmp(:,m,n)=penc
               if (ldivu_perp) then
@@ -624,8 +624,8 @@ module Shock
               endif
             enddo; enddo
           else
-            do n=3,mz-2; do jj=2,4
-              m=1+jj
+            do n=n1-1,n2+1; do jj=0,2
+              m=m1-1+jj
               call shock_max3(f,ishock,penc)
               tmp(:,m,n)=penc
               if (ldivu_perp) then
@@ -633,8 +633,8 @@ module Shock
                 !tobi: this needs to be commented out
                 !tmp_perp(:,m,n)=penc_perp
               endif
-              m=my-jj
-              if (m <= 5) cycle
+              m=m2-1+jj
+              if (m <= m1+1) cycle
               call shock_max3(f,ishock,penc)
               tmp(:,m,n)=penc
               if (ldivu_perp) then
@@ -643,8 +643,8 @@ module Shock
                 !tmp_perp(:,m,n)=penc_perp
               endif
             enddo; enddo
-            do kk=2,4; do m=6,my-5
-              n=1+kk
+            do kk=0,2; do m=m1+2,m2-2
+              n=n1-1+kk
               call shock_max3(f,ishock,penc)
               tmp(:,m,n)=penc
               if (ldivu_perp) then
@@ -652,8 +652,8 @@ module Shock
                 !tobi: this needs to be commented out
                 !tmp_perp(:,m,n)=penc_perp
               endif
-              n=mz-kk
-              if (n <= 5) cycle
+               n=n2-1+kk
+              if (n <= n1+1) cycle
               call shock_max3(f,ishock,penc)
               tmp(:,m,n)=penc
               if (ldivu_perp) then
