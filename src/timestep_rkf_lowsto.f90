@@ -140,7 +140,7 @@ module Timestep
       real, dimension (nx,ny,nz,mvar) :: errdf
       real, dimension (nx) :: scal
       type (pencil_case) :: p
-      real :: ds, dtsub, dt_temp
+      real :: dtsub, dt_temp
       integer :: j, iR1, iR2
 
 !
@@ -174,6 +174,7 @@ module Timestep
 !
         if (lfirst) then
           df=0.
+          f=ftmp(:,:,:,:,iR1)
         else
           if (it_rmv>0) lrmv=.false.
         endif
@@ -204,7 +205,7 @@ module Timestep
 !
 !  Apply border quenching.
 !
-        if (lborder_profiles) call border_quenching(ftmp(:,:,:,:,1),df,dtsub)
+        if (lborder_profiles) call border_quenching(ftmp(:,:,:,:,iR1),df,dtsub)
 !
 !  Time evolution of grid variables.
 !
@@ -213,9 +214,9 @@ module Timestep
             errdf = errdf + dt_beta_hat(itsub)*ftmp(l1:l2,m1:m2,n1:n2,1:mvar,iR2)
           endif
           ftmp(l1:l2,m1:m2,n1:n2,1:mvar,iR1) =  ftmp(l1:l2,m1:m2,n1:n2,1:mvar,iR1) &
-                                                   + dt_alpha_ts(itsub)*ftmp(l1:l2,m1:m2,n1:n2,1:mvar,iR2)
+                                             +  dt_alpha_ts(itsub) * ftmp(l1:l2,m1:m2,n1:n2,1:mvar,iR2)
           ftmp(l1:l2,m1:m2,n1:n2,1:mvar,iR2) =  ftmp(l1:l2,m1:m2,n1:n2,1:mvar,iR1) &
-                                                   + (dtsub-dt_alpha_ts(itsub))*ftmp(l1:l2,m1:m2,n1:n2,1:mvar,iR2)
+                                             + (dtsub - dt_alpha_ts(itsub)) * ftmp(l1:l2,m1:m2,n1:n2,1:mvar,iR2)
           if (mfarray>mvar) ftmp(:,:,:,mvar+1:mfarray,iR2) = ftmp(:,:,:,mvar+1:mfarray,iR1)
 !
         endif
@@ -272,6 +273,9 @@ module Timestep
                 !initial f state can be overwritten
                 scal = max(abs(ftmp(l1:l2,m,n,j,iR2)),farraymin(j))
                 errmaxs = max(maxval(abs(errdf(:,m-nghost,n-nghost,j))/scal),errmaxs)
+              case ('abs_err')
+                !initial f state can be overwritten
+                errmaxs = max(maxval(abs(errdf(:,m-nghost,n-nghost,j))),errmaxs)
               case ('none')
                 ! No error check
             endselect
