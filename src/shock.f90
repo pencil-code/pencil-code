@@ -567,7 +567,7 @@ module Shock
               f(:,m,n,ishock_perp)=max(0.,-penc_perp)
             endif
           enddo; enddo
-          do kk=0,2; do m=5,my-4
+          do kk=0,2; do m=m1+1,m2-1
             n=n1-2+kk
             call shock_divu(f,penc)
             f(:,m,n,ishock)=max(-penc,0.)
