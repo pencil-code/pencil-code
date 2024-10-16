@@ -6717,11 +6717,11 @@ Default (plain gcc) does not work; it is wrongly set up.
 
 \subsubsection{Missing ld\_classic on MacOS}
 
-While running pc_build, I get an error message saying that \texttt{-ld\_classic} is not found.
+While running pc_build, I get an error message saying that \code{-ld\_classic} is not found.
 
 {\bf A}:
-Note that \texttt{ld\_classic} is \emph{not} specifying a library called \texttt{libd\_classic}, but is rather an option passed to Apple's \texttt{ld} binary.
-\cmd{type ld} should say \texttt{/usr/bin/ld}.
+Note that \code{ld\_classic} is \emph{not} specifying a library called \code{libd\_classic}, but is rather an option passed to Apple's \code{ld} binary.
+\cmd{type ld} should say \code{/usr/bin/ld}.
 This error has been noticed on systems where people tried to install gfortran using anaconda, which pulls in a wrongly configured ld binary.
 Run \code{conda remove ld64} and use another method, like homebrew, to install gfortran.
 
