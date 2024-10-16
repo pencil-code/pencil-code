@@ -729,7 +729,7 @@ module Deriv
 !
       use General, only: loptest
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (mx,my,mz), intent(in) :: f
       real, dimension (nx), intent(out) :: df
       integer, intent(in) :: j
       logical, intent(in), optional :: ignoredx, upwind
