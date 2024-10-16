@@ -688,6 +688,14 @@ outer:  do ikz=1,nz
     elseif (sp=='jxb') then
        if (ijxb==0) call fatal_error('get_comp_spectrum','variable "jxb" not existent')
        ar=f(l1:l2,m1:m2,n1:n2,ijxbx+ivec-1)
+    elseif (sp=='o') then
+        if (iuu==0) call fatal_error('get_comp_spectrum','variable "u" not existent')
+        do n=n1,n2
+          do m=m1,m2
+             call curli(f,iuu,bb,ivec)
+             ar(:,m-nghost,n-nghost)=bb
+          enddo
+       enddo
     else
        print*,'comp_spectrum_xy: Warning - There is no such sp=',sp
        return
@@ -777,7 +785,8 @@ outer:  do ikz=1,nz
 !
 !  to add further fields, modify here!
 !
-  if ( sp(1:1)=='u' .or. sp(1:1)=='b' .or. sp(1:1)=='a' .or. sp(1:1)=='s' ) then
+  if ( sp(1:1)=='u' .or. sp(1:1)=='b' .or. sp(1:1)=='a' .or. sp(1:1)=='s' &
+      .or. sp(1:1)=='o') then
     sp_field=sp(1:1)
     cpos=2
   elseif (len(trim(sp))>=3) then
