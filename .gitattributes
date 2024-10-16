@@ -4278,6 +4278,7 @@ src/deriv.f90 -text
 src/deriv.h -text
 src/deriv_10th.f90 -text
 src/deriv_2nd.f90 -text
+src/deriv_2nd_all.f90 -text
 src/deriv_4th.f90 -text
 src/deriv_8th.f90 -text
 src/deriv_alt.f90 -text
