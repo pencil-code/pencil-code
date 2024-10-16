@@ -548,8 +548,8 @@ module Shock
 !
 !  Divu over external region
 !
-          do n=2,mz-1; do jj=1,3
-            m=1+jj
+          do n=n1-2,n2+2; do jj=0,2
+            m=m1-2+jj
             call shock_divu(f,penc)
             f(:,m,n,ishock)=max(-penc,0.)
             if (ldivu_perp) then
@@ -557,7 +557,7 @@ module Shock
               call shock_divu_perp(f,bb_hat,penc,penc_perp)
               f(:,m,n,ishock_perp)=max(0.,-penc_perp)
             endif
-            m=my-jj
+            m=m2+jj
             if (m <= m1) cycle
             call shock_divu(f,penc)
             f(:,m,n,ishock)=max(-penc,0.)
@@ -567,8 +567,8 @@ module Shock
               f(:,m,n,ishock_perp)=max(0.,-penc_perp)
             endif
           enddo; enddo
-          do kk=1,3; do m=5,my-4
-            n=1+kk
+          do kk=0,2; do m=5,my-4
+            n=n1-2+kk
             call shock_divu(f,penc)
             f(:,m,n,ishock)=max(-penc,0.)
             if (ldivu_perp) then
@@ -576,7 +576,7 @@ module Shock
               call shock_divu_perp(f,bb_hat,penc,penc_perp)
               f(:,m,n,ishock_perp)=max(0.,-penc_perp)
             endif
-            n=mz-kk
+            n=n2+kk
             if (n <= n1) cycle
             call shock_divu(f,penc)
             f(:,m,n,ishock)=max(-penc,0.)
