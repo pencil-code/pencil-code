@@ -709,15 +709,15 @@ module Shock
 !
 !  Non-MPI version:
 !
-!          do n=2,mz-1; do m=2,my-1
+!          do n=n1-2,n2+2; do m=m1-2,m2+2
 !            call shock_divu(f,penc)
 !            f(:,m,n,ishock)=max(0.,-penc)
 !          enddo; enddo
-!          do n=3,mz-2; do m=3,my-2
+!          do n=n1-1,n2+1; do m=m1-1,m2+1
 !            call shock_max3(f,ishock,penc)
 !            tmp(:,m,n)=penc
 !          enddo; enddo
-!          do n=4,mz-3; do m=4,my-3
+!          do n=n1,n2; do m=m1,m2
 !            call shock_smooth(tmp,penc)
 !            f(:,m,n,ishock)=penc
 !          enddo; enddo
