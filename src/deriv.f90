@@ -692,9 +692,10 @@ module Deriv
 !  10-feb-06/anders: adapted from der5
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: df,fac
+      real, dimension (nx) :: df
       integer :: j,k
       logical, optional :: ignoredx
+      real :: fac
       logical :: igndx
 !
       intent(in)  :: f,k,j,ignoredx
@@ -776,9 +777,9 @@ module Deriv
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df
-      real :: fac
       integer :: j,k
       logical, optional :: ignoredx,upwind
+      real :: fac
       logical :: igndx
 !
       intent(in)  :: f,k,j,ignoredx,upwind
