@@ -725,7 +725,7 @@ module Deriv
           endif
           df=fac*(- 13.0*(f(l1+1:l2+1,m,n,k)-f(l1-1:l2-1,m,n,k)) &
                   +  8.0*(f(l1+2:l2+2,m,n,k)-f(l1-2:l2-2,m,n,k)) &
-                  -  1.0*(f(l1+3:l2+3,m,n,k)-f(l1-3:l2-3,m,n,k)))
+                  -      (f(l1+3:l2+3,m,n,k)-f(l1-3:l2-3,m,n,k)))
         else
           df=0.
         endif
@@ -738,7 +738,7 @@ module Deriv
           endif
           df=fac*(- 13.0*(f(l1:l2,m+1,n,k)-f(l1:l2,m-1,n,k)) &
                   +  8.0*(f(l1:l2,m+2,n,k)-f(l1:l2,m-2,n,k)) &
-                  -  1.0*(f(l1:l2,m+3,n,k)-f(l1:l2,m-3,n,k)))
+                  -      (f(l1:l2,m+3,n,k)-f(l1:l2,m-3,n,k)))
           if (lcylindrical_coords)   df=df*rcyl_mn1**3
 !MR: spherical missing
         else
@@ -753,7 +753,7 @@ module Deriv
           endif
           df=fac*(- 13.0*(f(l1:l2,m,n+1,k)-f(l1:l2,m,n-1,k)) &
                   +  8.0*(f(l1:l2,m,n+2,k)-f(l1:l2,m,n-2,k)) &
-                  -  1.0*(f(l1:l2,m,n+3,k)-f(l1:l2,m,n-3,k)))
+                  -      (f(l1:l2,m,n+3,k)-f(l1:l2,m,n-3,k)))
 !MR: spherical/coarse missing
         else
           df=0.
