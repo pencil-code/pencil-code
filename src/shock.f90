@@ -559,6 +559,7 @@ module Shock
               f(:,m,n,ishock_perp)=max(0.,-penc_perp)
             endif
             m=my-jj
+            if (m <= m1) cycle
             call shock_divu(f,penc)
             f(:,m,n,ishock)=max(-penc,0.)
             if (ldivu_perp) then
@@ -577,6 +578,7 @@ module Shock
               f(:,m,n,ishock_perp)=max(0.,-penc_perp)
             endif
             n=mz-kk
+            if (n <= n1) cycle
             call shock_divu(f,penc)
             f(:,m,n,ishock)=max(-penc,0.)
             if (ldivu_perp) then
@@ -599,6 +601,7 @@ module Shock
                 !tmp_perp(:,m,n)=penc_perp
               endif
               m=my-jj
+              if (m <= 5) cycle
               call shock_max3_interp(f,ishock,penc)
               tmp(:,m,n)=penc
             enddo; enddo
@@ -612,6 +615,7 @@ module Shock
                 !tmp_perp(:,m,n)=penc_perp
               endif
               n=mz-kk
+              if (n <= 5) cycle
               call shock_max3_interp(f,ishock,penc)
               tmp(:,m,n)=penc
               if (ldivu_perp) then
@@ -631,6 +635,7 @@ module Shock
                 !tmp_perp(:,m,n)=penc_perp
               endif
               m=my-jj
+              if (m <= 5) cycle
               call shock_max3(f,ishock,penc)
               tmp(:,m,n)=penc
               if (ldivu_perp) then
@@ -649,6 +654,7 @@ module Shock
                 !tmp_perp(:,m,n)=penc_perp
               endif
               n=mz-kk
+              if (n <= 5) cycle
               call shock_max3(f,ishock,penc)
               tmp(:,m,n)=penc
               if (ldivu_perp) then
@@ -663,6 +669,7 @@ module Shock
 !
           do n=4,mz-3; do jj=3,5
             m=1+jj
+            if (m > m2) cycle
             call shock_smooth(tmp,penc)
             f(:,m,n,ishock)=penc
             if (ldivu_perp) then
@@ -671,6 +678,7 @@ module Shock
               f(:,m,n,ishock_perp)=penc_perp
             endif
             m=my-jj
+            if (m <= 6) cycle
             call shock_smooth(tmp,penc)
             f(:,m,n,ishock)=penc
             if (ldivu_perp) then
@@ -681,6 +689,7 @@ module Shock
           enddo; enddo
           do kk=3,5; do m=7,my-6
             n=1+kk
+            if (n > n2) cycle
             call shock_smooth(tmp,penc)
             f(:,m,n,ishock)=penc
             if (ldivu_perp) then
@@ -689,6 +698,7 @@ module Shock
               f(:,m,n,ishock_perp)=penc_perp
             endif
             n=mz-kk
+            if (n <= 6) cycle
             call shock_smooth(tmp,penc)
             f(:,m,n,ishock)=penc
             if (ldivu_perp) then
