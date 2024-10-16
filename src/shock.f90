@@ -666,8 +666,8 @@ module Shock
 !
 !  Smooth over external region
 !
-          do n=4,mz-3; do jj=3,5
-            m=1+jj
+          do n=n1,n2; do jj=0,2
+            m=m1+jj
             if (m > m2) cycle
             call shock_smooth(tmp,penc)
             f(:,m,n,ishock)=penc
@@ -676,8 +676,8 @@ module Shock
               !call shock_smooth(tmp_perp,penc_perp)
               f(:,m,n,ishock_perp)=penc_perp
             endif
-            m=my-jj
-            if (m <= 6) cycle
+            m=m2-2+jj
+            if (m <= m1+2) cycle
             call shock_smooth(tmp,penc)
             f(:,m,n,ishock)=penc
             if (ldivu_perp) then
@@ -686,8 +686,8 @@ module Shock
               f(:,m,n,ishock_perp)=penc_perp
             endif
           enddo; enddo
-          do kk=3,5; do m=7,my-6
-            n=1+kk
+          do kk=0,2; do m=m1+3,m2-3
+            n=n1+kk
             if (n > n2) cycle
             call shock_smooth(tmp,penc)
             f(:,m,n,ishock)=penc
@@ -696,8 +696,8 @@ module Shock
               !call shock_smooth(tmp_perp,penc_perp)
               f(:,m,n,ishock_perp)=penc_perp
             endif
-            n=mz-kk
-            if (n <= 6) cycle
+            n=n2-2+kk
+            if (n <= n1+2) cycle
             call shock_smooth(tmp,penc)
             f(:,m,n,ishock)=penc
             if (ldivu_perp) then
