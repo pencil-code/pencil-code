@@ -232,7 +232,7 @@ module Shock
 !
 !  check for those quantities for which we want video slices
 !
-      if (lwrite_slices) then 
+      if (lwrite_slices) then
         where(cnamev=='shock') cformv='DEFINED'
       endif
 !
@@ -303,13 +303,13 @@ module Shock
       if (lpencil(i_gshock)) call grad(f,ishock,p%gshock)
 !
       call calc_diagnostics_shock(p)
-
+!
     endsubroutine calc_pencils_shock
 !***********************************************************************
     subroutine calc_diagnostics_shock(p)
-
+!
       use Diagnostics, only: max_mn_name
-
+!
       type (pencil_case) :: p
 !
       if (ldiagnos) call max_mn_name(p%shock,idiag_shockmax)
@@ -319,11 +319,11 @@ module Shock
     subroutine shock_before_boundary(f)
 !
       real, dimension (mx,my,mz,mfarray) :: f
-!     
+!
 !  Shock profile calculation.
 !
       call calc_shock_profile(f)
- 
+!
     endsubroutine shock_before_boundary
 !***********************************************************************
     subroutine calc_shock_profile_simple(f)
@@ -461,7 +461,7 @@ module Shock
 !
           lcommunicate=.not.early_finalize
           do imn=1,nyz
-
+!
             n=nn(imn)
             m=mm(imn)
 !
