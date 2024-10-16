@@ -82,6 +82,7 @@
 %%   testscalar_axisym.f90
 %%   testscalar_simple.f90
 %%   thermal_energy.f90
+%%   training_torchfort.f90
 %%   viscosity.f90
 
 % ---------------------------------------------------------------- %
@@ -836,6 +837,7 @@
   \var{a2rhopm}   & $a^2 (rho+p)$ \\
   \var{a2rhom}    & $a^2 rho$ \\
   \var{a2rhophim} & $a^2 rho$ \\
+  \var{a2rhogphim} & $0.5 <grad phi^2>$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{bfield.f90}} \\
 \midrule
@@ -989,7 +991,7 @@
   \var{mfpf}      & $-f'/f$ \\
   \var{fppf}      & $f''/f$ \\
   \var{afact}     & $a$ (scale factor) \\
-  \var{weylgcond} & $<deldotE+>$ \\
+  \var{constrainteqn} & $<deldotE+>$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{dustdensity.f90}} \\
 \midrule
@@ -2748,6 +2750,10 @@
                     \left< c_v T \right>$
                     \quad(mean internal energy) \\
   \var{etot}      & $\langle e_\textrm{th} + \rho u^2 / 2\rangle$ \\
+\midrule
+  \multicolumn{2}{c}{Module \file{training_torchfort.f90}} \\
+\midrule
+  \var{tauerror}  & $\sqrt{\left<(\sum_{i,j} u_i*u_j - tau_{ij})^2\right>}$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{viscosity.f90}} \\
 \midrule
