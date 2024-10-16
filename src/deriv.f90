@@ -1325,10 +1325,10 @@ module Deriv
       real :: fac
 !
       if (size(f)/=1) then
-        fac=dc1(j)**5
-        der5_single=fac*(+  2.5*(f(j+1)-f(j-1)) &
-                         -  2.0*(f(j+2)-f(j-2)) &
-                         +  0.5*(f(j+3)-f(j-3)))
+        fac=(1.0/2)*dc1(j)**5
+        der5_single=fac*(+  5.0*(f(j+1)-f(j-1)) &
+                         -  4.0*(f(j+2)-f(j-2)) &
+                         +      (f(j+3)-f(j-3)))
       else
         der5_single=0.
       endif
