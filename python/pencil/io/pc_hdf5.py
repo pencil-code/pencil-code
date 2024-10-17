@@ -44,10 +44,10 @@ def open_h5(
         rank:      processor rank with root = 0.
     """
     filename = pathlib.Path(filename)
-    
+
     fname = filename.name
     path = filename.parent
-    
+
     if not (".h5" == fname[-3:] or ".hdf5" == fname[-5:]):
         if np.mod(rank, size) == 0:
             print(
