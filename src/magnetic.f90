@@ -5627,13 +5627,13 @@ module Magnetic
 !
 !  limp_alpha=T, add artificial z dependent alpha dynamo.
 !
-          if(limp_alpha) then
-            if (abs(z(n))<=imp_halpha/2) then
-              dAdt = dAdt+ p%uxb+fres+imp_alpha0*sin(pi*z(n)/imp_halpha)*p%bb
-            else
-              dAdt = dAdt+ p%uxb+fres+sign(imp_alpha0,z(n))*exp(-((2*z(n)-sign(imp_halpha,z(n)))/imp_halpha)**2)*p%bb
-            endif
+        if(limp_alpha) then
+          if (abs(z(n))<=imp_halpha/2) then
+            dAdt = dAdt+imp_alpha0*sin(pi*z(n)/imp_halpha)*p%bb
+          else
+            dAdt = dAdt+sign(imp_alpha0,z(n))*exp(-((2*z(n)-sign(imp_halpha,z(n)))/imp_halpha)**2)*p%bb
           endif
+        endif
 !
 !  Add Hall term.
 !
