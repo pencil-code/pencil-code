@@ -47,7 +47,7 @@ def get(path=".", quiet=False):
             print(
                 f"? Warning: sim.dill in {path} is not up to date, recreating simulation object.."
             )
-            os.system(f"rm {join(path, "pc/sim.dill")}")
+            os.system(f"rm {join(path, 'pc/sim.dill')}")
 
     if is_sim_dir(path):
         if not quiet:

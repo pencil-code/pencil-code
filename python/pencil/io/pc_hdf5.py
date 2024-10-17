@@ -51,14 +51,14 @@ def open_h5(
     if not (".h5" == fname[-3:] or ".hdf5" == fname[-5:]):
         if np.mod(rank, size) == 0:
             print(
-                f"Relabelling h5 {fname} to {str.strip(fname, ".dat")}.h5 on path {path}"
+                f"Relabelling h5 {fname} to {str.strip(fname, '.dat')}.h5 on path {path}"
             )
         fname = str.strip(fname, ".dat") + ".h5"
     mkdir(path, lfs=lfs, MB=MB, count=count)
     if status == "w" and exists(join(path, fname)):
         if not overwrite:
             try:
-                cmd = f"mv {join(path, fname)} {join(path, fname + ".bak")}"
+                cmd = f"mv {join(path, fname)} {join(path, fname + '.bak')}"
                 process = sub.Popen(cmd.split(), stdout=sub.PIPE)
                 output, error = process.communicate()
                 print(cmd, output, error)
