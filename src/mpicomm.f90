@@ -174,7 +174,7 @@ module Mpicomm
     logical, dimension(3) :: linterpol
 
   endtype foreign_setup
-! 
+!
   type(foreign_setup) :: frgn_setup
 !
   contains
@@ -200,7 +200,7 @@ module Mpicomm
 !
       call MPI_COMM_SIZE(MPI_COMM_WORLD, nprocs, mpierr)
       call MPI_COMM_RANK(MPI_COMM_WORLD, iproc, mpierr)
-!if (lroot) print*, 'Pencil0: nprocs,MPI_COMM_WORLD', nprocs, MPI_COMM_WORLD 
+!if (lroot) print*, 'Pencil0: nprocs,MPI_COMM_WORLD', nprocs, MPI_COMM_WORLD
 !
 ! If mpirun/mpiexec calls also other applications than Pencil:
 ! Get rank within the set of applications, iapp.
@@ -233,6 +233,7 @@ if (iproc==0) print*, 'Pencil1: iapp, nprocs, ncpus=', iapp, nprocs, ncpus   !MP
           write (*,*) "====================================================================="
           write (*,*) ""
         endif
+        if (linterstellar) call stop_it('using single precision: stop and recompile')
       else
         mpi_precision = MPI_DOUBLE_PRECISION
         MPI_CMPLX = MPI_DOUBLE_COMPLEX
@@ -443,8 +444,8 @@ if (iproc==0) print*, 'Pencil1: iapp, nprocs, ncpus=', iapp, nprocs, ncpus   !MP
 !
 !  Settings for Yin-Yang grid are done later in yyinit.
 !
-      bufsizes_yz(:,IRCV)=(/nz,ny,nz,ny/) 
-      bufsizes_yz(:,ISND)=(/nz,ny,nz,ny/) 
+      bufsizes_yz(:,IRCV)=(/nz,ny,nz,ny/)
+      bufsizes_yz(:,ISND)=(/nz,ny,nz,ny/)
 
       bufsizes_yz_corn=nghost
 
@@ -465,7 +466,7 @@ if (iproc==0) print*, 'Pencil1: iapp, nprocs, ncpus=', iapp, nprocs, ncpus   !MP
         if (nprocz>1) &
           allocate( lbufzi(mx,bufsizes_yz(INZL,IRCV),nghost,mcom),ubufzi(mx,bufsizes_yz(INZU,IRCV),nghost,mcom), &
                     lbufzo(mx,bufsizes_yz(INZL,ISND),nghost,mcom),ubufzo(mx,bufsizes_yz(INZU,ISND),nghost,mcom))
-  
+
         if ((nprocy>1 .or. lcommunicate_y .or. lyinyang).and.nprocz>1) &
           allocate( llbufi(mx,bufsizes_yz_corn(1,INLL,IRCV),bufsizes_yz_corn(2,INLL,IRCV),mcom), &
                     llbufo(mx,bufsizes_yz_corn(1,INLL,ISND),bufsizes_yz_corn(2,INLL,ISND),mcom), &
@@ -506,7 +507,7 @@ if (iproc==0) print*, 'Pencil1: iapp, nprocs, ncpus=', iapp, nprocs, ncpus   !MP
         ylneigh,llcorn,zlneigh,ulcorn,yuneigh,uucorn,zuneigh,lucorn
 !
 !  Define MPI communicators that include all processes sharing the same value
-!  of ipx, ipy, or ipz. Refer to MPI_COMM_GRID! 
+!  of ipx, ipy, or ipz. Refer to MPI_COMM_GRID!
 !  The rank within MPI_COMM_GRID is given by a
 !  combination of the two other directional processor indices.
 !
@@ -641,7 +642,7 @@ if (iproc==0) print*, 'Pencil1: iapp, nprocs, ncpus=', iapp, nprocs, ncpus   !MP
       integer :: ipatch
       logical, save :: lcalled=.false.
 
-      if (lcalled) then 
+      if (lcalled) then
         return
       else
         lcalled=.true.
@@ -728,7 +729,7 @@ print*,'AXEL: patch_neigh_left, patch_neigh_right, patch_neigh_top, patch_neigh_
                                              gridbuf_right                !             ~         of right corner neighbour
       logical, save :: lcalled=.false.
 
-      if (lcalled) then 
+      if (lcalled) then
         return
       else
         lcalled=.true.
@@ -738,7 +739,7 @@ print*,'AXEL: patch_neigh_left, patch_neigh_right, patch_neigh_top, patch_neigh_
 !
 !  Procs at yz corners have four outer neighbors: two direct ones for both corner edges
 !  and two corner neighbors in the directions away from the yz corner.
-!  (A fifth neighbor at the yz corner could be needed, too, for ncpus>75.)         
+!  (A fifth neighbor at the yz corner could be needed, too, for ncpus>75.)
 !
         if (nprocy>=6) then
           allocate(intcoeffs(5))
@@ -934,9 +935,9 @@ print*,'AXEL: patch_neigh_left, patch_neigh_right, patch_neigh_top, patch_neigh_
               call reset_triangle(nghost,2,my,my-(nghost-2),thphprime_strip_z)   ! cutoff overlap tip
             elseif (lfirst_proc_y) then
               call yy_transform_strip(1,my-nycut,mz-len_cornstrip_z+1,mz-len_cornstrip_z+nghost, &
-                                      thphprime_strip_z(:,:,:my-nycut),iph_shift_=-1)       
+                                      thphprime_strip_z(:,:,:my-nycut),iph_shift_=-1)
               call yy_transform_strip(1,my-nycut,mz-len_cornstrip_z+1-nghost,mz-len_cornstrip_z, &
-                                      thphprime_strip_z(:,:,my-nycut+1:2*(my-nycut)),iph_shift_=-1)       
+                                      thphprime_strip_z(:,:,my-nycut+1:2*(my-nycut)),iph_shift_=-1)
               call reset_triangle(nghost,2,1,nghost-1,thphprime_strip_z)       ! cutoff overlap tip
               call yy_transform_strip(my-nycut+1,my,1,nghost,thphprime_strip_z(:,:,2*(my-nycut)+1:ycornstart-1))
             endif
@@ -949,7 +950,7 @@ print*,'AXEL: patch_neigh_left, patch_neigh_right, patch_neigh_top, patch_neigh_
           if (lfirst_proc_y) then
             call yy_transform_strip(1,nghost,mz-len_cornstrip_z+1,mz,thphprime_strip_z(:,:,ycornstart:))   ! ll corner
           elseif (llast_proc_y) then
-            call yy_transform_strip(m2+1,my,mz-len_cornstrip_z+1,mz,thphprime_strip_z(:,:,ycornstart:))    ! ul corner 
+            call yy_transform_strip(m2+1,my,mz-len_cornstrip_z+1,mz,thphprime_strip_z(:,:,ycornstart:))    ! ul corner
           endif
 if (.false.) then
 !if (.not.lyang.and.(lfirst_proc_y.or.llast_proc_y)) then
@@ -977,7 +978,7 @@ endif
                                   !MPI_ANY_TAG
 !print*, 'proc ', iproc_world, 'receives ', nghost*yy_buflens(RIGHT), 'from ', llcorn
 !if (.not.lyang) write(iproc+200,*) iproc, 'sends', size_corn/(2*nghost), 'to ', llcorn
-            call MPI_ISEND(thphprime_strip_z(:,:,:lenred),size_corn,mpi_precision, &              
+            call MPI_ISEND(thphprime_strip_z(:,:,:lenred),size_corn,mpi_precision, &
 !  send strip (without corner part) to right corner neighbor
                            llcorn,iproc_world,MPI_COMM_PENCIL,isend_rq_TOll,mpierr)
                                   !TOll
@@ -985,11 +986,11 @@ endif
 
           if (ulcorn>=0) then
 !
-            call MPI_IRECV(gridbuf_left,2*nghost*yy_buflens(LEFT),mpi_precision, &      ! receive strip from ~ 
+            call MPI_IRECV(gridbuf_left,2*nghost*yy_buflens(LEFT),mpi_precision, &      ! receive strip from ~
                            ulcorn,ulcorn,MPI_COMM_PENCIL,irecv_rq_FRul,mpierr)
                                   !MPI_ANY_TAG
 !print*, 'proc ', iproc_world, 'receives ', nghost*yy_buflens(LEFT), 'from ', ulcorn
-            call MPI_ISEND(thphprime_strip_z(:,:,:lenred),size_corn,mpi_precision, &              
+            call MPI_ISEND(thphprime_strip_z(:,:,:lenred),size_corn,mpi_precision, &
 !  send strip (without corner part) to left corner neighbor
                            ulcorn,iproc_world,MPI_COMM_PENCIL,isend_rq_TOul,mpierr)
                                   !TOul
@@ -1025,7 +1026,7 @@ endif
 !  At yz corner: create a "cornerstrip" by adding truncated z strip
 !
           if (lfirst_proc_y) then
-            call yy_transform_strip(1,nghost,1,len_cornstrip_z,thphprime_strip_z(:,:,ycornstart:))     ! lu corner 
+            call yy_transform_strip(1,nghost,1,len_cornstrip_z,thphprime_strip_z(:,:,ycornstart:))     ! lu corner
           elseif (llast_proc_y) then
             call yy_transform_strip(m2+1,my,1,len_cornstrip_z,thphprime_strip_z(:,:,ycornstart:))      ! uu corner
           endif
@@ -1054,7 +1055,7 @@ endif
                            lucorn,lucorn,MPI_COMM_PENCIL,irecv_rq_FRlu,mpierr)
                                   !MPI_ANY_TAG
 !print*, 'proc ', iproc_world, 'receives ', nghost*yy_buflens(LEFT), 'from ', lucorn
-            call MPI_ISEND(thphprime_strip_z(:,:,:lenred),size_corn,mpi_precision, &              
+            call MPI_ISEND(thphprime_strip_z(:,:,:lenred),size_corn,mpi_precision, &
 !  send strip (without corner part) to left corner neighbor
                            lucorn,iproc_world,MPI_COMM_PENCIL,isend_rq_TOlu,mpierr)
                                   !TOlu
@@ -1104,7 +1105,7 @@ endif
               call yy_transform_strip(-nghost+1,0,nzcut+1,mz, &
                                       thphprime_strip_y(:,:,mz+1:zcornstart-1),ith_shift_=1)
               call reset_triangle(nghost,2,mz,mz-(nghost-2),thphprime_strip_y)   ! reset overlap tip
-            elseif (lfirst_proc_z) then 
+            elseif (lfirst_proc_z) then
               call yy_transform_strip(my-len_cornstrip_y+1,my-len_cornstrip_y+nghost,1,mz-nzcut, &
                                       thphprime_strip_y(:,:,:mz-nzcut),ith_shift_=-1)
               call yy_transform_strip(my-len_cornstrip_y+1-nghost,my-len_cornstrip_y,1,mz-nzcut, &
@@ -1120,10 +1121,10 @@ endif
 !  At yz corner: create a "cornerstrip"
 !
           if (lfirst_proc_z) then
-!print*, 'left lower completed: len_cornstrip_y=', len_cornstrip_y 
+!print*, 'left lower completed: len_cornstrip_y=', len_cornstrip_y
             call yy_transform_strip(my-len_cornstrip_y+1,my,1,nghost,thphprime_strip_y(:,:,zcornstart:))     ! left lower corner completed
           elseif (llast_proc_z) then
-!print*, 'left upper completed: len_cornstrip_y=', len_cornstrip_y 
+!print*, 'left upper completed: len_cornstrip_y=', len_cornstrip_y
             call yy_transform_strip(my-len_cornstrip_y+1,my,n2+1,mz,thphprime_strip_y(:,:,zcornstart:))    ! left upper corner completed
           endif
 if (.false.) then
@@ -1173,7 +1174,7 @@ endif
 
           if (lucorn>=0) then
 !
-            call MPI_IRECV(gridbuf_right,2*nghost*yy_buflens(RIGHT),mpi_precision, &    ! receive strip from ~ 
+            call MPI_IRECV(gridbuf_right,2*nghost*yy_buflens(RIGHT),mpi_precision, &    ! receive strip from ~
                            lucorn,lucorn,MPI_COMM_PENCIL,irecv_rq_FRlu,mpierr)
 !print*, 'proc ', iproc_world, 'receives ', nghost*yy_buflens(RIGHT), 'from ', lucorn
             call MPI_ISEND(thphprime_strip_y,size_corn,mpi_precision, &                       ! send strip to right corner neighbor
@@ -1255,7 +1256,7 @@ endif
                            ulcorn,ulcorn,MPI_COMM_PENCIL,irecv_rq_FRul,mpierr)
                                   !MPI_ANY_TAG
 !print*, 'proc ', iproc_world, 'receives ', nghost*yy_buflens(RIGHT), 'from ', ulcorn
-            call MPI_ISEND(thphprime_strip_y,size_corn,mpi_precision, &                        
+            call MPI_ISEND(thphprime_strip_y,size_corn,mpi_precision, &
                            ulcorn,iproc_world,MPI_COMM_PENCIL,isend_rq_TOul,mpierr)
                                   !TOul
           endif
@@ -1308,7 +1309,7 @@ endif
 !
         call MPI_WAIT(irecv_rq_fromuppy,irecv_stat_fu,mpierr)
         nok=prep_interp(gridbuf_midz,intcoeffs(MIDZ),iyinyang_intpol_type,ngap); noks=noks+nok
-! print*,'uppy:',iproc,iproc_world,nok,maxval(abs(intcoeffs(MIDZ)%coeffs)),maxval(intcoeffs(MIDZ)%inds), & 
+! print*,'uppy:',iproc,iproc_world,nok,maxval(abs(intcoeffs(MIDZ)%coeffs)),maxval(intcoeffs(MIDZ)%inds), &
 ! minval(intcoeffs(MIDZ)%inds)
         call MPI_WAIT(isend_rq_touppy,isend_stat_tu,mpierr)
 !if (lyang.and.iproc==17) print*, 'fromuppy: iproc, nok=', iproc, nok, ngap
@@ -1321,7 +1322,7 @@ endif
           nok=prep_interp(gridbuf_right,intcoeffs(RIGHT),iyinyang_intpol_type,ngap); noks=noks+nok
 !if (lyang.and.iproc==23) print*, 'fromlowright: iproc, nok=', iproc, nok, ngap
 !if (lyang.and.iproc==14) print*, 'fromlowright: iproc, nok=', iproc, nok, ngap
-! print*,'ul:',iproc,iproc_world,nok,maxval(abs(intcoeffs(RIGHT)%coeffs)),maxval(intcoeffs(RIGHT)%inds), & 
+! print*,'ul:',iproc,iproc_world,nok,maxval(abs(intcoeffs(RIGHT)%coeffs)),maxval(intcoeffs(RIGHT)%inds), &
 ! minval(intcoeffs(RIGHT)%inds)
           call MPI_WAIT(isend_rq_TOul,isend_stat_Tul,mpierr)
         endif
@@ -1331,7 +1332,7 @@ endif
           nok=prep_interp(gridbuf_left,intcoeffs(LEFT),iyinyang_intpol_type,ngap); noks=noks+nok
 !if (lyang.and.iproc==14) print*, 'fromuppright: iproc, nok=', iproc, nok, ngap
 !if (lyang.and.iproc==5) print*, 'fromuppright: iproc, nok=', iproc, nok, ngap
-! print*,'uu:',iproc,iproc_world,nok,maxval(abs(intcoeffs(LEFT)%coeffs)),maxval(intcoeffs(LEFT)%inds), & 
+! print*,'uu:',iproc,iproc_world,nok,maxval(abs(intcoeffs(LEFT)%coeffs)),maxval(intcoeffs(LEFT)%inds), &
 ! minval(intcoeffs(LEFT)%inds)
           call MPI_WAIT(isend_rq_TOuu,isend_stat_Tuu,mpierr)
         endif
@@ -1351,16 +1352,16 @@ if (.not.lyang.and.notanumber(intcoeffs(MIDY)%coeffs)) print*, 'iproc=', iproc
         if (llcorn>=0) then
           call MPI_WAIT(irecv_rq_FRll,irecv_stat_Fll,mpierr)
           nok=prep_interp(gridbuf_right,intcoeffs(RIGHT),iyinyang_intpol_type,ngap); noks=noks+nok
-! print*,'ll:',iproc,iproc_world,nok,maxval(abs(intcoeffs(RIGHT)%coeffs)),maxval(intcoeffs(RIGHT)%inds), & 
+! print*,'ll:',iproc,iproc_world,nok,maxval(abs(intcoeffs(RIGHT)%coeffs)),maxval(intcoeffs(RIGHT)%inds), &
 ! minval(intcoeffs(RIGHT)%inds)
 if (.not.lyang.and.notanumber(intcoeffs(RIGHT)%coeffs)) print*, 'iproc=', iproc
           call MPI_WAIT(isend_rq_TOll,isend_stat_Tll,mpierr)
         endif
-    
+
         if (ulcorn>=0) then
           call MPI_WAIT(irecv_rq_FRul,irecv_stat_Ful,mpierr)
           nok=prep_interp(gridbuf_left,intcoeffs(LEFT),iyinyang_intpol_type,ngap); noks=noks+nok
-! print*,'ul:',iproc,iproc_world,nok,maxval(abs(intcoeffs(LEFT)%coeffs)),maxval(intcoeffs(LEFT)%inds), & 
+! print*,'ul:',iproc,iproc_world,nok,maxval(abs(intcoeffs(LEFT)%coeffs)),maxval(intcoeffs(LEFT)%inds), &
 ! minval(intcoeffs(LEFT)%inds)
 if (.not.lyang.and.notanumber(intcoeffs(LEFT)%coeffs)) print*, 'iproc=', iproc
           call MPI_WAIT(isend_rq_TOul,isend_stat_Tul,mpierr)
@@ -1376,7 +1377,7 @@ if (.not.lyang.and.notanumber(intcoeffs(LEFT)%coeffs)) print*, 'iproc=', iproc
 !  size(gridbuf_midy,2), size(gridbuf_midy,3), size(intcoeffs(MIDY)%inds,1), size(intcoeffs(MIDY)%inds,2)
 !  print'(22(f8.5,1x))', gridbuf_midy(1,:,:)
 !  print'(22(i3,1x))', intcoeffs(MIDY)%inds(:,:,1)
-!  print*,'upz:',iproc,iproc_world,nok,maxval(abs(intcoeffs(MIDY)%coeffs)),maxval(intcoeffs(MIDY)%inds), & 
+!  print*,'upz:',iproc,iproc_world,nok,maxval(abs(intcoeffs(MIDY)%coeffs)),maxval(intcoeffs(MIDY)%inds), &
 !  minval(intcoeffs(MIDY)%inds)
 if (.not.lyang.and.notanumber(intcoeffs(MIDY)%coeffs)) print*, 'iproc=', iproc
         call MPI_WAIT(isend_rq_touppz,isend_stat_tu,mpierr)
@@ -1384,7 +1385,7 @@ if (.not.lyang.and.notanumber(intcoeffs(MIDY)%coeffs)) print*, 'iproc=', iproc
         if (lucorn>=0) then
           call MPI_WAIT(irecv_rq_FRlu,irecv_stat_Flu,mpierr)
           nok=prep_interp(gridbuf_left,intcoeffs(LEFT),iyinyang_intpol_type,ngap); noks=noks+nok
-!  print*,'lu:',iproc,iproc_world,nok,maxval(abs(intcoeffs(LEFT)%coeffs)),maxval(intcoeffs(LEFT)%inds), & 
+!  print*,'lu:',iproc,iproc_world,nok,maxval(abs(intcoeffs(LEFT)%coeffs)),maxval(intcoeffs(LEFT)%inds), &
 !  minval(intcoeffs(LEFT)%inds)
 if (.not.lyang.and.notanumber(intcoeffs(LEFT)%coeffs)) print*, 'iproc=', iproc
           call MPI_WAIT(isend_rq_TOlu,isend_stat_Tlu,mpierr)
@@ -1417,7 +1418,7 @@ if (.not.lyang.and.notanumber(intcoeffs(RIGHT)%coeffs)) print*, 'iproc=', iproc
         else
           nstrip_total=2*nghost*(nprocz*mz + nprocy*my - 2*nghost)
         endif
-        noks_all=noks_all - ngap_all/4 
+        noks_all=noks_all - ngap_all/4
 
 print*, 'noks_all,ngap_all,nstrip_total=', noks_all,ngap_all,nstrip_total
         if (noks_all/=nstrip_total) then
@@ -1477,7 +1478,7 @@ print*, 'noks_all,ngap_all,nstrip_total=', noks_all,ngap_all,nstrip_total
 !
 !  For spherical polar boundary condition across the pole set up edge and corner
 !  neighbours. Assumes the domain is binary communication between z processors.
-!  NB nprocz=2*n, n>=1, comms across y-plane parallel in z! 
+!  NB nprocz=2*n, n>=1, comms across y-plane parallel in z!
 !
       if (lcommunicate_y) then
         poleneigh = find_proc(ipx,     ipy,ipz  +nprocz/2)
@@ -1561,7 +1562,7 @@ if (notanumber(ubufyo)) print*, 'ubufyo: iproc=', iproc, iproc_world
 !  Set communication across z-planes.
 !
       if (nprocz>1) then
-!        
+!
         if (lyinyang.and.lfirst_proc_z) then
 !
 !  Interpolate variables ivar1 ... ivar2 for lower z neighbor in other grid.
@@ -1571,7 +1572,7 @@ if (notanumber(ubufyo)) print*, 'ubufyo: iproc=', iproc, iproc_world
           comm=MPI_COMM_PENCIL; touppzr=zlneigh; tolowzs=iproc_world  !touppzr=MPI_ANY_TAG
         elseif (lcoarse) then
           do mm=mexts(1),mexts(2)
-            lbufzo(:,mm-nghost,:,ivar1:ivar2)=f(:,mm,nexts(mm,1):nexts(mm,1)+(nghost-1)*nphis(mm):nphis(mm),ivar1:ivar2) 
+            lbufzo(:,mm-nghost,:,ivar1:ivar2)=f(:,mm,nexts(mm,1):nexts(mm,1)+(nghost-1)*nphis(mm):nphis(mm),ivar1:ivar2)
           enddo
           if (lfirst_proc_y.and.mexts(2)<m2) then
             lbufzo(:,mexts(2)-nghost+1:,:,ivar1:ivar2)=f(:,mexts(2)+1:m2,n1:n1i,ivar1:ivar2)
@@ -1602,7 +1603,7 @@ if (notanumber(ubufyo)) print*, 'ubufyo: iproc=', iproc, iproc_world
           comm=MPI_COMM_PENCIL; tolowzr=zuneigh; touppzs=iproc_world   !tolowzr=MPI_ANY_TAG
         elseif (lcoarse) then
           do mm=mexts(1),mexts(2)
-            ubufzo(:,mm-nghost,:,ivar1:ivar2)=f(:,mm,nexts(mm,2)-(nghost-1)*nphis(mm):nexts(mm,2):nphis(mm),ivar1:ivar2) 
+            ubufzo(:,mm-nghost,:,ivar1:ivar2)=f(:,mm,nexts(mm,2)-(nghost-1)*nphis(mm):nexts(mm,2):nphis(mm),ivar1:ivar2)
           enddo
           if (lfirst_proc_y.and.mexts(2)<m2) then
             ubufzo(:,mexts(2)-nghost+1:,:,ivar1:ivar2)=f(:,mexts(2)+1:m2,n2i:n2,ivar1:ivar2)
@@ -1855,7 +1856,7 @@ if (notanumber(ubufyo)) print*, 'ubufyo: iproc=', iproc, iproc_world
 
         do j=ivar1,ivar2
 
-          if (.not. lfirst_proc_y .or. bcy12(j,1)=='p' .or. lyinyang) then  
+          if (.not. lfirst_proc_y .or. bcy12(j,1)=='p' .or. lyinyang) then
 ! communication should happen only under these conditions
             if (lfirst_proc_y.and.lyinyang) then
               if (lcorner_yz) then
@@ -1944,16 +1945,16 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
           if (.not. lfirst_proc_z .or. bcz12(j,1)=='p'.or.lyinyang) then
             if (lfirst_proc_z.and.lyinyang) then
               if (lcorner_yz) then
-! fill lower horizontal ghost strip 
-                if (.not.lcutoff_corners) f(:,:,:n1-1,j)=f(:,:,:n1-1,j)+lbufzi(:,:my,:,j)                         
+! fill lower horizontal ghost strip
+                if (.not.lcutoff_corners) f(:,:,:n1-1,j)=f(:,:,:n1-1,j)+lbufzi(:,:my,:,j)
                 if (lfirst_proc_y) then
                   if (lcutoff_corners) call copy_kinked_strip_z(nycut,mz-nzcut+2,lbufzi,f,j,-1,.true.,ladd_=.true.)
-! fill left vertical ghost strip  
-                  call transpose_mn( lbufzi(:,ycornstart:,:,j), f(:,:nghost,mz-len_cornstrip_z+1:,j),ladd=.true.) 
+! fill left vertical ghost strip
+                  call transpose_mn( lbufzi(:,ycornstart:,:,j), f(:,:nghost,mz-len_cornstrip_z+1:,j),ladd=.true.)
                 elseif (llast_proc_y) then
                   if (lcutoff_corners) call copy_kinked_strip_z(nycut,1,lbufzi,f,j,1,.false.,ladd_=.true.)
-! fill right vertical ghost strip      
-                  call transpose_mn( lbufzi(:,ycornstart:,:,j), f(:,m2+1:,mz-len_cornstrip_z+1:,j),ladd=.true.) 
+! fill right vertical ghost strip
+                  call transpose_mn( lbufzi(:,ycornstart:,:,j), f(:,m2+1:,mz-len_cornstrip_z+1:,j),ladd=.true.)
                 endif
 !if (notanumber(f(:,:,:,j))) print*, 'lbufzi: iproc,j=', iproc, iproc_world, j
               else
@@ -1964,22 +1965,22 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
             endif
           endif
 
-          if (.not. llast_proc_z .or. bcz12(j,2)=='p'.or.lyinyang) then 
+          if (.not. llast_proc_z .or. bcz12(j,2)=='p'.or.lyinyang) then
             if (llast_proc_z.and.lyinyang) then
               if (lcorner_yz) then
 ! fill upper horizontal ghost strip
                 if (.not.lcutoff_corners) f(:,:,n2+1:,j)=f(:,:,n2+1:,j)+ubufzi(:,:my,:,j)
                 if (lfirst_proc_y) then
                   if (lcutoff_corners) call copy_kinked_strip_z(nycut,nzcut-nghost,ubufzi,f,j,1,.true.,ladd_=.true.)
-! fill left vertical ghost strip        
-                  call transpose_mn( ubufzi(:,ycornstart:,:,j), f(:,:nghost,:len_cornstrip_z,j),ladd=.true.) 
+! fill left vertical ghost strip
+                  call transpose_mn( ubufzi(:,ycornstart:,:,j), f(:,:nghost,:len_cornstrip_z,j),ladd=.true.)
                 elseif (llast_proc_y) then
                   if (lcutoff_corners) call copy_kinked_strip_z(nycut,n2+1,ubufzi,f,j,-1,.false.,ladd_=.true.)
-! fill right vertical ghost strip 
-                  call transpose_mn( ubufzi(:,ycornstart:,:,j), f(:,m2+1:,:len_cornstrip_z,j),ladd=.true.) 
+! fill right vertical ghost strip
+                  call transpose_mn( ubufzi(:,ycornstart:,:,j), f(:,m2+1:,:len_cornstrip_z,j),ladd=.true.)
                 endif
               else
-                f(:,:,n2+1:,j)=ubufzi(:,:my,:,j)  ! fill upper horizontal ghost strip 
+                f(:,:,n2+1:,j)=ubufzi(:,:my,:,j)  ! fill upper horizontal ghost strip
               endif
             else
               f(:,m1:m2,n2+1:,j)=ubufzi(:,:,:,j)  ! set upper z-ghostzone
@@ -2092,7 +2093,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
             if (.not. lfirst_proc_y .or. bcy12(j,1)=='p' .or. lyinyang) then
               if ((.not.llast_proc_z .or.bcz12(j,2)=='p').and. &   ! inner or periodic proc boundaries
-                  (.not.lfirst_proc_y.or.bcy12(j,1)=='p')) then 
+                  (.not.lfirst_proc_y.or.bcy12(j,1)=='p')) then
                 f(:,1:m1-1,n2+1:,j)=lubufi(:,:,:,j)                ! fill upper left corner
               elseif (lucornr>=0.and.lyinyang) then
                 if (llast_proc_z) then
@@ -2141,7 +2142,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
             endif
           endif
         enddo
-        
+
         if (llcorns>=0) call MPI_WAIT(isend_rq_TOll,isend_stat_Tll,mpierr)
         if (ulcorns>=0) call MPI_WAIT(isend_rq_TOul,isend_stat_Tul,mpierr)
         if (uucorns>=0) call MPI_WAIT(isend_rq_TOuu,isend_stat_Tuu,mpierr)
@@ -2392,7 +2393,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  Subroutine for shearing sheet boundary conditions
 !
-!  27-nov-14/mcnallcp: Now uses 4 shearing neighbours so 
+!  27-nov-14/mcnallcp: Now uses 4 shearing neighbours so
 !                      y-ghosts are not needed
 !  20-june-02/nils: adapted from pencil_mpi
 !
@@ -2452,18 +2453,18 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 ! Terms in these expressions
 !     ipz*nprocy*nprocx = the offset to this x-y plane of processors
 !     modulo(ipy-ystep,nprocy)*nprocx = the offset to the x-row of the shearing neighbor
-!     ipx_partner = the offset to the shearing neighbour within the x-row, 
-!                   either the low-x end or high-x end of the grid. 
+!     ipx_partner = the offset to the shearing neighbour within the x-row,
+!                   either the low-x end or high-x end of the grid.
 !                   Note iproc, ipx, etc are zero-based indexing.
-          nextnextya = find_proc(ipx_partner,ipy-ystep+1,ipz) 
-          nextya     = find_proc(ipx_partner,ipy-ystep  ,ipz) 
-          lastya     = find_proc(ipx_partner,ipy-ystep-1,ipz) 
-          lastlastya = find_proc(ipx_partner,ipy-ystep-2,ipz) 
+          nextnextya = find_proc(ipx_partner,ipy-ystep+1,ipz)
+          nextya     = find_proc(ipx_partner,ipy-ystep  ,ipz)
+          lastya     = find_proc(ipx_partner,ipy-ystep-1,ipz)
+          lastlastya = find_proc(ipx_partner,ipy-ystep-2,ipz)
 !
-          lastlastyb = find_proc(ipx_partner,ipy+ystep-1,ipz) 
-          lastyb     = find_proc(ipx_partner,ipy+ystep  ,ipz) 
-          nextyb     = find_proc(ipx_partner,ipy+ystep+1,ipz) 
-          nextnextyb = find_proc(ipx_partner,ipy+ystep+2,ipz) 
+          lastlastyb = find_proc(ipx_partner,ipy+ystep-1,ipz)
+          lastyb     = find_proc(ipx_partner,ipy+ystep  ,ipz)
+          nextyb     = find_proc(ipx_partner,ipy+ystep+1,ipz)
+          nextnextyb = find_proc(ipx_partner,ipy+ystep+2,ipz)
 !
           !!nextnextya = ipz*nprocy*nprocx +modulo(ipy-ystep+1,nprocy)*nprocx + ipx_partner
           !!nextya     = ipz*nprocy*nprocx +modulo(ipy-ystep  ,nprocy)*nprocx + ipx_partner
@@ -2517,7 +2518,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
             call MPI_IRECV(fbhihi(:,:,:,ivar1:ivar2),nbufx_gh,mpi_precision,nextnextyb, &
                 tonextnextyb,MPI_COMM_GRID,irecv_rq_fromnextnextyb,mpierr)
           endif
-! 
+!
           if (lastya/=iproc) then
             call MPI_ISEND(fao(:,:,:,ivar1:ivar2),nbufx_gh,mpi_precision,lastya, &
                 tonextyb,MPI_COMM_GRID,isend_rq_tolastya,mpierr)
@@ -2528,7 +2529,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
             call MPI_IRECV(fbhi(:,:,:,ivar1:ivar2),nbufx_gh,mpi_precision,nextyb, &
                 tonextyb,MPI_COMM_GRID,irecv_rq_fromnextyb,mpierr)
           endif
-! 
+!
          if (nextya/=iproc) then
             call MPI_ISEND(fao(:,:,:,ivar1:ivar2),nbufx_gh,mpi_precision,nextya, &
                 tolastyb,MPI_COMM_GRID,isend_rq_tonextya,mpierr)
@@ -2604,7 +2605,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  Subroutine for shearing sheet boundary conditions
 !
-!  27-nov-14/mcnallcp: Now uses 4 shearing neighbours so 
+!  27-nov-14/mcnallcp: Now uses 4 shearing neighbours so
 !                      y-ghosts are not needed
 !  20-june-02/nils: adapted from pencil_mpi
 !  02-mar-02/ulf: Sliding periodic boundary conditions in x
@@ -3058,7 +3059,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !***********************************************************************
     subroutine mpirecv_real_scl(bcast_array,proc_src,tag_id,comm,nonblock)
 !
-!  Receive real scalar from other processor. 
+!  Receive real scalar from other processor.
 !  If present, nonblock is the request id for non-blockin receive.
 !
 !  02-jul-05/anders: coded
@@ -3250,7 +3251,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       if (present(nonblock)) then
         call MPI_IRECV(bcast_array, 1, MPI_INTEGER, proc_src, &
                       tag_id, ioptest(comm,MPI_COMM_GRID), nonblock, mpierr)
-      else 
+      else
         call MPI_RECV(bcast_array, 1, MPI_INTEGER, proc_src, &
                       tag_id, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
       endif
@@ -3263,7 +3264,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !  If present, nonblock is the request id for non-blockin receive.
 !
 !  02-jul-05/anders: coded
-! 
+!
       integer :: nbcast_array
       integer, dimension(nbcast_array) :: bcast_array
       integer :: proc_src, tag_id
@@ -3413,10 +3414,10 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
     endsubroutine mpisend_real_arr_huge
 !***********************************************************************
     subroutine mpirecv_real_arr_huge(array,len_array,partner,tag,comm)
-!     
+!
 !  Allows to communicate arrays with length > max_int.
 !  06-oct-22/MR: coded
-!     
+!
       real, dimension(*) :: array
       integer(KIND=ikind8) :: len_array
       integer :: partner,tag
@@ -3429,7 +3430,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 
       mult=len_array/max_int
       res =len_array-mult*max_int
-            
+
       if (mult>0) &
         call MPI_RECV(array, mult, REAL_ARR_MAXSIZE, partner, tag, MPI_COMM_GRID, stat, mpierr)
       if (res>0) &
@@ -3629,7 +3630,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(MPI_STATUS_SIZE) :: stat
       intent(out) :: recv_array
       integer, optional :: idir
- 
+
       if (any(nbcast_array == 0)) return
 
       num_elements = product(nbcast_array)
@@ -3669,7 +3670,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       intent(out) :: recv_array
 
       if (any(nbcast_array == 0)) return
- 
+
       num_elements = product(nbcast_array)
       call MPI_SENDRECV(send_array,num_elements,mpi_precision,proc_dest,sendtag, &
                         recv_array,num_elements,mpi_precision,proc_src,recvtag, &
@@ -3998,7 +3999,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       if (present(nonblock)) then
         call MPI_ISEND(bcast_array, nbcast_array, MPI_INTEGER, proc_rec, &
                        tag_id, ioptest(comm,MPI_COMM_GRID), nonblock, mpierr)
-      else 
+      else
         call MPI_SEND(bcast_array, nbcast_array, MPI_INTEGER, proc_rec, &
                       tag_id, ioptest(comm,MPI_COMM_GRID), mpierr)
       endif
@@ -7380,7 +7381,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
           else
             ! send to partner
             buffer = in(px*cnx+1:px*cnx+mx,:,:,:)
-            
+
             call mpisend_real_arr_huge(buffer,nrow,partner,xtag)
             !old version: call MPI_SEND (buffer, int(nrow), mpi_precision, partner, xtag, MPI_COMM_GRID, mpierr)
           endif
@@ -8957,7 +8958,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       if ((onx /= bnx*nprocxy) .or. (ony /= bny)) &
           call stop_fatal ('transp_pencil_xy_4D: output array has unmatching size', lfirst_proc_xy)
       if (inz /= onz) &
-          call stop_fatal ('transp_pencil_xy_4D: inz/=onz - sizes differ in the z direction', lfirst_proc_xy)               
+          call stop_fatal ('transp_pencil_xy_4D: inz/=onz - sizes differ in the z direction', lfirst_proc_xy)
       if (ina /= ona) &
          call stop_fatal ('transp_pencil_xy_4D: ina/=ona - sizes differ in the 4th dimension', lfirst_proc_xy)
 !
@@ -9037,7 +9038,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       if ((size (out, 2) /= ony) .or. ((size (out, 3) /= onz))) &
           call stop_fatal ('remap_to_pencil_yz_3D: output array size mismatch /= ny/nprocz,nzgrid', lfirst_proc_yz)
       if (inx /= onx) &
-          call stop_fatal ('remap_to_pencil_yz_3D: inx/=onx - sizes differ in the x direction', lfirst_proc_yz) 
+          call stop_fatal ('remap_to_pencil_yz_3D: inx/=onx - sizes differ in the x direction', lfirst_proc_yz)
 !
       allocate (send_buf(onx,bny,bnz), stat=alloc_err)
       if (alloc_err > 0) call stop_fatal ('remap_to_pencil_yz_3D: not enough memory for send_buf!', .true.)
@@ -9295,7 +9296,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       mx=size(x); my=size(y); mz=size(z)
       l2=mx-nghost; m2=my-nghost; n2=mz-nghost
- 
+
       if (lroot) then
         ! collect the global x-data from all leading processors in the yz-plane
         gx(1:mx) = x; ie=l2
@@ -9819,7 +9820,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !***********************************************************************
     subroutine mpiwait(bwait)
 !
-!  Wrapper to go with non-blocking communication functions. 
+!  Wrapper to go with non-blocking communication functions.
 !
 !  12-dec-14/wlad: coded
 !
@@ -9968,18 +9969,18 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !**************************************************************************
     subroutine set_yy_neighbors
 !
-!  Determines for the boundary processors of one (Yin or Yang) grid the neighbors 
-!  (direct or corner) in the other. Determines further the length of the buffers 
+!  Determines for the boundary processors of one (Yin or Yang) grid the neighbors
+!  (direct or corner) in the other. Determines further the length of the buffers
 !  for data exchange between the neighbors and stores them in yy_buflens.
 !  Implemented for nprocz/nprocy=3 only!
-! 
+!
 !  At return neighbor ranks refer to MPI_COMM_PENCIL.
 !
 !  20-dec-15/MR: coded
 !
         integer, parameter :: nprocz_rd=nprocz/3
-        integer :: lenred      
- 
+        integer :: lenred
+
         if (lcutoff_corners) then
           len_cornstrip_y=nycut-1
           len_cornstrip_z=nzcut-1
@@ -9989,7 +9990,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
           len_cornbuf=max(2*my-nycut+len_cornstrip_z,2*mz-nzcut+len_cornstrip_y)
           ycornstart=2*my-nycut+1; zcornstart=2*mz-nzcut+1
           lenred=max(2*my-nycut,2*mz-nzcut)
-        else 
+        else
           len_cornstrip_y=m2; len_cornstrip_z=n2
           len_cornbuf=my+nz+nghost                                ! length of a "cornerstrip"
           ycornstart=my+1; zcornstart=mz+1
@@ -10051,7 +10052,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
               lucorn=find_proc(ipx,0,5*nprocz_rd-ipz-2)
             endif
 
-          else                                            ! for middle third in phi direction                 
+          else                                            ! for middle third in phi direction
 
             yy_buflens=my
 !
@@ -10084,7 +10085,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
           if (.not.lyang) then
 !
 !  For Yin grid: neighbors are in upper half of overall proc number range.
-! 
+!
             ylneigh=ylneigh+ncpus
             if (llcorn/=-1) llcorn=llcorn+ncpus
             if (lucorn/=-1) lucorn=lucorn+ncpus
@@ -10116,11 +10117,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
             if (ipz==nprocz_rd-1) then                         ! last proc in first third = corner opposite
               uucorn=-1
               yy_buflens=(/0,len_cornbuf,mz/)
-            else 
+            else
               uucorn=find_proc(ipx,nprocy-1,nprocz_rd-2-ipz)
               if (ipz==nprocz_rd-2) yy_buflens(1)=lenred       ! penultimate proc in first third = cross corner opposite
             endif
- 
+
           elseif (ipz>=2*nprocz_rd) then                       ! for last third in phi direction
 
             yy_buflens=mz
@@ -10142,12 +10143,12 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !  Upper left neighbor.
 !
             if (llast_proc_z) then
-              uucorn=-1                                       ! not used at yz-corner                          
+              uucorn=-1                                       ! not used at yz-corner
             else
               uucorn=find_proc(ipx,0,ipz-2*nprocz_rd+1)
             endif
 
-          else                                                ! middle third in phi direction                   
+          else                                                ! middle third in phi direction
 !
 !  Direct neighbor.
 !
@@ -10180,7 +10181,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
           if (.not.lyang) then
 !
 !  For Yin grid: neighbors are in upper half of overall proc number range.
-! 
+!
             yuneigh=yuneigh+ncpus
             if (ulcorn/=-1) ulcorn=ulcorn+ncpus
             if (uucorn/=-1) uucorn=uucorn+ncpus
@@ -10217,7 +10218,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
           if (.not.lyang) then
 !
 !  For Yin grid: neighbors are in upper half of overall proc number range.
-! 
+!
             zlneigh=zlneigh+ncpus
             if (llcorn/=-1) llcorn=llcorn+ncpus
             if (ulcorn/=-1) ulcorn=ulcorn+ncpus
@@ -10254,7 +10255,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
           if (.not.lyang) then
 !
 !  For Yin grid: neighbors are in upper half of overall proc number range.
-! 
+!
             zuneigh=zuneigh+ncpus
             if (lucorn/=-1) lucorn=lucorn+ncpus
             if (uucorn/=-1) uucorn=uucorn+ncpus
@@ -10300,7 +10301,7 @@ endif
 !  Loop over all variables.
 !
       iv=ivar1
-      do while (iv<=ivar2) 
+      do while (iv<=ivar2)
 
         if (var_is_vec(iv)) then
 !
@@ -10314,7 +10315,7 @@ endif
 !if (.false..and.(iproc_world==52.or.iproc_world==53).and.ive==-1) then
 !  if (intcoeffs(pos)%pcoors(15,1,1)/=0.) then
 !    print*, intcoeffs(pos)%pcoors(15,1,:)
-!    print*,intcoeffs(pos)%coeffs2(15,1,:,:) 
+!    print*,intcoeffs(pos)%coeffs2(15,1,:,:)
 !    print*,'----'
 !  endif
 !endif
@@ -10339,7 +10340,7 @@ endif
         iv=ive+1
 
       enddo
-!      
+!
     endsubroutine interpolate_yy
 !***********************************************************************
     subroutine mpiscatterv_real_plain(src,counts,dspls,dest,nlocal,comm)
@@ -10460,7 +10461,7 @@ endif
           endif
 !
 !  Receive name of foreign code.
-!      
+!
           call mpirecv_char(frgn_setup%name(1:name_len),frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
           frgn_setup%name=frgn_setup%name(1:name_len)
 
@@ -10469,7 +10470,7 @@ endif
                          trim(frgn_setup%name)//'" not supported')
 !
 !  Receive processor numbers of foreign code.
-!      
+!
           call mpirecv_int(intbuf,3,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
           frgn_setup%procnums=intbuf
           frgn_setup%ncpus=product(intbuf)
@@ -10486,13 +10487,13 @@ endif
           endif
 !
 !  Receive gridpoint numbers of foreign code.
-!      
+!
           call mpirecv_int(frgn_setup%dims,3,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
 !print*, 'Pencil: received frgn_setup%dims=', frgn_setup%dims
           frgn_setup%linterpol = (frgn_setup%dims/=(/nxgrid,nygrid,nzgrid/))
 !
 !  Receive units of foreign code.
-!      
+!
           call mpirecv_char(frgn_setup%unit_system,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
           if (trim(frgn_setup%unit_system)/='SI'.and.trim(frgn_setup%unit_system)/='CGS') then
             messg=trim(messg)//' foreign unit system unknown;'
@@ -10521,7 +10522,7 @@ endif
           if (lok) frgn_setup%renorm_UU=frgn_setup%unit_time/frgn_setup%unit_length  !not the full truth yet
 !
 !  Receive domain extents of foreign code. j loops over r, theta, phi.
-!      
+!
           call mpirecv_real(floatbuf,6,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
           ind=1
           do j=1,3
@@ -10544,7 +10545,7 @@ endif
           enddo
 !
 !  Receive output timestep of foreign code.
-!      
+!
           call mpirecv_real(frgn_setup%dt_out,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
           if (frgn_setup%dt_out<=0.) then
             messg=trim(messg)//' foreign output step<=0;'
@@ -10552,7 +10553,7 @@ endif
           endif
 !
 !  Send confirmation flag that setup is acceptable.
-! 
+!
           call mpisend_logical(lok,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
         endif
 
@@ -10560,18 +10561,18 @@ endif
 
         if (.not.lok) call stop_it('initialize_foreign_comm: '//trim(messg))
         call mpibcast_char(frgn_setup%name,comm=MPI_COMM_PENCIL)
-!                                                                              
-!  Broadcast foreign processor numbers and grid size.                                                    
-!                                                                              
+!
+!  Broadcast foreign processor numbers and grid size.
+!
         call mpibcast_int(frgn_setup%dims,3,comm=MPI_COMM_PENCIL)
 
-        if (lfirst_proc_yz) then                                                 
+        if (lfirst_proc_yz) then
           nxgrid_foreign=frgn_setup%dims(1)
           allocate(frgn_setup%xgrid(nxgrid_foreign))
-        endif 
+        endif
         nygrid_foreign=frgn_setup%dims(2)
         allocate(frgn_setup%ygrid(nygrid_foreign))
-                                                                 
+
         if (lroot) then
 !
 !  Receive vector of foreign global x(r)-grid points.
@@ -10580,7 +10581,7 @@ endif
 !
 !  Renormalize X-coord to Pencil domain.
 !
-          frgn_setup%xgrid = frgn_setup%xgrid/frgn_setup%xgrid(nxgrid_foreign)*xyz1(1)       
+          frgn_setup%xgrid = frgn_setup%xgrid/frgn_setup%xgrid(nxgrid_foreign)*xyz1(1)
 !print*, 'frgn_setup%xgrid=', frgn_setup%xgrid
 !
 !  Receive vector of foreign global y(theta)-grid points.
@@ -10591,7 +10592,7 @@ endif
 !
           call mpirecv_real(frgn_setup%renorm_t,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
 !print*,'PENCIL - dt, dt/tnorm',frgn_setup%dt_out ,frgn_setup%dt_out/frgn_setup%renorm_t
-          frgn_setup%renorm_L = frgn_setup%extents(2,1)  
+          frgn_setup%renorm_L = frgn_setup%extents(2,1)
           frgn_setup%renorm_UU=frgn_setup%renorm_L/frgn_setup%renorm_t
           frgn_setup%dt_out = frgn_setup%dt_out/frgn_setup%renorm_t
 !print*, 'PENCIL - renormUU, t_last_rcv, dt_out', frgn_setup%renorm_UU,frgn_setup%t_last_recvd,frgn_setup%dt_out, t-frgn_setup%t_last_recvd
@@ -10610,7 +10611,7 @@ endif
         call mpibcast_real(frgn_setup%renorm_t,comm=MPI_COMM_PENCIL)
         call mpibcast_real(frgn_setup%renorm_UU,comm=MPI_COMM_PENCIL)
         call mpibcast_real(frgn_setup%dt_out,comm=MPI_COMM_PENCIL)
-!       
+!
         call mpibcast_int(frgn_setup%procnums,3,comm=MPI_COMM_PENCIL)
         call mpibcast_int(frgn_setup%proc_multis,3,comm=MPI_COMM_PENCIL)
         call mpibcast(frgn_setup%linterpol,3,comm=MPI_COMM_PENCIL)
@@ -10633,11 +10634,11 @@ endif
 !
         allocate(frgn_setup%xind_rng(-1:frgn_setup%procnums(1)-1,2)); frgn_setup%xind_rng=0
         allocate(frgn_setup%yind_rng(-1:frgn_setup%procnums(2)-1,2)); frgn_setup%yind_rng=0
-!                              
+!
         if (lfirst_proc_xz) then             ! on processors of first YBEAM
 !
 !  Broadcast foreign ygrid to all procs with ipx=ipz=0.
-!                              
+!
           call mpibcast_real(frgn_setup%ygrid,nygrid_foreign,comm=MPI_COMM_YBEAM)
 !
 !  Determine index range frgn_setup%yind_rng in foreign ygrid which is needed
@@ -10654,7 +10655,7 @@ endif
 !       Determine the peer using PENCIL (Not EULAG) proc grid conventions.
 !
             peer = find_proc_general(0,py,0,frgn_setup%procnums(3),frgn_setup%procnums(2),frgn_setup%procnums(1),.true.)
-            call mpisendrecv_int(frgn_setup%yind_rng(-1,:),2,ncpus+peer,tag_foreign+iproc, & 
+            call mpisendrecv_int(frgn_setup%yind_rng(-1,:),2,ncpus+peer,tag_foreign+iproc, &
                                  intbuf,ncpus+peer,tag_foreign+peer,MPI_COMM_WORLD)
             frgn_setup%yind_rng(py,:)=intbuf(1:2)
 
@@ -10676,11 +10677,11 @@ endif
           if (frgn_setup%linterpol(2)) &
             call get_linterp_weights_1D(frgn_setup%ygrid,frgn_setup%yind_rng(-1,:),y,frgn_setup%yinds,frgn_setup%yweights)
         endif   !lfirst_proc_xz
-!                              
+!
         if (lfirst_proc_yz) then             ! on processors of first XBEAM, i.e., ipy=ipz=0
 !
 !  Broadcast frgn_setup%xgrid to all procs of first x-beam.
-!                              
+!
           call mpibcast_real(frgn_setup%xgrid,nxgrid_foreign,comm=MPI_COMM_XBEAM)
 
 !  Determine index range frgn_setup%xind_rng in frgn_setup%xgrid which is needed for individual
@@ -10712,13 +10713,13 @@ endif
             call mpisendrecv_int(frgn_setup%xind_rng(-1,:),2,peer+ncpus,tag_foreign+iproc, &
                                  intbuf,peer+ncpus,tag_foreign+peer,MPI_COMM_WORLD)
             frgn_setup%xind_rng(px,:)=intbuf(1:2)
-!            
+!
             if (frgn_setup%xpeer_rng(1)>=0) then    ! if start of peer range has already been detected
 !
 !  If px has no share, px-1 is last of peer range.
 !
-              if (frgn_setup%xind_rng(px,1)>frgn_setup%xind_rng(px,2).and.frgn_setup%ypeer_rng(2)<0) then 
-                frgn_setup%xpeer_rng(2)=px-1 
+              if (frgn_setup%xind_rng(px,1)>frgn_setup%xind_rng(px,2).and.frgn_setup%ypeer_rng(2)<0) then
+                frgn_setup%xpeer_rng(2)=px-1
               endif
             else                                   ! if start of peer range has not yet been detected
 !
@@ -10758,7 +10759,7 @@ endif
 !print*, 'PENCIL global len*',iproc,peer, lenx, leny, mz
 
         if (allocated(frgn_setup%recv_req)) deallocate(frgn_setup%recv_req)
-        allocate(frgn_setup%recv_req(0:frgn_setup%procnums(1)-1)) 
+        allocate(frgn_setup%recv_req(0:frgn_setup%procnums(1)-1))
 
       endif    ! if (lforeign)
 
@@ -10789,7 +10790,7 @@ print*, 'Pencil: after barrier'
       lesav = .false.
 
       do px=frgn_setup%xpeer_rng(1),frgn_setup%xpeer_rng(2)
-          
+
         ixstart=frgn_setup%xind_rng(px,1)-frgn_setup%xind_rng(-1,1)+1!-nghost
         lenx_loc=frgn_setup%xind_rng(px,2)-frgn_setup%xind_rng(px,1)+1!+2*nghost
 
@@ -10804,22 +10805,22 @@ print*, 'Pencil: after barrier'
             if (loptest(lnonblock)) then      ! non-blocking
               call mpirecv_real(frgn_buffer(ixstart:ixstart+lenx_loc-1,iystart:iystart+leny_loc-1,:,iv), &
                                (/lenx_loc,leny_loc,mz/),peer+ncpus,iproc+tag_foreign,MPI_COMM_WORLD,frgn_setup%recv_req(px))
-            else                              ! blocking 
-!print*, 'PENCIL1X', iproc,peer,px,ixstart, ixstart+lenx_loc-1    
-!print*, 'PENCIL1Y', iproc,peer,py,iystart, iystart+leny_loc-1  
-!print*, 'PENCIL3', iproc,peer,lenx_loc,leny_loc,mz     
+            else                              ! blocking
+!print*, 'PENCIL1X', iproc,peer,px,ixstart, ixstart+lenx_loc-1
+!print*, 'PENCIL1Y', iproc,peer,py,iystart, iystart+leny_loc-1
+!print*, 'PENCIL3', iproc,peer,lenx_loc,leny_loc,mz
 !print*,'PENCIL4', iproc, peer,l1, l2,m1,m2
-!print*, 'PENCIL1B', iproc, lbound(frgn_buffer(ixstart:ixstart+lenx_loc-1,iystart:iystart+leny_loc-1,:,iv)),ubound(frgn_buffer(ixstart:ixstart+lenx_loc-1,iystart:iystart+leny_loc-1,:,iv))  
+!print*, 'PENCIL1B', iproc, lbound(frgn_buffer(ixstart:ixstart+lenx_loc-1,iystart:iystart+leny_loc-1,:,iv)),ubound(frgn_buffer(ixstart:ixstart+lenx_loc-1,iystart:iystart+leny_loc-1,:,iv))
 !print*, 'PENCIL2B', iproc, size(x),size(y),size(z)
               call mpirecv_real(frgn_buffer(ixstart:ixstart+lenx_loc-1,iystart:iystart+leny_loc-1,:,iv), &
                                (/lenx_loc,leny_loc,mz/),peer+ncpus,iproc+tag_foreign,MPI_COMM_WORLD)
-            endif 
+            endif
 !
           enddo
         enddo
-      enddo 
-!GM: Wait for the saving command      
-if(iproc==0) then 
+      enddo
+!GM: Wait for the saving command
+if(iproc==0) then
 !  print*, 'PENCIL Before RECEIVED LOGICAL SAVE', lesav
   call mpirecv_logical(lesav,frgn_setup%root,tag_foreign,MPI_COMM_WORLD)
 !  if (lesav) then
@@ -10837,7 +10838,7 @@ call mpibcast_logical(lesav,comm=MPI_COMM_PENCIL)
 
       return !END new version
 !
-print*, 'PENCIL-BARRIER', iproc    
+print*, 'PENCIL-BARRIER', iproc
 call MPI_BARRIER(MPI_COMM_WORLD, mpierr)
 call MPI_FINALIZE(mpierr)
 stop
@@ -10892,12 +10893,12 @@ stop
 !***********************************************************************
     subroutine get_foreign_snap_finalize(f,ivar1,ivar2,frgn_buffer,interp_buffer,lnonblock)
 !
-! Finalizes fetching of data snapshot from foreign code: when nonblocking, call MPI_WAIT; 
+! Finalizes fetching of data snapshot from foreign code: when nonblocking, call MPI_WAIT;
 ! interpolate data and scatter across processors.
 ! Non-blocking mode not yet operational.
 !
 ! 20-oct-21/MR: coded
-! 
+!
       use General, only: loptest,linear_interpolate_1d, itoa
 !      use IO, only: output_snap, output_snap_finalize
 
@@ -10915,7 +10916,7 @@ stop
 !
 ! Interpolate/scatter data to array f
 !
-      if (trim(frgn_setup%name)=='EULAG') then           
+      if (trim(frgn_setup%name)=='EULAG') then
 
         if (loptest(lnonblock)) call mpiwait(frgn_setup%recv_req(px))
         if(size(frgn_buffer,1) > size(f,1)) lf1 = 2
@@ -10928,13 +10929,13 @@ stop
             f(:,m1:m2,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU
 !
           else if (lfirst_proc_x) then! on processors of first XBEAM
-!          
-            f(l1:,m1:m2,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU 
+!
+            f(l1:,m1:m2,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU
           else if(llast_proc_x) then!on processors of last XBEAM
             f(:l2,m1:m2,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU
           endif
 
-        else if(.not.(lfirst_proc_y .or. llast_proc_y)) then!MID of YBEAM 
+        else if(.not.(lfirst_proc_y .or. llast_proc_y)) then!MID of YBEAM
 !
           if(lfirst_proc_x .and. nprocx==1) then!if only one proc in X
             f(l1:l2,:,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU
@@ -10943,8 +10944,8 @@ stop
             f(:,:,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU
 !
           else if (lfirst_proc_x) then! on processors of first XBEAM
-!          
-            f(l1:,:,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU 
+!
+            f(l1:,:,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU
           else if(llast_proc_x) then!on processors of last XBEAM
             f(:l2,:,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU
           endif
@@ -10956,14 +10957,14 @@ stop
 !
           else if(.not.(lfirst_proc_x .or. llast_proc_x))then!MID of XBEAM
             f(:,m1:,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU
-!        
+!
           else if (lfirst_proc_x) then! on processors of first XBEAM
-!          
-            f(l1:,m1:,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU 
+!
+            f(l1:,m1:,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU
           else if(llast_proc_x) then!on processors of last XBEAM
             f(:l2,m1:,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU
           endif
-!          
+!
         else if(llast_proc_y) then!on processors of last YBEAM
           if(lfirst_proc_x .and. nprocx==1) then!if only one proc in X
             f(l1:l2,:m2,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU
@@ -10971,8 +10972,8 @@ stop
           else if(.not.(lfirst_proc_x .or. llast_proc_x))then!MID of XBEAM
             f(:,:m2,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU
           else if (lfirst_proc_x) then! on processors of first XBEAM
-!          
-            f(l1:,:m2,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU 
+!
+            f(l1:,:m2,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU
           else if(llast_proc_x) then!on processors of last XBEAM
             f(:l2,:m2,:,ivar1:ivar2)=frgn_buffer(lf1:,:,:,:)/frgn_setup%renorm_UU
           endif
@@ -11003,7 +11004,7 @@ stop
 !  call output_snap(f,nv1=1,nv2=mfarray,file='data'//itoa(sav_counter)//'.dat',mode=1)
 !  call output_snap_finalize
 !endif
-goto 125!!!        
+goto 125!!!
         !!!f(:,:,:,ivar1:ivar2)=frgn_buffer(lf1:,my::-1,:,:)/frgn_setup%renorm_UU  !For invertion of theta
 !
 !print*, 'iproc, weights=', iproc, maxval(frgn_setup%xweights), maxval(frgn_setup%yweights)
@@ -11034,9 +11035,9 @@ goto 125!!!
         elseif (frgn_setup%linterpol(3)) then
 ! Z-Interpolation
         endif
-! 
+!
 125 continue !!!
-      elseif (lfirst_proc_yz) then 
+      elseif (lfirst_proc_yz) then
 
         if (frgn_setup%proc_multis(1)>1) then
           nvars=ivar2-ivar1+1
@@ -11145,7 +11146,7 @@ goto 125!!!
 ! Returns delivery cadence of foreign code in dt_foreign.
 !
 ! 20-oct-21/MR: coded
-! 
+!
       real(KIND=rkind8), intent(IN) :: t
       real,              intent(OUT):: t_foreign
 
