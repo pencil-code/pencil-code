@@ -1027,7 +1027,7 @@ class __Simulation__(object):
         fname = os.path.join(self.datadir, proc, "varN.list")
         if not os.path.isfile(fname):
             raise FileNotFoundError(fname)
-        var_dict = {name: float(time) for name, time in np.loadtxt(fname, dtype=str)}
+        var_dict = {name: float(time) for name, time in np.loadtxt(fname, dtype=str, ndmin=2)}
 
         if isinstance(var_file, list):
             return [var_dict[fixname(k)] for k in var_file]
