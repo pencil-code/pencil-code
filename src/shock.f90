@@ -103,6 +103,12 @@ module Shock
 !
        real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
+       if (nghost < 3) then
+         if (lroot .and. (nghost == 1)) write (*,*) '=> Retry with the "deriv_2nd_all" module.'
+         if (lroot .and. (nghost == 2)) write (*,*) '=> Retry with the "deriv_4th_all" module.'
+         call fatal_error ('shock', 'requires at least 3 ghost cells')
+       endif
+!
 !  Initialize shock profile to zero
 !
       f(:,:,:,ishock)=0.0
