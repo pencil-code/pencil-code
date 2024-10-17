@@ -3919,15 +3919,6 @@ mnloop:do n=n1,n2
           close(1)
         endif
 !
-        if (lfirst_warning) then
-          call warning('sn_series.dat','new column SN_rate added 19.10.17 '// &
-          'continuation of old data may need header and extra column appended')
-          call warning('sn_series.dat','new columns rhom, Ekin, Ecr 20.03.19 '// &
-          'continuation of old data may need header and extra columns appended')
-          call warning('sn_series.dat','new columns added_Nsol 27.05.21 '// &
-          'continuation of old data may need header and extra columns appended')
-        endif
-
         print "(1x,'explode_SN:    step, time = ',i8,e12.5)",it,t
         open(1,file=trim(datadir)//'/sn_history.dat',position='append')
         write(1,'("explode_SN:     step, time =",i8,e12.5)') it,t
