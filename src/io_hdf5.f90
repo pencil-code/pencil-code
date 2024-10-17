@@ -1087,11 +1087,15 @@ contains
 !  12-Oct-2019/PABourdin: coded
 !
       use General, only: lower_case
+      use Mpicomm, only: mpibcast
 !
       character (len=*), intent(in) :: label
 !
       persist_exists = exists_in_hdf5('persist')
-      if (persist_exists) persist_exists = exists_in_hdf5('persist/'//lower_case(label))
+!      if (lroot) then
+        if (persist_exists) persist_exists = exists_in_hdf5('persist/'//lower_case(label))
+!      endif
+!      call mpibcast(persist_exists)
 !
     endfunction persist_exists
 !***********************************************************************
@@ -1146,6 +1150,7 @@ contains
 !  27-Oct-2018/PABourdin: coded
 !
       use General, only: lower_case
+      use Mpicomm, only: mpibcast
 !
       character (len=*), intent(in) :: label
       logical, dimension(:), intent(out) :: value
@@ -1155,9 +1160,14 @@ contains
       read_persist_logical_1D = .true.
       if (.not. persist_exists (label)) return
 !
-      call input_hdf5 ('persist/'//lower_case (label), value_int, size (value), same_size=.true.)
-      value = .false.
-      where (value_int > 0) value = .true.
+      if (lroot) then
+        call input_hdf5 ('persist/'//lower_case (label), value_int, size (value), same_size=.true.)
+        value = .false.
+        where (value_int > 0) value = .true.
+      else
+        call input_hdf5 ('persist/'//lower_case (label), value_int, 0, same_size=.true.)
+      endif
+      call mpibcast(value,size(value))
 !
       read_persist_logical_1D = .false.
 !
@@ -1186,6 +1196,7 @@ contains
 !  27-Oct-2018/PABourdin: coded
 !
       use General, only: lower_case
+      use Mpicomm, only: mpibcast
 !
       character (len=*), intent(in) :: label
       integer, dimension(:), intent(out) :: value
@@ -1193,7 +1204,12 @@ contains
       read_persist_int_1D = .true.
       if (.not. persist_exists (label)) return
 !
-      call input_hdf5 ('persist/'//lower_case (label), value, size (value), same_size=.true.)
+      if (lroot) then
+        call input_hdf5 ('persist/'//lower_case (label), value, size (value), same_size=.true.)
+      else
+        call input_hdf5 ('persist/'//lower_case (label), value, 0, same_size=.true.)
+      endif
+      call mpibcast(value,size(value))
 !
       read_persist_int_1D = .false.
 !
@@ -1222,6 +1238,7 @@ contains
 !  27-Oct-2018/PABourdin: coded
 !
       use General, only: lower_case
+      use Mpicomm, only: mpibcast
 !
       character (len=*), intent(in) :: label
       real, dimension(:), intent(out) :: value
@@ -1229,7 +1246,12 @@ contains
       read_persist_real_1D = .true.
       if (.not. persist_exists (label)) return
 !
-      call input_hdf5 ('persist/'//lower_case (label), value, size (value), same_size=.true.)
+      if (lroot) then
+        call input_hdf5 ('persist/'//lower_case (label), value, size (value), same_size=.true.)
+      else
+        call input_hdf5 ('persist/'//lower_case (label), value, 0, same_size=.true.)
+      endif
+      call mpibcast(value, size(value))
 !
       read_persist_real_1D = .false.
 !
