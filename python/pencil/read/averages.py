@@ -194,6 +194,12 @@ class Averages(object):
                 if not isinstance(it, int):
                     raise ValueError(f"read.aver Error: iter_list contains {it}, but must be integers")
 
+        if time_range is not None:
+            if isinstance(time_range, Iterable):
+                time_range = list(time_range)
+            else:
+                time_range = [0, time_range]
+
         from os.path import join, abspath
 
         simdir = abspath(simdir)
@@ -471,17 +477,8 @@ class Averages(object):
             n_times = len(tmp.keys()) - 1
             n_times = min(n_times,tmp['last'][()].item() + 1)
             start_time, end_time = 0, tmp[str(n_times-1)]['time'][()].item()
-            if time_range:
-                if isinstance(time_range, list):
-                    time_range = time_range
-                else:
-                    time_range = [time_range]
-                if len(time_range) == 1:
-                    start_time = 0.
-                    end_time = time_range[0]
-                elif len(time_range) == 2:
-                    start_time = time_range[0]
-                    end_time = time_range[1]
+            if time_range is not None:
+                start_time, end_time = time_range
             if iter_list:
                 if len(iter_list) == 1:
                     n_times = min(n_times-1, iter_list[0])
@@ -666,11 +663,7 @@ class Averages(object):
             else:
                 plane_iter_list = [0,1,2,3]
                 liter = False
-            if time_range:
-                if isinstance(time_range, Iterable):
-                    time_range = list(time_range)
-                else:
-                    time_range = [0, time_range]
+            if time_range is not None:
                 start_time, end_time = time_range
                 ltime = True
             else:
