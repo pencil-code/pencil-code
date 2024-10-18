@@ -670,8 +670,8 @@ class Averages(object):
                 plane_iter_list = [0,1,2,3]
                 liter = False
             if time_range:
-                if isinstance(time_range, list):
-                    time_range = time_range
+                if isinstance(time_range, Iterable):
+                    time_range = list(time_range)
                 else:
                     time_range = [time_range]
                 if len(time_range) == 1:
