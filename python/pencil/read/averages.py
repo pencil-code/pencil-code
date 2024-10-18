@@ -287,10 +287,10 @@ class Averages(object):
                 if not quiet:
                     print(variables)
                 if var_names is not None:
-                    if isinstance(var_names, list):
-                        plane_var_names = var_names
-                    else:
+                    if isinstance(var_names, str):
                         plane_var_names = [var_names]
+                    else:
+                        plane_var_names = list(var_names)
                     for var_name in plane_var_names:
                         if not var_name in variables:
                             plane_var_names.remove(var_name)
