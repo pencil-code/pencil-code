@@ -384,7 +384,8 @@ class Power(object):
         NOTE: If you want to read output from non-cubic-box simulations run using older versions of Pencil where the number of k-vectors was always taken as nxgrid/2, you can do
         ```
         >>> class Power_wrong(pc.read.powers.Power):
-        ...     def _get_nk_xyz(self, dim, grid):
+        ...     def _get_nk_xyz(self, datadir):
+        ...         dim = read.dim(datadir=datadir)
         ...         return int(dim.nxgrid/2)
 
         >>> p = Power_wrong.read()
