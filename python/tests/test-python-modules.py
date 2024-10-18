@@ -5,24 +5,11 @@
 
 
 import argparse
+import sys
+import pytest
 
-from test_utils import TestProgram
-
-# Most likely the only place in the whole Pencil Code where importing '*'
-# makes sense: Import all test cases from the following modules.
-from read import *
-from imports import *
-from basics import *
-from manual import *
-from derivatives import *
-from pc_io import *
-
-def main() -> None:
+if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.parse_args()
 
-    TestProgram().run_and_exit()
-
-
-if __name__ == "__main__":
-    main()
+    sys.exit(pytest.main())
