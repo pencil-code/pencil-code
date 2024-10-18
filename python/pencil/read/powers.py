@@ -388,7 +388,8 @@ class Power(object):
         ...         dim = read.dim(datadir=datadir)
         ...         return int(dim.nxgrid/2)
 
-        >>> p = Power_wrong.read()
+        >>> p = Power_wrong()
+        >>> p.read()
         ```
         """
         dim = read.dim(datadir=datadir)
