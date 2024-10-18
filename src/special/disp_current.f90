@@ -495,14 +495,16 @@ module Special
         endif
       endif
       constrainteqn1=sqrt(p%divE**2+tmp**2)
-      constrainteqn=(p%divE-tmp)/constrainteqn1
+      if (constrainteqn1 /= 0.) then
+        constrainteqn=(p%divE-tmp)/constrainteqn1
+      else
+        constrainteqn=0.
+      endif
       if (llongitudinalE) then
         if (lsolve_chargedensity) tmp=tmp+f(l1:l2,m,n,irhoe)
-        if (.not.lswitch_off_Gamma) then
-          df(l1:l2,m,n,iGamma)=df(l1:l2,m,n,iGamma) &
-            -(1.-weight_longitudinalE)*p%divE &
-            -weight_longitudinalE*tmp
-        endif
+        if (.not.lswitch_off_Gamma) &
+          df(l1:l2,m,n,iGamma) = df(l1:l2,m,n,iGamma) - (1.-weight_longitudinalE)*p%divE &
+                                -weight_longitudinalE*tmp
       endif
 !
 !  solve: dE/dt = curlB - ...
