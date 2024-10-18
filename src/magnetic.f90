@@ -1,4 +1,4 @@
-! $Idf(l1:l2,m,n,iex:iez)$
+! $Id$
 !
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -1454,6 +1454,8 @@ module Magnetic
       exp_epspb=(gamma_epspb+1.)/4.
 !
 !  Calculate lJ_ext (true if any of the 3 components in true).
+!  MR: attention: this J_ext is added to the current density pencil with negative sign!
+!      only meaningful when meant for use with Bell instability
 !
       lJ_ext=any(J_ext/=0.)
 !

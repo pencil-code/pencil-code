@@ -57,6 +57,7 @@ module Param_IO
   use TestPerturb
   use Testscalar
   use Timeavg
+  use Training
   use Viscosity
 !
   implicit none
@@ -616,8 +617,9 @@ module Param_IO
         call read_namelist(read_power_spectrum_run_pars ,'power_spectrum'    ,lpower_spectrum)
         call read_namelist(read_python_run_pars         ,'python'            ,lpython)
         call read_namelist(read_implicit_diff_run_pars  ,'implicit_diffusion',limplicit_diffusion)
+        call read_namelist(read_training_run_pars       ,'training'          ,ltraining)
 !
-      call read_all_particles_run_pars
+        call read_all_particles_run_pars
 !
       endif
 !

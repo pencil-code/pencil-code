@@ -1587,7 +1587,7 @@ module Sub
 !
     endsubroutine grad5
 !***********************************************************************
-    subroutine div(f,k,g,ldiff_fluxes)
+    subroutine div(f,k,g,ldiff_fluxes,inds)
 !
 !  Calculate divergence of vector, get scalar.
 !
@@ -1611,18 +1611,22 @@ module Sub
       integer :: k
       real, dimension (nx) :: g
       logical, optional :: ldiff_fluxes
+      integer, dimension(3), optional :: inds
 !
       intent(in)  :: f,k,ldiff_fluxes
       intent(out) :: g
 !
       integer :: k1,i
+      integer, dimension(3) :: inds_
       real, dimension(nx) :: tmp
       integer, save :: indr=0, indth=0
       logical, save :: s0=.true.
 !
-      k1=k-1
-!
       if (loptest(ldiff_fluxes)) then
+
+        if (k==0) call fatal_error("div","k=0 not legal for diff_fluxes")
+        k1=k-1
+!
         g=0.
         do i=1,dimensionality
           call der_4th_stag(f,k1+i,tmp,dim_mask(i))
@@ -1645,16 +1649,21 @@ module Sub
         if (lcylindrical_coords.and.indr>0) g=g+rcyl_mn1*f(l1:l2,m,n,k1+indr)
 !
       else
-        call der(f,k1+1,tmp,1)
+        if (k==0) then
+          if (.not.present(inds)) call fatal_error("div","argument inds needed for k=0")
+          inds_=inds
+        else
+          inds_=(/k,k+1,k+2/)
+        endif
+        call der(f,inds_(1),tmp,1)
         g=tmp
-        call der(f,k1+2,tmp,2)
+        call der(f,inds_(2),tmp,2)
         g=g+tmp
-        call der(f,k1+3,tmp,3)
+        call der(f,inds_(3),tmp,3)
         g=g+tmp
 
-        if (lspherical_coords) &
-          g=g+r1_mn*(2.*f(l1:l2,m,n,k1+1)+cotth(m)*f(l1:l2,m,n,k1+2))
-        if (lcylindrical_coords) g=g+rcyl_mn1*f(l1:l2,m,n,k1+1)
+        if (lspherical_coords) g=g+r1_mn*(2.*f(l1:l2,m,n,inds_(1))+cotth(m)*f(l1:l2,m,n,inds_(2)))
+        if (lcylindrical_coords) g=g+rcyl_mn1*f(l1:l2,m,n,inds_(1))
 !
       endif
 !
