@@ -14,7 +14,7 @@ from test_utils import (
     assert_true,
     _assert_close,
     _assert_equal_tuple,
-    test_extracted,
+    cmp_extracted,
 )
 
 from pencil.read.timeseries import ts
@@ -148,7 +148,7 @@ def test_read_var() -> None:
         ("f", lambda f: np.std(f[4, :, :, :]), 2.047_645e-19, 1.0e-25),
     ]
     for (key, extract, expect, eps) in expected:
-        test_extracted(getattr(data, key), extract, expect, key, eps)
+        cmp_extracted(getattr(data, key), extract, expect, key, eps)
 
 
 @test

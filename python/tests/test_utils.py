@@ -106,7 +106,7 @@ def read_and_check_type(
     )
 
 
-def test_extracted(
+def cmp_extracted(
     value: np.ndarray,
     extract: Callable[[np.ndarray], float],
     expected: float,

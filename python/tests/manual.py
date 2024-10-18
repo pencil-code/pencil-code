@@ -25,7 +25,7 @@ from test_utils import (
     get_docstring_standalone,
     read_and_check_type,
     standalone_test,
-    test_extracted,
+    cmp_extracted,
 )
 
 
@@ -51,7 +51,7 @@ def test_read_var() -> None:
         ("f", lambda f: np.std(f[1, :, :, :]), 0.002_363_680, 1.0e-9),
     ]
     for (key, extract, expect, eps) in expected:
-        test_extracted(getattr(var, key), extract, expect, key, eps)
+        cmp_extracted(getattr(var, key), extract, expect, key, eps)
 
 
 @test
