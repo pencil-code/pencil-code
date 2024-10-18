@@ -9,12 +9,12 @@ import os
 import sys
 from typing import Any
 
-from test_utils import test, assert_equal, _pretty_print
+from test_utils import make_test, assert_equal, _pretty_print
 
 from pencil.sim.simulation import __Simulation__
 
 
-@test
+@make_test
 def test_neat_short_tricks() -> None:
     """Code from python/tutorials/basics/neat_short-tricks.py .
 

@@ -19,10 +19,10 @@ can be removed in the code, provided these tests get adapted.
 
 """
 
-from test_utils import test, standalone_test
+from test_utils import make_test, standalone_test
 
 
-@test
+@make_test
 def test_import_stuff() -> None:
     """Import a number of modules.
 
@@ -80,7 +80,7 @@ def test_import_stuff() -> None:
     pass
 
 
-@test
+@make_test
 def test_import_visu_stuff() -> None:
     """Import modules (or symbols?) related to visu. [commented out]
 
@@ -100,7 +100,7 @@ def test_import_visu_stuff() -> None:
     pass
 
 
-@test
+@make_test
 def test_import_pencil() -> None:
     """Import the pencil module in a separate Python process.
 

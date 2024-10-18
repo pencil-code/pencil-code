@@ -8,7 +8,7 @@ Test the functions that calculate derivatives.
 import numpy as np
 import pencil as pc
 from test_utils import (
-    test,
+    make_test,
     _assert_close_arr,
 )
 from numpy import exp, sin, cos, sqrt, pi
@@ -16,7 +16,7 @@ from numpy import exp, sin, cos, sqrt, pi
 pcd = pc.math.derivatives
 
 
-@test
+@make_test
 def test_partial_derivatives() -> None:
     """Partial derivatives of scalar fields"""
     z, y, x = generate_xyz_grid()
@@ -50,7 +50,7 @@ def test_partial_derivatives() -> None:
     check_arr_close(df_ana, df_num)
 
 
-@test
+@make_test
 def test_partial_derivatives_nonequi() -> None:
     """Partial derivatives of scalar fields on nonequidistant grids"""
     grid = generate_xyz_nonequi_grid()
@@ -95,7 +95,7 @@ def test_partial_derivatives_nonequi() -> None:
     check_arr_close(df_ana, df_num)
 
 
-@test
+@make_test
 def test_derivatives_lap_grad() -> None:
     """Laplacian and gradient of scalar fields"""
     z, y, x = generate_xyz_grid()
@@ -116,7 +116,7 @@ def test_derivatives_lap_grad() -> None:
     check_arr_close_coarse(del6_f, pcd.del6(f, dx, dy, dz))
 
 
-@test
+@make_test
 def test_derivatives_vector() -> None:
     """Derivatives of vector fields"""
     z, y, x = generate_xyz_grid()
@@ -152,7 +152,7 @@ def test_derivatives_vector() -> None:
     check_arr_close_coarse(del6_v, pcd.del6(v,dx,dy,dz))
 
 
-@test
+@make_test
 def test_derivatives_cylindrical() -> None:
     """Derivatives in cylindrical coordinates"""
     z, theta, r = generate_cylindrical_grid()
@@ -223,7 +223,7 @@ def test_derivatives_cylindrical() -> None:
     check_arr_close(df_ana, df_num)
 
 
-@test
+@make_test
 def test_derivatives_spherical() -> None:
     """Derivatives in spherical coordinates"""
     phi, theta, r = generate_spherical_grid()

@@ -25,7 +25,7 @@ def register(function: F, **kwargs: Any) -> F:
     return function
 
 
-def test(function: F, **kwargs: Any) -> F:
+def make_test(function: F, **kwargs: Any) -> F:
     return register(function, **kwargs)
 
 

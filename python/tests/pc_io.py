@@ -7,10 +7,10 @@ Test functions in pc.io
 
 import os
 from pencil.io import get_value_from_file
-from test_utils import test, assert_equal
+from test_utils import make_test, assert_equal
 
 
-@test
+@make_test
 def test_get_value_from_file() -> None:
     """Reading values from {start,run}.in"""
     rundir = get_run_dir()
