@@ -660,11 +660,8 @@ class Averages(object):
                 sys.stdout.flush()
                 break
             #indices can be specified for subset of time series
-            if iter_list:
-                if isinstance(iter_list, list):
-                    plane_iter_list = iter_list
-                else:
-                    plane_iter_list = [iter_list]
+            if iter_list is not None:
+                plane_iter_list = iter_list
                 liter = True
             else:
                 plane_iter_list = [0,1,2,3]
