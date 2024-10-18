@@ -14,6 +14,7 @@ from pencil.math import natural_sort
 import glob
 import time
 import os
+from collections.abc import Iterable
 
 def aver(*args, **kwargs):
     """
@@ -184,9 +185,9 @@ class Averages(object):
 
 
         #check iter_list type is integer(s) if present
-        if iter_list:
-            if isinstance(iter_list, list):
-                iter_list = iter_list
+        if iter_list is not None:
+            if isinstance(iter_list, Iterable):
+                iter_list = list(iter_list)
             else:
                 iter_list = [iter_list]
             for it in iter_list:
