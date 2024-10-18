@@ -770,6 +770,9 @@ class Averages(object):
         Return the raw data and the time array.
         """
 
+        if time_range is not None:
+            warnings.warn("Averages.__read_2d_aver: time_range is not implemented")
+
         # Determine the structure of the xy/xz/yz averages.
         if plane == "xy":
             nw = getattr(read.dim(datadir=datadir), "nz")
