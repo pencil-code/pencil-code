@@ -670,13 +670,8 @@ class Averages(object):
                 if isinstance(time_range, Iterable):
                     time_range = list(time_range)
                 else:
-                    time_range = [time_range]
-                if len(time_range) == 1:
-                    start_time = 0.
-                    end_time = time_range[0]
-                elif len(time_range) == 2:
-                    start_time = time_range[0]
-                    end_time = time_range[1]
+                    time_range = [0, time_range]
+                start_time, end_time = time_range
                 ltime = True
             else:
                 ltime = False
