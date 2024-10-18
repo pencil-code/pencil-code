@@ -15,7 +15,7 @@ from pencil.sim.simulation import __Simulation__
 
 
 @test
-def neat_short_tricks() -> None:
+def test_neat_short_tricks() -> None:
     """Code from python/tutorials/basics/neat_short-tricks.py .
 
     Adapted to use existing data directories

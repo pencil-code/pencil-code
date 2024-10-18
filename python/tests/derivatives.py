@@ -17,7 +17,7 @@ pcd = pc.math.derivatives
 
 
 @test
-def partial_derivatives() -> None:
+def test_partial_derivatives() -> None:
     """Partial derivatives of scalar fields"""
     z, y, x = generate_xyz_grid()
     dx = x[1, 1, 1] - x[0, 0, 0]
@@ -51,7 +51,7 @@ def partial_derivatives() -> None:
 
 
 @test
-def partial_derivatives_nonequi() -> None:
+def test_partial_derivatives_nonequi() -> None:
     """Partial derivatives of scalar fields on nonequidistant grids"""
     grid = generate_xyz_nonequi_grid()
 
@@ -96,7 +96,7 @@ def partial_derivatives_nonequi() -> None:
 
 
 @test
-def derivatives_lap_grad() -> None:
+def test_derivatives_lap_grad() -> None:
     """Laplacian and gradient of scalar fields"""
     z, y, x = generate_xyz_grid()
     dx = x[1, 1, 1] - x[0, 0, 0]
@@ -117,7 +117,7 @@ def derivatives_lap_grad() -> None:
 
 
 @test
-def derivatives_vector() -> None:
+def test_derivatives_vector() -> None:
     """Derivatives of vector fields"""
     z, y, x = generate_xyz_grid()
     dx = x[1, 1, 1] - x[0, 0, 0]
@@ -153,7 +153,7 @@ def derivatives_vector() -> None:
 
 
 @test
-def derivatives_cylindrical() -> None:
+def test_derivatives_cylindrical() -> None:
     """Derivatives in cylindrical coordinates"""
     z, theta, r = generate_cylindrical_grid()
     dr = r[1, 1, 1] - r[0, 0, 0]
@@ -224,7 +224,7 @@ def derivatives_cylindrical() -> None:
 
 
 @test
-def derivatives_spherical() -> None:
+def test_derivatives_spherical() -> None:
     """Derivatives in spherical coordinates"""
     phi, theta, r = generate_spherical_grid()
     dr = r[1, 1, 1] - r[0, 0, 0]
