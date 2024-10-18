@@ -104,7 +104,7 @@ class Averages(object):
         avfile_list=None,
         infile_list=None,
         var_index=-1,
-        var_names=list(),
+        var_names=None,
         iter_list=None,
         niter = 9999,
         iter_step=1,
@@ -286,7 +286,7 @@ class Averages(object):
                 n_vars = len(variables)
                 if not quiet:
                     print(variables)
-                if len(var_names) > 0:
+                if var_names is not None:
                     if isinstance(var_names, list):
                         plane_var_names = var_names
                     else:
