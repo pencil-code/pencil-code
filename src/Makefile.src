@@ -492,9 +492,8 @@ ifeq ($(TRAINING),training_torchfort)
   ifneq ($(shell bash -c 'which nvfortran 2>& 1 >/dev/null | grep "which *: *no "'),)
     $(error nvfortran not available! Exit.)
   endif
-  override FC = nvfortran
   ifeq ($(TORCHFORT_PATH),)
-    $(error TORCHFORT_PATH  not set! Exit.)
+    $(info TORCHFORT_PATH  not set)
   else
     override FFLAGS+=-cuda -noswitcherror -I$(TORCHFORT_PATH)/include/
     override LDFLAGS+=-L$(TORCHFORT_PATH)/lib/ -ltorchfort_fort -ltorchfort -cuda
@@ -2384,6 +2383,7 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 ## Mahti: Atos BullSequana XH2000 (Kajaani)
 ##
 #FC=mpiifort #(mahti-[^g]|mahti[^-])
+#FC=mpif90 #(mahti-[^g]|mahti[^-])
 #FSTD_95=-std95 #(mahti-[^g]|mahti[^-])
 #F90=$(FC) #(mahti-[^g]|mahti[^-])
 #CC=mpicc #(mahti-[^g]|mahti[^-])

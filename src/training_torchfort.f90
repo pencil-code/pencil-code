@@ -11,20 +11,21 @@
     use Cdata
     use General, only: itoa
     use Messages
-    !use Torchfort
+    use Cudafor
+    use Torchfort
 
     implicit none
 
     integer :: model_device=0
     integer :: it_train=-1, it_train_chkpt=-1
 
-    real, dimension(:,:,:,:,:), allocatable, device :: input, label, output   !, device :: input, label, output
+    real, dimension(:,:,:,:,:), allocatable, device :: input, label, output
 
     integer :: itau, itauxx, itauxy, itauxz, itauyy, itauyz, itauzz
 
-    character(LEN=fnlen) :: model='mymodel', config_file="config_mlp_native.yaml"
-    character(LEN=fnlen) :: model_output_dir='data/ml_models/', checkpoint_output_dir='data/ml_models/', &
-                            model_file = "model.pt", chkpt_file=""
+    character(LEN=fnlen) :: model='model', config_file="training/config_mlp_native.yaml"
+    character(LEN=fnlen) :: model_output_dir='training', checkpoint_output_dir='training', &
+                            model_file = "model.pt", chkpt_file="model.ckpt"
 
     logical :: luse_trained_tau
 
@@ -32,7 +33,7 @@
 
     namelist /training_run_pars/ config_file, model_file, it_train, it_train_chkpt, luse_trained_tau
 !
-    integer :: istat, train_step_ckpt, val_step_ckpt   !, TORCHFORT_RESULT_SUCCESS=0
+    integer :: istat, train_step_ckpt, val_step_ckpt    !, TORCHFORT_RESULT_SUCCESS=0
     logical :: ltrained=.false.
 
     contains
@@ -40,10 +41,13 @@
     subroutine initialize_training
 
       use File_IO, only: file_exists
-      use Mpicomm, only: mpibcast
+      use Mpicomm, only: mpibcast, MPI_COMM_WORLD
       use Syscalls, only: system_cmd
 
       character(LEN=fnlen) :: modelfn
+
+      if (.not.lhydro) call fatal_error('initialize_training','needs HYDRO module')
+      istat = cudaSetDevice(iproc)
 
       modelfn=trim(model_output_dir)//trim(model_file)
       if (lroot) then
@@ -55,8 +59,12 @@
       endif
       call mpibcast(ltrained)
 
+      istat = cudaSetDevice(iproc)
+!
+! TorchFort create model
+!
       if (lmpicomm) then
-        istat = torchfort_create_distributed_model(model, config_file, MPI_COMM_WORLD, iproc)  !multinode?
+        istat = torchfort_create_distributed_model(model, config_file, MPI_COMM_WORLD, iproc)
       else
         istat = torchfort_create_model(model, config_file, model_device)
       endif
@@ -73,7 +81,7 @@
       else
         if (file_exists(trim(model_output_dir)//trim(chkpt_file))) then
 
-          istat = torchfort_load_checkpoint("mymodel", checkpoint_output_dir, train_step_ckpt, val_step_ckpt)
+          istat = torchfort_load_checkpoint(model, checkpoint_output_dir, train_step_ckpt, val_step_ckpt)
           if (istat /= TORCHFORT_RESULT_SUCCESS) &
             call fatal_error("initialize_training","when loading checkpoint: istat="//trim(itoa(istat)))
 
@@ -82,9 +90,9 @@
 
       luse_trained_tau = luse_trained_tau.and.ltrained
 
-      allocate(input(nx, ny, nz, 3, 1))
-      allocate(output(nx, ny, nz, 6, 1))
-      allocate(label(nx, ny, nz, 3, 1))
+      allocate(input(mx, my, mz, 3, 1))
+      allocate(output(mx, my, mz, 6, 1))
+      allocate(label(mx, my, mz, 6, 1))
 
     endsubroutine initialize_training
 !***********************************************************************
@@ -99,7 +107,7 @@
       if (lroot) call svn_id( &
            "$Id$")
 !
-      call farray_register_pde('tau',itau,vector=6)
+      call farray_register_auxiliary('tau',itau,vector=6)
 !
 !  Indices to access tau.
 !
@@ -144,9 +152,9 @@
       real, dimension (mx,my,mz,mfarray) :: f
 
       ! Host to device
-      input(:,:,:,:,1) = f(l1:l2,m1:m2,n1:n2,iux:iuz)
+      input(:,:,:,:,1) = f(:,:,:,iux:iuz)
 
-      istat = torchfort_inference(model, input(:,:,:,:,1), output(:,:,:,:,1))
+      istat = torchfort_inference(model, input, output)
       if (istat /= TORCHFORT_RESULT_SUCCESS) then
         call fatal_error("infer","istat="//trim(itoa(istat)))
       else
@@ -157,15 +165,34 @@
     endsubroutine infer
 !***************************************************************
     subroutine train(f)
-     
+    
+      use Sub, only: smooth
+
       real, dimension (mx,my,mz,mfarray) :: f
 
       real :: loss_val
 
       if (mod(it,it_train)==0) then
-        ! Host to device
-        input(:,:,:,:,1) = f(l1:l2,m1:m2,n1:n2,iux:iuz)
+!
+!  Smooth velocity.
+!
+        f(:,:,:,itau:itau+2) = f(:,:,:,iux:iuz)      ! use f(:,:,:,itau:itau+2) as work space
+        call smooth(f,itau,itau+2)
+        input(:,:,:,:,1) = f(:,:,:,itau:itau+2)      ! host to device
+!
+!  Calculate and smooth stress tensor.
+!
+        f(:,:,:,itauxx) = f(:,:,:,iux)**2
+        f(:,:,:,itauyy) = f(:,:,:,iuy)**2
+        f(:,:,:,itauzz) = f(:,:,:,iuz)**2
+        f(:,:,:,itauxy) = f(:,:,:,iux)*f(:,:,:,iuy)
+        f(:,:,:,itauyz) = f(:,:,:,iuy)*f(:,:,:,iuz)
+        f(:,:,:,itauxz) = f(:,:,:,iux)*f(:,:,:,iuz)
 
+        call smooth(f,itauxx,itauzz)
+        label(:,:,:,:,1) = f(:,:,:,itauxx:itauzz)    ! host to device
+
+        if (lroot) print*, "train ..."
         istat = torchfort_train(model, input, label, loss_val)
         if (istat /= TORCHFORT_RESULT_SUCCESS) then
           call fatal_error("train","istat="//trim(itoa(istat)))
@@ -173,7 +200,7 @@
           if (lroot) print*, "training loss = ", loss_val
         endif
 
-        if (mod(it,it_train_chkpt)==0) then
+        if (lroot.and.mod(it,it_train_chkpt)==0) then
           istat = torchfort_save_checkpoint(model, checkpoint_output_dir)
           if (istat /= TORCHFORT_RESULT_SUCCESS) &
             call fatal_error("train","when saving checkpoint: istat="//trim(itoa(istat)))
@@ -184,22 +211,17 @@
 !***************************************************************
     subroutine div_reynolds_stress(f,df)
 
-      use Sub, only: div_other
+      use Sub, only: div
 
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
 
       real, dimension(nx,3) :: divrey
-      real, dimension(mx,my,mz,3) :: tmp
 
       if (luse_trained_tau) then 
-        call div_other(f(:,:,:,itauxx:itauxz),divrey(nx,1))
-
-        tmp=f(:,:,:,(/itauxy,itauyy,itauyz/))
-        call div_other(tmp,divrey(nx,2))
-
-        tmp=f(:,:,:,(/itauxz,itauyz,itauzz/))
-        call div_other(tmp,divrey(nx,3))
+        call div(f,itauxx,divrey(:,1))
+        call div(f,0,divrey(:,2),inds=(/itauxy,itauyy,itauyz/))
+        call div(f,0,divrey(:,3),inds=(/itauxz,itauyz,itauzz/))
 
         df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - divrey
       endif
@@ -268,5 +290,37 @@
       deallocate(input,label,output)
 
     endsubroutine finalize_training
+!***************************************************************
+    subroutine write_sample(sample, fname)
+      
+!      use HDF5
+
+      real, dimension(:,:,:), intent(in) :: sample
+      character(len=*), intent(in) :: fname
+
+!      integer(HID_T) :: in_file_id
+!      integer(HID_T) :: out_file_id
+!      integer(HID_T) :: dset_id
+!      integer(HID_T) :: dspace_id
+    
+      integer :: err
+    
+      !integer(HSIZE_T) :: dims(size(shape(sample)))
+      integer :: dims(size(shape(sample)))
+    
+!      call h5open_f(err)
+!      call h5fcreate_f (fname, H5F_ACC_TRUNC_F, out_file_id, err)
+    
+      dims = shape(sample)
+!      call h5screate_simple_f(size(shape(sample)), dims, dspace_id, err)
+!      call h5dcreate_f(out_file_id, "data", H5T_NATIVE_REAL, dspace_id, dset_id, err)
+!      call h5dwrite_f(dset_id, H5T_NATIVE_REAL, sample, dims, err)
+!      call h5dclose_f(dset_id, err)
+!      call h5sclose_f(dspace_id, err)
+!    
+!      call h5fclose_f(out_file_id, err)
+!      call h5close_f(err)
+    
+    endsubroutine write_sample
 !***************************************************************
   end module Training

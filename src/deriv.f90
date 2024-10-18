@@ -412,6 +412,7 @@ module Deriv
 
     real, dimension(:,:), intent(inout) :: arr
     integer, intent(in) :: idir
+
     real, dimension(:,:), intent(out) :: der
     integer, intent(in), optional :: order
 !
