@@ -495,10 +495,10 @@ module Special
         endif
       endif
       constrainteqn1=sqrt(p%divE**2+tmp**2)
-      if (constrainteqn1 /= 0.) then
-        constrainteqn=(p%divE-tmp)/constrainteqn1
-      else
+      if (any(constrainteqn1 == 0.)) then
         constrainteqn=0.
+      else
+        constrainteqn=(p%divE-tmp)/constrainteqn1
       endif
       if (llongitudinalE) then
         if (lsolve_chargedensity) tmp=tmp+f(l1:l2,m,n,irhoe)
