@@ -509,7 +509,7 @@ class Averages(object):
                 else:
                     itlist = tmplist
             # Determine the structure of the xy/xz/yz/y/z averages.
-            if len(var_names) > 0:
+            if var_names is not None:
                 var_names = [v.strip() for v in var_names]
                 if isinstance(var_names, list):
                     var_names = var_names
