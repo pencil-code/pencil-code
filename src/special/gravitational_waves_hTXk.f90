@@ -1761,14 +1761,6 @@ if (ibin_angular<1 .or. ibin_angular>nbin_angular) print*,'AXEL: bad ibin_angula
                         *f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  ) &
                         -f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  ) &
                         *f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim) )*facthel
-if (ikx==2 .and. iky==2 .and. ikz==2) then
-  print*,'AXEL: f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  )=',f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  )
-  print*,'AXEL: f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim)=',f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim)
-  print*,'AXEL: f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  )=',f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  )
-  print*,'AXEL: f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim)=',f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim)
-  print*,'AXEL: facthel, sign_switch=',facthel, sign_switch
-endif
-                                           
 !
 !  Sum the angles in GWh_Gamma_ang, and count the number of entries in GWhhel_Gamma_ang.
 !
@@ -1880,6 +1872,7 @@ endif
 !  endif from ik <= nk
 !
               endif
+              spectra%GWhhel_Gamma_ang(ik,:)=spectra%GWhhel_Gamma_ang(ik,:)+1.
 !
 !  endif from k^2=0
 !
