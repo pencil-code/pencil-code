@@ -253,6 +253,7 @@ module Special
     real, dimension(nk) :: GWshel,GWhhel,GWmhel,Strhel,Stghel
     real, dimension(nk) :: SCL, VCT, Tpq, TGW
     real, dimension(nk,nbin_angular) :: GWh_Gamma_ab, GWhhel_Gamma_ab, GWh_Gamma_ang, GWhhel_Gamma_ang
+    real, dimension(nk,nbin_angular) :: GWh_Gamma_Bb, GWhhel_Gamma_Bb
     !real, dimension (:,:), allocatable :: GWh_Gamma_ab, GWhhel_Gamma_ab, GWh_Gamma_ang, GWhhel_Gamma_ang
     complex, dimension(nx) :: complex_Str_T, complex_Str_X
     ! emma added (dec 6) for boost:
@@ -1315,7 +1316,7 @@ module Special
       real, dimension (3) :: VCT_re, VCT_im, kvec
 ! for boost (dec 7)
       real :: k1_boost, k1sqr_boost, k2_boost,k2sqr_boost,k3_boost, k3sqr_boost
-      real :: ksqr_boost, ksqrt_boost, one_over_k2_boost
+      real :: ksqr_boost, ksqrt_boost, one_over_k_boost
       real, dimension (3) :: e1_boost, e2_boost, vboost, kvec_boost, khat_boost
       real, dimension (6) :: e_T_boost, e_X_boost
       real :: eTT, eTX, eXT, eXX
@@ -1325,8 +1326,10 @@ module Special
       real :: ggT_boost, ggTim_boost, ggX_boost, ggXim_boost
 !
       real :: fact, facthel, cos_angle, angle, sign_switch
+      real :: fact_boost, facthel_boost
             
       real :: DT_a, DT_b, DX_a, DX_b, khat_xhat_a, khat_xhat_b, DT_a_sum, DT_b_sum, DX_a_sum, DX_b_sum
+      real :: khat_xhat_a_boost, khat_xhat_b_boost, DT_a_sum_boost, DT_b_sum_boost, DX_a_sum_boost, DX_b_sum_boost
       real, dimension (6) :: e_T, e_X
       real, dimension (3) :: e1, e2
 !
@@ -1338,6 +1341,7 @@ module Special
       spectra%SCL=0.; spectra%VCT=0.; spectra%Tpq=0.
       spectra%TGW=0.
       spectra%GWh_Gamma_ab=0.; spectra%GWhhel_Gamma_ab=0.
+      spectra%GWh_Gamma_Bb=0.; spectra%GWhhel_Gamma_Bb=0.
       spectra%GWh_Gamma_ang=0.; spectra%GWhhel_Gamma_ang=0.
 !
       !added emma (dec 6) for boosted spectra
@@ -1480,6 +1484,7 @@ module Special
                 k3sqr_boost=k3_boost**2
                 ksqr_boost=k1sqr_boost+k2sqr_boost+k3sqr_boost
                 ksqrt_boost=sqrt(ksqr_boost)
+                one_over_k_boost=1./sqrt(ksqr_boost)
 !
 !  set boosted k vector            
 !
@@ -1571,20 +1576,20 @@ module Special
 !
 !  Now do g, but this could also be switcheable
 !
-                if (GWs_spec_boost) then
-                  ggT_boost  =.5*(eTT*f(nghost+ikx,nghost+iky,nghost+ikz,iggT  ) &
-                                 +eTX*f(nghost+ikx,nghost+iky,nghost+ikz,iggX  ))
-                  ggTim_boost=.5*(eTT*f(nghost+ikx,nghost+iky,nghost+ikz,iggTim) &
-                                 +eTX*f(nghost+ikx,nghost+iky,nghost+ikz,iggXim))
+               !if (GWs_spec_boost) then
+               !  ggT_boost  =.5*(eTT*f(nghost+ikx,nghost+iky,nghost+ikz,iggT  ) &
+               !                 +eTX*f(nghost+ikx,nghost+iky,nghost+ikz,iggX  ))
+               !  ggTim_boost=.5*(eTT*f(nghost+ikx,nghost+iky,nghost+ikz,iggTim) &
+               !                 +eTX*f(nghost+ikx,nghost+iky,nghost+ikz,iggXim))
 !
-                  ggX_boost  =.5*(eXT*f(nghost+ikx,nghost+iky,nghost+ikz,iggT  ) &
-                                 +eXX*f(nghost+ikx,nghost+iky,nghost+ikz,iggX  ))
-                  ggXim_boost=.5*(eXT*f(nghost+ikx,nghost+iky,nghost+ikz,iggTim) &
-                                 +eXX*f(nghost+ikx,nghost+iky,nghost+ikz,iggXim))
+               !  ggX_boost  =.5*(eXT*f(nghost+ikx,nghost+iky,nghost+ikz,iggT  ) &
+               !                 +eXX*f(nghost+ikx,nghost+iky,nghost+ikz,iggX  ))
+               !  ggXim_boost=.5*(eXT*f(nghost+ikx,nghost+iky,nghost+ikz,iggTim) &
+               !                 +eXX*f(nghost+ikx,nghost+iky,nghost+ikz,iggXim))
                 endif
 !
 !  end of lboost
-!
+!???
               endif
 !
 !  SVT decomposition (not related to boost).
@@ -1642,46 +1647,6 @@ module Special
                      *f(nghost+ikx,nghost+iky,nghost+ikz,iggTim) )
                 endif
 !
-!  unclear what the rest is about comment out out now.
-!
-    !           if (GWs_spec_complex) then
-    !             if (k2==0. .and. k3==0.) then
-    !               spectra%complex_Str_T(ikx)=cmplx(f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  ), &
-    !                                                f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim))
-    !               spectra%complex_Str_X(ikx)=cmplx(f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  ), &
-    !                                                f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim))
-    !             else
-    !               spectra%complex_Str_T(ikx)=0.
-    !               spectra%complex_Str_X(ikx)=0.
-    !             endif
-    !           endif
-!
-! added by emma (dec 7) to include boosted spectra
-!
-                if (lboost) then
-                  if (GWh_spec_boost) then
-                    spectra%GWh_boost(ik)=spectra%GWh_boost(ik) &
-                     +hhX_boost  **2 &
-                     +hhXim_boost**2 &
-                     +hhT_boost  **2 &
-                     +hhTim_boost**2
-                    spectra%GWhhel_boost(ik)=spectra%GWhhel_boost(ik)+2*sign_switch*( &
-                      +hhXim_boost*hhT_boost &
-                      -hhX_boost  *hhTim_boost )
-                  endif
-!
-                  if (GWs_spec_boost) then
-                    spectra%GWs_boost(ik)=spectra%GWs_boost(ik) &
-                     +ggX_boost  **2 &
-                     +ggXim_boost**2 &
-                     +ggT_boost  **2 &
-                     +ggTim_boost**2
-                    spectra%GWshel_boost(ik)=spectra%GWshel_boost(ik)+2*sign_switch*( &
-                      +ggXim_boost*ggT_boost &
-                      -ggX_boost  *ggTim_boost )
-                  endif
-                endif
-!
 !  Gravitational wave strain spectrum computed from h
 !
                 if (GWh_spec) then
@@ -1695,6 +1660,52 @@ module Special
                      *f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  ) &
                      -f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  ) &
                      *f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim) )
+                endif
+!
+!  Gravitational wave mixed spectrum computed from h and g
+!
+                if (GWm_spec) then
+                  spectra%GWm(ik)=spectra%GWm(ik) &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,ihhX)  *f(nghost+ikx,nghost+iky,nghost+ikz,iggX  ) &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim)*f(nghost+ikx,nghost+iky,nghost+ikz,iggXim) &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,ihhT)  *f(nghost+ikx,nghost+iky,nghost+ikz,iggT  ) &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim)*f(nghost+ikx,nghost+iky,nghost+ikz,iggTim)
+                  spectra%GWmhel(ik)=spectra%GWmhel(ik)-sign_switch*( &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim) &
+                     *f(nghost+ikx,nghost+iky,nghost+ikz,iggT  ) &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,iggXim) &
+                     *f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  ) &
+                     -f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  ) &
+                     *f(nghost+ikx,nghost+iky,nghost+ikz,iggTim) &
+                     -f(nghost+ikx,nghost+iky,nghost+ikz,iggX  ) &
+                     *f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim) )
+                endif
+!
+! added by emma (dec 7) to include boosted spectra
+!
+                if (lboost) then
+                 !if (GWs_spec_boost) then
+                 !  spectra%GWs_boost(ik)=spectra%GWs_boost(ik) &
+                 !   +ggX_boost  **2 &
+                 !   +ggXim_boost**2 &
+                 !   +ggT_boost  **2 &
+                 !   +ggTim_boost**2
+                 !  spectra%GWshel_boost(ik)=spectra%GWshel_boost(ik)+2*sign_switch*( &
+                 !    +ggXim_boost*ggT_boost &
+                 !    -ggX_boost  *ggTim_boost )
+                 !endif
+!
+                  if (GWh_spec_boost) then
+                    spectra%GWh_boost(ik)=spectra%GWh_boost(ik) &
+                     +hhX_boost  **2 &
+                     +hhXim_boost**2 &
+                     +hhT_boost  **2 &
+                     +hhTim_boost**2
+                    spectra%GWhhel_boost(ik)=spectra%GWhhel_boost(ik)+2*sign_switch*( &
+                      +hhXim_boost*hhT_boost &
+                      -hhX_boost  *hhTim_boost )
+                  endif
+!
                 endif
 !
 !  Hellings-Downs curve
@@ -1737,6 +1748,8 @@ module Special
                       endif
                     enddo
                     enddo
+                    fact   =DT_a_sum*DT_b_sum+DX_a_sum*DX_b_sum
+                    facthel=DT_a_sum*DX_b_sum-DX_a_sum*DT_b_sum
 !
 !  Compute angle (in degrees) between pulsars.
 !
@@ -1745,9 +1758,7 @@ module Special
                              +nn_pulsar(ipulsar,3)*nn_pulsar(jpulsar,3)
                     angle=acos(cos_angle)/dtor
                     ibin_angular=1+nint(angle*(nbin_angular-1)/180.)
-if (ibin_angular<1 .or. ibin_angular>nbin_angular) print*,'AXEL: bad ibin_angular',ibin_angular
-                    fact   =DT_a_sum*DT_b_sum+DX_a_sum*DX_b_sum
-                    facthel=DT_a_sum*DX_b_sum-DX_a_sum*DT_b_sum
+                    if (ibin_angular<1 .or. ibin_angular>nbin_angular) print*,'AXEL: bad ibin_angular',ibin_angular
 !
 !  Sum up the 2-D histograms, GWh_Gamma_ab and GWhhel_Gamma_ab (unboosted HD curve, here for h)
 !
@@ -1766,6 +1777,56 @@ if (ibin_angular<1 .or. ibin_angular>nbin_angular) print*,'AXEL: bad ibin_angula
 !
                     spectra%GWh_Gamma_ang(ik,ibin_angular)=spectra%GWh_Gamma_ang(ik,ibin_angular)+angle
                     spectra%GWhhel_Gamma_ang(ik,ibin_angular)=spectra%GWhhel_Gamma_ang(ik,ibin_angular)+1.
+!
+!  Sum up the 2-D histograms, GWh_Gamma_Bb and GWhhel_Gamma_Bb (boosted HD curve, here for h)
+!
+                    if (lboost) then
+                      DT_a_sum_boost=0.
+                      DT_b_sum_boost=0.
+                      DX_a_sum_boost=0.
+                      DX_b_sum_boost=0.
+                      do j=1,3
+                      do i=1,3
+                        ij=ij_table(i,j)
+!
+!  compute khat*xhat
+!
+                        khat_xhat_a_boost=0.
+                        khat_xhat_b_boost=0.
+                        do jvec=1,3
+                          khat_xhat_a_boost=khat_xhat_a_boost+nn_pulsar(ipulsar,jvec)*kvec_boost(jvec)*one_over_k_boost
+                          khat_xhat_b_boost=khat_xhat_b_boost+nn_pulsar(jpulsar,jvec)*kvec_boost(jvec)*one_over_k_boost
+                        enddo
+!
+!  Avoid cases where pulsar and GW directions are aligned,
+!  although only in the anti-aligned case would we divide by zero.
+!
+                        if (.not. (abs(khat_xhat_a)==1. .or. abs(khat_xhat_b)==1.)) then
+                          DT_a=.5*nn_pulsar(ipulsar,i)*nn_pulsar(ipulsar,j)*e_T(ij)/(1.+khat_xhat_a)
+                          DT_b=.5*nn_pulsar(jpulsar,i)*nn_pulsar(jpulsar,j)*e_T(ij)/(1.+khat_xhat_b)
+                          DX_a=.5*nn_pulsar(ipulsar,i)*nn_pulsar(ipulsar,j)*e_X(ij)/(1.+khat_xhat_a)
+                          DX_b=.5*nn_pulsar(jpulsar,i)*nn_pulsar(jpulsar,j)*e_X(ij)/(1.+khat_xhat_b)
+                          DT_a_sum=DT_a_sum+DT_a
+                          DT_b_sum=DT_b_sum+DT_b
+                          DX_a_sum=DX_a_sum+DX_a
+                          DX_b_sum=DX_b_sum+DX_b
+                        endif
+                      enddo
+                      enddo
+                      fact_boost   =DT_a_sum*DT_b_sum+DX_a_sum*DX_b_sum
+                      facthel_boost=DT_a_sum*DX_b_sum-DX_a_sum*DT_b_sum
+                      spectra%GWh_Gamma_Bb(ik,ibin_angular)=spectra%GWh_Gamma_Bb(ik,ibin_angular) &
+                         +(hhX_boost  **2 &
+                          +hhXim_boost**2 &
+                          +hhT_boost  **2 &
+                          +hhTim_boost**2)*fact_boost
+                      spectra%GWhhel_Gamma_Bb(ik,ibin_angular)=spectra%GWhhel_Gamma_Bb(ik,ibin_angular)+2*sign_switch*( &
+                         +(hhXim_boost*hhT_boost &
+                          -hhX_boost  *hhTim_boost ))*facthel_boost
+                    endif
+!
+!  end of pulsar loop
+!
                   enddo
                   enddo
 !
@@ -1774,25 +1835,6 @@ if (ibin_angular<1 .or. ibin_angular>nbin_angular) print*,'AXEL: bad ibin_angula
                 endif
 !
 ! still need to add other boosted spectra (as follows below) -emma
-!
-!  Gravitational wave mixed spectrum computed from h and g
-!
-                if (GWm_spec) then
-                  spectra%GWm(ik)=spectra%GWm(ik) &
-                     +f(nghost+ikx,nghost+iky,nghost+ikz,ihhX)  *f(nghost+ikx,nghost+iky,nghost+ikz,iggX  ) &
-                     +f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim)*f(nghost+ikx,nghost+iky,nghost+ikz,iggXim) &
-                     +f(nghost+ikx,nghost+iky,nghost+ikz,ihhT)  *f(nghost+ikx,nghost+iky,nghost+ikz,iggT  ) &
-                     +f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim)*f(nghost+ikx,nghost+iky,nghost+ikz,iggTim)
-                  spectra%GWmhel(ik)=spectra%GWmhel(ik)-sign_switch*( &
-                     +f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim) &
-                     *f(nghost+ikx,nghost+iky,nghost+ikz,iggT  ) &
-                     +f(nghost+ikx,nghost+iky,nghost+ikz,iggXim) &
-                     *f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  ) &
-                     -f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  ) &
-                     *f(nghost+ikx,nghost+iky,nghost+ikz,iggTim) &
-                     -f(nghost+ikx,nghost+iky,nghost+ikz,iggX  ) &
-                     *f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim) )
-                endif
 !
 !  Gravitational wave production spectrum for TTgT
 !
@@ -1871,12 +1913,14 @@ if (ibin_angular<1 .or. ibin_angular>nbin_angular) print*,'AXEL: bad ibin_angula
 !
 !  endif from ik <= nk
 !
+              else
+                spectra%GWhhel_Gamma_ang(ik,:)=spectra%GWhhel_Gamma_ang(ik,:)+1.
               endif
-              spectra%GWhhel_Gamma_ang(ik,:)=spectra%GWhhel_Gamma_ang(ik,:)+1.
 !
 !  endif from k^2=0
 !
-            endif
+!enddo
+            !endif
           enddo
         enddo
       enddo
@@ -1920,6 +1964,7 @@ if (ibin_angular<1 .or. ibin_angular>nbin_angular) print*,'AXEL: bad ibin_angula
                     spectrum_hel=aimag(spectra%complex_Str_X)
       case ('Gab'); spectrum_2d=spectra%GWh_Gamma_ab; spectrum_2d_hel=spectra%GWhhel_Gamma_ab
       case ('Gan'); spectrum_2d=spectra%GWh_Gamma_ang; spectrum_2d_hel=spectra%GWhhel_Gamma_ang
+      case ('GBb'); spectrum_2d=spectra%GWh_Gamma_Bb; spectrum_2d_hel=spectra%GWhhel_Gamma_Bb
       case default; call warning('special_calc_spectra', &
                       'kind of spectrum "'//kind//'" not implemented')
       endselect

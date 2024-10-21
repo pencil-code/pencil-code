@@ -613,7 +613,7 @@ module Cdata
   logical :: ou_spec=.false., ab_spec=.false., azbz_spec=.false., uzs_spec=.false.
   logical :: ub_spec=.false., Lor_spec=.false., EMF_spec=.false., Tra_spec=.false.
   logical :: GWs_spec=.false., GWh_spec=.false., GWm_spec=.false., Str_spec=.false., Stg_spec=.false.
-  logical :: Gab_spec=.false., Gan_spec=.false.
+  logical :: Gab_spec=.false., Gan_spec=.false., GBb_spec=.false.
   logical :: GWs_spec_boost=.false., GWh_spec_boost=.false.
   logical :: StT_spec=.false., StX_spec=.false.
   logical :: GWd_spec=.false., GWe_spec=.false., GWf_spec=.false., GWg_spec=.false.

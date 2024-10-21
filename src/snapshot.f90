@@ -748,6 +748,7 @@ module Snapshot
         if (TGW_spec) call powerGWs(f,'TGW',lfirstcall)
         if (Gab_spec) call powerGWs(f,'Gab',lfirstcall)
         if (Gan_spec) call powerGWs(f,'Gan',lfirstcall)
+        if (GBb_spec) call powerGWs(f,'GBb',lfirstcall)
         if (GWs_spec_boost) call powerGWs(f,'GBs',lfirstcall)
         if (GWh_spec_boost) call powerGWs(f,'GBh',lfirstcall)
         if (GWd_spec) call powerhel(f,'GWd',lfirstcall_powerhel)
