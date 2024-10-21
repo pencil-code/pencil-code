@@ -164,8 +164,10 @@ module Chemistry
   !
   integer :: i_cond_spec,ichem_cond_spec
   real :: true_density_cond_spec_cgs=2.196, true_density_cond_spec
-  real :: chem_conc_sat_spec=1e-8 !units of mol/cmˆ3
-logical, pointer :: ldustnucleation, lpartnucleation
+  real :: gam_surf_energy_cgs=32.
+  real :: chem_conc_sat_spec_cgs=1e-8 !units of mol/cmˆ3
+  logical, pointer :: ldustnucleation, lpartnucleation
+  character(len=labellen) :: isurf_energy="const"
 !
 !   Atmospheric physics
 !
@@ -210,7 +212,7 @@ logical, pointer :: ldustnucleation, lpartnucleation
       linit_density, init_rho2, &
       file_name, lreac_as_aux, init_zz1, init_zz2, flame_pos, &
       reac_rate_method,global_phi, lSmag_heat_transport, Pr_turb, lSmag_diffusion, z_cloud, &
-      lhotspot, lchem_detailed, condensing_species, chem_conc_sat_spec, &
+      lhotspot, lchem_detailed, condensing_species, chem_conc_sat_spec_cgs, &
       true_density_cond_spec_cgs, delta_chem, press
 !
 !
@@ -224,8 +226,9 @@ logical, pointer :: ldustnucleation, lpartnucleation
       lfilter_strict,init_TT1,init_TT2,init_x1,init_x2, linit_temperature, &
       linit_density, &
       ldiff_corr, lDiff_fick, lreac_as_aux, reac_rate_method,global_phi, &
-      Ythresh, lchem_detailed, chem_conc_sat_spec, inucl_pre_exp, lcorr_vel, &
-      lgradP_terms, lnormalize_chemspec, lnormalize_chemspec_N2
+      Ythresh, lchem_detailed, chem_conc_sat_spec_cgs, inucl_pre_exp, lcorr_vel, &
+      lgradP_terms, lnormalize_chemspec, lnormalize_chemspec_N2, &
+      gam_surf_energy_cgs, isurf_energy
 !
 ! diagnostic variables (need to be consistent with reset list below)
 !
@@ -5507,7 +5510,7 @@ logical, pointer :: ldustnucleation, lpartnucleation
       integer :: i, j, k=1
       real :: YY_k, air_mass, TT=300.
       real :: velx=0.
-      real, dimension(nchemspec) :: stor2
+      real, dimension(nchemspec) :: stor2=0.0
       integer, dimension(nchemspec) :: stor1
 !
       integer :: StartInd, StopInd, StartInd_1, StopInd_1
@@ -5605,6 +5608,11 @@ logical, pointer :: ldustnucleation, lpartnucleation
 ! Stop if air.dat is empty
 !
       if (emptyFile) call fatal_error("air_field",'Input file air.dat was empty')
+
+      if ((sum(stor2) .lt. 99.) .or. (sum(stor2) .gt. 101.)) then
+        print*,"sum(stor2)=",sum(stor2)
+        call fatal_error("air_field",'The mass fractions should sum to 100.')
+      endif
       air_mass=1./air_mass
 
       do j=1,k-1
@@ -6693,9 +6701,10 @@ logical, pointer :: ldustnucleation, lpartnucleation
       type (pencil_case) :: p
       !
       integer :: ichem, kkk
-      real :: molar_mass_spec, atomic_m_spec, A_spec
+      real :: molar_mass_spec, atomic_m_spec, A_spec, chem_conc_sat_spec
       !
       molar_mass_spec = species_constants(ichem_cond_spec,imass)
+      chem_conc_sat_spec=chem_conc_sat_spec_cgs*unit_length**3
       atomic_m_spec=molar_mass_spec*m_u
       A_spec=sqrt(8.*k_B/(pi*atomic_m_spec))*molar_mass_spec/(4.*true_density_cond_spec)
       mfluxcond=A_spec*(p%chem_conc(:,ichem_cond_spec)-chem_conc_sat_spec)*sqrt(p%TT)
@@ -6707,20 +6716,25 @@ logical, pointer :: ldustnucleation, lpartnucleation
       type (pencil_case) :: p
       !
       integer :: ichem, kkk
-      real :: gam_surf_energy_cgs=32.
       real :: nucleation_rate_coeff_cgs=1e19
       real :: volume_spec_cgs=4.5e-23
-      real :: gam_surf_energy, volume_spec
-      real, dimension (nx) :: sat_ratio_spec, tmp2, nucleation_rate, nucleation_rmin
-      real, dimension (nx) :: nucleation_rate_coeff
-      real :: tmp1
+      real :: volume_spec, chem_conc_sat_spec
+      real, dimension (nx) :: sat_ratio_spec, tmp1, tmp2, nucleation_rate, nucleation_rmin
+      real, dimension (nx) :: gam_surf_energy, nucleation_rate_coeff
       real :: molar_mass_spec, atomic_m_spec
       !
 !  compute rmin
 !
       if (lnucleation) then
+        if (isurf_energy == "const") then
           gam_surf_energy=gam_surf_energy_cgs/(unit_mass/unit_time)
+        elseif (isurf_energy == "Kingery") then
+          gam_surf_energy=(307.+0.031*(p%TT-2073.))/unit_energy*unit_length**2
+        else
+          call fatal_error("cond_spec_nucl_rate","No such isurf_energy")
+        endif
           volume_spec=volume_spec_cgs/unit_length**3
+          chem_conc_sat_spec=chem_conc_sat_spec_cgs*unit_length**3
           sat_ratio_spec=p%chem_conc(:,ichem_cond_spec)/chem_conc_sat_spec
           nucleation_rmin=2.*gam_surf_energy*volume_spec/(k_B*p%TT*alog(sat_ratio_spec))
 !
@@ -6736,7 +6750,7 @@ logical, pointer :: ldustnucleation, lpartnucleation
             nucleation_rate_coeff=tmp1*volume_spec*tmp2/sat_ratio_spec
           endif
           tmp1=-16.*pi*gam_surf_energy**3*volume_spec**2
-          tmp2=2*(k_B*p%TT)**3*(alog(sat_ratio_spec))**2
+          tmp2=3*(k_B*p%TT)**3*(alog(sat_ratio_spec))**2
           nucleation_rate=nucleation_rate_coeff*exp(tmp1/tmp2)
         else
           nucleation_rate=0.0
