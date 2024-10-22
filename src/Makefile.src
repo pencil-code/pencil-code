@@ -3161,7 +3161,7 @@ endif
 #
 #  Rules for combine_videofiles.x, read_videofiles.x, read_vectorfiles.x.
 #
-basics=cparam.o cdata.o $(FILE_IO_OBJ) general.o messages.o $(SYSCALLS_OBJ) syscalls_ansi.o nompicomm.o
+basics=cparam.o cdata.o $(FILE_IO_OBJ) general.o messages.o $(SYSCALLS_OBJ) syscalls_ansi.o nompicomm.o $(MORTON_HELPER_OBJ) pthread.o
 #
 combine_videofiles.o: $(basics) 
 combine_videofiles.x: combine_videofiles.o

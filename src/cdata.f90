@@ -10,7 +10,6 @@
 module Cdata
 !
   use Cparam
-!!$ use mt, only: TaskHandle
 !
   implicit none
 !
@@ -827,7 +826,6 @@ module Cdata
 
   real(KIND=rkind8) :: t_save
   real :: t1ddiagnos_save,t2davgfirst_save,tslice_save,tsound_save
-!!$ type(TaskHandle) :: last_pushed_task = TaskHandle(task_id=-1)
 
 !$ logical, volatile, dimension(n_helperflags) :: lhelperflags=(/.false.,.false.,.false.,.false./)
 !$ logical, volatile, dimension(n_helperflags) :: lmasterflags=(/.false.,.false.,.false.,.false./)

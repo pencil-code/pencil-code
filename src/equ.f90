@@ -91,7 +91,6 @@ module Equ
       use Mpicomm
 !$    use, intrinsic :: iso_c_binding
 !      use, intrinsic :: iso_fortran_env
-!!$    use mt, only: push_task, depend_on_all, default_task_type, wait_all_thread_pool
 !$    use General, only: signal_send
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -341,14 +340,11 @@ module Equ
         !call test_rhs_gpu(f,df,p,mass_per_proc,early_finalize,rhs_cpu)
         if (ldiagnos.or.l1davgfirst.or.l1dphiavg.or.l2davgfirst) then
           !wait in case the last diagnostic tasks are not finished
-!!$        call wait_all_thread_pool
 !         Not done for the first step since we haven't loaded any data to the GPU yet
           call copy_farray_from_GPU(f)
 !$        call save_diagnostic_controls
 !!$        call signal_send(lhelperflags(PERF_DIAGS),.true.)
 !$        lmasterflags(PERF_DIAGS) = .true.
-!!$        last_pushed_task = push_task(c_funloc(calc_all_module_diagnostics_wrapper),&
-!!$        last_pushed_task, 1, default_task_type, 1, depend_on_all, f, mx, my, mz, mfarray)
         endif
         start_time = mpiwtime()
         call rhs_gpu(f,itsub)
@@ -455,8 +451,6 @@ module Equ
 
               if (lmultithread) then
                 if (ldiagnos.or.l1davgfirst.or.l1dphiavg.or.l2davgfirst) then
-        !!$        last_pushed_task = push_task(c_funloc(finalize_diagnostics_wrapper),&
-        !!$        last_pushed_task, 1, default_task_type, 1, depend_on_all)
                 endif
               elseif (lfirst) then
                 if (lout) then
