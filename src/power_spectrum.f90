@@ -2753,7 +2753,7 @@ outer:  do ikz=1,nz
     call mpireduce_sum(spectrum   ,spectrum_sum   ,nk)
     call mpireduce_sum(spectrumhel,spectrumhel_sum,nk)
     !
-    if ( any(sp.eq.(/'Gab','Gan'/)) ) then
+    if ( any(sp.eq.(/'Gab','Gan','GBb'/)) ) then
       call mpireduce_sum(spectrum_2d   ,spectrum_2d_sum   ,(/nk,nbin_angular/))
       call mpireduce_sum(spectrumhel_2d,spectrumhel_2d_sum,(/nk,nbin_angular/))
     endif
@@ -2793,7 +2793,7 @@ outer:  do ikz=1,nz
       enddo
     else
       write(1,*) t
-      if ( all(sp.ne.(/'Gab','Gan'/)) ) then
+      if ( all(sp.ne.(/'Gab','Gan','GBb'/)) ) then
         write(1,power_format) spectrum_sum
       else
         write(1,power_format) spectrum_2d_sum
@@ -2809,7 +2809,7 @@ outer:  do ikz=1,nz
         enddo
       else
         write(1,*) t
-        if ( all(sp.ne.(/'Gab','Gan'/)) ) then
+        if ( all(sp.ne.(/'Gab','Gan','GBb'/)) ) then
           write(1,power_format) spectrumhel_sum
         else
           write(1,power_format) spectrumhel_2d_sum
