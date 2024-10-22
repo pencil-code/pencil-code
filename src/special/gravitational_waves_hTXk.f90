@@ -1913,8 +1913,11 @@ module Special
 !
 !  endif from ik <= nk
 !
-              else
+              elseif (ik==0) then
                 spectra%GWhhel_Gamma_ang(ik,:)=spectra%GWhhel_Gamma_ang(ik,:)+1.
+!print*,'AEXEL: test t,ik=',t,ik
+              else
+!print*,'AXEL: other test t,ik=',t,ik
               endif
 !
 !  endif from k^2=0
