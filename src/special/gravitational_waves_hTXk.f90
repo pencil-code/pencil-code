@@ -1586,7 +1586,7 @@ module Special
                !                 +eXX*f(nghost+ikx,nghost+iky,nghost+ikz,iggX  ))
                !  ggXim_boost=.5*(eXT*f(nghost+ikx,nghost+iky,nghost+ikz,iggTim) &
                !                 +eXX*f(nghost+ikx,nghost+iky,nghost+ikz,iggXim))
-                endif
+               !endif
 !
 !  end of lboost
 !???
@@ -1919,8 +1919,7 @@ module Special
 !
 !  endif from k^2=0
 !
-!enddo
-            !endif
+            endif
           enddo
         enddo
       enddo
