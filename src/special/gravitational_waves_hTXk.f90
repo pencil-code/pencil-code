@@ -1802,18 +1802,24 @@ module Special
 !  although only in the anti-aligned case would we divide by zero.
 !
                         if (.not. (abs(khat_xhat_a)==1. .or. abs(khat_xhat_b)==1.)) then
-                          DT_a=.5*nn_pulsar(ipulsar,i)*nn_pulsar(ipulsar,j)*e_T(ij)/(1.+khat_xhat_a)
-                          DT_b=.5*nn_pulsar(jpulsar,i)*nn_pulsar(jpulsar,j)*e_T(ij)/(1.+khat_xhat_b)
-                          DX_a=.5*nn_pulsar(ipulsar,i)*nn_pulsar(ipulsar,j)*e_X(ij)/(1.+khat_xhat_a)
-                          DX_b=.5*nn_pulsar(jpulsar,i)*nn_pulsar(jpulsar,j)*e_X(ij)/(1.+khat_xhat_b)
-                          DT_a_sum=DT_a_sum+DT_a
-                          DT_b_sum=DT_b_sum+DT_b
-                          DX_a_sum=DX_a_sum+DX_a
-                          DX_b_sum=DX_b_sum+DX_b
+                          DT_a=.5*nn_pulsar(ipulsar,i)*nn_pulsar(ipulsar,j)*e_T(ij)/(1.+khat_xhat_a_boost)
+                          DT_b=.5*nn_pulsar(jpulsar,i)*nn_pulsar(jpulsar,j)*e_T(ij)/(1.+khat_xhat_b_boost)
+                          DX_a=.5*nn_pulsar(ipulsar,i)*nn_pulsar(ipulsar,j)*e_X(ij)/(1.+khat_xhat_a_boost)
+                          DX_b=.5*nn_pulsar(jpulsar,i)*nn_pulsar(jpulsar,j)*e_X(ij)/(1.+khat_xhat_b_boost)
+                          DT_a_sum_boost=DT_a_sum_boost+DT_a
+                          DT_b_sum_boost=DT_b_sum_boost+DT_b
+                          DX_a_sum_boost=DX_a_sum_boost+DX_a
+                          DX_b_sum_boost=DX_b_sum_boost+DX_b
                         endif
                       enddo
                       enddo
-                      fact_boost   =DT_a_sum*DT_b_sum+DX_a_sum*DX_b_sum
+                      fact_boost   =DT_a_sum_boost*DT_b_sum_boost+DX_a_sum_boost*DX_b_sum_boost
+!if (ikx==2 .and. iky==2 .and. ikz==2 .and. ipulsar==1 .and. jpulsar==3) then
+!  print*,'AXEL2: DT_a_sum,DT_b_sum,DX_a_sum,DX_b_sum=',DT_a_sum,DT_b_sum,DX_a_sum,DX_b_sum
+!  print*,'AXEL2: DT_a_sum_boost,DT_b_sum_boost,DX_a_sum_boost,DX_b_sum_boost=', &
+!                 DT_a_sum_boost,DT_b_sum_boost,DX_a_sum_boost,DX_b_sum_boost
+!  print*,'AXEL2: fact,fact_boost=',fact,fact_boost
+!endif
                       facthel_boost=DT_a_sum*DX_b_sum-DX_a_sum*DT_b_sum
                       spectra%GWh_Gamma_Bb(ik,ibin_angular)=spectra%GWh_Gamma_Bb(ik,ibin_angular) &
                          +(hhX_boost  **2 &
