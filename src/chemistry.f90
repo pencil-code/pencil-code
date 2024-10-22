@@ -4218,7 +4218,7 @@ module Chemistry
                           else
                             if (VarNumber_add==1) then
                               read (unit=ChemInpLine_add(StartInd_add:&
-                                  StopInd_add),fmt='(E15.8)') low_coeff(1,k)
+                                  StopInd_add),fmt='(E25.8)') low_coeff(1,k)
                               if (low_coeff(1,k)/=0.) low_coeff(1,k)=log(low_coeff(1,k))
                             elseif (VarNumber_add==2) then
                               read (unit=ChemInpLine_add(StartInd_add:&
@@ -4287,7 +4287,7 @@ module Chemistry
                           else
                             if (VarNumber_add==1) then
                               read (unit=ChemInpLine_add(StartInd_add:&
-                                  StopInd_add),fmt='(E15.8)') high_coeff(1,k)
+                                  StopInd_add),fmt='(E25.8)') high_coeff(1,k)
                               if (high_coeff(1,k)/=0.) high_coeff(1,k)=log(high_coeff(1,k))
                             elseif (VarNumber_add==2) then
                               read (unit=ChemInpLine_add(StartInd_add:&
@@ -4408,7 +4408,7 @@ module Chemistry
                     StartInd=StartInd+1
                   else
                     if (VarNumber==1) then
-                      read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)')  &
+                      read (unit=ChemInpLine(StartInd:StopInd),fmt='(E25.8)')  &
                           B_n(k)
                       if (B_n(k)/=0.) B_n(k)=log(B_n(k))
                     elseif (VarNumber==2) then
