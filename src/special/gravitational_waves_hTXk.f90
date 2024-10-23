@@ -594,15 +594,21 @@ module Special
       real, dimension(:), allocatable :: th, ph
       real, dimension(:), allocatable :: cos_angle
       integer :: ipulsar, jpulsar, ncos_angle, icount
+      logical :: exist1
 !
-      open(9,file='pulsar.dat',status='old')
-      read(9,*) npulsar
-      if (allocated(th)) deallocate(th, ph, nn_pulsar)
-      allocate(th(npulsar), ph(npulsar), nn_pulsar(npulsar,3))
-      do ipulsar=1,npulsar
-        read(9,*) th(ipulsar), ph(ipulsar)
-      enddo
-      close(9)
+      inquire(FILE='pulsar.dat',EXIST=exist1)
+      if (exist1) then
+        open(9,file='pulsar.dat',status='old')
+        read(9,*) npulsar
+        if (allocated(th)) deallocate(th, ph, nn_pulsar)
+        allocate(th(npulsar), ph(npulsar), nn_pulsar(npulsar,3))
+        do ipulsar=1,npulsar
+          read(9,*) th(ipulsar), ph(ipulsar)
+        enddo
+        close(9)
+      else
+        call fatal_error('read_pulsar_data','pulsar.dat does not exist')
+      endif
 !
 !  Compute unit vector on the sphere.
 !
@@ -1710,7 +1716,7 @@ module Special
 !
 !  Hellings-Downs curve
 !
-                if (lread_pulsar) then
+                if (lread_pulsar.and.lspec) then
 !
 !  Loop of each pair of pulsars.
 !
@@ -1820,6 +1826,7 @@ module Special
 !                 DT_a_sum_boost,DT_b_sum_boost,DX_a_sum_boost,DX_b_sum_boost
 !  print*,'AXEL2: fact,fact_boost=',fact,fact_boost
 !endif
+!if (ikx==2 .and. iky==2 .and. ikz==2 .and. ipulsar=1 .and. jpulsar=3) print*,'AXEL: fact,fact_boost=',fact,fact_boost
                       facthel_boost=DT_a_sum*DX_b_sum-DX_a_sum*DT_b_sum
                       spectra%GWh_Gamma_Bb(ik,ibin_angular)=spectra%GWh_Gamma_Bb(ik,ibin_angular) &
                          +(hhX_boost  **2 &
