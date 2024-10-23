@@ -73,7 +73,6 @@ module Special
   real :: frac_sponge_polar=0
   !
   logical :: linit_equilibrium=.false.
-  logical :: lresi_hyper3=.false.
 !
 ! Run parameters
 !
@@ -94,7 +93,7 @@ module Special
   namelist /special_run_pars/ &
       tau_slow_heating,t0_slow_heating,Bext_ampl,iBext,frac_sponge_r,&
       q_drag,q_sponge_r,&
-      dTeq_max,dTeqtop,dTeqbot,ieta_PT,eta_floor,eta_ceiling,lresi_hyper3
+      dTeq_max,dTeqtop,dTeqbot,ieta_PT,eta_floor,eta_ceiling
 !
 !
 ! Declare index of new variables in f array (if any).
@@ -234,10 +233,6 @@ module Special
       lpenc_requested(i_del2a)=.true.
     endif
 !
-    if (lmagnetic .and. lresi_hyper3) then
-      lpenc_requested(i_del6a)=.true.
-    endif
-!
     endsubroutine pencil_criteria_special
 !***********************************************************************
     subroutine read_special_init_pars(iostat)
@@ -361,7 +356,7 @@ module Special
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      real, dimension (nx,3) :: uxb_ext, fres
+      real, dimension (nx,3) :: uxb_ext
       real, dimension (nx) :: eta_x
 !
       call cross_mn(p%uu,Bext(l1:l2,m,n,:),uxb_ext)
@@ -376,12 +371,12 @@ module Special
         call interpolation1d(ref_eta_log10p,log10(ref_etaP), &
                              ref_eta_nP,ref_eta_dlog10p, &
                              log10(p%pp*pp2Pa),eta_x )
-        eta_x = 10.**eta_x/eta2si
+        eta_x = 10.**eta_x
       case ('eta_PT')
         call interpolation2d(ref_eta_log10p,ref_eta_T,log10(ref_etaPT), &
                              ref_eta_nP,ref_eta_nT,ref_eta_dlog10p,ref_eta_dT, &
                              log10(p%pp*pp2Pa),p%TT*TT2K,eta_x )
-        eta_x = 10.**eta_x/eta2si
+        eta_x = 10.**eta_x
       case ('Perna+2010')
         !  reference: Perna+2010, Eq. (1) and Menou+2012 Sec. 3.3
         eta_x = 214.545 * exp(25188./p%TT/TT2K) * &
@@ -398,17 +393,9 @@ module Special
 ! Apply customized eta profile to the induction and heat equations
 !
       if (ieta_PT/='nothing') then
-        if (lresi_hyper3) then
-          fres = spread(eta_x,2,3) * p%del6a
-          if (lfirst.and.ldt) maxdiffus3=max(maxdiffus3,eta_x**dxyz_6)
-        else
-          fres = spread(eta_x,2,3) * p%del2a
-          if (lfirst.and.ldt) maxdiffus=max(maxdiffus,eta_x*dxyz_2)
-        endif
-!
-        df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + fres
-        df(l1:l2,m,n,iTT)   = df(l1:l2,m,n,iTT) + p%cv1*p%rho1*mu0*eta_x*p%j2
-!
+        df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + spread(eta_x,2,3) * p%del2a
+        df(l1:l2,m,n,iTT)   = df(l1:l2,m,n,iTT) + p%cv1*p%rho1*mu0 * eta_x * p%j2
+        if (lfirst.and.ldt) maxdiffus=max(maxdiffus,eta_x*dxyz_2)
       endif
 !
     endsubroutine special_calc_magnetic
