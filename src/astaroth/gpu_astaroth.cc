@@ -893,6 +893,7 @@ extern "C" void registerGPU(AcReal *farray)
   // mesh.profiles[PROFILE_X] = profile_x_host;
 
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  mesh.info = acInitInfo();
 
   size_t offset = 0;
   for (int i = 0; i < NUM_VTXBUF_HANDLES; ++i)
@@ -910,41 +911,41 @@ extern "C" void initGPU()
 }
 /***********************************************************************************************/
 #define PCLoad acPushToConfig
-void setupConfig(AcMeshInfo& config, AcCompInfo& comp_info)
+void setupConfig(AcMeshInfo& config)
 { 
   // Enter basic parameters in config.
   #include "PC_modulepars.h"
 
-  PCLoad(config,comp_info, AC_domain_decomposition, (int3) {nprocx,nprocy,nprocz});
-  PCLoad(config,comp_info, AC_nxgrid, nxgrid);
-  PCLoad(config,comp_info, AC_nygrid, nygrid);
-  PCLoad(config,comp_info, AC_nzgrid, nzgrid);
+  PCLoad(config, AC_domain_decomposition, (int3) {nprocx,nprocy,nprocz});
+  PCLoad(config, AC_nxgrid, nxgrid);
+  PCLoad(config, AC_nygrid, nygrid);
+  PCLoad(config, AC_nzgrid, nzgrid);
 
   //TP: important this is correct even though we set AC_nx = nxgrid.
   //This is stupid but needed for now.
   //Hopefully in future we can deprecate AC_nx loading that AC_nxgrid loading becomes the default
-  PCLoad(config,comp_info, AC_nx, nxgrid);
-  PCLoad(config,comp_info, AC_ny, nygrid);
-  PCLoad(config,comp_info, AC_nz, nzgrid);
+  PCLoad(config, AC_nx, nxgrid);
+  PCLoad(config, AC_ny, nygrid);
+  PCLoad(config, AC_nz, nzgrid);
 
-  PCLoad(config,comp_info,AC_decompose_strategy,(int)AcDecomposeStrategy::External);
+  PCLoad(config,AC_decompose_strategy,(int)AcDecomposeStrategy::External);
   if (lmorton_curve)
-    PCLoad(config,comp_info,AC_proc_mapping_strategy,(int)AcProcMappingStrategy::Morton);
+    PCLoad(config,AC_proc_mapping_strategy,(int)AcProcMappingStrategy::Morton);
   else
-    PCLoad(config,comp_info,AC_proc_mapping_strategy,(int)AcProcMappingStrategy::Linear);
-  PCLoad(config,comp_info,AC_MPI_comm_strategy,(int)AcMPICommStrategy::DuplicateUserComm);
+    PCLoad(config,AC_proc_mapping_strategy,(int)AcProcMappingStrategy::Linear);
+  PCLoad(config,AC_MPI_comm_strategy,(int)AcMPICommStrategy::DuplicateUserComm);
   config.comm = comm_pencil;
 
 // grid and geometry related parameters
 
-  PCLoad(config,comp_info,AC_dsx,dx);
-  PCLoad(config,comp_info,AC_dsy,dy);
-  PCLoad(config,comp_info,AC_dsz,dz);
+  PCLoad(config,AC_dsx,dx);
+  PCLoad(config,AC_dsy,dy);
+  PCLoad(config,AC_dsz,dz);
 
   // Enter physics related parameters in config.
 
   #if LDENSITY
-    PCLoad(config,comp_info,AC_ldensity_nolog,ldensity_nolog);
+    PCLoad(config,AC_ldensity_nolog,ldensity_nolog);
     //printf("ldensity_nolog is %d \n",config.int_params[AC_ldensity_nolog]);//ldensity_nolog);
   #endif
   //Device dev = acGridGetDevice();
@@ -961,31 +962,8 @@ void setupConfig(AcMeshInfo& config, AcCompInfo& comp_info)
 #undef y
 #undef z
 
-int
-get_int_param(const AcMeshInfo &config, AcCompInfo& comp_info, AcIntParam param)
-{
-	return config.int_params[(int)param];
-}
-
-int
-get_int_param(const AcMeshInfo &config, AcCompInfo& comp_info, AcIntCompParam param)
-{
-	return comp_info.config.int_params[(int)param];
-}
-
-AcReal
-get_real_param(const AcMeshInfo &config, AcCompInfo& comp_info, AcRealParam param)
-{
-	return config.real_params[(int)param];
-}
-
-AcReal
-get_real_param(const AcMeshInfo &config, AcCompInfo& comp_info, AcRealCompParam param)
-{
-	return comp_info.config.real_params[(int)param];
-}
 /***********************************************************************************************/
-void checkConfig(AcMeshInfo &config, AcCompInfo& comp_info)
+void checkConfig(AcMeshInfo &config)
 {
  acLogFromRootProc(rank,"Check that config is correct\n");
  acLogFromRootProc(rank,"n[xyz]grid, d[xyz]: %d %d %d %.14f %.14f %.14f \n", nxgrid, nygrid, nzgrid, dx, dy, dz);
@@ -993,38 +971,38 @@ void checkConfig(AcMeshInfo &config, AcCompInfo& comp_info)
  acLogFromRootProc(rank,"rank= %d: zlen= %.14f %.14f \n", config.real_params[AC_zlen], lxyz[2]);
 
 #if LHYDRO
- acLogFromRootProc(rank,"lpressuregradientgas= %d %d \n", lpressuregradient_gas, get_int_param(config,comp_info,AC_lpressuregradient_gas));
+ acLogFromRootProc(rank,"lpressuregradientgas= %d %d \n", lpressuregradient_gas, config[AC_lpressuregradient_gas]);
 #endif
 #if LENTROPY
- acLogFromRootProc(rank,"chi= %f %f \n", chi, get_real_param(config,comp_info,AC_chi));
- acLogFromRootProc(rank,"nkramers= %f %f \n", nkramers, get_real_param(config,comp_info,AC_nkramers));
- acLogFromRootProc(rank,"hcond0_kramers= %f %f \n", hcond0_kramers, get_real_param(config,comp_info,AC_hcond0_kramers));
- acLogFromRootProc(rank,"hcond_Kconst= %f %f \n", hcond_Kconst, get_real_param(config,comp_info,AC_hcond_Kconst));
+ acLogFromRootProc(rank,"chi= %f %f \n", chi, config[AC_chi]);
+ acLogFromRootProc(rank,"nkramers= %f %f \n", nkramers, config[AC_nkramers]);
+ acLogFromRootProc(rank,"hcond0_kramers= %f %f \n", hcond0_kramers, config[AC_hcond0_kramers]);
+ acLogFromRootProc(rank,"hcond_Kconst= %f %f \n", hcond_Kconst, config[AC_hcond_Kconst]);
 #endif
 #if LVISCOSITY
- acLogFromRootProc(rank,"nu= %f %f \n", nu, get_real_param(config,comp_info,AC_nu));
- acLogFromRootProc(rank,"zeta= %f %f \n", zeta, get_real_param(config,comp_info,AC_zeta));
+ acLogFromRootProc(rank,"nu= %f %f \n", nu, config[AC_nu]);
+ acLogFromRootProc(rank,"zeta= %f %f \n", zeta, config[AC_zeta]);
 #endif
 #if LMAGNETIC
-  acLogFromRootProc(rank,"eta= %f %f \n", eta, get_real_param(config,comp_info,AC_eta));
+  acLogFromRootProc(rank,"eta= %f %f \n", eta, config[AC_eta]);
 #endif
 #if LEOS
-  acLogFromRootProc(rank,"cs20= %f %f \n", cs20, get_real_param(config,comp_info,AC_cs20));
+  acLogFromRootProc(rank,"cs20= %f %f \n", cs20, config[AC_cs20]);
   //  acLogFromRootProc(rank,"gamma= %f %f \n", gamma, get_real_param(config,comp_infoAC_gamma));
-  acLogFromRootProc(rank,"gamma_m1= %f %f \n", gamma_m1, get_real_param(config,comp_info,AC_gamma_m1));
-  acLogFromRootProc(rank,"gamma1= %f %f \n", gamma1, get_real_param(config,comp_info,AC_gamma1));
-  acLogFromRootProc(rank,"cv= %f %f \n", cv, get_real_param(config,comp_info,AC_cv));
-  acLogFromRootProc(rank,"cp= %f %f \n", cp, get_real_param(config,comp_info,AC_cp));
-  acLogFromRootProc(rank,"lnT0= %f %f \n", lnTT0, get_real_param(config,comp_info,AC_lnTT0));
-  acLogFromRootProc(rank,"lnrho0= %f %f \n", lnrho0, get_real_param(config,comp_info,AC_lnrho0));
+  acLogFromRootProc(rank,"gamma_m1= %f %f \n", gamma_m1, config[AC_gamma_m1]);
+  acLogFromRootProc(rank,"gamma1= %f %f \n", gamma1, config[AC_gamma1]);
+  acLogFromRootProc(rank,"cv= %f %f \n", cv, config[AC_cv]);
+  acLogFromRootProc(rank,"cp= %f %f \n", cp, config[AC_cp]);
+  acLogFromRootProc(rank,"lnT0= %f %f \n", lnTT0, config[AC_lnTT0]);
+  acLogFromRootProc(rank,"lnrho0= %f %f \n", lnrho0, config[AC_lnrho0]);
 #endif
 #if LFORCING
-  acLogFromRootProc(rank,"iforcing_zsym= %f %f \n", iforcing_zsym, get_int_param(config,comp_info,AC_iforcing_zsym));
-  acLogFromRootProc(rank,"k1_ff= %f %f \n", k1_ff, get_real_param(config,comp_info,AC_k1_ff));
-  acLogFromRootProc(rank,"tforce_stop= %f %f \n", tforce_stop, get_real_param(config,comp_info,AC_tforce_stop));
+  acLogFromRootProc(rank,"iforcing_zsym= %f %f \n", iforcing_zsym, config[AC_iforcing_zsym]);
+  acLogFromRootProc(rank,"k1_ff= %f %f \n", k1_ff, config[AC_k1_ff]);
+  acLogFromRootProc(rank,"tforce_stop= %f %f \n", tforce_stop, config[AC_tforce_stop]);
   acLogFromRootProc(rank,"k1_ff,profx_ampl, val= %f %d %lf %lf\n", k1_ff, profx_ampl, profx_ampl[0], profx_ampl[nx-1]);
 #endif
-  acLogFromRootProc(rank,"mu0= %f %f \n", mu0, get_real_param(config,comp_info,AC_mu0));
+  acLogFromRootProc(rank,"mu0= %f %f \n", mu0, config[AC_mu0]);
 }
 /***********************************************************************************************/
 extern "C" void getFArrayIn(AcReal **p_f_in)
@@ -1051,14 +1029,14 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out, int c
   //initLoadStore();
 #endif
 
+
   comm_pencil = MPI_Comm_f2c(comm_fint);
-  AcCompInfo comp_info = acInitCompInfo();
-  setupConfig(mesh.info,comp_info);
+  setupConfig(mesh.info);
 #if AC_RUNTIME_COMPILATION
   if (rank == 0)
   {
 #include "cmake_options.h"
-    acCompile(cmake_options,comp_info);
+    acCompile(cmake_options,mesh.info);
   }
   MPI_Barrier(comm_pencil);
   acLoadLibrary();
@@ -1068,7 +1046,7 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out, int c
   acLogFromRootProc(rank, "Done setupConfig\n");
   fflush(stdout);
 #endif
-  checkConfig(mesh.info,comp_info);
+  checkConfig(mesh.info);
   acCheckDeviceAvailability();
   acGridInit(mesh);
   mesh.info = acGridDecomposeMeshInfo(mesh.info);
@@ -1104,8 +1082,8 @@ extern "C" void copyFarray(AcReal* f)
 /***********************************************************************************************/
 extern "C" void reloadConfig()
 {
-  AcCompInfo comp_info = acInitCompInfo();
-  setupConfig(mesh.info, comp_info);
+  mesh.info.run_consts = acInitCompInfo();
+  setupConfig(mesh.info);
   acGridSynchronizeStream(STREAM_ALL);
   acDeviceUpdate(acGridGetDevice(), mesh.info);
   acGridSynchronizeStream(STREAM_ALL);
