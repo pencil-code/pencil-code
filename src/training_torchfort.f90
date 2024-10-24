@@ -23,15 +23,15 @@
 
     integer :: itau, itauxx, itauxy, itauxz, itauyy, itauyz, itauzz
 
-    character(LEN=fnlen) :: model='model', config_file="training/config_mlp_native.yaml"
-    character(LEN=fnlen) :: model_output_dir='training', checkpoint_output_dir='training', &
-                            model_file = "model.pt", chkpt_file="model.ckpt"
+    character(LEN=fnlen) :: model_output_dir='training/', checkpoint_output_dir='training'
+    character(LEN=fnlen) :: model='model', config_file="training/config_mlp_native.yaml", model_file
 
     logical :: luse_trained_tau
+    real :: max_loss=1.e-4
 
     integer :: idiag_tauerror=0        ! DIAG_DOC: $\sqrt{\left<(\sum_{i,j} u_i*u_j - tau_{ij})^2\right>}$
 
-    namelist /training_run_pars/ config_file, model_file, it_train, it_train_chkpt, luse_trained_tau
+    namelist /training_run_pars/ config_file, model, it_train, it_train_chkpt, luse_trained_tau, max_loss
 !
     integer :: istat, train_step_ckpt, val_step_ckpt    !, TORCHFORT_RESULT_SUCCESS=0
     logical :: ltrained=.false.
@@ -48,8 +48,10 @@
 
       if (.not.lhydro) call fatal_error('initialize_training','needs HYDRO module')
       istat = cudaSetDevice(iproc)
-
+   
+      model_file = trim(model)//'.pt'
       modelfn=trim(model_output_dir)//trim(model_file)
+
       if (lroot) then
         if (.not.file_exists(model_output_dir)) then
           call system_cmd('mkdir '//trim(model_output_dir))
@@ -71,19 +73,25 @@
       if (istat /= TORCHFORT_RESULT_SUCCESS) then
         call fatal_error("initialize_training","when creating model: istat="//trim(itoa(istat)))
       else
-        call information('initialize_training','TORCHFORT LOADED SUCCESFULLY')
+        call information('initialize_training','TORCHFORT LIB LOADED SUCCESFULLY')
       endif
 
       if (ltrained) then
         istat = torchfort_load_model(model, modelfn)
-        if (istat /= TORCHFORT_RESULT_SUCCESS) &
+        if (istat /= TORCHFORT_RESULT_SUCCESS) then
           call fatal_error("initialize_training","when loading model: istat="//trim(itoa(istat)))
+        else
+          call information('initialize_training','TORCHFORT MODEL "'//trim(modelfn)//'" LOADED SUCCESFULLY')
+        endif
       else
-        if (file_exists(trim(model_output_dir)//trim(chkpt_file))) then
+        if (file_exists(trim(model_output_dir)//trim(model)//'.ckpt')) then
 
           istat = torchfort_load_checkpoint(model, checkpoint_output_dir, train_step_ckpt, val_step_ckpt)
-          if (istat /= TORCHFORT_RESULT_SUCCESS) &
+          if (istat /= TORCHFORT_RESULT_SUCCESS) then
             call fatal_error("initialize_training","when loading checkpoint: istat="//trim(itoa(istat)))
+          else
+            call information('initialize_training','TORCHFORT CHECKPOINT LOADED SUCCESFULLY')
+          endif
 
         endif
       endif
@@ -192,7 +200,6 @@
         call smooth(f,itauxx,itauzz)
         label(:,:,:,:,1) = f(:,:,:,itauxx:itauzz)    ! host to device
 
-        if (lroot) print*, "train ..."
         istat = torchfort_train(model, input, label, loss_val)
         if (istat /= TORCHFORT_RESULT_SUCCESS) then
           call fatal_error("train","istat="//trim(itoa(istat)))
@@ -200,6 +207,7 @@
           if (lroot) print*, "training loss = ", loss_val
         endif
 
+        if (loss_val <= max_loss) ltrained=.true.
         if (lroot.and.mod(it,it_train_chkpt)==0) then
           istat = torchfort_save_checkpoint(model, checkpoint_output_dir)
           if (istat /= TORCHFORT_RESULT_SUCCESS) &
