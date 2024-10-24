@@ -3024,6 +3024,12 @@ samples/conv-slab-noequi/run.in -text
 samples/conv-slab-noequi/src/Makefile.local -text
 samples/conv-slab-noequi/src/cparam.local -text
 samples/conv-slab-noequi/start.in -text
+samples/conv-slab-torch/print.in -text
+samples/conv-slab-torch/run.in -text
+samples/conv-slab-torch/src/Makefile.local -text
+samples/conv-slab-torch/src/cparam.local -text
+samples/conv-slab-torch/start.in -text
+samples/conv-slab-torch/training/config_mlp_native.yaml -text
 samples/conv-slab/NEVERLOCK -text
 samples/conv-slab/README -text
 samples/conv-slab/idl/pc_fluxz.pro -text
