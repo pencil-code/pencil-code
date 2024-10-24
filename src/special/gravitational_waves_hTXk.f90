@@ -144,10 +144,12 @@ module Special
   real, dimension(:), allocatable :: t_file, scl_factor, Hp_file
   real, dimension(:), allocatable :: appa_file, lgt_file, lgff, lgff2, lgff3
   real, dimension(:,:), allocatable :: nn_pulsar
+  real, dimension(3,3) :: hij_boost, hij_boost_im, hij, hij_im
   real :: kscale_factor, tau_stress_comp=0., exp_stress_comp=0.
   real :: tau_stress_kick=0., tnext_stress_kick=1., fac_stress_kick=2., accum_stress_kick=1.
   real :: nonlinear_source_fact=0., k_in_stress=1.
   integer :: itorder_GW=1, idt_file_safety=12
+  integer :: boost_method=2
 !
 ! input parameters
   namelist /special_init_pars/ &
@@ -177,7 +179,7 @@ module Special
     initGW, reinitialize_GW, rescale_GW, &
     lggTX_as_aux, lhhTX_as_aux, lremove_mean_hij, lremove_mean_gij, &
     vx_boost, vy_boost, vz_boost, & 
-    lboost, &
+    lboost, boost_method, &
     lstress, lstress_ramp, tstress_ramp, &
     lstress_upscale, stress_upscale_rate, stress_upscale_exp, &
     linflation, lreheating_GW, lmatter_GW, ldark_energy_GW, &
@@ -1332,7 +1334,7 @@ module Special
       real :: ggT_boost, ggTim_boost, ggX_boost, ggXim_boost
 !
       real :: fact, facthel, cos_angle, angle, sign_switch
-      real :: fact_boost, facthel_boost
+      real :: fact_boost, facthel_boost, omboost
             
       real :: DT_a, DT_b, DX_a, DX_b, khat_xhat_a, khat_xhat_b, DT_a_sum, DT_b_sum, DX_a_sum, DX_b_sum
       real :: khat_xhat_a_boost, khat_xhat_b_boost, DT_a_sum_boost, DT_b_sum_boost, DX_a_sum_boost, DX_b_sum_boost
@@ -1476,8 +1478,10 @@ module Special
                 vboost(3)=vz_boost
                 if (v_boostsqr==0.) then
                   kdotv = 0.
+                  omboost=0.
                 else
                   kdotv = (gamma_boost-1)*(k1*vx_boost + k2*vy_boost + k3*vz_boost)/v_boostsqr
+                  omboost= (ksqrt-(k1*vx_boost + k2*vy_boost + k3*vz_boost))*gamma_boost
                 endif
                 k1_boost = k1+kdotv*vx_boost - gamma_boost*ksqrt*vx_boost
                 k2_boost = k2+kdotv*vy_boost - gamma_boost*ksqrt*vy_boost
@@ -1562,6 +1566,10 @@ module Special
                   eTX=eTX+e_T_boost(ij)*e_X(ij)
                   eXT=eXT+e_X_boost(ij)*e_T(ij)
                   eXX=eXX+e_X_boost(ij)*e_X(ij)
+!if ((ikx==2 .or. ikx==nx) .and. iky==1 .and. ikz==1) then
+!  print*,'AXEL: ksqrt,ksqrt_boost,omboost=',ksqrt,ksqrt_boost,omboost
+!  print*,'AXEL: i,j,e_X_boost(ij),e_T(ij)=',i,j,e_X_boost(ij),e_T(ij)
+!endif
                 enddo
                 enddo
 !
@@ -1569,16 +1577,69 @@ module Special
 !  Do first h, but this could also be switcheable
 !
                 if (GWh_spec_boost) then
-                  hhT_boost  =.5*(eTT*f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  ) &
-                                 +eTX*f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  ))
-                  hhTim_boost=.5*(eTT*f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim) &
-                                 +eTX*f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim))
+                  if (boost_method==1) then
+                    hhT_boost  =.5*(eTT*f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  ) &
+                                   +eTX*f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  ))
+                    hhTim_boost=.5*(eTT*f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim) &
+                                   +eTX*f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim))
+  !
+                    hhX_boost  =.5*(eXT*f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  ) &
+                                   +eXX*f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  ))
+                    hhXim_boost=.5*(eXT*f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim) &
+                                   +eXX*f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim))
+                  else
+                    do i=1,3
+                    do j=1,3
+                      ij=ij_table(i,j)
+                      hij(i,j)   =e_T(ij)*f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  ) &
+                                 +e_X(ij)*f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  )
+                      hij_im(i,j)=e_T(ij)*f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim) &
+                                 +e_X(ij)*f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim)
+                    enddo
+                    enddo
 !
-                  hhX_boost  =.5*(eXT*f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  ) &
-                                 +eXX*f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  ))
-                  hhXim_boost=.5*(eXT*f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim) &
-                                 +eXX*f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim))
+!  actual boost
+!
+                    hij_boost   =hij
+                    hij_boost_im=hij_im
+                    fact=1./(1.-(k1*vx_boost+k2*vy_boost+k3*vz_boost)/ksqrt)
+                    do i=1,3
+                    do j=1,3
+                    do p=1,3
+                      hij_boost   (i,j) = hij_boost   (i,j)+vboost(p)*fact*(hij   (i,p)*kvec(j)+hij   (j,p)*kvec(i))/ksqrt
+                      hij_boost_im(i,j) = hij_boost_im(i,j)+vboost(p)*fact*(hij_im(i,p)*kvec(j)+hij_im(j,p)*kvec(i))/ksqrt
+                    enddo
+                    enddo
+                    enddo
+!
+!  reassemble
+!
+                    hhT_boost=0.
+                    hhX_boost=0.
+                    hhTim_boost=0.
+                    hhXim_boost=0.
+                    do i=1,3
+                    do j=1,3
+                      ij=ij_table(i,j)
+                      hhT_boost  =hhT_boost  +.5*e_T_boost(ij)*hij_boost   (i,j)
+                      hhX_boost  =hhX_boost  +.5*e_X_boost(ij)*hij_boost   (i,j)
+                      hhTim_boost=hhTim_boost+.5*e_T_boost(ij)*hij_boost_im(i,j)
+                      hhXim_boost=hhXim_boost+.5*e_X_boost(ij)*hij_boost_im(i,j)
+                    enddo
+                    enddo
+                  endif
                 endif
+!
+!if ((ikx==2 .or. ikx==nx) .and. iky==1 .and. ikz==1) then
+!  print*,'AXEL: k1,k2,k3=',k1,k2,k3
+!  print*,'AXEL: k1_boost,k2_boost,k3_boost=',k1_boost,k2_boost,k3_boost
+!  print*,'AXEL: hhT,hhTim,hhX,hhXim=', &
+!    f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  ), &
+!    f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim), &
+!    f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  ), &
+!    f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim)
+!  print*,'AXEL: hhT_boost,hhTim_boost,hhX_boost,hhXim_boost=',hhT_boost,hhTim_boost,hhX_boost,hhXim_boost
+!endif
 !
 !  Now do g, but this could also be switcheable
 !
