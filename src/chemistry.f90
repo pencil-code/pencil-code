@@ -4059,8 +4059,8 @@ module Chemistry
         close (file_id)
       endif
 !
-100   format(I3,26f6.1)
-101   format('    ',26A6)
+100   format(I3,60f6.1)
+101   format('    ',60A6)
 !
       call keep_compiler_quiet(f)
 !
