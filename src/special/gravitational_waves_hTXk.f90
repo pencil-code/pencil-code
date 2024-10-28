@@ -801,8 +801,6 @@ module Special
           call fatal_error("init_special: No such value for initGW:" &
               ,trim(initGW))
       endselect
-!print*,'AXEL: f(nghost+2,nghost+2,nghost+2,ihhT  )=',f(nghost+2,nghost+2,nghost+2,ihhT  )
-!print*,'AXEL: f(nghost+2,nghost+2,nghost+2,ihhX  )=',f(nghost+2,nghost+2,nghost+2,ihhX  )
 !
       if (lStress_as_aux) then
         f(:,:,:,iStressT)=0.
@@ -1470,12 +1468,6 @@ module Special
                 e2=ee2
               endif
 !
-if (ip<20) then
-call dot (kvec,e1,tmp) ; print*,'AXEL1: k.e1=',tmp
-call dot (kvec,e2,tmp) ; print*,'AXEL1: k.e2=',tmp
-call dot (e1,e2,tmp) ; print*,'AXEL1: e1.e2=',tmp
-endif
-!
               e1=e1/sqrt(e1(1)**2+e1(2)**2+e1(3)**2)
               e2=e2/sqrt(e2(1)**2+e2(2)**2+e2(3)**2)
 !
@@ -1590,15 +1582,6 @@ endif
                 e1_boost=e1_boost/sqrt(e1_boost(1)**2+e1_boost(2)**2+e1_boost(3)**2)
                 e2_boost=e2_boost/sqrt(e2_boost(1)**2+e2_boost(2)**2+e2_boost(3)**2)
 !
-!  check
-!
-if (ip<20) then
-call dot (kvec_boost,e1_boost,tmp) ; print*,'AXEL2: k.e1_boost=',tmp
-call dot (kvec_boost,e2_boost,tmp) ; print*,'AXEL2: k.e2_boost=',tmp
-call dot (e1_boost,e2_boost,tmp) ; print*,'AXEL2: e1_boost.e2_boost=',tmp
-print*
-endif
-!
 !  compute e_T_boost and e_X_boost
 !
                 do j=1,3
@@ -1638,13 +1621,9 @@ endif
                   eTX=eTX+e_T_boost(ij)*e_X(ij)
                   eXT=eXT+e_X_boost(ij)*e_T(ij)
                   eXX=eXX+e_X_boost(ij)*e_X(ij)
-!if ((ikx==2 .or. ikx==nx) .and. iky==1 .and. ikz==1) then
-!  print*,'AXEL: ksqrt,ksqrt_boost,omboost=',ksqrt,ksqrt_boost,omboost
-!  print*,'AXEL: i,j,e_X_boost(ij),e_T(ij)=',i,j,e_X_boost(ij),e_T(ij)
-!endif
                 enddo
                 enddo
-if (abs(k1) <3 .and. abs(k2) <3 .and. abs(k3) <3) print*,'AXEL: eXT=',k1,k2,k3,eXT
+if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,k3,eTT,eXX,eXT,eTX
 !
 !  apply transformation from unboosted to boosted h and g, Eq.(64) from Emma's notes
 !  Do first h, but this could also be switcheable
