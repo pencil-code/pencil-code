@@ -32,7 +32,7 @@ module Energy
 !
   real :: entropy_floor = impossible, TT_floor = impossible
   real, dimension(ninit) :: radius_ss=0.1, radius_ss_x=1., ampl_ss=0.0
-  real :: widthss=2*epsi, epsilon_ss=0.0
+  real :: widthss=2*epsi, epsilon_ss=0.0,widthss_int=2*epsi,widthss_ext=2*epsi
   real :: luminosity=0.0, wheat=0.1, cool=0.0, cool1=0.0, cool2=0.0
   real :: wpres=0.1
   real :: zcool=0.0, zcool1=0.0, zcool2=0.0
@@ -193,7 +193,7 @@ module Energy
 !
   namelist /entropy_init_pars/ &
       initss, pertss, grads0, radius_ss, radius_ss_x, ampl_ss, &
-      widthss, epsilon_ss, &
+      widthss, widthss_int, widthss_ext, epsilon_ss, &
       mixinglength_flux, entropy_flux, &
       chi_t, chi_rho, pp_const, ss_left, ss_right, &
       ss_const, TT_const, mpoly0, mpoly1, mpoly2, isothtop, khor_ss, &
@@ -212,7 +212,7 @@ module Energy
 !  Run parameters.
 !
   namelist /entropy_run_pars/ &
-      hcond0, hcond1, hcond2, widthss, borderss, mpoly0, mpoly1, mpoly2, &
+      hcond0, hcond1, hcond2, widthss, widthss_int, widthss_ext, borderss, mpoly0, mpoly1, mpoly2, &
       luminosity, wheat, cooling_profile, cooltype, cool, cool1, cs2cool, rcool, &
       rcool1, rcool2, deltaT, cs2cool2, cool2, zcool, ppcool, wcool, wcool1, &
       wcool2, Fbot, lcooling_general, lcooling_to_cs2cool, gradS0_imposed, &
@@ -6310,8 +6310,8 @@ module Energy
 !  condition is not the same as the power law.
 !
       if (lborder_heat_variable) then
-        pborder=quintic_step(x(l1:l2),r_int,widthss,SHIFT= 1.) - &
-                quintic_step(x(l1:l2),r_ext,widthss,SHIFT=-1.)
+        pborder=quintic_step(x(l1:l2),r_int,widthss_int,SHIFT= 1.) - &
+                quintic_step(x(l1:l2),r_ext,widthss_ext,SHIFT=-1.)
       else
         pborder=1.
       endif
