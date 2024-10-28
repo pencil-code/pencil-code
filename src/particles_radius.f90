@@ -66,7 +66,7 @@ module Particles_radius
       aplow, apmid, aphigh, mbar, ap1, ip1, qplaw, eps_dtog, nbin_initdist, &
       sigma_initdist, a0_initdist, rpbeta0, lparticles_radius_rpbeta, &
       lfixed_particles_radius, lambda, &
-      n0, b, alpha
+      n0, b, alpha, lcondensing_species
 !
   namelist /particles_radius_run_pars/ &
       rhopmat, vthresh_sweepup, deltavp12_floor, &
@@ -79,7 +79,8 @@ module Particles_radius
       lconstant_radius_w_chem, &
       initap, lreinitialize_ap, ap0, &
       lcondensation_rate, vapor_mixing_ratio_qvs, &
-      lkohler, lkohler_simplified, coeff_Kelvin, coeff_kappa, r_CCN, kappa_aerosol, &
+      lkohler, lkohler_simplified, coeff_Kelvin, coeff_kappa, r_CCN, &
+      kappa_aerosol, &
       ltauascalar, modified_vapor_diffusivity, ldt_evaporation, &
       ldt_condensation, ldt_condensation_off, &
       ldust_condensation, xi_accretion, ldust_accretion, &
@@ -115,6 +116,9 @@ module Particles_radius
       if (lparticles_radius_rpbeta) call append_npvar('irpbeta',irpbeta)
 !
       call put_shared_variable('ap0',ap0,caller='register_particles_radius')
+      if (lchemistry) then
+        call put_shared_variable('lcondensing_species',lcondensing_species,caller='register_particles_radius')
+      endif
 !
     endsubroutine register_particles_radius
 !***********************************************************************
