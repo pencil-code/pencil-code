@@ -2480,7 +2480,11 @@ module Particles
             !
             ! Insert nucleii if scalar concentration is above threshold value
             !
-            mass_nucleii=f(ii,jj,kk,icc)*f(ii,jj,kk,irho)
+            if (ldensity_nolog) then
+              mass_nucleii=f(ii,jj,kk,icc)*f(ii,jj,kk,irho)
+            else
+              mass_nucleii=f(ii,jj,kk,icc)*exp(f(ii,jj,kk,ilnrho))
+            endif
             if (mass_nucleii .gt. nucleation_threshold) then
               if ((1+npar_loc <= mpar_loc)  &
                    .and. (t < max_particle_insert_time) .and. (t > tstart_insert_particles)) then
