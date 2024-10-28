@@ -801,8 +801,8 @@ module Special
           call fatal_error("init_special: No such value for initGW:" &
               ,trim(initGW))
       endselect
-print*,'AXEL: f(nghost+2,nghost+2,nghost+2,ihhT  )=',f(nghost+2,nghost+2,nghost+2,ihhT  )
-print*,'AXEL: f(nghost+2,nghost+2,nghost+2,ihhX  )=',f(nghost+2,nghost+2,nghost+2,ihhX  )
+!print*,'AXEL: f(nghost+2,nghost+2,nghost+2,ihhT  )=',f(nghost+2,nghost+2,nghost+2,ihhT  )
+!print*,'AXEL: f(nghost+2,nghost+2,nghost+2,ihhX  )=',f(nghost+2,nghost+2,nghost+2,ihhX  )
 !
       if (lStress_as_aux) then
         f(:,:,:,iStressT)=0.
@@ -1463,16 +1463,18 @@ print*,'AXEL: f(nghost+2,nghost+2,nghost+2,ihhX  )=',f(nghost+2,nghost+2,nghost+
                 ee1(2)=(kk1*kk2*c1+kk3*s)*e1(1) + (kk2**2*c1+c)*e1(2) + (kk2*kk3*c1-kk1*s)*e1(3)
                 ee2(2)=(kk1*kk2*c1+kk3*s)*e2(1) + (kk2**2*c1+c)*e2(2) + (kk2*kk3*c1-kk1*s)*e2(3)
 !
-                ee1(3)=(kk1*kk3*c1-kk2*s)*e1(3) + (kk2*kk3*c1+kk1*s)*e1(2) + (kk3**2*c1+c)*e1(3)
-                ee2(3)=(kk1*kk3*c1-kk2*s)*e2(3) + (kk2*kk3*c1+kk1*s)*e2(2) + (kk3**2*c1+c)*e2(3)
+                ee1(3)=(kk1*kk3*c1-kk2*s)*e1(1) + (kk2*kk3*c1+kk1*s)*e1(2) + (kk3**2*c1+c)*e1(3)
+                ee2(3)=(kk1*kk3*c1-kk2*s)*e2(1) + (kk2*kk3*c1+kk1*s)*e2(2) + (kk3**2*c1+c)*e2(3)
 !
                 e1=ee1
                 e2=ee2
               endif
 !
-call dot (kvec,e1,tmp) ; print*,'AXEL1: kxe1=',tmp
-call dot (kvec,e2,tmp) ; print*,'AXEL1: kxe2=',tmp
-call dot (e1,e2,tmp) ; print*,'AXEL1: e1xe2=',tmp
+if (ip<20) then
+call dot (kvec,e1,tmp) ; print*,'AXEL1: k.e1=',tmp
+call dot (kvec,e2,tmp) ; print*,'AXEL1: k.e2=',tmp
+call dot (e1,e2,tmp) ; print*,'AXEL1: e1.e2=',tmp
+endif
 !
               e1=e1/sqrt(e1(1)**2+e1(2)**2+e1(3)**2)
               e2=e2/sqrt(e2(1)**2+e2(2)**2+e2(3)**2)
@@ -1561,10 +1563,26 @@ call dot (e1,e2,tmp) ; print*,'AXEL1: e1xe2=',tmp
 !
               if (lrandomize_e1_e2) then
                 call random_number_wrapper(phi); phi = phi*2*pi
-                ee1_boost=+cos(phi)*e1_boost+sin(phi)*e2_boost
-                ee2_boost=-sin(phi)*e1_boost+cos(phi)*e2_boost
-                e1_boost=ee1_boost
-                e2_boost=ee2_boost
+                s=sin(phi)
+                c=cos(phi)
+                c1=1.-c
+                kk1=k1_boost*one_over_k_boost
+                kk2=k2_boost*one_over_k_boost
+                kk3=k3_boost*one_over_k_boost
+!
+!  reuse ee1 and ee2, which is reset to e1_boost and e2_boost afterwards
+!
+                ee1(1)=(kk1**2*c1+c)*e1_boost(1) + (kk1*kk2*c1-kk3*s)*e1_boost(2) + (kk1*kk3*c1+kk2*s)*e1_boost(3)
+                ee2(1)=(kk1**2*c1+c)*e2_boost(1) + (kk1*kk2*c1-kk3*s)*e2_boost(2) + (kk1*kk3*c1+kk2*s)*e2_boost(3)
+!
+                ee1(2)=(kk1*kk2*c1+kk3*s)*e1_boost(1) + (kk2**2*c1+c)*e1_boost(2) + (kk2*kk3*c1-kk1*s)*e1_boost(3)
+                ee2(2)=(kk1*kk2*c1+kk3*s)*e2_boost(1) + (kk2**2*c1+c)*e2_boost(2) + (kk2*kk3*c1-kk1*s)*e2_boost(3)
+!
+                ee1(3)=(kk1*kk3*c1-kk2*s)*e1_boost(1) + (kk2*kk3*c1+kk1*s)*e1_boost(2) + (kk3**2*c1+c)*e1_boost(3)
+                ee2(3)=(kk1*kk3*c1-kk2*s)*e2_boost(1) + (kk2*kk3*c1+kk1*s)*e2_boost(2) + (kk3**2*c1+c)*e2_boost(3)
+!
+                e1_boost=ee1
+                e2_boost=ee2
               endif
 !
 !  normalize boosted e1 and e2 vectors
@@ -1574,10 +1592,12 @@ call dot (e1,e2,tmp) ; print*,'AXEL1: e1xe2=',tmp
 !
 !  check
 !
-call dot (kvec_boost,e1_boost,tmp) ; print*,'AXEL2: kxe1_boost=',tmp
-call dot (kvec_boost,e2_boost,tmp) ; print*,'AXEL2: kxe2_boost=',tmp
-call dot (e1_boost,e2_boost,tmp) ; print*,'AXEL2: e1xe2_boost=',tmp
+if (ip<20) then
+call dot (kvec_boost,e1_boost,tmp) ; print*,'AXEL2: k.e1_boost=',tmp
+call dot (kvec_boost,e2_boost,tmp) ; print*,'AXEL2: k.e2_boost=',tmp
+call dot (e1_boost,e2_boost,tmp) ; print*,'AXEL2: e1_boost.e2_boost=',tmp
 print*
+endif
 !
 !  compute e_T_boost and e_X_boost
 !
