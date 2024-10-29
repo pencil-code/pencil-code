@@ -135,14 +135,15 @@ rm -f tmp
 #
 # writes macro definition of individual p_'$1' into $modfuncs
 #
+#s/^#define *\([a-zA-Z0-9_]*\).*(( *\([a-zA-Z0-9_]*\) .*$/run_const \2 AC_\1 \/\/ from '$modname'\n#define \1 \AC_\1/
 if [ -f tmp1 ]; then
   sed -n '
-         s/^.*\/\/ *\(\[.*\]\) *\([a-zA-Z0-9_]*\)  *\([a-zA-Z0-9_]*\) *$/#define \2 (*((\3 *) p_par_'$modname'\1))/
+         s/^.*\/\/ *\(\[.*\]\) *\([a-zA-Z0-9_]*\)  *\([a-zA-Z0-9_]*\) *$/#define \2 to_\3(p_par_'$modname'\1)/
          t cont
          b dimen
          : cont
          p
-         s/^#define *\([a-zA-Z0-9_]*\).*(( *\([a-zA-Z0-9_]*\) .*$/run_const \2 AC_\1 \/\/ from '$modname'\n#define \1 \AC_\1/
+         s/^#define *\([a-zA-Z0-9_]*\) to_\([a-zA-Z0-9_]*\).*$/run_const \2 AC_\1 \/\/ from '$modname'\n#define \1 \AC_\1/
 	 s/.*run_const real AC_dt //
 	 s/#define dt AC_dt//
          H

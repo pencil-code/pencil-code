@@ -19,6 +19,41 @@
 
 // Astaroth headers.
 #include "astaroth.h"
+
+AcReal
+to_real(void* param)
+{
+	return *((AcReal*)param);
+}
+int
+to_int(void* param)
+{
+	return *((int*)param);
+}
+bool
+to_bool(void* param)
+{
+	return *((bool*)param);
+}
+int3
+to_int3(void* param)
+{
+        int* arr = (int*)param;
+        return (int3){arr[0],arr[1],arr[2]};
+}
+AcReal3
+to_real3(void* param)
+{
+        AcReal* arr = (AcReal*)param;
+        return (AcReal3){arr[0],arr[1],arr[2]};
+}
+AcBool3
+to_bool3(void* param)
+{
+        bool* arr = (bool*)param;
+        return (AcBool3){arr[0],arr[1],arr[2]};
+}
+
 #include "math_utils.h"
 #define real AcReal
 #define EXTERN
