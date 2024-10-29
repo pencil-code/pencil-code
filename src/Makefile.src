@@ -570,6 +570,7 @@ ifneq ($(filter openmp OpenMP,$(MULTITHREADING)),)
   $(shell bash -c 'rm -f exit_mn.h; touch exit_mn.h')
   PTHREAD_OBJ=pthread.o
   PTHREAD_SRC=pthread.c
+  OMP_HEADER=omp_init.h
 #
   override FFLAGS += $(OMPFFLAGS)
   override LDFLAGS += $(OMPLFLAGS)
@@ -589,6 +590,7 @@ ifneq ($(filter openmp OpenMP,$(MULTITHREADING)),)
 else
   MULTITHREADING = 
   PTHREAD_OBJ=
+  OMP_HEADER=
   $(shell bash -c 'echo "exit mn_loop" > exit_mn.h')
 endif
 ifeq ($(MAKECMDGOALS),libPC.so)
@@ -2972,11 +2974,11 @@ run=$(technical) $(physics) $(GPU_OBJ) $(GPU_INTERFACE) $(TIMESTEP_OBJ) equ.o pe
 #
 #  Rules for compiling start.o, start.x, run.o, run.x.
 #
-start.o: $(start) Makefile.local
+start.o: $(start) Makefile.local $(OMP_HEADER)
 start.x: start.o | $(SPECIAL_DEPS)
 	$(LD) $(start) start.o $(LDFLAGS) $(LDFLAGS_MAIN) $(LD_MPI) $(LD_FOURIER) $(LD_GSL) -o start.x
 #
-run.o: $(run) Makefile.local
+run.o: $(run) Makefile.local $(OMP_HEADER)
 run.x: run.o | $(SPECIAL_DEPS) $(LIBGPU)
 	$(LD) $(run) run.o $(LDFLAGS) $(LDFLAGS_MAIN) $(LDFLAGS_LIB) $(LD_MPI) $(LD_FOURIER) $(LIBSIG) $(LD_GSL) -o run.x
 	@rm -f exit_mn.h

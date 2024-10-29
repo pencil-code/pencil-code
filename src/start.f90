@@ -79,6 +79,7 @@ program start
   use Mpicomm
   use NeutralDensity,   only: init_lnrhon
   use NeutralVelocity,  only: init_uun
+  use OMP_lib
   use Param_IO
   use Particles_main
   use Polymer,          only: init_poly
@@ -111,6 +112,10 @@ program start
 !  Check processor layout, get processor numbers and define whether we are root.
 !
   call mpicomm_init
+!
+!  Initialize OpenMP use
+!
+!$ include 'omp_init.h'
 !
 !  Identify version.
 !
