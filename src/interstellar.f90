@@ -1747,7 +1747,7 @@ module Interstellar
           if (laverage_SNII_heating) &
             heatingfunction_scale(SNII)= t_interval(SNII)/(t_interval(SNII)+t*heatingfunction_fadefactor) &
                                         *heatingfunction_scalefactor
-          if (lgpu) call update_on_gpu(ind_scale,'AC_heatingfunction_scale')
+          if (lgpu) call update_on_gpu(ind_scale,'AC_heatingfunction_scale')   ! returns index ind_scale at first call!
         endif
       endif
 
@@ -2393,6 +2393,7 @@ module Interstellar
           if (lcart_equi) then
             rhom=sum(f(l1:l2,m1:m2,n1:n2,irho))*dVol_glob
           else
+            !$ call OMP_set_num_threads(num_helper_threads-1)
            !!$omp target if(loffload) !map(from:rhom) has_device_addr(f) !globals: irho
             !$omp teams distribute parallel do collapse(2) private(dV) reduction(+:rhom)
             do n=n1,n2; do m=m1,m2
@@ -2406,6 +2407,7 @@ module Interstellar
           if (lcart_equi) then
             rhom=sum(exp(f(l1:l2,m1:m2,n1:n2,ilnrho)))*dVol_glob
           else
+            !$ call OMP_set_num_threads(num_helper_threads-1)
            !!$omp target if(loffload) !map(from:rhom) has_device_addr(f)   ! globals: ilnrho
             !$omp teams distribute parallel do collapse(2) private(dV) reduction(+:rhom)
             do n=n1,n2; do m=m1,m2
@@ -2470,7 +2472,7 @@ module Interstellar
       disk_massII=0.
       if (nz1<=nz2) then
 !
-!$    call OMP_set_num_threads(num_helper_threads)
+        !$ call OMP_set_num_threads(num_helper_threads-1)
         if (ldensity_nolog) then
           if (lcart_equi) then
             disk_massII=sum(f(l1:l2,m1:m2,nz1:nz2,irho))*dVol_glob
@@ -2563,7 +2565,7 @@ module Interstellar
 !  cloud_TT and the density is above cloud_rho, i.e. cold and dense.
 !
         cloud_mass=0.0
-!$      call OMP_set_num_threads(num_helper_threads)
+        !$ call OMP_set_num_threads(num_helper_threads-1)
         !!$omp target if(loffload) !map(from: cloud_mass) & !needs: cloud_rho, lncloud_TT 
         !!$omp        has_device_addr(f) ! globals: irho, ilnrho, iss, ilnTT, ldensity_nolog
         !$omp teams distribute parallel do collapse(2) private(rho,lnTT,dV) reduction(+:cloud_mass)
@@ -2773,7 +2775,7 @@ module Interstellar
 !
         rhosum=0.0
         if (lgpu.and..not.lSN_list) call copy_farray_from_GPU(f)
-!$      call OMP_set_num_threads(num_helper_threads)
+        !$ call OMP_set_num_threads(num_helper_threads-1)
         if (.not.lcart_equi) then
          !!$omp target if(loffload) !map(from: rhosum) has_device_addr(f)   ! globals: irho, ilnrho, ldensity_nolog
           !$omp teams distribute parallel do collapse(2) private(dV) reduction(+:rhosum)
@@ -3071,10 +3073,10 @@ Get_z:if (lroot) then
         cloud_mass_proc=cloud_mass_byproc(SNR%indx%iproc+1)
         !$ lfound = .false.
 ! FG notes for omp: irho_ss, lentropy, nx, lgpu, iEXPLOSION_TOO_HOT priv ierr 
-!$      call OMP_set_num_threads(num_helper_threads)
+        !$ call OMP_set_num_threads(num_helper_threads-1)
         !!$omp target if(loffload) !map(from: ierr,cum_mass) map(tofrom: SNR) & !needs: cloud_rho,lncloud_TT,preSN) &
         !!$omp        has_device_addr(f)  !globals: ip, irho,ilnrho,ilnTT,iss,ldensity_nolog
-        !$omp teams distribute parallel do collapse(2) private(dV,rho,lnTT,l,ipsn) reduction(+:cum_mass)  !!!reduction unclear
+        !$omp teams distribute parallel do collapse(2) private(dV,rho,lnTT,l,ipsn) reduction(+:cum_mass) firstprivate(lfound) !!!reduction unclear
 mn_loop:do n=n1,n2
         do m=m1,m2
           !$ if (lfound) cycle
@@ -3106,13 +3108,11 @@ mn_loop:do n=n1,n2
                       (SNR%indx%m==preSN(2,ipsn)) .and. &
                       (SNR%indx%n==preSN(3,ipsn)) .and. &
                       (SNR%indx%iproc==preSN(4,ipsn))) then
-                    !$omp atomic
                     ierr=iEXPLOSION_TOO_HOT
                     if (.not.lgpu.and.ip==1963) &
                       print*,'position_by_cloudmass: iEXPLOSION_TOO_HOT, iproc,it,preSN=',iproc,it,preSN(:,ipsn)
                   endif
                 enddo
-                !$omp atomic
                 !$ lfound = .true.
                 include 'exit_mn.h' !exits mn_loop if not multi-threaded, otherwise does nothing
                                     !exit_mn.h is only temporarily created by make!
@@ -3493,14 +3493,14 @@ mn_loop:do n=n1,n2
       SNR%indx%state=SNstate_waiting
       SN_TT_ratio_max = SN_TT_ratio*TT_SN_max
       !$ lfound = .false.
-!$    call OMP_set_num_threads(num_helper_threads)
+      !$ call OMP_set_num_threads(num_helper_threads-1)
       !!$omp target if(loffload) !map(tofrom: SNR) has_device_addr(f)  ! needs:
       !irho,ilnrho,iss,ilnTT,frac_eth,dr2_SN,rfactor_SN,TT_SN_max, switches FG radius2mass, c_SN, width_energy, width_mass,&
       !irho_lnTT, irho_ss, irho_ee, SN_TT_ratio_max
       !$omp teams distribute parallel do collapse(2) &
       !$omp private(dV,rho_old,rho_new,deltarho,deltauu,deltaEE,deltaCR,ee_old,lnTT, &
       !$omp outward_normal_SN,maxTT,rad_hot,deltarho_hot,ind_maxTT,cmass_tmp) &
-      !$omp reduction(+:site_mass,cum_mm,cum_ee) reduction(max:maxlnTT,max_cmass)
+      !$omp reduction(+:site_mass,cum_mm,cum_ee) reduction(max:maxlnTT,max_cmass) firstprivate(lfound)
 mn_loop:do n=n1,n2
       do m=m1,m2
 !
@@ -3550,10 +3550,8 @@ mn_loop:do n=n1,n2
               !dense remnant
               if (maxTT>TT_SN_max) then
                 if (present(ierr)) then
-                  !$omp atomic
                   ierr=iEXPLOSION_TOO_HOT
                   if (.not.lSN_list) then
-                    !$omp atomic
                     !$ lfound = .true.
                     include 'exit_mn.h'  !exits mn_loop if not multi-threaded, otherwise does nothing
                                          !exit_mn.h is only temporarily created by make!
@@ -3572,10 +3570,8 @@ mn_loop:do n=n1,n2
                   maxlnTT=max(log(maxTT),maxlnTT)
                 else
                   if (present(ierr)) then
-                    !$omp atomic
                     ierr=iEXPLOSION_TOO_HOT
                     if (.not.lSN_list) then
-                      !$omp atomic
                       !$ lfound = .true.
                       include 'exit_mn.h' !exits mn_loop if not multi-threaded, otherwise does nothing
                                           !exit_mn.h is only temporarily created by make!
@@ -3941,7 +3937,7 @@ print*,"Fred was here, after MPI explode_SN: iproc, exp(maxlnTT)/TT_SN_max",ipro
 !  Obtain distance to SN and sum all points inside SNR radius and
 !  divide by number of points.
 !
-!$    call OMP_set_num_threads(num_helper_threads)
+      !$ call OMP_set_num_threads(num_helper_threads-1)!  nok:2,3,4,5)  !num_helper_threads-1)
      !!$omp target if(loffload) !map(from: rhomin,rhomax,tmp) map(to: remnant) has_device_addr(f)  ! needs: irho,ilnrho,iuu,dr2_SN, switches;  gives: m,n
       !$omp teams distribute parallel do collapse(2) private(rho,uu,u2,lmask,dV), &
       !$omp reduction(min:rhomin) reduction(max:rhomax) reduction(+:tmp)
@@ -3982,6 +3978,8 @@ print*,"Fred was here, after MPI explode_SN: iproc, exp(maxlnTT)/TT_SN_max",ipro
       enddo  !  mn-loop
       !$omp end teams distribute parallel do
      !!$omp end target
+!print*, 'get_properties after parallel'
+!flush(6)
 !
 !  Calculate mean density inside the remnant and return error if the volume is
 !  zero.
@@ -4045,7 +4043,7 @@ print*,"Fred was here, after MPI explode_SN: iproc, exp(maxlnTT)/TT_SN_max",ipro
 !  Obtain distance to SN and sum all points inside SNR radius and divide by number of points.
 !
       tmp=0.
-!$    call OMP_set_num_threads(num_helper_threads)
+      !$ call OMP_set_num_threads(num_helper_threads-1)
      !!$omp target if(loffload) !map(from: tmp) map(to: remnant) has_device_addr(f)  ! needs: irho,ilnrho,iuu,dr2_SN, switches;  gives: m,n
 !FG: cvelocity_SN, cmass_SN
       !$omp teams distribute parallel do collapse(2) private(uu,u2,rho,deltauu,deltarho,dV,outward_normal_SN) reduction(+:tmp)
