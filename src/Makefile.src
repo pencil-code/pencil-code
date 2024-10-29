@@ -534,7 +534,7 @@ ifneq ($(GPU),nogpu)
       GPU_DEPS = $(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/Makefile.vendor $(CUDA_MAKEDIR)/PC_modulesources.h $(DSL_WORKDIR)/fieldecs.h $(DSL_WORKDIR)/equations.h $(DSL_WORKDIR)/solve.ac
       #LDFLAGS_MAIN = -Bdynamic -Wl,--export-dynamic
       LDFLAGS_MAIN = -h dynamic -Wl,--export-dynamic
-      ifneq ($(filter on yes,$RUNTIME_COMPILATION),)
+      ifneq ($(filter on yes,$(RUNTIME_COMPILATION)),)
         RUNTIME_COMPILATION = on
         LDFLAGS_LIB = -L astaroth -L astaroth/submodule/build/src/core -L astaroth/submodule/build/runtime_compilation -L astaroth/submodule/build/src/core/kernels -lacc_runtime_compiler -lastaroth_core -lkernels -l$(LIBGPU_NAME)
       else
@@ -2985,7 +2985,7 @@ libPC.so: run.o | $(SPECIAL_DEPS) $(LIBGPU)
 	  $(LD) $(run) run.o $(LDFLAGS) $(LDFLAGS_MAIN) $(LDFLAGS_LIB) $(LD_MPI) $(LD_FOURIER) $(LIBSIG) $(LD_GSL) -shared -o libPC.so
 $(LIBGPU): $(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/Makefile.vendor
 #$(LIBGPU): $(GPU_DEPS)
-	cd astaroth && make MPICOMM=$(MPICOMM)
+	cd astaroth && make MPICOMM=$(MPICOMM) RUNTIME_COMPILATION=$(RUNTIME_COMPILATION)
 #
 special_preps:
 ifeq ($(SPECIAL_MULT),1)

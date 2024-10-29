@@ -6,12 +6,12 @@
 #define cpu_pow pow
 #define REAL_MAX AC_REAL_MAX
 
-#include "PC_nghost.h"
 #include "../../PC_moduleflags.h"
 #include "../stdlib/math"
 #include "../stdlib/utils/intrinsics.h"
 
 #include "../../../cparam_c.h"
+#include "PC_nghost.h"
 
 #define AC_n1 n1
 #define AC_m1 m1
@@ -29,10 +29,6 @@
 #include "../stdlib/units.h"
 #include "../stdlib/utils/kernels.h"
 #include "PC_modulepardecs.h"
-//TP: x,y and z are too generic macros
-#undef x
-#undef y
-#undef z
 #define AC_NGHOST NGHOST
 
 // declare here reduction results needed for the timestep
@@ -46,7 +42,6 @@
 #endif
 
 #ifdef LDENSITY
-  int AC_ldensity_nolog
   #define LNRHO RHO
   #define ldensity_nolog AC_ldensity_nolog
 #endif

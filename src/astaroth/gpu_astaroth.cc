@@ -77,22 +77,22 @@ int halo_xz_size[2] = {0, 0}, halo_yz_size[2] = {0, 0};
 /***********************************************************************************************/
 int DCONST(const AcIntParam param)
 {
-  return mesh.info.int_params[param];
+  return mesh.info[param];
 }
 /***********************************************************************************************/
 int3 DCONST(const AcInt3Param param)
 {
-  return mesh.info.int3_params[param];
+  return mesh.info[param];
 }
 /***********************************************************************************************/
 AcReal DCONST(const AcRealParam param)
 {
-  return mesh.info.real_params[param];
+  return mesh.info[param];
 }
 /***********************************************************************************************/
 AcReal3 DCONST(const AcReal3Param param)
 {
-  return mesh.info.real3_params[param];
+  return mesh.info[param];
 }
 /***********************************************************************************************/
 //TP: for testing not usually used
@@ -452,7 +452,10 @@ extern "C" void substepGPU(int isubstep)
   Device dev = acGridGetDevice();
   if (isubstep == 1)
     acDeviceSetInput(acGridGetDevice(), AC_dt,dt);
+  //auto start = MPI_Wtime();
   acGridExecuteTaskGraph(rhs, 1);
+  //auto end = MPI_Wtime();
+  //fprintf(stderr,"RHS TOOK: %14e\n",end-start);
   if (isubstep == 1 && ldt)
   {
       acGridSynchronizeStream(STREAM_ALL);
@@ -946,7 +949,7 @@ void setupConfig(AcMeshInfo& config)
 
   #if LDENSITY
     PCLoad(config,AC_ldensity_nolog,ldensity_nolog);
-    //printf("ldensity_nolog is %d \n",config.int_params[AC_ldensity_nolog]);//ldensity_nolog);
+    //printf("ldensity_nolog is %d \n",config[AC_ldensity_nolog]);//ldensity_nolog);
   #endif
   //Device dev = acGridGetDevice();
 #if LHYDRO
@@ -968,7 +971,7 @@ void checkConfig(AcMeshInfo &config)
  acLogFromRootProc(rank,"Check that config is correct\n");
  acLogFromRootProc(rank,"n[xyz]grid, d[xyz]: %d %d %d %.14f %.14f %.14f \n", nxgrid, nygrid, nzgrid, dx, dy, dz);
 // acLogFromRootProc(rank,"rank= %d: l1, l2, n1, n2, m1, m2= %d %d %d %d %d %d \n", rank, l1, l2, n1, n2, m1, m2);
- acLogFromRootProc(rank,"rank= %d: zlen= %.14f %.14f \n", config.real_params[AC_zlen], lxyz[2]);
+ acLogFromRootProc(rank,"rank= %d: zlen= %.14f %.14f \n", config[AC_zlen], lxyz[2]);
 
 #if LHYDRO
  acLogFromRootProc(rank,"lpressuregradientgas= %d %d \n", lpressuregradient_gas, config[AC_lpressuregradient_gas]);
@@ -1007,16 +1010,20 @@ void checkConfig(AcMeshInfo &config)
 /***********************************************************************************************/
 extern "C" void getFArrayIn(AcReal **p_f_in)
 {
-  auto VBA = acGridGetVBA();
-  *p_f_in = VBA.in[0];
+  fprintf(stderr,"DEPRECATED\n");
+  exit(EXIT_FAILURE);
+  //auto VBA = acGridGetVBA();
+  //*p_f_in = VBA.in[0];
 }
 /***********************************************************************************************/
 extern "C" void copyVBApointers(AcReal **in, AcReal **out)
 {
-  Device device = acGridGetDevice();
-  auto VBA = acGridGetVBA();
-  *in =  VBA.in[0];
-  *out = VBA.out[0];
+  fprintf(stderr,"DEPRECATED\n");
+  exit(EXIT_FAILURE);
+  //Device device = acGridGetDevice();
+  //auto VBA = acGridGetVBA();
+  //*in =  VBA.in[0];
+  //*out = VBA.out[0];
 }
 /***********************************************************************************************/
 void
@@ -1033,12 +1040,8 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out, int c
   comm_pencil = MPI_Comm_f2c(comm_fint);
   setupConfig(mesh.info);
 #if AC_RUNTIME_COMPILATION
-  if (rank == 0)
-  {
 #include "cmake_options.h"
-    acCompile(cmake_options,mesh.info);
-  }
-  MPI_Barrier(comm_pencil);
+  acCompile(cmake_options,mesh.info);
   acLoadLibrary();
   acLogFromRootProc(rank, "Done setupConfig && acCompile\n");
   fflush(stdout);
@@ -1237,8 +1240,8 @@ sym_z(AcMesh mesh_in)
 	 else
 	 {
 	 	const auto idx = DEVICE_VTXBUF_IDX(i,j,k);
-		const auto offset = k-mesh_in.info.int_params[AC_nz_max]+1;
-	 	const auto domain_z= mesh_in.info.int_params[AC_nz_max]-offset;
+		const auto offset = k-mesh_in.info[AC_nz_max]+1;
+	 	const auto domain_z= mesh_in.info[AC_nz_max]-offset;
 	 	const auto domain_idx = DEVICE_VTXBUF_IDX(i,j,domain_z);
 		mesh_in.vertex_buffer[ivar][idx] = mesh_in.vertex_buffer[ivar][domain_idx];
 		//mesh_in.vertex_buffer[ivar][idx] = mesh.vertex_buffer[ivar][idx];
@@ -1291,8 +1294,8 @@ check_sym_z(AcMesh mesh_in)
 	 else
 	 {
 	 	const auto idx = DEVICE_VTXBUF_IDX(i,j,k);
-		const auto offset = k-mesh_in.info.int_params[AC_nz_max]+1;
-	 	const auto domain_z= mesh_in.info.int_params[AC_nz_max]-offset;
+		const auto offset = k-mesh_in.info[AC_nz_max]+1;
+	 	const auto domain_z= mesh_in.info[AC_nz_max]-offset;
 	 	const auto domain_idx = DEVICE_VTXBUF_IDX(i,j,domain_z);
 		mesh_in.vertex_buffer[ivar][idx] = mesh.vertex_buffer[ivar][domain_idx];
 		if(mesh_in.vertex_buffer[ivar][idx] !=  mesh_in.vertex_buffer[ivar][domain_idx])
