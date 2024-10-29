@@ -43,7 +43,6 @@
 
 #ifdef LDENSITY
   #define LNRHO RHO
-  #define ldensity_nolog AC_ldensity_nolog
 #endif
 #include "../bcs/funcs.h"
 #include "../bcs/funcs_overload.h"

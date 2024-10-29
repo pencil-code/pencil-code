@@ -400,11 +400,12 @@ LNTT[vertexIdx.x][vertexIdx.y][AC_n1-i-1]=2*LNTT[vertexIdx.x][vertexIdx.y][AC_n1
 }
 }
 else if(topbot == AC_top) {;
+cs2top_loc=cs2top;
 if (AC_lread_oldsnap) {;
-cs2top=AC_cs20*exp(AC_gamma*SS[AC_l2-1][AC_m2-1][AC_n2-1]/AC_cp+AC_gamma_m1*(LNRHO[AC_l2-1][AC_m2-1][AC_n2-1]-AC_lnrho0));
+cs2top_loc=AC_cs20*exp(AC_gamma*SS[AC_l2-1][AC_m2-1][AC_n2-1]/AC_cp+AC_gamma_m1*(LNRHO[AC_l2-1][AC_m2-1][AC_n2-1]-AC_lnrho0));
 }
 if (lentropy  &&  ! AC_pretend_lntt) {;
-tmp = 2*AC_cv*log(cs2top/AC_cs20);
+tmp = 2*AC_cv*log(cs2top_loc/AC_cs20);
 if (AC_ldensity_nolog) {;
 if (AC_lreference_state) {;
 }
@@ -439,7 +440,7 @@ SS[vertexIdx.x][vertexIdx.y][AC_n2+i-1] = -SS[vertexIdx.x][vertexIdx.y][AC_n2-i-
 }
 }
 else if (lentropy  &&  AC_pretend_lntt) {;
-SS[vertexIdx.x][vertexIdx.y][AC_n2-1] = log(cs2top/AC_gamma_m1);
+SS[vertexIdx.x][vertexIdx.y][AC_n2-1] = log(cs2top_loc/AC_gamma_m1);
 loptest_return_value_6 = false;
 if (present(lone_sided)) {;
 loptest_return_value_6=lone_sided;
@@ -457,10 +458,10 @@ SS[vertexIdx.x][vertexIdx.y][AC_n2+i-1]=2*SS[vertexIdx.x][vertexIdx.y][AC_n2-1]-
 }
 else if (ltemperature) {;
 if (ltemperature_nolog) {;
-TT[vertexIdx.x][vertexIdx.y][AC_n2-1]   = cs2top/AC_gamma_m1;
+TT[vertexIdx.x][vertexIdx.y][AC_n2-1]   = cs2top_loc/AC_gamma_m1;
 }
 else {
-LNTT[vertexIdx.x][vertexIdx.y][AC_n2-1] = log(cs2top/AC_gamma_m1);
+LNTT[vertexIdx.x][vertexIdx.y][AC_n2-1] = log(cs2top_loc/AC_gamma_m1);
 }
 loptest_return_value_7 = false;
 if (present(lone_sided)) {;

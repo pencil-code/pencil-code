@@ -3204,7 +3204,7 @@ module EquationOfState
       integer, intent(IN) :: topbot
       logical, optional :: lone_sided
 !
-      real :: tmp
+      real :: tmp, cs2top_loc
       integer :: i
       real, dimension(mx,my) :: lnrho_xy
 !
@@ -3286,11 +3286,14 @@ module EquationOfState
 
 !DM+PC next two lines need to be looked into.
 !AB: This was implemented in revision: 17029 dhruba.mitra, but it works!
-        if (lread_oldsnap) &
-          cs2top=cs20*exp(gamma*f(l2,m2,n2,iss)/cp+gamma_m1*(f(l2,m2,n2,ilnrho)-lnrho0))
+        if (lread_oldsnap) then
+          cs2top_loc=cs20*exp(gamma*f(l2,m2,n2,iss)/cp+gamma_m1*(f(l2,m2,n2,ilnrho)-lnrho0))
+        else
+          cs2top_loc=cs2top
+        endif
 !
         if (lentropy .and. .not. pretend_lnTT) then
-          tmp = 2*cv*log(cs2top/cs20)
+          tmp = 2*cv*log(cs2top_loc/cs20)
           call getlnrho(f(:,:,n2,ilnrho),lnrho_xy)
           f(:,:,n2,iss) = 0.5*tmp - (cp-cv)*(lnrho_xy-lnrho0)
           if (lreference_state) &
@@ -3317,7 +3320,7 @@ module EquationOfState
             endif
           endif
         elseif (lentropy .and. pretend_lnTT) then
-            f(:,:,n2,iss) = log(cs2top/gamma_m1)
+            f(:,:,n2,iss) = log(cs2top_loc/gamma_m1)
             if (loptest(lone_sided)) then
               call set_ghosts_for_onesided_ders(f,topbot,iss,3,.true.)
             else
@@ -3325,9 +3328,9 @@ module EquationOfState
             endif
         elseif (ltemperature) then
             if (ltemperature_nolog) then
-              f(:,:,n2,iTT)   = cs2top/gamma_m1
+              f(:,:,n2,iTT)   = cs2top_loc/gamma_m1
             else
-              f(:,:,n2,ilnTT) = log(cs2top/gamma_m1)
+              f(:,:,n2,ilnTT) = log(cs2top_loc/gamma_m1)
             endif
             if (loptest(lone_sided)) then
               call set_ghosts_for_onesided_ders(f,topbot,ilnTT,3,.true.)
