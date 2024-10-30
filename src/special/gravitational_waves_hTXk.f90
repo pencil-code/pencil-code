@@ -1878,6 +1878,7 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
                     angle=acos(cos_angle)/dtor
                     ibin_angular=1+nint(angle*(nbin_angular-1)/180.)
                     if (ibin_angular<1 .or. ibin_angular>nbin_angular) print*,'AXEL: bad ibin_angular',ibin_angular
+!if (ibin_angular>15) print*,'AXEL: bad ibin_angular',ibin_angular,angle
 !
 !  Sum up the 2-D histograms, GWh_Gamma_ab and GWhhel_Gamma_ab (unboosted HD curve, here for h)
 !
