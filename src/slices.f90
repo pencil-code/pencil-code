@@ -113,7 +113,6 @@ contains
       if (ip<=12.and.lroot) time1=mpiwtime()
       do while (inamev <= nnamev)
 !
-print*, 'cformv(inamev)=', cformv(inamev)
         if (trim(cformv(inamev))=='') then
           inamev=inamev+1
           cycle           ! skip undefined slices
