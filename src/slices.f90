@@ -93,6 +93,7 @@ contains
       use Testfield,       only: get_slices_testfield
       use Testflow,        only: get_slices_testflow
       use Testscalar,      only: get_slices_testscalar
+      use Training,        only: get_slices_training
       use Mpicomm,         only: mpiwtime
 !
       real, dimension (mx,my,mz,mfarray), intent(IN) :: f
@@ -112,6 +113,7 @@ contains
       if (ip<=12.and.lroot) time1=mpiwtime()
       do while (inamev <= nnamev)
 !
+print*, 'cformv(inamev)=', cformv(inamev)
         if (trim(cformv(inamev))=='') then
           inamev=inamev+1
           cycle           ! skip undefined slices
@@ -154,6 +156,7 @@ contains
         if (ltestfield)    call get_slices_testfield   (f,slices)
         if (ltestflow)     call get_slices_testflow    (f,slices)
         if (ltestscalar)   call get_slices_testscalar  (f,slices)
+        if (ltraining)     call get_slices_training    (f,slices)
 !
         if (lslices_legacy) then
           inamev=inamev+1

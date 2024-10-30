@@ -1369,7 +1369,6 @@ module Diagnostics
 !  The remaining name can then be used for the legend.
 !
       if (cname(1:length)==ctest) then
-
         if (itest==0) then
           if (iform1>0) then
             cform=cname(iform1+1:iform2-1)
