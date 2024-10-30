@@ -76,5 +76,15 @@
     subroutine finalize_training
 
     endsubroutine finalize_training
+!***********************************************************************
+    subroutine get_slices_training(f,slices)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (slice_data) :: slices
+
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(slices)
+      
+    endsubroutine get_slices_training
 !***************************************************************
   end module Training
