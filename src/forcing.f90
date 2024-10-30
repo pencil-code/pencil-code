@@ -1144,8 +1144,8 @@ module Forcing
           profx_ampl=ampl_ff(i)*(1.-4./3.*(1.-.25*x(l1:l2)**2)*x(l1:l2)**2)
         elseif (iforcing_cont(i)=='tidal') then
           if (lroot) print*, 'forcing_cont: tidal'
-          sinx(:,i)=sin(kf_fcont_x(i)*x)
-          siny(:,i)=sin(kf_fcont_y(i)*y)
+          sinx(:,i)=sin(2.*pi*x/Lxyz(1))
+          siny(:,i)=sin(2.*pi*y/Lxyz(2))
        elseif (iforcing_cont(i)=='from_file') then
           if (allocated(fcont_from_file)) deallocate(fcont_from_file)
           allocate(fcont_from_file(3,nxgrid,nygrid,nzgrid))
