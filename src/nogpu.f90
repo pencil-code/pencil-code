@@ -49,6 +49,20 @@ contains
 !
     endsubroutine rhs_GPU
 !**************************************************************************
+    function get_ptr_GPU(ind1,ind2,lout) result(pFarr)
+
+      integer :: ind1
+      integer, optional :: ind2
+      logical, optional :: lout
+
+      real, dimension(:,:,:,:), pointer :: pFarr
+
+      call keep_compiler_quiet(ind1,ind2)
+      call keep_compiler_quiet(lout)
+      call keep_compiler_quiet(pFarr)
+
+    endfunction get_ptr_GPU
+!**************************************************************************
     subroutine copy_farray_from_GPU(f)
 
       real, dimension (:,:,:,:), intent(OUT) :: f
