@@ -13,6 +13,7 @@
     use Messages
     use Cudafor
     use Torchfort
+    use iso_c_binding
 
     implicit none
 
@@ -29,11 +30,12 @@
     logical :: luse_trained_tau
     real :: max_loss=1.e-4
 
+    integer :: idiag_loss=0            ! DIAG_DOC: torchfort training loss
     integer :: idiag_tauerror=0        ! DIAG_DOC: $\sqrt{\left<(\sum_{i,j} u_i*u_j - tau_{ij})^2\right>}$
 
     namelist /training_run_pars/ config_file, model, it_train, it_train_chkpt, luse_trained_tau, max_loss
 !
-    integer :: istat, train_step_ckpt, val_step_ckpt    !, TORCHFORT_RESULT_SUCCESS=0
+    integer :: istat, train_step_ckpt, val_step_ckpt
     logical :: ltrained=.false.
 
     contains
@@ -48,6 +50,7 @@
 
       if (.not.lhydro) call fatal_error('initialize_training','needs HYDRO module')
       istat = cudaSetDevice(iproc)
+      if (istat /= CUDASUCCESS) call fatal_error('initialize_training','cudaSetDevice failed')
    
       model_file = trim(model)//'.pt'
       modelfn=trim(model_output_dir)//trim(model_file)
@@ -60,8 +63,6 @@
         endif
       endif
       call mpibcast(ltrained)
-
-      istat = cudaSetDevice(iproc)
 !
 ! TorchFort create model
 !
@@ -98,9 +99,11 @@
 
       luse_trained_tau = luse_trained_tau.and.ltrained
 
-      allocate(input(mx, my, mz, 3, 1))
-      allocate(output(mx, my, mz, 6, 1))
-      allocate(label(mx, my, mz, 6, 1))
+      if (.not.lgpu) then
+        allocate(input(mx, my, mz, 3, 1))
+        allocate(output(mx, my, mz, 6, 1))
+        allocate(label(mx, my, mz, 6, 1))
+      endif
 
     endsubroutine initialize_training
 !***********************************************************************
@@ -156,16 +159,25 @@
     endsubroutine training_before_boundary
 !***************************************************************
     subroutine infer(f)
-     
+    
+      use Gpu, only: get_ptr_gpu
+
       real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:), pointer :: ptr_uu, ptr_tau
 
       ! Host to device
-      input(:,:,:,:,1) = f(:,:,:,iux:iuz)
+      if (.not.lgpu) then
+        input(:,:,:,:,1) = f(:,:,:,iux:iuz)    ! host to device
+        istat = torchfort_inference(model, input, output)
+      else
+        !call get_ptr_gpu(ptr_uu,iux,iuz)
+        !call get_ptr_gpu(ptr_tau,tauxx,tauzz)
+        istat = torchfort_inference(model, get_ptr_gpu(iux,iuz), get_ptr_gpu(itauxx,itauzz))
+      endif
 
-      istat = torchfort_inference(model, input, output)
       if (istat /= TORCHFORT_RESULT_SUCCESS) then
         call fatal_error("infer","istat="//trim(itoa(istat)))
-      else
+      elseif (.not.lgpu) then
         ! Device to host
         f(l1:l2,m1:m2,n1:n2,itauxx:itauzz) = output(:,:,:,:,1)
       endif
@@ -173,7 +185,9 @@
     endsubroutine infer
 !***************************************************************
     subroutine train(f)
-    
+   
+      use Diagnostics, only: save_name 
+      use Gpu, only: get_ptr_gpu
       use Sub, only: smooth
 
       real, dimension (mx,my,mz,mfarray) :: f
@@ -184,27 +198,33 @@
 !
 !  Smooth velocity.
 !
-        f(:,:,:,itau:itau+2) = f(:,:,:,iux:iuz)      ! use f(:,:,:,itau:itau+2) as work space
-        call smooth(f,itau,itau+2)
-        input(:,:,:,:,1) = f(:,:,:,itau:itau+2)      ! host to device
+        if (lgpu) then
+          !smoothing kernel for uu and tau
+          istat = torchfort_inference(model, get_ptr_gpu(iux,iuz), get_ptr_gpu(itauxx,itauzz))
+        else
+          f(:,:,:,itau:itau+2) = f(:,:,:,iux:iuz)      ! use f(:,:,:,itau:itau+2) as work space
+          call smooth(f,itau,itau+2)
+          input(:,:,:,:,1) = f(:,:,:,itau:itau+2)      ! host to device
 !
 !  Calculate and smooth stress tensor.
 !
-        f(:,:,:,itauxx) = f(:,:,:,iux)**2
-        f(:,:,:,itauyy) = f(:,:,:,iuy)**2
-        f(:,:,:,itauzz) = f(:,:,:,iuz)**2
-        f(:,:,:,itauxy) = f(:,:,:,iux)*f(:,:,:,iuy)
-        f(:,:,:,itauyz) = f(:,:,:,iuy)*f(:,:,:,iuz)
-        f(:,:,:,itauxz) = f(:,:,:,iux)*f(:,:,:,iuz)
+          f(:,:,:,itauxx) = f(:,:,:,iux)**2
+          f(:,:,:,itauyy) = f(:,:,:,iuy)**2
+          f(:,:,:,itauzz) = f(:,:,:,iuz)**2
+          f(:,:,:,itauxy) = f(:,:,:,iux)*f(:,:,:,iuy)
+          f(:,:,:,itauyz) = f(:,:,:,iuy)*f(:,:,:,iuz)
+          f(:,:,:,itauxz) = f(:,:,:,iux)*f(:,:,:,iuz)
 
-        call smooth(f,itauxx,itauzz)
-        label(:,:,:,:,1) = f(:,:,:,itauxx:itauzz)    ! host to device
+          call smooth(f,itauxx,itauzz)
+          label(:,:,:,:,1) = f(:,:,:,itauxx:itauzz)    ! host to device
 
-        istat = torchfort_train(model, input, label, loss_val)
+          istat = torchfort_train(model, input, label, loss_val)
+        endif
+
         if (istat /= TORCHFORT_RESULT_SUCCESS) then
           call fatal_error("train","istat="//trim(itoa(istat)))
         else
-          if (lroot) print*, "training loss = ", loss_val
+          if (ldiagnos) call save_name(loss_val, idiag_loss)
         endif
 
         if (loss_val <= max_loss) ltrained=.true.
@@ -246,23 +266,51 @@
       integer :: i,j,jtau
       real, dimension(nx) :: error
 
-      if (ldiagnos.and.ltrained) then
-        if (idiag_tauerror>0) then
+      if (ltrained) then
+        if (ldiagnos) then
+          if (idiag_tauerror>0) then
 
-          jtau=0
-          error=0.
-          do i=1,3
-            do j=i,3
-              error=error+(p%uu(:,i)*p%uu(:,j)-f(l1:l2,m,n,itau+jtau))**2
-              jtau=jtau+1
+            jtau=0
+            error=0.
+            do i=1,3
+              do j=i,3
+                error=error+(p%uu(:,i)*p%uu(:,j)-f(l1:l2,m,n,itau+jtau))**2
+                jtau=jtau+1
+              enddo
             enddo
-          enddo
-          call sum_mn_name(error,idiag_tauerror,lsqrt=.true.)
+            call sum_mn_name(error,idiag_tauerror,lsqrt=.true.)
 
+          endif 
         endif 
       endif 
-
+!
     endsubroutine calc_diagnostics_training
+!***********************************************************************
+    subroutine get_slices_training(f,slices)
+!
+!  Write slices for animation of predicted Reynolds stresses.
+!
+      use Slices_methods, only: assign_slices_scal
+
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (slice_data) :: slices
+!
+!  Loop over slices
+!
+      select case (trim(slices%name))
+!
+!  Velocity field.
+!
+        case ('tauxx'); call assign_slices_scal(slices,f,itauxx)
+        case ('tauxy'); call assign_slices_scal(slices,f,itauxy)
+        case ('tauxz'); call assign_slices_scal(slices,f,itauxz)
+        case ('tauyy'); call assign_slices_scal(slices,f,itauyy)
+        case ('tauyz'); call assign_slices_scal(slices,f,itauyz)
+        case ('tauzz'); call assign_slices_scal(slices,f,itauzz)
+
+      end select
+
+    endsubroutine get_slices_training
 !***********************************************************************
     subroutine rprint_training(lreset)
 !
@@ -270,18 +318,34 @@
 !
       use Diagnostics, only: parse_name
 !
-      integer :: iname
+      integer :: iname, inamev, idum
       logical :: lreset
 !
       if (lreset) then
-        idiag_tauerror=0
+        idiag_tauerror=0; idiag_loss=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
 !
       if (lroot.and.ip<14) print*,'rprint_training: run through parse list'
       do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'loss',idiag_loss)
         call parse_name(iname,cname(iname),cform(iname),'tauerror',idiag_tauerror)
+      enddo
+
+      do inamev=1,nnamev
+        idum=0
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'tauxx',idum)
+        idum=0
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'tauxy',idum) 
+        idum=0
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'tauxz',idum) 
+        idum=0
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'tauyy',idum) 
+        idum=0
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'tauyz',idum) 
+        idum=0
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'tauzz',idum) 
       enddo
 
     endsubroutine rprint_training
@@ -295,7 +359,7 @@
         if (istat /= TORCHFORT_RESULT_SUCCESS) &
           call fatal_error("finalize_training","when saving model: istat="//trim(itoa(istat)))
       endif
-      deallocate(input,label,output)
+      if (.not.lgpu) deallocate(input,label,output)
 
     endsubroutine finalize_training
 !***************************************************************

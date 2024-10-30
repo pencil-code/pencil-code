@@ -11,3 +11,4 @@
     public :: write_training_run_pars
     public :: calc_diagnostics_training, rprint_training
     public :: div_reynolds_stress
+    public :: get_slices_training
