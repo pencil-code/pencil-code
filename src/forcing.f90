@@ -6126,12 +6126,17 @@ module Forcing
 !
       case ('tidal')
         force(:,1) = ampl_ff(i) * ( &
-            sinx(l1:l2,i)*cos(2.*phi_tidal)*cos(omega_ff*t) &
-            + 2.*siny(m,i)*cos(phi_tidal)*sin(omega_ff*t) )
+            sinx(l1:l2,i) * cos(2.*phi_tidal) * cos(omega_ff*t) + &
+            siny(m,i)     * 2.*cos(phi_tidal) * sin(omega_ff*t) + &
+            z(n)          * 0.5*sin(2.*phi_tidal) * cos(omega_ff*t) )
         force(:,2) = ampl_ff(i) * ( &
-            sinx(l1:l2,i)*cos(phi_tidal)*sin(omega_ff*t) &
-            - 2.*siny(m,i)*cos(omega_ff*t) )
-        force(:,3) = 0.
+            sinx(l1:l2,i) * cos(phi_tidal) * sin(omega_ff*t) + &
+            siny(m,i)     * (-2.) * cos(omega_ff*t) + &
+            z(n)          * sin(phi_tidal) * sin(omega_ff*t) )
+        force(:,3) = ampl_ff(i) * ( &
+            sinx(l1:l2,i) * sin(2.*phi_tidal) * cos(omega_ff*t) + &
+            siny(m,i)     * 2.*sin(phi_tidal) * sin(omega_ff*t) + &
+            z(n)          * sin(phi_tidal)**2 * cos(omega_ff*t) )
 !
 !
 !  possibility of putting zero, e.g., for purely magnetic forcings
