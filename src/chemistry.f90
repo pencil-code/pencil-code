@@ -166,8 +166,9 @@ module Chemistry
   real :: true_density_cond_spec_cgs=2.196, true_density_cond_spec
   real :: gam_surf_energy_cgs=32.
   real :: chem_conc_sat_spec_cgs=1e-8 !units of mol/cmˆ3
-  logical, pointer :: ldustnucleation, lpartnucleation
+  logical, pointer :: ldustnucleation, lpartnucleation, lcondensing_species
   character(len=labellen) :: isurf_energy="const"
+  character(len=labellen) :: ichem_conc_sat_spec="const"
 !
 !   Atmospheric physics
 !
@@ -228,7 +229,7 @@ module Chemistry
       ldiff_corr, lDiff_fick, lreac_as_aux, reac_rate_method,global_phi, &
       Ythresh, lchem_detailed, chem_conc_sat_spec_cgs, inucl_pre_exp, lcorr_vel, &
       lgradP_terms, lnormalize_chemspec, lnormalize_chemspec_N2, &
-      gam_surf_energy_cgs, isurf_energy
+      gam_surf_energy_cgs, isurf_energy, ichem_conc_sat_spec
 !
 ! diagnostic variables (need to be consistent with reset list below)
 !
@@ -442,10 +443,23 @@ module Chemistry
           endif
         endif
         if (ldustdensity .or. lparticles_radius) then
-          call find_species_index(condensing_species,i_cond_spec,ichem_cond_spec,found_specie)
-          if (.not. found_specie) then
-            print*,"condensing_species=",condensing_species
-            call fatal_error('initialize_chemistry','there is no such species')
+          if  (lparticles_radius) then
+            call get_shared_variable('lcondensing_species',lcondensing_species)
+          endif
+
+          if (lcondensing_species) then
+            call find_species_index(condensing_species,i_cond_spec,ichem_cond_spec,found_specie)
+            if (.not. found_specie) then
+              print*,"condensing_species=",condensing_species
+              call fatal_error('initialize_chemistry','there is no such species')
+            else
+              if (lroot) then
+                print*,"Condensing species:"
+                print*,"i_cond_spec=",i_cond_spec
+                print*,"ichem_cond_spec=",ichem_cond_spec
+                print*,"species=",varname(ichemspec(ichem_cond_spec))
+              endif
+            endif
           endif
         endif
 
@@ -587,7 +601,7 @@ module Chemistry
         if  (lparticles_radius) then
           true_density_cond_spec=true_density_cond_spec_cgs/unit_density
         endif
-      endif
+      endif      
 !
 !  write array dimension to chemistry diagnostics file
 !
@@ -3162,7 +3176,7 @@ module Chemistry
       if (headtt .or. ldebug) print*,'dchemistry_dt: SOLVE dchemistry_dt'
 !
 !  Interface for your personal subroutines calls
-!
+      !
       if (lspecial) call special_calc_chemistry(f,df,p)
 !
 ! Calculate correction velocity to ensure that the sum of all mass fractions is unit
@@ -3842,7 +3856,7 @@ module Chemistry
             write (file_id,*) 'TROE/',troe_coeff(:,reac)
           endif
           if (minval(a_k4(:,reac)) < impossible) then
-            write (file_id,*) a_k4(:,reac)
+            write (file_id,*) "a_k4/", a_k4(:,reac)
           endif
         else
           write (file_id,*) ' min lambda=',lamb_low,' max lambda=',lamb_up
@@ -4905,6 +4919,7 @@ module Chemistry
           enddo
         enddo
       endif
+
 !
 ! NH:
 !
@@ -5504,7 +5519,7 @@ module Chemistry
       logical :: emptyfile=.true.
       logical :: found_specie
       integer :: file_id=123, ind_glob, ind_chem
-      character(len=80) :: ChemInpLine
+      character(len=80) :: ChemInpLine,spe
       character(len=10) :: specie_string
       character(len=1) :: tmp_string
       integer :: i, j, k=1
@@ -5721,6 +5736,12 @@ module Chemistry
         print '(E10.3)',  PP/(k_B_cgs/m_u_cgs)*air_mass/TT
         print*, 'Air mean weight, g/mol', air_mass
         print*, 'R', k_B_cgs/m_u_cgs
+
+        do j=1,nchemspec
+          spe="Y("//trim(varname(ichemspec(j)))//")="
+          write (*,'(A10,F10.7)') spe,initial_massfractions(j)
+        enddo
+        
       endif
 
       close(file_id)
@@ -6668,6 +6689,9 @@ module Chemistry
         ! Calculate mass flux of nucleii
         !
         ff_nucl=p%nucl_rate*4.*pi*true_density_cond_spec*p%nucl_rmin**3/3.
+        where (ff_nucl<0)
+          ff_nucl=0.0
+        end where
         !
         ! The mass of the nucleii is added to the passive scalar equation 
         !
@@ -6720,12 +6744,17 @@ module Chemistry
       real :: volume_spec_cgs=4.5e-23
       real :: volume_spec, chem_conc_sat_spec
       real, dimension (nx) :: sat_ratio_spec, tmp1, tmp2, nucleation_rate, nucleation_rmin
-      real, dimension (nx) :: gam_surf_energy, nucleation_rate_coeff
+      real, dimension (nx) :: gam_surf_energy, nucleation_rate_coeff, chem_conc
       real :: molar_mass_spec, atomic_m_spec
       !
 !  compute rmin
 !
       if (lnucleation) then
+        !
+        ! Set minimum concentration of the condensing species to avoid NaNs
+        !
+        chem_conc=max(1e-20,p%chem_conc(:,ichem_cond_spec))
+        
         if (isurf_energy == "const") then
           gam_surf_energy=gam_surf_energy_cgs/(unit_mass/unit_time)
         elseif (isurf_energy == "Kingery") then
@@ -6733,36 +6762,29 @@ module Chemistry
         else
           call fatal_error("cond_spec_nucl_rate","No such isurf_energy")
         endif
-          volume_spec=volume_spec_cgs/unit_length**3
-          chem_conc_sat_spec=chem_conc_sat_spec_cgs*unit_length**3
-          sat_ratio_spec=p%chem_conc(:,ichem_cond_spec)/chem_conc_sat_spec
-          nucleation_rmin=2.*gam_surf_energy*volume_spec/(k_B*p%TT*alog(sat_ratio_spec))
-!
-!  Compute nucleation rate (of nucleii with r=rmin)
-!
-          if (inucl_pre_exp .eq. "const") then
-            nucleation_rate_coeff=nucleation_rate_coeff_cgs*unit_length**3
-          elseif (inucl_pre_exp .eq. "oxtoby") then
-            molar_mass_spec = species_constants(ichem_cond_spec,imass)
-            atomic_m_spec=molar_mass_spec*m_u
-            tmp1=sqrt(2*gam_surf_energy/(pi*atomic_m_spec))
-            tmp2=(p%chem_conc(:,ichem_cond_spec)*N_avogadro_cgs)**2
-            nucleation_rate_coeff=tmp1*volume_spec*tmp2/sat_ratio_spec
-          endif
-          tmp1=-16.*pi*gam_surf_energy**3*volume_spec**2
-          tmp2=3*(k_B*p%TT)**3*(alog(sat_ratio_spec))**2
-          nucleation_rate=nucleation_rate_coeff*exp(tmp1/tmp2)
-        else
-          nucleation_rate=0.0
-          nucleation_rmin=0.0
+        volume_spec=volume_spec_cgs/unit_length**3
+        chem_conc_sat_spec=chem_conc_sat_spec_cgs*unit_length**3
+        sat_ratio_spec=chem_conc/chem_conc_sat_spec
+        nucleation_rmin=2.*gam_surf_energy*volume_spec/(k_B*p%TT*alog(sat_ratio_spec))
+        !
+        !  Compute nucleation rate (of nucleii with r=rmin)
+        !
+        if (inucl_pre_exp .eq. "const") then
+          nucleation_rate_coeff=nucleation_rate_coeff_cgs*unit_length**3
+        elseif (inucl_pre_exp .eq. "oxtoby") then
+          molar_mass_spec = species_constants(ichem_cond_spec,imass)
+          atomic_m_spec=molar_mass_spec*m_u
+          tmp1=sqrt(2*gam_surf_energy/(pi*atomic_m_spec))
+          tmp2=(chem_conc*N_avogadro_cgs)**2
+          nucleation_rate_coeff=tmp1*volume_spec*tmp2/sat_ratio_spec
         endif
-
-        !print*,"S, rmin, gamma=",sat_ratio_spec,nucleation_rmin/100.,gam_surf_energy/1000.
-       ! print*,"nucleation_rate_coeff,nucleation_rate=",nucleation_rate_coeff*1e6,nucleation_rate*1e6
-       ! print*,"vol, m, Na =",volume_spec/1e6, atomic_m_spec/1000.,N_avogadro_cgs
-       ! print*,"pre =", sqrt(2*gam_surf_energy/(pi*atomic_m_spec))
-       ! print*,"fin=", (p%chem_conc(:,ichem_cond_spec)*N_avogadro_cgs)**2*1e12
-        
+        tmp1=-16.*pi*gam_surf_energy**3*volume_spec**2
+        tmp2=3*(k_B*p%TT)**3*(alog(sat_ratio_spec))**2
+        nucleation_rate=nucleation_rate_coeff*exp(tmp1/tmp2)
+      else
+        nucleation_rate=0.0
+        nucleation_rmin=0.0
+      endif
 !      
       end subroutine cond_spec_nucl_rate
 !***********************************************************************
