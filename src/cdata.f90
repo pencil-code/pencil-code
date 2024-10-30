@@ -263,7 +263,7 @@ module Cdata
 !
 !  Derived units
 !
-  real(KIND=rkind8) :: unit_mass,unit_energy,unit_time,unit_flux
+  real(KIND=rkind8) :: unit_mass,unit_energy,unit_time,unit_flux,unit_pressure
   real(KIND=rkind8) :: k_B,m_u,m_p,m_e,m_H,m_He,eV, &
                       chiH,chiH_,sigmaH_,sigmaSB,kappa_es
   real(KIND=rkind8) :: c_light=impossible,G_Newton=impossible,hbar=impossible
