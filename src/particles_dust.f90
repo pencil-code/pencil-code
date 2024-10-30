@@ -2516,7 +2516,6 @@ module Particles
                   !
                   iii = npar_loc+1
                   ipar(iii) = npar_inserted_tot+1
-                  print*,"NILS: iproc,iii,ipar(iii)=",iproc,iii,ipar(iii)
                   npar_loc = npar_loc + 1
                   k=npar_loc
 !
