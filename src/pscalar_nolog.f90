@@ -1044,26 +1044,11 @@ module Pscalar
 !
 !  5-dec-11/MR: coded
 !
-      use Mpicomm, only: mpiallreduce_sum
+      use Sub, only: remove_mean
 
       real, dimension (mx,my,mz,mfarray), intent(INOUT) :: f
 
-      real, dimension(npscalar) :: ccm, ccm_tmp
-      integer :: i
-
-      if (lremove_mean.and.lrmv) then
-
-        do i=1,npscalar
-          ccm_tmp(i) = sum(f(l1:l2,m1:m2,n1:n2,icc+i-1))
-        enddo
-
-        call mpiallreduce_sum(ccm_tmp,ccm,npscalar)
-
-        do i=1,npscalar
-          f(l1:l2,m1:m2,n1:n2,icc+i-1)=f(l1:l2,m1:m2,n1:n2,icc+i-1)-ccm(i)/nwgrid
-        enddo
-
-      endif
+      if (lremove_mean.and.lrmv) call remove_mean(f,icc,icc+npscalar-1)
 
     endsubroutine pscalar_before_boundary
 !***********************************************************************
