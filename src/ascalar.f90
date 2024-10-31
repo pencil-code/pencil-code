@@ -538,18 +538,14 @@ module Ascalar
 !
 !  06-June-18/Xiang-Yu.Li: coded
 !
-      use Sub, only: finalize_aver
+      use Sub, only: global_mean
 !
       real, dimension (mx,my,mz,mfarray) :: f
       intent(in) :: f
-
-      real, dimension(1) :: tmp
 !
 !  Calculate mean of temperature.
 !
-      tmp = sum(f(l1:l2,m1:m2,n1:n2,ittc))
-      call finalize_aver(ncpus,123,tmp)
-      ttc_mean = tmp(1)/nwgrid
+      call global_mean(f,ittc,ttc_mean)
 !
     endsubroutine calc_ttcmean
 !***********************************************************************
@@ -559,18 +555,14 @@ module Ascalar
 !
 !  06-June-18/Xiang-Yu.Li: coded
 !
-      use Sub, only: finalize_aver
+      use Sub, only: global_mean
 !
       real, dimension (mx,my,mz,mfarray) :: f
       intent(in) :: f
-
-      real, dimension(1) :: tmp
 !
 !  Calculate mean of temperature.
 !
-      tmp = sum(f(l1:l2,m1:m2,n1:n2,iacc))
-      call finalize_aver(ncpus,123,tmp)
-      acc_mean = tmp(1)/nwgrid
+      call global_mean(f,iacc,acc_mean)
 !
     endsubroutine calc_accmean
 !***********************************************************************
