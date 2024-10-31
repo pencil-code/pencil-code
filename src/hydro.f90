@@ -7790,6 +7790,7 @@ endif
 !  13-feb-15/MR  : changes for use of reference_state (used for main run density only)
 !
       use Mpicomm, only: mpiallreduce_sum
+      use Sub, only: remove_mean
 !
       real, dimension (mx,my,mz,mfarray), intent(inout)        :: f
       integer,                            intent(in)           :: indux
@@ -7885,6 +7886,7 @@ endif
         call remove_mean(f,indux,indux+2)   ! as this is equivalent to remove
                                             ! mean momenta for constant density
       endif
+
     endsubroutine remove_mean_momenta
 !***********************************************************************
     subroutine remove_mean_angmom(f,induz)
