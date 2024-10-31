@@ -243,7 +243,6 @@ module Particles
       use EquationOfState, only: cs0, rho0, get_stratz, get_gamma_etc
       use FArrayManager
       use SharedVariables, only: get_shared_variable
-      use Density, only: mean_density
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mparray), intent (in) :: fp

@@ -394,7 +394,6 @@ module Particles
 !
       use EquationOfState, only: rho0, cs0
       use SharedVariables, only: get_shared_variable
-      use Density, only: mean_density
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mparray), intent (out) :: fp

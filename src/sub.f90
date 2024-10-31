@@ -7248,7 +7248,7 @@ nameloop: do
 !
 !  initialize mean
 !
-      mean = 0.0
+      mean = 0.
 !
 !  Compute mean for each field.
 !
@@ -7268,7 +7268,7 @@ nameloop: do
 !
     endsubroutine global_mean
 !***********************************************************************
-    subroutine remove_mean(f,inda,indep)
+    subroutine remove_mean(f,inda,indep,lexp)
 !
 !  Substract mean from a (several) field(s) selected by the index inda
 !  (the index range inda - indep) in f.
@@ -7281,49 +7281,24 @@ nameloop: do
       real, dimension (mx,my,mz,*), intent (inout)        :: f
       integer,                      intent (in)           :: inda
       integer,                      intent (in), optional :: indep
+      logical,                      intent (in), optional :: lexp
 !
       real, allocatable, dimension(:) :: mean, mean_tmp
-      integer :: m,n,j, inde
+      integer :: m,n,j,inde
+      real :: fac
 !
       inde = ioptest(indep,inda)
-      allocate( mean(inda:inde), mean_tmp(inda:inde) )
+      allocate( mean(inda:inde) )
 !
-!  initialize mean
+      call global_mean(f,inda,mean,inde,lexp)
 !
-      mean = 0.0
+!  Subtract out the mean separately for each field.
 !
-!  Go through all pencils.
-!
-      do n = n1,n2
-      do m = m1,m2
-!
-!  Compute mean for each field.
-!
-        do j=inda,inde
-          mean(j) = mean(j) + sum(f(l1:l2,m,n,j))
-        enddo
-      enddo
-      enddo
-!
-!  Compute total mean for all processors
-!
-      call mpiallreduce_sum(mean/nwgrid,mean_tmp,inde-inda+1)
-      mean = mean_tmp
-!
-!  Go through all pencils and subtract out the mean
-!  separately for each field.
-!
-      do n = n1,n2
-      do m = m1,m2
-        do j=inda,inde
-          f(l1:l2,m,n,j) = f(l1:l2,m,n,j) - mean(j)
-        enddo
-      enddo
+      do j=inda,inde
+        f(l1:l2,m1:m2,n1:n2,j) = f(l1:l2,m1:m2,n1:n2,j) - mean(j)
       enddo
 !
       if (lroot.and.ip<6) print*,'remove_mean: mean=',mean
-!
-      deallocate( mean, mean_tmp )
 !
     endsubroutine remove_mean
 !***********************************************************************
