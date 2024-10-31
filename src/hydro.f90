@@ -1646,24 +1646,24 @@ module Hydro
           ruxm=0.
           ruym=0.
           ruzm=0.
-          fact=1./nwgrid
           do n=n1,n2
           do m=m1,m2
             call getrho(f(:,m,n,ilnrho),rho)
             rux=rho*f(l1:l2,m,n,iux)
             ruy=rho*f(l1:l2,m,n,iuy)
             ruz=rho*f(l1:l2,m,n,iuz)
-            ruxm=ruxm+fact*sum(rux)
-            ruym=ruym+fact*sum(ruy)
-            ruzm=ruzm+fact*sum(ruz)
+            ruxm=ruxm+sum(rux)
+            ruym=ruym+sum(ruy)
+            ruzm=ruzm+sum(ruz)
           enddo
           enddo
 !
 !  communicate to the other processors
 !
-          fsum_tmp(1)=ruxm
-          fsum_tmp(2)=ruym
-          fsum_tmp(3)=ruzm
+          fact=1./nwgrid
+          fsum_tmp(1)=ruxm*fact
+          fsum_tmp(2)=ruym*fact
+          fsum_tmp(3)=ruzm*fact
           call mpiallreduce_sum(fsum_tmp,fsum,nreduce)
           ruxm=fsum(1)
           ruym=fsum(2)
@@ -3647,7 +3647,7 @@ module Hydro
 !  15-dec-10/MR: adapted from density for homogeneity
 !  19-oct-15/ccyang: add calculation of the vorticity field.
 !
-      use Sub, only: curl
+      use Sub, only: curl, remove_mean
       use Mpicomm, only: mpiallreduce_sum
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
@@ -3659,7 +3659,6 @@ module Hydro
       real, dimension (mx) :: uphi
       real :: nygrid1,nzgrid1
       integer ::  j
-!XX
 !
 !  Remove mean momenta or mean flows if desired.
 !  Useful to avoid unphysical winds, for example in shearing box simulations.
@@ -3668,8 +3667,7 @@ module Hydro
         if (lremove_mean_momenta) then
           call remove_mean_momenta(f,iux,ilnrho)
         else
-          if (lremove_mean_flow) call remove_mean_flow(f,iux)
-          !if (lremove_mean_flow) call remove_mean_value(f,iux,iuz)  !(could use this one)
+          if (lremove_mean_flow) call remove_mean(f,iux,iuz)
           if (lremove_mean_angmom) call remove_mean_angmom(f,iuz)
         endif
       endif
@@ -7884,68 +7882,10 @@ endif
         enddo
         if (lroot.and.ip<6) print*,'remove_mean_momenta: rum=',rum
       else
-        call remove_mean_flow(f,indux)       ! as this is equivalent to remove
-                                             ! mean momenta for constant density
+        call remove_mean(f,indux,indux+2)   ! as this is equivalent to remove
+                                            ! mean momenta for constant density
       endif
     endsubroutine remove_mean_momenta
-!***********************************************************************
-    subroutine remove_mean_flow(f,indux)
-!
-!  Substract mean x-flow from the x-velocity field.
-!  Useful to avoid unphysical winds in shearing box simulations.
-!  Note: this is possibly not useful when there is rotation, because
-!  then epicyclic motions don't usually grow catastrophically.
-!
-!  22-may-07/axel: adapted from remove_mean_momenta
-!  15-dec-10/MR  : added parameters indux to make routine applicable
-!                  to other velocities
-!
-      use Mpicomm, only: mpiallreduce_sum
-!
-      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
-      integer,                            intent (in)    :: indux
-!
-      real, dimension (indux:indux+2) :: um, um_tmp
-      integer :: m,n,j
-      real    :: fac
-!
-!  initialize um and compute normalization factor fac
-!
-        um = 0.0
-        fac = 1.0/nwgrid
-!
-!  Go through all pencils.
-!
-        do n = n1,n2
-        do m = m1,m2
-!
-!  Compute mean flow in each of the 3 directions.
-!
-          do j=indux,indux+2
-            um(j) = um(j) + fac*sum(f(l1:l2,m,n,j))
-          enddo
-        enddo
-        enddo
-!
-!  Compute total sum for all processors
-!
-        call mpiallreduce_sum(um,um_tmp,3)
-        um = um_tmp
-!
-!  Go through all pencils and subtract out the mean flow
-!  separately for each direction.
-!
-        do n = n1,n2
-        do m = m1,m2
-          do j=indux,indux+2
-            f(l1:l2,m,n,j) = f(l1:l2,m,n,j) - um(j)
-          enddo
-        enddo
-        enddo
-!
-        if (lroot.and.ip<6) print*,'remove_mean_flow: um=',um
-!
-    endsubroutine remove_mean_flow
 !***********************************************************************
     subroutine remove_mean_angmom(f,induz)
 !
