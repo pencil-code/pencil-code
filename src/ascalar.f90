@@ -41,7 +41,7 @@ module Ascalar
   character (len=labellen) :: initlnTT='nothing'
   character (len=labellen) :: initTT='nothing'
   real :: T_env=293.0, qv_env=1.63e-2, Rv_over_Rd_minus_one=0.608, gravity_acceleration=9.81
-  real :: ttc_mean=293.0, acc_mean=1.e-2
+  real, dimension(1) :: ttc_mean=293.0, acc_mean=1.e-2
   logical :: lbuoyancy=.false., ltauascalar=.false., lttc=.false., lttc_mean=.false.
 !
   namelist /ascalar_init_pars/ &
@@ -452,8 +452,8 @@ module Ascalar
           ssat0=acc_const/((const1_qvs*exp(-const2_qvs/ttc_const))/(Rv*rhoa*ttc_const))-1
           if (lbuoyancy) then
             if (lttc_mean) then
-              buoyancy = gravity_acceleration*((p%ttc-ttc_mean)/p%ttc+ &
-                         Rv_over_Rd_minus_one*(p%acc-acc_mean)/p%acc-p%waterMixingRatio)
+              buoyancy = gravity_acceleration*((p%ttc-ttc_mean(1))/p%ttc+ &
+                         Rv_over_Rd_minus_one*(p%acc-acc_mean(1))/p%acc-p%waterMixingRatio)
             else
               buoyancy = gravity_acceleration*((p%ttc-T_env)/p%ttc+ &
                          Rv_over_Rd_minus_one*(p%acc-qv_env)/p%acc-p%waterMixingRatio)
@@ -525,8 +525,8 @@ module Ascalar
         endif
 !
         if (lcondensation_rate.and.lttc.and.lbuoyancy.and.lttc_mean) then
-          call save_name(acc_mean,idiag_acc_mean)
-          call save_name(ttc_mean,idiag_ttc_mean)
+          call save_name(acc_mean(1),idiag_acc_mean)
+          call save_name(ttc_mean(1),idiag_ttc_mean)
         endif
       endif
 !

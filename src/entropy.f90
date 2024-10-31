@@ -86,7 +86,7 @@ module Energy
   real :: tau_cool=0.0, tau_diff=0.0, TTref_cool=0.0, tau_cool2=0.0
   real :: tau_cool_ss=0.0, tau_relax_ss=0.0
   real :: cs0hs=0.0, H0hs=0.0, rho0hs=0.0
-  real :: ss_volaverage=0.
+  real, dimension(1) :: ss_volaverage=0.
   real :: xbot=0.0, xtop=0.0, alpha_MLT=1.5, xbot_aniso=0.0, xtop_aniso=0.0
   real :: xbot_chit1=0.0, xtop_chit1=0.0
   real :: zz1=impossible, zz2=impossible
@@ -6108,7 +6108,7 @@ module Energy
 !
       if (tau_cool_ss/=0.) then
         if (lcalc_ss_volaverage) then
-          df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-(ss_volaverage-ss_const)/tau_cool_ss
+          df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-(ss_volaverage(1)-ss_const)/tau_cool_ss
         elseif (lcooling_ss_mz) then
           df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-(p%ss-ss_mz(n))/tau_cool_ss
         else
