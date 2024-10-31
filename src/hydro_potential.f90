@@ -1602,7 +1602,7 @@ module Hydro
         if (lremove_mean_momenta) then
           call remove_mean_momenta(f,iux,ilnrho)
         else
-          if (lremove_mean_flow) call remove_mean(f,iux,iuz)  !(could use this one)
+          if (lremove_mean_flow) call remove_mean(f,iux,iuz)
           if (lremove_mean_angmom) call remove_mean_angmom(f,iuz)
         endif
       endif
@@ -3598,51 +3598,6 @@ module Hydro
                                              ! mean momenta for constant density
       endif
     endsubroutine remove_mean_momenta
-!***********************************************************************
-    subroutine remove_mean_flow(f,indux)
-!
-!  Substract mean x-flow from the x-velocity field.
-!  Useful to avoid unphysical winds in shearing box simulations.
-!  Note: this is possibly not useful when there is rotation, because
-!  then epicyclic motions don't usually grow catastrophically.
-!
-!  22-may-07/axel: adapted from remove_mean_momenta
-!  15-dec-10/MR  : added parameters indux to make routine applicable
-!                  to other velocities
-!
-      use Mpicomm, only: mpiallreduce_sum
-!
-      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
-      integer,                            intent (in)    :: indux
-!
-      real, dimension (indux:indux+2) :: um, um_tmp
-      integer :: j
-!
-!  initialize um and compute normalization factor fac
-!
-        um = 0.0
-!
-!  Compute mean flow in each of the 3 directions.
-!
-        do j=indux,indux+2
-          um(j) = um(j) + sum(f(l1:l2,m1:m2,n1:n2,j))
-        enddo
-!
-!  Compute total sum for all processors
-!
-        call mpiallreduce_sum(um,um_tmp,3)
-        um = um_tmp/nwgrid
-!
-!  Go through all pencils and subtract out the mean flow
-!  separately for each direction.
-!
-        do j=indux,indux+2
-          f(l1:l2,m1:m2,n1:n2,j) = f(l1:l2,m1:m2,n1:n2,j) - um(j)
-        enddo
-!
-        if (lroot.and.ip<6) print*,'remove_mean_flow: um=',um
-!
-    endsubroutine remove_mean_flow
 !***********************************************************************
     subroutine remove_mean_angmom(f,induz)
 !
