@@ -4181,7 +4181,7 @@ module Energy
 !
       use Deriv, only: der_x, der2_x, der_z, der2_z
       use Mpicomm, only: mpiallreduce_sum
-      use Sub, only: finalize_aver,calc_all_diff_fluxes,div,smooth
+      use Sub, only: finalize_aver,calc_all_diff_fluxes,div,smooth,global_mean
 !
       real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
 !
@@ -4358,10 +4358,7 @@ module Energy
 !
 !  Compute volume average of entropy.
 !
-      if (lcalc_ss_volaverage) then
-        tmp1=sum(f(l1:l2,m1:m2,n1:n2,iss))/nwgrid
-        call mpiallreduce_sum(tmp1,ss_volaverage)
-      endif
+      if (lcalc_ss_volaverage) call global_mean(f,iss,ss_volaverage)
 !
 !  Slope limited diffusion following Rempel (2014)
 !  First calculating the flux in a subroutine below
