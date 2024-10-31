@@ -208,6 +208,7 @@ config/compilers/separate/Intel-ifort.conf -text
 config/compilers/separate/PGI-pgcc.conf -text
 config/compilers/separate/PGI-pgf.conf -text
 config/compilers/separate/g95.conf -text
+config/compilers/separate/nvidia-fortran.conf -text
 config/hosts/Curie/host-curie50-GNU_Linux-bullx.conf -text
 config/hosts/Curie/host-curie51-GNU_Linux-bullx.conf -text
 config/hosts/ICHEC/stokes1.ice.ichec.ie.conf -text
