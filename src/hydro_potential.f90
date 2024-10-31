@@ -1588,7 +1588,7 @@ module Hydro
 !  15-dec-10/MR: adapted from density for homogeneity
 !  19-oct-15/ccyang: add calculation of the vorticity field.
 !
-      use Sub, only: curl
+      use Sub, only: curl, remove_mean
       use Mpicomm, only: mpiallreduce_sum
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
@@ -1602,8 +1602,7 @@ module Hydro
         if (lremove_mean_momenta) then
           call remove_mean_momenta(f,iux,ilnrho)
         else
-          if (lremove_mean_flow) call remove_mean_flow(f,iux)
-          !if (lremove_mean_flow) call remove_mean_value(f,iux,iuz)  !(could use this one)
+          if (lremove_mean_flow) call remove_mean(f,iux,iuz)  !(could use this one)
           if (lremove_mean_angmom) call remove_mean_angmom(f,iuz)
         endif
       endif
@@ -3502,6 +3501,7 @@ module Hydro
 !  13-feb-15/MR  : changes for use of reference_state (used for main run density only)
 !
       use Mpicomm, only: mpiallreduce_sum
+      use Sub, only: curl, remove_mean
 !
       real, dimension (mx,my,mz,mfarray), intent(inout)        :: f
       integer,                            intent(in)           :: indux
@@ -3594,8 +3594,7 @@ module Hydro
         enddo
         if (lroot.and.ip<6) print*,'remove_mean_momenta: rum=',rum
       else
-        !call remove_mean_flow(f,iux)         ! as this is equivalent to remove
-        call remove_mean_flow(f,indux)       ! as this is equivalent to remove
+        call remove_mean(f,indux,indux+2)    ! as this is equivalent to remove
                                              ! mean momenta for constant density
       endif
     endsubroutine remove_mean_momenta
