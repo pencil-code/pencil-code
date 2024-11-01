@@ -275,7 +275,7 @@ module Special
 !  06-oct-2003/tony: coded
 !
       use Initcond
-      use Sub, only: remove_mean_value, remove_mean, blob
+      use Sub, only: remove_mean, blob
 !
       real, dimension (mx,my,mz,mfarray) :: f,df
 !
@@ -857,8 +857,6 @@ module Special
 !
 !  22-aug-21/axel: temporal profile for gammaf5
 !
-      use Sub, only: remove_mean_value
-!
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
 !  Choice of gammaf5_tdep profiles.
@@ -927,34 +925,18 @@ module Special
 !
 !  11-oct-15/jenny: coded
 !
-      use Mpicomm, only: mpiallreduce_sum
+      use Sub, only: global_mean
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: meanmu5_tmp !, meanB2_tmp
+      !real :: meanB2_tmp
       intent(inout) :: f
 !
 !  compute meanmu5 and meanB2
 !
-      meanmu5=0.
+      call global_mean(f,imu5,meanmu5)
 !      meanB2=0.
-      do n=n1,n2; do m=m1,m2
-        meanmu5=meanmu5+sum(f(l1:l2,m,n,imu5))
-!        print*, "sum(f(l1:l2,m,n,imu5))", sum(f(l1:l2,m,n,imu5))
-      enddo; enddo
 !      meanB2=meanB2+sum(p%b2)
-!
-!  communicate and divide by all mesh meshpoints
-!
-     if (nprocxy>1) then
-   !    call mpiallreduce_sum(meanmu5,meanmu5_tmp,(/nx,ny,nz/))
-       call mpiallreduce_sum(meanmu5,meanmu5_tmp)
 !       call mpiallreduce_sum(meanB2,meanB2_tmp)
-     else
-       meanmu5_tmp=meanmu5
-     endif
-!
-! number of grid points
-      meanmu5=meanmu5_tmp/nwgrid
 !      meanB2=nw1*meanB2_tmp
 !      flucmu5=p%mu5-meanmu5
 !

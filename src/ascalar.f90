@@ -38,8 +38,6 @@ module Ascalar
   logical :: noascalar=.false., reinitialize_acc=.false.
   character (len=labellen) :: initacc='nothing'
   character (len=labellen) :: initttc='nothing'
-  character (len=labellen) :: initlnTT='nothing'
-  character (len=labellen) :: initTT='nothing'
   real :: T_env=293.0, qv_env=1.63e-2, Rv_over_Rd_minus_one=0.608, gravity_acceleration=9.81
   real, dimension(1) :: ttc_mean=293.0, acc_mean=1.e-2
   logical :: lbuoyancy=.false., ltauascalar=.false., lttc=.false., lttc_mean=.false.
@@ -53,7 +51,6 @@ module Ascalar
 !
   real :: thermal_diff=0.0
   real :: ascalar_diff=0.0
-  real :: ascalar_sink=0.0
   real :: vapor_mixing_ratio_qvs=0.0
   real :: updraft=0.0
   real :: A1=0.0
@@ -69,7 +66,7 @@ module Ascalar
   logical :: lupw_acc=.false., lcondensation_rate=.false., lconstTT=.false., lTT_mean=.false., lupw_ttc=.false.
 
   namelist /ascalar_run_pars/ &
-      lupw_acc, lascalar_sink, Rascalar_sink, ascalar_sink, l_T_source, &
+      lupw_acc, lascalar_sink, Rascalar_sink, l_T_source, &
       ascalar_diff, gradacc0, lcondensation_rate, vapor_mixing_ratio_qvs, &
       lupdraft, updraft, A1, latent_heat, cp_constant, &
       const1_qvs, const2_qvs, Rv, rhoa, gravity_acceleration, Rv_over_Rd_minus_one, &
@@ -147,7 +144,6 @@ module Ascalar
       use Initcond
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: mudry1, muvap1
       integer :: l
 !
       select case (initacc)
@@ -352,7 +348,6 @@ module Ascalar
       intent(out) :: df
 !
       real, dimension (nx) :: bump, radius_sum, condensation_rate_Cd
-      integer :: k
 !
       character(len=2) :: id
 !

@@ -1263,7 +1263,7 @@ module Special
 !
 !  13-may-18/axel: added remove_mean_value for hij and gij
 !
-      use Sub, only: remove_mean_value
+      use Sub, only: remove_mean
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
