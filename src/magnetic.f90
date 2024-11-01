@@ -10781,7 +10781,7 @@ module Magnetic
    subroutine magnetic_after_timestep(f,df,dtsub)
 !
       use Mpicomm, only: mpibcast_real
-      use Sub, only: vecout_finalize
+      use Sub, only: vecout_finalize, remove_mean
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
@@ -10789,7 +10789,7 @@ module Magnetic
 !
       if (lfargo_advection) then
         if (lkeplerian_gauge) call keplerian_gauge(f)
-        if (lrmv.and.lremove_volume_average) call remove_volume_average(f)
+        if (lrmv.and.lremove_volume_average) call remove_mean(f,iax)
       endif
 !
       if (lresi_vAspeed) then
@@ -10928,7 +10928,7 @@ module Magnetic
 !  eventually.
 !
 !  This is a cylindrical version of the rtime_phiavg special file.
-!
+!MR: these comments seem not to apply, routine is now obsolete
 !  13-sep-07/wlad: adapted from remove_mean_momenta
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
