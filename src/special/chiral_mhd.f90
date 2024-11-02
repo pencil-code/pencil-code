@@ -262,8 +262,7 @@ module Special
 !
 !  give eta out as shared_variable
 !
-      if (lmagnetic.and.lrun) &
-        call get_shared_variable('eta',eta,caller="initialize_special")
+      if (lmagnetic.and.lrun) call get_shared_variable('eta',eta,caller="initialize_special")
 !
     endsubroutine initialize_special
 !***********************************************************************
@@ -305,7 +304,7 @@ module Special
 !
         case ('triple_sin')
           do n=n1,n2; do m=m1,m2
-             f(l1:l2,m,n,imu5)=amplmu5*( sin(kx_mu5*x(l1:l2)) + sin(2.*kx_mu5*x(l1:l2))  &
+             f(l1:l2,m,n,imu5)=amplmu5*( sin(kx_mu5*x(l1:l2)) + sin(2.*kx_mu5*x(l1:l2)) &
               + sin(4.*kx_mu5*x(l1:l2)) )
           enddo; enddo
           if (lmuS) f(:,:,:,imuS) = muS_const
@@ -343,7 +342,7 @@ module Special
           if (lmuS) then
             call power_randomphase(amplmuS,initpower_muS,kgaussian_muS,kpeak_muS,cutoff_muS,&
               f,imuS,imuS,lscale_tobox=.false.)
-            if(lremove_mean_muS) call remove_mean(f,imuS)
+            if (lremove_mean_muS) call remove_mean(f,imuS)
           endif
         case default
           call fatal_error("init_special","no such initspecial: "//trim(initspecial))
@@ -359,25 +358,24 @@ module Special
 !
 !  24-feb-21/axel: adapted from blob
 !
+      use General, only: roptest
+
       integer :: i
       real, dimension (mx,my,mz,mfarray) :: f
       real, optional :: xblob,yblob,zblob
-      real :: ampl,radius,sigma,x01=0.,y01=0.,z01=0.,fact
+      real :: ampl,radius,sigma,fact
 !
 !  Single  blob.
 !
-      if (present(xblob)) x01=xblob
-      if (present(yblob)) y01=yblob
-      if (present(zblob)) z01=zblob
       if (ampl==0) then
-        if (lroot) print*,'ampl=0 in plusminus_sphere'
+        call warning('plusminus_sphere','ampl=0')
       else
         if (lroot.and.ip<14) print*,'plusminus_sphere: variable i,ampl=',i,ampl
         fact=1./sigma**2
-        f(:,:,:,i)=f(:,:,:,i)-ampl*tanh(fact*(( &
-           spread(spread((x-x01)**2,2,my),3,mz) &
-          +spread(spread((y-y01)**2,1,mx),3,mz) &
-          +spread(spread((z-z01)**2,1,mx),2,my))-radius**2))
+        f(:,:,:,i) = f(:,:,:,i)-ampl*tanh(fact*(( &
+                     spread(spread((x-roptest(xblob,0.))**2,2,my),3,mz) &
+                    +spread(spread((y-roptest(yblob,0.))**2,1,mx),3,mz) &
+                    +spread(spread((z-roptest(zblob,0.))**2,1,mx),2,my))-radius**2))
       endif
 !
     endsubroutine plusminus_sphere
@@ -418,6 +416,7 @@ module Special
 !  diagnostic pencils
 !
       if (idiag_mu5jbm/=0) lpenc_diagnos(i_jb)=.true.
+      if (idiag_jxm /= 0) lpenc_diagnos(i_jj) = .true.
 !
     endsubroutine pencil_criteria_special
 !***********************************************************************
@@ -515,36 +514,28 @@ module Special
 !
 !  Evolution of mu5
 !
-      df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) &
-          +lambda5*EB-gammaf5*p%mu5+source5
+      df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) +lambda5*EB-gammaf5*p%mu5+source5
 !
 !  Different diffusion operators.
 !
       if (ldiffmu5_hyper2_simplified) then
-         df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) &
-            -diffmu5_hyper2*p%del4mu5
+         df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) - diffmu5_hyper2*p%del4mu5
       else if (ldiffmu5_hyper3_simplified) then
-         df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) &
-            +diffmu5_hyper3*p%del6mu5
+         df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) + diffmu5_hyper3*p%del6mu5
       else
         df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) + diffmu5_*p%del2mu5 
       endif
 ! 
-      if (lmu5adv) then
-        df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) - p%ugmu5 
-      endif
+      if (lmu5adv) df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) - p%ugmu5 
 !
 !  Set lmu5divu_term=T to obey total chirality conservation in the compressible case.
 !  This is not the default and was only used since Brandenburg (2021, ApJ 911, 110).
 !
-      if (lmu5divu_term) then
-        df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) - p%mu5*p%divu
-      endif
+      if (lmu5divu_term) df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) - p%mu5*p%divu
 !
       if (lCVE) then
         call dot(p%oo,p%gmu5,oogmu5)
-        df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) &
-          -2.*Cw*p%mu5*oogmu5
+        df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) - 2.*Cw*p%mu5*oogmu5
       endif
 !
 !  Contributions to timestep from mu5 equation
@@ -565,36 +556,27 @@ module Special
         muSmu5 = p%muS*p%mu5
         call dot(p%bb,p%gmu5,bdotgmu5)
         call dot(p%bb,p%gmuS,bdotgmuS)
-        df(l1:l2,m,n,imuS) = df(l1:l2,m,n,imuS) &
-           -coef_muS*bdotgmu5
+        df(l1:l2,m,n,imuS) = df(l1:l2,m,n,imuS) - coef_muS*bdotgmu5
 ! 
-        if (lmuSdivu_term) then
-          df(l1:l2,m,n,imuS) = df(l1:l2,m,n,imuS) - p%muS*p%divu
-        endif
+        if (lmuSdivu_term) df(l1:l2,m,n,imuS) = df(l1:l2,m,n,imuS) - p%muS*p%divu
 !
         if (ldiffmuS_hyper2_simplified) then
-           df(l1:l2,m,n,imuS) = df(l1:l2,m,n,imuS) &
-              -diffmuS_hyper2*p%del4muS
+           df(l1:l2,m,n,imuS) = df(l1:l2,m,n,imuS) - diffmuS_hyper2*p%del4muS
         else if (ldiffmuS_hyper3_simplified) then
-           df(l1:l2,m,n,imuS) = df(l1:l2,m,n,imuS) &
-              +diffmuS_hyper3*p%del6muS
+           df(l1:l2,m,n,imuS) = df(l1:l2,m,n,imuS) + diffmuS_hyper3*p%del6muS
         else
-           df(l1:l2,m,n,imuS) = df(l1:l2,m,n,imuS) &
-              +diffmuS*p%del2muS
+           df(l1:l2,m,n,imuS) = df(l1:l2,m,n,imuS) + diffmuS*p%del2muS
         endif
 ! 
-        if (lmuSadv) then
-          df(l1:l2,m,n,imuS) = df(l1:l2,m,n,imuS) - p%ugmuS
-        endif
+        if (lmuSadv) f(l1:l2,m,n,imuS) = df(l1:l2,m,n,imuS) - p%ugmuS
+
         df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) - coef_mu5*bdotgmuS  
         if (lCVE) then   
           call dot(p%oo,p%bb,oobb)
           call dot(p%oo,p%gmuS,oogmuS)
           call dot(p%oo,p%gmu5,oogmu5)
-          df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) - lambda5*eta*muSmu5*oobb &
-            -2.*Cw*p%muS*oogmuS
-          df(l1:l2,m,n,imuS) = df(l1:l2,m,n,imuS) &
-            -Cw*p%mu5*oogmuS -Cw*p%muS*oogmu5
+          df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) - lambda5*eta*muSmu5*oobb - 2.*Cw*p%muS*oogmuS
+          df(l1:l2,m,n,imuS) = df(l1:l2,m,n,imuS) - Cw*p%mu5*oogmuS -Cw*p%muS*oogmu5
         endif
 !  Contributions to timestep from muS equation
         dt1_CMW = sqrt(coef_mu5*coef_muS)*sqrt(p%b2)*sqrt(dxyz_2)
@@ -617,9 +599,7 @@ module Special
       endif
 !  Contributions to timestep from bb equation
       dt1_vmu = eta*p%mu5*sqrt(dxyz_2)
-      if (lCVE) then 
-         dt1_CVE1 = eta*p%muS*p%mu5*sqrt(dxyz_2)
-      endif
+      if (lCVE) dt1_CVE1 = eta*p%muS*p%mu5*sqrt(dxyz_2)
 !
 !  Additions to the test-field equations
 !
@@ -627,7 +607,7 @@ module Special
         aatest=f(l1:l2,m,n,iaxtest:iaztest)
         call gij(f,iaxtest,aijtest,1)
         call curl_mn(aijtest,bbtest,aatest)
-        df(l1:l2,m,n,iaxtest:iaztest) = df(l1:l2,m,n,iaxtest:iaztest) + eta*meanmu5*bbtest
+        df(l1:l2,m,n,iaxtest:iaztest) = df(l1:l2,m,n,iaxtest:iaztest) + eta*meanmu5(1)*bbtest
       endif  
 !
 !  Total contribution to the timestep
@@ -635,9 +615,9 @@ module Special
       if (lfirst.and.ldt.and.ldt_chiral_mhd) then
         if (lmuS) then
           dt1_special = max(dt1_lambda5, dt1_D5, &
-                        dt1_gammaf5, dt1_vmu, &
-                        dt1_CVE1, dt1_CVE2, &
-                        dt1_CMW, dt1_Dmu)/cdtchiral
+                            dt1_gammaf5, dt1_vmu, &
+                            dt1_CVE1, dt1_CVE2, &
+                            dt1_CMW, dt1_Dmu)/cdtchiral
         else
           dt1_special = max(dt1_lambda5, dt1_D5, dt1_gammaf5, dt1_vmu)/cdtchiral
         endif
@@ -700,12 +680,7 @@ module Special
         if (idiag_mu5b2m/=0) call sum_mn_name(p%mu5*p%b2,idiag_mu5b2m)
         if (idiag_mu5jbm/=0) call sum_mn_name(p%mu5*p%jb,idiag_mu5jbm)
         if (idiag_Dmu5_tdep/=0) call max_mn_name(unity*diffmu5_,idiag_Dmu5_tdep)
-!
-!AB: shouldn't this pencil be requested in pencil_criteria_special?
-        if (idiag_jxm /= 0) then
-          lpenc_diagnos(i_jj) = .true.
-          call sum_mn_name(p%jj(:,1), idiag_jxm)
-        endif
+        call sum_mn_name(p%jj(:,1), idiag_jxm)
      endif
 !
     endsubroutine dspecial_dt
@@ -874,7 +849,7 @@ module Special
 !  Default.
 !
         case default
-          call fatal_error("special_before_boundary","no such gammaf5_tdep:"//trim(gammaf5_tdep))
+          call fatal_error("special_before_boundary","no such gammaf5_tdep: "//trim(gammaf5_tdep))
       endselect
 !
 !  Choice of source5_tdep profiles.
