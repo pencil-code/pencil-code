@@ -99,7 +99,8 @@ module Special
    real :: gammaf5_input=0., t1_gammaf5=0., t2_gammaf5=0.
    real :: source5_input=0., t1_source5=0., t2_source5=0.
    real :: muS_const=0., coef_muS=0., coef_mu5=0., Cw=0.
-   real :: meanmu5=0., flucmu5=0., meanB2=0., Brms=0.
+   real, dimension(1) :: meanmu5=0.
+   real :: flucmu5=0., meanB2=0., Brms=0.
    real :: initpower_mu5=0., cutoff_mu5=0.
    real :: initpower_muS=0., cutoff_muS=0.
    real :: kgaussian_mu5=0.,kpeak_mu5=0.
@@ -261,11 +262,8 @@ module Special
 !
 !  give eta out as shared_variable
 !
-      if (lmagnetic.and.lrun) then
-        call get_shared_variable('eta',eta,ierr)
-        if (ierr/=0) call fatal_error("initialize_special: ", &
-            "cannot get shared var eta")
-      endif
+      if (lmagnetic.and.lrun) &
+        call get_shared_variable('eta',eta,caller="initialize_special")
 !
     endsubroutine initialize_special
 !***********************************************************************
@@ -348,8 +346,7 @@ module Special
             if(lremove_mean_muS) call remove_mean(f,imuS)
           endif
         case default
-          call fatal_error("init_special: No such value for initspecial:" &
-              ,trim(initspecial))
+          call fatal_error("init_special","no such initspecial: "//trim(initspecial))
       endselect
 !
       call keep_compiler_quiet(f)
@@ -589,8 +586,7 @@ module Special
         if (lmuSadv) then
           df(l1:l2,m,n,imuS) = df(l1:l2,m,n,imuS) - p%ugmuS
         endif
-        df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) &
-          -coef_mu5*bdotgmuS  
+        df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) - coef_mu5*bdotgmuS  
         if (lCVE) then   
           call dot(p%oo,p%bb,oobb)
           call dot(p%oo,p%gmuS,oogmuS)
@@ -603,9 +599,9 @@ module Special
 !  Contributions to timestep from muS equation
         dt1_CMW = sqrt(coef_mu5*coef_muS)*sqrt(p%b2)*sqrt(dxyz_2)
         if (ldiffmuS_hyper2_simplified) then
-           dt1_Dmu = diffmuS_hyper2*dxyz_4
+          dt1_Dmu = diffmuS_hyper2*dxyz_4
         else
-           dt1_Dmu = diffmuS*dxyz_2
+          dt1_Dmu = diffmuS*dxyz_2
         endif
       endif
 !                          
@@ -631,8 +627,7 @@ module Special
         aatest=f(l1:l2,m,n,iaxtest:iaztest)
         call gij(f,iaxtest,aijtest,1)
         call curl_mn(aijtest,bbtest,aatest)
-        df(l1:l2,m,n,iaxtest:iaztest) = df(l1:l2,m,n,iaxtest:iaztest) &
-                                        + eta*meanmu5*bbtest
+        df(l1:l2,m,n,iaxtest:iaztest) = df(l1:l2,m,n,iaxtest:iaztest) + eta*meanmu5*bbtest
       endif  
 !
 !  Total contribution to the timestep
@@ -644,8 +639,7 @@ module Special
                         dt1_CVE1, dt1_CVE2, &
                         dt1_CMW, dt1_Dmu)/cdtchiral
         else
-          dt1_special = max(dt1_lambda5, dt1_D5, &
-                        dt1_gammaf5, dt1_vmu)/cdtchiral
+          dt1_special = max(dt1_lambda5, dt1_D5, dt1_gammaf5, dt1_vmu)/cdtchiral
         endif
         dt1_max=max(dt1_max,dt1_special)  
       endif
@@ -653,19 +647,19 @@ module Special
 !  Diagnostics
 !
       if (ldiagnos) then
-        if (idiag_muSm/=0) call sum_mn_name(p%muS,idiag_muSm)
+        call sum_mn_name(p%muS,idiag_muSm)
         if (idiag_muSrms/=0) call sum_mn_name(p%muS**2,idiag_muSrms,lsqrt=.true.)
-        if (idiag_muSmax/=0) call max_mn_name(p%muS,idiag_muSmax)
-        if (idiag_mu5m/=0) call sum_mn_name(p%mu5,idiag_mu5m)
+        call max_mn_name(p%muS,idiag_muSmax)
+        call sum_mn_name(p%mu5,idiag_mu5m)
         if (idiag_mu51m/=0) call sum_mn_name(sqrt(p%mu5**2),idiag_mu51m)
         if (idiag_mu53m/=0) call sum_mn_name(p%mu5**3,idiag_mu53m)
         if (idiag_mu54m/=0) call sum_mn_name(p%mu5**4,idiag_mu54m)
         if (idiag_mu5rms/=0) call sum_mn_name(p%mu5**2,idiag_mu5rms,lsqrt=.true.)
         if (idiag_mu5min/=0) call max_mn_name(-p%mu5,idiag_mu5min,lneg=.true.)
-        if (idiag_mu5max/=0) call max_mn_name(p%mu5,idiag_mu5max)
+        call max_mn_name(p%mu5,idiag_mu5max)
         if (idiag_mu5abs/=0) call max_mn_name(abs(p%mu5),idiag_mu5abs)
-        if (idiag_gamf5m/=0) call save_name(gammaf5,idiag_gamf5m)
-        if (idiag_srce5m/=0) call save_name(source5,idiag_srce5m)
+        call save_name(gammaf5,idiag_gamf5m)
+        call save_name(source5,idiag_srce5m)
         if (idiag_gmu5rms/=0) then
           call dot2_mn(p%gmu5,gmu52)
           call sum_mn_name(gmu52,idiag_gmu5rms,lsqrt=.true.)
@@ -674,9 +668,9 @@ module Special
           call dot2_mn(p%gmuS,gmuS2)
           call sum_mn_name(gmuS2,idiag_gmuSrms,lsqrt=.true.)
         endif
-        if (idiag_gmu5mx/=0) call sum_mn_name(p%gmu5(:,1),idiag_gmu5mx)
-        if (idiag_gmu5my/=0) call sum_mn_name(p%gmu5(:,2),idiag_gmu5my)
-        if (idiag_gmu5mz/=0) call sum_mn_name(p%gmu5(:,3),idiag_gmu5mz)
+        call sum_mn_name(p%gmu5(:,1),idiag_gmu5mx)
+        call sum_mn_name(p%gmu5(:,2),idiag_gmu5my)
+        call sum_mn_name(p%gmu5(:,3),idiag_gmu5mz)
         if (idiag_bgmu5rms/=0) then
           call dot_mn(p%bb,p%gmu5,bgmu5)
           call sum_mn_name(bgmu5**2,idiag_bgmu5rms,lsqrt=.true.)
@@ -880,7 +874,7 @@ module Special
 !  Default.
 !
         case default
-          call fatal_error("daa_dt: No such value for gammaf5_tdep:",trim(gammaf5_tdep))
+          call fatal_error("special_before_boundary","no such gammaf5_tdep:"//trim(gammaf5_tdep))
       endselect
 !
 !  Choice of source5_tdep profiles.
@@ -904,7 +898,7 @@ module Special
 !  Default.
 !
         case default
-          call fatal_error("daa_dt: No such value for source5_tdep:",trim(source5_tdep))
+          call fatal_error("special_before_boundary", "no such source5_tdep: "//trim(source5_tdep))
       endselect
 !
 !  The option ldiffmu5_tdep=T allows for a time-dependent diffusivity.
