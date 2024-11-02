@@ -568,7 +568,7 @@ module Special
            df(l1:l2,m,n,imuS) = df(l1:l2,m,n,imuS) + diffmuS*p%del2muS
         endif
 ! 
-        if (lmuSadv) f(l1:l2,m,n,imuS) = df(l1:l2,m,n,imuS) - p%ugmuS
+        if (lmuSadv) df(l1:l2,m,n,imuS) = df(l1:l2,m,n,imuS) - p%ugmuS
 
         df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) - coef_mu5*bdotgmuS  
         if (lCVE) then   
