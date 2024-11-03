@@ -359,6 +359,7 @@ module Special
 !  24-feb-21/axel: adapted from blob
 !
       use General, only: roptest
+      use Messages, only: warning
 
       integer :: i
       real, dimension (mx,my,mz,mfarray) :: f
