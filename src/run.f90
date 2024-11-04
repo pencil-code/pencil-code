@@ -2271,7 +2271,8 @@ call copy_addr(fbcx,p_par(1155)) ! (mcom) (2)
 call copy_addr(fbcy,p_par(1156)) ! (mcom) (2)
 call copy_addr(fbcz,p_par(1157)) ! (mcom) (2)
 
-call copy_addr(fbcx_1,p_par(1158)) ! (mcom) (2)
+!TP: for some reason no fbcx_1?
+!call copy_addr(fbcx_1,p_par(1158)) ! (mcom) (2)
 call copy_addr(fbcy_1,p_par(1159)) ! (mcom) (2)
 call copy_addr(fbcz_1,p_par(1160)) ! (mcom) (2)
 
