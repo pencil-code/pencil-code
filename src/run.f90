@@ -2267,6 +2267,17 @@ call copy_addr(l2i,p_par(1151)) ! int
 call copy_addr(m2i,p_par(1152)) ! int
 call copy_addr(n2i,p_par(1153)) ! int
 call copy_addr(ltest_bcs,p_par(1154)) !bool
+call copy_addr(fbcx,p_par(1155)) ! (mcom) (2)
+call copy_addr(fbcy,p_par(1156)) ! (mcom) (2)
+call copy_addr(fbcz,p_par(1157)) ! (mcom) (2)
+
+call copy_addr(fbcx_1,p_par(1158)) ! (mcom) (2)
+call copy_addr(fbcy_1,p_par(1159)) ! (mcom) (2)
+call copy_addr(fbcz_1,p_par(1160)) ! (mcom) (2)
+
+call copy_addr(fbcx_2,p_par(1161)) ! (mcom) (2)
+call copy_addr(fbcy_2,p_par(1162)) ! (mcom) (2)
+call copy_addr(fbcz_2,p_par(1163)) ! (mcom) (2)
     endsubroutine pushpars2c
 !***********************************************************************
 endmodule Run_module

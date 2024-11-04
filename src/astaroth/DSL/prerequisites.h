@@ -54,8 +54,4 @@
   #define ADDFORCE
 #endif
 
-gmem real AC_fbcx[mcom][2], AC_fbcx_2[mcom][2]
-gmem real AC_fbcy[mcom][2], AC_fbcy_1[mcom][2], AC_fbcy_2[mcom][2]
-gmem real AC_fbcz[mcom][2], AC_fbcz_1[mcom][2], AC_fbcz_2[mcom][2]
-
 #include "equations.h"
