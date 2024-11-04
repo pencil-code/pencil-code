@@ -160,7 +160,7 @@ module Cdata
   real :: cdtsrc=0.2, cdtf=0.9
   real :: eps_rkf=1e-3, eps_stiff=1e-6, eps_rkf0=0., dtinc=0.5, dtdec=0.5
   real :: ddt=0.0
-  real :: dtmin=1.0e-6, dtmax=1.0e37, dt_epsi=1e-7, dt_ratio=0.01
+  real :: dtmin=1.0e-6, dtmax=1.0e37, dt_epsi=1e-7, dt_ratio=1e-5
   real :: nu_sts=0.1
   real :: density_scale_factor=impossible
   integer :: permute_sts=0
@@ -173,7 +173,7 @@ module Cdata
   real, dimension (nx) :: maxdiffus=0., maxdiffus2=0., maxdiffus3=0., maxsrc=0.
   real, dimension (nx) :: dt1_max
   real, dimension (nx) :: reac_chem, reac_dust
-  real                 :: trelax_poly, reac_pchem
+  real    :: trelax_poly, reac_pchem
   real, dimension (5) :: alpha_ts=0.0,beta_ts=0.0,dt_beta_ts=1.0,bhat_ts=0.0,dt_bhat_ts=1.0
   logical :: lfractional_tstep_advance=.false.
   logical :: lfractional_tstep_negative=.true.
@@ -535,7 +535,7 @@ module Cdata
   integer, parameter :: mname_half=20
   integer, dimension (mname_half) :: itype_name_half=0
   real, dimension (mname_half,2) :: fname_half
-  integer :: name_half_max=0
+  integer :: name_half_max=0, ntmax1Dav=500, ntmax2Dav=500
   character (len=30) :: cname_half(mname_half)
 !  Radius inside of which diagnostics are calculated for sphere_in_a_box models
   real :: radius_diag=1.0
