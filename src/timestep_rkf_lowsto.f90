@@ -25,6 +25,7 @@ module Timestep
   real            :: dt_increase, dt_decrease, errmax, errmaxs
   real            :: safety=0.95
   integer         :: itter
+  logical         :: fixed_dt=.false.
 !
   contains
 !***********************************************************************
@@ -71,8 +72,8 @@ module Timestep
                      -69544964788955./30262026368149.,&
                                   0.0 /)
         alpha_ts  =  (/11847461282814./36547543011857.,&
-                                    3943225443063./ 7078155732230.,&
-                                    -346793006927./ 4029903576067.,&
+                        3943225443063./ 7078155732230.,&
+                        -346793006927./ 4029903576067.,&
                                                 0.0,0.0 /)
         itter=4
      elseif (itorder==4) then
@@ -83,7 +84,7 @@ module Timestep
                       -1672844663538./4480602732383., &
                        2114624349019./3568978502595., &
                        5198255086312./14908931495163. /)
-        beta_hat =  (/ 1101688804080./7410784769900., &
+        beta_hat =  (/ 1016888040809./7410784769900., &
                       11231460423587./58533540763752.,&
                       -1563879915014./6823010717585., &
                         606302364029./971179775848.,  &
@@ -102,17 +103,22 @@ module Timestep
       dt_increase=-1./(itorder+dtinc)
       dt_decrease=-1./(itorder-dtdec)
 !
-      if (dt==0.) then
-        if (lroot) call warning('initialize_timestep','dt=0 not appropriate for Runge-Kutta-Fehlberg'// &
-                     'set to dt_epsi = '//trim(rtoa(dt_epsi)))
-        dt=dt_epsi
+      !overwrite the persistent time_step from dt0 in run.in if dt
+      !too high to initialize run
+      if (dt0>0.) then
+        dt=dt0
+      elseif (dt0<0.) then
+        fixed_dt=.true.
+        dt=-dt0
+      else
+        if (dt==0) then
+          call warning('initialize_timestep','dt=0 not appropriate for Runge-Kutta-Fehlberg'// &
+                     'set to dt_epsi='//trim(rtoa(dt_epsi)))
+          dt=dt_epsi
+        endif
       endif
 !
       if (eps_rkf0/=0.) eps_rkf=eps_rkf0
-!
-      !overwrite the persistent time_step from dt0 in run.in if dt
-      !too high to initialize run
-      if (dt0/=0.) dt=dt0
 !
       ldt = .false.!(dt==0.)
 !
@@ -142,7 +148,6 @@ module Timestep
       type (pencil_case) :: p
       real :: dtsub, dt_temp
       integer :: j, iR1, iR2
-
 !
 !  Determine a lower bound for each variable j by which to normalise the error
 !
@@ -155,11 +160,9 @@ module Timestep
       dt_beta_ts=dt*beta_ts
       dt_beta_hat=dt*(beta_ts-beta_hat)
       dt_alpha_ts=dt*alpha_ts
-      if (ip<=6) print*, 'time_step: iproc, dt=', iproc_world, dt  !(all have same dt?)
-!
       errmax=0.
       errmaxs=0.
-      errdf=0.0
+      errdf=0.
 !
       substep_loop:do itsub=1,itter
         lfirst=(itsub==1)
@@ -173,9 +176,10 @@ module Timestep
         headtt = headt .and. lfirst .and. lroot
 !
         if (lfirst) then
-          df=0.
-          f=ftmp(:,:,:,:,iR1)
+          ftmp(:,:,:,1:mvar,iR2)=0.
+          !f=ftmp(:,:,:,:,iR1)
         else
+          ftmp(:,:,:,1:mvar,iR2)=0.
           if (it_rmv>0) lrmv=.false.
         endif
 !
@@ -207,6 +211,34 @@ module Timestep
 !
         if (lborder_profiles) call border_quenching(ftmp(:,:,:,:,iR1),df,dtsub)
 !
+!  Time evolution of point masses.
+!
+        if (lpointmasses) call pointmasses_timestep_second(ftmp(:,:,:,:,iR1))
+!
+!  Time evolution of particle variables.
+!
+        if (lparticles) call particles_timestep_second(ftmp(:,:,:,:,iR1))
+!
+! Time evolution of ODE variables.
+!
+        if (lode) call ode_timestep_second
+!
+!  Time evolution of solid_cells.
+!  Currently this call has only keep_compiler_quiet so set ds=1
+!
+        if (lsolid_cells) call solid_cells_timestep_second(ftmp(:,:,:,:,iR1),dtsub,2.)
+!
+!  Advance deltay of the shear (and, optionally, perform shear advection
+!  by shifting all variables and their derivatives).
+!
+        if (lshear) then
+          call impose_floors_ceilings(ftmp(:,:,:,:,iR1))
+          call update_ghosts(ftmp(:,:,:,:,iR1))  ! Necessary for non-FFT advection but unnecessarily overloading FFT advection
+          call advance_shear(ftmp(:,:,:,:,iR1), ftmp(:,:,:,1:mvar,iR2), dtsub)
+        endif
+!
+        call update_after_substep(ftmp(:,:,:,:,iR1),ftmp(:,:,:,1:mvar,iR2),dtsub,llast)
+!
 !  Time evolution of grid variables.
 !
         if (.not. lgpu) then
@@ -218,36 +250,7 @@ module Timestep
           ftmp(l1:l2,m1:m2,n1:n2,1:mvar,iR2) =  ftmp(l1:l2,m1:m2,n1:n2,1:mvar,iR1) &
                                              + (dtsub - dt_alpha_ts(itsub)) * ftmp(l1:l2,m1:m2,n1:n2,1:mvar,iR2)
           if (mfarray>mvar) ftmp(:,:,:,mvar+1:mfarray,iR2) = ftmp(:,:,:,mvar+1:mfarray,iR1)
-!
         endif
-!
-!  Time evolution of point masses.
-!
-        if (lpointmasses) call pointmasses_timestep_second(ftmp(:,:,:,:,iR2))
-!
-!  Time evolution of particle variables.
-!
-        if (lparticles) call particles_timestep_second(ftmp(:,:,:,:,iR2))
-!
-! Time evolution of ODE variables.
-!
-        if (lode) call ode_timestep_second
-!
-!  Time evolution of solid_cells.
-!  Currently this call has only keep_compiler_quiet so set ds=1
-!
-        if (lsolid_cells) call solid_cells_timestep_second(ftmp(:,:,:,:,iR2),dtsub,2.)
-!
-!  Advance deltay of the shear (and, optionally, perform shear advection
-!  by shifting all variables and their derivatives).
-!
-        if (lshear) then
-          call impose_floors_ceilings(ftmp(:,:,:,:,iR2))
-          call update_ghosts(ftmp(:,:,:,:,iR2))  ! Necessary for non-FFT advection but unnecessarily overloading FFT advection
-          call advance_shear(ftmp(:,:,:,:,iR2), df, dtsub)
-        endif
-!
-        call update_after_substep(ftmp(:,:,:,:,iR2),df,dtsub,llast)
 !
 !  Increase time.
 !
@@ -272,6 +275,7 @@ module Timestep
               case ('rel_err')
                 !initial f state can be overwritten
                 scal = max(abs(ftmp(l1:l2,m,n,j,iR2)),farraymin(j))
+                !scal = max(abs(ftmp(l1:l2,m,n,j,iR2)),dt_epsi)
                 errmaxs = max(maxval(abs(errdf(:,m-nghost,n-nghost,j))/scal),errmaxs)
               case ('abs_err')
                 !initial f state can be overwritten
@@ -287,22 +291,22 @@ module Timestep
         errmaxs=errmaxs/eps_rkf
 !
         call mpiallreduce_max(errmaxs,errmax,MPI_COMM_WORLD)
-        if (errmax > 1) then
-          ! Step above error threshold so decrease the next time step
-          dt_temp = safety*dt*errmax**dt_decrease
-          if (lroot.and.ip==6787) print*,"time_step: it",it,"dt",dt,&
-               "to ",dt_temp,"at errmax",errmax
-          ! Don't decrease the time step by more than a factor of ten
-          dt = sign(max(abs(dt_temp), 0.1*abs(dt)), dt)
-        else
-          if (lroot.and.ip==6787) print*,"time_step increased: it",it,"dt",dt,&
-               "to ",dt*errmax**dt_increase,"at errmax",errmax
-          dt = dt*errmax**dt_increase
+        if (.not. fixed_dt) then
+          if (errmax > 1) then
+            ! Step above error threshold so decrease the next time step
+            dt_temp = safety*dt*errmax**dt_decrease
+            if (lroot.and.ip==6787) print*,"time_step: it",it,"dt",dt,&
+                 "to ",dt_temp,"at errmax",errmax
+            ! Don't decrease the time step by more than a factor of ten
+            dt = sign(max(abs(dt_temp), 0.1*abs(dt)), dt)
+          else
+            if (lroot.and.ip==6787) print*,"time_step increased: it",it,"dt",dt,&
+                 "to ",dt*errmax**dt_increase,"at errmax",errmax
+            dt = dt*errmax**dt_increase
+          endif
         endif
       endif
       f = ftmp(:,:,:,:,iR2)
-!
-      if (ip<=6) print*,'TIMESTEP: iproc, dt=',iproc_world,dt
 !
     endsubroutine time_step
 !***********************************************************************

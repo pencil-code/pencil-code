@@ -14,6 +14,7 @@ module Timestep
   real, parameter :: safety      =  0.95
   real            :: errcon, dt_next, dt_increase, dt_decrease
   real, dimension(mvar) :: farraymin
+  logical :: fixed_dt=.false.
 !
   contains
 !
@@ -21,21 +22,29 @@ module Timestep
     subroutine initialize_timestep
 !
       use Messages, only: fatal_error, warning
+      use General, only: rtoa
 !
       if (lparticles) call fatal_error("initialize_timestep", "Particles are"// &
                                        " not yet supported by the adaptive rkf scheme")
       if (itorder/=5.and.itorder/=3) then
-        call warning('initialize_timestep','itorder set to 5 for Runge-Kutta-Fehlberg')
+        call warning('initialize_timestep','itorder set to 5 or 3 for Runge-Kutta-Fehlberg')
         itorder=5
       else if (itorder==3) then
         call warning('initialize_timestep',&
                      'Runge-Kutta-Fehlberg itorder is 3: set to 5 for higher accuracy')
       endif
 !
-      if (dt==0.) then
-        call warning('initialize_timestep','dt=0 not appropriate for Runge-Kutta-Fehlberg'// &
-                     'set to 1e-6')
-        dt=1e-6
+      if (dt0>0.) then
+        dt=dt0
+      elseif (dt0<0.) then
+        fixed_dt=.true.
+        dt=-dt0
+      else
+        if (dt==0) then
+          call warning('initialize_timestep','dt=0 not appropriate for Runge-Kutta-Fehlberg'// &
+                     'set to dt_epsi='//trim(rtoa(dt_epsi)))
+          dt=dt_epsi
+        endif
       endif
 !
       if (eps_rkf0/=0.) eps_rkf=eps_rkf0
@@ -46,7 +55,6 @@ module Timestep
       ldt=.false.
       !overwrite the persistent time_step from dt0 in run.in if dt
       !too high to initialize run
-      if (dt0/=0.) dt=dt0
       dt_next=dt
       dt_increase=-1./(itorder+dtinc)
       dt_decrease=-1./(itorder-dtdec)
@@ -106,7 +114,7 @@ module Timestep
           call rkck3(f, df, p, errmax)
         endif
         ! Step succeeded so exit
-        if (errmax <= 1) exit
+        if (errmax <= 1.or.fixed_dt) exit
         ! If f not to be stored for reiteration errmax constraint below must be removed TBA
         if (.not.lreiterate.and.errmax<=1.75) exit
         ! Step didn't succeed so decrease the time step
@@ -141,15 +149,17 @@ module Timestep
 !
 ! Time step to try next time
 !
-      if (lreiterate) then
-        dt_next = dt*errmax**dt_increase
-      else
-        if (errmax <= 1) then
+      if (.not. fixed_dt) then
+        if (lreiterate) then
           dt_next = dt*errmax**dt_increase
         else
-          dt_temp = safety*dt*errmax**dt_decrease
-          ! Don't decrease the time step by more than a factor of ten
-          dt_next = sign(max(abs(dt_temp), 0.1*abs(dt)), dt)
+          if (errmax <= 1) then
+            dt_next = dt*errmax**dt_increase
+          else
+            dt_temp = safety*dt*errmax**dt_decrease
+            ! Don't decrease the time step by more than a factor of ten
+            dt_next = sign(max(abs(dt_temp), 0.1*abs(dt)), dt)
+          endif
         endif
       endif
 !
