@@ -15,6 +15,7 @@ module Timestep
   real, parameter :: dt_decrease      = -0.25
   real, parameter :: dt_increase      = -0.20
   real            :: errcon, dt_next
+  real, dimension(mvar) :: farraymin
   logical :: fixed_dt=.false.
 !
   contains
@@ -175,6 +176,11 @@ module Timestep
         call fatal_error("rkck", "timestep_rkf_1d only works for the 1D case")
       endif
 !
+      do j=1,mvar
+        farraymin(j) = max(dt_ratio*maxval(abs(f(l1:l2,m1:m2,n1:n2,j))),dt_epsi)
+      enddo
+      if (lroot.and.it==1) print*,"farraymin",farraymin
+!
       errmax=0.
 !
       if (first_call) then
@@ -282,6 +288,13 @@ module Timestep
             ! Constant error
             !
             scal = max(abs(f(l1:l2,n,m,j)), 1e-8)
+            errmaxs = max(maxval(abs(err/scal)),errmaxs)
+            !
+          case ('rel_err')
+            !
+            ! Relative error to f constrained with farraymin floor
+            !
+            scal=max(abs(f(l1:l2,m,n,j)+df(l1:l2,m,n,j)),farraymin(j))
             errmaxs = max(maxval(abs(err/scal)),errmaxs)
             !
           case ('none')
