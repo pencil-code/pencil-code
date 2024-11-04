@@ -19,6 +19,7 @@ module Timestep
   real, parameter :: errcon           = 0.1296
   real, parameter :: grow             = 1.5
   real, parameter :: shrnk            = 0.5
+  real, dimension(mvar) :: farraymin
 ! Shampine parameters
   real, parameter :: gam      = 1.0 / 2.0
   real, parameter :: a21      = 2.0
@@ -183,6 +184,11 @@ module Timestep
       real :: errmax, errmaxs
       integer :: j,l
 !
+      do j=1,mvar
+        farraymin(j) = max(dt_ratio*maxval(abs(f(l1:l2,m1:m2,n1:n2,j))),dt_epsi)
+      enddo
+      if (lroot.and.it==1) print*,"farraymin",farraymin
+!
       df=0.
       errmax=0.
       errmaxs=0.
@@ -331,6 +337,13 @@ module Timestep
             !
             !scal = abs(f(l1:l2,m,n,j))+abs(df(l1:l2,m,n,j)*dt)+1e-30!tiny(0.)
             errmaxs = max(maxval(abs(err/fscal(l1:l2,m,n,j))),errmaxs)
+            !
+          case ('rel_err')
+            !
+            ! Relative error to f constrained with farraymin floor
+            !
+            scal=max(abs(f(l1:l2,m,n,j)+df(l1:l2,m,n,j)),farraymin(j))
+            errmaxs = max(maxval(abs(err/scal)),errmaxs)
             !
           case ('none')
             ! No error check

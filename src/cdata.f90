@@ -179,7 +179,7 @@ module Cdata
   logical :: lfractional_tstep_negative=.true.
   logical :: lmaxadvec_sum=.false.,old_cdtv=.false.,leps_fixed=.true.
   logical :: lmaximal_cdtv=.false., lmaximal_cdt=.false.,lreiterate=.true.
-  character (len=20), dimension(mvar) :: timestep_scaling='cons_frac_err'
+  character (len=20), dimension(mvar) :: timestep_scaling='rel_err'
 !
 !  Use of LSODE to solve the chemistry in a separate step
 !  By default, sequential splitting method (1st order)
