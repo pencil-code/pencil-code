@@ -15,22 +15,32 @@ module Timestep
   real, parameter :: dt_decrease      = -0.25
   real, parameter :: dt_increase      = -0.20
   real            :: errcon, dt_next
+  logical :: fixed_dt=.false.
 !
   contains
 !
 !***********************************************************************
     subroutine initialize_timestep
-
+!
+      use Messages, only: warning
+      use General, only: rtoa
+!
       ldt = .false.
 !
-      if (dt==0.) then
-        call warning('initialize_timestep','dt=0 not appropriate for Runge-Kutta-Fehlberg'// &
-                     'set to 1e-6')
-        dt=1e-6
+      if (dt0>0.) then
+        dt=dt0
+      elseif (dt0<0.) then
+        fixed_dt=.true.
+        dt=-dt0
+      else
+        if (dt==0) then
+          call warning('initialize_timestep','dt=0 not appropriate for Runge-Kutta-Fehlberg'// &
+                     'set to dt_epsi='//trim(rtoa(dt_epsi)))
+          dt=dt_epsi
+        endif
       endif
 !
-      !overwrite the persistent time_step from dt0 in run.in
-      if (dt0/=0.) dt=dt0
+      if (eps_rkf0/=0.) eps_rkf=eps_rkf0
       dt_next=dt
 
     endsubroutine initialize_timestep
