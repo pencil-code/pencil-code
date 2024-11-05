@@ -24,7 +24,7 @@
 ! PENCILS PROVIDED ghhk(3,nchemspec); S0_R(nchemspec); cs2
 ! PENCILS PROVIDED glnpp(3); del2pp; mukmu1(nchemspec)
 ! PENCILS PROVIDED ccondens; ppwater
-! PENCILS PROVIDED Ywater, nucl_rate, nucl_rmin
+! PENCILS PROVIDED Ywater, nucl_rate, nucl_rmin, conc_sat_spec
 !
 !***************************************************************
 module Chemistry
@@ -165,10 +165,11 @@ module Chemistry
   integer :: i_cond_spec,ichem_cond_spec
   real :: true_density_cond_spec_cgs=2.196, true_density_cond_spec
   real :: gam_surf_energy_cgs=32.
-  real :: chem_conc_sat_spec_cgs=1e-8 !units of mol/cmˆ3
+  real :: nucleation_rate_coeff_cgs=1e19
+  real :: conc_sat_spec_cgs=1e-8 !units of mol/cmˆ3
   logical, pointer :: ldustnucleation, lpartnucleation, lcondensing_species
   character(len=labellen) :: isurf_energy="const"
-  character(len=labellen) :: ichem_conc_sat_spec="const"
+  character(len=labellen) :: iconc_sat_spec="const"
 !
 !   Atmospheric physics
 !
@@ -213,7 +214,7 @@ module Chemistry
       linit_density, init_rho2, &
       file_name, lreac_as_aux, init_zz1, init_zz2, flame_pos, &
       reac_rate_method,global_phi, lSmag_heat_transport, Pr_turb, lSmag_diffusion, z_cloud, &
-      lhotspot, lchem_detailed, condensing_species, chem_conc_sat_spec_cgs, &
+      lhotspot, lchem_detailed, condensing_species, conc_sat_spec_cgs, &
       true_density_cond_spec_cgs, delta_chem, press
 !
 !
@@ -227,9 +228,9 @@ module Chemistry
       lfilter_strict,init_TT1,init_TT2,init_x1,init_x2, linit_temperature, &
       linit_density, &
       ldiff_corr, lDiff_fick, lreac_as_aux, reac_rate_method,global_phi, &
-      Ythresh, lchem_detailed, chem_conc_sat_spec_cgs, inucl_pre_exp, lcorr_vel, &
+      Ythresh, lchem_detailed, conc_sat_spec_cgs, inucl_pre_exp, lcorr_vel, &
       lgradP_terms, lnormalize_chemspec, lnormalize_chemspec_N2, &
-      gam_surf_energy_cgs, isurf_energy, ichem_conc_sat_spec
+      gam_surf_energy_cgs, isurf_energy, iconc_sat_spec, nucleation_rate_coeff_cgs
 !
 ! diagnostic variables (need to be consistent with reset list below)
 !
@@ -249,6 +250,7 @@ module Chemistry
   integer :: idiag_dtchem=0     ! DIAG_DOC: $dt_{chem}$
   integer :: idiag_nuclrmin=0! DIAG_DOC: $\left< r_{\min} \right>$
   integer :: idiag_nuclrate=0! DIAG_DOC: $\left< J \right>$
+  integer :: idiag_conc_satm=0
 !
   integer :: idiag_cpfull=0
   integer :: idiag_cvfull=0
@@ -883,6 +885,9 @@ module Chemistry
           lpenc_requested(i_nucl_rate) = .true.
           lpenc_requested(i_nucl_rmin) = .true.
         endif
+        if (lnucleation .or. lcondensing_species) then
+          lpenc_requested(i_conc_sat_spec) = .true.
+        endif
       endif
 !
     endsubroutine pencil_criteria_chemistry
@@ -895,6 +900,10 @@ module Chemistry
 !
       logical, dimension(npencils) :: lpencil_in
       !
+      if (lpencil_in(i_conc_sat_spec)) then
+        lpencil_in(i_TT) = .true.
+        lpencil_in(i_TT1) = .true.
+      endif
       if (lpencil_in(i_nucl_rate) .or. lpencil_in(i_nucl_rmin))  then
         lpencil_in(i_chem_conc) = .true.
         lpencil_in(i_TT) = .true.
@@ -953,7 +962,7 @@ module Chemistry
       real, dimension(mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
       real, dimension(nx,3) :: glncp_tmp
-      real, dimension (nx) :: nucleation_rmin, nucleation_rate
+      real, dimension (nx) :: nucleation_rmin, nucleation_rate, conc_sat_spec
 !
       intent(in) :: f
       intent(inout) :: p
@@ -1319,6 +1328,10 @@ module Chemistry
             p%nucl_rate=nucleation_rate
             p%nucl_rmin=nucleation_rmin
           endif
+        endif
+        if (lnucleation .or. lcondensing_species) then
+          call cond_spec_sat_conc(p,conc_sat_spec)
+          p%conc_sat_spec=conc_sat_spec
         endif
       endif
 !
@@ -3502,6 +3515,7 @@ module Chemistry
         if (lnucleation) then
           if (idiag_nuclrmin/=0) call sum_mn_name(p%nucl_rmin,idiag_nuclrmin)
           if (idiag_nuclrate/=0) call sum_mn_name(p%nucl_rate,idiag_nuclrate)
+          if (idiag_conc_satm/=0) call sum_mn_name(p%conc_sat_spec,idiag_conc_satm)
         endif
 !
 !  Sample for hard coded diffusion diagnostics
@@ -3594,6 +3608,7 @@ module Chemistry
 !
         idiag_nuclrmin=0
         idiag_nuclrate=0
+        idiag_conc_satm=0
       endif
 !
 !  check for those quantities that we want to evaluate online
@@ -3631,6 +3646,7 @@ module Chemistry
         call parse_name(iname,cname(iname),cform(iname),'cvfull',idiag_cvfull)
         call parse_name(iname,cname(iname),cform(iname),'nuclrmin',idiag_nuclrmin)
         call parse_name(iname,cname(iname),cform(iname),'nuclrate',idiag_nuclrate)
+        call parse_name(iname,cname(iname),cform(iname),'conc_satm',idiag_conc_satm)
 !
 !   Sample for hard-coded heat capacity diagnostics 
 !
@@ -6725,13 +6741,12 @@ module Chemistry
       type (pencil_case) :: p
       !
       integer :: ichem, kkk
-      real :: molar_mass_spec, atomic_m_spec, A_spec, chem_conc_sat_spec
+      real :: molar_mass_spec, atomic_m_spec, A_spec
       !
       molar_mass_spec = species_constants(ichem_cond_spec,imass)
-      chem_conc_sat_spec=chem_conc_sat_spec_cgs*unit_length**3
       atomic_m_spec=molar_mass_spec*m_u
       A_spec=sqrt(8.*k_B/(pi*atomic_m_spec))*molar_mass_spec/(4.*true_density_cond_spec)
-      mfluxcond=A_spec*(p%chem_conc(:,ichem_cond_spec)-chem_conc_sat_spec)*sqrt(p%TT)
+      mfluxcond=A_spec*(p%chem_conc(:,ichem_cond_spec)-p%conc_sat_spec)*sqrt(p%TT)
       !
     end subroutine condensing_species_rate
 !***********************************************************************
@@ -6740,9 +6755,8 @@ module Chemistry
       type (pencil_case) :: p
       !
       integer :: ichem, kkk
-      real :: nucleation_rate_coeff_cgs=1e19
       real :: volume_spec_cgs=4.5e-23
-      real :: volume_spec, chem_conc_sat_spec
+      real :: volume_spec
       real, dimension (nx) :: sat_ratio_spec, tmp1, tmp2, nucleation_rate, nucleation_rmin
       real, dimension (nx) :: gam_surf_energy, nucleation_rate_coeff, chem_conc
       real :: molar_mass_spec, atomic_m_spec
@@ -6763,8 +6777,7 @@ module Chemistry
           call fatal_error("cond_spec_nucl_rate","No such isurf_energy")
         endif
         volume_spec=volume_spec_cgs/unit_length**3
-        chem_conc_sat_spec=chem_conc_sat_spec_cgs*unit_length**3
-        sat_ratio_spec=chem_conc/chem_conc_sat_spec
+        sat_ratio_spec=chem_conc/p%conc_sat_spec
         nucleation_rmin=2.*gam_surf_energy*volume_spec/(k_B*p%TT*alog(sat_ratio_spec))
         !
         !  Compute nucleation rate (of nucleii with r=rmin)
@@ -6787,6 +6800,30 @@ module Chemistry
       endif
 !      
       end subroutine cond_spec_nucl_rate
+!***********************************************************************
+      subroutine cond_spec_sat_conc(p,conc_sat_spec)
+        !
+        ! Calculate the saturation concentration of the condensing species
+        !
+        type (pencil_case) :: p
+        !
+        real, dimension (nx) :: conc_sat_spec, tmp1
+        real :: P_boil_cgs = 1013250 ! 1bar in Ba (=0.1Pa)
+        real :: T_boil_cgs = 2503 ! in K
+        real :: deltaH_cgs = 7.07e12 ! in erg/mol
+        real :: P_boil
+        !
+        if (iconc_sat_spec=="const") then
+          conc_sat_spec=conc_sat_spec_cgs*unit_length**3
+        elseif (iconc_sat_spec=="Clausius") then
+          P_boil=P_boil_cgs/unit_pressure
+          tmp1=-deltaH_cgs/(unit_energy*Rgas)*(p%TT1-unit_temperature/T_boil_cgs)
+          conc_sat_spec=P_boil*exp(tmp1)/(Rgas*p%TT)
+        else
+          call fatal_error("cond_spec_sat_conc","no such iconc_sat_spec")
+        endif
+        !
+      end subroutine cond_spec_sat_conc
 !***********************************************************************
     include 'chemistry_common.inc'
 !***********************************************************************
