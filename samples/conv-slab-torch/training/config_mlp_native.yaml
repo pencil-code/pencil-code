@@ -1,0 +1,31 @@
+general:
+  enable_wandb_hook: 1
+  report_frequency: 100
+
+model:
+#  type: mlp
+#  parameters:
+#    dropout: 0.0
+#   layer_sizes: [1024, 1024]
+  type: torchscript
+  parameters:
+    filename: "training/unet_torchscript.pt"
+
+loss:
+  type: MSE
+
+optimizer:
+  type: adam
+  parameters:
+    learning_rate: 1e-3
+    beta1: 0.9
+    beta2: 0.999
+    weight_decay: 0
+    eps: 1e-8
+    amsgrad: 0
+
+lr_scheduler:
+  type: cosine_annealing
+  parameters:
+    T_max: 100000
+

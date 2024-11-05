@@ -17,7 +17,7 @@ def twonorm_accuracy(
     noerr=True,
     quiet=True,
 ):
-    """
+    r"""
     Assessment of accuracy of simulation:
     Computes the two-norm error of all available simulation, where the simulation
     with the maximum amount of grid points is used as the correct/reference solution.
@@ -217,7 +217,7 @@ def order_accuracy(
     var_file="ogvar.dat",
     direction="x",
 ):
-    """
+    r"""
     Compute an estimate of the order of accuracy, using two-norms where
     the finest grid is used as reference solution u_0.
     Return array of orders of accuracy, where each order p is for computation along one strip.
@@ -347,7 +347,7 @@ def maxerror(u1, u2):
 def twonorm_accuracy2D(
     simulations, field="ur", var_file="ogvar.dat", noerr=True, quiet=True
 ):
-    """
+    r"""
     Assessment of accuracy of simulation:
     Computes the two-norm error of all available simulation, where the simulation
     with the maximum amount of grid points is used as the correct/reference solution.
@@ -479,7 +479,7 @@ def twonorm_accuracy1D(
     noerr=True,
     quiet=True,
 ):
-    """
+    r"""
     Assessment of accuracy of simulation:
     Computes the two-norm error of all available simulation, where the simulation
     with the maximum amount of grid points is used as the correct/reference solution.

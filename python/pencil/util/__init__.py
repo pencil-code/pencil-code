@@ -11,6 +11,7 @@ defined here are not allowed to import any other pencil packages.
 import os
 import re
 import warnings
+import pathlib
 
 MARKER_FILES = ["run.in", "start.in", "src/cparam.local", "src/Makefile.local"]
 
@@ -48,3 +49,23 @@ def ffloat(x):
         warnings.warn("This usage of pc.util.ffloat will be removed soon. If you believe your use-case is legitimate, please email <pencil-code-python@googlegroups.com> describing it.")
         val = re.sub(r"(-?\d+\.?\d*)([+-]\d+)", r"\1E\2", x)
         return float(val)
+
+class PathWrapper(pathlib.Path):
+    """
+    See documentation of pathlib.Path.
+
+    This wrapper tries to avoid immediately breaking user code which assumes
+    paths are always strings
+
+    KG (2024-Oct-10): added
+    """
+    def _add_warning(self):
+        warnings.warn("Adding paths to strings will not work in the future; please change your code before it breaks. If you believe your use-case is legitimate, please email <pencil-code-python@googlegroups.com> describing it.")
+
+    def __add__(self, other):
+        self._add_warning()
+        return str(self) + str(other)
+
+    def __radd__(self, other):
+        self._add_warning()
+        return str(other) + str(self)

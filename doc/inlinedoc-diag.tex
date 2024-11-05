@@ -82,6 +82,7 @@
 %%   testscalar_axisym.f90
 %%   testscalar_simple.f90
 %%   thermal_energy.f90
+%%   training_torchfort.f90
 %%   viscosity.f90
 
 % ---------------------------------------------------------------- %
@@ -447,6 +448,7 @@
   \var{abms}      & $\left<\Av\cdot\Bv\right>$ (south) \\
   \var{abrms}     & $\left<(\Av\cdot\Bv)^2\right>^{1/2}$ \\
   \var{jbrms}     & $\left<(\jv\cdot\Bv)^2\right>^{1/2}$ \\
+  \var{jxbrms}    & $\left<(\jv\times\Bv)^2\right>^{1/2}$ \\
   \var{ajm}       & $\left<\jv\cdot\Av\right>$ \\
   \var{jbm}       & $\left<\jv\cdot\Bv\right>$ \\
   \var{a2b2m}     & $\left<\Av^2\cdot\Bv^2\right>$ \\
@@ -829,11 +831,13 @@
   \var{dphim}     & $\left<\phi'\right>$ \\
   \var{dphi2m}    & $\left<(\phi')^2\right>$ \\
   \var{dphirms}   & $\left<(\phi')^2\right>^{1/2}$ \\
-  \var{Hubblem}   & $\left<{\cal H}\right>$ \\
+  \var{Hscriptm}  & $\left<{\cal a*H}\right>$ \\
   \var{lnam}      & $\left<\ln a\right>$ \\
   \var{ddotam}    & $a''/a$ \\
   \var{a2rhopm}   & $a^2 (rho+p)$ \\
   \var{a2rhom}    & $a^2 rho$ \\
+  \var{a2rhophim} & $a^2 rho$ \\
+  \var{a2rhogphim} & $0.5 <grad phi^2>$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{bfield.f90}} \\
 \midrule
@@ -889,6 +893,8 @@
   \multicolumn{2}{c}{Module \file{chemistry.f90}} \\
 \midrule
   \var{dtchem}    & $dt_{chem}$ \\
+  \var{nuclrmin}  & $\left< r_{\min} \right>$ \\
+  \var{nuclrate}  & $\left< J \right>$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{chemistry_simple.f90}} \\
 \midrule
@@ -985,6 +991,7 @@
   \var{mfpf}      & $-f'/f$ \\
   \var{fppf}      & $f''/f$ \\
   \var{afact}     & $a$ (scale factor) \\
+  \var{constrainteqn} & $<deldotE+>$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{dustdensity.f90}} \\
 \midrule
@@ -2743,6 +2750,10 @@
                     \left< c_v T \right>$
                     \quad(mean internal energy) \\
   \var{etot}      & $\langle e_\textrm{th} + \rho u^2 / 2\rangle$ \\
+\midrule
+  \multicolumn{2}{c}{Module \file{training_torchfort.f90}} \\
+\midrule
+  \var{tauerror}  & $\sqrt{\left<(\sum_{i,j} u_i*u_j - tau_{ij})^2\right>}$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{viscosity.f90}} \\
 \midrule

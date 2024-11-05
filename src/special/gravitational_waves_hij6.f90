@@ -666,14 +666,14 @@ module Special
 !
 !  13-may-18/axel: added remove_mean_value for hij and gij
 !
-      use Sub, only: remove_mean_value
+      use Sub, only: remove_mean
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
 !  Remove mean hij or gij if desired.
 !
-      if (lremove_mean_hij) call remove_mean_value(f,ihij,ihij+5)
-      if (lremove_mean_gij) call remove_mean_value(f,igij,igij+5)
+      if (lremove_mean_hij) call remove_mean(f,ihij,ihij+5)
+      if (lremove_mean_gij) call remove_mean(f,igij,igij+5)
 !
     endsubroutine special_before_boundary
 !***********************************************************************

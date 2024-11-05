@@ -1144,8 +1144,8 @@ module Forcing
           profx_ampl=ampl_ff(i)*(1.-4./3.*(1.-.25*x(l1:l2)**2)*x(l1:l2)**2)
         elseif (iforcing_cont(i)=='tidal') then
           if (lroot) print*, 'forcing_cont: tidal'
-          sinx(:,i)=sin(kf_fcont_x(i)*x)
-          siny(:,i)=sin(kf_fcont_y(i)*y)
+          sinx(:,i)=sin(2.*pi*x/Lxyz(1))
+          siny(:,i)=sin(2.*pi*y/Lxyz(2))
        elseif (iforcing_cont(i)=='from_file') then
           if (allocated(fcont_from_file)) deallocate(fcont_from_file)
           allocate(fcont_from_file(3,nxgrid,nygrid,nzgrid))
@@ -2649,13 +2649,13 @@ module Forcing
                 call sum_mn_name(ff,idiag_ffm)
               endif
               if (lmagnetic) then
-                if (idiag_fxbxm/=0.or.idiag_fxbym/=0.or.idiag_fxbzm/=0) then
-                  call curl(f,iaa,bb)
-                  call cross(forcing_rhs,bb,fxb)
-                  call sum_mn_name(fxb(:,1),idiag_fxbxm)
-                  call sum_mn_name(fxb(:,2),idiag_fxbym)
-                  call sum_mn_name(fxb(:,3),idiag_fxbzm)
-                endif
+!               if (idiag_fxbxm/=0.or.idiag_fxbym/=0.or.idiag_fxbzm/=0) then
+!                 call curl(f,iaa,bb)
+!                 call cross(forcing_rhs,bb,fxb)
+!                 call sum_mn_name(fxb(:,1),idiag_fxbxm)
+!                 call sum_mn_name(fxb(:,2),idiag_fxbym)
+!                 call sum_mn_name(fxb(:,3),idiag_fxbzm)
+!               endif
               endif
             endif
             lfirstpoint = .false.
@@ -2710,11 +2710,11 @@ module Forcing
         if (idiag_ofm/=0)  call mpireduce_sum(fname(idiag_ofm)/nwgrid,fname(idiag_ofm))
         if (idiag_qfm/=0)  call mpireduce_sum(fname(idiag_qfm)/nwgrid,fname(idiag_qfm))
         if (idiag_ffm/=0)  call mpireduce_sum(fname(idiag_ffm)/nwgrid,fname(idiag_ffm))
-        if (lmagnetic) then
-          if (idiag_fxbxm/=0) call mpireduce_sum(fname(idiag_fxbxm)/nwgrid,fname(idiag_fxbxm))
-          if (idiag_fxbym/=0) call mpireduce_sum(fname(idiag_fxbym)/nwgrid,fname(idiag_fxbym))
-          if (idiag_fxbzm/=0) call mpireduce_sum(fname(idiag_fxbzm)/nwgrid,fname(idiag_fxbzm))
-        endif
+!       if (lmagnetic) then
+!         if (idiag_fxbxm/=0) call mpireduce_sum(fname(idiag_fxbxm)/nwgrid,fname(idiag_fxbxm))
+!         if (idiag_fxbym/=0) call mpireduce_sum(fname(idiag_fxbym)/nwgrid,fname(idiag_fxbym))
+!         if (idiag_fxbzm/=0) call mpireduce_sum(fname(idiag_fxbzm)/nwgrid,fname(idiag_fxbzm))
+!       endif
       endif
 !
     endsubroutine forcing_hel_kprof
@@ -3503,13 +3503,13 @@ module Forcing
               call sum_mn_name(ruf,idiag_rufm)
             endif
             if (lmagnetic) then
-              if (idiag_fxbxm/=0.or.idiag_fxbym/=0.or.idiag_fxbzm/=0) then
-                call curl(f,iaa,bb)
-                call cross(forcing_rhs,bb,fxb)
-                call sum_mn_name(fxb(:,1),idiag_fxbxm)
-                call sum_mn_name(fxb(:,2),idiag_fxbym)
-                call sum_mn_name(fxb(:,3),idiag_fxbzm)
-              endif
+!             if (idiag_fxbxm/=0.or.idiag_fxbym/=0.or.idiag_fxbzm/=0) then
+!               call curl(f,iaa,bb)
+!               call cross(forcing_rhs,bb,fxb)
+!               call sum_mn_name(fxb(:,1),idiag_fxbxm)
+!               call sum_mn_name(fxb(:,2),idiag_fxbym)
+!               call sum_mn_name(fxb(:,3),idiag_fxbzm)
+!             endif
             endif
           endif
           lfirstpoint = .false.
@@ -3520,11 +3520,11 @@ module Forcing
 !
       if (lout) then
         if (idiag_rufm/=0) call mpireduce_sum(fname(idiag_rufm)/nwgrid,fname(idiag_rufm))
-        if (lmagnetic) then
-          if (idiag_fxbxm/=0) call mpireduce_sum(fname(idiag_fxbxm)/nwgrid,fname(idiag_fxbxm))
-          if (idiag_fxbym/=0) call mpireduce_sum(fname(idiag_fxbym)/nwgrid,fname(idiag_fxbym))
-          if (idiag_fxbzm/=0) call mpireduce_sum(fname(idiag_fxbzm)/nwgrid,fname(idiag_fxbzm))
-        endif
+!       if (lmagnetic) then
+!         if (idiag_fxbxm/=0) call mpireduce_sum(fname(idiag_fxbxm)/nwgrid,fname(idiag_fxbxm))
+!         if (idiag_fxbym/=0) call mpireduce_sum(fname(idiag_fxbym)/nwgrid,fname(idiag_fxbym))
+!         if (idiag_fxbzm/=0) call mpireduce_sum(fname(idiag_fxbzm)/nwgrid,fname(idiag_fxbzm))
+!       endif
       endif
 !
       if (ip<=9) print*,'forcing_ABC: forcing OK'
@@ -4942,13 +4942,13 @@ module Forcing
               call sum_mn_name(ruf,idiag_rufm)
             endif
             if (lmagnetic) then
-              if (idiag_fxbxm/=0.or.idiag_fxbym/=0.or.idiag_fxbzm/=0) then
-                call curl(f,iaa,bb)
-                call cross(forcing_rhs,bb,fxb)
-                call sum_mn_name(fxb(:,1),idiag_fxbxm)
-                call sum_mn_name(fxb(:,2),idiag_fxbym)
-                call sum_mn_name(fxb(:,3),idiag_fxbzm)
-              endif
+!             if (idiag_fxbxm/=0.or.idiag_fxbym/=0.or.idiag_fxbzm/=0) then
+!               call curl(f,iaa,bb)
+!               call cross(forcing_rhs,bb,fxb)
+!               call sum_mn_name(fxb(:,1),idiag_fxbxm)
+!               call sum_mn_name(fxb(:,2),idiag_fxbym)
+!               call sum_mn_name(fxb(:,3),idiag_fxbzm)
+!             endif
             endif
           endif
           lfirstpoint = .false.
@@ -4959,11 +4959,11 @@ module Forcing
 !
       if (lout) then
         if (idiag_rufm/=0) call mpireduce_sum(fname(idiag_rufm)/nwgrid,fname(idiag_rufm))
-        if (lmagnetic) then
-          if (idiag_fxbxm/=0) call mpireduce_sum(fname(idiag_fxbxm)/nwgrid,fname(idiag_fxbxm))
-          if (idiag_fxbym/=0) call mpireduce_sum(fname(idiag_fxbym)/nwgrid,fname(idiag_fxbym))
-          if (idiag_fxbzm/=0) call mpireduce_sum(fname(idiag_fxbzm)/nwgrid,fname(idiag_fxbzm))
-        endif
+!       if (lmagnetic) then
+!         if (idiag_fxbxm/=0) call mpireduce_sum(fname(idiag_fxbxm)/nwgrid,fname(idiag_fxbxm))
+!         if (idiag_fxbym/=0) call mpireduce_sum(fname(idiag_fxbym)/nwgrid,fname(idiag_fxbym))
+!         if (idiag_fxbzm/=0) call mpireduce_sum(fname(idiag_fxbzm)/nwgrid,fname(idiag_fxbzm))
+!       endif
       endif
 !
       if (ip<=9) print*,'forcing_tidal: forcing OK'
@@ -5357,10 +5357,6 @@ module Forcing
       if (iforcing_cont(1)=='(0,cosx*cosz,0)_Lor') lpenc_requested(i_rho1)=.true.
       if (lmomentum_ff) lpenc_requested(i_rho1)=.true.
       if (idiag_qfm/=0) lpenc_diagnos(i_curlo)=.true.
-      if (idiag_rufm/=0 .or. idiag_rufint/=0 .or. idiag_ufm/=0 .or. &
-        idiag_ofm/=0 .or. idiag_qfm/=0 .or. idiag_fxbxm/=0 .or. &
-        idiag_fxbym/=0.or.idiag_fxbzm/=0) &
-        lpenc_diagnos(i_fcont)=.true.
 !
     endsubroutine pencil_criteria_forcing
 !***********************************************************************
@@ -6130,12 +6126,17 @@ module Forcing
 !
       case ('tidal')
         force(:,1) = ampl_ff(i) * ( &
-            sinx(l1:l2,i)*cos(2.*phi_tidal)*cos(omega_ff*t) &
-            + 2.*siny(m,i)*cos(phi_tidal)*sin(omega_ff*t) )
+            sinx(l1:l2,i) * cos(2.*phi_tidal) * cos(omega_ff*t) + &
+            siny(m,i)     * 2.*cos(phi_tidal) * sin(omega_ff*t) + &
+            z(n)          * 0.5*sin(2.*phi_tidal) * cos(omega_ff*t) )
         force(:,2) = ampl_ff(i) * ( &
-            sinx(l1:l2,i)*cos(phi_tidal)*sin(omega_ff*t) &
-            - 2.*siny(m,i)*cos(omega_ff*t) )
-        force(:,3) = 0.
+            sinx(l1:l2,i) * cos(phi_tidal) * sin(omega_ff*t) + &
+            siny(m,i)     * (-2.) * cos(omega_ff*t) + &
+            z(n)          * sin(phi_tidal) * sin(omega_ff*t) )
+        force(:,3) = ampl_ff(i) * ( &
+            sinx(l1:l2,i) * sin(2.*phi_tidal) * cos(omega_ff*t) + &
+            siny(m,i)     * 2.*sin(phi_tidal) * sin(omega_ff*t) + &
+            z(n)          * sin(phi_tidal)**2 * cos(omega_ff*t) )
 !
 !
 !  possibility of putting zero, e.g., for purely magnetic forcings
@@ -6206,12 +6207,12 @@ module Forcing
         endif
 !
         if (lmagnetic) then
-          if (idiag_fxbxm/=0.or.idiag_fxbym/=0.or.idiag_fxbzm/=0) then
-            call cross(p%fcont(:,:,2),p%bb,fxb)
-            call sum_mn_name(fxb(:,1),idiag_fxbxm)
-            call sum_mn_name(fxb(:,2),idiag_fxbym)
-            call sum_mn_name(fxb(:,3),idiag_fxbzm)
-          endif
+!         if (idiag_fxbxm/=0.or.idiag_fxbym/=0.or.idiag_fxbzm/=0) then
+!           call cross(p%fcont(:,:,2),p%bb,fxb)
+!           call sum_mn_name(fxb(:,1),idiag_fxbxm)
+!           call sum_mn_name(fxb(:,2),idiag_fxbym)
+!           call sum_mn_name(fxb(:,3),idiag_fxbzm)
+!         endif
         endif
       endif
 !
@@ -6272,6 +6273,7 @@ module Forcing
 !
       error = read_persist ('FORCING_LOCATION', location)
       if (lroot .and. .not. error) print *, 'input_persist_forcing: location: ', location
+!print *, 'input_persist_forcing: location: ', location, error
 !
       error = read_persist ('FORCING_TSFORCE', tsforce)
       if (lroot .and. .not. error) print *, 'input_persist_forcing: tsforce: ', tsforce
@@ -6329,7 +6331,7 @@ module Forcing
         idiag_rufm=0; idiag_rufint=0; idiag_ufm=0; idiag_ofm=0; idiag_qfm=0; idiag_ffm=0
         idiag_ruxfxm=0; idiag_ruyfym=0; idiag_ruzfzm=0
         idiag_ruxfym=0; idiag_ruyfxm=0
-        idiag_fxbxm=0; idiag_fxbym=0; idiag_fxbzm=0
+!       idiag_fxbxm=0; idiag_fxbym=0; idiag_fxbzm=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -6347,9 +6349,9 @@ module Forcing
         call parse_name(iname,cname(iname),cform(iname),'ofm',idiag_ofm)
         call parse_name(iname,cname(iname),cform(iname),'qfm',idiag_qfm)
         call parse_name(iname,cname(iname),cform(iname),'ffm',idiag_ffm)
-        call parse_name(iname,cname(iname),cform(iname),'fxbxm',idiag_fxbxm)
-        call parse_name(iname,cname(iname),cform(iname),'fxbym',idiag_fxbym)
-        call parse_name(iname,cname(iname),cform(iname),'fxbzm',idiag_fxbzm)
+!       call parse_name(iname,cname(iname),cform(iname),'fxbxm',idiag_fxbxm)
+!       call parse_name(iname,cname(iname),cform(iname),'fxbym',idiag_fxbym)
+!       call parse_name(iname,cname(iname),cform(iname),'fxbzm',idiag_fxbzm)
       enddo
 !
 !  write column where which forcing variable is stored

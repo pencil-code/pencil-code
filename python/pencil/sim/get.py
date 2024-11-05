@@ -1,3 +1,21 @@
+from pathlib import Path
+from os.path import (
+    isdir,
+    join,
+    exists,
+    basename,
+    abspath,
+    )
+import numpy as np
+
+from pencil.io import (
+    load,
+    save,
+    walklevel,
+    )
+from pencil.util import is_sim_dir
+from pencil.sim import simulation
+
 def get(path=".", quiet=False):
     """
     get(path=".", quiet=False)
@@ -13,19 +31,12 @@ def get(path=".", quiet=False):
     quiet : bool
         Switches out the output of the function. Default: False.
     """
-
-    from os.path import isdir, join, exists, basename, abspath
-
-    from pencil.io import load
-    from pencil.sim.simulation import simulation
-    from pencil import is_sim_dir
-
     if exists(join(path, "pc/sim.dill")):
         try:
             sim = load("sim", folder=join(path, "pc"))
             sim.update(quiet=quiet)
 
-            if sim.path != abspath(path):
+            if sim.path != Path(path).absolute():
                 # The name of the directory containing the simulation has somehow changed (maybe the user renamed it). Better to just try to reload the sim from scratch.
                 raise RuntimeError
 
@@ -34,22 +45,18 @@ def get(path=".", quiet=False):
             import os
 
             print(
-                "? Warning: sim.dill in "
-                + path
-                + " is not up to date, recreating simulation object.."
+                f"? Warning: sim.dill in {path} is not up to date, recreating simulation object.."
             )
-            os.system("rm " + join(path, "pc/sim.dill"))
+            os.system(f"rm {join(path, 'pc/sim.dill')}")
 
     if is_sim_dir(path):
-        if quiet == False:
+        if not quiet:
             print(
-                "~ Found simulation in "
-                + path
-                + " and simulation object is created for the first time. May take some time.. "
+                f"~ Found simulation in {path} and simulation object is created for the first time. May take some time.. "
             )
         return simulation(path, quiet=quiet)
     else:
-        print("? WARNING: No simulation found in " + path + " -> try get_sims maybe?")
+        print(f"? WARNING: No simulation found in {path} -> try get_sims maybe?")
         return False
 
 
@@ -76,14 +83,6 @@ def get_sims(path_root=".", depth=0, unhide_all=True, quiet=False):
     quiet : bool
         Switches out the output of the function. Default: False.
     """
-    from os.path import join, basename
-    import numpy as np
-
-    from pencil.io import load
-    from pencil.io import save
-    from pencil.sim import simulation
-    from pencil.io import walklevel
-    from pencil import is_sim_dir
 
     # from pen.intern.class_simdict import Simdict
     # from intern import get_simdict
@@ -107,7 +106,7 @@ def get_sims(path_root=".", depth=0, unhide_all=True, quiet=False):
             sd = join(path, sdir)
             if is_sim_dir(sd) and not basename(sd).startswith("."):
                 if not quiet:
-                    print("# Found Simulation in " + sd)
+                    print(f"# Found Simulation in {sd}")
                 sim_paths.append(sd)
     if is_sim_dir("."):
         sim_paths.append(".")

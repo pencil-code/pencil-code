@@ -41,14 +41,15 @@ module Gravity
   endinterface
 !
   real(KIND=rkind8), parameter :: g_B_cgs=6.172d20, g_D_cgs=3.086d21
-  real(KIND=rkind8) :: g_B, g_D, g_B_factor=1.0, g_D_factor=1.0
+  real(KIND=rkind8), parameter :: g_E_cgs=6.7892d20, g_F_cgs=1.512d22
+  real(KIND=rkind8) :: g_B, g_D, g_B_factor=1.0, g_D_factor=1.0, g_E_factor=1.0, g_F_factor=1.0
   real :: gravitational_const=0., mass_cent_body=0.
   real, dimension(mx) :: gravx_xpencil=0.0, potx_xpencil=0.0
   real, dimension(my) :: gravy_ypencil=0.0, poty_ypencil=0.0
   real, dimension(mz) :: gravz_zpencil=0.0, potz_zpencil=0.0
   real, dimension(mx) :: xdep=0.0
   real, dimension(mz) :: zdep=0.0
-  real, parameter :: g_A_cgs=4.4e-9, g_C_cgs=1.7e-9
+  real, parameter :: g_A_cgs=4.4e-9, g_C_cgs=1.7e-9, Rsol_cgs=2.6231e22
   real :: gravx=0.0, gravy=0.0, gravz=0.0
   real :: kx_gg=1.0, ky_gg=1.0, kz_gg=1.0, gravz_const=1.0, reduced_top=1.0
   real :: xgrav=impossible, ygrav=impossible, zgrav=impossible
@@ -58,11 +59,12 @@ module Gravity
   real :: nu_epicycle=1.0, nu_epicycle2=1.0
   real :: nux_epicycle=0.0, nux_epicycle2=0.0
   real :: g_A, g_C, g_A_factor=1.0, g_C_factor=1.0
+  real :: g_E, g_F, Rgal=impossible, Rsol=impossible
   real :: cs0hs=0.0, H0hs=0.0
   real :: potx_const=0.0, poty_const=0.0, potz_const=0.0
   integer :: n_pot=10
   integer :: n_adjust_sphersym=0
-  character (len=labellen) :: gravx_profile='zero',gravy_profile='zero', &
+  character (len=labellen) :: gravx_profile='zero', gravy_profile='zero', &
                               gravz_profile='zero'
 !
 !  Parameters used by other modules (only defined for other gravities)
@@ -72,7 +74,7 @@ module Gravity
   logical :: lcalc_zinfty=.false.
   logical :: lboussinesq_grav=.false.
   logical :: ladjust_sphersym=.false.
- 
+
   real :: g0=0.0
   real :: lnrho_bot=0.0, lnrho_top=0.0, ss_bot=0.0, ss_top=0.0
   real :: kappa_x1=0.0, kappa_x2=0.0, kappa_z1=0.0, kappa_z2=0.0
@@ -87,7 +89,7 @@ module Gravity
       lcalc_zinfty, kappa_x1, kappa_x2, kappa_z1, kappa_z2, reduced_top, &
       lboussinesq_grav, n_pot, cs0hs, H0hs, grav_tilt, grav_amp, &
       potx_const,poty_const,potz_const, zclip, n_adjust_sphersym, gravitational_const, &
-      mass_cent_body, g_A_factor, g_C_factor, g_B_factor, g_D_factor
+      mass_cent_body, g_A_factor, g_C_factor, g_B_factor, g_D_factor, Rsol, Rgal
 !
   namelist /grav_run_pars/ &
       gravx_profile, gravy_profile, gravz_profile, gravx, gravy, gravz, &
@@ -98,7 +100,7 @@ module Gravity
       lcalc_zinfty, kappa_x1, kappa_x2, kappa_z1, kappa_z2, reduced_top, &
       lboussinesq_grav, n_pot, grav_tilt, grav_amp, &
       potx_const,poty_const,potz_const, zclip, n_adjust_sphersym, gravitational_const, &
-      mass_cent_body, g_A_factor, g_C_factor, g_B_factor, g_D_factor
+      mass_cent_body, g_A_factor, g_C_factor, g_B_factor, g_D_factor, Rsol, Rgal
 !
 !  Diagnostic variables for print.in
 ! (needs to be consistent with reset list below)
@@ -145,7 +147,7 @@ module Gravity
   real, dimension(mx) :: gravx_xpencil_0
   real ::G4pi
   real, dimension(:,:), pointer :: reference_state
-!  
+!
   contains
 !***********************************************************************
     subroutine register_gravity
@@ -178,7 +180,7 @@ module Gravity
 !                timesteps the spherically symmetric part of gravity is adjusted
 !                according to the actual density distribution.
 !                Only in effect for spherical co-ordinates.
-!  12-jun-15/MR: added (alternative) parameters gravitational_const and mass_cent_body for 
+!  12-jun-15/MR: added (alternative) parameters gravitational_const and mass_cent_body for
 !                gravity adjustment.
 !                For Kepler profile, gravitational_const is calculated from gravx and mass_cent_body.
 !
@@ -464,7 +466,7 @@ module Gravity
           gravz_zpencil = g_ref * (z-zref+sphere_rad) / sphere_rad
         end where
         potz_zpencil = -gravz_zpencil * (z - zinfty)
-!        
+!
       ! gravity profile provided as binary data
       ! 'zref' determines the location of the sphere border relative to the lower box boundary.
       ! 'g_ref' is the gravity acceleration at zref (implies the mass of the sphere).
@@ -476,7 +478,7 @@ module Gravity
         gravz_zpencil = grav_init_z
         potz_zpencil = -gravz_zpencil * (z - zinfty)
         gravz = grav_init_z(n1) !test code to use automatic calculation of hcond0 in boundcond.f90
-!	
+!
         deallocate(grav_init_z)
 !
       case ('spherical')
@@ -543,6 +545,39 @@ module Gravity
 !AB: As it is now, it can never make much sense.
         gravz_zpencil = -(g_A*z/sqrt(z**2+g_B**2) + g_C*z/g_D)
 !
+      case ('Ferriere-R')
+!
+!  Set up physical units.
+!
+      if (unit_system=='cgs') then
+        g_A = g_A_factor*g_A_cgs/unit_velocity*unit_time
+        g_B = g_B_factor*g_B_cgs/unit_length
+        g_C = g_C_factor*g_C_cgs/unit_velocity*unit_time
+        g_D = g_D_factor*g_D_cgs/unit_length
+        g_E = g_E_factor*g_E_cgs/unit_length
+        g_F = g_F_factor*g_F_cgs/unit_length
+        if (Rsol==impossible) Rsol=Rsol_cgs/unit_length
+        if (Rgal==impossible) Rgal=Rsol_cgs/unit_length
+      else if (unit_system=='SI') then
+!        call not_implemented('initialize_gravity','SI unit conversions')
+        g_A = g_A_factor*g_A_cgs/unit_velocity*unit_time/1e2
+        g_B = g_B_factor*g_B_cgs/unit_length/1e2
+        g_C = g_C_factor*g_C_cgs/unit_velocity*unit_time/1e2
+        g_D = g_D_factor*g_D_cgs/unit_length/1e2
+        g_E = g_E_factor*g_E_cgs/unit_length/1e2
+        g_F = g_F_factor*g_F_cgs/unit_length/1e2
+        if (Rsol==impossible) Rsol=Rsol_cgs/unit_length/1e2
+        if (Rgal==impossible) Rgal=Rsol_cgs/unit_length/1e2
+      endif
+!
+!  Gravity profile from K. Ferriere, ApJ 497, 759, 1998, eq (36)
+!  at various radius relative to the solar radius.  (for interstellar runs)
+!  Rsol and Rgal are by default 8.5 kpc
+!
+      gravz_zpencil = -(g_A*z/sqrt(z**2+g_B**2)*exp((Rsol-Rgal)/g_F) &
+                      + g_C*z/g_D*(Rsol**2+g_E**2)/(Rgal**2+g_E**2)-2*Omega*(Omega+Sshear)*z)
+
+!
       case ('Galactic-hs')
         if (lroot) print*,'Galactic hydrostatic equilibrium gravity profile'
         if (lroot.and.(cs0hs==0.or.H0hs==0)) &
@@ -589,8 +624,8 @@ module Gravity
         gravx_xpencil_0 = gravx_xpencil
 
       endif
-  
-      if (lhydro) then 
+
+      if (lhydro) then
         if (lboussinesq_grav.and..not.lentropy) &
           call fatal_error('initialize_gravity','lboussinesq_grav w/o entropy not ok')
 
@@ -624,7 +659,7 @@ module Gravity
 !
       integer, parameter :: unit=12
       integer :: len_double
-!      
+!
       integer :: alloc_err
 !
       inquire (IOLENGTH=len_double) 1.0d0
@@ -1014,7 +1049,7 @@ module Gravity
 !***********************************************************************
     subroutine gravity_after_boundary(f)
 !
-!  For actions outside mn-loop. 
+!  For actions outside mn-loop.
 !  At the moment only adjustment of spherically symmetric gravity.
 !
 !  9-jun-15/MR: coded

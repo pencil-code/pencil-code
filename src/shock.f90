@@ -103,6 +103,12 @@ module Shock
 !
        real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
+       if (nghost < 3) then
+         if (lroot .and. (nghost == 1)) write (*,*) '=> Retry with the "deriv_2nd_all" module.'
+         if (lroot .and. (nghost == 2)) write (*,*) '=> Retry with the "deriv_4th_all" module.'
+         call fatal_error ('shock', 'requires at least 3 ghost cells')
+       endif
+!
 !  Initialize shock profile to zero
 !
       f(:,:,:,ishock)=0.0
@@ -232,7 +238,7 @@ module Shock
 !
 !  check for those quantities for which we want video slices
 !
-      if (lwrite_slices) then 
+      if (lwrite_slices) then
         where(cnamev=='shock') cformv='DEFINED'
       endif
 !
@@ -303,13 +309,13 @@ module Shock
       if (lpencil(i_gshock)) call grad(f,ishock,p%gshock)
 !
       call calc_diagnostics_shock(p)
-
+!
     endsubroutine calc_pencils_shock
 !***********************************************************************
     subroutine calc_diagnostics_shock(p)
-
+!
       use Diagnostics, only: max_mn_name
-
+!
       type (pencil_case) :: p
 !
       if (ldiagnos) call max_mn_name(p%shock,idiag_shockmax)
@@ -319,11 +325,11 @@ module Shock
     subroutine shock_before_boundary(f)
 !
       real, dimension (mx,my,mz,mfarray) :: f
-!     
+!
 !  Shock profile calculation.
 !
       call calc_shock_profile(f)
- 
+!
     endsubroutine shock_before_boundary
 !***********************************************************************
     subroutine calc_shock_profile_simple(f)
@@ -461,7 +467,7 @@ module Shock
 !
           lcommunicate=.not.early_finalize
           do imn=1,nyz
-
+!
             n=nn(imn)
             m=mm(imn)
 !
@@ -491,7 +497,6 @@ module Shock
 !  Communicate uu ghost zones
           call boundconds_x(f,iux,iuz)
           call initiate_isendrcv_bdry(f,iux,iuz)
-          f(:,:,:,ishock)=impossible
 !
 !  Divu over internal region
 !
@@ -549,8 +554,8 @@ module Shock
 !
 !  Divu over external region
 !
-          do n=2,mz-1; do jj=1,3
-            m=1+jj
+          do n=n1-2,n2+2; do jj=0,2
+            m=m1-2+jj
             call shock_divu(f,penc)
             f(:,m,n,ishock)=max(-penc,0.)
             if (ldivu_perp) then
@@ -558,7 +563,8 @@ module Shock
               call shock_divu_perp(f,bb_hat,penc,penc_perp)
               f(:,m,n,ishock_perp)=max(0.,-penc_perp)
             endif
-            m=my-jj
+            m=m2+jj
+            if (m <= m1) cycle
             call shock_divu(f,penc)
             f(:,m,n,ishock)=max(-penc,0.)
             if (ldivu_perp) then
@@ -567,8 +573,8 @@ module Shock
               f(:,m,n,ishock_perp)=max(0.,-penc_perp)
             endif
           enddo; enddo
-          do kk=1,3; do m=5,my-4
-            n=1+kk
+          do kk=0,2; do m=m1+1,m2-1
+            n=n1-2+kk
             call shock_divu(f,penc)
             f(:,m,n,ishock)=max(-penc,0.)
             if (ldivu_perp) then
@@ -576,7 +582,8 @@ module Shock
               call shock_divu_perp(f,bb_hat,penc,penc_perp)
               f(:,m,n,ishock_perp)=max(0.,-penc_perp)
             endif
-            n=mz-kk
+            n=n2+kk
+            if (n <= n1) cycle
             call shock_divu(f,penc)
             f(:,m,n,ishock)=max(-penc,0.)
             if (ldivu_perp) then
@@ -589,8 +596,8 @@ module Shock
 !  Max over external region
 !
           if (lshock_max3_interp) then
-            do n=3,mz-2; do jj=2,4
-              m=1+jj
+            do n=n1-1,n2+1; do jj=0,2
+              m=m1-1+jj
               call shock_max3_interp(f,ishock,penc)
               tmp(:,m,n)=penc
               if (ldivu_perp) then
@@ -598,12 +605,13 @@ module Shock
                 !tobi: this needs to be commented out
                 !tmp_perp(:,m,n)=penc_perp
               endif
-              m=my-jj
+              m=m2-1+jj
+              if (m <= m1+1) cycle
               call shock_max3_interp(f,ishock,penc)
               tmp(:,m,n)=penc
             enddo; enddo
-            do kk=2,4; do m=6,my-5
-              n=1+kk
+            do kk=0,2; do m=m1+2,m2-2
+              n=n1-1+kk
               call shock_max3_interp(f,ishock,penc)
               tmp(:,m,n)=penc
               if (ldivu_perp) then
@@ -611,7 +619,8 @@ module Shock
                 !tobi: this needs to be commented out
                 !tmp_perp(:,m,n)=penc_perp
               endif
-              n=mz-kk
+              n=n2-1+kk
+              if (n <= n1+1) cycle
               call shock_max3_interp(f,ishock,penc)
               tmp(:,m,n)=penc
               if (ldivu_perp) then
@@ -621,8 +630,8 @@ module Shock
               endif
             enddo; enddo
           else
-            do n=3,mz-2; do jj=2,4
-              m=1+jj
+            do n=n1-1,n2+1; do jj=0,2
+              m=m1-1+jj
               call shock_max3(f,ishock,penc)
               tmp(:,m,n)=penc
               if (ldivu_perp) then
@@ -630,7 +639,8 @@ module Shock
                 !tobi: this needs to be commented out
                 !tmp_perp(:,m,n)=penc_perp
               endif
-              m=my-jj
+              m=m2-1+jj
+              if (m <= m1+1) cycle
               call shock_max3(f,ishock,penc)
               tmp(:,m,n)=penc
               if (ldivu_perp) then
@@ -639,8 +649,8 @@ module Shock
                 !tmp_perp(:,m,n)=penc_perp
               endif
             enddo; enddo
-            do kk=2,4; do m=6,my-5
-              n=1+kk
+            do kk=0,2; do m=m1+2,m2-2
+              n=n1-1+kk
               call shock_max3(f,ishock,penc)
               tmp(:,m,n)=penc
               if (ldivu_perp) then
@@ -648,7 +658,8 @@ module Shock
                 !tobi: this needs to be commented out
                 !tmp_perp(:,m,n)=penc_perp
               endif
-              n=mz-kk
+               n=n2-1+kk
+              if (n <= n1+1) cycle
               call shock_max3(f,ishock,penc)
               tmp(:,m,n)=penc
               if (ldivu_perp) then
@@ -661,8 +672,9 @@ module Shock
 !
 !  Smooth over external region
 !
-          do n=4,mz-3; do jj=3,5
-            m=1+jj
+          do n=n1,n2; do jj=0,2
+            m=m1+jj
+            if (m > m2) cycle
             call shock_smooth(tmp,penc)
             f(:,m,n,ishock)=penc
             if (ldivu_perp) then
@@ -670,7 +682,8 @@ module Shock
               !call shock_smooth(tmp_perp,penc_perp)
               f(:,m,n,ishock_perp)=penc_perp
             endif
-            m=my-jj
+            m=m2-2+jj
+            if (m <= m1+2) cycle
             call shock_smooth(tmp,penc)
             f(:,m,n,ishock)=penc
             if (ldivu_perp) then
@@ -679,8 +692,9 @@ module Shock
               f(:,m,n,ishock_perp)=penc_perp
             endif
           enddo; enddo
-          do kk=3,5; do m=7,my-6
-            n=1+kk
+          do kk=0,2; do m=m1+3,m2-3
+            n=n1+kk
+            if (n > n2) cycle
             call shock_smooth(tmp,penc)
             f(:,m,n,ishock)=penc
             if (ldivu_perp) then
@@ -688,7 +702,8 @@ module Shock
               !call shock_smooth(tmp_perp,penc_perp)
               f(:,m,n,ishock_perp)=penc_perp
             endif
-            n=mz-kk
+            n=n2-2+kk
+            if (n <= n1+2) cycle
             call shock_smooth(tmp,penc)
             f(:,m,n,ishock)=penc
             if (ldivu_perp) then
@@ -700,15 +715,15 @@ module Shock
 !
 !  Non-MPI version:
 !
-!          do n=2,mz-1; do m=2,my-1
+!          do n=n1-2,n2+2; do m=m1-2,m2+2
 !            call shock_divu(f,penc)
 !            f(:,m,n,ishock)=max(0.,-penc)
 !          enddo; enddo
-!          do n=3,mz-2; do m=3,my-2
+!          do n=n1-1,n2+1; do m=m1-1,m2+1
 !            call shock_max3(f,ishock,penc)
 !            tmp(:,m,n)=penc
 !          enddo; enddo
-!          do n=4,mz-3; do m=4,my-3
+!          do n=n1,n2; do m=m1,m2
 !            call shock_smooth(tmp,penc)
 !            f(:,m,n,ishock)=penc
 !          enddo; enddo

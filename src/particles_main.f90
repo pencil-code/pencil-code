@@ -1262,6 +1262,7 @@ module Particles_main
       real, dimension (mx,my,mz,mfarray) :: f
 !
       if (linsert_particles_continuously) call insert_particles(f,fp,ineargrid)
+      if (lpartnucleation) call insert_nucleii(f,fp,ineargrid)
 !
     endsubroutine particles_insert_continuously
 !***********************************************************************

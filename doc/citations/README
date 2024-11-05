@@ -11,6 +11,9 @@ and available as
   http://norlx51.nordita.org/~brandenb/tmp/citations/
   %ZEncoding:ISO-8859-1%z200%r\,%% %3h "%t"
 
+Therefore, we also need to update the pdf file and check it in on:
+  ~/www/doc
+
 This directory is currently being checked out and made public on
   norlx55:~/public_html/pencil-code/PCSC
   norlx51b:/home/brandenb/public_html/tmp/citations

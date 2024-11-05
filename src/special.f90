@@ -59,7 +59,7 @@
                           I_SPECIAL_PARTICLES_AFTER_DTSUB=36
     
     integer, parameter :: n_subroutines=36
-    integer, parameter :: n_special_modules_max=2
+    integer, parameter :: n_special_modules_max=3
 !
     integer :: n_special_modules
     character(LEN=256) :: special_modules_list = ''
@@ -698,10 +698,13 @@
 !
     endsubroutine set_init_parameters
 !***********************************************************************
-    subroutine special_calc_spectra(f,spec,spec_hel,lfirstcall,kind)
+    subroutine special_calc_spectra(f,spec,spec_hel,spec_2d,spec_2d_hel,lfirstcall,kind)
+
+      use General, only: keep_compiler_quiet
 
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (:) :: spec,spec_hel
+      real, dimension (:,:) :: spec_2d,spec_2d_hel
       logical :: lfirstcall
       character(LEN=3) :: kind
 !
@@ -709,9 +712,12 @@
       do i=1,n_special_modules
         call caller6(special_sub_handles(i,I_SPECIAL_CALC_SPECTRA_BYTE),f, &
                      spec,spec_hel,lfirstcall,kind,3)
+!                    spec,spec_hel,spec_2d,spec_2d_hel,lfirstcall,kind,3)
 !        call caller5_str5(special_sub_handles(i,I_SPECIAL_CALC_SPECTRA),f, &
 !                         spec, spec_hel, lfirstcall, kind)
       enddo
+
+      call keep_compiler_quiet(spec_2d,spec_2d_hel)
 
     endsubroutine special_calc_spectra
 !***********************************************************************

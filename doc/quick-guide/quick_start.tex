@@ -18,7 +18,16 @@
 %\usepackage{bibtex}
 %\usepackage{wrapfig}
 \usepackage{color}
-\usepackage[breaklinks=true]{hyperref}
+\RequirePackage{hyperref}
+\hypersetup{
+	breaklinks = true,
+	colorlinks = true,
+	linkcolor = blue,
+	citecolor = green,
+	filecolor = green,
+	urlcolor = red,
+	pdfborder = {0 0 0}
+}
 %\usepackage{fmtcount}
 \usepackage{parskip}
 
@@ -61,6 +70,7 @@ For HDF5 and MPI support, you need to install the package \directory{libhdf5-ope
 \end{verbatim}
 
 \subsection{\name{MacOS X}}
+WARNING: This section is not up-to-date and not tested!
 For \name{Mac}, you first need to install \name{Xcode} from the
 website \url{http://developer.apple.com/}, where you have to register as a member.
 In addition to that it might be necessary to install a \name{fortran} \name{open-mpi} compiler which can be done by first installing \name{homebrew} (available at \url{https://brew.sh}) and then through the terminal command:
@@ -92,7 +102,7 @@ If one needs to reactivate \name{anaconda}, it is done using
 The Pencil Code is an open source code written mainly in \name{Fortran} and available under GPL.
 General information can be found at our official homepage:
 
-\url{http://pencil-code.nordita.org/}.
+\url{http://pencil-code.org/}.
 
 The latest version of the code can be downloaded with \command{svn}. In the
 directory where you want to put the code, type:
@@ -105,7 +115,7 @@ Alternatively, you may also use \command{git}:
   git clone https://github.com/pencil-code/pencil-code.git
 \end{verbatim}
 
-More details on download options can be found here: \url{http://pencil-code.nordita.org/download.php}
+More details on download options can be found here: \url{http://pencil-code.org/download.php}
 
 The downloaded \directory{pencil-code} directory contains several sub-directories:
 \begin{enumerate}
@@ -196,6 +206,19 @@ Alternatively, for multi-processor runs (still using the default \name{GNU-GCC} 
   pc_build -f GNU-GCC_MPI
 \end{verbatim}
 
+\subsubsection{Debugging and testing options}
+
+During code development and testing phase, there is a common set of debug options that one should use for compiling.
+These debug options are available as predefined sets for all major compilers.
+E.g., if you use the \name{GNU-GCC} compilers, you would use this extension:
+\begin{verbatim}
+  pc_build -f GNU-GCC_MPI,GNU-GCC_debug
+\end{verbatim}
+Alternatively, if you know that you do not need MPI:
+\begin{verbatim}
+  pc_build -f GNU-GCC,GNU-GCC_debug
+\end{verbatim}
+
 \subsubsection{Using a different compiler (optional)}
 
 If you prefer to use a different compiler package (e.g. with \name{MPI} support or using \command{ifort}), you may try:
@@ -209,7 +232,7 @@ If you prefer to use a different compiler package (e.g. with \name{MPI} support 
 
 More pre-defined configurations are found in the directory \file{pencil-code/config/compilers/*.conf}.
 
-\subsubsection{Changing compiler options (optional)}
+\subsubsection{Individual compiler setup (optional)}
 
 Of course you can also create a configuration file in any subdirectory of \directory{pencil-code/config/hosts/}.
 By default, \command{pc\_build} looks for a config file that is based on your \code{host-ID}, which you may see with the command:
@@ -273,7 +296,7 @@ If compiling fails, please try the following --- with or without the optional \c
   pc_build -f GNU-GCC_MPI
 \end{verbatim}
 
-If some step still fails, you may report to our mailing list: \url{http://pencil-code.nordita.org/contact.php}.
+If some step still fails, you may report to our mailing list: \url{http://pencil-code.org/contact.php}.
 In your report, please state the exact point in this quick start guide that fails for you (including the full error message) --- and be sure you precisely followed all non-optional instructions from the beginning.
 
 In addition to that, please report your operating system (if not \name{Linux}-based) and the shell you use (if not \command{bash}).
@@ -314,11 +337,11 @@ If you miss some physical quantities, you might want to extend the two IDL routi
 Please check the documentation inside these files:
 \begin{center}
 \begin{tabular}{|l|l|}\hline
-  \file{pencil-code/idl/read/pc\_read\_var\_raw.pro} & efficient reading of raw data\\\hline
-  \file{pencil-code/idl/read/pc\_read\_subvol\_raw.pro} & reading of sub-volumes\\\hline
-  \file{pencil-code/idl/read/pc\_read\_slice\_raw.pro} & reading of any 2D slice from 3D snapshots\\\hline
-  \file{pencil-code/idl/pc\_get\_quantity.pro} & compute physical quantities out of raw data\\\hline
-  \file{pencil-code/idl/pc\_check\_quantities.pro} & dependency checking of physical quantities\\\hline
+  \command{pencil-code/idl/read/pc\_read\_var\_raw.pro} & efficient reading of raw data\\\hline
+  \command{pencil-code/idl/read/pc\_read\_subvol\_raw.pro} & reading of sub-volumes\\\hline
+  \command{pencil-code/idl/read/pc\_read\_slice\_raw.pro} & reading of any 2D slice from 3D snapshots\\\hline
+  \command{pencil-code/idl/pc\_get\_quantity.pro} & compute physical quantities out of raw data\\\hline
+  \command{pencil-code/idl/pc\_check\_quantities.pro} & dependency checking of physical quantities\\\hline
 \end{tabular}
 \end{center}
 in order to read data efficiently and compute quantities in physical units.
@@ -397,11 +420,9 @@ import pencil as pc
 Some useful functions:
 \begin{center}
 \begin{tabular}{|l|l|}\hline
-\file{pc.read.ts} & read \file{time\_series.dat} file. Parameters are added as 
-members of the class\\\hline
-\file{pc.read.slices} & read 2D slice files and return two arrays: 
-(nslices,vsize,hsize) and (time)\\\hline
-\file{pc.visu.animate\_interactive} & assemble a 2D animation from a 3D 
+\command{pc.read.ts} & read \file{time\_series.dat}. Parameters are added as members of the class\\\hline
+\command{pc.read.slices} & read 2D slice files and return two arrays: (nslices,vsize,hsize) and (time)\\\hline
+\command{pc.visu.animate\_interactive} & assemble a 2D animation from a 3D 
 array\\\hline
 %× & ×\\\hline
 %× & ×\\\hline

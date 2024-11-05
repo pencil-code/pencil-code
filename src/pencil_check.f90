@@ -318,6 +318,7 @@ f_lop:  do iv=1,mvar
               'that conjugate pencils are'
           print*, '                          calculated *after* the '// &
               'individual components'
+          ! [PAB] add code here in order to find the problematic component
           ldie=.true.
         else
           print*, 'pencil_consistency_check: '// &

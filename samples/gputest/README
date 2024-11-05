@@ -62,6 +62,8 @@ On some imperfectly configured machines, additional settings are required.
 
 
 
+ln -s /cfs/klemming/home/b/brandenb/scr/GPU-test/pencil-code/src/astaroth/submodule/acc-runtime/samples/gputest submodule/acc-runtime/samples/gputest
+module load rocm/5.0.2 craype-accel-amd-gfx90a cmake/3.20.1
 
 
 # Touko's demonstration session on Dardel:

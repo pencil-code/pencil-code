@@ -545,6 +545,7 @@ module Pscalar
 !  20-may-03/axel: coded
 !
       use Special, only: special_calc_pscalar
+      use Chemistry, only: cond_spec_nucl_lagr
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -707,6 +708,22 @@ module Pscalar
             cc_xyaver=sum(f(l1:l2,m1:m2,n,k))/nxygrid   !only for nprocxy=1 - tb improved: calc cc_xyaver in before_boundary
             df(l1:l2,m,n,k)=df(l1:l2,m,n,k)-LLambda_cc*cc_xyaver
           enddo
+        endif
+        !
+        ! Add source term due to nucleation of chemical species into nucleii (droplets).
+        ! In an ideal world, these nucleii should have generated new lagrangian particles
+        ! in every grid cell at every time step. This will, however, cause way too many particles
+        ! to be computationally tractable. Instead we use the pscalar as a temporary storage of
+        ! nucleii. When number of nucleii in a given grid cell is above a certain threshold,
+        ! a new lagrangian swarm particle that contain all these (identical) nuceii is generated,
+        ! and the amount of pscalar is set back to zero for that grid cell. Should note that the
+        ! particles are considered as generated as soon as they have been transferred to the
+        ! pscalar - not when a new lagrangian particle has been generated. This means that
+        ! there are corresponding source terms also in the equatinos for continuity and
+        ! chemical species
+        !
+        if (lchemistry .and. lparticles) then
+          call cond_spec_nucl_lagr(f,df,p)
         endif
 !
 !  For the timestep calculation, need maximum diffusion.
@@ -1027,26 +1044,11 @@ module Pscalar
 !
 !  5-dec-11/MR: coded
 !
-      use Mpicomm, only: mpiallreduce_sum
+      use Sub, only: remove_mean
 
       real, dimension (mx,my,mz,mfarray), intent(INOUT) :: f
 
-      real, dimension(npscalar) :: ccm, ccm_tmp
-      integer :: i
-
-      if (lremove_mean.and.lrmv) then
-
-        do i=1,npscalar
-          ccm_tmp(i) = sum(f(l1:l2,m1:m2,n1:n2,icc+i-1))
-        enddo
-
-        call mpiallreduce_sum(ccm_tmp,ccm,npscalar)
-
-        do i=1,npscalar
-          f(l1:l2,m1:m2,n1:n2,icc+i-1)=f(l1:l2,m1:m2,n1:n2,icc+i-1)-ccm(i)/nwgrid
-        enddo
-
-      endif
+      if (lremove_mean.and.lrmv) call remove_mean(f,icc,icc+npscalar-1)
 
     endsubroutine pscalar_before_boundary
 !***********************************************************************

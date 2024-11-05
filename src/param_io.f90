@@ -57,6 +57,7 @@ module Param_IO
   use TestPerturb
   use Testscalar
   use Timeavg
+  use Training
   use Viscosity
 !
   implicit none
@@ -83,7 +84,7 @@ module Param_IO
       xyz_units, wav1, wav1z, coord_system, lpole, ncoarse, lfix_unit_std, &
       lequidist, coeff_grid, zeta_grid0, grid_func, xyz_star, lwrite_ic, lwrite_avg1d_binary, &
       lnowrite, luniform_z_mesh_aspect_ratio, unit_system, unit_length, &
-      lmodify,modify_filename, dvid, ldivu_perp, &
+      lmodify,modify_filename, dvid, ldivu_perp, ssmask1, ssmask2, &
       unit_velocity, unit_density, unit_temperature, unit_magnetic, c_light, &
       G_Newton, hbar, random_gen, seed0, lseed_global, lseed_procdependent, nfilter, lserial_io, der2_type, &
       lread_oldsnap, lwrite_var_anyway, lwrite_last_powersnap, &
@@ -108,12 +109,13 @@ module Param_IO
       uxj_spec, vec_spec, ou_spec, oun_spec, ab_spec, azbz_spec, uzs_spec, ub_spec, &
       bb2_spec, jj2_spec, ele_spec, a0_spec, pot_spec, &
       Lor_spec, EMF_spec, Tra_spec, GWs_spec, GWh_spec, GWm_spec, Str_spec, Stg_spec, &
+      Gab_spec, Gan_spec, GBb_spec, &
       GWs_spec_boost, GWh_spec_boost, &
       SCL_spec, VCT_spec, Tpq_spec, TGW_spec, GWd_spec, GWe_spec, GWf_spec, GWg_spec, &
       SCL_spec_boost, VCT_spec_boost, &
       StT_spec, StX_spec, &
       vel_phispec, mag_phispec, &
-      uxj_phispec, vec_phispec, ou_phispec, ab_phispec, EP_spec, ro_spec, &
+      uxj_phispec, vec_phispec, ou_phispec, ab_phispec, EP_spec, hEP_spec, ro_spec, &
       nd_spec, ud_spec, ux_spec, uy_spec, uz_spec, ucp_spec, &
       TT_spec, ss_spec, cc_spec, cr_spec, mu_spec, sp_spec, ssp_spec, sssp_spec, &
       isaveglobal, lr_spec, r2u_spec, &
@@ -141,12 +143,12 @@ module Param_IO
   namelist /run_pars/ &
       cvsid, ip, xyz0, xyz1, Lxyz, lperi, lpole, ncoarse, &
       lshift_origin, lshift_origin_lower, coord_system, lconcurrent, &
-      nt, it1, it1start, it1d, itspec, it_rmv, dt, dt0, dt_epsi, dt_ratio, cdt, ddt, dt_incr, &
+      nt, it1, it1start, it1d, itspec, itsnap, it_rmv, dt, dt0, dt_epsi, dt_ratio, cdt, ddt, dt_incr, &
       lfractional_tstep_advance, lfractional_tstep_negative, leps_fixed, &
       cdtv, cdtv2, cdtv3, cdtsrc, cdts, cdtr, cdtf, &
       cdtc, isave, itorder, dsnap, dsnap_down, mvar_down, maux_down, &
       d1davg, d2davg, dvid, dsound, dtmin, dspec, tmax, toutoff, &
-      iwig, ldivu_perp, allproc_print, &
+      iwig, ldivu_perp, allproc_print, ssmask1, ssmask2, &
       dtracers, dfixed_points, unit_system, unit_length, &
       unit_velocity, unit_density, unit_temperature, unit_magnetic, &
       awig, ialive, max_walltime, dtmax, ldt_paronly, &
@@ -155,12 +157,13 @@ module Param_IO
       uxj_spec, vec_spec, ou_spec, oun_spec, ab_spec, azbz_spec, uzs_spec, ub_spec, &
       bb2_spec, jj2_spec, ele_spec, a0_spec, pot_spec, &
       Lor_spec, EMF_spec, Tra_spec, GWs_spec, GWh_spec, GWm_spec, Str_spec, Stg_spec, &
+      Gab_spec, Gan_spec, GBb_spec, &
       GWs_spec_boost, GWh_spec_boost, &
       SCL_spec, VCT_spec, Tpq_spec, TGW_spec, GWd_spec, GWe_spec, GWf_spec, GWg_spec, &
       SCL_spec_boost, VCT_spec_boost, &
       StT_spec, StX_spec, &
       vel_phispec, mag_phispec, &
-      uxj_phispec, vec_phispec, ou_phispec, ab_phispec, EP_spec, ro_spec, abs_u_spec, &
+      uxj_phispec, vec_phispec, ou_phispec, ab_phispec, EP_spec, hEP_spec, ro_spec, abs_u_spec, &
       nd_spec, ud_spec, ux_spec, uy_spec, uz_spec, ucp_spec, &
       TT_spec, ss_spec, cc_spec, cr_spec, mu_spec, sp_spec, ssp_spec, sssp_spec, &
       isaveglobal, lr_spec, r2u_spec, &
@@ -215,9 +218,9 @@ module Param_IO
       theta_lower_border, wborder_theta_lower, theta_upper_border, &
       wborder_theta_upper, fraction_tborder, lmeridional_border_drive, &
       lread_from_other_prec, downsampl, lfullvar_in_slices, ivar_omit, &
-      lread_scl_factor_file_new, &
+      lread_scl_factor_file_new, lphase, &
       lsubstract_reference_state, lzaver_on_input, &
-      ldirect_access, lproper_averages, lmaximal_cdt, lmaximal_cdtv, &
+      ldirect_access, lproper_averages, lmaximal_cdt, lmaximal_cdtv, lreiterate, &
       pipe_func, glnCrossSec0, CrossSec_x1, CrossSec_x2, CrossSec_w, &
       cyinyang_intpol_type, yy_biquad_weights, lcutoff_corners, nycut, nzcut, rel_dang, &
       lignore_nonequi, tag_foreign, lforeign_comm_nblckg, tau_aver1, fmt_avgs, &
@@ -616,8 +619,9 @@ module Param_IO
         call read_namelist(read_power_spectrum_run_pars ,'power_spectrum'    ,lpower_spectrum)
         call read_namelist(read_python_run_pars         ,'python'            ,lpython)
         call read_namelist(read_implicit_diff_run_pars  ,'implicit_diffusion',limplicit_diffusion)
+        call read_namelist(read_training_run_pars       ,'training'          ,ltraining)
 !
-      call read_all_particles_run_pars
+        call read_all_particles_run_pars
 !
       endif
 !

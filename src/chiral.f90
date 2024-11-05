@@ -26,6 +26,7 @@ module Chiral
   include 'chiral.h'
 !
   integer :: iXX_chiral=0, iYY_chiral=0, iZZ_chiral=0
+  integer :: iXX2_chiral=0, iYY2_chiral=0
   character (len=labellen) :: initXX_chiral='zero', initYY_chiral='zero', initZZ_chiral='zero'
   logical :: llorentzforceEP=.false., lZZ_chiral=.false.
   logical :: linitialize_aa_from_EP=.false.
@@ -39,6 +40,7 @@ module Chiral
   real :: kx_YY_chiral=1.,ky_YY_chiral=1.,kz_YY_chiral=1.,radiusYY_chiral=0.
   real :: xposXX_chiral=0.,yposXX_chiral=0.,zposXX_chiral=0.
   real :: xposYY_chiral=0.,yposYY_chiral=0.,zposYY_chiral=0.
+  real :: initpowerYY_chiral=2., cutoffYY_chiral=0.
 !
   namelist /chiral_init_pars/ &
        initXX_chiral, amplXX_chiral, kx_XX_chiral, ky_XX_chiral, kz_XX_chiral, &
@@ -47,7 +49,8 @@ module Chiral
        radiusXX_chiral, widthXX_chiral, &
        radiusYY_chiral, widthYY_chiral, &
        xposXX_chiral, yposXX_chiral, zposXX_chiral, &
-       xposYY_chiral, yposYY_chiral, zposYY_chiral
+       xposYY_chiral, yposYY_chiral, zposYY_chiral, &
+       initpowerYY_chiral, cutoffYY_chiral
 !
   real :: chiral_diffXX=impossible, chiral_diff=0., chiral_crossinhibition=1.,chiral_fidelity=1.
   real :: chiral_diffZZ=impossible
@@ -100,6 +103,14 @@ module Chiral
       call farray_register_pde('YY_chiral',iYY_chiral)
       if (lZZ_chiral) call farray_register_pde('ZZ_chiral',iZZ_chiral)
 !
+!  extra fields for Higgs
+!
+      if (initYY_chiral=='power_randomphase_higgs' .or. &
+          initYY_chiral=='higgs_mono') then
+        call farray_register_pde('XX2_chiral',iXX2_chiral)
+        call farray_register_pde('YY2_chiral',iYY2_chiral)
+      endif
+!
 !  Identify version number.
 !
       if (lroot) call svn_id( &
@@ -142,7 +153,8 @@ module Chiral
       use InitialCondition, only: initial_condition_chiral
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: r
+      real, dimension (mx,my,mz) :: r, pom
+      real, dimension (mx,my,mz) :: norm1
 !
 !  check first for initXX_chiral
 !
@@ -194,6 +206,48 @@ module Chiral
         case ('cosx_cosy_cosz'); call cosx_cosy_cosz(amplYY_chiral,f,iYY_chiral,kx_YY_chiral,ky_YY_chiral,kz_YY_chiral)
         case ('cosx_siny_cosz'); call cosx_siny_cosz(amplYY_chiral,f,iYY_chiral,kx_YY_chiral,ky_YY_chiral,kz_YY_chiral)
         case ('chiral_list'); call chiral_list(amplYY_chiral,f,iYY_chiral,'chiral_list')
+        case ('power_randomphase')
+          call power_randomphase(amplYY_chiral,initpowerYY_chiral,0.,0.,cutoffYY_chiral,&
+            f,iXX_chiral,iXX_chiral,lscale_tobox=.false.)
+          call power_randomphase(amplYY_chiral,initpowerYY_chiral,0.,0.,cutoffYY_chiral,&
+            f,iYY_chiral,iYY_chiral,lscale_tobox=.false.)
+        case ('power_randomphase_higgs')
+          call power_randomphase(amplYY_chiral,initpowerYY_chiral,0.,0.,cutoffYY_chiral,&
+            f,iXX_chiral,iXX_chiral,lscale_tobox=.false.)
+          call power_randomphase(amplYY_chiral,initpowerYY_chiral,0.,0.,cutoffYY_chiral,&
+            f,iYY_chiral,iYY_chiral,lscale_tobox=.false.)
+          call power_randomphase(amplYY_chiral,initpowerYY_chiral,0.,0.,cutoffYY_chiral,&
+            f,iXX2_chiral,iXX2_chiral,lscale_tobox=.false.)
+          call power_randomphase(amplYY_chiral,initpowerYY_chiral,0.,0.,cutoffYY_chiral,&
+            f,iYY2_chiral,iYY2_chiral,lscale_tobox=.false.)
+!
+!  normalize
+!
+          r=1./sqrt(f(:,:,:,iXX_chiral)**2 &
+                   +f(:,:,:,iYY_chiral)**2 &
+                   +f(:,:,:,iXX2_chiral)**2 &
+                   +f(:,:,:,iYY2_chiral)**2)
+          f(:,:,:,iXX_chiral) =r*f(:,:,:,iXX_chiral)
+          f(:,:,:,iYY_chiral) =r*f(:,:,:,iYY_chiral)
+          f(:,:,:,iXX2_chiral)=r*f(:,:,:,iXX2_chiral)
+          f(:,:,:,iYY2_chiral)=r*f(:,:,:,iYY2_chiral)
+!
+!  Higgs monopole
+!
+        case ('higgs_mono')
+          pom=sqrt(spread(spread(x**2,2,my),3,mz) &
+                  +spread(spread(y**2,1,mx),3,mz))
+          r=sqrt(spread(spread(x**2,2,my),3,mz) &
+                +spread(spread(y**2,1,mx),3,mz) &
+                +spread(spread(z**2,1,mx),2,my))
+          f(:,:,:,iXX_chiral) =sqrt(.5*(1.+spread(spread(z,1,mx),2,my)/r))
+          f(:,:,:,iYY_chiral) =0.
+          f(:,:,:,iXX2_chiral)=sqrt(.5*(1.-(spread(spread(z,1,mx),2,my)/r))) &
+!--         *cos(atan2(spread(spread(y,1,mx),3,mz),spread(spread(x,2,my),3,mz)))
+            *spread(spread(x,2,my),3,mz)/pom
+          f(:,:,:,iYY2_chiral)=sqrt(.5*(1.-(spread(spread(z,1,mx),2,my)/r))) &
+!--         *sin(atan2(spread(spread(y,1,mx),3,mz),spread(spread(x,2,my),3,mz)))
+            *spread(spread(y,1,mx),3,mz)/pom
         case default; call fatal_error('init_chiral','no such initYY_chiral: '//trim(initYY_chiral))
       endselect
 !
@@ -271,7 +325,6 @@ module Chiral
 !  Most basic pencils should come first, as others may depend on them.
 !
 !  21-11-04/anders: coded
-!
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -564,7 +617,7 @@ module Chiral
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx,3) :: gXX_chiral,gYY_chiral
+      real, dimension (nx,3) :: gXX_chiral,gYY_chiral,gXX2_chiral,gYY2_chiral
       integer :: j
 !
       intent(inout) :: f
@@ -581,6 +634,10 @@ module Chiral
             do m=m1,m2
               call grad(f,iXX_chiral,gXX_chiral)
               call grad(f,iYY_chiral,gYY_chiral)
+              if (initYY_chiral=='power_randomphase_higgs') then
+                call grad(f,iXX2_chiral,gXX2_chiral)
+                call grad(f,iYY2_chiral,gYY2_chiral)
+              endif
               if (limposed_gradient) then
                 do j=1,3
                   gXX_chiral(:,j)=gXX_chiral(:,j)+gradX0(j)
@@ -595,6 +652,12 @@ module Chiral
                 else
                   f(l1:l2,m,n,j+iaa-1)=.5*( f(l1:l2,m,n,iXX_chiral)*gYY_chiral(:,j) &
                                            -f(l1:l2,m,n,iYY_chiral)*gXX_chiral(:,j))
+                  if (initYY_chiral=='power_randomphase_higgs') then
+                    f(l1:l2,m,n,j+iaa-1)=f(l1:l2,m,n,j+iaa-1) &
+                      +.5*( f(l1:l2,m,n,iXX2_chiral)*gYY2_chiral(:,j) &
+                           -f(l1:l2,m,n,iYY2_chiral)*gXX2_chiral(:,j))
+                    if (lroot) print*,'initialize_aa_from_Higgs at t=',t
+                  endif
                 endif
               enddo
             enddo
@@ -602,7 +665,6 @@ module Chiral
           endif
         endif
       endif
-!
 !
 !  time-dependent reinfection rate
 !

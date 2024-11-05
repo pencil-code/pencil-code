@@ -1,4 +1,4 @@
-pro pc_read_saffman,tt,iir,choice=choice
+pro pc_read_saffman,tt,iir,choice=choice,datadir=datadir
 ;
 ;  Simple routine for reading Saffman integrals.
 ;  Here with hardwired file name and file size.
@@ -33,12 +33,13 @@ endelse
 ;
 ;  determine resolution
 ;
-pc_read_dim,obj=dim
+if keyword_set(datadir) then pc_read_dim,obj=dim,datadir=datadir+'/data' else pc_read_dim,obj=dim
+;pc_read_dim,obj=dim
 n=dim.nx/2
-print,'AXEL: n=',n
+;print,'pc_read_saffman: n=',n
 ;
 ir=fltarr(n)
-openr,1,file
+if keyword_set(datadir) then openr,1,datadir+'/'+file else openr,1,file
 ;
 ;  Initialize counter, read, and append, until end of file (eof):
 ;
@@ -46,7 +47,7 @@ it=0L
 while not eof(1) do begin
   readf,1,t
   readf,1,ir
-  print,t
+  ;print,t
   if it eq 0 then begin
     tt=t
     iir=ir

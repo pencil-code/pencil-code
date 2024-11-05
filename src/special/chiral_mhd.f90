@@ -99,7 +99,8 @@ module Special
    real :: gammaf5_input=0., t1_gammaf5=0., t2_gammaf5=0.
    real :: source5_input=0., t1_source5=0., t2_source5=0.
    real :: muS_const=0., coef_muS=0., coef_mu5=0., Cw=0.
-   real :: meanmu5=0., flucmu5=0., meanB2=0., Brms=0.
+   real, dimension(1) :: meanmu5=0.
+   real :: flucmu5=0., meanB2=0., Brms=0.
    real :: initpower_mu5=0., cutoff_mu5=0.
    real :: initpower_muS=0., cutoff_muS=0.
    real :: kgaussian_mu5=0.,kpeak_mu5=0.
@@ -261,11 +262,7 @@ module Special
 !
 !  give eta out as shared_variable
 !
-      if (lmagnetic.and.lrun) then
-        call get_shared_variable('eta',eta,ierr)
-        if (ierr/=0) call fatal_error("initialize_special: ", &
-            "cannot get shared var eta")
-      endif
+      if (lmagnetic.and.lrun) call get_shared_variable('eta',eta,caller="initialize_special")
 !
     endsubroutine initialize_special
 !***********************************************************************
@@ -275,7 +272,7 @@ module Special
 !  06-oct-2003/tony: coded
 !
       use Initcond
-      use Sub, only: remove_mean_value, remove_mean, blob
+      use Sub, only: remove_mean, blob
 !
       real, dimension (mx,my,mz,mfarray) :: f,df
 !
@@ -307,7 +304,7 @@ module Special
 !
         case ('triple_sin')
           do n=n1,n2; do m=m1,m2
-             f(l1:l2,m,n,imu5)=amplmu5*( sin(kx_mu5*x(l1:l2)) + sin(2.*kx_mu5*x(l1:l2))  &
+             f(l1:l2,m,n,imu5)=amplmu5*( sin(kx_mu5*x(l1:l2)) + sin(2.*kx_mu5*x(l1:l2)) &
               + sin(4.*kx_mu5*x(l1:l2)) )
           enddo; enddo
           if (lmuS) f(:,:,:,imuS) = muS_const
@@ -345,11 +342,10 @@ module Special
           if (lmuS) then
             call power_randomphase(amplmuS,initpower_muS,kgaussian_muS,kpeak_muS,cutoff_muS,&
               f,imuS,imuS,lscale_tobox=.false.)
-            if(lremove_mean_muS) call remove_mean(f,imuS)
+            if (lremove_mean_muS) call remove_mean(f,imuS)
           endif
         case default
-          call fatal_error("init_special: No such value for initspecial:" &
-              ,trim(initspecial))
+          call fatal_error("init_special","no such initspecial: "//trim(initspecial))
       endselect
 !
       call keep_compiler_quiet(f)
@@ -362,25 +358,25 @@ module Special
 !
 !  24-feb-21/axel: adapted from blob
 !
+      use General, only: roptest
+      use Messages, only: warning
+
       integer :: i
       real, dimension (mx,my,mz,mfarray) :: f
       real, optional :: xblob,yblob,zblob
-      real :: ampl,radius,sigma,x01=0.,y01=0.,z01=0.,fact
+      real :: ampl,radius,sigma,fact
 !
 !  Single  blob.
 !
-      if (present(xblob)) x01=xblob
-      if (present(yblob)) y01=yblob
-      if (present(zblob)) z01=zblob
       if (ampl==0) then
-        if (lroot) print*,'ampl=0 in plusminus_sphere'
+        call warning('plusminus_sphere','ampl=0')
       else
         if (lroot.and.ip<14) print*,'plusminus_sphere: variable i,ampl=',i,ampl
         fact=1./sigma**2
-        f(:,:,:,i)=f(:,:,:,i)-ampl*tanh(fact*(( &
-           spread(spread((x-x01)**2,2,my),3,mz) &
-          +spread(spread((y-y01)**2,1,mx),3,mz) &
-          +spread(spread((z-z01)**2,1,mx),2,my))-radius**2))
+        f(:,:,:,i) = f(:,:,:,i)-ampl*tanh(fact*(( &
+                     spread(spread((x-roptest(xblob,0.))**2,2,my),3,mz) &
+                    +spread(spread((y-roptest(yblob,0.))**2,1,mx),3,mz) &
+                    +spread(spread((z-roptest(zblob,0.))**2,1,mx),2,my))-radius**2))
       endif
 !
     endsubroutine plusminus_sphere
@@ -421,6 +417,7 @@ module Special
 !  diagnostic pencils
 !
       if (idiag_mu5jbm/=0) lpenc_diagnos(i_jb)=.true.
+      if (idiag_jxm /= 0) lpenc_diagnos(i_jj) = .true.
 !
     endsubroutine pencil_criteria_special
 !***********************************************************************
@@ -518,36 +515,28 @@ module Special
 !
 !  Evolution of mu5
 !
-      df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) &
-          +lambda5*EB-gammaf5*p%mu5+source5
+      df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) +lambda5*EB-gammaf5*p%mu5+source5
 !
 !  Different diffusion operators.
 !
       if (ldiffmu5_hyper2_simplified) then
-         df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) &
-            -diffmu5_hyper2*p%del4mu5
+         df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) - diffmu5_hyper2*p%del4mu5
       else if (ldiffmu5_hyper3_simplified) then
-         df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) &
-            +diffmu5_hyper3*p%del6mu5
+         df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) + diffmu5_hyper3*p%del6mu5
       else
         df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) + diffmu5_*p%del2mu5 
       endif
 ! 
-      if (lmu5adv) then
-        df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) - p%ugmu5 
-      endif
+      if (lmu5adv) df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) - p%ugmu5 
 !
 !  Set lmu5divu_term=T to obey total chirality conservation in the compressible case.
 !  This is not the default and was only used since Brandenburg (2021, ApJ 911, 110).
 !
-      if (lmu5divu_term) then
-        df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) - p%mu5*p%divu
-      endif
+      if (lmu5divu_term) df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) - p%mu5*p%divu
 !
       if (lCVE) then
         call dot(p%oo,p%gmu5,oogmu5)
-        df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) &
-          -2.*Cw*p%mu5*oogmu5
+        df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) - 2.*Cw*p%mu5*oogmu5
       endif
 !
 !  Contributions to timestep from mu5 equation
@@ -568,42 +557,34 @@ module Special
         muSmu5 = p%muS*p%mu5
         call dot(p%bb,p%gmu5,bdotgmu5)
         call dot(p%bb,p%gmuS,bdotgmuS)
-        df(l1:l2,m,n,imuS) = df(l1:l2,m,n,imuS) &
-           -coef_muS*bdotgmu5
+        df(l1:l2,m,n,imuS) = df(l1:l2,m,n,imuS) - coef_muS*bdotgmu5
 ! 
-        if (lmuSdivu_term) then
-          df(l1:l2,m,n,imuS) = df(l1:l2,m,n,imuS) - p%muS*p%divu
-        endif
+        if (lmuSdivu_term) df(l1:l2,m,n,imuS) = df(l1:l2,m,n,imuS) - p%muS*p%divu
 !
         if (ldiffmuS_hyper2_simplified) then
-           df(l1:l2,m,n,imuS) = df(l1:l2,m,n,imuS) &
-              -diffmuS_hyper2*p%del4muS
+           df(l1:l2,m,n,imuS) = df(l1:l2,m,n,imuS) - diffmuS_hyper2*p%del4muS
         else if (ldiffmuS_hyper3_simplified) then
-           df(l1:l2,m,n,imuS) = df(l1:l2,m,n,imuS) &
-              +diffmuS_hyper3*p%del6muS
+           df(l1:l2,m,n,imuS) = df(l1:l2,m,n,imuS) + diffmuS_hyper3*p%del6muS
         else
-           df(l1:l2,m,n,imuS) = df(l1:l2,m,n,imuS) &
-              +diffmuS*p%del2muS
+           df(l1:l2,m,n,imuS) = df(l1:l2,m,n,imuS) + diffmuS*p%del2muS
         endif
 ! 
-        if (lmuSadv) then
-          df(l1:l2,m,n,imuS) = df(l1:l2,m,n,imuS) - p%ugmuS
-        endif
-        df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) &
-          -coef_mu5*bdotgmuS  
+        if (lmuSadv) df(l1:l2,m,n,imuS) = df(l1:l2,m,n,imuS) - p%ugmuS
+
+        df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) - coef_mu5*bdotgmuS  
         if (lCVE) then   
           call dot(p%oo,p%bb,oobb)
           call dot(p%oo,p%gmuS,oogmuS)
-!          call dot(p%oo,p%gmu5,oogmu5)
-          df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) - lambda5*eta*muSmu5*oobb &
-            -2.*Cw*p%muS*oogmuS
+          call dot(p%oo,p%gmu5,oogmu5)
+          df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) - lambda5*eta*muSmu5*oobb - 2.*Cw*p%muS*oogmuS
+          df(l1:l2,m,n,imuS) = df(l1:l2,m,n,imuS) - Cw*p%mu5*oogmuS -Cw*p%muS*oogmu5
         endif
 !  Contributions to timestep from muS equation
         dt1_CMW = sqrt(coef_mu5*coef_muS)*sqrt(p%b2)*sqrt(dxyz_2)
         if (ldiffmuS_hyper2_simplified) then
-           dt1_Dmu = diffmuS_hyper2*dxyz_4
+          dt1_Dmu = diffmuS_hyper2*dxyz_4
         else
-           dt1_Dmu = diffmuS*dxyz_2
+          dt1_Dmu = diffmuS*dxyz_2
         endif
       endif
 !                          
@@ -619,9 +600,7 @@ module Special
       endif
 !  Contributions to timestep from bb equation
       dt1_vmu = eta*p%mu5*sqrt(dxyz_2)
-      if (lCVE) then 
-         dt1_CVE1 = eta*p%muS*p%mu5*sqrt(dxyz_2)
-      endif
+      if (lCVE) dt1_CVE1 = eta*p%muS*p%mu5*sqrt(dxyz_2)
 !
 !  Additions to the test-field equations
 !
@@ -629,8 +608,7 @@ module Special
         aatest=f(l1:l2,m,n,iaxtest:iaztest)
         call gij(f,iaxtest,aijtest,1)
         call curl_mn(aijtest,bbtest,aatest)
-        df(l1:l2,m,n,iaxtest:iaztest) = df(l1:l2,m,n,iaxtest:iaztest) &
-                                        + eta*meanmu5*bbtest
+        df(l1:l2,m,n,iaxtest:iaztest) = df(l1:l2,m,n,iaxtest:iaztest) + eta*meanmu5(1)*bbtest
       endif  
 !
 !  Total contribution to the timestep
@@ -638,12 +616,11 @@ module Special
       if (lfirst.and.ldt.and.ldt_chiral_mhd) then
         if (lmuS) then
           dt1_special = max(dt1_lambda5, dt1_D5, &
-                        dt1_gammaf5, dt1_vmu, &
-                        dt1_CVE1, dt1_CVE2, &
-                        dt1_CMW, dt1_Dmu)/cdtchiral
+                            dt1_gammaf5, dt1_vmu, &
+                            dt1_CVE1, dt1_CVE2, &
+                            dt1_CMW, dt1_Dmu)/cdtchiral
         else
-          dt1_special = max(dt1_lambda5, dt1_D5, &
-                        dt1_gammaf5, dt1_vmu)/cdtchiral
+          dt1_special = max(dt1_lambda5, dt1_D5, dt1_gammaf5, dt1_vmu)/cdtchiral
         endif
         dt1_max=max(dt1_max,dt1_special)  
       endif
@@ -651,19 +628,19 @@ module Special
 !  Diagnostics
 !
       if (ldiagnos) then
-        if (idiag_muSm/=0) call sum_mn_name(p%muS,idiag_muSm)
+        call sum_mn_name(p%muS,idiag_muSm)
         if (idiag_muSrms/=0) call sum_mn_name(p%muS**2,idiag_muSrms,lsqrt=.true.)
-        if (idiag_muSmax/=0) call max_mn_name(p%muS,idiag_muSmax)
-        if (idiag_mu5m/=0) call sum_mn_name(p%mu5,idiag_mu5m)
+        call max_mn_name(p%muS,idiag_muSmax)
+        call sum_mn_name(p%mu5,idiag_mu5m)
         if (idiag_mu51m/=0) call sum_mn_name(sqrt(p%mu5**2),idiag_mu51m)
         if (idiag_mu53m/=0) call sum_mn_name(p%mu5**3,idiag_mu53m)
         if (idiag_mu54m/=0) call sum_mn_name(p%mu5**4,idiag_mu54m)
         if (idiag_mu5rms/=0) call sum_mn_name(p%mu5**2,idiag_mu5rms,lsqrt=.true.)
         if (idiag_mu5min/=0) call max_mn_name(-p%mu5,idiag_mu5min,lneg=.true.)
-        if (idiag_mu5max/=0) call max_mn_name(p%mu5,idiag_mu5max)
+        call max_mn_name(p%mu5,idiag_mu5max)
         if (idiag_mu5abs/=0) call max_mn_name(abs(p%mu5),idiag_mu5abs)
-        if (idiag_gamf5m/=0) call save_name(gammaf5,idiag_gamf5m)
-        if (idiag_srce5m/=0) call save_name(source5,idiag_srce5m)
+        call save_name(gammaf5,idiag_gamf5m)
+        call save_name(source5,idiag_srce5m)
         if (idiag_gmu5rms/=0) then
           call dot2_mn(p%gmu5,gmu52)
           call sum_mn_name(gmu52,idiag_gmu5rms,lsqrt=.true.)
@@ -672,9 +649,9 @@ module Special
           call dot2_mn(p%gmuS,gmuS2)
           call sum_mn_name(gmuS2,idiag_gmuSrms,lsqrt=.true.)
         endif
-        if (idiag_gmu5mx/=0) call sum_mn_name(p%gmu5(:,1),idiag_gmu5mx)
-        if (idiag_gmu5my/=0) call sum_mn_name(p%gmu5(:,2),idiag_gmu5my)
-        if (idiag_gmu5mz/=0) call sum_mn_name(p%gmu5(:,3),idiag_gmu5mz)
+        call sum_mn_name(p%gmu5(:,1),idiag_gmu5mx)
+        call sum_mn_name(p%gmu5(:,2),idiag_gmu5my)
+        call sum_mn_name(p%gmu5(:,3),idiag_gmu5mz)
         if (idiag_bgmu5rms/=0) then
           call dot_mn(p%bb,p%gmu5,bgmu5)
           call sum_mn_name(bgmu5**2,idiag_bgmu5rms,lsqrt=.true.)
@@ -704,12 +681,7 @@ module Special
         if (idiag_mu5b2m/=0) call sum_mn_name(p%mu5*p%b2,idiag_mu5b2m)
         if (idiag_mu5jbm/=0) call sum_mn_name(p%mu5*p%jb,idiag_mu5jbm)
         if (idiag_Dmu5_tdep/=0) call max_mn_name(unity*diffmu5_,idiag_Dmu5_tdep)
-!
-!AB: shouldn't this pencil be requested in pencil_criteria_special?
-        if (idiag_jxm /= 0) then
-          lpenc_diagnos(i_jj) = .true.
-          call sum_mn_name(p%jj(:,1), idiag_jxm)
-        endif
+        call sum_mn_name(p%jj(:,1), idiag_jxm)
      endif
 !
     endsubroutine dspecial_dt
@@ -855,8 +827,6 @@ module Special
 !
 !  22-aug-21/axel: temporal profile for gammaf5
 !
-      use Sub, only: remove_mean_value
-!
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
 !  Choice of gammaf5_tdep profiles.
@@ -880,7 +850,7 @@ module Special
 !  Default.
 !
         case default
-          call fatal_error("daa_dt: No such value for gammaf5_tdep:",trim(gammaf5_tdep))
+          call fatal_error("special_before_boundary","no such gammaf5_tdep: "//trim(gammaf5_tdep))
       endselect
 !
 !  Choice of source5_tdep profiles.
@@ -904,7 +874,7 @@ module Special
 !  Default.
 !
         case default
-          call fatal_error("daa_dt: No such value for source5_tdep:",trim(source5_tdep))
+          call fatal_error("special_before_boundary", "no such source5_tdep: "//trim(source5_tdep))
       endselect
 !
 !  The option ldiffmu5_tdep=T allows for a time-dependent diffusivity.
@@ -925,34 +895,18 @@ module Special
 !
 !  11-oct-15/jenny: coded
 !
-      use Mpicomm, only: mpiallreduce_sum
+      use Sub, only: global_mean
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: meanmu5_tmp !, meanB2_tmp
+      !real :: meanB2_tmp
       intent(inout) :: f
 !
 !  compute meanmu5 and meanB2
 !
-      meanmu5=0.
+      call global_mean(f,imu5,meanmu5)
 !      meanB2=0.
-      do n=n1,n2; do m=m1,m2
-        meanmu5=meanmu5+sum(f(l1:l2,m,n,imu5))
-!        print*, "sum(f(l1:l2,m,n,imu5))", sum(f(l1:l2,m,n,imu5))
-      enddo; enddo
 !      meanB2=meanB2+sum(p%b2)
-!
-!  communicate and divide by all mesh meshpoints
-!
-     if (nprocxy>1) then
-   !    call mpiallreduce_sum(meanmu5,meanmu5_tmp,(/nx,ny,nz/))
-       call mpiallreduce_sum(meanmu5,meanmu5_tmp)
 !       call mpiallreduce_sum(meanB2,meanB2_tmp)
-     else
-       meanmu5_tmp=meanmu5
-     endif
-!
-! number of grid points
-      meanmu5=meanmu5_tmp/nwgrid
 !      meanB2=nw1*meanB2_tmp
 !      flucmu5=p%mu5-meanmu5
 !

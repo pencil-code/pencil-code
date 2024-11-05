@@ -14,6 +14,7 @@ module Timestep
   real, parameter :: safety      =  0.95
   real            :: errcon, dt_next, dt_increase, dt_decrease
   real, dimension(mvar) :: farraymin
+  logical :: fixed_dt=.false.
 !
   contains
 !
@@ -21,28 +22,32 @@ module Timestep
     subroutine initialize_timestep
 !
       use Messages, only: fatal_error, warning
+      use General, only: rtoa
 !
       if (lparticles) call fatal_error("initialize_timestep", "Particles are"// &
                                        " not yet supported by the adaptive rkf scheme")
       if (itorder/=5.and.itorder/=3) then
-        call warning('initialize_timestep','itorder set to 5 for Runge-Kutta-Fehlberg')
+        call warning('initialize_timestep','itorder set to 5 or 3 for Runge-Kutta-Fehlberg')
         itorder=5
       else if (itorder==3) then
         call warning('initialize_timestep',&
                      'Runge-Kutta-Fehlberg itorder is 3: set to 5 for higher accuracy')
       endif
 !
-      if (dt==0.) then
-        call warning('initialize_timestep','dt=0 not appropriate for Runge-Kutta-Fehlberg'// &
-                     'set to 1e-6')
-        dt=1e-6
+      if (dt0>0.) then
+        dt=dt0
+      elseif (dt0<0.) then
+        fixed_dt=.true.
+        dt=-dt0
+      else
+        if (dt==0) then
+          call warning('initialize_timestep','dt=0 not appropriate for Runge-Kutta-Fehlberg'// &
+                     'set to dt_epsi='//trim(rtoa(dt_epsi)))
+          dt=dt_epsi
+        endif
       endif
 !
       if (eps_rkf0/=0.) eps_rkf=eps_rkf0
-!
-!  General error condition: errcon ~1e-4 redundant with maxerr ~1.
-!  0.1 more effective accelerator
-!      errcon = 0.1!(5.0/safety)**(1.0/dt_increase)
 !
 !  ldt is set after read_persistent in rsnap, so dt0==0 used to read,
 !  but ldt=F for write
@@ -50,7 +55,6 @@ module Timestep
       ldt=.false.
       !overwrite the persistent time_step from dt0 in run.in if dt
       !too high to initialize run
-      if (dt0/=0.) dt=dt0
       dt_next=dt
       dt_increase=-1./(itorder+dtinc)
       dt_decrease=-1./(itorder-dtdec)
@@ -76,6 +80,9 @@ module Timestep
 !     0.95 as 0.9 overshoots, saftey<1 for dt_temp can actually reduce the timestep, so now omitted.
 !     "cons_frac_err" for relative error normalisation only method verified and sensitive to choices
 !     dt_epsi and dt_ratio. Sensitivity to eps_rkf very nonlinear and resolution dependent.
+!  14-oct-24/fred: "rel_err" now reliable option for accuracy constraint.
+!                  "lreiterate=F": implement solution with current dt and instead only adjust dt
+!                  for the next time step. Timestep very similar and stable without reiterating.
 !
       use Messages, only: warning
 
@@ -86,10 +93,6 @@ module Timestep
       real :: errmax, dt_temp, dt_last
       real(KIND=rkind8) :: tnew, told
       integer :: j,i
-!
-!  dt_beta_ts may be needed in other modules (like Dustdensity) for fixed dt
-!
-!      if (.not. ldt) dt_beta_ts=dt*beta_ts
 !
 !  dt_ratio is lower bound on a processor for the denominator of each variable
 !  dt_epsi is the lower bound for the denominator on any variable or processor
@@ -111,12 +114,15 @@ module Timestep
           call rkck3(f, df, p, errmax)
         endif
         ! Step succeeded so exit
-        if (errmax <= 1) exit
+        if (errmax <= 1.or.fixed_dt) exit
+        ! If f not to be stored for reiteration errmax constraint below must be removed TBA
+        if (.not.lreiterate.and.errmax<=1.75) exit
         ! Step didn't succeed so decrease the time step
         dt_temp = safety*dt*errmax**dt_decrease
         ! Don't decrease the time step by more than a factor of ten
         dt = sign(max(abs(dt_temp), 0.1*abs(dt)), dt)
-        if (lroot.and.ip==7) print*,"time_step: dt",dt,"to dt_temp",dt_temp,"at errmax",errmax
+        if (lroot.and.ip==6787) print*,"time_step: dt",dt,"to dt_temp",dt_temp,"at errmax",errmax
+        exit
         tnew=told+dt
         if (tnew == told) then
           ! Guard against infinitesimal time steps
@@ -132,7 +138,7 @@ module Timestep
 !  and there will be more iterations. The ratio of dt/dt_next should not be small if dt_next
 !  is a reasonable try.
 !
-      if (lroot.and.ip==7) then
+      if (lroot.and.ip==7.and.i>1) then
         print*,"time_step: rkck",i,"iterations"
         print*,"time_step: rkck",errmax,"converged errmax"
         print*,"time_step: rkck",dt_next,"tried dt_next"
@@ -143,7 +149,19 @@ module Timestep
 !
 ! Time step to try next time
 !
-      dt_next = dt*errmax**dt_increase
+      if (.not. fixed_dt) then
+        if (lreiterate) then
+          dt_next = dt*errmax**dt_increase
+        else
+          if (errmax <= 1) then
+            dt_next = dt*errmax**dt_increase
+          else
+            dt_temp = safety*dt*errmax**dt_decrease
+            ! Don't decrease the time step by more than a factor of ten
+            dt_next = sign(max(abs(dt_temp), 0.1*abs(dt)), dt)
+          endif
+        endif
+      endif
 !
       if (ip<=6) print*,'TIMESTEP: iproc,dt=',iproc_world,dt
 !
@@ -205,9 +223,8 @@ module Timestep
 !   None of those will do exctly what is intended, because they are
 !   only really modifying f during the first substep.
 !
-      !intent(inout) :: f
-      !intent(out)   :: df, p, errmax
-      intent(out)   :: errmax
+      intent(inout) :: f
+      intent(out)   :: df, p, errmax
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -361,8 +378,10 @@ module Timestep
             errmaxs = max(maxval(abs(err/scal)),errmaxs)
           case ('rel_err')
             ! Relative error to f constrained with farraymin floor
-            scal=max(abs(f(l1:l2,m,n,j)),farraymin(j))
+            scal=max(abs(f(l1:l2,m,n,j)+df(l1:l2,m,n,j)),farraymin(j))
             errmaxs = max(maxval(abs(err)/scal),errmaxs)
+          case ('abs_err')
+            errmaxs = max(maxval(abs(err)),errmaxs)
           case ('cons_err')
             ! Relative error constraint for abs(f) > 1e-8
             scal=max(abs(f(l1:l2,m,n,j)),1e-8)
@@ -389,7 +408,7 @@ module Timestep
 !***********************************************************************
     subroutine rkck3(f, df, p, errmax)
 !
-! Explicit fifth order Runge--Kutta--Fehlberg time stepping
+! Explicit third order Runge--Kutta--Fehlberg time stepping
 !
       use Mpicomm, only: mpiallreduce_max,MPI_COMM_WORLD
       use Equ, only: pde, impose_floors_ceilings
@@ -421,9 +440,8 @@ module Timestep
 !   None of those will do exctly what is intended, because they are
 !   only really modifying f during the first substep.
 !
-      !intent(inout) :: f
-      !intent(out)   :: df, p, errmax
-      intent(out)   :: errmax
+      intent(inout) :: f
+      intent(out)   :: df, p, errmax
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -531,8 +549,10 @@ module Timestep
             errmaxs = max(maxval(abs(err/scal)),errmaxs)
           case ('rel_err')
             ! Relative error to f constrained with farraymin floor
-            scal=max(abs(f(l1:l2,m,n,j)),farraymin(j))
+            scal=max(abs(f(l1:l2,m,n,j)+df(l1:l2,m,n,j)),farraymin(j))
             errmaxs = max(maxval(abs(err)/scal),errmaxs)
+          case ('abs_err')
+            errmaxs = max(maxval(abs(err)),errmaxs)
           case ('cons_err')
             ! Relative error constraint for abs(f) > 1e-8
             scal=max(abs(f(l1:l2,m,n,j)),1e-8)

@@ -14,7 +14,6 @@
 !!!!!!!
 !! Eva 27/05/2022: testing the ic generation
 !!!!!!!
-
 module InitialCondition
 !
   use Cparam
@@ -22,11 +21,10 @@ module InitialCondition
   use General, only: keep_compiler_quiet
   use Messages
   !use Selfgravity, only: gravitational_const
-
 !
   implicit none
 !
-  include 'initial_condition.h'
+  include '../initial_condition.h'
 !
 ! Bonnor Ebert sphere initial condition
 ! xmin and xmax are the min and max values of the dimensionles xi parameter
@@ -74,9 +72,9 @@ module InitialCondition
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       integer :: iy, iz
 !
-      do iy=m1,m2;do iz=n1,n2
-         f(:,iy,iz,iuu:iuu+2)=0.d0
-      enddo; enddo
+      ! do iy=m1,m2;do iz=n1,n2
+      !    f(:,iy,iz,iuu:iuu+2)=0.d0
+      ! enddo; enddo
 !
       call keep_compiler_quiet(f)
 !
@@ -305,6 +303,6 @@ module InitialCondition
 !**  copies dummy routines from noinitial_condition.f90 for any    **
 !**  InitialCondition routines not implemented in this file        **
 !**                                                                **
-    include 'initial_condition_dummies.inc'
+    include '../initial_condition_dummies.inc'
 !********************************************************************
 endmodule InitialCondition

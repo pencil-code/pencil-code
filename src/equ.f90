@@ -56,7 +56,7 @@ module Equ
       use Energy
       use EquationOfState
       use Forcing, only: forcing_after_boundary
-!                         
+!
 ! To check ghost cell consistency, please uncomment the following line:
 !     use Ghost_check, only: check_ghosts_consistency
       use GhostFold, only: fold_df, fold_df_3points
@@ -85,6 +85,7 @@ module Equ
       use Testfield
       use Testflow
       use Testscalar
+      use Training, only: training_before_boundary
       use Viscosity, only: viscosity_after_boundary
       use Grid, only: coarsegrid_interp
 !$    use OMP_lib
@@ -157,11 +158,11 @@ module Equ
                      lhyperviscosity_strict.or.lhyperresistivity_strict.or. &
                      ltestscalar.or.ltestfield.or.ltestflow.or. &
                      lparticles_spin.or.lsolid_cells.or. &
-                     lchemistry.or.lweno_transport .or. lbfield .or. & 
+                     lchemistry.or.lweno_transport .or. lbfield .or. &
 !                     lslope_limit_diff .or. lvisc_smag .or. &
                      lvisc_smag .or. &
                      lyinyang .or. lgpu .or. &   !!!
-                     ncoarse>1 
+                     ncoarse>1
 !
 !  Write crash snapshots to the hard disc if the time-step is very low.
 !  The user must have set crash_file_dtmin_factor>0.0 in &run_pars for
@@ -188,7 +189,7 @@ module Equ
 !
 !  Cal  l "before_boundary" hooks (for f array precalculation)
 !
-        if (ldustdensity)  call dustdensity_before_boundary(f) 
+        if (ldustdensity)  call dustdensity_before_boundary(f)
         if (linterstellar) call interstellar_before_boundary(f)
         if (ldensity.or.lboussinesq) call density_before_boundary(f)
         if (lhydro.or.lhydro_kinematic) call hydro_before_boundary(f)
@@ -205,6 +206,7 @@ module Equ
         if (lchemistry)    call chemistry_before_boundary(f)
         if (lparticles.and.lspecial) call particles_special_bfre_bdary(f)
         if (lshock)        call shock_before_boundary(f)
+        if (ltraining)     call training_before_boundary(f)
 !
 !  Prepare x-ghost zones; required before f-array communication
 !  AND shock calculation
@@ -302,7 +304,7 @@ module Equ
 !  for example. They used to be or are still called hydro_after_boundary etc,
 !  and will soon be renamed to hydro_after_boundary.
 !
-!  Important to note that the processor boundaries are not full updated 
+!  Important to note that the processor boundaries are not full updated
 !  at this point, even if the name 'after_boundary' suggesting this.
 !  Use early_finalize in this case.
 !  MR+joern+axel, 8.10.2015
@@ -362,6 +364,7 @@ module Equ
 !  (At the moment relevant for anelastic and Schur flows.)
 !
         call density_after_mn(f, df, mass_per_proc)
+        call magnetic_after_mn(df)
 !
         call timing('pde','after the end of the mn_loop')
 !
@@ -388,20 +391,6 @@ module Equ
         endif
 !
         if (lpointmasses) call pointmasses_pde(f,df)
-!
-!  Electron inertia: our df(:,:,:,iax:iaz) so far is
-!  (1 - l_e^2\Laplace) daa, thus to get the true daa, we need to invert
-!  that operator.
-!  [wd-aug-2007: This should be replaced by the more general stuff with the
-!   Poisson solver (so l_e can be non-constant), so at some point, we can
-!   remove/replace this]
-!
-!      if (lelectron_inertia .and. inertial_length/=0.) then
-!        do iv = iax,iaz
-!          call inverse_laplacian_semispectral(df(:,:,:,iv), H=linertial_2)
-!        enddo
-!        df(:,:,:,iax:iaz) = -df(:,:,:,iax:iaz) * linertial_2
-!      endif
 !
 !  Take care of flux-limited diffusion
 !  This is now commented out, because we always use radiation_ray instead.
@@ -491,23 +480,23 @@ module Equ
 !
 !   13-nov-23/TP: Written
 !
-    l1davgfirst = l1davgfirst_save 
-    ldiagnos = ldiagnos_save 
-    l1dphiavg = l1dphiavg_save 
-    l2davgfirst = l2davgfirst_save 
+    l1davgfirst = l1davgfirst_save
+    ldiagnos = ldiagnos_save
+    l1dphiavg = l1dphiavg_save
+    l2davgfirst = l2davgfirst_save
 
-    lout = lout_save 
+    lout = lout_save
     l1davg = l1davg_save
-    l2davg = l2davg_save 
+    l2davg = l2davg_save
     lout_sound = lout_sound_save
     lvideo = lvideo_save
-    t1ddiagnos = t1ddiagnos_save 
+    t1ddiagnos = t1ddiagnos_save
     t2davgfirst= t2davgfirst_save
     tslice = tslice_save
     tsound = tsound_save
 
     if (ldiagnos) then
-      tdiagnos  = t_save 
+      tdiagnos  = t_save
       dtdiagnos = dt_save
       itdiagnos = it_save
       eps_rkf_diagnos = eps_rkf_save
@@ -517,7 +506,7 @@ module Equ
     endsubroutine restore_diagnostic_controls
 !***********************************************************************
 !$   subroutine write_diagnostics_wrapper(f) bind(C)
-!    
+!
 !  7-feb-24/TP: needed since can't use bind(C) in general (only for threadpool)
 !
 !$    real, dimension(mx,my,mz,mfarray) :: f
@@ -564,7 +553,7 @@ module Equ
 !  Initializes pointers used in diagnostics_reductions
 !
 !  20-feb-23/MR: Coded
-!  
+!
       use Diagnostics
       use Chemistry
       use Solid_Cells
@@ -584,12 +573,12 @@ module Equ
       call diagnostics_init_reduc_pointers
       call chemistry_init_reduc_pointers
       call sc_init_reduc_pointers
- 
+
     endsubroutine init_reduc_pointers
 !***********************************************************************
-   subroutine save_diagnostic_controls 
+   subroutine save_diagnostic_controls
 !
-!  Saves threadprivate variables to shared ones.  
+!  Saves threadprivate variables to shared ones.
 !
 !  25-aug-23/TP: Coded
 !
@@ -804,7 +793,7 @@ module Equ
 !*****************************************************************************
     subroutine finalize_diagnostics
 !
-!  Finalizes all module diagnostics by MPI communication. 
+!  Finalizes all module diagnostics by MPI communication.
 !  Result is only in (diagmaster of) root.
 !
 !  25-aug-23/TP: refactored from pde
@@ -855,7 +844,7 @@ module Equ
         if (lhydro)    call calc_mflow
         if (lpscalar)  call calc_mpscalar
       endif
- 
+
     endsubroutine finalize_diagnostics
 !****************************************************************************
     subroutine calc_all_pencils(f,p)
@@ -969,7 +958,7 @@ module Equ
 !  Calculates rhss of the PDEs.
 !
 !  14-feb-17/MR: Carved out from pde.
-!  21-feb-17/MR: Moved all module-specific estimators of the (inverse) possible timestep 
+!  21-feb-17/MR: Moved all module-specific estimators of the (inverse) possible timestep
 !                to the individual modules.
 !
       use Ascalar
@@ -1004,6 +993,7 @@ module Equ
       use Testfield
       use Testflow
       use Testscalar
+      use Training, only: calc_diagnostics_training
 
       real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
       real, dimension (mx,my,mz,mvar)   ,intent(OUT  ) :: df
@@ -1118,7 +1108,7 @@ module Equ
         if (lpscalar) call dlncc_dt(f,df,p)
 !
 !  Supersaturation evolution
-        
+
         if (lascalar) call dacc_dt(f,df,p)
 !
 !  Dust evolution
@@ -1183,6 +1173,8 @@ module Equ
         if (lparticles) call particles_pde_pencil(f,df,p)
 !
         if (lpointmasses) call pointmasses_pde_pencil(f,df,p)
+
+        if (ltraining) call calc_diagnostics_training(f,p)
 !
 !  Call diagnostics that involves the full right hand side
 !  This must be done at the end of all calls that might modify df.
@@ -1396,10 +1388,10 @@ module Equ
       !if (lgpu) then
       !  call freeze_gpu
       !  return
-      !endif  
+      !endif
 
-      lpenc_loc=.false. 
-      if (lcylinder_in_a_box.or.lcylindrical_coords) then 
+      lpenc_loc=.false.
+      if (lcylinder_in_a_box.or.lcylindrical_coords) then
         lpenc_loc(i_rcyl_mn)=.true.
       else
         lpenc_loc(i_r_mn)=.true.
@@ -1431,9 +1423,9 @@ module Equ
               if (wfreeze_int==0.0) then
                 where (p%rcyl_mn<=rfreeze_int)
                   pfreeze=0.0
-                elsewhere  
+                elsewhere
                   pfreeze=1.0
-                endwhere  
+                endwhere
               else
                 pfreeze=quintic_step(p%rcyl_mn,rfreeze_int,wfreeze_int,SHIFT=fshift_int)
               endif
@@ -1441,9 +1433,9 @@ module Equ
               if (wfreeze_int==0.0) then
                 where (p%r_mn<=rfreeze_int)
                   pfreeze=0.0
-                elsewhere 
+                elsewhere
                   pfreeze=1.0
-                endwhere  
+                endwhere
               else
                 pfreeze=quintic_step(p%r_mn,rfreeze_int,wfreeze_int,SHIFT=fshift_int)
               endif
@@ -1464,9 +1456,9 @@ module Equ
               if (wfreeze_ext==0.0) then
                 where (p%rcyl_mn>=rfreeze_ext)
                   pfreeze=0.0
-                elsewhere  
+                elsewhere
                   pfreeze=1.0
-                endwhere  
+                endwhere
               else
                 pfreeze=1.0-quintic_step(p%rcyl_mn,rfreeze_ext,wfreeze_ext,SHIFT=fshift_ext)
               endif
@@ -1474,9 +1466,9 @@ module Equ
               if (wfreeze_ext==0.0) then
                 where (p%r_mn>=rfreeze_ext)
                   pfreeze=0.0
-                elsewhere 
+                elsewhere
                   pfreeze=1.0
-                endwhere  
+                endwhere
               else
                 pfreeze=1.0-quintic_step(p%r_mn,rfreeze_ext,wfreeze_ext,SHIFT=fshift_ext)
               endif
@@ -1610,7 +1602,7 @@ module Equ
 !
         dt1_src = maxsrc/cdtsrc
 !
-!  Timestep combination from advection, diffusion and "source". 
+!  Timestep combination from advection, diffusion and "source".
 !
         dt1_max_loc = sqrt(dt1_advec**2 + dt1_diffus**2 + dt1_src**2)
 !
@@ -1633,11 +1625,11 @@ module Equ
 !
         if (any(lfreeze_varint)) then
           if (lcylinder_in_a_box.or.lcylindrical_coords) then
-            where (p%rcyl_mn<=rfreeze_int) 
+            where (p%rcyl_mn<=rfreeze_int)
               dt1_max_loc=0.; maxadvec=0.; maxdiffus=0.; maxdiffus2=0.; maxdiffus3=0.
             endwhere
           else
-            where (p%r_mn<=rfreeze_int) 
+            where (p%r_mn<=rfreeze_int)
               dt1_max_loc=0.; maxadvec=0.; maxdiffus=0.; maxdiffus2=0.; maxdiffus3=0.
             endwhere
           endif
@@ -1705,7 +1697,7 @@ module Equ
           intent(inout) :: f
           intent(in) :: p
           intent(inout) :: df
-        endsubroutine rhs_1 
+        endsubroutine rhs_1
       endinterface
 
       interface
@@ -1722,7 +1714,7 @@ module Equ
           intent(inout) :: f
           intent(in) :: p
           intent(inout) :: df
-        endsubroutine rhs_2 
+        endsubroutine rhs_2
       endinterface
 
       df_copy = df
@@ -1752,7 +1744,7 @@ module Equ
       print*,iux,iuy,iuz,iss,ilnrho
 
       call die_gracefully
-      
+
     endsubroutine test_dt
 !***********************************************************************
     subroutine test_rhs(f,df,p,mass_per_proc,early_finalize,rhs_1,rhs_2)
@@ -1788,7 +1780,7 @@ module Equ
           intent(inout) :: f
           intent(inout) :: p
           intent(out) :: df
-        endsubroutine rhs_1 
+        endsubroutine rhs_1
       endinterface
 
       interface
@@ -1807,7 +1799,7 @@ module Equ
           intent(inout) :: f
           intent(inout) :: p
           intent(out) :: df
-        endsubroutine rhs_2 
+        endsubroutine rhs_2
       endinterface
 
       max_relative_diff = -1.0

@@ -28,9 +28,16 @@ import os
 from ..math import dot, dot2, cross
 from ..math.derivatives import div, curl, curl2, grad, del2, del6
 import numpy as np
-from scipy.ndimage.filters import gaussian_filter1d, gaussian_filter
+
 from pencil.ism_dyn import is_vector
 
+from packaging import version
+import scipy
+if version.parse(scipy.__version__) < version.parse("1.8.0"):
+	#KG: 1.8.0 was released in 2021; unsure how long we plan to support older versions.
+	from scipy.ndimage.filters import gaussian_filter1d, gaussian_filter
+else:
+	from scipy.ndimage import gaussian_filter1d, gaussian_filter
 
 def kernel_smooth(
     sim_path,

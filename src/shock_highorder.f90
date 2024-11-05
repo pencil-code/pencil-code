@@ -114,7 +114,6 @@ module Shock
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      real, dimension (-3:3) :: weights
       integer :: i,j,k,idum
 !
 !  Initialize shock profile to zero
@@ -646,9 +645,9 @@ module Shock
 !
 !  Smooth with a Gaussian profile
 !
-      ni = merge(3,0,nxgrid > 1)
-      nj = merge(3,0,nygrid > 1)
-      nk = merge(3,0,nzgrid > 1)
+      ni = merge(min(nghost,3),0,nxgrid > 1)
+      nj = merge(min(nghost,3),0,nygrid > 1)
+      nk = merge(min(nghost,3),0,nzgrid > 1)
 !
       tmp = 0.0
 !

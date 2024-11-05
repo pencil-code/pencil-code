@@ -81,7 +81,7 @@ module Dustdensity
   character (len=labellen) :: advec_ddensity='normal'
   character (len=labellen) :: diffnd_law='const'
   character (len=labellen) :: self_collisions='nothing'
-  logical :: ludstickmax=.false., lno_deltavd=.false.
+  logical :: ludstickmax=.false., lno_deltavd=.false., ldustnucleation=.false.
   logical :: lcalcdkern=.true., lkeepinitnd=.false., ldustcontinuity=.true.
   logical :: ldustnulling=.false., lupw_ndmdmi=.false.
   logical :: ldeltavd_thermal=.false., ldeltavd_turbulent=.false.
@@ -103,8 +103,8 @@ module Dustdensity
   logical :: lkernel_mean=.false., lpiecewise_constant_kernel=.false.
   logical :: lfree_molecule=.false.
   integer :: iadvec_ddensity=0
-  logical, pointer :: llin_radiusbins
-  real, pointer :: deltamd
+  logical, pointer :: llin_radiusbins, llog_massbins
+  real, pointer :: deltamd, dustbin_width
   real    :: dustdensity_floor=-1, Kern_min=0., Kern_max=0.
   real    :: G_condensparam=0., supsatratio_given=0., supsatratio_given0=0.
   real    :: supsatratio_omega=0., self_collision_factor=1.
@@ -112,7 +112,7 @@ module Dustdensity
   real    :: r_lucky=0., r_collected=0., f_lucky=0.
   real :: tstart_droplet_coagulation=impossible
   real :: nd0_luck=0.
-!
+  !
   namelist /dustdensity_init_pars/ &
       rhod0, initnd, eps_dtog, nd_const, dkern_cst, nd0,  mdave0, Hnd, &
       adpeak, amplnd, amplnd_rel, phase_nd, kx_nd, ky_nd, kz_nd, &
@@ -127,8 +127,7 @@ module Dustdensity
       advec_ddensity, dustdensity_floor, init_x1, init_x2, lsubstep, a0, a1, &
       ldustcondensation_simplified, ldustcoagulation_simplified,lradius_binning, &
       lzero_upper_kern, rotat_position, dt_substep, &
-      r_lucky, r_collected, f_lucky, nd0_luck
- 
+      r_lucky, r_collected, f_lucky, nd0_luck, ldustnucleation
 !
   namelist /dustdensity_run_pars/ &
       rhod0, diffnd, diffnd_hyper3, diffnd_hyper3_mesh, diffmd, diffmi, lno_deltavd, initnd, &
@@ -144,7 +143,7 @@ module Dustdensity
       lsemi_chemistry, lradius_binning, dkern_cst, lzero_upper_kern, &
       llog10_for_admom_above10,lmomcons, lmomconsb, lmomcons2, lmomcons3, lmomcons3b, &
       lkernel_mean, lpiecewise_constant_kernel, momcons_term_frac, &
-      tstart_droplet_coagulation, lfree_molecule
+      tstart_droplet_coagulation, lfree_molecule, ldustnucleation
 !
   integer :: idiag_KKm=0     ! DIAG_DOC: $\sum {\cal T}_k^{\rm coag}$
   integer :: idiag_KK2m=0    ! DIAG_DOC: $\sum {\cal T}_k^{\rm coag}$
@@ -184,6 +183,7 @@ module Dustdensity
 !
       use FArrayManager, only: farray_register_pde, farray_index_append
       use General, only: itoa
+      use SharedVariables, only: put_shared_variable
 !
       integer :: k, i, ind_tmp
 !
@@ -231,6 +231,12 @@ module Dustdensity
         call farray_index_append('ndc',ndustspec)
 !
       endif
+      !
+      !  Shared variables
+      !
+      if (lchemistry) then
+        call put_shared_variable('ldustnucleation',ldustnucleation)
+      endif
 !
 !  Identify version number (generated automatically by CVS).
 !
@@ -267,15 +273,17 @@ module Dustdensity
 !  Need deltamd for computing the radius differential in dustdensity.
 !
       if (ldustvelocity) then
-        call get_shared_variable('deltamd',deltamd,caller='initialize_dustdensity')
+        call get_shared_variable('dustbin_width',dustbin_width)
+        call get_shared_variable('deltamd',deltamd)
         call get_shared_variable('llin_radiusbins',llin_radiusbins)
+        call get_shared_variable('llog_massbins',llog_massbins)
         if (llin_radiusbins.and..not.lradius_binning) call fatal_error('initialize_dustdensity', &
                 'must not use llin_radiusbins=T with lradius_binning=F')
       endif
 
       if ((latm_chemistry .or. lsemi_chemistry).and. ndustspec<3) &
         call fatal_error('initialize_dustdensity', 'Number of dust species < 3')
-
+!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !NB:  this part destroys latm_chemistry case
@@ -426,7 +434,7 @@ module Dustdensity
       case default
         call fatal_error('initialize_dustdensity','no such diffnd_law: '//trim(diffnd_law))
       endselect
-      if (lroot) print*, 'initialize_dustdensity: diffnd_ndustspec=',diffnd_ndustspec
+      if (lroot .and. ip<14) print*, 'initialize_dustdensity: diffnd_ndustspec=',diffnd_ndustspec
 !
 !  check for self-collisions
 !
@@ -923,7 +931,7 @@ module Dustdensity
 !
           call fatal_error('initnd','no such initnd: '//trim(initnd(j)))
 !
-        endselect
+       endselect
 !
 !  End loop over initial conditions.
 !
@@ -1734,7 +1742,7 @@ module Dustdensity
 !        p%nd(:,ndustspec)=(Nd_rho(:,ndustspec)-CoagS(:,ndustspec)*dt)/(dsize(ndustspec)-dsize(ndustspec-1))/p%rho
 !
       endif  
-        
+!
     endsubroutine calc_pencils_dustdensity
 !***********************************************************************
     subroutine dndmd_dt(f,df,p)
@@ -1748,6 +1756,7 @@ module Dustdensity
       use Special, only: special_calc_dustdensity
       use General, only: spline_integral
       use Deriv, only: der6
+      use Chemistry, only: cond_spec_cond, cond_spec_nucl
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -1755,9 +1764,12 @@ module Dustdensity
 !
       real, dimension (nx) :: mfluxcond,fdiffd,gshockgnd, Imr, tmp1, tmp2
       real, dimension (nx) :: diffus_diffnd,diffus_diffnd3,advec_hypermesh_nd
+      real, dimension (nx) :: ff_cond, ff_cond_fact
+      integer, dimension(nx) :: kk_vec
+      real :: ff_nucl
       real, dimension (nx,ndustspec) :: dndr_tmp=0.,  dndr
       real, dimension (nx,ndustspec) :: nd_substep, nd_substep_0, K1,K2,K3,K4
-      integer :: k,i,j
+      integer :: k,i,j,kk,ichem, kkk
 !
       intent(in)  :: f,p
       intent(inout) :: df
@@ -1917,9 +1929,41 @@ module Dustdensity
 !  Dust growth due to condensation on grains
 !  (This is not used by Natalia's routines, although it is not obvious why.)
 !
-        if (ldustcondensation) call dust_condensation(f,df,p,mfluxcond)
+        if (ldustcondensation) then
+          call dust_condensation(f,df,p,mfluxcond)
+          !
+          ! Condensation on droplets will have a feedback on the species and continuity eqs.
+          !
+          if (dust_chemistry=='condensing_species') then
+            call cond_spec_cond(f,df,p,ad,dustbin_width,mfluxcond)
+          endif
+       endif
 !
-      endif   !if (latm_chemistry .or. lsemi_chemistry)
+!  Nucleation of condensing species into droplets
+!
+       if (ldustnucleation) then
+         do i=1,nx
+           if (p%nucl_rmin(i)>ad(1) .and. p%nucl_rmin(i)<ad(ndustspec)) then
+             select case (dust_binning)
+             case ('lin_radius')
+               kk_vec(i)=max(1,int(1+(p%nucl_rmin(i)-ad(1))/dustbin_width))                      
+             case ('log_radius')
+               kk_vec(i)=max(1,int(1+alog(p%nucl_rmin(i)/ad(1))/dustbin_width))
+             case ('log_mass')
+               call fatal_error('dndmd_dt','not implemented for llog_massbins yet')        
+             case default
+               call fatal_error('register_dustvelocity','no valid dust_binning')
+             endselect
+             if (kk_vec(i) .gt. ndustspec) call fatal_error('dndmd_dt','kk is too large')
+             df(l1+i-1,m,n,ind(kk_vec(i)))=df(l1+i-1,m,n,ind(kk_vec(i)))+p%nucl_rate(i)/dustbin_width
+           else
+             kk_vec(i)=0
+           endif
+         enddo
+!
+         call cond_spec_nucl(f,df,p,kk_vec,ad)
+       endif
+     endif   !if (latm_chemistry .or. lsemi_chemistry)
 !
 !  Loop over dust layers
 !  this is a non-atmospheric case (for latm_chemistry=F)
@@ -2154,7 +2198,9 @@ module Dustdensity
           if (idiag_rmom(k)/=0) call sum_mn_name(sum(p%md**(k/3.)*p%nd,2),idiag_rmom(k))
           if (idiag_admom(k)/=0) then
             if (lradius_binning) then
-              call sum_mn_name(sum(p%ad**k*p%nd,2)*dlnad,idiag_admom(k))
+               !call sum_mn_name(sum(p%ad**k*p%nd,2)*dlnad,idiag_admom(k))
+              ! 2024-06-14/AB: the thing above seems wrong, and would affect earlier work.
+               call sum_mn_name(sum(p%ad**k*p%nd,2)*dustbin_width,idiag_admom(k))
             else
               if (llog10_for_admom_above10.and.k>10) then
                 call sum_mn_name(sum(p%ad**k*p%nd,2),idiag_admom(k),llog10=.true.)
@@ -2330,14 +2376,23 @@ module Dustdensity
 !
 !  In the free molecule regime, there is no 1/r in the condensation.
 !  For k=1, nothing needs to be done, unless we want to introduce damping.
-!  This part is used for microsilica modeling.
+!  This part is used for modeling of condensing species.
 !
-          if (lfree_molecule) then
-            do k=2,ndustspec-1
-              coefkm=mfluxcondm/(ad(k+1)-ad(k))
-              df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) &
-                -coefk0*(f(l1:l2,m,n,ind(k))-f(l1:l2,m,n,ind(k-1)))
-            enddo
+           if (lfree_molecule) then
+              select case (dust_binning)
+              case ('lin_radius')
+                 do k=2,ndustspec-1
+                    coefkm=mfluxcond/dustbin_width
+                    df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) &
+                         -coefkm*(f(l1:l2,m,n,ind(k))-f(l1:l2,m,n,ind(k-1)))
+                 enddo
+              case ('log_radius')
+                 do k=2,ndustspec-1
+                    coefkm=2.*mfluxcond/(dustbin_width*(ad(k)+ad(k-1)))
+                    df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) &
+                         -coefkm*(f(l1:l2,m,n,ind(k))-f(l1:l2,m,n,ind(k-1)))
+                 enddo
+              endselect
           else
 !
 !  Alternative I (does not work when coagulation is also used).
@@ -2383,11 +2438,11 @@ module Dustdensity
 !
 !  in the free molecule regime, there is no 1/r in the condensation.
 !  For k=1, nothing needs to be done, unless we want to introduce damping.
-!  This part is used for microsilica modeling.
+!  This part is used for modeling of condensing species.
 !
           if (lfree_molecule) then
             do k=2,ndustspec-1
-              coefk0=3.*mfluxcond/(ad(k)*dlnmd)
+              coefk0=mfluxcond/dustbin_width
               df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) &
                 -coefk0*(f(l1:l2,m,n,ind(k))-f(l1:l2,m,n,ind(k-1)))
             enddo
@@ -2504,6 +2559,7 @@ module Dustdensity
 !
       use Diagnostics, only: max_mn_name, sum_mn_name
       use EquationOfState, only: getmu,eoscalc,getpressure
+      use Chemistry, only: find_species_index, condensing_species_rate
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: mfluxcond,rho,TT1,cc
@@ -2553,8 +2609,11 @@ module Dustdensity
 !
 !  Condensation obtained from passive scalar equation.
 !
-      case ('microsilica')
+      case ('condensing_species_test')
         mfluxcond=G_condensparam
+!
+      case ('condensing_species')
+        call condensing_species_rate(p,mfluxcond)
 !
 !  Assume a hat(om*t) time behavior
 !
@@ -3482,7 +3541,7 @@ module Dustdensity
       logical :: loverwrite
 !
       real :: fac
-      integer :: k
+      integer :: k, pow
 !
 !  Impose the density floor.
 !
@@ -3491,13 +3550,22 @@ module Dustdensity
         print*, 'init_nd: amplnd   =',amplnd
         print*, 'init_nd: a0, a1, sigmad=',a0, a1, sigmad
       endif
+      !
+      ! Set correct power
+      !
+      select case (dust_binning)
+      case ('lin_radius')
+         pow=1
+      case ('log_radius')
+         pow=0
+      endselect
 !
 !  loop through the dust bins
 !
       do k=1,ndustspec
         if (a1 == 0) then
           if (lradius_binning) then
-            fac=1./(sqrt(twopi)*sigmad*ad(k))
+            fac=1./(sqrt(twopi)*sigmad*ad(k)**pow)
           else
             fac=dlnad/(sqrt(twopi)*sigmad)
           endif

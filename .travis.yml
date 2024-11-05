@@ -22,6 +22,7 @@ cache:
   - $HOME/build/pencil-code/pencil-code/samples/dust-vortex/src
   - $HOME/build/pencil-code/pencil-code/samples/damped_alfven_waves/src
   - $HOME/build/pencil-code/pencil-code/samples/corona/src
+  - $HOME/build/pencil-code/pencil-code/samples/helical-MHDturb/src
 
 addons:
   apt:
@@ -32,12 +33,6 @@ before_install:
   - gfortran --version
   - cd $HOME/build/pencil-code/pencil-code/ && git restore-mtime src/
 
-python:
-  - 3.9
-
-install:
-  - pip install -r python/pencil/requirements.txt
-
 script:
   - source sourceme.sh
-  - pc_auto-test --host-id travis-ci -t --max-level 1 --script-tests=python --auto-clean --no-bisect
+  - pc_auto-test --host-id travis-ci -t --max-level 1 --auto-clean

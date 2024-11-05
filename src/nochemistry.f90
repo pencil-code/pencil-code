@@ -9,7 +9,8 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED Ywater, lambda
+! PENCILS PROVIDED Ywater, lambda; chem_conc(nchemspec)
+! PENCILS PROVIDED nucl_rmin; nucl_rate; conc_satm;
 !
 !***************************************************************
 module Chemistry
@@ -21,7 +22,7 @@ module Chemistry
 !
   implicit none
 !
-  real :: Rgas
+  real :: Rgas, Rgas_unit_sys
   logical :: lchemistry_diag=.false.
   logical :: lreactions=.false.
 !
@@ -38,6 +39,9 @@ module Chemistry
     subroutine initialize_chemistry(f)
 !
       real, dimension (mx,my,mz,mfarray) :: f
+!
+      Rgas_unit_sys = k_B_cgs/m_u_cgs
+      Rgas = Rgas_unit_sys/unit_energy
 !
       call keep_compiler_quiet(f)
 !
@@ -314,4 +318,80 @@ module Chemistry
 
    endsubroutine find_species_index
 !***********************************************************************
+    subroutine cond_spec_cond(f,df,p,ad,dustbin_width,mfluxcond)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+      real :: dustbin_width
+      real, dimension (nx) :: mfluxcond
+      real, dimension(ndustspec) :: ad
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
+      call keep_compiler_quiet(ad)
+      call keep_compiler_quiet(dustbin_width)
+      call keep_compiler_quiet(mfluxcond)
+!  
+    end subroutine cond_spec_cond
+!***********************************************************************
+    subroutine cond_spec_nucl(f,df,p,kk_vec,ad)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+      integer, dimension(nx) :: kk_vec
+      real, dimension(ndustspec) :: ad
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
+      call keep_compiler_quiet(ad)
+      call keep_compiler_quiet(kk_vec)
+!  
+    end subroutine cond_spec_nucl
+!***********************************************************************
+    subroutine condensing_species_rate(p,mfluxcond)
+!
+      real, dimension (nx) :: mfluxcond
+      type (pencil_case) :: p
+!
+      call keep_compiler_quiet(p)
+      call keep_compiler_quiet(mfluxcond)
+!      
+    end subroutine condensing_species_rate
+!***********************************************************************
+    subroutine cond_spec_cond_lagr(f,df,p,rp,ix0,ix,np_swarm,dapdt)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+      real :: rp,np_swarm,dapdt
+      integer :: ix0,ix
+ !
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
+      call keep_compiler_quiet(dapdt)
+      call keep_compiler_quiet(ix0)
+!
+    end subroutine cond_spec_cond_lagr
+!***********************************************************************
+    subroutine cond_spec_nucl_lagr(f,df,p)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
+!
+    end subroutine cond_spec_nucl_lagr
+    !***********************************************************************
+
+
+
+   
 endmodule Chemistry

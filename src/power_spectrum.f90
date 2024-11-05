@@ -83,13 +83,16 @@ module Power_spectrum
       lhorizontal_spectra, lvertical_spectra, ltrue_binning, max_k2, &
       specflux_pmin, specflux_pmax
 !
+! real, allocatable, dimension(:,:) :: spectrum_2d, spectrumhel_2d
+! real, allocatable, dimension(:,:) :: spectrum_2d_sum, spectrumhel_2d_sum
+!
   contains
 !***********************************************************************
     subroutine initialize_power_spectrum
 !
       use Messages
       use General, only: binomial, pos_in_array, quick_sort
-      use Mpicomm, only: mpiallreduce_merge 
+      use Mpicomm, only: mpiallreduce_merge
 
       integer :: ikr, ikmu, ind, ikx, iky, ikz, i, len
       real :: k2
@@ -100,16 +103,55 @@ module Power_spectrum
           ((dx /= dz) .and. ((nxgrid-1)*(nzgrid-1) /= 0))) &
           call warning ('power_spectrum', &
           "Shell-integration will be wrong; set dx=dy=dz to fix this.")
-      
-      L_min = minval(Lxyz)
-      L_min_xy = min(Lx, Ly)
-      
-!     KG: Ideally, these would be used for calculation of nk, but that requires
-!     making all arrays of size nk into allocatables. Currently these are used
-!     only in power_xy and power.
-      nk_xyz = nint(min( nxgrid*L_min/(2*Lx), nygrid*L_min/(2*Ly), nzgrid*L_min/(2*Lz) ))
-!       nk_xy = nint(min( nxgrid*L_min/(2*Lx), nygrid*L_min/(2*Ly) ))
-      nk_xy = nint( sqrt( ((nxgrid+1)/Lx)**2+((nygrid+1)/Ly)**2 )*L_min_xy/2 )+1 !KG: I don't agree with this expression, but I am using this to avoid changing the behaviour of power_xy.
+!
+!     Choose the length scale used to make wavenumbers into integers (for
+!     binning). When the domain is non-cubical, the spacing between
+!     wavevectors is different in different directions. Binning using the
+!     largest spacing (corresponding to the smallest domain length) avoids
+!     aliasing artefacts in the spectra. Dimensions with only one grid point
+!     are skipped in this calculation, since, e.g., if nzgrid=0, we only
+!     have k_z=0.
+!
+      L_min = max_real
+      L_min_xy = max_real
+!
+      if (nxgrid/=1) then
+        L_min = min(L_min, Lx)
+        L_min_xy = min(L_min_xy, Lx)
+      endif
+!
+      if (nygrid/=1) then
+        L_min = min(L_min, Ly)
+        L_min_xy = min(L_min_xy, Ly)
+      endif
+!
+      if (nzgrid/=1) then
+        L_min = min(L_min, Lz)
+      endif
+
+!     Fallback for 0D; exact value does not matter because k=0.
+      if (L_min==max_real) L_min = 2*pi
+      if (L_min_xy==max_real) L_min_xy = 2*pi
+!
+      nk_xyz = max_int
+      nk_xy = max_int
+!
+      if (nxgrid /= 1) then
+        nk_xyz = min(nk_xyz, nint(nxgrid*L_min/(2*Lx)))
+        nk_xy = min(nk_xy, nint(nxgrid*L_min_xy/(2*Lx)))
+      endif
+!
+      if (nygrid /= 1) then
+        nk_xyz = min(nk_xyz, nint(nygrid*L_min/(2*Ly)))
+        nk_xy = min(nk_xy, nint(nygrid*L_min_xy/(2*Ly)))
+      endif
+!
+      if (nzgrid /= 1) then
+        nk_xyz = min(nk_xyz, nint(nzgrid*L_min/(2*Lz)))
+      endif
+!     Fallback for 0D
+      if (nk_xyz==max_int) nk_xyz=1
+      if (nk_xy==max_int) nk_xy=1
 !
 !  07-dec-20/hongzhe: import gauss-legendre quadrature from gauss_legendre_quadrature.dat
 !
@@ -183,7 +225,11 @@ outer:  do ikz=1,nz
       kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
       ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
       kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
- 
+
+      !if (.not.allocated(spectrum_2d)) then
+      !  allocate(spectrum_2d(nk,nbin_angular), spectrumhel_2d(nk,nbin_angular), &
+      !           spectrum_2d_sum(nk,nbin_angular), spectrumhel_2d_sum(nk,nbin_angular))
+
     endsubroutine initialize_power_spectrum
 !***********************************************************************
     subroutine read_power_spectrum_run_pars(iostat)
@@ -444,7 +490,7 @@ outer:  do ikz=1,nz
 !
      if (ip<10) call information('power','fft done; now integrate over shells')
      if (ltrue_binning) then
-!  
+!
 !  Sum spectral contributions into bins of k^2 - avoids rounding of k.
 !
        !$omp do collapse(3)
@@ -502,8 +548,8 @@ outer:  do ikz=1,nz
       write(1,*) nk_truebin
       write(1,*) real(k2s(:nk_truebin))
     endif
-    write(1,*) t   
-    write(1,power_format) spectrum_sum 
+    write(1,*) t
+    write(1,power_format) spectrum_sum
     close(1)
   endif
 !
@@ -569,7 +615,7 @@ outer:  do ikz=1,nz
 !  Doing the Fourier transform
 !
      !print*, 'ivec1=', ivec
-     
+
      call fourier_transform_xz(a_re,a_im)    !!!! MR: causes error - ivec is set back from 1 to 0
      !print*, 'ivec2=', ivec
 !    to be replaced by comp_spectrum( f, sp, ivec, ar, ai, fourier_transform_xz )
@@ -608,7 +654,7 @@ outer:  do ikz=1,nz
     spectrum_sum=.5*spectrum_sum
     open(1,file=trim(datadir)//'/power'//trim(sp)//'_2d.dat',position='append')
     write(1,*) t
-    write(1,power_format) spectrum_sum 
+    write(1,power_format) spectrum_sum
     close(1)
   endif
   !
@@ -832,6 +878,7 @@ outer:  do ikz=1,nz
 !
       spectrum2=0.
       spectrum2_sum=0.
+      spectrum2_global=0.
 !
     endif
 !
@@ -848,6 +895,7 @@ outer:  do ikz=1,nz
 !
     spectrum2=0.
     spectrum2_sum=0.
+    spectrum2_global=0.
 !
   else
 !
@@ -939,7 +987,7 @@ outer:  do ikz=1,nz
 !
   enddo ! do ivec=iveca,iveca+ncomp-1
 !
-  if (lintegrate_shell .and. firstout<n_spectra .and. ipz==0) call mpimerge_1d(kshell,nk,12) ! filling of the shell-wavenumber vector
+  if (lintegrate_shell .and. ipz==0) call mpimerge_1d(kshell,nk,12) ! filling of the shell-wavenumber vector
 !
   if (lroot) then
 !
@@ -1085,17 +1133,19 @@ outer:  do ikz=1,nz
     use Fourier, only: fft_xyz_parallel
     use Mpicomm, only: mpireduce_sum
     use Sub, only: del2vi_etc, del2v_etc, cross, grad, curli, curl, dot2
-    use Chiral, only: iXX_chiral, iYY_chiral
+    use Chiral, only: iXX_chiral, iYY_chiral, iXX2_chiral, iYY2_chiral
     use Magnetic, only: magnetic_calc_spectra
 !
   integer, parameter :: nk=nxgrid/2
   integer :: i, k, ikx, iky, ikz, jkz, im, in, ivec, ivec_jj
   real :: k2
   real, dimension (mx,my,mz,mfarray) :: f
-  real, dimension(nx) :: jji, b2, j2
-  real, dimension(nx,3) :: bb, bbEP, jj, gtmp1, gtmp2
+  real, dimension(nx) :: bbi, jji, b2, j2
+  real, dimension(nx,3) :: bb, bbEP, hhEP, jj, gtmp1, gtmp2
   real, dimension(nk) :: nks,nks_sum
   real, dimension(nk) :: k2m,k2m_sum,krms
+  real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
+  complex, dimension(nx,ny,nz) :: phi
   real, dimension(nk) :: spectrum,spectrum_sum
   real, dimension(nk) :: spectrumhel,spectrumhel_sum
   real, allocatable, dimension(:,:), save :: cyl_spectrum, cyl_spectrum_sum
@@ -1435,6 +1485,40 @@ outer:  do ikz=1,nz
         !$omp end workshare
       endif
 !
+!  magnetic energy spectra based on fields with Euler potentials (Higgs case)
+!
+    elseif (sp=='hEP') then
+      if (iXX2_chiral/=0.and.iYY2_chiral/=0) then
+        do n=n1,n2
+          do m=m1,m2
+            call grad(f,iXX2_chiral,gtmp1)
+            call grad(f,iYY2_chiral,gtmp2)
+            call cross(gtmp1,gtmp2,hhEP)
+            im=m-nghost
+            in=n-nghost
+            b_re(:,im,in)=hhEP(:,ivec)  !(this corresponds to magnetic field)
+            a_re(:,im,in)=.5*(f(l1:l2,m,n,iXX2_chiral)*gtmp2(:,ivec) &
+                             -f(l1:l2,m,n,iYY2_chiral)*gtmp1(:,ivec))
+          enddo
+        enddo
+        a_im=0.
+        b_im=0.
+      endif
+!
+!  Spectra based on Tanmay's flux method
+!
+    elseif (sp=='fEP') then
+      if (iXX2_chiral/=0.and.iYY2_chiral/=0) then
+        phi=cmplx(f(l1:l2,m1:m2,n1:n2,iXX2_chiral),f(l1:l2,m1:m2,n1:n2,iXX2_chiral))
+        if (ivec==1) then
+!         b_re=aimag(cshift(conj(phi),0,0,0)*cshift(phi,0,1,0) &
+!                   +cshift(conj(phi),0,1,0)*cshift(phi,0,1,1) &
+!                   +cshift(conj(phi),0,1,1)*cshift(phi,0,0,1) &
+!                   +cshift(conj(phi),0,0,1)*cshift(phi,0,0,0))
+          a_re=0.
+        endif
+      endif
+!
 !  Spectrum of uxj
 !
     elseif (sp=='uxj') then
@@ -1579,7 +1663,7 @@ outer:  do ikz=1,nz
       enddo
     else
       write(1,*) t
-      write(1,power_format) spectrum_sum 
+      write(1,power_format) spectrum_sum
     endif
     close(1)
     !
@@ -1590,7 +1674,7 @@ outer:  do ikz=1,nz
       enddo
     else
       write(1,*) t
-      write(1,power_format) spectrumhel_sum 
+      write(1,power_format) spectrumhel_sum
     endif
     close(1)
     !
@@ -1608,7 +1692,7 @@ outer:  do ikz=1,nz
         enddo
       else
         write(1,*) t
-        write(1,power_format) cyl_spectrum_sum 
+        write(1,power_format) cyl_spectrum_sum
       endif
       close(1)
       !
@@ -1621,7 +1705,7 @@ outer:  do ikz=1,nz
         enddo
       else
         write(1,*) t
-        write(1,power_format) cyl_spectrumhel_sum 
+        write(1,power_format) cyl_spectrumhel_sum
       endif
       close(1)
     endif
@@ -2517,6 +2601,9 @@ outer:  do ikz=1,nz
   real :: k2
   real, dimension(nk) :: nks,nks_sum
   real, dimension(nk) :: k2m,k2m_sum,krms
+  real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
+  real, dimension(nk,nbin_angular) :: spectrum_2d, spectrumhel_2d
+  real, dimension(nk,nbin_angular) :: spectrum_2d_sum, spectrumhel_2d_sum
   real, allocatable, dimension(:) :: spectrum,spectrumhel
   real, allocatable, dimension(:) :: spectrum_sum,spectrumhel_sum
   logical, save :: lwrite_krms_GWs=.false.
@@ -2541,7 +2628,9 @@ outer:  do ikz=1,nz
       allocate(spectrum(nk),spectrumhel(nk))
       allocate(spectrum_sum(nk),spectrumhel_sum(nk))
     endif
-    call special_calc_spectra(f,spectrum,spectrumhel,lfirstcall,sp)
+    call special_calc_spectra(f,spectrum,spectrumhel, &
+      spectrum_2d,spectrumhel_2d, &
+      lfirstcall,sp)
   else
     allocate(spectrum(nk),spectrumhel(nk))
 
@@ -2619,7 +2708,7 @@ outer:  do ikz=1,nz
 ! do ikz=1,nz
 !   do iky=1,ny
 !     do ikx=1,nx
-    !$omp do collapse(3) reduction(+:spectrum,spectrumhel,k2m,nks) 
+    !$omp do collapse(3) reduction(+:spectrum,spectrumhel,k2m,nks)
     do iky=1,nz
       do ikx=1,ny
         do ikz=1,nx
@@ -2695,6 +2784,12 @@ outer:  do ikz=1,nz
 !
     call mpireduce_sum(spectrum   ,spectrum_sum   ,nk)
     call mpireduce_sum(spectrumhel,spectrumhel_sum,nk)
+    !
+    if ( any(sp.eq.(/'Gab','Gan','GBb'/)) ) then
+      call mpireduce_sum(spectrum_2d   ,spectrum_2d_sum   ,(/nk,nbin_angular/))
+      call mpireduce_sum(spectrumhel_2d,spectrumhel_2d_sum,(/nk,nbin_angular/))
+    endif
+    !
   endif
 !
 !  compute krms only once
@@ -2730,7 +2825,11 @@ outer:  do ikz=1,nz
       enddo
     else
       write(1,*) t
-      write(1,power_format) spectrum_sum
+      if ( all(sp.ne.(/'Gab','Gan','GBb'/)) ) then
+        write(1,power_format) spectrum_sum
+      else
+        write(1,power_format) spectrum_2d_sum
+      endif
     endif
     close(1)
     !
@@ -2742,7 +2841,11 @@ outer:  do ikz=1,nz
         enddo
       else
         write(1,*) t
-        write(1,power_format) spectrumhel_sum
+        if ( all(sp.ne.(/'Gab','Gan','GBb'/)) ) then
+          write(1,power_format) spectrumhel_sum
+        else
+          write(1,power_format) spectrumhel_2d_sum
+        endif
       endif
       close(1)
     endif
@@ -3219,7 +3322,7 @@ outer:  do ikz=1,nz
     spectrumx(:,2:nk)=2*spectrumx(:,2:nk)
     !$omp end workshare
 !
-!  Doing fourier spectra in all directions if onedall=T
+!  Doing Fourier spectra in all directions if onedall=T
 !
     if (onedall) then
 !
@@ -4209,7 +4312,7 @@ endsubroutine pdf
         enddo
       enddo
     enddo
-!$omp end parallel    
+!$omp end parallel
     !  sum up results
     call mpireduce_sum(legendre_al_a,legendre_al_a_sum,(/legendre_lmax+1,nk/))
     call mpireduce_sum(legendre_al_b,legendre_al_b_sum,(/legendre_lmax+1,nk/))
@@ -4479,7 +4582,7 @@ endsubroutine pdf
 !***********************************************************************
   subroutine power1d_plane(f,sp)
 !
-!  Calculate power and helicity spectra of planar-averaged 
+!  Calculate power and helicity spectra of planar-averaged
 !  variable specified by `sp', i.e. either the spectra of uu and kinetic
 !  helicity, or those of bb and magnetic helicity..
 !  Since this routine is only used at the end of a time step,
@@ -4489,8 +4592,8 @@ endsubroutine pdf
 !
     use Fourier, only: fft_xyz_parallel
     use Mpicomm, only: mpireduce_sum
-    use Sub, only: del2v_etc, cross, grad, curli, curl, dot2
-    use Chiral, only: iXX_chiral, iYY_chiral
+    use Sub, only: del2vi_etc, del2v_etc, cross, grad, curli, curl, dot2
+    use Chiral, only: iXX_chiral, iYY_chiral, iXX2_chiral, iYY2_chiral
 !
   integer, parameter :: nk=nxgrid/2
   integer :: i, ikx, iky, ikz, im, in, ivec
@@ -5333,7 +5436,7 @@ endsubroutine pdf
       if (iaa==0) call fatal_error('quadratic_invariants','iaa=0')
       !$omp do collapse(2)
       do n=n1,n2; do m=m1,m2
-        call curli(f,iaa,b_re(:,m-nghost,n-nghost),ivec)   !  magnetic field   
+        call curli(f,iaa,b_re(:,m-nghost,n-nghost),ivec)   !  magnetic field
       enddo; enddo
       !$omp workshare
       h_re=h_re+b_re**2  !  magnetic energy density
@@ -5635,7 +5738,7 @@ endsubroutine pdf
       endif
     endif
     !
-    !$omp do 
+    !$omp do
     do ikz=1,nz
       jkz=nint(kz(ikz+ipz*nz))+(kkoutz-1)/2+1
       if ( jkz>=1 .and. jkz<=kkoutz ) then
@@ -5800,9 +5903,9 @@ endsubroutine pdf
 !
 !  initialize spectral flux to zero
 !
-  !$omp workshare 
+  !$omp workshare
   Tpq=0.
-  !$omp end workshare 
+  !$omp end workshare
 !
 !  obtain u and b
 !
@@ -5873,15 +5976,15 @@ endsubroutine pdf
         !
         do ivec=1,3
           if (sp=='Hm'.or.sp=='Hc') then
-            !$omp workshare 
+            !$omp workshare
             u_tmp(:,:,:,ivec)=uuu(:,:,:,ivec)
-            !$omp end workshare 
+            !$omp end workshare
             call power_shell_filter(bbb(:,:,:,ivec),b_tmp(:,:,:,ivec),q)
           elseif (sp=='Em') then
             call power_shell_filter(uuu(:,:,:,ivec),u_tmp(:,:,:,ivec),q)
-            !$omp workshare 
+            !$omp workshare
             b_tmp(:,:,:,ivec)=bbb(:,:,:,ivec)
-            !$omp end workshare 
+            !$omp end workshare
           endif
         enddo
         !
@@ -5945,10 +6048,10 @@ endsubroutine pdf
 !   27-sep-2023/KG: coded
 !
     use Fourier, only: kx_fft2, ky_fft2, kz_fft2
-    
+
     integer, intent (in) :: ikx, iky, ikz
     real :: k2
-    
+
     k2 = (L_min/(2*pi))**2 * ( kx_fft2(ikx) + ky_fft2(iky) + kz_fft2(ikz) )
 !
   endfunction get_k2
@@ -5964,7 +6067,7 @@ endsubroutine pdf
 !
     integer, intent (in) :: ikx, iky, ikz
     real :: k
-    
+
     k = sqrt(get_k2(ikx, iky, ikz))
 !
   endfunction get_k
@@ -5979,10 +6082,10 @@ endsubroutine pdf
 !   27-sep-2023/KG: coded
 !
     use Fourier, only: kx_fft2, ky_fft2
-    
+
     integer, intent (in) :: ikx, iky
     real :: k2
-    
+
     k2 = (L_min_xy/(2*pi))**2 * ( kx_fft2(ikx) + ky_fft2(iky) )
 !
   endfunction get_k2_xy

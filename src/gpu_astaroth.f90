@@ -9,9 +9,11 @@
 module GPU
 !
   use Cdata
-  use General, only: keep_compiler_quiet, lpointer
+  use General, only: keep_compiler_quiet, lpointer, ioptest, loptest
+  use Mpicomm, only: stop_it
   use Messages
 !$ use, intrinsic :: iso_c_binding
+  use iso_c_binding
 
   implicit none
 
@@ -25,18 +27,21 @@ module GPU
   external initialize_gpu_c
   external finalize_gpu_c
   external rhs_gpu_c
-  external load_farray_c 
+  external load_farray_c
   external reload_gpu_config_c
   external test_rhs_c
   external copy_farray_c
   external update_on_gpu_arr_by_ind_c
   external update_on_gpu_scal_by_ind_c
+  external pos_real_ptr_c
   integer, external :: update_on_gpu_arr_by_name_c
   integer, external :: update_on_gpu_scal_by_name_c
 
   include 'gpu.h'
 
   real :: timestamp_farray = impossible
+  !integer(KIND=ikind8) :: pFarr_GPU_in, pFarr_GPU_out
+  type(C_PTR) :: pFarr_GPU_in, pFarr_GPU_out
 
 contains
 !***********************************************************************
@@ -104,6 +109,36 @@ contains
       call rhs_gpu_c(isubstep)
 !
     endsubroutine rhs_GPU
+!**************************************************************************
+    function get_ptr_GPU(ind1,ind2,lout) result(pFarr)
+
+      use Cparam
+      use iso_c_binding
+
+      integer :: ind1
+      integer, optional :: ind2
+      logical, optional :: lout
+
+      real, dimension(:,:,:,:), pointer :: pFarr
+
+      integer :: i2
+
+      interface
+        type(c_ptr) function pos_real_ptr_c(ptr,ind)
+          import :: c_ptr, ikind8
+          type(c_ptr) :: ptr
+          integer :: ind
+        endfunction
+      endinterface
+
+      i2 = ioptest(ind2,ind1)
+      if (loptest(lout)) then
+        call c_f_pointer(pos_real_ptr_c(pFarr_GPU_out,ind1-1),pFarr,(/mx,my,mz,i2-ind1+1/))
+      else
+        call c_f_pointer(pos_real_ptr_c(pFarr_GPU_in,ind1-1),pFarr,(/mx,my,mz,i2-ind1+1/))
+      endif
+
+    endfunction get_ptr_GPU
 !**************************************************************************
     subroutine copy_farray_from_GPU(f)
 

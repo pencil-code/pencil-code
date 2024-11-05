@@ -38,10 +38,8 @@ module Ascalar
   logical :: noascalar=.false., reinitialize_acc=.false.
   character (len=labellen) :: initacc='nothing'
   character (len=labellen) :: initttc='nothing'
-  character (len=labellen) :: initlnTT='nothing'
-  character (len=labellen) :: initTT='nothing'
   real :: T_env=293.0, qv_env=1.63e-2, Rv_over_Rd_minus_one=0.608, gravity_acceleration=9.81
-  real :: ttc_mean=293.0, acc_mean=1.e-2
+  real, dimension(1) :: ttc_mean=293.0, acc_mean=1.e-2
   logical :: lbuoyancy=.false., ltauascalar=.false., lttc=.false., lttc_mean=.false.
 !
   namelist /ascalar_init_pars/ &
@@ -53,7 +51,6 @@ module Ascalar
 !
   real :: thermal_diff=0.0
   real :: ascalar_diff=0.0
-  real :: ascalar_sink=0.0
   real :: vapor_mixing_ratio_qvs=0.0
   real :: updraft=0.0
   real :: A1=0.0
@@ -69,7 +66,7 @@ module Ascalar
   logical :: lupw_acc=.false., lcondensation_rate=.false., lconstTT=.false., lTT_mean=.false., lupw_ttc=.false.
 
   namelist /ascalar_run_pars/ &
-      lupw_acc, lascalar_sink, Rascalar_sink, ascalar_sink, l_T_source, &
+      lupw_acc, lascalar_sink, Rascalar_sink, l_T_source, &
       ascalar_diff, gradacc0, lcondensation_rate, vapor_mixing_ratio_qvs, &
       lupdraft, updraft, A1, latent_heat, cp_constant, &
       const1_qvs, const2_qvs, Rv, rhoa, gravity_acceleration, Rv_over_Rd_minus_one, &
@@ -147,7 +144,6 @@ module Ascalar
       use Initcond
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: mudry1, muvap1
       integer :: l
 !
       select case (initacc)
@@ -228,7 +224,7 @@ module Ascalar
 ! 
       lpenc_diagnos(i_acc)=.true.
 !
-! temperaature
+! temperature
 !
       if (lttc) then
         do i=1,3
@@ -352,7 +348,6 @@ module Ascalar
       intent(out) :: df
 !
       real, dimension (nx) :: bump, radius_sum, condensation_rate_Cd
-      integer :: k
 !
       character(len=2) :: id
 !
@@ -452,8 +447,8 @@ module Ascalar
           ssat0=acc_const/((const1_qvs*exp(-const2_qvs/ttc_const))/(Rv*rhoa*ttc_const))-1
           if (lbuoyancy) then
             if (lttc_mean) then
-              buoyancy = gravity_acceleration*((p%ttc-ttc_mean)/p%ttc+ &
-                         Rv_over_Rd_minus_one*(p%acc-acc_mean)/p%acc-p%waterMixingRatio)
+              buoyancy = gravity_acceleration*((p%ttc-ttc_mean(1))/p%ttc+ &
+                         Rv_over_Rd_minus_one*(p%acc-acc_mean(1))/p%acc-p%waterMixingRatio)
             else
               buoyancy = gravity_acceleration*((p%ttc-T_env)/p%ttc+ &
                          Rv_over_Rd_minus_one*(p%acc-qv_env)/p%acc-p%waterMixingRatio)
@@ -525,8 +520,8 @@ module Ascalar
         endif
 !
         if (lcondensation_rate.and.lttc.and.lbuoyancy.and.lttc_mean) then
-          call save_name(acc_mean,idiag_acc_mean)
-          call save_name(ttc_mean,idiag_ttc_mean)
+          call save_name(acc_mean(1),idiag_acc_mean)
+          call save_name(ttc_mean(1),idiag_ttc_mean)
         endif
       endif
 !
@@ -538,18 +533,14 @@ module Ascalar
 !
 !  06-June-18/Xiang-Yu.Li: coded
 !
-      use Sub, only: finalize_aver
+      use Sub, only: global_mean
 !
       real, dimension (mx,my,mz,mfarray) :: f
       intent(in) :: f
-
-      real, dimension(1) :: tmp
 !
 !  Calculate mean of temperature.
 !
-      tmp = sum(f(l1:l2,m1:m2,n1:n2,ittc))
-      call finalize_aver(ncpus,123,tmp)
-      ttc_mean = tmp(1)/nwgrid
+      call global_mean(f,ittc,ttc_mean)
 !
     endsubroutine calc_ttcmean
 !***********************************************************************
@@ -559,18 +550,14 @@ module Ascalar
 !
 !  06-June-18/Xiang-Yu.Li: coded
 !
-      use Sub, only: finalize_aver
+      use Sub, only: global_mean
 !
       real, dimension (mx,my,mz,mfarray) :: f
       intent(in) :: f
-
-      real, dimension(1) :: tmp
 !
 !  Calculate mean of temperature.
 !
-      tmp = sum(f(l1:l2,m1:m2,n1:n2,iacc))
-      call finalize_aver(ncpus,123,tmp)
-      acc_mean = tmp(1)/nwgrid
+      call global_mean(f,iacc,acc_mean)
 !
     endsubroutine calc_accmean
 !***********************************************************************

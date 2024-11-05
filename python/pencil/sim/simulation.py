@@ -6,6 +6,9 @@ manipulate simulations.
 
 import os
 from os.path import join, exists, split, islink, realpath, abspath, basename
+import numpy as np
+
+from pencil.util import PathWrapper
 
 try:
     from mpi4py import MPI
@@ -75,19 +78,14 @@ class __Simulation__(object):
     def __init__(self, path=".", hidden=False, hard=False, quiet=False):
         # from pen.intern.hash_sim import hash_sim
 
-        path = path.strip()
-        if path.endswith("/"):
-            path = path[:-1]
-        self.name = split(path)[-1]  # find out name and store it
-        if self.name == "." or self.name == "":
-            self.name = split(os.getcwd())[-1]
+        self.path = PathWrapper(path).absolute()
+        self.name = self.path.name  # find out name and store it
 
-        self.path = os.path.abspath(path)  # store paths
         if not quiet:
-            print("# Creating Simulation object for " + self.path)
-        self.datadir = join(self.path, "data")
-        self.pc_dir = join(self.path, "pc")
-        self.pc_datadir = join(self.path, "data", "pc")
+            print(f"# Creating Simulation object for {self.path}")
+        self.datadir = self.path/"data"
+        self.pc_dir = self.path/"pc"
+        self.pc_datadir = self.path/"data"/"pc"
 
         # core files of a simulation run
         self.components = [
@@ -282,8 +280,7 @@ class __Simulation__(object):
         # check existence of path_root+name, a reason to stop and not overwrite
         if OVERWRITE == False and exists(path_newsim):
             print(
-                "! ERROR: Folder to copy simulation to already exists!\n! -> "
-                + path_newsim
+                f"! ERROR: Folder to copy simulation to already exists!\n! -> {path_newsim}"
             )
             return False
 
@@ -342,25 +339,19 @@ class __Simulation__(object):
         # create folders
         if mkdir(path_newsim) == False and OVERWRITE == False:
             print(
-                "! ERROR: Couldnt create new simulation directory "
-                + path_newsim
-                + " !!"
+                f"! ERROR: Couldnt create new simulation directory {path_newsim} !!"
             )
             return False
 
         if mkdir(path_newsim_src) == False and OVERWRITE == False:
             print(
-                "! ERROR: Couldnt create new simulation src directory "
-                + path_newsim_src
-                + " !!"
+                f"! ERROR: Couldnt create new simulation src directory {path_newsim_src} !!"
             )
             return False
 
         if mkdir(path_newsim_data) == False and OVERWRITE == False:
             print(
-                "! ERROR: Couldnt create new simulation data directory "
-                + path_newsim_data
-                + " !!"
+                f"! ERROR: Couldnt create new simulation data directory {path_newsim_data} !!"
             )
             return False
         if link_data:
@@ -394,10 +385,7 @@ class __Simulation__(object):
         if has_initial_condition_dir:
             if mkdir(path_newsim_initcond) == False and OVERWRITE == False:
                 print(
-                    "! ERROR: Couldnt create new simulation initial_condition"
-                    + " directory "
-                    + path_newsim_initcond
-                    + " !!"
+                    f"! ERROR: Couldnt create new simulation initial_condition directory {path_newsim_initcond} !!"
                 )
                 return False
 
@@ -591,14 +579,13 @@ class __Simulation__(object):
                 else:
                     if not quiet:
                         print(
-                            "? WARNING: for "
-                            + self.path
-                            + "\n? Simulation has "
-                            + "not run yet! Meaning: No param.nml found!"
+                            f"? WARNING: for {self.path}",
+                            + "? Simulation has not run yet! Meaning: No param.nml found!",
+                            sep='\n',
                         )
                     REEXPORT = True
             except:
-                print("! ERROR: while reading param.nml for " + self.path)
+                print(f"! ERROR: while reading param.nml for {self.path}")
                 self.param = False
                 REEXPORT = True
 
@@ -631,7 +618,7 @@ class __Simulation__(object):
                         + "was not successfull, since run has not yet started."
                     )
                 if self.started() or (not quiet):
-                    print("? WARNING: Couldnt load grid for " + self.path)
+                    print(f"? WARNING: Couldnt load grid for {self.path}")
                 self.grid = False
                 self.ghost_grid = False
                 self.dim = False
@@ -727,7 +714,7 @@ class __Simulation__(object):
         if hostfile:
             command.append(" -f " + hostfile)
         if verbose != False:
-            print("! Compiling " + self.path)
+            print(f"! Compiling {self.path}")
 
         return self.bash(
             command=" ".join(command),
@@ -839,7 +826,7 @@ class __Simulation__(object):
         if hostfile:
             command.append(" -f " + hostfile)
         if verbose != False:
-            print("! Cleaning " + self.path)
+            print(f"! Cleaning {self.path}")
 
         return self.bash(
             command=" ".join(command),
@@ -1015,6 +1002,38 @@ class __Simulation__(object):
             return [varlist[int(i)] for i in pos]
         return varlist
 
+    def get_var_time(self, var_file):
+        """
+        Read varN.list to find the time corresponding to a varfile
+
+        Arguments:
+            var_file: string or list of strings
+
+        Returns:
+            float or list of floats depending on the type of var_file
+        """
+
+        if isinstance(self.param, dict) and self.param['io_strategy'] == 'HDF5':
+            proc = "allprocs"
+
+            def fixname(name):
+                if name[-3:] == ".h5":
+                    name = name[:-3]
+                return name
+        else:
+            proc = "proc0"
+            fixname = lambda name: name
+
+        fname = os.path.join(self.datadir, proc, "varN.list")
+        if not os.path.isfile(fname):
+            raise FileNotFoundError(fname)
+        var_dict = {name: float(time) for name, time in np.loadtxt(fname, dtype=str, ndmin=2)}
+
+        if isinstance(var_file, list):
+            return [var_dict[fixname(k)] for k in var_file]
+        else:
+            return var_dict[fixname(var_file)]
+
     def get_pvarlist(self, pos=False):
         """Same as get_varfiles(pos, particles=True)."""
         return self.get_varlist(pos=pos, particle=True)
@@ -1135,7 +1154,7 @@ class __Simulation__(object):
         if hostfile:
             command.append(" -f " + hostfile)
         if verbose:
-            print("! Running " + self.path)
+            print(f"! Running {self.path}")
 
         if cleardata:
             if verbose:

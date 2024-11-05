@@ -208,6 +208,7 @@ config/compilers/separate/Intel-ifort.conf -text
 config/compilers/separate/PGI-pgcc.conf -text
 config/compilers/separate/PGI-pgf.conf -text
 config/compilers/separate/g95.conf -text
+config/compilers/separate/nvidia-fortran.conf -text
 config/hosts/Curie/host-curie50-GNU_Linux-bullx.conf -text
 config/hosts/Curie/host-curie51-GNU_Linux-bullx.conf -text
 config/hosts/ICHEC/stokes1.ice.ichec.ie.conf -text
@@ -493,6 +494,7 @@ config/hosts/sintef/host-Copernicus-g95-debug.conf -text
 config/hosts/sintef/host-vsl229-GNU_Linux.conf -text
 config/hosts/sintef/host-vsl230-GNU_Linux.conf -text
 config/hosts/sintef/linux-32core.sintef.no.conf -text
+config/hosts/sintef/login-2.betzy.sigma2.no.conf -text
 config/hosts/sintef/unity.sintef.no.conf -text
 config/hosts/sintef/vsl176.cvos.cluster.conf -text
 config/hosts/surf/host-node02-GNU_Linux.conf -text
@@ -1877,6 +1879,7 @@ samples/1d-tests/anelastic_decay/src/cparam.local -text
 samples/1d-tests/anelastic_decay/start.in -text
 samples/1d-tests/anelastic_decay/video.in -text
 samples/1d-tests/axionSU2back/NEVERLOCK -text
+samples/1d-tests/axionSU2back/README.md -text
 samples/1d-tests/axionSU2back/parameters.pro -text
 samples/1d-tests/axionSU2back/print.in -text
 samples/1d-tests/axionSU2back/reference.out -text
@@ -2080,6 +2083,14 @@ samples/1d-tests/sedimentation-noneq-blocks/src/Makefile.local -text
 samples/1d-tests/sedimentation-noneq-blocks/src/cparam.local -text
 samples/1d-tests/sedimentation-noneq-blocks/start.in -text
 samples/1d-tests/sedimentation-noneq-blocks/video.in -text
+samples/1d-tests/sine-Gordon/README.md -text
+samples/1d-tests/sine-Gordon/print.in -text
+samples/1d-tests/sine-Gordon/reference.out -text
+samples/1d-tests/sine-Gordon/run.in -text
+samples/1d-tests/sine-Gordon/src/Makefile.local -text
+samples/1d-tests/sine-Gordon/src/cparam.local -text
+samples/1d-tests/sine-Gordon/start.in -text
+samples/1d-tests/sine-Gordon/video.in -text
 samples/1d-tests/sod_10/NEVERLOCK -text
 samples/1d-tests/sod_10/README -text
 samples/1d-tests/sod_10/parameters.pro -text
@@ -2913,6 +2924,14 @@ samples/ascalar/src/.current-precision -text
 samples/ascalar/src/Makefile.local -text
 samples/ascalar/src/cparam.local -text
 samples/ascalar/start.in -text
+samples/backreact_infl/NEVERLOCK -text
+samples/backreact_infl/README.md -text
+samples/backreact_infl/print.in -text
+samples/backreact_infl/reference.out -text
+samples/backreact_infl/run.in -text
+samples/backreact_infl/src/Makefile.local -text
+samples/backreact_infl/src/cparam.local -text
+samples/backreact_infl/start.in -text
 samples/backwards-compatible/IDL.csh -text
 samples/backwards-compatible/NEVERLOCK -text
 samples/backwards-compatible/NOSTART -text
@@ -3006,6 +3025,12 @@ samples/conv-slab-noequi/run.in -text
 samples/conv-slab-noequi/src/Makefile.local -text
 samples/conv-slab-noequi/src/cparam.local -text
 samples/conv-slab-noequi/start.in -text
+samples/conv-slab-torch/print.in -text
+samples/conv-slab-torch/run.in -text
+samples/conv-slab-torch/src/Makefile.local -text
+samples/conv-slab-torch/src/cparam.local -text
+samples/conv-slab-torch/start.in -text
+samples/conv-slab-torch/training/config_mlp_native.yaml -text
 samples/conv-slab/NEVERLOCK -text
 samples/conv-slab/README -text
 samples/conv-slab/idl/pc_fluxz.pro -text
@@ -3034,6 +3059,12 @@ samples/corona/driver/mag_field.dat -text
 samples/corona/driver/mag_times.dat -text
 samples/corona/driver/vel_field.dat -text
 samples/corona/driver/vel_times.dat -text
+samples/corona/gran_driver/print.in -text
+samples/corona/gran_driver/run.in -text
+samples/corona/gran_driver/src/Makefile.local -text
+samples/corona/gran_driver/src/cparam.local -text
+samples/corona/gran_driver/start.in -text
+samples/corona/gran_driver/video.in -text
 samples/corona/print.in -text
 samples/corona/reference.out -text
 samples/corona/reference.pro -text
@@ -4254,6 +4285,9 @@ src/deriv.f90 -text
 src/deriv.h -text
 src/deriv_10th.f90 -text
 src/deriv_2nd.f90 -text
+src/deriv_2nd_all.f90 -text
+src/deriv_4th.f90 -text
+src/deriv_4th_all.f90 -text
 src/deriv_8th.f90 -text
 src/deriv_alt.f90 -text
 src/detonate.f90 -text
@@ -4596,6 +4630,7 @@ src/notestflow.f90 -text
 src/notestperturb.f90 -text
 src/notestscalar.f90 -text
 src/notimeavg.f90 -text
+src/notraining.f90 -text
 src/noviscosity.f90 -text
 src/noweno_transport.f90 -text
 src/noyinyang.f90 -text
@@ -4892,6 +4927,8 @@ src/timestep_stiff.f90 -text
 src/timestep_strang.f90 -text
 src/timestep_sts.f90 -text
 src/timestep_subcycle.f90 -text
+src/training.h -text
+src/training_torchfort.f90 -text
 src/viscosity.f90 -text
 src/viscosity.h -text
 src/weno_transport.f90 -text

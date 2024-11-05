@@ -28,7 +28,7 @@ INITIAL_CONDITION  = noinitial_condition
 DEBUG_IO           =   debug_io_dist
 HDF5_IO            = nohdf5_io
 IO                 =   io_dist
-IO_IN              = 
+IO_IN              =
 MPICOMM            = nompicomm
 NSCBC              = noNSCBC
 POWER              = nopower_spectrum
@@ -44,6 +44,7 @@ SIGNAL_HANDLING    = nosignal_handling
 STRUCT_FUNC        = nostruct_func
 TIMEAVG            = notimeavg
 TIMESTEP           =   timestep
+TRAINING           = notraining
 #
 # Physics modules (alphabetical order).
 #
@@ -141,7 +142,7 @@ REAL_PRECISION = default
 #
 # Multithreading.
 #
-MULTITHREADING = 
+MULTITHREADING =
 #
 # Default compiler settings.
 #
@@ -438,8 +439,8 @@ ifeq ($(MPICOMM),$(filter $(MPICOMM), mpicomm))
   endif
 else
   YINYANG = noyinyang
-  ifneq ($(ncpus),) 
-    ifneq ($(ncpus),1) 
+  ifneq ($(ncpus),)
+    ifneq ($(ncpus),1)
       ifeq ($(filter clean,$(target)),)
         $(info )
         $(error Cannot build: ncpus > 1, but MPICOMM = nompicomm.)
@@ -461,7 +462,7 @@ else
   ifeq ($(SPECIAL),special)
     ifeq ($(filter clean,$(target)),)
       $(info )
-      $(error Cannot build: SPECIAL must not be set to special, but to individual module(s) in directory special.)
+      $(error Cannot build: SPECIAL must not be set to special, but to individual module(s) in directory "special"! Exit.)
     endif
   else
     SPECIAL_MULT := $(words $(SPECIAL))
@@ -481,6 +482,36 @@ CUDA_RELPATH=..
 DSL_WORKDIR=$(CUDA_MAKEDIR)/DSL/local
 LIBGPU =
 GPU_DEPS =
+
+ifeq ($(TRAINING),training_torchfort)
+  ifneq ($(HYDRO),hydro)
+    $(error Training_torchfort needs hydro! Exit.)
+  endif
+  ifneq ($(MODULE_CMD),)
+    CUDA_LOADED := $(shell (module list |& grep -i cuda) )
+    ifeq ($(CUDA_LOADED),)
+      $(warning  No CUDA module seems to be loaded (needed for training)!)
+      $(info Try (one of) the following: $(shell (module spider |& grep -i cuda | sed -e's/^.* \([^ ]*[Cc][Uu][Dd][Aa][^ ]*\) .*$$/\1/') ) )
+      YESNO := $(shell bash -c 'read -p "Continue? (Y/N) " yesno; echo $$yesno')
+      ifeq ($(YESNO),N)
+        $(error Exit.)
+      else
+        ifeq ($(YESNO),n)
+          $(error Exit.)
+        endif
+      endif
+    endif
+  endif
+  ifneq ($(shell bash -c 'which nvfortran 2>& 1 >/dev/null | grep "which *: *no "'),)
+    $(error nvfortran not available! Exit.)
+  endif
+  ifeq ($(TORCHFORT_PATH),)
+    $(info TORCHFORT_PATH  not set)
+  else
+    override FFLAGS+=-cuda -noswitcherror -I$(TORCHFORT_PATH)/include/
+    override LDFLAGS+=-L$(TORCHFORT_PATH)/lib/ -ltorchfort_fort -ltorchfort -cuda
+  endif
+endif
 ifneq ($(GPU),nogpu)
 #
   ifneq ($(MODULE_CMD),)
@@ -513,10 +544,10 @@ ifneq ($(GPU),nogpu)
 
       YESNO := $(shell bash -c 'read -p "Continue? (Y/N) " yesno; echo $$yesno')
       ifeq ($(YESNO),N)
-        $(error Exit)
+        $(error Exit.)
       else
         ifeq ($(YESNO),n)
-          $(error Exit)
+          $(error Exit.)
         endif
       endif
 
@@ -550,7 +581,7 @@ ifneq ($(GPU),nogpu)
 #      override LDFLAGS_LIB += -L astaroth/scheduler-build/src
   #   the following needed?
       LDFLAGS_LIB += -Wl,-O2 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,now -Wl,--disable-new-dtags -Wl,--gc-sections -ldl
-  #-fzero-link  
+  #-fzero-link
 
     else
       $(info )
@@ -588,7 +619,7 @@ ifneq ($(filter openmp OpenMP,$(MULTITHREADING)),)
 #	  fi \
 # done
 else
-  MULTITHREADING = 
+  MULTITHREADING =
   PTHREAD_OBJ=
   OMP_HEADER=
   $(shell bash -c 'echo "exit mn_loop" > exit_mn.h')
@@ -614,7 +645,7 @@ ifneq ($(filter $(SPECIAL) $(IO) $(IO_IN) $(IO_OUT), $(HDF5_MODULES)),)
     ifeq ($(HDF5_LOADED),)
       ifeq ($(filter clean,$(target)),)
         $(info )
-        $(info No HDF5 module seems to be loaded!) 
+        $(info No HDF5 module seems to be loaded!)
         $(error Try (one of) the following: $(shell (module spider |& grep -i hdf5 | sed -e's/^.* \([^ ]*[Hh][Dd][Ff]5[^ ]*\) .*$$/\1/') ))
       endif
     endif
@@ -1071,6 +1102,9 @@ TIMEAVG_SRC=$(TIMEAVG).f90
 #
 TIMESTEP_OBJ=$(TIMESTEP).o
 TIMESTEP_SRC=$(TIMESTEP).f90
+#
+TRAINING_OBJ=$(TRAINING).o
+TRAINING_SRC=$(TRAINING).f90
 #
 VISCOSITY_OBJ=$(VISCOSITY).o
 VISCOSITY_SRC=$(VISCOSITY).f90
@@ -1650,8 +1684,10 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #FC=mpif90   #(nl6)
 #FFLAGS= -O0 -fallow-argument-mismatch #(nl6)
 #FFLAGS= -O3 #(nl6)
+#FFLAGS= -O0 -finit-real=sNaN -fbacktrace -g -fcheck=all -ffpe-trap=invalid,zero,overflow #(nl6)
 #FFLAGS= -O0 #(nl6)
 #FFLAGS_DOUBLE=-fdefault-real-8  #(nl6)
+##FFLAGS=-O0 -finit-real=NaN #(nl6)
 #CC=gcc #(nl6)
 #CFLAGS=-O3 -DFUNDERSC=1 #(nl6)
 #LD_MPI= #(nl6)
@@ -2369,23 +2405,23 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 ##
 ##  Dardel (Axel, gFortran compiler, uan01)
 ##
-#FC=ftn #(uan01*)
-#F90=$(FC) #(uan01*)
-#CC=cc #(uan01*)
-#CFLAGS=-DFUNDERSC=1 -O3 -mcmodel=large #(uan01*)
+#FC=ftn #(login1*)
+#F90=$(FC) #(login1*)
+#CC=cc #(login1*)
+#CFLAGS=-DFUNDERSC=1 -O3 -mcmodel=large #(login1*)
 ##NS: added compiler option -ffree-line-length-0
 ##NS: to allow for long lines in source codes (max col no def was 132)
-##FFLAGS=-O3 -ffree-line-length-0 -large #(uan01*)
-#FFLAGS=-O3 -ffree-line-length-0 #(uan01*)
-#FFLAGS=-O3 -mcmodel=large #(uan01*)
-##FFLAGS=-O0 -ffree-line-length-0 -mcmodel=large #(uan01*)
-#FFLAGS=-O1 -fallow-argument-mismatch #(uan01*)
-#FFLAGS=-O0 #(uan01*)
-#FFLAGS=-O2 #(uan01*)
-#FFLAGS=-O0 -fallow-argument-mismatch -mcmodel=large #(uan01*)
+##FFLAGS=-O3 -ffree-line-length-0 -large #(login1*)
+#FFLAGS=-O3 -ffree-line-length-0 #(login1*)
+#FFLAGS=-O3 -mcmodel=large #(login1*)
+##FFLAGS=-O0 -ffree-line-length-0 -mcmodel=large #(login1*)
+#FFLAGS=-O1 -fallow-argument-mismatch #(login1*)
+#FFLAGS=-O0 #(login1*)
+#FFLAGS=-O2 #(login1*)
+#FFLAGS=-O0 -fallow-argument-mismatch -mcmodel=large #(login1*)
 ##NS: use following for debugging the code
-##FFLAGS=-O3 -fcheck=all #(uan01*)
-#FFLAGS_DOUBLE=-fdefault-real-8 -fdefault-double-8 #(uan01*)
+##FFLAGS=-O3 -fcheck=all #(login1*)
+#FFLAGS_DOUBLE=-fdefault-real-8 -fdefault-double-8 #(login1*)
 ##
 ##
 ##HP CP4000 BL Proliant supercluster
@@ -2433,6 +2469,7 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 ## Mahti: Atos BullSequana XH2000 (Kajaani)
 ##
 #FC=mpiifort #(mahti-[^g]|mahti[^-])
+#FC=mpif90 #(mahti-[^g]|mahti[^-])
 #FSTD_95=-std95 #(mahti-[^g]|mahti[^-])
 #F90=$(FC) #(mahti-[^g]|mahti[^-])
 #CC=mpicc #(mahti-[^g]|mahti[^-])
@@ -2605,7 +2642,7 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #FC=xlf90 #(Nils)
 #F77=xlf  #(Nils)
 #FFLAGS= -w -qsuppress=1501-510  #(Nils)
-#F90FLAGS=-qsuffix=f=f90 #(Nils)
+##F90FLAGS=-qsuffix=f=f90 #(Nils)
 #CFLAGS=-O3 -DFUNDERSC=0 #(Nils)
 #LD_MPI=-lSystemStubs #(easymac)
 ##
@@ -2923,7 +2960,7 @@ endef
 	$(FC) $(ALL_COMP_FLAGS) $(FSTD) -o $*.o -c $*.f90
 
 #%_omp.inc : %.f90
-#       python preprocessor.py 
+#       python preprocessor.py
 
 special/%.o : special/%.f90
 ifneq ($(SPECIAL_MULT),1)
@@ -2946,7 +2983,7 @@ default_to_be: Makefile cparam.inc code buildinfo
 #  Short hand for modules that must be preprocessed with mkcparam.
 #  Please use alphabetical order.
 #
-preprocess=$(ASCALAR_SRC) $(BORDER_PROFILES_SRC) $(CHEMISTRY_SRC) $(CHIRAL_SRC) $(COSMICRAY_SRC) $(COSMICRAYFLUX_SRC) $(DENSITY_SRC) $(DERIV_SRC) $(DETONATE_SRC) $(DUSTDENSITY_SRC) $(DUSTVELOCITY_SRC) $(ENERGY_SRC) $(EOS_SRC) $(FIXED_POINT_SRC) $(FORCING_SRC) $(GRAVITY_SRC) $(GPU_SRC) $(GRID_SRC) $(HEATFLUX_SRC) $(HYDRO_SRC) $(HYPERRESI_STRICT_SRC) $(HYPERVISC_STRICT_SRC) $(IMPLICIT_DIFFUSION_SRC) $(IMPLICIT_PHYSICS_SRC) $(INITIAL_CONDITION_SRC) $(INTERSTELLAR_SRC) $(LORENZ_GAUGE_SRC) $(MAGNETIC_SRC) $(MAGNETIC_MEANFIELD_SRC) $(MAGNETIC_MEANFIELD_DEMFDT_SRC) $(MPICOMM_SRC) $(NEUTRALDENSITY_SRC) $(NEUTRALVELOCITY_SRC) $(NSCBC_SRC) $(OPACITY_SRC) $(PARTICLES_SRC) $(PARTICLES_ADAPTATION_SRC) $(PARTICLES_COAGULATION_SRC) $(PARTICLES_CONDENSATION_SRC)  $(PARTICLES_COLLISIONS_SRC) $(PARTICLES_MAP_SRC) $(PARTICLES_DENSITY_SRC)  $(PARTICLES_MASS_SRC) $(PARTICLES_NUMBER_SRC) $(PARTICLES_RADIUS_SRC) $(PARTICLES_POTENTIAL_SRC) $(PARTICLES_GRAD_SRC) $(PARTICLES_SELFGRAVITY_SRC) $(PARTICLES_SINK_SRC) $(PARTICLES_DRAG_SRC) $(PARTICLES_SPIN_SRC) $(PARTICLES_STALKER_SRC) $(PARTICLES_LYAPUNOV_SRC) $(PARTICLES_CAUSTICS_SRC) $(PARTICLES_TETRAD_SRC) $(PARTICLES_STIRRING_SRC) $(PARTICLES_DIAGNOS_DV_SRC) $(PARTICLES_DIAGNOS_STATE_SRC) $(PARTICLES_PERSISTENCE_SRC) $(PARTICLES_TEMPERATURE_SRC) $(PARTICLES_ADSORBED_SRC) $(PARTICLES_SURFSPEC_SRC) $(PARTICLES_CHEMISTRY_SRC) $(POINTMASSES_SRC) $(POISSON_SRC) $(POLYMER_SRC) $(POWER_SRC) $(PYTHON_SRC) $(PSCALAR_SRC) $(RADIATION_SRC) $(SELFGRAVITY_SRC) $(SGSHYDRO_SRC) $(SHEAR_SRC) $(SHOCK_SRC) $(SIGNAL_HANDLING_SRC) $(SOLID_CELLS_SRC) $(STREAMLINES_SRC) $(TESTFIELD_GENERAL_SRC) $(TESTFIELD_SRC) $(TESTFLOW_SRC) $(TESTSCALAR_SRC) $(VISCOSITY_SRC) cparam.local
+preprocess=$(ASCALAR_SRC) $(BORDER_PROFILES_SRC) $(CHEMISTRY_SRC) $(CHIRAL_SRC) $(COSMICRAY_SRC) $(COSMICRAYFLUX_SRC) $(DENSITY_SRC) $(DERIV_SRC) $(DETONATE_SRC) $(DUSTDENSITY_SRC) $(DUSTVELOCITY_SRC) $(ENERGY_SRC) $(EOS_SRC) $(FIXED_POINT_SRC) $(FORCING_SRC) $(GRAVITY_SRC) $(GPU_SRC) $(GRID_SRC) $(HEATFLUX_SRC) $(HYDRO_SRC) $(HYPERRESI_STRICT_SRC) $(HYPERVISC_STRICT_SRC) $(IMPLICIT_DIFFUSION_SRC) $(IMPLICIT_PHYSICS_SRC) $(INITIAL_CONDITION_SRC) $(INTERSTELLAR_SRC) $(LORENZ_GAUGE_SRC) $(MAGNETIC_SRC) $(MAGNETIC_MEANFIELD_SRC) $(MAGNETIC_MEANFIELD_DEMFDT_SRC) $(MPICOMM_SRC) $(NEUTRALDENSITY_SRC) $(NEUTRALVELOCITY_SRC) $(NSCBC_SRC) $(OPACITY_SRC) $(PARTICLES_SRC) $(PARTICLES_ADAPTATION_SRC) $(PARTICLES_COAGULATION_SRC) $(PARTICLES_CONDENSATION_SRC)  $(PARTICLES_COLLISIONS_SRC) $(PARTICLES_MAP_SRC) $(PARTICLES_DENSITY_SRC)  $(PARTICLES_MASS_SRC) $(PARTICLES_NUMBER_SRC) $(PARTICLES_RADIUS_SRC) $(PARTICLES_POTENTIAL_SRC) $(PARTICLES_GRAD_SRC) $(PARTICLES_SELFGRAVITY_SRC) $(PARTICLES_SINK_SRC) $(PARTICLES_DRAG_SRC) $(PARTICLES_SPIN_SRC) $(PARTICLES_STALKER_SRC) $(PARTICLES_LYAPUNOV_SRC) $(PARTICLES_CAUSTICS_SRC) $(PARTICLES_TETRAD_SRC) $(PARTICLES_STIRRING_SRC) $(PARTICLES_DIAGNOS_DV_SRC) $(PARTICLES_DIAGNOS_STATE_SRC) $(PARTICLES_PERSISTENCE_SRC) $(PARTICLES_TEMPERATURE_SRC) $(PARTICLES_ADSORBED_SRC) $(PARTICLES_SURFSPEC_SRC) $(PARTICLES_CHEMISTRY_SRC) $(POINTMASSES_SRC) $(POISSON_SRC) $(POLYMER_SRC) $(POWER_SRC) $(PYTHON_SRC) $(PSCALAR_SRC) $(RADIATION_SRC) $(SELFGRAVITY_SRC) $(SGSHYDRO_SRC) $(SHEAR_SRC) $(SHOCK_SRC) $(SIGNAL_HANDLING_SRC) $(SOLID_CELLS_SRC) $(STREAMLINES_SRC) $(TESTFIELD_GENERAL_SRC) $(TESTFIELD_SRC) $(TESTFLOW_SRC) $(TESTSCALAR_SRC) $(TIMEAVG_SRC) $(TRAINING_SRC) $(VISCOSITY_SRC) cparam.local
 ifeq ($(SPECIAL_MULT),1)
   preprocess += $(SPECIAL_SRC)
 else
@@ -2962,7 +2999,7 @@ physics=$(CHEMISTRY_OBJ) $(CHIRAL_OBJ) $(COSMICRAY_OBJ) $(COSMICRAYFLUX_OBJ) $(D
 #  Short hand for technical modules.
 #  Please use alphabetical order.
 #
-technical=$(CPARAM_OBJ) $(CDATA_OBJ) $(MPICOMM_OBJ) $(BORDER_PROFILES_OBJ) $(BOUNDCOND_OBJ) $(DEBUG_OBJ) $(DEBUG_IO_OBJ) $(DERIV_OBJ) $(DIAGNOSTICS_OBJ) $(FARRAY_ALLOC_OBJ) $(FARRAY_OBJ) $(FILTER_OBJ) $(FIXED_POINT_OBJ) $(FOURIER_OBJ) $(GENERAL_OBJ) $(GEOMETRICAL_TYPES_OBJ) $(GHOST_CHECK_OBJ) $(GHOSTFOLD_OBJ) $(GRID_OBJ) $(GSL_OBJ) $(IMPLICIT_DIFFUSION_OBJ) $(INITCOND_OBJ) $(INITIAL_CONDITION_OBJ) $(HDF5_IO_OBJ) $(IO_IN_OBJ) $(IO_OUT_OBJ) $(IO_OBJ) $(FILE_IO_OBJ) $(LSODE_FC_OBJ) $(MESSAGES_OBJ) $(NSCBC_OBJ) $(PERSIST_OBJ) $(POWER_OBJ) $(PYTHON_OBJ) $(REGISTER_OBJ) $(SHARED_VARIABLES_OBJ) $(SIGNAL_HANDLING_OBJ) $(SLICES_OBJ) $(SLICES_METHODS_OBJ) $(SNAPSHOT_OBJ) $(solid_cells_objects) $(STREAMLINES_OBJ) $(STRUCT_FUNC_OBJ) $(SUB_OBJ) $(SYSCALLS_OBJ) $(SHARED_MEM_OBJ) syscalls_ansi.o $(TESTPERTURB_OBJ) $(TIMEAVG_OBJ) $(WENO_TRANSPORT_OBJ) $(YINYANG_OBJ) $(YINYANG_MPI_OBJ) magnetic.a $(PARTICLES_MAIN).a $(MORTON_HELPER_OBJ) $(PTHREAD_OBJ)
+technical=$(CPARAM_OBJ) $(CDATA_OBJ) $(MPICOMM_OBJ) $(BORDER_PROFILES_OBJ) $(BOUNDCOND_OBJ) $(DEBUG_OBJ) $(DEBUG_IO_OBJ) $(DERIV_OBJ) $(DIAGNOSTICS_OBJ) $(FARRAY_ALLOC_OBJ) $(FARRAY_OBJ) $(FILTER_OBJ) $(FIXED_POINT_OBJ) $(FOURIER_OBJ) $(GENERAL_OBJ) $(GEOMETRICAL_TYPES_OBJ) $(GHOST_CHECK_OBJ) $(GHOSTFOLD_OBJ) $(GRID_OBJ) $(GSL_OBJ) $(IMPLICIT_DIFFUSION_OBJ) $(INITCOND_OBJ) $(INITIAL_CONDITION_OBJ) $(HDF5_IO_OBJ) $(IO_IN_OBJ) $(IO_OUT_OBJ) $(IO_OBJ) $(FILE_IO_OBJ) $(LSODE_FC_OBJ) $(MESSAGES_OBJ) $(NSCBC_OBJ) $(PERSIST_OBJ) $(POWER_OBJ) $(PYTHON_OBJ) $(REGISTER_OBJ) $(SHARED_VARIABLES_OBJ) $(SIGNAL_HANDLING_OBJ) $(SLICES_OBJ) $(SLICES_METHODS_OBJ) $(SNAPSHOT_OBJ) $(solid_cells_objects) $(STREAMLINES_OBJ) $(STRUCT_FUNC_OBJ) $(SUB_OBJ) $(SYSCALLS_OBJ) $(SHARED_MEM_OBJ) syscalls_ansi.o $(TESTPERTURB_OBJ) $(TIMEAVG_OBJ) $(TRAINING_OBJ) $(WENO_TRANSPORT_OBJ) $(YINYANG_OBJ) $(YINYANG_MPI_OBJ) magnetic.a $(PARTICLES_MAIN).a $(MORTON_HELPER_OBJ) $(PTHREAD_OBJ)
 #
 #  Short hand notation for start.o dependencies.
 #
@@ -3032,7 +3069,7 @@ $(IO_IN_OBJ): $(IO_IN_SRC) Makefile.local
 	  $(call sed_follow_link,"s/^\( *[^!]*module  *\)[Ii][Oo].*$$/\1Io_in/",$(IO_IN_SRC)); \
 	fi
 ifeq ($(IO_IN),io_mpi2)
-	$(FC) $(ALL_COMP_FLAGS) $(ALLOW_ARG_MISMATCH) $(FSTD) -o $(IO_IN_OBJ) -c $(IO_IN_SRC) 
+	$(FC) $(ALL_COMP_FLAGS) $(ALLOW_ARG_MISMATCH) $(FSTD) -o $(IO_IN_OBJ) -c $(IO_IN_SRC)
 else
 	$(FC) $(ALL_COMP_FLAGS) -o $(IO_IN_OBJ) -c $(IO_IN_SRC)
 endif
@@ -3051,7 +3088,7 @@ endif
 endif
 #
 # writes moduleflags in $(CUDA_INCDIR)/PC_moduleflags.h, list of needed physics module source files in $(CUDA_MAKEDIR)/PC_modulesources.h
-# 
+#
 $(DSL_WORKDIR)/solve.ac: $(CUDA_INCDIR)/PC_moduleflags.h
 $(DSL_WORKDIR)/equations.h: $(CUDA_INCDIR)/PC_moduleflags.h
 $(DSL_WORKDIR)/fieldecs.h: $(CUDA_INCDIR)/PC_moduleflags.h
@@ -3127,7 +3164,7 @@ endif
 	      sed -i -e's/\/\/ *'"$$modname"'/'"$$replcmt"'/' $(DSL_WORKDIR)/fieldecs.h; \
 	    fi; \
 	  fi; \
-	done 
+	done
 	@echo '}' >> $(DSL_WORKDIR)/solve.ac
 	@sed -e'/auxiliary / ! d' $(DSL_WORKDIR)/fieldecs.h > tmpdec
 	@sed -i -e'/^ *\/\// d' -e'/auxiliary/ d' $(DSL_WORKDIR)/fieldecs.h
@@ -3165,7 +3202,7 @@ endif
 #
 basics=cparam.o cdata.o $(FILE_IO_OBJ) general.o messages.o $(SYSCALLS_OBJ) syscalls_ansi.o nompicomm.o $(MORTON_HELPER_OBJ) pthread.o
 #
-combine_videofiles.o: $(basics) 
+combine_videofiles.o: $(basics)
 combine_videofiles.x: combine_videofiles.o
 	$(LD) combine_videofiles.o $(basics) $(LDFLAGS) $(LDFLAGS_HELPER) $(LD_MPI) -o combine_videofiles.x
 #
@@ -3174,7 +3211,7 @@ read_videofiles.o: read_videofiles.f90 $(basics)
 read_videofiles.x: read_videofiles.o
 	$(LD) read_videofiles.o $(basics) $(LDFLAGS) $(LDFLAGS_HELPER) $(LD_MPI) -o read_videofiles.x
 #
-read_all_videofiles.o: $(basics) 
+read_all_videofiles.o: $(basics)
 read_all_videofiles.x: read_all_videofiles.o
 	$(LD) read_all_videofiles.o $(basics) $(LDFLAGS) $(LDFLAGS_HELPER) $(LD_MPI) -o read_all_videofiles.x
 #
@@ -3182,7 +3219,7 @@ read_vectorfiles.o: $(basics)
 read_vectorfiles.x: read_vectorfiles.o
 	$(LD) read_vectorfiles.o $(basics) $(LDFLAGS) $(LDFLAGS_HELPER) $(LD_MPI) -o read_vectorfiles.x
 #
-technical_nompi=$(CPARAM_OBJ) $(CDATA_OBJ) $(NOMPICOMM_OBJ) $(BOUNDCOND_OBJ) $(BORDER_PROFILES_OBJ) $(DEBUG_OBJ) $(DERIV_OBJ) $(FOURIER_OBJ) $(GEOMETRICAL_TYPES_OBJ) $(GHOSTFOLD_OBJ) nogpu.o $(GRID_OBJ) $(GSL_OBJ) $(INITIAL_CONDITION_OBJ) $(DEBUG_IO_OBJ) $(HDF5_IO_OBJ) $(IO_PP_OBJ) $(FILE_IO_OBJ) $(FIXED_POINT_OBJ) $(LSODE_FC_OBJ) $(NSCBC_OBJ) $(POWER_OBJ) $(PYTHON_OBJ) $(SIGNAL_HANDLING_OBJ) $(SLICES_OBJ) $(SLICES_METHODS_OBJ) $(solid_cells_objects) $(STRUCT_FUNC_OBJ) $(SYSCALLS_OBJ) syscalls_ansi.o $(TESTPERTURB_OBJ) $(TIMEAVG_OBJ) $(WENO_TRANSPORT_OBJ) $(DIAGNOSTICS_OBJ) $(FARRAY_OBJ) $(FILTER_OBJ) $(INITCOND_OBJ) $(MESSAGES_OBJ) $(GENERAL_OBJ) $(PERSIST_OBJ) $(REGISTER_OBJ) $(SHARED_VARIABLES_OBJ) $(SNAPSHOT_OBJ) $(STREAMLINES_OBJ) $(SUB_OBJ) noyinyang.o noyinyang_mpi.o $(GHOST_CHECK_OBJ) $(IMPLICIT_DIFFUSION_OBJ) magnetic.a $(PARTICLES_MAIN).a
+technical_nompi=$(CPARAM_OBJ) $(CDATA_OBJ) $(NOMPICOMM_OBJ) $(BOUNDCOND_OBJ) $(BORDER_PROFILES_OBJ) $(DEBUG_OBJ) $(DERIV_OBJ) $(FOURIER_OBJ) $(GEOMETRICAL_TYPES_OBJ) $(GHOSTFOLD_OBJ) nogpu.o $(GRID_OBJ) $(GSL_OBJ) $(INITIAL_CONDITION_OBJ) $(DEBUG_IO_OBJ) $(HDF5_IO_OBJ) $(IO_PP_OBJ) $(FILE_IO_OBJ) $(FIXED_POINT_OBJ) $(LSODE_FC_OBJ) $(NSCBC_OBJ) $(POWER_OBJ) $(PYTHON_OBJ) $(SIGNAL_HANDLING_OBJ) $(SLICES_OBJ) $(SLICES_METHODS_OBJ) $(solid_cells_objects) $(STRUCT_FUNC_OBJ) $(SYSCALLS_OBJ) syscalls_ansi.o $(TESTPERTURB_OBJ) $(TIMEAVG_OBJ) $(WENO_TRANSPORT_OBJ) $(DIAGNOSTICS_OBJ) $(FARRAY_OBJ) $(FILTER_OBJ) $(INITCOND_OBJ) $(MESSAGES_OBJ) $(GENERAL_OBJ) $(PERSIST_OBJ) $(REGISTER_OBJ) $(SHARED_VARIABLES_OBJ) $(SNAPSHOT_OBJ) $(STREAMLINES_OBJ) $(SUB_OBJ) noyinyang.o noyinyang_mpi.o $(GHOST_CHECK_OBJ) $(IMPLICIT_DIFFUSION_OBJ) $(TRAINING_OBJ) magnetic.a $(PARTICLES_MAIN).a
 #
 helper_commons=$(technical_nompi) $(physics) $(PARAM_IO_OBJ) $(EQU_OBJ)
 #
@@ -3222,7 +3259,7 @@ pre_and_post_processing/pc_tecplot_solid.o: pre_and_post_processing/pc_tecplot_s
 pre_and_post_processing/pc_tecplot_solid.x: pre_and_post_processing/pc_tecplot_solid.o
 	$(LD) $(helper_commons) pre_and_post_processing/pc_tecplot_solid.o $(LDFLAGS) $(LDFLAGS_HELPER) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_tecplot_solid.x
 #
-nompicomm.o: nompicomm.f90 
+nompicomm.o: nompicomm.f90
 	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS)   -o nompicomm.o -c nompicomm.f90
 #
 hdf5_io%.o: hdf5_io%.f90 hdf5_io.h Makefile.local
@@ -3231,7 +3268,7 @@ hdf5_io%.o: hdf5_io%.f90 hdf5_io.h Makefile.local
 geometrical_types.o: geometrical_types.f90
 	$(FC)   $(FFLAGS) $(FFLAGS_GENERAL) -c geometrical_types.f90 -o geometrical_types.o
 #
-special/meanfield_e_tensor.o: special/meanfield_e_tensor.f90 
+special/meanfield_e_tensor.o: special/meanfield_e_tensor.f90
 ifneq ($(SPECIAL_MULT),1)
 	$(FC_HDF5)   $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) $(DLL_FFLAGS) -c special/meanfield_e_tensor.f90 -o special/meanfield_e_tensor.o
 else
@@ -3488,7 +3525,7 @@ $(SYSCALLS_OBJ): $(SYSCALLS_SRC) syscalls_ansi.o $(CPARAM_OBJ)
 	$(FC) $(ALL_COMP_FLAGS) $(FSTD) $(ALLOW_ARG_MISMATCH) -o $(SYSCALLS_OBJ) -c $(SYSCALLS_SRC)
 $(MPICOMM_OBJ): mpicomm.h $(MPICOMM_SRC) cdata.o
 	$(FC) $(MOST_COMP_FLAGS) $(CONVERSION_RELAXED) $(ALLOW_ARG_MISMATCH) -o $(MPICOMM).o -c $(MPICOMM).f90
-$(STRUCT_FUNC_OBJ): $(STRUCT_FUNC_SRC) 
+$(STRUCT_FUNC_OBJ): $(STRUCT_FUNC_SRC)
 	$(FC) $(ALL_COMP_FLAGS) -o $(STRUCT_FUNC_OBJ) -c $(STRUCT_FUNC_SRC)
 $(PARTICLES_MPICOMM_OBJ): $(PARTICLES_MPICOMM_SRC)
 	$(FC) $(ALL_COMP_FLAGS) $(ALLOW_ARG_MISMATCH) -o $(PARTICLES_MPICOMM_OBJ) -c $(PARTICLES_MPICOMM_SRC)

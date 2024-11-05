@@ -39,9 +39,10 @@ module Magnetic_meanfield_demfdt
   real, dimension(:), pointer :: etat_y, kf_y
   real, dimension(:), pointer :: etat_z, kf_z
   logical, pointer :: lweyl_gauge
+  logical :: lgive_eta_emf
 !
   namelist /magn_mf_demfdt_init_pars/ &
-      tau_emf, tau1_emf, eta_emf_over_etat, &
+      tau_emf, tau1_emf, eta_emf_over_etat, lgive_eta_emf, &
       initemf
 !
 ! Run parameters
@@ -51,7 +52,7 @@ module Magnetic_meanfield_demfdt
   real, dimension(mz) :: eta_emf_z
 !
   namelist /magn_mf_demfdt_run_pars/ &
-      tau_emf, tau1_emf, eta_emf_over_etat
+      tau_emf, tau1_emf, eta_emf_over_etat, lgive_eta_emf
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 ! 
@@ -224,6 +225,7 @@ module Magnetic_meanfield_demfdt
 !
 !  First part (without spatial diffusion): dEMF/dt = (alp*B-etat*J-EMF)/tau.
 !  Note that the first part, alp*B-etat*J, is here obtained as p%mf_EMF.
+!  Note that kf_x=1 in most cases.
 !
       tau1_emf_tmp=tau1_emf*kf_x**1.5
       emf=f(l1:l2,m,n,iemfx:iemfz)
@@ -236,7 +238,11 @@ module Magnetic_meanfield_demfdt
 !  Spatial diffusion part, if eta_emf/=0.
 !
       if (eta_emf_over_etat/=0.) then
-        eta_emf_tmp=eta_emf_x*eta_emf_y(m)*eta_emf_z(n)
+        if (lgive_eta_emf) then
+          eta_emf_tmp=eta_emf_over_etat
+        else
+          eta_emf_tmp=eta_emf_x*eta_emf_y(m)*eta_emf_z(n)
+        endif
 !--     call del2v(f,iemf,del2emf)
         call gij(f,iemf,emfij,1)
         call gij_etc(f,iemf,emf,emfij,demfij,del2emf,graddivemf)

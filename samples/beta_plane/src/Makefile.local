@@ -1,0 +1,13 @@
+###                             -*-Makefile-*-
+### Makefile for modular pencil code -- local part
+### Included by `Makefile'
+###
+
+EOS      =   eos_idealgas
+HYDRO    =   hydro
+DENSITY  =   density
+FORCING  =   forcing
+SPECIAL  =   special/beta_plane
+
+FOURIER  =   fourier_fftpack
+POWER    =   power_spectrum

@@ -190,7 +190,7 @@ module Cdata
   real :: cdtv=0.25, cdtv2=0.03, cdtv3=0.01
   real :: cdtsrc=0.2, cdtf=0.9
   real :: ddt=0.0, dtinc=0.5, dtdec=0.5
-  real :: dtmin=1.0e-6, dtmax=1.0e37, dt_epsi=1e-7, dt_ratio=0.01
+  real :: dtmin=1.0e-6, dtmax=1.0e37, dt_epsi=1e-7, dt_ratio=1e-5
   real :: nu_sts=0.1
   integer :: permute_sts=0
   integer:: ireset_tstart=2
@@ -231,13 +231,13 @@ module Cdata
   real, dimension (nx) :: maxdiffus=0., maxdiffus2=0., maxdiffus3=0., maxsrc=0.
   real, target, dimension (nx) :: dt1_max
   real, dimension (nx) :: reac_chem, reac_dust
-  real                 :: trelax_poly, reac_pchem
-  real, dimension (5) :: alpha_ts=0.0,beta_ts=0.0,dt_beta_ts=1.0
+  real    :: trelax_poly, reac_pchem
+  real, dimension (5) :: alpha_ts=0.0,beta_ts=0.0,dt_beta_ts=1.0,bhat_ts=0.0,dt_bhat_ts=1.0
   logical :: lfractional_tstep_advance=.false.
   logical :: lfractional_tstep_negative=.true.
   logical :: lmaxadvec_sum=.false.,old_cdtv=.false.,leps_fixed=.true.
-  logical :: lmaximal_cdtv=.false., lmaximal_cdt=.false.
-  character (len=20), dimension(mvar) :: timestep_scaling='cons_frac_err'
+  logical :: lmaximal_cdtv=.false., lmaximal_cdt=.false.,lreiterate=.true.
+  character (len=20), dimension(mvar) :: timestep_scaling='rel_err'
 !
 !  Use of LSODE to solve the chemistry in a separate step
 !  By default, sequential splitting method (1st order)
@@ -366,6 +366,7 @@ module Cdata
 !
   logical :: pretend_lnTT=.false.
 !END C BINDING
+  logical :: lphase=.false.
 !
 !  Type counters.
 !
@@ -426,7 +427,7 @@ module Cdata
   integer :: iuxbtest=0,ijxbtest=0,iugutest=0,iughtest=0,iSghtest=0
   integer :: ishock=0,ishock_perp=0
   integer :: iyH=0,ihypvis=0,ihypres=0
-  integer :: iecr=0,ismagorinsky,iviscosity=0
+  integer :: iecr=0,ismagorinsky,iviscosity=0, inucl=0
   integer :: iQrad=0,iSrad=0,ilnTT=0,iTT=0,ikapparho=0
   integer :: iKR_Frad=0,iKR_Fradx=0,iKR_Frady=0, iKR_Fradz=0
   integer :: igpotselfx=0, igpotselfy=0, igpotselfz=0
@@ -499,6 +500,7 @@ module Cdata
 !
   character :: comment_char='#'
   integer :: it1=10,it1start=0,it1d=impossible_int,itspec=impossible_int
+  integer :: itsnap=impossible_int
   integer :: nname=0,nnamev=0,nnamexy=0,nnamexz=0,nnamerz=0
   integer :: nnamez=0,nnamey=0,nnamex=0,nnamer=0
   integer :: nname_sound=0, ncoords_sound=0
@@ -558,10 +560,12 @@ module Cdata
   logical :: lequatory,lequatorz
   integer, dimension (mname_half) :: itype_name_half=0
   real, dimension (mname_half,2) :: fname_half
-  integer :: name_half_max=0
+  integer :: name_half_max=0, ntmax1Dav=500, ntmax2Dav=500
   character (len=30) :: cname_half(mname_half)
 !  Radius inside of which diagnostics are calculated for sphere_in_a_box models
   real :: radius_diag=1.0
+!  Phase boundaries for ISM
+  real :: ssmask1=0.0,ssmask2=0.0
 !  Coordinates of the point where some quantities can be printed.
   integer :: lpoint=(mx+1)/2,mpoint=(my+1)/2,npoint=(mz+1)/2
   integer :: lpoint2=(mx+1)/4,mpoint2=(my+1)/4,npoint2=(mz+1)/4
@@ -624,7 +628,7 @@ module Cdata
   logical :: uxy_spec=.false., bxy_spec=.false., jxbxy_spec=.false.
   character (LEN=labellen*4) :: xy_spec=''
   character (LEN=labellen), dimension(n_xy_specs_max) :: xy_specs=''
-  logical :: EP_spec=.false., nd_spec=.false., ud_spec=.false., abs_u_spec=.false.
+  logical :: EP_spec=.false., hEP_spec=.false., nd_spec=.false., ud_spec=.false., abs_u_spec=.false.
   logical :: ro_spec=.false., TT_spec=.false., ss_spec=.false., cc_spec=.false., cr_spec=.false.
   logical :: sp_spec=.false., ssp_spec=.false., sssp_spec=.false., mu_spec=.false.
   logical :: lr_spec=.false., r2u_spec=.false., r3u_spec=.false., oun_spec=.false.
@@ -633,6 +637,7 @@ module Cdata
   logical :: ou_spec=.false., ab_spec=.false., azbz_spec=.false., uzs_spec=.false.
   logical :: ub_spec=.false., Lor_spec=.false., EMF_spec=.false., Tra_spec=.false.
   logical :: GWs_spec=.false., GWh_spec=.false., GWm_spec=.false., Str_spec=.false., Stg_spec=.false.
+  logical :: Gab_spec=.false., Gan_spec=.false., GBb_spec=.false.
   logical :: GWs_spec_boost=.false., GWh_spec_boost=.false.
   logical :: StT_spec=.false., StX_spec=.false.
   logical :: GWd_spec=.false., GWe_spec=.false., GWf_spec=.false., GWg_spec=.false.
@@ -659,6 +664,10 @@ module Cdata
   logical :: uu_kx0z=.false., oo_kx0z=.false., bb_kx0z=.false., jj_kx0z=.false.
   logical :: bb_k00z=.false., ee_k00z=.false., gwT_fft3d=.false.
   logical :: Em_specflux=.false., Hm_specflux=.false., Hc_specflux=.false.
+!
+!  Number of bins for Pulsar Timing Array
+!
+ !integer :: nbin_angular=19
 !
   ! Auxiliary parameters for boundary conditions:
   real, dimension(mcom,2) :: fbcx=0., fbcx_2=0.
@@ -818,7 +827,7 @@ module Cdata
   real :: lambda5 = 0.0
 !
 !  Variables for concurrency
-! 
+!
   logical :: lmultithread=.false.
   logical :: l1dphiavg_save, l1davgfirst_save, ldiagnos_save, l2davgfirst_save
   logical :: lout_save, l1davg_save, l2davg_save, lout_sound_save, lvideo_save
@@ -834,7 +843,7 @@ module Cdata
   integer :: num_helper_threads=1, thread_id=1
   integer, dimension(max_threads_possible) :: core_ids
 !$ logical, volatile :: lhelper_run=.true., lhelper_perf
-! 
+!
 ! threadprivate definitions for OpenMP
 !
 !$omp threadprivate(inds_max_diags, inds_sum_diags)

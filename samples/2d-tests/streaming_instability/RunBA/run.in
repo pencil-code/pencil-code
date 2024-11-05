@@ -4,7 +4,7 @@
 !
 &run_pars
     nt = 100, it1 = 10
-    tmax = 628.4, dsnap = 6.2831853071795864 !dvid = 0.1
+    tmax = 628.4, dsnap = 6.2831853071795864 
     lpencil_check=T
     isave = 5000
     itorder = 5

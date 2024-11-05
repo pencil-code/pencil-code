@@ -324,6 +324,13 @@ module Snapshot
 !  update ghost zones for var.dat (cheap, since done infrequently).
 !
         call update_snaptime(file,tsnap,nsnap,dsnap,t,lsnap,ch)
+!
+!        if (itsnap/=impossible_int) then
+!          call update_snaptime(file,tsnap,nsnap,dsnap,t,lsnap,ch,itout=itsnap)
+!        else
+!          call update_snaptime(file,tsnap,nsnap,dsnap,t,lsnap,ch)
+!        endif
+!
         if (lsnap) then
           if (.not.lstart.and.lgpu) call copy_farray_from_GPU(a)
           call update_ghosts(a)
@@ -407,7 +414,7 @@ module Snapshot
 !
       character(LEN=fnlen) :: file
       real, dimension(:), intent(OUT) :: snaptimes   ! allocatable
-      
+
     endsubroutine read_predef_snaptimes
 !***********************************************************************
     subroutine rsnap(chsnap,f,msnap,lread_nogrid)
@@ -782,7 +789,7 @@ module Snapshot
       integer :: ivec,stat,ipos,ispec,nloc,mloc
       character (LEN=40) :: str,sp1,sp2
       logical :: lfirstcall, lfirstcall_powerhel, lsqrt
-      
+
 !!$     call signal_wait(lhelperflags(PERF_POWERSNAP),lhelper_run)
 
         lsqrt=.true.
@@ -813,6 +820,11 @@ module Snapshot
         if (VCT_spec) call powerGWs(f,'VCT',lfirstcall)
         if (Tpq_spec) call powerGWs(f,'Tpq',lfirstcall)
         if (TGW_spec) call powerGWs(f,'TGW',lfirstcall)
+        if (Gab_spec) call powerGWs(f,'Gab',lfirstcall)
+        if (Gan_spec) call powerGWs(f,'Gan',lfirstcall)
+        if (GBb_spec) call powerGWs(f,'GBb',lfirstcall)
+        if (GWs_spec_boost) call powerGWs(f,'GBs',lfirstcall)
+        if (GWh_spec_boost) call powerGWs(f,'GBh',lfirstcall)
         if (GWd_spec) call powerhel(f,'GWd',lfirstcall_powerhel)  !MR: this use of lfirstcall_powerhel correct?
         if (GWe_spec) call powerhel(f,'GWe',lfirstcall_powerhel)
         if (GWf_spec) call powerhel(f,'GWf',lfirstcall_powerhel)
@@ -828,12 +840,13 @@ module Snapshot
         if (jj2_spec) call powerhel(f,'jj2',lfirstcall_powerhel)
         if (uzs_spec) call powerhel(f,'uzs',lfirstcall_powerhel)
         if (EP_spec)  call powerhel(f,'bEP',lfirstcall_powerhel)
+        if (hEP_spec) call powerhel(f,'hEP',lfirstcall_powerhel)
         if (a0_spec)  call powerscl(f,'a0')
         if (ro_spec)  call powerscl(f,'ro')
         if (abs_u_spec) call powerscl(f,'u_m')
         if (ux_spec)  call powerscl(f,'ux')
         if (uy_spec)  call powerscl(f,'uy')
-        if (uy_spec)  call powerscl(f,'uz')
+        if (uz_spec)  call powerscl(f,'uz')
         if (ucp_spec) call powerscl(f,'ucp')
         !if (lro_spec) call powerscl(f,'ro',lsqrt)
         if (lr_spec)  call powerscl(f,'lr')

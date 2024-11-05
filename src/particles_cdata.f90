@@ -108,6 +108,7 @@ module Particles_cdata
   logical :: lnocollapse_ydir_onecell=.false.
   logical :: lnocollapse_zdir_onecell=.false.
   logical :: lswap_radius_and_number=.false.
+  logical :: lpartnucleation = .false.  
 !
   character (len=2*bclen+1) :: bcpx='p', bcpy='p', bcpz='p'
   character (len=labellen), dimension(mparray) :: pvarname

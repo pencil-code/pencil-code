@@ -581,7 +581,7 @@ class IDL(pexpect.spawn):
             # Take the first max_n_elements elements (separated by
             # commas) of the first max_length characters of the string
             max_string = re.match(
-                "([^,]*[,\]]){," + str(max_n_elements) + "}",
+                r"([^,]*[,\]]){," + str(max_n_elements) + "}",
                 array_string_remaining[:max_length],
             ).group()
 
@@ -1038,7 +1038,7 @@ class IDL(pexpect.spawn):
         """Return IDL dims given description from structure."""
 
         try:
-            dims = re.search("(?<=Array\[).*\]", struct_help).group()[:-1]
+            dims = re.search(r"(?<=Array\[).*\]", struct_help).group()[:-1]
             idl_dims = numpy.array(dims.split(",")).astype(int)
             return idl_dims
         except AttributeError:

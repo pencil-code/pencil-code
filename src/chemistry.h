@@ -36,7 +36,7 @@
 !  public :: get_p_infy
 !  public :: get_rhs_Y
 !  public :: get_rhs_T
- 
+
 
   public :: chemistry_clean_up
 
@@ -50,3 +50,5 @@
 
   public :: chemistry_init_reduc_pointers
   public :: chemistry_diags_reductions
+  public :: cond_spec_cond, cond_spec_nucl, condensing_species_rate
+  public :: cond_spec_cond_lagr, cond_spec_nucl_lagr

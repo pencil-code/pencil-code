@@ -34,7 +34,6 @@
 &shock_run_pars
 /
 &particles_run_pars
-  ldragforce_dust_par = .true., ldragforce_gas_par = .true.
   lmigration_redo = .true.
   epsp_friction_increase = 200.0
 /

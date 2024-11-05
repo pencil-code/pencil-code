@@ -841,6 +841,7 @@ module Sub
     endsubroutine dot_0
 !***********************************************************************
     subroutine dot2_mn(a,b,fast_sqrt,precise_sqrt)
+!!$omp declare target
 !
 !  Dot product with itself, to calculate max and rms values of a vector.
 !  FAST_SQRT is only correct for ~1e-18 < |a| < 1e18 (for single precision);
@@ -850,38 +851,26 @@ module Sub
 !   1-apr-01/axel: adapted for cache-efficient sub-array formulation
 !  25-jun-05/bing: added optional args for calculating |a|
 !
+      use General, only: loptest
+
       real, dimension (nx,3) :: a
       real, dimension (nx) :: b,a_max
       logical, optional :: fast_sqrt,precise_sqrt
-      logical :: fast_sqrt1,precise_sqrt1
 !
       intent(in) :: a,fast_sqrt,precise_sqrt
       intent(out) :: b
-!
-!     ifc treats these variables as SAVE so we need to reset
-      if (present(fast_sqrt)) then
-        fast_sqrt1=fast_sqrt
-      else
-        fast_sqrt1=.false.
-      endif
-!
-      if (present(precise_sqrt)) then
-        precise_sqrt1=precise_sqrt
-      else
-        precise_sqrt1=.false.
-      endif
 !
 !  Rescale by factor a_max before taking sqrt.
 !  In single precision this increases the dynamic range from 1e18 to 1e36.
 !  To avoid division by zero when calculating a_max, we add tini.
 !
-      if (precise_sqrt1) then
+      if (loptest(precise_sqrt)) then
         a_max=tini+maxval(abs(a),dim=2)
         b=(a(:,1)/a_max)**2+(a(:,2)/a_max)**2+(a(:,3)/a_max)**2
         b=a_max*sqrt(b)
       else
         b=a(:,1)**2+a(:,2)**2+a(:,3)**2
-        if (fast_sqrt1) b=sqrt(b)
+        if (loptest(fast_sqrt)) b=sqrt(b)
       endif
 !
     endsubroutine dot2_mn
@@ -1599,7 +1588,7 @@ module Sub
 !
     endsubroutine grad5
 !***********************************************************************
-    subroutine div(f,k,g,ldiff_fluxes)
+    subroutine div(f,k,g,ldiff_fluxes,inds)
 !
 !  Calculate divergence of vector, get scalar.
 !
@@ -1623,18 +1612,22 @@ module Sub
       integer :: k
       real, dimension (nx) :: g
       logical, optional :: ldiff_fluxes
+      integer, dimension(3), optional :: inds
 !
       intent(in)  :: f,k,ldiff_fluxes
       intent(out) :: g
 !
       integer :: k1,i
+      integer, dimension(3) :: inds_
       real, dimension(nx) :: tmp
       integer, save :: indr=0, indth=0
       logical, save :: s0=.true.
 !
-      k1=k-1
-!
       if (loptest(ldiff_fluxes)) then
+
+        if (k==0) call fatal_error("div","k=0 not legal for diff_fluxes")
+        k1=k-1
+!
         g=0.
         do i=1,dimensionality
           call der_4th_stag(f,k1+i,tmp,dim_mask(i))
@@ -1657,16 +1650,21 @@ module Sub
         if (lcylindrical_coords.and.indr>0) g=g+rcyl_mn1*f(l1:l2,m,n,k1+indr)
 !
       else
-        call der(f,k1+1,tmp,1)
+        if (k==0) then
+          if (.not.present(inds)) call fatal_error("div","argument inds needed for k=0")
+          inds_=inds
+        else
+          inds_=(/k,k+1,k+2/)
+        endif
+        call der(f,inds_(1),tmp,1)
         g=tmp
-        call der(f,k1+2,tmp,2)
+        call der(f,inds_(2),tmp,2)
         g=g+tmp
-        call der(f,k1+3,tmp,3)
+        call der(f,inds_(3),tmp,3)
         g=g+tmp
 
-        if (lspherical_coords) &
-          g=g+r1_mn*(2.*f(l1:l2,m,n,k1+1)+cotth(m)*f(l1:l2,m,n,k1+2))
-        if (lcylindrical_coords) g=g+rcyl_mn1*f(l1:l2,m,n,k1+1)
+        if (lspherical_coords) g=g+r1_mn*(2.*f(l1:l2,m,n,inds_(1))+cotth(m)*f(l1:l2,m,n,inds_(2)))
+        if (lcylindrical_coords) g=g+rcyl_mn1*f(l1:l2,m,n,inds_(1))
 !
       endif
 !
@@ -1864,13 +1862,11 @@ module Sub
 !
 !  Adjustments for spherical coordinate system.
 !
-      if (lspherical_coords) then
-        call fatal_error('div_mn_2tensor','not impelmented in sph-coordinate')
-      endif
+      if (lspherical_coords) &
+        call not_implemented('div_mn_2tensor','in spherical coordinates')
 !
-      if (lcylindrical_coords) then
-        call fatal_error('div_mn_2tensor','not impelmented in cyl-coordinate')
-      endif
+      if (lcylindrical_coords) &
+        call not_implemented('div_mn_2tensor','cylindrical coordinates')
 !
     endsubroutine div_mn_2tensor
 !***********************************************************************
@@ -3822,6 +3818,7 @@ module Sub
 !
     endsubroutine read_snaptime
 !***********************************************************************
+!    subroutine update_snaptime(file,tout,nout,dtout,t,lout,ch,nowrite,itout)
     subroutine update_snaptime(file,tout,nout,dtout,t,lout,ch,nowrite)
 !
 !  Check whether we need to write snapshot; if so, update the snapshot
@@ -3843,12 +3840,13 @@ module Sub
       real(KIND=rkind8), intent(in) :: t
       logical, intent(inout) :: lout
       logical, intent(in), optional :: nowrite
+!      integer, intent(in), optional :: itout
       logical :: exist
       character (len=intlen), intent(out), optional :: ch
 !
       integer, parameter :: lun = 31
       integer ::  ntsnap=0, jtsnap=0
-      logical :: lwrite
+      logical :: lwrite, litsnap = .false.
       real :: t_sp   ! t in single precision for backwards compatibility
       logical, save :: lfirstcall=.true.
       real, save :: deltat_threshold
@@ -3891,9 +3889,26 @@ module Sub
         lfirstcall=.false.
       endif
 !
+!      if (present(itout) .and. mod(it,itout) == 0) then
+!        litsnap=.true.
+!        tout=huge_real
+!      else
+!        litsnap=.false.
+!      endif
+
+      if (itsnap/=impossible_int) then
+        if (mod(it,itsnap) == 0)  then
+          litsnap=.true.
+          tout=huge_real
+        else
+          litsnap=.false.
+        endif
+      endif
+!
       if ((t_sp >= tout) .or. &
 !      if (lout.or.t_sp    >= tout             .or. &
-          (abs(t_sp-tout) <  deltat_threshold)) then
+          (abs(t_sp-tout) <  deltat_threshold) .or. &
+          (litsnap)) then
         inquire(FILE='tsnap_list.dat',EXIST=exist)
         if (exist) then
           open(1,FILE='tsnap_list.dat')
@@ -3915,6 +3930,8 @@ module Sub
           if (dtout<0.0) then
             !tout=toutoff+(tout-toutoff)*10.**onethird
             tout=toutoff+(tout-toutoff)*10.**onesixth
+          elseif (itsnap/=impossible_int) then
+            tout=huge_real
           else
             tout=tout+abs(dtout)
 !           if (.not.lout) tout=tout+abs(dtout)
@@ -7230,7 +7247,7 @@ nameloop: do
 !
 !  initialize mean
 !
-      mean = 0.0
+      mean = 0.
 !
 !  Compute mean for each field.
 !
@@ -7250,7 +7267,7 @@ nameloop: do
 !
     endsubroutine global_mean
 !***********************************************************************
-    subroutine remove_mean(f,inda,indep)
+    subroutine remove_mean(f,inda,indep,lexp)
 !
 !  Substract mean from a (several) field(s) selected by the index inda
 !  (the index range inda - indep) in f.
@@ -7263,49 +7280,24 @@ nameloop: do
       real, dimension (mx,my,mz,*), intent (inout)        :: f
       integer,                      intent (in)           :: inda
       integer,                      intent (in), optional :: indep
+      logical,                      intent (in), optional :: lexp
 !
       real, allocatable, dimension(:) :: mean, mean_tmp
-      integer :: m,n,j, inde
+      integer :: m,n,j,inde
+      real :: fac
 !
       inde = ioptest(indep,inda)
-      allocate( mean(inda:inde), mean_tmp(inda:inde) )
+      allocate( mean(inda:inde) )
 !
-!  initialize mean
+      call global_mean(f,inda,mean,inde,lexp)
 !
-      mean = 0.0
+!  Subtract out the mean separately for each field.
 !
-!  Go through all pencils.
-!
-      do n = n1,n2
-      do m = m1,m2
-!
-!  Compute mean for each field.
-!
-        do j=inda,inde
-          mean(j) = mean(j) + sum(f(l1:l2,m,n,j))
-        enddo
-      enddo
-      enddo
-!
-!  Compute total mean for all processors
-!
-      call mpiallreduce_sum(mean/nwgrid,mean_tmp,inde-inda+1)
-      mean = mean_tmp
-!
-!  Go through all pencils and subtract out the mean
-!  separately for each field.
-!
-      do n = n1,n2
-      do m = m1,m2
-        do j=inda,inde
-          f(l1:l2,m,n,j) = f(l1:l2,m,n,j) - mean(j)
-        enddo
-      enddo
+      do j=inda,inde
+        f(l1:l2,m1:m2,n1:n2,j) = f(l1:l2,m1:m2,n1:n2,j) - mean(j)
       enddo
 !
       if (lroot.and.ip<6) print*,'remove_mean: mean=',mean
-!
-      deallocate( mean, mean_tmp )
 !
     endsubroutine remove_mean
 !***********************************************************************

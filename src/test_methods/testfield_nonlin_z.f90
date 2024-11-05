@@ -28,7 +28,6 @@
 
 module Testfield
 
-  use Cparam
   use Cdata
   use Messages
   use Equationofstate, only: rho0  ! meant to be used with nodensity!
@@ -1276,27 +1275,20 @@ module Testfield
 !    5-Oct-18/MR: changed to remove_mean_flow, as independent from what is used
 !                 in the main run, density should not be involved.
 !
-      use Hydro, only: remove_mean_flow
-      use Cdata
-      use Mpicomm
+      use Sub, only: remove_mean
 !
-      integer :: jtest
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
 !  Remove mean flow from all 5 test problems.
 !
       if (lrmv) then
         if (lremove_mean_flow_NLTFM_all) then
-          do jtest=1,njtest
-            iuxtest=iuutest+3*(jtest-1)
-            call remove_mean_flow(f,iuxtest)
-          enddo
+          call remove_mean(f,iuutest,iuztestpq)
 !
 !  Remove mean flow from the "0" problem only.
 !
         elseif (lremove_mean_flow_NLTFM_zero) then
-          iuxtest=iuutest+3*(njtest-1)
-          call remove_mean_flow(f,iuxtest)
+          call remove_mean(f,iuztestpq-2,iuztestpq)
         endif
       endif
 !

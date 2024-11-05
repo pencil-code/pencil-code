@@ -11,7 +11,7 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED cc; cc1; lncc; glncc(3); uglncc; del2lncc
+! PENCILS PROVIDED cc(1); cc1(1); lncc; glncc(3); uglncc; del2lncc
 ! PENCILS PROVIDED hlncc(3,3)
 !
 !***************************************************************
@@ -318,9 +318,9 @@ module Pscalar
       intent(in) :: f
       intent(inout) :: p
 ! cc
-      if (lpencil(i_cc)) p%cc=exp(f(l1:l2,m,n,ilncc))
+      if (lpencil(i_cc)) p%cc(:,1)=exp(f(l1:l2,m,n,ilncc))
 ! cc1
-      if (lpencil(i_cc1)) p%cc1=1/p%cc
+      if (lpencil(i_cc1)) p%cc1(:,1)=1/p%cc(:,1)
 ! glncc
       if (lpencil(i_glncc)) call grad(f,ilncc,p%glncc)
 ! uglncc
@@ -428,25 +428,25 @@ module Pscalar
 !  <u_k u_j d_j c> = <u_k c uu.gradlncc>
 !
       if (ldiagnos) then
-        if (idiag_mcct/=0)   call integrate_mn_name(p%rho*p%cc,idiag_mcct)
-        if (idiag_rhoccm/=0) call sum_mn_name(p%rho*p%cc,idiag_rhoccm)
-        call max_mn_name(p%cc,idiag_ccmax)
-        if (idiag_ccmin/=0)  call max_mn_name(-p%cc,idiag_ccmin,lneg=.true.)
-        if (idiag_ucm/=0)    call sum_mn_name(p%uu(:,3)*p%cc,idiag_ucm)
-        if (idiag_uudcm/=0)  call sum_mn_name(p%uu(:,3)*p%cc*p%uglncc,idiag_uudcm)
-        if (idiag_Cz2m/=0)   call sum_mn_name(p%rho*p%cc*z(n)**2,idiag_Cz2m)
-        if (idiag_Cz4m/=0)   call sum_mn_name(p%rho*p%cc*z(n)**4,idiag_Cz4m)
-        if (idiag_Crmsm/=0)  call sum_mn_name((p%rho*p%cc)**2,idiag_Crmsm,lsqrt=.true.)
-        if (idiag_ccglnrm/=0)call sum_mn_name(p%cc*p%glnrho(:,3),idiag_ccglnrm)
+        if (idiag_mcct/=0)   call integrate_mn_name(p%rho*p%cc(:,1),idiag_mcct)
+        if (idiag_rhoccm/=0) call sum_mn_name(p%rho*p%cc(:,1),idiag_rhoccm)
+        call max_mn_name(p%cc(:,1),idiag_ccmax)
+        if (idiag_ccmin/=0)  call max_mn_name(-p%cc(:,1),idiag_ccmin,lneg=.true.)
+        if (idiag_ucm/=0)    call sum_mn_name(p%uu(:,3)*p%cc(:,1),idiag_ucm)
+        if (idiag_uudcm/=0)  call sum_mn_name(p%uu(:,3)*p%cc(:,1)*p%uglncc,idiag_uudcm)
+        if (idiag_Cz2m/=0)   call sum_mn_name(p%rho*p%cc(:,1)*z(n)**2,idiag_Cz2m)
+        if (idiag_Cz4m/=0)   call sum_mn_name(p%rho*p%cc(:,1)*z(n)**4,idiag_Cz4m)
+        if (idiag_Crmsm/=0)  call sum_mn_name((p%rho*p%cc(:,1))**2,idiag_Crmsm,lsqrt=.true.)
+        if (idiag_ccglnrm/=0)call sum_mn_name(p%cc(:,1)*p%glnrho(:,3),idiag_ccglnrm)
       endif
 !
       if (l1davgfirst) then
         call xysum_mn_name_z(p%lncc,idiag_lnccmz)
         call xzsum_mn_name_y(p%lncc,idiag_lnccmy)
         call yzsum_mn_name_x(p%lncc,idiag_lnccmx)
-        call xysum_mn_name_z(p%cc,idiag_ccmz)
-        call xzsum_mn_name_y(p%cc,idiag_ccmy)
-        call yzsum_mn_name_x(p%cc,idiag_ccmx)
+        call xysum_mn_name_z(p%cc(:,1),idiag_ccmz)
+        call xzsum_mn_name_y(p%cc(:,1),idiag_ccmy)
+        call yzsum_mn_name_x(p%cc(:,1),idiag_ccmx)
       endif
 
     endsubroutine calc_diagnostics_pscalar

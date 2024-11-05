@@ -4,7 +4,7 @@ PRO power,var1,var2,last,w,v1=v1,v2=v2,v3=v3,all=all,wait=wait,k=k,qk=k2s,$
           tot=tot,lin=lin,png=png,yrange=yrange,norm=norm,helicity2=helicity2, $
           compensate1=compensate1,compensate2=compensate2, $
           compensate3=compensate3,datatopdir=datatopdir,double=double, $
-          lkscale=lkscale,cyl=cyl,zwav=zwav
+          lkscale=lkscale,cyl=cyl,zwav=zwav,dimcyl=dimcyl
 ;
 ;  $Id$
 ;
@@ -42,6 +42,7 @@ PRO power,var1,var2,last,w,v1=v1,v2=v2,v3=v3,all=all,wait=wait,k=k,qk=k2s,$
 ;  yrange: y-range for plot
 ;  compensate: exponent for compensating power spectrum (default=0)
 ;  lkscale: apply scaling factor if box is not (2pi)^3
+;  dimcyl: possibility to set a second dimension different from dim.nz.
 ;
 ;  24-sep-02/nils: coded
 ;   5-oct-02/axel: comments added
@@ -100,7 +101,12 @@ end else begin
         print,'Exiting........'
         stop
     end
-    if keyword_set(cyl) then begin
+;
+;  In general, we would like to distingish between 1D and 2D spectra.
+;  Currently, not all 2D spectra start with cyc. This may need attention
+;  later if other spectra start with cyc_.
+;
+    if keyword_set(cyl) and not keyword_set(dimcyl) then begin
       file1='cyl_power'+var1+'.dat'
       file2='cyl_power'+var2+'.dat'
     endif else begin
@@ -188,10 +194,16 @@ openr, unit, datatopdir+'/'+file1, /get_lun
     k2s=fltarr(imax) & readf,unit,k2s
   endif
   
-  if keyword_set(cyl) then $
-    spectrum1=keyword_set(double) ? dblarr(imax,dim.nz) : fltarr(imax,dim.nz) $
-  else $
+  if keyword_set(cyl) then begin
+    if keyword_set(dimcyl) then begin
+      dimcyl1=dimcyl
+    endif else begin
+      dimcyl1=dim.nz
+    endelse
+    spectrum1=keyword_set(double) ? dblarr(imax,dimcyl1) : fltarr(imax,dimcyl1)
+  endif else begin
     spectrum1=keyword_set(double) ? dblarr(imax) : fltarr(imax)
+  end
 
   while ~eof(unit) do begin
     readf,unit,time
@@ -206,7 +218,7 @@ openr, unit, datatopdir+'/'+file1, /get_lun
 
 free_lun, unit
 if keyword_set(cyl) then $
-  spec1=keyword_set(double) ? dblarr(imax,dim.nz,i-1) : fltarr(imax,dim.nz,i-1) $
+  spec1=keyword_set(double) ? dblarr(imax,dimcyl1,i-1) : fltarr(imax,dimcyl1,i-1) $
 else $
   spec1=keyword_set(double) ? dblarr(imax,i-1) : fltarr(imax,i-1)
 ;
@@ -220,11 +232,11 @@ unit_2__open = 0L
 if (file2 ne '') then begin
   if keyword_set(cyl) then begin
     if keyword_set(double) then begin
-      spectrum2=dblarr(imax,dim.nz)
-      spec2=dblarr(imax,dim.nz,i-1)
+      spectrum2=dblarr(imax,dimcyl1)
+      spec2=dblarr(imax,dimcyl1,i-1)
     endif else begin
-      spectrum2=fltarr(imax,dim.nz)
-      spec2=fltarr(imax,dim.nz,i-1)
+      spectrum2=fltarr(imax,dimcyl1)
+      spec2=fltarr(imax,dimcyl1,i-1)
     endelse
   endif else begin
     if keyword_set(double) then begin
@@ -245,11 +257,11 @@ unit_3__open = 0L
 if (file3 ne '') then begin
   if keyword_set(cyl) then begin
     if keyword_set(double) then begin
-      spectrum3=dblarr(imax,dim.nz)
-      spec3=dblarr(imax,dim.nz,i-1)
+      spectrum3=dblarr(imax,dimcyl1)
+      spec3=dblarr(imax,dimcyl1,i-1)
     endif else begin
-      spectrum3=fltarr(imax,dim.nz)
-      spec3=fltarr(imax,dim.nz,i-1)
+      spectrum3=fltarr(imax,dimcyl1)
+      spec3=fltarr(imax,dimcyl1,i-1)
     endelse
   endif else begin
     if keyword_set(double) then begin

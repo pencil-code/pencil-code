@@ -6,8 +6,6 @@
   public :: wsnap_timeavgs
 
 ! Variables
-  public :: ltavg
-  
 ! [ajwm] SHOULDN'T BE SHARED
 ! [PABourdin] should be in cdata.f90, because these are namelist parameters
   public :: tavg, idx_tavg

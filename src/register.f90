@@ -68,6 +68,7 @@ module Register
       use Testflow,         only: register_testflow
       use TestPerturb,      only: register_testperturb
       use Testscalar,       only: register_testscalar
+      use Training,         only: register_training
       use Viscosity,        only: register_viscosity
       use ImplicitPhysics,  only: register_implicit_physics
       use Solid_Cells,      only: register_solid_cells
@@ -158,6 +159,8 @@ module Register
       call register_heatflux
       call register_solid_cells
       call register_pointmasses
+      call register_training
+
       call farray_finalize_ode
 !
 !  Writing files for use with IDL.
@@ -241,6 +244,7 @@ module Register
       use TestPerturb,      only: initialize_testperturb
       use Testscalar,       only: initialize_testscalar
       use Timeavg,          only: initialize_timeavg
+      use Training,         only: initialize_training
       use Viscosity,        only: initialize_viscosity
       use ImplicitPhysics,  only: initialize_implicit_physics
       use Grid,             only: initialize_grid
@@ -263,8 +267,10 @@ module Register
 !
       unit_mass=unit_density*unit_length**3
       unit_energy=unit_mass*unit_velocity**2
+      unit_pressure=unit_energy/unit_length**3
       unit_time=unit_length/unit_velocity
       unit_flux=unit_energy/(unit_length**2*unit_time)
+      if (unit_temperature/=impossible) unit_entropy = unit_velocity**2/unit_temperature
 !
 !  Convert physical constants to code units.
 !
@@ -413,6 +419,7 @@ module Register
       call initialize_implicit_physics(f)
       call initialize_heatflux(f)
       call initialize_pointmasses(f)
+      call initialize_training
 !
 !  Check if MAUX is consistent with what is required.
 !
@@ -439,6 +446,7 @@ module Register
       use IO,             only: finalize_io
       use Particles_main, only: particles_finalize
       use Special,        only: finalize_special
+      use Training,       only: finalize_training
 !
       real, dimension(mx,my,mz,mfarray) :: f
 !
@@ -447,6 +455,8 @@ module Register
       call finalize_boundcond(f)
       call finalize_deriv
       call finalize_io
+      call finalize_gpu
+      call finalize_training
 !
     endsubroutine finalize_modules
 !***********************************************************************
@@ -849,6 +859,7 @@ module Register
       use Viscosity,       only: rprint_viscosity
       use Shear,           only: rprint_shear
       use TestPerturb,     only: rprint_testperturb
+      use Training,        only: rprint_training
       use PointMasses,     only: rprint_pointmasses
       use File_io,         only: parallel_file_exists, parallel_count_lines
       use Io,              only: IO_strategy
@@ -1095,6 +1106,7 @@ module Register
       call rprint_viscosity       (lreset,LWRITE=lroot)
       call rprint_shear           (lreset,LWRITE=lroot)
       call rprint_testperturb     (lreset,LWRITE=lroot)
+      call rprint_training        (lreset)
       call rprint_pointmasses     (lreset,LWRITE=lroot)
 !
       if (lroot .and. (IO_strategy /= "HDF5").and.lwrite_phiaverages) then

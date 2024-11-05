@@ -216,6 +216,7 @@ module Deriv
 !
 !  01-nov-07/anders: adapted from der
 !  25-aug-09/axel: adapted from deriv
+!  13-Sep-2024/PABourdin: fixed computation
 !
       real, dimension (:) :: pencil,df
       integer :: j
@@ -232,8 +233,10 @@ module Deriv
         endif
         df(l1:l2)=(1./2520)*dx_1(l1:l2)*( &
             + 2100.0*(pencil(l1+1:l2+1)-pencil(l1-1:l2-1)) &
-            - 168.0*(pencil(l1+2:l2+2)-pencil(l1-2:l2-2)) &
-            +      (pencil(l1+3:l2+3)-pencil(l1-3:l2-3)))
+            -  600.0*(pencil(l1+2:l2+2)-pencil(l1-2:l2-2)) &
+            +  150.0*(pencil(l1+3:l2+3)-pencil(l1-3:l2-3)) &
+            -   25.0*(pencil(l1+4:l2+4)-pencil(l1-4:l2-4)) &
+            +    2.0*(pencil(l1+5:l2+5)-pencil(l1-5:l2-5)) )
       else if (j==2) then
 !
 !  y-derivative
@@ -244,8 +247,10 @@ module Deriv
         endif
         df(m1:m2)=(1./2520)*dy_1(m1:m2)*( &
             + 2100.0*(pencil(m1+1:m2+1)-pencil(m1-1:m2-1)) &
-            - 168.0*(pencil(m1+2:m2+2)-pencil(m1-2:m2-2)) &
-            +      (pencil(m1+3:m2+3)-pencil(m1-3:m2-3)))
+            -  600.0*(pencil(m1+2:m2+2)-pencil(m1-2:m2-2)) &
+            +  150.0*(pencil(m1+3:m2+3)-pencil(m1-3:m2-3)) &
+            -   25.0*(pencil(m1+4:m2+4)-pencil(m1-4:m2-4)) &
+            +    2.0*(pencil(m1+5:m2+5)-pencil(m1-5:m2-5)) )
       else if (j==3) then
 !
 !  z-derivative
@@ -256,8 +261,10 @@ module Deriv
         endif
         df(n1:n2)=(1./2520)*dz_1(n1:n2)*( &
             + 2100.0*(pencil(n1+1:n2+1)-pencil(n1-1:n2-1)) &
-            - 168.0*(pencil(n1+2:n2+2)-pencil(n1-2:n2-2)) &
-            +      (pencil(n1+3:n2+3)-pencil(n1-3:n2-3)))
+            -  600.0*(pencil(n1+2:n2+2)-pencil(n1-2:n2-2)) &
+            +  150.0*(pencil(n1+3:n2+3)-pencil(n1-3:n2-3)) &
+            -   25.0*(pencil(n1+4:n2+4)-pencil(n1-4:n2-4)) &
+            +    2.0*(pencil(n1+5:n2+5)-pencil(n1-5:n2-5)) )
       else
         if (lroot) print*, 'der_pencil: no such direction j=', j
         call fatal_error('der_pencil','')
@@ -272,15 +279,16 @@ module Deriv
 !
 !  Dummy
 !
-    real, dimension(:,:) :: arr, der
-    integer :: idir
-    integer, optional :: order
-
+    real, dimension(:,:), intent(in) :: arr
+    integer, intent(in) :: idir
+    real, dimension(:,:), intent(out) :: der
+    integer, intent(in), optional :: order
+!
     call not_implemented('distr_der','for 10th order')
-    call keep_compiler_quiet(idir)
     call keep_compiler_quiet(arr)
+    call keep_compiler_quiet(idir)
     call keep_compiler_quiet(der)
-
+!
     endsubroutine distr_der
 !***********************************************************************
     subroutine der2_main(f,k,df2,j,lwo_line_elem)

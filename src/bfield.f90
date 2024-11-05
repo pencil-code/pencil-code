@@ -704,6 +704,14 @@ module Magnetic
       call keep_compiler_quiet(dtsub)
 !
     endsubroutine magnetic_after_timestep
+!****************************************************************************
+    subroutine magnetic_after_mn(df)
+!
+      real, dimension(mx,my,mz,mvar) :: df
+!
+      call keep_compiler_quiet(df)
+!
+    endsubroutine magnetic_after_mn
 !***********************************************************************
     subroutine split_update_magnetic(f)
 !

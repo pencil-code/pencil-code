@@ -384,10 +384,12 @@ class Power(object):
         NOTE: If you want to read output from non-cubic-box simulations run using older versions of Pencil where the number of k-vectors was always taken as nxgrid/2, you can do
         ```
         >>> class Power_wrong(pc.read.powers.Power):
-        ...     def _get_nk_xyz(self, dim, grid):
+        ...     def _get_nk_xyz(self, datadir):
+        ...         dim = read.dim(datadir=datadir)
         ...         return int(dim.nxgrid/2)
 
-        >>> p = Power_wrong.read()
+        >>> p = Power_wrong()
+        >>> p.read()
         ```
         """
         dim = read.dim(datadir=datadir)
@@ -402,5 +404,29 @@ class Power(object):
         Ly = grid.Ly
         Lz = grid.Lz
 
-        L_min = min(Lx, Ly, Lz)
-        return int(np.round(min( dim.nxgrid*L_min/(2*Lx), dim.nygrid*L_min/(2*Ly), dim.nzgrid*L_min/(2*Lz) )))
+        nx = dim.nx
+        ny = dim.ny
+        nz = dim.nz
+
+        L_min = np.inf
+
+        if nx != 1:
+            L_min = min(L_min, Lx)
+        if ny != 1:
+            L_min = min(L_min, Lz)
+        if nz != 1:
+            L_min = min(L_min, Lz)
+        if L_min == np.inf:
+            L_min = 2*np.pi
+
+        nk = np.inf
+        if nx != 1:
+            nk = min(nk, np.round(nx*L_min/(2*Lx)))
+        if ny != 1:
+            nk = min(nk, np.round(ny*L_min/(2*Ly)))
+        if nz != 1:
+            nk = min(nk, np.round(nz*L_min/(2*Lz)))
+        if nk == np.inf:
+            nk = 1
+
+        return int(nk)

@@ -39,7 +39,6 @@
 ! MAUX CONTRIBUTION 18
 !
 ! PENCILS PROVIDED stress_ij(6)
-!! PENCILS EXPECTED gphi(3), infl_a2
 ! PENCILS EXPECTED gphi(3)
 !
 !***************************************************************
@@ -106,12 +105,9 @@ module Special
   logical :: lStress_as_aux=.true., lreynolds=.false., lkinGW=.true.
   logical :: lelectmag=.false., lscalar=.false., lscalar_phi=.false.
   logical :: lggTX_as_aux=.true., lhhTX_as_aux=.true.
-  logical :: lggTX_as_aux_boost=.false., lhhTX_as_aux_boost=.false.
   logical :: lremove_mean_hij=.false., lremove_mean_gij=.false.
   logical :: GWs_spec_complex=.true. !(fixed for now)
-  logical :: GWs_spec_complex_boost=.true. ! added for boost
   logical :: lreal_space_hTX_as_aux=.false., lreal_space_gTX_as_aux=.false.
-  logical :: lreal_space_hTX_boost_as_aux=.false., lreal_space_gTX_boost_as_aux=.false.
   logical :: linflation=.false., lreheating_GW=.false., lmatter_GW=.false., ldark_energy_GW=.false.
   logical :: lonly_mag=.false.!, lread_scl_factor_file=.false.
   logical :: lstress=.true., lstress_ramp=.false., lstress_upscale=.false.
@@ -121,7 +117,9 @@ module Special
   logical :: lscale_tobox=.false., lskip_projection_GW=.false., lvectorpotential=.false.
   logical :: lnophase_in_stress=.false., llinphase_in_stress=.false., lconstmod_in_stress=.false.
   logical :: lno_noise_GW=.false., lfactors_GW=.false.,lcomp_GWs_k=.false.,lcomp_GWh_k=.false.
+  logical :: lnot_amp_GW=.true.
   logical :: llogbranch_GW=.false., ldouble_GW=.false., lLighthill=.false.
+  logical :: lrandomize_e1_e2=.false.
   real, dimension(3,3) :: ij_table
   real :: c_light2=1., delk=0., tdelk=0., tau_delk=1.
   real :: tstress_ramp=0., stress_upscale_rate=0., stress_upscale_exp=0., tturnoff=1.
@@ -135,7 +133,8 @@ module Special
 ! alberto: t_ini corresponds to the conformal time computed using a_0 = 1 at T_* = 100 GeV, g_S = 103 (EWPT)
   real :: t_ini=60549
 !
-  logical :: lread_scl_factor_file_exists
+  logical :: lread_scl_factor_file_exists, lread_pulsar=.false.
+  integer :: npulsar
   integer :: nt_file, it_file, iTij=0, iinfl_lna=0
   real :: lgt0, dlgt, H0, dummy
   real :: lgt1, lgt2, lgf1, lgf2, lgf, lgt_current
@@ -145,10 +144,13 @@ module Special
   real, dimension (:,:,:,:), allocatable :: nonlinear_Tpq_re, nonlinear_Tpq_im
   real, dimension(:), allocatable :: t_file, scl_factor, Hp_file
   real, dimension(:), allocatable :: appa_file, lgt_file, lgff, lgff2, lgff3
+  real, dimension(:,:), allocatable :: nn_pulsar
+  real, dimension(3,3) :: hij_boost, hij_boost_im, hij, hij_im
   real :: kscale_factor, tau_stress_comp=0., exp_stress_comp=0.
   real :: tau_stress_kick=0., tnext_stress_kick=1., fac_stress_kick=2., accum_stress_kick=1.
   real :: nonlinear_source_fact=0., k_in_stress=1.
   integer :: itorder_GW=1, idt_file_safety=12
+  integer :: boost_method=2
 !
 ! input parameters
   namelist /special_init_pars/ &
@@ -156,13 +158,14 @@ module Special
     initGW, amplGW, amplGW2, kpeak_GW, initpower_gw, initpower2_gw, cutoff_GW, &
     lStress_as_aux, lgamma_factor, &
     lreal_space_hTX_as_aux, lreal_space_gTX_as_aux, &
-    lreal_space_hTX_boost_as_aux, lreal_space_gTX_boost_as_aux, lscalar, lscalar_phi, &
+    lscalar, lscalar_phi, &
     lelectmag, lggTX_as_aux, lhhTX_as_aux, linflation, lreheating_GW, lmatter_GW, ldark_energy_GW, &
     lonly_mag, lread_scl_factor_file, t_ini, &
-    lggTX_as_aux_boost, lhhTX_as_aux_boost, lno_noise_GW, &
+    lno_noise_GW, &
     lscale_tobox, lfactors_GW, nfact_GWs, nfact_GWh, nfact_GW, &
     lcomp_GWs_k, lcomp_GWh_k, llogbranch_GW, initpower_med_GW, &
-    kpeak_log_GW, kbreak_GW, ldouble_GW, nfactd_GW
+    kpeak_log_GW, kbreak_GW, ldouble_GW, nfactd_GW, &
+    lread_pulsar !, nbin_angular
 !
 ! run parameters
   namelist /special_run_pars/ &
@@ -174,12 +177,10 @@ module Special
     lStress_as_aux, lkinGW, aux_stress, tau_stress_comp, exp_stress_comp, lscalar, lscalar_phi, &
     lelectmag, tau_stress_kick, fac_stress_kick, delk, tdelk, ldelkt, idelkt, tau_delk, &
     lreal_space_hTX_as_aux, lreal_space_gTX_as_aux, &
-    lreal_space_hTX_boost_as_aux, lreal_space_gTX_boost_as_aux, &
     initGW, reinitialize_GW, rescale_GW, &
     lggTX_as_aux, lhhTX_as_aux, lremove_mean_hij, lremove_mean_gij, &
-    lggTX_as_aux_boost, lhhTX_as_aux_boost, &
     vx_boost, vy_boost, vz_boost, & 
-    lboost, &
+    lboost, boost_method, lrandomize_e1_e2, &
     lstress, lstress_ramp, tstress_ramp, &
     lstress_upscale, stress_upscale_rate, stress_upscale_exp, &
     linflation, lreheating_GW, lmatter_GW, ldark_energy_GW, &
@@ -188,7 +189,8 @@ module Special
     lnonlinear_source, lnonlinear_Tpq_trans, nonlinear_source_fact, &
     lnophase_in_stress, llinphase_in_stress, slope_linphase_in_stress, &
     lread_scl_factor_file, t_ini, OmL0, OmM0, idt_file_safety, &
-    lconstmod_in_stress, k_in_stress, itorder_GW, lLighthill
+    lconstmod_in_stress, k_in_stress, itorder_GW, lLighthill, &
+    lread_pulsar !, nbin_angular
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -248,13 +250,14 @@ module Special
   integer :: iggT_realspace, iggX_realspace
   integer :: ihhT_realspace_boost, ihhX_realspace_boost
   integer :: iggT_realspace_boost, iggX_realspace_boost
-  integer :: ihhT_boost  =0, ihhX_boost  =0, iggT_boost  =0, iggX_boost  =0
-  integer :: ihhTim_boost=0, ihhXim_boost=0, iggTim_boost=0, iggXim_boost=0
   integer, parameter :: nk=nxgrid/2
   type, public :: GWspectra
     real, dimension(nk) :: GWs   ,GWh   ,GWm   ,Str   ,Stg
     real, dimension(nk) :: GWshel,GWhhel,GWmhel,Strhel,Stghel
     real, dimension(nk) :: SCL, VCT, Tpq, TGW
+    real, dimension(nk,nbin_angular) :: GWh_Gamma_ab, GWhhel_Gamma_ab, GWh_Gamma_ang, GWhhel_Gamma_ang
+    real, dimension(nk,nbin_angular) :: GWh_Gamma_Bb, GWhhel_Gamma_Bb
+    !real, dimension (:,:), allocatable :: GWh_Gamma_ab, GWhhel_Gamma_ab, GWh_Gamma_ang, GWhhel_Gamma_ang
     complex, dimension(nx) :: complex_Str_T, complex_Str_X
     ! emma added (dec 6) for boost:
     real, dimension(nk) :: GWs_boost   ,GWh_boost   ,GWm_boost   ,Str_boost   ,Stg_boost
@@ -319,37 +322,6 @@ module Special
       if (lreal_space_gTX_as_aux) then
         call farray_register_auxiliary('ggT_realspace',iggT_realspace)
         call farray_register_auxiliary('ggX_realspace',iggX_realspace)
-      endif
-!
-!  boosted hT and hX in Fourier space
-!
-      if (lggTX_as_aux_boost) then
-        call farray_register_auxiliary('ggT_boost',iggT_boost)
-        call farray_register_auxiliary('ggX_boost',iggX_boost)
-        call farray_register_auxiliary('ggTim_boost',iggTim_boost)
-        call farray_register_auxiliary('ggXim_boost',iggXim_boost)
-      endif
-!
-      if (lhhTX_as_aux_boost) then
-        call farray_register_auxiliary('hhT_boost',ihhT_boost)
-        call farray_register_auxiliary('hhX_boost',ihhX_boost)
-        call farray_register_auxiliary('hhTim_boost',ihhTim_boost)
-        call farray_register_auxiliary('hhXim_boost',ihhXim_boost)
-      endif
-!
-!
-!  boosted hT and hX in real space
-!
-      if (lreal_space_hTX_boost_as_aux) then
-        call farray_register_auxiliary('hhT_realspace_boost',ihhT_realspace_boost)
-        call farray_register_auxiliary('hhX_realspace_boost',ihhX_realspace_boost)
-      endif
-!
-!  boosted gT and gX in real space
-!
-      if (lreal_space_gTX_boost_as_aux) then
-        call farray_register_auxiliary('ggT_realspace_boost',iggT_realspace_boost)
-        call farray_register_auxiliary('ggX_realspace_boost',iggX_realspace_boost)
       endif
 !
 !  Check if we are solving for relativistic bulk motions, not just EoS.
@@ -494,6 +466,15 @@ module Special
 !
       kscale_factor=2*pi/Lx
 !
+!  allocate ...
+!
+    ! if (.not.allocated(GWh_Gamma_ab)) then
+    !   allocate(GWh_Gamma_ab(nk,nbin_angular),GWhhel_Gamma_ab(nk,nbin_angular), &
+    !            GWh_Gamma_ang(nk,nbin_angular),GWhhel_Gamma_ang(nk,nbin_angular), &
+    !    stat=stat)
+    !   if (stat>0) call fatal_error('initialize_special','Could not allocate memory for GWh_Gamma_ab etc')
+    ! endif
+!
 !  Possibility of reading scale factor file
 !
       if (lread_scl_factor_file) then
@@ -509,7 +490,6 @@ module Special
                    lgt_file(nt_file), lgff(nt_file), lgff2(nt_file), lgff3(nt_file))
           do it_file=1,nt_file
             read(9,*) t_file(it_file), scl_factor(it_file), Hp_file(it_file), appa_file(it_file), dummy
-          !if (ip<14) print*,'AXEL: 't_file(it_file), scl_factor(it_file), Hp_file(it_file), appa_file(it_file), dummy
           enddo
           close(9)
           lgt_file=alog10(t_file)
@@ -598,9 +578,62 @@ module Special
         endselect
       endif
 !
+!  Read pulsar data.
+!
+      if (lread_pulsar) call read_pulsar_data
+!
+!  Keep compiler quiet.
+!
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_special
+!***********************************************************************
+    subroutine read_pulsar_data
+!
+!  Read pulsar data
+!
+!   8-aug-2024/murman+axel: coded
+!
+      real, dimension(:), allocatable :: th, ph
+      real, dimension(:), allocatable :: cos_angle
+      integer :: ipulsar, jpulsar, ncos_angle, icount
+      logical :: exist1
+!
+      inquire(FILE='pulsar.dat',EXIST=exist1)
+      if (exist1) then
+        open(9,file='pulsar.dat',status='old')
+        read(9,*) npulsar
+        if (allocated(th)) deallocate(th, ph, nn_pulsar)
+        allocate(th(npulsar), ph(npulsar), nn_pulsar(npulsar,3))
+        do ipulsar=1,npulsar
+          read(9,*) th(ipulsar), ph(ipulsar)
+        enddo
+        close(9)
+      else
+        call fatal_error('read_pulsar_data','pulsar.dat does not exist')
+      endif
+!
+!  Compute unit vector on the sphere.
+!
+      nn_pulsar(:,1)=sin(th*dtor)*cos(ph*dtor)
+      nn_pulsar(:,2)=sin(th*dtor)*sin(ph*dtor)
+      nn_pulsar(:,3)=cos(th*dtor)
+!
+      icount=1
+      ncos_angle=npulsar*(npulsar-1)/2
+      allocate(cos_angle(ncos_angle))
+!
+      cos_angle=0.
+      do ipulsar=1,npulsar
+      do jpulsar=ipulsar+1,npulsar
+        cos_angle(icount)=nn_pulsar(ipulsar,1)*nn_pulsar(jpulsar,1) &
+                         +nn_pulsar(ipulsar,2)*nn_pulsar(jpulsar,2) &
+                         +nn_pulsar(ipulsar,3)*nn_pulsar(jpulsar,3)
+        icount=icount+1
+      enddo
+      enddo
+!
+    endsubroutine read_pulsar_data
 !***********************************************************************
     subroutine finalize_special(f)
 !
@@ -622,7 +655,7 @@ module Special
       use Fourier, only: kx_fft, ky_fft, kz_fft      
       real, dimension (mx,my,mz,mfarray) :: f
       real :: initpower_GWs,initpower2_GWs,initpower_med_GWs,compks,compkh,amplGWs
-      real :: ksqr, k1, k2, k3, k1sqr, k2sqr, k3sqr, ksqrt, om, om2
+      real :: ksqr, k1, k2, k3, k1sqr, k2sqr, k3sqr, om, om2
       real :: hhTre, hhTim
       integer :: ikx,iky,ikz
       complex :: om_cmplx, gcomplex_new
@@ -686,7 +719,7 @@ module Special
             lskip_projection_GW, lvectorpotential, &
             lscale_tobox=lscale_tobox, k1hel=k1hel, k2hel=k2hel, &
             lremain_in_fourier=.true., lno_noise=lno_noise_GW, &
-            lfactors0=lfactors_GW, nfact0=nfact_GWh, compk0=compkh, &
+            lfactors0=lfactors_GW, lnot_amp=lnot_amp_GW, nfact0=nfact_GWh, compk0=compkh, &
             llogbranch0=llogbranch_GW,initpower_med0=initpower_med_GW, &
             kpeak_log0=kpeak_log_GW,kbreak0=kbreak_GW,ldouble0=ldouble_GW, &
             nfactd0=nfact_GW)
@@ -695,7 +728,7 @@ module Special
             lskip_projection_GW, lvectorpotential, &
             lscale_tobox=lscale_tobox, k1hel=k1hel, k2hel=k2hel, &
             lremain_in_fourier=.true., lno_noise=lno_noise_GW, &
-            lfactors0=lfactors_GW, nfact0=nfact_GWs, compk0=compks, &
+            lfactors0=lfactors_GW, lnot_amp=lnot_amp_GW, nfact0=nfact_GWs, compk0=compks, &
             llogbranch0=llogbranch_GW,initpower_med0=initpower_med_GWs, &
             kpeak_log0=kpeak_log_GW,kbreak0=kbreak_GW,ldouble0=ldouble_GW, &
             nfactd0=nfact_GW)
@@ -705,7 +738,7 @@ module Special
             lskip_projection_GW, lvectorpotential, &
             lscale_tobox=lscale_tobox, k1hel=k1hel, k2hel=k2hel, &
             lremain_in_fourier=.true., lno_noise=lno_noise_GW, &
-            lfactors0=lfactors_GW, nfact0=nfact_GWh, compk0=compkh, &
+            lfactors0=lfactors_GW, lnot_amp=lnot_amp_GW, nfact0=nfact_GWh, compk0=compkh, &
             llogbranch0=llogbranch_GW,initpower_med0=initpower_med_GW, &
             kpeak_log0=kpeak_log_GW,kbreak0=kbreak_GW,ldouble0=ldouble_GW, &
             nfactd0=nfact_GW)
@@ -737,7 +770,7 @@ module Special
             lskip_projection_GW, lvectorpotential, &
             lscale_tobox=lscale_tobox, k1hel=k1hel, k2hel=k2hel, &
             lremain_in_fourier=.true., lno_noise=lno_noise_GW, &
-            lfactors0=lfactors_GW, nfact0=nfact_GWh, compk0=compkh, &
+            lfactors0=lfactors_GW, lnot_amp=lnot_amp_GW, nfact0=nfact_GWh, compk0=compkh, &
             llogbranch0=llogbranch_GW,initpower_med0=initpower_med_GW, &
             kpeak_log0=kpeak_log_GW,kbreak0=kbreak_GW,ldouble0=ldouble_GW, &
             nfactd0=nfact_GW)
@@ -1022,7 +1055,6 @@ module Special
           !if (ip<14) print*,'ALBERTO: ',it_file, t_file(it_file), t, t_file(it_file)+1, t_ini
           lgt1=lgt_file(it_file)
           lgt2=lgt_file(it_file+1)
-          if (ip<11.and.lroot) print*,'AXEL: ',lgt1, lgt_current, lgt2, lgt2-lgt_current
           lgf1=lgff(it_file)
           lgf2=lgff(it_file+1)
           lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
@@ -1231,7 +1263,7 @@ module Special
 !
 !  13-may-18/axel: added remove_mean_value for hij and gij
 !
-      use Sub, only: remove_mean_value
+      use Sub, only: remove_mean
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
@@ -1282,20 +1314,36 @@ module Special
 !  16-oct-19/MR: carved out from special_calc_spectra
 !
       use Fourier, only: kx_fft, ky_fft, kz_fft
+      use General, only: random_number_wrapper
+      use Sub, only: cross, dot
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      integer :: ikx, iky, ikz, q, p, pq, ik
-      real :: k1, k2, k3, ksqr,one_over_k2,one_over_k4,sign_switch
+      integer :: ikx, iky, ikz, q, p, pq, ik, i, j, ij
+      integer :: ipulsar, jpulsar, ibin_angular, jvec
+      real :: ksqr, ksqrt, one_over_k2, one_over_k4, one_over_k
+      real :: k1, k2, k3, k1sqr, k2sqr, k3sqr
       real :: k1mNy, k2mNy, k3mNy, SCL_re, SCL_im
-      real, dimension(3) :: VCT_re, VCT_im, kvec
+      real, dimension (3) :: VCT_re, VCT_im, kvec
 ! for boost (dec 7)
-      real :: k1_boost,k2_boost,k3_boost, ksqr_boost, ksqrt_boost
-      real :: one_over_k2_boost,one_over_k4_boost
-      real :: vx_boost, vy_boost, vz_boost
-      real, dimension(3) :: kvec_boost, vboost
+      real :: k1_boost, k1sqr_boost, k2_boost,k2sqr_boost,k3_boost, k3sqr_boost
+      real :: ksqr_boost, ksqrt_boost, one_over_k_boost
+      real, dimension (3) :: e1_boost, e2_boost, vboost, kvec_boost, khat_boost
+      real, dimension (3) :: ee1_boost, ee2_boost
+      real, dimension (6) :: e_T_boost, e_X_boost
+      real :: eTT, eTX, eXT, eXX, phi, tmp, s, c, c1, kk1, kk2, kk3
       real :: gamma_boost, v_boostsqr, kdotv
       real :: SCL_re_boost, SCL_im_boost, VCT_re_boost, VCT_im_boost
+      real :: hhT_boost, hhTim_boost, hhX_boost, hhXim_boost
+      real :: ggT_boost, ggTim_boost, ggX_boost, ggXim_boost
+!
+      real :: fact, facthel, cos_angle, angle, sign_switch
+      real :: fact_boost, facthel_boost, omboost
+            
+      real :: DT_a, DT_b, DX_a, DX_b, khat_xhat_a, khat_xhat_b, DT_a_sum, DT_b_sum, DX_a_sum, DX_b_sum
+      real :: khat_xhat_a_boost, khat_xhat_b_boost, DT_a_sum_boost, DT_b_sum_boost, DX_a_sum_boost, DX_b_sum_boost
+      real, dimension (6) :: e_T, e_X
+      real, dimension (3) :: e1, e2, ee1, ee2
 !
       spectra%GWs=0.; spectra%GWshel=0.
       spectra%GWh=0.; spectra%GWhhel=0.
@@ -1304,6 +1352,10 @@ module Special
       spectra%Stg=0.; spectra%Stghel=0.
       spectra%SCL=0.; spectra%VCT=0.; spectra%Tpq=0.
       spectra%TGW=0.
+      spectra%GWh_Gamma_ab=0.; spectra%GWhhel_Gamma_ab=0.
+      spectra%GWh_Gamma_Bb=0.; spectra%GWhhel_Gamma_Bb=0.
+      spectra%GWh_Gamma_ang=0.; spectra%GWhhel_Gamma_ang=0.
+!
       !added emma (dec 6) for boosted spectra
       spectra%GWs_boost=0.; spectra%GWshel_boost=0.
       spectra%GWh_boost=0.; spectra%GWhhel_boost=0.
@@ -1330,334 +1382,683 @@ module Special
             k1=kx_fft(ikx+ipx*nx)
             k2=ky_fft(iky+ipy*ny)
             k3=kz_fft(ikz+ipz*nz)
+            k1sqr=k1**2
+            k2sqr=k2**2
+            k3sqr=k3**2
+            ksqr=k1sqr+k2sqr+k3sqr
+            ksqrt = sqrt(ksqr)
 !
-            ksqr=k1**2+k2**2+k3**2
-!
-            if (lroot.and.ikx==1.and.iky==1.and.ikz==1) then
-              one_over_k2=0.
-            else
+            if (ksqr/=0.) then
               one_over_k2=1./ksqr
-            endif
-            one_over_k4=one_over_k2**2
+              one_over_k=sqrt(one_over_k2)
+              one_over_k4=one_over_k2**2
 !
 !  possibility of swapping the sign
 !
-            sign_switch=1.
-            if (lswitch_sign_e_X) then
-              if (k3<0.) then
-                sign_switch=-1.
-              elseif (k3==0.) then
-                if (k2<0.) then
+              sign_switch=1.
+              if (lswitch_sign_e_X) then
+                if (k3<0.) then
                   sign_switch=-1.
-                elseif (k2==0.) then
-                  if (k1<0.) sign_switch=-1.
+                elseif (k3==0.) then
+                  if (k2<0.) then
+                    sign_switch=-1.
+                  elseif (k2==0.) then
+                    if (k1<0.) sign_switch=-1.
+                  endif
                 endif
               endif
-            endif
 !
 !  Put sign_switch to zero for the negative Nyquist values, because they
 !  don't exist for the corresponding positive values and cause asymmetry.
 !
-            if (lswitch_symmetric) then
-              if (k1==k1mNy .or.k2==k2mNy .or.  k3==k3mNy) sign_switch=0.
-            endif
+              if (lswitch_symmetric) then
+                if (k1==k1mNy .or.k2==k2mNy .or.  k3==k3mNy) sign_switch=0.
+              endif
 !
 !  Sum up energy and helicity spectra. Divide by kscale_factor to have integers
 !  for the Fortran index ik. Note, however, that
 !
 !  set k vector
 !
-            kvec(1)=k1
-            kvec(2)=k2
-            kvec(3)=k3
+              kvec(1)=k1
+              kvec(2)=k2
+              kvec(3)=k3
+!
+!  compute e1 and e2 vectors
+!
+              if(abs(k1)<abs(k2)) then
+                if(abs(k1)<abs(k3)) then !(k1 is pref dir)
+                  e1=(/0.,-k3,+k2/)
+                  e2=(/k2sqr+k3sqr,-k2*k1,-k3*k1/)
+                else !(k3 is pref dir)
+                  e1=(/k2,-k1,0./)
+                  e2=(/k1*k3,k2*k3,-(k1sqr+k2sqr)/)
+                endif
+              else !(k2 smaller than k1)
+                if(abs(k2)<abs(k3)) then !(k2 is pref dir)
+                  e1=(/-k3,0.,+k1/)
+                  e2=(/+k1*k2,-(k1sqr+k3sqr),+k3*k2/)
+                else !(k3 is pref dir)
+                  e1=(/k2,-k1,0./)
+                  e2=(/k1*k3,k2*k3,-(k1sqr+k2sqr)/)
+                endif
+              endif
+!
+!  possibility to randomize e1 and e2
+!
+              if (lrandomize_e1_e2) then
+                call random_number_wrapper(phi); phi = phi*2*pi
+                s=sin(phi)
+                c=cos(phi)
+                c1=1.-c
+                kk1=k1*one_over_k
+                kk2=k2*one_over_k
+                kk3=k3*one_over_k
+!
+                ee1(1)=(kk1**2*c1+c)*e1(1) + (kk1*kk2*c1-kk3*s)*e1(2) + (kk1*kk3*c1+kk2*s)*e1(3)
+                ee2(1)=(kk1**2*c1+c)*e2(1) + (kk1*kk2*c1-kk3*s)*e2(2) + (kk1*kk3*c1+kk2*s)*e2(3)
+!
+                ee1(2)=(kk1*kk2*c1+kk3*s)*e1(1) + (kk2**2*c1+c)*e1(2) + (kk2*kk3*c1-kk1*s)*e1(3)
+                ee2(2)=(kk1*kk2*c1+kk3*s)*e2(1) + (kk2**2*c1+c)*e2(2) + (kk2*kk3*c1-kk1*s)*e2(3)
+!
+                ee1(3)=(kk1*kk3*c1-kk2*s)*e1(1) + (kk2*kk3*c1+kk1*s)*e1(2) + (kk3**2*c1+c)*e1(3)
+                ee2(3)=(kk1*kk3*c1-kk2*s)*e2(1) + (kk2*kk3*c1+kk1*s)*e2(2) + (kk3**2*c1+c)*e2(3)
+!
+                e1=ee1
+                e2=ee2
+              endif
+!
+              e1=e1/sqrt(e1(1)**2+e1(2)**2+e1(3)**2)
+              e2=e2/sqrt(e2(1)**2+e2(2)**2+e2(3)**2)
+!
+!  compute e_T and e_X
+!
+              do j=1,3
+              do i=1,3
+                ij=ij_table(i,j)
+                e_T(ij)=e1(i)*e1(j)-e2(i)*e2(j)
+                e_X(ij)=e1(i)*e2(j)+e2(i)*e1(j)
+              enddo
+              enddo
+!
+!  possibility of swapping the sign of e_X
+!
+              if (lswitch_sign_e_X) then
+                if (k3<0.) then
+                  e_X=-e_X
+                elseif (k3==0.) then
+                  if (k2<0.) then
+                    e_X=-e_X
+                  elseif (k2==0.) then
+                    if (k1<0.) then
+                      e_X=-e_X
+                    endif
+                  endif
+                endif
+              endif
 ! 
-! Boosted k, added by emma (dec 7)
-            if (lboost) then
-            v_boostsqr = vx_boost**2+vy_boost**2+vz_boost**2
-            gamma_boost=1./sqrt(1.-v_boostsqr)
-            vboost(1)=vx_boost
-            vboost(2)=vy_boost
-            vboost(3)=vz_boost
-            if (v_boostsqr==0.) then
-              kdotv = 0.
-            else
-              kdotv = (gamma_boost-1)*(k1*vx_boost + k2*vy_boost + k3*vz_boost)/v_boostsqr
-            endif
-            k1_boost = k1+kdotv*vx_boost - gamma_boost*sqrt(ksqr)*vx_boost
-            k2_boost = k2+kdotv*vy_boost - gamma_boost*sqrt(ksqr)*vy_boost
-            k3_boost = k3+kdotv*vz_boost - gamma_boost*sqrt(ksqr)*vz_boost
-            ksqr_boost=k1_boost**2+k2_boost**2+k3_boost**2
-            ksqrt_boost=sqrt(ksqr_boost)
-!            
-            if (lroot.and.ikx==1.and.iky==1.and.ikz==1) then
-              one_over_k2_boost=0.
-            else
-              one_over_k2_boost=1./ksqr_boost
-            endif
-            one_over_k4_boost=one_over_k2_boost**2
+! Boosted k, added by emma (dec 7, see Sec. 6.5)
 !
-
+              if (lboost) then
+                v_boostsqr = vx_boost**2+vy_boost**2+vz_boost**2
+                gamma_boost=1./sqrt(1.-v_boostsqr)
+                vboost(1)=vx_boost
+                vboost(2)=vy_boost
+                vboost(3)=vz_boost
+                if (v_boostsqr==0.) then
+                  kdotv = 0.
+                  omboost=0.
+                else
+                  kdotv = (gamma_boost-1)*(k1*vx_boost + k2*vy_boost + k3*vz_boost)/v_boostsqr
+                  omboost= (ksqrt-(k1*vx_boost + k2*vy_boost + k3*vz_boost))*gamma_boost
+                endif
+                k1_boost = k1+kdotv*vx_boost - gamma_boost*ksqrt*vx_boost
+                k2_boost = k2+kdotv*vy_boost - gamma_boost*ksqrt*vy_boost
+                k3_boost = k3+kdotv*vz_boost - gamma_boost*ksqrt*vz_boost
+!
+!  Same, but squared and square root
+!
+                k1sqr_boost=k1_boost**2
+                k2sqr_boost=k2_boost**2
+                k3sqr_boost=k3_boost**2
+                ksqr_boost=k1sqr_boost+k2sqr_boost+k3sqr_boost
+                ksqrt_boost=sqrt(ksqr_boost)
+                one_over_k_boost=1./sqrt(ksqr_boost)
+!
 !  set boosted k vector            
-            kvec_boost(1)=k1_boost
-            kvec_boost(2)=k2_boost
-            kvec_boost(3)=k3_boost
 !
-
-            endif
+                kvec_boost(1)=k1_boost
+                kvec_boost(2)=k2_boost
+                kvec_boost(3)=k3_boost
 !
+!  Construction of boosted polarization tensors
 !
-            if (SCL_spec) then
-              SCL_re=0.
-              SCL_im=0.
-              do q=1,3
-              do p=1,3
-                pq=ij_table(p,q)
-                SCL_re=SCL_re-1.5*kvec(p)*kvec(q)*one_over_k4*Tpq_re(ikx,iky,ikz,pq)
-                SCL_im=SCL_im-1.5*kvec(p)*kvec(q)*one_over_k4*Tpq_im(ikx,iky,ikz,pq)
-              enddo
-              enddo
-            endif
+                if(abs(k1)<abs(k2)) then
+                  if(abs(k1)<abs(k3)) then !(k1_boost is pref dir)
+                    e1_boost=(/0.,-k3_boost,+k2_boost/)
+                    e2_boost=(/k2sqr_boost+k3sqr_boost,-k2_boost*k1_boost,-k3_boost*k1_boost/)
+                  else !(k3 is pref dir)
+                    e1_boost=(/k2_boost,-k1_boost,0./)
+                    e2_boost=(/k1_boost*k3_boost,k2_boost*k3_boost,-(k1sqr_boost+k2sqr_boost)/)
+                  endif
+                else !(k2 smaller than k1_boost)
+                  if(abs(k2)<abs(k3)) then !(k2 is pref dir)
+                    e1_boost=(/-k3_boost,0.,+k1_boost/)
+                    e2_boost=(/+k1_boost*k2_boost,-(k1sqr_boost+k3sqr_boost),+k3_boost*k2_boost/)
+                  else !(k3 is pref dir)
+                    e1_boost=(/k2_boost,-k1_boost,0./)
+                    e2_boost=(/k1_boost*k3_boost,k2_boost*k3_boost,-(k1sqr_boost+k2sqr_boost)/)
+                  endif
+                endif
+!
+!  possibility to randomize e1 and e2
+!
+              if (lrandomize_e1_e2) then
+                call random_number_wrapper(phi); phi = phi*2*pi
+                s=sin(phi)
+                c=cos(phi)
+                c1=1.-c
+                kk1=k1_boost*one_over_k_boost
+                kk2=k2_boost*one_over_k_boost
+                kk3=k3_boost*one_over_k_boost
+!
+!  reuse ee1 and ee2, which is reset to e1_boost and e2_boost afterwards
+!
+                ee1(1)=(kk1**2*c1+c)*e1_boost(1) + (kk1*kk2*c1-kk3*s)*e1_boost(2) + (kk1*kk3*c1+kk2*s)*e1_boost(3)
+                ee2(1)=(kk1**2*c1+c)*e2_boost(1) + (kk1*kk2*c1-kk3*s)*e2_boost(2) + (kk1*kk3*c1+kk2*s)*e2_boost(3)
+!
+                ee1(2)=(kk1*kk2*c1+kk3*s)*e1_boost(1) + (kk2**2*c1+c)*e1_boost(2) + (kk2*kk3*c1-kk1*s)*e1_boost(3)
+                ee2(2)=(kk1*kk2*c1+kk3*s)*e2_boost(1) + (kk2**2*c1+c)*e2_boost(2) + (kk2*kk3*c1-kk1*s)*e2_boost(3)
+!
+                ee1(3)=(kk1*kk3*c1-kk2*s)*e1_boost(1) + (kk2*kk3*c1+kk1*s)*e1_boost(2) + (kk3**2*c1+c)*e1_boost(3)
+                ee2(3)=(kk1*kk3*c1-kk2*s)*e2_boost(1) + (kk2*kk3*c1+kk1*s)*e2_boost(2) + (kk3**2*c1+c)*e2_boost(3)
+!
+                e1_boost=ee1
+                e2_boost=ee2
+              endif
+!
+!  normalize boosted e1 and e2 vectors
+!
+                e1_boost=e1_boost/sqrt(e1_boost(1)**2+e1_boost(2)**2+e1_boost(3)**2)
+                e2_boost=e2_boost/sqrt(e2_boost(1)**2+e2_boost(2)**2+e2_boost(3)**2)
+!
+!  compute e_T_boost and e_X_boost
+!
+                do j=1,3
+                do i=1,3
+                  ij=ij_table(i,j)
+                  e_T_boost(ij)=e1_boost(i)*e1_boost(j)-e2_boost(i)*e2_boost(j)
+                  e_X_boost(ij)=e1_boost(i)*e2_boost(j)+e2_boost(i)*e1_boost(j)
+                enddo
+                enddo
+!
+!  possibility of swapping the sign of e_X
+!
+                if (lswitch_sign_e_X_boost) then
+                  if (k3<0.) then
+                    e_X_boost=-e_X_boost
+                  elseif (k3==0.) then
+                    if (k2<0.) then
+                      e_X_boost=-e_X_boost
+                    elseif (k2==0.) then
+                      if (k1_boost<0.) then
+                        e_X_boost=-e_X_boost
+                      endif
+                    endif
+                  endif
+                endif
+!
+!  compute 4 coefficients [Eq.(76) from Emma's notes]
+!
+                eTT=0.
+                eTX=0.
+                eXT=0.
+                eXX=0.
+                do j=1,3
+                do i=1,3
+                  ij=ij_table(i,j)
+                  eTT=eTT+e_T_boost(ij)*e_T(ij)
+                  eTX=eTX+e_T_boost(ij)*e_X(ij)
+                  eXT=eXT+e_X_boost(ij)*e_T(ij)
+                  eXX=eXX+e_X_boost(ij)*e_X(ij)
+                enddo
+                enddo
+if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,k3,eTT,eXX,eXT,eTX
+!
+!  apply transformation from unboosted to boosted h and g, Eq.(64) from Emma's notes
+!  Do first h, but this could also be switcheable
+!
+                if (GWh_spec_boost) then
+                  if (boost_method==1) then
+                    hhT_boost  =.5*(eTT*f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  ) &
+                                   +eTX*f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  ))
+                    hhTim_boost=.5*(eTT*f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim) &
+                                   +eTX*f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim))
+  !
+                    hhX_boost  =.5*(eXT*f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  ) &
+                                   +eXX*f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  ))
+                    hhXim_boost=.5*(eXT*f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim) &
+                                   +eXX*f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim))
+                  else
+                    do i=1,3
+                    do j=1,3
+                      ij=ij_table(i,j)
+                      hij(i,j)   =e_T(ij)*f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  ) &
+                                 +e_X(ij)*f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  )
+                      hij_im(i,j)=e_T(ij)*f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim) &
+                                 +e_X(ij)*f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim)
+                    enddo
+                    enddo
+!
+!  actual boost
+!
+                    hij_boost   =hij
+                    hij_boost_im=hij_im
+                    fact=1./(1.-(k1*vx_boost+k2*vy_boost+k3*vz_boost)/ksqrt)
+                    do i=1,3
+                    do j=1,3
+                    do p=1,3
+                      hij_boost   (i,j) = hij_boost   (i,j)+vboost(p)*fact*(hij   (i,p)*kvec(j)+hij   (j,p)*kvec(i))/ksqrt
+                      hij_boost_im(i,j) = hij_boost_im(i,j)+vboost(p)*fact*(hij_im(i,p)*kvec(j)+hij_im(j,p)*kvec(i))/ksqrt
+                    enddo
+                    enddo
+                    enddo
+!
+!  reassemble
+!
+                    hhT_boost=0.
+                    hhX_boost=0.
+                    hhTim_boost=0.
+                    hhXim_boost=0.
+                    do i=1,3
+                    do j=1,3
+                      ij=ij_table(i,j)
+                      hhT_boost  =hhT_boost  +.5*e_T_boost(ij)*hij_boost   (i,j)
+                      hhX_boost  =hhX_boost  +.5*e_X_boost(ij)*hij_boost   (i,j)
+                      hhTim_boost=hhTim_boost+.5*e_T_boost(ij)*hij_boost_im(i,j)
+                      hhXim_boost=hhXim_boost+.5*e_X_boost(ij)*hij_boost_im(i,j)
+                    enddo
+                    enddo
+                  endif
+                endif
+!
+!if ((ikx==2 .or. ikx==nx) .and. iky==1 .and. ikz==1) then
+!  print*,'AXEL: k1,k2,k3=',k1,k2,k3
+!  print*,'AXEL: k1_boost,k2_boost,k3_boost=',k1_boost,k2_boost,k3_boost
+!  print*,'AXEL: hhT,hhTim,hhX,hhXim=', &
+!    f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  ), &
+!    f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim), &
+!    f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  ), &
+!    f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim)
+!  print*,'AXEL: hhT_boost,hhTim_boost,hhX_boost,hhXim_boost=',hhT_boost,hhTim_boost,hhX_boost,hhXim_boost
+!endif
+!
+!  Now do g, but this could also be switcheable
+!
+               !if (GWs_spec_boost) then
+               !  ggT_boost  =.5*(eTT*f(nghost+ikx,nghost+iky,nghost+ikz,iggT  ) &
+               !                 +eTX*f(nghost+ikx,nghost+iky,nghost+ikz,iggX  ))
+               !  ggTim_boost=.5*(eTT*f(nghost+ikx,nghost+iky,nghost+ikz,iggTim) &
+               !                 +eTX*f(nghost+ikx,nghost+iky,nghost+ikz,iggXim))
+!
+               !  ggX_boost  =.5*(eXT*f(nghost+ikx,nghost+iky,nghost+ikz,iggT  ) &
+               !                 +eXX*f(nghost+ikx,nghost+iky,nghost+ikz,iggX  ))
+               !  ggXim_boost=.5*(eXT*f(nghost+ikx,nghost+iky,nghost+ikz,iggTim) &
+               !                 +eXX*f(nghost+ikx,nghost+iky,nghost+ikz,iggXim))
+               !endif
+!
+!  end of lboost
+!???
+              endif
+!
+!  SVT decomposition (not related to boost).
+!
+              if (SCL_spec) then
+                SCL_re=0.
+                SCL_im=0.
+                do q=1,3
+                do p=1,3
+                  pq=ij_table(p,q)
+                  SCL_re=SCL_re-1.5*kvec(p)*kvec(q)*one_over_k4*Tpq_re(ikx,iky,ikz,pq)
+                  SCL_im=SCL_im-1.5*kvec(p)*kvec(q)*one_over_k4*Tpq_im(ikx,iky,ikz,pq)
+                enddo
+                enddo
+              endif
 !
 !  V_i = -i*ki (2/3) S - (4/3) i*kj/k^4 Tij
 !      = -i*ki (2/3) (S'+iS") -  2*i*kj/k^2 (Tij'+iTik")
 !
-            if (VCT_spec) then
-              do q=1,3
-                VCT_re(q)=+twothird*kvec(q)*SCL_im
-                VCT_im(q)=-twothird*kvec(q)*SCL_re
-                do p=1,3
-                  pq=ij_table(p,q)
-                  VCT_re(q)=VCT_re(q)+2.*kvec(p)*one_over_k2*Tpq_im(ikx,iky,ikz,pq)
-                  VCT_im(q)=VCT_im(q)-2.*kvec(p)*one_over_k2*Tpq_re(ikx,iky,ikz,pq)
+              if (VCT_spec) then
+                do q=1,3
+                  VCT_re(q)=+twothird*kvec(q)*SCL_im
+                  VCT_im(q)=-twothird*kvec(q)*SCL_re
+                  do p=1,3
+                    pq=ij_table(p,q)
+                    VCT_re(q)=VCT_re(q)+2.*kvec(p)*one_over_k2*Tpq_im(ikx,iky,ikz,pq)
+                    VCT_im(q)=VCT_im(q)-2.*kvec(p)*one_over_k2*Tpq_re(ikx,iky,ikz,pq)
+                  enddo
                 enddo
-              enddo
-            endif
+              endif
 ! 
-! repeat for boosted case? (emma, dec-7)
-! check if this is right, boost Tpq needed?
-!            if (lboost) then
-!            if (SCL_spec_boost) then
-!              SCL_re_boost=0.
-!              SCL_im_boost=0.
-!              do q=1,3
-!              do p=1,3
-!                pq=ij_table(p,q)
-!               SCL_re_boost=SCL_re_boost-1.5*kvec_boost(p)*kvec_boost(q)*one_over_k4_boost*Tpq_re(ikx,iky,ikz,pq)
-!                SCL_im_boost=SCL_im_boost-1.5*kvec_boost(p)*kvec_boost(q)*one_over_k4_boost*Tpq_im(ikx,iky,ikz,pq)
-!              enddo
-!              enddo
-!            endif
-!
-!            if (VCT_spec_boost) then
-!              do q=1,3
-!                VCT_re_boost(q)=+twothird*kvec_boost(q)*SCL_im_boost
-!                VCT_im_boost(q)=-twothird*kvec_boost(q)*SCL_re_boost
-!                do p=1,3
-!                  pq=ij_table(p,q)
-!                  VCT_re_boost(q)=VCT_re_boost(q)+2.*kvec_boost(p)*one_over_k2_boost*Tpq_im(ikx,iky,ikz,pq)
-!                  VCT_im_boost(q)=VCT_im_boost(q)-2.*kvec_boost(p)*one_over_k2_boost*Tpq_re(ikx,iky,ikz,pq)
-!                enddo
-!              enddo
-!            endif
-!            endif
-! above (boosted) section causing errors and don't need right now -emma
-!
-            ik=1+nint(sqrt(ksqr)/kscale_factor)
+              ik=1+nint(sqrt(ksqr)/kscale_factor)
 !
 !  Debug output
 !
-            if (ldebug_print) then
-              if (ik <= 5) write(*,1000) iproc,ik,k1,k2,k3,f(nghost+ikx,nghost+iky,nghost+ikz,iggX  )
-              1000 format(2i5,1p,4e11.2)
-            endif
+              if (ldebug_print) then
+                if (ik <= 5) write(*,1000) iproc,ik,k1,k2,k3,f(nghost+ikx,nghost+iky,nghost+ikz,iggX  )
+                1000 format(2i5,1p,4e11.2)
+              endif
 !
-            if (ik <= nk) then
+              if (ik <= nk) then
 !
 !  Gravitational wave energy spectrum computed from hdot (=g)
 !
-              if (GWs_spec) then
-                spectra%GWs(ik)=spectra%GWs(ik) &
-                   +f(nghost+ikx,nghost+iky,nghost+ikz,iggX  )**2 &
-                   +f(nghost+ikx,nghost+iky,nghost+ikz,iggXim)**2 &
-                   +f(nghost+ikx,nghost+iky,nghost+ikz,iggT  )**2 &
-                   +f(nghost+ikx,nghost+iky,nghost+ikz,iggTim)**2
-                spectra%GWshel(ik)=spectra%GWshel(ik)+2*sign_switch*( &
-                   +f(nghost+ikx,nghost+iky,nghost+ikz,iggXim) &
-                   *f(nghost+ikx,nghost+iky,nghost+ikz,iggT  ) &
-                   -f(nghost+ikx,nghost+iky,nghost+ikz,iggX  ) &
-                   *f(nghost+ikx,nghost+iky,nghost+ikz,iggTim) )
-              endif
-!
-              if (GWs_spec_complex) then
-                if (k2==0. .and. k3==0.) then
-                  spectra%complex_Str_T(ikx)=cmplx(f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  ), &
-                                                   f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim))
-                  spectra%complex_Str_X(ikx)=cmplx(f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  ), &
-                                                   f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim))
-                else
-                  spectra%complex_Str_T(ikx)=0.
-                  spectra%complex_Str_X(ikx)=0.
+                if (GWs_spec) then
+                  spectra%GWs(ik)=spectra%GWs(ik) &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,iggX  )**2 &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,iggXim)**2 &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,iggT  )**2 &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,iggTim)**2
+                  spectra%GWshel(ik)=spectra%GWshel(ik)+2*sign_switch*( &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,iggXim) &
+                     *f(nghost+ikx,nghost+iky,nghost+ikz,iggT  ) &
+                     -f(nghost+ikx,nghost+iky,nghost+ikz,iggX  ) &
+                     *f(nghost+ikx,nghost+iky,nghost+ikz,iggTim) )
                 endif
-              endif
-! added by emma (dec 7) to include boosted spectra
-              if (lboost) then
-                if (GWs_spec_boost) then
-                        spectra%GWs_boost(ik)=spectra%GWs_boost(ik) &
-                        +f(nghost+ikx,nghost+iky,nghost+ikz,iggX_boost)**2 &
-                        +f(nghost+ikx,nghost+iky,nghost+ikz,iggXim_boost)**2 &
-                        +f(nghost+ikx,nghost+iky,nghost+ikz,iggT_boost)**2 &
-                        +f(nghost+ikx,nghost+iky,nghost+ikz,iggTim_boost)**2
-                        spectra%GWshel_boost(ik)=spectra%GWshel_boost(ik)+2*sign_switch*( &
-                        +f(nghost+ikx,nghost+iky,nghost+ikz,iggXim_boost) &
-                        *f(nghost+ikx,nghost+iky,nghost+ikz,iggT_boost) &
-                        -f(nghost+ikx,nghost+iky,nghost+ikz,iggX_boost) &
-                        *f(nghost+ikx,nghost+iky,nghost+ikz,iggTim_boost) )
-                endif
-                if (GWs_spec_complex_boost) then
-                        if (k2_boost==0. .and. k3_boost==0.) then
-                          spectra%complex_Str_T_boost(ikx)=cmplx(f(nghost+ikx,nghost+iky,nghost+ikz,ihhT_boost), &
-                                                   f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim_boost))
-                          spectra%complex_Str_X_boost(ikx)=cmplx(f(nghost+ikx,nghost+iky,nghost+ikz,ihhX_boost), &
-                                                   f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim_boost))
-                        else
-                          spectra%complex_Str_T_boost(ikx)=0.
-                          spectra%complex_Str_X_boost(ikx)=0.
-                        endif
-                endif
-             endif
-!end boost addition
 !
 !  Gravitational wave strain spectrum computed from h
 !
-              if (GWh_spec) then
-                spectra%GWh(ik)=spectra%GWh(ik) &
-                   +f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  )**2 &
-                   +f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim)**2 &
-                   +f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  )**2 &
-                   +f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim)**2
-                spectra%GWhhel(ik)=spectra%GWhhel(ik)+2*sign_switch*( &
-                   +f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim) &
-                   *f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  ) &
-                   -f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  ) &
-                   *f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim) )
-              endif
-!
-!  Boosted GW strain spectrumc computed from h
-              if (lboost) then
-              if (GWh_spec_boost) then
-                spectra%GWh_boost(ik)=spectra%GWh_boost(ik) &
-                   +f(nghost+ikx,nghost+iky,nghost+ikz,ihhX_boost  )**2 &
-                   +f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim_boost)**2 &
-                   +f(nghost+ikx,nghost+iky,nghost+ikz,ihhT_boost)**2 &
-                   +f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim_boost)**2
-                spectra%GWhhel_boost(ik)=spectra%GWhhel_boost(ik)+2*sign_switch*( &
-                   +f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim_boost) &
-                   *f(nghost+ikx,nghost+iky,nghost+ikz,ihhT_boost ) &
-                   -f(nghost+ikx,nghost+iky,nghost+ikz,ihhX_boost) &
-                   *f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim_boost) )
-              endif
-              endif
-! still need to add other boosted spectra (as follows below) -emma
+                if (GWh_spec) then
+                  spectra%GWh(ik)=spectra%GWh(ik) &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  )**2 &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim)**2 &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  )**2 &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim)**2
+                  spectra%GWhhel(ik)=spectra%GWhhel(ik)+2*sign_switch*( &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim) &
+                     *f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  ) &
+                     -f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  ) &
+                     *f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim) )
+                endif
 !
 !  Gravitational wave mixed spectrum computed from h and g
 !
-              if (GWm_spec) then
-                spectra%GWm(ik)=spectra%GWm(ik) &
-                   +f(nghost+ikx,nghost+iky,nghost+ikz,ihhX)  *f(nghost+ikx,nghost+iky,nghost+ikz,iggX  ) &
-                   +f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim)*f(nghost+ikx,nghost+iky,nghost+ikz,iggXim) &
-                   +f(nghost+ikx,nghost+iky,nghost+ikz,ihhT)  *f(nghost+ikx,nghost+iky,nghost+ikz,iggT  ) &
-                   +f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim)*f(nghost+ikx,nghost+iky,nghost+ikz,iggTim)
-                spectra%GWmhel(ik)=spectra%GWmhel(ik)-sign_switch*( &
-                   +f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim) &
-                   *f(nghost+ikx,nghost+iky,nghost+ikz,iggT  ) &
-                   +f(nghost+ikx,nghost+iky,nghost+ikz,iggXim) &
-                   *f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  ) &
-                   -f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  ) &
-                   *f(nghost+ikx,nghost+iky,nghost+ikz,iggTim) &
-                   -f(nghost+ikx,nghost+iky,nghost+ikz,iggX  ) &
-                   *f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim) )
-              endif
+                if (GWm_spec) then
+                  spectra%GWm(ik)=spectra%GWm(ik) &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,ihhX)  *f(nghost+ikx,nghost+iky,nghost+ikz,iggX  ) &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim)*f(nghost+ikx,nghost+iky,nghost+ikz,iggXim) &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,ihhT)  *f(nghost+ikx,nghost+iky,nghost+ikz,iggT  ) &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim)*f(nghost+ikx,nghost+iky,nghost+ikz,iggTim)
+                  spectra%GWmhel(ik)=spectra%GWmhel(ik)-sign_switch*( &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim) &
+                     *f(nghost+ikx,nghost+iky,nghost+ikz,iggT  ) &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,iggXim) &
+                     *f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  ) &
+                     -f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  ) &
+                     *f(nghost+ikx,nghost+iky,nghost+ikz,iggTim) &
+                     -f(nghost+ikx,nghost+iky,nghost+ikz,iggX  ) &
+                     *f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim) )
+                endif
+!
+! added by emma (dec 7) to include boosted spectra
+!
+                if (lboost) then
+                 !if (GWs_spec_boost) then
+                 !  spectra%GWs_boost(ik)=spectra%GWs_boost(ik) &
+                 !   +ggX_boost  **2 &
+                 !   +ggXim_boost**2 &
+                 !   +ggT_boost  **2 &
+                 !   +ggTim_boost**2
+                 !  spectra%GWshel_boost(ik)=spectra%GWshel_boost(ik)+2*sign_switch*( &
+                 !    +ggXim_boost*ggT_boost &
+                 !    -ggX_boost  *ggTim_boost )
+                 !endif
+!
+                  if (GWh_spec_boost) then
+                    spectra%GWh_boost(ik)=spectra%GWh_boost(ik) &
+                     +hhX_boost  **2 &
+                     +hhXim_boost**2 &
+                     +hhT_boost  **2 &
+                     +hhTim_boost**2
+                    spectra%GWhhel_boost(ik)=spectra%GWhhel_boost(ik)+2*sign_switch*( &
+                      +hhXim_boost*hhT_boost &
+                      -hhX_boost  *hhTim_boost )
+                  endif
+!
+                endif
+!
+!  Hellings-Downs curve
+!
+                if (lread_pulsar.and.lspec) then
+!
+!  Loop of each pair of pulsars.
+!
+                  do ipulsar=1,npulsar
+                  do jpulsar=ipulsar+1,npulsar
+                    DT_a_sum=0.
+                    DT_b_sum=0.
+                    DX_a_sum=0.
+                    DX_b_sum=0.
+                    do j=1,3
+                    do i=1,3
+                      ij=ij_table(i,j)
+!
+!  compute khat*xhat
+!
+                      khat_xhat_a=0.
+                      khat_xhat_b=0.
+                      do jvec=1,3
+                        khat_xhat_a=khat_xhat_a+nn_pulsar(ipulsar,jvec)*kvec(jvec)*one_over_k
+                        khat_xhat_b=khat_xhat_b+nn_pulsar(jpulsar,jvec)*kvec(jvec)*one_over_k
+                      enddo
+!
+!  Avoid cases where pulsar and GW directions are aligned,
+!  although only in the anti-aligned case would we divide by zero.
+!
+                      if (.not. (abs(khat_xhat_a)==1. .or. abs(khat_xhat_b)==1.)) then
+                        DT_a=.5*nn_pulsar(ipulsar,i)*nn_pulsar(ipulsar,j)*e_T(ij)/(1.+khat_xhat_a)
+                        DT_b=.5*nn_pulsar(jpulsar,i)*nn_pulsar(jpulsar,j)*e_T(ij)/(1.+khat_xhat_b)
+                        DX_a=.5*nn_pulsar(ipulsar,i)*nn_pulsar(ipulsar,j)*e_X(ij)/(1.+khat_xhat_a)
+                        DX_b=.5*nn_pulsar(jpulsar,i)*nn_pulsar(jpulsar,j)*e_X(ij)/(1.+khat_xhat_b)
+                        DT_a_sum=DT_a_sum+DT_a
+                        DT_b_sum=DT_b_sum+DT_b
+                        DX_a_sum=DX_a_sum+DX_a
+                        DX_b_sum=DX_b_sum+DX_b
+                      endif
+                    enddo
+                    enddo
+                    fact   =DT_a_sum*DT_b_sum+DX_a_sum*DX_b_sum
+                    facthel=DT_a_sum*DX_b_sum-DX_a_sum*DT_b_sum
+!
+!  Compute angle (in degrees) between pulsars.
+!
+                    cos_angle=nn_pulsar(ipulsar,1)*nn_pulsar(jpulsar,1) &
+                             +nn_pulsar(ipulsar,2)*nn_pulsar(jpulsar,2) &
+                             +nn_pulsar(ipulsar,3)*nn_pulsar(jpulsar,3)
+                    angle=acos(cos_angle)/dtor
+                    ibin_angular=1+nint(angle*(nbin_angular-1)/180.)
+                    if (ibin_angular<1 .or. ibin_angular>nbin_angular) print*,'AXEL: bad ibin_angular',ibin_angular
+!if (ibin_angular>15) print*,'AXEL: bad ibin_angular',ibin_angular,angle
+!
+!  Sum up the 2-D histograms, GWh_Gamma_ab and GWhhel_Gamma_ab (unboosted HD curve, here for h)
+!
+                    spectra%GWh_Gamma_ab(ik,ibin_angular)=spectra%GWh_Gamma_ab(ik,ibin_angular) &
+                       +(f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  )**2 &
+                        +f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim)**2 &
+                        +f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  )**2 &
+                        +f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim)**2)*fact
+                    spectra%GWhhel_Gamma_ab(ik,ibin_angular)=spectra%GWhhel_Gamma_ab(ik,ibin_angular)+2*sign_switch*( &
+                        +f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim) &
+                        *f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  ) &
+                        -f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  ) &
+                        *f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim) )*facthel
+!
+!  Sum the angles in GWh_Gamma_ang, and count the number of entries in GWhhel_Gamma_ang.
+!
+                    spectra%GWh_Gamma_ang(ik,ibin_angular)=spectra%GWh_Gamma_ang(ik,ibin_angular)+angle
+                    spectra%GWhhel_Gamma_ang(ik,ibin_angular)=spectra%GWhhel_Gamma_ang(ik,ibin_angular)+1.
+!
+!  Sum up the 2-D histograms, GWh_Gamma_Bb and GWhhel_Gamma_Bb (boosted HD curve, here for h)
+!
+                    if (lboost) then
+                      DT_a_sum_boost=0.
+                      DT_b_sum_boost=0.
+                      DX_a_sum_boost=0.
+                      DX_b_sum_boost=0.
+                      do j=1,3
+                      do i=1,3
+                        ij=ij_table(i,j)
+!
+!  compute khat*xhat
+!
+                        khat_xhat_a_boost=0.
+                        khat_xhat_b_boost=0.
+                        do jvec=1,3
+                          khat_xhat_a_boost=khat_xhat_a_boost+nn_pulsar(ipulsar,jvec)*kvec_boost(jvec)*one_over_k_boost
+                          khat_xhat_b_boost=khat_xhat_b_boost+nn_pulsar(jpulsar,jvec)*kvec_boost(jvec)*one_over_k_boost
+                        enddo
+!
+!  Avoid cases where pulsar and GW directions are aligned,
+!  although only in the anti-aligned case would we divide by zero.
+!
+                        if (.not. (abs(khat_xhat_a)==1. .or. abs(khat_xhat_b)==1.)) then
+                          DT_a=.5*nn_pulsar(ipulsar,i)*nn_pulsar(ipulsar,j)*e_T(ij)/(1.+khat_xhat_a_boost)
+                          DT_b=.5*nn_pulsar(jpulsar,i)*nn_pulsar(jpulsar,j)*e_T(ij)/(1.+khat_xhat_b_boost)
+                          DX_a=.5*nn_pulsar(ipulsar,i)*nn_pulsar(ipulsar,j)*e_X(ij)/(1.+khat_xhat_a_boost)
+                          DX_b=.5*nn_pulsar(jpulsar,i)*nn_pulsar(jpulsar,j)*e_X(ij)/(1.+khat_xhat_b_boost)
+                          DT_a_sum_boost=DT_a_sum_boost+DT_a
+                          DT_b_sum_boost=DT_b_sum_boost+DT_b
+                          DX_a_sum_boost=DX_a_sum_boost+DX_a
+                          DX_b_sum_boost=DX_b_sum_boost+DX_b
+                        endif
+                      enddo
+                      enddo
+                      fact_boost   =DT_a_sum_boost*DT_b_sum_boost+DX_a_sum_boost*DX_b_sum_boost
+!if (ikx==2 .and. iky==2 .and. ikz==2 .and. ipulsar==1 .and. jpulsar==3) then
+!  print*,'AXEL2: DT_a_sum,DT_b_sum,DX_a_sum,DX_b_sum=',DT_a_sum,DT_b_sum,DX_a_sum,DX_b_sum
+!  print*,'AXEL2: DT_a_sum_boost,DT_b_sum_boost,DX_a_sum_boost,DX_b_sum_boost=', &
+!                 DT_a_sum_boost,DT_b_sum_boost,DX_a_sum_boost,DX_b_sum_boost
+!  print*,'AXEL2: fact,fact_boost=',fact,fact_boost
+!endif
+!if (ikx==2 .and. iky==2 .and. ikz==2 .and. ipulsar=1 .and. jpulsar=3) print*,'AXEL: fact,fact_boost=',fact,fact_boost
+                      facthel_boost=DT_a_sum*DX_b_sum-DX_a_sum*DT_b_sum
+                      spectra%GWh_Gamma_Bb(ik,ibin_angular)=spectra%GWh_Gamma_Bb(ik,ibin_angular) &
+                         +(hhX_boost  **2 &
+                          +hhXim_boost**2 &
+                          +hhT_boost  **2 &
+                          +hhTim_boost**2)*fact_boost
+                      spectra%GWhhel_Gamma_Bb(ik,ibin_angular)=spectra%GWhhel_Gamma_Bb(ik,ibin_angular)+2*sign_switch*( &
+                         +(hhXim_boost*hhT_boost &
+                          -hhX_boost  *hhTim_boost ))*facthel_boost
+                    endif
+!
+!  end of pulsar loop
+!
+                  enddo
+                  enddo
+!
+!  endif from pulsar if
+!
+                endif
+!
+! still need to add other boosted spectra (as follows below) -emma
 !
 !  Gravitational wave production spectrum for TTgT
 !
-              if (Stg_spec) then
-                spectra%Stg(ik)=spectra%Stg(ik) &
-                   +f(nghost+ikx,nghost+iky,nghost+ikz,iStressT)  *f(nghost+ikx,nghost+iky,nghost+ikz,iggT  ) &
-                   +f(nghost+ikx,nghost+iky,nghost+ikz,iStressTim)*f(nghost+ikx,nghost+iky,nghost+ikz,iggTim) &
-                   +f(nghost+ikx,nghost+iky,nghost+ikz,iStressX)  *f(nghost+ikx,nghost+iky,nghost+ikz,iggX  ) &
-                   +f(nghost+ikx,nghost+iky,nghost+ikz,iStressXim)*f(nghost+ikx,nghost+iky,nghost+ikz,iggXim)
-                spectra%Stghel(ik)=spectra%Stghel(ik)-sign_switch*( &
-                   +f(nghost+ikx,nghost+iky,nghost+ikz,iStressXim) &
-                   *f(nghost+ikx,nghost+iky,nghost+ikz,iggT  ) &
-                   +f(nghost+ikx,nghost+iky,nghost+ikz,iStressXim) &
-                   *f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  ) &
-                   -f(nghost+ikx,nghost+iky,nghost+ikz,iStressX  ) &
-                   *f(nghost+ikx,nghost+iky,nghost+ikz,iggTim) &
-                   -f(nghost+ikx,nghost+iky,nghost+ikz,iStressX  ) &
-                   *f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim) )
-              endif
+                if (Stg_spec) then
+                  spectra%Stg(ik)=spectra%Stg(ik) &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,iStressT)  *f(nghost+ikx,nghost+iky,nghost+ikz,iggT  ) &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,iStressTim)*f(nghost+ikx,nghost+iky,nghost+ikz,iggTim) &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,iStressX)  *f(nghost+ikx,nghost+iky,nghost+ikz,iggX  ) &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,iStressXim)*f(nghost+ikx,nghost+iky,nghost+ikz,iggXim)
+                  spectra%Stghel(ik)=spectra%Stghel(ik)-sign_switch*( &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,iStressXim) &
+                     *f(nghost+ikx,nghost+iky,nghost+ikz,iggT  ) &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,iStressXim) &
+                     *f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  ) &
+                     -f(nghost+ikx,nghost+iky,nghost+ikz,iStressX  ) &
+                     *f(nghost+ikx,nghost+iky,nghost+ikz,iggTim) &
+                     -f(nghost+ikx,nghost+iky,nghost+ikz,iStressX  ) &
+                     *f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim) )
+                endif
 !
 !  Stress spectrum computed from Str
 !  ?not used currently
 !
-              if (Str_spec) then
-                spectra%Str(ik)=spectra%Str(ik) &
-                   +f(nghost+ikx,nghost+iky,nghost+ikz,iStressX  )**2 &
-                   +f(nghost+ikx,nghost+iky,nghost+ikz,iStressXim)**2 &
-                   +f(nghost+ikx,nghost+iky,nghost+ikz,iStressT  )**2 &
-                   +f(nghost+ikx,nghost+iky,nghost+ikz,iStressTim)**2
-                spectra%Strhel(ik)=spectra%Strhel(ik)+2*sign_switch*( &
-                   +f(nghost+ikx,nghost+iky,nghost+ikz,iStressXim) &
-                   *f(nghost+ikx,nghost+iky,nghost+ikz,iStressT  ) &
-                   -f(nghost+ikx,nghost+iky,nghost+ikz,iStressX  ) &
-                   *f(nghost+ikx,nghost+iky,nghost+ikz,iStressTim) )
-              endif
+                if (Str_spec) then
+                  spectra%Str(ik)=spectra%Str(ik) &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,iStressX  )**2 &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,iStressXim)**2 &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,iStressT  )**2 &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,iStressTim)**2
+                  spectra%Strhel(ik)=spectra%Strhel(ik)+2*sign_switch*( &
+                     +f(nghost+ikx,nghost+iky,nghost+ikz,iStressXim) &
+                     *f(nghost+ikx,nghost+iky,nghost+ikz,iStressT  ) &
+                     -f(nghost+ikx,nghost+iky,nghost+ikz,iStressX  ) &
+                     *f(nghost+ikx,nghost+iky,nghost+ikz,iStressTim) )
+                endif
 !
 !  Stress spectrum computed from the scalar mode, SCL.
 !
-              if (SCL_spec) then
-                spectra%SCL(ik)=spectra%SCL(ik)+.5*(SCL_re**2+SCL_im**2)
-              endif
+                if (SCL_spec) then
+                  spectra%SCL(ik)=spectra%SCL(ik)+.5*(SCL_re**2+SCL_im**2)
+                endif
 !
 !  Spectrum computed from the vector modes...
 !
-              if (VCT_spec) then
-                do q=1,3
-                  spectra%VCT(ik)=spectra%VCT(ik)+.5*(VCT_re(q)**2+VCT_im(q)**2)
-                enddo
-              endif
+                if (VCT_spec) then
+                  do q=1,3
+                    spectra%VCT(ik)=spectra%VCT(ik)+.5*(VCT_re(q)**2+VCT_im(q)**2)
+                  enddo
+                endif
 !
 !  Spectrum computed from the total unprojected stress
 !
-              if (Tpq_spec) then
-                do q=1,3
-                do p=1,3
-                  pq=ij_table(p,q)
-                  spectra%Tpq(ik)=spectra%Tpq(ik)+.5*(Tpq_re(ikx,iky,ikz,pq)**2+Tpq_im(ikx,iky,ikz,pq)**2)
-                enddo
-                enddo
-              endif
+                if (Tpq_spec) then
+                  do q=1,3
+                  do p=1,3
+                    pq=ij_table(p,q)
+                    spectra%Tpq(ik)=spectra%Tpq(ik)+.5*(Tpq_re(ikx,iky,ikz,pq)**2+Tpq_im(ikx,iky,ikz,pq)**2)
+                  enddo
+                  enddo
+                endif
 !
 ! Added for nonlinear GW memory effect
 !
-            if (TGW_spec) then
-              if (.not.lnonlinear_Tpq_trans.and.lroot) print*,'WARNING: TGW_spec incorrect; nonlinear_Tpq is still in real space'
-              do q=1,3
-              do p=1,3
-                pq=ij_table(p,q)
-                spectra%TGW(ik)=spectra%TGW(ik)+.5*(nonlinear_Tpq_re(ikx,iky,ikz,pq)**2+nonlinear_Tpq_im(ikx,iky,ikz,pq)**2)
-              enddo
-              enddo
+                if (TGW_spec) then
+                  if (.not.lnonlinear_Tpq_trans.and.lroot) then
+                    print*,'WARNING: TGW_spec incorrect; nonlinear_Tpq is still in real space'
+                  endif
+!
+                  do q=1,3
+                  do p=1,3
+                    pq=ij_table(p,q)
+                    spectra%TGW(ik)=spectra%TGW(ik)+.5*(nonlinear_Tpq_re(ikx,iky,ikz,pq)**2+nonlinear_Tpq_im(ikx,iky,ikz,pq)**2)
+                  enddo
+                  enddo
+                endif
+!
+!  endif from ik <= nk
+!
+              elseif (ik==0) then
+                spectra%GWhhel_Gamma_ang(ik,:)=spectra%GWhhel_Gamma_ang(ik,:)+1.
+!print*,'AEXEL: test t,ik=',t,ik
+              else
+!print*,'AXEL: other test t,ik=',t,ik
+              endif
+!
+!  endif from k^2=0
+!
             endif
-
-          endif
+          enddo
         enddo
       enddo
-    enddo
 
     endsubroutine make_spectra
 !***********************************************************************
-    subroutine special_calc_spectra(f,spectrum,spectrum_hel,lfirstcall,kind)
+    subroutine special_calc_spectra(f,spectrum,spectrum_hel,&
+      spectrum_2d,spectrum_2d_hel,&
+      lfirstcall,kind)
 !
 !  Calculates GW spectra. For use with a single special module.
 !
@@ -1665,6 +2066,7 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (:) :: spectrum,spectrum_hel
+      real, dimension (:,:) :: spectrum_2d,spectrum_2d_hel
       logical :: lfirstcall
       character(LEN=3) :: kind
 
@@ -1676,6 +2078,8 @@ module Special
       select case(kind)
       case ('GWs'); spectrum=spectra%GWs; spectrum_hel=spectra%GWshel
       case ('GWh'); spectrum=spectra%GWh; spectrum_hel=spectra%GWhhel
+      case ('GBs'); spectrum=spectra%GWs_boost; spectrum_hel=spectra%GWshel_boost
+      case ('GBh'); spectrum=spectra%GWh_boost; spectrum_hel=spectra%GWhhel_boost
       case ('GWm'); spectrum=spectra%GWm; spectrum_hel=spectra%GWmhel
       case ('Str'); spectrum=spectra%Str; spectrum_hel=spectra%Strhel
       case ('Stg'); spectrum=spectra%Stg; spectrum_hel=spectra%Stghel
@@ -1687,6 +2091,9 @@ module Special
                     spectrum_hel=aimag(spectra%complex_Str_T)
       case ('StX'); spectrum=real(spectra%complex_Str_X)
                     spectrum_hel=aimag(spectra%complex_Str_X)
+      case ('Gab'); spectrum_2d=spectra%GWh_Gamma_ab; spectrum_2d_hel=spectra%GWhhel_Gamma_ab
+      case ('Gan'); spectrum_2d=spectra%GWh_Gamma_ang; spectrum_2d_hel=spectra%GWhhel_Gamma_ang
+      case ('GBb'); spectrum_2d=spectra%GWh_Gamma_Bb; spectrum_2d_hel=spectra%GWhhel_Gamma_Bb
       case default; call warning('special_calc_spectra', &
                       'kind of spectrum "'//kind//'" not implemented')
       endselect
@@ -1732,7 +2139,6 @@ module Special
 !***********************************************************************
     subroutine compute_gT_and_gX_from_gij(f,label)
 !
-!YYY
 !  Compute the transverse part of the stress tensor by going into Fourier space.
 !  It also allows for the inclusion of nonlinear corrections to the wave equation.
 !  Alternatively, we can also solve the Lighthill equation if lLighthill=T.
@@ -1746,15 +2152,11 @@ module Special
       real, dimension (:,:,:), allocatable :: S_T_re, S_T_im, S_X_re, S_X_im, g2T_re, g2T_im, g2X_re, g2X_im
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (6) :: Pij=0., kij=0., e_T, e_X, Sij_re, Sij_im, delij=0.
-      real, dimension (6) :: e_T_boost, e_X_boost
       real, dimension (:,:,:,:,:), allocatable :: Hijkre, Hijkim
       real, dimension (3) :: e1, e2, kvec
-      real, dimension (3) :: e1_boost, e2_boost, vboost, kvec_boost, khat_boost !emma added nov4
       integer :: i,j,p,q,ik,ikx,iky,ikz,stat,ij,pq,ip,jq,jStress_ij
       real :: fact, delkt, om2_min, kmin
       real :: ksqr, one_over_k2, k1, k2, k3, k1sqr, k2sqr, k3sqr, ksqrt
-      real :: gamma_boost, v_boostsqr, kdotv, e1dote3,e2dote1,e2dote3!last added only for a test emma nov4
-      real :: k1_boost, k1sqr_boost, k2_boost,k2sqr_boost,k3_boost, k3sqr_boost, ksqr_boost, ksqrt_boost
       real :: hhTre, hhTim, hhXre, hhXim, coefAre, coefAim
       real :: ggTre, ggTim, ggXre, ggXim, coefBre, coefBim
       real :: cosot, sinot, sinot_minus, om12, om, om1, om2, dt1
@@ -2112,34 +2514,6 @@ module Special
             ksqr=k1sqr+k2sqr+k3sqr
             ksqrt = sqrt(ksqr)
 !
-!  boosted x components of k, and squared quantities.
-!
-            v_boostsqr = vx_boost**2+vy_boost**2+vz_boost**2
-            gamma_boost=1./sqrt(1.-v_boostsqr)
-            vboost(1)=vx_boost
-            vboost(2)=vy_boost
-            vboost(3)=vz_boost
-            !added above component definitions for later computation, emma
-            !k1_boost=gamma_boost*(-vx_boost*ksqrt+kx_fft(ikx+ipx*nx))
-            !generalising the boost:
-            if (v_boostsqr==0.) then
-              kdotv = 0.
-            else
-              kdotv = (gamma_boost-1)*(k1*vx_boost + k2*vy_boost + k3*vz_boost)/v_boostsqr
-            endif
-            k1_boost = k1+kdotv*vx_boost - gamma_boost*ksqrt*vx_boost
-            k2_boost = k2+kdotv*vy_boost - gamma_boost*ksqrt*vy_boost
-            k3_boost = k3+kdotv*vz_boost - gamma_boost*ksqrt*vz_boost
-            k1sqr_boost=k1_boost**2
-            k2sqr_boost=k2_boost**2
-            k3sqr_boost=k3_boost**2
-            ksqr_boost=k1sqr_boost+k2sqr_boost+k3sqr_boost
-            ksqrt_boost=sqrt(ksqr_boost)
-            kvec_boost(1)=k1_boost
-            kvec_boost(2)=k2_boost
-            kvec_boost(3)=k3_boost
-            !!!khat_boost = kvec_boost/ksqrt_boost    !MR: not used, but potential troublemaker for ksqrt_boost=0.
-!
 !  find two vectors e1 and e2 to compute e_T and e_X
 !
             if (lroot.and.ikx==1.and.iky==1.and.ikz==1) then
@@ -2439,11 +2813,11 @@ module Special
               if (ldebug_print) then
                 if (nint(k1)==2.and.nint(k2)==0.and.nint(k3)==0) then
                   if (lhorndeski) then
-                    print*,'AXEL0 (horndeski): ',om1, coefA,coefB,hhTre,ggTre
-                    print*,'AXEL1 (horndeski): ',cosoth, cosotg, sinoth, sinotg
+                    print*,'(horndeski): ',om1, coefA,coefB,hhTre,ggTre
+                    print*,'(horndeski): ',cosoth, cosotg, sinoth, sinotg
                   else
-                    print*,'AXEL0: ',om1, coefAre,coefBre,hhTre,ggTre
-                    print*,'AXEL1: ',cosot, sinot
+                    print*,'(horndeski1): ',om1, coefAre,coefBre,hhTre,ggTre
+                    print*,'(horndeski2): ',cosot, sinot
                   endif
                 endif
               endif
@@ -2512,131 +2886,6 @@ module Special
             f(nghost+ikx,nghost+iky,nghost+ikz,iStressX  )=S_X_re(ikx,iky,ikz)
             f(nghost+ikx,nghost+iky,nghost+ikz,iStressXim)=S_X_im(ikx,iky,ikz)
 !
-!  option of computing boosted hT, hX gT, gX
-!  back to real space: hTX
-!  re-utilize S_T_re, etc as workspace.
-!  begin by initilizing them to zero
-!  compute boosted e1 and e2 vectors
-!
-!emma: delete following if if decide to use second method below
-
-            if (lboost) then
-                e1dote3=0 !this is only for a test, emma
-                e2dote3=0
-                e2dote1=0
-!emma: changed if statements to keep construction choice consistent with un-boosted case (dec 9)                
-              if(abs(k1)<abs(k2)) then
-                if(abs(k1_boost)<abs(k3_boost)) then !(k1_boost is pref dir)
-                  e1_boost=(/0.,-k3_boost,+k2_boost/)
-                  e2_boost=(/k2sqr_boost+k3sqr_boost,-k2_boost*k1_boost,-k3_boost*k1_boost/)
-                else !(k3 is pref dir)
-                  e1_boost=(/k2_boost,-k1_boost,0./)
-                  e2_boost=(/k1_boost*k3_boost,k2_boost*k3_boost,-(k1sqr_boost+k2sqr_boost)/)
-                endif
-              else !(k2 smaller than k1_boost)
-                if(abs(k2)<abs(k3)) then !(k2 is pref dir)
-                  e1_boost=(/-k3_boost,0.,+k1_boost/)
-                  e2_boost=(/+k1_boost*k2_boost,-(k1sqr_boost+k3sqr_boost),+k3_boost*k2_boost/)
-                else !(k3 is pref dir)
-                  e1_boost=(/k2_boost,-k1_boost,0./)
-                  e2_boost=(/k1_boost*k3_boost,k2_boost*k3_boost,-(k1sqr_boost+k2sqr_boost)/)
-                endif
-              endif
-!
-!  normalize boosted e1 and e2 vectors
-!
-              e1_boost=e1_boost/sqrt(e1_boost(1)**2+e1_boost(2)**2+e1_boost(3)**2)
-              e2_boost=e2_boost/sqrt(e2_boost(1)**2+e2_boost(2)**2+e2_boost(3)**2)
-!
-! changed method for boosting e1 and e2
-               ! e1_boost(:2)=e1(:2); e2_boost(:2)=e2(:2)
-!                if (v_boostsqr/=0.) then
-!                  do i=1,3
-!                    e1_boost(i)=e1_boost(i)+(gamma_boost-1)*(e1(1)*vx_boost+e1(2)*vy_boost+e1(3)*vz_boost)*vboost(i)/v_boostsqr
-!                    e1_boost(i)=e1_boost(i)-gamma_boost*vboost(i)
-!                    e2_boost(i)=e2_boost(i)+(gamma_boost-1)*(e2(1)*vx_boost+e2(2)*vy_boost+e2(3)*vz_boost)*vboost(i)/v_boostsqr
-!                    e2_boost(i)=e2_boost(i)-gamma_boost*vboost(i)
-                   ! e1dote3=e1dote3+e1_boost(i)*khat_boost(i)
-                   ! e2dote3=e2dote3+e2_boost(i)*khat_boost(i)
-                   ! e2dote1=e2dote1+e2_boost(i)*e1_boost(i)
-!                  enddo
-!                endif
-              !test (emma, dec 9)
-              ! do i = 1,3
-              !    e1dote3=e1dote3+e1_boost(i)*khat_boost(i)
-              !    e2dote3=e2dote3+e2_boost(i)*khat_boost(i)
-              !    e2dote1=e2dote1+e2_boost(i)*e1_boost(i)
-              ! enddo
-              ! if (t>62.and.k1==1.and.k2==1.and.k3==1) print*,'13,23,21',e1dote3,e2dote3,e2dote1 !emma test nov4
-!
-!  compute e_T_boost and e_X_boost
-!
-              do j=1,3
-              do i=1,3
-                ij=ij_table(i,j)
-                e_T_boost(ij)=e1_boost(i)*e1_boost(j)-e2_boost(i)*e2_boost(j)
-                e_X_boost(ij)=e1_boost(i)*e2_boost(j)+e2_boost(i)*e1_boost(j)
-              enddo
-              enddo
-              !emma: following test, nov3
-              !if (t>61.and.k1==1.and.k2==1.and.k3==1) print*,'polar',e_T_boost(1),e_T_boost(2),e_T_boost(3),&
-              !e_T_boost(4),e_T_boost(5),e_T_boost(6)
-!
-!  possibility of swapping the sign of e_X
-!
-              if (lswitch_sign_e_X_boost) then
-                if (k3<0.) then
-                  e_X_boost=-e_X_boost
-                elseif (k3==0.) then
-                  if (k2<0.) then
-                    e_X_boost=-e_X_boost
-                  elseif (k2==0.) then
-                    if (k1_boost<0.) then
-                      e_X_boost=-e_X_boost
-                    endif
-                  endif
-                endif
-              endif
-!
-!  compute 4 coefficients
-!
-              eTT=0.
-              eTX=0.
-              eXT=0.
-              eXX=0.
-              do j=1,3
-              do i=1,3
-                ij=ij_table(i,j)
-                eTT=eTT+e_T_boost(ij)*e_T(ij)
-                eTX=eTX+e_T_boost(ij)*e_X(ij)
-                eXT=eXT+e_X_boost(ij)*e_T(ij)
-                eXX=eXX+e_X_boost(ij)*e_X(ij)
-              enddo
-              enddo
-              !if (t>60.and.k1==1.and.k2==1.and.k3==0) print*,'eTT,eTX,eXT,eXX',eTT,eTX,eXT,eXX !emma nov3 test
-              !if (t>60.and.k1==1.and.k2==1.and.k3==0) print*,'k-vec',k1,k1_boost,k2,k2_boost,k3,k3_boost
-!
-!  apply transformation from unboosted to boosted h and g
-!
-              f(nghost+1,nghost+1,nghost+1,ihhT_boost  )=eTT*f(nghost+1,nghost+1,nghost+1,ihhT  ) &
-                                                        +eTX*f(nghost+1,nghost+1,nghost+1,ihhX  )
-              f(nghost+1,nghost+1,nghost+1,ihhTim_boost)=eTT*f(nghost+1,nghost+1,nghost+1,ihhTim) &
-                                                        +eTX*f(nghost+1,nghost+1,nghost+1,ihhXim)
-              f(nghost+1,nghost+1,nghost+1,iggT_boost  )=eTT*f(nghost+1,nghost+1,nghost+1,iggT  ) &
-                                                        +eTX*f(nghost+1,nghost+1,nghost+1,iggX  )
-              f(nghost+1,nghost+1,nghost+1,iggTim_boost)=eTT*f(nghost+1,nghost+1,nghost+1,iggTim) &
-                                                        +eTX*f(nghost+1,nghost+1,nghost+1,iggXim)
-!
-              f(nghost+1,nghost+1,nghost+1,ihhX_boost  )=eXT*f(nghost+1,nghost+1,nghost+1,ihhT  ) &
-                                                        +eXX*f(nghost+1,nghost+1,nghost+1,ihhX  )
-              f(nghost+1,nghost+1,nghost+1,ihhXim_boost)=eXT*f(nghost+1,nghost+1,nghost+1,ihhTim) &
-                                                        +eXX*f(nghost+1,nghost+1,nghost+1,ihhXim)
-              f(nghost+1,nghost+1,nghost+1,iggX_boost  )=eXT*f(nghost+1,nghost+1,nghost+1,iggT  ) &
-                                                        +eTX*f(nghost+1,nghost+1,nghost+1,iggX  )
-              f(nghost+1,nghost+1,nghost+1,iggXim_boost)=eXT*f(nghost+1,nghost+1,nghost+1,iggTim) &
-                                                        +eXX*f(nghost+1,nghost+1,nghost+1,iggXim)
-            endif
-!
 !  end of ikx, iky, and ikz loops
 !
           enddo
@@ -2668,32 +2917,6 @@ module Special
         call fft_xyz_parallel(S_X_re,S_X_im,linv=.true.)
         f(l1:l2,m1:m2,n1:n2,iggT_realspace)=S_T_re
         f(l1:l2,m1:m2,n1:n2,iggX_realspace)=S_X_re
-      endif
-!
-!  back to real space: hTX
-!
-      if (lreal_space_hTX_boost_as_aux) then
-        S_T_re=f(l1:l2,m1:m2,n1:n2,ihhT_boost  )
-        S_X_re=f(l1:l2,m1:m2,n1:n2,ihhX_boost  )
-        S_T_im=f(l1:l2,m1:m2,n1:n2,ihhTim_boost)
-        S_X_im=f(l1:l2,m1:m2,n1:n2,ihhXim_boost)
-        call fft_xyz_parallel(S_T_re,S_T_im,linv=.true.)
-        call fft_xyz_parallel(S_X_re,S_X_im,linv=.true.)
-        f(l1:l2,m1:m2,n1:n2,ihhT_realspace_boost)=S_T_re
-        f(l1:l2,m1:m2,n1:n2,ihhX_realspace_boost)=S_X_re
-      endif
-!
-!  back to real space: gTX
-!
-      if (lreal_space_gTX_boost_as_aux) then
-        S_T_re=f(l1:l2,m1:m2,n1:n2,iggT_boost  )
-        S_X_re=f(l1:l2,m1:m2,n1:n2,iggX_boost  )
-        S_T_im=f(l1:l2,m1:m2,n1:n2,iggTim_boost)
-        S_X_im=f(l1:l2,m1:m2,n1:n2,iggXim_boost)
-        call fft_xyz_parallel(S_T_re,S_T_im,linv=.true.)
-        call fft_xyz_parallel(S_X_re,S_X_im,linv=.true.)
-        f(l1:l2,m1:m2,n1:n2,iggT_realspace_boost)=S_T_re
-        f(l1:l2,m1:m2,n1:n2,iggX_realspace_boost)=S_X_re
       endif
 !
     endsubroutine compute_gT_and_gX_from_gij

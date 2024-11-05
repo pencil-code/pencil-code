@@ -243,7 +243,6 @@ module Particles
       use EquationOfState, only: cs0, rho0, get_stratz, get_gamma_etc
       use FArrayManager
       use SharedVariables, only: get_shared_variable
-      use Density, only: mean_density
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mparray), intent (in) :: fp
@@ -1286,6 +1285,20 @@ k_loop:   do while (.not. (k>npar_loc))
       call keep_compiler_quiet(ineargrid)
 !
     endsubroutine insert_particles
+!***********************************************************************
+    subroutine insert_nucleii(f,fp,ineargrid)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mpar_loc,mparray) :: fp
+      integer, dimension (mpar_loc,3)    :: ineargrid
+!
+      intent (inout) :: fp,ineargrid
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(ineargrid)
+!
+    endsubroutine insert_nucleii
 !***********************************************************************
     subroutine particles_dragforce_stiff(f,fp,ineargrid)
 !

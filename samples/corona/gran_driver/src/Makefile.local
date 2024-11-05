@@ -1,0 +1,23 @@
+###                             -*-Makefile-*-
+### Makefile for modular pencil code -- local part
+### Included by `Makefile'
+###
+MPICOMM   =   mpicomm
+GLOBAL    = noglobal
+
+HYDRO     =   hydro
+DENSITY   = nodensity
+ENTROPY   = noentropy
+EOS       = noeos
+MAGNETIC  = nomagnetic
+RADIATION = noradiation
+
+GRAVITY   = nogravity
+FORCING   = noforcing
+SHOCK    =  noshock
+SHEAR     = noshear
+SPECIAL   =   special/solar_corona
+
+FOURIER   =   fourier_fftpack
+
+REAL_PRECISION = double

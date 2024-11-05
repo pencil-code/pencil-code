@@ -361,7 +361,7 @@ class SliceSeries(object):
                     if file_name[:6] == "slice_":
                         extension_list.append(file_name.split(".")[1])
                 # Remove duplicates.
-                extension_list = list(set(extension_list))
+                extension_list = sorted(set(extension_list))
                 try:
                     extension_list.remove("dat")
                 except:

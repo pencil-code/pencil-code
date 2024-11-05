@@ -147,6 +147,10 @@ class Grid(object):
                 if param.lcollective_io:
                     # A collective IO strategy is being used
                     proc_dirs = ["allprocs"]
+
+                if len(proc_dirs) == 0:
+                    raise FileNotFoundError("Assumed io_dist, but could not find processor directories")
+
             else:
                 proc_dirs = ["proc" + str(proc)]
 

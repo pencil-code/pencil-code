@@ -15,22 +15,33 @@ module Timestep
   real, parameter :: dt_decrease      = -0.25
   real, parameter :: dt_increase      = -0.20
   real            :: errcon, dt_next
+  real, dimension(mvar) :: farraymin
+  logical :: fixed_dt=.false.
 !
   contains
 !
 !***********************************************************************
     subroutine initialize_timestep
-
+!
+      use Messages, only: warning
+      use General, only: rtoa
+!
       ldt = .false.
 !
-      if (dt==0.) then
-        call warning('initialize_timestep','dt=0 not appropriate for Runge-Kutta-Fehlberg'// &
-                     'set to 1e-6')
-        dt=1e-6
+      if (dt0>0.) then
+        dt=dt0
+      elseif (dt0<0.) then
+        fixed_dt=.true.
+        dt=-dt0
+      else
+        if (dt==0) then
+          call warning('initialize_timestep','dt=0 not appropriate for Runge-Kutta-Fehlberg'// &
+                     'set to dt_epsi='//trim(rtoa(dt_epsi)))
+          dt=dt_epsi
+        endif
       endif
 !
-      !overwrite the persistent time_step from dt0 in run.in
-      if (dt0/=0.) dt=dt0
+      if (eps_rkf0/=0.) eps_rkf=eps_rkf0
       dt_next=dt
 
     endsubroutine initialize_timestep
@@ -165,6 +176,11 @@ module Timestep
         call fatal_error("rkck", "timestep_rkf_1d only works for the 1D case")
       endif
 !
+      do j=1,mvar
+        farraymin(j) = max(dt_ratio*maxval(abs(f(l1:l2,m1:m2,n1:n2,j))),dt_epsi)
+      enddo
+      if (lroot.and.it==1) print*,"farraymin",farraymin
+!
       errmax=0.
 !
       if (first_call) then
@@ -272,6 +288,13 @@ module Timestep
             ! Constant error
             !
             scal = max(abs(f(l1:l2,n,m,j)), 1e-8)
+            errmaxs = max(maxval(abs(err/scal)),errmaxs)
+            !
+          case ('rel_err')
+            !
+            ! Relative error to f constrained with farraymin floor
+            !
+            scal=max(abs(f(l1:l2,m,n,j)+df(l1:l2,m,n,j)),farraymin(j))
             errmaxs = max(maxval(abs(err/scal)),errmaxs)
             !
           case ('none')

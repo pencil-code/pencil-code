@@ -13,4 +13,3 @@
   public :: dynamical_viscosity
   public :: split_update_viscosity
   public :: pushpars2c
-!

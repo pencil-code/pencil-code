@@ -3707,8 +3707,8 @@ module Boundcond
 ! **********************************************************************
     subroutine bc_set_sfree_x(f,topbot,j)
 !
-!  Details are given in an appendix in the manual.
-!  Lambda effect : stresses due to Lambda effect are added to the stress-tensor.
+!  Details are given in the appendix of the manual.
+!  Lambda effect: stresses due to Lambda effect are added to the stress-tensor.
 !  For rotation along the z direction and also for not very strong rotation such
 !  that the breaking of rotational symmetry is only due to gravity, the only
 !  new term appears in the r-phi component. This implies that this term
@@ -3716,6 +3716,7 @@ module Boundcond
 !
 !  25-Aug-2007/dhruba: coded
 !  21-Mar-2009/axel: get llambda_effect using get_shared_variable
+!   6-Jun-2024/axel+petri: included llambda_scale_with_nu when scaled with nu
 !
       use SharedVariables, only : get_shared_variable
 !
@@ -3724,7 +3725,7 @@ module Boundcond
       integer, intent (in) :: j
 !
       real, pointer :: nu,Lambda_V0t,Lambda_V0b,Lambda_V1t,Lambda_V1b
-      logical, pointer :: llambda_effect
+      logical, pointer :: llambda_effect, llambda_scale_with_nu
       integer :: iy, k
       real :: fac,sth,lambda_exp
 
@@ -3736,10 +3737,11 @@ module Boundcond
       call get_shared_variable('nu',nu,caller='bc_set_sfree_x')
       call get_shared_variable('llambda_effect',llambda_effect)
       if (llambda_effect) then
-         call get_shared_variable('Lambda_V0t',Lambda_V0t)
-         call get_shared_variable('Lambda_V1t',Lambda_V1t)
-         call get_shared_variable('Lambda_V0b',Lambda_V0b)
-         call get_shared_variable('Lambda_V1b',Lambda_V1b)
+        call get_shared_variable('llambda_scale_with_nu',llambda_scale_with_nu)
+        call get_shared_variable('Lambda_V0t',Lambda_V0t)
+        call get_shared_variable('Lambda_V1t',Lambda_V1t)
+        call get_shared_variable('Lambda_V0b',Lambda_V0b)
+        call get_shared_variable('Lambda_V1b',Lambda_V1b)
       endif
 !
       select case (topbot)
@@ -3748,21 +3750,58 @@ module Boundcond
 !
       case(BOT)
 !
-        if ((llambda_effect).and.(j==iuz)) then
-          do iy=1,size(f,2)
-            sth=sinth(iy)
-            lambda_exp=1.+(Lambda_V0b+Lambda_V1b*sth*sth)/nu
-            do k=1,nghost
-               fac=(1.-dx2_bound(-k)/x(l1+k))**lambda_exp
-               if (Omega==0) then
-                 f(l1-k,iy,:,j) = f(l1+k,iy,:,j)*fac
-               else
-                 f(l1-k,iy,:,j) = (f(l1+k,iy,:,j)+Omega*x(l1+k)*sth)*fac &
-                                 -Omega*(x(l1+k)-dx2_bound(-k))*sth
-               endif
-            enddo
-          enddo
+        if (llambda_effect) then
+!
+!  for spherical coordinates, uphi=p%uu(*,3)
+!
+          if (lspherical_coords)then
+            if (j==iuz) then
+              do iy=1,size(f,2)
+                sth=sinth(iy)
+                if (llambda_scale_with_nu) then
+                  lambda_exp=1.+(Lambda_V0b+Lambda_V1b*sth*sth)
+                else
+                  lambda_exp=1.+(Lambda_V0b+Lambda_V1b*sth*sth)/nu
+                endif
+                do k=1,nghost
+                   fac=(1.-dx2_bound(-k)/x(l1+k))**lambda_exp
+                   if (Omega==0) then
+                     f(l1-k,iy,:,j) = f(l1+k,iy,:,j)*fac
+                   else
+                     f(l1-k,iy,:,j) = (f(l1+k,iy,:,j)+Omega*x(l1+k)*sth)*fac &
+                                     -Omega*(x(l1+k)-dx2_bound(-k))*sth
+                   endif
+                enddo
+              enddo
+            endif
+!
+!  for cylindrical coordinates, uphi=p%uu(*,2)
+!
+          elseif (lcylindrical_coords) then
+            if (j==iuy) then
+              do iy=1,size(f,2)
+                if (llambda_scale_with_nu) then
+                  lambda_exp=1.+Lambda_V0b
+                else
+                  lambda_exp=1.+Lambda_V0b/nu
+                endif
+                do k=1,nghost
+                   fac=(1.-dx2_bound(-k)/x(l1+k))**lambda_exp
+                   if (Omega==0) then
+                     f(l1-k,iy,:,j) = f(l1+k,iy,:,j)*fac
+                   else
+                     f(l1-k,iy,:,j) = (f(l1+k,iy,:,j)+Omega*x(l1+k))*fac
+                   endif
+                enddo
+              enddo
+            endif
+          else
+            call fatal_error('bc_set_sfree_x',"coords not ok?")
+          endif
         else
+!
+!  No Lambda effect:
+!
           do k=1,nghost
             f(l1-k,:,:,j) = f(l1+k,:,:,j)*(1.-dx2_bound(-k)/x(l1+k))
 !
@@ -3775,20 +3814,54 @@ module Boundcond
 ! Top boundary
 !
       case(TOP)
-        if ((llambda_effect).and.(j==iuz)) then
-          do iy=1,size(f,2)
-            sth=sinth(iy)
-            lambda_exp=1.+(Lambda_V0t+Lambda_V1t*sth*sth)/nu
-            do k=1,nghost
-              fac=(1.+dx2_bound(k)/x(l2-k))**lambda_exp
-              if (Omega==0) then
-                f(l2+k,iy,:,j) = f(l2-k,iy,:,j)*fac
-              else
-                f(l2+k,iy,:,j) = (f(l2-k,iy,:,j)+Omega*x(l2-k)*sth)*fac &
-                                -Omega*(x(l2-k)+dx2_bound(k))*sth
-              endif
-            enddo
-          enddo
+        if (llambda_effect) then
+!
+!  for spherical coordinates, uphi=p%uu(*,3)
+!
+          if (lspherical_coords)then
+            if (j==iuz) then
+              do iy=1,size(f,2)
+                sth=sinth(iy)
+                if (llambda_scale_with_nu) then
+                  lambda_exp=1.+(Lambda_V0t+Lambda_V1t*sth*sth)
+                else
+                  lambda_exp=1.+(Lambda_V0t+Lambda_V1t*sth*sth)/nu
+                endif
+                do k=1,nghost
+                  fac=(1.+dx2_bound(k)/x(l2-k))**lambda_exp
+                  if (Omega==0) then
+                    f(l2+k,iy,:,j) = f(l2-k,iy,:,j)*fac
+                  else
+                    f(l2+k,iy,:,j) = (f(l2-k,iy,:,j)+Omega*x(l2-k)*sth)*fac &
+                                    -Omega*(x(l2-k)+dx2_bound(k))*sth
+                  endif
+                enddo
+              enddo
+            endif
+!
+!  for cylindrical coordinates, uphi=p%uu(*,2)
+!
+          elseif (lcylindrical_coords) then
+            if (j==iuy) then
+              do iy=1,size(f,2)
+                if (llambda_scale_with_nu) then
+                  lambda_exp=1.+Lambda_V0t
+                else
+                  lambda_exp=1.+Lambda_V0t/nu
+                endif
+                do k=1,nghost
+                  fac=(1.+dx2_bound(k)/x(l2-k))**lambda_exp
+                  if (Omega==0) then
+                    f(l2+k,iy,:,j) = f(l2-k,iy,:,j)*fac
+                  else
+                    f(l2+k,iy,:,j) = (f(l2-k,iy,:,j)+Omega*x(l2-k))*fac
+                  endif
+                enddo
+              enddo
+            endif
+          else
+            call fatal_error('bc_set_sfree_x',"coords not ok?")
+          endif
         else
           do k=1,nghost
             f(l2+k,:,:,j)= f(l2-k,:,:,j)*(1.+dx2_bound(k)/x(l2-k))
@@ -3995,6 +4068,7 @@ module Boundcond
 !  S_{\theta \phi} component of the strain matrix to be zero in spherical
 !  coordinate system. This subroutine sets only the first part of this
 !  boundary condition for 'j'-th component of f.
+!  Note that llambda_scale_with_nu is not implemented here yet.
 !
 !  25-Aug-2007/dhruba: coded
 !
@@ -4005,7 +4079,7 @@ module Boundcond
       integer, intent (in) :: j
       real, pointer :: Lambda_H1,nu
       real, pointer :: LH1_rprof(:)
-      logical, pointer :: llambda_effect
+      logical, pointer :: llambda_effect, llambda_scale_with_nu
       integer :: k,ix
       real :: cos2thm_k,cos2thmpk,somega
       real,dimension(size(f,1)):: LH1
@@ -4015,6 +4089,7 @@ module Boundcond
       call get_shared_variable('nu',nu,caller='bc_set_sfree_y')
       call get_shared_variable('llambda_effect',llambda_effect)
       if (llambda_effect) then
+        call get_shared_variable('llambda_scale_with_nu',llambda_scale_with_nu)
         call get_shared_variable('Lambda_H1',Lambda_H1)
         call get_shared_variable('LH1_rprof',LH1_rprof)
         LH1=Lambda_H1*LH1_rprof
@@ -4026,27 +4101,43 @@ module Boundcond
         if (llambda_effect.and.(j==iuz)) then
           if (Lambda_H1/=0.) then
             do k=1,nghost
-                cos2thm_k= costh(m1-k)**2-sinth(m1-k)**2
-                cos2thmpk= costh(m1+k)**2-sinth(m1+k)**2
+              cos2thm_k= costh(m1-k)**2-sinth(m1-k)**2
+              cos2thmpk= costh(m1+k)**2-sinth(m1+k)**2
               if (Omega==0) then
-                 do ix=1,size(f,1)
+                do ix=1,size(f,1)
+                  if (llambda_scale_with_nu) then
+                    f(ix,m1-k,:,j)= f(ix,m1+k,:,j)* &
+                         (exp(LH1(ix)*cos2thmpk/(4.))*sin1th(m1+k)) &
+                         *(exp(-LH1(ix)*cos2thm_k/(4.))*sinth(m1-k))
+                  else
                     f(ix,m1-k,:,j)= f(ix,m1+k,:,j)* &
                          (exp(LH1(ix)*cos2thmpk/(4.*nu))*sin1th(m1+k)) &
                          *(exp(-LH1(ix)*cos2thm_k/(4.*nu))*sinth(m1-k))
-                 enddo
+                  endif
+                enddo
               else
                 do ix=1,size(f,1)
 ! DM+GG: temporally commented out
 !                somega=x(ix)*Omega*sinth(m1-k)*( &
 !                   exp(2*cos2thm_k*LH1(ix)/(4.*nu))&
 !                        -exp((cos2thmpk+cos2thm_k)*LH1(ix)/(4.*nu)) )
-                  somega=x(ix)*Omega*sinth(m1-k)*( &
-                     exp(cos2thmpk*LH1(ix)/(4.*nu))&
-                          /exp((cos2thm_k)*LH1(ix)/(4.*nu)) -1.)
-                  f(ix,m1-k,:,j)= f(ix,m1+k,:,j)* &
-                     (exp(LH1(ix)*cos2thmpk/(4.*nu))*sin1th(m1+k)) &
-                     *(exp(-LH1(ix)*cos2thm_k/(4.*nu))*sinth(m1-k)) &
-                        +somega
+                  if (llambda_scale_with_nu) then
+                    somega=x(ix)*Omega*sinth(m1-k)*( &
+                       exp(cos2thmpk*LH1(ix)/(4.))&
+                            /exp((cos2thm_k)*LH1(ix)/(4.)) -1.)
+                    f(ix,m1-k,:,j)= f(ix,m1+k,:,j)* &
+                       (exp(LH1(ix)*cos2thmpk/(4.))*sin1th(m1+k)) &
+                       *(exp(-LH1(ix)*cos2thm_k/(4.))*sinth(m1-k)) &
+                          +somega
+                  else
+                    somega=x(ix)*Omega*sinth(m1-k)*( &
+                       exp(cos2thmpk*LH1(ix)/(4.*nu))&
+                            /exp((cos2thm_k)*LH1(ix)/(4.*nu)) -1.)
+                    f(ix,m1-k,:,j)= f(ix,m1+k,:,j)* &
+                       (exp(LH1(ix)*cos2thmpk/(4.*nu))*sin1th(m1+k)) &
+                       *(exp(-LH1(ix)*cos2thm_k/(4.*nu))*sinth(m1-k)) &
+                          +somega
+                  endif
                 enddo
               endif
             enddo
@@ -4063,26 +4154,42 @@ module Boundcond
               cos2thm_k= costh(m2-k)**2-sinth(m2-k)**2
               cos2thmpk= costh(m2+k)**2-sinth(m2+k)**2
               if (Omega==0)then
-                 do ix=1,size(f,1)
+                do ix=1,size(f,1)
+                  if (llambda_scale_with_nu) then
+                    f(ix,m2+k,:,j)= f(ix,m2-k,:,j)* &
+                     (exp(LH1(ix)*cos2thm_k/(4.))*sin1th(m2-k)) &
+                    *(exp(-LH1(ix)*cos2thmpk/(4.))*sinth(m2+k))
+                  else
                     f(ix,m2+k,:,j)= f(ix,m2-k,:,j)* &
                      (exp(LH1(ix)*cos2thm_k/(4.*nu))*sin1th(m2-k)) &
                     *(exp(-LH1(ix)*cos2thmpk/(4.*nu))*sinth(m2+k))
-                 enddo
-               else
+                  endif
+                enddo
+              else
                 do ix=1,size(f,1)
 ! DM+GG: Temporally comented out
 !                somega=x(ix)*Omega*sinth(m2+k)*( &
 !                   exp(2*cos2thmpk*LH1(ix)/(4.*nu))&
 !                        -exp((cos2thmpk+cos2thm_k)*LH1(ix)/(4.*nu)) )
-                   somega=x(ix)*Omega*sinth(m2+k)*( &
-                        exp(cos2thm_k*LH1(ix)/(4.*nu))    &
-                        / exp(cos2thmpk*LH1(ix)/(4.*nu))-1.)
-                  f(ix,m2+k,:,j)= f(ix,m2-k,:,j)* &
+                  if (llambda_scale_with_nu) then
+                    somega=x(ix)*Omega*sinth(m2+k)*( &
+                      exp(cos2thm_k*LH1(ix)/(4.))    &
+                     /exp(cos2thmpk*LH1(ix)/(4.))-1.)
+                    f(ix,m2+k,:,j)= f(ix,m2-k,:,j)* &
+                       (exp(LH1(ix)*cos2thm_k/(4.))*sin1th(m2-k)) &
+                      *(exp(-LH1(ix)*cos2thmpk/(4.))*sinth(m2+k)) &
+                        +somega
+                  else
+                    somega=x(ix)*Omega*sinth(m2+k)*( &
+                      exp(cos2thm_k*LH1(ix)/(4.*nu))    &
+                     /exp(cos2thmpk*LH1(ix)/(4.*nu))-1.)
+                    f(ix,m2+k,:,j)= f(ix,m2-k,:,j)* &
                        (exp(LH1(ix)*cos2thm_k/(4.*nu))*sin1th(m2-k)) &
                       *(exp(-LH1(ix)*cos2thmpk/(4.*nu))*sinth(m2+k)) &
                         +somega
+                  endif
                 enddo
-               endif
+              endif
             enddo
           endif
         else
@@ -6393,6 +6500,7 @@ module Boundcond
 !   5-feb-15/MR: added reference state
 !  11-feb-15/MR: corrected use of reference state
 !  27-feb-2024/Kishore: implemented for iheatcond=chi-const
+!  21-jun-2024/Kishore: account for bounds on Kramers conductivity
 !
       use EquationOfState, only: lnrho0, cs20
       use SharedVariables, only: get_shared_variable
@@ -6400,9 +6508,9 @@ module Boundcond
       real, dimension (:,:,:,:) :: f
       integer, intent(IN) :: topbot
 !
-      real, dimension (:,:), allocatable :: tmp_yz,work_yz
-      real, pointer :: FbotKbot, FtopKtop, Fbot, Ftop, cp
-      real, pointer :: hcond0_kramers, nkramers, chi
+      real, dimension (:,:), allocatable :: tmp_yz, work_yz, Krho1kr_yz
+      real, pointer :: FbotKbot, FtopKtop, Fbot, Ftop, cp, chi
+      real, pointer :: hcond0_kramers, nkramers, chimax_kramers, chimin_kramers
       logical, pointer :: lheatc_kramers, lheatc_chiconst
       logical, pointer :: lheatc_Kprof, lheatc_Kconst
       integer :: i,stat
@@ -6428,6 +6536,8 @@ module Boundcond
         call get_shared_variable('hcond0_kramers',hcond0_kramers)
         call get_shared_variable('nkramers',nkramers)
         call get_shared_variable('cp',cp)
+        call get_shared_variable('chimax_kramers',chimax_kramers)
+        call get_shared_variable('chimin_kramers',chimin_kramers)
 !
       endif
       if (lheatc_chiconst) then
@@ -6438,6 +6548,11 @@ module Boundcond
       if (lheatc_kramers.or.lheatc_chiconst.or.lreference_state) then
         allocate(work_yz(size(f,2),size(f,3)),stat=stat)
         if (stat>0) call fatal_error('bc_ss_flux_x','could not allocate work_yz')
+      endif
+      if (lheatc_kramers) then
+        allocate(Krho1kr_yz(size(f,2),size(f,3)),stat=stat)
+        if (stat>0) call fatal_error('bc_ss_flux_x', &
+                                     'Could not allocate memory for Krho1kr_yz')
       endif
 !
       if (lreference_state) &
@@ -6498,8 +6613,12 @@ module Boundcond
           endif
 !
           if (lheatc_kramers) then
-            tmp_yz = Fbot*work_yz**(2*nkramers)*(cp*gamma_m1)**(6.5*nkramers)/ &
-                     (hcond0_kramers*tmp_yz**(6.5*nkramers+1.))
+            Krho1kr_yz = hcond0_kramers*work_yz**(-2*nkramers-1)*(tmp_yz/(cp*gamma_m1))**(6.5*nkramers)
+!
+            if (chimin_kramers>0) Krho1kr_yz = max(Krho1kr_yz, chimin_kramers*cp)
+            if (chimax_kramers>0) Krho1kr_yz = min(Krho1kr_yz, chimax_kramers*cp)
+!
+            tmp_yz=Fbot/(work_yz*Krho1kr_yz*tmp_yz)
           else if (lheatc_chiconst) then
             tmp_yz=Fbot/(work_yz*chi*cp*tmp_yz)
           else
@@ -6565,8 +6684,12 @@ module Boundcond
           endif
 !
           if (lheatc_kramers) then
-            tmp_yz = Ftop*work_yz**(2*nkramers)*(cp*gamma_m1)**(6.5*nkramers)/ &
-                     (hcond0_kramers*tmp_yz**(6.5*nkramers+1.))
+            Krho1kr_yz = hcond0_kramers*work_yz**(-2*nkramers-1)*(tmp_yz/(cp*gamma_m1))**(6.5*nkramers)
+!
+            if (chimin_kramers>0) Krho1kr_yz = max(Krho1kr_yz, chimin_kramers*cp)
+            if (chimax_kramers>0) Krho1kr_yz = min(Krho1kr_yz, chimax_kramers*cp)
+!
+            tmp_yz=Ftop/(work_yz*Krho1kr_yz*tmp_yz)
           else if (lheatc_chiconst) then
             tmp_yz=Ftop/(work_yz*chi*cp*tmp_yz)
           else

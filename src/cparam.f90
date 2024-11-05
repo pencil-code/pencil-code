@@ -75,6 +75,10 @@ module Cparam
   integer, parameter :: nrcyl=nxgrid/2
   integer, parameter :: nrcylrun=max(nx/20,1)
 !
+!  Number of bins for Pulsar Timing Array
+!
+  integer, parameter :: nbin_angular=19*2
+!
 !  Array dimension for reduce operation (maxima and sums).
 !  Use here symbol mreduce, use nreduce in call.
 !
@@ -165,6 +169,31 @@ module Cparam
   real, parameter :: k1bessel0=2.4048255577, k1bessel1=3.8317060
   real, parameter :: k2bessel0=5.5200781
 !
+!  Physical constants, taken from
+!  http://physics.nist.gov/cuu/Constants/index.html.
+!
+  real(KIND=rkind8), parameter :: hbar_cgs=1.054571596d-27  ! [erg*s]
+  real(KIND=rkind8), parameter :: k_B_cgs=1.3806505d-16     ! [erg/K]
+  real(KIND=rkind8), parameter :: m_u_cgs=1.66053886d-24    ! [g]
+  real(KIND=rkind8), parameter :: mu0_cgs=4*pi              ! [cgs]
+  ! Better express R_cgs as a derived quantity (i.e. don't define here...)
+  ! (Not done yet since it breaks the interstellar test)
+  !real(KIND=rkind8), parameter :: R_cgs=k_B_cgs/m_u_cgs    ! [erg/g/K]
+  real(KIND=rkind8), parameter :: R_cgs=8.3144D7            ! [erg/g/K]
+  ! It would be better to specify the following masses in units of m_u:
+  real(KIND=rkind8), parameter :: m_p_cgs=1.67262158d-24    ! [g]
+  real(KIND=rkind8), parameter :: m_e_cgs=9.10938188d-28    ! [g]
+  real(KIND=rkind8), parameter :: m_H_cgs=m_e_cgs+m_p_cgs   ! [g]
+  real(KIND=rkind8), parameter :: eV_cgs=1.602176462d-12    ! [erg]
+  real(KIND=rkind8), parameter :: sigmaSB_cgs=5.670400d-5   ! [erg/cm^2/s/K^4]
+! unclear source (probably just guessing?)
+  real(KIND=rkind8), parameter :: sigmaH_cgs=4.d-17         ! [cm^2]
+  real(KIND=rkind8), parameter :: kappa_es_cgs=3.4d-1       ! [cm^2/g]
+  real(KIND=rkind8), parameter :: c_light_cgs=2.99792458d10 ! [cm/s]
+  real(KIND=rkind8), parameter :: G_Newton_cgs=6.6742d-8    ! [cm3/g/s2]
+  real(KIND=rkind8), parameter :: density_scale_cgs=1.2435d21 ![cm] 403pc Reynolds 91, etc
+  real(KIND=rkind8), parameter :: N_avogadro_cgs=6.022d23 ![1/mol]
+!
   logical, parameter :: ALWAYS_FALSE=.false.
 !
 !  Data structure used to gather slice information from the various modules.
@@ -230,30 +259,6 @@ module Cparam
   real, parameter :: one_over_sqrt3=0.577350269189625764509148780501958d0
   real, parameter :: twopi = 6.2831853071795864769252867665590d0
   real, parameter :: dtor = pi/180.d0
-!
-!  Physical constants, taken from
-!  http://physics.nist.gov/cuu/Constants/index.html.
-!
-  real(KIND=rkind8), parameter :: hbar_cgs=1.054571596d-27  ! [erg*s]
-  real(KIND=rkind8), parameter :: k_B_cgs=1.3806505d-16     ! [erg/K]
-  real(KIND=rkind8), parameter :: m_u_cgs=1.66053886d-24    ! [g]
-  real(KIND=rkind8), parameter :: mu0_cgs=4*pi              ! [cgs]
-  ! Better express R_cgs as a derived quantity (i.e. don't define here...)
-  ! (Not done yet since it breaks the interstellar test)
-  !real(KIND=rkind8), parameter :: R_cgs=k_B_cgs/m_u_cgs    ! [erg/g/K]
-  real(KIND=rkind8), parameter :: R_cgs=8.3144D7            ! [erg/g/K]
-  ! It would be better to specify the following masses in units of m_u:
-  real(KIND=rkind8), parameter :: m_p_cgs=1.67262158d-24    ! [g]
-  real(KIND=rkind8), parameter :: m_e_cgs=9.10938188d-28    ! [g]
-  real(KIND=rkind8), parameter :: m_H_cgs=m_e_cgs+m_p_cgs   ! [g]
-  real(KIND=rkind8), parameter :: eV_cgs=1.602176462d-12    ! [erg]
-  real(KIND=rkind8), parameter :: sigmaSB_cgs=5.670400d-5   ! [erg/cm^2/s/K^4]
-! unclear source (probably just guessing?)
-  real(KIND=rkind8), parameter :: sigmaH_cgs=4.d-17         ! [cm^2]
-  real(KIND=rkind8), parameter :: kappa_es_cgs=3.4d-1       ! [cm^2/g]
-  real(KIND=rkind8), parameter :: c_light_cgs=2.99792458d10 ! [cm/s]
-  real(KIND=rkind8), parameter :: G_Newton_cgs=6.6742d-8    ! [cm3/g/s2]
-  real(KIND=rkind8), parameter :: density_scale_cgs=1.2435d21 ![cm] 403pc Reynolds 91, etc
 !
   logical, parameter :: loffload=.false.
 

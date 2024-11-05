@@ -25,7 +25,7 @@ module Chiral
 !
   include 'chiral.h'
 !
-  integer :: iXX_chiral=0,iYY_chiral=0
+  integer :: iXX_chiral=0, iYY_chiral=0, iXX2_chiral=0, iYY2_chiral=0
 !
   contains
 !***********************************************************************

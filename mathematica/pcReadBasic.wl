@@ -121,6 +121,8 @@ varName[sim_]:=Rule@@@Reverse/@Import[sim<>"/data/varname.dat"]//Association
 (*Read simulation parameters*)
 
 
+readParamNml[sim_,file_]:=readParamNml[sim,file,#]&
+readParamNml[sim_,file_,params_List]:=readParamNml[sim,file,#]&/@params
 readParamNml[sim_,file_,param_]:=Module[{breakTwoInOne,listToString,import,value},
   readParamNml::noentry="Entry `1` not found for `2`.";
   

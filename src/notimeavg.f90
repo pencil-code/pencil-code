@@ -1,4 +1,6 @@
 ! $Id$
+! 
+! CPARAM logical, parameter :: ltavg = .false.
 !
 module Timeavg
 !
@@ -11,7 +13,6 @@ module Timeavg
 !
   integer :: idx_tavg=0         ! just scalar, since unused and no mtavg known
   real :: tavg=0.0
-  logical :: ltavg=.false.
 !
   contains
 !***********************************************************************

@@ -48,6 +48,7 @@ module Particles
   real, dimension(3) :: pos_sphere=(/0.0,0.0,0.0/)
   real, dimension(3) :: pos_ellipsoid=(/0.0,0.0,0.0/)
   real, target :: tausp = 0.0
+  real, pointer :: true_density_cond_spec
   real :: xp0=0.0, yp0=0.0, zp0=0.0, vpx0=0.0, vpy0=0.0, vpz0=0.0
   real :: xp1=0.0, yp1=0.0, zp1=0.0, vpx1=0.0, vpy1=0.0, vpz1=0.0
   real :: xp2=0.0, yp2=0.0, zp2=0.0, vpx2=0.0, vpy2=0.0, vpz2=0.0
@@ -108,7 +109,7 @@ module Particles
   logical :: lcollisional_cooling_twobody=.false.
   logical :: lcollisional_dragforce_cooling=.false.
   logical :: ltau_coll_min_courant=.true.
-  logical :: ldragforce_equi_global_eps=.false., ldragforce_equi_noback=.false.
+  logical :: ldragforce_equi_global_eps=.false.
   logical :: ldraglaw_epstein=.true., ldraglaw_epstein_stokes_linear=.false.
   logical :: ldraglaw_simple=.false.
   logical :: ldraglaw_steadystate=.false., ldraglaw_variable=.false.
@@ -186,6 +187,7 @@ module Particles
 !  real :: A3=0., A2=0., G_condensation=0.
   real :: A3=0., A2=0.
   real, target :: G_condensation=0.0
+  real :: nucleation_threshold
   logical :: ascalar_ngp=.false., ascalar_cic=.false.
 !
   namelist /particles_init_pars/ &
@@ -226,7 +228,7 @@ module Particles
       Lz0, lglobalrandom, lswap_radius_and_number, linsert_particles_continuously, &
       lrandom_particle_pencils, lnocalc_np, lnocalc_rhop, &
       np_const, rhop_const, particle_radius, lignore_rhop_swarm, &
-      ldragforce_equi_noback, rhopmat, Deltauy_gas_friction, xp1, &
+      rhopmat, Deltauy_gas_friction, xp1, &
       yp1, zp1, vpx1, vpy1, vpz1, xp2, yp2, zp2, vpx2, vpy2, vpz2, &
       xp3, yp3, zp3, vpx3, vpy3, vpz3, lsinkparticle_1, rsinkparticle_1, &
       lcalc_uup, temp_grad0, thermophoretic_eq, cond_ratio, interp_pol_gradTT, &
@@ -237,7 +239,8 @@ module Particles
       remove_particle_at_time, remove_particle_criteria, &
       remove_particle_criteria_size, remove_particle_criteria_edtog, &
       lnocollapse_xdir_onecell, lnocollapse_ydir_onecell, &
-      lnocollapse_zdir_onecell, qgaussz, r0gaussz, lnp_ap_as_aux
+      lnocollapse_zdir_onecell, qgaussz, r0gaussz, lnp_ap_as_aux,&
+      lpartnucleation
 !
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -289,8 +292,7 @@ module Particles
       remove_particle_criteria_edtog, &
       ascalar_ngp, ascalar_cic, rp_int, rp_ext, rp_ext_width, lnpmin_exclude_zero, &
       lcondensation_rate, vapor_mixing_ratio_qvs, &
-      ltauascalar, rhoa, &
-      G_condensation
+      ltauascalar, rhoa, G_condensation, lpartnucleation, nucleation_threshold
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0      ! DIAG_DOC: $x_{part}$
   integer :: idiag_xpmin=0, idiag_ypmin=0, idiag_zpmin=0      ! DIAG_DOC: $x_{part}$
@@ -400,6 +402,12 @@ module Particles
         iupz = iuup+2
       endif
 !
+!  Register nucleation radius
+!
+      if (lpartnucleation) then
+        call farray_register_auxiliary('nucl_rmin',inucl,communicated=.false.)
+      endif
+!
 !  Special variable for stiff drag force equations.
 !
       if (ldragforce_stiff) then
@@ -454,6 +462,12 @@ module Particles
         call put_shared_variable('vel_call',vel_call)
         call put_shared_variable('turnover_call',turnover_call)
         call put_shared_variable('turnover_shared',turnover_shared)
+      endif
+!
+!  Shared variables
+!
+      if (lchemistry) then
+        call put_shared_variable('lpartnucleation',lpartnucleation)
       endif
 !
       if (lascalar) call put_shared_variable('G_condensation',G_condensation)
@@ -521,6 +535,11 @@ module Particles
         if (random_gen .eq. "min_std") &
           call fatal_error('initialize_particles','cannot use random_gen="min_std" when '// &
                            'linsert_particles_continuously=T and lpersist=T')
+      endif
+       if (lpersist .and. lpartnucleation .and. (ncpus .gt. 1)) then
+        if (random_gen .eq. "min_std") &
+          call fatal_error('initialize_particles','cannot use random_gen="min_std" when '// &
+                           'lpartnucleation=T and lpersist=T')
       endif
 !
 ! Mark particles in a pencil
@@ -963,6 +982,10 @@ module Particles
       if (ldragforce_dust_par .and. lparticlemesh_cic .and. &
           lpscalar_sink .and. lpscalar .and. ilncc == 0) &
         call fatal_error('initialize_particles','lpscalar_sink not allowed for pscalar_nolog')
+!
+      if (lchemistry) then
+        call get_shared_variable('true_density_cond_spec',true_density_cond_spec)
+      endif
 !
     endsubroutine initialize_particles
 !***********************************************************************
@@ -1926,12 +1949,13 @@ module Particles
           endif
           cs = sqrt(cs20)
 !
-          if (ldragforce_equi_global_eps) eps = eps_dtog
+          if (ldragforce_gas_par) then
+            eps = eps_dtog ! will be recomputed if ldragforce_equi_global_eps = .true.
+          else
+            eps = 0.0
+          endif
 !
-          if (ldragforce_equi_noback) eps = 0.0
-!
-          if (lroot .and. (ldragforce_equi_global_eps .or. ldragforce_equi_noback)) &
-              print*, 'init_particles: average dust-to-gas ratio=', eps
+          if (lroot) print*, 'init_particles: average dust-to-gas ratio=', eps
 !
           uudrag: if (lhydro .and. (.not. lread_oldsnap .or. lread_oldsnap_nohydro)) then
 !  Set gas velocity field.
@@ -1939,7 +1963,7 @@ module Particles
               do m = m1,m2
                 do n = n1,n2
 !  Take either global or local dust-to-gas ratio.
-                  if (.not. ldragforce_equi_global_eps) eps = f(l,m,n,irhop) / get_gas_density(f,l,m,n)
+                  if (ldragforce_gas_par .and. .not. ldragforce_equi_global_eps) eps = f(l,m,n,irhop) / get_gas_density(f,l,m,n)
 !
                   f(l,m,n,iux) = f(l,m,n,iux) - beta_glnrho_global(1)*eps*Omega*tausp/ &
                                                 ((1.0+eps)**2+(Omega*tausp)**2)*cs
@@ -1952,15 +1976,13 @@ module Particles
 !  Set particle velocity field.
           do k = 1,npar_loc
 !  Take either global or local dust-to-gas ratio.
-            if (ldragforce_equi_noback) then
+            if (.not. ldragforce_gas_par) then
               eps = 0.0
-            else
-              if (.not. ldragforce_equi_global_eps) then
-                ix0 = ineargrid(k,1)
-                iy0 = ineargrid(k,2)
-                iz0 = ineargrid(k,3)
-                eps = f(ix0,iy0,iz0,irhop) / get_gas_density(f,ix0,iy0,iz0)
-              endif
+            else if (.not. ldragforce_equi_global_eps) then
+              ix0 = ineargrid(k,1)
+              iy0 = ineargrid(k,2)
+              iz0 = ineargrid(k,3)
+              eps = f(ix0,iy0,iz0,irhop) / get_gas_density(f,ix0,iy0,iz0)
             endif
 !
             fp(k,ivpx) = fp(k,ivpx) + beta_glnrho_global(1)*Omega*tausp/ &
@@ -2417,6 +2439,162 @@ module Particles
       endif
 !
     endsubroutine insert_particles
+!***********************************************************************
+    subroutine insert_nucleii(f,fp,ineargrid)
+!
+! Insert particles nucleii continuously (when lnucleation == T),
+! A particle is inserted whenever the mass fraction of a scalar
+! that corresponds to the nucleated mass is above a certain threshold
+! in a grid cell.
+!
+      use General, only: random_number_wrapper, normal_deviate
+      use Particles_diagnos_state, only: insert_particles_diagnos_state
+      use Mpicomm, only: mpireduce_sum_int
+      use Particles_number, only: set_particle_number
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mpar_loc,mparray), intent(inout) :: fp
+      integer, dimension(mpar_loc,3), intent(inout) :: ineargrid
+      real, dimension(3) :: uup
+!
+      logical, save :: linsertmore=.true.
+      real :: xx0, yy0, r2, r, mass_nucleii, part_mass
+      integer :: j, k, n_insert, npar_loc_old, iii
+      integer :: ii,jj,kk
+!
+! Insertion of particles is stopped when maximum number of particles is reached,
+! unless linsert_as_many_as_possible is set.
+! Maximum numer of particles allowed in system is defined by max_particles,
+! initialized to npar. Note that this may cause errors at a processor further
+! downstream, if particles accumulate and mpar_loc is too small.
+! Since root inserts all new particles, make sure
+! npar_loc + n_insert < mpar_loc
+! so that a processor can not exceed its maximum number of particles.
+!
+      call mpireduce_sum_int(npar_loc,npar_total)
+      npar_loc_old=npar_loc
+
+      if (lmpicomm) then
+        !NILS: The current problem is that new particles should always be inserted
+        !NILS: by root. This is not currently done here, since particle insertion
+        !NILS: depends on the local concentration of the passive scalar (icc).
+        !NILS: I am not sure what the best way around this is.
+        call fatal_error("insert_nucleii",&
+             "This subroutine is not correct for multi-core simulations. Please fix!")
+      endif
+
+      
+      !
+      ! Check if we want to insert particles
+      !
+      if (t < max_particle_insert_time .and. t > tstart_insert_particles) then
+        !
+        ! Loop over all grid cells to identify those where nucleii should
+        ! be inserted
+        !
+        do ii=l1,l2
+          do jj=m1,m2
+            do kk=n1,n2
+              !
+              ! Insert nucleii if scalar concentration is above threshold value
+              !
+              if (ldensity_nolog) then
+                mass_nucleii=f(ii,jj,kk,icc)*f(ii,jj,kk,irho)
+              else
+                mass_nucleii=f(ii,jj,kk,icc)*exp(f(ii,jj,kk,ilnrho))
+              endif
+              if (mass_nucleii .gt. nucleation_threshold) then
+                if (1+npar_loc <= mpar_loc) then
+                  linsertmore = .true.
+                else
+                  linsertmore = .false.
+                  call fatal_error("insert_nucleii","mpar_loc is too small!")
+                endif
+                if (linsertmore) then
+                  !
+                  ! Insert nucleii:
+                  !
+                  iii = npar_loc+1
+                  ipar(iii) = npar_inserted_tot+1
+                  npar_loc = npar_loc + 1
+                  k=npar_loc
+!
+! Update total number of inserted particles, npar_inserted_tot.
+! Not the same as npar_total, which is the number of particles in the system,
+! without counting removed particles
+!
+                  npar_inserted_tot = 1 + npar_inserted_tot
+                  !
+                  ! Put the particle in the center of the local grid cell
+                  !
+                  fp(k,ixp) = x(ii)
+                  fp(k,iyp) = y(jj)
+                  fp(k,izp) = z(kk)
+                  !
+                  ! Give the particle the same velocity as the local fluid cell
+                  !
+                  ineargrid(k,1)=ii
+                  ineargrid(k,2)=jj
+                  ineargrid(k,3)=kk
+                  call interpolate_linear(f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:),0,0)
+                  fp(k,ivpx:ivpz) = uup
+                  ! 
+                  !  Initialize particle radius
+                  !
+                  if (lparticles_radius) then
+                    fp(k,iap)=f(ii,jj,kk,inucl)
+                    if (lparticles_number) then
+                      part_mass=4.*pi*fp(k,iap)**3/3.*true_density_cond_spec
+                      fp(k,inpswarm)=mass_nucleii/part_mass
+                    endif
+                  endif
+!
+!  Particles are not allowed to be present in non-existing dimensions.
+!  This would give huge problems with interpolation later.
+!
+                  if (nxgrid == 1) fp(k,ixp) = x(nghost+1)
+                  if (nygrid == 1) fp(k,iyp) = y(nghost+1)
+                  if (nzgrid == 1) fp(k,izp) = z(nghost+1)
+!
+                  if (lparticles_diagnos_state) call insert_particles_diagnos_state(fp, npar_loc_old)
+                  !
+                  ! Set the scalar to zero since the nucleii have now been moved to the particle phase
+                  !
+                  f(ii,jj,kk,icc) = 0.0
+                endif
+              endif
+            enddo
+          enddo
+        enddo
+      endif
+!
+!  Redistribute particles only when t < max_particle_insert_time
+!  and t>tstart_insert_particles.
+!  Could have included some other tests here aswell......
+!
+      if (t < max_particle_insert_time .and. t > tstart_insert_particles) then
+!
+!  Redistribute particles among processors.
+!
+        call boundconds_particles(fp,ipar,linsert=.true.)
+!
+!  Map particle position on the grid.
+!
+        call map_nearest_grid(fp,ineargrid)
+        call map_xxp_grid(f,fp,ineargrid)
+!
+!  Map particle velocity on the grid.
+!
+        call map_vvp_grid(f,fp,ineargrid)
+!
+!  Sort particles (must happen at the end of the subroutine so that random
+!  positions and velocities are not displaced relative to when there is no
+!  sorting).
+!
+        call sort_particles_imn(fp,ineargrid,ipar)
+      endif
+!
+    endsubroutine insert_nucleii
 !***********************************************************************
     subroutine streaming_coldstart(fp,f)
 !

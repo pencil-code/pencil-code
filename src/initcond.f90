@@ -251,7 +251,7 @@ module Initcond
 !
     endsubroutine x3_siny_cosz
 !***********************************************************************
-    subroutine x_siny_cosz(ampl,f,i,kx,ky,kz)
+    subroutine x_siny_cosz(ampl,f,i,kx,ky,kz,xbot, nexp)
 !
 !  sinusoidal wave, adapted from sinxsinz (that routine was already doing
 !  this, but under a different name)
@@ -260,23 +260,39 @@ module Initcond
 !
       integer :: i
       real, dimension (mx,my,mz,mfarray) :: f
-      real,optional :: kx,ky,kz
-      real :: ampl,kx1=pi/2.,ky1=0.,kz1=pi/2.
+      real, optional :: kx, ky, kz, xbot, nexp
+      real :: ampl, kx1=pi/2., ky1=0., kz1=pi/2., xbot_, nexp_
 !
 !  wavenumber k, helicity H=ampl (can be either sign)
 !
-!  sinx(kx*x)*sin(kz*z)
+!  sinx(kx*x)^nexp*sin(kz*z)
 !
       if (present(kx)) kx1=kx
       if (present(ky)) ky1=ky
       if (present(kz)) kz1=kz
+      if (present(xbot)) then
+        xbot_=xbot
+      else
+        xbot_=0.
+      endif
+!
+!  If nexp=0, we have the usual sin(theta) dependence.
+!  To concentrate the field more strongly toward the equator,
+!  we can ut nexp=1 or larger. (The actual exponent must be even.)
+!
+      if (present(nexp)) then
+        nexp_=nexp
+      else
+        nexp_=0.
+      endif
+!
       if (ampl==0) then
         if (lroot) print*,'x_siny_cosz: ampl=0'
       else
         if (lroot) write(*,wave_fmt1) 'x_siny_cosz: ampl,kx,ky,kz=', &
                                       ampl,kx1,ky1,kz1
-        f(:,:,:,i)=f(:,:,:,i)+ampl*(spread(spread(   (    x),2,my),3,mz)&
-                                   *spread(spread(sin(ky1*y),1,mx),3,mz)&
+        f(:,:,:,i)=f(:,:,:,i)+ampl*(spread(spread((x-xbot_),2,my),3,mz)&
+                                   *spread(spread(sin(ky1*y)**(1.+2.*nexp_),1,mx),3,mz)&
                                    *spread(spread(cos(kz1*z),1,mx),2,my))
       endif
 !
@@ -5140,8 +5156,8 @@ module Initcond
       lskip_projection,lvectorpotential,lscale_tobox, lsquash, &
       k1hel, k2hel,lremain_in_fourier,lpower_profile_file,qexp, &
       lno_noise,nfact0,lfactors0,compk0,llogbranch0,initpower_med0, &
-      kpeak_log0,kbreak0,ldouble0,nfactd0,qirro,time,cs,lreinit, &
-      ltime_old,ltime_new,lrho_nonuni,ilnr,l2d)
+      kpeak_log0,kbreak0,ldouble0,nfactd0,qirro,lsqrt_qirro,time, &
+      cs,lreinit,ltime_old,ltime_new,lrho_nonuni,ilnr,l2d,lnot_amp)
 !
 !  Produces helical (q**n * (1+q)**(N-n))*exp(-k**l/cutoff**l) spectrum
 !  when kgaussian=0, where q=k/kpeak, n=initpower, N=initpower2,
@@ -5170,12 +5186,12 @@ module Initcond
       use General, only: loptest, roptest
 !
       logical, intent(in), optional :: lscale_tobox, lsquash, lremain_in_fourier, ltime_old
-      logical, intent(in), optional :: ltime_new, lrho_nonuni
+      logical, intent(in), optional :: ltime_new, lrho_nonuni, lnot_amp
       logical, intent(in), optional :: lpower_profile_file, lno_noise, lfactors0
-      logical, intent(in), optional :: llogbranch0,ldouble0, lreinit, l2d
+      logical, intent(in), optional :: llogbranch0,ldouble0, lreinit, l2d, lsqrt_qirro
       logical :: lvectorpotential, lscale_tobox1, lsquash1, lremain_in_fourier1, lno_noise1
       logical :: lskip_projection,lfactors,llogbranch,ldouble, ltime, ltime_old1
-      logical :: ltime_new1, lrho_nonuni1, l2d1
+      logical :: ltime_new1, lrho_nonuni1, l2d1, lsqrt_qirro1, lnot_amp1
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i, i1, i2, ikx, iky, ikz, stat, ik, nk, ilnr1
       integer, intent(in), optional :: ilnr
@@ -5192,7 +5208,7 @@ module Initcond
       real :: lgk0, dlgk, lgf, lgk, lgf2, lgf1, lgk2, lgk1, D1, D2, D3, compk
       real :: kpeak_log, kbreak, kbreak1, kbreak2, kbreak21, initpower_med, initpower_log
       real :: nfactd,nexp3,nexp4
-      real :: qirro1, p, time1, cs1, om, ctime, stime
+      real :: qirro1, p, p2, time1, cs1, om, ctime, stime
 !
       if (ampl==0.) then
         if (lroot) print*,'power_randomphase: set variable to zero; i1,i2=',i1,i2
@@ -5238,6 +5254,12 @@ module Initcond
 !
      qirro1 = roptest(qirro)
 !
+! added option to use sqrt(qirro) to have correct normalization for trace
+! of two-point correlation (added by antonino, madeline, alberto)
+!
+     lsqrt_qirro1 = loptest(lsqrt_qirro)
+     !print*,'value of qirro1',lsqrt_qirro1
+!
 !  time
 !
      time1 = roptest(time)
@@ -5257,6 +5279,7 @@ module Initcond
 !
      nfact = roptest(nfact0,4.)
      lfactors = loptest(lfactors0)
+     lnot_amp1 = loptest(lnot_amp)
 !
 !  alberto: added option to include additional logarithmic branch
 !
@@ -5549,6 +5572,11 @@ module Initcond
           else
             fact=fact*(1+D2)**nexp2
           endif
+          !D1=abs(initpower/initpower2)
+          !D2=-1/initpower2
+          !if (initpower/=0) then
+          !  D2=D2*abs(initpower)
+          !endif
         endif
       endif  ! (lfactors)
 !
@@ -5560,14 +5588,30 @@ module Initcond
 !
 !  alberto: if lfactor is chosen, the amplitude of the spectrum is
 !           independent of kpeak instead of the integrated energy,
-!           so avoid scaling in such case, also avoided scaling with domain size
-!           (only tested for 1D GW fields)
+!           and it takes the value ampl at kpeak (tested for hydro
+!           fields, for magnetic one can choose compk_aa=-.5 to obtain
+!           a magnetic field spectrum with value ampl at kpeak)
 !
       if (lfactors) then
-        fact=fact*(2*pi/Lx)**0.5
+        !print*,'TEST Lx, kpeak',Lx,kpeak
+        if (lnot_amp1) then
+          fact=fact*(2*pi/Lx)**0.5
+        else
+          fact=fact*kpeak1*scale_factor**1.5/(2*pi*ampl)**0.5
+          !
+          ! alberto: compensate for contribution due to helicity
+          ! taking into account generic qirro (only correct when
+          ! lsqrt_qirro is true)
+          !
+          fact=fact/(1 + relhel**2*(1 - qirro1))**0.5
+          ! compensate when compk is non-zero
+          fact=fact*kpeak21**compk
+          !fact=fact*(kpeak1*scale_factor)
+        endif
       else
         fact=fact*(kpeak1*scale_factor)**1.5
       endif
+ 
       if (lvectorpotential) then
         fact=fact*kpeak1
         if (kgaussian /= 0.) fact=fact*kgaussian**(-.5*(initpower+3.))
@@ -5695,7 +5739,13 @@ module Initcond
 !  Allow for possibility of irrotational contributions of fraction q,
 !  so the vortical fraction is (1-q) == p.
 !
-          p=1.-qirro1
+          if (lsqrt_qirro1) then
+            p=sqrt(1.-qirro1)
+            p2=sqrt(1.-qirro1)-sqrt(2.*qirro1)
+          else
+            p=1.-qirro1
+            p2=1.-2.*qirro1
+          endif
 !
 !  In 2-D
 !
@@ -5708,7 +5758,8 @@ module Initcond
 !  (kk.uu)/k2, ==> vi = ui - ki kj uj, but now we write:
 !  (kk.uu)/k2, ==> vi = (1-q)*ui - (1-2q) ki kj uj
 !
-                r(ikx,iky,ikz)=(1.-2.*qirro1) * (kx(ikx+ipx*nx)*u_re(ikx,iky,ikz,1) &
+                !r(ikx,iky,ikz)=(1.-2.*qirro1) * (kx(ikx+ipx*nx)*u_re(ikx,iky,ikz,1) &
+                r(ikx,iky,ikz)=p2 * (kx(ikx+ipx*nx)*u_re(ikx,iky,ikz,1) &
                                                 +ky(iky+ipy*ny)*u_re(ikx,iky,ikz,2))/k2(ikx,iky,ikz)
                 u_re(ikx,iky,ikz,1)=p*u_re(ikx,iky,ikz,1)-kx(ikx+ipx*nx)*r(ikx,iky,ikz)
                 u_re(ikx,iky,ikz,2)=p*u_re(ikx,iky,ikz,2)-ky(iky+ipy*ny)*r(ikx,iky,ikz)
@@ -5717,7 +5768,8 @@ module Initcond
 !  Imaginary part of (ux, uy, uz) -> vx, vy, vz
 !  (kk.uu)/k2, vi = ui - ki kj uj
 !
-                r(ikx,iky,ikz)=(1.-2.*qirro1) * (kx(ikx+ipx*nx)*u_im(ikx,iky,ikz,1) &
+                !r(ikx,iky,ikz)=(1.-2.*qirro1) * (kx(ikx+ipx*nx)*u_im(ikx,iky,ikz,1) &
+                r(ikx,iky,ikz)=p2 * (kx(ikx+ipx*nx)*u_im(ikx,iky,ikz,1) &
                                                 +ky(iky+ipy*ny)*u_im(ikx,iky,ikz,2))/k2(ikx,iky,ikz)
                 u_im(ikx,iky,ikz,1)=p*u_im(ikx,iky,ikz,1)-kx(ikx+ipx*nx)*r(ikx,iky,ikz)
                 u_im(ikx,iky,ikz,2)=p*u_im(ikx,iky,ikz,2)-ky(iky+ipy*ny)*r(ikx,iky,ikz)
@@ -5733,7 +5785,8 @@ module Initcond
 !  Real part of (ux, uy, uz) -> vx, vy, vz
 !  (kk.uu)/k2, vi = ui - ki kj uj
 !
-                  r(ikx,iky,ikz)=(1.-2.*qirro1)* &
+                  !r(ikx,iky,ikz)=(1.-2.*qirro1)* &
+                  r(ikx,iky,ikz)=p2 * &
                       (kx(ikx+ipx*nx)*u_re(ikx,iky,ikz,1) &
                       +ky(iky+ipy*ny)*u_re(ikx,iky,ikz,2) &
                       +kz(ikz+ipz*nz)*u_re(ikx,iky,ikz,3))/k2(ikx,iky,ikz)
@@ -5756,7 +5809,8 @@ module Initcond
 !  Imaginary part of (ux, uy, uz) -> vx, vy, vz
 !  (kk.uu)/k2, vi = ui - ki kj uj
 !
-                  r(ikx,iky,ikz)=(1.-2.*qirro1)* &
+                  !r(ikx,iky,ikz)=(1.-2.*qirro1)* &
+                  r(ikx,iky,ikz)=p2 * &
                       (kx(ikx+ipx*nx)*u_im(ikx,iky,ikz,1) &
                       +ky(iky+ipy*ny)*u_im(ikx,iky,ikz,2) &
                       +kz(ikz+ipz*nz)*u_im(ikx,iky,ikz,3))/k2(ikx,iky,ikz)

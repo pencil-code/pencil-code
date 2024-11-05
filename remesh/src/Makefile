@@ -28,9 +28,14 @@ FFLAGS_GENERAL=
 # 
 # Default double flags (can be overwritten in machine-specific section).
 #
+FC = mpiifort
+#FC = mpif90
+F77= $(FC)
+CC = mpiicc
+#CC = mpicc
 FFLAGS_DOUBLE = -r8                #Intel
-FFLAGS_DOUBLE = -fdefault-real-8   #GNU
-FFLAGS_DOUBLE = -s real64          #CRAY
+#FFLAGS_DOUBLE = -fdefault-real-8   #GNU
+#FFLAGS_DOUBLE = -s real64          #CRAY
 CFLAGS_DOUBLE = -DDOUBLE_PRECISION
 
 ## Overwrite settings that are local to each run directory
@@ -290,7 +295,8 @@ endif
 MODULE_CMD := $(shell command -v module 2> /dev/null)
 
 LD=$(FC)
-LDFLAGS=$(FFLAGS) $(FFLAGS_GENERAL) -ldl -Wl,--no-relax   # CRAY w. large memory
+LDFLAGS=$(FFLAGS) $(FFLAGS_GENERAL) -ldl
+#-Wl,--no-relax   # CRAY w. large memory
 
 .SUFFIXES: .f90 .mod
 

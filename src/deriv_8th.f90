@@ -210,6 +210,7 @@ module Deriv
 !
 !  01-nov-07/anders: adapted from der
 !  25-aug-09/axel: adapted from deriv
+!  10-Sep-2024/PABourdin: fixed calculation to correct 8th order
 !
       use Cdata
 !
@@ -229,7 +230,8 @@ module Deriv
         df(l1:l2)=(1./840)*dx_1(l1:l2)*( &
             + 672.0*(pencil(l1+1:l2+1)-pencil(l1-1:l2-1)) &
             - 168.0*(pencil(l1+2:l2+2)-pencil(l1-2:l2-2)) &
-            +      (pencil(l1+3:l2+3)-pencil(l1-3:l2-3)))
+            +  32.0*(pencil(l1+3:l2+3)-pencil(l1-3:l2-3)) &
+            -   3.0*(pencil(l1+4:l2+4)-pencil(l1-4:l2-4)) )
       else if (j==2) then
 !
 !  y-derivative
@@ -241,7 +243,8 @@ module Deriv
         df(m1:m2)=(1./840)*dy_1(m1:m2)*( &
             + 672.0*(pencil(m1+1:m2+1)-pencil(m1-1:m2-1)) &
             - 168.0*(pencil(m1+2:m2+2)-pencil(m1-2:m2-2)) &
-            +      (pencil(m1+3:m2+3)-pencil(m1-3:m2-3)))
+            +  32.0*(pencil(m1+3:m2+3)-pencil(m1-3:m2-3)) &
+            -   3.0*(pencil(m1+4:m2+4)-pencil(m1-4:m2-4)) )
       else if (j==3) then
 !
 !  z-derivative
@@ -253,7 +256,8 @@ module Deriv
         df(n1:n2)=(1./840)*dz_1(n1:n2)*( &
             + 672.0*(pencil(n1+1:n2+1)-pencil(n1-1:n2-1)) &
             - 168.0*(pencil(n1+2:n2+2)-pencil(n1-2:n2-2)) &
-            +      (pencil(n1+3:n2+3)-pencil(n1-3:n2-3)))
+            +  32.0*(pencil(n1+3:n2+3)-pencil(n1-3:n2-3)) &
+            -   3.0*(pencil(n1+3:n2+3)-pencil(n1-3:n2-3)) )
       else
         if (lroot) print*, 'der_pencil: no such direction j=', j
         call fatal_error('der_pencil','')
@@ -268,15 +272,16 @@ module Deriv
 !
 !  Dummy
 !
-    real, dimension(:,:) :: arr, der
-    integer :: idir
-    integer, optional :: order
-
+    real, dimension(:,:), intent(in) :: arr
+    integer, intent(in) :: idir
+    real, dimension(:,:), intent(out) :: der
+    integer, intent(in), optional :: order
+!
     call not_implemented('distr_der','for 8th order')
-    call keep_compiler_quiet(idir)
     call keep_compiler_quiet(arr)
+    call keep_compiler_quiet(idir)
     call keep_compiler_quiet(der)
- 
+!
     endsubroutine distr_der
 !***********************************************************************
     subroutine der2_main(f,k,df2,j,lwo_line_elem)
@@ -368,6 +373,7 @@ module Deriv
 !   1-apr-01/axel+wolf: pencil formulation
 !  25-jun-04/tobi+wolf: adapted for non-equidistant grids
 !  25-aug-09/axel: adapted from deriv
+!  10-Sep-2024/PABourdin: implemented 8th order accuracy
 !
       use Cdata
 !
@@ -384,11 +390,12 @@ module Deriv
 !
       if (j==1) then
         if (nxgrid/=1) then
-          fac=(1./180)*dx_1(l1:l2)**2
-          df2=fac*(-490.0*f(l1:l2,m,n) &
-                   +270.0*(f(l1+1:l2+1,m,n)+f(l1-1:l2-1,m,n)) &
-                   - 27.0*(f(l1+2:l2+2,m,n)+f(l1-2:l2-2,m,n)) &
-                   +  2.0*(f(l1+3:l2+3,m,n)+f(l1-3:l2-3,m,n)))
+          fac=dx_1(l1:l2)**2
+          df2=fac*( der2_coef0*f(l1:l2,m,n) &
+                   +der2_coef1*(f(l1+1:l2+1,m,n)+f(l1-1:l2-1,m,n)) &
+                   +der2_coef2*(f(l1+2:l2+2,m,n)+f(l1-2:l2-2,m,n)) &
+                   +der2_coef3*(f(l1+3:l2+3,m,n)+f(l1-3:l2-3,m,n)) &
+                   +der2_coef4*(f(l1+4:l2+4,m,n)+f(l1-4:l2-4,m,n)) )
           if (.not.lequidist(j)) then
             call der(f,df,j)
             df2=df2+dx_tilde(l1:l2)*df
@@ -398,11 +405,12 @@ module Deriv
         endif
       elseif (j==2) then
         if (nygrid/=1) then
-          fac=(1./180)*dy_1(m)**2
-          df2=fac*(-490.0*f(l1:l2,m,n) &
-                   +270.0*(f(l1:l2,m+1,n)+f(l1:l2,m-1,n)) &
-                   - 27.0*(f(l1:l2,m+2,n)+f(l1:l2,m-2,n)) &
-                   +  2.0*(f(l1:l2,m+3,n)+f(l1:l2,m-3,n)))
+          fac=dy_1(m)**2
+          df2=fac*( der2_coef0*f(l1:l2,m,n) &
+                   +der2_coef1*(f(l1:l2,m+1,n)+f(l1:l2,m-1,n)) &
+                   +der2_coef2*(f(l1:l2,m+2,n)+f(l1:l2,m-2,n)) &
+                   +der2_coef3*(f(l1:l2,m+3,n)+f(l1:l2,m-3,n)) &
+                   +der2_coef4*(f(l1:l2,m+4,n)+f(l1:l2,m-4,n)) )
           if (lspherical_coords)     df2=df2*r2_mn
           if (lcylindrical_coords)   df2=df2*rcyl_mn2
           if (.not.lequidist(j)) then
@@ -414,11 +422,12 @@ module Deriv
         endif
       elseif (j==3) then
         if (nzgrid/=1) then
-          fac=(1./180)*dz_1(n)**2
-          df2=fac*(-490.0*f(l1:l2,m,n) &
-                   +270.0*(f(l1:l2,m,n+1)+f(l1:l2,m,n-1)) &
-                   - 27.0*(f(l1:l2,m,n+2)+f(l1:l2,m,n-2)) &
-                   +  2.0*(f(l1:l2,m,n+3)+f(l1:l2,m,n-3)))
+          fac=dz_1(n)**2
+          df2=fac*( der2_coef0*f(l1:l2,m,n) &
+                   +der2_coef1*(f(l1:l2,m,n+1)+f(l1:l2,m,n-1)) &
+                   +der2_coef2*(f(l1:l2,m,n+2)+f(l1:l2,m,n-2)) &
+                   +der2_coef3*(f(l1:l2,m,n+3)+f(l1:l2,m,n-3)) &
+                   +der2_coef4*(f(l1:l2,m,n+4)+f(l1:l2,m,n-4)) )
           if (lspherical_coords) df2=df2*r2_mn*sin2th(m)
           if (.not.lequidist(j)) then
             call der(f,df,j)
@@ -438,6 +447,7 @@ module Deriv
 !
 !  01-nov-07/anders: adapted from der2
 !  25-aug-09/axel: adapted from deriv
+!  10-Sep-2024/PABourdin: implemented 8th order accuracy
 !
       use Cdata
 !
@@ -454,10 +464,12 @@ module Deriv
           if (lroot) print*, 'der2_pencil: pencil must be of size mx for x derivative'
           call fatal_error('der2_pencil','')
         endif
-        df2=(1./180)*dx_1(l1:l2)**2*(-490.0*pencil(l1:l2) &
-               +270.0*(pencil(l1+1:l2+1)+pencil(l1-1:l2-1)) &
-               - 27.0*(pencil(l1+2:l2+2)+pencil(l1-2:l2-2)) &
-               +  2.0*(pencil(l1+3:l2+3)+pencil(l1-3:l2-3)))
+        df2=dx_1(l1:l2)**2*( &
+                der2_coef0*pencil(l1:l2) &
+               +der2_coef1*(pencil(l1+1:l2+1)+pencil(l1-1:l2-1)) &
+               +der2_coef2*(pencil(l1+2:l2+2)+pencil(l1-2:l2-2)) &
+               +der2_coef3*(pencil(l1+3:l2+3)+pencil(l1-3:l2-3)) &
+               +der2_coef4*(pencil(l1+4:l2+4)+pencil(l1-4:l2-4)) )
       else if (j==2) then
 !
 !  y-derivative
@@ -466,10 +478,12 @@ module Deriv
           if (lroot) print*, 'der2_pencil: pencil must be of size my for y derivative'
           call fatal_error('der2_pencil','')
         endif
-        df2=(1./180)*dy_1(m1:m2)**2*(-490.0*pencil(m1:m2) &
-               +270.0*(pencil(m1+1:m2+1)+pencil(m1-1:m2-1)) &
-               - 27.0*(pencil(m1+2:m2+2)+pencil(m1-2:m2-2)) &
-               +  2.0*(pencil(m1+3:m2+3)+pencil(m1-3:m2-3)))
+        df2=dy_1(m1:m2)**2*( &
+                der2_coef0*pencil(m1:m2) &
+               +der2_coef1*(pencil(m1+1:m2+1)+pencil(m1-1:m2-1)) &
+               +der2_coef2*(pencil(m1+2:m2+2)+pencil(m1-2:m2-2)) &
+               +der2_coef3*(pencil(m1+3:m2+3)+pencil(m1-3:m2-3)) &
+               +der2_coef4*(pencil(m1+4:m2+4)+pencil(m1-4:m2-4)) )
       else if (j==3) then
 !
 !  z-derivative
@@ -478,10 +492,12 @@ module Deriv
           if (lroot) print*, 'der2_pencil: pencil must be of size mz for z derivative'
           call fatal_error('der2_pencil','')
         endif
-        df2(n1:n2)=(1./180)*dz_1(n1:n2)**2*(-490.0*pencil(n1:n2) &
-               +270.0*(pencil(n1+1:n2+1)+pencil(n1-1:n2-1)) &
-               - 27.0*(pencil(n1+2:n2+2)+pencil(n1-2:n2-2)) &
-               +  2.0*(pencil(n1+3:n2+3)+pencil(n1-3:n2-3)))
+        df2(n1:n2)=dz_1(n1:n2)**2*( &
+                der2_coef0*pencil(n1:n2) &
+               +der2_coef1*(pencil(n1+1:n2+1)+pencil(n1-1:n2-1)) &
+               +der2_coef2*(pencil(n1+2:n2+2)+pencil(n1-2:n2-2)) &
+               +der2_coef3*(pencil(n1+3:n2+3)+pencil(n1-3:n2-3)) &
+               +der2_coef4*(pencil(n1+4:n2+4)+pencil(n1-4:n2-4)) )
       else
         if (lroot) print*, 'der2_pencil: no such direction j=', j
         call fatal_error('der2_pencil','')
@@ -495,6 +511,7 @@ module Deriv
 !
 !  10-feb-06/anders: adapted from der5
 !  25-aug-09/axel: copied from deriv, but not adapted yet
+!  10-Sep-2024/PABourdin: upgraded to 6th order accuracy
 !
       use Cdata
 !
@@ -525,26 +542,28 @@ module Deriv
       if (j==1) then
         if (nxgrid/=1) then
           if (igndx) then
-            fac=(1.0/8)
+            fac=(1.0/240)
           else
-            fac=(1.0/8)*1./dx**3
+            fac=(1.0/240)*1./dx**3
           endif
-          df=fac*(- 13.0*(f(l1+1:l2+1,m,n,k)-f(l1-1:l2-1,m,n,k)) &
-                  +  8.0*(f(l1+2:l2+2,m,n,k)-f(l1-2:l2-2,m,n,k)) &
-                  -  1.0*(f(l1+3:l2+3,m,n,k)-f(l1-3:l2-3,m,n,k)))
+          df=fac*(-488.0*(f(l1+1:l2+1,m,n,k)-f(l1-1:l2-1,m,n,k)) &
+                  +338.0*(f(l1+2:l2+2,m,n,k)-f(l1-2:l2-2,m,n,k)) &
+                  - 72.0*(f(l1+3:l2+3,m,n,k)-f(l1-3:l2-3,m,n,k)) &
+                  +  7.0*(f(l1+4:l2+4,m,n,k)-f(l1-4:l2-4,m,n,k)) )
         else
           df=0.
         endif
       elseif (j==2) then
         if (nygrid/=1) then
           if (igndx) then
-            fac=(1.0/8)
+            fac=(1.0/240)
           else
-            fac=(1.0/8)*1./dy**3
+            fac=(1.0/240)*1./dy**3
           endif
-          df=fac*(- 13.0*(f(l1:l2,m+1,n,k)-f(l1:l2,m-1,n,k)) &
-                  +  8.0*(f(l1:l2,m+2,n,k)-f(l1:l2,m-2,n,k)) &
-                  -  1.0*(f(l1:l2,m+3,n,k)-f(l1:l2,m-3,n,k)))
+          df=fac*(-488.0*(f(l1:l2,m+1,n,k)-f(l1:l2,m-1,n,k)) &
+                  +338.0*(f(l1:l2,m+2,n,k)-f(l1:l2,m-2,n,k)) &
+                  - 72.0*(f(l1:l2,m+3,n,k)-f(l1:l2,m-3,n,k)) &
+                  +  7.0*(f(l1:l2,m+4,n,k)-f(l1:l2,m-4,n,k)) )
           if (lcylindrical_coords)   df=df*rcyl_mn1**3
         else
           df=0.
@@ -552,13 +571,14 @@ module Deriv
       elseif (j==3) then
         if (nzgrid/=1) then
           if (igndx) then
-            fac=(1.0/8)
+            fac=(1.0/240)
           else
-            fac=(1.0/8)*1./dz**3
+            fac=(1.0/240)*1./dz**3
           endif
-          df=fac*(- 13.0*(f(l1:l2,m,n+1,k)-f(l1:l2,m,n-1,k)) &
-                  +  8.0*(f(l1:l2,m,n+2,k)-f(l1:l2,m,n-2,k)) &
-                  -  1.0*(f(l1:l2,m,n+3,k)-f(l1:l2,m,n-3,k)))
+          df=fac*(-488.0*(f(l1:l2,m,n+1,k)-f(l1:l2,m,n-1,k)) &
+                  +338.0*(f(l1:l2,m,n+2,k)-f(l1:l2,m,n-2,k)) &
+                  - 72.0*(f(l1:l2,m,n+3,k)-f(l1:l2,m,n-3,k)) &
+                  +  7.0*(f(l1:l2,m,n+4,k)-f(l1:l2,m,n-4,k)) )
         else
           df=0.
         endif
@@ -579,6 +599,7 @@ module Deriv
 !   9-dec-03/nils: adapted from der6
 !  10-feb-06/anders: corrected sign and factor
 !  25-aug-09/axel: copied from deriv, but not adapted yet
+!  10-Sep-2024/PABourdin: upgraded to 6th order accuracy
 !
       use Cdata
 !
@@ -617,28 +638,30 @@ module Deriv
       if (j==1) then
         if (nxgrid/=1) then
           if (igndx) then
-            fac=(1.0/6)
+            fac=(1.0/240)
           else
-            fac=(1.0/6)*1/dx**4
+            fac=(1.0/240)*1/dx**4
           endif
-          df=fac*(+ 56.0* f(l1:l2,m,n,k) &
-                  - 39.0*(f(l1+1:l2+1,m,n,k)+f(l1-1:l2-1,m,n,k)) &
-                  + 12.0*(f(l1+2:l2+2,m,n,k)+f(l1-2:l2-2,m,n,k)) &
-                  -      (f(l1+3:l2+3,m,n,k)+f(l1-3:l2-3,m,n,k)))
+          df=fac*(+2730.0* f(l1:l2,m,n,k) &
+                  -1952.0*(f(l1+1:l2+1,m,n,k)+f(l1-1:l2-1,m,n,k)) &
+                  + 676.0*(f(l1+2:l2+2,m,n,k)+f(l1-2:l2-2,m,n,k)) &
+                  -  96.0*(f(l1+3:l2+3,m,n,k)+f(l1-3:l2-3,m,n,k)) &
+                  +   7.0*(f(l1+4:l2+4,m,n,k)+f(l1-4:l2-4,m,n,k)) )
         else
           df=0.
         endif
       elseif (j==2) then
         if (nygrid/=1) then
           if (igndx) then
-            fac=(1.0/6)
+            fac=(1.0/240)
           else
-            fac=(1.0/6)*1/dy**4
+            fac=(1.0/240)*1/dy**4
           endif
-          df=fac*(+ 56.0* f(l1:l2,m  ,n,k) &
-                  - 39.0*(f(l1:l2,m+1,n,k)+f(l1:l2,m-1,n,k)) &
-                  + 12.0*(f(l1:l2,m+2,n,k)+f(l1:l2,m-2,n,k)) &
-                  -      (f(l1:l2,m+3,n,k)+f(l1:l2,m-3,n,k)))
+          df=fac*(+2730.0* f(l1:l2,m  ,n,k) &
+                  -1952.0*(f(l1:l2,m+1,n,k)+f(l1:l2,m-1,n,k)) &
+                  + 676.0*(f(l1:l2,m+2,n,k)+f(l1:l2,m-2,n,k)) &
+                  -  96.0*(f(l1:l2,m+3,n,k)+f(l1:l2,m-3,n,k)) &
+                  +   7.0*(f(l1:l2,m+4,n,k)+f(l1:l2,m-4,n,k)) )
           if (lcylindrical_coords)   df=df*rcyl_mn1**4
         else
           df=0.
@@ -646,14 +669,15 @@ module Deriv
       elseif (j==3) then
         if (nzgrid/=1) then
           if (igndx) then
-            fac=(1.0/6)
+            fac=(1.0/240)
           else
-            fac=(1.0/6)*1/dz**4
+            fac=(1.0/240)*1/dz**4
           endif
-          df=fac*(+ 56.0* f(l1:l2,m,n  ,k) &
-                  - 39.0*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)) &
-                  + 12.0*(f(l1:l2,m,n+2,k)+f(l1:l2,m,n-2,k)) &
-                  -      (f(l1:l2,m,n+3,k)+f(l1:l2,m,n-3,k)))
+          df=fac*(+2730.0* f(l1:l2,m,n  ,k) &
+                  -1952.0*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)) &
+                  + 676.0*(f(l1:l2,m,n+2,k)+f(l1:l2,m,n-2,k)) &
+                  -  96.0*(f(l1:l2,m,n+3,k)+f(l1:l2,m,n-3,k)) &
+                  +   7.0*(f(l1:l2,m,n+4,k)+f(l1:l2,m,n-4,k)) )
         else
           df=0.
         endif
@@ -672,6 +696,7 @@ module Deriv
 !
 !  29-oct-04/anders: adapted from der6
 !  25-aug-09/axel: copied from deriv, but not adapted yet
+!  10-Sep-2024/PABourdin: upgraded to 4th order accuracy
 !
       use Cdata
 !
@@ -702,26 +727,28 @@ module Deriv
       if (j==1) then
         if (nxgrid/=1) then
           if (igndx) then
-            fac=1.0
+            fac=1.0/6
           else
-            fac=1/dx**5
+            fac=(1.0/6)/dx**5
           endif
-          df=fac*(+  2.5*(f(l1+1:l2+1,m,n,k)-f(l1-1:l2-1,m,n,k)) &
-                  -  2.0*(f(l1+2:l2+2,m,n,k)-f(l1-2:l2-2,m,n,k)) &
-                  +  0.5*(f(l1+3:l2+3,m,n,k)-f(l1-3:l2-3,m,n,k)))
+          df=fac*(+ 29.0*(f(l1+1:l2+1,m,n,k)-f(l1-1:l2-1,m,n,k)) &
+                  - 26.0*(f(l1+2:l2+2,m,n,k)-f(l1-2:l2-2,m,n,k)) &
+                  +  9.0*(f(l1+3:l2+3,m,n,k)-f(l1-3:l2-3,m,n,k)) &
+                  -      (f(l1+4:l2+4,m,n,k)-f(l1-4:l2-4,m,n,k)) )
         else
           df=0.
         endif
       elseif (j==2) then
         if (nygrid/=1) then
           if (igndx) then
-            fac=1.0
+            fac=1.0/6
           else
-            fac=1/dy**5
+            fac=(1.0/6)/dy**5
           endif
-          df=fac*(+  2.5*(f(l1:l2,m+1,n,k)-f(l1:l2,m-1,n,k)) &
-                  -  2.0*(f(l1:l2,m+2,n,k)-f(l1:l2,m-2,n,k)) &
-                  +  0.5*(f(l1:l2,m+3,n,k)-f(l1:l2,m-3,n,k)))
+          df=fac*(+ 29.0*(f(l1:l2,m+1,n,k)-f(l1:l2,m-1,n,k)) &
+                  - 26.0*(f(l1:l2,m+2,n,k)-f(l1:l2,m-2,n,k)) &
+                  +  9.0*(f(l1:l2,m+3,n,k)-f(l1:l2,m-3,n,k)) &
+                  -      (f(l1:l2,m+4,n,k)-f(l1:l2,m-4,n,k)) )
           if (lcylindrical_coords)   df=df*rcyl_mn1**5
         else
           df=0.
@@ -729,13 +756,14 @@ module Deriv
       elseif (j==3) then
         if (nzgrid/=1) then
           if (igndx) then
-            fac=1.0
+            fac=1.0/6
           else
-            fac=1/dz**5
+            fac=(1.0/6)/dz**5
           endif
-          df=fac*(+  2.5*(f(l1:l2,m,n+1,k)-f(l1:l2,m,n-1,k)) &
-                  -  2.0*(f(l1:l2,m,n+2,k)-f(l1:l2,m,n-2,k)) &
-                  +  0.5*(f(l1:l2,m,n+3,k)-f(l1:l2,m,n-3,k)))
+          df=fac*(+ 29.0*(f(l1:l2,m,n+1,k)-f(l1:l2,m,n-1,k)) &
+                  - 26.0*(f(l1:l2,m,n+2,k)-f(l1:l2,m,n-2,k)) &
+                  +  9.0*(f(l1:l2,m,n+3,k)-f(l1:l2,m,n-3,k)) &
+                  -      (f(l1:l2,m,n+4,k)-f(l1:l2,m,n-4,k)) )
         else
           df=0.
         endif
@@ -756,6 +784,7 @@ module Deriv
 !
 !   8-jul-02/wolf: coded
 !  25-aug-09/axel: copied from deriv, but not adapted yet
+!  10-Sep-2024/PABourdin: upgraded to 4th order accuracy
 !
       use Cdata
 !
@@ -793,48 +822,51 @@ module Deriv
       if (j==1) then
         if (nxgrid/=1) then
           if (igndx) then
-            fac=1.0
+            fac=1.0/4
           else if (upwnd) then
-            fac=(1.0/840)*dx_1(l1:l2)
+            fac=(1.0/4)*dx_1(l1:l2)
           else
-            fac=1/dx**6
+            fac=(1.0/4)/dx**6
           endif
-          df=fac*(- 20.0* f(l1:l2,m,n,k) &
-                  + 15.0*(f(l1+1:l2+1,m,n,k)+f(l1-1:l2-1,m,n,k)) &
-                  -  6.0*(f(l1+2:l2+2,m,n,k)+f(l1-2:l2-2,m,n,k)) &
-                  +      (f(l1+3:l2+3,m,n,k)+f(l1-3:l2-3,m,n,k)))
+          df=fac*(-150.0* f(l1:l2,m,n,k) &
+                  +116.0*(f(l1+1:l2+1,m,n,k)+f(l1-1:l2-1,m,n,k)) &
+                  - 52.0*(f(l1+2:l2+2,m,n,k)+f(l1-2:l2-2,m,n,k)) &
+                  + 12.0*(f(l1+3:l2+3,m,n,k)+f(l1-3:l2-3,m,n,k)) &
+                  -      (f(l1+4:l2+4,m,n,k)+f(l1-4:l2-4,m,n,k)) )
         else
           df=0.
         endif
       elseif (j==2) then
         if (nygrid/=1) then
           if (igndx) then
-            fac=1.0
+            fac=1.0/4
           else if (upwnd) then
-            fac=(1.0/840)*dy_1(m)
+            fac=(1.0/4)*dy_1(m)
           else
-            fac=1/dy**6
+            fac=(1.0/4)/dy**6
           endif
-          df=fac*(- 20.0* f(l1:l2,m  ,n,k) &
-                  + 15.0*(f(l1:l2,m+1,n,k)+f(l1:l2,m-1,n,k)) &
-                  -  6.0*(f(l1:l2,m+2,n,k)+f(l1:l2,m-2,n,k)) &
-                  +      (f(l1:l2,m+3,n,k)+f(l1:l2,m-3,n,k)))
+          df=fac*(-150.0* f(l1:l2,m  ,n,k) &
+                  +116.0*(f(l1:l2,m+1,n,k)+f(l1:l2,m-1,n,k)) &
+                  - 52.0*(f(l1:l2,m+2,n,k)+f(l1:l2,m-2,n,k)) &
+                  + 12.0*(f(l1:l2,m+3,n,k)+f(l1:l2,m-3,n,k)) &
+                  -      (f(l1:l2,m+4,n,k)+f(l1:l2,m-4,n,k)) )
          else
           df=0.
         endif
       elseif (j==3) then
         if (nzgrid/=1) then
           if (igndx) then
-            fac=1.
+            fac=1.0/4
           else if (upwnd) then
-            fac=(1.0/840)*dz_1(n)
+            fac=(1.0/4)*dz_1(n)
           else
-            fac=1/dz**6
+            fac=(1.0/4)/dz**6
           endif
-          df=fac*(- 20.0* f(l1:l2,m,n  ,k) &
-                  + 15.0*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)) &
-                  -  6.0*(f(l1:l2,m,n+2,k)+f(l1:l2,m,n-2,k)) &
-                  +      (f(l1:l2,m,n+3,k)+f(l1:l2,m,n-3,k)))
+          df=fac*(-150.0* f(l1:l2,m,n  ,k) &
+                  +116.0*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)) &
+                  - 52.0*(f(l1:l2,m,n+2,k)+f(l1:l2,m,n-2,k)) &
+                  + 12.0*(f(l1:l2,m,n+3,k)+f(l1:l2,m,n-3,k)) &
+                  -      (f(l1:l2,m,n+4,k)+f(l1:l2,m,n-4,k)) )
          else
           df=0.
         endif
@@ -854,7 +886,8 @@ module Deriv
 !  D^(6)*dx^5/840, which is the upwind correction of centered derivatives.
 !
 !   8-jul-02/wolf: coded
-!  25-aug-09/axel: copied from deriv, but not adapted yet
+!  25-aug-09/axel: copied from deriv
+!  10-Sep-2024/PABourdin: upgraded to 4th order accuracy
 !
       use Cdata
 !
@@ -890,48 +923,51 @@ module Deriv
       if (j==1) then
         if (nxgrid/=1) then
           if (igndx) then
-            fac=1.0
+            fac=1.0/4
           else if (upwnd) then
-            fac=(1.0/840)*dx_1(l1:l2)
+            fac=(1.0/4)*dx_1(l1:l2)
           else
-            fac=1/dx**6
+            fac=(1.0/4)/dx**6
           endif
-          df=fac*(- 20.0* f(l1:l2,m,n) &
-                  + 15.0*(f(l1+1:l2+1,m,n)+f(l1-1:l2-1,m,n)) &
-                  -  6.0*(f(l1+2:l2+2,m,n)+f(l1-2:l2-2,m,n)) &
-                  +      (f(l1+3:l2+3,m,n)+f(l1-3:l2-3,m,n)))
+          df=fac*(-150.0* f(l1:l2,m,n) &
+                  +116.0*(f(l1+1:l2+1,m,n)+f(l1-1:l2-1,m,n)) &
+                  - 52.0*(f(l1+2:l2+2,m,n)+f(l1-2:l2-2,m,n)) &
+                  + 12.0*(f(l1+3:l2+3,m,n)+f(l1-3:l2-3,m,n)) &
+                  -      (f(l1+4:l2+4,m,n)+f(l1-4:l2-4,m,n)) )
         else
           df=0.
         endif
       elseif (j==2) then
         if (nygrid/=1) then
           if (igndx) then
-            fac=1.0
+            fac=1.0/4
           else if (upwnd) then
-            fac=(1.0/840)*dy_1(m)
+            fac=(1.0/4)*dy_1(m)
           else
-            fac=1/dy**6
+            fac=(1.0/4)/dy**6
           endif
-          df=fac*(- 20.0* f(l1:l2,m  ,n) &
-                  + 15.0*(f(l1:l2,m+1,n)+f(l1:l2,m-1,n)) &
-                  -  6.0*(f(l1:l2,m+2,n)+f(l1:l2,m-2,n)) &
-                  +      (f(l1:l2,m+3,n)+f(l1:l2,m-3,n)))
+          df=fac*(-150.0* f(l1:l2,m  ,n) &
+                  +116.0*(f(l1:l2,m+1,n)+f(l1:l2,m-1,n)) &
+                  - 52.0*(f(l1:l2,m+2,n)+f(l1:l2,m-2,n)) &
+                  + 12.0*(f(l1:l2,m+3,n)+f(l1:l2,m-3,n)) &
+                  -      (f(l1:l2,m+4,n)+f(l1:l2,m-4,n)) )
         else
           df=0.
         endif
       elseif (j==3) then
         if (nzgrid/=1) then
           if (igndx) then
-            fac=1.0
+            fac=1.0/4
           else if (upwnd) then
-            fac=(1.0/840)*dz_1(n)
+            fac=(1.0/4)*dz_1(n)
           else
-            fac=1/dz**6
+            fac=(1.0/4)/dz**6
           endif
-          df=fac*(- 20.0* f(l1:l2,m,n  ) &
-                  + 15.0*(f(l1:l2,m,n+1)+f(l1:l2,m,n-1)) &
-                  -  6.0*(f(l1:l2,m,n+2)+f(l1:l2,m,n-2)) &
-                  +      (f(l1:l2,m,n+3)+f(l1:l2,m,n-3)))
+          df=fac*(-150.0* f(l1:l2,m,n  ) &
+                  +116.0*(f(l1:l2,m,n+1)+f(l1:l2,m,n-1)) &
+                  - 52.0*(f(l1:l2,m,n+2)+f(l1:l2,m,n-2)) &
+                  + 12.0*(f(l1:l2,m,n+3)+f(l1:l2,m,n-3)) &
+                  -      (f(l1:l2,m,n+4)+f(l1:l2,m,n-4)) )
         else
           df=0.
         endif
@@ -943,18 +979,97 @@ module Deriv
 !
 !  Calculate 6th derivative of any x, y or z pencil.
 !
-      use General, only: keep_compiler_quiet
+!  20-jul-20/wlyra: adapted from der2_pencil
+!  10-Sep-2024/PABourdin: copied from deriv, upgraded to 4th order accuracy
 !
       real, dimension (:) :: pencil,df6
+      real, dimension (nx) :: facx
+      real, dimension (ny) :: facy
+      real, dimension (nz) :: facz
       integer :: j
       logical, optional :: ignoredx,upwind
+      logical :: igndx,upwnd
 !
-      intent(in)  :: j, pencil
+      intent(in)  :: j, pencil,ignoredx,upwind
       intent(out) :: df6
 
-      call not_implemented('der6_pencil','')
-      call keep_compiler_quiet(df6)
-
+!
+      if (present(ignoredx)) then
+        igndx = ignoredx
+      else
+        igndx = .false.
+      endif
+!
+      if (present(upwind)) then
+        if (.not. lequidist(j).and..not.lignore_nonequi) then
+          call fatal_error('der6','upwind cannot be used with '//&
+              'non-equidistant grid.')
+        endif
+        upwnd = upwind
+      else
+        upwnd = .false.
+      endif
+!
+!  x-derivative
+!
+      if (j==1) then
+        if (size(pencil)/=mx) &
+          call fatal_error('der6_pencil','pencil must be of size mx for x derivative')
+        if (igndx) then
+          facx=1.0/4
+        elseif (upwnd) then
+          facx=(1.0/4)*dx_1(l1:l2)
+        else
+          facx=(1.0/4)*dx_1(l1:l2)**6
+        endif
+        df6=facx*(-150.0* pencil(l1:l2) &
+                  +116.0*(pencil(l1+1:l2+1)+pencil(l1-1:l2-1)) &
+                  - 52.0*(pencil(l1+2:l2+2)+pencil(l1-2:l2-2)) &
+                  + 12.0*(pencil(l1+3:l2+3)+pencil(l1-3:l2-3)) &
+                  -      (pencil(l1+4:l2+4)+pencil(l1-4:l2-4)) )
+      else if (j==2) then
+!
+!  y-derivative
+!
+        if (size(pencil)/=my) &
+          call fatal_error('der6_pencil','pencil must be of size my for y derivative')
+        if (igndx) then
+          facy=1.0/4
+        else if (upwnd) then
+          facy=(1.0/4)*dy_1(m1:m2)
+        else
+          facy=(1.0/4)*dy_1(m1:m2)**6
+        endif
+        df6=facy*(-150.0* pencil(m1:m2) &
+                  +116.0*(pencil(m1+1:m2+1)+pencil(m1-1:m2-1)) &
+                  - 52.0*(pencil(m1+2:m2+2)+pencil(m1-2:m2-2)) &
+                  + 12.0*(pencil(m1+3:m2+3)+pencil(m1-3:m2-3)) &
+                  -      (pencil(m1+4:m2+4)+pencil(m1-4:m2-4)) )
+!MR: no spherical/cylindrical
+      else if (j==3) then
+!
+!  z-derivative
+!
+        if (size(pencil)/=mz) &
+          call fatal_error('der6_pencil','pencil must be of size mz for z derivative')
+        if (igndx) then
+          facz=1.0/4
+        else if (upwnd) then
+          facz=(1.0/4)*dz_1(n1:n2)
+        else
+          facz=(1.0/4)*dz_1(n1:n2)**6
+        endif
+        df6=facz*(-150.0* pencil(n1:n2) &
+                  +116.0*(pencil(n1+1:n2+1)+pencil(n1-1:n2-1)) &
+                  - 52.0*(pencil(n1+2:n2+2)+pencil(n1-2:n2-2)) &
+                  + 12.0*(pencil(n1+3:n2+3)+pencil(n1-3:n2-3)) &
+                  -      (pencil(n1+4:n2+4)+pencil(n1-4:n2-4)) )
+!MR: no spherical/coarse
+      else
+        if (lroot) print*, 'der6_pencil: no such direction j=', j
+        call fatal_error('der6_pencil','')
+      endif
+!
     endsubroutine der6_pencil
 !***********************************************************************
     real function der5_single(f,j,dc1)
@@ -962,13 +1077,23 @@ module Deriv
 !  computes 5th order derivative of function given by f at position j
 !
 !   3-oct-12/MR: coded
+!  10-Sep-2024/PABourdin: copied from deriv, upgraded to 4th order accuracy
 !
       real, dimension(:),  intent(in) :: f, dc1
       integer           ,  intent(in) :: j
-
-      call not_implemented('der5_single','')
-      der5_single=0.
-
+!
+      real :: fac
+!
+      if (size(f)/=1) then
+        fac=(1.0/12)*dc1(j)**5
+        der5_single=fac*(+ 58.0*(f(j+1)-f(j-1)) &
+                         - 52.0*(f(j+2)-f(j-2)) &
+                         + 18.0*(f(j+3)-f(j-3)) &
+                         -  2.0*(f(j+4)-f(j-4)) )
+      else
+        der5_single=0.
+      endif
+!
     endfunction der5_single
 !***********************************************************************
     subroutine derij_main(f,k,df,i,j,lwo_line_elem)
@@ -1877,75 +2002,109 @@ module Deriv
 
    endsubroutine der_onesided_4_slice_other_pt
 !***********************************************************************
+    subroutine der_x(f,df)
+!
+!  x derivative operating on an x-dependent 1-D array
+!
+!  23-jun-15/pete: adapted from der_z; note that f is not the f array!
+!  10-Sep-2024/PABourdin: upgraded to 8th order accuracy
+!
+      real, dimension (mx), intent(in)  :: f
+      real, dimension (nx), intent(out) :: df
+!
+      real, dimension (nx) :: fac
+!
+      if (nxgrid/=1) then
+        fac=(1./840)*dx_1(l1:l2)
+        df=fac*(+672.0*(f(l1+1:l2+1)-f(l1-1:l2-1)) &
+                -168.0*(f(l1+2:l2+2)-f(l1-2:l2-2)) &
+                + 32.0*(f(l1+3:l2+3)-f(l1-3:l2-3)) &
+                -  3.0*(f(l1+4:l2+4)-f(l1-4:l2-4)) )
+      else
+        df=0.
+        if (ip<=5) print*, 'der_x: Degenerate case in x-direction'
+      endif
+!
+    endsubroutine der_x
+!***********************************************************************
+    subroutine der2_x(f,df2)
+!
+!  Second x derivative operating on an x-dependent 1-D array
+!
+!  23-jun-15/pete: adapted from der2_z
+!  10-Sep-2024/PABourdin: upgraded to 8th order accuracy
+!
+      real, dimension (mx), intent(in)  :: f
+      real, dimension (nx), intent(out) :: df2
+!
+      real, dimension (nx) :: fac
+!
+      if (nxgrid/=1) then
+        fac=(1./5040)*dx_1(l1:l2)**2
+        df2=fac*(-14350.0*f(l1:l2) &
+                 + 8064.0*(f(l1+1:l2+1)+f(l1-1:l2-1)) &
+                 - 1008.0*(f(l1+2:l2+2)+f(l1-2:l2-2)) &
+                 +  128.0*(f(l1+3:l2+3)+f(l1-3:l2-3)) &
+                 -    9.0*(f(l1+4:l2+4)+f(l1-4:l2-4)) )
+      else
+        df2=0.
+        if (ip<=5) print*, 'der2_x: Degenerate case in x-direction'
+      endif
+!
+    endsubroutine der2_x
+!***********************************************************************
     subroutine der_z(f,df)
 !
-! dummy routine
+!  z derivative operating on a z-dependent 1-D array
 !
-      use General, only: keep_compiler_quiet
-
-      use Cparam, only: mz, nz
-      use Mpicomm, only: stop_it
+!   9-feb-07/axel: adapted from der_main; note that f is not the f array!
+!  10-Sep-2024/PABourdin: upgraded to 8th order accuracy
 !
       real, dimension (mz), intent(in)  :: f
       real, dimension (nz), intent(out) :: df
 !
-      call stop_it("deriv_8th: der_z not implemented yet")
-      call keep_compiler_quiet(df)
+      real, dimension (nz) :: fac
+!
+      if (nzgrid/=1) then
+!MR: coarse case/spherical missing!
+        fac=(1./840)*dz_1(n1:n2)
+        df=fac*(+672.0*(f(n1+1:n2+1)-f(n1-1:n2-1)) &
+                -168.0*(f(n1+2:n2+2)-f(n1-2:n2-2)) &
+                + 32.0*(f(n1+3:n2+3)-f(n1-3:n2-3)) &
+                -  3.0*(f(n1+4:n2+4)-f(n1-4:n2-4)) )
+      else
+        df=0.
+        if (ip<=5) print*, 'der_z: Degenerate case in z-direction'
+      endif
 !
     endsubroutine der_z
 !***********************************************************************
     subroutine der2_z(f,df2)
 !
-! dummy routine
+!  z derivative operating on a z-dependent 1-D array
 !
-      use General, only: keep_compiler_quiet
-
-      use Cparam, only: mz, nz
-      use Mpicomm, only: stop_it
+!   2-jan-10/axel: adapted from der_z and der_main
+!  10-Sep-2024/PABourdin: upgraded to 8th order accuracy
 !
       real, dimension (mz), intent(in)  :: f
       real, dimension (nz), intent(out) :: df2
 !
-      call stop_it("deriv_8th: der2_z not implemented yet")
-      call keep_compiler_quiet(df2)
+      real, dimension (nz) :: fac
+!
+      if (nzgrid/=1) then
+!MR: coarse case/spherical missing!
+        fac=(1./5040)*dz_1(n1:n2)**2
+        df2=fac*(-14350.0*f(n1:n2) &
+                 + 8064.0*(f(n1+1:n2+1)+f(n1-1:n2-1)) &
+                 - 1008.0*(f(n1+2:n2+2)+f(n1-2:n2-2)) &
+                 +  128.0*(f(n1+3:n2+3)+f(n1-3:n2-3)) &
+                 -    9.0*(f(n1+4:n2+4)+f(n1-4:n2-4)) )
+      else
+        df2=0.
+        if (ip<=5) print*, 'der2_z: Degenerate case in z-direction'
+      endif
 !
     endsubroutine der2_z
-!***********************************************************************
-    subroutine der_x(f,df)
-!
-! dummy routine
-!
-      use Cparam, only: mz, nz
-      use Mpicomm, only: stop_it
-!
-      real, dimension (mx), intent(in)  :: f
-      real, dimension (nx), intent(out) :: df
-!
-      call stop_it("deriv_8th: der_x not implemented yet")
-!
-! To avoid compiler warnings:
-!
-      df=f(n1:n2)
-!
-    endsubroutine der_x
-!***********************************************************************
-    subroutine der2_x(f,df)
-!
-! dummy routine
-!
-      use Cparam, only: mz, nz
-      use Mpicomm, only: stop_it
-!
-      real, dimension (mx), intent(in)  :: f
-      real, dimension (nx), intent(out) :: df
-!
-      call stop_it("deriv_8th: der2_x not implemented yet")
-!
-! To avoid compiler warnings:
-!
-      df=f(n1:n2)
-!
-    endsubroutine der2_x
 !***********************************************************************
     subroutine der2_minmod(f,j,delfk,delfkp1,delfkm1,k)
 !

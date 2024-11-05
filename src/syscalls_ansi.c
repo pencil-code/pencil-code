@@ -427,4 +427,8 @@ void FTNIZE(py_finalize)(void *pModule,void *pFunction)
     Py_Finalize();
 #endif
   }
+REAL* FTNIZE(pos_real_ptr_c)(REAL* ptr,int ind)
+  {
+    return ptr+ind;
+  }
 /* ---------------------------------------------------------------------- */
