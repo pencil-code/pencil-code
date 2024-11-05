@@ -2199,7 +2199,7 @@ module Magnetic
         case ('cosxcosy'); call cosx_cosy_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
         case ('Bzcosxcosy'); call cosx_cosy_cosz(amplaa(j),f,iay,kx_aa(j),ky_aa(j),0.)
         case ('sinxsiny'); call sinx_siny_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
-        case ('xsiny'); call x_siny_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.,xbot=x0aa,nexp=nexp_aa)
+        !!!case ('xsiny'); call x_siny_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.,xbot=x0aa,nexp=nexp_aa)
         case ('x1siny'); call x1_siny_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.,phasey_aa(j))
         case ('x32siny'); call x32_siny_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.,phasey_aa(j))
         case ('sinxcosz'); call sinx_siny_cosz(amplaa(j),f,iay,kx_aa(j),ky_aa(j),kz_aa(j))
@@ -10837,9 +10837,9 @@ module Magnetic
 !***********************************************************************
     subroutine keplerian_gauge(f)
 !
-      use Mpicomm , only: mpiallreduce_sum
-      use Deriv, only: der
       use Boundcond, only: update_ghosts
+      use Deriv, only: der
+      use Mpicomm , only: mpiallreduce_sum
 !
 !  Substract mean emf from the radial component of the induction
 !  equation. Activated only when large Bz fields and are present
@@ -10856,11 +10856,9 @@ module Magnetic
 !  28-mar-17/MR: reinstated update_ghosts.
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
-      real, dimension (mx,mz) :: fsum_tmp,glambda_rz
-      real, dimension (mx,my,mz) :: lambda
-      real, dimension (nx) :: glambda_z
-      real :: fac
-      integer :: i
+      real, dimension (mx,mz) :: fsum_tmp,glambda_rz,lambda
+      real, dimension (mz) :: glambda_z
+      integer :: i,l
 !
       !if (.not.lupdate_bounds_before_special) then
       !  print*,'The boundaries have not been updated prior '
@@ -10872,18 +10870,15 @@ module Magnetic
       !  call fatal_error("apply_keplerian_gauge","")
       !endif
 !
-      fac = 1.0/nygrid
-!
 ! Set ghost zones of iax.
 !
       call update_ghosts(f,iax)
 !
 ! Average over phi - the result is a (mr=mx,mz) array
 !
-      fsum_tmp = 0.
-      do m=m1,m2; do n=1,mz
-        fsum_tmp(:,n) = fsum_tmp(:,n) + fac*f(:,m,n,iax)
-      enddo; enddo
+      do n=1,mz
+        fsum_tmp(:,n) = (1./nygrid)*sum(f(:,m1:m2,n,iax),2)
+      enddo
 !
 ! The sum has to be done processor-wise
 ! Sum over processors of same ipz, and different ipy
@@ -10899,18 +10894,20 @@ module Magnetic
 ! Integrate in R to get lambda, using N=6 composite Simpson's rule.
 ! Ghost zones in r needed for glambda_r.
 !
-      do i=l1,l2 ; do n=1,mz
-        lambda(i,:,n) = dx/6.*(   glambda_rz(i-3,n)+glambda_rz(i+3,n)+&
-                               4*(glambda_rz(i-2,n)+glambda_rz(i  ,n)+glambda_rz(i+2,n))+&
-                               2*(glambda_rz(i-1,n)+glambda_rz(i+1,n)))
-      enddo; enddo
+      do i=l1,l2 
+        lambda(i,:) = dx/6.*(   glambda_rz(i-3,:)                +glambda_rz(i+3,:) + &
+                             4*(glambda_rz(i-2,:)+glambda_rz(i,:)+glambda_rz(i+2,:))+ &
+                             2*(glambda_rz(i-1,:)                +glambda_rz(i+1,:)))
+      enddo
 !
 !  Gauge-transform vertical A. Ghost zones in z needed for lambda.
 !
-      do m=m1,m2; do n=n1,n2
-        call der(lambda,glambda_z,3)
-        f(l1:l2,m,n,iaz) = f(l1:l2,m,n,iaz) - glambda_z
-      enddo; enddo
+      do l=l1,l2
+        call der(3,lambda(l,:),glambda_z)
+        do m=m1,m2
+          f(l,m,n1:n2,iaz) = f(l,m,n1:n2,iaz) - glambda_z(n1:n2)
+        enddo
+      enddo
 !
     endsubroutine keplerian_gauge
 !********************************************************************
