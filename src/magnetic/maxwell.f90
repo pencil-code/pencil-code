@@ -45,7 +45,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED bb(3); bbb(3); bij(3,3); jxbr(3); ss12; uxb(3); jj(3)
-! PENCILS PROVIDED el(3); e2; a2; b2; bf2
+! PENCILS PROVIDED el(3); e2; a2; b2; bf2; j2
 ! PENCILS PROVIDED aa(3); diva; del2a(3); aij(3,3); bunit(3); va2
 !
 !***************************************************************
@@ -101,7 +101,7 @@ module Magnetic
   logical :: lelectron_inertia=.false.
   logical :: lcalc_aameanz=.false., lcalc_aamean=.false.
   logical :: reinitialize_aa=.false.
-  logical, dimension(7) :: lresi_dep=.false. 
+  logical, dimension(7) :: lresi_dep=.false.
   logical :: lcoulomb=.false.
   integer :: pushpars2c, pushdiags2c  ! should be procedure pointer (F2003)
   integer :: iLam=0
@@ -219,9 +219,9 @@ module Magnetic
         call farray_register_auxiliary('eek',ieek,vector=3)
         call farray_register_auxiliary('eekim',ieekim,vector=3)
         iakx  =iaak  ; iaky  =iaak  +1; iakz  =iaak  +2
-        iakxim=iaakim; iakyim=iaakim+1; iakzim=iaakim+2 
+        iakxim=iaakim; iakyim=iaakim+1; iakzim=iaakim+2
         iekx  =ieek  ; ieky  =ieek  +1; iekz  =ieek  +2
-        iekxim=ieekim; iekyim=ieekim+1; iekzim=ieekim+2 
+        iekxim=ieekim; iekyim=ieekim+1; iekzim=ieekim+2
       endif
 !
 !  register B array as aux
@@ -690,7 +690,7 @@ module Magnetic
 !
 !  Calculate Magnetic pencils.
 !  Most basic pencils should come first, as others may depend on them.
-! 
+!
 !  Version with formal parameter lpencil_loc instead of global lpencil for cases
 !  in which not necessarily all generally needed pencil are to be calculated.
 !
@@ -718,6 +718,8 @@ module Magnetic
       if (lpenc_loc(i_bb)) p%bb=f(l1:l2,m,n,ibx:ibz)
 ! jj
       if (lpenc_loc(i_jj)) p%jj=f(l1:l2,m,n,ijx:ijz)
+! j2
+      if (lpenc_loc(i_j2)) call dot2_mn(p%jj,p%j2)
 ! bbb
       if (lpenc_loc(i_bbb)) p%bbb=p%bb
 ! e2
@@ -732,7 +734,7 @@ module Magnetic
 !***********************************************************************
     subroutine update_char_vel_magnetic(f)
 !
-! Dummy 
+! Dummy
 !
 !  25-sep-15/MR+joern: coded
 !
