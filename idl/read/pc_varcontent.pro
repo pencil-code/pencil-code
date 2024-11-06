@@ -350,7 +350,10 @@ indices_aux = [ $
   { name:'iuxbtest', label:'Testfield EMF', dims:ntestfield }, $
   { name:'ijxbtest', label:'Testfield Lorentz force', dims:ntestfield }, $
   { name:'iugutest', label:'Testflow advective acc.', dims:ntestfield }, $
-  { name:'iughtest', label:'Testflow enthalpy advection', dims:ntestfield } $
+  { name:'iughtest', label:'Testflow enthalpy advection', dims:ntestfield }, $
+  { name:'inucl_rmin', label:'Radius of nucleating particles', dims:1 }, $
+  { name:'inucl_rate', label:'Rate of particle nucleation', dims:1 }, $
+  { name:'isupersat', label:'Supersaturation', dims:1 } $
   ; don't forget to add a comma above when extending
 ]
 ;
