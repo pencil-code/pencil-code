@@ -11,7 +11,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED bb(3); bbb(3); bij(3,3); jxbr(3); ss12; b2; uxb(3); jj(3)
-! PENCILS PROVIDED aa(3); diva; del2a(3); aij(3,3), bunit(3); va2
+! PENCILS PROVIDED aa(3); diva; del2a(3); aij(3,3), bunit(3); va2; j2
 ! PENCILS PROVIDED el(3); e2
 !
 !***************************************************************
@@ -28,7 +28,7 @@ module Magnetic
   real, dimension(3) :: B_ext_inv=(/0.0,0.0,0.0/)
   real, dimension (mz,3) :: aamz
   logical :: lcalc_aameanz=.false., lcalc_aamean=.false.
-  logical, dimension(7) :: lresi_dep=.false. 
+  logical, dimension(7) :: lresi_dep=.false.
   logical :: lcoulomb=.false.
   integer :: pushpars2c, pushdiags2c  ! should be procedure pointer (F2003)
   integer :: iLam=0
@@ -153,6 +153,7 @@ module Magnetic
       if (lpenc_loc(i_bij)) p%bij=0.0
       if (lpenc_loc(i_uxb)) p%uxb=0.0
       if (lpenc_loc(i_jj)) p%jj=0.0
+      if (lpenc_loc(i_j2)) p%j2=0.0
       if (lpenc_loc(i_va2)) p%va2=0.0
 !
 !  Dummy pencils
@@ -166,7 +167,7 @@ module Magnetic
 !***********************************************************************
     subroutine update_char_vel_magnetic(f)
 !
-! Dummy 
+! Dummy
 !
 !  25-sep-15/MR+joern: coded
 !
