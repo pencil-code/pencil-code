@@ -23,11 +23,11 @@ from os.path import exists
 
 def local_remesh(var, xsrc, ysrc, zsrc, xdst, ydst, zdst, quiet=True, kind="linear"):
     """
-    local_remesh(var, xsrc, ysrc, zsrc, xdst, ydst, zdst, quiet=True)
+    local_remesh(var, xsrc, ysrc, zsrc, xdst, ydst, zdst, quiet=True, kind="linear")
 
     Parameters
     ----------
-    var : ndarray
+    var : np.array
         Snapshot scalar numpy array of shape [mz, my, mx].
 
     xsrc, ysrc, zsrc : ndarrays
@@ -36,8 +36,14 @@ def local_remesh(var, xsrc, ysrc, zsrc, xdst, ydst, zdst, quiet=True, kind="line
     xdst, ydst, zdst : ndarrays
       Grid x, y, z arrays for destination simulation.
 
+    kind : string
+      interpolation method
+
     quiet : bool
       Flag for switching of output.
+
+    Useage: interpolate a 3D data array of arbitrary shape onto an equivalent
+            grid of alternate shape
     """
 
     tmp = var.copy()
@@ -82,7 +88,7 @@ def get_dstgrid(
     """
     get_dstgrid(srch5, srcpar, dsth5, ncpus=[1,1,1], multxyz=[2,2,2],
                fracxyz=[1,1,1], srcghost=3, dstghost=3, dtype=np.float64,
-               lsymmetric=True, quiet=True)
+               lsymmetric=True, quiet=True,dstprecision=[b"D"],status="w")
 
     Parameters
     ----------
@@ -119,6 +125,12 @@ def get_dstgrid(
 
     quiet : bool
         Flag for switching of output.
+
+    dstprecision :
+        floating point precision of new simulation grid.
+
+    status :
+        status of hdf5 grid being written "w" or "a".
     """
     # TBA
     # check prime factorization of the result and display for proc options
@@ -217,8 +229,8 @@ def get_dstgrid(
             grid["d" + mstr + "_tilde"][()] = dtype(np.gradient(grid["d" + mstr + "_1"][()]))
 
 def src2dst_remesh(
-    src,
-    dst,
+    src=None,
+    dst=None,
     h5in="var.h5",
     h5out="var.h5",
     nxyz=None,
@@ -255,15 +267,15 @@ def src2dst_remesh(
     remesh=True
 ):
     """
-    src2dst_remesh(src, dst, h5in='var.h5', h5out='var.h5', multxyz=[2, 2, 2],
-                   fracxyz=[1, 1, 1], srcghost=3, dstghost=3,
+    src2dst_remesh(src=None, dst=None, h5in='var.h5', h5out='var.h5', nxyz=None, multxyz=[2, 2, 2],
+                   fracxyz=[1, 1, 1], srcchunks=None, srcghost=3, dstghost=3,
                    srcdatadir='data/allprocs', dstdatadir='data/allprocs',
-                   dstprecision=[b'D'], lsymmetric=True, quiet=True,
+                   dstprecision=[b'D'], lsymmetric=True, quiet=True, kind="linear",
                    check_grid=True, OVERWRITE=False, optionals=True, nmin=32,
                    rename_submit_script=False, MBmin=5.0, ncpus=[1, 1, 1],
                    start_optionals=False, hostfile=None, submit_new=False,
                    chunksize=1000.0, lfs=False,  MB=1, count=1, size=1,
-                   rank=0, comm=None)
+                   rank=0, comm=None, farray=None, index_farray=None, data='all', remesh=True)
 
     Parameters
     ----------
@@ -278,6 +290,10 @@ def src2dst_remesh(
 
     h5out : string
         Destination simulation file to be written.
+
+    nxyz : list
+        If not None a list of 3 integers [nx, ny, nz] defining the size of
+        the destination domain
 
     multxyz : list
         Factors by which to multiply old sim dimensions xyz order.
@@ -362,6 +378,18 @@ def src2dst_remesh(
 
     comm :
         MPI library calls
+
+    farray : string list
+        Select subset of the farray from src.
+
+    index_farray : integer list
+        set of index at which interpolation shall start
+
+    data : string
+        "all" default to interpolate full farray, or specify selection
+
+    remesh :  bool
+        remesh or just copy
     """
 
     import h5py
@@ -388,16 +416,22 @@ def src2dst_remesh(
             print("precision " + dstprecision + " not valid")
         return 1
 
+    if not src or src==".":
+        src=os.getcwd()
+    if not dst or dst==".":
+        dst=src+"copy"
     if is_sim_dir(src):
-        srcsim = simulation(src, quiet=quiet)
+         srcsim = simulation(src, quiet=quiet)
     else:
         if rank == 0 or rank == size - 1:
             print('src2dst_remesh ERROR: src"' + src + '" is not a valid simulation path')
         return 1
     print("dst is sim",is_sim_dir(dst))
+    lsim=False
     if is_sim_dir(dst):
         dstsim = simulation(dst, quiet=quiet)
         mode = "r+"
+        lsim=True
     else:
         mode = "w"
         print("setting up simulation")
@@ -425,12 +459,12 @@ def src2dst_remesh(
     if data == "all":
         if rank == 0:
             with h5py.File(join(srcsim.path, srcdatadir, h5in),"r") as srch5:
-                print("opening {} file on rank{}".format(join(srcsim.path, srcdatadir, h5in),rank))
+                print("opening {} file on rank {}".format(join(srcsim.path, srcdatadir, h5in),rank))
                 cmd = "cp "+join(dstsim.path, dstdatadir, h5out)+" "+join(dstsim.path, dstdatadir, h5out+"copy")
                 os.system(cmd)
                 with h5py.File(join(dstsim.path, dstdatadir, h5out),mode) as dsth5:
-                    print("dst is sim",is_sim_dir(dst))
-                    if not is_sim_dir(dst):
+                    print("dst is sim already?",lsim)
+                    if not lsim:
                         get_dstgrid(
                             srch5,
                             srcsim.param,
@@ -524,7 +558,12 @@ def src2dst_remesh(
         sh5 = h5py.File(join(srcsim.path, srcdatadir, h5in), "r" )
         dh5 = h5py.File(join(dstsim.path, dstdatadir, h5out),"r+" )
     print("dh5 name", dh5.filename)
-    print("dh5 settings", dh5.keys(), dh5["settings"].keys())
+    nx, ny, nz =(
+        sh5["settings"]["nx"][0],
+        sh5["settings"]["ny"][0],
+        sh5["settings"]["nz"][0],
+    )
+    #print("dh5 settings", dh5.keys(), dh5["settings"].keys())
     if data == "all" or data == "data":
         with sh5 as srch5:
             if comm:
@@ -555,15 +594,14 @@ def src2dst_remesh(
                 print("start and end values {},{}".format(l1,l2))
             else:
                 nxsub, nysub, nzsub = nx, ny, nz
-                l1,l2=srch5["settings/l1"][0], srch5["settings/l2"][0]
-                m1,m2=srch5["settings/m1"][0], srch5["settings/m2"][0]
-                n1,n2=srch5["settings/n1"][0], srch5["settings/n2"][0]
+                l1,l2=srch5["settings/l1"][0], srch5["settings/l2"][0]+1
+                m1,m2=srch5["settings/m1"][0], srch5["settings/m2"][0]+1
+                n1,n2=srch5["settings/n1"][0], srch5["settings/n2"][0]+1
                 xin, yin, zin = (
                       srch5["grid/x"][()],
                       srch5["grid/y"][()],
                       srch5["grid/z"][()]
                       )
-            print("xin, yin, zin", xin, yin, zin)
             print("nxin, nyin, nzin", xin.size, yin.size, zin.size)
             if not farray:
                 fields = list(srch5["data"].keys())
@@ -760,7 +798,10 @@ def src2dst_remesh(
                     if rank == 0 or rank == size - 1:
                         print("remeshing " + key)
                     if not lchunks:
-                        invar = srch5["data"][key][n1:n2,m1:m2,l1:l2]
+                        #invar = srch5["data"][key][n1:n2,m1:m2,l1:l2]
+                        invar = srch5["data"][key][()]
+                        print(key, srch5["data"][key][n1:n2,m1:m2,l1:l2].shape)
+                        print(key, zout.size,  yout.size, xout.size)
                         var = local_remesh(
                             invar,
                             xin,
