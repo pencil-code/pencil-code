@@ -418,7 +418,7 @@ def plot_box(
     it = np.where(ttmp >= tstart)[0]
     if len(xyzplane) == 0:
         for key in slice_obj.__dict__.keys():
-            if key != "t":
+            if key in ["xy","xy2","xy3","xy4","xz","xz2","yz","r"]:
                 xyzplane.append(key)
     if len(xyzplane) < 4:
         raise ValueError("xyzplane: rvid_box requires at least 4 surfaces.")
