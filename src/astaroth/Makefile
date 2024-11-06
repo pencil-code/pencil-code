@@ -25,13 +25,12 @@ else
   USE_HIP = OFF
 endif
 
-ifeq ($(MPICOMM),mpicomm)
+ifeq ($(MPICOMM),nompicomm)
+  CMAKE_MPI = OFF
+  $(error interfaced version requires MPI)
+else
   CMAKE_MPI = ON
   $(info MPI enabled)
-else
-  CMAKE_MPI = OFF
-  $(info MPI not enabled)
-  #$(error interfaced version requires MPI)
 endif
 
 SOURCES = gpu_astaroth.cc 

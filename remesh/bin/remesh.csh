@@ -19,8 +19,8 @@ date
 
 # write the current directory to new directory (for information)
 set targetdir = `cat remesh.in`
-echo $cwd >>! $targetdir/data/remeshed_from.dir
-date >>! $targetdir/data/remeshed_from.dir
+pwd >> $targetdir/data/remeshed_from.dir
+date >> $targetdir/data/remeshed_from.dir
 cp data/param.nml $targetdir/data/
 
 # generate directory tree
