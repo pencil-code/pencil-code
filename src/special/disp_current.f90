@@ -610,6 +610,11 @@ module disp_current
         if (idiag_divJrms/=0) call sum_mn_name(p%divJ**2,idiag_divJrms,lsqrt=.true.)
         call sum_mn_name(p%divE,idiag_divEm)
         call sum_mn_name(p%divJ,idiag_divJm)
+!if (m==m1) then
+!  print*,'AXEL1 rhoe=',p%rhoe(1:3)
+!  print*,'AXEL1 divE=',p%divE(1:3)
+!  print*,'AXEL1 divJ=',p%divJ(1:3)
+!endif
         call save_name(mfpf,idiag_mfpf)
         call save_name(fppf,idiag_fppf)
         call save_name(scl_factor_target,idiag_afact)
