@@ -7,9 +7,10 @@
 import argparse
 import sys
 import pytest
+import pathlib
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.parse_args()
 
-    sys.exit(pytest.main())
+    sys.exit(pytest.main(['-c', str(pathlib.Path(__file__).parent/"pytest.ini")]))
