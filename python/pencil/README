@@ -16,10 +16,18 @@ Therefore, 'pc' will store all calcuated data in separate files and reload if ne
 #############################
 ## REQUIREMENTS
 ##
-This module requires the followint Python3 modules:
-numpy, scipy, matplotlib, h5py, copy, mpi4py, os, sys, math, importlib, dill, struct, subprocess, pickle,
-glob, time, re, copy, shutil, code, inspect, vtk, weakref, atexit, unittest, tempfile, errno, pexpect, doctest,
-distutils, Cython, random, fileinput, astropy
+This module requires the following Python packages:
+- dill
+- f90nml
+- flatdict
+- h5py
+- matplotlib
+- numpy
+- plotly
+- psutil
+- requests
+- scipy
+- tqdm
 
 #############################
 ## EASY START
