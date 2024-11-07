@@ -138,7 +138,7 @@ module Magnetic
   real :: eta_shock=0.0, eta_shock2=0.0, alp_aniso=0.0, eta_aniso_BB=0.0
   real :: quench_aniso=impossible
   real :: eta_va=0., eta_j=0., eta_j2=0., eta_jrho=0., eta_min=0., eta_max=0., &
-          etaj20=0., va_min=0., vArms=1.
+          eta_huge=1e38, etaj20=0., va_min=0., vArms=1.
   real :: rhomin_jxb=0.0, va2max_jxb=0.0, va2max_boris=0.0,cmin=0.0
   real :: omega_Bz_ext=0.0
   real :: mu_r=-0.5 !(still needed for backwards compatibility)
@@ -168,14 +168,14 @@ module Magnetic
   real :: non_ffree_factor=1.
   real :: etaB=0.
   real :: tau_relprof=0.0, tau_relprof1, amp_relprof=1.0 , k_relprof=1.0
-  real, pointer :: cp
+  real, pointer :: cp, ascale, Hscript
   real :: dipole_moment=0.0
   real :: eta_power_x=0., eta_power_z=0.
   real :: z1_aa=0., z2_aa=0.
   real :: Pm_smag1=1., k1hel=0., k2hel=max_real, qexp_aa=0.
   real :: nfact_aa=4.
   real :: r_inner=0., r_outer=0.
-  real :: eta_tdep_loverride_ee=0.
+  real :: eta_tdep_loverride_ee=0., echarge=.55
   integer, target :: va2power_jxb = 5
   integer :: nbvec, nbvecmax=nx*ny*nz/4, iua=0, iLam=0, idiva=0
   integer :: N_modes_aa=1, naareset
@@ -284,7 +284,8 @@ module Magnetic
       source_zav,nzav,indzav,izav_start, k1hel, k2hel, lbb_sph_as_aux, &
       r_inner, r_outer, lpower_profile_file, eta_jump0, eta_jump1, eta_jump2, &
       lcoulomb, qexp_aa, nfact_aa, lfactors_aa, lvacuum, l2d_aa, &
-      loverride_ee_decide, eta_tdep_loverride_ee, z0_gaussian, width_gaussian
+      loverride_ee_decide, eta_tdep_loverride_ee, z0_gaussian, width_gaussian, &
+      echarge
 !
 ! Run parameters
 !
@@ -425,7 +426,8 @@ module Magnetic
       lbb_sph_as_aux, ltime_integrals_always, dtcor, lvart_in_shear_frame, &
       lbraginsky, eta_jump0, eta_jump1, lcoulomb, lvacuum, &
       loverride_ee_decide, eta_tdep_loverride_ee, loverride_ee2, lignore_1rho_in_Lorentz, &
-      lbext_moving_layer, zbot_moving_layer, ztop_moving_layer, speed_moving_layer, edge_moving_layer
+      lbext_moving_layer, zbot_moving_layer, ztop_moving_layer, speed_moving_layer, edge_moving_layer, &
+      echarge
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -1109,7 +1111,7 @@ module Magnetic
 !  03-apr-20/joern: restructured and fixed slope-limited diffusion
 !
       use Sub, only: register_report_aux
-      use FArrayManager, only: farray_register_pde,farray_register_auxiliary
+      use FArrayManager, only: farray_register_pde, farray_register_auxiliary, farray_index_by_name_ode
       use SharedVariables, only: put_shared_variable
 !
       call farray_register_pde('aa',iaa,vector=3)
@@ -1135,7 +1137,7 @@ module Magnetic
 !  Register EE as auxilliary array if asked for.
 !  This must not be involved when the displacement current is being solved for.
 !
-      if (lee_as_aux) then
+      if (lee_as_aux) then  !(AB: this will not be used; it was a test)
         if (lroot) print*,'NOTE: lee_as_aux=',lee_as_aux
         call farray_register_auxiliary('ee',iee,vector=3)
         iex=iee; iey=iee+1; iez=iee+2
@@ -1282,7 +1284,7 @@ module Magnetic
       use Slices_methods, only: alloc_slice_buffers
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: i,j,nyl,nycap
+      integer :: i, j, nyl, nycap
       real :: eta_zdep_exponent
 !
       call get_gamma_etc(gamma)
@@ -2376,7 +2378,7 @@ module Magnetic
         case ('piecewise-dipole'); call piecew_dipole_aa (amplaa(j),inclaa,f,iaa)
         case ('Ferriere-uniform-Bx'); call ferriere_uniform_x(amplaa(j),f,iaa)
         case ('Ferriere-uniform-By'); call ferriere_uniform_y(amplaa(j),f,iaa)
-        case ('robertsflow'); call robertsflow(amplaa(j),f,iaa,relhel_aa)
+        case ('robertsflow'); call robertsflow(amplaa(j),f,iaa,relhel_aa,KX=kx_aa(j))
         case ('sinx-clip')
           do l=l1,l2
             if (abs(x(l))<=pi) then
@@ -3673,7 +3675,6 @@ module Magnetic
             if (irhoe/=0.and.ibb/=0) then
 !             p%jj_ohm=(p%el+p%uxb)*mu01/eta_total(1)
 !AB: rhoe is apparently not ready yet
-!  XXX
             else
               if (lcartesian_coords) then
                 call gij_etc(f,iaa,BIJ=bij)
@@ -3834,6 +3835,7 @@ module Magnetic
       real, dimension (nx) :: rho1_jxb, quench, StokesI_ncr, tmp1, bbgb, va2max_beta
       real, dimension(3) :: B_ext, j_ext
       real :: c,s
+      real :: Eaver, Baver, b2m
       integer :: i, j, ix, iedotx, iedotz
 
       if (lfirstpoint) lproc_print=.true.
@@ -4085,7 +4087,60 @@ module Magnetic
 !
 ! jj
 !
-      if (lpenc_loc(i_jj)) then
+      if (lpenc_loc(i_jj) .or. lpenc_loc(i_jj_ohm)) then
+!
+!  The following allows us to let eta change with time, t-eta_tdep_toffset.
+!  The eta_tdep_toffset is used in cosmology where time starts at t=1.
+!  lresi_eta_tdep_t0_norm is not the default because of backward compatbility.
+!  The default is problematic because then eta_tdep /= eta for t < eta_tdep_t0.
+!
+      if (lresi_eta_tdep .or. lresi_hyper2_tdep .or. lresi_hyper3_tdep) then
+        select case (tdep_eta_type)
+          case ('standard')
+            if (lresi_eta_tdep_t0_norm) then
+              eta_tdep=eta*max(real(t-eta_tdep_toffset)/eta_tdep_t0,1.)**eta_tdep_exponent
+            else
+              eta_tdep=eta*max(real(t-eta_tdep_toffset),eta_tdep_t0)**eta_tdep_exponent
+            endif
+          case ('standard2')
+            eta_tdep=eta*(1.+max(real(t-eta_tdep_toffset)/eta_tdep_t0,0.))**eta_tdep_exponent
+          case ('log-switch-on')
+            eta_tdep=eta*exp((alog(eta_max)-alog(eta)) &
+                     *max(min((1.-real(t-eta_tdep_toffset)/eta_tdep_t0),1.),0.))
+          case ('linear-sigma')
+            eta_tdep=1./(1./eta_max+(1./eta-1./eta_max) &
+                     *max(min(real(t-eta_tdep_toffset)/eta_tdep_t0,1.),0.))
+          case ('eta_table')
+            call fatal_error('magnetic_after_boundary','eta_table not yet completed')
+            eta_tdep=0.
+          case ('mean-field')
+!
+!  eta_tdep
+!
+             call get_shared_variable('ascale', ascale, caller='initialize_magnetic')
+             call get_shared_variable('Hscript', Hscript, caller='initialize_magnetic')
+             if (lbb_as_aux .and. .not. lbb_as_comaux) then
+               b2m=sum(f(l1:l2,m,n,ibx)**2+f(l1:l2,m,n,iby)**2+f(l1:l2,m,n,ibz)**2)/nx
+             else
+               call fatal_error('magnetic_after_boundary','must have lbb_as_aux')
+             endif
+             Eaver=sqrt(sum(f(l1:l2,m1:m2,n,iex)**2+f(l1:l2,m1:m2,n,iey)**2+f(l1:l2,m1:m2,n,iez)**2)/nx)
+             Baver=sqrt(B_ext2+b2m)
+!
+!  Note that for Baver=0, eta_tdep=0
+!
+            if (Eaver<tini) then
+              eta_tdep=eta_huge
+            else
+              if (Baver<tini) then
+                eta_tdep=6.*pi**3*Hscript/echarge**3/Eaver
+              else
+                eta_tdep=6.*pi**2*Hscript/echarge**3*tanh(pi*Baver/Eaver)/Baver
+              endif
+            endif
+          case default
+        endselect
+      endif
 !
 !  Here, if we don't solve for the displacement current,
 !  p%jj is just curlb (so we could have just called it that),
@@ -5820,9 +5875,10 @@ module Magnetic
 !
       endif
 !
-!  Add turbulent diffusivity, if provided.  (MR: should be done in MF module!)
+!  Add turbulent diffusivity, if provided.  (MR: should be done in MF module! AB: I agree; replace now by fatal error)
 !
-      if (ietat/=0) eta_total=eta_total+f(l1:l2,m,n,ietat)
+      !if (ietat/=0) eta_total=eta_total+f(l1:l2,m,n,ietat)
+      if (ietat/=0) call fatal_error("daa_dt","eta_total=eta_total+f(l1:l2,m,n,ietat) should be done in MF module")
 !
 !  Multiply resistivity by Nyquist scale, for resistive time-step.
 !
@@ -6674,6 +6730,10 @@ module Magnetic
         call sum_mn_name(b2b31,idiag_b2b31m)
       endif
 !
+!  eta_tdep as diagnostics:
+!
+      if (lroot) call save_name(eta_tdep,idiag_eta_tdep)
+!
 !  current density components at one point (=pt).
 !
       if (lroot.and.m==mpoint.and.n==npoint) then
@@ -7242,12 +7302,14 @@ module Magnetic
 !
       use Boundcond, only: update_ghosts
       use Diagnostics, only: save_name
+      use SharedVariables, only: get_shared_variable
       use Sub, only: div, calc_all_diff_fluxes, dot2_mn, vecout_initialize
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
 
       real, dimension(nx) :: tmp
       real, save :: phase_beltrami_before=impossible
+      real :: Eaver, Baver, b2m
 !
 !  Slope limited diffusion following Rempel (2014)
 !  First calculating the flux in a subroutine below
@@ -7284,35 +7346,6 @@ module Magnetic
           call update_ghosts(f,ietasmag)  !MR: can this be avoided (do earlier)?
 !
         endif
-      endif
-!
-!  The following allows us to let eta change with time, t-eta_tdep_toffset.
-!  The eta_tdep_toffset is used in cosmology where time starts at t=1.
-!  lresi_eta_tdep_t0_norm is not the default because of backward compatbility.
-!  The default is problematic because then eta_tdep /= eta for t < eta_tdep_t0.
-!
-      if (lresi_eta_tdep .or. lresi_hyper2_tdep .or. lresi_hyper3_tdep) then
-        select case (tdep_eta_type)
-          case ('standard')
-            if (lresi_eta_tdep_t0_norm) then
-              eta_tdep=eta*max(real(t-eta_tdep_toffset)/eta_tdep_t0,1.)**eta_tdep_exponent
-            else
-              eta_tdep=eta*max(real(t-eta_tdep_toffset),eta_tdep_t0)**eta_tdep_exponent
-            endif
-          case ('standard2')
-            eta_tdep=eta*(1.+max(real(t-eta_tdep_toffset)/eta_tdep_t0,0.))**eta_tdep_exponent
-          case ('log-switch-on')
-            eta_tdep=eta*exp((alog(eta_max)-alog(eta)) &
-                     *max(min((1.-real(t-eta_tdep_toffset)/eta_tdep_t0),1.),0.))
-          case ('linear-sigma')
-            eta_tdep=1./(1./eta_max+(1./eta-1./eta_max) &
-                     *max(min(real(t-eta_tdep_toffset)/eta_tdep_t0,1.),0.))
-          case ('eta_table')
-            call fatal_error('magnetic_after_boundary','eta_table not yet completed')
-            eta_tdep=0.
-          case default
-        endselect
-        if (lroot.and.ldiagnos) call save_name(eta_tdep,idiag_eta_tdep)
       endif
 !
 !  Decide whether or not we want to override the use of the displacement current.

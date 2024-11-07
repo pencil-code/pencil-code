@@ -2265,7 +2265,7 @@ module Initcond
 !
     endsubroutine rolls
 !***********************************************************************
-    subroutine robertsflow(ampl,f,i,relhel)
+    subroutine robertsflow(ampl,f,i,relhel,kx)
 !
 !  Roberts Flow (as initial condition)
 !
@@ -2274,6 +2274,13 @@ module Initcond
       integer :: i,j
       real, dimension (mx,my,mz,mfarray) :: f
       real :: ampl,k=1.,kf,fac1,fac2,relhel
+      real, optional :: kx
+!
+!  Possibility of changing the wavenumber
+!
+      if (present(kx)) then
+        k=kx
+      endif
 !
 !  prepare coefficients
 !

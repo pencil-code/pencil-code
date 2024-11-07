@@ -32,7 +32,7 @@
 !    NOT IMPLEMENTED FULLY YET - HOOKS NOT PLACED INTO THE PENCIL-CODE
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
-! Declare (for generation of special_dummies.inc) the number of f array
+! Declare (for generation of backreact_infl_dummies.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: lspecial = .true.
@@ -72,7 +72,7 @@
 ! Where geo_kws it replaced by the filename of your new module
 ! upto and not including the .f90
 !
-module Special
+module backreact_infl
 !
   use Cdata
   use General, only: keep_compiler_quiet
@@ -87,6 +87,7 @@ module Special
 !
 !  integer :: iinfl_phi=0, iinfl_dphi=0, iinfl_hubble=0, iinfl_lna=0, Ndiv=100
   integer :: iinfl_phi=0, iinfl_dphi=0, iinfl_lna=0, Ndiv=100
+  integer :: iinfl_rho_chi=0
   real :: ncutoff_phi=1., infl_v=.1
   real :: axionmass=1.06e-6, axionmass2, ascale_ini=1.
   real :: phi0=.44, dphi0=-1e-5, c_light_axion=1., lambda_axion=0., eps=.01
@@ -95,7 +96,8 @@ module Special
   real :: initpower_dphi=0., cutoff_dphi=0., initpower2_dphi=0.
   real :: kgaussian_phi=0.,kpeak_phi=0., kgaussian_dphi=0., kpeak_dphi=0.
   real :: relhel_phi=0.
-  real :: ddotam, a2rhopm, a2rhopm_all, a2rhom, a2rhom_all, edotbm, edotbm_all, a2rhophim, a2rhophim_all
+  real :: ddotam, a2rhopm, a2rhopm_all, a2rhom, a2rhom_all
+  real :: edotbm, edotbm_all, e2m, e2m_all, a2rhophim, a2rhophim_all
   real :: a2rhogphim, a2rhogphim_all
   real :: lnascale, ascale, a2, a21, Hscript
   real :: Hscript0=0.
@@ -105,24 +107,26 @@ module Special
   logical :: lbackreact_infl=.true., lem_backreact=.true., lzeroHubble=.false.
   logical :: lscale_tobox=.true.,ldt_backreact_infl=.true., lconf_time=.true.
   logical :: lskip_projection_phi=.false., lvectorpotential=.false., lflrw=.false.
+  logical :: lrho_chi=.false.
   logical, pointer :: lphi_hom
 !
   character (len=labellen) :: Vprime_choice='quadratic', Hscript_choice='default'
   character (len=labellen), dimension(ninit) :: initspecial='nothing'
 !
-  namelist /special_init_pars/ &
+  namelist /backreact_infl_init_pars/ &
       initspecial, phi0, dphi0, axionmass, eps, ascale_ini, &
       c_light_axion, lambda_axion, amplphi, ampldphi, &
       kx_phi, ky_phi, kz_phi, phase_phi, width, offset, &
       initpower_phi, initpower2_phi, cutoff_phi, kgaussian_phi, kpeak_phi, &
       initpower_dphi, initpower2_dphi, cutoff_dphi, kpeak_dphi, &
-      ncutoff_phi, lscale_tobox, Hscript0, Hscript_choice, infl_v, lflrw
+      ncutoff_phi, lscale_tobox, Hscript0, Hscript_choice, infl_v, lflrw, &
+      lrho_chi
 !
-  namelist /special_run_pars/ &
+  namelist /backreact_infl_run_pars/ &
       initspecial, phi0, dphi0, axionmass, eps, ascale_ini, &
       lbackreact_infl, lem_backreact, c_light_axion, lambda_axion, Vprime_choice, &
       lzeroHubble, ldt_backreact_infl, Ndiv, Hscript0, Hscript_choice, infl_v, &
-      lflrw
+      lflrw, lrho_chi
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -161,6 +165,10 @@ module Special
        call farray_register_ode('infl_lna',iinfl_lna)
      endif
 !
+     if (lrho_chi) then
+       call farray_register_ode('infl_rho_chi',iinfl_rho_chi)
+     endif
+!
 !  for power spectra, it is convenient to use ispecialvar and
 !
       ispecialvar=iinfl_phi
@@ -181,6 +189,8 @@ module Special
       axionmass2=axionmass**2
 !
       call put_shared_variable('ddotam',ddotam_all,caller='initialize_backreact_infl_ode')
+  !   call put_shared_variable('ascale',ascale,caller='initialize_backreact_infl')
+  !   call put_shared_variable('Hscript',Hscript,caller='initialize_backreact_infl')
 !
       if (lmagnetic .and. lem_backreact) then
         call get_shared_variable('alpf',alpf)
@@ -241,6 +251,7 @@ module Special
               f_ode(iinfl_lna) =lnascale
 !              f(iinfl_hubble) =Hubble_ini
             endif
+!
           case ('default')
             Vpotential=.5*axionmass2*phi0**2
             Hubble_ini=sqrt(8.*pi/3.*(.5*axionmass2*phi0**2*ascale_ini**2))
@@ -279,6 +290,13 @@ module Special
             call fatal_error("init_special: No such initspecial: ", trim(initspecial(j)))
         endselect
       enddo
+!
+!  energy density of the charged particles
+!
+      if (lroot .and. lrho_chi) then
+        f_ode(iinfl_rho_chi)=0.
+      endif
+!
       call mpibcast_real(a2)
       call mpibcast_real(Hscript)
 !
@@ -301,6 +319,7 @@ module Special
       if (lmagnetic) then
         lpenc_requested(i_bb)=.true.
         lpenc_requested(i_el)=.true.
+        if (lrho_chi) lpenc_requested(i_e2)=.true.
       endif
 !
     endsubroutine pencil_criteria_special
@@ -476,8 +495,18 @@ module Special
 !
       use Diagnostics, only: save_name
 !
+      real :: sigmaE=0.
+!
       if (lflrw) then
         df_ode(iinfl_lna)=df_ode(iinfl_lna)+Hscript
+      endif
+      ascale=exp(f_ode(iinfl_lna))
+!
+!  energy density of the charged particles
+!
+      if (lrho_chi) then
+        df_ode(iinfl_rho_chi)=df_ode(iinfl_rho_chi)-4.*Hscript*f_ode(iinfl_rho_chi) &
+          +2.*sigmaE*e2m/ascale**3
       endif
 !
 !  Diagnostics
@@ -500,7 +529,7 @@ module Special
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=special_init_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=backreact_infl_init_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_init_pars
 !***********************************************************************
@@ -508,7 +537,7 @@ module Special
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=special_init_pars)
+      write(unit, NML=backreact_infl_init_pars)
 !
     endsubroutine write_special_init_pars
 !***********************************************************************
@@ -518,7 +547,7 @@ module Special
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=special_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=backreact_infl_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_run_pars
 !***********************************************************************
@@ -526,7 +555,7 @@ module Special
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=special_run_pars)
+      write(unit, NML=backreact_infl_run_pars)
 !
     endsubroutine write_special_run_pars
 !***********************************************************************
@@ -604,7 +633,7 @@ module Special
       call mpibcast_real(a2)
       call mpibcast_real(a21)
 !
-      ddotam=0.; a2rhopm=0.; a2rhom=0.; edotbm=0; a2rhophim=0.; a2rhogphim=0.
+      ddotam=0.; a2rhopm=0.; a2rhom=0.; e2m=0; edotbm=0; a2rhophim=0.; a2rhogphim=0.
       do n=n1,n2
       do m=m1,m2
         call prep_ode_right(f)
@@ -621,15 +650,35 @@ module Special
         call mpiallreduce_sum(edotbm,edotbm_all)
       endif
 !
+!  mean electric energy density
+!
+      if (lrho_chi) then
+        e2m=e2m/nwgrid
+        call mpiallreduce_sum(e2m,e2m_all)
+      endif
+!
       call mpireduce_sum(a2rhopm,a2rhopm_all)
       call mpiallreduce_sum(a2rhom,a2rhom_all)
       call mpireduce_sum(a2rhophim,a2rhophim_all)
       call mpireduce_sum(a2rhogphim,a2rhogphim_all)
       call mpiallreduce_sum(ddotam,ddotam_all)
 !
+!  Choice of prescription for Hscript
+!
       if (lroot .and. lflrw) then
-        Hscript=(8.*pi/3.)*sqrt(a2rhom_all)
+        select case (Hscript_choice)
+          case ('default')
+            !Hscript=sqrt((8.*pi/3.)*a2rhom_all)
+            Hscript=(8.*pi/3.)*sqrt(a2rhom_all)
+          case ('set')
+            Hscript=Hscript0
+            a2=1.
+            a21=1./a2
+          case default
+            call fatal_error("dspecial_dt: No such Hscript_choice: ", trim(Hscript_choice))
+        endselect
       endif
+!
       call mpibcast_real(Hscript)
 !
     endsubroutine special_after_boundary
@@ -697,6 +746,10 @@ module Special
         edotbm=edotbm+sum(edotb)
       endif
 !
+      if (lmagnetic .and. lem_backreact .and. lrho_chi) then
+        e2m=e2m+sum(e2)
+      endif
+!
     endsubroutine prep_ode_right
 !********************************************************************
 !********************************************************************
@@ -706,6 +759,6 @@ module Special
 !**  copies dummy routines from nospecial.f90 for any Special      **
 !**  routines not implemented in this file                         **
 !**                                                                **
-    include '../special_dummies.inc'
+    include '../backreact_infl_dummies.inc'
 !***********************************************************************
-endmodule Special
+endmodule backreact_infl
