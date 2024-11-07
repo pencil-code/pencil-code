@@ -103,7 +103,7 @@ module Magnetic
   logical :: reinitialize_aa=.false.
   logical, dimension(7) :: lresi_dep=.false.
   logical :: lcoulomb=.false.
-  integer :: pushpars2c, pushdiags2c  ! should be procedure pointer (F2003)
+  integer :: pushpars2c  ! should be procedure pointer (F2003)
   integer :: iLam=0
 !
   integer :: idiag_axmz=0,idiag_aymz=0
