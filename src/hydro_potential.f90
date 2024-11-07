@@ -3837,13 +3837,4 @@ module Hydro
 
     endsubroutine pushpars2c
 !***********************************************************************
-    subroutine pushdiags2c(p_diag)
-
-    use Syscalls, only: copy_addr
-
-    integer, parameter :: n_diags=0
-    integer(KIND=ikind8), dimension(n_diags) :: p_diag
-
-    endsubroutine pushdiags2c
-!***********************************************************************
 endmodule Hydro
