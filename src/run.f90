@@ -294,7 +294,7 @@ subroutine timeloop(f,df,p)
   use Testscalar,      only: rescaling_testscalar
   use Testfield,       only: rescaling_testfield
   use TestPerturb,     only: testperturb_begin, testperturb_finalize
-  use Timeavg,         only: ltavg, update_timeavgs
+  use Timeavg,         only: update_timeavgs
   use Timestep,        only: time_step
   use Slices,          only: wvid_prepare
   use Solid_Cells,     only: time_step_ogrid

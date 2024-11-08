@@ -169,6 +169,19 @@ module Cparam
   real, parameter :: k1bessel0=2.4048255577, k1bessel1=3.8317060
   real, parameter :: k2bessel0=5.5200781
 !
+!  pi and its derivatives.
+!
+  real, parameter :: pi=3.14159265358979323846264338327950d0
+  real, parameter :: pi_1=1./pi,pi4_1=(1.0)/(pi*pi*pi*pi),pi5_1=1.0/(pi*pi*pi*pi*pi)
+  real, parameter :: sqrtpi=1.77245385090551602729816748334115d0
+  real, parameter :: sqrt2=1.41421356237309504880168872420970d0
+  real, parameter :: sqrt2pi=sqrt2*sqrtpi
+  real, parameter :: four_pi_over_three=4.0/3.0*pi
+  real, parameter :: onethird=1./3., twothird=2./3., fourthird=4./3., onesixth=1./6.
+  real, parameter :: one_over_sqrt3=0.577350269189625764509148780501958d0
+  real, parameter :: twopi = 6.2831853071795864769252867665590d0
+  real, parameter :: dtor = pi/180.d0
+!
 !  Physical constants, taken from
 !  http://physics.nist.gov/cuu/Constants/index.html.
 !
@@ -246,19 +259,6 @@ module Cparam
 !  The order of the patches is the same as in MATINS.
 !
   integer, parameter :: XPLUS=1, YPLUS=2, XMINUS=3, YMINUS=4, ZPLUS=5, ZMINUS=6
-!
-!  pi and its derivatives.
-!
-  real, parameter :: pi=3.14159265358979323846264338327950d0
-  real, parameter :: pi_1=1./pi,pi4_1=(1.0)/(pi*pi*pi*pi),pi5_1=1.0/(pi*pi*pi*pi*pi)
-  real, parameter :: sqrtpi=1.77245385090551602729816748334115d0
-  real, parameter :: sqrt2=1.41421356237309504880168872420970d0
-  real, parameter :: sqrt2pi=sqrt2*sqrtpi
-  real, parameter :: four_pi_over_three=4.0/3.0*pi
-  real, parameter :: onethird=1./3., twothird=2./3., fourthird=4./3., onesixth=1./6.
-  real, parameter :: one_over_sqrt3=0.577350269189625764509148780501958d0
-  real, parameter :: twopi = 6.2831853071795864769252867665590d0
-  real, parameter :: dtor = pi/180.d0
 !
   logical, parameter :: loffload=.false.
 

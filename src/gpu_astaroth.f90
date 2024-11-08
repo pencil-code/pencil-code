@@ -17,7 +17,6 @@ module GPU
 
   implicit none
 
-  integer(KIND=ikind8) :: pFarr_GPU_in, pFarr_GPU_out
 
 !$  interface
 !$    subroutine random_initial_condition() bind(C)
