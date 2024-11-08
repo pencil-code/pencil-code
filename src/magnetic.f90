@@ -110,7 +110,7 @@ module Magnetic
   integer, dimension (ninit) :: ll_sh=0, mm_sh=0
   integer :: nzav=0,indzav=0,izav_start=1
   character (len=fnlen) :: source_zav=''
-  character (len=labellen), dimension(ninit) :: initaa='nothing'
+  character (len=labellen), dimension(ninit) :: initaa='nothing', robflow_aa='I'
   character (len=labellen), dimension(3) :: borderaa='nothing'
   character (len=labellen), dimension(nresi_max) :: iresistivity=''
   character (len=labellen) :: ihall_term='const', tdep_eta_type='standard'
@@ -259,7 +259,7 @@ module Magnetic
       ABCaa, x0aa, y0aa, z0aa, widthaa, nexp_aa, &
       RFPradB, RFPradJ, by_left, by_right, bz_left, bz_right, relhel_aa, &
       initaa, amplaa, amplaa2, kx_aa, ky_aa, kz_aa, amplaaJ, amplaaB, RFPrad, radRFP, &
-      coefaa, coefbb, phase_aa, phasex_aa, phasey_aa, phasez_aa, inclaa, &
+      robflow_aa, coefaa, coefbb, phase_aa, phasex_aa, phasey_aa, phasez_aa, inclaa, &
       lpress_equil, lpress_equil_via_ss, lset_AxAy_zero, ladd_bb_init, &
       mu_r, mu_ext_pot, lB_ext_pot, &
       alp_aniso, ljj_as_comaux, lsmooth_jj, &
@@ -692,6 +692,13 @@ module Magnetic
   integer :: idiag_jx4m=0       ! DIAG_DOC: $\left< J_x^4 \right>$
   integer :: idiag_jy4m=0       ! DIAG_DOC: $\left< J_y^4 \right>$
   integer :: idiag_jz4m=0       ! DIAG_DOC: $\left< J_z^4 \right>$
+  integer :: idiag_jh2m1=0      ! DIAG_DOC: $\left< J_\perp^2 \right>^{I}$
+  integer :: idiag_jx2m1=0      ! DIAG_DOC: $\left< J_x^2 \right>^{I}$
+  integer :: idiag_jy2m1=0      ! DIAG_DOC: $\left< J_y^2 \right>^{I}$
+  integer :: idiag_jx2m2=0      ! DIAG_DOC: $\left< J_x^2 \right>^{II}$
+  integer :: idiag_jy2m2=0      ! DIAG_DOC: $\left< J_y^2 \right>^{II}$
+  integer :: idiag_jx2m3=0      ! DIAG_DOC: $\left< J_x^2 \right>^{III}$
+  integer :: idiag_jy2m3=0      ! DIAG_DOC: $\left< J_y^2 \right>^{III}$
   integer :: idiag_uxbm=0       ! DIAG_DOC: $\left<\uv\times\Bv\right>\cdot\Bv_0/B_0^2$
   integer :: idiag_jxbm=0       ! DIAG_DOC: $\left<\jv\times\Bv\right>\cdot\Bv_0/B_0^2$
   integer :: idiag_vmagfricmax=0 ! DIAG_DOC: $\max(1/\nu_{\rm mag}|\jv\times\Bv/\Bv^2|)$
@@ -2378,7 +2385,7 @@ module Magnetic
         case ('piecewise-dipole'); call piecew_dipole_aa (amplaa(j),inclaa,f,iaa)
         case ('Ferriere-uniform-Bx'); call ferriere_uniform_x(amplaa(j),f,iaa)
         case ('Ferriere-uniform-By'); call ferriere_uniform_y(amplaa(j),f,iaa)
-        case ('robertsflow'); call robertsflow(amplaa(j),f,iaa,relhel_aa,KX=kx_aa(j))
+        case ('robertsflow'); call robertsflow(amplaa(j),f,iaa,relhel_aa,KX=kx_aa(j),FLOW=robflow_aa(j))
         case ('sinx-clip')
           do l=l1,l2
             if (abs(x(l))<=pi) then
@@ -6338,6 +6345,13 @@ module Magnetic
       if (idiag_bxbym/=0) call sum_mn_name(p%bbb(:,1)*p%bbb(:,2),idiag_bxbym)
       if (idiag_bxbzm/=0) call sum_mn_name(p%bbb(:,1)*p%bbb(:,3),idiag_bxbzm)
       if (idiag_bybzm/=0) call sum_mn_name(p%bbb(:,2)*p%bbb(:,3),idiag_bybzm)
+      if (idiag_jh2m1/=0) call sum_mn_name(p%bij(:,2,3)**2+p%bij(:,1,3)**2,idiag_jh2m1)
+      if (idiag_jx2m1/=0) call sum_mn_name(p%bij(:,2,3)**2,idiag_jx2m1)
+      if (idiag_jy2m1/=0) call sum_mn_name(p%bij(:,1,3)**2,idiag_jy2m1)
+      if (idiag_jx2m2/=0) call sum_mn_name(p%bij(:,3,2)**2,idiag_jx2m2)
+      if (idiag_jy2m2/=0) call sum_mn_name(p%bij(:,3,1)**2,idiag_jy2m2)
+      if (idiag_jx2m3/=0) call sum_mn_name(-2.*p%bij(:,3,2)*p%bij(:,2,3),idiag_jx2m3)
+      if (idiag_jy2m3/=0) call sum_mn_name(-2.*p%bij(:,3,1)*p%bij(:,1,3),idiag_jy2m3)
       call sum_mn_name(p%djuidjbi,idiag_djuidjbim)
 !
 !  Calculate B*sin(phi) = -<Bx*sinkz> + <By*coskz>.
@@ -9963,6 +9977,8 @@ module Magnetic
         idiag_bx4m=0; idiag_by4m=0; idiag_bz4m=0
         idiag_jx2m=0; idiag_jy2m=0; idiag_jz2m=0
         idiag_jx4m=0; idiag_jy4m=0; idiag_jz4m=0
+        idiag_jx2m1=0; idiag_jx2m2=0; idiag_jx2m3=0; idiag_jh2m1=0
+        idiag_jy2m1=0; idiag_jy2m2=0; idiag_jy2m3=0
         idiag_bxbymx = 0; idiag_bxbzmx = 0; idiag_bybzmx = 0
         idiag_bxbymy=0; idiag_bxbzmy=0; idiag_bybzmy=0; idiag_bxbymz=0
         idiag_aybxmz=0; idiag_ay2mz=0; idiag_bxbzmz=0; idiag_bybzmz=0
@@ -10226,6 +10242,13 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'jx4m',idiag_jx4m)
         call parse_name(iname,cname(iname),cform(iname),'jy4m',idiag_jy4m)
         call parse_name(iname,cname(iname),cform(iname),'jz4m',idiag_jz4m)
+        call parse_name(iname,cname(iname),cform(iname),'jh2m1',idiag_jh2m1)
+        call parse_name(iname,cname(iname),cform(iname),'jx2m1',idiag_jx2m1)
+        call parse_name(iname,cname(iname),cform(iname),'jy2m1',idiag_jy2m1)
+        call parse_name(iname,cname(iname),cform(iname),'jx2m2',idiag_jx2m2)
+        call parse_name(iname,cname(iname),cform(iname),'jy2m2',idiag_jy2m2)
+        call parse_name(iname,cname(iname),cform(iname),'jx2m3',idiag_jx2m3)
+        call parse_name(iname,cname(iname),cform(iname),'jy2m3',idiag_jy2m3)
         call parse_name(iname,cname(iname),cform(iname),'bxbym',idiag_bxbym)
         call parse_name(iname,cname(iname),cform(iname),'bxbzm',idiag_bxbzm)
         call parse_name(iname,cname(iname),cform(iname),'bybzm',idiag_bybzm)
