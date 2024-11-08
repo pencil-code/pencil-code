@@ -770,6 +770,7 @@ module Particles_radius
             call condensing_species_rate(p,mfluxcond)
           endif
           !
+          p%ff_cond=0.
           do k = k1_imn(imn),k2_imn(imn)
             ix0 = ineargrid(k,1)
             ix = ix0-nghost

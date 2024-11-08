@@ -1337,6 +1337,18 @@ module Particles_main
               enddo
               remove_particle_at_time = -1.
 
+            case ('size')
+              k=1
+              do while (k<=npar_loc)
+                if ( fp(k,iap) < remove_particle_criteria_size ) then
+                  call remove_particle(fp,ipar,k,dfp,ineargrid)
+!                  print*,"Removed particle:",k,fp(k,iap)
+                else
+                  k=k+1
+                endif
+              enddo
+              remove_particle_at_time = t
+              
             endselect
           else
             remove_particle_at_time = -1.

@@ -145,7 +145,7 @@ module Particles
   logical :: ldiffuse_dragf= .false., ldiff_dragf=.false.
   logical :: lsimple_volume=.false.
   logical :: lnpmin_exclude_zero = .false.
-  logical :: ltauascalar = .false.
+  logical :: ltauascalar = .false., lfollow_gas=.true.
   logical, pointer :: lramp_mass, lsecondary_wait
 !
   character(len=labellen) :: interp_pol_uu ='ngp'
@@ -291,7 +291,7 @@ module Particles
       remove_particle_at_time, remove_particle_criteria, remove_particle_criteria_size, &
       remove_particle_criteria_edtog, &
       ascalar_ngp, ascalar_cic, rp_int, rp_ext, rp_ext_width, lnpmin_exclude_zero, &
-      lcondensation_rate, vapor_mixing_ratio_qvs, &
+      lcondensation_rate, vapor_mixing_ratio_qvs, lfollow_gas, &
       ltauascalar, rhoa, G_condensation, lpartnucleation, nucleation_threshold
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0      ! DIAG_DOC: $x_{part}$
@@ -406,6 +406,8 @@ module Particles
 !
       if (lpartnucleation) then
         call farray_register_auxiliary('nucl_rmin',inucl,communicated=.false.)
+        call farray_register_auxiliary('nucl_rate',inucrate,communicated=.false.)
+        call farray_register_auxiliary('supersat',isupsat,communicated=.false.)
       endif
 !
 !  Special variable for stiff drag force equations.
@@ -3043,6 +3045,25 @@ module Particles
             endif
           else
             vvp = f(ix0,iy0,iz0,ifgx:ifgz)
+          endif
+          fp(k,ivpx:ivpz) = vvp
+        enddo
+      elseif (lfollow_gas) then
+        do k = 1,npar_loc
+          ix0 = ineargrid(k,1)
+          iy0 = ineargrid(k,2)
+          iz0 = ineargrid(k,3)
+          if (lparticlemesh_cic) then
+            call interpolate_linear(f,iux,iuz, &
+                 fp(k,ixp:izp),vvp,ineargrid(k,:),0,ipar(k))
+          elseif (lparticlemesh_tsc) then
+            if (linterpolate_spline) then
+              call interpolate_quadratic_spline(f,iux,iuz,fp(k,ixp:izp),vvp,ineargrid(k,:),0,ipar(k))
+            else
+              call interpolate_quadratic(f,iux,iuz,fp(k,ixp:izp),vvp,ineargrid(k,:),0,ipar(k))
+            endif
+          else
+            vvp = f(ix0,iy0,iz0,iux:iuz)
           endif
           fp(k,ivpx:ivpz) = vvp
         enddo

@@ -24,7 +24,7 @@
 ! PENCILS PROVIDED ghhk(3,nchemspec); S0_R(nchemspec); cs2
 ! PENCILS PROVIDED glnpp(3); del2pp; mukmu1(nchemspec)
 ! PENCILS PROVIDED ccondens; ppwater
-! PENCILS PROVIDED Ywater, nucl_rate, nucl_rmin, conc_sat_spec
+! PENCILS PROVIDED Ywater, nucl_rate, nucl_rmin, conc_sat_spec, ff_nucl,ff_cond
 !
 !***************************************************************
 module Chemistry
@@ -60,7 +60,6 @@ module Chemistry
   logical :: lchem_detailed=.true.
   logical :: lgradP_terms=.true.
   character(len=30) :: reac_rate_method = 'chemkin'
-  character(len=30) :: inucl_pre_exp="const"      
 ! parameters for initial conditions
   real :: init_x1=-0.2, init_x2=0.2
   real :: init_y1=-0.2, init_y2=0.2
@@ -170,6 +169,8 @@ module Chemistry
   logical, pointer :: ldustnucleation, lpartnucleation, lcondensing_species
   character(len=labellen) :: isurf_energy="const"
   character(len=labellen) :: iconc_sat_spec="const"
+  character(len=30) :: inucl_pre_exp="const"      
+  logical :: lnoevap=.false.
 !
 !   Atmospheric physics
 !
@@ -230,7 +231,7 @@ module Chemistry
       ldiff_corr, lDiff_fick, lreac_as_aux, reac_rate_method,global_phi, &
       Ythresh, lchem_detailed, conc_sat_spec_cgs, inucl_pre_exp, lcorr_vel, &
       lgradP_terms, lnormalize_chemspec, lnormalize_chemspec_N2, &
-      gam_surf_energy_cgs, isurf_energy, iconc_sat_spec, nucleation_rate_coeff_cgs
+      gam_surf_energy_cgs, isurf_energy, iconc_sat_spec, nucleation_rate_coeff_cgs, lnoevap
 !
 ! diagnostic variables (need to be consistent with reset list below)
 !
@@ -259,6 +260,8 @@ module Chemistry
   integer :: idiag_lambdam=0,idiag_lambdamax=0,idiag_lambdamin=0
   integer :: idiag_alpham=0,idiag_alphamax=0,idiag_alphamin=0
   integer :: idiag_num=0,idiag_numax=0,idiag_numin=0
+  integer :: idiag_ffcondposm, idiag_ffcondnegm, idiag_ffnucl
+  integer :: idiag_ffcondm
 !
 !  Auxiliaries.
 !
@@ -964,7 +967,7 @@ module Chemistry
       real, dimension(nx,3) :: glncp_tmp
       real, dimension (nx) :: nucleation_rmin, nucleation_rate, conc_sat_spec
 !
-      intent(in) :: f
+      intent(inout) :: f
       intent(inout) :: p
       integer :: k,i
       integer :: ii1=1, ii2=2, ii3=3, ii4=4, ii5=5, ii6=6, ii7=7
@@ -1327,11 +1330,18 @@ module Chemistry
             call cond_spec_nucl_rate(p,nucleation_rmin,nucleation_rate)
             p%nucl_rate=nucleation_rate
             p%nucl_rmin=nucleation_rmin
+            !
+            ! Fill auxilliary array with radius and rate of nucleii. For use in
+            ! insert_nucleii in particles_dust.f90 and for visualization
+            !
+            f(l1:l2,m,n,inucl)=p%nucl_rmin
+            f(l1:l2,m,n,inucrate)=p%nucl_rate
           endif
         endif
         if (lnucleation .or. lcondensing_species) then
           call cond_spec_sat_conc(p,conc_sat_spec)
           p%conc_sat_spec=conc_sat_spec
+          f(l1:l2,m,n,isupsat)=p%chem_conc(:,ichem_cond_spec)/max(p%conc_sat_spec,1e-20)
         endif
       endif
 !
@@ -3463,6 +3473,7 @@ module Chemistry
 !
       real, dimension(mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
+      real, dimension(nx) :: ff_condm
 
       integer :: ii
 
@@ -3516,6 +3527,14 @@ module Chemistry
           if (idiag_nuclrmin/=0) call sum_mn_name(p%nucl_rmin,idiag_nuclrmin)
           if (idiag_nuclrate/=0) call sum_mn_name(p%nucl_rate,idiag_nuclrate)
           if (idiag_conc_satm/=0) call sum_mn_name(p%conc_sat_spec,idiag_conc_satm)
+          if (idiag_ffcondm/= 0) &
+               call sum_mn_name(p%ff_cond,idiag_ffcondm)
+          if (idiag_ffcondposm/= 0) &
+               call sum_mn_name(max(0.,p%ff_cond),idiag_ffcondposm)
+          if (idiag_ffcondnegm/= 0) then
+            call sum_mn_name(min(0.,p%ff_cond),idiag_ffcondnegm)
+          endif
+          if (idiag_ffnucl/= 0) call sum_mn_name(p%ff_nucl,idiag_ffnucl)
         endif
 !
 !  Sample for hard coded diffusion diagnostics
@@ -3605,6 +3624,10 @@ module Chemistry
         idiag_num = 0
         idiag_numax = 0
         idiag_numin = 0
+        idiag_ffcondposm = 0
+        idiag_ffcondm = 0
+        idiag_ffcondnegm = 0
+        idiag_ffnucl = 0
 !
         idiag_nuclrmin=0
         idiag_nuclrate=0
@@ -3661,6 +3684,10 @@ module Chemistry
         call parse_name(iname,cname(iname),cform(iname),'num',idiag_num)
         call parse_name(iname,cname(iname),cform(iname),'numax',idiag_numax)
         call parse_name(iname,cname(iname),cform(iname),'numin',idiag_numin)
+        call parse_name(iname,cname(iname),cform(iname),'ffcondposm',idiag_ffcondposm)
+        call parse_name(iname,cname(iname),cform(iname),'ffcondm',idiag_ffcondm)
+        call parse_name(iname,cname(iname),cform(iname),'ffcondnegm',idiag_ffcondnegm)
+        call parse_name(iname,cname(iname),cform(iname),'ffnucl',idiag_ffnucl)
 !
 !  Sample for hard-coded diffusion diagnostics
 !
@@ -3685,6 +3712,13 @@ module Chemistry
           if (get_species_nr(sname,'chemspec',nchemspec,'rprint_chemistry')>0) cformv(iname)='DEFINED'
         endif
       enddo
+!       
+      if (lwrite_slices) then 
+        where(cnamev=='nuclrmin') cformv='DEFINED'
+        where(cnamev=='nuclrate') cformv='DEFINED'
+        where(cnamev=='supersat') cformv='DEFINED'
+      endif
+      
 !
     endsubroutine rprint_chemistry
 !***********************************************************************
@@ -3706,13 +3740,33 @@ module Chemistry
 !  Chemical species mass fractions.
 !
       sname=trim(slices%name)
-      if (sname(9:)==' ') then    ! 9=len('chemspec')+1
-        ispec=1
-      else
-        read(sname(9:),'(i3)') ispec
-      endif
+      if (sname(1:8)=='chemspec') then
+        if (sname(9:)==' ') then    ! 9=len('chemspec')+1
+          ispec=1
+        else
+          read(sname(9:),'(i3)') ispec
+        endif
 ! 
-      call assign_slices_scal(slices,f,ichemspec(ispec))
+        call assign_slices_scal(slices,f,ichemspec(ispec))
+      endif
+!
+!  Nucleation radius
+!
+      if (sname=='nuclrmin') then
+        call assign_slices_scal(slices,f,inucl)
+      endif
+!
+!  Nucleation radte
+!
+      if (sname=='nuclrate') then
+        call assign_slices_scal(slices,f,inucrate)
+      endif
+!
+!  Supersaturation
+!
+      if (sname=='supersat') then
+        call assign_slices_scal(slices,f,isupsat)
+      endif
 !
     endsubroutine get_slices_chemistry
 !***********************************************************************
@@ -6596,30 +6650,30 @@ module Chemistry
       real :: dustbin_width
       real, dimension (nx) :: mfluxcond
 !
-      real, dimension (nx) :: ff_cond, ff_cond_fact
+      real, dimension (nx) :: ff_cond_fact
       real, dimension(ndustspec) :: ad
       integer :: ichem, kkk,k
 !
 !
 !  All the bins consume.
 !
-      ff_cond=0.
+      p%ff_cond=0.
       ff_cond_fact=4.*pi*mfluxcond*true_density_cond_spec
       do k=1,ndustspec
-        ff_cond=ff_cond+ff_cond_fact*ad(k)**2*f(l1:l2,m,n,ind(k))*dustbin_width
+        p%ff_cond=p%ff_cond+ff_cond_fact*ad(k)**2*f(l1:l2,m,n,ind(k))*dustbin_width
       enddo
       do ichem = 1,nchemspec
         kkk=ichemspec(ichem)
         if (kkk==i_cond_spec) then
-          df(l1:l2,m,n,kkk) = df(l1:l2,m,n,kkk) + ff_cond*(f(l1:l2,m,n,kkk)-1.)/p%rho
+          df(l1:l2,m,n,kkk) = df(l1:l2,m,n,kkk) + p%ff_cond*(f(l1:l2,m,n,kkk)-1.)/p%rho
         else
-          df(l1:l2,m,n,kkk) = df(l1:l2,m,n,kkk) + ff_cond*f(l1:l2,m,n,kkk)/p%rho
+          df(l1:l2,m,n,kkk) = df(l1:l2,m,n,kkk) + p%ff_cond*f(l1:l2,m,n,kkk)/p%rho
         endif
       enddo
       if (ldensity_nolog) then
-        df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) - ff_cond
+        df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) - p%ff_cond
       else
-        df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - ff_cond*p%rho1
+        df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - p%ff_cond*p%rho1
       endif
 ! 
     end subroutine cond_spec_cond
@@ -6630,16 +6684,16 @@ module Chemistry
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       integer :: ichem, kkk,ix0,ix
-      real :: rp,dapdt,np_swarm,drhocdt
+      real :: rp,dapdt,np_swarm, ffcondp
 !
 ! Modify continuity equation
 !
-      drhocdt = dapdt*4*pi*rp**2*true_density_cond_spec*np_swarm
-      !print*,"NILS:", drhocdt,dapdt,rp,true_density_cond_spec,np_swarm
+      ffcondp=dapdt*4*pi*rp**2*true_density_cond_spec*np_swarm
+      p%ff_cond(ix) = p%ff_cond(ix)+ffcondp
       if (ldensity_nolog) then
-        df(ix0,m,n,irho)   = df(ix0,m,n,irho)   - drhocdt
+        df(ix0,m,n,irho)   = df(ix0,m,n,irho)   - ffcondp
       else
-        df(ix0,m,n,ilnrho) = df(ix0,m,n,ilnrho) - drhocdt*p%rho1(ix)
+        df(ix0,m,n,ilnrho) = df(ix0,m,n,ilnrho) - ffcondp*p%rho1(ix)
       endif
 !
 ! Loop over all species and modify the species equation
@@ -6647,9 +6701,9 @@ module Chemistry
       do ichem = 1,nchemspec
         kkk=ichemspec(ichem)
         if (kkk==i_cond_spec) then
-          df(ix0,m,n,kkk) = df(ix0,m,n,kkk) + drhocdt*(f(ix0,m,n,kkk)-1.)*p%rho1(ix)
+          df(ix0,m,n,kkk) = df(ix0,m,n,kkk) + ffcondp*(f(ix0,m,n,kkk)-1.)*p%rho1(ix)
         else
-          df(ix0,m,n,kkk) = df(ix0,m,n,kkk) + drhocdt*f(ix0,m,n,kkk)*p%rho1(ix)
+          df(ix0,m,n,kkk) = df(ix0,m,n,kkk) + ffcondp*f(ix0,m,n,kkk)*p%rho1(ix)
         endif
       enddo
 !
@@ -6664,7 +6718,7 @@ module Chemistry
       integer :: ichem, kkk,i
       integer, dimension(nx) :: kk_vec
       real, dimension(ndustspec) :: ad
-      real :: ff_nucl
+      !real :: ff_nucl
 !
       do i=1,nx
         !
@@ -6674,16 +6728,16 @@ module Chemistry
           !
           !  Generating the nucleii consumes the condensing species
           !
-          ff_nucl=p%nucl_rate(i)*4.*pi*true_density_cond_spec/3.*ad(kk_vec(i))**3
+          p%ff_nucl(i)=p%nucl_rate(i)*4.*pi*true_density_cond_spec/3.*ad(kk_vec(i))**3
           do ichem = 1,nchemspec
             kkk=ichemspec(ichem)
             if (kkk==i_cond_spec) then
-              df(l1+i-1,m,n,kkk) = df(l1+i-1,m,n,kkk) + ff_nucl*(f(l1+i-1,m,n,kkk)-1.)/p%rho(i)
+              df(l1+i-1,m,n,kkk) = df(l1+i-1,m,n,kkk) + p%ff_nucl(i)*(f(l1+i-1,m,n,kkk)-1.)/p%rho(i)
             else
-              df(l1+i-1,m,n,kkk) = df(l1+i-1,m,n,kkk) + ff_nucl*f(l1+i-1,m,n,kkk)/p%rho(i)
+              df(l1+i-1,m,n,kkk) = df(l1+i-1,m,n,kkk) + p%ff_nucl(i)*f(l1+i-1,m,n,kkk)/p%rho(i)
             endif
           enddo
-          df(l1+i-1,m,n,irho) = df(l1+i-1,m,n,irho) - ff_nucl
+          df(l1+i-1,m,n,irho) = df(l1+i-1,m,n,irho) - p%ff_nucl(i)
         else
           p%nucl_rate(i)=0.
         endif
@@ -6698,39 +6752,36 @@ module Chemistry
       type (pencil_case) :: p
 !
       integer :: ichem, kkk,i
-      real, dimension(nx) :: ff_nucl
+      !real, dimension(nx) :: ff_nucl
       !
       if (lnucleation) then
         !
         ! Calculate mass flux of nucleii
         !
-        ff_nucl=p%nucl_rate*4.*pi*true_density_cond_spec*p%nucl_rmin**3/3.
-        where (ff_nucl<0)
-          ff_nucl=0.0
+        p%ff_nucl=p%nucl_rate*4.*pi*true_density_cond_spec*p%nucl_rmin**3/3.
+        where (p%ff_nucl<0)
+          p%ff_nucl=0.0
         end where
         !
         ! The mass of the nucleii is added to the passive scalar equation 
         !
-        df(l1:l2,m,n,icc) = df(l1:l2,m,n,icc) + ff_nucl*(1+p%cc(:,1))*p%rho1
+        df(l1:l2,m,n,icc) = df(l1:l2,m,n,icc) + p%ff_nucl*(1+p%cc(:,1))*p%rho1
         !
         !  Generating the nucleii consumes the condensing species
         !
         do ichem = 1,nchemspec
           kkk=ichemspec(ichem)
           if (kkk==i_cond_spec) then
-            df(l1:l2,m,n,kkk) = df(l1:l2,m,n,kkk) + ff_nucl*(f(l1:l2,m,n,kkk)-1.)*p%rho1
+            df(l1:l2,m,n,kkk) = df(l1:l2,m,n,kkk) + p%ff_nucl*(f(l1:l2,m,n,kkk)-1.)*p%rho1
           else
-            df(l1:l2,m,n,kkk) = df(l1:l2,m,n,kkk) + ff_nucl*f(l1:l2,m,n,kkk)*p%rho1
+            df(l1:l2,m,n,kkk) = df(l1:l2,m,n,kkk) + p%ff_nucl*f(l1:l2,m,n,kkk)*p%rho1
           endif
         enddo
         !
         ! The new nucleii also means that the density is reduced
         !
-        df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) - ff_nucl
+        df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) - p%ff_nucl
         !
-        ! Fill auxilliary array with radius of nucleii (for use in insert_nucleii in particles_dust.f90)
-        !
-        f(l1:l2,m,n,inucl)=p%nucl_rmin
       endif
 !     
     end subroutine cond_spec_nucl_lagr
@@ -6748,18 +6799,24 @@ module Chemistry
       A_spec=sqrt(8.*k_B/(pi*atomic_m_spec))*molar_mass_spec/(4.*true_density_cond_spec)
       mfluxcond=A_spec*(p%chem_conc(:,ichem_cond_spec)-p%conc_sat_spec)*sqrt(p%TT)
       !
+      ! Do we allow for evaporation of particles
+      !
+      if (lnoevap) then
+        mfluxcond=max(mfluxcond,0.)
+      endif
+      !
     end subroutine condensing_species_rate
 !***********************************************************************
     subroutine cond_spec_nucl_rate(p,nucleation_rmin,nucleation_rate)
       !
       type (pencil_case) :: p
       !
-      integer :: ichem, kkk
+      integer :: ichem, kkk, i
       real :: volume_spec_cgs=4.5e-23
       real :: volume_spec
-      real, dimension (nx) :: sat_ratio_spec, tmp1, tmp2, nucleation_rate, nucleation_rmin
-      real, dimension (nx) :: gam_surf_energy, nucleation_rate_coeff, chem_conc
-      real :: molar_mass_spec, atomic_m_spec
+      real, dimension (nx) :: sat_ratio_spec, nucleation_rate, nucleation_rmin
+      real, dimension (nx) :: gam_surf_energy, chem_conc
+      real :: atomic_m_spec, tmp1, tmp2, tmp3, tmp4, nucleation_rate_coeff
       !
 !  compute rmin
 !
@@ -6768,7 +6825,8 @@ module Chemistry
         ! Set minimum concentration of the condensing species to avoid NaNs
         !
         chem_conc=max(1e-20,p%chem_conc(:,ichem_cond_spec))
-        
+        sat_ratio_spec=chem_conc/p%conc_sat_spec
+
         if (isurf_energy == "const") then
           gam_surf_energy=gam_surf_energy_cgs/(unit_mass/unit_time)
         elseif (isurf_energy == "Kingery") then
@@ -6777,23 +6835,31 @@ module Chemistry
           call fatal_error("cond_spec_nucl_rate","No such isurf_energy")
         endif
         volume_spec=volume_spec_cgs/unit_length**3
-        sat_ratio_spec=chem_conc/p%conc_sat_spec
-        nucleation_rmin=2.*gam_surf_energy*volume_spec/(k_B*p%TT*alog(sat_ratio_spec))
-        !
-        !  Compute nucleation rate (of nucleii with r=rmin)
-        !
-        if (inucl_pre_exp .eq. "const") then
-          nucleation_rate_coeff=nucleation_rate_coeff_cgs*unit_length**3
-        elseif (inucl_pre_exp .eq. "oxtoby") then
-          molar_mass_spec = species_constants(ichem_cond_spec,imass)
-          atomic_m_spec=molar_mass_spec*m_u
-          tmp1=sqrt(2*gam_surf_energy/(pi*atomic_m_spec))
-          tmp2=(chem_conc*N_avogadro_cgs)**2
-          nucleation_rate_coeff=tmp1*volume_spec*tmp2/sat_ratio_spec
-        endif
-        tmp1=-16.*pi*gam_surf_energy**3*volume_spec**2
-        tmp2=3*(k_B*p%TT)**3*(alog(sat_ratio_spec))**2
-        nucleation_rate=nucleation_rate_coeff*exp(tmp1/tmp2)
+        atomic_m_spec=m_u*species_constants(ichem_cond_spec,imass)
+
+        
+        do i=1,nx
+          if (sat_ratio_spec(i) > 1.0) then
+            nucleation_rmin(i)=2.*gam_surf_energy(i)*volume_spec/&
+                 (k_B*p%TT(i)*alog(sat_ratio_spec(i)))
+            !
+            !  Compute nucleation rate (of nucleii with r=rmin)
+            !
+            if (inucl_pre_exp .eq. "const") then
+              nucleation_rate_coeff=nucleation_rate_coeff_cgs*unit_length**3
+            elseif (inucl_pre_exp .eq. "oxtoby") then
+              tmp1=sqrt(2*gam_surf_energy(i)/(pi*atomic_m_spec))
+              tmp2=(chem_conc(i)*N_avogadro_cgs)**2
+              nucleation_rate_coeff=tmp1*volume_spec*tmp2/sat_ratio_spec(i)
+            endif
+            tmp3=-16.*pi*gam_surf_energy(i)**3*volume_spec**2
+            tmp4=3*(k_B*p%TT(i))**3*(alog(sat_ratio_spec(i)))**2
+            nucleation_rate(i)=nucleation_rate_coeff*exp(tmp3/tmp4)
+          else
+            nucleation_rate(i)=0.0
+            nucleation_rmin(i)=0.0
+          endif
+        enddo
       else
         nucleation_rate=0.0
         nucleation_rmin=0.0
@@ -6810,7 +6876,8 @@ module Chemistry
         real, dimension (nx) :: conc_sat_spec, tmp1
         real :: P_boil_cgs = 1013250 ! 1bar in Ba (=0.1Pa)
         real :: T_boil_cgs = 2503 ! in K
-        real :: deltaH_cgs = 7.07e12 ! in erg/mol
+        !real :: deltaH_cgs = 7.07e12 ! in erg/mol
+        real :: deltaH_cgs = 3.55e12 ! in erg/mol (based on Tboil and 1025C)
         real :: P_boil
         !
         if (iconc_sat_spec=="const") then
