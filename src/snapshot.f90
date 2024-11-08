@@ -10,7 +10,6 @@ module Snapshot
 !
   use Cdata
   use Messages
-!$ use General, only: signal_send, signal_wait
   use Gpu, only: copy_farray_from_GPU
 !
   implicit none
@@ -69,7 +68,6 @@ module Snapshot
 !
         if (.not.lstart.and.lgpu) call copy_farray_from_GPU(a)
         if (lmultithread) then
-!!$        call signal_send(lhelperflags(PERF_WSNAP_DOWN),.false.)
 !$        lmasterflags(PERF_WSNAP_DOWN) = .true.
         else
           call perform_wsnap_down(a)
@@ -332,13 +330,12 @@ module Snapshot
 !        endif
 !
         if (lsnap) then
-          if (.not.lstart.and.lgpu) call copy_farray_from_GPU(a)
+          if (.not.lstart .and. lgpu .and. nt>0) call copy_farray_from_GPU(a)
           call update_ghosts(a)
           if (msnap==mfarray) call update_auxiliaries(a)
           call safe_character_assign(file,trim(chsnap)//ch)
           if (lmultithread) then
             extpars%ind1=nv1_capitalvar; extpars%ind2=msnap; extpars%file=file
-!!$          if (.not.lstart) call signal_send(lhelperflags(PERF_WSNAP),.true.)
 !$          lmasterflags(PERF_WSNAP) = .true.
           else
             call perform_wsnap(a,nv1_capitalvar,msnap,file)
@@ -353,7 +350,7 @@ module Snapshot
 !  Write snapshot without label (typically, var.dat). For dvar.dat we need to
 !  make sure that ghost zones are not set on df!
 !
-        if (.not.lstart.and.lgpu) call copy_farray_from_GPU(a)
+        if (.not.lstart .and. lgpu .and. nt>0) call copy_farray_from_GPU(a)
         if (msnap==mfarray) then
           if (.not. loptest(noghost)) call update_ghosts(a)
           call update_auxiliaries(a) ! Not if e.g. dvar.dat.
@@ -363,7 +360,6 @@ module Snapshot
         call safe_character_assign(file,trim(chsnap))
         if (lmultithread) then
           extpars%ind1=1; extpars%ind2=msnap; extpars%file=file
-!!$        if (.not.lstart) call signal_send(lhelperflags(PERF_WSNAP),.true.)
 !$        lmasterflags(PERF_WSNAP) = .true.
         else
           call perform_wsnap(a,1,msnap,file)
@@ -382,7 +378,6 @@ module Snapshot
       real, dimension(:,:,:,:) :: a
 
       call perform_wsnap(a,extpars%ind1,extpars%ind2,extpars%file)
-!!$    if (.not. lstart) call signal_send(lhelperflags(PERF_WSNAP),.false.)
 !$     lhelperflags(PERF_WSNAP) = .false.
 
     endsubroutine perform_wsnap_ext
@@ -741,7 +736,6 @@ module Snapshot
 !
       use Boundcond, only: update_ghosts
       use Sub, only: update_snaptime
-!$    use General, only: signal_send
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical, optional :: lwrite_only
@@ -762,7 +756,6 @@ module Snapshot
         if (ldo_all) call update_ghosts(f)
 !
         if (lmultithread) then
-!!$        call signal_send(lhelperflags(PERF_POWERSNAP),.true.)
 !$        lmasterflags(PERF_POWERSNAP) = .true.
         else
           call perform_powersnap(f)
@@ -789,9 +782,7 @@ module Snapshot
       integer :: ivec,stat,ipos,ispec,nloc,mloc
       character (LEN=40) :: str,sp1,sp2
       logical :: lfirstcall, lfirstcall_powerhel, lsqrt
-
-!!$     call signal_wait(lhelperflags(PERF_POWERSNAP),lhelper_run)
-
+      
         lsqrt=.true.
         lfirstcall_powerhel=.true.
 
@@ -1054,7 +1045,6 @@ module Snapshot
         if (Hm_specflux) call power_transfer_mag(f,'Hm')
         if (Hc_specflux) call power_transfer_mag(f,'Hc')
 !
-!!$      call signal_send(lhelperflags(PERF_POWERSNAP),.false.)
 !$       lhelperflags(PERF_POWERSNAP) = .false.
 
     endsubroutine perform_powersnap

@@ -563,6 +563,7 @@ subroutine timeloop(f,df,p)
 !$  endif
 
   enddo Time_loop
+
 !$ lmultithread = .false.
 !$ call signal_wait(lhelper_perf, .false.)
 !$ call signal_send(lhelper_run,.false.)
@@ -585,7 +586,7 @@ subroutine run_start() bind(C)
   use FArrayManager,   only: farray_clean_up
   use Farray_alloc
   use General,         only: random_seed_wrapper, touch_file, itoa
-!$ use General,        only: signal_init,get_cpu
+!$ use General,        only: signal_init, get_cpu
   use Grid,            only: construct_grid, box_vol, grid_bound_data, set_coorsys_dimmask, &
                              construct_serial_arrays, coarsegrid_interp
   use Gpu,             only: gpu_init, register_gpu, load_farray_to_GPU, initialize_gpu, finalize_gpu
@@ -941,7 +942,7 @@ subroutine run_start() bind(C)
   call initialize_boundcond
   call initialize_gpu
 ! Load farray to gpu
-  call load_farray_to_GPU(f)
+  if (nt>0) call load_farray_to_GPU(f)
 !
   if (it1d==impossible_int) then
     it1d=it1
@@ -1000,9 +1001,7 @@ subroutine run_start() bind(C)
 !  for the GW stress, but the GW signal itself is at the
 !  correct time; see the comment in the GW module.
 !
-  if (lspec_start .and. t==tstart) then
-    lspec=.true.
-  endif
+  if (lspec_start .and. t==tstart) lspec=.true.
 !
 !  Save spectrum snapshot.
 !
@@ -1084,17 +1083,14 @@ subroutine run_start() bind(C)
         time1=mpiwtime()
         time_last_diagnostic=time1
       endif
-      call timeloop(f,df,p)
+      if (nt>0) call timeloop(f,df,p)
 !print*, 'nach timeloop', iproc
 !flush(6)
-!stop
 !$  else
 !$    call helper_loop(f,p)
 !$  endif
 !$omp barrier
 !$omp end parallel
-!print*, 'nach parallel', iproc
-!flush(6)
 !
   if (lroot) then
 !
@@ -1109,7 +1105,7 @@ subroutine run_start() bind(C)
     write(*,*) 'Writing final snapshot at time t =', t
   endif
 !
-  if (.not.lnowrite) then
+  if (.not.lnowrite .or. nt==0) then
 
     if (ncoarse>1) then
       call update_ghosts(f)

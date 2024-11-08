@@ -13,7 +13,7 @@
               h
               w sedtmp
               : cont
-              $ { a Kernel twopass_solve_final(int step_num)\{
+              $ { a fixed_boundary Kernel twopass_solve_final(int step_num)\{
                   r sedtmp
                   a \}
                 }
