@@ -50,7 +50,7 @@ def ffloat(x):
         val = re.sub(r"(-?\d+\.?\d*)([+-]\d+)", r"\1E\2", x)
         return float(val)
 
-class PathWrapper(pathlib.Path):
+class PathWrapper(pathlib.WindowsPath if os.name == 'nt' else pathlib.PosixPath):
     """
     See documentation of pathlib.Path.
 
@@ -58,6 +58,7 @@ class PathWrapper(pathlib.Path):
     paths are always strings
 
     KG (2024-Oct-10): added
+    KG (2024-Nov-09): fixed usage with Python<3.12 (see https://stackoverflow.com/a/78471242 )
     """
     def _add_warning(self):
         warnings.warn("Adding paths to strings will not work in the future; please change your code before it breaks. If you believe your use-case is legitimate, please email <pencil-code-python@googlegroups.com> describing it.")
