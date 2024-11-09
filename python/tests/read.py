@@ -9,7 +9,6 @@ import os
 from typing import Any, Tuple
 
 from test_utils import (
-    make_test,
     assert_equal,
     assert_true,
     _assert_close,
@@ -39,7 +38,6 @@ def data_file(file_name: str) -> str:
         raise Exception("File {} not found.".format(path))
 
 
-@make_test
 def test_read_time_series() -> None:
     """Read time series."""
     time_series = ts(data_file("time-series-1.dat"), quiet=True)
@@ -66,7 +64,6 @@ def test_read_time_series() -> None:
     _assert_close(time_series.ecrmax[3], 1.835, "ecrmax[3]")
 
 
-@make_test
 def test_read_dim() -> None:
     """Read dim.dat file."""
     global_dim = dim(DATA_DIR)
@@ -104,7 +101,6 @@ def test_read_dim() -> None:
         )
 
 
-@make_test
 def test_read_param() -> None:
     """Read param.nml file."""
     params = param(DATA_DIR)
@@ -119,7 +115,6 @@ def test_read_param() -> None:
     assert_equal(params.ltemperature, False)
 
 
-@make_test
 def test_read_var() -> None:
     """Read var.dat (data cube) file."""
     data = var("var.dat", DATA_DIR, proc=0, quiet=True)
@@ -151,7 +146,6 @@ def test_read_var() -> None:
         cmp_extracted(getattr(data, key), extract, expect, key, eps)
 
 
-@make_test
 def test_read_power() -> None:
     """Read power spectra"""
     ps = power(datadir=DATA_DIR, quiet=True)

@@ -17,7 +17,6 @@ from typing import Any, List, Tuple
 import pencil as pc
 
 from test_utils import (
-    make_test,
     assert_true,
     fail,
     _assert_close,
@@ -29,7 +28,6 @@ from test_utils import (
 )
 
 
-@make_test
 def test_read_var() -> None:
     """Read var.dat (data cube) file."""
     var = pc.read.var(trimall=True, datadir=get_data_dir())
@@ -54,7 +52,6 @@ def test_read_var() -> None:
         cmp_extracted(getattr(var, key), extract, expect, key, eps)
 
 
-@make_test
 def test_get_help() -> None:
     """Get doc strings of imported functions."""
     math_dot_help = pc.math.dot.__doc__
@@ -64,7 +61,6 @@ def test_get_help() -> None:
     )
 
 
-@make_test
 def test_get_help_standalone() -> None:
     """Get doc string in a separate Python process."""
     get_docstring_standalone(
@@ -72,7 +68,6 @@ def test_get_help_standalone() -> None:
     )
 
 
-@make_test
 def test_read_ts_standalone() -> None:
     """Read time series in a separate Python process."""
     read_and_check_type(
@@ -88,7 +83,6 @@ def test_read_ts_standalone() -> None:
     )
 
 
-@make_test
 def test_read_var_standalone() -> None:
     """Read data cube in a separate Python process."""
     read_and_check_type(
@@ -103,7 +97,6 @@ def test_read_var_standalone() -> None:
     )
 
 
-@make_test
 def test_read_slices_standalone() -> None:
     """Read slices in a separate Python process."""
     read_and_check_type(
@@ -120,7 +113,6 @@ def test_read_slices_standalone() -> None:
     )
 
 
-@make_test
 def test_remesh() -> None:
     """Remeshing: [Not yet implemented]."""
     pass
