@@ -16,6 +16,14 @@ These tests depend on the [_Pytest_](https://pytest.org/) Python package.
 Pytest will search for tests in the files given in the `python_files` key of `pytest.ini`.
 Any function in these files whose name starts with `test` is treated as a test.
 
+# Testing with multiple Python versions
+
+A configuration file for [_Tox_] is provided. Change into this directory and run
+
+```sh
+tox
+```
+
 # Historical notes
 
 ## Why not Proboscis?
