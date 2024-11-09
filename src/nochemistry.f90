@@ -10,7 +10,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED Ywater, lambda; chem_conc(nchemspec)
-! PENCILS PROVIDED nucl_rmin; nucl_rate; conc_satm;
+! PENCILS PROVIDED nucl_rmin, nucl_rate, conc_satm, ff_cond
 !
 !***************************************************************
 module Chemistry
