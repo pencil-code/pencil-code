@@ -145,7 +145,7 @@ module Particles
   logical :: ldiffuse_dragf= .false., ldiff_dragf=.false.
   logical :: lsimple_volume=.false.
   logical :: lnpmin_exclude_zero = .false.
-  logical :: ltauascalar = .false., lfollow_gas=.true.
+  logical :: ltauascalar = .false., lfollow_gas=.false.
   logical, pointer :: lramp_mass, lsecondary_wait
 !
   character(len=labellen) :: interp_pol_uu ='ngp'
