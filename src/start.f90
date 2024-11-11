@@ -115,7 +115,7 @@ program start
 !
 !  Initialize OpenMP use
 !
-!!$ include 'omp_init.h'
+!$ include 'omp_init.h'
 !
 !  Identify version.
 !

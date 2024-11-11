@@ -10,7 +10,6 @@ module GPU
 !
   use Cdata
   use General, only: keep_compiler_quiet, lpointer, ioptest, loptest
-  use Mpicomm, only: stop_it
   use Messages
 !$ use, intrinsic :: iso_c_binding
   use iso_c_binding
