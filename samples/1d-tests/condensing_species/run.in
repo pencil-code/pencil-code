@@ -4,10 +4,7 @@
 !
 &run_pars
   ip=14,
-  nt=20000000, it1=100, isave=1000, itorder=3, ialive=0
-  nt=1000, it1=100, isave=1000, itorder=3, ialive=0
-!  nt=2400, it1=10, isave=10000, itorder=3, ialive=0
- ! nt=12000, it1=10, isave=10000, itorder=3, ialive=0, dt=5.8e-9  it1d=500
+  nt=300, it1=100, isave=1000, itorder=3, ialive=0
   cdt=0.8,
   cdtv=0.8,
   dtmin=1e-20
@@ -15,7 +12,6 @@
   dvid=4e-5
   tmax=0.03
   lwrite_aux=T
-  !dt=2e-9
   lpencil_check=F, lpencil_check_small=F, lpencil_check_no_zeros=F
   random_gen="system"
 /
@@ -39,7 +35,6 @@
   isurf_energy="Kingery"
   inucl_pre_exp="oxtoby"
   iconc_sat_spec="Clausius"
-  !  iconc_sat_spec="const"
   lnoevap=F
 /
 &viscosity_run_pars
@@ -70,7 +65,4 @@
   lfree_molecule=T
 /
 &particles_number_run_pars
-/
-&particles_stalker_run_pars
-  !dstalk=42e-6
 /
