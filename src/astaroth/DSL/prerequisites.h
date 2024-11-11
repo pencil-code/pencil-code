@@ -28,6 +28,7 @@
 #include "../stdlib/integrators.h"
 #include "../stdlib/units.h"
 #include "../stdlib/utils/kernels.h"
+#include "../stdlib/map.h"
 #include "PC_modulepardecs.h"
 #define AC_NGHOST NGHOST
 

@@ -19,6 +19,7 @@
 
 // Astaroth headers.
 #include "astaroth.h"
+#include "reduce.h"
 
 AcReal
 to_real(void* param)
@@ -1087,12 +1088,15 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out, int c
   checkConfig(mesh.info);
   acCheckDeviceAvailability();
   acGridInit(mesh);
+  
+
   mesh.info = acGridDecomposeMeshInfo(mesh.info);
   rhs = acGetDSLTaskGraph(AC_rhs);
   if(ltest_bcs) testBCs();
   acGridSynchronizeStream(STREAM_ALL);
   acLogFromRootProc(rank, "DONE initializeGPU\n");
   fflush(stdout);
+
 }
 /***********************************************************************************************/
 extern "C" void copyFarray(AcReal* f)
@@ -1341,6 +1345,69 @@ check_sym_z(AcMesh mesh_in)
     }
   }
 }
+
+void
+check_sym_x(const AcMesh mesh_in)
+{
+  const auto DEVICE_VTXBUF_IDX = [&](const int x, const int y, const int z)
+  				{
+					return acVertexBufferIdx(x,y,z,acGridGetLocalMeshInfo());
+  				};
+  if(rank == 1)
+  {
+  	//printf("HMM: %14e\n",mesh_in.vertex_buffer[0][DEVICE_VTXBUF_IDX(14,15,2)]);
+  	//printf("HMM: %14e\n",mesh_in.vertex_buffer[0][DEVICE_VTXBUF_IDX(14,15,2)]);
+  	printf("HMM: %14e\n",mesh_in.vertex_buffer[0][DEVICE_VTXBUF_IDX(26,14,1)]);
+  	printf("HMM: %14e\n",mesh_in.vertex_buffer[0][DEVICE_VTXBUF_IDX(26,14,5)]);
+  }
+  AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
+  for (int i = 0; i < dims.m1.x; i++)
+  {
+    for (int j = 0; j < dims.m1.y; j++)
+    {
+      for (int k = 0; k < dims.m1.z; k++)
+      {
+	if(
+	   i >= NGHOST && i < dims.n1.x &&
+	   j >= NGHOST && j < dims.n1.y &&
+	   k >= NGHOST && k < dims.n1.z
+	  )continue;
+	 if(i >= NGHOST && i < dims.n1.x) continue;
+        for (int ivar = UUY; ivar <= UUY; ivar++)
+        {
+	 //BOT
+	 if(i < NGHOST)
+	 {
+	 	const auto idx = DEVICE_VTXBUF_IDX(i,j,k);
+		const auto offset = NGHOST-i;
+	 	const auto domain_x= NGHOST+offset;
+	 	const auto domain_idx = DEVICE_VTXBUF_IDX(domain_x,j,k);
+		if(mesh_in.vertex_buffer[ivar][idx] !=  mesh_in.vertex_buffer[ivar][domain_idx])
+		{
+			fprintf(stderr,"WRONG\n");
+			exit(EXIT_FAILURE);
+
+		}
+	 }
+	 //TOP:
+	 else
+	 {
+	 	const auto idx = DEVICE_VTXBUF_IDX(i,j,k);
+		const auto offset = i-mesh_in.info[AC_nz_max]+1;
+	 	const auto domain_x= mesh_in.info[AC_nz_max]-offset;
+	 	const auto domain_idx = DEVICE_VTXBUF_IDX(domain_x,j,k);
+		if(mesh_in.vertex_buffer[ivar][idx] !=  mesh_in.vertex_buffer[ivar][domain_idx])
+		{
+			fprintf(stderr,"WRONG\n");
+			exit(EXIT_FAILURE);
+
+		}
+	 }
+	}
+      }
+    }
+  }
+}
 void
 testBCs()
 {
@@ -1370,24 +1437,26 @@ testBCs()
   acDeviceLoadMesh(acGridGetDevice(), STREAM_DEFAULT, mesh);
   acGridSynchronizeStream(STREAM_ALL);
 
+
   int ivar1 = 1;
   int ivar2 = NUM_VTXBUF_HANDLES;
   boundconds_x_c(mesh.vertex_buffer[0],&ivar1,&ivar2);
   boundconds_y_c(mesh.vertex_buffer[0],&ivar1,&ivar2);
   boundconds_z_c(mesh.vertex_buffer[0],&ivar1,&ivar2);
 
-
-
   acGridSynchronizeStream(STREAM_ALL);
   acGridExecuteTaskGraph(bcs,1);
   acGridSynchronizeStream(STREAM_ALL);
+
+
 
 
   acGridSynchronizeStream(STREAM_ALL);
   acDeviceStoreMesh(acGridGetDevice(), STREAM_DEFAULT, &mesh_to_copy);
   acGridSynchronizeStream(STREAM_ALL);
 
-
+  //check_sym_x(mesh);
+  //check_sym_x(mesh_to_copy);
 
   AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
   bool passed = true;
@@ -1414,7 +1483,7 @@ testBCs()
   auto end_y =  skip_y ? dims.n1.y : dims.m1.y;
   auto end_z =  skip_z ? dims.n1.z : dims.m1.z;
 
-  int num_of_points_where_different[NUM_VTXBUF_HANDLES] = {0};
+  int num_of_points_where_different[NUM_VTXBUF_HANDLES]{};
   int num_of_points = 0;
 
   for (int i = start_x; i < end_x; i++)
@@ -1472,13 +1541,13 @@ testBCs()
   if(!passed)
   {
   	for (int ivar=0;ivar<NUM_VTXBUF_HANDLES;ivar++)
-    		acLogFromRootProc(rank,"ratio of values wrong for field: %d\t %f\n",ivar,(double)num_of_points_where_different[ivar]/num_of_points);
-  	acLogFromRootProc(rank,"max abs not passed val: %.7e\t%.7e\n",max_abs_not_passed_val, fabs(true_pair));
-  	acLogFromRootProc(rank,"max abs relative difference val: %.7e\n",max_abs_relative_difference);
-  	acLogFromRootProc(rank,"Point where biggest rel diff: %d,%d,%d\n",largest_diff_point.x,largest_diff_point.y,largest_diff_point.z);
-  	acLogFromRootProc(rank,"largest difference: %.7e\t%.7e\n",gpu_val_for_largest_diff, true_val_for_largest_diff);
-  	acLogFromRootProc(rank,"abs range: %.7e-%7e\n",min_abs_value,max_abs_value);
-    	acLogFromRootProc(rank,"Did not pass BC test :(\n");
+    		acLogFromRootProc(0,"ratio of values wrong for field: %s\t %f\n",field_names[ivar],(double)num_of_points_where_different[ivar]/num_of_points);
+  	acLogFromRootProc(0,"max abs not passed val: %.7e\t%.7e\n",max_abs_not_passed_val, fabs(true_pair));
+  	acLogFromRootProc(0,"max abs relative difference val: %.7e\n",max_abs_relative_difference);
+  	acLogFromRootProc(0,"Point where biggest rel diff: %d,%d,%d\n",largest_diff_point.x,largest_diff_point.y,largest_diff_point.z);
+  	acLogFromRootProc(0,"largest difference: %.7e\t%.7e\n",gpu_val_for_largest_diff, true_val_for_largest_diff);
+  	acLogFromRootProc(0,"abs range: %.7e-%7e\n",min_abs_value,max_abs_value);
+    	acLogFromRootProc(0,"Did not pass BC test :(\n");
 	fprintf(stderr,"Did not pass BC\n");
 
     	exit(EXIT_FAILURE);
