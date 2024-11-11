@@ -1,0 +1,17 @@
+#!/bin/bash
+
+#SBATCH --job-name=pc_start            # Job name
+#SBATCH --account=nn11020k             # Project account name
+#SBATCH --qos=devel              # Specify the devel queue
+#SBATCH --nodes=4                      # Number of nodes to use
+#SBATCH --ntasks-per-node=128            # Number of tasks (cores) per node
+#SBATCH --time=00:05:00                # Wall time (hh:mm:ss) - max time for the devel queue
+#SBATCH --output=pc_start.out      # Standard output and error log
+
+# Load necessary modules (example: GCC and OpenMPI)
+module load foss/2023a
+
+# Run your application or script
+#mpirun ./src/start.x
+#mpirun pc_start -H login-2.betzy.sigma2.no
+pc_start
