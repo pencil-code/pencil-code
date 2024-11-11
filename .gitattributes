@@ -1956,8 +1956,6 @@ samples/1d-tests/condensing_species/run.in -text
 samples/1d-tests/condensing_species/src/Makefile.local -text
 samples/1d-tests/condensing_species/src/cparam.local -text
 samples/1d-tests/condensing_species/start.in -text
-samples/1d-tests/condensing_species/startrunscript.in -text
-samples/1d-tests/condensing_species/startscript.in -text
 samples/1d-tests/condensing_species/tran.dat -text
 samples/1d-tests/condensing_species/video.in -text
 samples/1d-tests/expans/NEVERLOCK -text
