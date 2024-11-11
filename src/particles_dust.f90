@@ -2451,7 +2451,7 @@ module Particles
 !
       use General, only: random_number_wrapper, normal_deviate
       use Particles_diagnos_state, only: insert_particles_diagnos_state
-      use Mpicomm, only: mpireduce_sum_int
+      use Mpicomm, only: mpireduce_sum_int, mpibarrier, mpisend_int, mpirecv_int
       use Particles_number, only: set_particle_number
 !
       real, dimension(mx,my,mz,mfarray) :: f
@@ -2463,6 +2463,7 @@ module Particles
       real :: xx0, yy0, r2, r, mass_nucleii, part_mass
       integer :: j, k, n_insert, npar_loc_old, iii
       integer :: ii,jj,kk
+      integer :: jproc,tag_id
 !
 ! Insertion of particles is stopped when maximum number of particles is reached,
 ! unless linsert_as_many_as_possible is set.
@@ -2475,100 +2476,110 @@ module Particles
 !
       call mpireduce_sum_int(npar_loc,npar_total)
       npar_loc_old=npar_loc
-
-      if (lmpicomm) then
-        !NILS: The current problem is that new particles should always be inserted
-        !NILS: by root. This is not currently done here, since particle insertion
-        !NILS: depends on the local concentration of the passive scalar (icc).
-        !NILS: I am not sure what the best way around this is.
-        call fatal_error("insert_nucleii",&
-             "This subroutine is not correct for multi-core simulations. Please fix!")
-      endif
-
-      
-      !
-      ! Check if we want to insert particles
-      !
-      if (t < max_particle_insert_time .and. t > tstart_insert_particles) then
-        !
-        ! Loop over all grid cells to identify those where nucleii should
-        ! be inserted
-        !
-        do ii=l1,l2
-          do jj=m1,m2
-            do kk=n1,n2
-              !
-              ! Insert nucleii if scalar concentration is above threshold value
-              !
-              if (ldensity_nolog) then
-                mass_nucleii=f(ii,jj,kk,icc)*f(ii,jj,kk,irho)
-              else
-                mass_nucleii=f(ii,jj,kk,icc)*exp(f(ii,jj,kk,ilnrho))
-              endif
-              if (mass_nucleii .gt. nucleation_threshold) then
-                if (1+npar_loc <= mpar_loc) then
-                  linsertmore = .true.
-                else
-                  linsertmore = .false.
-                  call fatal_error("insert_nucleii","mpar_loc is too small!")
-                endif
-                if (linsertmore) then
+!
+!  Loop over all processors jproc, and only proceed of jproc==iproc.
+!  Receive npar_inserted_tot from previous one, unless we are on zero.
+!
+      do jproc=0,ncpus-1
+        if (iproc==jproc) then
+          if (iproc/=0) call mpirecv_int(npar_inserted_tot,mod(jproc-1,ncpus),tag_id)
+          !
+          ! Check if we want to insert particles
+          !
+          if (t < max_particle_insert_time .and. t > tstart_insert_particles) then
+            !
+            ! Loop over all grid cells to identify those where nucleii should
+            ! be inserted
+            !
+            do ii=l1,l2
+              do jj=m1,m2
+                do kk=n1,n2
                   !
-                  ! Insert nucleii:
+                  ! Insert nucleii if scalar concentration is above threshold value
                   !
-                  iii = npar_loc+1
-                  ipar(iii) = npar_inserted_tot+1
-                  npar_loc = npar_loc + 1
-                  k=npar_loc
+                  if (ldensity_nolog) then
+                    mass_nucleii=f(ii,jj,kk,icc)*f(ii,jj,kk,irho)
+                  else
+                    mass_nucleii=f(ii,jj,kk,icc)*exp(f(ii,jj,kk,ilnrho))
+                  endif
+                  if (mass_nucleii .gt. nucleation_threshold) then
+                    if (1+npar_loc <= mpar_loc) then
+                      linsertmore = .true.
+                    else
+                      linsertmore = .false.
+                      call fatal_error("insert_nucleii","mpar_loc is too small!")
+                    endif
+                    if (linsertmore) then
+                      !
+                      ! Insert nucleii:
+                      !
+                      iii = npar_loc+1
+                      ipar(iii) = npar_inserted_tot+1
+                      npar_loc = npar_loc + 1
+                      k=npar_loc
 !
 ! Update total number of inserted particles, npar_inserted_tot.
 ! Not the same as npar_total, which is the number of particles in the system,
 ! without counting removed particles
 !
-                  npar_inserted_tot = 1 + npar_inserted_tot
-                  !
-                  ! Put the particle in the center of the local grid cell
-                  !
-                  fp(k,ixp) = x(ii)
-                  fp(k,iyp) = y(jj)
-                  fp(k,izp) = z(kk)
-                  !
-                  ! Give the particle the same velocity as the local fluid cell
-                  !
-                  ineargrid(k,1)=ii
-                  ineargrid(k,2)=jj
-                  ineargrid(k,3)=kk
-                  call interpolate_linear(f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:),0,0)
-                  fp(k,ivpx:ivpz) = uup
-                  ! 
-                  !  Initialize particle radius
-                  !
-                  if (lparticles_radius) then
-                    fp(k,iap)=f(ii,jj,kk,inucl)
-                    if (lparticles_number) then
-                      part_mass=4.*pi*fp(k,iap)**3/3.*true_density_cond_spec
-                      fp(k,inpswarm)=mass_nucleii/part_mass
-                    endif
-                  endif
+                      npar_inserted_tot = 1 + npar_inserted_tot
+                      !
+                      ! Put the particle in the center of the local grid cell
+                      !
+                      fp(k,ixp) = x(ii)
+                      fp(k,iyp) = y(jj)
+                      fp(k,izp) = z(kk)
+                      !
+                      ! Give the particle the same velocity as the local fluid cell
+                      !
+                      ineargrid(k,1)=ii
+                      ineargrid(k,2)=jj
+                      ineargrid(k,3)=kk
+                      call interpolate_linear(f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:),0,0)
+                      fp(k,ivpx:ivpz) = uup
+                      ! 
+                      !  Initialize particle radius
+                      !
+                      if (lparticles_radius) then
+                        fp(k,iap)=f(ii,jj,kk,inucl)
+                        if (lparticles_number) then
+                          part_mass=4.*pi*fp(k,iap)**3/3.*true_density_cond_spec
+                          fp(k,inpswarm)=mass_nucleii/part_mass
+                        endif
+                      endif
 !
 !  Particles are not allowed to be present in non-existing dimensions.
 !  This would give huge problems with interpolation later.
 !
-                  if (nxgrid == 1) fp(k,ixp) = x(nghost+1)
-                  if (nygrid == 1) fp(k,iyp) = y(nghost+1)
-                  if (nzgrid == 1) fp(k,izp) = z(nghost+1)
+                      if (nxgrid == 1) fp(k,ixp) = x(nghost+1)
+                      if (nygrid == 1) fp(k,iyp) = y(nghost+1)
+                      if (nzgrid == 1) fp(k,izp) = z(nghost+1)
 !
-                  if (lparticles_diagnos_state) call insert_particles_diagnos_state(fp, npar_loc_old)
-                  !
-                  ! Set the scalar to zero since the nucleii have now been moved to the particle phase
-                  !
-                  f(ii,jj,kk,icc) = 0.0
-                endif
-              endif
+                      if (lparticles_diagnos_state) call insert_particles_diagnos_state(fp, npar_loc_old)
+                      !
+                      ! Set the scalar to zero since the nucleii have now been moved to the particle phase
+                      !
+                      f(ii,jj,kk,icc) = 0.0
+                    endif
+                  endif
+                enddo
+              enddo
             enddo
-          enddo
-        enddo
-      endif
+          endif  !(over time)
+!
+!  send to next processor, or to zero if on the last one.
+!
+          call mpisend_int(npar_inserted_tot,mod(jproc+1,ncpus),tag_id)
+        endif  !(iproc==jproc)
+!
+!  apply barrier, because this is sequential.
+!
+        call mpibarrier
+      enddo
+!
+!  root receives from last processor to be ready for the next time step
+!
+      if (iproc==0) call mpirecv_int(npar_inserted_tot,ncpus-1,tag_id)
 !
 !  Redistribute particles only when t < max_particle_insert_time
 !  and t>tstart_insert_particles.
