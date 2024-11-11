@@ -1321,8 +1321,18 @@ module Chemistry
 !  Energy per unit mass
 !
       if (lpencil(i_ee)) p%ee = p%cv*p%TT
-!
-!  Nucleation rate of condensing species
+      !
+      ! Calculate saturation concentration of condensing species
+      ! (This must be done before nucleation radius and rate are calculated)
+      !
+      if (lnucleation .or. lcondensing_species) then
+        call cond_spec_sat_conc(p,conc_sat_spec)
+        p%conc_sat_spec=conc_sat_spec
+        f(l1:l2,m,n,isupsat)=p%chem_conc(:,ichem_cond_spec)&
+             /max(p%conc_sat_spec,1e-20)
+      endif
+      !
+      !  Nucleation rate of condensing species
       !
       if (ldustdensity .or. lparticles) then
         if (lnucleation) then
@@ -1337,11 +1347,6 @@ module Chemistry
             f(l1:l2,m,n,inucl)=p%nucl_rmin
             f(l1:l2,m,n,inucrate)=p%nucl_rate
           endif
-        endif
-        if (lnucleation .or. lcondensing_species) then
-          call cond_spec_sat_conc(p,conc_sat_spec)
-          p%conc_sat_spec=conc_sat_spec
-          f(l1:l2,m,n,isupsat)=p%chem_conc(:,ichem_cond_spec)/max(p%conc_sat_spec,1e-20)
         endif
       endif
 !
