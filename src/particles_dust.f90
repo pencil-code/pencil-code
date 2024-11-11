@@ -2463,7 +2463,7 @@ module Particles
       real :: xx0, yy0, r2, r, mass_nucleii, part_mass
       integer :: j, k, n_insert, npar_loc_old, iii
       integer :: ii,jj,kk
-      integer :: jproc,tag_id
+      integer :: jproc,tag_id,tag0=283
 !
 ! Insertion of particles is stopped when maximum number of particles is reached,
 ! unless linsert_as_many_as_possible is set.
@@ -2482,7 +2482,10 @@ module Particles
 !
       do jproc=0,ncpus-1
         if (iproc==jproc) then
-          if (iproc/=0) call mpirecv_int(npar_inserted_tot,mod(jproc-1,ncpus),tag_id)
+          if (iproc/=0) then
+            tag_id=tag0+jproc
+            call mpirecv_int(npar_inserted_tot,mod(jproc-1,ncpus),tag_id)
+          endif
           !
           ! Check if we want to insert particles
           !
@@ -2568,17 +2571,19 @@ module Particles
           endif  !(over time)
 !
 !  send to next processor, or to zero if on the last one.
-!
+          !
+          tag_id=tag0+jproc+1
           call mpisend_int(npar_inserted_tot,mod(jproc+1,ncpus),tag_id)
         endif  !(iproc==jproc)
-!
-!  apply barrier, because this is sequential.
-!
-        call mpibarrier
+        !
+        !  apply barrier, because this is sequential.
+        !
+        if (jproc .lt. ncpus-1) call mpibarrier
       enddo
-!
-!  root receives from last processor to be ready for the next time step
-!
+      !
+      !  root receives from last processor to be ready for the next time step
+      !
+      tag_id=tag0+ncpus
       if (iproc==0) call mpirecv_int(npar_inserted_tot,ncpus-1,tag_id)
 !
 !  Redistribute particles only when t < max_particle_insert_time
