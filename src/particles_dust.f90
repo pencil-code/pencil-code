@@ -986,7 +986,14 @@ module Particles
         call fatal_error('initialize_particles','lpscalar_sink not allowed for pscalar_nolog')
 !
       if (lchemistry) then
-        call get_shared_variable('true_density_cond_spec',true_density_cond_spec)
+        if (lpartnucleation .or. lcondensing_species) then
+          call get_shared_variable('true_density_cond_spec',&
+               true_density_cond_spec)
+          if (rhopmat /= 1.0 .and. rhopmat /= true_density_cond_spec) &
+               call fatal_error("initialize_particles",&
+               "Can not set rhopmat if true_density_cond_spec is given.")
+          rhopmat=true_density_cond_spec
+        endif
       endif
 !
     endsubroutine initialize_particles
@@ -5076,7 +5083,7 @@ module Particles
       if (allocated(stocunn)) deallocate(stocunn)
 !
       call calc_diagnostics_particles(fp,p,ineargrid)
-
+      
     endsubroutine dvvp_dt_pencil
 !***********************************************************************
     subroutine calc_diagnostics_particles(fp,p,ineargrid)
