@@ -215,7 +215,8 @@ function input_table, filename, $
         if (not (is_empty)) then begin ; a data line
           if N_compl gt 0 then $
             line = strjoin(strsplit(line,' |[(,)]',/REGEX,/EXTRACT),' ')
-          if (not sepminus) then begin
+
+  	  if (not sepminus) then begin
 
 ;  If the minus sign is not supposed to be a separator, the situation "+ or - in between two decimal digits"
 ;  is most likely due to Fortran output of numbers in exponential format with 3-digit exponents *without* eEdD.
@@ -224,8 +225,7 @@ function input_table, filename, $
             ipos=0
             while ipos ge 0 do begin
               ipos=stregex(line,'[0-9][+-][0-9]')
-              if ipos ge 0 then $
-                line=strmid(line,0,ipos)+'E'+strmid(line,ipos+1)
+              if ipos ge 0 then line=strmid(line,0,ipos)+'E'+strmid(line,ipos+1)
             endwhile
           endif 
           reads, line, row

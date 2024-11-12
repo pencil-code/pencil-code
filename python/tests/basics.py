@@ -9,13 +9,12 @@ import os
 import sys
 from typing import Any
 
-from test_utils import test, assert_equal, _pretty_print
+from test_utils import assert_equal, _pretty_print
 
 from pencil.sim.simulation import __Simulation__
 
 
-@test
-def neat_short_tricks() -> None:
+def test_neat_short_tricks() -> None:
     """Code from python/tutorials/basics/neat_short-tricks.py .
 
     Adapted to use existing data directories

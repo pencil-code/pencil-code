@@ -5357,6 +5357,7 @@ module Forcing
       if (iforcing_cont(1)=='(0,cosx*cosz,0)_Lor') lpenc_requested(i_rho1)=.true.
       if (lmomentum_ff) lpenc_requested(i_rho1)=.true.
       if (idiag_qfm/=0) lpenc_diagnos(i_curlo)=.true.
+      if (idiag_rufm/=0) lpenc_diagnos(i_rho)=.true.
 !
     endsubroutine pencil_criteria_forcing
 !***********************************************************************

@@ -871,8 +871,8 @@ module Hydro
 !
   real, dimension(:,:), pointer :: reference_state
   real, dimension(3) :: Omegav=0.
-  real, dimension(nx) :: Fmax
-  real :: t_vart=0., fade_fact, frict
+  real, dimension(nx) :: Fmax, frict
+  real :: t_vart=0., fade_fact
 !
   real, dimension (nx) :: prof_amp1, prof_amp2
   real, dimension (mz) :: prof_amp3
@@ -2823,6 +2823,10 @@ module Hydro
         lpenc_requested(i_phiy)=.true.
       endif
 !
+!  for dynamical friction
+!
+      if (ekman_friction/=0 .and. friction_tdep=='current') lpenc_requested(i_j2)=.true.
+!
 !  video pencils
 !
       if (lwrite_slices) then
@@ -3780,7 +3784,7 @@ module Hydro
 !
       use Diagnostics
       use Special, only: special_calc_hydro
-      use Sub, only: dot, dot2, identify_bcs, cross, multsv, multsv_mn_add
+      use Sub, only: dot, dot2, identify_bcs, cross, multsv, multsv_mn_add, multsv_mn
       use General, only: transform_thph_yy, notanumber
       use Deriv, only: der
       use Training, only: div_reynolds_stress
@@ -3792,7 +3796,7 @@ module Hydro
       intent(inout) :: p
       intent(inout) :: f,df
 
-      real, dimension (nx,3) :: uu1
+      real, dimension (nx,3) :: uu1, tmpv
       real, dimension (nx) :: tmp, ftot, ugu_Schur_x, ugu_Schur_y, ugu_Schur_z
       real, dimension (nx,3,3) :: puij_Schur
       integer :: i, j, ju
@@ -3978,9 +3982,16 @@ module Hydro
             frict=ekman_friction*max(min(real(t-friction_tdep_toffset)/friction_tdep_tau0,1.),0.)
           case ('inverse')
             frict=ekman_friction/max(real(t),friction_tdep_toffset)
+          case ('current')
+            if (lmagnetic) then
+              frict=ekman_friction*sqrt(p%j2)
+            else
+              call fatal_error("duu_dt","lmagnetic must be true")
+            endif
           case default
         endselect
-        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-frict*p%uu
+        call multsv_mn(frict,p%uu,tmpv)
+        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-tmpv
       endif
 !
 !  Boussinesq approximation: -g_z*alpha*(T-T_0) added.
@@ -4492,7 +4503,7 @@ module Hydro
           endif
         endif
 
-        if (ekman_friction/=0) call save_name(frict,idiag_frict)
+        if (ekman_friction/=0) call sum_mn_name(frict,idiag_frict)
 
       elseif (lcorr_zero_dt) then
 !

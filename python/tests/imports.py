@@ -19,11 +19,10 @@ can be removed in the code, provided these tests get adapted.
 
 """
 
-from test_utils import test, standalone_test
+from test_utils import standalone_test
 
 
-@test
-def import_stuff() -> None:
+def test_import_stuff() -> None:
     """Import a number of modules.
 
     Ideally, this list will grow each time we refactor something.
@@ -80,8 +79,7 @@ def import_stuff() -> None:
     pass
 
 
-@test
-def import_visu_stuff() -> None:
+def test_import_visu_stuff() -> None:
     """Import modules (or symbols?) related to visu. [commented out]
 
     These tests may fail, because visu is often not installed.
@@ -100,8 +98,7 @@ def import_visu_stuff() -> None:
     pass
 
 
-@test
-def import_pencil() -> None:
+def test_import_pencil() -> None:
     """Import the pencil module in a separate Python process.
 
     This will in turn import all other modules, including visu.

@@ -109,7 +109,7 @@ module Magnetic
   integer, dimension (ninit) :: ll_sh=0, mm_sh=0
   integer :: nzav=0,indzav=0,izav_start=1
   character (len=fnlen) :: source_zav=''
-  character (len=labellen), dimension(ninit) :: initaa='nothing'
+  character (len=labellen), dimension(ninit) :: initaa='nothing', robflow_aa='I'
   character (len=labellen), dimension(3) :: borderaa='nothing'
   character (len=labellen), dimension(nresi_max) :: iresistivity=''
   character (len=labellen) :: ihall_term='const', tdep_eta_type='standard'
@@ -137,7 +137,7 @@ module Magnetic
   real :: eta_shock=0.0, eta_shock2=0.0, alp_aniso=0.0, eta_aniso_BB=0.0
   real :: quench_aniso=impossible
   real :: eta_va=0., eta_j=0., eta_j2=0., eta_jrho=0., eta_min=0., eta_max=0., &
-          etaj20=0., va_min=0., vArms=1.
+          eta_huge=1e38, etaj20=0., va_min=0., vArms=1.
   real :: rhomin_jxb=0.0, va2max_jxb=0.0, va2max_boris=0.0,cmin=0.0
   real :: omega_Bz_ext=0.0
   real :: mu_r=-0.5 !(still needed for backwards compatibility)
@@ -167,14 +167,14 @@ module Magnetic
   real :: non_ffree_factor=1.
   real :: etaB=0.
   real :: tau_relprof=0.0, tau_relprof1, amp_relprof=1.0 , k_relprof=1.0
-  real, pointer :: cp
+  real, pointer :: cp, ascale, Hscript
   real :: dipole_moment=0.0
   real :: eta_power_x=0., eta_power_z=0.
   real :: z1_aa=0., z2_aa=0.
   real :: Pm_smag1=1., k1hel=0., k2hel=max_real, qexp_aa=0.
   real :: nfact_aa=4.
   real :: r_inner=0., r_outer=0.
-  real :: eta_tdep_loverride_ee=0.
+  real :: eta_tdep_loverride_ee=0., echarge=.55
   integer, target :: va2power_jxb = 5
   integer :: nbvec, nbvecmax=nx*ny*nz/4, iua=0, iLam=0, idiva=0
   integer :: N_modes_aa=1, naareset
@@ -258,7 +258,7 @@ module Magnetic
       ABCaa, x0aa, y0aa, z0aa, widthaa, nexp_aa, &
       RFPradB, RFPradJ, by_left, by_right, bz_left, bz_right, relhel_aa, &
       initaa, amplaa, amplaa2, kx_aa, ky_aa, kz_aa, amplaaJ, amplaaB, RFPrad, radRFP, &
-      coefaa, coefbb, phase_aa, phasex_aa, phasey_aa, phasez_aa, inclaa, &
+      robflow_aa, coefaa, coefbb, phase_aa, phasex_aa, phasey_aa, phasez_aa, inclaa, &
       lpress_equil, lpress_equil_via_ss, lset_AxAy_zero, ladd_bb_init, &
       mu_r, mu_ext_pot, lB_ext_pot, &
       alp_aniso, ljj_as_comaux, lsmooth_jj, &
@@ -283,7 +283,8 @@ module Magnetic
       source_zav,nzav,indzav,izav_start, k1hel, k2hel, lbb_sph_as_aux, &
       r_inner, r_outer, lpower_profile_file, eta_jump0, eta_jump1, eta_jump2, &
       lcoulomb, qexp_aa, nfact_aa, lfactors_aa, lvacuum, l2d_aa, &
-      loverride_ee_decide, eta_tdep_loverride_ee, z0_gaussian, width_gaussian
+      loverride_ee_decide, eta_tdep_loverride_ee, z0_gaussian, width_gaussian, &
+      echarge
 !
 ! Run parameters
 !
@@ -424,7 +425,8 @@ module Magnetic
       lbb_sph_as_aux, ltime_integrals_always, dtcor, lvart_in_shear_frame, &
       lbraginsky, eta_jump0, eta_jump1, lcoulomb, lvacuum, &
       loverride_ee_decide, eta_tdep_loverride_ee, loverride_ee2, lignore_1rho_in_Lorentz, &
-      lbext_moving_layer, zbot_moving_layer, ztop_moving_layer, speed_moving_layer, edge_moving_layer
+      lbext_moving_layer, zbot_moving_layer, ztop_moving_layer, speed_moving_layer, edge_moving_layer, &
+      echarge
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -689,6 +691,13 @@ module Magnetic
   integer :: idiag_jx4m=0       ! DIAG_DOC: $\left< J_x^4 \right>$
   integer :: idiag_jy4m=0       ! DIAG_DOC: $\left< J_y^4 \right>$
   integer :: idiag_jz4m=0       ! DIAG_DOC: $\left< J_z^4 \right>$
+  integer :: idiag_jh2m1=0      ! DIAG_DOC: $\left< J_\perp^2 \right>^{I}$
+  integer :: idiag_jx2m1=0      ! DIAG_DOC: $\left< J_x^2 \right>^{I}$
+  integer :: idiag_jy2m1=0      ! DIAG_DOC: $\left< J_y^2 \right>^{I}$
+  integer :: idiag_jx2m2=0      ! DIAG_DOC: $\left< J_x^2 \right>^{II}$
+  integer :: idiag_jy2m2=0      ! DIAG_DOC: $\left< J_y^2 \right>^{II}$
+  integer :: idiag_jx2m3=0      ! DIAG_DOC: $\left< J_x^2 \right>^{III}$
+  integer :: idiag_jy2m3=0      ! DIAG_DOC: $\left< J_y^2 \right>^{III}$
   integer :: idiag_uxbm=0       ! DIAG_DOC: $\left<\uv\times\Bv\right>\cdot\Bv_0/B_0^2$
   integer :: idiag_jxbm=0       ! DIAG_DOC: $\left<\jv\times\Bv\right>\cdot\Bv_0/B_0^2$
   integer :: idiag_vmagfricmax=0 ! DIAG_DOC: $\max(1/\nu_{\rm mag}|\jv\times\Bv/\Bv^2|)$
@@ -1109,7 +1118,7 @@ module Magnetic
 !  03-apr-20/joern: restructured and fixed slope-limited diffusion
 !
       use Sub, only: register_report_aux
-      use FArrayManager, only: farray_register_pde,farray_register_auxiliary
+      use FArrayManager, only: farray_register_pde, farray_register_auxiliary, farray_index_by_name_ode
       use SharedVariables, only: put_shared_variable
 !
       call farray_register_pde('aa',iaa,vector=3)
@@ -1135,7 +1144,7 @@ module Magnetic
 !  Register EE as auxilliary array if asked for.
 !  This must not be involved when the displacement current is being solved for.
 !
-      if (lee_as_aux) then
+      if (lee_as_aux) then  !(AB: this will not be used; it was a test)
         if (lroot) print*,'NOTE: lee_as_aux=',lee_as_aux
         call farray_register_auxiliary('ee',iee,vector=3)
         iex=iee; iey=iee+1; iez=iee+2
@@ -1286,7 +1295,7 @@ module Magnetic
       use Slices_methods, only: alloc_slice_buffers
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: i,j,nyl,nycap
+      integer :: i, j, nyl, nycap
       real :: eta_zdep_exponent
 !
       call get_gamma_etc(gamma)
@@ -2199,7 +2208,7 @@ module Magnetic
         case ('cosxcosy'); call cosx_cosy_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
         case ('Bzcosxcosy'); call cosx_cosy_cosz(amplaa(j),f,iay,kx_aa(j),ky_aa(j),0.)
         case ('sinxsiny'); call sinx_siny_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
-        case ('xsiny'); call x_siny_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.,xbot=x0aa,nexp=nexp_aa)
+        !!!case ('xsiny'); call x_siny_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.,xbot=x0aa,nexp=nexp_aa)
         case ('x1siny'); call x1_siny_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.,phasey_aa(j))
         case ('x32siny'); call x32_siny_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.,phasey_aa(j))
         case ('sinxcosz'); call sinx_siny_cosz(amplaa(j),f,iay,kx_aa(j),ky_aa(j),kz_aa(j))
@@ -2376,7 +2385,7 @@ module Magnetic
         case ('piecewise-dipole'); call piecew_dipole_aa (amplaa(j),inclaa,f,iaa)
         case ('Ferriere-uniform-Bx'); call ferriere_uniform_x(amplaa(j),f,iaa)
         case ('Ferriere-uniform-By'); call ferriere_uniform_y(amplaa(j),f,iaa)
-        case ('robertsflow'); call robertsflow(amplaa(j),f,iaa,relhel_aa)
+        case ('robertsflow'); call robertsflow(amplaa(j),f,iaa,relhel_aa,KX=kx_aa(j),FLOW=robflow_aa(j))
         case ('sinx-clip')
           do l=l1,l2
             if (abs(x(l))<=pi) then
@@ -3679,7 +3688,6 @@ module Magnetic
             if (irhoe/=0.and.ibb/=0) then
 !             p%jj_ohm=(p%el+p%uxb)*mu01/eta_total(1)
 !AB: rhoe is apparently not ready yet
-!  XXX
             else
               if (lcartesian_coords) then
                 call gij_etc(f,iaa,BIJ=bij)
@@ -3840,6 +3848,7 @@ module Magnetic
       real, dimension (nx) :: rho1_jxb, quench, StokesI_ncr, tmp1, bbgb, va2max_beta
       real, dimension(3) :: B_ext, j_ext
       real :: c,s
+      real :: Eaver, Baver, b2m
       integer :: i, j, ix, iedotx, iedotz
 
       if (lfirstpoint) lproc_print=.true.
@@ -4093,7 +4102,60 @@ module Magnetic
 !
 ! jj
 !
-      if (lpenc_loc(i_jj)) then
+      if (lpenc_loc(i_jj) .or. lpenc_loc(i_jj_ohm)) then
+!
+!  The following allows us to let eta change with time, t-eta_tdep_toffset.
+!  The eta_tdep_toffset is used in cosmology where time starts at t=1.
+!  lresi_eta_tdep_t0_norm is not the default because of backward compatbility.
+!  The default is problematic because then eta_tdep /= eta for t < eta_tdep_t0.
+!
+      if (lresi_eta_tdep .or. lresi_hyper2_tdep .or. lresi_hyper3_tdep) then
+        select case (tdep_eta_type)
+          case ('standard')
+            if (lresi_eta_tdep_t0_norm) then
+              eta_tdep=eta*max(real(t-eta_tdep_toffset)/eta_tdep_t0,1.)**eta_tdep_exponent
+            else
+              eta_tdep=eta*max(real(t-eta_tdep_toffset),eta_tdep_t0)**eta_tdep_exponent
+            endif
+          case ('standard2')
+            eta_tdep=eta*(1.+max(real(t-eta_tdep_toffset)/eta_tdep_t0,0.))**eta_tdep_exponent
+          case ('log-switch-on')
+            eta_tdep=eta*exp((alog(eta_max)-alog(eta)) &
+                     *max(min((1.-real(t-eta_tdep_toffset)/eta_tdep_t0),1.),0.))
+          case ('linear-sigma')
+            eta_tdep=1./(1./eta_max+(1./eta-1./eta_max) &
+                     *max(min(real(t-eta_tdep_toffset)/eta_tdep_t0,1.),0.))
+          case ('eta_table')
+            call fatal_error('magnetic_after_boundary','eta_table not yet completed')
+            eta_tdep=0.
+          case ('mean-field')
+!
+!  eta_tdep
+!
+             call get_shared_variable('ascale', ascale, caller='initialize_magnetic')
+             call get_shared_variable('Hscript', Hscript, caller='initialize_magnetic')
+             if (lbb_as_aux .and. .not. lbb_as_comaux) then
+               b2m=sum(f(l1:l2,m,n,ibx)**2+f(l1:l2,m,n,iby)**2+f(l1:l2,m,n,ibz)**2)/nx
+             else
+               call fatal_error('magnetic_after_boundary','must have lbb_as_aux')
+             endif
+             Eaver=sqrt(sum(f(l1:l2,m1:m2,n,iex)**2+f(l1:l2,m1:m2,n,iey)**2+f(l1:l2,m1:m2,n,iez)**2)/nx)
+             Baver=sqrt(B_ext2+b2m)
+!
+!  Note that for Baver=0, eta_tdep=0
+!
+            if (Eaver<tini) then
+              eta_tdep=eta_huge
+            else
+              if (Baver<tini) then
+                eta_tdep=6.*pi**3*Hscript/echarge**3/Eaver
+              else
+                eta_tdep=6.*pi**2*Hscript/echarge**3*tanh(pi*Baver/Eaver)/Baver
+              endif
+            endif
+          case default
+        endselect
+      endif
 !
 !  Here, if we don't solve for the displacement current,
 !  p%jj is just curlb (so we could have just called it that),
@@ -5828,9 +5890,10 @@ module Magnetic
 !
       endif
 !
-!  Add turbulent diffusivity, if provided.  (MR: should be done in MF module!)
+!  Add turbulent diffusivity, if provided.  (MR: should be done in MF module! AB: I agree; replace now by fatal error)
 !
-      if (ietat/=0) eta_total=eta_total+f(l1:l2,m,n,ietat)
+      !if (ietat/=0) eta_total=eta_total+f(l1:l2,m,n,ietat)
+      if (ietat/=0) call fatal_error("daa_dt","eta_total=eta_total+f(l1:l2,m,n,ietat) should be done in MF module")
 !
 !  Multiply resistivity by Nyquist scale, for resistive time-step.
 !
@@ -6288,6 +6351,13 @@ module Magnetic
       if (idiag_bxbym/=0) call sum_mn_name(p%bbb(:,1)*p%bbb(:,2),idiag_bxbym)
       if (idiag_bxbzm/=0) call sum_mn_name(p%bbb(:,1)*p%bbb(:,3),idiag_bxbzm)
       if (idiag_bybzm/=0) call sum_mn_name(p%bbb(:,2)*p%bbb(:,3),idiag_bybzm)
+      if (idiag_jh2m1/=0) call sum_mn_name(p%bij(:,2,3)**2+p%bij(:,1,3)**2,idiag_jh2m1)
+      if (idiag_jx2m1/=0) call sum_mn_name(p%bij(:,2,3)**2,idiag_jx2m1)
+      if (idiag_jy2m1/=0) call sum_mn_name(p%bij(:,1,3)**2,idiag_jy2m1)
+      if (idiag_jx2m2/=0) call sum_mn_name(p%bij(:,3,2)**2,idiag_jx2m2)
+      if (idiag_jy2m2/=0) call sum_mn_name(p%bij(:,3,1)**2,idiag_jy2m2)
+      if (idiag_jx2m3/=0) call sum_mn_name(-2.*p%bij(:,3,2)*p%bij(:,2,3),idiag_jx2m3)
+      if (idiag_jy2m3/=0) call sum_mn_name(-2.*p%bij(:,3,1)*p%bij(:,1,3),idiag_jy2m3)
       call sum_mn_name(p%djuidjbi,idiag_djuidjbim)
 !
 !  Calculate B*sin(phi) = -<Bx*sinkz> + <By*coskz>.
@@ -6678,6 +6748,10 @@ module Magnetic
         b2b31=p%bb(:,2)*p%bij(:,3,1)
         call sum_mn_name(b2b31,idiag_b2b31m)
       endif
+!
+!  eta_tdep as diagnostics:
+!
+      if (lroot) call save_name(eta_tdep,idiag_eta_tdep)
 !
 !  current density components at one point (=pt).
 !
@@ -7247,12 +7321,14 @@ module Magnetic
 !
       use Boundcond, only: update_ghosts
       use Diagnostics, only: save_name
+      use SharedVariables, only: get_shared_variable
       use Sub, only: div, calc_all_diff_fluxes, dot2_mn, vecout_initialize
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
 
       real, dimension(nx) :: tmp
       real, save :: phase_beltrami_before=impossible
+      real :: Eaver, Baver, b2m
 !
 !  Slope limited diffusion following Rempel (2014)
 !  First calculating the flux in a subroutine below
@@ -7289,35 +7365,6 @@ module Magnetic
           call update_ghosts(f,ietasmag)  !MR: can this be avoided (do earlier)?
 !
         endif
-      endif
-!
-!  The following allows us to let eta change with time, t-eta_tdep_toffset.
-!  The eta_tdep_toffset is used in cosmology where time starts at t=1.
-!  lresi_eta_tdep_t0_norm is not the default because of backward compatbility.
-!  The default is problematic because then eta_tdep /= eta for t < eta_tdep_t0.
-!
-      if (lresi_eta_tdep .or. lresi_hyper2_tdep .or. lresi_hyper3_tdep) then
-        select case (tdep_eta_type)
-          case ('standard')
-            if (lresi_eta_tdep_t0_norm) then
-              eta_tdep=eta*max(real(t-eta_tdep_toffset)/eta_tdep_t0,1.)**eta_tdep_exponent
-            else
-              eta_tdep=eta*max(real(t-eta_tdep_toffset),eta_tdep_t0)**eta_tdep_exponent
-            endif
-          case ('standard2')
-            eta_tdep=eta*(1.+max(real(t-eta_tdep_toffset)/eta_tdep_t0,0.))**eta_tdep_exponent
-          case ('log-switch-on')
-            eta_tdep=eta*exp((alog(eta_max)-alog(eta)) &
-                     *max(min((1.-real(t-eta_tdep_toffset)/eta_tdep_t0),1.),0.))
-          case ('linear-sigma')
-            eta_tdep=1./(1./eta_max+(1./eta-1./eta_max) &
-                     *max(min(real(t-eta_tdep_toffset)/eta_tdep_t0,1.),0.))
-          case ('eta_table')
-            call fatal_error('magnetic_after_boundary','eta_table not yet completed')
-            eta_tdep=0.
-          case default
-        endselect
-        if (lroot.and.ldiagnos) call save_name(eta_tdep,idiag_eta_tdep)
       endif
 !
 !  Decide whether or not we want to override the use of the displacement current.
@@ -9935,6 +9982,8 @@ module Magnetic
         idiag_bx4m=0; idiag_by4m=0; idiag_bz4m=0
         idiag_jx2m=0; idiag_jy2m=0; idiag_jz2m=0
         idiag_jx4m=0; idiag_jy4m=0; idiag_jz4m=0
+        idiag_jx2m1=0; idiag_jx2m2=0; idiag_jx2m3=0; idiag_jh2m1=0
+        idiag_jy2m1=0; idiag_jy2m2=0; idiag_jy2m3=0
         idiag_bxbymx = 0; idiag_bxbzmx = 0; idiag_bybzmx = 0
         idiag_bxbymy=0; idiag_bxbzmy=0; idiag_bybzmy=0; idiag_bxbymz=0
         idiag_aybxmz=0; idiag_ay2mz=0; idiag_bxbzmz=0; idiag_bybzmz=0
@@ -10198,6 +10247,13 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'jx4m',idiag_jx4m)
         call parse_name(iname,cname(iname),cform(iname),'jy4m',idiag_jy4m)
         call parse_name(iname,cname(iname),cform(iname),'jz4m',idiag_jz4m)
+        call parse_name(iname,cname(iname),cform(iname),'jh2m1',idiag_jh2m1)
+        call parse_name(iname,cname(iname),cform(iname),'jx2m1',idiag_jx2m1)
+        call parse_name(iname,cname(iname),cform(iname),'jy2m1',idiag_jy2m1)
+        call parse_name(iname,cname(iname),cform(iname),'jx2m2',idiag_jx2m2)
+        call parse_name(iname,cname(iname),cform(iname),'jy2m2',idiag_jy2m2)
+        call parse_name(iname,cname(iname),cform(iname),'jx2m3',idiag_jx2m3)
+        call parse_name(iname,cname(iname),cform(iname),'jy2m3',idiag_jy2m3)
         call parse_name(iname,cname(iname),cform(iname),'bxbym',idiag_bxbym)
         call parse_name(iname,cname(iname),cform(iname),'bxbzm',idiag_bxbzm)
         call parse_name(iname,cname(iname),cform(iname),'bybzm',idiag_bybzm)
@@ -10842,9 +10898,9 @@ module Magnetic
 !***********************************************************************
     subroutine keplerian_gauge(f)
 !
-      use Mpicomm , only: mpiallreduce_sum
-      use Deriv, only: der
       use Boundcond, only: update_ghosts
+      use Deriv, only: der
+      use Mpicomm , only: mpiallreduce_sum
 !
 !  Substract mean emf from the radial component of the induction
 !  equation. Activated only when large Bz fields and are present
@@ -10861,11 +10917,9 @@ module Magnetic
 !  28-mar-17/MR: reinstated update_ghosts.
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
-      real, dimension (mx,mz) :: fsum_tmp,glambda_rz
-      real, dimension (mx,my,mz) :: lambda
-      real, dimension (nx) :: glambda_z
-      real :: fac
-      integer :: i
+      real, dimension (mx,mz) :: fsum_tmp,glambda_rz,lambda
+      real, dimension (mz) :: glambda_z
+      integer :: i,l
 !
       !if (.not.lupdate_bounds_before_special) then
       !  print*,'The boundaries have not been updated prior '
@@ -10877,18 +10931,15 @@ module Magnetic
       !  call fatal_error("apply_keplerian_gauge","")
       !endif
 !
-      fac = 1.0/nygrid
-!
 ! Set ghost zones of iax.
 !
       call update_ghosts(f,iax)
 !
 ! Average over phi - the result is a (mr=mx,mz) array
 !
-      fsum_tmp = 0.
-      do m=m1,m2; do n=1,mz
-        fsum_tmp(:,n) = fsum_tmp(:,n) + fac*f(:,m,n,iax)
-      enddo; enddo
+      do n=1,mz
+        fsum_tmp(:,n) = (1./nygrid)*sum(f(:,m1:m2,n,iax),2)
+      enddo
 !
 ! The sum has to be done processor-wise
 ! Sum over processors of same ipz, and different ipy
@@ -10904,18 +10955,20 @@ module Magnetic
 ! Integrate in R to get lambda, using N=6 composite Simpson's rule.
 ! Ghost zones in r needed for glambda_r.
 !
-      do i=l1,l2 ; do n=1,mz
-        lambda(i,:,n) = dx/6.*(   glambda_rz(i-3,n)+glambda_rz(i+3,n)+&
-                               4*(glambda_rz(i-2,n)+glambda_rz(i  ,n)+glambda_rz(i+2,n))+&
-                               2*(glambda_rz(i-1,n)+glambda_rz(i+1,n)))
-      enddo; enddo
+      do i=l1,l2 
+        lambda(i,:) = dx/6.*(   glambda_rz(i-3,:)                +glambda_rz(i+3,:) + &
+                             4*(glambda_rz(i-2,:)+glambda_rz(i,:)+glambda_rz(i+2,:))+ &
+                             2*(glambda_rz(i-1,:)                +glambda_rz(i+1,:)))
+      enddo
 !
 !  Gauge-transform vertical A. Ghost zones in z needed for lambda.
 !
-      do m=m1,m2; do n=n1,n2
-        call der(lambda,glambda_z,3)
-        f(l1:l2,m,n,iaz) = f(l1:l2,m,n,iaz) - glambda_z
-      enddo; enddo
+      do l=l1,l2
+        call der(3,lambda(l,:),glambda_z)
+        do m=m1,m2
+          f(l,m,n1:n2,iaz) = f(l,m,n1:n2,iaz) - glambda_z(n1:n2)
+        enddo
+      enddo
 !
     endsubroutine keplerian_gauge
 !********************************************************************

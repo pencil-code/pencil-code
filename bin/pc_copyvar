@@ -28,6 +28,7 @@
 #  Options:
 #    -s               -  create symbolic link instead of copy
 #    -execute=1, -e   -  really execute copy or link
+#    -q               -  don't display copy/link command
 #
 set data=data/
 set narg=0

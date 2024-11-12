@@ -20,7 +20,8 @@ from pencil.math import natural_sort
 def var(*args, **kwargs):
     """
     var(var_file='', datadir='data', proc=-1, ivar=-1, quiet=True,
-        trimall=False, flist=None, magic=None, sim=None, precision='f')
+        trimall=False, magic=None, sim=None, precision='f', flist=None,
+        timing=True, fbloc=True, lvec=True, lonlyvec=False, lpersist=False)
 
     Read VAR files from Pencil Code. If proc < 0, then load all data
     and assemble, otherwise load VAR file from specified processor.
@@ -55,9 +56,6 @@ def var(*args, **kwargs):
      trimall : bool
          Trim the data cube to exclude ghost zones.
 
-     flist : bool
-         If present list of exclusive basic farrays to include
-
      magic : bool
          If present list of derived values to be computed from the data, e.g. B = curl(A).
 
@@ -66,6 +64,21 @@ def var(*args, **kwargs):
 
      precision : string
          Float 'f', double 'd' or half 'half'.
+
+     flist : list
+         If present list of exclusive basic farrays to include
+
+     timing : bool
+         Report the time taken to create the obbject
+
+     fbloc : bool
+         If memory is restricted omit duplicate farray copy
+
+     lvec : bool
+         Combine components to form a vector
+
+     lonlyvec : bool
+         If memory is restricted omit components and provide only the vector
 
      lpersist : bool
          Read the persistent variables if they exist
@@ -161,16 +174,21 @@ class DataCube(object):
         ivar=-1,
         quiet=True,
         trimall=False,
-        flist=None,
         magic=None,
         sim=None,
-        precision="d",
+        precision="f",
         lpersist=False,
         dtype=np.float64,
+        flist=None,
+        timing=True,
+        fbloc=True,
+        lvec=True,
+        lonlyvec=False
     ):
         """
         read(var_file='', datadir='data', proc=-1, ivar=-1, quiet=True,
-             trimall=False, magic=None, sim=None, precision='d')
+             trimall=False, magic=None, sim=None, precision='f', flist=None,
+             timing=True, fbloc=True, lvec=True, lonlyvec=False, lpersist=False)
 
         Read VAR files from Pencil Code. If proc < 0, then load all data
         and assemble, otherwise load VAR file from specified processor.
@@ -182,7 +200,6 @@ class DataCube(object):
         Here nvar denotes the number of slots, i.e. 1 for one scalar field, 3
         for one vector field, 8 for var.dat in the case of MHD with entropy.
         but, deltay(1) is only there if lshear is on! need to know parameters.
-
 
         Parameters
         ----------
@@ -206,13 +223,28 @@ class DataCube(object):
              Trim the data cube to exclude ghost zones.
 
          magic : bool
-             Values to be computed from the data, e.g. B = curl(A).
+             If present list of derived values to be computed from the data, e.g. B = curl(A).
 
          sim : pencil code simulation object
              Contains information about the local simulation.
 
          precision : string
              Float 'f', double 'd' or half 'half'.
+
+         flist : list
+             If present list of exclusive basic farrays to include
+
+         timing : bool
+             Report the time taken to create the obbject
+
+         fbloc : bool
+             If memory is restricted omit duplicate farray copy
+
+         lvec : bool
+             Combine components to form a vector
+
+         lonlyvec : bool
+             If memory is restricted omit components and provide only the vector
 
          lpersist : bool
              Read the persistent variables if they exist
@@ -239,6 +271,9 @@ class DataCube(object):
         from scipy.io import FortranFile
         from pencil.math.derivatives import curl, curl2
         from pencil import read
+        if timing:
+            import time
+            start_time = time.time()
 
         def persist(self, infile=None, precision="d", quiet=quiet):
             """An open Fortran file potentially containing persistent variables appended
@@ -259,6 +294,7 @@ class DataCube(object):
             except:
                 return -1
             block_id = 0
+            pers_obj = _Persist()
             for i in range(2000):
                 i += 1
                 tmp_id = infile.read_record("h")
@@ -268,11 +304,12 @@ class DataCube(object):
                 for key in record_types.keys():
                     if record_types[key][0] == block_id:
                         tmp_val = infile.read_record(record_types[key][1])
-                        self.__setattr__(key, tmp_val[0])
+                        pers_obj.__setattr__(key, tmp_val[0])
                         if not quiet:
                             print(
                                 key, record_types[key][0], record_types[key][1], tmp_val
                             )
+            self.__setattr__("persist", pers_obj)
             return self
 
         if sim is None:
@@ -337,9 +374,10 @@ class DataCube(object):
             file_name = os.path.join(datadir, "allprocs", var_file)
             with h5py.File(file_name, "r") as tmp:
                 for key in tmp["data"].keys():
-                    self.f[index.__getattribute__(key) - 1, :] = dtype(
-                        tmp["data/" + key][:]
-                    )
+                    if key in index.__dict__.keys():
+                        self.f[index.__getattribute__(key) - 1, :] = dtype(
+                            tmp["data/" + key][:]
+                        )
                 t = (tmp["time"][()]).astype(precision)
                 x = (tmp["grid/x"][()]).astype(precision)
                 y = (tmp["grid/y"][()]).astype(precision)
@@ -350,10 +388,16 @@ class DataCube(object):
                 if param.lshear:
                     deltay = (tmp["persist/shear_delta_y"][(0)]).astype(precision)
                 if lpersist:
+                    pers_obj = _Persist()
                     for key in tmp["persist"].keys():
-                        self.__setattr__(
-                            key, (tmp["persist"][key][0]).astype(precision)
+                        if isinstance(tmp["persist"][key][0],float):
+                            dtype = precision
+                        else:
+                            dtype = type(tmp["persist"][key][0])
+                        pers_obj.__setattr__(
+                            key, (tmp["persist"][key][0]).astype(dtype)
                         )
+                    self.__setattr__("persist", pers_obj)
         elif param.io_strategy == "dist":
             #
             #  Read scattered Fortran binary files.
@@ -443,7 +487,7 @@ class DataCube(object):
                         f_loc = dtype(infile.read_record(dtype=read_precision))
                         f_loc = f_loc.reshape((-1, myloc, mxloc))
                 raw_etc = infile.read_record(dtype=read_precision)
-                if lpersist:
+                if lpersist and directory==proc_dirs[0]:
                     persist(self, infile=infile, precision=read_precision, quiet=quiet)
                 infile.close()
 
@@ -755,6 +799,8 @@ class DataCube(object):
         self.magic = magic
         if self.magic is not None:
             self.magic_attributes(param, dtype=dtype)
+        if timing:
+            print("object completed in {:.2f} seconds.".format(time.time()-start_time))
 
     def __natural_sort(self, procs_list):
         """
@@ -874,3 +920,11 @@ class DataCube(object):
                     setattr(self, "pp", dtype((cp - cv) * self.TT * np.exp(lnrho)))
                 else:
                     raise AttributeError("Problem in magic: missing ss or lntt or tt")
+class _Persist():
+    """
+    Used to store the persistent variables
+    """
+    def keys(self):
+        for i in self.__dict__.keys():
+            if not i == "keys":
+               print(i)

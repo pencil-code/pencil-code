@@ -782,7 +782,7 @@ module Snapshot
       integer :: ivec,stat,ipos,ispec,nloc,mloc
       character (LEN=40) :: str,sp1,sp2
       logical :: lfirstcall, lfirstcall_powerhel, lsqrt
-      
+
         lsqrt=.true.
         lfirstcall_powerhel=.true.
 
@@ -811,11 +811,11 @@ module Snapshot
         if (VCT_spec) call powerGWs(f,'VCT',lfirstcall)
         if (Tpq_spec) call powerGWs(f,'Tpq',lfirstcall)
         if (TGW_spec) call powerGWs(f,'TGW',lfirstcall)
-        if (Gab_spec) call powerGWs(f,'Gab',lfirstcall)
-        if (Gan_spec) call powerGWs(f,'Gan',lfirstcall)
-        if (GBb_spec) call powerGWs(f,'GBb',lfirstcall)
-        if (GWs_spec_boost) call powerGWs(f,'GBs',lfirstcall)
-        if (GWh_spec_boost) call powerGWs(f,'GBh',lfirstcall)
+        if (Gab_spec) call powerGWs(f,'Gab',lfirstcall) !unboosted HD
+        if (Gan_spec) call powerGWs(f,'Gan',lfirstcall) !angles
+        if (GBb_spec) call powerGWs(f,'GBb',lfirstcall) !boosted HD
+        if (GWs_spec_boost) call powerGWs(f,'GBs',lfirstcall)  !standard boost, not HD
+        if (GWh_spec_boost) call powerGWs(f,'GBh',lfirstcall)  !standard boost, not HD
         if (GWd_spec) call powerhel(f,'GWd',lfirstcall_powerhel)  !MR: this use of lfirstcall_powerhel correct?
         if (GWe_spec) call powerhel(f,'GWe',lfirstcall_powerhel)
         if (GWf_spec) call powerhel(f,'GWf',lfirstcall_powerhel)

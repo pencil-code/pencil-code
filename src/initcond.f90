@@ -2265,7 +2265,7 @@ module Initcond
 !
     endsubroutine rolls
 !***********************************************************************
-    subroutine robertsflow(ampl,f,i,relhel)
+    subroutine robertsflow(ampl,f,i,relhel,kx,flow)
 !
 !  Roberts Flow (as initial condition)
 !
@@ -2274,6 +2274,21 @@ module Initcond
       integer :: i,j
       real, dimension (mx,my,mz,mfarray) :: f
       real :: ampl,k=1.,kf,fac1,fac2,relhel
+      real, optional :: kx
+      character (len=labellen) :: flowtype='I'
+      character (len=labellen), optional :: flow
+!
+!  Possibility of changing the wavenumber
+!
+      if (present(kx)) then
+        k=kx
+      endif
+!
+!  Possibility of changing the flow
+!
+      if (present(flow)) then
+        flowtype=flow
+      endif
 !
 !  prepare coefficients
 !
@@ -2287,8 +2302,15 @@ module Initcond
       j=i+1; f(:,:,:,j)=f(:,:,:,j)+fac1*spread(spread(sin(k*x),2,my),3,mz)&
                                        *spread(spread(cos(k*y),1,mx),3,mz)
 !
-      j=i+2; f(:,:,:,j)=f(:,:,:,j)+fac2*spread(spread(cos(k*x),2,my),3,mz)&
-                                       *spread(spread(cos(k*y),1,mx),3,mz)
+      if (flowtype=='I') then
+        j=i+2; f(:,:,:,j)=f(:,:,:,j)+fac2*spread(spread(cos(k*x),2,my),3,mz)&
+                                         *spread(spread(cos(k*y),1,mx),3,mz)
+      elseif (flowtype=='II') then
+        j=i+2; f(:,:,:,j)=f(:,:,:,j)+fac2*spread(spread(sin(k*x),2,my),3,mz)&
+                                         *spread(spread(sin(k*y),1,mx),3,mz)
+      else
+        call fatal_error('robertsflow','no such flowtype')
+      endif
 !
     endsubroutine robertsflow
 !***********************************************************************

@@ -9,12 +9,11 @@ import os
 from typing import Any, Tuple
 
 from test_utils import (
-    test,
     assert_equal,
     assert_true,
     _assert_close,
     _assert_equal_tuple,
-    test_extracted,
+    cmp_extracted,
 )
 
 from pencil.read.timeseries import ts
@@ -39,7 +38,6 @@ def data_file(file_name: str) -> str:
         raise Exception("File {} not found.".format(path))
 
 
-@test
 def test_read_time_series() -> None:
     """Read time series."""
     time_series = ts(data_file("time-series-1.dat"), quiet=True)
@@ -66,7 +64,6 @@ def test_read_time_series() -> None:
     _assert_close(time_series.ecrmax[3], 1.835, "ecrmax[3]")
 
 
-@test
 def test_read_dim() -> None:
     """Read dim.dat file."""
     global_dim = dim(DATA_DIR)
@@ -104,7 +101,6 @@ def test_read_dim() -> None:
         )
 
 
-@test
 def test_read_param() -> None:
     """Read param.nml file."""
     params = param(DATA_DIR)
@@ -119,7 +115,6 @@ def test_read_param() -> None:
     assert_equal(params.ltemperature, False)
 
 
-@test
 def test_read_var() -> None:
     """Read var.dat (data cube) file."""
     data = var("var.dat", DATA_DIR, proc=0, quiet=True)
@@ -148,10 +143,9 @@ def test_read_var() -> None:
         ("f", lambda f: np.std(f[4, :, :, :]), 2.047_645e-19, 1.0e-25),
     ]
     for (key, extract, expect, eps) in expected:
-        test_extracted(getattr(data, key), extract, expect, key, eps)
+        cmp_extracted(getattr(data, key), extract, expect, key, eps)
 
 
-@test
 def test_read_power() -> None:
     """Read power spectra"""
     ps = power(datadir=DATA_DIR, quiet=True)

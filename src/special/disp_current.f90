@@ -6,7 +6,7 @@
 !  25-feb-07/axel: adapted from nospecial.f90
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
-! Declare (for generation of special_dummies.inc) the number of f array
+! Declare (for generation of disp_current_dummies.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: lspecial = .true.
@@ -19,7 +19,7 @@
 ! PENCILS EXPECTED infl_phi, infl_dphi, gphi(3)
 !***************************************************************
 !
-module Special
+module disp_current
 !
   use Cparam
   use Cdata
@@ -55,7 +55,7 @@ module Special
   logical :: lswitch_off_divJ=.false., lswitch_off_Gamma=.false.
   logical, pointer :: loverride_ee, lresi_eta_tdep
   character(len=50) :: initee='zero', inita0='zero'
-  namelist /special_init_pars/ &
+  namelist /disp_current_init_pars/ &
     initee, inita0, alpf, &
     ampl_ex, ampl_ey, ampl_ez, ampl_a0, &
     kx_ex, kx_ey, kx_ez, &
@@ -73,7 +73,7 @@ module Special
 !
   ! run parameters
   real :: beta_inflation=0.
-  namelist /special_run_pars/ &
+  namelist /disp_current_run_pars/ &
     alpf, llongitudinalE, llorenz_gauge_disp, lphi_hom, &
     leedot_as_aux, eta_ee, lcurlyA, beta_inflation, &
     weight_longitudinalE, lswitch_off_divJ, lswitch_off_Gamma
@@ -383,7 +383,7 @@ module Special
 ! el: choice of either replacing E by the MHD value -uxB+J/sigma
 ! (with constant or time-dependent eta), or the advanced E field.
 !
-      if (loverride_ee) then
+      if (loverride_ee) then   !(this is not used; it was just a test)
         if (lresi_eta_tdep) then
           p%el=-p%uxb+mu0*eta_tdep*p%jj
         else
@@ -403,7 +403,7 @@ module Special
         p%edot2=0.
       endif
 !
-!  del2ee
+!  del2ee  !(AB: not needed)
 !
       if (eta_ee/=0.) call del2v(f,iex,p%del2ee)
 !
@@ -509,14 +509,12 @@ module Special
 !
 !  solve: dE/dt = curlB - ...
 !  Calculate curlB as -del2a, because curlB leads to instability.
+!  Usually, we don't override, so .not.loverride_ee is true.,
+!  so it is here where we solve dA/dt = -E.
 !
       if (lmagnetic) then
         if (.not.loverride_ee) df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-p%el
         df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)+c_light2*(p%curlb-mu0*p%jj_ohm)
-if (m==5) then
-  !print*,'AXEL: p%curlb(:,1)=',p%curlb(:,1)
-  !print*,'AXEL: p%jj_ohm(:,1)=',p%jj_ohm(:,1)
-endif
 !
 !  Solve for charge density
 !
@@ -612,6 +610,11 @@ endif
         if (idiag_divJrms/=0) call sum_mn_name(p%divJ**2,idiag_divJrms,lsqrt=.true.)
         call sum_mn_name(p%divE,idiag_divEm)
         call sum_mn_name(p%divJ,idiag_divJm)
+!if (m==m1) then
+!  print*,'AXEL1 rhoe=',p%rhoe(1:3)
+!  print*,'AXEL1 divE=',p%divE(1:3)
+!  print*,'AXEL1 divJ=',p%divJ(1:3)
+!endif
         call save_name(mfpf,idiag_mfpf)
         call save_name(fppf,idiag_fppf)
         call save_name(scl_factor_target,idiag_afact)
@@ -636,7 +639,7 @@ endif
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=special_init_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=disp_current_init_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_init_pars
 !***********************************************************************
@@ -644,7 +647,7 @@ endif
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=special_init_pars)
+      write(unit, NML=disp_current_init_pars)
 !
     endsubroutine write_special_init_pars
 !***********************************************************************
@@ -654,7 +657,7 @@ endif
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=special_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=disp_current_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_run_pars
 !***********************************************************************
@@ -662,7 +665,7 @@ endif
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=special_run_pars)
+      write(unit, NML=disp_current_run_pars)
 !
     endsubroutine write_special_run_pars
 !***********************************************************************
@@ -797,7 +800,7 @@ endif
 !**  copies dummy routines from nospecial.f90 for any Special      **
 !**  routines not implemented in this file                         **
 !**                                                                **
-    include '../special_dummies.inc'
+    include '../disp_current_dummies.inc'
 !********************************************************************
 !
-endmodule Special
+endmodule disp_current

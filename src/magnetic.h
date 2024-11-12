@@ -26,7 +26,7 @@
   public :: expand_shands_magnetic
   public :: update_char_vel_magnetic
   public :: magnetic_after_timestep, magnetic_after_mn
-  public :: pushpars2c 
+  public :: pushpars2c
   public :: calc_diagnostics_magnetic
   public :: magnetic_calc_spectra
   public :: beltrami_phase

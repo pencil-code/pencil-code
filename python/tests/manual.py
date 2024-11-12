@@ -17,7 +17,6 @@ from typing import Any, List, Tuple
 import pencil as pc
 
 from test_utils import (
-    test,
     assert_true,
     fail,
     _assert_close,
@@ -25,12 +24,11 @@ from test_utils import (
     get_docstring_standalone,
     read_and_check_type,
     standalone_test,
-    test_extracted,
+    cmp_extracted,
 )
 
 
-@test
-def read_var() -> None:
+def test_read_var() -> None:
     """Read var.dat (data cube) file."""
     var = pc.read.var(trimall=True, datadir=get_data_dir())
     _assert_equal_tuple(var.f.shape, (5, 32, 32, 32))
@@ -51,11 +49,10 @@ def read_var() -> None:
         ("f", lambda f: np.std(f[1, :, :, :]), 0.002_363_680, 1.0e-9),
     ]
     for (key, extract, expect, eps) in expected:
-        test_extracted(getattr(var, key), extract, expect, key, eps)
+        cmp_extracted(getattr(var, key), extract, expect, key, eps)
 
 
-@test
-def get_help() -> None:
+def test_get_help() -> None:
     """Get doc strings of imported functions."""
     math_dot_help = pc.math.dot.__doc__
     assert_true(
@@ -64,16 +61,14 @@ def get_help() -> None:
     )
 
 
-@test
-def get_help_standalone() -> None:
+def test_get_help_standalone() -> None:
     """Get doc string in a separate Python process."""
     get_docstring_standalone(
         "pc.math.dot", r"Take dot product of two pencil-code vectors"
     )
 
 
-@test
-def read_ts_standalone() -> None:
+def test_read_ts_standalone() -> None:
     """Read time series in a separate Python process."""
     read_and_check_type(
         [
@@ -88,8 +83,7 @@ def read_ts_standalone() -> None:
     )
 
 
-@test
-def read_var_standalone() -> None:
+def test_read_var_standalone() -> None:
     """Read data cube in a separate Python process."""
     read_and_check_type(
         [
@@ -103,8 +97,7 @@ def read_var_standalone() -> None:
     )
 
 
-@test
-def read_slices_standalone() -> None:
+def test_read_slices_standalone() -> None:
     """Read slices in a separate Python process."""
     read_and_check_type(
         [
@@ -120,8 +113,7 @@ def read_slices_standalone() -> None:
     )
 
 
-@test
-def remesh() -> None:
+def test_remesh() -> None:
     """Remeshing: [Not yet implemented]."""
     pass
 

@@ -89,12 +89,11 @@ class Averages(object):
             warnings.warn("Mismatch between the times of different kinds of averages (usually happens when 1D and 2D averages are stored at different times). Please use the t attributes of the respective planes (e.g. av.xy.t, rather than av.t).")
         self._t = arr
 
-    @property
     def keys(self):
-        ks = list(self.__dict__.keys())
-        ks.remove("_t")
-        ks.append("t")
-        return ks
+        for i in self.__dict__.keys():
+            if i == "_t":
+               i = "t"
+            print(i)
 
     def read(
         self,
@@ -833,9 +832,7 @@ class _Plane():
     """
     Used to store the averages in a particular plane
     """
-    @property
     def keys(self):
-        ks = list(self.__dict__.keys())
-        if "keys" in ks:
-            ks.remove("ks")
-        return ks
+        for i in self.__dict__.keys():
+            if not i == "keys":
+               print(i)

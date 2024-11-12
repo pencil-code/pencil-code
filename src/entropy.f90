@@ -765,21 +765,22 @@ module Energy
 !  such that cool2>>cool
 !
       if (lgravz .and. lrun) then
-        if (cool+cool2==0.) then
-          call warning('initialize_energy','cool+cool2==0 -> no meaningful cs2top_from_cool can be formed.' &
-                       //achar(10)//'Is set to cs2top')
-          cs2top_from_cool=cs2top
-        else
+        if (cool+cool2/=0.) then
           cs2top_from_cool = (cool*cs2cool + cool2*cs2cool2)/(cool+cool2)
-          if (cs2top/=cs2top_from_cool) then
-            if (lroot) print*,'initialize_energy: cs2top,cs2cool,cs2cool2=',cs2top,cs2cool,cs2cool2
-            if (cs2top_from_cool /= 0.) then ! cs2top_from_cool is the value to go for
-              if (lroot) print*,'initialize_energy: now set cs2top=(cool*cs2cool + cool2*cs2cool2)/(cool+cool2)'
-              cs2top=cs2top_from_cool
-            else                  ! cs2cool,cs2cool2=0, so go for cs2top
-              if (lroot) print*,'initialize_energy: now set cs2cool=cs2top'
-              cs2cool=cs2top
-            endif
+        else
+!         KG: there is no cooling, so setting of cs2cool in the next if-else 
+!         KG: will not affect the simulation
+          cs2top_from_cool = 0
+        endif
+!
+        if (cs2top/=cs2top_from_cool) then
+          if (lroot) print*,'initialize_energy: cs2top,cs2cool,cs2cool2=',cs2top,cs2cool,cs2cool2
+          if (cs2top_from_cool /= 0.) then ! cs2top_from_cool is the value to go for
+            if (lroot) print*,'initialize_energy: now set cs2top=(cool*cs2cool + cool2*cs2cool2)/(cool+cool2)'
+            cs2top=cs2top_from_cool
+          else                  ! cs2cool,cs2cool2=0, so go for cs2top
+            if (lroot) print*,'initialize_energy: now set cs2cool=cs2top'
+            cs2cool=cs2top
           endif
         endif
       endif
