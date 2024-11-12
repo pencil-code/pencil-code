@@ -145,3 +145,21 @@ def get_sims(path_root=".", depth=0, unhide_all=True, quiet=False):
     if sim_list == [] and not quiet:
         print("? WARNING: no simulations found!")
     return sim_list
+
+def get_cparam(filepath):
+    """
+    Read contents of src/cparam.local into a dictionary
+
+    filepath : string
+        path to cparam.local file relative or absolute
+    """
+    cpars = dist()
+
+    lines = open(filepath, "r").readlines()
+
+    for aline in lines:
+        if not aline[0]=="!":
+            for subline in aline.strip().split():
+                if "=" in subline:
+                    for ssubline in subline.split(","):
+                        cpars[ssubline.split("=")[0]]=int(ssubline.split("=")[1])
