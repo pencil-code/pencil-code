@@ -248,6 +248,9 @@ def derive_data(
                         if ix[-1] == locindx[-1][-1]:
                             l2out = l2
                             varl2 = l2
+                        print("l1,l2,m1,m2,n1,n2",l1,l2,m1,m2,n1,n2)
+                        print("varl1,varl2,varm1,varm2,varn1,varn2",varl1,varl2,varm1,varm2,varn1,varn2)
+                        print("l1out,l2out,m1out,m2out,n1out,n2out",l1out,l2out,m1out,m2out,n1out,n2out)
                         if not quiet:
                             print("remeshing " + key + "x chunk {}".format([ix]))
                         var = calc_derived_data(
@@ -256,12 +259,12 @@ def derive_data(
                             key,
                             par,
                             gd,
-                            l1,
-                            l2,
-                            m1,
-                            m2,
-                            n1,
-                            n2,
+                            l1=l1,
+                            l2=l2,
+                            m1=m1,
+                            m2=m2,
+                            n1=n1,
+                            n2=n2,
                             nghost=nghost,
                             Reynolds_shock=Reynolds_shock,
                             lmix=lmix,
@@ -283,12 +286,12 @@ def calc_derived_data(
     key,
     par,
     gd,
-    l1,
-    l2,
-    m1,
-    m2,
-    n1,
-    n2,
+    l1=3,
+    l2=-3,
+    m1=3,
+    m2=-3,
+    n1=3,
+    n2=-3,
     nghost=3,
     Reynolds_shock=False,
     lmix=False,
@@ -297,7 +300,7 @@ def calc_derived_data(
     compute from src data and existing dst data derived data
     """
     # ==========================================================================
-    def pressure(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2, nghost):
+    def pressure(src,dst,key,par,gd,l1=3,l2=-3,m1=3,m2=-3,n1=3,n2=-3,nghost=3):
         if key == "pp":
             if "rho" in src.keys():
                 rho = src["rho"][n1:n2, m1:m2, l1:l2]
@@ -339,15 +342,15 @@ def calc_derived_data(
             return var
 
     # ==========================================================================
-    def temperature(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2, nghost):
+    def temperature(src,dst,key,par,gd,l1=3,l2=-3,m1=3,m2=-3,n1=3,n2=-3,nghost=3):
         if key == "tt":
             if "rho" in src.keys():
-                rho = src["rho"][n1:n2, m1:m2, l1:l2]
+                lnrho = np.log(src["rho"][n1:n2, m1:m2, l1:l2])
             elif "lnrho" in src.keys():
-                rho = np.exp(src["lnrho"][n1:n2, m1:m2, l1:l2])
+                lnrho = src["lnrho"][n1:n2, m1:m2, l1:l2]
             else:
                 print("no density used setting rho=1 in temperature calculation")
-                rho = 1
+                lnrho = 0
             if "ss" in src.keys():
                 ss = src["ss"][n1:n2, m1:m2, l1:l2]
                 lnrho0 = np.log(par.rho0)
@@ -356,18 +359,41 @@ def calc_derived_data(
                     lnTT = (
                         lnTT0
                         + par.gamma / par.cp * ss
-                        + (par.gamma - 1) * (np.log(rho) - lnrho0)
+                        + (par.gamma - 1) * (lnrho - lnrho0)
                     )
                 else:
                     lnTT0 = np.log(par.cs0 ** 2 / par.cp)
                     lnTT = lnTT0 + par.gamma / par.cp * ss
             else:
                 lnTT0 = np.log(par.cs0 ** 2 / (par.cp * (par.gamma - 1)))
-                lnTT = (par.gamma - 1) * (np.log(rho) - lnrho0) + lnTT0
+                lnTT = (par.gamma - 1) * (lnrho - lnrho0) + lnTT0
             return np.exp(lnTT)
 
+    # ==========================================================================
+    def entropy(src,dst,key,par,gd,l1=3,l2=-3,m1=3,m2=-3,n1=3,n2=-3,nghost=3):
+        if key == "ss":
+            if "rho" in src.keys():
+                lnrho = np.log(src["rho"][n1:n2, m1:m2, l1:l2])
+            elif "lnrho" in src.keys():
+                lnrho = src["lnrho"][n1:n2, m1:m2, l1:l2]
+            else:
+                print("no density used setting rho=1 in temperature calculation")
+                lnrho = 0
+            if "tt" in src.keys():
+                lnTT = np.log(src["tt"][n1:n2, m1:m2, l1:l2])
+                lnrho0 = np.log(par.rho0)
+                if not par.gamma == 1:
+                    lnTT0 = np.log(par.cs0 ** 2 / (par.cp * (par.gamma - 1)))
+                    ss = par.cp / par.gamma * (lnTT - lnTT0
+                        - (par.gamma - 1) * (lnrho - lnrho0)
+                    )
+                else:
+                    lnTT0 = np.log(par.cs0 ** 2 / par.cp)
+                    ss = par.cp / par.gamma * (lnTT - lnTT0)
+            return ss
+
     # ======================================================================
-    def Re_number(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2, nghost):
+    def Re_number(src,dst,key,par,gd,l1=3,l2=-3,m1=3,m2=-3,n1=3,n2=-3,nghost=3):
         if key == "Re":
             n1shift, n2shift, m1shift, m2shift, l1shift, l2shift = der_limits(
                 n1, n2, m1, m2, l1, l2, nghost
@@ -396,7 +422,7 @@ def calc_derived_data(
             return var[n1r : n2 - n1 + n1r, m1r : m2 - m1 + m1r, l1r : l2 - l1 + l1r]
 
     # ======================================================================
-    def Rm_number(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2, nghost):
+    def Rm_number(src,dst,key,par,gd,l1=3,l2=-3,m1=3,m2=-3,n1=3,n2=-3,nghost=3):
         if key == "Rm":
             n1shift, n2shift, m1shift, m2shift, l1shift, l2shift = der_limits(
                 n1, n2, m1, m2, l1, l2, nghost
@@ -454,16 +480,16 @@ def calc_derived_data(
             return var[n1r : n2 - n1 + n1r, m1r : m2 - m1 + m1r, l1r : l2 - l1 + l1r]
 
     # ======================================================================
-    def Pm_number(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2, nghost):
+    def Pm_number(src,dst,key,par,gd,l1=3,l2=-3,m1=3,m2=-3,n1=3,n2=-3,nghost=3):
         if key == "Pm":
             if "Re" in dst.keys():
                 Re = dst["Re"][n1:n2, m1:m2, l1:l2]
             else:
-                Re = Re_number(src, dst, "Re", par, gd, l1, l2, m1, m2, n1, n2, nghost)
+                Re = Re_number(src,dst,"Re",par,gd,l1=l1,l2=l2,m1=m1,m2=m2,n1=n1,n2=n2,nghost=nghost)
             if "Rm" in dst.keys():
                 Rm = dst["Rm"][n1:n2, m1:m2, l1:l2]
             else:
-                Rm = Rm_number(src, dst, "Rm", par, gd, l1, l2, m1, m2, n1, n2, nghost)
+                Rm = Rm_number(src,dst,"Rm",par,gd,l1=l1,l2=l2,m1=m1,m2=m2,n1=n1,n2=n2,nghost=nghost)
             if Re.max() > 0:
                 Re[np.where(Re == 0)] = Re[np.where(Re > 0)].min()
             else:
@@ -474,7 +500,7 @@ def calc_derived_data(
             return Rm / Re
 
     # ======================================================================
-    def rot_flow(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2, nghost):
+    def rot_flow(src,dst,key,par,gd,l1=3,l2=-3,m1=3,m2=-3,n1=3,n2=-3,nghost=3):
         if key == "urot":
             uu = np.array(
                 [
@@ -487,7 +513,7 @@ def calc_derived_data(
             return var
 
     # ======================================================================
-    def pot_flow(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2, nghost):
+    def pot_flow(src,dst,key,par,gd,l1=3,l2=-3,m1=3,m2=-3,n1=3,n2=-3,nghost=3):
         if key == "upot":
             uu = np.array(
                 [
@@ -500,7 +526,7 @@ def calc_derived_data(
             return var
 
     # ======================================================================
-    def Mach_cs(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2, nghost):
+    def Mach_cs(src,dst,key,par,gd,l1=3,l2=-3,m1=3,m2=-3,n1=3,n2=-3,nghost=3):
         if key == "Ms":
             uu = np.array(
                 [
@@ -513,7 +539,7 @@ def calc_derived_data(
                 tt = dst["tt"][n1:n2, m1:m2, l1:l2]
             else:
                 tt = temperature(
-                    src, dst, "tt", par, gd, l1, l2, m1, m2, n1, n2, nghost
+                    src,dst,"tt",par,gd,l1=l1,l2=l2,m1=m1,m2=m2,n1=n1,n2=n2,nghost=nghost
                 )
             if not par.gamma == 1:
                 cs2 = par.cp * (par.gamma - 1) * tt
@@ -524,12 +550,12 @@ def calc_derived_data(
             return var
 
     # ======================================================================
-    def Mach_Av(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2, nghost):
+    def Mach_Av(src,dst,key,par,gd,l1=3,l2=-3,m1=3,m2=-3,n1=3,n2=-3,nghost=3):
         if key == "Ma":
             if "bb" in dst.keys():
                 bb = dst["bb"][:, n1:n2, m1:m2, l1:l2]
             else:
-                bb = bfield(src, dst, "bb", par, gd, l1, l2, m1, m2, n1, n2, nghost)
+                bb = bfield(src,dst,"bb",par,gd,l1=l1,l2=l2,m1=m1,m2=m2,n1=n1,n2=n2,nghost=nghost)
             if "rho" in src.keys():
                 rho = src["rho"][n1:n2, m1:m2, l1:l2]
             elif "lnrho" in src.keys():
@@ -541,17 +567,17 @@ def calc_derived_data(
             return var
 
     # ======================================================================
-    def mag_pressure(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2, nghost):
+    def mag_pressure(src,dst,key,par,gd,l1=3,l2=-3,m1=3,m2=-3,n1=3,n2=-3,nghost=3):
         if key == "pb":
             if "bb" in dst.keys():
                 bb = dst["bb"][:, n1:n2, m1:m2, l1:l2]
             else:
-                bb = bfield(src, dst, "bb", par, gd, l1, l2, m1, m2, n1, n2, nghost)
+                bb = bfield(src,dst,"bb",par,gd,l1=l1,l2=l2,m1=m1,m2=m2,n1=n1,n2=n2,nghost=nghost)
             var = 0.5 * dot2(bb) / par.mu0
             return var
 
     # ======================================================================
-    def vorticity(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2, nghost):
+    def vorticity(src,dst,key,par,gd,l1=3,l2=-3,m1=3,m2=-3,n1=3,n2=-3,nghost=3):
         if key == "vort":
             n1shift, n2shift, m1shift, m2shift, l1shift, l2shift = der_limits(
                 n1, n2, m1, m2, l1, l2, nghost
@@ -568,7 +594,7 @@ def calc_derived_data(
             return var[:, n1r : n2 - n1 + n1r, m1r : m2 - m1 + m1r, l1r : l2 - l1 + l1r]
 
     # ======================================================================
-    def bfield(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2, nghost):
+    def bfield(src,dst,key,par,gd,l1=3,l2=-3,m1=3,m2=-3,n1=3,n2=-3,nghost=3):
         if key == "bb":
             n1shift, n2shift, m1shift, m2shift, l1shift, l2shift = der_limits(
                 n1, n2, m1, m2, l1, l2, nghost
@@ -585,7 +611,7 @@ def calc_derived_data(
             return var[:, n1r : n2 - n1 + n1r, m1r : m2 - m1 + m1r, l1r : l2 - l1 + l1r]
 
     # ======================================================================
-    def current(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2, nghost):
+    def current(src,dst,key,par,gd,l1=3,l2=-3,m1=3,m2=-3,n1=3,n2=-3,nghost=3):
         if key == "jj":
             n1shift, n2shift, m1shift, m2shift, l1shift, l2shift = der_limits(
                 n1, n2, m1, m2, l1, l2, nghost
@@ -599,10 +625,10 @@ def calc_derived_data(
             )
             var = curl2(aa, gd.dx, gd.dy, gd.dz)
             n1r, m1r, l1r = under_limits(n1, m1, l1, n1shift, m1shift, l1shift, nghost)
-            return var[:, n1r : n2 - n1 + n1r, m1r : m2 - m1 + m1r, l1r : l2 - l1 + l1r]
+            return var[:,n1r : n2 - n1 + n1r,m1r : m2 - m1 + m1r,l1r : l2 - l1 + l1r]
 
     # ======================================================================
-    def kin_helicity(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2, nghost):
+    def kin_helicity(src,dst,key,par,gd,l1=3,l2=-3,m1=3,m2=-3,n1=3,n2=-3,nghost=3):
         if key == "ou":
             uu = np.array(
                 [
@@ -615,13 +641,13 @@ def calc_derived_data(
                 oo = dst["vort"][:, n1:n2, m1:m2, l1:l2]
             else:
                 oo = vorticity(
-                    src, dst, "vort", par, gd, l1, l2, m1, m2, n1, n2, nghost
+                    src,dst,"vort",par,gd,l1=l1,l2=l2,m1=m1,m2=m2,n1=n1,n2=n2,nghost=nghost
                 )
             var = dot(uu, oo)
             return var
 
     # ======================================================================
-    def mag_helicity(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2, nghost):
+    def mag_helicity(src,dst,key,par,gd,l1=3,l2=-3,m1=3,m2=-3,n1=3,n2=-3,nghost=3):
         if key == "ab":
             aa = np.array(
                 [
@@ -633,12 +659,12 @@ def calc_derived_data(
             if "bb" in dst.keys():
                 bb = dst["bb"][:, n1:n2, m1:m2, l1:l2]
             else:
-                bb = bfield(src, dst, "bb", par, gd, l1, l2, m1, m2, n1, n2, nghost)
+                bb = bfield(src,dst,"bb",par,gd,l1=l1,l2=l2,m1=m1,m2=m2,n1=n1,n2=n2,nghost=nghost)
             var = dot(aa, bb)
             return var
 
     #==========================================================================
-    def urand(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2, nghost):
+    def urand(src,dst,key,par,gd,l1=3,l2=-3,m1=3,m2=-3,n1=3,n2=-3,nghost=3):
         if key == "u2rand":
             sigma = 0.02
             if "sigma" in par.keys:
@@ -665,22 +691,23 @@ def calc_derived_data(
     # ==========================================================================
     def calc_derived_item(key):
         case = {
-            "urot": rot_flow(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2, nghost),
-            "upot": pot_flow(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2, nghost),
-            "vort": vorticity(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2, nghost),
-            "ou": kin_helicity(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2, nghost),
-            "tt": temperature(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2, nghost),
-            "pp": pressure(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2, nghost),
-            "Re": Re_number(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2, nghost),
-            "Ms": Mach_cs(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2, nghost),
-            "bb": bfield(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2, nghost),
-            "pb": mag_pressure(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2, nghost),
-            "ab": mag_helicity(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2, nghost),
-            "jj": current(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2, nghost),
-            "Ma": Mach_Av(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2, nghost),
-            "Rm": Rm_number(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2, nghost),
-            "Pm": Pm_number(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2, nghost),
-            "u2rand": urand(src, dst, key, par, gd, l1, l2, m1, m2, n1, n2, nghost),
+            "urot":   rot_flow(src,dst,key,par,gd,l1=l1,l2=l2,m1=m1,m2=m2,n1=n1,n2=n2,nghost=nghost),
+            "upot":   pot_flow(src,dst,key,par,gd,l1=l1,l2=l2,m1=m1,m2=m2,n1=n1,n2=n2,nghost=nghost),
+            "vort":  vorticity(src,dst,key,par,gd,l1=l1,l2=l2,m1=m1,m2=m2,n1=n1,n2=n2,nghost=nghost),
+            "ou": kin_helicity(src,dst,key,par,gd,l1=l1,l2=l2,m1=m1,m2=m2,n1=n1,n2=n2,nghost=nghost),
+            "tt":  temperature(src,dst,key,par,gd,l1=l1,l2=l2,m1=m1,m2=m2,n1=n1,n2=n2,nghost=nghost),
+            "ss":      entropy(src,dst,key,par,gd,l1=l1,l2=l2,m1=m1,m2=m2,n1=n1,n2=n2,nghost=nghost),
+            "pp":     pressure(src,dst,key,par,gd,l1=l1,l2=l2,m1=m1,m2=m2,n1=n1,n2=n2,nghost=nghost),
+            "Re":    Re_number(src,dst,key,par,gd,l1=l1,l2=l2,m1=m1,m2=m2,n1=n1,n2=n2,nghost=nghost),
+            "Ms":      Mach_cs(src,dst,key,par,gd,l1=l1,l2=l2,m1=m1,m2=m2,n1=n1,n2=n2,nghost=nghost),
+            "bb":       bfield(src,dst,key,par,gd,l1=l1,l2=l2,m1=m1,m2=m2,n1=n1,n2=n2,nghost=nghost),
+            "pb": mag_pressure(src,dst,key,par,gd,l1=l1,l2=l2,m1=m1,m2=m2,n1=n1,n2=n2,nghost=nghost),
+            "ab": mag_helicity(src,dst,key,par,gd,l1=l1,l2=l2,m1=m1,m2=m2,n1=n1,n2=n2,nghost=nghost),
+            "jj":      current(src,dst,key,par,gd,l1=l1,l2=l2,m1=m1,m2=m2,n1=n1,n2=n2,nghost=nghost),
+            "Ma":      Mach_Av(src,dst,key,par,gd,l1=l1,l2=l2,m1=m1,m2=m2,n1=n1,n2=n2,nghost=nghost),
+            "Rm":    Rm_number(src,dst,key,par,gd,l1=l1,l2=l2,m1=m1,m2=m2,n1=n1,n2=n2,nghost=nghost),
+            "Pm":    Pm_number(src,dst,key,par,gd,l1=l1,l2=l2,m1=m1,m2=m2,n1=n1,n2=n2,nghost=nghost),
+            "u2rand":    urand(src,dst,key,par,gd,l1=l1,l2=l2,m1=m1,m2=m2,n1=n1,n2=n2,nghost=nghost),
         }
         func = case.get(key, lambda: "No function for " + key)
         return func
