@@ -4183,7 +4183,7 @@ module Particles
 !
 !  Precalculate Stokes-Cunningham factor (only if not ldraglaw_simple  or ldraglaw_purestokes)
 !
-        if (.not. (ldraglaw_simple .or. ldraglaw_purestokes .or. ldraglaw_stokesschiller)) then
+        if (lbrownian_forces .or. .not. (ldraglaw_simple .or. ldraglaw_purestokes .or. ldraglaw_stokesschiller)) then
           if (ldraglaw_steadystate .or. lbrownian_forces) then
             allocate(stocunn(k1_imn(imn):k2_imn(imn)))
             if (.not. allocated(stocunn)) &
