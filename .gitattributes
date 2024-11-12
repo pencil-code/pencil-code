@@ -3863,6 +3863,7 @@ samples/superparticle-condensation-coagulation/README -text
 samples/superparticle-condensation-coagulation/k.dat -text
 samples/superparticle-condensation-coagulation/print.in -text
 samples/superparticle-condensation-coagulation/reference.out -text
+samples/superparticle-condensation-coagulation/reference.out_gcc-14.1.0_1 -text
 samples/superparticle-condensation-coagulation/reference.out_openmpi-4.0.4_gnu-4.8.5 -text
 samples/superparticle-condensation-coagulation/reference.out_openmpi-4.0.4_gnu-4.8.5_2nd-run -text
 samples/superparticle-condensation-coagulation/reference.out_openmpi-4.1.2_gnu-11.2 -text
