@@ -163,3 +163,5 @@ def get_cparam(filepath):
                 if "=" in subline:
                     for ssubline in subline.split(","):
                         cpars[ssubline.split("=")[0]]=int(ssubline.split("=")[1])
+
+    return cpars
