@@ -153,7 +153,7 @@ def get_cparam(filepath):
     filepath : string
         path to cparam.local file relative or absolute
     """
-    cpars = dist()
+    cpars = dict()
 
     lines = open(filepath, "r").readlines()
 
