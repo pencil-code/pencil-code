@@ -19,7 +19,7 @@
 
 // Astaroth headers.
 #include "astaroth.h"
-#include "reduce.h"
+//#include "reduce.h"
 
 AcReal
 to_real(void* param)
@@ -405,7 +405,6 @@ void print_diagnostics(const int pid, const int step, const AcReal dt_, const Ac
 }
 ***/
 /***********************************************************************************************/
-AcReal max_advec();
 /***********************************************************************************************/
 std::array<AcReal,3>
 visc_get_max_diffus()
@@ -504,6 +503,7 @@ extern "C" void substepGPU(int isubstep)
       //AcReal maxchi    = dev->output.real_outputs[AC_maxchi];
       //maxdiffus = maxdiffus+maxchi/pow(dx,2)
 #endif
+      //fprintf(stderr, "HMM MAX ADVEC, DIFFUS: %14e, %14e\n",maxadvec,max_diffus());
       AcReal dt1_ = sqrt(pow(maxadvec, 2) + pow(max_diffus(), 2));
 //printf("maxadvec, maxchi,maxdiffus= %e %e %e \n", maxadvec, maxchi, maxdiffus);
 //printf("maxadvec, maxdiffus= %e %e %e \n", maxadvec, max_diffus());
@@ -956,16 +956,11 @@ void setupConfig(AcMeshInfo& config)
   #include "PC_modulepars.h"
 
   PCLoad(config, AC_domain_decomposition, (int3) {nprocx,nprocy,nprocz});
-  PCLoad(config, AC_nxgrid, nxgrid);
-  PCLoad(config, AC_nygrid, nygrid);
-  PCLoad(config, AC_nzgrid, nzgrid);
-
+  PCLoad(config, AC_ngrid, (int3){nxgrid,nygrid,nzgrid});
   //TP: important this is correct even though we set AC_nx = nxgrid.
   //This is stupid but needed for now.
   //Hopefully in future we can deprecate AC_nx loading that AC_nxgrid loading becomes the default
-  PCLoad(config, AC_nx, nxgrid);
-  PCLoad(config, AC_ny, nygrid);
-  PCLoad(config, AC_nz, nzgrid);
+  PCLoad(config, AC_nlocal, (int3){nxgrid,nygrid,nzgrid});
 
   PCLoad(config,AC_decompose_strategy,(int)AcDecomposeStrategy::External);
   if (lmorton_curve)
@@ -977,9 +972,7 @@ void setupConfig(AcMeshInfo& config)
 
 // grid and geometry related parameters
 
-  PCLoad(config,AC_dsx,dx);
-  PCLoad(config,AC_dsy,dy);
-  PCLoad(config,AC_dsz,dz);
+  PCLoad(config,AC_ds,(AcReal3){dx,dy,dz});
 
   // Enter physics related parameters in config.
 
@@ -1007,7 +1000,7 @@ void checkConfig(AcMeshInfo &config)
  acLogFromRootProc(rank,"Check that config is correct\n");
  acLogFromRootProc(rank,"n[xyz]grid, d[xyz]: %d %d %d %.14f %.14f %.14f \n", nxgrid, nygrid, nzgrid, dx, dy, dz);
 // acLogFromRootProc(rank,"rank= %d: l1, l2, n1, n2, m1, m2= %d %d %d %d %d %d \n", rank, l1, l2, n1, n2, m1, m2);
- acLogFromRootProc(rank,"rank= %d: zlen= %.14f %.14f \n", config[AC_zlen], lxyz[2]);
+ acLogFromRootProc(rank,"rank= %d: zlen= %.14f %.14f \n", config[AC_len].z, lxyz[2]);
 
 #if LHYDRO
  acLogFromRootProc(rank,"lpressuregradientgas= %d %d \n", lpressuregradient_gas, config[AC_lpressuregradient_gas]);
@@ -1228,17 +1221,6 @@ AcReal max_diffus()
   auto max_diffusions = elem_wise_max(visc_get_max_diffus(), magnetic_get_max_diffus(), energy_get_max_diffus());
   return max_diffusions[0]*dxyz_vals.x/cdtv + max_diffusions[1]*dxyz_vals.y/cdtv2 + max_diffusions[2]*dxyz_vals.z/cdtv3;
 }
-AcReal max_advec()
-{
-#if LHYDRO
-  AcReal umax = 0.;
-  acGridReduceVec(STREAM_DEFAULT, RTYPE_MAX, UUX, UUY, UUZ, &umax);
-  return umax/sqrt(get_dxyzs().x);
-#else
-  return 0.;
-#endif
-  
-}
 //TP: this is not written the the most optimally since it needs two extra copies of the mesh where at least the tmp
 //could be circumvented by temporarily using the output buffers on the GPU to store the f-array and load back from there
 //but if we truly hit the mem limit for now the user can of course simply test the bcs with a smaller mesh and skip the test with a larger mesh
@@ -1279,8 +1261,8 @@ sym_z(AcMesh mesh_in)
 	 else
 	 {
 	 	const auto idx = DEVICE_VTXBUF_IDX(i,j,k);
-		const auto offset = k-mesh_in.info[AC_nz_max]+1;
-	 	const auto domain_z= mesh_in.info[AC_nz_max]-offset;
+		const auto offset = k-mesh_in.info[AC_nlocal_max].z+1;
+	 	const auto domain_z= mesh_in.info[AC_nlocal_max].z-offset;
 	 	const auto domain_idx = DEVICE_VTXBUF_IDX(i,j,domain_z);
 		mesh_in.vertex_buffer[ivar][idx] = mesh_in.vertex_buffer[ivar][domain_idx];
 		//mesh_in.vertex_buffer[ivar][idx] = mesh.vertex_buffer[ivar][idx];
@@ -1333,8 +1315,8 @@ check_sym_z(AcMesh mesh_in)
 	 else
 	 {
 	 	const auto idx = DEVICE_VTXBUF_IDX(i,j,k);
-		const auto offset = k-mesh_in.info[AC_nz_max]+1;
-	 	const auto domain_z= mesh_in.info[AC_nz_max]-offset;
+		const auto offset = k-mesh_in.info[AC_nlocal_max].z+1;
+	 	const auto domain_z= mesh_in.info[AC_nlocal_max].z-offset;
 	 	const auto domain_idx = DEVICE_VTXBUF_IDX(i,j,domain_z);
 		mesh_in.vertex_buffer[ivar][idx] = mesh.vertex_buffer[ivar][domain_idx];
 		if(mesh_in.vertex_buffer[ivar][idx] !=  mesh_in.vertex_buffer[ivar][domain_idx])
@@ -1393,8 +1375,8 @@ check_sym_x(const AcMesh mesh_in)
 	 else
 	 {
 	 	const auto idx = DEVICE_VTXBUF_IDX(i,j,k);
-		const auto offset = i-mesh_in.info[AC_nz_max]+1;
-	 	const auto domain_x= mesh_in.info[AC_nz_max]-offset;
+		const auto offset = i-mesh_in.info[AC_nlocal_max].x+1;
+	 	const auto domain_x= mesh_in.info[AC_nlocal_max].x-offset;
 	 	const auto domain_idx = DEVICE_VTXBUF_IDX(domain_x,j,k);
 		if(mesh_in.vertex_buffer[ivar][idx] !=  mesh_in.vertex_buffer[ivar][domain_idx])
 		{

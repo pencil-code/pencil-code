@@ -6,6 +6,26 @@
 #define cpu_pow pow
 #define REAL_MAX AC_REAL_MAX
 
+#define AC_mx AC_mlocal.x
+#define AC_my AC_mlocal.y
+#define AC_mz AC_mlocal.z
+
+#define AC_nx AC_nlocal.x
+#define AC_ny AC_nlocal.y
+#define AC_nz AC_nlocal.z
+
+#define AC_mxgrid AC_mgrid.x
+#define AC_mygrid AC_mgrid.y
+#define AC_mzgrid AC_mgrid.z
+
+#define AC_nxgrid AC_ngrid.x
+#define AC_nygrid AC_ngrid.y
+#define AC_nzgrid AC_ngrid.z
+
+#define AC_dsx AC_ds.x
+#define AC_dsy AC_ds.y
+#define AC_dsz AC_ds.z
+
 #include "../../PC_moduleflags.h"
 #include "../stdlib/math"
 #include "../stdlib/utils/intrinsics.h"
@@ -28,7 +48,7 @@
 #include "../stdlib/integrators.h"
 #include "../stdlib/units.h"
 #include "../stdlib/utils/kernels.h"
-#include "../stdlib/map.h"
+//#include "../stdlib/map.h"
 #include "PC_modulepardecs.h"
 #define AC_NGHOST NGHOST
 
