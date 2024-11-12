@@ -53,7 +53,7 @@ module Particles_radius
   logical :: lfixed_particles_radius=.false.
   logical :: ltauascalar = .false., ldust_condensation=.false.
   logical :: ldust_accretion = .false., lreinitialize_ap=.false.
-  logical :: lfree_molecule=.false., lcondensing_species=.false.
+  logical :: lfree_molecule=.false.
   character(len=labellen), dimension(ninit) :: initap='nothing'
   character(len=labellen) :: condensation_coefficient_type='constant'
 !
