@@ -121,6 +121,7 @@ module Particles
   logical :: lcoldstart_amplitude_correction=.false.
   logical :: luse_tau_ap=.true.
   logical :: lbrownian_forces=.false.
+  logical :: lbrownian_forces_Li_Ahmadi=.false.
   logical :: lthermophoretic_forces=.false.
   logical :: lenforce_policy=.false., lnostore_uu=.true.
   logical :: ldt_grav_par=.true., ldt_adv_par=.true.
@@ -219,7 +220,8 @@ module Particles
       ldraglaw_steadystate, tstart_liftforce_par, &
       ldraglaw_purestokes,rpbeta_species, rpbeta, gab_width, &
       tstart_brownian_par, tstart_sink_par, &
-      lbrownian_forces,lthermophoretic_forces,lenforce_policy, &
+      lbrownian_forces,lbrownian_forces_Li_Ahmadi,&
+      lthermophoretic_forces,lenforce_policy, &
       interp_pol_uu,interp_pol_oo,interp_pol_TT,interp_pol_rho, &
       interp_pol_pp,interp_pol_species,brownian_T0, &
       thermophoretic_T0, lnostore_uu, ldt_grav_par, ldragforce_radialonly, &
@@ -264,7 +266,7 @@ module Particles
       ldraglaw_variable_density, ldraglaw_steadystate, tstart_liftforce_par, &
       ldraglaw_purestokes, ldiffuse_dragf, ldiffuse_passive, rdiffconst_dragf, &
       tstart_brownian_par, tstart_sink_par, ldiff_dragf, ldiff_pass, &
-      lbrownian_forces, lenforce_policy, &
+      lbrownian_forces, lbrownian_forces_Li_Ahmadi, lenforce_policy, &
       interp_pol_uu,interp_pol_oo, interp_pol_TT, interp_pol_rho, &
       interp_pol_pp,interp_pol_species, &
       brownian_T0,thermophoretic_T0, lnostore_uu, ldt_grav_par, &
@@ -302,7 +304,7 @@ module Particles
   integer :: idiag_rpm=0, idiag_rp2m=0
   integer :: idiag_vpxm=0, idiag_vpym=0, idiag_vpzm=0   ! DIAG_DOC: $u_{part}$
   integer :: idiag_vpx2m=0, idiag_vpy2m=0, idiag_vpz2m=0 ! DIAG_DOC: $u^2_{part}$
-  integer :: idiag_ekinp=0     ! DIAG_DOC: $E_{kin,part}$
+  integer :: idiag_ekinp=0, idiag_vtherm500=0     ! DIAG_DOC: $E_{kin,part}$
   integer :: idiag_vpxmax=0, idiag_vpymax=0, idiag_vpzmax=0, idiag_vpmax=0 ! DIAG_DOC: $MAX(u_{part})$
   integer :: idiag_vpxmin=0, idiag_vpymin=0, idiag_vpzmin=0    ! DIAG_DOC: $MIN(u_{part})$
   integer :: idiag_urel=0
@@ -3436,6 +3438,7 @@ module Particles
       if (ldiagnos) then
         call sum_name(npar_loc,idiag_nparsum)
         if (idiag_nparmin /= 0) call max_name(-npar_loc,idiag_nparmin,lneg=.true.)
+        call sum_par_name(k_B*500./(four_pi_over_three*fp(1:npar_loc,iap)**3*rhopmat),idiag_vtherm500,lsqrt = .true.)      
         call max_name(+npar_loc,idiag_nparmax)
         if (idiag_nparpmax /= 0) call max_name(maxval(npar_imn),idiag_nparpmax)
         call sum_par_name(fp(1:npar_loc,ixp),idiag_xpm)
@@ -3518,6 +3521,7 @@ module Particles
         endif
         if (idiag_epotpm /= 0) call sum_par_name( &
             -gravr/sqrt(sum(fp(1:npar_loc,ixp:izp)**2,dim=2)),idiag_epotpm)
+        ! Better formulate with lsqrt
         if (idiag_vpmax /= 0) call max_par_name( &
             sqrt(sum(fp(1:npar_loc,ivpx:ivpz)**2,2)),idiag_vpmax)
         if (idiag_vrelpabsm /= 0) call calc_relative_velocity(f,fp,ineargrid)
@@ -4191,7 +4195,7 @@ module Particles
 !  Precalculate Stokes-Cunningham factor (only if not ldraglaw_simple  or ldraglaw_purestokes)
 !
         if (lbrownian_forces .or. .not. (ldraglaw_simple .or. ldraglaw_purestokes .or. ldraglaw_stokesschiller)) then
-          if (ldraglaw_steadystate .or. lbrownian_forces) then
+          if (ldraglaw_steadystate .or. lbrownian_forces_Li_Ahmadi) then
             allocate(stocunn(k1_imn(imn):k2_imn(imn)))
             if (.not. allocated(stocunn)) &
               call fatal_error('dvvp_dt_pencil','unable to allocate stocunn',.true.)
@@ -5048,7 +5052,11 @@ module Particles
       if (lbrownian_forces .and. t >= tstart_brownian_par) then
         if (npar_imn(imn) /= 0) then
           do k = k1_imn(imn),k2_imn(imn)
-            call calc_brownian_force(fp,k,ineargrid(k,:),stocunn(k),bforce)
+            if (lbrownian_forces_Li_Ahmadi) then
+              call calc_brownian_force_Li_Ahmadi(fp,k,ineargrid(k,:),stocunn(k),bforce)
+            else
+              call calc_brownian_force(f,fp,p,k,ineargrid(k,:),bforce)
+            endif
             dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz)+bforce
           enddo
         endif
@@ -6493,7 +6501,7 @@ module Particles
 !
     endsubroutine calc_draglaw_steadystate
 !***********************************************************************
-    subroutine calc_brownian_force(fp,k,ineark,stocunn,force)
+    subroutine calc_brownian_force_Li_Ahmadi(fp,k,ineark,stocunn,force)
 !
 !  Calculate the Brownian force contribution due to the random thermal motions
 !  of the gas molecules.
@@ -6503,6 +6511,7 @@ module Particles
 !      Aerosol Science and Technology. 16. 209–226. 1992.
 !
 !  28-jul-08/kapelrud: coded
+!  13-nov-24/axel+nils: renamed
 !
       use General, only: normal_deviate
       use Viscosity, only: getnu
@@ -6532,7 +6541,7 @@ module Particles
       elseif (ivis == 'mu-therm') then
         nu = nu_*sqrt(interp_TT(k)) /interp_rho(k)
       else
-        call fatal_error('calc_brownian_force','no such ivis: '//trim(ivis))
+        call fatal_error('calc_brownian_force_Li_Ahmadi','no such ivis: '//trim(ivis))
       endif
 !
 !  Particle diameter:
@@ -6553,7 +6562,6 @@ module Particles
 !
       call get_rhopswarm(mp_swarm,fp,k,ineark,rhop_swarm_par)
 !
-!  NILS: The particle material density is given by rhopmat - not rhop_swarm_par
 !      Szero = 216*nu*k_B*TT*pi_1/ &
 !          (dia**5*stocunn*rhop_swarm_par**2/interp_rho(k))
       Szero = 216*nu*k_B*TT*pi_1/(dia**5*stocunn*rhopmat**2/interp_rho(k))
@@ -6564,6 +6572,72 @@ module Particles
 !
 !  du/dt = sqrt(dt)
 !  .3 * urms^2 * tau = D=kB*T/(6pi*eta*a)
+!
+      if (dt == 0.0) then
+        force = 0.0
+      else
+        force = force*sqrt(Szero/dt)
+      endif
+!
+    endsubroutine calc_brownian_force_Li_Ahmadi
+    !***********************************************************************
+    subroutine calc_brownian_force(f,fp,p,k,ineark,force)
+!
+!  Calculate the Brownian force contribution due to the random thermal motions
+!  of the gas molecules.
+!      
+!  13-nov-24/(axel + nils): coded
+!
+      use General, only: gaunoise_number
+      use Viscosity, only: getnu
+      !
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, dimension(mpar_loc,mparray), intent(in) :: fp
+!      real, dimension(nx,mparray), intent(in) :: p
+       type (pencil_case) :: p
+      integer, intent(in) :: k
+      integer, dimension(3) :: ineark
+      real, dimension(2) :: gn
+      real, dimension(3), intent(out) :: force
+!
+      character(len=labellen) :: ivis=''
+      real :: TT, gam, Szero, mp, eta
+!
+!  Find dynamic viscosity
+      !
+      eta=f(ineark(1),ineark(2),ineark(3),iviscosity)*interp_rho(k)
+!      print*,"eta,nu,rho=", eta,f(ineark(1),ineark(2),ineark(3),iviscosity),interp_rho(k)
+      !
+      !  Get zero mean, unit variance Gaussian random numbers:
+      !
+      call gaunoise_number(gn)
+      force(1)=gn(1)
+      force(2)=gn(2)
+      call gaunoise_number(gn)
+      force(3)=gn(1)
+!
+      if (interp%lTT) then
+        TT = interp_TT(k)
+      else
+        TT = brownian_T0
+      endif
+!
+      
+
+      if (ldraglaw_epstein) then
+        gam=interp_rho(k)*sqrt(p%cs2(ineark(1)-nghost))*fp(k,iap)**2
+      elseif (ldraglaw_purestokes .or. ldraglaw_steadystate) then
+        ! NILS: This should probably be used for all non-epstein drag-laws
+        gam=6*pi*eta*fp(k,iap)  
+      else
+        call fatal_error("calc_brownian_force","no such draglaw")
+      endif
+      !print*,"cs=",sqrt(p%cs2(ineark(1)-nghost))
+      
+      mp=four_pi_over_three*fp(k,iap)**3*rhopmat
+! Calling it Szero to be consistent with the other brownian routine
+      Szero=2*gam*k_B*TT/mp**2
+!
 !
       if (dt == 0.0) then
         force = 0.0
@@ -6907,6 +6981,7 @@ module Particles
         call parse_name(iname,cname(iname),cform(iname),'vpymin',idiag_vpymin)
         call parse_name(iname,cname(iname),cform(iname),'vpzmin',idiag_vpzmin)
         call parse_name(iname,cname(iname),cform(iname),'vpmax',idiag_vpmax)
+        call parse_name(iname,cname(iname),cform(iname),'vtherm500',idiag_vtherm500)
         call parse_name(iname,cname(iname),cform(iname),'rhopvpxm',idiag_rhopvpxm)
         call parse_name(iname,cname(iname),cform(iname),'rhopvpym',idiag_rhopvpym)
         call parse_name(iname,cname(iname),cform(iname),'rhopvpzm',idiag_rhopvpzm)
