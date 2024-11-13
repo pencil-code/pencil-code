@@ -53,7 +53,7 @@
   frac_init_particles=0. 
 /
 &particles_radius_init_pars
-  rhopmat=1e3, nbin_initdist=100, lcondensing_species=T
+  nbin_initdist=100, lcondensing_species=T
 /
 &particles_number_init_pars
   initnpswarm='nothing', np_swarm0=1.0e+11
