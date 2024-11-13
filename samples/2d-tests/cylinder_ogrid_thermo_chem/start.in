@@ -98,7 +98,7 @@
   interp_pol_uu='cic'
   linsert_particles_continuously=T
   lnostore_uu=.false.
-  lbrownian_forces=T
+  lbrownian_forces=T, lbrownian_forces_Li_Ahmadi=T
   thermophoretic_eq='near_continuum'
   cond_ratio=10.0
 /

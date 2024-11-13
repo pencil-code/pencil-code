@@ -56,7 +56,7 @@
   remove_particle_criteria="size"
   remove_particle_criteria_size=1e-9 ! 0.01 nm
   remove_particle_at_time=1e-19
-  lbrownian_forces=T
+  lbrownian_forces=T, lbrownian_forces_Li_Ahmadi=T
   tstart_brownian_par=0.0
 /
 &particles_radius_run_pars
