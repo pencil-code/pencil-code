@@ -304,7 +304,8 @@ module Particles
   integer :: idiag_rpm=0, idiag_rp2m=0
   integer :: idiag_vpxm=0, idiag_vpym=0, idiag_vpzm=0   ! DIAG_DOC: $u_{part}$
   integer :: idiag_vpx2m=0, idiag_vpy2m=0, idiag_vpz2m=0 ! DIAG_DOC: $u^2_{part}$
-  integer :: idiag_ekinp=0, idiag_vtherm500=0     ! DIAG_DOC: $E_{kin,part}$
+  integer :: idiag_ekinp=0     ! DIAG_DOC: $E_{kin,part}$
+!  integer :: idiag_vtherm500=0
   integer :: idiag_vpxmax=0, idiag_vpymax=0, idiag_vpzmax=0, idiag_vpmax=0 ! DIAG_DOC: $MAX(u_{part})$
   integer :: idiag_vpxmin=0, idiag_vpymin=0, idiag_vpzmin=0    ! DIAG_DOC: $MIN(u_{part})$
   integer :: idiag_urel=0
@@ -3438,7 +3439,7 @@ module Particles
       if (ldiagnos) then
         call sum_name(npar_loc,idiag_nparsum)
         if (idiag_nparmin /= 0) call max_name(-npar_loc,idiag_nparmin,lneg=.true.)
-        call sum_par_name(k_B*500./(four_pi_over_three*fp(1:npar_loc,iap)**3*rhopmat),idiag_vtherm500,lsqrt = .true.)      
+!        call sum_par_name(k_B*500./(four_pi_over_three*fp(1:npar_loc,iap)**3*rhopmat),idiag_vtherm500,lsqrt = .true.)      
         call max_name(+npar_loc,idiag_nparmax)
         if (idiag_nparpmax /= 0) call max_name(maxval(npar_imn),idiag_nparpmax)
         call sum_par_name(fp(1:npar_loc,ixp),idiag_xpm)
@@ -6981,7 +6982,7 @@ module Particles
         call parse_name(iname,cname(iname),cform(iname),'vpymin',idiag_vpymin)
         call parse_name(iname,cname(iname),cform(iname),'vpzmin',idiag_vpzmin)
         call parse_name(iname,cname(iname),cform(iname),'vpmax',idiag_vpmax)
-        call parse_name(iname,cname(iname),cform(iname),'vtherm500',idiag_vtherm500)
+!        call parse_name(iname,cname(iname),cform(iname),'vtherm500',idiag_vtherm500)
         call parse_name(iname,cname(iname),cform(iname),'rhopvpxm',idiag_rhopvpxm)
         call parse_name(iname,cname(iname),cform(iname),'rhopvpym',idiag_rhopvpym)
         call parse_name(iname,cname(iname),cform(iname),'rhopvpzm',idiag_rhopvpzm)
