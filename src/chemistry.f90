@@ -259,7 +259,6 @@ module Chemistry
 !
   integer :: idiag_lambdam=0,idiag_lambdamax=0,idiag_lambdamin=0
   integer :: idiag_alpham=0,idiag_alphamax=0,idiag_alphamin=0
-  integer :: idiag_num=0,idiag_numax=0,idiag_numin=0
   integer :: idiag_ffcondposm, idiag_ffcondnegm, idiag_ffnucl
   integer :: idiag_ffcondm
 !
@@ -3527,12 +3526,6 @@ module Chemistry
              call max_mn_name(lambda_full(l1:l2,m,n)/(p%rho*cp_full(l1:l2,m,n)),idiag_alphamax) 
         if (idiag_alphamin/=0) &
              call max_mn_name(-lambda_full(l1:l2,m,n)/(p%rho*cp_full(l1:l2,m,n)),idiag_alphamin,lneg=.true.) 
-        if (idiag_num/=0) &
-             call sum_mn_name(f(l1:l2,m,n,iviscosity),idiag_num)
-        if (idiag_numax/=0) &
-             call max_mn_name(f(l1:l2,m,n,iviscosity),idiag_numax)
-        if (idiag_numin/=0) &
-             call max_mn_name(-f(l1:l2,m,n,iviscosity),idiag_numin,lneg=.true.)
         if (lnucleation) then
           if (idiag_nuclrmin/=0) call sum_mn_name(p%nucl_rmin,idiag_nuclrmin)
           if (idiag_nuclrate/=0) call sum_mn_name(p%nucl_rate,idiag_nuclrate)
@@ -3631,9 +3624,6 @@ module Chemistry
         idiag_alpham = 0
         idiag_alphamax = 0
         idiag_alphamin = 0
-        idiag_num = 0
-        idiag_numax = 0
-        idiag_numin = 0
         idiag_ffcondposm = 0
         idiag_ffcondm = 0
         idiag_ffcondnegm = 0
@@ -3691,9 +3681,6 @@ module Chemistry
         call parse_name(iname,cname(iname),cform(iname),'alpham',idiag_alpham)
         call parse_name(iname,cname(iname),cform(iname),'alphamax',idiag_alphamax)
         call parse_name(iname,cname(iname),cform(iname),'alphamin',idiag_alphamin)
-        call parse_name(iname,cname(iname),cform(iname),'num',idiag_num)
-        call parse_name(iname,cname(iname),cform(iname),'numax',idiag_numax)
-        call parse_name(iname,cname(iname),cform(iname),'numin',idiag_numin)
         call parse_name(iname,cname(iname),cform(iname),'ffcondposm',idiag_ffcondposm)
         call parse_name(iname,cname(iname),cform(iname),'ffcondm',idiag_ffcondm)
         call parse_name(iname,cname(iname),cform(iname),'ffcondnegm',idiag_ffcondnegm)
@@ -6694,7 +6681,8 @@ module Chemistry
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       integer :: ichem, kkk,ix0,ix
-      real :: rp,dapdt,np_swarm, ffcondp
+      real :: ffcondp
+      real, intent(IN) :: rp,dapdt,np_swarm
 !
 ! Modify continuity equation
 !
