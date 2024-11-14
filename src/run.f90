@@ -1099,14 +1099,15 @@ subroutine run_start() bind(C)
     print*
     print*, 'Simulation finished after ', icount, ' time-steps'
 !
+  endif
+!
+  if (.not.lnowrite .or. nt==0) then
+!
 !  Write data at end of run for restart.
 !
     print*
     write(*,*) 'Writing final snapshot at time t =', t
-  endif
 !
-  if (.not.lnowrite .or. nt==0) then
-
     if (ncoarse>1) then
       call update_ghosts(f)
       if (lcoarse) then

@@ -448,9 +448,8 @@ elem_wise_max(const std::array<AcReal,3>& a,const std::array<AcReal,3>& b,const 
 	};
 }
 
-AcReal max_diffus();
+AcReal max_diffus(AcReal );
 /***********************************************************************************************/
-
 bool
 has_nans(AcMesh mesh_in);
 /***********************************************************************************************/
@@ -485,11 +484,11 @@ extern "C" void substepGPU(int isubstep)
   acDeviceSetInput(acGridGetDevice(), AC_step_num,isubstep-1);
   //acGridSynchronizeStream(STREAM_ALL);
   Device dev = acGridGetDevice();
-  if (isubstep == 1)
-    acDeviceSetInput(acGridGetDevice(), AC_dt,dt);
-  //auto start = MPI_Wtime();
+  if (isubstep == 1) acDeviceSetInput(acGridGetDevice(), AC_dt,dt);
+  //fprintf(stderr,"before acGridExecuteTaskGraph");
+  auto start = MPI_Wtime();
   acGridExecuteTaskGraph(rhs, 1);
-  //auto end = MPI_Wtime();
+  auto end = MPI_Wtime();
   //fprintf(stderr,"RHS TOOK: %14e\n",end-start);
   if (isubstep == 1 && ldt)
   {
@@ -499,12 +498,12 @@ extern "C" void substepGPU(int isubstep)
 #if LHYDRO
       maxadvec = acDeviceGetOutput(acGridGetDevice(), AC_maxadvec)/cdt;
 #endif
+      AcReal maxchi_dyn = 0.;
 #if LENTROPY
-      //AcReal maxchi    = dev->output.real_outputs[AC_maxchi];
-      //maxdiffus = maxdiffus+maxchi/pow(dx,2)
+      maxchi_dyn = acDeviceGetOutput(acGridGetDevice(), AC_maxchi);
 #endif
       //fprintf(stderr, "HMM MAX ADVEC, DIFFUS: %14e, %14e\n",maxadvec,max_diffus());
-      AcReal dt1_ = sqrt(pow(maxadvec, 2) + pow(max_diffus(), 2));
+      AcReal dt1_ = sqrt(pow(maxadvec, 2) + pow(max_diffus(maxchi_dyn), 2));
 //printf("maxadvec, maxchi,maxdiffus= %e %e %e \n", maxadvec, maxchi, maxdiffus);
 //printf("maxadvec, maxdiffus= %e %e %e \n", maxadvec, max_diffus());
       set_dt(dt1_);
@@ -938,15 +937,16 @@ extern "C" void registerGPU(AcReal *farray)
   for (int i = 0; i < NUM_VTXBUF_HANDLES; ++i)
   {
     mesh.vertex_buffer[VertexBufferHandle(i)] = &farray[offset];
-    //test_mesh.vertex_buffer[VertexBufferHandle(i)] = (AcReal *)malloc(sizeof(AcReal) * mw);
+//{printf("&farray[offset]= %p \n",&farray[offset]);fflush(stdout);}
+    //test.mesh.vertex_buffer[VertexBufferHandle(i)] = (AcReal *)malloc(sizeof(AcReal) * mw);
     offset += mw;
   }
 }
 /***********************************************************************************************/
 extern "C" void initGPU()
 {
-  // Initialize GPUs in the node
-  //AcResult res = acCheckDeviceAvailability();
+  // Check whether there is (at least) one GPU available
+  AcResult res = acCheckDeviceAvailability();
 }
 /***********************************************************************************************/
 #define PCLoad acPushToConfig
@@ -1065,7 +1065,6 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out, int c
   //initLoadStore();
 #endif
 
-
   comm_pencil = MPI_Comm_f2c(comm_fint);
   setupConfig(mesh.info);
 #if AC_RUNTIME_COMPILATION
@@ -1085,7 +1084,7 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out, int c
 
   mesh.info = acGridDecomposeMeshInfo(mesh.info);
   rhs = acGetDSLTaskGraph(AC_rhs);
-  if(ltest_bcs) testBCs();
+  if (ltest_bcs) testBCs();
   acGridSynchronizeStream(STREAM_ALL);
   acLogFromRootProc(rank, "DONE initializeGPU\n");
   fflush(stdout);
@@ -1105,6 +1104,7 @@ extern "C" void copyFarray(AcReal* f)
   for (int i = 0; i < NUM_VTXBUF_HANDLES; ++i)
   {
     mesh_to_copy.vertex_buffer[VertexBufferHandle(i)] = &f[offset];
+//printf("mesh %d %p \n",i, mesh.vertex_buffer[VertexBufferHandle(i)]);
     offset += mw;
   }
   mesh_to_copy.info = mesh.info;
@@ -1215,10 +1215,11 @@ has_nans(AcMesh mesh_in)
   }
   return res;
 }
-AcReal max_diffus()
+AcReal max_diffus(AcReal maxchi_dyn)
 {
   AcReal3 dxyz_vals = get_dxyzs();
   auto max_diffusions = elem_wise_max(visc_get_max_diffus(), magnetic_get_max_diffus(), energy_get_max_diffus());
+  max_diffusions[0] = std::max(max_diffusions[0],maxchi_dyn);
   return max_diffusions[0]*dxyz_vals.x/cdtv + max_diffusions[1]*dxyz_vals.y/cdtv2 + max_diffusions[2]*dxyz_vals.z/cdtv3;
 }
 //TP: this is not written the the most optimally since it needs two extra copies of the mesh where at least the tmp
@@ -1239,16 +1240,16 @@ sym_z(AcMesh mesh_in)
     {
       for (int k = 0; k < dims.m1.z; k++)
       {
-	if(
+	if (
 	   i >= NGHOST && i < dims.n1.x &&
 	   j >= NGHOST && j < dims.n1.y &&
 	   k >= NGHOST && k < dims.n1.z
 	  )continue;
-	 if(k >= NGHOST && k < dims.n1.z) continue;
+	 if (k >= NGHOST && k < dims.n1.z) continue;
         for (int ivar = 0; ivar < NUM_VTXBUF_HANDLES; ivar++)
         {
 	 //BOT
-	 if(k < NGHOST)
+	 if (k < NGHOST)
 	 {
 	 	const auto idx = DEVICE_VTXBUF_IDX(i,j,k);
 		const auto offset = NGHOST-k;
@@ -1279,7 +1280,7 @@ check_sym_z(AcMesh mesh_in)
   				{
 					return acVertexBufferIdx(x,y,z,acGridGetLocalMeshInfo());
   				};
-  if(rank == 1)
+  if (rank == 1)
   {
   	//printf("HMM: %14e\n",mesh_in.vertex_buffer[0][DEVICE_VTXBUF_IDX(14,15,2)]);
   	//printf("HMM: %14e\n",mesh_in.vertex_buffer[0][DEVICE_VTXBUF_IDX(14,15,2)]);
@@ -1293,22 +1294,22 @@ check_sym_z(AcMesh mesh_in)
     {
       for (int k = 0; k < dims.m1.z; k++)
       {
-	if(
+	if (
 	   i >= NGHOST && i < dims.n1.x &&
 	   j >= NGHOST && j < dims.n1.y &&
 	   k >= NGHOST && k < dims.n1.z
 	  )continue;
-	 if(k >= NGHOST && k < dims.n1.z) continue;
+	 if (k >= NGHOST && k < dims.n1.z) continue;
         for (int ivar = 0; ivar < NUM_VTXBUF_HANDLES; ivar++)
         {
 	 //BOT
-	 if(k < NGHOST)
+	 if (k < NGHOST)
 	 {
 	 	const auto idx = DEVICE_VTXBUF_IDX(i,j,k);
 		const auto offset = NGHOST-k;
 	 	const auto domain_z= NGHOST+offset;
 	 	const auto domain_idx = DEVICE_VTXBUF_IDX(i,j,domain_z);
-		if(mesh_in.vertex_buffer[ivar][idx] !=  mesh_in.vertex_buffer[ivar][domain_idx])
+		if (mesh_in.vertex_buffer[ivar][idx] !=  mesh_in.vertex_buffer[ivar][domain_idx])
 			printf("WRONG\n");
 	 }
 	 //TOP:
@@ -1319,7 +1320,7 @@ check_sym_z(AcMesh mesh_in)
 	 	const auto domain_z= mesh_in.info[AC_nlocal_max].z-offset;
 	 	const auto domain_idx = DEVICE_VTXBUF_IDX(i,j,domain_z);
 		mesh_in.vertex_buffer[ivar][idx] = mesh.vertex_buffer[ivar][domain_idx];
-		if(mesh_in.vertex_buffer[ivar][idx] !=  mesh_in.vertex_buffer[ivar][domain_idx])
+		if (mesh_in.vertex_buffer[ivar][idx] !=  mesh_in.vertex_buffer[ivar][domain_idx])
 			printf("WRONG\n");
 	 }
 	}
@@ -1404,7 +1405,7 @@ testBCs()
   				acGridTaskGraphHasPeriodicBoundcondsY(rhs) && 
   				acGridTaskGraphHasPeriodicBoundcondsZ(rhs) 
 				;
-  if(all_periodic) return;
+  if (all_periodic) return;
   auto bcs = acGetDSLTaskGraph(boundconds);
 
   AcMesh tmp_mesh_to_store;
@@ -1474,12 +1475,12 @@ testBCs()
     {
       for (int k = start_z; k < end_z; k++)
       {
-	if(
+	if (
 	   i >= NGHOST && i < dims.n1.x &&
 	   j >= NGHOST && j < dims.n1.y &&
 	   k >= NGHOST && k < dims.n1.z
 	  )continue;
-	  //if(i < NGHOST | i > dims.n1.x  || j < NGHOST || j > dims.n1.y) continue;
+	  //if (i < NGHOST | i > dims.n1.x  || j < NGHOST || j > dims.n1.y) continue;
 	++num_of_points;
         for (int ivar = 0; ivar < NUM_VTXBUF_HANDLES; ivar++)
         {
@@ -1520,7 +1521,7 @@ testBCs()
 	  return a.x*a.y*a.z;
   };
   passed &= !has_nans(mesh);
-  if(!passed)
+  if (!passed)
   {
   	for (int ivar=0;ivar<NUM_VTXBUF_HANDLES;ivar++)
     		acLogFromRootProc(0,"ratio of values wrong for field: %s\t %f\n",field_names[ivar],(double)num_of_points_where_different[ivar]/num_of_points);

@@ -377,7 +377,7 @@ def src2dst_remesh(
       Size in megabytes of snapshot variable before chunked remesh is used.
 
     lfs : bool
-      Flag to set the striping for large file sizes to imporve IO efficiency.
+      Flag to set the striping for large file sizes to improve IO efficiency.
 
     MB : float
       Size of data to write contiguously before moving to new OST on lustre.
@@ -450,8 +450,15 @@ def src2dst_remesh(
     lsim=False
     if is_sim_dir(dst):
         dstsim = simulation(dst, quiet=quiet)
-        mode = "r+"
         lsim=True
+        mode = "w"
+        if not os.path.isfile(join(dst,"data")):
+            mkdir(join(dst,"data"))
+            mkdir(join(dst,"data/allprocs"),lfs=lfs,MB=MB,count=count)
+        elif not os.path.isfile(join(dst,"data/allprocs")):
+            mkdir(join(dst,"data/allprocs"),lfs=lfs,MB=MB,count=count)
+        elif os.path.isfile(join(dst,"data/allprocs",h5out)):
+            mode = "r+"
     else:
         mode = "a"
         print("setting up simulation")
@@ -637,11 +644,11 @@ def src2dst_remesh(
         comm.Barrier()
         driver = "mpio"
         sh5 = h5py.File(join(srcsim.path, srcdatadir, h5in), "r", driver=driver, comm=comm)
-        dh5 = h5py.File(join(dstsim.path, dstdatadir, h5out),"r+", driver=driver, comm=comm)
+        dh5 = h5py.File(join(dstsim.path, dstdatadir, h5out),mode, driver=driver, comm=comm)
     else:
         #driver = None
         sh5 = h5py.File(join(srcsim.path, srcdatadir, h5in), "r" )
-        dh5 = h5py.File(join(dstsim.path, dstdatadir, h5out),"r+" )
+        dh5 = h5py.File(join(dstsim.path, dstdatadir, h5out), mode )
     print("dh5 name", dh5.filename)
     nx, ny, nz =(
         dh5["settings"]["nx"][0],
