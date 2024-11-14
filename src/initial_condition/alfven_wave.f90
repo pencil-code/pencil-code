@@ -23,6 +23,7 @@ module InitialCondition
 !
   real, dimension(3) :: init_amp0 = 0.0, init_k0 = 0.0
   real :: init_phase0 = 0.0
+  real, pointer :: rho0
 !
   namelist /initial_condition_pars/ init_amp0, init_k0, init_phase0
 !
@@ -44,9 +45,12 @@ module InitialCondition
 !
 !  26-sep-14/ccyang: coded.
 !
+      use SharedVariables, only: get_shared_variable
+!
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
 !
       call keep_compiler_quiet(f)
+      call get_shared_variable('rho0',rho0,caller="initialize_initial_condition")
 !
 !  Oscillations must be perpendicular to the wave vector.
 !
@@ -79,7 +83,6 @@ module InitialCondition
 !
 !  26-sep-14/ccyang: coded.
 !
-      use EquationOfState, only: rho0
       use Initcond, only: sinwave_phase, coswave_phase
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f

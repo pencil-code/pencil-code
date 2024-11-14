@@ -366,7 +366,6 @@ module Special
 !
       use Cdata
       use Messages, only: fatal_error
-      use EquationOfState, only : rho0
 !
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
