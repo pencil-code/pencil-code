@@ -2192,6 +2192,22 @@ module Particles_map
         endif
       endif
 !
+!  Speed of sound
+!
+      if (interp%lcs) then
+        allocate(interp_cs(k1:k2))
+        if (.not.allocated(interp_cs)) then
+          print*,'interpolate_quantities: unable to allocate '// &
+                 'sufficient memory for interp_cs'
+          call fatal_error('interpolate_quantities','')
+        endif
+        if (npar_imn(imn) /= 0) then
+          do k=k1,k2
+            interp_cs(k)=sqrt(p%cs2(ineargrid(k,1)-nghost))
+          enddo
+        endif
+      endif
+!
 !  Species:
 !
       if (interp%lspecies) then
@@ -2219,6 +2235,7 @@ module Particles_map
       if (allocated(interp_rho)) deallocate(interp_rho)
       if (allocated(interp_gradTT)) deallocate(interp_gradTT)
       if (allocated(interp_nu)) deallocate(interp_nu)
+      if (allocated(interp_cs)) deallocate(interp_cs)
       if (allocated(interp_pp)) deallocate(interp_pp)
       if (allocated(interp_species)) deallocate(interp_species)
 !
