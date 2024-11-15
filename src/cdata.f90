@@ -571,10 +571,14 @@ module Cdata
   integer :: idiag_rmphi=0      ! PHIAVG_DOC: spherical radius
                                 ! PHIAVG_DOC: $r=\sqrt{\varpi^2+z^2}$
                                 ! PHIAVG_DOC: (useful for debugging)
-  integer :: idiag_dtv=0        ! DIAG_DOC:
-  integer :: idiag_dtdiffus=0   ! DIAG_DOC:
-  integer :: idiag_dtdiffus2=0  ! DIAG_DOC:
-  integer :: idiag_dtdiffus3=0  ! DIAG_DOC:
+  integer :: idiag_dtv=0        ! DIAG_DOC: advective timestep as a
+                                ! DIAG_DOC:   fraction of the actual one
+  integer :: idiag_dtdiffus=0   ! DIAG_DOC: diffusive timestep as a
+                                ! DIAG_DOC:   fraction of the actual one
+  integer :: idiag_dtdiffus2=0  ! DIAG_DOC: hyperdiffusive (hyper2)  timestep
+                                ! DIAG_DOC:   as a fraction of the actual one
+  integer :: idiag_dtdiffus3=0  ! DIAG_DOC: hyperdiffusive (hyper3)  timestep
+                                ! DIAG_DOC:   as a fraction of the actual one
   integer :: idiag_Rmesh=0      ! DIAG_DOC: $R_{\rm mesh}$
   integer :: idiag_Rmesh3=0     ! DIAG_DOC: $R_{\rm mesh}^{(3)}$
   integer :: idiag_maxadvec=0   ! DIAG_DOC: maxadvec
