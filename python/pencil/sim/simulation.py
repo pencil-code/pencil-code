@@ -105,12 +105,11 @@ class __Simulation__(object):
         self.start_components = [
             "index.pro",
             "param.nml",
-            "time_series.dat",
             #                                 'jobid.dat',
             "pencils.list",
         ]
         # optional files that should stick with the simulation when copied
-        self.start_optionals = ["*.pro", "*.h5"]
+        self.start_optionals = ["time_series.dat","*.pro", "*.h5"]
 
         self.hidden = hidden  # hidden is default False
         self.param = False

@@ -74,7 +74,6 @@ def get_dstgrid(
     srcpar,
     dsth5,
     dst,
-    ncpus=[1, 1, 1],
     nxyz=None,
     multxyz=[2, 2, 2],
     fracxyz=[1, 1, 1],
@@ -86,12 +85,11 @@ def get_dstgrid(
     dstprecision=[b"D"],
     dim=None,
     grid=None,
-    status="w",
 ):
     """
-    get_dstgrid(srch5, srcpar, dsth5, ncpus=[1,1,1], multxyz=[2,2,2],
+    get_dstgrid(srch5, srcpar, dsth5, multxyz=[2,2,2],
                fracxyz=[1,1,1], srcghost=3, dstghost=3, dtype=np.float64,
-               lsymmetric=True, quiet=True,dstprecision=[b"D"],status="w")
+               lsymmetric=True, quiet=True,dstprecision=[b"D"])
 
     Parameters
     ----------
@@ -103,9 +101,6 @@ def get_dstgrid(
 
     dsth5 : obj
         hdf5 object for destination simulation data.
-
-    ncpus : int
-        Array of nprocx, nprocy, and nprocz to apply for new simulation.
 
     multxyz : list
         Factors by which to multiply old sim dimensions yxz order.
@@ -132,8 +127,6 @@ def get_dstgrid(
     dstprecision :
         floating point precision of new simulation grid.
 
-    status :
-        status of hdf5 grid being written "w" or "a".
     """
     from os.path import join, abspath
     # TBA
@@ -142,15 +135,18 @@ def get_dstgrid(
     # handling non-equidistant grids tba
 
     # copy settings from srcsim and revise with changes to dstsim var.h5
+    if dsth5.__contains__("settings"):
+        dsth5.__delitem__("settings")
     if srch5:
         srcsets = srch5["settings"]
+        srch5.copy("settings",dsth5)
+        sets = dsth5["settings"]
     else:
+        sets = dsth5.require_group("settings")
         srcsets = dict()
         for key in dim.__dict__.keys():
             srcsets[key]=np.array([dim.__getattribute__(key)])
-    sets = dsth5.require_group("settings")
-    for key in srcsets.keys():
-        dsth5["settings"].create_dataset(key, data=srcsets[key][()])
+            sets.create_dataset(key, data=srcsets[key][()])
     # update grid dimensions
     if not nxyz:
         sets["nx"][()] = int(srcsets["nx"][0] * multxyz[0] / fracxyz[0])
@@ -178,32 +174,24 @@ def get_dstgrid(
         sets["m2"][()] = sets["my"][()] - 1 - dstghost
         sets["n1"][()] = dstghost
         sets["n2"][()] = sets["mz"][()] - 1 - dstghost
-    if not ncpus == [1, 1, 1]:
-        sets["nprocx"][()] = ncpus[0]
-        sets["nprocy"][()] = ncpus[1]
-        sets["nprocz"][()] = ncpus[2]
-    #elif exists(join(dst, "src", "cparam.local")):
-    #    from pencil.sim import get_cparam
-    #    cpars=get_cparam(join(dst, "src", "cparam.local"))
-    #    print(cpars)
-    #    sets["nprocx"][()] = cpars["nprocx"]
-    #    sets["nprocy"][()] = cpars["nprocy"]
-    #    sets["nprocz"][()] = cpars["nprocz"]
-
 
     # copy the grid from the srcsim to dstsim var.h5 and grid.h5
+    if dsth5.__contains__("grid"):
+        dsth5.__delitem__("grid")
     if srch5:
         srcgrid = srch5["grid"]
+        srch5.copy("grid",dsth5)
+        grid=dsth5["grid"]
     else:
+        grid=dsth5.require_group("grid")
         srcgrid = dict()
         for key in gd.__dict__.keys():
             if not key == "t":
                 srcgrid[key]=gd.__getattribute__(key)
+                grid.create_dataset(key, data=srcgrid[key])
         for key, i in zip(["Ox", "Oy", "Oz"],[0,1,2]):
             srcgrid[key]=srcpar["xyz0"][i]
-    grid=dsth5.require_group("grid")
-    for key in srcgrid.keys():
-        grid.create_dataset(key, data=srcgrid[key][()])
+            grid.create_dataset(key, data=srcgrid[key])
     # replace grid data changed for dstsim
     for ii, mm in [[0, "mx"], [1, "my"], [2, "mz"]]:
         if not srcpar["lequidist"][ii]:
@@ -289,8 +277,9 @@ def src2dst_remesh(
     comm=None,
     farray=None,
     index_farray=None,
-    data='all',
-    remesh=True
+    datasets='all',
+    remesh=True,
+    newtime=None,
 ):
     """
     src2dst_remesh(src=None, dst=None, h5in='var.h5', h5out='var.h5', nxyz=None, multxyz=[2, 2, 2],
@@ -301,7 +290,7 @@ def src2dst_remesh(
                    rename_submit_script=False, MBmin=5.0, ncpus=[1, 1, 1],
                    start_optionals=False, hostfile=None, submit_new=False,
                    chunksize=1000.0, lfs=False,  MB=1, count=1, size=1,
-                   rank=0, comm=None, farray=None, index_farray=None, data='all', remesh=True)
+                   rank=0, comm=None, farray=None, index_farray=None, datasets='all', remesh=True)
 
     Parameters
     ----------
@@ -411,7 +400,7 @@ def src2dst_remesh(
     index_farray : integer list
         set of index at which interpolation shall start
 
-    data : string
+    datasets : string
         "all" default to interpolate full farray, or specify selection
 
     remesh :  bool
@@ -430,6 +419,11 @@ def src2dst_remesh(
     from pencil import is_sim_dir
 
     start_time = time.time()
+
+    #==================================================================
+    #identify source and destination paths and copy simulation files as
+    #required to destination path
+
     if rank == 0 or rank == size - 1:
         print("started at {}".format(time.ctime(start_time)))
     # set dtype from precision
@@ -476,64 +470,53 @@ def src2dst_remesh(
                 rename_submit_script=rename_submit_script,
             )
             mkdir(join(dst,"data","allprocs"),lfs=lfs,MB=MB,count=count)
-        if comm:
-            comm.Barrier()
-        if not rank == 0:
-            dstsim = simulation(dst, quiet=quiet)
-        if comm:
-            comm.Barrier()
-    if data == "all":
-        if rank == 0:
-            #cmd = "cp "+join(dstsim.path, dstdatadir, h5out)+" "+join(dstsim.path, dstdatadir, h5out+"copy")
-            #os.system(cmd)
-            lsrch5=False
-            if srcsim.param["io_strategy"]=="HDF5":
-                lsrch5=True
-                with h5py.File(join(srcsim.path, srcdatadir, h5in),"r") as srch5:
-                    print("opening {} file on rank {}".format(join(srcsim.path, srcdatadir, h5in),rank))
-                    print("dst is sim already?",lsim)
-                    if not lsim:
-                        with h5py.File(join(dstsim.path, dstdatadir, h5out),mode) as dsth5:
-                            get_dstgrid(
-                                srch5,
-                                srcsim.param,
-                                dsth5,
-                                dst,
-                                ncpus=ncpus,
-                                nxyz=nxyz,
-                                multxyz=multxyz,
-                                fracxyz=fracxyz,
-                                srcghost=srcghost,
-                                dstghost=dstghost,
-                                dtype=dtype,
-                                lsymmetric=lsymmetric,
-                                quiet=quiet,
-                                dstprecision=dstprecision,
-                                status=mode
-                                )
-            else:
-                if not lsim:
-                    srch5=None
-                    with h5py.File(join(dstsim.path, dstdatadir, h5out),mode) as dsth5:
-                        get_dstgrid(
-                            srch5,
-                            srcsim.param,
-                            dsth5,
-                            dst,
-                            ncpus=ncpus,
-                            nxyz=nxyz,
-                            multxyz=multxyz,
-                            fracxyz=fracxyz,
-                            srcghost=srcghost,
-                            dstghost=dstghost,
-                            dtype=dtype,
-                            lsymmetric=lsymmetric,
-                            quiet=quiet,
-                            dstprecision=dstprecision,
-                            dim=srcsim.dim,
-                            grid=srcsim.grid,
-                            status=mode
-                            )
+    lsrch5=False
+    if srcsim.param["io_strategy"]=="HDF5":
+        lsrch5=True
+
+    #==================================================================
+    #Determine the dimensions of the destination grid and update settings
+
+    if rank==0:
+        print("opening {} file on rank {}".format(join(srcsim.path, srcdatadir, h5in),rank))
+        if lsrch5:
+            with h5py.File(join(srcsim.path, srcdatadir, h5in),"r") as srch5:
+                with h5py.File(join(dstsim.path, dstdatadir, h5out),mode) as dsth5:
+                    get_dstgrid(
+                        srch5,
+                        srcsim.param,
+                        dsth5,
+                        dst,
+                        nxyz=nxyz,
+                        multxyz=multxyz,
+                        fracxyz=fracxyz,
+                        srcghost=srcghost,
+                        dstghost=dstghost,
+                        dtype=dtype,
+                        lsymmetric=lsymmetric,
+                        quiet=quiet,
+                        dstprecision=dstprecision,
+                        )
+        else:
+            srch5=None
+            with h5py.File(join(dstsim.path, dstdatadir, h5out),mode) as dsth5:
+                get_dstgrid(
+                    srch5,
+                    srcsim.param,
+                    dsth5,
+                    dst,
+                    nxyz=nxyz,
+                    multxyz=multxyz,
+                    fracxyz=fracxyz,
+                    srcghost=srcghost,
+                    dstghost=dstghost,
+                    dtype=dtype,
+                    lsymmetric=lsymmetric,
+                    quiet=quiet,
+                    dstprecision=dstprecision,
+                    dim=srcsim.dim,
+                    grid=srcsim.grid,
+                    )
 
         print("get_dstgrid completed on rank {}".format(rank))
         with h5py.File(join(dstsim.path, dstdatadir, h5out),mode) as dsth5:
@@ -560,8 +543,10 @@ def src2dst_remesh(
                 )
                 + 'To execute remesh set "check_grid=False".'
             )
-            if ncpus == [1, 1, 1]:
-                ncpus = [factors[1][0], factors[1][1], factors[1][2]]
+            if not ncpus == [factors[1][0], factors[1][1], factors[1][2]]:
+                if check_grid:
+                    return 1
+            ncpus = [factors[1][0], factors[1][1], factors[1][2]]
             dsth5["settings/nprocx"][0] = ncpus[0]
             dsth5["settings/nprocy"][0] = ncpus[1]
             dsth5["settings/nprocz"][0] = ncpus[2]
@@ -583,23 +568,17 @@ def src2dst_remesh(
                      + "efficient parallel processing options."
                      + "\n**********************************************************\n"
                     )
-                if check_grid:
-                    return 1
-            dsth5.require_group("unit")
+            if dsth5.__contains__("unit"):
+                dsth5.__delitem__("unit")
             if lsrch5:
                 with h5py.File(join(srcsim.path, srcdatadir, h5in),"r") as srch5:
-                    for key in srch5["unit"].keys():
-                        dsth5["unit"].create_dataset(key,
-                                                     data=srch5["unit"][key][()])
+                    srch5.copy("unit", dsth5)
             else:
                 for key in srcsim.param.keys():
                     if "unit_" in key and not "_unit_" in key:
-                        dsth5["unit"].create_dataset(key.split("_")[-1],
-                                                     data=srcsim.param[key][()])
+                        dkey=key.split("_")[-1]
+                        dsth5["unit"].create_dataset(dkey, data=srcsim.param[key])
             gridh5 = h5py.File(join(dstsim.datadir, "grid.h5"), 'w')
-            #dsth5["settings/nprocx"][0] = ncpus[0]
-            #dsth5["settings/nprocy"][0] = ncpus[1]
-            #dsth5["settings/nprocz"][0] = ncpus[2]
             dsth5.copy("settings", gridh5)
             dsth5.copy("grid", gridh5)
             dsth5.copy("unit", gridh5)
@@ -609,24 +588,50 @@ def src2dst_remesh(
                     pers=dsth5.require_group("persist")
                     with h5py.File(join(srcsim.path, srcdatadir, h5in),"r") as srch5:
                         for key in srch5["persist"].keys():
+                            dtype=type(srch5["persist"][key][0])
                             tmp = np.zeros(nprocs)
                             tmp[:] = srch5["persist"][key][0]
-                            pers.create_dataset(key, data=tmp)
+                            try:
+                                pers.require_dataset(key, (nprocs,), dtype=dtype)
+                            except:
+                                pers.__delitem__(key)
+                                pers.require_dataset(key, (nprocs,), dtype=dtype)
+                            pers[key][()]=tmp
                 else:
                     var=pc.read.var(proc=rank, lpersist=True)
                     pers=dsth5.require_group("persist")
                     for key in var.persist.keys():
                         tmp = np.zeros(nprocs)
                         tmp[:] = var.persist.__getattribute__(key)
-                        pers.create_dataset(key, data=tmp)
+                        dtype=type(var.persist.__getattribute__(key))
+                        try:
+                            pers.require_dataset(key, (nprocs,), dtype=dtype)
+                        except:
+                            pers.__delitem__(key)
+                            pers.require_dataset(key, (nprocs,), dtype=dtype)
+                        pers[key][()]=tmp
 
-            if lsrch5:
+            if newtime:
+                dsth5.require_dataset("time", (), dtype=dtype)
+                dsth5["time"][()] = newtime
+            elif lsrch5:
                 with h5py.File(join(srcsim.path, srcdatadir, h5in),"r") as srch5:
-                    dsth5.create_dataset("time", data=srch5["time"][()], dtype=dtype)
+                    dsth5.require_dataset("time", (), dtype=dtype)
+                    dsth5["time"][()] = srch5["time"][()]
             else:
                 if not srcsim.param["lpersist"]:
-                    var=pc.read.var(proc=rank, lpersist=True)
-                dsth5.create_dataset("time", data=var.t, dtype=dtype)
+                    var=pc.read.var(proc=rank, lpersist=False)
+                dsth5.require_dataset("time", (), dtype=dtype)
+                dsth5["time"][()] = var.t
+    #==========================================================================
+    #update destination simulation object on all ranks
+
+    if comm:
+        comm.Barrier()
+    if not rank == 0:
+        dstsim = simulation(dst, quiet=quiet)
+    else:
+        dstsim.update(hard=True)
 
     if comm:
         comm.Barrier()
@@ -644,7 +649,7 @@ def src2dst_remesh(
         dh5["settings"]["nz"][0],
     )
     #print("dh5 settings", dh5.keys(), dh5["settings"].keys())
-    if data == "all" or data == "data":
+    if datasets == "all" or datasets == "data":
         with sh5 as srch5:
             if comm:
                 try:
@@ -842,6 +847,7 @@ def src2dst_remesh(
                 nchunks = 1
                 chunks = [0,0,0]
         print("rank {} len chunks {}, len lfirstx".format(rank, len(chunks), len(lfirstx)))
+        print(sh5,dh5)
         for key, ind_start in zip(fields,index_fields):
             if exists(join(dst,'PYTHONSTOP')):
                 if rank == 0:
@@ -895,10 +901,8 @@ def src2dst_remesh(
                         )
                         if rank == 0 or rank == size - 1:
                             print("serial rank {} writing {} shape {}".format(rank,key,var.shape))
-                        if dsth5["data"].__contains__(key):
-                            dsth5["data"][key][()] = var
-                        else:
-                            dsth5["data"].create_dataset(key, data=var, dtype=dtype)
+                        dsth5["data"].require_dataset(key, shape=(mz, my, mx), dtype=dtype)
+                        dsth5["data"][key][()] = var
                     else:
                         dsth5["data"].require_dataset(key, shape=(mz, my, mx), dtype=dtype)
                         print("xin {}, yin {}, zin {}, xout {}, yout {}, zout {}".format(xin.shape, yin.shape, zin.shape, xout.shape, yout.shape, zout.shape))
@@ -1031,18 +1035,14 @@ def src2dst_remesh(
                                 dsth5["data"][key][n1out:n2out, m1out:m2out, l1out:l2out] = outvar
                                 print("wrote rank {} nchunk {} for {} in {} seconds".format(rank,[ix,iy,iz],key,time.time()-globals()[str(ixyz)+"time"]))
                                 del(var,globals()[str(ixyz)+"time"],iz, firstz, lastz, iy, firsty, lasty, ix, firstx, lastx, ixyz)
-    ##The subsequest tools need to be improved to complete revision of *.local and
-    ##compilation if required -- see pipelines
-    #dstsim.update()
-    #dstsim.change_value_in_file("src/cparam.local", "ncpus", str(nprocs))
-    #dstsim.change_value_in_file("src/cparam.local", "nprocx", str(ncpus[0]))
-    #dstsim.change_value_in_file("src/cparam.local", "nprocy", str(ncpus[1]))
-    #dstsim.change_value_in_file("src/cparam.local", "nprocz", str(ncpus[2]))
-    #dstsim.change_value_in_file("src/cparam.local", "nxgrid", str(dstsim.dim.nxgrid))
-    ## dstsim.change_value_in_file('src/cparam.local','nygrid',
-    ##                                                    str(dstsim.dim.nygrid))
-    #dstsim.change_value_in_file("src/cparam.local", "nzgrid", str(dstsim.dim.nzgrid))
-
+    #The subsequest tools need to be improved to complete revision of *.local and
+    #compilation if required -- see pipelines
+    dstsim.update(hard=True)
+    cpar = open(join(dstsim.path,"src/cparam.local"),"a")
+    cpar.write("integer, parameter :: {}={}\n".format("ncpus",nprocs))
+    for key in ["nprocx","nprocy","nprocz","nxgrid","nygrid","nzgrid"]:
+        cpar.write("integer, parameter :: {}={}\n".format(key,dstsim.dim.__getattribute__(key)))
+    cpar.close()
     # cmd = 'source '+join(srcsim.path,'src','.moduleinfo')
     # os.system(cmd)
     # os.chdir(dstsim.path)

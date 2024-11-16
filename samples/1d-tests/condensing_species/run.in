@@ -4,7 +4,7 @@
 !
 &run_pars
   ip=14,
-  nt=300, it1=100, isave=1000, itorder=3, ialive=0
+  nt=300, it1=10, isave=1000, itorder=3, ialive=0
   cdt=0.8,
   cdtv=0.8,
   dtmin=1e-20
@@ -46,17 +46,17 @@
 &particles_run_pars
   gravz_profile='const'
   gravz=0.
-  cdtp=0.2
-  cdtp_drag=200.
-  ldragforce_dust_par=F, ldragforce_gas_par=F
-  ldraglaw_steadystate=F, lnostore_uu=F
+  cdtp=0.2, cdtp_drag=200.
+  cdtp=0.8, cdtp_drag=10.
+  ldragforce_dust_par=T, ldragforce_gas_par=F
+  ldraglaw_epstein=T, lnostore_uu=F
   ldragforce_heat=F, lnu_draglaw=T, nu_draglaw=1e-5
   lpartnucleation=T
   nucleation_threshold=3e-11
   remove_particle_criteria="size"
   remove_particle_criteria_size=1e-9 ! 0.01 nm
   remove_particle_at_time=1e-19
-  lbrownian_forces=T
+  lbrownian_forces=T, lbrownian_forces_Li_Ahmadi=F
   tstart_brownian_par=0.0
 /
 &particles_radius_run_pars

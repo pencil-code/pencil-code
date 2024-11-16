@@ -1949,6 +1949,7 @@ samples/1d-tests/axionSU2back_lhubble/src/Makefile.local -text
 samples/1d-tests/axionSU2back_lhubble/src/cparam.local -text
 samples/1d-tests/axionSU2back_lhubble/start.in -text
 samples/1d-tests/axionSU2back_lhubble/zaver.in -text
+samples/1d-tests/condensing_species/NEVERLOCK -text
 samples/1d-tests/condensing_species/README.md -text
 samples/1d-tests/condensing_species/chem.inp -text
 samples/1d-tests/condensing_species/print.in -text
@@ -3863,6 +3864,7 @@ samples/superparticle-condensation-coagulation/README -text
 samples/superparticle-condensation-coagulation/k.dat -text
 samples/superparticle-condensation-coagulation/print.in -text
 samples/superparticle-condensation-coagulation/reference.out -text
+samples/superparticle-condensation-coagulation/reference.out_gcc-14.1.0_1 -text
 samples/superparticle-condensation-coagulation/reference.out_openmpi-4.0.4_gnu-4.8.5 -text
 samples/superparticle-condensation-coagulation/reference.out_openmpi-4.0.4_gnu-4.8.5_2nd-run -text
 samples/superparticle-condensation-coagulation/reference.out_openmpi-4.1.2_gnu-11.2 -text

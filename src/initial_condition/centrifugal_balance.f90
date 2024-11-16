@@ -73,7 +73,7 @@ module InitialCondition
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
-  use EquationOfState
+  !use EquationOfState
 !
   implicit none
 !
@@ -172,6 +172,8 @@ module InitialCondition
 !  Initialize any module variables which are parameter dependent.
 !
 !  07-may-09/wlad: coded
+!
+      use EquationOfState, only: get_gamma_etc
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real :: cp, cv
@@ -303,8 +305,8 @@ module InitialCondition
 !***********************************************************************
     subroutine add_noise(f)
 !
-      use FArrayManager, only: farray_use_global
       use EquationOfState, only: cs20,lnrho0
+      use FArrayManager, only: farray_use_global
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: cs2
@@ -392,18 +394,20 @@ module InitialCondition
 !***********************************************************************
     subroutine poly_fit(cs2)
 !
+      use EquationOfState, only: cs20
+!
       real, dimension(0:6) :: c
       real, dimension(mx) :: cs2,lncs2
 !
 !  Fits for different combinations of cs2 and temperature_power_law
 !
-      if (cs0 .eq. 0.1 .and. temperature_power_law.eq.2) then
+      if (sqrt(cs20) .eq. 0.1 .and. temperature_power_law.eq.2) then
          coeff_cs2=(/-8.33551,27.6856,-57.5702,54.6696,-27.2370,6.87119,-0.690690/)
-      else if (cs0 .eq. 0.1 .and. temperature_power_law.eq.1) then
+      else if (sqrt(cs20) .eq. 0.1 .and. temperature_power_law.eq.1) then
          coeff_cs2=(/-6.47454,13.8181,-28.6687,27.1693,-13.5113,3.40305,-0.341599/)
       else
          call fatal_error("poly_fit",&
-              "fit not calculated for choice of cs0 and Teff power law")
+              "fit not calculated for choice of cs20 and Teff power law")
       endif
       c=coeff_cs2
       lncs2 = c(0) + c(1) * x    + c(2) * x**2 + c(3) * x**3 + &
@@ -420,10 +424,10 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
+      use EquationOfState, only: rho0, cs20
       use FArrayManager
       use Gravity,         only: potential,acceleration
       use Sub,             only: get_radial_distance,grad,power_law
-      use EquationOfState, only: rho0
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx)   :: strat,tmp1,tmp2,cs2
@@ -564,7 +568,7 @@ module InitialCondition
         if (.not.lcylindrical_gravity.and.lpresent_zed) then
           if (lheader) &
                print*,"Adding vertical stratification with "//&
-               "scale height h/r=",cs0
+               "scale height h/r=",cs2 !Fred: changed from unspecified cs0, but not sure what is actually intended here
 !
 !  Get the sound speed
 !
@@ -850,9 +854,8 @@ module InitialCondition
 !                  Now this subroutine really only sets the thermo
 !                  variables.
 !
+      use EquationOfState, only: cs20,cs2bot,cs2top,lnrho0
       use FArrayManager
-      use EquationOfState, only: &
-           cs20,cs2bot,cs2top,lnrho0
       use Sub,             only: power_law,get_radial_distance
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -986,7 +989,7 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
-      use EquationOfState, only: cs20
+      use EquationOfState, only: cs20,rho0
       use Sub, only: step, power_law
       use FArrayManager, only: farray_use_global
 !
@@ -1207,9 +1210,9 @@ module InitialCondition
 !***********************************************************************
     subroutine set_field_constbeta(f)
 !
+      use EquationOfState, only: cs20,lnrho0
       use FArrayManager,   only: farray_use_global
       use Sub,             only: get_radial_distance
-      use EquationOfState, only: cs20,lnrho0
       use Boundcond,       only: update_ghosts
       use Messages,        only: fatal_error
 !
@@ -1365,6 +1368,7 @@ module InitialCondition
 !
 !  21-aug-07/wlad : coded
 !
+      use EquationOfState, only: cs20
       use FArrayManager
       use Sub,    only: get_radial_distance,grad
 !
