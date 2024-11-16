@@ -349,16 +349,12 @@ module InitialCondition
 !  Renormalize density such that rho=rho0 at r=rbot
 !
       do j=1,nxgrid
-         if (xglobal(nghost+j) < rbot) then
-           del2rho_global(j)=lnrho_global(j) ! del2rho_global is not lnrho_global(r < rbot)
-         else
-           del2rho_global(j)=maxval(lnrho_global)
-         endif
+         if (xglobal(nghost+j) > rbot) exit
       enddo
-      lnrho_global=lnrho_global-minval(del2rho_global)
+      lnrho_global=lnrho_global-lnrho_global(j)+log(rho0)
       rho_global=exp(lnrho_global)
       lnrho(l1:l2)=lnrho_global(ipx*nx+1:(ipx+1)*nx)
-      rho00=rho0
+      rho00 = rho0
       rho_surf=exp(lnrho_global(nxgrid))
 !
 !  Renormalize entropy with rho0 and cs20

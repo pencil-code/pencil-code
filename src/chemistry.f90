@@ -264,7 +264,6 @@ module Chemistry
 !
   integer :: idiag_lambdam=0,idiag_lambdamax=0,idiag_lambdamin=0
   integer :: idiag_alpham=0,idiag_alphamax=0,idiag_alphamin=0
-  integer :: idiag_num=0,idiag_numax=0,idiag_numin=0
   integer :: idiag_ffcondposm, idiag_ffcondnegm, idiag_ffnucl
   integer :: idiag_ffcondm
 !
@@ -3506,50 +3505,36 @@ module Chemistry
 !
         do ii = 1,nchemspec
           call sum_mn_name(f(l1:l2,m,n,ichemspec(ii)),idiag_Ym(ii))
-          call sum_mn_name(p%rho*f(l1:l2,m,n,ichemspec(ii)),idiag_rhoYm(ii))
+          if (idiag_rhoYm(ii)/=0) call sum_mn_name(p%rho*f(l1:l2,m,n,ichemspec(ii)),idiag_rhoYm(ii))
           call max_mn_name(f(l1:l2,m,n,ichemspec(ii)),idiag_Ymax(ii))
-          if (idiag_Ymin(ii)/= 0) &
-            call max_mn_name(-f(l1:l2,m,n,ichemspec(ii)),idiag_Ymin(ii),lneg=.true.)
+          if (idiag_Ymin(ii)/= 0) call max_mn_name(-f(l1:l2,m,n,ichemspec(ii)),idiag_Ymin(ii),lneg=.true.)
           if (idiag_TYm(ii)/= 0) &
             call sum_mn_name(max(1.-f(l1:l2,m,n,ichemspec(ii))/Ythresh(ii),0.),idiag_TYm(ii))
-          if (idiag_diffm(ii)/= 0)   call sum_mn_name( Diff_full_add(l1:l2,m,n,ii),idiag_diffm(ii))
-          if (idiag_diffmax(ii)/= 0) call max_mn_name( Diff_full_add(l1:l2,m,n,ii),idiag_diffmax(ii))
+          call sum_mn_name( Diff_full_add(l1:l2,m,n,ii),idiag_diffm(ii))
+          call max_mn_name( Diff_full_add(l1:l2,m,n,ii),idiag_diffmax(ii))
           if (idiag_diffmin(ii)/= 0) call max_mn_name(-Diff_full_add(l1:l2,m,n,ii),idiag_diffmin(ii),lneg=.true.)
         enddo
 !
         call sum_mn_name(cp_full(l1:l2,m,n),idiag_cpfull)
         call sum_mn_name(cv_full(l1:l2,m,n),idiag_cvfull)
 !
-        if (idiag_lambdam/=0) &
-             call sum_mn_name(lambda_full(l1:l2,m,n),idiag_lambdam)
-        if (idiag_lambdamax/=0) &
-             call max_mn_name(lambda_full(l1:l2,m,n),idiag_lambdamax)
-        if (idiag_lambdamin/=0) &
-             call max_mn_name(-lambda_full(l1:l2,m,n),idiag_lambdamin,lneg=.true.)
-         if (idiag_alpham/=0) &
-             call sum_mn_name(lambda_full(l1:l2,m,n)/(p%rho*cp_full(l1:l2,m,n)),idiag_alpham)
+        call sum_mn_name(lambda_full(l1:l2,m,n),idiag_lambdam)
+        call max_mn_name(lambda_full(l1:l2,m,n),idiag_lambdamax)
+        if (idiag_lambdamin/=0) call max_mn_name(-lambda_full(l1:l2,m,n),idiag_lambdamin,lneg=.true.)
+        if (idiag_alpham/=0) &
+            call sum_mn_name(lambda_full(l1:l2,m,n)/(p%rho*cp_full(l1:l2,m,n)),idiag_alpham)
         if (idiag_alphamax/=0) &
-             call max_mn_name(lambda_full(l1:l2,m,n)/(p%rho*cp_full(l1:l2,m,n)),idiag_alphamax)
+            call max_mn_name(lambda_full(l1:l2,m,n)/(p%rho*cp_full(l1:l2,m,n)),idiag_alphamax)
         if (idiag_alphamin/=0) &
-             call max_mn_name(-lambda_full(l1:l2,m,n)/(p%rho*cp_full(l1:l2,m,n)),idiag_alphamin,lneg=.true.)
-        if (idiag_num/=0) &
-             call sum_mn_name(f(l1:l2,m,n,iviscosity),idiag_num)
-        if (idiag_numax/=0) &
-             call max_mn_name(f(l1:l2,m,n,iviscosity),idiag_numax)
-        if (idiag_numin/=0) &
-             call max_mn_name(-f(l1:l2,m,n,iviscosity),idiag_numin,lneg=.true.)
+            call max_mn_name(-lambda_full(l1:l2,m,n)/(p%rho*cp_full(l1:l2,m,n)),idiag_alphamin,lneg=.true.) 
         if (lnucleation) then
-          if (idiag_nuclrmin/=0) call sum_mn_name(p%nucl_rmin,idiag_nuclrmin)
-          if (idiag_nuclrate/=0) call sum_mn_name(p%nucl_rate,idiag_nuclrate)
-          if (idiag_conc_satm/=0) call sum_mn_name(p%conc_sat_spec,idiag_conc_satm)
-          if (idiag_ffcondm/= 0) &
-               call sum_mn_name(p%ff_cond,idiag_ffcondm)
-          if (idiag_ffcondposm/= 0) &
-               call sum_mn_name(max(0.,p%ff_cond),idiag_ffcondposm)
-          if (idiag_ffcondnegm/= 0) then
-            call sum_mn_name(min(0.,p%ff_cond),idiag_ffcondnegm)
-          endif
-          if (idiag_ffnucl/= 0) call sum_mn_name(p%ff_nucl,idiag_ffnucl)
+          call sum_mn_name(p%nucl_rmin,idiag_nuclrmin)
+          call sum_mn_name(p%nucl_rate,idiag_nuclrate)
+          call sum_mn_name(p%conc_sat_spec,idiag_conc_satm)
+          call sum_mn_name(p%ff_cond,idiag_ffcondm)
+          if (idiag_ffcondposm/= 0) call sum_mn_name(max(0.,p%ff_cond),idiag_ffcondposm)
+          if (idiag_ffcondnegm/= 0) call sum_mn_name(min(0.,p%ff_cond),idiag_ffcondnegm)
+          call sum_mn_name(p%ff_nucl,idiag_ffnucl)
         endif
 !
 !  Sample for hard coded diffusion diagnostics
@@ -3636,9 +3621,6 @@ module Chemistry
         idiag_alpham = 0
         idiag_alphamax = 0
         idiag_alphamin = 0
-        idiag_num = 0
-        idiag_numax = 0
-        idiag_numin = 0
         idiag_ffcondposm = 0
         idiag_ffcondm = 0
         idiag_ffcondnegm = 0
@@ -3696,9 +3678,6 @@ module Chemistry
         call parse_name(iname,cname(iname),cform(iname),'alpham',idiag_alpham)
         call parse_name(iname,cname(iname),cform(iname),'alphamax',idiag_alphamax)
         call parse_name(iname,cname(iname),cform(iname),'alphamin',idiag_alphamin)
-        call parse_name(iname,cname(iname),cform(iname),'num',idiag_num)
-        call parse_name(iname,cname(iname),cform(iname),'numax',idiag_numax)
-        call parse_name(iname,cname(iname),cform(iname),'numin',idiag_numin)
         call parse_name(iname,cname(iname),cform(iname),'ffcondposm',idiag_ffcondposm)
         call parse_name(iname,cname(iname),cform(iname),'ffcondm',idiag_ffcondm)
         call parse_name(iname,cname(iname),cform(iname),'ffcondnegm',idiag_ffcondnegm)
@@ -6679,7 +6658,8 @@ module Chemistry
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       integer :: ichem, kkk,ix0,ix
-      real :: rp,dapdt,np_swarm, ffcondp
+      real :: ffcondp
+      real, intent(IN) :: rp,dapdt,np_swarm
 !
 ! Modify continuity equation
 !

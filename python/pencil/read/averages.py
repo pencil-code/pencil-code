@@ -14,6 +14,7 @@ from pencil.math import natural_sort
 import glob
 import time
 import os
+from collections.abc import Iterable
 
 def aver(*args, **kwargs):
     """
@@ -103,12 +104,12 @@ class Averages(object):
         avfile_list=None,
         infile_list=None,
         var_index=-1,
-        var_names=list(),
+        var_names=None,
         iter_list=None,
         niter = 9999,
         iter_step=1,
         time_range=None,
-        param=list(),
+        param=None,
         proc=-1,
         precision="f",
         comp_time=False,
@@ -184,20 +185,26 @@ class Averages(object):
 
 
         #check iter_list type is integer(s) if present
-        if iter_list:
-            if isinstance(iter_list, list):
-                iter_list = iter_list
+        if iter_list is not None:
+            if isinstance(iter_list, Iterable):
+                iter_list = list(iter_list)
             else:
                 iter_list = [iter_list]
             for it in iter_list:
                 if not isinstance(it, int):
                     raise ValueError(f"read.aver Error: iter_list contains {it}, but must be integers")
 
+        if time_range is not None:
+            if isinstance(time_range, Iterable):
+                time_range = list(time_range)
+            else:
+                time_range = [0, time_range]
+
         from os.path import join, abspath
 
         simdir = abspath(simdir)
 
-        if isinstance(param, list):
+        if param is None:
             param = read.param(datadir=datadir, quiet=True)
 
         if param.io_strategy != "HDF5":
@@ -285,11 +292,11 @@ class Averages(object):
                 n_vars = len(variables)
                 if not quiet:
                     print(variables)
-                if len(var_names) > 0:
-                    if isinstance(var_names, list):
-                        plane_var_names = var_names
-                    else:
+                if var_names is not None:
+                    if isinstance(var_names, str):
                         plane_var_names = [var_names]
+                    else:
+                        plane_var_names = list(var_names)
                     for var_name in plane_var_names:
                         if not var_name in variables:
                             plane_var_names.remove(var_name)
@@ -470,17 +477,8 @@ class Averages(object):
             n_times = len(tmp.keys()) - 1
             n_times = min(n_times,tmp['last'][()].item() + 1)
             start_time, end_time = 0, tmp[str(n_times-1)]['time'][()].item()
-            if time_range:
-                if isinstance(time_range, list):
-                    time_range = time_range
-                else:
-                    time_range = [time_range]
-                if len(time_range) == 1:
-                    start_time = 0.
-                    end_time = time_range[0]
-                elif len(time_range) == 2:
-                    start_time = time_range[0]
-                    end_time = time_range[1]
+            if time_range is not None:
+                start_time, end_time = time_range
             if iter_list:
                 if len(iter_list) == 1:
                     n_times = min(n_times-1, iter_list[0])
@@ -511,7 +509,7 @@ class Averages(object):
                 else:
                     itlist = tmplist
             # Determine the structure of the xy/xz/yz/y/z averages.
-            if len(var_names) > 0:
+            if var_names is not None:
                 var_names = [v.strip() for v in var_names]
                 if isinstance(var_names, list):
                     var_names = var_names
@@ -659,26 +657,14 @@ class Averages(object):
                 sys.stdout.flush()
                 break
             #indices can be specified for subset of time series
-            if iter_list:
-                if isinstance(iter_list, list):
-                    plane_iter_list = iter_list
-                else:
-                    plane_iter_list = [iter_list]
+            if iter_list is not None:
+                plane_iter_list = iter_list
                 liter = True
             else:
                 plane_iter_list = [0,1,2,3]
                 liter = False
-            if time_range:
-                if isinstance(time_range, list):
-                    time_range = time_range
-                else:
-                    time_range = [time_range]
-                if len(time_range) == 1:
-                    start_time = 0.
-                    end_time = time_range[0]
-                elif len(time_range) == 2:
-                    start_time = time_range[0]
-                    end_time = time_range[1]
+            if time_range is not None:
+                start_time, end_time = time_range
                 ltime = True
             else:
                 ltime = False
@@ -776,6 +762,9 @@ class Averages(object):
         Read the xyaverages.dat, xzaverages.dat, yzaverages.dat
         Return the raw data and the time array.
         """
+
+        if time_range is not None:
+            warnings.warn("Averages.__read_2d_aver: time_range is not implemented")
 
         # Determine the structure of the xy/xz/yz averages.
         if plane == "xy":

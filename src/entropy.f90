@@ -1924,7 +1924,7 @@ module Energy
             if (lroot) print*, 'init_energy: put blob in hydrostatic equilibrium: '// &
                        'radius_ss(j),ampl_ss(j)=', radius_ss(j), ampl_ss(j)
             call blob(ampl_ss(j),f,iss,radius_ss(j),center1_x(j),center1_y(j),center1_z(j))
-            call blob(-ampl_ss(j),f,ilnrho,radius_ss(j),center1_x(j),center1_y(j),center1_z(j))
+            call blob(-cp1*ampl_ss(j),f,ilnrho,radius_ss(j),center1_x(j),center1_y(j),center1_z(j))
             if (ldensity_nolog) then
               f(:,:,:,irho) = exp(f(:,:,:,ilnrho))
               if (lreference_state) &

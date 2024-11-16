@@ -677,14 +677,13 @@ outer:  do ikz=1,nz
     integer, optional, intent(in)                 :: ivecp
     real, dimension(nx,ny,nz), intent(out) :: ar, ai
 !
-    real, dimension(nx) :: bb
     integer :: m,n,ind,ivec,i,la,le,ndelx
 !
     ivec = ioptest(ivecp,1)
     if (sp == 'rho' .and. ivec>1) return
     if (sp == 's' .and. ivec>1) return
 !
-!$omp parallel private(bb,i,la,le,ndelx) num_threads(num_helper_threads) &
+!$omp parallel private(i,la,le,ndelx) num_threads(num_helper_threads) &
 !$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
 !$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
 !$ thread_id = omp_get_thread_num()+1
@@ -729,6 +728,14 @@ outer:  do ikz=1,nz
       !$omp workshare
       ar = f(l1:l2,m1:m2,n1:n2,ijxbx+ivec-1)
       !$omp end workshare
+    elseif (sp=='o') then
+      if (iuu==0) call fatal_error('comp_spectrum','variable "u" not existent')
+      !$omp do collapse(2)
+      do n=n1,n2
+        do m=m1,m2
+          call curli(f,iuu,ar(:,m-nghost,n-nghost),ivec)
+        enddo
+      enddo
     else
       call fatal_error('comp_spectrum_xy',"no such sp: "//trim(sp))
     endif
@@ -820,7 +827,8 @@ outer:  do ikz=1,nz
 !
 !  to add further fields, modify here!
 !
-  if ( sp(1:1)=='u' .or. sp(1:1)=='b' .or. sp(1:1)=='a' .or. sp(1:1)=='s' ) then
+  if ( sp(1:1)=='u' .or. sp(1:1)=='b' .or. sp(1:1)=='a' .or. sp(1:1)=='s' &
+      .or. sp(1:1)=='o') then
     sp_field=sp(1:1)
     cpos=2
   elseif (len(trim(sp))>=3) then

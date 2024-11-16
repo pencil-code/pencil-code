@@ -1150,6 +1150,7 @@ idl/lib_rsi/README -text
 idl/lib_rsi/mean.pro -text
 idl/lib_rsi/moment.pro -text
 idl/minkowski.pro -text
+idl/modules/chemistry/pc_chemistry.pro -text
 idl/modules/chemistry/pc_read_net_reactions.pro -text
 idl/modules/chemistry/pc_visualize_species.pro -text
 idl/modules/dust/pc_dust_aux.pro -text

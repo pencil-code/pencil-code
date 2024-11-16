@@ -149,6 +149,8 @@ module Viscosity
   integer :: idiag_fviscrmsx=0  ! DIAG_DOC: Rms value of viscous acceleration
                                 ! DIAG_DOC: for the vis_xaver_range
   integer :: idiag_num=0        ! DIAG_DOC: Mean value of viscosity
+  integer :: idiag_numax=0      ! DIAG_DOC: Max value of viscosity
+  integer :: idiag_numin=0      ! DIAG_DOC: Min value of viscosity
   integer :: idiag_nusmagm=0    ! DIAG_DOC: Mean value of Smagorinsky viscosity
   integer :: idiag_nusmagmin=0  ! DIAG_DOC: Min value of Smagorinsky viscosity
   integer :: idiag_nusmagmax=0  ! DIAG_DOC: Max value of Smagorinsky viscosity
@@ -874,6 +876,8 @@ module Viscosity
         call parse_name(iname,cname(iname),cform(iname),'fviscmax',idiag_fviscmax)
         call parse_name(iname,cname(iname),cform(iname),'fviscrmsx',idiag_fviscrmsx)
         call parse_name(iname,cname(iname),cform(iname),'num',idiag_num)
+        call parse_name(iname,cname(iname),cform(iname),'numax',idiag_numax)
+        call parse_name(iname,cname(iname),cform(iname),'numin',idiag_numin)
         call parse_name(iname,cname(iname),cform(iname),'nusmagm',idiag_nusmagm)
         call parse_name(iname,cname(iname),cform(iname),'nusmagmin',idiag_nusmagmin)
         call parse_name(iname,cname(iname),cform(iname),'nusmagmax',idiag_nusmagmax)
@@ -2625,8 +2629,10 @@ module Viscosity
         call sum_mn_name(p%nu_smag,idiag_nu_LES)
         if (idiag_nusmagmin/=0) call max_mn_name(-p%nu_smag,idiag_nusmagmin,lneg=.true.)
         call max_mn_name(p%nu_smag,idiag_nusmagmax)
-
         call sum_mn_name(p%nu,idiag_num)
+        call max_mn_name(p%nu,idiag_numax)
+        call max_mn_name(-p%nu,idiag_numin,lneg=.true.)
+        
         if (idiag_qfviscm/=0) then
           call dot(p%curlo,p%fvisc,qfvisc)
           call sum_mn_name(qfvisc,idiag_qfviscm)

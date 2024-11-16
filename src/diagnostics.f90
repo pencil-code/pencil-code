@@ -131,17 +131,19 @@ module Diagnostics
 !  Since many of the averaging routines used for diagnostics don't account
 !  for nonequidistant coordinates, warn the user.
       if (lroot) then
-        if ((.not.lproper_averages).and.any(.not.lequidist)) call warning('initialize_diagnostics', &
-          'volume averages are calculated wrongly for nonequidistant grids unless lproper_averages=T.')
-!
-        if (lwrite_xyaverages.and..not.(lequidist(1).and.lequidist(2))) call warning('initialize_diagnostics', &
-          '1D averages are calculated wrongly for non-equidistant grids.')
-        if (lwrite_xzaverages.and..not.(lequidist(1).and.lequidist(3))) call warning('initialize_diagnostics', &
-          '1D averages are calculated wrongly for non-equidistant grids.')
-        if (lwrite_yzaverages.and..not.(lequidist(2).and.lequidist(3))) call warning('initialize_diagnostics', &
-          '1D averages are calculated wrongly for non-equidistant grids.')
-        if (lwrite_phiaverages.and..not.(lequidist(1).and.lequidist(2))) call warning('initialize_diagnostics', &
-          '1D averages are calculated wrongly for non-equidistant grids.')
+        if (.not.lproper_averages) then
+          if (any(.not.lequidist)) call warning('initialize_diagnostics', &
+            'volume averages are calculated wrongly for nonequidistant grids unless lproper_averages=T.')
+  !
+          if (lwrite_xyaverages.and..not.(lequidist(1).and.lequidist(2))) call warning('initialize_diagnostics', &
+            '1D averages are calculated wrongly for non-equidistant grids.')
+          if (lwrite_xzaverages.and..not.(lequidist(1).and.lequidist(3))) call warning('initialize_diagnostics', &
+            '1D averages are calculated wrongly for non-equidistant grids.')
+          if (lwrite_yzaverages.and..not.(lequidist(2).and.lequidist(3))) call warning('initialize_diagnostics', &
+            '1D averages are calculated wrongly for non-equidistant grids.')
+          if (lwrite_phiaverages.and..not.(lequidist(1).and.lequidist(2))) call warning('initialize_diagnostics', &
+            '1D averages are calculated wrongly for non-equidistant grids.')
+        endif
 !
         if (lwrite_yaverages.and..not.lequidist(2)) call warning('initialize_diagnostics', &
           '2D averages are calculated wrongly for non-equidistant grids.')
@@ -183,7 +185,12 @@ module Diagnostics
 !
 !  Calculate relative volume integral.
 !
-      if (lspherical_coords) then
+      if (lproper_averages) then
+        dVol_rel1=1./box_volume
+        dA_xy_rel1 = 1./Area_xy
+        dA_yz_rel1 = 1./Area_yz
+        dA_xz_rel1 = 1./Area_xz
+      elseif (lspherical_coords) then
 !
 !  Prevent zeros from less than 3-dimensional runs
 !  (maybe this should be 2pi, but maybe not).
@@ -245,10 +252,6 @@ module Diagnostics
         dA_xy_rel1 = 1./nxygrid
         dA_xz_rel1 = 1./nxzgrid
         dA_yz_rel1 = 1./nyzgrid
-      endif
-!
-      if (lproper_averages) then
-        dVol_rel1=1./box_volume
       endif
 !
       if (lroot.and.ip<=10) then
@@ -2287,8 +2290,14 @@ module Diagnostics
           lmask=.true.
         endif
 !
-      call xysum_mn_name_z_npar(a,n,iname,MASK=lmask)
-
+      if (lproper_averages) then
+        if (.not.all(lmask)) call fatal_error('xysum_mn_name_z', &
+          'masking not implemented with lproper_averages=T')
+        call xyintegrate_mn_name_z(a,iname)
+      else
+        call xysum_mn_name_z_npar(a,n,iname,MASK=lmask)
+      endif
+!
     endsubroutine xysum_mn_name_z
 !***********************************************************************
     subroutine xysum_mn_name_z_npar(a,n,iname,mask)
@@ -2341,7 +2350,11 @@ module Diagnostics
       real, dimension(nx), intent(IN) :: a
       integer,             intent(IN) :: iname
 
-      call xzsum_mn_name_y_mpar(a,m,iname)
+      if (lproper_averages) then
+        call xzintegrate_mn_name_y(a,iname)
+      else
+        call xzsum_mn_name_y_mpar(a,m,iname)
+      endif
 
     endsubroutine xzsum_mn_name_y
 !***********************************************************************
@@ -2394,7 +2407,11 @@ module Diagnostics
       real, dimension(nx), intent(IN) :: a
       integer,             intent(IN) :: iname
 
-      call yzsum_mn_name_x_mpar(a,m,iname)
+      if (lproper_averages) then
+        call yzintegrate_mn_name_x(a,iname)
+      else
+        call yzsum_mn_name_x_mpar(a,m,iname)
+      endif
 
     endsubroutine yzsum_mn_name_x
 !***********************************************************************
@@ -2442,7 +2459,7 @@ module Diagnostics
 !
 !   18-jun-07/tobi: adapted from xysum_mn_name_z
 !
-      real, dimension (nx) :: a
+      real, dimension (nx) :: a, tmp
       integer :: iname
       real :: fac,suma
       integer :: nl
@@ -2460,10 +2477,16 @@ module Diagnostics
         if ((m==m1.and.lfirst_proc_y).or.(m==m2.and.llast_proc_y)) fac = .5
       endif
 !
-      if (lperi(1)) then
-        suma = fac*sum(a)
+      if (lproper_averages) then
+        tmp = a*dAxy_x(l1:l2)*dAxy_y(m)
       else
-        suma = fac*(sum(a(2:nx-1))+.5*(a(1)+a(nx)))
+        tmp  = a
+      endif
+!
+      if (lperi(1)) then
+        suma = fac*sum(tmp)
+      else
+        suma = fac*(sum(tmp(2:nx-1))+.5*(tmp(1)+tmp(nx)))
       endif
 !
 !  n starts with nghost=4, so the correct index is n-nghost.
@@ -2480,7 +2503,7 @@ module Diagnostics
 !
 !   18-jun-07/tobi: adapted from xzsum_mn_name_y
 !
-      real, dimension (nx) :: a
+      real, dimension (nx) :: a, tmp
       integer :: iname
       real :: fac,suma
 !
@@ -2497,10 +2520,16 @@ module Diagnostics
         if ((n==n1.and.lfirst_proc_z).or.(n==n2.and.llast_proc_z)) fac = .5
       endif
 !
-      if (lperi(1)) then
-        suma = fac*sum(a)
+      if (lproper_averages) then
+        tmp = a*dAxz_x(l1:l2)*dAxz_z(n)
       else
-        suma = fac*(sum(a(2:nx-1))+.5*(a(1)+a(nx)))
+        tmp  = a
+      endif
+!
+      if (lperi(1)) then
+        suma = fac*sum(tmp)
+      else
+        suma = fac*(sum(tmp(2:nx-1))+.5*(tmp(1)+tmp(nx)))
       endif
 !
 !  m starts with mghost+1=4, so the correct index is m-nghost.
@@ -2516,7 +2545,7 @@ module Diagnostics
 !
 !   18-jun-07/tobi: adapted from yzsum_mn_name_x
 !
-      real, dimension (nx) :: a
+      real, dimension (nx) :: a, tmp
       integer :: iname
       real :: fac
 !
@@ -2536,7 +2565,14 @@ module Diagnostics
         if ((n==n1.and.lfirst_proc_z).or.(n==n2.and.llast_proc_z)) fac = .5*fac
       endif
 !
-      fnamex(:,ipx+1,iname) = fnamex(:,ipx+1,iname) + fac*a
+!
+      if (lproper_averages) then
+        tmp = a*dAyz_y(m)*dAyz_z(n)
+      else
+        tmp  = a
+      endif
+!
+      fnamex(:,ipx+1,iname) = fnamex(:,ipx+1,iname) + fac*tmp
 !
     endsubroutine yzintegrate_mn_name_x
 !***********************************************************************

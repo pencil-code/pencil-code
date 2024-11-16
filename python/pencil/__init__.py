@@ -16,13 +16,6 @@ except ImportError:
     comm = None
     l_mpi = False
 
-if rank == 0:
-    print("Warning: pencilnew has moved to pencil.")
-    print("         pencil has moved to pencil_old.")
-    print("To change your scripts accordingly:")
-    print("import pencilnew as pc -> import pencil as pc")
-    print("import pencil as pc -> import pencil_old as pc")
-
 try:
     import h5py
 # except ImportError:

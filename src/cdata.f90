@@ -70,8 +70,11 @@ module Cdata
 
   real :: dVol_glob
   real, dimension (mx) :: x,dx_1,dx2,dx_tilde,xprim,dVol_x,dVol1_x
+  real, dimension (mx) :: dAxy_x, dAxz_x
   real, dimension (my) :: y,dy_1,dy2,dy_tilde,yprim,dVol_y,dVol1_y
+  real, dimension (my) :: dAxy_y, dAyz_y
   real, dimension (mz) :: z,dz_1,dz2,dz_tilde,zprim,dVol_z,dVol1_z
+  real, dimension (mz) :: dAyz_z, dAxz_z
   real :: dx,dy,dz,dxmin,dxmax
   real, dimension (-nghost:nghost) :: dx2_bound=0., dy2_bound=0., dz2_bound=0.
   real, dimension (nxgrid) :: xgrid, dx1grid, dxtgrid
@@ -593,10 +596,14 @@ module Cdata
   integer :: idiag_rmphi=0      ! PHIAVG_DOC: spherical radius
                                 ! PHIAVG_DOC: $r=\sqrt{\varpi^2+z^2}$
                                 ! PHIAVG_DOC: (useful for debugging)
-  integer :: idiag_dtv=0        ! DIAG_DOC:
-  integer :: idiag_dtdiffus=0   ! DIAG_DOC:
-  integer :: idiag_dtdiffus2=0  ! DIAG_DOC:
-  integer :: idiag_dtdiffus3=0  ! DIAG_DOC:
+  integer :: idiag_dtv=0        ! DIAG_DOC: advective timestep as a
+                                ! DIAG_DOC:   fraction of the actual one
+  integer :: idiag_dtdiffus=0   ! DIAG_DOC: diffusive timestep as a
+                                ! DIAG_DOC:   fraction of the actual one
+  integer :: idiag_dtdiffus2=0  ! DIAG_DOC: hyperdiffusive (hyper2)  timestep
+                                ! DIAG_DOC:   as a fraction of the actual one
+  integer :: idiag_dtdiffus3=0  ! DIAG_DOC: hyperdiffusive (hyper3)  timestep
+                                ! DIAG_DOC:   as a fraction of the actual one
   integer :: idiag_Rmesh=0      ! DIAG_DOC: $R_{\rm mesh}$
   integer :: idiag_Rmesh3=0     ! DIAG_DOC: $R_{\rm mesh}^{(3)}$
   integer :: idiag_maxadvec=0   ! DIAG_DOC: maxadvec

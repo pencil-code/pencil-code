@@ -8,7 +8,7 @@
 """
 import numpy as np
 from pencil.math import dot, dot2, helmholtz_fft, cpu_optimal
-from pencil.math.derivatives import curl, curl2
+from pencil.math.derivatives import curl, curl2, div
 from pencil.calc import fluid_reynolds, magnetic_reynolds
 from pencil.io import group_h5, dataset_h5
 from pencil import read
@@ -611,6 +611,39 @@ def calc_derived_data(
             return var[:, n1r : n2 - n1 + n1r, m1r : m2 - m1 + m1r, l1r : l2 - l1 + l1r]
 
     # ======================================================================
+    def comprat(src,dst,key,par,gd,l1=3,l2=-3,m1=3,m2=-3,n1=3,n2=-3,nghost=3):
+        if key == "comp_ratio":
+            #compressive ratio
+            #see https://ui.adsabs.harvard.edu/abs/2007ApJ...665..416K
+            if not "divu" in dst.keys():
+                n1shift, n2shift, m1shift, m2shift, l1shift, l2shift =\
+                        der_limits(
+                                   n1, n2, m1, m2, l1, l2, nghost
+                                  )
+                uu = np.array(
+                [
+                src["ux"][n1shift:n2shift, m1shift:m2shift, l1shift:l2shift],
+                src["uy"][n1shift:n2shift, m1shift:m2shift, l1shift:l2shift],
+                src["uz"][n1shift:n2shift, m1shift:m2shift, l1shift:l2shift],
+                ]
+                            )
+                n1r, m1r, l1r = under_limits(n1, m1, l1, n1shift, m1shift, l1shift, nghost)
+                divu = div(uu, gd.dx, gd.dy, gd.dz)[n1r : n2 - n1 + n1r, m1r : m2 - m1 + m1r, l1r : l2 - l1 + l1r]
+            else:
+                divu = dst["divu"][n1:n2, m1:m2, l1:l2]
+            div2 = divu**2
+            if "vort" in dst.keys():
+                oo = dst["vort"][:, n1:n2, m1:m2, l1:l2]
+            else:
+                oo = vorticity(
+                    src, dst, "vort", par, gd, l1, l2, m1, m2, n1, n2, nghost
+                )
+            o2 = dot2(oo)
+            var = div2/(div2+o2)
+
+            return var
+
+    # ======================================================================
     def current(src,dst,key,par,gd,l1=3,l2=-3,m1=3,m2=-3,n1=3,n2=-3,nghost=3):
         if key == "jj":
             n1shift, n2shift, m1shift, m2shift, l1shift, l2shift = der_limits(
@@ -708,6 +741,7 @@ def calc_derived_data(
             "Rm":    Rm_number(src,dst,key,par,gd,l1=l1,l2=l2,m1=m1,m2=m2,n1=n1,n2=n2,nghost=nghost),
             "Pm":    Pm_number(src,dst,key,par,gd,l1=l1,l2=l2,m1=m1,m2=m2,n1=n1,n2=n2,nghost=nghost),
             "u2rand":    urand(src,dst,key,par,gd,l1=l1,l2=l2,m1=m1,m2=m2,n1=n1,n2=n2,nghost=nghost),
+            "comp_ratio":urand(src,dst,key,par,gd,l1=l1,l2=l2,m1=m1,m2=m2,n1=n1,n2=n2,nghost=nghost),
         }
         func = case.get(key, lambda: "No function for " + key)
         return func

@@ -1049,30 +1049,42 @@ module Grid
 !
         if (nxgrid/=1) then
           dVol_x=xprim
+          dAxy_x=xprim
+          dAxz_x=xprim
           Area_xy=Area_xy*Lxyz(1)
           Area_xz=Area_xz*Lxyz(1)
         else
           dVol_x=1.
+          dAxy_x=1.
+          dAxz_x=1.
         endif
 !
 !  y-extent
 !
         if (nygrid/=1) then
           dVol_y=yprim
+          dAxy_y=yprim
+          dAyz_y=yprim
           Area_xy=Area_xy*Lxyz(2)
           Area_yz=Area_yz*Lxyz(2)
         else
           dVol_y=1.
+          dAxy_y=1.
+          dAyz_y=1.
         endif
 !
 !  z-extent
 !
         if (nzgrid/=1) then
           dVol_z=zprim
+          dAyz_z=zprim
+          dAxz_z=zprim
           Area_yz=Area_yz*Lxyz(3)
           Area_xz=Area_xz*Lxyz(3)
         else
           dVol_z=1.
+          dAyz_z=1.
+          dAxz_z=1.
         endif
 !
 !  single value volume element dVol applicable only to Cartesian equidistant grid
@@ -1098,6 +1110,8 @@ module Grid
 !
         if (nxgrid/=1) then
           dVol_x=x**2*xprim
+          dAxy_x=x*xprim
+          dAxz_x=x*xprim
           Area_xy=Area_xy*1./2.*(xyz1(1)**2-xyz0(1)**2)
           Area_xz=Area_xz*1./2.*(xyz1(1)**2-xyz0(1)**2)
         else
@@ -1105,6 +1119,8 @@ module Grid
 !          Area_xy=Area_xy*1./2.*(xyz1(1)**2-xyz0(1)**2)    !???
 !          Area_xz=Area_xz*1./2.*(xyz1(1)**2-xyz0(1)**2)
           dVol_x=1./3.
+          dAxy_x=1./2.
+          dAxz_x=1./2.
           Area_xy=Area_xy*1./2.
           Area_xz=Area_xz*1./2.
 
@@ -1114,10 +1130,14 @@ module Grid
 !
         if (nygrid/=1) then
           dVol_y=sinth*yprim
+          dAxy_y=yprim
+          dAyz_y=sinth*yprim
           Area_xy=Area_xy*Lxyz(2)
           Area_yz=Area_yz*(cos(xyz0(2))-cos(xyz1(2)))
         else
           dVol_y=2.
+          dAxy_y=pi
+          dAyz_y=2.
           Area_xy=Area_xy*pi
           Area_yz=Area_yz*2.
         endif
@@ -1126,10 +1146,14 @@ module Grid
 !
         if (nzgrid/=1) then
           dVol_z=zprim
+          dAyz_z=zprim
+          dAxz_z=zprim
           Area_xz=Area_xz*Lxyz(3)
           Area_yz=Area_yz*Lxyz(3)
         else
           dVol_z=2.*pi
+          dAyz_z=2.*pi
+          dAxz_z=2.*pi
           Area_xz=Area_xz*2.*pi
           Area_yz=Area_yz*2.*pi
         endif
@@ -1180,11 +1204,15 @@ module Grid
 !
         if (nxgrid/=1) then
           dVol_x=x*xprim
+          dAxy_x=x*xprim
+          dAxz_x=xprim
           Area_xy=Area_xy*1./2.*(xyz1(1)**2-xyz0(1)**2)
           Area_xz=Area_xz*Lxyz(1)
         else
 !          dVol_x=1./2.*(xyz1(1)**2-xyz0(1)**2)   !???
           dVol_x=1./2.
+          dAxy_x=1./2.
+          dAxz_x=1.
           Area_xy=Area_xy*dVol_x(1)
           Area_xz=Area_xz*Lxyz(1)
         endif
@@ -1193,10 +1221,14 @@ module Grid
 !
         if (nygrid/=1) then
           dVol_y=yprim
+          dAxy_y=yprim
+          dAyz_y=yprim
           Area_xy=Area_xy*Lxyz(2)
           Area_yz=Area_yz*Lxyz(2)
         else
           dVol_y=2.*pi
+          dAxy_y=2.*pi
+          dAyz_y=2.*pi
           Area_xy=Area_xy*2.*pi
           Area_yz=Area_yz*2.*pi
         endif
@@ -1205,10 +1237,14 @@ module Grid
 !
         if (nzgrid/=1) then
           dVol_z=zprim
+          dAyz_z=zprim
+          dAxz_z=zprim
           Area_xz=Area_xz*Lxyz(3)
           Area_yz=Area_yz*Lxyz(3)
         else
           dVol_z=1.
+          dAyz_z=1.
+          dAxz_z=1.
         endif
 !
 !  Trapezoidal rule
