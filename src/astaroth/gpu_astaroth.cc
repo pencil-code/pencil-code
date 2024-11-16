@@ -19,7 +19,6 @@
 
 // Astaroth headers.
 #include "astaroth.h"
-//#include "reduce.h"
 
 AcReal
 to_real(void* param)
@@ -1010,6 +1009,11 @@ void checkConfig(AcMeshInfo &config)
  acLogFromRootProc(rank,"nkramers= %f %f \n", nkramers, config[AC_nkramers]);
  acLogFromRootProc(rank,"hcond0_kramers= %f %f \n", hcond0_kramers, config[AC_hcond0_kramers]);
  acLogFromRootProc(rank,"hcond_Kconst= %f %f \n", hcond_Kconst, config[AC_hcond_Kconst]);
+ acLogFromRootProc(rank,"Fbot= %f %f \n", Fbot, config[AC_Fbot]);
+ acLogFromRootProc(rank,"chi_t= %f %f \n", chi_t, config[AC_chi_t]);
+ acLogFromRootProc(rank,"chit_prof1= %f %f \n", chit_prof1, config[AC_chit_prof1]);
+ acLogFromRootProc(rank,"chit_prof2= %f %f \n", chit_prof2, config[AC_chit_prof2]);
+ acLogFromRootProc(rank,"widthss= %f %f \n", widthss, config[AC_widthss]);
 #endif
 #if LVISCOSITY
  acLogFromRootProc(rank,"nu= %f %f \n", nu, config[AC_nu]);
