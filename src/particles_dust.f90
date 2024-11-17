@@ -835,6 +835,7 @@ module Particles
       interp%lrho = lbrownian_forces .or. ldraglaw_steadystate &
           .or. lthermophoretic_forces .or. ldraglaw_purestokes &
           .or. ldraglaw_stokesschiller .or. lsolid_ogrid
+      interp%lcs = lbrownian_forces .or. ldraglaw_epstein
       interp%lnu = lchemistry
       interp%lpp = lparticles_chemistry
       interp%lspecies = lparticles_surfspec
@@ -3037,7 +3038,7 @@ module Particles
       integer, dimension(mpar_loc,3) :: ineargrid
 !
       real, dimension(nx) :: eps
-      real, dimension(3) :: vvp
+      real, dimension(3) :: vvp, force
       integer :: imn, i, k, ix0, iy0, iz0
 !
       if (ldragforce_stiff .and. .not. lpencil_check_at_work) then
@@ -3074,25 +3075,36 @@ module Particles
           endif
           fp(k,ivpx:ivpz) = vvp
         enddo
-      elseif (lfollow_gas) then
-        do k = 1,npar_loc
-          ix0 = ineargrid(k,1)
-          iy0 = ineargrid(k,2)
-          iz0 = ineargrid(k,3)
-          if (lparticlemesh_cic) then
-            call interpolate_linear(f,iux,iuz, &
-                 fp(k,ixp:izp),vvp,ineargrid(k,:),0,ipar(k))
-          elseif (lparticlemesh_tsc) then
-            if (linterpolate_spline) then
-              call interpolate_quadratic_spline(f,iux,iuz,fp(k,ixp:izp),vvp,ineargrid(k,:),0,ipar(k))
-            else
-              call interpolate_quadratic(f,iux,iuz,fp(k,ixp:izp),vvp,ineargrid(k,:),0,ipar(k))
-            endif
-          else
-            vvp = f(ix0,iy0,iz0,iux:iuz)
-          endif
-          fp(k,ivpx:ivpz) = vvp
-        enddo
+      !elseif (lfollow_gas) then
+      !  do k = 1,npar_loc
+      !    ix0 = ineargrid(k,1)
+      !    iy0 = ineargrid(k,2)
+      !    iz0 = ineargrid(k,3)
+      !    if (lparticlemesh_cic) then
+      !      call interpolate_linear(f,iux,iuz, &
+      !           fp(k,ixp:izp),vvp,ineargrid(k,:),0,ipar(k))
+      !    elseif (lparticlemesh_tsc) then
+      !      if (linterpolate_spline) then
+      !        call interpolate_quadratic_spline(f,iux,iuz,fp(k,ixp:izp),vvp,ineargrid(k,:),0,ipar(k))
+      !      else
+      !        call interpolate_quadratic(f,iux,iuz,fp(k,ixp:izp),vvp,ineargrid(k,:),0,ipar(k))
+      !      endif
+      !    else
+      !      vvp = f(ix0,iy0,iz0,iux:iuz)
+      !    endif
+      !    fp(k,ivpx:ivpz) = vvp
+      !    !
+      !    ! Add Brownian motion on top of the fluid velocity
+      !    !
+      !    if (lbrownian_forces) then
+      !      !if (lbrownian_forces_Li_Ahmadi) then
+      !      !  call calc_brownian_force_Li_Ahmadi(f,fp,k,ineargrid(k,:),stocunn(k),force)
+      !      !else
+      !      call calc_brownian_force(f,fp,k,ineargrid(k,:),force)
+      !      !endif
+      !      fp(k,ivpx:ivpz) = fp(k,ivpx:ivpz) + force*dt
+      !    endif
+      !  enddo
       endif
 !
     endsubroutine particles_dragforce_stiff
@@ -3378,61 +3390,66 @@ module Particles
       lheader = lfirstcall .and. lroot
       if (lheader) print*,'dvvp_dt: Calculate dvvp_dt'
 !
+! Calculate the acceleration of particles only if lfollow_gas is not true
+!
+      if (.not. lfollow_gas) then
+!
 !  Add Coriolis force from rotating coordinate frame.
 !
-      if (Omega /= 0.) then
-        if (lcoriolis_force_par) then
-          if (lheader) print*,'dvvp_dt: Add Coriolis force; Omega=', Omega
-          Omega2 = 2*Omega
-          if (.not. lspherical_coords) then
-            dfp(1:npar_loc,ivpx) = dfp(1:npar_loc,ivpx) + Omega2*fp(1:npar_loc,ivpy)
-            dfp(1:npar_loc,ivpy) = dfp(1:npar_loc,ivpy) - Omega2*fp(1:npar_loc,ivpx)
-          else
-            call not_implemented('dvvp_dt','Coriolis force on particles for spherical coordinates')
+        if (Omega /= 0.) then
+          if (lcoriolis_force_par) then
+            if (lheader) print*,'dvvp_dt: Add Coriolis force; Omega=', Omega
+            Omega2 = 2*Omega
+            if (.not. lspherical_coords) then
+              dfp(1:npar_loc,ivpx) = dfp(1:npar_loc,ivpx) + Omega2*fp(1:npar_loc,ivpy)
+              dfp(1:npar_loc,ivpy) = dfp(1:npar_loc,ivpy) - Omega2*fp(1:npar_loc,ivpx)
+            else
+              call not_implemented('dvvp_dt','Coriolis force on particles for spherical coordinates')
+            endif
           endif
-        endif
 !
 !  Add centrifugal force.
 !
-        if (lcentrifugal_force_par) then
-          if (lheader) print*,'dvvp_dt: Add Centrifugal force; Omega=', Omega
-          if (lcartesian_coords) then
-!
-            dfp(1:npar_loc,ivpx) = dfp(1:npar_loc,ivpx) + Omega**2*fp(1:npar_loc,ixp)
-!
-            dfp(1:npar_loc,ivpy) = dfp(1:npar_loc,ivpy) + Omega**2*fp(1:npar_loc,iyp)
-!
-          elseif (lcylindrical_coords) then
-            dfp(1:npar_loc,ivpx) = dfp(1:npar_loc,ivpx) + Omega**2*fp(1:npar_loc,ixp)
-          else
-            call not_implemented('dvvp_dt','centrifugal force on particles for spherical coordinates')
+          if (lcentrifugal_force_par) then
+            if (lheader) print*,'dvvp_dt: Add Centrifugal force; Omega=', Omega
+            if (lcartesian_coords) then
+              !
+              dfp(1:npar_loc,ivpx) = dfp(1:npar_loc,ivpx) + Omega**2*fp(1:npar_loc,ixp)
+              !
+              dfp(1:npar_loc,ivpy) = dfp(1:npar_loc,ivpy) + Omega**2*fp(1:npar_loc,iyp)
+              !
+            elseif (lcylindrical_coords) then
+              dfp(1:npar_loc,ivpx) = dfp(1:npar_loc,ivpx) + Omega**2*fp(1:npar_loc,ixp)
+            else
+              call not_implemented('dvvp_dt','centrifugal force on particles for spherical coordinates')
+            endif
           endif
-        endif
 !
 !  With shear there is an extra term due to the background shear flow.
 !
-        if (lshear .and. lshear_accel_par) &
-            dfp(1:npar_loc,ivpy) = dfp(1:npar_loc,ivpy) + qshear * Omega * fp(1:npar_loc,ivpx)
-      endif
+          if (lshear .and. lshear_accel_par) &
+               dfp(1:npar_loc,ivpy) = dfp(1:npar_loc,ivpy) + qshear * Omega * fp(1:npar_loc,ivpx)
+        endif
 !
 !  Add constant background pressure gradient beta=alpha*H0/r0, where alpha
 !  comes from a global pressure gradient P = P0*(r/r0)^alpha.
 !  (the term must be added to the dust equation of motion when measuring
 !  velocities relative to the shear flow modified by the globalfpressure grad.)
 !
-      if (beta_dPdr_dust /= 0.0 .and. t >= tstart_dragforce_par) &
-        dfp(1:npar_loc,ivpx) = dfp(1:npar_loc,ivpx) + cs20*beta_dPdr_dust_scaled
+        if (beta_dPdr_dust /= 0.0 .and. t >= tstart_dragforce_par) &
+             dfp(1:npar_loc,ivpx) = dfp(1:npar_loc,ivpx) + cs20*beta_dPdr_dust_scaled
 !
 !  Gravity on the particles.
 !  Gravity on particles is implemented only if lparticle_gravity is true which is the default.
 !
-      if (lparticle_gravity) call particle_gravity(f,df,fp,dfp,ineargrid)
+        if (lparticle_gravity) call particle_gravity(f,df,fp,dfp,ineargrid)
 !
-      if (lcorotational_frame) call indirect_inertial_particles(f,df,fp,dfp,ineargrid)
+        if (lcorotational_frame) call indirect_inertial_particles(f,df,fp,dfp,ineargrid)
 !
 !  The auxiliary has to be set to zero afterwards
 !
-      call diffuse_backreaction(f,df)
+        call diffuse_backreaction(f,df)
+    endif
 !
 !  Diagnostic output
 !
@@ -4181,9 +4198,46 @@ module Particles
 !
       if (idiag_urel /= 0) urel_sum = 0.
 !
+!  If lfollow_gas=T, the evolution equation for the particle velocity is not
+!  calculated. Instead we set the particle velocity equal to the velocity of
+!  the gas. Brownian velocities might be added on top of that. This is useful
+!  for particles with very short response times.
+!
+      if (lfollow_gas) then
+        !
+        ! Since we set the velocity directly in the fp-array here, we
+        ! should do this only at the first sub-timestep.
+        !
+        if (lfirst) then
+          if (npar_imn(imn) /= 0) then
+            if (lbrownian_forces_Li_Ahmadi) then
+              allocate(stocunn(k1_imn(imn):k2_imn(imn)))
+              call calc_stokes_cunningham(fp,stocunn)
+            endif
+            do k = k1_imn(imn),k2_imn(imn)
+              fp(k,ivpx:ivpz) = interp_uu(k,:)
+              !
+              ! Add Brownian motion on top of the fluid velocity
+              !
+              if (lbrownian_forces) then
+                if (lbrownian_forces_Li_Ahmadi) then
+                  call calc_brownian_force_Li_Ahmadi(fp,k,ineargrid(k,:),stocunn(k),bforce)
+                else
+                  call calc_brownian_force(f,fp,k,ineargrid(k,:),bforce,tausp1_par)
+                endif
+                fp(k,ivpx:ivpz) = fp(k,ivpx:ivpz) + bforce/tausp1_par
+              endif
+            enddo
+            if (lbrownian_forces_Li_Ahmadi) then
+              if (allocated(stocunn)) deallocate(stocunn)
+            endif
+          endif
+        endif
+      else
+!
 !  Precalculate certain quantities, if necessary.
 !
-      if (npar_imn(imn) /= 0) then
+        if (npar_imn(imn) /= 0) then          
 !
 !  Precalculate particle Reynolds numbers.
 !
@@ -5056,7 +5110,7 @@ module Particles
             if (lbrownian_forces_Li_Ahmadi) then
               call calc_brownian_force_Li_Ahmadi(fp,k,ineargrid(k,:),stocunn(k),bforce)
             else
-              call calc_brownian_force(f,fp,p,k,ineargrid(k,:),bforce)
+              call calc_brownian_force(f,fp,k,ineargrid(k,:),bforce,tausp1)
             endif
             dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz)+bforce
           enddo
@@ -5090,6 +5144,7 @@ module Particles
 !
       if (allocated(rep)) deallocate(rep)
       if (allocated(stocunn)) deallocate(stocunn)
+endif
 !
       call calc_diagnostics_particles(fp,p,ineargrid)
       
@@ -5477,7 +5532,7 @@ module Particles
 !
       if (ldraglaw_epstein) then
         if (iap /= 0) then
-          if (fp(k,iap) /= 0.0) tausp1_par = (sqrt(p%cs2(inx0))*p%rho(inx0))/(fp(k,iap)*rhopmat)
+          if (fp(k,iap) /= 0.0) tausp1_par = (interp_cs(k)*interp_rho(k))/(fp(k,iap)*rhopmat)
 !
 ! DM : 10 Nov  2016
 ! For the usual Epstein drag we need also the thermal velocity and the
@@ -5629,7 +5684,7 @@ module Particles
         endif
 !
       endif
-!
+
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(ineargrid)
 !
@@ -6582,7 +6637,7 @@ module Particles
 !
     endsubroutine calc_brownian_force_Li_Ahmadi
     !***********************************************************************
-    subroutine calc_brownian_force(f,fp,p,k,ineark,force)
+    subroutine calc_brownian_force(f,fp,k,ineark,force,tausp1)
 !
 !  Calculate the Brownian force contribution due to the random thermal motions
 !  of the gas molecules.
@@ -6594,20 +6649,13 @@ module Particles
       !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(mpar_loc,mparray), intent(in) :: fp
-!      real, dimension(nx,mparray), intent(in) :: p
-       type (pencil_case) :: p
       integer, intent(in) :: k
       integer, dimension(3) :: ineark
       real, dimension(2) :: gn
       real, dimension(3), intent(out) :: force
 !
       character(len=labellen) :: ivis=''
-      real :: TT, gam, Szero, mp, eta
-!
-!  Find dynamic viscosity
-      !
-      eta=f(ineark(1),ineark(2),ineark(3),iviscosity)*interp_rho(k)
-!      print*,"eta,nu,rho=", eta,f(ineark(1),ineark(2),ineark(3),iviscosity),interp_rho(k)
+      real :: TT, tausp1, Szero, mp, eta
       !
       !  Get zero mean, unit variance Gaussian random numbers:
       !
@@ -6616,29 +6664,24 @@ module Particles
       force(2)=gn(2)
       call gaunoise_number(gn)
       force(3)=gn(1)
-!
+      !
       if (interp%lTT) then
         TT = interp_TT(k)
       else
         TT = brownian_T0
       endif
-!
-      
-
+      !
       if (ldraglaw_epstein) then
-        gam=interp_rho(k)*sqrt(p%cs2(ineark(1)-nghost))*fp(k,iap)**2
+        tausp1 = interp_cs(k)*interp_rho(k)/(fp(k,iap)*rhopmat)
       elseif (ldraglaw_purestokes .or. ldraglaw_steadystate) then
         ! NILS: This should probably be used for all non-epstein drag-laws
-        gam=6*pi*eta*fp(k,iap)  
+        tausp1 = 18*interp_nu(k)*interp_rho(k)/(rhopmat*4*fp(k,iap)**2)
       else
         call fatal_error("calc_brownian_force","no such draglaw")
       endif
-      !print*,"cs=",sqrt(p%cs2(ineark(1)-nghost))
-      
       mp=four_pi_over_three*fp(k,iap)**3*rhopmat
 ! Calling it Szero to be consistent with the other brownian routine
-      Szero=2*gam*k_B*TT/mp**2
-!
+      Szero=2*tausp1*k_B*TT/mp
 !
       if (dt == 0.0) then
         force = 0.0
