@@ -2275,6 +2275,9 @@ call copy_addr(fbcz_1,p_par(1160)) ! (mcom) (2)
 call copy_addr(fbcx_2,p_par(1161)) ! (mcom) (2)
 call copy_addr(fbcy_2,p_par(1162)) ! (mcom) (2)
 call copy_addr(fbcz_2,p_par(1163)) ! (mcom) (2)
+call copy_addr(dx2_bound,p_par(1164)) ! (nghost*2+1)
+call copy_addr(dy2_bound,p_par(1165)) ! (nghost*2+1)
+call copy_addr(dz2_bound,p_par(1166)) ! (nghost*2+1)
     endsubroutine pushpars2c
 !***********************************************************************
 endmodule Run_module

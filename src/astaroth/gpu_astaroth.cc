@@ -1444,14 +1444,14 @@ testBCs()
   AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
   bool passed = true;
   AcReal max_abs_not_passed_val=-1.0;
-  AcReal true_pair;
+  AcReal true_pair{};
   AcReal max_abs_relative_difference =-1.0;
   AcReal max_abs_value = -1.0;
   AcReal min_abs_value = 1.0;
-  AcReal gpu_val_for_largest_diff;
-  AcReal true_val_for_largest_diff;
+  AcReal gpu_val_for_largest_diff{};
+  AcReal true_val_for_largest_diff{};
   AcReal epsilon = pow(10.0,-12.0);
-  int3 largest_diff_point;
+  int3 largest_diff_point{};
   //AcReal epsilon = 0.0;
 
   auto skip_x = acGridTaskGraphHasPeriodicBoundcondsX(rhs) || false;
@@ -1467,6 +1467,17 @@ testBCs()
   auto end_z =  skip_z ? dims.n1.z : dims.m1.z;
 
   int num_of_points_where_different[NUM_VTXBUF_HANDLES]{};
+  bool different_in[NUM_VTXBUF_HANDLES][6]{};
+  //TP: stupid levels of safety
+  memset(different_in,0,NUM_VTXBUF_HANDLES*6*sizeof(bool));
+  const int bot_x = 0;
+  const int top_x = 1;
+
+  const int bot_y = 2;
+  const int top_y = 3;
+
+  const int bot_z = 4;
+  const int top_z = 5;
   int num_of_points = 0;
 
   for (int i = start_x; i < end_x; i++)
@@ -1491,6 +1502,15 @@ testBCs()
           if (fabs(true_val) < min_abs_value) min_abs_value = fabs(true_val);
           if ((abs_diff/true_val) > epsilon || (true_val == 0.0 && fabs(out_val) > pow(0.1,13)) || (epsilon == 0.0 && true_val != out_val))
           {
+	    different_in[ivar][bot_x] |= i < NGHOST;
+	    different_in[ivar][top_x] |= i >= dims.n1.x;
+
+	    different_in[ivar][bot_y] |= j < NGHOST;
+	    different_in[ivar][top_y] |= j >= dims.n1.y;
+
+	    different_in[ivar][bot_z] |= k < NGHOST;
+	    different_in[ivar][top_z] |= k >= dims.n1.z;
+
             passed = false;
             num_of_points_where_different[ivar]++;
             if (max_abs_not_passed_val<abs(out_val)){
@@ -1516,15 +1536,21 @@ testBCs()
     }
   }
 
-  auto volume_size = [](int3 a)
-  {
-	  return a.x*a.y*a.z;
-  };
   passed &= !has_nans(mesh);
   if (!passed)
   {
   	for (int ivar=0;ivar<NUM_VTXBUF_HANDLES;ivar++)
+	{
     		acLogFromRootProc(0,"ratio of values wrong for field: %s\t %f\n",field_names[ivar],(double)num_of_points_where_different[ivar]/num_of_points);
+		if(different_in[ivar][bot_x]) acLogFromRootProc(0,"different in BOT_X\n");
+		if(different_in[ivar][top_x]) acLogFromRootProc(0,"different in TOP_X\n");
+
+		if(different_in[ivar][bot_y]) acLogFromRootProc(0,"different in BOT_Y\n");
+		if(different_in[ivar][top_y]) acLogFromRootProc(0,"different in TOP_Y\n");
+
+		if(different_in[ivar][bot_z]) acLogFromRootProc(0,"different in BOT_Z\n");
+		if(different_in[ivar][top_z]) acLogFromRootProc(0,"different in TOP_Z\n");
+	}
   	acLogFromRootProc(0,"max abs not passed val: %.7e\t%.7e\n",max_abs_not_passed_val, fabs(true_pair));
   	acLogFromRootProc(0,"max abs relative difference val: %.7e\n",max_abs_relative_difference);
   	acLogFromRootProc(0,"Point where biggest rel diff: %d,%d,%d\n",largest_diff_point.x,largest_diff_point.y,largest_diff_point.z);
