@@ -17,8 +17,6 @@ present(var)
 {
 	return true
 }
-//TP: note in Fortran this is (-nghost:nghost) so in C this will then be  of length 3*2+1
-//Also one has to index into it index+NGHOST
 bc_steady_z(topbot, VtxBuffer field)
 {
   int i;
