@@ -7,8 +7,8 @@
 //
 enum AC_TOP_BOT
 {
-        AC_top,
-        AC_bot
+        AC_bot,
+        AC_top
 }
 #define BOT AC_bot
 #define TOP AC_top
@@ -17,12 +17,6 @@ present(var)
 {
 	return true
 }
-//TP: note in Fortran this is (-nghost:nghost) so in C this will then be  of length 3*2+1
-//Also one has to index into it index+NGHOST
-
-real AC_dx2_bound[7]
-real AC_dy2_bound[7]
-real AC_dz2_bound[7]
 
 bc_steady_z(topbot, VtxBuffer field)
 {
