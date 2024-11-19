@@ -128,7 +128,7 @@ module Diagnostics
         if (.not.lproper_averages) then
           if (any(.not.lequidist)) call warning('initialize_diagnostics', &
             'volume averages are calculated wrongly for nonequidistant grids unless lproper_averages=T.')
-  !
+!
           if (lwrite_xyaverages.and..not.(lequidist(1).and.lequidist(2))) call warning('initialize_diagnostics', &
             '1D average (xyaver) is calculated wrongly for non-equidistant grids unless lproper_averages=T.')
           if (lwrite_xzaverages.and..not.(lequidist(1).and.lequidist(3))) call warning('initialize_diagnostics', &
