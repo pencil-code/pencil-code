@@ -135,7 +135,7 @@ module Diagnostics
             '1D average (xzaver) is calculated wrongly for non-equidistant grids.')
           if (lwrite_yzaverages.and..not.(lequidist(2).and.lequidist(3))) call warning('initialize_diagnostics', &
             '1D average (yzaver) is calculated wrongly for non-equidistant grids.')
-          if (lwrite_phiaverages.and..not.(lequidist(1).and.lequidist(2))) call warning('initialize_diagnostics', &
+          if (lwrite_phizaverages.and..not.(lequidist(1).and.lequidist(2))) call warning('initialize_diagnostics', &
             '1D average (phizaver) is calculated wrongly for non-equidistant grids.')
 !
           if (lwrite_yaverages.and..not.lequidist(2)) call warning('initialize_diagnostics', &
