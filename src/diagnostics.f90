@@ -130,22 +130,22 @@ module Diagnostics
             'volume averages are calculated wrongly for nonequidistant grids unless lproper_averages=T.')
   !
           if (lwrite_xyaverages.and..not.(lequidist(1).and.lequidist(2))) call warning('initialize_diagnostics', &
-            '1D averages are calculated wrongly for non-equidistant grids.')
+            '1D average (xyaver) is calculated wrongly for non-equidistant grids.')
           if (lwrite_xzaverages.and..not.(lequidist(1).and.lequidist(3))) call warning('initialize_diagnostics', &
-            '1D averages are calculated wrongly for non-equidistant grids.')
+            '1D average (xzaver) is calculated wrongly for non-equidistant grids.')
           if (lwrite_yzaverages.and..not.(lequidist(2).and.lequidist(3))) call warning('initialize_diagnostics', &
-            '1D averages are calculated wrongly for non-equidistant grids.')
+            '1D average (yzaver) is calculated wrongly for non-equidistant grids.')
           if (lwrite_phiaverages.and..not.(lequidist(1).and.lequidist(2))) call warning('initialize_diagnostics', &
-            '1D averages are calculated wrongly for non-equidistant grids.')
+            '1D average (phizaver) is calculated wrongly for non-equidistant grids.')
 !
           if (lwrite_yaverages.and..not.lequidist(2)) call warning('initialize_diagnostics', &
             '2D average (yaver) is calculated wrongly for non-equidistant grids.')
         endif
 !
         if (lwrite_zaverages.and..not.lequidist(3)) call warning('initialize_diagnostics', &
-          '2D averages are calculated wrongly for non-equidistant grids.')
+          '2D average (zaver) is calculated wrongly for non-equidistant grids.')
         if (lwrite_phiaverages.and.any(.not.lequidist)) call warning('initialize_diagnostics', &
-          '2D averages are calculated wrongly for non-equidistant grids.')
+          '2D average (phiaver) is calculated wrongly for non-equidistant grids.')
       endif
 !
 !  Initialize rcyl for the phi-averages grid. Does not need to be
