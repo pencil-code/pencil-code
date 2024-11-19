@@ -96,7 +96,7 @@ module Diagnostics
 !
   real, dimension (nrcyl,nx) :: phiavg_profile=0.0
   real, dimension (nrcyl) :: phiavg_norm
-  real :: dVol_rel1, dA_xy_rel1, dA_yz_rel1, dA_xz_rel1
+  real :: dVol_rel1, dA_xy_rel1, dA_yz_rel1, dA_xz_rel1, dL_y_rel1
 
   character (len=intlen) :: ch1davg, ch2davg
   integer :: ixav_max
@@ -184,6 +184,7 @@ module Diagnostics
         dA_xy_rel1 = 1./Area_xy
         dA_yz_rel1 = 1./Area_yz
         dA_xz_rel1 = 1./Area_xz
+        dL_y_rel1 = 1./Ly
       elseif (lspherical_coords) then
 !
 !  Prevent zeros from less than 3-dimensional runs
@@ -213,6 +214,7 @@ module Diagnostics
         dA_xy_rel1 = 1./(intrdr_sph*nygrid)
         dA_yz_rel1 = 1./(intdtheta_rel*intdphi_rel)
         dA_xz_rel1 = 1./(intrdr_sph*intdphi_rel)
+        dL_y_rel1 = 1./nygrid
 !
       elseif (lcylindrical_coords) then
 !
@@ -240,12 +242,14 @@ module Diagnostics
         dA_xy_rel1 = 1./(intdr_rel*intdphi_rel)
         dA_yz_rel1 = 1./(intdphi_rel*intdz_rel)
         dA_xz_rel1 = 1./(nxgrid*intdz_rel)
+        dL_y_rel1 = 1./nygrid
 !
       else
         dVol_rel1=1./nwgrid
         dA_xy_rel1 = 1./nxygrid
         dA_xz_rel1 = 1./nxzgrid
         dA_yz_rel1 = 1./nyzgrid
+        dL_y_rel1 = 1./nygrid
       endif
 !
       if (lroot.and.ip<=10) then
@@ -253,6 +257,7 @@ module Diagnostics
         print*,'dA_xy_rel1=',dA_xy_rel1
         print*,'dA_xz_rel1=',dA_xz_rel1
         print*,'dA_yz_rel1=',dA_yz_rel1
+        print*,'dL_y_rel1=',dL_y_rel1
       endif
 !
 !  Limits to xaveraging.
@@ -1055,7 +1060,7 @@ module Diagnostics
 !
       if (nnamexz>0) then
         call mpireduce_sum(fnamexz,fsumxz,(/nx,nz,nnamexz/),idir=2)
-        if (lfirst_proc_y) fnamexz(:,:,1:nnamexz)=fsumxz(:,:,1:nnamexz)/nygrid
+        if (lfirst_proc_y) fnamexz(:,:,1:nnamexz)=fsumxz(:,:,1:nnamexz)*dL_y_rel1
       endif
 !
     endsubroutine yaverages_xz
@@ -2591,7 +2596,11 @@ module Diagnostics
       real, dimension(nx), intent(IN) :: a
       integer,             intent(IN) :: iname
 
-      call ysum_mn_name_xz_npar(a,n,iname)
+      if (lproper_averages) then
+        call yintegrate_mn_name_xz(a,iname)
+      else
+        call ysum_mn_name_xz_npar(a,n,iname)
+      endif
 
     endsubroutine ysum_mn_name_xz
 !***********************************************************************
