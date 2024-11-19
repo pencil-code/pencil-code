@@ -39,6 +39,7 @@ module Diagnostics
   public :: phisum_mn_name_rz, calc_phiavg_profile
   public :: yzintegrate_mn_name_x, xzintegrate_mn_name_y, xyintegrate_mn_name_z
   public :: ysum_mn_name_xz_npar, xysum_mn_name_z_npar, yzsum_mn_name_x_mpar
+  public :: yintegrate_mn_name_xz
   public :: zsum_mn_name_xy_mpar_scal, zsum_mn_name_xy_mpar, &
             zsum_mn_name_xy_arr, zsum_mn_name_xy_arr2
   public :: allocate_fnames,allocate_vnames,allocate_sound
@@ -2628,6 +2629,43 @@ module Diagnostics
       fnamexz(:,nl,iname) = fnamexz(:,nl,iname)+a
 !
     endsubroutine ysum_mn_name_xz_npar
+!***********************************************************************
+    subroutine yintegrate_mn_name_xz(a,iname)
+!
+!   Integrate over y. Apply trapezoidal rule properly in the case
+!   of non-periodic boundaries.
+!
+!   19-nov-2024/Kishore: adapted from xyintegrate_mn_name_z
+!
+      real, dimension (nx) :: a, tmp
+      integer :: iname, nl
+      real :: fac
+!
+      if (iname==0) return
+!
+!  Initialize to zero, including other parts of the z-array
+!  which are later merged with an mpi reduce command.
+!
+      if (lfirstpoint) fnamexz(:,:,iname) = 0.0
+!
+      fac=1.
+!
+      if (.not.lperi(2)) then
+        if ((m==m1.and.lfirst_proc_y).or.(m==m2.and.llast_proc_y)) fac = .5
+      endif
+!
+      if (lproper_averages) then
+        tmp = fac*a*yprim(m)
+      else
+        tmp = fac*a
+      endif
+!
+!  n starts with nghost=4, so the correct index is n-nghost.
+!
+      nl=n-nghost
+      fnamexz(:,nl,iname) = fnamexz(:,nl,iname) + tmp
+!
+    endsubroutine yintegrate_mn_name_xz
 !***********************************************************************
     subroutine zsum_mn_name_xy_scal(a,iname,lint)
 !
