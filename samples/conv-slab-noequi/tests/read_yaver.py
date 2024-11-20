@@ -25,7 +25,7 @@ av = pc.read.aver(
 
 with open(f'{__file__[:-3]}.out', 'w') as f:
     f.write('av.t :')
-    for t in av.t:
+    for t in av.t[:2]:
         f.write(f' {t:g}')
     f.write('\n')
 
