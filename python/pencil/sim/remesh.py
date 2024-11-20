@@ -230,7 +230,6 @@ def get_dstgrid(
             grid["L"+x][()] = srcgrid[x][sch[1]+srcghost] - grid["O"+x][()]
             x0,x1 = grid["O"+x][()], grid["O"+x][()] + grid["L"+x][()]
             dx = dtype(grid["L"+x][()]/sets["n"+x][0])
-            print("dx {}, xyz0 {}, Lxyz {}".format(dx, x0, x1-x0))
             grid["d"+x][()] = dx
             grid.__delitem__(x)
             grid.create_dataset(x, data=np.linspace(x0-dstghost*dx,
@@ -242,10 +241,6 @@ def get_dstgrid(
             grid.__delitem__("d"+x+"_tilde")
             grid.create_dataset("d"+x+"_tilde", data=np.zeros(sets["m"+x][0]), dtype=dtype)
             grid["d"+x+"_tilde"][:] = dtype(1.0 / np.gradient(grid["d"+x+"_1"][()]))
-            print("grid"+x,grid[x][()])
-        print("Calculating grid subgrid", grid.keys())
-        for key in grid.keys():
-            print(key, grid[key])
     else:
         for x, ii in zip(["x","y","z"],[0,1,2]):
             if not srcpar["lequidist"][ii]:
@@ -287,9 +282,6 @@ def get_dstgrid(
                     dtype=dtype,
                 )
                 grid["d" + x + "_tilde"][()] = dtype(np.gradient(grid["d" + x + "_1"][()]))
-        print("Calculating grid full grid", grid.keys())
-        for key in grid.keys():
-            print(key, grid[key])
 
 def src2dst_remesh(
     src=None,
@@ -617,6 +609,16 @@ def src2dst_remesh(
                     )
                 if check_grid:
                     return 1
+            dstsim.update()
+            for key in ["nprocx","nprocy","nprocz","nxgrid","nygrid","nzgrid"]:
+                dstsim.dim.__setattr__(key,dsth5[join("settings",key.strip("grid"))][0])
+            dstsim.dim.__setattr__("ncpus",nprocs)
+            #The subsequest tools need to be improved to complete revision of *.local and
+            #compilation if required -- see pipelines
+            cpar = open(join(dstsim.path,"src/cparam.local"),"a")
+            for key in ["ncpus","nprocx","nprocy","nprocz","nxgrid","nygrid","nzgrid"]:
+                cpar.write("integer, parameter :: {}={}\n".format(key,dstsim.dim.__getattribute__(key)))
+            cpar.close()
             if dsth5.__contains__("unit"):
                 dsth5.__delitem__("unit")
             if lsrch5:
@@ -1083,50 +1085,34 @@ def src2dst_remesh(
                                     dsth5["data"][key][n1out:n2out, m1out:m2out, l1out:l2out] = outvar
                                     print("wrote rank {} nchunk {} for {} in {} seconds".format(rank,[ix,iy,iz],key,time.time()-globals()[str(ixyz)+"time"]))
                                     del(var,globals()[str(ixyz)+"time"],iz, firstz, lastz, iy, firsty, lasty, ix, firstx, lastx, ixyz)
-    else:
-        if comm:
-            comm.Barrier()
-            driver = "mpio"
-            dh5 = h5py.File(join(dstsim.path, dstdatadir, h5out),"r+", driver=driver, comm=comm)
-        else:
-            #driver = None
-            dh5 = h5py.File(join(dstsim.path, dstdatadir, h5out),"r+" )
-        print("dh5 name", dh5.filename)
-        nx, ny, nz =(
-            dh5["settings"]["nx"][0],
-            dh5["settings"]["ny"][0],
-            dh5["settings"]["nz"][0],
-        )
-    #The subsequest tools need to be improved to complete revision of *.local and
-    #compilation if required -- see pipelines
-    dstsim.update()
-    cpar = open(join(dstsim.path,"src/cparam.local"),"a")
-    cpar.write("integer, parameter :: {}={}\n".format("ncpus",nprocs))
-    for key in ["nprocx","nprocy","nprocz","nxgrid","nygrid","nzgrid"]:
-        cpar.write("integer, parameter :: {}={}\n".format(key,dstsim.dim.__getattribute__(key)))
-    cpar.close()
-    # cmd = 'source '+join(srcsim.path,'src','.moduleinfo')
-    # os.system(cmd)
-    # os.chdir(dstsim.path)
-    # cmd = 'pc_setupsrc; make cleann'
-    # os.system(cmd)
-    # cmd = 'pc_build'
-    # if hostfile: cmd = cmd + ' -f '+hostfile
-    # process = sub.Popen(cmd.split(),stdout=sub.PIPE)
-    # process = sub.Popen(cmd.split(),stdout=sub.PIPE)
-    # output, error = process.communicate()
-    # print(cmd,output,error)
-    if srcprocs > nprocs:
-        if rank == 0 or rank == size - 1:
-            print(
-            "\n**********************************************************\n"
-        + "remesh WARNING: {} procs reduced from {}.\n".format(nprocs, srcprocs)
-        + "Review multxyz {} and fracxyz {} for more\n".format(multxyz, fracxyz)
-        + "efficient parallel processing options."
-            + "\n**********************************************************\n"
-        )
-    cmd = "rm -f "+join(dstsim.path, dstdatadir, h5out+"copy")
-    os.system(cmd)
+    #else:
+    #    if comm:
+    #        comm.Barrier()
+    #        driver = "mpio"
+    #        dh5 = h5py.File(join(dstsim.path, dstdatadir, h5out),"r+", driver=driver, comm=comm)
+    #    else:
+    #        #driver = None
+    #        dh5 = h5py.File(join(dstsim.path, dstdatadir, h5out),"r+" )
+    #    print("dh5 name", dh5.filename)
+    #    nx, ny, nz =(
+    #        dh5["settings"]["nx"][0],
+    #        dh5["settings"]["ny"][0],
+    #        dh5["settings"]["nz"][0],
+    #    )
+    if rank==0 and submit_new:
+        cmd = 'source '+join(srcsim.path,'src','.moduleinfo')
+        os.system(cmd)
+        os.chdir(dstsim.path)
+        cmd = 'pc_setupsrc; make cleann'
+        os.system(cmd)
+        cmd = 'pc_build'
+        if hostfile: cmd = cmd + ' -f '+hostfile
+        process = sub.Popen(cmd.split(),stdout=sub.PIPE)
+        process = sub.Popen(cmd.split(),stdout=sub.PIPE)
+        output, error = process.communicate()
+        print(cmd,output,error)
+        cmd = "rm -f "+join(dstsim.path, dstdatadir, h5out+"copy")
+        os.system(cmd)
     if comm:
         comm.Barrier()
     end_time = time.time()
@@ -1137,4 +1123,3 @@ def src2dst_remesh(
         )
 
 
-# remains to copy other files and edit param files

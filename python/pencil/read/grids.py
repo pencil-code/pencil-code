@@ -62,7 +62,7 @@ class Grid(object):
         for i in self.__dict__.keys():
             print(i)
 
-    def read(self, datadir="data", proc=-1, quiet=False, precision="f", trim=False):
+    def read(self, datadir="data", proc=-1, quiet=False, precision="f", trim=False, param=None):
         """
         read(datadir='data', proc=-1, quiet=False, trim=False)
 
@@ -106,11 +106,15 @@ class Grid(object):
             print('read grid: {} precision not set, using "f"'.format(precision))
             dtype = np.float32
 
-        if os.path.exists(os.path.join(datadir, "grid.h5")):
-            dim = read.dim(datadir, proc)
+        if not param:
+            param = read.param(datadir=datadir, quiet=True)
+
+        if param.io_strategy == "HDF5":
             import h5py
 
-            with h5py.File(os.path.join(datadir, "grid.h5"), "r") as tmp:
+            dim = read.dim(datadir, proc)
+
+            with h5py.File(os.path.join(datadir,"allprocs","var.h5"), "r") as tmp:
                 x = dtype(tmp["grid"]["x"][()])
                 y = dtype(tmp["grid"]["y"][()])
                 z = dtype(tmp["grid"]["z"][()])
