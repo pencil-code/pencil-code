@@ -348,6 +348,8 @@ Examples:
                                  # after 2 minutes.
                                  # Mainly useful for run.x, but we also limit
                                  # start.x o avoid hour-long runaway processes
+                                 # The format of the time specification is
+                                 # documented in bin/reaper
   pc_auto-test -a   # run tests in all subdirs of samples/ with a
                     # referece.out{,.double} file
   pc_auto-test --level=1         # run all level 1 tests
