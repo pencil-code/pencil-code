@@ -1104,7 +1104,7 @@ sub test_timelimited_perl_cmd {
     my ($error_count, $res) = (0, '');
     eval {
         local $SIG{ALRM} = sub { die "timed out\n" }; # NB: \n is required here
-        if ($time_limit != 0) {
+        if (Scalar::Util::looks_like_number($time_limit) && $time_limit != 0) {
             alarm $time_limit if $time_limit != 0  # TODO: use HiRes::ualarm()
         }
         my ($good, $bad, $output) = call_sub_catch_output($cmd);
