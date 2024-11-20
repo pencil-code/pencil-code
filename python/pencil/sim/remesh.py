@@ -20,7 +20,6 @@ from pencil.math.derivatives import grad
 from pencil.io import open_h5, group_h5, dataset_h5
 from os.path import exists
 
-
 def local_remesh(var, xsrc, ysrc, zsrc, xdst, ydst, zdst, quiet=True, kind="linear"):
     """
     local_remesh(var, xsrc, ysrc, zsrc, xdst, ydst, zdst, quiet=True, kind="linear")
@@ -831,24 +830,34 @@ def src2dst_remesh(
                 lchunks = False
                 if dstchunksize > chunksize or size > 1:
                     lchunks = True
+                    #nallchunks = cpu_optimal(
+                    #        nx,
+                    #        ny,
+                    #        nz,
+                    #        mvar=1,
+                    #        maux=0,
+                    #        nmin=nmin,
+                    #        MBmin=MBmin,
+                    #        size=size,
+                    #        remesh=remesh
+                    #        )[1]
+                    #tchunks = nallchunks[0]*nallchunks[1]*nallchunks[2]
+                    #if not ncpus == [1,1,1]:
+                    #    procchunks = ncpus[0]*ncpus[1]*ncpus[2]
+                    #    if procchunks > tchunks:
+                    #        for ich in range(3):
+                    #            nallchunks[ich] = ncpus[ich]
+                    #        tchunks = procchunks
+                    tchunks = int(dstchunksize/chunksize+1)
                     nallchunks = cpu_optimal(
                             nx,
                             ny,
                             nz,
-                            mvar=1,
-                            maux=0,
-                            nmin=nmin,
-                            MBmin=MBmin,
-                            size=size,
+                            MBmin=tchunks,
+                            nsize=tchunks,
+                            size=tchunks,
                             remesh=remesh
                             )[1]
-                    tchunks = nallchunks[0]*nallchunks[1]*nallchunks[2]
-                    if not ncpus == [1,1,1]:
-                        procchunks = ncpus[0]*ncpus[1]*ncpus[2]
-                        if procchunks > tchunks:
-                            for ich in range(3):
-                                nallchunks[ich] = ncpus[ich]
-                            tchunks = procchunks
                     if rank == 0:
                         print("rank,lchunks, tchunks, nallchunks",rank,lchunks, tchunks, nallchunks)
                     allindx = np.array_split(np.arange(nx) + dstghost, nallchunks[0])
