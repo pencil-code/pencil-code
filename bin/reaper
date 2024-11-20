@@ -363,12 +363,6 @@ sub min {
     }
 }
 # ---------------------------------------------------------------------- #
-sub numeric_value {
-# Return argument as number; if undefined, return 0
-    my ($arg) = (@_);
-    return ( defined($arg) ? "0" + $arg : "0" );
-}
-# ---------------------------------------------------------------------- #
 sub get_proc_list {
 # Return list of processes that have a given name, are owned by us and are
 # not in @$blacklist
