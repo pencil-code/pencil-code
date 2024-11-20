@@ -82,7 +82,7 @@ BEGIN {
 
 use Pencil::Util;
 Pencil::Util::use_pencil_perl_modules(
-    'Test::ParseTime',
+    'Test::Parse',
     ) or die;
 
 my (%opts);                     # Options hash for GetOptions
@@ -335,8 +335,8 @@ sub parse_time_spec {
           or die "Invalid extended time_spec argument: <$rest>\n";
     }
 
-    my $totaltime = Test::ParseTime::parse_time($total);
-    my $warntime  = ( defined($warn) ? Test::ParseTime::parse_time($warn) : '0');
+    my $totaltime = Test::Parse::parse_time($total);
+    my $warntime  = ( defined($warn) ? Test::Parse::parse_time($warn) : '0');
 
     my $msg = "parse_time_spec: "
         . "\$totaltime = ${totaltime}s"

@@ -1,6 +1,6 @@
 # 20-Nov-2024: Kishore: outsourced from bin/reaper so that parse_time can be used in pc_auto-test
 
-package Test::ParseTime;
+package Test::Parse;
 
 use warnings;
 use strict;
