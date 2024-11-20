@@ -71,6 +71,20 @@ use Socket;
 use IO::Socket;
 use IO::Select;
 
+BEGIN {
+    # Make sure ${PENCIL_HOME}/lib/perl is in the Perl path
+    if (-d "$ENV{PENCIL_HOME}/lib/perl") {
+        unshift @INC, "$ENV{PENCIL_HOME}/lib/perl";
+    } else {
+        if ($0 =~ m!(.*[/\\])!) { unshift @INC, "$1../lib/perl"; }
+    }
+}
+
+use Pencil::Util;
+Pencil::Util::use_pencil_perl_modules(
+    'Test::ParseTime',
+    ) or die;
+
 my (%opts);                     # Options hash for GetOptions
 my $doll='\$';                  # Need this to trick CVS
 my $prefix = '';
@@ -321,8 +335,8 @@ sub parse_time_spec {
           or die "Invalid extended time_spec argument: <$rest>\n";
     }
 
-    my $totaltime = parse_time($total);
-    my $warntime  = ( defined($warn) ? parse_time($warn) : '0');
+    my $totaltime = Test::ParseTime::parse_time($total);
+    my $warntime  = ( defined($warn) ? Test::ParseTime::parse_time($warn) : '0');
 
     my $msg = "parse_time_spec: "
         . "\$totaltime = ${totaltime}s"
@@ -337,57 +351,6 @@ sub parse_time_spec {
     }
 
     return ($totaltime, $name, $warntime, $shutdown)
-}
-# ---------------------------------------------------------------------- #
-sub parse_time {
-# Parse a time interval of the form
-# `1h[our] 5m[in] 7s[ec]'
-# `1:05:07'  (ditto)
-# `1:05'     (same as `1h 5m')
-#  into seconds.
-    my ($string) = (@_);
-
-    my ($hour, $min, $sec);
-
-    if ($string =~ /:/) {
-        ($hour, $min, $sec)
-          = ($string =~ /^\s*([0-9]+):([0-9]+)(?::([0-9]+))?\s*$/)
-            or die "Cannot parse <$string> in hh:mm[:ss] format\n";
-    } else {
-        ($hour, $min, $sec)
-          = ($string =~
-             /
-                 ^\s*
-                 (?:
-                     ([0-9]+)    # capture hours
-                     h[^0-9]* # h[ours]
-                     \s*
-                 )?              # hours are optional
-                 (?:
-                     ([0-9]+)    # capture minutes
-                     m[^0-9]* # m[in[utes]]
-                     \s*         # minutes are optional
-                 )?
-                 (?:
-                     ([0-9]+)    # capture seconds
-                     s[^0-9]* # s[ec[onds]]
-                     \s*         # seconds are optional
-                 )?
-                 \s*
-                 $
-             /x
-            ) or die
-              "Cannot parse <$string> in [<hh>h] [<mm>m] [<ss>s] format\n";
-    }
-
-    die "Bad time format <string>\n"
-      unless (defined($hour) || defined($min) || defined($sec));
-
-    my $time = numeric_value($hour);
-    $time = 60*$time + numeric_value($min);
-    $time = 60*$time + numeric_value($sec);
-
-    return $time;
 }
 # ---------------------------------------------------------------------- #
 sub min {
