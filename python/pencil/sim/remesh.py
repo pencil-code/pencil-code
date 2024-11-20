@@ -465,8 +465,10 @@ def src2dst_remesh(
     # set dtype from precision
     if dstprecision[0] == b"D":
         dtype = np.float64
+        bytesize = 8
     elif dstprecision[0] == b"S":
         dtype = np.float32
+        bytesize = 4
     else:
         if rank == 0 or rank == size - 1:
             print("precision " + dstprecision + " not valid")
@@ -589,6 +591,7 @@ def src2dst_remesh(
             dsth5["settings/nprocx"][0] = ncpus[0]
             dsth5["settings/nprocy"][0] = ncpus[1]
             dsth5["settings/nprocz"][0] = ncpus[2]
+            dsth5["settings/precision"][0] = dstprecision
             nprocs = ncpus[0] * ncpus[1] * ncpus[2]
             srcprocs = (
                   srcsim.dim.nprocx
@@ -822,7 +825,7 @@ def src2dst_remesh(
                       dsth5["grid/z"][()]
                       )
                 dsth5.require_group("data")
-                dstchunksize = 8 * nx * ny * nz / 1024 / 1024
+                dstchunksize = bytesize * nx * ny * nz / 1024 / 1024
                 if rank == 0:
                     print("rank {}, nx = {} dstchunksize {} chunksize {}, ncpus {}".format(rank, nx, dstchunksize, chunksize, ncpus))
                 lchunks = False
