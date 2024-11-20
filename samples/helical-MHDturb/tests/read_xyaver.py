@@ -14,10 +14,6 @@ matplotlib.use('agg')
 import numpy as np
 import pencil as pc
 
-
-# Description:
-#   Read time series and data cube, write a few values
-
 datadir = '../data'
 simdir = '..'
 
