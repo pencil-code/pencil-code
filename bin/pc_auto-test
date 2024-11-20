@@ -42,6 +42,7 @@ Pencil::Util::use_pencil_perl_modules(
     'Pencil::ReadmeReader',
     'Test::NumericFileComparator',
     'Test::ScriptTester',
+    'Test::Parse',
     ) or die;
 
 use constant NOQUIET     => 0;
@@ -1093,7 +1094,7 @@ sub test_timelimited_perl_cmd {
 # ($error_count, $message).
 # Return error message.
     my $cmd   = shift;
-    my $time_limit   = shift;
+    my $time_limit_str   = shift;
     my $dir   = (shift || "<Unknown directory>");
     my $phase = (shift || "<Unknown phase>");
     my $quiet = (shift || 0);   # flag for suppressing the 'ok'
@@ -1101,13 +1102,18 @@ sub test_timelimited_perl_cmd {
 
     print STDERR "\nRunning Perl command\n" if ($debug);
 
+    my $time_limit;
+    if (Scalar::Util::looks_like_number($time_limit_str)) {
+        $time_limit = $time_limit_str;
+    } else {
+        $time_limit = Test::Parse::parse_time($time_limit_str);
+    }
+
     my ($error_count, $res) = (0, '');
     eval {
         local $SIG{ALRM} = sub { die "timed out\n" }; # NB: \n is required here
-        if (Scalar::Util::looks_like_number($time_limit) && $time_limit != 0) {
-            #Kishore: isn't the condition below redundant?
-            alarm $time_limit if $time_limit != 0  # TODO: use HiRes::ualarm()
-        }
+        alarm $time_limit if $time_limit != 0; # TODO: use HiRes::ualarm()
+
         my ($good, $bad, $output) = call_sub_catch_output($cmd);
         alarm 0;                # clear alarm
         $error_count += $bad;
