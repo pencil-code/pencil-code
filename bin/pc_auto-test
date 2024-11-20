@@ -61,10 +61,9 @@ use IPC::Open2;
 # 0 is the absolute minimum,
 # 1 are the most important tests,
 # 2 is the standard program for nightly tests,
-# 3 adds the remaining tests under samples (most of which will curently
-# fail).
-# [Note: until we get closer to have all test running, we will use more
-# levels to distinguish the different degrees of failures]
+# 3 adds the remaining tests under samples.
+# [Note: until we get closer to have all test running, we will use
+# levels beyond 3 to distinguish the different degrees of failures]
 # Within a level, tests should be roughly sorted by total run time, such
 # that the slowest tests are run last.
 my $default_level = 2;
