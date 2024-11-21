@@ -5344,14 +5344,14 @@ module Energy
 !
       if (chi_t/=0.0) then
 !
+        gss1=p%gss
         if (lcalc_ssmean) then
-          do j=1,3; gss1(:,j)=p%gss(:,j)-gssmz(n-n1+1,j); enddo
+          do j=1,3; gss1(:,j)=gss1(:,j)-gssmz(n-n1+1,j); enddo
           del2ss1=p%del2ss-del2ssmz(n-n1+1)
         else if (lcalc_ssmeanxy) then
-          do j=1,3; gss1(:,j)=p%gss(:,j)-gssmx(:,j); enddo
+          do j=1,3; gss1(:,j)=gss1(:,j)-gssmx(:,j); enddo
           del2ss1=p%del2ss-del2ssmx
         else
-          do j=1,3; gss1(:,j)=p%gss(:,j) ; enddo
           del2ss1=p%del2ss
         endif
         call dot(p%glnrho+p%glnTT,gss1,g2)
@@ -7357,8 +7357,7 @@ module Energy
 !
       elseif (lspherical_coords.or.lconvection_gravx) then
 
-        if (.not.allocated(chit_prof_stored)) &
-          allocate(chit_prof_stored(nx),dchit_prof_stored(nx))
+        if (.not.allocated(chit_prof_stored)) allocate(chit_prof_stored(nx),dchit_prof_stored(nx))
 
         select case (ichit)
           case ('nothing')
@@ -8052,7 +8051,7 @@ module Energy
 
     use Syscalls, only: copy_addr
 
-    integer, parameter :: n_pars=26
+    integer, parameter :: n_pars=28
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call copy_addr(chi,p_par(1))
@@ -8064,9 +8063,9 @@ module Energy
 
     if (allocated(hcond_prof))    call copy_addr(hcond_prof,p_par(7))      ! (nz)
     if (allocated(dlnhcond_prof)) call copy_addr(dlnhcond_prof,p_par(8))   ! (nz)
-    if (allocated(chit_prof_stored)) call copy_addr(chit_prof_stored,p_par(9))   ! (nz)
+    if (allocated(chit_prof_stored)) call copy_addr(chit_prof_stored,p_par(9))    ! (nz)
     if (allocated(dchit_prof_stored)) call copy_addr(dchit_prof_stored,p_par(10)) ! (nz)
-
+if (lroot) print*, 'chit_prof:', chit_prof_stored(1:2),dchit_prof_stored(1:2)
     call copy_addr(lheatc_hyper3ss,p_par(11)) ! int
     call copy_addr(lheatc_shock,p_par(12)) ! int
     call copy_addr(chi_shock,p_par(13))
@@ -8078,7 +8077,7 @@ module Energy
     call copy_addr(Ftop,p_par(17))
     call copy_addr(lheatc_chiconst,p_par(18)) ! int
     call copy_addr(lheatc_kramers,p_par(19))  ! int
-    call copy_addr(pretend_lnTT,p_par(20))  ! int
+    call copy_addr(pretend_lnTT,p_par(20))    ! int
 
     call copy_addr(profz_cool,p_par(21))    ! (nz)
     call copy_addr(profz1_cool,p_par(22))   ! (nz)
@@ -8086,6 +8085,9 @@ module Energy
     call copy_addr(profr1_cool,p_par(24))   ! (nx)
     call copy_addr(profr2_cool,p_par(25))   ! (nx)
     call copy_addr(profr_heat,p_par(26))    ! (nx)
+    
+    call copy_addr(lchit_total,p_par(27))   ! int
+    call copy_addr(chi_t,p_par(28))
 
     endsubroutine pushpars2c
 !***********************************************************************

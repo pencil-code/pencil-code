@@ -32,10 +32,13 @@
 #endif
 
   rhs /= TT
-  #include "../entropy/heat_cond_hyper3.h"
-  #include "../entropy/heat_cond_const_chi.h"
+  gss = gradient(SS)
+  del2ss = laplace(SS)
+  //!!!#include "../entropy/heat_cond_hyper3.h"
+  //!!!#include "../entropy/heat_cond_const_chi.h"
+  #include "../entropy/heat_cond_kramers.h"
 
 #if LHYDRO
-  rhs += -dot(UU, gradient(SS))
+  rhs += -dot(UU, gss)
 #endif
   return rhs
