@@ -188,13 +188,12 @@ module Gravity
       use Sub, only: cubic_step
       use Mpicomm, only: mpibcast_real, MPI_COMM_WORLD
       use SharedVariables, only: get_shared_variable
-      use EquationOfState, only: get_gamma_etc
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      real, pointer :: mpoly,cs20
+      real, pointer :: mpoly,gamma,cs20
 !
       real, dimension (mz) :: prof
-      real :: ztop, gamma
+      real :: ztop
 !
       character(len=*), parameter :: gravity_z_dat = 'prof_g.dat'
       real, dimension(:), allocatable :: grav_init_z
@@ -222,7 +221,15 @@ module Gravity
             call fatal_error('initialize_gravity','zref=impossible')
           else
             call get_shared_variable('cs20',cs20,caller='initialize_gravity')
-            call get_gamma_etc(gamma)
+!
+!           Kishore: ideally we would use get_gamma_eta which gives the
+!           warning below when needed, but having Gravity depend on
+!           EquationOfState (in Makefile.depend) leads to a circular
+!           dependency.
+!
+            if (.not.leos_idealgas) call warning('initialize_eos', 'assuming gamma is a constant')
+            call get_shared_variable('gamma',gamma)
+!
             if (gamma==impossible) call fatal_error('initialize_gravity','invalid value of gamma')
             if (ldensity.and..not.lstratz) then
               call get_shared_variable('mpoly',mpoly)
