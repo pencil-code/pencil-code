@@ -168,7 +168,8 @@ module Magnetic
   real :: non_ffree_factor=1.
   real :: etaB=0.
   real :: tau_relprof=0.0, tau_relprof1, amp_relprof=1.0 , k_relprof=1.0
-  real, pointer :: cp, ascale, Hscript
+  real, pointer :: ascale, Hscript
+  real :: cp=impossible
   real :: dipole_moment=0.0
   real :: eta_power_x=0., eta_power_z=0.
   real :: z1_aa=0., z2_aa=0.
@@ -2590,7 +2591,7 @@ module Magnetic
         call boundconds_y(f)
         call boundconds_z(f)
 !
-        call get_shared_variable('cp', cp, caller='init_aa')
+        call get_gamma_etc(cp=cp)
 !
         do n=n1,n2
         do m=m1,m2
