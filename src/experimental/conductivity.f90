@@ -52,8 +52,7 @@ module Conductivity
 !  Auxiliaries
 !
   real, dimension(nx) :: diffus_chi, diffus_chi3
-  real, pointer :: gamma
-  real :: gamma_m1
+  real :: gamma, gamma_m1
 !
   contains
 !***********************************************************************
@@ -74,8 +73,8 @@ module Conductivity
 !
 !  18-jun-13/wlad: coded
 !
-      use SharedVariables, only: get_shared_variable
-
+      use EquationOfState, only: get_gamma_etc
+!
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
 !
       integer :: i
@@ -140,7 +139,7 @@ module Conductivity
       if (pretend_lnTT) call fatal_error("initialize_conductivity",&
            "alpha version, lnTT capability not yet implemented")
 !
-      call get_shared_variable('gamma',gamma,caller="initialize_conductivity")
+      call get_gamma_etc(gamma)
       if (gamma==impossible) call fatal_error('initialize_conductivity','invalid value of gamma')
       gamma_m1=gamma-1.
 
