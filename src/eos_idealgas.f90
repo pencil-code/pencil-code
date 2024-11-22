@@ -1161,11 +1161,9 @@ module EquationOfState
 !***********************************************************************
     subroutine get_gamma_etc(gamma_,cp,cv)
 !
-      real, intent(OUT) :: gamma_
-      real, optional, intent(OUT) :: cp,cv
+      real, optional, intent(OUT) :: gamma_, cp,cv
 !
-      gamma_=gamma
-
+      if (present(gamma_)) gamma_=gamma
       if (present(cp)) cp=get_cp()     ! as module variable is hidden here
       if (present(cv)) cv=get_cv()
 
