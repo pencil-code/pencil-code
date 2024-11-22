@@ -801,7 +801,7 @@ module Energy
 !
           if (Fbot==impossible) then
             if (bcz12(iss,1)=='c1') then
-              Fbot=-gamma/(gamma_m1)*hcond0*gravz/(mpoly0+1)
+              Fbot=-gamma/(cp*gamma_m1)*hcond0*gravz/(mpoly0+1)
               if (lroot) print*, 'initialize_energy: Calculated Fbot = ', Fbot
             else
               Fbot=0.
@@ -818,7 +818,7 @@ module Energy
 !
           if (Ftop==impossible) then
             if (bcz12(iss,2)=='c1') then
-              Ftop=-gamma/(gamma_m1)*hcond0*gravz/(mpoly0+1)
+              Ftop=-gamma/(cp*gamma_m1)*hcond0*gravz/(mpoly0+1)
               if (lroot) print*, 'initialize_energy: Calculated Ftop = ',Ftop
             else
               Ftop=0.
