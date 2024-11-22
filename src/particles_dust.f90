@@ -6686,7 +6686,16 @@ endif
       if (dt == 0.0) then
         force = 0.0
       else
-        force = force*sqrt(Szero/dt)
+        !
+        ! NILS: The Browian forces are correctly implemented only when
+        ! lfollow_gas=T. For lfollow_gas=F, everything is correct for
+        ! itorder=1 (and almost correct also for itorder=2), but for itorder=3
+        ! the motions are somewhat underpredicted. I have tried to compensate
+        ! for this by compensating the time step in the line below with
+        ! beta_ts, but it is not enough. I do not know how to resolve this
+        ! issue.
+        !
+        force = force*sqrt(Szero/(beta_ts(itorder)*dt))
       endif
 !
     endsubroutine calc_brownian_force
