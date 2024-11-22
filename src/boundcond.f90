@@ -54,8 +54,8 @@ module Boundcond
   integer, parameter :: sz_slc_chunk=20
   real, dimension(:), pointer :: hcondADI
 !
-  real, pointer :: gamma, cp, cv
-  real :: gamma1, gamma_m1, cp1
+  real :: gamma=impossible, cp=impossible, cv=impossible
+  real :: gamma1=impossible, gamma_m1=impossible, cp1=impossible
 
   contains
 !***********************************************************************
@@ -191,6 +191,7 @@ module Boundcond
       use Syscalls, only: directory_exists
       use IO, only: IO_strategy
       use HDF5_IO, only: input_dim
+      use EquationOfState, only: get_gamma_etc
       use SharedVariables, only: get_shared_variable
 
       integer :: ix_bc,ix2_bc,iy_bc,iy2_bc,iz_bc,iz2_bc,idum
@@ -202,16 +203,12 @@ module Boundcond
       character :: prec_in
       character(LEN=3) :: suff_xy2, suff_xz2, suff_yz2
 
-      call get_shared_variable('gamma',gamma,caller="initialize_boundcond")
-      if (gamma==impossible) then
-        call warning('initialize_boundcond','invalid value of gamma, set it to 5/3')
-        gamma=5./3.
-      endif
+      call get_gamma_etc(gamma)
       gamma1=1./gamma; gamma_m1=gamma-1.
 
       if (leos_idealgas) then
-        call get_shared_variable('cp',cp); cp1=1./cp
-        call get_shared_variable('cv',cv)
+        call get_gamma_etc(cp=cp, cv=cv)
+        cp1=1./cp
       endif
       if (lADI) call get_shared_variable('hcondADI', hcondADI)
 !
@@ -6598,7 +6595,7 @@ module Boundcond
 !  27-feb-2024/Kishore: implemented for iheatcond=chi-const
 !  21-jun-2024/Kishore: account for bounds on Kramers conductivity
 !
-      use EquationOfState, only: lnrho0, cs20
+      use EquationOfState, only: lnrho0, cs20, get_gamma_etc
       use SharedVariables, only: get_shared_variable
 !
       real, dimension (:,:,:,:) :: f
@@ -6632,14 +6629,14 @@ module Boundcond
 !
         call get_shared_variable('hcond0_kramers',hcond0_kramers)
         call get_shared_variable('nkramers',nkramers)
-        call get_shared_variable('cp',cp)
         call get_shared_variable('chimax_kramers',chimax_kramers)
         call get_shared_variable('chimin_kramers',chimin_kramers)
+        call get_gamma_etc(cp=cp)
 !
       endif
       if (lheatc_chiconst) then
         call get_shared_variable('chi',chi)
-        call get_shared_variable('cp',cp)
+        call get_gamma_etc(cp=cp)
       endif
 !
       if (lheatc_kramers.or.lheatc_chiconst.or.lreference_state) then
