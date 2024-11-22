@@ -2836,8 +2836,9 @@ module Energy
 !
       integer :: i
 !
-      if (lheatc_Kconst .or. lheatc_chiconst .or. lheatc_Kprof .or. tau_cor>0 .or. lheatc_sqrtrhochiconst) &
+      if (lheatc_Kconst .or. lheatc_chiconst .or. tau_cor>0 .or. lheatc_sqrtrhochiconst) &
         lpenc_requested(i_cp1)=.true.
+      if (lheatc_Kprof) lpenc_requested(i_cv1)=.true.
       if (ldt) then
         lpenc_requested(i_cs2)=.true.
         lpenc_requested(i_ee)=.true.
@@ -5547,21 +5548,23 @@ module Energy
 !        Ds/Dt = ... + K/rho*[del2lnTT+(glnTT+glnhcond).glnTT]
 !
 !  where chix = K/(cp rho) is needed for diffus_chi calculation.
+!  Kishore: While it is correct to use cp in the expression for chix, cv is used to preserve the old behaviour.
 !
         if (notanumber(p%glnTT)) call fatal_error_local('calc_heatcond', 'NaNs in p%glnTT')
 
-        chix = p%rho1*hcond*p%cp1
         glnThcond = p%glnTT + glhc    ! grad ln(T*hcond)
         call dot(p%glnTT,glnThcond,g2)
         if (pretend_lnTT) then
           thdiff = p%cv1*p%rho1*hcond * (p%del2lnTT + g2)
+          chix = p%rho1*hcond*p%cv1
         else
           if (lhcond0_density_dep) then
             call dot(p%glnTT,p%glnrho,glnrhoglnT)
             thdiff = sqrt(p%rho1)*hcond * (p%del2lnTT + g2+0.5*glnrhoglnT)
-            chix = sqrt(p%rho1)*hcond*p%cp1
+            chix = sqrt(p%rho1)*hcond*p%cv1
           else
             thdiff = p%rho1*hcond * (p%del2lnTT + g2)
+            chix = p%rho1*hcond*p%cv1
           endif
         endif
 !
@@ -5713,7 +5716,7 @@ module Energy
 !    gamma*chix*del2ss.
 !
       if (lfirst.and.ldt) then
-        if (hcond0/=0..or.lread_hcond) diffus_chi=diffus_chi+p%rho1*hcond*cv1*dxyz_2
+        if (hcond0/=0..or.lread_hcond) diffus_chi=diffus_chi+chix*dxyz_2
         if (chi_t/=0.) diffus_chi=diffus_chi+chi_t*chit_prof*dxyz_2
       endif
 !
