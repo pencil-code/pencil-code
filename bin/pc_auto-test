@@ -158,6 +158,7 @@ my %tests = (
                          cartesian-convection-kramers-chimax
                          continuous-forcing-from-file
                          conv-slab
+                         conv-slab_cp_2
                          interlocked-fluxrings
                          conv-slab-flat
                          coronae_heatflux_boris
