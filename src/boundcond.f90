@@ -6723,6 +6723,7 @@ module Boundcond
 !  enforce ds/dx           + gamma_m1/gamma*dlnrho/dx = - gamma_m1/gamma*Fbot/(K*cs2)
 !  or with reference state:
 !                + ds_0/dx + gamma_m1/gamma*d/dx(ln(rho'+rho_0)) = - gamma_m1/gamma*Fbot/(K*cs2)
+!  Kishore: this expression assumes cp=1 (TODO)
 !
           if (lreference_state) then
             work_yz= 1./(f(l1,:,:,irho)+reference_state(1,iref_rho))
