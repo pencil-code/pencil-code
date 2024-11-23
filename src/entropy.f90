@@ -5317,8 +5317,6 @@ module Energy
       Krho1 = K_kramers*p%rho1   ! = K/rho
 !
 !  g2 is grad(ln(K) + ln(T)).grad(ln(T))
-!  We are not accounting for the gradient of cp, so the below will
-!  be wrong if you use eos_ionization or eos_idealgas_vapor
 !
       call dot(-2.*nkramers*p%glnrho+(6.5*nkramers+1)*p%glnTT,p%glnTT,g2)
       call dot(p%glnrho+p%glnTT, p%glnTT, g2_chi)
