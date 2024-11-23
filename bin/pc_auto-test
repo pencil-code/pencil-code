@@ -156,6 +156,7 @@ my %tests = (
                          2d-tests/boussinesq_convection
                          2d-tests/chiral_dynamo
                          cartesian-convection-kramers-chimax
+                         cartesian-convection-kramers-chimax_cp_2
                          continuous-forcing-from-file
                          conv-slab
                          conv-slab_cp_2
