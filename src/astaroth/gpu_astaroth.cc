@@ -503,8 +503,7 @@ extern "C" void substepGPU(int isubstep)
 #endif
       //fprintf(stderr, "HMM MAX ADVEC, DIFFUS: %14e, %14e\n",maxadvec,max_diffus());
       AcReal dt1_ = sqrt(pow(maxadvec, 2) + pow(max_diffus(maxchi_dyn), 2));
-//printf("maxadvec, maxchi,maxdiffus= %e %e %e \n", maxadvec, maxchi, maxdiffus);
-//printf("maxadvec, maxdiffus= %e %e %e \n", maxadvec, max_diffus());
+//printf("maxadvec, maxdiffus= %e %e %e \n", maxadvec,maxchi_dyn,max_diffus(maxchi_dyn));
       set_dt(dt1_);
       acDeviceSetInput(acGridGetDevice(),AC_dt,dt);
   }
@@ -1011,9 +1010,6 @@ void checkConfig(AcMeshInfo &config)
  acLogFromRootProc(rank,"hcond_Kconst= %f %f \n", hcond_Kconst, config[AC_hcond_Kconst]);
  acLogFromRootProc(rank,"Fbot= %f %f \n", Fbot, config[AC_Fbot]);
  acLogFromRootProc(rank,"chi_t= %f %f \n", chi_t, config[AC_chi_t]);
- acLogFromRootProc(rank,"chit_prof1= %f %f \n", chit_prof1, config[AC_chit_prof1]);
- acLogFromRootProc(rank,"chit_prof2= %f %f \n", chit_prof2, config[AC_chit_prof2]);
- acLogFromRootProc(rank,"widthss= %f %f \n", widthss, config[AC_widthss]);
 #endif
 #if LVISCOSITY
  acLogFromRootProc(rank,"nu= %f %f \n", nu, config[AC_nu]);
