@@ -323,7 +323,7 @@ def src2dst_remesh(
     comm=None,
     farray=None,
     index_farray=None,
-    data='all',
+    datasets='all',
     remesh=True,
     newtime=None,
 ):
@@ -336,7 +336,7 @@ def src2dst_remesh(
                    rename_submit_script=False, MBmin=5.0, ncpus=[1, 1, 1],
                    start_optionals=False, hostfile=None, submit_new=False,
                    chunksize=1000.0, lfs=False,  MB=1, count=1, size=1,
-                   rank=0, comm=None, farray=None, index_farray=None, data='all', remesh=True)
+                   rank=0, comm=None, farray=None, index_farray=None, datasets='all', remesh=True)
 
     Parameters
     ----------
@@ -446,7 +446,7 @@ def src2dst_remesh(
     index_farray : integer list
         set of index at which interpolation shall start
 
-    data : string
+    datasets : string
         "all" default to interpolate full farray, or specify selection
 
     remesh :  bool
@@ -465,6 +465,11 @@ def src2dst_remesh(
     from pencil import is_sim_dir
 
     start_time = time.time()
+
+    #------------------------------------------------------------------
+    #identify source and destination paths and copy simulation files as
+    #required to destination path
+
     if rank == 0 or rank == size - 1:
         print("started at {}".format(time.ctime(start_time)))
     # set dtype from precision
@@ -493,8 +498,20 @@ def src2dst_remesh(
     lsim=False
     if is_sim_dir(dst):
         dstsim = simulation(dst, quiet=quiet)
-        mode = "r+"
+        mode = "w"
         lsim=True
+        srcsim.copy(
+                name=dstname,
+                quiet=quiet,
+                OVERWRITE=False,
+                optionals=optionals,
+                start_optionals=start_optionals,
+                rename_submit_script=rename_submit_script,
+            )
+        if not os.path.isfile(join(dst,"data/allprocs")):
+            mkdir(join(dst,"data/allprocs"),lfs=lfs,MB=MB,count=count)
+        if os.path.isfile(join(dst,"data/allprocs",h5out)):
+            mode = "r+"
     else:
         mode = "a"
         print("setting up simulation")
@@ -513,7 +530,7 @@ def src2dst_remesh(
                 rename_submit_script=rename_submit_script,
             )
             mkdir(join(dst,"data","allprocs"),lfs=lfs,MB=MB,count=count)
-    if data == "all":
+    if datasets == "all":
         if rank == 0:
             #cmd = "cp "+join(dstsim.path, dstdatadir, h5out)+" "+join(dstsim.path, dstdatadir, h5out+"copy")
             #os.system(cmd)
@@ -638,9 +655,6 @@ def src2dst_remesh(
                         dkey=key.split("_")[-1]
                         dsth5["unit"].create_dataset(dkey, data=srcsim.param[key])
             gridh5 = h5py.File(join(dstsim.datadir, "grid.h5"), 'w')
-            #dsth5["settings/nprocx"][0] = ncpus[0]
-            #dsth5["settings/nprocy"][0] = ncpus[1]
-            #dsth5["settings/nprocz"][0] = ncpus[2]
             dsth5.copy("settings", gridh5)
             dsth5.copy("grid", gridh5)
             dsth5.copy("unit", gridh5)
@@ -685,6 +699,10 @@ def src2dst_remesh(
                     var=pc.read.var(proc=rank, lpersist=False)
                 dsth5.require_dataset("time", (), dtype=dtype)
                 dsth5["time"][()] = var.t
+
+    #-----------------------------------------------------------------
+    #update destination simulation object on all ranks
+
     if comm:
         comm.Barrier()
     if not rank == 0:
@@ -708,7 +726,7 @@ def src2dst_remesh(
             dh5["settings"]["nz"][0],
         )
         #print("dh5 settings", dh5.keys(), dh5["settings"].keys())
-        if data == "all" or data == "data":
+        if datasets == "all" or datasets == "data":
             with sh5 as srch5:
                 if comm:
                     try:
