@@ -73,7 +73,7 @@ def get_dstgrid(
     srcpar,
     dsth5,
     dstsim,
-    ncpus=[1,1,1],
+    ncpus=[1, 1, 1],
     nxyz=None,
     multxyz=[2, 2, 2],
     fracxyz=[1, 1, 1],
@@ -546,7 +546,7 @@ def src2dst_remesh(
                                 srch5,
                                 srcsim.param,
                                 dsth5,
-                                dst,
+                                dstsim,
                                 ncpus=ncpus,
                                 nxyz=nxyz,
                                 multxyz=multxyz,
@@ -567,7 +567,7 @@ def src2dst_remesh(
                             srch5,
                             srcsim.param,
                             dsth5,
-                            dst,
+                            dstsim,
                             ncpus=ncpus,
                             nxyz=nxyz,
                             multxyz=multxyz,
@@ -699,6 +699,7 @@ def src2dst_remesh(
                     var=pc.read.var(proc=rank, lpersist=False)
                 dsth5.require_dataset("time", (), dtype=dtype)
                 dsth5["time"][()] = var.t
+
     #-----------------------------------------------------------------
     #update destination simulation object on all ranks
 
