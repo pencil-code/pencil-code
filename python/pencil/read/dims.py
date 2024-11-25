@@ -114,7 +114,10 @@ class Dim(object):
                     "allprocs",
                     os.path.basename(vardfiles[0]),
                     )
+            elif os.path.exists(os.path.join(datadir, "grid.h5")):
+                filename = os.path.join(datadir, "grid.h5")
             else:
+                # Judging from commit 47692849354b143fc18649687975164bc4b1bdf8 , there is a use-case for reading dims when grid.h5 does not exist.
                 filename = os.path.join(datadir,"allprocs","var.h5")
 
             with h5py.File(filename, "r") as tmp:

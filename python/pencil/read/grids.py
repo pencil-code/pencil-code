@@ -114,7 +114,13 @@ class Grid(object):
 
             dim = read.dim(datadir, proc)
 
-            with h5py.File(os.path.join(datadir,"allprocs","var.h5"), "r") as tmp:
+            if os.path.exists(os.path.join(datadir, "grid.h5")):
+                filename = os.path.join(datadir, "grid.h5")
+            else:
+                # Judging from commit 47692849354b143fc18649687975164bc4b1bdf8 , there is a use-case for reading grid when grid.h5 does not exist.
+                filename = os.path.join(datadir,"allprocs","var.h5")
+
+            with h5py.File(filename, "r") as tmp:
                 x = dtype(tmp["grid"]["x"][()])
                 y = dtype(tmp["grid"]["y"][()])
                 z = dtype(tmp["grid"]["z"][()])
