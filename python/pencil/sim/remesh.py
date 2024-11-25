@@ -70,7 +70,7 @@ def local_remesh(var, xsrc, ysrc, zsrc, xdst, ydst, zdst, quiet=True, kind="line
 
 def get_dstgrid(
     srch5,
-    srcpar,
+    srcsim,
     dsth5,
     dstsim,
     ncpus=[1, 1, 1],
@@ -84,27 +84,26 @@ def get_dstgrid(
     quiet=True,
     dstprecision=[b"D"],
     srcchunks=None,
-    srcsim=None,
 ):
     """
-    get_dstgrid(srch5, srcpar, dsth5, dstsim, ncpus=[1,1,1], multxyz=[2,2,2],
+    get_dstgrid(srch5, srcsim, dsth5, dstsim, ncpus=[1,1,1], multxyz=[2,2,2],
                nxyz=None, fracxyz=[1,1,1], srcghost=3, dstghost=3, dtype=np.float64,
                lsymmetric=True, quiet=True, dstprecision=[b"D"],
-               srchunks=srchunks, srcsim=None)
+               srchunks=srchunks)
 
     Parameters
     ----------
     srch5 : obj
         hdf5 object from source simulation.
 
-    srcpar : dict
-        Simulation param dictionary object from source simulation.
+    srcsim : simulation object
+        src simulation object
 
     dsth5 : obj
         hdf5 object for destination simulation data.
 
     dstsim : simulation object
-        Simulation param dictionary object from source simulation.
+        dst simulation object
 
     ncpus : int
         Array of nprocx, nprocy, and nprocz to apply for new simulation.
@@ -139,9 +138,6 @@ def get_dstgrid(
 
     srcchunks : bool
         list of index limits [l[0]:l[1],m[0]:m[1],n[0]:n[1]] for subdomain remesh
-
-    srcsim : bool
-        src simulation object in absence of h5 object
 
     """
     from os.path import join, abspath
@@ -222,7 +218,7 @@ def get_dstgrid(
                 srcgrid[key]=srcsim.ghost_grid.__getattribute__(key)
                 grid.create_dataset(key, data=srcgrid[key])
         for key, i in zip(["Ox", "Oy", "Oz"],[0,1,2]):
-            srcgrid[key]=srcpar["xyz0"][i]
+            srcgrid[key]=srcsim.param["xyz0"][i]
             grid.create_dataset(key, data=srcgrid[key])
     # replace grid data changed for dstsim
     if srcchunks:
@@ -244,7 +240,7 @@ def get_dstgrid(
             grid["d"+x+"_tilde"][:] = dtype(1.0 / np.gradient(grid["d"+x+"_1"][()]))
     else:
         for x, ii in zip(["x","y","z"],[0,1,2]):
-            if not srcpar["lequidist"][ii]:
+            if not srcsim.param["lequidist"][ii]:
                 if rank == 0:
                     print(
                         "get_dstgrid WARNING: non-equidistant grid not implemented\n",
@@ -254,12 +250,12 @@ def get_dstgrid(
             if not sets["m"+x][()] == srcsets["m"+x][()]:
                 dx = dtype(grid["L"+x][()]/sets["n"+x][0])
                 grid["d"+x][()] = dx
-                if not srcpar["lperi"][ii]:
+                if not srcsim.param["lperi"][ii]:
                     grid["O"+x][()] = srcgrid["O"+x][()] - 0.5*dx
                 x0,x1 = grid["O"+x][()], grid["O"+x][()] + grid["L"+x][()]
                 print("dx {}, xyz0 {}, Lxyz {}".format(dx, x0, x1-x0))
                 grid.__delitem__(x)
-                if srcpar["lperi"][ii]:
+                if srcsim.param["lperi"][ii]:
                     grid.create_dataset(x, data=np.linspace(x0-dstghost*dx,
                                                     x1+(dstghost-1)*dx,
                                                     sets["m"+x][0]), dtype=dtype)
@@ -267,9 +263,9 @@ def get_dstgrid(
                     grid.create_dataset(x, data=np.linspace(x0-dstghost*dx,
                                                     x1+(dstghost-1)*dx,
                                                     sets["m"+x][0]), dtype=dtype)
-                if srcpar["lshift_origin"][ii] or lsymmetric:
+                if srcsim.param["lshift_origin"][ii] or lsymmetric:
                     grid[x][()] += dtype(0.5 * grid["d"+x][()])
-                elif srcpar["lshift_origin_lower"][ii]:
+                elif srcsim.param["lshift_origin_lower"][ii]:
                     grid[x][()] -= dtype(0.5 * grid["d"+x][()])
                 grid.__delitem__("d" + x + "_1")
                 grid.create_dataset(
@@ -494,6 +490,8 @@ def src2dst_remesh(
     lsim=False
     if is_sim_dir(dst):
         dstsim = simulation(dst, quiet=quiet)
+        dstname = str.split(dst, "/")[-1]
+        dstpath = str.strip(dst, dstname)
         mode = "w"
         lsim=True
         srcsim.copy(
@@ -540,7 +538,7 @@ def src2dst_remesh(
                         with h5py.File(join(dstsim.path, dstdatadir, h5out),mode) as dsth5:
                             get_dstgrid(
                                 srch5,
-                                srcsim.param,
+                                srcsim,
                                 dsth5,
                                 dstsim,
                                 ncpus=ncpus,
@@ -561,7 +559,7 @@ def src2dst_remesh(
                     with h5py.File(join(dstsim.path, dstdatadir, h5out),mode) as dsth5:
                         get_dstgrid(
                             srch5,
-                            srcsim.param,
+                            srcsim,
                             dsth5,
                             dstsim,
                             ncpus=ncpus,
@@ -575,7 +573,6 @@ def src2dst_remesh(
                             quiet=quiet,
                             dstprecision=dstprecision,
                             srcchunks=srcchunks,
-                            srcsim=srcsim,
                             )
 
         print("get_dstgrid completed on rank {}".format(rank))

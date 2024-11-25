@@ -535,7 +535,7 @@ class __Simulation__(object):
         """
         from os.path import exists
         from os.path import join
-        from pencil.read import param, grid, dim
+        from pencil.read import param, grid, dim, index
 
         REEXPORT = False
 
