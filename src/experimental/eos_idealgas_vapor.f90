@@ -678,15 +678,21 @@ module EquationOfState
 !
     endsubroutine getpressure
 !***********************************************************************
-    subroutine get_gamma_etc(gamma,cp,cv)
+    subroutine get_gamma_etc(gamma_,cp,cv)
 !
-      real, optional, intent(OUT) :: gamma, cp,cv
+      real, optional, intent(OUT) :: gamma_, cp,cv
 !
-      call warning('get_gamma_etc','gamma, cp, and cv are not constant in eos_idealgas_vapor.'// &
-                   achar(10)//'The values provided are for one-atomic ideal gas. Use at own risk')
-      if (present(gamma)) gamma=5./3.
-      if (present(cp)) cp=1.
-      if (present(cv)) cv=3./5.
+      if (present(gamma_)) gamma_=gamma
+      if (present(cp)) then
+        call warning('get_gamma_etc','cp is not constant in eos_idealgas_vapor.'// &
+          achar(10)//'The value provided is for one-atomic ideal gas. Use at own risk')
+        cp=1.
+      endif
+      if (present(cv)) then
+        call warning('get_gamma_etc','cv is not constant in eos_idealgas_vapor.'// &
+          achar(10)//'The value provided is for one-atomic ideal gas. Use at own risk')
+        cv=3./5.
+      endif
 
     endsubroutine get_gamma_etc
 !***********************************************************************
