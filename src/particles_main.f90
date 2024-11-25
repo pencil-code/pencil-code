@@ -1278,7 +1278,7 @@ module Particles_main
       real :: rp, epsd2g_tmp
       integer :: k, ix0, iy0, iz0
 !
-      if (remove_particle_at_time > 0) then
+      if (remove_particle_at_time > 0) then        
         !
         ! Should this be moved to particles_dust.f90 and _blocks.f90 respectivly? (signed who?)
         !
@@ -1347,8 +1347,7 @@ module Particles_main
                   k=k+1
                 endif
               enddo
-              remove_particle_at_time = t
-              
+              remove_particle_at_time = t+dt
             endselect
           else
             remove_particle_at_time = -1.
