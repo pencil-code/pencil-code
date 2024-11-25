@@ -264,8 +264,7 @@ module Chemistry
 !
   integer :: idiag_lambdam=0,idiag_lambdamax=0,idiag_lambdamin=0
   integer :: idiag_alpham=0,idiag_alphamax=0,idiag_alphamin=0
-  integer :: idiag_ffcondposm, idiag_ffcondnegm, idiag_ffnucl
-  integer :: idiag_ffcondm
+  integer :: idiag_ffnucl
 !
 !  Auxiliaries.
 !
@@ -3526,7 +3525,7 @@ module Chemistry
         if (idiag_alphamax/=0) &
             call max_mn_name(lambda_full(l1:l2,m,n)/(p%rho*cp_full(l1:l2,m,n)),idiag_alphamax)
         if (idiag_alphamin/=0) &
-            call max_mn_name(-lambda_full(l1:l2,m,n)/(p%rho*cp_full(l1:l2,m,n)),idiag_alphamin,lneg=.true.) 
+            call max_mn_name(-lambda_full(l1:l2,m,n)/(p%rho*cp_full(l1:l2,m,n)),idiag_alphamin,lneg=.true.)
         if (lnucleation) then
           call sum_mn_name(p%nucl_rmin,idiag_nuclrmin)
           call sum_mn_name(p%nucl_rate,idiag_nuclrate)
@@ -3621,9 +3620,6 @@ module Chemistry
         idiag_alpham = 0
         idiag_alphamax = 0
         idiag_alphamin = 0
-        idiag_ffcondposm = 0
-        idiag_ffcondm = 0
-        idiag_ffcondnegm = 0
         idiag_ffnucl = 0
 !
         idiag_nuclrmin=0
@@ -3678,9 +3674,6 @@ module Chemistry
         call parse_name(iname,cname(iname),cform(iname),'alpham',idiag_alpham)
         call parse_name(iname,cname(iname),cform(iname),'alphamax',idiag_alphamax)
         call parse_name(iname,cname(iname),cform(iname),'alphamin',idiag_alphamin)
-        call parse_name(iname,cname(iname),cform(iname),'ffcondposm',idiag_ffcondposm)
-        call parse_name(iname,cname(iname),cform(iname),'ffcondm',idiag_ffcondm)
-        call parse_name(iname,cname(iname),cform(iname),'ffcondnegm',idiag_ffcondnegm)
         call parse_name(iname,cname(iname),cform(iname),'ffnucl',idiag_ffnucl)
 !
 !  Sample for hard-coded diffusion diagnostics

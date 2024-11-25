@@ -64,6 +64,7 @@ def simulation(*args, **kwargs):
                                be ignored by pencil
     self.param:            list of param file
     self.grid:             grid object
+    self.index             index object
     self.dim:              dim object
     self.tmp_dict:         temporal dictionary of stuff, will not be saved
     """
@@ -114,6 +115,7 @@ class __Simulation__(object):
         self.hidden = hidden  # hidden is default False
         self.param = False
         self.grid = False
+        self.index = False
         self.dim = False
         self.ghost_grid = False
         self.tmp_dict = {}
@@ -597,6 +599,8 @@ class __Simulation__(object):
                 self.grid = grid(datadir=self.datadir, trim=True, quiet=True)
                 print("~ Reading ghost_grid.. ")
                 self.ghost_grid = grid(datadir=self.datadir, trim=False, quiet=True)
+                print("~ Reading index.. ")
+                self.index = index(datadir=self.datadir)
                 print("~ Reading dim.. ")
                 self.dim = dim(datadir=self.datadir)
                 if not quiet:
@@ -622,6 +626,7 @@ class __Simulation__(object):
                     print(f"? WARNING: Couldnt load grid for {self.path}")
                 self.grid = False
                 self.ghost_grid = False
+                self.index = False
                 self.dim = False
                 REEXPORT = True
         elif self.param == False:
@@ -632,6 +637,7 @@ class __Simulation__(object):
                 )
             self.grid = False
             self.ghost_grid = False
+            self.index = False
             self.dim = False
             REEXPORT = True
 

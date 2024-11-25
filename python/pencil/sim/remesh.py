@@ -160,8 +160,8 @@ def get_dstgrid(
     else:
         sets = dsth5.require_group("settings")
         srcsets = dict()
-        for key in srcsim["dim"].keys():
-            srcsets[key]=np.array([srcsim["dim"][key]])
+        for key in srcsim.dim.__dict__.keys():
+            srcsets[key]=np.array([srcsim.dim.__getattribute(key)])
             sets.create_dataset(key, data=srcsets[key][()])
     lvalid = True
     if srcchunks:
@@ -217,9 +217,9 @@ def get_dstgrid(
     else:
         grid=dsth5.require_group("grid")
         srcgrid = dict()
-        for key in srcsim["grid"].keys():
+        for key in srcsim.ghost_grid.__dict__.keys():
             if not key == "t":
-                srcgrid[key]=srcsim["grid"][key]
+                srcgrid[key]=srcsim.ghost_grid.__getattribute__(key)
                 grid.create_dataset(key, data=srcgrid[key])
         for key, i in zip(["Ox", "Oy", "Oz"],[0,1,2]):
             srcgrid[key]=srcpar["xyz0"][i]
@@ -324,15 +324,15 @@ def src2dst_remesh(
     newtime=None,
 ):
     """
-    src2dst_remesh(src=None, dst=None, h5in='var.h5', h5out='var.h5', nxyz=None, multxyz=[2, 2, 2],
-                   fracxyz=[1, 1, 1], srcchunks=None, srcghost=3, dstghost=3,
-                   srcdatadir='data/allprocs', dstdatadir='data/allprocs',
+    src2dst_remesh(src=None, dst=None, h5in='var.h5', h5out='var.h5', nxyz=None,
+                   multxyz=[2, 2, 2], fracxyz=[1, 1, 1], srcchunks=None, srcghost=3,
+                   dstghost=3, srcdatadir='data/allprocs', dstdatadir='data/allprocs',
                    dstprecision=[b'D'], lsymmetric=True, quiet=True, kind="linear",
                    check_grid=True, OVERWRITE=False, optionals=True, nmin=32,
                    rename_submit_script=False, MBmin=5.0, ncpus=[1, 1, 1],
                    start_optionals=False, hostfile=None, submit_new=False,
-                   chunksize=1000.0, lfs=False,  MB=1, count=1, size=1,
-                   rank=0, comm=None, farray=None, index_farray=None, datasets='all', remesh=True)
+                   chunksize=1000.0, lfs=False,  MB=1, count=1, size=1, rank=0,
+                   comm=None, farray=None, index_farray=None, datasets='all', remesh=True)
 
     Parameters
     ----------
@@ -702,420 +702,399 @@ def src2dst_remesh(
         comm.Barrier()
     if not rank == 0:
         dstsim = simulation(dst, quiet=quiet)
+    #print("dh5 settings", dh5.keys(), dh5["settings"].keys())
+    #    if datasets == "all" or datasets == "data":
+    #        #with sh5 as srch5:
+    #            if comm:
+    #                try:
+    #                    srch5.atomic = True
+    #                except:
+    #                    print("atomic not supported with driver {}".format(driver))
+    #                print(srch5.filename,"atomic status:",srch5.atomic)
+    #            else:
+    #                print("atomic not used not comm {}".format(not comm))
+    srcprocs = (
+          srcsim.dim.nprocx
+        * srcsim.dim.nprocy
+        * srcsim.dim.nprocz
+    )
+    if srcchunks:
+        nxsub = srcchunks[0][1]-srcchunks[0][0]
+        nysub = srcchunks[1][1]-srcchunks[1][0]
+        nzsub = srcchunks[2][1]-srcchunks[2][0]
+        l1,l2=srcchunks[0][0], srcchunks[0][1]+2*srcghost
+        m1,m2=srcchunks[1][0], srcchunks[1][1]+2*srcghost
+        n1,n2=srcchunks[2][0], srcchunks[2][1]+2*srcghost
+        xin, yin, zin = (
+          srcsim.ghost_grid.x[l1:l2],
+          srcsim.ghost_grid.y[m1:m2],
+          srcsim.ghost_grid.z[n1:n2]
+          )
+        print("start and end values {},{}".format(l1,l2))
+    else:
+        nxsub, nysub, nzsub = nx, ny, nz
+        l1,l2=srcsim.dim.l1-srcghost, srcsim.dim.l2+srcghost+1
+        m1,m2=srcsim.dim.m1-srcghost, srcsim.dim.m2+srcghost+1
+        n1,n2=srcsim.dim.n1-srcghost, srcsim.dim.n2+srcghost+1
+        xin, yin, zin = (
+              srcsim.ghost_grid.x[()],
+              srcsim.ghost_grid.y[()],
+              srcsim.ghost_grid.z[()]
+              )
+    print("nxin, nyin, nzin", xin.size, yin.size, zin.size)
+    #if lsrch5:
     if comm:
-        comm.Barrier()
-    if lsrch5:
+        driver = "mpio"
+        #sh5 = h5py.File(join(srcsim.path, srcdatadir, h5in), "r", driver=driver, comm=comm)
+        dh5 = h5py.File(join(dstsim.path, dstdatadir, h5out),"r+", driver=driver, comm=comm)
+    else:
+        #driver = None
+        #sh5 = h5py.File(join(srcsim.path, srcdatadir, h5in), "r" )
+        dh5 = h5py.File(join(dstsim.path, dstdatadir, h5out),"r+" )
+    print("dh5 name", dh5.filename)
+    nx, ny, nz =(
+        dh5["settings"]["nx"][0],
+        dh5["settings"]["ny"][0],
+        dh5["settings"]["nz"][0],
+    )
+    if not farray:
+        fields = list(srcsim.index.__dict__.keys())
+        if not index_farray:
+            index_fields = list()
+            for ind in range(len(fields)):
+                index_fields.append(0)
+    else:
+        fields = list()
+        index_fields = list()
+        if isinstance(farray, list):
+            if not index_farray:
+                index_farray = list()
+                for ind in range(len(farray)):
+                    index_farray.append(0)
+            if isinstance(index_farray, list):
+                index_farray = index_farray
+            else:
+                index_farray = list(index_farray)
+            if not isinstance(index_farray[0], int):
+                if rank == 0:
+                    print("index_farray {} should be a list of start indices or else None to start writing at index 0.".format(index_farray))
+                index_farray = [0]
+                if len(index_farray) < len(farray):
+                    for ind in range(len(farray)-len(index_farray)):
+                        index_farray.append(0)
+            for field, ind in zip(farray,index_farray):
+                if field in srch5["data"].keys():
+                    fields.append(field)
+                    index_fields.append(ind)
+                else:
+                    if rank == 0:
+                        print("{} in farray list is not in {} data".format(field, srch5.filename))
+        else:
+            if isinstance(farray, str):
+                if farray in srch5["data"].keys():
+                    fields.append(farray)
+                    if not index_fields:
+                        index_fields = [0]
+                    elif isinstance(index_farray, list):
+                        if not isinstance(index_farray[0], int):
+                            if rank == 0:
+                                print("index_farray {} should be a list of start indices or else None to start writing at index 0.".format(index_farray))
+                            index_fields = [0]
+                    else:
+                        if not isinstance(index_farray, int):
+                            if rank == 0:
+                                print("index_farray {} should be a list of start indices or else None to start writing at index 0.".format(index_farray))
+                            index_fields = [0]
+                else:
+                    if rank == 0:
+                        print("farray {} is not a string or is not in {} data".format(farray, srch5.filename))
+        if len(fields) == 0:
+            print("farray list empty no data to remesh")
+            return 1
+    with dh5 as dsth5:
         if comm:
-            comm.Barrier()
+            try:
+                dsth5.atomic = True
+            except:
+                print("atomic not supported with driver {}".format(driver))
+            print(dsth5.filename,"atomic status:",dsth5.atomic)
+        nx, ny, nz =(
+            dsth5["settings"]["nx"][0],
+            dsth5["settings"]["ny"][0],
+            dsth5["settings"]["nz"][0],
+        )
+        nprocs = (
+              dsth5["settings/nprocx"][0]
+            * dsth5["settings/nprocy"][0]
+            * dsth5["settings/nprocz"][0]
+        )
+        ncpus = [dsth5["settings/nprocx"][0],dsth5["settings/nprocy"][0],dsth5["settings/nprocz"][0]]
+        mx, my, mz = (
+                dsth5["settings"]["mx"][0],
+                dsth5["settings"]["my"][0],
+                dsth5["settings"]["mz"][0],
+            )
+        xout, yout, zout = (
+              dsth5["grid/x"][()],
+              dsth5["grid/y"][()],
+              dsth5["grid/z"][()]
+              )
+        dsth5.require_group("data")
+        dstchunksize = bytesize * nx * ny * nz / 1024 / 1024
+        if rank == 0:
+            print("rank {}, nx = {} dstchunksize {} chunksize {}, ncpus {}".format(rank, nx, dstchunksize, chunksize, ncpus))
+        lchunks = False
+        if dstchunksize > chunksize or size > 1:
+            lchunks = True
+            tchunks = int(dstchunksize/chunksize+1)
+            nallchunks = cpu_optimal(
+                    nx,
+                    ny,
+                    nz,
+                    MBmin=tchunks,
+                    nsize=tchunks,
+                    size=tchunks,
+                    remesh=remesh
+                    )[1]
+            if rank == 0:
+                print("rank,lchunks, tchunks, nallchunks",rank,lchunks, tchunks, nallchunks)
+            allindx = np.array_split(np.arange(nx) + dstghost, nallchunks[0])
+            allindy = np.array_split(np.arange(ny) + dstghost, nallchunks[1])
+            allindz = np.array_split(np.arange(nz) + dstghost, nallchunks[2])
+            chunks = list()
+            for izz in range(nallchunks[2]):
+                for iyy in range(nallchunks[1]):
+                    for ixx in range(nallchunks[0]):
+                        chunks.append([ixx,iyy,izz])
+            #print("rank {} chunks {} len chunks {}".format(rank, chunks, len(chunks)))
+            rankchunks = np.array_split(chunks, size)
+            for irank in range(size):
+                if rank == irank:
+                    chunks = rankchunks[irank]
+                    #print("rank {} chunks {} len chunks {}".format(rank, chunks, len(chunks)))
+                    nchunks = 0
+                    lfirstx,lfirsty,lfirstz = list(),list(),list()
+                    llastx,llasty,llastz = list(),list(),list()
+                    for ichunk in chunks:
+                        nchunks += 1
+                        if ichunk[0] == 0:
+                            lfirstx.append("True")
+                        else:
+                            lfirstx.append("False")
+                        if ichunk[0] == nallchunks[0] - 1:
+                            llastx.append("True")
+                        else:
+                            llastx.append("False")
+                        if ichunk[1] == 0:
+                            lfirsty.append("True")
+                        else:
+                            lfirsty.append("False")
+                        if ichunk[1] == nallchunks[1] - 1:
+                            llasty.append("True")
+                        else:
+                            llasty.append("False")
+                        if ichunk[2] == 0:
+                            lfirstz.append("True")
+                        else:
+                            lfirstz.append("False")
+                        if ichunk[2] == nallchunks[2] - 1:
+                            llastz.append("True")
+                        else:
+                            llastz.append("False")
+
+        else:
+            lfirstx,lfirsty,lfirstz = list("True"),list("True"),list("True")
+            llastx,llasty,llastz = list("True"),list("True"),list("True")
+            nchunks = 1
+            chunks = [0,0,0]
+    print("rank {} len chunks {}, len lfirstx".format(rank, len(chunks), len(lfirstx)))
+    for key, ind_start in zip(fields,index_fields):
+        if exists(join(dst,'PYTHONSTOP')):
+            if rank == 0:
+                cmd = 'rm -f '+join(dst,'PYTHONSTOP')
+                print("rank {} ind {} for key {} at time {}".format(rank, ind, key, time.ctime(time.time())))
+                os.system(cmd)
+            if comm:
+                comm.Barrier()
+            sys.exit()
+        if comm:
             driver = "mpio"
             sh5 = h5py.File(join(srcsim.path, srcdatadir, h5in), "r", driver=driver, comm=comm)
             dh5 = h5py.File(join(dstsim.path, dstdatadir, h5out),"r+", driver=driver, comm=comm)
         else:
-            #driver = None
-            sh5 = h5py.File(join(srcsim.path, srcdatadir, h5in), "r" )
-            dh5 = h5py.File(join(dstsim.path, dstdatadir, h5out),"r+" )
-        print("dh5 name", dh5.filename)
-        nx, ny, nz =(
-            dh5["settings"]["nx"][0],
-            dh5["settings"]["ny"][0],
-            dh5["settings"]["nz"][0],
-        )
-        #print("dh5 settings", dh5.keys(), dh5["settings"].keys())
-        if datasets == "all" or datasets == "data":
-            with sh5 as srch5:
-                if comm:
-                    try:
-                        srch5.atomic = True
-                    except:
-                        print("atomic not supported with driver {}".format(driver))
-                    print(srch5.filename,"atomic status:",srch5.atomic)
-                else:
-                    print("atomic not used not comm {}".format(not comm))
-                srcprocs = (
-                      srch5["settings/nprocx"][0]
-                    * srch5["settings/nprocy"][0]
-                    * srch5["settings/nprocz"][0]
-                )
-                if srcchunks:
-                    nxsub = srcchunks[0][1]-srcchunks[0][0]
-                    nysub = srcchunks[1][1]-srcchunks[1][0]
-                    nzsub = srcchunks[2][1]-srcchunks[2][0]
-                    l1,l2=srcchunks[0][0], srcchunks[0][1]+2*srcghost
-                    m1,m2=srcchunks[1][0], srcchunks[1][1]+2*srcghost
-                    n1,n2=srcchunks[2][0], srcchunks[2][1]+2*srcghost
-                    xin, yin, zin = (
-                      srch5["grid/x"][l1:l2],
-                      srch5["grid/y"][m1:m2],
-                      srch5["grid/z"][n1:n2]
-                      )
-                    print("start and end values {},{}".format(l1,l2))
-                else:
-                    nxsub, nysub, nzsub = nx, ny, nz
-                    l1,l2=srch5["settings/l1"][0]-srcghost, srch5["settings/l2"][0]+srcghost+1
-                    m1,m2=srch5["settings/m1"][0]-srcghost, srch5["settings/m2"][0]+srcghost+1
-                    n1,n2=srch5["settings/n1"][0]-srcghost, srch5["settings/n2"][0]+srcghost+1
-                    xin, yin, zin = (
-                          srch5["grid/x"][()],
-                          srch5["grid/y"][()],
-                          srch5["grid/z"][()]
-                          )
-                print("nxin, nyin, nzin", xin.size, yin.size, zin.size)
-                if not farray:
-                    fields = list(srch5["data"].keys())
-                    if not index_farray:
-                        index_fields = list()
-                        for ind in range(len(fields)):
-                            index_fields.append(0)
-                else:
-                    fields = list()
-                    index_fields = list()
-                    if isinstance(farray, list):
-                        if not index_farray:
-                            index_farray = list()
-                            for ind in range(len(farray)):
-                                index_farray.append(0)
-                        if isinstance(index_farray, list):
-                            index_farray = index_farray
-                        else:
-                            index_farray = list(index_farray)
-                        if not isinstance(index_farray[0], int):
-                            if rank == 0:
-                                print("index_farray {} should be a list of start indices or else None to start writing at index 0.".format(index_farray))
-                            index_farray = [0]
-                            if len(index_farray) < len(farray):
-                                for ind in range(len(farray)-len(index_farray)):
-                                    index_farray.append(0)
-                        for field, ind in zip(farray,index_farray):
-                            if field in srch5["data"].keys():
-                                fields.append(field)
-                                index_fields.append(ind)
-                            else:
-                                if rank == 0:
-                                    print("{} in farray list is not in {} data".format(field, srch5.filename))
-                    else:
-                        if isinstance(farray, str):
-                            if farray in srch5["data"].keys():
-                                fields.append(farray)
-                                if not index_fields:
-                                    index_fields = [0]
-                                elif isinstance(index_farray, list):
-                                    if not isinstance(index_farray[0], int):
-                                        if rank == 0:
-                                            print("index_farray {} should be a list of start indices or else None to start writing at index 0.".format(index_farray))
-                                        index_fields = [0]
-                                else:
-                                    if not isinstance(index_farray, int):
-                                        if rank == 0:
-                                            print("index_farray {} should be a list of start indices or else None to start writing at index 0.".format(index_farray))
-                                        index_fields = [0]
-                            else:
-                                if rank == 0:
-                                    print("farray {} is not a string or is not in {} data".format(farray, srch5.filename))
-                    if len(fields) == 0:
-                        print("farray list empty no data to remesh")
-                        return 1
+            driver = None
+            sh5 = h5py.File(join(srcsim.path, srcdatadir, h5in), "r", driver=driver)
+            dh5 = h5py.File(join(dstsim.path, dstdatadir, h5out),"r+", driver=driver)
+        with sh5 as srch5:
+            if comm:
+                try:
+                    srch5.atomic = True
+                except:
+                    print("atomic not supported with driver {}".format(driver))
             with dh5 as dsth5:
                 if comm:
                     try:
                         dsth5.atomic = True
                     except:
                         print("atomic not supported with driver {}".format(driver))
-                    print(dsth5.filename,"atomic status:",dsth5.atomic)
-                nx, ny, nz =(
-                    dsth5["settings"]["nx"][0],
-                    dsth5["settings"]["ny"][0],
-                    dsth5["settings"]["nz"][0],
-                )
-                nprocs = (
-                      dsth5["settings/nprocx"][0]
-                    * dsth5["settings/nprocy"][0]
-                    * dsth5["settings/nprocz"][0]
-                )
-                ncpus = [dsth5["settings/nprocx"][0],dsth5["settings/nprocy"][0],dsth5["settings/nprocz"][0]]
-                mx, my, mz = (
-                        dsth5["settings"]["mx"][0],
-                        dsth5["settings"]["my"][0],
-                        dsth5["settings"]["mz"][0],
+                if not quiet:
+                    if rank == 0 or rank == size - 1:
+                        print("nx {}, ny {}, nz {}".format(nx, ny, nz))
+                        print("mx {}, my {}, mz {}".format(mx, my, mz))
+                if rank == 0 or rank == size - 1:
+                    print("remeshing " + key)
+                if not lchunks:
+                    #invar = srch5["data"][key][n1:n2,m1:m2,l1:l2]
+                    invar = srch5["data"][key][n1:n2,m1:m2,l1:l2]
+                    print(key, srch5["data"][key][n1:n2,m1:m2,l1:l2].shape)
+                    print(key, zout.size,  yout.size, xout.size)
+                    var = local_remesh(
+                        invar,
+                        xin,
+                        yin,
+                        zin,
+                        xout,
+                        yout,
+                        zout,
+                        quiet=quiet,
+                        kind=kind,
                     )
-                xout, yout, zout = (
-                      dsth5["grid/x"][()],
-                      dsth5["grid/y"][()],
-                      dsth5["grid/z"][()]
-                      )
-                dsth5.require_group("data")
-                dstchunksize = bytesize * nx * ny * nz / 1024 / 1024
-                if rank == 0:
-                    print("rank {}, nx = {} dstchunksize {} chunksize {}, ncpus {}".format(rank, nx, dstchunksize, chunksize, ncpus))
-                lchunks = False
-                if dstchunksize > chunksize or size > 1:
-                    lchunks = True
-                    #nallchunks = cpu_optimal(
-                    #        nx,
-                    #        ny,
-                    #        nz,
-                    #        mvar=1,
-                    #        maux=0,
-                    #        nmin=nmin,
-                    #        MBmin=MBmin,
-                    #        size=size,
-                    #        remesh=remesh
-                    #        )[1]
-                    #tchunks = nallchunks[0]*nallchunks[1]*nallchunks[2]
-                    #if not ncpus == [1,1,1]:
-                    #    procchunks = ncpus[0]*ncpus[1]*ncpus[2]
-                    #    if procchunks > tchunks:
-                    #        for ich in range(3):
-                    #            nallchunks[ich] = ncpus[ich]
-                    #        tchunks = procchunks
-                    tchunks = int(dstchunksize/chunksize+1)
-                    nallchunks = cpu_optimal(
-                            nx,
-                            ny,
-                            nz,
-                            MBmin=tchunks,
-                            nsize=tchunks,
-                            size=tchunks,
-                            remesh=remesh
-                            )[1]
-                    if rank == 0:
-                        print("rank,lchunks, tchunks, nallchunks",rank,lchunks, tchunks, nallchunks)
-                    allindx = np.array_split(np.arange(nx) + dstghost, nallchunks[0])
-                    allindy = np.array_split(np.arange(ny) + dstghost, nallchunks[1])
-                    allindz = np.array_split(np.arange(nz) + dstghost, nallchunks[2])
-                    chunks = list()
-                    for izz in range(nallchunks[2]):
-                        for iyy in range(nallchunks[1]):
-                            for ixx in range(nallchunks[0]):
-                                chunks.append([ixx,iyy,izz])
-                    #print("rank {} chunks {} len chunks {}".format(rank, chunks, len(chunks)))
-                    rankchunks = np.array_split(chunks, size)
-                    for irank in range(size):
-                        if rank == irank:
-                            chunks = rankchunks[irank]
-                            #print("rank {} chunks {} len chunks {}".format(rank, chunks, len(chunks)))
-                            nchunks = 0
-                            lfirstx,lfirsty,lfirstz = list(),list(),list()
-                            llastx,llasty,llastz = list(),list(),list()
-                            for ichunk in chunks:
-                                nchunks += 1
-                                if ichunk[0] == 0:
-                                    lfirstx.append("True")
-                                else:
-                                    lfirstx.append("False")
-                                if ichunk[0] == nallchunks[0] - 1:
-                                    llastx.append("True")
-                                else:
-                                    llastx.append("False")
-                                if ichunk[1] == 0:
-                                    lfirsty.append("True")
-                                else:
-                                    lfirsty.append("False")
-                                if ichunk[1] == nallchunks[1] - 1:
-                                    llasty.append("True")
-                                else:
-                                    llasty.append("False")
-                                if ichunk[2] == 0:
-                                    lfirstz.append("True")
-                                else:
-                                    lfirstz.append("False")
-                                if ichunk[2] == nallchunks[2] - 1:
-                                    llastz.append("True")
-                                else:
-                                    llastz.append("False")
-
+                    if rank == 0 or rank == size - 1:
+                        print("serial rank {} writing {} shape {}".format(rank,key,var.shape))
+                    dsth5["data"].require_dataset(key, shape=(mz, my, mx), dtype=dtype)
+                    dsth5["data"][key][()] = var
                 else:
-                    lfirstx,lfirsty,lfirstz = list("True"),list("True"),list("True")
-                    llastx,llasty,llastz = list("True"),list("True"),list("True")
-                    nchunks = 1
-                    chunks = [0,0,0]
-            print("rank {} len chunks {}, len lfirstx".format(rank, len(chunks), len(lfirstx)))
-            for key, ind_start in zip(fields,index_fields):
-                if exists(join(dst,'PYTHONSTOP')):
-                    if rank == 0:
-                        cmd = 'rm -f '+join(dst,'PYTHONSTOP')
-                        print("rank {} ind {} for key {} at time {}".format(rank, ind, key, time.ctime(time.time())))
-                        os.system(cmd)
-                    if comm:
-                        comm.Barrier()
-                    sys.exit()
-                if comm:
-                    driver = "mpio"
-                    sh5 = h5py.File(join(srcsim.path, srcdatadir, h5in), "r", driver=driver, comm=comm)
-                    dh5 = h5py.File(join(dstsim.path, dstdatadir, h5out),"r+", driver=driver, comm=comm)
-                else:
-                    driver = None
-                    sh5 = h5py.File(join(srcsim.path, srcdatadir, h5in), "r", driver=driver)
-                    dh5 = h5py.File(join(dstsim.path, dstdatadir, h5out),"r+", driver=driver)
-                with sh5 as srch5:
-                    if comm:
-                        try:
-                            srch5.atomic = True
-                        except:
-                            print("atomic not supported with driver {}".format(driver))
-                    with dh5 as dsth5:
-                        if comm:
+                    dsth5["data"].require_dataset(key, shape=(mz, my, mx), dtype=dtype)
+                    print("xin {}, yin {}, zin {}, xout {}, yout {}, zout {}".format(xin.shape, yin.shape, zin.shape, xout.shape, yout.shape, zout.shape))
+                    for [ix, iy, iz], ixyz, firstz, lastz, firsty, lasty, firstx, lastx in zip(chunks,range(nchunks),lfirstz,llastz,lfirsty,llasty,lfirstx,llastx):
+                        #print("ixyz {} ix {} iy {} iz {}, firstz {}, lastz {}, firsty {}, lasty {}, firstx {}, lastx {}".format(ixyz, ix, iy, iz, firstz, lastz, firsty, lasty, firstx, lastx))
+                        if ixyz >= ind_start:
+                            n1, n2 = allindz[iz][0] - dstghost, allindz[iz][-1] + dstghost
+                            #print("zout[n1] {}, n1 {}, zin[:n1] {}".format(zout[n1], n1, zin[n1]))
                             try:
-                                dsth5.atomic = True
+                                srcn1 = np.max(
+                                np.where(zin < zout[n1])
+                                )
                             except:
-                                print("atomic not supported with driver {}".format(driver))
-                        if not quiet:
-                            if rank == 0 or rank == size - 1:
-                                print("nx {}, ny {}, nz {}".format(nx, ny, nz))
-                                print("mx {}, my {}, mz {}".format(mx, my, mz))
-                        if rank == 0 or rank == size - 1:
-                            print("remeshing " + key)
-                        if not lchunks:
-                            #invar = srch5["data"][key][n1:n2,m1:m2,l1:l2]
-                            invar = srch5["data"][key][n1:n2,m1:m2,l1:l2]
-                            print(key, srch5["data"][key][n1:n2,m1:m2,l1:l2].shape)
-                            print(key, zout.size,  yout.size, xout.size)
+                                srcn1 = 0
+                            try:
+                                srcn2 = np.min(
+                                    np.where(zin > zout[n2])
+                                )
+                            except:
+                                srcn2 = zin.size
+                            n1out = n1 + dstghost
+                            n2out = n2 - dstghost + 1
+                            varn1 = dstghost
+                            varn2 = -dstghost
+                            if firstz == True:
+                                n1out = 0
+                                varn1 = 0
+                            if lastz == True:
+                                n2out = n2 + 1
+                                varn2 = n2 + 1
+                            if not quiet:
+                                print(
+                                    "n1 {}, n2 {}, srcn1 {}, srcn2 {}".format(
+                                        n1, n2, srcn1, srcn2
+                                    )
+                                )
+                            m1, m2 = allindy[iy][0] - dstghost, allindy[iy][-1] + dstghost
+                            try:
+                                srcm1 = np.max(
+                                np.where(yin < yout[m1])
+                                )
+                            except:
+                                srcm1 = 0
+                            try:
+                                srcm2 = np.min(
+                                    np.where(yin > yout[m2])
+                                )
+                            except:
+                                srcm2 = yin.size
+                            m1out = m1 + dstghost
+                            m2out = m2 - dstghost + 1
+                            varm1 = dstghost
+                            varm2 = -dstghost
+                            if firsty == True:
+                                m1out = 0
+                                varm1 = 0
+                            if lasty == True:
+                                m2out = m2 + 1
+                                varm2 = m2 + 1
+                            if not quiet:
+                                print(
+                                    "rank {} m1 {}, m2 {}, srcm1 {}, srcm2 {}".format( rank,
+                                        m1, m2, srcm1, srcm2
+                                    )
+                                )
+                            l1, l2 = allindx[ix][0] - dstghost, allindx[ix][-1] + dstghost
+                            try:
+                                srcl1 = np.max(
+                                np.where(xin < xout[l1])
+                                )
+                            except:
+                                srcl1 = 0
+                            try:
+                                srcl2 = np.min(
+                                    np.where(xin > xout[l2])
+                                )
+                            except:
+                                srcl2 = zin.size
+                            l1out = l1 + dstghost
+                            l2out = l2 - dstghost + 1
+                            varl1 = dstghost
+                            varl2 = -dstghost
+                            if firstx == True:
+                                l1out = 0
+                                varl1 = 0
+                            if lastx == True:
+                                l2out = l2 + 1
+                                varl2 = l2 + 1
+                            if not quiet:
+                                print(
+                                    "l1 {}, l2 {}, srcl1 {}, srcl2 {}".format(
+                                        l1, l2, srcl1, srcl2
+                                    )
+                                )
+                            if not quiet:
+                                print(
+                                    "remeshing "
+                                    + key
+                                    + " chunk {}".format([iz, iy, ix])
+                                )
+                            if not quiet:
+                                print("rank {} ind {} writing {} shape {}".format(rank,ind,key,[n2out-n1out, m2out-m1out, l2out-l1out]))
+                            invar = srch5["data"][key][
+                                    srcn1 : srcn2 + 1,
+                                    srcm1 : srcm2 + 1,
+                                    srcl1 : srcl2 + 1,
+                                ]
                             var = local_remesh(
                                 invar,
-                                xin,
-                                yin,
-                                zin,
-                                xout,
-                                yout,
-                                zout,
+                                xin[srcl1 : srcl2 + 1],
+                                yin[srcm1 : srcm2 + 1],
+                                zin[srcn1 : srcn2 + 1],
+                                xout[l1 : l2 + 1],
+                                yout[m1 : m2 + 1],
+                                zout[n1 : n2 + 1],
                                 quiet=quiet,
-                                kind=kind,
                             )
-                            if rank == 0 or rank == size - 1:
-                                print("serial rank {} writing {} shape {}".format(rank,key,var.shape))
-                            dsth5["data"].require_dataset(key, shape=(mz, my, mx), dtype=dtype)
-                            dsth5["data"][key][()] = var
-                        else:
-                            dsth5["data"].require_dataset(key, shape=(mz, my, mx), dtype=dtype)
-                            print("xin {}, yin {}, zin {}, xout {}, yout {}, zout {}".format(xin.shape, yin.shape, zin.shape, xout.shape, yout.shape, zout.shape))
-                            for [ix, iy, iz], ixyz, firstz, lastz, firsty, lasty, firstx, lastx in zip(chunks,range(nchunks),lfirstz,llastz,lfirsty,llasty,lfirstx,llastx):
-                                #print("ixyz {} ix {} iy {} iz {}, firstz {}, lastz {}, firsty {}, lasty {}, firstx {}, lastx {}".format(ixyz, ix, iy, iz, firstz, lastz, firsty, lasty, firstx, lastx))
-                                if ixyz >= ind_start:
-                                    n1, n2 = allindz[iz][0] - dstghost, allindz[iz][-1] + dstghost
-                                    #print("zout[n1] {}, n1 {}, zin[:n1] {}".format(zout[n1], n1, zin[n1]))
-                                    try:
-                                        srcn1 = np.max(
-                                        np.where(zin < zout[n1])
-                                        )
-                                    except:
-                                        srcn1 = 0
-                                    try:
-                                        srcn2 = np.min(
-                                            np.where(zin > zout[n2])
-                                        )
-                                    except:
-                                        srcn2 = zin.size
-                                    n1out = n1 + dstghost
-                                    n2out = n2 - dstghost + 1
-                                    varn1 = dstghost
-                                    varn2 = -dstghost
-                                    if firstz == True:
-                                        n1out = 0
-                                        varn1 = 0
-                                    if lastz == True:
-                                        n2out = n2 + 1
-                                        varn2 = n2 + 1
-                                    if not quiet:
-                                        print(
-                                            "n1 {}, n2 {}, srcn1 {}, srcn2 {}".format(
-                                                n1, n2, srcn1, srcn2
-                                            )
-                                        )
-                                    m1, m2 = allindy[iy][0] - dstghost, allindy[iy][-1] + dstghost
-                                    try:
-                                        srcm1 = np.max(
-                                        np.where(yin < yout[m1])
-                                        )
-                                    except:
-                                        srcm1 = 0
-                                    try:
-                                        srcm2 = np.min(
-                                            np.where(yin > yout[m2])
-                                        )
-                                    except:
-                                        srcm2 = yin.size
-                                    m1out = m1 + dstghost
-                                    m2out = m2 - dstghost + 1
-                                    varm1 = dstghost
-                                    varm2 = -dstghost
-                                    if firsty == True:
-                                        m1out = 0
-                                        varm1 = 0
-                                    if lasty == True:
-                                        m2out = m2 + 1
-                                        varm2 = m2 + 1
-                                    if not quiet:
-                                        print(
-                                            "rank {} m1 {}, m2 {}, srcm1 {}, srcm2 {}".format( rank,
-                                                m1, m2, srcm1, srcm2
-                                            )
-                                        )
-                                    l1, l2 = allindx[ix][0] - dstghost, allindx[ix][-1] + dstghost
-                                    try:
-                                        srcl1 = np.max(
-                                        np.where(xin < xout[l1])
-                                        )
-                                    except:
-                                        srcl1 = 0
-                                    try:
-                                        srcl2 = np.min(
-                                            np.where(xin > xout[l2])
-                                        )
-                                    except:
-                                        srcl2 = zin.size
-                                    l1out = l1 + dstghost
-                                    l2out = l2 - dstghost + 1
-                                    varl1 = dstghost
-                                    varl2 = -dstghost
-                                    if firstx == True:
-                                        l1out = 0
-                                        varl1 = 0
-                                    if lastx == True:
-                                        l2out = l2 + 1
-                                        varl2 = l2 + 1
-                                    if not quiet:
-                                        print(
-                                            "l1 {}, l2 {}, srcl1 {}, srcl2 {}".format(
-                                                l1, l2, srcl1, srcl2
-                                            )
-                                        )
-                                    if not quiet:
-                                        print(
-                                            "remeshing "
-                                            + key
-                                            + " chunk {}".format([iz, iy, ix])
-                                        )
-                                    if not quiet:
-                                        print("rank {} ind {} writing {} shape {}".format(rank,ind,key,[n2out-n1out, m2out-m1out, l2out-l1out]))
-                                    invar = srch5["data"][key][
-                                            srcn1 : srcn2 + 1,
-                                            srcm1 : srcm2 + 1,
-                                            srcl1 : srcl2 + 1,
-                                        ]
-                                    var = local_remesh(
-                                        invar,
-                                        xin[srcl1 : srcl2 + 1],
-                                        yin[srcm1 : srcm2 + 1],
-                                        zin[srcn1 : srcn2 + 1],
-                                        xout[l1 : l2 + 1],
-                                        yout[m1 : m2 + 1],
-                                        zout[n1 : n2 + 1],
-                                        quiet=quiet,
+                            if not quiet:
+                                print(
+                                    "writing "
+                                    + key
+                                    + " shape {} chunk {}".format(
+                                        var.shape, [iz, iy, ix]
                                     )
-                                    if not quiet:
-                                        print(
-                                            "writing "
-                                            + key
-                                            + " shape {} chunk {}".format(
-                                                var.shape, [iz, iy, ix]
-                                            )
-                                        )
-                                    globals()[str(ixyz)+"time"] = time.time()
-                                    outvar = dtype(
-                                        var[varn1:varn2, varm1:varm2, varl1:varl2]
-                                    )
-                                    dsth5["data"][key][n1out:n2out, m1out:m2out, l1out:l2out] = outvar
-                                    print("wrote rank {} nchunk {} for {} in {} seconds".format(rank,[ix,iy,iz],key,time.time()-globals()[str(ixyz)+"time"]))
-                                    del(var,globals()[str(ixyz)+"time"],iz, firstz, lastz, iy, firsty, lasty, ix, firstx, lastx, ixyz)
+                                )
+                            globals()[str(ixyz)+"time"] = time.time()
+                            outvar = dtype(
+                                var[varn1:varn2, varm1:varm2, varl1:varl2]
+                            )
+                            dsth5["data"][key][n1out:n2out, m1out:m2out, l1out:l2out] = outvar
+                            print("wrote rank {} nchunk {} for {} in {} seconds".format(rank,[ix,iy,iz],key,time.time()-globals()[str(ixyz)+"time"]))
+                            del(var,globals()[str(ixyz)+"time"],iz, firstz, lastz, iy, firsty, lasty, ix, firstx, lastx, ixyz)
     #else:
     #    if comm:
     #        comm.Barrier()

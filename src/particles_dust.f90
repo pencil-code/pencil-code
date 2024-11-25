@@ -337,6 +337,7 @@ module Particles
   integer :: idiag_eccpx2m=0, idiag_eccpy2m=0, idiag_eccpz2m=0
   integer :: idiag_vprms=0, idiag_vpyfull2m=0, idiag_deshearbcsm=0
   integer :: idiag_Shm=0
+  integer :: idiag_ffcondposm, idiag_ffcondnegm, idiag_ffcondm
   integer, dimension(ndustrad) :: idiag_npvzmz=0, idiag_npvz2mz=0, idiag_nptz=0
   integer, dimension(ndustrad) :: idiag_npuzmz=0
 !
@@ -3453,10 +3454,9 @@ module Particles
 !
 !  Diagnostic output
 !
-      if (ldiagnos) then
+    if (ldiagnos) then
         call sum_name(npar_loc,idiag_nparsum)
         if (idiag_nparmin /= 0) call max_name(-npar_loc,idiag_nparmin,lneg=.true.)
-!        call sum_par_name(k_B*500./(four_pi_over_three*fp(1:npar_loc,iap)**3*rhopmat),idiag_vtherm500,lsqrt = .true.)      
         call max_name(+npar_loc,idiag_nparmax)
         if (idiag_nparpmax /= 0) call max_name(maxval(npar_imn),idiag_nparpmax)
         call sum_par_name(fp(1:npar_loc,ixp),idiag_xpm)
@@ -5189,6 +5189,12 @@ endif
         if (idiag_dvpx2m /= 0 .or. idiag_dvpx2m /= 0 .or. idiag_dvpx2m /= 0 .or. &
             idiag_dvpm  /= 0 .or. idiag_dvpmax /= 0) call calculate_rms_speed(fp,ineargrid,p)
         if (lfirst .and. ldt) call max_mn_name(dt1_drag,idiag_dtdragp,l_dt=.true.)
+        if (idiag_ffcondm/= 0) &
+             call sum_mn_name(p%ff_cond,idiag_ffcondm)
+        if (idiag_ffcondposm/= 0) &
+             call sum_mn_name(max(0.,p%ff_cond),idiag_ffcondposm)
+        if (idiag_ffcondnegm/= 0) &
+             call sum_mn_name(min(0.,p%ff_cond),idiag_ffcondnegm)
       endif
 !
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1
@@ -6991,6 +6997,10 @@ endif
         idiag_nptz = 0
         idiag_Shm = 0
         idiag_npuzmz = 0
+
+        idiag_ffcondposm = 0
+        idiag_ffcondm = 0
+        idiag_ffcondnegm = 0
       endif
 !
 !  Run through all possible names that may be listed in print.in.
@@ -7086,6 +7096,9 @@ endif
         call parse_name(iname,cname(iname),cform(iname),'vprms',idiag_vprms)
         call parse_name(iname,cname(iname),cform(iname),'Shm',idiag_Shm)
         call parse_name(iname,cname(iname),cform(iname),'deshearbcsm',idiag_deshearbcsm)
+        call parse_name(iname,cname(iname),cform(iname),'ffcondposm',idiag_ffcondposm)
+        call parse_name(iname,cname(iname),cform(iname),'ffcondm',idiag_ffcondm)
+        call parse_name(iname,cname(iname),cform(iname),'ffcondnegm',idiag_ffcondnegm)
       enddo
 !
 !  Check for those quantities for which we want x-averages.
