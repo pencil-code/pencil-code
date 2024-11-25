@@ -530,7 +530,7 @@ def src2dst_remesh(
                 rename_submit_script=rename_submit_script,
             )
             mkdir(join(dst,"data","allprocs"),lfs=lfs,MB=MB,count=count)
-    if data == "all":
+    if datasets == "all":
         if rank == 0:
             #cmd = "cp "+join(dstsim.path, dstdatadir, h5out)+" "+join(dstsim.path, dstdatadir, h5out+"copy")
             #os.system(cmd)
@@ -725,7 +725,7 @@ def src2dst_remesh(
             dh5["settings"]["nz"][0],
         )
         #print("dh5 settings", dh5.keys(), dh5["settings"].keys())
-        if data == "all" or data == "data":
+        if datasets == "all" or datasets == "data":
             with sh5 as srch5:
                 if comm:
                     try:
