@@ -72,7 +72,7 @@ def get_dstgrid(
     srch5,
     srcpar,
     dsth5,
-    dst,
+    dstsim,
     ncpus=[1, 1, 1],
     nxyz=None,
     multxyz=[2, 2, 2],
@@ -88,8 +88,8 @@ def get_dstgrid(
     grid=None,
 ):
     """
-    get_dstgrid(srch5, srcpar, dsth5, ncpus=[1,1,1], multxyz=[2,2,2],
-               fracxyz=[1,1,1], srcghost=3, dstghost=3, dtype=np.float64,
+    get_dstgrid(srch5, srcpar, dsth5, dstsim, ncpus=[1,1,1], multxyz=[2,2,2],
+               nxyz=None, fracxyz=[1,1,1], srcghost=3, dstghost=3, dtype=np.float64,
                lsymmetric=True, quiet=True, dstprecision=[b"D"],
                srchunks=srchunks, dim=None, grid=None)
 
@@ -104,8 +104,14 @@ def get_dstgrid(
     dsth5 : obj
         hdf5 object for destination simulation data.
 
+    dstsim : simulation object
+        Simulation param dictionary object from source simulation.
+
     ncpus : int
         Array of nprocx, nprocy, and nprocz to apply for new simulation.
+
+    nxyz : bool
+        integer list of lenght 3 with new size of grid excluding ghosts.
 
     multxyz : list
         Factors by which to multiply old sim dimensions yxz order.
@@ -523,7 +529,7 @@ def src2dst_remesh(
                                 srch5,
                                 srcsim.param,
                                 dsth5,
-                                dst,
+                                dstsim,
                                 ncpus=ncpus,
                                 nxyz=nxyz,
                                 multxyz=multxyz,
@@ -544,7 +550,7 @@ def src2dst_remesh(
                             srch5,
                             srcsim.param,
                             dsth5,
-                            dst,
+                            dstsim,
                             ncpus=ncpus,
                             nxyz=nxyz,
                             multxyz=multxyz,
