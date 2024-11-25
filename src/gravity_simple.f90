@@ -221,7 +221,15 @@ module Gravity
             call fatal_error('initialize_gravity','zref=impossible')
           else
             call get_shared_variable('cs20',cs20,caller='initialize_gravity')
+!
+!           Kishore: ideally we would use get_gamma_eta which gives the
+!           warning below when needed, but having Gravity depend on
+!           EquationOfState (in Makefile.depend) leads to a circular
+!           dependency.
+!
+            if (.not.leos_idealgas) call warning('initialize_eos', 'assuming gamma is a constant')
             call get_shared_variable('gamma',gamma)
+!
             if (gamma==impossible) call fatal_error('initialize_gravity','invalid value of gamma')
             if (ldensity.and..not.lstratz) then
               call get_shared_variable('mpoly',mpoly)

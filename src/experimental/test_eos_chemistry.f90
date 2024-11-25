@@ -675,12 +675,11 @@ module EquationOfState
 !***********************************************************************
     subroutine get_gamma_etc(gamma,cp,cv)
 !
-      real, intent(OUT) :: gamma
-      real, optional, intent(OUT) :: cp,cv
+      real, optional, intent(OUT) :: gamma, cp,cv
 !
       call warning('get_gamma_etc','gamma, cp, and cv are not constant in eos_chemistry.'// &
                    achar(10)//'The values provided are for one-atomic ideal gas. Use at own risk')
-      gamma=5./3.
+      if (present(gamma)) gamma=5./3.
       if (present(cp)) cp=1.
       if (present(cv)) cv=3./5.
 

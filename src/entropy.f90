@@ -267,6 +267,8 @@ module Energy
   integer :: idiag_ssuzm=0      ! DIAG_DOC: $\left<s u_z/c_p\right>$
   integer :: idiag_ssm=0        ! DIAG_DOC: $\left<s/c_p\right>$
                                 ! DIAG_DOC:   \quad(mean entropy)
+  integer :: idiag_ssbycpm=0    ! DIAG_DOC: $\left<s/c_p\right>$
+                                ! DIAG_DOC:   \quad(mean entropy)
   integer :: idiag_ss2m=0       ! DIAG_DOC: $\left<(s/c_p)^2\right>$
                                 ! DIAG_DOC:   \quad(mean squared entropy)
   integer :: idiag_eem=0        ! DIAG_DOC: $\left<e\right>$
@@ -800,7 +802,7 @@ module Energy
 !
           if (Fbot==impossible) then
             if (bcz12(iss,1)=='c1') then
-              Fbot=-gamma/(gamma_m1)*hcond0*gravz/(mpoly0+1)
+              Fbot=-gamma/(cp*gamma_m1)*hcond0*gravz/(mpoly0+1)
               if (lroot) print*, 'initialize_energy: Calculated Fbot = ', Fbot
             else
               Fbot=0.
@@ -817,7 +819,7 @@ module Energy
 !
           if (Ftop==impossible) then
             if (bcz12(iss,2)=='c1') then
-              Ftop=-gamma/(gamma_m1)*hcond0*gravz/(mpoly0+1)
+              Ftop=-gamma/(cp*gamma_m1)*hcond0*gravz/(mpoly0+1)
               if (lroot) print*, 'initialize_energy: Calculated Ftop = ',Ftop
             else
               Ftop=0.
@@ -2835,8 +2837,9 @@ module Energy
 !
       integer :: i
 !
-      if (lheatc_Kconst .or. lheatc_chiconst .or. lheatc_Kprof .or. tau_cor>0 .or. lheatc_sqrtrhochiconst) &
+      if (lheatc_Kconst .or. lheatc_chiconst .or. tau_cor>0 .or. lheatc_sqrtrhochiconst) &
         lpenc_requested(i_cp1)=.true.
+      if (lheatc_Kprof) lpenc_requested(i_cv1)=.true.
       if (ldt) then
         lpenc_requested(i_cs2)=.true.
         lpenc_requested(i_ee)=.true.
@@ -3141,6 +3144,7 @@ module Energy
         lpenc_diagnos(i_divu)=.true.
       endif
       if (idiag_ssruzm/=0 .or. idiag_ssuzm/=0 .or. idiag_ssm/=0 .or. &
+        idiag_ssbycpm/=0 .or. &
         idiag_ss2m/=0 .or. idiag_ssmz/=0 .or. idiag_ss2mz/=0 .or. &
         idiag_ssupmz/=0 .or. idiag_ssdownmz/=0 .or. &
         idiag_ss2upmz/=0 .or. idiag_ss2downmz/=0 .or. &
@@ -3148,7 +3152,8 @@ module Energy
         idiag_ssmy/=0 .or. idiag_ssmx/=0 .or. idiag_ss2mx/=0 .or. &
         idiag_ssmr/=0) &
         lpenc_diagnos(i_ss)=.true.
-
+      if (idiag_ssbycpm/=0) &
+        lpenc_diagnos(i_cp1)=.true.
       if (idiag_fpreszmz/=0) lpenc_diagnos(i_fpres)=.true.
       if (idiag_ppmx/=0 .or. idiag_ppmy/=0 .or. idiag_ppmz/=0) &
         lpenc_diagnos(i_pp)=.true.
@@ -3693,6 +3698,7 @@ module Energy
         if (idiag_ssruzm/=0) call sum_mn_name(p%ss*p%rho*p%uu(:,3),idiag_ssruzm)
         if (idiag_ssuzm/=0) call sum_mn_name(p%ss*p%uu(:,3),idiag_ssuzm)
         call sum_mn_name(p%ss,idiag_ssm)
+        call sum_mn_name(p%ss*p%cp1,idiag_ssbycpm)
         if (idiag_ss2m/=0) call sum_mn_name(p%ss**2,idiag_ss2m)
         call sum_mn_name(p%ee,idiag_eem)
         call sum_mn_name(p%pp,idiag_ppm)
@@ -5317,8 +5323,6 @@ module Energy
       Krho1 = K_kramers*p%rho1   ! = K/rho
 !
 !  g2 is grad(ln(K) + ln(T)).grad(ln(T))
-!  We are not accounting for the gradient of cp, so the below will
-!  be wrong if you use eos_ionization or eos_idealgas_vapor
 !
       call dot(-2.*nkramers*p%glnrho+(6.5*nkramers+1)*p%glnTT,p%glnTT,g2)
       call dot(p%glnrho+p%glnTT, p%glnTT, g2_chi)
@@ -5548,21 +5552,23 @@ module Energy
 !        Ds/Dt = ... + K/rho*[del2lnTT+(glnTT+glnhcond).glnTT]
 !
 !  where chix = K/(cp rho) is needed for diffus_chi calculation.
+!  Kishore: While it is correct to use cp in the expression for chix, cv is used to preserve the old behaviour.
 !
         if (notanumber(p%glnTT)) call fatal_error_local('calc_heatcond', 'NaNs in p%glnTT')
 
-        chix = p%rho1*hcond*p%cp1
         glnThcond = p%glnTT + glhc    ! grad ln(T*hcond)
         call dot(p%glnTT,glnThcond,g2)
         if (pretend_lnTT) then
           thdiff = p%cv1*p%rho1*hcond * (p%del2lnTT + g2)
+          chix = p%rho1*hcond*p%cv1
         else
           if (lhcond0_density_dep) then
             call dot(p%glnTT,p%glnrho,glnrhoglnT)
             thdiff = sqrt(p%rho1)*hcond * (p%del2lnTT + g2+0.5*glnrhoglnT)
-            chix = sqrt(p%rho1)*hcond*p%cp1
+            chix = sqrt(p%rho1)*hcond*p%cv1
           else
             thdiff = p%rho1*hcond * (p%del2lnTT + g2)
+            chix = p%rho1*hcond*p%cv1
           endif
         endif
 !
@@ -5714,7 +5720,7 @@ module Energy
 !    gamma*chix*del2ss.
 !
       if (lfirst.and.ldt) then
-        if (hcond0/=0..or.lread_hcond) diffus_chi=diffus_chi+p%rho1*hcond*cv1*dxyz_2
+        if (hcond0/=0..or.lread_hcond) diffus_chi=diffus_chi+chix*dxyz_2
         if (chi_t/=0.) diffus_chi=diffus_chi+chi_t*chit_prof*dxyz_2
       endif
 !
@@ -6846,6 +6852,7 @@ module Energy
       if (lreset) then
         idiag_dtc=0; idiag_ethm=0; idiag_ethdivum=0; idiag_pdivumz=0
         idiag_ssruzm=0; idiag_ssuzm=0; idiag_ssm=0; idiag_ss2m=0
+        idiag_ssbycpm=0
         idiag_eem=0; idiag_ppm=0; idiag_csm=0; idiag_cgam=0; idiag_pdivum=0; idiag_heatm=0
         idiag_ugradpm=0; idiag_ethtot=0; idiag_dtchi=0; idiag_ssmphi=0; idiag_ss2mphi=0
         idiag_fradbot=0; idiag_fradtop=0; idiag_TTtop=0
@@ -6903,6 +6910,7 @@ module Energy
         call parse_name(iname,cname(iname),cform(iname),'ssruzm',idiag_ssruzm)
         call parse_name(iname,cname(iname),cform(iname),'ssuzm',idiag_ssuzm)
         call parse_name(iname,cname(iname),cform(iname),'ssm',idiag_ssm)
+        call parse_name(iname,cname(iname),cform(iname),'ssbycpm',idiag_ssbycpm)
         call parse_name(iname,cname(iname),cform(iname),'ss2m',idiag_ss2m)
         call parse_name(iname,cname(iname),cform(iname),'eem',idiag_eem)
         call parse_name(iname,cname(iname),cform(iname),'ppm',idiag_ppm)

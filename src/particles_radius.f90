@@ -767,6 +767,7 @@ module Particles_radius
           ! Calculate the condensation rate for condensing species
           !
           if (lcondensing_species) then
+            p%ff_cond=0.
             call condensing_species_rate(p,mfluxcond)
           endif
           !

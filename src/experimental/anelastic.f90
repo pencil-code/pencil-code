@@ -654,17 +654,17 @@ module Density
 !                  to allow isothermal condition for arbitrary density
 !
       use Gravity
-      use SharedVariables, only: get_shared_variable
+      use EquationOfState, only: get_gamma_etc
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: pot,tmp
-      real, pointer :: cp
-      real :: cp1
+      real :: cp=impossible, cp1=impossible
 !
 !  Stratification depends on the gravity potential
 !
       if (leos_idealgas) then
-        call get_shared_variable('cp',cp); cp1=1./cp
+        call get_gamma_etc(cp=cp)
+        cp1=1./cp
       endif
 
       if (lroot) print*,'isothermal_density: isothermal stratification'

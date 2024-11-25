@@ -1,0 +1,16 @@
+Directory:
+    ${PENCIL_HOME}/samples/conv-slab_cp_2
+SVN Id:
+    $Id$
+Maintainer:
+	Kishore G <kishore96/gmail[dot]com>
+Added:
+	23-Nov-2024
+Status
+	succeeds
+Comments
+	Test that ensures that (at least some part of) the code doesn't implicitly
+	assume cp==1. This setup is identical to conv-slab, except that cp is set
+	to 2 (and hcond0 is doubled). If the code correctly handles cp/=1, the
+	results should be identical to those of conv-slab (as long as we consider
+	ss/cp rather than ss in the diagnostics).

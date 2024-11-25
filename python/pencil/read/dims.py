@@ -115,7 +115,7 @@ class Dim(object):
                     os.path.basename(vardfiles[0]),
                     )
             else:
-                filename = os.path.join(datadir, "grid.h5")
+                filename = os.path.join(datadir,"allprocs","var.h5")
 
             with h5py.File(filename, "r") as tmp:
                 self.mx = np.array(tmp["settings"]["mx"]).item()

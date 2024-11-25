@@ -43,6 +43,7 @@ module Diagnostics
   public :: phisum_mn_name_rz, calc_phiavg_profile
   public :: yzintegrate_mn_name_x, xzintegrate_mn_name_y, xyintegrate_mn_name_z
   public :: ysum_mn_name_xz_npar, xysum_mn_name_z_npar, yzsum_mn_name_x_mpar
+  public :: yintegrate_mn_name_xz
   public :: zsum_mn_name_xy_mpar_scal, zsum_mn_name_xy_mpar, &
             zsum_mn_name_xy_arr, zsum_mn_name_xy_arr2
   public :: allocate_fnames,allocate_vnames,allocate_sound
@@ -103,7 +104,8 @@ module Diagnostics
 !
   real, pointer, dimension(:) :: p_phiavg_norm
   real, dimension (nrcyl,nx) :: phiavg_profile=0.0
-  real :: dVol_rel1, dA_xy_rel1, dA_yz_rel1, dA_xz_rel1
+  real, dimension (nrcyl) :: phiavg_norm
+  real :: dVol_rel1, dA_xy_rel1, dA_yz_rel1, dA_xz_rel1, dL_y_rel1
 
   character (len=intlen) :: ch1davg, ch2davg
   integer :: ixav_max
@@ -134,23 +136,24 @@ module Diagnostics
         if (.not.lproper_averages) then
           if (any(.not.lequidist)) call warning('initialize_diagnostics', &
             'volume averages are calculated wrongly for nonequidistant grids unless lproper_averages=T.')
-  !
+!
           if (lwrite_xyaverages.and..not.(lequidist(1).and.lequidist(2))) call warning('initialize_diagnostics', &
-            '1D averages are calculated wrongly for non-equidistant grids.')
+            '1D average (xyaver) is calculated wrongly for non-equidistant grids unless lproper_averages=T.')
           if (lwrite_xzaverages.and..not.(lequidist(1).and.lequidist(3))) call warning('initialize_diagnostics', &
-            '1D averages are calculated wrongly for non-equidistant grids.')
+            '1D average (xzaver) is calculated wrongly for non-equidistant grids unless lproper_averages=T.')
           if (lwrite_yzaverages.and..not.(lequidist(2).and.lequidist(3))) call warning('initialize_diagnostics', &
-            '1D averages are calculated wrongly for non-equidistant grids.')
-          if (lwrite_phiaverages.and..not.(lequidist(1).and.lequidist(2))) call warning('initialize_diagnostics', &
-            '1D averages are calculated wrongly for non-equidistant grids.')
+            '1D average (yzaver) is calculated wrongly for non-equidistant grids unless lproper_averages=T.')
+          if (lwrite_phizaverages.and..not.(lequidist(1).and.lequidist(2))) call warning('initialize_diagnostics', &
+            '1D average (phizaver) is calculated wrongly for non-equidistant grids unless lproper_averages=T.')
+!
+          if (lwrite_yaverages.and..not.lequidist(2)) call warning('initialize_diagnostics', &
+            '2D average (yaver) is calculated wrongly for non-equidistant grids unless lproper_averages=T.')
         endif
 !
-        if (lwrite_yaverages.and..not.lequidist(2)) call warning('initialize_diagnostics', &
-          '2D averages are calculated wrongly for non-equidistant grids.')
         if (lwrite_zaverages.and..not.lequidist(3)) call warning('initialize_diagnostics', &
-          '2D averages are calculated wrongly for non-equidistant grids.')
+          '2D average (zaver) is calculated wrongly for non-equidistant grids.')
         if (lwrite_phiaverages.and.any(.not.lequidist)) call warning('initialize_diagnostics', &
-          '2D averages are calculated wrongly for non-equidistant grids.')
+          '2D average (phiaver) is calculated wrongly for non-equidistant grids.')
       endif
 !
 !  Initialize rcyl for the phi-averages grid. Does not need to be
@@ -190,6 +193,7 @@ module Diagnostics
         dA_xy_rel1 = 1./Area_xy
         dA_yz_rel1 = 1./Area_yz
         dA_xz_rel1 = 1./Area_xz
+        dL_y_rel1 = 1./Ly
       elseif (lspherical_coords) then
 !
 !  Prevent zeros from less than 3-dimensional runs
@@ -219,6 +223,7 @@ module Diagnostics
         dA_xy_rel1 = 1./(intrdr_sph*nygrid)
         dA_yz_rel1 = 1./(intdtheta_rel*intdphi_rel)
         dA_xz_rel1 = 1./(intrdr_sph*intdphi_rel)
+        dL_y_rel1 = 1./nygrid
 !
       elseif (lcylindrical_coords) then
 !
@@ -246,12 +251,14 @@ module Diagnostics
         dA_xy_rel1 = 1./(intdr_rel*intdphi_rel)
         dA_yz_rel1 = 1./(intdphi_rel*intdz_rel)
         dA_xz_rel1 = 1./(nxgrid*intdz_rel)
+        dL_y_rel1 = 1./nygrid
 !
       else
         dVol_rel1=1./nwgrid
         dA_xy_rel1 = 1./nxygrid
         dA_xz_rel1 = 1./nxzgrid
         dA_yz_rel1 = 1./nyzgrid
+        dL_y_rel1 = 1./nygrid
       endif
 !
       if (lroot.and.ip<=10) then
@@ -259,6 +266,7 @@ module Diagnostics
         print*,'dA_xy_rel1=',dA_xy_rel1
         print*,'dA_xz_rel1=',dA_xz_rel1
         print*,'dA_yz_rel1=',dA_yz_rel1
+        print*,'dL_y_rel1=',dL_y_rel1
       endif
 !
 !  Limits to xaveraging.
@@ -1066,8 +1074,8 @@ module Diagnostics
 !  The result is only present on the y-root processors.
 !
       if (nnamexz>0) then
-        call mpireduce_sum(fnamexz,fsumxz,(/nx,nz,nnamexz/),idir=IXBEAM)
-        if (lfirst_proc_y) fnamexz(:,:,1:nnamexz)=fsumxz(:,:,1:nnamexz)/nygrid
+        call mpireduce_sum(fnamexz,fsumxz,(/nx,nz,nnamexz/),idir=2)
+        if (lfirst_proc_y) fnamexz(:,:,1:nnamexz)=fsumxz(:,:,1:nnamexz)*dL_y_rel1
       endif
 !
     endsubroutine yaverages_xz
@@ -2605,7 +2613,11 @@ module Diagnostics
       real, dimension(nx), intent(IN) :: a
       integer,             intent(IN) :: iname
 
-      call ysum_mn_name_xz_npar(a,n,iname)
+      if (lproper_averages) then
+        call yintegrate_mn_name_xz(a,iname)
+      else
+        call ysum_mn_name_xz_npar(a,n,iname)
+      endif
 
     endsubroutine ysum_mn_name_xz
 !***********************************************************************
@@ -2643,6 +2655,43 @@ module Diagnostics
       fnamexz(:,nl,iname) = fnamexz(:,nl,iname)+a
 !
     endsubroutine ysum_mn_name_xz_npar
+!***********************************************************************
+    subroutine yintegrate_mn_name_xz(a,iname)
+!
+!   Integrate over y. Apply trapezoidal rule properly in the case
+!   of non-periodic boundaries.
+!
+!   19-nov-2024/Kishore: adapted from xyintegrate_mn_name_z
+!
+      real, dimension (nx) :: a, tmp
+      integer :: iname, nl
+      real :: fac
+!
+      if (iname==0) return
+!
+!  Initialize to zero, including other parts of the z-array
+!  which are later merged with an mpi reduce command.
+!
+      if (lfirstpoint) fnamexz(:,:,iname) = 0.0
+!
+      fac=1.
+!
+      if (.not.lperi(2)) then
+        if ((m==m1.and.lfirst_proc_y).or.(m==m2.and.llast_proc_y)) fac = .5
+      endif
+!
+      if (lproper_averages) then
+        tmp = fac*a*yprim(m)
+      else
+        tmp = fac*a
+      endif
+!
+!  n starts with nghost=4, so the correct index is n-nghost.
+!
+      nl=n-nghost
+      fnamexz(:,nl,iname) = fnamexz(:,nl,iname) + tmp
+!
+    endsubroutine yintegrate_mn_name_xz
 !***********************************************************************
     subroutine zsum_mn_name_xy_scal(a,iname,lint)
 !

@@ -1161,11 +1161,9 @@ module EquationOfState
 !***********************************************************************
     subroutine get_gamma_etc(gamma_,cp,cv)
 !
-      real, intent(OUT) :: gamma_
-      real, optional, intent(OUT) :: cp,cv
+      real, optional, intent(OUT) :: gamma_, cp,cv
 !
-      gamma_=gamma
-
+      if (present(gamma_)) gamma_=gamma
       if (present(cp)) cp=get_cp()     ! as module variable is hidden here
       if (present(cv)) cv=get_cv()
 
@@ -2160,7 +2158,7 @@ module EquationOfState
           else
             do i=1,nghost
               call getdlnrho_z(f(:,:,:,ilnrho),n1,i,rho_xy)           ! rho_xy=del_z ln(rho)
-              f(:,:,n1-i,iss)=f(:,:,n1+i,iss)+cp*(cp-cv)*(rho_xy+dz2_bound(-i)*tmp_xy)
+              f(:,:,n1-i,iss)=f(:,:,n1+i,iss)+(cp-cv)*(rho_xy+cp*dz2_bound(-i)*tmp_xy)
             enddo
           endif
         endif
@@ -2218,7 +2216,7 @@ module EquationOfState
           else
             do i=1,nghost
               call getdlnrho_z(f(:,:,:,ilnrho),n2,i,rho_xy)        ! rho_xy=del_z ln(rho)
-              f(:,:,n2+i,iss)=f(:,:,n2-i,iss)+cp*(cp-cv)*(-rho_xy-dz2_bound(i)*tmp_xy)
+              f(:,:,n2+i,iss)=f(:,:,n2-i,iss)+(cp-cv)*(-rho_xy-cp*dz2_bound(i)*tmp_xy)
             enddo
           endif
         endif

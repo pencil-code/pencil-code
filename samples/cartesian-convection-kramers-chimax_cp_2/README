@@ -1,0 +1,16 @@
+Directory:
+    ${PENCIL_HOME}/samples/cartesian-convection-kramers-chimax_cp_2
+SVN Id:
+    $Id$
+Maintainer:
+	Kishore G <kishore96/gmail[dot]com>
+Added:
+	23-Nov-2024
+Status
+	succeeds
+Comments
+	Test that ensures that (at least some part of) the code doesn't implicitly
+	assume cp==1. This setup is identical to cartesian-convection-kramers-chimax,
+	except that cp is set to 2 (and hcond0 is scaled appropriately). The
+	diagnostic precision has been increased since the Kramers conductivity
+	only seems to have a very small effect on the results.

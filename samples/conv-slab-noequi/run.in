@@ -12,6 +12,8 @@
   bcz = 's','s','a','a2','c1:cT'
   cdtv=0.30, cdt=0.4
   lpencil_check=T
+  lproper_averages=T !required for nonequidistant grids
+  d2davg=0.2
 /
 &eos_run_pars
 /

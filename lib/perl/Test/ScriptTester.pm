@@ -260,6 +260,10 @@ sub _run_test {
             warn "Script $script did not write expected file $outfile\n";
             $ok = 0;
         }
+    } else {
+        # The documentation of this module says the file must exist.
+        warn "No reference file for $script\n";
+        $ok = 0;
     }
 
     chdir $workdir;

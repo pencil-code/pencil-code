@@ -128,7 +128,7 @@
         file_='ode.dat'
       endif
       
-      lun = lun_output+10
+      lun = lun_output+20
       open(lun,FILE=trim(directory_collect)//'/'//trim(file_),FORM='unformatted')
       if (n_odevars > 0) then
         num = farray_retrieve_metadata_ode(names,lengs)
