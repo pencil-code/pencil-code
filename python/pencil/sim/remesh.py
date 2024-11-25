@@ -84,14 +84,13 @@ def get_dstgrid(
     quiet=True,
     dstprecision=[b"D"],
     srcchunks=None,
-    dim=None,
-    grid=None,
+    srcsim=None,
 ):
     """
     get_dstgrid(srch5, srcpar, dsth5, dstsim, ncpus=[1,1,1], multxyz=[2,2,2],
                nxyz=None, fracxyz=[1,1,1], srcghost=3, dstghost=3, dtype=np.float64,
                lsymmetric=True, quiet=True, dstprecision=[b"D"],
-               srchunks=srchunks, dim=None, grid=None)
+               srchunks=srchunks, srcsim=None)
 
     Parameters
     ----------
@@ -141,11 +140,8 @@ def get_dstgrid(
     srcchunks : bool
         list of index limits [l[0]:l[1],m[0]:m[1],n[0]:n[1]] for subdomain remesh
 
-    dim : bool
-        dim object in absence of h5 object
-
-    grid : bool
-        grid object in absence of h5 object
+    srcsim : bool
+        src simulation object in absence of h5 object
 
     """
     from os.path import join, abspath
@@ -164,8 +160,8 @@ def get_dstgrid(
     else:
         sets = dsth5.require_group("settings")
         srcsets = dict()
-        for key in dim.__dict__.keys():
-            srcsets[key]=np.array([dim.__getattribute__(key)])
+        for key in srcsim["dim"].keys():
+            srcsets[key]=np.array([srcsim["dim"][key]])
             sets.create_dataset(key, data=srcsets[key][()])
     lvalid = True
     if srcchunks:
@@ -221,9 +217,9 @@ def get_dstgrid(
     else:
         grid=dsth5.require_group("grid")
         srcgrid = dict()
-        for key in gd.__dict__.keys():
+        for key in srcsim["grid"].keys():
             if not key == "t":
-                srcgrid[key]=gd.__getattribute__(key)
+                srcgrid[key]=srcsim["grid"][key]
                 grid.create_dataset(key, data=srcgrid[key])
         for key, i in zip(["Ox", "Oy", "Oz"],[0,1,2]):
             srcgrid[key]=srcpar["xyz0"][i]
@@ -579,8 +575,7 @@ def src2dst_remesh(
                             quiet=quiet,
                             dstprecision=dstprecision,
                             srcchunks=srcchunks,
-                            dim=srcsim.dim,
-                            grid=srcsim.grid,
+                            srcsim=srcsim,
                             )
 
         print("get_dstgrid completed on rank {}".format(rank))
