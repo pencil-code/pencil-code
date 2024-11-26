@@ -19,6 +19,11 @@ import os
 from pencil.math.derivatives import grad
 from pencil.io import open_h5, group_h5, dataset_h5
 from os.path import exists
+try:
+    import f90nml
+    lnml=True
+except:
+    lnml=False
 
 def local_remesh(var, xsrc, ysrc, zsrc, xdst, ydst, zdst, quiet=True, kind="linear"):
     """
@@ -141,6 +146,7 @@ def get_dstgrid(
 
     """
     from os.path import join, abspath
+    import h5py
     # TBA
     # check prime factorization of the result and display for proc options
     # if using fft check options for grid and cpu layout
@@ -157,7 +163,11 @@ def get_dstgrid(
         sets = dsth5.require_group("settings")
         srcsets = dict()
         for key in srcsim.dim.__dict__.keys():
-            srcsets[key]=np.array([srcsim.dim.__getattribute(key)])
+            htype=type(srcsim.dim.__getattribute__(key))
+            if htype=="str":
+                srcsets[key]=np.array([srcsim.dim.__getattribute__(key).encode("utf-8")])
+            else:
+                srcsets[key]=np.array([srcsim.dim.__getattribute__(key)])
             sets.create_dataset(key, data=srcsets[key][()])
     lvalid = True
     if srcchunks:
@@ -279,6 +289,61 @@ def get_dstgrid(
                     dtype=dtype,
                 )
                 grid["d" + x + "_tilde"][()] = dtype(np.gradient(grid["d" + x + "_1"][()]))
+    if dsth5.__contains__("unit"):
+        dsth5.__delitem__("unit")
+    if srch5:
+        srch5.copy("unit", dsth5)
+    else:
+        dsth5.create_group("unit")
+        for key in srcsim.param.keys():
+            if "unit_" in key and not "_unit_" in key:
+                dkey=key.split("_")[-1]
+                if dkey == "system":
+                    dsth5["unit"].create_dataset(dkey, data=srcsim.param[key].encode("utf-8"))
+                else:
+                    dsth5["unit"].create_dataset(dkey, data=srcsim.param[key])
+    gridh5 = h5py.File(join(dstsim.datadir, "grid.h5"), 'w')
+    dsth5.copy("settings", gridh5)
+    dsth5.copy("grid", gridh5)
+    dsth5.copy("unit", gridh5)
+    gridh5.close()
+    if srcsim.param["lpersist"]:
+        nprocs = (
+              dsth5["settings/nprocx"][0]
+            * dsth5["settings/nprocy"][0]
+            * dsth5["settings/nprocz"][0]
+        )
+        if srch5:
+            pers=dsth5.require_group("persist")
+            for key in srch5["persist"].keys():
+                htype=type(srch5["persist"][key][0])
+                if type(srch5["persist"][key][0].item())==float:
+                    htype=dtype
+                tmp = np.zeros(nprocs)
+                tmp[:] = srch5["persist"][key][0]
+                try:
+                    pers.require_dataset(key, (nprocs,), dtype=htype)
+                except:
+                    pers.__delitem__(key)
+                    pers.require_dataset(key, (nprocs,), dtype=htype)
+                pers[key][()]=tmp
+        else:
+            var=pc.read.var(proc=rank, lpersist=True)
+            pers=dsth5.require_group("persist")
+            for key in var.persist.keys():
+                tmp = np.zeros(nprocs)
+                tmp[:] = var.persist.__getattribute__(key)
+                htype=type(var.persist.__getattribute__(key))
+                if type(srch5["persist"][key][0].item())==float:
+                    htype=dtype
+                if htype=="str":
+                    htype=type(var.persist.__getattribute__(key).encode("utf-8"))
+                try:
+                    pers.require_dataset(key, (nprocs,), dtype=htype)
+                except:
+                    pers.__delitem__(key)
+                    pers.require_dataset(key, (nprocs,), dtype=htype)
+                pers[key][()]=tmp
 
 def src2dst_remesh(
     src=None,
@@ -306,7 +371,7 @@ def src2dst_remesh(
     start_optionals=False,
     hostfile=None,
     submit_new=False,
-    chunksize=1000.0,
+    chunksize=5000.0,
     lfs=False,
     MB=32,
     count=1,
@@ -488,209 +553,178 @@ def src2dst_remesh(
         return 1
     print("dst is sim",is_sim_dir(dst))
     lsim=False
-    if is_sim_dir(dst):
-        dstsim = simulation(dst, quiet=quiet)
-        dstname = str.split(dst, "/")[-1]
-        dstpath = str.strip(dst, dstname)
-        mode = "w"
-        lsim=True
-        srcsim.copy(
-                name=dstname,
-                quiet=quiet,
-                OVERWRITE=False,
-                optionals=optionals,
-                start_optionals=start_optionals,
-                rename_submit_script=rename_submit_script,
-            )
-        if not os.path.isfile(join(dst,"data/allprocs")):
-            mkdir(join(dst,"data/allprocs"),lfs=lfs,MB=MB,count=count)
-        if os.path.isfile(join(dst,"data/allprocs",h5out)):
-            mode = "r+"
-    else:
-        mode = "a"
-        print("setting up simulation")
-        if rank == 0:
+    if rank == 0:
+        if is_sim_dir(dst):
+            dstsim = simulation(dst, quiet=quiet)
             dstname = str.split(dst, "/")[-1]
             dstpath = str.strip(dst, dstname)
-            if len(dstpath) == 0:
-                dstpath = str.strip(srcsim.path, srcsim.name)
-            dstsim = srcsim.copy(
-                path_root=dstpath,
-                name=dstname,
-                quiet=quiet,
-                OVERWRITE=True,
-                optionals=optionals,
-                start_optionals=start_optionals,
-                rename_submit_script=rename_submit_script,
-            )
-            mkdir(join(dst,"data","allprocs"),lfs=lfs,MB=MB,count=count)
-    if datasets == "all":
-        if rank == 0:
-            #cmd = "cp "+join(dstsim.path, dstdatadir, h5out)+" "+join(dstsim.path, dstdatadir, h5out+"copy")
-            #os.system(cmd)
-            lsrch5=False
+            srcsim.copy(
+                    name=dstname,
+                    quiet=quiet,
+                    OVERWRITE=False,
+                    optionals=optionals,
+                    start_optionals=start_optionals,
+                    rename_submit_script=rename_submit_script,
+                )
+            if not os.path.isfile(join(dst,"data/allprocs")):
+                mkdir(join(dst,"data/allprocs"),lfs=lfs,MB=MB,count=count)
+                mode = "w"
+            if os.path.isfile(join(dst,"data/allprocs",h5out)):
+                lsim=True
+                mode = "r+"
+        else:
+            mode = "a"
+            print("setting up simulation")
+            if rank == 0:
+                dstname = str.split(dst, "/")[-1]
+                dstpath = str.strip(dst, dstname)
+                if len(dstpath) == 0:
+                    dstpath = str.strip(srcsim.path, srcsim.name)
+                dstsim = srcsim.copy(
+                    path_root=dstpath,
+                    name=dstname,
+                    quiet=quiet,
+                    OVERWRITE=True,
+                    optionals=optionals,
+                    start_optionals=start_optionals,
+                    rename_submit_script=rename_submit_script,
+                )
+                mkdir(join(dst,"data","allprocs"),lfs=lfs,MB=MB,count=count)
+        print("dst is sim already?",lsim)
+        if not lsim:
+            if not srcsim.param["io_strategy"]=="HDF5":
+                if os.path.isfile(join(src,srcdatadir,h5in)):
+                    srcsim.param["io_strategy"]="HDF5"
             if srcsim.param["io_strategy"]=="HDF5":
-                lsrch5=True
-                with h5py.File(join(srcsim.path, srcdatadir, h5in),"r") as srch5:
-                    print("opening {} file on rank {}".format(join(srcsim.path, srcdatadir, h5in),rank))
-                    print("dst is sim already?",lsim)
-                    if not lsim:
-                        with h5py.File(join(dstsim.path, dstdatadir, h5out),mode) as dsth5:
-                            get_dstgrid(
-                                srch5,
-                                srcsim,
-                                dsth5,
-                                dstsim,
-                                ncpus=ncpus,
-                                nxyz=nxyz,
-                                multxyz=multxyz,
-                                fracxyz=fracxyz,
-                                srcghost=srcghost,
-                                dstghost=dstghost,
-                                dtype=dtype,
-                                lsymmetric=lsymmetric,
-                                quiet=quiet,
-                                dstprecision=dstprecision,
-                                srcchunks=srcchunks,
-                                )
+                srch5 = h5py.File(join(srcsim.path, srcdatadir, h5in),"r")
+                print("opening {} file on rank {}".format(join(srcsim.path, srcdatadir, h5in),rank))
             else:
-                if not lsim:
-                    srch5=None
-                    with h5py.File(join(dstsim.path, dstdatadir, h5out),mode) as dsth5:
-                        get_dstgrid(
-                            srch5,
-                            srcsim,
-                            dsth5,
-                            dstsim,
-                            ncpus=ncpus,
-                            nxyz=nxyz,
-                            multxyz=multxyz,
-                            fracxyz=fracxyz,
-                            srcghost=srcghost,
-                            dstghost=dstghost,
-                            dtype=dtype,
-                            lsymmetric=lsymmetric,
-                            quiet=quiet,
-                            dstprecision=dstprecision,
-                            srcchunks=srcchunks,
-                            )
+                srch5=None
+            with h5py.File(join(dstsim.path, dstdatadir, h5out),mode) as dsth5:
+                get_dstgrid(
+                    srch5,
+                    srcsim,
+                    dsth5,
+                    dstsim,
+                    ncpus=ncpus,
+                    nxyz=nxyz,
+                    multxyz=multxyz,
+                    fracxyz=fracxyz,
+                    srcghost=srcghost,
+                    dstghost=dstghost,
+                    dtype=dtype,
+                    lsymmetric=lsymmetric,
+                    quiet=quiet,
+                    dstprecision=dstprecision,
+                    srcchunks=srcchunks,
+                    )
+            if srcsim.param["io_strategy"]=="HDF5":
+                srch5.close()
 
-        print("get_dstgrid completed on rank {}".format(rank))
-        with h5py.File(join(dstsim.path, dstdatadir, h5out),mode) as dsth5:
-            # use settings to determine available proc dist then set ncpus
-            factors = cpu_optimal(
-                dsth5["settings/nx"][0],
-                dsth5["settings/ny"][0],
-                dsth5["settings/nz"][0],
-                mvar=dsth5["settings/mvar"][0],
-                maux=dsth5["settings/maux"][0],
-                par=srcsim.param,
-                nmin=nmin,
-                MBmin=MBmin,
-                remesh=remesh
-            )
-            print(
-                "remesh check grid: optional cpus up to min grid of "
-                + "nmin={}\n".format(nmin)
-                + "cpu options {}\n".format(factors)
-                + "new mesh: {}, {}, {}\n".format(
+            print("get_dstgrid completed on rank {}".format(rank))
+            with h5py.File(join(dstsim.path, dstdatadir, h5out),"r+") as dsth5:
+                # use settings to determine available proc dist then set ncpus
+                factors = cpu_optimal(
                     dsth5["settings/nx"][0],
                     dsth5["settings/ny"][0],
                     dsth5["settings/nz"][0],
+                    mvar=dsth5["settings/mvar"][0],
+                    maux=dsth5["settings/maux"][0],
+                    par=srcsim.param,
+                    nmin=nmin,
+                    MBmin=MBmin,
+                    remesh=remesh
                 )
-                + 'To execute remesh set "check_grid=False".'
-            )
-            if ncpus == [1, 1, 1]:
-                ncpus = [factors[1][0], factors[1][1], factors[1][2]]
-            dsth5["settings/nprocx"][0] = ncpus[0]
-            dsth5["settings/nprocy"][0] = ncpus[1]
-            dsth5["settings/nprocz"][0] = ncpus[2]
-            dsth5["settings/precision"][0] = dstprecision
-            nprocs = ncpus[0] * ncpus[1] * ncpus[2]
-            srcprocs = (
-                  srcsim.dim.nprocx
-                * srcsim.dim.nprocy
-                * srcsim.dim.nprocz
-            )
-            if srcprocs > nprocs:
                 print(
-                     "\n**********************************************************\n"
-                     + "remesh WARNING: {} procs reduced from {}.\n".format(
-                         nprocs, srcprocs
-                     )
-                     + "Review multxyz {} and fracxyz {} for more\n".format(
-                         multxyz, fracxyz
-                     )
-                     + "efficient parallel processing options."
-                     + "\n**********************************************************\n"
+                    "remesh check grid: optional cpus up to min grid of "
+                    + "nmin={}\n".format(nmin)
+                    + "cpu options {}\n".format(factors)
+                    + "new mesh: {}, {}, {}\n".format(
+                        dsth5["settings/nx"][0],
+                        dsth5["settings/ny"][0],
+                        dsth5["settings/nz"][0],
                     )
-                if check_grid:
-                    return 1
-            dstsim.update()
-            for key in ["nprocx","nprocy","nprocz","nxgrid","nygrid","nzgrid"]:
-                dstsim.dim.__setattr__(key,dsth5[join("settings",key.strip("grid"))][0])
-            dstsim.dim.__setattr__("ncpus",nprocs)
-            #The subsequest tools need to be improved to complete revision of *.local and
-            #compilation if required -- see pipelines
-            cpar = open(join(dstsim.path,"src/cparam.local"),"a")
-            for key in ["ncpus","nprocx","nprocy","nprocz","nxgrid","nygrid","nzgrid"]:
-                cpar.write("integer, parameter :: {}={}\n".format(key,dstsim.dim.__getattribute__(key)))
-            cpar.close()
-            if dsth5.__contains__("unit"):
-                dsth5.__delitem__("unit")
-            if lsrch5:
-                with h5py.File(join(srcsim.path, srcdatadir, h5in),"r") as srch5:
-                    srch5.copy("unit", dsth5)
-            else:
-                for key in srcsim.param.keys():
-                    if "unit_" in key and not "_unit_" in key:
-                        dkey=key.split("_")[-1]
-                        dsth5["unit"].create_dataset(dkey, data=srcsim.param[key])
-            gridh5 = h5py.File(join(dstsim.datadir, "grid.h5"), 'w')
-            dsth5.copy("settings", gridh5)
-            dsth5.copy("grid", gridh5)
-            dsth5.copy("unit", gridh5)
-            gridh5.close()
-            if srcsim.param["lpersist"]:
-                if lsrch5:
-                    pers=dsth5.require_group("persist")
-                    with h5py.File(join(srcsim.path, srcdatadir, h5in),"r") as srch5:
-                        for key in srch5["persist"].keys():
-                            dtype=type(srch5["persist"][key][0])
-                            tmp = np.zeros(nprocs)
-                            tmp[:] = srch5["persist"][key][0]
-                            try:
-                                pers.require_dataset(key, (nprocs,), dtype=dtype)
-                            except:
-                                pers.__delitem__(key)
-                                pers.require_dataset(key, (nprocs,), dtype=dtype)
-                            pers[key][()]=tmp
+                    + 'To execute remesh set "check_grid=False".'
+                )
+                if ncpus == [1, 1, 1]:
+                    ncpus = [factors[1][0], factors[1][1], factors[1][2]]
+                dsth5["settings/nprocx"][0] = ncpus[0]
+                dsth5["settings/nprocy"][0] = ncpus[1]
+                dsth5["settings/nprocz"][0] = ncpus[2]
+                dsth5["settings/precision"][0] = dstprecision
+                nprocs = ncpus[0] * ncpus[1] * ncpus[2]
+                srcprocs = (
+                      srcsim.dim.nprocx
+                    * srcsim.dim.nprocy
+                    * srcsim.dim.nprocz
+                )
+                if srcprocs > nprocs:
+                    print(
+                         "\n**********************************************************\n"
+                         + "remesh WARNING: {} procs reduced from {}.\n".format(
+                             nprocs, srcprocs
+                         )
+                         + "Review multxyz {} and fracxyz {} for more\n".format(
+                             multxyz, fracxyz
+                         )
+                         + "efficient parallel processing options."
+                         + "\n**********************************************************\n"
+                        )
+                    if check_grid:
+                        return 1
+                if lnml:
+                    nmldata=f90nml.read(join(srcsim.datadir,"param.nml"))
+                    nmldata["io_pars"]["io_strategy"]="HDF5"
+                    nmldata["init_pars"]["xyz0"]=[dsth5["grid/Ox"][()],
+                                                  dsth5["grid/Oy"][()],
+                                                  dsth5["grid/Oz"][()]]
+                    nmldata["init_pars"]["lxyz"]=[dsth5["grid/Lx"][()],
+                                                  dsth5["grid/Ly"][()],
+                                                  dsth5["grid/Lz"][()]]
+                    nmldata["init_pars"]["xyz1"]=[dsth5["grid/Ox"][()] + dsth5["grid/Lx"][()],
+                                                  dsth5["grid/Oy"][()] + dsth5["grid/Ly"][()],
+                                                  dsth5["grid/Oz"][()] + dsth5["grid/Lz"][()]]
+                    nmldata.write(join(dstsim.datadir,"param.nml"),"f")
+                    nmldata=f90nml.read(join(srcsim.datadir,"param2.nml"))
+                    nmldata["io_pars"]["io_strategy"]="HDF5"
+                    nmldata["run_pars"]["xyz0"]=[dsth5["grid/Ox"][()],
+                                                  dsth5["grid/Oy"][()],
+                                                  dsth5["grid/Oz"][()]]
+                    nmldata["run_pars"]["lxyz"]=[dsth5["grid/Lx"][()],
+                                                  dsth5["grid/Ly"][()],
+                                                  dsth5["grid/Lz"][()]]
+                    nmldata["run_pars"]["xyz1"]=[dsth5["grid/Ox"][()] + dsth5["grid/Lx"][()],
+                                                  dsth5["grid/Oy"][()] + dsth5["grid/Ly"][()],
+                                                  dsth5["grid/Oz"][()] + dsth5["grid/Lz"][()]]
+                    nmldata.write(join(dstsim.datadir,"param2.nml"),"f")
+                    dstsim.update(hard=True)
                 else:
-                    var=pc.read.var(proc=rank, lpersist=True)
-                    pers=dsth5.require_group("persist")
-                    for key in var.persist.keys():
-                        tmp = np.zeros(nprocs)
-                        tmp[:] = var.persist.__getattribute__(key)
-                        dtype=type(var.persist.__getattribute__(key))
-                        try:
-                            pers.require_dataset(key, (nprocs,), dtype=dtype)
-                        except:
-                            pers.__delitem__(key)
-                            pers.require_dataset(key, (nprocs,), dtype=dtype)
-                        pers[key][()]=tmp
+                    dstsim.update()
+                    for key in ["nprocx","nprocy","nprocz","nxgrid","nygrid","nzgrid"]:
+                        dstsim.dim.__setattr__(key,dsth5[join("settings",key.strip("grid"))][0])
+                dstsim.dim.__setattr__("ncpus",nprocs)
+                #The subsequest tools need to be improved to complete revision of *.local and
+                #compilation if required -- see pipelines
+                cpar = open(join(dstsim.path,"src/cparam.local"),"a")
+                for key in ["ncpus","nprocx","nprocy","nprocz","nxgrid","nygrid","nzgrid"]:
+                    cpar.write("integer, parameter :: {}={}\n".format(key,dstsim.dim.__getattribute__(key)))
+                cpar.close()
 
-            if newtime:
-                dsth5.require_dataset("time", (), dtype=dtype)
-                dsth5["time"][()] = newtime
-            elif lsrch5:
-                with h5py.File(join(srcsim.path, srcdatadir, h5in),"r") as srch5:
+                if newtime:
                     dsth5.require_dataset("time", (), dtype=dtype)
-                    dsth5["time"][()] = srch5["time"][()]
-            else:
-                if not srcsim.param["lpersist"]:
-                    var=pc.read.var(proc=rank, lpersist=False)
-                dsth5.require_dataset("time", (), dtype=dtype)
-                dsth5["time"][()] = var.t
+                    dsth5["time"][()] = newtime
+                elif srcsim.param["io_strategy"]=="HDF5":
+                    with h5py.File(join(srcsim.path, srcdatadir, h5in),"r") as srch5:
+                        dsth5.require_dataset("time", (), dtype=dtype)
+                        dsth5["time"][()] = srch5["time"][()]
+                else:
+                    if not h5in=="var.h5":
+                        varfile = h5in.strip(".h5")
+                    else:
+                        varfile = "var.dat"
+                    var=pc.read.var(var_file=varfile,proc=rank)
+                    dsth5.require_dataset("time", (), dtype=dtype)
+                    dsth5["time"][()] = var.t
 
     #-----------------------------------------------------------------
     #update destination simulation object on all ranks
@@ -699,26 +733,14 @@ def src2dst_remesh(
         comm.Barrier()
     if not rank == 0:
         dstsim = simulation(dst, quiet=quiet)
-    #print("dh5 settings", dh5.keys(), dh5["settings"].keys())
-    #    if datasets == "all" or datasets == "data":
-    #        #with sh5 as srch5:
-    #            if comm:
-    #                try:
-    #                    srch5.atomic = True
-    #                except:
-    #                    print("atomic not supported with driver {}".format(driver))
-    #                print(srch5.filename,"atomic status:",srch5.atomic)
-    #            else:
-    #                print("atomic not used not comm {}".format(not comm))
-    srcprocs = (
-          srcsim.dim.nprocx
-        * srcsim.dim.nprocy
-        * srcsim.dim.nprocz
-    )
+        if not lnml:
+            with h5py.File(join(dstsim.path, dstdatadir, h5out),"r+") as dsth5:
+                for key in ["nprocx","nprocy","nprocz","nxgrid","nygrid","nzgrid"]:
+                    dstsim.dim.__setattr__(key,dsth5[join("settings",key.strip("grid"))][0])
     if srcchunks:
-        nxsub = srcchunks[0][1]-srcchunks[0][0]
-        nysub = srcchunks[1][1]-srcchunks[1][0]
-        nzsub = srcchunks[2][1]-srcchunks[2][0]
+        #nxsub = srcchunks[0][1]-srcchunks[0][0]
+        #nysub = srcchunks[1][1]-srcchunks[1][0]
+        #nzsub = srcchunks[2][1]-srcchunks[2][0]
         l1,l2=srcchunks[0][0], srcchunks[0][1]+2*srcghost
         m1,m2=srcchunks[1][0], srcchunks[1][1]+2*srcghost
         n1,n2=srcchunks[2][0], srcchunks[2][1]+2*srcghost
@@ -729,7 +751,7 @@ def src2dst_remesh(
           )
         print("start and end values {},{}".format(l1,l2))
     else:
-        nxsub, nysub, nzsub = nx, ny, nz
+        #nxsub, nysub, nzsub = nx, ny, nz
         l1,l2=srcsim.dim.l1-srcghost, srcsim.dim.l2+srcghost+1
         m1,m2=srcsim.dim.m1-srcghost, srcsim.dim.m2+srcghost+1
         n1,n2=srcsim.dim.n1-srcghost, srcsim.dim.n2+srcghost+1
@@ -738,22 +760,10 @@ def src2dst_remesh(
               srcsim.ghost_grid.y[()],
               srcsim.ghost_grid.z[()]
               )
-    print("nxin, nyin, nzin", xin.size, yin.size, zin.size)
-    #if lsrch5:
-    if comm:
-        driver = "mpio"
-        #sh5 = h5py.File(join(srcsim.path, srcdatadir, h5in), "r", driver=driver, comm=comm)
-        dh5 = h5py.File(join(dstsim.path, dstdatadir, h5out),"r+", driver=driver, comm=comm)
-    else:
-        #driver = None
-        #sh5 = h5py.File(join(srcsim.path, srcdatadir, h5in), "r" )
-        dh5 = h5py.File(join(dstsim.path, dstdatadir, h5out),"r+" )
-    print("dh5 name", dh5.filename)
-    nx, ny, nz =(
-        dh5["settings"]["nx"][0],
-        dh5["settings"]["ny"][0],
-        dh5["settings"]["nz"][0],
-    )
+    if rank==0:
+        print("nxin, nyin, nzin", xin.size, yin.size, zin.size)
+
+    #Determine which fields from the farray need to be remeshed
     if not farray:
         fields = list(srcsim.index.__dict__.keys())
         if not index_farray:
@@ -808,6 +818,14 @@ def src2dst_remesh(
         if len(fields) == 0:
             print("farray list empty no data to remesh")
             return 1
+    if comm:
+        driver = "mpio"
+        dh5 = h5py.File(join(dstsim.path, dstdatadir, h5out),"r+", driver=driver, comm=comm)
+    else:
+        dh5 = h5py.File(join(dstsim.path, dstdatadir, h5out),"r+" )
+    print("dh5 name", dh5.filename)
+
+    #determine if chunking is required due to memory constraints
     with dh5 as dsth5:
         if comm:
             try:
@@ -836,75 +854,79 @@ def src2dst_remesh(
               dsth5["grid/y"][()],
               dsth5["grid/z"][()]
               )
-        dsth5.require_group("data")
-        dstchunksize = bytesize * nx * ny * nz / 1024 / 1024
-        if rank == 0:
-            print("rank {}, nx = {} dstchunksize {} chunksize {}, ncpus {}".format(rank, nx, dstchunksize, chunksize, ncpus))
-        lchunks = False
-        if dstchunksize > chunksize or size > 1:
-            lchunks = True
-            tchunks = int(dstchunksize/chunksize+1)
-            nallchunks = cpu_optimal(
-                    nx,
-                    ny,
-                    nz,
-                    MBmin=tchunks,
-                    nsize=tchunks,
-                    size=tchunks,
-                    remesh=remesh
-                    )[1]
-            if rank == 0:
-                print("rank,lchunks, tchunks, nallchunks",rank,lchunks, tchunks, nallchunks)
-            allindx = np.array_split(np.arange(nx) + dstghost, nallchunks[0])
-            allindy = np.array_split(np.arange(ny) + dstghost, nallchunks[1])
-            allindz = np.array_split(np.arange(nz) + dstghost, nallchunks[2])
-            chunks = list()
-            for izz in range(nallchunks[2]):
-                for iyy in range(nallchunks[1]):
-                    for ixx in range(nallchunks[0]):
-                        chunks.append([ixx,iyy,izz])
-            #print("rank {} chunks {} len chunks {}".format(rank, chunks, len(chunks)))
-            rankchunks = np.array_split(chunks, size)
-            for irank in range(size):
-                if rank == irank:
-                    chunks = rankchunks[irank]
-                    #print("rank {} chunks {} len chunks {}".format(rank, chunks, len(chunks)))
-                    nchunks = 0
-                    lfirstx,lfirsty,lfirstz = list(),list(),list()
-                    llastx,llasty,llastz = list(),list(),list()
-                    for ichunk in chunks:
-                        nchunks += 1
-                        if ichunk[0] == 0:
-                            lfirstx.append("True")
-                        else:
-                            lfirstx.append("False")
-                        if ichunk[0] == nallchunks[0] - 1:
-                            llastx.append("True")
-                        else:
-                            llastx.append("False")
-                        if ichunk[1] == 0:
-                            lfirsty.append("True")
-                        else:
-                            lfirsty.append("False")
-                        if ichunk[1] == nallchunks[1] - 1:
-                            llasty.append("True")
-                        else:
-                            llasty.append("False")
-                        if ichunk[2] == 0:
-                            lfirstz.append("True")
-                        else:
-                            lfirstz.append("False")
-                        if ichunk[2] == nallchunks[2] - 1:
-                            llastz.append("True")
-                        else:
-                            llastz.append("False")
-
+    dstchunksize = bytesize * nx * ny * nz / 1024 / 1024 / size
+    if rank == 0:
+        print("rank {}, nx = {} dstchunksize {} chunksize {}, ncpus {}".format(rank, nx, dstchunksize, chunksize, ncpus))
+    lchunks = False
+    if dstchunksize > chunksize or size > 1:
+        lchunks = True
+        if size > 1:
+            tchunks = size
         else:
-            lfirstx,lfirsty,lfirstz = list("True"),list("True"),list("True")
-            llastx,llasty,llastz = list("True"),list("True"),list("True")
-            nchunks = 1
-            chunks = [0,0,0]
+            tchunks = int(dstchunksize/chunksize+1)
+        nallchunks = cpu_optimal(
+                nx,
+                ny,
+                nz,
+                MBmin=tchunks,
+                nsize=tchunks,
+                size=tchunks,
+                remesh=remesh
+                )[1]
+        if rank == 0:
+            print("rank,lchunks, tchunks, nallchunks",rank,lchunks, tchunks, nallchunks)
+        allindx = np.array_split(np.arange(nx) + dstghost, nallchunks[0])
+        allindy = np.array_split(np.arange(ny) + dstghost, nallchunks[1])
+        allindz = np.array_split(np.arange(nz) + dstghost, nallchunks[2])
+        chunks = list()
+        for izz in range(nallchunks[2]):
+            for iyy in range(nallchunks[1]):
+                for ixx in range(nallchunks[0]):
+                    chunks.append([ixx,iyy,izz])
+        #print("rank {} chunks {} len chunks {}".format(rank, chunks, len(chunks)))
+        rankchunks = np.array_split(chunks, size)
+        for irank in range(size):
+            if rank == irank:
+                chunks = rankchunks[irank]
+                #print("rank {} chunks {} len chunks {}".format(rank, chunks, len(chunks)))
+                nchunks = 0
+                lfirstx,lfirsty,lfirstz = list(),list(),list()
+                llastx,llasty,llastz = list(),list(),list()
+                for ichunk in chunks:
+                    nchunks += 1
+                    if ichunk[0] == 0:
+                        lfirstx.append("True")
+                    else:
+                        lfirstx.append("False")
+                    if ichunk[0] == nallchunks[0] - 1:
+                        llastx.append("True")
+                    else:
+                        llastx.append("False")
+                    if ichunk[1] == 0:
+                        lfirsty.append("True")
+                    else:
+                        lfirsty.append("False")
+                    if ichunk[1] == nallchunks[1] - 1:
+                        llasty.append("True")
+                    else:
+                        llasty.append("False")
+                    if ichunk[2] == 0:
+                        lfirstz.append("True")
+                    else:
+                        lfirstz.append("False")
+                    if ichunk[2] == nallchunks[2] - 1:
+                        llastz.append("True")
+                    else:
+                        llastz.append("False")
+
+    else:
+        lfirstx,lfirsty,lfirstz = list("True"),list("True"),list("True")
+        llastx,llasty,llastz = list("True"),list("True"),list("True")
+        nchunks = 1
+        chunks = [0,0,0]
     print("rank {} len chunks {}, len lfirstx".format(rank, len(chunks), len(lfirstx)))
+
+    #Process remeshing for each field specified from the farray
     for key, ind_start in zip(fields,index_fields):
         if exists(join(dst,'PYTHONSTOP')):
             if rank == 0:
@@ -938,6 +960,7 @@ def src2dst_remesh(
                     if rank == 0 or rank == size - 1:
                         print("nx {}, ny {}, nz {}".format(nx, ny, nz))
                         print("mx {}, my {}, mz {}".format(mx, my, mz))
+                dsth5.require_group("data")
                 if rank == 0 or rank == size - 1:
                     print("remeshing " + key)
                 if not lchunks:
@@ -1092,20 +1115,7 @@ def src2dst_remesh(
                             dsth5["data"][key][n1out:n2out, m1out:m2out, l1out:l2out] = outvar
                             print("wrote rank {} nchunk {} for {} in {} seconds".format(rank,[ix,iy,iz],key,time.time()-globals()[str(ixyz)+"time"]))
                             del(var,globals()[str(ixyz)+"time"],iz, firstz, lastz, iy, firsty, lasty, ix, firstx, lastx, ixyz)
-    #else:
-    #    if comm:
-    #        comm.Barrier()
-    #        driver = "mpio"
-    #        dh5 = h5py.File(join(dstsim.path, dstdatadir, h5out),"r+", driver=driver, comm=comm)
-    #    else:
-    #        #driver = None
-    #        dh5 = h5py.File(join(dstsim.path, dstdatadir, h5out),"r+" )
-    #    print("dh5 name", dh5.filename)
-    #    nx, ny, nz =(
-    #        dh5["settings"]["nx"][0],
-    #        dh5["settings"]["ny"][0],
-    #        dh5["settings"]["nz"][0],
-    #    )
+
     if rank==0 and submit_new:
         cmd = 'source '+join(srcsim.path,'src','.moduleinfo')
         os.system(cmd)
