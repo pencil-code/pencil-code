@@ -116,6 +116,9 @@ class Index(object):
                 and val <= totalvars
                 and not name.startswith("i_")
                 and name.startswith("i")
+                and name != "iuu" and name != "iaa" and name != "ibb"
+                and name != "iuun" and name != "iqq" and name != "ifcr"
+                and name != "iemf" and name != "iam"
             ):
                 name = name.lstrip("i")
                 if name == "lnTT" and param.ltemperature_nolog:
