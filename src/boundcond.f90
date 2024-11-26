@@ -1394,9 +1394,9 @@ module Boundcond
               case ('a2')
                 ! BCZ_DOC: antisymmetry relative to boundary value
                 call bc_sym_z(f,-1,topbot,j,REL=.true.)
-               case ('a2v')
-                  ! BCZ_DOC: set boundary value and antisymmetry relative to it
-                  call bc_sym_z(f,-1,topbot,j,REL=.true.,val=fbcz(:,topbot))
+              case ('a2v')
+                ! BCZ_DOC: set boundary value and antisymmetry relative to it
+                call bc_sym_z(f,-1,topbot,j,REL=.true.,val=fbcz(:,topbot))
               case ('af')
                 ! BCZ_DOC: antisymmetry with respect to interface
                 call bc_sf_z(f,-1,topbot,j)
