@@ -1476,7 +1476,7 @@ module Boundcond
                 if (j==ilnrho) call bc_lnrho_temp_z(f,topbot)
                 call bc_ss_temp_z(f,topbot)
               case ('cT1')
-                ! BCZ_DOC: constant temp.
+                ! BCZ_DOC: constant temperature using one-sided derivatives
                 call bc_ss_temp_z(f,topbot,.true.)
               case ('cT2')
                 ! BCZ_DOC: constant temp. (keep lnrho)
