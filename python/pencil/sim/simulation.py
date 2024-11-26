@@ -220,7 +220,7 @@ class __Simulation__(object):
         if islink(join(path_root, self.name, "data")):
             link_data = True
             oldtmp = os.path.realpath(join(path_root, self.name, "data"))
-            newtmp = join(str.strip(str.strip(oldtmp, "data"), self.name), name, "data")
+            newtmp = oldtmp.replace(self.name, name)
             if exists(newtmp) and OVERWRITE == False:
                 raise ValueError("Data directory {0} already exists".format(newtmp))
             else:
