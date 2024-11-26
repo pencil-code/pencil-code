@@ -1,0 +1,5 @@
+Added: 2024-Nov-26 (Kishore G)
+
+Apparently it is important to some users to be able to read grid and dim from HDF5 simulations without relying on the presence of grid.h5. var.h5 in this directory is a 'fake' snapshot containing only the grid information (I took a snapshot from an actual simulation and removed the f-array from the HDF5 file to reduce its size).
+
+Important: do not add grid.h5 to this directory.

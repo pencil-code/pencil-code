@@ -1,0 +1,5 @@
+Added: 2024-Nov-26 (Kishore G)
+
+In older versions of Pencil's Python module, pc.read.{grid,dim} were coded in such a way that grid information could not be read from a HDF5 simulation without a snapshot being present. This directory is used for a Python test to ensure that this does not recur (it is stupid to have to keep a snapshot around just to read the grid information, especially for large simulations).
+
+Important: do not add var.h5 to this directory.
