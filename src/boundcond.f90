@@ -64,7 +64,7 @@ module Boundcond
 !  Update all ghost zones of f.
 !
 !  21-sep-02/wolf: extracted from wsnaps
-!  28-mar-17/MR: added registration of already communicated variable ranges in f. 
+!  28-mar-17/MR: added registration of already communicated variable ranges in f.
 !
       use Grid, only: coarsegrid_interp
 
@@ -92,7 +92,7 @@ module Boundcond
 !  Update specific ghost zones of f.
 !
 !  11-aug-11/wlad: adapted from update_ghosts
-!  28-mar-17/MR: added registration of already communicated variable ranges in f. 
+!  28-mar-17/MR: added registration of already communicated variable ranges in f.
 !
       use General, only: add_merge_range
       use Grid, only: coarsegrid_interp
@@ -304,7 +304,7 @@ module Boundcond
             call position(idum,ipz,nz,iz2_bc,lread_slice_xy2)
             if (lread_slice_xy) then
               suff_xy2='xy2'
-            else 
+            else
               suff_xy2='xy'
             endif
           endif
@@ -318,23 +318,23 @@ module Boundcond
             call init_scattered_array(slc_dat_xy,nx,ny,mvar,sz_slc_chunk,lreloading)
             call get_slice_data(z(n1),find_proc(ipx,ipy,nprocz_in/2-1),'xy',slc_dat_xy,nt_slices)
           endif
-          if (lread_slice_xy2) then 
+          if (lread_slice_xy2) then
             call init_scattered_array(slc_dat_xy2,nx,ny,mvar,sz_slc_chunk,lreloading)
             call get_slice_data(z(n2),find_proc(ipx,ipy,nprocz_in/2-1),suff_xy2,slc_dat_xy2,nt_slices)
           endif
-          if (lread_slice_xz ) then 
+          if (lread_slice_xz ) then
             call init_scattered_array(slc_dat_xz ,nx,nz,mvar,sz_slc_chunk,lreloading)
             call get_slice_data(y(m1),find_proc(ipx,nprocy_in/2-1,ipz),'xz',slc_dat_xz,nt_slices)
           endif
-          if (lread_slice_xz2) then 
+          if (lread_slice_xz2) then
             call init_scattered_array(slc_dat_xz2,nx,nz,mvar,sz_slc_chunk,lreloading)
             call get_slice_data(y(m2),find_proc(ipx,nprocy_in/2-1,ipz),suff_xz2,slc_dat_xz2,nt_slices)
           endif
-          if (lread_slice_yz ) then 
+          if (lread_slice_yz ) then
             call init_scattered_array(slc_dat_yz ,ny,nz,mvar,sz_slc_chunk,lreloading)
             call get_slice_data(x(l1),find_proc(nprocx_in/2-1,ipy,ipz),'yz',slc_dat_yz,nt_slices)
           endif
-          if (lread_slice_yz2) then 
+          if (lread_slice_yz2) then
             call init_scattered_array(slc_dat_yz2,ny,nz,mvar,sz_slc_chunk,lreloading)
             call get_slice_data(x(l2),find_proc(nprocx_in/2-1,ipy,ipz),suff_yz2,slc_dat_yz2,nt_slices)
           endif
@@ -342,8 +342,8 @@ module Boundcond
           call mpibarrier
         else
           call fatal_error('initialize_boundcond','BC set from slice data not implemented for IO_strategy="HDF5"')
-        endif      
-      endif      
+        endif
+      endif
 
     endsubroutine initialize_boundcond
 !***********************************************************************
@@ -452,7 +452,7 @@ module Boundcond
 
       character(LEN=fnlen) :: slicedir, file
       real :: pos_slc
-     
+
       slicedir=trim(bc_slc_dir)//'/data/proc'//trim(itoa(iproc_slc))
 
       if (lhydro) then
@@ -495,7 +495,7 @@ module Boundcond
           call fatal_error_local('get_slice_data', 'slices in '//trim(file)// &
                                  ' at wrong position')
       endif
- 
+
     endsubroutine get_slice_data
 !***********************************************************************
     subroutine set_from_slice_x(f,topbot,j)
@@ -535,7 +535,7 @@ module Boundcond
       real, dimension (:,:,:,:) :: f
       integer, intent(IN) :: topbot
       integer :: j
-    
+
       integer, save :: ilayer=-1
       real, save :: last_gettime, timediff
       real, dimension(nx,nz,mvar), save :: ahead_data
@@ -574,7 +574,7 @@ module Boundcond
       real :: w
 
       lget=.false.
-      if (itsub==0.or.lfirst) then   
+      if (itsub==0.or.lfirst) then
 !
 ! update only in first substep of integration or before integration has started
 !
@@ -1443,7 +1443,7 @@ module Boundcond
                 if (j==ilnrho) call bc_lnrho_temp_z(f,topbot)
                 call bc_ss_temp_z(f,topbot)
               case ('cT1')
-                ! BCZ_DOC: constant temp.
+                ! BCZ_DOC: constant temperature using one-sided derivatives
                 call bc_ss_temp_z(f,topbot,.true.)
               case ('cT2')
                 ! BCZ_DOC: constant temp. (keep lnrho)
@@ -1682,7 +1682,7 @@ module Boundcond
 ! Apply boundary conditions to a 1D scalar of arbitrary size.
 !
 ! 29-may-12/ccyang: coded
-!  2-apr-15/MR: optional parameters d2_bound, bound for use in stress-free 
+!  2-apr-15/MR: optional parameters d2_bound, bound for use in stress-free
 !               and normal-field BCs added; these BCs, 'a' and 's' implemented
 !
 ! Input/Output Arguments
@@ -1752,7 +1752,7 @@ module Boundcond
       case ('cop') upper
         penc(ncell+1:ncell+nghost) = penc(ncell)
       case ('s') upper
-        penc(ncell+1:ncell+nghost) = penc(ncell-nghost:ncell-1) 
+        penc(ncell+1:ncell+nghost) = penc(ncell-nghost:ncell-1)
       case ('a') upper
         penc(ncell+1:ncell+nghost) = -penc(ncell-nghost:ncell-1)
         penc(ncell) = 0.
@@ -1869,7 +1869,7 @@ module Boundcond
 
       if (is_vec) then
 !
-!  Vector quantities need to be transformed from the Cartesian basis to 
+!  Vector quantities need to be transformed from the Cartesian basis to
 !  the local spherical basis.
 !
         jdone=j+2     ! requires adjacent vector components
@@ -1953,7 +1953,7 @@ module Boundcond
 !  After-communication handling of vector quantities for Yin-Yang grid.
 !
 !  30-nov-15/MR: coded
-!  29-feb-16/MR: avoided double transformation in ghost zone corners 
+!  29-feb-16/MR: avoided double transformation in ghost zone corners
 !                which is already done in bc_yy_y
 !
       use General, only: transform_cart_spher
@@ -1971,19 +1971,19 @@ module Boundcond
 
       if (is_vec) then
 !
-!  Vector quantities need to be transformed from the Cartesian basis to 
+!  Vector quantities need to be transformed from the Cartesian basis to
 !  the local spherical basis.
 !
         jdone=j+2     ! requires adjacent vector components
 
-        iya=1; iye=my          
+        iya=1; iye=my
         if (lfirst_proc_y) iya=m1
         if (llast_proc_y) iye=m2
-      
+
         if (topbot==BOT) then
           call transform_cart_spher(f,iya,iye,1,nghost,j)  ! in-place!
         else
-          call transform_cart_spher(f,iya,iye,n2+1,mz,j)   ! ~  
+          call transform_cart_spher(f,iya,iye,n2+1,mz,j)   ! ~
         endif
       else
         jdone=0
@@ -3238,7 +3238,7 @@ module Boundcond
             endif
           enddo
         else
-!if (ldownsampling) print*, 'size,n1,j=', size(f,1), size(f,2), size(f,3), size(f,4),n1,j 
+!if (ldownsampling) print*, 'size,n1,j=', size(f,1), size(f,2), size(f,3), size(f,4),n1,j
           do i=1,nghost; f(:,:,n1-i,j)=              sgn*f(:,:,n1+i,j); enddo
           if (sgn<0) f(:,:,n1,j) = 0. ! set bdry value=0 (indep of initcond)
         endif
@@ -3481,7 +3481,7 @@ module Boundcond
         endif
         lbc_file_x=.false.
       endif
-      
+
       iszx=size(f,1)
 !
       select case (topbot)
@@ -3641,7 +3641,7 @@ module Boundcond
       if (topbot==BOT) then
         call bval_from_3rd(f,topbot,j,1,-1./x(l1))
       else
-        call bval_from_3rd(f,topbot,j,1,-1./x(l2)) 
+        call bval_from_3rd(f,topbot,j,1,-1./x(l2))
       endif
       call set_ghosts_for_onesided_ders(f,topbot,j,1,.true.)
 !
@@ -4521,10 +4521,10 @@ module Boundcond
 !
 !  30-jul-13/wlad: copied from z
 !  18-mar-22/wlad+debanjan: differentiated between log quantities
-!                           (lnrho and ss) and linear quantities (rho)     
+!                           (lnrho and ss) and linear quantities (rho)
 !
 !  TODO: generalize for all log and all linear quantities
-!        or else, just code a separate van3rd_log subroutine      
+!        or else, just code a separate van3rd_log subroutine
 !
       integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
@@ -5261,15 +5261,15 @@ module Boundcond
       select case (topbot)
       case(BOT)
         ! bottom (left end of the domain)
-        slope = (f(:,:,n1+1,j) - f(:,:,n1,j)) / dz2_bound(-1) 
+        slope = (f(:,:,n1+1,j) - f(:,:,n1,j)) / dz2_bound(-1)
         do i = 1, nghost
-          f(:,:,n1-i,j) = f(:,:,n1,j) - slope * dz2_bound(-i) 
+          f(:,:,n1-i,j) = f(:,:,n1,j) - slope * dz2_bound(-i)
         enddo
       case(TOP)
         ! top (right end of the domain)
         slope = (f(:,:,n2,j) - f(:,:,n2-1,j)) / dz2_bound(1)
         do i = 1, nghost
-          f(:,:,n2+i,j) = f(:,:,n2,j) + slope * dz2_bound(i) 
+          f(:,:,n2+i,j) = f(:,:,n2,j) + slope * dz2_bound(i)
         enddo
       case default
         call fatal_error ('bcz_extrapol', 'topbot should be BOT or TOP', lfirst_proc_xy)
@@ -6554,7 +6554,7 @@ module Boundcond
 !
       if (lreference_state) &
         call get_shared_variable('reference_state',reference_state)
-! 
+!
       fac=gamma_m1/gamma
 !
 ! Check whether we want to do top or bottom (this is processor dependent)
@@ -7780,7 +7780,7 @@ module Boundcond
 !  the box). 'crk' is a no-inflow, purely outflow boundary. It sets the
 !  velocity to zero if that was pointing back to the box. The 'k' means
 !  "kill". "copy amd reduce if outflow, kill if inflow". Additionally the velocity
-!  in the ghost zones are reduced by a factor 
+!  in the ghost zones are reduced by a factor
 !  2i, where i is the i-th ghost zone
 !
 !  22-mar-2018/piyali: copied from bc_copy_z_noinflow
@@ -9101,7 +9101,7 @@ module Boundcond
         select case (topbot)
         case(TOP)
           do k=1,3
-            f(l2+k,:,:,j)=0.    
+            f(l2+k,:,:,j)=0.
             do p=0,3
               f(l2+k,:,:,j) = f(l2+k,:,:,j)+coefs(p,k)*f(l2-p,:,:,j)
             enddo
