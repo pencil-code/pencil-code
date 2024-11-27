@@ -57,10 +57,11 @@ module Special
       if (y_2==impossible) y_2=xyz1(2)
       if (z_2==impossible) z_2=xyz1(3)
 !
-      tauinv_prof = spread(spread(step(x,x_1,-w)*step(x,x_2,w),2,my),3,mz) &
-                   *spread(spread(step(y,y_1,-w)*step(y,y_2,w),1,mx),3,mz) &
-                   *spread(spread(step(z,z_1,-w)*step(z,z_2,w),1,mx),2,my) &
-                   /tau
+      tauinv_prof = spread(spread(step(x,x_1,-w)+step(x,x_2,w),2,my),3,mz) &
+                   +spread(spread(step(y,y_1,-w)+step(y,y_2,w),1,mx),3,mz) &
+                   +spread(spread(step(z,z_1,-w)+step(z,z_2,w),1,mx),2,my)
+      where (tauinv_prof>1) tauinv_prof = 1 !avoid damping being too strong in the corners
+      tauinv_prof = tauinv_prof/tau
 !
       if (ldamp_rho) then
         if (ilnrho==0) call fatal_error('initialize_special', 'could not find density variable to be damped')
