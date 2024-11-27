@@ -1,0 +1,26 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+&run_pars
+  nt=10
+  it1=1
+  it1d=1
+  itsnap=1
+/
+&eos_run_pars
+/
+&density_run_pars
+  lupw_lnrho=T
+/
+&grav_run_pars
+/
+&entropy_run_pars
+  lupw_ss=T
+  
+!   Fbot = ?? !will be calculated from hcond0
+  
+  iheatcond='K-profile'
+  widthss = 0.03
+  hcond0 = 5e-2 !K below z2
+  hcond1 = 1 !Ignore z1
+!   hcond2 = ?? !K above z2 will be hcond2*hcond0 !hcond2 will be automatically calculated according to the polytropic index we set in the IC
+/
