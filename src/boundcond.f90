@@ -1472,9 +1472,12 @@ module Boundcond
                 ! BCZ_DOC: hydrostatic equilibrium with a high-frequency filter
                 call bc_lnrho_hdss_z_iso(f,topbot)
               case ('cT')
-                ! BCZ_DOC: constant temp.
+                ! BCZ_DOC: constant temperature.
+                ! BCZ_DOC: If used for lnrho, sets both lnrho and ss (in
+                ! BCZ_DOC: which case the BC for ss should be set to 'nil')
+                ! BCZ_DOC: If used for ss, sets only ss.
                 if (j==ilnrho) call bc_lnrho_temp_z(f,topbot)
-                call bc_ss_temp_z(f,topbot)
+                if (j==iss.or.j==iTT.or.j==ilnTT) call bc_ss_temp_z(f,topbot)
               case ('cT1')
                 ! BCZ_DOC: constant temperature using one-sided derivatives
                 call bc_ss_temp_z(f,topbot,.true.)
