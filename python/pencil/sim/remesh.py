@@ -985,7 +985,7 @@ def src2dst_remesh(
                                     np.where(zin > zout[n2])
                                 )
                             except:
-                                srcn2 = zin.size
+                                srcn2 = zin.size - 1
                             n1out = n1 + dstghost
                             n2out = n2 - dstghost + 1
                             varn1 = dstghost
@@ -1002,7 +1002,7 @@ def src2dst_remesh(
                                         n1, n2, srcn1, srcn2
                                     )
                                 )
-                            m1, m2 = allindy[iy][0] - dstghost, allindy[iy][-1] + dstghost
+                            m1, m2 = allouty[iy][0] - dstghost, allouty[iy][-1] + dstghost
                             try:
                                 srcm1 = np.max(
                                 np.where(yin < yout[m1])
@@ -1014,7 +1014,7 @@ def src2dst_remesh(
                                     np.where(yin > yout[m2])
                                 )
                             except:
-                                srcm2 = yin.size
+                                srcm2 = yin.size - 1
                             m1out = m1 + dstghost
                             m2out = m2 - dstghost + 1
                             varm1 = dstghost
@@ -1031,7 +1031,7 @@ def src2dst_remesh(
                                         m1, m2, srcm1, srcm2
                                     )
                                 )
-                            l1, l2 = allindx[ix][0] - dstghost, allindx[ix][-1] + dstghost
+                            l1, l2 = alloutx[ix][0] - dstghost, alloutx[ix][-1] + dstghost
                             try:
                                 srcl1 = np.max(
                                 np.where(xin < xout[l1])
@@ -1043,7 +1043,7 @@ def src2dst_remesh(
                                     np.where(xin > xout[l2])
                                 )
                             except:
-                                srcl2 = zin.size
+                                srcl2 = zin.size - 1
                             l1out = l1 + dstghost
                             l2out = l2 - dstghost + 1
                             varl1 = dstghost
@@ -1066,6 +1066,16 @@ def src2dst_remesh(
                                     + key
                                     + " chunk {}".format([iz, iy, ix])
                                 )
+                                print("ixyz {} xin  {:.3f} {:.3f}, yin  {:.3f} {:.3f}, zin  {:.3f} {:.3f}".format(
+                                       ixyz,
+                                       xin[srcl1], xin[srcl2],
+                                       yin[srcm1], yin[srcm2],
+                                       zin[srcn1], zin[srcn2]))
+                                print("ixyz {} xout {:.3f} {:.3f}, yout {:.3f} {:.3f}, zout {:.3f} {:.3f}".format(
+                                       ixyz,
+                                       xout[l1], xout[l2],
+                                       yout[m1], yout[m2],
+                                       zout[n1], zout[n2]))
                             if not quiet:
                                 print("rank {} ind {} writing {} shape {}".format(rank,ind,key,[n2out-n1out, m2out-m1out, l2out-l1out]))
                             invar = srch5["data"][key][
