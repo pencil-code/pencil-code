@@ -978,12 +978,16 @@ def src2dst_remesh(
                                 srcn1 = np.max(
                                 np.where(zin < zout[n1])
                                 )
+                                print(iz,"srcn1 {} zin {:.3f} n1 {} zout {:.3f}".format(
+                                       srcn1,   zin[srcn1],n1,   zout[n1]))
                             except:
                                 srcn1 = 0
                             try:
                                 srcn2 = np.min(
                                     np.where(zin > zout[n2])
                                 )
+                                print(iz,"srcn2 {} zin {:.3f} n2 {} zout {:.3f}".format(
+                                       srcn2,   zin[srcn2],n2,   zout[n2]))
                             except:
                                 srcn2 = zin.size - 1
                             n1out = n1 + dstghost
@@ -1007,12 +1011,16 @@ def src2dst_remesh(
                                 srcm1 = np.max(
                                 np.where(yin < yout[m1])
                                 )
+                                print(iy,"srcm1 {} yin {:.3f} m1 {} yout {:.3f}".format(
+                                       srcm1,   yin[srcm1],m1,   yout[m1]))
                             except:
                                 srcm1 = 0
                             try:
                                 srcm2 = np.min(
                                     np.where(yin > yout[m2])
                                 )
+                                print(iy,"srcm2 {} yin {:.3f} m2 {} yout {:.3f}".format(
+                                       srcm2,   yin[srcm2],m2,   yout[m2]))
                             except:
                                 srcm2 = yin.size - 1
                             m1out = m1 + dstghost
@@ -1036,12 +1044,16 @@ def src2dst_remesh(
                                 srcl1 = np.max(
                                 np.where(xin < xout[l1])
                                 )
+                                print(ix,"srcl1 {} xin {:.3f} l1 {} xout {:.3f}".format(
+                                       srcl1,   xin[srcl1],l1,   xout[l1]))
                             except:
                                 srcl1 = 0
                             try:
                                 srcl2 = np.min(
                                     np.where(xin > xout[l2])
                                 )
+                                print(ix,"srcl2 {} xin {:.3f} l2 {} xout {:.3f}".format(
+                                       srcl2,   xin[srcl2],l2,   xout[l2]))
                             except:
                                 srcl2 = zin.size - 1
                             l1out = l1 + dstghost
