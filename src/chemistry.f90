@@ -25,6 +25,7 @@
 ! PENCILS PROVIDED glnpp(3); del2pp; mukmu1(nchemspec)
 ! PENCILS PROVIDED ccondens; ppwater
 ! PENCILS PROVIDED Ywater, nucl_rate, nucl_rmin, conc_sat_spec, ff_nucl,ff_cond
+! PENCILS PROVIDED cond_heat
 !
 !***************************************************************
 module Chemistry
@@ -165,12 +166,15 @@ module Chemistry
   real :: true_density_cond_spec_cgs=2.196, true_density_cond_spec
   real :: gam_surf_energy_cgs=32.
   real :: nucleation_rate_coeff_cgs=1e19
+  real :: molar_mass_spec, atomic_m_spec, A_spec
+  !real :: deltaH_cgs = 7.07e12 ! in erg/mol
+  real :: deltaH_cgs = 3.55e12 ! in erg/mol (based on Tboil and 1025C)
   real :: conc_sat_spec_cgs=1e-8 !units of mol/cmˆ3
   logical, pointer :: ldustnucleation, lpartnucleation, lcondensing_species
   character(len=labellen) :: isurf_energy="const"
   character(len=labellen) :: iconc_sat_spec="const"
   character(len=30) :: inucl_pre_exp="const"      
-  logical :: lnoevap=.false.
+  logical :: lnoevap=.false., lnocondheat=.false.
 !
 !   Atmospheric physics
 !
@@ -231,7 +235,8 @@ module Chemistry
       ldiff_corr, lDiff_fick, lreac_as_aux, reac_rate_method,global_phi, &
       Ythresh, lchem_detailed, conc_sat_spec_cgs, inucl_pre_exp, lcorr_vel, &
       lgradP_terms, lnormalize_chemspec, lnormalize_chemspec_N2, &
-      gam_surf_energy_cgs, isurf_energy, iconc_sat_spec, nucleation_rate_coeff_cgs, lnoevap
+      gam_surf_energy_cgs, isurf_energy, iconc_sat_spec, nucleation_rate_coeff_cgs, &
+      lnoevap, lnocondheat
 !
 ! diagnostic variables (need to be consistent with reset list below)
 !
@@ -450,7 +455,7 @@ module Chemistry
             call get_shared_variable('lcondensing_species',lcondensing_species)
           endif
 
-          if (lcondensing_species) then
+          if (lcondensing_species .and. lparticles_radius) then
             call find_species_index(condensing_species,i_cond_spec,ichem_cond_spec,found_specie)
             if (.not. found_specie) then
               print*,"condensing_species=",condensing_species
@@ -604,7 +609,15 @@ module Chemistry
         if  (lparticles_radius) then
           true_density_cond_spec=true_density_cond_spec_cgs/unit_density
         endif
-      endif      
+      endif
+!
+! Define some constants used for condensing species
+!
+      if (lcondensing_species .and. lparticles_radius) then
+        molar_mass_spec = species_constants(ichem_cond_spec,imass)
+        atomic_m_spec=molar_mass_spec*m_u
+        A_spec=sqrt(8.*k_B/(pi*atomic_m_spec))*molar_mass_spec/(4.*true_density_cond_spec)
+      endif
 !
 !  write array dimension to chemistry diagnostics file
 !
@@ -6633,7 +6646,7 @@ module Chemistry
       real :: dustbin_width
       real, dimension (nx) :: mfluxcond
 !
-      real, dimension (nx) :: ff_cond_fact
+      real, dimension (nx) :: ff_cond_fact, Q_cond
       real, dimension(ndustspec) :: ad
       integer :: ichem, kkk,k
 !
@@ -6641,9 +6654,12 @@ module Chemistry
 !  All the bins consume.
 !
       p%ff_cond=0.
+      p%part_heatcap=0.
+      p%cond_heat=0.
       ff_cond_fact=4.*pi*mfluxcond*true_density_cond_spec
       do k=1,ndustspec
         p%ff_cond=p%ff_cond+ff_cond_fact*ad(k)**2*f(l1:l2,m,n,ind(k))*dustbin_width
+        p%part_heatcap=p%part_heatcap+4*pi*ad(k)**3*f(l1:l2,m,n,ind(k))*true_density_cond_spec*dustbin_width
       enddo
       do ichem = 1,nchemspec
         kkk=ichemspec(ichem)
@@ -6658,6 +6674,16 @@ module Chemistry
       else
         df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - p%ff_cond*p%rho1
       endif
+      !
+      ! Make pencil containing the heat due to condesation phase change
+      ! This may be added to the energy equation of the gas phase, but this
+      ! is currently not implemented for the eulerian approach. See the
+      ! lagrangian approach (cond_spec_cond_lagr) below for info of how it
+      ! is done.
+      !
+      if (.not. lnocondheat) then
+        p%cond_heat=p%cond_heat+p%ff_cond*deltaH_cgs/unit_temperature/molar_mass_spec*unit_mass
+      endif
 ! 
     end subroutine cond_spec_cond
 !***********************************************************************
@@ -6667,7 +6693,7 @@ module Chemistry
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       integer :: ichem, kkk,ix0,ix
-      real :: ffcondp
+      real :: ffcondp, Q_cond
       real, intent(IN) :: rp,dapdt,np_swarm
 !
 ! Modify continuity equation
@@ -6690,6 +6716,15 @@ module Chemistry
           df(ix0,m,n,kkk) = df(ix0,m,n,kkk) + ffcondp*f(ix0,m,n,kkk)*p%rho1(ix)
         endif
       enddo
+      !
+      ! Make pencil containing the heat due to condesation phase change
+      ! This may be added to the energy equation of the gas phase in
+      ! particles_temperature.f90.
+      !
+      if (.not. lnocondheat) then
+        call fatal_error("cond_spec_cond_lagr","Please check that the condensational heat is correctly added to the energy equation before using this option.")
+         p%cond_heat(ix)=p%cond_heat(ix)+p%ff_cond(ix)*deltaH_cgs/unit_temperature/molar_mass_spec*unit_mass 
+      endif
 !
     end subroutine cond_spec_cond_lagr
 !***********************************************************************
@@ -6702,7 +6737,7 @@ module Chemistry
       integer :: ichem, kkk,i
       integer, dimension(nx) :: kk_vec
       real, dimension(ndustspec) :: ad
-      !real :: ff_nucl
+      real :: Q_nucl
 !
       do i=1,nx
         !
@@ -6722,6 +6757,17 @@ module Chemistry
             endif
           enddo
           df(l1+i-1,m,n,irho) = df(l1+i-1,m,n,irho) - p%ff_nucl(i)
+          !
+          ! Add heat due to condesation phase change to the energy equation
+          !
+          if (.not. lnocondheat) then
+            p%cond_heat(i)=p%cond_heat(i)+p%ff_nucl(i)*deltaH_cgs/unit_temperature/molar_mass_spec*unit_mass
+            !if (ltemperature_nolog) then
+            !  df(l1+i,m,n,iTT) = df(l1+i,m,n,iTT) + Q_nucl*p%rho1(i)*p%cv1(i)
+            !else
+            !  df(l1+i,m,n,ilnTT) = df(l1+i,m,n,ilnTT) + Q_nucl*p%rho1(i)*p%cv1(i)*p%TT1(i)
+            !endif
+          endif
         else
           p%nucl_rate(i)=0.
         endif
@@ -6736,7 +6782,7 @@ module Chemistry
       type (pencil_case) :: p
 !
       integer :: ichem, kkk,i
-      !real, dimension(nx) :: ff_nucl
+      real, dimension(nx) :: Q_nucl
       !
       if (lnucleation) then
         !
@@ -6766,6 +6812,17 @@ module Chemistry
         !
         df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) - p%ff_nucl
         !
+        ! Add heat due to condesation phase change to the energy equation
+        !
+        if (.not. lnocondheat) then
+          p%cond_heat=p%cond_heat+p%ff_nucl*deltaH_cgs/unit_temperature/molar_mass_spec*unit_mass
+          !if (ltemperature_nolog) then
+          !  df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) + Q_nucl*p%rho1*p%cv1
+          !else
+          !  df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + Q_nucl*p%rho1*p%cv1*p%TT1
+          !endif
+        endif
+        !
       endif
 !     
     end subroutine cond_spec_nucl_lagr
@@ -6776,11 +6833,7 @@ module Chemistry
       type (pencil_case) :: p
       !
       integer :: ichem, kkk
-      real :: molar_mass_spec, atomic_m_spec, A_spec
       !
-      molar_mass_spec = species_constants(ichem_cond_spec,imass)
-      atomic_m_spec=molar_mass_spec*m_u
-      A_spec=sqrt(8.*k_B/(pi*atomic_m_spec))*molar_mass_spec/(4.*true_density_cond_spec)
       mfluxcond=A_spec*(p%chem_conc(:,ichem_cond_spec)-p%conc_sat_spec)*sqrt(p%TT)
       !
       ! Do we allow for evaporation of particles
@@ -6800,7 +6853,7 @@ module Chemistry
       real :: volume_spec
       real, dimension (nx) :: sat_ratio_spec, nucleation_rate, nucleation_rmin
       real, dimension (nx) :: gam_surf_energy, chem_conc
-      real :: atomic_m_spec, tmp1, tmp2, tmp3, tmp4, nucleation_rate_coeff
+      real :: tmp1, tmp2, tmp3, tmp4, nucleation_rate_coeff
       !
 !  compute rmin
 !
@@ -6819,8 +6872,6 @@ module Chemistry
           call fatal_error("cond_spec_nucl_rate","No such isurf_energy")
         endif
         volume_spec=volume_spec_cgs/unit_length**3
-        atomic_m_spec=m_u*species_constants(ichem_cond_spec,imass)
-
         
         do i=1,nx
           if (sat_ratio_spec(i) > 1.0) then
@@ -6860,8 +6911,6 @@ module Chemistry
         real, dimension (nx) :: conc_sat_spec, tmp1
         real :: P_boil_cgs = 1013250 ! 1bar in Ba (=0.1Pa)
         real :: T_boil_cgs = 2503 ! in K
-        !real :: deltaH_cgs = 7.07e12 ! in erg/mol
-        real :: deltaH_cgs = 3.55e12 ! in erg/mol (based on Tboil and 1025C)
         real :: P_boil
         !
         if (iconc_sat_spec=="const") then

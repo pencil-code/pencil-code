@@ -742,6 +742,10 @@ module Particles_radius
 !
       intent(in) :: f, fp
       intent(inout) :: dfp
+      !
+      p%ff_cond=0.
+      p%part_heatcap=0.
+      p%cond_heat=0.
 !
 !  Change in particle radius due to condensation and evaporation.
 !
@@ -767,7 +771,6 @@ module Particles_radius
           ! Calculate the condensation rate for condensing species
           !
           if (lcondensing_species) then
-            p%ff_cond=0.
             call condensing_species_rate(p,mfluxcond)
           endif
           !
