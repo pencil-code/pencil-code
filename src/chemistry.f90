@@ -6722,7 +6722,9 @@ module Chemistry
       ! particles_temperature.f90.
       !
       if (.not. lnocondheat) then
-        call fatal_error("cond_spec_cond_lagr","Please check that the condensational heat is correctly added to the energy equation before using this option.")
+        ! NILS: Please check that theis correctly added to the energy
+        ! NILS: equation before using this option.
+        call fatal_error("cond_spec_cond_lagr","Please check that this is correct")
          p%cond_heat(ix)=p%cond_heat(ix)+p%ff_cond(ix)*deltaH_cgs/unit_temperature/molar_mass_spec*unit_mass 
       endif
 !
