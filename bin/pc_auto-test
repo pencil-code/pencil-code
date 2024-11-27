@@ -146,6 +146,7 @@ my %tests = (
              # successfully
              3 => [qw(
                          0d-tests/heating_ionize_planck
+                         1d-tests/conduction
                          1d-tests/jeans-drag-dustpar-x
                          1d-tests/jeans-x
                          1d-tests/sod_10s
