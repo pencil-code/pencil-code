@@ -888,7 +888,8 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		if (B0_ext_z gt 0.0) then begin
 			; Add external magnetic field B_ext_z
 			B0_strat_z = pc_compute_quantity (vars, index, 'B0_strat_z', ghost=ghost)
-			B_ext = spread (B0_strat_z, [0,1], [mx,my])
+			B_ext = dblarr (gnx, gny, gnz, 3)
+			B_ext[*,*,*,2] = spread (B0_strat_z, [0,1], [gnx,gny])
 			return, B_ext
 		endif
 		return, 0
