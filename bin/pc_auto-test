@@ -1939,6 +1939,7 @@ sub mark_success {
 # ---------------------------------------------------------------------- #
 sub get_current_revision {
 # Get current revision only if not previously obtained
+    $current_hash = "";
     if (!defined ($current_revision)) {
         # Get current SVN revision and GIT hash
         if (-d "$pencil_home/.svn") {
@@ -1951,8 +1952,12 @@ sub get_current_revision {
                 $current_revision = "Problem obtaining SVN revision!";
             } else {
                 # GIT hash
-                $current_hash = `wget -q "http://pencil-code.org/translate.php?output=plain&revision=$current_revision" -O -`;
-                chomp ($current_hash);
+                my $tries = 0;
+                while (!$current_hash && ($tries < 4)) {
+                    if ($tries > 0) { sleep (3*$tries); }
+                    $current_hash = `wget -q "http://pencil-code.org/translate.php?output=plain&revision=$current_revision" -O -`;
+                    chomp ($current_hash);
+                }
             }
             if (!$current_hash) { $current_hash = "No network connection to pencil-code.org!"; }
         }
