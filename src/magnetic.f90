@@ -371,7 +371,7 @@ module Magnetic
   character (len=labellen) :: iforcing_continuous_aa='fixed_swirl'
   character (len=labellen) :: ambipolar_diffusion='constant'
   character (len=labellen) :: div_sld_magn='2nd'
-  logical :: lbext_moving_layer=.false.
+  logical :: lbext_moving_layer=.false., lno_eta_tdep=.false.
   real :: zbot_moving_layer=0., ztop_moving_layer=0., speed_moving_layer=0., edge_moving_layer=.1
 !
   namelist /magnetic_run_pars/ &
@@ -428,7 +428,7 @@ module Magnetic
       lbraginsky, eta_jump0, eta_jump1, lcoulomb, lvacuum, &
       loverride_ee_decide, eta_tdep_loverride_ee, loverride_ee2, lignore_1rho_in_Lorentz, &
       lbext_moving_layer, zbot_moving_layer, ztop_moving_layer, speed_moving_layer, edge_moving_layer, &
-      echarge
+      echarge, lno_eta_tdep
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -1094,6 +1094,7 @@ module Magnetic
   real, dimension(nzgrid) :: eta_zgrid=0.0
   real, dimension(mz) :: feta_ztdep=0.0
   real :: eta_shock_jump1=1.0, eta_tdep=0.0, Arms=0.0
+  real, dimension(nx) :: eta_xtdep=0.0
   real, dimension(-nghost:nghost,-nghost:nghost,-nghost:nghost) :: kern_jjsmooth
 !
   real, dimension(nz,nprocz) :: z_allprocs
@@ -2950,6 +2951,15 @@ module Magnetic
 !
       if (lua_as_aux) lpenc_diagnos(i_ua)=.true.
 !
+!  e2 and b2 needed for mean-field conductivity
+!
+      if (lresi_eta_tdep .or. lresi_hyper2_tdep .or. lresi_hyper3_tdep) then
+        if (tdep_eta_type=='mean-field-local') then
+          lpenc_requested(i_e2)=.true.
+          lpenc_requested(i_b2)=.true.
+        endif
+      endif
+!
 !  Request unit vectors for transformation of magnetic field from
 !  Cartesian to spherical coordinates.
 !
@@ -3841,6 +3851,7 @@ module Magnetic
 !
       real, dimension (nx,3) :: tmp ! currently unused: bb_ext_pot
       real, dimension (nx) :: rho1_jxb, quench, StokesI_ncr, tmp1, bbgb, va2max_beta
+      real, dimension (nx) :: Eabs, Babs
       real, dimension(3) :: B_ext, j_ext
       real :: c,s
       real :: Eaver, Baver, b2m
@@ -4129,15 +4140,15 @@ module Magnetic
              call get_shared_variable('Hscript', Hscript, caller='initialize_magnetic')
              if (lbb_as_aux .and. .not. lbb_as_comaux) then
                b2m=sum(f(l1:l2,m,n,ibx)**2+f(l1:l2,m,n,iby)**2+f(l1:l2,m,n,ibz)**2)/nx
+               Eaver=sqrt(sum(f(l1:l2,m1:m2,n,iex)**2+f(l1:l2,m1:m2,n,iey)**2+f(l1:l2,m1:m2,n,iez)**2)/nx)
+               Baver=sqrt(B_ext2+b2m)
              else
                call fatal_error('magnetic_after_boundary','must have lbb_as_aux')
              endif
-             Eaver=sqrt(sum(f(l1:l2,m1:m2,n,iex)**2+f(l1:l2,m1:m2,n,iey)**2+f(l1:l2,m1:m2,n,iez)**2)/nx)
-             Baver=sqrt(B_ext2+b2m)
 !
 !  Note that for Baver=0, eta_tdep=0
 !
-            if (Eaver<tini) then
+            if (Eaver<tini .or. lno_eta_tdep) then
               eta_tdep=eta_huge
             else
               if (Baver<tini) then
@@ -4146,6 +4157,26 @@ module Magnetic
                 eta_tdep=6.*pi**2*Hscript/echarge**3*tanh(pi*Baver/Eaver)/Baver
               endif
             endif
+!
+!  eta_tdep
+!
+          case ('mean-field-local')
+             call get_shared_variable('ascale', ascale, caller='initialize_magnetic')
+             call get_shared_variable('Hscript', Hscript, caller='initialize_magnetic')
+             Eabs=sqrt(p%e2)
+             Babs=sqrt(p%b2)
+!
+!  Note that for Babs=0, eta_tdep=0
+!
+            where (Eabs<tini)
+              eta_xtdep=eta_huge
+            elsewhere
+              where (Babs<tini)
+                eta_xtdep=6.*pi**3*Hscript/echarge**3/Eabs
+              elsewhere
+                eta_xtdep=6.*pi**2*Hscript/echarge**3*tanh(pi*Babs/Eabs)/Babs
+              endwhere
+            endwhere
           case default
         endselect
       endif
@@ -5851,6 +5882,7 @@ module Magnetic
 !  This line must not be used when the displacement current is being solved for.
 !  But is might actually work correctly.
 !
+!print*,'AXEL: lee_as_aux, dAdt(1:3)=',lee_as_aux, dAdt(1:3)
       if (lee_as_aux) then
         if (lroot) print*,'f(l1:l2,m,n,iex:iez)=-dAdt is set'
         f(l1:l2,m,n,iex:iez)=-dAdt
@@ -5879,21 +5911,13 @@ module Magnetic
 !
       if (lmagn_mf) call daa_dt_meanfield(f,df,p)
 !
-!  This is the endif from (iex==0.or.loverride_ee)
-!
-      endif
-!
-!  Add turbulent diffusivity, if provided.  (MR: should be done in MF module! AB: I agree; replace now by fatal error)
-!
-      !if (ietat/=0) eta_total=eta_total+f(l1:l2,m,n,ietat)
-      if (ietat/=0) call fatal_error("daa_dt","eta_total=eta_total+f(l1:l2,m,n,ietat) should be done in MF module")
-!
 !  Multiply resistivity by Nyquist scale, for resistive time-step.
 !
       if (lfirst.and.ldt) then
 !
         diffus_eta =eta_total *dxyz_2
         diffus_eta2=diffus_eta2*dxyz_4
+print*,'AXEL: diffus_eta=',diffus_eta
 !
         if (ldynamical_diffusion .and. lresi_hyper3_mesh) then
           diffus_eta3 = diffus_eta3 * sum(dline_1,2)
@@ -5925,6 +5949,10 @@ module Magnetic
         maxdiffus=max(maxdiffus,diffus_eta)
         maxdiffus2=max(maxdiffus2,diffus_eta2)
         maxdiffus3=max(maxdiffus3,diffus_eta3)
+!
+      endif
+!
+!  This is the endif from (iex==0.or.loverride_ee)
 !
       endif
 !
