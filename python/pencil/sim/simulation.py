@@ -549,7 +549,7 @@ class __Simulation__(object):
         if self.param == False:
             try:
                 if exists(join(self.datadir, "param.nml")):
-                    print("~ Reading param.nml.. ")
+                    if not quiet: print("~ Reading param.nml.. ")
                     param = param(quiet=quiet, datadir=self.datadir)
                     self.param = {}
                     # read params into Simulation object
@@ -595,13 +595,13 @@ class __Simulation__(object):
         if self.param != False and (self.grid == False or self.ghost_grid == False):
             # read grid only if param is not False
             try:
-                print("~ Reading grid.. ")
+                if not quiet: print("~ Reading grid.. ")
                 self.grid = grid(datadir=self.datadir, trim=True, quiet=True)
-                print("~ Reading ghost_grid.. ")
+                if not quiet: print("~ Reading ghost_grid.. ")
                 self.ghost_grid = grid(datadir=self.datadir, trim=False, quiet=True)
-                print("~ Reading index.. ")
+                if not quiet: print("~ Reading index.. ")
                 self.index = index(datadir=self.datadir)
-                print("~ Reading dim.. ")
+                if not quiet: print("~ Reading dim.. ")
                 self.dim = dim(datadir=self.datadir)
                 if not quiet:
                     print("# Updating grid and ghost_grid succesfull")
