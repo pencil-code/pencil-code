@@ -8073,7 +8073,6 @@ module Energy
     if (allocated(dlnhcond_prof)) call copy_addr(dlnhcond_prof,p_par(8))   ! (nz)
     if (allocated(chit_prof_stored)) call copy_addr(chit_prof_stored,p_par(9))    ! (nz)
     if (allocated(dchit_prof_stored)) call copy_addr(dchit_prof_stored,p_par(10)) ! (nz)
-if (lroot) print*, 'chit_prof:', chit_prof_stored(1:2),dchit_prof_stored(1:2)
     call copy_addr(lheatc_hyper3ss,p_par(11)) ! int
     call copy_addr(lheatc_shock,p_par(12)) ! int
     call copy_addr(chi_shock,p_par(13))
