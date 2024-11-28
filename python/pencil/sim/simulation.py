@@ -660,7 +660,8 @@ class __Simulation__(object):
         from pencil.io import save
 
         if self == False:
-            print("! ERROR: Simulation object is bool object and False!")
+            #Kishore (2024-Nov-28): is it ever possible for this code path to be reached? I think not.
+            raise RuntimeError("Simulation object is bool object and False!")
 
         # clean self.tmp_dict
         tmp_dict = self.tmp_dict
