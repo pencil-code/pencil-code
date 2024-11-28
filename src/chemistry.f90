@@ -169,12 +169,13 @@ module Chemistry
   real :: molar_mass_spec, atomic_m_spec, A_spec
   !real :: deltaH_cgs = 7.07e12 ! in erg/mol
   real :: deltaH_cgs = 3.55e12 ! in erg/mol (based on Tboil and 1025C)
+  real :: gam_surf_energy_mul_fac=1.0
   real :: conc_sat_spec_cgs=1e-8 !units of mol/cmˆ3
   logical, pointer :: ldustnucleation, lpartnucleation, lcondensing_species
   character(len=labellen) :: isurf_energy="const"
   character(len=labellen) :: iconc_sat_spec="const"
   character(len=30) :: inucl_pre_exp="const"      
-  logical :: lnoevap=.false., lnocondheat=.false.
+  logical :: lnoevap=.false., lnocondheat=.true.
 !
 !   Atmospheric physics
 !
@@ -236,7 +237,7 @@ module Chemistry
       Ythresh, lchem_detailed, conc_sat_spec_cgs, inucl_pre_exp, lcorr_vel, &
       lgradP_terms, lnormalize_chemspec, lnormalize_chemspec_N2, &
       gam_surf_energy_cgs, isurf_energy, iconc_sat_spec, nucleation_rate_coeff_cgs, &
-      lnoevap, lnocondheat
+      lnoevap, lnocondheat, gam_surf_energy_mul_fac
 !
 ! diagnostic variables (need to be consistent with reset list below)
 !
@@ -264,7 +265,7 @@ module Chemistry
 !
   integer :: idiag_lambdam=0,idiag_lambdamax=0,idiag_lambdamin=0
   integer :: idiag_alpham=0,idiag_alphamax=0,idiag_alphamin=0
-  integer :: idiag_ffnucl
+  integer :: idiag_ffnucl=0, idiag_supersat=0
 !
 !  Auxiliaries.
 !
@@ -571,7 +572,7 @@ module Chemistry
           enddo
         endif
       endif
-!
+      !
       if (leos) then
         call get_shared_variable('mu1_full',mu1_full,caller='initialize_chemistry')
       else
@@ -829,7 +830,7 @@ module Chemistry
 !        if (lroot) print*, 'initchem: this is one specie case'
 !      endif
 !
-    endsubroutine init_chemistry
+    endsubroutine init_chemistry    
 !***********************************************************************
     subroutine pencil_criteria_chemistry
 !
@@ -3544,6 +3545,9 @@ module Chemistry
           if (idiag_conc_satm/=0) call sum_mn_name(p%conc_sat_spec,idiag_conc_satm)
           if (idiag_ffnucl/= 0) call sum_mn_name(p%ff_nucl,idiag_ffnucl)
         endif
+        if (isupsat/=0) then
+          if (idiag_supersat/= 0) call sum_mn_name(f(l1:l2,m,n,isupsat),idiag_supersat)
+        endif
 !
 !  Sample for hard coded diffusion diagnostics
 !
@@ -3630,6 +3634,7 @@ module Chemistry
         idiag_alphamax = 0
         idiag_alphamin = 0
         idiag_ffnucl = 0
+        idiag_supersat = 0
 !
         idiag_nuclrmin=0
         idiag_nuclrate=0
@@ -3684,6 +3689,7 @@ module Chemistry
         call parse_name(iname,cname(iname),cform(iname),'alphamax',idiag_alphamax)
         call parse_name(iname,cname(iname),cform(iname),'alphamin',idiag_alphamin)
         call parse_name(iname,cname(iname),cform(iname),'ffnucl',idiag_ffnucl)
+        call parse_name(iname,cname(iname),cform(iname),'supersat',idiag_supersat)
 !
 !  Sample for hard-coded diffusion diagnostics
 !
@@ -6724,7 +6730,7 @@ module Chemistry
       if (.not. lnocondheat) then
         ! NILS: Please check that theis correctly added to the energy
         ! NILS: equation before using this option.
-        call fatal_error("cond_spec_cond_lagr","Please check that this is correct")
+        !call fatal_error("cond_spec_cond_lagr","Please check that this is correct")
          p%cond_heat(ix)=p%cond_heat(ix)+p%ff_cond(ix)*deltaH_cgs/unit_temperature/molar_mass_spec*unit_mass 
       endif
 !
@@ -6764,11 +6770,6 @@ module Chemistry
           !
           if (.not. lnocondheat) then
             p%cond_heat(i)=p%cond_heat(i)+p%ff_nucl(i)*deltaH_cgs/unit_temperature/molar_mass_spec*unit_mass
-            !if (ltemperature_nolog) then
-            !  df(l1+i,m,n,iTT) = df(l1+i,m,n,iTT) + Q_nucl*p%rho1(i)*p%cv1(i)
-            !else
-            !  df(l1+i,m,n,ilnTT) = df(l1+i,m,n,ilnTT) + Q_nucl*p%rho1(i)*p%cv1(i)*p%TT1(i)
-            !endif
           endif
         else
           p%nucl_rate(i)=0.
@@ -6814,15 +6815,11 @@ module Chemistry
         !
         df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) - p%ff_nucl
         !
-        ! Add heat due to condesation phase change to the energy equation
+        ! Add heat due to condesation phase change to the energy equation.
+        ! This is done in particles_temperature.f90.
         !
         if (.not. lnocondheat) then
           p%cond_heat=p%cond_heat+p%ff_nucl*deltaH_cgs/unit_temperature/molar_mass_spec*unit_mass
-          !if (ltemperature_nolog) then
-          !  df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) + Q_nucl*p%rho1*p%cv1
-          !else
-          !  df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + Q_nucl*p%rho1*p%cv1*p%TT1
-          !endif
         endif
         !
       endif
@@ -6869,7 +6866,7 @@ module Chemistry
         if (isurf_energy == "const") then
           gam_surf_energy=gam_surf_energy_cgs/(unit_mass/unit_time)
         elseif (isurf_energy == "Kingery") then
-          gam_surf_energy=(307.+0.031*(p%TT-2073.))/unit_energy*unit_length**2
+          gam_surf_energy=(307.+0.031*(p%TT-2073.))/unit_energy*unit_length**2*gam_surf_energy_mul_fac
         else
           call fatal_error("cond_spec_nucl_rate","No such isurf_energy")
         endif
@@ -6888,6 +6885,10 @@ module Chemistry
               tmp1=sqrt(2*gam_surf_energy(i)/(pi*atomic_m_spec))
               tmp2=(chem_conc(i)*N_avogadro_cgs)**2
               nucleation_rate_coeff=tmp1*volume_spec*tmp2/sat_ratio_spec(i)
+            elseif (inucl_pre_exp .eq. "becker_doring") then
+              tmp1=sqrt(2*gam_surf_energy(i)/(pi*atomic_m_spec))
+              tmp2=(chem_conc(i)*N_avogadro_cgs)**2
+              nucleation_rate_coeff=tmp1*volume_spec*tmp2
             endif
             tmp3=-16.*pi*gam_surf_energy(i)**3*volume_spec**2
             tmp4=3*(k_B*p%TT(i))**3*(alog(sat_ratio_spec(i)))**2
