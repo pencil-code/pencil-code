@@ -189,8 +189,8 @@ module backreact_infl
       axionmass2=axionmass**2
 !
       call put_shared_variable('ddotam',ddotam_all,caller='initialize_backreact_infl_ode')
-  !   call put_shared_variable('ascale',ascale,caller='initialize_backreact_infl')
-  !   call put_shared_variable('Hscript',Hscript,caller='initialize_backreact_infl')
+      call put_shared_variable('ascale',ascale,caller='initialize_backreact_infl')
+      call put_shared_variable('Hscript',Hscript,caller='initialize_backreact_infl')
 !
       if (lmagnetic .and. lem_backreact) then
         call get_shared_variable('alpf',alpf)
