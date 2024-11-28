@@ -3298,11 +3298,15 @@ module Particles
       if (itauascalar > 0) p%tauascalar = f(l1:l2,m,n,itauascalar)
       if (icondensationRate > 0) p%condensationRate = f(l1:l2,m,n,icondensationRate)
       if (iwaterMixingRatio > 0) p%waterMixingRatio = f(l1:l2,m,n,iwaterMixingRatio)
-      if (lpencil(i_part_heatcap)) then
+      if (lpencil(i_part_heatcap) .and. iap/=0) then
         p%part_heatcap=0
         do k = 1,npar_loc
           inx0 = ineargrid(k,1)-nghost
-          p%part_heatcap(inx0) = p%part_heatcap(inx0)+4*pi*fp(k,iap)**3*rhopmat*fp(k,irhopswarm)/3.
+          if (irhopswarm /= 0) then
+            p%part_heatcap(inx0) = p%part_heatcap(inx0)+4*pi*fp(k,iap)**3*rhopmat*fp(k,irhopswarm)/3.
+          else
+            p%part_heatcap(inx0) = p%part_heatcap(inx0)+4*pi*fp(k,iap)**3*rhopmat/3.
+          endif
         enddo
       endif
 !
