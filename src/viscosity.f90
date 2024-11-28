@@ -2066,6 +2066,11 @@ module Viscosity
 
         else
 !
+!  A warning here, since if the user actually wanted to ignore the gradient of
+!  the Smagorinsky viscosity, they would've used 'smagorinsky-simplified' instead.
+!
+          if (headtt) call warning('calc_pencils_viscosity', 'gradient of Smagorinsky viscosity is ignored since lnusmag_as_aux=F')
+!
 !  Compute nu_smag and put into a pencil
 !
           p%nu_smag=(C_smag*dxmax)**2.*sqrt(2.*p%sij2)
