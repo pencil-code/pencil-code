@@ -1008,7 +1008,7 @@ void checkConfig(AcMeshInfo &config)
  acLogFromRootProc(rank,"nkramers= %f %f \n", nkramers, config[AC_nkramers]);
  acLogFromRootProc(rank,"hcond0_kramers= %f %f \n", hcond0_kramers, config[AC_hcond0_kramers]);
  acLogFromRootProc(rank,"hcond_Kconst= %f %f \n", hcond_Kconst, config[AC_hcond_Kconst]);
- acLogFromRootProc(rank,"Fbot= %f %f \n", Fbot, config[AC_Fbot]);
+ //acLogFromRootProc(rank,"Fbot= %f %f \n", Fbot, config[AC_Fbot]);
  acLogFromRootProc(rank,"chi_t= %f %f \n", chi_t, config[AC_chi_t]);
 #endif
 #if LVISCOSITY
@@ -1083,6 +1083,9 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out, int c
   
 
   mesh.info = acGridDecomposeMeshInfo(mesh.info);
+  //TP: important to do before autotuning
+  acDeviceSetInput(acGridGetDevice(), AC_step_num,0);
+  acDeviceSetInput(acGridGetDevice(), AC_dt,dt);
   rhs = acGetDSLTaskGraph(AC_rhs);
   if (ltest_bcs) testBCs();
   acGridSynchronizeStream(STREAM_ALL);
