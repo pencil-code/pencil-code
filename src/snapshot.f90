@@ -358,7 +358,7 @@ module Snapshot
         ! update ghosts, because 'update_auxiliaries' may change the data
         if (.not. loptest(noghost).or.ncoarse>1) call update_ghosts(a)
         call safe_character_assign(file,trim(chsnap))
-        if (lmultithread) then
+        if (lmultithread.and.nt>0) then
           extpars%ind1=1; extpars%ind2=msnap; extpars%file=file
 !$        lmasterflags(PERF_WSNAP) = .true.
         else
