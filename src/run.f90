@@ -728,19 +728,19 @@ subroutine run_start() bind(C)
   inquire (file=fproc_bounds, exist=lexist)
   call mpibarrier
 !
-  cgrid: if (luse_oldgrid .and. lexist) then
+  if (luse_oldgrid .and. lexist) then
     if (ip<=6.and.lroot) print*, 'reading grid coordinates'
     call rgrid('grid.dat')
     call rproc_bounds(fproc_bounds)
     call construct_serial_arrays
     call grid_bound_data
-  else cgrid
-    if (luse_oldgrid) call warning("run.x", "reconstructing the grid")
+  else
+    if (luse_oldgrid) call warning("run", "reconstructing the grid")
     if (luse_xyz1) Lxyz = xyz1-xyz0
     call construct_grid(x,y,z,dx,dy,dz)
     call wgrid("grid.dat", lwrite=.true.)
     call wproc_bounds(fproc_bounds)
-  endif cgrid
+  endif
 !
 !  Shorthands (global).
 !
@@ -1070,13 +1070,14 @@ subroutine run_start() bind(C)
 !$    if (omp_get_thread_num() == i) call create_communicators
 !$  enddo
 !$omp barrier
+  call mpibarrier
 !$  if (omp_get_thread_num() == 0) then
 !
 !  Start timing for final timing statistics.
 !  Initialize timestep diagnostics during the run (whether used or not,
 !  see idiag_timeperstep).
 !
-      !print*,"Master core: ",get_cpu(), iproc
+!!$print*,"Master core: ",get_cpu(), iproc
       if (lroot) then
         icount=0
         it_last_diagnostic=icount
@@ -1087,7 +1088,7 @@ subroutine run_start() bind(C)
 !print*, 'nach timeloop', iproc
 !flush(6)
 !$  else
-!$    call helper_loop(f,p)
+!$    if (nt>0) call helper_loop(f,p)
 !$  endif
 !$omp barrier
 !$omp end parallel
@@ -1119,7 +1120,7 @@ subroutine run_start() bind(C)
       call update_ghosts(f)
     endif
 
-    if (save_lastsnap) then
+    if (save_lastsnap.or.nt==0) then
       if (lparticles) call write_snapshot_particles(f,ENUM=.false.)
       if (lpointmasses) call pointmasses_write_snapshot('qvar.dat',ENUM=.false.)
       if (lsolid_cells) call wsnap_ogrid('ogvar.dat',ENUM=.false.)
