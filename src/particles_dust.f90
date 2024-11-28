@@ -6738,7 +6738,11 @@ endif
         ! beta_ts, but it is not enough. I do not know how to resolve this
         ! issue.
         !
-        force = force*sqrt(Szero/(beta_ts(itorder)*dt))
+        if (lfollow_gas) then
+          force = force*sqrt(Szero/dt)
+        else
+          force = force*sqrt(Szero/(beta_ts(itorder)*dt))
+        endif
       endif
 !
     endsubroutine calc_brownian_force
