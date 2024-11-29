@@ -1955,6 +1955,7 @@ sub get_current_revision {
                 my $tries = 0;
                 while (!$current_hash && ($tries < 4)) {
                     if ($tries > 0) { sleep (3*$tries); }
+                    $tries++;
                     $current_hash = `wget -q "http://pencil-code.org/translate.php?output=plain&revision=$current_revision" -O -`;
                     chomp ($current_hash);
                 }
