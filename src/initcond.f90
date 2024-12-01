@@ -5181,7 +5181,8 @@ module Initcond
       k1hel, k2hel,lremain_in_fourier,lpower_profile_file,qexp, &
       lno_noise,nfact0,lfactors0,compk0,llogbranch0,initpower_med0, &
       kpeak_log0,kbreak0,ldouble0,nfactd0,qirro,lsqrt_qirro,time, &
-      cs,lreinit,ltime_old,ltime_new,lrho_nonuni,ilnr,l2d,lnot_amp)
+      cs,lreinit,ltime_old,ltime_new,lrho_nonuni,ilnr,l2d, &
+      lnot_amp, lrandom_ampl)
 !
 !  Produces helical (q**n * (1+q)**(N-n))*exp(-k**l/cutoff**l) spectrum
 !  when kgaussian=0, where q=k/kpeak, n=initpower, N=initpower2,
@@ -5210,12 +5211,12 @@ module Initcond
       use General, only: loptest, roptest
 !
       logical, intent(in), optional :: lscale_tobox, lsquash, lremain_in_fourier, ltime_old
-      logical, intent(in), optional :: ltime_new, lrho_nonuni, lnot_amp
+      logical, intent(in), optional :: ltime_new, lrho_nonuni, lnot_amp, lrandom_ampl
       logical, intent(in), optional :: lpower_profile_file, lno_noise, lfactors0
       logical, intent(in), optional :: llogbranch0,ldouble0, lreinit, l2d, lsqrt_qirro
       logical :: lvectorpotential, lscale_tobox1, lsquash1, lremain_in_fourier1, lno_noise1
       logical :: lskip_projection,lfactors,llogbranch,ldouble, ltime, ltime_old1
-      logical :: ltime_new1, lrho_nonuni1, l2d1, lsqrt_qirro1, lnot_amp1
+      logical :: ltime_new1, lrho_nonuni1, l2d1, lsqrt_qirro1, lnot_amp1, lrandom_ampl1
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i, i1, i2, ikx, iky, ikz, stat, ik, nk, ilnr1
       integer, intent(in), optional :: ilnr
@@ -5265,6 +5266,10 @@ module Initcond
         ilnr1 = ioptest(ilnr)
         if (ilnr1 <= 0) call fatal_error('power_randomphase_hel','must provide ilnr')
       endif
+!
+!  Check whether we want random amplitudes or not
+!
+      lrandom_ampl1 = loptest(lrandom_ampl)
 !
 !  Check whether we want no_noise or not
 !
@@ -5397,38 +5402,9 @@ module Initcond
       kz=cshift((/(i-nzgrid/2,i=0,nzgrid-1)/),nzgrid/2)*scale_factor
       if (lroot.and.ip<10) print*,'AXEL: kz=',kz
 !
-!  Set k^2 array.
-!
-!  Note: for multiple processors, there may still be a problem n 1-D
-!
-!  In 1-D
-      if (nzgrid==1.and.nygrid==1) then
-        ikz=1
-        iky=1
-        do ikx=1,nx
-          k2(ikx,iky,ikz)=kx(ikx+ipx*nx)**2
-        enddo
-!  In 2-D
-      elseif (nzgrid==1) then
-        ikz=1
-        do iky=1,ny
-          do ikx=1,nx
-            k2(ikx,iky,ikz)=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2
-          enddo
-        enddo
-!  In 3-D
-      else
-        do ikz=1,nz
-          do iky=1,ny
-              do ikx=1,nx
-                k2(ikx,iky,ikz)=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
-              enddo
-          enddo
-        enddo
-      endif
-      if (lroot) k2(1,1,1) = 1.  ! Avoid division by zero
-!
 !  Generate flat spectrum with random phase (between -pi and pi) for qexp=0.
+!  When lrandom_ampl=T, we multiply by a sqrt(-2*alog(k2)) factor, as in the
+!  gaunoise routine; the variable k2 is borrowed before it is used for k^2.
 !
       if (present(qexp)) then
         if (qexp==0.) then
@@ -5438,8 +5414,14 @@ module Initcond
           else
             do i=1,i2-i1+1
               call random_number_wrapper(r)
-              u_re(:,:,:,i)=ampl*cos(pi*(2*r-1))
-              u_im(:,:,:,i)=ampl*sin(pi*(2*r-1))
+              if (lrandom_ampl1) then
+                call random_number_wrapper(k2)
+                u_re(:,:,:,i)=ampl*sqrt(-2*alog(k2))*cos(pi*(2*r-1))
+                u_im(:,:,:,i)=ampl*sqrt(-2*alog(k2))*sin(pi*(2*r-1))
+              else
+                u_re(:,:,:,i)=ampl*cos(pi*(2*r-1))
+                u_im(:,:,:,i)=ampl*sin(pi*(2*r-1))
+              endif
             enddo
           endif
         else
@@ -5472,6 +5454,37 @@ module Initcond
           enddo
         endif
       endif  ! (present(qexp))
+!
+!  Set k^2 array.
+!
+!  Note: for multiple processors, there may still be a problem in 1-D
+!
+!  In 1-D
+      if (nzgrid==1.and.nygrid==1) then
+        ikz=1
+        iky=1
+        do ikx=1,nx
+          k2(ikx,iky,ikz)=kx(ikx+ipx*nx)**2
+        enddo
+!  In 2-D
+      elseif (nzgrid==1) then
+        ikz=1
+        do iky=1,ny
+          do ikx=1,nx
+            k2(ikx,iky,ikz)=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2
+          enddo
+        enddo
+!  In 3-D
+      else
+        do ikz=1,nz
+          do iky=1,ny
+              do ikx=1,nx
+                k2(ikx,iky,ikz)=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
+              enddo
+          enddo
+        enddo
+      endif
+      if (lroot) k2(1,1,1) = 1.  ! Avoid division by zero
 !
 !  To get the shell integrated power spectrum E ~ k^n, we need u ~ k^m
 !  and since E(k) ~ u^2 k^2 we have n=2m+2, so m=n/2-1 in 3-D.
@@ -5640,7 +5653,10 @@ module Initcond
       else
         fact=fact*(kpeak1*scale_factor)**1.5
       endif
- 
+!
+!  If lvectorpotential, we given slopes are meant to be for the magnetic
+!  vector potential, so we use (initpower+3.) instead of (initpower+1.).
+!
       if (lvectorpotential) then
         fact=fact*kpeak1
         if (kgaussian /= 0.) fact=fact*kgaussian**(-.5*(initpower+3.))

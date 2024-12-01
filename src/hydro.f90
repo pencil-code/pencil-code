@@ -141,7 +141,7 @@ module Hydro
   logical :: luu_fluc_as_aux=.false.
   logical :: luu_sph_as_aux=.false.
   logical :: lvv_as_aux=.false., lvv_as_comaux=.false.
-  logical :: lscale_tobox=.true.
+  logical :: lscale_tobox=.true., lrandom_ampl_uu=.false.
   logical :: lfactors_uu=.false.
   logical :: lpower_profile_file_uu=.false.
   logical, target :: lpressuregradient_gas=.true.
@@ -187,8 +187,8 @@ module Hydro
       lprecession, omega_precession, alpha_precession, velocity_ceiling, &
       loo_as_aux, luut_as_aux, luust_as_aux, loot_as_aux, loost_as_aux, &
       llorentz_as_aux, luuk_as_aux, look_as_aux, &
-      mu_omega, nb_rings, om_rings, gap, &
-      lscale_tobox, ampl_Omega, omega_ini, r_cyl, skin_depth, incl_alpha, &
+      mu_omega, nb_rings, om_rings, gap, lscale_tobox, lrandom_ampl_uu, &
+      ampl_Omega, omega_ini, r_cyl, skin_depth, incl_alpha, &
       rot_rr, xsphere, ysphere, zsphere, neddy, amp_meri_circ, &
       rnoise_int, rnoise_ext, lreflecteddy, louinit, hydro_xaver_range, max_uu,&
       amp_factor,kx_uu_perturb,llinearized_hydro, hydro_zaver_range, index_rSH, &
@@ -1138,7 +1138,7 @@ module Hydro
               nfact0=nfact_uu, lfactors0=lfactors_uu,lno_noise=lno_noise_uu, &
               lpower_profile_file=lpower_profile_file_uu, qirro=qirro_uu, &
               lsqrt_qirro=lsqrt_qirro_uu, lreinit=lreinitialize_uu, &
-              lrho_nonuni=lrho_nonuni_uu,ilnr=ilnrho)
+              lrho_nonuni=lrho_nonuni_uu,ilnr=ilnrho, lrandom_ampl=lrandom_ampl_uu)
           endselect
         enddo
       endif
@@ -2402,7 +2402,8 @@ module Hydro
             lskip_projection, lvectorpotential,lscale_tobox, &
             nfact0=nfact_uu, lfactors0=lfactors_uu,lno_noise=lno_noise_uu, &
             lpower_profile_file=lpower_profile_file_uu, qirro=qirro_uu, &
-            lsqrt_qirro=lsqrt_qirro_uu,lrho_nonuni=lrho_nonuni_uu,ilnr=ilnrho)
+            lsqrt_qirro=lsqrt_qirro_uu,lrho_nonuni=lrho_nonuni_uu,ilnr=ilnrho, &
+            lrandom_ampl=lrandom_ampl_uu)
 !
         case ('random-isotropic-KS')
           call random_isotropic_KS(initpower,f,iux,N_modes_uu)

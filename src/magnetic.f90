@@ -229,7 +229,7 @@ module Magnetic
   logical :: reinitialize_aa=.false.
   logical :: lB_ext_pot=.false., lJ_ext=.false.
   logical :: lforce_free_test=.false.
-  logical :: lforcing_cont_aa_local=.false.
+  logical :: lforcing_cont_aa_local=.false., lrandom_ampl_aa=.false.
   logical :: lee_as_aux=.false., ladd_disp_current_from_aux=.false.
   logical :: lbb_as_aux=.false., ljj_as_aux=.false., ljxb_as_aux=.false.
   logical :: luxb_as_aux=.false., lugb_as_aux=.false., lbgu_as_aux=.false.
@@ -266,7 +266,7 @@ module Magnetic
       alp_aniso, ljj_as_comaux, lsmooth_jj, &
       lforce_free_test, ampl_B0, N_modes_aa, &
       initpower_aa, initpower2_aa, cutoff_aa, ncutoff_aa, kpeak_aa, &
-      lscale_tobox, lsquash_aa, kgaussian_aa, z1_aa, z2_aa, &
+      lscale_tobox, lsquash_aa, kgaussian_aa, lrandom_ampl_aa, z1_aa, z2_aa, &
       lcheck_positive_va2, lskip_projection_aa, &
       ladd_disp_current_from_aux, compk_aa, &
       lbb_as_aux, lbb_as_comaux, lB_ext_in_comaux, lee_as_aux, &
@@ -2117,7 +2117,7 @@ module Magnetic
             cutoff_aa,ncutoff_aa,kpeak_aa,f,iax,iaz,relhel_aa,kgaussian_aa, &
             lskip_projection_aa, lvectorpotential, lscale_tobox, lsquash_aa, k1hel=k1hel, k2hel=k2hel, &
             lpower_profile_file=lpower_profile_file, qexp=qexp_aa,nfact0=nfact_aa, lfactors0=lfactors_aa, &
-            l2d=l2d_aa,compk0=compk_aa)
+            l2d=l2d_aa,compk0=compk_aa, lrandom_ampl=lrandom_ampl_aa)
         case ('random-isotropic-KS')
           call random_isotropic_KS(initpower_aa,f,iax,N_modes_aa)
         case ('random_isotropic_shell')
@@ -5917,7 +5917,7 @@ module Magnetic
 !
         diffus_eta =eta_total *dxyz_2
         diffus_eta2=diffus_eta2*dxyz_4
-print*,'AXEL: diffus_eta=',diffus_eta
+!print*,'AXEL: diffus_eta=',diffus_eta
 !
         if (ldynamical_diffusion .and. lresi_hyper3_mesh) then
           diffus_eta3 = diffus_eta3 * sum(dline_1,2)
