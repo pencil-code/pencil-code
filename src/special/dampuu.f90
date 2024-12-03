@@ -67,14 +67,15 @@ module Special
         if (ilnrho==0) call fatal_error('initialize_special', 'could not find density variable to be damped')
         if (ldensity_nolog) call not_implemented('initialize_special', 'damping rho with ldensity_nolog=T')
         if (lreference_state) call not_implemented('initialize_special', 'damping rho with lreference_state=T')
-        rho_prof = exp(f(l1,m1,:,ilnrho))
+        call get_from_xyroot(rho_prof, f, ilnrho)
+        rho_prof = exp(rho_prof)
       endif
 !
       if (ldamp_ss) then
         if (iss==0) call fatal_error('initialize_special', 'could not find entropy variable to be damped')
         if (pretend_lnTT) call not_implemented('initialize_special', 'damping entropy with pretend_lnTT=T')
         if (lreference_state) call not_implemented('initialize_special', 'damping entropy with lreference_state=T')
-        ss_prof = f(l1,m1,:,iss)
+        call get_from_xyroot(ss_prof, f, iss)
       endif
 !
     endsubroutine initialize_special
@@ -146,6 +147,20 @@ module Special
       endif
 !
     endsubroutine special_calc_energy
+!***********************************************************************
+    subroutine get_from_xyroot(dest, f, ivar)
+!
+      use Mpicomm, only: mpibcast, MPI_COMM_XYPLANE
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (mz), intent(out) :: dest
+      integer, intent(in) :: ivar
+!
+      if (ipx==0.and.ipy==0) dest = f(l1,m1,:,ivar)
+!
+      call mpibcast(dest,size(dest),comm=MPI_COMM_XYPLANE)
+!
+    endsubroutine get_from_xyroot
 !***********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************
