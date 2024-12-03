@@ -36,14 +36,15 @@ module Special
   real :: w=0 !width of the step function
   logical :: ldamp_rho=.false. !whether to damp the density to its initial profile
   logical :: ldamp_ss=.false. !whether to damp the entropy to its initial profile
-  logical :: lprof_from_initial=.true. !Whether the profiles that the entropy and density are damped to should be recalculated at each timestep.
+  character (len=labellen) :: far_field_type='initial' !how to determine the profiles to which rho and ss are damped.
 !
   real, dimension (mx,my,mz) :: tauinv_prof
   real, dimension (mz) :: rho_prof, ss_prof
+  logical :: lprof_from_initial=.true.
 !
 ! run parameters
   namelist /special_run_pars/ &
-    x_1, x_2, y_1, y_2, z_1, z_2, tau, w, ldamp_rho, ldamp_ss, lprof_from_initial
+    x_1, x_2, y_1, y_2, z_1, z_2, tau, w, ldamp_rho, ldamp_ss, far_field_type
 !
   contains
 ! !***********************************************************************
@@ -64,9 +65,20 @@ module Special
       where (tauinv_prof>1) tauinv_prof = 1 !avoid damping being too strong in the corners
       tauinv_prof = tauinv_prof/tau
 !
-!     KG: if lprof_from_initial=T, the profile from the initial condition will be used as the reference damping profile. The problem with the way it is currently implemented is that restarting the run leads to the used profile changing.
-!
-      call update_profiles(f)
+      select case (far_field_type)
+        case ('initial')
+!         The profile from the initial condition will be used as the
+!         reference damping profile.
+!         KG: The problem with the way it is currently implemented is
+!         KG: that restarting the run leads to the used profile changing.
+          call update_profiles(f)
+        case ('time-dep')
+!         Update at every timestep
+          lprof_from_initial=.false.
+          call update_profiles(f)
+        case default
+          call fatal_error('initialize_special', 'Unknown far_field_type = '//trim(far_field_type))
+      endselect
 !
     endsubroutine initialize_special
 !***********************************************************************
