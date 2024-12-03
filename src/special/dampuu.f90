@@ -36,13 +36,14 @@ module Special
   real :: w=0 !width of the step function
   logical :: ldamp_rho=.false. !whether to damp the density to its initial profile
   logical :: ldamp_ss=.false. !whether to damp the entropy to its initial profile
+  logical :: lprof_from_initial=.true. !Whether the profiles that the entropy and density are damped to should be recalculated at each timestep.
 !
   real, dimension (mx,my,mz) :: tauinv_prof
   real, dimension (mz) :: rho_prof, ss_prof
 !
 ! run parameters
   namelist /special_run_pars/ &
-    x_1, x_2, y_1, y_2, z_1, z_2, tau, w, ldamp_rho, ldamp_ss
+    x_1, x_2, y_1, y_2, z_1, z_2, tau, w, ldamp_rho, ldamp_ss, lprof_from_initial
 !
   contains
 ! !***********************************************************************
@@ -63,20 +64,9 @@ module Special
       where (tauinv_prof>1) tauinv_prof = 1 !avoid damping being too strong in the corners
       tauinv_prof = tauinv_prof/tau
 !
-      if (ldamp_rho) then
-        if (ilnrho==0) call fatal_error('initialize_special', 'could not find density variable to be damped')
-        if (ldensity_nolog) call not_implemented('initialize_special', 'damping rho with ldensity_nolog=T')
-        if (lreference_state) call not_implemented('initialize_special', 'damping rho with lreference_state=T')
-        call get_from_xyroot(rho_prof, f, ilnrho)
-        rho_prof = exp(rho_prof)
-      endif
+!     KG: if lprof_from_initial=T, the profile from the initial condition will be used as the reference damping profile. The problem with the way it is currently implemented is that restarting the run leads to the used profile changing.
 !
-      if (ldamp_ss) then
-        if (iss==0) call fatal_error('initialize_special', 'could not find entropy variable to be damped')
-        if (pretend_lnTT) call not_implemented('initialize_special', 'damping entropy with pretend_lnTT=T')
-        if (lreference_state) call not_implemented('initialize_special', 'damping entropy with lreference_state=T')
-        call get_from_xyroot(ss_prof, f, iss)
-      endif
+      call update_profiles(f)
 !
     endsubroutine initialize_special
 !***********************************************************************
@@ -162,6 +152,41 @@ module Special
 !
     endsubroutine get_from_xyroot
 !***********************************************************************
+    subroutine special_after_boundary(f)
+!
+!     Used in case rho_prof and ss_prof need to be updated every timestep
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+!
+      if (.not.lprof_from_initial) then
+        call update_profiles(f)
+      endif
+!
+    endsubroutine special_after_boundary
+!***********************************************************************
+!***********************************************************************
+    subroutine update_profiles(f)
+!
+!     Get rho_prof and ss_prof from the f array
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+!
+      if (ldamp_rho) then
+        if (ilnrho==0) call fatal_error('initialize_special', 'could not find density variable to be damped')
+        if (ldensity_nolog) call not_implemented('initialize_special', 'damping rho with ldensity_nolog=T')
+        if (lreference_state) call not_implemented('initialize_special', 'damping rho with lreference_state=T')
+        call get_from_xyroot(rho_prof, f, ilnrho)
+        rho_prof = exp(rho_prof)
+      endif
+!
+      if (ldamp_ss) then
+        if (iss==0) call fatal_error('initialize_special', 'could not find entropy variable to be damped')
+        if (pretend_lnTT) call not_implemented('initialize_special', 'damping entropy with pretend_lnTT=T')
+        if (lreference_state) call not_implemented('initialize_special', 'damping entropy with lreference_state=T')
+        call get_from_xyroot(ss_prof, f, iss)
+      endif
+!
+    endsubroutine update_profiles
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************
 !**  This is an automatically generated include file that creates  **
