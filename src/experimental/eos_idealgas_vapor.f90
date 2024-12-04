@@ -60,6 +60,11 @@ module EquationOfState
   real :: Pr_number=0.7
   logical :: lpres_grad=.false.
 !
+!  Shared variables
+!
+  real :: fac_cs=1.0
+  integer :: isothmid=0
+!
 !  Input parameters.
 !
   namelist /eos_init_pars/ &
@@ -77,6 +82,9 @@ module EquationOfState
 !  Register variables from the EquationOfState module.
 !
 !  06-jan-10/anders: adapted from eos_idealgas
+!  04-dec-2024/Kishore: added shared variables (copied from eos_idealgas)
+!
+      use SharedVariables, only: put_shared_variable
 !
       iyH=0
       ilnTT=0
@@ -89,6 +97,12 @@ module EquationOfState
 !
       if (lroot) call svn_id( &
           '$Id: eos_idealgas_vapor.f90,v 1.7 2010/02/03 10:30:37 ajohan Exp $')
+!
+! Shared variables
+!
+      call put_shared_variable('cs20',cs20,caller='register_eos')
+      call put_shared_variable('isothmid',isothmid)
+      call put_shared_variable('fac_cs',fac_cs)
 !
     endsubroutine register_eos
 !***********************************************************************
