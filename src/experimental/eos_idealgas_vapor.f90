@@ -1238,6 +1238,8 @@ module EquationOfState
       integer, intent(IN) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
+      call fatal_error('bc_ss_a2stemp_x','not implemented')
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
 !
@@ -1250,6 +1252,8 @@ module EquationOfState
       integer, intent(IN) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
+      call fatal_error('bc_ss_a2stemp_y','not implemented')
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
 !
@@ -1261,6 +1265,8 @@ module EquationOfState
 !
       integer, intent(IN) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
+!
+      call fatal_error('bc_ss_a2stemp_z','not implemented')
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
