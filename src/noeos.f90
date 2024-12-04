@@ -663,6 +663,8 @@ module EquationOfState
       integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
 !
+      call fatal_error('bc_ss_flux_turb','not implemented')
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
 !
@@ -674,6 +676,8 @@ module EquationOfState
 !
       integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
+!
+      call fatal_error('bc_ss_flux_turb_x','not implemented')
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -687,6 +691,8 @@ module EquationOfState
       integer, intent(IN) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
+      call fatal_error('bc_ss_flux_condturb_x','not implemented')
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
 !
@@ -699,6 +705,8 @@ module EquationOfState
       integer, intent(IN) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
+      call fatal_error('bc_ss_flux_condturb_mean_x','not implemented')
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
 !
@@ -710,6 +718,8 @@ module EquationOfState
 !
       integer, intent(IN) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
+!
+      call fatal_error('bc_ss_flux_condturb_z','not implemented')
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
