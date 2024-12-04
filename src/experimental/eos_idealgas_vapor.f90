@@ -519,7 +519,7 @@ module EquationOfState
       type (pencil_case) :: p
       logical, dimension(:),             intent(IN)   :: lpenc_loc
 !
-      intent(in) :: f
+      intent(inout) :: f
       intent(inout) :: p
 !
       real, dimension(nx) :: tmp
