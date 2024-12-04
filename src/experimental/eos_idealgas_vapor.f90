@@ -977,15 +977,17 @@ module EquationOfState
 !
     endsubroutine write_eos_run_pars
 !***********************************************************************
-    subroutine isothermal_entropy(f,T0)
+    subroutine isothermal_entropy(lnrho,T0,ss)
 !
-      real, dimension(mx,my,mz,mfarray) :: f
-      real :: t0
+      real, intent(in) :: T0
+      real, dimension(mx,my,mz), intent(in) :: lnrho
+      real, dimension(mx,my,mz), intent(out):: ss
 !
       call fatal_error('isothermal_entropy','not implemented')
 !
-      call keep_compiler_quiet(f)
       call keep_compiler_quiet(T0)
+      call keep_compiler_quiet(lnrho)
+      call keep_compiler_quiet(ss)
 !
     endsubroutine isothermal_entropy
 !***********************************************************************
