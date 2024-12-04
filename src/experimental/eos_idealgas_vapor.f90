@@ -36,7 +36,7 @@ module EquationOfState
   integer, parameter :: irho_cs2=6, irho_ss=7, irho_lnTT=8, ilnrho_TT=9
   integer, parameter :: irho_TT=10, ipp_ss=11, ipp_cs2=12
   integer, parameter :: irho_eth=13, ilnrho_eth=14
-  integer :: iglobal_cs2, iglobal_glnTT, ics
+  integer :: iglobal_cs2, iglobal_glnTT
   real, dimension(nchemspec,18) :: species_constants
   real :: Rgas_unit_sys=1.0
   real :: lnTT0=impossible
