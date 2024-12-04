@@ -991,64 +991,6 @@ module EquationOfState
 !
     endsubroutine isothermal_entropy
 !***********************************************************************
-    subroutine isothermal_lnrho_ss(f,T0,rho0)
-!
-      real, dimension(mx,my,mz,mfarray) :: f
-      real :: t0, rho0
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(T0)
-      call keep_compiler_quiet(rho0)
-!
-    endsubroutine isothermal_lnrho_ss
-!***********************************************************************
-    subroutine Hminus_opacity(f,kapparho)
-!
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx,my,mz) :: kapparho
-!
-      call fatal_error('Hminus_opacity','not implemented')
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(kapparho)
-!
-    endsubroutine Hminus_opacity
-!***********************************************************************
-    subroutine get_average_pressure(average_density,average_pressure)
-!
-      real :: average_density, average_pressure
-!
-      call fatal_error('get_average_pressure','not implemented')
-!
-      call keep_compiler_quiet(average_density)
-      call keep_compiler_quiet(average_pressure)
-!
-    endsubroutine get_average_pressure
-!***********************************************************************
-    subroutine bc_ss_flux_tmp(f,topbot)
-!
-      integer, intent(IN) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      call fatal_error('bc_ss_flux_tmp','not implemented')
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(topbot)
-!
-    endsubroutine bc_ss_flux_tmp
-!***********************************************************************
-    subroutine bc_ss_flux_tmp2(f,topbot)
-!
-      integer, intent(IN) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      call fatal_error('bc_ss_flux_tmp2','not implemented')
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(topbot)
-!
-    endsubroutine bc_ss_flux_tmp2
-!***********************************************************************
     subroutine bc_ss_flux(f,topbot,lone_sided)
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1062,30 +1004,6 @@ module EquationOfState
       call keep_compiler_quiet(lone_sided)
 !
     endsubroutine bc_ss_flux
-!***********************************************************************
-    subroutine bc_ss_flux_turb(f,topbot)
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      integer, intent(IN) :: topbot
-!
-      call fatal_error('bc_ss_flux_turb','not implemented')
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(topbot)
-!
-    endsubroutine bc_ss_flux_turb
-!***********************************************************************
-    subroutine bc_ss_flux_condturb_z(f,topbot)
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      integer, intent(IN) :: topbot
-!
-      call fatal_error('bc_ss_flux_turb','not implemented')
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(topbot)
-!
-    endsubroutine bc_ss_flux_condturb_z
 !***********************************************************************
     subroutine bc_ss_temp_old(f,topbot)
 !
@@ -1253,18 +1171,6 @@ module EquationOfState
 !
     endsubroutine bc_ss_temp2_z
 !***********************************************************************
-    subroutine bc_ss_temp3_z(f,topbot)
-!
-      integer, intent(IN) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      call fatal_error('bc_ss_temp3_z','not implemented')
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(topbot)
-!
-    endsubroutine bc_ss_temp3_z
-!***********************************************************************
     subroutine bc_ss_stemp_x(f,topbot)
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1313,54 +1219,6 @@ module EquationOfState
 !
     endsubroutine bc_ss_energy
 !***********************************************************************
-    subroutine bc_stellar_surface(f,topbot)
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      integer, intent(IN) :: topbot
-!
-      call fatal_error('bc_stellar_surface','not implemented')
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(topbot)
-!
-    endsubroutine bc_stellar_surface
-!***********************************************************************
-    subroutine bc_lnrho_cfb_r_iso(f,topbot)
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      integer, intent(IN) :: topbot
-!
-      call fatal_error('bc_lnrho_cfb_r_iso','not implemented')
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(topbot)
-!
-    endsubroutine bc_lnrho_cfb_r_iso
-!***********************************************************************
-    subroutine bc_lnrho_hds_z_iso(f,topbot)
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      integer, intent(IN) :: topbot
-!
-      call fatal_error('bc_lnrho_hds_z_iso','not implemented')
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(topbot)
-!
-    endsubroutine bc_lnrho_hds_z_iso
-!***********************************************************************
-    subroutine bc_lnrho_hdss_z_iso(f,topbot)
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      integer, intent(IN) :: topbot
-!
-      call fatal_error('bc_lnrho_hdss_z_iso','not implemented')
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(topbot)
-!
-    endsubroutine bc_lnrho_hdss_z_iso
-!***********************************************************************
     subroutine bc_lnrho_hdss_z_liso(f,topbot)
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1372,18 +1230,6 @@ module EquationOfState
       call keep_compiler_quiet(topbot)
 !
     endsubroutine bc_lnrho_hdss_z_liso
-!***********************************************************************
-    subroutine bc_lnrho_hds_z_liso(f,topbot)
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      integer, intent(IN) :: topbot
-!
-      call fatal_error('bc_lnrho_hds_z_liso','not implemented')
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(topbot)
-!
-    endsubroutine bc_lnrho_hds_z_liso
 !***********************************************************************
     subroutine bc_ss_a2stemp_x(f,topbot)
 !
@@ -1420,42 +1266,6 @@ module EquationOfState
       call keep_compiler_quiet(topbot)
 !
     endsubroutine bc_ss_a2stemp_z
-!***********************************************************************
-    subroutine bc_ss_flux_turb_x(f,topbot)
-!
-!  11-mar-2012/anders: dummmy
-!
-      integer, intent(IN) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(topbot)
-!
-    endsubroutine bc_ss_flux_turb_x
-!***********************************************************************
-    subroutine bc_ss_flux_condturb_x(f,topbot)
-!
-!  12-nov-2016/axel: dummmy
-!
-      integer, intent(IN) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(topbot)
-!
-    endsubroutine bc_ss_flux_condturb_x
-!***********************************************************************
-    subroutine bc_ss_flux_condturb_mean_x(f,topbot)
-!
-!  12-nov-2016/axel: dummmy
-!
-      integer, intent(IN) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(topbot)
-!
-    endsubroutine bc_ss_flux_condturb_mean_x
 !***********************************************************************
     subroutine find_mass(element_name,MolMass)
 !
