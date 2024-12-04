@@ -4951,7 +4951,7 @@ module Boundcond
       integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       real :: frac=0.8
-      integer :: j,l1p4,l2m4
+      integer :: j,l1p4,l2m4,i
 !
 !  abbreviations, because otherwise the ifc compiler complains
 !  for 1-D runs without vertical extent
@@ -4974,9 +4974,10 @@ module Boundcond
 !
       case(TOP)               ! top boundary
         if ((j .eq. ilnrho) .or. (j .eq. ilnTT)) then
-          f(l2+1,:,:,j)=0.2*(  9*f(l2,:,:,j)-4*f(l2-2,:,:,j)- 3*f(l2-3,:,:,j)+ 3*f(l2m4,:,:,j))+alog(frac)
-          f(l2+2,:,:,j)=0.2*( 15*f(l2,:,:,j)- 2*f(l2-1,:,:,j)-9*f(l2-2,:,:,j)- 6*f(l2-3,:,:,j)+ 7*f(l2m4,:,:,j))+alog(frac)
-          f(l2+3,:,:,j)=1.0/35.*(157*f(l2,:,:,j)-33*f(l2-1,:,:,j)-108*f(l2-2,:,:,j)-68*f(l2-3,:,:,j)+87*f(l2m4,:,:,j))+alog(frac)
+!          f(l2+1,:,:,j)=0.2*(  9*f(l2,:,:,j)-4*f(l2-2,:,:,j)- 3*f(l2-3,:,:,j)+ 3*f(l2m4,:,:,j))+alog(frac)
+!          f(l2+2,:,:,j)=0.2*( 15*f(l2,:,:,j)- 2*f(l2-1,:,:,j)-9*f(l2-2,:,:,j)- 6*f(l2-3,:,:,j)+ 7*f(l2m4,:,:,j))+alog(frac)
+!          f(l2+3,:,:,j)=1.0/35.*(157*f(l2,:,:,j)-33*f(l2-1,:,:,j)-108*f(l2-2,:,:,j)-68*f(l2-3,:,:,j)+87*f(l2m4,:,:,j))+alog(frac)
+          do i=1,nghost; f(l2+i,:,:,j)=2*f(l2,:,:,j)-f(l2-i,:,:,j)+alog(frac); enddo
         else
           f(l2+1,:,:,j)=0.2   *(  9*f(l2,:,:,j)                 - 4*f(l2-2,:,:,j)- 3*f(l2-3,:,:,j)+ 3*f(l2m4,:,:,j))
           f(l2+2,:,:,j)=0.2   *( 15*f(l2,:,:,j)- 2*f(l2-1,:,:,j)-9*f(l2-2,:,:,j)- 6*f(l2-3,:,:,j)+ 7*f(l2m4,:,:,j))

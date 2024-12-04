@@ -1489,6 +1489,7 @@ module Hydro
             call fatal_error("initialize_hydro","you need to set lcalc_uumeanxy=T for uuprof='damp_corona'")
           prof_amp1=0.5*(tanh((x(l1:l2)-rdampext)/wdamp)+1.)
         elseif (lcartesian_coords) then
+          zbot=xyz0(3)
           prof_amp3=0.5*(tanh((z-rdampext)/wdamp)+1.)
         endif
 
@@ -5441,6 +5442,8 @@ endif
           do j=1,3
             do n=1,mz
               f(:,:,n,iuu+j-1) = f(:,:,n,iuu+j-1)-uumz(n,j)
+! PC: The line commented below is for damping box modes of convection. 
+!              if (z(n) .lt. 0.0) f(:,:,n,iuu+j-1) = f(:,:,n,iuu+j-1)-rescale_uu*uumz(n,j)
             enddo
           enddo
         elseif (lremove_uumeanz_horizontal) then
