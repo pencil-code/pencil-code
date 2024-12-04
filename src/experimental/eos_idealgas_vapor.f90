@@ -54,16 +54,17 @@ module EquationOfState
   logical :: leos_isothermal=.false., leos_isentropic=.false.
   logical :: leos_isochoric=.false., leos_isobaric=.false.
   logical :: leos_localisothermal=.false.
+  logical :: lcp_as_aux=.false.
 !
 !  Input parameters.
 !
   namelist /eos_init_pars/ &
-      mudry, muvap, cpdry, cs0, rho0, gamma, error_cp, ptlaw
+      mudry, muvap, cpdry, cs0, rho0, gamma, error_cp, ptlaw, lcp_as_aux
 !
 !  Run parameters.
 !
   namelist /eos_run_pars/ &
-      mudry, muvap, cpdry, cs0, rho0, gamma, error_cp, ptlaw
+      mudry, muvap, cpdry, cs0, rho0, gamma, error_cp, ptlaw, lcp_as_aux
 !
   contains
 !***********************************************************************
@@ -199,6 +200,10 @@ module EquationOfState
 !
       ieosvars=-1
       ieosvar_count=0
+!
+!  cp as optional auxiliary variable
+!
+      if (lcp_as_aux) call register_report_aux('cp',icp)
 !
 !  Write constants to disk. In future we may want to deal with this
 !  using an include file or another module.
@@ -480,6 +485,10 @@ module EquationOfState
         call fatal_error('pencil_interdep_eos','ieosvars case not implemented yet')
       endselect
 !
+!  For aux
+!
+      if (lcp_as_aux) lpenc_requested(i_cp)=.true.
+!
     endsubroutine pencil_interdep_eos
 !***********************************************************************
     subroutine calc_pencils_eos_std(f,p)
@@ -624,6 +633,10 @@ module EquationOfState
       if (lpenc_loc(i_ee)) p%ee=p%cv*exp(p%lnTT)
 ! yH
       if (lpenc_loc(i_yH)) p%yH=impossible
+!
+! auxiliaries
+!
+      if (lcp_as_aux) f(l1:l2,m,n,icp)=p%cp
 !
     endsubroutine calc_pencils_eos_pencpar
 !***********************************************************************
