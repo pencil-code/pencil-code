@@ -8,8 +8,7 @@ import os
 from os.path import join, exists, split, islink, realpath, abspath, basename
 import numpy as np
 
-#from pencil.util import PathWrapper
-import pathlib
+from pencil.util import PathWrapper
 
 try:
     from mpi4py import MPI
@@ -80,8 +79,7 @@ class __Simulation__(object):
     def __init__(self, path=".", hidden=False, hard=False, quiet=False):
         # from pen.intern.hash_sim import hash_sim
 
-        #self.path = PathWrapper(path).absolute()
-        self.path = pathlib.Path(path).absolute()
+        self.path = PathWrapper(path).absolute()
         self.name = self.path.name  # find out name and store it
 
         if not quiet:
