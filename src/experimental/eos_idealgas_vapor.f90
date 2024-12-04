@@ -1135,6 +1135,98 @@ module EquationOfState
 !
     endsubroutine bc_ss_temp_z
 !***********************************************************************
+    subroutine bc_lnrho_temp_z(f,topbot)
+!
+!  boundary condition for lnrho *and* ss: constant temperature
+!
+!  27-sep-2002/axel: coded
+!  19-aug-2005/tobi: distributed across ionization modules
+!  04-dec-2024/Kishore: implemented for eos_idealgas_vapor
+!
+      use Gravity, only: gravz
+!
+      integer, intent(IN) :: topbot
+      real, dimension (:,:,:,:) :: f
+      real :: TTval
+      real, dimension (size(f,1),size(f,2)) :: cp, cv
+      integer :: i,il,im
+      real, dimension(mx,my) :: lnrho_xy
+!
+      if (ldebug) print*,'bc_lnrho_temp_z: cs20,cs0=',cs20,cs0
+!
+!  Constant temperature for entropy, with the temperature corresponding
+!  to cs2{top,bot}/((gamma-1)*cpdry). The entropy is set to be antisymmetric
+!  about its boundary value, while the density is set assuming
+!  hydrostatic equilibrium.
+!
+!  check whether we want to do top or bottom (this is processor dependent)
+!
+      select case (topbot)
+!
+!  bottom boundary
+!
+      case(BOT)
+        do il=1,size(cp,1)
+          do im =1,size(cp,2)
+            call get_gamma_etc(cp=cp(il,im), cv=cv(il,im), f=f(il,im,n1,:))
+          enddo
+        enddo
+        TTval = cs2bot/((gamma-1)*cpdry)
+        if (ldebug) print*, 'bc_lnrho_temp_z: set z bottom temperature: cs2bot=',cs2bot,"; TTbot=",TTval
+        if (cs2bot<=0.) call fatal_error('bc_lnrho_temp_z','cannot have cs2bot<=0')
+!
+!  set boundary value for entropy, then extrapolate ghost pts by antisymmetry
+!
+        call getlnrho(f(:,:,n1,ilnrho),lnrho_xy)
+!
+!  This formula works because cp,cv are independent of rho,TT
+!
+        f(:,:,n1,iss) = cv*(log(TTval)-lnTT0) - (cp-cv)*(lnrho_xy-lnrho0)
+        if (lreference_state) call not_implemented('bc_lnrho_temp_z','for lSmag_heat_transport=T')
+!
+        do i=1,nghost; f(:,:,n1-i,iss) = 2*f(:,:,n1,iss)-f(:,:,n1+i,iss); enddo
+!
+!  set density in the ghost zones so that dlnrho/dz + (1/cp)*ds/dz = gz/(gamma*(cp-cv)*TTval)
+!
+        do i=1,nghost
+          f(:,:,n1-i,ilnrho) = f(:,:,n1+i,ilnrho) + (f(:,:,n1+i,iss)-f(:,:,n1-i,iss))/cp + dz2_bound(-i)*gravz/(gamma*(cp-cv)*TTval)
+        enddo
+!
+!  top boundary
+!
+      case(TOP)
+        do il=1,size(cp,1)
+          do im =1,size(cp,2)
+            call get_gamma_etc(cp=cp(il,im), cv=cv(il,im), f=f(il,im,n2,:))
+          enddo
+        enddo
+        TTval = cs2top/((gamma-1)*cpdry)
+        if (ldebug) print*, 'bc_lnrho_temp_z: set z top temperature: cs2top=',cs2top,"; TTtop=",TTval
+        if (cs2top<=0.) call fatal_error('bc_lnrho_temp_z','cannot have cs2top<=0')
+!
+!  set boundary value for entropy, then extrapolate ghost pts by antisymmetry
+!
+        call getlnrho(f(:,:,n2,ilnrho),lnrho_xy)
+!
+!  This formula works because cp,cv are independent of rho,TT
+!
+        f(:,:,n2,iss) = cv*(log(TTval)-lnTT0) - (cp-cv)*(lnrho_xy-lnrho0)
+        if (lreference_state) call not_implemented('bc_lnrho_temp_z','for lSmag_heat_transport=T')
+!
+        do i=1,nghost; f(:,:,n2+i,iss) = 2*f(:,:,n2,iss)-f(:,:,n2-i,iss); enddo
+!
+!  set density in the ghost zones so that dlnrho/dz + (1/cp)*ds/dz = gz/(gamma*(cp-cv)*TTval)
+!
+        do i=1,nghost
+          f(:,:,n2+i,ilnrho) = f(:,:,n2-i,ilnrho) + (f(:,:,n2-i,iss)-f(:,:,n2+i,iss))/cp + dz2_bound(i)*gravz/(gamma*(cp-cv)*TTval)
+        enddo
+!
+      case default
+        call fatal_error('bc_lnrho_temp_z','invalid argument')
+      endselect
+!
+    endsubroutine bc_lnrho_temp_z
+!***********************************************************************
     subroutine bc_lnrho_pressure_z(f,topbot)
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1428,100 +1520,6 @@ module EquationOfState
       if (present(eth0z)) call keep_compiler_quiet(eth0z)
 !
     endsubroutine get_stratz
-!***********************************************************************
-!***********************************************************************
-    subroutine bc_lnrho_temp_z(f,topbot)
-!
-!  boundary condition for lnrho *and* ss: constant temperature
-!
-!  27-sep-2002/axel: coded
-!  19-aug-2005/tobi: distributed across ionization modules
-!  04-dec-2024/Kishore: implemented for eos_idealgas_vapor
-!
-      use Gravity, only: gravz
-!
-      integer, intent(IN) :: topbot
-      real, dimension (:,:,:,:) :: f
-      real :: TTval
-      real, dimension (size(f,1),size(f,2)) :: cp, cv
-      integer :: i,il,im
-      real, dimension(mx,my) :: lnrho_xy
-!
-      if (ldebug) print*,'bc_lnrho_temp_z: cs20,cs0=',cs20,cs0
-!
-!  Constant temperature for entropy, with the temperature corresponding
-!  to cs2{top,bot}/((gamma-1)*cpdry). The entropy is set to be antisymmetric
-!  about its boundary value, while the density is set assuming
-!  hydrostatic equilibrium.
-!
-!  check whether we want to do top or bottom (this is processor dependent)
-!
-      select case (topbot)
-!
-!  bottom boundary
-!
-      case(BOT)
-        do il=1,size(cp,1)
-          do im =1,size(cp,2)
-            call get_gamma_etc(cp=cp(il,im), cv=cv(il,im), f=f(il,im,n1,:))
-          enddo
-        enddo
-        TTval = cs2bot/((gamma-1)*cpdry)
-        if (ldebug) print*, 'bc_lnrho_temp_z: set z bottom temperature: cs2bot=',cs2bot,"; TTbot=",TTval
-        if (cs2bot<=0.) call fatal_error('bc_lnrho_temp_z','cannot have cs2bot<=0')
-!
-!  set boundary value for entropy, then extrapolate ghost pts by antisymmetry
-!
-        call getlnrho(f(:,:,n1,ilnrho),lnrho_xy)
-!
-!  This formula works because cp,cv are independent of rho,TT
-!
-        f(:,:,n1,iss) = cv*(log(TTval)-lnTT0) - (cp-cv)*(lnrho_xy-lnrho0)
-        if (lreference_state) call not_implemented('bc_lnrho_temp_z','for lSmag_heat_transport=T')
-!
-        do i=1,nghost; f(:,:,n1-i,iss) = 2*f(:,:,n1,iss)-f(:,:,n1+i,iss); enddo
-!
-!  set density in the ghost zones so that dlnrho/dz + (1/cp)*ds/dz = gz/(gamma*(cp-cv)*TTval)
-!
-        do i=1,nghost
-          f(:,:,n1-i,ilnrho) = f(:,:,n1+i,ilnrho) + (f(:,:,n1+i,iss)-f(:,:,n1-i,iss))/cp + dz2_bound(-i)*gravz/(gamma*(cp-cv)*TTval)
-        enddo
-!
-!  top boundary
-!
-      case(TOP)
-        do il=1,size(cp,1)
-          do im =1,size(cp,2)
-            call get_gamma_etc(cp=cp(il,im), cv=cv(il,im), f=f(il,im,n2,:))
-          enddo
-        enddo
-        TTval = cs2top/((gamma-1)*cpdry)
-        if (ldebug) print*, 'bc_lnrho_temp_z: set z top temperature: cs2top=',cs2top,"; TTtop=",TTval
-        if (cs2top<=0.) call fatal_error('bc_lnrho_temp_z','cannot have cs2top<=0')
-!
-!  set boundary value for entropy, then extrapolate ghost pts by antisymmetry
-!
-        call getlnrho(f(:,:,n2,ilnrho),lnrho_xy)
-!
-!  This formula works because cp,cv are independent of rho,TT
-!
-        f(:,:,n2,iss) = cv*(log(TTval)-lnTT0) - (cp-cv)*(lnrho_xy-lnrho0)
-        if (lreference_state) call not_implemented('bc_lnrho_temp_z','for lSmag_heat_transport=T')
-!
-        do i=1,nghost; f(:,:,n2+i,iss) = 2*f(:,:,n2,iss)-f(:,:,n2-i,iss); enddo
-!
-!  set density in the ghost zones so that dlnrho/dz + (1/cp)*ds/dz = gz/(gamma*(cp-cv)*TTval)
-!
-        do i=1,nghost
-          f(:,:,n2+i,ilnrho) = f(:,:,n2-i,ilnrho) + (f(:,:,n2-i,iss)-f(:,:,n2+i,iss))/cp + dz2_bound(i)*gravz/(gamma*(cp-cv)*TTval)
-        enddo
-!
-      case default
-        call fatal_error('bc_lnrho_temp_z','invalid argument')
-      endselect
-!
-    endsubroutine bc_lnrho_temp_z
-!***********************************************************************
 !***********************************************************************
 !********************************************************************
 !********************************************************************
