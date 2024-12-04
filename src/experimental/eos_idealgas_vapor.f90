@@ -54,6 +54,12 @@ module EquationOfState
   logical :: leos_localisothermal=.false.
   logical :: lcp_as_aux=.false.
 !
+! Kishore: I have not checked what these are used for; just copied from eos_idealgas to get this module to compile.
+!
+  real :: Cp_const=impossible
+  real :: Pr_number=0.7
+  logical :: lpres_grad=.false.
+!
 !  Input parameters.
 !
   namelist /eos_init_pars/ &
