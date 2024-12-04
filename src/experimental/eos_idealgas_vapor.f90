@@ -1500,4 +1500,15 @@ module EquationOfState
 !
     endsubroutine bc_lnrho_temp_z
 !***********************************************************************
+!***********************************************************************
+!********************************************************************
+!********************************************************************
+!************        DO NOT DELETE THE FOLLOWING        *************
+!********************************************************************
+!**  This is an automatically generated include file that creates  **
+!**  copies dummy routines from noeos.f90 for any Eos routines     **
+!**  not implemented in this file                                  **
+!**                                                                **
+    include '../eos_dummies.inc'
+!***********************************************************************
 endmodule EquationOfState
