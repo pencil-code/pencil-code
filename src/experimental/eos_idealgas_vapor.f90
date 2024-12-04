@@ -195,6 +195,8 @@ module EquationOfState
 !
 !  06-jan-10/anders: adapted from eos_idealgas
 !
+      use Sub, only: register_report_aux
+!
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
 !
       mudry1=1/mudry
@@ -1066,6 +1068,7 @@ module EquationOfState
 !  04-dec-2024/Kishore: implemented for eos_idealgas_vapor
 !
       use Gravity, only: gravz
+      use DensityMethods, only: getlnrho
 !
       integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
