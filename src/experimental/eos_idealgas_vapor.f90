@@ -522,7 +522,6 @@ module EquationOfState
       intent(inout) :: f
       intent(inout) :: p
 !
-      real, dimension(nx) :: tmp
       integer :: i,j
 !
       if (leos_isentropic.or.leos_isothermal.or.leos_localisothermal) &
