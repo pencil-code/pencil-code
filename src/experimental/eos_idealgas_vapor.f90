@@ -404,6 +404,8 @@ module EquationOfState
 !
 !  06-jan-10/anders: adapted from eos_idealgas
 !
+      if (lcp_as_aux) lpenc_requested(i_cp)=.true.
+!
     endsubroutine pencil_criteria_eos
 !***********************************************************************
     subroutine pencil_interdep_eos(lpencil_in)
@@ -484,10 +486,6 @@ module EquationOfState
       case default
         call fatal_error('pencil_interdep_eos','ieosvars case not implemented yet')
       endselect
-!
-!  For aux
-!
-      if (lcp_as_aux) lpenc_requested(i_cp)=.true.
 !
     endsubroutine pencil_interdep_eos
 !***********************************************************************
