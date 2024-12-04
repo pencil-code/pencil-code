@@ -17,7 +17,7 @@
 ! PENCILS PROVIDED glnTT(3); TT; TT1; gTT(3); yH; hss(3,3); hlnTT(3,3)
 ! PENCILS PROVIDED del2ss; del6ss; del2lnTT; cv; cv1; del6lnTT; gamma
 ! PENCILS PROVIDED del2TT; del6TT; mumol; mumol1; glnmumol(3)
-! PENCILS PROVIDED rho_anel; ppvap; csvap2
+! PENCILS PROVIDED rho_anel; ppvap; csvap2; fvap; gfvap(3)
 !
 !***************************************************************
 module EquationOfState
@@ -423,10 +423,13 @@ module EquationOfState
       if (lpencil_in(i_glnmumol)) then
         lpencil_in(i_mumol)=.true.
         !lpencil_in(i_gcc)=.true.
-        lpencil_in(i_gssat)=.true.
+        !lpencil_in(i_gssat)=.true.
+        lpencil_in(i_gfvap)=.true.
+        lpencil_in(i_fvap)=.true.
       endif
       if (lpencil_in(i_mumol)) lpencil_in(i_mumol1)=.true.
-      if (lpencil_in(i_mumol1)) lpencil_in(i_cc)=.true.
+      !if (lpencil_in(i_mumol1)) lpencil_in(i_cc)=.true.
+      if (lpencil_in(i_mumol1)) lpencil_in(i_fvap)=.true.
       if (lpencil_in(i_cv1)) lpencil_in(i_cp1)=.true.
       if (lpencil_in(i_cp1)) lpencil_in(i_cp)=.true.
       if (lpencil_in(i_cv)) lpencil_in(i_cp)=.true.
@@ -442,7 +445,7 @@ module EquationOfState
         lpencil_in(i_TT)=.true.
       endif
       if (lpencil_in(i_ppvap)) then
-        lpencil_in(i_cc)=.true.
+        lpencil_in(i_fvap)=.true.
         lpencil_in(i_rho)=.true.
         lpencil_in(i_TT)=.true.
       endif
@@ -527,16 +530,35 @@ module EquationOfState
 !
 !  Pencils that are independent of the chosen thermodynamical variables.
 !
-! mumol1
+!
+!  fvap (rho_vapour/rho_total). The quantity acc (called q_V in [https://doi.org/10.5194/acp-19-639-2019]),
+!  is fvap/(1-fvap).
+!  Kishore: Axel, in commit e495afe2fecd170243aa475024da0f3f5b3fd632 ,
+!  Kishore: you made a change to treat p%ssat as the vapour fraction.
+!  Kishore: However, I think that should be calculated as below.
+!  Kishore: Do you agree? I do not see eos_idealgas_vapor being used
+!  Kishore: in any samples, and so have taken the liberty of changing it.
+!
+      if (lpenc_loc(i_fvap)) p%fvap = p%acc/(1+p%acc)
+      if (lpenc_loc(i_gfvap)) then
+        do i=1,3
+          p%gfvap(:,i)= p%gacc(:,i)/(1+p%acc)**2
+        enddo
+      endif
+!
+!  mumol1
+!
       !if (lpenc_loc(i_mumol1)) p%mumol1=(1-p%cc(:,1))*mudry1+p%cc(:,1)*muvap1
-      if (lpenc_loc(i_mumol1)) p%mumol1=(1-p%ssat)*mudry1+p%ssat*muvap1
+      !if (lpenc_loc(i_mumol1)) p%mumol1=(1-p%ssat)*mudry1+p%ssat*muvap1
+      if (lpenc_loc(i_mumol1)) p%mumol1 = (1-p%fvap)*mudry1 + p%fvap*muvap1
 ! mumol
       if (lpenc_loc(i_mumol)) p%mumol=1/p%mumol1
 ! glnmumol
       if (lpenc_loc(i_glnmumol)) then
         do i=1,3
           !p%glnmumol(:,i)=-p%mumol*(p%gcc(:,i,1)*(muvap1-mudry1))
-          p%glnmumol(:,i)=-p%mumol*(p%gssat(:,i)*(muvap1-mudry1))
+          !p%glnmumol(:,i)=-p%mumol*(p%gssat(:,i)*(muvap1-mudry1))
+          p%glnmumol(:,i)=-p%mumol*p%gfvap(:,i)*(muvap1-mudry1)
         enddo
       endif
 ! cp
@@ -622,7 +644,8 @@ module EquationOfState
       if (lpenc_loc(i_pp)) p%pp=(p%cp-p%cv)*p%rho*p%TT
 ! ppvap
       !if (lpenc_loc(i_ppvap)) p%ppvap=muvap1*Rgas_unit_sys*p%cc(:,1)*p%rho*p%TT
-      if (lpenc_loc(i_ppvap)) p%ppvap=muvap1*Rgas_unit_sys*p%ssat*p%rho*p%TT
+!       if (lpenc_loc(i_ppvap)) p%ppvap=muvap1*Rgas_unit_sys*p%ssat*p%rho*p%TT
+      if (lpenc_loc(i_ppvap)) p%ppvap=p%fvap*mudry1*muvap1*cpdry*p%rho*p%TT
 ! cs2
       if (lpenc_loc(i_cs2)) p%cs2=p%cp*p%TT*gamma_m1
 ! csvap2
