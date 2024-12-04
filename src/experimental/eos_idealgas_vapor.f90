@@ -1477,8 +1477,7 @@ module EquationOfState
 !  This formula works because cp,cv are independent of rho,TT
 !
         f(:,:,n1,iss) = cv*(log(TTval)-lnTT0) - (cp-cv)*(lnrho_xy-lnrho0)
-        if (lreference_state) &
-          f(l1:l2,:,n1,iss) = f(l1:l2,:,n1,iss) - spread(reference_state(:,iref_s),2,my)
+        if (lreference_state) call not_implemented('bc_lnrho_temp_z','for lSmag_heat_transport=T')
 !
         do i=1,nghost; f(:,:,n1-i,iss) = 2*f(:,:,n1,iss)-f(:,:,n1+i,iss); enddo
 !
@@ -1507,8 +1506,7 @@ module EquationOfState
 !  This formula works because cp,cv are independent of rho,TT
 !
         f(:,:,n2,iss) = cv*(log(TTval)-lnTT0) - (cp-cv)*(lnrho_xy-lnrho0)
-        if (lreference_state) &
-          f(l1:l2,:,n2,iss) = f(l1:l2,:,n2,iss) - spread(reference_state(:,iref_s),2,my)
+        if (lreference_state) call not_implemented('bc_lnrho_temp_z','for lSmag_heat_transport=T')
 !
         do i=1,nghost; f(:,:,n2+i,iss) = 2*f(:,:,n2,iss)-f(:,:,n2-i,iss); enddo
 !
