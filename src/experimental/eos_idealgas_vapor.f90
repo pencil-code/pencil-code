@@ -7,6 +7,8 @@
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: leos = .true.
+! CPARAM logical, parameter :: leos_ionization = .false., leos_temperature_ionization=.false.
+! CPARAM logical, parameter :: leos_idealgas = .false., leos_chemistry = .false.
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
@@ -73,8 +75,6 @@ module EquationOfState
 !  Register variables from the EquationOfState module.
 !
 !  06-jan-10/anders: adapted from eos_idealgas
-!
-      leos_idealgas=.true.
 !
       iyH=0
       ilnTT=0
