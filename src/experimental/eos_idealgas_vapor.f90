@@ -189,11 +189,13 @@ module EquationOfState
 !
     endsubroutine units_eos
 !***********************************************************************
-    subroutine initialize_eos()
+    subroutine initialize_eos(f)
 !
 !  Perform any post-parameter-read initialization
 !
 !  06-jan-10/anders: adapted from eos_idealgas
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
 !
       mudry1=1/mudry
       muvap1=1/muvap
