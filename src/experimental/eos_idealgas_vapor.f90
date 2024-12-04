@@ -1019,7 +1019,7 @@ module EquationOfState
 !***********************************************************************
     subroutine bc_ss_flux_tmp(f,topbot)
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call fatal_error('bc_ss_flux_tmp','not implemented')
@@ -1031,7 +1031,7 @@ module EquationOfState
 !***********************************************************************
     subroutine bc_ss_flux_tmp2(f,topbot)
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call fatal_error('bc_ss_flux_tmp2','not implemented')
@@ -1044,7 +1044,7 @@ module EquationOfState
     subroutine bc_ss_flux(f,topbot,lone_sided)
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       logical, optional :: lone_sided
 !
       call fatal_error('bc_ss_flux','not implemented')
@@ -1058,7 +1058,7 @@ module EquationOfState
     subroutine bc_ss_flux_turb(f,topbot)
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
 !
       call fatal_error('bc_ss_flux_turb','not implemented')
 !
@@ -1070,7 +1070,7 @@ module EquationOfState
     subroutine bc_ss_flux_condturb_z(f,topbot)
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
 !
       call fatal_error('bc_ss_flux_turb','not implemented')
 !
@@ -1082,7 +1082,7 @@ module EquationOfState
     subroutine bc_ss_temp_old(f,topbot)
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
 !
       call fatal_error('bc_ss_temp_old','not implemented')
 !
@@ -1094,7 +1094,7 @@ module EquationOfState
     subroutine bc_ss_temp_x(f,topbot)
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
 !
       call fatal_error('bc_ss_temp_x','not implemented')
 !
@@ -1106,7 +1106,7 @@ module EquationOfState
     subroutine bc_ss_temp_y(f,topbot)
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
 !
       call fatal_error('bc_ss_temp_y','not implemented')
 !
@@ -1118,7 +1118,7 @@ module EquationOfState
     subroutine bc_ss_temp_z(f,topbot,lone_sided)
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       logical, optional :: lone_sided
 !
       call fatal_error('bc_ss_temp_z','not implemented')
@@ -1132,7 +1132,7 @@ module EquationOfState
     subroutine bc_lnrho_pressure_z(f,topbot)
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
 !
       call fatal_error('bc_lnrho_pressure_z','not implemented')
 !
@@ -1143,7 +1143,7 @@ module EquationOfState
 !***********************************************************************
     subroutine bc_ss_temp2_z(f,topbot)
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call fatal_error('bc_ss_temp2_z','not implemented')
@@ -1155,7 +1155,7 @@ module EquationOfState
 !***********************************************************************
     subroutine bc_ss_temp3_z(f,topbot)
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call fatal_error('bc_ss_temp3_z','not implemented')
@@ -1168,7 +1168,7 @@ module EquationOfState
     subroutine bc_ss_stemp_x(f,topbot)
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
 !
       call fatal_error('bc_ss_stemp_x','not implemented')
 !
@@ -1180,7 +1180,7 @@ module EquationOfState
     subroutine bc_ss_stemp_y(f,topbot)
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
 !
       call fatal_error('bc_ss_stemp_y','not implemented')
 !
@@ -1192,7 +1192,7 @@ module EquationOfState
     subroutine bc_ss_stemp_z(f,topbot)
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
 !
       call fatal_error('bc_ss_stemp_z','not implemented')
 !
@@ -1204,7 +1204,7 @@ module EquationOfState
     subroutine bc_ss_energy(f,topbot)
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
 !
       call fatal_error('bc_ss_energy','not implemented')
 !
@@ -1216,7 +1216,7 @@ module EquationOfState
     subroutine bc_stellar_surface(f,topbot)
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
 !
       call fatal_error('bc_stellar_surface','not implemented')
 !
@@ -1228,7 +1228,7 @@ module EquationOfState
     subroutine bc_lnrho_cfb_r_iso(f,topbot)
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
 !
       call fatal_error('bc_lnrho_cfb_r_iso','not implemented')
 !
@@ -1240,7 +1240,7 @@ module EquationOfState
     subroutine bc_lnrho_hds_z_iso(f,topbot)
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
 !
       call fatal_error('bc_lnrho_hds_z_iso','not implemented')
 !
@@ -1252,7 +1252,7 @@ module EquationOfState
     subroutine bc_lnrho_hdss_z_iso(f,topbot)
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
 !
       call fatal_error('bc_lnrho_hdss_z_iso','not implemented')
 !
@@ -1264,7 +1264,7 @@ module EquationOfState
     subroutine bc_lnrho_hdss_z_liso(f,topbot)
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
 !
       call fatal_error('bc_lnrho_hdss_z_liso','not implemented')
 !
@@ -1276,7 +1276,7 @@ module EquationOfState
     subroutine bc_lnrho_hds_z_liso(f,topbot)
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
 !
       call fatal_error('bc_lnrho_hds_z_liso','not implemented')
 !
@@ -1289,7 +1289,7 @@ module EquationOfState
 !
 !  11-mar-2012/anders: dummmy
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call keep_compiler_quiet(f)
@@ -1301,7 +1301,7 @@ module EquationOfState
 !
 !  11-mar-2012/anders: dummmy
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call keep_compiler_quiet(f)
@@ -1313,7 +1313,7 @@ module EquationOfState
 !
 !  11-mar-2012/anders: dummmy
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call keep_compiler_quiet(f)
@@ -1325,7 +1325,7 @@ module EquationOfState
 !
 !  11-mar-2012/anders: dummmy
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call keep_compiler_quiet(f)
@@ -1337,7 +1337,7 @@ module EquationOfState
 !
 !  12-nov-2016/axel: dummmy
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call keep_compiler_quiet(f)
@@ -1349,7 +1349,7 @@ module EquationOfState
 !
 !  12-nov-2016/axel: dummmy
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call keep_compiler_quiet(f)
