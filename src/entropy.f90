@@ -493,9 +493,8 @@ module Energy
   integer, parameter :: prof_nz=150
   real, dimension (prof_nz) :: prof_lnT,prof_z
   logical :: lcalc_heat_cool
-  real :: tau1_cool,rho01,gamma,gamma_m1,gamma1,cv,cv1,cp1,hcond_Kconst    !,lnrho0,cs20
+  real :: tau1_cool,rho01,hcond_Kconst    !,lnrho0,cs20
   real, dimension(:), pointer :: beta_glnrho_scaled
-!
   contains
 !***********************************************************************
     subroutine register_energy
@@ -671,13 +670,14 @@ module Energy
       real, dimension (nzgrid) :: tmpz
       real, dimension (nx) :: tmpz_penc
       real :: beta1, beta0, TT_bcz, star_cte, cs2top_from_cool, ztop, zbot
-      real :: dummy,cp
+      real :: dummy
       integer :: i, j, n, m, stat, lend
       logical :: lnothing, exist, opend
       character(LEN=11) :: formtd
       real, pointer :: gravx
       character (len=*), parameter :: lnT_dat = 'driver/b_lnT.dat'
       real, dimension(:), pointer :: beta_glnrho_global_
+      real :: gamma,gamma_m1,gamma1,cp,cp1
 !
 !  Check any module dependencies.
 !
@@ -694,10 +694,6 @@ module Energy
       endif
       call get_shared_variable('beta_glnrho_scaled',beta_glnrho_scaled)
 !
-      call get_gamma_etc(gamma,cp,cv)
-      gamma1=1./gamma; gamma_m1=gamma-1.
-      cp1=1./cp; cv1=1./cv
-
       !!call get_shared_variable('rho0',rho0); lnrho0=log(rho0)
       !!call get_shared_variable('cs0',cs0); cs20=cs0**2
 !
@@ -742,6 +738,7 @@ module Energy
 !  hcond1 and hcond2 follow below in the block 'if (lmultilayer) etc...'
 !
       if (mixinglength_flux/=0.0) then
+        call get_gamma_etc(gamma); gamma1=1./gamma; gamma_m1=gamma-1.
         Fbot=mixinglength_flux
         hcond0=-mixinglength_flux*(mpoly0+1.)*gamma_m1*gamma1/gravz
         hcond1 = (mpoly1+1.)/(mpoly0+1.)
@@ -801,6 +798,8 @@ module Energy
 !
           if (Fbot==impossible) then
             if (bcz12(iss,1)=='c1') then
+              call get_gamma_etc(gamma,cp=cp); gamma_m1=gamma-1.
+!
               Fbot=-gamma/(cp*gamma_m1)*hcond0*gravz/(mpoly0+1)
               if (lroot) print*, 'initialize_energy: Calculated Fbot = ', Fbot
             else
@@ -818,6 +817,8 @@ module Energy
 !
           if (Ftop==impossible) then
             if (bcz12(iss,2)=='c1') then
+              call get_gamma_etc(gamma,cp=cp); gamma_m1=gamma-1.
+!
               Ftop=-gamma/(cp*gamma_m1)*hcond0*gravz/(mpoly0+1)
               if (lroot) print*, 'initialize_energy: Calculated Ftop = ',Ftop
             else
@@ -841,6 +842,8 @@ module Energy
 !
           if (Fbot==impossible) then
             if (bcz12(iss,1)=='c1') then
+              call get_gamma_etc(gamma); gamma_m1=gamma-1.
+!
               Fbot=-gamma/(gamma_m1)*hcond0*gravz/(mpoly+1)
               if (lroot) print*, 'initialize_energy: Calculated Fbot = ', Fbot
 !
@@ -858,6 +861,8 @@ module Energy
 !  Define hcond0 from the given value of Fbot.
 !
             if (bcz12(iss,1)=='c1') then
+              call get_gamma_etc(gamma); gamma_m1=gamma-1.
+!
               hcond0=-gamma_m1/gamma*(mpoly0+1.)*Fbot/gravz
               Kbot=hcond0
               FbotKbot=-gravz*gamma/gamma_m1/(mpoly0+1.)
@@ -869,6 +874,8 @@ module Energy
 !
           if (Ftop==impossible) then
             if (bcz12(iss,2)=='c1') then
+              call get_gamma_etc(gamma); gamma_m1=gamma-1.
+!
               Ftop=-gamma/(gamma_m1)*hcond0*gravz/(mpoly+1)
               if (lroot) print*, 'initialize_energy: Calculated Ftop = ', Ftop
               Ktop=gamma_m1/gamma*(mpoly+1.)*Ftop
@@ -913,6 +920,8 @@ module Energy
       select case (initss(1))
         case ('geo-kws','geo-benchmark','shell_layers')
           if (lroot) print*, 'initialize_energy: set boundary temperatures for spherical shell problem'
+!
+          call get_gamma_etc(gamma,cp=cp); gamma_m1=gamma-1.; cp1=1./cp
 !
 !  Calculate temperature gradient from polytropic index.
 !
@@ -961,12 +970,15 @@ module Energy
 !
 !  Compute the gravity profile inside the star.
 !
+          call get_gamma_etc(gamma); gamma1=1./gamma
           star_cte=(mpoly0+1.)/hcond0*(1.-gamma1)
           call compute_gravity_star(f, wheat, luminosity, star_cte)
 !
         case ('piecew_poly_cylind')
           if (bcx12(iss,1)=='c1') then
             call get_shared_variable('gravx', gravx, caller='initialize_energy')
+            call get_gamma_etc(gamma); gamma_m1=gamma-1.
+!
             Fbot=-gamma/gamma_m1*hcond0*gravx/(mpoly0+1.)
             FbotKbot=-gamma/gamma_m1*gravx/(mpoly0+1.)
           endif
@@ -1025,6 +1037,7 @@ module Energy
               f(:,:,n,iss)=f(:,:,n,iss)+tmpz(n-nghost+nz*ipz)
             enddo
           case ('wave-pressure-equil')
+            call get_gamma_etc(cp=cp); cp1=1./cp
             do n=n1,n2; do m=m1,m2
               tmpz_penc=ampl_ss(j)*cos(kx_ss*x(l1:l2))*cos(ky_ss*y(m))*cos(kz_ss*z(n))
               f(l1:l2,m,n,iss)=f(l1:l2,m,n,iss)+ss_const+tmpz_penc
@@ -1555,11 +1568,16 @@ module Energy
 !
 !  26-feb-13/MR: coded following Axel's recipe
 !
+      use EquationOfState, only: get_gamma_etc
+!
       real, dimension(mx,my,mz,mfarray), intent(INOUT) :: f
 !
       real, dimension(mx,my) :: ssmxy
       integer :: n
       real :: fac
+      real :: cv
+!
+      call get_gamma_etc(cv=cv)
 !
       if (rescale_TTmeanxy==1.) return
       if (rescale_TTmeanxy<=0.) call fatal_error('rescale_TT_in_ss','rescale_TTmeanxy<=0')
@@ -1619,7 +1637,7 @@ module Energy
 !  20-jan-2015/MR: changes for use of reference state
 !
       use SharedVariables, only: get_shared_variable
-      use EquationOfState, only: isothermal_entropy, eoscalc, isothermal_lnrho_ss, cs20, lnrho0, lnTT0
+      use EquationOfState, only: isothermal_entropy, eoscalc, isothermal_lnrho_ss, cs20, lnrho0, lnTT0, get_gamma_etc
       use Density, only: mean_density
 !
       use General, only: itoa
@@ -1638,6 +1656,7 @@ module Energy
       integer, pointer :: isothmid
       integer :: j,n,m
       logical :: lnothing, save_pretend_lnTT
+      real :: gamma,gamma_m1,gamma1,cv,cp,cp1
 !
 !  If pretend_lnTT is set then turn it off so that initial conditions are
 !  correctly generated in terms of entropy, but then restore it later
@@ -1663,6 +1682,7 @@ module Energy
           case ('zero', '0'); f(:,:,:,iss) = 0.
           case ('const_ss'); f(:,:,:,iss)=f(:,:,:,iss)+ss_const
           case ('const_TT')
+            call get_gamma_etc(gamma,cv=cv); gamma_m1=gamma-1.
             ss_const=cv*(alog(TT_const)-lnTT0-gamma_m1*(alog(mean_density(f))-lnrho0))
             f(:,:,:,iss)=f(:,:,:,iss)+ss_const
           case ('gaussian-noise'); call gaunoise(ampl_ss(j),f,iss,iss)
@@ -1686,6 +1706,7 @@ module Energy
               f(l1:l2,m,n,iss)=f(l1:l2,m,n,iss)+ss_const+ampl_ss(j)*sin(kx_ss*x(l1:l2)+pi)
             enddo; enddo
           case ('wave-pressure-equil')
+            call get_gamma_etc(cp=cp); cp1=1./cp
             do n=n1,n2; do m=m1,m2
               tmp=ampl_ss(j)*cos(kx_ss*x(l1:l2))*cos(ky_ss*y(m))*cos(kz_ss*z(n))
               f(l1:l2,m,n,iss)=f(l1:l2,m,n,iss)+ss_const+tmp
@@ -1729,6 +1750,7 @@ module Energy
           case ('const_chit'); call strat_const_chit(f)
           case ('read_arr_file'); call read_outside_scal_array(f, "ss.arr", iss)
           case ('mixinglength')
+            call get_gamma_etc(gamma); gamma1=1./gamma; gamma_m1=gamma-1.
              call mixinglength(mixinglength_flux,f)
              hcond0=-mixinglength_flux*(mpoly0+1.)*gamma_m1*gamma1/gravz
              print*,'init_energy : Fbot, hcond0=', Fbot, hcond0
@@ -1799,6 +1821,9 @@ module Energy
             if (.not. ldensity) call fatal_error('isentropic-star','requires DENSITY=density')
             if (lgravr) then
               if (lroot) print*,'init_lnrho: isentropic star with isothermal atmosphere'
+!
+              call get_gamma_etc(gamma); gamma_m1=gamma-1.
+!
               do n=n1,n2; do m=m1,m2
                 r_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
                 call potential(POT=pot,POT0=pot0,RMN=r_mn) ! gravity potential
@@ -1924,6 +1949,7 @@ module Energy
           case ('blob_hs')
             if (lroot) print*, 'init_energy: put blob in hydrostatic equilibrium: '// &
                        'radius_ss(j),ampl_ss(j)=', radius_ss(j), ampl_ss(j)
+            call get_gamma_etc(cp=cp); cp1=1./cp
             call blob(ampl_ss(j),f,iss,radius_ss(j),center1_x(j),center1_y(j),center1_z(j))
             call blob(-cp1*ampl_ss(j),f,ilnrho,radius_ss(j),center1_x(j),center1_y(j),center1_z(j))
             if (ldensity_nolog) then
@@ -2053,6 +2079,7 @@ module Energy
 !             bottom on exit
 !  cs2int  -- same for cs2
 !
+      use EquationOfState, only: get_gamma_etc
       use Gravity, only: gravz
       use Sub, only: step
 !
@@ -2063,8 +2090,11 @@ module Energy
 !
       real,intent(in),optional    :: fac_cs
       intent(inout) :: cs2int,ssint,f
+      real :: gamma,gamma_m1,cp,cp1
 !
       integer :: n,m
+!
+      call get_gamma_etc(gamma,cp=cp); gamma_m1=gamma-1.; cp1=1./cp
 !
 !  Warning: beta1 is here not dT/dz, but dcs2/dz = (gamma-1)c_p dT/dz
 !
@@ -2127,6 +2157,7 @@ module Energy
 !
 !  24-jun-03/ulf:  coded
 !
+      use EquationOfState, only: get_gamma_etc
       use Gravity, only: gravz, nu_epicycle
       use Sub, only: step
 !
@@ -2134,8 +2165,11 @@ module Energy
       real, dimension (mz) :: stp
       real :: tmp,mpoly,zint,zbot,zblend,beta1,cs2int,ssint, nu_epicycle2
       integer :: isoth
+      real :: gamma,gamma_m1
 !
       integer :: n,m
+!
+      call get_gamma_etc(gamma); gamma_m1=gamma-1.
 !
 !  Warning: beta1 is here not dT/dz, but dcs2/dz = (gamma-1)c_p dT/dz.
 !
@@ -2236,14 +2270,18 @@ module Energy
 !
 !   2-mar-13/axel: coded
 !
+      use EquationOfState, only: get_gamma_etc
       use Gravity, only: gravz
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real :: zz,lnrho,ss,rho,cs2,dlnrho,dss
       integer :: iz
+      real :: gamma,gamma_m1
 !
       if (.not.lgravz) call fatal_error('strat_const_chit','works only for vertical gravity')
       if (headtt) print*,'init_energy : strat_const_chit stratification'
+!
+      call get_gamma_etc(gamma); gamma_m1=gamma-1.
 !
 !  Integrate downward.
 !
@@ -2298,7 +2336,7 @@ module Energy
 !  12-jul-05/axel: coded
 !  17-Nov-05/dintrans: updated using strat_MLT
 !
-      use EquationOfState, only: eoscalc
+      use EquationOfState, only: eoscalc, get_gamma_etc
       use General, only: safe_character_assign
       use Gravity, only: z1
 !
@@ -2308,9 +2346,12 @@ module Energy
       real :: zbot,rbot,rt_old,rt_new,rb_old,rb_new,crit,rhotop,rhobot
       integer :: iter,iz
       character (len=120) :: wfile
+      real :: gamma,gamma_m1
 !
       if (headtt) print*,'init_energy : mixinglength stratification'
       if (.not.lgravz) call fatal_error('mixinglength','works only for vertical gravity')
+!
+      call get_gamma_etc(gamma); gamma_m1=gamma-1.
 !
 !  Do the calculation on all processors, and then put the relevant piece
 !  into the f array.
@@ -2398,12 +2439,15 @@ module Energy
 !  20-oct-03/dave -- coded
 !  21-aug-08/dhruba: added spherical coordinates
 !
-      use EquationOfState, only: eoscalc
+      use EquationOfState, only: eoscalc, get_gamma_etc
       use Gravity, only: g0
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: lnrho,lnTT,TT,pert_TT,r_mn
       real :: beta1
+      real :: gamma,gamma_m1,cp,cp1
+!
+      call get_gamma_etc(gamma,cp=cp); gamma_m1=gamma-1.; cp1=1./cp
 !
 !  beta1 is the temperature gradient
 !  1/beta = (g/cp) 1./[(1-1/gamma)*(m+1)]
@@ -2492,13 +2536,16 @@ module Energy
 !  for `conv_slab' style runs, with a layer of polytropic gas in [z0,z1].
 !  generalised for cp/=1.
 !
-      use EquationOfState, only: eoscalc
+      use EquationOfState, only: eoscalc, get_gamma_etc
       use Gravity, only: gravz, zinfty
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       real, dimension (nx) :: lnrho,TT
       real :: beta1
+      real :: gamma,gamma_m1,cp,cp1
+!
+      call get_gamma_etc(gamma,cp=cp); gamma_m1=gamma-1.; cp1=1./cp
 !
 !  beta1 is the temperature gradient
 !  1/beta = (g/cp) 1./[(1-1/gamma)*(m+1)]
@@ -2627,7 +2674,7 @@ module Energy
 !  12-feb-11/fred: older subroutine now use thermal_hs_equilibrium_ism.
 !  20-jan-15/MR: changes for use of reference state.
 !
-      use EquationOfState , only: eoscalc, getmu
+      use EquationOfState , only: eoscalc, getmu, get_gamma_etc
       use Mpicomm, only: mpibcast_real, MPI_COMM_WORLD
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2637,6 +2684,9 @@ module Energy
       real, parameter :: g_A_cgs=4.4e-9, g_C_cgs=1.7e-9
       real(KIND=rkind8) :: g_B, g_D
       real(KIND=rkind8), parameter :: g_B_cgs=6.172D20, g_D_cgs=3.086D21
+      real :: gamma,gamma_m1
+!
+      call get_gamma_etc(gamma); gamma_m1=gamma-1.
 !
 !  Set up physical units.
 !
@@ -2765,11 +2815,15 @@ module Energy
 !          year="1993",
 !          pages="1394-1414" }
 !
+      use EquationOfState, only: get_gamma_etc
+!
       real, dimension (mx,my,mz,mfarray) :: f
 !
       real, dimension (4) :: rpp,rpr,rpu,rpv
       integer :: l,ind,n,m
+      real :: gamma
 !
+      call get_gamma_etc(gamma)
       if (lroot) print*,'shock2d: initial condition, gamma=',gamma
 !
 !  First quadrant:
@@ -3353,6 +3407,7 @@ module Energy
 !  20-nov-04/anders: coded
 !  15-mar-15/MR: changes for use of reference state.
 !
+      use EquationOfState, only: get_gamma_etc
       use Sub, only: u_dot_grad, grad, multmv, h_dot_grad
       use WENO_transport, only: weno_transp
 !
@@ -3360,6 +3415,7 @@ module Energy
       type(pencil_case),                 intent(INOUT):: p
 !
       integer :: j
+      real :: gamma,gamma1
 !
 ! Ma2
       if (lpencil(i_Ma2)) p%Ma2=p%u2/p%cs2
@@ -3386,6 +3442,7 @@ module Energy
           enddo
         else
           if (leos_idealgas) then
+            call get_gamma_etc(gamma); gamma1=1./gamma
             do j=1,3
               p%fpres(:,j)=-p%cs2*(p%glnrho(:,j) + p%glnTT(:,j))*gamma1
             enddo
@@ -3445,6 +3502,7 @@ module Energy
 !   2-feb-03/axel: added possibility of ionization
 !
       use Diagnostics
+      use EquationOfState, only: get_gamma_etc
       use Interstellar, only: calc_heat_cool_interstellar
       use Special, only: special_calc_energy
       use Sub
@@ -3461,6 +3519,7 @@ module Energy
       real :: ztop,xi,profile_cor
       real, dimension(nx) :: tmp1
       integer :: j
+      real :: gamma,gamma_m1
 !
       Hmax = 1./impossible
       ssmax = 1./impossible
@@ -3526,6 +3585,7 @@ module Energy
 !
       if (ladvection_entropy) then
         if (pretend_lnTT) then
+          call get_gamma_etc(gamma); gamma_m1=gamma-1.
           df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%divu*gamma_m1-p%uglnTT
         else
           if (lweno_transport) then
@@ -3642,6 +3702,7 @@ module Energy
 !  Calculate entropy related diagnostics.
 !
       use Diagnostics
+      use EquationOfState, only: get_gamma_etc
       use Sub, only: cross, dot, dot2
 
       type(pencil_case) :: p
@@ -3651,6 +3712,7 @@ module Energy
       real, dimension(nx,3) :: gTxgs
       real :: uT,fradz,TTtop
       integer :: i
+      real :: gamma,gamma1
 
       if (ldiagnos) then
 
@@ -3780,7 +3842,10 @@ module Energy
 !
 !  Calculate integrated temperature in limited radial range.
 !
-        if (idiag_TTp/=0) call sum_lim_mn_name(p%rho*p%cs2*gamma1,idiag_TTp,p)
+        if (idiag_TTp/=0) then
+          call get_gamma_etc(gamma); gamma1=1./gamma
+          call sum_lim_mn_name(p%rho*p%cs2*gamma1,idiag_TTp,p)
+        endif
 !
 !from calc_heatcond_kramers
         call sum_mn_name(K_kramers,idiag_Kkramersm)
@@ -4113,16 +4178,20 @@ module Energy
 !
 !   1-apr-20/joern: coded
 !
+      use EquationOfState, only: get_gamma_etc
       use Sub, only : step
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx) :: cs2, prof_cs, fact_rho, fact_wsld
-      real :: cv1, rhotop, lnrhotop, w_sldrat2=1.0
+      real :: rhotop, lnrhotop, w_sldrat2=1.0
+      real :: gamma,gamma_m1,cv,cv1
 !
 !    Slope limited diffusion: update characteristic speed
 !    Not staggered yet
 !
-     if (lslope_limit_diff .and. llast) then
+      if (lslope_limit_diff .and. llast) then
+        call get_gamma_etc(gamma,cv=cv); gamma_m1=gamma-1.; cv1=1./cv
+!
        if (ldensity_nolog) then
          rhotop=exp(lnrho0)*((cs2top/cs20)**(1./gamma_m1))
        else
@@ -4186,6 +4255,7 @@ module Energy
 !  17-apr-10/axel: adapted from magnetic_after_boundary
 !  12-feb-15/MR  : changed for reference state; not yet done in averages of entropy.
 !
+      use EquationOfState, only: get_gamma_etc
       use Deriv, only: der_x, der2_x, der_z, der2_z
       use Mpicomm, only: mpiallreduce_sum
       use Sub, only: finalize_aver,calc_all_diff_fluxes,div,smooth,global_mean
@@ -4197,6 +4267,7 @@ module Energy
 !
       integer :: l,m,n,lf
       real :: fact, tmp1
+      real :: gamma,gamma_m1,cv,cv1,cp,cp1
 !
 !  Compute horizontal average of entropy. Include the ghost zones,
 !  because they have just been set.
@@ -4256,6 +4327,9 @@ module Energy
 !  Compute average sound speed cs2(x) and cs2(x,y)
 !
       if (lcalc_cs2mean) then
+!
+        call get_gamma_etc(gamma,cv=cv); gamma_m1=gamma-1.; cv1=1./cv
+!
         if (lcartesian_coords) then
           fact=1./nyzgrid
           do l=1,nx
@@ -4329,6 +4403,8 @@ module Energy
 !
       if (lcalc_cs2mz_mean .or. lcalc_cs2mz_mean_diag) then
 !
+        call get_gamma_etc(gamma,cv=cv); gamma_m1=gamma-1.; cv1=1./cv
+!
         fact=1./nxygrid
         cs2mz=0.
         if (ldensity_nolog) then
@@ -4355,6 +4431,7 @@ module Energy
 !  Sound speed fluctuations as auxilliary array
 !
         if (lTT_flucz_as_aux) then
+          call get_gamma_etc(gamma,cp=cp,cv=cv); gamma_m1=gamma-1.; cp1=1./cp; cv1=1./cv
           tmp1=cp1/gamma_m1
           do n=1,mz
             f(l1:l2,m1:m2,n,iTT_flucz) = tmp1* &
@@ -4396,6 +4473,8 @@ module Energy
 !  Enthalpy flux as auxilliary array
 !
       if (lFenth_as_aux) then
+!
+        call get_gamma_etc(gamma,cp=cp,cv=cv); gamma_m1=gamma-1.; cp1=1./cp; cv1=1./cv
 !
         tmp1=cp1/gamma_m1
 !
@@ -4460,6 +4539,7 @@ module Energy
 !  28-jul-06/wlad: coded
 !  28-apr-16/wlad: added case initial-temperature
 !
+      use EquationOfState, only: get_gamma_etc
       use BorderProfiles, only: border_driving, set_border_initcond
 !
       real, dimension(mx,my,mz,mfarray) :: f
@@ -4467,6 +4547,7 @@ module Energy
       real, dimension(mx,my,mz,mvar) :: df
       real, dimension(nx) :: f_target
       real, dimension(nx) :: lnrho_init,ss_init,rho_init
+      real :: gamma,gamma_m1,cv
 !
       select case (borderss)
 !
@@ -4490,6 +4571,8 @@ module Energy
 !    ss = cv*(log(cs2/cs20)-gamma_m1*(lnrho-lnrho0))
 !
 !  Keep the density and replace cs2 by the initial cs2 to drive ss to the initial temperature.
+!
+        call get_gamma_etc(gamma,cv=cv); gamma_m1=gamma-1.
 !
         call set_border_initcond(f,iss,ss_init)
         if (ldensity_nolog) then
@@ -4525,6 +4608,7 @@ module Energy
 !  12-mar-06/axel: used p%glnTT and p%del2lnTT, so that general cp work ok
 !
       use Diagnostics!, only: max_mn_name
+      use EquationOfState, only: get_gamma_etc
       use Sub, only: dot, multmv_transp, multsv_mn
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -4536,10 +4620,12 @@ module Energy
 !
       real, dimension(nx) :: thdiff, g2
       real, dimension(nx,3) :: gradchit_prof
+      real :: gamma
 !
 !  Check that chi is ok.
 !
       if (headtt) print*,'calc_heatcond_constchi: chi=',chi
+!
 !
 !  Heat conduction
 !  Note: these routines require revision when ionization turned on
@@ -4555,6 +4641,7 @@ module Energy
 !
       call dot(p%glnrho+p%glnTT,p%glnTT,g2)
       if (pretend_lnTT) then
+        call get_gamma_etc(gamma)
         thdiff=gamma*chi*(p%del2lnTT+g2)
       else
         thdiff=chi*p%cp*(p%del2lnTT+g2)
@@ -4581,6 +4668,7 @@ module Energy
 !
       if (lfirst.and.ldt) then
         if (leos_idealgas) then
+          call get_gamma_etc(gamma)
           diffus_chi=diffus_chi+(gamma*chi)*dxyz_2
         else
           diffus_chi=diffus_chi+chi*dxyz_2
@@ -4605,11 +4693,13 @@ module Energy
 !  12-mar-06/axel: used p%glnTT and p%del2lnTT, so that general cp work ok
 !
       use Diagnostics, only: max_mn_name
+      use EquationOfState, only: get_gamma_etc
       use Sub, only: dot
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real, dimension (nx) :: thdiff,g2,thchi
+      real :: gamma
 !
       intent(inout) :: df
 !
@@ -4638,6 +4728,7 @@ module Energy
       thchi=chi*exp(chi_cspeed*p%lnTT)
       if (pretend_lnTT) then
         call dot(p%glnrho+(1.+chi_cspeed)*p%glnTT,p%glnTT,g2)
+        call get_gamma_etc(gamma)
         thdiff=gamma*thchi*(p%del2lnTT+g2)
         if (chi_t/=0.) then
           call dot(p%glnrho+p%glnTT,p%gss,g2)
@@ -4671,6 +4762,7 @@ module Energy
 !
       if (lfirst.and.ldt) then
         if (leos_idealgas) then
+          call get_gamma_etc(gamma)
           diffus_chi=diffus_chi+(gamma*thchi+chi_t)*dxyz_2
         else
           diffus_chi=diffus_chi+(thchi+chi_t)*dxyz_2
@@ -4694,11 +4786,13 @@ module Energy
 !  12-mar-06/axel: used p%glnTT and p%del2lnTT, so that general cp work ok
 !
       use Diagnostics, only: max_mn_name
+      use EquationOfState, only: get_gamma_etc
       use Sub, only: dot
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real, dimension (nx) :: thdiff,g2,rhochi
+      real :: gamma
 !
       intent(inout) :: df
 !
@@ -4724,6 +4818,7 @@ module Energy
       rhochi=chi_rho*sqrt(p%rho1)
       if (pretend_lnTT) then
         call dot(p%glnrho+p%glnTT,p%glnTT,g2)
+        call get_gamma_etc(gamma)
         thdiff=gamma*rhochi*(p%del2lnTT+g2)
         if (chi_t/=0.) then
           call dot(p%glnrho+p%glnTT,p%gss,g2)
@@ -4758,6 +4853,7 @@ module Energy
 !
       if (lfirst.and.ldt) then
         if (leos_idealgas) then
+          call get_gamma_etc(gamma)
           diffus_chi=diffus_chi+(gamma*rhochi+chi_t)*dxyz_2
         else
           diffus_chi=diffus_chi+(rhochi+chi_t)*dxyz_2
@@ -4919,11 +5015,13 @@ module Energy
 !  22-aug-14/joern: removed chi_t from here.
 !
       use Diagnostics, only: max_mn_name
+      use EquationOfState, only: get_gamma_etc
       use Sub, only: dot
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real, dimension (nx) :: thdiff,g2,gshockglnTT,gshockgss
+      real :: gamma
 !
       intent(in) :: p
       intent(inout) :: df
@@ -4945,6 +5043,7 @@ module Energy
 !
       if (lheatc_shock) then
         if (pretend_lnTT) then
+          call get_gamma_etc(gamma)
           thdiff=gamma*chi_shock*(p%shock*(p%del2lnrho+g2)+gshockglnTT)
         else
           if (lchi_shock_density_dep) then
@@ -4959,6 +5058,7 @@ module Energy
       endif
       if (lheatc_shock2) then
         if (pretend_lnTT) then
+          call get_gamma_etc(gamma)
           thdiff=gamma*chi_shock2*(p%shock**2*(p%del2lnrho+g2)+gshockglnTT)
         else
           if (lchi_shock_density_dep) then
@@ -4989,6 +5089,7 @@ module Energy
             if (lheatc_shock2) &
                 diffus_chi=diffus_chi+exp(-onethird*p%lnrho)*chi_shock2*p%shock**2*p%cp1*dxyz_2
           else
+            call get_gamma_etc(gamma)
             if (lheatc_shock ) diffus_chi=diffus_chi+(gamma*chi_shock*p%shock)*dxyz_2
             if (lheatc_shock2) diffus_chi=diffus_chi+(gamma*chi_shock2*p%shock**2)*dxyz_2
           endif
@@ -5006,12 +5107,14 @@ module Energy
 !                   but no chit adding anymore
 !
       use Diagnostics, only: max_mn_name
+      use EquationOfState, only: get_gamma_etc
       use Sub, only: dot, step, der_step
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real, dimension (nx) :: thdiff,g2,gshockglnTT,gchiglnTT,pchi_shock
       real, dimension (nx,3) :: gradchi_shock
+      real :: gamma
 !
       intent(in) :: p
       intent(inout) :: df
@@ -5041,6 +5144,7 @@ module Energy
       call dot(gradchi_shock,p%glnTT,gchiglnTT)
 !
       if (pretend_lnTT) then
+        call get_gamma_etc(gamma)
         thdiff=gamma*(pchi_shock*(p%shock*(p%del2lnrho+g2)+gshockglnTT)+gchiglnTT*p%shock)
       else
         thdiff=pchi_shock*(p%shock*(p%del2lnTT+g2)+gshockglnTT)+gchiglnTT*p%shock
@@ -5057,6 +5161,7 @@ module Energy
 !
       if (lfirst.and.ldt) then
         if (leos_idealgas) then
+          call get_gamma_etc(gamma)
           diffus_chi=diffus_chi+(gamma*pchi_shock*p%shock)*dxyz_2
         else
           diffus_chi=diffus_chi+(pchi_shock*p%shock)*dxyz_2
@@ -5073,6 +5178,7 @@ module Energy
 !  30-mar-06/ngrs: simplified calculations using p%glnTT and p%del2lnTT
 !
       use Diagnostics, only: max_mn_name, yzsum_mn_name_x, phisum_mn_name_rz
+      use EquationOfState, only: get_gamma_etc
       use Sub, only: dot
 !
       type (pencil_case) :: p
@@ -5083,6 +5189,7 @@ module Energy
 
       real, dimension (nx) :: chix
       real, dimension (nx) :: thdiff,g2
+      real :: gamma
 !
 !  This particular version assumes a simple polytrope, so mpoly is known.
 !
@@ -5114,6 +5221,7 @@ module Energy
       call dot(p%glnTT,p%glnTT,g2)
 !
       if (pretend_lnTT) then
+        call get_gamma_etc(gamma)
         thdiff = gamma*chix * (p%del2lnTT + g2)
       else
         thdiff = p%rho1*hcond_Kconst * (p%del2lnTT + g2)
@@ -5128,7 +5236,10 @@ module Energy
 !  With heat conduction, the second-order term for entropy is
 !  gamma*chix*del2ss.
 !
-      if (lfirst.and.ldt) diffus_chi=diffus_chi+gamma*chix*dxyz_2
+      if (lfirst.and.ldt) then
+        call get_gamma_etc(gamma)
+        diffus_chi=diffus_chi+gamma*chix*dxyz_2
+      endif
 !
     endsubroutine calc_heatcond_constK
 !***********************************************************************
@@ -5142,12 +5253,14 @@ module Energy
 !  10-feb-04/bing: coded
 !
       use Debug_IO, only: output_pencil
+      use EquationOfState, only: get_gamma_etc
       use Sub, only: dot2_mn, multsv_mn, tensor_diffusion_coef
 !
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: gvKpara,gvKperp,tmpv,tmpv2
       real, dimension (nx) :: bb2,thdiff,b1
       real, dimension (nx) :: tmps,vKpara,vKperp
+      real :: gamma
 !
       integer ::i,j
       type (pencil_case) :: p
@@ -5193,6 +5306,7 @@ module Energy
       df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) + thdiff
 !
       if (lfirst.and.ldt) then
+        call get_gamma_etc(gamma)
         dt1_max=max(dt1_max,maxval(abs(thdiff)*gamma)/(cdts))
         diffus_chi=diffus_chi+p%cv1*Kgpara*exp(2.5*p%lnTT-p%lnrho)*dxyz_2
       endif
@@ -5954,6 +6068,7 @@ module Energy
 !  02-jul-02/wolf: coded
 !
       use Diagnostics, only: sum_mn_name, xysum_mn_name_z
+      use EquationOfState, only: get_gamma_etc
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -5962,6 +6077,7 @@ module Energy
       real, dimension (nx) :: heat, TT_drive, prof
       real :: profile_buffer
       real :: xi,Rgas
+      real :: gamma,gamma_m1,gamma1,cp,cp1
 !
       intent(in) :: p
       intent(inout) :: Hmax,df
@@ -6036,6 +6152,9 @@ module Energy
       if (cool_uniform/=0.0) heat=heat-cool_uniform*p%rho*p%cp*p%TT
       if (cool_newton/=0.0) then
         if (lchromospheric_cooling) then
+!
+          call get_gamma_etc(gamma,cp=cp); gamma1=1./gamma; gamma_m1=gamma-1.; cp1=1./cp
+!
           Rgas=(1.0-gamma1)/cp1
           xi=(z(n)-z_cor)/(xyz1(3)-z_cor)
           profile_buffer=xi**2*(3-2*xi)
@@ -6624,9 +6743,13 @@ module Energy
 !
 !  17-may-10/dhruba: coded
 !
+      use EquationOfState, only: get_gamma_etc
+!
       type (pencil_case) :: p
       real, dimension (nx) :: heat
       real :: ztop,xi,profile_cor
+      real :: gamma,gamma_m1
+!
       intent(in) :: p
 !
       ztop=xyz0(3)+Lxyz(3)
@@ -6634,6 +6757,7 @@ module Energy
         xi=(z(n)-z_cor)/(ztop-z_cor)
         profile_cor=xi**2*(3-2*xi)
         if (lcalc_cs2mz_mean) then
+          call get_gamma_etc(gamma); gamma_m1=gamma-1.
           heat=heat+profile_cor*(TT_cor-cs2mz(n)/gamma_m1*p%cp1)/(p%rho1*tau_cor*p%cp1)
         else
           heat=heat+profile_cor*(TT_cor-1/p%TT1)/(p%rho1*tau_cor*p%cp1)
@@ -6652,6 +6776,7 @@ module Energy
 !  15-dec-04/bing: coded
 !
       use Debug_IO, only: output_pencil
+      use EquationOfState, only: get_gamma_etc
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -6659,6 +6784,7 @@ module Energy
       real, dimension (nx) :: lnQ,rtv_cool,lnTT_SI,lnneni,delta_lnTT,tmp
       integer :: i,imax
       real :: unit_lnQ
+      real :: gamma,gamma1
 !
 !  Parameters for subroutine cool_RTV in SI units (from Cook et al. 1989).
 !
@@ -6679,6 +6805,8 @@ module Energy
 !
       intent(in) :: p
       intent(inout) :: df
+!
+      call get_gamma_etc(gamma); gamma1=1./gamma
 !
       if (pretend_lnTT) call not_implemented('calc_heat_cool_RTV','for pretend_lnTT = T')
 !
@@ -7280,6 +7408,7 @@ module Energy
 !
 !  10-march-2011/gustavo: Adapted from idl script strat_poly.pro
 !
+      use EquationOfState, only: get_gamma_etc
       use SharedVariables, only: get_shared_variable
       use Sub, only: step, der_step
 
@@ -7288,6 +7417,7 @@ module Energy
       real, dimension (:), pointer :: gravx_xpencil
       real, dimension (nx) :: dTTdxc,mpoly_xprof,dmpoly_dx
       real :: Lum
+      real :: gamma,gamma_m1,cv,cv1
 !
       if (.not.lmultilayer) call fatal_error('get_gravx_heatcond', &
            "don't call if you have only one layer")
@@ -7297,6 +7427,8 @@ module Energy
 
       call get_shared_variable('gravx_xpencil', gravx_xpencil)
       call get_shared_variable('gravx', gravx)
+!
+      call get_gamma_etc(gamma,cv=cv); gamma_m1=gamma-1.; cv1=1./cv
 !
 ! Radial profile of the polytropic index
       mpoly_xprof = mpoly0 - (mpoly0-mpoly1)*step(x(l1:l2),xb,widthss) &
@@ -7553,15 +7685,19 @@ module Energy
 !  25-sep-2006/bing: updated, using external data
 !
       use Debug_IO, only: output_pencil
+      use EquationOfState, only: get_gamma_etc
 !
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: newton
       real :: lnTTor
       integer :: i
       type (pencil_case) :: p
+      real :: gamma
 !
       intent(inout) :: df
       intent(in) :: p
+!
+      call get_gamma_etc(gamma)
 !
 !  Get reference temperature.
 !
@@ -7653,6 +7789,7 @@ module Energy
 !  equations until rho=1 at the bottom of convection zone (z=z1)
 !  see Eqs. (20-21-22) in Brandenburg et al., AN, 326 (2005)
 !
+      use EquationOfState, only: get_gamma_etc
       use Gravity, only: z1, z2, gravz
       use Sub, only: interp1
 !
@@ -7660,6 +7797,9 @@ module Energy
       real :: rhotop, zm, ztop, dlnrho, dtemp, mixinglength_flux, lnrhobot, rhobot
       real :: del, delad, fr_frac, fc_frac, fc, polyad
       integer :: iz
+      real :: gamma,gamma_m1
+!
+      call get_gamma_etc(gamma); gamma_m1=gamma-1.
 !
 !  Initial values at the top.
 !
@@ -7715,15 +7855,18 @@ module Energy
 !
 !  09-aug-06/dintrans: coded
 !
-      use EquationOfState, only: eoscalc
+      use EquationOfState, only: eoscalc, get_gamma_etc
       use Gravity, only: g0
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: TT,r_mn
       real :: beta0,beta1,TT_bcz
       real :: lnrho_int,lnrho_ext,lnrho_bcz
+      real :: gamma,gamma_m1,cp,cp1
 !
       if (lroot) print*,'r_bcz in entropy.f90=',r_bcz
+!
+      call get_gamma_etc(gamma,cp=cp); gamma_m1=gamma-1.; cp1=1./cp
 !
 !  The temperature gradient is dT/dr=beta/r with
 !  beta = (g/cp) /[(1-1/gamma)*(m+1)]
@@ -7783,7 +7926,7 @@ module Energy
 !
 !  17-mar-07/dintrans: coded
 !
-      use EquationOfState, only: eoscalc
+      use EquationOfState, only: eoscalc, get_gamma_etc
       use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
@@ -7791,8 +7934,11 @@ module Energy
       real :: beta0, beta1, TT_bcz, TT_ext, TT_int
       real :: lnrho_bcz
       real, pointer :: gravx
+      real :: gamma,gamma_m1,cp,cp1
 !
       if (headtt) print*,'r_bcz in piecew_poly_cylind=', r_bcz
+!
+      call get_gamma_etc(gamma,cp=cp); gamma_m1=gamma-1.; cp1=1./cp
 !
 !  beta is the (negative) temperature gradient
 !  beta = (g/cp) 1./[(1-1/gamma)*(m+1)]
@@ -7837,14 +7983,17 @@ module Energy
 !
 !  Note: both entropy and density are initialized there (compared to layer_ss)
 !
-      use EquationOfState, only: eoscalc
+      use EquationOfState, only: eoscalc, get_gamma_etc
       use Gravity, only: gravz
       use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: lnrho, TT
-      real :: beta, cp1, zbot, ztop, TT0
+      real :: beta, zbot, ztop, TT0
       real, pointer :: gravx
+      real :: gamma,gamma_m1,cp,cp1
+!
+      call get_gamma_etc(gamma,cp=cp); gamma_m1=gamma-1.; cp1=1./cp
 !
 !  beta is the (negative) temperature gradient
 !  beta = (g/cp) 1./[(1-1/gamma)*(m+1)]
