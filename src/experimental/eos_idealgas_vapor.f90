@@ -1103,8 +1103,8 @@ module EquationOfState
 !  bottom boundary
 !
       case(BOT)
-        do il=1,size(cp,1)
-          do im =1,size(cp,2)
+        do il=1,mx
+          do im =1,my
             call get_gamma_etc(cp=cp(il,im), cv=cv(il,im), f=f(il,im,n1,:))
           enddo
         enddo
@@ -1132,8 +1132,8 @@ module EquationOfState
 !  top boundary
 !
       case(TOP)
-        do il=1,size(cp,1)
-          do im =1,size(cp,2)
+        do il=1,mx
+          do im =1,my
             call get_gamma_etc(cp=cp(il,im), cv=cv(il,im), f=f(il,im,n2,:))
           enddo
         enddo
