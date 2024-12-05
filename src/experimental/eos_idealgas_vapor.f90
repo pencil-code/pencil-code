@@ -739,6 +739,7 @@ module EquationOfState
       if (present(gamma_)) gamma_=gamma
 !
       if (present(f).and.lcp_as_aux) then
+        if (f(icp)==0) call fatal_error('get_gamma_etc', 'cp is zero')
         if (present(cp)) cp = f(icp)
         if (present(cv)) cv = f(icp)/gamma
       else
