@@ -117,7 +117,7 @@ module Special
   logical :: lscale_tobox=.false., lskip_projection_GW=.false., lvectorpotential=.false.
   logical :: lnophase_in_stress=.false., llinphase_in_stress=.false., lconstmod_in_stress=.false.
   logical :: lno_noise_GW=.false., lfactors_GW=.false.,lcomp_GWs_k=.false.,lcomp_GWh_k=.false.
-  logical :: lnot_amp_GW=.true.
+  logical :: lnot_amp_GW=.true., lrandom_ampl_GW=.false.
   logical :: llogbranch_GW=.false., ldouble_GW=.false., lLighthill=.false.
   logical :: lrandomize_e1_e2=.false.
   real, dimension(3,3) :: ij_table
@@ -161,7 +161,7 @@ module Special
     lscalar, lscalar_phi, &
     lelectmag, lggTX_as_aux, lhhTX_as_aux, linflation, lreheating_GW, lmatter_GW, ldark_energy_GW, &
     lonly_mag, lread_scl_factor_file, t_ini, &
-    lno_noise_GW, &
+    lno_noise_GW, lrandom_ampl_GW, &
     lscale_tobox, lfactors_GW, nfact_GWs, nfact_GWh, nfact_GW, &
     lcomp_GWs_k, lcomp_GWh_k, llogbranch_GW, initpower_med_GW, &
     kpeak_log_GW, kbreak_GW, ldouble_GW, nfactd_GW, &
@@ -722,7 +722,7 @@ module Special
             lfactors0=lfactors_GW, lnot_amp=lnot_amp_GW, nfact0=nfact_GWh, compk0=compkh, &
             llogbranch0=llogbranch_GW,initpower_med0=initpower_med_GW, &
             kpeak_log0=kpeak_log_GW,kbreak0=kbreak_GW,ldouble0=ldouble_GW, &
-            nfactd0=nfact_GW)
+            nfactd0=nfact_GW, lrandom_ampl=lrandom_ampl_GW)
           call power_randomphase_hel(amplGWs,initpower_GWs,initpower2_GWs, &
             cutoff_GW,ncutoff_GW,kpeak_GW,f,iggT,iggT,relhel_GW,kgaussian_GW, &
             lskip_projection_GW, lvectorpotential, &
@@ -731,7 +731,7 @@ module Special
             lfactors0=lfactors_GW, lnot_amp=lnot_amp_GW, nfact0=nfact_GWs, compk0=compks, &
             llogbranch0=llogbranch_GW,initpower_med0=initpower_med_GWs, &
             kpeak_log0=kpeak_log_GW,kbreak0=kbreak_GW,ldouble0=ldouble_GW, &
-            nfactd0=nfact_GW)
+            nfactd0=nfact_GW, lrandom_ampl=lrandom_ampl_GW)
         case ('power_randomphase_hel_wave')
           call power_randomphase_hel(amplGW,initpower_GW,initpower2_GW, &
             cutoff_GW,ncutoff_GW,kpeak_GW,f,ihhT,ihhT,relhel_GW,kgaussian_GW, &
@@ -741,7 +741,7 @@ module Special
             lfactors0=lfactors_GW, lnot_amp=lnot_amp_GW, nfact0=nfact_GWh, compk0=compkh, &
             llogbranch0=llogbranch_GW,initpower_med0=initpower_med_GW, &
             kpeak_log0=kpeak_log_GW,kbreak0=kbreak_GW,ldouble0=ldouble_GW, &
-            nfactd0=nfact_GW)
+            nfactd0=nfact_GW, lrandom_ampl=lrandom_ampl_GW)
 !
           do ikz=1,nz
           do iky=1,ny

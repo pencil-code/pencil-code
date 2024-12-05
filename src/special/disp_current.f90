@@ -50,7 +50,7 @@ module Special
   logical :: llongitudinalE=.true., llorenz_gauge_disp=.false., lskip_projection_ee=.false.
   logical :: lscale_tobox=.true., lskip_projection_a0=.false.
   logical :: lvectorpotential=.false., lphi_hom=.false.
-  logical :: loverride_ee_prev=.false.
+  logical :: loverride_ee_prev=.false., lno_noise_ee=.false.
   logical :: leedot_as_aux=.false., lcurlyA=.true., lsolve_chargedensity=.false.
   logical :: lswitch_off_divJ=.false., lswitch_off_Gamma=.false.
   logical, pointer :: loverride_ee, lresi_eta_tdep
@@ -66,7 +66,7 @@ module Special
     llongitudinalE, llorenz_gauge_disp, lphi_hom, &
     amplee, initpower_ee, initpower2_ee, lscale_tobox, &
     cutoff_ee, ncutoff_ee, kpeak_ee, relhel_ee, kgaussian_ee, &
-    ampla0, initpower_a0, initpower2_a0, &
+    ampla0, initpower_a0, initpower2_a0, lno_noise_ee, &
     cutoff_a0, ncutoff_a0, kpeak_a0, relhel_a0, kgaussian_a0, &
     leedot_as_aux, lsolve_chargedensity, &
     weight_longitudinalE
@@ -208,7 +208,8 @@ module Special
         case ('power_randomphase_hel')
           call power_randomphase_hel(amplee,initpower_ee,initpower2_ee, &
             cutoff_ee,ncutoff_ee,kpeak_ee,f,iex,iez,relhel_ee,kgaussian_ee, &
-            lskip_projection_ee, lvectorpotential, lscale_tobox=lscale_tobox)
+            lskip_projection_ee, lvectorpotential, lscale_tobox=lscale_tobox, &
+            lno_noise=lno_noise_ee)
 !
         case default
           !

@@ -107,7 +107,7 @@ module backreact_infl
   logical :: lbackreact_infl=.true., lem_backreact=.true., lzeroHubble=.false.
   logical :: lscale_tobox=.true.,ldt_backreact_infl=.true., lconf_time=.true.
   logical :: lskip_projection_phi=.false., lvectorpotential=.false., lflrw=.false.
-  logical :: lrho_chi=.false.
+  logical :: lrho_chi=.false., lno_noise_phi=.false., lno_noise_dphi=.false.
   logical, pointer :: lphi_hom
 !
   character (len=labellen) :: Vprime_choice='quadratic', Hscript_choice='default'
@@ -115,7 +115,7 @@ module backreact_infl
 !
   namelist /backreact_infl_init_pars/ &
       initspecial, phi0, dphi0, axionmass, eps, ascale_ini, &
-      c_light_axion, lambda_axion, amplphi, ampldphi, &
+      c_light_axion, lambda_axion, amplphi, ampldphi, lno_noise_phi, lno_noise_dphi, &
       kx_phi, ky_phi, kz_phi, phase_phi, width, offset, &
       initpower_phi, initpower2_phi, cutoff_phi, kgaussian_phi, kpeak_phi, &
       initpower_dphi, initpower2_dphi, cutoff_dphi, kpeak_dphi, &
@@ -279,12 +279,12 @@ module backreact_infl
             call power_randomphase_hel(amplphi,initpower_phi,initpower2_phi, &
               cutoff_phi,ncutoff_phi,kpeak_phi,f,iinfl_phi,iinfl_phi, &
               relhel_phi,kgaussian_phi, lskip_projection_phi, lvectorpotential, &
-              lscale_tobox, lpower_profile_file=.false.)
+              lscale_tobox, lpower_profile_file=.false., lno_noise=lno_noise_phi)
           case ('dphi_power_randomphase')
             call power_randomphase_hel(ampldphi,initpower_dphi,initpower2_dphi, &
               cutoff_dphi,ncutoff_phi,kpeak_dphi,f,iinfl_dphi,iinfl_dphi, &
               relhel_phi,kgaussian_phi, lskip_projection_phi, lvectorpotential, &
-              lscale_tobox, lpower_profile_file=.false.)
+              lscale_tobox, lpower_profile_file=.false., lno_noise=lno_noise_dphi)
   
           case default
             call fatal_error("init_special: No such initspecial: ", trim(initspecial(j)))

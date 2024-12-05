@@ -240,7 +240,7 @@ module Magnetic
   logical :: lbb_as_comaux=.false., lB_ext_in_comaux=.true.
   logical :: lbb_sph_as_aux=.false.
   logical :: lbext_curvilinear=.true., lcheck_positive_va2=.false.
-  logical :: lreset_aa=.false., lsmooth_jj=.false.
+  logical :: lreset_aa=.false., lsmooth_jj=.false., lno_noise_aa=.false.
   logical :: lbx_ext_global=.false.,lby_ext_global=.false.,&
              lbz_ext_global=.false.
   logical :: lax_ext_global=.false.,lay_ext_global=.false.,&
@@ -264,7 +264,7 @@ module Magnetic
       lpress_equil, lpress_equil_via_ss, lset_AxAy_zero, ladd_bb_init, &
       mu_r, mu_ext_pot, lB_ext_pot, &
       alp_aniso, ljj_as_comaux, lsmooth_jj, &
-      lforce_free_test, ampl_B0, N_modes_aa, &
+      lforce_free_test, ampl_B0, N_modes_aa, lno_noise_aa, &
       initpower_aa, initpower2_aa, cutoff_aa, ncutoff_aa, kpeak_aa, &
       lscale_tobox, lsquash_aa, kgaussian_aa, lrandom_ampl_aa, z1_aa, z2_aa, &
       lcheck_positive_va2, lskip_projection_aa, &
@@ -2117,7 +2117,7 @@ module Magnetic
             cutoff_aa,ncutoff_aa,kpeak_aa,f,iax,iaz,relhel_aa,kgaussian_aa, &
             lskip_projection_aa, lvectorpotential, lscale_tobox, lsquash_aa, k1hel=k1hel, k2hel=k2hel, &
             lpower_profile_file=lpower_profile_file, qexp=qexp_aa,nfact0=nfact_aa, lfactors0=lfactors_aa, &
-            l2d=l2d_aa,compk0=compk_aa, lrandom_ampl=lrandom_ampl_aa)
+            l2d=l2d_aa,compk0=compk_aa, lrandom_ampl=lrandom_ampl_aa, lno_noise=lno_noise_aa)
         case ('random-isotropic-KS')
           call random_isotropic_KS(initpower_aa,f,iax,N_modes_aa)
         case ('random_isotropic_shell')
