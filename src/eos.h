@@ -20,6 +20,7 @@
   public :: rprint_eos, get_slices_eos
   public :: read_eos_init_pars, write_eos_init_pars
   public :: read_eos_run_pars,  write_eos_run_pars
+  public :: eos_before_boundary
 
   public :: select_eos_variable
 

@@ -1901,4 +1901,14 @@ module EquationOfState
 
     endsubroutine pushpars2c
 !***********************************************************************
+    subroutine eos_before_boundary(f)
+!
+!     05-dec-2024/Kishore: added dummy routine
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine eos_before_boundary
+!***********************************************************************
 endmodule EquationOfState
