@@ -1950,17 +1950,6 @@ samples/1d-tests/axionSU2back_lhubble/src/Makefile.local -text
 samples/1d-tests/axionSU2back_lhubble/src/cparam.local -text
 samples/1d-tests/axionSU2back_lhubble/start.in -text
 samples/1d-tests/axionSU2back_lhubble/zaver.in -text
-samples/1d-tests/condensing_species/NEVERLOCK -text
-samples/1d-tests/condensing_species/README.md -text
-samples/1d-tests/condensing_species/chem.inp -text
-samples/1d-tests/condensing_species/print.in -text
-samples/1d-tests/condensing_species/reference.out -text
-samples/1d-tests/condensing_species/run.in -text
-samples/1d-tests/condensing_species/src/Makefile.local -text
-samples/1d-tests/condensing_species/src/cparam.local -text
-samples/1d-tests/condensing_species/start.in -text
-samples/1d-tests/condensing_species/tran.dat -text
-samples/1d-tests/condensing_species/video.in -text
 samples/1d-tests/expans/NEVERLOCK -text
 samples/1d-tests/expans/print.in -text
 samples/1d-tests/expans/run.in -text
