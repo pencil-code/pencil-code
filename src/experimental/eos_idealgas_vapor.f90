@@ -11,7 +11,7 @@
 ! CPARAM logical, parameter :: leos_idealgas = .false., leos_chemistry = .false.
 !
 ! MVAR CONTRIBUTION 0
-! MAUX CONTRIBUTION 0
+! MAUX CONTRIBUTION 3
 !
 ! PENCILS PROVIDED ss; gss(3); ee; pp; lnTT; cs2; cp; cp1; cp1tilde
 ! PENCILS PROVIDED glnTT(3); TT; TT1; gTT(3); yH; hss(3,3); hlnTT(3,3)
@@ -52,7 +52,6 @@ module EquationOfState
   logical :: leos_isothermal=.false., leos_isentropic=.false.
   logical :: leos_isochoric=.false., leos_isobaric=.false.
   logical :: leos_localisothermal=.false.
-  logical :: lcp_as_aux=.false.
 !
 ! Kishore: I have not checked what these are used for; just copied from eos_idealgas to get this module to compile.
 !
@@ -68,12 +67,12 @@ module EquationOfState
 !  Input parameters.
 !
   namelist /eos_init_pars/ &
-      mudry, muvap, cpdry, cs0, rho0, gamma, error_cp, ptlaw, lcp_as_aux
+      mudry, muvap, cpdry, cs0, rho0, gamma, error_cp, ptlaw
 !
 !  Run parameters.
 !
   namelist /eos_run_pars/ &
-      mudry, muvap, cpdry, cs0, rho0, gamma, error_cp, ptlaw, lcp_as_aux
+      mudry, muvap, cpdry, cs0, rho0, gamma, error_cp, ptlaw
 !
   contains
 !***********************************************************************
@@ -221,9 +220,11 @@ module EquationOfState
       ieosvars=-1
       ieosvar_count=0
 !
-!  cp as optional auxiliary variable
+!  fvap, mumol1, and cp as auxiliary variables.
 !
-      if (lcp_as_aux) call register_report_aux('cp',icp)
+      call register_report_aux('fvap',ifvap)
+      call register_report_aux('mumol1',imumol1)
+      call register_report_aux('cp',icp)
 !
 !  Write constants to disk. In future we may want to deal with this
 !  using an include file or another module.
@@ -418,16 +419,6 @@ module EquationOfState
 !
     endsubroutine get_slices_eos
 !***********************************************************************
-    subroutine pencil_criteria_eos()
-!
-!  All pencils that the EquationOfState module depends on are specified here.
-!
-!  06-jan-10/anders: adapted from eos_idealgas
-!
-      if (lcp_as_aux) lpenc_requested(i_cp)=.true.
-!
-    endsubroutine pencil_criteria_eos
-!***********************************************************************
     subroutine pencil_interdep_eos(lpencil_in)
 !
 !  Interdependency among pencils from the EquationOfState module is specified
@@ -558,7 +549,11 @@ module EquationOfState
 !  Kishore: Do you agree? I do not see eos_idealgas_vapor being used
 !  Kishore: in any samples, and so have taken the liberty of changing it.
 !
-      if (lpenc_loc(i_fvap)) p%fvap = p%acc/(1+p%acc)
+      if (lpenc_loc(i_fvap)) then
+        !p%fvap = p%acc/(1+p%acc)
+        !Already calculated in eos_before_boundary
+        p%fvap = f(l1:l2,m,n,ifvap)
+      endif
       if (lpenc_loc(i_gfvap)) then
         do i=1,3
           p%gfvap(:,i)= p%gacc(:,i)/(1+p%acc)**2
@@ -567,9 +562,13 @@ module EquationOfState
 !
 !  mumol1
 !
-      !if (lpenc_loc(i_mumol1)) p%mumol1=(1-p%cc(:,1))*mudry1+p%cc(:,1)*muvap1
-      !if (lpenc_loc(i_mumol1)) p%mumol1=(1-p%ssat)*mudry1+p%ssat*muvap1
-      if (lpenc_loc(i_mumol1)) p%mumol1 = (1-p%fvap)*mudry1 + p%fvap*muvap1
+      if (lpenc_loc(i_mumol1)) then
+        !p%mumol1=(1-p%cc(:,1))*mudry1+p%cc(:,1)*muvap1
+        !p%mumol1=(1-p%ssat)*mudry1+p%ssat*muvap1
+        !p%mumol1 = (1-p%fvap)*mudry1 + p%fvap*muvap1
+        !Already calculated in eos_before_boundary
+        p%mumol1 = f(l1:l2,m,n,imumol1)
+      endif
 ! mumol
       if (lpenc_loc(i_mumol)) p%mumol=1/p%mumol1
 ! glnmumol
@@ -581,7 +580,11 @@ module EquationOfState
         enddo
       endif
 ! cp
-      if (lpenc_loc(i_cp)) p%cp=cpdry*mudry*p%mumol1
+      if (lpenc_loc(i_cp)) then
+        !p%cp=cpdry*mudry*p%mumol1
+        !Already calculated in eos_before_boundary
+        p%cp = f(l1:l2,m,n,icp)
+      endif
 ! cp1
       if (lpenc_loc(i_cp1)) p%cp1=1/p%cp
 ! cv
@@ -674,10 +677,6 @@ module EquationOfState
 ! yH
       if (lpenc_loc(i_yH)) p%yH=impossible
 !
-! auxiliaries
-!
-      if (lcp_as_aux) f(l1:l2,m,n,icp)=p%cp
-!
     endsubroutine calc_pencils_eos_pencpar
 !***********************************************************************
     subroutine ioninit(f)
@@ -738,8 +737,7 @@ module EquationOfState
 !
       if (present(gamma_)) gamma_=gamma
 !
-      if (present(f).and.lcp_as_aux) then
-        if (f(icp)==0) call fatal_error('get_gamma_etc', 'cp is zero')
+      if (present(f)) then
         if (present(cp)) cp = f(icp)
         if (present(cv)) cv = f(icp)/gamma
       else
@@ -1357,6 +1355,25 @@ module EquationOfState
       if (present(eth0z)) call keep_compiler_quiet(eth0z)
 !
     endsubroutine get_stratz
+!***********************************************************************
+    subroutine eos_before_boundary(f)
+!
+!     05-dec-2024/kishore: added
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+!
+!     Subroutine get_gamma_etc requires cp to be in the f-array. Usage of
+!     get_gamma_etc in boundary condition routines then requires that cp be
+!     present in the f-array before the boundary conditions are called.
+!     Calculating cp requires fvap and mumol1; we then keep them in the f-array
+!     to avoid unnecessary recomputation if these are needed as pencils later on.
+!
+      f(l1:l2,m1:m2,n1:n2,ifvap) = f(l1:l2,m1:m2,n1:n2,iacc)/(1+f(l1:l2,m1:m2,n1:n2,iacc))
+      f(l1:l2,m1:m2,n1:n2,imumol1) = (1-f(l1:l2,m1:m2,n1:n2,ifvap))*mudry1 &
+                                     +   f(l1:l2,m1:m2,n1:n2,ifvap)*muvap1
+      f(l1:l2,m1:m2,n1:n2,icp) = cpdry*mudry*f(l1:l2,m1:m2,n1:n2,imumol1)
+!
+    endsubroutine eos_before_boundary
 !***********************************************************************
 !********************************************************************
 !********************************************************************

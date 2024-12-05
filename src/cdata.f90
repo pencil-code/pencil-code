@@ -410,6 +410,7 @@ module Cdata
   integer :: iuu_fluc=0, iuu_flucx=0, iuu_flucy=0, iuu_flucz=0
   integer :: iuu_sph=0, iuu_sphr=0, iuu_spht=0, iuu_sphp=0
   integer :: ics=0
+  integer :: ifvap=0, imumol1=0
 !
 !  Parameters related to message passing.
 !
