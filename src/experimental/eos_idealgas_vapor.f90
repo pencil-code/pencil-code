@@ -1085,11 +1085,10 @@ module EquationOfState
       use DensityMethods, only: getlnrho
 !
       integer, intent(IN) :: topbot
-      real, dimension (:,:,:,:) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real :: TTval
-      real, dimension (size(f,1),size(f,2)) :: cp, cv
       integer :: i,il,im
-      real, dimension(mx,my) :: lnrho_xy
+      real, dimension(mx,my) :: lnrho_xy, cp, cv
 !
       if (ldebug) print*,'bc_lnrho_temp_z: cs20,cs0=',cs20,cs0
 !
