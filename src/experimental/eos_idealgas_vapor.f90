@@ -64,6 +64,10 @@ module EquationOfState
   real :: fac_cs=1.0
   integer :: isothmid=0
 !
+! Indices for aux variables
+!
+  integer :: ifvap=0, imumol1=0
+!
 !  Input parameters.
 !
   namelist /eos_init_pars/ &
