@@ -1129,7 +1129,7 @@ module EquationOfState
 !  set density in the ghost zones so that dlnrho/dz + (1/cp)*ds/dz = gz/(gamma*(cp-cv)*TTval)
 !
         do i=1,nghost
-          f(:,:,n1-i,ilnrho) = f(:,:,n1+i,ilnrho) + (f(:,:,n1+i,iss)-f(:,:,n1-i,iss))/cp + dz2_bound(-i)*gravz/(gamma*(cp-cv)*TTval)
+          f(:,:,n1-i,ilnrho) = f(:,:,n1+i,ilnrho) + (f(:,:,n1+i,iss)-f(:,:,n1-i,iss))/cp - dz2_bound(-i)*gravz/(gamma*(cp-cv)*TTval)
         enddo
 !
 !  top boundary
