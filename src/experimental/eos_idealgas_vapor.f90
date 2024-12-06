@@ -39,7 +39,6 @@ module EquationOfState
   real :: mudry=1.0, muvap=1.0, mudry1=1.0, muvap1=1.0
   real :: cs0=1.0, rho0=1.0, pp0=1.0
   real :: cs20=1.0, lnrho0=0.0
-  real :: ptlaw=0.0
   real :: gamma=5.0/3.0
   real :: Rgas_cgs=0.0, Rgas, error_cp=1.0e-6
   real :: gamma_m1    !(=gamma-1)
@@ -71,12 +70,12 @@ module EquationOfState
 !  Input parameters.
 !
   namelist /eos_init_pars/ &
-      mudry, muvap, cpdry, cs0, rho0, gamma, error_cp, ptlaw
+      mudry, muvap, cpdry, cs0, rho0, gamma, error_cp
 !
 !  Run parameters.
 !
   namelist /eos_run_pars/ &
-      mudry, muvap, cpdry, cs0, rho0, gamma, error_cp, ptlaw
+      mudry, muvap, cpdry, cs0, rho0, gamma, error_cp
 !
   contains
 !***********************************************************************
