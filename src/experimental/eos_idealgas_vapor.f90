@@ -1111,7 +1111,7 @@ module EquationOfState
             call get_gamma_etc(cp=cp(il,im), cv=cv(il,im), f=f(il,im,n1,:))
           enddo
         enddo
-        TTval = cs2bot/((gamma-1)*cpdry)
+        TTval = cs2bot/(gamma_m1*cpdry)
         if (ldebug) print*, 'bc_lnrho_temp_z: set z bottom temperature: cs2bot=',cs2bot,"; TTbot=",TTval
         if (cs2bot<=0.) call fatal_error('bc_lnrho_temp_z','cannot have cs2bot<=0')
 !
@@ -1140,7 +1140,7 @@ module EquationOfState
             call get_gamma_etc(cp=cp(il,im), cv=cv(il,im), f=f(il,im,n2,:))
           enddo
         enddo
-        TTval = cs2top/((gamma-1)*cpdry)
+        TTval = cs2top/(gamma_m1*cpdry)
         if (ldebug) print*, 'bc_lnrho_temp_z: set z top temperature: cs2top=',cs2top,"; TTtop=",TTval
         if (cs2top<=0.) call fatal_error('bc_lnrho_temp_z','cannot have cs2top<=0')
 !
