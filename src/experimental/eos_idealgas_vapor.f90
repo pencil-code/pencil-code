@@ -1293,54 +1293,6 @@ module EquationOfState
 !
     endsubroutine bc_ss_a2stemp_z
 !***********************************************************************
-    subroutine find_mass(element_name,MolMass)
-!
-      character (len=*), intent(in) :: element_name
-      real, intent(out) :: MolMass
-!
-      call keep_compiler_quiet(element_name)
-      call keep_compiler_quiet(MolMass)
-!
-    endsubroutine find_mass
-!***********************************************************************
-    subroutine find_species_index(species_name,ind_glob,ind_chem,found_specie)
-!
-      integer, intent(out) :: ind_glob
-      integer, intent(inout) :: ind_chem
-      character (len=*), intent(in) :: species_name
-      logical, intent(out) :: found_specie
-!
-      call keep_compiler_quiet(ind_glob)
-      call keep_compiler_quiet(ind_chem)
-      call keep_compiler_quiet(species_name)
-      call keep_compiler_quiet(found_specie)
-!
-    endsubroutine find_species_index
-!***********************************************************************
-    subroutine write_thermodyn()
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine write_thermodyn
-!***********************************************************************
-    subroutine read_thermodyn()
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine read_thermodyn
-!***********************************************************************
-    subroutine read_species(input_file)
-!
-      character (len=*) :: input_file
-!
-      call keep_compiler_quiet(input_file)
-!
-    endsubroutine read_species
-!***********************************************************************
     subroutine eos_before_boundary(f)
 !
 !     05-dec-2024/kishore: added
