@@ -191,9 +191,8 @@ module EquationOfState
       if (gamma_m1/=0.0) then
         lnTT0=log(cs20/(cpdry*gamma_m1))  !(general case)
       else
-        lnTT0=log(cs20/cpdry)  !(isothermal/polytropic cases: check!)
+        lnTT0=log(cs20/cpdry)  !(isothermal case)
       endif
-      lnTT0=0.0
       pp0=Rgas*exp(lnTT0)*rho0
 !
 !  Check that everything is OK.
