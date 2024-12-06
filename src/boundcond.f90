@@ -6603,13 +6603,13 @@ module Boundcond
       integer, intent(IN) :: topbot
 !
       real, dimension (:,:), allocatable :: tmp_yz, work_yz, Krho1kr_yz
-      real, pointer :: FbotKbot, FtopKtop, Fbot, Ftop, cp, chi
+      real, pointer :: FbotKbot, FtopKtop, Fbot, Ftop, chi
       real, pointer :: hcond0_kramers, nkramers, chimax_kramers, chimin_kramers
       logical, pointer :: lheatc_kramers, lheatc_chiconst
       logical, pointer :: lheatc_Kprof, lheatc_Kconst
       integer :: i,stat
       real, dimension (:,:), pointer :: reference_state
-      real :: fac
+      real :: fac, cp
 !
 !  Do the 'c1' boundary condition (constant heat flux) for entropy.
 !
