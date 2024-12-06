@@ -1,4 +1,4 @@
-! $Id: eos_idealgas_vapor.f90,v 1.7 2010/02/03 10:30:37 ajohan Exp $
+! $Id$
 !
 !  Equation of state for an ideal gas with variable water vapour.
 !
@@ -98,7 +98,7 @@ module EquationOfState
 !  Identify version number.
 !
       if (lroot) call svn_id( &
-          '$Id: eos_idealgas_vapor.f90,v 1.7 2010/02/03 10:30:37 ajohan Exp $')
+          '$Id$')
 !
 ! Shared variables
 !
