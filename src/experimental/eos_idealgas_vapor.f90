@@ -758,16 +758,6 @@ module EquationOfState
 
     endsubroutine get_gamma_etc
 !***********************************************************************
-    subroutine get_ptlaw(ptlaw_)
-!
-      real :: ptlaw_
-!
-      call fatal_error('get_ptlaw','not implemented')
-!
-      call keep_compiler_quiet(ptlaw_)
-!
-    endsubroutine get_ptlaw
-!***********************************************************************
     subroutine pressure_gradient_farray(f,cs2,cp1tilde)
 !
       real, dimension(mx,my,mz,mfarray) :: f
