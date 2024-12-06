@@ -753,7 +753,7 @@ module EquationOfState
         if (present(cv)) then
           call warning('get_gamma_etc','cv is not constant in eos_idealgas_vapor.'// &
             achar(10)//'The value provided is for one-atomic ideal gas. Use at own risk')
-          cv=3./5.
+          cv=1/gamma
         endif
       endif
 
