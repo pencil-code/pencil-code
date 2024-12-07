@@ -952,6 +952,41 @@ module EquationOfState
 !
     endsubroutine eoscalc_pencil
 !***********************************************************************
+    subroutine eoscalc_point_f(ivars,f,lnrho,ss,yH,lnTT,ee,pp,cs2)
+!
+      integer, intent(in) :: ivars
+      real, dimension(mfarray), intent(in) :: f
+      real, optional, intent(out) :: lnrho, ss, yH, lnTT, ee, pp, cs2
+      real :: cp, cv, lnrho_, ss_, lnTT_, ee_, pp_, cs2_
+!
+      if (present(yh)) call fatal_error('eoscalc_point_f','yH is not relevant for this EOS')
+!
+      select case (ivars)
+      case (ilnrho_ss)
+        lnrho_ = f(ilnrho)
+        if (present(lnrho)) lnrho=lnrho_
+!
+        ss_ = f(iss)
+        if (present(ss)) ss=ss_
+!
+        if (present(lnTT).or.present(ee).or.present(pp).or.present(cs2)) then
+          cp = f(icp)
+          cv = cp/gamma
+!
+!         This formula works because cp,cv are independent of rho,TT
+!
+          lnTT_ = lnTT0 + ss_/cv + (gamma-1)*(lnrho_-lnrho0)
+          if (present(lnTT)) lnTT = lnTT_
+          if (present(ee)) ee = cv*exp(lnrho_+lnTT_)
+          if (present(pp)) pp = (cp-cv)*exp(lnrho_+lnTT_)
+          if (present(cs2)) cs2 = cp*(gamma-1)*exp(lnTT_)
+        endif
+      case default
+        call not_implemented('eoscalc_point_f','thermodynamic variable combination')
+      endselect
+!
+    endsubroutine eoscalc_point_f
+!***********************************************************************
     subroutine get_soundspeed(lnTT,cs2)
 !
       real :: lnTT, cs2
