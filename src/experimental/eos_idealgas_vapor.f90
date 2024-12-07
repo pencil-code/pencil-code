@@ -51,6 +51,7 @@ module EquationOfState
   logical :: leos_isothermal=.false., leos_isentropic=.false.
   logical :: leos_isochoric=.false., leos_isobaric=.false.
   logical :: leos_localisothermal=.false.
+  real, dimension(:,:), pointer :: reference_state
 !
 ! Kishore: I have not checked what these are used for; just copied from eos_idealgas to get this module to compile.
 !
@@ -210,6 +211,7 @@ module EquationOfState
 !
 !  06-jan-10/anders: adapted from eos_idealgas
 !
+      use SharedVariables, only: get_shared_variable
       use Sub, only: register_report_aux
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
@@ -241,6 +243,9 @@ module EquationOfState
         write (1,*) 'cpdry=', cpdry
         close (1)
       endif
+!
+      if (lreference_state) call get_shared_variable('reference_state',reference_state, &
+                                                     caller='initialize_eos')
 !
     endsubroutine initialize_eos
 !***********************************************************************
