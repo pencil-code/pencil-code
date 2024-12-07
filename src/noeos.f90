@@ -388,13 +388,23 @@ module EquationOfState
 !***********************************************************************
     subroutine eoscalc_point_f(ivars,f,lnrho,ss,yH,lnTT,ee,pp,cs2)
 !
-!   0207-dec-2024/Kishore: dummy
+!     07-dec-2024/Kishore: dummy
 !
       integer, intent(in) :: ivars
       real, dimension(mfarray), intent(in) :: f
       real, optional, intent(out) :: lnrho, ss, yH, lnTT, ee, pp, cs2
 !
-      call eoscalc_point(ivars,f(ieosvar1),f(ieosvar2),lnrho=lnrho,ss=ss,yH=yH,lnTT=lnTT,ee=ee,pp=pp,cs2=cs2)
+      call not_implemented('eoscalc_point_f','for this EOS')
+!
+      if (present(lnrho)) lnrho=0.0
+      if (present(ss)) ss=0.0
+      if (present(yH)) yH=0.0
+      if (present(lnTT)) lnTT=0.0
+      if (present(ee)) ee=0.0
+      if (present(pp)) pp=0.0
+!
+      call keep_compiler_quiet(ivars)
+      call keep_compiler_quiet(f)
 !
     endsubroutine eoscalc_point_f
 !***********************************************************************
