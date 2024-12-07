@@ -971,7 +971,7 @@ module EquationOfState
 !
         if (present(lnTT).or.present(ee).or.present(pp).or.present(cs2)) then
           cp = f(icp)
-          cv = cp/gamma
+          cv = cp*gamma1
 !
 !         This formula works because cp,cv are independent of rho,TT
 !
