@@ -65,6 +65,7 @@
     module procedure eoscalc_farray
     module procedure eoscalc_pencil
     module procedure eoscalc_point
+    module procedure eoscalc_point_f
   endinterface
 !
   interface pressure_gradient    ! Overload subroutine pressure_gradient

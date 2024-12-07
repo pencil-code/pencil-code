@@ -386,6 +386,18 @@ module EquationOfState
 !
     endsubroutine eoscalc_point
 !***********************************************************************
+    subroutine eoscalc_point_f(ivars,f,lnrho,ss,yH,lnTT,ee,pp,cs2)
+!
+!   0207-dec-2024/Kishore: dummy
+!
+      integer, intent(in) :: ivars
+      real, dimension(mfarray), intent(in) :: f
+      real, optional, intent(out) :: lnrho, ss, yH, lnTT, ee, pp, cs2
+!
+      call eoscalc_point(ivars,f(ieosvar1),f(ieosvar2),lnrho=lnrho,ss=ss,yH=yH,lnTT=lnTT,ee=ee,pp=pp,cs2=cs2)
+!
+    endsubroutine eoscalc_point_f
+!***********************************************************************
     subroutine eoscalc_pencil(ivars,var1,var2,lnrho,ss,yH,lnTT,ee,pp,cs2)
 !
       integer, intent(in) :: ivars
