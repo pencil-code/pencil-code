@@ -175,9 +175,9 @@ module EquationOfState
             cp_reference=Rgas/(mudry*gamma_m1*gamma1)
           endif
           if (abs(cpdry-cp_reference)/cpdry > error_cp) then
-            if (lroot) print*,'initialize_eos: consistency: cpdry=', cpdry , &
+            if (lroot) print*,'units_eos: consistency: cpdry=', cpdry , &
                 'while: cp_reference=', cp_reference
-            call fatal_error('initialize_eos','')
+            call fatal_error('units_eos','Inconsistent units')
           endif
         endif
       endif
@@ -198,8 +198,8 @@ module EquationOfState
 !  Check that everything is OK.
 !
       if (lroot) then
-        print*, 'initialize_eos: unit_temperature=', unit_temperature
-        print*, 'initialize_eos: cpdry, lnTT0, cs0, pp0=', &
+        print*, 'units_eos: unit_temperature=', unit_temperature
+        print*, 'units_eos: cpdry, lnTT0, cs0, pp0=', &
             cpdry, lnTT0, cs0, pp0
       endif
 !
