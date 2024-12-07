@@ -1054,18 +1054,157 @@ module EquationOfState
       call keep_compiler_quiet(topbot)
 !
     endsubroutine bc_ss_temp_y
-!***********************************************************************
+!************************************************************************
     subroutine bc_ss_temp_z(f,topbot,lone_sided)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      integer, intent(IN) :: topbot
-      logical, optional :: lone_sided
+!  boundary condition for entropy: constant temperature. If lone_sided=T, it uses one-sided derivatives for the energy variable. Otherwise (default), it makes the energy variable antisymmetric about the boundary.
 !
-      call fatal_error('bc_ss_temp_z','not implemented')
+!  7-dec-2024/Kishore: copied from eos_idealgas and modified
 !
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(topbot)
-      call keep_compiler_quiet(lone_sided)
+      use General, only: loptest
+      use DensityMethods, only: getlnrho
+      use Deriv, only: set_ghosts_for_onesided_ders
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      integer, intent(in) :: topbot
+      logical, optional, intent(in) :: lone_sided
+!
+      real :: TTval
+      integer :: i, il, im
+      real, dimension(mx,my) :: lnrho_xy, cp, cv
+!
+      if (ldebug) print*,'bc_ss_temp_z: cs20,cs0=',cs20,cs0
+!
+!  Constant temperature for entropy, with the temperature corresponding
+!  to cs2{top,bot}/((gamma-1)*cpdry).
+!  This assumes that the density is already set (ie density _must_ register
+!  first!)
+!
+!  check whether we want to do top or bottom (this is processor dependent)
+!
+      select case (topbot)
+!
+!  bottom boundary
+!
+      case(BOT)
+!
+        do il=1,mx
+          do im =1,my
+            call get_gamma_etc(cp=cp(il,im), cv=cv(il,im), f=f(il,im,n1,:))
+          enddo
+        enddo
+!
+        TTval = cs2bot/(gamma_m1*cpdry)
+        if (ldebug) print*, 'bc_ss_temp_z: set z bottom temperature: TTbot=',TTval
+        if (cs2bot<=0.) call fatal_error('bc_ss_temp_z','cannot have cs2bot<=0')
+
+        if (lentropy .and. .not. pretend_lnTT) then
+!
+          call getlnrho(f(:,:,n1,ilnrho),lnrho_xy)
+!
+!  This formula works because cp,cv are independent of rho,TT
+!
+          f(:,:,n1,iss) = cv*(log(TTval)-lnTT0) - (cp-cv)*(lnrho_xy-lnrho0)
+!
+          if (lreference_state) then
+            f(l1:l2,:,n1,iss) = f(l1:l2,:,n1,iss) - spread(reference_state(:,iref_s),2,my)
+          endif
+!
+          if (loptest(lone_sided)) then
+            call set_ghosts_for_onesided_ders(f,topbot,iss,3,.true.)
+          else
+            do i=1,nghost
+              f(:,:,n1-i,iss) = 2*f(:,:,n1,iss) - f(:,:,n1+i,iss)
+            enddo
+          endif
+!
+        elseif (lentropy .and. pretend_lnTT) then
+          f(:,:,n1,iss) = log(TTval)
+          if (loptest(lone_sided)) then
+            call set_ghosts_for_onesided_ders(f,topbot,iss,3,.true.)
+          else
+            do i=1,nghost
+              f(:,:,n1-i,iss) = 2*f(:,:,n1,iss) - f(:,:,n1+i,iss)
+            enddo
+          endif
+        elseif (ltemperature) then
+          if (ltemperature_nolog) then
+            f(:,:,n1,iTT)   = TTval
+          else
+            f(:,:,n1,ilnTT) = log(TTval)
+          endif
+          if (loptest(lone_sided)) then
+            call set_ghosts_for_onesided_ders(f,topbot,ilnTT,3,.true.)
+          else
+            do i=1,nghost
+              f(:,:,n1-i,ilnTT) = 2*f(:,:,n1,ilnTT) - f(:,:,n1+i,ilnTT)
+            enddo
+          endif
+        endif
+!
+!  top boundary
+!
+      case(TOP)
+!
+        do il=1,mx
+          do im =1,my
+            call get_gamma_etc(cp=cp(il,im), cv=cv(il,im), f=f(il,im,n2,:))
+          enddo
+        enddo
+!
+        TTval = cs2top/(gamma_m1*cpdry)
+        if (ldebug) print*, 'bc_ss_temp_z: set z top temperature: TTtop=',TTval
+        if (cs2top<=0.) call fatal_error('bc_ss_temp_z','cannot have cs2top<=0')
+!
+        if (lentropy .and. .not. pretend_lnTT) then
+          call getlnrho(f(:,:,n2,ilnrho),lnrho_xy)
+!
+!  This formula works because cp,cv are independent of rho,TT
+!
+          f(:,:,n1,iss) = cv*(log(TTval)-lnTT0) - (cp-cv)*(lnrho_xy-lnrho0)
+!
+          if (lreference_state) then
+            f(l1:l2,:,n2,iss) = f(l1:l2,:,n2,iss) - spread(reference_state(:,iref_s),2,my)
+          endif
+!
+          if (loptest(lone_sided)) then
+            call set_ghosts_for_onesided_ders(f,topbot,iss,3,.true.)
+          else
+            do i=1,nghost
+              f(:,:,n2+i,iss) = 2*f(:,:,n2,iss) - f(:,:,n2-i,iss)
+            enddo
+          endif
+!
+        elseif (lentropy .and. pretend_lnTT) then
+          f(:,:,n2,iss) = log(TTval)
+!
+          if (loptest(lone_sided)) then
+            call set_ghosts_for_onesided_ders(f,topbot,iss,3,.true.)
+          else
+            do i=1,nghost
+              f(:,:,n2+i,iss) = 2*f(:,:,n2,iss) - f(:,:,n2-i,iss)
+            enddo
+          endif
+!
+        elseif (ltemperature) then
+          if (ltemperature_nolog) then
+            f(:,:,n2,iTT)   = TTval
+          else
+            f(:,:,n2,ilnTT) = log(TTval)
+          endif
+!
+          if (loptest(lone_sided)) then
+            call set_ghosts_for_onesided_ders(f,topbot,ilnTT,3,.true.)
+          else
+            do i=1,nghost
+              f(:,:,n2+i,ilnTT) = 2*f(:,:,n2,ilnTT) - f(:,:,n2-i,ilnTT)
+            enddo
+          endif
+        endif
+!
+      case default
+        call fatal_error('bc_ss_temp_z','invalid argument')
+      endselect
 !
     endsubroutine bc_ss_temp_z
 !***********************************************************************
