@@ -1110,7 +1110,7 @@ module EquationOfState
           endif
 !
           if (loptest(lone_sided)) then
-            call set_ghosts_for_onesided_ders(f,topbot,iss,3,.true.)
+            call set_ghosts_for_onesided_ders(f,topbot,iss,3)
           else
             do i=1,nghost
               f(:,:,n1-i,iss) = 2*f(:,:,n1,iss) - f(:,:,n1+i,iss)
@@ -1120,7 +1120,7 @@ module EquationOfState
         elseif (lentropy .and. pretend_lnTT) then
           f(:,:,n1,iss) = log(TTval)
           if (loptest(lone_sided)) then
-            call set_ghosts_for_onesided_ders(f,topbot,iss,3,.true.)
+            call set_ghosts_for_onesided_ders(f,topbot,iss,3)
           else
             do i=1,nghost
               f(:,:,n1-i,iss) = 2*f(:,:,n1,iss) - f(:,:,n1+i,iss)
@@ -1133,7 +1133,7 @@ module EquationOfState
             f(:,:,n1,ilnTT) = log(TTval)
           endif
           if (loptest(lone_sided)) then
-            call set_ghosts_for_onesided_ders(f,topbot,ilnTT,3,.true.)
+            call set_ghosts_for_onesided_ders(f,topbot,ilnTT,3)
           else
             do i=1,nghost
               f(:,:,n1-i,ilnTT) = 2*f(:,:,n1,ilnTT) - f(:,:,n1+i,ilnTT)
@@ -1167,7 +1167,7 @@ module EquationOfState
           endif
 !
           if (loptest(lone_sided)) then
-            call set_ghosts_for_onesided_ders(f,topbot,iss,3,.true.)
+            call set_ghosts_for_onesided_ders(f,topbot,iss,3)
           else
             do i=1,nghost
               f(:,:,n2+i,iss) = 2*f(:,:,n2,iss) - f(:,:,n2-i,iss)
@@ -1178,7 +1178,7 @@ module EquationOfState
           f(:,:,n2,iss) = log(TTval)
 !
           if (loptest(lone_sided)) then
-            call set_ghosts_for_onesided_ders(f,topbot,iss,3,.true.)
+            call set_ghosts_for_onesided_ders(f,topbot,iss,3)
           else
             do i=1,nghost
               f(:,:,n2+i,iss) = 2*f(:,:,n2,iss) - f(:,:,n2-i,iss)
@@ -1193,7 +1193,7 @@ module EquationOfState
           endif
 !
           if (loptest(lone_sided)) then
-            call set_ghosts_for_onesided_ders(f,topbot,ilnTT,3,.true.)
+            call set_ghosts_for_onesided_ders(f,topbot,ilnTT,3)
           else
             do i=1,nghost
               f(:,:,n2+i,ilnTT) = 2*f(:,:,n2,ilnTT) - f(:,:,n2-i,ilnTT)
