@@ -446,12 +446,12 @@ program start
     call init_solid_cells(f)
     call init_pointmasses(f)
     call init_special(f)
-  enddo
 !
 !  If desired, the f array can be initialized in one call.
 !
-  if (linitial_condition) call initial_condition_all(f)
-  call init_eos(f)     ! has to come last
+    if (linitial_condition) call initial_condition_all(f)
+    call init_eos(f)     ! has to come last
+  enddo
 !
 !  Initialize particles.
 !
