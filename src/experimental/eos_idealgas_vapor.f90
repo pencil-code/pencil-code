@@ -1015,15 +1015,135 @@ module EquationOfState
 !***********************************************************************
     subroutine bc_ss_flux(f,topbot,lone_sided)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+!  constant flux boundary condition for entropy (called when bcz='c1')
+!
+!  07-dec-2024/Kishore: copied from eos_idealgas and modified to be EOS-agnostic. Also reduced duplicated code.
+!
+      use DensityMethods, only: getdlnrho_z, getderlnrho_z, getrho
+      use Deriv, only: bval_from_neumann, set_ghosts_for_onesided_ders
+      use General, only: loptest
+      use SharedVariables, only: get_shared_variable
+!
+      real, pointer :: Flux,FbyK,chi
+      real, pointer :: hcond0_kramers, nkramers, chimax_kramers, chimin_kramers
+      logical, pointer :: lmultilayer, lheatc_chiconst, lheatc_kramers
+!
       integer, intent(IN) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
       logical, optional :: lone_sided
 !
-      call fatal_error('bc_ss_flux','not implemented')
+      real, dimension (mx,my) :: tmp_xy, cs2_xy, rho_xy, Krho1kr_xy, cp, cv
+      integer :: i, il, im, ivars, n, ig1, ig2, igs
 !
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(topbot)
-      call keep_compiler_quiet(lone_sided)
+      if (ldebug) print*,'bc_ss_flux: ENTER - cs20,cs0=',cs20,cs0
+!
+!  Do the `c1' boundary condition (constant heat flux) for entropy.
+!  check whether we want to do top or bottom (this is precessor dependent)
+!
+!  Get the shared variables
+!
+      call get_shared_variable('chi',chi,caller='bc_ss_flux')
+      call get_shared_variable('lmultilayer',lmultilayer)
+      call get_shared_variable('lheatc_chiconst',lheatc_chiconst)
+      call get_shared_variable('lheatc_kramers',lheatc_kramers)
+      if (lheatc_kramers) then
+        call get_shared_variable('hcond0_kramers',hcond0_kramers)
+        call get_shared_variable('nkramers',nkramers)
+        call get_shared_variable('chimax_kramers',chimax_kramers)
+        call get_shared_variable('chimin_kramers',chimin_kramers)
+      endif
+!
+      select case (topbot)
+!
+      case(BOT)
+!
+        call get_shared_variable('Fbot',Flux)
+        call get_shared_variable('FbotKbot',FbyK)
+        n=n1
+        ig1=1
+        ig2=nghost
+        igs=1
+!
+      case(TOP)
+!
+        call get_shared_variable('Ftop',Flux)
+        call get_shared_variable('FtopKtop',FbyK)
+        n=n2
+        ig1=-1
+        ig2=-nghost
+        igs=-1
+!
+      case default
+        call fatal_error('bc_ss_flux','invalid argument')
+      endselect
+!
+!  Common for topbot
+!
+      do il=1,mx
+        do im =1,my
+          call get_gamma_etc(cp=cp(il,im), cv=cv(il,im), f=f(il,im,n,:))
+        enddo
+      enddo
+!
+!  calculate F/(K*cs2)
+!
+      if (pretend_lnTT) then
+        call not_implemented('bc_ss_flux', 'lpretend_lnTT=T')
+! !  Kishore: The below is only correct if we ignore dlnrho/dz and set cp=1
+!         tmp_xy=-FbotKbot/exp(f(:,:,n,iss))
+!         do i=ig1,ig2,igs
+!           f(:,:,n-i,iss)=f(:,:,n+i,iss)-dz2_bound(-i)*tmp_xy
+!         enddo
+      else
+!
+        call getrho(f(:,:,n,ilnrho),rho_xy)
+        cs2_xy = f(:,:,n,iss)         ! here cs2_xy = entropy
+        if (lreference_state) &
+          cs2_xy(l1:l2,:) = cs2_xy(l1:l2,:) + spread(reference_state(:,iref_s),2,my)
+!
+        if (ldensity_nolog) then
+          ivars=irho_ss
+        else
+          ivars=ilnrho_ss
+        endif
+        do il=1,mx
+          do im=1,my
+            call eoscalc(ivars,f(il,im,n,ilnrho),f(il,im,n,iss),cs2=cs2_xy(il,im))
+          enddo
+        enddo
+!
+!  Check whether we have chi=constant at the boundary, in which case
+!  we have the nonconstant rho_xy*chi in tmp_xy.
+!  Check also whether Kramers opacity is used, then hcond itself depends
+!  on density and temperature.
+!
+        if (lheatc_chiconst) then
+          tmp_xy=Flux/(rho_xy*chi*cs2_xy)
+        else if (lheatc_kramers) then
+          Krho1kr_xy = hcond0_kramers*rho_xy**(-2*nkramers-1)*(cs2_xy/(cp*gamma_m1))**(6.5*nkramers)
+!
+          if (chimin_kramers>0) Krho1kr_xy = max(Krho1kr_xy, chimin_kramers*cp)
+          if (chimax_kramers>0) Krho1kr_xy = min(Krho1kr_xy, chimax_kramers*cp)
+!
+          tmp_xy=Flux/(rho_xy*Krho1kr_xy*cs2_xy)
+        else
+          tmp_xy=FbyK/cs2_xy
+        endif
+!
+!  enforce ds/dz + (cp-cv)*dlnrho/dz = - cp*(cp-cv)*F/(K*cs2)
+!
+        if (loptest(lone_sided)) then
+          call not_implemented('bc_ss_flux', 'one-sided BC')
+!           call getderlnrho_z(f,n,rho_xy)                           ! rho_xy=d_z ln(rho)
+!           call bval_from_neumann(f,topbot,iss,3,rho_xy)
+!           call set_ghosts_for_onesided_ders(f,topbot,iss,3,.true.)
+        else
+          do i=ig1,ig2,igs
+            call getdlnrho_z(f(:,:,:,ilnrho),n,i,rho_xy)           ! rho_xy=del_z ln(rho)
+            f(:,:,n-i,iss)=f(:,:,n+i,iss)+(cp-cv)*(rho_xy+cp*dz2_bound(-i)*tmp_xy)
+          enddo
+        endif
+      endif
 !
     endsubroutine bc_ss_flux
 !***********************************************************************
