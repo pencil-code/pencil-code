@@ -1099,7 +1099,6 @@ module EquationOfState
         if (cs2bot<=0.) call fatal_error('bc_ss_temp_z','cannot have cs2bot<=0')
 
         if (lentropy .and. .not. pretend_lnTT) then
-!
           call getlnrho(f(:,:,n1,ilnrho),lnrho_xy)
 !
 !  This formula works because cp,cv are independent of rho,TT
