@@ -214,7 +214,7 @@ module EquationOfState
       use SharedVariables, only: get_shared_variable
       use Sub, only: register_report_aux
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       mudry1=1/mudry
       muvap1=1/muvap
@@ -229,6 +229,14 @@ module EquationOfState
       call register_report_aux('fvap',ifvap)
       call register_report_aux('mumol1',imumol1)
       call register_report_aux('cp',icp)
+!
+!  Prevent use of uninitialized variables by the initial conditions. These will be updated later by init_eos.
+      f(:,:,:,ifvap) = 0
+      f(:,:,:,imumol1) = mudry1
+      f(:,:,:,icp) = cpdry
+!
+      if (init_loops==1) call warning('initialize_eos', &
+        'Using correct values of cp etc. for initial conditions requires init_loops>1')
 !
 !  Write constants to disk. In future we may want to deal with this
 !  using an include file or another module.
