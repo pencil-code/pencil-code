@@ -1143,7 +1143,7 @@ module EquationOfState
         endif
         do il=1,mx
           do im=1,my
-            call eoscalc(ivars,f(il,im,n,ilnrho),f(il,im,n,iss),cs2=cs2_xy(il,im))
+            call eoscalc(ivars,f(il,im,n,:),cs2=cs2_xy(il,im))
           enddo
         enddo
 !
