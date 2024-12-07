@@ -3266,6 +3266,9 @@ module EquationOfState
                    - 2*(cp-cv)*(lnrho_xy-lnrho0)
               enddo
             else
+!  Kishore: This seems to be setting d^2(lnTT) = 0. Why does that make sense?
+!  Kishore: If anything, I would expect d^2(TT)=0 (at least for constant
+!  Kishore: thermal conductivity).
               do i=1,nghost
                 f(:,:,n1-i,iss) = -f(:,:,n1+i,iss) + tmp &
                     - (cp-cv)*(f(:,:,n1+i,ilnrho)+f(:,:,n1-i,ilnrho)-2*lnrho0)
