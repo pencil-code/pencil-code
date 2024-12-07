@@ -1160,7 +1160,7 @@ module EquationOfState
 !
 !  This formula works because cp,cv are independent of rho,TT
 !
-          f(:,:,n1,iss) = cv*(log(TTval)-lnTT0) - (cp-cv)*(lnrho_xy-lnrho0)
+          f(:,:,n2,iss) = cv*(log(TTval)-lnTT0) - (cp-cv)*(lnrho_xy-lnrho0)
 !
           if (lreference_state) then
             f(l1:l2,:,n2,iss) = f(l1:l2,:,n2,iss) - spread(reference_state(:,iref_s),2,my)
