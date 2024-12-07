@@ -975,11 +975,11 @@ module EquationOfState
 !
 !         This formula works because cp,cv are independent of rho,TT
 !
-          lnTT_ = lnTT0 + ss_/cv + (gamma-1)*(lnrho_-lnrho0)
+          lnTT_ = lnTT0 + ss_/cv + gamma_m1*(lnrho_-lnrho0)
           if (present(lnTT)) lnTT = lnTT_
           if (present(ee)) ee = cv*exp(lnrho_+lnTT_)
           if (present(pp)) pp = (cp-cv)*exp(lnrho_+lnTT_)
-          if (present(cs2)) cs2 = cp*(gamma-1)*exp(lnTT_)
+          if (present(cs2)) cs2 = cp*gamma_m1*exp(lnTT_)
         endif
       case default
         call not_implemented('eoscalc_point_f','thermodynamic variable combination')
