@@ -1061,7 +1061,7 @@ module EquationOfState
 !
       real, pointer :: Flux,FbyK,chi
       real, pointer :: hcond0_kramers, nkramers, chimax_kramers, chimin_kramers
-      logical, pointer :: lmultilayer, lheatc_chiconst, lheatc_kramers
+      logical, pointer :: lmultilayer, lheatc_chiconst, lheatc_kramers, lheatc_Kprof, lheatc_Kconst
 !
       integer, intent(IN) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1077,10 +1077,11 @@ module EquationOfState
 !
 !  Get the shared variables
 !
-      call get_shared_variable('chi',chi,caller='bc_ss_flux')
-      call get_shared_variable('lmultilayer',lmultilayer)
       call get_shared_variable('lheatc_chiconst',lheatc_chiconst)
       call get_shared_variable('lheatc_kramers',lheatc_kramers)
+      call get_shared_variable('lheatc_Kprof',lheatc_Kprof)
+      call get_shared_variable('lheatc_Kconst',lheatc_Kconst)
+!
       if (lheatc_kramers) then
         call get_shared_variable('hcond0_kramers',hcond0_kramers)
         call get_shared_variable('nkramers',nkramers)
@@ -1088,12 +1089,19 @@ module EquationOfState
         call get_shared_variable('chimin_kramers',chimin_kramers)
       endif
 !
+      if (lheatc_chiconst) then
+        call get_shared_variable('chi',chi)
+      endif
+!
       select case (topbot)
 !
       case(BOT)
 !
-        call get_shared_variable('Fbot',Flux)
-        call get_shared_variable('FbotKbot',FbyK)
+        if (lheatc_Kprof.or.lheatc_Kconst) then
+          call get_shared_variable('FbotKbot',FbyK)
+        else
+          call get_shared_variable('Fbot',Flux)
+        endif
         n=n1
         ig1=-1
         ig2=-nghost
@@ -1101,8 +1109,11 @@ module EquationOfState
 !
       case(TOP)
 !
-        call get_shared_variable('Ftop',Flux)
-        call get_shared_variable('FtopKtop',FbyK)
+        if (lheatc_Kprof.or.lheatc_Kconst) then
+          call get_shared_variable('FtopKtop',FbyK)
+        else
+          call get_shared_variable('Ftop',Flux)
+        endif
         n=n2
         ig1=1
         ig2=nghost
@@ -1122,8 +1133,8 @@ module EquationOfState
 !
       if (pretend_lnTT) then
 !
-        if (lheatc_chiconst.or.lheatc_kramers) call not_implemented('bc_ss_flux', &
-          'for this combination of heat conductivity when lpretend_lnTT=T')
+        if (.not.(lheatc_Kprof.or.lheatc_Kconst)) call not_implemented('bc_ss_flux', &
+          'for this heat conductivity when lpretend_lnTT=T')
 !
         FbyKT_xy=-FbyK/exp(f(:,:,n,iss))
         do i=ig1,ig2,dir
@@ -1160,6 +1171,9 @@ module EquationOfState
 !
           FbyKT_xy=Flux/(rho_xy*Krho1kr_xy*TT_xy)
         else
+          if (headtt.and..not.(lheatc_Kprof.or.lheatc_Kconst)) then
+            call warning('bc_ss_flux', 'FtopKtop and FbotKbot may not be correctly set.')
+          endif
           FbyKT_xy=FbyK/TT_xy
         endif
 !
