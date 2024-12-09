@@ -35,6 +35,7 @@ module Ascalar
 !  Init parameters.
 !
   real :: acc_const=0., amplacc=0., widthacc=0., ttc_const=0., amplttc=0., widthttc=0.
+  real :: z0_acc=0.
   logical :: noascalar=.false., reinitialize_acc=.false.
   character (len=labellen) :: initacc='nothing'
   character (len=labellen) :: initttc='nothing'
@@ -43,7 +44,7 @@ module Ascalar
   logical :: lbuoyancy=.false., ltauascalar=.false., lttc=.false., lttc_mean=.false.
 !
   namelist /ascalar_init_pars/ &
-           initacc, acc_const, amplacc, widthacc, & 
+           initacc, acc_const, amplacc, widthacc, z0_acc, &
            initttc, ttc_const, amplttc, widthttc, & 
            T_env, qv_env, lbuoyancy, lttc, lttc_mean
 !
@@ -146,6 +147,7 @@ module Ascalar
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: l
+      real, dimension (mz) :: tmp
 !
       select case (initacc)
         case ('nothing')
@@ -158,6 +160,14 @@ module Ascalar
         case ('tanhz')
           do l=l1,l2; do m=m1,m2
              f(l,m,:,iacc)=acc_const+amplacc*tanh(z/widthacc)
+          enddo;enddo
+        case ('tanhz/(1-tanhz)')
+          !Such that the mass fraction is a step.
+          do l=l1,l2; do m=m1,m2
+            tmp = acc_const + amplacc*(1+tanh((z-z0_acc)/widthacc))/2
+            if (any(tmp==1)) call fatal_error('init_acc', &
+              'specified initial condition leads to infinite values for acc')
+            f(l,m,:,iacc) = tmp/(1-tmp)
           enddo;enddo
 !
 !  Catch unknown values.
