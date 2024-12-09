@@ -954,6 +954,8 @@ module EquationOfState
 !***********************************************************************
     subroutine eoscalc_point_f(ivars,f,lnrho,ss,yH,lnTT,ee,pp,cs2)
 !
+!   07-dec-2024/Kishore: added
+!
       integer, intent(in) :: ivars
       real, dimension(mfarray), intent(in) :: f
       real, optional, intent(out) :: lnrho, ss, yH, lnTT, ee, pp, cs2
