@@ -1132,9 +1132,6 @@ module EquationOfState
       else
 !
         call getrho(f(:,:,n,ilnrho),rho_xy)
-        cs2_xy = f(:,:,n,iss)         ! here cs2_xy = entropy
-        if (lreference_state) &
-          cs2_xy(l1:l2,:) = cs2_xy(l1:l2,:) + spread(reference_state(:,iref_s),2,my)
 !
         if (ldensity_nolog) then
           ivars=irho_ss
