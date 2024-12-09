@@ -1067,7 +1067,7 @@ module EquationOfState
       real, dimension (mx,my,mz,mfarray) :: f
       logical, optional :: lone_sided
 !
-      real, dimension (mx,my) :: tmp_xy, TT_xy, rho_xy, Krho1kr_xy, cp, cv
+      real, dimension (mx,my) :: tmp_xy, TT_xy, rho_xy, Krho1kr_xy, cp, cv, pp_xy, drho_xy
       integer :: i, il, im, ivars, n, ig1, ig2, dir
 !
       if (ldebug) print*,'bc_ss_flux: ENTER - cs20,cs0=',cs20,cs0
@@ -1140,7 +1140,7 @@ module EquationOfState
         endif
         do il=1,mx
           do im=1,my
-            call eoscalc(ivars,f(il,im,n,:),lnTT=TT_xy(il,im))
+            call eoscalc(ivars,f(il,im,n,:),lnTT=TT_xy(il,im), pp=pp_xy(il,im))
           enddo
         enddo
         TT_xy = exp(TT_xy)
@@ -1163,7 +1163,7 @@ module EquationOfState
           tmp_xy=FbyK/TT_xy
         endif
 !
-!  enforce ds/dz + (cp-cv)*dlnrho/dz = - cv*F/(K*TT)
+!  enforce ds/dz + (p/(rho*TT))*dlnrho/dz = - cv*F/(K*TT)
 !
         if (loptest(lone_sided)) then
           call not_implemented('bc_ss_flux', 'one-sided BC')
@@ -1171,9 +1171,10 @@ module EquationOfState
 !           call bval_from_neumann(f,topbot,iss,3,rho_xy)
 !           call set_ghosts_for_onesided_ders(f,topbot,iss,3,.true.)
         else
+          pp_xy = pp_xy/(rho_xy*TT_xy) !pp_xy is now P/(rho*T)
           do i=ig1,ig2,dir
-            call getdlnrho_z(f(:,:,:,ilnrho),n,i,rho_xy)           ! rho_xy=del_z ln(rho)
-            f(:,:,n+i,iss) =   f(:,:,n-i,iss) - (cp-cv)*rho_xy &
+            call getdlnrho_z(f(:,:,:,ilnrho),n,i,drho_xy)
+            f(:,:,n+i,iss) =   f(:,:,n-i,iss) - pp_xy*drho_xy &
                              - dir*cv*dz2_bound(i)*tmp_xy
           enddo
         endif
