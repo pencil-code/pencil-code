@@ -541,143 +541,156 @@ module EquationOfState
     subroutine bc_ss_flux(f,topbot,lone_sided)
 !
 !  constant flux boundary condition for entropy (called when bcz='c1')
+!  This implementation is intended to work for all supported EOS.
 !
 !  23-jan-2002/wolf: coded
 !  11-jun-2002/axel: moved into the entropy module
 !   8-jul-2002/axel: split old bc_ss into two
 !  26-aug-2003/tony: distributed across ionization modules
-!   3-oct-16/MR: added new optional switch lone_sided
+!  13-mar-2011/pete: c1 condition for z-boundaries with Kramers' opacity
+!   4-jun-2015/MR: factor cp added in front of tmp_xy
+!  30-sep-2016/MR: changes for use of one-sided BC formulation (chosen by setting new optional switch lone_sided)
+!  21-jun-2024/Kishore: account for bounds on Kramers conductivity
+!  07-dec-2024/Kishore: copied from eos_idealgas to eos_idealgas_vapor and modified to be EOS-agnostic. Also reduced duplicated code.
+!  09-dec-2024/Kishore: moved to noeos.f90 to replace an earlier implementation that looked correct only for eos_idealgas.
 !
-      use SharedVariables,only: get_shared_variable
+      use DensityMethods, only: getdlnrho_z, getderlnrho_z, getrho
+      use Deriv, only: bval_from_neumann, set_ghosts_for_onesided_ders
+      use General, only: loptest
+      use SharedVariables, only: get_shared_variable
+!
+      real, pointer :: Flux,FbyK,chi
+      real, pointer :: hcond0_kramers, nkramers, chimax_kramers, chimin_kramers
+      logical, pointer :: lmultilayer, lheatc_chiconst, lheatc_kramers, lheatc_Kprof, lheatc_Kconst
 !
       integer, intent(IN) :: topbot
-      real, dimension (:,:,:,:) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       logical, optional :: lone_sided
 !
-      real, pointer :: Fbot,Ftop,FtopKtop,FbotKbot,hcond0,hcond1,chi
-      logical, pointer :: lmultilayer, lheatc_chiconst
-      real, dimension (:,:), allocatable :: tmp_xy,cs2_xy,rho_xy
-      integer :: i,stat,iszx,iszy
+      real, dimension (mx,my) :: FbyKT_xy, TT_xy, rho_xy, Krho1kr_xy, cp, cv, pp_xy
+      integer :: i, il, im, ivars, n, ig1, ig2, dir
 !
       if (ldebug) print*,'bc_ss_flux: ENTER - cs20,cs0=',cs20,cs0
 !
-!  Allocate memory for large arrays.
-!
-      iszx=size(f,1); iszy=size(f,2)
-      allocate(tmp_xy(iszx,iszy),stat=stat)
-      if (stat>0) call fatal_error('bc_ss_flux','Could not allocate tmp_xy')
-      allocate(cs2_xy(iszx,iszy),stat=stat)
-      if (stat>0) call fatal_error('bc_ss_flux','Could not allocate cs2_xy')
-      allocate(rho_xy(iszx,iszy),stat=stat)
-      if (stat>0) call fatal_error('bc_ss_flux','Could not allocate rho_xy')
-!
-!  Do the `c1' boundary condition (constant heat flux) for entropy.
-!  check whether we want to do top or bottom (this is precessor dependent)
-!
-!  Get the shared variables
-!
-      call get_shared_variable('hcond0',hcond0,caller='bc_ss_flux')
-      call get_shared_variable('hcond1',hcond1)
-      call get_shared_variable('Fbot',Fbot)
-      call get_shared_variable('Ftop',Ftop)
-      call get_shared_variable('FbotKbot',FbotKbot)
-      call get_shared_variable('FtopKtop',FtopKtop)
-      call get_shared_variable('chi',chi)
-      call get_shared_variable('lmultilayer',lmultilayer)
       call get_shared_variable('lheatc_chiconst',lheatc_chiconst)
+      call get_shared_variable('lheatc_kramers',lheatc_kramers)
+      call get_shared_variable('lheatc_Kprof',lheatc_Kprof)
+      call get_shared_variable('lheatc_Kconst',lheatc_Kconst)
+!
+!     TODO: is there a neat way to guard against simultaneous use of heat conductivities (which is currently not supported here)?
+!
+      if (lheatc_kramers) then
+        call get_shared_variable('hcond0_kramers',hcond0_kramers)
+        call get_shared_variable('nkramers',nkramers)
+        call get_shared_variable('chimax_kramers',chimax_kramers)
+        call get_shared_variable('chimin_kramers',chimin_kramers)
+      endif
+!
+      if (lheatc_chiconst) then
+        call get_shared_variable('chi',chi)
+      endif
 !
       select case (topbot)
 !
-!  bottom boundary
-!  ===============
-!
       case(BOT)
-        if (lmultilayer) then
-          if (headtt) print*,'bc_ss_flux: Fbot,hcond=',Fbot,hcond0*hcond1
+!
+        if (lheatc_Kprof.or.lheatc_Kconst) then
+          call get_shared_variable('FbotKbot',FbyK)
         else
-          if (headtt) print*,'bc_ss_flux: Fbot,hcond=',Fbot,hcond0
+          call get_shared_variable('Fbot',Flux)
         endif
-!
-!  calculate Fbot/(K*cs2)
-!
-        if (ldensity_nolog) then
-          rho_xy=f(:,:,n1,irho)
-          cs2_xy=cs20*exp(gamma_m1*log(rho_xy/rho0)+gamma*f(:,:,n1,iss))
-        else
-          rho_xy=exp(f(:,:,n1,ilnrho))
-          cs2_xy=cs20*exp(gamma_m1*(f(:,:,n1,ilnrho)-lnrho0)+gamma*f(:,:,n1,iss))
-        endif
-!
-!  check whether we have chi=constant at bottom, in which case
-!  we have the nonconstant rho_xy*chi in tmp_xy.
-!
-        if (lheatc_chiconst) then
-          tmp_xy=Fbot/(rho_xy*chi*cs2_xy)
-        else
-          tmp_xy=FbotKbot/cs2_xy
-        endif
-!
-!  enforce ds/dz + gamma_m1/gamma*dlnrho/dz = - gamma_m1/gamma*Fbot/(K*cs2)
-!
-        do i=1,nghost
-          if (ldensity_nolog) then
-            f(:,:,n1-i,iss)=f(:,:,n1+i,iss)+gamma_m1/gamma* &
-                (log(f(:,:,n1+i,irho)/f(:,:,n1-i,irho))+dz2_bound(-i)*tmp_xy)
-          else
-            f(:,:,n1-i,iss)=f(:,:,n1+i,iss)+gamma_m1/gamma* &
-                (f(:,:,n1+i,ilnrho)-f(:,:,n1-i,ilnrho)+dz2_bound(-i)*tmp_xy)
-          endif
-        enddo
-!
-!  top boundary
-!  ============
+        n=n1
+        ig1=-1
+        ig2=-nghost
+        dir=-1
 !
       case(TOP)
-        if (lmultilayer) then
-          if (headtt) print*,'bc_ss_flux: Ftop,hcond=',Ftop,hcond0*hcond1
+!
+        if (lheatc_Kprof.or.lheatc_Kconst) then
+          call get_shared_variable('FtopKtop',FbyK)
         else
-          if (headtt) print*,'bc_ss_flux: Ftop,hcond=',Ftop,hcond0
+          call get_shared_variable('Ftop',Flux)
         endif
+        n=n2
+        ig1=1
+        ig2=nghost
+        dir=1
 !
-!  calculate Ftop/(K*cs2)
-!
-        if (ldensity_nolog) then
-          rho_xy=f(:,:,n2,irho)
-          cs2_xy=cs20*exp(gamma_m1*log(rho_xy/rho0)+gamma*f(:,:,n2,iss))
-        else
-          rho_xy=exp(f(:,:,n2,ilnrho))
-          cs2_xy=cs20*exp(gamma_m1*(f(:,:,n2,ilnrho)-lnrho0)+gamma*f(:,:,n2,iss))
-        endif
-!
-!  check whether we have chi=constant at bottom, in which case
-!  we have the nonconstant rho_xy*chi in tmp_xy.
-!
-        if (lheatc_chiconst) then
-          tmp_xy=Ftop/(rho_xy*chi*cs2_xy)
-        else
-          tmp_xy=FtopKtop/cs2_xy
-        endif
-!
-!  enforce ds/dz + gamma_m1/gamma*dlnrho/dz = - gamma_m1/gamma*Fbot/(K*cs2)
-!
-        do i=1,nghost
-          if (ldensity_nolog) then
-            f(:,:,n2+i,iss)=f(:,:,n2-i,iss)+gamma_m1/gamma* &
-                (log(f(:,:,n2-i,irho)/f(:,:,n2+i,irho))-dz2_bound(i)*tmp_xy)
-          else
-            f(:,:,n2+i,iss)=f(:,:,n2-i,iss)+gamma_m1/gamma* &
-                (f(:,:,n2-i,ilnrho)-f(:,:,n2+i,ilnrho)-dz2_bound(i)*tmp_xy)
-          endif
-        enddo
       case default
         call fatal_error('bc_ss_flux','invalid argument')
       endselect
 !
-!  Deallocate arrays.
+      do il=1,mx
+        do im =1,my
+          call get_gamma_etc(cp=cp(il,im), cv=cv(il,im), f=f(il,im,n,:))
+        enddo
+      enddo
 !
-      if (allocated(tmp_xy)) deallocate(tmp_xy)
-      if (allocated(cs2_xy)) deallocate(cs2_xy)
-      if (allocated(rho_xy)) deallocate(rho_xy)
+      if (pretend_lnTT) then
+!
+        if (.not.(lheatc_Kprof.or.lheatc_Kconst)) call not_implemented('bc_ss_flux', &
+          'for this heat conductivity when lpretend_lnTT=T')
+!
+        FbyKT_xy=-FbyK/exp(f(:,:,n,iss))
+        do i=ig1,ig2,dir
+          f(:,:,n+i,iss) = f(:,:,n-i,iss) - dir*dz2_bound(i)*FbyKT_xy
+        enddo
+      else
+!
+        call getrho(f(:,:,n,ilnrho),rho_xy)
+!
+        if (ldensity_nolog) then
+          ivars=irho_ss
+        else
+          ivars=ilnrho_ss
+        endif
+        do il=1,mx
+          do im=1,my
+            call eoscalc(ivars,f(il,im,n,:),lnTT=TT_xy(il,im), pp=pp_xy(il,im))
+          enddo
+        enddo
+        TT_xy = exp(TT_xy)
+!
+!  Check whether we have chi=constant at the boundary, in which case
+!  we have the nonconstant rho_xy*chi in FbyKT_xy.
+!  Check also whether Kramers opacity is used, then hcond itself depends
+!  on density and temperature.
+!
+        if (lheatc_chiconst) then
+          !FbyKT_xy=Flux/(rho_xy*chi*TT_xy)
+          !Kishore: I think the above misses a factor of cp.
+          FbyKT_xy=Flux/(rho_xy*chi*cp*TT_xy)
+        else if (lheatc_kramers) then
+          Krho1kr_xy = hcond0_kramers*rho_xy**(-2*nkramers-1)*TT_xy**(6.5*nkramers)
+!
+          if (chimin_kramers>0) Krho1kr_xy = max(Krho1kr_xy, chimin_kramers*cp)
+          if (chimax_kramers>0) Krho1kr_xy = min(Krho1kr_xy, chimax_kramers*cp)
+!
+          FbyKT_xy=Flux/(rho_xy*Krho1kr_xy*TT_xy)
+        else
+          if (headtt.and..not.(lheatc_Kprof.or.lheatc_Kconst)) then
+            call warning('bc_ss_flux', 'FtopKtop and FbotKbot may not be correctly set.')
+          endif
+          FbyKT_xy=FbyK/TT_xy
+        endif
+!
+!  enforce ds/dz + (p/(rho*TT))*dlnrho/dz = - cv*F/(K*TT)
+!
+        if (loptest(lone_sided)) then
+          call not_implemented('bc_ss_flux', 'one-sided BC')
+!           call getderlnrho_z(f,n,rho_xy)                           ! rho_xy=d_z ln(rho)
+!           call bval_from_neumann(f,topbot,iss,3,rho_xy)
+!           call set_ghosts_for_onesided_ders(f,topbot,iss,3,.true.)
+        else
+          pp_xy = pp_xy/(rho_xy*TT_xy) !pp_xy is now P/(rho*T)
+          FbyKT_xy = dir*cv*FbyKT_xy !now (+-)cv*F/(K*T)
+          do i=ig1,ig2,dir
+            call getdlnrho_z(f(:,:,:,ilnrho),n,i,rho_xy) !rho_xy is now dlnrho
+            f(:,:,n+i,iss) =   f(:,:,n-i,iss) - pp_xy*rho_xy &
+                             - dz2_bound(i)*FbyKT_xy
+          enddo
+        endif
+      endif
 !
     endsubroutine bc_ss_flux
 !***********************************************************************
