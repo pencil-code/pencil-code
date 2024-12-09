@@ -1158,7 +1158,9 @@ module EquationOfState
 !  on density and temperature.
 !
         if (lheatc_chiconst) then
-          FbyKT_xy=Flux/(rho_xy*chi*TT_xy)
+          !FbyKT_xy=Flux/(rho_xy*chi*TT_xy)
+          !Kishore: I think the above misses a factor of cp.
+          FbyKT_xy=Flux/(rho_xy*chi*cp*TT_xy)
         else if (lheatc_kramers) then
           Krho1kr_xy = hcond0_kramers*rho_xy**(-2*nkramers-1)*TT_xy**(6.5*nkramers)
 !
