@@ -1121,12 +1121,14 @@ module EquationOfState
 !  calculate F/(K*TT)
 !
       if (pretend_lnTT) then
-        call not_implemented('bc_ss_flux', 'lpretend_lnTT=T')
-! !  Kishore: The below is only correct if we ignore dlnrho/dz and set cp=1
-!         FbyKT_xy=-FbotKbot/exp(f(:,:,n,iss))
-!         do i=ig1,ig2,dir
-!           f(:,:,n+i,iss)=f(:,:,n-i,iss)-dz2_bound(-i)*FbyKT_xy
-!         enddo
+!
+        if (lheatc_chiconst.or.lheatc_kramers) call not_implemented('bc_ss_flux', &
+          'for this combination of heat conductivity when lpretend_lnTT=T')
+!
+        FbyKT_xy=-FbyK/exp(f(:,:,n,iss))
+        do i=ig1,ig2,dir
+          f(:,:,n+i,iss) = f(:,:,n-i,iss) - dir*dz2_bound(i)*FbyKT_xy
+        enddo
       else
 !
         call getrho(f(:,:,n,ilnrho),rho_xy)
