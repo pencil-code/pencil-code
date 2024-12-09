@@ -13,12 +13,6 @@ option(PACKED_DATA_TRANSFERS  "Enables kernel for packed data transfers"        
 option(SINGLEPASS_INTEGRATION "Enables single pass integration"                         OFF)
 option(RUNTIME_COMPILATION    "Enables runtime compilation"                         OFF)
 
-if (USE_HIP)
-    find_program(CMAKE_HIP_COMPILER hipcc REQUIRED)
-    set(CMAKE_C_COMPILER ${CMAKE_HIP_COMPILER})
-    set(CMAKE_CXX_COMPILER ${CMAKE_HIP_COMPILER})
-endif()
-
 ## Project settings
 project(astaroth C CXX)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
@@ -57,22 +51,10 @@ list(APPEND CMAKE_PREFIX_PATH /opt/rocm/hip /opt/rocm)
 #link_directories(/opt/rocm/lib)
 
 # Roctracer
-set(ROC_TRACER_PATH "/opt/rocm/include/roctracer")
-include_directories(${ROC_TRACER_PATH})
-link_directories(${ROC_TRACER_PATH})
-list(APPEND CMAKE_PREFIX_PATH ${ROC_TRACER_PATH})
 #include_directories(/opt/rocm/roctracer/include)
 #link_directories(/opt/rocm/roctracer/lib)
 
-# Rocrand
-include_directories(/opt/rocm/hiprand/include)
-include_directories(/opt/rocm/rocrand/include)
-link_directories(/opt/rocm/hiprand/lib)
-link_directories(/opt/rocm/rocrand/lib)
-
-find_package(hip)
 else ()
-enable_language(CUDA)
 
 # Commented out CUDA host compiler flags: seem to be ignored anyways
 #string (REPLACE " " "," CUDA_COMMON_FLAGS "${COMMON_FLAGS}")

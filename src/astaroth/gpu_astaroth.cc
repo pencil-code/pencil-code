@@ -1142,7 +1142,7 @@ extern "C" void loadFarray()
 /***********************************************************************************************/
 extern "C" void updateInConfigArr(int index)
 {
-     if (mesh.info.real_arrays[index] != nullptr)
+     if (mesh.info[(AcRealArrayParam)index] != nullptr)
         acDeviceLoadRealArray(acGridGetDevice(),STREAM_DEFAULT,mesh.info,static_cast<AcRealArrayParam>(index));
 }
 /***********************************************************************************************/

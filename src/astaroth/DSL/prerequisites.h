@@ -14,10 +14,6 @@
 #define AC_ny AC_nlocal.y
 #define AC_nz AC_nlocal.z
 
-#define AC_mxgrid AC_mgrid.x
-#define AC_mygrid AC_mgrid.y
-#define AC_mzgrid AC_mgrid.z
-
 #define AC_nxgrid AC_ngrid.x
 #define AC_nygrid AC_ngrid.y
 #define AC_nzgrid AC_ngrid.z
