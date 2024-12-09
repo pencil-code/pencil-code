@@ -1067,7 +1067,7 @@ module EquationOfState
       real, dimension (mx,my,mz,mfarray) :: f
       logical, optional :: lone_sided
 !
-      real, dimension (mx,my) :: tmp_xy, cs2_xy, rho_xy, Krho1kr_xy, cp, cv
+      real, dimension (mx,my) :: tmp_xy, TT_xy, rho_xy, Krho1kr_xy, cp, cv
       integer :: i, il, im, ivars, n, ig1, ig2, dir
 !
       if (ldebug) print*,'bc_ss_flux: ENTER - cs20,cs0=',cs20,cs0
@@ -1120,7 +1120,7 @@ module EquationOfState
         enddo
       enddo
 !
-!  calculate F/(K*cs2)
+!  calculate F/(K*TT)
 !
       if (pretend_lnTT) then
         call not_implemented('bc_ss_flux', 'lpretend_lnTT=T')
@@ -1140,9 +1140,10 @@ module EquationOfState
         endif
         do il=1,mx
           do im=1,my
-            call eoscalc(ivars,f(il,im,n,:),cs2=cs2_xy(il,im))
+            call eoscalc(ivars,f(il,im,n,:),lnTT=TT_xy(il,im))
           enddo
         enddo
+        TT_xy = exp(TT_xy)
 !
 !  Check whether we have chi=constant at the boundary, in which case
 !  we have the nonconstant rho_xy*chi in tmp_xy.
@@ -1150,19 +1151,19 @@ module EquationOfState
 !  on density and temperature.
 !
         if (lheatc_chiconst) then
-          tmp_xy=Flux/(rho_xy*chi*cs2_xy)
+          tmp_xy=Flux/(rho_xy*chi*TT_xy)
         else if (lheatc_kramers) then
-          Krho1kr_xy = hcond0_kramers*rho_xy**(-2*nkramers-1)*(cs2_xy/(cp*gamma_m1))**(6.5*nkramers)
+          Krho1kr_xy = hcond0_kramers*rho_xy**(-2*nkramers-1)*TT_xy**(6.5*nkramers)
 !
           if (chimin_kramers>0) Krho1kr_xy = max(Krho1kr_xy, chimin_kramers*cp)
           if (chimax_kramers>0) Krho1kr_xy = min(Krho1kr_xy, chimax_kramers*cp)
 !
-          tmp_xy=Flux/(rho_xy*Krho1kr_xy*cs2_xy)
+          tmp_xy=Flux/(rho_xy*Krho1kr_xy*TT_xy)
         else
-          tmp_xy=FbyK/cs2_xy
+          tmp_xy=FbyK/TT_xy
         endif
 !
-!  enforce ds/dz + (cp-cv)*dlnrho/dz = - cp*(cp-cv)*F/(K*cs2)
+!  enforce ds/dz + (cp-cv)*dlnrho/dz = - cv*F/(K*TT)
 !
         if (loptest(lone_sided)) then
           call not_implemented('bc_ss_flux', 'one-sided BC')
@@ -1172,7 +1173,8 @@ module EquationOfState
         else
           do i=ig1,ig2,dir
             call getdlnrho_z(f(:,:,:,ilnrho),n,i,rho_xy)           ! rho_xy=del_z ln(rho)
-            f(:,:,n+i,iss)=f(:,:,n-i,iss)-(cp-cv)*(rho_xy+dir*cp*dz2_bound(i)*tmp_xy)
+            f(:,:,n+i,iss) =   f(:,:,n-i,iss) - (cp-cv)*rho_xy &
+                             - dir*cv*dz2_bound(i)*tmp_xy
           enddo
         endif
       endif
