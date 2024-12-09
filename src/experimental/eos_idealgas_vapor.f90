@@ -1067,7 +1067,7 @@ module EquationOfState
       real, dimension (mx,my,mz,mfarray) :: f
       logical, optional :: lone_sided
 !
-      real, dimension (mx,my) :: FbyKT_xy, TT_xy, rho_xy, Krho1kr_xy, cp, cv, pp_xy, drho_xy
+      real, dimension (mx,my) :: FbyKT_xy, TT_xy, rho_xy, Krho1kr_xy, cp, cv, pp_xy
       integer :: i, il, im, ivars, n, ig1, ig2, dir
 !
       if (ldebug) print*,'bc_ss_flux: ENTER - cs20,cs0=',cs20,cs0
@@ -1174,8 +1174,8 @@ module EquationOfState
           pp_xy = pp_xy/(rho_xy*TT_xy) !pp_xy is now P/(rho*T)
           FbyKT_xy = dir*cv*FbyKT_xy !now (+-)cv*F/(K*T)
           do i=ig1,ig2,dir
-            call getdlnrho_z(f(:,:,:,ilnrho),n,i,drho_xy)
-            f(:,:,n+i,iss) =   f(:,:,n-i,iss) - pp_xy*drho_xy &
+            call getdlnrho_z(f(:,:,:,ilnrho),n,i,rho_xy) !rho_xy is now dlnrho
+            f(:,:,n+i,iss) =   f(:,:,n-i,iss) - pp_xy*rho_xy &
                              - dz2_bound(i)*FbyKT_xy
           enddo
         endif
