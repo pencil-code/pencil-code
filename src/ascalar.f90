@@ -159,7 +159,7 @@ module Ascalar
           enddo;enddo
         case ('tanhz')
           do l=l1,l2; do m=m1,m2
-             f(l,m,:,iacc)=acc_const+amplacc*tanh(z/widthacc)
+             f(l,m,:,iacc)=acc_const+amplacc*tanh((z-z0_acc)/widthacc)
           enddo;enddo
         case ('tanhz/(1-tanhz)')
           !Such that the mass fraction is a step.
