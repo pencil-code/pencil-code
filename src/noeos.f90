@@ -249,9 +249,12 @@ module EquationOfState
 !
     endsubroutine getpressure
 !***********************************************************************
-    subroutine get_gamma_etc(gamma,cp,cv)
+    subroutine get_gamma_etc(gamma,cp,cv,f)
 !
       real, optional, intent(OUT) :: gamma, cp,cv
+      real, dimension(mfarray), optional, intent(IN) :: f
+!
+      call keep_compiler_quiet(f)
 !
       if (headt) call warning('get_gamma_etc','gamma, cp, and cv are undefined in noeos.'// &
                               achar(10)//'The values provided are for one-atomic ideal gas. Use at own risk')

@@ -1159,9 +1159,12 @@ module EquationOfState
 !
     endsubroutine pressure_gradient_farray
 !***********************************************************************
-    subroutine get_gamma_etc(gamma_,cp,cv)
+    subroutine get_gamma_etc(gamma_,cp,cv,f)
 !
       real, optional, intent(OUT) :: gamma_, cp,cv
+      real, dimension(mfarray), optional, intent(IN) :: f
+!
+      call keep_compiler_quiet(f) !not needed here, but required for other EOS.
 !
       if (present(gamma_)) gamma_=gamma
       if (present(cp)) cp=get_cp()     ! as module variable is hidden here
