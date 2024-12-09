@@ -1068,7 +1068,7 @@ module EquationOfState
       logical, optional :: lone_sided
 !
       real, dimension (mx,my) :: tmp_xy, cs2_xy, rho_xy, Krho1kr_xy, cp, cv
-      integer :: i, il, im, ivars, n, ig1, ig2, igs
+      integer :: i, il, im, ivars, n, ig1, ig2, dir
 !
       if (ldebug) print*,'bc_ss_flux: ENTER - cs20,cs0=',cs20,cs0
 !
@@ -1097,7 +1097,7 @@ module EquationOfState
         n=n1
         ig1=-1
         ig2=-nghost
-        igs=-1
+        dir=-1
 !
       case(TOP)
 !
@@ -1106,7 +1106,7 @@ module EquationOfState
         n=n2
         ig1=1
         ig2=nghost
-        igs=1
+        dir=1
 !
       case default
         call fatal_error('bc_ss_flux','invalid argument')
@@ -1126,8 +1126,8 @@ module EquationOfState
         call not_implemented('bc_ss_flux', 'lpretend_lnTT=T')
 ! !  Kishore: The below is only correct if we ignore dlnrho/dz and set cp=1
 !         tmp_xy=-FbotKbot/exp(f(:,:,n,iss))
-!         do i=ig1,ig2,igs
-!           f(:,:,n-i,iss)=f(:,:,n+i,iss)-dz2_bound(-i)*tmp_xy
+!         do i=ig1,ig2,dir
+!           f(:,:,n+i,iss)=f(:,:,n-i,iss)-dz2_bound(-i)*tmp_xy
 !         enddo
       else
 !
@@ -1173,9 +1173,9 @@ module EquationOfState
 !           call bval_from_neumann(f,topbot,iss,3,rho_xy)
 !           call set_ghosts_for_onesided_ders(f,topbot,iss,3,.true.)
         else
-          do i=ig1,ig2,igs
-            call getdlnrho_z(f(:,:,:,ilnrho),n,abs(i),rho_xy)           ! rho_xy=del_z ln(rho)
-            f(:,:,n+i,iss)=f(:,:,n-i,iss)-igs*(cp-cv)*(rho_xy+cp*dz2_bound(i)*tmp_xy)
+          do i=ig1,ig2,dir
+            call getdlnrho_z(f(:,:,:,ilnrho),n,i,rho_xy)           ! rho_xy=del_z ln(rho)
+            f(:,:,n+i,iss)=f(:,:,n-i,iss)-(cp-cv)*(rho_xy+dir*cp*dz2_bound(i)*tmp_xy)
           enddo
         endif
       endif
