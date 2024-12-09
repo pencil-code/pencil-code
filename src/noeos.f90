@@ -553,6 +553,8 @@ module EquationOfState
 !  21-jun-2024/Kishore: account for bounds on Kramers conductivity
 !  07-dec-2024/Kishore: copied from eos_idealgas to eos_idealgas_vapor and modified to be EOS-agnostic. Also reduced duplicated code.
 !  09-dec-2024/Kishore: moved to noeos.f90 to replace an earlier implementation that looked correct only for eos_idealgas.
+!  TODO: after verifying that this works correctly for all EOS, move it to entropy.f90
+!  NOTE: non-dummy implementations (excluding this) are in eos_ionization and eos_temperature_ionization
 !
       use DensityMethods, only: getdlnrho_z, getderlnrho_z, getrho
       use Deriv, only: bval_from_neumann, set_ghosts_for_onesided_ders
