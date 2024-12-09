@@ -962,6 +962,8 @@ module EquationOfState
       real :: cp, cv, lnrho_, ss_, lnTT_, ee_, pp_, cs2_
 !
       if (present(yh)) call fatal_error('eoscalc_point_f','yH is not relevant for this EOS')
+      if (lreference_state) call not_implemented('eoscalc_point_f', 'lreference_state=T')
+      if (pretend_lnTT) call not_implemented('eoscalc_point_f', 'pretend_lnTT=T')
 !
       select case (ivars)
       case (ilnrho_ss)
