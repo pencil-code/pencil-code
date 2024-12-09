@@ -1067,7 +1067,7 @@ module EquationOfState
       real, dimension (mx,my,mz,mfarray) :: f
       logical, optional :: lone_sided
 !
-      real, dimension (mx,my) :: tmp_xy, TT_xy, rho_xy, Krho1kr_xy, cp, cv, pp_xy, drho_xy
+      real, dimension (mx,my) :: FbyKT_xy, TT_xy, rho_xy, Krho1kr_xy, cp, cv, pp_xy, drho_xy
       integer :: i, il, im, ivars, n, ig1, ig2, dir
 !
       if (ldebug) print*,'bc_ss_flux: ENTER - cs20,cs0=',cs20,cs0
@@ -1146,21 +1146,21 @@ module EquationOfState
         TT_xy = exp(TT_xy)
 !
 !  Check whether we have chi=constant at the boundary, in which case
-!  we have the nonconstant rho_xy*chi in tmp_xy.
+!  we have the nonconstant rho_xy*chi in FbyKT_xy.
 !  Check also whether Kramers opacity is used, then hcond itself depends
 !  on density and temperature.
 !
         if (lheatc_chiconst) then
-          tmp_xy=Flux/(rho_xy*chi*TT_xy)
+          FbyKT_xy=Flux/(rho_xy*chi*TT_xy)
         else if (lheatc_kramers) then
           Krho1kr_xy = hcond0_kramers*rho_xy**(-2*nkramers-1)*TT_xy**(6.5*nkramers)
 !
           if (chimin_kramers>0) Krho1kr_xy = max(Krho1kr_xy, chimin_kramers*cp)
           if (chimax_kramers>0) Krho1kr_xy = min(Krho1kr_xy, chimax_kramers*cp)
 !
-          tmp_xy=Flux/(rho_xy*Krho1kr_xy*TT_xy)
+          FbyKT_xy=Flux/(rho_xy*Krho1kr_xy*TT_xy)
         else
-          tmp_xy=FbyK/TT_xy
+          FbyKT_xy=FbyK/TT_xy
         endif
 !
 !  enforce ds/dz + (p/(rho*TT))*dlnrho/dz = - cv*F/(K*TT)
@@ -1172,10 +1172,11 @@ module EquationOfState
 !           call set_ghosts_for_onesided_ders(f,topbot,iss,3,.true.)
         else
           pp_xy = pp_xy/(rho_xy*TT_xy) !pp_xy is now P/(rho*T)
+          FbyKT_xy = dir*cv*FbyKT_xy !now (+-)cv*F/(K*T)
           do i=ig1,ig2,dir
             call getdlnrho_z(f(:,:,:,ilnrho),n,i,drho_xy)
             f(:,:,n+i,iss) =   f(:,:,n-i,iss) - pp_xy*drho_xy &
-                             - dir*cv*dz2_bound(i)*tmp_xy
+                             - dz2_bound(i)*FbyKT_xy
           enddo
         endif
       endif
