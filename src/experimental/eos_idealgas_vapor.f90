@@ -1051,6 +1051,7 @@ module EquationOfState
     subroutine bc_ss_flux(f,topbot,lone_sided)
 !
 !  constant flux boundary condition for entropy (called when bcz='c1')
+!  This implementation is intended to work for all supported EOS.
 !
 !  07-dec-2024/Kishore: copied from eos_idealgas and modified to be EOS-agnostic. Also reduced duplicated code.
 !
@@ -1072,15 +1073,12 @@ module EquationOfState
 !
       if (ldebug) print*,'bc_ss_flux: ENTER - cs20,cs0=',cs20,cs0
 !
-!  Do the `c1' boundary condition (constant heat flux) for entropy.
-!  check whether we want to do top or bottom (this is precessor dependent)
-!
-!  Get the shared variables
-!
       call get_shared_variable('lheatc_chiconst',lheatc_chiconst)
       call get_shared_variable('lheatc_kramers',lheatc_kramers)
       call get_shared_variable('lheatc_Kprof',lheatc_Kprof)
       call get_shared_variable('lheatc_Kconst',lheatc_Kconst)
+!
+!     TODO: is there a neat way to guard against simultaneous use of heat conductivities (which is currently not supported here)?
 !
       if (lheatc_kramers) then
         call get_shared_variable('hcond0_kramers',hcond0_kramers)
@@ -1128,8 +1126,6 @@ module EquationOfState
           call get_gamma_etc(cp=cp(il,im), cv=cv(il,im), f=f(il,im,n,:))
         enddo
       enddo
-!
-!  calculate F/(K*TT)
 !
       if (pretend_lnTT) then
 !
