@@ -1095,18 +1095,18 @@ module EquationOfState
         call get_shared_variable('Fbot',Flux)
         call get_shared_variable('FbotKbot',FbyK)
         n=n1
-        ig1=1
-        ig2=nghost
-        igs=1
+        ig1=-1
+        ig2=-nghost
+        igs=-1
 !
       case(TOP)
 !
         call get_shared_variable('Ftop',Flux)
         call get_shared_variable('FtopKtop',FbyK)
         n=n2
-        ig1=-1
-        ig2=-nghost
-        igs=-1
+        ig1=1
+        ig2=nghost
+        igs=1
 !
       case default
         call fatal_error('bc_ss_flux','invalid argument')
@@ -1174,8 +1174,8 @@ module EquationOfState
 !           call set_ghosts_for_onesided_ders(f,topbot,iss,3,.true.)
         else
           do i=ig1,ig2,igs
-            call getdlnrho_z(f(:,:,:,ilnrho),n,i,rho_xy)           ! rho_xy=del_z ln(rho)
-            f(:,:,n-i,iss)=f(:,:,n+i,iss)+(cp-cv)*(rho_xy+cp*dz2_bound(-i)*tmp_xy)
+            call getdlnrho_z(f(:,:,:,ilnrho),n,abs(i),rho_xy)           ! rho_xy=del_z ln(rho)
+            f(:,:,n+i,iss)=f(:,:,n-i,iss)-igs*(cp-cv)*(rho_xy+cp*dz2_bound(i)*tmp_xy)
           enddo
         endif
       endif
