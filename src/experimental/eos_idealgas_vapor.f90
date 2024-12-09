@@ -1112,8 +1112,6 @@ module EquationOfState
         call fatal_error('bc_ss_flux','invalid argument')
       endselect
 !
-!  Common for topbot
-!
       do il=1,mx
         do im =1,my
           call get_gamma_etc(cp=cp(il,im), cv=cv(il,im), f=f(il,im,n,:))
@@ -1125,9 +1123,9 @@ module EquationOfState
       if (pretend_lnTT) then
         call not_implemented('bc_ss_flux', 'lpretend_lnTT=T')
 ! !  Kishore: The below is only correct if we ignore dlnrho/dz and set cp=1
-!         tmp_xy=-FbotKbot/exp(f(:,:,n,iss))
+!         FbyKT_xy=-FbotKbot/exp(f(:,:,n,iss))
 !         do i=ig1,ig2,dir
-!           f(:,:,n+i,iss)=f(:,:,n-i,iss)-dz2_bound(-i)*tmp_xy
+!           f(:,:,n+i,iss)=f(:,:,n-i,iss)-dz2_bound(-i)*FbyKT_xy
 !         enddo
       else
 !
