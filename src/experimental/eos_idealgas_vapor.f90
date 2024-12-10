@@ -231,9 +231,11 @@ module EquationOfState
       ieosvar_count=0
 !
 !  Prevent use of uninitialized variables by the initial conditions. These will be updated later by init_eos.
-      f(:,:,:,ifvap) = 0
-      f(:,:,:,imumol1) = mudry1
-      f(:,:,:,icp) = cpdry
+      if (.not.lreloading) then
+        f(:,:,:,ifvap) = 0
+        f(:,:,:,imumol1) = mudry1
+        f(:,:,:,icp) = cpdry
+      endif
 !
       if (init_loops==1) call warning('initialize_eos', &
         'Using correct values of cp etc. for initial conditions requires init_loops>1')
