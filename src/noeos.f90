@@ -594,10 +594,10 @@ module EquationOfState
 !
       case(BOT)
 !
-        if (lheatc_Kprof.or.lheatc_Kconst) then
-          call get_shared_variable('FbotKbot',FbyK)
-        else
+        if (lheatc_chiconst.or.lheatc_kramers) then
           call get_shared_variable('Fbot',Flux)
+        else
+          call get_shared_variable('FbotKbot',FbyK)
         endif
         n=n1
         ig1=-1
@@ -606,10 +606,10 @@ module EquationOfState
 !
       case(TOP)
 !
-        if (lheatc_Kprof.or.lheatc_Kconst) then
-          call get_shared_variable('FtopKtop',FbyK)
-        else
+        if (lheatc_chiconst.or.lheatc_kramers) then
           call get_shared_variable('Ftop',Flux)
+        else
+          call get_shared_variable('FtopKtop',FbyK)
         endif
         n=n2
         ig1=1
