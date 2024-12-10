@@ -173,7 +173,7 @@ module Special
       if (lmagnetic) then
         call get_shared_variable('loverride_ee',loverride_ee)
         call get_shared_variable('lresi_eta_tdep',lresi_eta_tdep)
-        call get_shared_variable('eta_tdep',eta_tdep)
+        if (lresi_eta_tdep) call get_shared_variable('eta_tdep',eta_tdep)
         call get_shared_variable('eta',eta)
       endif
 !

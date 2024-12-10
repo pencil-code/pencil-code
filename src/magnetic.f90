@@ -187,7 +187,7 @@ module Magnetic
   logical :: ldiamagnetism=.false., lcovariant_magnetic=.false.
   logical :: ladd_global_field=.false., ladd_bb_init=.false.
   logical :: lresi_eta_const=.false.
-  logical :: lresi_eta_tdep=.false., lresi_eta_ztdep=.false.
+  logical :: lresi_eta_tdep=.false., lresi_eta_xtdep=.false., lresi_eta_ztdep=.false.
   logical :: lresi_eta_tdep_t0_norm=.false.
   logical :: lresi_sqrtrhoeta_const=.false.
   logical :: lresi_eta_aniso=.false., lquench_eta_aniso=.false.
@@ -1237,7 +1237,7 @@ module Magnetic
       call put_shared_variable('lbb_as_comaux',lbb_as_comaux, caller='register_magnetic')
       call put_shared_variable('lresi_eta_tdep', lresi_eta_tdep)
       call put_shared_variable('loverride_ee', loverride_ee)
-      call put_shared_variable('eta_tdep', eta_tdep)
+      if (lresi_eta_tdep) call put_shared_variable('eta_tdep', eta_tdep)
       call put_shared_variable('eta', eta)
 !
 !  Share several parameters for Alfven limiter with module Shock.
@@ -1515,6 +1515,7 @@ module Magnetic
       if (iresistivity(1)=='') iresistivity(1)='eta-const'  ! default
       lresi_eta_const=.false.
       lresi_eta_tdep=.false.
+      lresi_eta_xtdep=.false.
       lresi_sqrtrhoeta_const=.false.
       lresi_eta_aniso=.false.
       lresi_hyper2=.false.
@@ -1553,6 +1554,9 @@ module Magnetic
         case ('eta-tdep')
           if (lroot) print*, 'resistivity: time-dependent eta'
           lresi_eta_tdep=.true.
+        case ('eta-xtdep')
+          if (lroot) print*, 'resistivity: x and t-dependent eta'
+          lresi_eta_xtdep=.true.
         case ('eta-ztdep')
           if (lroot) print*, 'resistivity: time-dependent eta'
           lresi_eta_tdep=.true.
@@ -1735,8 +1739,9 @@ module Magnetic
 !
       if (lrun) then
         if (lroot) then
-          if ((lresi_eta_const.or.lresi_eta_tdep).and.(eta==0.0)) &
-              call warning('initialize_magnetic','Resistivity coefficient eta is zero')
+          if ((lresi_eta_const.or.lresi_eta_tdep).and.(eta==0.0)) then
+            if (.not.lresi_eta_xtdep) call warning('initialize_magnetic','Resistivity coefficient eta is zero')
+          endif
           if (lresi_sqrtrhoeta_const.and.(eta==0.0)) &
               call warning('initialize_magnetic','Resistivity coefficient eta is zero')
           if (lresi_hyper2.and.eta_hyper2==0.0) &
@@ -2953,10 +2958,12 @@ module Magnetic
 !
 !  e2 and b2 needed for mean-field conductivity
 !
-      if (lresi_eta_tdep .or. lresi_hyper2_tdep .or. lresi_hyper3_tdep) then
+      if (lresi_eta_tdep .or. lresi_eta_xtdep .or. lresi_hyper2_tdep .or. lresi_hyper3_tdep) then
         if (tdep_eta_type=='mean-field-local') then
           lpenc_requested(i_e2)=.true.
           lpenc_requested(i_b2)=.true.
+        elseif (tdep_eta_type=='mean-field') then
+          call fatal_error('pencil_criteria_magnetic','to check whether we need e2 and b2')
         endif
       endif
 !
@@ -3986,7 +3993,7 @@ module Magnetic
       if (lpenc_loc(i_ua)) call dot_mn(p%uu,p%aa,p%ua)
 ! uxb
       if (lpenc_loc(i_uxb)) then
-        call cross_mn(p%uu,p%bb,p%uxb)
+          call cross_mn(p%uu,p%bb,p%uxb)
 !  add external e-field.
         do j=1,3
           if (iglobal_eext(j)/=0) p%uxb(:,j)=p%uxb(:,j)+f(l1:l2,m,n,iglobal_eext(j))
@@ -4113,7 +4120,7 @@ module Magnetic
 !  lresi_eta_tdep_t0_norm is not the default because of backward compatbility.
 !  The default is problematic because then eta_tdep /= eta for t < eta_tdep_t0.
 !
-      if (lresi_eta_tdep .or. lresi_hyper2_tdep .or. lresi_hyper3_tdep) then
+      if (lresi_eta_tdep .or. lresi_eta_xtdep .or. lresi_hyper2_tdep .or. lresi_hyper3_tdep) then
         select case (tdep_eta_type)
           case ('standard')
             if (lresi_eta_tdep_t0_norm) then
@@ -4139,6 +4146,8 @@ module Magnetic
              call get_shared_variable('ascale', ascale, caller='initialize_magnetic')
              call get_shared_variable('Hscript', Hscript, caller='initialize_magnetic')
              if (lbb_as_aux .and. .not. lbb_as_comaux) then
+               if (ncpus>1.or.dimensionality>1) call fatal_error('calc_pencils_magnetic_pencpar', &
+                   'not programmed for multiple procs or more than 1 dimension')
                b2m=sum(f(l1:l2,m,n,ibx)**2+f(l1:l2,m,n,iby)**2+f(l1:l2,m,n,ibz)**2)/nx
                Eaver=sqrt(sum(f(l1:l2,m1:m2,n,iex)**2+f(l1:l2,m1:m2,n,iey)**2+f(l1:l2,m1:m2,n,iez)**2)/nx)
                Baver=sqrt(B_ext2+b2m)
@@ -4166,7 +4175,7 @@ module Magnetic
              Eabs=sqrt(p%e2)
              Babs=sqrt(p%b2)
 !
-!  Note that for Babs=0, eta_tdep=0
+!  Note that for Babs=0, eta_xtdep=0
 !
             where (Eabs<tini)
               eta_xtdep=eta_huge
@@ -4201,7 +4210,11 @@ module Magnetic
 !
         if (iex>0) then
           if (lresi_eta_tdep) then
+            if (lresi_eta_xtdep) call fatal_error('calc_pencils_magnetic_pencpar', &
+                'lresi_eta_tdep must be false if lresi_eta_xtdep is true')
             eta_total=eta_tdep
+          elseif (lresi_eta_xtdep) then
+            eta_total=eta_xtdep
           else
             eta_total=eta
           endif
@@ -6775,7 +6788,13 @@ module Magnetic
 !
 !  eta_tdep as diagnostics:
 !
-      if (lroot) call save_name(eta_tdep,idiag_eta_tdep)
+      if (lresi_eta_tdep) then
+        if (lroot) call save_name(eta_tdep,idiag_eta_tdep)
+      elseif (lresi_eta_xtdep) then
+        call sum_mn_name(eta_xtdep,idiag_eta_tdep)
+      else
+        call fatal_error('calc_0d_diagnostics_magnetic','should not happen')
+      endif
 !
 !  current density components at one point (=pt).
 !
