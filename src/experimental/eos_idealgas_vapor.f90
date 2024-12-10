@@ -88,6 +88,7 @@ module EquationOfState
 !  04-dec-2024/Kishore: added shared variables (copied from eos_idealgas)
 !
       use SharedVariables, only: put_shared_variable
+      use Sub, only: register_report_aux
 !
       iyH=0
       ilnTT=0
@@ -100,6 +101,12 @@ module EquationOfState
 !
       if (lroot) call svn_id( &
           '$Id$')
+!
+!  fvap, mumol1, and cp as auxiliary variables.
+!
+      call register_report_aux('fvap',ifvap)
+      call register_report_aux('mumol1',imumol1)
+      call register_report_aux('cp',icp)
 !
 ! Shared variables
 !
@@ -212,7 +219,6 @@ module EquationOfState
 !  06-jan-10/anders: adapted from eos_idealgas
 !
       use SharedVariables, only: get_shared_variable
-      use Sub, only: register_report_aux
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
@@ -223,12 +229,6 @@ module EquationOfState
 !
       ieosvars=-1
       ieosvar_count=0
-!
-!  fvap, mumol1, and cp as auxiliary variables.
-!
-      call register_report_aux('fvap',ifvap)
-      call register_report_aux('mumol1',imumol1)
-      call register_report_aux('cp',icp)
 !
 !  Prevent use of uninitialized variables by the initial conditions. These will be updated later by init_eos.
       f(:,:,:,ifvap) = 0
