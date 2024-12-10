@@ -2746,7 +2746,7 @@ module Magnetic
       endif
       if (lresi_ydep .and. lspherical_coords) lpenc_requested(i_r_mn1)=.true.
       if ((.not.lweyl_gauge).and.(lresi_eta_proptouz)) lpenc_requested(i_diva)=.true.
-      lpenc_requested(i_uij)=.true.
+      if (lhydro) lpenc_requested(i_uij)=.true.
       if (lresi_eta_proptouz) lpenc_requested(i_uu)=.true.
       if (lresi_sqrtrhoeta_const) then
         lpenc_requested(i_jj)=.true.
@@ -2960,10 +2960,7 @@ module Magnetic
 !
       if (lresi_eta_tdep .or. lresi_eta_xtdep .or. lresi_hyper2_tdep .or. lresi_hyper3_tdep) then
         if (tdep_eta_type=='mean-field-local') then
-          lpenc_requested(i_e2)=.true.
           lpenc_requested(i_b2)=.true.
-        elseif (tdep_eta_type=='mean-field') then
-          call fatal_error('pencil_criteria_magnetic','to check whether we need e2 and b2')
         endif
       endif
 !
@@ -4148,9 +4145,12 @@ module Magnetic
              if (lbb_as_aux .and. .not. lbb_as_comaux) then
                if (ncpus>1.or.dimensionality>1) call fatal_error('calc_pencils_magnetic_pencpar', &
                    'not programmed for multiple procs or more than 1 dimension')
-               b2m=sum(f(l1:l2,m,n,ibx)**2+f(l1:l2,m,n,iby)**2+f(l1:l2,m,n,ibz)**2)/nx
-               Eaver=sqrt(sum(f(l1:l2,m1:m2,n,iex)**2+f(l1:l2,m1:m2,n,iey)**2+f(l1:l2,m1:m2,n,iez)**2)/nx)
-               Baver=sqrt(B_ext2+b2m)
+               !b2m=sum(f(l1:l2,m,n,ibx)**2+f(l1:l2,m,n,iby)**2+f(l1:l2,m,n,ibz)**2)/nx
+               Eaver=sqrt(sum(f(l1:l2,m,n,iex)**2+f(l1:l2,m,n,iey)**2+f(l1:l2,m,n,iez)**2)/nx)
+               !Baver=sqrt(sum(f(l1:l2,m,n,ibx)**2+f(l1:l2,m,n,iby)**2+f(l1:l2,m,n,ibz)**2)/nx+B_ext2)
+!print*,'AXEL71: Eaver,Baver,B_ext2=',Eaver,Baver,B_ext2
+               !Baver=sqrt(B_ext2+b2m)
+               Baver=sqrt(sum(p%b2)/nx+B_ext2)
              else
                call fatal_error('magnetic_after_boundary','must have lbb_as_aux')
              endif
@@ -4172,20 +4172,41 @@ module Magnetic
           case ('mean-field-local')
              call get_shared_variable('ascale', ascale, caller='initialize_magnetic')
              call get_shared_variable('Hscript', Hscript, caller='initialize_magnetic')
-             Eabs=sqrt(p%e2)
+             if (iex>0) then
+               Eabs=sqrt(f(l1:l2,m,n,iex)**2+f(l1:l2,m,n,iey)**2+f(l1:l2,m,n,iez)**2)
+             else
+               call fatal_error('calc_pencils_magnetic_pencpar','electric field must be computed')
+             endif
              Babs=sqrt(p%b2)
+!
+               b2m=sum(p%b2)/nx
+               Eaver=sqrt(sum(f(l1:l2,m1:m2,n,iex)**2+f(l1:l2,m1:m2,n,iey)**2+f(l1:l2,m1:m2,n,iez)**2)/nx)
+               Baver=sqrt(B_ext2+b2m)
+!print*,'AXEL72: Eaver,Baver,B_ext2=',Eaver,Baver,B_ext2
 !
 !  Note that for Babs=0, eta_xtdep=0
 !
-            where (Eabs<tini)
+      !     where (Eabs<tini)
+      !       eta_xtdep=eta_huge
+      !     elsewhere
+      !       where (Babs<tini)
+      !         !eta_xtdep=6.*pi**3*Hscript/echarge**3/Eabs
+      !         eta_xtdep=6.*pi**3*Hscript/echarge**3/Eaver
+      !       elsewhere
+      !         !eta_xtdep=6.*pi**2*Hscript/echarge**3*tanh(pi*Babs/Eabs)/Babs
+      !         eta_xtdep=6.*pi**2*Hscript/echarge**3*tanh(pi*Baver/Eaver)/Baver
+      !       endwhere
+      !     endwhere
+
+            if (Eaver<tini .or. lno_eta_tdep) then
               eta_xtdep=eta_huge
-            elsewhere
-              where (Babs<tini)
-                eta_xtdep=6.*pi**3*Hscript/echarge**3/Eabs
-              elsewhere
-                eta_xtdep=6.*pi**2*Hscript/echarge**3*tanh(pi*Babs/Eabs)/Babs
-              endwhere
-            endwhere
+            else
+              if (Baver<tini) then
+                eta_xtdep=6.*pi**3*Hscript/echarge**3/Eaver
+              else
+                eta_xtdep=6.*pi**2*Hscript/echarge**3*tanh(pi*Baver/Eaver)/Baver
+              endif
+            endif
           case default
         endselect
       endif
@@ -5895,7 +5916,6 @@ module Magnetic
 !  This line must not be used when the displacement current is being solved for.
 !  But is might actually work correctly.
 !
-!print*,'AXEL: lee_as_aux, dAdt(1:3)=',lee_as_aux, dAdt(1:3)
       if (lee_as_aux) then
         if (lroot) print*,'f(l1:l2,m,n,iex:iez)=-dAdt is set'
         f(l1:l2,m,n,iex:iez)=-dAdt
@@ -5930,7 +5950,6 @@ module Magnetic
 !
         diffus_eta =eta_total *dxyz_2
         diffus_eta2=diffus_eta2*dxyz_4
-!print*,'AXEL: diffus_eta=',diffus_eta
 !
         if (ldynamical_diffusion .and. lresi_hyper3_mesh) then
           diffus_eta3 = diffus_eta3 * sum(dline_1,2)
@@ -6792,8 +6811,6 @@ module Magnetic
         if (lroot) call save_name(eta_tdep,idiag_eta_tdep)
       elseif (lresi_eta_xtdep) then
         call sum_mn_name(eta_xtdep,idiag_eta_tdep)
-      else
-        call fatal_error('calc_0d_diagnostics_magnetic','should not happen')
       endif
 !
 !  current density components at one point (=pt).
@@ -7371,7 +7388,6 @@ module Magnetic
 
       real, dimension(nx) :: tmp
       real, save :: phase_beltrami_before=impossible
-      real :: Eaver, Baver, b2m
 !
 !  Slope limited diffusion following Rempel (2014)
 !  First calculating the flux in a subroutine below
