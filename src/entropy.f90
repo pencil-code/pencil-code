@@ -3495,7 +3495,7 @@ module Energy
     subroutine denergy_dt(f,df,p)
 !
 !  Calculate right hand side of entropy equation,
-!  ds/dt = -u.grads + [H-C + div(K*gradT) + mu0*eta*J^2 + ...]
+!  ds/dt = -u.grads + [H-C + div(K*gradT) + mu0*eta*J^2 + ...]/(rho*T)
 !
 !  17-sep-01/axel: coded
 !   9-jun-02/axel: pressure gradient added to du/dt already here
