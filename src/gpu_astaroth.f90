@@ -157,10 +157,11 @@ contains
 !**************************************************************************
     subroutine load_farray_to_GPU(f)
 
+!$    use General, only: signal_send
+
       real, dimension (mx,my,mz,mfarray), intent(OUT) :: f
 
       call load_farray_c
-!$    lfarray_copied=.false.
 
     endsubroutine load_farray_to_GPU
 !**************************************************************************
