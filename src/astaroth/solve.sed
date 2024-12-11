@@ -14,11 +14,9 @@
               w sedtmp
               : cont
               $ { a fixed_boundary Kernel twopass_solve_final(int step_num)\{
-                  r sedtmp
-                  a \}
+#                  r sedtmp
+#                  a \}
                 }
               d
               : end
            }
-/twopass_solve_intermediate(STEP_NUM,dt)/ a \
-  twopass_solve_final(STEP_NUM)
