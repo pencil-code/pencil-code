@@ -560,6 +560,9 @@ subroutine timeloop(f,df,p)
 !$    lmasterflags = .false.
 !$    call signal_send(lhelper_perf,.true.)
 !$    lfarray_copied = .false.
+!$  else if(lfarray_copied) then
+!$    lfarray_copied = .false.
+!$    call signal_send(lhelper_perf,.false.)
 !$  endif
 
   enddo Time_loop
