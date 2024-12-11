@@ -3139,15 +3139,11 @@ endif
 	    fieldname=`echo $$replcmt | sed -e's/.*\\\\\/ *\\\\\/ *\([a-zA-Z0-9_]*\).*$$/\U\1/'`; \
 	    funcname=`grep '^ *subroutine  *d[a-zA-Z_0-9_][a-zA-Z_0-9_]*_dt' $$file | sed -e's/^ *subroutine  *d/d/' -e's/ *(.*$$//'`; \
 	    if [[ "$$replcmt" =~ .*\#define[^a-zA-Z_].* ]]; then \
-	      suffix=; \
-	      prefix=vec; \
 	      init="return real3(0.,0.,0.)"; \
 	    else \
-	      suffix=; \
-	      prefix=; \
 	      init="return 0."; \
 	    fi; \
-	    echo '  '$$prefix'write( '$$fieldname', rk3'$$suffix'('$$prefix'previous('$$fieldname'), '$$prefix'value('$$fieldname'), '$$funcname'(step_num), step_num, dt) )' >> $(DSL_WORKDIR)/solve.ac; \
+	    echo '  write( '$$fieldname', rk3'$$'(previous('$$fieldname'), value('$$fieldname'), '$$funcname'(step_num), step_num, dt) )' >> $(DSL_WORKDIR)/solve.ac; \
 	    if ( ! grep $$funcname' *( *int *step_num *) *{' $(DSL_WORKDIR)/equations.h > /dev/null ); then \
 	      echo '#if '`echo $$modname | sed -e's/\(.*\)/L\U\1/'` >> $(DSL_WORKDIR)/equations.h; \
 	      echo $$funcname'(int step_num){' >> $(DSL_WORKDIR)/equations.h; \
@@ -3170,6 +3166,7 @@ endif
 	@sed -i -e'/^ *\/\// d' -e'/auxiliary/ d' $(DSL_WORKDIR)/fieldecs.h
 	@cat tmpdec | sed -e's/communicated //' -e's/auxiliary //' >> $(DSL_WORKDIR)/fieldecs.h; rm tmpdec
 	@sed -f $(CUDA_MAKEDIR)/solve.sed $(DSL_WORKDIR)/solve.ac > $(DSL_WORKDIR)/solve_two.ac
+	@echo '}' >> sedtmp; cat sedtmp >> $(DSL_WORKDIR)/solve_two.ac; rm -f sedtmp
 	@mv $(DSL_WORKDIR)/solve.ac $(DSL_WORKDIR)/solve_single.ac
 	@echo '#include "steps_two.h"' >> $(DSL_WORKDIR)/solve_two.ac
 	@echo '#include "steps_single.h"' >> $(DSL_WORKDIR)/solve_single.ac
