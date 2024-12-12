@@ -5178,7 +5178,7 @@ module Initcond
     subroutine power_randomphase_hel(ampl,initpower,initpower2, &
       cutoff,ncutoff,kpeak,f,i1,i2,relhel,kgaussian, &
       lskip_projection,lvectorpotential,lscale_tobox, lsquash, &
-      k1hel, k2hel,lremain_in_fourier,lpower_profile_file,qexp0, &
+      k1hel, k2hel,lremain_in_fourier,lpower_profile_file,qexp, &
       lno_noise,nfact0,lfactors0,compk0,llogbranch0,initpower_med0, &
       kpeak_log0,kbreak0,ldouble0,nfactd0,qirro,lsqrt_qirro,time, &
       cs,lreinit,ltime_old,ltime_new,lrho_nonuni,ilnr,l2d, &
@@ -5220,7 +5220,7 @@ module Initcond
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i, i1, i2, ikx, iky, ikz, stat, ik, nk, ilnr1
       integer, intent(in), optional :: ilnr
-      real, intent(in), optional :: k1hel, k2hel, qexp0, nfact0, compk0
+      real, intent(in), optional :: k1hel, k2hel, qexp, nfact0, compk0
       real, intent(in), optional :: initpower_med0, kpeak_log0, kbreak0
       real, intent(in), optional :: nfactd0, qirro, time, cs
       real, dimension (:,:,:,:), allocatable :: u_re, u_im
@@ -5232,8 +5232,8 @@ module Initcond
       real :: nfact, kpeak1, kpeak21, nexp1,nexp2,ncutoff,kgaussian,fact
       real :: lgk0, dlgk, lgf, lgk, lgf2, lgf1, lgk2, lgk1, D1, D2, D3, compk
       real :: kpeak_log, kbreak, kbreak1, kbreak2, kbreak21, initpower_med, initpower_log
-      real :: nfactd,nexp3,nexp4, qexp
-      real :: qirro1, p, p2, time1, cs1, om, ctime, stime
+      real :: nfactd,nexp3,nexp4
+      real :: qexp1, qexp11, qirro1, p, p2, time1, cs1, om, ctime, stime
 !
       if (ampl==0.) then
         if (lroot) print*,'power_randomphase: set variable to zero; i1,i2=',i1,i2
@@ -5279,6 +5279,10 @@ module Initcond
 !
       l2d1 = loptest(l2d)
 !
+!  qexp for q-exponential, qexp=1 by default
+!
+     qexp1 = roptest(qexp, rdef=1.)
+!
 !  qirro, is the vortical contribution, qirro=1 for fully irrotational.
 !
      qirro1 = roptest(qirro)
@@ -5301,7 +5305,6 @@ module Initcond
 !  alberto: added option to compensate spectral shape by a power of k
 !
      compk = roptest(compk0)
-     qexp = roptest(qexp0)
 !
 !  alberto: added option to use different values of nfact
 !  Here, nfact is the exponent on k/k0, with an 1/nfact outside [1+(k/k0)^n]^(1/nfact).
@@ -5403,97 +5406,34 @@ module Initcond
       kz=cshift((/(i-nzgrid/2,i=0,nzgrid-1)/),nzgrid/2)*scale_factor
       if (lroot.and.ip<10) print*,'AXEL: kz=',kz
 !
-!  Generate flat spectrum with random phase (between -pi and pi) for qexp=0.
-!  or when qexp is not given
+!  Generate flat spectrum with random phase (between -pi and pi).
+!  When lrandom_ampl=T, we multiply by a sqrt(-2*alog(k2)) factor, as in the
+!  gaunoise routine; the variable k2 is borrowed before it is used for k^2.
+!  For qexp /= 1, we use the q-logarithm, the inverse of the q-exponential,
+!  alog_q(x) = [x^(1-q)-1]/(1-q), and define qexp11 = 1-q for clearer notation.
 !
-!      if (.not.present(qexp)) qexp=0
-      if (qexp==0) then
-        if (lno_noise1) then
-          u_re=ampl
-          u_im=0.
-        else
-          do i=1,i2-i1+1
-            call random_number_wrapper(r)
-            u_re(:,:,:,i)=ampl*cos(pi*(2*r-1))
-            u_im(:,:,:,i)=ampl*sin(pi*(2*r-1))
-            if (lrandom_ampl1) then
-              call random_number_wrapper(k2)
-              u_re(:,:,:,i)=u_re(:,:,:,i)*sqrt(-2*alog(k2))
-              u_im(:,:,:,i)=u_im(:,:,:,i)*sqrt(-2*alog(k2))
-            endif
-          enddo
-        endif
-!
-!  Random nongaussian amplitudes for other values of q with exponential
-!  distribution (for q=1) and super-exponential (for q>1) first in real
-!  space, and then transform into spectral space.
-!
+      if (lno_noise1) then
+        u_re=ampl
+        u_im=0.
       else
         do i=1,i2-i1+1
           call random_number_wrapper(r)
-          call random_number_wrapper(k2)   ! use k2 for r2
-          if (qexp==1.) then
-            u_re(:,:,:,i)=ampl*alog(r)*tanh(100.*(k2-.5))
+          if (lrandom_ampl1) then
+            call random_number_wrapper(k2)
+            if (qexp1==1.) then
+              u_im(:,:,:,i)=ampl*sqrt(-2*alog(k2))
+            else
+              qexp11=1.-qexp1
+              u_im(:,:,:,i)=ampl*sqrt(-2*(k2**qexp11-1.)/qexp11)
+            endif
+            u_re(:,:,:,i)=u_im(:,:,:,i)*cos(pi*(2*r-1))
+            u_im(:,:,:,i)=u_im(:,:,:,i)*sin(pi*(2*r-1))
           else
-            u_re(:,:,:,i)=ampl*(r**(1.-qexp)-1.)/(1.-qexp)*tanh(100.*(k2-.5))
+            u_re(:,:,:,i)=ampl*cos(pi*(2*r-1))
+            u_im(:,:,:,i)=ampl*sin(pi*(2*r-1))
           endif
-          u_im(:,:,:,i)=0.
-          call fft_xyz_parallel(u_re(:,:,:,i),u_im(:,:,:,i))
         enddo
       endif
-
-!  When lrandom_ampl=T, we multiply by a sqrt(-2*alog(k2)) factor, as in the
-!  gaunoise routine; the variable k2 is borrowed before it is used for k^2.
-!
-!      if (present(qexp)) then
-!        if (qexp==0.) then
-!          if (lno_noise1) then
-!            u_re=ampl
-!            u_im=0.
-!          else
-!            do i=1,i2-i1+1
-!              call random_number_wrapper(r)
-!              if (lrandom_ampl1) then
-!                call random_number_wrapper(k2)
-!                u_re(:,:,:,i)=ampl*sqrt(-2*alog(k2))*cos(pi*(2*r-1))
-!                u_im(:,:,:,i)=ampl*sqrt(-2*alog(k2))*sin(pi*(2*r-1))
-!              else
-!                u_re(:,:,:,i)=ampl*cos(pi*(2*r-1))
-!                u_im(:,:,:,i)=ampl*sin(pi*(2*r-1))
-!              endif
-!            enddo
-!          endif
-!        else
-!
-!  Random nongaussian amplitudes for other values of q with exponential
-!  distribution (for q=1) and super-exponential (for q>1) first in real
-!  space, and then transform into spectral space.
-!
-!          do i=1,i2-i1+1
-!            call random_number_wrapper(r)
-!            call random_number_wrapper(u_re(:,:,:,i))   ! use u_re for r2
-!            if (qexp==1.) then
-!              u_re(:,:,:,i)=ampl*alog(r)*tanh(100.*(u_re(:,:,:,i)-.5))
-!            else
-!              u_re(:,:,:,i)=ampl*(r**(1.-qexp)-1.)/(1.-qexp)*tanh(100.*(u_re(:,:,:,i)-.5))
-!            endif
-!            u_im(:,:,:,i)=0.
-!            call fft_xyz_parallel(u_re(:,:,:,i),u_im(:,:,:,i))
-!          enddo
-!        endif
-!      else  ! (present(qexp))
-!        if (lno_noise1) then
-!          u_re=ampl
-!          u_im=0.
-!        else
-!          do i=1,i2-i1+1
-!            call random_number_wrapper(r)
-!            u_re(:,:,:,i)=ampl*cos(pi*(2*r-1))
-!            u_im(:,:,:,i)=ampl*sin(pi*(2*r-1))
-!          enddo
-!        endif
-!      endif  ! (present(qexp))
-!
 !
 !  Set k^2 array.
 !
