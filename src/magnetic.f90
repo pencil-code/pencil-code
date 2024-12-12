@@ -2121,7 +2121,7 @@ module Magnetic
           call power_randomphase_hel(amplaa(j),initpower_aa,initpower2_aa, &
             cutoff_aa,ncutoff_aa,kpeak_aa,f,iax,iaz,relhel_aa,kgaussian_aa, &
             lskip_projection_aa, lvectorpotential, lscale_tobox, lsquash_aa, k1hel=k1hel, k2hel=k2hel, &
-            lpower_profile_file=lpower_profile_file, qexp=qexp_aa,nfact0=nfact_aa, lfactors0=lfactors_aa, &
+            lpower_profile_file=lpower_profile_file, qexp0=qexp_aa, nfact0=nfact_aa, lfactors0=lfactors_aa, &
             l2d=l2d_aa,compk0=compk_aa, lrandom_ampl=lrandom_ampl_aa, lno_noise=lno_noise_aa)
         case ('random-isotropic-KS')
           call random_isotropic_KS(initpower_aa,f,iax,N_modes_aa)
