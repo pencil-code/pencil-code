@@ -19,6 +19,295 @@
 
 // Astaroth headers.
 #include "astaroth.h"
+bool
+has_nans(AcMesh mesh_in);
+
+#define real AcReal
+#include "math_utils.h"
+#define EXTERN
+#define FINT int
+
+#if DOUBLE_PRECISION
+  #define REAL_MAX DBL_MAX
+#else
+  #define REAL_MAX FLT_MAX
+#endif
+#include "../cparam_c.h"
+
+static int rank;
+static AcTaskGraph *rhs;
+static AcMesh mesh;
+extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
+{
+  const auto DEVICE_VTXBUF_IDX = [&](const int x, const int y, const int z)
+  				{
+					return acVertexBufferIdx(x,y,z,mesh.info);
+  				};
+  // __energy_MOD_pushpars2c(p_par_energy);
+  // mesh.info.profiles[AC_dlnhcond_prof]=dlnhcond_prof; // [2-1] dlnhcond_prof real(nz)
+  // for (int i=20;i<30;++i)
+  //   acLogFromRootProc(rank,"C: dlnhcond_prof %d=%f\n",i,mesh.info.profiles[AC_dlnhcond_prof][i]);
+  // fflush(stdout);
+  // return;
+  // make_tasks(diagnostics_func, reduction_func, finalize_func, write_func);
+  // thread_pool.WaitAll();
+  constexpr AcReal alpha[3] = {0.0, -(5.0 / 9.0), -(153.0 / 128.0)};
+  constexpr AcReal beta[3] = {(1.0 / 3.0), (15.0 / 16.0), (8.0 / 15.0)};
+  constexpr int num_of_steps = 100;
+
+  AcMesh mesh_true;
+  AcMesh mesh_test;
+  const AcReal epsilon = pow(0.1,12);
+  // constexpr AcReal epsilon = 0.0;
+  constexpr AcReal local_dt = 0.001;
+  Device dev = acGridGetDevice();
+  acDeviceSetInput(acGridGetDevice(),AC_dt,local_dt);
+  acGridSynchronizeStream(STREAM_ALL);
+
+  size_t offset = 0;
+  for (int i = 0; i < NUM_VTXBUF_HANDLES; ++i)
+  {
+    mesh_test.vertex_buffer[VertexBufferHandle(i)] = &farray_in[offset];
+    offset += mw;
+  }
+  offset = 0;
+  for (int i = 0; i < NUM_VTXBUF_HANDLES; ++i)
+  {
+    mesh_true.vertex_buffer[VertexBufferHandle(i)] = &dfarray_truth[offset];
+    offset += mw;
+  }
+  AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
+  acLogFromRootProc(rank,"n0: %d,%d,%d\trank: %d\n", dims.n0.x, dims.n0.y, dims.n0.z, rank);
+  acLogFromRootProc(rank,"n1: %d,%d,%d\trank: %d\n", dims.n1.x, dims.n1.y, dims.n1.z, rank);
+
+  //dryrun
+  // acGridLaunchKernel(STREAM_DEFAULT, twopass_solve_intermediate_step0, dims.n0,dims.n1);
+  // acGridSynchronizeStream(STREAM_ALL);
+  // acGridSwapBuffers();
+  // acGridSynchronizeStream(STREAM_ALL);
+  // acGridLaunchKernel(STREAM_DEFAULT, twopass_solve_final_step0, dims.n0,dims.n1);
+  // acGridSynchronizeStream(STREAM_ALL);
+  // acGridSwapBuffers();
+  // acGridSynchronizeStream(STREAM_ALL);
+  // acGridLaunchKernel(STREAM_DEFAULT, twopass_solve_intermediate_step1, dims.n0,dims.n1);
+  // acGridSynchronizeStream(STREAM_ALL);
+  // acGridSwapBuffers();
+  // acGridSynchronizeStream(STREAM_ALL);
+
+  // acGridExecuteTaskGraph(rhs_test_graph,1);
+  for(int i = 0; i < 3; ++i)
+  {
+  	acDeviceSetInput(acGridGetDevice(), AC_step_num, i);
+  	acGridExecuteTaskGraph(rhs,1);
+  	acGridSynchronizeStream(STREAM_ALL);
+  }
+
+  acGridSynchronizeStream(STREAM_ALL);
+  acDeviceLoadMesh(acGridGetDevice(), STREAM_DEFAULT, mesh_test);
+  acGridSynchronizeStream(STREAM_ALL);
+  acDeviceStoreMesh(acGridGetDevice(), STREAM_DEFAULT, &mesh);
+  acGridSynchronizeStream(STREAM_ALL);
+
+  bool loaded_correct = true;
+  for (int i = 0; i < mx; i++)
+  {
+    for (int j = 0; j < my; j++)
+    {
+      for (int k = 0; k < mz; k++)
+      {
+        for (int ivar = 0; ivar < mfarray; ivar++)
+        {
+          AcReal out_val = mesh.vertex_buffer[ivar][DEVICE_VTXBUF_IDX(i, j, k)];
+          AcReal true_val = mesh_test.vertex_buffer[ivar][DEVICE_VTXBUF_IDX(i, j, k)];
+          if (out_val != true_val)
+          {
+            loaded_correct = false;
+            acLogFromRootProc(rank,"Loaded val wrong at %d,%d,%d\n", i, j, k);
+            acLogFromRootProc(rank,"field = %d", ivar);
+            acLogFromRootProc(rank,"Loaded val: %f\tTRUE val: %f\n", out_val, true_val);
+          }
+        }
+      }
+    }
+  }
+  //AcReal derx_ux;
+  //AcReal derx_normal;
+  //AcReal dery_uy;
+  //AcReal derz_uz;
+  //test calculating divu different ways
+  //const int y = 42;
+  //const int x = 42;
+  //const int z = 42;
+  //const AcReal AC_inv_dsx = 2.0;
+
+    // [0][0][-3] = -AC_inv_dsx * DER1_3,
+    // [0][0][-2] = -AC_inv_dsx * DER1_2,
+    // [0][0][-1] = -AC_inv_dsx * DER1_1,
+    // [0][0][1]  = AC_inv_dsx * DER1_1,
+    // [0][0][2]  = AC_inv_dsx * DER1_2,
+    // [0][0][3]  = AC_inv_dsx * DER1_3
+
+  // derx_normal = -AC_inv_dsx*DER1_3*(mesh.vertex_buffer[0][DEVICE_VTXBUF_IDX(x-3,y,z)]);
+  // derx_normal += -AC_inv_dsx*DER1_2*(mesh.vertex_buffer[0][DEVICE_VTXBUF_IDX(x-2,y,z)]);
+  // derx_normal += -AC_inv_dsx*DER1_1*(mesh.vertex_buffer[0][DEVICE_VTXBUF_IDX(x-1,y,z)]);
+  // derx_normal += AC_inv_dsx*DER1_1*(mesh.vertex_buffer[0][DEVICE_VTXBUF_IDX(x+1,y,z)]);
+  // derx_normal += AC_inv_dsx*DER1_2*(mesh.vertex_buffer[0][DEVICE_VTXBUF_IDX(x+2,y,z)]);
+  // derx_normal += AC_inv_dsx*DER1_3*(mesh.vertex_buffer[0][DEVICE_VTXBUF_IDX(x+3,y,z)]);
+  // acLogFromRootProc(rank,"test derx_ux: %.7e\n",derx_ux);
+  // acLogFromRootProc(rank,"normal derx_ux. %.7e\n",derx_normal);
+  fflush(stdout);
+  // return;
+  if (loaded_correct)
+  {
+    acLogFromRootProc(rank,"loaded correct data\n");
+  }
+  else
+  {
+    acLogFromRootProc(rank,"loaded incorrect data :(\n");
+  }
+
+  //set output buffer to 0 since if we are reading from it we don't want NaNs
+  // acGridExecuteTaskGraph(rhs_test_graph, 1);
+  // acGridSynchronizeStream(STREAM_ALL);
+  // acGridExecuteTaskGraph(rhs_test_rhs_1, 1);
+  // acGridSynchronizeStream(STREAM_ALL);
+  acGridLaunchKernel(STREAM_DEFAULT, AC_BUILTIN_RESET, dims.n0, dims.n1);
+  acGridSynchronizeStream(STREAM_ALL);
+
+  //actual run
+  for (int i=0;i<num_of_steps;i++){
+    for(int substep  = 0; substep < 3; ++i)
+    {
+    	acDeviceSetInput(acGridGetDevice(), AC_step_num, substep);
+    	acGridExecuteTaskGraph(rhs,1);
+    	acGridSynchronizeStream(STREAM_ALL);
+    }
+    acGridSynchronizeStream(STREAM_ALL);
+    acDeviceStoreMesh(acGridGetDevice(), STREAM_DEFAULT, &mesh);
+  //  acGridSynchronizeStream(STREAM_ALL);
+  //  AcReal max_uux2 = 0.0;
+  //  AcReal max_uuy2 = 0.0;
+  //  AcReal max_uuz2 = 0.0;
+  //for (int i = dims.n0.x; i < dims.n1.x; i++)
+  //{
+  //  for (int j = dims.n0.y; j < dims.n1.y; j++)
+  //  {
+  //    for (int k = dims.n0.z; k < dims.n1.z; k++)
+  //    {
+  //        max_uux2 = max(max_uux2,pow(mesh.vertex_buffer[0][DEVICE_VTXBUF_IDX(i,j,k)],2));
+  //        max_uuy2 = max(max_uuy2,pow(mesh.vertex_buffer[1][DEVICE_VTXBUF_IDX(i,j,k)],2));
+  //        max_uuz2 = max(max_uuz2,pow(mesh.vertex_buffer[2][DEVICE_VTXBUF_IDX(i,j,k)],2));
+  //    }
+  //  }
+  //}
+  //acLogFromRootProc(rank,"GPU: uumax: %.7e\n", pow(max_uux2+max_uuy2+max_uuz2,0.5));
+  //  acGridSynchronizeStream(STREAM_ALL);
+  }
+    acGridSynchronizeStream(STREAM_ALL);
+  // acGridLaunchKernel(STREAM_DEFAULT, twopass_solve_intermediate_step0, dims.n0,dims.n1);
+  // acGridSynchronizeStream(STREAM_ALL);
+  // acGridSwapBuffers();
+  // acGridSynchronizeStream(STREAM_ALL);
+  // acGridLaunchKernel(STREAM_DEFAULT, twopass_solve_final_step0, dims.n0,dims.n1);
+  // acGridSynchronizeStream(STREAM_ALL);
+  // acGridSwapBuffers();
+  // acGridSynchronizeStream(STREAM_ALL);
+  // acGridLaunchKernel(STREAM_DEFAULT, twopass_solve_intermediate_step1, dims.n0,dims.n1);
+  // acGridSynchronizeStream(STREAM_ALL);
+  // acGridSwapBuffers();
+  // acGridSynchronizeStream(STREAM_ALL);
+
+  // acGridLaunchKernel(STREAM_DEFAULT, twopass_solve_final_step1, dims.n0,dims.n1);
+  // acGridSynchronizeStream(STREAM_ALL);
+  // acGridSwapBuffers();
+  // acGridSynchronizeStream(STREAM_ALL);
+
+  // acGridLaunchKernel(STREAM_DEFAULT, twopass_solve_intermediate_step2, dims.n0,dims.n1);
+  // acGridSynchronizeStream(STREAM_ALL);
+  // acGridSwapBuffers();
+  // acGridSynchronizeStream(STREAM_ALL);
+
+  // acGridLaunchKernel(STREAM_DEFAULT, twopass_solve_final_step2, dims.n0,dims.n1);
+  // acGridSynchronizeStream(STREAM_ALL);
+  // acGridSwapBuffers();
+  // acGridSynchronizeStream(STREAM_ALL);
+
+  acGridSynchronizeStream(STREAM_ALL);
+  acDeviceStoreMesh(acGridGetDevice(), STREAM_DEFAULT, &mesh);
+
+  bool passed = true;
+  AcReal max_abs_not_passed_val=-1.0;
+  AcReal true_pair;
+  AcReal max_abs_relative_difference =-1.0;
+  AcReal max_abs_value = -1.0;
+  AcReal min_abs_value = 1.0;
+  AcReal gpu_val_for_largest_diff;
+  AcReal true_val_for_largest_diff;
+  int num_of_points_where_different[NUM_VTXBUF_HANDLES] = {0};
+
+  for (int i = dims.n0.x; i < dims.n1.x; i++)
+  {
+    for (int j = dims.n0.y; j < dims.n1.y; j++)
+    {
+      for (int k = dims.n0.z; k < dims.n1.z; k++)
+      {
+        for (int ivar = 0; ivar < NUM_VTXBUF_HANDLES; ivar++)
+        {
+          AcReal out_val = mesh.vertex_buffer[ivar][DEVICE_VTXBUF_IDX(i, j, k)];
+          AcReal true_val = mesh_true.vertex_buffer[ivar][DEVICE_VTXBUF_IDX(i, j, k)];
+          AcReal abs_diff = fabs(out_val - true_val);
+          if (fabs(true_val) > max_abs_value) max_abs_value = fabs(true_val);
+          if (fabs(true_val) < min_abs_value) min_abs_value = fabs(true_val);
+          if ((abs_diff/true_val) > epsilon || (true_val == 0.0 && fabs(out_val) > pow(0.1,13)) || (epsilon == 0.0 && true_val != out_val))
+          {
+            passed = false;
+            num_of_points_where_different[ivar]++;
+            // acLogFromRootProc(rank,"rhs val wrong at %d,%d,%d\n", i, j, k);
+            // acLogFromRootProc(rank,"field = %d", ivar);
+            // acLogFromRootProc(rank,"GPU val: %.7e\tTRUE val: %.7e\n", out_val, true_val);
+            // acLogFromRootProc(rank,"PID: %d\n", rank);
+            if (max_abs_not_passed_val<abs(out_val)){
+              max_abs_not_passed_val = abs(out_val);
+              true_pair = true_val;
+            }
+            if (true_val != 0.0){
+              if (max_abs_relative_difference<(abs_diff/true_val)){
+                max_abs_relative_difference=(abs_diff/true_val);
+                gpu_val_for_largest_diff = out_val;
+                true_val_for_largest_diff = true_val;
+              }
+            }  
+          }
+          if (isnan(out_val))
+          {
+            acLogFromRootProc(rank,"nan before at %d,%d,%d,%d!\n!",i,j,k,ivar);
+            acLogFromRootProc(rank,"%.7e\n",out_val);
+          }
+        }
+      }
+    }
+  }
+  auto volume_size = [](int3 a)
+  {
+	  return a.x*a.y*a.z;
+  };
+  for (int ivar=0;ivar<NUM_VTXBUF_HANDLES;ivar++)
+    acLogFromRootProc(rank,"ratio of values wrong for field: %d\t %f\n",ivar,(double)num_of_points_where_different[ivar]/volume_size(dims.n1-dims.n0));
+  passed &= !has_nans(mesh);
+  if (passed)
+  {
+    acLogFromRootProc(rank,"Passed GPU test :)\n");
+  }
+  else
+  {
+    acLogFromRootProc(rank,"Did not pass GPU test :(\n");
+  }
+  acLogFromRootProc(rank,"max abs not passed val: %.7e\t%.7e\n",max_abs_not_passed_val, fabs(true_pair));
+  acLogFromRootProc(rank,"max abs relative difference val: %.7e\n",max_abs_relative_difference);
+  acLogFromRootProc(rank,"largest difference: %.7e\t%.7e\n",gpu_val_for_largest_diff, true_val_for_largest_diff);
+  acLogFromRootProc(rank,"abs range: %.7e-%7e\n",min_abs_value,max_abs_value);
+  fflush(stdout);
+}
 
 AcReal
 to_real(void* param)
@@ -54,16 +343,6 @@ to_bool3(void* param)
         return (AcBool3){arr[0],arr[1],arr[2]};
 }
 
-#include "math_utils.h"
-#define real AcReal
-#define EXTERN
-#define FINT int
-
-#if DOUBLE_PRECISION
-  #define REAL_MAX DBL_MAX
-#else
-  #define REAL_MAX FLT_MAX
-#endif
 
 __thread int tp_int;
 typedef void (*rangefunc)(const int a, const int b);
@@ -75,7 +354,6 @@ AcReal cpu_pow(AcReal const val, AcReal exponent)
 }
 // PC interface headers.
 #include "PC_moduleflags.h"
-#include "../cparam_c.h"
 //#include "../cdata_c.h"
 #if LFORCING
   #include "../forcing_c.h"     // provides forcing_pars_hel
@@ -94,16 +372,13 @@ AcReal cpu_pow(AcReal const val, AcReal exponent)
   #include "forcing.h"
 #endif
 // Astaroth objects instantiation.
-static AcMesh mesh;
 //static AcMesh test_mesh;
-static AcTaskGraph *rhs;
 static AcTaskGraph *randomize_graph;
 static AcTaskGraph *rhs_test_graph;
 static AcTaskGraph *rhs_test_rhs_1;
 
 
 // Other.
-static int rank;
 static MPI_Comm comm_pencil;
 int halo_xz_size[2] = {0, 0}, halo_yz_size[2] = {0, 0};
 //static AcReal *xtop_buffer, *xbot_buffer, *ytop_buffer, *ybot_buffer;
@@ -503,7 +778,8 @@ extern "C" void substepGPU(int isubstep)
 #endif
       //fprintf(stderr, "HMM MAX ADVEC, DIFFUS: %14e, %14e\n",maxadvec,max_diffus());
       AcReal dt1_ = sqrt(pow(maxadvec, 2) + pow(max_diffus(maxchi_dyn), 2));
-//printf("maxadvec, maxdiffus= %e %e %e \n", maxadvec,maxchi_dyn,max_diffus(maxchi_dyn));
+      printf("maxadvec, maxdiffus= %e %e %e \n", maxadvec,maxchi_dyn,max_diffus(maxchi_dyn)
+		      );
       set_dt(dt1_);
       acDeviceSetInput(acGridGetDevice(),AC_dt,dt);
   }
@@ -645,279 +921,6 @@ extern "C" void testBcKernel(AcReal *farray_in, AcReal *farray_truth)
 }
 **/
 /***********************************************************************************************/
-extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
-{
-}
-/**
-
-extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
-{
-  // __energy_MOD_pushpars2c(p_par_energy);
-  // mesh.info.profiles[AC_dlnhcond_prof]=dlnhcond_prof; // [2-1] dlnhcond_prof real(nz)
-  // for (int i=20;i<30;++i)
-  //   acLogFromRootProc(rank,"C: dlnhcond_prof %d=%f\n",i,mesh.info.profiles[AC_dlnhcond_prof][i]);
-  // fflush(stdout);
-  // return;
-  // make_tasks(diagnostics_func, reduction_func, finalize_func, write_func);
-  // thread_pool.WaitAll();
-  constexpr real alpha[3] = {0.0, -(5.0 / 9.0), -(153.0 / 128.0)};
-  constexpr real beta[3] = {(1.0 / 3.0), (15.0 / 16.0), (8.0 / 15.0)};
-  constexpr int num_of_steps = 100;
-
-  AcMesh mesh_true;
-  AcMesh mesh_test;
-  const AcReal epsilon = pow(0.1,12);
-  // constexpr AcReal epsilon = 0.0;
-  constexpr AcReal local_dt = 0.001;
-  Device dev = acGridGetDevice();
-  acDeviceSetInput(acGridGetDevice(),AC_dt,local_dt);
-  acGridSynchronizeStream(STREAM_ALL);
-
-  size_t offset = 0;
-  for (int i = 0; i < NUM_VTXBUF_HANDLES; ++i)
-  {
-    mesh_test.vertex_buffer[VertexBufferHandle(i)] = &farray_in[offset];
-    offset += mw;
-  }
-  offset = 0;
-  for (int i = 0; i < NUM_VTXBUF_HANDLES; ++i)
-  {
-    mesh_true.vertex_buffer[VertexBufferHandle(i)] = &dfarray_truth[offset];
-    offset += mw;
-  }
-  AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
-  acLogFromRootProc(rank,"n0: %d,%d,%d\trank: %d\n", dims.n0.x, dims.n0.y, dims.n0.z, rank);
-  acLogFromRootProc(rank,"n1: %d,%d,%d\trank: %d\n", dims.n1.x, dims.n1.y, dims.n1.z, rank);
-
-  //dryrun
-  // acGridLaunchKernel(STREAM_DEFAULT, twopass_solve_intermediate_step0, dims.n0,dims.n1);
-  // acGridSynchronizeStream(STREAM_ALL);
-  // acGridSwapBuffers();
-  // acGridSynchronizeStream(STREAM_ALL);
-  // acGridLaunchKernel(STREAM_DEFAULT, twopass_solve_final_step0, dims.n0,dims.n1);
-  // acGridSynchronizeStream(STREAM_ALL);
-  // acGridSwapBuffers();
-  // acGridSynchronizeStream(STREAM_ALL);
-  // acGridLaunchKernel(STREAM_DEFAULT, twopass_solve_intermediate_step1, dims.n0,dims.n1);
-  // acGridSynchronizeStream(STREAM_ALL);
-  // acGridSwapBuffers();
-  // acGridSynchronizeStream(STREAM_ALL);
-
-  // acGridExecuteTaskGraph(rhs_test_graph,1);
-  for(int i = 0; i < 3; ++i)
-  {
-  	acDeviceSetInput(acGridGetDevice(), AC_step_num, i);
-  	acGridExecuteTaskGraph(rhs,1);
-  	acGridSynchronizeStream(STREAM_ALL);
-  }
-
-  acGridSynchronizeStream(STREAM_ALL);
-  acDeviceLoadMesh(acGridGetDevice(), STREAM_DEFAULT, mesh_test);
-  acGridSynchronizeStream(STREAM_ALL);
-  acDeviceStoreMesh(acGridGetDevice(), STREAM_DEFAULT, &mesh);
-  acGridSynchronizeStream(STREAM_ALL);
-
-  bool loaded_correct = true;
-  for (int i = 0; i < mx; i++)
-  {
-    for (int j = 0; j < my; j++)
-    {
-      for (int k = 0; k < mz; k++)
-      {
-        for (int ivar = 0; ivar < mfarray; ivar++)
-        {
-          AcReal out_val = mesh.vertex_buffer[ivar][DEVICE_VTXBUF_IDX(i, j, k)];
-          AcReal true_val = mesh_test.vertex_buffer[ivar][DEVICE_VTXBUF_IDX(i, j, k)];
-          if (out_val != true_val)
-          {
-            loaded_correct = false;
-            acLogFromRootProc(rank,"Loaded val wrong at %d,%d,%d\n", i, j, k);
-            acLogFromRootProc(rank,"field = %d", ivar);
-            acLogFromRootProc(rank,"Loaded val: %f\tTRUE val: %f\n", out_val, true_val);
-          }
-        }
-      }
-    }
-  }
-  //AcReal derx_ux;
-  //AcReal derx_normal;
-  //AcReal dery_uy;
-  //AcReal derz_uz;
-  //test calculating divu different ways
-  //const int y = 42;
-  //const int x = 42;
-  //const int z = 42;
-  //const AcReal AC_inv_dsx = 2.0;
-
-    // [0][0][-3] = -AC_inv_dsx * DER1_3,
-    // [0][0][-2] = -AC_inv_dsx * DER1_2,
-    // [0][0][-1] = -AC_inv_dsx * DER1_1,
-    // [0][0][1]  = AC_inv_dsx * DER1_1,
-    // [0][0][2]  = AC_inv_dsx * DER1_2,
-    // [0][0][3]  = AC_inv_dsx * DER1_3
-
-  // derx_normal = -AC_inv_dsx*DER1_3*(mesh.vertex_buffer[0][DEVICE_VTXBUF_IDX(x-3,y,z)]);
-  // derx_normal += -AC_inv_dsx*DER1_2*(mesh.vertex_buffer[0][DEVICE_VTXBUF_IDX(x-2,y,z)]);
-  // derx_normal += -AC_inv_dsx*DER1_1*(mesh.vertex_buffer[0][DEVICE_VTXBUF_IDX(x-1,y,z)]);
-  // derx_normal += AC_inv_dsx*DER1_1*(mesh.vertex_buffer[0][DEVICE_VTXBUF_IDX(x+1,y,z)]);
-  // derx_normal += AC_inv_dsx*DER1_2*(mesh.vertex_buffer[0][DEVICE_VTXBUF_IDX(x+2,y,z)]);
-  // derx_normal += AC_inv_dsx*DER1_3*(mesh.vertex_buffer[0][DEVICE_VTXBUF_IDX(x+3,y,z)]);
-  // acLogFromRootProc(rank,"test derx_ux: %.7e\n",derx_ux);
-  // acLogFromRootProc(rank,"normal derx_ux. %.7e\n",derx_normal);
-  fflush(stdout);
-  // return;
-  if (loaded_correct)
-  {
-    acLogFromRootProc(rank,"loaded correct data\n");
-  }
-  else
-  {
-    acLogFromRootProc(rank,"loaded incorrect data :(\n");
-  }
-
-  //set output buffer to 0 since if we are reading from it we don't want NaNs
-  // acGridExecuteTaskGraph(rhs_test_graph, 1);
-  // acGridSynchronizeStream(STREAM_ALL);
-  // acGridExecuteTaskGraph(rhs_test_rhs_1, 1);
-  // acGridSynchronizeStream(STREAM_ALL);
-  acGridLaunchKernel(STREAM_DEFAULT, KERNEL_AC_BUILTIN_RESET, dims.n0, dims.n1);
-  acGridSynchronizeStream(STREAM_ALL);
-
-  //actual run
-  for (int i=0;i<num_of_steps;i++){
-    for(int i = 0; i < 3; ++i)
-    {
-    	acDeviceSetInput(acGridGetDevice(), AC_step_num, i);
-    	acGridExecuteTaskGraph(rhs,1);
-    	acGridSynchronizeStream(STREAM_ALL);
-    }
-    acGridSynchronizeStream(STREAM_ALL);
-    acDeviceStoreMesh(acGridGetDevice(), STREAM_DEFAULT, &mesh);
-  //  acGridSynchronizeStream(STREAM_ALL);
-  //  AcReal max_uux2 = 0.0;
-  //  AcReal max_uuy2 = 0.0;
-  //  AcReal max_uuz2 = 0.0;
-  //for (int i = dims.n0.x; i < dims.n1.x; i++)
-  //{
-  //  for (int j = dims.n0.y; j < dims.n1.y; j++)
-  //  {
-  //    for (int k = dims.n0.z; k < dims.n1.z; k++)
-  //    {
-  //        max_uux2 = max(max_uux2,pow(mesh.vertex_buffer[0][DEVICE_VTXBUF_IDX(i,j,k)],2));
-  //        max_uuy2 = max(max_uuy2,pow(mesh.vertex_buffer[1][DEVICE_VTXBUF_IDX(i,j,k)],2));
-  //        max_uuz2 = max(max_uuz2,pow(mesh.vertex_buffer[2][DEVICE_VTXBUF_IDX(i,j,k)],2));
-  //    }
-  //  }
-  //}
-  //acLogFromRootProc(rank,"GPU: uumax: %.7e\n", pow(max_uux2+max_uuy2+max_uuz2,0.5));
-  //  acGridSynchronizeStream(STREAM_ALL);
-  }
-    acGridSynchronizeStream(STREAM_ALL);
-  // acGridLaunchKernel(STREAM_DEFAULT, twopass_solve_intermediate_step0, dims.n0,dims.n1);
-  // acGridSynchronizeStream(STREAM_ALL);
-  // acGridSwapBuffers();
-  // acGridSynchronizeStream(STREAM_ALL);
-  // acGridLaunchKernel(STREAM_DEFAULT, twopass_solve_final_step0, dims.n0,dims.n1);
-  // acGridSynchronizeStream(STREAM_ALL);
-  // acGridSwapBuffers();
-  // acGridSynchronizeStream(STREAM_ALL);
-  // acGridLaunchKernel(STREAM_DEFAULT, twopass_solve_intermediate_step1, dims.n0,dims.n1);
-  // acGridSynchronizeStream(STREAM_ALL);
-  // acGridSwapBuffers();
-  // acGridSynchronizeStream(STREAM_ALL);
-
-  // acGridLaunchKernel(STREAM_DEFAULT, twopass_solve_final_step1, dims.n0,dims.n1);
-  // acGridSynchronizeStream(STREAM_ALL);
-  // acGridSwapBuffers();
-  // acGridSynchronizeStream(STREAM_ALL);
-
-  // acGridLaunchKernel(STREAM_DEFAULT, twopass_solve_intermediate_step2, dims.n0,dims.n1);
-  // acGridSynchronizeStream(STREAM_ALL);
-  // acGridSwapBuffers();
-  // acGridSynchronizeStream(STREAM_ALL);
-
-  // acGridLaunchKernel(STREAM_DEFAULT, twopass_solve_final_step2, dims.n0,dims.n1);
-  // acGridSynchronizeStream(STREAM_ALL);
-  // acGridSwapBuffers();
-  // acGridSynchronizeStream(STREAM_ALL);
-
-  acGridSynchronizeStream(STREAM_ALL);
-  acDeviceStoreMesh(acGridGetDevice(), STREAM_DEFAULT, &mesh);
-
-  bool passed = true;
-  AcReal max_abs_not_passed_val=-1.0;
-  AcReal true_pair;
-  AcReal max_abs_relative_difference =-1.0;
-  AcReal max_abs_value = -1.0;
-  AcReal min_abs_value = 1.0;
-  AcReal gpu_val_for_largest_diff;
-  AcReal true_val_for_largest_diff;
-  int num_of_points_where_different[NUM_VTXBUF_HANDLES] = {0};
-
-  for (int i = dims.n0.x; i < dims.n1.x; i++)
-  {
-    for (int j = dims.n0.y; j < dims.n1.y; j++)
-    {
-      for (int k = dims.n0.z; k < dims.n1.z; k++)
-      {
-        for (int ivar = 0; ivar < NUM_VTXBUF_HANDLES; ivar++)
-        {
-          AcReal out_val = mesh.vertex_buffer[ivar][DEVICE_VTXBUF_IDX(i, j, k)];
-          AcReal true_val = mesh_true.vertex_buffer[ivar][DEVICE_VTXBUF_IDX(i, j, k)];
-          AcReal abs_diff = fabs(out_val - true_val);
-          if (fabs(true_val) > max_abs_value) max_abs_value = fabs(true_val);
-          if (fabs(true_val) < min_abs_value) min_abs_value = fabs(true_val);
-          if ((abs_diff/true_val) > epsilon || (true_val == 0.0 && fabs(out_val) > pow(0.1,13)) || (epsilon == 0.0 && true_val != out_val))
-          {
-            passed = false;
-            num_of_points_where_different[ivar]++;
-            // acLogFromRootProc(rank,"rhs val wrong at %d,%d,%d\n", i, j, k);
-            // acLogFromRootProc(rank,"field = %d", ivar);
-            // acLogFromRootProc(rank,"GPU val: %.7e\tTRUE val: %.7e\n", out_val, true_val);
-            // acLogFromRootProc(rank,"PID: %d\n", rank);
-            if (max_abs_not_passed_val<abs(out_val)){
-              max_abs_not_passed_val = abs(out_val);
-              true_pair = true_val;
-            }
-            if (true_val != 0.0){
-              if (max_abs_relative_difference<(abs_diff/true_val)){
-                max_abs_relative_difference=(abs_diff/true_val);
-                gpu_val_for_largest_diff = out_val;
-                true_val_for_largest_diff = true_val;
-              }
-            }  
-          }
-          if (isnan(out_val))
-          {
-            acLogFromRootProc(rank,"nan before at %d,%d,%d,%d!\n!",i,j,k,ivar);
-            acLogFromRootProc(rank,"%.7e\n",out_val);
-          }
-        }
-      }
-    }
-  }
-  auto volume_size = [](int3 a)
-  {
-	  return a.x*a.y*a.z;
-  };
-  for (int ivar=0;ivar<NUM_VTXBUF_HANDLES;ivar++)
-    acLogFromRootProc(rank,"ratio of values wrong for field: %d\t %f\n",ivar,(double)num_of_points_where_different[ivar]/volume_size(dims.n1-dims.n0));
-  passed &= !has_nans(mesh);
-  if (passed)
-  {
-    acLogFromRootProc(rank,"Passed GPU test :)\n");
-  }
-  else
-  {
-    acLogFromRootProc(rank,"Did not pass GPU test :(\n");
-  }
-  acLogFromRootProc(rank,"max abs not passed val: %.7e\t%.7e\n",max_abs_not_passed_val, fabs(true_pair));
-  acLogFromRootProc(rank,"max abs relative difference val: %.7e\n",max_abs_relative_difference);
-  acLogFromRootProc(rank,"largest difference: %.7e\t%.7e\n",gpu_val_for_largest_diff, true_val_for_largest_diff);
-  acLogFromRootProc(rank,"abs range: %.7e-%7e\n",min_abs_value,max_abs_value);
-  fflush(stdout);
-}
-**/
 /***********************************************************************************************/
 extern "C" void registerGPU(AcReal *farray)
 {
