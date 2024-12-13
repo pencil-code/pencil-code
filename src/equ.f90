@@ -699,7 +699,7 @@ module Equ
 !
       call init_reduc_pointers
 
-!$omp parallel private(p) num_threads(num_helper_threads) &
+!$omp parallel if(.not. lsuppress_parallel_reductions) private(p) num_threads(num_helper_threads) &
 !$omp copyin(fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz,phiavg_norm)
 !$    call restore_diagnostic_controls
 
