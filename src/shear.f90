@@ -1005,7 +1005,8 @@ module Shear
 !  19-sep-14/ccyang: coded.
 !
       use Mpicomm, only: mpirecv_real, mpisend_real, mpibarrier
-      use Cparam, only: l1i, l2i
+      use Cparam, only: l1i
+      use Cdata, only: l2i
 !
       real, dimension(:,:,:,:), intent(inout) :: a
       integer, intent(in) :: ivar1, ivar2

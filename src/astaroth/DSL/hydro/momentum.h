@@ -30,26 +30,33 @@ else{
     reduce_max(step_num==0, abs(sum(value(UU)/AC_ds)) + sqrt(advec2)/AC_dsx, AC_maxadvec)
     rhs=real3(0.,0.,0.)
 #if LVISCOSITY
-#include "../hydro/viscosity.h"
+    #include "../hydro/viscosity.h"
 #endif
 #if LGRAVITY
     if (lgravz_gas){
       rhs.z += gravz_zpencil[vertexIdx.z-NGHOST]
     }
 #endif
-    if (lupw_uu){
-      rhs -= real3(ugrad_upw(UUX,UU), ugrad_upw(UUY,UU), ugrad_upw(UUZ,UU))
+    if (ladvection_velocity) {
+      if (lupw_uu){
+        rhs -= real3(ugrad_upw(UUX,UU), ugrad_upw(UUY,UU), ugrad_upw(UUZ,UU))
+      }
+      else{
+        rhs -= gradient_tensor(UU) * UU // order?
+      }
     }
-    else{
-      rhs -= gradient_tensor(UU) * UU // order?
-    }
-
-    return rhs 
+    if (lpressuregradient_gas) {
 #if LENTROPY
-           - cs2 * (gradient(SS)/cp + glnrho)
+      rhs -= cs2 * (gradient(SS)/cp + glnrho)
 #else
-	   - cs20 * glnrho
+      if (leos_isothermal){
+        rhs -= cs20 * glnrho
+      }
+    }
 #endif
 #if LMAGNETIC
-           + rho1 * cross(jj,bb)
+    if (llorentzforce) {
+      rhs += rho1 * cross(jj,bb)
+    }
 #endif
+    return rhs 

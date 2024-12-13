@@ -7815,7 +7815,6 @@ endif
       integer,                            intent(in), optional :: indrho
 !
       real, dimension (nx) :: rho,rho1,mm
-      real :: fac
       real, dimension (indux:indux+2) :: rum, rum_tmp
       integer :: m,n,j,indrhol
       logical :: lref
@@ -7846,10 +7845,13 @@ endif
         endif
 !
         rum = 0.0
-        fac = 1.0/nwgrid
 !
 !  Go through all pencils.
 !
+        !!$omp target if(loffload) data
+        !!$omp target if(loffload) data update(reference_state,iref_rho,n1,n2,m1,m2,l1,l2) map(from: rum) has_device_addr(f)
+        !shared: lref, indrhol
+        !$omp teams distribute parallel do collapse(2) private(rho,mm) reduction(+:rum)
         do n = n1,n2
         do m = m1,m2
 !
@@ -7866,20 +7868,25 @@ endif
 !
           do j=indux,indux+2
             mm = rho*f(l1:l2,m,n,j)
-            rum(j) = rum(j) + fac*sum(mm)
+            rum(j) = rum(j) + sum(mm)
           enddo
         enddo
         enddo
+        !!$omp end target
+        !!$omp end target data
 !
 !  Compute total sum for all processors.
 !  Allow here for the possibility to add mean_momentum.
 !  It needs to be subtracted here, because "rum" is removed.
 !
         call mpiallreduce_sum(rum,rum_tmp,3)
-        rum = rum_tmp - mean_momentum
+        rum = rum_tmp/nwgrid - mean_momentum
 !
 !  Compute inverse density, rho1.
 !
+        !!$omp target if(loffload) data map(to: rum) has_device_addr(f) 
+        !shared: lref, indrhol
+        !$omp teams distribute parallel do collapse(2) private(rho1)
         do n = n1,n2
         do m = m1,m2
           if (ldensity_nolog) then
@@ -7899,6 +7906,7 @@ endif
           enddo
         enddo
         enddo
+        !!$omp end target
         if (lroot.and.ip<6) print*,'remove_mean_momenta: rum=',rum
       else
         call remove_mean(f,indux,indux+2)   ! as this is equivalent to remove
@@ -8490,11 +8498,12 @@ endif
 
     use Syscalls, only: copy_addr
 
-    integer, parameter :: n_pars=2
+    integer, parameter :: n_pars=3
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call copy_addr(lpressuregradient_gas,p_par(1))  ! int
     call copy_addr(lupw_uu,p_par(2))  ! int
+    call copy_addr(ladvection_velocity,p_par(3))  ! int
 
     endsubroutine pushpars2c
 !***********************************************************************

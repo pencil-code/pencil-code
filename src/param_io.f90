@@ -799,6 +799,7 @@ module Param_IO
 !  19-aug-15/PABourdin: renamed from 'print_startpars' to 'write_all_init_pars'
 !
       use Particles_main, only: write_all_particles_init_pars
+      use Syscalls, only: system_cmd
 !
       character (len=*), optional, intent(in) :: file
 !
@@ -873,7 +874,13 @@ module Param_IO
 !
         if (lidl_output) call write_IDL_logicals(unit)
 !
-        if (present(file)) close(unit)
+        if (present(file)) then
+          close(unit)
+!
+!  This is to have one item per line in the file param.nml (Cray compiler denies it).
+!
+          call system_cmd("sed -i -e's/\(&[a-zA-Z0-9_]*\) \( *[^ ].*\)/\1\n\2/' -e's/,\([^,]*=\)/,\n\1/g' data/param.nml")
+        endif
       endif
 !
     endsubroutine write_all_init_pars
@@ -984,7 +991,13 @@ module Param_IO
 !
           write(unit,NML=IO_pars)
 
-          if (unit /= 6) close(unit)
+          if (unit /= 6) then
+            close(unit)
+!
+!  This is to have one item per line in the file param.nml (Cray compiler denies it).
+!
+            call system_cmd("sed -i -e's/\(&[a-zA-Z0-9_]*\) \( *[^ ].*\)/\1\n\2/' -e's/,\([^,]*=\)/,\n\1/g' data/param2.nml")
+          endif
 
         else                                    ! output in params.log, stdout or other file
           ! Add separator, comment, and time.

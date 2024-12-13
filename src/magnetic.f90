@@ -6438,9 +6438,9 @@ module Magnetic
 !
 !  Not correct for hyperresistivity:
 !
-      if (.not.lmultithread) then
+      !!!if (.not.lmultithread) then
         if (idiag_epsM/=0) call sum_mn_name(eta_total*mu0*p%j2,idiag_epsM)
-      endif
+      !!!endif
 !
 !  Heating by ion-neutrals friction.
 !
@@ -11212,7 +11212,7 @@ module Magnetic
 
     use Syscalls, only: copy_addr
 
-    integer, parameter :: n_pars=7
+    integer, parameter :: n_pars=8
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call copy_addr(eta,p_par(1))
@@ -11222,6 +11222,7 @@ module Magnetic
     call copy_addr(lresi_hyper2,p_par(5)) ! int
     call copy_addr(lresi_hyper3,p_par(6)) ! int
     call copy_addr(lupw_aa,p_par(7)) ! int
+    call copy_addr(llorentzforce,p_par(8)) ! int
 
     endsubroutine pushpars2c
 !***********************************************************************
