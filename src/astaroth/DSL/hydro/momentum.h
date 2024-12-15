@@ -16,18 +16,11 @@ else{
     grho = glnrho/rho1
     lnrho = value(LNRHO)
 }   // v
-#if LMAGNETIC
-    jj = (gradient_of_divergence(AA) - laplace(AA))/mu0
-    bb = curl(AA)
-    advec2 = norm2(bb)*rho1/mu0
-#else
     advec2 = 0.
-#endif
 #if LENTROPY
     cs2 = cs20 * exp(value(SS)/cv + gamma_m1 * (lnrho - lnrho0))  //v
     advec2 = advec2 + cs2
 #endif
-    reduce_max(step_num==0, abs(sum(value(UU)/AC_ds)) + sqrt(advec2)/AC_dsx, AC_maxadvec)
     rhs=real3(0.,0.,0.)
 #if LVISCOSITY
     #include "../hydro/viscosity.h"
@@ -42,7 +35,7 @@ else{
         rhs -= real3(ugrad_upw(UUX,UU), ugrad_upw(UUY,UU), ugrad_upw(UUZ,UU))
       }
       else{
-        rhs -= gradient_tensor(UU) * UU // order?
+        rhs -= gradient_tensor(UU) * UU
       }
     }
     if (lpressuregradient_gas) {
@@ -56,7 +49,11 @@ else{
 #endif
 #if LMAGNETIC
     if (llorentzforce) {
+      jj = (gradient_of_divergence(AA) - laplace(AA))/mu0
+      bb = curl(AA)
+      advec2 = norm2(bb)*rho1/mu0
       rhs += rho1 * cross(jj,bb)
     }
 #endif
+    reduce_max(step_num==0, sum(abs(value(UU))/AC_ds) + sqrt(advec2)/AC_dsx, AC_maxadvec)
     return rhs 

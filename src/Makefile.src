@@ -565,12 +565,12 @@ ifneq ($(GPU),nogpu)
       GPU_DEPS = $(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/Makefile.vendor $(CUDA_MAKEDIR)/PC_modulesources.h $(DSL_WORKDIR)/fieldecs.h $(DSL_WORKDIR)/equations.h $(DSL_WORKDIR)/solve.ac
       #LDFLAGS_MAIN = -Bdynamic -Wl,--export-dynamic
       LDFLAGS_MAIN = -h dynamic -Wl,--export-dynamic
+      LDFLAGS_LIB = -L astaroth -L astaroth/submodule/build/src/core -L astaroth/submodule/build/src/core/kernels -lastaroth_core -lkernels -l$(LIBGPU_NAME)
       ifneq ($(filter on yes,$(RUNTIME_COMPILATION)),)
         RUNTIME_COMPILATION = on
-        LDFLAGS_LIB = -L astaroth -L astaroth/submodule/build/src/core -L astaroth/submodule/build/runtime_compilation -L astaroth/submodule/build/src/core/kernels -lacc_runtime_compiler -lastaroth_core -lkernels -l$(LIBGPU_NAME)
+        LDFLAGS_LIB += -L astaroth/submodule/build/runtime_compilation -lacc_runtime_compiler
       else
         RUNTIME_COMPILATION = off
-        LDFLAGS_LIB = -L astaroth -L astaroth/submodule/build/src/core -L astaroth/submodule/build/src/core/kernels -lastaroth_core -lkernels -l$(LIBGPU_NAME)
       endif
       ifneq ($(IS_CRAY),)
         #TP: mpi_gtl_hsa and pe/lib64 is to enable CUDA_AWARE_MPI
@@ -589,7 +589,7 @@ ifneq ($(GPU),nogpu)
     endif
   else
     $(info )
-    $(error No other GPU interfaces than gpu_astaroth* recently supported!)
+    $(error No other GPU interfaces than gpu_astaroth recently supported!)
   endif
 #
 else
@@ -619,7 +619,6 @@ ifneq ($(filter openmp OpenMP,$(MULTITHREADING)),)
 #	  fi \
 # done
 else
-  MULTITHREADING =
   PTHREAD_OBJ=
   OMP_HEADER=
   $(shell bash -c 'echo "exit mn_loop" > exit_mn.h')
@@ -2999,23 +2998,23 @@ physics=$(CHEMISTRY_OBJ) $(CHIRAL_OBJ) $(COSMICRAY_OBJ) $(COSMICRAYFLUX_OBJ) $(D
 #  Short hand for technical modules.
 #  Please use alphabetical order.
 #
-technical=$(CPARAM_OBJ) $(CDATA_OBJ) $(MPICOMM_OBJ) $(BORDER_PROFILES_OBJ) $(BOUNDCOND_OBJ) $(DEBUG_OBJ) $(DEBUG_IO_OBJ) $(DERIV_OBJ) $(DIAGNOSTICS_OBJ) $(FARRAY_ALLOC_OBJ) $(FARRAY_OBJ) $(FILTER_OBJ) $(FIXED_POINT_OBJ) $(FOURIER_OBJ) $(GENERAL_OBJ) $(GEOMETRICAL_TYPES_OBJ) $(GHOST_CHECK_OBJ) $(GHOSTFOLD_OBJ) $(GRID_OBJ) $(GSL_OBJ) $(IMPLICIT_DIFFUSION_OBJ) $(INITCOND_OBJ) $(INITIAL_CONDITION_OBJ) $(HDF5_IO_OBJ) $(IO_IN_OBJ) $(IO_OUT_OBJ) $(IO_OBJ) $(FILE_IO_OBJ) $(LSODE_FC_OBJ) $(MESSAGES_OBJ) $(NSCBC_OBJ) $(PERSIST_OBJ) $(POWER_OBJ) $(PYTHON_OBJ) $(REGISTER_OBJ) $(SHARED_VARIABLES_OBJ) $(SIGNAL_HANDLING_OBJ) $(SLICES_OBJ) $(SLICES_METHODS_OBJ) $(SNAPSHOT_OBJ) $(solid_cells_objects) $(STREAMLINES_OBJ) $(STRUCT_FUNC_OBJ) $(SUB_OBJ) $(SYSCALLS_OBJ) $(SHARED_MEM_OBJ) syscalls_ansi.o $(TESTPERTURB_OBJ) $(TIMEAVG_OBJ) $(TRAINING_OBJ) $(WENO_TRANSPORT_OBJ) $(YINYANG_OBJ) $(YINYANG_MPI_OBJ) magnetic.a $(PARTICLES_MAIN).a $(MORTON_HELPER_OBJ) $(PTHREAD_OBJ)
+technical=$(CPARAM_OBJ) $(CDATA_OBJ) $(MPICOMM_OBJ) $(BORDER_PROFILES_OBJ) $(BOUNDCOND_OBJ) $(DEBUG_OBJ) $(DEBUG_IO_OBJ) $(DERIV_OBJ) $(DIAGNOSTICS_OBJ) $(FARRAY_ALLOC_OBJ) $(FARRAY_OBJ) $(FILTER_OBJ) $(FIXED_POINT_OBJ) $(FOURIER_OBJ) $(GENERAL_OBJ) $(GEOMETRICAL_TYPES_OBJ) $(GHOST_CHECK_OBJ) $(GHOSTFOLD_OBJ) $(GRID_OBJ) $(GSL_OBJ) $(IMPLICIT_DIFFUSION_OBJ) $(INITCOND_OBJ) $(INITIAL_CONDITION_OBJ) $(HDF5_IO_OBJ) $(IO_IN_OBJ) $(IO_OUT_OBJ) $(IO_OBJ) $(FILE_IO_OBJ) $(LSODE_FC_OBJ) $(MESSAGES_OBJ) $(NSCBC_OBJ) $(PARAM_IO_OBJ) $(PERSIST_OBJ) $(POWER_OBJ) $(PYTHON_OBJ) $(REGISTER_OBJ) $(SHARED_VARIABLES_OBJ) $(SIGNAL_HANDLING_OBJ) $(SLICES_OBJ) $(SLICES_METHODS_OBJ) $(SNAPSHOT_OBJ) $(solid_cells_objects) $(STREAMLINES_OBJ) $(STRUCT_FUNC_OBJ) $(SUB_OBJ) $(SYSCALLS_OBJ) $(SHARED_MEM_OBJ) syscalls_ansi.o $(TESTPERTURB_OBJ) $(TIMEAVG_OBJ) $(TRAINING_OBJ) $(WENO_TRANSPORT_OBJ) $(YINYANG_OBJ) $(YINYANG_MPI_OBJ) magnetic.a $(PARTICLES_MAIN).a $(MORTON_HELPER_OBJ) $(PTHREAD_OBJ)
 #
 #  Short hand notation for start.o dependencies.
 #
-start=$(technical) $(physics) $(PARAM_IO_OBJ) nogpu.o
+start=$(technical) $(physics) nogpu.o
 #
 #  Short hand notation for run.o dependencies.
 #
-run=$(technical) $(physics) $(GPU_OBJ) $(GPU_INTERFACE) $(TIMESTEP_OBJ) equ.o pencil_check.o $(PARAM_IO_OBJ)
+run=$(technical) $(physics) $(GPU_OBJ) $(GPU_INTERFACE) $(TIMESTEP_OBJ) equ.o pencil_check.o
 #
 #  Rules for compiling start.o, start.x, run.o, run.x.
 #
-start.o: $(start) Makefile.local $(OMP_HEADER)
+start.o: $(start) $(OMP_HEADER) Makefile.local
 start.x: start.o | $(SPECIAL_DEPS)
 	$(LD) $(start) start.o $(LDFLAGS) $(LDFLAGS_MAIN) $(LD_MPI) $(LD_FOURIER) $(LD_GSL) -o start.x
 #
-run.o: $(run) Makefile.local $(OMP_HEADER)
+run.o: $(run) $(OMP_HEADER) Makefile.local
 run.x: run.o | $(SPECIAL_DEPS) $(LIBGPU)
 	$(LD) $(run) run.o $(LDFLAGS) $(LDFLAGS_MAIN) $(LDFLAGS_LIB) $(LD_MPI) $(LD_FOURIER) $(LIBSIG) $(LD_GSL) -o run.x
 	@rm -f exit_mn.h
