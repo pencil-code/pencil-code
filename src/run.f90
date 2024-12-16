@@ -56,6 +56,7 @@ contains
 !***********************************************************************
 subroutine helper_loop(f,p)
 !
+  use Boundcond, only: update_ghosts
   use Equ, only: perform_diagnostics
 !$ use General, only: signal_wait, signal_send
   use Snapshot, only: perform_powersnap, perform_wsnap_ext, perform_wsnap_down
@@ -68,6 +69,7 @@ subroutine helper_loop(f,p)
 !$  do while(lhelper_run)
 
 !$    call signal_wait(lhelper_perf,lhelper_run)
+!$    if (lhelper_run) call update_ghosts(f)
 !$    if (lhelper_run .and. lhelperflags(PERF_DIAGS)) then 
         !print*,"doing diag"
         call perform_diagnostics(f,p)

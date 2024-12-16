@@ -11212,7 +11212,7 @@ module Magnetic
 
     use Syscalls, only: copy_addr
 
-    integer, parameter :: n_pars=8
+    integer, parameter :: n_pars=9
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call copy_addr(eta,p_par(1))
@@ -11223,6 +11223,7 @@ module Magnetic
     call copy_addr(lresi_hyper3,p_par(6)) ! int
     call copy_addr(lupw_aa,p_par(7)) ! int
     call copy_addr(llorentzforce,p_par(8)) ! int
+    call copy_addr(linduction,p_par(9)) ! int
 
     endsubroutine pushpars2c
 !***********************************************************************
