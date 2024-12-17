@@ -260,8 +260,6 @@ module Cparam
 !
   integer, parameter :: XPLUS=1, YPLUS=2, XMINUS=3, YMINUS=4, ZPLUS=5, ZMINUS=6
 !
-  logical, parameter :: loffload=.false.
-
   integer, parameter :: max_threads_possible = 200
   integer, parameter :: PERF_DIAGS=1, PERF_WSNAP=2, PERF_POWERSNAP=3, PERF_WSNAP_DOWN=4
   integer, parameter :: n_helperflags=4

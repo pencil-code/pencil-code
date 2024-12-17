@@ -851,6 +851,7 @@ module Cdata
   integer :: num_helper_threads=1, thread_id=1
   integer, dimension(max_threads_possible) :: core_ids
 !$ logical, volatile :: lhelper_run=.true., lhelper_perf
+!$ logical :: loffload=.false.
 !
 ! threadprivate definitions for OpenMP
 !
@@ -860,6 +861,9 @@ module Cdata
 !$omp threadprivate(fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz)
 !$omp threadprivate(l1dphiavg, l1davgfirst, l2davgfirst, ldiagnos,lout, l1davg, l2davg, lout_sound, lvideo)
 !$omp threadprivate(tdiagnos,t1ddiagnos,t2davgfirst,tslice,tsound,itdiagnos,dtdiagnos,eps_rkf_diagnos)
+!
+! For use in offloaded code:
+!!$omp declare target(ldensity_nolog,l2,m2,n2)
 !
 !***********************************************************************
 endmodule Cdata
