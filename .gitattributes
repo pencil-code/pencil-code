@@ -4859,6 +4859,7 @@ src/special/neutron_star.f90 -text
 src/special/newton_cooling.f90 -text
 src/special/oscillation_0D.f90 -text
 src/special/oscillation_0D_Lorenz.f90 -text
+src/special/oscillation_3D.f90 -text
 src/special/param_instab.f90 -text
 src/special/photoelectric_dust.f90 -text
 src/special/planet_atmosphere.f90 -text
