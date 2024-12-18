@@ -377,12 +377,10 @@ static AcTaskGraph *randomize_graph;
 static AcTaskGraph *rhs_test_graph;
 static AcTaskGraph *rhs_test_rhs_1;
 
-
 // Other.
 static MPI_Comm comm_pencil;
 int halo_xz_size[2] = {0, 0}, halo_yz_size[2] = {0, 0};
 //static AcReal *xtop_buffer, *xbot_buffer, *ytop_buffer, *ybot_buffer;
-
 
 /***********************************************************************************************/
 int DCONST(const AcIntParam param)
@@ -679,7 +677,6 @@ void print_diagnostics(const int pid, const int step, const AcReal dt_, const Ac
 }
 ***/
 /***********************************************************************************************/
-/***********************************************************************************************/
 std::array<AcReal,3>
 visc_get_max_diffus()
 {
@@ -726,6 +723,7 @@ AcReal max_diffus(AcReal );
 /***********************************************************************************************/
 bool
 has_nans(AcMesh mesh_in);
+
 /***********************************************************************************************/
 extern "C" void substepGPU(int isubstep)
 //
@@ -771,6 +769,7 @@ extern "C" void substepGPU(int isubstep)
       AcReal maxadvec = 0.;
 #if LHYDRO
       maxadvec = acDeviceGetOutput(acGridGetDevice(), AC_maxadvec)/cdt;
+      //if (rank==0) printf("rank, maxadvec= %d %e \n", rank, maxadvec);
 #endif
       AcReal maxchi_dyn = 0.;
 #if LENTROPY
@@ -778,10 +777,9 @@ extern "C" void substepGPU(int isubstep)
 #endif
       //fprintf(stderr, "HMM MAX ADVEC, DIFFUS: %14e, %14e\n",maxadvec,max_diffus());
       AcReal dt1_ = sqrt(pow(maxadvec, 2) + pow(max_diffus(maxchi_dyn), 2));
-      printf("maxadvec, maxdiffus= %e %e %e \n", maxadvec,maxchi_dyn,max_diffus(maxchi_dyn)
-		      );
       set_dt(dt1_);
       acDeviceSetInput(acGridGetDevice(),AC_dt,dt);
+      //if (rank==0) printf("rank, maxadvec, maxdiffus, dt1_= %d %e %e %e \n", rank, maxadvec,max_diffus(maxchi_dyn), dt1_);
   }
   //acGridSynchronizeStream(STREAM_ALL);
   //acGridSynchronizeStream(STREAM_ALL);
@@ -921,7 +919,6 @@ extern "C" void testBcKernel(AcReal *farray_in, AcReal *farray_truth)
 }
 **/
 /***********************************************************************************************/
-/***********************************************************************************************/
 extern "C" void registerGPU(AcReal *farray)
 {
   // AcReal* profile_x_host = (AcReal*)malloc(sizeof(AcReal)*mx);
@@ -994,15 +991,14 @@ void setupConfig(AcMeshInfo& config)
 #undef x
 #undef y
 #undef z
-
 /***********************************************************************************************/
 void checkConfig(AcMeshInfo &config)
 {
  acLogFromRootProc(rank,"Check that config is correct\n");
  acLogFromRootProc(rank,"n[xyz]grid, d[xyz]: %d %d %d %.14f %.14f %.14f \n", nxgrid, nygrid, nzgrid, dx, dy, dz);
 // acLogFromRootProc(rank,"rank= %d: l1, l2, n1, n2, m1, m2= %d %d %d %d %d %d \n", rank, l1, l2, n1, n2, m1, m2);
- acLogFromRootProc(rank,"rank= %d: zlen= %.14f %.14f \n", config[AC_len].z, lxyz[2]);
-
+// acLogFromRootProc(rank,"zlen= %.14f %.14f \n", config[AC_len].z, lxyz[2]);
+ /*
 #if LHYDRO
  acLogFromRootProc(rank,"lpressuregradientgas= %d %d \n", lpressuregradient_gas, config[AC_lpressuregradient_gas]);
 #endif
@@ -1037,6 +1033,7 @@ void checkConfig(AcMeshInfo &config)
   acLogFromRootProc(rank,"tforce_stop= %f %f \n", tforce_stop, config[AC_tforce_stop]);
   acLogFromRootProc(rank,"k1_ff,profx_ampl, val= %f %d %lf %lf\n", k1_ff, profx_ampl, profx_ampl[0], profx_ampl[nx-1]);
 #endif
+*/
   acLogFromRootProc(rank,"mu0= %f %f \n", mu0, config[AC_mu0]);
 }
 /***********************************************************************************************/
@@ -1063,7 +1060,6 @@ testBCs();
 extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out, int comm_fint)
 {
   //Setup configurations used for initializing and running the GPU code
-
 #if PACKED_DATA_TRANSFERS
   //initLoadStore();
 #endif
@@ -1083,7 +1079,6 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out, int c
   checkConfig(mesh.info);
   acCheckDeviceAvailability();
   acGridInit(mesh);
-  
 
   mesh.info = acGridDecomposeMeshInfo(mesh.info);
   //TP: important to do before autotuning
@@ -1094,7 +1089,6 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out, int c
   acGridSynchronizeStream(STREAM_ALL);
   acLogFromRootProc(rank, "DONE initializeGPU\n");
   fflush(stdout);
-
 }
 /***********************************************************************************************/
 extern "C" void copyFarray(AcReal* f)
@@ -1225,9 +1219,12 @@ AcReal max_diffus(AcReal maxchi_dyn)
 {
   AcReal3 dxyz_vals = get_dxyzs();
   auto max_diffusions = elem_wise_max(visc_get_max_diffus(), magnetic_get_max_diffus(), energy_get_max_diffus());
+#if LENTROPY
   max_diffusions[0] = std::max(max_diffusions[0],maxchi_dyn);
+#endif
   return max_diffusions[0]*dxyz_vals.x/cdtv + max_diffusions[1]*dxyz_vals.y/cdtv2 + max_diffusions[2]*dxyz_vals.z/cdtv3;
 }
+/***********************************************************************************************/
 //TP: this is not written the the most optimally since it needs two extra copies of the mesh where at least the tmp
 //could be circumvented by temporarily using the output buffers on the GPU to store the f-array and load back from there
 //but if we truly hit the mem limit for now the user can of course simply test the bcs with a smaller mesh and skip the test with a larger mesh
@@ -1279,6 +1276,7 @@ sym_z(AcMesh mesh_in)
     }
   }
 }
+/***********************************************************************************************/
 void
 check_sym_z(AcMesh mesh_in)
 {
@@ -1334,7 +1332,7 @@ check_sym_z(AcMesh mesh_in)
     }
   }
 }
-
+/***********************************************************************************************/
 void
 check_sym_x(const AcMesh mesh_in)
 {
@@ -1397,6 +1395,7 @@ check_sym_x(const AcMesh mesh_in)
     }
   }
 }
+/***********************************************************************************************/
 void
 testBCs()
 {
@@ -1436,9 +1435,6 @@ testBCs()
   acGridSynchronizeStream(STREAM_ALL);
   acGridExecuteTaskGraph(bcs,1);
   acGridSynchronizeStream(STREAM_ALL);
-
-
-
 
   acGridSynchronizeStream(STREAM_ALL);
   acDeviceStoreMesh(acGridGetDevice(), STREAM_DEFAULT, &mesh_to_copy);
@@ -1571,5 +1567,5 @@ testBCs()
   acHostMeshDestroy(&mesh_to_copy);
   acHostMeshCopyVertexBuffers(tmp_mesh_to_store,mesh);
   acHostMeshDestroy(&tmp_mesh_to_store);
-
 }
+/***********************************************************************************************/
