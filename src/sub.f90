@@ -388,7 +388,7 @@ module Sub
         if (lspherical_coords) then
           res = 0.
           do isum=l1,l2
-            res = res+x(isum)*x(isum)*sinth(m)*a(isum)*a(isum)
+            res = res+x(isum)*x(isum)*sinth(m)*a(isum-nghost)*a(isum-nghost)
           enddo
         else
           res=sum(dble(a))     ! sum at double precision to improve accuracy
@@ -396,7 +396,7 @@ module Sub
       else
         if (lspherical_coords) then
           do isum=l1,l2
-            res = res+x(isum)*x(isum)*sinth(m)*a(isum)*a(isum)
+            res = res+x(isum)*x(isum)*sinth(m)*a(isum-nghost)*a(isum-nghost)
           enddo
         else
           res=res+sum(dble(a))
@@ -491,7 +491,7 @@ module Sub
         if (lspherical_coords) then
           res = 0.
           do isum=l1,l2
-            res = res+x(isum)*x(isum)*sinth(m)*a(isum)*a(isum)
+            res = res+x(isum)*x(isum)*sinth(m)*a(isum-nghost)*a(isum-nghost)
           enddo
         else
           res=sum(a**2)
@@ -499,7 +499,7 @@ module Sub
       else
         if (lspherical_coords) then
           do isum=l1,l2
-            res = res+x(isum)*x(isum)*sinth(m)*a(isum)*a(isum)
+            res = res+x(isum)*x(isum)*sinth(m)*a(isum-nghost)*a(isum-nghost)
           enddo
         else
           res=res+sum(a**2)
@@ -527,7 +527,7 @@ module Sub
         if (lspherical_coords) then
           res = 0.
           do isum=l1,l2
-            res = res+x(isum)*x(isum)*sinth(m)*a2(isum)
+            res = res+x(isum)*x(isum)*sinth(m)*a2(isum-nghost)
           enddo
         else
           res=sum(a2)
@@ -535,7 +535,7 @@ module Sub
       else
         if (lspherical_coords) then
           do isum=l1,l2
-            res = res+x(isum)*x(isum)*sinth(m)*a2(isum)
+            res = res+x(isum)*x(isum)*sinth(m)*a2(isum-nghost)
           enddo
         else
           res=res+sum(a2)
@@ -563,7 +563,7 @@ module Sub
         if (lspherical_coords) then
           res = 0.
           do isum=l1,l2
-            res = res+x(isum)*x(isum)*sinth(m)*a(isum)
+            res = res+x(isum)*x(isum)*sinth(m)*a(isum-nghost)
           enddo
         else
           res=sum(a)
@@ -571,7 +571,7 @@ module Sub
       else
         if (lspherical_coords) then
           do isum=l1,l2
-            res = res+x(isum)*x(isum)*sinth(m)*a(isum)
+            res = res+x(isum)*x(isum)*sinth(m)*a(isum-nghost)
           enddo
         else
           res=res+sum(a)
