@@ -161,6 +161,9 @@ module Viscosity
                                 ! DIAG_DOC: \fv_{\rm visc}\right>$
   integer :: idiag_Sij2m=0      ! DIAG_DOC: $\left<\Strain^2\right>$
   integer :: idiag_epsK=0       ! DIAG_DOC: $\left<2\nu\varrho\Strain^2\right>$
+  integer :: idiag_epsK2=0      ! DIAG_DOC: $\left<(2\nu\varrho\Strain^2)^2\right>$
+  integer :: idiag_epsK3=0      ! DIAG_DOC: $\left<(2\nu\varrho\Strain^2)^3\right>$
+  integer :: idiag_epsK4=0      ! DIAG_DOC: $\left<(2\nu\varrho\Strain^2)^4\right>$
   integer :: idiag_epsKint=0    ! DIAG_DOC: $\int(2\nu\varrho\Strain^2)\,dV$
   integer :: idiag_epsK_LES=0   ! DIAG_DOC:
   integer :: idiag_sijoiojm=0   ! DIAG_DOC: $\left<S_{i,j} \omega_i \omega_j\right>$
@@ -851,6 +854,7 @@ module Viscosity
       if (lreset) then
         idiag_dtnu=0; idiag_dtnu3=0; idiag_nu_LES=0; idiag_Sij2m=0
         idiag_epsK=0; idiag_epsKint=0; idiag_epsK_LES=0; idiag_sijoiojm=0
+        idiag_epsK2=0; idiag_epsK3=0; idiag_epsK4=0
         idiag_visc_heatm=0; idiag_mesh3Remax=0; idiag_meshRemax=0; idiag_Reshock=0
         idiag_nuD2uxbxm=0; idiag_nuD2uxbym=0; idiag_nuD2uxbzm=0
         idiag_nu_tdep=0; idiag_fviscm=0 ; idiag_fviscrmsx=0
@@ -887,6 +891,9 @@ module Viscosity
         call parse_name(iname,cname(iname),cform(iname),'Sij2m',idiag_Sij2m)
         call parse_name(iname,cname(iname),cform(iname),'sijoiojm',idiag_sijoiojm)
         call parse_name(iname,cname(iname),cform(iname),'epsK',idiag_epsK)
+        call parse_name(iname,cname(iname),cform(iname),'epsK2',idiag_epsK2)
+        call parse_name(iname,cname(iname),cform(iname),'epsK3',idiag_epsK3)
+        call parse_name(iname,cname(iname),cform(iname),'epsK4',idiag_epsK4)
         call parse_name(iname,cname(iname),cform(iname),'epsKint',idiag_epsKint)
         call parse_name(iname,cname(iname),cform(iname),'epsK_LES',idiag_epsK_LES)
         call parse_name(iname,cname(iname),cform(iname),'meshRemax',idiag_meshRemax)
@@ -963,6 +970,7 @@ module Viscosity
           (lvisc_simplified.and.lboussinesq) ) then
         if ((lenergy.and.lviscosity_heat) .or. &
              idiag_epsK/=0 .or. idiag_epsKint/=0 .or. idiag_epsK_LES/=0 .or. &
+             idiag_epsK2/=0 .or.idiag_epsK3/=0 .or.  idiag_epsK4/=0 .or. &
              idiag_epsKmz/=0 .or. &
              idiag_fviscmz/=0.or.idiag_fviscsmmz/=0.or.idiag_fviscmx/=0) &
           lpenc_requested(i_sij2)=.true.
@@ -1109,6 +1117,7 @@ module Viscosity
 !        lpenc_diagnos(i_sij2)=.true.
       endif
       if (idiag_epsK/=0 .or. idiag_epsKint/=0 .or. idiag_epsK_LES/=0 .or. idiag_epsKmz/=0 .or. &
+          idiag_epsK2/=0 .or.idiag_epsK3/=0 .or.  idiag_epsK4/=0 .or. &
           idiag_viscforcezmz/=0.or.idiag_viscforcezupmz/=0.or. &
           idiag_viscforcezdownmz/=0) then
         lpenc_diagnos(i_rho)=.true.
@@ -1122,28 +1131,35 @@ module Viscosity
         lpenc_diagnos(i_sij)=.true.
       endif
       if (idiag_Sij2m/=0.) lpenc_diagnos(i_sij2)=.true.
-      if (idiag_epsK/=0 .or. idiag_epsKint/=0 .or. idiag_epsKmz/=0 .or. idiag_epsK_LES/=0) then
+      if (idiag_epsK/=0 .or. idiag_epsKint/=0 .or. idiag_epsKmz/=0 .or. idiag_epsK_LES/=0 .or. &
+          idiag_epsK2/=0 .or.idiag_epsK3/=0 .or.  idiag_epsK4/=0) then
         lpenc_diagnos(i_visc_heat)=.true.
         lpenc_diagnos(i_uu)=.true.
       endif
       if (idiag_sijxxmz/=0.or.idiag_sijxymz/=0.or.idiag_sijxzmz/=0.or. &
           idiag_sijyymz/=0.or.idiag_sijyzmz/=0.or.idiag_sijzzmz/=0) &
         lpenc_diagnos(i_sij)=.true.
-      if (lvisc_nu_shock.and.(idiag_epsK/=0 .or. idiag_epsKint/=0)) then
+      if (lvisc_nu_shock.and.(idiag_epsK/=0 .or. &
+          idiag_epsK2/=0 .or.idiag_epsK3/=0 .or.  idiag_epsK4/=0 .or. &
+          idiag_epsKint/=0)) then
         lpenc_diagnos(i_fvisc)=.true.
         lpenc_diagnos(i_diffus_total)=.true.
         lpenc_diagnos(i_shock)=.true.
         lpenc_diagnos(i_divu)=.true.
         lpenc_diagnos(i_rho)=.true.
       endif
-      if (lvisc_nu_shock_profz.and.(idiag_epsK/=0 .or. idiag_epsKint/=0)) then
+      if (lvisc_nu_shock_profz.and.(idiag_epsK/=0 .or. &
+          idiag_epsK2/=0 .or.idiag_epsK3/=0 .or.  idiag_epsK4/=0 .or. &
+          idiag_epsKint/=0)) then
         lpenc_diagnos(i_fvisc)=.true.
         lpenc_diagnos(i_diffus_total)=.true.
         lpenc_diagnos(i_shock)=.true.
         lpenc_diagnos(i_divu)=.true.
         lpenc_diagnos(i_rho)=.true.
       endif
-      if (lvisc_nu_shock_profr.and.(idiag_epsK/=0 .or. idiag_epsKint/=0)) then
+      if (lvisc_nu_shock_profr.and.(idiag_epsK/=0 .or. &
+          idiag_epsK2/=0 .or.idiag_epsK3/=0 .or.  idiag_epsK4/=0 .or. &
+          idiag_epsKint/=0)) then
         lpenc_diagnos(i_fvisc)=.true.
         lpenc_diagnos(i_diffus_total)=.true.
         lpenc_diagnos(i_shock)=.true.
@@ -2627,6 +2643,9 @@ module Viscosity
         if (idiag_fviscrmsx/=0) call sum_mn_name(xmask_vis*fvisc2,idiag_fviscrmsx,lsqrt=.true.)
         call sum_mn_name(p%visc_heat,idiag_visc_heatm)
         if (idiag_epsK/=0) call sum_mn_name(p%visc_heat*p%rho,idiag_epsK)
+        if (idiag_epsK2/=0) call sum_mn_name((p%visc_heat*p%rho)**2,idiag_epsK2)
+        if (idiag_epsK3/=0) call sum_mn_name((p%visc_heat*p%rho)**3,idiag_epsK3)
+        if (idiag_epsK4/=0) call sum_mn_name((p%visc_heat*p%rho)**4,idiag_epsK4)
         if (idiag_epsKint/=0) call integrate_mn_name(p%visc_heat*p%rho,idiag_epsKint)
 
         call sum_mn_name(p%nu_smag,idiag_nusmagm)

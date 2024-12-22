@@ -541,6 +541,9 @@ module Hydro
   integer :: idiag_duxdzma=0    ! DIAG_DOC:
   integer :: idiag_duydzma=0    ! DIAG_DOC:
   integer :: idiag_EEK=0        ! DIAG_DOC: $\left<\varrho\uv^2\right>/2$
+  integer :: idiag_EEK2=0       ! DIAG_DOC: $\left<(\varrho\uv^2/2)^2\right>$
+  integer :: idiag_EEK3=0       ! DIAG_DOC: $\left<(\varrho\uv^2/2)^3\right>$
+  integer :: idiag_EEK4=0       ! DIAG_DOC: $\left<(\varrho\uv^2/2)^4\right>$
   integer :: idiag_ekin=0       ! DIAG_DOC: $\left<{1\over2}\varrho\uv^2\right>$
   integer :: idiag_ekintot=0    ! DIAG_DOC: $\int_V{1\over2}\varrho\uv^2\, dV$
   integer :: idiag_totangmom=0  ! DIAG_DOC:
@@ -2943,8 +2946,9 @@ module Hydro
         lpenc_diagnos(i_phiy)=.true.
       endif
       if (idiag_EEK/=0 .or. idiag_ekin/=0 .or. idiag_ekintot/=0 .or. idiag_fkinzmz/=0 .or. &
-           idiag_fkinzupmz/=0 .or. idiag_fkinzdownmz/=0 .or. &
-           idiag_ekinmx /= 0 .or. idiag_ekinmz/=0 .or. idiag_fkinxmx/=0) then
+          idiag_EEK2/=0 .or. idiag_EEK3/=0 .or. idiag_EEK4/=0 .or. &
+          idiag_fkinzupmz/=0 .or. idiag_fkinzdownmz/=0 .or. &
+          idiag_ekinmx /= 0 .or. idiag_ekinmz/=0 .or. idiag_fkinxmx/=0) then
         lpenc_diagnos(i_ekin)=.true.
       endif
       if (idiag_fkinxmxy/=0 .or. idiag_fkinymxy/=0 .or. &
@@ -4226,6 +4230,9 @@ module Hydro
         if (idiag_Tzxm/=0)  call sum_mn_name(f(l1:l2,m,n,iTij+5),idiag_Tzxm)
         call sum_mn_name(p%ekin,idiag_ekin)
         call sum_mn_name(p%ekin,idiag_EEK)
+        call sum_mn_name(p%ekin**2,idiag_EEK2)
+        call sum_mn_name(p%ekin**3,idiag_EEK3)
+        call sum_mn_name(p%ekin**4,idiag_EEK4)
         call integrate_mn_name(p%ekin,idiag_ekintot)
 !
 !  should be coordinate dependent
@@ -6578,6 +6585,9 @@ endif
         idiag_duxdzma=0
         idiag_duydzma=0
         idiag_EEK=0
+        idiag_EEK2=0
+        idiag_EEK3=0
+        idiag_EEK4=0
         idiag_ekin=0
         idiag_totangmom=0
         idiag_ekintot=0
@@ -6707,6 +6717,9 @@ endif
       if (lroot.and.ip<14) print*,'rprint_hydro: run through parse list'
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'EEK',idiag_EEK)
+        call parse_name(iname,cname(iname),cform(iname),'EEK2',idiag_EEK2)
+        call parse_name(iname,cname(iname),cform(iname),'EEK3',idiag_EEK3)
+        call parse_name(iname,cname(iname),cform(iname),'EEK4',idiag_EEK4)
         call parse_name(iname,cname(iname),cform(iname),'ekin',idiag_ekin)
         call parse_name(iname,cname(iname),cform(iname),'ekintot',idiag_ekintot)
         call parse_name(iname,cname(iname),cform(iname),'gamm',idiag_gamm)
