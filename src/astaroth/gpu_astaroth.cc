@@ -287,7 +287,7 @@ extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
       }
     }
   }
-  auto volume_size = [](int3 a)
+  auto volume_size = [](const auto& a)
   {
 	  return a.x*a.y*a.z;
   };
