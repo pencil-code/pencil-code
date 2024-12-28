@@ -39,3 +39,70 @@ pc_build -f hosts/lumi/host-uan01-GNU_Linux
 ### make
 # => adapt settings in "disbatch.sh"
 sbatch disbatch.sh
+
+Axel:
+setenv PENCIL_HOME /cfs/klemming/home/b/brandenb/data/pencil-code-git
+module load aocm
+
+module spider rocm
+
+module load rocm/5.7.0
+
+module load rocm craype-accel-amd-gfx90a cmake/3.20.1
+
+pc_build -f Cray -s FFLAGS+=-O0
+
+AXEL (2024-Dec-28)
+git clone -b gputestv6 --recurse-submodules https://AxelBrandenburg@pencil-code.org/git/ pencil-code
+cd pencil-code/src/astaroth/submodule
+git checkout PCinterface_2019-8-12
+
+#AB: Matthias to email Toc Puro about detatched branch
+
+#AB: actual build, problems without O0
+pc_setupsrc
+pc_build -f compilers/Cray_MPI FFLAGS+=" -g" LDFLAGS+='-Wl,--no-relax'
+pc_build -f compilers/Cray_MPI FFLAGS+=" -g -O0" LDFLAGS+='-Wl,--no-relax -L /opt/cray/pe/lib64 -lmpi_gtl_hsa'
+
+brandenb@login1:/cfs/klemming/home/b/brandenb/data/GPU/axel/decay/reconnection/k600_nu5em7_k4_Pm5_128a> find . -name '*auto*'
+./src/astaroth/submodule/build/acc-runtime/api/autotune.csv
+
+#AB: Matthias to check RELOAD
+
+brandenb@login1:/cfs/klemming/home/b/brandenb/data/GPU/axel/decay/reconnection/k600_nu5em7_k4_Pm5_128a> cp ../../../../pencil-code/samples/gputest/disbatch.sh .
+brandenb@login1:/cfs/klemming/home/b/brandenb/data/GPU/pencil-code/samples/gputest> sinfo -s
+sbatch job.sh
+
+/cfs/klemming/home/b/brandenb/data/GPU/axel/decay/reconnection/k600_nu5em7_k4_Pm5_128a/src/astaroth/submodule/acc-runtime/built-in/default_values.h
+fehlt
+
+git branch
+brandenb@login1:/cfs/klemming/home/b/brandenb/data/GPU/pencil-code> cd src/astaroth/submodule/
+brandenb@login1:/cfs/klemming/home/b/brandenb/data/GPU/pencil-code/src/astaroth/submodule> rm -r *
+brandenb@login1:/cfs/klemming/home/b/brandenb/data/GPU/pencil-code> git submodule update --init --recursive
+
+go to 
+git checkout PCinterface_2019-8-12
+  1017	11:13	h
+brandenb@login1:/cfs/klemming/home/b/brandenb/data/GPU/pencil-code/src/astaroth/submodule> 
+
+git checkout PCinterface_2019-8-12
+
+can build
+
+brandenb@login1:/cfs/klemming/home/b/brandenb/data/GPU/axel/decay/reconnection/k600_nu5em7_k4_Pm5_128a> ls -l src/astaroth/submodule/
+
+/pc_bu
+
+
+brandenb@login1:/cfs/klemming/home/b/brandenb/data/GPU/axel/decay/reconnection/k600_nu5em7_k4_Pm5_128a> ml rocm
+brandenb@login1:/cfs/klemming/home/b/brandenb/data/GPU/axel/decay/reconnection/k600_nu5em7_k4_Pm5_128a> ml cmake
+ml
+
+pc_build -f compilers/Cray_MPI FFLAGS+=" -g" LDFLAGS+='-Wl,--no-relax'
+
+brandenb@login1:/cfs/klemming/home/b/brandenb/data/GPU/axel/decay/reconnection/k600_nu5em7_k4_Pm5_128a> vi src/astaroth/DSL/local/equations.h 
+
+brandenb@login1:/cfs/klemming/home/b/brandenb/data/GPU/axel/decay/reconnection/k600_nu5em7_k4_Pm5_128a> cp ../k600_nu5em7_k4_Pm5/src/astaroth/DSL/local/equations.h src/astaroth/DSL/local/
+brandenb@login1:/cfs/klemming/home/b/brandenb/data/GPU/axel/decay/reconnection/k600_nu5em7_k4_Pm5_128a> ls -l src/astaroth/submodule/acc-runtime/acc/
+
