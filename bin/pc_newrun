@@ -187,6 +187,10 @@ if [ $same_source ]; then
 
     lnk=`readlink $olddir/src/special.so`
     if [ "$lnk" != "" ]; then ln -s $lnk .; fi
+
+    lnk=`readlink $olddir/src/astaroth/libastaroth_dbl.so`
+    if [ "$lnk" != "" ]; then ln -s $lnk astaroth/.; fi
+
   else
     cd $olddir;
     if [ -e src/.config-files ]; then 
