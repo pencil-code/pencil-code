@@ -86,14 +86,14 @@ module oscillation_3D
 !
    integer :: ispecial=0,ispecial1=0,ispecial2=0
 !
-  real :: om1,om2,u1ini,u2ini
+  real :: u1ini, u2ini, modulation_fact=1.
   character(len=50) :: init='zero'
   namelist /oscillation_3D_init_pars/ &
-    init,om1,om2,u1ini,u2ini
+    init, u1ini, u2ini
 !
   ! run parameters
   namelist /oscillation_3D_run_pars/ &
-    om1,om2
+    modulation_fact
 !
 ! other variables (needs to be consistent with reset list below)
 !
@@ -310,10 +310,10 @@ module oscillation_3D
 !
             if (i==j) then
               call der2(f,ispecial1,tmp,i)
-              df(l1:l2,m,n,ispecial2)=df(l1:l2,m,n,ispecial2)+(1.+f(l1:l2,m,n,ihij))*tmp
+              df(l1:l2,m,n,ispecial2)=df(l1:l2,m,n,ispecial2)+(1.+modulation_fact*f(l1:l2,m,n,ihij))*tmp
             else
               call derij(f,ispecial1,tmp,i,j)
-              df(l1:l2,m,n,ispecial2)=df(l1:l2,m,n,ispecial2)+2.*f(l1:l2,m,n,ihij)*tmp
+              df(l1:l2,m,n,ispecial2)=df(l1:l2,m,n,ispecial2)+2.*modulation_fact*f(l1:l2,m,n,ihij)*tmp
             endif
 !if (m==m1+1.and.n==n1+1) print*,'AXEL: i,j=',i,j,ihij,f(l1:l1+3,m,n,ihij)
           enddo
@@ -350,9 +350,11 @@ module oscillation_3D
 !***********************************************************************
     subroutine read_special_run_pars(iostat)
 !
+      use File_io, only: parallel_unit
+!
       integer, intent(out) :: iostat
 !
-      iostat = 0
+      read(parallel_unit, NML=oscillation_3D_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_run_pars
 !***********************************************************************
