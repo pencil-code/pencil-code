@@ -97,7 +97,7 @@ module oscillation_3D
 !
 ! other variables (needs to be consistent with reset list below)
 !
-  integer :: idiag_u1=0,idiag_u2=0
+  integer :: idiag_psirms=0,idiag_phirms=0
 !
   contains
 !****************************************************************************
@@ -246,15 +246,8 @@ module oscillation_3D
 !***********************************************************************
     subroutine dspecial_dt(f,df,p)
 !
-!  calculate right hand side of ONE OR MORE extra coupled PDEs
-!  along the 'current' Pencil, i.e. f(l1:l2,m,n) where
-!  m,n are global variables looped over in equ.f90
-!
-!  Due to the multi-step Runge Kutta timestepping used one MUST always
-!  add to the present contents of the df array.  NEVER reset it to zero.
-!
-!  Several precalculated Pencils of information are passed for
-!  efficiency.
+!  Solve wave equation in 3-D with wave speed altered by
+!  the strain tensor components.
 !
       use Diagnostics
       use Mpicomm
@@ -262,49 +255,73 @@ module oscillation_3D
       use FArrayManager, only: farray_index_by_name
       use Sub
 !
-!  06-oct-03/tony: coded
+!  05-jan-25/axel: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: u1, u2, tmp
+      real, dimension (nx) :: tmp
       type (pencil_case) :: p
 !
       intent(in) :: f,p
       intent(inout) :: df
 !
-      integer :: ihhT_realspace, ihhX_realspace
+      integer :: ih11_realspace, ih22_realspace, ih33_realspace
+      integer :: ih12_realspace, ih23_realspace, ih31_realspace
+      integer :: i, j, ij
 !
 !  Identify module and boundary conditions.
 !
       if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dspecial_dt'
-!!      if (headtt) call identify_bcs('special',ispecial)
 !
-!  Solve the equations du1/dt = om1*u2
-!                      du2/dt = om2*u1
+!  Determine indices from other module
 !
-        u1=f(l1:l2,m,n,ispecial1)
-        u2=f(l1:l2,m,n,ispecial2)
+        ih11_realspace=farray_index_by_name('h11_realspace')
+        ih22_realspace=farray_index_by_name('h22_realspace')
+        ih33_realspace=farray_index_by_name('h33_realspace')
+        ih12_realspace=farray_index_by_name('h12_realspace')
+        ih23_realspace=farray_index_by_name('h23_realspace')
+        ih31_realspace=farray_index_by_name('h31_realspace')
 !
-        ihhT_realspace=farray_index_by_name('hhT_realspace')
-        ihhX_realspace=farray_index_by_name('hhX_realspace')
-        if (ihhT_realspace>0) then
-          if (m==m1.and.n==n1) print*,'AXEL2: ihhT_realspace=',f(l1:l1+3,m2,n1,ihhT_realspace)
+!  Solve wave equation d2psi/dt = del2 psi.
+!  Begin with dpsi/dt = phi and solve further below dphi/dt = del2 psi.
+!
+        df(l1:l2,m,n,ispecial1)=df(l1:l2,m,n,ispecial1)+f(l1:l2,m,n,ispecial2)
+!
+!  Do the following only if at least the first of 6 indices exists.
+!
+        if (ih11_realspace>0) then
+          do ij=1,6
+!
+!  Select i and j, and the target location ihij in the f-array.
+!
+            select case (ij)
+              case (1); i=1; j=1; ihij=ih11_realspace
+              case (2); i=2; j=2; ihij=ih22_realspace
+              case (3); i=3; j=3; ihij=ih33_realspace
+              case (4); i=1; j=2; ihij=ih12_realspace
+              case (5); i=2; j=3; ihij=ih23_realspace
+              case (6); i=3; j=1; ihij=ih31_realspace
+            endselect
+!
+!  For diagonal components, add (delta_ij+h_ij)*d2f/dx_i dx_j
+!  For each pair of off-diagonal components, add 2h_ij*d2f/dx_i dx_j.
+!
+            if (i==j) then
+              call der2(f,ispecial1,tmp,i)
+              df(l1:l2,m,n,ispecial2)=df(l1:l2,m,n,ispecial2)+(1.+f(l1:l2,m,n,ihij))*tmp
+            else
+              call derij(f,ispecial1,tmp,i,j)
+              df(l1:l2,m,n,ispecial2)=df(l1:l2,m,n,ispecial2)+2.*f(l1:l2,m,n,ihij)*tmp
+            endif
+!if (m==m1+1.and.n==n1+1) print*,'AXEL: i,j=',i,j,ihij,f(l1:l1+3,m,n,ihij)
+          enddo
         endif
-
-        call der2 (f,ispecial1,tmp,1)
-!       do i=j+1,3
-!         call derij(f,k,tmp,i,j); g(:,i,j)=tmp; g(:,j,i)=tmp
-!
-        df(l1:l2,m,n,ispecial1)=df(l1:l2,m,n,ispecial1)+u2
-        df(l1:l2,m,n,ispecial2)=df(l1:l2,m,n,ispecial2)+om1**2*tmp
 !
 !  diagnostics
 !
       if (ldiagnos) then
-        if (lroot.and.m==mpoint.and.n==npoint) then
-          if (idiag_u1/=0) call save_name(u1(lpoint-nghost),idiag_u1)
-          if (idiag_u2/=0) call save_name(u2(lpoint-nghost),idiag_u2)
-        endif
+        call sum_mn_name(f(l1:l2,m,n,ispecial1)**2,idiag_psirms,lsqrt=.true.)
+        call sum_mn_name(f(l1:l2,m,n,ispecial2)**2,idiag_phirms,lsqrt=.true.)
       endif
 !
       call keep_compiler_quiet(p)
@@ -368,20 +385,20 @@ module oscillation_3D
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_u1=0; idiag_u2=0
+        idiag_psirms=0; idiag_phirms=0
       endif
 !
       do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'u1',idiag_u1)
-        call parse_name(iname,cname(iname),cform(iname),'u2',idiag_u2)
+        call parse_name(iname,cname(iname),cform(iname),'psirms',idiag_psirms)
+        call parse_name(iname,cname(iname),cform(iname),'phirms',idiag_phirms)
       enddo
 !
 !  write column where which variable is stored
 !
-      if (lwr) then
-        call farray_index_append('i_u1',idiag_u1)
-        call farray_index_append('i_u2',idiag_u2)
-      endif
+!     if (lwr) then
+!       call farray_index_append('i_psirms',idiag_psirms)
+!       call farray_index_append('i_phirms',idiag_phirms)
+!     endif
 !
     endsubroutine rprint_special
 !***********************************************************************

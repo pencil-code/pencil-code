@@ -245,6 +245,12 @@ module Special
   integer :: idiag_nlin0=0       ! DIAG_DOC: $\bra{nlin0}$
   integer :: idiag_nlin1=0       ! DIAG_DOC: $\bra{nlin1}$
   integer :: idiag_nlin2=0       ! DIAG_DOC: $\bra{nlin2}$
+  integer :: idiag_h11rms=0      ! DIAG_DOC: $\bra{h_{11}^2}^{1/2}$
+  integer :: idiag_h22rms=0      ! DIAG_DOC: $\bra{h_{22}^2}^{1/2}$
+  integer :: idiag_h33rms=0      ! DIAG_DOC: $\bra{h_{33}^2}^{1/2}$
+  integer :: idiag_h12rms=0      ! DIAG_DOC: $\bra{h_{12}^2}^{1/2}$
+  integer :: idiag_h23rms=0      ! DIAG_DOC: $\bra{h_{23}^2}^{1/2}$
+  integer :: idiag_h31rms=0      ! DIAG_DOC: $\bra{h_{31}^2}^{1/2}$
 !
   integer :: ihhT_realspace, ihhX_realspace
   integer :: iggT_realspace, iggX_realspace
@@ -1185,6 +1191,13 @@ module Special
             +f(l1:l2,m,n,iStress_ij+3)**2 &
             +f(l1:l2,m,n,iStress_ij+4)**2 &
             +f(l1:l2,m,n,iStress_ij+5)**2,idiag_nlin1)
+!
+        if (idiag_h11rms/=0) call sum_mn_name(f(l1:l2,m,n,ih11_realspace)**2,idiag_h11rms,lsqrt=.true.)
+        if (idiag_h22rms/=0) call sum_mn_name(f(l1:l2,m,n,ih22_realspace)**2,idiag_h22rms,lsqrt=.true.)
+        if (idiag_h33rms/=0) call sum_mn_name(f(l1:l2,m,n,ih33_realspace)**2,idiag_h33rms,lsqrt=.true.)
+        if (idiag_h12rms/=0) call sum_mn_name(f(l1:l2,m,n,ih12_realspace)**2,idiag_h12rms,lsqrt=.true.)
+        if (idiag_h23rms/=0) call sum_mn_name(f(l1:l2,m,n,ih23_realspace)**2,idiag_h23rms,lsqrt=.true.)
+        if (idiag_h31rms/=0) call sum_mn_name(f(l1:l2,m,n,ih31_realspace)**2,idiag_h31rms,lsqrt=.true.)
 !
         if (lproc_pt.and.m==mpoint.and.n==npoint) then
           if (idiag_STrept/=0) call save_name(f(lpoint,m,n,iStressT  ),idiag_STrept)
@@ -2248,7 +2261,7 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
         if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate memory for Hijkim')
       endif
 !
-!  Allocate 18 chunks of memory for nonlinear source
+!  Allocate chunks for real and imaginary parts of one component of hij in real space at a time.
 !
       if (lreal_space_hij_as_aux) then
         allocate(hij_re(nx,ny,nz),stat=stat)
@@ -2976,9 +2989,11 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
 !
       if (lreal_space_hij_as_aux) then
 !
-!  Loop over all 6 components of hij
+!  Loop over all 6 non-trivial components of hij
 !
         do ij=1,6
+!
+!  Select i and j, and the target location ihij in the f-array.
 !
           select case (ij)
             case (1); i=1; j=1; ihij=ih11_realspace
@@ -2996,7 +3011,6 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
           do ikz=1,nz
             do iky=1,ny
               do ikx=1,nx
-!
                 k1=kx_fft(ikx+ipx*nx)
                 k2=ky_fft(iky+ipy*ny)
                 k3=kz_fft(ikz+ipz*nz)
@@ -3004,14 +3018,10 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
                 k2sqr=k2**2
                 k3sqr=k3**2
                 ksqr=k1sqr+k2sqr+k3sqr
-                ksqrt = sqrt(ksqr)
 !
 !  for ksqr/=0, set up k vector
 !
                 if (ksqr/=0.) then
-                  kvec(1)=k1
-                  kvec(2)=k2
-                  kvec(3)=k3
 !
 !  compute e1 and e2 vectors
 !
@@ -3088,7 +3098,9 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
 !
           call fft_xyz_parallel(hij_re,hij_im,linv=.true.)
           f(l1:l2,m1:m2,n1:n2,ihij)=hij_re
-print*,'AXEL: =ij,i,j,hij_re=',ij,i,j,hij_re(2,2,2)
+!print*,'AXEL: =ij,i,j,hij_re=',ij,i,j,hij_re(2,2,2)
+!print*,'AXEL: =ij,i,j,hij_re=',ij,i,j,hij_re(2,1,1)
+!print*,'AXEL: =ij,i,j,hij_im=',ij,i,j,hij_im(2,1,1)
 !
 !  enddo ij loop
 !
@@ -3129,6 +3141,8 @@ print*,'AXEL: =ij,i,j,hij_re=',ij,i,j,hij_re(2,2,2)
         idiag_hhT2m=0; idiag_hhX2m=0; idiag_hhTXm=0; idiag_hrms=0
         idiag_ggT2m=0; idiag_ggX2m=0; idiag_ggTXm=0; idiag_gg2m=0
         idiag_Stgm=0 ; idiag_EEGW=0 ; idiag_nlin0=0; idiag_nlin1=0; idiag_nlin2=0
+        idiag_h11rms=0; idiag_h22rms=0; idiag_h33rms=0
+        idiag_h12rms=0; idiag_h23rms=0; idiag_h31rms=0
         cformv=''
       endif
 !
@@ -3166,6 +3180,12 @@ print*,'AXEL: =ij,i,j,hij_re=',ij,i,j,hij_re(2,2,2)
         call parse_name(iname,cname(iname),cform(iname),'nlin0',idiag_nlin0)
         call parse_name(iname,cname(iname),cform(iname),'nlin1',idiag_nlin1)
         call parse_name(iname,cname(iname),cform(iname),'nlin2',idiag_nlin2)
+        call parse_name(iname,cname(iname),cform(iname),'h11rms',idiag_h11rms)
+        call parse_name(iname,cname(iname),cform(iname),'h22rms',idiag_h22rms)
+        call parse_name(iname,cname(iname),cform(iname),'h33rms',idiag_h33rms)
+        call parse_name(iname,cname(iname),cform(iname),'h12rms',idiag_h12rms)
+        call parse_name(iname,cname(iname),cform(iname),'h23rms',idiag_h23rms)
+        call parse_name(iname,cname(iname),cform(iname),'h31rms',idiag_h31rms)
         if (lhhTX_as_aux) then
           call parse_name(iname,cname(iname),cform(iname),'hhTpt',idiag_hhTpt)
           call parse_name(iname,cname(iname),cform(iname),'hhXpt',idiag_hhXpt)
