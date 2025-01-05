@@ -175,6 +175,7 @@ module oscillation_3D
 !  06-oct-2003/tony: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      real :: kx
 !
       intent(inout) :: f
 !
@@ -185,10 +186,11 @@ module oscillation_3D
         case ('zero'); f(:,:,:,ispecial1)=0.
         case ('set'); f(:,:,:,ispecial1)=u1ini; f(:,:,:,ispecial2)=u2ini
         case ('sincos')
+          kx=2*pi/Lx
           do m=1,my
           do n=1,mz
-            f(:,m,n,ispecial1)=u1ini*sin(x)
-            f(:,m,n,ispecial2)=u2ini*cos(x)
+            f(:,m,n,ispecial1)=u1ini*sin(kx*x)
+            f(:,m,n,ispecial2)=u2ini*cos(kx*x)
           enddo
           enddo
 !
