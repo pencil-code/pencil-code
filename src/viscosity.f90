@@ -228,6 +228,9 @@ module Viscosity
   real, dimension(mz) :: eth0z = 0.0
   real, dimension(nx) :: diffus_nu, diffus_nu3
 !
+  integer :: string_enum_nnewton_type = 0
+  integer :: string_enum_div_sld_visc = 0
+!
   contains
 !***********************************************************************
     subroutine register_viscosity
@@ -2210,7 +2213,8 @@ module Viscosity
 !
       if (lvisc_schur_223) then
         p%fvisc=p%fvisc+nu*p%del2u
-        p%fvisc(:,1:2)=p%fvisc(:,1:2)-nu*p%d2uidxj(:,1:2,3)
+        p%fvisc(:,1)=p%fvisc(:,1)-nu*p%d2uidxj(:,1,3)
+        p%fvisc(:,2)=p%fvisc(:,2)-nu*p%d2uidxj(:,2,3)
       endif
 !
 !  Calculate Lambda effect. Allow for the possibility of the
@@ -2220,16 +2224,16 @@ module Viscosity
         if (lspherical_coords) then
           call calc_lambda(p,lambda_phi)
           if (llambda_scale_with_nu) then
-            p%fvisc(:,iuz)=p%fvisc(:,iuz) + nu*lambda_phi
+            p%fvisc(:,3)=p%fvisc(:,3) + nu*lambda_phi
           else
-            p%fvisc(:,iuz)=p%fvisc(:,iuz) + lambda_phi
+            p%fvisc(:,3)=p%fvisc(:,3) + lambda_phi
           endif
         elseif (lcylindrical_coords) then
           call calc_lambda_cylindric(p,lambda_phi)
           if (llambda_scale_with_nu) then
-            p%fvisc(:,iuy)=p%fvisc(:,iuy) + nu*lambda_phi
+            p%fvisc(:,2)=p%fvisc(:,2) + nu*lambda_phi
           else
-            p%fvisc(:,iuy)=p%fvisc(:,iuy) + lambda_phi
+            p%fvisc(:,2)=p%fvisc(:,2) + lambda_phi
           endif
         else
           call fatal_error("init_uu","coord_system should be spherical or cylindric")

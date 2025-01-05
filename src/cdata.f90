@@ -833,6 +833,7 @@ module Cdata
 !  or not the chiral MHD special module is used.
 !
   real :: lambda5 = 0.0
+  integer :: string_enum_unit_system = 0
 !
 !  Variables for concurrency
 !

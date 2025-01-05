@@ -253,6 +253,7 @@ module Magnetic
   logical :: lfactors_aa=.false., lvacuum=.false.
   logical :: loverride_ee=.false., loverride_ee2=.false., loverride_ee_decide=.false.
   logical :: lignore_1rho_in_Lorentz=.false.
+  integer :: iedotx, iedotz
 !
   namelist /magnetic_init_pars/ &
       B_ext, B0_ext, B0_ext_z, B0_ext_z_H, t_bext, t0_bext, J_ext, lohmic_heat, radius, epsilonaa, &
@@ -1106,6 +1107,13 @@ module Magnetic
   real :: R2,R12
 
   real :: gamma, gamma1, gamma_m1
+
+  integer :: string_enum_tdep_eta_type = 0
+  integer :: string_enum_ambipolar_diffusion = 0
+  integer :: string_enum_rdep_profile = 0
+  integer :: string_enum_div_sld_magn = 0
+  integer :: string_enum_ihall_term = 0
+  integer :: string_enum_borderaa = 0
 
   contains
 !***********************************************************************
@@ -2056,6 +2064,8 @@ module Magnetic
 
       if (.not.lcoulomb.and.idiag_bzLammz/=0) &
         call fatal_error('initialize_magnetic', 'Coulomb gauge needs to be invoked for bzLamm')
+     iedotx=farray_index_by_name('eedot')
+     iedotz=iedotx+2
 
     endsubroutine initialize_magnetic
 !***********************************************************************
@@ -3707,7 +3717,9 @@ module Magnetic
           if (lbb_as_comaux) then
             if (lB_ext_in_comaux) then
               call get_bext(B_ext)
-              forall(j = 1:3, B_ext(j) /= 0.0) bb(:,j) = bb(:,j) + B_ext(j)
+              !forall(j = 1:3, B_ext(j) /= 0.0) bb(:,j) = bb(:,j) + B_ext(j)
+              !TP: don't have skip adding B_ext even if zero: for now skip the optimization
+              do j = 1,3; bb(:,j) = bb(:,j) + B_ext(j); enddo;
               if (headtt .and. imn == 1) print *, 'magnetic_before_boundary: B_ext = ', B_ext
             endif
             f(l1:l2,m,n,ibx:ibz) = bb
@@ -3824,6 +3836,34 @@ module Magnetic
 !
     endsubroutine calc_pencils_magnetic_std
 !***********************************************************************
+    subroutine eta_tdep_mean_field
+    real :: Eaver, Baver
+!
+!  eta_tdep
+!
+             call get_shared_variable('ascale', ascale, caller='initialize_magnetic')
+             call get_shared_variable('Hscript', Hscript, caller='initialize_magnetic')
+             if (lbb_as_aux .and. .not. lbb_as_comaux) then
+               b2m=sum(f(l1:l2,m,n,ibx)**2+f(l1:l2,m,n,iby)**2+f(l1:l2,m,n,ibz)**2)/nx
+             else
+               call fatal_error('magnetic_after_boundary','must have lbb_as_aux')
+             endif
+             Eaver=sqrt(sum(f(l1:l2,m1:m2,n,iex)**2+f(l1:l2,m1:m2,n,iey)**2+f(l1:l2,m1:m2,n,iez)**2)/nx)
+             Baver=sqrt(B_ext2+b2m)
+!
+!  Note that for Baver=0, eta_tdep=0
+!
+            if (Eaver<tini) then
+              eta_tdep=eta_huge
+            else
+              if (Baver<tini) then
+                eta_tdep=6.*pi**3*Hscript/echarge**3/Eaver
+              else
+                eta_tdep=6.*pi**2*Hscript/echarge**3*tanh(pi*Baver/Eaver)/Baver
+              endif
+            endif
+    endsubroutine
+!***********************************************************************
     subroutine calc_pencils_magnetic_pencpar(f,p,lpenc_loc)
 !
 !  Calculate Magnetic pencils.
@@ -3849,8 +3889,8 @@ module Magnetic
       real, dimension (nx) :: rho1_jxb, quench, StokesI_ncr, tmp1, bbgb, va2max_beta
       real, dimension(3) :: B_ext, j_ext
       real :: c,s
-      real :: Eaver, Baver, b2m
-      integer :: i, j, ix, iedotx, iedotz
+      real :: b2m
+      integer :: i, j, ix 
 
       if (lfirstpoint) lproc_print=.true.
 ! aa
@@ -3866,7 +3906,7 @@ module Magnetic
         if (lpenc_loc(i_aij) .and. .not. lpencil_check_at_work) then
           call div_mn(p%aij,p%diva,p%aa)
         else
-          call div_other(f(:,:,:,iax:iaz),p%diva)
+          call div(f,iaa,p%diva)
         endif
         if (lcoulomb) f(l1:l2,m,n,idiva)=p%diva
       endif
@@ -3881,7 +3921,7 @@ module Magnetic
         elseif (lpenc_loc(i_aij) .and. .not. lpencil_check_at_work) then
           call curl_mn(p%aij,p%bb,A=p%aa)
         else
-          call curl_other(f(:,:,:,iax:iaz),p%bb)
+          call curl(f,iaa,p%bb)
         endif
 !
 !  Save field before adding imposed field (for diagnostics).
@@ -3895,14 +3935,16 @@ module Magnetic
         if (.not. (lbb_as_comaux .and. lB_ext_in_comaux) .and. (.not. ladd_global_field)) then
           call get_bext(B_ext,j_ext)
           if (any(B_ext/=0.)) then
-            forall(j = 1:3, B_ext(j) /= 0.0) p%bb(:,j) = p%bb(:,j) + B_ext(j)
+            !TP: don't have skip adding B_ext even if zero: for now skip the optimization
+            do j = 1,3; p%bb(:,j) = p%bb(:,j) + B_ext(j); enddo;
             if (headtt) print *, 'calc_pencils_magnetic_pencpar: B_ext = ', B_ext
             if (headtt) print *, 'calc_pencils_magnetic_pencpar: logic = ', &
                         (lbb_as_comaux .and. lB_ext_in_comaux .and. ladd_global_field)
           endif
           ! The following does not happen if (lbb_as_comaux .and. lB_ext_in_comaux) !
 !AB: the following comes too early and is later done anyway
-         forall(j = 1:3, j_ext(j) /= 0.0) p%jj(:,j) = p%jj(:,j) + j_ext(j)
+         !TP: don't have skip adding j_ext even if zero: for now skip the optimization
+         do j = 1,3; p%jj(:,j) = p%jj(:,j) + j_ext(j); enddo;
         endif
 !
 !  Add a precessing dipole not in the Bext field
@@ -4089,9 +4131,9 @@ module Magnetic
 !  uses the kern_jjsmooth as kernels
 !
         if (lsmooth_jj) then
-          do j=1,3
-            call smooth_mn(f,ijx+(j-1),kern_jjsmooth,p%jj(:,j))
-          enddo
+          call smooth_mn(f,ijx,kern_jjsmooth,p%jj(:,1))
+          call smooth_mn(f,ijy,kern_jjsmooth,p%jj(:,2))
+          call smooth_mn(f,ijz,kern_jjsmooth,p%jj(:,3))
         else
           p%jj=f(l1:l2,m,n,ijx:ijz)
         endif
@@ -4130,30 +4172,7 @@ module Magnetic
             call fatal_error('magnetic_after_boundary','eta_table not yet completed')
             eta_tdep=0.
           case ('mean-field')
-!
-!  eta_tdep
-!
-             call get_shared_variable('ascale', ascale, caller='initialize_magnetic')
-             call get_shared_variable('Hscript', Hscript, caller='initialize_magnetic')
-             if (lbb_as_aux .and. .not. lbb_as_comaux) then
-               b2m=sum(f(l1:l2,m,n,ibx)**2+f(l1:l2,m,n,iby)**2+f(l1:l2,m,n,ibz)**2)/nx
-             else
-               call fatal_error('magnetic_after_boundary','must have lbb_as_aux')
-             endif
-             Eaver=sqrt(sum(f(l1:l2,m1:m2,n,iex)**2+f(l1:l2,m1:m2,n,iey)**2+f(l1:l2,m1:m2,n,iez)**2)/nx)
-             Baver=sqrt(B_ext2+b2m)
-!
-!  Note that for Baver=0, eta_tdep=0
-!
-            if (Eaver<tini) then
-              eta_tdep=eta_huge
-            else
-              if (Baver<tini) then
-                eta_tdep=6.*pi**3*Hscript/echarge**3/Eaver
-              else
-                eta_tdep=6.*pi**2*Hscript/echarge**3*tanh(pi*Baver/Eaver)/Baver
-              endif
-            endif
+             !call eta_tdep_mean_field
           case default
         endselect
       endif
@@ -4202,8 +4221,6 @@ module Magnetic
 !
             if (loverride_ee2) then
               if (ladd_disp_current_from_aux) then
-                iedotx=farray_index_by_name('eedot')
-                iedotz=iedotx+2
                 if (iedotx>0 .and. iedotz>0) then
                   p%jj=mu01*p%curlb-c_light21*f(l1:l2,m,n,iedotx:iedotz)
                 else
@@ -4280,48 +4297,47 @@ module Magnetic
       if (lpenc_loc(i_etava)) then
         if (lresi_vAspeed) then
           p%etava = eta_va * sqrt(p%va2)/vArms
-          if (va_min > 0.) where (p%etava < va_min) p%etava = va_min
+          if (va_min > 0.) set_min_val(p%etava,p%etava,va_min)
         else
           p%etava = mu0 * eta_va * dxmax * sqrt(p%va2)
-          if (eta_min > 0.) where (p%etava < eta_min) p%etava = 0.
+          if (eta_min > 0.) set_zero_below_threshold(p%etava,p%etava,eta_min)
         endif
       endif
 ! gradient of va
       if (lpenc_loc(i_gva).and.lalfven_as_aux) then
         call grad(f,ialfven,p%gva)
         if (lresi_vAspeed) then
-          do i=1,3
-            if (va_min > 0.) where (p%etava < va_min) p%gva(:,i) = 0.
-          enddo
+          if (va_min > 0.) set_zero_below_threshold(p%gva,p%etava,va_min)
         endif
       endif
 ! eta_j
       if (lpenc_loc(i_etaj)) then
         p%etaj = mu0 * eta_j * dxmax**2 * sqrt(mu0 * p%j2 * p%rho1)
-        if (eta_min > 0.) where (p%etaj < eta_min) p%etaj = 0.
+        if (eta_min > 0.) set_zero_below_threshold(p%etaj,p%etaj,eta_min)
       endif
 ! eta_j2
       if (lpenc_loc(i_etaj2)) then
         p%etaj2 = etaj20 * p%j2 * p%rho1
-        if (eta_min > 0.) where (p%etaj2 < eta_min) p%etaj2 = 0.
+        if (eta_min > 0.) set_zero_below_threshold(p%etaj2,p%etaj2,eta_min)
       endif
 ! eta_jrho
       if (lpenc_loc(i_etajrho)) then
         p%etajrho = mu0 * eta_jrho * dxmax * sqrt(p%j2) * p%rho1
-        if (eta_min > 0.) where (p%etajrho < eta_min) p%etajrho = 0.
+        if (eta_min > 0.) set_zero_below_threshold(p%etajrho,p%etajrho,eta_min)
       endif
 ! jxb
       if (lpenc_loc(i_jxb)) call cross_mn(p%jj,p%bb,p%jxb)
 !
 ! cosjb
       if (lpenc_loc(i_cosjb)) then
-        do ix=1,nx
-          if ((abs(p%j2(ix))<=tini).or.(abs(p%b2(ix))<=tini))then
-            p%cosjb(ix)=0.
-          else
-            p%cosjb(ix)=p%jb(ix)/sqrt(p%j2(ix)*p%b2(ix))
-          endif
-        enddo
+        tini_sqrt_div(p%cosjb,p%jb, p%j2, p%b2)
+        !do ix=1,nx
+        !  if ((abs(p%j2(ix))<=tini).or.(abs(p%b2(ix))<=tini))then
+        !    p%cosjb(ix)=0.
+        !  else
+        !    p%cosjb(ix)=p%jb(ix)/sqrt(p%j2(ix)*p%b2(ix))
+        !  endif
+        !enddo
         if (lpencil_check_at_work) then
         ! map penc0 value back to interval [-1,1]
           p%cosjb = modulo(p%cosjb + 1.0, 2.0) - 1
@@ -4363,13 +4379,14 @@ module Magnetic
       if (lpenc_loc(i_uj)) call dot_mn(p%uu,p%jj,p%uj)
 ! cosub
       if (lpenc_loc(i_cosub)) then
-        do ix=1,nx
-          if ((abs(p%u2(ix))<=tini).or.(abs(p%b2(ix))<=tini)) then
-            p%cosub(ix)=0.
-          else
-            p%cosub(ix)=p%ub(ix)/sqrt(p%u2(ix)*p%b2(ix))
-          endif
-        enddo
+        tini_sqrt_div(p%cosub,p%ub, p%u2, p%b2)
+        !do ix=1,nx
+        !  if ((abs(p%u2(ix))<=tini).or.(abs(p%b2(ix))<=tini)) then
+        !    p%cosub(ix)=0.
+        !  else
+        !    p%cosub(ix)=p%ub(ix)/sqrt(p%u2(ix)*p%b2(ix))
+        !  endif
+        !enddo
         if (lpencil_check) then
         ! map penc0 value back to interval [-1,1]
           p%cosub = modulo(p%cosub + 1.0, 2.0) - 1
@@ -4465,14 +4482,15 @@ module Magnetic
       if (lpenc_loc(i_hjb)) call dot_mn(p%hjj,p%bb,p%hjb)
 ! coshjb
       if (lpenc_loc(i_coshjb)) then
-        do ix=1,nx
-          if ((abs(p%hj2(ix))<=tini).or.(abs(p%b2(ix))<=tini))then
-            p%coshjb(ix)=0.
-          else
-            !p%coshjb(ix)=p%hjb(ix)/sqrt(p%hj2(ix)*p%b2(ix))
-            p%coshjb(ix)=p%hjb(ix)/(sqrt(p%hj2(ix))*sqrt(p%b2(ix)))
-          endif
-        enddo
+        call tini_sqrt_div_separate(p%coshjb,p%hjb,p%hj2,p%b2)
+        !do ix=1,nx
+        !  if ((abs(p%hj2(ix))<=tini).or.(abs(p%b2(ix))<=tini))then
+        !    p%coshjb(ix)=0.
+        !  else
+        !    !p%coshjb(ix)=p%hjb(ix)/sqrt(p%hj2(ix)*p%b2(ix))
+        !    p%coshjb(ix)=p%hjb(ix)/(sqrt(p%hj2(ix))*sqrt(p%b2(ix)))
+        !  endif
+        !enddo
         if (lpencil_check_at_work) then
 ! map penc0 value back to interval [-1,1]
           p%coshjb = modulo(p%coshjb + 1.0, 2.0) - 1
@@ -4925,7 +4943,7 @@ module Magnetic
           if (lweyl_gauge) then
             fres = fres - eta_z(n) * mu0 * p%jj
           else
-            forall(j = 1:3) fres(:,j) = fres(:,j) + eta_z(n) * p%del2a(:,j)
+            do j = 1,3; fres(:,j) = fres(:,j) + eta_z(n) * p%del2a(:,j); enddo;
             fres(:,3) = fres(:,3) + geta_z(n) * p%diva
           endif
           eta_total = eta_total + eta_z(n)
@@ -5221,7 +5239,7 @@ module Magnetic
 !
       if (lresi_etava) then
         if (lweyl_gauge) then
-          forall (i = 1:3) fres(:,i) = fres(:,i) - p%etava * p%jj(:,i)
+          do i = 1,3; fres(:,i) = fres(:,i) - p%etava * p%jj(:,i); enddo;
         endif
         eta_total = eta_total + p%etava
       endif
@@ -5230,7 +5248,7 @@ module Magnetic
 !
       if (lresi_vAspeed) then
         if (lweyl_gauge) then
-          forall (i = 1:3) fres(:,i) = fres(:,i) - p%etava * p%jj(:,i)
+          do i = 1,3; fres(:,i) = fres(:,i) - p%etava * p%jj(:,i); enddo;
         else
           do i=1,3
             fres(:,i) = fres(:,i) + mu0 * p%etava * p%del2a(:,i) + eta_va/vArms * p%diva * p%gva(:,i)
@@ -5240,17 +5258,17 @@ module Magnetic
       endif
 !
       if (lresi_etaj) then
-        forall (i = 1:3) fres(:,i) = fres(:,i) - p%etaj * p%jj(:,i)
+          do i = 1,3; fres(:,i) = fres(:,i) - p%etaj * p%jj(:,i); enddo;
         eta_total = eta_total + p%etaj
       endif
 !
       if (lresi_etaj2) then
-        forall (i = 1:3) fres(:,i) = fres(:,i) - p%etaj2 * p%jj(:,i)
+              do i = 1,3; fres(:,i) = fres(:,i) - p%etaj2 * p%jj(:,i); enddo;
         eta_total = eta_total + p%etaj2
       endif
 !
       if (lresi_etajrho) then
-        forall (i = 1:3) fres(:,i) = fres(:,i) - p%etajrho * p%jj(:,i)
+              do i = 1,3; fres(:,i) = fres(:,i) - p%etajrho * p%jj(:,i); enddo;
         eta_total = eta_total + p%etajrho
       endif
 !
@@ -5301,10 +5319,10 @@ module Magnetic
         eta_smag=(D_smag*dxmax)**2.*sign_jo*sqrt(p%jo*sign_jo)
         call multsv(eta_smag+eta,p%del2a,fres)
       endif
-      if (any((/lresi_smagorinsky,lresi_smagorinsky_nusmag,lresi_smagorinsky_cross/))) eta_total = eta_total + eta_smag
+      if (lresi_smagorinsky .or. lresi_smagorinsky_nusmag .or. lresi_smagorinsky_cross) eta_total = eta_total + eta_smag
 !
-!  Anomalous resistivity. Sets in when the ion-electron drift speed is
-!  larger than some critical value.
+!  Anoalous resistivity. Sets in when the ion-electron drift speed is
+!  larer than some critical value.
 !
       if (lresi_anomalous) then
         vdrift=sqrt(sum(p%jj**2,2))*p%rho1
@@ -5317,7 +5335,9 @@ module Magnetic
                 fres(:,i)=fres(:,i)-eta_anom*vdrift/vcrit_anom*mu0*p%jj(:,i)
               endwhere
             else
-              where (vdrift>vcrit_anom) fres(:,i)=fres(:,i)-eta_anom*vdrift/vcrit_anom*mu0*p%jj(:,i)
+              where (vdrift>vcrit_anom) 
+                        fres(:,i)=fres(:,i)-eta_anom*vdrift/vcrit_anom*mu0*p%jj(:,i)
+              endwhere
             endif
           enddo
         else
@@ -5330,14 +5350,16 @@ module Magnetic
             eta_total=eta_total+eta_anom*vdrift/vcrit_anom
           endwhere
         else
-          where (vdrift>vcrit_anom) eta_total=eta_total+eta_anom*vdrift/vcrit_anom
+          where (vdrift>vcrit_anom) 
+                eta_total=eta_total+eta_anom*vdrift/vcrit_anom
+          endwhere
         endif
       endif
 !
-! Temperature dependent resistivity for the solar corona (Spitzer 1969)
+! Tempature dependent resistivity for the solar corona (Spitzer 1969)
 !
       if (lresi_spitzer) then
-        if (lweyl_gauge) then
+        if (/weyl_gauge) then
           do i=1,3
             fres(:,i)=fres(:,i)-eta_spitzer*exp(-1.5*p%lnTT)*mu0*p%jj(:,i)
           enddo
@@ -5432,10 +5454,11 @@ module Magnetic
 !  to Ekman friction; see below.
 !
       if (lmean_friction) then
-        do j=1,3
-          aa_xyaver(:,j)=sum(f(l1:l2,m1:m2,n,j+iax-1))/nxy
-        enddo
-        dAdt = dAdt-LLambda_aa*aa_xyaver
+        !TP: mean calculation not yet supported
+        !do j=1,3
+        !  aa_xyaver(:,j)=sum(f(l1:l2,m1:m2,n,j+iax-1))/nxy
+        !enddo
+        !dAdt = dAdt-LLambda_aa*aa_xyaver
       elseif (llocal_friction) then
         dAdt = dAdt-LLambda_aa*p%aa
       endif
@@ -5556,7 +5579,7 @@ module Magnetic
 !
       do j=1,3
         if (lfrozen_bb_bot(j).and.lfirst_proc_z.and.n==n1) fres(:,j)=0.
-        if (lfrozen_bb_top(j).and.llast_proc_z.and.n==n2) fres(:,j)=0.
+        if (lfrozen_bb_top(j).and.llast_proc_z.and.n==n2)  fres(:,j)=0.
       enddo
 !
 !  Induction equation.
@@ -5771,10 +5794,15 @@ module Magnetic
       if (height_eta/=0.0) then
         if (headtt) print*,'daa_dt: height_eta,eta_out,lhalox=',height_eta,eta_out,lhalox
         if (lhalox) then
-          do ix=1,nx
-            tmp=(x(ix)/height_eta)**2
-            eta_out1=eta_out*(1.0-exp(-tmp**5/max(1.0-tmp,1.0e-5)))-eta
-          enddo
+          !TP: this simply seems bizare we are overwriting eta_out1 multiple times
+          !TP: for transpilation assume that we only want to write last write which is anyways
+          !the only visible access
+          tmp = (x(nx)/height_eta)**2
+          eta_out1 = eta_out*(1.0-exp(-tmp**5/max(1.0-tmp,1.0e-5)))-eta
+          !do ix=1,nx
+          !  tmp=(x(ix)/height_eta)**2
+          !  eta_out1=eta_out*(1.0-exp(-tmp**5/max(1.0-tmp,1.0e-5)))-eta
+          !enddo
         else
           !eta_out1=eta_out*0.5*(1.-erfunc((z(n)-height_eta)/eta_zwidth))-eta
 !AB: 2018-12-18 changed to produce change *above* height_eta.
@@ -5891,50 +5919,50 @@ module Magnetic
 !
       endif
 !
-!  Add turbulent diffusivity, if provided.  (MR: should be done in MF module! AB: I agree; replace now by fatal error)
+!  Add! turbulent diffusivity, if provided.  (MR: should be done in MF module! AB: I agree; replace now by fatal error)
 !
-      !if (ietat/=0) eta_total=eta_total+f(l1:l2,m,n,ietat)
-      if (ietat/=0) call fatal_error("daa_dt","eta_total=eta_total+f(l1:l2,m,n,ietat) should be done in MF module")
+      !!if (ietat/=0) eta_total=eta_total+f(l1:l2,m,n,ietat)
+      !if (ietat/=0) call fatal_error("daa_dt","eta_total=eta_total+f(l1:l2,m,n,ietat) should be done in MF module")
 !
-!  Multiply resistivity by Nyquist scale, for resistive time-step.
+!  Mul!iply resistivity by Nyquist scale, for resistive time-step.
 !
-      if (lfirst.and.ldt) then
+      !if (lfirst.and.ldt) then
 !
-        diffus_eta =eta_total *dxyz_2
-        diffus_eta2=diffus_eta2*dxyz_4
+      !  diffus_eta =eta_total *dxyz_2
+      !  diffus_eta2=diffus_eta2*dxyz_4
 !
-        if (ldynamical_diffusion .and. lresi_hyper3_mesh) then
-          diffus_eta3 = diffus_eta3 * sum(dline_1,2)
-        else
-          diffus_eta3 = diffus_eta3*dxyz_6
-        endif
-        if (lpole(2) .and. lcoarse) then
+      !  if (ldynamical_diffusion .and. lresi_hyper3_mesh) then
+      !    diffus_eta3 = diffus_eta3 * sum(dline_1,2)
+      !  else
+      !    diffus_eta3 = diffus_eta3*dxyz_6
+      !  endif
+      !  if (lpole(2) .and. lcoarse) then
 
-          if (lfirst_proc_y .and. m<m1+1.5*ncoarse .and. m>=m1) then
-            nphi = max(mod(int(ncoarse/(m-m1+1)),ncoarse+1),1)
-          elseif (llast_proc_y .and. m>m2-1.5*ncoarse .and. m<=m2) then
-            nphi = max(mod(int(ncoarse/(m2-m+1)),ncoarse+1),1)
-          else
-            nphi = 1
-          endif
-          !if (lroot .and. n==n1) print*,'fred: nphi, m',nphi, m
-          diffus_eta =diffus_eta /nphi**2
-          diffus_eta2=diffus_eta2/nphi**4
+      !    if (lfirst_proc_y .and. m<m1+1.5*ncoarse .and. m>=m1) then
+      !      nphi = max(mod(int(ncoarse/(m-m1+1)),ncoarse+1),1)
+      !    elseif (llast_proc_y .and. m>m2-1.5*ncoarse .and. m<=m2) then
+      !      nphi = max(mod(int(ncoarse/(m2-m+1)),ncoarse+1),1)
+      !    else
+      !      nphi = 1
+      !    endif
+      !    !if (lroot .and. n==n1) print*,'fred: nphi, m',nphi, m
+      !    diffus_eta =diffus_eta /nphi**2
+      !    diffus_eta2=diffus_eta2/nphi**4
 !
-          if (.not.(ldynamical_diffusion .and. lresi_hyper3_mesh)) diffus_eta3 = diffus_eta3/nphi**6
-        endif
+      !    if (.not.(ldynamical_diffusion .and. lresi_hyper3_mesh)) diffus_eta3 = diffus_eta3/nphi**6
+      !  endif
 !
-        if (headtt.or.ldebug) then
-          print*, 'daa_dt: max(diffus_eta)  =', maxval(diffus_eta)
-          print*, 'daa_dt: max(diffus_eta2) =', maxval(diffus_eta2)
-          print*, 'daa_dt: max(diffus_eta3) =', maxval(diffus_eta3)
-        endif
+      !  if (headtt.or.ldebug) then
+      !    print*, 'daa_dt: max(diffus_eta)  =', maxval(diffus_eta)
+      !    print*, 'daa_dt: max(diffus_eta2) =', maxval(diffus_eta2)
+      !    print*, 'daa_dt: max(diffus_eta3) =', maxval(diffus_eta3)
+      !  endif
 
-        maxdiffus=max(maxdiffus,diffus_eta)
-        maxdiffus2=max(maxdiffus2,diffus_eta2)
-        maxdiffus3=max(maxdiffus3,diffus_eta3)
+      !  maxdiffus=max(maxdiffus,diffus_eta)
+      !  maxdiffus2=max(maxdiffus2,diffus_eta2)
+      !  maxdiffus3=max(maxdiffus3,diffus_eta3)
 !
-      endif
+      !endif
 !
 !  Do diagnostics, which includes also slices.
 !
@@ -7248,21 +7276,22 @@ module Magnetic
           if (ijjt/=0)  f(l1:l2,m,n,ijxt:ijzt) = f(l1:l2,m,n,ijxt:ijzt)  +dt*p%jj
         endif
       elseif (lreset_vart) then
-        if (lvart_in_shear_frame) then
-          !
-          !  store ibbt etc. in the shear frame
-          !
-          do ikx=l1,l2
-            nshear=nint( deltay/dy * x(ikx)/Lx )
-            iky=mod(m-nshear,ny)
-            if (iky<=0) iky=iky+ny
-            if (ibxt/=0 .and. ibx/=0) f(ikx,m,n,ibxt:ibzt) = f(ikx,iky,n,ibx:ibz)
-            if (ijxt/=0 .and. ijx/=0) f(ikx,m,n,ijxt:ijzt) = f(ikx,iky,n,ijx:ijz)
-          enddo
-        else
-          if (ibxt/=0 .and. ibx/=0) f(l1:l2,m,n,ibxt:ibzt) = f(l1:l2,m,n,ibx:ibz)
-          if (ijxt/=0 .and. ijx/=0) f(l1:l2,m,n,ijxt:ijzt) = f(l1:l2,m,n,ijx:ijz)
-        endif
+        !TP: reconsider how to do it for transpilation
+        !if (lvart_in_shear_frame) then
+        !  !
+        !  !  store ibbt etc. in the shear frame
+        !  !
+        !  do ikx=l1,l2
+        !    nshear=nint( deltay/dy * x(ikx)/Lx )
+        !    iky=mod(m-nshear,ny)
+        !    if (iky<=0) iky=iky+ny
+        !    if (ibxt/=0 .and. ibx/=0) f(ikx,m,n,ibxt:ibzt) = f(ikx,iky,n,ibx:ibz)
+        !    if (ijxt/=0 .and. ijx/=0) f(ikx,m,n,ijxt:ijzt) = f(ikx,iky,n,ijx:ijz)
+        !  enddo
+        !else
+        !  if (ibxt/=0 .and. ibx/=0) f(l1:l2,m,n,ibxt:ibzt) = f(l1:l2,m,n,ibx:ibz)
+        !  if (ijxt/=0 .and. ijx/=0) f(l1:l2,m,n,ijxt:ijzt) = f(l1:l2,m,n,ijx:ijz)
+        !endif
       endif
       lreset_vart=.false.
 !

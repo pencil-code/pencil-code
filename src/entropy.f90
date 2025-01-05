@@ -497,6 +497,12 @@ module Energy
 
   real, dimension(:), pointer :: beta_glnrho_scaled
 !
+  integer :: string_enum_div_sld_ene = 0
+  integer :: string_enum_cooling_profile = 0
+  integer :: string_enum_cooltype = 0
+  integer :: string_enum_heattype = 0
+  integer :: string_enum_borderss = 0
+!
   contains
 !***********************************************************************
     subroutine register_energy
@@ -4478,10 +4484,13 @@ module Energy
 !
       case ('zero','0')
         f_target=0.0
+        call border_driving(f,df,p,f_target,iss)
       case ('constant')
         f_target=ss_const
+        call border_driving(f,df,p,f_target,iss)
       case ('initial-condition')
         call set_border_initcond(f,iss,f_target)
+        call border_driving(f,df,p,f_target,iss)
       case ('initial-temperature')
 !
 !  This boundary condition drives the entropy back not to the initial entropy,
@@ -4511,11 +4520,10 @@ module Energy
 !
         f_target = ss_init - gamma_m1*cv*(p%lnrho-lnrho_init)
 !
+        call border_driving(f,df,p,f_target,iss)
       case ('nothing')
-        return
       endselect
 !
-      call border_driving(f,df,p,f_target,iss)
 !
     endsubroutine set_border_entropy
 !***********************************************************************
@@ -5916,11 +5924,11 @@ module Energy
                                chit_fluct_prof1,chit_fluct_prof2,xbot,xtop,p,f, &
                                stored_prof=chit_prof_fluct_stored,stored_dprof=dchit_prof_fluct_stored)
 !
-          call grad(f(:,:,:,iss_run_aver),gss1)
+          call grad(f,iss_run_aver,gss1)
           do j=1,3
             gss0(:,j)=p%gss(:,j)-gss1(:,j)
           enddo
-          call del2(f(:,:,:,iss_run_aver),del2ss1)
+          call del2(f,iss_run_aver,del2ss1)
           del2ss0=p%del2ss-del2ss1
           if (lchit_noT) then
             call dot(p%glnrho,gss0,g2)
@@ -6707,7 +6715,7 @@ module Energy
         imax = size(intlnT_1,1)
         lnQ(:)=0.0
         do i=1,imax-1
-          where (( intlnT_1(i) <= lnTT_SI .or. i==1 ) .and. lnTT_SI < intlnT_1(i+1) )
+          where (( intlnT_1(i) <= .or. i==1 ) .and. lnTT_SI < intlnT_1(i+1) )
             lnQ=lnQ + lnH_1(i) + B_1(i)*lnTT_SI
           endwhere
         enddo
@@ -6741,15 +6749,15 @@ module Energy
         endif
         tmp=maxval(rtv_cool*gamma)/(cdts)
       case (3)
-        rtv_cool=0.0
-        if (z(n) > z_cor) then
-          call get_lnQ(lnTT_SI, lnQ, delta_lnTT)
-          rtv_cool = exp(lnQ-unit_lnQ+lnneni-p%lnTT-p%lnrho)
-        endif
-        tmp = max (rtv_cool/cdts, abs (rtv_cool/max (tini, delta_lnTT)))
+        !rtv_cool=0.0
+        !if (z(n) > z_cor) then
+        !  call get_lnQ(lnTT_SI, lnQ, delta_lnTT)
+        !  rtv_cool = exp(lnQ-unit_lnQ+lnneni-p%lnTT-p%lnrho)
+        !endif
+        !tmp = max (rtv_cool/cdts, abs (rtv_cool/max (tini, delta_lnTT)))
       case default
         rtv_cool(:)=0.
-        tmp=maxval(rtv_cool*gamma)/(cdts)
+        !tmp=maxval(rtv_cool*gamma)/(cdts)
     end select
 !
       rtv_cool=rtv_cool * cool_RTV  ! for adjusting by setting cool_RTV in run.in
@@ -6760,7 +6768,7 @@ module Energy
 !
       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss)-rtv_cool
 !
-      if (lfirst.and.ldt) dt1_max=max(dt1_max,tmp)
+      !if (lfirst.and.ldt) dt1_max=max(dt1_max,tmp)
 !
     endsubroutine calc_heat_cool_RTV
 !***********************************************************************
@@ -7419,54 +7427,53 @@ module Energy
 
       if (.not.lmultilayer) then
         prof=amp; dprof=0.
-        return
-      endif
+      else then
+        if (lgravz) then
+          prof=stored_prof(n-nghost)
+          dprof(:,3)=stored_dprof(n-nghost); dprof(:,1:2)=0.
+        elseif (l2D3D) then
 
-      if (lgravz) then
-        prof=stored_prof(n-nghost)
-        dprof(:,3)=stored_dprof(n-nghost); dprof(:,1:2)=0.
-      elseif (l2D3D) then
-
-        if (present(p).and.lhcond_global) then
-          prof = f(l1:l2,m,n,iglobal_hcond)
-          dprof= f(l1:l2,m,n,iglobal_glhc:iglobal_glhc+2)
-        else
-
-          if (present(p)) then
-            r_mn=p%r_mn
-            r_mn1=p%r_mn1
+          if (present(p).and.lhcond_global) then
+            prof = f(l1:l2,m,n,iglobal_hcond)
+            dprof= f(l1:l2,m,n,iglobal_glhc:iglobal_glhc+2)
           else
-            r_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
-            r_mn1=1./r_mn
+
+            if (present(p)) then
+              r_mn=p%r_mn
+              r_mn1=p%r_mn1
+            else
+              r_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
+              r_mn1=1./r_mn
+            endif
+
+            prof =  (amp1-1.)*der_step(r_mn,pos1,-widthss) &
+                   +(amp2-1.)*der_step(r_mn,pos2, widthss)
+            dprof(:,1) = prof*x(l1:l2)*r_mn1
+            dprof(:,2) = prof*y(  m  )*r_mn1
+
+            if (lcylinder_in_a_box) then
+              dprof(:,3) = 0.0
+            else
+              dprof(:,3) = prof*z(n)*r_mn1
+            endif
+
+            prof = 1.+(amp1-1.)*step(r_mn,pos1,-widthss) &
+                     +(amp2-1.)*step(r_mn,pos2, widthss)
+
+            if (loptest(llog)) then
+              do j=1,3; dprof(:,j)=dprof(:,j)/prof; enddo
+            else
+              dprof = amp*dprof
+            endif
+
+            prof = amp*prof
+
           endif
 
-          prof =  (amp1-1.)*der_step(r_mn,pos1,-widthss) &
-                 +(amp2-1.)*der_step(r_mn,pos2, widthss)
-          dprof(:,1) = prof*x(l1:l2)*r_mn1
-          dprof(:,2) = prof*y(  m  )*r_mn1
-
-          if (lcylinder_in_a_box) then
-            dprof(:,3) = 0.0
-          else
-            dprof(:,3) = prof*z(n)*r_mn1
-          endif
-
-          prof = 1.+(amp1-1.)*step(r_mn,pos1,-widthss) &
-                   +(amp2-1.)*step(r_mn,pos2, widthss)
-
-          if (loptest(llog)) then
-            do j=1,3; dprof(:,j)=dprof(:,j)/prof; enddo
-          else
-            dprof = amp*dprof
-          endif
-
-          prof = amp*prof
-
+        else  ! covers also lgravr=T
+          prof=stored_prof
+          dprof(:,1)=stored_dprof; dprof(:,2:3)=0.
         endif
-
-      else  ! covers also lgravr=T
-        prof=stored_prof
-        dprof(:,1)=stored_dprof; dprof(:,2:3)=0.
       endif
 
     endsubroutine get_prof_pencil

@@ -904,9 +904,9 @@ module Equ
 !
 !  Calculate profile for phi-averages if needed.
 !
-        if (((l2davgfirst.and.lwrite_phiaverages )  .or. &
-             (l1dphiavg  .and.lwrite_phizaverages)) .and. &
-            (lcylinder_in_a_box.or.lsphere_in_a_box)) call calc_phiavg_profile(p)
+        !if (((l2davgfirst.and.lwrite_phiaverages )  .or. &
+        !     (l1dphiavg  .and.lwrite_phizaverages)) .and. &
+        !    (lcylinder_in_a_box.or.lsphere_in_a_box)) call calc_phiavg_profile(p)
 !
 !  Calculate pencils for the pencil_case.
 !  Note: some no-modules (e.g. nohydro) also calculate some pencils,
@@ -1016,11 +1016,11 @@ module Equ
 !
 !  Skip points not belonging to coarse grid.
 !
-        lcoarse_mn=lcoarse.and.mexts(1)<=m.and.m<=mexts(2)
-        if (lcoarse_mn) then
-          lcoarse_mn=lcoarse_mn.and.ninds(0,m,n)>0
-          if (ninds(0,m,n)<=0) cycle
-        endif
+        !lcoarse_mn=lcoarse.and.mexts(1)<=m.and.m<=mexts(2)
+        !if (lcoarse_mn) then
+        !  lcoarse_mn=lcoarse_mn.and.ninds(0,m,n)>0
+        !  if (ninds(0,m,n)<=0) cycle
+        !endif
 !
 !  Store the velocity part of df array in a temporary array
 !  while solving the anelastic case.
@@ -1245,9 +1245,9 @@ module Equ
 !
         if (lanelastic) then
 !          call calc_pencils_density(f,p)
-          f(l1:l2,m,n,irhs)   = p%rho*df(l1:l2,m,n,iuu)
-          f(l1:l2,m,n,irhs+1) = p%rho*df(l1:l2,m,n,iuu+1)
-          f(l1:l2,m,n,irhs+2) = p%rho*df(l1:l2,m,n,iuu+2)
+          f(l1:l2,m,n,irhx)   = p%rho*df(l1:l2,m,n,iuu)
+          f(l1:l2,m,n,irhy) = p%rho*df(l1:l2,m,n,iuy)
+          f(l1:l2,m,n,irhz) = p%rho*df(l1:l2,m,n,iuz)
           df(l1:l2,m,n,iux:iuz) = df_iuu_pencil + df(l1:l2,m,n,iux:iuz)
           call sum_mn(p%rho,mass_per_proc(1))
         endif

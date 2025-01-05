@@ -62,7 +62,7 @@ module Hydro
   real, dimension (mz,3) :: uumz=0.0, ruumz=0.0
   real, dimension (mx,3) :: uumx=0.0
   real, dimension (my,3) :: uumy=0.0
-  real, dimension (:,:,:), allocatable :: uumxy, ruumxy
+  real, dimension (mx,my,3) :: uumxy, ruumxy
   real, dimension (mx,mz,3) :: uumxz=0.0
 !
 !  phi-averaged arrays for orbital advection
@@ -881,6 +881,10 @@ module Hydro
   real, dimension (nx,3) :: fint,fext
   real, dimension (nx,ny) :: omega_prof
 
+  integer :: string_enum_friction_tdep = 0
+  integer :: string_enum_uuprof = 0
+  integer :: string_enum_borderuu = 0
+
   contains
 !***********************************************************************
     subroutine register_hydro
@@ -1092,7 +1096,8 @@ module Hydro
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mz) :: c, s
-      integer :: j,myl ! currently unused: nycap
+      integer :: j
+      !integer :: myl ! currently unused: nycap
       real :: slope,uinn,uext,zbot
       logical :: lvectorpotential=.false.
 !
@@ -1355,13 +1360,12 @@ module Hydro
       endif
 !
       if (lcalc_uumeanxy .or. lcalc_ruumeanxy) then
-        myl=my
         if (lyinyang) then
           call not_implemented('initialize_hydro','calculation of z average for Yin-Yang grid')
           !call initialize_zaver_yy(myl,nycap)
         endif
-        allocate(uumxy(mx,myl,3))
-        allocate(ruumxy(mx,myl,3))
+        !allocate(uumxy(mx,my,3))
+        !allocate(ruumxy(mx,my,3))
         uumxy=0.0
         ruumxy=0.0
       endif
@@ -3909,7 +3913,8 @@ module Hydro
 !  12-Mar-2017/WL: Agree, looks very specific.
 !
         if (lno_meridional_flow) then
-          f(l1:l2,m,n,iux:iuy)=0.0
+          f(l1:l2,m,n,iux)=0.0
+          f(l1:l2,m,n,iuy)=0.0
           df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-p%ugu(:,3)
         endif
 !
@@ -5657,9 +5662,7 @@ endif
 !
       real :: c2, s2
 !
-      if (Omega==0.) return
-!
-      if (theta==0) then
+      if (Omega /= 0. .and. theta==0) then
 !
         if (lcoriolis_force) then
 !
@@ -5685,7 +5688,7 @@ endif
 !
         endif
 !
-      else
+      else if(Omega /= 0.) then
 
         if (phi/=0.) call not_implemented("coriolis_cartesian","if Omega has y component")
 !
@@ -5735,9 +5738,7 @@ endif
 !
       real :: c2, s2
 !
-      if (Omega==0.) return
-!
-      if (lcoriolis_force) then
+      if (Omega /= 0. .and. lcoriolis_force) then
 !
         if (headtt) print*,'coriolis_cartesian_xaxis: Coriolis force; Omega, theta=', Omega, theta
 !
@@ -8149,7 +8150,8 @@ endif
         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*(f(l1:l2,m,n,iuz)-prof_amp1*prof_amp4(m))
 !            -prof_amp1*cos(20.*x(llx))*cos(20.*y(m)) )
       if (ldiffrot_test) then
-        f(l1:l2,m,n,iux:iuy) = 0.
+        f(l1:l2,m,n,iux) = 0.
+        f(l1:l2,m,n,iuy) = 0.
         if (lspherical_coords.or.lcartesian_coords) f(l1:l2,m,n,iuz) = prof_amp1*prof_amp4(m)
       endif
 !
