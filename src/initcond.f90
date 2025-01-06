@@ -58,7 +58,7 @@ module Initcond
   public :: vortex_2d
   public :: vfield2
   public :: hawley_etal99a
-  public :: robertsflow
+  public :: robertsflow, rotated_robertsflow
   public :: const_lou
   public :: corona_init,mdi_init,mag_init,mag_Az_init,file_init,temp_hydrostatic
   public :: innerbox
@@ -2313,6 +2313,53 @@ module Initcond
       endif
 !
     endsubroutine robertsflow
+!***********************************************************************
+    subroutine rotated_robertsflow(ampl,f,i,relhel,kx,flow)
+!
+!  By 45 degrees rotated Roberts Flow (as initial condition)
+!
+!   6-jan-25/axel: coded
+!
+      integer :: i,j
+      real, dimension (mx,my,mz,mfarray) :: f
+      real :: ampl,k=1.,kf,fac1,fac2,relhel
+      real, optional :: kx
+      character (len=labellen) :: flowtype='I'
+      character (len=labellen), optional :: flow
+!
+!  Possibility of changing the wavenumber
+!
+      if (present(kx)) then
+        k=kx
+      endif
+!
+!  Possibility of changing the flow
+!
+      if (present(flow)) then
+        flowtype=flow
+      endif
+!
+!  prepare coefficients
+!
+      kf=k*sqrt(2.)
+      fac1=sqrt(2.)*ampl*k/kf
+      fac2=sqrt(2.)*ampl*relhel
+!
+      j=i+0; f(:,:,:,j)=f(:,:,:,j)+fac1*spread(spread(sin(k*y),1,mx),3,mz)
+!
+      j=i+1; f(:,:,:,j)=f(:,:,:,j)+fac1*spread(spread(sin(k*x),2,my),3,mz)
+!
+      if (flowtype=='I') then
+        j=i+2; f(:,:,:,j)=f(:,:,:,j)+fac1*(spread(spread(cos(k*x),2,my),3,mz)&
+                                          -spread(spread(cos(k*y),1,mx),3,mz))
+      elseif (flowtype=='II') then
+        j=i+2; f(:,:,:,j)=f(:,:,:,j)+fac1*(spread(spread(cos(k*x),2,my),3,mz)&
+                                          +spread(spread(cos(k*y),1,mx),3,mz))
+      else
+        call fatal_error('robertsflow','no such flowtype')
+      endif
+!
+    endsubroutine rotated_robertsflow
 !***********************************************************************
     subroutine exponential(ampl,f,j,KKz)
 !

@@ -2399,6 +2399,7 @@ module Magnetic
         case ('Ferriere-uniform-Bx'); call ferriere_uniform_x(amplaa(j),f,iaa)
         case ('Ferriere-uniform-By'); call ferriere_uniform_y(amplaa(j),f,iaa)
         case ('robertsflow'); call robertsflow(amplaa(j),f,iaa,relhel_aa,KX=kx_aa(j),FLOW=robflow_aa(j))
+        case ('rotated_robertsflow'); call rotated_robertsflow(amplaa(j),f,iaa,relhel_aa,KX=kx_aa(j),FLOW=robflow_aa(j))
         case ('sinx-clip')
           do l=l1,l2
             if (abs(x(l))<=pi) then
