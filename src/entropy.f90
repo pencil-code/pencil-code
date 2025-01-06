@@ -3471,7 +3471,7 @@ module Energy
 !
       Hmax = 1./impossible
       ssmax = 1./impossible
-      if (n==nn(1).and.m==mm(1)) lproc_print=.true.
+      !if (n==nn(1).and.m==mm(1)) lproc_print=.true.
 !
 !  Identify module and boundary conditions.
 !
@@ -3487,10 +3487,10 @@ module Energy
       if (lhydro) then
         if (lpressuregradient_gas) then
           if (notanumber(p%fpres)) then
-            if (lproc_print) then
-              print*, 'denergy_dt: it',it,'t',t,'p%fpres contains a NaN at iproc=', iproc
-              if (.not.allproc_print) lproc_print=.false.
-            endif
+            !if (lproc_print) then
+            !  print*, 'denergy_dt: it',it,'t',t,'p%fpres contains a NaN at iproc=', iproc
+            !  if (.not.allproc_print) lproc_print=.false.
+            !endif
             if (ip<6) print*, 'p%fpres =',p%fpres
             call fatal_error('denergy_dt','',FORCE=.true.)
           endif
@@ -3506,9 +3506,9 @@ module Energy
 !
         if (any(beta_glnrho_scaled/=0.0)) then
           if (headtt) print*, 'denergy_dt: adding global pressure gradient force'
-          do j=1,3
-            df(l1:l2,m,n,(iux-1)+j) = df(l1:l2,m,n,(iux-1)+j) - p%cs2*beta_glnrho_scaled(j)
-          enddo
+          df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - p%cs2*beta_glnrho_scaled(1)
+          df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - p%cs2*beta_glnrho_scaled(2)
+          df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) - p%cs2*beta_glnrho_scaled(3)
         endif
 !
 !  Velocity damping in the coronal heating zone.
@@ -5389,13 +5389,13 @@ module Energy
 !
 !  Most of these should trigger the following trap.
 !
-        if (notanumber(thdiff)) then
-          if (lproc_print) then
-            print*, 'calc_heatcond_kramers: m,n,y(m),z(n)=', m, n, y(m), z(n)
-            if (.not.allproc_print) lproc_print=.false.
-          endif
-          call fatal_error_local('calc_heatcond_kramers','NaNs in thdiff')
-        endif
+        !if (notanumber(thdiff)) then
+        !  if (lproc_print) then
+        !    print*, 'calc_heatcond_kramers: m,n,y(m),z(n)=', m, n, y(m), z(n)
+        !    if (.not.allproc_print) lproc_print=.false.
+        !  endif
+        !  call fatal_error_local('calc_heatcond_kramers','NaNs in thdiff')
+        !endif
       endif
 !
 !  At the end of this routine, add all contribution to
@@ -5486,13 +5486,13 @@ module Energy
 !
 !  Most of these should trigger the following trap.
 !
-        if (notanumber(thdiff)) then
-          if (lproc_print) then
-            print*, 'calc_heatcond_smagorinsky: m,n,y(m),z(n)=', m, n, y(m), z(n)
-            if (.not.allproc_print) lproc_print=.false.
-          endif
-          call fatal_error_local('calc_heatcond_smagorinsky','NaNs in thdiff')
-        endif
+        !if (notanumber(thdiff)) then
+        !  if (lproc_print) then
+        !    print*, 'calc_heatcond_smagorinsky: m,n,y(m),z(n)=', m, n, y(m), z(n)
+        !    if (.not.allproc_print) lproc_print=.false.
+        !  endif
+        !  call fatal_error_local('calc_heatcond_smagorinsky','NaNs in thdiff')
+        !endif
       endif
 !
 !  At the end of this routine, add all contribution to
@@ -5696,14 +5696,14 @@ module Energy
 !
 !  Most of these should trigger the following trap.
 !
-          if (notanumber(thdiff)) then
-            if (lproc_print) then
-              print*,'calc_heatcond: NaNs in thdiff'
-              print*, 'calc_heatcond: m,n,y(m),z(n)=', m, n, y(m), z(n)
-              if (.not.allproc_print) lproc_print=.false.
-            endif
-            call fatal_error_local('calc_heatcond','NaNs in thdiff')
-          endif
+          !if (notanumber(thdiff)) then
+          !  if (lproc_print) then
+          !    print*,'calc_heatcond: NaNs in thdiff'
+          !    print*, 'calc_heatcond: m,n,y(m),z(n)=', m, n, y(m), z(n)
+          !    if (.not.allproc_print) lproc_print=.false.
+          !  endif
+          !  call fatal_error_local('calc_heatcond','NaNs in thdiff')
+          !endif
         endif
         if ((hcond0/=0..or.lread_hcond).and.lwrite_prof .and. ip<=9) then
           call output_pencil('chi.dat',chix,1)

@@ -3142,12 +3142,12 @@ module Hydro
           if (dimensionality<3) p%advec_uu=sqrt(p%u2*dxyz_2)
         endif
 
-        if (notanumber(p%advec_uu)) then
-          if (lproc_print) then
-            print*, 'calc_pencils_hydro: p%advec_uu =',p%advec_uu
-            if (.not.allproc_print) lproc_print=.false.
-          endif
-        endif
+        !if (notanumber(p%advec_uu)) then
+        !  if (lproc_print) then
+        !    print*, 'calc_pencils_hydro: p%advec_uu =',p%advec_uu
+        !    if (.not.allproc_print) lproc_print=.false.
+        !  endif
+        !endif
       endif
 !
       endsubroutine calc_pencils_hydro_pencpar
@@ -3266,11 +3266,17 @@ module Hydro
 !  if gradu is to be stored as auxiliary then we store it now
 !
         if (lgradu_as_aux .or. lparticles_lyapunov .or. lparticles_caustics .or. lparticles_tetrad) then
-          jk=0
-          do jj=1,3; do kk=1,3
-            f(l1:l2,m,n,iguij+jk) = p%uij(:,jj,kk)
-            jk=jk+1
-          enddo;enddo
+          f(l1:l2,m,n,igu11) = p%uij(:,1,1)
+          f(l1:l2,m,n,igu12) = p%uij(:,1,2)
+          f(l1:l2,m,n,igu13) = p%uij(:,1,3)
+
+          f(l1:l2,m,n,igu21) = p%uij(:,2,1)
+          f(l1:l2,m,n,igu22) = p%uij(:,2,2)
+          f(l1:l2,m,n,igu23) = p%uij(:,2,3)
+
+          f(l1:l2,m,n,igu31) = p%uij(:,3,1)
+          f(l1:l2,m,n,igu32) = p%uij(:,3,2)
+          f(l1:l2,m,n,igu33) = p%uij(:,3,3)
         endif
       endif
 !      if (.not.lpenc_loc_check_at_work) then
@@ -3315,14 +3321,14 @@ module Hydro
       if (lpenc_loc(i_oxu)) call cross(p%oo,p%uu,p%oxu)
       if (lpenc_loc(i_oxu2)) call dot2_mn(p%oxu,p%oxu2)
 ! Useful to debug forcing - Dhruba
-      if (loutest.and.lpenc_loc(i_ou))then
-!        write(*,*) lpenc_loc(i_ou)
-        outest = minval(p%ou)
-        if (outest < -1d-8)then
-          write(*,*) m,n,outest,maxval(p%ou),lpenc_loc(i_ou)
-          write(*,*)'WARNING : hydro:ou has different sign than relhel'
-        endif
-      endif
+      !if (loutest.and.lpenc_loc(i_ou))then
+!     !   write(*,*) lpenc_loc(i_ou)
+      !  outest = minval(p%ou)
+      !  if (outest < -1d-8)then
+      !    write(*,*) m,n,outest,maxval(p%ou),lpenc_loc(i_ou)
+      !    write(*,*)'WARNING : hydro:ou has different sign than relhel'
+      !  endif
+      !endif
 !
 !  ugu
 !
@@ -3806,7 +3812,7 @@ module Hydro
       integer :: i, j, ju
 !
       Fmax=1./impossible
-      if (n==nn(1).and.m==mm(1)) lproc_print=.true.
+      !if (n==nn(1).and.m==mm(1)) lproc_print=.true.
 
 !  Identify module and boundary conditions.
 
@@ -3901,9 +3907,9 @@ module Hydro
 !  WENO transport.
 !
         if (lweno_transport) then
-          do j=1,3
-            df(l1:l2,m,n,iux-1+j)=df(l1:l2,m,n,iux-1+j)-(p%transpurho(:,j)-p%uu(:,j)*p%transprho)*p%rho1
-          enddo
+          df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-(p%transpurho(:,1)-p%uu(:,1)*p%transprho)*p%rho1
+          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-(p%transpurho(:,2)-p%uu(:,2)*p%transprho)*p%rho1
+          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-(p%transpurho(:,3)-p%uu(:,3)*p%transprho)*p%rho1
         endif
 !
 !  No meridional flow : turn off the meridional flow (in spherical)
@@ -3955,8 +3961,9 @@ module Hydro
 !  i.e., Tbaro=Sbaro0*r*sinth*(costh, -sinth, 0).
 !
       if (Sbaro0/=0.) then
-        df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+Sbaro0*x(l1:l2)*sinth(m1:m2)*costh(m)
-        df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-Sbaro0*x(l1:l2)*sinth(m1:m2)**2
+        !TP: ask Matthias
+        !df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+Sbaro0*x(l1:l2)*sinth(m1:m2)*costh(m)
+        !df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-Sbaro0*x(l1:l2)*sinth(m1:m2)**2
       endif
 !
 !  Interface for your personal subroutines calls
@@ -5564,24 +5571,24 @@ endif
 !
       do j=1,3
 
+        ju=j+iuu-1
         select case (borderuu(j))
 !
         case ('zero','0')
           f_target(:,j)=0.
+          call border_driving(f,df,p,f_target(:,j),ju)
 !
         case ('constant')
           f_target(:,j) = uu_const(j)
+          call border_driving(f,df,p,f_target(:,j),ju)
 !
         case ('initial-condition')
-          ju=j+iuu-1
           call set_border_initcond(f,ju,f_target(:,j))
+          call border_driving(f,df,p,f_target(:,j),ju)
 !
         case ('nothing')
-          cycle
         endselect
 
-        ju=j+iuu-1
-        call border_driving(f,df,p,f_target(:,j),ju)
 !
       enddo
 !
@@ -5629,6 +5636,7 @@ endif
       type (pencil_case) :: p
 !
       integer :: i,j,k
+      real, dimension(nx,3) :: cent_res, cori_res
 !
 !  info about precession term
 !
@@ -5636,12 +5644,9 @@ endif
 !
 !  matrix multiply
 !
-      do j=1,3
-      do i=1,3
-        k=iuu-1+i
-        df(l1:l2,m,n,k)=df(l1:l2,m,n,k) + mat_cent(i,j)*p%rr(:,j) + mat_cori(i,j)*p%uu(:,j)
-      enddo
-      enddo
+      call multmv(mat_cent,p%rr,cent_res)
+      call multmv(mat_cent,p%uu,cori_res)
+      df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + cent_res + cori_res
 !
     endsubroutine precession
 !***********************************************************************
@@ -6127,10 +6132,9 @@ endif
             pdamp = step(p%r_mn,rdampext,wdamp) ! outer damping profile
           endif
 !
-          do i=1,3
-            j=iux-1+i
-            fext(:,i)=-dampuext*pdamp*f(l1:l2,m,n,j)
-          enddo
+          fext(:,1)=-dampuext*pdamp*f(l1:l2,m,n,iux)
+          fext(:,2)=-dampuext*pdamp*f(l1:l2,m,n,iuy)
+          fext(:,3)=-dampuext*pdamp*f(l1:l2,m,n,iuz)
           df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+fext
 !
 !  internal angular velocity, uref=(-y,x,0)*Omega_int, and
@@ -8368,6 +8372,18 @@ endif
 
     endsubroutine read_omega_profile
 !***********************************************************************
+    subroutine set_min_val(dst, val, min_val)
+          real, dimension(nx) :: dst,val
+          real :: min_val
+          where (val < min_val) dst = min_val
+    endsubroutine
+!***********************************************************************
+    subroutine set_max_val(dst, val, max_val)
+          real, dimension(nx) :: dst,val
+          real :: max_val
+          where (val > max_val) dst = max_val
+    endsubroutine
+!***********************************************************************
     subroutine impose_velocity_ceiling(f)
 !
 !  Impose a maximum velocity by setting all higher velocities to the maximum
@@ -8376,10 +8392,13 @@ endif
 !  13-aug-2007/anders: implemented.
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      integer :: j
 !
       if (velocity_ceiling>0.0) then
-        where (f(l1:l2,m,n,iux:iuz)> velocity_ceiling) f(l1:l2,m,n,iux:iuz)= velocity_ceiling
-        where (f(l1:l2,m,n,iux:iuz)<-velocity_ceiling) f(l1:l2,m,n,iux:iuz)=-velocity_ceiling
+        do j =iux,iuz
+                call set_min_val(f(l1:l2,m,n,j),f(l1:l2,m,n,j),-velocity_veiling)
+                call set_max_val(f(l1:l2,m,n,j),f(l1:l2,m,n,j),velocity_veiling)
+        enddo
       endif
 !
     endsubroutine impose_velocity_ceiling

@@ -6727,17 +6727,17 @@ module Initcond
             if (pz == ipz) then
               call distribute_xy(A_local, A_global)
               f(l1:l2,m1:m2,n1:n2,iax+(comp-1)) = A_local
-              if (iglobal_ax_ext/=0 .and. comp == 1) then
-                f(:,:,:, iglobal_ax_ext)=0.
-                f(l1:l2,m1:m2,n1:n2,iglobal_ax_ext) = A_local
+              if (iglobal_ext_ax/=0 .and. comp == 1) then
+                f(:,:,:, iglobal_ext_ax)=0.
+                f(l1:l2,m1:m2,n1:n2,iglobal_ext_ax) = A_local
               endif
-              if (iglobal_ay_ext/=0 .and. comp == 2) then
-                f(:,:,:, iglobal_ay_ext)=0.
-                f(l1:l2,m1:m2,n1:n2,iglobal_ay_ext) = A_local
+              if (iglobal_ext_ay/=0 .and. comp == 2) then
+                f(:,:,:, iglobal_ext_ay)=0.
+                f(l1:l2,m1:m2,n1:n2,iglobal_ext_ay) = A_local
               endif
-              if (iglobal_az_ext/=0 .and. comp == 3) then
-                f(:,:,:, iglobal_az_ext)=0.
-                f(l1:l2,m1:m2,n1:n2,iglobal_az_ext) = A_local
+              if (iglobal_ext_az/=0 .and. comp == 3) then
+                f(:,:,:, iglobal_ext_az)=0.
+                f(l1:l2,m1:m2,n1:n2,iglobal_ext_az) = A_local
               endif
             else
               partner = find_proc(ipx,ipy,pz)
@@ -6757,17 +6757,17 @@ module Initcond
             call distribute_xy(A_local)
           endif
           f(l1:l2,m1:m2,n1:n2,iax+(comp-1)) = A_local
-          if (iglobal_ax_ext/=0 .and. comp == 1) then
-            f(:,:,:, iglobal_ax_ext)=0.
-            f(l1:l2,m1:m2,n1:n2,iglobal_ax_ext) = A_local
+          if (iglobal_ext_ax/=0 .and. comp == 1) then
+            f(:,:,:, iglobal_ext_ax)=0.
+            f(l1:l2,m1:m2,n1:n2,iglobal_ext_ax) = A_local
           endif
-          if (iglobal_ay_ext/=0 .and. comp == 2) then
-            f(:,:,:, iglobal_ay_ext)=0.
-            f(l1:l2,m1:m2,n1:n2,iglobal_ay_ext) = A_local
+          if (iglobal_ext_ay/=0 .and. comp == 2) then
+            f(:,:,:, iglobal_ext_ay)=0.
+            f(l1:l2,m1:m2,n1:n2,iglobal_ext_ay) = A_local
           endif
-          if (iglobal_az_ext/=0 .and. comp == 3) then
-            f(:,:,:, iglobal_az_ext)=0.
-            f(l1:l2,m1:m2,n1:n2,iglobal_az_ext) = A_local
+          if (iglobal_ext_az/=0 .and. comp == 3) then
+            f(:,:,:, iglobal_ext_az)=0.
+            f(l1:l2,m1:m2,n1:n2,iglobal_ext_az) = A_local
           endif
         enddo
       endif

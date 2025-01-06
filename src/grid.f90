@@ -2595,7 +2595,7 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
           dline_1(:,1) = dx_1(l1:l2)
           dline_1(:,2) = r1_mn * dy_1(m)
           dline_1(:,3) = r1_mn * sin1th(m) * dz_1(n)
-          if (lcoarse_mn) dline_1(:,3) = dline_1(:,3)*nphis1(m)
+          !if (lcoarse_mn) dline_1(:,3) = dline_1(:,3)*nphis1(m)
         else if (lcylindrical_coords) then
           dline_1(:,1) = dx_1(l1:l2)
           dline_1(:,2) = rcyl_mn1 * dy_1(m)

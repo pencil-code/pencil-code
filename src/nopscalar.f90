@@ -104,7 +104,8 @@ module Pscalar
 ! cc1
       if (lpencil(i_cc1)) p%cc1=1.0
 ! gcc
-      if (lpencil(i_gcc)) p%gcc=0.0
+      !TP: has dimension of zero
+      !if (lpencil(i_gcc)) p%gcc=0.0
 !
       call keep_compiler_quiet(f)
 !

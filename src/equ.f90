@@ -1004,8 +1004,8 @@ module Equ
       real, dimension (nx,3) :: df_iuu_pencil
       logical :: lcommunicate
 !
-      lfirstpoint=.true.
-      lcommunicate=.not.early_finalize
+      !lfirstpoint=.true.
+      !lcommunicate=.not.early_finalize
 
       mn_loop: do imn=1,nyz
 
@@ -1036,15 +1036,15 @@ module Equ
 !
 !  Make sure all ghost points are set.
 !
-        if (lcommunicate) then
-          if (necessary(imn)) then
-            call finalize_isendrcv_bdry(f)
-            call boundconds_y(f)
-            call boundconds_z(f)
-            lcommunicate=.false.
-          endif
-        endif
-        call timing('pde','finished boundconds_z',mnloop=.true.)
+        !if (lcommunicate) then
+        !  if (necessary(imn)) then
+        !    call finalize_isendrcv_bdry(f)
+        !    call boundconds_y(f)
+        !    call boundconds_z(f)
+        !    lcommunicate=.false.
+        !  endif
+        !endif
+        !call timing('pde','finished boundconds_z',mnloop=.true.)
 !
 !  For each pencil, accumulate through the different modules
 !  advec_XX and diffus_XX, which are essentially the inverse
@@ -1151,7 +1151,7 @@ module Equ
 !
 !  Continuous forcing diagonstics.
 !
-        if (lforcing_cont) call calc_diagnostics_forcing(p)
+        !if (lforcing_cont) call calc_diagnostics_forcing(p)
 !
 !  Add and extra 'special' physics
 !
@@ -1174,49 +1174,49 @@ module Equ
 !
         if (lpointmasses) call pointmasses_pde_pencil(f,df,p)
 
-        if (ltraining) call calc_diagnostics_training(f,p)
+        !if (ltraining) call calc_diagnostics_training(f,p)
 !
 !  Call diagnostics that involves the full right hand side
 !  This must be done at the end of all calls that might modify df.
 !
-        if (ldiagnos) then
-          if (lhydro) call df_diagnos_hydro(df,p)
-          if (lmagnetic) call df_diagnos_magnetic(df,p)
-        endif
+        !if (ldiagnos) then
+        !  if (lhydro) call df_diagnos_hydro(df,p)
+        !  if (lmagnetic) call df_diagnos_magnetic(df,p)
+        !endif
 !
 !  General phiaverage quantities -- useful for debugging.
 !  MR: Results are constant in time, so why here?
 !
-        if (l2davgfirst) then
-          call phisum_mn_name_rz(p%rcyl_mn,idiag_rcylmphi)
-          call phisum_mn_name_rz(p%phi_mn,idiag_phimphi)
-          call phisum_mn_name_rz(p%z_mn,idiag_zmphi)
-          call phisum_mn_name_rz(p%r_mn,idiag_rmphi)
-        endif
+        !if (l2davgfirst) then
+        !  call phisum_mn_name_rz(p%rcyl_mn,idiag_rcylmphi)
+        !  call phisum_mn_name_rz(p%phi_mn,idiag_phimphi)
+        !  call phisum_mn_name_rz(p%z_mn,idiag_zmphi)
+        !  call phisum_mn_name_rz(p%r_mn,idiag_rmphi)
+        !endif
 !
 !  Do the time integrations here, before the pencils are overwritten.
 !
-        if (ltime_integrals.and.llast) then
-          if (lhydro)    call time_integrals_hydro(f,p)
-          if (lmagnetic) call time_integrals_magnetic(f,p)
-        endif
+        !if (ltime_integrals.and.llast) then
+        !  if (lhydro)    call time_integrals_hydro(f,p)
+        !  if (lmagnetic) call time_integrals_magnetic(f,p)
+        !endif
 
-        call set_dt1_max(p)
+        !call set_dt1_max(p)
 !
 !  Diagnostics showing how close to advective and diffusive time steps we are
 !
-        if (lfirst.and.ldt.and.(.not.ldt_paronly).and.ldiagnos) then
-          if (idiag_dtv/=0) call max_mn_name(maxadvec/cdt,idiag_dtv,l_dt=.true.)
-          if (idiag_dtdiffus/=0) call max_mn_name(maxdiffus/cdtv,idiag_dtdiffus,l_dt=.true.)
-          if (idiag_dtdiffus2/=0) call max_mn_name(maxdiffus2/cdtv2,idiag_dtdiffus2,l_dt=.true.)
-          if (idiag_dtdiffus3/=0) call max_mn_name(maxdiffus3/cdtv3,idiag_dtdiffus3,l_dt=.true.)
+        !if (lfirst.and.ldt.and.(.not.ldt_paronly).and.ldiagnos) then
+        !  if (idiag_dtv/=0) call max_mn_name(maxadvec/cdt,idiag_dtv,l_dt=.true.)
+        !  if (idiag_dtdiffus/=0) call max_mn_name(maxdiffus/cdtv,idiag_dtdiffus,l_dt=.true.)
+        !  if (idiag_dtdiffus2/=0) call max_mn_name(maxdiffus2/cdtv2,idiag_dtdiffus2,l_dt=.true.)
+        !  if (idiag_dtdiffus3/=0) call max_mn_name(maxdiffus3/cdtv3,idiag_dtdiffus3,l_dt=.true.)
 !
-!  Regular and hyperdiffusive mesh Reynolds numbers
+!  Regul!ar and hyperdiffusive mesh Reynolds numbers
 !
-          if (idiag_Rmesh/=0) call max_mn_name(pi_1*maxadvec/(maxdiffus+tini),idiag_Rmesh)
-          if (idiag_Rmesh3/=0) call max_mn_name(pi5_1*maxadvec/(maxdiffus3+tini),idiag_Rmesh3)
-          call max_mn_name(maxadvec,idiag_maxadvec)
-        endif
+        !  if (idiag_Rmesh/=0) call max_mn_name(pi_1*maxadvec/(maxdiffus+tini),idiag_Rmesh)
+        !  if (idiag_Rmesh3/=0) call max_mn_name(pi5_1*maxadvec/(maxdiffus3+tini),idiag_Rmesh3)
+        !  call max_mn_name(maxadvec,idiag_maxadvec)
+        !endif
 !
 !  Display derivative info
 !
@@ -1249,7 +1249,7 @@ module Equ
           f(l1:l2,m,n,irhy) = p%rho*df(l1:l2,m,n,iuy)
           f(l1:l2,m,n,irhz) = p%rho*df(l1:l2,m,n,iuz)
           df(l1:l2,m,n,iux:iuz) = df_iuu_pencil + df(l1:l2,m,n,iux:iuz)
-          call sum_mn(p%rho,mass_per_proc(1))
+          !call sum_mn(p%rho,mass_per_proc(1))
         endif
         call timing('rhs_cpu','end of mn loop',mnloop=.true.)
 !
@@ -1260,9 +1260,9 @@ module Equ
 !
       enddo mn_loop
 !
-      if (ltime_integrals.and.llast) then
-        if (lhydro) call update_for_time_integrals_hydro
-      endif
+      !if (ltime_integrals.and.llast) then
+      !  if (lhydro) call update_for_time_integrals_hydro
+      !endif
 !
     endsubroutine rhs_cpu
 !***********************************************************************

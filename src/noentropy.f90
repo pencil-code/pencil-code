@@ -358,9 +358,9 @@ module Energy
 !
         if (any(beta_glnrho_scaled /= 0.)) then
           if (headtt) print*, 'denergy_dt: adding global pressure gradient force'
-          do j=1,3
-            df(l1:l2,m,n,(iux-1)+j) = df(l1:l2,m,n,(iux-1)+j) - p%cs2*beta_glnrho_scaled(j)
-          enddo
+          df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - p%cs2*beta_glnrho_scaled(1)
+          df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - p%cs2*beta_glnrho_scaled(2)
+          df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) - p%cs2*beta_glnrho_scaled(3)
         endif
       endif
 

@@ -383,6 +383,7 @@ module Cdata
   integer :: irho_b=0, iss_b=0 ! Anelastic auxiliary variables (base state)
   integer, dimension(ndustrad) :: iapn=0
   integer :: ipp,irhs=0,iTTold=0
+  integer :: irhx,irhy,irhz
   integer :: ipoly=0
   integer :: ip11=0,ip12=0,ip13=0
   integer :: ip21=0,ip22=0,ip23=0
@@ -450,8 +451,8 @@ module Cdata
   integer, dimension(ndustspec,ndustspec0) :: idcj=0,ilndcj=0
   integer, dimension(nchemspec) :: ichemspec=0
   integer :: ilnrhon=0,irhon=0, irhoe=0, iuun=0,iunx=0,iuny=0,iunz=0
-  integer :: iglobal_bx_ext=0, iglobal_by_ext=0, iglobal_bz_ext=0
-  integer :: iglobal_ax_ext=0, iglobal_ay_ext=0, iglobal_az_ext=0
+  integer :: iglobal_ext_bx=0, iglobal_ext_by=0, iglobal_ext_bz=0
+  integer :: iglobal_ext_ax=0, iglobal_ext_ay=0, iglobal_ext_az=0
   integer, dimension(3) :: iglobal_jext=0, iglobal_eext
   integer :: iglobal_lnrho0=0, iglobal_ss0=0
   integer :: icp=0, igpx=0, igpy=0, iRR=0, iss_run_aver=0

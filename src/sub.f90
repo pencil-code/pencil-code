@@ -221,6 +221,8 @@ module Sub
 !
   interface multmv
     module procedure multmv_mn
+    module procedure multmv_scalar
+    module procedure multmv_mixed
   endinterface
 !
   interface max_for_dt
@@ -1142,6 +1144,24 @@ module Sub
 !
     endsubroutine multmm_sc_mn
 !***********************************************************************
+    subroutine multmm_sc_mn(a,b,c)
+!
+!  Matrix multiplied with matrix, gives scalar.
+!
+!   21-dec-01/nils: coded
+!   16-jul-02/nils: adapted from pencil_mpi
+!
+      real, dimension (nx,3,3) :: a,b
+      real, dimension (nx) :: c
+      integer :: i,j
+!
+      c=0.0
+      do i=1,3; do j=1,3
+        c=c+a(:,i,j)*b(:,i,j)
+      enddo; enddo
+!
+    endsubroutine multmm_sc_mn
+!***********************************************************************
     subroutine mult_matrix(a,b,c)
 !
 !  Matrix multiplication of two pencil variables.
@@ -1233,6 +1253,58 @@ module Sub
       enddo
 !
     endsubroutine multmv_mn
+!***********************************************************************
+    subroutine multmv_scalar(a,b,c)
+!
+!  Matrix multiplied with vector, gives vector.
+!
+!  C_i = A_{i,j} B_j
+!
+!   3-apr-01/axel+gitta: coded
+!  24-jun-08/MR: ladd added for incremental work
+!
+      use General, only: loptest
+!
+      real, dimension (3,3) :: a
+      real, dimension (3) :: b,c
+!
+      intent(in) :: a,b
+      intent(out) :: c
+!
+      do i=1,3
+        c(i)=a(i,1)*b(1)
+        do j=2,3
+          c(i)=a(i,j)*b(j)
+        enddo
+      enddo
+!
+    endsubroutine multmv_scalar
+!***********************************************************************
+    subroutine multmv_mixed(a,b,c)
+!
+!  Matrix multiplied with vector, gives vector.
+!
+!  C_i = A_{i,j} B_j
+!
+!   3-apr-01/axel+gitta: coded
+!  24-jun-08/MR: ladd added for incremental work
+!
+      use General, only: loptest
+!
+      real, dimension (3,3) :: a
+      real, dimension (nx,3) :: b,c
+!
+      intent(in) :: a,b
+      intent(out) :: c
+!
+      do i=1,3
+        c(:,i)=a(i,j)*b(:,j)
+        do j=2,3
+          c(:,i)=a(i,j)*b(:,j)
+        enddo
+      enddo
+!
+    endsubroutine multmv_scalar
 !***********************************************************************
     subroutine invmat_DB(d,b,mat)
 !
