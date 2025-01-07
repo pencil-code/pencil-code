@@ -883,7 +883,7 @@ module Hydro
 
   integer :: string_enum_friction_tdep = 0
   integer :: string_enum_uuprof = 0
-  integer :: string_enum_borderuu = 0
+  integer, dimension(3) :: string_enum_borderuu = 0
 
   contains
 !***********************************************************************
@@ -4078,19 +4078,19 @@ module Hydro
 !
 !  Fred: Option to constrain timestep for large forces
 !
-      if ( lfirst.and.ldt.and.(lcdt_tauf.or.ldiagnos.and.idiag_dtF/=0) .or. &
-           ldiagnos.and.idiag_taufmin/=0 ) then
-        where (abs(p%uu)>1)   !MR: What would in general be the significance of 1 here?
-          uu1=1./p%uu
-        elsewhere
-          uu1=1.
-        endwhere
-        do j=1,3
-          ftot=abs(df(l1:l2,m,n,iux+j-1)*uu1(:,j))
-          if (ldt.and.lcdt_tauf) dt1_max=max(dt1_max,ftot/cdtf)
-          if (ldiagnos.and.(idiag_dtF/=0.or.idiag_taufmin/=0)) Fmax=max(Fmax,ftot)
-        enddo
-      endif
+      !if ( lfirst.and.ldt.and.(lcdt_tauf.or.ldiagnos.and.idiag_dtF/=0) .or. &
+      !     ldiagnos.and.idiag_taufmin/=0 ) then
+      !  where (abs(p%uu)>1)   !MR: What would in general be the significance of 1 here?
+      !    uu1=1./p%uu
+      !  elsewhere
+      !    uu1=1.
+      !  endwhere
+      !  do j=1,3
+      !    ftot=abs(df(l1:l2,m,n,iux+j-1)*uu1(:,j))
+      !    if (ldt.and.lcdt_tauf) dt1_max=max(dt1_max,ftot/cdtf)
+      !    if (ldiagnos.and.(idiag_dtF/=0.or.idiag_taufmin/=0)) Fmax=max(Fmax,ftot)
+      !  enddo
+      !endif
 
       call calc_diagnostics_hydro(f,p)
 !
@@ -8392,12 +8392,14 @@ endif
 !  13-aug-2007/anders: implemented.
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real :: neg_velocity_ceiling
       integer :: j
+      neg_velocity_ceiling = -velocity_ceiling
 !
       if (velocity_ceiling>0.0) then
         do j =iux,iuz
-                call set_min_val(f(l1:l2,m,n,j),f(l1:l2,m,n,j),-velocity_veiling)
-                call set_max_val(f(l1:l2,m,n,j),f(l1:l2,m,n,j),velocity_veiling)
+                call set_min_val(f(l1:l2,m,n,j),f(l1:l2,m,n,j),neg_velocity_ceiling)
+                call set_max_val(f(l1:l2,m,n,j),f(l1:l2,m,n,j),velocity_ceiling)
         enddo
       endif
 !

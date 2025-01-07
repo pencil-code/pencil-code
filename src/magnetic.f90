@@ -1113,7 +1113,7 @@ module Magnetic
   integer :: string_enum_rdep_profile = 0
   integer :: string_enum_div_sld_magn = 0
   integer :: string_enum_ihall_term = 0
-  integer :: string_enum_borderaa = 0
+  integer :: string_enum_borderaa(3) = 0
   real, dimension(mz) :: Bz_stratified
 
   contains
@@ -5906,34 +5906,35 @@ module Magnetic
 !  Lorentz force and Ohmic heating terms
 !  should set in entropy lthdiff_Hmax=F and lrhs_max=F & in hydro lcdt_tauf=F as handled here
 !
-      if (lfirst.and.ldt.and.lrhs_max) then
-        if (lhydro) then
-          where (abs(p%uu)>1)   !MR: What is the significance of unity in this criterion?
-            uu1=1./p%uu
-          elsewhere
-            uu1=1.
-          endwhere
-        endif
-        where (abs(p%aa)>1)
-          aa1=1./p%aa
-        elsewhere
-          aa1=1.
-        endwhere
-        do j=1,3
-          dAtot=abs(dAdt(:,j)*aa1(:,j))
-          dt1_max=max(dt1_max,dAtot/cdtf)
-          dAmax=max(dAmax,dAtot/cdtf)
-          if (lhydro) then
-            ftot=abs(df(l1:l2,m,n,iux+j-1)*uu1(:,j))
-            dt1_max=max(dt1_max,ftot/cdtf)
-            Fmax=max(Fmax,ftot/cdtf)
-          endif
-        enddo
-        if (lentropy) then
-          ssmax = max(ssmax,abs(df(l1:l2,m,n,iss))*p%cv1/cdts)
-          dt1_max=max(dt1_max,ssmax)
-        endif
-      endif
+      !TP: no timestep control
+      !if (lfirst.and.ldt.and.lrhs_max) then
+      !  if (lhydro) then
+      !    where (abs(p%uu)>1)   !MR: What is the significance of unity in this criterion?
+      !      uu1=1./p%uu
+      !    elsewhere
+      !      uu1=1.
+      !    endwhere
+      !  endif
+      !  where (abs(p%aa)>1)
+      !    aa1=1./p%aa
+      !  elsewhere
+      !    aa1=1.
+      !  endwhere
+      !  do j=1,3
+      !    dAtot=abs(dAdt(:,j)*aa1(:,j))
+      !    dt1_max=max(dt1_max,dAtot/cdtf)
+      !    dAmax=max(dAmax,dAtot/cdtf)
+      !    if (lhydro) then
+      !      ftot=abs(df(l1:l2,m,n,iux+j-1)*uu1(:,j))
+      !      dt1_max=max(dt1_max,ftot/cdtf)
+      !      Fmax=max(Fmax,ftot/cdtf)
+      !    endif
+      !  enddo
+      !  if (lentropy) then
+      !    ssmax = max(ssmax,abs(df(l1:l2,m,n,iss))*p%cv1/cdts)
+      !    dt1_max=max(dt1_max,ssmax)
+      !  endif
+      !endif
 !
 !  Electric field E = -dA/dt, store the Electric field in f-array if asked for.
 !  This line must not be used when the displacement current is being solved for.
