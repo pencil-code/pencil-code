@@ -3952,14 +3952,198 @@ module Density
 
     use Syscalls, only: copy_addr
 
-    integer, parameter :: n_pars=5
+    integer, parameter :: n_pars=1000
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
-    call copy_addr(ldiff_shock,p_par(1)) ! int
-    call copy_addr(diffrho_shock,p_par(2))
-    call copy_addr(ldiff_hyper3lnrho,p_par(3)) ! int
-    call copy_addr(diffrho_hyper3,p_par(4))
-    call copy_addr(lupw_lnrho,p_par(5)) ! int
+call copy_addr(mpoly,p_par(1))
+call copy_addr(width_eos_prof,p_par(2))
+call copy_addr(reference_state_mass,p_par(3))
+call copy_addr(lnrho_const,p_par(4))
+call copy_addr(rho_const,p_par(5))
+call copy_addr(hrho,p_par(6))
+call copy_addr(ggamma,p_par(7))
+call copy_addr(cdiffrho,p_par(8))
+call copy_addr(diffrho,p_par(9))
+call copy_addr(diff_cspeed,p_par(10))
+call copy_addr(diffrho_hyper3,p_par(11))
+call copy_addr(diffrho_hyper3_mesh,p_par(12))
+call copy_addr(diffrho_shock,p_par(13))
+call copy_addr(eps_planet,p_par(14))
+call copy_addr(q_ell,p_par(15))
+call copy_addr(hh0,p_par(16))
+call copy_addr(mass_source_omega,p_par(17))
+call copy_addr(co1_ss,p_par(18))
+call copy_addr(co2_ss,p_par(19))
+call copy_addr(sigma1,p_par(20))
+call copy_addr(lnrho_int,p_par(21))
+call copy_addr(lnrho_ext,p_par(22))
+call copy_addr(damplnrho_int,p_par(23))
+call copy_addr(damplnrho_ext,p_par(24))
+call copy_addr(wdamp,p_par(25))
+call copy_addr(density_floor,p_par(26))
+call copy_addr(density_floor_exp,p_par(27))
+call copy_addr(mass_source_mdot,p_par(28))
+call copy_addr(mass_source_sigma,p_par(29))
+call copy_addr(mass_source_offset,p_par(30))
+call copy_addr(tstart_mass_source,p_par(31))
+call copy_addr(tstop_mass_source,p_par(32))
+call copy_addr(lnrho_z_shift,p_par(33))
+call copy_addr(powerlr,p_par(34))
+call copy_addr(zoverh,p_par(35))
+call copy_addr(hoverr,p_par(36))
+call copy_addr(rzero_ffree,p_par(37))
+call copy_addr(wffree,p_par(38))
+call copy_addr(rho_top,p_par(39))
+call copy_addr(rho_bottom,p_par(40))
+call copy_addr(rmax_mass_source,p_par(41))
+call copy_addr(fnorm,p_par(42))
+call copy_addr(r0_rho,p_par(43))
+call copy_addr(invgrav_ampl,p_par(44))
+call copy_addr(rnoise_int,p_par(45))
+call copy_addr(rnoise_ext,p_par(46))
+call copy_addr(mass_source_tau1,p_par(47))
+call copy_addr(mass_cloud,p_par(48))
+call copy_addr(t_cloud,p_par(49))
+call copy_addr(t_cloud_out_rel,p_par(50))
+call copy_addr(xi_coeff,p_par(51))
+call copy_addr(temp_coeff,p_par(52))
+call copy_addr(dens_coeff,p_par(53))
+call copy_addr(temp_trans,p_par(54))
+call copy_addr(temp_coeff_out,p_par(55))
+call copy_addr(rss_coef1,p_par(56))
+call copy_addr(rss_coef2,p_par(57))
+call copy_addr(total_mass,p_par(58))
+call copy_addr(rescale_rho,p_par(59))
+call copy_addr(xjump_mid,p_par(60))
+call copy_addr(yjump_mid,p_par(61))
+call copy_addr(zjump_mid,p_par(62))
+call copy_addr(kgaussian_lnrho,p_par(63))
+call copy_addr(initpower_lnrho,p_par(64))
+call copy_addr(kpeak_lnrho,p_par(65))
+call copy_addr(cutoff_lnrho,p_par(66))
+call copy_addr(reduce_cs2,p_par(67))
+call copy_addr(iglobal_gg,p_par(68)) ! int
+call copy_addr(lrelativistic_eos,p_par(69)) ! bool
+call copy_addr(ladvection_density,p_par(70)) ! bool
+call copy_addr(lisothermal_fixed_hrho,p_par(71)) ! bool
+call copy_addr(lmass_source,p_par(72)) ! bool
+call copy_addr(lmass_source_random,p_par(73)) ! bool
+call copy_addr(lcontinuity_gas,p_par(74)) ! bool
+call copy_addr(lupw_lnrho,p_par(75)) ! bool
+call copy_addr(lupw_rho,p_par(76)) ! bool
+call copy_addr(ldiff_normal,p_par(77)) ! bool
+call copy_addr(ldiff_hyper3,p_par(78)) ! bool
+call copy_addr(ldiff_shock,p_par(79)) ! bool
+call copy_addr(ldiff_cspeed,p_par(80)) ! bool
+call copy_addr(ldiff_hyper3lnrho,p_par(81)) ! bool
+call copy_addr(ldiff_hyper3_aniso,p_par(82)) ! bool
+call copy_addr(ldiff_hyper3_polar,p_par(83)) ! bool
+call copy_addr(lanti_shockdiffusion,p_par(84)) ! bool
+call copy_addr(ldiff_hyper3_mesh,p_par(85)) ! bool
+call copy_addr(ldiff_hyper3_strict,p_par(86)) ! bool
+call copy_addr(ldiff_hyper3lnrho_strict,p_par(87)) ! bool
+call copy_addr(lfreeze_lnrhoint,p_par(88)) ! bool
+call copy_addr(lfreeze_lnrhoext,p_par(89)) ! bool
+call copy_addr(lfreeze_lnrhosqu,p_par(90)) ! bool
+call copy_addr(lrho_as_aux,p_par(91)) ! bool
+call copy_addr(ldiffusion_nolog,p_par(92)) ! bool
+call copy_addr(lrho_flucz_as_aux,p_par(93)) ! bool
+call copy_addr(lmassdiff_fix,p_par(94)) ! bool
+call copy_addr(lmassdiff_fixmom,p_par(95)) ! bool
+call copy_addr(lmassdiff_fixkin,p_par(96)) ! bool
+call copy_addr(lcheck_negative_density,p_par(97)) ! bool
+call copy_addr(lcalc_lnrhomean,p_par(98)) ! bool
+call copy_addr(ldensity_profile_masscons,p_par(99)) ! bool
+call copy_addr(lffree,p_par(100)) ! bool
+call copy_addr(lschur_3d3d1d,p_par(101)) ! bool
+call copy_addr(lreduced_sound_speed,p_par(102)) ! bool
+call copy_addr(lscale_to_cs2top,p_par(103)) ! bool
+call copy_addr(lconserve_total_mass,p_par(104)) ! bool
+call copy_addr(density_ceiling,p_par(105))
+call copy_addr(lreinitialize_lnrho,p_par(106)) ! bool
+call copy_addr(lreinitialize_rho,p_par(107)) ! bool
+call copy_addr(lsubtract_init_stratification,p_par(108)) ! bool
+call copy_addr(lwrite_stratification,p_par(109)) ! bool
+call copy_addr(ldensity_slope_limited,p_par(110)) ! bool
+call copy_addr(h_sld_dens,p_par(111))
+call copy_addr(nlf_sld_dens,p_par(112))
+call copy_addr(idiag_rhom,p_par(113)) ! int
+call copy_addr(idiag_rhomxmask,p_par(114)) ! int
+call copy_addr(idiag_rhomzmask,p_par(115)) ! int
+call copy_addr(idiag_rho2m,p_par(116)) ! int
+call copy_addr(idiag_rho4m,p_par(117)) ! int
+call copy_addr(idiag_rho6m,p_par(118)) ! int
+call copy_addr(idiag_rho12m,p_par(119)) ! int
+call copy_addr(idiag_rhof2m,p_par(120)) ! int
+call copy_addr(idiag_lnrho2m,p_par(121)) ! int
+call copy_addr(idiag_drho2m,p_par(122)) ! int
+call copy_addr(idiag_drhom,p_par(123)) ! int
+call copy_addr(idiag_rhomin,p_par(124)) ! int
+call copy_addr(idiag_rhomax,p_par(125)) ! int
+call copy_addr(idiag_lnrhomin,p_par(126)) ! int
+call copy_addr(idiag_lnrhomax,p_par(127)) ! int
+call copy_addr(idiag_rhorms,p_par(128)) ! int
+call copy_addr(idiag_lnrhorms,p_par(129)) ! int
+call copy_addr(idiag_ugrhom,p_par(130)) ! int
+call copy_addr(idiag_uglnrhom,p_par(131)) ! int
+call copy_addr(idiag_lnrhomphi,p_par(132)) ! int
+call copy_addr(idiag_rhomphi,p_par(133)) ! int
+call copy_addr(idiag_dtd,p_par(134)) ! int
+call copy_addr(idiag_dtd3,p_par(135)) ! int
+call copy_addr(idiag_rhomr,p_par(136)) ! int
+call copy_addr(idiag_totmass,p_par(137)) ! int
+call copy_addr(idiag_mass,p_par(138)) ! int
+call copy_addr(idiag_sphmass,p_par(139)) ! int
+call copy_addr(idiag_inertiaxx,p_par(140)) ! int
+call copy_addr(idiag_inertiayy,p_par(141)) ! int
+call copy_addr(idiag_inertiazz,p_par(142)) ! int
+call copy_addr(idiag_inertiaxx_car,p_par(143)) ! int
+call copy_addr(idiag_inertiayy_car,p_par(144)) ! int
+call copy_addr(idiag_inertiazz_car,p_par(145)) ! int
+call copy_addr(idiag_vol,p_par(146)) ! int
+call copy_addr(idiag_grhomax,p_par(147)) ! int
+call copy_addr(idiag_rhomz,p_par(148)) ! int
+call copy_addr(idiag_rhoupmz,p_par(149)) ! int
+call copy_addr(idiag_rhodownmz,p_par(150)) ! int
+call copy_addr(idiag_rho2mz,p_par(151)) ! int
+call copy_addr(idiag_rho2upmz,p_par(152)) ! int
+call copy_addr(idiag_rho2downmz,p_par(153)) ! int
+call copy_addr(idiag_rhof2mz,p_par(154)) ! int
+call copy_addr(idiag_rhof2upmz,p_par(155)) ! int
+call copy_addr(idiag_rhof2downmz,p_par(156)) ! int
+call copy_addr(idiag_gzlnrhomz,p_par(157)) ! int
+call copy_addr(idiag_uglnrhomz,p_par(158)) ! int
+call copy_addr(idiag_ugrhomz,p_par(159)) ! int
+call copy_addr(idiag_uygzlnrhomz,p_par(160)) ! int
+call copy_addr(idiag_uzgylnrhomz,p_par(161)) ! int
+call copy_addr(idiag_rhoph1mz,p_par(162)) ! int
+call copy_addr(idiag_rhoph2mz,p_par(163)) ! int
+call copy_addr(idiag_rhoph3mz,p_par(164)) ! int
+call copy_addr(idiag_rho2ph1mz,p_par(165)) ! int
+call copy_addr(idiag_rho2ph2mz,p_par(166)) ! int
+call copy_addr(idiag_rho2ph3mz,p_par(167)) ! int
+call copy_addr(idiag_rhomy,p_par(168)) ! int
+call copy_addr(idiag_rhomx,p_par(169)) ! int
+call copy_addr(idiag_rho2mx,p_par(170)) ! int
+call copy_addr(idiag_rhomxz,p_par(171)) ! int
+call copy_addr(idiag_rhomxy,p_par(172)) ! int
+call copy_addr(idiag_rho2mxy,p_par(173)) ! int
+call copy_addr(idiag_sigma,p_par(174)) ! int
+call copy_addr(lupdate_mass_source,p_par(175)) ! bool
+call copy_addr(density_floor_log,p_par(176))
+call copy_addr(density_ceiling_log,p_par(177))
+call copy_addr(gamma,p_par(178))
+call copy_addr(gamma1,p_par(179))
+call copy_addr(gamma_m1,p_par(180))
+call copy_addr(cp1,p_par(181))
+call copy_addr(string_enum_ieos_profile,p_par(182)) ! int
+call copy_addr(string_enum_mass_source_profile,p_par(183)) ! int
+call copy_addr(string_enum_div_sld_dens,p_par(184)) ! int
+call copy_addr(string_enum_borderlnrho,p_par(185)) ! int
+call copy_addr(diffrho_hyper3_aniso,p_par(186)) ! real3
+call copy_addr(beta_glnrho_global,p_par(187)) ! real3
+call copy_addr(beta_glnrho_scaled,p_par(188)) ! real3
+
 
     endsubroutine pushpars2c
 !***********************************************************************

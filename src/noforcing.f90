@@ -96,12 +96,14 @@ module Forcing
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-      integer :: i
+      integer :: i,j
 !
       if (lpencil(i_fcont)) then
-        do i = 1,n_forcing_cont_max
-              p%fcont(i)=0.
-        enddo
+            do i =1,3
+                do j=1,n_forcing_cont_max
+                        p%fcont(:,i,j)=0.
+                enddo
+            enddo
       endif
 !
       call keep_compiler_quiet(f)

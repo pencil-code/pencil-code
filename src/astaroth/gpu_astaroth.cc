@@ -34,6 +34,29 @@ has_nans(AcMesh mesh_in);
 #endif
 #include "../cparam_c.h"
 
+#define nu nu__mod__viscosity
+#define nu_hyper2 nu_hyper2__mod__viscosity
+#define nu_hyper3 nu_hyper3__mod__viscosity
+
+#define eta eta__mod__magnetic
+#define eta_hyper2 eta_hyper2__mod__magnetic
+#define eta_hyper3 eta_hyper3__mod__magnetic
+
+#define dt  dt__mod__run_module
+#define ldt ldt__mod__run_module
+
+#define dx dx__mod__run_module
+#define dy dy__mod__run_module
+#define dz dz__mod__run_module
+#define ltest_bcs ltest_bcs__mod__run_module
+#define cdt       cdt__mod__run_module
+#define cdtv       cdtv__mod__run_module
+#define cdtv2       cdtv2__mod__run_module
+#define cdtv3       cdtv3__mod__run_module
+#define mu0         mu0__mod__run_module
+#define lmorton_curve       lmorton_curve__mod__run_module
+#define ldensity_nolog ldensity_nolog__mod__run_module
+
 static int rank;
 static AcTaskGraph *rhs;
 static AcMesh mesh;
@@ -975,7 +998,7 @@ void setupConfig(AcMeshInfo& config)
   // Enter physics related parameters in config.
 
   #if LDENSITY
-    PCLoad(config,AC_ldensity_nolog,ldensity_nolog);
+    PCLoad(config,AC_ldensity_nolog__mod__run_module,ldensity_nolog);
     //printf("ldensity_nolog is %d \n",config[AC_ldensity_nolog]);//ldensity_nolog);
   #endif
   //Device dev = acGridGetDevice();
@@ -1034,7 +1057,7 @@ void checkConfig(AcMeshInfo &config)
   acLogFromRootProc(rank,"k1_ff,profx_ampl, val= %f %d %lf %lf\n", k1_ff, profx_ampl, profx_ampl[0], profx_ampl[nx-1]);
 #endif
 */
-  acLogFromRootProc(rank,"mu0= %f %f \n", mu0, config[AC_mu0]);
+  acLogFromRootProc(rank,"mu0= %f %f \n", mu0, config[AC_mu0__mod__run_module]);
 }
 /***********************************************************************************************/
 extern "C" void getFArrayIn(AcReal **p_f_in)

@@ -379,8 +379,26 @@ module Gravity
 !***********************************************************************
     subroutine pushpars2c(p_par)
 
-    integer, parameter :: n_pars=0
+    use Syscalls, only: copy_addr
+
+    integer, parameter :: n_pars=1000
     integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+    call copy_addr(z1,p_par(1))
+    call copy_addr(z2,p_par(2))
+    call copy_addr(zref,p_par(3))
+    call copy_addr(zgrav,p_par(4))
+    call copy_addr(gravz,p_par(5))
+    call copy_addr(zinfty,p_par(6))
+    call copy_addr(nu_epicycle,p_par(7))
+    call copy_addr(lnrho_bot,p_par(8))
+    call copy_addr(lnrho_top,p_par(9))
+    call copy_addr(ss_bot,p_par(10))
+    call copy_addr(ss_top,p_par(11))
+    call copy_addr(gravz_const,p_par(12))
+    call copy_addr(reduced_top,p_par(13))
+    call copy_addr(g0,p_par(14))
+    call copy_addr(lnumerical_equilibrium,p_par(15)) ! bool
 
     endsubroutine pushpars2c
 !***********************************************************************

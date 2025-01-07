@@ -1144,24 +1144,6 @@ module Sub
 !
     endsubroutine multmm_sc_mn
 !***********************************************************************
-    subroutine multmm_sc_mn(a,b,c)
-!
-!  Matrix multiplied with matrix, gives scalar.
-!
-!   21-dec-01/nils: coded
-!   16-jul-02/nils: adapted from pencil_mpi
-!
-      real, dimension (nx,3,3) :: a,b
-      real, dimension (nx) :: c
-      integer :: i,j
-!
-      c=0.0
-      do i=1,3; do j=1,3
-        c=c+a(:,i,j)*b(:,i,j)
-      enddo; enddo
-!
-    endsubroutine multmm_sc_mn
-!***********************************************************************
     subroutine mult_matrix(a,b,c)
 !
 !  Matrix multiplication of two pencil variables.
@@ -1270,6 +1252,8 @@ module Sub
 !
       intent(in) :: a,b
       intent(out) :: c
+
+      integer :: i,j
 !
       do i=1,3
         c(i)=a(i,1)*b(1)
@@ -1296,6 +1280,8 @@ module Sub
 !
       intent(in) :: a,b
       intent(out) :: c
+
+      integer :: i,j
 !
       do i=1,3
         c(:,i)=a(i,j)*b(:,j)
@@ -1304,7 +1290,7 @@ module Sub
         enddo
       enddo
 !
-    endsubroutine multmv_scalar
+    endsubroutine multmv_mixed
 !***********************************************************************
     subroutine invmat_DB(d,b,mat)
 !

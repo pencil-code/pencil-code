@@ -11282,18 +11282,964 @@ module Magnetic
 
     use Syscalls, only: copy_addr
 
-    integer, parameter :: n_pars=9
+    integer, parameter :: n_pars=1100
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
-    call copy_addr(eta,p_par(1))
-    call copy_addr(eta_hyper2,p_par(2))
-    call copy_addr(eta_hyper3,p_par(3))
-    call copy_addr(lresi_eta_const,p_par(4)) ! int
-    call copy_addr(lresi_hyper2,p_par(5)) ! int
-    call copy_addr(lresi_hyper3,p_par(6)) ! int
-    call copy_addr(lupw_aa,p_par(7)) ! int
-    call copy_addr(llorentzforce,p_par(8)) ! int
-    call copy_addr(linduction,p_par(9)) ! int
+
+call copy_addr(nzav,p_par(1)) ! int
+call copy_addr(indzav,p_par(2)) ! int
+call copy_addr(izav_start,p_par(3)) ! int
+call copy_addr(b0_ext_z,p_par(4))
+call copy_addr(b0_ext_z_h,p_par(5))
+call copy_addr(sheet_position,p_par(6))
+call copy_addr(sheet_thickness,p_par(7))
+call copy_addr(sheet_hyp,p_par(8))
+call copy_addr(t_bext,p_par(9))
+call copy_addr(t0_bext,p_par(10))
+call copy_addr(radius,p_par(11))
+call copy_addr(epsilonaa,p_par(12))
+call copy_addr(x0aa,p_par(13))
+call copy_addr(y0aa,p_par(14))
+call copy_addr(z0aa,p_par(15))
+call copy_addr(by_left,p_par(16))
+call copy_addr(by_right,p_par(17))
+call copy_addr(bz_left,p_par(18))
+call copy_addr(bz_right,p_par(19))
+call copy_addr(relhel_aa,p_par(20))
+call copy_addr(nexp_aa,p_par(21))
+call copy_addr(bthresh,p_par(22))
+call copy_addr(bthresh_per_brms,p_par(23))
+call copy_addr(bthresh_scl,p_par(24))
+call copy_addr(eta1_aniso_ratio,p_par(25))
+call copy_addr(eta1_aniso,p_par(26))
+call copy_addr(eta1_aniso_r,p_par(27))
+call copy_addr(eta1_aniso_d,p_par(28))
+call copy_addr(eta_shock,p_par(29))
+call copy_addr(eta_shock2,p_par(30))
+call copy_addr(alp_aniso,p_par(31))
+call copy_addr(eta_aniso_bb,p_par(32))
+call copy_addr(quench_aniso,p_par(33))
+call copy_addr(eta_va,p_par(34))
+call copy_addr(eta_j,p_par(35))
+call copy_addr(eta_j2,p_par(36))
+call copy_addr(eta_jrho,p_par(37))
+call copy_addr(eta_min,p_par(38))
+call copy_addr(eta_max,p_par(39))
+call copy_addr(eta_huge,p_par(40))
+call copy_addr(etaj20,p_par(41))
+call copy_addr(va_min,p_par(42))
+call copy_addr(varms,p_par(43))
+call copy_addr(rhomin_jxb,p_par(44))
+call copy_addr(va2max_jxb,p_par(45))
+call copy_addr(va2max_boris,p_par(46))
+call copy_addr(cmin,p_par(47))
+call copy_addr(omega_bz_ext,p_par(48))
+call copy_addr(mu_r,p_par(49))
+call copy_addr(mu_ext_pot,p_par(50))
+call copy_addr(inclaa,p_par(51))
+call copy_addr(mu012,p_par(52))
+call copy_addr(rescale_aa,p_par(53))
+call copy_addr(ampl_b0,p_par(54))
+call copy_addr(d_smag,p_par(55))
+call copy_addr(b_ext2,p_par(56))
+call copy_addr(b_ext21,p_par(57))
+call copy_addr(b_ext11,p_par(58))
+call copy_addr(nu_ni,p_par(59))
+call copy_addr(nu_ni1,p_par(60))
+call copy_addr(hall_term,p_par(61))
+call copy_addr(battery_term,p_par(62))
+call copy_addr(hall_tdep_t0,p_par(63))
+call copy_addr(hall_tdep_exponent,p_par(64))
+call copy_addr(hhall,p_par(65))
+call copy_addr(hall_zdep_exponent,p_par(66))
+call copy_addr(initpower_aa,p_par(67))
+call copy_addr(initpower2_aa,p_par(68))
+call copy_addr(cutoff_aa,p_par(69))
+call copy_addr(ncutoff_aa,p_par(70))
+call copy_addr(kpeak_aa,p_par(71))
+call copy_addr(kgaussian_aa,p_par(72))
+call copy_addr(brms_target,p_par(73))
+call copy_addr(rescaling_fraction,p_par(74))
+call copy_addr(compk_aa,p_par(75))
+call copy_addr(phase_beltrami,p_par(76))
+call copy_addr(ampl_beltrami,p_par(77))
+call copy_addr(bmz,p_par(78))
+call copy_addr(bmz_beltrami_phase,p_par(79))
+call copy_addr(taareset,p_par(80))
+call copy_addr(daareset,p_par(81))
+call copy_addr(center1_x,p_par(82))
+call copy_addr(center1_y,p_par(83))
+call copy_addr(center1_z,p_par(84))
+call copy_addr(fluxtube_border_width,p_par(85))
+call copy_addr(eta_jump,p_par(86))
+call copy_addr(eta_jump0,p_par(87))
+call copy_addr(eta_jump1,p_par(88))
+call copy_addr(eta_jump2,p_par(89))
+call copy_addr(damp,p_par(90))
+call copy_addr(two_step_factor,p_par(91))
+call copy_addr(radrfp,p_par(92))
+call copy_addr(rnoise_int,p_par(93))
+call copy_addr(rnoise_ext,p_par(94))
+call copy_addr(znoise_int,p_par(95))
+call copy_addr(znoise_ext,p_par(96))
+call copy_addr(mix_factor,p_par(97))
+call copy_addr(rfpradb,p_par(98))
+call copy_addr(rfpradj,p_par(99))
+call copy_addr(th_spot,p_par(100))
+call copy_addr(non_ffree_factor,p_par(101))
+call copy_addr(etab,p_par(102))
+call copy_addr(tau_relprof,p_par(103))
+call copy_addr(tau_relprof1,p_par(104))
+call copy_addr(amp_relprof,p_par(105))
+call copy_addr(k_relprof,p_par(106))
+call copy_addr(cp,p_par(107))
+call copy_addr(dipole_moment,p_par(108))
+call copy_addr(eta_power_x,p_par(109))
+call copy_addr(eta_power_z,p_par(110))
+call copy_addr(z1_aa,p_par(111))
+call copy_addr(z2_aa,p_par(112))
+call copy_addr(pm_smag1,p_par(113))
+call copy_addr(k1hel,p_par(114))
+call copy_addr(k2hel,p_par(115))
+call copy_addr(qexp_aa,p_par(116))
+call copy_addr(nfact_aa,p_par(117))
+call copy_addr(r_inner,p_par(118))
+call copy_addr(r_outer,p_par(119))
+call copy_addr(eta_tdep_loverride_ee,p_par(120))
+call copy_addr(echarge,p_par(121))
+call copy_addr(va2power_jxb,p_par(122)) ! int
+call copy_addr(nbvec,p_par(123)) ! int
+call copy_addr(nbvecmax,p_par(124)) ! int
+call copy_addr(iua,p_par(125)) ! int
+call copy_addr(ilam,p_par(126)) ! int
+call copy_addr(idiva,p_par(127)) ! int
+call copy_addr(n_modes_aa,p_par(128)) ! int
+call copy_addr(naareset,p_par(129)) ! int
+call copy_addr(lpress_equil,p_par(130)) ! bool
+call copy_addr(lpress_equil_via_ss,p_par(131)) ! bool
+call copy_addr(lpress_equil_alt,p_par(132)) ! bool
+call copy_addr(lset_axay_zero,p_par(133)) ! bool
+call copy_addr(llorentzforce,p_par(134)) ! bool
+call copy_addr(llorentz_rhoref,p_par(135)) ! bool
+call copy_addr(linduction,p_par(136)) ! bool
+call copy_addr(ldiamagnetism,p_par(137)) ! bool
+call copy_addr(lcovariant_magnetic,p_par(138)) ! bool
+call copy_addr(ladd_global_field,p_par(139)) ! bool
+call copy_addr(ladd_bb_init,p_par(140)) ! bool
+call copy_addr(lresi_eta_const,p_par(141)) ! bool
+call copy_addr(lresi_eta_tdep,p_par(142)) ! bool
+call copy_addr(lresi_eta_ztdep,p_par(143)) ! bool
+call copy_addr(lresi_eta_tdep_t0_norm,p_par(144)) ! bool
+call copy_addr(lresi_sqrtrhoeta_const,p_par(145)) ! bool
+call copy_addr(lresi_eta_aniso,p_par(146)) ! bool
+call copy_addr(lquench_eta_aniso,p_par(147)) ! bool
+call copy_addr(lresi_etass,p_par(148)) ! bool
+call copy_addr(lresi_hyper2,p_par(149)) ! bool
+call copy_addr(lresi_hyper3,p_par(150)) ! bool
+call copy_addr(lresi_hyper2_tdep,p_par(151)) ! bool
+call copy_addr(lresi_hyper3_tdep,p_par(152)) ! bool
+call copy_addr(lresi_hyper3_polar,p_par(153)) ! bool
+call copy_addr(lresi_hyper3_mesh,p_par(154)) ! bool
+call copy_addr(lresi_hyper3_csmesh,p_par(155)) ! bool
+call copy_addr(lresi_hyper3_strict,p_par(156)) ! bool
+call copy_addr(lresi_zdep,p_par(157)) ! bool
+call copy_addr(lresi_ydep,p_par(158)) ! bool
+call copy_addr(lresi_xdep,p_par(159)) ! bool
+call copy_addr(lresi_rdep,p_par(160)) ! bool
+call copy_addr(lresi_xydep,p_par(161)) ! bool
+call copy_addr(lresi_dust,p_par(162)) ! bool
+call copy_addr(lresi_hyper3_aniso,p_par(163)) ! bool
+call copy_addr(lresi_eta_shock,p_par(164)) ! bool
+call copy_addr(lresi_eta_shock2,p_par(165)) ! bool
+call copy_addr(lresi_eta_shock_profz,p_par(166)) ! bool
+call copy_addr(lresi_eta_shock_profr,p_par(167)) ! bool
+call copy_addr(lresi_eta_shock_perp,p_par(168)) ! bool
+call copy_addr(lresi_etava,p_par(169)) ! bool
+call copy_addr(lresi_etaj,p_par(170)) ! bool
+call copy_addr(lresi_etaj2,p_par(171)) ! bool
+call copy_addr(lresi_etajrho,p_par(172)) ! bool
+call copy_addr(lresi_shell,p_par(173)) ! bool
+call copy_addr(lresi_smagorinsky,p_par(174)) ! bool
+call copy_addr(lresi_smagorinsky_nusmag,p_par(175)) ! bool
+call copy_addr(lresi_smagorinsky_cross,p_par(176)) ! bool
+call copy_addr(lresi_anomalous,p_par(177)) ! bool
+call copy_addr(lresi_spitzer,p_par(178)) ! bool
+call copy_addr(lresi_cspeed,p_par(179)) ! bool
+call copy_addr(lresi_vaspeed,p_par(180)) ! bool
+call copy_addr(lalfven_as_aux,p_par(181)) ! bool
+call copy_addr(lresi_magfield,p_par(182)) ! bool
+call copy_addr(lresi_eta_proptouz,p_par(183)) ! bool
+call copy_addr(lohmic_heat,p_par(184)) ! bool
+call copy_addr(lneutralion_heat,p_par(185)) ! bool
+call copy_addr(reinitialize_aa,p_par(186)) ! bool
+call copy_addr(lb_ext_pot,p_par(187)) ! bool
+call copy_addr(lj_ext,p_par(188)) ! bool
+call copy_addr(lforce_free_test,p_par(189)) ! bool
+call copy_addr(lforcing_cont_aa_local,p_par(190)) ! bool
+call copy_addr(lee_as_aux,p_par(191)) ! bool
+call copy_addr(ladd_disp_current_from_aux,p_par(192)) ! bool
+call copy_addr(lbb_as_aux,p_par(193)) ! bool
+call copy_addr(ljj_as_aux,p_par(194)) ! bool
+call copy_addr(ljxb_as_aux,p_par(195)) ! bool
+call copy_addr(luxb_as_aux,p_par(196)) ! bool
+call copy_addr(lugb_as_aux,p_par(197)) ! bool
+call copy_addr(lbgu_as_aux,p_par(198)) ! bool
+call copy_addr(lbdivu_as_aux,p_par(199)) ! bool
+call copy_addr(lbbt_as_aux,p_par(200)) ! bool
+call copy_addr(ljjt_as_aux,p_par(201)) ! bool
+call copy_addr(lua_as_aux,p_par(202)) ! bool
+call copy_addr(lbeta_as_aux,p_par(203)) ! bool
+call copy_addr(letasmag_as_aux,p_par(204)) ! bool
+call copy_addr(ljj_as_comaux,p_par(205)) ! bool
+call copy_addr(lbb_as_comaux,p_par(206)) ! bool
+call copy_addr(lb_ext_in_comaux,p_par(207)) ! bool
+call copy_addr(lbb_sph_as_aux,p_par(208)) ! bool
+call copy_addr(lbext_curvilinear,p_par(209)) ! bool
+call copy_addr(lcheck_positive_va2,p_par(210)) ! bool
+call copy_addr(lreset_aa,p_par(211)) ! bool
+call copy_addr(lsmooth_jj,p_par(212)) ! bool
+call copy_addr(lbx_ext_global,p_par(213)) ! bool
+call copy_addr(lby_ext_global,p_par(214)) ! bool
+call copy_addr(lbz_ext_global,p_par(215)) ! bool
+call copy_addr(lax_ext_global,p_par(216)) ! bool
+call copy_addr(lay_ext_global,p_par(217)) ! bool
+call copy_addr(laz_ext_global,p_par(218)) ! bool
+call copy_addr(lambipolar_diffusion,p_par(219)) ! bool
+call copy_addr(lpower_profile_file,p_par(220)) ! bool
+call copy_addr(lskip_projection_aa,p_par(221)) ! bool
+call copy_addr(lscale_tobox,p_par(222)) ! bool
+call copy_addr(lsquash_aa,p_par(223)) ! bool
+call copy_addr(lbraginsky,p_par(224)) ! bool
+call copy_addr(l2d_aa,p_par(225)) ! bool
+call copy_addr(lcoulomb,p_par(226)) ! bool
+call copy_addr(lfactors_aa,p_par(227)) ! bool
+call copy_addr(lvacuum,p_par(228)) ! bool
+call copy_addr(loverride_ee,p_par(229)) ! bool
+call copy_addr(loverride_ee2,p_par(230)) ! bool
+call copy_addr(loverride_ee_decide,p_par(231)) ! bool
+call copy_addr(lignore_1rho_in_lorentz,p_par(232)) ! bool
+call copy_addr(iedotx,p_par(233)) ! int
+call copy_addr(iedotz,p_par(234)) ! int
+call copy_addr(eta,p_par(235))
+call copy_addr(eta1,p_par(236))
+call copy_addr(eta_hyper2,p_par(237))
+call copy_addr(eta_hyper3,p_par(238))
+call copy_addr(eta_tdep_exponent,p_par(239))
+call copy_addr(eta_tdep_t0,p_par(240))
+call copy_addr(eta_tdep_toffset,p_par(241))
+call copy_addr(eta_hyper3_mesh,p_par(242))
+call copy_addr(eta_spitzer,p_par(243))
+call copy_addr(eta_anom,p_par(244))
+call copy_addr(eta_anom_thresh,p_par(245))
+call copy_addr(eta_ampl,p_par(246))
+call copy_addr(eta_int,p_par(247))
+call copy_addr(eta_ext,p_par(248))
+call copy_addr(wresistivity,p_par(249))
+call copy_addr(eta_xy_max,p_par(250))
+call copy_addr(height_eta,p_par(251))
+call copy_addr(eta_out,p_par(252))
+call copy_addr(eta_cspeed,p_par(253))
+call copy_addr(tau_aa_exterior,p_par(254))
+call copy_addr(tauad,p_par(255))
+call copy_addr(alev,p_par(256))
+call copy_addr(sigma_ratio,p_par(257))
+call copy_addr(eta_z0,p_par(258))
+call copy_addr(eta_z1,p_par(259))
+call copy_addr(eta_xwidth,p_par(260))
+call copy_addr(eta_ywidth,p_par(261))
+call copy_addr(eta_zwidth,p_par(262))
+call copy_addr(eta_zwidth2,p_par(263))
+call copy_addr(eta_rwidth,p_par(264))
+call copy_addr(eta_width_shock,p_par(265))
+call copy_addr(eta_zshock,p_par(266))
+call copy_addr(eta_jump_shock,p_par(267))
+call copy_addr(eta_xwidth0,p_par(268))
+call copy_addr(eta_xwidth1,p_par(269))
+call copy_addr(eta_rwidth0,p_par(270))
+call copy_addr(eta_rwidth1,p_par(271))
+call copy_addr(eta_xshock,p_par(272))
+call copy_addr(eta_x0,p_par(273))
+call copy_addr(eta_x1,p_par(274))
+call copy_addr(eta_y0,p_par(275))
+call copy_addr(eta_y1,p_par(276))
+call copy_addr(eta_r0,p_par(277))
+call copy_addr(eta_r1,p_par(278))
+call copy_addr(alphassm,p_par(279))
+call copy_addr(j_ext_quench,p_par(280))
+call copy_addr(b2_diamag,p_par(281))
+call copy_addr(k1_ff,p_par(282))
+call copy_addr(ampl_ff,p_par(283))
+call copy_addr(swirl,p_par(284))
+call copy_addr(k1x_ff,p_par(285))
+call copy_addr(k1y_ff,p_par(286))
+call copy_addr(k1z_ff,p_par(287))
+call copy_addr(inertial_length,p_par(288))
+call copy_addr(linertial_2,p_par(289))
+call copy_addr(forcing_continuous_aa_phasefact,p_par(290))
+call copy_addr(forcing_continuous_aa_amplfact,p_par(291))
+call copy_addr(ampl_fcont_aa,p_par(292))
+call copy_addr(llambda_aa,p_par(293))
+call copy_addr(vcrit_anom,p_par(294))
+call copy_addr(numag,p_par(295))
+call copy_addr(b0_magfric,p_par(296))
+call copy_addr(ekman_friction_aa,p_par(297))
+call copy_addr(gamma_epspb,p_par(298))
+call copy_addr(exp_epspb,p_par(299))
+call copy_addr(ncr_quench,p_par(300))
+call copy_addr(ampl_eta_uz,p_par(301))
+call copy_addr(no_ohmic_heat_z0,p_par(302))
+call copy_addr(no_ohmic_heat_zwidth,p_par(303))
+call copy_addr(imp_alpha0,p_par(304))
+call copy_addr(imp_halpha,p_par(305))
+call copy_addr(c_light2,p_par(306))
+call copy_addr(c_light21,p_par(307))
+call copy_addr(betamin_jxb,p_par(308))
+call copy_addr(lfreeze_aint,p_par(309)) ! bool
+call copy_addr(lfreeze_aext,p_par(310)) ! bool
+call copy_addr(lweyl_gauge,p_par(311)) ! bool
+call copy_addr(ladvective_gauge,p_par(312)) ! bool
+call copy_addr(lupw_aa,p_par(313)) ! bool
+call copy_addr(ladvective_gauge2,p_par(314)) ! bool
+call copy_addr(lcalc_aameanz,p_par(315)) ! bool
+call copy_addr(lcalc_aamean,p_par(316)) ! bool
+call copy_addr(lforcing_cont_aa,p_par(317)) ! bool
+call copy_addr(iforcing_cont_aa,p_par(318)) ! int
+call copy_addr(lelectron_inertia,p_par(319)) ! bool
+call copy_addr(lkinematic,p_par(320)) ! bool
+call copy_addr(lignore_bext_in_b2,p_par(321)) ! bool
+call copy_addr(luse_bext_in_b2,p_par(322)) ! bool
+call copy_addr(lmean_friction,p_par(323)) ! bool
+call copy_addr(llocal_friction,p_par(324)) ! bool
+call copy_addr(lambipolar_strong_coupling,p_par(325)) ! bool
+call copy_addr(lhalox,p_par(326)) ! bool
+call copy_addr(lno_ohmic_heat_bound_z,p_par(327)) ! bool
+call copy_addr(lrun_initaa,p_par(328)) ! bool
+call copy_addr(lmagneto_friction,p_par(329)) ! bool
+call copy_addr(limplicit_resistivity,p_par(330)) ! bool
+call copy_addr(lncr_correlated,p_par(331)) ! bool
+call copy_addr(lncr_anticorrelated,p_par(332)) ! bool
+call copy_addr(lpropagate_borderaa,p_par(333)) ! bool
+call copy_addr(lremove_meanaz,p_par(334)) ! bool
+call copy_addr(lremove_meanax,p_par(335)) ! bool
+call copy_addr(lremove_meanay,p_par(336)) ! bool
+call copy_addr(lremove_meanaxy,p_par(337)) ! bool
+call copy_addr(lremove_meanaxz,p_par(338)) ! bool
+call copy_addr(ladd_efield,p_par(339)) ! bool
+call copy_addr(lsld_bb,p_par(340)) ! bool
+call copy_addr(la_relprof_global,p_par(341)) ! bool
+call copy_addr(lmagnetic_slope_limited,p_par(342)) ! bool
+call copy_addr(lboris_correction,p_par(343)) ! bool
+call copy_addr(lnoinduction,p_par(344)) ! bool
+call copy_addr(lkeplerian_gauge,p_par(345)) ! bool
+call copy_addr(lremove_volume_average,p_par(346)) ! bool
+call copy_addr(lrhs_max,p_par(347)) ! bool
+call copy_addr(ltime_integrals_always,p_par(348)) ! bool
+call copy_addr(lvart_in_shear_frame,p_par(349)) ! bool
+call copy_addr(limp_alpha,p_par(350)) ! bool
+call copy_addr(dtcor,p_par(351))
+call copy_addr(h_sld_magn,p_par(352))
+call copy_addr(nlf_sld_magn,p_par(353))
+call copy_addr(fac_sld_magn,p_par(354))
+call copy_addr(ampl_efield,p_par(355))
+call copy_addr(w_sldchar_mag,p_par(356))
+call copy_addr(tau_remove_meanaxy,p_par(357))
+call copy_addr(rhoref,p_par(358))
+call copy_addr(rhoref1,p_par(359))
+call copy_addr(lbext_moving_layer,p_par(360)) ! bool
+call copy_addr(zbot_moving_layer,p_par(361))
+call copy_addr(ztop_moving_layer,p_par(362))
+call copy_addr(speed_moving_layer,p_par(363))
+call copy_addr(edge_moving_layer,p_par(364))
+call copy_addr(idiag_eta_tdep,p_par(365)) ! int
+call copy_addr(idiag_ab_int,p_par(366)) ! int
+call copy_addr(idiag_jb_int,p_par(367)) ! int
+call copy_addr(idiag_b2tm,p_par(368)) ! int
+call copy_addr(idiag_bjtm,p_par(369)) ! int
+call copy_addr(idiag_jbtm,p_par(370)) ! int
+call copy_addr(idiag_ujtm,p_par(371)) ! int
+call copy_addr(idiag_jutm,p_par(372)) ! int
+call copy_addr(idiag_ubtm,p_par(373)) ! int
+call copy_addr(idiag_butm,p_par(374)) ! int
+call copy_addr(idiag_b2ruzm,p_par(375)) ! int
+call copy_addr(idiag_b2uzm,p_par(376)) ! int
+call copy_addr(idiag_ubbzm,p_par(377)) ! int
+call copy_addr(idiag_b1m,p_par(378)) ! int
+call copy_addr(idiag_b2m,p_par(379)) ! int
+call copy_addr(idiag_eem,p_par(380)) ! int
+call copy_addr(idiag_b4m,p_par(381)) ! int
+call copy_addr(idiag_b6m,p_par(382)) ! int
+call copy_addr(idiag_b12m,p_par(383)) ! int
+call copy_addr(idiag_bm2,p_par(384)) ! int
+call copy_addr(idiag_j2m,p_par(385)) ! int
+call copy_addr(idiag_jm2,p_par(386)) ! int
+call copy_addr(idiag_abm,p_par(387)) ! int
+call copy_addr(idiag_glamam,p_par(388)) ! int
+call copy_addr(idiag_glambm,p_par(389)) ! int
+call copy_addr(idiag_abumx,p_par(390)) ! int
+call copy_addr(idiag_abumy,p_par(391)) ! int
+call copy_addr(idiag_abumz,p_par(392)) ! int
+call copy_addr(idiag_abmh,p_par(393)) ! int
+call copy_addr(idiag_abmn,p_par(394)) ! int
+call copy_addr(idiag_abms,p_par(395)) ! int
+call copy_addr(idiag_abrms,p_par(396)) ! int
+call copy_addr(idiag_jbrms,p_par(397)) ! int
+call copy_addr(idiag_jxbrms,p_par(398)) ! int
+call copy_addr(idiag_ajm,p_par(399)) ! int
+call copy_addr(idiag_jbm,p_par(400)) ! int
+call copy_addr(idiag_a2b2m,p_par(401)) ! int
+call copy_addr(idiag_j2b2m,p_par(402)) ! int
+call copy_addr(idiag_hjbm,p_par(403)) ! int
+call copy_addr(idiag_jbmh,p_par(404)) ! int
+call copy_addr(idiag_jbmn,p_par(405)) ! int
+call copy_addr(idiag_jbms,p_par(406)) ! int
+call copy_addr(idiag_ubm,p_par(407)) ! int
+call copy_addr(idiag_dubrms,p_par(408)) ! int
+call copy_addr(idiag_dobrms,p_par(409)) ! int
+call copy_addr(idiag_uxbxm,p_par(410)) ! int
+call copy_addr(idiag_uybxm,p_par(411)) ! int
+call copy_addr(idiag_uzbxm,p_par(412)) ! int
+call copy_addr(idiag_uxbym,p_par(413)) ! int
+call copy_addr(idiag_uybym,p_par(414)) ! int
+call copy_addr(idiag_uzbym,p_par(415)) ! int
+call copy_addr(idiag_uxbzm,p_par(416)) ! int
+call copy_addr(idiag_uybzm,p_par(417)) ! int
+call copy_addr(idiag_uzbzm,p_par(418)) ! int
+call copy_addr(idiag_uxjxm,p_par(419)) ! int
+call copy_addr(idiag_uxjym,p_par(420)) ! int
+call copy_addr(idiag_uxjzm,p_par(421)) ! int
+call copy_addr(idiag_uyjxm,p_par(422)) ! int
+call copy_addr(idiag_uyjym,p_par(423)) ! int
+call copy_addr(idiag_uyjzm,p_par(424)) ! int
+call copy_addr(idiag_uzjxm,p_par(425)) ! int
+call copy_addr(idiag_uzjym,p_par(426)) ! int
+call copy_addr(idiag_uzjzm,p_par(427)) ! int
+call copy_addr(idiag_cosubm,p_par(428)) ! int
+call copy_addr(idiag_jxbxm,p_par(429)) ! int
+call copy_addr(idiag_jybxm,p_par(430)) ! int
+call copy_addr(idiag_jzbxm,p_par(431)) ! int
+call copy_addr(idiag_jxbym,p_par(432)) ! int
+call copy_addr(idiag_jybym,p_par(433)) ! int
+call copy_addr(idiag_jzbym,p_par(434)) ! int
+call copy_addr(idiag_jxbzm,p_par(435)) ! int
+call copy_addr(idiag_jybzm,p_par(436)) ! int
+call copy_addr(idiag_jzbzm,p_par(437)) ! int
+call copy_addr(idiag_uam,p_par(438)) ! int
+call copy_addr(idiag_obm,p_par(439)) ! int
+call copy_addr(idiag_ujm,p_par(440)) ! int
+call copy_addr(idiag_fbm,p_par(441)) ! int
+call copy_addr(idiag_fxbxm,p_par(442)) ! int
+call copy_addr(idiag_epsm,p_par(443)) ! int
+call copy_addr(idiag_epsad,p_par(444)) ! int
+call copy_addr(idiag_bxpt,p_par(445)) ! int
+call copy_addr(idiag_bypt,p_par(446)) ! int
+call copy_addr(idiag_bzpt,p_par(447)) ! int
+call copy_addr(idiag_bxbypt,p_par(448)) ! int
+call copy_addr(idiag_bybzpt,p_par(449)) ! int
+call copy_addr(idiag_bzbxpt,p_par(450)) ! int
+call copy_addr(idiag_jxpt,p_par(451)) ! int
+call copy_addr(idiag_jypt,p_par(452)) ! int
+call copy_addr(idiag_jzpt,p_par(453)) ! int
+call copy_addr(idiag_expt,p_par(454)) ! int
+call copy_addr(idiag_eypt,p_par(455)) ! int
+call copy_addr(idiag_ezpt,p_par(456)) ! int
+call copy_addr(idiag_axpt,p_par(457)) ! int
+call copy_addr(idiag_aypt,p_par(458)) ! int
+call copy_addr(idiag_azpt,p_par(459)) ! int
+call copy_addr(idiag_bxp2,p_par(460)) ! int
+call copy_addr(idiag_byp2,p_par(461)) ! int
+call copy_addr(idiag_bzp2,p_par(462)) ! int
+call copy_addr(idiag_jxp2,p_par(463)) ! int
+call copy_addr(idiag_jyp2,p_par(464)) ! int
+call copy_addr(idiag_jzp2,p_par(465)) ! int
+call copy_addr(idiag_exp2,p_par(466)) ! int
+call copy_addr(idiag_eyp2,p_par(467)) ! int
+call copy_addr(idiag_ezp2,p_par(468)) ! int
+call copy_addr(idiag_axp2,p_par(469)) ! int
+call copy_addr(idiag_ayp2,p_par(470)) ! int
+call copy_addr(idiag_azp2,p_par(471)) ! int
+call copy_addr(idiag_epsm_les,p_par(472)) ! int
+call copy_addr(idiag_aybym2,p_par(473)) ! int
+call copy_addr(idiag_exaym2,p_par(474)) ! int
+call copy_addr(idiag_exabot,p_par(475)) ! int
+call copy_addr(idiag_exatop,p_par(476)) ! int
+call copy_addr(idiag_exjm2,p_par(477)) ! int
+call copy_addr(idiag_emag,p_par(478)) ! int
+call copy_addr(idiag_brms,p_par(479)) ! int
+call copy_addr(idiag_bfrms,p_par(480)) ! int
+call copy_addr(idiag_bf2m,p_par(481)) ! int
+call copy_addr(idiag_bf4m,p_par(482)) ! int
+call copy_addr(idiag_bmax,p_par(483)) ! int
+call copy_addr(idiag_bxmin,p_par(484)) ! int
+call copy_addr(idiag_bymin,p_par(485)) ! int
+call copy_addr(idiag_bzmin,p_par(486)) ! int
+call copy_addr(idiag_bxmax,p_par(487)) ! int
+call copy_addr(idiag_bymax,p_par(488)) ! int
+call copy_addr(idiag_bzmax,p_par(489)) ! int
+call copy_addr(idiag_bbxmax,p_par(490)) ! int
+call copy_addr(idiag_bbymax,p_par(491)) ! int
+call copy_addr(idiag_bbzmax,p_par(492)) ! int
+call copy_addr(idiag_jxmax,p_par(493)) ! int
+call copy_addr(idiag_jymax,p_par(494)) ! int
+call copy_addr(idiag_jzmax,p_par(495)) ! int
+call copy_addr(idiag_jrms,p_par(496)) ! int
+call copy_addr(idiag_hjrms,p_par(497)) ! int
+call copy_addr(idiag_jmax,p_par(498)) ! int
+call copy_addr(idiag_va23rms,p_par(499)) ! int
+call copy_addr(idiag_varms,p_par(500)) ! int
+call copy_addr(idiag_vamax,p_par(501)) ! int
+call copy_addr(idiag_dtb,p_par(502)) ! int
+call copy_addr(idiag_dteta,p_par(503)) ! int
+call copy_addr(idiag_dteta3,p_par(504)) ! int
+call copy_addr(idiag_dthr,p_par(505)) ! int
+call copy_addr(idiag_dtfr,p_par(506)) ! int
+call copy_addr(idiag_dtbr,p_par(507)) ! int
+call copy_addr(idiag_axm,p_par(508)) ! int
+call copy_addr(idiag_aym,p_par(509)) ! int
+call copy_addr(idiag_azm,p_par(510)) ! int
+call copy_addr(idiag_a2m,p_par(511)) ! int
+call copy_addr(idiag_arms,p_par(512)) ! int
+call copy_addr(idiag_amax,p_par(513)) ! int
+call copy_addr(idiag_divarms,p_par(514)) ! int
+call copy_addr(idiag_beta1m,p_par(515)) ! int
+call copy_addr(idiag_beta1max,p_par(516)) ! int
+call copy_addr(idiag_betam,p_par(517)) ! int
+call copy_addr(idiag_betamax,p_par(518)) ! int
+call copy_addr(idiag_betamin,p_par(519)) ! int
+call copy_addr(idiag_azmid_min,p_par(520)) ! int
+call copy_addr(idiag_azmid_max,p_par(521)) ! int
+call copy_addr(idiag_bxm,p_par(522)) ! int
+call copy_addr(idiag_bym,p_par(523)) ! int
+call copy_addr(idiag_bzm,p_par(524)) ! int
+call copy_addr(idiag_jxm,p_par(525)) ! int
+call copy_addr(idiag_jym,p_par(526)) ! int
+call copy_addr(idiag_jzm,p_par(527)) ! int
+call copy_addr(idiag_bxbym,p_par(528)) ! int
+call copy_addr(idiag_bxbzm,p_par(529)) ! int
+call copy_addr(idiag_bybzm,p_par(530)) ! int
+call copy_addr(idiag_djuidjbim,p_par(531)) ! int
+call copy_addr(idiag_bij_cov_diffmax,p_par(532)) ! int
+call copy_addr(idiag_bmx,p_par(533)) ! int
+call copy_addr(idiag_bmy,p_par(534)) ! int
+call copy_addr(idiag_bmz,p_par(535)) ! int
+call copy_addr(idiag_bmzs2,p_par(536)) ! int
+call copy_addr(idiag_bmza2,p_par(537)) ! int
+call copy_addr(idiag_jmx,p_par(538)) ! int
+call copy_addr(idiag_jmy,p_par(539)) ! int
+call copy_addr(idiag_jmz,p_par(540)) ! int
+call copy_addr(idiag_bmzph,p_par(541)) ! int
+call copy_addr(idiag_bmzphe,p_par(542)) ! int
+call copy_addr(idiag_bsinphz,p_par(543)) ! int
+call copy_addr(idiag_bcosphz,p_par(544)) ! int
+call copy_addr(idiag_emxamz3,p_par(545)) ! int
+call copy_addr(idiag_embmz,p_par(546)) ! int
+call copy_addr(idiag_ambmz,p_par(547)) ! int
+call copy_addr(idiag_ambmzh,p_par(548)) ! int
+call copy_addr(idiag_ambmzn,p_par(549)) ! int
+call copy_addr(idiag_ambmzs,p_par(550)) ! int
+call copy_addr(idiag_jmbmz,p_par(551)) ! int
+call copy_addr(idiag_rmmz,p_par(552)) ! int
+call copy_addr(idiag_kx_aa,p_par(553)) ! int
+call copy_addr(idiag_kmz,p_par(554)) ! int
+call copy_addr(idiag_bx2m,p_par(555)) ! int
+call copy_addr(idiag_by2m,p_par(556)) ! int
+call copy_addr(idiag_bz2m,p_par(557)) ! int
+call copy_addr(idiag_bx3m,p_par(558)) ! int
+call copy_addr(idiag_by3m,p_par(559)) ! int
+call copy_addr(idiag_bz3m,p_par(560)) ! int
+call copy_addr(idiag_bx4m,p_par(561)) ! int
+call copy_addr(idiag_by4m,p_par(562)) ! int
+call copy_addr(idiag_bz4m,p_par(563)) ! int
+call copy_addr(idiag_jx2m,p_par(564)) ! int
+call copy_addr(idiag_jy2m,p_par(565)) ! int
+call copy_addr(idiag_jz2m,p_par(566)) ! int
+call copy_addr(idiag_jx4m,p_par(567)) ! int
+call copy_addr(idiag_jy4m,p_par(568)) ! int
+call copy_addr(idiag_jz4m,p_par(569)) ! int
+call copy_addr(idiag_jh2m1,p_par(570)) ! int
+call copy_addr(idiag_jx2m1,p_par(571)) ! int
+call copy_addr(idiag_jy2m1,p_par(572)) ! int
+call copy_addr(idiag_jx2m2,p_par(573)) ! int
+call copy_addr(idiag_jy2m2,p_par(574)) ! int
+call copy_addr(idiag_jx2m3,p_par(575)) ! int
+call copy_addr(idiag_jy2m3,p_par(576)) ! int
+call copy_addr(idiag_uxbm,p_par(577)) ! int
+call copy_addr(idiag_jxbm,p_par(578)) ! int
+call copy_addr(idiag_vmagfricmax,p_par(579)) ! int
+call copy_addr(idiag_vmagfricrms,p_par(580)) ! int
+call copy_addr(idiag_oxuxbm,p_par(581)) ! int
+call copy_addr(idiag_jxbxbm,p_par(582)) ! int
+call copy_addr(idiag_gpxbm,p_par(583)) ! int
+call copy_addr(idiag_uxdxuxbm,p_par(584)) ! int
+call copy_addr(idiag_b3b21m,p_par(585)) ! int
+call copy_addr(idiag_b3b12m,p_par(586)) ! int
+call copy_addr(idiag_b1b32m,p_par(587)) ! int
+call copy_addr(idiag_b1b23m,p_par(588)) ! int
+call copy_addr(idiag_b2b13m,p_par(589)) ! int
+call copy_addr(idiag_b2b31m,p_par(590)) ! int
+call copy_addr(idiag_udotxbm,p_par(591)) ! int
+call copy_addr(idiag_uxbdotm,p_par(592)) ! int
+call copy_addr(idiag_uxbmx,p_par(593)) ! int
+call copy_addr(idiag_uxbmy,p_par(594)) ! int
+call copy_addr(idiag_uxbmz,p_par(595)) ! int
+call copy_addr(idiag_jxbmx,p_par(596)) ! int
+call copy_addr(idiag_jxbmy,p_par(597)) ! int
+call copy_addr(idiag_jxbmz,p_par(598)) ! int
+call copy_addr(idiag_uxbcmx,p_par(599)) ! int
+call copy_addr(idiag_uxbcmy,p_par(600)) ! int
+call copy_addr(idiag_uxbsmx,p_par(601)) ! int
+call copy_addr(idiag_uxbsmy,p_par(602)) ! int
+call copy_addr(idiag_examx,p_par(603)) ! int
+call copy_addr(idiag_examy,p_par(604)) ! int
+call copy_addr(idiag_examz,p_par(605)) ! int
+call copy_addr(idiag_exatotalmx,p_par(606)) ! int
+call copy_addr(idiag_exatotalmy,p_par(607)) ! int
+call copy_addr(idiag_exatotalmz,p_par(608)) ! int
+call copy_addr(idiag_exjmx,p_par(609)) ! int
+call copy_addr(idiag_exjmy,p_par(610)) ! int
+call copy_addr(idiag_exjmz,p_par(611)) ! int
+call copy_addr(idiag_dexbmx,p_par(612)) ! int
+call copy_addr(idiag_dexbmy,p_par(613)) ! int
+call copy_addr(idiag_dexbmz,p_par(614)) ! int
+call copy_addr(idiag_phibmx,p_par(615)) ! int
+call copy_addr(idiag_phibmy,p_par(616)) ! int
+call copy_addr(idiag_phibmz,p_par(617)) ! int
+call copy_addr(idiag_uxjm,p_par(618)) ! int
+call copy_addr(idiag_b2divum,p_par(619)) ! int
+call copy_addr(idiag_jdel2am,p_par(620)) ! int
+call copy_addr(idiag_jem,p_par(621)) ! int
+call copy_addr(idiag_aem,p_par(622)) ! int
+call copy_addr(idiag_ujxbm,p_par(623)) ! int
+call copy_addr(idiag_wl2d,p_par(624)) ! int
+call copy_addr(idiag_wl3d,p_par(625)) ! int
+call copy_addr(idiag_wl3d2,p_par(626)) ! int
+call copy_addr(idiag_bij2m,p_par(627)) ! int
+call copy_addr(idiag_sijbibjm,p_par(628)) ! int
+call copy_addr(idiag_ubgbpm,p_par(629)) ! int
+call copy_addr(idiag_ugb22m,p_par(630)) ! int
+call copy_addr(idiag_jxbrxm,p_par(631)) ! int
+call copy_addr(idiag_jxbrym,p_par(632)) ! int
+call copy_addr(idiag_jxbrzm,p_par(633)) ! int
+call copy_addr(idiag_jxbrmax,p_par(634)) ! int
+call copy_addr(idiag_jxbr2m,p_par(635)) ! int
+call copy_addr(idiag_jxbrqm,p_par(636)) ! int
+call copy_addr(idiag_uxbrms,p_par(637)) ! int
+call copy_addr(idiag_bresrms,p_par(638)) ! int
+call copy_addr(idiag_rmrms,p_par(639)) ! int
+call copy_addr(idiag_jfm,p_par(640)) ! int
+call copy_addr(idiag_brbpmr,p_par(641)) ! int
+call copy_addr(idiag_va2m,p_par(642)) ! int
+call copy_addr(idiag_b2mr,p_par(643)) ! int
+call copy_addr(idiag_brmr,p_par(644)) ! int
+call copy_addr(idiag_bpmr,p_par(645)) ! int
+call copy_addr(idiag_bzmr,p_par(646)) ! int
+call copy_addr(idiag_armr,p_par(647)) ! int
+call copy_addr(idiag_apmr,p_par(648)) ! int
+call copy_addr(idiag_azmr,p_par(649)) ! int
+call copy_addr(idiag_mflux_x,p_par(650)) ! int
+call copy_addr(idiag_mflux_y,p_par(651)) ! int
+call copy_addr(idiag_mflux_z,p_par(652)) ! int
+call copy_addr(idiag_bmxy_rms,p_par(653)) ! int
+call copy_addr(idiag_etasmagm,p_par(654)) ! int
+call copy_addr(idiag_etasmagmin,p_par(655)) ! int
+call copy_addr(idiag_etasmagmax,p_par(656)) ! int
+call copy_addr(idiag_etavamax,p_par(657)) ! int
+call copy_addr(idiag_etajmax,p_par(658)) ! int
+call copy_addr(idiag_etaj2max,p_par(659)) ! int
+call copy_addr(idiag_etajrhomax,p_par(660)) ! int
+call copy_addr(idiag_etaaniso,p_par(661)) ! int
+call copy_addr(idiag_etaanisobb,p_par(662)) ! int
+call copy_addr(idiag_cosjbm,p_par(663)) ! int
+call copy_addr(idiag_coshjbm,p_par(664)) ! int
+call copy_addr(idiag_jparallelm,p_par(665)) ! int
+call copy_addr(idiag_jperpm,p_par(666)) ! int
+call copy_addr(idiag_hjparallelm,p_par(667)) ! int
+call copy_addr(idiag_hjperpm,p_par(668)) ! int
+call copy_addr(idiag_brmsn,p_par(669)) ! int
+call copy_addr(idiag_brmss,p_par(670)) ! int
+call copy_addr(idiag_brmsh,p_par(671)) ! int
+call copy_addr(idiag_b2sphm,p_par(672)) ! int
+call copy_addr(idiag_brmsx,p_par(673)) ! int
+call copy_addr(idiag_brmsz,p_par(674)) ! int
+call copy_addr(idiag_exmxy,p_par(675)) ! int
+call copy_addr(idiag_eymxy,p_par(676)) ! int
+call copy_addr(idiag_ezmxy,p_par(677)) ! int
+call copy_addr(idiag_jxbrmphi,p_par(678)) ! int
+call copy_addr(idiag_jxbpmphi,p_par(679)) ! int
+call copy_addr(idiag_jxbzmphi,p_par(680)) ! int
+call copy_addr(idiag_jbmphi,p_par(681)) ! int
+call copy_addr(idiag_armphi,p_par(682)) ! int
+call copy_addr(idiag_apmphi,p_par(683)) ! int
+call copy_addr(idiag_azmphi,p_par(684)) ! int
+call copy_addr(idiag_brmphi,p_par(685)) ! int
+call copy_addr(idiag_bpmphi,p_par(686)) ! int
+call copy_addr(idiag_bzmphi,p_par(687)) ! int
+call copy_addr(idiag_br2mphi,p_par(688)) ! int
+call copy_addr(idiag_bp2mphi,p_par(689)) ! int
+call copy_addr(idiag_bz2mphi,p_par(690)) ! int
+call copy_addr(idiag_b2mphi,p_par(691)) ! int
+call copy_addr(idiag_brsphmphi,p_par(692)) ! int
+call copy_addr(idiag_bthmphi,p_par(693)) ! int
+call copy_addr(idiag_uxbrmphi,p_par(694)) ! int
+call copy_addr(idiag_uxbpmphi,p_par(695)) ! int
+call copy_addr(idiag_uxbzmphi,p_par(696)) ! int
+call copy_addr(idiag_brbpmphi,p_par(697)) ! int
+call copy_addr(idiag_brbzmphi,p_par(698)) ! int
+call copy_addr(idiag_bpbzmphi,p_par(699)) ! int
+call copy_addr(idiag_axmz,p_par(700)) ! int
+call copy_addr(idiag_aymz,p_par(701)) ! int
+call copy_addr(idiag_azmz,p_par(702)) ! int
+call copy_addr(idiag_abuxmz,p_par(703)) ! int
+call copy_addr(idiag_abuymz,p_par(704)) ! int
+call copy_addr(idiag_abuzmz,p_par(705)) ! int
+call copy_addr(idiag_uabxmz,p_par(706)) ! int
+call copy_addr(idiag_uabymz,p_par(707)) ! int
+call copy_addr(idiag_uabzmz,p_par(708)) ! int
+call copy_addr(idiag_bbxmz,p_par(709)) ! int
+call copy_addr(idiag_bbymz,p_par(710)) ! int
+call copy_addr(idiag_bbzmz,p_par(711)) ! int
+call copy_addr(idiag_bxmz,p_par(712)) ! int
+call copy_addr(idiag_bymz,p_par(713)) ! int
+call copy_addr(idiag_bzmz,p_par(714)) ! int
+call copy_addr(idiag_jxmz,p_par(715)) ! int
+call copy_addr(idiag_jymz,p_par(716)) ! int
+call copy_addr(idiag_jzmz,p_par(717)) ! int
+call copy_addr(idiag_exmz,p_par(718)) ! int
+call copy_addr(idiag_eymz,p_par(719)) ! int
+call copy_addr(idiag_ezmz,p_par(720)) ! int
+call copy_addr(idiag_bx2mz,p_par(721)) ! int
+call copy_addr(idiag_by2mz,p_par(722)) ! int
+call copy_addr(idiag_bz2mz,p_par(723)) ! int
+call copy_addr(idiag_bx2rmz,p_par(724)) ! int
+call copy_addr(idiag_by2rmz,p_par(725)) ! int
+call copy_addr(idiag_bz2rmz,p_par(726)) ! int
+call copy_addr(idiag_beta1mz,p_par(727)) ! int
+call copy_addr(idiag_betamz,p_par(728)) ! int
+call copy_addr(idiag_beta2mz,p_par(729)) ! int
+call copy_addr(idiag_jbmz,p_par(730)) ! int
+call copy_addr(idiag_bdel2amz,p_par(731)) ! int
+call copy_addr(idiag_jdel2amz,p_par(732)) ! int
+call copy_addr(idiag_d6abmz,p_par(733)) ! int
+call copy_addr(idiag_d6amz1,p_par(734)) ! int
+call copy_addr(idiag_d6amz2,p_par(735)) ! int
+call copy_addr(idiag_d6amz3,p_par(736)) ! int
+call copy_addr(idiag_abmz,p_par(737)) ! int
+call copy_addr(idiag_ubmz,p_par(738)) ! int
+call copy_addr(idiag_ujmz,p_par(739)) ! int
+call copy_addr(idiag_obmz,p_par(740)) ! int
+call copy_addr(idiag_uamz,p_par(741)) ! int
+call copy_addr(idiag_bzuamz,p_par(742)) ! int
+call copy_addr(idiag_bzaymz,p_par(743)) ! int
+call copy_addr(idiag_bzdivamz,p_par(744)) ! int
+call copy_addr(idiag_bzlammz,p_par(745)) ! int
+call copy_addr(idiag_divamz,p_par(746)) ! int
+call copy_addr(idiag_uxbxmz,p_par(747)) ! int
+call copy_addr(idiag_uybxmz,p_par(748)) ! int
+call copy_addr(idiag_uzbxmz,p_par(749)) ! int
+call copy_addr(idiag_uxbymz,p_par(750)) ! int
+call copy_addr(idiag_uybymz,p_par(751)) ! int
+call copy_addr(idiag_uzbymz,p_par(752)) ! int
+call copy_addr(idiag_uxbzmz,p_par(753)) ! int
+call copy_addr(idiag_uybzmz,p_par(754)) ! int
+call copy_addr(idiag_uzbzmz,p_par(755)) ! int
+call copy_addr(idiag_ujxbmz,p_par(756)) ! int
+call copy_addr(idiag_examz1,p_par(757)) ! int
+call copy_addr(idiag_examz2,p_par(758)) ! int
+call copy_addr(idiag_examz3,p_par(759)) ! int
+call copy_addr(idiag_exatotalmz1,p_par(760)) ! int
+call copy_addr(idiag_exatotalmz2,p_par(761)) ! int
+call copy_addr(idiag_exatotalmz3,p_par(762)) ! int
+call copy_addr(idiag_e3xamz1,p_par(763)) ! int
+call copy_addr(idiag_e3xamz2,p_par(764)) ! int
+call copy_addr(idiag_e3xamz3,p_par(765)) ! int
+call copy_addr(idiag_etatotalmz,p_par(766)) ! int
+call copy_addr(idiag_ay2mz,p_par(767)) ! int
+call copy_addr(idiag_aybxmz,p_par(768)) ! int
+call copy_addr(idiag_bxbymz,p_par(769)) ! int
+call copy_addr(idiag_bxbzmz,p_par(770)) ! int
+call copy_addr(idiag_bybzmz,p_par(771)) ! int
+call copy_addr(idiag_jxbrxmz,p_par(772)) ! int
+call copy_addr(idiag_jxbrymz,p_par(773)) ! int
+call copy_addr(idiag_jxbrzmz,p_par(774)) ! int
+call copy_addr(idiag_a2mz,p_par(775)) ! int
+call copy_addr(idiag_b2mz,p_par(776)) ! int
+call copy_addr(idiag_bf2mz,p_par(777)) ! int
+call copy_addr(idiag_j2mz,p_par(778)) ! int
+call copy_addr(idiag_poynzmz,p_par(779)) ! int
+call copy_addr(idiag_epsmmz,p_par(780)) ! int
+call copy_addr(idiag_vmagfricmz,p_par(781)) ! int
+call copy_addr(idiag_bxph1mz,p_par(782)) ! int
+call copy_addr(idiag_bxph2mz,p_par(783)) ! int
+call copy_addr(idiag_bxph3mz,p_par(784)) ! int
+call copy_addr(idiag_byph1mz,p_par(785)) ! int
+call copy_addr(idiag_byph2mz,p_par(786)) ! int
+call copy_addr(idiag_byph3mz,p_par(787)) ! int
+call copy_addr(idiag_bzph1mz,p_par(788)) ! int
+call copy_addr(idiag_bzph2mz,p_par(789)) ! int
+call copy_addr(idiag_bzph3mz,p_par(790)) ! int
+call copy_addr(idiag_bx2ph1mz,p_par(791)) ! int
+call copy_addr(idiag_bx2ph2mz,p_par(792)) ! int
+call copy_addr(idiag_bx2ph3mz,p_par(793)) ! int
+call copy_addr(idiag_by2ph1mz,p_par(794)) ! int
+call copy_addr(idiag_by2ph2mz,p_par(795)) ! int
+call copy_addr(idiag_by2ph3mz,p_par(796)) ! int
+call copy_addr(idiag_bz2ph1mz,p_par(797)) ! int
+call copy_addr(idiag_bz2ph2mz,p_par(798)) ! int
+call copy_addr(idiag_bz2ph3mz,p_par(799)) ! int
+call copy_addr(idiag_bx2rph1mz,p_par(800)) ! int
+call copy_addr(idiag_bx2rph2mz,p_par(801)) ! int
+call copy_addr(idiag_bx2rph3mz,p_par(802)) ! int
+call copy_addr(idiag_by2rph1mz,p_par(803)) ! int
+call copy_addr(idiag_by2rph2mz,p_par(804)) ! int
+call copy_addr(idiag_by2rph3mz,p_par(805)) ! int
+call copy_addr(idiag_bz2rph1mz,p_par(806)) ! int
+call copy_addr(idiag_bz2rph2mz,p_par(807)) ! int
+call copy_addr(idiag_bz2rph3mz,p_par(808)) ! int
+call copy_addr(idiag_abph1mz,p_par(809)) ! int
+call copy_addr(idiag_abph2mz,p_par(810)) ! int
+call copy_addr(idiag_abph3mz,p_par(811)) ! int
+call copy_addr(idiag_jbph1mz,p_par(812)) ! int
+call copy_addr(idiag_jbph2mz,p_par(813)) ! int
+call copy_addr(idiag_jbph3mz,p_par(814)) ! int
+call copy_addr(idiag_poynzph1mz,p_par(815)) ! int
+call copy_addr(idiag_poynzph2mz,p_par(816)) ! int
+call copy_addr(idiag_poynzph3mz,p_par(817)) ! int
+call copy_addr(idiag_jxph1mz,p_par(818)) ! int
+call copy_addr(idiag_jxph2mz,p_par(819)) ! int
+call copy_addr(idiag_jxph3mz,p_par(820)) ! int
+call copy_addr(idiag_jyph1mz,p_par(821)) ! int
+call copy_addr(idiag_jyph2mz,p_par(822)) ! int
+call copy_addr(idiag_jyph3mz,p_par(823)) ! int
+call copy_addr(idiag_jzph1mz,p_par(824)) ! int
+call copy_addr(idiag_jzph2mz,p_par(825)) ! int
+call copy_addr(idiag_jzph3mz,p_par(826)) ! int
+call copy_addr(idiag_bxmy,p_par(827)) ! int
+call copy_addr(idiag_bymy,p_par(828)) ! int
+call copy_addr(idiag_bzmy,p_par(829)) ! int
+call copy_addr(idiag_bx2my,p_par(830)) ! int
+call copy_addr(idiag_by2my,p_par(831)) ! int
+call copy_addr(idiag_bz2my,p_par(832)) ! int
+call copy_addr(idiag_bxbymy,p_par(833)) ! int
+call copy_addr(idiag_bxbzmy,p_par(834)) ! int
+call copy_addr(idiag_bybzmy,p_par(835)) ! int
+call copy_addr(idiag_jxbrxmy,p_par(836)) ! int
+call copy_addr(idiag_jxbrymy,p_par(837)) ! int
+call copy_addr(idiag_jxbrzmy,p_par(838)) ! int
+call copy_addr(idiag_b2mx,p_par(839)) ! int
+call copy_addr(idiag_bxmx,p_par(840)) ! int
+call copy_addr(idiag_bymx,p_par(841)) ! int
+call copy_addr(idiag_bzmx,p_par(842)) ! int
+call copy_addr(idiag_bx2mx,p_par(843)) ! int
+call copy_addr(idiag_by2mx,p_par(844)) ! int
+call copy_addr(idiag_bz2mx,p_par(845)) ! int
+call copy_addr(idiag_bxbymx,p_par(846)) ! int
+call copy_addr(idiag_bxbzmx,p_par(847)) ! int
+call copy_addr(idiag_bybzmx,p_par(848)) ! int
+call copy_addr(idiag_betamx,p_par(849)) ! int
+call copy_addr(idiag_beta2mx,p_par(850)) ! int
+call copy_addr(idiag_etatotalmx,p_par(851)) ! int
+call copy_addr(idiag_jxbrxmx,p_par(852)) ! int
+call copy_addr(idiag_jxbrymx,p_par(853)) ! int
+call copy_addr(idiag_jxbrzmx,p_par(854)) ! int
+call copy_addr(idiag_b2mxz,p_par(855)) ! int
+call copy_addr(idiag_axmxz,p_par(856)) ! int
+call copy_addr(idiag_aymxz,p_par(857)) ! int
+call copy_addr(idiag_azmxz,p_par(858)) ! int
+call copy_addr(idiag_bx1mxz,p_par(859)) ! int
+call copy_addr(idiag_by1mxz,p_par(860)) ! int
+call copy_addr(idiag_bz1mxz,p_par(861)) ! int
+call copy_addr(idiag_bxmxz,p_par(862)) ! int
+call copy_addr(idiag_bymxz,p_par(863)) ! int
+call copy_addr(idiag_bzmxz,p_par(864)) ! int
+call copy_addr(idiag_jxmxz,p_par(865)) ! int
+call copy_addr(idiag_jymxz,p_par(866)) ! int
+call copy_addr(idiag_jzmxz,p_par(867)) ! int
+call copy_addr(idiag_bx2mxz,p_par(868)) ! int
+call copy_addr(idiag_by2mxz,p_par(869)) ! int
+call copy_addr(idiag_bz2mxz,p_par(870)) ! int
+call copy_addr(idiag_bxbymxz,p_par(871)) ! int
+call copy_addr(idiag_bxbzmxz,p_par(872)) ! int
+call copy_addr(idiag_bybzmxz,p_par(873)) ! int
+call copy_addr(idiag_uybxmxz,p_par(874)) ! int
+call copy_addr(idiag_uybzmxz,p_par(875)) ! int
+call copy_addr(idiag_exmxz,p_par(876)) ! int
+call copy_addr(idiag_eymxz,p_par(877)) ! int
+call copy_addr(idiag_ezmxz,p_par(878)) ! int
+call copy_addr(idiag_vamxz,p_par(879)) ! int
+call copy_addr(idiag_bxmxy,p_par(880)) ! int
+call copy_addr(idiag_bymxy,p_par(881)) ! int
+call copy_addr(idiag_bzmxy,p_par(882)) ! int
+call copy_addr(idiag_jxmxy,p_par(883)) ! int
+call copy_addr(idiag_jymxy,p_par(884)) ! int
+call copy_addr(idiag_jzmxy,p_par(885)) ! int
+call copy_addr(idiag_axmxy,p_par(886)) ! int
+call copy_addr(idiag_aymxy,p_par(887)) ! int
+call copy_addr(idiag_azmxy,p_par(888)) ! int
+call copy_addr(idiag_bx2mxy,p_par(889)) ! int
+call copy_addr(idiag_by2mxy,p_par(890)) ! int
+call copy_addr(idiag_bz2mxy,p_par(891)) ! int
+call copy_addr(idiag_bxbymxy,p_par(892)) ! int
+call copy_addr(idiag_bxbzmxy,p_par(893)) ! int
+call copy_addr(idiag_bybzmxy,p_par(894)) ! int
+call copy_addr(idiag_poynxmxy,p_par(895)) ! int
+call copy_addr(idiag_poynymxy,p_par(896)) ! int
+call copy_addr(idiag_poynzmxy,p_par(897)) ! int
+call copy_addr(idiag_etatotalmxy,p_par(898)) ! int
+call copy_addr(idiag_jbmxy,p_par(899)) ! int
+call copy_addr(idiag_abmxy,p_par(900)) ! int
+call copy_addr(idiag_ubmxy,p_par(901)) ! int
+call copy_addr(idiag_examxy1,p_par(902)) ! int
+call copy_addr(idiag_examxy2,p_par(903)) ! int
+call copy_addr(idiag_examxy3,p_par(904)) ! int
+call copy_addr(idiag_stokesimxy,p_par(905)) ! int
+call copy_addr(idiag_stokesqmxy,p_par(906)) ! int
+call copy_addr(idiag_stokesumxy,p_par(907)) ! int
+call copy_addr(idiag_stokesq1mxy,p_par(908)) ! int
+call copy_addr(idiag_stokesu1mxy,p_par(909)) ! int
+call copy_addr(idiag_beta1mxy,p_par(910)) ! int
+call copy_addr(idiag_dbxdxmxy,p_par(911)) ! int
+call copy_addr(idiag_dbxdymxy,p_par(912)) ! int
+call copy_addr(idiag_dbxdzmxy,p_par(913)) ! int
+call copy_addr(idiag_dbydxmxy,p_par(914)) ! int
+call copy_addr(idiag_dbydymxy,p_par(915)) ! int
+call copy_addr(idiag_dbydzmxy,p_par(916)) ! int
+call copy_addr(idiag_dbzdxmxy,p_par(917)) ! int
+call copy_addr(idiag_dbzdymxy,p_par(918)) ! int
+call copy_addr(idiag_dbzdzmxy,p_par(919)) ! int
+call copy_addr(ivid_aps,p_par(920)) ! int
+call copy_addr(ivid_bb,p_par(921)) ! int
+call copy_addr(ivid_jj,p_par(922)) ! int
+call copy_addr(ivid_b2,p_par(923)) ! int
+call copy_addr(ivid_j2,p_par(924)) ! int
+call copy_addr(ivid_ab,p_par(925)) ! int
+call copy_addr(ivid_jb,p_par(926)) ! int
+call copy_addr(ivid_beta1,p_par(927)) ! int
+call copy_addr(ivid_poynting,p_par(928)) ! int
+call copy_addr(ivid_bb_sph,p_par(929)) ! int
+call copy_addr(eta_shock_jump1,p_par(930))
+call copy_addr(eta_tdep,p_par(931))
+call copy_addr(arms,p_par(932))
+call copy_addr(r2,p_par(933))
+call copy_addr(r12,p_par(934))
+call copy_addr(gamma,p_par(935))
+call copy_addr(gamma1,p_par(936))
+call copy_addr(gamma_m1,p_par(937))
+call copy_addr(string_enum_tdep_eta_type,p_par(938)) ! int
+call copy_addr(string_enum_ambipolar_diffusion,p_par(939)) ! int
+call copy_addr(string_enum_rdep_profile,p_par(940)) ! int
+call copy_addr(string_enum_div_sld_magn,p_par(941)) ! int
+call copy_addr(string_enum_ihall_term,p_par(942)) ! int
+call copy_addr(b_ext,p_par(943)) ! real3
+call copy_addr(b0_ext,p_par(944)) ! real3
+call copy_addr(abcaa,p_par(945)) ! real3
+call copy_addr(widthaa,p_par(946)) ! real3
+call copy_addr(b1_ext,p_par(947)) ! real3
+call copy_addr(b_ext_inv,p_par(948)) ! real3
+call copy_addr(j_ext,p_par(949)) ! real3
+call copy_addr(eta_aniso_hyper3,p_par(950)) ! real3
+call copy_addr(lfrozen_bb_bot,p_par(951)) ! bool3
+call copy_addr(lfrozen_bb_top,p_par(952)) ! bool3
+call copy_addr(string_enum_borderaa,p_par(953)) ! int3
+
 
     endsubroutine pushpars2c
 !***********************************************************************
