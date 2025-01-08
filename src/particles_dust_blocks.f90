@@ -1377,7 +1377,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
     endsubroutine pencil_interdep_particles
 !***********************************************************************
-    subroutine calc_pencils_particles(f,p)
+    subroutine calc_pencils_particles(f,p,fp,ineargrid)
 !
 !  Calculate particle pencils.
 !
@@ -1386,6 +1386,8 @@ k_loop:   do while (.not. (k>npar_loc))
       use Sub, only: grad
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension(mpar_loc,mparray), intent(in) :: fp
+      integer, dimension(mpar_loc,3), intent(in) :: ineargrid
       type (pencil_case) :: p
 !
       if (lpencil(i_np)) p%np=f(l1:l2,m,n,inp)

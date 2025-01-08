@@ -58,7 +58,7 @@ module Initcond
   public :: vortex_2d
   public :: vfield2
   public :: hawley_etal99a
-  public :: robertsflow
+  public :: robertsflow, rotated_robertsflow
   public :: const_lou
   public :: corona_init,mdi_init,mag_init,mag_Az_init,file_init,temp_hydrostatic
   public :: innerbox
@@ -2313,6 +2313,53 @@ module Initcond
       endif
 !
     endsubroutine robertsflow
+!***********************************************************************
+    subroutine rotated_robertsflow(ampl,f,i,relhel,kx,flow)
+!
+!  By 45 degrees rotated Roberts Flow (as initial condition)
+!
+!   6-jan-25/axel: coded
+!
+      integer :: i,j
+      real, dimension (mx,my,mz,mfarray) :: f
+      real :: ampl,k=1.,kf,fac1,fac2,relhel
+      real, optional :: kx
+      character (len=labellen) :: flowtype='I'
+      character (len=labellen), optional :: flow
+!
+!  Possibility of changing the wavenumber
+!
+      if (present(kx)) then
+        k=kx
+      endif
+!
+!  Possibility of changing the flow
+!
+      if (present(flow)) then
+        flowtype=flow
+      endif
+!
+!  prepare coefficients
+!
+      kf=k*sqrt(2.)
+      fac1=sqrt(2.)*ampl*k/kf
+      fac2=sqrt(2.)*ampl*relhel
+!
+      j=i+0; f(:,:,:,j)=f(:,:,:,j)+fac1*spread(spread(sin(k*y),1,mx),3,mz)
+!
+      j=i+1; f(:,:,:,j)=f(:,:,:,j)+fac1*spread(spread(sin(k*x),2,my),3,mz)
+!
+      if (flowtype=='I') then
+        j=i+2; f(:,:,:,j)=f(:,:,:,j)+fac1*(spread(spread(cos(k*x),2,my),3,mz)&
+                                          -spread(spread(cos(k*y),1,mx),3,mz))
+      elseif (flowtype=='II') then
+        j=i+2; f(:,:,:,j)=f(:,:,:,j)+fac1*(spread(spread(cos(k*x),2,my),3,mz)&
+                                          +spread(spread(cos(k*y),1,mx),3,mz))
+      else
+        call fatal_error('robertsflow','no such flowtype')
+      endif
+!
+    endsubroutine rotated_robertsflow
 !***********************************************************************
     subroutine exponential(ampl,f,j,KKz)
 !
@@ -5179,7 +5226,8 @@ module Initcond
       k1hel, k2hel,lremain_in_fourier,lpower_profile_file,qexp, &
       lno_noise,nfact0,lfactors0,compk0,llogbranch0,initpower_med0, &
       kpeak_log0,kbreak0,ldouble0,nfactd0,qirro,lsqrt_qirro,time, &
-      cs,lreinit,ltime_old,ltime_new,lrho_nonuni,ilnr,l2d,lnot_amp)
+      cs,lreinit,ltime_old,ltime_new,lrho_nonuni,ilnr,l2d, &
+      lnot_amp, lrandom_ampl)
 !
 !  Produces helical (q**n * (1+q)**(N-n))*exp(-k**l/cutoff**l) spectrum
 !  when kgaussian=0, where q=k/kpeak, n=initpower, N=initpower2,
@@ -5208,12 +5256,12 @@ module Initcond
       use General, only: loptest, roptest
 !
       logical, intent(in), optional :: lscale_tobox, lsquash, lremain_in_fourier, ltime_old
-      logical, intent(in), optional :: ltime_new, lrho_nonuni, lnot_amp
+      logical, intent(in), optional :: ltime_new, lrho_nonuni, lnot_amp, lrandom_ampl
       logical, intent(in), optional :: lpower_profile_file, lno_noise, lfactors0
       logical, intent(in), optional :: llogbranch0,ldouble0, lreinit, l2d, lsqrt_qirro
       logical :: lvectorpotential, lscale_tobox1, lsquash1, lremain_in_fourier1, lno_noise1
       logical :: lskip_projection,lfactors,llogbranch,ldouble, ltime, ltime_old1
-      logical :: ltime_new1, lrho_nonuni1, l2d1, lsqrt_qirro1, lnot_amp1
+      logical :: ltime_new1, lrho_nonuni1, l2d1, lsqrt_qirro1, lnot_amp1, lrandom_ampl1
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i, i1, i2, ikx, iky, ikz, stat, ik, nk, ilnr1
       integer, intent(in), optional :: ilnr
@@ -5230,7 +5278,7 @@ module Initcond
       real :: lgk0, dlgk, lgf, lgk, lgf2, lgf1, lgk2, lgk1, D1, D2, D3, compk
       real :: kpeak_log, kbreak, kbreak1, kbreak2, kbreak21, initpower_med, initpower_log
       real :: nfactd,nexp3,nexp4
-      real :: qirro1, p, p2, time1, cs1, om, ctime, stime
+      real :: qexp1, qexp11, qirro1, p, p2, time1, cs1, om, ctime, stime
 !
       if (ampl==0.) then
         if (lroot) print*,'power_randomphase: set variable to zero; i1,i2=',i1,i2
@@ -5264,6 +5312,10 @@ module Initcond
         if (ilnr1 <= 0) call fatal_error('power_randomphase_hel','must provide ilnr')
       endif
 !
+!  Check whether we want random amplitudes or not
+!
+      lrandom_ampl1 = loptest(lrandom_ampl)
+!
 !  Check whether we want no_noise or not
 !
       lno_noise1 = loptest(lno_noise)
@@ -5271,6 +5323,10 @@ module Initcond
 !  Check whether we want l2d or not
 !
       l2d1 = loptest(l2d)
+!
+!  qexp for q-exponential, qexp=1 by default
+!
+     qexp1 = roptest(qexp, rdef=1.)
 !
 !  qirro, is the vortical contribution, qirro=1 for fully irrotational.
 !
@@ -5388,9 +5444,38 @@ module Initcond
       kz=cshift((/(i-nzgrid/2,i=0,nzgrid-1)/),nzgrid/2)*scale_factor
       if (lroot.and.ip<10) print*,'AXEL: kz=',kz
 !
+!  Generate flat spectrum with random phase (between -pi and pi).
+!  When lrandom_ampl=T, we multiply by a sqrt(-2*alog(k2)) factor, as in the
+!  gaunoise routine; the variable k2 is borrowed before it is used for k^2.
+!  For qexp /= 1, we use the q-logarithm, the inverse of the q-exponential,
+!  alog_q(x) = [x^(1-q)-1]/(1-q), and define qexp11 = 1-q for clearer notation.
+!
+      if (lno_noise1) then
+        u_re=ampl
+        u_im=0.
+      else
+        do i=1,i2-i1+1
+          call random_number_wrapper(r)
+          if (lrandom_ampl1) then
+            call random_number_wrapper(k2)
+            if (qexp1==1.) then
+              u_im(:,:,:,i)=ampl*sqrt(-2*alog(k2))
+            else
+              qexp11=1.-qexp1
+              u_im(:,:,:,i)=ampl*sqrt(-2*(k2**qexp11-1.)/qexp11)
+            endif
+            u_re(:,:,:,i)=u_im(:,:,:,i)*cos(pi*(2*r-1))
+            u_im(:,:,:,i)=u_im(:,:,:,i)*sin(pi*(2*r-1))
+          else
+            u_re(:,:,:,i)=ampl*cos(pi*(2*r-1))
+            u_im(:,:,:,i)=ampl*sin(pi*(2*r-1))
+          endif
+        enddo
+      endif
+!
 !  Set k^2 array.
 !
-!  Note: for multiple processors, there may still be a problem n 1-D
+!  Note: for multiple processors, there may still be a problem in 1-D
 !
 !  In 1-D
       if (nzgrid==1.and.nygrid==1) then
@@ -5418,53 +5503,6 @@ module Initcond
         enddo
       endif
       if (lroot) k2(1,1,1) = 1.  ! Avoid division by zero
-!
-!  Generate flat spectrum with random phase (between -pi and pi) for qexp=0.
-!
-      if (present(qexp)) then
-        if (qexp==0.) then
-          if (lno_noise1) then
-            u_re=ampl
-            u_im=0.
-          else
-            do i=1,i2-i1+1
-              call random_number_wrapper(r)
-              r=pi*(2.*r-1)
-              u_re(:,:,:,i)=ampl*cos(r)
-              u_im(:,:,:,i)=ampl*sin(r)
-            enddo
-          endif
-        else
-!
-!  Random nongaussian amplitudes for other values of q with exponential
-!  distribution (for q=1) and super-exponential (for q>1) first in real
-!  space, and then transform into spectral space.
-!
-          do i=1,i2-i1+1
-            call random_number_wrapper(r)
-            call random_number_wrapper(u_re(:,:,:,i))   ! use u_re for r2
-            if (qexp==1.) then
-              u_re(:,:,:,i)=ampl*alog(r)*tanh(100.*(u_re(:,:,:,i)-.5))
-            else
-              u_re(:,:,:,i)=ampl*(r**(1.-qexp)-1.)/(1.-qexp)*tanh(100.*(u_re(:,:,:,i)-.5))
-            endif
-            u_im(:,:,:,i)=0.
-            call fft_xyz_parallel(u_re(:,:,:,i),u_im(:,:,:,i))
-          enddo
-        endif
-      else  ! (present(qexp))
-        if (lno_noise1) then
-          u_re=ampl
-          u_im=0.
-        else
-          do i=1,i2-i1+1
-            call random_number_wrapper(r)
-            r=pi*(2.*r-1)
-            u_re(:,:,:,i)=ampl*cos(r)
-            u_im(:,:,:,i)=ampl*sin(r)
-          enddo
-        endif
-      endif  ! (present(qexp))
 !
 !  To get the shell integrated power spectrum E ~ k^n, we need u ~ k^m
 !  and since E(k) ~ u^2 k^2 we have n=2m+2, so m=n/2-1 in 3-D.
@@ -5633,7 +5671,10 @@ module Initcond
       else
         fact=fact*(kpeak1*scale_factor)**1.5
       endif
- 
+!
+!  If lvectorpotential, we given slopes are meant to be for the magnetic
+!  vector potential, so we use (initpower+3.) instead of (initpower+1.).
+!
       if (lvectorpotential) then
         fact=fact*kpeak1
         if (kgaussian /= 0.) fact=fact*kgaussian**(-.5*(initpower+3.))

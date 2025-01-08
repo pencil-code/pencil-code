@@ -1718,12 +1718,16 @@ module Radiation
               if (f(l1-1+l,m,n,ikapparho)**2>dxyz_2(l)) then
                 dt1_rad(l)=4*kappa(l)*sigmaSB*p%TT(l)**3*p%cv1(l)* &
                     dxyz_2(l)/f(l1-1+l,m,n,ikapparho)**2/cdtrad
-                if (z_cutoff/=impossible .and. cool_wid/=impossible) &
-                dt1_rad(l)=0.5*dt1_rad(l)*(1.-tanh((z(n)-z_cutoff)/cool_wid))
+!                if (z_cutoff/=impossible .and. cool_wid/=impossible) &
+!                dt1_rad(l)=0.5*dt1_rad(l)*(1.-tanh((z(n)-z_cutoff)/cool_wid))
+                if (z_cutoff/=impossible .and. cool_wid/=impossible .and. z(n) .gt. z_cutoff) &
+                dt1_rad(l)=0.5*dt1_rad(l)*(1.-tanh((p%lnTT(l)-log(1.0e4))/log(2.0)))
               else
                 dt1_rad(l)=4*kappa(l)*sigmaSB*p%TT(l)**3*p%cv1(l)/cdtrad
-                if (z_cutoff/=impossible .and. cool_wid/=impossible) &
-                dt1_rad(l)=0.5*dt1_rad(l)*(1.-tanh((z(n)-z_cutoff)/cool_wid))
+!                if (z_cutoff/=impossible .and. cool_wid/=impossible) &
+!                dt1_rad(l)=0.5*dt1_rad(l)*(1.-tanh((z(n)-z_cutoff)/cool_wid))
+                if (z_cutoff/=impossible .and. cool_wid/=impossible .and. z(n) .gt. z_cutoff) &
+                dt1_rad(l)=0.5*dt1_rad(l)*(1.-tanh((p%lnTT(l)-log(1.0e4))/log(2.0)))
               endif
             enddo
           else
@@ -1882,10 +1886,16 @@ module Radiation
           do n=n1-radz,n2+radz
           do m=m1-rady,m2+rady
             call eoscalc(f,mx,lnTT=lnTT)
-            do l=l1-radx,l2+radx
-              Srad(l,m,n)=arad*exp(4*lnTT(l))*scalefactor_Srad(inu)* &
-                        0.5*(1.-tanh((z(n)-z_cutoff1(l,m))/cool_wid))
-            enddo
+!            do l=l1-radx,l2+radx
+!              Srad(l,m,n)=arad*exp(4*lnTT(l))*scalefactor_Srad(inu)* &
+!                        0.5*(1.-tanh((z(n)-z_cutoff1(l,m))/cool_wid))
+!            enddo
+            if (z(n) .gt. z_cutoff) then
+               Srad(:,m,n)=arad*exp(4*lnTT)*scalefactor_Srad(inu)* &
+                       0.5*(1.-tanh((lnTT-log(1.0d4))/log(2.0)))
+            else
+               Srad(:,m,n)=arad*exp(4*lnTT)*scalefactor_Srad(inu)
+            endif
           enddo
           enddo
         else
@@ -2018,7 +2028,10 @@ module Radiation
           kappa_cond=2.6d-7*unit_length*unit_temperature**2*exp(2*lnTT)*exp(-lnrho)
           kappa_rad=kapparho_floor+1./(1./(kappa1+kappae)+1./kappa2)
           kappa_tot=1./(1./kappa_rad+1./kappa_cond)
-          if (lcutoff_opticallythin) kappa_tot=0.5*(1.-tanh((z(n)-0.5*z_cutoff)/(2*cool_wid)))/ &
+!          if (lcutoff_opticallythin) kappa_tot=0.5*(1.-tanh((z(n)-0.5*z_cutoff)/(2*cool_wid)))/ &
+!                                               (1./kappa_rad+1./kappa_cond)
+          if (lcutoff_opticallythin .and. z(n) .gt. z_cutoff) &
+             kappa_tot=0.5*(1.-tanh((lntt-log(1.0d4))/(log(2.0))))/ &
                                                (1./kappa_rad+1./kappa_cond)
           do i=1,mx 
             kappa_tot(i)=min(kappa_tot(i),kappa_ceiling)

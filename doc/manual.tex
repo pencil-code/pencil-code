@@ -11591,12 +11591,20 @@ We see that upwinding causes additional wiggles.
 \index{SLD}
 \index{slope-limited diffusion}
 In Fig.~\ref{pspec}, we compare turbulence simulations with $512^3$
-mesh points using $\nu=10^{-4}$ and a forcing amplitude $f_0=0.02$
-and a forcing wavenumber of 1.5
+mesh points using $\nu=10^{-4}$, a forcing amplitude $f_0=0.02$,
+and a forcing wavenumber of 1.5.
 The resulting Mach number is then 0.13 and the Reynolds number
 is $u_{\rm rms}/\nu k_{\rm f}=900$.
-We also show a comparison with a run without regular diffusion, but
-with slope-limited diffusion (SLD) instead.
+We also show a comparison with a run without regular diffusion,
+using just slope-limited diffusion (SLD) instead.
+Below an excerpt from the \file{run.in} file for one of the runs.
+\begin{verbatim}
+&viscosity_run_pars
+  ivisc='nu-slope-limited', 'nu-const'
+  h_sld_visc=1.0
+  nlf_sld_visc=3.0
+  nu=1e-4
+\end{verbatim}
 
 \subsection{The bidiagonal scheme for cross-derivatives}
 \index{Bidiagonal scheme}

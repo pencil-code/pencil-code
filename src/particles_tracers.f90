@@ -398,13 +398,15 @@ module Particles
 !
     endsubroutine pencil_interdep_particles
 !***********************************************************************
-    subroutine calc_pencils_particles(f,p)
+    subroutine calc_pencils_particles(f,p,fp,ineargrid)
 !
 !  Calculate particle pencils.
 !
 !  15-feb-06/anders: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension(mpar_loc,mparray), intent(in) :: fp
+      integer, dimension(mpar_loc,3), intent(in) :: ineargrid
       type (pencil_case) :: p
 ! np
       if (lpencil(i_np)) p%np=f(l1:l2,m,n,inp)

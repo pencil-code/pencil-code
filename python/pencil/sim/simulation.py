@@ -8,8 +8,7 @@ import os
 from os.path import join, exists, split, islink, realpath, abspath, basename
 import numpy as np
 
-#from pencil.util import PathWrapper
-import pathlib
+from pencil.util import PathWrapper
 
 try:
     from mpi4py import MPI
@@ -80,8 +79,7 @@ class __Simulation__(object):
     def __init__(self, path=".", hidden=False, hard=False, quiet=False):
         # from pen.intern.hash_sim import hash_sim
 
-        #self.path = PathWrapper(path).absolute()
-        self.path = pathlib.Path(path).absolute()
+        self.path = PathWrapper(path).absolute()
         self.name = self.path.name  # find out name and store it
 
         if not quiet:
@@ -549,7 +547,7 @@ class __Simulation__(object):
         if self.param == False:
             try:
                 if exists(join(self.datadir, "param.nml")):
-                    print("~ Reading param.nml.. ")
+                    if not quiet: print("~ Reading param.nml.. ")
                     param = param(quiet=quiet, datadir=self.datadir)
                     self.param = {}
                     # read params into Simulation object
@@ -595,13 +593,13 @@ class __Simulation__(object):
         if self.param != False and (self.grid == False or self.ghost_grid == False):
             # read grid only if param is not False
             try:
-                print("~ Reading grid.. ")
+                if not quiet: print("~ Reading grid.. ")
                 self.grid = grid(datadir=self.datadir, trim=True, quiet=True)
-                print("~ Reading ghost_grid.. ")
+                if not quiet: print("~ Reading ghost_grid.. ")
                 self.ghost_grid = grid(datadir=self.datadir, trim=False, quiet=True)
-                print("~ Reading index.. ")
+                if not quiet: print("~ Reading index.. ")
                 self.index = index(datadir=self.datadir)
-                print("~ Reading dim.. ")
+                if not quiet: print("~ Reading dim.. ")
                 self.dim = dim(datadir=self.datadir)
                 if not quiet:
                     print("# Updating grid and ghost_grid succesfull")
@@ -660,7 +658,8 @@ class __Simulation__(object):
         from pencil.io import save
 
         if self == False:
-            print("! ERROR: Simulation object is bool object and False!")
+            #Kishore (2024-Nov-28): is it ever possible for this code path to be reached? I think not.
+            raise RuntimeError("Simulation object is bool object and False!")
 
         # clean self.tmp_dict
         tmp_dict = self.tmp_dict

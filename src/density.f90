@@ -286,7 +286,6 @@ module Density
   real, dimension(nx) :: diffus_diffrho
   real, dimension(nx) :: diffus_diffrho3
   real :: density_floor_log, density_ceiling_log
-  real :: gamma, gamma1, gamma_m1, cp1
 !
   contains
 !***********************************************************************
@@ -417,7 +416,7 @@ module Density
       logical :: lnothing, exist
       real :: rho_bot,sref
       real, dimension(:), pointer :: gravx_xpencil
-      real :: cp
+      real :: gamma, gamma_m1
 !
 !  Prevent this module when background stratification is on.
 !
@@ -905,8 +904,6 @@ module Density
                            beta_glnrho_global
       endif
 !
-      call get_gamma_etc(gamma,cp)
-      gamma1=1./gamma; gamma_m1=gamma-1.; cp1=1./cp
 !
       if (lreference_state) then
 !
@@ -914,6 +911,8 @@ module Density
         case ('adiabatic_simple_x')
 !
 !  Simple adiabatic reference state s=sref=const., p ~ rho^gamma for gravity ~ 1/x^2 --> rho/rho_bottom = (x/x_bottom)^(1/(1-gamma))
+!
+          call get_gamma_etc(gamma); gamma_m1=gamma-1.
 !
           rho_bot=1.
           sref=1.
@@ -1011,7 +1010,7 @@ module Density
 !  28-jun-02/axel: added isothermal
 !  15-oct-03/dave: added spherical shell (kws)
 !
-      use EquationOfState, only: eoscalc, ilnrho_TT
+      use EquationOfState, only: eoscalc, ilnrho_TT, get_gamma_etc
       use General, only: itoa,rtoa,complex_phase,notanumber
       use Gravity, only: zref,z1,z2,gravz,nu_epicycle,potential
       use Initcond
@@ -1032,6 +1031,7 @@ module Density
       complex :: omega_jeans
       integer :: j,ix,iy
       logical :: lnothing
+      real :: gamma, gamma_m1
 !
       intent(inout) :: f
 !
@@ -1132,7 +1132,9 @@ module Density
         case ('stratification-xz'); call stratification_xz(f,strati_type)
         case ('polytropic_simple'); call polytropic_simple(f)
         case ('stratification_tsallis'); call stratification_tsallis(f)
-        case ('hydrostatic_TT'); call temp_hydrostatic(f,rho_const,gamma)
+        case ('hydrostatic_TT')
+          call get_gamma_etc(gamma)
+          call temp_hydrostatic(f,rho_const,gamma)
         case ('hydrostatic-z', '1')
           if (lroot) print*, 'init_lnrho: use polytropic_simple instead!'
         case ('xjump')
@@ -1178,12 +1180,15 @@ module Density
           call triquad(ampllnrho(j),f,ilnrho,kx_lnrho(j), &
               ky_lnrho(j),kz_lnrho(j), kxx_lnrho(j), kyy_lnrho(j),kzz_lnrho(j))
         case ('isotdisk')
+          call get_gamma_etc(gamma)
           call isotdisk(powerlr,f,ilnrho,zoverh, hoverr)
           f(1:mx,1:my,1:mz,iss)=-(gamma-1)/gamma*f(1:mx,1:my,1:mz,ilnrho)
 !          call isotdisk(powerlr,f,iss,zoverh,hoverr, -(gamma-1)/gamma)
         case ('sinx_siny_sinz')
           call sinx_siny_sinz(ampllnrho(j),f,ilnrho,kx_lnrho(j),ky_lnrho(j),kz_lnrho(j))
-        case ('corona'); call corona_init(f,gamma)
+        case ('corona')
+          call get_gamma_etc(gamma)
+          call corona_init(f,gamma)
         case ('gaussian3d')
           call gaussian3d(ampllnrho(j),f,ilnrho,radius_lnrho(j))
         case ('gaussian-z')
@@ -1250,6 +1255,7 @@ module Density
 !  Hydrostatic density stratification for isentropic atmosphere.
 !
         case ('hydrostatic-z-2', '3')
+          call get_gamma_etc(gamma); gamma_m1=gamma-1
           if (lgravz) then
             if (lroot) print*,'init_lnrho: vertical density stratification'
             do n=n1,n2; do m=m1,m2
@@ -1265,6 +1271,7 @@ module Density
         case ('sph_isoth'); call init_sph_isoth (f)
 !
         case ('cylind_isoth')
+          call get_gamma_etc(gamma); gamma_m1=gamma-1
           call get_shared_variable('gravx', gravx, caller='init_lnrho')
           if (lroot) print*, 'init_lnrho: isothermal cylindrical ring with gravx=', gravx
           haut=-cs20/gamma/gravx
@@ -1284,6 +1291,7 @@ module Density
 !  Only makes sense if both initlnrho=initss='isentropic-star'
 !
           if (lgravr) then
+            call get_gamma_etc(gamma); gamma_m1=gamma-1
             if (lentropy) then
               call get_shared_variable('cs2cool', cs2cool, caller='init_lnrho')
             else
@@ -1344,6 +1352,7 @@ module Density
           cs2int = cs0**2
           lnrhoint = lnrho0
 !
+          call get_gamma_etc(gamma); gamma_m1=gamma-1
           call get_shared_variable('isothmid', isothmid, caller='init_lnrho')
           call get_shared_variable('fac_cs', fac_cs)
           if (lentropy) then
@@ -1373,6 +1382,8 @@ module Density
 !  Piecewise polytropic for accretion discs.
 !
           if (lroot) print*, 'init_lnrho: piecewise polytropic disc stratification (lnrho)'
+!
+          call get_gamma_etc(gamma); gamma_m1=gamma-1
 !  Bottom region.
           cs2int = cs0**2
           lnrhoint = lnrho0
@@ -1399,6 +1410,8 @@ module Density
 !  cs0, rho0 and ss0=0 refer to height z=zref
 !
           if (lroot) print*, 'init_lnrho: polytropic vertical stratification (lnrho)'
+!
+          call get_gamma_etc(gamma)
 !
           cs2int = cs20
           lnrhoint = lnrho0
@@ -1493,12 +1506,14 @@ module Density
 !  Planet solution of Goodman, Narayan & Goldreich (1987).
 !  (Simple 3-D)
 !
+          call get_gamma_etc(gamma)
           call planet(rbound,f,eps_planet,radius_lnrho(j),gamma,cs20,rho0,widthlnrho(j),hh0)
         case ('planet_hc')
 !
 !  Planet solution of Goodman, Narayan & Goldreich (1987).
 !  (3-D with hot corona)
 !
+          call get_gamma_etc(gamma)
           call planet_hc(amplrho(j),f,eps_planet,radius_lnrho(j), gamma,cs20,rho0,widthlnrho(j))
         case ('Ferriere')
           call information('init_lnrho','Ferriere set in entropy')
@@ -1773,6 +1788,7 @@ module Density
 !             at the zbot on exit
 !  cs2int  -- same for cs2
 !
+      use EquationOfState, only: get_gamma_etc
       use Sub, only: step
       use Gravity, only: gravz
 !
@@ -1780,10 +1796,13 @@ module Density
       real, dimension (mz) :: stp
       real :: tmp,mpoly,zint,zbot,zblend,beta1,cs2int,lnrhoint
       integer :: isoth
+      real :: gamma
 !
       intent(in)    :: mpoly,zint,zbot,zblend,isoth
       real, intent(in), optional    :: fac_cs
       intent(inout) :: cs2int,lnrhoint,f
+!
+      call get_gamma_etc(gamma)
 !
       stp = step(z,zblend,widthlnrho(1))
       do n=n1,n2; do m=m1,m2
@@ -1839,6 +1858,7 @@ module Density
 !
 !  24-jun-03/ulf:  coded
 !
+      use EquationOfState, only: get_gamma_etc
       use Sub, only: step
       use Gravity, only: gravz, nu_epicycle
 !
@@ -1846,6 +1866,9 @@ module Density
       real, dimension (mz) :: stp
       real :: tmp,mpoly,zint,zbot,zblend,beta1,cs2int,lnrhoint,nu_epicycle2
       integer :: isoth
+      real :: gamma
+!
+      call get_gamma_etc(gamma)
 !
       do n=n1,n2; do m=m1,m2
 ! NB: beta1 is not dT/dz, but dcs2/dz = (gamma-1)c_p dT/dz
@@ -1888,11 +1911,15 @@ module Density
 !  22-oct-03/dave -- coded
 !  21-aug-08/dhruba -- added spherical coordinates
 !
+      use EquationOfState, only: get_gamma_etc
       use Gravity, only: g0,potential
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: pot, r_mn
       real :: beta1,lnrho_int,lnrho_ext,pot_int,pot_ext
+      real :: gamma, gamma_m1
+!
+      call get_gamma_etc(gamma); gamma_m1=gamma-1
 !
       beta1=g0/(mpoly+1)*gamma/gamma_m1  ! gamma_m1/gamma=R_{*} (for cp=1)
 !
@@ -1948,6 +1975,7 @@ module Density
 !
 !    (1/rho) grad(P) = cs20 (rho/rho0)^(gamma-2) grad(rho)
 !
+      use EquationOfState, only: get_gamma_etc
       use Sub, only: grad
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1955,6 +1983,9 @@ module Density
       real, dimension (nx,3) :: glnrho
       real, dimension (nx,3) :: gg_mn
       integer :: j
+      real :: gamma, gamma_m1
+!
+      call get_gamma_etc(gamma); gamma_m1=gamma-1
 !
       if (ldensity_nolog) call not_implemented('numerical_equilibrium','for linear density')
 !
@@ -3049,11 +3080,15 @@ module Density
 !  26-sep-10/axel: added lisothermal_fixed_Hrho to allow for isothermal density
 !                  stratification to remain unchanged when gamma is changed.
 !
+      use EquationOfState, only: get_gamma_etc
       use Gravity
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
       real, dimension (nx) :: pot,tmp
+      real :: gamma, gamma_m1, cp, cp1
+!
+      call get_gamma_etc(gamma, cp=cp); gamma_m1=gamma-1; cp1=1/cp
 !
 !  Stratification depends on the gravity potential.
 !
@@ -3103,12 +3138,16 @@ module Density
 !
 !  17-apr-13/axel+illa: adapted from isothermal
 !
+      use EquationOfState, only: get_gamma_etc
       use Gravity
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
       real, dimension (nx) :: pot,tmp
       real :: pot1,tmp1
+      real :: gamma, gamma_m1, cp, cp1
+!
+      call get_gamma_etc(gamma, cp=cp); gamma_m1=gamma-1; cp1=1/cp
 !
 !  Stratification depends on the gravity potential;
 !
@@ -3170,15 +3209,19 @@ module Density
 !
 !   8-jul-02/axel: incorporated/adapted from init_lnrho
 !
+      use EquationOfState, only: get_gamma_etc
       use Gravity, only: gravz_profile,gravz,zinfty,zref,zgrav,potential,nu_epicycle
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: pot,dlncs2,r_mn
       real :: ztop,zbot,zref2,pot_ext,lnrho_ref,ptop,pbot
+      real :: gamma, gamma_m1
 !
 !  identifier
 !
       if (lroot) print*,'polytropic_simple: mpoly=',mpoly
+!
+      call get_gamma_etc(gamma); gamma_m1=gamma-1
 !
 !  The following is specific only to cases with gravity in the z direction
 !  zref is calculated such that rho=rho0 and cs2=cs20 at z=zref.
@@ -3288,6 +3331,7 @@ module Density
 !  28-apr-2005/axel: coded
 !  14-may-2019/axel: changed xblob -> xblob(1) for now
 !
+      use EquationOfState, only: get_gamma_etc
       use General, only: random_number_wrapper
       use Sub, only: step
 !
@@ -3298,8 +3342,11 @@ module Density
       real, dimension (2) :: fran
       real :: tmp
       real, dimension (nx) :: dlnrhodt, pdamp, fprofile, radius2
+      real :: gamma, gamma1
 !
       if (ldebug) print*,'mass_source: cs20,cs0=',cs20,cs0
+!
+      call get_gamma_etc(gamma); gamma1=1./gamma
 !
 !  Choose between different possibilities.
 !
@@ -3613,14 +3660,18 @@ module Density
 !***********************************************************************
     subroutine init_hydrostatic_r (f)
 !
+      use EquationOfState, only: get_gamma_etc
       use Gravity, only: potential,lnumerical_equilibrium
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: pot
       real :: pot0
       real, dimension (nx) :: r_mn
+      real :: gamma, gamma_m1
 !
       intent(inout) :: f
+!
+      call get_gamma_etc(gamma); gamma_m1=gamma-1
 !
       if (lgravr) then
          if (lroot) print*, 'init_hydrostatic_r: radial density stratification (assumes s=const)'
@@ -3655,13 +3706,16 @@ module Density
 !
 !  14-may-10/dhruba: coded
 !
-      use EquationOfState, only: eoscalc,ilnrho_TT
+      use EquationOfState, only: eoscalc,ilnrho_TT, get_gamma_etc
 
       real, dimension (mx,my,mz,mfarray) :: f
       real :: haut
       real, dimension (nx) :: TT
+      real :: gamma, gamma_m1
 !
       intent(inout) :: f
+!
+      call get_gamma_etc(gamma); gamma_m1=gamma-1
 !
       if (lgravr) then
         if (lroot) print*, 'init_sph_isoth: isothermal sphere'

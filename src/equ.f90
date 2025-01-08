@@ -171,23 +171,23 @@ module Equ
 !      if (.not. lgpu) then
         if (crash_file_dtmin_factor > 0.0) call output_crash_files(f)
 !
-!  For   debugging purposes impose minimum or maximum value on certain variables.
+!  For debugging purposes impose minimum or maximum value on certain variables.
 !
         call impose_floors_ceilings(f)   !MR: too early, f modifications come below
 !
-!  App  ly global boundary conditions to particle positions and communicate
-!  mig  rating particles between the processors.
+!  Apply global boundary conditions to particle positions and communicate
+!  migrating particles between the processors.
 !
         if (lparticles) call particles_boundconds(f)
         if (lpointmasses) call boundconds_pointmasses
 !
-!  Cal  culate the potential of the self gravity. Must be done before
-!  com  munication in order to be able to take the gradient of the potential
-!  lat  er.
+!  Calculate the potential of the self gravity. Must be done before
+!  communication in order to be able to take the gradient of the potential
+!  later.
 !
         call calc_selfpotential(f)
 !
-!  Cal  l "before_boundary" hooks (for f array precalculation)
+!  Call "before_boundary" hooks (for f array precalculation)
 !
         if (ldustdensity)  call dustdensity_before_boundary(f)
         if (linterstellar) call interstellar_before_boundary(f)

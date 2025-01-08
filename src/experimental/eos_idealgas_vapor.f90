@@ -1,4 +1,4 @@
-! $Id: eos_idealgas_vapor.f90,v 1.7 2010/02/03 10:30:37 ajohan Exp $
+! $Id$
 !
 !  Equation of state for an ideal gas with variable water vapour.
 !
@@ -7,15 +7,17 @@
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: leos = .true.
+! CPARAM logical, parameter :: leos_ionization = .false., leos_temperature_ionization=.false.
+! CPARAM logical, parameter :: leos_idealgas = .false., leos_chemistry = .false.
 !
 ! MVAR CONTRIBUTION 0
-! MAUX CONTRIBUTION 0
+! MAUX CONTRIBUTION 3
 !
 ! PENCILS PROVIDED ss; gss(3); ee; pp; lnTT; cs2; cp; cp1; cp1tilde
 ! PENCILS PROVIDED glnTT(3); TT; TT1; gTT(3); yH; hss(3,3); hlnTT(3,3)
 ! PENCILS PROVIDED del2ss; del6ss; del2lnTT; cv; cv1; del6lnTT; gamma
 ! PENCILS PROVIDED del2TT; del6TT; mumol; mumol1; glnmumol(3)
-! PENCILS PROVIDED rho_anel; ppvap; csvap2
+! PENCILS PROVIDED rho_anel; ppvap; csvap2; fvap; gfvap(3)
 !
 !***************************************************************
 module EquationOfState
@@ -28,20 +30,15 @@ module EquationOfState
   implicit none
 !
   include '../eos.h'
+  include '../eos_params.h'
 !
-  integer, parameter :: ilnrho_ss=1, ilnrho_ee=2, ilnrho_pp=3
-  integer, parameter :: ilnrho_lnTT=4, ilnrho_cs2=5
-  integer, parameter :: irho_cs2=6, irho_ss=7, irho_lnTT=8, ilnrho_TT=9
-  integer, parameter :: irho_TT=10, ipp_ss=11, ipp_cs2=12
-  integer, parameter :: irho_eth=13, ilnrho_eth=14
-  integer :: iglobal_cs2, iglobal_glnTT, ics
+  integer :: iglobal_cs2, iglobal_glnTT
   real, dimension(nchemspec,18) :: species_constants
   real :: Rgas_unit_sys=1.0
   real :: lnTT0=impossible
   real :: mudry=1.0, muvap=1.0, mudry1=1.0, muvap1=1.0
   real :: cs0=1.0, rho0=1.0, pp0=1.0
   real :: cs20=1.0, lnrho0=0.0
-  real :: ptlaw=0.0
   real :: gamma=5.0/3.0
   real :: Rgas_cgs=0.0, Rgas, error_cp=1.0e-6
   real :: gamma_m1    !(=gamma-1)
@@ -54,16 +51,32 @@ module EquationOfState
   logical :: leos_isothermal=.false., leos_isentropic=.false.
   logical :: leos_isochoric=.false., leos_isobaric=.false.
   logical :: leos_localisothermal=.false.
+  real, dimension(:,:), pointer :: reference_state
+!
+! Kishore: I have not checked what these are used for; just copied from eos_idealgas to get this module to compile.
+!
+  real :: Cp_const=impossible
+  real :: Pr_number=0.7
+  logical :: lpres_grad=.false.
+!
+!  Shared variables
+!
+  real :: fac_cs=1.0
+  integer :: isothmid=0
+!
+! Indices for aux variables
+!
+  integer :: ifvap=0, imumol1=0
 !
 !  Input parameters.
 !
   namelist /eos_init_pars/ &
-      mudry, muvap, cpdry, cs0, rho0, gamma, error_cp, ptlaw
+      mudry, muvap, cpdry, cs0, rho0, gamma, error_cp
 !
 !  Run parameters.
 !
   namelist /eos_run_pars/ &
-      mudry, muvap, cpdry, cs0, rho0, gamma, error_cp, ptlaw
+      mudry, muvap, cpdry, cs0, rho0, gamma, error_cp
 !
   contains
 !***********************************************************************
@@ -72,8 +85,10 @@ module EquationOfState
 !  Register variables from the EquationOfState module.
 !
 !  06-jan-10/anders: adapted from eos_idealgas
+!  04-dec-2024/Kishore: added shared variables (copied from eos_idealgas)
 !
-      leos_idealgas=.true.
+      use SharedVariables, only: put_shared_variable
+      use Sub, only: register_report_aux
 !
       iyH=0
       ilnTT=0
@@ -85,7 +100,19 @@ module EquationOfState
 !  Identify version number.
 !
       if (lroot) call svn_id( &
-          '$Id: eos_idealgas_vapor.f90,v 1.7 2010/02/03 10:30:37 ajohan Exp $')
+          '$Id$')
+!
+!  fvap, mumol1, and cp as auxiliary variables.
+!
+      call register_report_aux('fvap',ifvap)
+      call register_report_aux('mumol1',imumol1)
+      call register_report_aux('cp',icp)
+!
+! Shared variables
+!
+      call put_shared_variable('cs20',cs20,caller='register_eos')
+      call put_shared_variable('isothmid',isothmid)
+      call put_shared_variable('fac_cs',fac_cs)
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -155,9 +182,9 @@ module EquationOfState
             cp_reference=Rgas/(mudry*gamma_m1*gamma1)
           endif
           if (abs(cpdry-cp_reference)/cpdry > error_cp) then
-            if (lroot) print*,'initialize_eos: consistency: cpdry=', cpdry , &
+            if (lroot) print*,'units_eos: consistency: cpdry=', cpdry , &
                 'while: cp_reference=', cp_reference
-            call fatal_error('initialize_eos','')
+            call fatal_error('units_eos','Inconsistent units')
           endif
         endif
       endif
@@ -171,26 +198,29 @@ module EquationOfState
       if (gamma_m1/=0.0) then
         lnTT0=log(cs20/(cpdry*gamma_m1))  !(general case)
       else
-        lnTT0=log(cs20/cpdry)  !(isothermal/polytropic cases: check!)
+        lnTT0=log(cs20/cpdry)  !(isothermal case)
       endif
-      lnTT0=0.0
       pp0=Rgas*exp(lnTT0)*rho0
 !
 !  Check that everything is OK.
 !
       if (lroot) then
-        print*, 'initialize_eos: unit_temperature=', unit_temperature
-        print*, 'initialize_eos: cpdry, lnTT0, cs0, pp0=', &
+        print*, 'units_eos: unit_temperature=', unit_temperature
+        print*, 'units_eos: cpdry, lnTT0, cs0, pp0=', &
             cpdry, lnTT0, cs0, pp0
       endif
 !
     endsubroutine units_eos
 !***********************************************************************
-    subroutine initialize_eos()
+    subroutine initialize_eos(f)
 !
 !  Perform any post-parameter-read initialization
 !
 !  06-jan-10/anders: adapted from eos_idealgas
+!
+      use SharedVariables, only: get_shared_variable
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       mudry1=1/mudry
       muvap1=1/muvap
@@ -199,6 +229,16 @@ module EquationOfState
 !
       ieosvars=-1
       ieosvar_count=0
+!
+!  Prevent use of uninitialized variables by the initial conditions. These will be updated later by init_eos.
+      if (.not.lreloading) then
+        f(:,:,:,ifvap) = 0
+        f(:,:,:,imumol1) = mudry1
+        f(:,:,:,icp) = cpdry
+      endif
+!
+      if (init_loops==1) call warning('initialize_eos', &
+        'Using correct values of cp etc. for initial conditions requires init_loops>1')
 !
 !  Write constants to disk. In future we may want to deal with this
 !  using an include file or another module.
@@ -213,6 +253,9 @@ module EquationOfState
         write (1,*) 'cpdry=', cpdry
         close (1)
       endif
+!
+      if (lreference_state) call get_shared_variable('reference_state',reference_state, &
+                                                     caller='initialize_eos')
 !
     endsubroutine initialize_eos
 !***********************************************************************
@@ -393,14 +436,6 @@ module EquationOfState
 !
     endsubroutine get_slices_eos
 !***********************************************************************
-    subroutine pencil_criteria_eos()
-!
-!  All pencils that the EquationOfState module depends on are specified here.
-!
-!  06-jan-10/anders: adapted from eos_idealgas
-!
-    endsubroutine pencil_criteria_eos
-!***********************************************************************
     subroutine pencil_interdep_eos(lpencil_in)
 !
 !  Interdependency among pencils from the EquationOfState module is specified
@@ -416,10 +451,13 @@ module EquationOfState
       if (lpencil_in(i_glnmumol)) then
         lpencil_in(i_mumol)=.true.
         !lpencil_in(i_gcc)=.true.
-        lpencil_in(i_gssat)=.true.
+        !lpencil_in(i_gssat)=.true.
+        lpencil_in(i_gfvap)=.true.
+        lpencil_in(i_fvap)=.true.
       endif
       if (lpencil_in(i_mumol)) lpencil_in(i_mumol1)=.true.
-      if (lpencil_in(i_mumol1)) lpencil_in(i_cc)=.true.
+      !if (lpencil_in(i_mumol1)) lpencil_in(i_cc)=.true.
+      if (lpencil_in(i_mumol1)) lpencil_in(i_fvap)=.true.
       if (lpencil_in(i_cv1)) lpencil_in(i_cp1)=.true.
       if (lpencil_in(i_cp1)) lpencil_in(i_cp)=.true.
       if (lpencil_in(i_cv)) lpencil_in(i_cp)=.true.
@@ -435,7 +473,7 @@ module EquationOfState
         lpencil_in(i_TT)=.true.
       endif
       if (lpencil_in(i_ppvap)) then
-        lpencil_in(i_cc)=.true.
+        lpencil_in(i_fvap)=.true.
         lpencil_in(i_rho)=.true.
         lpencil_in(i_TT)=.true.
       endif
@@ -509,10 +547,9 @@ module EquationOfState
       type (pencil_case) :: p
       logical, dimension(:),             intent(IN)   :: lpenc_loc
 !
-      intent(in) :: f
+      intent(inout) :: f
       intent(inout) :: p
 !
-      real, dimension(nx) :: tmp
       integer :: i,j
 !
       if (leos_isentropic.or.leos_isothermal.or.leos_localisothermal) &
@@ -520,20 +557,51 @@ module EquationOfState
 !
 !  Pencils that are independent of the chosen thermodynamical variables.
 !
-! mumol1
-      !if (lpenc_loc(i_mumol1)) p%mumol1=(1-p%cc(:,1))*mudry1+p%cc(:,1)*muvap1
-      if (lpenc_loc(i_mumol1)) p%mumol1=(1-p%ssat)*mudry1+p%ssat*muvap1
+!
+!  fvap (rho_vapour/rho_total). The quantity acc (called q_V in [https://doi.org/10.5194/acp-19-639-2019]),
+!  is fvap/(1-fvap).
+!  Kishore: Axel, in commit e495afe2fecd170243aa475024da0f3f5b3fd632 ,
+!  Kishore: you made a change to treat p%ssat as the vapour fraction.
+!  Kishore: However, I think that should be calculated as below.
+!  Kishore: Do you agree? I do not see eos_idealgas_vapor being used
+!  Kishore: in any samples, and so have taken the liberty of changing it.
+!
+      if (lpenc_loc(i_fvap)) then
+        !p%fvap = p%acc/(1+p%acc)
+        !Already calculated in eos_before_boundary
+        p%fvap = f(l1:l2,m,n,ifvap)
+      endif
+      if (lpenc_loc(i_gfvap)) then
+        do i=1,3
+          p%gfvap(:,i)= p%gacc(:,i)/(1+p%acc)**2
+        enddo
+      endif
+!
+!  mumol1
+!
+      if (lpenc_loc(i_mumol1)) then
+        !p%mumol1=(1-p%cc(:,1))*mudry1+p%cc(:,1)*muvap1
+        !p%mumol1=(1-p%ssat)*mudry1+p%ssat*muvap1
+        !p%mumol1 = (1-p%fvap)*mudry1 + p%fvap*muvap1
+        !Already calculated in eos_before_boundary
+        p%mumol1 = f(l1:l2,m,n,imumol1)
+      endif
 ! mumol
       if (lpenc_loc(i_mumol)) p%mumol=1/p%mumol1
 ! glnmumol
       if (lpenc_loc(i_glnmumol)) then
         do i=1,3
           !p%glnmumol(:,i)=-p%mumol*(p%gcc(:,i,1)*(muvap1-mudry1))
-          p%glnmumol(:,i)=-p%mumol*(p%gssat(:,i)*(muvap1-mudry1))
+          !p%glnmumol(:,i)=-p%mumol*(p%gssat(:,i)*(muvap1-mudry1))
+          p%glnmumol(:,i)=-p%mumol*p%gfvap(:,i)*(muvap1-mudry1)
         enddo
       endif
 ! cp
-      if (lpenc_loc(i_cp)) p%cp=cpdry*mudry*p%mumol1
+      if (lpenc_loc(i_cp)) then
+        !p%cp=cpdry*mudry*p%mumol1
+        !Already calculated in eos_before_boundary
+        p%cp = f(l1:l2,m,n,icp)
+      endif
 ! cp1
       if (lpenc_loc(i_cp1)) p%cp1=1/p%cp
 ! cv
@@ -615,7 +683,8 @@ module EquationOfState
       if (lpenc_loc(i_pp)) p%pp=(p%cp-p%cv)*p%rho*p%TT
 ! ppvap
       !if (lpenc_loc(i_ppvap)) p%ppvap=muvap1*Rgas_unit_sys*p%cc(:,1)*p%rho*p%TT
-      if (lpenc_loc(i_ppvap)) p%ppvap=muvap1*Rgas_unit_sys*p%ssat*p%rho*p%TT
+!       if (lpenc_loc(i_ppvap)) p%ppvap=muvap1*Rgas_unit_sys*p%ssat*p%rho*p%TT
+      if (lpenc_loc(i_ppvap)) p%ppvap=p%fvap*mudry1*muvap1*cpdry*p%rho*p%TT
 ! cs2
       if (lpenc_loc(i_cs2)) p%cs2=p%cp*p%TT*gamma_m1
 ! csvap2
@@ -678,27 +747,30 @@ module EquationOfState
 !
     endsubroutine getpressure
 !***********************************************************************
-    subroutine get_gamma_etc(gamma,cp,cv)
+    subroutine get_gamma_etc(gamma_,cp,cv,f)
 !
-      real, optional, intent(OUT) :: gamma, cp,cv
+      real, optional, intent(OUT) :: gamma_, cp,cv
+      real, dimension(mfarray), optional, intent(IN) :: f
 !
-      call warning('get_gamma_etc','gamma, cp, and cv are not constant in eos_idealgas_vapor.'// &
-                   achar(10)//'The values provided are for one-atomic ideal gas. Use at own risk')
-      if (present(gamma)) gamma=5./3.
-      if (present(cp)) cp=1.
-      if (present(cv)) cv=3./5.
+      if (present(gamma_)) gamma_=gamma
+!
+      if (present(f)) then
+        if (present(cp)) cp = f(icp)
+        if (present(cv)) cv = f(icp)/gamma
+      else
+        if (present(cp)) then
+          call warning('get_gamma_etc','cp is not constant in eos_idealgas_vapor.'// &
+            achar(10)//'The value provided is for one-atomic ideal gas. Use at own risk')
+          cp=1.
+        endif
+        if (present(cv)) then
+          call warning('get_gamma_etc','cv is not constant in eos_idealgas_vapor.'// &
+            achar(10)//'The value provided is for one-atomic ideal gas. Use at own risk')
+          cv=1/gamma
+        endif
+      endif
 
     endsubroutine get_gamma_etc
-!***********************************************************************
-    subroutine get_ptlaw(ptlaw_)
-!
-      real :: ptlaw_
-!
-      call fatal_error('get_ptlaw','not implemented')
-!
-      call keep_compiler_quiet(ptlaw_)
-!
-    endsubroutine get_ptlaw
 !***********************************************************************
     subroutine pressure_gradient_farray(f,cs2,cp1tilde)
 !
@@ -882,6 +954,45 @@ module EquationOfState
 !
     endsubroutine eoscalc_pencil
 !***********************************************************************
+    subroutine eoscalc_point_f(ivars,f,lnrho,ss,yH,lnTT,ee,pp,cs2)
+!
+!   07-dec-2024/Kishore: added
+!
+      integer, intent(in) :: ivars
+      real, dimension(mfarray), intent(in) :: f
+      real, optional, intent(out) :: lnrho, ss, yH, lnTT, ee, pp, cs2
+      real :: cp, cv, lnrho_, ss_, lnTT_, ee_, pp_, cs2_
+!
+      if (present(yh)) call fatal_error('eoscalc_point_f','yH is not relevant for this EOS')
+      if (lreference_state) call not_implemented('eoscalc_point_f', 'lreference_state=T')
+      if (pretend_lnTT) call not_implemented('eoscalc_point_f', 'pretend_lnTT=T')
+!
+      select case (ivars)
+      case (ilnrho_ss)
+        lnrho_ = f(ilnrho)
+        if (present(lnrho)) lnrho=lnrho_
+!
+        ss_ = f(iss)
+        if (present(ss)) ss=ss_
+!
+        if (present(lnTT).or.present(ee).or.present(pp).or.present(cs2)) then
+          cp = f(icp)
+          cv = cp*gamma1
+!
+!         This formula works because cp,cv are independent of rho,TT
+!
+          lnTT_ = lnTT0 + ss_/cv + gamma_m1*(lnrho_-lnrho0)
+          if (present(lnTT)) lnTT = lnTT_
+          if (present(ee)) ee = cv*exp(lnrho_+lnTT_)
+          if (present(pp)) pp = (cp-cv)*exp(lnrho_+lnTT_)
+          if (present(cs2)) cs2 = cp*gamma_m1*exp(lnTT_)
+        endif
+      case default
+        call not_implemented('eoscalc_point_f','thermodynamic variable combination')
+      endselect
+!
+    endsubroutine eoscalc_point_f
+!***********************************************************************
     subroutine get_soundspeed(lnTT,cs2)
 !
       real :: lnTT, cs2
@@ -929,118 +1040,24 @@ module EquationOfState
 !
     endsubroutine write_eos_run_pars
 !***********************************************************************
-    subroutine isothermal_entropy(f,T0)
+    subroutine isothermal_entropy(lnrho,T0,ss)
 !
-      real, dimension(mx,my,mz,mfarray) :: f
-      real :: t0
+      real, intent(in) :: T0
+      real, dimension(mx,my,mz), intent(in) :: lnrho
+      real, dimension(mx,my,mz), intent(out):: ss
 !
       call fatal_error('isothermal_entropy','not implemented')
 !
-      call keep_compiler_quiet(f)
       call keep_compiler_quiet(T0)
+      call keep_compiler_quiet(lnrho)
+      call keep_compiler_quiet(ss)
 !
     endsubroutine isothermal_entropy
-!***********************************************************************
-    subroutine isothermal_lnrho_ss(f,T0,rho0)
-!
-      real, dimension(mx,my,mz,mfarray) :: f
-      real :: t0, rho0
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(T0)
-      call keep_compiler_quiet(rho0)
-!
-    endsubroutine isothermal_lnrho_ss
-!***********************************************************************
-    subroutine Hminus_opacity(f,kapparho)
-!
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx,my,mz) :: kapparho
-!
-      call fatal_error('Hminus_opacity','not implemented')
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(kapparho)
-!
-    endsubroutine Hminus_opacity
-!***********************************************************************
-    subroutine get_average_pressure(average_density,average_pressure)
-!
-      real :: average_density, average_pressure
-!
-      call fatal_error('get_average_pressure','not implemented')
-!
-      call keep_compiler_quiet(average_density)
-      call keep_compiler_quiet(average_pressure)
-!
-    endsubroutine get_average_pressure
-!***********************************************************************
-    subroutine bc_ss_flux_tmp(f,topbot)
-!
-      character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      call fatal_error('bc_ss_flux_tmp','not implemented')
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(topbot)
-!
-    endsubroutine bc_ss_flux_tmp
-!***********************************************************************
-    subroutine bc_ss_flux_tmp2(f,topbot)
-!
-      character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      call fatal_error('bc_ss_flux_tmp2','not implemented')
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(topbot)
-!
-    endsubroutine bc_ss_flux_tmp2
-!***********************************************************************
-    subroutine bc_ss_flux(f,topbot,lone_sided)
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      character (len=3) :: topbot
-      logical, optional :: lone_sided
-!
-      call fatal_error('bc_ss_flux','not implemented')
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(topbot)
-      call keep_compiler_quiet(lone_sided)
-!
-    endsubroutine bc_ss_flux
-!***********************************************************************
-    subroutine bc_ss_flux_turb(f,topbot)
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      character (len=3) :: topbot
-!
-      call fatal_error('bc_ss_flux_turb','not implemented')
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(topbot)
-!
-    endsubroutine bc_ss_flux_turb
-!***********************************************************************
-    subroutine bc_ss_flux_condturb_z(f,topbot)
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      character (len=3) :: topbot
-!
-      call fatal_error('bc_ss_flux_turb','not implemented')
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(topbot)
-!
-    endsubroutine bc_ss_flux_condturb_z
 !***********************************************************************
     subroutine bc_ss_temp_old(f,topbot)
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
 !
       call fatal_error('bc_ss_temp_old','not implemented')
 !
@@ -1052,7 +1069,7 @@ module EquationOfState
     subroutine bc_ss_temp_x(f,topbot)
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
 !
       call fatal_error('bc_ss_temp_x','not implemented')
 !
@@ -1064,7 +1081,7 @@ module EquationOfState
     subroutine bc_ss_temp_y(f,topbot)
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
 !
       call fatal_error('bc_ss_temp_y','not implemented')
 !
@@ -1072,37 +1089,255 @@ module EquationOfState
       call keep_compiler_quiet(topbot)
 !
     endsubroutine bc_ss_temp_y
-!***********************************************************************
+!************************************************************************
     subroutine bc_ss_temp_z(f,topbot,lone_sided)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      character (len=3) :: topbot
-      logical, optional :: lone_sided
+!  boundary condition for entropy: constant temperature. If lone_sided=T, it uses one-sided derivatives for the energy variable. Otherwise (default), it makes the energy variable antisymmetric about the boundary.
 !
-      call fatal_error('bc_ss_temp_z','not implemented')
+!  7-dec-2024/Kishore: copied from eos_idealgas and modified
 !
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(topbot)
-      call keep_compiler_quiet(lone_sided)
+      use General, only: loptest
+      use DensityMethods, only: getlnrho
+      use Deriv, only: set_ghosts_for_onesided_ders
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      integer, intent(in) :: topbot
+      logical, optional, intent(in) :: lone_sided
+!
+      real :: TTval
+      integer :: i, il, im
+      real, dimension(mx,my) :: lnrho_xy, cp, cv
+!
+      if (ldebug) print*,'bc_ss_temp_z: cs20,cs0=',cs20,cs0
+!
+!  Constant temperature for entropy, with the temperature corresponding
+!  to cs2{top,bot}/((gamma-1)*cpdry).
+!  This assumes that the density is already set (ie density _must_ register
+!  first!)
+!
+!  check whether we want to do top or bottom (this is processor dependent)
+!
+      select case (topbot)
+!
+!  bottom boundary
+!
+      case(BOT)
+!
+        do il=1,mx
+          do im =1,my
+            call get_gamma_etc(cp=cp(il,im), cv=cv(il,im), f=f(il,im,n1,:))
+          enddo
+        enddo
+!
+        TTval = cs2bot/(gamma_m1*cpdry)
+        if (ldebug) print*, 'bc_ss_temp_z: set z bottom temperature: TTbot=',TTval
+        if (cs2bot<=0.) call fatal_error('bc_ss_temp_z','cannot have cs2bot<=0')
+
+        if (lentropy .and. .not. pretend_lnTT) then
+          call getlnrho(f(:,:,n1,ilnrho),lnrho_xy)
+!
+!  This formula works because cp,cv are independent of rho,TT
+!
+          f(:,:,n1,iss) = cv*(log(TTval)-lnTT0) - (cp-cv)*(lnrho_xy-lnrho0)
+!
+          if (lreference_state) then
+            f(l1:l2,:,n1,iss) = f(l1:l2,:,n1,iss) - spread(reference_state(:,iref_s),2,my)
+          endif
+!
+          if (loptest(lone_sided)) then
+            call set_ghosts_for_onesided_ders(f,topbot,iss,3)
+          else
+            do i=1,nghost
+              f(:,:,n1-i,iss) = 2*f(:,:,n1,iss) - f(:,:,n1+i,iss)
+            enddo
+          endif
+!
+        elseif (lentropy .and. pretend_lnTT) then
+          f(:,:,n1,iss) = log(TTval)
+          if (loptest(lone_sided)) then
+            call set_ghosts_for_onesided_ders(f,topbot,iss,3)
+          else
+            do i=1,nghost
+              f(:,:,n1-i,iss) = 2*f(:,:,n1,iss) - f(:,:,n1+i,iss)
+            enddo
+          endif
+        elseif (ltemperature) then
+          if (ltemperature_nolog) then
+            f(:,:,n1,iTT)   = TTval
+          else
+            f(:,:,n1,ilnTT) = log(TTval)
+          endif
+          if (loptest(lone_sided)) then
+            call set_ghosts_for_onesided_ders(f,topbot,ilnTT,3)
+          else
+            do i=1,nghost
+              f(:,:,n1-i,ilnTT) = 2*f(:,:,n1,ilnTT) - f(:,:,n1+i,ilnTT)
+            enddo
+          endif
+        endif
+!
+!  top boundary
+!
+      case(TOP)
+!
+        do il=1,mx
+          do im =1,my
+            call get_gamma_etc(cp=cp(il,im), cv=cv(il,im), f=f(il,im,n2,:))
+          enddo
+        enddo
+!
+        TTval = cs2top/(gamma_m1*cpdry)
+        if (ldebug) print*, 'bc_ss_temp_z: set z top temperature: TTtop=',TTval
+        if (cs2top<=0.) call fatal_error('bc_ss_temp_z','cannot have cs2top<=0')
+!
+        if (lentropy .and. .not. pretend_lnTT) then
+          call getlnrho(f(:,:,n2,ilnrho),lnrho_xy)
+!
+!  This formula works because cp,cv are independent of rho,TT
+!
+          f(:,:,n2,iss) = cv*(log(TTval)-lnTT0) - (cp-cv)*(lnrho_xy-lnrho0)
+!
+          if (lreference_state) then
+            f(l1:l2,:,n2,iss) = f(l1:l2,:,n2,iss) - spread(reference_state(:,iref_s),2,my)
+          endif
+!
+          if (loptest(lone_sided)) then
+            call set_ghosts_for_onesided_ders(f,topbot,iss,3)
+          else
+            do i=1,nghost
+              f(:,:,n2+i,iss) = 2*f(:,:,n2,iss) - f(:,:,n2-i,iss)
+            enddo
+          endif
+!
+        elseif (lentropy .and. pretend_lnTT) then
+          f(:,:,n2,iss) = log(TTval)
+!
+          if (loptest(lone_sided)) then
+            call set_ghosts_for_onesided_ders(f,topbot,iss,3)
+          else
+            do i=1,nghost
+              f(:,:,n2+i,iss) = 2*f(:,:,n2,iss) - f(:,:,n2-i,iss)
+            enddo
+          endif
+!
+        elseif (ltemperature) then
+          if (ltemperature_nolog) then
+            f(:,:,n2,iTT)   = TTval
+          else
+            f(:,:,n2,ilnTT) = log(TTval)
+          endif
+!
+          if (loptest(lone_sided)) then
+            call set_ghosts_for_onesided_ders(f,topbot,ilnTT,3)
+          else
+            do i=1,nghost
+              f(:,:,n2+i,ilnTT) = 2*f(:,:,n2,ilnTT) - f(:,:,n2-i,ilnTT)
+            enddo
+          endif
+        endif
+!
+      case default
+        call fatal_error('bc_ss_temp_z','invalid argument')
+      endselect
 !
     endsubroutine bc_ss_temp_z
 !***********************************************************************
     subroutine bc_lnrho_temp_z(f,topbot)
 !
+!  boundary condition for lnrho *and* ss: constant temperature
+!
+!  27-sep-2002/axel: coded
+!  19-aug-2005/tobi: distributed across ionization modules
+!  04-dec-2024/Kishore: implemented for eos_idealgas_vapor
+!
+      use Gravity, only: gravz
+      use DensityMethods, only: getlnrho
+!
+      integer, intent(IN) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
-      character (len=3) :: topbot
+      real :: TTval
+      integer :: i,il,im
+      real, dimension(mx,my) :: lnrho_xy, cp, cv
 !
-      call fatal_error('bc_lnrho_temp_z','not implemented')
+      if (ldebug) print*,'bc_lnrho_temp_z: cs20,cs0=',cs20,cs0
 !
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(topbot)
+!  Constant temperature for entropy, with the temperature corresponding
+!  to cs2{top,bot}/((gamma-1)*cpdry). The entropy is set to be antisymmetric
+!  about its boundary value, while the density is set assuming
+!  hydrostatic equilibrium.
+!
+!  check whether we want to do top or bottom (this is processor dependent)
+!
+      select case (topbot)
+!
+!  bottom boundary
+!
+      case(BOT)
+        do il=1,mx
+          do im =1,my
+            call get_gamma_etc(cp=cp(il,im), cv=cv(il,im), f=f(il,im,n1,:))
+          enddo
+        enddo
+        TTval = cs2bot/(gamma_m1*cpdry)
+        if (ldebug) print*, 'bc_lnrho_temp_z: set z bottom temperature: cs2bot=',cs2bot,"; TTbot=",TTval
+        if (cs2bot<=0.) call fatal_error('bc_lnrho_temp_z','cannot have cs2bot<=0')
+!
+!  set boundary value for entropy, then extrapolate ghost pts by antisymmetry
+!
+        call getlnrho(f(:,:,n1,ilnrho),lnrho_xy)
+!
+!  This formula works because cp,cv are independent of rho,TT
+!
+        f(:,:,n1,iss) = cv*(log(TTval)-lnTT0) - (cp-cv)*(lnrho_xy-lnrho0)
+        if (lreference_state) call not_implemented('bc_lnrho_temp_z','for lreference_state=T')
+!
+        do i=1,nghost; f(:,:,n1-i,iss) = 2*f(:,:,n1,iss)-f(:,:,n1+i,iss); enddo
+!
+!  set density in the ghost zones so that dlnrho/dz + (1/cp)*ds/dz = gz/(gamma*(cp-cv)*TTval)
+!
+        do i=1,nghost
+          f(:,:,n1-i,ilnrho) = f(:,:,n1+i,ilnrho) + (f(:,:,n1+i,iss)-f(:,:,n1-i,iss))/cp - dz2_bound(-i)*gravz/(gamma*(cp-cv)*TTval)
+        enddo
+!
+!  top boundary
+!
+      case(TOP)
+        do il=1,mx
+          do im =1,my
+            call get_gamma_etc(cp=cp(il,im), cv=cv(il,im), f=f(il,im,n2,:))
+          enddo
+        enddo
+        TTval = cs2top/(gamma_m1*cpdry)
+        if (ldebug) print*, 'bc_lnrho_temp_z: set z top temperature: cs2top=',cs2top,"; TTtop=",TTval
+        if (cs2top<=0.) call fatal_error('bc_lnrho_temp_z','cannot have cs2top<=0')
+!
+!  set boundary value for entropy, then extrapolate ghost pts by antisymmetry
+!
+        call getlnrho(f(:,:,n2,ilnrho),lnrho_xy)
+!
+!  This formula works because cp,cv are independent of rho,TT
+!
+        f(:,:,n2,iss) = cv*(log(TTval)-lnTT0) - (cp-cv)*(lnrho_xy-lnrho0)
+        if (lreference_state) call not_implemented('bc_lnrho_temp_z','for lreference_state=T')
+!
+        do i=1,nghost; f(:,:,n2+i,iss) = 2*f(:,:,n2,iss)-f(:,:,n2-i,iss); enddo
+!
+!  set density in the ghost zones so that dlnrho/dz + (1/cp)*ds/dz = gz/(gamma*(cp-cv)*TTval)
+!
+        do i=1,nghost
+          f(:,:,n2+i,ilnrho) = f(:,:,n2-i,ilnrho) + (f(:,:,n2-i,iss)-f(:,:,n2+i,iss))/cp + dz2_bound(i)*gravz/(gamma*(cp-cv)*TTval)
+        enddo
+!
+      case default
+        call fatal_error('bc_lnrho_temp_z','invalid argument')
+      endselect
 !
     endsubroutine bc_lnrho_temp_z
 !***********************************************************************
     subroutine bc_lnrho_pressure_z(f,topbot)
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
 !
       call fatal_error('bc_lnrho_pressure_z','not implemented')
 !
@@ -1113,7 +1348,7 @@ module EquationOfState
 !***********************************************************************
     subroutine bc_ss_temp2_z(f,topbot)
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call fatal_error('bc_ss_temp2_z','not implemented')
@@ -1123,22 +1358,10 @@ module EquationOfState
 !
     endsubroutine bc_ss_temp2_z
 !***********************************************************************
-    subroutine bc_ss_temp3_z(f,topbot)
-!
-      character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      call fatal_error('bc_ss_temp3_z','not implemented')
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(topbot)
-!
-    endsubroutine bc_ss_temp3_z
-!***********************************************************************
     subroutine bc_ss_stemp_x(f,topbot)
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
 !
       call fatal_error('bc_ss_stemp_x','not implemented')
 !
@@ -1150,7 +1373,7 @@ module EquationOfState
     subroutine bc_ss_stemp_y(f,topbot)
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
 !
       call fatal_error('bc_ss_stemp_y','not implemented')
 !
@@ -1162,7 +1385,7 @@ module EquationOfState
     subroutine bc_ss_stemp_z(f,topbot)
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
 !
       call fatal_error('bc_ss_stemp_z','not implemented')
 !
@@ -1174,7 +1397,7 @@ module EquationOfState
     subroutine bc_ss_energy(f,topbot)
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
 !
       call fatal_error('bc_ss_energy','not implemented')
 !
@@ -1183,58 +1406,10 @@ module EquationOfState
 !
     endsubroutine bc_ss_energy
 !***********************************************************************
-    subroutine bc_stellar_surface(f,topbot)
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      character (len=3) :: topbot
-!
-      call fatal_error('bc_stellar_surface','not implemented')
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(topbot)
-!
-    endsubroutine bc_stellar_surface
-!***********************************************************************
-    subroutine bc_lnrho_cfb_r_iso(f,topbot)
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      character (len=3) :: topbot
-!
-      call fatal_error('bc_lnrho_cfb_r_iso','not implemented')
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(topbot)
-!
-    endsubroutine bc_lnrho_cfb_r_iso
-!***********************************************************************
-    subroutine bc_lnrho_hds_z_iso(f,topbot)
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      character (len=3) :: topbot
-!
-      call fatal_error('bc_lnrho_hds_z_iso','not implemented')
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(topbot)
-!
-    endsubroutine bc_lnrho_hds_z_iso
-!***********************************************************************
-    subroutine bc_lnrho_hdss_z_iso(f,topbot)
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      character (len=3) :: topbot
-!
-      call fatal_error('bc_lnrho_hdss_z_iso','not implemented')
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(topbot)
-!
-    endsubroutine bc_lnrho_hdss_z_iso
-!***********************************************************************
     subroutine bc_lnrho_hdss_z_liso(f,topbot)
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
 !
       call fatal_error('bc_lnrho_hdss_z_liso','not implemented')
 !
@@ -1243,24 +1418,14 @@ module EquationOfState
 !
     endsubroutine bc_lnrho_hdss_z_liso
 !***********************************************************************
-    subroutine bc_lnrho_hds_z_liso(f,topbot)
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      character (len=3) :: topbot
-!
-      call fatal_error('bc_lnrho_hds_z_liso','not implemented')
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(topbot)
-!
-    endsubroutine bc_lnrho_hds_z_liso
-!***********************************************************************
     subroutine bc_ss_a2stemp_x(f,topbot)
 !
 !  11-mar-2012/anders: dummmy
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
+!
+      call fatal_error('bc_ss_a2stemp_x','not implemented')
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1271,8 +1436,10 @@ module EquationOfState
 !
 !  11-mar-2012/anders: dummmy
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
+!
+      call fatal_error('bc_ss_a2stemp_y','not implemented')
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1283,114 +1450,68 @@ module EquationOfState
 !
 !  11-mar-2012/anders: dummmy
 !
-      character (len=3) :: topbot
+      integer, intent(IN) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
+!
+      call fatal_error('bc_ss_a2stemp_z','not implemented')
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
 !
     endsubroutine bc_ss_a2stemp_z
 !***********************************************************************
-    subroutine bc_ss_flux_turb_x(f,topbot)
+    subroutine eos_before_boundary(f)
 !
-!  11-mar-2012/anders: dummmy
+!     Put cp in the f-array so that get_gamma_etc can be used by boundary
+!     conditions.
 !
-      character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+!     05-dec-2024/kishore: added
+!     07-dec-2024/Kishore: outsourced to eos_update_aux
 !
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(topbot)
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-    endsubroutine bc_ss_flux_turb_x
+      call eos_update_aux(f)
+!
+    endsubroutine eos_before_boundary
 !***********************************************************************
-    subroutine bc_ss_flux_condturb_x(f,topbot)
+    subroutine init_eos(f)
 !
-!  12-nov-2016/axel: dummmy
+!     Put cp in the f-array so that get_gamma_etc can be used by initial
+!     conditions. Currently only works as intended with init_loops>1.
 !
-      character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+!     07-dec-2024/Kishore: added
 !
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(topbot)
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-    endsubroutine bc_ss_flux_condturb_x
+      call eos_update_aux(f)
+!
+    endsubroutine init_eos
 !***********************************************************************
-    subroutine bc_ss_flux_condturb_mean_x(f,topbot)
+    subroutine eos_update_aux(f)
 !
-!  12-nov-2016/axel: dummmy
+!     Subroutine get_gamma_etc requires cp to be in the f-array.
+!     Calculating cp requires fvap and mumol1; we then keep them in the f-array
+!     to avoid unnecessary recomputation if these are needed as pencils later on.
 !
-      character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+!     05-dec-2024/kishore: added
 !
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(topbot)
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-    endsubroutine bc_ss_flux_condturb_mean_x
+      f(l1:l2,m1:m2,n1:n2,ifvap) = f(l1:l2,m1:m2,n1:n2,iacc)/(1+f(l1:l2,m1:m2,n1:n2,iacc))
+      f(l1:l2,m1:m2,n1:n2,imumol1) = (1-f(l1:l2,m1:m2,n1:n2,ifvap))*mudry1 &
+                                     +   f(l1:l2,m1:m2,n1:n2,ifvap)*muvap1
+      f(l1:l2,m1:m2,n1:n2,icp) = cpdry*mudry*f(l1:l2,m1:m2,n1:n2,imumol1)
+!
+    endsubroutine eos_update_aux
 !***********************************************************************
-    subroutine find_mass(element_name,MolMass)
-!
-      character (len=*), intent(in) :: element_name
-      real, intent(out) :: MolMass
-!
-      call keep_compiler_quiet(element_name)
-      call keep_compiler_quiet(MolMass)
-!
-    endsubroutine find_mass
-!***********************************************************************
-    subroutine find_species_index(species_name,ind_glob,ind_chem,found_specie)
-!
-      integer, intent(out) :: ind_glob
-      integer, intent(inout) :: ind_chem
-      character (len=*), intent(in) :: species_name
-      logical, intent(out) :: found_specie
-!
-      call keep_compiler_quiet(ind_glob)
-      call keep_compiler_quiet(ind_chem)
-      call keep_compiler_quiet(species_name)
-      call keep_compiler_quiet(found_specie)
-!
-    endsubroutine find_species_index
-!***********************************************************************
-    subroutine write_thermodyn()
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine write_thermodyn
-!***********************************************************************
-    subroutine read_thermodyn()
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine read_thermodyn
-!***********************************************************************
-    subroutine read_species(input_file)
-!
-      character (len=*) :: input_file
-!
-      call keep_compiler_quiet(input_file)
-!
-    endsubroutine read_species
-!***********************************************************************
-    subroutine get_stratz(z, rho0z, dlnrho0dz, eth0z)
-!
-!  Get background stratification in z direction.
-!
-!  13-oct-14/ccyang: dummy
-!
-      real, dimension(:), intent(in) :: z
-      real, dimension(:), intent(out), optional :: rho0z, dlnrho0dz, eth0z
-!
-      call fatal_error('get_stratz', 'Stratification for this EOS is not implemented. ')
-!
-      call keep_compiler_quiet(z)
-      if (present(rho0z)) call keep_compiler_quiet(rho0z)
-      if (present(dlnrho0dz)) call keep_compiler_quiet(dlnrho0dz)
-      if (present(eth0z)) call keep_compiler_quiet(eth0z)
-!
-    endsubroutine get_stratz
+!********************************************************************
+!********************************************************************
+!************        DO NOT DELETE THE FOLLOWING        *************
+!********************************************************************
+!**  This is an automatically generated include file that creates  **
+!**  copies dummy routines from noeos.f90 for any Eos routines     **
+!**  not implemented in this file                                  **
+!**                                                                **
+    include '../eos_dummies.inc'
 !***********************************************************************
 endmodule EquationOfState

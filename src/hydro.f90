@@ -141,7 +141,7 @@ module Hydro
   logical :: luu_fluc_as_aux=.false.
   logical :: luu_sph_as_aux=.false.
   logical :: lvv_as_aux=.false., lvv_as_comaux=.false.
-  logical :: lscale_tobox=.true.
+  logical :: lscale_tobox=.true., lrandom_ampl_uu=.false.
   logical :: lfactors_uu=.false.
   logical :: lpower_profile_file_uu=.false.
   logical, target :: lpressuregradient_gas=.true.
@@ -187,8 +187,8 @@ module Hydro
       lprecession, omega_precession, alpha_precession, velocity_ceiling, &
       loo_as_aux, luut_as_aux, luust_as_aux, loot_as_aux, loost_as_aux, &
       llorentz_as_aux, luuk_as_aux, look_as_aux, &
-      mu_omega, nb_rings, om_rings, gap, &
-      lscale_tobox, ampl_Omega, omega_ini, r_cyl, skin_depth, incl_alpha, &
+      mu_omega, nb_rings, om_rings, gap, lscale_tobox, lrandom_ampl_uu, &
+      ampl_Omega, omega_ini, r_cyl, skin_depth, incl_alpha, &
       rot_rr, xsphere, ysphere, zsphere, neddy, amp_meri_circ, &
       rnoise_int, rnoise_ext, lreflecteddy, louinit, hydro_xaver_range, max_uu,&
       amp_factor,kx_uu_perturb,llinearized_hydro, hydro_zaver_range, index_rSH, &
@@ -541,6 +541,9 @@ module Hydro
   integer :: idiag_duxdzma=0    ! DIAG_DOC:
   integer :: idiag_duydzma=0    ! DIAG_DOC:
   integer :: idiag_EEK=0        ! DIAG_DOC: $\left<\varrho\uv^2\right>/2$
+  integer :: idiag_EEK2=0       ! DIAG_DOC: $\left<(\varrho\uv^2/2)^2\right>$
+  integer :: idiag_EEK3=0       ! DIAG_DOC: $\left<(\varrho\uv^2/2)^3\right>$
+  integer :: idiag_EEK4=0       ! DIAG_DOC: $\left<(\varrho\uv^2/2)^4\right>$
   integer :: idiag_ekin=0       ! DIAG_DOC: $\left<{1\over2}\varrho\uv^2\right>$
   integer :: idiag_ekintot=0    ! DIAG_DOC: $\int_V{1\over2}\varrho\uv^2\, dV$
   integer :: idiag_totangmom=0  ! DIAG_DOC:
@@ -1138,7 +1141,7 @@ module Hydro
               nfact0=nfact_uu, lfactors0=lfactors_uu,lno_noise=lno_noise_uu, &
               lpower_profile_file=lpower_profile_file_uu, qirro=qirro_uu, &
               lsqrt_qirro=lsqrt_qirro_uu, lreinit=lreinitialize_uu, &
-              lrho_nonuni=lrho_nonuni_uu,ilnr=ilnrho)
+              lrho_nonuni=lrho_nonuni_uu,ilnr=ilnrho, lrandom_ampl=lrandom_ampl_uu)
           endselect
         enddo
       endif
@@ -2403,7 +2406,8 @@ module Hydro
             lskip_projection, lvectorpotential,lscale_tobox, &
             nfact0=nfact_uu, lfactors0=lfactors_uu,lno_noise=lno_noise_uu, &
             lpower_profile_file=lpower_profile_file_uu, qirro=qirro_uu, &
-            lsqrt_qirro=lsqrt_qirro_uu,lrho_nonuni=lrho_nonuni_uu,ilnr=ilnrho)
+            lsqrt_qirro=lsqrt_qirro_uu,lrho_nonuni=lrho_nonuni_uu,ilnr=ilnrho, &
+            lrandom_ampl=lrandom_ampl_uu)
 !
         case ('random-isotropic-KS')
           call random_isotropic_KS(initpower,f,iux,N_modes_uu)
@@ -2942,8 +2946,9 @@ module Hydro
         lpenc_diagnos(i_phiy)=.true.
       endif
       if (idiag_EEK/=0 .or. idiag_ekin/=0 .or. idiag_ekintot/=0 .or. idiag_fkinzmz/=0 .or. &
-           idiag_fkinzupmz/=0 .or. idiag_fkinzdownmz/=0 .or. &
-           idiag_ekinmx /= 0 .or. idiag_ekinmz/=0 .or. idiag_fkinxmx/=0) then
+          idiag_EEK2/=0 .or. idiag_EEK3/=0 .or. idiag_EEK4/=0 .or. &
+          idiag_fkinzupmz/=0 .or. idiag_fkinzdownmz/=0 .or. &
+          idiag_ekinmx /= 0 .or. idiag_ekinmz/=0 .or. idiag_fkinxmx/=0) then
         lpenc_diagnos(i_ekin)=.true.
       endif
       if (idiag_fkinxmxy/=0 .or. idiag_fkinymxy/=0 .or. &
@@ -4233,6 +4238,9 @@ module Hydro
         if (idiag_Tzxm/=0)  call sum_mn_name(f(l1:l2,m,n,iTij+5),idiag_Tzxm)
         call sum_mn_name(p%ekin,idiag_ekin)
         call sum_mn_name(p%ekin,idiag_EEK)
+        call sum_mn_name(p%ekin**2,idiag_EEK2)
+        call sum_mn_name(p%ekin**3,idiag_EEK3)
+        call sum_mn_name(p%ekin**4,idiag_EEK4)
         call integrate_mn_name(p%ekin,idiag_ekintot)
 !
 !  should be coordinate dependent
@@ -5447,6 +5455,8 @@ endif
           do j=1,3
             do n=1,mz
               f(:,:,n,iuu+j-1) = f(:,:,n,iuu+j-1)-uumz(n,j)
+! PC: The line commented below is for damping box modes of convection. 
+!              if (z(n) .lt. 0.0) f(:,:,n,iuu+j-1) = f(:,:,n,iuu+j-1)-rescale_uu*uumz(n,j)
             enddo
           enddo
         elseif (lremove_uumeanz_horizontal) then
@@ -6582,6 +6592,9 @@ endif
         idiag_duxdzma=0
         idiag_duydzma=0
         idiag_EEK=0
+        idiag_EEK2=0
+        idiag_EEK3=0
+        idiag_EEK4=0
         idiag_ekin=0
         idiag_totangmom=0
         idiag_ekintot=0
@@ -6711,6 +6724,9 @@ endif
       if (lroot.and.ip<14) print*,'rprint_hydro: run through parse list'
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'EEK',idiag_EEK)
+        call parse_name(iname,cname(iname),cform(iname),'EEK2',idiag_EEK2)
+        call parse_name(iname,cname(iname),cform(iname),'EEK3',idiag_EEK3)
+        call parse_name(iname,cname(iname),cform(iname),'EEK4',idiag_EEK4)
         call parse_name(iname,cname(iname),cform(iname),'ekin',idiag_ekin)
         call parse_name(iname,cname(iname),cform(iname),'ekintot',idiag_ekintot)
         call parse_name(iname,cname(iname),cform(iname),'gamm',idiag_gamm)
