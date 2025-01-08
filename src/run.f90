@@ -113,6 +113,7 @@ subroutine reload(f, lreload_file, lreload_always_file)
     use Timestep,    only: initialize_timestep
     use HDF5_IO,     only: initialize_hdf5
     use Diagnostics, only: report_undefined_diagnostics,diagnostics_clean_up
+    use Particles_main,   only: particles_rprint_list, particles_initialize_modules
 
     real, dimension (mx,my,mz,mfarray) :: f
     logical :: lreload_file, lreload_always_file

@@ -60,7 +60,7 @@ module Chemistry
   logical :: lchem_detailed=.true.
   logical :: lgradP_terms=.true.
   character(len=30) :: reac_rate_method = 'chemkin'
-  character(len=30) :: inucl_pre_exp="const"
+! --AB--  character(len=30) :: inucl_pre_exp="const"
 ! parameters for initial conditions
   real :: init_x1=-0.2, init_x2=0.2
   real :: init_y1=-0.2, init_y2=0.2
