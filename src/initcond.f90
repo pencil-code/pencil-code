@@ -5041,7 +5041,8 @@ module Initcond
 !
     endsubroutine powern
 !***********************************************************************
-    subroutine power_randomphase(ampl,initpower,kgaussian,kpeak,cutoff,f,i1,i2,lscale_tobox)
+    subroutine power_randomphase(ampl,initpower,kgaussian,kpeak,cutoff, &
+      f,i1,i2,lscale_tobox)
 !
 !  Produces k^initpower*exp(-k**2/cutoff**2) spectrum.
 !  However, initpower=-3 produces a k^{-1} spectrum.
@@ -5076,8 +5077,8 @@ module Initcond
       allocate(k2(nx,ny,nz),stat=stat)
       if (stat>0) call fatal_error('powern','Could not allocate memory for k2')
       if (kgaussian /= 0.) then
-        allocate(k2mkpeak(nx,ny,nz),stat=stat)    !MR: k2mkpeak not used below!
-        if (stat>0) call fatal_error('powern','Could not allocate memory for k2mkpeak')
+         allocate(k2mkpeak(nx,ny,nz),stat=stat)
+         if (stat>0) call fatal_error('powern','Could not allocate memory for k2mkpeak')
       endif
       allocate(u_re(nx,ny,nz),stat=stat)
       if (stat>0) call fatal_error('powern','Could not allocate memory for u_re')
@@ -5115,7 +5116,8 @@ module Initcond
 !
 !  integration over shells
 !
-        if (lroot .AND. ip<10) print*,'power_randomphase:fft done; now integrate over shells...'
+        if (lroot .AND. ip<10) &
+               print*,'power_randomphase:fft done; now integrate over shells...'
 !  In 2-D
         if (nz==1) then
           ikz=1
@@ -5169,7 +5171,7 @@ module Initcond
             nexp1=.25*nfact*initpower
             nexp2=1./nfact
             kpeak1=1./kpeak
-            kpeak21=kpeak1**2
+            kpeak21=1./kpeak**2
 !
 !  Multiply by kpeak1**1.5 to eliminate scaling with kpeak,
 !  which comes from a kpeak^3 factor in the k^2 dk integration.
@@ -5407,10 +5409,17 @@ module Initcond
       allocate(r(nx,ny,nz),stat=stat)
       if (stat>0) call fatal_error('power_randomphase_hel','Could not allocate r')
 !
-      allocate(u_re(nx,ny,nz,i2-i1+1),stat=stat)
-      if (stat>0) call fatal_error('power_randomphase_hel','Could not allocate u_re')
-      allocate(u_im(nx,ny,nz,i2-i1+1),stat=stat)
-      if (stat>0) call fatal_error('power_randomphase_hel','Could not allocate u_im')
+      if (i2==i1) then
+        allocate(u_re(nx,ny,nz,1),stat=stat)
+        if (stat>0) call fatal_error('power_randomphase_hel','Could not allocate u_re')
+        allocate(u_im(nx,ny,nz,1),stat=stat)
+        if (stat>0) call fatal_error('power_randomphase_hel','Could not allocate u_im')
+      else
+        allocate(u_re(nx,ny,nz,3),stat=stat)
+        if (stat>0) call fatal_error('power_randomphase_hel','Could not allocate u_re')
+        allocate(u_im(nx,ny,nz,3),stat=stat)
+        if (stat>0) call fatal_error('power_randomphase_hel','Could not allocate u_im')
+      endif
 !
       allocate(kx(nxgrid),stat=stat)
       if (stat>0) call fatal_error('power_randomphase_hel','Could not allocate kx')

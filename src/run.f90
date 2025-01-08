@@ -187,6 +187,7 @@ subroutine gen_output(f)
     use Timeavg,         only: wsnap_timeavgs
     use Fixed_point,     only: wfixed_points
     use Streamlines,     only: wtracers
+    use Io,              only: output_globals
 
     real, dimension (mx,my,mz,mfarray), intent(inout) :: f
     integer :: isave_shift=0, i

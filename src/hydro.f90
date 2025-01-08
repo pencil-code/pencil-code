@@ -7867,7 +7867,7 @@ endif
         !!$omp target if(loffload) data
         !!$omp target if(loffload) data update(reference_state,iref_rho,n1,n2,m1,m2,l1,l2) map(from: rum) has_device_addr(f)
         !shared: lref, indrhol
-        !$omp teams distribute parallel do collapse(2) private(rho,mm) reduction(+:rum)
+        !!$omp teams distribute parallel do collapse(2) private(rho,mm) reduction(+:rum)
         do n = n1,n2
         do m = m1,m2
 !
@@ -7902,7 +7902,7 @@ endif
 !
         !!$omp target if(loffload) data map(to: rum) has_device_addr(f) 
         !shared: lref, indrhol
-        !$omp teams distribute parallel do collapse(2) private(rho1)
+        !!$omp teams distribute parallel do collapse(2) private(rho1)
         do n = n1,n2
         do m = m1,m2
           if (ldensity_nolog) then

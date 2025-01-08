@@ -3544,10 +3544,10 @@ module Chemistry
           call sum_mn_name(p%nucl_rmin,idiag_nuclrmin)
           call sum_mn_name(p%nucl_rate,idiag_nuclrate)
           call sum_mn_name(p%conc_sat_spec,idiag_conc_satm)
-          call sum_mn_name(p%ff_cond,idiag_ffcondm)
-          if (idiag_ffcondposm/= 0) call sum_mn_name(max(0.,p%ff_cond),idiag_ffcondposm)
-          if (idiag_ffcondnegm/= 0) call sum_mn_name(min(0.,p%ff_cond),idiag_ffcondnegm)
-          call sum_mn_name(p%ff_nucl,idiag_ffnucl)
+!         if (idiag_ffcondposm/= 0) call sum_mn_name(max(0.,p%ff_cond),idiag_ffcondposm)
+!         if (idiag_ffcondnegm/= 0) call sum_mn_name(min(0.,p%ff_cond),idiag_ffcondnegm)
+!         call sum_mn_name(p%ff_cond,idiag_ffcondm)
+!         call sum_mn_name(p%ff_nucl,idiag_ffnucl)
         endif
         if (isupsat/=0) then
           if (idiag_supersat/= 0) call sum_mn_name(f(l1:l2,m,n,isupsat),idiag_supersat)
