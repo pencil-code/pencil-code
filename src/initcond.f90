@@ -2508,15 +2508,16 @@ module Initcond
 !
       integer :: i
       real, dimension (mx,my,mz,mfarray) :: f
-      real, optional :: kx,ky,kz
-      real :: ampl,k=1.,fac
+      real, optional :: kx, ky, kz
+      real :: ampl, k=1., fac
+      real :: kx1, ky1, kz1
 !
 !  wavenumber k
 !
 !  set x-dependent cos wave
 !
       if (present(kx)) then
-        k=kx; if (k==0) print*,'coswave: k must not be zero!'; fac=ampl
+        k=kx; if (k==0) print*,'coswave: k must not be zero!'
         if (ampl==0) then
           if (lroot) print*,'coswave: ampl=0; kx=',k
         else
@@ -2707,46 +2708,76 @@ module Initcond
 !
     endsubroutine sinwave
 !***********************************************************************
-    subroutine sinwave_phase(f,i,ampl,kx,ky,kz,phase)
+    subroutine sinwave_phase(f,i,ampl,kx,ky,kz,phase,lnorm_kk)
 !
 !  Sine wave (as initial condition)
 !
 !  23-jan-06/anders: adapted from sinwave.
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: ampl, kx, ky, kz, phase
+      real :: ampl, kx, ky, kz, phase, fact, k2
       integer :: i
+      logical, optional :: lnorm_kk
+!
+!  possibility to normalize by 1/k if the initial amplitude
+!  is meant to be an amplitude for the B-field.
+!
+      if (present(lnorm_kk)) then
+        k2=kx**2+ky**2+kz**2
+        if (lnorm_kk .and. k2/=0.) then
+          fact=ampl/sqrt(k2)
+        else
+          fact=ampl
+        endif
+      else
+        fact=ampl
+      endif
 !
 !  Set sin wave
 !
-      if (lroot) print*, 'sinwave_phase: i, ampl, kx, ky, kz, phase=', &
-          i, ampl, kx, ky, kz, phase
+      if (lroot) print*, 'sinwave_phase: i, fact, kx, ky, kz, phase=', &
+          i, fact, kx, ky, kz, phase
 !
       do m=m1,m2; do n=n1,n2
         f(l1:l2,m,n,i) = f(l1:l2,m,n,i) + &
-            ampl*sin(kx*x(l1:l2)+ky*y(m)+kz*z(n)+phase)
+            fact*sin(kx*x(l1:l2)+ky*y(m)+kz*z(n)+phase)
       enddo; enddo
 !
     endsubroutine sinwave_phase
 !***********************************************************************
-    subroutine coswave_phase(f,i,ampl,kx,ky,kz,phase)
+    subroutine coswave_phase(f,i,ampl,kx,ky,kz,phase,lnorm_kk)
 !
 !  Cosine wave (as initial condition)
 !
 !  13-jun-06/anders: adapted from sinwave-phase.
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: ampl, kx, ky, kz, phase
+      real :: ampl, kx, ky, kz, phase, fact, k2
       integer :: i
+      logical, optional :: lnorm_kk
+!
+!  possibility to normalize by 1/k if the initial amplitude
+!  is meant to be an amplitude for the B-field.
+!
+      if (present(lnorm_kk)) then
+        k2=kx**2+ky**2+kz**2
+        if (lnorm_kk .and. k2/=0.) then
+          fact=ampl/sqrt(k2)
+        else
+          fact=ampl
+        endif
+      else
+        fact=ampl
+      endif
 !
 !  Set cos wave
 !
-      if (lroot) print*, 'coswave_phase: i, ampl, kx, ky, kz, phase=', &
-          i, ampl, kx, ky, kz, phase
+      if (lroot) print*, 'coswave_phase: i, fact, kx, ky, kz, phase=', &
+          i, fact, kx, ky, kz, phase
 !
       do m=m1,m2; do n=n1,n2
         f(l1:l2,m,n,i) = f(l1:l2,m,n,i) + &
-            ampl*cos(kx*x(l1:l2)+ky*y(m)+kz*z(n)+phase)
+            fact*cos(kx*x(l1:l2)+ky*y(m)+kz*z(n)+phase)
       enddo; enddo
 !
     endsubroutine coswave_phase
