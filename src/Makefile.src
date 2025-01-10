@@ -563,7 +563,7 @@ ifneq ($(GPU),nogpu)
       LIBGPU = astaroth/lib$(LIBGPU_NAME).so
 
       GPU_DEPS = $(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/Makefile.vendor $(CUDA_MAKEDIR)/PC_modulesources.h $(DSL_WORKDIR)/fieldecs.h $(DSL_WORKDIR)/equations.h $(DSL_WORKDIR)/solve.ac
-      ifneq ($(firstword $(IS_CRAY)),CRAY)
+      ifneq (,$(firstword $(IS_CRAY)))
         LDFLAGS_MAIN = -Bdynamic -Wl,--export-dynamic
       else
         LDFLAGS_MAIN = -h dynamic -Wl,--export-dynamic
