@@ -4108,9 +4108,6 @@ module Hydro
       real, dimension (nx) :: rmask
       real :: kx,zbot
       integer :: k
-      logical :: lcorr_zero_dt
-
-      lcorr_zero_dt = .false.
 !
 !  Calculate maxima and rms values for diagnostic purposes
 !
@@ -4484,7 +4481,6 @@ module Hydro
             !nshift=phidot*dt*dy_1(m)
             !call max_mn_name(nshift,idiag_nshift)
             if (dt==0.) then
-              lcorr_zero_dt=.true.
               call max_mn_name(uu_average_cyl(l1:l2,n)*rcyl_mn1*dy_1(m),idiag_nshift)
             else
               call max_mn_name(uu_average_cyl(l1:l2,n)*rcyl_mn1*dt*dy_1(m),idiag_nshift)
@@ -4495,7 +4491,6 @@ module Hydro
             !nshift=phidot*dt*dz_1(n)
             !call max_mn_name(nshift,idiag_nshift)
             if (dt==0.) then
-              lcorr_zero_dt=.true.
               call max_mn_name(uu_average_sph(l1:l2,m)*rcyl_mn1*dz_1(n),idiag_nshift)
             else
               call max_mn_name(uu_average_sph(l1:l2,m)*rcyl_mn1*dt*dz_1(n),idiag_nshift)
@@ -4513,12 +4508,12 @@ module Hydro
 
         if (ekman_friction/=0) call sum_mn_name(frict,idiag_frict)
 
-      elseif (lcorr_zero_dt) then
+      elseif (headt.and.itsub==2.and.lfirstpoint) then
 !
 !  Here all quantities should be updated the calculation of which requires dt which
 !  is zero at the very first diagnostics output time. (Doesn't work for itorder=1.)
 !
-        if (lroot) fname(idiag_nshift)=fname(idiag_nshift)*dt
+        fname(idiag_nshift)=fname(idiag_nshift)*dt
       endif  ! if (ldiagnos)
 
     endsubroutine calc_0d_diagnostics_hydro
