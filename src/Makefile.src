@@ -563,8 +563,11 @@ ifneq ($(GPU),nogpu)
       LIBGPU = astaroth/lib$(LIBGPU_NAME).so
 
       GPU_DEPS = $(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/Makefile.vendor $(CUDA_MAKEDIR)/PC_modulesources.h $(DSL_WORKDIR)/fieldecs.h $(DSL_WORKDIR)/equations.h $(DSL_WORKDIR)/solve.ac
-      #LDFLAGS_MAIN = -Bdynamic -Wl,--export-dynamic
-      LDFLAGS_MAIN = -h dynamic -Wl,--export-dynamic
+      ifneq ($(firstword $(IS_CRAY)),CRAY)
+        LDFLAGS_MAIN = -Bdynamic -Wl,--export-dynamic
+      else
+        LDFLAGS_MAIN = -h dynamic -Wl,--export-dynamic
+      endif
       LDFLAGS_LIB = -L astaroth -L astaroth/submodule/build/src/core -L astaroth/submodule/build/src/core/kernels -lastaroth_core -lkernels -l$(LIBGPU_NAME)
       ifneq ($(filter on yes,$(RUNTIME_COMPILATION)),)
         RUNTIME_COMPILATION = on
