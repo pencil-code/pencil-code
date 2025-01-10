@@ -1,0 +1,4 @@
+module load \
+CrayEnv \
+rocm \
+buildtools
