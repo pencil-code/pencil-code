@@ -1636,8 +1636,6 @@ module Diagnostics
 
       if (iname==0) return
 
-      if (loptest(lsqrt)) &
-        itype_name(iname)=ilabel_sum_sqrt
       if (loptest(lsqrt)) then
         itype_name(iname)=ilabel_sum_sqrt
       elseif (loptest(llog10)) then

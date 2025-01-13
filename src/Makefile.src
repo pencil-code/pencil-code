@@ -3590,7 +3590,7 @@ clean:  slender
 #  (there should be no Makefile_inc; but if there is, `make' just does nothing)
 #
 cleann: clean
-	rm -f Makefile src/Makefile Makefile_inc TAGS
+	rm -f Makefile Makefile_inc TAGS exit_mn.h
 	rm -rf semiauto-conf_tmp f90_qnd_log_dir
 	@for file in *.inc; do \
 	  if [ ! -L $$file ]; then rm -f $$file; fi \
