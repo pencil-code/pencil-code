@@ -3674,7 +3674,6 @@ module Hydro
       real, dimension (mx,mz) :: fsum_tmp_cyl
       real, dimension (mx,my) :: fsum_tmp_sph
       real, dimension (mx) :: uphi
-      real :: nygrid1,nzgrid1
       integer ::  j
 !
 !  Remove mean momenta or mean flows if desired.
@@ -3723,11 +3722,10 @@ module Hydro
 !
         if (lcylindrical_coords) then
           fsum_tmp_cyl=0.
-          nygrid1=1./nygrid
           do n=1,mz
             do m=m1,m2
               uphi=f(:,m,n,iuy)
-              fsum_tmp_cyl(:,n)=fsum_tmp_cyl(:,n)+uphi*nygrid1
+              fsum_tmp_cyl(:,n)=fsum_tmp_cyl(:,n)+uphi
             enddo
           enddo
 !
@@ -3735,18 +3733,19 @@ module Hydro
 ! Sum over processors of same ipz, and different ipy
 ! --only relevant for 3D, but is here for generality
 !
+          fsum_tmp_cyl = fsum_tmp_cyl/nygrid
           call mpiallreduce_sum(fsum_tmp_cyl,uu_average_cyl,(/mx,mz/),idir=2)
           !idir=2 is equal to old LSUMY=.true.
 !
         elseif (lspherical_coords) then
-          nzgrid1=1./nzgrid
           fsum_tmp_sph=0.
           do n=n1,n2
             do m=1,my
               uphi=f(:,m,n,iuz)
-              fsum_tmp_sph(:,m)=fsum_tmp_sph(:,m)+uphi*nzgrid1
+              fsum_tmp_sph(:,m)=fsum_tmp_sph(:,m)+uphi
             enddo
           enddo
+          fsum_tmp_sph = fsum_tmp_sph/nzgrid
           call mpiallreduce_sum(fsum_tmp_sph,uu_average_sph,(/mx,my/),idir=3)
           !idir=3 is equal to old LSUMZ=.true.
 !
@@ -4513,7 +4512,7 @@ module Hydro
 !  Here all quantities should be updated the calculation of which requires dt which
 !  is zero at the very first diagnostics output time. (Doesn't work for itorder=1.)
 !
-        fname(idiag_nshift)=fname(idiag_nshift)*dt
+        if (idiag_nshift/=0) fname(idiag_nshift)=fname(idiag_nshift)*dt
       endif  ! if (ldiagnos)
 
     endsubroutine calc_0d_diagnostics_hydro

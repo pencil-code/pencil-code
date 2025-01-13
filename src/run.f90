@@ -306,7 +306,6 @@ subroutine timeloop(f,df,p)
   use Snapshot,        only: powersnap_prepare
 !$ use OMP_lib
 !$ use General, only: signal_send, signal_wait
-!!$ use, intrinsic :: iso_fortran_env
 !
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension (mx,my,mz,mvar) :: df
@@ -621,8 +620,6 @@ subroutine run_start() bind(C)
 !
 !$ use OMP_lib
 !$ use, intrinsic :: iso_c_binding
-!!$ use, intrinsic :: iso_fortran_env
-!!$ use mt, only: wait_all_thread_pool, push_task, free_thread_pool, depend_on_all, default_task_type
 !
   implicit none
 
@@ -1025,7 +1022,7 @@ subroutine run_start() bind(C)
   if ( ((lpencil_check .and. .not. suppress_pencil_check) .or. &
         (.not.lpencil_check.and.lpencil_check_small)) .and. nt>0 ) then
     if (lgpu) then
-      call warning('run',"Pencil consistency check not supported on the GPU. You can consider running it on a CPU-only compilation")
+      call warning('run',"Pencil consistency check not supported on GPUs. You can consider running it with a CPU-only build")
     else 
       call pencil_consistency_check(f,df,p)
     endif
@@ -1092,8 +1089,6 @@ subroutine run_start() bind(C)
         time_last_diagnostic=time1
       endif
       if (nt>0) call timeloop(f,df,p)
-!print*, 'nach timeloop', iproc
-!flush(6)
 !$  else
 !$    if (nt>0) call helper_loop(f,p)
 !$  endif
