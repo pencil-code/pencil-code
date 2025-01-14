@@ -149,6 +149,8 @@ module Interstellar
 !  3-D  was 3.71213666 but replaced with Maple result....
 !
   real, parameter, dimension(3) :: &
+      ctrim             = (/ 0.7962595104709423, 0.5688899297713748, 0.3729484303423599  /)
+  real, parameter, dimension(3) :: &
       cnorm_gaussian_SN    = (/ 0.8862269254527579, pi,                5.568327996831708  /)
   real, parameter, dimension(3) :: &
       cnorm_gaussian2_SN   = (/ 0.9064024770554771, 2.784163998415854, 3.849760110050832  /)
@@ -410,6 +412,7 @@ module Interstellar
   character (len=labellen) :: velocity_profile= 'gaussian'
   character (len=labellen) :: mass_profile    = 'gaussian'
   character (len=labellen) :: clabel=' '
+  logical :: ltrim_profile=.false.
 !
 !  Variables required for returning mass to disk given no inflow
 !  boundary condition used in addmassflux
@@ -438,7 +441,7 @@ module Interstellar
       lSN_scale_rad, ampl_SN, mass_SN, width_SN, &
       mass_width_ratio, energy_width_ratio, velocity_width_ratio, &
       t_next_SNI, t_next_SNII, center_SN_x, center_SN_y, center_SN_z, &
-      lSN_eth, lSN_ecr, lSN_fcr, lSN_mass, lSN_list, &
+      lSN_eth, lSN_ecr, lSN_fcr, lSN_mass, lSN_list, ltrim_profile, &
       frac_ecr, frac_kin, thermal_profile, velocity_profile, mass_profile, &
       luniform_zdist_SNI, inner_shell_proportion, outer_shell_proportion, &
       SNI_factor, SNII_factor, lSN_autofrackin, kin_max, &
@@ -456,8 +459,8 @@ module Interstellar
       mass_width_ratio, energy_width_ratio, velocity_width_ratio, &
       lSN_eth, lSN_ecr, lSN_fcr, lSN_mass, width_SN, lSNI, lSNII, &
       luniform_zdist_SNI, SNI_area_rate, SNII_area_rate, &
-      SNI_factor, SNII_factor, lSN_autofrackin, kin_max, &
-      frac_ecr, frac_kin, thermal_profile,velocity_profile, mass_profile, &
+      SNI_factor, SNII_factor, lSN_autofrackin, kin_max, ltrim_profile, &
+      frac_ecr, frac_kin, thermal_profile, velocity_profile, mass_profile, &
       h_SNI, h_SNII, TT_SN_min, lSN_scale_rad, lh_SNII_adjust, &
       mass_SN_progenitor, cloud_tau, cloud_rho, cloud_TT, &
       laverage_SNI_heating, laverage_SNII_heating, coolingfunction_scalefactor, &
@@ -4443,6 +4446,8 @@ print*,"Fred was here, after MPI explode_SN: iproc, exp(maxlnTT)/TT_SN_max",ipro
         profile_SN=exp(-(dr2_SN/width**2)**2)
       elseif (thermal_profile=="gaussian") then
         profile_SN=exp(-(dr2_SN/width**2))
+        if (ltrim_profile .and. dimensionality==3) &
+          profile_SN=profile_SN*exp(-(dr2_SN/width**2)**3)/ctrim(dimensionality)
       elseif (thermal_profile=="quadratic") then
         profile_SN=max(1.-(dr2_SN/width**2),0.)
       elseif (thermal_profile=="quadratictanh") then
@@ -4472,6 +4477,8 @@ print*,"Fred was here, after MPI explode_SN: iproc, exp(maxlnTT)/TT_SN_max",ipro
         profile_SN=exp(-(dr2_SN/width**2)**2)
       elseif (mass_profile=="gaussian") then
         profile_SN=exp(-(dr2_SN/width**2))
+        if (ltrim_profile .and. dimensionality==3) &
+          profile_SN=profile_SN*exp(-(dr2_SN/width**2)**3)/ctrim(dimensionality)
       elseif (mass_profile=="quadratic") then
         profile_SN=max(1.0-(dr2_SN/width**2),0.0)
       elseif (mass_profile=="tanh") then
@@ -4531,6 +4538,8 @@ print*,"Fred was here, after MPI explode_SN: iproc, exp(maxlnTT)/TT_SN_max",ipro
 !
       if (velocity_profile=="gaussian") then
         profile_SN=exp(-(dr2_SN/width**2))
+        if (ltrim_profile .and. dimensionality==3) &
+          profile_SN=profile_SN*exp(-(dr2_SN/width**2)**3)/ctrim(dimensionality)
 !
       elseif (velocity_profile=="gaussian2") then
         profile_SN=exp(-(dr2_SN/width**2)**2)
@@ -4572,6 +4581,8 @@ print*,"Fred was here, after MPI explode_SN: iproc, exp(maxlnTT)/TT_SN_max",ipro
 !
       if (thermal_profile=="gaussian") then
         profile_SN=2.*sqrt(dr2_SN)/width**2*exp(-(dr2_SN/width**2))
+        if (ltrim_profile .and. dimensionality==3) &
+          profile_SN=profile_SN*exp(-(dr2_SN/width**2)**3)/ctrim(dimensionality)
 !
       elseif (thermal_profile=="gaussian2") then
         profile_SN=4.*(sqrt(dr2_SN)**3)/width**4*exp(-(dr2_SN/width**2)**2)
