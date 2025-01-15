@@ -3372,8 +3372,8 @@ module Dustdensity
       real, dimension (ndustspec) :: dsize_loc
 
       integer :: k
-      integer, parameter :: i1=1,i2=2,i3=3
-      integer, parameter :: ii1=ndustspec, ii2=ndustspec-1,ii3=ndustspec-2
+      integer, parameter :: i1=1,i2=min(ndustspec,2),i3=min(ndustspec,3)
+      integer, parameter :: ii1=ndustspec, ii2=max(ndustspec-1,1),ii3=max(ndustspec-2,1)
       real :: rr1=0.,rr2=0.,rr3=0.
       intent(in) :: ff, dsize_loc
       intent(out) :: dff_dr
@@ -3381,31 +3381,40 @@ module Dustdensity
 !  df/dx = y0*(2x-x1-x2)/(x01*x02)+y1*(2x-x0-x2)/(x10*x12)+y2*(2x-x0-x1)/(x20*x21)
 !  Where: x01 = x0-x1, x02 = x0-x2, x12 = x1-x2, etc.
 !
-      rr1=dsize_loc(i1)
-      rr2=dsize_loc(i2)
-      rr3=dsize_loc(i3)
+      if (ndustspec>=3) then
+
+        rr1=dsize_loc(i1)
+        rr2=dsize_loc(i2)
+        rr3=dsize_loc(i3)
 !
-      dff_dr(:,i1) = (ff(:,i1)*(rr1-rr2+rr1-rr3)/((rr1-rr2)*(rr1-rr3))  &
-                    - ff(:,i2)*(rr1-rr3)/((rr1-rr2)*(rr2-rr3)) &
-                    + ff(:,i3)*(rr1-rr2)/((rr1-rr3)*(rr2-rr3)) )
+        dff_dr(:,i1) = (ff(:,i1)*(rr1-rr2+rr1-rr3)/((rr1-rr2)*(rr1-rr3))  &
+                      - ff(:,i2)*(rr1-rr3)/((rr1-rr2)*(rr2-rr3)) &
+                      + ff(:,i3)*(rr1-rr2)/((rr1-rr3)*(rr2-rr3)) )
 !
 !  interior points (second order)
 !
-      do k=2,ndustspec-1
+        do k=2,ndustspec-1
 !
-        rr1=dsize_loc(k-1)
-        rr2=dsize_loc(k)
-        rr3=dsize_loc(k+1)
+          rr1=dsize_loc(k-1)
+          rr2=dsize_loc(k)
+          rr3=dsize_loc(k+1)
 !
-        dff_dr(:,k) =  ff(:,k-1)*(rr2-rr3)/((rr1-rr2)*(rr1-rr3)) &
-                      +ff(:,k  )*(2*rr2-rr1-rr3)/((rr2-rr1)*(rr2-rr3)) &
-                      +ff(:,k+1)*(2*rr2-rr1-rr2)/((rr3-rr1)*(rr3-rr2))
-      enddo
+          dff_dr(:,k) =  ff(:,k-1)*(rr2-rr3)/((rr1-rr2)*(rr1-rr3)) &
+                        +ff(:,k  )*(2*rr2-rr1-rr3)/((rr2-rr1)*(rr2-rr3)) &
+                        +ff(:,k+1)*(2*rr2-rr1-rr2)/((rr3-rr1)*(rr3-rr2))
+        enddo
 !
-      dff_dr(:,ndustspec)=-ff(:,ii3)*(rr2-rr3)/((rr1-rr2)*(rr1-rr3)) &
-                          +ff(:,ii2)*(rr1-rr3)/((rr1-rr2)*(rr2-rr3)) &
-                          -ff(:,ii1)*(rr1-rr3+rr2-rr3)/((rr1-rr3)*(rr2-rr3))
+        dff_dr(:,ndustspec)=-ff(:,ii3)*(rr2-rr3)/((rr1-rr2)*(rr1-rr3)) &
+                            +ff(:,ii2)*(rr1-rr3)/((rr1-rr2)*(rr2-rr3)) &
+                            -ff(:,ii1)*(rr1-rr3+rr2-rr3)/((rr1-rr3)*(rr2-rr3))
 !
+      elseif (ndustspec==2) then
+        dff_dr(:,1) = (ff(:,2) - ff(:,1))/(dsize_loc(2)-dsize_loc(1))
+        dff_dr(:,2) = dff_dr(:,1)
+      else
+        dff_dr(:,1) = 0.
+      endif
+
     endsubroutine deriv_size
 !***********************************************************************
     subroutine droplet_init(f)

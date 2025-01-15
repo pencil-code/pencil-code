@@ -8217,7 +8217,7 @@ module Energy
     call copy_addr(chi_hyper3,p_par(5))
     call copy_addr(chi_t0,p_par(6))
 
-    if (allocated(hcond_prof))    call copy_addr(hcond_prof,p_par(7))      ! (nz)
+    if (allocated(hcond_prof))    call copy_addr(hcond_prof,p_par(7))      ! (nz)   !tb replaced by a runtime dim
     if (allocated(dlnhcond_prof)) call copy_addr(dlnhcond_prof,p_par(8))   ! (nz)
     if (allocated(chit_prof_stored)) call copy_addr(chit_prof_stored,p_par(9))    ! (nz)
     if (allocated(dchit_prof_stored)) call copy_addr(dchit_prof_stored,p_par(10)) ! (nz)
