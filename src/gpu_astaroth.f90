@@ -43,9 +43,12 @@ module GPU
 
 contains
 !***********************************************************************
-    subroutine initialize_GPU
+    subroutine initialize_GPU(f)
 !
-      use MPIComm, only: MPI_COMM_PENCIL
+      use Mpicomm, only: MPI_COMM_PENCIL
+
+      real, dimension(:,:,:,:), intent(IN) :: f
+
       character(LEN=512) :: str
 !
       str=''
@@ -69,12 +72,17 @@ contains
       if (lspecial) str=trim(str)//', '//'special'
       if (lparticles) str=trim(str)//', '//'particles'
 
-      if (str/='') call fatal_error('initialize_GPU','no GPU implementation possible for module(s) "'// &
+      if (str/='') call fatal_error('initialize_GPU','no GPU implementation available for module(s) "'// &
                                     trim(str(3:))//'"')
 !
       if (dt<=0.) dt = dtmin
       call initialize_gpu_c(pFarr_GPU_in,pFarr_GPU_out,MPI_COMM_PENCIL)
-!print'(a,1x,Z0,1x,Z0)', 'pFarr_GPU_in,pFarr_GPU_out=', pFarr_GPU_in,pFarr_GPU_out
+!
+! Load farray to gpu
+!
+      if (nt>0) call load_farray_to_GPU(f)
+
+  !print'(a,1x,Z0,1x,Z0)', 'pFarr_GPU_in,pFarr_GPU_out=', pFarr_GPU_in,pFarr_GPU_out
     endsubroutine initialize_GPU
 !**************************************************************************
     subroutine gpu_init

@@ -632,7 +632,7 @@ subroutine run_start() bind(C)
   integer :: memuse, memory, memcpu
   logical :: suppress_pencil_check=.false.
   logical :: lnoreset_tzero=.false.
-  logical :: lexist
+  logical :: lprocbounds_exist
   integer, parameter :: num_helpers=1
   integer :: i,j
   integer :: master_core_id
@@ -729,21 +729,20 @@ subroutine run_start() bind(C)
   call set_coorsys_dimmask
 !
   fproc_bounds = trim(datadir) // "/proc_bounds.dat"
-  inquire (file=fproc_bounds, exist=lexist)
+  inquire (file=fproc_bounds, exist=lprocbounds_exist)
   call mpibarrier
 !
-  if (luse_oldgrid .and. lexist) then
+  if (luse_oldgrid .and. lprocbounds_exist) then
     if (ip<=6.and.lroot) print*, 'reading grid coordinates'
     call rgrid('grid.dat')
     call rproc_bounds(fproc_bounds)
     call construct_serial_arrays
     call grid_bound_data
   else
-    if (luse_oldgrid) call warning("run", "reconstructing the grid")
+    if (luse_oldgrid) call warning("run", "reconstructing the grid because proc_bounds.dat is missing")
     if (luse_xyz1) Lxyz = xyz1-xyz0
     call construct_grid(x,y,z,dx,dy,dz)
-    call wgrid("grid.dat", lwrite=.true.)
-    call wproc_bounds(fproc_bounds)
+    lprocbounds_exist = .false.    ! triggers wproc_bounds later
   endif
 !
 !  Shorthands (global).
@@ -883,10 +882,7 @@ subroutine run_start() bind(C)
 !
 !  Read particle snapshot.
 !
-  if (lparticles) then
-    if (ip <= 6 .and. lroot) print *, "reading particle snapshot"
-    call read_snapshot_particles
-  endif
+  if (lparticles) call read_snapshot_particles
 !
 !  Read point masses.
 !
@@ -944,9 +940,7 @@ subroutine run_start() bind(C)
   call initialize_timestep
   call initialize_modules(f)
   call initialize_boundcond
-  call initialize_gpu
-! Load farray to gpu
-  if (nt>0) call load_farray_to_GPU(f)
+  call initialize_gpu(f)
 !
   if (it1d==impossible_int) then
     it1d=it1
@@ -964,13 +958,18 @@ subroutine run_start() bind(C)
   if (lparticles) call particles_initialize_modules(f)
 !
 !  Only after register it is possible to write the correct dim.dat
-!  file with the correct number of variables
+!  file with the correct number of variables.
+!  No IO-module-controlled reading operations allowed beyond this point!
 !
-  call wgrid('grid.dat')
+  call wgrid("grid.dat", lwrite=.not.(lprocbounds_exist .and. luse_oldgrid))
+  if (.not.lprocbounds_exist) call wproc_bounds(fproc_bounds)
+
   if (.not.luse_oldgrid .or. lwrite_dim_again) then
     call wdim('dim.dat')
-    if (ip<11) print*,'Lz=',Lz
-    if (ip<11) print*,'z=',z
+    if (ip<11 .and. lroot) then
+      print*,'Lz=',Lz
+      print*,'z=',z
+    endif
   endif
 !
 !  Write data to file for IDL (param2.nml).

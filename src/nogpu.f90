@@ -17,8 +17,12 @@ module GPU
 
 contains
 !***********************************************************************
-    subroutine initialize_GPU
+    subroutine initialize_GPU(f)
 !
+      real, dimension(:,:,:,:), intent(IN) :: f
+
+      call keep_compiler_quiet(f)
+
     endsubroutine initialize_GPU
 !**************************************************************************
     subroutine gpu_init
