@@ -167,7 +167,7 @@ module Magnetic
   real :: non_ffree_factor=1.
   real :: etaB=0.
   real :: tau_relprof=0.0, tau_relprof1, amp_relprof=1.0 , k_relprof=1.0
-  real, pointer :: ascale, Hscript
+  real, pointer :: ascale, Hscript, e2m_all, b2m_all
   real :: cp=impossible
   real :: dipole_moment=0.0
   real :: eta_power_x=0., eta_power_z=0.
@@ -179,7 +179,7 @@ module Magnetic
   integer, target :: va2power_jxb = 5
   integer :: nbvec, nbvecmax=nx*ny*nz/4, iua=0, iLam=0, idiva=0
   integer :: N_modes_aa=1, naareset
-  logical, pointer :: lrelativistic_eos, lconservative
+  logical, pointer :: lrelativistic_eos, lconservative, lrho_chi
   logical :: lpress_equil=.false., lpress_equil_via_ss=.false.
   logical :: lpress_equil_alt=.false., lset_AxAy_zero=.false.
   logical :: llorentzforce=.true., llorentz_rhoref=.false., linduction=.true.
@@ -1250,9 +1250,9 @@ module Magnetic
 !
       call put_shared_variable('lbb_as_comaux',lbb_as_comaux, caller='register_magnetic')
       call put_shared_variable('lresi_eta_tdep', lresi_eta_tdep)
-      call put_shared_variable('loverride_ee', loverride_ee)
-      if (lresi_eta_tdep) call put_shared_variable('eta_tdep', eta_tdep)
+      if (lrun) call put_shared_variable('eta_tdep',eta_tdep)
       call put_shared_variable('eta', eta)
+      call put_shared_variable('loverride_ee', loverride_ee)
 !
 !  Share several parameters for Alfven limiter with module Shock.
 !
@@ -1804,7 +1804,11 @@ module Magnetic
               call warning('initialize_magnetic','4th & 6th order hyperdiffusion are both set. '// &
                            'Timestep is currently only sensitive to fourth order')
         endif
-
+!
+!  Put eta_xtdep id lresi_eta_xtdep=T.
+!
+      if (lresi_eta_xtdep) call put_shared_variable('eta_xtdep', eta_xtdep)
+!
       endif
 !
 !  Quenching of \eta by rms of magnetic vector potential?
@@ -1882,6 +1886,10 @@ module Magnetic
         if (lresi_magfield) call fatal_error('initialize_magnetic','set lweyl_gauge=T for lresi_magfield')
         if (lresi_etava) call not_implemented('initialize_magnetic','eta_va for resistive gauge')
       endif
+!
+!  get other shared variables
+!
+!AB   call get_shared_variable('lrho_chi',lrho_chi, caller='initialize_magnetic')
 !
 !  Border profile backward compatibility. For a vector, if only the first
 !  borderaa is set, then the other components get the same value.
@@ -3873,6 +3881,7 @@ module Magnetic
       use EquationOfState, only: rho0
       use General, only: notanumber
       use FArrayManager, only: farray_index_by_name
+      use SharedVariables, only: put_shared_variable
       use Sub
 !
       real, dimension (mx,my,mz,mfarray), intent(inout):: f
@@ -3884,7 +3893,7 @@ module Magnetic
       real, dimension (nx) :: Eabs, Babs
       real, dimension(3) :: B_ext, j_ext
       real :: c,s
-      real :: Eaver, Baver, b2m
+      real :: Eaver, Baver !, b2m
       integer :: i, j, ix, iedotx, iedotz
 
       if (lfirstpoint) lproc_print=.true.
@@ -4170,7 +4179,7 @@ module Magnetic
             eta_tdep=0.
           case ('mean-field')
 !
-!  eta_tdep
+!  eta_tdep (luse_scale_factor_in_sigma=T by default)
 !
             if (luse_scale_factor_in_sigma) then
               call get_shared_variable('ascale', ascale, caller='initialize_magnetic')
@@ -4180,10 +4189,26 @@ module Magnetic
               ascale=1.
               Hscript=1.
             endif
-            if (ncpus>1.or.dimensionality>1) call fatal_error('calc_pencils_magnetic_pencpar', &
-                'not programmed for multiple procs or more than 1 dimension')
-            Eaver=sqrt(sum(f(l1:l2,m,n,iex)**2+f(l1:l2,m,n,iey)**2+f(l1:l2,m,n,iez)**2)/nx)
-            Baver=sqrt(sum(p%b2)/nx+B_ext2)
+!
+!  get other shared variables
+!
+      call get_shared_variable('lrho_chi',lrho_chi, caller='initialize_magnetic')
+!
+!  need e2m, b2m
+!
+            if (.not. lrho_chi) call fatal_error('calc_pencils_magnetic_pencpar', &
+                'lrho_chi must be true when using mean-field')
+!
+!           if (ncpus>1.or.dimensionality>1) call fatal_error('calc_pencils_magnetic_pencpar', &
+!               'not programmed for multiple procs or more than 1 dimension')
+!           Eaver=sqrt(sum(f(l1:l2,m,n,iex)**2+f(l1:l2,m,n,iey)**2+f(l1:l2,m,n,iez)**2)/nx)
+!           Baver=sqrt(sum(p%b2)/nx+B_ext2)
+!
+            !call get_shared_variable('e2m_all', e2m_all, caller='initialize_magnetic')
+            call get_shared_variable('e2m_all', e2m_all)
+            call get_shared_variable('b2m_all', b2m_all)
+            Eaver=sqrt(e2m_all)
+            Baver=sqrt(b2m_all+B_ext2)
 !
 !  Note that eta_tdep=0 for Baver=0.
 !
@@ -4243,6 +4268,7 @@ module Magnetic
           else
             eta_total=eta
           endif
+!
           if (lvacuum) then
             p%jj=0.
             p%jj_ohm=0.
@@ -6003,7 +6029,6 @@ module Magnetic
           do j=1,3
             dJdt(:,j)=tau1_jj*(p%el(:,j)+p%uxb(:,j))*mu01/eta_total
           enddo
-!print*,'AXEL: p%el(1:3,j),p%uxb(1:3,j),mu01,eta_total=',p%el(1:3,j),p%uxb(1:3,j),mu01,eta_total
           if (ell_jj/=0.) then
             call del2v(f,ijx,del2jj)
             dJdt=dJdt+(ell_jj**2*tau1_jj)*del2jj

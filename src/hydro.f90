@@ -213,7 +213,7 @@ module Hydro
   real :: omega_out=0., omega_in=0., omega_fourier=0.
   real :: width_ff_uu=1.,x1_ff_uu=0.,x2_ff_uu=0.
   real :: ekman_friction=0.0, friction_tdep_toffset=0.0, friction_tdep_tau0=0.
-  real :: uzjet=0.0
+  real :: t1_ekman, t2_ekman, uzjet=0.0
   real :: ampl_forc=0., k_forc=impossible, w_forc=0., x_forc=0., dx_forc=0.1
   real :: ampl_fcont_uu=1., k_diffrot=1., amp_centforce=1., Sbaro0=0.
   real :: uphi_rbot=1., uphi_rtop=1., uphi_step_width=0.
@@ -286,6 +286,7 @@ module Hydro
       interior_bc_hydro_profile, lhydro_bc_interior, z1_interior_bc_hydro, &
       velocity_ceiling, ampl_Omega, lcoriolis_xdep, &
       ekman_friction, friction_tdep, friction_tdep_toffset, friction_tdep_tau0, &
+      t1_ekman, t2_ekman, &
       ampl_forc, k_forc, w_forc, x_forc, dx_forc, ampl_fcont_uu, Sbaro0, &
       lno_meridional_flow, lrotation_xaxis, k_diffrot,Shearx, rescale_uu, &
       hydro_xaver_range, Ra, Pr, llinearized_hydro, lremove_mean_angmom, &
@@ -3991,6 +3992,14 @@ module Hydro
               frict=ekman_friction*sqrt(p%j2)
             else
               call fatal_error("duu_dt","lmagnetic must be true")
+            endif
+          case ('step')
+            if (t<=t1_ekman) then
+              frict=0.
+            elseif (t<=t2_ekman) then
+              frict=ekman_friction
+            else
+              frict=0.
             endif
           case default
         endselect
