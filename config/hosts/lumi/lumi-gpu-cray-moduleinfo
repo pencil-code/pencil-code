@@ -1,0 +1,6 @@
+module load \
+cray-hdf5-parallel \
+CrayEnv \
+rocm \
+buildtools \
+cray-python

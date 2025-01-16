@@ -5,6 +5,7 @@ from os.path import (
     exists,
     basename,
     abspath,
+    getmtime,
     )
 import numpy as np
 
@@ -38,6 +39,10 @@ def get(path=".", quiet=False):
 
             if sim.path != Path(path).absolute():
                 # The name of the directory containing the simulation has somehow changed (maybe the user renamed it). Better to just try to reload the sim from scratch.
+                raise RuntimeError
+
+            if getmtime(join(path, "pc/sim.dill")) < getmtime(sim.datadir):
+                #Without this, sim.param sometimes does not pick up changes made by the user.
                 raise RuntimeError
 
             return sim

@@ -162,6 +162,9 @@ module Viscosity
                                 ! DIAG_DOC: \fv_{\rm visc}\right>$
   integer :: idiag_Sij2m=0      ! DIAG_DOC: $\left<\Strain^2\right>$
   integer :: idiag_epsK=0       ! DIAG_DOC: $\left<2\nu\varrho\Strain^2\right>$
+  integer :: idiag_epsK2=0      ! DIAG_DOC: $\left<(2\nu\varrho\Strain^2)^2\right>$
+  integer :: idiag_epsK3=0      ! DIAG_DOC: $\left<(2\nu\varrho\Strain^2)^3\right>$
+  integer :: idiag_epsK4=0      ! DIAG_DOC: $\left<(2\nu\varrho\Strain^2)^4\right>$
   integer :: idiag_epsKint=0    ! DIAG_DOC: $\int(2\nu\varrho\Strain^2)\,dV$
   integer :: idiag_epsK_LES=0   ! DIAG_DOC:
   integer :: idiag_sijoiojm=0   ! DIAG_DOC: $\left<S_{i,j} \omega_i \omega_j\right>$
@@ -577,7 +580,7 @@ module Viscosity
             call warning('initialize_viscosity','Viscosity coefficient nu is zero')
 
         if ((lvisc_rho_nu_const_bulk).and.zeta==0.0) &
-          call warning('initialize_viscosity','Viscosity coefficient zeta is zero')
+            call fatal_error('initialize_viscosity','Viscosity coefficient zeta is zero')
 
         if (lvisc_hyper2_simplified.and.nu_hyper2==0.0) &
             call fatal_error('initialize_viscosity','Viscosity coefficient nu_hyper2 is zero')
@@ -627,11 +630,10 @@ module Viscosity
 !  Dynamical hyper-diffusivity operates only for mesh formulation of hyper-viscosity
 !
         if (ldynamical_diffusion.and. &
-            .not.(lvisc_hyper3_mesh.or.lvisc_hyper3_mesh_residual.or.lvisc_hyper3_csmesh)) then
+            .not.(lvisc_hyper3_mesh.or.lvisc_hyper3_mesh_residual.or.lvisc_hyper3_csmesh)) &
           call fatal_error("initialize_viscosity", &
                "Dynamical diffusion requires mesh hyper-diffusion, switch ivisc='hyper3-mesh' "// &
                "'hyper3-mesh-residual', or 'hyper3-csmesh'")
-        endif
       endif
 
       if (lyinyang) then
@@ -852,6 +854,7 @@ module Viscosity
       if (lreset) then
         idiag_dtnu=0; idiag_dtnu3=0; idiag_nu_LES=0; idiag_Sij2m=0
         idiag_epsK=0; idiag_epsKint=0; idiag_epsK_LES=0; idiag_sijoiojm=0
+        idiag_epsK2=0; idiag_epsK3=0; idiag_epsK4=0
         idiag_visc_heatm=0; idiag_mesh3Remax=0; idiag_meshRemax=0; idiag_Reshock=0
         idiag_nuD2uxbxm=0; idiag_nuD2uxbym=0; idiag_nuD2uxbzm=0
         idiag_nu_tdep=0; idiag_fviscm=0 ; idiag_fviscrmsx=0
@@ -888,6 +891,9 @@ module Viscosity
         call parse_name(iname,cname(iname),cform(iname),'Sij2m',idiag_Sij2m)
         call parse_name(iname,cname(iname),cform(iname),'sijoiojm',idiag_sijoiojm)
         call parse_name(iname,cname(iname),cform(iname),'epsK',idiag_epsK)
+        call parse_name(iname,cname(iname),cform(iname),'epsK2',idiag_epsK2)
+        call parse_name(iname,cname(iname),cform(iname),'epsK3',idiag_epsK3)
+        call parse_name(iname,cname(iname),cform(iname),'epsK4',idiag_epsK4)
         call parse_name(iname,cname(iname),cform(iname),'epsKint',idiag_epsKint)
         call parse_name(iname,cname(iname),cform(iname),'epsK_LES',idiag_epsK_LES)
         call parse_name(iname,cname(iname),cform(iname),'meshRemax',idiag_meshRemax)
@@ -964,6 +970,7 @@ module Viscosity
           (lvisc_simplified.and.lboussinesq) ) then
         if ((lenergy.and.lviscosity_heat) .or. &
              idiag_epsK/=0 .or. idiag_epsKint/=0 .or. idiag_epsK_LES/=0 .or. &
+             idiag_epsK2/=0 .or.idiag_epsK3/=0 .or.  idiag_epsK4/=0 .or. &
              idiag_epsKmz/=0 .or. &
              idiag_fviscmz/=0.or.idiag_fviscsmmz/=0.or.idiag_fviscmx/=0) &
           lpenc_requested(i_sij2)=.true.
@@ -1110,6 +1117,7 @@ module Viscosity
 !        lpenc_diagnos(i_sij2)=.true.
       endif
       if (idiag_epsK/=0 .or. idiag_epsKint/=0 .or. idiag_epsK_LES/=0 .or. idiag_epsKmz/=0 .or. &
+          idiag_epsK2/=0 .or.idiag_epsK3/=0 .or.  idiag_epsK4/=0 .or. &
           idiag_viscforcezmz/=0.or.idiag_viscforcezupmz/=0.or. &
           idiag_viscforcezdownmz/=0) then
         lpenc_diagnos(i_rho)=.true.
@@ -1123,28 +1131,35 @@ module Viscosity
         lpenc_diagnos(i_sij)=.true.
       endif
       if (idiag_Sij2m/=0.) lpenc_diagnos(i_sij2)=.true.
-      if (idiag_epsK/=0 .or. idiag_epsKint/=0 .or. idiag_epsKmz/=0 .or. idiag_epsK_LES/=0) then
+      if (idiag_epsK/=0 .or. idiag_epsKint/=0 .or. idiag_epsKmz/=0 .or. idiag_epsK_LES/=0 .or. &
+          idiag_epsK2/=0 .or.idiag_epsK3/=0 .or.  idiag_epsK4/=0) then
         lpenc_diagnos(i_visc_heat)=.true.
         lpenc_diagnos(i_uu)=.true.
       endif
       if (idiag_sijxxmz/=0.or.idiag_sijxymz/=0.or.idiag_sijxzmz/=0.or. &
           idiag_sijyymz/=0.or.idiag_sijyzmz/=0.or.idiag_sijzzmz/=0) &
         lpenc_diagnos(i_sij)=.true.
-      if (lvisc_nu_shock.and.(idiag_epsK/=0 .or. idiag_epsKint/=0)) then
+      if (lvisc_nu_shock.and.(idiag_epsK/=0 .or. &
+          idiag_epsK2/=0 .or.idiag_epsK3/=0 .or.  idiag_epsK4/=0 .or. &
+          idiag_epsKint/=0)) then
         lpenc_diagnos(i_fvisc)=.true.
         lpenc_diagnos(i_diffus_total)=.true.
         lpenc_diagnos(i_shock)=.true.
         lpenc_diagnos(i_divu)=.true.
         lpenc_diagnos(i_rho)=.true.
       endif
-      if (lvisc_nu_shock_profz.and.(idiag_epsK/=0 .or. idiag_epsKint/=0)) then
+      if (lvisc_nu_shock_profz.and.(idiag_epsK/=0 .or. &
+          idiag_epsK2/=0 .or.idiag_epsK3/=0 .or.  idiag_epsK4/=0 .or. &
+          idiag_epsKint/=0)) then
         lpenc_diagnos(i_fvisc)=.true.
         lpenc_diagnos(i_diffus_total)=.true.
         lpenc_diagnos(i_shock)=.true.
         lpenc_diagnos(i_divu)=.true.
         lpenc_diagnos(i_rho)=.true.
       endif
-      if (lvisc_nu_shock_profr.and.(idiag_epsK/=0 .or. idiag_epsKint/=0)) then
+      if (lvisc_nu_shock_profr.and.(idiag_epsK/=0 .or. &
+          idiag_epsK2/=0 .or.idiag_epsK3/=0 .or.  idiag_epsK4/=0 .or. &
+          idiag_epsKint/=0)) then
         lpenc_diagnos(i_fvisc)=.true.
         lpenc_diagnos(i_diffus_total)=.true.
         lpenc_diagnos(i_shock)=.true.
@@ -2067,6 +2082,11 @@ module Viscosity
 
         else
 !
+!  A warning here, since if the user actually wanted to ignore the gradient of
+!  the Smagorinsky viscosity, they would've used 'smagorinsky-simplified' instead.
+!
+          if (headtt) call warning('calc_pencils_viscosity', 'gradient of Smagorinsky viscosity is ignored since lnusmag_as_aux=F')
+!
 !  Compute nu_smag and put into a pencil
 !
           p%nu_smag=(C_smag*dxmax)**2.*sqrt(2.*p%sij2)
@@ -2623,6 +2643,9 @@ module Viscosity
         if (idiag_fviscrmsx/=0) call sum_mn_name(xmask_vis*fvisc2,idiag_fviscrmsx,lsqrt=.true.)
         call sum_mn_name(p%visc_heat,idiag_visc_heatm)
         if (idiag_epsK/=0) call sum_mn_name(p%visc_heat*p%rho,idiag_epsK)
+        if (idiag_epsK2/=0) call sum_mn_name((p%visc_heat*p%rho)**2,idiag_epsK2)
+        if (idiag_epsK3/=0) call sum_mn_name((p%visc_heat*p%rho)**3,idiag_epsK3)
+        if (idiag_epsK4/=0) call sum_mn_name((p%visc_heat*p%rho)**4,idiag_epsK4)
         if (idiag_epsKint/=0) call integrate_mn_name(p%visc_heat*p%rho,idiag_epsKint)
 
         call sum_mn_name(p%nu_smag,idiag_nusmagm)

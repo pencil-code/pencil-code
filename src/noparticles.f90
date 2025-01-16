@@ -12,7 +12,7 @@
 ! PENCILS PROVIDED rhop;grhop(3);peh
 ! PENCILS PROVIDED tauascalar
 ! PENCILS PROVIDED condensationRate
-! PENCILS PROVIDED waterMixingRatio
+! PENCILS PROVIDED waterMixingRatio, part_heatcap
 !
 !***************************************************************
 module Particles

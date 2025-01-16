@@ -1159,9 +1159,12 @@ module EquationOfState
 !
     endsubroutine pressure_gradient_farray
 !***********************************************************************
-    subroutine get_gamma_etc(gamma_,cp,cv)
+    subroutine get_gamma_etc(gamma_,cp,cv,f)
 !
       real, optional, intent(OUT) :: gamma_, cp,cv
+      real, dimension(mfarray), optional, intent(IN) :: f
+!
+      call keep_compiler_quiet(f) !not needed here, but required for other EOS.
 !
       if (present(gamma_)) gamma_=gamma
       if (present(cp)) cp=get_cp()     ! as module variable is hidden here
@@ -1682,6 +1685,18 @@ module EquationOfState
 !
     endsubroutine eoscalc_point
 !***********************************************************************
+    subroutine eoscalc_point_f(ivars,f,lnrho,ss,yH,lnTT,ee,pp,cs2)
+!
+!     07-dec-2024/Kishore: wrapper around eoscalc_point
+!
+      integer, intent(in) :: ivars
+      real, dimension(mfarray), intent(in) :: f
+      real, optional, intent(out) :: lnrho, ss, yH, lnTT, ee, pp, cs2
+!
+      call eoscalc_point(ivars,f(ieosvar1),f(ieosvar2),lnrho=lnrho,ss=ss,yH=yH,lnTT=lnTT,ee=ee,pp=pp,cs2=cs2)
+!
+    endsubroutine eoscalc_point_f
+!***********************************************************************
     subroutine eoscalc_pencil(ivars,var1,var2,iz,lnrho,ss,yH,lnTT,ee,pp,cs2)
 !
 !   Calculate thermodynamical quantities. Convention for entropy:
@@ -2052,180 +2067,6 @@ module EquationOfState
       quench=1./(1.+chit_quenching*b2*Beq21)
 !
     endsubroutine meanfield_chitB
-!***********************************************************************
-    subroutine bc_ss_flux(f,topbot,lone_sided)
-!
-!  constant flux boundary condition for entropy (called when bcz='c1')
-!
-!  23-jan-2002/wolf: coded
-!  11-jun-2002/axel: moved into the entropy module
-!   8-jul-2002/axel: split old bc_ss into two
-!  26-aug-2003/tony: distributed across ionization modules
-!  13-mar-2011/pete: c1 condition for z-boundaries with Kramers' opacity
-!   4-jun-2015/MR: factor cp added in front of tmp_xy
-!  30-sep-2016/MR: changes for use of one-sided BC formulation (chosen by setting new optional switch lone_sided)
-!  21-jun-2024/Kishore: account for bounds on Kramers conductivity
-!
-      use DensityMethods, only: getdlnrho_z, getderlnrho_z
-      use Deriv, only: bval_from_neumann, set_ghosts_for_onesided_ders
-      use General, only: loptest
-!
-      real, pointer :: Fbot,Ftop,FtopKtop,FbotKbot,chi
-      real, pointer :: hcond0_kramers, nkramers, chimax_kramers, chimin_kramers
-      logical, pointer :: lmultilayer, lheatc_chiconst, lheatc_kramers
-!
-      integer, intent(IN) :: topbot
-      real, dimension (:,:,:,:) :: f
-      logical, optional :: lone_sided
-!
-      real, dimension (size(f,1),size(f,2)) :: tmp_xy, cs2_xy, rho_xy, Krho1kr_xy
-      integer :: i
-!
-      if (ldebug) print*,'bc_ss_flux: ENTER - cs20,cs0=',cs20,cs0
-!
-!  Do the `c1' boundary condition (constant heat flux) for entropy.
-!  check whether we want to do top or bottom (this is precessor dependent)
-!
-!  Get the shared variables
-!
-      call get_shared_variable('Fbot',Fbot,caller='bc_ss_flux')
-      call get_shared_variable('Ftop',Ftop)
-      call get_shared_variable('FbotKbot',FbotKbot)
-      call get_shared_variable('FtopKtop',FtopKtop)
-      call get_shared_variable('chi',chi)
-      call get_shared_variable('lmultilayer',lmultilayer)
-      call get_shared_variable('lheatc_chiconst',lheatc_chiconst)
-      call get_shared_variable('lheatc_kramers',lheatc_kramers)
-      if (lheatc_kramers) then
-        call get_shared_variable('hcond0_kramers',hcond0_kramers)
-        call get_shared_variable('nkramers',nkramers)
-        call get_shared_variable('chimax_kramers',chimax_kramers)
-        call get_shared_variable('chimin_kramers',chimin_kramers)
-      endif
-!
-      select case (topbot)
-!
-!  bottom boundary
-!  ===============
-!
-      case(BOT)
-!
-!  calculate Fbot/(K*cs2)
-!
-        if (pretend_lnTT) then
-          tmp_xy=-FbotKbot/exp(f(:,:,n1,iss))
-          do i=1,nghost
-            f(:,:,n1-i,iss)=f(:,:,n1+i,iss)-dz2_bound(-i)*tmp_xy
-          enddo
-        else
-!
-          call getrho(f(:,:,n1,ilnrho),rho_xy)
-          cs2_xy = f(:,:,n1,iss)         ! here cs2_xy = entropy
-          if (lreference_state) &
-            cs2_xy(l1:l2,:) = cs2_xy(l1:l2,:) + spread(reference_state(:,iref_s),2,my)
-!
-          if (ldensity_nolog) then
-            cs2_xy=cs20*exp(gamma_m1*(log(rho_xy)-lnrho0)+cv1*cs2_xy)
-          else
-            cs2_xy=cs20*exp(gamma_m1*(f(:,:,n1,ilnrho)-lnrho0)+cv1*cs2_xy)
-          endif
-!
-!  Check whether we have chi=constant at bottom, in which case
-!  we have the nonconstant rho_xy*chi in tmp_xy.
-!  Check also whether Kramers opacity is used, then hcond itself depends
-!  on density and temperature.
-!
-          if (lheatc_chiconst) then
-            tmp_xy=Fbot/(rho_xy*chi*cs2_xy)
-          else if (lheatc_kramers) then
-            Krho1kr_xy = hcond0_kramers*rho_xy**(-2*nkramers-1)*(cs2_xy/(cp*gamma_m1))**(6.5*nkramers)
-!
-            if (chimin_kramers>0) Krho1kr_xy = max(Krho1kr_xy, chimin_kramers*cp)
-            if (chimax_kramers>0) Krho1kr_xy = min(Krho1kr_xy, chimax_kramers*cp)
-!
-            tmp_xy=Fbot/(rho_xy*Krho1kr_xy*cs2_xy)
-          else
-            tmp_xy=FbotKbot/cs2_xy
-          endif
-!
-!  enforce ds/dz + (cp-cv)*dlnrho/dz = - cp*(cp-cv)*Fbot/(Kbot*cs2)
-!
-          if (loptest(lone_sided)) then
-            call not_implemented('bc_ss_flux', 'one-sided BC')
-            call getderlnrho_z(f,n1,rho_xy)                           ! rho_xy=d_z ln(rho)
-            call bval_from_neumann(f,topbot,iss,3,rho_xy)
-            call set_ghosts_for_onesided_ders(f,topbot,iss,3,.true.)
-          else
-            do i=1,nghost
-              call getdlnrho_z(f(:,:,:,ilnrho),n1,i,rho_xy)           ! rho_xy=del_z ln(rho)
-              f(:,:,n1-i,iss)=f(:,:,n1+i,iss)+(cp-cv)*(rho_xy+cp*dz2_bound(-i)*tmp_xy)
-            enddo
-          endif
-        endif
-!
-!  top boundary
-!  ============
-!
-      case(TOP)
-!
-!  calculate Ftop/(K*cs2)
-!
-        if (pretend_lnTT) then
-          tmp_xy=-FtopKtop/exp(f(:,:,n2,iss))
-          do i=1,nghost
-             f(:,:,n2-i,iss)=f(:,:,n2+i,iss)-dz2_bound(i)*tmp_xy
-          enddo
-        else
-!
-          call getrho(f(:,:,n2,ilnrho),rho_xy)
-          cs2_xy = f(:,:,n2,iss)             ! here cs2_xy = entropy
-          if (lreference_state) &
-            cs2_xy(l1:l2,:) = cs2_xy(l1:l2,:) + spread(reference_state(:,iref_s),2,my)
-!
-          if (ldensity_nolog) then
-            cs2_xy=cs20*exp(gamma_m1*(log(rho_xy)-lnrho0)+cv1*cs2_xy)
-          else
-            cs2_xy=cs20*exp(gamma_m1*(f(:,:,n2,ilnrho)-lnrho0)+cv1*cs2_xy)
-          endif
-!
-!  Check whether we have chi=constant at top, in which case
-!  we have the nonconstant rho_xy*chi in tmp_xy.
-!  Check also whether Kramers opacity is used, then hcond itself depends
-!  on density and temperature.
-!
-          if (lheatc_chiconst) then
-            tmp_xy=Ftop/(rho_xy*chi*cs2_xy)
-          else if (lheatc_kramers) then
-            Krho1kr_xy = hcond0_kramers*rho_xy**(-2*nkramers-1)*(cs2_xy/(cp*gamma_m1))**(6.5*nkramers)
-!
-            if (chimin_kramers>0) Krho1kr_xy = max(Krho1kr_xy, chimin_kramers*cp)
-            if (chimax_kramers>0) Krho1kr_xy = min(Krho1kr_xy, chimax_kramers*cp)
-!
-            tmp_xy=Ftop/(rho_xy*Krho1kr_xy*cs2_xy)
-          else
-            tmp_xy=FtopKtop/cs2_xy
-          endif
-!
-!  enforce ds/dz + (cp-cv)*dlnrho/dz = - cp*(cp-cv)*Ftop/(K*cs2)
-!
-          if (loptest(lone_sided)) then
-            call not_implemented('bc_ss_flux', 'one-sided BC')
-            call getderlnrho_z(f,n2,rho_xy)                           ! rho_xy=d_z ln(rho)
-            call bval_from_neumann(f,topbot,iss,3,rho_xy)
-            call set_ghosts_for_onesided_ders(f,topbot,iss,3,.true.)
-          else
-            do i=1,nghost
-              call getdlnrho_z(f(:,:,:,ilnrho),n2,i,rho_xy)        ! rho_xy=del_z ln(rho)
-              f(:,:,n2+i,iss)=f(:,:,n2-i,iss)+(cp-cv)*(-rho_xy-cp*dz2_bound(i)*tmp_xy)
-            enddo
-          endif
-        endif
-!
-      case default
-        call fatal_error('bc_ss_flux','invalid argument')
-      endselect
-!
-    endsubroutine bc_ss_flux
 !***********************************************************************
     subroutine bc_ss_flux_turb(f,topbot)
 !
@@ -3211,6 +3052,9 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !  11-oct-2016/MR: changes for use of one-sided BC formulation (chosen by setting new optional switch lone_sided)
+!  07-dec-2024/Kishore: remove l2nd=T from the set_ghosts_for_onesided_ders calls;
+!                       verified that fradz_Kprof is now constant in the steady
+!                       state of a 1D thermal conduction problem.
 !
       use General, only: loptest
       use Deriv, only: set_ghosts_for_onesided_ders
@@ -3250,7 +3094,7 @@ module EquationOfState
             f(l1:l2,:,n1,iss) = f(l1:l2,:,n1,iss) - spread(reference_state(:,iref_s),2,my)
 !
           if (loptest(lone_sided)) then
-            call set_ghosts_for_onesided_ders(f,topbot,iss,3,.true.)
+            call set_ghosts_for_onesided_ders(f,topbot,iss,3)
           else
 !
 !  Distinguish cases for linear and logarithmic density
@@ -3266,6 +3110,9 @@ module EquationOfState
                    - 2*(cp-cv)*(lnrho_xy-lnrho0)
               enddo
             else
+!  Kishore: This seems to be setting d^2(lnTT) = 0. Why does that make sense?
+!  Kishore: If anything, I would expect d^2(TT)=0 (at least for constant
+!  Kishore: thermal conductivity).
               do i=1,nghost
                 f(:,:,n1-i,iss) = -f(:,:,n1+i,iss) + tmp &
                     - (cp-cv)*(f(:,:,n1+i,ilnrho)+f(:,:,n1-i,ilnrho)-2*lnrho0)
@@ -3276,7 +3123,7 @@ module EquationOfState
         elseif (lentropy .and. pretend_lnTT) then
           f(:,:,n1,iss) = log(cs2bot/gamma_m1)
           if (loptest(lone_sided)) then
-            call set_ghosts_for_onesided_ders(f,topbot,iss,3,.true.)
+            call set_ghosts_for_onesided_ders(f,topbot,iss,3)
           else
             do i=1,nghost; f(:,:,n1-i,iss)=2*f(:,:,n1,iss)-f(:,:,n1+i,iss); enddo
           endif
@@ -3287,7 +3134,7 @@ module EquationOfState
             f(:,:,n1,ilnTT) = log(cs2bot/gamma_m1)
           endif
           if (loptest(lone_sided)) then
-            call set_ghosts_for_onesided_ders(f,topbot,ilnTT,3,.true.)
+            call set_ghosts_for_onesided_ders(f,topbot,ilnTT,3)
           else
             do i=1,nghost; f(:,:,n1-i,ilnTT)=2*f(:,:,n1,ilnTT)-f(:,:,n1+i,ilnTT); enddo
           endif
@@ -3315,7 +3162,7 @@ module EquationOfState
             f(l1:l2,:,n2,iss) = f(l1:l2,:,n2,iss) - spread(reference_state(:,iref_s),2,my)
 !
           if (loptest(lone_sided)) then
-            call set_ghosts_for_onesided_ders(f,topbot,iss,3,.true.)
+            call set_ghosts_for_onesided_ders(f,topbot,iss,3)
           else
 !
 !  Distinguish cases for linear and logarithmic density
@@ -3337,7 +3184,7 @@ module EquationOfState
         elseif (lentropy .and. pretend_lnTT) then
             f(:,:,n2,iss) = log(cs2top_loc/gamma_m1)
             if (loptest(lone_sided)) then
-              call set_ghosts_for_onesided_ders(f,topbot,iss,3,.true.)
+              call set_ghosts_for_onesided_ders(f,topbot,iss,3)
             else
               do i=1,nghost; f(:,:,n2+i,iss)=2*f(:,:,n2,iss)-f(:,:,n2-i,iss); enddo
             endif
@@ -3348,7 +3195,7 @@ module EquationOfState
               f(:,:,n2,ilnTT) = log(cs2top_loc/gamma_m1)
             endif
             if (loptest(lone_sided)) then
-              call set_ghosts_for_onesided_ders(f,topbot,ilnTT,3,.true.)
+              call set_ghosts_for_onesided_ders(f,topbot,ilnTT,3)
             else
               do i=1,nghost; f(:,:,n2+i,ilnTT)=2*f(:,:,n2,ilnTT)-f(:,:,n2-i,ilnTT); enddo
             endif

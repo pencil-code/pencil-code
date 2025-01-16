@@ -92,7 +92,7 @@ module Special
   character (len=labellen) :: fourthird_in_stress='4/3'
   character (len=labellen) :: cc_light='1'
   character (len=labellen) :: aux_stress='stress', idelkt='jump', ihorndeski_time='const'
-  real :: amplGW=0., amplGW2=0., kpeak_GW=1., initpower_gw=0., initpower2_gw=-4., cutoff_GW=500.
+  real :: amplGW=0., amplGW2=0., amplGWX=0., kpeak_GW=1., initpower_gw=0., initpower2_gw=-4., cutoff_GW=500.
   real :: trace_factor=0., stress_prefactor, fourthird_factor, EGWpref
   real :: nscale_factor_conformal=1., tshift=0.
   real :: t_equality=3.789E11, t_acceleration=1.9215E13, t_0=1.3725E13
@@ -107,7 +107,7 @@ module Special
   logical :: lggTX_as_aux=.true., lhhTX_as_aux=.true.
   logical :: lremove_mean_hij=.false., lremove_mean_gij=.false.
   logical :: GWs_spec_complex=.true. !(fixed for now)
-  logical :: lreal_space_hTX_as_aux=.false., lreal_space_gTX_as_aux=.false.
+  logical :: lreal_space_hTX_as_aux=.false., lreal_space_gTX_as_aux=.false., lreal_space_hij_as_aux=.false.
   logical :: linflation=.false., lreheating_GW=.false., lmatter_GW=.false., ldark_energy_GW=.false.
   logical :: lonly_mag=.false.!, lread_scl_factor_file=.false.
   logical :: lstress=.true., lstress_ramp=.false., lstress_upscale=.false.
@@ -117,7 +117,7 @@ module Special
   logical :: lscale_tobox=.false., lskip_projection_GW=.false., lvectorpotential=.false.
   logical :: lnophase_in_stress=.false., llinphase_in_stress=.false., lconstmod_in_stress=.false.
   logical :: lno_noise_GW=.false., lfactors_GW=.false.,lcomp_GWs_k=.false.,lcomp_GWh_k=.false.
-  logical :: lnot_amp_GW=.true.
+  logical :: lnot_amp_GW=.true., lrandom_ampl_GW=.false.
   logical :: llogbranch_GW=.false., ldouble_GW=.false., lLighthill=.false.
   logical :: lrandomize_e1_e2=.false.
   real, dimension(3,3) :: ij_table
@@ -155,13 +155,13 @@ module Special
 ! input parameters
   namelist /special_init_pars/ &
     ctrace_factor, cstress_prefactor, fourthird_in_stress, lno_transverse_part, &
-    initGW, amplGW, amplGW2, kpeak_GW, initpower_gw, initpower2_gw, cutoff_GW, &
+    initGW, amplGW, amplGW2, amplGWX, kpeak_GW, initpower_gw, initpower2_gw, cutoff_GW, &
     lStress_as_aux, lgamma_factor, &
-    lreal_space_hTX_as_aux, lreal_space_gTX_as_aux, &
+    lreal_space_hTX_as_aux, lreal_space_gTX_as_aux, lreal_space_hij_as_aux, &
     lscalar, lscalar_phi, &
     lelectmag, lggTX_as_aux, lhhTX_as_aux, linflation, lreheating_GW, lmatter_GW, ldark_energy_GW, &
     lonly_mag, lread_scl_factor_file, t_ini, &
-    lno_noise_GW, &
+    lno_noise_GW, lrandom_ampl_GW, &
     lscale_tobox, lfactors_GW, nfact_GWs, nfact_GWh, nfact_GW, &
     lcomp_GWs_k, lcomp_GWh_k, llogbranch_GW, initpower_med_GW, &
     kpeak_log_GW, kbreak_GW, ldouble_GW, nfactd_GW, &
@@ -176,7 +176,7 @@ module Special
     t_equality, t_acceleration, &
     lStress_as_aux, lkinGW, aux_stress, tau_stress_comp, exp_stress_comp, lscalar, lscalar_phi, &
     lelectmag, tau_stress_kick, fac_stress_kick, delk, tdelk, ldelkt, idelkt, tau_delk, &
-    lreal_space_hTX_as_aux, lreal_space_gTX_as_aux, &
+    lreal_space_hTX_as_aux, lreal_space_gTX_as_aux, lreal_space_hij_as_aux, &
     initGW, reinitialize_GW, rescale_GW, &
     lggTX_as_aux, lhhTX_as_aux, lremove_mean_hij, lremove_mean_gij, &
     vx_boost, vy_boost, vz_boost, & 
@@ -245,9 +245,17 @@ module Special
   integer :: idiag_nlin0=0       ! DIAG_DOC: $\bra{nlin0}$
   integer :: idiag_nlin1=0       ! DIAG_DOC: $\bra{nlin1}$
   integer :: idiag_nlin2=0       ! DIAG_DOC: $\bra{nlin2}$
+  integer :: idiag_h11rms=0      ! DIAG_DOC: $\bra{h_{11}^2}^{1/2}$
+  integer :: idiag_h22rms=0      ! DIAG_DOC: $\bra{h_{22}^2}^{1/2}$
+  integer :: idiag_h33rms=0      ! DIAG_DOC: $\bra{h_{33}^2}^{1/2}$
+  integer :: idiag_h12rms=0      ! DIAG_DOC: $\bra{h_{12}^2}^{1/2}$
+  integer :: idiag_h23rms=0      ! DIAG_DOC: $\bra{h_{23}^2}^{1/2}$
+  integer :: idiag_h31rms=0      ! DIAG_DOC: $\bra{h_{31}^2}^{1/2}$
 !
   integer :: ihhT_realspace, ihhX_realspace
   integer :: iggT_realspace, iggX_realspace
+  integer :: ih11_realspace, ih22_realspace, ih33_realspace
+  integer :: ih12_realspace, ih23_realspace, ih31_realspace
   integer :: ihhT_realspace_boost, ihhX_realspace_boost
   integer :: iggT_realspace_boost, iggX_realspace_boost
   integer, parameter :: nk=nxgrid/2
@@ -324,6 +332,17 @@ module Special
         call farray_register_auxiliary('ggX_realspace',iggX_realspace)
       endif
 !
+!  To get hij in real space, invoke lreal_space_hij_as_aux
+!
+      if (lreal_space_hij_as_aux) then
+        call farray_register_auxiliary('h11_realspace',ih11_realspace)
+        call farray_register_auxiliary('h22_realspace',ih22_realspace)
+        call farray_register_auxiliary('h33_realspace',ih33_realspace)
+        call farray_register_auxiliary('h12_realspace',ih12_realspace)
+        call farray_register_auxiliary('h23_realspace',ih23_realspace)
+        call farray_register_auxiliary('h31_realspace',ih31_realspace)
+      endif
+!
 !  Check if we are solving for relativistic bulk motions, not just EoS.
 !
       if (lhydro) then
@@ -356,7 +375,7 @@ module Special
       !integer :: stat, i, nt_file, it_file
       integer :: stat, i
 !
-!  set index table
+!  set index table, count off-diagonal components cyclicly
 !
       ij_table(1,1)=1
       ij_table(2,2)=2
@@ -682,6 +701,18 @@ module Special
         case ('kx1')
           f(l1+1,m1,n1,ihhT)=amplGW
           f(l2-0,m1,n1,ihhT)=amplGW
+          f(l1+1,m1,n1,ihhXim)=+amplGWX
+          f(l2-0,m1,n1,ihhXim)=-amplGWX
+        case ('ky1')
+          f(l1,m1+1,n1,ihhT)=amplGW
+          f(l2,m1-0,n1,ihhT)=amplGW
+          f(l1,m1+1,n1,ihhXim)=+amplGWX
+          f(l2,m1-0,n1,ihhXim)=-amplGWX
+        case ('kz1')
+          f(l1,m1,n1+1,ihhT)=amplGW
+          f(l2,m1,n1-0,ihhT)=amplGW
+          f(l1,m1,n1+1,ihhXim)=+amplGWX
+          f(l2,m1,n1-0,ihhXim)=-amplGWX
         case ('power_randomphase_hel')
           ! alberto: option to use same nfact for both GWs and GWh spectra
           if (nfact_GW/=0.) then
@@ -722,7 +753,7 @@ module Special
             lfactors0=lfactors_GW, lnot_amp=lnot_amp_GW, nfact0=nfact_GWh, compk0=compkh, &
             llogbranch0=llogbranch_GW,initpower_med0=initpower_med_GW, &
             kpeak_log0=kpeak_log_GW,kbreak0=kbreak_GW,ldouble0=ldouble_GW, &
-            nfactd0=nfact_GW)
+            nfactd0=nfact_GW, lrandom_ampl=lrandom_ampl_GW)
           call power_randomphase_hel(amplGWs,initpower_GWs,initpower2_GWs, &
             cutoff_GW,ncutoff_GW,kpeak_GW,f,iggT,iggT,relhel_GW,kgaussian_GW, &
             lskip_projection_GW, lvectorpotential, &
@@ -731,7 +762,7 @@ module Special
             lfactors0=lfactors_GW, lnot_amp=lnot_amp_GW, nfact0=nfact_GWs, compk0=compks, &
             llogbranch0=llogbranch_GW,initpower_med0=initpower_med_GWs, &
             kpeak_log0=kpeak_log_GW,kbreak0=kbreak_GW,ldouble0=ldouble_GW, &
-            nfactd0=nfact_GW)
+            nfactd0=nfact_GW, lrandom_ampl=lrandom_ampl_GW)
         case ('power_randomphase_hel_wave')
           call power_randomphase_hel(amplGW,initpower_GW,initpower2_GW, &
             cutoff_GW,ncutoff_GW,kpeak_GW,f,ihhT,ihhT,relhel_GW,kgaussian_GW, &
@@ -741,7 +772,7 @@ module Special
             lfactors0=lfactors_GW, lnot_amp=lnot_amp_GW, nfact0=nfact_GWh, compk0=compkh, &
             llogbranch0=llogbranch_GW,initpower_med0=initpower_med_GW, &
             kpeak_log0=kpeak_log_GW,kbreak0=kbreak_GW,ldouble0=ldouble_GW, &
-            nfactd0=nfact_GW)
+            nfactd0=nfact_GW, lrandom_ampl=lrandom_ampl_GW)
 !
           do ikz=1,nz
           do iky=1,ny
@@ -809,9 +840,23 @@ module Special
         f(:,:,:,iStressXim)=0.
       endif
 !
+      if (lreal_space_hTX_as_aux) then
+        f(:,:,:,ihhT_realspace)=0.
+        f(:,:,:,ihhX_realspace)=0.
+      endif
+!
       if (lreal_space_gTX_as_aux) then
         f(:,:,:,iggT_realspace)=0.
         f(:,:,:,iggX_realspace)=0.
+      endif
+!
+      if (lreal_space_hij_as_aux) then
+        f(:,:,:,ih11_realspace)=0.
+        f(:,:,:,ih22_realspace)=0.
+        f(:,:,:,ih33_realspace)=0.
+        f(:,:,:,ih12_realspace)=0.
+        f(:,:,:,ih23_realspace)=0.
+        f(:,:,:,ih31_realspace)=0.
       endif
 !
     endsubroutine init_special
@@ -1146,6 +1191,13 @@ module Special
             +f(l1:l2,m,n,iStress_ij+3)**2 &
             +f(l1:l2,m,n,iStress_ij+4)**2 &
             +f(l1:l2,m,n,iStress_ij+5)**2,idiag_nlin1)
+!
+        if (idiag_h11rms/=0) call sum_mn_name(f(l1:l2,m,n,ih11_realspace)**2,idiag_h11rms,lsqrt=.true.)
+        if (idiag_h22rms/=0) call sum_mn_name(f(l1:l2,m,n,ih22_realspace)**2,idiag_h22rms,lsqrt=.true.)
+        if (idiag_h33rms/=0) call sum_mn_name(f(l1:l2,m,n,ih33_realspace)**2,idiag_h33rms,lsqrt=.true.)
+        if (idiag_h12rms/=0) call sum_mn_name(f(l1:l2,m,n,ih12_realspace)**2,idiag_h12rms,lsqrt=.true.)
+        if (idiag_h23rms/=0) call sum_mn_name(f(l1:l2,m,n,ih23_realspace)**2,idiag_h23rms,lsqrt=.true.)
+        if (idiag_h31rms/=0) call sum_mn_name(f(l1:l2,m,n,ih31_realspace)**2,idiag_h31rms,lsqrt=.true.)
 !
         if (lproc_pt.and.m==mpoint.and.n==npoint) then
           if (idiag_STrept/=0) call save_name(f(lpoint,m,n,iStressT  ),idiag_STrept)
@@ -2150,6 +2202,7 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
       use Diagnostics
 !
       real, dimension (:,:,:), allocatable :: S_T_re, S_T_im, S_X_re, S_X_im, g2T_re, g2T_im, g2X_re, g2X_im
+      real, dimension (:,:,:), allocatable :: hij_re, hij_im
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (6) :: Pij=0., kij=0., e_T, e_X, Sij_re, Sij_im, delij=0.
       real, dimension (:,:,:,:,:), allocatable :: Hijkre, Hijkim
@@ -2159,6 +2212,7 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
       real :: ksqr, one_over_k2, k1, k2, k3, k1sqr, k2sqr, k3sqr, ksqrt
       real :: hhTre, hhTim, hhXre, hhXim, coefAre, coefAim
       real :: ggTre, ggTim, ggXre, ggXim, coefBre, coefBim
+      real :: e_ij_T, e_ij_X
       real :: cosot, sinot, sinot_minus, om12, om, om1, om2, dt1
       real :: eTT, eTX, eXT, eXX
       real :: discrim2
@@ -2205,6 +2259,17 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
 !
         allocate(Hijkim(nx,ny,nz,3,6),stat=stat)
         if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate memory for Hijkim')
+      endif
+!
+!  Allocate chunks for real and imaginary parts of one component of hij in real space at a time.
+!
+      if (lreal_space_hij_as_aux) then
+        allocate(hij_re(nx,ny,nz),stat=stat)
+        if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate memory for hij_re')
+!
+        allocate(hij_im(nx,ny,nz),stat=stat)
+        if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate memory for hij_im')
+!
       endif
 !
 !  Compute om2_min, below which no GWs are computed.
@@ -2919,6 +2984,132 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
         f(l1:l2,m1:m2,n1:n2,iggX_realspace)=S_X_re
       endif
 !
+!  back to real space: hij
+!  re-utilize S_T_re, etc as workspace.
+!
+      if (lreal_space_hij_as_aux) then
+!
+!  Loop over all 6 non-trivial components of hij
+!
+        do ij=1,6
+!
+!  Select i and j, and the target location ihij in the f-array.
+!
+          select case (ij)
+            case (1); i=1; j=1; ihij=ih11_realspace
+            case (2); i=2; j=2; ihij=ih22_realspace
+            case (3); i=3; j=3; ihij=ih33_realspace
+            case (4); i=1; j=2; ihij=ih12_realspace
+            case (5); i=2; j=3; ihij=ih23_realspace
+            case (6); i=3; j=1; ihij=ih31_realspace
+          endselect
+!
+!  Need to unproject from T and X to ij components.
+!  Loop over all positions in k-space.
+!  Indentation not done yet.
+!
+          do ikz=1,nz
+            do iky=1,ny
+              do ikx=1,nx
+                k1=kx_fft(ikx+ipx*nx)
+                k2=ky_fft(iky+ipy*ny)
+                k3=kz_fft(ikz+ipz*nz)
+                k1sqr=k1**2
+                k2sqr=k2**2
+                k3sqr=k3**2
+                ksqr=k1sqr+k2sqr+k3sqr
+!
+!  for ksqr/=0, set up k vector
+!
+                if (ksqr/=0.) then
+!
+!  compute e1 and e2 vectors
+!
+                  if(abs(k1)<abs(k2)) then
+                    if(abs(k1)<abs(k3)) then !(k1 is pref dir)
+                      e1=(/0.,-k3,+k2/)
+                      e2=(/k2sqr+k3sqr,-k2*k1,-k3*k1/)
+                    else !(k3 is pref dir)
+                      e1=(/k2,-k1,0./)
+                      e2=(/k1*k3,k2*k3,-(k1sqr+k2sqr)/)
+                    endif
+                  else !(k2 smaller than k1)
+                    if(abs(k2)<abs(k3)) then !(k2 is pref dir)
+                      e1=(/-k3,0.,+k1/)
+                      e2=(/+k1*k2,-(k1sqr+k3sqr),+k3*k2/)
+                    else !(k3 is pref dir)
+                      e1=(/k2,-k1,0./)
+                      e2=(/k1*k3,k2*k3,-(k1sqr+k2sqr)/)
+                    endif
+                  endif
+!
+!  normalize e1 and e2
+!
+                  e1=e1/sqrt(e1(1)**2+e1(2)**2+e1(3)**2)
+                  e2=e2/sqrt(e2(1)**2+e2(2)**2+e2(3)**2)
+!
+!  compute e_T and e_X
+!
+                  e_ij_T=e1(i)*e1(j)-e2(i)*e2(j)
+                  e_ij_X=e1(i)*e2(j)+e2(i)*e1(j)
+!
+!  possibility of swapping the sign of e_X
+!
+                  if (lswitch_sign_e_X) then
+                    if (k3<0.) then
+                      e_ij_X=-e_ij_X
+                    elseif (k3==0.) then
+                      if (k2<0.) then
+                        e_ij_X=-e_ij_X
+                      elseif (k2==0.) then
+                        if (k1<0.) then
+                          e_ij_X=-e_ij_X
+                        endif
+                      endif
+                    endif
+                  endif
+!
+!  Introduce shorthands.
+!
+                  hhTre=f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  )
+                  hhXre=f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  )
+                  hhTim=f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim)
+                  hhXim=f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim)
+!
+!  Assemble hij
+!
+                  hij_re(ikx,iky,ikz)=e_ij_T*hhTre+e_ij_X*hhXre
+                  hij_im(ikx,iky,ikz)=e_ij_T*hhTim+e_ij_X*hhXim
+!
+! endif from "if (ksqr/=0.) then"
+!
+                else
+                  hij_re(ikx,iky,ikz)=0.
+                  hij_im(ikx,iky,ikz)=0.
+                endif
+!
+!  end of ikx, iky, and ikz loops
+!
+              enddo
+            enddo
+          enddo
+!
+!  Go back with Hijkre into real space:
+!
+          call fft_xyz_parallel(hij_re,hij_im,linv=.true.)
+          f(l1:l2,m1:m2,n1:n2,ihij)=hij_re
+!print*,'AXEL: =ij,i,j,hij_re=',ij,i,j,hij_re(2,2,2)
+!print*,'AXEL: =ij,i,j,hij_re=',ij,i,j,hij_re(2,1,1)
+!print*,'AXEL: =ij,i,j,hij_im=',ij,i,j,hij_im(2,1,1)
+!
+!  enddo ij loop
+!
+        enddo
+!
+!  endif from lreal_space_hij_as_aux
+!
+      endif
+!
     endsubroutine compute_gT_and_gX_from_gij
 !***********************************************************************
     subroutine rprint_special(lreset,lwrite)
@@ -2950,6 +3141,8 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
         idiag_hhT2m=0; idiag_hhX2m=0; idiag_hhTXm=0; idiag_hrms=0
         idiag_ggT2m=0; idiag_ggX2m=0; idiag_ggTXm=0; idiag_gg2m=0
         idiag_Stgm=0 ; idiag_EEGW=0 ; idiag_nlin0=0; idiag_nlin1=0; idiag_nlin2=0
+        idiag_h11rms=0; idiag_h22rms=0; idiag_h33rms=0
+        idiag_h12rms=0; idiag_h23rms=0; idiag_h31rms=0
         cformv=''
       endif
 !
@@ -2987,6 +3180,12 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
         call parse_name(iname,cname(iname),cform(iname),'nlin0',idiag_nlin0)
         call parse_name(iname,cname(iname),cform(iname),'nlin1',idiag_nlin1)
         call parse_name(iname,cname(iname),cform(iname),'nlin2',idiag_nlin2)
+        call parse_name(iname,cname(iname),cform(iname),'h11rms',idiag_h11rms)
+        call parse_name(iname,cname(iname),cform(iname),'h22rms',idiag_h22rms)
+        call parse_name(iname,cname(iname),cform(iname),'h33rms',idiag_h33rms)
+        call parse_name(iname,cname(iname),cform(iname),'h12rms',idiag_h12rms)
+        call parse_name(iname,cname(iname),cform(iname),'h23rms',idiag_h23rms)
+        call parse_name(iname,cname(iname),cform(iname),'h31rms',idiag_h31rms)
         if (lhhTX_as_aux) then
           call parse_name(iname,cname(iname),cform(iname),'hhTpt',idiag_hhTpt)
           call parse_name(iname,cname(iname),cform(iname),'hhXpt',idiag_hhXpt)

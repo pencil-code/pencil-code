@@ -1439,9 +1439,12 @@ module Boundcond
                 ! BCZ_DOC: hydrostatic equilibrium with a high-frequency filter
                 call bc_lnrho_hdss_z_iso(f,topbot)
               case ('cT')
-                ! BCZ_DOC: constant temp.
+                ! BCZ_DOC: constant temperature.
+                ! BCZ_DOC: If used for lnrho, sets both lnrho and ss (in
+                ! BCZ_DOC: which case the BC for ss should be set to 'nil')
+                ! BCZ_DOC: If used for ss, sets only ss.
                 if (j==ilnrho) call bc_lnrho_temp_z(f,topbot)
-                call bc_ss_temp_z(f,topbot)
+                if (j==iss.or.j==iTT.or.j==ilnTT) call bc_ss_temp_z(f,topbot)
               case ('cT1')
                 ! BCZ_DOC: constant temperature using one-sided derivatives
                 call bc_ss_temp_z(f,topbot,.true.)
@@ -4881,7 +4884,7 @@ module Boundcond
       integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       real :: frac=0.8
-      integer :: j,l1p4,l2m4
+      integer :: j,l1p4,l2m4,i
 !
 !  abbreviations, because otherwise the ifc compiler complains
 !  for 1-D runs without vertical extent
@@ -4904,9 +4907,10 @@ module Boundcond
 !
       case(TOP)               ! top boundary
         if ((j .eq. ilnrho) .or. (j .eq. ilnTT)) then
-          f(l2+1,:,:,j)=0.2*(  9*f(l2,:,:,j)-4*f(l2-2,:,:,j)- 3*f(l2-3,:,:,j)+ 3*f(l2m4,:,:,j))+alog(frac)
-          f(l2+2,:,:,j)=0.2*( 15*f(l2,:,:,j)- 2*f(l2-1,:,:,j)-9*f(l2-2,:,:,j)- 6*f(l2-3,:,:,j)+ 7*f(l2m4,:,:,j))+alog(frac)
-          f(l2+3,:,:,j)=1.0/35.*(157*f(l2,:,:,j)-33*f(l2-1,:,:,j)-108*f(l2-2,:,:,j)-68*f(l2-3,:,:,j)+87*f(l2m4,:,:,j))+alog(frac)
+!          f(l2+1,:,:,j)=0.2*(  9*f(l2,:,:,j)-4*f(l2-2,:,:,j)- 3*f(l2-3,:,:,j)+ 3*f(l2m4,:,:,j))+alog(frac)
+!          f(l2+2,:,:,j)=0.2*( 15*f(l2,:,:,j)- 2*f(l2-1,:,:,j)-9*f(l2-2,:,:,j)- 6*f(l2-3,:,:,j)+ 7*f(l2m4,:,:,j))+alog(frac)
+!          f(l2+3,:,:,j)=1.0/35.*(157*f(l2,:,:,j)-33*f(l2-1,:,:,j)-108*f(l2-2,:,:,j)-68*f(l2-3,:,:,j)+87*f(l2m4,:,:,j))+alog(frac)
+          do i=1,nghost; f(l2+i,:,:,j)=2*f(l2,:,:,j)-f(l2-i,:,:,j)+alog(frac); enddo
         else
           f(l2+1,:,:,j)=0.2   *(  9*f(l2,:,:,j)                 - 4*f(l2-2,:,:,j)- 3*f(l2-3,:,:,j)+ 3*f(l2m4,:,:,j))
           f(l2+2,:,:,j)=0.2   *( 15*f(l2,:,:,j)- 2*f(l2-1,:,:,j)-9*f(l2-2,:,:,j)- 6*f(l2-3,:,:,j)+ 7*f(l2m4,:,:,j))
@@ -6506,13 +6510,13 @@ module Boundcond
       integer, intent(IN) :: topbot
 !
       real, dimension (:,:), allocatable :: tmp_yz, work_yz, Krho1kr_yz
-      real, pointer :: FbotKbot, FtopKtop, Fbot, Ftop, cp, chi
+      real, pointer :: FbotKbot, FtopKtop, Fbot, Ftop, chi
       real, pointer :: hcond0_kramers, nkramers, chimax_kramers, chimin_kramers
       logical, pointer :: lheatc_kramers, lheatc_chiconst
       logical, pointer :: lheatc_Kprof, lheatc_Kconst
       integer :: i,stat
       real, dimension (:,:), pointer :: reference_state
-      real :: fac
+      real :: fac, cp
 !
 !  Do the 'c1' boundary condition (constant heat flux) for entropy.
 !

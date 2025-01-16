@@ -851,7 +851,7 @@ module Shock
 
     use Syscalls, only: copy_addr
 
-    integer, parameter :: n_pars=7
+    integer, parameter :: n_pars=1000
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call copy_addr(ishock_max   ,p_par(1))  ! int
@@ -859,8 +859,7 @@ module Shock
     call copy_addr(shock_linear ,p_par(3))
     call copy_addr(shock_div_pow,p_par(4))
     call copy_addr(dt_div_pow   ,p_par(5))
-    call copy_addr(dtfactor     ,p_par(6))
-    call copy_addr(con_bias     ,p_par(7))
+    call copy_addr(con_bias     ,p_par(6))
 
     endsubroutine pushpars2c
 !***********************************************************************

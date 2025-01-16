@@ -171,23 +171,23 @@ module Equ
 !      if (.not. lgpu) then
         if (crash_file_dtmin_factor > 0.0) call output_crash_files(f)
 !
-!  For   debugging purposes impose minimum or maximum value on certain variables.
+!  For debugging purposes impose minimum or maximum value on certain variables.
 !
         call impose_floors_ceilings(f)   !MR: too early, f modifications come below
 !
-!  App  ly global boundary conditions to particle positions and communicate
-!  mig  rating particles between the processors.
+!  Apply global boundary conditions to particle positions and communicate
+!  migrating particles between the processors.
 !
         if (lparticles) call particles_boundconds(f)
         if (lpointmasses) call boundconds_pointmasses
 !
-!  Cal  culate the potential of the self gravity. Must be done before
-!  com  munication in order to be able to take the gradient of the potential
-!  lat  er.
+!  Calculate the potential of the self gravity. Must be done before
+!  communication in order to be able to take the gradient of the potential
+!  later.
 !
         call calc_selfpotential(f)
 !
-!  Cal  l "before_boundary" hooks (for f array precalculation)
+!  Call "before_boundary" hooks (for f array precalculation)
 !
         if (ldustdensity)  call dustdensity_before_boundary(f)
         if (linterstellar) call interstellar_before_boundary(f)
@@ -211,7 +211,8 @@ module Equ
 !  Prepare x-ghost zones; required before f-array communication
 !  AND shock calculation
 !
-        if (.not. lgpu) call boundconds_x(f)
+        if (.not. lgpu) then
+          call boundconds_x(f)
 !
 !  Initiate (non-blocking) communication and do boundary conditions.
 !  Required order:
@@ -219,7 +220,6 @@ module Equ
 !  2. communication
 !  3. y- and z-boundaries
 !
-        if (.not. lgpu) then
           if (nghost>0) then
             if (ldebug) print*,'pde: before initiate_isendrcv_bdry'
             call initiate_isendrcv_bdry(f)
@@ -341,11 +341,11 @@ module Equ
       if (lgpu) then
         !call test_rhs_gpu(f,df,p,mass_per_proc,early_finalize,rhs_cpu)
         if (ldiagnos.or.l1davgfirst.or.l1dphiavg.or.l2davgfirst) then
+                !if (lroot) print*,'Diagnostic time - GPU=', t
           !wait in case the last diagnostic tasks are not finished
 !         Not done for the first step since we haven't loaded any data to the GPU yet
           call copy_farray_from_GPU(f)
 !$        call save_diagnostic_controls
-!!$        call signal_send(lhelperflags(PERF_DIAGS),.true.)
 !$        lmasterflags(PERF_DIAGS) = .true.
         endif
         start_time = mpiwtime()
@@ -358,6 +358,9 @@ module Equ
         !if (lroot) print*,"nth iteration: average time on gpu:",n_iterations, sum_time/n_iterations
         !if (lroot) flush(6)
       else
+        if (ldiagnos.or.l1davgfirst.or.l1dphiavg.or.l2davgfirst) then
+                !if (lroot) print*,'Diagnostic time - CPU=', t
+        endif
         call rhs_cpu(f,df,p,mass_per_proc,early_finalize)
 !
 !  Doing df-related work which cannot be finished inside the main mn-loop.
@@ -438,39 +441,39 @@ module Equ
 
       endif     ! if (.not. lgpu)
 
-              if (lmultithread) then
-                if (ldiagnos.or.l1davgfirst.or.l1dphiavg.or.l2davgfirst) then
-                endif
-              elseif (lfirst) then
-                if (lout) then
-                  tdiagnos  = t
-                  itdiagnos = it
-                  dtdiagnos = dt
-                endif
-                call finalize_diagnostics
-              endif
-        !
-        !  Calculate rhoccm and cc2m (this requires that these are set in print.in).
-        !  Broadcast result to other processors. This is needed for calculating PDFs.
-        !
-        !      if (idiag_rhoccm/=0) then
-        !        if (iproc==0) rhoccm=fname(idiag_rhoccm)
-        !        call mpibcast_real(rhoccm)
-        !      endif
-        !
-        !      if (idiag_cc2m/=0) then
-        !        if (iproc==0) cc2m=fname(idiag_cc2m)
-        !        call mpibcast_real(cc2m)
-        !      endif
-        !
-        !      if (idiag_gcc2m/=0) then
-        !        if (iproc==0) gcc2m=fname(idiag_gcc2m)
-        !        call mpibcast_real(gcc2m)
-        !      endif
-        !
-        !  Reset lwrite_prof.
-        !
-              lwrite_prof=.false.
+      if (lmultithread) then
+        if (ldiagnos.or.l1davgfirst.or.l1dphiavg.or.l2davgfirst) then
+        endif
+      elseif (lfirst) then
+        if (lout) then
+          tdiagnos  = t
+          itdiagnos = it
+          dtdiagnos = dt
+        endif
+        call finalize_diagnostics
+      endif
+      !
+      !  Calculate rhoccm and cc2m (this requires that these are set in print.in).
+      !  Broadcast result to other processors. This is needed for calculating PDFs.
+      !
+      !      if (idiag_rhoccm/=0) then
+      !        if (iproc==0) rhoccm=fname(idiag_rhoccm)
+      !        call mpibcast_real(rhoccm)
+      !      endif
+      !
+      !      if (idiag_cc2m/=0) then
+      !        if (iproc==0) cc2m=fname(idiag_cc2m)
+      !        call mpibcast_real(cc2m)
+      !      endif
+      !
+      !      if (idiag_gcc2m/=0) then
+      !        if (iproc==0) gcc2m=fname(idiag_gcc2m)
+      !        call mpibcast_real(gcc2m)
+      !      endif
+!
+!  Reset lwrite_prof.
+!
+      lwrite_prof=.false.
 !
     endsubroutine pde
 !***********************************************************************
@@ -1053,7 +1056,7 @@ module Equ
 !  Note that advec_cs2 should always be initialized when leos.
 !
         if (lfirst.and.ldt.and.(.not.ldt_paronly)) then
-          advec_cs2=0.0
+          advec_cs2=0.
           maxadvec=0.
           if (lenergy.or.ldensity.or.lmagnetic.or.lradiation.or.lneutralvelocity.or.lcosmicray.or. &
               (ltestfield_z.and.iuutest>0)) &
@@ -1658,7 +1661,7 @@ module Equ
 !  Check for NaNs in the advection time-step.
 !
         if (notanumber(maxadvec)) then
-          print*, 'pde: maxadvec contains a NaN at iproc=', iproc_world
+          print*, 'set_dt1_max: maxadvec contains a NaN at iproc=', iproc_world
           if (lenergy) print*, 'advec_cs2  =',advec_cs2
           call fatal_error_local('set_dt1_max','')
         endif

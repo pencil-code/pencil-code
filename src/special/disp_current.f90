@@ -45,15 +45,14 @@ module Special
   real :: cutoff_a0=0.0, ncutoff_a0=0.0, kpeak_a0=0.0
   real :: relhel_a0=0.0, kgaussian_a0=0.0, eta_ee=0.0
   real :: weight_longitudinalE=2.0
-  real, pointer :: eta, eta_tdep
+  real, pointer :: eta
   integer :: iGamma=0, ia0=0, idiva_name=0, ieedot=0, iedotx=0, iedoty=0, iedotz=0
   logical :: llongitudinalE=.true., llorenz_gauge_disp=.false., lskip_projection_ee=.false.
   logical :: lscale_tobox=.true., lskip_projection_a0=.false.
   logical :: lvectorpotential=.false., lphi_hom=.false.
-  logical :: loverride_ee_prev=.false.
+  logical :: lno_noise_ee=.false.
   logical :: leedot_as_aux=.false., lcurlyA=.true., lsolve_chargedensity=.false.
   logical :: lswitch_off_divJ=.false., lswitch_off_Gamma=.false.
-  logical, pointer :: loverride_ee, lresi_eta_tdep
   character(len=50) :: initee='zero', inita0='zero'
   namelist /special_init_pars/ &
     initee, inita0, alpf, &
@@ -66,7 +65,7 @@ module Special
     llongitudinalE, llorenz_gauge_disp, lphi_hom, &
     amplee, initpower_ee, initpower2_ee, lscale_tobox, &
     cutoff_ee, ncutoff_ee, kpeak_ee, relhel_ee, kgaussian_ee, &
-    ampla0, initpower_a0, initpower2_a0, &
+    ampla0, initpower_a0, initpower2_a0, lno_noise_ee, &
     cutoff_a0, ncutoff_a0, kpeak_a0, relhel_a0, kgaussian_a0, &
     leedot_as_aux, lsolve_chargedensity, &
     weight_longitudinalE
@@ -102,6 +101,9 @@ module Special
   integer :: idiag_fppf=0       ! DIAG_DOC: $f''/f$
   integer :: idiag_afact=0      ! DIAG_DOC: $a$ (scale factor)
   integer :: idiag_constrainteqn=0  ! DIAG_DOC: $<deldotE+>$
+  integer :: idiag_exm=0        ! DIAG_DOC: $\left<E_x\right>$
+  integer :: idiag_eym=0        ! DIAG_DOC: $\left<E_y\right>$
+  integer :: idiag_ezm=0        ! DIAG_DOC: $\left<E_z\right>$
 !
 ! xy averaged diagnostics given in xyaver.in
 !
@@ -170,10 +172,7 @@ module Special
       if (c_light/=1.) call fatal_error('disp_current', "use unit_system='set'")
       c_light2=c_light**2
 !
-      if (lmagnetic) then
-        call get_shared_variable('loverride_ee',loverride_ee)
-        call get_shared_variable('lresi_eta_tdep',lresi_eta_tdep)
-        call get_shared_variable('eta_tdep',eta_tdep)
+      if (lmagnetic .and. .not.lswitch_off_divJ) then
         call get_shared_variable('eta',eta)
       endif
 !
@@ -208,7 +207,8 @@ module Special
         case ('power_randomphase_hel')
           call power_randomphase_hel(amplee,initpower_ee,initpower2_ee, &
             cutoff_ee,ncutoff_ee,kpeak_ee,f,iex,iez,relhel_ee,kgaussian_ee, &
-            lskip_projection_ee, lvectorpotential, lscale_tobox=lscale_tobox)
+            lskip_projection_ee, lvectorpotential, lscale_tobox=lscale_tobox, &
+            lno_noise=lno_noise_ee)
 !
         case default
           !
@@ -293,10 +293,6 @@ module Special
         lpenc_requested(i_diva)=.true.
       endif
 !
-      if (loverride_ee) then
-        lpenc_requested(i_jj)=.true.
-      endif
-!
 !  Terms for Gamma evolution.
 !
       if (llongitudinalE) then
@@ -333,6 +329,7 @@ module Special
       if (idiag_edotrms/=0) lpenc_diagnos(i_edot2)=.true.
       if (idiag_EEEM/=0 .or. idiag_erms/=0 .or. idiag_emax/=0) lpenc_diagnos(i_e2)=.true.
       if (idiag_exmz/=0 .or. idiag_eymz/=0 .or. idiag_ezmz/=0 ) lpenc_diagnos(i_el)=.true.
+      if (idiag_exm/=0 .or. idiag_eym/=0 .or. idiag_ezm/=0 ) lpenc_diagnos(i_el)=.true.
 !
     endsubroutine pencil_criteria_special
 !***********************************************************************
@@ -380,19 +377,9 @@ module Special
 !        print*,'ram=p%del2a',p%del2a
       endif
 !
-! el: choice of either replacing E by the MHD value -uxB+J/sigma
-! (with constant or time-dependent eta), or the advanced E field.
+! el and e2 (note that this is called after magnetic, where sigma is computed)
 !
-      if (loverride_ee) then   !(this is not used; it was just a test)
-        if (lresi_eta_tdep) then
-          p%el=-p%uxb+mu0*eta_tdep*p%jj
-        else
-          p%el=-p%uxb+mu0*eta*p%jj
-        endif
-      else
-        p%el=f(l1:l2,m,n,iex:iez)
-      endif
-! e2
+      p%el=f(l1:l2,m,n,iex:iez)
       call dot2_mn(p%el,p%e2)
 !
 ! edot2
@@ -425,8 +412,9 @@ module Special
         call grad(f,ia0,p%ga0)
       endif
 !
-! divJ (using Ohm's law)
-! divJ=sigma*[divE+eps_ijk*(u_j,i * b_k + u_j * b_k,i)]
+!  divJ (using Ohm's law)
+!  divJ=sigma*[divE+eps_ijk*(u_j,i * b_k + u_j * b_k,i)]
+!  The use if eta may be suspect and should be checked.
 !
       if (lpenc_requested(i_divJ)) then
         tmp=0.
@@ -509,11 +497,10 @@ module Special
 !
 !  solve: dE/dt = curlB - ...
 !  Calculate curlB as -del2a, because curlB leads to instability.
-!  Usually, we don't override, so .not.loverride_ee is true.,
-!  so it is here where we solve dA/dt = -E.
+!  Solve dA/dt = -E.
 !
       if (lmagnetic) then
-        if (.not.loverride_ee) df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-p%el
+        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-p%el
         df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)+c_light2*(p%curlb-mu0*p%jj_ohm)
 !
 !  Solve for charge density
@@ -597,6 +584,9 @@ module Special
 !
       if (ldiagnos) then
         if (idiag_EEEM/=0) call sum_mn_name(.5*(p%e2+p%b2),idiag_EEEM)
+        call sum_mn_name(p%el(:,1),idiag_exm)
+        call sum_mn_name(p%el(:,2),idiag_eym)
+        call sum_mn_name(p%el(:,3),idiag_ezm)
         call sum_mn_name(p%e2,idiag_erms,lsqrt=.true.)
         call sum_mn_name(p%edot2,idiag_edotrms,lsqrt=.true.)
         call max_mn_name(p%e2,idiag_emax,lsqrt=.true.)
@@ -692,8 +682,8 @@ module Special
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_EEEM=0; idiag_erms=0; idiag_edotrms=0; idiag_emax=0
-        idiag_a0rms=0; idiag_grms=0; idiag_da0rms=0; idiag_BcurlEm=0
+        idiag_EEEM=0; idiag_erms=0; idiag_exm=0;idiag_eym=0;  idiag_ezm=0; idiag_emax=0
+        idiag_edotrms=0; idiag_a0rms=0; idiag_grms=0; idiag_da0rms=0; idiag_BcurlEm=0
         idiag_mfpf=0; idiag_fppf=0; idiag_afact=0
         idiag_rhoerms=0.; idiag_divErms=0.; idiag_divJrms=0.
         idiag_rhoem=0.; idiag_divEm=0.; idiag_divJm=0.; idiag_constrainteqn=0.
@@ -705,6 +695,9 @@ module Special
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'EEEM',idiag_EEEM)
         call parse_name(iname,cname(iname),cform(iname),'erms',idiag_erms)
+        call parse_name(iname,cname(iname),cform(iname),'exm',idiag_exm)
+        call parse_name(iname,cname(iname),cform(iname),'eym',idiag_eym)
+        call parse_name(iname,cname(iname),cform(iname),'ezm',idiag_ezm)
         call parse_name(iname,cname(iname),cform(iname),'edotrms',idiag_edotrms)
         call parse_name(iname,cname(iname),cform(iname),'emax',idiag_emax)
         call parse_name(iname,cname(iname),cform(iname),'a0rms',idiag_a0rms)
@@ -750,18 +743,6 @@ module Special
 !  06-jul-06/tony: coded
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
-!
-!  Announcement that we have switched:
-!
-      if (lroot.and.lmagnetic) then
-        if ((loverride_ee.neqv.loverride_ee_prev).and.lroot) then
-          print*,'loverride_ee has CHANGED: now loverride_ee=',loverride_ee
-          loverride_ee_prev=loverride_ee
-          open (1,file=trim(datadir)//'/pc_constants.pro',position="append")
-          write (1,'(a,1pd26.16)') 'toverride_ee=',t
-          close (1)
-        endif
-      endif
 !
       call keep_compiler_quiet(f)
 !

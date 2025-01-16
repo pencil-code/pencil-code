@@ -40,8 +40,8 @@ add_definitions(-DAC_USE_HIP=1)
 
 	
 
-set(GPU_TARGETS "gfx908" CACHE STRING "GPU target")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --offload-arch=gfx908 --offload-arch=gfx90a")
+#set(GPU_TARGETS "gfx908" CACHE STRING "GPU target")
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --offload-arch=gfx908 --offload-arch=gfx90a")
 
 # Workaround for finding HIP on Triton
 list(APPEND CMAKE_PREFIX_PATH /opt/rocm/hip /opt/rocm)

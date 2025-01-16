@@ -256,7 +256,7 @@ endif
 #
 target := $(firstword $(MAKECMDGOALS))
 #
-MODULE_CMD := $(shell command -v module 2> /dev/null)
+MODULE_CMD := $(shell bash -c 'command -v module 2> /dev/null')
 #
 # For gsl library.
 #
@@ -563,8 +563,11 @@ ifneq ($(GPU),nogpu)
       LIBGPU = astaroth/lib$(LIBGPU_NAME).so
 
       GPU_DEPS = $(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/Makefile.vendor $(CUDA_MAKEDIR)/PC_modulesources.h $(DSL_WORKDIR)/fieldecs.h $(DSL_WORKDIR)/equations.h $(DSL_WORKDIR)/solve.ac
-      #LDFLAGS_MAIN = -Bdynamic -Wl,--export-dynamic
-      LDFLAGS_MAIN = -h dynamic -Wl,--export-dynamic
+      ifneq (,$(firstword $(IS_CRAY)))
+        LDFLAGS_MAIN = -Bdynamic -Wl,--export-dynamic
+      else
+        LDFLAGS_MAIN = -h dynamic -Wl,--export-dynamic
+      endif
       LDFLAGS_LIB = -L astaroth -L astaroth/submodule/build/src/core -L astaroth/submodule/build/src/core/kernels -lastaroth_core -lkernels -l$(LIBGPU_NAME)
       ifneq ($(filter on yes,$(RUNTIME_COMPILATION)),)
         RUNTIME_COMPILATION = on
@@ -575,7 +578,7 @@ ifneq ($(GPU),nogpu)
       ifneq ($(IS_CRAY),)
         #TP: mpi_gtl_hsa and pe/lib64 is to enable CUDA_AWARE_MPI
         #good that this is still here
-        LDFLAGS_LIB += -L /opt/cray/pe/lib64 -lmpi_gtl_hsa
+        override LDFLAGS_LIB += -L /opt/cray/pe/lib64 -lmpi_gtl_hsa
       endif
 #      override LDFLAGS += -l:libmt-fortran.a -l:libmt.a -lstdc++
 #      override LDFLAGS_LIB += -L astaroth/scheduler-build/src
@@ -3587,7 +3590,7 @@ clean:  slender
 #  (there should be no Makefile_inc; but if there is, `make' just does nothing)
 #
 cleann: clean
-	rm -f Makefile src/Makefile Makefile_inc TAGS
+	rm -f Makefile Makefile_inc TAGS exit_mn.h
 	rm -rf semiauto-conf_tmp f90_qnd_log_dir
 	@for file in *.inc; do \
 	  if [ ! -L $$file ]; then rm -f $$file; fi \

@@ -10098,14 +10098,14 @@ module Solid_Cells
 !
   endsubroutine sc_init_diag_accum
 !***********************************************************************
-  subroutine sc_diagnostic_reductions
+  subroutine sc_diags_reductions
 !
 !  Reduces accumulated diagnostic variables across threads. Only called if using OpenMP
 !  Dummy for solid cells ogrid
 !
 !  30-mar-23/TP: coded
 !
-  endsubroutine sc_diagnostic_reductions
+  endsubroutine sc_diags_reductions
 !***********************************************************************
   subroutine sc_init_reduc_pointers
 !

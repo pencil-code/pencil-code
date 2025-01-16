@@ -459,7 +459,7 @@ module Solid_Cells_Mpicomm
       real, dimension (mx_ogrid,Hsize,nz_ogrid,mvar) ::  f_Hloy,f_Hupy
       intent(inout) :: f_Hlox,f_Hupx,f_Hloy,f_Hupy
 
-      integer, parameter :: ivar1=1, ivar2=min(mcom,size(f_Hloy,4))
+      integer :: ivar1=1, ivar2=min(mcom,size(f_Hloy,4))
       integer :: j
 !
       if (ivar2==0) return

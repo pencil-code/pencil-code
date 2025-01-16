@@ -113,6 +113,7 @@ subroutine reload(f, lreload_file, lreload_always_file)
     use Timestep,    only: initialize_timestep
     use HDF5_IO,     only: initialize_hdf5
     use Diagnostics, only: report_undefined_diagnostics,diagnostics_clean_up
+    use Particles_main,   only: particles_rprint_list, particles_initialize_modules
 
     real, dimension (mx,my,mz,mfarray) :: f
     logical :: lreload_file, lreload_always_file
@@ -186,6 +187,7 @@ subroutine gen_output(f)
     use Timeavg,         only: wsnap_timeavgs
     use Fixed_point,     only: wfixed_points
     use Streamlines,     only: wtracers
+    use Io,              only: output_globals
 
     real, dimension (mx,my,mz,mfarray), intent(inout) :: f
     integer :: isave_shift=0, i
@@ -304,7 +306,6 @@ subroutine timeloop(f,df,p)
   use Snapshot,        only: powersnap_prepare
 !$ use OMP_lib
 !$ use General, only: signal_send, signal_wait
-!!$ use, intrinsic :: iso_fortran_env
 !
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension (mx,my,mz,mvar) :: df
@@ -619,8 +620,6 @@ subroutine run_start() bind(C)
 !
 !$ use OMP_lib
 !$ use, intrinsic :: iso_c_binding
-!!$ use, intrinsic :: iso_fortran_env
-!!$ use mt, only: wait_all_thread_pool, push_task, free_thread_pool, depend_on_all, default_task_type
 !
   implicit none
 
@@ -633,7 +632,7 @@ subroutine run_start() bind(C)
   integer :: memuse, memory, memcpu
   logical :: suppress_pencil_check=.false.
   logical :: lnoreset_tzero=.false.
-  logical :: lexist
+  logical :: lprocbounds_exist
   integer, parameter :: num_helpers=1
   integer :: i,j
   integer :: master_core_id
@@ -730,21 +729,20 @@ subroutine run_start() bind(C)
   call set_coorsys_dimmask
 !
   fproc_bounds = trim(datadir) // "/proc_bounds.dat"
-  inquire (file=fproc_bounds, exist=lexist)
+  inquire (file=fproc_bounds, exist=lprocbounds_exist)
   call mpibarrier
 !
-  if (luse_oldgrid .and. lexist) then
+  if (luse_oldgrid .and. lprocbounds_exist) then
     if (ip<=6.and.lroot) print*, 'reading grid coordinates'
     call rgrid('grid.dat')
     call rproc_bounds(fproc_bounds)
     call construct_serial_arrays
     call grid_bound_data
   else
-    if (luse_oldgrid) call warning("run", "reconstructing the grid")
+    if (luse_oldgrid) call warning("run", "reconstructing the grid because proc_bounds.dat is missing")
     if (luse_xyz1) Lxyz = xyz1-xyz0
     call construct_grid(x,y,z,dx,dy,dz)
-    call wgrid("grid.dat", lwrite=.true.)
-    call wproc_bounds(fproc_bounds)
+    lprocbounds_exist = .false.    ! triggers wproc_bounds later
   endif
 !
 !  Shorthands (global).
@@ -884,10 +882,7 @@ subroutine run_start() bind(C)
 !
 !  Read particle snapshot.
 !
-  if (lparticles) then
-    if (ip <= 6 .and. lroot) print *, "reading particle snapshot"
-    call read_snapshot_particles
-  endif
+  if (lparticles) call read_snapshot_particles
 !
 !  Read point masses.
 !
@@ -945,9 +940,7 @@ subroutine run_start() bind(C)
   call initialize_timestep
   call initialize_modules(f)
   call initialize_boundcond
-  call initialize_gpu
-! Load farray to gpu
-  if (nt>0) call load_farray_to_GPU(f)
+  call initialize_gpu(f)
 !
   if (it1d==impossible_int) then
     it1d=it1
@@ -965,13 +958,18 @@ subroutine run_start() bind(C)
   if (lparticles) call particles_initialize_modules(f)
 !
 !  Only after register it is possible to write the correct dim.dat
-!  file with the correct number of variables
+!  file with the correct number of variables.
+!  No IO-module-controlled reading operations allowed beyond this point!
 !
-  call wgrid('grid.dat')
+  call wgrid("grid.dat", lwrite=.not.(lprocbounds_exist .and. luse_oldgrid))
+  if (.not.lprocbounds_exist) call wproc_bounds(fproc_bounds)
+
   if (.not.luse_oldgrid .or. lwrite_dim_again) then
     call wdim('dim.dat')
-    if (ip<11) print*,'Lz=',Lz
-    if (ip<11) print*,'z=',z
+    if (ip<11 .and. lroot) then
+      print*,'Lz=',Lz
+      print*,'z=',z
+    endif
   endif
 !
 !  Write data to file for IDL (param2.nml).
@@ -1023,7 +1021,7 @@ subroutine run_start() bind(C)
   if ( ((lpencil_check .and. .not. suppress_pencil_check) .or. &
         (.not.lpencil_check.and.lpencil_check_small)) .and. nt>0 ) then
     if (lgpu) then
-      call warning('run',"Pencil consistency check not supported on the GPU. You can consider running it on a CPU-only compilation")
+      call warning('run',"Pencil consistency check not supported on GPUs. You can consider running it with a CPU-only build")
     else 
       call pencil_consistency_check(f,df,p)
     endif
@@ -1090,8 +1088,6 @@ subroutine run_start() bind(C)
         time_last_diagnostic=time1
       endif
       if (nt>0) call timeloop(f,df,p)
-!print*, 'nach timeloop', iproc
-!flush(6)
 !$  else
 !$    if (nt>0) call helper_loop(f,p)
 !$  endif

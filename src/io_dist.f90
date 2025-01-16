@@ -1332,8 +1332,8 @@ module Io
         if (lroot) then
           write (lun_output) gx, gy, gz
           close (lun_output)
-       endif
-     endif
+        endif
+      endif
 !
     endsubroutine wgrid
 !***********************************************************************

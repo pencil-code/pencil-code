@@ -98,6 +98,14 @@
   \var{dt}        & time step $\delta t$ \\
   \var{walltime}  & wall clock time since start of
                     run.x, in seconds \\
+  \var{dtv}       & advective timestep as a
+                    fraction of the actual one \\
+  \var{dtdiffus}  & diffusive timestep as a
+                    fraction of the actual one \\
+  \var{dtdiffus2} & hyperdiffusive (hyper2)  timestep
+                    as a fraction of the actual one \\
+  \var{dtdiffus3} & hyperdiffusive (hyper3)  timestep
+                    as a fraction of the actual one \\
   \var{Rmesh}     & $R_{\rm mesh}$ \\
   \var{Rmesh3}    & $R_{\rm mesh}^{(3)}$ \\
   \var{maxadvec}  & maxadvec \\
@@ -358,6 +366,8 @@
   \var{ssruzm}    & $\left<s \varrho u_z/c_p\right>$ \\
   \var{ssuzm}     & $\left<s u_z/c_p\right>$ \\
   \var{ssm}       & $\left<s/c_p\right>$
+                    \quad(mean entropy) \\
+  \var{ssbycpm}   & $\left<s/c_p\right>$
                     \quad(mean entropy) \\
   \var{ss2m}      & $\left<(s/c_p)^2\right>$
                     \quad(mean squared entropy) \\
@@ -2753,6 +2763,7 @@
 \midrule
   \multicolumn{2}{c}{Module \file{training_torchfort.f90}} \\
 \midrule
+  \var{loss}      & torchfort training loss \\
   \var{tauerror}  & $\sqrt{\left<(\sum_{i,j} u_i*u_j - tau_{ij})^2\right>}$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{viscosity.f90}} \\
@@ -2764,6 +2775,8 @@
   \var{fviscrmsx} & Rms value of viscous acceleration
                     for the vis_xaver_range \\
   \var{num}       & Mean value of viscosity \\
+  \var{numax}     & Max value of viscosity \\
+  \var{numin}     & Min value of viscosity \\
   \var{nusmagm}   & Mean value of Smagorinsky viscosity \\
   \var{nusmagmin} & Min value of Smagorinsky viscosity \\
   \var{nusmagmax} & Max value of Smagorinsky viscosity \\

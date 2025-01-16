@@ -41,11 +41,12 @@ module Solid_Cells
   logical :: lnointerception=.false., lcheck_ba=.false.
   logical :: lclose_quad_rad_inter=.true.
   logical :: lset_flow_dir=.false.
-  real                          :: rhosum, flow_dir=0., T0, flow_dir_set=0.
-  integer                       :: irhocount
-  real                          :: theta_shift=1e-2
-  real                          :: limit_close_linear=0.5
-  real                          :: ineargridshift=1
+  real, target     :: rhosum
+  real             :: flow_dir=0., T0, flow_dir_set=0.
+  integer, target  :: irhocount
+  real             :: theta_shift=1e-2
+  real             :: limit_close_linear=0.5
+  real             :: ineargridshift=1
 !
   type solid_object
     character(len=10) :: form
@@ -80,14 +81,15 @@ module Solid_Cells
   integer :: idiag_Nusselt=0
 !
   integer, allocatable :: fpnearestgrid(:,:,:)
-  real, allocatable    :: c_dragx(:), c_dragy(:), c_dragz(:), Nusselt(:)
-  real, allocatable    :: c_dragx_p(:), c_dragy_p(:), c_dragz_p(:)
+  real, allocatable, target :: c_dragx(:), c_dragy(:), c_dragz(:), Nusselt(:)
+  real, allocatable, target :: c_dragx_p(:), c_dragy_p(:), c_dragz_p(:)
 !  Dummy variables
   real :: r_ogrid
   real :: r_int_outer
   real, dimension(3) :: xorigo_ogrid
 !  For multithreading purposes
-  real, pointer :: p_rhosum, p_c_dragy, p_c_dragx, p_c_dragz, p_Nusselt, p_c_dragx_p, p_c_dragz_p, p_c_dragy_p
+  real, pointer :: p_rhosum
+  real, pointer, dimension(:) :: p_c_dragy, p_c_dragx, p_c_dragz, p_Nusselt, p_c_dragx_p, p_c_dragz_p, p_c_dragy_p
   integer, pointer :: p_irhocount
   !$omp threadprivate(c_dragx, c_dragy, c_dragz, Nusselt, c_dragx_p, c_dragy_p, c_dragz_p, irhocount, rhosum)
 !

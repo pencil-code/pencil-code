@@ -1,0 +1,7 @@
+module swap PrgEnv-cray/8.5.0 PrgEnv-gnu/8.5.0
+module load \
+cray-hdf5-parallel \
+CrayEnv \
+rocm \
+buildtools \
+cray-python

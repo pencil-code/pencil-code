@@ -156,6 +156,7 @@ cp *.in $targetdir
 [ -f data/emftensors.h5 ] && ln -s data/emftensors.h5 $targetdir/data/emftensors.h5
 if [ -n "`ls *.py 2>/dev/null`" ]; then cp *.py $targetdir; fi
 [ -f FAKE_PARALLEL_IO ] && touch $targetdir/FAKE_PARALLEL_IO
+[ -f job.sh ] && cp job.sh $targetdir
 [ -f pc_commands.log ] && cp pc_commands.log $targetdir && echo -e "\n# `date +'%Y-%m-%d %H:%M:%S'`\n# copied from '$olddir'" >>  $targetdir/pc_commands.log
 [ -f src/.moduleinfo ] && cp src/.moduleinfo $targetdir/src
 [ -f src/.config-files ] && cp src/.config-files $targetdir/src
@@ -186,6 +187,10 @@ if [ $same_source ]; then
 
     lnk=`readlink $olddir/src/special.so`
     if [ "$lnk" != "" ]; then ln -s $lnk .; fi
+
+    lnk=`readlink $olddir/src/astaroth/libastaroth_dbl.so`
+    if [ "$lnk" != "" ]; then ln -s $lnk astaroth/.; fi
+
   else
     cd $olddir;
     if [ -e src/.config-files ]; then 

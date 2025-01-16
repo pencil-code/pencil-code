@@ -204,7 +204,7 @@ class npfile(object):
         if minus_ones == 0:
             pass
         elif minus_ones == 1:
-            known_dimensions_size = -N.product(shape,axis=0) * dt.itemsize
+            known_dimensions_size = -N.prod(shape,axis=0) * dt.itemsize
             unknown_dimension_size, illegal = divmod(self.remaining_bytes(),
                                                      known_dimensions_size)
             if illegal:
@@ -213,7 +213,7 @@ class npfile(object):
         else:
             raise ValueError(
                 "illegal -1 count; can only specify one unknown dimension")
-        sz = dt.itemsize * N.product(shape)
+        sz = dt.itemsize * N.prod(shape)
         dt_endian = self._endian_from_dtype(dt)
         buf = self.file.read(sz)
         arr = N.ndarray(shape=shape,
@@ -302,7 +302,7 @@ class npfile(object):
         if minus_ones == 0:
             pass
         elif minus_ones == 1:
-            known_dimensions_size = -N.product(shape,axis=0) * dt.itemsize
+            known_dimensions_size = -N.prod(shape,axis=0) * dt.itemsize
             unknown_dimension_size, illegal = divmod(header,
                                                      known_dimensions_size)
             if illegal:
@@ -311,7 +311,7 @@ class npfile(object):
         else:
             raise ValueError(
                 "illegal -1 count; can only specify one unknown dimension")
-        sz = dt.itemsize * N.product(shape)
+        sz = dt.itemsize * N.prod(shape)
 
         buf = self.file.read(sz)
         arr = N.ndarray(shape=shape,

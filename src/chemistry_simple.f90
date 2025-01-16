@@ -20,7 +20,7 @@
 ! PENCILS PROVIDED DYDt_reac(nchemspec); DYDt_diff(nchemspec)
 ! PENCILS PROVIDED lambda; glambda(3)
 ! PENCILS PROVIDED Diff_penc_add(nchemspec); H0_RT(nchemspec); hhk_full(nchemspec)
-! PENCILS PROVIDED ghhk(3,nchemspec); S0_R(nchemspec), ff_cond
+! PENCILS PROVIDED ghhk(3,nchemspec); S0_R(nchemspec), ff_cond, cond_heat
 
 !
 !***************************************************************
@@ -142,10 +142,10 @@ module Chemistry
 !
 !   Diagnostics
 !
-  real, allocatable, dimension(:,:) :: net_react_m, net_react_p
+  real, allocatable, dimension(:,:), target :: net_react_m, net_react_p
   !$omp threadprivate(net_react_m,net_react_p)
 ! For concurrency
-  real, pointer :: p_net_react_m, p_net_react_p
+  real, dimension(:,:), pointer :: p_net_react_m, p_net_react_p
   logical :: lchemistry_diag=.false.
 !
 ! input parameters

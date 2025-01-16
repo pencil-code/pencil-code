@@ -141,7 +141,7 @@ module Hydro
   logical :: luu_fluc_as_aux=.false.
   logical :: luu_sph_as_aux=.false.
   logical :: lvv_as_aux=.false., lvv_as_comaux=.false.
-  logical :: lscale_tobox=.true.
+  logical :: lscale_tobox=.true., lrandom_ampl_uu=.false.
   logical :: lfactors_uu=.false.
   logical :: lpower_profile_file_uu=.false.
   logical, target :: lpressuregradient_gas=.true.
@@ -187,8 +187,8 @@ module Hydro
       lprecession, omega_precession, alpha_precession, velocity_ceiling, &
       loo_as_aux, luut_as_aux, luust_as_aux, loot_as_aux, loost_as_aux, &
       llorentz_as_aux, luuk_as_aux, look_as_aux, &
-      mu_omega, nb_rings, om_rings, gap, &
-      lscale_tobox, ampl_Omega, omega_ini, r_cyl, skin_depth, incl_alpha, &
+      mu_omega, nb_rings, om_rings, gap, lscale_tobox, lrandom_ampl_uu, &
+      ampl_Omega, omega_ini, r_cyl, skin_depth, incl_alpha, &
       rot_rr, xsphere, ysphere, zsphere, neddy, amp_meri_circ, &
       rnoise_int, rnoise_ext, lreflecteddy, louinit, hydro_xaver_range, max_uu,&
       amp_factor,kx_uu_perturb,llinearized_hydro, hydro_zaver_range, index_rSH, &
@@ -541,6 +541,9 @@ module Hydro
   integer :: idiag_duxdzma=0    ! DIAG_DOC:
   integer :: idiag_duydzma=0    ! DIAG_DOC:
   integer :: idiag_EEK=0        ! DIAG_DOC: $\left<\varrho\uv^2\right>/2$
+  integer :: idiag_EEK2=0       ! DIAG_DOC: $\left<(\varrho\uv^2/2)^2\right>$
+  integer :: idiag_EEK3=0       ! DIAG_DOC: $\left<(\varrho\uv^2/2)^3\right>$
+  integer :: idiag_EEK4=0       ! DIAG_DOC: $\left<(\varrho\uv^2/2)^4\right>$
   integer :: idiag_ekin=0       ! DIAG_DOC: $\left<{1\over2}\varrho\uv^2\right>$
   integer :: idiag_ekintot=0    ! DIAG_DOC: $\int_V{1\over2}\varrho\uv^2\, dV$
   integer :: idiag_totangmom=0  ! DIAG_DOC:
@@ -1138,7 +1141,7 @@ module Hydro
               nfact0=nfact_uu, lfactors0=lfactors_uu,lno_noise=lno_noise_uu, &
               lpower_profile_file=lpower_profile_file_uu, qirro=qirro_uu, &
               lsqrt_qirro=lsqrt_qirro_uu, lreinit=lreinitialize_uu, &
-              lrho_nonuni=lrho_nonuni_uu,ilnr=ilnrho)
+              lrho_nonuni=lrho_nonuni_uu,ilnr=ilnrho, lrandom_ampl=lrandom_ampl_uu)
           endselect
         enddo
       endif
@@ -2403,7 +2406,8 @@ module Hydro
             lskip_projection, lvectorpotential,lscale_tobox, &
             nfact0=nfact_uu, lfactors0=lfactors_uu,lno_noise=lno_noise_uu, &
             lpower_profile_file=lpower_profile_file_uu, qirro=qirro_uu, &
-            lsqrt_qirro=lsqrt_qirro_uu,lrho_nonuni=lrho_nonuni_uu,ilnr=ilnrho)
+            lsqrt_qirro=lsqrt_qirro_uu,lrho_nonuni=lrho_nonuni_uu,ilnr=ilnrho, &
+            lrandom_ampl=lrandom_ampl_uu)
 !
         case ('random-isotropic-KS')
           call random_isotropic_KS(initpower,f,iux,N_modes_uu)
@@ -2942,8 +2946,9 @@ module Hydro
         lpenc_diagnos(i_phiy)=.true.
       endif
       if (idiag_EEK/=0 .or. idiag_ekin/=0 .or. idiag_ekintot/=0 .or. idiag_fkinzmz/=0 .or. &
-           idiag_fkinzupmz/=0 .or. idiag_fkinzdownmz/=0 .or. &
-           idiag_ekinmx /= 0 .or. idiag_ekinmz/=0 .or. idiag_fkinxmx/=0) then
+          idiag_EEK2/=0 .or. idiag_EEK3/=0 .or. idiag_EEK4/=0 .or. &
+          idiag_fkinzupmz/=0 .or. idiag_fkinzdownmz/=0 .or. &
+          idiag_ekinmx /= 0 .or. idiag_ekinmz/=0 .or. idiag_fkinxmx/=0) then
         lpenc_diagnos(i_ekin)=.true.
       endif
       if (idiag_fkinxmxy/=0 .or. idiag_fkinymxy/=0 .or. &
@@ -3669,7 +3674,6 @@ module Hydro
       real, dimension (mx,mz) :: fsum_tmp_cyl
       real, dimension (mx,my) :: fsum_tmp_sph
       real, dimension (mx) :: uphi
-      real :: nygrid1,nzgrid1
       integer ::  j
 !
 !  Remove mean momenta or mean flows if desired.
@@ -3718,11 +3722,10 @@ module Hydro
 !
         if (lcylindrical_coords) then
           fsum_tmp_cyl=0.
-          nygrid1=1./nygrid
           do n=1,mz
             do m=m1,m2
               uphi=f(:,m,n,iuy)
-              fsum_tmp_cyl(:,n)=fsum_tmp_cyl(:,n)+uphi*nygrid1
+              fsum_tmp_cyl(:,n)=fsum_tmp_cyl(:,n)+uphi
             enddo
           enddo
 !
@@ -3730,18 +3733,19 @@ module Hydro
 ! Sum over processors of same ipz, and different ipy
 ! --only relevant for 3D, but is here for generality
 !
+          fsum_tmp_cyl = fsum_tmp_cyl/nygrid
           call mpiallreduce_sum(fsum_tmp_cyl,uu_average_cyl,(/mx,mz/),idir=2)
           !idir=2 is equal to old LSUMY=.true.
 !
         elseif (lspherical_coords) then
-          nzgrid1=1./nzgrid
           fsum_tmp_sph=0.
           do n=n1,n2
             do m=1,my
               uphi=f(:,m,n,iuz)
-              fsum_tmp_sph(:,m)=fsum_tmp_sph(:,m)+uphi*nzgrid1
+              fsum_tmp_sph(:,m)=fsum_tmp_sph(:,m)+uphi
             enddo
           enddo
+          fsum_tmp_sph = fsum_tmp_sph/nzgrid
           call mpiallreduce_sum(fsum_tmp_sph,uu_average_sph,(/mx,my/),idir=3)
           !idir=3 is equal to old LSUMZ=.true.
 !
@@ -4103,9 +4107,6 @@ module Hydro
       real, dimension (nx) :: rmask
       real :: kx,zbot
       integer :: k
-      logical :: lcorr_zero_dt
-
-      lcorr_zero_dt = .false.
 !
 !  Calculate maxima and rms values for diagnostic purposes
 !
@@ -4233,6 +4234,9 @@ module Hydro
         if (idiag_Tzxm/=0)  call sum_mn_name(f(l1:l2,m,n,iTij+5),idiag_Tzxm)
         call sum_mn_name(p%ekin,idiag_ekin)
         call sum_mn_name(p%ekin,idiag_EEK)
+        call sum_mn_name(p%ekin**2,idiag_EEK2)
+        call sum_mn_name(p%ekin**3,idiag_EEK3)
+        call sum_mn_name(p%ekin**4,idiag_EEK4)
         call integrate_mn_name(p%ekin,idiag_ekintot)
 !
 !  should be coordinate dependent
@@ -4475,23 +4479,13 @@ module Hydro
             !phidot=uu_average_cyl(:,n)*rcyl_mn1
             !nshift=phidot*dt*dy_1(m)
             !call max_mn_name(nshift,idiag_nshift)
-            if (dt==0.) then
-              lcorr_zero_dt=.true.
-              call max_mn_name(uu_average_cyl(l1:l2,n)*rcyl_mn1*dy_1(m),idiag_nshift)
-            else
-              call max_mn_name(uu_average_cyl(l1:l2,n)*rcyl_mn1*dt*dy_1(m),idiag_nshift)
-            endif
+            call max_mn_name(uu_average_cyl(l1:l2,n)*rcyl_mn1*dy_1(m),idiag_nshift,l_dt=.true.)
           elseif (lspherical_coords) then
             !mnghost=m-nghost
             !phidot=uu_average_sph(:,n)*rcyl_mn1  ! rcyl = r*sinth(m)
             !nshift=phidot*dt*dz_1(n)
             !call max_mn_name(nshift,idiag_nshift)
-            if (dt==0.) then
-              lcorr_zero_dt=.true.
-              call max_mn_name(uu_average_sph(l1:l2,m)*rcyl_mn1*dz_1(n),idiag_nshift)
-            else
-              call max_mn_name(uu_average_sph(l1:l2,m)*rcyl_mn1*dt*dz_1(n),idiag_nshift)
-            endif
+            call max_mn_name(uu_average_sph(l1:l2,m)*rcyl_mn1*dz_1(n),idiag_nshift,l_dt=.true.)
           endif
         endif
         if (othresh_per_orms/=0.) call vecout(41,trim(directory)//'/ovec',p%oo,othresh,novec)
@@ -4505,12 +4499,6 @@ module Hydro
 
         if (ekman_friction/=0) call sum_mn_name(frict,idiag_frict)
 
-      elseif (lcorr_zero_dt) then
-!
-!  Here all quantities should be updated the calculation of which requires dt which
-!  is zero at the very first diagnostics output time. (Doesn't work for itorder=1.)
-!
-        if (lroot) fname(idiag_nshift)=fname(idiag_nshift)*dt
       endif  ! if (ldiagnos)
 
     endsubroutine calc_0d_diagnostics_hydro
@@ -5447,6 +5435,8 @@ endif
           do j=1,3
             do n=1,mz
               f(:,:,n,iuu+j-1) = f(:,:,n,iuu+j-1)-uumz(n,j)
+! PC: The line commented below is for damping box modes of convection. 
+!              if (z(n) .lt. 0.0) f(:,:,n,iuu+j-1) = f(:,:,n,iuu+j-1)-rescale_uu*uumz(n,j)
             enddo
           enddo
         elseif (lremove_uumeanz_horizontal) then
@@ -6582,6 +6572,9 @@ endif
         idiag_duxdzma=0
         idiag_duydzma=0
         idiag_EEK=0
+        idiag_EEK2=0
+        idiag_EEK3=0
+        idiag_EEK4=0
         idiag_ekin=0
         idiag_totangmom=0
         idiag_ekintot=0
@@ -6711,6 +6704,9 @@ endif
       if (lroot.and.ip<14) print*,'rprint_hydro: run through parse list'
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'EEK',idiag_EEK)
+        call parse_name(iname,cname(iname),cform(iname),'EEK2',idiag_EEK2)
+        call parse_name(iname,cname(iname),cform(iname),'EEK3',idiag_EEK3)
+        call parse_name(iname,cname(iname),cform(iname),'EEK4',idiag_EEK4)
         call parse_name(iname,cname(iname),cform(iname),'ekin',idiag_ekin)
         call parse_name(iname,cname(iname),cform(iname),'ekintot',idiag_ekintot)
         call parse_name(iname,cname(iname),cform(iname),'gamm',idiag_gamm)
@@ -7851,7 +7847,7 @@ endif
         !!$omp target if(loffload) data
         !!$omp target if(loffload) data update(reference_state,iref_rho,n1,n2,m1,m2,l1,l2) map(from: rum) has_device_addr(f)
         !shared: lref, indrhol
-        !$omp teams distribute parallel do collapse(2) private(rho,mm) reduction(+:rum)
+        !!$omp teams distribute parallel do collapse(2) private(rho,mm) reduction(+:rum)
         do n = n1,n2
         do m = m1,m2
 !
@@ -7886,7 +7882,7 @@ endif
 !
         !!$omp target if(loffload) data map(to: rum) has_device_addr(f) 
         !shared: lref, indrhol
-        !$omp teams distribute parallel do collapse(2) private(rho1)
+        !!$omp teams distribute parallel do collapse(2) private(rho1)
         do n = n1,n2
         do m = m1,m2
           if (ldensity_nolog) then

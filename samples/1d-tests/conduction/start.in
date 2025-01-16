@@ -1,0 +1,32 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+&init_pars
+  xyz0  = -2., -2., 0
+  Lxyz  =  1.,  1.,  3
+  lperi =  T ,   T ,   F
+  bcz = 'db:cT','c1:nil'
+/
+&eos_init_pars
+  cs0=0.3
+  gamma=1.6666666
+  rho0=1.
+  cp=2
+/
+&density_init_pars
+  initlnrho='piecew-poly'
+  widthlnrho=0.025
+/
+&grav_init_pars
+  gravz_profile='const'
+  z1=0
+  z2=2
+  zref=3
+  gravz=-1.
+/
+&entropy_init_pars
+  initss='piecew-poly'
+  widthss=0.03
+  mpoly0=1.49 !between z1 and z2
+!   mpoly1=1.49 !between zbot and z1
+  mpoly2=1.51 !between z2 and zref
+/

@@ -35,6 +35,7 @@ module Ascalar
 !  Init parameters.
 !
   real :: acc_const=0., amplacc=0., widthacc=0., ttc_const=0., amplttc=0., widthttc=0.
+  real :: z0_acc=0.
   logical :: noascalar=.false., reinitialize_acc=.false.
   character (len=labellen) :: initacc='nothing'
   character (len=labellen) :: initttc='nothing'
@@ -43,7 +44,7 @@ module Ascalar
   logical :: lbuoyancy=.false., ltauascalar=.false., lttc=.false., lttc_mean=.false.
 !
   namelist /ascalar_init_pars/ &
-           initacc, acc_const, amplacc, widthacc, & 
+           initacc, acc_const, amplacc, widthacc, z0_acc, &
            initttc, ttc_const, amplttc, widthttc, & 
            T_env, qv_env, lbuoyancy, lttc, lttc_mean
 !
@@ -85,6 +86,7 @@ module Ascalar
   integer :: idiag_esrms=0, idiag_esm=0, idiag_esmax=0, idiag_esmin=0
   integer :: idiag_qvsrms=0, idiag_qvsm=0, idiag_qvsmax=0, idiag_qvsmin=0
   integer :: idiag_ttc_mean=0, idiag_acc_mean=0
+  integer :: idiag_accmz=0 ! XYAVG_DOC: $\left<c\right>_{xy}$
 !
   contains
 !***********************************************************************
@@ -145,6 +147,7 @@ module Ascalar
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: l
+      real, dimension (mz) :: tmp
 !
       select case (initacc)
         case ('nothing')
@@ -156,7 +159,15 @@ module Ascalar
           enddo;enddo
         case ('tanhz')
           do l=l1,l2; do m=m1,m2
-             f(l,m,:,iacc)=acc_const+amplacc*tanh(z/widthacc)
+             f(l,m,:,iacc)=acc_const+amplacc*tanh((z-z0_acc)/widthacc)
+          enddo;enddo
+        case ('tanhz/(1-tanhz)')
+          !Such that the mass fraction is a step.
+          do l=l1,l2; do m=m1,m2
+            tmp = acc_const + amplacc*(1+tanh((z-z0_acc)/widthacc))/2
+            if (any(tmp==1)) call fatal_error('init_acc', &
+              'specified initial condition leads to infinite values for acc')
+            f(l,m,:,iacc) = tmp/(1-tmp)
           enddo;enddo
 !
 !  Catch unknown values.
@@ -235,6 +246,7 @@ module Ascalar
       if (thermal_diff/=0.) lpenc_requested(i_del2ttc)=.true.
 !
       lpenc_diagnos(i_ttc)=.true.
+      if (idiag_accmz/=0) lpenc_diagnos(i_acc)=.true.
 !      
 ! temperature calculated from "temperature_idealgas.f90"
       if (ltemperature) then 
@@ -525,6 +537,12 @@ module Ascalar
         endif
       endif
 !
+!  1d-averages. Happens at every it1d timesteps, NOT at every it1.
+!
+      if (l1davgfirst .or. (ldiagnos .and. ldiagnos_need_zaverages)) then
+        call xysum_mn_name_z(p%acc,idiag_accmz)
+      endif
+!
     endsubroutine calc_diagnostics_ascalar
 !***********************************************************************
     subroutine calc_ttcmean(f)
@@ -606,7 +624,7 @@ module Ascalar
       logical :: lreset
       logical, optional :: lwrite
 !
-      integer :: iname
+      integer :: iname, inamez
       logical :: lwr
 !
 !
@@ -625,6 +643,7 @@ module Ascalar
         idiag_qvsrms=0; idiag_qvsm=0; idiag_qvsmax=0; idiag_qvsmin=0
         idiag_buoyancyrms=0; idiag_buoyancym=0; idiag_buoyancymax=0; idiag_buoyancymin=0
         idiag_ttc_mean=0; idiag_acc_mean=0
+        idiag_accmz=0
       endif
 !
       do iname=1,nname
@@ -668,6 +687,10 @@ module Ascalar
         call parse_name(iname,cname(iname),cform(iname),'buoyancymin',idiag_buoyancymin)
         call parse_name(iname,cname(iname),cform(iname),'ttc_mean',idiag_ttc_mean)
         call parse_name(iname,cname(iname),cform(iname),'acc_mean',idiag_acc_mean)
+      enddo
+!
+      do inamez=1,nnamez
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'accmz',idiag_accmz)
       enddo
 !
       if (lwr) then 

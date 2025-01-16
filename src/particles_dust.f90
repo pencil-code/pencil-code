@@ -19,7 +19,7 @@
 ! PENCILS PROVIDED epsp; grhop(3)
 ! PENCILS PROVIDED tauascalar
 ! PENCILS PROVIDED condensationRate
-! PENCILS PROVIDED waterMixingRatio
+! PENCILS PROVIDED waterMixingRatio, part_heatcap
 !
 !***************************************************************
 module Particles
@@ -312,7 +312,7 @@ module Particles
   integer :: idiag_vpxvpym=0, idiag_vpxvpzm=0, idiag_vpyvpzm=0
   integer :: idiag_rhopvpxm=0, idiag_rhopvpym=0, idiag_rhopvpzm=0
   integer :: idiag_rhopvpxt=0, idiag_rhopvpyt=0, idiag_rhopvpzt=0
-  integer :: idiag_rhopvpysm=0
+  integer :: idiag_rhopvpysm=0, idiag_rhopart=0
   integer :: idiag_lpxm=0, idiag_lpym=0, idiag_lpzm=0
   integer :: idiag_lpx2m=0, idiag_lpy2m=0, idiag_lpz2m=0
   integer :: idiag_npm=0, idiag_np2m=0, idiag_npmax=0, idiag_npmin=0 ! DIAG_DOC: $\rm{mean particle number density}$
@@ -336,7 +336,7 @@ module Particles
   integer :: idiag_eccpxm=0, idiag_eccpym=0, idiag_eccpzm=0
   integer :: idiag_eccpx2m=0, idiag_eccpy2m=0, idiag_eccpz2m=0
   integer :: idiag_vprms=0, idiag_vpyfull2m=0, idiag_deshearbcsm=0
-  integer :: idiag_Shm=0
+  integer :: idiag_Shm=0, idiag_condheatm
   integer :: idiag_ffcondposm, idiag_ffcondnegm, idiag_ffcondm
   integer, dimension(ndustrad) :: idiag_npvzmz=0, idiag_npvz2mz=0, idiag_nptz=0
   integer, dimension(ndustrad) :: idiag_npuzmz=0
@@ -2472,7 +2472,7 @@ module Particles
       real, dimension(3) :: uup
 !
       logical, save :: linsertmore=.true.
-      real :: xx0, yy0, r2, r, mass_nucleii, part_mass
+      real :: xx0, yy0, r2, r, mass_nucleii, part_mass, TTp
       integer :: j, k, n_insert, npar_loc_old, iii
       integer :: ii,jj,kk
       integer :: jproc,tag_id,tag0=283
@@ -2561,6 +2561,18 @@ module Particles
                           part_mass=4.*pi*fp(k,iap)**3/3.*true_density_cond_spec
                           fp(k,inpswarm)=mass_nucleii/part_mass
                         endif
+                      endif
+                      !
+                      ! Initialize temperature
+                      !
+                      if (lparticles_temperature) then
+                        if (ltemperature_nolog) then
+                          call interpolate_linear(f,iTT,fp(k,ixp:izp),TTp,ineargrid(k,:),0,0)
+                        else
+                          call interpolate_linear(f,ilnTT,fp(k,ixp:izp),TTp,ineargrid(k,:),0,0)
+                          TTp=exp(TTp)
+                        endif
+                        fp(k,iTp) = TTp
                       endif
 !
 !  Particles are not allowed to be present in non-existing dimensions.
@@ -3187,7 +3199,8 @@ module Particles
         lpenc_diagnos(i_rhop) = .true.
         lpenc_diagnos(i_uup) = .true.
       endif
-!
+      !
+      if (ltemp_equip_part_gas) lpenc_requested(i_part_heatcap) = .true.
       if (maxval(idiag_npvzmz) > 0) lpenc_requested(i_npvz) = .true.   !MR: not pencil_diagnos?
       if (maxval(idiag_npvz2mz) > 0) lpenc_requested(i_npvz2) = .true.
       if (maxval(idiag_npuzmz) > 0) lpenc_requested(i_npuz) = .true.
@@ -3236,7 +3249,7 @@ module Particles
 !
     endsubroutine pencil_interdep_particles
 !***********************************************************************
-    subroutine calc_pencils_particles(f,p)
+    subroutine calc_pencils_particles(f,p,fp,ineargrid)
 !
       use Sub, only: grad
 !
@@ -3245,7 +3258,10 @@ module Particles
 !
 !  16-feb-06/anders: coded
 !
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, dimension(mpar_loc,mparray), intent(in) :: fp
+      integer, dimension(mpar_loc,3), intent(in) :: ineargrid
+      integer :: k, inx0
       type (pencil_case) :: p
 !
       if (lpencil(i_np)) then
@@ -3282,6 +3298,17 @@ module Particles
       if (itauascalar > 0) p%tauascalar = f(l1:l2,m,n,itauascalar)
       if (icondensationRate > 0) p%condensationRate = f(l1:l2,m,n,icondensationRate)
       if (iwaterMixingRatio > 0) p%waterMixingRatio = f(l1:l2,m,n,iwaterMixingRatio)
+      if (lpencil(i_part_heatcap) .and. iap/=0) then
+        p%part_heatcap=0
+        do k = 1,npar_loc
+          inx0 = ineargrid(k,1)-nghost
+          if (irhopswarm /= 0) then
+            p%part_heatcap(inx0) = p%part_heatcap(inx0)+4*pi*fp(k,iap)**3*rhopmat*fp(k,irhopswarm)/3.
+          else
+            p%part_heatcap(inx0) = p%part_heatcap(inx0)+4*pi*fp(k,iap)**3*rhopmat/3.
+          endif
+        enddo
+      endif
 !
     endsubroutine calc_pencils_particles
 !***********************************************************************
@@ -3589,6 +3616,14 @@ module Particles
                 fp(1:npar_loc,ivpx),idiag_rhopvpxm)
           endif
         endif
+
+        if (idiag_rhopart /= 0) then
+          if (lparticles_radius .and. lparticles_number) then
+            call sum_par_name(four_pi_rhopmat_over_three* &
+                fp(1:npar_loc,iap)**3*fp(1:npar_loc,inpswarm)*npar_loc,idiag_rhopart)
+          endif
+        endif
+        
         if (idiag_rhopvpym /= 0) then
           if (lparticles_density) then
             call sum_par_name(fp(1:npar_loc,irhopswarm)*fp(1:npar_loc,ivpy), &
@@ -5189,6 +5224,8 @@ endif
         if (idiag_dvpx2m /= 0 .or. idiag_dvpx2m /= 0 .or. idiag_dvpx2m /= 0 .or. &
             idiag_dvpm  /= 0 .or. idiag_dvpmax /= 0) call calculate_rms_speed(fp,ineargrid,p)
         if (lfirst .and. ldt) call max_mn_name(dt1_drag,idiag_dtdragp,l_dt=.true.)
+        if (idiag_condheatm/= 0) &
+             call sum_mn_name(p%cond_heat,idiag_condheatm)
         if (idiag_ffcondm/= 0) &
              call sum_mn_name(p%ff_cond,idiag_ffcondm)
         if (idiag_ffcondposm/= 0) &
@@ -6701,7 +6738,11 @@ endif
         ! beta_ts, but it is not enough. I do not know how to resolve this
         ! issue.
         !
-        force = force*sqrt(Szero/(beta_ts(itorder)*dt))
+        if (lfollow_gas) then
+          force = force*sqrt(Szero/dt)
+        else
+          force = force*sqrt(Szero/(beta_ts(itorder)*dt))
+        endif
       endif
 !
     endsubroutine calc_brownian_force
@@ -6915,6 +6956,7 @@ endif
         idiag_vpxmin = 0
         idiag_vpymin = 0
         idiag_vpzmin = 0
+        idiag_rhopart = 0
         idiag_rhopvpxm = 0
         idiag_rhopvpym = 0
         idiag_rhopvpzm = 0
@@ -6998,6 +7040,7 @@ endif
         idiag_Shm = 0
         idiag_npuzmz = 0
 
+        idiag_condheatm = 0
         idiag_ffcondposm = 0
         idiag_ffcondm = 0
         idiag_ffcondnegm = 0
@@ -7044,7 +7087,7 @@ endif
         call parse_name(iname,cname(iname),cform(iname),'vpymin',idiag_vpymin)
         call parse_name(iname,cname(iname),cform(iname),'vpzmin',idiag_vpzmin)
         call parse_name(iname,cname(iname),cform(iname),'vpmax',idiag_vpmax)
-!        call parse_name(iname,cname(iname),cform(iname),'vtherm500',idiag_vtherm500)
+        call parse_name(iname,cname(iname),cform(iname),'rhopart',idiag_rhopart)
         call parse_name(iname,cname(iname),cform(iname),'rhopvpxm',idiag_rhopvpxm)
         call parse_name(iname,cname(iname),cform(iname),'rhopvpym',idiag_rhopvpym)
         call parse_name(iname,cname(iname),cform(iname),'rhopvpzm',idiag_rhopvpzm)
@@ -7096,6 +7139,7 @@ endif
         call parse_name(iname,cname(iname),cform(iname),'vprms',idiag_vprms)
         call parse_name(iname,cname(iname),cform(iname),'Shm',idiag_Shm)
         call parse_name(iname,cname(iname),cform(iname),'deshearbcsm',idiag_deshearbcsm)
+        call parse_name(iname,cname(iname),cform(iname),'condheatm',idiag_condheatm)
         call parse_name(iname,cname(iname),cform(iname),'ffcondposm',idiag_ffcondposm)
         call parse_name(iname,cname(iname),cform(iname),'ffcondm',idiag_ffcondm)
         call parse_name(iname,cname(iname),cform(iname),'ffcondnegm',idiag_ffcondnegm)

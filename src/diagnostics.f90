@@ -1139,7 +1139,7 @@ module Diagnostics
 !
       if (nnamerz>0) then
         call mpireduce_sum(fnamerz,fsumrz,(/nrcyl,nz,nprocz,nnamerz/))
-        if (ipz==0) call mpireduce_sum(phiavg_norm,norm,nrcyl)  ! avoid double comm!
+        if (ipz==0) call mpireduce_sum(phiavg_norm,norm,nrcyl,idir=12)  ! avoid double comm!
         if (lroot) then
           do i=1,nnamerz
             fnamerz(:,:,:,i)=fsumrz(:,:,:,i)/spread(spread(norm,2,nz),3,nprocz)
@@ -1636,8 +1636,6 @@ module Diagnostics
 
       if (iname==0) return
 
-      if (loptest(lsqrt)) &
-        itype_name(iname)=ilabel_sum_sqrt
       if (loptest(lsqrt)) then
         itype_name(iname)=ilabel_sum_sqrt
       elseif (loptest(llog10)) then
