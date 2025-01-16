@@ -112,6 +112,7 @@ module Fourier
 !
       if (lforward) then
         if (ip<10) call information('fourier_transform','doing FFTpack in x')
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do collapse(2)
         do n=1,nz; do m=1,ny
           ax(1:nx)=cmplx(a_re(:,m,n),a_im(:,m,n))
@@ -119,6 +120,7 @@ module Fourier
           a_re(:,m,n)=real(ax(1:nx))
           a_im(:,m,n)=aimag(ax(1:nx))
         enddo; enddo
+        !$omp end parallel
 !
 !  Transform y-direction.
 !
@@ -131,6 +133,7 @@ module Fourier
 !  The length of the array in the y-direction is nx.
 !
           if (ip<10) call information('fourier_transform','doing FFTpack in y')
+          !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
           !$omp do collapse(2)
           do n=1,nz; do l=1,ny
             ax(1:nx)=cmplx(a_re(:,l,n),a_im(:,l,n))
@@ -138,6 +141,7 @@ module Fourier
             a_re(:,l,n)=real(ax(1:nx))
             a_im(:,l,n)=aimag(ax(1:nx))
           enddo; enddo
+          !$omp end parallel
         endif
 !
 !  Transform z-direction.
@@ -151,6 +155,7 @@ module Fourier
 !  The length of the array in the z-direction is also nx.
 !
           if (ip<10) call information('fourier_transform','doing FFTpack in z')
+          !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
           !$omp do collapse(2)
           do m=1,nz; do l=1,ny
             ax(1:nx)=cmplx(a_re(:,l,m),a_im(:,l,m))
@@ -158,6 +163,7 @@ module Fourier
             a_re(:,l,m)=real(ax(1:nx))
             a_im(:,l,m)=aimag(ax(1:nx))
           enddo; enddo
+          !$omp end parallel
         endif
       else
 !
@@ -171,6 +177,7 @@ module Fourier
           if (nzgrid/=nxgrid) call fatal_error('fourier_transform','must have nzgrid=nxgrid')
 !
           if (ip<10) call information('fourier_transform','doing FFTpack in z')
+          !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
           !$omp do collapse(2)
           do m=1,nz; do l=1,ny
             ax(1:nx)=cmplx(a_re(:,l,m),a_im(:,l,m))
@@ -178,6 +185,7 @@ module Fourier
             a_re(:,l,m)=real(ax(1:nx))
             a_im(:,l,m)=aimag(ax(1:nx))
           enddo; enddo
+          !$omp end parallel
         endif
 !
 !  Transform y-direction back. Must transpose to go from (z,x,y) to (y,x,z).
@@ -191,6 +199,7 @@ module Fourier
           endif
 !
           if (ip<10) call information('fourier_transform','doing FFTpack in y')
+          !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
           !$omp do collapse(2)
           do n=1,nz; do l=1,ny
             ax(1:nx)=cmplx(a_re(:,l,n),a_im(:,l,n))
@@ -198,6 +207,7 @@ module Fourier
             a_re(:,l,n)=real(ax(1:nx))
             a_im(:,l,n)=aimag(ax(1:nx))
           enddo; enddo
+          !$omp end parallel
         endif
 !
 !  Transform x-direction back. Transpose to go from (y,x,z) to (x,y,z).
@@ -211,6 +221,7 @@ module Fourier
           call transp(a_re,'y' )
           call transp(a_im,'y' )
         endif
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do collapse(2)
         do n=1,nz; do m=1,ny
           ax(1:nx)=cmplx(a_re(:,m,n),a_im(:,m,n))
@@ -218,15 +229,18 @@ module Fourier
           a_re(:,m,n)=real(ax(1:nx))
           a_im(:,m,n)=aimag(ax(1:nx))
         enddo; enddo
+        !$omp end parallel
       endif
 !
 !  Normalize
 !
       if (lforward) then
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp workshare
         a_re=a_re/nwgrid
         a_im=a_im/nwgrid
         !$omp end workshare 
+        !$omp end parallel
       endif
 !
       if (ip<10) call information('fourier_transform','fft has finished')
@@ -255,6 +269,7 @@ module Fourier
 !
       if (lforward) then
         if (ip<10) call information('fourier_transform_xy','doing FFTpack in x')
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do collapse(2)
         do n=1,nz; do m=1,ny
           ax=cmplx(a_re(:,m,n),a_im(:,m,n))
@@ -262,6 +277,7 @@ module Fourier
           a_re(:,m,n)=real(ax)
           a_im(:,m,n)=aimag(ax)
         enddo; enddo
+        !$omp end parallel
 !
 !  Transform y-direction.
 !
@@ -274,6 +290,7 @@ module Fourier
 !  The length of the array in the y-direction is nx.
 !
           if (ip<10) call information('fourier_transform_xy','doing FFTpack in y')
+          !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
           !$omp do collapse(2)
           do n=1,nz; do l=1,ny
             ax=cmplx(a_re(:,l,n),a_im(:,l,n))
@@ -281,6 +298,7 @@ module Fourier
             a_re(:,l,n)=real(ax)
             a_im(:,l,n)=aimag(ax)
           enddo; enddo
+          !$omp end parallel
         endif
       else
 !
@@ -290,6 +308,7 @@ module Fourier
           if (nygrid/=nxgrid) call fatal_error('fourier_transform','must have nygrid=nxgrid')
 !
           if (ip<10) call information('fourier_transform_xy','doing FFTpack in y')
+          !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
           !$omp do collapse(2)
           do n=1,nz; do l=1,ny
             ax=cmplx(a_re(:,l,n),a_im(:,l,n))
@@ -297,6 +316,7 @@ module Fourier
             a_re(:,l,n)=real(ax)
             a_im(:,l,n)=aimag(ax)
           enddo; enddo
+          !$omp end parallel
         endif
 !
 !  Transform x-direction back. Transpose to go from (y,x,z) to (x,y,z).
@@ -306,6 +326,7 @@ module Fourier
           call transp(a_re,'y' )
           call transp(a_im,'y' )
         endif
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do collapse(2)
         do n=1,nz; do m=1,ny
           ax=cmplx(a_re(:,m,n),a_im(:,m,n))
@@ -313,15 +334,18 @@ module Fourier
           a_re(:,m,n)=real(ax)
           a_im(:,m,n)=aimag(ax)
         enddo; enddo
+        !$omp end parallel
       endif
 !
 !  Normalize
 !
       if (lforward) then
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp workshare
         a_re=a_re/nxygrid
         a_im=a_im/nxygrid
         !$omp end workshare 
+        !$omp end parallel
       endif
 !
       if (ip<10) call information('fourier_transform_xy','fft has finished')
@@ -354,6 +378,7 @@ module Fourier
         call fatal_error('fourier_transform_xz','must have nxgrid=nygrid=nzgrid')
 !
       if (ip<10) call information('fourier_transform_xz','doing FFTpack in x')
+      !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
       !$omp do collapse(2)
       do n=1,nz; do m=1,ny
         ax(1:nx)=cmplx(a_re(:,m,n),a_im(:,m,n))
@@ -361,6 +386,7 @@ module Fourier
         a_re(:,m,n)=real(ax(1:nx))
         a_im(:,m,n)=aimag(ax(1:nx))
       enddo; enddo
+      !$omp end parallel
       
       call transp(a_re,'z')
       call transp(a_im,'z')
@@ -369,6 +395,7 @@ module Fourier
 !
       if (ip<10) call information('fourier_transform_xz','doing FFTpack in z')
 
+      !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
       !$omp do collapse(2)
       do l=1,nz; do m=1,ny
         ax(1:nx)=cmplx(a_re(:,m,l),a_im(:,m,l))
@@ -376,6 +403,7 @@ module Fourier
         a_re(:,m,n)=real(ax(1:nx))/nwgrid     ! normalize
         a_im(:,m,n)=aimag(ax(1:nx))/nwgrid
       enddo; enddo
+      !$omp end parallel
 !
       if (ip<10) call information('fourier_transform_xz','fft has finished')
 !
@@ -415,6 +443,7 @@ module Fourier
 !  Transform x-direction to fourier space. Normalization is included.
 !
         if (ip<10) call information('fourier_transform_x','doing FFTpack in x')
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do collapse(2)
         do n=1,nz; do m=1,ny
           ax(1:nx)=cmplx(a_re(:,m,n),a_im(:,m,n))
@@ -422,6 +451,7 @@ module Fourier
           a_re(:,m,n)=real(ax(1:nx))/nxgrid
           a_im(:,m,n)=aimag(ax(1:nx))/nxgrid
         enddo; enddo
+        !$omp end parallel
 !
       else
 !
@@ -429,6 +459,7 @@ module Fourier
 !
         if (ip<10) call information('fourier_transform_x','doing FFTpack in x')
 
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do collapse(2)
         do n=1,nz; do m=1,ny
           ax(1:nx)=cmplx(a_re(:,m,n),a_im(:,m,n))
@@ -436,6 +467,7 @@ module Fourier
           a_re(:,m,n)=real(ax(1:nx))
           a_im(:,m,n)=aimag(ax(1:nx))
         enddo; enddo
+        !$omp end parallel
 !
       endif
 !
@@ -514,6 +546,7 @@ module Fourier
         if (ip<10) call information('fourier_transform_y','nxgrid>=nygrid')
 !
         call transp(a_re,'y' ) ; call transp(a_im,'y' )
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do collapse(3)
         do n=1,nz; do l=1,ny
 !  Divide a_re into arrays of size nygrid to fit ay
@@ -529,6 +562,7 @@ module Fourier
             a_im(ido:iup,l,n)=aimag(ay)
           enddo
         enddo;enddo
+        !$omp end parallel
 
         call transp(a_re,'y' ) ; call transp(a_im,'y' )
 !
@@ -536,10 +570,12 @@ module Fourier
 !
         if (lforward) then
           if (lnormalize) then
+            !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
             !$omp workshare
             a_re=a_re/nygrid
             a_im=a_im/nygrid
             !$omp end workshare 
+            !$omp end parallel
           endif
         endif
 !
@@ -551,25 +587,30 @@ module Fourier
 !
         if (lfirstcall) then
           dnx=Lxyz(1)/(nygrid-1)
+          !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
           !$omp do
           do i=0,nygrid-1
             xnyg(i+1)=x(l1)+i*dnx
           enddo
+          !$omp end parallel
           lfirstcall=.false.
         endif
 !
 ! Interpolate nx to the same dimension as nygrid, so we
 ! can transpose
 !
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do collapse(2)
         do n=1,nz;do m=1,ny
           call spline(x(l1:l2),a_re(:,m,n),xnyg,tmp_re(:,m,n),nx,nygrid,err)
           call spline(x(l1:l2),a_im(:,m,n),xnyg,tmp_im(:,m,n),nx,nygrid,err)
         enddo;enddo
+        !$omp end parallel
 !
 ! Transpose, transform, transpose back
 !
         call transp_other(tmp_re,'y' ) ; call transp_other(tmp_im,'y' )
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do collapse(2)
         do n=1,nz;do l=1,ny
           ay=cmplx(tmp_re(:,l,n),tmp_im(:,l,n))
@@ -581,26 +622,31 @@ module Fourier
           tmp_re(:,l,n)=real(ay)
           tmp_im(:,l,n)=aimag(ay)
         enddo; enddo
+        !$omp end parallel
         call transp_other(tmp_re,'y' ) ; call transp_other(tmp_im,'y' )
 !
 ! Normalize if forward
 !
         if (lforward) then
           if (lnormalize) then
+            !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
             !$omp workshare
             tmp_re=tmp_re/nygrid
             tmp_im=tmp_im/nygrid
             !$omp end workshare 
+            !$omp end parallel
           endif
         endif
 !
 ! Interpolate (coarsen) back to dimension nx
 !
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do collapse(2)
         do n=1,nz;do m=1,ny
           call spline(xnyg,tmp_re(:,m,n),x(l1:l2),a_re(:,m,n),nygrid,nx,err)
           call spline(xnyg,tmp_im(:,m,n),x(l1:l2),a_im(:,m,n),nygrid,nx,err)
         enddo;enddo
+        !$omp end parallel
       endif
 !
       if (ip<10) call information('fourier_transform_y','fft has finished')
@@ -674,6 +720,7 @@ module Fourier
           
           call transp(a_re,'y' )
           call transp(a_im,'y' )
+          !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
           !$omp do collapse(2)
           do n=1,nz; do l=1,ny
             ay(1:nx)=cmplx(a_re(:,l,n),a_im(:,l,n))
@@ -685,6 +732,7 @@ module Fourier
             a_re(:,l,n)=real(ay(1:nx))
             a_im(:,l,n)=aimag(ay(1:nx))
           enddo; enddo
+          !$omp end parallel
         endif
 !
 !  Transform x-direction and normalize.
@@ -694,6 +742,7 @@ module Fourier
           call transp(a_re,'y' )
           call transp(a_im,'y' )
         endif
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do collapse(2)
         do n=1,nz; do m=1,ny
           ax(1:nx)=cmplx(a_re(:,m,n),a_im(:,m,n))
@@ -701,6 +750,7 @@ module Fourier
           a_re(:,m,n)=real(ax(1:nx))/nwgrid
           a_im(:,m,n)=aimag(ax(1:nx))/nwgrid
         enddo; enddo
+        !$omp end parallel
 !
 !  Transform z-direction.
 !
@@ -709,6 +759,7 @@ module Fourier
           
           call transp(a_re,'z' )
           call transp(a_im,'z' )
+          !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
           !$omp do collapse(2)
           do l=1,nz; do m=1,ny
             az(1:nx)=cmplx(a_re(:,m,l),a_im(:,m,l))
@@ -716,6 +767,7 @@ module Fourier
             a_re(:,m,l)=real(az(1:nx))
             a_im(:,m,l)=aimag(az(1:nx))
           enddo; enddo
+          !$omp end parallel
         endif
       else
 !
@@ -723,6 +775,7 @@ module Fourier
 !
         if (nzgrid/=1) then
           if (ip<10) call information('fourier_transform_shear','doing FFTpack in z')
+          !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
           !$omp do collapse(2)
           do l=1,nz; do m=1,ny
             az(1:nx)=cmplx(a_re(:,m,l),a_im(:,m,l))
@@ -730,6 +783,7 @@ module Fourier
             a_re(:,m,l)=real(az(1:nx))
             a_im(:,m,l)=aimag(az(1:nx))
           enddo; enddo
+          !$omp end parallel
         endif
 !
 !  Transform x-direction back.
@@ -740,6 +794,7 @@ module Fourier
           call transp(a_re,'z' )
           call transp(a_im,'z' )
         endif
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do collapse(2)
         do n=1,nz; do m=1,ny
           ax(1:nx)=cmplx(a_re(:,m,n),a_im(:,m,n))
@@ -747,6 +802,7 @@ module Fourier
           a_re(:,m,n)=real(ax(1:nx))
           a_im(:,m,n)=aimag(ax(1:nx))
         enddo; enddo
+        !$omp end parallel
 !
 !  Transform y-direction back. Would be more practical to end with the
 !  x-direction, but the transformation from y' to y means that we must transform
@@ -757,6 +813,7 @@ module Fourier
           call transp(a_re,'y' )
           call transp(a_im,'y' )
           if (ip<10) call information('fourier_transform_shear','doing FFTpack in y')
+          !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
           !$omp do collapse(2)
           do n=1,nz; do l=1,ny
             ay(1:nx)=cmplx(a_re(:,l,n),a_im(:,l,n))
@@ -767,6 +824,7 @@ module Fourier
             a_re(:,l,n)=real(ay(1:nx))
             a_im(:,l,n)=aimag(ay(1:nx))
           enddo; enddo
+          !$omp end parallel
           call transp(a_re,'y' )  ! Deliver array back in (x,y,z) order.
           call transp(a_im,'y' )
         endif
@@ -824,6 +882,7 @@ module Fourier
           
           call transp(a_re,'y' )
           call transp(a_im,'y' )
+          !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
           !$omp do collapse(2)
           do n=1,nz; do l=1,ny
             ay(1:nx)=cmplx(a_re(:,l,n),a_im(:,l,n))
@@ -836,6 +895,7 @@ module Fourier
             a_re(:,l,n)=real(ay(1:nx))
             a_im(:,l,n)=aimag(ay(1:nx))
           enddo; enddo
+          !$omp end parallel
         endif
 !
 !  Transform x-direction. Normalization is included.
@@ -846,6 +906,7 @@ module Fourier
           call transp(a_re,'y' )
           call transp(a_im,'y' )
         endif
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do collapse(2)
         do n=1,nz; do m=1,ny
           ax(1:nx)=cmplx(a_re(:,m,n),a_im(:,m,n))
@@ -853,11 +914,13 @@ module Fourier
           a_re(:,m,n)=real(ax(1:nx))/nxygrid
           a_im(:,m,n)=aimag(ax(1:nx))/nxygrid
         enddo; enddo
+        !$omp end parallel
       else
 !
 !  Transform x-direction back.
 !
         if (ip<10) call information('fourier_transform_shear','doing FFTpack in x')
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do collapse(2)
         do n=1,nz; do m=1,ny
           ax(1:nx)=cmplx(a_re(:,m,n),a_im(:,m,n))
@@ -865,6 +928,7 @@ module Fourier
           a_re(:,m,n)=real(ax(1:nx))
           a_im(:,m,n)=aimag(ax(1:nx))
         enddo; enddo
+        !$omp end parallel
 !
 !  Transform y-direction back. Would be more practical to end with the
 !  x-direction, but the transformation from y' to y means that we must transform
@@ -875,6 +939,7 @@ module Fourier
           call transp(a_re,'y' )
           call transp(a_im,'y' )
           if (ip<10) call information('fourier_transform_shear','doing FFTpack in y')
+          !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
           !$omp do collapse(2)
           do n=1,nz; do l=1,ny
             ay(1:nx)=cmplx(a_re(:,l,n),a_im(:,l,n))
@@ -885,6 +950,7 @@ module Fourier
             a_re(:,l,n)=real(ay(1:nx))
             a_im(:,l,n)=aimag(ay(1:nx))
           enddo; enddo
+          !$omp end parallel
           call transp(a_re,'y' )  ! Deliver array back in (x,y,z) order.
           call transp(a_im,'y' )
         endif
@@ -973,17 +1039,20 @@ module Fourier
 !  Transform x-direction.
 !
         if (ip<10) call information('fourier_transform_other_2','doing FFTpack in x')
-        !$omp 
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
+        !$omp do
         do m=1,ny_other
           ax=cmplx(a_re(:,m),a_im(:,m))
           call cfftf(nx_other,ax,wsavex)
           a_re(:,m)=real(ax)
           a_im(:,m)=aimag(ax)
         enddo
+        !$omp end parallel
 !
 !  Transform y-direction.
 !
         if (ip<10) call information('fourier_transform_other_2','doing FFTpack in y')
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do
         do l=1,nx_other
           ay=cmplx(a_re(l,:),a_im(l,:))
@@ -991,11 +1060,13 @@ module Fourier
           a_re(l,:)=real(ay)/(nx_other*ny_other)
           a_im(l,:)=aimag(ay)/(nx_other*ny_other)
         enddo
+        !$omp end parallel
       else
 !
 !  Transform x-direction back.
 !
         if (ip<10) call information('fourier_transform_other_2','doing FFTpack in x')
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do
         do m=1,ny_other
           ax=cmplx(a_re(:,m),a_im(:,m))
@@ -1003,10 +1074,12 @@ module Fourier
           a_re(:,m)=real(ax)
           a_im(:,m)=aimag(ax)
         enddo
+        !$omp end parallel
 !
 !  Transform y-direction back.
 !
         if (ip<10) call information('fourier_transform_other_2','doing FFTpack in y')
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do
         do l=1,nx_other
           ay=cmplx(a_re(l,:),a_im(l,:))
@@ -1014,6 +1087,7 @@ module Fourier
           a_re(l,:)=real(ay)
           a_im(l,:)=aimag(ay)
         enddo
+        !$omp end parallel
       endif
 !
       if (ip<10) call information('fourier_transform_other_2','fft has finished')
@@ -1067,11 +1141,14 @@ module Fourier
           if (lcompute_im) then
             call transp_xy(a_im )
           else
+            !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
             !$omp workshare
             a_im=0.0
             !$omp end workshare
+            !$omp end parallel
           endif
 !
+          !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
           !$omp do collapse(2)
           do ibox=0,nxgrid/nygrid-1
             do l=1,nyl
@@ -1083,6 +1160,7 @@ module Fourier
               a_im(iy+1:iy+nygrid,l)=aimag(ay)
             enddo
           enddo
+          !$omp end parallel
 !
           call transp_xy(a_re )
           call transp_xy(a_im )
@@ -1093,6 +1171,7 @@ module Fourier
 !
 !  Transform x-direction.
 !
+          !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
           !$omp do
           do m=1,nyl
             ax=cmplx(a_re(:,m),a_im(:,m))
@@ -1100,6 +1179,7 @@ module Fourier
             a_re(:,m)=real(ax)
             a_im(:,m)=aimag(ax)
           enddo
+          !$omp end parallel
 !
         endif
 !
@@ -1109,6 +1189,7 @@ module Fourier
 !
 !  Transform x-direction back.
 !
+          !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
           !$omp do
           do m=1,nyl
             ax=cmplx(a_re(:,m),a_im(:,m))
@@ -1116,6 +1197,7 @@ module Fourier
             a_re(:,m)=real(ax)
             a_im(:,m)=aimag(ax)
           enddo
+          !$omp end parallel
 !
         endif
 !
@@ -1126,6 +1208,7 @@ module Fourier
           call transp_xy(a_re )
           call transp_xy(a_im )
 !
+          !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
           !$omp do collapse(2)
           do ibox=0,nxgrid/nygrid-1
             do l=1,nyl
@@ -1137,6 +1220,7 @@ module Fourier
               if (lcompute_im) a_im(iy+1:iy+nygrid,l)=aimag(ay)
             enddo
           enddo
+          !$omp end parallel
 !
           call transp_xy(a_re )
           if (lcompute_im) call transp_xy(a_im )
@@ -1148,10 +1232,12 @@ module Fourier
 !  Normalize
 !
       if (lforward) then
-!$omp workshare
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
+        !$omp workshare
         a_re=a_re/nxygrid
         a_im=a_im/nxygrid
-!$omp end workshare 
+        !$omp end workshare 
+        !$omp end parallel
       endif
 !
     endsubroutine fourier_transform_xy_xy
@@ -1198,6 +1284,7 @@ module Fourier
 !
           call cffti(nygrid_other,wsavey)
 !
+          !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
           !$omp do
           do l=1,ny_other
             ay=cmplx(a_re(:,l),a_im(:,l))
@@ -1205,6 +1292,7 @@ module Fourier
             a_re(:,l)=real(ay)
             a_im(:,l)=aimag(ay)
           enddo
+          !$omp end parallel
 !
           call transp_xy_other(a_re )
           call transp_xy_other(a_im )
@@ -1217,6 +1305,7 @@ module Fourier
 !
           call cffti(nxgrid_other,wsavex)
 !
+          !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
           !$omp do
           do m=1,ny_other
             ax=cmplx(a_re(:,m),a_im(:,m))
@@ -1224,6 +1313,7 @@ module Fourier
             a_re(:,m)=real(ax)
             a_im(:,m)=aimag(ax)
           enddo
+          !$omp end parallel
 !
         endif
 !
@@ -1235,6 +1325,7 @@ module Fourier
 !
           call cffti(nxgrid_other,wsavex)
 !
+          !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
           !$omp do
           do m=1,ny_other
             ax=cmplx(a_re(:,m),a_im(:,m))
@@ -1242,6 +1333,7 @@ module Fourier
             a_re(:,m)=real(ax)
             a_im(:,m)=aimag(ax)
           enddo
+          !$omp end parallel
 !
         endif
 !
@@ -1254,6 +1346,7 @@ module Fourier
 !
           call cffti(nygrid_other,wsavey)
 !
+          !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
           !$omp do
           do l=1,ny_other
             ay=cmplx(a_re(:,l),a_im(:,l))
@@ -1261,6 +1354,7 @@ module Fourier
             a_re(:,l)=real(ay)
             a_im(:,l)=aimag(ay)
           enddo
+          !$omp end parallel
 !
           call transp_xy_other(a_re )
           call transp_xy_other(a_im )
@@ -1272,10 +1366,12 @@ module Fourier
 !  Normalize
 !
       if (lforward) then
-!$omp workshare
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
+        !$omp workshare
         a_re=a_re/(nxgrid_other*nygrid_other)
         a_im=a_im/(nxgrid_other*nygrid_other)
-!$omp end workshare 
+        !$omp end workshare 
+        !$omp end parallel
       endif
 !
     endsubroutine fourier_transform_xy_xy_other
@@ -1420,12 +1516,15 @@ module Fourier
         if (lcompute_im) then
           call remap_to_pencil_xy (a_im, p_im_2d )
         else
+          !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
           !$omp workshare
           p_im_2d = 0.0
           !$omp end workshare
+          !$omp end parallel
         endif
 !
         ! Transform x-direction and normalize.
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do
         do m = 1, pny
           ax = cmplx (p_re_2d(:,m), p_im_2d(:,m))
@@ -1433,6 +1532,7 @@ module Fourier
           p_re_2d(:,m) = real (ax)/nxgrid
           p_im_2d(:,m) = aimag (ax)/nxgrid
         enddo
+        !$omp end parallel
 !
         ! Unmap the results back to normal shape.
         call unmap_from_pencil_xy (p_re_2d, a_re )
@@ -1447,6 +1547,7 @@ module Fourier
         call remap_to_pencil_xy (a_re, p_re_2d )
         call remap_to_pencil_xy (a_im, p_im_2d )
 !
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do
         do m = 1, pny
           ! Transform x-direction back.
@@ -1455,6 +1556,7 @@ module Fourier
           p_re_2d(:,m) = real (ax)
           if (lcompute_im) p_im_2d(:,m) = aimag (ax)
         enddo
+        !$omp end parallel
 !
         ! Unmap the results back to normal shape.
         call unmap_from_pencil_xy (p_re_2d, a_re )
@@ -1536,11 +1638,14 @@ module Fourier
         if (lcompute_im) then
           call remap_to_pencil_xy (a_im, p_im_3d )
         else
+          !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
           !$omp workshare
           p_im_3d = 0.0
           !$omp end workshare
+          !$omp end parallel
         endif
 !
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do collapse(2)
         do pos_z = 1, inz
           do m = 1, pny
@@ -1551,6 +1656,7 @@ module Fourier
             p_im_3d(:,m,pos_z) = aimag (ax)/nxgrid
           enddo
         enddo
+        !$omp end parallel
 !
         ! Unmap the results back to normal shape.
         call unmap_from_pencil_xy (p_re_3d, a_re )
@@ -1565,6 +1671,7 @@ module Fourier
         call remap_to_pencil_xy (a_re, p_re_3d )
         call remap_to_pencil_xy (a_im, p_im_3d )
 !
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do collapse(2)
         do pos_z = 1, inz
           do m = 1, pny
@@ -1575,6 +1682,7 @@ module Fourier
             if (lcompute_im) p_im_3d(:,m,pos_z) = aimag (ax)
           enddo
         enddo
+        !$omp end parallel
 !
         ! Unmap the results back to normal shape.
         call unmap_from_pencil_xy (p_re_3d, a_re )
@@ -1659,11 +1767,14 @@ module Fourier
         if (lcompute_im) then
           call remap_to_pencil_xy (a_im, p_im_4d )
         else
+          !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
           !$omp workshare
           p_im_4d = 0.0
           !$omp end workshare
+          !$omp end parallel
         endif
 !
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do collapse(3)
         do pos_a = 1, ina
           do pos_z = 1, inz
@@ -1676,6 +1787,7 @@ module Fourier
             enddo
           enddo
         enddo
+        !$omp end parallel
 !
         ! Unmap the results back to normal shape.
         call unmap_from_pencil_xy (p_re_4d, a_re )
@@ -1690,6 +1802,7 @@ module Fourier
         call remap_to_pencil_xy (a_re, p_re_4d )
         call remap_to_pencil_xy (a_im, p_im_4d )
 !
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do collapse(3)
         do pos_a = 1, ina
           do pos_z = 1, inz
@@ -1702,6 +1815,7 @@ module Fourier
             enddo
           enddo
         enddo
+        !$omp end parallel
 !
         ! Unmap the results back to normal shape.
         call unmap_from_pencil_xy (p_re_4d, a_re )
@@ -1857,12 +1971,15 @@ module Fourier
         if (lcompute_im) then
           call remap_to_pencil_y (a_im, p_im_2d )
         else
+          !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
           !$omp workshare
           p_im_2d = 0.0
           !$omp end workshare
+          !$omp end parallel
         endif
 !
         ! Transform y-direction and normalize.
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do
         do l = 1, nx
           ay = cmplx (p_re_2d(l,:), p_im_2d(l,:))
@@ -1872,6 +1989,7 @@ module Fourier
           p_re_2d(l,:) = real (ay)/nygrid
           p_im_2d(l,:) = aimag (ay)/nygrid
         enddo
+        !$omp end parallel
 !
         ! Unmap the results back to normal shape.
         call unmap_from_pencil_y (p_re_2d, a_re)
@@ -1887,6 +2005,7 @@ module Fourier
         call remap_to_pencil_y (a_im, p_im_2d )
 !
         ! Transform y-direction back.
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do
         do l = 1, nx
           ay = cmplx (p_re_2d(l,:), p_im_2d(l,:))
@@ -1895,6 +2014,7 @@ module Fourier
           p_re_2d(l,:) = real (ay)
           p_im_2d(l,:) = aimag (ay)
         enddo
+        !$omp end parallel
 !
         ! Unmap the results back to normal shape.
         call unmap_from_pencil_y (p_re_2d, a_re)
@@ -1972,12 +2092,15 @@ module Fourier
         if (lcompute_im) then
           call remap_to_pencil_y (a_im, p_im_3d )
         else
+          !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
           !$omp workshare
           p_im_3d = 0.0
           !$omp end workshare
+          !$omp end parallel
         endif
 !
         ! Transform y-direction and normalize.
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do collapse(2)
         do pos_z = 1, inz
           do l = 1, nx
@@ -1989,6 +2112,7 @@ module Fourier
             p_im_3d(l,:,pos_z) = aimag (ay)/nygrid
           enddo
         enddo
+        !$omp end parallel
 !
         ! Unmap the results back to normal shape.
         call unmap_from_pencil_y (p_re_3d, a_re)
@@ -2004,6 +2128,7 @@ module Fourier
         call remap_to_pencil_y (a_im, p_im_3d )
 !
         ! Transform y-direction back.
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do collapse(2)
         do pos_z = 1, inz
           do l = 1, nx
@@ -2014,6 +2139,7 @@ module Fourier
             p_im_3d(l,:,pos_z) = aimag (ay)
           enddo
         enddo
+        !$omp end parallel
 !
         ! Unmap the results back to normal shape.
         call unmap_from_pencil_y (p_re_3d, a_re)
@@ -2096,12 +2222,15 @@ module Fourier
         if (lcompute_im) then
           call remap_to_pencil_y (a_im, p_im_4d )
         else
+          !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
           !$omp workshare
           p_im_4d= 0.0
           !$omp end workshare
+          !$omp end parallel
         endif
 !
         ! Transform y-direction and normalize.
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do collapse(3)
         do pos_a = 1, ina
           do pos_z = 1, inz
@@ -2115,6 +2244,7 @@ module Fourier
             enddo
           enddo
         enddo
+        !$omp end parallel
 !
         ! Unmap the results back to normal shape.
         call unmap_from_pencil_y (p_re_4d, a_re)
@@ -2129,6 +2259,7 @@ module Fourier
         call remap_to_pencil_y (a_im, p_im_4d )
 !
         ! Transform y-direction back.
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do collapse(3)
         do pos_a = 1, ina
           do pos_z = 1, inz
@@ -2141,6 +2272,7 @@ module Fourier
             enddo
           enddo
         enddo
+        !$omp end parallel
 !
         ! Unmap the results back to normal shape.
         call unmap_from_pencil_y (p_re_4d, a_re)
@@ -2306,12 +2438,15 @@ module Fourier
         if (lcompute_im) then
           call remap_to_pencil_z (a_im, p_im_2d )
         else
+          !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
           !$omp workshare
           p_im_2d= 0.0
           !$omp end workshare
+          !$omp end parallel
         endif
 !
         ! Transform z-direction and normalize.
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do
         do pos_a = 1, ina
           az = cmplx (p_re_2d(:,pos_a), p_im_2d(:,pos_a))
@@ -2320,6 +2455,7 @@ module Fourier
           p_re_2d(:,pos_a) = real (az)/nzgrid
           p_im_2d(:,pos_a) = aimag (az)/nzgrid
         enddo
+        !$omp end parallel
 !
         ! Unmap the results back to normal shape.
         call unmap_from_pencil_z (p_re_2d, a_re)
@@ -2335,6 +2471,7 @@ module Fourier
         call remap_to_pencil_z (a_im, p_im_2d )
 !
         ! Transform z-direction back.
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do
         do pos_a = 1, ina
           az = cmplx (p_re_2d(:,pos_a), p_im_2d(:,pos_a))
@@ -2342,6 +2479,7 @@ module Fourier
           p_re_2d(:,pos_a) = real (az)
           p_im_2d(:,pos_a) = aimag (az)
         enddo
+        !$omp end parallel
 !
         ! Unmap the results back to normal shape.
         call unmap_from_pencil_z (p_re_2d, a_re)
@@ -2415,12 +2553,15 @@ module Fourier
         if (lcompute_im) then
           call remap_to_pencil_z (a_im, p_im_3d )
         else
+          !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
           !$omp workshare
           p_im_3d= 0.0
           !$omp end workshare
+          !$omp end parallel
         endif
 !
         ! Transform z-direction and normalize.
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do collapse(2)
         do m = 1, iny
           do l = 1, inx
@@ -2430,6 +2571,7 @@ module Fourier
             p_im_3d(l,m,:) = aimag (az)/nzgrid
           enddo
         enddo
+        !$omp end parallel
 !
         ! Unmap the results back to normal shape.
         call unmap_from_pencil_z (p_re_3d, a_re)
@@ -2445,6 +2587,7 @@ module Fourier
         call remap_to_pencil_z (a_im, p_im_3d )
 !
         ! Transform z-direction back.
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do collapse(2)
         do m = 1, iny
           do l = 1, inx
@@ -2454,6 +2597,7 @@ module Fourier
             p_im_3d(l,m,:) = aimag (az)
           enddo
         enddo
+        !$omp end parallel
 !
         ! Unmap the results back to normal shape.
         call unmap_from_pencil_z (p_re_3d, a_re)
@@ -2530,12 +2674,15 @@ module Fourier
         if (lcompute_im) then
           call remap_to_pencil_z (a_im, p_im_4d )
         else
+          !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
           !$omp workshare
           p_im_4d= 0.0
           !$omp end workshare
+          !$omp end parallel
         endif
 !
         ! Transform z-direction and normalize.
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do collapse(3)
         do pos_a = 1, ina
           do m = 1, iny
@@ -2547,6 +2694,7 @@ module Fourier
             enddo
           enddo
         enddo
+        !$omp end parallel
 !
         ! Unmap the results back to normal shape.
         call unmap_from_pencil_z (p_re_4d, a_re)
@@ -2562,6 +2710,7 @@ module Fourier
         call remap_to_pencil_z (a_im, p_im_4d )
 !
         ! Transform z-direction back.
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do collapse(3)
         do pos_a = 1, ina
           do m = 1, iny
@@ -2573,6 +2722,7 @@ module Fourier
             enddo
           enddo
         enddo
+        !$omp end parallel
 !
         ! Unmap the results back to normal shape.
         call unmap_from_pencil_z (p_re_4d, a_re)
@@ -2681,15 +2831,18 @@ module Fourier
         if (lcompute_im) then
           call remap_to_pencil_xy (a_im, p_im_2d )
         else
+          !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
           !$omp workshare
           p_im_2d= 0.0
           !$omp end workshare
+          !$omp end parallel
         endif
 !
         call transp_pencil_xy (p_re_2d, t_re_2d )
         call transp_pencil_xy (p_im_2d, t_im_2d )
 !
         ! Transform y-direction.
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do
         do l = 1, tny
           ay = cmplx (t_re_2d(:,l), t_im_2d(:,l))
@@ -2699,11 +2852,13 @@ module Fourier
           t_re_2d(:,l) = real (ay)
           t_im_2d(:,l) = aimag (ay)
         enddo
+        !$omp end parallel
 !
         call transp_pencil_xy (t_re_2d, p_re_2d )
         call transp_pencil_xy (t_im_2d, p_im_2d )
 !
         ! Transform x-direction.
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do
         do m = 1, pny
           ax = cmplx (p_re_2d(:,m), p_im_2d(:,m))
@@ -2711,6 +2866,7 @@ module Fourier
           p_re_2d(:,m) = real (ax)/nxygrid
           p_im_2d(:,m) = aimag (ax)/nxygrid
         enddo
+        !$omp end parallel
 !
         ! Unmap the results back to normal shape.
         call unmap_from_pencil_xy (p_re_2d, a_re )
@@ -2725,6 +2881,7 @@ module Fourier
         call remap_to_pencil_xy (a_re, p_re_2d )
         call remap_to_pencil_xy (a_im, p_im_2d )
 !
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do
         do m = 1, pny
           ! Transform x-direction back.
@@ -2733,10 +2890,12 @@ module Fourier
           p_re_2d(:,m) = real (ax)
           p_im_2d(:,m) = aimag (ax)
         enddo
+        !$omp end parallel
 !
         call transp_pencil_xy (p_re_2d, t_re_2d )
         call transp_pencil_xy (p_im_2d, t_im_2d )
 !
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do
         do l = 1, tny
           ! Transform y-direction back.
@@ -2746,6 +2905,7 @@ module Fourier
           t_re_2d(:,l) = real (ay)
           if (lcompute_im) t_im_2d(:,l) = aimag (ay)
         enddo
+        !$omp end parallel
 !
         call transp_pencil_xy (t_re_2d, p_re_2d )
         if (lcompute_im) call transp_pencil_xy (t_im_2d, p_im_2d )
@@ -2850,6 +3010,7 @@ module Fourier
         call remap_to_pencil_xy_2D_other(a_im,p_im_2d )
 !
         ! Transform x-direction.
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do
         do m=1,pny
           ax_other = cmplx(p_re_2d(:,m),p_im_2d(:,m))
@@ -2857,11 +3018,13 @@ module Fourier
           p_re_2d(:,m) = real(ax_other)
           p_im_2d(:,m) = aimag(ax_other)
         enddo
+        !$omp end parallel
 !
         call transp_pencil_xy(p_re_2d,t_re_2d )
         call transp_pencil_xy(p_im_2d,t_im_2d )
 !
         ! Transform y-direction and normalize.
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do
         do l=1,tny
           ay_other = cmplx(t_re_2d(:,l), t_im_2d(:,l))
@@ -2869,6 +3032,7 @@ module Fourier
           t_re_2d(:,l) = real(ay_other)/(nxgrid_other*nygrid_other)
           t_im_2d(:,l) = aimag(ay_other)/(nxgrid_other*nygrid_other)
         enddo
+        !$omp end parallel
 !
         call transp_pencil_xy(t_re_2d,p_re_2d )
         call transp_pencil_xy(t_im_2d,p_im_2d )
@@ -2889,6 +3053,7 @@ module Fourier
         call transp_pencil_xy(p_re_2d, t_re_2d )
         call transp_pencil_xy(p_im_2d, t_im_2d )
 !
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do
         do l=1,tny
           ! Transform y-direction back.
@@ -2897,10 +3062,12 @@ module Fourier
           t_re_2d(:,l) = real(ay_other)
           t_im_2d(:,l) = aimag(ay_other)
         enddo
+        !$omp end parallel
 !
         call transp_pencil_xy(t_re_2d,p_re_2d )
         call transp_pencil_xy(t_im_2d,p_im_2d )
 !
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do
         do m=1,pny
           ! Transform x-direction back.
@@ -2909,6 +3076,7 @@ module Fourier
           p_re_2d(:,m) = real(ax_other)
           p_im_2d(:,m) = aimag(ax_other)
         enddo
+        !$omp end parallel
 !
         ! Unmap the results back to normal shape.
         call unmap_from_pencil_xy_2D_other(p_re_2d,a_re )
@@ -2972,17 +3140,21 @@ module Fourier
 !     Check for degenerate cases.
 !     KG: (27-sep-2023) it seems to me that fft_y_parallel_2D does the FFT along the second axis; here, we want FFT along the first axis, and moreover have to handle the case where nx!=ny!=nz. This seems the simplest way to accomplish that.
       if (nxgrid == 1) then
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do
         do i=1,inz
           call fft_y_parallel (a_re(1,:,i), a_im(1,:,i), .not. lforward, lcompute_im, lignore_shear=lnoshear)
         enddo
+        !$omp end parallel
         return
       endif
       if (nygrid == 1) then
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do
         do i=1,inz
           call fft_x_parallel (a_re(:,1,i), a_im(:,1,i), .not. lforward, lcompute_im, lignore_shear=lnoshear)
         enddo
+        !$omp end parallel
         return
       endif
 !
@@ -3026,14 +3198,17 @@ module Fourier
         if (lcompute_im) then
           call remap_to_pencil_xy (a_im, p_im_3d )
         else
+          !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
           !$omp workshare
           p_im_3d = 0.0
           !$omp end workshare
+          !$omp end parallel
         endif
 !
         call transp_pencil_xy (p_re_3d, t_re_3d )
         call transp_pencil_xy (p_im_3d, t_im_3d )
-!
+!§
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do collapse(2)
         do pos_z = 1, inz
           do l = 1, tny
@@ -3046,10 +3221,12 @@ module Fourier
             t_im_3d(:,l,pos_z) = aimag (ay)
           enddo
         enddo
+        !$omp end parallel
 !
         call transp_pencil_xy (t_re_3d, p_re_3d )
         call transp_pencil_xy (t_im_3d, p_im_3d )
 !
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do collapse(2)
         do pos_z = 1, inz
           do m = 1, pny
@@ -3060,6 +3237,7 @@ module Fourier
             p_im_3d(:,m,pos_z) = aimag (ax)/nxygrid
           enddo
         enddo
+        !$omp end parallel
 !
         ! Unmap the results back to normal shape.
         call unmap_from_pencil_xy (p_re_3d, a_re )
@@ -3074,6 +3252,7 @@ module Fourier
         call remap_to_pencil_xy (a_re, p_re_3d )
         call remap_to_pencil_xy (a_im, p_im_3d )
 !
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do collapse(2)
         do pos_z = 1, inz
           do m = 1, pny
@@ -3084,10 +3263,12 @@ module Fourier
             p_im_3d(:,m,pos_z) = aimag (ax)
           enddo
         enddo
+        !$omp end parallel
 !
         call transp_pencil_xy (p_re_3d, t_re_3d )
         call transp_pencil_xy (p_im_3d, t_im_3d )
 !
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do collapse(2)
         do pos_z = 1, inz
           do l = 1, tny
@@ -3099,6 +3280,7 @@ module Fourier
             if (lcompute_im) t_im_3d(:,l,pos_z) = aimag (ay)
           enddo
         enddo
+        !$omp end parallel
 !
         call transp_pencil_xy (t_re_3d, p_re_3d )
         if (lcompute_im) call transp_pencil_xy (t_im_3d, p_im_3d )
@@ -3166,21 +3348,25 @@ module Fourier
 !     Check for degenerate cases.
 !     KG: (27-sep-2023) it seems to me that fft_y_parallel_3D does the FFT along the second axis; here, we want FFT along the first axis, and moreover have to handle the case where nx!=ny!=nz. This seems the simplest way to accomplish that.
       if (nxgrid == 1) then
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do collapse(2)
         do iz=1,inz
           do ia = 1,ina
             call fft_y_parallel (a_re(1,:,iz,ia), a_im(1,:,iz,ia), .not. lforward, lcompute_im, lignore_shear=lnoshear)
           enddo
         enddo
+        !$omp end parallel
         return
       endif
       if (nygrid == 1) then
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do collapse(2)
         do iz=1,inz
           do ia = 1,ina
             call fft_x_parallel (a_re(:,1,iz,ia), a_im(:,1,iz,ia), .not. lforward, lcompute_im, lignore_shear=lnoshear)
           enddo
         enddo
+        !$omp end parallel
         return
       endif
 !
@@ -3226,14 +3412,17 @@ module Fourier
         if (lcompute_im) then
           call remap_to_pencil_xy (a_im, p_im_4d )
         else
+          !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
           !$omp workshare
           p_im_4d= 0.0
           !$omp end workshare
+          !$omp end parallel
         endif
 !
         call transp_pencil_xy (p_re_4d, t_re_4d)
         call transp_pencil_xy (p_im_4d, t_im_4d)
 !
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do collapse(3)
         do pos_a = 1, ina
           do pos_z = 1, inz
@@ -3248,10 +3437,12 @@ module Fourier
             enddo
           enddo
         enddo
+        !$omp end parallel
 !
         call transp_pencil_xy (t_re_4d, p_re_4d)
         call transp_pencil_xy (t_im_4d, p_im_4d)
 !
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do collapse(3)
         do pos_a = 1, ina
           do pos_z = 1, inz
@@ -3264,6 +3455,7 @@ module Fourier
             enddo
           enddo
         enddo
+        !$omp end parallel
 !
         ! Unmap the results back to normal shape.
         call unmap_from_pencil_xy (p_re_4d, a_re )
@@ -3277,6 +3469,7 @@ module Fourier
         call remap_to_pencil_xy (a_re, p_re_4d )
         call remap_to_pencil_xy (a_im, p_im_4d )
 !
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do collapse(3)
         do pos_a = 1, ina
           do pos_z = 1, inz
@@ -3289,10 +3482,12 @@ module Fourier
             enddo
           enddo
         enddo
+        !$omp end parallel
 !
         call transp_pencil_xy (p_re_4d, t_re_4d)
         call transp_pencil_xy (p_im_4d, t_im_4d)
 !
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do collapse(3)
         do pos_a = 1, ina
           do pos_z = 1, inz
@@ -3306,6 +3501,7 @@ module Fourier
             enddo
           enddo
         enddo
+        !$omp end parallel
 !
         call transp_pencil_xy (t_re_4d, p_re_4d)
         if (lcompute_im) call transp_pencil_xy (t_im_4d, p_im_4d)
@@ -3404,6 +3600,7 @@ module Fourier
         call remap_to_pencil_yz (a_re, p_re_3d )
         call remap_to_pencil_yz (a_im, p_im_3d )
 !
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do collapse(2)
         do l = 1, nx
           do m = 1, pny
@@ -3414,6 +3611,7 @@ module Fourier
             p_im_3d(l,m,:) = aimag (az)/nzgrid
           enddo
         enddo
+        !$omp end parallel
 !
         ! Unmap the results back to normal shape.
         call unmap_from_pencil_yz (p_re_3d, a_re )
@@ -3440,6 +3638,7 @@ module Fourier
         call remap_to_pencil_yz (a_re, p_re_3d )
         call remap_to_pencil_yz (a_im, p_im_3d )
 !
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do collapse(2) 
         do l = 1, nx
           do m = 1, pny
@@ -3450,6 +3649,7 @@ module Fourier
             p_im_3d(l,m,:) = aimag (az)
           enddo
         enddo
+        !$omp end parallel
 !
         ! Unmap the results back to normal shape.
         call unmap_from_pencil_yz (p_re_3d, a_re )
@@ -3555,6 +3755,7 @@ module Fourier
         call remap_to_pencil_yz (a_re, p_re_4d )
         call remap_to_pencil_yz (a_im, p_im_4d )
 !
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do collapse(3)
         do pos_a = 1, ina
           do l = 1, nx
@@ -3567,6 +3768,7 @@ module Fourier
             enddo
           enddo
         enddo
+        !$omp end parallel
 !
         ! Unmap the results back to normal shape.
         call unmap_from_pencil_yz (p_re_4d, a_re )
@@ -3593,6 +3795,7 @@ module Fourier
         call remap_to_pencil_yz (a_re, p_re_4d )
         call remap_to_pencil_yz (a_im, p_im_4d )
 !
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do collapse(3)
         do pos_a = 1, ina
           do l = 1, nx
@@ -3605,6 +3808,7 @@ module Fourier
             enddo
           enddo
         enddo
+       !$omp end parallel
 !
         ! Unmap the results back to normal shape.
         call unmap_from_pencil_yz (p_re_4d, a_re )
@@ -3674,6 +3878,7 @@ module Fourier
         ! Special case for kx=0 and ky=0
         factor(1,1,onz) = 1.0
       endif
+      !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
       !$omp do
       do pos_z = 1, onz
         delta_z = ref_z - z(pos_z)
@@ -3683,6 +3888,7 @@ module Fourier
         ! Include normalization of FFT: 1/(nxgrid*nygrid)
         factor(:,:,pos_z) = factor(:,:,onz) ** delta_z / (k_2 * nxgrid*nygrid)
       enddo
+      !$omp end parallel
 !
       !$omp barrier
       !$omp single
@@ -3756,6 +3962,7 @@ module Fourier
       call remap_to_pencil_xy (in, p_re_3d )
       p_im_3d= 0.
 !
+      !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
       !$omp do collapse(2)
       do pos_a = 1, ona
         do m = 1, pny
@@ -3766,6 +3973,7 @@ module Fourier
           p_im_3d(:,m,pos_a) = aimag (ax)
         enddo
       enddo
+      !$omp end parallel
 !
       call transp_pencil_xy (p_re_3d, t_re_3d )
       call transp_pencil_xy (p_im_3d, t_im_3d )
@@ -3778,6 +3986,7 @@ module Fourier
       !$omp end single
       !$omp barrier
 !
+      !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
       !$omp do collapse(2)
       do pos_a = 1, ona
         do l = 1, tny
@@ -3794,6 +4003,7 @@ module Fourier
           enddo
         enddo
       enddo
+      !$omp end parallel
 !
       !$omp barrier
       !$omp single
@@ -3812,6 +4022,7 @@ module Fourier
       !$omp end single
 !
       ! Transform x-direction back in each z layer.
+      !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
       !$omp do collapse(3)
       do pos_a = 1, ona
         do pos_z = 1, onz
@@ -3822,6 +4033,7 @@ module Fourier
           enddo
         enddo
       enddo
+      !$omp end parallel
 !
       ! Distribute the results back in normal shape.
       call unmap_from_pencil_xy (b_re, out )
@@ -3893,11 +4105,14 @@ module Fourier
       !$omp barrier
 !
       ! Collect the data we need.
+      !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
       !$omp workshare
       p_re_2d= in
       p_im_2d= 0.
       !$omp end workshare
+      !$omp end parallel
 !
+      !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
       !$omp do
       do m = 1, pny
         ! Transform x-direction.
@@ -3906,6 +4121,7 @@ module Fourier
         p_re_2d(:,m) = real (ax)
         p_im_2d(:,m) = aimag (ax)
       enddo
+      !$omp end parallel
 !
       call transp_pencil_xy (p_re_2d, t_re_2d )
       call transp_pencil_xy (p_im_2d, t_im_2d )
@@ -3918,6 +4134,7 @@ module Fourier
       !$omp end single
       !$omp barrier
 !
+      !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
       !$omp do
       do l = 1, tny
         ! Transform y-direction.
@@ -3939,6 +4156,7 @@ module Fourier
           e_im(:,l,pos_z,2) = aimag (ay_extra_y)
         enddo
       enddo
+      !$omp end parallel
 !
       !$omp barrier
       !$omp single
@@ -3957,6 +4175,7 @@ module Fourier
       !$omp end single
 !
       ! Transform x-direction back.
+      !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
       !$omp do collapse(2)
       do pos_z = 1, onz
         do m = 1, pny
@@ -3970,6 +4189,7 @@ module Fourier
           b_re(:,m,pos_z,2) = real (ax)
         enddo
       enddo
+      !$omp end parallel
 !
       ! Distribute the results.
       call unmap_from_pencil_xy (b_re, out )
@@ -4098,10 +4318,12 @@ module Fourier
 !  Normalize
 !
       if (lforward) then
-!$omp workshare
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
+        !$omp workshare
         a_re=a_re/nygrid
         a_im=a_im/nygrid
-!$omp end workshare
+        !$omp end workshare
+        !$omp end parallel
       endif
 !
     endsubroutine fourier_transform_y_y
@@ -4226,13 +4448,16 @@ module Fourier
 !
       ! perform FFT on all participating procesors
       if (ipy < nprocy_used) then
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp workshare
         a_im_new=0.0
         cmplx_shift=exp(cmplx(0.0,-ky_fft*shift_y))
         !$omp end workshare
+        !$omp end parallel
 !
 !  Transform to Fourier space.
 !
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do
         do n=1,nz_new
           call fourier_transform_other(a_re_new(:,n),a_im_new(:,n))
@@ -4240,6 +4465,7 @@ module Fourier
           a_re_new(:,n)=real(a_cmplx)
           a_im_new(:,n)=aimag(a_cmplx)
         enddo
+        !$omp end parallel
 !
 !  Back to real space.
 !
@@ -4326,25 +4552,30 @@ module Fourier
 !
       if (ip<10) call information('fourier_shift_y','doing FFTpack in y')
       if (nygrid/=1) then
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp workshare
         a_im=0.0
         !$omp end workshare
+        !$omp end parallel
         call transp(a_re,'y' )
         
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do collapse(2)
         do n=1,nz; do l=1,ny
           ay=cmplx(a_re(:,l,n),a_im(:,l,n))
-          call cfftf(nygrid,ay,wsave)   !MR: whatif nygrid/=nx?
+          call cfftf(nygrid,ay,wsave)   !MR: whatif nygrid/=nx? See also next statement!
 !
 !  Shift all modes by the amount shift_y(x).
 !
-          ay(two:nxgrid)=ay(two:nxgrid)*exp(cmplx(0.0,-ky_fft(two:nxgrid)*shift_y(l+ipy*ny)))
+          !!!ay(two:nxgrid)=ay(two:nxgrid)*exp(cmplx(0.0,-ky_fft(two:nxgrid)*shift_y(l+ipy*ny)))
           a_re(:,l,n)=real(ay)
           a_im(:,l,n)=aimag(ay)
         enddo; enddo
+        !$omp end parallel
 !
 !  Transform y-direction back and normalize.
 !
+        !$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do collapse(2)
         do n=1,nz; do l=1,ny
           ay=cmplx(a_re(:,l,n),a_im(:,l,n))
@@ -4352,6 +4583,7 @@ module Fourier
           a_re(:,l,n)=real(ay)/nygrid
           a_im(:,l,n)=aimag(ay)/nygrid
         enddo; enddo
+        !$omp end parallel
 
         call transp(a_re,'y' )
         call transp(a_im,'y' )
