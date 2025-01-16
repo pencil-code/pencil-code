@@ -14,7 +14,7 @@ export OMP_NUM_THREADS=7
 export OMP_PROC_BIND=close,spread
 export OMP_MAX_ACTIVE_LEVELS=2
 export OMP_WAIT_POLICY=PASSIVE
-./start.csh
+#./start.csh
 export MPICH_GPU_SUPPORT_ENABLED=1
 #srun ./src/run.x
 #./run.csh
@@ -40,9 +40,9 @@ unset OS_TENANT_ID
 unset OS_TENANT_NAME
 # In addition to the owning entity (tenant), OpenStack stores the entity
 # performing the action as the **user**.
-export OS_USERNAME="USER_NAME_HERE"
+export OS_USERNAME="USERNAME"
 # With Keystone you pass the keystone password.
-export OS_PASSWORD="PASS_WORD_HERE"
+export OS_PASSWORD="PASSWORD"
 export OS_IDENTITY_API_VERSION="3"
 
 

@@ -14,6 +14,19 @@ import cv2
 import glob
 
 
+def get_reduce_task(field_name):
+    @odop.task(name=f"reduce_{field_name}",trigger="file_updated",file_path="/users/toukopur/pencil-code/samples/gputest/data/proc0/var.dat")
+    def reduce(filenames=None):
+        f = pc.read.var()
+        #file_heavy = False
+        field = getattr(f,field_name)
+        for i in range(100):
+            xy_aver = np.sum(field,2)
+            np.save(f"/users/toukopur/odop-dst/{field_name}_xyaver.dat",xy_aver)
+
+        print(f"{field_name}_xyaver: DONE\n");
+    return reduce
+
 for field_name in [
                     "ux",
                     "uy",
@@ -24,16 +37,8 @@ for field_name in [
                     "lnrho",
                     "ss"
                     ]:
+        get_reduce_task(field_name)
 
-    @odop.task(name=f"reduce_{field_name}",trigger="file_updated",file_path="/users/toukopur/pencil-code/samples/gputest/data/proc0/var.dat")
-    def reduce(filenames=None):
-        f = pc.read.var()
-        #file_heavy = False
-        field = getattr(f,field_name)
-        xy_aver = np.sum(field,2)
-        np.save(f"/users/toukopur/odop-dst/{field_name}_xyaver.dat",xy_aver)
-
-        print(f"{field_name}_xyaver: DONE\n");
 
 
 import os
@@ -108,34 +113,11 @@ def main():
     datadir="/users/toukopur/pencil-code/samples/gputest/allas/data"
     import pencil as pc
     slices = pc.read.slices(datadir=datadir)
-    #fields = ["uu1","uu2","uu3","tauxx","tauxy","tauxz","tauyy","tauyz","tauzz"]
     fields = ["uu1","uu2"]
-    pc.visu.rvid_box.plot_box(slices,datadir=datadir,fields=fields)
-    create_video("images", "output.mp4", framerate=30)
+    pc.visu.rvid_box.plot_box(slices,datadir=datadir,fields=fields,colorscale="Jet")
+    create_video("images", "output.mp4", framerate=1)
     upload()
 
-def reductions():
-    for field_name in [
-                        "ux",
-                        "uy",
-                        "uz",
-                        "ax",
-                        "ay",
-                        "az",
-                        "lnrho",
-                        "ss"
-                        ]:
-    
-        @odop.task(name=f"reduce_{field_name}_2",trigger="file_updated",file_path="/users/toukopur/pencil-code/samples/gputest/data/proc0/var.dat")
-        def reduce(filenames=None):
-            f = pc.read.var()
-            #file_heavy = False
-            field = getattr(f,field_name)
-            xy_aver = np.sum(field,2)
-            np.save(f"/users/toukopur/odop-dst/{field_name}_xyaver.dat",xy_aver)
-    
-            print(f"{field_name}_xyaver: DONE\n");
-        reduce()
-
 if __name__ == "__main__":
-    download()
+    main()
+    #upload()
