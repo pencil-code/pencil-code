@@ -165,9 +165,7 @@ contains
 !**************************************************************************
     subroutine load_farray_to_GPU(f)
 
-!$    use General, only: signal_send
-
-      real, dimension (mx,my,mz,mfarray), intent(OUT) :: f
+      real, dimension (mx,my,mz,mfarray), intent(IN) :: f
 
       call load_farray_c
 
