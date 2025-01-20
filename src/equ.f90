@@ -108,6 +108,7 @@ module Equ
 !  Print statements when they are first executed.
 !
       headtt = headt .and. lfirst .and. lroot
+      lupdate_courant_dt = lfirst .and. ldt .and. lcourant_dt
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call svn_id( &
@@ -274,7 +275,7 @@ module Equ
 !  If we want to have a logarithmic time advance, we want set this here
 !  as the maximum. All other routines can then still make it shorter.
 !
-        if (lfirst.and.ldt) then
+        if (lupdate_courant_dt) then
           if (dtmax/=0.0) then
             if (lfractional_tstep_advance) then
               dt1_max=1./(dt_incr*t)
@@ -437,7 +438,7 @@ module Equ
 !  Takes minimum over and distributes to all processors.
 !  With GPUs this is done on the CUDA side.
 !
-        if (lfirst.and.ldt.and..not.lgpu) call set_dt(maxval(dt1_max))
+        if (lupdate_courant_dt.and..not.lgpu) call set_dt(maxval(dt1_max))
 
       endif     ! if (.not. lgpu)
 
@@ -1055,7 +1056,7 @@ module Equ
 !  (note: advec2 is an inverse _squared_ timestep)
 !  Note that advec_cs2 should always be initialized when leos.
 !
-        if (lfirst.and.ldt.and.(.not.ldt_paronly)) then
+        if (lupdate_courant_dt.and.(.not.ldt_paronly)) then
           advec_cs2=0.
           maxadvec=0.
           if (lenergy.or.ldensity.or.lmagnetic.or.lradiation.or.lneutralvelocity.or.lcosmicray.or. &
@@ -1208,7 +1209,7 @@ module Equ
 !
 !  Diagnostics showing how close to advective and diffusive time steps we are
 !
-        if (lfirst.and.ldt.and.(.not.ldt_paronly).and.ldiagnos) then
+        if (lupdate_courant_dt.and.(.not.ldt_paronly).and.ldiagnos) then
           if (idiag_dtv/=0) call max_mn_name(maxadvec/cdt,idiag_dtv,l_dt=.true.)
           if (idiag_dtdiffus/=0) call max_mn_name(maxdiffus/cdtv,idiag_dtdiffus,l_dt=.true.)
           if (idiag_dtdiffus2/=0) call max_mn_name(maxdiffus2/cdtv2,idiag_dtdiffus2,l_dt=.true.)
@@ -1578,7 +1579,7 @@ module Equ
       real, dimension(nx) :: dt1_max_loc, dt1_advec, dt1_diffus, dt1_src
       real :: dt1_preac
 
-      if (lfirst.and.ldt.and.(.not.ldt_paronly)) then
+      if (lupdate_courant_dt.and.(.not.ldt_paronly)) then
 !
 !  sum or maximum of the advection terms?
 !  (lmaxadvec_sum=.false. by default)

@@ -1266,8 +1266,8 @@ module Viscosity
       p%fvisc=0.0                               !!! not needed
       if (lpencil(i_visc_heat)) p%visc_heat=0.0
 
-      ldiffus_total = lfirst .and. ldt .or. lpencil(i_diffus_total)
-      ldiffus_total3 = lfirst .and. ldt .or. lpencil(i_diffus_total3)
+      ldiffus_total = lupdate_courant_dt .or. lpencil(i_diffus_total)
+      ldiffus_total3 = lupdate_courant_dt .or. lpencil(i_diffus_total3)
       if (ldiffus_total.or.ldiffus_total3) then
         p%diffus_total=0.0
         p%diffus_total2=0.0
@@ -1779,7 +1779,7 @@ module Viscosity
           if (headtt) call warning('calc_pencils_viscosity', 'viscous heating '// &
                                    'not implemented for lvisc_hyper2_simplified')
         endif
-        if (lfirst .and. ldt) p%diffus_total2=p%diffus_total2+nu_hyper2
+        if (lupdate_courant_dt) p%diffus_total2=p%diffus_total2+nu_hyper2
       endif
 !
 !  viscous force: nu_hyper3*del6v (not momentum-conserving)
@@ -1801,7 +1801,7 @@ module Viscosity
           if (headtt) call warning('calc_pencils_viscosity', 'viscous heating '// &
                                    'not implemented for lvisc_hyper2_simplified')
         endif
-        if (lfirst .and. ldt) p%diffus_total2=p%diffus_total2+nu_tdep
+        if (lupdate_courant_dt) p%diffus_total2=p%diffus_total2+nu_tdep
       endif
 !
       if (lvisc_hyper3_simplified_tdep) then
@@ -2552,7 +2552,7 @@ module Viscosity
 !
 !  Calculate max total diffusion coefficient for timestep calculation etc.
 !
-      if (lfirst.and.ldt) then
+      if (lupdate_courant_dt) then
 
         diffus_nu = p%diffus_total*dxyz_2
         if (ldynamical_diffusion .and. lvisc_hyper3_mesh) then

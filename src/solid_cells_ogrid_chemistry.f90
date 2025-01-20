@@ -889,7 +889,7 @@ module solid_cells_ogrid_chemistry
 !
 !  For the timestep calculation, need maximum diffusion
 !
-!      if (lfirst .and. ldt) then
+!      if (lupdate_courant_dt) then
 !          diffus_chem=0.
 !          do j = 1,nx
 !            if (ldiffusion .and. .not. ldiff_simple) then
@@ -909,7 +909,7 @@ module solid_cells_ogrid_chemistry
 !
 ! NB: it should be discussed
 !
-!      if (lfirst .and. ldt) then
+!      if (lupdate_courant_dt) then
 !        if (lreactions .and.(.not. llsode)) then
 !
 !  calculate maximum of *relative* reaction rate if decaying,

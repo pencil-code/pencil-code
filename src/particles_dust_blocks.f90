@@ -1676,7 +1676,7 @@ k_loop:   do while (.not. (k>npar_loc))
               dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + ggp
             endif
 !  Limit time-step if particles close to gravity source.
-            if (ldt_grav_par.and.(lfirst.and.ldt)) then
+            if (ldt_grav_par.and.(lupdate_courant_dt)) then
               if (lcartesian_coords) then
                 vv=sqrt(fp(k,ivpx)**2+fp(k,ivpy)**2+fp(k,ivpz)**2)
               elseif (lcylindrical_coords) then
@@ -1925,7 +1925,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Contribution of dust particles to time step.
 !
       do iblock=0,nblock_loc-1
-        if (lfirst.and.ldt.and.ldt_adv_par) then
+        if (lupdate_courant_dt.and.ldt_adv_par) then
           if (npar_iblock(iblock)/=0) then
             do k=k1_iblock(iblock),k2_iblock(iblock)
               ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
@@ -1985,7 +1985,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
           if (npar_iblock(iblock)/=0) then
 !
-            if (lfirst.and.ldt) then
+            if (lupdate_courant_dt) then
               dt1_drag_dust=0.0
               if (ldragforce_gas_par) dt1_drag_gas=0.0
             endif
@@ -2173,7 +2173,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !  With drag force on the gas as well, the maximum time-step is set as
 !    dt1_drag = Sum_k[eps_k/tau_k]
 !
-                if (lfirst.and.ldt) then
+                if (lupdate_courant_dt) then
                   dt1_drag_dust(ix0,iy0,iz0)= &
                        max(dt1_drag_dust(ix0,iy0,iz0),tausp1_par)
                   if (ldragforce_gas_par) then
@@ -2191,7 +2191,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !  time-steps are added up to give a valid expression even when the two are
 !  of similar magnitude.
 !
-          if (lfirst.and.ldt) then
+          if (lupdate_courant_dt) then
             if (ldragforce_gas_par) then
               dt1_drag=dt1_drag_dust+dt1_drag_gas
             else
@@ -2207,7 +2207,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  No particles in this block.
 !
-          if (lfirst.and.ldt) dt1_drag=0.0
+          if (lupdate_courant_dt) dt1_drag=0.0
         endif
       enddo
 !

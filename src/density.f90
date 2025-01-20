@@ -2620,7 +2620,7 @@ module Density
       diffus_diffrho=0.; diffus_diffrho3=0.
       fdiff=0.0
 !
-      ldt_up = lfirst.and.ldt
+      ldt_up = lupdate_courant_dt
 !
       if (ldiff_normal) then  ! Normal diffusion operator
         if (ldensity_nolog) then
@@ -2646,7 +2646,7 @@ module Density
             fdiff = fdiff + diffrho*p%TT**diff_cspeed*(p%del2lnrho+p%glnrho2)
           endif
         endif
-        if (lfirst.and.ldt) diffus_diffrho=diffus_diffrho+diffrho
+        if (lupdate_courant_dt) diffus_diffrho=diffus_diffrho+diffrho
         if (headtt) print*,'dlnrho_dt: diffrho=', diffrho
       endif
 !

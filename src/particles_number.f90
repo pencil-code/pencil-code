@@ -217,7 +217,7 @@ module Particles_number
 !
       if (lfragmentation_par .and. t>=tstart_fragmentation_par) then
 !
-        if (lfirst.and.ldt) dt1_fragmentation=0.0
+        if (lupdate_courant_dt) dt1_fragmentation=0.0
 !
         if (npar_imn(imn)/=0) then
 
@@ -274,7 +274,7 @@ module Particles_number
                     endif
                   endif  ! fragmentation or coagulation
 !  Time-step contribution
-!                  if (lfirst.and.ldt) then
+!                  if (lupdate_courant_dt) then
 !                    dt1_fragmentation(l-nghost) = dt1_fragmentation(l-nghost) +&
 !                        p%cc1(l-nghost)*p%rho1(l-nghost)*4/3.*pi*rhopmat* &
 !                        (fp(j,iap)**3+fp(k,iap)**3)*cdot
@@ -309,7 +309,7 @@ module Particles_number
                     ncoll=ncoll+1
                   endif
 !  Time-step contribution
-!                  if (lfirst.and.ldt) then
+!                  if (lupdate_courant_dt) then
 !                    dt1_fragmentation(l-nghost) = dt1_fragmentation(l-nghost) +&
 !                        p%cc1(l-nghost)*p%rho1(l-nghost)*4/3.*pi*rhopmat*fp(k,iap)**3*cdot
 !                  endif
@@ -330,9 +330,9 @@ module Particles_number
             endif
           enddo ! l1,l2
 !
-          if (lfirst.and.ldt.or.ldiagnos) then
+          if (lupdate_courant_dt.or.ldiagnos) then
             dt1_fragmentation=dt1_fragmentation/cdtpf
-            if (lfirst.and.ldt) dt1_max=max(dt1_max,dt1_fragmentation)
+            if (lupdate_courant_dt) dt1_max=max(dt1_max,dt1_fragmentation)
           endif
 !
         endif ! npar_imn/=0

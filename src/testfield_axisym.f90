@@ -644,7 +644,7 @@ module Testfield
 !  diffusive time step, just take the max of diffus_eta (if existent)
 !  and whatever is calculated here
 !
-      if (lfirst.and.ldt) then
+      if (lupdate_courant_dt) then
         diffus_eta=etatest*dxyz_2
         maxdiffus=max(maxdiffus,diffus_eta)
       endif

@@ -3121,7 +3121,7 @@ module Hydro
         call calc_pencils_hydro_nonlinear(f,p,lpenc_loc)
       endif
 ! advec_uu
-      if (lfirst.and.ldt.and.ladvection_velocity) then
+      if (lupdate_courant_dt.and.ladvection_velocity) then
         if (lmaximal_cdt) then
           p%advec_uu=max(abs(p%uu(:,1))*dline_1(:,1),&
                          abs(p%uu(:,2))*dline_1(:,2),&
@@ -3969,7 +3969,7 @@ module Hydro
 !
 !  ``uu/dx'' for timestep
 !
-      if (lfirst.and.ldt.and.ladvection_velocity) then
+      if (lupdate_courant_dt.and.ladvection_velocity) then
         maxadvec=maxadvec+p%advec_uu
         if (headtt.or.ldebug) print*,'duu_dt: max(advec_uu) =',maxval(p%advec_uu)
       endif
@@ -4070,7 +4070,7 @@ module Hydro
 !
 !  Fred: Option to constrain timestep for large forces
 !
-      if ( lfirst.and.ldt.and.(lcdt_tauf.or.ldiagnos.and.idiag_dtF/=0) .or. &
+      if ( lupdate_courant_dt.and.(lcdt_tauf.or.ldiagnos.and.idiag_dtF/=0) .or. &
            ldiagnos.and.idiag_taufmin/=0 ) then
         where (abs(p%uu)>1)   !MR: What would in general be the significance of 1 here?
           uu1=1./p%uu

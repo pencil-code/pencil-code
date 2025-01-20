@@ -1568,7 +1568,7 @@ module Chemistry
 !
 !  For the timestep calculation, need maximum diffusion
 !
-!      if (lfirst .and. ldt) then
+!      if (lupdate_courant_dt) then
 !print*,'Why never enters here??***********************************************************'
 !          diffus_chem=0.
 !          do j = 1,nx
@@ -1589,7 +1589,7 @@ module Chemistry
 !
 ! NB: it should be discussed
 !
-!      if (lfirst .and. ldt) then
+!      if (lupdate_courant_dt) then
 !        if (lreactions .and.(.not. llsode)) then
 !
 !  calculate maximum of *relative* reaction rate if decaying,

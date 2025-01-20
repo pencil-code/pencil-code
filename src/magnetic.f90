@@ -4622,7 +4622,7 @@ module Magnetic
 !  Add ``va^2/dx^2'' contribution to timestep.
 !  Consider advective timestep only when lhydro=T.
 !
-      if (lfirst.and.ldt) then
+      if (lupdate_courant_dt) then
         if (lhydro.and.llorentzforce) then
           rho1_jxb=p%rho1
           if (rhomin_jxb>0) rho1_jxb=min(rho1_jxb,1/rhomin_jxb)
@@ -4982,7 +4982,7 @@ module Magnetic
         else    !MR: What about Weyl gauge here?
           ! Assuming geta_z(:,1) = geta_z(:,2) = 0
           fres(:,3) = fres(:,3) + geta_z(n) * p%diva
-          if (lfirst .and. ldt) maxadvec = maxadvec + abs(geta_z(n)) * dz_1(n)
+          if (lupdate_courant_dt) maxadvec = maxadvec + abs(geta_z(n)) * dz_1(n)
         endif
       endif
 !
@@ -5077,12 +5077,12 @@ module Magnetic
 !
       if (lresi_hyper2) then
         fres=fres+eta_hyper2*p%del4a
-        if (lfirst.and.ldt) diffus_eta2=diffus_eta2+eta_hyper2
+        if (lupdate_courant_dt) diffus_eta2=diffus_eta2+eta_hyper2
       endif
 !
       if (lresi_hyper3) then
         fres=fres+eta_hyper3*p%del6a
-        if (lfirst.and.ldt) diffus_eta3=diffus_eta3+eta_hyper3
+        if (lupdate_courant_dt) diffus_eta3=diffus_eta3+eta_hyper3
       endif
 !
 !  Unlike for usual hyper2 and hyper3, where the coefficient is
@@ -5091,12 +5091,12 @@ module Magnetic
 !
       if (lresi_hyper2_tdep) then
         fres=fres-eta_tdep*p%del4a
-        if (lfirst.and.ldt) diffus_eta2=diffus_eta2+eta_tdep
+        if (lupdate_courant_dt) diffus_eta2=diffus_eta2+eta_tdep
       endif
 !
       if (lresi_hyper3_tdep) then
         fres=fres+eta_tdep*p%del6a
-        if (lfirst.and.ldt) diffus_eta3=diffus_eta3+eta_tdep
+        if (lupdate_courant_dt) diffus_eta3=diffus_eta3+eta_tdep
       endif
 !
       if (lresi_hyper3_polar) then
@@ -5107,7 +5107,7 @@ module Magnetic
             fres(:,j)=fres(:,j)+eta_hyper3*pi4_1*tmp1*dline_1(:,i)**2
           enddo
         enddo
-        if (lfirst.and.ldt) diffus_eta3=diffus_eta3+eta_hyper3*pi4_1*dxmin_pencil**4
+        if (lupdate_courant_dt) diffus_eta3=diffus_eta3+eta_hyper3*pi4_1*dxmin_pencil**4
       endif
 !
       if (lresi_hyper3_mesh) then
@@ -5122,7 +5122,7 @@ module Magnetic
             endif
           enddo
         enddo
-        if (lfirst.and.ldt) then
+        if (lupdate_courant_dt) then
           if (ldynamical_diffusion) then
             diffus_eta3 = diffus_eta3 + eta_hyper3_mesh
             advec_hypermesh_aa = 0.0
@@ -5145,7 +5145,7 @@ module Magnetic
             endif
           enddo
         enddo
-        if (lfirst.and.ldt) then
+        if (lupdate_courant_dt) then
           if (ldynamical_diffusion) then
             diffus_eta3=diffus_eta3+eta_hyper3_mesh*sqrt(p%cs2)
             advec_hypermesh_aa=0.0
@@ -5158,14 +5158,14 @@ module Magnetic
 !
       if (lresi_hyper3_strict) then
         fres=fres+eta_hyper3*f(l1:l2,m,n,ihypres:ihypres+2)
-        if (lfirst.and.ldt) diffus_eta3=diffus_eta3+eta_hyper3
+        if (lupdate_courant_dt) diffus_eta3=diffus_eta3+eta_hyper3
       endif
 !
       if (lresi_hyper3_aniso) then
          call del6fjv(f,eta_aniso_hyper3,iaa,tmp2)
          fres=fres+tmp2
 !  Must divide by dxyz_6 here, because it is multiplied on later.
-         if (lfirst.and.ldt) diffus_eta3=diffus_eta3 + &
+         if (lupdate_courant_dt) diffus_eta3=diffus_eta3 + &
                                          (eta_aniso_hyper3(1)*dline_1(:,1)**6 + &
                                           eta_aniso_hyper3(2)*dline_1(:,2)**6 + &
                                           eta_aniso_hyper3(3)*dline_1(:,3)**6)/dxyz_6
@@ -5767,7 +5767,7 @@ module Magnetic
         endselect
         if (headtt) print*,'daa_dt: hall_term=',hall_term_
         dAdt=dAdt-hall_term_*p%jxb
-        if (lfirst.and.ldt) then
+        if (lupdate_courant_dt) then
           advec_hall=sum(abs(p%uu-hall_term_*p%jj)*dline_1,2)
           if (notanumber(advec_hall)) then
             if (lproc_print) then
@@ -5875,7 +5875,7 @@ module Magnetic
 !  Lorentz force and Ohmic heating terms
 !  should set in entropy lthdiff_Hmax=F and lrhs_max=F & in hydro lcdt_tauf=F as handled here
 !
-      if (lfirst.and.ldt.and.lrhs_max) then
+      if (lupdate_courant_dt.and.lrhs_max) then
         if (lhydro) then
           where (abs(p%uu)>1)   !MR: What is the significance of unity in this criterion?
             uu1=1./p%uu
@@ -5938,7 +5938,7 @@ module Magnetic
 !
 !  Multiply resistivity by Nyquist scale, for resistive time-step.
 !
-      if (lfirst.and.ldt) then
+      if (lupdate_courant_dt) then
 !
         diffus_eta =eta_total *dxyz_2
         diffus_eta2=diffus_eta2*dxyz_4

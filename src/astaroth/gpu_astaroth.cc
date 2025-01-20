@@ -776,8 +776,11 @@ extern "C" void substepGPU(int isubstep)
       maxchi_dyn = acDeviceGetOutput(acGridGetDevice(), AC_maxchi);
 #endif
       //fprintf(stderr, "HMM MAX ADVEC, DIFFUS: %14e, %14e\n",maxadvec,max_diffus());
+      if(lcourant_dt)
+      {
       AcReal dt1_ = sqrt(pow(maxadvec, 2) + pow(max_diffus(maxchi_dyn), 2));
       set_dt(dt1_);
+      }
       acDeviceSetInput(acGridGetDevice(),AC_dt,dt);
       //if (rank==0) printf("rank, maxadvec, maxdiffus, dt1_= %d %e %e %e \n", rank, maxadvec,max_diffus(maxchi_dyn), dt1_);
   }

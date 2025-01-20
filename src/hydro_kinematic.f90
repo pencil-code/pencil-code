@@ -2731,7 +2731,7 @@ module Hydro
 !  uu/dx for timestep (if kinematic_flow is set)
 !
       if (kinematic_flow/='none') then
-        if (lfirst.and.ldt) then
+        if (lupdate_courant_dt) then
           advec_uu=sum(abs(p%uu)*dline_1,2)
           maxadvec=maxadvec+advec_uu
           if (headtt.or.ldebug) print*, 'duu_dt: max(advec_uu) =', maxval(advec_uu)

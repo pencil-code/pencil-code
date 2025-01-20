@@ -604,7 +604,7 @@ module Particles_surfspec
 !
 !  Prepare the max_reac_pchem
 !
-              if (lfirst .and. ldt) max_reac_pchem = 0.0
+              if (lupdate_courant_dt) max_reac_pchem = 0.0
 !
 !  Sum for testing
 !
@@ -632,7 +632,7 @@ module Particles_surfspec
                           species_constants(i,imass)+ &
                           dmass*interp_species(k,i))*weight_array/ &
                           (f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,irho)*volume_cell)
-                      if (lfirst .and. ldt) then
+                      if (lupdate_courant_dt) then
                         reac_pchem_weight = max(reac_pchem_weight, &
                             abs(maxval(df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,index2))/ &
                             max(maxval(f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,index2)),1e-10)))
@@ -665,7 +665,7 @@ module Particles_surfspec
                           species_constants(i,imass)+ &
                           dmass*interp_species(k,i))*weight_array/ &
                           (exp(f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnrho))*volume_cell)
-                      if (lfirst .and. ldt) then
+                      if (lupdate_courant_dt) then
                         reac_pchem_weight = max(reac_pchem_weight, &
                             abs(max(maxval(df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,index2)/ &
                             f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,index2)),1e-10)))
@@ -710,7 +710,7 @@ module Particles_surfspec
 !
 !  Compare the current maximum reaction rate to the previous one
 !
-              if (lfirst .and. ldt) max_reac_pchem = max(max_reac_pchem, reac_pchem_weight)
+              if (lupdate_courant_dt) max_reac_pchem = max(max_reac_pchem, reac_pchem_weight)
 !
 !  Enthalpy transfer via mass transfer!
 !
@@ -756,7 +756,7 @@ module Particles_surfspec
 !  Compare the current maximum reaction rate to the current maximum
 !  reaction rate in the current pencil
 !
-              if (lfirst .and. ldt) reac_pchem = max(reac_pchem,max_reac_pchem)
+              if (lupdate_courant_dt) reac_pchem = max(reac_pchem,max_reac_pchem)
 !
             endif
 !

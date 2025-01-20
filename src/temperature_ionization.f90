@@ -594,7 +594,7 @@ module Energy
 !
 !  ``cs2/dx^2'' for timestep
 !
-      if (ldensity.and.lhydro.and.lfirst.and.ldt) then
+      if (ldensity.and.lhydro.and.lupdate_courant_dt) then
         if (lreduced_sound_speed) then
           if (lscale_to_cs2top) then
             call fatal_error('denergy_dt','lscale_to_cs2top not possible')
@@ -714,7 +714,7 @@ module Energy
 !
       if (lspecial) call special_calc_energy(f,df,p)
 !
-      if (lfirst.and.ldt) then
+      if (lupdate_courant_dt) then
         maxdiffus=max(maxdiffus,diffus_chi)
         maxdiffus3=max(maxdiffus3,diffus_chi3)
       endif
@@ -841,7 +841,7 @@ module Energy
 !
 !  check maximum diffusion from thermal diffusion
 !
-      if (lfirst.and.ldt) diffus_chi=diffus_chi+gamma*chi*dxyz_2
+      if (lupdate_courant_dt) diffus_chi=diffus_chi+gamma*chi*dxyz_2
 !
     endsubroutine calc_heatcond_constchi
 !***********************************************************************
@@ -858,7 +858,7 @@ module Energy
 !
 !  check maximum diffusion from thermal diffusion
 !
-      if (lfirst.and.ldt) diffus_chi=diffus_chi+chi_hyper3*dxyz_6
+      if (lupdate_courant_dt) diffus_chi=diffus_chi+chi_hyper3*dxyz_6
 !
     endsubroutine calc_heatcond_hyper3
 !***********************************************************************
@@ -909,7 +909,7 @@ module Energy
 !  With heat conduction, the second-order term for entropy is
 !  gamma*chi*del2ss.
 !
-      if (lfirst.and.ldt) diffus_chi=diffus_chi+(p%gamma*chi_shock*p%shock)*dxyz_2
+      if (lupdate_courant_dt) diffus_chi=diffus_chi+(p%gamma*chi_shock*p%shock)*dxyz_2
 !
     endsubroutine calc_heatcond_shock
 !***********************************************************************

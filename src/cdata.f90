@@ -179,6 +179,8 @@ module Cdata
   real :: mu0=1., mu01=0. !  magnetic permeability [should be in Magnetic]
   logical :: lfirst=.false.,llast=.false.,ldt_paronly=.false.
   logical :: ldt=.true.
+  logical :: lcourant_dt=.true.
+  logical :: lupdate_courant_dt=.false.
 !
 !  Time integration parameters.
 !

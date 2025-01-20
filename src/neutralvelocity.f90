@@ -426,7 +426,7 @@ module NeutralVelocity
       endif
 
 !
-      if (lfirst.and.ldt.and.dimensionality>0) then
+      if (lupdate_courant_dt.and.dimensionality>0) then
 !
 !  ``uun/dx'' for timestep
 !
@@ -569,7 +569,7 @@ module NeutralVelocity
 !
       endif
 !
-      if (lfirst.and.ldt.and.dimensionality>0) then
+      if (lupdate_courant_dt.and.dimensionality>0) then
         advec2=advec2+p%advec_csn2
         maxadvec=maxadvec+p%advec_uun
       endif
@@ -797,7 +797,7 @@ module NeutralVelocity
                fvisc(:,i)=fvisc(:,i)+munrhon1*(p%del2un(:,i)+onethird*p%graddivun(:,i))
             enddo
             if (lpencil(i_visc_heatn)) p%visc_heatn=p%visc_heatn + 2*nun*p%snij2*p%rhon1
-            if (lfirst.and.ldt) diffus_nun=diffus_nun+munrhon1*dxyz_2
+            if (lupdate_courant_dt) diffus_nun=diffus_nun+munrhon1*dxyz_2
 
          case ('nun-const')
 !
@@ -813,7 +813,7 @@ module NeutralVelocity
             endif
 !
             if (lpencil(i_visc_heatn)) p%visc_heatn=p%visc_heatn + 2*nun*p%snij2
-            if (lfirst.and.ldt) diffus_nun=diffus_nun+nun*dxyz_2
+            if (lupdate_courant_dt) diffus_nun=diffus_nun+nun*dxyz_2
 !
          case ('hyper3_nun-const')
 !
@@ -824,7 +824,7 @@ module NeutralVelocity
 !
             if (headtt) print*, 'Viscous force (neutral): nun*(del6un+Sn.glnrhon)'
             fvisc = fvisc + nun_hyper3*(p%del6un+unij5glnrhon)
-            if (lfirst.and.ldt) diffus_nun3=diffus_nun3+nun_hyper3*dxyz_6
+            if (lupdate_courant_dt) diffus_nun3=diffus_nun3+nun_hyper3*dxyz_6
 !
          case ('hyper3-cyl','hyper3_cyl','hyper3-sph','hyper3_sph')
 !
@@ -836,7 +836,7 @@ module NeutralVelocity
                call der6(f,ju,tmp,i,IGNOREDX=.true.)
                fvisc(:,jj)=fvisc(:,jj)+nun_hyper3*pi4_1*tmp*dline_1(:,i)**2
              enddo
-             if (lfirst.and.ldt) diffus_nun3=diffus_nun3+nun_hyper3*pi4_1*dxmin_pencil**4
+             if (lupdate_courant_dt) diffus_nun3=diffus_nun3+nun_hyper3*pi4_1*dxmin_pencil**4
            enddo
 !
      !    case ('shock','nun-shock')
@@ -855,7 +855,7 @@ module NeutralVelocity
      !        call multsv(nun_shock*p%shock,tmp,tmp2)
      !        call multsv_add(tmp2,nun_shock*p%divun,p%gshockn,tmp)
      !        fvisc=fvisc+tmp
-     !        if (lfirst.and.ldt) diffus_total=diffus_total+(nu_shock*p%shock)
+     !        if (lupdate_courant_dt) diffus_total=diffus_total+(nu_shock*p%shock)
      !      endif
             !
          case ('')
@@ -866,7 +866,7 @@ module NeutralVelocity
          endselect
       enddo
 !
-      if (lfirst.and.ldt) then
+      if (lupdate_courant_dt) then
         maxdiffus=max(maxdiffus,diffus_nun)
         maxdiffus3=max(maxdiffus3,diffus_nun3)
       endif

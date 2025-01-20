@@ -728,7 +728,7 @@ module Pscalar
 !
 !  For the timestep calculation, need maximum diffusion.
 !
-        if (lfirst.and.ldt) then
+        if (lupdate_courant_dt) then
           diffus_pscalar =(pscalar_diff+tensor_pscalar_diff)*dxyz_2
           diffus_pscalar3=pscalar_diff_hyper3*dxyz_6
           maxdiffus=max(maxdiffus,diffus_pscalar)

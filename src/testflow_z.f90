@@ -921,7 +921,7 @@ module Testflow
 !
 !  check for testflow timestep
 !
-          if (lfirst.and.ldt) &
+          if (lupdate_courant_dt) &
             advec_uu=max(advec_uu,sum(abs(uutest)*dline_1,2))
         endif
 
@@ -934,7 +934,7 @@ module Testflow
 !  diffusive time step, just take the max of diffus_nu (if existent)
 !  and whatever is calculated here. Check also for testsound timestep.
 !
-      if (lfirst.and.ldt) then
+      if (lupdate_courant_dt) then
         advec_cs2=max(advec_cs2,cs2test*dxyz_2)
         maxadvec=maxadvec+advec_uu
         diffus_nu=nutest*dxyz_2

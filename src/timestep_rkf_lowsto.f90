@@ -120,7 +120,8 @@ module Timestep
 !
       if (eps_rkf0/=0.) eps_rkf=eps_rkf0
 !
-      ldt = .false.!(dt==0.)
+      ldt = (dt==0.)
+      lcourant_dt=.false.
 !
     endsubroutine initialize_timestep
 !***********************************************************************
