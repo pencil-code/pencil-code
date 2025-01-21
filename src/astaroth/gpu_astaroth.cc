@@ -724,6 +724,16 @@ AcReal max_diffus(AcReal );
 bool
 has_nans(AcMesh mesh_in);
 
+AcReal
+sign(const AcReal a, const AcReal b)
+{
+	if(b < 0.0)
+		return -abs(a);
+	else
+		return abs(a);
+}
+
+
 /***********************************************************************************************/
 extern "C" void substepGPU(int isubstep)
 //
@@ -762,10 +772,40 @@ extern "C" void substepGPU(int isubstep)
   acGridExecuteTaskGraph(rhs, 1);
   auto end = MPI_Wtime();
   //fprintf(stderr,"RHS TOOK: %14e\n",end-start);
-  if (isubstep == 1 && ldt)
+  if (ldt &&
+	((isubstep == 5 && !lcourant_dt) 
+	|| (isubstep == 1 && lcourant_dt)
+     ))
   {
       acGridSynchronizeStream(STREAM_ALL);
       acGridFinalizeReduceLocal(rhs);
+    
+    AcReal dt1_{};
+    if(!lcourant_dt)
+    {
+      const AcReal maximum_error = acDeviceGetOutput(acGridGetDevice(), AC_maximum_error);
+      AcReal dt_{};
+      const AcReal dt_increase=-1./(itorder+dtinc);
+      const AcReal dt_decrease=-1./(itorder-dtdec);
+      const AcReal safety=0.95;
+      if(maximum_error > 1)
+      {
+      	// Step above error threshold so decrease the next time step
+      	const AcReal dt_temp = safety*dt*pow(maximum_error,dt_decrease);
+      	// Don't decrease the time step by more than a factor of ten
+      	dt_ = sign(max(abs(dt_temp), 0.1*abs(dt)), dt);
+      } 
+      else
+      {
+      	dt_ = dt*pow(maximum_error,dt_increase);
+      }
+      fprintf(stderr,"DT_: %14e\n",dt_);
+      fprintf(stderr,"MAX ERROR: %14e\n",maximum_error);
+      dt1_ = 1.0/dt_;
+    }
+    //fprintf(stderr, "HMM MAX ADVEC, DIFFUS: %14e, %14e\n",maxadvec,max_diffus());
+    else 
+    {
       AcReal maxadvec = 0.;
 #if LHYDRO
       maxadvec = acDeviceGetOutput(acGridGetDevice(), AC_maxadvec)/cdt;
@@ -776,13 +816,11 @@ extern "C" void substepGPU(int isubstep)
       maxchi_dyn = acDeviceGetOutput(acGridGetDevice(), AC_maxchi);
 #endif
       //fprintf(stderr, "HMM MAX ADVEC, DIFFUS: %14e, %14e\n",maxadvec,max_diffus());
-      if(lcourant_dt)
-      {
-      AcReal dt1_ = sqrt(pow(maxadvec, 2) + pow(max_diffus(maxchi_dyn), 2));
-      set_dt(dt1_);
-      }
-      acDeviceSetInput(acGridGetDevice(),AC_dt,dt);
+      dt1_ = sqrt(pow(maxadvec, 2) + pow(max_diffus(maxchi_dyn), 2));
+      //acDeviceSetInput(acGridGetDevice(),AC_dt,dt);
       //if (rank==0) printf("rank, maxadvec, maxdiffus, dt1_= %d %e %e %e \n", rank, maxadvec,max_diffus(maxchi_dyn), dt1_);
+    }
+    set_dt(dt1_);
   }
   //acGridSynchronizeStream(STREAM_ALL);
   //acGridSynchronizeStream(STREAM_ALL);
