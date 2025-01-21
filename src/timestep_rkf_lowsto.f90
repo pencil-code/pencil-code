@@ -25,7 +25,6 @@ module Timestep
   real            :: dt_increase, dt_decrease, errmax, errmaxs
   real            :: safety=0.95
   integer         :: itter
-  logical         :: fixed_dt=.false.
 !
   contains
 !***********************************************************************
@@ -105,22 +104,29 @@ module Timestep
 !
       !overwrite the persistent time_step from dt0 in run.in if dt
       !too high to initialize run
-      if (dt0>0.) then
-        dt=dt0
-      elseif (dt0<0.) then
-        fixed_dt=.true.
-        dt=-dt0
-      else
-        if (dt==0) then
-          call warning('initialize_timestep','dt=0 not appropriate for Runge-Kutta-Fehlberg'// &
-                     'set to dt_epsi='//trim(rtoa(dt_epsi)))
-          dt=dt_epsi
-        endif
-      endif
+      !if (dt0>0.) then
+      !  dt=dt0
+      !elseif (dt0<0.) then
+      !  ldt=.false.
+      !  dt=-dt0
+      !else
+      !  if (dt==0) then
+      !    call warning('initialize_timestep','dt=0 not appropriate for Runge-Kutta-Fehlberg'// &
+      !               'set to dt_epsi='//trim(rtoa(dt_epsi)))
+      !    dt=dt_epsi
+      !  endif
+      !endif
 !
       if (eps_rkf0/=0.) eps_rkf=eps_rkf0
 !
-      ldt = (dt==0.)
+      if (dt0 < 0.) dt = 0
+      if (lgpu.and.dt0>0.) then
+        ldt = .true.
+        dt=dt0
+        dt0=0.
+      else
+        ldt = (dt==0.)
+      endif
       lcourant_dt=.false.
 !
     endsubroutine initialize_timestep
@@ -152,12 +158,12 @@ module Timestep
 !
 !  Determine a lower bound for each variable j by which to normalise the error
 !
-      do j=1,mvar
-        farraymin(j) = max(dt_ratio*maxval(abs(f(l1:l2,m1:m2,n1:n2,j))),dt_epsi)
-      enddo
-      if (lroot.and.it==1) print*,"farraymin",farraymin
-      ftmp(:,:,:,:,1) = f
-      ftmp(:,:,:,:,2) = f
+        do j=1,mvar
+          farraymin(j) = max(dt_ratio*maxval(abs(f(l1:l2,m1:m2,n1:n2,j))),dt_epsi)
+        enddo
+        if (lroot.and.it==1) print*,"farraymin",farraymin
+        ftmp(:,:,:,:,1) = f
+        ftmp(:,:,:,:,2) = f
       dt_beta_ts=dt*beta_ts
       dt_beta_hat=dt*(beta_ts-beta_hat)
       dt_alpha_ts=dt*alpha_ts
@@ -176,40 +182,49 @@ module Timestep
 !
         headtt = headt .and. lfirst .and. lroot
 !
-        if (lfirst) then
-          ftmp(:,:,:,1:mvar,iR2)=0.
-          !f=ftmp(:,:,:,:,iR1)
+          if (lfirst) then
+            ftmp(:,:,:,1:mvar,iR2)=0.
+            !f=ftmp(:,:,:,:,iR1)
+          else
+            ftmp(:,:,:,1:mvar,iR2)=0.
+            if (it_rmv>0) lrmv=.false.
+          endif
+        if(.not. lgpu) then
+!
+!    Set up particle derivative array.
+!  
+          if (lparticles) call particles_timestep_first(ftmp(:,:,:,:,iR1))
+!  
+!    Set up point masses derivative array
+!  
+          if (lpointmasses) call pointmasses_timestep_first(ftmp(:,:,:,:,iR1))
+!  
+!    Set up ODE derivatives array
+!  
+          if (lode) call ode_timestep_first
+!  
+!    Set up solid_cells time advance
+!  
+          if (lsolid_cells) call solid_cells_timestep_first(ftmp(:,:,:,:,iR1))
+!  
+!    Change df according to the chosen physics modules.
+!
+        endif
+        if(lgpu) then
+          call pde(f,df,p)
         else
-          ftmp(:,:,:,1:mvar,iR2)=0.
-          if (it_rmv>0) lrmv=.false.
+          call pde(ftmp(:,:,:,:,iR1),ftmp(:,:,:,1:mvar,iR2),p)
         endif
 !
-!  Set up particle derivative array.
-!
-        if (lparticles) call particles_timestep_first(ftmp(:,:,:,:,iR1))
-!
-!  Set up point masses derivative array
-!
-        if (lpointmasses) call pointmasses_timestep_first(ftmp(:,:,:,:,iR1))
-!
-!  Set up ODE derivatives array
-!
-        if (lode) call ode_timestep_first
-!
-!  Set up solid_cells time advance
-!
-        if (lsolid_cells) call solid_cells_timestep_first(ftmp(:,:,:,:,iR1))
-!
-!  Change df according to the chosen physics modules.
-!
-        call pde(ftmp(:,:,:,:,iR1),ftmp(:,:,:,1:mvar,iR2),p)
-!
-        if (lode) call ode
+        if(.not. lgpu) then
+          if (lode) call ode
+        endif
 !
         dtsub = dt_beta_ts(itsub)
 !
 !  Apply border quenching.
 !
+        if(.not. lgpu) then
         if (lborder_profiles) call border_quenching(ftmp(:,:,:,:,iR1),df,dtsub)
 !
 !  Time evolution of point masses.
@@ -242,7 +257,6 @@ module Timestep
 !
 !  Time evolution of grid variables.
 !
-        if (.not. lgpu) then
           if (itorder>2) then
             errdf = errdf + dt_beta_hat(itsub)*ftmp(l1:l2,m1:m2,n1:n2,1:mvar,iR2)
           endif
@@ -292,7 +306,7 @@ module Timestep
         errmaxs=errmaxs/eps_rkf
 !
         call mpiallreduce_max(errmaxs,errmax,MPI_COMM_WORLD)
-        if (.not. fixed_dt) then
+        if (ldt) then
           if (errmax > 1) then
             ! Step above error threshold so decrease the next time step
             dt_temp = safety*dt*errmax**dt_decrease
