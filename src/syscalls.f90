@@ -33,6 +33,7 @@ module Syscalls
     module procedure copy_addr_int
     module procedure copy_addr_log
     module procedure copy_addr_real
+    module procedure copy_addr_int_1D
     module procedure copy_addr_real_1D
     module procedure copy_addr_real_2D
   endinterface
@@ -364,6 +365,15 @@ module Syscalls
     call copy_addr_c(var,caddr)
 
     endsubroutine copy_addr_real_1D
+!***********************************************************************
+    subroutine copy_addr_int_1D(var, caddr)
+
+    integer, dimension(:), intent(IN) :: var
+    integer(KIND=ikind8), intent(OUT) :: caddr
+
+    call copy_addr_c(var,caddr)
+
+    endsubroutine copy_addr_int_1D
 !***********************************************************************
     subroutine copy_addr_real_2D(var, caddr)
 
