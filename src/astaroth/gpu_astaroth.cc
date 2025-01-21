@@ -973,12 +973,19 @@ extern "C" void registerGPU(AcReal *farray)
   mesh.info = acInitInfo();
 
   size_t offset = 0;
-  for (int i = 0; i < NUM_VTXBUF_HANDLES; ++i)
+  //TP: at the moment hardcoded for interstellar TODO: figure out a proper solution
+  const int NUM_PC_FIELDS = 9;
+  for (int i = 0; i < min(NUM_PC_FIELDS,NUM_VTXBUF_HANDLES); ++i)
   {
     mesh.vertex_buffer[VertexBufferHandle(i)] = &farray[offset];
 //{printf("&farray[offset]= %p \n",&farray[offset]);fflush(stdout);}
     //test.mesh.vertex_buffer[VertexBufferHandle(i)] = (AcReal *)malloc(sizeof(AcReal) * mw);
     offset += mw;
+  }
+  for(int i = NUM_PC_FIELDS; i < NUM_VTXBUF_HANDLES; ++i)
+  {
+	  mesh.vertex_buffer[VertexBufferHandle(i)] = (AcReal*)calloc(mw,sizeof(AcReal));
+	  offset += mw;
   }
 }
 /***********************************************************************************************/
