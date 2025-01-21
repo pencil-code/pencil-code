@@ -1,6 +1,6 @@
 #include "../prerequisites.h"
 
-Field ERROR[MVAR] // Errors
+Field ERROR[mvar] // Errors
 
 Kernel twopass_solve_intermediate(int step_num, real dt) {
   update_uu , error_uu  = rk4_intermediate(UU,     duu_dt(step_num), step_num, dt)
@@ -37,10 +37,43 @@ Kernel twopass_solve_intermediate(int step_num, real dt) {
 
 }
 
+
+output real AC_maximum_error
 fixed_boundary Kernel twopass_solve_final(int step_num, real dt){
-  write( UU, rk3_final(previous(UU), value(UU), step_num, real dt) )
-  write( RHO, rk3_final(previous(RHO), value(RHO), step_num, real dt) )
-  write( AA, rk3_final(previous(AA), value(AA), step_num, real dt) )
-  write( SS, rk3_final(previous(SS), value(SS), step_num, real dt) )
+
+
+  update_uu = rk4_final(UU,  step_num, dt)
+  update_rho= rk4_final(RHO, step_num, dt)
+  update_aa = rk4_final(AA,  step_num, dt)
+  update_ss = rk4_final(SS,  step_num, dt)
+
+  if(step_num==4)
+  {
+    maximum_error=0.0
+    scal = max(abs(update_uu.x),AC_dt_epsi)
+    maximum_error = max(abs(ERROR[UUX]/scal),maximum_error)
+    scal = max(abs(update_uu.y),AC_dt_epsi)
+    maximum_error = max(abs(ERROR[UUY]/scal),maximum_error)
+    scal = max(abs(update_uu.z),AC_dt_epsi)
+    maximum_error = max(abs(ERROR[UUZ]/scal),maximum_error)
+    scal = max(abs(update_aa.x),AC_dt_epsi)
+    maximum_error = max(abs(ERROR[AAX]/scal),maximum_error)
+    scal = max(abs(update_aa.y),AC_dt_epsi)
+    maximum_error = max(abs(ERROR[AAY]/scal),maximum_error)
+    scal = max(abs(update_aa.z),AC_dt_epsi)
+    maximum_error = max(abs(ERROR[AAZ]/scal),maximum_error)
+    scal = max(abs(update_rho),AC_dt_epsi)
+    maximum_error = max(abs(ERROR[RHO]/scal),maximum_error)
+    scal = max(abs(update_ss),AC_dt_epsi)
+    maximum_error = max(abs(ERROR[SS] /scal),maximum_error)
+
+    reduce_max(step_num==4, maximum_error, AC_maximum_error)
+  }
+
+  write( UU,  update_uu  )
+  write( RHO, update_rho )
+  write( AA,  update_aa  )
+  write( SS,  update_ss  )
 }
+
 #include "steps_two.h"
