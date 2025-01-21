@@ -960,6 +960,7 @@ extern "C" void testBcKernel(AcReal *farray_in, AcReal *farray_truth)
 }
 **/
 /***********************************************************************************************/
+AcReal* PC_FARRAY;
 extern "C" void registerGPU(AcReal *farray)
 {
   // AcReal* profile_x_host = (AcReal*)malloc(sizeof(AcReal)*mx);
@@ -972,21 +973,8 @@ extern "C" void registerGPU(AcReal *farray)
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   mesh.info = acInitInfo();
 
-  size_t offset = 0;
-  //TP: at the moment hardcoded for interstellar TODO: figure out a proper solution
-  const int NUM_PC_FIELDS = 9;
-  for (int i = 0; i < min(NUM_PC_FIELDS,NUM_VTXBUF_HANDLES); ++i)
-  {
-    mesh.vertex_buffer[VertexBufferHandle(i)] = &farray[offset];
-//{printf("&farray[offset]= %p \n",&farray[offset]);fflush(stdout);}
-    //test.mesh.vertex_buffer[VertexBufferHandle(i)] = (AcReal *)malloc(sizeof(AcReal) * mw);
-    offset += mw;
-  }
-  for(int i = NUM_PC_FIELDS; i < NUM_VTXBUF_HANDLES; ++i)
-  {
-	  mesh.vertex_buffer[VertexBufferHandle(i)] = (AcReal*)calloc(mw,sizeof(AcReal));
-	  offset += mw;
-  }
+  //TP: this is a ugly way to do this but works for now
+  PC_FARRAY = farray;
 }
 /***********************************************************************************************/
 extern "C" void initGPU()
@@ -1114,6 +1102,25 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out, int c
 
   comm_pencil = MPI_Comm_f2c(comm_fint);
   setupConfig(mesh.info);
+
+  //TP: done after setupConfig since we need maux_vtxbuf_index
+  //TP: this is a ugly way to do this but works for now
+  {
+    size_t offset = 0;
+    for (int i = 0; i < mvar; ++i)
+    {
+      mesh.vertex_buffer[VertexBufferHandle(i)] = &PC_FARRAY[offset];
+      offset += mw;
+    }
+
+    for(int i = 0; i < mfarray; ++i)
+    {
+      if(maux_vtxbuf_index[i])
+      {
+              mesh.vertex_buffer[maux_vtxbuf_index[i]] = &PC_FARRAY[mw*i];
+      }
+    }
+  }
 #if AC_RUNTIME_COMPILATION
 #include "cmake_options.h"
   acCompile(cmake_options,mesh.info);
