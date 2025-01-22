@@ -8243,6 +8243,7 @@ module Energy
     
     call copy_addr(lchit_total,p_par(27))   ! int
     call copy_addr(chi_t,p_par(28))
+    call copy_addr(lupw_ss,p_par(29))       ! bool
 
     endsubroutine pushpars2c
 !***********************************************************************

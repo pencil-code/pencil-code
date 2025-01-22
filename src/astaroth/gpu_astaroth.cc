@@ -1166,7 +1166,13 @@ extern "C" void copyFarray(AcReal* f)
 
   acGridSynchronizeStream(STREAM_ALL);
   //acDeviceStoreMesh(acGridGetDevice(), STREAM_DEFAULT, &mesh_to_copy);
-  acDeviceStoreMesh(acGridGetDevice(), STREAM_DEFAULT, &mesh);
+  //acDeviceStoreMesh(acGridGetDevice(), STREAM_DEFAULT, &mesh);
+  //TP: for now only copy the advanced fields back
+  //TODO: should auxiliaries needed on the GPU like e.g. Shock be copied? They can always be recomputed on the host if needed
+  for(int i = 0; i < mvar; ++i)
+  {
+	  acDeviceStoreVertexBuffer(acGridGetDevice(),STREAM_DEFAULT,VertexBufferHandle(i),&mesh);
+  }
   acGridSynchronizeStream(STREAM_ALL);
 }
 /***********************************************************************************************/

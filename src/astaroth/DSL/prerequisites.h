@@ -57,6 +57,7 @@
   output real AC_maxchi
   #define LENERGY 1       // a hack for the moment
 #endif
+output real AC_maximum_error
 
 #ifdef LDENSITY
   #define LNRHO RHO
