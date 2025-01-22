@@ -125,7 +125,7 @@ module Timestep
       else
         ldt = (dt==0.)
       endif
-      lcourant_dt=.false.
+      !lcourant_dt=.false.
 !
     endsubroutine initialize_timestep
 !***********************************************************************
@@ -271,14 +271,14 @@ module Timestep
 !
 !  Check how much the maximum error satisfies the defined accuracy threshold
 !
-      if (itorder>2) then
+      if (itorder>2.and.ldt) then
         do j=1,mvar
           do m=m1,m2; do n=n1,n2
             select case (timestep_scaling(j))
               case ('cons_frac_err')
                 !requires initial f state to be stored
                 !depricated
-                if (lroot) call warning("time_step","recommend 'rel_err' vs 'cons_frac_error'")
+                if (lroot.and.lfirst.and.it==1) call warning("time_step","recommend 'rel_err' vs 'cons_frac_error'")
                 scal = max(abs(f(l1:l2,m,n,j))+abs(df(l1:l2,m,n,j)),farraymin(j))
                 errmaxs = max(maxval(abs(errdf(:,m-nghost,n-nghost,j))/scal),errmaxs)
               case ('rel_err')
@@ -287,7 +287,7 @@ module Timestep
                 errmaxs = max(maxval(abs(errdf(:,m-nghost,n-nghost,j))/scal),errmaxs)
               case ('abs_err')
                 !initial f state can be overwritten
-                if (lroot) call warning("time_step","recommend 'rel_err' vs 'abs_err'")
+                if (lroot.and.lfirst.and.it==1) call warning("time_step","recommend 'rel_err' vs 'abs_err'")
                 errmaxs = max(maxval(abs(errdf(:,m-nghost,n-nghost,j))),errmaxs)
               case ('none')
                 ! No error check
