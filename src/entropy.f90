@@ -8207,7 +8207,7 @@ module Energy
 
     use Syscalls, only: copy_addr
 
-    integer, parameter :: n_pars=28
+    integer, parameter :: n_pars=100
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call copy_addr(chi,p_par(1))
