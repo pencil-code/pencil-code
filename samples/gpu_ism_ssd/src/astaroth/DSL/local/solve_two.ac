@@ -45,6 +45,7 @@ fixed_boundary Kernel twopass_solve_final(int step_num, real dt){
   update_rho= rk4_final(RHO, step_num, dt)
   update_aa = rk4_final(AA,  step_num, dt)
   update_ss = rk4_final(SS,  step_num, dt)
+
   maximum_error=0.0
   if(step_num==4)
   {
