@@ -338,10 +338,12 @@ module Snapshot
         if (.not. loptest(noghost).or.ncoarse>1) call update_ghosts(a)
         call safe_character_assign(file,trim(chsnap))
         if (lroot) call touch_file(trim(workdir)//'/WRITING')
+        call timing(message='start writing '//trim(file),instruct='initialize',lforce=ltiming_io)
         call output_snap(a,nv2=msnap,file=file)
         if (lpersist) call output_persistent(file)
         call output_snap_finalize
         call mpibarrier
+        call timing(message='end writing '//trim(file),instruct='finalize',lforce=ltiming_io)
         if (lroot) call delete_file(trim(workdir)//'/WRITING')
         if (present(flist)) call log_filename_to_file(file,flist)
       endif
@@ -353,9 +355,13 @@ module Snapshot
 !***********************************************************************
     subroutine read_predef_snaptimes(file,snaptimes)
 
+      use General, only: keep_compiler_quiet
+
       character(LEN=fnlen) :: file
       real, dimension(:), intent(OUT) :: snaptimes   ! allocatable
       
+      call keep_compiler_quiet(snaptimes)
+
     endsubroutine read_predef_snaptimes
 !***********************************************************************
     subroutine rsnap(chsnap,f,msnap,lread_nogrid)
