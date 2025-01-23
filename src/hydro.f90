@@ -4183,8 +4183,8 @@ module Hydro
           call integrate_mn_name(rmask*p%o2,idiag_o2sphm)
         endif
         call sum_mn_name(p%divu,idiag_divum)
-        if (idiag_rdivum/=0)  call sum_mn_name(p%rho*p%divu,idiag_rdivum)
-        if (idiag_divu2m/=0)  call sum_mn_name(p%divu**2,idiag_divu2m)
+        if (idiag_rdivum/=0) call sum_mn_name(p%rho*p%divu,idiag_rdivum)
+        if (idiag_divu2m/=0) call sum_mn_name(p%divu**2,idiag_divu2m)
         if (idiag_gdivu2m/=0) then
           call dot2(p%graddivu,graddivu2)
           call sum_mn_name(graddivu2,idiag_gdivu2m)
@@ -4231,21 +4231,21 @@ module Hydro
         if (idiag_rux2m/=0) call sum_mn_name(p%rho*p%uu(:,1)**2,idiag_rux2m)
         if (idiag_ruy2m/=0) call sum_mn_name(p%rho*p%uu(:,2)**2,idiag_ruy2m)
         if (idiag_ruz2m/=0) call sum_mn_name(p%rho*p%uu(:,3)**2,idiag_ruz2m)
-        if (idiag_T00m/=0)  call sum_mn_name(f(l1:l2,m,n,irho),idiag_T00m)
+        call sum_mn_name(f(l1:l2,m,n,irho),idiag_T00m)
         if (idiag_T0x2m/=0) call sum_mn_name(f(l1:l2,m,n,iux)**2,idiag_T0x2m)
         if (idiag_T0y2m/=0) call sum_mn_name(f(l1:l2,m,n,iuy)**2,idiag_T0y2m)
         if (idiag_T0z2m/=0) call sum_mn_name(f(l1:l2,m,n,iuy)**2,idiag_T0z2m)
-        if (idiag_Txxm/=0)  call sum_mn_name(f(l1:l2,m,n,iTij+0),idiag_Txxm)
-        if (idiag_Tyym/=0)  call sum_mn_name(f(l1:l2,m,n,iTij+1),idiag_Tyym)
-        if (idiag_Tzzm/=0)  call sum_mn_name(f(l1:l2,m,n,iTij+2),idiag_Tzzm)
-        if (idiag_Txym/=0)  call sum_mn_name(f(l1:l2,m,n,iTij+3),idiag_Txym)
-        if (idiag_Tyzm/=0)  call sum_mn_name(f(l1:l2,m,n,iTij+4),idiag_Tyzm)
-        if (idiag_Tzxm/=0)  call sum_mn_name(f(l1:l2,m,n,iTij+5),idiag_Tzxm)
+        call sum_mn_name(f(l1:l2,m,n,iTij+0),idiag_Txxm)
+        call sum_mn_name(f(l1:l2,m,n,iTij+1),idiag_Tyym)
+        call sum_mn_name(f(l1:l2,m,n,iTij+2),idiag_Tzzm)
+        call sum_mn_name(f(l1:l2,m,n,iTij+3),idiag_Txym)
+        call sum_mn_name(f(l1:l2,m,n,iTij+4),idiag_Tyzm)
+        call sum_mn_name(f(l1:l2,m,n,iTij+5),idiag_Tzxm)
         call sum_mn_name(p%ekin,idiag_ekin)
         call sum_mn_name(p%ekin,idiag_EEK)
-        call sum_mn_name(p%ekin**2,idiag_EEK2)
-        call sum_mn_name(p%ekin**3,idiag_EEK3)
-        call sum_mn_name(p%ekin**4,idiag_EEK4)
+        if (idiag_EEK2/=0) call sum_mn_name(p%ekin**2,idiag_EEK2)
+        if (idiag_EEK3/=0) call sum_mn_name(p%ekin**3,idiag_EEK3)
+        if (idiag_EEK4/=0) call sum_mn_name(p%ekin**4,idiag_EEK4)
         call integrate_mn_name(p%ekin,idiag_ekintot)
 !
 !  should be coordinate dependent
@@ -4267,9 +4267,9 @@ module Hydro
 !  Velocity components at one point (=pt).
 !
         if (lroot.and.m==mpoint.and.n==npoint) then
-          if (idiag_uxpt/=0) call save_name(p%uu(lpoint-nghost,1),idiag_uxpt)
-          if (idiag_uypt/=0) call save_name(p%uu(lpoint-nghost,2),idiag_uypt)
-          if (idiag_uzpt/=0) call save_name(p%uu(lpoint-nghost,3),idiag_uzpt)
+          call save_name(p%uu(lpoint-nghost,1),idiag_uxpt)
+          call save_name(p%uu(lpoint-nghost,2),idiag_uypt)
+          call save_name(p%uu(lpoint-nghost,3),idiag_uzpt)
           if (idiag_uxuypt/=0) call save_name(p%uu(lpoint-nghost,1)*p%uu(lpoint-nghost,2),idiag_uxuypt)
           if (idiag_uyuzpt/=0) call save_name(p%uu(lpoint-nghost,2)*p%uu(lpoint-nghost,3),idiag_uyuzpt)
           if (idiag_uzuxpt/=0) call save_name(p%uu(lpoint-nghost,3)*p%uu(lpoint-nghost,1),idiag_uzuxpt)
@@ -4278,9 +4278,9 @@ module Hydro
 !  Velocity components at point 2 (=p2).
 !
         if (lroot.and.m==mpoint2.and.n==npoint2) then
-          if (idiag_uxp2/=0) call save_name(p%uu(lpoint2-nghost,1),idiag_uxp2)
-          if (idiag_uyp2/=0) call save_name(p%uu(lpoint2-nghost,2),idiag_uyp2)
-          if (idiag_uzp2/=0) call save_name(p%uu(lpoint2-nghost,3),idiag_uzp2)
+          call save_name(p%uu(lpoint2-nghost,1),idiag_uxp2)
+          call save_name(p%uu(lpoint2-nghost,2),idiag_uyp2)
+          call save_name(p%uu(lpoint2-nghost,3),idiag_uzp2)
         endif
 !
 !  Mean momenta.
