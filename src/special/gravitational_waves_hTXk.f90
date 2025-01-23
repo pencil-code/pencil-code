@@ -424,6 +424,8 @@ module Special
         case ('16pi_corr'); stress_prefactor=16.*pi; EGWpref=1./(16.*pi)
         case ('16piG/c^2'); stress_prefactor=16.*pi*G_Newton_cgs/c_light_cgs**2;
           EGWpref=c_light_cgs**2/(32.*pi*G_Newton_cgs)
+        case ('16piG_corr/c^2'); stress_prefactor=16.*pi*G_Newton_cgs/c_light_cgs**2;
+          EGWpref=c_light_cgs**2/(16.*pi*G_Newton_cgs)
         case default
           call fatal_error("initialize_special: No such value for ctrace_factor:" &
               ,trim(ctrace_factor))
