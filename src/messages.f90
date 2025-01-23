@@ -501,18 +501,20 @@ module Messages
 !
     endsubroutine svn_id
 !***********************************************************************
-    subroutine timing(location,message,instruct,mnloop)
+    subroutine timing(location,message,instruct,mnloop,lforce)
 !
 !  Timer: write the current systems time to standart output
 !  provided it=it_timing.
 !
+      use General, only: loptest
+
       integer :: lun=9
       character(len=*), optional :: location
       character(len=*) :: message
       real(KIND=rkind8) :: time
       real(KIND=rkind8), save :: time_initial
       character(len=*), optional :: instruct
-      logical, optional :: mnloop
+      logical, optional :: mnloop, lforce
       integer :: mul_fac
       logical, save :: opened = .false.
 !
@@ -522,7 +524,7 @@ module Messages
 !
 !  work on the timing only when it == it_timing
 !
-      if (it /= it_timing) return
+      if (.not.loptest(lforce) .and. it /= it_timing) return
 !
       if (lroot) then
 !
@@ -558,6 +560,7 @@ module Messages
 !
         if (present(instruct)) then
           if (opened .and. (trim(instruct) == 'finalize')) then
+            if (.not.lfirst) write(lun,*) time, merge('',trim(scaller)//": "//trim(message)//'.',message=='')
             close(lun)
             opened = .false.
           endif
