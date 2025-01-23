@@ -1176,6 +1176,7 @@ module Density
           call coswave(ampllnrho(j),f,ilnrho,ky=ky_lnrho(j))
         case ('coswave-z')
           call coswave(ampllnrho(j),f,ilnrho,kz=kz_lnrho(j))
+        case ('hatwave-x'); call hatwave(ampllnrho(j),f,ilnrho,widthlnrho(j),kx=kx_lnrho(j))
         case ('triquad')
           call triquad(ampllnrho(j),f,ilnrho,kx_lnrho(j), &
               ky_lnrho(j),kz_lnrho(j), kxx_lnrho(j), kyy_lnrho(j),kzz_lnrho(j))
