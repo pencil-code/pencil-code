@@ -123,6 +123,7 @@ module Density
   logical :: ldensity_profile_masscons=.false.
   logical :: lffree=.false.
   logical :: lSchur_3D3D1D=.false.
+  logical :: lscale_tobox_lnrho=.false.
   logical, target :: lreduced_sound_speed=.false.
   logical, target :: lscale_to_cs2top=.false.
   logical :: lconserve_total_mass=.false.
@@ -164,7 +165,7 @@ module Density
       lscale_to_cs2top, density_zaver_range, &
       ieos_profile, width_eos_prof, kpeak_lnrho, initpower_lnrho, cutoff_lnrho, &
       lconserve_total_mass, total_mass, ireference_state, lrho_flucz_as_aux,&
-      ldensity_linearstart, xjump_mid, yjump_mid, zjump_mid
+      ldensity_linearstart, xjump_mid, yjump_mid, zjump_mid, lscale_tobox_lnrho
 !
   namelist /density_run_pars/ &
       cdiffrho, diffrho, diffrho_hyper3, diffrho_hyper3_mesh, diffrho_shock, &
@@ -1042,6 +1043,14 @@ module Density
       if (lread_oldsnap .and. ldensity_nolog .and. .not. all(initlnrho == 'nothing')) &
         call fatal_error('init_lnrho', 'cannot add initial conditions to the old snapshot')
         !MR: Why? should just be possible for linear density.
+!
+!  Possibility to scale wavenumbers to the box wavenumber
+!
+      if (lscale_tobox_lnrho) then
+        kx_lnrho=2*pi/Lxyz(1)
+        ky_lnrho=2*pi/Lxyz(2)
+        kz_lnrho=2*pi/Lxyz(3)
+      endif
 !
 !  Define bottom and top height.
 !
