@@ -62,7 +62,7 @@ module Gravity
   real :: g_E, g_F, Rgal=impossible, Rsol=impossible
   real :: cs0hs=0.0, H0hs=0.0
   real :: potx_const=0.0, poty_const=0.0, potz_const=0.0
-  real :: accretor_grav=0., accretor_speed=0., accretor_rsoft=0.
+  real :: accretor_grav=0., accretor_speed=0., accretor_rsoft=0., kaccretor
   integer :: n_pot=10
   integer :: n_adjust_sphersym=0
   character (len=labellen) :: gravx_profile='zero', gravy_profile='zero', &
@@ -75,6 +75,7 @@ module Gravity
   logical :: lcalc_zinfty=.false.
   logical :: lboussinesq_grav=.false.
   logical :: ladjust_sphersym=.false.
+  logical :: laccretor_peri=.false.
 
   real :: g0=0.0
   real :: lnrho_bot=0.0, lnrho_top=0.0, ss_bot=0.0, ss_top=0.0
@@ -91,7 +92,7 @@ module Gravity
       lboussinesq_grav, n_pot, cs0hs, H0hs, grav_tilt, grav_amp, &
       potx_const,poty_const,potz_const, zclip, n_adjust_sphersym, gravitational_const, &
       mass_cent_body, g_A_factor, g_C_factor, g_B_factor, g_D_factor, Rsol, Rgal, &
-      grav_type, accretor_grav, accretor_speed, accretor_rsoft
+      grav_type, accretor_grav, accretor_speed, accretor_rsoft, laccretor_peri
 !
   namelist /grav_run_pars/ &
       gravx_profile, gravy_profile, gravz_profile, gravx, gravy, gravz, &
@@ -103,7 +104,7 @@ module Gravity
       lboussinesq_grav, n_pot, grav_tilt, grav_amp, &
       potx_const,poty_const,potz_const, zclip, n_adjust_sphersym, gravitational_const, &
       mass_cent_body, g_A_factor, g_C_factor, g_B_factor, g_D_factor, Rsol, Rgal, &
-      grav_type, accretor_grav, accretor_speed, accretor_rsoft
+      grav_type, accretor_grav, accretor_speed, accretor_rsoft, laccretor_peri
 !
 !  Diagnostic variables for print.in
 ! (needs to be consistent with reset list below)
@@ -614,6 +615,13 @@ module Gravity
 !
       endselect
 !
+!  Compute parameter for periodic accretor potential.
+!
+      if (laccretor_peri) then
+        kaccretor=pi/Lxyz(1)
+        if (lroot) print*,'kaccretor=',kaccretor
+      endif
+!
 !  Sanity check.
 !
       if (notanumber(gravx_xpencil)) &
@@ -943,7 +951,11 @@ module Gravity
 !
       case ('accretor')
         if (lpencil(i_gg)) then
-          xaccretor=x(l1:l2)-accretor_speed*t
+          if (laccretor_peri) then
+            xaccretor=atan(tan(kaccretor*(x(l1:l2)-accretor_speed*t)))/kaccretor
+          else
+            xaccretor=x(l1:l2)-accretor_speed*t
+          endif
           one_over_r=1./sqrt(xaccretor**2+y(m)**2+z(n)**2+accretor_rsoft**2)
           fact=-accretor_grav*one_over_r**3
           p%gg(:,1) = fact*xaccretor
