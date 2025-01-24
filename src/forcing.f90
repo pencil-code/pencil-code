@@ -4151,8 +4151,7 @@ module Forcing
 !   7-sep-02/axel: coded
 !
       use DensityMethods, only: getrho
-      use Mpicomm
-      use Sub
+      use Mpicomm, only: mpiallreduce_sum
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3) :: uu
@@ -4161,7 +4160,7 @@ module Forcing
       complex, dimension (my) :: fy
       complex, dimension (mz) :: fz
       complex, dimension (3) :: coef
-      real :: rho_uu_ff,force_ampl,fsum_tmp,fsum
+      real :: rho_uu_ff,force_ampl,fsum
       integer :: j,m,n
 !
       rho_uu_ff=0.
@@ -4177,23 +4176,18 @@ module Forcing
         enddo
       enddo
 !
-!  on different processors, this result needs to be communicated
-!  to other processors
+!  final sum on all processors
 !
-      fsum_tmp=rho_uu_ff
-      call mpireduce_sum(fsum_tmp,fsum)
-      if (lroot) rho_uu_ff=fsum/nwgrid
-!      if (lroot) rho_uu_ff=rho_uu_ff/nwgrid
-      call mpibcast_real(rho_uu_ff)
+      call mpiallreduce_sum(rho_uu_ff/nwgrid,fsum)
 !
 !  scale forcing function
 !  but do this only when rho_uu_ff>0.; never allow it to change sign
 !
-        if (headt) print*,'calc_force_ampl: divide forcing function by rho_uu_ff=',rho_uu_ff
-        !      force_ampl=work_ff/(.1+max(0.,rho_uu_ff))
-        force_ampl=work_ff/rho_uu_ff
-        if (force_ampl > max_force) force_ampl=max_force
-        if (force_ampl < -max_force) force_ampl=-max_force
+      if (headt) print*,'calc_force_ampl: divide forcing function by rho_uu_ff=',fsum
+      !      force_ampl=work_ff/(.1+max(0.,fsum))
+      force_ampl=work_ff/fsum
+      if (force_ampl > max_force) force_ampl=max_force
+      if (force_ampl < -max_force) force_ampl=-max_force
 !
     endfunction calc_force_ampl
 !***********************************************************************
