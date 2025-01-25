@@ -1103,6 +1103,7 @@ outer:  do ikz=1,nz
   real :: k2
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
+  real, dimension(nx,ny,nz,3) :: bEP, hEP
   complex, dimension(nx,ny,nz) :: phi
   real, dimension(nx) :: bbi, jji, b2, j2
   real, dimension(nx,3) :: bb, bbEP, hhEP, jj
@@ -1425,16 +1426,22 @@ outer:  do ikz=1,nz
             call cross(gtmp1,gtmp2,bbEP)
             im=m-nghost
             in=n-nghost
-            b_re(:,im,in)=bbEP(:,ivec)  !(this corresponds to magnetic field)
-            a_re(:,im,in)=.5*(f(l1:l2,m,n,iXX_chiral)*gtmp2(:,ivec) &
-                             -f(l1:l2,m,n,iYY_chiral)*gtmp1(:,ivec))
+!            bEP(:,im,in,:)=bbEP
+            !b_re(:,im,in)=bbEP(:,ivec)  !(this corresponds to magnetic field)
+            !a_re(:,im,in)=.5*(f(l1:l2,m,n,iXX_chiral)*gtmp2(:,ivec) &
+            !                 -f(l1:l2,m,n,iYY_chiral)*gtmp1(:,ivec))
           enddo
         enddo
         a_im=0.
         b_im=0.
+        if (ncpus==1) then
+          open(1,file=trim(datadir)//'/bEP.dat',form='unformatted',position='append')
+!          write(1) bEP,t
+          close(1)
+        endif
       endif
 !
-!  magnetic energy spectra based on fields with Euler potentials (Higgs case)
+!  magnetic helicity variance spectra based on fields with Euler potentials (Higgs case)
 !
     elseif (sp=='hEP') then
       if (iXX2_chiral/=0.and.iYY2_chiral/=0) then
@@ -1445,13 +1452,19 @@ outer:  do ikz=1,nz
             call cross(gtmp1,gtmp2,hhEP)
             im=m-nghost
             in=n-nghost
-            b_re(:,im,in)=hhEP(:,ivec)  !(this corresponds to magnetic field)
-            a_re(:,im,in)=.5*(f(l1:l2,m,n,iXX2_chiral)*gtmp2(:,ivec) &
-                             -f(l1:l2,m,n,iYY2_chiral)*gtmp1(:,ivec))
+            hEP(:,im,in,:)=hhEP
+            !b_re(:,im,in)=hhEP(:,ivec)  !(this corresponds to magnetic field)
+            !a_re(:,im,in)=.5*(f(l1:l2,m,n,iXX2_chiral)*gtmp2(:,ivec) &
+            !                 -f(l1:l2,m,n,iYY2_chiral)*gtmp1(:,ivec))
           enddo
         enddo
         a_im=0.
         b_im=0.
+        if (ncpus==1) then
+          open(1,file=trim(datadir)//'/hEP.dat',form='unformatted',position='append')
+          write(1) hEP,t
+          close(1)
+        endif
       endif
 !
 !  Spectra based on Tanmay's flux method

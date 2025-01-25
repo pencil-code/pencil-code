@@ -103,6 +103,7 @@ module Density
   integer, parameter :: ndiff_max=4
   integer :: iglobal_gg=0
   logical :: lrelativistic_eos=.false., ladvection_density=.true.
+  logical :: lrelativistic_eos_term1=.true., lrelativistic_eos_term2=.true.
   logical, pointer :: lconservative, lhiggsless
   logical :: lisothermal_fixed_Hrho=.false.
   logical :: lmass_source=.false., lmass_source_random=.false., lcontinuity_gas=.true.
@@ -165,7 +166,8 @@ module Density
       lscale_to_cs2top, density_zaver_range, &
       ieos_profile, width_eos_prof, kpeak_lnrho, initpower_lnrho, cutoff_lnrho, &
       lconserve_total_mass, total_mass, ireference_state, lrho_flucz_as_aux,&
-      ldensity_linearstart, xjump_mid, yjump_mid, zjump_mid, lscale_tobox_lnrho
+      ldensity_linearstart, xjump_mid, yjump_mid, zjump_mid, lscale_tobox_lnrho, &
+      lrelativistic_eos_term1, lrelativistic_eos_term2
 !
   namelist /density_run_pars/ &
       cdiffrho, diffrho, diffrho_hyper3, diffrho_hyper3_mesh, diffrho_shock, &
@@ -190,7 +192,8 @@ module Density
       lreinitialize_lnrho, lreinitialize_rho, initlnrho, rescale_rho, &
       lsubtract_init_stratification, ireference_state, &
       h_sld_dens, lrho_flucz_as_aux, nlf_sld_dens, div_sld_dens, &
-      lSchur_3D3D1D
+      lSchur_3D3D1D, &
+      lrelativistic_eos_term1, lrelativistic_eos_term2
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !  Note: drho2m is based on rho0, while rhof2m is based on <rho>(z).
@@ -2503,7 +2506,7 @@ module Density
       real, dimension (nx) :: fdiff
       real, dimension (nx) :: tmp
       real, dimension (nx,3) :: tmpv
-      real, dimension (nx) :: density_rhs,advec_hypermesh_rho
+      real, dimension (nx) :: density_rhs, density_rhs_tmp, advec_hypermesh_rho
       integer :: j
       logical :: ldt_up
 !
@@ -2541,7 +2544,7 @@ module Density
               if (lrelativistic_eos) density_rhs=fourthird*density_rhs
             endif
 !
-!  Evolution of lnrho
+!  Evolution of lnrho: set here density_rhs
 !
           else
             density_rhs= - p%divu
@@ -2550,9 +2553,16 @@ module Density
 !  The following few lines only enter without lconservative,
 !  and also only without ldensity_nolog, but with lrelativistic_eos.
 !
-            if (lrelativistic_eos.and..not.lconservative) then
+            if (lrelativistic_eos .and. .not.lconservative) then
               if (lhydro) then
-                call multvs(p%uu,density_rhs,tmpv)
+                if (lrelativistic_eos_term1 .and. lrelativistic_eos_term2) then
+                  call multvs(p%uu,density_rhs,tmpv)
+                else
+                  density_rhs_tmp=0.
+                  if (lrelativistic_eos_term1) density_rhs_tmp=density_rhs_tmp-p%divu
+                  if (lrelativistic_eos_term2) density_rhs_tmp=density_rhs_tmp-p%uglnrho
+                  call multvs(p%uu,density_rhs_tmp,tmpv)
+                endif
                 df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-onethird*tmpv
               endif
               density_rhs=fourthird*density_rhs
