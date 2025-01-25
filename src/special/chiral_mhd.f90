@@ -871,6 +871,17 @@ module Special
             source5=0.
           endif
 !
+!  Time-dependent profile for Gamma.
+!
+        case ('step_decay')
+          if (t<=t1_source5) then
+            source5=0.
+          elseif (t<=t2_source5) then
+            source5=source5_input*exp(-gammaf5*(t-t1_source5))
+          else
+            source5=0.
+          endif
+!
 !  Default.
 !
         case default
