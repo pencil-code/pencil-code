@@ -651,12 +651,12 @@ ifneq ($(filter $(SPECIAL) $(IO) $(IO_IN) $(IO_OUT) $(TRAINING), $(HDF5_MODULES)
         $(error Try (one of) the following: $(shell (module spider |& grep -i hdf5 | sed -e's/^.* \([^ ]*[Hh][Dd][Ff]5[^ ]*\) .*$$/\1/') ))
       endif
     endif
-    ifeq ($(HDF5_PATH),)
-      $(info HDF5_PATH  not set)
-    else
-      override FFLAGS+= -I$(HDF5_PATH)/include/
-      override LDFLAGS+=-L$(HDF5_PATH)/lib/ -lhdf5_fortran
-    endif
+  endif
+  ifeq ($(HDF5_PATH),)
+    $(info HDF5_PATH  not set)
+  else
+    override FFLAGS+= -I$(HDF5_PATH)/include/
+    override LDFLAGS+=-L$(HDF5_PATH)/lib/ -lhdf5_fortran
   endif
 endif
 #
