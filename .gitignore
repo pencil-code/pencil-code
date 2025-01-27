@@ -361,3 +361,14 @@ samples/corona/driver
 !samples/conv-slab-torch/.run_directories.log
 !samples/conv-slab-torch/pc_build_tmp_*
 !samples/conv-slab-torch/.pc_build_history
+!samples/conv-slab-torch/scripts/.DS_Store
+!samples/conv-slab-torch/scripts/*.directory
+!samples/conv-slab-torch/scripts/*.pyc
+!samples/conv-slab-torch/scripts/*~
+!samples/conv-slab-torch/scripts/.*.swp
+!samples/conv-slab-torch/scripts/host-ID
+!samples/conv-slab-torch/scripts/revision.txt
+!samples/conv-slab-torch/scripts/*-eps-converted-to.pdf
+!samples/conv-slab-torch/scripts/.run_directories.log
+!samples/conv-slab-torch/scripts/pc_build_tmp_*
+!samples/conv-slab-torch/scripts/.pc_build_history
