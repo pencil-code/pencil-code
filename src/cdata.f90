@@ -200,6 +200,7 @@ module Cdata
   integer :: permute_sts=0
   integer:: ireset_tstart=2
   integer :: nt=10000000, it=0, itorder=3, itsub=0, it_timing=0, it_rmv=0
+  integer :: num_substeps = 3
 !
 !  Parameters related to message passing.
 !

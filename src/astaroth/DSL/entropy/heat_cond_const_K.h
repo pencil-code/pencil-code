@@ -10,6 +10,9 @@
 
     chi = hcond_Kconst/(exp(value(LNRHO)) * cp)
 
-    reduce_max(step_num==0,chi,AC_maxchi)
+    if(step_num == 0 && lcourant_dt)
+    {
+    	reduce_max(chi,AC_maxchi)
+    }
 
     rhs += cp * chi * (first_term + dot(second_term, third_term))

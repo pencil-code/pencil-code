@@ -7,6 +7,9 @@
 
     chi = exp(-value(LNRHO)) * hcond_prof[ind_z]
 
-    reduce_max(step_num==0,chi,AC_maxchi)
+    if(step_num == 0 && lcourant_dt)
+    {
+    	reduce_max(step_num==0,chi,AC_maxchi)
+    }
 
     rhs += chi * ( del2_lnTT + dot(grad_lnTT,glnThcond) )

@@ -127,6 +127,7 @@ module Timestep
       endif
       lcourant_dt=.false.
 !
+      num_substeps = itter
     endsubroutine initialize_timestep
 !***********************************************************************
     subroutine time_step(f,df,p)

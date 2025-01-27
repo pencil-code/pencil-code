@@ -1,7 +1,6 @@
 // Provides all declarations and functions needed for the formulation of the PDEs' rhss by DSL code
 // and finally for the definition of the solve kernel.
 #define IN_DSL 1
-
 #define double real
 #define cpu_pow pow
 #define REAL_MAX AC_REAL_MAX
@@ -73,3 +72,4 @@ output real AC_maximum_error
 #endif
 
 #include "equations.h"
+

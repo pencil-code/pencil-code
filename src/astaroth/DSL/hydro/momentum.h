@@ -60,5 +60,8 @@ else{
       rhs += rho1 * cross(jj,bb)
     }
 #endif
-    reduce_max(step_num==0, sum(abs(value(UU))/AC_ds) + sqrt(advec2), AC_maxadvec)
+    if(step_num == 0 && lcourant_dt)
+    {
+    	reduce_max(sum(abs(value(UU))/AC_ds) + sqrt(advec2), AC_maxadvec)
+    }
     return rhs 

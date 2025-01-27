@@ -35,7 +35,6 @@ has_nans(AcMesh mesh_in);
 #include "../cparam_c.h"
 
 static int rank;
-static AcTaskGraph *rhs;
 static AcMesh mesh;
 extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
 {
@@ -95,9 +94,10 @@ extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
   // acGridSynchronizeStream(STREAM_ALL);
 
   // acGridExecuteTaskGraph(rhs_test_graph,1);
+  AcTaskGraph *rhs =  acGetOptimizedDSLTaskGraph(AC_rhs);
   for(int i = 0; i < 3; ++i)
   {
-  	acDeviceSetInput(acGridGetDevice(), AC_step_num, i);
+  	acDeviceSetInput(acGridGetDevice(), AC_step_num, (PC_SUB_STEP_NUMBER) i);
   	acGridExecuteTaskGraph(rhs,1);
   	acGridSynchronizeStream(STREAM_ALL);
   }
@@ -109,13 +109,13 @@ extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
   acGridSynchronizeStream(STREAM_ALL);
 
   bool loaded_correct = true;
-  for (int i = 0; i < mx; i++)
+  for (size_t i = 0; i < mx; i++)
   {
-    for (int j = 0; j < my; j++)
+    for (size_t j = 0; j < my; j++)
     {
-      for (int k = 0; k < mz; k++)
+      for (size_t k = 0; k < mz; k++)
       {
-        for (int ivar = 0; ivar < mfarray; ivar++)
+        for (size_t ivar = 0; ivar < mfarray; ivar++)
         {
           AcReal out_val = mesh.vertex_buffer[ivar][DEVICE_VTXBUF_IDX(i, j, k)];
           AcReal true_val = mesh_test.vertex_buffer[ivar][DEVICE_VTXBUF_IDX(i, j, k)];
@@ -176,10 +176,10 @@ extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
 
   //actual run
   for (int i=0;i<num_of_steps;i++){
-    for(int substep  = 0; substep < 3; ++i)
+    for(int substep  = 0; substep <3; ++i)
     {
-    	acDeviceSetInput(acGridGetDevice(), AC_step_num, substep);
-    	acGridExecuteTaskGraph(rhs,1);
+    	acDeviceSetInput(acGridGetDevice(), AC_step_num, (PC_SUB_STEP_NUMBER)substep);
+    	acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_rhs),1);
     	acGridSynchronizeStream(STREAM_ALL);
     }
     acGridSynchronizeStream(STREAM_ALL);
@@ -245,13 +245,13 @@ extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
   AcReal true_val_for_largest_diff;
   int num_of_points_where_different[NUM_VTXBUF_HANDLES] = {0};
 
-  for (int i = dims.n0.x; i < dims.n1.x; i++)
+  for (size_t i = dims.n0.x; i < dims.n1.x; i++)
   {
-    for (int j = dims.n0.y; j < dims.n1.y; j++)
+    for (size_t j = dims.n0.y; j < dims.n1.y; j++)
     {
-      for (int k = dims.n0.z; k < dims.n1.z; k++)
+      for (size_t k = dims.n0.z; k < dims.n1.z; k++)
       {
-        for (int ivar = 0; ivar < NUM_VTXBUF_HANDLES; ivar++)
+        for (size_t ivar = 0; ivar < NUM_VTXBUF_HANDLES; ivar++)
         {
           AcReal out_val = mesh.vertex_buffer[ivar][DEVICE_VTXBUF_IDX(i, j, k)];
           AcReal true_val = mesh_true.vertex_buffer[ivar][DEVICE_VTXBUF_IDX(i, j, k)];
@@ -763,11 +763,12 @@ extern "C" void substepGPU(int isubstep)
   //  AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
   //  acGridSynchronizeStream(STREAM_ALL);
   //}
-  acDeviceSetInput(acGridGetDevice(), AC_step_num,isubstep-1);
+  acDeviceSetInput(acGridGetDevice(), AC_step_num,(PC_SUB_STEP_NUMBER) (isubstep-1));
   //acGridSynchronizeStream(STREAM_ALL);
   Device dev = acGridGetDevice();
   if (isubstep == 1) acDeviceSetInput(acGridGetDevice(), AC_dt,dt);
   //fprintf(stderr,"before acGridExecuteTaskGraph");
+  AcTaskGraph *rhs =  acGetOptimizedDSLTaskGraph(AC_rhs);
   auto start = MPI_Wtime();
   acGridExecuteTaskGraph(rhs, 1);
   auto end = MPI_Wtime();
@@ -777,8 +778,9 @@ extern "C" void substepGPU(int isubstep)
 	|| (isubstep == 1 && lcourant_dt)
      ))
   {
-      acGridSynchronizeStream(STREAM_ALL);
-      acGridFinalizeReduceLocal(rhs);
+      //acGridSynchronizeStream(STREAM_ALL);
+      //acGridFinalizeReduceLocal(rhs);
+      //TP: now done in executetaskgraph
     
     AcReal dt1_{};
     if(!lcourant_dt)
@@ -1075,20 +1077,33 @@ void checkConfig(AcMeshInfo &config)
 /***********************************************************************************************/
 extern "C" void getFArrayIn(AcReal **p_f_in)
 {
-  fprintf(stderr,"DEPRECATED\n");
-  exit(EXIT_FAILURE);
-  //auto VBA = acGridGetVBA();
-  //*p_f_in = VBA.in[0];
+  AcReal* out = NULL;
+
+  AcReal* uux_ptr = NULL;
+  AcReal* uuy_ptr = NULL;
+  AcReal* uuz_ptr = NULL;
+
+  acDeviceGetVertexBufferPtrs(acGridGetDevice(),UUX,&uux_ptr,&out);
+  acDeviceGetVertexBufferPtrs(acGridGetDevice(),UUY,&uuy_ptr,&out);
+  acDeviceGetVertexBufferPtrs(acGridGetDevice(),UUZ,&uuz_ptr,&out);
+  if(uux_ptr + mw != uuy_ptr) fprintf(stderr, "UU not contiguous\n");
+  if(uuy_ptr + mw != uuz_ptr) fprintf(stderr, "UU not contiguous\n");
+  acDeviceGetVertexBufferPtrs(acGridGetDevice(),VertexBufferHandle(0),p_f_in,&out);
 }
 /***********************************************************************************************/
 extern "C" void copyVBApointers(AcReal **in, AcReal **out)
 {
-  fprintf(stderr,"DEPRECATED\n");
-  exit(EXIT_FAILURE);
-  //Device device = acGridGetDevice();
-  //auto VBA = acGridGetVBA();
-  //*in =  VBA.in[0];
-  //*out = VBA.out[0];
+  AcReal* uux_ptr = NULL;
+  AcReal* uuy_ptr = NULL;
+  AcReal* uuz_ptr = NULL;
+
+  acDeviceGetVertexBufferPtrs(acGridGetDevice(),UUX,&uux_ptr,out);
+  acDeviceGetVertexBufferPtrs(acGridGetDevice(),UUY,&uuy_ptr,out);
+  acDeviceGetVertexBufferPtrs(acGridGetDevice(),UUZ,&uuz_ptr,out);
+  if(uux_ptr + mw != uuy_ptr) fprintf(stderr, "UU not contiguous\n");
+  if(uuy_ptr + mw != uuz_ptr) fprintf(stderr, "UU not contiguous\n");
+
+  acDeviceGetVertexBufferPtrs(acGridGetDevice(),VertexBufferHandle(0),in,out);
 }
 /***********************************************************************************************/
 void
@@ -1137,10 +1152,15 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out, int c
 
   mesh.info = acGridDecomposeMeshInfo(mesh.info);
   //TP: important to do before autotuning
-  acDeviceSetInput(acGridGetDevice(), AC_step_num,0);
+  acDeviceSetInput(acGridGetDevice(), AC_step_num,(PC_SUB_STEP_NUMBER)0);
   acDeviceSetInput(acGridGetDevice(), AC_dt,dt);
-  rhs = acGetDSLTaskGraph(AC_rhs);
   if (ltest_bcs) testBCs();
+  //TP: autotune for all substeps
+  for(int i = 0; i < num_substeps; ++i)
+  {
+  	acDeviceSetInput(acGridGetDevice(), AC_step_num,(PC_SUB_STEP_NUMBER)i);
+	acGetOptimizedDSLTaskGraph(AC_rhs);
+  }
   acGridSynchronizeStream(STREAM_ALL);
   acLogFromRootProc(rank, "DONE initializeGPU\n");
   fflush(stdout);
@@ -1256,13 +1276,13 @@ has_nans(AcMesh mesh_in)
   				{
 					return acVertexBufferIdx(x,y,z,mesh.info);
   				};
-  for (int i = dims.n0.x; i < dims.n1.x; i++)
+  for (size_t i = dims.n0.x; i < dims.n1.x; i++)
   {
-    for (int j = dims.n0.y; j < dims.n1.y; j++)
+    for (size_t j = dims.n0.y; j < dims.n1.y; j++)
     {
-      for (int k = dims.n0.z; k < dims.n1.z; k++)
+      for (size_t k = dims.n0.z; k < dims.n1.z; k++)
       {
-        for (int ivar = 0; ivar < NUM_VTXBUF_HANDLES; ivar++)
+        for (size_t ivar = 0; ivar < NUM_VTXBUF_HANDLES; ivar++)
         {
           if (isnan(mesh_in.vertex_buffer[ivar][DEVICE_VTXBUF_IDX(i, j, k)]))
           {
@@ -1298,11 +1318,11 @@ sym_z(AcMesh mesh_in)
 					return acVertexBufferIdx(x,y,z,acGridGetLocalMeshInfo());
   				};
   AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
-  for (int i = 0; i < dims.m1.x; i++)
+  for (size_t i = 0; i < dims.m1.x; i++)
   {
-    for (int j = 0; j < dims.m1.y; j++)
+    for (size_t j = 0; j < dims.m1.y; j++)
     {
-      for (int k = 0; k < dims.m1.z; k++)
+      for (size_t k = 0; k < dims.m1.z; k++)
       {
 	if (
 	   i >= NGHOST && i < dims.n1.x &&
@@ -1353,11 +1373,11 @@ check_sym_z(AcMesh mesh_in)
   	printf("HMM: %14e\n",mesh_in.vertex_buffer[0][DEVICE_VTXBUF_IDX(26,14,5)]);
   }
   AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
-  for (int i = 0; i < dims.m1.x; i++)
+  for (size_t i = 0; i < dims.m1.x; i++)
   {
-    for (int j = 0; j < dims.m1.y; j++)
+    for (size_t j = 0; j < dims.m1.y; j++)
     {
-      for (int k = 0; k < dims.m1.z; k++)
+      for (size_t k = 0; k < dims.m1.z; k++)
       {
 	if (
 	   i >= NGHOST && i < dims.n1.x &&
@@ -1409,11 +1429,11 @@ check_sym_x(const AcMesh mesh_in)
   	printf("HMM: %14e\n",mesh_in.vertex_buffer[0][DEVICE_VTXBUF_IDX(26,14,5)]);
   }
   AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
-  for (int i = 0; i < dims.m1.x; i++)
+  for (size_t i = 0; i < dims.m1.x; i++)
   {
-    for (int j = 0; j < dims.m1.y; j++)
+    for (size_t j = 0; j < dims.m1.y; j++)
     {
-      for (int k = 0; k < dims.m1.z; k++)
+      for (size_t k = 0; k < dims.m1.z; k++)
       {
 	if(
 	   i >= NGHOST && i < dims.n1.x &&
@@ -1466,6 +1486,7 @@ testBCs()
   				{
 					return acVertexBufferIdx(x,y,z,acGridGetLocalMeshInfo());
   				};
+  AcTaskGraph* rhs = acGetOptimizedDSLTaskGraph(AC_rhs);
   const bool all_periodic = 
   				acGridTaskGraphHasPeriodicBoundcondsX(rhs) && 
   				acGridTaskGraphHasPeriodicBoundcondsY(rhs) && 
@@ -1543,11 +1564,11 @@ testBCs()
   const int top_z = 5;
   int num_of_points = 0;
 
-  for (int i = start_x; i < end_x; i++)
+  for (size_t i = start_x; i < end_x; i++)
   {
-    for (int j = start_y; j < end_y; j++)
+    for (size_t j = start_y; j < end_y; j++)
     {
-      for (int k = start_z; k < end_z; k++)
+      for (size_t k = start_z; k < end_z; k++)
       {
 	if (
 	   i >= NGHOST && i < dims.n1.x &&
@@ -1585,7 +1606,7 @@ testBCs()
                 max_abs_relative_difference=(abs_diff/true_val);
                 gpu_val_for_largest_diff = out_val;
                 true_val_for_largest_diff = true_val;
-		largest_diff_point = (int3){i,j,k};
+		largest_diff_point = (int3){(int)i,(int)j,(int)k};
               }
             }  
           }
