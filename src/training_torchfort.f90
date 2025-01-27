@@ -20,26 +20,26 @@
     integer :: model_device=0
     integer :: it_train=-1, it_train_chkpt=-1
 
-    !real, dimension(:,:,:,:,:), allocatable, device :: input, label, output
-    real, dimension(:,:,:,:,:), allocatable :: input, label, output
+    real, dimension(:,:,:,:,:), allocatable, device :: input, label, output
+    !real, dimension(:,:,:,:,:), allocatable :: input, label, output
 
     integer :: itau, itauxx, itauxy, itauxz, itauyy, itauyz, itauzz
 
     character(LEN=fnlen) :: model_output_dir='training/', checkpoint_output_dir='training'
     character(LEN=fnlen) :: model='model', config_file="training/config_mlp_native.yaml", model_file
 
-    logical :: luse_trained_tau, lwrite_sample=.false.
+    logical :: luse_trained_tau, lwrite_sample=.false., lscale=.true.
     real :: max_loss=1.e-4
 
     integer :: idiag_loss=0            ! DIAG_DOC: torchfort training loss
     integer :: idiag_tauerror=0        ! DIAG_DOC: $\sqrt{\left<(\sum_{i,j} u_i*u_j - tau_{ij})^2\right>}$
 
-    namelist /training_run_pars/ config_file, model, it_train, it_train_chkpt, luse_trained_tau, &
+    namelist /training_run_pars/ config_file, model, it_train, it_train_chkpt, luse_trained_tau, lscale, &
                                  lwrite_sample, max_loss
 !
     integer :: istat, train_step_ckpt, val_step_ckpt
     logical :: ltrained=.false., lckpt_written=.false.
-    real :: train_loss
+    real :: train_loss, tauerror
     real, dimension (mx,my,mz,3) :: uumean
     real :: input_min, input_max, output_min, output_max
 
@@ -109,6 +109,7 @@ print*, 'ltrained, modelfn=', ltrained, modelfn
         allocate(input(mx, my, mz, 3, 1))
         allocate(output(mx, my, mz, 6, 1))
         allocate(label(mx, my, mz, 6, 1))
+print*, 'adresses:', loc(input), loc(output), loc(label)
       endif
 
     endsubroutine initialize_training
@@ -155,11 +156,21 @@ print*, 'ltrained, modelfn=', ltrained, modelfn
     subroutine training_before_boundary(f)
      
       real, dimension (mx,my,mz,mfarray) :: f
-return !!!
+
       if (ltrained) then
         call infer(f)
+        if (.not.lgpu) then
+          ! Device to host
+          if (ldiagnos.and.lfirst) then
+            call calc_tau(f)
+            f(:,:,:,itauxx:itauzz) = f(:,:,:,itauxx:itauzz) - output(:,:,:,:,1)
+            tauerror = sum(f(l1:l2,m1:m2,n1:n2,itauxx:itauzz)**2)/nx
+          endif
+          f(:,:,:,itauxx:itauzz) = output(:,:,:,:,1)
+        else
+        endif
       else
-        call train(f)
+        if (lfirst) call train(f)
       endif
 
     endsubroutine training_before_boundary
@@ -167,13 +178,16 @@ return !!!
     subroutine infer(f)
     
       use Gpu, only: get_ptr_gpu
+      use Sub, only: smooth
 
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (:,:,:,:), pointer :: ptr_uu, ptr_tau
 
       ! Host to device
       if (.not.lgpu) then
-        input(:,:,:,:,1) = f(:,:,:,iux:iuz)    ! host to device
+        uumean = f(:,:,:,iux:iuz)
+        call smooth(uumean,1,3,lgauss=.true.)
+        input(:,:,:,:,1) = uumean    ! host to device
         istat = torchfort_inference(model, input, output)
       else
         !call get_ptr_gpu(ptr_uu,iux,iuz)
@@ -181,12 +195,8 @@ return !!!
         istat = torchfort_inference(model, get_ptr_gpu(iux,iuz), get_ptr_gpu(itauxx,itauzz))
       endif
 
-      if (istat /= TORCHFORT_RESULT_SUCCESS) then
+      if (istat /= TORCHFORT_RESULT_SUCCESS) &
         call fatal_error("infer","istat="//trim(itoa(istat)))
-      elseif (.not.lgpu) then
-        ! Device to host
-        f(l1:l2,m1:m2,n1:n2,itauxx:itauzz) = output(:,:,:,:,1)
-      endif
 
     endsubroutine infer
 !***************************************************************
@@ -217,8 +227,6 @@ return !!!
 
       integer :: start_it
 
-print*, 'BEGIN TRAIN', it!   ltrained!, input_min, input_max
-!stop
       start_it = 200
       if (it<start_it) return
 
@@ -230,55 +238,41 @@ print*, 'BEGIN TRAIN', it!   ltrained!, input_min, input_max
           !TODO: smoothing/scaling etc. for uu and tau
           istat = torchfort_train(model, get_ptr_gpu(iux,iuz), get_ptr_gpu(itauxx,itauzz), train_loss)
         else
-          uumean = f(:,:,:,iux:iuz)
-          call smooth(uumean,1,3,lgauss=.true.)
-!
-!  Calculate and smooth stress tensor.
-!
-          f(:,:,:,itauxx) = f(:,:,:,iux)**2
-          f(:,:,:,itauyy) = f(:,:,:,iuy)**2
-          f(:,:,:,itauzz) = f(:,:,:,iuz)**2
-          f(:,:,:,itauxy) = f(:,:,:,iux)*f(:,:,:,iuy)
-          f(:,:,:,itauyz) = f(:,:,:,iuy)*f(:,:,:,iuz)
-          f(:,:,:,itauxz) = f(:,:,:,iux)*f(:,:,:,iuz)
-
-          call smooth(f,itauxx,itauzz, lgauss=.true.)
-
-          f(:,:,:,itauxx) = -uumean(:,:,:,1)**2 + f(:,:,:,itauxx)
-          f(:,:,:,itauyy) = -uumean(:,:,:,2)**2 + f(:,:,:,itauyy)
-          f(:,:,:,itauzz) = -uumean(:,:,:,3)**2 + f(:,:,:,itauzz)
-          f(:,:,:,itauxy) = -uumean(:,:,:,1)*uumean(:,:,:,2) + f(:,:,:,itauxy)
-          f(:,:,:,itauyz) = -uumean(:,:,:,2)*uumean(:,:,:,3) + f(:,:,:,itauyz)
-          f(:,:,:,itauxz) = -uumean(:,:,:,1)*uumean(:,:,:,3) + f(:,:,:,itauxz)
+          call calc_tau(f)
 !
 !  input scaling.
 !
-          if (it == start_it) then
-            input_min = minval(uumean)
-            input_max = maxval(uumean)
-          endif
-          call scale(uumean, input_min, input_max)
-          input(:,:,:,:,1) = uumean      ! host to device
+          if (lscale) then
+            if (it == start_it) then
+              input_min = minval(uumean)
+              input_max = maxval(uumean)
+            endif
+            call scale(uumean, input_min, input_max)
 !
 ! output scaling.
 !
-          if (it == start_it) then
-            output_min = minval(f(:,:,:,itauxx:itauzz))
-            output_max = maxval(f(:,:,:,itauxx:itauzz))
+            if (it == start_it) then
+              output_min = minval(f(:,:,:,itauxx:itauzz))
+              output_max = maxval(f(:,:,:,itauxx:itauzz))
+            endif
+            call scale(f(:,:,:,itauxx:itauzz), output_min, output_max)
           endif
-          call scale(f(:,:,:,itauxx:itauzz), output_min, output_max)
+
           ! print*, output_min, output_max, input_min, input_max
+          input(:,:,:,:,1) = uumean                    ! host to device
           label(:,:,:,:,1) = f(:,:,:,itauxx:itauzz)    ! host to device
 
           istat = torchfort_train(model, input, label, train_loss)
+print*, 'TRAIN', it, train_loss!   ltrained!, input_min, input_max
 !
 ! output for plotting
 !
           if (lwrite_sample .and. mod(it, 50)==0) then
             call write_sample(f(:,:,:,itauxx), mx, my, mz, "target_"//trim(itoa(iproc))//".hdf5")
             istat = torchfort_inference(model, input, output)
-            call descale(output(:,:,:,1:1,1), output_min, output_max)
-            call write_sample(output(:,:,:,1:1,1), mx, my, mz, "pred_"//trim(itoa(iproc))//".hdf5")
+            f(:,:,:,itauxx:itauzz) = output(:,:,:,:,1)
+            if (lscale) call descale(f(:,:,1:1,itauxx:itauzz), output_min, output_max)
+            call write_sample(f(:,:,1:1,itauxx:itauzz), mx, my, mz, "pred_"//trim(itoa(iproc))//".hdf5")
           endif
 
         endif
@@ -296,6 +290,35 @@ print*, 'it,it_train_chkpt=', it,it_train_chkpt, trim(model),istat, trim(checkpo
       endif
 
     endsubroutine train
+!***************************************************************
+    subroutine calc_tau(f)
+
+      use Sub, only: smooth
+
+      real, dimension (mx,my,mz,mfarray) :: f
+
+      uumean = f(:,:,:,iux:iuz)
+      call smooth(uumean,1,3,lgauss=.true.)
+!
+!  Calculate and smooth stress tensor.
+!
+      f(:,:,:,itauxx) = f(:,:,:,iux)**2
+      f(:,:,:,itauyy) = f(:,:,:,iuy)**2
+      f(:,:,:,itauzz) = f(:,:,:,iuz)**2
+      f(:,:,:,itauxy) = f(:,:,:,iux)*f(:,:,:,iuy)
+      f(:,:,:,itauyz) = f(:,:,:,iuy)*f(:,:,:,iuz)
+      f(:,:,:,itauxz) = f(:,:,:,iux)*f(:,:,:,iuz)
+
+      call smooth(f,itauxx,itauzz, lgauss=.true.)
+
+      f(:,:,:,itauxx) = -uumean(:,:,:,1)**2 + f(:,:,:,itauxx)
+      f(:,:,:,itauyy) = -uumean(:,:,:,2)**2 + f(:,:,:,itauyy)
+      f(:,:,:,itauzz) = -uumean(:,:,:,3)**2 + f(:,:,:,itauzz)
+      f(:,:,:,itauxy) = -uumean(:,:,:,1)*uumean(:,:,:,2) + f(:,:,:,itauxy)
+      f(:,:,:,itauyz) = -uumean(:,:,:,2)*uumean(:,:,:,3) + f(:,:,:,itauyz)
+      f(:,:,:,itauxz) = -uumean(:,:,:,1)*uumean(:,:,:,3) + f(:,:,:,itauxz)
+
+    endsubroutine calc_tau
 !***************************************************************
     subroutine div_reynolds_stress(f,df)
 
@@ -324,23 +347,10 @@ print*, 'it,it_train_chkpt=', it,it_train_chkpt, trim(model),istat, trim(checkpo
       type(pencil_case) :: p
 
       integer :: i,j,jtau
-      real, dimension(nx) :: error
 
       if (ldiagnos) then
-        if (ltrained) then
-          if (idiag_tauerror>0) then
-
-            jtau=0
-            error=0.
-            do i=1,3
-              do j=i,3
-                error=error+(p%uu(:,i)*p%uu(:,j)-f(l1:l2,m,n,itau+jtau))**2
-                jtau=jtau+1
-              enddo
-            enddo
-            call sum_mn_name(error,idiag_tauerror,lsqrt=.true.)
-
-          endif 
+        if (ltrained.and.lfirstpoint) then
+          call sum_mn_name(spread(tauerror,1,nx),idiag_tauerror,lsqrt=.true.)
         else
           call save_name(train_loss, idiag_loss)
         endif 
