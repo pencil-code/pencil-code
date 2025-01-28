@@ -121,6 +121,8 @@ indices = [ $
   { name:'iinfl_dphi', label:'Inflaton time derivative dphi', dims:1 }, $
   { name:'iinfl_hubble', label:'Comoving Hubble parameter', dims:1 }, $
   { name:'iinfl_lna', label:'Logarithmic scale factor', dims:1 }, $
+  { name:'iispecial1', label:'special1', dims:1 }, $
+  { name:'iispecial2', label:'special2', dims:1 }, $
   { name:'iaphi', label:'A_phi', dims:1 }, $
   { name:'ibphi', label:'B_phi', dims:1 }, $
   { name:'ibb', label:'Magnetic field', dims:3 }, $
@@ -151,6 +153,12 @@ indices = [ $
   { name:'iggXim_boost', label:'ggXim_boost', dims:1 }, $
   { name:'ihhTim_boost', label:'hhTim_boost', dims:1 }, $
   { name:'ihhXim_boost', label:'hhXim_boost', dims:1 }, $
+  { name:'ih11_realspace', label:'h11_realspace', dims:1 }, $
+  { name:'ih22_realspace', label:'h22_realspace', dims:1 }, $
+  { name:'ih33_realspace', label:'h33_realspace', dims:1 }, $
+  { name:'ih12_realspace', label:'h12_realspace', dims:1 }, $
+  { name:'ih23_realspace', label:'h23_realspace', dims:1 }, $
+  { name:'ih31_realspace', label:'h31_realspace', dims:1 }, $
   { name:'ihij', label:'hij', dims:6 }, $
   { name:'igij', label:'gij', dims:6 }, $
   { name:'irrr', label:'Collapse radius', dims:1 }, $
@@ -330,6 +338,8 @@ indices_aux = [ $
   { name:'iStXim', label:'StXim', dims:1 }, $
   { name:'ihhT_realspace', label:'ihhT_realspace', dims:1 }, $
   { name:'ihhX_realspace', label:'ihhX_realspace', dims:1 }, $
+  { name:'iggT_realspace', label:'iggT_realspace', dims:1 }, $
+  { name:'iggX_realspace', label:'iggX_realspace', dims:1 }, $
   { name:'isld_char', label:'SLD characteristic speed', dims:1 }, $
   { name:'ialfven', label:'Alfven speed', dims:1 }, $
   { name:'ipsi', label:'Streamfunction', dims:1 }, $
