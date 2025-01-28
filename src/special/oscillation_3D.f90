@@ -84,12 +84,20 @@ module oscillation_3D
 !
 ! Declare index of new variables in f array (if any).
 !
-   integer :: ispecial=0,ispecial1=0,ispecial2=0
+  real :: ampl_psi=0., initpower_psi=0.,  initpower2_psi=0., kpeak_psi=0.
+  real :: ampl_dpsi=0., initpower_dpsi=0.,  initpower2_dpsi=0., kpeak_dpsi=0.
+  real :: relhel_psi=0., cutoff_psi=0.,  ncutoff_psi=1.
+  real :: kgaussian_psi=0.,kgaussian_dpsi=0.
+  logical :: lno_noise_psi=.false.
+  logical :: lskip_projection_psi=.false., lvectorpotential=.false.
+  logical :: lscale_tobox_psi=.true., lscale_tobox_dpsi=.true.
 !
-  real :: u1ini, u2ini, modulation_fact=1.
-  character(len=50) :: init='zero'
-  namelist /oscillation_3D_init_pars/ &
-    init, u1ini, u2ini
+  real :: modulation_fact=1.
+  character (len=labellen), dimension(ninit) :: init_psi='nothing'
+  namelist /oscillation_3D_init_pars/  init_psi, &
+    ampl_psi, initpower_psi, initpower2_psi, kpeak_psi, &
+    ampl_dpsi, initpower_dpsi, initpower2_dpsi, kpeak_dpsi, &
+    lscale_tobox_psi
 !
   ! run parameters
   namelist /oscillation_3D_run_pars/ &
@@ -97,7 +105,7 @@ module oscillation_3D
 !
 ! other variables (needs to be consistent with reset list below)
 !
-  integer :: idiag_psirms=0,idiag_phirms=0
+  integer :: idiag_psirms=0,idiag_dpsirms=0
 !
   contains
 !****************************************************************************
@@ -118,10 +126,8 @@ module oscillation_3D
       if (lroot) call svn_id( &
            "$Id$")
 !
-      call farray_register_pde('ispecial',ispecial,array=2)
-!
-      ispecial1=ispecial
-      ispecial2=ispecial+1
+      call farray_register_pde('ispecial',ispecialvar,array=2)
+      ispecialvar2=ispecialvar+1
 !
     endsubroutine register_special
 !***********************************************************************
@@ -138,10 +144,8 @@ module oscillation_3D
       if (lroot) call svn_id( &
            "$Id$")
 !
-      call farray_register_pde('ispecial',ispecial,array=2)
-!
-      ispecial1=ispecial
-      ispecial2=ispecial+1
+      call farray_register_pde('ispecial',ispecialvar,array=2)
+      ispecialvar2=ispecialvar+1
 !
     endsubroutine register_particles_special
 !***********************************************************************
@@ -174,33 +178,52 @@ module oscillation_3D
 !  initialise special condition; called from start.f90
 !  06-oct-2003/tony: coded
 !
+      use Initcond, only: power_randomphase_hel
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real :: kx
+      integer :: j
 !
       intent(inout) :: f
 !
 !  initial condition
 !
-      select case (init)
-        case ('nothing'); if (lroot) print*,'init_special: nothing'
-        case ('zero'); f(:,:,:,ispecial1)=0.
-        case ('set'); f(:,:,:,ispecial1)=u1ini; f(:,:,:,ispecial2)=u2ini
-        case ('sincos')
-          kx=2*pi/Lx
-          do m=1,my
-          do n=1,mz
-            f(:,m,n,ispecial1)=u1ini*sin(kx*x)
-            f(:,m,n,ispecial2)=u2ini*cos(kx*x)
-          enddo
-          enddo
+      do j=1,ninit
+        select case (init_psi(j))
+          case ('nothing'); if (lroot) print*,'init_psi: nothing'
+          case ('set')
+            f(:,:,:,ispecialvar)=f(:,:,:,ispecialvar)+ampl_psi
+            f(:,:,:,ispecialvar2)=f(:,:,:,ispecialvar2)+ampl_dpsi
+          case ('sincos')
+            kx=2*pi/Lx
+            do m=1,my
+            do n=1,mz
+              f(:,m,n,ispecialvar)=ampl_psi*sin(kx*x)
+              f(:,m,n,ispecialvar2)=ampl_dpsi*cos(kx*x)
+            enddo
+            enddo
 !
-        case default
-          !
-          !  Catch unknown values
-          !
-          if (lroot) print*,'init_special: No such value for init: ', trim(init)
-          call fatal_error("init_special","init value not defined")
-      endselect
+!  spectrum
+!
+            case ('psi_power_randomphase')
+              call power_randomphase_hel(ampl_psi, initpower_psi, initpower2_psi, &
+                cutoff_psi, ncutoff_psi, kpeak_psi, f, ispecialvar, ispecialvar, &
+                relhel_psi, kgaussian_psi, lskip_projection_psi, lvectorpotential, &
+                lscale_tobox_psi, lpower_profile_file=.false., lno_noise=lno_noise_psi)
+            case ('dpsi_power_randomphase')
+              call power_randomphase_hel(ampl_dpsi, initpower_dpsi, initpower2_dpsi, &
+                cutoff_psi, ncutoff_psi, kpeak_dpsi, f, ispecialvar2, ispecialvar2, &
+                relhel_psi, kgaussian_psi, lskip_projection_psi, lvectorpotential, &
+                lscale_tobox_psi, lpower_profile_file=.false., lno_noise=lno_noise_psi)
+!
+          case default
+            !
+            !  Catch unknown values
+            !
+            if (lroot) print*,'init_psi: No such value for init_psi: ', trim(init_psi(j))
+            call fatal_error("init_psi","init value not defined")
+        endselect
+      enddo
 !
     endsubroutine init_special
 !***********************************************************************
@@ -285,9 +308,9 @@ module oscillation_3D
         ih31_realspace=farray_index_by_name('h31_realspace')
 !
 !  Solve wave equation d2psi/dt = del2 psi.
-!  Begin with dpsi/dt = phi and solve further below dphi/dt = del2 psi.
+!  Begin with dpsi/dt = dpsi and solve further below ddpsi/dt = del2 psi.
 !
-        df(l1:l2,m,n,ispecial1)=df(l1:l2,m,n,ispecial1)+f(l1:l2,m,n,ispecial2)
+        df(l1:l2,m,n,ispecialvar)=df(l1:l2,m,n,ispecialvar)+f(l1:l2,m,n,ispecialvar2)
 !
 !  Do the following only if at least the first of 6 indices exists.
 !
@@ -309,21 +332,20 @@ module oscillation_3D
 !  For each pair of off-diagonal components, add 2h_ij*d2f/dx_i dx_j.
 !
             if (i==j) then
-              call der2(f,ispecial1,tmp,i)
-              df(l1:l2,m,n,ispecial2)=df(l1:l2,m,n,ispecial2)+(1.+modulation_fact*f(l1:l2,m,n,ihij))*tmp
+              call der2(f,ispecialvar,tmp,i)
+              df(l1:l2,m,n,ispecialvar2)=df(l1:l2,m,n,ispecialvar2)+(1.+modulation_fact*f(l1:l2,m,n,ihij))*tmp
             else
-              call derij(f,ispecial1,tmp,i,j)
-              df(l1:l2,m,n,ispecial2)=df(l1:l2,m,n,ispecial2)+2.*modulation_fact*f(l1:l2,m,n,ihij)*tmp
+              call derij(f,ispecialvar,tmp,i,j)
+              df(l1:l2,m,n,ispecialvar2)=df(l1:l2,m,n,ispecialvar2)+2.*modulation_fact*f(l1:l2,m,n,ihij)*tmp
             endif
-!if (m==m1+1.and.n==n1+1) print*,'AXEL: i,j=',i,j,ihij,f(l1:l1+3,m,n,ihij)
           enddo
         endif
 !
 !  diagnostics
 !
       if (ldiagnos) then
-        call sum_mn_name(f(l1:l2,m,n,ispecial1)**2,idiag_psirms,lsqrt=.true.)
-        call sum_mn_name(f(l1:l2,m,n,ispecial2)**2,idiag_phirms,lsqrt=.true.)
+        call sum_mn_name(f(l1:l2,m,n,ispecialvar)**2,idiag_psirms,lsqrt=.true.)
+        call sum_mn_name(f(l1:l2,m,n,ispecialvar2)**2,idiag_dpsirms,lsqrt=.true.)
       endif
 !
       call keep_compiler_quiet(p)
@@ -389,19 +411,19 @@ module oscillation_3D
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_psirms=0; idiag_phirms=0
+        idiag_psirms=0; idiag_dpsirms=0
       endif
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'psirms',idiag_psirms)
-        call parse_name(iname,cname(iname),cform(iname),'phirms',idiag_phirms)
+        call parse_name(iname,cname(iname),cform(iname),'dpsirms',idiag_dpsirms)
       enddo
 !
 !  write column where which variable is stored
 !
 !     if (lwr) then
 !       call farray_index_append('i_psirms',idiag_psirms)
-!       call farray_index_append('i_phirms',idiag_phirms)
+!       call farray_index_append('i_dpsirms',idiag_dpsirms)
 !     endif
 !
     endsubroutine rprint_special
