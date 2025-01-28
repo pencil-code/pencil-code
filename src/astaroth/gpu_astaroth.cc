@@ -1214,7 +1214,14 @@ extern "C" void loadFarray()
   }
   **/
   acGridSynchronizeStream(STREAM_ALL);
-  acDeviceLoadMesh(acGridGetDevice(), STREAM_DEFAULT, mesh);
+  {
+    for (int i = 0; i < mvar; ++i)
+  	acDeviceLoadVertexBuffer(acGridGetDevice(), STREAM_DEFAULT, mesh, VertexBufferHandle(i));
+
+    for(int i = 0; i < mfarray; ++i)
+      if(maux_vtxbuf_index[i])
+  		acDeviceLoadVertexBuffer(acGridGetDevice(), STREAM_DEFAULT, mesh, VertexBufferHandle(maux_vtxbuf_index[i]));
+  }
   acGridSynchronizeStream(STREAM_ALL);
 }
 /***********************************************************************************************/

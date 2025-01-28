@@ -1,7 +1,16 @@
+enum PC_SUB_STEP_NUMBER
+{
+	PC_FIRST_SUB_STEP,
+	PC_SECOND_SUB_STEP,
+	PC_THIRD_SUB_STEP,
+	PC_FOURTH_SUB_STEP,
+	PC_FIFTH_SUB_STEP,
+}
 #include "../prerequisites.h"
-
-Kernel twopass_solve_intermediate(int step_num, real dt) {
-  //TP: for now get the max_advec but just throw it away
+#include "../shock/kernels.ac"
+#
+Kernel twopass_solve_intermediate(PC_SUB_STEP_NUMBER step_num, real dt) {
+  //TP: this is the optimized version feel free to try the less optimized version which first copies alpha -> beta and beta -> alpha on gpu_astaroth.cc
   df_uu  = duu_dt(step_num)
   df_aa  = daa_dt(step_num)
   df_rho = drho_dt(step_num)
@@ -16,38 +25,37 @@ Kernel twopass_solve_intermediate(int step_num, real dt) {
   //TP: nothing to cumulate for the first substep
   if(step_num!=0)
   {
-	uu_error  += ERROR_UU
-	aa_error  += ERROR_AA
-	rho_error += ERROR_RHO
-	ss_error  += ERROR_SS
+        uu_error  += ERROR_UU
+        aa_error  += ERROR_AA
+        rho_error += ERROR_RHO
+        ss_error  += ERROR_SS
   }
   //TP: done since e.g. UU stores now the initial state which beta update should read from
   //For subsequent steps it should read from itself
   //Last step is skipped since we want the beta version to finally end up in the 'proper' registers
   if(step_num == 0)
   {
-	write(BETA_UU ,rk4_beta(UU ,df_uu ,step_num,dt))
-	write(BETA_AA ,rk4_beta(AA ,df_aa ,step_num,dt))
-	write(BETA_RHO,rk4_beta(RHO,df_rho,step_num,dt))
-	write(BETA_SS ,rk4_beta(SS ,df_ss ,step_num,dt))
+        write(BETA_UU ,rk4_beta(UU ,df_uu ,step_num,dt))
+        write(BETA_AA ,rk4_beta(AA ,df_aa ,step_num,dt))
+        write(BETA_RHO,rk4_beta(RHO,df_rho,step_num,dt))
+        write(BETA_SS ,rk4_beta(SS ,df_ss ,step_num,dt))
   }
   else if(step_num != 4)
   {
-	write(BETA_UU ,rk4_beta(BETA_UU ,df_uu ,step_num,dt))
-	write(BETA_AA ,rk4_beta(BETA_AA ,df_aa ,step_num,dt))
-	write(BETA_RHO,rk4_beta(BETA_RHO,df_rho,step_num,dt))
-	write(BETA_SS ,rk4_beta(BETA_SS ,df_ss ,step_num,dt))
+        write(BETA_UU ,rk4_beta(BETA_UU ,df_uu ,step_num,dt))
+        write(BETA_AA ,rk4_beta(BETA_AA ,df_aa ,step_num,dt))
+        write(BETA_RHO,rk4_beta(BETA_RHO,df_rho,step_num,dt))
+        write(BETA_SS ,rk4_beta(BETA_SS ,df_ss ,step_num,dt))
   }
   //Until the last step the 'proper' registers hold the alpha updates
   //Except in the last one we overwrite them with the beta update
   //No need to write the error out for the last substep
   if(step_num != 4)
   {
-	write(UU ,rk4_alpha(UU ,df_uu ,step_num,dt))
-	write(AA ,rk4_alpha(AA ,df_aa ,step_num,dt))
-	write(RHO,rk4_alpha(RHO,df_rho,step_num,dt))
-	write(SS ,rk4_alpha(SS ,df_ss ,step_num,dt))
-
+        write(UU ,rk4_alpha(UU ,df_uu ,step_num,dt))
+        write(AA ,rk4_alpha(AA ,df_aa ,step_num,dt))
+        write(RHO,rk4_alpha(RHO,df_rho,step_num,dt))
+        write(SS ,rk4_alpha(SS ,df_ss ,step_num,dt))
 
         write(ERROR_UU, uu_error)
         write(ERROR_AA, aa_error)
@@ -56,32 +64,29 @@ Kernel twopass_solve_intermediate(int step_num, real dt) {
   }
   else
   {
-	write(UU ,rk4_beta(UU ,df_uu ,step_num,dt))
-	write(AA ,rk4_beta(AA ,df_aa ,step_num,dt))
-	write(RHO,rk4_beta(RHO,df_rho,step_num,dt))
-	write(SS ,rk4_beta(SS ,df_ss ,step_num,dt))
-
+        write(UU ,rk4_beta(BETA_UU ,df_uu ,step_num,dt))
+        write(AA ,rk4_beta(BETA_AA ,df_aa ,step_num,dt))
+        write(RHO,rk4_beta(BETA_RHO,df_rho,step_num,dt))
+        write(SS ,rk4_beta(BETA_SS ,df_ss ,step_num,dt))
+	
         scal = max(abs(df_uu.x),AC_dt_epsi)
-        maximum_error = max(abs(ERROR_UUX/scal),maximum_error)
+        maximum_error = max(abs(uu_error.x/scal),maximum_error)
         scal = max(abs(df_uu.y),AC_dt_epsi)
-        maximum_error = max(abs(ERROR_UUY/scal),maximum_error)
+        maximum_error = max(abs(uu_error.y/scal),maximum_error)
         scal = max(abs(df_uu.z),AC_dt_epsi)
-        maximum_error = max(abs(ERROR_UUZ/scal),maximum_error)
+        maximum_error = max(abs(uu_error.z/scal),maximum_error)
         scal = max(abs(df_aa.x),AC_dt_epsi)
-        maximum_error = max(abs(ERROR_AAX/scal),maximum_error)
+        maximum_error = max(abs(aa_error.x/scal),maximum_error)
         scal = max(abs(df_aa.y),AC_dt_epsi)
-        maximum_error = max(abs(ERROR_AAY/scal),maximum_error)
+        maximum_error = max(abs(aa_error.y/scal),maximum_error)
         scal = max(abs(df_aa.z),AC_dt_epsi)
-        maximum_error = max(abs(ERROR_AAZ/scal),maximum_error)
+        maximum_error = max(abs(aa_error.z/scal),maximum_error)
         scal = max(abs(df_rho),AC_dt_epsi)
-        maximum_error = max(abs(ERROR_RHO/scal),maximum_error)
+        maximum_error = max(abs(rho_error/scal),maximum_error)
         scal = max(abs(df_ss),AC_dt_epsi)
-        maximum_error = max(abs(ERROR_SS/scal),maximum_error)
+        maximum_error = max(abs(ss_error/scal),maximum_error)
+  	reduce_max(maximum_error,AC_maximum_error)
   } 
-  //Because of some TODO work on Astaroth side unsafe to call reduce_max inside conditionals that depend on input parameters
-  //There is a clear solution how to circumvent this but requires some coding.
-  //TODO: Do it?
-  reduce_max(step_num == 4, maximum_error,AC_maximum_error)
 }
 
 #include "steps_two.h"
