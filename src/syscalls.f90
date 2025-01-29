@@ -34,10 +34,12 @@ module Syscalls
     module procedure copy_addr_int
     module procedure copy_addr_log
     module procedure copy_addr_real
-    module procedure copy_addr_int_1D
-    module procedure copy_addr_log_1D
     module procedure copy_addr_real_1D
+    module procedure copy_addr_log_1D
+    module procedure copy_addr_int_1D
     module procedure copy_addr_real_2D
+    module procedure copy_addr_real_3D
+    module procedure copy_addr_real_4D
   endinterface
 !
   contains
@@ -368,15 +370,6 @@ module Syscalls
 
     endsubroutine copy_addr_real_1D
 !***********************************************************************
-    subroutine copy_addr_int_1D(var, caddr)
-
-    integer, dimension(:), intent(IN) :: var
-    integer(KIND=ikind8), intent(OUT) :: caddr
-
-    call copy_addr_c(var,caddr)
-
-    endsubroutine copy_addr_int_1D
-!***********************************************************************
     subroutine copy_addr_log_1D(var, caddr)
 
     logical, dimension(:), intent(IN) :: var
@@ -394,6 +387,15 @@ module Syscalls
 
     endsubroutine copy_addr_log_1D
 !***********************************************************************
+    subroutine copy_addr_int_1D(var, caddr)
+
+    integer, dimension(:), intent(IN) :: var
+    integer(KIND=ikind8), intent(OUT) :: caddr
+
+    call copy_addr_c(var,caddr)
+
+    endsubroutine copy_addr_int_1D
+!***********************************************************************
     subroutine copy_addr_real_2D(var, caddr)
 
     real, dimension(:,:), intent(IN) :: var
@@ -402,6 +404,24 @@ module Syscalls
     call copy_addr_c(var,caddr)
 
     endsubroutine copy_addr_real_2D
+!***********************************************************************
+    subroutine copy_addr_real_3D(var, caddr)
+
+    real, dimension(:,:,:), intent(IN) :: var
+    integer(KIND=ikind8), intent(OUT) :: caddr
+
+    call copy_addr_c(var,caddr)
+
+    endsubroutine copy_addr_real_3D
+!***********************************************************************
+    subroutine copy_addr_real_4D(var, caddr)
+
+    real, dimension(:,:,:,:), intent(IN) :: var
+    integer(KIND=ikind8), intent(OUT) :: caddr
+
+    call copy_addr_c(var,caddr)
+
+    endsubroutine copy_addr_real_4D
 !***********************************************************************
     subroutine copy_addr_dble_1D(var, caddr)
 
