@@ -1161,6 +1161,7 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out, int c
   	acDeviceSetInput(acGridGetDevice(), AC_step_num,(PC_SUB_STEP_NUMBER)i);
 	acGetOptimizedDSLTaskGraph(AC_rhs);
   }
+  acStoreConfig(acDeviceGetLocalConfig(acGridGetDevice()), "PC-AC.conf");
   acGridSynchronizeStream(STREAM_ALL);
   acLogFromRootProc(rank, "DONE initializeGPU\n");
   fflush(stdout);
