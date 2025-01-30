@@ -982,7 +982,8 @@ extern "C" void registerGPU(AcReal *farray)
 extern "C" void initGPU()
 {
   // Check whether there is (at least) one GPU available
-  AcResult res = acCheckDeviceAvailability();
+  //TP: moved to initializeGPU since with runtime compilation should call only after Astaroth is loaded
+  //AcResult res = acCheckDeviceAvailability();
 }
 /***********************************************************************************************/
 #define PCLoad acPushToConfig
@@ -1146,6 +1147,7 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out, int c
   acLogFromRootProc(rank, "Done setupConfig\n");
   fflush(stdout);
 #endif
+  AcResult res = acCheckDeviceAvailability();
   checkConfig(mesh.info);
   acCheckDeviceAvailability();
   acGridInit(mesh);
