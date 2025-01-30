@@ -25,8 +25,7 @@
 
     integer :: itau, itauxx, itauxy, itauxz, itauyy, itauyz, itauzz
 
-    character(LEN=fnlen) :: model_output_dir='training/', checkpoint_output_dir='training'
-    character(LEN=fnlen) :: model='model', config_file="training/config_mlp_native.yaml", model_file
+    character(LEN=fnlen) :: model='model', config_file="config_mlp_native.yaml", model_file
 
     logical :: luse_trained_tau, lwrite_sample=.false., lscale=.true.
     real :: max_loss=1.e-4
@@ -37,6 +36,7 @@
     namelist /training_run_pars/ config_file, model, it_train, it_train_chkpt, luse_trained_tau, lscale, &
                                  lwrite_sample, max_loss
 !
+    character(LEN=fnlen) :: model_output_dir, checkpoint_output_dir
     integer :: istat, train_step_ckpt, val_step_ckpt
     logical :: ltrained=.false., lckpt_written=.false.
     real :: train_loss, tauerror
@@ -56,7 +56,9 @@
       if (.not.lhydro) call fatal_error('initialize_training','needs HYDRO module')
       istat = cudaSetDevice(iproc)
       if (istat /= CUDASUCCESS) call fatal_error('initialize_training','cudaSetDevice failed')
-   
+  
+      model_output_dir=trim(datadir)//'/training/' 
+      checkpoint_output_dir=model_output_dir
       model_file = trim(model)//'.pt'
       modelfn=trim(model_output_dir)//trim(model_file)
 
@@ -72,10 +74,11 @@ print*, 'ltrained, modelfn=', ltrained, modelfn
 !
 ! TorchFort create model
 !
+print*, 'MODEL FILE=', trim(model_output_dir)//trim(config_file)
       if (lmpicomm) then
-        istat = torchfort_create_distributed_model(trim(model), config_file, MPI_COMM_WORLD, iproc)
+        istat = torchfort_create_distributed_model(trim(model), trim(model_output_dir)//trim(config_file), MPI_COMM_WORLD, iproc)
       else
-        istat = torchfort_create_model(trim(model), config_file, model_device)
+        istat = torchfort_create_model(trim(model), trim(model_output_dir)//trim(config_file), model_device)
       endif
       if (istat /= TORCHFORT_RESULT_SUCCESS) then
         call fatal_error("initialize_training","when creating model "//trim(model)//": istat="//trim(itoa(istat)))
@@ -105,7 +108,7 @@ print*, 'ltrained, modelfn=', ltrained, modelfn
 
       luse_trained_tau = luse_trained_tau.and.ltrained
 
-      if (.not.lgpu) then
+      if (.not.(lgpu.or.lstart)) then
         allocate(input(mx, my, mz, 3, 1))
         allocate(output(mx, my, mz, 6, 1))
         allocate(label(mx, my, mz, 6, 1))
@@ -159,15 +162,16 @@ print*, 'adresses:', loc(input), loc(output), loc(label)
 
       if (ltrained) then
         call infer(f)
-        if (.not.lgpu) then
           ! Device to host
-          if (ldiagnos.and.lfirst) then
-            call calc_tau(f)
+        if ((ldiagnos.or.lvideo).and.lfirst) then
+          call calc_tau(f)
+          if (lgpu) then
+          else
             f(:,:,:,itauxx:itauzz) = f(:,:,:,itauxx:itauzz) - output(:,:,:,:,1)
-            tauerror = sum(f(l1:l2,m1:m2,n1:n2,itauxx:itauzz)**2)/nx
           endif
-          f(:,:,:,itauxx:itauzz) = output(:,:,:,:,1)
+          tauerror = sum(f(l1:l2,m1:m2,n1:n2,itauxx:itauzz)**2)/nx
         else
+          f(:,:,:,itauxx:itauzz) = output(:,:,:,:,1)
         endif
       else
         if (lfirst) call train(f)
@@ -263,7 +267,7 @@ print*, 'adresses:', loc(input), loc(output), loc(label)
           label(:,:,:,:,1) = f(:,:,:,itauxx:itauzz)    ! host to device
 
           istat = torchfort_train(model, input, label, train_loss)
-print*, 'TRAIN', it, train_loss!   ltrained!, input_min, input_max
+!print*, 'TRAIN', it, train_loss!   ltrained!, input_min, input_max
 !
 ! output for plotting
 !
@@ -373,12 +377,12 @@ print*, 'it,it_train_chkpt=', it,it_train_chkpt, trim(model),istat, trim(checkpo
 !
 !  Velocity field.
 !
-        case ('tauxx'); call assign_slices_scal(slices,f,itauxx)
-        case ('tauxy'); call assign_slices_scal(slices,f,itauxy)
-        case ('tauxz'); call assign_slices_scal(slices,f,itauxz)
-        case ('tauyy'); call assign_slices_scal(slices,f,itauyy)
-        case ('tauyz'); call assign_slices_scal(slices,f,itauyz)
-        case ('tauzz'); call assign_slices_scal(slices,f,itauzz)
+        case ('tauxxerr'); call assign_slices_scal(slices,f,itauxx)
+        case ('tauxyerr'); call assign_slices_scal(slices,f,itauxy)
+        case ('tauxzerr'); call assign_slices_scal(slices,f,itauxz)
+        case ('tauyyerr'); call assign_slices_scal(slices,f,itauyy)
+        case ('tauyzerr'); call assign_slices_scal(slices,f,itauyz)
+        case ('tauzzerr'); call assign_slices_scal(slices,f,itauzz)
 
       end select
 
@@ -418,6 +422,18 @@ print*, 'it,it_train_chkpt=', it,it_train_chkpt, trim(model),istat, trim(checkpo
         call parse_name(inamev,cnamev(inamev),cformv(inamev),'tauyz',idum) 
         idum=0
         call parse_name(inamev,cnamev(inamev),cformv(inamev),'tauzz',idum) 
+        idum=0
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'tauxxerr',idum)
+        idum=0
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'tauxyerr',idum) 
+        idum=0
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'tauxzerr',idum) 
+        idum=0
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'tauyyerr',idum) 
+        idum=0
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'tauyzerr',idum) 
+        idum=0
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'tauzzerr',idum) 
       enddo
 
     endsubroutine rprint_training
@@ -425,13 +441,15 @@ print*, 'it,it_train_chkpt=', it,it_train_chkpt, trim(model),istat, trim(checkpo
     subroutine finalize_training
 
 !  Saving trained model.
+      if (.not.lstart) then
 print*, 'ltrained .or. .not. lckpt_written=', ltrained, lckpt_written
-      if (ltrained .or. lckpt_written) then
-        istat = torchfort_save_model(model, trim(model_output_dir)//trim(model_file))
-        if (istat /= TORCHFORT_RESULT_SUCCESS) &
-          call fatal_error("finalize_training","when saving model: istat="//trim(itoa(istat)))
+        if (ltrained .or. lckpt_written) then
+          istat = torchfort_save_model(model, trim(model_output_dir)//trim(model_file))
+          if (istat /= TORCHFORT_RESULT_SUCCESS) &
+            call fatal_error("finalize_training","when saving model: istat="//trim(itoa(istat)))
+        endif
+        if (.not.lgpu) deallocate(input,label,output)
       endif
-      if (.not.lgpu) deallocate(input,label,output)
 
     endsubroutine finalize_training
 !***************************************************************
