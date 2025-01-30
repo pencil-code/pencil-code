@@ -23,4 +23,5 @@ cd $olddir
 #
 cp data/param* $1/data
 cp data/allprocs/grid.dat $1/data/allprocs
+cp data/proc_bounds.dat $1/data/
 pc_copyvar v v $newdir -s -e
