@@ -45,13 +45,16 @@ if (! $?_sourceme) then		# called for the fist time?
 
     #  Set shell path
     if (! $?_sourceme_quiet) echo "Adding $PENCIL_HOME/{bin,utils{,/axel},scripts} to PATH"
+    #  First remove all PC related paths from path
+    set path = `echo $PATH | sed -e's/[^:]*pencil-code[^:]*://g' -e's/[^:]*pencil-code[^:]* *$//' -e's/:$//'`
     set path = ( $path $PENCIL_HOME/bin \
                        $PENCIL_HOME/utils \
 		       $PENCIL_HOME/utils/axel \
                        $PENCIL_HOME/src/scripts \
-		       $PENCIL_HOME/remesh/bin)
+		       $PENCIL_HOME/remesh/bin )
+    #setenv PATH ${path}
 
-		       #  Set path for DX macros
+    #  Set path for DX macros
     set _dxpath = "${PENCIL_HOME}/dx/macros:${PENCIL_HOME}/dx/macros/others"
     if ($?DXMACROS) then
       setenv DXMACROS "${_dxpath}:$DXMACROS"
