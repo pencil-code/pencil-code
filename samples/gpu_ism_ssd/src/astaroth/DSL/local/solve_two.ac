@@ -1,11 +1,3 @@
-enum PC_SUB_STEP_NUMBER
-{
-	PC_FIRST_SUB_STEP,
-	PC_SECOND_SUB_STEP,
-	PC_THIRD_SUB_STEP,
-	PC_FOURTH_SUB_STEP,
-	PC_FIFTH_SUB_STEP,
-}
 #include "../prerequisites.h"
 #include "../shock/kernels.ac"
 #
