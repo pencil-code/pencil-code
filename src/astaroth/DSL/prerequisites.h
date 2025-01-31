@@ -38,13 +38,13 @@
 
 #include "fieldecs.h"
 #include "../stdlib/grid.h"
-#include "../stdlib/derivs.h"
-#include "../stdlib/operators.h"
 #include "../stdlib/integrators.h"
 #include "../stdlib/units.h"
 #include "../stdlib/utils/kernels.h"
 //#include "../stdlib/map.h"
 #include "PC_modulepardecs.h"
+#include "../stdlib/derivs.h"
+#include "../stdlib/operators.h"
 #define AC_NGHOST NGHOST
 
 // declare here reduction results needed for the timestep
@@ -73,3 +73,11 @@ output real AC_maximum_error
 
 #include "equations.h"
 
+enum PC_SUB_STEP_NUMBER
+{
+	PC_FIRST_SUB_STEP,
+	PC_SECOND_SUB_STEP,
+	PC_THIRD_SUB_STEP,
+	PC_FOURTH_SUB_STEP,
+	PC_FIFTH_SUB_STEP,
+}

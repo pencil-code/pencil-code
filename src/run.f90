@@ -1229,8 +1229,6 @@ call copy_addr(dsound,p_par(10))
 call copy_addr(tsound,p_par(11)) 
 call copy_addr(soundeps,p_par(12)) 
 call copy_addr(lfix_unit_std,p_par(14)) ! int
-call copy_addr(m,p_par(44)) ! int
-call copy_addr(n,p_par(45)) ! int
 call copy_addr(lfirstpoint,p_par(46)) ! int
 call copy_addr(dxyz_2,p_par(47)) ! (nx)
 call copy_addr(dxyz_4,p_par(48)) ! (nx)
