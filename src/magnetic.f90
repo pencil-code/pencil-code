@@ -137,7 +137,8 @@ module Magnetic
   real :: eta_shock=0.0, eta_shock2=0.0, alp_aniso=0.0, eta_aniso_BB=0.0
   real :: quench_aniso=impossible
   real :: eta_va=0., eta_j=0., eta_j2=0., eta_jrho=0., eta_min=0., eta_max=0., &
-          eta_huge=1e38, etaj20=0., va_min=0., vArms=1.
+          !eta_huge=1e38, etaj20=0., va_min=0., vArms=1.
+          eta_huge=huge1, etaj20=0., va_min=0., vArms=1.
   real :: rhomin_jxb=0.0, va2max_jxb=0.0, va2max_boris=0.0,cmin=0.0
   real :: omega_Bz_ext=0.0
   real :: mu_r=-0.5 !(still needed for backwards compatibility)
@@ -4150,6 +4151,13 @@ module Magnetic
 ! jj
 !
       if (lpenc_loc(i_jj) .or. lpenc_loc(i_jj_ohm)) then
+        if (lvacuum) then
+          p%jj=0.
+          p%jj_ohm=0.
+          eta_total=huge1
+          eta_xtdep=huge1
+          eta_tdep=huge1
+        else
 !
 !  The following allows us to let eta change with time, t-eta_tdep_toffset.
 !  The eta_tdep_toffset is used in cosmology where time starts at t=1.
@@ -4253,6 +4261,8 @@ module Magnetic
             endwhere
           case default
         endselect
+!indent end
+        endif
       endif
 !
 !  Check whether or not the displacement current is being computed.
@@ -4272,6 +4282,7 @@ module Magnetic
           if (lvacuum) then
             p%jj=0.
             p%jj_ohm=0.
+            eta_total=huge1
           else
 !
 !  The Ohm's current is independent of loverride_ee2, etc.
@@ -4719,7 +4730,7 @@ module Magnetic
           advec2=advec2 + tmp1
         endif
 !
-      endif
+      endif 
 !
     endsubroutine calc_pencils_magnetic_pencpar
 !***********************************************************************
