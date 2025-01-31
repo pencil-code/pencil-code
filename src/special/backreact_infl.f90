@@ -100,7 +100,7 @@ module backreact_infl
   real :: edotbm, edotbm_all, e2m, e2m_all, b2m, b2m_all, a2rhophim, a2rhophim_all
   real :: a2rhogphim, a2rhogphim_all
   real :: lnascale, ascale, a2, a21, Hscript
-  real :: Hscript0=0.
+  real :: Hscript0=0., scale_rho_chi_Heqn=1.
   real, target :: ddotam_all
   real, pointer :: alpf, eta_tdep
 ! real, dimension (:), pointer :: eta_xtdep
@@ -121,13 +121,13 @@ module backreact_infl
       initpower_phi, initpower2_phi, cutoff_phi, kgaussian_phi, kpeak_phi, &
       initpower_dphi, initpower2_dphi, cutoff_dphi, kpeak_dphi, &
       ncutoff_phi, lscale_tobox, Hscript0, Hscript_choice, infl_v, lflrw, &
-      lrho_chi
+      lrho_chi, scale_rho_chi_Heqn
 !
   namelist /backreact_infl_run_pars/ &
       initspecial, phi0, dphi0, axionmass, eps, ascale_ini, &
       lbackreact_infl, lem_backreact, c_light_axion, lambda_axion, Vprime_choice, &
       lzeroHubble, ldt_backreact_infl, Ndiv, Hscript0, Hscript_choice, infl_v, &
-      lflrw, lrho_chi
+      lflrw, lrho_chi, scale_rho_chi_Heqn
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -752,6 +752,9 @@ module backreact_infl
         call dot2_mn(el,e2)
         a2rhop=a2rhop+(.5*fourthird)*(e2+b2)*a21
         a2rho=a2rho+.5*(e2+b2)*a21
+        if (lrho_chi) then
+          a2rho=a2rho+scale_rho_chi_Heqn*a2*f_ode(iinfl_rho_chi)
+        endif
       endif
 !
       a2rhopm=a2rhopm+sum(a2rhop)
