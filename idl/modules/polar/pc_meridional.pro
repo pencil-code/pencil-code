@@ -1,10 +1,12 @@
 
 function pc_meridional,field_in,rad,tht,$
-                  plot=plot,amin=amin,amax=amax,ncolors=ncolors
+                  plot=plot,amin=amin,amax=amax,ncolors=ncolors;,datadir=datadir
 ;
 default,amin,0.
 default,amax,1.
 default,ncolors,256
+;
+pc_read_param, obj=param, dim=dim, datadir=datadir
 ;
 field=field_in
 ;
@@ -37,7 +39,7 @@ zc=grange(z0,zn,Nzc)
 fieldxz=fltarr(nxc,nzc)
 fieldxz=fieldxz*0.
 ;
-drad=rad(1)-rad(0) & drad1=1./drad
+drad0=rad(1)-rad(0)
 dtht=tht(1)-tht(0) & dtht1=1./dtht
 ;
 rint=rad[0]
@@ -52,7 +54,32 @@ for ix=0,nxc-1 do begin
                           and                   $
         (theta ge tht(0)) and (theta le tht(ntht-1))) then begin
 ;
-      ir1=floor((radius-rint)*drad1) & ir2=ir1+1
+       if (param.lequidist[0] eq -1) then begin
+       ; usual indexing for equidistant grids
+          ir1=floor((radius-rint)/drad0)
+       endif else begin
+       ; bisect to find the index in non-equidistant grids
+       ; (imported from the fortran subroutine in the main code)
+          jl = 0
+          ju = n_elements(rad)-1
+          while ((ju - jl) gt 1) do begin
+             jm = (ju + jl) / 2
+             if (radius gt rad[jm-1]) then begin
+                jl = jm
+             endif else begin
+                ju = jm
+             endelse
+          endwhile
+          if (radius - rad[jl-1] le rad[ju-1] - radius) then begin
+             ir1 = jl-1
+          endif else begin
+             ir1 = ju-1
+          endelse
+       endelse
+
+       ir2=ir1+1
+       drad=rad(ir2)-rad(ir1) & drad1=1./drad
+
       if (ir2 eq Nrad) then ir2=Nrad-1
       if (ir1 lt    0) then begin
         print,'ir1 lt 0. radius,ir1=',radius,ir1
