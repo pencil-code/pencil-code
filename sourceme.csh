@@ -46,12 +46,13 @@ if (! $?_sourceme) then		# called for the fist time?
     #  Set shell path
     if (! $?_sourceme_quiet) echo "Adding $PENCIL_HOME/{bin,utils{,/axel},scripts} to PATH"
     #  First remove all PC related paths from path
-    set path = `echo $PATH | sed -e's/[^:]*pencil-code[^:]*://g' -e's/[^:]*pencil-code[^:]* *$//' -e's/:$//'`
+# AB: the following line leaves me without /bin, for example! Removed it for now.
+#   set path = `echo $PATH | sed -e's/[^:]*pencil-code[^:]*://g' -e's/[^:]*pencil-code[^:]* *$//' -e's/:$//'`
     set path = ( $path $PENCIL_HOME/bin \
                        $PENCIL_HOME/utils \
 		       $PENCIL_HOME/utils/axel \
                        $PENCIL_HOME/src/scripts \
-		       $PENCIL_HOME/remesh/bin )
+		       $PENCIL_HOME/remesh/bin)
     #setenv PATH ${path}
 
     #  Set path for DX macros
@@ -71,7 +72,8 @@ if (! $?_sourceme) then		# called for the fist time?
     endif
 
     # Set HDF5 path
-    if (! $?HDF5_HOME) setenv HDF5_HOME `which h5fc 2>/dev/null | sed -e 's/\/bin\/h5fc$//'`
+    # AB: the following line causes an  "Ambiguous output redirect." I comment it out for now.
+    #if (! $?HDF5_HOME) setenv HDF5_HOME `which h5fc 2>/dev/null | sed -e 's/\/bin\/h5fc$//'`
 
     #  Set PYTHON path
     if ($?PYTHONPATH) then
