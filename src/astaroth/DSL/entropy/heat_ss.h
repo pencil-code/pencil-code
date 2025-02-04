@@ -19,8 +19,8 @@
   lnTT = lnTT0+cv1*value(SS)+gamma_m1*(lnrho-lnrho0)
   TT = exp(lnTT)
 #if LHYDRO
-  rhs +=  2. * nu * contract(traceless_rateof_strain(UU))
-        + zeta * rho1 * divergence(UU) * divergence(UU)   // precalculated?
+  if (lvisc_nu_const){rhs += 2. * nu * contract(traceless_rateof_strain(UU))}
+  if (lvisc_rho_nu_const_bulk){rhs += zeta * rho1 * divergence(UU) * divergence(UU)}   // precalculated?
 #endif
 #if LMAGNETIC
   j = (gradient_of_divergence(AA) - laplace(AA))/mu0

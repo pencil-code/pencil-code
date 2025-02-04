@@ -3712,11 +3712,15 @@ module Diagnostics
       if (.not.firstcall) return
 
       nmax = allpos_in_array_int(max_range,itype_name)
-      allocate(inds_max_diags(nmax))
-      nmax = allpos_in_array_int(max_range,itype_name,inds_max_diags)
+      if (nmax>0) then
+        allocate(inds_max_diags(nmax))
+        nmax = allpos_in_array_int(max_range,itype_name,inds_max_diags)
+      endif
       nsum = allpos_in_array_int(sum_range,itype_name)
-      allocate(inds_sum_diags(nsum))
-      nsum = allpos_in_array_int(sum_range,itype_name,inds_sum_diags)
+      if (nsum>0) then
+        allocate(inds_sum_diags(nsum))
+        nsum = allpos_in_array_int(sum_range,itype_name,inds_sum_diags)
+      endif
 
       firstcall=.false.
       firstcall_from_pencil_check=lpencil_check_at_work

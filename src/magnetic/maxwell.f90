@@ -790,6 +790,7 @@ module Magnetic
       integer :: ikx, iky, ikz, q, p, ik
       real :: k1, k2, k3, ksqr
 ! 
+!$omp parallel num_threads(num_helper_threads)
       !$omp workshare   
       spectra%mag=0.; spectra%maghel=0.
       spectra%ele=0.; spectra%elehel=0.
@@ -886,7 +887,8 @@ module Magnetic
             endif
           enddo
         enddo
-      enddo
+      enddo     ! do ikz
+!$omp end parallel
 
     endsubroutine make_spectra
 !***********************************************************************
@@ -902,24 +904,24 @@ module Magnetic
       character(LEN=3) :: kind
 
       if (lfirstcall) then
-!$omp parallel
         call make_spectra(f)
-!$omp end parallel
         lfirstcall=.false.
       endif
 !
+!$omp parallel num_threads(num_helper_threads)
       select case(kind)
       case ('mag')
-        !$omp parallel workshare
+        !$omp workshare
         spectrum=spectra%mag; spectrum_hel=spectra%maghel
-        !$omp end parallel workshare
+        !$omp end workshare
       case ('ele')
-        !$omp parallel workshare
+        !$omp workshare
         spectrum=spectra%ele; spectrum_hel=spectra%elehel
-        !$omp end parallel workshare
+        !$omp end workshare
       case default 
         call warning('magnetic_calc_spectra','kind of spectrum "'//kind//'" not implemented')
       endselect
+!$omp end parallel
 !
     endsubroutine magnetic_calc_spectra
 !***********************************************************************
@@ -938,26 +940,26 @@ module Magnetic
       character(LEN=3) :: kindstr
 
       if (lfirstcall) then
-!$omp parallel
         call make_spectra(f)
-!$omp end parallel
         lfirstcall=.false.
       endif
 
       kindstr=char(kind(1))//char(kind(2))//char(kind(3))
 
+!$omp parallel num_threads(num_helper_threads)
       select case(kindstr)
       case ('mag')
-        !$omp parallel workshare
+        !$omp workshare
         spectrum=spectra%mag; spectrum_hel=spectra%maghel
-        !$omp end parallel workshare
+        !$omp end workshare
       case ('ele')
-        !$omp parallel workshare
+        !$omp workshare
         spectrum=spectra%ele; spectrum_hel=spectra%elehel
-        !$omp end parallel workshare
+        !$omp end workshare
       case default
         call warning('magnetic_calc_spectra','kind of spectrum "'//kindstr//'" not implemented')
       endselect
+!$omp end parallel
 
     endsubroutine magnetic_calc_spectra_byte
 !***********************************************************************

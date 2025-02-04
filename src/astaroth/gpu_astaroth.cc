@@ -95,7 +95,7 @@ extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
 
   // acGridExecuteTaskGraph(rhs_test_graph,1);
   AcTaskGraph *rhs =  acGetOptimizedDSLTaskGraph(AC_rhs);
-  for(int i = 0; i < 3; ++i)
+  for (int i = 0; i < 3; ++i)
   {
   	acDeviceSetInput(acGridGetDevice(), AC_step_num, (PC_SUB_STEP_NUMBER) i);
   	acGridExecuteTaskGraph(rhs,1);
@@ -177,7 +177,7 @@ extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
   //actual run
   //TP: works for only rk3 but is anyone anyways using this? Probably not
   for (int i=0;i<num_of_steps;i++){
-    for(int substep  = 0;substep<3; ++substep)
+    for (int substep = 0; substep <3; ++substep)
     {
     	acDeviceSetInput(acGridGetDevice(), AC_step_num, (PC_SUB_STEP_NUMBER)substep);
     	acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_rhs),1);
@@ -724,17 +724,15 @@ AcReal max_diffus(AcReal );
 /***********************************************************************************************/
 bool
 has_nans(AcMesh mesh_in);
-
+/***********************************************************************************************/
 AcReal
 sign(const AcReal a, const AcReal b)
 {
-	if(b < 0.0)
+	if (b < 0.0)
 		return -abs(a);
 	else
 		return abs(a);
 }
-
-
 /***********************************************************************************************/
 extern "C" void substepGPU(int isubstep)
 //
@@ -784,14 +782,14 @@ extern "C" void substepGPU(int isubstep)
       //TP: now done in executetaskgraph
     
     AcReal dt1_{};
-    if(!lcourant_dt)
+    if (!lcourant_dt)
     {
       const AcReal maximum_error = acDeviceGetOutput(acGridGetDevice(), AC_maximum_error);
       AcReal dt_{};
       const AcReal dt_increase=-1./(itorder+dtinc);
       const AcReal dt_decrease=-1./(itorder-dtdec);
       const AcReal safety=0.95;
-      if(maximum_error > 1)
+      if (maximum_error > 1)
       {
       	// Step above error threshold so decrease the next time step
       	const AcReal dt_temp = safety*dt*pow(maximum_error,dt_decrease);
@@ -1005,6 +1003,7 @@ void setupConfig(AcMeshInfo& config)
     PCLoad(config,AC_proc_mapping_strategy,(int)AcProcMappingStrategy::Morton);
   else
     PCLoad(config,AC_proc_mapping_strategy,(int)AcProcMappingStrategy::Linear);
+
   PCLoad(config,AC_MPI_comm_strategy,(int)AcMPICommStrategy::DuplicateUserComm);
   config.comm = comm_pencil;
 
@@ -1088,8 +1087,8 @@ extern "C" void getFArrayIn(AcReal **p_f_in)
   acDeviceGetVertexBufferPtrs(acGridGetDevice(),UUX,&uux_ptr,&out);
   acDeviceGetVertexBufferPtrs(acGridGetDevice(),UUY,&uuy_ptr,&out);
   acDeviceGetVertexBufferPtrs(acGridGetDevice(),UUZ,&uuz_ptr,&out);
-  if(uux_ptr + mw != uuy_ptr) fprintf(stderr, "UU not contiguous\n");
-  if(uuy_ptr + mw != uuz_ptr) fprintf(stderr, "UU not contiguous\n");
+  if (uux_ptr + mw != uuy_ptr) fprintf(stderr, "UU not contiguous\n");
+  if (uuy_ptr + mw != uuz_ptr) fprintf(stderr, "UU not contiguous\n");
   acDeviceGetVertexBufferPtrs(acGridGetDevice(),VertexBufferHandle(0),p_f_in,&out);
 }
 /***********************************************************************************************/
@@ -1102,14 +1101,15 @@ extern "C" void copyVBApointers(AcReal **in, AcReal **out)
   acDeviceGetVertexBufferPtrs(acGridGetDevice(),UUX,&uux_ptr,out);
   acDeviceGetVertexBufferPtrs(acGridGetDevice(),UUY,&uuy_ptr,out);
   acDeviceGetVertexBufferPtrs(acGridGetDevice(),UUZ,&uuz_ptr,out);
-  if(uux_ptr + mw != uuy_ptr) fprintf(stderr, "UU not contiguous\n");
-  if(uuy_ptr + mw != uuz_ptr) fprintf(stderr, "UU not contiguous\n");
+  if (uux_ptr + mw != uuy_ptr) fprintf(stderr, "UU not contiguous\n");
+  if (uuy_ptr + mw != uuz_ptr) fprintf(stderr, "UU not contiguous\n");
 
   acDeviceGetVertexBufferPtrs(acGridGetDevice(),VertexBufferHandle(0),in,out);
 }
 /***********************************************************************************************/
 void
-testBCs();
+testBCs();     // ahead declaration
+/***********************************************************************************************/
 extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out, int comm_fint)
 {
   //Setup configurations used for initializing and running the GPU code
@@ -1121,7 +1121,7 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out, int c
   setupConfig(mesh.info);
 
   //TP: done after setupConfig since we need maux_vtxbuf_index
-  //TP: this is a ugly way to do this but works for now
+  //TP: this is an ugly way to do this but works for now
   {
     size_t offset = 0;
     for (int i = 0; i < mvar; ++i)
@@ -1129,10 +1129,11 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out, int c
       mesh.vertex_buffer[VertexBufferHandle(i)] = &PC_FARRAY[offset];
       offset += mw;
     }
+//printf("&farray[offset]= %p \n",&farray[offset]);fflush(stdout);
 
-    for(int i = 0; i < mfarray; ++i)
+    for (int i = 0; i < mfarray; ++i)
     {
-      if(maux_vtxbuf_index[i])
+      if (maux_vtxbuf_index[i])
       {
               mesh.vertex_buffer[maux_vtxbuf_index[i]] = &PC_FARRAY[mw*i];
       }
@@ -1159,7 +1160,7 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out, int c
   acDeviceSetInput(acGridGetDevice(), AC_dt,dt);
   if (ltest_bcs) testBCs();
   //TP: autotune for all substeps
-  for(int i = 0; i < num_substeps; ++i)
+  for (int i = 0; i < num_substeps; ++i)
   {
   	acDeviceSetInput(acGridGetDevice(), AC_step_num,(PC_SUB_STEP_NUMBER)i);
 	acGetOptimizedDSLTaskGraph(AC_rhs);
@@ -1193,7 +1194,7 @@ extern "C" void copyFarray(AcReal* f)
   //acDeviceStoreMesh(acGridGetDevice(), STREAM_DEFAULT, &mesh);
   //TP: for now only copy the advanced fields back
   //TODO: should auxiliaries needed on the GPU like e.g. Shock be copied? They can always be recomputed on the host if needed
-  for(int i = 0; i < mvar; ++i)
+  for (int i = 0; i < mvar; ++i)
   {
 	  acDeviceStoreVertexBuffer(acGridGetDevice(),STREAM_DEFAULT,VertexBufferHandle(i),&mesh);
   }
@@ -1222,8 +1223,8 @@ extern "C" void loadFarray()
     for (int i = 0; i < mvar; ++i)
   	acDeviceLoadVertexBuffer(acGridGetDevice(), STREAM_DEFAULT, mesh, VertexBufferHandle(i));
 
-    for(int i = 0; i < mfarray; ++i)
-      if(maux_vtxbuf_index[i])
+    for (int i = 0; i < mfarray; ++i)
+      if (maux_vtxbuf_index[i])
   		acDeviceLoadVertexBuffer(acGridGetDevice(), STREAM_DEFAULT, mesh, VertexBufferHandle(maux_vtxbuf_index[i]));
   }
   acGridSynchronizeStream(STREAM_ALL);
@@ -1432,7 +1433,7 @@ check_sym_x(const AcMesh mesh_in)
   				{
 					return acVertexBufferIdx(x,y,z,acGridGetLocalMeshInfo());
   				};
-  if(rank == 1)
+  if (rank == 1)
   {
   	//printf("HMM: %14e\n",mesh_in.vertex_buffer[0][DEVICE_VTXBUF_IDX(14,15,2)]);
   	//printf("HMM: %14e\n",mesh_in.vertex_buffer[0][DEVICE_VTXBUF_IDX(14,15,2)]);
@@ -1446,22 +1447,22 @@ check_sym_x(const AcMesh mesh_in)
     {
       for (size_t k = 0; k < dims.m1.z; k++)
       {
-	if(
+	if (
 	   i >= NGHOST && i < dims.n1.x &&
 	   j >= NGHOST && j < dims.n1.y &&
 	   k >= NGHOST && k < dims.n1.z
 	  )continue;
-	 if(i >= NGHOST && i < dims.n1.x) continue;
+	 if (i >= NGHOST && i < dims.n1.x) continue;
         for (int ivar = UUY; ivar <= UUY; ivar++)
         {
 	 //BOT
-	 if(i < NGHOST)
+	 if (i < NGHOST)
 	 {
 	 	const auto idx = DEVICE_VTXBUF_IDX(i,j,k);
 		const auto offset = NGHOST-i;
 	 	const auto domain_x= NGHOST+offset;
 	 	const auto domain_idx = DEVICE_VTXBUF_IDX(domain_x,j,k);
-		if(mesh_in.vertex_buffer[ivar][idx] !=  mesh_in.vertex_buffer[ivar][domain_idx])
+		if (mesh_in.vertex_buffer[ivar][idx] !=  mesh_in.vertex_buffer[ivar][domain_idx])
 		{
 			fprintf(stderr,"WRONG\n");
 			exit(EXIT_FAILURE);
@@ -1475,7 +1476,7 @@ check_sym_x(const AcMesh mesh_in)
 		const auto offset = i-mesh_in.info[AC_nlocal_max].x+1;
 	 	const auto domain_x= mesh_in.info[AC_nlocal_max].x-offset;
 	 	const auto domain_idx = DEVICE_VTXBUF_IDX(domain_x,j,k);
-		if(mesh_in.vertex_buffer[ivar][idx] !=  mesh_in.vertex_buffer[ivar][domain_idx])
+		if (mesh_in.vertex_buffer[ivar][idx] !=  mesh_in.vertex_buffer[ivar][domain_idx])
 		{
 			fprintf(stderr,"WRONG\n");
 			exit(EXIT_FAILURE);
@@ -1637,14 +1638,14 @@ testBCs()
   	for (int ivar=0;ivar<NUM_VTXBUF_HANDLES;ivar++)
 	{
     		acLogFromRootProc(0,"ratio of values wrong for field: %s\t %f\n",field_names[ivar],(double)num_of_points_where_different[ivar]/num_of_points);
-		if(different_in[ivar][bot_x]) acLogFromRootProc(0,"different in BOT_X\n");
-		if(different_in[ivar][top_x]) acLogFromRootProc(0,"different in TOP_X\n");
+		if (different_in[ivar][bot_x]) acLogFromRootProc(0,"different in BOT_X\n");
+		if (different_in[ivar][top_x]) acLogFromRootProc(0,"different in TOP_X\n");
 
-		if(different_in[ivar][bot_y]) acLogFromRootProc(0,"different in BOT_Y\n");
-		if(different_in[ivar][top_y]) acLogFromRootProc(0,"different in TOP_Y\n");
+		if (different_in[ivar][bot_y]) acLogFromRootProc(0,"different in BOT_Y\n");
+		if (different_in[ivar][top_y]) acLogFromRootProc(0,"different in TOP_Y\n");
 
-		if(different_in[ivar][bot_z]) acLogFromRootProc(0,"different in BOT_Z\n");
-		if(different_in[ivar][top_z]) acLogFromRootProc(0,"different in TOP_Z\n");
+		if (different_in[ivar][bot_z]) acLogFromRootProc(0,"different in BOT_Z\n");
+		if (different_in[ivar][top_z]) acLogFromRootProc(0,"different in TOP_Z\n");
 	}
   	acLogFromRootProc(0,"max abs not passed val: %.7e\t%.7e\n",max_abs_not_passed_val, fabs(true_pair));
   	acLogFromRootProc(0,"max abs relative difference val: %.7e\n",max_abs_relative_difference);

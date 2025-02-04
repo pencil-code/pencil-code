@@ -627,10 +627,12 @@ module Equ
 
       if (ldiagnos .and. allocated(fname)) then
         do imn=1,size(fname)
-          if (any(inds_max_diags == imn) .and. fname(imn) /= 0.) then
-            p_fname(imn) = max(p_fname(imn),fname(imn))
-          else if (any(inds_sum_diags == imn)) then
-            p_fname(imn) = p_fname(imn) + fname(imn)
+          if (allocated(inds_max_diags)) then
+            if (any(inds_max_diags == imn) .and. fname(imn) /= 0.) &
+              p_fname(imn) = max(p_fname(imn),fname(imn))
+          endif
+          if (allocated(inds_sum_diags)) then
+            if (any(inds_sum_diags == imn)) p_fname(imn) = p_fname(imn) + fname(imn)
           endif
         enddo
       endif

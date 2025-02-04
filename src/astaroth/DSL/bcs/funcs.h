@@ -66,26 +66,28 @@ bc_ss_flux(topbot)
   real cs2_xy;
   real rho_xy;
   int i;
+  real lnrho
+  lnrho = LNRHO[vertexIdx.x][vertexIdx.y][AC_n1-1]
   if (topbot == AC_bot) {
     if (AC_pretend_lnTT) {
       tmp_xy=-FbotKbot/exp(SS[vertexIdx.x][vertexIdx.y][AC_n1-1]);
       for i in 1:NGHOST+1 {
         SS[vertexIdx.x][vertexIdx.y][AC_n1-i-1]=SS[vertexIdx.x][vertexIdx.y][AC_n1+i-1]-AC_dz2_bound[-i+NGHOST]*tmp_xy;
       }
-    }
+    } 
     else {
       if (AC_ldensity_nolog) {
-          rho_xy=LNRHO[vertexIdx.x][vertexIdx.y][AC_n1-1];
+          rho_xy=lnrho;
       }
       else {
-        rho_xy=exp(LNRHO[vertexIdx.x][vertexIdx.y][AC_n1-1]);
+        rho_xy=exp(lnrho);
       }
       cs2_xy = SS[vertexIdx.x][vertexIdx.y][AC_n1-1];
       if (AC_ldensity_nolog) {
         cs2_xy=AC_cs20*exp(AC_gamma_m1*(log(rho_xy)-AC_lnrho0)+AC_cv1*cs2_xy);
       }
       else {
-        cs2_xy=AC_cs20*exp(AC_gamma_m1*(LNRHO[vertexIdx.x][vertexIdx.y][AC_n1-1]-AC_lnrho0)+AC_cv1*cs2_xy);
+        cs2_xy=AC_cs20*exp(AC_gamma_m1*(lnrho-AC_lnrho0)+AC_cv1*cs2_xy);
       }
       if (AC_lheatc_chiconst) {
         tmp_xy=Fbot/(rho_xy*AC_chi*cs2_xy);
@@ -99,7 +101,7 @@ bc_ss_flux(topbot)
       for i in 1:NGHOST+1 {
         rho_xy = LNRHO[vertexIdx.x][vertexIdx.y][AC_n1+i-1]-LNRHO[vertexIdx.x][vertexIdx.y][AC_n1-i-1];
         if (AC_ldensity_nolog) {
-            rho_xy = rho_xy/LNRHO[vertexIdx.x][vertexIdx.y][AC_n1-1];
+            rho_xy = rho_xy/lnrho;
         }
         SS[vertexIdx.x][vertexIdx.y][AC_n1-i-1]=SS[vertexIdx.x][vertexIdx.y][AC_n1+i-1]+AC_cp*(AC_cp-AC_cv)*(rho_xy+AC_dz2_bound[-i+NGHOST]*tmp_xy);
       }

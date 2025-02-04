@@ -2983,7 +2983,7 @@ module Viscosity
 
     use Syscalls, only: copy_addr
 
-    integer, parameter :: n_pars=8
+    integer, parameter :: n_pars=9
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call copy_addr(nu,p_par(1))
@@ -2994,6 +2994,7 @@ module Viscosity
     call copy_addr(lvisc_hyper3_nu_const,p_par(6)) ! int
     call copy_addr(lvisc_nu_shock,p_par(7)) ! int
     call copy_addr(nu_hyper2,p_par(8))
+    call copy_addr(lvisc_rho_nu_const_bulk,p_par(9)) ! int
 
     endsubroutine pushpars2c
 !***********************************************************************
