@@ -252,7 +252,7 @@ module Magnetic
   logical :: lscale_tobox=.true., lsquash_aa=.false.
   logical :: lbraginsky=.false., l2d_aa=.false.
   logical :: lcoulomb=.false.
-  logical :: lfactors_aa=.false., lvacuum=.false.
+  logical :: lfactors_aa=.false., lvacuum=.false., lnoncollinear_EB=.false.
   logical :: loverride_ee=.false., loverride_ee2=.false., loverride_ee_decide=.false.
   logical :: lignore_1rho_in_Lorentz=.false., lnorm_aa_kk=.false., lohm_evolve=.false.
 !
@@ -427,7 +427,7 @@ module Magnetic
       no_ohmic_heat_z0, no_ohmic_heat_zwidth, alev, lrhs_max, &
       lnoinduction, lA_relprof_global, nlf_sld_magn, fac_sld_magn, div_sld_magn, &
       lbb_sph_as_aux, ltime_integrals_always, dtcor, lvart_in_shear_frame, &
-      lbraginsky, eta_jump0, eta_jump1, lcoulomb, lvacuum, &
+      lbraginsky, eta_jump0, eta_jump1, lcoulomb, lvacuum, lnoncollinear_EB, &
       loverride_ee_decide, eta_tdep_loverride_ee, loverride_ee2, lignore_1rho_in_Lorentz, &
       lbext_moving_layer, zbot_moving_layer, ztop_moving_layer, speed_moving_layer, edge_moving_layer, &
       echarge, lno_eta_tdep, luse_scale_factor_in_sigma, ell_jj, tau_jj
@@ -3885,7 +3885,7 @@ module Magnetic
 !
       real, dimension (nx,3) :: tmp ! currently unused: bb_ext_pot
       real, dimension (nx) :: rho1_jxb, quench, StokesI_ncr, tmp1, bbgb, va2max_beta
-      real, dimension (nx) :: Eabs, Babs
+      real, dimension (nx) :: Eabs, Babs, eb, boost, gam_EB, eprime, bprime, jprime, sigE, sigB
       real, dimension(3) :: B_ext, j_ext
       real :: c,s
       real :: Eaver, Baver !, b2m
@@ -4192,7 +4192,7 @@ module Magnetic
 !
 !  get other shared variables
 !
-      call get_shared_variable('lrho_chi',lrho_chi, caller='initialize_magnetic')
+            call get_shared_variable('lrho_chi',lrho_chi, caller='initialize_magnetic')
 !
 !  need e2m, b2m
 !
@@ -4203,14 +4203,15 @@ module Magnetic
 !               'not programmed for multiple procs or more than 1 dimension')
 !           Eaver=sqrt(sum(f(l1:l2,m,n,iex)**2+f(l1:l2,m,n,iey)**2+f(l1:l2,m,n,iez)**2)/nx)
 !           Baver=sqrt(sum(p%b2)/nx+B_ext2)
-!
+!XXX
             !call get_shared_variable('e2m_all', e2m_all, caller='initialize_magnetic')
             call get_shared_variable('e2m_all', e2m_all)
             call get_shared_variable('b2m_all', b2m_all)
             Eaver=sqrt(e2m_all)
             Baver=sqrt(b2m_all+B_ext2)
 !
-!  Note that eta_tdep=0 for Baver=0.
+!  Compute sigmaE. Note that eta_tdep=0 for Baver=0.
+!  By default, lno_eta_tdep is false.
 !
             if (Eaver<tini .or. lno_eta_tdep) then
               eta_tdep=eta_huge
@@ -4222,6 +4223,20 @@ module Magnetic
               endif
             endif
 !
+!  Compute sigmaB. Note that eta_tdep=0 for Baver=0.
+!
+!           if (lsigmaB_contribution) then
+!             if (Eaver<tini) then
+!               etaB_tdep_B1=eta_huge
+!             else
+!               if (Baver<tini) then
+!                 etaB_tdep_B1=6.*pi**3*Hscript/echarge**3/(Eaver*Baver)
+!               else
+!                 etaB_tdep_B1=6.*pi**2*Hscript/echarge**3*tanh(pi*Baver/Eaver)/(Eaver*Baver)
+!               endif
+!             endif
+!           endif
+!XX
 !  eta_tdep
 !
           case ('mean-field-local')
@@ -4284,9 +4299,26 @@ module Magnetic
             if (lohm_evolve) then
               p%jj_ohm=f(l1:l2,m,n,ijx:ijz)
             else
-              do j=1,3
-                p%jj_ohm(:,j)=(p%el(:,j)+p%uxb(:,j))*mu01/eta_total
-              enddo
+!
+!  Compute fully non-collinear expression for the current density.
+!
+              if (lnoncollinear_EB) then
+                call dot(p%el,p%bb,eb)
+                boost=sqrt((p%e2-p%b2)**2+4.*eb**2)
+                gam_EB=sqrt21*sqrt(1.+(p%e2+p%b2)/boost)
+                eprime=sqrt21*sqrt(p%e2-p%b2+boost)
+                bprime=sqrt21*sqrt(p%b2-p%e2+boost)*sign(1.,eb)
+                jprime=echarge**3/(6.*pi**2*Hscript)*eprime*abs(bprime)/tanh(pi*abs(Bprime)/Eprime)
+                sigE=abs(jprime)*eprime/(gam_EB*boost)
+                sigB=abs(jprime)*eb/(eprime*gam_EB*boost)
+                p%jj_ohm(:,j)=sigE*p%el(:,j)+sigB*p%bb(:,j)
+              else
+                do j=1,3
+                  p%jj_ohm(:,j)=(p%el(:,j)+p%uxb(:,j))*mu01/eta_total
+                enddo
+              endif
+!
+              print*,'AXEL: p%jj_ohm=',p%jj_ohm
             endif
 !
 !  Compute current for Lorentz force.
@@ -6030,6 +6062,9 @@ module Magnetic
         if (tau_jj>0) then
           tau1_jj=1./tau_jj
           do j=1,3
+!
+!  Here we would need to add tau*sigmaB*B
+!
             dJdt(:,j)=tau1_jj*(p%el(:,j)+p%uxb(:,j))*mu01/eta_total
           enddo
           if (ell_jj/=0.) then
