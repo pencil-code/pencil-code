@@ -3032,7 +3032,7 @@ start.o: $(start) $(OMP_HEADER) Makefile.local
 start.x: start.o | $(SPECIAL_DEPS)
 	$(LD) $(start) start.o $(LDFLAGS) $(LDFLAGS_MAIN) $(LD_MPI) $(LD_FOURIER) $(LD_GSL) -o start.x
 libPCStart.so: start.o | $(SPECIAL_DEPS)
-        $(LD) $(start) start.o $(LDFLAGS) $(LDFLAGS_MAIN) $(LD_MPI) $(LD_FOURIER) $(LD_GSL) -shared -o libPCStart.so
+	$(LD) $(start) start.o $(LDFLAGS) $(LDFLAGS_MAIN) $(LD_MPI) $(LD_FOURIER) $(LD_GSL) -shared -o libPCStart.so
 
 #
 run.o: $(run) $(OMP_HEADER) Makefile.local
