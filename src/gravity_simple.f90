@@ -62,10 +62,11 @@ module Gravity
   real :: g_E, g_F, Rgal=impossible, Rsol=impossible
   real :: cs0hs=0.0, H0hs=0.0
   real :: potx_const=0.0, poty_const=0.0, potz_const=0.0
+  real :: accretor_grav=0., accretor_speed=0., accretor_rsoft=0., kaccretor
   integer :: n_pot=10
   integer :: n_adjust_sphersym=0
   character (len=labellen) :: gravx_profile='zero', gravy_profile='zero', &
-                              gravz_profile='zero'
+                              gravz_profile='zero', grav_type='default'
 !
 !  Parameters used by other modules (only defined for other gravities)
 !
@@ -74,6 +75,7 @@ module Gravity
   logical :: lcalc_zinfty=.false.
   logical :: lboussinesq_grav=.false.
   logical :: ladjust_sphersym=.false.
+  logical :: laccretor_peri=.false.
 
   real :: g0=0.0
   real :: lnrho_bot=0.0, lnrho_top=0.0, ss_bot=0.0, ss_top=0.0
@@ -89,7 +91,8 @@ module Gravity
       lcalc_zinfty, kappa_x1, kappa_x2, kappa_z1, kappa_z2, reduced_top, &
       lboussinesq_grav, n_pot, cs0hs, H0hs, grav_tilt, grav_amp, &
       potx_const,poty_const,potz_const, zclip, n_adjust_sphersym, gravitational_const, &
-      mass_cent_body, g_A_factor, g_C_factor, g_B_factor, g_D_factor, Rsol, Rgal
+      mass_cent_body, g_A_factor, g_C_factor, g_B_factor, g_D_factor, Rsol, Rgal, &
+      grav_type, accretor_grav, accretor_speed, accretor_rsoft, laccretor_peri
 !
   namelist /grav_run_pars/ &
       gravx_profile, gravy_profile, gravz_profile, gravx, gravy, gravz, &
@@ -100,7 +103,8 @@ module Gravity
       lcalc_zinfty, kappa_x1, kappa_x2, kappa_z1, kappa_z2, reduced_top, &
       lboussinesq_grav, n_pot, grav_tilt, grav_amp, &
       potx_const,poty_const,potz_const, zclip, n_adjust_sphersym, gravitational_const, &
-      mass_cent_body, g_A_factor, g_C_factor, g_B_factor, g_D_factor, Rsol, Rgal
+      mass_cent_body, g_A_factor, g_C_factor, g_B_factor, g_D_factor, Rsol, Rgal, &
+      grav_type, accretor_grav, accretor_speed, accretor_rsoft, laccretor_peri
 !
 !  Diagnostic variables for print.in
 ! (needs to be consistent with reset list below)
@@ -204,7 +208,8 @@ module Gravity
       if (lrun) then
         if (gravx_profile == 'zero' .and. &
             gravy_profile == 'zero' .and. &
-            gravz_profile == 'zero') then
+            gravz_profile == 'zero' .and. &
+            grav_type == 'default') then
           call warning('initialize_gravity','You do not need gravity_simple for zero gravity')
         endif
       endif
@@ -254,10 +259,12 @@ module Gravity
       select case (gravx_profile)
 !
       case ('zero')
-        if (lroot) print*,'initialize_gravity: no x-gravity'
-        gravx_xpencil=0.
-        lgravx_gas=.false.
-        lgravx_dust=.false.
+        if (grav_type=='default') then
+          if (lroot) print*,'initialize_gravity: no x-gravity'
+          gravx_xpencil=0.
+          lgravx_gas=.false.
+          lgravx_dust=.false.
+        endif
 !
       case ('const')
         if (lroot) print*,'initialize_gravity: constant x-grav=', gravx
@@ -382,10 +389,12 @@ module Gravity
       select case (gravy_profile)
 !
       case ('zero')
-        if (lroot) print*,'initialize_gravity: no y-gravity'
-        gravy_ypencil=0.
-        lgravy_gas=.false.
-        lgravy_dust=.false.
+        if (grav_type=='default') then
+          if (lroot) print*,'initialize_gravity: no y-gravity'
+          gravy_ypencil=0.
+          lgravy_gas=.false.
+          lgravy_dust=.false.
+        endif
 !
       case ('const')
         if (lroot) print*,'initialize_gravity: constant y-grav=', gravy
@@ -415,10 +424,12 @@ module Gravity
       select case (gravz_profile)
 !
       case ('zero')
-        if (lroot) print*,'initialize_gravity: no z-gravity'
-        gravz_zpencil=0.
-        lgravz_gas=.false.
-        lgravz_dust=.false.
+        if (grav_type=='default') then
+          if (lroot) print*,'initialize_gravity: no z-gravity'
+          gravz_zpencil=0.
+          lgravz_gas=.false.
+          lgravz_dust=.false.
+        endif
 !
       case ('const')
         if (lroot) print*,'initialize_gravity: constant gravz=', gravz
@@ -603,6 +614,13 @@ module Gravity
         call fatal_error('initialize_gravity','no such gravz_profile: '//trim(gravz_profile))
 !
       endselect
+!
+!  Compute parameter for periodic accretor potential.
+!
+      if (laccretor_peri) then
+        kaccretor=pi/Lxyz(1)
+        if (lroot) print*,'kaccretor=',kaccretor
+      endif
 !
 !  Sanity check.
 !
@@ -927,13 +945,36 @@ module Gravity
       intent(in) :: f
       intent(inout) :: p
 !
-      if (lpencil(i_gg)) then
-        p%gg(:,1) = gravx_xpencil(l1:l2)
-        p%gg(:,2) = gravy_ypencil(m)
-        p%gg(:,3) = gravz_zpencil(n)
-      endif
+      real, dimension (nx) :: fact, xaccretor, one_over_r
 !
-      if (lpencil(i_epot)) p%epot=p%rho*(potx_xpencil(l1:l2)+poty_ypencil(m)+potz_zpencil(n))
+      select case (grav_type)
+!
+      case ('accretor')
+        if (lpencil(i_gg)) then
+          if (laccretor_peri) then
+            xaccretor=atan(tan(kaccretor*(x(l1:l2)-accretor_speed*t)))/kaccretor
+          else
+            xaccretor=x(l1:l2)-accretor_speed*t
+          endif
+          one_over_r=1./sqrt(xaccretor**2+y(m)**2+z(n)**2+accretor_rsoft**2)
+          fact=-accretor_grav*one_over_r**3
+          p%gg(:,1) = fact*xaccretor
+          p%gg(:,2) = fact*y(m)
+          p%gg(:,3) = fact*z(n)
+          if (lpencil(i_epot)) then
+            p%epot=-accretor_grav*one_over_r
+          endif
+        endif
+      case ('default')
+        if (lpencil(i_gg)) then
+          p%gg(:,1) = gravx_xpencil(l1:l2)
+          p%gg(:,2) = gravy_ypencil(m)
+          p%gg(:,3) = gravz_zpencil(n)
+        endif
+        if (lpencil(i_epot)) p%epot=p%rho*(potx_xpencil(l1:l2)+poty_ypencil(m)+potz_zpencil(n))
+      case default
+        call fatal_error('calc_pencils_gravity','no such grav_type')
+      endselect
 !
       call keep_compiler_quiet(f)
 !

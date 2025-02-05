@@ -503,7 +503,7 @@ ifeq ($(TRAINING),training_torchfort)
     endif
   endif
   ifneq ($(shell bash -c 'which nvfortran 2>& 1 >/dev/null | grep "which *: *no "'),)
-    $(error nvfortran not available! Exit.)
+    $(info nvfortran not available! Exit.)
   endif
   ifeq ($(TORCHFORT_PATH),)
     $(info TORCHFORT_PATH  not set)
@@ -639,9 +639,9 @@ ifneq ($(filter $(IO) $(IO_IN), io_hdf5),)
   endif
 endif
 #
-HDF5_MODULES = io_hdf5 special/meanfield_e_tensor
+HDF5_MODULES = io_hdf5 special/meanfield_e_tensor training_torchfort
 #
-ifneq ($(filter $(SPECIAL) $(IO) $(IO_IN) $(IO_OUT), $(HDF5_MODULES)),)
+ifneq ($(filter $(SPECIAL) $(IO) $(IO_IN) $(IO_OUT) $(TRAINING), $(HDF5_MODULES)),)
   ifneq ($(MODULE_CMD),)
     HDF5_LOADED := $(shell (module list |& grep -i hdf5) || (module list |& grep -i hf5) )
     ifeq ($(HDF5_LOADED),)
@@ -651,6 +651,12 @@ ifneq ($(filter $(SPECIAL) $(IO) $(IO_IN) $(IO_OUT), $(HDF5_MODULES)),)
         $(error Try (one of) the following: $(shell (module spider |& grep -i hdf5 | sed -e's/^.* \([^ ]*[Hh][Dd][Ff]5[^ ]*\) .*$$/\1/') ))
       endif
     endif
+  endif
+  ifeq ($(HDF5_PATH),)
+    $(info HDF5_PATH  not set)
+  else
+    override FFLAGS+= -I$(HDF5_PATH)/include/
+    override LDFLAGS+=-L$(HDF5_PATH)/lib/ -lhdf5_fortran
   endif
 endif
 #

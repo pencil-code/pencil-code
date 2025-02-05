@@ -27,7 +27,7 @@ nm=mean(n(good))
 cm=mean(c(good))
 om=mean(o(good))
 ;
-xr=[2002.8,2024.7]
+xr=[2002.8,2025.7]
 plot,y,n,ps=10,yr=[0,64],xr=xr
 oplot,y,c,ps=10,col=122
 oplot,y,o,ps=10,col=55

@@ -97,12 +97,13 @@ module backreact_infl
   real :: kgaussian_phi=0.,kpeak_phi=0., kgaussian_dphi=0., kpeak_dphi=0.
   real :: relhel_phi=0.
   real :: ddotam, a2rhopm, a2rhopm_all, a2rhom, a2rhom_all
-  real :: edotbm, edotbm_all, e2m, e2m_all, a2rhophim, a2rhophim_all
+  real :: edotbm, edotbm_all, e2m, e2m_all, b2m, b2m_all, a2rhophim, a2rhophim_all
   real :: a2rhogphim, a2rhogphim_all
   real :: lnascale, ascale, a2, a21, Hscript
-  real :: Hscript0=0.
+  real :: Hscript0=0., scale_rho_chi_Heqn=1.
   real, target :: ddotam_all
-  real, pointer :: alpf
+  real, pointer :: alpf, eta_tdep
+! real, dimension (:), pointer :: eta_xtdep
   real, dimension (nx) :: dt1_special
   logical :: lbackreact_infl=.true., lem_backreact=.true., lzeroHubble=.false.
   logical :: lscale_tobox=.true.,ldt_backreact_infl=.true., lconf_time=.true.
@@ -120,13 +121,13 @@ module backreact_infl
       initpower_phi, initpower2_phi, cutoff_phi, kgaussian_phi, kpeak_phi, &
       initpower_dphi, initpower2_dphi, cutoff_dphi, kpeak_dphi, &
       ncutoff_phi, lscale_tobox, Hscript0, Hscript_choice, infl_v, lflrw, &
-      lrho_chi
+      lrho_chi, scale_rho_chi_Heqn
 !
   namelist /backreact_infl_run_pars/ &
       initspecial, phi0, dphi0, axionmass, eps, ascale_ini, &
       lbackreact_infl, lem_backreact, c_light_axion, lambda_axion, Vprime_choice, &
       lzeroHubble, ldt_backreact_infl, Ndiv, Hscript0, Hscript_choice, infl_v, &
-      lflrw, lrho_chi
+      lflrw, lrho_chi, scale_rho_chi_Heqn
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -143,6 +144,7 @@ module backreact_infl
   integer :: idiag_a2rhom=0   ! DIAG_DOC: $a^2 rho$
   integer :: idiag_a2rhophim=0   ! DIAG_DOC: $a^2 rho$
   integer :: idiag_a2rhogphim=0   ! DIAG_DOC: $0.5 <grad phi^2>$
+  integer :: idiag_rho_chi=0   ! DIAG_DOC: $\rho_\chi$
 !
   contains
 !****************************************************************************
@@ -191,6 +193,9 @@ module backreact_infl
       call put_shared_variable('ddotam',ddotam_all,caller='initialize_backreact_infl_ode')
       call put_shared_variable('ascale',ascale,caller='initialize_backreact_infl')
       call put_shared_variable('Hscript',Hscript,caller='initialize_backreact_infl')
+      call put_shared_variable('e2m_all',e2m_all,caller='initialize_backreact_infl')
+      call put_shared_variable('b2m_all',b2m_all,caller='initialize_backreact_infl')
+      call put_shared_variable('lrho_chi',lrho_chi,caller='initialize_backreact_infl')
 !
       if (lmagnetic .and. lem_backreact) then
         call get_shared_variable('alpf',alpf)
@@ -494,19 +499,33 @@ module backreact_infl
     subroutine dspecial_dt_ode
 !
       use Diagnostics, only: save_name
+      use SharedVariables, only: get_shared_variable
+!     use Magnetic, only: eta_xtdep
 !
-      real :: sigmaE=0.
+      real :: rho_chi
 !
       if (lflrw) then
         df_ode(iinfl_lna)=df_ode(iinfl_lna)+Hscript
       endif
       ascale=exp(f_ode(iinfl_lna))
+      rho_chi=f_ode(iinfl_rho_chi)
 !
-!  energy density of the charged particles
+!  eta_tdep
+!
+      if (lmagnetic .and. lem_backreact) then
+        call get_shared_variable('eta_tdep',eta_tdep)
+      else
+        allocate(eta_tdep)
+        eta_tdep=0.
+      endif
+!
+!  Energy density of the charged particles.
+!  At the moment, eta_tdep is computed computed from the averaged e2m,
+!  so it is not itself being averaged.
 !
       if (lrho_chi) then
         df_ode(iinfl_rho_chi)=df_ode(iinfl_rho_chi)-4.*Hscript*f_ode(iinfl_rho_chi) &
-          +2.*sigmaE*e2m/ascale**3
+          +e2m_all/(eta_tdep*ascale**3)
       endif
 !
 !  Diagnostics
@@ -519,6 +538,7 @@ module backreact_infl
         call save_name(a2rhom_all,idiag_a2rhom)
         call save_name(a2rhophim_all,idiag_a2rhophim)
         call save_name(a2rhogphim_all,idiag_a2rhogphim)
+        call save_name(rho_chi,idiag_rho_chi)
       endif
 !
     endsubroutine dspecial_dt_ode
@@ -578,7 +598,7 @@ module backreact_infl
         idiag_dphim=0; idiag_dphi2m=0; idiag_dphirms=0
         idiag_Hscriptm=0; idiag_lnam=0; idiag_ddotam=0
         idiag_a2rhopm=0; idiag_a2rhom=0; idiag_a2rhophim=0
-        idiag_a2rhogphim=0;
+        idiag_a2rhogphim=0; idiag_rho_chi=0
       endif
 !
       do iname=1,nname
@@ -595,6 +615,7 @@ module backreact_infl
         call parse_name(iname,cname(iname),cform(iname),'a2rhom',idiag_a2rhom)
         call parse_name(iname,cname(iname),cform(iname),'a2rhophim',idiag_a2rhophim)
         call parse_name(iname,cname(iname),cform(iname),'a2rhogphim',idiag_a2rhogphim)
+        call parse_name(iname,cname(iname),cform(iname),'rho_chi',idiag_rho_chi)
       enddo
 !!
 !!!  write column where which magnetic variable is stored
@@ -633,7 +654,9 @@ module backreact_infl
       call mpibcast_real(a2)
       call mpibcast_real(a21)
 !
-      ddotam=0.; a2rhopm=0.; a2rhom=0.; e2m=0; edotbm=0; a2rhophim=0.; a2rhogphim=0.
+!  In the following loop, go through all penciles and add up results to get e2m, etc.
+!
+      ddotam=0.; a2rhopm=0.; a2rhom=0.; e2m=0; b2m=0; edotbm=0; a2rhophim=0.; a2rhogphim=0.
       do n=n1,n2
       do m=m1,m2
         call prep_ode_right(f)
@@ -652,9 +675,17 @@ module backreact_infl
 !
 !  mean electric energy density
 !
+!  Get eta_xtdep from magnetic.
+!
+!     if (lmagnetic .and. lem_backreact) then
+!       call get_shared_variable('eta_xtdep',eta_xtdep)
+!     endif
+!
       if (lrho_chi) then
         e2m=e2m/nwgrid
+        b2m=b2m/nwgrid
         call mpiallreduce_sum(e2m,e2m_all)
+        call mpiallreduce_sum(b2m,b2m_all)
       endif
 !
       call mpireduce_sum(a2rhopm,a2rhopm_all)
@@ -679,7 +710,12 @@ module backreact_infl
         endselect
       endif
 !
+!  Broadcast to other processors, and each processor uses put_shared_variable
+!  to get the values to other subroutines.
+!
       call mpibcast_real(Hscript)
+      call mpibcast_real(e2m_all)
+      call mpibcast_real(b2m_all)
 !
     endsubroutine special_after_boundary
 !***********************************************************************
@@ -708,7 +744,6 @@ module backreact_infl
         a2rho=0.5*(dphi**2+gphi2)
         a2rhophim=a2rhophim+sum(a2rho)
       endif
-
 !
       if (iex/=0 .and. lem_backreact) then
         el=f(l1:l2,m,n,iex:iez)
@@ -717,6 +752,9 @@ module backreact_infl
         call dot2_mn(el,e2)
         a2rhop=a2rhop+(.5*fourthird)*(e2+b2)*a21
         a2rho=a2rho+.5*(e2+b2)*a21
+        if (lrho_chi) then
+          a2rho=a2rho+scale_rho_chi_Heqn*a2*f_ode(iinfl_rho_chi)
+        endif
       endif
 !
       a2rhopm=a2rhopm+sum(a2rhop)
@@ -746,8 +784,12 @@ module backreact_infl
         edotbm=edotbm+sum(edotb)
       endif
 !
+!  Compute e2m per pencil. It becomes the total e2m after calling
+!  prep_ode_right for each pencil.
+!
       if (lmagnetic .and. lem_backreact .and. lrho_chi) then
         e2m=e2m+sum(e2)
+        b2m=b2m+sum(b2)
       endif
 !
     endsubroutine prep_ode_right

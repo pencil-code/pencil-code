@@ -210,7 +210,7 @@ module Param_IO
       eps_stiff, timestep_scaling, lequatory, lequatorz, zequator, &
       lini_t_eq_zero, lini_t_eq_zero_once, &
       lav_smallx, xav_max, ldt_paronly, lweno_transport, &
-      it_timing, har_spec, hav_spec, j_spec, jb_spec, ja_spec, b2_spec, &
+      it_timing, ltiming_io, har_spec, hav_spec, j_spec, jb_spec, ja_spec, b2_spec, &
       lread_less, lread_nogrid, lformat, ltec, lread_global, &
       llsode, lsplit_second, nu_sts, permute_sts, lfargo_advection, &
       ldynamical_diffusion, ldyndiff_useumax, re_mesh, lghostfold_usebspline, &
@@ -986,6 +986,7 @@ module Param_IO
           call write_pointmasses_run_pars(unit)
           call write_python_run_pars(unit)
           call write_implicit_diff_run_pars(unit)
+          call write_training_run_pars(unit)
 !
           call write_all_particles_run_pars(unit)
 !

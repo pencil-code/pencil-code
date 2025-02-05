@@ -1153,6 +1153,7 @@ outer:  do ikz=1,nz
   real, dimension(nk) :: nks,nks_sum
   real, dimension(nk) :: k2m,k2m_sum,krms
   real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
+  real, dimension(nx,ny,nz,3) :: bEP, hEP
   complex, dimension(nx,ny,nz) :: phi
   real, dimension(nk) :: spectrum,spectrum_sum
   real, dimension(nk) :: spectrumhel,spectrumhel_sum
@@ -1482,18 +1483,27 @@ outer:  do ikz=1,nz
             call grad(f,iXX_chiral,gtmp1)
             call grad(f,iYY_chiral,gtmp2)
             call cross(gtmp1,gtmp2,bbEP)
-            b_re(:,m-nghost,n-nghost)=bbEP(:,ivec)  ! corresponds to magnetic field
-            a_re(:,m-nghost,n-nghost)=.5*( f(l1:l2,m,n,iXX_chiral)*gtmp2(:,ivec) &
-                                          -f(l1:l2,m,n,iYY_chiral)*gtmp1(:,ivec))
+            im=m-nghost
+            in=n-nghost
+!            bEP(:,im,in,:)=bbEP
+            !b_re(:,im,in)=bbEP(:,ivec)  !(this corresponds to magnetic field)
+            !a_re(:,im,in)=.5*(f(l1:l2,m,n,iXX_chiral)*gtmp2(:,ivec) &
+            !                 -f(l1:l2,m,n,iYY_chiral)*gtmp1(:,ivec))
           enddo
         enddo
         !$omp workshare
         a_im=0.
         b_im=0.
         !$omp end workshare
+
+        if (ncpus==1) then
+          open(1,file=trim(datadir)//'/bEP.dat',form='unformatted',position='append')
+!          write(1) bEP,t
+          close(1)
+        endif
       endif
 !
-!  magnetic energy spectra based on fields with Euler potentials (Higgs case)
+!  magnetic helicity variance spectra based on fields with Euler potentials (Higgs case)
 !
     elseif (sp=='hEP') then
       if (iXX2_chiral/=0.and.iYY2_chiral/=0) then
@@ -1504,13 +1514,19 @@ outer:  do ikz=1,nz
             call cross(gtmp1,gtmp2,hhEP)
             im=m-nghost
             in=n-nghost
-            b_re(:,im,in)=hhEP(:,ivec)  !(this corresponds to magnetic field)
-            a_re(:,im,in)=.5*(f(l1:l2,m,n,iXX2_chiral)*gtmp2(:,ivec) &
-                             -f(l1:l2,m,n,iYY2_chiral)*gtmp1(:,ivec))
+            hEP(:,im,in,:)=hhEP
+            !b_re(:,im,in)=hhEP(:,ivec)  !(this corresponds to magnetic field)
+            !a_re(:,im,in)=.5*(f(l1:l2,m,n,iXX2_chiral)*gtmp2(:,ivec) &
+            !                 -f(l1:l2,m,n,iYY2_chiral)*gtmp1(:,ivec))
           enddo
         enddo
         a_im=0.
         b_im=0.
+        if (ncpus==1) then
+          open(1,file=trim(datadir)//'/hEP.dat',form='unformatted',position='append')
+          write(1) hEP,t
+          close(1)
+        endif
       endif
 !
 !  Spectra based on Tanmay's flux method

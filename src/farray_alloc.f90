@@ -55,12 +55,15 @@
       if (stat>0) call fatal_error('farray_alloc','Could not allocate memory for df')
     endif
 
+    f => f_arr
+
   endsubroutine initialize
 !******************************************************************************
   subroutine finalize
 
     if (shared_mem_name=='') then
       deallocate(f_arr)
+      ! deallocate fp?
     endif
     if (allocated(df)) deallocate(df) 
 

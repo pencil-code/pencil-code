@@ -137,7 +137,8 @@ module Magnetic
   real :: eta_shock=0.0, eta_shock2=0.0, alp_aniso=0.0, eta_aniso_BB=0.0
   real :: quench_aniso=impossible
   real :: eta_va=0., eta_j=0., eta_j2=0., eta_jrho=0., eta_min=0., eta_max=0., &
-          eta_huge=1e38, etaj20=0., va_min=0., vArms=1.
+          !eta_huge=1e38, etaj20=0., va_min=0., vArms=1.
+          eta_huge=huge1, etaj20=0., va_min=0., vArms=1.
   real :: rhomin_jxb=0.0, va2max_jxb=0.0, va2max_boris=0.0,cmin=0.0
   real :: omega_Bz_ext=0.0
   real :: mu_r=-0.5 !(still needed for backwards compatibility)
@@ -167,7 +168,7 @@ module Magnetic
   real :: non_ffree_factor=1.
   real :: etaB=0.
   real :: tau_relprof=0.0, tau_relprof1, amp_relprof=1.0 , k_relprof=1.0
-  real, pointer :: ascale, Hscript
+  real, pointer :: ascale, Hscript, e2m_all, b2m_all
   real :: cp=impossible
   real :: dipole_moment=0.0
   real :: eta_power_x=0., eta_power_z=0.
@@ -179,7 +180,7 @@ module Magnetic
   integer, target :: va2power_jxb = 5
   integer :: nbvec, nbvecmax=nx*ny*nz/4, iua=0, iLam=0, idiva=0
   integer :: N_modes_aa=1, naareset
-  logical, pointer :: lrelativistic_eos, lconservative
+  logical, pointer :: lrelativistic_eos, lconservative, lrho_chi
   logical :: lpress_equil=.false., lpress_equil_via_ss=.false.
   logical :: lpress_equil_alt=.false., lset_AxAy_zero=.false.
   logical :: llorentzforce=.true., llorentz_rhoref=.false., linduction=.true.
@@ -252,7 +253,7 @@ module Magnetic
   logical :: lcoulomb=.false.
   logical :: lfactors_aa=.false., lvacuum=.false.
   logical :: loverride_ee=.false., loverride_ee2=.false., loverride_ee_decide=.false.
-  logical :: lignore_1rho_in_Lorentz=.false.
+  logical :: lignore_1rho_in_Lorentz=.false., lnorm_aa_kk=.false., lohm_evolve=.false.
 !
   namelist /magnetic_init_pars/ &
       B_ext, B0_ext, B0_ext_z, B0_ext_z_H, t_bext, t0_bext, J_ext, lohmic_heat, radius, epsilonaa, &
@@ -285,7 +286,7 @@ module Magnetic
       r_inner, r_outer, lpower_profile_file, eta_jump0, eta_jump1, eta_jump2, &
       lcoulomb, qexp_aa, nfact_aa, lfactors_aa, lvacuum, l2d_aa, &
       loverride_ee_decide, eta_tdep_loverride_ee, z0_gaussian, width_gaussian, &
-      echarge
+      echarge, lnorm_aa_kk, lohm_evolve
 !
 ! Run parameters
 !
@@ -361,6 +362,7 @@ module Magnetic
   real :: ampl_efield=0.
   real :: w_sldchar_mag=1., tau_remove_meanaxy=1.0
   real :: rhoref=impossible, rhoref1
+  real :: ell_jj=0., tau_jj=1.
   character (len=labellen) :: A_relaxprofile='0,coskz,0'
   character (len=labellen) :: zdep_profile='fs'
   character (len=labellen) :: ydep_profile='two-step'
@@ -427,7 +429,7 @@ module Magnetic
       lbraginsky, eta_jump0, eta_jump1, lcoulomb, lvacuum, &
       loverride_ee_decide, eta_tdep_loverride_ee, loverride_ee2, lignore_1rho_in_Lorentz, &
       lbext_moving_layer, zbot_moving_layer, ztop_moving_layer, speed_moving_layer, edge_moving_layer, &
-      echarge, lno_eta_tdep, luse_scale_factor_in_sigma
+      echarge, lno_eta_tdep, luse_scale_factor_in_sigma, ell_jj, tau_jj
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -1132,6 +1134,13 @@ module Magnetic
       call farray_register_pde('aa',iaa,vector=3)
       iax = iaa; iay = iaa+1; iaz = iaa+2
 !
+!  If we want to evolve the current density.
+!
+      if (lohm_evolve) then
+        call farray_register_pde('jj',ijj,vector=3)
+        ijx = ijj; ijy = ijj+1; ijz = ijj+2
+      endif
+!
 !  Identify version number.
 !
       if (lroot) call svn_id( &
@@ -1242,9 +1251,9 @@ module Magnetic
 !
       call put_shared_variable('lbb_as_comaux',lbb_as_comaux, caller='register_magnetic')
       call put_shared_variable('lresi_eta_tdep', lresi_eta_tdep)
-      call put_shared_variable('loverride_ee', loverride_ee)
-      if (lresi_eta_tdep) call put_shared_variable('eta_tdep', eta_tdep)
+      if (lrun) call put_shared_variable('eta_tdep',eta_tdep)
       call put_shared_variable('eta', eta)
+      call put_shared_variable('loverride_ee', loverride_ee)
 !
 !  Share several parameters for Alfven limiter with module Shock.
 !
@@ -1796,7 +1805,11 @@ module Magnetic
               call warning('initialize_magnetic','4th & 6th order hyperdiffusion are both set. '// &
                            'Timestep is currently only sensitive to fourth order')
         endif
-
+!
+!  Put eta_xtdep id lresi_eta_xtdep=T.
+!
+      if (lresi_eta_xtdep) call put_shared_variable('eta_xtdep', eta_xtdep)
+!
       endif
 !
 !  Quenching of \eta by rms of magnetic vector potential?
@@ -1874,6 +1887,10 @@ module Magnetic
         if (lresi_magfield) call fatal_error('initialize_magnetic','set lweyl_gauge=T for lresi_magfield')
         if (lresi_etava) call not_implemented('initialize_magnetic','eta_va for resistive gauge')
       endif
+!
+!  get other shared variables
+!
+!AB   call get_shared_variable('lrho_chi',lrho_chi, caller='initialize_magnetic')
 !
 !  Border profile backward compatibility. For a vector, if only the first
 !  borderaa is set, then the other components get the same value.
@@ -2270,13 +2287,13 @@ module Magnetic
         case ('read_arr_file'); call read_outside_vec_array(f, "aa.arr", iaa)
         case ('read_bin_file'); call read_outside_vec_array(f, "ap.dat", iaa,.true.,amplaa(j))
         case ('sinwave-phase')
-          call sinwave_phase(f,iax,ampl_ax(j),kx_ax(j),ky_ax(j),kz_ax(j),phase_ax(j))
-          call sinwave_phase(f,iay,ampl_ay(j),kx_ay(j),ky_ay(j),kz_ay(j),phase_ay(j))
-          call sinwave_phase(f,iaz,ampl_az(j),kx_az(j),ky_az(j),kz_az(j),phase_az(j))
+          call sinwave_phase(f,iax,ampl_ax(j),kx_ax(j),ky_ax(j),kz_ax(j),phase_ax(j),LNORM_KK=lnorm_aa_kk)
+          call sinwave_phase(f,iay,ampl_ay(j),kx_ay(j),ky_ay(j),kz_ay(j),phase_ay(j),LNORM_KK=lnorm_aa_kk)
+          call sinwave_phase(f,iaz,ampl_az(j),kx_az(j),ky_az(j),kz_az(j),phase_az(j),LNORM_KK=lnorm_aa_kk)
         case ('coswave-phase')
-          call coswave_phase(f,iax,ampl_ax(j),kx_ax(j),ky_ax(j),kz_ax(j),phase_ax(j))
-          call coswave_phase(f,iay,ampl_ay(j),kx_ay(j),ky_ay(j),kz_ay(j),phase_ay(j))
-          call coswave_phase(f,iaz,ampl_az(j),kx_az(j),ky_az(j),kz_az(j),phase_az(j))
+          call coswave_phase(f,iax,ampl_ax(j),kx_ax(j),ky_ax(j),kz_ax(j),phase_ax(j),LNORM_KK=lnorm_aa_kk)
+          call coswave_phase(f,iay,ampl_ay(j),kx_ay(j),ky_ay(j),kz_ay(j),phase_ay(j),LNORM_KK=lnorm_aa_kk)
+          call coswave_phase(f,iaz,ampl_az(j),kx_az(j),ky_az(j),kz_az(j),phase_az(j),LNORM_KK=lnorm_aa_kk)
         case ('sinwave-x'); call sinwave(amplaa(j),f,iaa,kx=kx_aa(j))
         case ('coswave-Ax-kx'); call coswave(amplaa(j),f,iax,kx=kx_aa(j))
         case ('coswave-Ax-ky'); call coswave(amplaa(j),f,iax,ky=ky_aa(j))
@@ -3865,6 +3882,7 @@ module Magnetic
       use EquationOfState, only: rho0
       use General, only: notanumber
       use FArrayManager, only: farray_index_by_name
+      use SharedVariables, only: put_shared_variable
       use Sub
 !
       real, dimension (mx,my,mz,mfarray), intent(inout):: f
@@ -3876,7 +3894,7 @@ module Magnetic
       real, dimension (nx) :: Eabs, Babs
       real, dimension(3) :: B_ext, j_ext
       real :: c,s
-      real :: Eaver, Baver, b2m
+      real :: Eaver, Baver !, b2m
       integer :: i, j, ix, iedotx, iedotz
 
       if (lfirstpoint) lproc_print=.true.
@@ -4133,6 +4151,13 @@ module Magnetic
 ! jj
 !
       if (lpenc_loc(i_jj) .or. lpenc_loc(i_jj_ohm)) then
+        if (lvacuum) then
+          p%jj=0.
+          p%jj_ohm=0.
+          eta_total=huge1
+          eta_xtdep=huge1
+          eta_tdep=huge1
+        else
 !
 !  The following allows us to let eta change with time, t-eta_tdep_toffset.
 !  The eta_tdep_toffset is used in cosmology where time starts at t=1.
@@ -4141,6 +4166,8 @@ module Magnetic
 !
       if (lresi_eta_tdep .or. lresi_eta_xtdep .or. lresi_hyper2_tdep .or. lresi_hyper3_tdep) then
         select case (tdep_eta_type)
+          case ('const')
+            eta_tdep=eta
           case ('standard')
             if (lresi_eta_tdep_t0_norm) then
               eta_tdep=eta*max(real(t-eta_tdep_toffset)/eta_tdep_t0,1.)**eta_tdep_exponent
@@ -4160,7 +4187,7 @@ module Magnetic
             eta_tdep=0.
           case ('mean-field')
 !
-!  eta_tdep
+!  eta_tdep (luse_scale_factor_in_sigma=T by default)
 !
             if (luse_scale_factor_in_sigma) then
               call get_shared_variable('ascale', ascale, caller='initialize_magnetic')
@@ -4170,10 +4197,26 @@ module Magnetic
               ascale=1.
               Hscript=1.
             endif
-            if (ncpus>1.or.dimensionality>1) call fatal_error('calc_pencils_magnetic_pencpar', &
-                'not programmed for multiple procs or more than 1 dimension')
-            Eaver=sqrt(sum(f(l1:l2,m,n,iex)**2+f(l1:l2,m,n,iey)**2+f(l1:l2,m,n,iez)**2)/nx)
-            Baver=sqrt(sum(p%b2)/nx+B_ext2)
+!
+!  get other shared variables
+!
+      call get_shared_variable('lrho_chi',lrho_chi, caller='initialize_magnetic')
+!
+!  need e2m, b2m
+!
+            if (.not. lrho_chi) call fatal_error('calc_pencils_magnetic_pencpar', &
+                'lrho_chi must be true when using mean-field')
+!
+!           if (ncpus>1.or.dimensionality>1) call fatal_error('calc_pencils_magnetic_pencpar', &
+!               'not programmed for multiple procs or more than 1 dimension')
+!           Eaver=sqrt(sum(f(l1:l2,m,n,iex)**2+f(l1:l2,m,n,iey)**2+f(l1:l2,m,n,iez)**2)/nx)
+!           Baver=sqrt(sum(p%b2)/nx+B_ext2)
+!
+            !call get_shared_variable('e2m_all', e2m_all, caller='initialize_magnetic')
+            call get_shared_variable('e2m_all', e2m_all)
+            call get_shared_variable('b2m_all', b2m_all)
+            Eaver=sqrt(e2m_all)
+            Baver=sqrt(b2m_all+B_ext2)
 !
 !  Note that eta_tdep=0 for Baver=0.
 !
@@ -4218,6 +4261,8 @@ module Magnetic
             endwhere
           case default
         endselect
+!indent end
+        endif
       endif
 !
 !  Check whether or not the displacement current is being computed.
@@ -4233,17 +4278,24 @@ module Magnetic
           else
             eta_total=eta
           endif
+!
           if (lvacuum) then
             p%jj=0.
             p%jj_ohm=0.
+            eta_total=huge1
           else
 !
-! The Ohm's current is independent of loverride_ee2, etc.
-! AB: eta_total and the rest are pencils, but it complains about inconsistent ranks. So I put (1).
+!  The Ohm's current is independent of loverride_ee2, etc.
+!  AB: eta_total and the rest are pencils, but it complains about inconsistent ranks. So I put (1).
+!  Here we may need to add the chiral part.
 !
-            do j=1,3
-              p%jj_ohm(:,j)=(p%el(:,j)+p%uxb(:,j))*mu01/eta_total
-            enddo
+            if (lohm_evolve) then
+              p%jj_ohm=f(l1:l2,m,n,ijx:ijz)
+            else
+              do j=1,3
+                p%jj_ohm(:,j)=(p%el(:,j)+p%uxb(:,j))*mu01/eta_total
+              enddo
+            endif
 !
 !  Compute current for Lorentz force.
 !  Note that loverride_ee2 is a "permanent" switch,
@@ -4678,7 +4730,7 @@ module Magnetic
           advec2=advec2 + tmp1
         endif
 !
-      endif
+      endif 
 !
     endsubroutine calc_pencils_magnetic_pencpar
 !***********************************************************************
@@ -4787,7 +4839,7 @@ module Magnetic
       real, dimension (nx,3) :: ujiaj,gua,ajiuj
       real, dimension (nx,3) :: aa_xyaver
       real, dimension (nx,3) :: geta,uxb_upw,tmp2
-      real, dimension (nx,3) :: dAdt, gradeta_shock, aa1, uu1
+      real, dimension (nx,3) :: dAdt, gradeta_shock, aa1, uu1, dJdt, del2jj
       real, dimension (nx,3,3) :: d_sld_flux
       real, dimension (nx) :: ftot, dAtot
       real, dimension (nx) :: peta_shock
@@ -4797,7 +4849,7 @@ module Magnetic
       real, dimension (nx) :: del2aa_ini,tanhx2,advec_hall,advec_hypermesh_aa
       real, dimension(nx) :: eta_BB, prof
       real, dimension(3) :: B_ext
-      real :: tmp, eta_out1, cosalp, sinalp, hall_term_
+      real :: tmp, eta_out1, cosalp, sinalp, hall_term_, tau1_jj
       real, parameter :: OmegaSS=1.0
       integer :: i,j,k,ju,ix,nphi
       integer, parameter :: nxy=nxgrid*nygrid
@@ -5978,6 +6030,24 @@ module Magnetic
 !
 !  This is the endif from (iex==0.or.loverride_ee)
 !
+      endif
+!
+!  Evolve current density.
+!
+      if (lohm_evolve) then
+        if (tau_jj>0) then
+          tau1_jj=1./tau_jj
+          do j=1,3
+            dJdt(:,j)=tau1_jj*(p%el(:,j)+p%uxb(:,j))*mu01/eta_total
+          enddo
+          if (ell_jj/=0.) then
+            call del2v(f,ijx,del2jj)
+            dJdt=dJdt+(ell_jj**2*tau1_jj)*del2jj
+          endif
+          df(l1:l2,m,n,ijx:ijz)=df(l1:l2,m,n,ijx:ijz)+dJdt
+        else
+          call fatal_error('daa_dt','tau_jj must be finite and positive')
+        endif
       endif
 !
 !  Do diagnostics, which includes also slices.
