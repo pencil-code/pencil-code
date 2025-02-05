@@ -7,7 +7,10 @@ Kernel twopass_solve_intermediate(int step_num, real dt) {
   write( UU, rk3_intermediate(previous(UU),   uu_dt, step_num, dt) )
   write( RHO, rk3_intermediate(previous(RHO), lnrho_dt, step_num, dt) )
   write( AA, rk3_intermediate(previous(AA)  , aa_dt, step_num, dt) )
-  reduce_max(step_num==0, uu_max_advec, AC_maxadvec)
+  if(step_num == 0 && lcourant_dt)
+  {
+  	reduce_max(uu_max_advec, AC_maxadvec)
+  }
 }
 fixed_boundary Kernel twopass_solve_final(int step_num){
   write( UU, rk3_final(previous(UU), value(UU), step_num) )

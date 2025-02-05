@@ -60,5 +60,5 @@ else{
     }
 #endif
     max_advec = sum(abs(value(UU))/AC_ds) + sqrt(advec2)
-    //return (PC_rhs_update){rhs,max_advec}
-    return rhs
+    return (PC_rhs_update){rhs,max_advec}
+    //return rhs
