@@ -3224,6 +3224,7 @@ module Hydro
 !
               if (full_3D) then
                 DD=(f(l1:l2,m,n,irho)-.5*B_ext2)/(1.-.25/f(l1:l2,m,n,ilorentz))+B_ext2
+!AB: not yet calculated
                 call invmat_DB(DD,p%bb,tmp33)
                 call multmv(tmp33,tmp3,p%uu)
               else

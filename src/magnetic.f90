@@ -252,7 +252,7 @@ module Magnetic
   logical :: lscale_tobox=.true., lsquash_aa=.false.
   logical :: lbraginsky=.false., l2d_aa=.false.
   logical :: lcoulomb=.false.
-  logical :: lfactors_aa=.false., lvacuum=.false., lnoncollinear_EB=.false.
+  logical :: lfactors_aa=.false., lvacuum=.false.
   logical :: loverride_ee=.false., loverride_ee2=.false., loverride_ee_decide=.false.
   logical :: lignore_1rho_in_Lorentz=.false., lnorm_aa_kk=.false., lohm_evolve=.false.
 !
@@ -427,7 +427,7 @@ module Magnetic
       no_ohmic_heat_z0, no_ohmic_heat_zwidth, alev, lrhs_max, &
       lnoinduction, lA_relprof_global, nlf_sld_magn, fac_sld_magn, div_sld_magn, &
       lbb_sph_as_aux, ltime_integrals_always, dtcor, lvart_in_shear_frame, &
-      lbraginsky, eta_jump0, eta_jump1, lcoulomb, lvacuum, lnoncollinear_EB, &
+      lbraginsky, eta_jump0, eta_jump1, lcoulomb, lvacuum, &
       loverride_ee_decide, eta_tdep_loverride_ee, loverride_ee2, lignore_1rho_in_Lorentz, &
       lbext_moving_layer, zbot_moving_layer, ztop_moving_layer, speed_moving_layer, edge_moving_layer, &
       echarge, lno_eta_tdep, luse_scale_factor_in_sigma, ell_jj, tau_jj
@@ -1263,7 +1263,6 @@ module Magnetic
       endif
 !
       call put_shared_variable('rhoref', rhoref)
-      call put_shared_variable('eta', eta)
 !
 !  Share lweyl_gauge
 !
@@ -1274,8 +1273,8 @@ module Magnetic
 !
 !  If meanfield theory is invoked, we need to tell the other routines
 !  eta is also needed with the chiral fluids procedure.
-!
-      if (lrun .and. (lmagn_mf.or.lspecial)) call put_shared_variable('eta',eta)
+!  Omit this now, because a few lines above we did this exact same line already.
+!     if (lrun .and. (lmagn_mf.or.lspecial)) call put_shared_variable('eta',eta)
 !
 !  Share the external magnetic field with module Shear.
 !
@@ -3885,7 +3884,7 @@ module Magnetic
 !
       real, dimension (nx,3) :: tmp ! currently unused: bb_ext_pot
       real, dimension (nx) :: rho1_jxb, quench, StokesI_ncr, tmp1, bbgb, va2max_beta
-      real, dimension (nx) :: Eabs, Babs, eb, boost, gam_EB, eprime, bprime, jprime, sigE, sigB
+      real, dimension (nx) :: Eabs, Babs
       real, dimension(3) :: B_ext, j_ext
       real :: c,s
       real :: Eaver, Baver !, b2m
@@ -4283,6 +4282,8 @@ module Magnetic
           elseif (lresi_eta_xtdep) then
             eta_total=eta_xtdep
           else
+            p%jj=0.
+            p%jj_ohm=0.
             eta_total=eta
           endif
 !
@@ -4296,29 +4297,16 @@ module Magnetic
 !  AB: eta_total and the rest are pencils, but it complains about inconsistent ranks. So I put (1).
 !  Here we may need to add the chiral part.
 !
-            if (lohm_evolve) then
-              p%jj_ohm=f(l1:l2,m,n,ijx:ijz)
-            else
-!
-!  Compute fully non-collinear expression for the current density.
-!
-              if (lnoncollinear_EB) then
-                call dot(p%el,p%bb,eb)
-                boost=sqrt((p%e2-p%b2)**2+4.*eb**2)
-                gam_EB=sqrt21*sqrt(1.+(p%e2+p%b2)/boost)
-                eprime=sqrt21*sqrt(p%e2-p%b2+boost)
-                bprime=sqrt21*sqrt(p%b2-p%e2+boost)*sign(1.,eb)
-                jprime=echarge**3/(6.*pi**2*Hscript)*eprime*abs(bprime)/tanh(pi*abs(Bprime)/Eprime)
-                sigE=abs(jprime)*eprime/(gam_EB*boost)
-                sigB=abs(jprime)*eb/(eprime*gam_EB*boost)
-                p%jj_ohm(:,j)=sigE*p%el(:,j)+sigB*p%bb(:,j)
+            if (lresi_eta_tdep .or. lresi_eta_xtdep) then
+              if (lohm_evolve) then
+                p%jj_ohm=f(l1:l2,m,n,ijx:ijz)
               else
+!
                 do j=1,3
                   p%jj_ohm(:,j)=(p%el(:,j)+p%uxb(:,j))*mu01/eta_total
                 enddo
-              endif
 !
-              print*,'AXEL: p%jj_ohm=',p%jj_ohm
+              endif
             endif
 !
 !  Compute current for Lorentz force.
