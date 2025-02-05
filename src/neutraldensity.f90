@@ -702,7 +702,7 @@ module NeutralDensity
 !
         if (ldiffn_normal) then  ! Normal diffusion operator
           fdiff = fdiff + diffrhon*p%del2rhon
-          if (lfirst.and.ldt) diffus_diffrhon=diffus_diffrhon+diffrhon*dxyz_2
+          if (lupdate_courant_dt) diffus_diffrhon=diffus_diffrhon+diffrhon*dxyz_2
           if (headtt) print*,'dlnrhon_dt: diffrhon=', diffrhon
         endif
 !
@@ -714,7 +714,7 @@ module NeutralDensity
           else
             fdiff = fdiff + 1/p%rhon*diffrhon_hyper3*p%del6rhon
           endif
-          if (lfirst.and.ldt) diffus_diffrhon3=diffus_diffrhon3+diffrhon_hyper3*dxyz_6
+          if (lupdate_courant_dt) diffus_diffrhon3=diffus_diffrhon3+diffrhon_hyper3*dxyz_6
           if (headtt) print*,'dlnrhon_dt: diffrhon_hyper3=', diffrhon_hyper3
         endif
 !
@@ -722,7 +722,7 @@ module NeutralDensity
           if (lneutraldensity_nolog) then
             call del6fj(f,diffrhon_hyper3_aniso,ilnrhon,tmp)
             fdiff = fdiff + tmp
-            if (lfirst.and.ldt) diffus_diffrhon3=diffus_diffrhon3 + &
+            if (lupdate_courant_dt) diffus_diffrhon3=diffus_diffrhon3 + &
                                                  diffrhon_hyper3_aniso(1)*dline_1(:,1)**6 + &
                                                  diffrhon_hyper3_aniso(2)*dline_1(:,2)**6 + &
                                                  diffrhon_hyper3_aniso(3)*dline_1(:,3)**6
@@ -736,13 +736,13 @@ module NeutralDensity
             if (.not.lneutraldensity_nolog) tmp=tmp*p%rhon1
             fdiff = fdiff + diffrhon_hyper3*pi4_1*tmp*dline_1(:,j)**2
           enddo
-          if (lfirst.and.ldt) diffus_diffrhon3=diffus_diffrhon3+diffrhon_hyper3*pi4_1*dxmin_pencil**4
+          if (lupdate_courant_dt) diffus_diffrhon3=diffus_diffrhon3+diffrhon_hyper3*pi4_1*dxmin_pencil**4
           if (headtt) print*,'dlnrhon_dt: diffrhon_hyper3=', diffrhon_hyper3
         endif
 !
         if (ldiffn_hyper3lnrhon) then
           if (.not. lneutraldensity_nolog) fdiff = fdiff + diffrhon_hyper3*p%del6lnrhon
-          if (lfirst.and.ldt) diffus_diffrhon3=diffus_diffrhon3+diffrhon_hyper3*dxyz_6
+          if (lupdate_courant_dt) diffus_diffrhon3=diffus_diffrhon3+diffrhon_hyper3*dxyz_6
           if (headtt) print*,'dlnrhon_dt: diffrhon_hyper3=', diffrhon_hyper3
         endif
 !
@@ -758,7 +758,7 @@ module NeutralDensity
             df(l1:l2,m,n,ilnrhon) = df(l1:l2,m,n,ilnrhon) + &
                 diffrhon_shock*p%shock*p%del2rhon + diffrhon_shock*gshockglnrhon
           endif
-          if (lfirst.and.ldt) diffus_diffrhon=diffus_diffrhon+diffrhon_shock*p%shock*dxyz_2
+          if (lupdate_courant_dt) diffus_diffrhon=diffus_diffrhon+diffrhon_shock*p%shock*dxyz_2
           if (headtt) print*,'dlnrhon_dt: diffrhon_shock=', diffrhon_shock
         endif
 !
@@ -770,7 +770,7 @@ module NeutralDensity
           df(l1:l2,m,n,ilnrhon) = df(l1:l2,m,n,ilnrhon) + fdiff
         endif
 !
-        if (lfirst.and.ldt) then
+        if (lupdate_courant_dt) then
           if (headtt.or.ldebug) print*,'dlnrhon_dt: max(diffus_diffrhon) =',maxval(diffus_diffrhon)
           maxdiffus=max(maxdiffus,diffus_diffrhon)
           maxdiffus3=max(maxdiffus3,diffus_diffrhon3)

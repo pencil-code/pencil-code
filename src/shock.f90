@@ -86,7 +86,7 @@ module Shock
 !
       use FArrayManager
 !
-      call farray_register_auxiliary('shock',ishock,communicated=.true.)
+      call farray_register_auxiliary('shock',ishock,communicated=.true.,ongpu=.true.)
 !
 !  Writing files for use with IDL
 !

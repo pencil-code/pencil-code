@@ -25,7 +25,6 @@ module Timestep
   real            :: dt_increase, dt_decrease, errmax, errmaxs
   real            :: safety=0.95
   integer         :: itter
-  logical         :: fixed_dt=.false.
 !
   contains
 !***********************************************************************
@@ -49,16 +48,29 @@ module Timestep
       use General, only: itoa, rtoa
 !
       if (itorder==1) then
+        if (lgpu) then
+          if (lroot) call warning("initialize_timestep","itorder 1 not implemented on GPU switched to 4")
+          itorder=4
+        endif
         if (lroot) call warning('initialize_timestep','itorder 1 timestep is not adapted for itorder <3')
         alpha_ts=(/ 0.0, 0.0, 0.0, 0.0, 0.0 /)
         beta_ts =(/ 1.0, 0.0, 0.0, 0.0, 0.0 /)
         itter=1
       elseif (itorder==2) then
+        if (lgpu) then
+          if (lroot) call warning("initialize_timestep","itorder 2 not implemented on GPU switched to 4")
+          itorder=4
+        endif
         if (lroot) call warning('initialize_timestep','itorder 2 timestep is not adapted for itorder <3')
         alpha_ts=(/   0.0, -1/2.0, 0.0, 0.0, 0.0 /)
         beta_ts =(/ 1/2.0,    1.0, 0.0, 0.0, 0.0 /)
         itter=2
       elseif (itorder==3) then
+        if (lgpu) then
+          if (lroot) call warning("initialize_timestep","itorder 3 not implemented on GPU switched to 4")
+          itorder=4
+        endif
+        if (lroot) call warning("initialize_timestep","itorder 3 not recommended; 4 is optimal")
         ! Explicit Runge-Kutta 3rd vs 2nd order 2 Register 4-step scheme
         ! "C" indicate scheme compromises stability and accuracy criteria
         beta_ts =  (/ 1017324711453./ 9774461848756.,&
@@ -103,25 +115,19 @@ module Timestep
       dt_increase=-1./(itorder+dtinc)
       dt_decrease=-1./(itorder-dtdec)
 !
-      !overwrite the persistent time_step from dt0 in run.in if dt
-      !too high to initialize run
-      if (dt0>0.) then
-        dt=dt0
-      elseif (dt0<0.) then
-        fixed_dt=.true.
-        dt=-dt0
-      else
-        if (dt==0) then
-          call warning('initialize_timestep','dt=0 not appropriate for Runge-Kutta-Fehlberg'// &
-                     'set to dt_epsi='//trim(rtoa(dt_epsi)))
-          dt=dt_epsi
-        endif
-      endif
-!
       if (eps_rkf0/=0.) eps_rkf=eps_rkf0
 !
-      ldt = .false.!(dt==0.)
+      if (dt0 < 0.) dt = 0
+      if (lgpu.and.dt0>0.) then
+        ldt = .true.
+        dt=dt0
+        dt0=0.
+      else
+        ldt = (dt==0.)
+      endif
+      !lcourant_dt=.false.
 !
+      num_substeps = itter
     endsubroutine initialize_timestep
 !***********************************************************************
     subroutine time_step(f,df,p)
@@ -132,6 +138,7 @@ module Timestep
       use BorderProfiles, only: border_quenching
       use Equ, only: pde, impose_floors_ceilings
       use Mpicomm, only: mpiallreduce_max,MPI_COMM_WORLD
+      use Messages, only: warning
       use Particles_main, only: particles_timestep_first, &
           particles_timestep_second
       use PointMasses, only: pointmasses_timestep_first, &
@@ -141,7 +148,7 @@ module Timestep
       use Shear, only: advance_shear
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mfarray,2) :: ftmp
+      real, dimension (mx,my,mz,mfarray) :: falpha
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,ny,nz,mvar) :: errdf
       real, dimension (nx) :: scal
@@ -151,12 +158,14 @@ module Timestep
 !
 !  Determine a lower bound for each variable j by which to normalise the error
 !
-      do j=1,mvar
-        farraymin(j) = max(dt_ratio*maxval(abs(f(l1:l2,m1:m2,n1:n2,j))),dt_epsi)
-      enddo
-      if (lroot.and.it==1) print*,"farraymin",farraymin
-      ftmp(:,:,:,:,1) = f
-      ftmp(:,:,:,:,2) = f
+      if (.not.lgpu) then
+        do j=1,mvar
+          farraymin(j) = max(dt_ratio*maxval(abs(f(l1:l2,m1:m2,n1:n2,j))),dt_epsi)
+        enddo
+        if (lroot.and.it==1) print*,"farraymin",farraymin
+      endif
+!  Intermediate storage of f from which to derive substep df
+      falpha(:,:,:,:) = f
       dt_beta_ts=dt*beta_ts
       dt_beta_hat=dt*(beta_ts-beta_hat)
       dt_alpha_ts=dt*alpha_ts
@@ -168,88 +177,87 @@ module Timestep
         lfirst=(itsub==1)
         llast=(itsub==itter)
 !
-!  swap which indices of ftmp store current stage f or df in pde
-!
-        iR1 = 1+mod(itsub+1,2)
-        iR2 = 1+mod(itsub,2)
-!
         headtt = headt .and. lfirst .and. lroot
 !
-        if (lfirst) then
-          ftmp(:,:,:,1:mvar,iR2)=0.
-          !f=ftmp(:,:,:,:,iR1)
+        if (lfirst.and..not.lgpu) then
+          df=0.
         else
-          ftmp(:,:,:,1:mvar,iR2)=0.
+          if (.not.lgpu) df=0.
           if (it_rmv>0) lrmv=.false.
         endif
 !
 !  Set up particle derivative array.
 !
-        if (lparticles) call particles_timestep_first(ftmp(:,:,:,:,iR1))
+        if (lparticles.and..not.lgpu) call particles_timestep_first(falpha)
 !
 !  Set up point masses derivative array
 !
-        if (lpointmasses) call pointmasses_timestep_first(ftmp(:,:,:,:,iR1))
+        if (lpointmasses.and..not.lgpu) call pointmasses_timestep_first(falpha)
 !
 !  Set up ODE derivatives array
 !
-        if (lode) call ode_timestep_first
+        if (lode.and..not.lgpu) call ode_timestep_first
 !
 !  Set up solid_cells time advance
 !
-        if (lsolid_cells) call solid_cells_timestep_first(ftmp(:,:,:,:,iR1))
+        if (lsolid_cells.and..not.lgpu) call solid_cells_timestep_first(falpha)
 !
 !  Change df according to the chosen physics modules.
 !
-        call pde(ftmp(:,:,:,:,iR1),ftmp(:,:,:,1:mvar,iR2),p)
+        if(lgpu) then
+          call pde(f,df,p)
+        else
+          call pde(falpha,df,p)
+        endif
 !
-        if (lode) call ode
+        if (lode.and..not.lgpu) call ode
 !
         dtsub = dt_beta_ts(itsub)
 !
 !  Apply border quenching.
 !
-        if (lborder_profiles) call border_quenching(ftmp(:,:,:,:,iR1),df,dtsub)
+        if (lborder_profiles.and..not.lgpu) call border_quenching(falpha,df,dtsub)
 !
 !  Time evolution of point masses.
 !
-        if (lpointmasses) call pointmasses_timestep_second(ftmp(:,:,:,:,iR1))
+        if (lpointmasses.and..not.lgpu) call pointmasses_timestep_second(falpha)
 !
 !  Time evolution of particle variables.
 !
-        if (lparticles) call particles_timestep_second(ftmp(:,:,:,:,iR1))
+        if (lparticles.and..not.lgpu) call particles_timestep_second(falpha)
 !
 ! Time evolution of ODE variables.
 !
-        if (lode) call ode_timestep_second
+        if (lode.and..not.lgpu) call ode_timestep_second
 !
 !  Time evolution of solid_cells.
 !  Currently this call has only keep_compiler_quiet so set ds=1
 !
-        if (lsolid_cells) call solid_cells_timestep_second(ftmp(:,:,:,:,iR1),dtsub,2.)
+        if (lsolid_cells.and..not.lgpu) call solid_cells_timestep_second(falpha,dtsub,2.)
 !
 !  Advance deltay of the shear (and, optionally, perform shear advection
 !  by shifting all variables and their derivatives).
 !
-        if (lshear) then
-          call impose_floors_ceilings(ftmp(:,:,:,:,iR1))
-          call update_ghosts(ftmp(:,:,:,:,iR1))  ! Necessary for non-FFT advection but unnecessarily overloading FFT advection
-          call advance_shear(ftmp(:,:,:,:,iR1), ftmp(:,:,:,1:mvar,iR2), dtsub)
+        if (lshear.and..not.lgpu) then
+          call impose_floors_ceilings(falpha)
+          call update_ghosts(falpha)  ! Necessary for non-FFT advection but unnecessarily overloading FFT advection
+          call advance_shear(falpha, df, dtsub)
         endif
 !
-        call update_after_substep(ftmp(:,:,:,:,iR1),ftmp(:,:,:,1:mvar,iR2),dtsub,llast)
+        if (.not. lgpu) &
+            call update_after_substep(falpha,df,dtsub,llast)
 !
 !  Time evolution of grid variables.
 !
         if (.not. lgpu) then
           if (itorder>2) then
-            errdf = errdf + dt_beta_hat(itsub)*ftmp(l1:l2,m1:m2,n1:n2,1:mvar,iR2)
+            errdf = errdf + dt_beta_hat(itsub)*df(l1:l2,m1:m2,n1:n2,1:mvar)
           endif
-          ftmp(l1:l2,m1:m2,n1:n2,1:mvar,iR1) =  ftmp(l1:l2,m1:m2,n1:n2,1:mvar,iR1) &
-                                             +  dt_alpha_ts(itsub) * ftmp(l1:l2,m1:m2,n1:n2,1:mvar,iR2)
-          ftmp(l1:l2,m1:m2,n1:n2,1:mvar,iR2) =  ftmp(l1:l2,m1:m2,n1:n2,1:mvar,iR1) &
-                                             + (dtsub - dt_alpha_ts(itsub)) * ftmp(l1:l2,m1:m2,n1:n2,1:mvar,iR2)
-          if (mfarray>mvar) ftmp(:,:,:,mvar+1:mfarray,iR2) = ftmp(:,:,:,mvar+1:mfarray,iR1)
+          falpha(l1:l2,m1:m2,n1:n2,1:mvar) =  falpha(l1:l2,m1:m2,n1:n2,1:mvar) &
+                                             +  dt_alpha_ts(itsub) * df(l1:l2,m1:m2,n1:n2,1:mvar)
+          f(l1:l2,m1:m2,n1:n2,1:mvar) =  f(l1:l2,m1:m2,n1:n2,1:mvar) &
+                                             +  dtsub * df(l1:l2,m1:m2,n1:n2,1:mvar)
+          if (mfarray>mvar) f(:,:,:,mvar+1:mfarray) = falpha(:,:,:,mvar+1:mfarray)
         endif
 !
 !  Increase time.
@@ -260,25 +268,27 @@ module Timestep
 !
 !  Integrate operator split terms.
 !
-      call split_update(ftmp(:,:,:,:,iR2))
+      call split_update(f(:,:,:,:))
 !
 !  Check how much the maximum error satisfies the defined accuracy threshold
 !
-      if (itorder>2) then
+      if (itorder>2.and.ldt) then
         do j=1,mvar
           do m=m1,m2; do n=n1,n2
             select case (timestep_scaling(j))
               case ('cons_frac_err')
                 !requires initial f state to be stored
-                scal = max(abs(f(l1:l2,m,n,j))+abs(ftmp(l1:l2,m,n,j,iR2)-f(l1:l2,m,n,j)),farraymin(j))
+                !depricated
+                if (lroot.and.lfirst.and.it==1) call warning("time_step","recommend 'rel_err' vs 'cons_frac_error'")
+                scal = max(abs(f(l1:l2,m,n,j))+abs(df(l1:l2,m,n,j)),farraymin(j))
                 errmaxs = max(maxval(abs(errdf(:,m-nghost,n-nghost,j))/scal),errmaxs)
               case ('rel_err')
                 !initial f state can be overwritten
-                scal = max(abs(ftmp(l1:l2,m,n,j,iR2)),farraymin(j))
-                !scal = max(abs(ftmp(l1:l2,m,n,j,iR2)),dt_epsi)
+                scal = max(abs(f(l1:l2,m,n,j)),farraymin(j))
                 errmaxs = max(maxval(abs(errdf(:,m-nghost,n-nghost,j))/scal),errmaxs)
               case ('abs_err')
                 !initial f state can be overwritten
+                if (lroot.and.lfirst.and.it==1) call warning("time_step","recommend 'rel_err' vs 'abs_err'")
                 errmaxs = max(maxval(abs(errdf(:,m-nghost,n-nghost,j))),errmaxs)
               case ('none')
                 ! No error check
@@ -291,7 +301,7 @@ module Timestep
         errmaxs=errmaxs/eps_rkf
 !
         call mpiallreduce_max(errmaxs,errmax,MPI_COMM_WORLD)
-        if (.not. fixed_dt) then
+        if (ldt) then
           if (errmax > 1) then
             ! Step above error threshold so decrease the next time step
             dt_temp = safety*dt*errmax**dt_decrease
@@ -306,7 +316,6 @@ module Timestep
           endif
         endif
       endif
-      f = ftmp(:,:,:,:,iR2)
 !
     endsubroutine time_step
 !***********************************************************************

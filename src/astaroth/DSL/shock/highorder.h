@@ -1,3 +1,4 @@
+#if LSHOCK
 // checked 18.6.
 #include "../stdlib/smooth_max.h"
 
@@ -13,3 +14,4 @@ divu_shock()
 
     return tmp
 }
+#endif

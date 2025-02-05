@@ -65,6 +65,7 @@ module Timestep
       else
         ldt = (dt==0.)
       endif
+      lcourant_dt = .true.
 
     endsubroutine initialize_timestep
 !***********************************************************************

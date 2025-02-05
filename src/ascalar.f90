@@ -384,7 +384,7 @@ module Ascalar
       df(l1:l2,m,n,iacc)=df(l1:l2,m,n,iacc)-p%ugacc
       if (ascalar_diff/=0.) then
         df(l1:l2,m,n,iacc)=df(l1:l2,m,n,iacc)+ascalar_diff*p%del2acc
-        if (lfirst.and.ldt) maxdiffus=max(maxdiffus,ascalar_diff)
+        if (lupdate_courant_dt) maxdiffus=max(maxdiffus,ascalar_diff)
       endif
 !
 ! ttc
@@ -393,7 +393,7 @@ module Ascalar
         df(l1:l2,m,n,ittc)=df(l1:l2,m,n,ittc)-p%ugttc
         if (thermal_diff/=0.) then
           df(l1:l2,m,n,ittc)=df(l1:l2,m,n,ittc)+thermal_diff*p%del2ttc
-          if (lfirst.and.ldt) maxdiffus=max(maxdiffus,thermal_diff)
+          if (lupdate_courant_dt) maxdiffus=max(maxdiffus,thermal_diff)
         endif
       endif
 !

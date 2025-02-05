@@ -52,12 +52,13 @@ module Timestep
 !  ldt is set after read_persistent in rsnap, so dt0==0 used to read,
 !  but ldt=F for write
 !
-      ldt=.false.
+      ldt=(dt==0.)
       !overwrite the persistent time_step from dt0 in run.in if dt
       !too high to initialize run
       dt_next=dt
       dt_increase=-1./(itorder+dtinc)
       dt_decrease=-1./(itorder-dtdec)
+      lcourant_dt=.false.
 !
     endsubroutine initialize_timestep
 !***********************************************************************

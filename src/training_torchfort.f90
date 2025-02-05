@@ -21,22 +21,27 @@
     integer :: it_train=-1, it_train_chkpt=-1
 
     real, dimension(:,:,:,:,:), allocatable, device :: input, label, output
+    !real, dimension(:,:,:,:,:), allocatable :: input, label, output
 
     integer :: itau, itauxx, itauxy, itauxz, itauyy, itauyz, itauzz
 
-    character(LEN=fnlen) :: model_output_dir='training/', checkpoint_output_dir='training'
-    character(LEN=fnlen) :: model='model', config_file="training/config_mlp_native.yaml", model_file
+    character(LEN=fnlen) :: model='model', config_file="config_mlp_native.yaml", model_file
 
-    logical :: luse_trained_tau
+    logical :: luse_trained_tau, lwrite_sample=.false., lscale=.true.
     real :: max_loss=1.e-4
 
     integer :: idiag_loss=0            ! DIAG_DOC: torchfort training loss
     integer :: idiag_tauerror=0        ! DIAG_DOC: $\sqrt{\left<(\sum_{i,j} u_i*u_j - tau_{ij})^2\right>}$
 
-    namelist /training_run_pars/ config_file, model, it_train, it_train_chkpt, luse_trained_tau, max_loss
+    namelist /training_run_pars/ config_file, model, it_train, it_train_chkpt, luse_trained_tau, lscale, &
+                                 lwrite_sample, max_loss
 !
+    character(LEN=fnlen) :: model_output_dir, checkpoint_output_dir
     integer :: istat, train_step_ckpt, val_step_ckpt
-    logical :: ltrained=.false.
+    logical :: ltrained=.false., lckpt_written=.false.
+    real :: train_loss, tauerror
+    real, dimension (mx,my,mz,3) :: uumean
+    real :: input_min, input_max, output_min, output_max
 
     contains
 !***************************************************************
@@ -51,7 +56,9 @@
       if (.not.lhydro) call fatal_error('initialize_training','needs HYDRO module')
       istat = cudaSetDevice(iproc)
       if (istat /= CUDASUCCESS) call fatal_error('initialize_training','cudaSetDevice failed')
-   
+  
+      model_output_dir=trim(datadir)//'/training/' 
+      checkpoint_output_dir=model_output_dir
       model_file = trim(model)//'.pt'
       modelfn=trim(model_output_dir)//trim(model_file)
 
@@ -60,34 +67,36 @@
           call system_cmd('mkdir '//trim(model_output_dir))
         else
           ltrained = file_exists(trim(modelfn))
+print*, 'ltrained, modelfn=', ltrained, modelfn
         endif
       endif
       call mpibcast(ltrained)
 !
 ! TorchFort create model
 !
+print*, 'MODEL FILE=', trim(model_output_dir)//trim(config_file)
       if (lmpicomm) then
-        istat = torchfort_create_distributed_model(model, config_file, MPI_COMM_WORLD, iproc)
+        istat = torchfort_create_distributed_model(trim(model), trim(model_output_dir)//trim(config_file), MPI_COMM_WORLD, iproc)
       else
-        istat = torchfort_create_model(model, config_file, model_device)
+        istat = torchfort_create_model(trim(model), trim(model_output_dir)//trim(config_file), model_device)
       endif
       if (istat /= TORCHFORT_RESULT_SUCCESS) then
-        call fatal_error("initialize_training","when creating model: istat="//trim(itoa(istat)))
+        call fatal_error("initialize_training","when creating model "//trim(model)//": istat="//trim(itoa(istat)))
       else
         call information('initialize_training','TORCHFORT LIB LOADED SUCCESFULLY')
       endif
 
       if (ltrained) then
-        istat = torchfort_load_model(model, modelfn)
+        istat = torchfort_load_model(trim(model), trim(modelfn))
         if (istat /= TORCHFORT_RESULT_SUCCESS) then
           call fatal_error("initialize_training","when loading model: istat="//trim(itoa(istat)))
         else
           call information('initialize_training','TORCHFORT MODEL "'//trim(modelfn)//'" LOADED SUCCESFULLY')
         endif
       else
-        if (file_exists(trim(model_output_dir)//trim(model)//'.ckpt')) then
+        if (file_exists(trim(checkpoint_output_dir)//'/'//trim(model)//'.ckpt')) then
 
-          istat = torchfort_load_checkpoint(model, checkpoint_output_dir, train_step_ckpt, val_step_ckpt)
+          istat = torchfort_load_checkpoint(trim(model), trim(checkpoint_output_dir), train_step_ckpt, val_step_ckpt)
           if (istat /= TORCHFORT_RESULT_SUCCESS) then
             call fatal_error("initialize_training","when loading checkpoint: istat="//trim(itoa(istat)))
           else
@@ -99,10 +108,11 @@
 
       luse_trained_tau = luse_trained_tau.and.ltrained
 
-      if (.not.lgpu) then
+      if (.not.(lgpu.or.lstart)) then
         allocate(input(mx, my, mz, 3, 1))
         allocate(output(mx, my, mz, 6, 1))
         allocate(label(mx, my, mz, 6, 1))
+print*, 'adresses:', loc(input), loc(output), loc(label)
       endif
 
     endsubroutine initialize_training
@@ -152,8 +162,19 @@
 
       if (ltrained) then
         call infer(f)
+          ! Device to host
+        if ((ldiagnos.or.lvideo).and.lfirst) then
+          call calc_tau(f)
+          if (lgpu) then
+          else
+            f(:,:,:,itauxx:itauzz) = f(:,:,:,itauxx:itauzz) - output(:,:,:,:,1)
+          endif
+          tauerror = sum(f(l1:l2,m1:m2,n1:n2,itauxx:itauzz)**2)/nx
+        else
+          f(:,:,:,itauxx:itauzz) = output(:,:,:,:,1)
+        endif
       else
-        call train(f)
+        if (lfirst) call train(f)
       endif
 
     endsubroutine training_before_boundary
@@ -161,13 +182,16 @@
     subroutine infer(f)
     
       use Gpu, only: get_ptr_gpu
+      use Sub, only: smooth
 
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (:,:,:,:), pointer :: ptr_uu, ptr_tau
 
       ! Host to device
       if (.not.lgpu) then
-        input(:,:,:,:,1) = f(:,:,:,iux:iuz)    ! host to device
+        uumean = f(:,:,:,iux:iuz)
+        call smooth(uumean,1,3,lgauss=.true.)
+        input(:,:,:,:,1) = uumean    ! host to device
         istat = torchfort_inference(model, input, output)
       else
         !call get_ptr_gpu(ptr_uu,iux,iuz)
@@ -175,67 +199,130 @@
         istat = torchfort_inference(model, get_ptr_gpu(iux,iuz), get_ptr_gpu(itauxx,itauzz))
       endif
 
-      if (istat /= TORCHFORT_RESULT_SUCCESS) then
+      if (istat /= TORCHFORT_RESULT_SUCCESS) &
         call fatal_error("infer","istat="//trim(itoa(istat)))
-      elseif (.not.lgpu) then
-        ! Device to host
-        f(l1:l2,m1:m2,n1:n2,itauxx:itauzz) = output(:,:,:,:,1)
-      endif
 
     endsubroutine infer
 !***************************************************************
+    subroutine scale(f, minvalue, maxvalue)
+
+      real, dimension (:,:,:,:) :: f
+      real :: minvalue, maxvalue
+
+      f = (f - minvalue)/(maxvalue - minvalue)
+
+    endsubroutine
+!***************************************************************
+    subroutine descale(f, minvalue, maxvalue)
+
+      real, dimension (:,:,:,:) :: f
+      real :: minvalue, maxvalue
+
+      f = f*(maxvalue - minvalue) + minvalue
+
+    endsubroutine
+!***************************************************************
     subroutine train(f)
    
-      use Diagnostics, only: save_name 
       use Gpu, only: get_ptr_gpu
       use Sub, only: smooth
 
       real, dimension (mx,my,mz,mfarray) :: f
 
-      real :: loss_val
+      integer :: start_it
+
+      start_it = 200
+      if (it<start_it) return
 
       if (mod(it,it_train)==0) then
 !
 !  Smooth velocity.
 !
         if (lgpu) then
-          !smoothing kernel for uu and tau
-          istat = torchfort_inference(model, get_ptr_gpu(iux,iuz), get_ptr_gpu(itauxx,itauzz))
+          !TODO: smoothing/scaling etc. for uu and tau
+          istat = torchfort_train(model, get_ptr_gpu(iux,iuz), get_ptr_gpu(itauxx,itauzz), train_loss)
         else
-          f(:,:,:,itau:itau+2) = f(:,:,:,iux:iuz)      ! use f(:,:,:,itau:itau+2) as work space
-          call smooth(f,itau,itau+2)
-          input(:,:,:,:,1) = f(:,:,:,itau:itau+2)      ! host to device
+          call calc_tau(f)
 !
-!  Calculate and smooth stress tensor.
+!  input scaling.
 !
-          f(:,:,:,itauxx) = f(:,:,:,iux)**2
-          f(:,:,:,itauyy) = f(:,:,:,iuy)**2
-          f(:,:,:,itauzz) = f(:,:,:,iuz)**2
-          f(:,:,:,itauxy) = f(:,:,:,iux)*f(:,:,:,iuy)
-          f(:,:,:,itauyz) = f(:,:,:,iuy)*f(:,:,:,iuz)
-          f(:,:,:,itauxz) = f(:,:,:,iux)*f(:,:,:,iuz)
+          if (lscale) then
+            if (it == start_it) then
+              input_min = minval(uumean)
+              input_max = maxval(uumean)
+            endif
+            call scale(uumean, input_min, input_max)
+!
+! output scaling.
+!
+            if (it == start_it) then
+              output_min = minval(f(:,:,:,itauxx:itauzz))
+              output_max = maxval(f(:,:,:,itauxx:itauzz))
+            endif
+            call scale(f(:,:,:,itauxx:itauzz), output_min, output_max)
+          endif
 
-          call smooth(f,itauxx,itauzz)
+          ! print*, output_min, output_max, input_min, input_max
+          input(:,:,:,:,1) = uumean                    ! host to device
           label(:,:,:,:,1) = f(:,:,:,itauxx:itauzz)    ! host to device
 
-          istat = torchfort_train(model, input, label, loss_val)
+          istat = torchfort_train(model, input, label, train_loss)
+!print*, 'TRAIN', it, train_loss!   ltrained!, input_min, input_max
+!
+! output for plotting
+!
+          if (lwrite_sample .and. mod(it, 50)==0) then
+            call write_sample(f(:,:,:,itauxx), mx, my, mz, "target_"//trim(itoa(iproc))//".hdf5")
+            istat = torchfort_inference(model, input, output)
+            f(:,:,:,itauxx:itauzz) = output(:,:,:,:,1)
+            if (lscale) call descale(f(:,:,1:1,itauxx:itauzz), output_min, output_max)
+            call write_sample(f(:,:,1:1,itauxx:itauzz), mx, my, mz, "pred_"//trim(itoa(iproc))//".hdf5")
+          endif
+
         endif
 
-        if (istat /= TORCHFORT_RESULT_SUCCESS) then
-          call fatal_error("train","istat="//trim(itoa(istat)))
-        else
-          if (ldiagnos) call save_name(loss_val, idiag_loss)
-        endif
+        if (istat /= TORCHFORT_RESULT_SUCCESS) call fatal_error("train","istat="//trim(itoa(istat)))
 
-        if (loss_val <= max_loss) ltrained=.true.
-        if (lroot.and.mod(it,it_train_chkpt)==0) then
-          istat = torchfort_save_checkpoint(model, checkpoint_output_dir)
+        if (train_loss <= max_loss) ltrained=.true.
+        if (lroot.and.lfirst.and.mod(it,it_train_chkpt)==0) then
+          istat = torchfort_save_checkpoint(trim(model), trim(checkpoint_output_dir))
           if (istat /= TORCHFORT_RESULT_SUCCESS) &
             call fatal_error("train","when saving checkpoint: istat="//trim(itoa(istat)))
+          lckpt_written = .true.
+print*, 'it,it_train_chkpt=', it,it_train_chkpt, trim(model),istat, trim(checkpoint_output_dir), lckpt_written
         endif
       endif
 
     endsubroutine train
+!***************************************************************
+    subroutine calc_tau(f)
+
+      use Sub, only: smooth
+
+      real, dimension (mx,my,mz,mfarray) :: f
+
+      uumean = f(:,:,:,iux:iuz)
+      call smooth(uumean,1,3,lgauss=.true.)
+!
+!  Calculate and smooth stress tensor.
+!
+      f(:,:,:,itauxx) = f(:,:,:,iux)**2
+      f(:,:,:,itauyy) = f(:,:,:,iuy)**2
+      f(:,:,:,itauzz) = f(:,:,:,iuz)**2
+      f(:,:,:,itauxy) = f(:,:,:,iux)*f(:,:,:,iuy)
+      f(:,:,:,itauyz) = f(:,:,:,iuy)*f(:,:,:,iuz)
+      f(:,:,:,itauxz) = f(:,:,:,iux)*f(:,:,:,iuz)
+
+      call smooth(f,itauxx,itauzz, lgauss=.true.)
+
+      f(:,:,:,itauxx) = -uumean(:,:,:,1)**2 + f(:,:,:,itauxx)
+      f(:,:,:,itauyy) = -uumean(:,:,:,2)**2 + f(:,:,:,itauyy)
+      f(:,:,:,itauzz) = -uumean(:,:,:,3)**2 + f(:,:,:,itauzz)
+      f(:,:,:,itauxy) = -uumean(:,:,:,1)*uumean(:,:,:,2) + f(:,:,:,itauxy)
+      f(:,:,:,itauyz) = -uumean(:,:,:,2)*uumean(:,:,:,3) + f(:,:,:,itauyz)
+      f(:,:,:,itauxz) = -uumean(:,:,:,1)*uumean(:,:,:,3) + f(:,:,:,itauxz)
+
+    endsubroutine calc_tau
 !***************************************************************
     subroutine div_reynolds_stress(f,df)
 
@@ -258,29 +345,18 @@
 !***************************************************************
     subroutine calc_diagnostics_training(f,p)
 
-      use Diagnostics, only: sum_mn_name
+      use Diagnostics, only: sum_mn_name, save_name
 
       real, dimension (mx,my,mz,mfarray) :: f
       type(pencil_case) :: p
 
       integer :: i,j,jtau
-      real, dimension(nx) :: error
 
-      if (ltrained) then
-        if (ldiagnos) then
-          if (idiag_tauerror>0) then
-
-            jtau=0
-            error=0.
-            do i=1,3
-              do j=i,3
-                error=error+(p%uu(:,i)*p%uu(:,j)-f(l1:l2,m,n,itau+jtau))**2
-                jtau=jtau+1
-              enddo
-            enddo
-            call sum_mn_name(error,idiag_tauerror,lsqrt=.true.)
-
-          endif 
+      if (ldiagnos) then
+        if (ltrained.and.lfirstpoint) then
+          call sum_mn_name(spread(tauerror,1,nx),idiag_tauerror,lsqrt=.true.)
+        else
+          call save_name(train_loss, idiag_loss)
         endif 
       endif 
 !
@@ -301,12 +377,12 @@
 !
 !  Velocity field.
 !
-        case ('tauxx'); call assign_slices_scal(slices,f,itauxx)
-        case ('tauxy'); call assign_slices_scal(slices,f,itauxy)
-        case ('tauxz'); call assign_slices_scal(slices,f,itauxz)
-        case ('tauyy'); call assign_slices_scal(slices,f,itauyy)
-        case ('tauyz'); call assign_slices_scal(slices,f,itauyz)
-        case ('tauzz'); call assign_slices_scal(slices,f,itauzz)
+        case ('tauxxerr'); call assign_slices_scal(slices,f,itauxx)
+        case ('tauxyerr'); call assign_slices_scal(slices,f,itauxy)
+        case ('tauxzerr'); call assign_slices_scal(slices,f,itauxz)
+        case ('tauyyerr'); call assign_slices_scal(slices,f,itauyy)
+        case ('tauyzerr'); call assign_slices_scal(slices,f,itauyz)
+        case ('tauzzerr'); call assign_slices_scal(slices,f,itauzz)
 
       end select
 
@@ -346,6 +422,18 @@
         call parse_name(inamev,cnamev(inamev),cformv(inamev),'tauyz',idum) 
         idum=0
         call parse_name(inamev,cnamev(inamev),cformv(inamev),'tauzz',idum) 
+        idum=0
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'tauxxerr',idum)
+        idum=0
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'tauxyerr',idum) 
+        idum=0
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'tauxzerr',idum) 
+        idum=0
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'tauyyerr',idum) 
+        idum=0
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'tauyzerr',idum) 
+        idum=0
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'tauzzerr',idum) 
       enddo
 
     endsubroutine rprint_training
@@ -353,46 +441,45 @@
     subroutine finalize_training
 
 !  Saving trained model.
-
-      if (ltrained) then
-        istat = torchfort_save_model(model, trim(model_output_dir)//trim(model_file))
-        if (istat /= TORCHFORT_RESULT_SUCCESS) &
-          call fatal_error("finalize_training","when saving model: istat="//trim(itoa(istat)))
+      if (.not.lstart) then
+print*, 'ltrained .or. .not. lckpt_written=', ltrained, lckpt_written
+        if (ltrained .or. lckpt_written) then
+          istat = torchfort_save_model(model, trim(model_output_dir)//trim(model_file))
+          if (istat /= TORCHFORT_RESULT_SUCCESS) &
+            call fatal_error("finalize_training","when saving model: istat="//trim(itoa(istat)))
+        endif
+        if (.not.lgpu) deallocate(input,label,output)
       endif
-      if (.not.lgpu) deallocate(input,label,output)
 
     endsubroutine finalize_training
 !***************************************************************
-    subroutine write_sample(sample, fname)
-      
-!      use HDF5
+    subroutine write_sample(sample, mx, my, mz, fname)
 
-      real, dimension(:,:,:), intent(in) :: sample
-      character(len=*), intent(in) :: fname
+      use HDF5
 
-!      integer(HID_T) :: in_file_id
-!      integer(HID_T) :: out_file_id
-!      integer(HID_T) :: dset_id
-!      integer(HID_T) :: dspace_id
-    
+      character(len=*) :: fname
+      integer, intent(in) :: mx, my, mz
+      real, intent(in) :: sample(mx, my, mz)
+      integer(HID_T) :: in_file_id
+      integer(HID_T) :: out_file_id
+      integer(HID_T) :: dset_id
+      integer(HID_T) :: dspace_id
+      integer(HSIZE_T) :: dims(size(shape(sample)))
       integer :: err
     
-      !integer(HSIZE_T) :: dims(size(shape(sample)))
-      integer :: dims(size(shape(sample)))
-    
-!      call h5open_f(err)
-!      call h5fcreate_f (fname, H5F_ACC_TRUNC_F, out_file_id, err)
+      call h5open_f(err)
+      call h5fcreate_f (fname, H5F_ACC_TRUNC_F, out_file_id, err)
     
       dims = shape(sample)
-!      call h5screate_simple_f(size(shape(sample)), dims, dspace_id, err)
-!      call h5dcreate_f(out_file_id, "data", H5T_NATIVE_REAL, dspace_id, dset_id, err)
-!      call h5dwrite_f(dset_id, H5T_NATIVE_REAL, sample, dims, err)
-!      call h5dclose_f(dset_id, err)
-!      call h5sclose_f(dspace_id, err)
-!    
-!      call h5fclose_f(out_file_id, err)
-!      call h5close_f(err)
+      call h5screate_simple_f(size(shape(sample)), dims, dspace_id, err)
+      call h5dcreate_f(out_file_id, "data", H5T_NATIVE_REAL, dspace_id, dset_id, err)
+      call h5dwrite_f(dset_id, H5T_NATIVE_REAL, sample, dims, err)
+      call h5dclose_f(dset_id, err)
+      call h5sclose_f(dspace_id, err)
     
+      call h5fclose_f(out_file_id, err)
+      call h5close_f(err)
+
     endsubroutine write_sample
 !***************************************************************
-  end module Training
+  endmodule Training

@@ -32,7 +32,7 @@ module Energy
 !
   real :: entropy_floor = impossible, TT_floor = impossible
   real, dimension(ninit) :: radius_ss=0.1, radius_ss_x=1., ampl_ss=0.0
-  real :: widthss=2*epsi, epsilon_ss=0.0
+  real :: widthss=2*epsi, epsilon_ss=0.0,widthss_int=2*epsi,widthss_ext=2*epsi
   real :: luminosity=0.0, wheat=0.1, cool=0.0, cool1=0.0, cool2=0.0
   real :: wpres=0.1
   real :: zcool=0.0, zcool1=0.0, zcool2=0.0
@@ -193,7 +193,7 @@ module Energy
 !
   namelist /entropy_init_pars/ &
       initss, pertss, grads0, radius_ss, radius_ss_x, ampl_ss, &
-      widthss, epsilon_ss, &
+      widthss, widthss_int, widthss_ext, epsilon_ss, &
       mixinglength_flux, entropy_flux, &
       chi_t, chi_rho, pp_const, ss_left, ss_right, &
       ss_const, TT_const, mpoly0, mpoly1, mpoly2, isothtop, khor_ss, &
@@ -212,7 +212,7 @@ module Energy
 !  Run parameters.
 !
   namelist /entropy_run_pars/ &
-      hcond0, hcond1, hcond2, widthss, borderss, mpoly0, mpoly1, mpoly2, &
+      hcond0, hcond1, hcond2, widthss, widthss_int, widthss_ext, borderss, mpoly0, mpoly1, mpoly2, &
       luminosity, wheat, cooling_profile, cooltype, cool, cool1, cs2cool, rcool, &
       rcool1, rcool2, deltaT, cs2cool2, cool2, zcool, ppcool, wcool, wcool1, &
       wcool2, Fbot, lcooling_general, lcooling_to_cs2cool, gradS0_imposed, &
@@ -3475,7 +3475,7 @@ module Energy
 !
 !  ``cs2/dx^2'' for timestep
 !
-      if (lfirst.and.ldt) then
+      if (lupdate_courant_dt) then
         if (lhydro.and.ldensity) then
           if (lreduced_sound_speed) then
             if (lscale_to_cs2top) then
@@ -3642,7 +3642,7 @@ module Energy
       if (lheatc_hyper3ss_mesh)  call calc_heatcond_hyper3_mesh(f,df)
       if (lheatc_hyper3ss_aniso) call calc_heatcond_hyper3_aniso(f,df)
 !
-      if (lfirst.and.ldt) then
+      if (lupdate_courant_dt) then
         maxdiffus=max(maxdiffus,diffus_chi)
         maxdiffus3=max(maxdiffus3,diffus_chi3)
       endif
@@ -3677,7 +3677,7 @@ module Energy
 !
 !  Enforce maximum heating rate timestep constraint
 !
-      if (lfirst.and.ldt) then
+      if (lupdate_courant_dt) then
         if (lhydro.and.ldensity) advec_cs2=p%advec_cs2
         if (lthdiff_Hmax.or.idiag_dtH/=0) then
           if (lthdiff_Hmax) then
@@ -4671,7 +4671,7 @@ module Energy
 !  With heat conduction, the second-order term for entropy is
 !  gamma*chi*del2ss.
 !
-      if (lfirst.and.ldt) then
+      if (lupdate_courant_dt) then
         if (leos_idealgas) then
           call get_gamma_etc(gamma)
           diffus_chi=diffus_chi+(gamma*chi)*dxyz_2
@@ -4765,7 +4765,7 @@ module Energy
 !  With heat conduction, the second-order term for entropy is
 !  gamma*chi*del2ss.
 !
-      if (lfirst.and.ldt) then
+      if (lupdate_courant_dt) then
         if (leos_idealgas) then
           call get_gamma_etc(gamma)
           diffus_chi=diffus_chi+(gamma*thchi+chi_t)*dxyz_2
@@ -4856,7 +4856,7 @@ module Energy
 !  With heat conduction, the second-order term for entropy is
 !  gamma*chi*del2ss.
 !
-      if (lfirst.and.ldt) then
+      if (lupdate_courant_dt) then
         if (leos_idealgas) then
           call get_gamma_etc(gamma)
           diffus_chi=diffus_chi+(gamma*rhochi+chi_t)*dxyz_2
@@ -4895,7 +4895,7 @@ module Energy
 !
 !  Check maximum diffusion from thermal diffusion.
 !
-      if (lfirst.and.ldt) diffus_chi3=diffus_chi3+chi_hyper3*dxyz_6
+      if (lupdate_courant_dt) diffus_chi3=diffus_chi3+chi_hyper3*dxyz_6
 !
     endsubroutine calc_heatcond_hyper3
 !***********************************************************************
@@ -4921,7 +4921,7 @@ module Energy
       call del6fj(f,chi_hyper3_aniso,iss,thdiff)
       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff
 !
-      if (lfirst.and.ldt) &
+      if (lupdate_courant_dt) &
         diffus_chi3=diffus_chi3 + (chi_hyper3_aniso(1)*dline_1(:,1)**6 + &
                                    chi_hyper3_aniso(2)*dline_1(:,2)**6 + &
                                    chi_hyper3_aniso(3)*dline_1(:,3)**6)
@@ -4957,7 +4957,7 @@ module Energy
 !
       if (headtt) print*,'calc_heatcond_hyper3: added thdiff'
 !
-      if (lfirst.and.ldt) diffus_chi3=diffus_chi3+chi_hyper3*pi4_1*dxmin_pencil**4
+      if (lupdate_courant_dt) diffus_chi3=diffus_chi3+chi_hyper3*pi4_1*dxmin_pencil**4
 !
     endsubroutine calc_heatcond_hyper3_polar
 !***********************************************************************
@@ -4994,7 +4994,7 @@ module Energy
 !
       if (headtt) print*,'calc_heatcond_hyper3: added thdiff'
 !
-      if (lfirst.and.ldt) then
+      if (lupdate_courant_dt) then
         if (ldynamical_diffusion) then
           diffus_chi3 = diffus_chi3 + chi_hyper3_mesh * sum(abs(dline_1),2)
           advec_hypermesh_ss = 0.0
@@ -5086,7 +5086,7 @@ module Energy
 !  With heat conduction, the second-order term for entropy is
 !  gamma*chi*del2ss.
 !
-      if (lfirst.and.ldt) then
+      if (lupdate_courant_dt) then
         if (leos_idealgas) then
           if (lchi_shock_density_dep) then
             if (lheatc_shock) &
@@ -5164,7 +5164,7 @@ module Energy
 !  With heat conduction, the second-order term for entropy is
 !  gamma*pchi*del2ss.
 !
-      if (lfirst.and.ldt) then
+      if (lupdate_courant_dt) then
         if (leos_idealgas) then
           call get_gamma_etc(gamma)
           diffus_chi=diffus_chi+(gamma*pchi_shock*p%shock)*dxyz_2
@@ -5241,7 +5241,7 @@ module Energy
 !  With heat conduction, the second-order term for entropy is
 !  gamma*chix*del2ss.
 !
-      if (lfirst.and.ldt) then
+      if (lupdate_courant_dt) then
         call get_gamma_etc(gamma)
         diffus_chi=diffus_chi+gamma*chix*dxyz_2
       endif
@@ -5310,7 +5310,7 @@ module Energy
 !
       df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) + thdiff
 !
-      if (lfirst.and.ldt) then
+      if (lupdate_courant_dt) then
         call get_gamma_etc(gamma)
         dt1_max=max(dt1_max,maxval(abs(thdiff)*gamma)/(cdts))
         diffus_chi=diffus_chi+p%cv1*Kgpara*exp(2.5*p%lnTT-p%lnrho)*dxyz_2
@@ -5352,7 +5352,7 @@ module Energy
         cosbgT=cosbgT/sqrt(gT2*b2)
       endwhere
 !
-      if (lfirst.and.ldt) then
+      if (lupdate_courant_dt) then
         diffus_chi=diffus_chi + cosbgT*p%cv1*Kgpara*exp(-p%lnrho)*dxyz_2
       endif
 !
@@ -5515,7 +5515,7 @@ module Energy
 !  NB: With heat conduction, the second-order term for entropy is
 !    gamma*chix*del2ss.
 !
-      if (lfirst.and.ldt) diffus_chi=diffus_chi+(p%cv1*Krho1+chi_t)*dxyz_2
+      if (lupdate_courant_dt) diffus_chi=diffus_chi+(p%cv1*Krho1+chi_t)*dxyz_2
 !
     endsubroutine calc_heatcond_kramers
 !***********************************************************************
@@ -5612,7 +5612,7 @@ module Energy
 !  NB: With heat conduction, the second-order term for entropy is
 !    gamma*chix*del2ss.
 !
-      if (lfirst.and.ldt) diffus_chi=diffus_chi+(p%cv1/p%cp1*chix)*dxyz_2
+      if (lupdate_courant_dt) diffus_chi=diffus_chi+(p%cv1/p%cp1*chix)*dxyz_2
 !
     endsubroutine calc_heatcond_smagorinsky
 !***********************************************************************
@@ -5832,7 +5832,7 @@ module Energy
 !  NB: With heat conduction, the second-order term for entropy is
 !    gamma*chix*del2ss.
 !
-      if (lfirst.and.ldt) then
+      if (lupdate_courant_dt) then
         if (hcond0/=0..or.lread_hcond) diffus_chi=diffus_chi+chix*dxyz_2
         if (chi_t/=0.) diffus_chi=diffus_chi+chi_t*chit_prof*dxyz_2
       endif
@@ -5890,7 +5890,7 @@ module Energy
 !
 !  Check maximum diffusion from thermal diffusion.
 !
-      if (lfirst.and.ldt) diffus_chi=diffus_chi+chi_t*dxyz_2
+      if (lupdate_courant_dt) diffus_chi=diffus_chi+chi_t*dxyz_2
 !
     endsubroutine calc_heatcond_sfluct
 !***********************************************************************
@@ -6057,7 +6057,7 @@ module Energy
 !
 !  Check maximum diffusion from thermal diffusion.
 !
-      if (lfirst.and.ldt) then
+      if (lupdate_courant_dt) then
         if (chi_t0/=0..and.(lchit_total .or. lchit_mean)) diffus_chi=diffus_chi+chi_t0*chit_prof*dxyz_2
         if (lcalc_ssmean .or. lcalc_ssmeanxy .or. lss_running_aver) then
           if (chi_t1/=0..and.lchit_fluct) diffus_chi=diffus_chi+chit_prof_fluct*dxyz_2
@@ -6310,8 +6310,8 @@ module Energy
 !  condition is not the same as the power law.
 !
       if (lborder_heat_variable) then
-        pborder=quintic_step(x(l1:l2),r_int,widthss,SHIFT= 1.) - &
-                quintic_step(x(l1:l2),r_ext,widthss,SHIFT=-1.)
+        pborder=quintic_step(x(l1:l2),r_int,widthss_int,SHIFT= 1.) - &
+                quintic_step(x(l1:l2),r_ext,widthss_ext,SHIFT=-1.)
       else
         pborder=1.
       endif
@@ -6887,7 +6887,7 @@ module Energy
 !
       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss)-rtv_cool
 !
-      if (lfirst.and.ldt) dt1_max=max(dt1_max,tmp)
+      if (lupdate_courant_dt) dt1_max=max(dt1_max,tmp)
 !
     endsubroutine calc_heat_cool_RTV
 !***********************************************************************
@@ -7732,7 +7732,7 @@ module Energy
 !
         df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + newton
 !
-        if (lfirst.and.ldt) dt1_max=max(dt1_max,maxval(abs(newton)*gamma)/(cdts))
+        if (lupdate_courant_dt) dt1_max=max(dt1_max,maxval(abs(newton)*gamma)/(cdts))
       endif
 !
     endsubroutine newton_cool
@@ -8207,7 +8207,7 @@ module Energy
 
     use Syscalls, only: copy_addr
 
-    integer, parameter :: n_pars=28
+    integer, parameter :: n_pars=100
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call copy_addr(chi,p_par(1))
@@ -8243,6 +8243,7 @@ module Energy
     
     call copy_addr(lchit_total,p_par(27))   ! int
     call copy_addr(chi_t,p_par(28))
+    call copy_addr(lupw_ss,p_par(29))       ! bool
 
     endsubroutine pushpars2c
 !***********************************************************************

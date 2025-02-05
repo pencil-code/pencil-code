@@ -425,7 +425,7 @@ $data_cparam_pencil .= "endtype pencil_case\n\n";
 # Define pencil indices:
 $i=1;
 foreach my $pencil (@pencil_names) {
-  $data_cparam_pencil .= "integer :: i_$pencil=$i\n";
+  $data_cparam_pencil .= "integer, parameter :: i_$pencil=$i\n";
   $i++;
 }
 

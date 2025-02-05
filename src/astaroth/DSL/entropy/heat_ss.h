@@ -39,6 +39,14 @@
   #include "../entropy/heat_cond_kramers.h"
 
 #if LHYDRO
-  rhs += -dot(UU, gss)
+  if(lupw_ss)
+  {
+  	rhs += - (dot(UU, gss) - dot(abs(UU),gradient_upwd(SS)))
+  }
+  else
+  {
+  	rhs += - (dot(UU, gss))
+  }
+  //rhs += -ugrad_upwd(SS, UU)
 #endif
   return rhs

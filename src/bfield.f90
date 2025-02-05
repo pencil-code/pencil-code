@@ -446,7 +446,7 @@ module Magnetic
 !
 !  Reset maxdiffus_eta for time step constraint.
 !
-      if (lfirst .and. ldt) maxdiffus_eta = 0.0
+      if (lupdate_courant_dt) maxdiffus_eta = 0.0
 !
 !  Zero E field or initialize it with mesh hyper-resistivity.
 !
@@ -490,7 +490,7 @@ module Magnetic
             call get_resistivity(f, eta_penc)
             f(:,m,n,iex:iez) = f(:,m,n,iex:iez) + spread(eta_penc, 2, 3) * f(:,m,n,ijx:ijz)
 !           Time-step constraint
-            timestep: if (lfirst .and. ldt) then
+            timestep: if (lupdate_courant_dt) then
               if (.not. lcartesian_coords .or. .not. all(lequidist)) call get_grid_mn
               maxdiffus_eta = max(maxdiffus_eta, eta_penc(l1:l2) * dxyz_2)
             endif timestep
@@ -662,7 +662,7 @@ module Magnetic
 !
 !  Constrain the time step.
 !
-      timestep: if (lfirst .and. ldt) then
+      timestep: if (lupdate_courant_dt) then
         call set_advec_va2(p)
         maxdiffus = max(maxdiffus,maxdiffus_eta)
         maxdiffus3 = max(maxdiffus3,maxdiffus_eta3)
@@ -1295,7 +1295,7 @@ module Magnetic
 !
 !  Reset maxdiffus_eta3 for time-step constraint.
 !
-      if (lfirst .and. ldt) maxdiffus_eta3 = 0.0
+      if (lupdate_courant_dt) maxdiffus_eta3 = 0.0
 !
 !  Calculate the mesh curl of B (assuming the boundary conditions have been applied).
 !  Note: The auxiliary J field is temporarily used as working array here.
@@ -1329,7 +1329,7 @@ module Magnetic
         f(l1:l2,m,n,iex:iez) = pv
 !       Time-step constraint
 !MR: this to be moved to dbb_dt!
-        timestep: if (lfirst .and. ldt) then
+        timestep: if (lupdate_courant_dt) then
           if (.not. lcartesian_coords .or. .not. all(lequidist)) call get_grid_mn
           maxdiffus_eta3 = max(maxdiffus_eta3, eta3 * sum(dline_1,2))
         endif timestep

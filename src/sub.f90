@@ -4166,9 +4166,9 @@ module Sub
 !  23-jan-14/ccyang: coded.
 !  05-jun-20/joenr: add gaussian kernels
 !
-      use General, only: loptest, ioptest
+      use General, only: ioptest
 !
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension(mx,my,mz,*), intent(inout) :: f
       integer, intent(in) :: ivar
       logical, intent(in), optional :: lgauss
       integer, intent(in), optional :: ivar2_,smooth_width_
@@ -4182,7 +4182,7 @@ module Sub
 !  Initialization at first call.
 !
       if (lfirstcall) then
-        call get_smooth_kernel(kernel,loptest(lgauss))
+        call get_smooth_kernel(kernel,lgauss)
         smooth_width=min(ioptest(smooth_width_,nghost),nghost)
         ni = merge(smooth_width,0,nxgrid > 1)
         nj = merge(smooth_width,0,nygrid > 1)

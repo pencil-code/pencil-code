@@ -419,7 +419,7 @@ module Register
       call initialize_implicit_physics(f)
       call initialize_heatflux(f)
       call initialize_pointmasses(f)
-      call initialize_training
+      if (lrun) call initialize_training
 !
 !  Check if MAUX is consistent with what is required.
 !
@@ -455,8 +455,10 @@ module Register
       call finalize_boundcond(f)
       call finalize_deriv
       call finalize_io
-      call finalize_gpu
-      call finalize_training
+      if (lrun) then
+        call finalize_gpu
+        call finalize_training
+      endif
 !
     endsubroutine finalize_modules
 !***********************************************************************

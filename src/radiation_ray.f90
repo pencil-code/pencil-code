@@ -1702,7 +1702,7 @@ module Radiation
 !
 !  Time-step contribution from cooling.
 !
-        !if (lfirst.and.ldt) then
+        !if (lupdate_courant_dt) then
 !
 !  Choose less stringent time-scale of optically thin or thick cooling.
 !  This is currently not correct in the non-gray case!
@@ -2745,7 +2745,7 @@ module Radiation
 !  Include constraint from radiative time step
 !  (has to do with radiation pressure waves).
 !
-      if (lfirst.and.ldt) then
+      if (lupdate_courant_dt) then
         advec_crad2=(16./3.)*p%rho1*(sigmaSB/c_light)*p%TT**4
         advec2=advec2+advec_crad2
         if (notanumber(advec_crad2)) print*, 'advec_crad2=',advec_crad2

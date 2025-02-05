@@ -301,7 +301,7 @@ module Particles_selfgravity
 !  gravitational acceleration must at most move a particle a fraction of
 !  a grid cell in one time-step.
 !
-            if (lfirst.and.ldt) then
+            if (lupdate_courant_dt) then
               if (lparticles_blocks) then
                 dt1_max(ineargrid(k,1)-nghostb)= &
                     max(dt1_max(ineargrid(k,1)-nghostb), &

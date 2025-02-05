@@ -213,7 +213,7 @@ module Hydro
   real :: omega_out=0., omega_in=0., omega_fourier=0.
   real :: width_ff_uu=1.,x1_ff_uu=0.,x2_ff_uu=0.
   real :: ekman_friction=0.0, friction_tdep_toffset=0.0, friction_tdep_tau0=0.
-  real :: uzjet=0.0
+  real :: t1_ekman, t2_ekman, uzjet=0.0
   real :: ampl_forc=0., k_forc=impossible, w_forc=0., x_forc=0., dx_forc=0.1
   real :: ampl_fcont_uu=1., k_diffrot=1., amp_centforce=1., Sbaro0=0.
   real :: uphi_rbot=1., uphi_rtop=1., uphi_step_width=0.
@@ -286,6 +286,7 @@ module Hydro
       interior_bc_hydro_profile, lhydro_bc_interior, z1_interior_bc_hydro, &
       velocity_ceiling, ampl_Omega, lcoriolis_xdep, &
       ekman_friction, friction_tdep, friction_tdep_toffset, friction_tdep_tau0, &
+      t1_ekman, t2_ekman, &
       ampl_forc, k_forc, w_forc, x_forc, dx_forc, ampl_fcont_uu, Sbaro0, &
       lno_meridional_flow, lrotation_xaxis, k_diffrot,Shearx, rescale_uu, &
       hydro_xaver_range, Ra, Pr, llinearized_hydro, lremove_mean_angmom, &
@@ -3121,7 +3122,7 @@ module Hydro
         call calc_pencils_hydro_nonlinear(f,p,lpenc_loc)
       endif
 ! advec_uu
-      if (lfirst.and.ldt.and.ladvection_velocity) then
+      if (lupdate_courant_dt.and.ladvection_velocity) then
         if (lmaximal_cdt) then
           p%advec_uu=max(abs(p%uu(:,1))*dline_1(:,1),&
                          abs(p%uu(:,2))*dline_1(:,2),&
@@ -3969,7 +3970,7 @@ module Hydro
 !
 !  ``uu/dx'' for timestep
 !
-      if (lfirst.and.ldt.and.ladvection_velocity) then
+      if (lupdate_courant_dt.and.ladvection_velocity) then
         maxadvec=maxadvec+p%advec_uu
         if (headtt.or.ldebug) print*,'duu_dt: max(advec_uu) =',maxval(p%advec_uu)
       endif
@@ -3991,6 +3992,14 @@ module Hydro
               frict=ekman_friction*sqrt(p%j2)
             else
               call fatal_error("duu_dt","lmagnetic must be true")
+            endif
+          case ('step')
+            if (t<=t1_ekman) then
+              frict=0.
+            elseif (t<=t2_ekman) then
+              frict=ekman_friction
+            else
+              frict=0.
             endif
           case default
         endselect
@@ -4070,7 +4079,7 @@ module Hydro
 !
 !  Fred: Option to constrain timestep for large forces
 !
-      if ( lfirst.and.ldt.and.(lcdt_tauf.or.ldiagnos.and.idiag_dtF/=0) .or. &
+      if ( lupdate_courant_dt.and.(lcdt_tauf.or.ldiagnos.and.idiag_dtF/=0) .or. &
            ldiagnos.and.idiag_taufmin/=0 ) then
         where (abs(p%uu)>1)   !MR: What would in general be the significance of 1 here?
           uu1=1./p%uu
@@ -4174,8 +4183,8 @@ module Hydro
           call integrate_mn_name(rmask*p%o2,idiag_o2sphm)
         endif
         call sum_mn_name(p%divu,idiag_divum)
-        if (idiag_rdivum/=0)  call sum_mn_name(p%rho*p%divu,idiag_rdivum)
-        if (idiag_divu2m/=0)  call sum_mn_name(p%divu**2,idiag_divu2m)
+        if (idiag_rdivum/=0) call sum_mn_name(p%rho*p%divu,idiag_rdivum)
+        if (idiag_divu2m/=0) call sum_mn_name(p%divu**2,idiag_divu2m)
         if (idiag_gdivu2m/=0) then
           call dot2(p%graddivu,graddivu2)
           call sum_mn_name(graddivu2,idiag_gdivu2m)
@@ -4222,21 +4231,21 @@ module Hydro
         if (idiag_rux2m/=0) call sum_mn_name(p%rho*p%uu(:,1)**2,idiag_rux2m)
         if (idiag_ruy2m/=0) call sum_mn_name(p%rho*p%uu(:,2)**2,idiag_ruy2m)
         if (idiag_ruz2m/=0) call sum_mn_name(p%rho*p%uu(:,3)**2,idiag_ruz2m)
-        if (idiag_T00m/=0)  call sum_mn_name(f(l1:l2,m,n,irho),idiag_T00m)
+        call sum_mn_name(f(l1:l2,m,n,irho),idiag_T00m)
         if (idiag_T0x2m/=0) call sum_mn_name(f(l1:l2,m,n,iux)**2,idiag_T0x2m)
         if (idiag_T0y2m/=0) call sum_mn_name(f(l1:l2,m,n,iuy)**2,idiag_T0y2m)
         if (idiag_T0z2m/=0) call sum_mn_name(f(l1:l2,m,n,iuy)**2,idiag_T0z2m)
-        if (idiag_Txxm/=0)  call sum_mn_name(f(l1:l2,m,n,iTij+0),idiag_Txxm)
-        if (idiag_Tyym/=0)  call sum_mn_name(f(l1:l2,m,n,iTij+1),idiag_Tyym)
-        if (idiag_Tzzm/=0)  call sum_mn_name(f(l1:l2,m,n,iTij+2),idiag_Tzzm)
-        if (idiag_Txym/=0)  call sum_mn_name(f(l1:l2,m,n,iTij+3),idiag_Txym)
-        if (idiag_Tyzm/=0)  call sum_mn_name(f(l1:l2,m,n,iTij+4),idiag_Tyzm)
-        if (idiag_Tzxm/=0)  call sum_mn_name(f(l1:l2,m,n,iTij+5),idiag_Tzxm)
+        call sum_mn_name(f(l1:l2,m,n,iTij+0),idiag_Txxm)
+        call sum_mn_name(f(l1:l2,m,n,iTij+1),idiag_Tyym)
+        call sum_mn_name(f(l1:l2,m,n,iTij+2),idiag_Tzzm)
+        call sum_mn_name(f(l1:l2,m,n,iTij+3),idiag_Txym)
+        call sum_mn_name(f(l1:l2,m,n,iTij+4),idiag_Tyzm)
+        call sum_mn_name(f(l1:l2,m,n,iTij+5),idiag_Tzxm)
         call sum_mn_name(p%ekin,idiag_ekin)
         call sum_mn_name(p%ekin,idiag_EEK)
-        call sum_mn_name(p%ekin**2,idiag_EEK2)
-        call sum_mn_name(p%ekin**3,idiag_EEK3)
-        call sum_mn_name(p%ekin**4,idiag_EEK4)
+        if (idiag_EEK2/=0) call sum_mn_name(p%ekin**2,idiag_EEK2)
+        if (idiag_EEK3/=0) call sum_mn_name(p%ekin**3,idiag_EEK3)
+        if (idiag_EEK4/=0) call sum_mn_name(p%ekin**4,idiag_EEK4)
         call integrate_mn_name(p%ekin,idiag_ekintot)
 !
 !  should be coordinate dependent
@@ -4258,9 +4267,9 @@ module Hydro
 !  Velocity components at one point (=pt).
 !
         if (lroot.and.m==mpoint.and.n==npoint) then
-          if (idiag_uxpt/=0) call save_name(p%uu(lpoint-nghost,1),idiag_uxpt)
-          if (idiag_uypt/=0) call save_name(p%uu(lpoint-nghost,2),idiag_uypt)
-          if (idiag_uzpt/=0) call save_name(p%uu(lpoint-nghost,3),idiag_uzpt)
+          call save_name(p%uu(lpoint-nghost,1),idiag_uxpt)
+          call save_name(p%uu(lpoint-nghost,2),idiag_uypt)
+          call save_name(p%uu(lpoint-nghost,3),idiag_uzpt)
           if (idiag_uxuypt/=0) call save_name(p%uu(lpoint-nghost,1)*p%uu(lpoint-nghost,2),idiag_uxuypt)
           if (idiag_uyuzpt/=0) call save_name(p%uu(lpoint-nghost,2)*p%uu(lpoint-nghost,3),idiag_uyuzpt)
           if (idiag_uzuxpt/=0) call save_name(p%uu(lpoint-nghost,3)*p%uu(lpoint-nghost,1),idiag_uzuxpt)
@@ -4269,9 +4278,9 @@ module Hydro
 !  Velocity components at point 2 (=p2).
 !
         if (lroot.and.m==mpoint2.and.n==npoint2) then
-          if (idiag_uxp2/=0) call save_name(p%uu(lpoint2-nghost,1),idiag_uxp2)
-          if (idiag_uyp2/=0) call save_name(p%uu(lpoint2-nghost,2),idiag_uyp2)
-          if (idiag_uzp2/=0) call save_name(p%uu(lpoint2-nghost,3),idiag_uzp2)
+          call save_name(p%uu(lpoint2-nghost,1),idiag_uxp2)
+          call save_name(p%uu(lpoint2-nghost,2),idiag_uyp2)
+          call save_name(p%uu(lpoint2-nghost,3),idiag_uzp2)
         endif
 !
 !  Mean momenta.

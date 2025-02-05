@@ -22,7 +22,7 @@ else{
 #endif
 #if LGRAVITY
     if (lgravz_gas){
-      rhs.z += gravz_zpencil[vertexIdx.z-NGHOST]
+      rhs.z += gravz_zpencil[vertexIdx.z]
     }
 #endif
     if (ladvection_velocity) {
@@ -48,7 +48,8 @@ else{
 #endif
     }
     //if (!lmaximal_cdtv) {advec_cs2 *= 3.}     // otherwise max!!
-    advec_cs2 *= 3./(AC_dsmin*AC_dsmin)
+    //advec_cs2 *= 3./(AC_dsmin*AC_dsmin)
+    advec_cs2 *= 1.*(AC_inv_ds_2.x+AC_inv_ds_2.y+AC_inv_ds_2.z)
     advec2 += advec_cs2
 #if LMAGNETIC
     if (llorentzforce) {
@@ -59,5 +60,8 @@ else{
       rhs += rho1 * cross(jj,bb)
     }
 #endif
-    reduce_max(step_num==0, sum(abs(value(UU))/AC_ds) + sqrt(advec2), AC_maxadvec)
+    if(step_num == 0 && lcourant_dt)
+    {
+    	reduce_max(sum(abs(value(UU))/AC_ds) + sqrt(advec2), AC_maxadvec)
+    }
     return rhs 

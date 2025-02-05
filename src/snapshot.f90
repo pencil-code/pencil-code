@@ -396,9 +396,11 @@ module Snapshot
       intent(IN) :: a, nv1, nv2, file
 
       if (lroot) call touch_file(trim(workdir)//'/WRITING')
+      !call timing(message='start writing '//trim(file),instruct='initialize',lforce=ltiming_io)
       call output_snap(a,nv1,nv2,file=file)
       if (lpersist) call output_persistent(file)
       call output_snap_finalize
+      !call timing(message='end writing '//trim(file),instruct='finalize',lforce=ltiming_io)
       if (lroot) call delete_file(trim(workdir)//'/WRITING')
 
     endsubroutine perform_wsnap
@@ -407,8 +409,12 @@ module Snapshot
 !
 !  Yet a stub.
 !
+      use General, only: keep_compiler_quiet
+
       character(LEN=fnlen) :: file
       real, dimension(:), intent(OUT) :: snaptimes   ! allocatable
+
+      call keep_compiler_quiet(snaptimes)
 
     endsubroutine read_predef_snaptimes
 !***********************************************************************

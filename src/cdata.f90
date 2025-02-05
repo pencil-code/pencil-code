@@ -179,6 +179,8 @@ module Cdata
   real :: mu0=1., mu01=0. !  magnetic permeability [should be in Magnetic]
   logical :: lfirst=.false.,llast=.false.,ldt_paronly=.false.
   logical :: ldt=.true.
+  logical :: lcourant_dt=.true.
+  logical :: lupdate_courant_dt=.false.
 !
 !  Time integration parameters.
 !
@@ -198,6 +200,7 @@ module Cdata
   integer :: permute_sts=0
   integer:: ireset_tstart=2
   integer :: nt=10000000, it=0, itorder=3, itsub=0, it_timing=0, it_rmv=0
+  integer :: num_substeps = 3
 !
 !  Parameters related to message passing.
 !
@@ -527,6 +530,7 @@ module Cdata
                                          cnamez(:),cnamey(:),cnamex(:),cnamer(:)
   integer, dimension(:), allocatable :: inds_max_diags, inds_sum_diags
 
+  logical :: ltiming_io=.false.
   logical :: lout=.false.,headt=.false.,headtt=.true.,lrmv=.false.
   logical :: ldiagnos=.false.,lvideo=.false.,lwrite_prof=.true.,lout_sound=.false.
   logical :: ltracers=.false.,lfixed_points=.false.
@@ -828,6 +832,13 @@ module Cdata
 !  Inverse timescale for running time average
 !
   real :: tau_aver1 = 1.0
+!
+!  Info whether maux is needed and used on the GPU
+!  Index for var is non-zero iff var is used on the GPU
+!  The index corresponds to the vertex buffer index on Astaroth
+!  Size of mfarray to make sure we can store the handle (for 1 to mvar zero)
+!
+   integer, dimension(mfarray) :: maux_vtxbuf_index = 0
 !
 !  Define and initialize lambda5, so that it can be used to tell whether
 !  or not the chiral MHD special module is used.

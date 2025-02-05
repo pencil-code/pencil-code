@@ -1229,8 +1229,6 @@ call copy_addr(dsound,p_par(10))
 call copy_addr(tsound,p_par(11)) 
 call copy_addr(soundeps,p_par(12)) 
 call copy_addr(lfix_unit_std,p_par(14)) ! int
-call copy_addr(m,p_par(44)) ! int
-call copy_addr(n,p_par(45)) ! int
 call copy_addr(lfirstpoint,p_par(46)) ! int
 call copy_addr(dxyz_2,p_par(47)) ! (nx)
 call copy_addr(dxyz_4,p_par(48)) ! (nx)
@@ -2282,6 +2280,12 @@ call copy_addr(fbcz_2,p_par(1163)) ! (mcom) (2)
 call copy_addr(dx2_bound,p_par(1164)) ! (2*nghost+1)
 call copy_addr(dy2_bound,p_par(1165)) ! (2*nghost+1)
 call copy_addr(dz2_bound,p_par(1166)) ! (2*nghost+1)
+
+call copy_addr(lcourant_dt,p_par(1167)) !bool
+
+call copy_addr(maux_vtxbuf_index,p_par(1168)) !int (mfarray)
+
+call copy_addr(num_substeps,p_par(1169)) ! int
 
     endsubroutine pushpars2c
 !***********************************************************************
