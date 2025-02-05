@@ -32,7 +32,7 @@ production:
 
 #Builds Pencil Code as a shared library
 shared_lib: Makefile_inc Fortran_standard
-	(cd src; $(MAKE) FROM_PARENT=src/ -f Makefile.src libPC.so)
+	(cd src; $(MAKE) FROM_PARENT=src/ -f Makefile.src libPC.so libPCStart.so)
 
 # Use calculated dependencies instead:
 depend dep:

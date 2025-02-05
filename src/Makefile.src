@@ -630,6 +630,15 @@ ifeq ($(MAKECMDGOALS),libPC.so)
   override FFLAGS += -fPIC
   override CFLAGS += -fPIC
 endif
+ifeq ($(MAKECMDGOALS),libPCStart.so)
+  override FFLAGS += -fPIC
+  override CFLAGS += -fPIC
+endif
+ifeq ($(MAKECMDGOALS),libPC.so libPCStart.so)
+  override FFLAGS += -fPIC
+  override CFLAGS += -fPIC
+endif
+
 #
 ifneq ($(filter $(IO) $(IO_IN), io_hdf5),)
   # HDF5 IO requires to select an HDF5-IO strategy module (not nohdf5_io).
@@ -3016,6 +3025,9 @@ run=$(technical) $(physics) $(GPU_OBJ) $(GPU_INTERFACE) $(TIMESTEP_OBJ) equ.o pe
 start.o: $(start) $(OMP_HEADER) Makefile.local
 start.x: start.o | $(SPECIAL_DEPS)
 	$(LD) $(start) start.o $(LDFLAGS) $(LDFLAGS_MAIN) $(LD_MPI) $(LD_FOURIER) $(LD_GSL) -o start.x
+libPCStart.so: start.o | $(SPECIAL_DEPS)
+        $(LD) $(start) start.o $(LDFLAGS) $(LDFLAGS_MAIN) $(LD_MPI) $(LD_FOURIER) $(LD_GSL) -shared -o libPCStart.so
+
 #
 run.o: $(run) $(OMP_HEADER) Makefile.local
 run.x: run.o | $(SPECIAL_DEPS) $(LIBGPU)

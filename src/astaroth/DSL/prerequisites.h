@@ -6,6 +6,12 @@
 #define cpu_pow pow
 #define REAL_MAX AC_REAL_MAX
 
+struct PC_rhs_update
+{
+	real3 dt
+	real max_advec
+}
+
 #define AC_mx AC_mlocal.x
 #define AC_my AC_mlocal.y
 #define AC_mz AC_mlocal.z
