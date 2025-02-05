@@ -89,7 +89,7 @@ subroutine helper_loop(f,p)
 !$      lhelperflags(PERF_WSNAP_DOWN) = .false.
 !$    endif
 !$    if (lhelper_run .and. lhelperflags(PERF_POWERSNAP)) then 
-        !print*,"doing power"
+if (lroot) print*,"doing power", lspec
         call perform_powersnap(f)
 !$    else 
 !$      lhelperflags(PERF_POWERSNAP) = .false.
@@ -179,7 +179,7 @@ subroutine gen_output(f)
 !
     use Equ,             only: write_diagnostics 
     use Snapshot,        only: powersnap, powersnap_prepare, wsnap, wsnap_down, output_form
-    use Particles_main,   only: write_snapshot_particles
+    use Particles_main,  only: write_snapshot_particles
     use PointMasses,     only: pointmasses_write_snapshot
     use Mpicomm,         only: mpiwtime
     use Sub,             only: control_file_exists
@@ -264,6 +264,7 @@ subroutine gen_output(f)
 !  Save spectrum snapshot.
 !
     if (dspec/=impossible .or. itspec/=impossible_int) call powersnap(f)
+    if (lroot.and.(dspec/=impossible .or. itspec/=impossible_int).and.lspec) print*, 'gen_output powersnap'
 !
 !  Save global variables.
 !
@@ -610,7 +611,7 @@ subroutine run_start() bind(C)
   use SharedVariables, only: sharedvars_clean_up
   use Signal_handling, only: signal_prepare
   use Slices,          only: setup_slices
-  use Snapshot,        only: powersnap, rsnap, powersnap_prepare, wsnap
+  use Snapshot,        only: powersnap, rsnap, wsnap
   use Solid_Cells,     only: wsnap_ogrid
   use Special,         only: initialize_mult_special
   use Sub,             only: control_file_exists, get_nseed
@@ -633,7 +634,7 @@ subroutine run_start() bind(C)
   logical :: suppress_pencil_check=.false.
   logical :: lnoreset_tzero=.false.
   logical :: lprocbounds_exist
-  integer, parameter :: num_helpers=1
+  integer, parameter :: num_helper_masters=1
   integer :: i,j
   integer :: master_core_id
   integer :: helper_core_id
@@ -1005,10 +1006,11 @@ subroutine run_start() bind(C)
 !  correct time; see the comment in the GW module.
 !
   if (lspec_start .and. t==tstart) lspec=.true.
+print*, 'run: lspec=', lspec
 !
 !  Save spectrum snapshot.
 !
-  if (dspec/=impossible) call powersnap(f)
+  !!!if (dspec/=impossible) call powersnap(f)
 !
 !  Initialize pencils in the pencil_case.
 !
@@ -1040,12 +1042,12 @@ subroutine run_start() bind(C)
   call trim_averages
   
   !$ call mpibarrier
-  !$omp parallel copyin(fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz,phiavg_norm)
-  !$ core_ids(omp_get_thread_num()+1) = get_cpu()
+  !$omp parallel 
+  !$    core_ids(omp_get_thread_num()+1) = get_cpu()
   !$omp end parallel
   !$ call mpibarrier
 !
-!$omp parallel num_threads(num_helpers+1) &
+!$omp parallel num_threads(num_helper_masters+1) &
 !$omp copyin(fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz,phiavg_norm)
 !
 !TP: remove master id from core ids since no one should run on master core and make sure new core ids indexing start from 1
@@ -1068,7 +1070,7 @@ subroutine run_start() bind(C)
 !
 ! Ensures that all MPI processes call create_communicators with the same thread.
 !
-!$  do i=1,num_helpers
+!$  do i=1,num_helper_masters
 !$omp barrier
 !$    if (omp_get_thread_num() == i) call create_communicators
 !$  enddo
@@ -1149,6 +1151,7 @@ subroutine run_start() bind(C)
 !  in run_pars or init_pars.
 !
   if (save_lastsnap) then
+    if (dspec/=impossible.and.lroot) print*, 'save_lastsnap powersnap'
     if (dspec/=impossible) call powersnap(f,lwrite_last_powersnap)
   endif
 !
@@ -1209,9 +1212,9 @@ subroutine run_start() bind(C)
   if (lparticles) call particles_cleanup
   call finalize
 !
-endsubroutine run_start
+  endsubroutine run_start
 !***********************************************************************
-    subroutine pushpars2c(p_par)
+  subroutine pushpars2c(p_par)
 
     use Syscalls, only: copy_addr
 
@@ -2282,12 +2285,10 @@ call copy_addr(dy2_bound,p_par(1165)) ! (2*nghost+1)
 call copy_addr(dz2_bound,p_par(1166)) ! (2*nghost+1)
 
 call copy_addr(lcourant_dt,p_par(1167)) !bool
-
 call copy_addr(maux_vtxbuf_index,p_par(1168)) !int (mfarray)
-
 call copy_addr(num_substeps,p_par(1169)) ! int
 
-    endsubroutine pushpars2c
+  endsubroutine pushpars2c
 !***********************************************************************
 endmodule Run_module
 !***********************************************************************

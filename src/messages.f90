@@ -560,7 +560,13 @@ module Messages
 !
         if (present(instruct)) then
           if (opened .and. (trim(instruct) == 'finalize')) then
-            if (.not.lfirst) write(lun,*) time, merge('',trim(scaller)//": "//trim(message)//'.',message=='')
+            if (.not.lfirst) then
+              if (message=='') then
+                write(lun,*) time
+              else
+                write(lun,*) time, trim(scaller)//": "//trim(message)//'.'
+              endif
+            endif
             close(lun)
             opened = .false.
           endif

@@ -26,7 +26,6 @@
 !
 module Shock
 !
-  use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
@@ -86,7 +85,7 @@ module Shock
 !
       use FArrayManager
 !
-      call farray_register_auxiliary('shock',ishock,communicated=.true.,ongpu=.true.)
+      call farray_register_auxiliary('shock',ishock,communicated=.true.,on_gpu=lgpu)
 !
 !  Writing files for use with IDL
 !

@@ -158,9 +158,9 @@ module FArrayManager
 !
 !  Register an auxiliary variable in the f array.
 !
+      use Cdata,  only: maux_vtxbuf_index
+      use Cparam, only: mfarray
       use General, only: loptest
-      use Cdata,   only: maux_vtxbuf_index
-      use Cparam,   only: mfarray
 !
       character (len=*), intent(in) :: varname
       integer, intent(out)  :: ivar
@@ -170,8 +170,7 @@ module FArrayManager
       logical, optional, intent(in) :: on_gpu
 !
       integer :: vartype
-      integer :: vertex_buffer_index
-      integer :: i
+      integer :: vtxbuf_index
 !
       if (loptest(communicated)) then
         vartype = iFARRAY_TYPE_COMM_AUXILIARY
@@ -180,26 +179,21 @@ module FArrayManager
       endif
 !
       call farray_register_variable(varname,ivar,vartype,vector=vector,array=array,ierr=ierr)
-      !TP: first we get the largest non zero index in the index array
-      if(loptest(on_gpu)) then
-        vertex_buffer_index = 0
-        do i=1,mfarray
-          vertex_buffer_index = max(vertex_buffer_index,maux_vtxbuf_index(i)) 
-        enddo
+
+      if (loptest(on_gpu)) then
+
+        !TP: first we get the largest non zero index in the index array
+        vtxbuf_index = maxval(maux_vtxbuf_index)
         !TP: if the largest one is zero this is the first one and then we know its index to be 
-        !mvar (because of C's zero-based indexing)
-        !else it should be one more than the largest existing one
-        if(vertex_buffer_index == 0) then
-                vertex_buffer_index = mvar
+        !    mvar (because of C's zero-based indexing)
+        !    else it should be one more than the largest existing one
+        if (vtxbuf_index == 0) then
+          vtxbuf_index = mvar
         else
-                vertex_buffer_index = vertex_buffer_index +1
+          vtxbuf_index = vtxbuf_index+1
         endif
-        maux_vtxbuf_index(ivar) = vertex_buffer_index
+        maux_vtxbuf_index(ivar) = vtxbuf_index
       endif
-
-
-
-      
 !
     endsubroutine farray_register_auxiliary
 !***********************************************************************

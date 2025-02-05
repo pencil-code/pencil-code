@@ -25,7 +25,6 @@
 !***************************************************************
 module Shock
 !
-  use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
 !
@@ -88,7 +87,7 @@ module Shock
       use FArrayManager
       use Messages, only: svn_id
 !
-      call farray_register_auxiliary('shock',ishock,communicated=.true.)
+      call farray_register_auxiliary('shock',ishock,communicated=.true.,on_gpu=lgpu)
 !
 !  Identify version number.
 !
