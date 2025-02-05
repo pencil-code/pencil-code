@@ -33,6 +33,7 @@ int updateInConfigArrName(char *);
 void updateInConfigScal(int,REAL);
 int updateInConfigScalName(char *, REAL);
 void testRHS(REAL*,REAL*);
+void gpuSetDt();
 void random_initial_condition(void);
 
 // for Gnu Compiler
@@ -41,7 +42,7 @@ extern REAL __cdata_MOD_y[14];
 extern REAL __cdata_MOD_dx, __cdata_MOD_dy, __cdata_MOD_dz;
 // ----------------------------------------------------------------------
 void FTNIZE(initialize_gpu_c)(REAL **farr_GPU_in, REAL **farr_GPU_out, FINT* comm_fint)
-// Initializes GPU.
+// Initializes GPU.  
 {
   /*
   printf("nx = %d\n", *nx);
@@ -167,5 +168,9 @@ int FTNIZE(update_on_gpu_arr_by_name_c)(char *varname)
 void FTNIZE(test_rhs_c)(REAL* f_in, REAL* df_truth)
 {
   testRHS(f_in,df_truth);
+}
+void FTNIZE(gpu_set_dt_c)()
+{
+	gpuSetDt();
 }
 /* ---------------------------------------------------------------------- */

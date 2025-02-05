@@ -1,9 +1,16 @@
+#include "../shock/kernels.ac"
 input real AC_dt
 input int AC_step_num
 ComputeSteps AC_rhs(boundconds)
 {
+	shock_1_divu()
+	shock_2_smooth()
         twopass_solve_intermediate(AC_step_num,AC_dt)
         twopass_solve_final(AC_step_num)
+}
+ComputeSteps AC_calculate_timestep(boundconds)
+{
+	twopass_solve_intermediate(0,AC_dt)
 }
 BoundConds boundconds{
   #include "boundconds.h"

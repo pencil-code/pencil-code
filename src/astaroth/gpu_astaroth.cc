@@ -34,6 +34,7 @@ has_nans(AcMesh mesh_in);
 #endif
 #include "../cparam_c.h"
 
+AcReal dt1_interface{};
 static int rank;
 static AcMesh mesh = acInitMesh();
 extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
@@ -734,6 +735,24 @@ sign(const AcReal a, const AcReal b)
 		return abs(a);
 }
 /***********************************************************************************************/
+AcReal
+calc_dt1_courant()
+{
+      AcReal maxadvec = 0.;
+#if LHYDRO
+      maxadvec = acDeviceGetOutput(acGridGetDevice(), AC_maxadvec)/cdt;
+      //if (rank==0) printf("rank, maxadvec= %d %e \n", rank, maxadvec);
+#endif
+      AcReal maxchi_dyn = 0.;
+#if LENTROPY
+      maxchi_dyn = acDeviceGetOutput(acGridGetDevice(), AC_maxchi);
+#endif
+      //fprintf(stderr, "HMM MAX ADVEC, DIFFUS: %14e, %14e\n",maxadvec,max_diffus());
+      return sqrt(pow(maxadvec, 2) + pow(max_diffus(maxchi_dyn), 2));
+      //acDeviceSetInput(acGridGetDevice(),AC_dt,dt);
+      //if (rank==0) printf("rank, maxadvec, maxdiffus, dt1_= %d %e %e %e \n", rank, maxadvec,max_diffus(maxchi_dyn), dt1_);
+}
+/***********************************************************************************************/
 extern "C" void substepGPU(int isubstep)
 //
 //  Do the 'isubstep'th integration step on all GPUs on the node and handle boundaries.
@@ -765,7 +784,13 @@ extern "C" void substepGPU(int isubstep)
   acDeviceSetInput(acGridGetDevice(), AC_step_num,(PC_SUB_STEP_NUMBER) (isubstep-1));
   //acGridSynchronizeStream(STREAM_ALL);
   Device dev = acGridGetDevice();
-  if (isubstep == 1) acDeviceSetInput(acGridGetDevice(), AC_dt,dt);
+  //TP: done in this more complex manner to ensure the actually integrated time and the time reported by Pencil agree
+  //if we call set_dt after the first timestep there would be slight shift in dt what Pencil sees and what is actually used for time integration
+  if (isubstep == 1) 
+  {
+	  if(ldt) set_dt(dt1_interface);
+	  acDeviceSetInput(acGridGetDevice(), AC_dt,dt);
+  }
   //fprintf(stderr,"before acGridExecuteTaskGraph");
   AcTaskGraph *rhs =  acGetOptimizedDSLTaskGraph(AC_rhs);
   auto start = MPI_Wtime();
@@ -807,21 +832,9 @@ extern "C" void substepGPU(int isubstep)
     //fprintf(stderr, "HMM MAX ADVEC, DIFFUS: %14e, %14e\n",maxadvec,max_diffus());
     else 
     {
-      AcReal maxadvec = 0.;
-#if LHYDRO
-      maxadvec = acDeviceGetOutput(acGridGetDevice(), AC_maxadvec)/cdt;
-      //if (rank==0) printf("rank, maxadvec= %d %e \n", rank, maxadvec);
-#endif
-      AcReal maxchi_dyn = 0.;
-#if LENTROPY
-      maxchi_dyn = acDeviceGetOutput(acGridGetDevice(), AC_maxchi);
-#endif
-      //fprintf(stderr, "HMM MAX ADVEC, DIFFUS: %14e, %14e\n",maxadvec,max_diffus());
-      dt1_ = sqrt(pow(maxadvec, 2) + pow(max_diffus(maxchi_dyn), 2));
-      //acDeviceSetInput(acGridGetDevice(),AC_dt,dt);
-      //if (rank==0) printf("rank, maxadvec, maxdiffus, dt1_= %d %e %e %e \n", rank, maxadvec,max_diffus(maxchi_dyn), dt1_);
+      dt1_ = calc_dt1_courant();
     }
-    set_dt(dt1_);
+    dt1_interface = dt1_;
   }
   //acGridSynchronizeStream(STREAM_ALL);
   //acGridSynchronizeStream(STREAM_ALL);
@@ -1169,6 +1182,7 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out, int c
   acGridSynchronizeStream(STREAM_ALL);
   acLogFromRootProc(rank, "DONE initializeGPU\n");
   fflush(stdout);
+  dt1_interface = 1.0/dt;
 }
 /***********************************************************************************************/
 extern "C" void copyFarray(AcReal* f)
@@ -1661,5 +1675,26 @@ testBCs()
   acHostMeshDestroy(&mesh_to_copy);
   acHostMeshCopyVertexBuffers(tmp_mesh_to_store,mesh);
   acHostMeshDestroy(&tmp_mesh_to_store);
+}
+/***********************************************************************************************/
+extern "C" void
+gpuSetDt()
+{
+	acGridSynchronizeStream(STREAM_ALL);
+	if(!lcourant_dt)
+	{
+		fprintf(stderr,"gpuSetDt works only for Courant timestep!!\n");
+		exit(EXIT_FAILURE);
+	}
+	//TP: not needed but for extra safety
+  	acDeviceSetInput(acGridGetDevice(), AC_step_num, (PC_SUB_STEP_NUMBER) 0);
+	const auto graph = acGetOptimizedDSLTaskGraph(AC_calculate_timestep);
+
+	acGridExecuteTaskGraph(graph,1);
+	acGridSynchronizeStream(STREAM_ALL);
+	AcReal dt1_ = calc_dt1_courant();
+	set_dt(dt1_);
+	dt1_interface = dt1_;
+        acDeviceSwapBuffers(acGridGetDevice());
 }
 /***********************************************************************************************/

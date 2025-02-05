@@ -114,4 +114,8 @@ contains
 
     endsubroutine test_rhs_gpu
 !**************************************************************************
+    subroutine gpu_set_dt()
+    endsubroutine gpu_set_dt
+!**************************************************************************
+
 endmodule  GPU

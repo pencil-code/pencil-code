@@ -305,6 +305,7 @@ subroutine timeloop(f,df,p)
   use Solid_Cells,     only: time_step_ogrid
   use Streamlines,     only: tracers_prepare
   use Snapshot,        only: powersnap_prepare
+  use GPU,             only: gpu_set_dt
 !$ use OMP_lib
 !$ use General, only: signal_send, signal_wait
 !
@@ -317,6 +318,15 @@ subroutine timeloop(f,df,p)
   real :: wall_clock_time=0., time_per_step=0.
   real(KIND=rkind8) :: time_this_diagnostic
   integer :: it_this_diagnostic
+
+!TP: due to df being always limited to a kernel on the Astaroth side we have to know the timestep before we do the rhs
+!    compared to the cpu where it is sufficient to know it after the rhs calculations
+!    so we take the timestep calculated at the start of the last timestep
+!    initially there is no previous timestep so we have a extra call here for there always to be a valid previous timestep
+!    no advancement happens here
+  if(lgpu .and. lcourant_dt .and. ldt) then
+        call gpu_set_dt()
+  endif
 
   Time_loop: do while (it<=nt)
 !

@@ -3195,8 +3195,6 @@ ifeq ($(wildcard $(DSL_WORKDIR)/solve_two.ac),)
 	@cp $(DSL_WORKDIR)/../steps_two.h $(DSL_WORKDIR)
 	@sed -i -e'1 i   #include "../shock/kernels.ac"' $(DSL_WORKDIR)/steps_two.h
 	@sed -i -e'1 i   #include "../shock/kernels.ac"' $(DSL_WORKDIR)/steps_single.h
-	@sed -i -e'/twopass_solve_intermediate/ i   shock_1_divu()\n  shock_2_smooth()' $(DSL_WORKDIR)/steps_two.h
-	@sed -i -e'/singlepass_solve/ i   shock_1_divu()\n   shock_2_smooth()' $(DSL_WORKDIR)/steps_single.h
 ifeq ($(HYDRO),hydro)
 ifneq ($(FORCING),noforcing)
 	@if ( ! grep 'forcing/getforce\.h' $(DSL_WORKDIR)/solve_single.ac > /dev/null ); then \

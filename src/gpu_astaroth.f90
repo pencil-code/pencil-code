@@ -32,6 +32,7 @@ module GPU
   external update_on_gpu_arr_by_ind_c
   external update_on_gpu_scal_by_ind_c
   external pos_real_ptr_c
+  external gpu_set_dt_c
   integer, external :: update_on_gpu_arr_by_name_c
   integer, external :: update_on_gpu_scal_by_name_c
 
@@ -115,6 +116,12 @@ contains
       call rhs_gpu_c(isubstep)
 !
     endsubroutine rhs_GPU
+!**************************************************************************
+    subroutine gpu_set_dt()
+!
+      call gpu_set_dt_c()
+!
+    endsubroutine gpu_set_dt
 !**************************************************************************
     function get_ptr_GPU(ind1,ind2,lout) result(pFarr)
 
