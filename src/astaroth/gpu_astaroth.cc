@@ -35,7 +35,7 @@ has_nans(AcMesh mesh_in);
 #include "../cparam_c.h"
 
 static int rank;
-static AcMesh mesh;
+static AcMesh mesh = acInitMesh();
 extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
 {
   const auto DEVICE_VTXBUF_IDX = [&](const int x, const int y, const int z)
@@ -175,8 +175,9 @@ extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
   acGridSynchronizeStream(STREAM_ALL);
 
   //actual run
+  //TP: works for only rk3 but is anyone anyways using this? Probably not
   for (int i=0;i<num_of_steps;i++){
-    for(int substep  = 0; substep <3; ++i)
+    for(int substep  = 0;substep<3; ++substep)
     {
     	acDeviceSetInput(acGridGetDevice(), AC_step_num, (PC_SUB_STEP_NUMBER)substep);
     	acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_rhs),1);
@@ -237,12 +238,12 @@ extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
 
   bool passed = true;
   AcReal max_abs_not_passed_val=-1.0;
-  AcReal true_pair;
+  AcReal true_pair{};
   AcReal max_abs_relative_difference =-1.0;
   AcReal max_abs_value = -1.0;
   AcReal min_abs_value = 1.0;
-  AcReal gpu_val_for_largest_diff;
-  AcReal true_val_for_largest_diff;
+  AcReal gpu_val_for_largest_diff{};
+  AcReal true_val_for_largest_diff{};
   int num_of_points_where_different[NUM_VTXBUF_HANDLES] = {0};
 
   for (size_t i = dims.n0.x; i < dims.n1.x; i++)
