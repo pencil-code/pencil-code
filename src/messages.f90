@@ -5,7 +5,6 @@
 module Messages
 !
   use Cdata
-  use Mpicomm
 !$ use OMP_lib
 !
   implicit none
@@ -93,6 +92,7 @@ module Messages
     subroutine not_implemented(location,message,force)
 !
       use General, only: loptest
+      use Mpicomm, only: die_immediately, die_gracefully
 
       character(len=*), optional :: location, message
       logical, optional :: force
@@ -103,9 +103,9 @@ module Messages
         errors=errors+1
 !
         if (lroot .or. (ncpus<=16 .and. (message/=''))) then
-          call terminal_highlight_error()
+          call terminal_highlight_error
           write (*,'(A18)',ADVANCE='NO') "NOT IMPLEMENTED: "
-          call terminal_defaultcolor()
+          call terminal_defaultcolor
           if (present(message)) then
             write(*,*) trim(scaller)//": "//trim(message)//'!'
           else
@@ -125,6 +125,7 @@ module Messages
    subroutine fatal_error(location,message,force)
 !
       use General, only: loptest
+      use Mpicomm, only: die_immediately, die_gracefully
 
       character(len=*), optional :: location
       character(len=*)           :: message
@@ -140,13 +141,13 @@ module Messages
         fatal=loptest(force)
 !
         if (lroot .or. (ncpus<=16 .and. (message/='')) .or. fatal) then
-          call terminal_highlight_fatal_error()
+          call terminal_highlight_fatal_error
           if (scaller=='') then
             write (*,*) "FATAL ERROR: "//trim(message)//'!!!'
           else
             write (*,*) "FATAL ERROR: "//trim(scaller)//": "//trim(message)//'!!!'
           endif
-          call terminal_defaultcolor()
+          call terminal_defaultcolor
         endif
 !
         if (ldie_onfatalerror) then
@@ -166,6 +167,7 @@ module Messages
 !  07-26-2011: Julien\ Added forced exit if "force" is set to .true.
 !
       use General, only: loptest
+      use Mpicomm, only: die_immediately, die_gracefully
 
       character(len=*), optional :: location
       character(len=*)           :: message
@@ -179,14 +181,14 @@ module Messages
       errors=errors+1
 !
       if (lroot .or. (ncpus<=16 .and. (message/='')) .or. fatal) then
-        call terminal_highlight_fatal_error()
+        call terminal_highlight_fatal_error
         write (*,'(A13)',ADVANCE='NO') "FATAL ERROR: "
-        call terminal_defaultcolor()
+        call terminal_defaultcolor
         write (*,*) trim(scaller) // ": " // trim(message)//'!!!'
       endif
 !
-      if (fatal) call die_immediately()
-      call die_gracefully()
+      if (fatal) call die_immediately
+      call die_gracefully
 !
     endsubroutine inevitably_fatal_error
 !***********************************************************************
@@ -207,9 +209,9 @@ module Messages
         fatal_errors=fatal_errors+1
 !
         if (lroot .or. (ncpus<=16 .and. (message/=''))) then
-          call terminal_highlight_fatal_error()
+          call terminal_highlight_fatal_error
           write (*,'(A13)',ADVANCE='NO') "FATAL ERROR: "
-          call terminal_defaultcolor()
+          call terminal_defaultcolor
           write (*,*) trim(scaller)//": "//trim(message)//'!!!'
         endif
 !
@@ -232,6 +234,9 @@ module Messages
 !  17-may-2006/anders: coded
 !
       use General, only: itoa
+      use Mpicomm, only: mpireduce_sum_int, mpibcast_int, mpigather_scl_str, MPI_COMM_WORLD
+      use Mpicomm, only: die_immediately, die_gracefully
+
 
       character(LEN=linelen), dimension(ncpus) :: messages
       character(LEN=linelen) :: preceding
@@ -291,6 +296,8 @@ module Messages
 !***********************************************************************
     subroutine error(location,message)
 !
+      use Mpicomm, only: die_gracefully
+
       character(len=*), optional :: location
       character(len=*)           :: message
 !
@@ -300,9 +307,9 @@ module Messages
         errors=errors+1
 !
         if (lroot .or. (ncpus<=16 .and. (message/=''))) then
-          call terminal_highlight_error()
+          call terminal_highlight_error
           write (*,'(A7)',ADVANCE='NO') "ERROR: "
-          call terminal_defaultcolor()
+          call terminal_defaultcolor
           write (*,*) trim(scaller) // ": " // trim(message)//'!!!'
         endif
 !
@@ -320,6 +327,7 @@ module Messages
 !   2-apr-17/MR: optional parameter ip = processor number added
 !
       use General, only: ioptest
+      use Mpicomm, only: die_gracefully
 
       character (len=*), optional :: location
       character (len=*)           :: message
@@ -329,9 +337,9 @@ module Messages
 
       if (.not.llife_support) then
         if ((iproc_world == ioptest(ipr,0)) .and. (message /= '')) then
-          call terminal_highlight_warning()
+          call terminal_highlight_warning
           write (*,'(A9)',ADVANCE='NO') "WARNING: "
-          call terminal_defaultcolor()
+          call terminal_defaultcolor
           write (*,*) trim(scaller) // ": " // trim(message)//'!'
 !          call flush(6) ! has to wait until F2003
         endif
@@ -492,6 +500,7 @@ module Messages
 !  provided it=it_timing.
 !
       use General, only: loptest
+      use Mpicomm, only: mpiwtime
 
       integer :: lun=9
       character(len=*), optional :: location

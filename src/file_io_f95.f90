@@ -10,8 +10,6 @@
 !
 module File_io
 !
-  use Mpicomm
-!
   implicit none
 !
   external write_binary_file_c
@@ -40,6 +38,7 @@ module File_io
 !
       use General, only: loptest
       use Messages, only: fatal_error
+      use Mpicomm, only: mpibcast_int, mpibcast_char, lroot, MPI_COMM_WORLD, stop_it_if_any
 
       integer :: parallel_read
       character (len=*), intent(in) :: file
@@ -273,7 +272,7 @@ module File_io
 !
       use Cdata, only: comment_char
       use General, only: lower_case
-      use Mpicomm, only: lroot, mpibcast
+      use Mpicomm, only: lroot, mpibcast, MPI_COMM_WORLD
       use Messages, only: warning
 !
       character(len=*), intent(in) :: name
