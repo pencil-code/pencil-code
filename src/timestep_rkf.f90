@@ -59,6 +59,7 @@ module Timestep
       dt_increase=-1./(itorder+dtinc)
       dt_decrease=-1./(itorder-dtdec)
       lcourant_dt=.false.
+      num_substeps = itorder
 !
     endsubroutine initialize_timestep
 !***********************************************************************

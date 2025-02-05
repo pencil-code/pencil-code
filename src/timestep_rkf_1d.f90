@@ -45,6 +45,8 @@ module Timestep
       dt_next=dt
       lcourant_dt=.false.
 
+      num_substeps = 5
+
     endsubroutine initialize_timestep
 !***********************************************************************
     subroutine time_step(f,df,p)
