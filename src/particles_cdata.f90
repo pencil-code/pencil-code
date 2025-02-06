@@ -110,6 +110,7 @@ module Particles_cdata
   logical :: lswap_radius_and_number=.false.
   logical :: lpartnucleation = .false., lcondensing_species=.false.
   logical :: ltemp_equip_part_gas=.false.
+  logical :: ltemp_equip_simplified=.false.
 !
   character (len=2*bclen+1) :: bcpx='p', bcpy='p', bcpz='p'
   character (len=labellen), dimension(mparray) :: pvarname

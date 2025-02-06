@@ -50,7 +50,7 @@ module Particles_temperature
   namelist /particles_TT_run_pars/ emissivity, cp_part, lpart_temp_backreac,&
       lrad_part,Twall, lpart_nuss_const,lstefan_flow,lconv_heating, &
       ldiffuse_backtemp,ldiffTT,rdiffconstTT, ndiffstepTT,lconst_part_temp,&
-      ltemp_equip_part_gas,lrayleigh_rad_limit
+      ltemp_equip_part_gas,lrayleigh_rad_limit, ltemp_equip_simplified
 !
   integer :: idiag_Tpm=0, idiag_etpm=0
 !
@@ -402,7 +402,7 @@ module Particles_temperature
               ! For the case of temperature equipartition, the modification to the temperature
               ! equation of the gas phase is done after the particle loop, otherwise it is done here.
               !
-              if (.not. ltemp_equip_part_gas) then
+              if (ltemp_equip_simplified .or. (.not. ltemp_equip_part_gas)) then
                 call find_interpolation_indeces(ixx0,ixx1,iyy0,iyy1,izz0,izz1,fp,k,ix0,iy0,iz0)
 !
 !  Add the source to the df-array
@@ -462,7 +462,7 @@ module Particles_temperature
 ! For the case of temperature equipartition, the modification to the temperature
 ! equation of the gas phase is done here, after the particle loop.
 !
-        if (ltemp_equip_part_gas) then    
+        if (ltemp_equip_part_gas .and. (.not. ltemp_equip_simplified)) then
           if (ltemperature_nolog) then
             df(l1:l2,m,n,iTT)  = (df(l1:l2,m,n,iTT)*p%rho*p%cv&
                  +p%cond_heat+Qc_back/volume_cell)/(p%rho*p%cv+p%part_heatcap)
