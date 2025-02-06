@@ -154,7 +154,7 @@ module Special
       endif
 !
       call put_shared_variable('alpf',alpf,caller='register_disp_current')
-      call put_shared_variable('lphi_hom',lphi_hom,caller='register_disp_current')
+      call put_shared_variable('lphi_hom',lphi_hom)
 !
       if (lroot) call svn_id( &
            "$Id$")
@@ -180,14 +180,14 @@ module Special
       c_light2=c_light**2
 !
       if (lmagnetic .and. .not.lswitch_off_divJ) then
-        call get_shared_variable('eta',eta)
+        call get_shared_variable('eta',eta, caller='initialize_magnetic')
       endif
 !
 !  eta_tdep (luse_scale_factor_in_sigma=T by default)
 !
       if (luse_scale_factor_in_sigma) then
         call get_shared_variable('ascale', ascale, caller='initialize_magnetic')
-        call get_shared_variable('Hscript', Hscript, caller='initialize_magnetic')
+        call get_shared_variable('Hscript', Hscript)
       else
         allocate (ascale, Hscript)
         ascale=1.
