@@ -125,7 +125,7 @@ extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
             loaded_correct = false;
             acLogFromRootProc(rank,"Loaded val wrong at %d,%d,%d\n", i, j, k);
             acLogFromRootProc(rank,"field = %d", ivar);
-            acLogFromRootProc(rank,"Loaded val: %f\tTRUE val: %f\n", out_val, true_val);
+            acLogFromRootProc(rank,"Loaded val: %f\tTRUE val: %f\n", (double)out_val, (double)true_val);
           }
         }
       }
@@ -260,7 +260,7 @@ extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
           AcReal abs_diff = fabs(out_val - true_val);
           if (fabs(true_val) > max_abs_value) max_abs_value = fabs(true_val);
           if (fabs(true_val) < min_abs_value) min_abs_value = fabs(true_val);
-          if ((abs_diff/true_val) > epsilon || (true_val == 0.0 && fabs(out_val) > pow(0.1,13)) || (epsilon == 0.0 && true_val != out_val))
+          if ((AcReal)(abs_diff/true_val) > epsilon || (true_val == (AcReal)0.0 && (AcReal)fabs(out_val) > (AcReal)pow(0.1,13)) || (epsilon == (AcReal)0.0 && true_val != out_val))
           {
             passed = false;
             num_of_points_where_different[ivar]++;
@@ -272,7 +272,7 @@ extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
               max_abs_not_passed_val = abs(out_val);
               true_pair = true_val;
             }
-            if (true_val != 0.0){
+            if (true_val != (AcReal)0.0){
               if (max_abs_relative_difference<(abs_diff/true_val)){
                 max_abs_relative_difference=(abs_diff/true_val);
                 gpu_val_for_largest_diff = out_val;
@@ -283,7 +283,7 @@ extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
           if (isnan(out_val))
           {
             acLogFromRootProc(rank,"nan before at %d,%d,%d,%d!\n!",i,j,k,ivar);
-            acLogFromRootProc(rank,"%.7e\n",out_val);
+            acLogFromRootProc(rank,"%.7e\n",(double)out_val);
           }
         }
       }
@@ -304,10 +304,10 @@ extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
   {
     acLogFromRootProc(rank,"Did not pass GPU test :(\n");
   }
-  acLogFromRootProc(rank,"max abs not passed val: %.7e\t%.7e\n",max_abs_not_passed_val, fabs(true_pair));
-  acLogFromRootProc(rank,"max abs relative difference val: %.7e\n",max_abs_relative_difference);
-  acLogFromRootProc(rank,"largest difference: %.7e\t%.7e\n",gpu_val_for_largest_diff, true_val_for_largest_diff);
-  acLogFromRootProc(rank,"abs range: %.7e-%7e\n",min_abs_value,max_abs_value);
+  acLogFromRootProc(rank,"max abs not passed val: %.7e\t%.7e\n",(double)max_abs_not_passed_val, (double)fabs(true_pair));
+  acLogFromRootProc(rank,"max abs relative difference val: %.7e\n",(double)max_abs_relative_difference);
+  acLogFromRootProc(rank,"largest difference: %.7e\t%.7e\n",(double)gpu_val_for_largest_diff, (double)true_val_for_largest_diff);
+  acLogFromRootProc(rank,"abs range: %.7e-%7e\n",(double)min_abs_value,(double)max_abs_value);
   fflush(stdout);
 }
 
@@ -729,7 +729,7 @@ has_nans(AcMesh mesh_in);
 AcReal
 sign(const AcReal a, const AcReal b)
 {
-	if (b < 0.0)
+	if (b < (AcReal)0.0)
 		return -abs(a);
 	else
 		return abs(a);
@@ -806,28 +806,28 @@ extern "C" void substepGPU(int isubstep)
       //acGridFinalizeReduceLocal(rhs);
       //TP: now done in executetaskgraph
     
+    constexpr AcReal unit = 1.0;
     AcReal dt1_{};
     if (!lcourant_dt)
     {
       const AcReal maximum_error = acDeviceGetOutput(acGridGetDevice(), AC_maximum_error);
       AcReal dt_{};
-      const AcReal dt_increase=-1./(itorder+dtinc);
-      const AcReal dt_decrease=-1./(itorder-dtdec);
+      const AcReal dt_increase=-unit/(itorder+dtinc);
+      const AcReal dt_decrease=-unit/(itorder-dtdec);
       const AcReal safety=0.95;
       if (maximum_error > 1)
       {
       	// Step above error threshold so decrease the next time step
       	const AcReal dt_temp = safety*dt*pow(maximum_error,dt_decrease);
       	// Don't decrease the time step by more than a factor of ten
-      	dt_ = sign(max(abs(dt_temp), 0.1*abs(dt)), dt);
+	constexpr AcReal decrease_factor = 0.1;
+      	dt_ = sign(max(abs(dt_temp), decrease_factor*abs(dt)), dt);
       } 
       else
       {
       	dt_ = dt*pow(maximum_error,dt_increase);
       }
-      fprintf(stderr,"DT_: %14e\n",dt_);
-      fprintf(stderr,"MAX ERROR: %14e\n",maximum_error);
-      dt1_ = 1.0/dt_;
+      dt1_ = unit/dt_;
     }
     //fprintf(stderr, "HMM MAX ADVEC, DIFFUS: %14e, %14e\n",maxadvec,max_diffus());
     else 
@@ -1047,7 +1047,7 @@ void setupConfig(AcMeshInfo& config)
 void checkConfig(AcMeshInfo &config)
 {
  acLogFromRootProc(rank,"Check that config is correct\n");
- acLogFromRootProc(rank,"n[xyz]grid, d[xyz]: %d %d %d %.14f %.14f %.14f \n", nxgrid, nygrid, nzgrid, dx, dy, dz);
+ acLogFromRootProc(rank,"n[xyz]grid, d[xyz]: %d %d %d %.14f %.14f %.14f \n", nxgrid, nygrid, nzgrid, (double)dx, (double)dy, (double)dz);
 // acLogFromRootProc(rank,"rank= %d: l1, l2, n1, n2, m1, m2= %d %d %d %d %d %d \n", rank, l1, l2, n1, n2, m1, m2);
 // acLogFromRootProc(rank,"zlen= %.14f %.14f \n", config[AC_len].z, lxyz[2]);
  /*
@@ -1086,7 +1086,7 @@ void checkConfig(AcMeshInfo &config)
   acLogFromRootProc(rank,"k1_ff,profx_ampl, val= %f %d %lf %lf\n", k1_ff, profx_ampl, profx_ampl[0], profx_ampl[nx-1]);
 #endif
 */
-  acLogFromRootProc(rank,"mu0= %f %f \n", mu0, config[AC_mu0]);
+  acLogFromRootProc(rank,"mu0= %f %f \n", (double)mu0, (double)config[AC_mu0]);
 }
 /***********************************************************************************************/
 extern "C" void getFArrayIn(AcReal **p_f_in)
@@ -1182,7 +1182,8 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out, int c
   acGridSynchronizeStream(STREAM_ALL);
   acLogFromRootProc(rank, "DONE initializeGPU\n");
   fflush(stdout);
-  dt1_interface = 1.0/dt;
+  constexpr AcReal unit = 1.0;
+  dt1_interface = unit/dt;
 }
 /***********************************************************************************************/
 extern "C" void copyFarray(AcReal* f)
@@ -1395,8 +1396,8 @@ check_sym_z(AcMesh mesh_in)
   {
   	//printf("HMM: %14e\n",mesh_in.vertex_buffer[0][DEVICE_VTXBUF_IDX(14,15,2)]);
   	//printf("HMM: %14e\n",mesh_in.vertex_buffer[0][DEVICE_VTXBUF_IDX(14,15,2)]);
-  	printf("HMM: %14e\n",mesh_in.vertex_buffer[0][DEVICE_VTXBUF_IDX(26,14,1)]);
-  	printf("HMM: %14e\n",mesh_in.vertex_buffer[0][DEVICE_VTXBUF_IDX(26,14,5)]);
+  	//printf("HMM: %14e\n",mesh_in.vertex_buffer[0][DEVICE_VTXBUF_IDX(26,14,1)]);
+  	//printf("HMM: %14e\n",mesh_in.vertex_buffer[0][DEVICE_VTXBUF_IDX(26,14,5)]);
   }
   AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
   for (size_t i = 0; i < dims.m1.x; i++)
@@ -1451,8 +1452,8 @@ check_sym_x(const AcMesh mesh_in)
   {
   	//printf("HMM: %14e\n",mesh_in.vertex_buffer[0][DEVICE_VTXBUF_IDX(14,15,2)]);
   	//printf("HMM: %14e\n",mesh_in.vertex_buffer[0][DEVICE_VTXBUF_IDX(14,15,2)]);
-  	printf("HMM: %14e\n",mesh_in.vertex_buffer[0][DEVICE_VTXBUF_IDX(26,14,1)]);
-  	printf("HMM: %14e\n",mesh_in.vertex_buffer[0][DEVICE_VTXBUF_IDX(26,14,5)]);
+  	//printf("HMM: %14e\n",mesh_in.vertex_buffer[0][DEVICE_VTXBUF_IDX(26,14,1)]);
+  	//printf("HMM: %14e\n",mesh_in.vertex_buffer[0][DEVICE_VTXBUF_IDX(26,14,5)]);
   }
   AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
   for (size_t i = 0; i < dims.m1.x; i++)
@@ -1610,7 +1611,7 @@ testBCs()
           AcReal abs_diff = fabs(out_val - true_val);
           if (fabs(true_val) > max_abs_value) max_abs_value = fabs(true_val);
           if (fabs(true_val) < min_abs_value) min_abs_value = fabs(true_val);
-          if ((abs_diff/true_val) > epsilon || (true_val == 0.0 && fabs(out_val) > pow(0.1,13)) || (epsilon == 0.0 && true_val != out_val))
+          if ((abs_diff/true_val) > epsilon || (true_val == (AcReal)0.0 && fabs(out_val) > (AcReal)pow(0.1,13)) || (epsilon == (AcReal)0.0 && true_val != out_val))
           {
 	    different_in[ivar][bot_x] |= i < NGHOST;
 	    different_in[ivar][top_x] |= i >= dims.n1.x;
@@ -1627,7 +1628,7 @@ testBCs()
               max_abs_not_passed_val = abs(out_val);
               true_pair = true_val;
             }
-            if (true_val != 0.0){
+            if (true_val != (AcReal)0.0){
               if (max_abs_relative_difference<(abs_diff/true_val)){
                 max_abs_relative_difference=(abs_diff/true_val);
                 gpu_val_for_largest_diff = out_val;
@@ -1639,7 +1640,7 @@ testBCs()
           if (isnan(out_val))
           {
             acLogFromRootProc(rank,"nan before at %d,%d,%d,%d!\n!",i,j,k,ivar);
-            acLogFromRootProc(rank,"%.7e\n",out_val);
+            acLogFromRootProc(rank,"%.7e\n",(double)out_val);
           }
         }
       }
@@ -1661,11 +1662,11 @@ testBCs()
 		if (different_in[ivar][bot_z]) acLogFromRootProc(0,"different in BOT_Z\n");
 		if (different_in[ivar][top_z]) acLogFromRootProc(0,"different in TOP_Z\n");
 	}
-  	acLogFromRootProc(0,"max abs not passed val: %.7e\t%.7e\n",max_abs_not_passed_val, fabs(true_pair));
-  	acLogFromRootProc(0,"max abs relative difference val: %.7e\n",max_abs_relative_difference);
+  	acLogFromRootProc(0,"max abs not passed val: %.7e\t%.7e\n",(double)max_abs_not_passed_val, (double)fabs(true_pair));
+  	acLogFromRootProc(0,"max abs relative difference val: %.7e\n",(double)max_abs_relative_difference);
   	acLogFromRootProc(0,"Point where biggest rel diff: %d,%d,%d\n",largest_diff_point.x,largest_diff_point.y,largest_diff_point.z);
-  	acLogFromRootProc(0,"largest difference: %.7e\t%.7e\n",gpu_val_for_largest_diff, true_val_for_largest_diff);
-  	acLogFromRootProc(0,"abs range: %.7e-%7e\n",min_abs_value,max_abs_value);
+  	acLogFromRootProc(0,"largest difference: %.7e\t%.7e\n",(double)gpu_val_for_largest_diff, (double)true_val_for_largest_diff);
+  	acLogFromRootProc(0,"abs range: %.7e-%7e\n",(double)min_abs_value,(double)max_abs_value);
     	acLogFromRootProc(0,"Did not pass BC test :(\n");
 	fprintf(stderr,"Did not pass BC\n");
 
