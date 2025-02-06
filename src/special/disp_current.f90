@@ -15,7 +15,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED e2; edot2; el(3); a0; ga0(3); del2ee(3); curlE(3); BcurlE
-! PENCILS PROVIDED rhoe, divJ, divE, gGamma(3)
+! PENCILS PROVIDED rhoe, divJ, divE, gGamma(3); sigE, sigB
 ! PENCILS EXPECTED infl_phi, infl_dphi, gphi(3)
 !***************************************************************
 !
@@ -44,13 +44,14 @@ module Special
   real :: ampla0=0.0, initpower_a0=0.0, initpower2_a0=0.0
   real :: cutoff_a0=0.0, ncutoff_a0=0.0, kpeak_a0=0.0
   real :: relhel_a0=0.0, kgaussian_a0=0.0, eta_ee=0.0
-  real :: weight_longitudinalE=2.0
-  real, pointer :: eta
+  real :: weight_longitudinalE=2.0, echarge=.55
+  logical :: luse_scale_factor_in_sigma=.true.
+  real, pointer :: eta, ascale, Hscript
   integer :: iGamma=0, ia0=0, idiva_name=0, ieedot=0, iedotx=0, iedoty=0, iedotz=0
   logical :: llongitudinalE=.true., llorenz_gauge_disp=.false., lskip_projection_ee=.false.
   logical :: lscale_tobox=.true., lskip_projection_a0=.false.
   logical :: lvectorpotential=.false., lphi_hom=.false.
-  logical :: lno_noise_ee=.false.
+  logical :: lno_noise_ee=.false., lnoncollinear_EB=.false.
   logical :: leedot_as_aux=.false., lcurlyA=.true., lsolve_chargedensity=.false.
   logical :: lswitch_off_divJ=.false., lswitch_off_Gamma=.false.
   character(len=50) :: initee='zero', inita0='zero'
@@ -75,7 +76,8 @@ module Special
   namelist /special_run_pars/ &
     alpf, llongitudinalE, llorenz_gauge_disp, lphi_hom, &
     leedot_as_aux, eta_ee, lcurlyA, beta_inflation, &
-    weight_longitudinalE, lswitch_off_divJ, lswitch_off_Gamma
+    weight_longitudinalE, lswitch_off_divJ, lswitch_off_Gamma, &
+    lnoncollinear_EB, echarge, luse_scale_factor_in_sigma
 !
 ! Declare any index variables necessary for main or
 !
@@ -104,6 +106,11 @@ module Special
   integer :: idiag_exm=0        ! DIAG_DOC: $\left<E_x\right>$
   integer :: idiag_eym=0        ! DIAG_DOC: $\left<E_y\right>$
   integer :: idiag_ezm=0        ! DIAG_DOC: $\left<E_z\right>$
+  integer :: idiag_sigEm=0      ! DIAG_DOC: $\left<\sigma_\mathrm{E}\right>$
+  integer :: idiag_sigBm=0      ! DIAG_DOC: $\left<\sigma_\mathrm{B}\right>$
+  integer :: idiag_sigErms=0    ! DIAG_DOC: $\left<\sigma_\mathrm{E}^2\right>^{1/2}$
+  integer :: idiag_sigBrms=0    ! DIAG_DOC: $\left<\sigma_\mathrm{B}^2\right>^{1/2}$
+  integer :: idiag_Johmrms=0    ! DIAG_DOC: $\left<\Jv^2\right>^{1/2}$
 !
 ! xy averaged diagnostics given in xyaver.in
 !
@@ -174,6 +181,17 @@ module Special
 !
       if (lmagnetic .and. .not.lswitch_off_divJ) then
         call get_shared_variable('eta',eta)
+      endif
+!
+!  eta_tdep (luse_scale_factor_in_sigma=T by default)
+!
+      if (luse_scale_factor_in_sigma) then
+        call get_shared_variable('ascale', ascale, caller='initialize_magnetic')
+        call get_shared_variable('Hscript', Hscript, caller='initialize_magnetic')
+      else
+        allocate (ascale, Hscript)
+        ascale=1.
+        Hscript=1.
       endif
 !
       call keep_compiler_quiet(f)
@@ -293,6 +311,14 @@ module Special
       lpenc_requested(i_curlb)=.true.
       lpenc_requested(i_jj_ohm)=.true.
 !
+! Pencils for lnoncollinear_EB
+!
+      if (lnoncollinear_EB) then
+        lpenc_requested(i_bb)=.true.
+        lpenc_requested(i_e2)=.true.
+        lpenc_requested(i_b2)=.true.
+      endif
+!
       if (llorenz_gauge_disp) then
         lpenc_requested(i_diva)=.true.
       endif
@@ -362,6 +388,7 @@ module Special
       type (pencil_case) :: p
 !
       real, dimension (nx) :: tmp
+      real, dimension (nx) :: eb, boost, gam_EB, eprime, bprime, jprime !, sigE, sigB
       integer :: i,j,k
 !
       intent(in) :: f
@@ -385,6 +412,27 @@ module Special
 !
       p%el=f(l1:l2,m,n,iex:iez)
       call dot2_mn(p%el,p%e2)
+!
+!  Compute fully non-collinear expression for the current density.
+!
+              if (lnoncollinear_EB) then
+                call dot(p%el,p%bb,eb)
+                boost=sqrt((p%e2-p%b2)**2+4.*eb**2)
+                gam_EB=sqrt21*sqrt(1.+(p%e2+p%b2)/boost)
+                eprime=sqrt21*sqrt(p%e2-p%b2+boost)
+                bprime=sqrt21*sqrt(p%b2-p%e2+boost)*sign(1.,eb)
+                jprime=echarge**3/(6.*pi**2*Hscript)*eprime*abs(bprime)/tanh(pi*abs(Bprime)/Eprime)
+                p%sigE=abs(jprime)*eprime/(gam_EB*boost)
+                p%sigB=abs(jprime)*eb/(eprime*gam_EB*boost)
+                do j=1,3
+                  p%jj_ohm(:,j)=p%sigE*p%el(:,j)+p%sigB*p%bb(:,j)
+                enddo
+                !eta_tdep=1./sigE
+!             else
+!               do j=1,3
+!                 p%jj_ohm(:,j)=(p%el(:,j)+p%uxb(:,j))*mu01/eta_total
+!               enddo
+              endif
 !
 ! edot2
 !
@@ -591,6 +639,14 @@ module Special
         call sum_mn_name(p%el(:,1),idiag_exm)
         call sum_mn_name(p%el(:,2),idiag_eym)
         call sum_mn_name(p%el(:,3),idiag_ezm)
+        call sum_mn_name(p%sigE,idiag_sigEm)
+        call sum_mn_name(p%sigB,idiag_sigBm)
+        call sum_mn_name(p%sigE**2,idiag_sigErms,lsqrt=.true.)
+        call sum_mn_name(p%sigB**2,idiag_sigBrms,lsqrt=.true.)
+        if (idiag_Johmrms/=0) then
+          call dot2_mn(p%jj_ohm,tmp)
+          call sum_mn_name(tmp,idiag_Johmrms,lsqrt=.true.)
+        endif
         call sum_mn_name(p%e2,idiag_erms,lsqrt=.true.)
         call sum_mn_name(p%edot2,idiag_edotrms,lsqrt=.true.)
         call max_mn_name(p%e2,idiag_emax,lsqrt=.true.)
@@ -691,6 +747,7 @@ module Special
         idiag_mfpf=0; idiag_fppf=0; idiag_afact=0
         idiag_rhoerms=0.; idiag_divErms=0.; idiag_divJrms=0.
         idiag_rhoem=0.; idiag_divEm=0.; idiag_divJm=0.; idiag_constrainteqn=0.
+        idiag_sigEm=0.; idiag_sigBm=0.; idiag_sigErms=0.; idiag_sigBrms=0.; idiag_Johmrms=0.
         cformv=''
       endif
 !
@@ -714,6 +771,11 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'divEm',idiag_divEm)
         call parse_name(iname,cname(iname),cform(iname),'divJm',idiag_divJm)
         call parse_name(iname,cname(iname),cform(iname),'rhoem',idiag_rhoem)
+        call parse_name(iname,cname(iname),cform(iname),'sigEm',idiag_sigEm)
+        call parse_name(iname,cname(iname),cform(iname),'sigBm',idiag_sigBm)
+        call parse_name(iname,cname(iname),cform(iname),'sigErms',idiag_sigErms)
+        call parse_name(iname,cname(iname),cform(iname),'sigBrms',idiag_sigBrms)
+        call parse_name(iname,cname(iname),cform(iname),'Johmrms',idiag_Johmrms)
         call parse_name(iname,cname(iname),cform(iname),'mfpf',idiag_mfpf)
         call parse_name(iname,cname(iname),cform(iname),'fppf',idiag_fppf)
         call parse_name(iname,cname(iname),cform(iname),'afact',idiag_afact)
