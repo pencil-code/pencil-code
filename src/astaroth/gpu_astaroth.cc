@@ -51,15 +51,15 @@ extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
   // return;
   // make_tasks(diagnostics_func, reduction_func, finalize_func, write_func);
   // thread_pool.WaitAll();
-  constexpr AcReal alpha[3] = {0.0, -(5.0 / 9.0), -(153.0 / 128.0)};
-  constexpr AcReal beta[3] = {(1.0 / 3.0), (15.0 / 16.0), (8.0 / 15.0)};
+  constexpr AcReal alpha[3] = {0.0, (AcReal)-(5.0 / 9.0), (AcReal)-(153.0 / 128.0)};
+  constexpr AcReal beta[3] = {(AcReal)(1.0 / 3.0), (AcReal)(15.0 / 16.0), (AcReal)(8.0 / 15.0)};
   constexpr int num_of_steps = 100;
 
   AcMesh mesh_true;
   AcMesh mesh_test;
-  const AcReal epsilon = pow(0.1,12);
+  const AcReal epsilon = (AcReal)pow(0.1,12);
   // constexpr AcReal epsilon = 0.0;
-  constexpr AcReal local_dt = 0.001;
+  constexpr AcReal local_dt = (AcReal)0.001;
   Device dev = acGridGetDevice();
   acDeviceSetInput(acGridGetDevice(),AC_dt,local_dt);
   acGridSynchronizeStream(STREAM_ALL);
@@ -748,7 +748,7 @@ calc_dt1_courant()
       maxchi_dyn = acDeviceGetOutput(acGridGetDevice(), AC_maxchi);
 #endif
       //fprintf(stderr, "HMM MAX ADVEC, DIFFUS: %14e, %14e\n",maxadvec,max_diffus());
-      return sqrt(pow(maxadvec, 2) + pow(max_diffus(maxchi_dyn), 2));
+      return (AcReal)sqrt(pow(maxadvec, 2) + pow(max_diffus(maxchi_dyn), 2));
       //acDeviceSetInput(acGridGetDevice(),AC_dt,dt);
       //if (rank==0) printf("rank, maxadvec, maxdiffus, dt1_= %d %e %e %e \n", rank, maxadvec,max_diffus(maxchi_dyn), dt1_);
 }
@@ -814,13 +814,13 @@ extern "C" void substepGPU(int isubstep)
       AcReal dt_{};
       const AcReal dt_increase=-unit/(itorder+dtinc);
       const AcReal dt_decrease=-unit/(itorder-dtdec);
-      const AcReal safety=0.95;
+      constexpr AcReal safety=(AcReal)0.95;
       if (maximum_error > 1)
       {
       	// Step above error threshold so decrease the next time step
       	const AcReal dt_temp = safety*dt*pow(maximum_error,dt_decrease);
       	// Don't decrease the time step by more than a factor of ten
-	constexpr AcReal decrease_factor = 0.1;
+	constexpr AcReal decrease_factor = (AcReal)0.1;
       	dt_ = sign(max(abs(dt_temp), decrease_factor*abs(dt)), dt);
       } 
       else
@@ -1561,7 +1561,7 @@ testBCs()
   AcReal min_abs_value = 1.0;
   AcReal gpu_val_for_largest_diff{};
   AcReal true_val_for_largest_diff{};
-  AcReal epsilon = pow(10.0,-12.0);
+  AcReal epsilon = (AcReal)pow(10.0,-12.0);
   int3 largest_diff_point{};
   //AcReal epsilon = 0.0;
 
