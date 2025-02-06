@@ -1043,8 +1043,7 @@ extern "C" void testBcKernel(AcReal *farray_in, AcReal *farray_truth)
 }
 **/
 /***********************************************************************************************/
-AcReal* PC_FARRAY;
-extern "C" void registerGPU(AcReal *farray)
+extern "C" void registerGPU()
 {
   // AcReal* profile_x_host = (AcReal*)malloc(sizeof(AcReal)*mx);
   // for (int i=0;i<mx;i++){
@@ -1055,9 +1054,6 @@ extern "C" void registerGPU(AcReal *farray)
 
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   mesh.info = acInitInfo();
-
-  //TP: this is a ugly way to do this but works for now
-  PC_FARRAY = farray;
 }
 /***********************************************************************************************/
 extern "C" void initGPU()
@@ -1211,7 +1207,7 @@ extern "C" void copyVBApointers(AcReal **in, AcReal **out)
 void
 testBCs();     // ahead declaration
 /***********************************************************************************************/
-extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out, int comm_fint)
+extern "C" void initializeGPU(real* farray, int comm_fint)
 {
   //Setup configurations used for initializing and running the GPU code
 #if PACKED_DATA_TRANSFERS
@@ -1227,7 +1223,7 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out, int c
     size_t offset = 0;
     for (int i = 0; i < mvar; ++i)
     {
-      mesh.vertex_buffer[VertexBufferHandle(i)] = &PC_FARRAY[offset];
+      mesh.vertex_buffer[VertexBufferHandle(i)] = &farray[offset];
       offset += mw;
     }
 //printf("&farray[offset]= %p \n",&farray[offset]);fflush(stdout);
@@ -1236,7 +1232,7 @@ extern "C" void initializeGPU(AcReal **farr_GPU_in, AcReal **farr_GPU_out, int c
     {
       if (maux_vtxbuf_index[i])
       {
-              mesh.vertex_buffer[maux_vtxbuf_index[i]] = &PC_FARRAY[mw*i];
+              mesh.vertex_buffer[maux_vtxbuf_index[i]] = &farray[mw*i];
       }
     }
   }

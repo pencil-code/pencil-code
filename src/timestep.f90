@@ -126,10 +126,10 @@ module Timestep
         headtt = headt .and. lfirst .and. lroot
 
           if (lfirst) then
-            if(.not. lgpu) df=0.0
+            if (.not. lgpu) df=0.0
             ds=0.0
           else
-            if(.not. lgpu) df=alpha_ts(itsub)*df !(could be subsumed into pde, but is dangerous!)
+            if (.not. lgpu) df=alpha_ts(itsub)*df !(could be subsumed into pde, but is dangerous!)
             ds=alpha_ts(itsub)*ds
             if (it_rmv>0) lrmv=.false.
           endif
