@@ -167,8 +167,8 @@ module Chemistry
   real :: gam_surf_energy_cgs=32.
   real :: nucleation_rate_coeff_cgs=1e19
   real :: molar_mass_spec, atomic_m_spec, A_spec
-  !real :: deltaH_cgs = 7.07e12 ! in erg/mol
-  real :: deltaH_cgs = 3.55e12 ! in erg/mol (based on Tboil and 1025C)
+  real :: deltaH_cgs = 7.07e12 ! in erg/mol
+  !real :: deltaH_cgs = 3.55e12 ! in erg/mol (based on Tboil and 1025C)
   real :: gam_surf_energy_mul_fac=1.0
   real :: conc_sat_spec_cgs=1e-8 !units of mol/cmˆ3
   logical, pointer :: ldustnucleation, lpartnucleation, lcondensing_species
@@ -237,7 +237,7 @@ module Chemistry
       Ythresh, lchem_detailed, conc_sat_spec_cgs, inucl_pre_exp, lcorr_vel, &
       lgradP_terms, lnormalize_chemspec, lnormalize_chemspec_N2, &
       gam_surf_energy_cgs, isurf_energy, iconc_sat_spec, nucleation_rate_coeff_cgs, &
-      lnoevap, lnocondheat, gam_surf_energy_mul_fac
+      lnoevap, lnocondheat, gam_surf_energy_mul_fac, deltaH_cgs
 !
 ! diagnostic variables (need to be consistent with reset list below)
 !
