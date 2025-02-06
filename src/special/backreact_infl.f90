@@ -154,7 +154,8 @@ module backreact_infl
 !
 !  6-oct-03/tony: coded
 !
-  use FArrayManager
+      use FArrayManager
+      use SharedVariables, only: put_shared_variable
 !
       if (lroot) call svn_id( &
            "$Id$")
@@ -176,6 +177,13 @@ module backreact_infl
       ispecialvar=iinfl_phi
       ispecialvar2=iinfl_dphi
 !
+      call put_shared_variable('ddotam',ddotam_all,caller='register_backreact_infl')
+      call put_shared_variable('ascale',ascale)
+      call put_shared_variable('Hscript',Hscript)
+      call put_shared_variable('e2m_all',e2m_all)
+      call put_shared_variable('b2m_all',b2m_all)
+      call put_shared_variable('lrho_chi',lrho_chil)
+!
     endsubroutine register_special
 !***********************************************************************
     subroutine initialize_special(f)
@@ -184,21 +192,14 @@ module backreact_infl
 !
 !  06-oct-03/tony: coded
 !
-      use SharedVariables, only: get_shared_variable, put_shared_variable
+      use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
       axionmass2=axionmass**2
 !
-      call put_shared_variable('ddotam',ddotam_all,caller='initialize_backreact_infl_ode')
-      call put_shared_variable('ascale',ascale,caller='initialize_backreact_infl')
-      call put_shared_variable('Hscript',Hscript,caller='initialize_backreact_infl')
-      call put_shared_variable('e2m_all',e2m_all,caller='initialize_backreact_infl')
-      call put_shared_variable('b2m_all',b2m_all,caller='initialize_backreact_infl')
-      call put_shared_variable('lrho_chi',lrho_chi,caller='initialize_backreact_infl')
-!
       if (lmagnetic .and. lem_backreact) then
-        call get_shared_variable('alpf',alpf)
+        call get_shared_variable('alpf',alpf,caller='initialize_backreact_infl')
         call get_shared_variable('lphi_hom',lphi_hom)
       else
         allocate(alpf)
