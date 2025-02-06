@@ -89,7 +89,7 @@ subroutine helper_loop(f,p)
 !$      lhelperflags(PERF_WSNAP_DOWN) = .false.
 !$    endif
 !$    if (lhelper_run .and. lhelperflags(PERF_POWERSNAP)) then 
-if (lroot) print*,"doing power", lspec
+!if (lroot) print*,"doing power", lspec
         call perform_powersnap(f)
 !$    else 
 !$      lhelperflags(PERF_POWERSNAP) = .false.
