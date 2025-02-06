@@ -42,6 +42,9 @@ module Particles_temperature
   real, dimension(:,:,:), allocatable :: weight_array
   real :: Twall=0.0
   real :: cp_part=0.711e7 ! wolframalpha, erg/(g*K)
+  ! Using refractive index for soot for now: m=2.21-1.23i
+  ! im_part_ref=(m^2-1)/(m^2+2)
+  real :: im_part_ref=-0.279
   character(len=labellen), dimension(ninit) :: init_particle_temperature='nothing'
 !
   namelist /particles_TT_init_pars/ &
@@ -50,7 +53,8 @@ module Particles_temperature
   namelist /particles_TT_run_pars/ emissivity, cp_part, lpart_temp_backreac,&
       lrad_part,Twall, lpart_nuss_const,lstefan_flow,lconv_heating, &
       ldiffuse_backtemp,ldiffTT,rdiffconstTT, ndiffstepTT,lconst_part_temp,&
-      ltemp_equip_part_gas,lrayleigh_rad_limit, ltemp_equip_simplified
+      ltemp_equip_part_gas,lrayleigh_rad_limit, ltemp_equip_simplified, &
+      im_part_ref
 !
   integer :: idiag_Tpm=0, idiag_etpm=0
 !
@@ -216,7 +220,7 @@ module Particles_temperature
       real :: volume_cell, stefan_b,Prandtl
       real :: Qc, Qrad, Qreac, Ap, heat_trans_coef, cond
       integer :: k, inx0, ix0, iy0, iz0, ierr
-      real :: rho1_point, weight, pmass,lambda_rad,xlambda,qabs, im_part_ref
+      real :: rho1_point, weight, pmass,lambda_rad,xlambda,qabs
       integer :: ixx0, ixx1, iyy0, iyy1, izz0, izz1
       integer :: ixx, iyy, izz, k1, k2
 !
@@ -307,9 +311,6 @@ module Particles_temperature
             if (lrayleigh_rad_limit) then
               lambda_rad=2.898e-1/unit_length/interp_TT(k)
               xlambda=2*pi*fp(k,iap)/lambda_rad
-              ! Using refractive index for soot for now: m=2.21-1.23i
-              ! im_part_ref=(m^2-1)/(m^2+2)
-              im_part_ref=-0.2792
               qabs=-4*xlambda*im_part_ref
             else
               qabs=1
