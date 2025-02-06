@@ -336,7 +336,7 @@ module Particles
   integer :: idiag_eccpxm=0, idiag_eccpym=0, idiag_eccpzm=0
   integer :: idiag_eccpx2m=0, idiag_eccpy2m=0, idiag_eccpz2m=0
   integer :: idiag_vprms=0, idiag_vpyfull2m=0, idiag_deshearbcsm=0
-  integer :: idiag_Shm=0, idiag_condheatm
+  integer :: idiag_Shm=0, idiag_latentheatm
   integer :: idiag_ffcondposm, idiag_ffcondnegm, idiag_ffcondm
   integer, dimension(ndustrad) :: idiag_npvzmz=0, idiag_npvz2mz=0, idiag_nptz=0
   integer, dimension(ndustrad) :: idiag_npuzmz=0
@@ -5224,8 +5224,8 @@ endif
         if (idiag_dvpx2m /= 0 .or. idiag_dvpx2m /= 0 .or. idiag_dvpx2m /= 0 .or. &
             idiag_dvpm  /= 0 .or. idiag_dvpmax /= 0) call calculate_rms_speed(fp,ineargrid,p)
         if (lfirst .and. ldt) call max_mn_name(dt1_drag,idiag_dtdragp,l_dt=.true.)
-        if (idiag_condheatm/= 0) &
-             call sum_mn_name(p%cond_heat,idiag_condheatm)
+        if (idiag_latentheatm/= 0) &
+             call sum_mn_name(p%latent_heat,idiag_latentheatm)
         if (idiag_ffcondm/= 0) &
              call sum_mn_name(p%ff_cond,idiag_ffcondm)
         if (idiag_ffcondposm/= 0) &
@@ -7040,7 +7040,7 @@ endif
         idiag_Shm = 0
         idiag_npuzmz = 0
 
-        idiag_condheatm = 0
+        idiag_latentheatm = 0
         idiag_ffcondposm = 0
         idiag_ffcondm = 0
         idiag_ffcondnegm = 0
@@ -7139,7 +7139,7 @@ endif
         call parse_name(iname,cname(iname),cform(iname),'vprms',idiag_vprms)
         call parse_name(iname,cname(iname),cform(iname),'Shm',idiag_Shm)
         call parse_name(iname,cname(iname),cform(iname),'deshearbcsm',idiag_deshearbcsm)
-        call parse_name(iname,cname(iname),cform(iname),'condheatm',idiag_condheatm)
+        call parse_name(iname,cname(iname),cform(iname),'latentheatm',idiag_latentheatm)
         call parse_name(iname,cname(iname),cform(iname),'ffcondposm',idiag_ffcondposm)
         call parse_name(iname,cname(iname),cform(iname),'ffcondm',idiag_ffcondm)
         call parse_name(iname,cname(iname),cform(iname),'ffcondnegm',idiag_ffcondnegm)
