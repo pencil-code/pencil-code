@@ -10,6 +10,8 @@
 ! MPVAR CONTRIBUTION 1
 ! CPARAM logical, parameter :: lparticles_radius=.true.
 !
+! PENCILS PROVIDED latent_heat
+!
 !***************************************************************
 module Particles_radius
 !

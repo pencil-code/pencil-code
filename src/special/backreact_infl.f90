@@ -98,6 +98,7 @@ module backreact_infl
   real :: relhel_phi=0.
   real :: ddotam, a2rhopm, a2rhopm_all, a2rhom, a2rhom_all
   real :: edotbm, edotbm_all, e2m, e2m_all, b2m, b2m_all, a2rhophim, a2rhophim_all
+  real :: ebm, sigEm, sigBm, ebm_all, sigEm_all, sigBm_all
   real :: a2rhogphim, a2rhogphim_all
   real :: lnascale, ascale, a2, a21, Hscript
   real :: Hscript0=0., scale_rho_chi_Heqn=1.
@@ -109,7 +110,7 @@ module backreact_infl
   logical :: lscale_tobox=.true.,ldt_backreact_infl=.true., lconf_time=.true.
   logical :: lskip_projection_phi=.false., lvectorpotential=.false., lflrw=.false.
   logical :: lrho_chi=.false., lno_noise_phi=.false., lno_noise_dphi=.false.
-  logical, pointer :: lphi_hom
+  logical, pointer :: lphi_hom, lnoncollinear_EB
 !
   character (len=labellen) :: Vprime_choice='quadratic', Hscript_choice='default'
   character (len=labellen), dimension(ninit) :: initspecial='nothing'
@@ -201,6 +202,7 @@ module backreact_infl
       if (lmagnetic .and. lem_backreact) then
         call get_shared_variable('alpf',alpf,caller='initialize_backreact_infl')
         call get_shared_variable('lphi_hom',lphi_hom)
+        call get_shared_variable('lnoncollinear_EB',lnoncollinear_EB)
       else
         allocate(alpf)
         allocate(lphi_hom)
@@ -525,8 +527,13 @@ module backreact_infl
 !  so it is not itself being averaged.
 !
       if (lrho_chi) then
-        df_ode(iinfl_rho_chi)=df_ode(iinfl_rho_chi)-4.*Hscript*f_ode(iinfl_rho_chi) &
-          +e2m_all/(eta_tdep*ascale**3)
+        if (lnoncollinear_EB) then
+          df_ode(iinfl_rho_chi)=df_ode(iinfl_rho_chi)-4.*Hscript*f_ode(iinfl_rho_chi) &
+            +(sigEm_all*e2m_all+sigBm_all*ebm_all)/ascale**3
+        else
+          df_ode(iinfl_rho_chi)=df_ode(iinfl_rho_chi)-4.*Hscript*f_ode(iinfl_rho_chi) &
+            +e2m_all/(eta_tdep*ascale**3)
+        endif
       endif
 !
 !  Diagnostics
@@ -658,6 +665,10 @@ module backreact_infl
 !  In the following loop, go through all penciles and add up results to get e2m, etc.
 !
       ddotam=0.; a2rhopm=0.; a2rhom=0.; e2m=0; b2m=0; edotbm=0; a2rhophim=0.; a2rhogphim=0.
+      sigEm=0.; sigBm=0.
+!
+!  In the following, sum over all mn pencils.
+!
       do n=n1,n2
       do m=m1,m2
         call prep_ode_right(f)
@@ -687,6 +698,9 @@ module backreact_infl
         b2m=b2m/nwgrid
         call mpiallreduce_sum(e2m,e2m_all)
         call mpiallreduce_sum(b2m,b2m_all)
+        call mpiallreduce_sum(ebm,ebm_all)
+        call mpiallreduce_sum(sigEm,sigEm_all)
+        call mpiallreduce_sum(sigBm,sigBm_all)
       endif
 !
       call mpireduce_sum(a2rhopm,a2rhopm_all)
@@ -727,7 +741,7 @@ module backreact_infl
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (nx,3) :: el, bb, gphi
       real, dimension (nx) :: e2, b2, gphi2, dphi, a2rhop, a2rho
-      real, dimension (nx) :: ddota, phi, Vpotential, edotb
+      real, dimension (nx) :: ddota, phi, Vpotential, edotb, sigE, sigB
 !
 !  if requested, calculate here <dphi**2+gphi**2+(4./3.)*(E^2+B^2)/a^2>
 !
@@ -791,6 +805,8 @@ module backreact_infl
       if (lmagnetic .and. lem_backreact .and. lrho_chi) then
         e2m=e2m+sum(e2)
         b2m=b2m+sum(b2)
+        sigEm=sigEm+sum(sigE)
+        sigBm=sigBm+sum(sigB)
       endif
 !
     endsubroutine prep_ode_right
