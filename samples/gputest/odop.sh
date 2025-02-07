@@ -1,13 +1,14 @@
 #!/bin/bash -l
 #SBATCH --output=test.out
 #SBATCH --partition=dev-g  # Partition (queue) name
-#SBATCH --nodes=1 # Total number of nodes 
-#SBATCH --ntasks-per-node=1
 #SBATCH --gpus-per-node=1       # Allocate one gpu per MPI rank
+##SBATCH --partition=debug  # Partition (queue) name
+#SBATCH --nodes=2 # Total number of nodes 
+#SBATCH --ntasks-per-node=1
 #SBATCH --time=00:15:00       # Run time (d-hh:mm:ss)
 #SBATCH --account=project_462000613 # Project for billing
 #SBATCH --cpus-per-task=7
-#SBATCH --exclusive
+##SBATCH --exclusive
 #SBATCH --mem=0
 
 export OMP_NUM_THREADS=7
@@ -18,13 +19,18 @@ export OMP_WAIT_POLICY=PASSIVE
 export MPICH_GPU_SUPPORT_ENABLED=1
 #srun ./src/run.x
 #./run.csh
-source ~/new-monitoring/venv/bin/activate
+source ~/new-monitoring/env/bin/activate
 export ODOP_REAL_PATH=~/new-monitoring/odop/odop/odop_obs
 export ODOP_PATH=$ODOP_REAL_PATH/
 rm  -f $ODOP_REAL_PATH/metric_database/*.csv
 rm  -f $ODOP_REAL_PATH/metric_database/*.png
 rm  -f $ODOP_REAL_PATH/logs/*.txt
+#export LD_PRELOAD=./src/libPC.so:/users/toukopur/pencil-code/pencil-private/projects/PC-A/cpu/src/libPCStart.so
 export LD_PRELOAD=./src/libPC.so
+#export LD_PRELOAD=/users/toukopur/pencil-code/pencil-private/projects/PC-A/cpu/src/libPCStart.so
+#
+#To Ondrej: change this to point the the sample you want to run alongside on the CPU with this one
+export PC_CPU_SAMPLE=/users/toukopur/pencil-code/pencil-private/projects/PC-A/cpu
 
 export OS_AUTH_URL=https://pouta.csc.fi:5001/v3
 # With the addition of Keystone we have standardized on the term **project**
@@ -47,5 +53,7 @@ export OS_IDENTITY_API_VERSION="3"
 
 
 srun python call.py
+#srun python op-tasks/reduce.py
+#srun python /users/toukopur/pencil-code/samples/gputest/op-tasks/reduce.py
 
 
