@@ -6563,7 +6563,7 @@ module Magnetic
         call max_mn_name(eta_smag,idiag_etasmagmax)
       endif
       if (idiag_etaaniso/=0) call save_name(eta1_aniso/(1.+quench_aniso*Arms),idiag_etaaniso)
-      if (idiag_etaanisoBB) call save_name(eta_aniso_BB/(1.+quench_aniso*Arms),idiag_etaanisoBB)
+      if (idiag_etaanisoBB/=0) call save_name(eta_aniso_BB/(1.+quench_aniso*Arms),idiag_etaanisoBB)
       call max_mn_name(p%etava,idiag_etavamax)
       call max_mn_name(p%etaj,idiag_etajmax)
       call max_mn_name(p%etaj2,idiag_etaj2max)
