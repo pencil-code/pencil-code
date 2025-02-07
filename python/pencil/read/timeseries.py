@@ -97,6 +97,12 @@ class TimeSeries(object):
         unique_clean : bool
           Set True, np.unique is used to clean up the ts, e.g. remove errors
           at the end of crashed runs.
+
+        time_range : bool
+          List of length 2, start and end time, of float with end time.
+
+        precision : float
+          "f" (single,default) or "d" (double) or "h" (half).
         """
 
         import numpy as np
