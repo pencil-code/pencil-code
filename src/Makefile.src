@@ -3150,7 +3150,7 @@ ifeq ($(wildcard $(DSL_WORKDIR)/solve_two.ac),)
 	fi
 	@echo '#include "../prerequisites.h"' > $(DSL_WORKDIR)/solve.ac
 	@echo '' >> $(DSL_WORKDIR)/solve.ac
-	@echo 'Kernel singlepass_solve(int step_num, real dt) {' >> $(DSL_WORKDIR)/solve.ac
+	@echo 'Kernel singlepass_solve(PC_SUB_STEP_NUMBER step_num, real dt) {' >> $(DSL_WORKDIR)/solve.ac
 	@sed -e's/MODULESOURCES=/MODULESOURCES="/' -e'$$ s/$$/"/' -e's/\.\.\///' $(CUDA_MAKEDIR)/PC_modulesources.h > tmp; source ./tmp; rm -f tmp; \
 	for file in $$MODULESOURCES; do \
 	  modname=`grep '^ *module [a-zA-Z0-9_]* *$$' $$file | sed -e's/ *module *//' -e's/\([^ ]\) */\L\1/g'`; \
