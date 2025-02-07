@@ -2,6 +2,11 @@
 // and finally for the definition of the solve kernel.
 #define IN_DSL 1
 
+struct PC_rhs_update
+{
+	real3 dt
+	real  timestep_control 
+}
 #define double real
 #define cpu_pow pow
 #define REAL_MAX AC_REAL_MAX
@@ -44,7 +49,7 @@
 #include "../stdlib/integrators.h"
 #include "../stdlib/units.h"
 #include "../stdlib/utils/kernels.h"
-//#include "../stdlib/map.h"
+#include "../stdlib/map.h"
 #include "PC_modulepardecs.h"
 #define AC_NGHOST NGHOST
 
@@ -61,8 +66,6 @@
 #ifdef LDENSITY
   #define LNRHO RHO
 #endif
-#include "../bcs/funcs.h"
-#include "../bcs/funcs_overload.h"
 
 #ifdef LFORCING
   #include "../forcing/pcstyleforcing.h"
@@ -71,4 +74,3 @@
   #define ADDFORCE
 #endif
 
-#include "equations.h"

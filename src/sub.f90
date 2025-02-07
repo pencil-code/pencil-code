@@ -54,7 +54,7 @@ module Sub
   public :: del2, del2v, del2v_etc, del2fj,d2fi_dxj,del2fi_dxjk
   public :: del2m3x3_sym
   public :: del4v, del4, del2vi_etc, del4graddiv
-  public :: del6v, del6, del6_other, del6fj, del6fjv, del6_strict
+  public :: del6_exp, del6v, del6, del6_other, del6fj, del6fjv, del6_strict
   public :: gradf_upw1st, doupwind
   public :: matrix2linarray, linarray2matrix
   public :: ScalarTripleProduct
@@ -3109,6 +3109,18 @@ module Sub
       del6f = d6fdx + d6fdy + d6fdz
 !
     endsubroutine del6
+!***********************************************************************
+    subroutine del6_exp(f,k,del6f)
+      intent(in) :: f,k
+      intent(out) :: del6f
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx) :: del6f
+      integer :: k
+
+      call del6(f,k,del6f)
+      del6f = del6f*exp(f(l1:l2,m,n,k))
+    endsubroutine del6_exp
 !***********************************************************************
     subroutine del6_strict(f,k,del6)
 !

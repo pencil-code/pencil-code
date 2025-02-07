@@ -430,6 +430,7 @@ make_astaroth_dir()
   adddir $src/astaroth/submodule
 ## subdirectories of submodule
   adddir $src/astaroth/submodule/acc-runtime 
+  adddir $src/astaroth/submodule/runtime_compilation
   adddir $src/astaroth/submodule/acc-runtime/built-in
   adddir $src/astaroth/submodule/acc-runtime/samples
   adddir $src/astaroth/submodule/acc-runtime/samples/mhd
@@ -466,7 +467,7 @@ link_astaroth_files()
               $srcdir/astaroth/submodule/acc-runtime/samples/gputest/* \
               $srcdir/astaroth/submodule/acc-runtime/samples/mhd_modular/* \
               $srcdir/astaroth/submodule/src \
-              $srcdir/astaroth/submodule/runtime_compilation \
+              $srcdir/astaroth/submodule/runtime_compilation/* \
               $srcdir/astaroth/NUMA-scheduler
   do
     file_for_link $file

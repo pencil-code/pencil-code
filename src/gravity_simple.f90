@@ -1410,11 +1410,20 @@ module Gravity
 
     use Syscalls, only: copy_addr
 
-    integer, parameter :: n_pars=2
+    integer, parameter :: n_pars=100
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
-    call copy_addr(gravz,p_par(1))
-    call copy_addr(gravz_zpencil,p_par(2)) ! (mz)
+call copy_addr(zgrav,p_par(1))
+call copy_addr(lxyzdependence,p_par(2)) ! bool
+call copy_addr(lboussinesq_grav,p_par(3)) ! bool
+call copy_addr(gravx_xpencil,p_par(4)) ! (mx)
+call copy_addr(potx_xpencil,p_par(5)) ! (mx)
+call copy_addr(gravy_ypencil,p_par(6)) ! (my)
+call copy_addr(poty_ypencil,p_par(7)) ! (my)
+call copy_addr(gravz_zpencil,p_par(8)) ! (mz)
+call copy_addr(potz_zpencil,p_par(9)) ! (mz)
+call copy_addr(xdep,p_par(10)) ! (mx)
+call copy_addr(zdep,p_par(11)) ! (mz)
 
     endsubroutine pushpars2c
 !***********************************************************************

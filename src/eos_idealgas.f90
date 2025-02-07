@@ -4670,63 +4670,70 @@ module EquationOfState
     subroutine pushpars2c(p_par)
 !
     use Syscalls, only: copy_addr
+    use General, only : string_to_enum
 
     integer, parameter :: n_pars=1000
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 !
 !
+       
 
-    call copy_addr(iglobal_cs2,p_par(1)) ! int
-    call copy_addr(iglobal_glntt,p_par(2)) ! int
-    call copy_addr(lntt0,p_par(3))
-    call copy_addr(tt0,p_par(4))
-    call copy_addr(xhe,p_par(5))
-    call copy_addr(mu,p_par(6))
-    call copy_addr(cs0,p_par(7))
-    call copy_addr(cs20,p_par(8))
-    call copy_addr(cs20t,p_par(9))
-    call copy_addr(rho0,p_par(10))
-    call copy_addr(lnrho0,p_par(11))
-    call copy_addr(rho01,p_par(12))
-    call copy_addr(pp0,p_par(13))
-    call copy_addr(gamma,p_par(14))
-    call copy_addr(rgas_cgs,p_par(15))
-    call copy_addr(rgas,p_par(16))
-    call copy_addr(error_cp,p_par(17))
-    call copy_addr(gamma_m1,p_par(18))
-    call copy_addr(gamma1,p_par(19))
-    call copy_addr(cp,p_par(20))
-    call copy_addr(cp1,p_par(21))
-    call copy_addr(cv,p_par(22))
-    call copy_addr(cv1,p_par(23))
-    call copy_addr(pres_corr,p_par(24))
-    call copy_addr(cs2bot,p_par(25))
-    call copy_addr(cs2top,p_par(26))
-    call copy_addr(fac_cs,p_par(27))
-    call copy_addr(cs20_tdep_rate,p_par(28))
-    call copy_addr(sigmasbt,p_par(29))
-    call copy_addr(isothmid,p_par(30)) ! int
-    call copy_addr(ieosvars,p_par(31)) ! int
-    call copy_addr(ieosvar1,p_par(32)) ! int
-    call copy_addr(ieosvar2,p_par(33)) ! int
-    call copy_addr(ieosvar_count,p_par(34)) ! int
-    call copy_addr(leos_isothermal,p_par(35)) ! bool
-    call copy_addr(leos_isentropic,p_par(36)) ! bool
-    call copy_addr(leos_isochoric,p_par(37)) ! bool
-    call copy_addr(leos_isobaric,p_par(38)) ! bool
-    call copy_addr(leos_localisothermal,p_par(39)) ! bool
-    call copy_addr(lanelastic_lin,p_par(40)) ! bool
-    call copy_addr(lcs_as_aux,p_par(41)) ! bool
-    call copy_addr(lcs_as_comaux,p_par(42)) ! bool
-    call copy_addr(lcs_tdep,p_par(43)) ! bool
-    call copy_addr(cp_const,p_par(44))
-    call copy_addr(pr_number,p_par(45))
-    call copy_addr(lpres_grad,p_par(46)) ! bool
-    call copy_addr(imass,p_par(47)) ! int
-    call copy_addr(gz_coeff,p_par(48))
-    call copy_addr(lstratset,p_par(49)) ! bool
+
+
+call copy_addr(iglobal_cs2,p_par(1)) ! int
+call copy_addr(iglobal_glntt,p_par(2)) ! int
+call copy_addr(lntt0,p_par(3))
+call copy_addr(tt0,p_par(4))
+call copy_addr(xhe,p_par(5))
+call copy_addr(mu,p_par(6))
+call copy_addr(cs0,p_par(7))
+call copy_addr(cs20,p_par(8))
+call copy_addr(cs20t,p_par(9))
+call copy_addr(rho0,p_par(10))
+call copy_addr(lnrho0,p_par(11))
+call copy_addr(rho01,p_par(12))
+call copy_addr(pp0,p_par(13))
+call copy_addr(gamma,p_par(14))
+call copy_addr(rgas_cgs,p_par(15))
+call copy_addr(rgas,p_par(16))
+call copy_addr(error_cp,p_par(17))
+call copy_addr(gamma_m1,p_par(18))
+call copy_addr(gamma1,p_par(19))
+call copy_addr(cp,p_par(20))
+call copy_addr(cp1,p_par(21))
+call copy_addr(cv,p_par(22))
+call copy_addr(cv1,p_par(23))
+call copy_addr(pres_corr,p_par(24))
+call copy_addr(cs2bot,p_par(25))
+call copy_addr(cs2top,p_par(26))
+call copy_addr(fac_cs,p_par(27))
+call copy_addr(cs20_tdep_rate,p_par(28))
+call copy_addr(sigmasbt,p_par(29))
+call copy_addr(isothmid,p_par(30)) ! int
+call copy_addr(ieosvars,p_par(31)) ! int
+call copy_addr(ieosvar1,p_par(32)) ! int
+call copy_addr(ieosvar2,p_par(33)) ! int
+call copy_addr(ieosvar_count,p_par(34)) ! int
+call copy_addr(leos_isothermal,p_par(35)) ! bool
+call copy_addr(leos_isentropic,p_par(36)) ! bool
+call copy_addr(leos_isochoric,p_par(37)) ! bool
+call copy_addr(leos_isobaric,p_par(38)) ! bool
+call copy_addr(leos_localisothermal,p_par(39)) ! bool
+call copy_addr(lanelastic_lin,p_par(40)) ! bool
+call copy_addr(lcs_as_aux,p_par(41)) ! bool
+call copy_addr(lcs_as_comaux,p_par(42)) ! bool
+call copy_addr(lcs_tdep,p_par(43)) ! bool
+call copy_addr(cp_const,p_par(44))
+call copy_addr(pr_number,p_par(45))
+call copy_addr(lpres_grad,p_par(46)) ! bool
+call copy_addr(imass,p_par(47)) ! int
+call copy_addr(gz_coeff,p_par(48))
+call copy_addr(lstratset,p_par(49)) ! bool
+call copy_addr(eth0z,p_par(50)) ! (mz)
 
     endsubroutine pushpars2c
+!***********************************************************************
+!***********************************************************************
 !***********************************************************************
 !********************************************************************
 !********************************************************************

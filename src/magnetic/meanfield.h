@@ -15,3 +15,4 @@
 !- public :: meanfield_chitB
   public :: pc_aasb_const_alpha
   public :: meanfield_after_boundary
+  public :: pushpars2c

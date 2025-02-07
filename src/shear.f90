@@ -309,15 +309,16 @@ module Shear
 !
 !  Advection of all variables by shear flow.
 !
-      if (.not. lshearadvection_as_shift) then
-        do j = 1, nvar
-          ! bfield and testflow modules may handle their own shearing.
-          if (lbfield .and. (j >= ibx) .and. (j <= ibz)) cycle
-          if (ltestflow .and. (j >= iuutest) .and. (j <= iuutest+ntestflow-1)) cycle
-          call der(f,j,dfdy,2)
-          df(l1:l2,m,n,j) = df(l1:l2,m,n,j) - uy0*dfdy
-        enddo
-      endif
+      !TP: do this by hand
+      !if (.not. lshearadvection_as_shift) then
+      !  do j = 1, nvar
+      !    ! bfield and testflow modules may handle their own shearing.
+      !    if (lbfield .and. (j >= ibx) .and. (j <= ibz)) cycle
+      !    if (ltestflow .and. (j >= iuutest) .and. (j <= iuutest+ntestflow-1)) cycle
+      !    call der(f,j,dfdy,2)
+      !    df(l1:l2,m,n,j) = df(l1:l2,m,n,j) - uy0*dfdy
+      !  enddo
+      !endif
 !
 !  Lagrangian shear of background velocity profile. Appears like a correction
 !  to the Coriolis force, but is actually not related to the Coriolis force.
@@ -326,19 +327,19 @@ module Shear
 !
 !  Hyper-diffusion in x-direction to damp aliasing.
 !
-      hyper3x: if (lhyper3x_mesh) then
+      if (lhyper3x_mesh) then
         d = diff_hyper3x_mesh * abs(Sshear)
-        comp1: do j = 1, nvar
+        do j = 1, nvar
           if ((lbfield .and. ibx <= j .and. j <= ibz) .or. &
               (lpscalar .and. icc <= j .and. j <= icc+npscalar-1)) continue
           call der6(f, j, penc, 1, ignoredx=.true.)
           df(l1:l2,m,n,j) = df(l1:l2,m,n,j) + d * penc
-        enddo comp1
+        enddo
         if (lfirst .and. ldt) then
           diffus_shear3 = d
           maxdiffus3=max(maxdiffus3,diffus_shear3)
         endif
-      endif hyper3x
+      endif
 !
 !  Add (Lagrangian) shear term for all dust species.
 !
@@ -361,16 +362,16 @@ module Shear
 !  Testfield stretching term.
 !  Loop through all the daatest/dt equations and add -S*ay contribution.
 !
-      if (ltestfield) then
-        do j=iaatest,iaztestpq,3
-          df(l1:l2,m,n,j)=df(l1:l2,m,n,j)-Sshear*f(l1:l2,m,n,j+1)
-        enddo
-        if (iuutest/=0) then
-          do j=iuutest,iuztestpq,3
-            df(l1:l2,m,n,j+1)=df(l1:l2,m,n,j+1)-Sshear1*f(l1:l2,m,n,j)
-          enddo
-        endif
-      endif
+      !if (ltestfield) then
+      !  do j=iaatest,iaztestpq,3
+      !    df(l1:l2,m,n,j)=df(l1:l2,m,n,j)-Sshear*f(l1:l2,m,n,j+1)
+      !  enddo
+      !  if (iuutest/=0) then
+      !    do j=iuutest,iuztestpq,3
+      !      df(l1:l2,m,n,j+1)=df(l1:l2,m,n,j+1)-Sshear1*f(l1:l2,m,n,j)
+      !    enddo
+      !  endif
+      !endif
 !
 !  Mean magnetic field stretching term.
 !  Loop through all the dam/dt equations and add -S*ay contribution.

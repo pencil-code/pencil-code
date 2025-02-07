@@ -5206,10 +5206,10 @@ module Energy
 !
       df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) + thdiff
 !
-      if (lfirst.and.ldt) then
-        dt1_max=max(dt1_max,maxval(abs(thdiff)*gamma)/(cdts))
-        diffus_chi=diffus_chi+p%cv1*Kgpara*exp(2.5*p%lnTT-p%lnrho)*dxyz_2
-      endif
+      !if (lfirst.and.ldt) then
+      !  dt1_max=max(dt1_max,maxval(abs(thdiff)*gamma)/(cdts))
+      !  diffus_chi=diffus_chi+p%cv1*Kgpara*exp(2.5*p%lnTT-p%lnrho)*dxyz_2
+      !endif
 !
     endsubroutine calc_heatcond_spitzer
 !***********************************************************************
@@ -5445,7 +5445,7 @@ module Energy
         do j=1,3; gss1(:,j)=p%gss(:,j)-gssmz(n-n1+1,j); enddo
         del2ss1=p%del2ss-del2ssmz(n-n1+1)
       else if (lcalc_ssmeanxy) then
-        gss1=p%gss-gssmx
+        do j=1,3;gss1(:,j)=p%gss(:,j)-gssmx(:,j); enddo
         del2ss1=p%del2ss-del2ssmx
       else
         gss1=p%gss
@@ -6715,7 +6715,7 @@ module Energy
         imax = size(intlnT_1,1)
         lnQ(:)=0.0
         do i=1,imax-1
-          where (( intlnT_1(i) <= .or. i==1 ) .and. lnTT_SI < intlnT_1(i+1) )
+          where (( intlnT_1(i) <= lnTT_SI .or. i==1 ) .and. lnTT_SI < intlnT_1(i+1) )
             lnQ=lnQ + lnH_1(i) + B_1(i)*lnTT_SI
           endwhere
         enddo
@@ -6727,7 +6727,7 @@ module Energy
         else
           rtv_cool=exp(lnneni+lnQ-unit_lnQ-p%lnTT-p%lnrho)
         endif
-        tmp=maxval(rtv_cool*gamma)/(cdts)
+        !tmp=maxval(rtv_cool*gamma)/(cdts)
       case (2)
 !
 !  Second set of parameters
@@ -6747,7 +6747,7 @@ module Energy
         else
           rtv_cool=exp(lnneni+lnQ-unit_lnQ-p%lnTT-p%lnrho)
         endif
-        tmp=maxval(rtv_cool*gamma)/(cdts)
+        !tmp=maxval(rtv_cool*gamma)/(cdts)
       case (3)
         !rtv_cool=0.0
         !if (z(n) > z_cor) then
@@ -7427,7 +7427,7 @@ module Energy
 
       if (.not.lmultilayer) then
         prof=amp; dprof=0.
-      else then
+      else
         if (lgravz) then
           prof=stored_prof(n-nghost)
           dprof(:,3)=stored_dprof(n-nghost); dprof(:,1:2)=0.
@@ -8065,43 +8065,471 @@ module Energy
     subroutine pushpars2c(p_par)
 
     use Syscalls, only: copy_addr
+    use General, only: string_to_enum
 
-    integer, parameter :: n_pars=28
+    integer, parameter :: n_pars=1000
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
-    call copy_addr(chi,p_par(1))
-    call copy_addr(nkramers,p_par(2))
-    call copy_addr(hcond0_kramers,p_par(3))
-    call copy_addr(hcond_Kconst,p_par(4))
-    call copy_addr(chi_hyper3,p_par(5))
-    call copy_addr(chi_t0,p_par(6))
 
-    if (allocated(hcond_prof))    call copy_addr(hcond_prof,p_par(7))      ! (nz)
-    if (allocated(dlnhcond_prof)) call copy_addr(dlnhcond_prof,p_par(8))   ! (nz)
-    if (allocated(chit_prof_stored)) call copy_addr(chit_prof_stored,p_par(9))    ! (nz)
-    if (allocated(dchit_prof_stored)) call copy_addr(dchit_prof_stored,p_par(10)) ! (nz)
-    call copy_addr(lheatc_hyper3ss,p_par(11)) ! int
-    call copy_addr(lheatc_shock,p_par(12)) ! int
-    call copy_addr(chi_shock,p_par(13))
 
-    call copy_addr(FbotKbot,p_par(14))
-    call copy_addr(FtopKtop,p_par(15))
 
-    call copy_addr(Fbot,p_par(16))
-    call copy_addr(Ftop,p_par(17))
-    call copy_addr(lheatc_chiconst,p_par(18)) ! int
-    call copy_addr(lheatc_kramers,p_par(19))  ! int
-    call copy_addr(pretend_lnTT,p_par(20))    ! int
-
-    call copy_addr(profz_cool,p_par(21))    ! (nz)
-    call copy_addr(profz1_cool,p_par(22))   ! (nz)
-    call copy_addr(profr_cool,p_par(23))    ! (nx)
-    call copy_addr(profr1_cool,p_par(24))   ! (nx)
-    call copy_addr(profr2_cool,p_par(25))   ! (nx)
-    call copy_addr(profr_heat,p_par(26))    ! (nx)
-    
-    call copy_addr(lchit_total,p_par(27))   ! int
-    call copy_addr(chi_t,p_par(28))
+call copy_addr(w_sldchar_ene,p_par(1))
+call copy_addr(entropy_floor,p_par(2))
+call copy_addr(tt_floor,p_par(3))
+call copy_addr(widthss,p_par(4))
+call copy_addr(epsilon_ss,p_par(5))
+call copy_addr(luminosity,p_par(6))
+call copy_addr(wheat,p_par(7))
+call copy_addr(cool,p_par(8))
+call copy_addr(cool1,p_par(9))
+call copy_addr(cool2,p_par(10))
+call copy_addr(wpres,p_par(11))
+call copy_addr(zcool,p_par(12))
+call copy_addr(zcool1,p_par(13))
+call copy_addr(zcool2,p_par(14))
+call copy_addr(rcool,p_par(15))
+call copy_addr(rcool1,p_par(16))
+call copy_addr(rcool2,p_par(17))
+call copy_addr(ppcool,p_par(18))
+call copy_addr(wcool,p_par(19))
+call copy_addr(wcool1,p_par(20))
+call copy_addr(wcool2,p_par(21))
+call copy_addr(deltat,p_par(22))
+call copy_addr(cs2cool2,p_par(23))
+call copy_addr(tt_int,p_par(24))
+call copy_addr(tt_ext,p_par(25))
+call copy_addr(cs2_int,p_par(26))
+call copy_addr(cs2_ext,p_par(27))
+call copy_addr(cool_int,p_par(28))
+call copy_addr(cool_ext,p_par(29))
+call copy_addr(ampl_tt,p_par(30))
+call copy_addr(chi_jump_shock,p_par(31))
+call copy_addr(xchi_shock,p_par(32))
+call copy_addr(widthchi_shock,p_par(33))
+call copy_addr(cs2cool,p_par(34))
+call copy_addr(mpoly0,p_par(35))
+call copy_addr(mpoly1,p_par(36))
+call copy_addr(mpoly2,p_par(37))
+call copy_addr(chi_t,p_par(38))
+call copy_addr(chi_shock,p_par(39))
+call copy_addr(chi_hyper3,p_par(40))
+call copy_addr(chi_cspeed,p_par(41))
+call copy_addr(chi_shock2,p_par(42))
+call copy_addr(chi_t0,p_par(43))
+call copy_addr(chi_t1,p_par(44))
+call copy_addr(chi_hyper3_mesh,p_par(45))
+call copy_addr(chi_rho,p_par(46))
+call copy_addr(kgperp,p_par(47))
+call copy_addr(kgpara,p_par(48))
+call copy_addr(tdown,p_par(49))
+call copy_addr(allp,p_par(50))
+call copy_addr(tt_powerlaw,p_par(51))
+call copy_addr(ss_left,p_par(52))
+call copy_addr(ss_right,p_par(53))
+call copy_addr(khor_ss,p_par(54))
+call copy_addr(ss_const,p_par(55))
+call copy_addr(tt_const,p_par(56))
+call copy_addr(pp_const,p_par(57))
+call copy_addr(tau_ss_exterior,p_par(58))
+call copy_addr(t0,p_par(59))
+call copy_addr(t0_cgs,p_par(60))
+call copy_addr(ssmask1_cgs,p_par(61))
+call copy_addr(ssmask2_cgs,p_par(62))
+call copy_addr(ampl_imp_ss,p_par(63))
+call copy_addr(mixinglength_flux,p_par(64))
+call copy_addr(entropy_flux,p_par(65))
+call copy_addr(center2_x,p_par(66))
+call copy_addr(center2_y,p_par(67))
+call copy_addr(center2_z,p_par(68))
+call copy_addr(kx_ss,p_par(69))
+call copy_addr(ky_ss,p_par(70))
+call copy_addr(kz_ss,p_par(71))
+call copy_addr(thermal_background,p_par(72))
+call copy_addr(thermal_peak,p_par(73))
+call copy_addr(thermal_scaling,p_par(74))
+call copy_addr(cool_fac,p_par(75))
+call copy_addr(chib,p_par(76))
+call copy_addr(downflow_cs2cool_fac,p_par(77))
+call copy_addr(hcond0,p_par(78))
+call copy_addr(hcond1,p_par(79))
+call copy_addr(hcondxbot,p_par(80))
+call copy_addr(hcondxtop,p_par(81))
+call copy_addr(hcondzbot,p_par(82))
+call copy_addr(hcondztop,p_par(83))
+call copy_addr(fbot,p_par(84))
+call copy_addr(fbotkbot,p_par(85))
+call copy_addr(rescale_hcond,p_par(86))
+call copy_addr(ftop,p_par(87))
+call copy_addr(ftopktop,p_par(88))
+call copy_addr(chit_prof1,p_par(89))
+call copy_addr(chit_prof2,p_par(90))
+call copy_addr(kbot,p_par(91))
+call copy_addr(ktop,p_par(92))
+call copy_addr(hcond2,p_par(93))
+call copy_addr(chit_aniso,p_par(94))
+call copy_addr(chit_aniso_prof1,p_par(95))
+call copy_addr(chit_aniso_prof2,p_par(96))
+call copy_addr(chit_fluct_prof1,p_par(97))
+call copy_addr(chit_fluct_prof2,p_par(98))
+call copy_addr(tau_cor,p_par(99))
+call copy_addr(tt_cor,p_par(100))
+call copy_addr(z_cor,p_par(101))
+call copy_addr(tauheat_buffer,p_par(102))
+call copy_addr(ttheat_buffer,p_par(103))
+call copy_addr(heat_gaussianz,p_par(104))
+call copy_addr(heat_gaussianz_sigma,p_par(105))
+call copy_addr(heat_gaussianblob,p_par(106))
+call copy_addr(heat_gaussianblob_sigma,p_par(107))
+call copy_addr(zheat_buffer,p_par(108))
+call copy_addr(dheat_buffer1,p_par(109))
+call copy_addr(heat_uniform,p_par(110))
+call copy_addr(cool_uniform,p_par(111))
+call copy_addr(cool_newton,p_par(112))
+call copy_addr(cool_rtv,p_par(113))
+call copy_addr(deltat_poleq,p_par(114))
+call copy_addr(r_bcz,p_par(115))
+call copy_addr(tau_cool,p_par(116))
+call copy_addr(tau_diff,p_par(117))
+call copy_addr(ttref_cool,p_par(118))
+call copy_addr(tau_cool2,p_par(119))
+call copy_addr(tau_cool_ss,p_par(120))
+call copy_addr(tau_relax_ss,p_par(121))
+call copy_addr(cs0hs,p_par(122))
+call copy_addr(h0hs,p_par(123))
+call copy_addr(rho0hs,p_par(124))
+call copy_addr(xbot,p_par(125))
+call copy_addr(xtop,p_par(126))
+call copy_addr(alpha_mlt,p_par(127))
+call copy_addr(xbot_aniso,p_par(128))
+call copy_addr(xtop_aniso,p_par(129))
+call copy_addr(xbot_chit1,p_par(130))
+call copy_addr(xtop_chit1,p_par(131))
+call copy_addr(zz1,p_par(132))
+call copy_addr(zz2,p_par(133))
+call copy_addr(zz1_fluct,p_par(134))
+call copy_addr(zz2_fluct,p_par(135))
+call copy_addr(rescale_ttmeanxy,p_par(136))
+call copy_addr(pres_cutoff,p_par(137))
+call copy_addr(pclaw,p_par(138))
+call copy_addr(xchit,p_par(139))
+call copy_addr(hcond0_kramers,p_par(140))
+call copy_addr(nkramers,p_par(141))
+call copy_addr(chimax_kramers,p_par(142))
+call copy_addr(chimin_kramers,p_par(143))
+call copy_addr(nsmooth_kramers,p_par(144)) ! int
+call copy_addr(zheat_uniform_range,p_par(145))
+call copy_addr(peh_factor,p_par(146))
+call copy_addr(heat_ceiling,p_par(147))
+call copy_addr(pr_smag1,p_par(148))
+call copy_addr(cs2top_ini,p_par(149))
+call copy_addr(dcs2top_ini,p_par(150))
+call copy_addr(ttbot_factor,p_par(151))
+call copy_addr(nheat_rho,p_par(152))
+call copy_addr(nheat_tt,p_par(153))
+call copy_addr(xjump_mid,p_par(154))
+call copy_addr(yjump_mid,p_par(155))
+call copy_addr(zjump_mid,p_par(156))
+call copy_addr(iglobal_hcond,p_par(157)) ! int
+call copy_addr(iglobal_glhc,p_par(158)) ! int
+call copy_addr(ippaux,p_par(159)) ! int
+call copy_addr(isothtop,p_par(160)) ! int
+call copy_addr(cool_type,p_par(161)) ! int
+call copy_addr(lturbulent_heat,p_par(162)) ! bool
+call copy_addr(lheatc_kprof,p_par(163)) ! bool
+call copy_addr(lheatc_kconst,p_par(164)) ! bool
+call copy_addr(lheatc_sfluct,p_par(165)) ! bool
+call copy_addr(lheatc_chiconst,p_par(166)) ! bool
+call copy_addr(lheatc_tensordiffusion,p_par(167)) ! bool
+call copy_addr(lheatc_spitzer,p_par(168)) ! bool
+call copy_addr(lheatc_hubeny,p_par(169)) ! bool
+call copy_addr(lheatc_sqrtrhochiconst,p_par(170)) ! bool
+call copy_addr(lheatc_kramers,p_par(171)) ! bool
+call copy_addr(lheatc_smagorinsky,p_par(172)) ! bool
+call copy_addr(lheatc_chit,p_par(173)) ! bool
+call copy_addr(lheatc_corona,p_par(174)) ! bool
+call copy_addr(lheatc_chi_cspeed,p_par(175)) ! bool
+call copy_addr(lheatc_shock,p_par(176)) ! bool
+call copy_addr(lheatc_shock2,p_par(177)) ! bool
+call copy_addr(lheatc_hyper3ss,p_par(178)) ! bool
+call copy_addr(lheatc_hyper3ss_polar,p_par(179)) ! bool
+call copy_addr(lheatc_hyper3ss_aniso,p_par(180)) ! bool
+call copy_addr(lheatc_hyper3ss_mesh,p_par(181)) ! bool
+call copy_addr(lheatc_shock_profr,p_par(182)) ! bool
+call copy_addr(lcooling_general,p_par(183)) ! bool
+call copy_addr(lcooling_to_cs2cool,p_par(184)) ! bool
+call copy_addr(lupw_ss,p_par(185)) ! bool
+call copy_addr(lcalc_ssmean,p_par(186)) ! bool
+call copy_addr(lcalc_ss_volaverage,p_par(187)) ! bool
+call copy_addr(lcalc_cs2mean,p_par(188)) ! bool
+call copy_addr(lcalc_cs2mz_mean,p_par(189)) ! bool
+call copy_addr(lcalc_cs2mz_mean_diag,p_par(190)) ! bool
+call copy_addr(lcalc_ssmeanxy,p_par(191)) ! bool
+call copy_addr(lmultilayer,p_par(192)) ! bool
+call copy_addr(ladvection_entropy,p_par(193)) ! bool
+call copy_addr(reinitialize_ss,p_par(194)) ! bool
+call copy_addr(lviscosity_heat,p_par(195)) ! bool
+call copy_addr(lfreeze_sint,p_par(196)) ! bool
+call copy_addr(lfreeze_sext,p_par(197)) ! bool
+call copy_addr(lhcond_global,p_par(198)) ! bool
+call copy_addr(lchit_aniso_simplified,p_par(199)) ! bool
+call copy_addr(lchit_total,p_par(200)) ! bool
+call copy_addr(lchit_mean,p_par(201)) ! bool
+call copy_addr(lchit_fluct,p_par(202)) ! bool
+call copy_addr(lchib_simplified,p_par(203)) ! bool
+call copy_addr(lfpres_from_pressure,p_par(204)) ! bool
+call copy_addr(lconvection_gravx,p_par(205)) ! bool
+call copy_addr(lread_hcond,p_par(206)) ! bool
+call copy_addr(ltau_cool_variable,p_par(207)) ! bool
+call copy_addr(lprestellar_cool_iso,p_par(208)) ! bool
+call copy_addr(lphotoelectric_heating,p_par(209)) ! bool
+call copy_addr(lphotoelectric_heating_radius,p_par(210)) ! bool
+call copy_addr(lborder_heat_variable,p_par(211)) ! bool
+call copy_addr(lchromospheric_cooling,p_par(212)) ! bool
+call copy_addr(lchi_shock_density_dep,p_par(213)) ! bool
+call copy_addr(lhcond0_density_dep,p_par(214)) ! bool
+call copy_addr(lenergy_slope_limited,p_par(215)) ! bool
+call copy_addr(limpose_heat_ceiling,p_par(216)) ! bool
+call copy_addr(lthdiff_hmax,p_par(217)) ! bool
+call copy_addr(lrhs_max,p_par(218)) ! bool
+call copy_addr(lchit_not,p_par(219)) ! bool
+call copy_addr(lss_running_aver_as_aux,p_par(220)) ! bool
+call copy_addr(lss_running_aver_as_var,p_par(221)) ! bool
+call copy_addr(lss_running_aver,p_par(222)) ! bool
+call copy_addr(lfenth_as_aux,p_par(223)) ! bool
+call copy_addr(lss_flucz_as_aux,p_par(224)) ! bool
+call copy_addr(lsld_char_wprofr,p_par(225)) ! bool
+call copy_addr(ltt_flucz_as_aux,p_par(226)) ! bool
+call copy_addr(lsld_char_cslimit,p_par(227)) ! bool
+call copy_addr(lchi_t1_noprof,p_par(228)) ! bool
+call copy_addr(lsld_char_rholimit,p_par(229)) ! bool
+call copy_addr(lsmooth_ss_run_aver,p_par(230)) ! bool
+call copy_addr(h_sld_ene,p_par(231))
+call copy_addr(nlf_sld_ene,p_par(232))
+call copy_addr(w_sldchar_ene2,p_par(233))
+call copy_addr(w_sldchar_ene_r0,p_par(234))
+call copy_addr(w_sldchar_ene_p,p_par(235))
+call copy_addr(xmid,p_par(236))
+call copy_addr(lheat_cool_gravz,p_par(237)) ! bool
+call copy_addr(idiag_dtc,p_par(238)) ! int
+call copy_addr(idiag_ethm,p_par(239)) ! int
+call copy_addr(idiag_ethdivum,p_par(240)) ! int
+call copy_addr(idiag_ssruzm,p_par(241)) ! int
+call copy_addr(idiag_ssuzm,p_par(242)) ! int
+call copy_addr(idiag_ssm,p_par(243)) ! int
+call copy_addr(idiag_ssbycpm,p_par(244)) ! int
+call copy_addr(idiag_ss2m,p_par(245)) ! int
+call copy_addr(idiag_eem,p_par(246)) ! int
+call copy_addr(idiag_ppm,p_par(247)) ! int
+call copy_addr(idiag_csm,p_par(248)) ! int
+call copy_addr(idiag_csmax,p_par(249)) ! int
+call copy_addr(idiag_cgam,p_par(250)) ! int
+call copy_addr(idiag_pdivum,p_par(251)) ! int
+call copy_addr(idiag_heatm,p_par(252)) ! int
+call copy_addr(idiag_ugradpm,p_par(253)) ! int
+call copy_addr(idiag_fradbot,p_par(254)) ! int
+call copy_addr(idiag_fradtop,p_par(255)) ! int
+call copy_addr(idiag_tttop,p_par(256)) ! int
+call copy_addr(idiag_ethtot,p_par(257)) ! int
+call copy_addr(idiag_dtchi,p_par(258)) ! int
+call copy_addr(idiag_hmax,p_par(259)) ! int
+call copy_addr(idiag_tauhmin,p_par(260)) ! int
+call copy_addr(idiag_dth,p_par(261)) ! int
+call copy_addr(idiag_ssmphi,p_par(262)) ! int
+call copy_addr(idiag_ss2mphi,p_par(263)) ! int
+call copy_addr(idiag_cs2mphi,p_par(264)) ! int
+call copy_addr(idiag_ttmphi,p_par(265)) ! int
+call copy_addr(idiag_ppmphi,p_par(266)) ! int
+call copy_addr(idiag_dcoolmphi,p_par(267)) ! int
+call copy_addr(idiag_divcoolmphi,p_par(268)) ! int
+call copy_addr(idiag_divheatmphi,p_par(269)) ! int
+call copy_addr(idiag_fradrsphmphi_kramers,p_par(270)) ! int
+call copy_addr(idiag_fradrsphmphi_kconst,p_par(271)) ! int
+call copy_addr(idiag_fconvrsphmphi,p_par(272)) ! int
+call copy_addr(idiag_fconvthsphmphi,p_par(273)) ! int
+call copy_addr(idiag_fconvpsphmphi,p_par(274)) ! int
+call copy_addr(idiag_ursphttmphi,p_par(275)) ! int
+call copy_addr(idiag_fturbrsphmphi,p_par(276)) ! int
+call copy_addr(idiag_yhm,p_par(277)) ! int
+call copy_addr(idiag_yhmax,p_par(278)) ! int
+call copy_addr(idiag_ttm,p_par(279)) ! int
+call copy_addr(idiag_ttmax,p_par(280)) ! int
+call copy_addr(idiag_ttmin,p_par(281)) ! int
+call copy_addr(idiag_gtmax,p_par(282)) ! int
+call copy_addr(idiag_ssmax,p_par(283)) ! int
+call copy_addr(idiag_ssmin,p_par(284)) ! int
+call copy_addr(idiag_gtrms,p_par(285)) ! int
+call copy_addr(idiag_gsrms,p_par(286)) ! int
+call copy_addr(idiag_gtxgsrms,p_par(287)) ! int
+call copy_addr(idiag_gtxgsom,p_par(288)) ! int
+call copy_addr(idiag_fconvm,p_par(289)) ! int
+call copy_addr(idiag_ttp,p_par(290)) ! int
+call copy_addr(idiag_ssmr,p_par(291)) ! int
+call copy_addr(idiag_ttmr,p_par(292)) ! int
+call copy_addr(idiag_ufpresm,p_par(293)) ! int
+call copy_addr(idiag_kkramersm,p_par(294)) ! int
+call copy_addr(idiag_chikrammin,p_par(295)) ! int
+call copy_addr(idiag_chikrammax,p_par(296)) ! int
+call copy_addr(idiag_tt2m,p_par(297)) ! int
+call copy_addr(idiag_fradz,p_par(298)) ! int
+call copy_addr(idiag_fconvz,p_par(299)) ! int
+call copy_addr(idiag_fenthz,p_par(300)) ! int
+call copy_addr(idiag_fenthupz,p_par(301)) ! int
+call copy_addr(idiag_fenthdownz,p_par(302)) ! int
+call copy_addr(idiag_ssmz,p_par(303)) ! int
+call copy_addr(idiag_ssupmz,p_par(304)) ! int
+call copy_addr(idiag_ssdownmz,p_par(305)) ! int
+call copy_addr(idiag_ss2mz,p_par(306)) ! int
+call copy_addr(idiag_ss2upmz,p_par(307)) ! int
+call copy_addr(idiag_ss2downmz,p_par(308)) ! int
+call copy_addr(idiag_ssf2mz,p_par(309)) ! int
+call copy_addr(idiag_ssf2upmz,p_par(310)) ! int
+call copy_addr(idiag_ssf2downmz,p_par(311)) ! int
+call copy_addr(idiag_ppmz,p_par(312)) ! int
+call copy_addr(idiag_ttmz,p_par(313)) ! int
+call copy_addr(idiag_ttdownmz,p_par(314)) ! int
+call copy_addr(idiag_ttupmz,p_par(315)) ! int
+call copy_addr(idiag_tt2mz,p_par(316)) ! int
+call copy_addr(idiag_tt2upmz,p_par(317)) ! int
+call copy_addr(idiag_tt2downmz,p_par(318)) ! int
+call copy_addr(idiag_ttf2mz,p_par(319)) ! int
+call copy_addr(idiag_ttf2upmz,p_par(320)) ! int
+call copy_addr(idiag_ttf2downmz,p_par(321)) ! int
+call copy_addr(idiag_ugradpmz,p_par(322)) ! int
+call copy_addr(idiag_gradpxmz,p_par(323)) ! int
+call copy_addr(idiag_gradpymz,p_par(324)) ! int
+call copy_addr(idiag_gradpzmz,p_par(325)) ! int
+call copy_addr(idiag_pdivumz,p_par(326)) ! int
+call copy_addr(idiag_uxttmz,p_par(327)) ! int
+call copy_addr(idiag_uyttmz,p_par(328)) ! int
+call copy_addr(idiag_uzttmz,p_par(329)) ! int
+call copy_addr(idiag_uzttupmz,p_par(330)) ! int
+call copy_addr(idiag_uzttdownmz,p_par(331)) ! int
+call copy_addr(idiag_gtxgsxmz,p_par(332)) ! int
+call copy_addr(idiag_gtxgsymz,p_par(333)) ! int
+call copy_addr(idiag_gtxgszmz,p_par(334)) ! int
+call copy_addr(idiag_gtxgsx2mz,p_par(335)) ! int
+call copy_addr(idiag_gtxgsy2mz,p_par(336)) ! int
+call copy_addr(idiag_gtxgsz2mz,p_par(337)) ! int
+call copy_addr(idiag_fradz_kramers,p_par(338)) ! int
+call copy_addr(idiag_fradz_kprof,p_par(339)) ! int
+call copy_addr(idiag_fradz_constchi,p_par(340)) ! int
+call copy_addr(idiag_fturbz,p_par(341)) ! int
+call copy_addr(idiag_fturbtz,p_par(342)) ! int
+call copy_addr(idiag_fturbmz,p_par(343)) ! int
+call copy_addr(idiag_fturbfz,p_par(344)) ! int
+call copy_addr(idiag_dcoolz,p_par(345)) ! int
+call copy_addr(idiag_heatmz,p_par(346)) ! int
+call copy_addr(idiag_kkramersmz,p_par(347)) ! int
+call copy_addr(idiag_ethmz,p_par(348)) ! int
+call copy_addr(idiag_fpreszmz,p_par(349)) ! int
+call copy_addr(idiag_gtt2mz,p_par(350)) ! int
+call copy_addr(idiag_gss2mz,p_par(351)) ! int
+call copy_addr(idiag_fracvph1mz,p_par(352)) ! int
+call copy_addr(idiag_fracvph2mz,p_par(353)) ! int
+call copy_addr(idiag_fracvph3mz,p_par(354)) ! int
+call copy_addr(idiag_ssmy,p_par(355)) ! int
+call copy_addr(idiag_ppmy,p_par(356)) ! int
+call copy_addr(idiag_ttmy,p_par(357)) ! int
+call copy_addr(idiag_ssmx,p_par(358)) ! int
+call copy_addr(idiag_ss2mx,p_par(359)) ! int
+call copy_addr(idiag_ppmx,p_par(360)) ! int
+call copy_addr(idiag_ttmx,p_par(361)) ! int
+call copy_addr(idiag_tt2mx,p_par(362)) ! int
+call copy_addr(idiag_uxttmx,p_par(363)) ! int
+call copy_addr(idiag_uyttmx,p_par(364)) ! int
+call copy_addr(idiag_uzttmx,p_par(365)) ! int
+call copy_addr(idiag_fconvxmx,p_par(366)) ! int
+call copy_addr(idiag_fradmx,p_par(367)) ! int
+call copy_addr(idiag_fturbmx,p_par(368)) ! int
+call copy_addr(idiag_kkramersmx,p_par(369)) ! int
+call copy_addr(idiag_dcoolx,p_par(370)) ! int
+call copy_addr(idiag_fradx_kramers,p_par(371)) ! int
+call copy_addr(idiag_fradx_constchi,p_par(372)) ! int
+call copy_addr(idiag_ttmxz,p_par(373)) ! int
+call copy_addr(idiag_ssmxz,p_par(374)) ! int
+call copy_addr(idiag_ttmxy,p_par(375)) ! int
+call copy_addr(idiag_ssmxy,p_par(376)) ! int
+call copy_addr(idiag_uxttmxy,p_par(377)) ! int
+call copy_addr(idiag_uyttmxy,p_par(378)) ! int
+call copy_addr(idiag_uzttmxy,p_par(379)) ! int
+call copy_addr(idiag_gtxmxy,p_par(380)) ! int
+call copy_addr(idiag_gtymxy,p_par(381)) ! int
+call copy_addr(idiag_gtzmxy,p_par(382)) ! int
+call copy_addr(idiag_gsxmxy,p_par(383)) ! int
+call copy_addr(idiag_gsymxy,p_par(384)) ! int
+call copy_addr(idiag_gszmxy,p_par(385)) ! int
+call copy_addr(idiag_gtxgsxmxy,p_par(386)) ! int
+call copy_addr(idiag_gtxgsymxy,p_par(387)) ! int
+call copy_addr(idiag_gtxgszmxy,p_par(388)) ! int
+call copy_addr(idiag_gtxgsx2mxy,p_par(389)) ! int
+call copy_addr(idiag_gtxgsy2mxy,p_par(390)) ! int
+call copy_addr(idiag_gtxgsz2mxy,p_par(391)) ! int
+call copy_addr(idiag_fconvxy,p_par(392)) ! int
+call copy_addr(idiag_fconvyxy,p_par(393)) ! int
+call copy_addr(idiag_fconvzxy,p_par(394)) ! int
+call copy_addr(idiag_fradxy_kprof,p_par(395)) ! int
+call copy_addr(idiag_fradymxy_kprof,p_par(396)) ! int
+call copy_addr(idiag_fradxy_kramers,p_par(397)) ! int
+call copy_addr(idiag_fradr_constchixy,p_par(398)) ! int
+call copy_addr(idiag_fturbxy,p_par(399)) ! int
+call copy_addr(idiag_fturbymxy,p_par(400)) ! int
+call copy_addr(idiag_fturbrxy,p_par(401)) ! int
+call copy_addr(idiag_fturbthxy,p_par(402)) ! int
+call copy_addr(idiag_dcoolxy,p_par(403)) ! int
+call copy_addr(lcalc_heat_cool,p_par(404)) ! bool
+call copy_addr(tau1_cool,p_par(405))
+call copy_addr(rho01,p_par(406))
+call copy_addr(gamma,p_par(407))
+call copy_addr(gamma_m1,p_par(408))
+call copy_addr(gamma1,p_par(409))
+call copy_addr(cv,p_par(410))
+call copy_addr(cv1,p_par(411))
+call copy_addr(cp1,p_par(412))
+call copy_addr(hcond_kconst,p_par(413))
+call string_to_enum(string_enum_div_sld_ene,div_sld_ene)
+call copy_addr(string_enum_div_sld_ene,p_par(414)) ! int
+call string_to_enum(string_enum_cooling_profile,cooling_profile)
+call copy_addr(string_enum_cooling_profile,p_par(415)) ! int
+call string_to_enum(string_enum_cooltype,cooltype)
+call copy_addr(string_enum_cooltype,p_par(416)) ! int
+call string_to_enum(string_enum_heattype,heattype)
+call copy_addr(string_enum_heattype,p_par(417)) ! int
+call string_to_enum(string_enum_borderss,borderss)
+call copy_addr(string_enum_borderss,p_par(418)) ! int
+call copy_addr(radius_ss,p_par(419)) ! (ninit)
+call copy_addr(radius_ss_x,p_par(420)) ! (ninit)
+call copy_addr(ampl_ss,p_par(421)) ! (ninit)
+call copy_addr(center1_x,p_par(422)) ! (ninit)
+call copy_addr(center1_y,p_par(423)) ! (ninit)
+call copy_addr(center1_z,p_par(424)) ! (ninit)
+call copy_addr(chi_hyper3_aniso,p_par(425)) ! real3
+call copy_addr(heat_gaussianblob_r0,p_par(426)) ! real3
+call copy_addr(ss_volaverage,p_par(427)) ! (1)
+call copy_addr(ss_mz,p_par(428)) ! (mz)
+call copy_addr(chit_aniso_prof,p_par(429)) ! (nx)
+call copy_addr(dchit_aniso_prof,p_par(430)) ! (nx)
+call copy_addr(penc_ones,p_par(431)) ! (nx)
+call copy_addr(beta_glnrho_global,p_par(432)) ! real3
+call copy_addr(ssmz,p_par(433)) ! (mz)
+call copy_addr(cs2mz,p_par(434)) ! (mz)
+call copy_addr(gssmz,p_par(435)) ! (nz) (3)
+call copy_addr(del2ssmz,p_par(436)) ! (nz)
+call copy_addr(ssmx,p_par(437)) ! (mx)
+call copy_addr(gssmx,p_par(438)) ! (nx) (3)
+call copy_addr(cs2mx,p_par(439)) ! (nx)
+call copy_addr(del2ssmx,p_par(440)) ! (nx)
+call copy_addr(cs2mxy,p_par(441)) ! (nx) (my)
+call copy_addr(ssmxy,p_par(442)) ! (nx) (my)
+call copy_addr(cs2cool_x,p_par(443)) ! (nx)
+call copy_addr(profz_cool,p_par(444)) ! (nz)
+call copy_addr(profz1_cool,p_par(445)) ! (nz)
+call copy_addr(profz_heat,p_par(446)) ! (nz)
+call copy_addr(profr_cool,p_par(447)) ! (nx)
+call copy_addr(profr1_cool,p_par(448)) ! (nx)
+call copy_addr(profr2_cool,p_par(449)) ! (nx)
+call copy_addr(profr_heat,p_par(450)) ! (nx)
+call copy_addr(profx_heat,p_par(451)) ! (nx)
+call copy_addr(prof_z,p_par(452)) ! (prof_nz)
 
     endsubroutine pushpars2c
 !***********************************************************************

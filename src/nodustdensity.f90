@@ -176,4 +176,11 @@ module Dustdensity
 !
    endsubroutine impose_dustdensity_floor
 !***********************************************************************
+    subroutine pushpars2c(p_par)
+
+    integer, parameter :: n_pars=1100
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
+   endsubroutine
+!***********************************************************************
+
 endmodule Dustdensity

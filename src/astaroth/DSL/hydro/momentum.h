@@ -59,5 +59,6 @@ else{
       rhs += rho1 * cross(jj,bb)
     }
 #endif
-    reduce_max(step_num==0, sum(abs(value(UU))/AC_ds) + sqrt(advec2), AC_maxadvec)
-    return rhs 
+    //reduce_max(step_num==0, , AC_maxadvec)
+    max_advec = sum(abs(value(UU))/AC_ds) + sqrt(advec2)
+    return (PC_rhs_update){rhs, max_advec}

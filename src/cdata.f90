@@ -152,6 +152,7 @@ module Cdata
                            lshift_origin=.false., lshift_origin_lower=.false., & ! don't shift origin
                            lpole=.false., &                                      ! in spherical coords: pole excluded
                            lequidist=.true.                                      ! grid equidistant in every direction
+
   logical :: lignore_nonequi=.false., lcart_equi=.true.
   character (len=labellen), dimension(3) :: grid_func='linear'
   character (len=labellen) :: pipe_func='error_function'
@@ -835,6 +836,8 @@ module Cdata
 !
   real :: lambda5 = 0.0
   integer :: string_enum_unit_system = 0
+  integer, dimension(mfarray) :: maux_vtxbuf_index = 0
+  integer :: num_substeps = 3
 !
 !  Variables for concurrency
 !
@@ -852,6 +855,7 @@ module Cdata
   logical, dimension(npencils) :: lpencil_save = .false.
   integer :: num_helper_threads=1, thread_id=1
   integer, dimension(max_threads_possible) :: core_ids
+  logical :: lcourant_dt
 !$ logical, volatile :: lhelper_run=.true., lhelper_perf
 !$ logical :: loffload=.false.
 !

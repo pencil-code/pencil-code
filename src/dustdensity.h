@@ -10,4 +10,5 @@
   public :: pencil_criteria_dustdensity, pencil_interdep_dustdensity
 
   public :: impose_dustdensity_floor
+  public :: pushpars2c
 !  public :: Ntot_i

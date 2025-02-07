@@ -18,7 +18,6 @@ module Chemistry
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
-  use EquationOfState
 !
   implicit none
 !
@@ -389,7 +388,15 @@ module Chemistry
       call keep_compiler_quiet(p)
 !
     end subroutine cond_spec_nucl_lagr
-    !***********************************************************************
+!***********************************************************************
+    subroutine pushpars2c(p_par)
+    use Syscalls, only: copy_addr
+    integer, parameter :: n_pars=1100
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+     call copy_addr(rgas,p_par(1))
+   endsubroutine
+!***********************************************************************
 
 
 

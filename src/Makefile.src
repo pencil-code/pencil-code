@@ -34,10 +34,10 @@ NSCBC              = noNSCBC
 POWER              = nopower_spectrum
 PYTHON             = nopython
 SOLID_CELLS        = nosolid_cells
-SOLID_CELLS_MPICOMM= nosolid_cells_mpicomm
-SOLID_CELLS_OGRID_SUB= nosolid_cells_ogrid_sub
-SOLID_CELLS_OGRID_CDATA= nosolid_cells_ogrid_cdata
-SOLID_CELLS_OGRID_CHEMISTRY=nosolid_cells_ogrid_chemistry
+SOLID_CELLS_MPICOMM = nosolid_cells_mpicomm
+SOLID_CELLS_OGRID_SUB = nosolid_cells_ogrid_sub
+SOLID_CELLS_OGRID_CDATA = nosolid_cells_ogrid_cdata
+SOLID_CELLS_OGRID_CHEMISTRY = nosolid_cells_ogrid_chemistry
 SLICES             =   slices
 SLICES_METHODS     =   slices_methods
 SIGNAL_HANDLING    = nosignal_handling
@@ -3107,6 +3107,9 @@ endif
 ifeq ($(TIMESTEP),timestep)
 	@echo $(CUDA_RELPATH)'/timestep.f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources.h
 endif
+	@echo $(CUDA_RELPATH)'/$(MAGNETIC_MEANFIELD).f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources.h
+	@echo $(CUDA_RELPATH)'/$(ENERGY).f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources.h
+	@echo $(CUDA_RELPATH)'/$(GRAVITY).f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources.h
 ifeq ($(EOS),noeos)
 	@echo $(CUDA_RELPATH)'/noeos.f90' >> $(CUDA_MAKEDIR)/PC_modulesources.h
 else

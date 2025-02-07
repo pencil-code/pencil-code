@@ -8521,721 +8521,104 @@ endif
     subroutine pushpars2c(p_par)
 
     use Syscalls, only: copy_addr
+    use General, only: string_to_enum
 
     integer, parameter :: n_pars=1000
     integer(KIND=ikind8), dimension(n_pars) :: p_par
-
-    call copy_addr(widthuu,p_par(1))
-    call copy_addr(radiusuu,p_par(2))
-    call copy_addr(urand,p_par(3))
-    call copy_addr(kx_uu,p_par(4))
-    call copy_addr(ky_uu,p_par(5))
-    call copy_addr(kz_uu,p_par(6))
-    call copy_addr(relhel_uu,p_par(7))
-    call copy_addr(urandi,p_par(8))
-    call copy_addr(uu_left,p_par(9))
-    call copy_addr(uu_right,p_par(10))
-    call copy_addr(uu_lower,p_par(11))
-    call copy_addr(uu_upper,p_par(12))
-    call copy_addr(uy_left,p_par(13))
-    call copy_addr(uy_right,p_par(14))
-    call copy_addr(initpower,p_par(15))
-    call copy_addr(initpower2,p_par(16))
-    call copy_addr(cutoff,p_par(17))
-    call copy_addr(ncutoff,p_par(18))
-    call copy_addr(kpeak,p_par(19))
-    call copy_addr(xhalf,p_par(20))
-    call copy_addr(kgaussian_uu,p_par(21))
-    call copy_addr(nfact_uu,p_par(22))
-    call copy_addr(omega_precession,p_par(23))
-    call copy_addr(alpha_precession,p_par(24))
-    call copy_addr(u_out_kep,p_par(25))
-    call copy_addr(velocity_ceiling,p_par(26))
-    call copy_addr(w_sldchar_hyd,p_par(27))
-    call copy_addr(mu_omega,p_par(28))
-    call copy_addr(gap,p_par(29))
-    call copy_addr(r_omega,p_par(30))
-    call copy_addr(w_omega,p_par(31))
-    call copy_addr(z1_uu,p_par(32))
-    call copy_addr(z2_uu,p_par(33))
-    call copy_addr(abc_a,p_par(34))
-    call copy_addr(abc_b,p_par(35))
-    call copy_addr(abc_c,p_par(36))
-    call copy_addr(vwall,p_par(37))
-    call copy_addr(alpha_hless,p_par(38))
-    call copy_addr(eps_hless,p_par(39))
-    call copy_addr(xjump_mid,p_par(40))
-    call copy_addr(yjump_mid,p_par(41))
-    call copy_addr(zjump_mid,p_par(42))
-    call copy_addr(nb_rings,p_par(43)) ! int
-    call copy_addr(neddy,p_par(44)) ! int
-    call copy_addr(itij,p_par(45)) ! int
-    call copy_addr(ihless,p_par(46)) ! int
-    call copy_addr(jhless,p_par(47)) ! int
-    call copy_addr(nhless,p_par(48)) ! int
-    call copy_addr(index_rsh,p_par(49)) ! int
-    call copy_addr(n_modes_uu,p_par(50)) ! int
-    call copy_addr(llinearized_hydro,p_par(51)) ! bool
-    call copy_addr(ladvection_velocity,p_par(52)) ! bool
-    call copy_addr(lprecession,p_par(53)) ! bool
-    call copy_addr(lshear_rateofstrain,p_par(54)) ! bool
-    call copy_addr(loo_as_aux,p_par(55)) ! bool
-    call copy_addr(llorentz_as_aux,p_par(56)) ! bool
-    call copy_addr(luut_as_aux,p_par(57)) ! bool
-    call copy_addr(luust_as_aux,p_par(58)) ! bool
-    call copy_addr(loot_as_aux,p_par(59)) ! bool
-    call copy_addr(loost_as_aux,p_par(60)) ! bool
-    call copy_addr(luuk_as_aux,p_par(61)) ! bool
-    call copy_addr(look_as_aux,p_par(62)) ! bool
-    call copy_addr(luu_fluc_as_aux,p_par(63)) ! bool
-    call copy_addr(luu_sph_as_aux,p_par(64)) ! bool
-    call copy_addr(lvv_as_aux,p_par(65)) ! bool
-    call copy_addr(lvv_as_comaux,p_par(66)) ! bool
-    call copy_addr(lscale_tobox,p_par(67)) ! bool
-    call copy_addr(lfactors_uu,p_par(68)) ! bool
-    call copy_addr(lpower_profile_file_uu,p_par(69)) ! bool
-    call copy_addr(lpressuregradient_gas,p_par(70)) ! bool
-    call copy_addr(lcoriolis_force,p_par(71)) ! bool
-    call copy_addr(lshear_in_coriolis,p_par(72)) ! bool
-    call copy_addr(lcentrifugal_force,p_par(73)) ! bool
-    call copy_addr(lreflecteddy,p_par(74)) ! bool
-    call copy_addr(louinit,p_par(75)) ! bool
-    call copy_addr(lskip_projection,p_par(76)) ! bool
-    call copy_addr(lconservative,p_par(77)) ! bool
-    call copy_addr(lrelativistic,p_par(78)) ! bool
-    call copy_addr(lno_noise_uu,p_par(79)) ! bool
-    call copy_addr(lrho_nonuni_uu,p_par(80)) ! bool
-    call copy_addr(llorentz_limiter,p_par(81)) ! bool
-    call copy_addr(full_3d,p_par(82)) ! bool
-    call copy_addr(lhiggsless,p_par(83)) ! bool
-    call copy_addr(lhiggsless_old,p_par(84)) ! bool
-    call copy_addr(lsqrt_qirro_uu,p_par(85)) ! bool
-    call copy_addr(incl_alpha,p_par(86))
-    call copy_addr(rot_rr,p_par(87))
-    call copy_addr(xsphere,p_par(88))
-    call copy_addr(ysphere,p_par(89))
-    call copy_addr(zsphere,p_par(90))
-    call copy_addr(amp_meri_circ,p_par(91))
-    call copy_addr(max_uu,p_par(92))
-    call copy_addr(delta_u,p_par(93))
-    call copy_addr(ampl_omega,p_par(94))
-    call copy_addr(omega_ini,p_par(95))
-    call copy_addr(loutest,p_par(96)) ! bool
-    call copy_addr(ldiffrot_test,p_par(97)) ! bool
-    call copy_addr(r_cyl,p_par(98))
-    call copy_addr(skin_depth,p_par(99))
-    call copy_addr(rnoise_int,p_par(100))
-    call copy_addr(rnoise_ext,p_par(101))
-    call copy_addr(prra,p_par(102))
-    call copy_addr(amp_factor,p_par(103))
-    call copy_addr(kx_uu_perturb,p_par(104))
-    call copy_addr(qirro_uu,p_par(105))
-    call copy_addr(qini,p_par(106))
-    call copy_addr(tdamp,p_par(107))
-    call copy_addr(tfade_start,p_par(108))
-    call copy_addr(dampu,p_par(109))
-    call copy_addr(wdamp,p_par(110))
-    call copy_addr(dampuint,p_par(111))
-    call copy_addr(dampuext,p_par(112))
-    call copy_addr(rdampint,p_par(113))
-    call copy_addr(rdampext,p_par(114))
-    call copy_addr(ydampint,p_par(115))
-    call copy_addr(ydampext,p_par(116))
-    call copy_addr(ruxm,p_par(117))
-    call copy_addr(ruym,p_par(118))
-    call copy_addr(ruzm,p_par(119))
-    call copy_addr(tau_damp_ruxm1,p_par(120))
-    call copy_addr(tau_damp_ruym1,p_par(121))
-    call copy_addr(tau_damp_ruzm1,p_par(122))
-    call copy_addr(tau_damp_ruxm,p_par(123))
-    call copy_addr(tau_damp_ruym,p_par(124))
-    call copy_addr(tau_damp_ruzm,p_par(125))
-    call copy_addr(tau_diffrot1,p_par(126))
-    call copy_addr(ampl1_diffrot,p_par(127))
-    call copy_addr(ampl2_diffrot,p_par(128))
-    call copy_addr(ampl_wind,p_par(129))
-    call copy_addr(omega_int,p_par(130))
-    call copy_addr(xexp_diffrot,p_par(131))
-    call copy_addr(kx_diffrot,p_par(132))
-    call copy_addr(kz_diffrot,p_par(133))
-    call copy_addr(phase_diffrot,p_par(134))
-    call copy_addr(othresh,p_par(135))
-    call copy_addr(othresh_per_orms,p_par(136))
-    call copy_addr(othresh_scl,p_par(137))
-    call copy_addr(omega_out,p_par(138))
-    call copy_addr(omega_in,p_par(139))
-    call copy_addr(omega_fourier,p_par(140))
-    call copy_addr(width_ff_uu,p_par(141))
-    call copy_addr(x1_ff_uu,p_par(142))
-    call copy_addr(x2_ff_uu,p_par(143))
-    call copy_addr(ekman_friction,p_par(144))
-    call copy_addr(friction_tdep_toffset,p_par(145))
-    call copy_addr(friction_tdep_tau0,p_par(146))
-    call copy_addr(uzjet,p_par(147))
-    call copy_addr(ampl_forc,p_par(148))
-    call copy_addr(k_forc,p_par(149))
-    call copy_addr(w_forc,p_par(150))
-    call copy_addr(x_forc,p_par(151))
-    call copy_addr(dx_forc,p_par(152))
-    call copy_addr(ampl_fcont_uu,p_par(153))
-    call copy_addr(k_diffrot,p_par(154))
-    call copy_addr(amp_centforce,p_par(155))
-    call copy_addr(sbaro0,p_par(156))
-    call copy_addr(uphi_rbot,p_par(157))
-    call copy_addr(uphi_rtop,p_par(158))
-    call copy_addr(uphi_step_width,p_par(159))
-    call copy_addr(novec,p_par(160)) ! int
-    call copy_addr(novecmax,p_par(161)) ! int
-    call copy_addr(niter_relb,p_par(162)) ! int
-    call copy_addr(ldamp_fade,p_par(163)) ! bool
-    call copy_addr(lomega_int,p_par(164)) ! bool
-    call copy_addr(lupw_uu,p_par(165)) ! bool
-    call copy_addr(lfreeze_uint,p_par(166)) ! bool
-    call copy_addr(lfreeze_uext,p_par(167)) ! bool
-    call copy_addr(lremove_mean_angmom,p_par(168)) ! bool
-    call copy_addr(lremove_mean_momenta,p_par(169)) ! bool
-    call copy_addr(lremove_mean_flow,p_par(170)) ! bool
-    call copy_addr(lremove_uumeanxy,p_par(171)) ! bool
-    call copy_addr(lremove_uumeanx,p_par(172)) ! bool
-    call copy_addr(lremove_uumeany,p_par(173)) ! bool
-    call copy_addr(lremove_uumeanz,p_par(174)) ! bool
-    call copy_addr(lremove_uumeanz_horizontal,p_par(175)) ! bool
-    call copy_addr(lreinitialize_uu,p_par(176)) ! bool
-    call copy_addr(lalways_use_gij_etc,p_par(177)) ! bool
-    call copy_addr(lcalc_uumeanz,p_par(178)) ! bool
-    call copy_addr(lcalc_uumeanxy,p_par(179)) ! bool
-    call copy_addr(lcalc_uumean,p_par(180)) ! bool
-    call copy_addr(lcalc_uumeanx,p_par(181)) ! bool
-    call copy_addr(lcalc_uumeany,p_par(182)) ! bool
-    call copy_addr(lcalc_uumeanxz,p_par(183)) ! bool
-    call copy_addr(lcalc_ruumeanz,p_par(184)) ! bool
-    call copy_addr(lcalc_ruumeanxy,p_par(185)) ! bool
-    call copy_addr(lforcing_cont_uu,p_par(186)) ! bool
-    call copy_addr(lcoriolis_xdep,p_par(187)) ! bool
-    call copy_addr(lno_meridional_flow,p_par(188)) ! bool
-    call copy_addr(lrotation_xaxis,p_par(189)) ! bool
-    call copy_addr(lpropagate_borderuu,p_par(190)) ! bool
-    call copy_addr(lgradu_as_aux,p_par(191)) ! bool
-    call copy_addr(lomega_cyl_xy,p_par(192)) ! bool
-    call copy_addr(lno_radial_advection,p_par(193)) ! bool
-    call copy_addr(lfargoadvection_as_shift,p_par(194)) ! bool
-    call copy_addr(lhelmholtz_decomp,p_par(195)) ! bool
-    call copy_addr(limpose_only_horizontal_uumz,p_par(196)) ! bool
-    call copy_addr(ltime_integrals_always,p_par(197)) ! bool
-    call copy_addr(lvart_in_shear_frame,p_par(198)) ! bool
-    call copy_addr(lschur_3d3d1d_uu,p_par(199)) ! bool
-    call copy_addr(lschur_2d2d3d_uu,p_par(200)) ! bool
-    call copy_addr(lschur_2d2d1d_uu,p_par(201)) ! bool
-    call copy_addr(dtcor,p_par(202))
-    call copy_addr(t_cor,p_par(203))
-    call copy_addr(lhydro_bc_interior,p_par(204)) ! bool
-    call copy_addr(z1_interior_bc_hydro,p_par(205))
-    call copy_addr(kz_analysis,p_par(206))
-    call copy_addr(shearx,p_par(207))
-    call copy_addr(rescale_uu,p_par(208))
-    call copy_addr(ra,p_par(209))
-    call copy_addr(pr,p_par(210))
-    call copy_addr(om_inner,p_par(211))
-    call copy_addr(cdt_tauf,p_par(212))
-    call copy_addr(ulev,p_par(213))
-    call copy_addr(lcdt_tauf,p_par(214)) ! bool
-    call copy_addr(lcalc_uuavg,p_par(215)) ! bool
-    call copy_addr(idiag_u2tm,p_par(216)) ! int
-    call copy_addr(idiag_uotm,p_par(217)) ! int
-    call copy_addr(idiag_outm,p_par(218)) ! int
-    call copy_addr(idiag_fkinzm,p_par(219)) ! int
-    call copy_addr(idiag_gamm,p_par(220)) ! int
-    call copy_addr(idiag_gamrms,p_par(221)) ! int
-    call copy_addr(idiag_gammax,p_par(222)) ! int
-    call copy_addr(idiag_u2m,p_par(223)) ! int
-    call copy_addr(idiag_u2sphm,p_par(224)) ! int
-    call copy_addr(idiag_um2,p_par(225)) ! int
-    call copy_addr(idiag_uxpt,p_par(226)) ! int
-    call copy_addr(idiag_uypt,p_par(227)) ! int
-    call copy_addr(idiag_uzpt,p_par(228)) ! int
-    call copy_addr(idiag_uxp2,p_par(229)) ! int
-    call copy_addr(idiag_uyp2,p_par(230)) ! int
-    call copy_addr(idiag_uzp2,p_par(231)) ! int
-    call copy_addr(idiag_uxuypt,p_par(232)) ! int
-    call copy_addr(idiag_uyuzpt,p_par(233)) ! int
-    call copy_addr(idiag_uzuxpt,p_par(234)) ! int
-    call copy_addr(idiag_urms,p_par(235)) ! int
-    call copy_addr(idiag_urmsx,p_par(236)) ! int
-    call copy_addr(idiag_urmsz,p_par(237)) ! int
-    call copy_addr(idiag_durms,p_par(238)) ! int
-    call copy_addr(idiag_umax,p_par(239)) ! int
-    call copy_addr(idiag_umin,p_par(240)) ! int
-    call copy_addr(idiag_uxrms,p_par(241)) ! int
-    call copy_addr(idiag_uyrms,p_par(242)) ! int
-    call copy_addr(idiag_uzrms,p_par(243)) ! int
-    call copy_addr(idiag_uzrmaxs,p_par(244)) ! int
-    call copy_addr(idiag_uxmin,p_par(245)) ! int
-    call copy_addr(idiag_uymin,p_par(246)) ! int
-    call copy_addr(idiag_uzmin,p_par(247)) ! int
-    call copy_addr(idiag_uxmax,p_par(248)) ! int
-    call copy_addr(idiag_uymax,p_par(249)) ! int
-    call copy_addr(idiag_uzmax,p_par(250)) ! int
-    call copy_addr(idiag_uxm,p_par(251)) ! int
-    call copy_addr(idiag_uym,p_par(252)) ! int
-    call copy_addr(idiag_uzm,p_par(253)) ! int
-    call copy_addr(idiag_uzcx10m,p_par(254)) ! int
-    call copy_addr(idiag_uzsx10m,p_par(255)) ! int
-    call copy_addr(idiag_uduum,p_par(256)) ! int
-    call copy_addr(idiag_ux2m,p_par(257)) ! int
-    call copy_addr(idiag_uy2m,p_par(258)) ! int
-    call copy_addr(idiag_uz2m,p_par(259)) ! int
-    call copy_addr(idiag_ux3m,p_par(260)) ! int
-    call copy_addr(idiag_uy3m,p_par(261)) ! int
-    call copy_addr(idiag_uz3m,p_par(262)) ! int
-    call copy_addr(idiag_ux4m,p_par(263)) ! int
-    call copy_addr(idiag_uy4m,p_par(264)) ! int
-    call copy_addr(idiag_uz4m,p_par(265)) ! int
-    call copy_addr(idiag_uxuy2m,p_par(266)) ! int
-    call copy_addr(idiag_uyuz2m,p_par(267)) ! int
-    call copy_addr(idiag_uzux2m,p_par(268)) ! int
-    call copy_addr(idiag_t00m,p_par(269)) ! int
-    call copy_addr(idiag_txxm,p_par(270)) ! int
-    call copy_addr(idiag_tyym,p_par(271)) ! int
-    call copy_addr(idiag_tzzm,p_par(272)) ! int
-    call copy_addr(idiag_txym,p_par(273)) ! int
-    call copy_addr(idiag_tyzm,p_par(274)) ! int
-    call copy_addr(idiag_tzxm,p_par(275)) ! int
-    call copy_addr(idiag_t0x2m,p_par(276)) ! int
-    call copy_addr(idiag_t0y2m,p_par(277)) ! int
-    call copy_addr(idiag_t0z2m,p_par(278)) ! int
-    call copy_addr(idiag_ux2ccm,p_par(279)) ! int
-    call copy_addr(idiag_ux2ssm,p_par(280)) ! int
-    call copy_addr(idiag_uy2ccm,p_par(281)) ! int
-    call copy_addr(idiag_uy2ssm,p_par(282)) ! int
-    call copy_addr(idiag_uxuycsm,p_par(283)) ! int
-    call copy_addr(idiag_uxuym,p_par(284)) ! int
-    call copy_addr(idiag_uxuzm,p_par(285)) ! int
-    call copy_addr(idiag_uyuzm,p_par(286)) ! int
-    call copy_addr(idiag_umx,p_par(287)) ! int
-    call copy_addr(idiag_umy,p_par(288)) ! int
-    call copy_addr(idiag_umz,p_par(289)) ! int
-    call copy_addr(idiag_omumz,p_par(290)) ! int
-    call copy_addr(idiag_umamz,p_par(291)) ! int
-    call copy_addr(idiag_umbmz,p_par(292)) ! int
-    call copy_addr(idiag_umxbmz,p_par(293)) ! int
-    call copy_addr(idiag_rux2m,p_par(294)) ! int
-    call copy_addr(idiag_ruy2m,p_par(295)) ! int
-    call copy_addr(idiag_ruz2m,p_par(296)) ! int
-    call copy_addr(idiag_divum,p_par(297)) ! int
-    call copy_addr(idiag_rdivum,p_par(298)) ! int
-    call copy_addr(idiag_divu2m,p_par(299)) ! int
-    call copy_addr(idiag_gdivu2m,p_par(300)) ! int
-    call copy_addr(idiag_u3u21m,p_par(301)) ! int
-    call copy_addr(idiag_u1u32m,p_par(302)) ! int
-    call copy_addr(idiag_u2u13m,p_par(303)) ! int
-    call copy_addr(idiag_u2u31m,p_par(304)) ! int
-    call copy_addr(idiag_u3u12m,p_par(305)) ! int
-    call copy_addr(idiag_u1u23m,p_par(306)) ! int
-    call copy_addr(idiag_urmphi,p_par(307)) ! int
-    call copy_addr(idiag_upmphi,p_par(308)) ! int
-    call copy_addr(idiag_uzmphi,p_par(309)) ! int
-    call copy_addr(idiag_rurmphi,p_par(310)) ! int
-    call copy_addr(idiag_rupmphi,p_par(311)) ! int
-    call copy_addr(idiag_ruzmphi,p_par(312)) ! int
-    call copy_addr(idiag_ur2mphi,p_par(313)) ! int
-    call copy_addr(idiag_up2mphi,p_par(314)) ! int
-    call copy_addr(idiag_uz2mphi,p_par(315)) ! int
-    call copy_addr(idiag_urupmphi,p_par(316)) ! int
-    call copy_addr(idiag_uruzmphi,p_par(317)) ! int
-    call copy_addr(idiag_upuzmphi,p_par(318)) ! int
-    call copy_addr(idiag_rurupmphi,p_par(319)) ! int
-    call copy_addr(idiag_ruruzmphi,p_par(320)) ! int
-    call copy_addr(idiag_rupuzmphi,p_par(321)) ! int
-    call copy_addr(idiag_ursphmphi,p_par(322)) ! int
-    call copy_addr(idiag_uthmphi,p_par(323)) ! int
-    call copy_addr(idiag_rursphmphi,p_par(324)) ! int
-    call copy_addr(idiag_ruthmphi,p_par(325)) ! int
-    call copy_addr(idiag_u2mphi,p_par(326)) ! int
-    call copy_addr(idiag_fkinrsphmphi,p_par(327)) ! int
-    call copy_addr(idiag_u2mr,p_par(328)) ! int
-    call copy_addr(idiag_urmr,p_par(329)) ! int
-    call copy_addr(idiag_upmr,p_par(330)) ! int
-    call copy_addr(idiag_uzmr,p_par(331)) ! int
-    call copy_addr(idiag_uxfampm,p_par(332)) ! int
-    call copy_addr(idiag_uyfampm,p_par(333)) ! int
-    call copy_addr(idiag_uzfampm,p_par(334)) ! int
-    call copy_addr(idiag_uxfampim,p_par(335)) ! int
-    call copy_addr(idiag_uyfampim,p_par(336)) ! int
-    call copy_addr(idiag_uzfampim,p_par(337)) ! int
-    call copy_addr(idiag_ruxm,p_par(338)) ! int
-    call copy_addr(idiag_ruym,p_par(339)) ! int
-    call copy_addr(idiag_ruzm,p_par(340)) ! int
-    call copy_addr(idiag_ruxtot,p_par(341)) ! int
-    call copy_addr(idiag_rumax,p_par(342)) ! int
-    call copy_addr(idiag_ruxuym,p_par(343)) ! int
-    call copy_addr(idiag_ruxuzm,p_par(344)) ! int
-    call copy_addr(idiag_ruyuzm,p_par(345)) ! int
-    call copy_addr(idiag_divrhourms,p_par(346)) ! int
-    call copy_addr(idiag_divrhoumax,p_par(347)) ! int
-    call copy_addr(idiag_rlxm,p_par(348)) ! int
-    call copy_addr(idiag_rlym,p_par(349)) ! int
-    call copy_addr(idiag_rlzm,p_par(350)) ! int
-    call copy_addr(idiag_rlx2m,p_par(351)) ! int
-    call copy_addr(idiag_rly2m,p_par(352)) ! int
-    call copy_addr(idiag_rlz2m,p_par(353)) ! int
-    call copy_addr(idiag_tot_ang_mom,p_par(354)) ! int
-    call copy_addr(idiag_dtu,p_par(355)) ! int
-    call copy_addr(idiag_oum,p_par(356)) ! int
-    call copy_addr(idiag_oxum,p_par(357)) ! int
-    call copy_addr(idiag_ourms,p_par(358)) ! int
-    call copy_addr(idiag_oxurms,p_par(359)) ! int
-    call copy_addr(idiag_ou_int,p_par(360)) ! int
-    call copy_addr(idiag_fum,p_par(361)) ! int
-    call copy_addr(idiag_odel2um,p_par(362)) ! int
-    call copy_addr(idiag_o2m,p_par(363)) ! int
-    call copy_addr(idiag_o2u2m,p_par(364)) ! int
-    call copy_addr(idiag_o2sphm,p_par(365)) ! int
-    call copy_addr(idiag_orms,p_par(366)) ! int
-    call copy_addr(idiag_omax,p_par(367)) ! int
-    call copy_addr(idiag_ox2m,p_par(368)) ! int
-    call copy_addr(idiag_oy2m,p_par(369)) ! int
-    call copy_addr(idiag_oz2m,p_par(370)) ! int
-    call copy_addr(idiag_ox3m,p_par(371)) ! int
-    call copy_addr(idiag_oy3m,p_par(372)) ! int
-    call copy_addr(idiag_oz3m,p_par(373)) ! int
-    call copy_addr(idiag_ox4m,p_par(374)) ! int
-    call copy_addr(idiag_oy4m,p_par(375)) ! int
-    call copy_addr(idiag_oz4m,p_par(376)) ! int
-    call copy_addr(idiag_oxm,p_par(377)) ! int
-    call copy_addr(idiag_oym,p_par(378)) ! int
-    call copy_addr(idiag_ozm,p_par(379)) ! int
-    call copy_addr(idiag_oxuzxm,p_par(380)) ! int
-    call copy_addr(idiag_oyuzym,p_par(381)) ! int
-    call copy_addr(idiag_oxoym,p_par(382)) ! int
-    call copy_addr(idiag_oxozm,p_par(383)) ! int
-    call copy_addr(idiag_oyozm,p_par(384)) ! int
-    call copy_addr(idiag_qfm,p_par(385)) ! int
-    call copy_addr(idiag_q2m,p_par(386)) ! int
-    call copy_addr(idiag_qrms,p_par(387)) ! int
-    call copy_addr(idiag_qmax,p_par(388)) ! int
-    call copy_addr(idiag_qom,p_par(389)) ! int
-    call copy_addr(idiag_quxom,p_par(390)) ! int
-    call copy_addr(idiag_qezxum,p_par(391)) ! int
-    call copy_addr(idiag_quysm,p_par(392)) ! int
-    call copy_addr(idiag_jxbrqm,p_par(393)) ! int
-    call copy_addr(idiag_pvzm,p_par(394)) ! int
-    call copy_addr(idiag_oumphi,p_par(395)) ! int
-    call copy_addr(idiag_ozmphi,p_par(396)) ! int
-    call copy_addr(idiag_ormr,p_par(397)) ! int
-    call copy_addr(idiag_opmr,p_par(398)) ! int
-    call copy_addr(idiag_ozmr,p_par(399)) ! int
-    call copy_addr(idiag_uguxm,p_par(400)) ! int
-    call copy_addr(idiag_uguym,p_par(401)) ! int
-    call copy_addr(idiag_uguzm,p_par(402)) ! int
-    call copy_addr(idiag_ugurmsx,p_par(403)) ! int
-    call copy_addr(idiag_ugu2m,p_par(404)) ! int
-    call copy_addr(idiag_dudx,p_par(405)) ! int
-    call copy_addr(idiag_marms,p_par(406)) ! int
-    call copy_addr(idiag_mamax,p_par(407)) ! int
-    call copy_addr(idiag_fintm,p_par(408)) ! int
-    call copy_addr(idiag_fextm,p_par(409)) ! int
-    call copy_addr(idiag_duxdzma,p_par(410)) ! int
-    call copy_addr(idiag_duydzma,p_par(411)) ! int
-    call copy_addr(idiag_eek,p_par(412)) ! int
-    call copy_addr(idiag_ekin,p_par(413)) ! int
-    call copy_addr(idiag_ekintot,p_par(414)) ! int
-    call copy_addr(idiag_totangmom,p_par(415)) ! int
-    call copy_addr(idiag_uxglnrym,p_par(416)) ! int
-    call copy_addr(idiag_uyglnrxm,p_par(417)) ! int
-    call copy_addr(idiag_uzdivum,p_par(418)) ! int
-    call copy_addr(idiag_uxuydivum,p_par(419)) ! int
-    call copy_addr(idiag_divuhrms,p_par(420)) ! int
-    call copy_addr(idiag_uxxrms,p_par(421)) ! int
-    call copy_addr(idiag_uyyrms,p_par(422)) ! int
-    call copy_addr(idiag_uxzrms,p_par(423)) ! int
-    call copy_addr(idiag_uyzrms,p_par(424)) ! int
-    call copy_addr(idiag_uzyrms,p_par(425)) ! int
-    call copy_addr(idiag_urmsn,p_par(426)) ! int
-    call copy_addr(idiag_urmss,p_par(427)) ! int
-    call copy_addr(idiag_urmsh,p_par(428)) ! int
-    call copy_addr(idiag_ormsn,p_par(429)) ! int
-    call copy_addr(idiag_ormss,p_par(430)) ! int
-    call copy_addr(idiag_ormsh,p_par(431)) ! int
-    call copy_addr(idiag_oumn,p_par(432)) ! int
-    call copy_addr(idiag_oums,p_par(433)) ! int
-    call copy_addr(idiag_oumh,p_par(434)) ! int
-    call copy_addr(idiag_taufmin,p_par(435)) ! int
-    call copy_addr(idiag_dtf,p_par(436)) ! int
-    call copy_addr(idiag_udpxxm,p_par(437)) ! int
-    call copy_addr(idiag_udpyym,p_par(438)) ! int
-    call copy_addr(idiag_udpzzm,p_par(439)) ! int
-    call copy_addr(idiag_udpxym,p_par(440)) ! int
-    call copy_addr(idiag_udpyzm,p_par(441)) ! int
-    call copy_addr(idiag_udpxzm,p_par(442)) ! int
-    call copy_addr(idiag_u2mz,p_par(443)) ! int
-    call copy_addr(idiag_o2mz,p_par(444)) ! int
-    call copy_addr(idiag_divu2mz,p_par(445)) ! int
-    call copy_addr(idiag_curlru2mz,p_par(446)) ! int
-    call copy_addr(idiag_divru2mz,p_par(447)) ! int
-    call copy_addr(idiag_fmasszmz,p_par(448)) ! int
-    call copy_addr(idiag_fkinzmz,p_par(449)) ! int
-    call copy_addr(idiag_fkinzupmz,p_par(450)) ! int
-    call copy_addr(idiag_fkinzdownmz,p_par(451)) ! int
-    call copy_addr(idiag_uxmz,p_par(452)) ! int
-    call copy_addr(idiag_uymz,p_par(453)) ! int
-    call copy_addr(idiag_uzmz,p_par(454)) ! int
-    call copy_addr(idiag_uxph1mz,p_par(455)) ! int
-    call copy_addr(idiag_uxph2mz,p_par(456)) ! int
-    call copy_addr(idiag_uxph3mz,p_par(457)) ! int
-    call copy_addr(idiag_uyph1mz,p_par(458)) ! int
-    call copy_addr(idiag_uyph2mz,p_par(459)) ! int
-    call copy_addr(idiag_uyph3mz,p_par(460)) ! int
-    call copy_addr(idiag_uzph1mz,p_par(461)) ! int
-    call copy_addr(idiag_uzph2mz,p_par(462)) ! int
-    call copy_addr(idiag_uzph3mz,p_par(463)) ! int
-    call copy_addr(idiag_u2ph1mz,p_par(464)) ! int
-    call copy_addr(idiag_u2ph2mz,p_par(465)) ! int
-    call copy_addr(idiag_u2ph3mz,p_par(466)) ! int
-    call copy_addr(idiag_ux2ph1mz,p_par(467)) ! int
-    call copy_addr(idiag_ux2ph2mz,p_par(468)) ! int
-    call copy_addr(idiag_ux2ph3mz,p_par(469)) ! int
-    call copy_addr(idiag_uy2ph1mz,p_par(470)) ! int
-    call copy_addr(idiag_uy2ph2mz,p_par(471)) ! int
-    call copy_addr(idiag_uy2ph3mz,p_par(472)) ! int
-    call copy_addr(idiag_uz2ph1mz,p_par(473)) ! int
-    call copy_addr(idiag_uz2ph2mz,p_par(474)) ! int
-    call copy_addr(idiag_uz2ph3mz,p_par(475)) ! int
-    call copy_addr(idiag_ffdownmz,p_par(476)) ! int
-    call copy_addr(idiag_uzupmz,p_par(477)) ! int
-    call copy_addr(idiag_uzdownmz,p_par(478)) ! int
-    call copy_addr(idiag_ruzupmz,p_par(479)) ! int
-    call copy_addr(idiag_ruzdownmz,p_par(480)) ! int
-    call copy_addr(idiag_divumz,p_par(481)) ! int
-    call copy_addr(idiag_uzdivumz,p_par(482)) ! int
-    call copy_addr(idiag_oxmz,p_par(483)) ! int
-    call copy_addr(idiag_oymz,p_par(484)) ! int
-    call copy_addr(idiag_ozmz,p_par(485)) ! int
-    call copy_addr(idiag_ux2mz,p_par(486)) ! int
-    call copy_addr(idiag_uy2mz,p_par(487)) ! int
-    call copy_addr(idiag_uz2mz,p_par(488)) ! int
-    call copy_addr(idiag_uz2upmz,p_par(489)) ! int
-    call copy_addr(idiag_uz2downmz,p_par(490)) ! int
-    call copy_addr(idiag_ox2mz,p_par(491)) ! int
-    call copy_addr(idiag_oy2mz,p_par(492)) ! int
-    call copy_addr(idiag_oz2mz,p_par(493)) ! int
-    call copy_addr(idiag_ruxmz,p_par(494)) ! int
-    call copy_addr(idiag_ruymz,p_par(495)) ! int
-    call copy_addr(idiag_ruzmz,p_par(496)) ! int
-    call copy_addr(idiag_ruxph1mz,p_par(497)) ! int
-    call copy_addr(idiag_ruxph2mz,p_par(498)) ! int
-    call copy_addr(idiag_ruxph3mz,p_par(499)) ! int
-    call copy_addr(idiag_ruyph1mz,p_par(500)) ! int
-    call copy_addr(idiag_ruyph2mz,p_par(501)) ! int
-    call copy_addr(idiag_ruyph3mz,p_par(502)) ! int
-    call copy_addr(idiag_ruzph1mz,p_par(503)) ! int
-    call copy_addr(idiag_ruzph2mz,p_par(504)) ! int
-    call copy_addr(idiag_ruzph3mz,p_par(505)) ! int
-    call copy_addr(idiag_rux2ph1mz,p_par(506)) ! int
-    call copy_addr(idiag_rux2ph2mz,p_par(507)) ! int
-    call copy_addr(idiag_rux2ph3mz,p_par(508)) ! int
-    call copy_addr(idiag_ruy2ph1mz,p_par(509)) ! int
-    call copy_addr(idiag_ruy2ph2mz,p_par(510)) ! int
-    call copy_addr(idiag_ruy2ph3mz,p_par(511)) ! int
-    call copy_addr(idiag_ruz2ph1mz,p_par(512)) ! int
-    call copy_addr(idiag_ruz2ph2mz,p_par(513)) ! int
-    call copy_addr(idiag_ruz2ph3mz,p_par(514)) ! int
-    call copy_addr(idiag_ekinph1mz,p_par(515)) ! int
-    call copy_addr(idiag_ekinph2mz,p_par(516)) ! int
-    call copy_addr(idiag_ekinph3mz,p_par(517)) ! int
-    call copy_addr(idiag_oxph1mz,p_par(518)) ! int
-    call copy_addr(idiag_oxph2mz,p_par(519)) ! int
-    call copy_addr(idiag_oxph3mz,p_par(520)) ! int
-    call copy_addr(idiag_oyph1mz,p_par(521)) ! int
-    call copy_addr(idiag_oyph2mz,p_par(522)) ! int
-    call copy_addr(idiag_oyph3mz,p_par(523)) ! int
-    call copy_addr(idiag_ozph1mz,p_par(524)) ! int
-    call copy_addr(idiag_ozph2mz,p_par(525)) ! int
-    call copy_addr(idiag_ozph3mz,p_par(526)) ! int
-    call copy_addr(idiag_ouph1mz,p_par(527)) ! int
-    call copy_addr(idiag_ouph2mz,p_par(528)) ! int
-    call copy_addr(idiag_ouph3mz,p_par(529)) ! int
-    call copy_addr(idiag_rux2mz,p_par(530)) ! int
-    call copy_addr(idiag_ruy2mz,p_par(531)) ! int
-    call copy_addr(idiag_ruz2mz,p_par(532)) ! int
-    call copy_addr(idiag_uxuymz,p_par(533)) ! int
-    call copy_addr(idiag_uxuzmz,p_par(534)) ! int
-    call copy_addr(idiag_uyuzmz,p_par(535)) ! int
-    call copy_addr(idiag_rxymz,p_par(536)) ! int
-    call copy_addr(idiag_rxyupmz,p_par(537)) ! int
-    call copy_addr(idiag_rxydownmz,p_par(538)) ! int
-    call copy_addr(idiag_rxzmz,p_par(539)) ! int
-    call copy_addr(idiag_rxzupmz,p_par(540)) ! int
-    call copy_addr(idiag_rxzdownmz,p_par(541)) ! int
-    call copy_addr(idiag_ryzmz,p_par(542)) ! int
-    call copy_addr(idiag_ryzupmz,p_par(543)) ! int
-    call copy_addr(idiag_ryzdownmz,p_par(544)) ! int
-    call copy_addr(idiag_ruxuymz,p_par(545)) ! int
-    call copy_addr(idiag_ruxuzmz,p_par(546)) ! int
-    call copy_addr(idiag_ruyuzmz,p_par(547)) ! int
-    call copy_addr(idiag_ruxuy2mz,p_par(548)) ! int
-    call copy_addr(idiag_ruxuz2mz,p_par(549)) ! int
-    call copy_addr(idiag_ruyuz2mz,p_par(550)) ! int
-    call copy_addr(idiag_oxuxxmz,p_par(551)) ! int
-    call copy_addr(idiag_oyuxymz,p_par(552)) ! int
-    call copy_addr(idiag_oxuyxmz,p_par(553)) ! int
-    call copy_addr(idiag_oyuyymz,p_par(554)) ! int
-    call copy_addr(idiag_oxuzxmz,p_par(555)) ! int
-    call copy_addr(idiag_oyuzymz,p_par(556)) ! int
-    call copy_addr(idiag_uyxuzxmz,p_par(557)) ! int
-    call copy_addr(idiag_uyyuzymz,p_par(558)) ! int
-    call copy_addr(idiag_uyzuzzmz,p_par(559)) ! int
-    call copy_addr(idiag_ekinmz,p_par(560)) ! int
-    call copy_addr(idiag_oumz,p_par(561)) ! int
-    call copy_addr(idiag_uguxmz,p_par(562)) ! int
-    call copy_addr(idiag_uguymz,p_par(563)) ! int
-    call copy_addr(idiag_uguzmz,p_par(564)) ! int
-    call copy_addr(idiag_remz,p_par(565)) ! int
-    call copy_addr(idiag_oguxmz,p_par(566)) ! int
-    call copy_addr(idiag_oguymz,p_par(567)) ! int
-    call copy_addr(idiag_oguzmz,p_par(568)) ! int
-    call copy_addr(idiag_ogux2mz,p_par(569)) ! int
-    call copy_addr(idiag_oguy2mz,p_par(570)) ! int
-    call copy_addr(idiag_oguz2mz,p_par(571)) ! int
-    call copy_addr(idiag_oxdivumz,p_par(572)) ! int
-    call copy_addr(idiag_oydivumz,p_par(573)) ! int
-    call copy_addr(idiag_ozdivumz,p_par(574)) ! int
-    call copy_addr(idiag_oxdivu2mz,p_par(575)) ! int
-    call copy_addr(idiag_oydivu2mz,p_par(576)) ! int
-    call copy_addr(idiag_ozdivu2mz,p_par(577)) ! int
-    call copy_addr(idiag_u3u21mz,p_par(578)) ! int
-    call copy_addr(idiag_u1u32mz,p_par(579)) ! int
-    call copy_addr(idiag_u2u13mz,p_par(580)) ! int
-    call copy_addr(idiag_u2u31mz,p_par(581)) ! int
-    call copy_addr(idiag_u3u12mz,p_par(582)) ! int
-    call copy_addr(idiag_u1u23mz,p_par(583)) ! int
-    call copy_addr(idiag_acczmz,p_par(584)) ! int
-    call copy_addr(idiag_acczupmz,p_par(585)) ! int
-    call copy_addr(idiag_acczdownmz,p_par(586)) ! int
-    call copy_addr(idiag_accpowzmz,p_par(587)) ! int
-    call copy_addr(idiag_accpowzupmz,p_par(588)) ! int
-    call copy_addr(idiag_accpowzdownmz,p_par(589)) ! int
-    call copy_addr(idiag_totalforcezmz,p_par(590)) ! int
-    call copy_addr(idiag_totalforcezupmz,p_par(591)) ! int
-    call copy_addr(idiag_totalforcezdownmz,p_par(592)) ! int
-    call copy_addr(idiag_uxmy,p_par(593)) ! int
-    call copy_addr(idiag_uymy,p_par(594)) ! int
-    call copy_addr(idiag_uzmy,p_par(595)) ! int
-    call copy_addr(idiag_ux2my,p_par(596)) ! int
-    call copy_addr(idiag_uy2my,p_par(597)) ! int
-    call copy_addr(idiag_uz2my,p_par(598)) ! int
-    call copy_addr(idiag_uxuymy,p_par(599)) ! int
-    call copy_addr(idiag_uxuzmy,p_par(600)) ! int
-    call copy_addr(idiag_uyuzmy,p_par(601)) ! int
-    call copy_addr(idiag_oumy,p_par(602)) ! int
-    call copy_addr(idiag_uguxmy,p_par(603)) ! int
-    call copy_addr(idiag_uguymy,p_par(604)) ! int
-    call copy_addr(idiag_uguzmy,p_par(605)) ! int
-    call copy_addr(idiag_uxmx,p_par(606)) ! int
-    call copy_addr(idiag_uymx,p_par(607)) ! int
-    call copy_addr(idiag_uzmx,p_par(608)) ! int
-    call copy_addr(idiag_ruxmx,p_par(609)) ! int
-    call copy_addr(idiag_ruymx,p_par(610)) ! int
-    call copy_addr(idiag_ruzmx,p_par(611)) ! int
-    call copy_addr(idiag_rux2mx,p_par(612)) ! int
-    call copy_addr(idiag_ruy2mx,p_par(613)) ! int
-    call copy_addr(idiag_ruz2mx,p_par(614)) ! int
-    call copy_addr(idiag_ruxuymx,p_par(615)) ! int
-    call copy_addr(idiag_ruxuzmx,p_par(616)) ! int
-    call copy_addr(idiag_ruyuzmx,p_par(617)) ! int
-    call copy_addr(idiag_ux2mx,p_par(618)) ! int
-    call copy_addr(idiag_uy2mx,p_par(619)) ! int
-    call copy_addr(idiag_uz2mx,p_par(620)) ! int
-    call copy_addr(idiag_ox2mx,p_par(621)) ! int
-    call copy_addr(idiag_oy2mx,p_par(622)) ! int
-    call copy_addr(idiag_oz2mx,p_par(623)) ! int
-    call copy_addr(idiag_uxuymx,p_par(624)) ! int
-    call copy_addr(idiag_uxuzmx,p_par(625)) ! int
-    call copy_addr(idiag_uyuzmx,p_par(626)) ! int
-    call copy_addr(idiag_oumx,p_par(627)) ! int
-    call copy_addr(idiag_uguxmx,p_par(628)) ! int
-    call copy_addr(idiag_uguymx,p_par(629)) ! int
-    call copy_addr(idiag_uguzmx,p_par(630)) ! int
-    call copy_addr(idiag_ekinmx,p_par(631)) ! int
-    call copy_addr(idiag_fkinxmx,p_par(632)) ! int
-    call copy_addr(idiag_uxmxz,p_par(633)) ! int
-    call copy_addr(idiag_uymxz,p_par(634)) ! int
-    call copy_addr(idiag_uzmxz,p_par(635)) ! int
-    call copy_addr(idiag_ux2mxz,p_par(636)) ! int
-    call copy_addr(idiag_uy2mxz,p_par(637)) ! int
-    call copy_addr(idiag_uz2mxz,p_par(638)) ! int
-    call copy_addr(idiag_uxuymxz,p_par(639)) ! int
-    call copy_addr(idiag_uxuzmxz,p_par(640)) ! int
-    call copy_addr(idiag_uyuzmxz,p_par(641)) ! int
-    call copy_addr(idiag_oumxz,p_par(642)) ! int
-    call copy_addr(idiag_ox2mxz,p_par(643)) ! int
-    call copy_addr(idiag_oy2mxz,p_par(644)) ! int
-    call copy_addr(idiag_oz2mxz,p_par(645)) ! int
-    call copy_addr(idiag_uxmxy,p_par(646)) ! int
-    call copy_addr(idiag_uymxy,p_par(647)) ! int
-    call copy_addr(idiag_uzmxy,p_par(648)) ! int
-    call copy_addr(idiag_uxupmxy,p_par(649)) ! int
-    call copy_addr(idiag_uxdownmxy,p_par(650)) ! int
-    call copy_addr(idiag_ruxupmxy,p_par(651)) ! int
-    call copy_addr(idiag_ruxdownmxy,p_par(652)) ! int
-    call copy_addr(idiag_ux2upmxy,p_par(653)) ! int
-    call copy_addr(idiag_ux2downmxy,p_par(654)) ! int
-    call copy_addr(idiag_ffdownmxy,p_par(655)) ! int
-    call copy_addr(idiag_uxuymxy,p_par(656)) ! int
-    call copy_addr(idiag_uxuzmxy,p_par(657)) ! int
-    call copy_addr(idiag_uyuzmxy,p_par(658)) ! int
-    call copy_addr(idiag_rxymxy,p_par(659)) ! int
-    call copy_addr(idiag_rxyupmxy,p_par(660)) ! int
-    call copy_addr(idiag_rxydownmxy,p_par(661)) ! int
-    call copy_addr(idiag_rxzmxy,p_par(662)) ! int
-    call copy_addr(idiag_rxzupmxy,p_par(663)) ! int
-    call copy_addr(idiag_rxzdownmxy,p_par(664)) ! int
-    call copy_addr(idiag_ryzmxy,p_par(665)) ! int
-    call copy_addr(idiag_ryzupmxy,p_par(666)) ! int
-    call copy_addr(idiag_ryzdownmxy,p_par(667)) ! int
-    call copy_addr(idiag_oxmxy,p_par(668)) ! int
-    call copy_addr(idiag_oymxy,p_par(669)) ! int
-    call copy_addr(idiag_ozmxy,p_par(670)) ! int
-    call copy_addr(idiag_oumxy,p_par(671)) ! int
-    call copy_addr(idiag_pvzmxy,p_par(672)) ! int
-    call copy_addr(idiag_uguxmxy,p_par(673)) ! int
-    call copy_addr(idiag_uguymxy,p_par(674)) ! int
-    call copy_addr(idiag_uguzmxy,p_par(675)) ! int
-    call copy_addr(idiag_ruxmxy,p_par(676)) ! int
-    call copy_addr(idiag_ruymxy,p_par(677)) ! int
-    call copy_addr(idiag_ruzmxy,p_par(678)) ! int
-    call copy_addr(idiag_ux2mxy,p_par(679)) ! int
-    call copy_addr(idiag_uy2mxy,p_par(680)) ! int
-    call copy_addr(idiag_uz2mxy,p_par(681)) ! int
-    call copy_addr(idiag_ox2mxy,p_par(682)) ! int
-    call copy_addr(idiag_oy2mxy,p_par(683)) ! int
-    call copy_addr(idiag_oz2mxy,p_par(684)) ! int
-    call copy_addr(idiag_rux2mxy,p_par(685)) ! int
-    call copy_addr(idiag_ruy2mxy,p_par(686)) ! int
-    call copy_addr(idiag_ruz2mxy,p_par(687)) ! int
-    call copy_addr(idiag_ruxuymxy,p_par(688)) ! int
-    call copy_addr(idiag_ruxuzmxy,p_par(689)) ! int
-    call copy_addr(idiag_ruyuzmxy,p_par(690)) ! int
-    call copy_addr(idiag_fkinxmxy,p_par(691)) ! int
-    call copy_addr(idiag_fkinymxy,p_par(692)) ! int
-    call copy_addr(idiag_fkinxupmxy,p_par(693)) ! int
-    call copy_addr(idiag_fkinxdownmxy,p_par(694)) ! int
-    call copy_addr(idiag_nshift,p_par(695)) ! int
-    call copy_addr(idiag_frict,p_par(696)) ! int
-    call copy_addr(ivid_oo,p_par(697)) ! int
-    call copy_addr(ivid_o2,p_par(698)) ! int
-    call copy_addr(ivid_divu,p_par(699)) ! int
-    call copy_addr(ivid_u2,p_par(700)) ! int
-    call copy_addr(ivid_ma2,p_par(701)) ! int
-    call copy_addr(ivid_uu_sph,p_par(702)) ! int
-    call copy_addr(ivid_ou,p_par(703)) ! int
-    call copy_addr(t_vart,p_par(704))
-    call copy_addr(fade_fact,p_par(705))
-    call copy_addr(string_enum_friction_tdep,p_par(706)) ! int
-    call copy_addr(string_enum_uuprof,p_par(707)) ! int
-    call copy_addr(uu_const,p_par(708)) ! real3
-    call copy_addr(mean_momentum,p_par(709)) ! real3
-    call copy_addr(omegav,p_par(710)) ! real3
-    call copy_addr(string_enum_borderuu,p_par(711)) ! int3
+call copy_addr(velocity_ceiling,p_par(1))
+call copy_addr(r_omega,p_par(2))
+call copy_addr(eps_hless,p_par(3))
+call copy_addr(itij,p_par(4)) ! int
+call copy_addr(ihless,p_par(5)) ! int
+call copy_addr(llinearized_hydro,p_par(6)) ! bool
+call copy_addr(ladvection_velocity,p_par(7)) ! bool
+call copy_addr(lprecession,p_par(8)) ! bool
+call copy_addr(lshear_rateofstrain,p_par(9)) ! bool
+call copy_addr(luu_sph_as_aux,p_par(10)) ! bool
+call copy_addr(lvv_as_aux,p_par(11)) ! bool
+call copy_addr(lvv_as_comaux,p_par(12)) ! bool
+call copy_addr(lpressuregradient_gas,p_par(13)) ! bool
+call copy_addr(lcoriolis_force,p_par(14)) ! bool
+call copy_addr(lshear_in_coriolis,p_par(15)) ! bool
+call copy_addr(lcentrifugal_force,p_par(16)) ! bool
+call copy_addr(lconservative,p_par(17)) ! bool
+call copy_addr(lrelativistic,p_par(18)) ! bool
+call copy_addr(full_3d,p_par(19)) ! bool
+call copy_addr(lhiggsless,p_par(20)) ! bool
+call copy_addr(lhiggsless_old,p_par(21)) ! bool
+call copy_addr(ampl_omega,p_par(22))
+call copy_addr(ldiffrot_test,p_par(23)) ! bool
+call copy_addr(tdamp,p_par(24))
+call copy_addr(dampu,p_par(25))
+call copy_addr(wdamp,p_par(26))
+call copy_addr(dampuint,p_par(27))
+call copy_addr(dampuext,p_par(28))
+call copy_addr(rdampint,p_par(29))
+call copy_addr(rdampext,p_par(30))
+call copy_addr(ruxm,p_par(31))
+call copy_addr(ruym,p_par(32))
+call copy_addr(ruzm,p_par(33))
+call copy_addr(tau_damp_ruxm1,p_par(34))
+call copy_addr(tau_damp_ruym1,p_par(35))
+call copy_addr(tau_damp_ruzm1,p_par(36))
+call copy_addr(tau_damp_ruxm,p_par(37))
+call copy_addr(tau_damp_ruym,p_par(38))
+call copy_addr(tau_damp_ruzm,p_par(39))
+call copy_addr(tau_diffrot1,p_par(40))
+call copy_addr(omega_int,p_par(41))
+call copy_addr(ekman_friction,p_par(42))
+call copy_addr(friction_tdep_toffset,p_par(43))
+call copy_addr(friction_tdep_tau0,p_par(44))
+call copy_addr(uzjet,p_par(45))
+call copy_addr(ampl_fcont_uu,p_par(46))
+call copy_addr(amp_centforce,p_par(47))
+call copy_addr(lomega_int,p_par(48)) ! bool
+call copy_addr(lupw_uu,p_par(49)) ! bool
+call copy_addr(lalways_use_gij_etc,p_par(50)) ! bool
+call copy_addr(lcalc_uumeanz,p_par(51)) ! bool
+call copy_addr(lcalc_uumeanxy,p_par(52)) ! bool
+call copy_addr(lcalc_uumean,p_par(53)) ! bool
+call copy_addr(lcalc_uumeanx,p_par(54)) ! bool
+call copy_addr(lcalc_uumeanxz,p_par(55)) ! bool
+call copy_addr(lforcing_cont_uu,p_par(56)) ! bool
+call copy_addr(lcoriolis_xdep,p_par(57)) ! bool
+call copy_addr(lno_meridional_flow,p_par(58)) ! bool
+call copy_addr(lrotation_xaxis,p_par(59)) ! bool
+call copy_addr(lgradu_as_aux,p_par(60)) ! bool
+call copy_addr(lomega_cyl_xy,p_par(61)) ! bool
+call copy_addr(limpose_only_horizontal_uumz,p_par(62)) ! bool
+call copy_addr(lschur_3d3d1d_uu,p_par(63)) ! bool
+call copy_addr(lschur_2d2d3d_uu,p_par(64)) ! bool
+call copy_addr(lschur_2d2d1d_uu,p_par(65)) ! bool
+call copy_addr(shearx,p_par(66))
+call copy_addr(ra,p_par(67))
+call copy_addr(pr,p_par(68))
+call copy_addr(fade_fact,p_par(69))
+call string_to_enum(string_enum_friction_tdep,friction_tdep)
+call copy_addr(string_enum_friction_tdep,p_par(70)) ! int
+call string_to_enum(string_enum_uuprof,uuprof)
+call copy_addr(string_enum_uuprof,p_par(71)) ! int
+call copy_addr(uumz,p_par(72)) ! (mz) (3)
+call copy_addr(uumx,p_par(73)) ! (mx) (3)
+call copy_addr(uumxy,p_par(74)) ! (mx) (my) (3)
+call copy_addr(uumxz,p_par(75)) ! (mx) (mz) (3)
+call copy_addr(uu_average_cyl,p_par(76)) ! (mx) (mz)
+call copy_addr(uu_average_sph,p_par(77)) ! (mx) (my)
+call copy_addr(profx_diffrot1,p_par(78)) ! (nx)
+call copy_addr(profx_diffrot2,p_par(79)) ! (nx)
+call copy_addr(profx_diffrot3,p_par(80)) ! (nx)
+call copy_addr(profy_diffrot1,p_par(81)) ! (my)
+call copy_addr(profy_diffrot2,p_par(82)) ! (my)
+call copy_addr(profy_diffrot3,p_par(83)) ! (my)
+call copy_addr(mat_cent,p_par(84)) ! (3) (3)
+call copy_addr(uu_const,p_par(85)) ! real3
+call copy_addr(prof_om,p_par(86)) ! (nx)
+call copy_addr(prof_amp1,p_par(87)) ! (nx)
+call copy_addr(prof_amp3,p_par(88)) ! (mz)
+call copy_addr(prof_amp4,p_par(89)) ! (my)
+call copy_addr(uumz_prof,p_par(90)) ! (nz) (3)
+call copy_addr(omega_prof,p_par(91)) ! (nx) (ny)
+call copy_addr(string_enum_borderuu,p_par(92)) ! int3
 
     endsubroutine pushpars2c
 !***********************************************************************

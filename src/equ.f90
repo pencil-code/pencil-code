@@ -1201,7 +1201,7 @@ module Equ
         !  if (lmagnetic) call time_integrals_magnetic(f,p)
         !endif
 
-        !call set_dt1_max(p)
+        call set_dt1_max(p)
 !
 !  Diagnostics showing how close to advective and diffusive time steps we are
 !
@@ -1255,8 +1255,8 @@ module Equ
 !
 !  End of loops over m and n.
 !
-        headtt=.false.
-        lfirstpoint=.false.
+        !headtt=.false.
+        !lfirstpoint=.false.
 !
       enddo mn_loop
 !
@@ -1653,7 +1653,7 @@ module Equ
           endwhere
         endif
 
-        dt1_max=max(dt1_max,dt1_max_loc)
+        !dt1_max=max(dt1_max,dt1_max_loc)
 !
 !  Check for NaNs in the advection time-step.
 !
