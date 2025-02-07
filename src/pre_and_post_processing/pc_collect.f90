@@ -31,7 +31,6 @@ program pc_collect
   real :: t_sp, t_test   ! t in single precision for backwards compatibility
 !
   lstart = .true.
-  lmpicomm = .false.
   lroot = .true.
   ipx = 0
   ipy = 0
@@ -85,10 +84,6 @@ program pc_collect
 !
   call register_modules
   if (lparticles) call particles_register_modules()
-!
-!  Define the lenergy logical
-!
-  lenergy = lentropy .or. ltemperature .or. lthermal_energy
 !
   if (lwrite_aux .and. .not. lread_aux) then
     if (lroot) then

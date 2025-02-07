@@ -42,7 +42,6 @@ program pc_reduce
   real :: t_sp, t_test   ! t in single precision for backwards compatibility
 !
   lstart = .true.
-  lmpicomm = .false.
   lroot = .true.
   ipx = 0
   ipy = 0
@@ -117,10 +116,6 @@ program pc_reduce
 !  Register physics modules.
 !
   call register_modules
-!
-!  Define the lenergy logical
-!
-  lenergy = lentropy .or. ltemperature .or. lthermal_energy
 !
   if (lwrite_aux .and. .not. lread_aux) then
     if (lroot) then
