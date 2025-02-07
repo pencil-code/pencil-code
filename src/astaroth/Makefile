@@ -74,7 +74,13 @@ RUNTIME_COMPILATION       ?= off
 INLINING                  ?= off
 READ_OVERRIDES            ?= off
 OPTIMIZE_INPUT_PARAMS     ?= on
-#CMAKE_BUILD_TYPE          ?= RelWithDebInfo
+
+ifeq ($(RUNTIME_COMPILATION),on) 
+	CMAKE_BUILD_TYPE          ?= RelWithDebInfo
+endif
+ifeq ($(RUNTIME_COMPILATION),ON) 
+	CMAKE_BUILD_TYPE          ?= RelWithDebInfo
+endif
 CMAKE_BUILD_TYPE          ?= Debug
 
 astaroth_$(PREC).so: $(SOURCES) forcing.h $(AC_HEADERS) $(PC_HEADERS) $(CHEADERS) astaroth_libs

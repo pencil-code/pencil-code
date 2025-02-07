@@ -10,7 +10,7 @@ ComputeSteps AC_rhs(boundconds)
 }
 ComputeSteps AC_calculate_timestep(boundconds)
 {
-	twopass_solve_intermediate(0,AC_dt)
+	twopass_solve_intermediate(PC_FIRST_SUB_STEP,AC_dt)
 }
 BoundConds boundconds{
   #include "boundconds.h"
