@@ -1726,7 +1726,7 @@ module Magnetic
         if (tdep_eta_type=='mean-field'.or.tdep_eta_type=='mean-field-local') then
           if (luse_scale_factor_in_sigma) then
             call get_shared_variable('ascale', ascale,ierr)
-            if (ierr=iSHVAR_ERR_NOSUCHVAR) then
+            if (ierr==iSHVAR_ERR_NOSUCHVAR) then
               luse_scale_factor_in_sigma=.false.
             else
               call get_shared_variable('Hscript', Hscript, caller='initialize_magnetic')
