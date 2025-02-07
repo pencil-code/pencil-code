@@ -19,7 +19,11 @@ export OMP_WAIT_POLICY=PASSIVE
 export MPICH_GPU_SUPPORT_ENABLED=1
 #srun ./src/run.x
 #./run.csh
+#
+#To Ondrej modify this to source odop and the python stuff it requires
 source ~/new-monitoring/env/bin/activate
+
+#To Ondrej modify this to point your odop installation
 export ODOP_REAL_PATH=~/new-monitoring/odop/odop/odop_obs
 export ODOP_PATH=$ODOP_REAL_PATH/
 rm  -f $ODOP_REAL_PATH/metric_database/*.csv
@@ -32,6 +36,7 @@ export LD_PRELOAD=./src/libPC.so
 #To Ondrej: change this to point the the sample you want to run alongside on the CPU with this one
 export PC_CPU_SAMPLE=/users/toukopur/pencil-code/pencil-private/projects/PC-A/cpu
 
+#TP: this does not matter if one is not using Allas.
 export OS_AUTH_URL=https://pouta.csc.fi:5001/v3
 # With the addition of Keystone we have standardized on the term **project**
 # as the entity that owns the resources.
