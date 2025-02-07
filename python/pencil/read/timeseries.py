@@ -68,6 +68,7 @@ class TimeSeries(object):
         sim=None,
         unique_clean=False,
         time_range=None,
+        precision="f",
     ):
         """
         read(file_name='time_series.dat', datadir='data',
@@ -102,6 +103,8 @@ class TimeSeries(object):
         import os.path
         import re
 
+        if precision == "h":
+            precision = "half"
         if sim:
             from pencil.sim import __Simulation__
 
@@ -113,7 +116,7 @@ class TimeSeries(object):
             lines = infile.readlines()
 
         nlines_init = len(lines)
-        data = np.zeros((nlines_init, len(self.keys)))
+        data = np.zeros((nlines_init, len(self.keys)),dtype=precision)
         nlines = 0
         for i, line in enumerate(lines):
             if re.search("^%s--" % comment_char, line):
@@ -122,7 +125,7 @@ class TimeSeries(object):
                 keys_new = re.split("-+", line)
                 if keys_new != self.keys:
                     n_newrows = abs(len(keys_new) - len(self.keys))
-                    data = np.append(data, np.zeros((nlines_init, n_newrows)), axis=1)
+                    data = np.append(data, np.zeros((nlines_init, n_newrows), dtype=precision), axis=1)
                     self.keys = keys_new
             else:
                 try:
