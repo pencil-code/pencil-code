@@ -3891,7 +3891,7 @@ module Magnetic
       use EquationOfState, only: rho0
       use General, only: notanumber
       use FArrayManager, only: farray_index_by_name
-      use SharedVariables, only: put_shared_variable
+      use SharedVariables, only: get_shared_variable
       use Sub
 !
       real, dimension (mx,my,mz,mfarray), intent(inout):: f
