@@ -8,21 +8,7 @@ import os
 from os.path import join, exists, split, islink, realpath, abspath, basename
 import numpy as np
 
-from pencil.util import PathWrapper
-
-try:
-    from mpi4py import MPI
-    comm = MPI.COMM_WORLD
-    rank = comm.Get_rank()
-    size = comm.Get_size()
-    l_mpi = True
-    l_mpi = l_mpi and (size != 1)
-except ImportError:
-    rank = 0
-    size = 1
-    comm = None
-    l_mpi = False
-
+from pencil.util import PathWrapper, pc_print
 
 def simulation(*args, **kwargs):
     """
@@ -670,10 +656,9 @@ class __Simulation__(object):
             # restore self.tmp_dict
             self.tmp_dict = tmp_dict
         except Exception as e:
-            if rank == 0:
-                print("Warning: pencil.io.save failed. If dill is not installed, try:")
-                print("'pip3 install dill' (Python 3) or 'pip install dill' (Python 2).")
-                print(f"The raised error was: {e}")
+            pc_print("Warning: pencil.io.save failed. If dill is not installed, try:")
+            pc_print("'pip3 install dill' (Python 3) or 'pip install dill' (Python 2).")
+            pc_print(f"The raised error was: {e}")
 
     def started(self):
         """Returns whether simulation has already started.
