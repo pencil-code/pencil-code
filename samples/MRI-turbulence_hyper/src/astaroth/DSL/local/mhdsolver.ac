@@ -7360,7 +7360,7 @@ Kernel twopass_solve_intermediate(int step_num, real AC_dt__mod__cdata, real AC_
       }
       else {
       }
-      if (AC_ldustvelocity_shorttausd__mod__dustvelocity) {
+      if (AC_ldustvelocity_shorttausd__mod__dustvelocity && tausd1__mod__dustvelocity[k_207-1] >= AC_shorttaus1limit__mod__dustvelocity) {
         if (AC_lgrav__mod__cparam) {
           aa_sfta_207=ac_transformed_pencil_gg
         }
