@@ -183,7 +183,7 @@ module backreact_infl
       call put_shared_variable('Hscript',Hscript)
       call put_shared_variable('e2m_all',e2m_all)
       call put_shared_variable('b2m_all',b2m_all)
-      call put_shared_variable('lrho_chi',lrho_chil)
+      call put_shared_variable('lrho_chi',lrho_chi)
 !
     endsubroutine register_special
 !***********************************************************************
