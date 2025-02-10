@@ -176,7 +176,7 @@ class DataCube(object):
         trimall=False,
         magic=None,
         sim=None,
-        precision="f",
+        precision="d",
         lpersist=False,
         dtype=np.float64,
         flist=None,
