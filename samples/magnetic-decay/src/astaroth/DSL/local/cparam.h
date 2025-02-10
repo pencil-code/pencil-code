@@ -1,0 +1,1739 @@
+const int maxtry__mod__timestep = 40
+#define AC_maxtry__mod__timestep maxtry__mod__timestep
+const int ilnrho_ss__mod__nscbc = 1
+#define AC_ilnrho_ss__mod__nscbc ilnrho_ss__mod__nscbc
+const int ilnrho_ee__mod__nscbc = 2
+#define AC_ilnrho_ee__mod__nscbc ilnrho_ee__mod__nscbc
+const int ilnrho_pp__mod__nscbc = 3
+#define AC_ilnrho_pp__mod__nscbc ilnrho_pp__mod__nscbc
+const int ilnrho_lntt__mod__nscbc = 4
+#define AC_ilnrho_lntt__mod__nscbc ilnrho_lntt__mod__nscbc
+const int ilnrho_cs2__mod__nscbc = 5
+#define AC_ilnrho_cs2__mod__nscbc ilnrho_cs2__mod__nscbc
+const int irho_cs2__mod__nscbc = 6
+#define AC_irho_cs2__mod__nscbc irho_cs2__mod__nscbc
+const int irho_ss__mod__nscbc = 7
+#define AC_irho_ss__mod__nscbc irho_ss__mod__nscbc
+const int irho_lntt__mod__nscbc = 8
+#define AC_irho_lntt__mod__nscbc irho_lntt__mod__nscbc
+const int ilnrho_tt__mod__nscbc = 9
+#define AC_ilnrho_tt__mod__nscbc ilnrho_tt__mod__nscbc
+const int irho_tt__mod__nscbc = 10
+#define AC_irho_tt__mod__nscbc irho_tt__mod__nscbc
+const int ipp_ss__mod__nscbc = 11
+#define AC_ipp_ss__mod__nscbc ipp_ss__mod__nscbc
+const int ipp_cs2__mod__nscbc = 12
+#define AC_ipp_cs2__mod__nscbc ipp_cs2__mod__nscbc
+const int irho_eth__mod__nscbc = 13
+#define AC_irho_eth__mod__nscbc irho_eth__mod__nscbc
+const int ilnrho_eth__mod__nscbc = 14
+#define AC_ilnrho_eth__mod__nscbc ilnrho_eth__mod__nscbc
+const int irho_ee__mod__nscbc = 15
+#define AC_irho_ee__mod__nscbc irho_ee__mod__nscbc
+const int irho_pp__mod__nscbc = 16
+#define AC_irho_pp__mod__nscbc irho_pp__mod__nscbc
+const int rgap__mod__yinyang = 3
+#define AC_rgap__mod__yinyang rgap__mod__yinyang
+const int nogap__mod__yinyang = 0
+#define AC_nogap__mod__yinyang nogap__mod__yinyang
+const int rneigh__mod__yinyang = 4
+#define AC_rneigh__mod__yinyang rneigh__mod__yinyang
+const int rmarg__mod__yinyang = 2
+#define AC_rmarg__mod__yinyang rmarg__mod__yinyang
+const int rmarg2__mod__yinyang = 1
+#define AC_rmarg2__mod__yinyang rmarg2__mod__yinyang
+const int rneigh2__mod__yinyang = 5
+#define AC_rneigh2__mod__yinyang rneigh2__mod__yinyang
+const int ilnrho_ss__mod__energybcs = 1
+#define AC_ilnrho_ss__mod__energybcs ilnrho_ss__mod__energybcs
+const int ilnrho_ee__mod__energybcs = 2
+#define AC_ilnrho_ee__mod__energybcs ilnrho_ee__mod__energybcs
+const int ilnrho_pp__mod__energybcs = 3
+#define AC_ilnrho_pp__mod__energybcs ilnrho_pp__mod__energybcs
+const int ilnrho_lntt__mod__energybcs = 4
+#define AC_ilnrho_lntt__mod__energybcs ilnrho_lntt__mod__energybcs
+const int ilnrho_cs2__mod__energybcs = 5
+#define AC_ilnrho_cs2__mod__energybcs ilnrho_cs2__mod__energybcs
+const int irho_cs2__mod__energybcs = 6
+#define AC_irho_cs2__mod__energybcs irho_cs2__mod__energybcs
+const int irho_ss__mod__energybcs = 7
+#define AC_irho_ss__mod__energybcs irho_ss__mod__energybcs
+const int irho_lntt__mod__energybcs = 8
+#define AC_irho_lntt__mod__energybcs irho_lntt__mod__energybcs
+const int ilnrho_tt__mod__energybcs = 9
+#define AC_ilnrho_tt__mod__energybcs ilnrho_tt__mod__energybcs
+const int irho_tt__mod__energybcs = 10
+#define AC_irho_tt__mod__energybcs irho_tt__mod__energybcs
+const int ipp_ss__mod__energybcs = 11
+#define AC_ipp_ss__mod__energybcs ipp_ss__mod__energybcs
+const int ipp_cs2__mod__energybcs = 12
+#define AC_ipp_cs2__mod__energybcs ipp_cs2__mod__energybcs
+const int irho_eth__mod__energybcs = 13
+#define AC_irho_eth__mod__energybcs irho_eth__mod__energybcs
+const int ilnrho_eth__mod__energybcs = 14
+#define AC_ilnrho_eth__mod__energybcs ilnrho_eth__mod__energybcs
+const int irho_ee__mod__energybcs = 15
+#define AC_irho_ee__mod__energybcs irho_ee__mod__energybcs
+const int irho_pp__mod__energybcs = 16
+#define AC_irho_pp__mod__energybcs irho_pp__mod__energybcs
+const int lun_input__mod__io = 88
+#define AC_lun_input__mod__io lun_input__mod__io
+const int lun_output__mod__io = 91
+#define AC_lun_output__mod__io lun_output__mod__io
+const int id_block_persistent__mod__io = 2000
+#define AC_id_block_persistent__mod__io id_block_persistent__mod__io
+const int id_record_random_seeds__mod__io = 1
+#define AC_id_record_random_seeds__mod__io id_record_random_seeds__mod__io
+const int id_record_random_seeds2__mod__io = 2
+#define AC_id_record_random_seeds2__mod__io id_record_random_seeds2__mod__io
+const int id_record_ism_t_next_old__mod__io = 250
+#define AC_id_record_ism_t_next_old__mod__io id_record_ism_t_next_old__mod__io
+const int id_record_ism_pos_next_old__mod__io = 251
+#define AC_id_record_ism_pos_next_old__mod__io id_record_ism_pos_next_old__mod__io
+const int id_record_ism_bold_mass__mod__io = 252
+#define AC_id_record_ism_bold_mass__mod__io id_record_ism_bold_mass__mod__io
+const int id_record_ism_t_next_sni__mod__io = 253
+#define AC_id_record_ism_t_next_sni__mod__io id_record_ism_t_next_sni__mod__io
+const int id_record_ism_t_next_snii__mod__io = 254
+#define AC_id_record_ism_t_next_snii__mod__io id_record_ism_t_next_snii__mod__io
+const int id_record_ism_x_cluster__mod__io = 255
+#define AC_id_record_ism_x_cluster__mod__io id_record_ism_x_cluster__mod__io
+const int id_record_ism_y_cluster__mod__io = 256
+#define AC_id_record_ism_y_cluster__mod__io id_record_ism_y_cluster__mod__io
+const int id_record_ism_z_cluster__mod__io = 260
+#define AC_id_record_ism_z_cluster__mod__io id_record_ism_z_cluster__mod__io
+const int id_record_ism_t_cluster__mod__io = 261
+#define AC_id_record_ism_t_cluster__mod__io id_record_ism_t_cluster__mod__io
+const int id_record_ism_toggle_sni__mod__io = 257
+#define AC_id_record_ism_toggle_sni__mod__io id_record_ism_toggle_sni__mod__io
+const int id_record_ism_toggle_snii__mod__io = 258
+#define AC_id_record_ism_toggle_snii__mod__io id_record_ism_toggle_snii__mod__io
+const int id_record_ism_snrs__mod__io = 259
+#define AC_id_record_ism_snrs__mod__io id_record_ism_snrs__mod__io
+const int id_record_ism_toggle_old__mod__io = 1001
+#define AC_id_record_ism_toggle_old__mod__io id_record_ism_toggle_old__mod__io
+const int id_record_ism_snrs_old__mod__io = 1002
+#define AC_id_record_ism_snrs_old__mod__io id_record_ism_snrs_old__mod__io
+const int id_record_forcing_location__mod__io = 270
+#define AC_id_record_forcing_location__mod__io id_record_forcing_location__mod__io
+const int id_record_forcing_tsforce__mod__io = 271
+#define AC_id_record_forcing_tsforce__mod__io id_record_forcing_tsforce__mod__io
+const int id_record_forcing_torus__mod__io = 272
+#define AC_id_record_forcing_torus__mod__io id_record_forcing_torus__mod__io
+const int id_record_hydro_tphase__mod__io = 280
+#define AC_id_record_hydro_tphase__mod__io id_record_hydro_tphase__mod__io
+const int id_record_hydro_phase1__mod__io = 281
+#define AC_id_record_hydro_phase1__mod__io id_record_hydro_phase1__mod__io
+const int id_record_hydro_phase2__mod__io = 282
+#define AC_id_record_hydro_phase2__mod__io id_record_hydro_phase2__mod__io
+const int id_record_hydro_tsforce__mod__io = 284
+#define AC_id_record_hydro_tsforce__mod__io id_record_hydro_tsforce__mod__io
+const int id_record_hydro_location__mod__io = 285
+#define AC_id_record_hydro_location__mod__io id_record_hydro_location__mod__io
+const int id_record_hydro_ampl__mod__io = 286
+#define AC_id_record_hydro_ampl__mod__io id_record_hydro_ampl__mod__io
+const int id_record_hydro_wavenumber__mod__io = 287
+#define AC_id_record_hydro_wavenumber__mod__io id_record_hydro_wavenumber__mod__io
+const int id_record_magnetic_phase__mod__io = 311
+#define AC_id_record_magnetic_phase__mod__io id_record_magnetic_phase__mod__io
+const int id_record_magnetic_ampl__mod__io = 312
+#define AC_id_record_magnetic_ampl__mod__io id_record_magnetic_ampl__mod__io
+const int id_record_shear_delta_y__mod__io = 320
+#define AC_id_record_shear_delta_y__mod__io id_record_shear_delta_y__mod__io
+const int id_record_time_step__mod__io = 330
+#define AC_id_record_time_step__mod__io id_record_time_step__mod__io
+const int id_record_eps_rkf__mod__io = 331
+#define AC_id_record_eps_rkf__mod__io id_record_eps_rkf__mod__io
+const int id_record_special_lnkmin0__mod__io = 340
+#define AC_id_record_special_lnkmin0__mod__io id_record_special_lnkmin0__mod__io
+const int mint__mod__io = 1
+#define AC_mint__mod__io mint__mod__io
+const int maxt__mod__io = 2
+#define AC_maxt__mod__io maxt__mod__io
+const int nvisc_max__mod__viscosity = 4
+#define AC_nvisc_max__mod__viscosity nvisc_max__mod__viscosity
+const int nvisc_max__mod__dustvelocity = 4
+#define AC_nvisc_max__mod__dustvelocity nvisc_max__mod__dustvelocity
+const int nxb__mod__particles_mpicomm = 1
+#define AC_nxb__mod__particles_mpicomm nxb__mod__particles_mpicomm
+const int nyb__mod__particles_mpicomm = 1
+#define AC_nyb__mod__particles_mpicomm nyb__mod__particles_mpicomm
+const int nzb__mod__particles_mpicomm = 1
+#define AC_nzb__mod__particles_mpicomm nzb__mod__particles_mpicomm
+const int nbx__mod__particles_mpicomm = 1
+#define AC_nbx__mod__particles_mpicomm nbx__mod__particles_mpicomm
+const int nby__mod__particles_mpicomm = 1
+#define AC_nby__mod__particles_mpicomm nby__mod__particles_mpicomm
+const int nbz__mod__particles_mpicomm = 1
+#define AC_nbz__mod__particles_mpicomm nbz__mod__particles_mpicomm
+const int nbricks__mod__particles_mpicomm = 0
+#define AC_nbricks__mod__particles_mpicomm nbricks__mod__particles_mpicomm
+const int nghostb__mod__particles_mpicomm = 0
+#define AC_nghostb__mod__particles_mpicomm nghostb__mod__particles_mpicomm
+const int mxb__mod__particles_mpicomm = 1
+#define AC_mxb__mod__particles_mpicomm mxb__mod__particles_mpicomm
+const int myb__mod__particles_mpicomm = 1
+#define AC_myb__mod__particles_mpicomm myb__mod__particles_mpicomm
+const int mzb__mod__particles_mpicomm = 1
+#define AC_mzb__mod__particles_mpicomm mzb__mod__particles_mpicomm
+const int l1b__mod__particles_mpicomm = 1
+#define AC_l1b__mod__particles_mpicomm l1b__mod__particles_mpicomm
+const int l2b__mod__particles_mpicomm = 1
+#define AC_l2b__mod__particles_mpicomm l2b__mod__particles_mpicomm
+const int m1b__mod__particles_mpicomm = 1
+#define AC_m1b__mod__particles_mpicomm m1b__mod__particles_mpicomm
+const int m2b__mod__particles_mpicomm = 1
+#define AC_m2b__mod__particles_mpicomm m2b__mod__particles_mpicomm
+const int n1b__mod__particles_mpicomm = 1
+#define AC_n1b__mod__particles_mpicomm n1b__mod__particles_mpicomm
+const int n2b__mod__particles_mpicomm = 1
+#define AC_n2b__mod__particles_mpicomm n2b__mod__particles_mpicomm
+const int i_border_zero__mod__borderprofiles = 1
+#define AC_i_border_zero__mod__borderprofiles i_border_zero__mod__borderprofiles
+const int i_border_special__mod__borderprofiles = 2
+#define AC_i_border_special__mod__borderprofiles i_border_special__mod__borderprofiles
+const int i_border___mod__borderprofiles = 3
+#define AC_i_border___mod__borderprofiles i_border___mod__borderprofiles
+const int mmom__mod__particles_number = 24
+#define AC_mmom__mod__particles_number mmom__mod__particles_number
+const int n_dims__mod__hdf5_io = 3
+#define AC_n_dims__mod__hdf5_io n_dims__mod__hdf5_io
+const int ntries__mod__hdf5_io = 10
+#define AC_ntries__mod__hdf5_io ntries__mod__hdf5_io
+const int nsleep__mod__hdf5_io = 60
+#define AC_nsleep__mod__hdf5_io nsleep__mod__hdf5_io
+const int id_block_persistent__mod__polymer = 2000
+#define AC_id_block_persistent__mod__polymer id_block_persistent__mod__polymer
+const int id_record_random_seeds__mod__polymer = 1
+#define AC_id_record_random_seeds__mod__polymer id_record_random_seeds__mod__polymer
+const int id_record_random_seeds2__mod__polymer = 2
+#define AC_id_record_random_seeds2__mod__polymer id_record_random_seeds2__mod__polymer
+const int id_record_ism_t_next_old__mod__polymer = 250
+#define AC_id_record_ism_t_next_old__mod__polymer id_record_ism_t_next_old__mod__polymer
+const int id_record_ism_pos_next_old__mod__polymer = 251
+#define AC_id_record_ism_pos_next_old__mod__polymer id_record_ism_pos_next_old__mod__polymer
+const int id_record_ism_bold_mass__mod__polymer = 252
+#define AC_id_record_ism_bold_mass__mod__polymer id_record_ism_bold_mass__mod__polymer
+const int id_record_ism_t_next_sni__mod__polymer = 253
+#define AC_id_record_ism_t_next_sni__mod__polymer id_record_ism_t_next_sni__mod__polymer
+const int id_record_ism_t_next_snii__mod__polymer = 254
+#define AC_id_record_ism_t_next_snii__mod__polymer id_record_ism_t_next_snii__mod__polymer
+const int id_record_ism_x_cluster__mod__polymer = 255
+#define AC_id_record_ism_x_cluster__mod__polymer id_record_ism_x_cluster__mod__polymer
+const int id_record_ism_y_cluster__mod__polymer = 256
+#define AC_id_record_ism_y_cluster__mod__polymer id_record_ism_y_cluster__mod__polymer
+const int id_record_ism_z_cluster__mod__polymer = 260
+#define AC_id_record_ism_z_cluster__mod__polymer id_record_ism_z_cluster__mod__polymer
+const int id_record_ism_t_cluster__mod__polymer = 261
+#define AC_id_record_ism_t_cluster__mod__polymer id_record_ism_t_cluster__mod__polymer
+const int id_record_ism_toggle_sni__mod__polymer = 257
+#define AC_id_record_ism_toggle_sni__mod__polymer id_record_ism_toggle_sni__mod__polymer
+const int id_record_ism_toggle_snii__mod__polymer = 258
+#define AC_id_record_ism_toggle_snii__mod__polymer id_record_ism_toggle_snii__mod__polymer
+const int id_record_ism_snrs__mod__polymer = 259
+#define AC_id_record_ism_snrs__mod__polymer id_record_ism_snrs__mod__polymer
+const int id_record_ism_toggle_old__mod__polymer = 1001
+#define AC_id_record_ism_toggle_old__mod__polymer id_record_ism_toggle_old__mod__polymer
+const int id_record_ism_snrs_old__mod__polymer = 1002
+#define AC_id_record_ism_snrs_old__mod__polymer id_record_ism_snrs_old__mod__polymer
+const int id_record_forcing_location__mod__polymer = 270
+#define AC_id_record_forcing_location__mod__polymer id_record_forcing_location__mod__polymer
+const int id_record_forcing_tsforce__mod__polymer = 271
+#define AC_id_record_forcing_tsforce__mod__polymer id_record_forcing_tsforce__mod__polymer
+const int id_record_forcing_torus__mod__polymer = 272
+#define AC_id_record_forcing_torus__mod__polymer id_record_forcing_torus__mod__polymer
+const int id_record_hydro_tphase__mod__polymer = 280
+#define AC_id_record_hydro_tphase__mod__polymer id_record_hydro_tphase__mod__polymer
+const int id_record_hydro_phase1__mod__polymer = 281
+#define AC_id_record_hydro_phase1__mod__polymer id_record_hydro_phase1__mod__polymer
+const int id_record_hydro_phase2__mod__polymer = 282
+#define AC_id_record_hydro_phase2__mod__polymer id_record_hydro_phase2__mod__polymer
+const int id_record_hydro_tsforce__mod__polymer = 284
+#define AC_id_record_hydro_tsforce__mod__polymer id_record_hydro_tsforce__mod__polymer
+const int id_record_hydro_location__mod__polymer = 285
+#define AC_id_record_hydro_location__mod__polymer id_record_hydro_location__mod__polymer
+const int id_record_hydro_ampl__mod__polymer = 286
+#define AC_id_record_hydro_ampl__mod__polymer id_record_hydro_ampl__mod__polymer
+const int id_record_hydro_wavenumber__mod__polymer = 287
+#define AC_id_record_hydro_wavenumber__mod__polymer id_record_hydro_wavenumber__mod__polymer
+const int id_record_magnetic_phase__mod__polymer = 311
+#define AC_id_record_magnetic_phase__mod__polymer id_record_magnetic_phase__mod__polymer
+const int id_record_magnetic_ampl__mod__polymer = 312
+#define AC_id_record_magnetic_ampl__mod__polymer id_record_magnetic_ampl__mod__polymer
+const int id_record_shear_delta_y__mod__polymer = 320
+#define AC_id_record_shear_delta_y__mod__polymer id_record_shear_delta_y__mod__polymer
+const int id_record_time_step__mod__polymer = 330
+#define AC_id_record_time_step__mod__polymer id_record_time_step__mod__polymer
+const int id_record_eps_rkf__mod__polymer = 331
+#define AC_id_record_eps_rkf__mod__polymer id_record_eps_rkf__mod__polymer
+const int id_record_special_lnkmin0__mod__polymer = 340
+#define AC_id_record_special_lnkmin0__mod__polymer id_record_special_lnkmin0__mod__polymer
+const int xbot__mod__densitybcs = 1
+#define AC_xbot__mod__densitybcs xbot__mod__densitybcs
+const int fixed_buflen__mod__file_io = 128
+#define AC_fixed_buflen__mod__file_io fixed_buflen__mod__file_io
+const int id_block_persistent__mod__magnetic = 2000
+#define AC_id_block_persistent__mod__magnetic id_block_persistent__mod__magnetic
+const int id_record_random_seeds__mod__magnetic = 1
+#define AC_id_record_random_seeds__mod__magnetic id_record_random_seeds__mod__magnetic
+const int id_record_random_seeds2__mod__magnetic = 2
+#define AC_id_record_random_seeds2__mod__magnetic id_record_random_seeds2__mod__magnetic
+const int id_record_ism_t_next_old__mod__magnetic = 250
+#define AC_id_record_ism_t_next_old__mod__magnetic id_record_ism_t_next_old__mod__magnetic
+const int id_record_ism_pos_next_old__mod__magnetic = 251
+#define AC_id_record_ism_pos_next_old__mod__magnetic id_record_ism_pos_next_old__mod__magnetic
+const int id_record_ism_bold_mass__mod__magnetic = 252
+#define AC_id_record_ism_bold_mass__mod__magnetic id_record_ism_bold_mass__mod__magnetic
+const int id_record_ism_t_next_sni__mod__magnetic = 253
+#define AC_id_record_ism_t_next_sni__mod__magnetic id_record_ism_t_next_sni__mod__magnetic
+const int id_record_ism_t_next_snii__mod__magnetic = 254
+#define AC_id_record_ism_t_next_snii__mod__magnetic id_record_ism_t_next_snii__mod__magnetic
+const int id_record_ism_x_cluster__mod__magnetic = 255
+#define AC_id_record_ism_x_cluster__mod__magnetic id_record_ism_x_cluster__mod__magnetic
+const int id_record_ism_y_cluster__mod__magnetic = 256
+#define AC_id_record_ism_y_cluster__mod__magnetic id_record_ism_y_cluster__mod__magnetic
+const int id_record_ism_z_cluster__mod__magnetic = 260
+#define AC_id_record_ism_z_cluster__mod__magnetic id_record_ism_z_cluster__mod__magnetic
+const int id_record_ism_t_cluster__mod__magnetic = 261
+#define AC_id_record_ism_t_cluster__mod__magnetic id_record_ism_t_cluster__mod__magnetic
+const int id_record_ism_toggle_sni__mod__magnetic = 257
+#define AC_id_record_ism_toggle_sni__mod__magnetic id_record_ism_toggle_sni__mod__magnetic
+const int id_record_ism_toggle_snii__mod__magnetic = 258
+#define AC_id_record_ism_toggle_snii__mod__magnetic id_record_ism_toggle_snii__mod__magnetic
+const int id_record_ism_snrs__mod__magnetic = 259
+#define AC_id_record_ism_snrs__mod__magnetic id_record_ism_snrs__mod__magnetic
+const int id_record_ism_toggle_old__mod__magnetic = 1001
+#define AC_id_record_ism_toggle_old__mod__magnetic id_record_ism_toggle_old__mod__magnetic
+const int id_record_ism_snrs_old__mod__magnetic = 1002
+#define AC_id_record_ism_snrs_old__mod__magnetic id_record_ism_snrs_old__mod__magnetic
+const int id_record_forcing_location__mod__magnetic = 270
+#define AC_id_record_forcing_location__mod__magnetic id_record_forcing_location__mod__magnetic
+const int id_record_forcing_tsforce__mod__magnetic = 271
+#define AC_id_record_forcing_tsforce__mod__magnetic id_record_forcing_tsforce__mod__magnetic
+const int id_record_forcing_torus__mod__magnetic = 272
+#define AC_id_record_forcing_torus__mod__magnetic id_record_forcing_torus__mod__magnetic
+const int id_record_hydro_tphase__mod__magnetic = 280
+#define AC_id_record_hydro_tphase__mod__magnetic id_record_hydro_tphase__mod__magnetic
+const int id_record_hydro_phase1__mod__magnetic = 281
+#define AC_id_record_hydro_phase1__mod__magnetic id_record_hydro_phase1__mod__magnetic
+const int id_record_hydro_phase2__mod__magnetic = 282
+#define AC_id_record_hydro_phase2__mod__magnetic id_record_hydro_phase2__mod__magnetic
+const int id_record_hydro_tsforce__mod__magnetic = 284
+#define AC_id_record_hydro_tsforce__mod__magnetic id_record_hydro_tsforce__mod__magnetic
+const int id_record_hydro_location__mod__magnetic = 285
+#define AC_id_record_hydro_location__mod__magnetic id_record_hydro_location__mod__magnetic
+const int id_record_hydro_ampl__mod__magnetic = 286
+#define AC_id_record_hydro_ampl__mod__magnetic id_record_hydro_ampl__mod__magnetic
+const int id_record_hydro_wavenumber__mod__magnetic = 287
+#define AC_id_record_hydro_wavenumber__mod__magnetic id_record_hydro_wavenumber__mod__magnetic
+const int id_record_magnetic_phase__mod__magnetic = 311
+#define AC_id_record_magnetic_phase__mod__magnetic id_record_magnetic_phase__mod__magnetic
+const int id_record_magnetic_ampl__mod__magnetic = 312
+#define AC_id_record_magnetic_ampl__mod__magnetic id_record_magnetic_ampl__mod__magnetic
+const int id_record_shear_delta_y__mod__magnetic = 320
+#define AC_id_record_shear_delta_y__mod__magnetic id_record_shear_delta_y__mod__magnetic
+const int id_record_time_step__mod__magnetic = 330
+#define AC_id_record_time_step__mod__magnetic id_record_time_step__mod__magnetic
+const int id_record_eps_rkf__mod__magnetic = 331
+#define AC_id_record_eps_rkf__mod__magnetic id_record_eps_rkf__mod__magnetic
+const int id_record_special_lnkmin0__mod__magnetic = 340
+#define AC_id_record_special_lnkmin0__mod__magnetic id_record_special_lnkmin0__mod__magnetic
+const int nresi_max__mod__magnetic = 4
+#define AC_nresi_max__mod__magnetic nresi_max__mod__magnetic
+const int displacement__mod__io = 0
+#define AC_displacement__mod__io displacement__mod__io
+const int id_block_persistent__mod__forcing = 2000
+#define AC_id_block_persistent__mod__forcing id_block_persistent__mod__forcing
+const int id_record_random_seeds__mod__forcing = 1
+#define AC_id_record_random_seeds__mod__forcing id_record_random_seeds__mod__forcing
+const int id_record_random_seeds2__mod__forcing = 2
+#define AC_id_record_random_seeds2__mod__forcing id_record_random_seeds2__mod__forcing
+const int id_record_ism_t_next_old__mod__forcing = 250
+#define AC_id_record_ism_t_next_old__mod__forcing id_record_ism_t_next_old__mod__forcing
+const int id_record_ism_pos_next_old__mod__forcing = 251
+#define AC_id_record_ism_pos_next_old__mod__forcing id_record_ism_pos_next_old__mod__forcing
+const int id_record_ism_bold_mass__mod__forcing = 252
+#define AC_id_record_ism_bold_mass__mod__forcing id_record_ism_bold_mass__mod__forcing
+const int id_record_ism_t_next_sni__mod__forcing = 253
+#define AC_id_record_ism_t_next_sni__mod__forcing id_record_ism_t_next_sni__mod__forcing
+const int id_record_ism_t_next_snii__mod__forcing = 254
+#define AC_id_record_ism_t_next_snii__mod__forcing id_record_ism_t_next_snii__mod__forcing
+const int id_record_ism_x_cluster__mod__forcing = 255
+#define AC_id_record_ism_x_cluster__mod__forcing id_record_ism_x_cluster__mod__forcing
+const int id_record_ism_y_cluster__mod__forcing = 256
+#define AC_id_record_ism_y_cluster__mod__forcing id_record_ism_y_cluster__mod__forcing
+const int id_record_ism_z_cluster__mod__forcing = 260
+#define AC_id_record_ism_z_cluster__mod__forcing id_record_ism_z_cluster__mod__forcing
+const int id_record_ism_t_cluster__mod__forcing = 261
+#define AC_id_record_ism_t_cluster__mod__forcing id_record_ism_t_cluster__mod__forcing
+const int id_record_ism_toggle_sni__mod__forcing = 257
+#define AC_id_record_ism_toggle_sni__mod__forcing id_record_ism_toggle_sni__mod__forcing
+const int id_record_ism_toggle_snii__mod__forcing = 258
+#define AC_id_record_ism_toggle_snii__mod__forcing id_record_ism_toggle_snii__mod__forcing
+const int id_record_ism_snrs__mod__forcing = 259
+#define AC_id_record_ism_snrs__mod__forcing id_record_ism_snrs__mod__forcing
+const int id_record_ism_toggle_old__mod__forcing = 1001
+#define AC_id_record_ism_toggle_old__mod__forcing id_record_ism_toggle_old__mod__forcing
+const int id_record_ism_snrs_old__mod__forcing = 1002
+#define AC_id_record_ism_snrs_old__mod__forcing id_record_ism_snrs_old__mod__forcing
+const int id_record_forcing_location__mod__forcing = 270
+#define AC_id_record_forcing_location__mod__forcing id_record_forcing_location__mod__forcing
+const int id_record_forcing_tsforce__mod__forcing = 271
+#define AC_id_record_forcing_tsforce__mod__forcing id_record_forcing_tsforce__mod__forcing
+const int id_record_forcing_torus__mod__forcing = 272
+#define AC_id_record_forcing_torus__mod__forcing id_record_forcing_torus__mod__forcing
+const int id_record_hydro_tphase__mod__forcing = 280
+#define AC_id_record_hydro_tphase__mod__forcing id_record_hydro_tphase__mod__forcing
+const int id_record_hydro_phase1__mod__forcing = 281
+#define AC_id_record_hydro_phase1__mod__forcing id_record_hydro_phase1__mod__forcing
+const int id_record_hydro_phase2__mod__forcing = 282
+#define AC_id_record_hydro_phase2__mod__forcing id_record_hydro_phase2__mod__forcing
+const int id_record_hydro_tsforce__mod__forcing = 284
+#define AC_id_record_hydro_tsforce__mod__forcing id_record_hydro_tsforce__mod__forcing
+const int id_record_hydro_location__mod__forcing = 285
+#define AC_id_record_hydro_location__mod__forcing id_record_hydro_location__mod__forcing
+const int id_record_hydro_ampl__mod__forcing = 286
+#define AC_id_record_hydro_ampl__mod__forcing id_record_hydro_ampl__mod__forcing
+const int id_record_hydro_wavenumber__mod__forcing = 287
+#define AC_id_record_hydro_wavenumber__mod__forcing id_record_hydro_wavenumber__mod__forcing
+const int id_record_magnetic_phase__mod__forcing = 311
+#define AC_id_record_magnetic_phase__mod__forcing id_record_magnetic_phase__mod__forcing
+const int id_record_magnetic_ampl__mod__forcing = 312
+#define AC_id_record_magnetic_ampl__mod__forcing id_record_magnetic_ampl__mod__forcing
+const int id_record_shear_delta_y__mod__forcing = 320
+#define AC_id_record_shear_delta_y__mod__forcing id_record_shear_delta_y__mod__forcing
+const int id_record_time_step__mod__forcing = 330
+#define AC_id_record_time_step__mod__forcing id_record_time_step__mod__forcing
+const int id_record_eps_rkf__mod__forcing = 331
+#define AC_id_record_eps_rkf__mod__forcing id_record_eps_rkf__mod__forcing
+const int id_record_special_lnkmin0__mod__forcing = 340
+#define AC_id_record_special_lnkmin0__mod__forcing id_record_special_lnkmin0__mod__forcing
+const int lsh_max__mod__hydro = 2
+#define AC_lsh_max__mod__hydro lsh_max__mod__hydro
+const int ilnrho_ss__mod__initcond = 1
+#define AC_ilnrho_ss__mod__initcond ilnrho_ss__mod__initcond
+const int ilnrho_ee__mod__initcond = 2
+#define AC_ilnrho_ee__mod__initcond ilnrho_ee__mod__initcond
+const int ilnrho_pp__mod__initcond = 3
+#define AC_ilnrho_pp__mod__initcond ilnrho_pp__mod__initcond
+const int ilnrho_lntt__mod__initcond = 4
+#define AC_ilnrho_lntt__mod__initcond ilnrho_lntt__mod__initcond
+const int ilnrho_cs2__mod__initcond = 5
+#define AC_ilnrho_cs2__mod__initcond ilnrho_cs2__mod__initcond
+const int irho_cs2__mod__initcond = 6
+#define AC_irho_cs2__mod__initcond irho_cs2__mod__initcond
+const int irho_ss__mod__initcond = 7
+#define AC_irho_ss__mod__initcond irho_ss__mod__initcond
+const int irho_lntt__mod__initcond = 8
+#define AC_irho_lntt__mod__initcond irho_lntt__mod__initcond
+const int ilnrho_tt__mod__initcond = 9
+#define AC_ilnrho_tt__mod__initcond ilnrho_tt__mod__initcond
+const int irho_tt__mod__initcond = 10
+#define AC_irho_tt__mod__initcond irho_tt__mod__initcond
+const int ipp_ss__mod__initcond = 11
+#define AC_ipp_ss__mod__initcond ipp_ss__mod__initcond
+const int ipp_cs2__mod__initcond = 12
+#define AC_ipp_cs2__mod__initcond ipp_cs2__mod__initcond
+const int irho_eth__mod__initcond = 13
+#define AC_irho_eth__mod__initcond irho_eth__mod__initcond
+const int ilnrho_eth__mod__initcond = 14
+#define AC_ilnrho_eth__mod__initcond ilnrho_eth__mod__initcond
+const int irho_ee__mod__initcond = 15
+#define AC_irho_ee__mod__initcond irho_ee__mod__initcond
+const int irho_pp__mod__initcond = 16
+#define AC_irho_pp__mod__initcond irho_pp__mod__initcond
+const int ilnrho_ss__mod__dustdensity = 1
+#define AC_ilnrho_ss__mod__dustdensity ilnrho_ss__mod__dustdensity
+const int ilnrho_ee__mod__dustdensity = 2
+#define AC_ilnrho_ee__mod__dustdensity ilnrho_ee__mod__dustdensity
+const int ilnrho_pp__mod__dustdensity = 3
+#define AC_ilnrho_pp__mod__dustdensity ilnrho_pp__mod__dustdensity
+const int ilnrho_lntt__mod__dustdensity = 4
+#define AC_ilnrho_lntt__mod__dustdensity ilnrho_lntt__mod__dustdensity
+const int ilnrho_cs2__mod__dustdensity = 5
+#define AC_ilnrho_cs2__mod__dustdensity ilnrho_cs2__mod__dustdensity
+const int irho_cs2__mod__dustdensity = 6
+#define AC_irho_cs2__mod__dustdensity irho_cs2__mod__dustdensity
+const int irho_ss__mod__dustdensity = 7
+#define AC_irho_ss__mod__dustdensity irho_ss__mod__dustdensity
+const int irho_lntt__mod__dustdensity = 8
+#define AC_irho_lntt__mod__dustdensity irho_lntt__mod__dustdensity
+const int ilnrho_tt__mod__dustdensity = 9
+#define AC_ilnrho_tt__mod__dustdensity ilnrho_tt__mod__dustdensity
+const int irho_tt__mod__dustdensity = 10
+#define AC_irho_tt__mod__dustdensity irho_tt__mod__dustdensity
+const int ipp_ss__mod__dustdensity = 11
+#define AC_ipp_ss__mod__dustdensity ipp_ss__mod__dustdensity
+const int ipp_cs2__mod__dustdensity = 12
+#define AC_ipp_cs2__mod__dustdensity ipp_cs2__mod__dustdensity
+const int irho_eth__mod__dustdensity = 13
+#define AC_irho_eth__mod__dustdensity irho_eth__mod__dustdensity
+const int ilnrho_eth__mod__dustdensity = 14
+#define AC_ilnrho_eth__mod__dustdensity ilnrho_eth__mod__dustdensity
+const int irho_ee__mod__dustdensity = 15
+#define AC_irho_ee__mod__dustdensity irho_ee__mod__dustdensity
+const int irho_pp__mod__dustdensity = 16
+#define AC_irho_pp__mod__dustdensity irho_pp__mod__dustdensity
+const int ndiffd_max__mod__dustdensity = 4
+#define AC_ndiffd_max__mod__dustdensity ndiffd_max__mod__dustdensity
+const int mmom__mod__dustdensity = 24
+#define AC_mmom__mod__dustdensity mmom__mod__dustdensity
+const int ixbeam__mod__mpicomm = 1
+#define AC_ixbeam__mod__mpicomm ixbeam__mod__mpicomm
+const int iybeam__mod__mpicomm = 2
+#define AC_iybeam__mod__mpicomm iybeam__mod__mpicomm
+const int izbeam__mod__mpicomm = 3
+#define AC_izbeam__mod__mpicomm izbeam__mod__mpicomm
+const int ixyplane__mod__mpicomm = 12
+#define AC_ixyplane__mod__mpicomm ixyplane__mod__mpicomm
+const int ixzplane__mod__mpicomm = 13
+#define AC_ixzplane__mod__mpicomm ixzplane__mod__mpicomm
+const int iyzplane__mod__mpicomm = 23
+#define AC_iyzplane__mod__mpicomm iyzplane__mod__mpicomm
+const int inyu__mod__mpicomm = 1
+#define AC_inyu__mod__mpicomm inyu__mod__mpicomm
+const int inzu__mod__mpicomm = 2
+#define AC_inzu__mod__mpicomm inzu__mod__mpicomm
+const int inyl__mod__mpicomm = 3
+#define AC_inyl__mod__mpicomm inyl__mod__mpicomm
+const int inzl__mod__mpicomm = 4
+#define AC_inzl__mod__mpicomm inzl__mod__mpicomm
+const int inuu__mod__mpicomm = 1
+#define AC_inuu__mod__mpicomm inuu__mod__mpicomm
+const int inlu__mod__mpicomm = 2
+#define AC_inlu__mod__mpicomm inlu__mod__mpicomm
+const int inll__mod__mpicomm = 3
+#define AC_inll__mod__mpicomm inll__mod__mpicomm
+const int inul__mod__mpicomm = 4
+#define AC_inul__mod__mpicomm inul__mod__mpicomm
+const int ircv__mod__mpicomm = 1
+#define AC_ircv__mod__mpicomm ircv__mod__mpicomm
+const int isnd__mod__mpicomm = 2
+#define AC_isnd__mod__mpicomm isnd__mod__mpicomm
+const int tolowx__mod__mpicomm = 13
+#define AC_tolowx__mod__mpicomm tolowx__mod__mpicomm
+const int touppx__mod__mpicomm = 14
+#define AC_touppx__mod__mpicomm touppx__mod__mpicomm
+const int tolowy__mod__mpicomm = 3
+#define AC_tolowy__mod__mpicomm tolowy__mod__mpicomm
+const int touppy__mod__mpicomm = 4
+#define AC_touppy__mod__mpicomm touppy__mod__mpicomm
+const int tolowz__mod__mpicomm = 5
+#define AC_tolowz__mod__mpicomm tolowz__mod__mpicomm
+const int touppz__mod__mpicomm = 6
+#define AC_touppz__mod__mpicomm touppz__mod__mpicomm
+const int toll__mod__mpicomm = 7
+#define AC_toll__mod__mpicomm toll__mod__mpicomm
+const int toul__mod__mpicomm = 8
+#define AC_toul__mod__mpicomm toul__mod__mpicomm
+const int touu__mod__mpicomm = 9
+#define AC_touu__mod__mpicomm touu__mod__mpicomm
+const int tolu__mod__mpicomm = 10
+#define AC_tolu__mod__mpicomm tolu__mod__mpicomm
+const int io_perm__mod__mpicomm = 20
+#define AC_io_perm__mod__mpicomm io_perm__mod__mpicomm
+const int io_succ__mod__mpicomm = 21
+#define AC_io_succ__mod__mpicomm io_succ__mod__mpicomm
+const int shiftn__mod__mpicomm = 22
+#define AC_shiftn__mod__mpicomm shiftn__mod__mpicomm
+const int shifts__mod__mpicomm = 23
+#define AC_shifts__mod__mpicomm shifts__mod__mpicomm
+const int tonf__mod__mpicomm = 24
+#define AC_tonf__mod__mpicomm tonf__mod__mpicomm
+const int tonb__mod__mpicomm = 25
+#define AC_tonb__mod__mpicomm tonb__mod__mpicomm
+const int tosf__mod__mpicomm = 26
+#define AC_tosf__mod__mpicomm tosf__mod__mpicomm
+const int tosb__mod__mpicomm = 27
+#define AC_tosb__mod__mpicomm tosb__mod__mpicomm
+const int qtag_yz__mod__mpicomm = 250
+#define AC_qtag_yz__mod__mpicomm qtag_yz__mod__mpicomm
+const int qtag_zx__mod__mpicomm = 300
+#define AC_qtag_zx__mod__mpicomm qtag_zx__mod__mpicomm
+const int qtag_xy__mod__mpicomm = 350
+#define AC_qtag_xy__mod__mpicomm qtag_xy__mod__mpicomm
+const int left__mod__mpicomm = 1
+#define AC_left__mod__mpicomm left__mod__mpicomm
+const int mid__mod__mpicomm = 2
+#define AC_mid__mod__mpicomm mid__mod__mpicomm
+const int right__mod__mpicomm = 3
+#define AC_right__mod__mpicomm right__mod__mpicomm
+const int nil__mod__mpicomm = 0
+#define AC_nil__mod__mpicomm nil__mod__mpicomm
+const int iterm_default__mod__messages = 0
+#define AC_iterm_default__mod__messages iterm_default__mod__messages
+const int iterm_bright__mod__messages = 1
+#define AC_iterm_bright__mod__messages iterm_bright__mod__messages
+const int iterm_underline__mod__messages = 4
+#define AC_iterm_underline__mod__messages iterm_underline__mod__messages
+const int iterm_flash__mod__messages = 5
+#define AC_iterm_flash__mod__messages iterm_flash__mod__messages
+const int iterm_fg_black__mod__messages = 30
+#define AC_iterm_fg_black__mod__messages iterm_fg_black__mod__messages
+const int iterm_fg_red__mod__messages = 31
+#define AC_iterm_fg_red__mod__messages iterm_fg_red__mod__messages
+const int iterm_fg_green__mod__messages = 32
+#define AC_iterm_fg_green__mod__messages iterm_fg_green__mod__messages
+const int iterm_fg_yellow__mod__messages = 33
+#define AC_iterm_fg_yellow__mod__messages iterm_fg_yellow__mod__messages
+const int iterm_fg_blue__mod__messages = 34
+#define AC_iterm_fg_blue__mod__messages iterm_fg_blue__mod__messages
+const int iterm_fg_magenta__mod__messages = 35
+#define AC_iterm_fg_magenta__mod__messages iterm_fg_magenta__mod__messages
+const int iterm_fg_cyan__mod__messages = 36
+#define AC_iterm_fg_cyan__mod__messages iterm_fg_cyan__mod__messages
+const int iterm_fg_white__mod__messages = 37
+#define AC_iterm_fg_white__mod__messages iterm_fg_white__mod__messages
+const int iterm_bg_black__mod__messages = 40
+#define AC_iterm_bg_black__mod__messages iterm_bg_black__mod__messages
+const int iterm_bg_red__mod__messages = 41
+#define AC_iterm_bg_red__mod__messages iterm_bg_red__mod__messages
+const int iterm_bg_green__mod__messages = 42
+#define AC_iterm_bg_green__mod__messages iterm_bg_green__mod__messages
+const int iterm_bg_yellow__mod__messages = 43
+#define AC_iterm_bg_yellow__mod__messages iterm_bg_yellow__mod__messages
+const int iterm_bg_blue__mod__messages = 44
+#define AC_iterm_bg_blue__mod__messages iterm_bg_blue__mod__messages
+const int iterm_bg_magenta__mod__messages = 45
+#define AC_iterm_bg_magenta__mod__messages iterm_bg_magenta__mod__messages
+const int iterm_bg_cyan__mod__messages = 46
+#define AC_iterm_bg_cyan__mod__messages iterm_bg_cyan__mod__messages
+const int iip_everything__mod__messages = 0
+#define AC_iip_everything__mod__messages iip_everything__mod__messages
+const int iip_default__mod__messages = 0
+#define AC_iip_default__mod__messages iip_default__mod__messages
+const int iinformation_ip__mod__messages = 1000
+#define AC_iinformation_ip__mod__messages iinformation_ip__mod__messages
+const int inyu__mod__solid_cells_mpicomm = 1
+#define AC_inyu__mod__solid_cells_mpicomm inyu__mod__solid_cells_mpicomm
+const int inzu__mod__solid_cells_mpicomm = 2
+#define AC_inzu__mod__solid_cells_mpicomm inzu__mod__solid_cells_mpicomm
+const int inyl__mod__solid_cells_mpicomm = 3
+#define AC_inyl__mod__solid_cells_mpicomm inyl__mod__solid_cells_mpicomm
+const int inzl__mod__solid_cells_mpicomm = 4
+#define AC_inzl__mod__solid_cells_mpicomm inzl__mod__solid_cells_mpicomm
+const int inuu__mod__solid_cells_mpicomm = 1
+#define AC_inuu__mod__solid_cells_mpicomm inuu__mod__solid_cells_mpicomm
+const int inlu__mod__solid_cells_mpicomm = 2
+#define AC_inlu__mod__solid_cells_mpicomm inlu__mod__solid_cells_mpicomm
+const int inll__mod__solid_cells_mpicomm = 3
+#define AC_inll__mod__solid_cells_mpicomm inll__mod__solid_cells_mpicomm
+const int inul__mod__solid_cells_mpicomm = 4
+#define AC_inul__mod__solid_cells_mpicomm inul__mod__solid_cells_mpicomm
+const int ircv__mod__solid_cells_mpicomm = 1
+#define AC_ircv__mod__solid_cells_mpicomm ircv__mod__solid_cells_mpicomm
+const int isnd__mod__solid_cells_mpicomm = 2
+#define AC_isnd__mod__solid_cells_mpicomm isnd__mod__solid_cells_mpicomm
+const int tolowx__mod__solid_cells_mpicomm = 13
+#define AC_tolowx__mod__solid_cells_mpicomm tolowx__mod__solid_cells_mpicomm
+const int touppx__mod__solid_cells_mpicomm = 14
+#define AC_touppx__mod__solid_cells_mpicomm touppx__mod__solid_cells_mpicomm
+const int tolowy__mod__solid_cells_mpicomm = 3
+#define AC_tolowy__mod__solid_cells_mpicomm tolowy__mod__solid_cells_mpicomm
+const int touppy__mod__solid_cells_mpicomm = 4
+#define AC_touppy__mod__solid_cells_mpicomm touppy__mod__solid_cells_mpicomm
+const int tolowz__mod__solid_cells_mpicomm = 5
+#define AC_tolowz__mod__solid_cells_mpicomm tolowz__mod__solid_cells_mpicomm
+const int touppz__mod__solid_cells_mpicomm = 6
+#define AC_touppz__mod__solid_cells_mpicomm touppz__mod__solid_cells_mpicomm
+const int toll__mod__solid_cells_mpicomm = 7
+#define AC_toll__mod__solid_cells_mpicomm toll__mod__solid_cells_mpicomm
+const int toul__mod__solid_cells_mpicomm = 8
+#define AC_toul__mod__solid_cells_mpicomm toul__mod__solid_cells_mpicomm
+const int touu__mod__solid_cells_mpicomm = 9
+#define AC_touu__mod__solid_cells_mpicomm touu__mod__solid_cells_mpicomm
+const int tolu__mod__solid_cells_mpicomm = 10
+#define AC_tolu__mod__solid_cells_mpicomm tolu__mod__solid_cells_mpicomm
+const int id_block_persistent__mod__persist = 2000
+#define AC_id_block_persistent__mod__persist id_block_persistent__mod__persist
+const int id_record_random_seeds__mod__persist = 1
+#define AC_id_record_random_seeds__mod__persist id_record_random_seeds__mod__persist
+const int id_record_random_seeds2__mod__persist = 2
+#define AC_id_record_random_seeds2__mod__persist id_record_random_seeds2__mod__persist
+const int id_record_ism_t_next_old__mod__persist = 250
+#define AC_id_record_ism_t_next_old__mod__persist id_record_ism_t_next_old__mod__persist
+const int id_record_ism_pos_next_old__mod__persist = 251
+#define AC_id_record_ism_pos_next_old__mod__persist id_record_ism_pos_next_old__mod__persist
+const int id_record_ism_bold_mass__mod__persist = 252
+#define AC_id_record_ism_bold_mass__mod__persist id_record_ism_bold_mass__mod__persist
+const int id_record_ism_t_next_sni__mod__persist = 253
+#define AC_id_record_ism_t_next_sni__mod__persist id_record_ism_t_next_sni__mod__persist
+const int id_record_ism_t_next_snii__mod__persist = 254
+#define AC_id_record_ism_t_next_snii__mod__persist id_record_ism_t_next_snii__mod__persist
+const int id_record_ism_x_cluster__mod__persist = 255
+#define AC_id_record_ism_x_cluster__mod__persist id_record_ism_x_cluster__mod__persist
+const int id_record_ism_y_cluster__mod__persist = 256
+#define AC_id_record_ism_y_cluster__mod__persist id_record_ism_y_cluster__mod__persist
+const int id_record_ism_z_cluster__mod__persist = 260
+#define AC_id_record_ism_z_cluster__mod__persist id_record_ism_z_cluster__mod__persist
+const int id_record_ism_t_cluster__mod__persist = 261
+#define AC_id_record_ism_t_cluster__mod__persist id_record_ism_t_cluster__mod__persist
+const int id_record_ism_toggle_sni__mod__persist = 257
+#define AC_id_record_ism_toggle_sni__mod__persist id_record_ism_toggle_sni__mod__persist
+const int id_record_ism_toggle_snii__mod__persist = 258
+#define AC_id_record_ism_toggle_snii__mod__persist id_record_ism_toggle_snii__mod__persist
+const int id_record_ism_snrs__mod__persist = 259
+#define AC_id_record_ism_snrs__mod__persist id_record_ism_snrs__mod__persist
+const int id_record_ism_toggle_old__mod__persist = 1001
+#define AC_id_record_ism_toggle_old__mod__persist id_record_ism_toggle_old__mod__persist
+const int id_record_ism_snrs_old__mod__persist = 1002
+#define AC_id_record_ism_snrs_old__mod__persist id_record_ism_snrs_old__mod__persist
+const int id_record_forcing_location__mod__persist = 270
+#define AC_id_record_forcing_location__mod__persist id_record_forcing_location__mod__persist
+const int id_record_forcing_tsforce__mod__persist = 271
+#define AC_id_record_forcing_tsforce__mod__persist id_record_forcing_tsforce__mod__persist
+const int id_record_forcing_torus__mod__persist = 272
+#define AC_id_record_forcing_torus__mod__persist id_record_forcing_torus__mod__persist
+const int id_record_hydro_tphase__mod__persist = 280
+#define AC_id_record_hydro_tphase__mod__persist id_record_hydro_tphase__mod__persist
+const int id_record_hydro_phase1__mod__persist = 281
+#define AC_id_record_hydro_phase1__mod__persist id_record_hydro_phase1__mod__persist
+const int id_record_hydro_phase2__mod__persist = 282
+#define AC_id_record_hydro_phase2__mod__persist id_record_hydro_phase2__mod__persist
+const int id_record_hydro_tsforce__mod__persist = 284
+#define AC_id_record_hydro_tsforce__mod__persist id_record_hydro_tsforce__mod__persist
+const int id_record_hydro_location__mod__persist = 285
+#define AC_id_record_hydro_location__mod__persist id_record_hydro_location__mod__persist
+const int id_record_hydro_ampl__mod__persist = 286
+#define AC_id_record_hydro_ampl__mod__persist id_record_hydro_ampl__mod__persist
+const int id_record_hydro_wavenumber__mod__persist = 287
+#define AC_id_record_hydro_wavenumber__mod__persist id_record_hydro_wavenumber__mod__persist
+const int id_record_magnetic_phase__mod__persist = 311
+#define AC_id_record_magnetic_phase__mod__persist id_record_magnetic_phase__mod__persist
+const int id_record_magnetic_ampl__mod__persist = 312
+#define AC_id_record_magnetic_ampl__mod__persist id_record_magnetic_ampl__mod__persist
+const int id_record_shear_delta_y__mod__persist = 320
+#define AC_id_record_shear_delta_y__mod__persist id_record_shear_delta_y__mod__persist
+const int id_record_time_step__mod__persist = 330
+#define AC_id_record_time_step__mod__persist id_record_time_step__mod__persist
+const int id_record_eps_rkf__mod__persist = 331
+#define AC_id_record_eps_rkf__mod__persist id_record_eps_rkf__mod__persist
+const int id_record_special_lnkmin0__mod__persist = 340
+#define AC_id_record_special_lnkmin0__mod__persist id_record_special_lnkmin0__mod__persist
+const int ndiff_max__mod__neutraldensity = 4
+#define AC_ndiff_max__mod__neutraldensity ndiff_max__mod__neutraldensity
+const int ifarray_type_nosuchtype__mod__farraymanager = 0
+#define AC_ifarray_type_nosuchtype__mod__farraymanager ifarray_type_nosuchtype__mod__farraymanager
+const int ifarray_type_pde__mod__farraymanager = 1
+#define AC_ifarray_type_pde__mod__farraymanager ifarray_type_pde__mod__farraymanager
+const int ifarray_type_comm_auxiliary__mod__farraymanager = 2
+#define AC_ifarray_type_comm_auxiliary__mod__farraymanager ifarray_type_comm_auxiliary__mod__farraymanager
+const int ifarray_type_auxiliary__mod__farraymanager = 3
+#define AC_ifarray_type_auxiliary__mod__farraymanager ifarray_type_auxiliary__mod__farraymanager
+const int ifarray_type_global__mod__farraymanager = 4
+#define AC_ifarray_type_global__mod__farraymanager ifarray_type_global__mod__farraymanager
+const int ifarray_type_scratch__mod__farraymanager = 5
+#define AC_ifarray_type_scratch__mod__farraymanager ifarray_type_scratch__mod__farraymanager
+const int ifarray_err_nosuchvar__mod__farraymanager = 1
+#define AC_ifarray_err_nosuchvar__mod__farraymanager ifarray_err_nosuchvar__mod__farraymanager
+const int ifarray_err_nosuchcomponent__mod__farraymanager = 2
+#define AC_ifarray_err_nosuchcomponent__mod__farraymanager ifarray_err_nosuchcomponent__mod__farraymanager
+const int ifarray_err_wrongtype__mod__farraymanager = 3
+#define AC_ifarray_err_wrongtype__mod__farraymanager ifarray_err_wrongtype__mod__farraymanager
+const int ifarray_err_wrongsize__mod__farraymanager = 4
+#define AC_ifarray_err_wrongsize__mod__farraymanager ifarray_err_wrongsize__mod__farraymanager
+const int ifarray_err_duplicate__mod__farraymanager = 5
+#define AC_ifarray_err_duplicate__mod__farraymanager ifarray_err_duplicate__mod__farraymanager
+const int ifarray_err_indexmismatch__mod__farraymanager = 6
+#define AC_ifarray_err_indexmismatch__mod__farraymanager ifarray_err_indexmismatch__mod__farraymanager
+const int ifarray_err_outofspace__mod__farraymanager = 7
+#define AC_ifarray_err_outofspace__mod__farraymanager ifarray_err_outofspace__mod__farraymanager
+const int scalar__mod__farraymanager = 0
+#define AC_scalar__mod__farraymanager scalar__mod__farraymanager
+const int vector__mod__farraymanager = 3
+#define AC_vector__mod__farraymanager vector__mod__farraymanager
+const int vector2__mod__farraymanager = 2
+#define AC_vector2__mod__farraymanager vector2__mod__farraymanager
+const int vector4__mod__farraymanager = 4
+#define AC_vector4__mod__farraymanager vector4__mod__farraymanager
+const int tensor2__mod__farraymanager = 9
+#define AC_tensor2__mod__farraymanager tensor2__mod__farraymanager
+const int tensor2sym__mod__farraymanager = 6
+#define AC_tensor2sym__mod__farraymanager tensor2sym__mod__farraymanager
+const int tensor3__mod__farraymanager = 27
+#define AC_tensor3__mod__farraymanager tensor3__mod__farraymanager
+const int lun_output__mod__particles_cdata = 93
+#define AC_lun_output__mod__particles_cdata lun_output__mod__particles_cdata
+const int maxp__mod__particles_cdata = 20
+#define AC_maxp__mod__particles_cdata maxp__mod__particles_cdata
+const int cic__mod__particles_cdata = 0
+#define AC_cic__mod__particles_cdata cic__mod__particles_cdata
+const int tsc__mod__particles_cdata = 1
+#define AC_tsc__mod__particles_cdata tsc__mod__particles_cdata
+const int ngp__mod__particles_cdata = 2
+#define AC_ngp__mod__particles_cdata ngp__mod__particles_cdata
+const int ilnrho_ss__mod__equationofstate = 1
+#define AC_ilnrho_ss__mod__equationofstate ilnrho_ss__mod__equationofstate
+const int ilnrho_ee__mod__equationofstate = 2
+#define AC_ilnrho_ee__mod__equationofstate ilnrho_ee__mod__equationofstate
+const int ilnrho_pp__mod__equationofstate = 3
+#define AC_ilnrho_pp__mod__equationofstate ilnrho_pp__mod__equationofstate
+const int ilnrho_lntt__mod__equationofstate = 4
+#define AC_ilnrho_lntt__mod__equationofstate ilnrho_lntt__mod__equationofstate
+const int ilnrho_cs2__mod__equationofstate = 5
+#define AC_ilnrho_cs2__mod__equationofstate ilnrho_cs2__mod__equationofstate
+const int irho_cs2__mod__equationofstate = 6
+#define AC_irho_cs2__mod__equationofstate irho_cs2__mod__equationofstate
+const int irho_ss__mod__equationofstate = 7
+#define AC_irho_ss__mod__equationofstate irho_ss__mod__equationofstate
+const int irho_lntt__mod__equationofstate = 8
+#define AC_irho_lntt__mod__equationofstate irho_lntt__mod__equationofstate
+const int ilnrho_tt__mod__equationofstate = 9
+#define AC_ilnrho_tt__mod__equationofstate ilnrho_tt__mod__equationofstate
+const int irho_tt__mod__equationofstate = 10
+#define AC_irho_tt__mod__equationofstate irho_tt__mod__equationofstate
+const int ipp_ss__mod__equationofstate = 11
+#define AC_ipp_ss__mod__equationofstate ipp_ss__mod__equationofstate
+const int ipp_cs2__mod__equationofstate = 12
+#define AC_ipp_cs2__mod__equationofstate ipp_cs2__mod__equationofstate
+const int irho_eth__mod__equationofstate = 13
+#define AC_irho_eth__mod__equationofstate irho_eth__mod__equationofstate
+const int ilnrho_eth__mod__equationofstate = 14
+#define AC_ilnrho_eth__mod__equationofstate ilnrho_eth__mod__equationofstate
+const int irho_ee__mod__equationofstate = 15
+#define AC_irho_ee__mod__equationofstate irho_ee__mod__equationofstate
+const int irho_pp__mod__equationofstate = 16
+#define AC_irho_pp__mod__equationofstate irho_pp__mod__equationofstate
+const int xbot__mod__equationofstate = 1
+#define AC_xbot__mod__equationofstate xbot__mod__equationofstate
+const int lun_input__mod__hdf5_io = 89
+#define AC_lun_input__mod__hdf5_io lun_input__mod__hdf5_io
+const int lun_output__mod__hdf5_io = 92
+#define AC_lun_output__mod__hdf5_io lun_output__mod__hdf5_io
+const int sz_slc_chunk__mod__boundcond = 20
+#define AC_sz_slc_chunk__mod__boundcond sz_slc_chunk__mod__boundcond
+const int num_after_timestep__mod__cdata = 5
+#define AC_num_after_timestep__mod__cdata num_after_timestep__mod__cdata
+#define AC_nx__mod__cparam nx
+#define AC_n_forcing_cont_max__mod__cparam n_forcing_cont_max
+#define AC_ndustspec0__mod__cparam ndustspec0
+#define AC_dimensionality__mod__cparam dimensionality
+#define AC_mvar__mod__cparam mvar
+#define AC_maux__mod__cparam maux
+#define AC_maux_com__mod__cparam maux_com
+#define AC_mogaux__mod__cparam mogaux
+#define AC_mglobal__mod__cparam mglobal
+#define AC_mscratch__mod__cparam mscratch
+#define AC_mpvar__mod__cparam mpvar
+#define AC_mpaux__mod__cparam mpaux
+#define AC_mqvar__mod__cparam mqvar
+#define AC_mqaux__mod__cparam mqaux
+#define AC_ndustspec__mod__cparam ndustspec
+#define AC_nchemspec__mod__cparam nchemspec
+#define AC_npscalar__mod__cparam npscalar
+#define AC_nadsspec__mod__cparam nadsspec
+#define AC_nsurfreacspec__mod__cparam nsurfreacspec
+#define AC_ndustrad__mod__cparam ndustrad
+#define AC_npartdisp__mod__cparam npartdisp
+#define AC_npar__mod__cparam npar
+#define AC_nqpar__mod__cparam nqpar
+#define AC_npar_mig__mod__cparam npar_mig
+#define AC_npar_species__mod__cparam npar_species
+#define AC_npar_stalk__mod__cparam npar_stalk
+#define AC_nbrickx__mod__cparam nbrickx
+#define AC_nbricky__mod__cparam nbricky
+#define AC_nbrickz__mod__cparam nbrickz
+#define AC_nblockmax__mod__cparam nblockmax
+#define AC_lviscosity__mod__cparam lviscosity
+#define AC_ltestfield_z__mod__cparam ltestfield_z
+#define AC_lshock__mod__cparam lshock
+#define AC_lshear__mod__cparam lshear
+#define AC_lradiation__mod__cparam lradiation
+#define AC_lpscalar__mod__cparam lpscalar
+#define AC_lpolymer__mod__cparam lpolymer
+#define AC_lparticles_tetrad__mod__cparam lparticles_tetrad
+#define AC_lparticles_caustics__mod__cparam lparticles_caustics
+#define AC_lparticles_lyapunov__mod__cparam lparticles_lyapunov
+#define AC_lneutralvelocity__mod__cparam lneutralvelocity
+#define AC_lmagn_mf__mod__cparam lmagn_mf
+#define AC_lmagnetic__mod__cparam lmagnetic
+#define AC_lhydro_potential__mod__cparam lhydro_potential
+#define AC_lhydro__mod__cparam lhydro
+#define AC_lgrav__mod__cparam lgrav
+#define AC_leos__mod__cparam leos
+#define AC_lthermal_energy__mod__cparam lthermal_energy
+#define AC_ltemperature__mod__cparam ltemperature
+#define AC_lentropy__mod__cparam lentropy
+#define AC_ldustvelocity__mod__cparam ldustvelocity
+#define AC_ldustdensity__mod__cparam ldustdensity
+#define AC_nghost__mod__cparam nghost
+#define AC_lboussinesq__mod__cparam lboussinesq
+#define AC_lanelastic__mod__cparam lanelastic
+#define AC_ldensity__mod__cparam ldensity
+#define AC_lcosmicray__mod__cparam lcosmicray
+#define AC_lchemistry__mod__cparam lchemistry
+#define AC_lborder_profiles__mod__cparam lborder_profiles
+#define AC_lenergy__mod__cparam lenergy
+#define AC_penc_name_len__mod__cparam penc_name_len
+#define AC_npencils__mod__cparam npencils
+#define AC_i_acc__mod__cparam i_acc
+#define AC_i_ssat__mod__cparam i_ssat
+#define AC_i_ttc__mod__cparam i_ttc
+#define AC_i_ywater__mod__cparam i_ywater
+#define AC_i_lambda__mod__cparam i_lambda
+#define AC_i_chem_conc__mod__cparam i_chem_conc
+#define AC_i_nucl_rmin__mod__cparam i_nucl_rmin
+#define AC_i_nucl_rate__mod__cparam i_nucl_rate
+#define AC_i_conc_satm__mod__cparam i_conc_satm
+#define AC_i_ff_cond__mod__cparam i_ff_cond
+#define AC_i_lnrho__mod__cparam i_lnrho
+#define AC_i_rho__mod__cparam i_rho
+#define AC_i_rho1__mod__cparam i_rho1
+#define AC_i_glnrho__mod__cparam i_glnrho
+#define AC_i_grho__mod__cparam i_grho
+#define AC_i_uglnrho__mod__cparam i_uglnrho
+#define AC_i_ugrho__mod__cparam i_ugrho
+#define AC_i_glnrho2__mod__cparam i_glnrho2
+#define AC_i_del2lnrho__mod__cparam i_del2lnrho
+#define AC_i_del2rho__mod__cparam i_del2rho
+#define AC_i_del6lnrho__mod__cparam i_del6lnrho
+#define AC_i_del6rho__mod__cparam i_del6rho
+#define AC_i_hlnrho__mod__cparam i_hlnrho
+#define AC_i_sglnrho__mod__cparam i_sglnrho
+#define AC_i_uij5glnrho__mod__cparam i_uij5glnrho
+#define AC_i_transprho__mod__cparam i_transprho
+#define AC_i_ekin__mod__cparam i_ekin
+#define AC_i_uuadvec_glnrho__mod__cparam i_uuadvec_glnrho
+#define AC_i_uuadvec_grho__mod__cparam i_uuadvec_grho
+#define AC_i_rhos1__mod__cparam i_rhos1
+#define AC_i_glnrhos__mod__cparam i_glnrhos
+#define AC_i_totenergy_rel__mod__cparam i_totenergy_rel
+#define AC_i_divss__mod__cparam i_divss
+#define AC_i_rhod__mod__cparam i_rhod
+#define AC_i_udropav__mod__cparam i_udropav
+#define AC_i_rhodsum__mod__cparam i_rhodsum
+#define AC_i_glnrhodsum__mod__cparam i_glnrhodsum
+#define AC_i_uud__mod__cparam i_uud
+#define AC_i_divud__mod__cparam i_divud
+#define AC_i_sdij__mod__cparam i_sdij
+#define AC_i_ma2__mod__cparam i_ma2
+#define AC_i_fpres__mod__cparam i_fpres
+#define AC_i_tcond__mod__cparam i_tcond
+#define AC_i_sglntt__mod__cparam i_sglntt
+#define AC_i_uglntt__mod__cparam i_uglntt
+#define AC_i_advec_cs2__mod__cparam i_advec_cs2
+#define AC_i_ss__mod__cparam i_ss
+#define AC_i_gss__mod__cparam i_gss
+#define AC_i_ee__mod__cparam i_ee
+#define AC_i_pp__mod__cparam i_pp
+#define AC_i_lntt__mod__cparam i_lntt
+#define AC_i_cs2__mod__cparam i_cs2
+#define AC_i_cp__mod__cparam i_cp
+#define AC_i_cp1__mod__cparam i_cp1
+#define AC_i_cp1tilde__mod__cparam i_cp1tilde
+#define AC_i_glntt__mod__cparam i_glntt
+#define AC_i_tt__mod__cparam i_tt
+#define AC_i_tt1__mod__cparam i_tt1
+#define AC_i_gtt__mod__cparam i_gtt
+#define AC_i_yh__mod__cparam i_yh
+#define AC_i_hss__mod__cparam i_hss
+#define AC_i_hlntt__mod__cparam i_hlntt
+#define AC_i_del2ss__mod__cparam i_del2ss
+#define AC_i_del6ss__mod__cparam i_del6ss
+#define AC_i_del2lntt__mod__cparam i_del2lntt
+#define AC_i_cv__mod__cparam i_cv
+#define AC_i_cv1__mod__cparam i_cv1
+#define AC_i_del6lntt__mod__cparam i_del6lntt
+#define AC_i_gamma__mod__cparam i_gamma
+#define AC_i_del2tt__mod__cparam i_del2tt
+#define AC_i_del6tt__mod__cparam i_del6tt
+#define AC_i_glnmumol__mod__cparam i_glnmumol
+#define AC_i_ppvap__mod__cparam i_ppvap
+#define AC_i_csvap2__mod__cparam i_csvap2
+#define AC_i_ttb__mod__cparam i_ttb
+#define AC_i_rho_anel__mod__cparam i_rho_anel
+#define AC_i_eth__mod__cparam i_eth
+#define AC_i_geth__mod__cparam i_geth
+#define AC_i_del2eth__mod__cparam i_del2eth
+#define AC_i_heth__mod__cparam i_heth
+#define AC_i_eths__mod__cparam i_eths
+#define AC_i_geths__mod__cparam i_geths
+#define AC_i_rho1gpp__mod__cparam i_rho1gpp
+#define AC_i_fcont__mod__cparam i_fcont
+#define AC_i_gg__mod__cparam i_gg
+#define AC_i_x_mn__mod__cparam i_x_mn
+#define AC_i_y_mn__mod__cparam i_y_mn
+#define AC_i_z_mn__mod__cparam i_z_mn
+#define AC_i_r_mn__mod__cparam i_r_mn
+#define AC_i_r_mn1__mod__cparam i_r_mn1
+#define AC_i_phix__mod__cparam i_phix
+#define AC_i_phiy__mod__cparam i_phiy
+#define AC_i_pomx__mod__cparam i_pomx
+#define AC_i_pomy__mod__cparam i_pomy
+#define AC_i_rcyl_mn__mod__cparam i_rcyl_mn
+#define AC_i_rcyl_mn1__mod__cparam i_rcyl_mn1
+#define AC_i_phi_mn__mod__cparam i_phi_mn
+#define AC_i_evr__mod__cparam i_evr
+#define AC_i_rr__mod__cparam i_rr
+#define AC_i_evth__mod__cparam i_evth
+#define AC_i_divu__mod__cparam i_divu
+#define AC_i_oo__mod__cparam i_oo
+#define AC_i_o2__mod__cparam i_o2
+#define AC_i_ou__mod__cparam i_ou
+#define AC_i_oxu2__mod__cparam i_oxu2
+#define AC_i_oxu__mod__cparam i_oxu
+#define AC_i_u2__mod__cparam i_u2
+#define AC_i_uij__mod__cparam i_uij
+#define AC_i_uu__mod__cparam i_uu
+#define AC_i_curlo__mod__cparam i_curlo
+#define AC_i_sij__mod__cparam i_sij
+#define AC_i_sij2__mod__cparam i_sij2
+#define AC_i_uij5__mod__cparam i_uij5
+#define AC_i_ugu__mod__cparam i_ugu
+#define AC_i_ugu2__mod__cparam i_ugu2
+#define AC_i_oij__mod__cparam i_oij
+#define AC_i_d2uidxj__mod__cparam i_d2uidxj
+#define AC_i_uijk__mod__cparam i_uijk
+#define AC_i_ogu__mod__cparam i_ogu
+#define AC_i_u3u21__mod__cparam i_u3u21
+#define AC_i_u1u32__mod__cparam i_u1u32
+#define AC_i_u2u13__mod__cparam i_u2u13
+#define AC_i_del2u__mod__cparam i_del2u
+#define AC_i_del4u__mod__cparam i_del4u
+#define AC_i_del6u__mod__cparam i_del6u
+#define AC_i_u2u31__mod__cparam i_u2u31
+#define AC_i_u3u12__mod__cparam i_u3u12
+#define AC_i_u1u23__mod__cparam i_u1u23
+#define AC_i_graddivu__mod__cparam i_graddivu
+#define AC_i_del6u_bulk__mod__cparam i_del6u_bulk
+#define AC_i_grad5divu__mod__cparam i_grad5divu
+#define AC_i_rhougu__mod__cparam i_rhougu
+#define AC_i_der6u__mod__cparam i_der6u
+#define AC_i_transpurho__mod__cparam i_transpurho
+#define AC_i_divu0__mod__cparam i_divu0
+#define AC_i_u0ij__mod__cparam i_u0ij
+#define AC_i_uu0__mod__cparam i_uu0
+#define AC_i_uu_advec__mod__cparam i_uu_advec
+#define AC_i_uuadvec_guu__mod__cparam i_uuadvec_guu
+#define AC_i_del6u_strict__mod__cparam i_del6u_strict
+#define AC_i_del4graddivu__mod__cparam i_del4graddivu
+#define AC_i_uu_sph__mod__cparam i_uu_sph
+#define AC_i_der6u_res__mod__cparam i_der6u_res
+#define AC_i_lorentz__mod__cparam i_lorentz
+#define AC_i_hless__mod__cparam i_hless
+#define AC_i_advec_uu__mod__cparam i_advec_uu
+#define AC_i_heat__mod__cparam i_heat
+#define AC_i_cool__mod__cparam i_cool
+#define AC_i_heatcool__mod__cparam i_heatcool
+#define AC_i_aa__mod__cparam i_aa
+#define AC_i_a2__mod__cparam i_a2
+#define AC_i_aij__mod__cparam i_aij
+#define AC_i_bb__mod__cparam i_bb
+#define AC_i_bbb__mod__cparam i_bbb
+#define AC_i_ab__mod__cparam i_ab
+#define AC_i_ua__mod__cparam i_ua
+#define AC_i_exa__mod__cparam i_exa
+#define AC_i_exatotal__mod__cparam i_exatotal
+#define AC_i_aps__mod__cparam i_aps
+#define AC_i_b2__mod__cparam i_b2
+#define AC_i_b21__mod__cparam i_b21
+#define AC_i_bf2__mod__cparam i_bf2
+#define AC_i_bij__mod__cparam i_bij
+#define AC_i_del2a__mod__cparam i_del2a
+#define AC_i_graddiva__mod__cparam i_graddiva
+#define AC_i_jj__mod__cparam i_jj
+#define AC_i_jj_ohm__mod__cparam i_jj_ohm
+#define AC_i_curlb__mod__cparam i_curlb
+#define AC_i_e3xa__mod__cparam i_e3xa
+#define AC_i_el__mod__cparam i_el
+#define AC_i_e2__mod__cparam i_e2
+#define AC_i_bijtilde__mod__cparam i_bijtilde
+#define AC_i_bij_cov_corr__mod__cparam i_bij_cov_corr
+#define AC_i_j2__mod__cparam i_j2
+#define AC_i_jb__mod__cparam i_jb
+#define AC_i_va2__mod__cparam i_va2
+#define AC_i_jxb__mod__cparam i_jxb
+#define AC_i_jxbr__mod__cparam i_jxbr
+#define AC_i_jxbr2__mod__cparam i_jxbr2
+#define AC_i_ub__mod__cparam i_ub
+#define AC_i_uj__mod__cparam i_uj
+#define AC_i_ob__mod__cparam i_ob
+#define AC_i_uxb__mod__cparam i_uxb
+#define AC_i_uxbb__mod__cparam i_uxbb
+#define AC_i_uxb2__mod__cparam i_uxb2
+#define AC_i_uxj__mod__cparam i_uxj
+#define AC_i_chibp__mod__cparam i_chibp
+#define AC_i_beta__mod__cparam i_beta
+#define AC_i_beta1__mod__cparam i_beta1
+#define AC_i_uga__mod__cparam i_uga
+#define AC_i_uuadvec_gaa__mod__cparam i_uuadvec_gaa
+#define AC_i_djuidjbi__mod__cparam i_djuidjbi
+#define AC_i_jo__mod__cparam i_jo
+#define AC_i_stokesi__mod__cparam i_stokesi
+#define AC_i_stokesq__mod__cparam i_stokesq
+#define AC_i_stokesu__mod__cparam i_stokesu
+#define AC_i_stokesq1__mod__cparam i_stokesq1
+#define AC_i_stokesu1__mod__cparam i_stokesu1
+#define AC_i_ujxb__mod__cparam i_ujxb
+#define AC_i_oxuxb__mod__cparam i_oxuxb
+#define AC_i_jxbxb__mod__cparam i_jxbxb
+#define AC_i_jxbrxb__mod__cparam i_jxbrxb
+#define AC_i_gb22__mod__cparam i_gb22
+#define AC_i_ugb__mod__cparam i_ugb
+#define AC_i_ugb22__mod__cparam i_ugb22
+#define AC_i_bgu__mod__cparam i_bgu
+#define AC_i_bgb__mod__cparam i_bgb
+#define AC_i_bgbp__mod__cparam i_bgbp
+#define AC_i_ubgbp__mod__cparam i_ubgbp
+#define AC_i_bdivu__mod__cparam i_bdivu
+#define AC_i_glnrhoxb__mod__cparam i_glnrhoxb
+#define AC_i_del4a__mod__cparam i_del4a
+#define AC_i_del6a__mod__cparam i_del6a
+#define AC_i_oxj__mod__cparam i_oxj
+#define AC_i_diva__mod__cparam i_diva
+#define AC_i_jij__mod__cparam i_jij
+#define AC_i_sj__mod__cparam i_sj
+#define AC_i_ss12__mod__cparam i_ss12
+#define AC_i_d6ab__mod__cparam i_d6ab
+#define AC_i_etava__mod__cparam i_etava
+#define AC_i_etaj__mod__cparam i_etaj
+#define AC_i_etaj2__mod__cparam i_etaj2
+#define AC_i_etajrho__mod__cparam i_etajrho
+#define AC_i_cosjb__mod__cparam i_cosjb
+#define AC_i_jparallel__mod__cparam i_jparallel
+#define AC_i_jperp__mod__cparam i_jperp
+#define AC_i_cosub__mod__cparam i_cosub
+#define AC_i_bunit__mod__cparam i_bunit
+#define AC_i_hjj__mod__cparam i_hjj
+#define AC_i_hj2__mod__cparam i_hj2
+#define AC_i_hjb__mod__cparam i_hjb
+#define AC_i_coshjb__mod__cparam i_coshjb
+#define AC_i_hjparallel__mod__cparam i_hjparallel
+#define AC_i_hjperp__mod__cparam i_hjperp
+#define AC_i_nu_ni1__mod__cparam i_nu_ni1
+#define AC_i_gamma_a2__mod__cparam i_gamma_a2
+#define AC_i_clight2__mod__cparam i_clight2
+#define AC_i_gva__mod__cparam i_gva
+#define AC_i_vmagfric__mod__cparam i_vmagfric
+#define AC_i_bb_sph__mod__cparam i_bb_sph
+#define AC_i_advec_va2__mod__cparam i_advec_va2
+#define AC_i_lam__mod__cparam i_lam
+#define AC_i_mf_emf__mod__cparam i_mf_emf
+#define AC_i_mf_emfdotb__mod__cparam i_mf_emfdotb
+#define AC_i_uun__mod__cparam i_uun
+#define AC_i_divun__mod__cparam i_divun
+#define AC_i_snij__mod__cparam i_snij
+#define AC_i_rhop__mod__cparam i_rhop
+#define AC_i_grhop__mod__cparam i_grhop
+#define AC_i_peh__mod__cparam i_peh
+#define AC_i_tauascalar__mod__cparam i_tauascalar
+#define AC_i_condensationrate__mod__cparam i_condensationrate
+#define AC_i_watermixingratio__mod__cparam i_watermixingratio
+#define AC_i_cc__mod__cparam i_cc
+#define AC_i_cc1__mod__cparam i_cc1
+#define AC_i_gcc__mod__cparam i_gcc
+#define AC_i_sgs_heat__mod__cparam i_sgs_heat
+#define AC_i_shock__mod__cparam i_shock
+#define AC_i_gshock__mod__cparam i_gshock
+#define AC_i_shock_perp__mod__cparam i_shock_perp
+#define AC_i_gshock_perp__mod__cparam i_gshock_perp
+#define AC_i_fvisc__mod__cparam i_fvisc
+#define AC_i_diffus_total__mod__cparam i_diffus_total
+#define AC_i_diffus_total2__mod__cparam i_diffus_total2
+#define AC_i_diffus_total3__mod__cparam i_diffus_total3
+#define AC_i_visc_heat__mod__cparam i_visc_heat
+#define AC_i_nu__mod__cparam i_nu
+#define AC_i_gradnu__mod__cparam i_gradnu
+#define AC_i_nu_smag__mod__cparam i_nu_smag
+#define AC_i_gnu_smag__mod__cparam i_gnu_smag
+#define AC_mcom__mod__cparam mcom
+#define AC_mx__mod__cparam mx
+#define AC_my__mod__cparam my
+#define AC_m1__mod__cparam m1
+#define AC_n1__mod__cparam n1
+#define AC_mreduce__mod__cparam mreduce
+#define AC_ninit__mod__cparam ninit
+#define AC_fnlen__mod__cparam fnlen
+#define AC_intlen__mod__cparam intlen
+#define AC_bclen__mod__cparam bclen
+#define AC_labellen__mod__cparam labellen
+#define AC_linelen__mod__cparam linelen
+#define AC_datelen__mod__cparam datelen
+#define AC_max_col_width__mod__cparam max_col_width
+#define AC_nscbc_len__mod__cparam nscbc_len
+#define AC_fmtlen__mod__cparam fmtlen
+#define AC_mseed__mod__cparam mseed
+#define AC_int_sgl__mod__cparam int_sgl
+#define AC_tini__mod__cparam tini
+#define AC_impossible__mod__cparam impossible
+#define AC_root__mod__cparam root
+#define AC_ilabel_sum__mod__cparam ilabel_sum
+#define AC_ilabel_save__mod__cparam ilabel_save
+#define AC_ilabel_sum_sqrt__mod__cparam ilabel_sum_sqrt
+#define AC_ilabel_sum_log10__mod__cparam ilabel_sum_log10
+#define AC_ilabel_sum_masked__mod__cparam ilabel_sum_masked
+#define AC_ilabel_integrate__mod__cparam ilabel_integrate
+#define AC_ilabel_integrate_sqrt__mod__cparam ilabel_integrate_sqrt
+#define AC_ilabel_integrate_log10__mod__cparam ilabel_integrate_log10
+#define AC_ilabel_surf__mod__cparam ilabel_surf
+#define AC_ilabel_sum_par__mod__cparam ilabel_sum_par
+#define AC_ilabel_sum_sqrt_par__mod__cparam ilabel_sum_sqrt_par
+#define AC_ilabel_sum_log10_par__mod__cparam ilabel_sum_log10_par
+#define AC_ilabel_sum_plain__mod__cparam ilabel_sum_plain
+#define AC_ilabel_sum_weighted__mod__cparam ilabel_sum_weighted
+#define AC_ilabel_sum_weighted_sqrt__mod__cparam ilabel_sum_weighted_sqrt
+#define AC_ilabel_sum_lim__mod__cparam ilabel_sum_lim
+#define AC_ilabel_complex__mod__cparam ilabel_complex
+#define AC_pi__mod__cparam pi
+#define AC_pi4_1__mod__cparam pi4_1
+#define AC_pi5_1__mod__cparam pi5_1
+#define AC_onethird__mod__cparam onethird
+#define AC_fourthird__mod__cparam fourthird
+#define AC_dtor__mod__cparam dtor
+#define AC_ibc_x_top__mod__cparam ibc_x_top
+#define AC_ibc_y_top__mod__cparam ibc_y_top
+#define AC_ibc_z_top__mod__cparam ibc_z_top
+#define AC_bot__mod__cparam bot
+#define AC_top__mod__cparam top
+#define AC_both__mod__cparam both
+#define AC_iref_rho__mod__cparam iref_rho
+#define AC_iref_grho__mod__cparam iref_grho
+#define AC_iref_d2rho__mod__cparam iref_d2rho
+#define AC_iref_d6rho__mod__cparam iref_d6rho
+#define AC_iref_gp__mod__cparam iref_gp
+#define AC_iref_s__mod__cparam iref_s
+#define AC_iref_gs__mod__cparam iref_gs
+#define AC_iref_d2s__mod__cparam iref_d2s
+#define AC_iref_d6s__mod__cparam iref_d6s
+#define AC_nref_vars__mod__cparam nref_vars
+#define AC_bilin__mod__cparam bilin
+#define AC_biquad__mod__cparam biquad
+#define AC_bicub__mod__cparam bicub
+#define AC_quadspline__mod__cparam quadspline
+#define AC_biquin__mod__cparam biquin
+#define AC_xplus__mod__cparam xplus
+#define AC_yplus__mod__cparam yplus
+#define AC_xminus__mod__cparam xminus
+#define AC_yminus__mod__cparam yminus
+#define AC_zplus__mod__cparam zplus
+#define AC_zminus__mod__cparam zminus
+#define AC_max_threads_possible__mod__cparam max_threads_possible
+#define AC_perf_diags__mod__cparam perf_diags
+#define AC_perf_wsnap__mod__cparam perf_wsnap
+#define AC_perf_powersnap__mod__cparam perf_powersnap
+#define AC_perf_wsnap_down__mod__cparam perf_wsnap_down
+#define AC_n_helperflags__mod__cparam n_helperflags
+#define AC_n_xy_specs_max__mod__cparam n_xy_specs_max
+#define AC_nk_max__mod__cparam nk_max
+#define AC_nz_max__mod__cparam nz_max
+#define AC_mname__mod__cparam mname
+#define AC_mname_half__mod__cparam mname_half
+#define AC_string_enum_unknown_string_string__mod__cparam string_enum_unknown_string_string
+#define AC_string_enum_pde_string__mod__cparam string_enum_pde_string
+#define AC_string_enum_before_lanelastic_string__mod__cparam string_enum_before_lanelastic_string
+#define AC_string_enum_calc_pencils_grid_string__mod__cparam string_enum_calc_pencils_grid_string
+#define AC_string_enum_position_vector_for__string__mod__cparam string_enum_position_vector_for__string
+#define AC_string_enum_nonzcartesian_coordinates_string__mod__cparam string_enum_nonzcartesian_coordinates_string
+#define AC_string_enum_cozlatitudinal_unit_vector_for__string__mod__cparam string_enum_cozlatitudinal_unit_vector_for__string
+#define AC_string_enum_calc_pencils_hydro_linearized_string__mod__cparam string_enum_calc_pencils_hydro_linearized_string
+#define AC_string_enum_u2_pencil_not_calculated_string__mod__cparam string_enum_u2_pencil_not_calculated_string
+#define AC_string_enum_sij2_pencil_not_calculated_string__mod__cparam string_enum_sij2_pencil_not_calculated_string
+#define AC_string_enum_uij5_pencil_not_calculated_string__mod__cparam string_enum_uij5_pencil_not_calculated_string
+#define AC_string_enum_o2_or_oxu2_pencils_not_calculate_string__mod__cparam string_enum_o2_or_oxu2_pencils_not_calculate_string
+#define AC_string_enum_ou_or_oxu_pencils_not_calculated_string__mod__cparam string_enum_ou_or_oxu_pencils_not_calculated_string
+#define AC_string_enum_ugu2_pencil_not_calculated_string__mod__cparam string_enum_ugu2_pencil_not_calculated_string
+#define AC_string_enum_ujukl_pencils_not_calculated_string__mod__cparam string_enum_ujukl_pencils_not_calculated_string
+#define AC_string_enum_calc_pencils_hydroz_call_gij_etc_string__mod__cparam string_enum_calc_pencils_hydroz_call_gij_etc_string
+#define AC_string_enum_no_linearized_weno_transport_string__mod__cparam string_enum_no_linearized_weno_transport_string
+#define AC_string_enum_calc_pencils_hydro_nonlinear_string__mod__cparam string_enum_calc_pencils_hydro_nonlinear_string
+#define AC_string_enum_calc_pencils_density_string__mod__cparam string_enum_calc_pencils_density_string
+#define AC_string_enum_del6lnrho_for_linear_mass_density_string__mod__cparam string_enum_del6lnrho_for_linear_mass_density_string
+#define AC_string_enum_hlnrho_linear_mass_density_string__mod__cparam string_enum_hlnrho_linear_mass_density_string
+#define AC_string_enum_densityziproczitzmznz_string__mod__cparam string_enum_densityziproczitzmznz_string
+#define AC_string_enum_nans_in_ac_transformed_pencil_glnrho_string__mod__cparam string_enum_nans_in_ac_transformed_pencil_glnrho_string
+#define AC_string_enum_ugrho_for_logarithmic_mass_density_string__mod__cparam string_enum_ugrho_for_logarithmic_mass_density_string
+#define AC_string_enum_del2rho_for_logarithmic_mass_density_string__mod__cparam string_enum_del2rho_for_logarithmic_mass_density_string
+#define AC_string_enum_del6rho_for_logarithmic_mass_density_string__mod__cparam string_enum_del6rho_for_logarithmic_mass_density_string
+#define AC_string_enum_calc_pencils_density_pnc_string__mod__cparam string_enum_calc_pencils_density_pnc_string
+#define AC_string_enum_rhos1_string__mod__cparam string_enum_rhos1_string
+#define AC_string_enum_glnrhos_string__mod__cparam string_enum_glnrhos_string
+#define AC_string_enum_calc_pencils_eos_string__mod__cparam string_enum_calc_pencils_eos_string
+#define AC_string_enum_rho1gpp_not_available_string__mod__cparam string_enum_rho1gpp_not_available_string
+#define AC_string_enum_rho1gpp_not_available_2_string__mod__cparam string_enum_rho1gpp_not_available_2_string
+#define AC_string_enum_del6ss_for_ilnrho_lntt_string__mod__cparam string_enum_del6ss_for_ilnrho_lntt_string
+#define AC_string_enum_no_gradients_yet_for_localisothermal_string__mod__cparam string_enum_no_gradients_yet_for_localisothermal_string
+#define AC_string_enum_entropy_not_needed_for_localisothermal_string__mod__cparam string_enum_entropy_not_needed_for_localisothermal_string
+#define AC_string_enum_full_equation_of_state_for_ilnrho_cs2_string__mod__cparam string_enum_full_equation_of_state_for_ilnrho_cs2_string
+#define AC_string_enum_local_isothermal_case_for_ipp_ss_string__mod__cparam string_enum_local_isothermal_case_for_ipp_ss_string
+#define AC_string_enum_isentropic_for_zppzlnttz_string__mod__cparam string_enum_isentropic_for_zppzlnttz_string
+#define AC_string_enum_local_isothermal_case_for_ipp_cs2_string__mod__cparam string_enum_local_isothermal_case_for_ipp_cs2_string
+#define AC_string_enum_del6ss_for_ilnrho_cs2_string__mod__cparam string_enum_del6ss_for_ilnrho_cs2_string
+#define AC_string_enum_geth_is_not_available_string__mod__cparam string_enum_geth_is_not_available_string
+#define AC_string_enum_del2eth_is_not_available_string__mod__cparam string_enum_del2eth_is_not_available_string
+#define AC_string_enum_eths_is_not_available_string__mod__cparam string_enum_eths_is_not_available_string
+#define AC_string_enum_geths_is_not_available_string__mod__cparam string_enum_geths_is_not_available_string
+#define AC_string_enum_hlntt_for_ilnrho_eth_or_irho_eth_string__mod__cparam string_enum_hlntt_for_ilnrho_eth_or_irho_eth_string
+#define AC_string_enum_unknown_combination_of_eos_vars_string__mod__cparam string_enum_unknown_combination_of_eos_vars_string
+#define AC_string_enum_calc_pencils_energyz_maxzadvec_cs2z_z_string__mod__cparam string_enum_calc_pencils_energyz_maxzadvec_cs2z_z_string
+#define AC_string_enum_carreau_string__mod__cparam string_enum_carreau_string
+#define AC_string_enum_step_string__mod__cparam string_enum_step_string
+#define AC_string_enum_getnu_non_newtonianz_string__mod__cparam string_enum_getnu_non_newtonianz_string
+#define AC_string_enum_no_such_nnewton_typez__string__mod__cparam string_enum_no_such_nnewton_typez__string
+#define AC_string_enum_calc_pencils_viscosity_string__mod__cparam string_enum_calc_pencils_viscosity_string
+#define AC_string_enum_viscous_heating__string__mod__cparam string_enum_viscous_heating__string
+#define AC_string_enum_not_implemented_for_lvisc_hyper3_polar_string__mod__cparam string_enum_not_implemented_for_lvisc_hyper3_polar_string
+#define AC_string_enum_not_implemented_for_lvisc_hyper3_mesh_string__mod__cparam string_enum_not_implemented_for_lvisc_hyper3_mesh_string
+#define AC_string_enum_not_implemented_for_lvisc_hyper3_csmesh_string__mod__cparam string_enum_not_implemented_for_lvisc_hyper3_csmesh_string
+#define AC_string_enum_del2fjv_string__mod__cparam string_enum_del2fjv_string
+#define AC_string_enum_viscous_heating_term__string__mod__cparam string_enum_viscous_heating_term__string
+#define AC_string_enum_viscose_string__mod__cparam string_enum_viscose_string
+#define AC_string_enum_init_uu_string__mod__cparam string_enum_init_uu_string
+#define AC_string_enum_get_bext_string__mod__cparam string_enum_get_bext_string
+#define AC_string_enum_step_scalar_string__mod__cparam string_enum_step_scalar_string
+#define AC_string_enum_width_must_not_be_zero_string__mod__cparam string_enum_width_must_not_be_zero_string
+#define AC_string_enum_calc_pencils_magnetic_pencparz_b_ext_z__string__mod__cparam string_enum_calc_pencils_magnetic_pencparz_b_ext_z__string
+#define AC_string_enum_calc_pencils_magnetic_pencparz_logic_z__string__mod__cparam string_enum_calc_pencils_magnetic_pencparz_logic_z__string
+#define AC_string_enum_calc_pencils_magnetic_pencpar_string__mod__cparam string_enum_calc_pencils_magnetic_pencpar_string
+#define AC_string_enum_uuadvec_gaa_for_spherical_coordinates_string__mod__cparam string_enum_uuadvec_gaa_for_spherical_coordinates_string
+#define AC_string_enum_constant_string__mod__cparam string_enum_constant_string
+#define AC_string_enum_ionizationzequilibrium_string__mod__cparam string_enum_ionizationzequilibrium_string
+#define AC_string_enum_ionizationzyh_string__mod__cparam string_enum_ionizationzyh_string
+#define AC_string_enum_set_ambipolar_diffusion_string__mod__cparam string_enum_set_ambipolar_diffusion_string
+#define AC_string_enum_no_such_ambipolar_diffusionz__string__mod__cparam string_enum_no_such_ambipolar_diffusionz__string
+#define AC_string_enum_duu_dt_string__mod__cparam string_enum_duu_dt_string
+#define AC_string_enum_entered_string__mod__cparam string_enum_entered_string
+#define AC_string_enum_duu_dtz_solve_string__mod__cparam string_enum_duu_dtz_solve_string
+#define AC_string_enum_bcs_for__string__mod__cparam string_enum_bcs_for__string
+#define AC_string_enum_ux_string__mod__cparam string_enum_ux_string
+#define AC_string_enum_uy_string__mod__cparam string_enum_uy_string
+#define AC_string_enum_uz_string__mod__cparam string_enum_uz_string
+#define AC_string_enum_sld_char_string__mod__cparam string_enum_sld_char_string
+#define AC_string_enum_coriolis_cylindricalz_omegaz_string__mod__cparam string_enum_coriolis_cylindricalz_omegaz_string
+#define AC_string_enum_coriolis_cylindricalz_omegazzthetaz_string__mod__cparam string_enum_coriolis_cylindricalz_omegazzthetaz_string
+#define AC_string_enum_coriolis_cylindrical_string__mod__cparam string_enum_coriolis_cylindrical_string
+#define AC_string_enum_coriolis_sphericalz_omegaz_string__mod__cparam string_enum_coriolis_sphericalz_omegaz_string
+#define AC_string_enum_coriolis_sphericalz_omegazthetazphiz_string__mod__cparam string_enum_coriolis_sphericalz_omegazthetazphiz_string
+#define AC_string_enum_coriolis_spherical_string__mod__cparam string_enum_coriolis_spherical_string
+#define AC_string_enum_for_omega_not_aligned_with_z_or_y_axis_string__mod__cparam string_enum_for_omega_not_aligned_with_z_or_y_axis_string
+#define AC_string_enum_precessionz_omega_precessionz_string__mod__cparam string_enum_precessionz_omega_precessionz_string
+#define AC_string_enum_coriolis_cartesian_string__mod__cparam string_enum_coriolis_cartesian_string
+#define AC_string_enum_if_omega_has_y_component_string__mod__cparam string_enum_if_omega_has_y_component_string
+#define AC_string_enum_coriolis_xdepz_ampl_omegaz_string__mod__cparam string_enum_coriolis_xdepz_ampl_omegaz_string
+#define AC_string_enum_duu_dtz_maxzadvec_uuz_z_string__mod__cparam string_enum_duu_dtz_maxzadvec_uuz_z_string
+#define AC_string_enum_nothing_string__mod__cparam string_enum_nothing_string
+#define AC_string_enum_linear_string__mod__cparam string_enum_linear_string
+#define AC_string_enum_inverse_string__mod__cparam string_enum_inverse_string
+#define AC_string_enum_current_string__mod__cparam string_enum_current_string
+#define AC_string_enum_lmagnetic_must_be_true_string__mod__cparam string_enum_lmagnetic_must_be_true_string
+#define AC_string_enum_bs04_string__mod__cparam string_enum_bs04_string
+#define AC_string_enum_bs04c_string__mod__cparam string_enum_bs04c_string
+#define AC_string_enum_bs04c1_string__mod__cparam string_enum_bs04c1_string
+#define AC_string_enum_bs04m_string__mod__cparam string_enum_bs04m_string
+#define AC_string_enum_hp09_string__mod__cparam string_enum_hp09_string
+#define AC_string_enum_sx_string__mod__cparam string_enum_sx_string
+#define AC_string_enum_solar_dc99_string__mod__cparam string_enum_solar_dc99_string
+#define AC_string_enum_vertical_shear_string__mod__cparam string_enum_vertical_shear_string
+#define AC_string_enum_vertical_compression_string__mod__cparam string_enum_vertical_compression_string
+#define AC_string_enum_remove_vertical_shear_string__mod__cparam string_enum_remove_vertical_shear_string
+#define AC_string_enum_vertical_shear_x_string__mod__cparam string_enum_vertical_shear_x_string
+#define AC_string_enum_vertical_shear_x_sinz_string__mod__cparam string_enum_vertical_shear_x_sinz_string
+#define AC_string_enum_vertical_shear_z_string__mod__cparam string_enum_vertical_shear_z_string
+#define AC_string_enum_vertical_shear_z2_string__mod__cparam string_enum_vertical_shear_z2_string
+#define AC_string_enum_vertical_shear_linear_string__mod__cparam string_enum_vertical_shear_linear_string
+#define AC_string_enum_tachocline_string__mod__cparam string_enum_tachocline_string
+#define AC_string_enum_solar_simple_string__mod__cparam string_enum_solar_simple_string
+#define AC_string_enum_radial_uniform_shear_string__mod__cparam string_enum_radial_uniform_shear_string
+#define AC_string_enum_breeze_string__mod__cparam string_enum_breeze_string
+#define AC_string_enum_slow_wind_string__mod__cparam string_enum_slow_wind_string
+#define AC_string_enum_radial_shear_string__mod__cparam string_enum_radial_shear_string
+#define AC_string_enum_radial_shear_damp_string__mod__cparam string_enum_radial_shear_damp_string
+#define AC_string_enum_damp_corona_string__mod__cparam string_enum_damp_corona_string
+#define AC_string_enum_damp_horiz_vel_string__mod__cparam string_enum_damp_horiz_vel_string
+#define AC_string_enum_latitudinal_shear_string__mod__cparam string_enum_latitudinal_shear_string
+#define AC_string_enum_damp_jets_string__mod__cparam string_enum_damp_jets_string
+#define AC_string_enum_spokezlikeznssl_string__mod__cparam string_enum_spokezlikeznssl_string
+#define AC_string_enum_uumz_profile_string__mod__cparam string_enum_uumz_profile_string
+#define AC_string_enum_omega_profile_string__mod__cparam string_enum_omega_profile_string
+#define AC_string_enum_zero_string__mod__cparam string_enum_zero_string
+#define AC_string_enum_0_string__mod__cparam string_enum_0_string
+#define AC_string_enum_initialzcondition_string__mod__cparam string_enum_initialzcondition_string
+#define AC_string_enum_finished_string__mod__cparam string_enum_finished_string
+#define AC_string_enum_dlnrho_dt_string__mod__cparam string_enum_dlnrho_dt_string
+#define AC_string_enum_dlnrho_dtz_solve_string__mod__cparam string_enum_dlnrho_dtz_solve_string
+#define AC_string_enum_lnrho_string__mod__cparam string_enum_lnrho_string
+#define AC_string_enum_surface_z_string__mod__cparam string_enum_surface_z_string
+#define AC_string_enum_mass_sourcez_cs20zcs0z_string__mod__cparam string_enum_mass_sourcez_cs20zcs0z_string
+#define AC_string_enum_mass_source_string__mod__cparam string_enum_mass_source_string
+#define AC_string_enum_mass_source_with_no_profile_string__mod__cparam string_enum_mass_source_with_no_profile_string
+#define AC_string_enum_exponential_string__mod__cparam string_enum_exponential_string
+#define AC_string_enum_bump_string__mod__cparam string_enum_bump_string
+#define AC_string_enum_bump2_string__mod__cparam string_enum_bump2_string
+#define AC_string_enum_bumpr_string__mod__cparam string_enum_bumpr_string
+#define AC_string_enum_bumpx_string__mod__cparam string_enum_bumpx_string
+#define AC_string_enum_sphzstepzdown_string__mod__cparam string_enum_sphzstepzdown_string
+#define AC_string_enum_const_string__mod__cparam string_enum_const_string
+#define AC_string_enum_cylindric_string__mod__cparam string_enum_cylindric_string
+#define AC_string_enum_no_such_mass_source_profilez__string__mod__cparam string_enum_no_such_mass_source_profilez__string
+#define AC_string_enum_dlnrho_dtz_diffrhoz_string__mod__cparam string_enum_dlnrho_dtz_diffrhoz_string
+#define AC_string_enum_dlnrho_dtz_diffrho_shockz_string__mod__cparam string_enum_dlnrho_dtz_diffrho_shockz_string
+#define AC_string_enum_dlnrho_dtz_diffrho_hyper3z_string__mod__cparam string_enum_dlnrho_dtz_diffrho_hyper3z_string
+#define AC_string_enum_dlnrho_dtz_diffrho_hyper3_meshz_string__mod__cparam string_enum_dlnrho_dtz_diffrho_hyper3_meshz_string
+#define AC_string_enum_dlnrho_dtz_diffrho_hyper3zzdxzdyzdzzz_string__mod__cparam string_enum_dlnrho_dtz_diffrho_hyper3zzdxzdyzdzzz_string
+#define AC_string_enum_dlnrho_dtz_diffrho_hyper3_strictz_string__mod__cparam string_enum_dlnrho_dtz_diffrho_hyper3_strictz_string
+#define AC_string_enum_dlnrho_dtz_maxzdiffus_diffrho_z_z_string__mod__cparam string_enum_dlnrho_dtz_maxzdiffus_diffrho_z_z_string
+#define AC_string_enum_dlnrho_dtz_maxzdiffus_diffrho3z_z_string__mod__cparam string_enum_dlnrho_dtz_maxzdiffus_diffrho3z_z_string
+#define AC_string_enum_before_calc_diagnostics_string__mod__cparam string_enum_before_calc_diagnostics_string
+#define AC_string_enum_daa_dt_string__mod__cparam string_enum_daa_dt_string
+#define AC_string_enum_daa_dtz_solve_string__mod__cparam string_enum_daa_dtz_solve_string
+#define AC_string_enum_ax_string__mod__cparam string_enum_ax_string
+#define AC_string_enum_ay_string__mod__cparam string_enum_ay_string
+#define AC_string_enum_az_string__mod__cparam string_enum_az_string
+#define AC_string_enum_bx_string__mod__cparam string_enum_bx_string
+#define AC_string_enum_by_string__mod__cparam string_enum_by_string
+#define AC_string_enum_bz_string__mod__cparam string_enum_bz_string
+#define AC_string_enum_jx_string__mod__cparam string_enum_jx_string
+#define AC_string_enum_jy_string__mod__cparam string_enum_jy_string
+#define AC_string_enum_jz_string__mod__cparam string_enum_jz_string
+#define AC_string_enum_daa_dtz_iresistivityz_string__mod__cparam string_enum_daa_dtz_iresistivityz_string
+#define AC_string_enum_two_step_string__mod__cparam string_enum_two_step_string
+#define AC_string_enum_twozstep_string__mod__cparam string_enum_twozstep_string
+#define AC_string_enum_two_step2_string__mod__cparam string_enum_two_step2_string
+#define AC_string_enum_twozstep2_string__mod__cparam string_enum_twozstep2_string
+#define AC_string_enum_z1pz5e11z3z_string__mod__cparam string_enum_z1pz5e11z3z_string
+#define AC_string_enum_eta_shell_string__mod__cparam string_enum_eta_shell_string
+#define AC_string_enum_daa_dtz_use_upwinding_in_advection_term_string__mod__cparam string_enum_daa_dtz_use_upwinding_in_advection_term_string
+#define AC_string_enum_tzdep_string__mod__cparam string_enum_tzdep_string
+#define AC_string_enum_zzdep_string__mod__cparam string_enum_zzdep_string
+#define AC_string_enum_daa_dtz_hall_termz_string__mod__cparam string_enum_daa_dtz_hall_termz_string
+#define AC_string_enum_daa_dtz_maxzadvec_hallz_z_string__mod__cparam string_enum_daa_dtz_maxzadvec_hallz_z_string
+#define AC_string_enum_daa_dtz_battery_termz_string__mod__cparam string_enum_daa_dtz_battery_termz_string
+#define AC_string_enum_daa_dtz_maxzbattery_termz_z_string__mod__cparam string_enum_daa_dtz_maxzbattery_termz_z_string
+#define AC_string_enum_daa_dtz_height_etazeta_outzlhaloxz_string__mod__cparam string_enum_daa_dtz_height_etazeta_outzlhaloxz_string
+#define AC_string_enum_calc_tau_aa_exteriorz_tauz_string__mod__cparam string_enum_calc_tau_aa_exteriorz_tauz_string
+#define AC_string_enum_fzl1zl2zmznziexziezzzzdadt_is_set_string__mod__cparam string_enum_fzl1zl2zmznziexziezzzzdadt_is_set_string
+#define AC_string_enum_aazdat_string__mod__cparam string_enum_aazdat_string
+#define AC_string_enum_bbzdat_string__mod__cparam string_enum_bbzdat_string
+#define AC_string_enum_jjzdat_string__mod__cparam string_enum_jjzdat_string
+#define AC_string_enum_del2azdat_string__mod__cparam string_enum_del2azdat_string
+#define AC_string_enum_jxbrzdat_string__mod__cparam string_enum_jxbrzdat_string
+#define AC_string_enum_jxbzdat_string__mod__cparam string_enum_jxbzdat_string
+#define AC_string_enum_dfzdat_string__mod__cparam string_enum_dfzdat_string
+#define AC_string_enum_dspecial_dtz_solve_dspecial_dt_string__mod__cparam string_enum_dspecial_dtz_solve_dspecial_dt_string
+#define AC_string_enum_rhs_cpu_string__mod__cparam string_enum_rhs_cpu_string
+#define AC_string_enum_end_of_mn_loop_string__mod__cparam string_enum_end_of_mn_loop_string
+#define AC_string_enum_denergy_dtz_solve_denergy_dt_string__mod__cparam string_enum_denergy_dtz_solve_denergy_dt_string
+#define AC_string_enum_ss_string__mod__cparam string_enum_ss_string
+#define AC_string_enum_denergy_dtz_lnttzcs2zcp1z_string__mod__cparam string_enum_denergy_dtz_lnttzcs2zcp1z_string
+#define AC_string_enum_ac_transformed_pencil_fpres_z_string__mod__cparam string_enum_ac_transformed_pencil_fpres_z_string
+#define AC_string_enum_denergy_dt_string__mod__cparam string_enum_denergy_dt_string
+#define AC_string_enum__string__mod__cparam string_enum__string
+#define AC_string_enum_calc_heatcondz_hcond0z_string__mod__cparam string_enum_calc_heatcondz_hcond0z_string
+#define AC_string_enum_calc_heatcondz_lgravzz_string__mod__cparam string_enum_calc_heatcondz_lgravzz_string
+#define AC_string_enum_calc_heatcondz_fbotzftopz_string__mod__cparam string_enum_calc_heatcondz_fbotzftopz_string
+#define AC_string_enum_calc_heatcond_string__mod__cparam string_enum_calc_heatcond_string
+#define AC_string_enum_nans_in_ac_transformed_pencil_glntt_string__mod__cparam string_enum_nans_in_ac_transformed_pencil_glntt_string
+#define AC_string_enum_calc_heatcondz__string__mod__cparam string_enum_calc_heatcondz__string
+#define AC_string_enum_calc_heatcondz_nans_in_rho1_string__mod__cparam string_enum_calc_heatcondz_nans_in_rho1_string
+#define AC_string_enum_calc_heatcondz_nans_in_del2ss_string__mod__cparam string_enum_calc_heatcondz_nans_in_del2ss_string
+#define AC_string_enum_calc_heatcondz_nans_in_hcond_string__mod__cparam string_enum_calc_heatcondz_nans_in_hcond_string
+#define AC_string_enum_calc_heatcondz_nans_in_1zhcond_string__mod__cparam string_enum_calc_heatcondz_nans_in_1zhcond_string
+#define AC_string_enum_calc_heatcondz_nans_in_glhc_string__mod__cparam string_enum_calc_heatcondz_nans_in_glhc_string
+#define AC_string_enum_calc_heatcondz_nans_in_chix_string__mod__cparam string_enum_calc_heatcondz_nans_in_chix_string
+#define AC_string_enum_calc_heatcondz_nans_in_glnthcond_string__mod__cparam string_enum_calc_heatcondz_nans_in_glnthcond_string
+#define AC_string_enum_calc_heatcondz_nans_in_g2_string__mod__cparam string_enum_calc_heatcondz_nans_in_g2_string
+#define AC_string_enum_chizdat_string__mod__cparam string_enum_chizdat_string
+#define AC_string_enum_hcondzdat_string__mod__cparam string_enum_hcondzdat_string
+#define AC_string_enum_glhczdat_string__mod__cparam string_enum_glhczdat_string
+#define AC_string_enum_heatcondzdat_string__mod__cparam string_enum_heatcondzdat_string
+#define AC_string_enum_calc_heatcondz_added_thdiff_string__mod__cparam string_enum_calc_heatcondz_added_thdiff_string
+#define AC_string_enum_calc_heatcond_constkz_hcondz_string__mod__cparam string_enum_calc_heatcond_constkz_hcondz_string
+#define AC_string_enum_calc_heatcond_constkz_added_thdiff_string__mod__cparam string_enum_calc_heatcond_constkz_added_thdiff_string
+#define AC_string_enum_calc_heatcond_sfluctz_chi_tz_string__mod__cparam string_enum_calc_heatcond_sfluctz_chi_tz_string
+#define AC_string_enum_calc_heatcond_constchiz_chiz_string__mod__cparam string_enum_calc_heatcond_constchiz_chiz_string
+#define AC_string_enum_calc_heatcond_constchiz_added_thdiff_string__mod__cparam string_enum_calc_heatcond_constchiz_added_thdiff_string
+#define AC_string_enum_calc_heatcond_cspeed_chiz_chiz_string__mod__cparam string_enum_calc_heatcond_cspeed_chiz_chiz_string
+#define AC_string_enum_calc_heatcond_cspeed_chiz_added_thdiff_string__mod__cparam string_enum_calc_heatcond_cspeed_chiz_added_thdiff_string
+#define AC_string_enum_calc_heatcond_sqrtrhochiz_chi_rhoz_string__mod__cparam string_enum_calc_heatcond_sqrtrhochiz_chi_rhoz_string
+#define AC_string_enum_calc_heatcond_sqrtrhochiz_added_thdiff_string__mod__cparam string_enum_calc_heatcond_sqrtrhochiz_added_thdiff_string
+#define AC_string_enum_calc_heatcond_shockz_chi_shockz_string__mod__cparam string_enum_calc_heatcond_shockz_chi_shockz_string
+#define AC_string_enum_calc_heatcond_shockz_added_thdiff_string__mod__cparam string_enum_calc_heatcond_shockz_added_thdiff_string
+#define AC_string_enum_calc_heatcond_shock_profrz_added_thdiff_string__mod__cparam string_enum_calc_heatcond_shock_profrz_added_thdiff_string
+#define AC_string_enum_calc_heatcond_hyper3z_chi_hyper3z_string__mod__cparam string_enum_calc_heatcond_hyper3z_chi_hyper3z_string
+#define AC_string_enum_calc_heatcond_hyper3z_added_thdiff_string__mod__cparam string_enum_calc_heatcond_hyper3z_added_thdiff_string
+#define AC_string_enum_spitzerzdat_string__mod__cparam string_enum_spitzerzdat_string
+#define AC_string_enum_viscouszdat_string__mod__cparam string_enum_viscouszdat_string
+#define AC_string_enum_enter_heatcond_hubeny_string__mod__cparam string_enum_enter_heatcond_hubeny_string
+#define AC_string_enum_calc_heatcond_kramersz_nans_in_rho1_string__mod__cparam string_enum_calc_heatcond_kramersz_nans_in_rho1_string
+#define AC_string_enum_calc_heatcond_kramersz_nans_in_kzrho_string__mod__cparam string_enum_calc_heatcond_kramersz_nans_in_kzrho_string
+#define AC_string_enum_calc_heatcond_kramersz_nans_in_del2ss_string__mod__cparam string_enum_calc_heatcond_kramersz_nans_in_del2ss_string
+#define AC_string_enum_calc_heatcond_kramersz_nans_in_tt_string__mod__cparam string_enum_calc_heatcond_kramersz_nans_in_tt_string
+#define AC_string_enum_calc_heatcond_kramersz_nans_in_glnt_string__mod__cparam string_enum_calc_heatcond_kramersz_nans_in_glnt_string
+#define AC_string_enum_calc_heatcond_kramersz_nans_in_g2_string__mod__cparam string_enum_calc_heatcond_kramersz_nans_in_g2_string
+#define AC_string_enum_calc_heatcond_kramersz_nans_in_thdiff_string__mod__cparam string_enum_calc_heatcond_kramersz_nans_in_thdiff_string
+#define AC_string_enum_calc_heatcond_kramersz_added_thdiff_string__mod__cparam string_enum_calc_heatcond_kramersz_added_thdiff_string
+#define AC_string_enum_calc_heatcond_chitz_chi_t0z_string__mod__cparam string_enum_calc_heatcond_chitz_chi_t0z_string
+#define AC_string_enum_calc_heatcond_chitz_chi_t1z_string__mod__cparam string_enum_calc_heatcond_chitz_chi_t1z_string
+#define AC_string_enum_calc_heatcond_smagorinskyz_nans_in_rho1_string__mod__cparam string_enum_calc_heatcond_smagorinskyz_nans_in_rho1_string
+#define AC_string_enum_calc_heatcond_smagorinskyz_nans_in_chix_string__mod__cparam string_enum_calc_heatcond_smagorinskyz_nans_in_chix_string
+#define AC_string_enum_calc_heatcond_smagorinskyz_nans_in_tt_string__mod__cparam string_enum_calc_heatcond_smagorinskyz_nans_in_tt_string
+#define AC_string_enum_calc_heatcond_smagorinskyz_nans_in_glnt_string__mod__cparam string_enum_calc_heatcond_smagorinskyz_nans_in_glnt_string
+#define AC_string_enum_calc_heatcond_smagorinskyz_nans_in_g2_string__mod__cparam string_enum_calc_heatcond_smagorinskyz_nans_in_g2_string
+#define AC_string_enum_calc_heatcond_smagorinskyz_added_thdiff_string__mod__cparam string_enum_calc_heatcond_smagorinskyz_added_thdiff_string
+#define AC_string_enum_newtonzdat_string__mod__cparam string_enum_newtonzdat_string
+#define AC_string_enum_calc_heat_cool_rtv_string__mod__cparam string_enum_calc_heat_cool_rtv_string
+#define AC_string_enum_for_pretend_lntt_z_t_string__mod__cparam string_enum_for_pretend_lntt_z_t_string
+#define AC_string_enum_cgs_string__mod__cparam string_enum_cgs_string
+#define AC_string_enum_rtvzdat_string__mod__cparam string_enum_rtvzdat_string
+#define AC_string_enum_calc_heatcond_hyper3_polarz_chi_hyper3z_string__mod__cparam string_enum_calc_heatcond_hyper3_polarz_chi_hyper3z_string
+#define AC_string_enum_calc_heatcond_hyper3_meshz_chi_hyper3z_string__mod__cparam string_enum_calc_heatcond_hyper3_meshz_chi_hyper3z_string
+#define AC_string_enum_gaussianzz_string__mod__cparam string_enum_gaussianzz_string
+#define AC_string_enum_linzz_string__mod__cparam string_enum_linzz_string
+#define AC_string_enum_sinzz_string__mod__cparam string_enum_sinzz_string
+#define AC_string_enum_surface_x_string__mod__cparam string_enum_surface_x_string
+#define AC_string_enum_twozlayer_string__mod__cparam string_enum_twozlayer_string
+#define AC_string_enum_squarezwell_string__mod__cparam string_enum_squarezwell_string
+#define AC_string_enum_cubic_step_string__mod__cparam string_enum_cubic_step_string
+#define AC_string_enum_cubic_step_topbot_string__mod__cparam string_enum_cubic_step_topbot_string
+#define AC_string_enum_surface_pp_string__mod__cparam string_enum_surface_pp_string
+#define AC_string_enum_plain_string__mod__cparam string_enum_plain_string
+#define AC_string_enum_corona_string__mod__cparam string_enum_corona_string
+#define AC_string_enum_temp_string__mod__cparam string_enum_temp_string
+#define AC_string_enum_get_cool_generalz_cs20zcs2coolz_string__mod__cparam string_enum_get_cool_generalz_cs20zcs2coolz_string
+#define AC_string_enum_temp2_string__mod__cparam string_enum_temp2_string
+#define AC_string_enum_rho_cs2_string__mod__cparam string_enum_rho_cs2_string
+#define AC_string_enum_twozlayerzmean_string__mod__cparam string_enum_twozlayerzmean_string
+#define AC_string_enum_get_cool_general_string__mod__cparam string_enum_get_cool_general_string
+#define AC_string_enum_no_such_cooltypez__string__mod__cparam string_enum_no_such_cooltypez__string
+#define AC_string_enum_cooling_profilezz2zwcoolzcs2coolz_string__mod__cparam string_enum_cooling_profilezz2zwcoolzcs2coolz_string
+#define AC_string_enum_gaussian_string__mod__cparam string_enum_gaussian_string
+#define AC_string_enum_step2_string__mod__cparam string_enum_step2_string
+#define AC_string_enum_surfcool_string__mod__cparam string_enum_surfcool_string
+#define AC_string_enum_volheat_surfcool_string__mod__cparam string_enum_volheat_surfcool_string
+#define AC_string_enum_cs2zrho_string__mod__cparam string_enum_cs2zrho_string
+#define AC_string_enum_get_heat_cool_gravr_string__mod__cparam string_enum_get_heat_cool_gravr_string
+#define AC_string_enum_no_such_heattypez__string__mod__cparam string_enum_no_such_heattypez__string
+#define AC_string_enum_heatzdat_string__mod__cparam string_enum_heatzdat_string
+#define AC_string_enum_cs2_string__mod__cparam string_enum_cs2_string
+#define AC_string_enum_tempzrho_string__mod__cparam string_enum_tempzrho_string
+#define AC_string_enum_entropy_string__mod__cparam string_enum_entropy_string
+#define AC_string_enum_pressure_string__mod__cparam string_enum_pressure_string
+#define AC_string_enum_shell_string__mod__cparam string_enum_shell_string
+#define AC_string_enum_calc_heat_coolz_deltat_poleqz_string__mod__cparam string_enum_calc_heat_coolz_deltat_poleqz_string
+#define AC_string_enum_ac_transformed_pencil_rcyl_mnz_string__mod__cparam string_enum_ac_transformed_pencil_rcyl_mnz_string
+#define AC_string_enum_ac_transformed_pencil_z_mnz_string__mod__cparam string_enum_ac_transformed_pencil_z_mnz_string
+#define AC_string_enum_shell2_string__mod__cparam string_enum_shell2_string
+#define AC_string_enum_shell3_string__mod__cparam string_enum_shell3_string
+#define AC_string_enum_shell_mean_yz_string__mod__cparam string_enum_shell_mean_yz_string
+#define AC_string_enum_shell_mean_yz2_string__mod__cparam string_enum_shell_mean_yz2_string
+#define AC_string_enum_shell_mean_downflow_string__mod__cparam string_enum_shell_mean_downflow_string
+#define AC_string_enum_latheat_string__mod__cparam string_enum_latheat_string
+#define AC_string_enum_shellzlatheat_string__mod__cparam string_enum_shellzlatheat_string
+#define AC_string_enum_shellzlatss_string__mod__cparam string_enum_shellzlatss_string
+#define AC_string_enum_top_layer_string__mod__cparam string_enum_top_layer_string
+#define AC_string_enum_calc_heat_cool_gravx_cartesian_string__mod__cparam string_enum_calc_heat_cool_gravx_cartesian_string
+#define AC_string_enum_eoscalc_pencil_string__mod__cparam string_enum_eoscalc_pencil_string
+#define AC_string_enum_eoscalc_point_string__mod__cparam string_enum_eoscalc_point_string
+#define AC_string_enum_thermodynamic_variable_combination_string__mod__cparam string_enum_thermodynamic_variable_combination_string
+#define AC_string_enum_calc_tau_ss_exteriorz_tauz_string__mod__cparam string_enum_calc_tau_ss_exteriorz_tauz_string
+#define AC_string_enum_initialztemperature_string__mod__cparam string_enum_initialztemperature_string
+#define AC_string_enum_daa_dtz_maxzdiffus_etaz__z_string__mod__cparam string_enum_daa_dtz_maxzdiffus_etaz__z_string
+#define AC_string_enum_daa_dtz_maxzdiffus_eta2z_z_string__mod__cparam string_enum_daa_dtz_maxzdiffus_eta2z_z_string
+#define AC_string_enum_daa_dtz_maxzdiffus_eta3z_z_string__mod__cparam string_enum_daa_dtz_maxzdiffus_eta3z_z_string
+#define AC_string_enum_pdez_maxadvec_contains_a_nan_at_iprocz_string__mod__cparam string_enum_pdez_maxadvec_contains_a_nan_at_iprocz_string
+#define AC_string_enum_advec_cs2__z_string__mod__cparam string_enum_advec_cs2__z_string
+#define AC_string_enum_set_dt1_max_string__mod__cparam string_enum_set_dt1_max_string
+#define AC_string_enum_cst_string__mod__cparam string_enum_cst_string
+#define AC_string_enum_wolfire_string__mod__cparam string_enum_wolfire_string
+#define AC_string_enum_wolfire_min_string__mod__cparam string_enum_wolfire_min_string
+#define AC_string_enum_thermalzhs_string__mod__cparam string_enum_thermalzhs_string
+#define AC_string_enum_off_string__mod__cparam string_enum_off_string
+#define AC_string_enum_calc_heat_cool_interstellarz_enter_string__mod__cparam string_enum_calc_heat_cool_interstellarz_enter_string
+const int rgap__mod__general = 3
+#define AC_rgap__mod__general rgap__mod__general
+const int nogap__mod__general = 0
+#define AC_nogap__mod__general nogap__mod__general
+const int rneigh__mod__general = 4
+#define AC_rneigh__mod__general rneigh__mod__general
+const int rmarg__mod__general = 2
+#define AC_rmarg__mod__general rmarg__mod__general
+const int rmarg2__mod__general = 1
+#define AC_rmarg2__mod__general rmarg2__mod__general
+const int rneigh2__mod__general = 5
+#define AC_rneigh2__mod__general rneigh2__mod__general
+const int xbot__mod__energybcs = 1
+#define AC_xbot__mod__energybcs xbot__mod__energybcs
+const int n_contrib_procs__mod__yinyang_mpi = 4
+#define AC_n_contrib_procs__mod__yinyang_mpi n_contrib_procs__mod__yinyang_mpi
+const int ishvar_type_real0d__mod__sharedvariables = 1
+#define AC_ishvar_type_real0d__mod__sharedvariables ishvar_type_real0d__mod__sharedvariables
+const int ishvar_type_real1d__mod__sharedvariables = 2
+#define AC_ishvar_type_real1d__mod__sharedvariables ishvar_type_real1d__mod__sharedvariables
+const int ishvar_type_real2d__mod__sharedvariables = 3
+#define AC_ishvar_type_real2d__mod__sharedvariables ishvar_type_real2d__mod__sharedvariables
+const int ishvar_type_real3d__mod__sharedvariables = 4
+#define AC_ishvar_type_real3d__mod__sharedvariables ishvar_type_real3d__mod__sharedvariables
+const int ishvar_type_real4d__mod__sharedvariables = 5
+#define AC_ishvar_type_real4d__mod__sharedvariables ishvar_type_real4d__mod__sharedvariables
+const int ishvar_type_int0d__mod__sharedvariables = 10
+#define AC_ishvar_type_int0d__mod__sharedvariables ishvar_type_int0d__mod__sharedvariables
+const int ishvar_type_int1d__mod__sharedvariables = 11
+#define AC_ishvar_type_int1d__mod__sharedvariables ishvar_type_int1d__mod__sharedvariables
+const int ishvar_type_int2d__mod__sharedvariables = 12
+#define AC_ishvar_type_int2d__mod__sharedvariables ishvar_type_int2d__mod__sharedvariables
+const int ishvar_type_int3d__mod__sharedvariables = 13
+#define AC_ishvar_type_int3d__mod__sharedvariables ishvar_type_int3d__mod__sharedvariables
+const int ishvar_type_log0d__mod__sharedvariables = 20
+#define AC_ishvar_type_log0d__mod__sharedvariables ishvar_type_log0d__mod__sharedvariables
+const int ishvar_type_log1d__mod__sharedvariables = 21
+#define AC_ishvar_type_log1d__mod__sharedvariables ishvar_type_log1d__mod__sharedvariables
+const int ishvar_type_log2d__mod__sharedvariables = 22
+#define AC_ishvar_type_log2d__mod__sharedvariables ishvar_type_log2d__mod__sharedvariables
+const int ishvar_type_char0d__mod__sharedvariables = 30
+#define AC_ishvar_type_char0d__mod__sharedvariables ishvar_type_char0d__mod__sharedvariables
+const int ishvar_err_nosuchvar__mod__sharedvariables = 1
+#define AC_ishvar_err_nosuchvar__mod__sharedvariables ishvar_err_nosuchvar__mod__sharedvariables
+const int ishvar_err_wrongtype__mod__sharedvariables = 2
+#define AC_ishvar_err_wrongtype__mod__sharedvariables ishvar_err_wrongtype__mod__sharedvariables
+const int ishvar_err_duplicate__mod__sharedvariables = 3
+#define AC_ishvar_err_duplicate__mod__sharedvariables ishvar_err_duplicate__mod__sharedvariables
+const int ishvar_err_notassociated__mod__sharedvariables = 4
+#define AC_ishvar_err_notassociated__mod__sharedvariables ishvar_err_notassociated__mod__sharedvariables
+const int mpi_comm_world__mod__mpicomm = 0
+#define AC_mpi_comm_world__mod__mpicomm mpi_comm_world__mod__mpicomm
+const int mpi_any_tag__mod__mpicomm = 0
+#define AC_mpi_any_tag__mod__mpicomm mpi_any_tag__mod__mpicomm
+const int mpi_info_null__mod__mpicomm = 0
+#define AC_mpi_info_null__mod__mpicomm mpi_info_null__mod__mpicomm
+const int id_block_persistent__mod__interstellar = 2000
+#define AC_id_block_persistent__mod__interstellar id_block_persistent__mod__interstellar
+const int id_record_random_seeds__mod__interstellar = 1
+#define AC_id_record_random_seeds__mod__interstellar id_record_random_seeds__mod__interstellar
+const int id_record_random_seeds2__mod__interstellar = 2
+#define AC_id_record_random_seeds2__mod__interstellar id_record_random_seeds2__mod__interstellar
+const int id_record_ism_t_next_old__mod__interstellar = 250
+#define AC_id_record_ism_t_next_old__mod__interstellar id_record_ism_t_next_old__mod__interstellar
+const int id_record_ism_pos_next_old__mod__interstellar = 251
+#define AC_id_record_ism_pos_next_old__mod__interstellar id_record_ism_pos_next_old__mod__interstellar
+const int id_record_ism_bold_mass__mod__interstellar = 252
+#define AC_id_record_ism_bold_mass__mod__interstellar id_record_ism_bold_mass__mod__interstellar
+const int id_record_ism_t_next_sni__mod__interstellar = 253
+#define AC_id_record_ism_t_next_sni__mod__interstellar id_record_ism_t_next_sni__mod__interstellar
+const int id_record_ism_t_next_snii__mod__interstellar = 254
+#define AC_id_record_ism_t_next_snii__mod__interstellar id_record_ism_t_next_snii__mod__interstellar
+const int id_record_ism_x_cluster__mod__interstellar = 255
+#define AC_id_record_ism_x_cluster__mod__interstellar id_record_ism_x_cluster__mod__interstellar
+const int id_record_ism_y_cluster__mod__interstellar = 256
+#define AC_id_record_ism_y_cluster__mod__interstellar id_record_ism_y_cluster__mod__interstellar
+const int id_record_ism_z_cluster__mod__interstellar = 260
+#define AC_id_record_ism_z_cluster__mod__interstellar id_record_ism_z_cluster__mod__interstellar
+const int id_record_ism_t_cluster__mod__interstellar = 261
+#define AC_id_record_ism_t_cluster__mod__interstellar id_record_ism_t_cluster__mod__interstellar
+const int id_record_ism_toggle_sni__mod__interstellar = 257
+#define AC_id_record_ism_toggle_sni__mod__interstellar id_record_ism_toggle_sni__mod__interstellar
+const int id_record_ism_toggle_snii__mod__interstellar = 258
+#define AC_id_record_ism_toggle_snii__mod__interstellar id_record_ism_toggle_snii__mod__interstellar
+const int id_record_ism_snrs__mod__interstellar = 259
+#define AC_id_record_ism_snrs__mod__interstellar id_record_ism_snrs__mod__interstellar
+const int id_record_ism_toggle_old__mod__interstellar = 1001
+#define AC_id_record_ism_toggle_old__mod__interstellar id_record_ism_toggle_old__mod__interstellar
+const int id_record_ism_snrs_old__mod__interstellar = 1002
+#define AC_id_record_ism_snrs_old__mod__interstellar id_record_ism_snrs_old__mod__interstellar
+const int id_record_forcing_location__mod__interstellar = 270
+#define AC_id_record_forcing_location__mod__interstellar id_record_forcing_location__mod__interstellar
+const int id_record_forcing_tsforce__mod__interstellar = 271
+#define AC_id_record_forcing_tsforce__mod__interstellar id_record_forcing_tsforce__mod__interstellar
+const int id_record_forcing_torus__mod__interstellar = 272
+#define AC_id_record_forcing_torus__mod__interstellar id_record_forcing_torus__mod__interstellar
+const int id_record_hydro_tphase__mod__interstellar = 280
+#define AC_id_record_hydro_tphase__mod__interstellar id_record_hydro_tphase__mod__interstellar
+const int id_record_hydro_phase1__mod__interstellar = 281
+#define AC_id_record_hydro_phase1__mod__interstellar id_record_hydro_phase1__mod__interstellar
+const int id_record_hydro_phase2__mod__interstellar = 282
+#define AC_id_record_hydro_phase2__mod__interstellar id_record_hydro_phase2__mod__interstellar
+const int id_record_hydro_tsforce__mod__interstellar = 284
+#define AC_id_record_hydro_tsforce__mod__interstellar id_record_hydro_tsforce__mod__interstellar
+const int id_record_hydro_location__mod__interstellar = 285
+#define AC_id_record_hydro_location__mod__interstellar id_record_hydro_location__mod__interstellar
+const int id_record_hydro_ampl__mod__interstellar = 286
+#define AC_id_record_hydro_ampl__mod__interstellar id_record_hydro_ampl__mod__interstellar
+const int id_record_hydro_wavenumber__mod__interstellar = 287
+#define AC_id_record_hydro_wavenumber__mod__interstellar id_record_hydro_wavenumber__mod__interstellar
+const int id_record_magnetic_phase__mod__interstellar = 311
+#define AC_id_record_magnetic_phase__mod__interstellar id_record_magnetic_phase__mod__interstellar
+const int id_record_magnetic_ampl__mod__interstellar = 312
+#define AC_id_record_magnetic_ampl__mod__interstellar id_record_magnetic_ampl__mod__interstellar
+const int id_record_shear_delta_y__mod__interstellar = 320
+#define AC_id_record_shear_delta_y__mod__interstellar id_record_shear_delta_y__mod__interstellar
+const int id_record_time_step__mod__interstellar = 330
+#define AC_id_record_time_step__mod__interstellar id_record_time_step__mod__interstellar
+const int id_record_eps_rkf__mod__interstellar = 331
+#define AC_id_record_eps_rkf__mod__interstellar id_record_eps_rkf__mod__interstellar
+const int id_record_special_lnkmin0__mod__interstellar = 340
+#define AC_id_record_special_lnkmin0__mod__interstellar id_record_special_lnkmin0__mod__interstellar
+const int ilnrho_ss__mod__interstellar = 1
+#define AC_ilnrho_ss__mod__interstellar ilnrho_ss__mod__interstellar
+const int ilnrho_ee__mod__interstellar = 2
+#define AC_ilnrho_ee__mod__interstellar ilnrho_ee__mod__interstellar
+const int ilnrho_pp__mod__interstellar = 3
+#define AC_ilnrho_pp__mod__interstellar ilnrho_pp__mod__interstellar
+const int ilnrho_lntt__mod__interstellar = 4
+#define AC_ilnrho_lntt__mod__interstellar ilnrho_lntt__mod__interstellar
+const int ilnrho_cs2__mod__interstellar = 5
+#define AC_ilnrho_cs2__mod__interstellar ilnrho_cs2__mod__interstellar
+const int irho_cs2__mod__interstellar = 6
+#define AC_irho_cs2__mod__interstellar irho_cs2__mod__interstellar
+const int irho_ss__mod__interstellar = 7
+#define AC_irho_ss__mod__interstellar irho_ss__mod__interstellar
+const int irho_lntt__mod__interstellar = 8
+#define AC_irho_lntt__mod__interstellar irho_lntt__mod__interstellar
+const int ilnrho_tt__mod__interstellar = 9
+#define AC_ilnrho_tt__mod__interstellar ilnrho_tt__mod__interstellar
+const int irho_tt__mod__interstellar = 10
+#define AC_irho_tt__mod__interstellar irho_tt__mod__interstellar
+const int ipp_ss__mod__interstellar = 11
+#define AC_ipp_ss__mod__interstellar ipp_ss__mod__interstellar
+const int ipp_cs2__mod__interstellar = 12
+#define AC_ipp_cs2__mod__interstellar ipp_cs2__mod__interstellar
+const int irho_eth__mod__interstellar = 13
+#define AC_irho_eth__mod__interstellar irho_eth__mod__interstellar
+const int ilnrho_eth__mod__interstellar = 14
+#define AC_ilnrho_eth__mod__interstellar ilnrho_eth__mod__interstellar
+const int irho_ee__mod__interstellar = 15
+#define AC_irho_ee__mod__interstellar irho_ee__mod__interstellar
+const int irho_pp__mod__interstellar = 16
+#define AC_irho_pp__mod__interstellar irho_pp__mod__interstellar
+const int snstate_invalid__mod__interstellar = 0
+#define AC_snstate_invalid__mod__interstellar snstate_invalid__mod__interstellar
+const int snstate_waiting__mod__interstellar = 1
+#define AC_snstate_waiting__mod__interstellar snstate_waiting__mod__interstellar
+const int snstate_exploding__mod__interstellar = 2
+#define AC_snstate_exploding__mod__interstellar snstate_exploding__mod__interstellar
+const int snstate_finished__mod__interstellar = 3
+#define AC_snstate_finished__mod__interstellar snstate_finished__mod__interstellar
+const int iexplosion_ok__mod__interstellar = 0
+#define AC_iexplosion_ok__mod__interstellar iexplosion_ok__mod__interstellar
+const int iexplosion_too_hot__mod__interstellar = 1
+#define AC_iexplosion_too_hot__mod__interstellar iexplosion_too_hot__mod__interstellar
+const int iexplosion_too_rarified__mod__interstellar = 2
+#define AC_iexplosion_too_rarified__mod__interstellar iexplosion_too_rarified__mod__interstellar
+const int iexplosion_too_uneven__mod__interstellar = 3
+#define AC_iexplosion_too_uneven__mod__interstellar iexplosion_too_uneven__mod__interstellar
+const int obstate_invalid__mod__interstellar = 0
+#define AC_obstate_invalid__mod__interstellar obstate_invalid__mod__interstellar
+const int obstate_waiting__mod__interstellar = 1
+#define AC_obstate_waiting__mod__interstellar obstate_waiting__mod__interstellar
+const int obstate_active__mod__interstellar = 2
+#define AC_obstate_active__mod__interstellar obstate_active__mod__interstellar
+const int obstate_finished__mod__interstellar = 3
+#define AC_obstate_finished__mod__interstellar obstate_finished__mod__interstellar
+const int msnr__mod__interstellar = 100
+#define AC_msnr__mod__interstellar msnr__mod__interstellar
+const int mob__mod__interstellar = 20
+#define AC_mob__mod__interstellar mob__mod__interstellar
+const int npresn__mod__interstellar = 5
+#define AC_npresn__mod__interstellar npresn__mod__interstellar
+const int sni__mod__interstellar = 1
+#define AC_sni__mod__interstellar sni__mod__interstellar
+const int snii__mod__interstellar = 2
+#define AC_snii__mod__interstellar snii__mod__interstellar
+const int len_cool__mod__interstellar = 11
+#define AC_len_cool__mod__interstellar len_cool__mod__interstellar
+const int ndiff_max__mod__density = 4
+#define AC_ndiff_max__mod__density ndiff_max__mod__density
+#define AC_ncpus__mod__cparam ncpus
+#define AC_nprocx__mod__cparam nprocx
+#define AC_nprocy__mod__cparam nprocy
+#define AC_nprocz__mod__cparam nprocz
+#define AC_nxgrid__mod__cparam nxgrid
+#define AC_nygrid__mod__cparam nygrid
+#define AC_nzgrid__mod__cparam nzgrid

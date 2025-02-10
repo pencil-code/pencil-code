@@ -1,0 +1,8 @@
+#include "../prerequisites.h"
+
+Kernel singlepass_solve(int step_num, real dt) {
+  write( UU, rk3(previous(UU), value(UU), duu_dt(step_num), step_num, dt) )
+  write( RHO, rk3(previous(RHO), value(RHO), dlnrho_dt(step_num), step_num, dt) )
+  write( AA, rk3(previous(AA), value(AA), daa_dt(step_num), step_num, dt) )
+}
+#include "steps_single.h"

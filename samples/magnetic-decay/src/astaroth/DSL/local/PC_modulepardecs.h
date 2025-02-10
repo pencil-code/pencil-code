@@ -1,0 +1,1368 @@
+// automatically generated; do not edit!
+
+run_const real AC_velocity_ceiling__mod__hydro // from hydro
+#define velocity_ceiling__mod__hydro AC_velocity_ceiling__mod__hydro
+run_const real AC_r_omega__mod__hydro // from hydro
+#define r_omega__mod__hydro AC_r_omega__mod__hydro
+run_const real AC_eps_hless__mod__hydro // from hydro
+#define eps_hless__mod__hydro AC_eps_hless__mod__hydro
+run_const int AC_itij__mod__hydro // from hydro
+#define itij__mod__hydro AC_itij__mod__hydro
+run_const int AC_ihless__mod__hydro // from hydro
+#define ihless__mod__hydro AC_ihless__mod__hydro
+run_const bool AC_llinearized_hydro__mod__hydro // from hydro
+#define llinearized_hydro__mod__hydro AC_llinearized_hydro__mod__hydro
+run_const bool AC_ladvection_velocity__mod__hydro // from hydro
+#define ladvection_velocity__mod__hydro AC_ladvection_velocity__mod__hydro
+run_const bool AC_lprecession__mod__hydro // from hydro
+#define lprecession__mod__hydro AC_lprecession__mod__hydro
+run_const bool AC_lshear_rateofstrain__mod__hydro // from hydro
+#define lshear_rateofstrain__mod__hydro AC_lshear_rateofstrain__mod__hydro
+run_const bool AC_luu_sph_as_aux__mod__hydro // from hydro
+#define luu_sph_as_aux__mod__hydro AC_luu_sph_as_aux__mod__hydro
+run_const bool AC_lvv_as_aux__mod__hydro // from hydro
+#define lvv_as_aux__mod__hydro AC_lvv_as_aux__mod__hydro
+run_const bool AC_lvv_as_comaux__mod__hydro // from hydro
+#define lvv_as_comaux__mod__hydro AC_lvv_as_comaux__mod__hydro
+run_const bool AC_lpressuregradient_gas__mod__hydro // from hydro
+#define lpressuregradient_gas__mod__hydro AC_lpressuregradient_gas__mod__hydro
+run_const bool AC_lcoriolis_force__mod__hydro // from hydro
+#define lcoriolis_force__mod__hydro AC_lcoriolis_force__mod__hydro
+run_const bool AC_lshear_in_coriolis__mod__hydro // from hydro
+#define lshear_in_coriolis__mod__hydro AC_lshear_in_coriolis__mod__hydro
+run_const bool AC_lcentrifugal_force__mod__hydro // from hydro
+#define lcentrifugal_force__mod__hydro AC_lcentrifugal_force__mod__hydro
+run_const bool AC_lconservative__mod__hydro // from hydro
+#define lconservative__mod__hydro AC_lconservative__mod__hydro
+run_const bool AC_lrelativistic__mod__hydro // from hydro
+#define lrelativistic__mod__hydro AC_lrelativistic__mod__hydro
+run_const bool AC_full_3d__mod__hydro // from hydro
+#define full_3d__mod__hydro AC_full_3d__mod__hydro
+run_const bool AC_lhiggsless__mod__hydro // from hydro
+#define lhiggsless__mod__hydro AC_lhiggsless__mod__hydro
+run_const bool AC_lhiggsless_old__mod__hydro // from hydro
+#define lhiggsless_old__mod__hydro AC_lhiggsless_old__mod__hydro
+run_const real AC_ampl_omega__mod__hydro // from hydro
+#define ampl_omega__mod__hydro AC_ampl_omega__mod__hydro
+run_const bool AC_ldiffrot_test__mod__hydro // from hydro
+#define ldiffrot_test__mod__hydro AC_ldiffrot_test__mod__hydro
+run_const real AC_tdamp__mod__hydro // from hydro
+#define tdamp__mod__hydro AC_tdamp__mod__hydro
+run_const real AC_dampu__mod__hydro // from hydro
+#define dampu__mod__hydro AC_dampu__mod__hydro
+run_const real AC_wdamp__mod__hydro // from hydro
+#define wdamp__mod__hydro AC_wdamp__mod__hydro
+run_const real AC_dampuint__mod__hydro // from hydro
+#define dampuint__mod__hydro AC_dampuint__mod__hydro
+run_const real AC_dampuext__mod__hydro // from hydro
+#define dampuext__mod__hydro AC_dampuext__mod__hydro
+run_const real AC_rdampint__mod__hydro // from hydro
+#define rdampint__mod__hydro AC_rdampint__mod__hydro
+run_const real AC_rdampext__mod__hydro // from hydro
+#define rdampext__mod__hydro AC_rdampext__mod__hydro
+run_const real AC_ruxm__mod__hydro // from hydro
+#define ruxm__mod__hydro AC_ruxm__mod__hydro
+run_const real AC_ruym__mod__hydro // from hydro
+#define ruym__mod__hydro AC_ruym__mod__hydro
+run_const real AC_ruzm__mod__hydro // from hydro
+#define ruzm__mod__hydro AC_ruzm__mod__hydro
+run_const real AC_tau_damp_ruxm1__mod__hydro // from hydro
+#define tau_damp_ruxm1__mod__hydro AC_tau_damp_ruxm1__mod__hydro
+run_const real AC_tau_damp_ruym1__mod__hydro // from hydro
+#define tau_damp_ruym1__mod__hydro AC_tau_damp_ruym1__mod__hydro
+run_const real AC_tau_damp_ruzm1__mod__hydro // from hydro
+#define tau_damp_ruzm1__mod__hydro AC_tau_damp_ruzm1__mod__hydro
+run_const real AC_tau_damp_ruxm__mod__hydro // from hydro
+#define tau_damp_ruxm__mod__hydro AC_tau_damp_ruxm__mod__hydro
+run_const real AC_tau_damp_ruym__mod__hydro // from hydro
+#define tau_damp_ruym__mod__hydro AC_tau_damp_ruym__mod__hydro
+run_const real AC_tau_damp_ruzm__mod__hydro // from hydro
+#define tau_damp_ruzm__mod__hydro AC_tau_damp_ruzm__mod__hydro
+run_const real AC_tau_diffrot1__mod__hydro // from hydro
+#define tau_diffrot1__mod__hydro AC_tau_diffrot1__mod__hydro
+run_const real AC_omega_int__mod__hydro // from hydro
+#define omega_int__mod__hydro AC_omega_int__mod__hydro
+run_const real AC_ekman_friction__mod__hydro // from hydro
+#define ekman_friction__mod__hydro AC_ekman_friction__mod__hydro
+run_const real AC_friction_tdep_toffset__mod__hydro // from hydro
+#define friction_tdep_toffset__mod__hydro AC_friction_tdep_toffset__mod__hydro
+run_const real AC_friction_tdep_tau0__mod__hydro // from hydro
+#define friction_tdep_tau0__mod__hydro AC_friction_tdep_tau0__mod__hydro
+run_const real AC_uzjet__mod__hydro // from hydro
+#define uzjet__mod__hydro AC_uzjet__mod__hydro
+run_const real AC_ampl_fcont_uu__mod__hydro // from hydro
+#define ampl_fcont_uu__mod__hydro AC_ampl_fcont_uu__mod__hydro
+run_const real AC_amp_centforce__mod__hydro // from hydro
+#define amp_centforce__mod__hydro AC_amp_centforce__mod__hydro
+run_const bool AC_lomega_int__mod__hydro // from hydro
+#define lomega_int__mod__hydro AC_lomega_int__mod__hydro
+run_const bool AC_lupw_uu__mod__hydro // from hydro
+#define lupw_uu__mod__hydro AC_lupw_uu__mod__hydro
+run_const bool AC_lalways_use_gij_etc__mod__hydro // from hydro
+#define lalways_use_gij_etc__mod__hydro AC_lalways_use_gij_etc__mod__hydro
+run_const bool AC_lcalc_uumeanz__mod__hydro // from hydro
+#define lcalc_uumeanz__mod__hydro AC_lcalc_uumeanz__mod__hydro
+run_const bool AC_lcalc_uumeanxy__mod__hydro // from hydro
+#define lcalc_uumeanxy__mod__hydro AC_lcalc_uumeanxy__mod__hydro
+run_const bool AC_lcalc_uumean__mod__hydro // from hydro
+#define lcalc_uumean__mod__hydro AC_lcalc_uumean__mod__hydro
+run_const bool AC_lcalc_uumeanx__mod__hydro // from hydro
+#define lcalc_uumeanx__mod__hydro AC_lcalc_uumeanx__mod__hydro
+run_const bool AC_lcalc_uumeanxz__mod__hydro // from hydro
+#define lcalc_uumeanxz__mod__hydro AC_lcalc_uumeanxz__mod__hydro
+run_const bool AC_lforcing_cont_uu__mod__hydro // from hydro
+#define lforcing_cont_uu__mod__hydro AC_lforcing_cont_uu__mod__hydro
+run_const bool AC_lcoriolis_xdep__mod__hydro // from hydro
+#define lcoriolis_xdep__mod__hydro AC_lcoriolis_xdep__mod__hydro
+run_const bool AC_lno_meridional_flow__mod__hydro // from hydro
+#define lno_meridional_flow__mod__hydro AC_lno_meridional_flow__mod__hydro
+run_const bool AC_lrotation_xaxis__mod__hydro // from hydro
+#define lrotation_xaxis__mod__hydro AC_lrotation_xaxis__mod__hydro
+run_const bool AC_lgradu_as_aux__mod__hydro // from hydro
+#define lgradu_as_aux__mod__hydro AC_lgradu_as_aux__mod__hydro
+run_const bool AC_lomega_cyl_xy__mod__hydro // from hydro
+#define lomega_cyl_xy__mod__hydro AC_lomega_cyl_xy__mod__hydro
+run_const bool AC_limpose_only_horizontal_uumz__mod__hydro // from hydro
+#define limpose_only_horizontal_uumz__mod__hydro AC_limpose_only_horizontal_uumz__mod__hydro
+run_const bool AC_lschur_3d3d1d_uu__mod__hydro // from hydro
+#define lschur_3d3d1d_uu__mod__hydro AC_lschur_3d3d1d_uu__mod__hydro
+run_const bool AC_lschur_2d2d3d_uu__mod__hydro // from hydro
+#define lschur_2d2d3d_uu__mod__hydro AC_lschur_2d2d3d_uu__mod__hydro
+run_const bool AC_lschur_2d2d1d_uu__mod__hydro // from hydro
+#define lschur_2d2d1d_uu__mod__hydro AC_lschur_2d2d1d_uu__mod__hydro
+run_const real AC_shearx__mod__hydro // from hydro
+#define shearx__mod__hydro AC_shearx__mod__hydro
+run_const real AC_ra__mod__hydro // from hydro
+#define ra__mod__hydro AC_ra__mod__hydro
+run_const real AC_pr__mod__hydro // from hydro
+#define pr__mod__hydro AC_pr__mod__hydro
+run_const real AC_fade_fact__mod__hydro // from hydro
+#define fade_fact__mod__hydro AC_fade_fact__mod__hydro
+run_const int AC_string_enum_friction_tdep__mod__hydro // from hydro
+#define string_enum_friction_tdep__mod__hydro AC_string_enum_friction_tdep__mod__hydro
+run_const int AC_string_enum_uuprof__mod__hydro // from hydro
+#define string_enum_uuprof__mod__hydro AC_string_enum_uuprof__mod__hydro
+run_const real AC_uumz__mod__hydro[mz][3] // from hydro
+#define uumz__mod__hydro AC_uumz__mod__hydro
+run_const real AC_uumx__mod__hydro[mx][3] // from hydro
+#define uumx__mod__hydro AC_uumx__mod__hydro
+gmem real AC_uumxy__mod__hydro[mx][my][3] // from hydro
+#define uumxy__mod__hydro AC_uumxy__mod__hydro
+gmem real AC_uumxz__mod__hydro[mx][mz][3] // from hydro
+#define uumxz__mod__hydro AC_uumxz__mod__hydro
+run_const real AC_uu_average_cyl__mod__hydro[mx][mz] // from hydro
+#define uu_average_cyl__mod__hydro AC_uu_average_cyl__mod__hydro
+run_const real AC_uu_average_sph__mod__hydro[mx][my] // from hydro
+#define uu_average_sph__mod__hydro AC_uu_average_sph__mod__hydro
+gmem real AC_profx_diffrot1__mod__hydro[AC_nx] // from hydro
+#define profx_diffrot1__mod__hydro AC_profx_diffrot1__mod__hydro
+gmem real AC_profx_diffrot2__mod__hydro[AC_nx] // from hydro
+#define profx_diffrot2__mod__hydro AC_profx_diffrot2__mod__hydro
+gmem real AC_profx_diffrot3__mod__hydro[AC_nx] // from hydro
+#define profx_diffrot3__mod__hydro AC_profx_diffrot3__mod__hydro
+gmem real AC_profy_diffrot1__mod__hydro[AC_my] // from hydro
+#define profy_diffrot1__mod__hydro AC_profy_diffrot1__mod__hydro
+gmem real AC_profy_diffrot2__mod__hydro[AC_my] // from hydro
+#define profy_diffrot2__mod__hydro AC_profy_diffrot2__mod__hydro
+gmem real AC_profy_diffrot3__mod__hydro[AC_my] // from hydro
+#define profy_diffrot3__mod__hydro AC_profy_diffrot3__mod__hydro
+run_const real AC_mat_cent__mod__hydro[3][3] // from hydro
+#define mat_cent__mod__hydro AC_mat_cent__mod__hydro
+run_const real3 AC_uu_const__mod__hydro // from hydro
+#define uu_const__mod__hydro AC_uu_const__mod__hydro
+gmem real AC_prof_om__mod__hydro[AC_nx] // from hydro
+#define prof_om__mod__hydro AC_prof_om__mod__hydro
+gmem real AC_prof_amp1__mod__hydro[AC_nx] // from hydro
+#define prof_amp1__mod__hydro AC_prof_amp1__mod__hydro
+gmem real AC_prof_amp3__mod__hydro[AC_mz] // from hydro
+#define prof_amp3__mod__hydro AC_prof_amp3__mod__hydro
+gmem real AC_prof_amp4__mod__hydro[AC_my] // from hydro
+#define prof_amp4__mod__hydro AC_prof_amp4__mod__hydro
+run_const real AC_uumz_prof__mod__hydro[nz][3] // from hydro
+#define uumz_prof__mod__hydro AC_uumz_prof__mod__hydro
+run_const real AC_omega_prof__mod__hydro[nx][ny] // from hydro
+#define omega_prof__mod__hydro AC_omega_prof__mod__hydro
+run_const int3 AC_string_enum_borderuu__mod__hydro // from hydro
+#define string_enum_borderuu__mod__hydro AC_string_enum_borderuu__mod__hydro
+
+run_const real AC_lnrho_const__mod__density // from density
+#define lnrho_const__mod__density AC_lnrho_const__mod__density
+run_const real AC_rho_const__mod__density // from density
+#define rho_const__mod__density AC_rho_const__mod__density
+run_const real AC_diffrho__mod__density // from density
+#define diffrho__mod__density AC_diffrho__mod__density
+run_const real AC_diff_cspeed__mod__density // from density
+#define diff_cspeed__mod__density AC_diff_cspeed__mod__density
+run_const real AC_diffrho_hyper3__mod__density // from density
+#define diffrho_hyper3__mod__density AC_diffrho_hyper3__mod__density
+run_const real AC_diffrho_hyper3_mesh__mod__density // from density
+#define diffrho_hyper3_mesh__mod__density AC_diffrho_hyper3_mesh__mod__density
+run_const real AC_diffrho_shock__mod__density // from density
+#define diffrho_shock__mod__density AC_diffrho_shock__mod__density
+run_const real AC_mass_source_omega__mod__density // from density
+#define mass_source_omega__mod__density AC_mass_source_omega__mod__density
+run_const real AC_lnrho_int__mod__density // from density
+#define lnrho_int__mod__density AC_lnrho_int__mod__density
+run_const real AC_lnrho_ext__mod__density // from density
+#define lnrho_ext__mod__density AC_lnrho_ext__mod__density
+run_const real AC_damplnrho_int__mod__density // from density
+#define damplnrho_int__mod__density AC_damplnrho_int__mod__density
+run_const real AC_damplnrho_ext__mod__density // from density
+#define damplnrho_ext__mod__density AC_damplnrho_ext__mod__density
+run_const real AC_wdamp__mod__density // from density
+#define wdamp__mod__density AC_wdamp__mod__density
+run_const real AC_mass_source_mdot__mod__density // from density
+#define mass_source_mdot__mod__density AC_mass_source_mdot__mod__density
+run_const real AC_mass_source_sigma__mod__density // from density
+#define mass_source_sigma__mod__density AC_mass_source_sigma__mod__density
+run_const real AC_fnorm__mod__density // from density
+#define fnorm__mod__density AC_fnorm__mod__density
+run_const real AC_mass_source_tau1__mod__density // from density
+#define mass_source_tau1__mod__density AC_mass_source_tau1__mod__density
+run_const real AC_reduce_cs2__mod__density // from density
+#define reduce_cs2__mod__density AC_reduce_cs2__mod__density
+run_const bool AC_lrelativistic_eos__mod__density // from density
+#define lrelativistic_eos__mod__density AC_lrelativistic_eos__mod__density
+run_const bool AC_ladvection_density__mod__density // from density
+#define ladvection_density__mod__density AC_ladvection_density__mod__density
+run_const bool AC_lmass_source_random__mod__density // from density
+#define lmass_source_random__mod__density AC_lmass_source_random__mod__density
+run_const bool AC_lcontinuity_gas__mod__density // from density
+#define lcontinuity_gas__mod__density AC_lcontinuity_gas__mod__density
+run_const bool AC_lupw_lnrho__mod__density // from density
+#define lupw_lnrho__mod__density AC_lupw_lnrho__mod__density
+run_const bool AC_lupw_rho__mod__density // from density
+#define lupw_rho__mod__density AC_lupw_rho__mod__density
+run_const bool AC_ldiff_normal__mod__density // from density
+#define ldiff_normal__mod__density AC_ldiff_normal__mod__density
+run_const bool AC_ldiff_hyper3__mod__density // from density
+#define ldiff_hyper3__mod__density AC_ldiff_hyper3__mod__density
+run_const bool AC_ldiff_shock__mod__density // from density
+#define ldiff_shock__mod__density AC_ldiff_shock__mod__density
+run_const bool AC_ldiff_cspeed__mod__density // from density
+#define ldiff_cspeed__mod__density AC_ldiff_cspeed__mod__density
+run_const bool AC_ldiff_hyper3lnrho__mod__density // from density
+#define ldiff_hyper3lnrho__mod__density AC_ldiff_hyper3lnrho__mod__density
+run_const bool AC_ldiff_hyper3_aniso__mod__density // from density
+#define ldiff_hyper3_aniso__mod__density AC_ldiff_hyper3_aniso__mod__density
+run_const bool AC_ldiff_hyper3_polar__mod__density // from density
+#define ldiff_hyper3_polar__mod__density AC_ldiff_hyper3_polar__mod__density
+run_const bool AC_lanti_shockdiffusion__mod__density // from density
+#define lanti_shockdiffusion__mod__density AC_lanti_shockdiffusion__mod__density
+run_const bool AC_ldiff_hyper3_mesh__mod__density // from density
+#define ldiff_hyper3_mesh__mod__density AC_ldiff_hyper3_mesh__mod__density
+run_const bool AC_ldiff_hyper3_strict__mod__density // from density
+#define ldiff_hyper3_strict__mod__density AC_ldiff_hyper3_strict__mod__density
+run_const bool AC_ldiff_hyper3lnrho_strict__mod__density // from density
+#define ldiff_hyper3lnrho_strict__mod__density AC_ldiff_hyper3lnrho_strict__mod__density
+run_const bool AC_ldiffusion_nolog__mod__density // from density
+#define ldiffusion_nolog__mod__density AC_ldiffusion_nolog__mod__density
+run_const bool AC_lmassdiff_fix__mod__density // from density
+#define lmassdiff_fix__mod__density AC_lmassdiff_fix__mod__density
+run_const bool AC_ldensity_profile_masscons__mod__density // from density
+#define ldensity_profile_masscons__mod__density AC_ldensity_profile_masscons__mod__density
+run_const bool AC_lffree__mod__density // from density
+#define lffree__mod__density AC_lffree__mod__density
+run_const bool AC_lschur_3d3d1d__mod__density // from density
+#define lschur_3d3d1d__mod__density AC_lschur_3d3d1d__mod__density
+run_const bool AC_lreduced_sound_speed__mod__density // from density
+#define lreduced_sound_speed__mod__density AC_lreduced_sound_speed__mod__density
+run_const bool AC_lscale_to_cs2top__mod__density // from density
+#define lscale_to_cs2top__mod__density AC_lscale_to_cs2top__mod__density
+run_const bool AC_lsubtract_init_stratification__mod__density // from density
+#define lsubtract_init_stratification__mod__density AC_lsubtract_init_stratification__mod__density
+run_const bool AC_ldensity_slope_limited__mod__density // from density
+#define ldensity_slope_limited__mod__density AC_ldensity_slope_limited__mod__density
+run_const bool AC_lupdate_mass_source__mod__density // from density
+#define lupdate_mass_source__mod__density AC_lupdate_mass_source__mod__density
+run_const real AC_gamma1__mod__density // from density
+#define gamma1__mod__density AC_gamma1__mod__density
+run_const int AC_string_enum_ieos_profile__mod__density // from density
+#define string_enum_ieos_profile__mod__density AC_string_enum_ieos_profile__mod__density
+run_const int AC_string_enum_mass_source_profile__mod__density // from density
+#define string_enum_mass_source_profile__mod__density AC_string_enum_mass_source_profile__mod__density
+run_const int AC_string_enum_borderlnrho__mod__density // from density
+#define string_enum_borderlnrho__mod__density AC_string_enum_borderlnrho__mod__density
+run_const real AC_xblob__mod__density[ninit] // from density
+#define xblob__mod__density AC_xblob__mod__density
+run_const real AC_yblob__mod__density[ninit] // from density
+#define yblob__mod__density AC_yblob__mod__density
+run_const real AC_zblob__mod__density[ninit] // from density
+#define zblob__mod__density AC_zblob__mod__density
+gmem real AC_dlnrhodz_init_z__mod__density[AC_mz] // from density
+#define dlnrhodz_init_z__mod__density AC_dlnrhodz_init_z__mod__density
+gmem real AC_del2lnrho_glnrho2_init_z__mod__density[AC_mz] // from density
+#define del2lnrho_glnrho2_init_z__mod__density AC_del2lnrho_glnrho2_init_z__mod__density
+run_const real3 AC_diffrho_hyper3_aniso__mod__density // from density
+#define diffrho_hyper3_aniso__mod__density AC_diffrho_hyper3_aniso__mod__density
+gmem real AC_profx_ffree__mod__density[AC_nx] // from density
+#define profx_ffree__mod__density AC_profx_ffree__mod__density
+gmem real AC_dprofx_ffree__mod__density[AC_nx] // from density
+#define dprofx_ffree__mod__density AC_dprofx_ffree__mod__density
+gmem real AC_profy_ffree__mod__density[AC_my] // from density
+#define profy_ffree__mod__density AC_profy_ffree__mod__density
+gmem real AC_dprofy_ffree__mod__density[AC_my] // from density
+#define dprofy_ffree__mod__density AC_dprofy_ffree__mod__density
+gmem real AC_profz_ffree__mod__density[AC_mz] // from density
+#define profz_ffree__mod__density AC_profz_ffree__mod__density
+gmem real AC_dprofz_ffree__mod__density[AC_mz] // from density
+#define dprofz_ffree__mod__density AC_dprofz_ffree__mod__density
+gmem real AC_profz_eos__mod__density[AC_mz] // from density
+#define profz_eos__mod__density AC_profz_eos__mod__density
+gmem real AC_dprofz_eos__mod__density[AC_mz] // from density
+#define dprofz_eos__mod__density AC_dprofz_eos__mod__density
+gmem real AC_fprofile_x__mod__density[AC_nx] // from density
+#define fprofile_x__mod__density AC_fprofile_x__mod__density
+gmem real AC_fprofile_z__mod__density[AC_nz] // from density
+#define fprofile_z__mod__density AC_fprofile_z__mod__density
+gmem real AC_reduce_cs2_profx__mod__density[AC_nx] // from density
+#define reduce_cs2_profx__mod__density AC_reduce_cs2_profx__mod__density
+gmem real AC_reduce_cs2_profz__mod__density[AC_mz] // from density
+#define reduce_cs2_profz__mod__density AC_reduce_cs2_profz__mod__density
+run_const real AC_reference_state__mod__density[nx][9] // from density
+#define reference_state__mod__density AC_reference_state__mod__density
+run_const real3 AC_beta_glnrho_scaled__mod__density // from density
+#define beta_glnrho_scaled__mod__density AC_beta_glnrho_scaled__mod__density
+
+run_const real AC_b0_ext_z__mod__magnetic // from magnetic
+#define b0_ext_z__mod__magnetic AC_b0_ext_z__mod__magnetic
+run_const real AC_t_bext__mod__magnetic // from magnetic
+#define t_bext__mod__magnetic AC_t_bext__mod__magnetic
+run_const real AC_t0_bext__mod__magnetic // from magnetic
+#define t0_bext__mod__magnetic AC_t0_bext__mod__magnetic
+run_const real AC_eta1_aniso__mod__magnetic // from magnetic
+#define eta1_aniso__mod__magnetic AC_eta1_aniso__mod__magnetic
+run_const real AC_eta1_aniso_r__mod__magnetic // from magnetic
+#define eta1_aniso_r__mod__magnetic AC_eta1_aniso_r__mod__magnetic
+run_const real AC_eta1_aniso_d__mod__magnetic // from magnetic
+#define eta1_aniso_d__mod__magnetic AC_eta1_aniso_d__mod__magnetic
+run_const real AC_eta_shock__mod__magnetic // from magnetic
+#define eta_shock__mod__magnetic AC_eta_shock__mod__magnetic
+run_const real AC_eta_shock2__mod__magnetic // from magnetic
+#define eta_shock2__mod__magnetic AC_eta_shock2__mod__magnetic
+run_const real AC_alp_aniso__mod__magnetic // from magnetic
+#define alp_aniso__mod__magnetic AC_alp_aniso__mod__magnetic
+run_const real AC_eta_aniso_bb__mod__magnetic // from magnetic
+#define eta_aniso_bb__mod__magnetic AC_eta_aniso_bb__mod__magnetic
+run_const real AC_quench_aniso__mod__magnetic // from magnetic
+#define quench_aniso__mod__magnetic AC_quench_aniso__mod__magnetic
+run_const real AC_eta_va__mod__magnetic // from magnetic
+#define eta_va__mod__magnetic AC_eta_va__mod__magnetic
+run_const real AC_eta_j__mod__magnetic // from magnetic
+#define eta_j__mod__magnetic AC_eta_j__mod__magnetic
+run_const real AC_eta_jrho__mod__magnetic // from magnetic
+#define eta_jrho__mod__magnetic AC_eta_jrho__mod__magnetic
+run_const real AC_eta_min__mod__magnetic // from magnetic
+#define eta_min__mod__magnetic AC_eta_min__mod__magnetic
+run_const real AC_etaj20__mod__magnetic // from magnetic
+#define etaj20__mod__magnetic AC_etaj20__mod__magnetic
+run_const real AC_va_min__mod__magnetic // from magnetic
+#define va_min__mod__magnetic AC_va_min__mod__magnetic
+run_const real AC_varms__mod__magnetic // from magnetic
+#define varms__mod__magnetic AC_varms__mod__magnetic
+run_const real AC_rhomin_jxb__mod__magnetic // from magnetic
+#define rhomin_jxb__mod__magnetic AC_rhomin_jxb__mod__magnetic
+run_const real AC_va2max_jxb__mod__magnetic // from magnetic
+#define va2max_jxb__mod__magnetic AC_va2max_jxb__mod__magnetic
+run_const real AC_va2max_boris__mod__magnetic // from magnetic
+#define va2max_boris__mod__magnetic AC_va2max_boris__mod__magnetic
+run_const real AC_cmin__mod__magnetic // from magnetic
+#define cmin__mod__magnetic AC_cmin__mod__magnetic
+run_const real AC_omega_bz_ext__mod__magnetic // from magnetic
+#define omega_bz_ext__mod__magnetic AC_omega_bz_ext__mod__magnetic
+run_const real AC_inclaa__mod__magnetic // from magnetic
+#define inclaa__mod__magnetic AC_inclaa__mod__magnetic
+run_const real AC_d_smag__mod__magnetic // from magnetic
+#define d_smag__mod__magnetic AC_d_smag__mod__magnetic
+run_const real AC_b_ext2__mod__magnetic // from magnetic
+#define b_ext2__mod__magnetic AC_b_ext2__mod__magnetic
+run_const real AC_nu_ni1__mod__magnetic // from magnetic
+#define nu_ni1__mod__magnetic AC_nu_ni1__mod__magnetic
+run_const real AC_hall_term__mod__magnetic // from magnetic
+#define hall_term__mod__magnetic AC_hall_term__mod__magnetic
+run_const real AC_battery_term__mod__magnetic // from magnetic
+#define battery_term__mod__magnetic AC_battery_term__mod__magnetic
+run_const real AC_hall_tdep_t0__mod__magnetic // from magnetic
+#define hall_tdep_t0__mod__magnetic AC_hall_tdep_t0__mod__magnetic
+run_const real AC_hall_tdep_exponent__mod__magnetic // from magnetic
+#define hall_tdep_exponent__mod__magnetic AC_hall_tdep_exponent__mod__magnetic
+run_const real AC_hhall__mod__magnetic // from magnetic
+#define hhall__mod__magnetic AC_hhall__mod__magnetic
+run_const real AC_hall_zdep_exponent__mod__magnetic // from magnetic
+#define hall_zdep_exponent__mod__magnetic AC_hall_zdep_exponent__mod__magnetic
+run_const real AC_eta_jump__mod__magnetic // from magnetic
+#define eta_jump__mod__magnetic AC_eta_jump__mod__magnetic
+run_const real AC_eta_jump0__mod__magnetic // from magnetic
+#define eta_jump0__mod__magnetic AC_eta_jump0__mod__magnetic
+run_const real AC_eta_jump1__mod__magnetic // from magnetic
+#define eta_jump1__mod__magnetic AC_eta_jump1__mod__magnetic
+run_const real AC_etab__mod__magnetic // from magnetic
+#define etab__mod__magnetic AC_etab__mod__magnetic
+run_const real AC_tau_relprof__mod__magnetic // from magnetic
+#define tau_relprof__mod__magnetic AC_tau_relprof__mod__magnetic
+run_const real AC_tau_relprof1__mod__magnetic // from magnetic
+#define tau_relprof1__mod__magnetic AC_tau_relprof1__mod__magnetic
+run_const real AC_dipole_moment__mod__magnetic // from magnetic
+#define dipole_moment__mod__magnetic AC_dipole_moment__mod__magnetic
+run_const real AC_pm_smag1__mod__magnetic // from magnetic
+#define pm_smag1__mod__magnetic AC_pm_smag1__mod__magnetic
+run_const int AC_va2power_jxb__mod__magnetic // from magnetic
+#define va2power_jxb__mod__magnetic AC_va2power_jxb__mod__magnetic
+run_const int AC_iua__mod__magnetic // from magnetic
+#define iua__mod__magnetic AC_iua__mod__magnetic
+run_const int AC_ilam__mod__magnetic // from magnetic
+#define ilam__mod__magnetic AC_ilam__mod__magnetic
+run_const bool AC_llorentzforce__mod__magnetic // from magnetic
+#define llorentzforce__mod__magnetic AC_llorentzforce__mod__magnetic
+run_const bool AC_llorentz_rhoref__mod__magnetic // from magnetic
+#define llorentz_rhoref__mod__magnetic AC_llorentz_rhoref__mod__magnetic
+run_const bool AC_linduction__mod__magnetic // from magnetic
+#define linduction__mod__magnetic AC_linduction__mod__magnetic
+run_const bool AC_ldiamagnetism__mod__magnetic // from magnetic
+#define ldiamagnetism__mod__magnetic AC_ldiamagnetism__mod__magnetic
+run_const bool AC_lcovariant_magnetic__mod__magnetic // from magnetic
+#define lcovariant_magnetic__mod__magnetic AC_lcovariant_magnetic__mod__magnetic
+run_const bool AC_ladd_global_field__mod__magnetic // from magnetic
+#define ladd_global_field__mod__magnetic AC_ladd_global_field__mod__magnetic
+run_const bool AC_lresi_eta_const__mod__magnetic // from magnetic
+#define lresi_eta_const__mod__magnetic AC_lresi_eta_const__mod__magnetic
+run_const bool AC_lresi_eta_tdep__mod__magnetic // from magnetic
+#define lresi_eta_tdep__mod__magnetic AC_lresi_eta_tdep__mod__magnetic
+run_const bool AC_lresi_eta_ztdep__mod__magnetic // from magnetic
+#define lresi_eta_ztdep__mod__magnetic AC_lresi_eta_ztdep__mod__magnetic
+run_const bool AC_lresi_sqrtrhoeta_const__mod__magnetic // from magnetic
+#define lresi_sqrtrhoeta_const__mod__magnetic AC_lresi_sqrtrhoeta_const__mod__magnetic
+run_const bool AC_lresi_eta_aniso__mod__magnetic // from magnetic
+#define lresi_eta_aniso__mod__magnetic AC_lresi_eta_aniso__mod__magnetic
+run_const bool AC_lquench_eta_aniso__mod__magnetic // from magnetic
+#define lquench_eta_aniso__mod__magnetic AC_lquench_eta_aniso__mod__magnetic
+run_const bool AC_lresi_etass__mod__magnetic // from magnetic
+#define lresi_etass__mod__magnetic AC_lresi_etass__mod__magnetic
+run_const bool AC_lresi_hyper2__mod__magnetic // from magnetic
+#define lresi_hyper2__mod__magnetic AC_lresi_hyper2__mod__magnetic
+run_const bool AC_lresi_hyper3__mod__magnetic // from magnetic
+#define lresi_hyper3__mod__magnetic AC_lresi_hyper3__mod__magnetic
+run_const bool AC_lresi_hyper2_tdep__mod__magnetic // from magnetic
+#define lresi_hyper2_tdep__mod__magnetic AC_lresi_hyper2_tdep__mod__magnetic
+run_const bool AC_lresi_hyper3_tdep__mod__magnetic // from magnetic
+#define lresi_hyper3_tdep__mod__magnetic AC_lresi_hyper3_tdep__mod__magnetic
+run_const bool AC_lresi_hyper3_polar__mod__magnetic // from magnetic
+#define lresi_hyper3_polar__mod__magnetic AC_lresi_hyper3_polar__mod__magnetic
+run_const bool AC_lresi_hyper3_mesh__mod__magnetic // from magnetic
+#define lresi_hyper3_mesh__mod__magnetic AC_lresi_hyper3_mesh__mod__magnetic
+run_const bool AC_lresi_hyper3_csmesh__mod__magnetic // from magnetic
+#define lresi_hyper3_csmesh__mod__magnetic AC_lresi_hyper3_csmesh__mod__magnetic
+run_const bool AC_lresi_hyper3_strict__mod__magnetic // from magnetic
+#define lresi_hyper3_strict__mod__magnetic AC_lresi_hyper3_strict__mod__magnetic
+run_const bool AC_lresi_zdep__mod__magnetic // from magnetic
+#define lresi_zdep__mod__magnetic AC_lresi_zdep__mod__magnetic
+run_const bool AC_lresi_ydep__mod__magnetic // from magnetic
+#define lresi_ydep__mod__magnetic AC_lresi_ydep__mod__magnetic
+run_const bool AC_lresi_xdep__mod__magnetic // from magnetic
+#define lresi_xdep__mod__magnetic AC_lresi_xdep__mod__magnetic
+run_const bool AC_lresi_rdep__mod__magnetic // from magnetic
+#define lresi_rdep__mod__magnetic AC_lresi_rdep__mod__magnetic
+run_const bool AC_lresi_xydep__mod__magnetic // from magnetic
+#define lresi_xydep__mod__magnetic AC_lresi_xydep__mod__magnetic
+run_const bool AC_lresi_hyper3_aniso__mod__magnetic // from magnetic
+#define lresi_hyper3_aniso__mod__magnetic AC_lresi_hyper3_aniso__mod__magnetic
+run_const bool AC_lresi_eta_shock__mod__magnetic // from magnetic
+#define lresi_eta_shock__mod__magnetic AC_lresi_eta_shock__mod__magnetic
+run_const bool AC_lresi_eta_shock2__mod__magnetic // from magnetic
+#define lresi_eta_shock2__mod__magnetic AC_lresi_eta_shock2__mod__magnetic
+run_const bool AC_lresi_eta_shock_profz__mod__magnetic // from magnetic
+#define lresi_eta_shock_profz__mod__magnetic AC_lresi_eta_shock_profz__mod__magnetic
+run_const bool AC_lresi_eta_shock_profr__mod__magnetic // from magnetic
+#define lresi_eta_shock_profr__mod__magnetic AC_lresi_eta_shock_profr__mod__magnetic
+run_const bool AC_lresi_eta_shock_perp__mod__magnetic // from magnetic
+#define lresi_eta_shock_perp__mod__magnetic AC_lresi_eta_shock_perp__mod__magnetic
+run_const bool AC_lresi_etava__mod__magnetic // from magnetic
+#define lresi_etava__mod__magnetic AC_lresi_etava__mod__magnetic
+run_const bool AC_lresi_etaj__mod__magnetic // from magnetic
+#define lresi_etaj__mod__magnetic AC_lresi_etaj__mod__magnetic
+run_const bool AC_lresi_etaj2__mod__magnetic // from magnetic
+#define lresi_etaj2__mod__magnetic AC_lresi_etaj2__mod__magnetic
+run_const bool AC_lresi_etajrho__mod__magnetic // from magnetic
+#define lresi_etajrho__mod__magnetic AC_lresi_etajrho__mod__magnetic
+run_const bool AC_lresi_shell__mod__magnetic // from magnetic
+#define lresi_shell__mod__magnetic AC_lresi_shell__mod__magnetic
+run_const bool AC_lresi_smagorinsky__mod__magnetic // from magnetic
+#define lresi_smagorinsky__mod__magnetic AC_lresi_smagorinsky__mod__magnetic
+run_const bool AC_lresi_smagorinsky_nusmag__mod__magnetic // from magnetic
+#define lresi_smagorinsky_nusmag__mod__magnetic AC_lresi_smagorinsky_nusmag__mod__magnetic
+run_const bool AC_lresi_smagorinsky_cross__mod__magnetic // from magnetic
+#define lresi_smagorinsky_cross__mod__magnetic AC_lresi_smagorinsky_cross__mod__magnetic
+run_const bool AC_lresi_anomalous__mod__magnetic // from magnetic
+#define lresi_anomalous__mod__magnetic AC_lresi_anomalous__mod__magnetic
+run_const bool AC_lresi_spitzer__mod__magnetic // from magnetic
+#define lresi_spitzer__mod__magnetic AC_lresi_spitzer__mod__magnetic
+run_const bool AC_lresi_cspeed__mod__magnetic // from magnetic
+#define lresi_cspeed__mod__magnetic AC_lresi_cspeed__mod__magnetic
+run_const bool AC_lresi_vaspeed__mod__magnetic // from magnetic
+#define lresi_vaspeed__mod__magnetic AC_lresi_vaspeed__mod__magnetic
+run_const bool AC_lalfven_as_aux__mod__magnetic // from magnetic
+#define lalfven_as_aux__mod__magnetic AC_lalfven_as_aux__mod__magnetic
+run_const bool AC_lresi_magfield__mod__magnetic // from magnetic
+#define lresi_magfield__mod__magnetic AC_lresi_magfield__mod__magnetic
+run_const bool AC_lresi_eta_proptouz__mod__magnetic // from magnetic
+#define lresi_eta_proptouz__mod__magnetic AC_lresi_eta_proptouz__mod__magnetic
+run_const bool AC_lohmic_heat__mod__magnetic // from magnetic
+#define lohmic_heat__mod__magnetic AC_lohmic_heat__mod__magnetic
+run_const bool AC_lneutralion_heat__mod__magnetic // from magnetic
+#define lneutralion_heat__mod__magnetic AC_lneutralion_heat__mod__magnetic
+run_const bool AC_lj_ext__mod__magnetic // from magnetic
+#define lj_ext__mod__magnetic AC_lj_ext__mod__magnetic
+run_const bool AC_lee_as_aux__mod__magnetic // from magnetic
+#define lee_as_aux__mod__magnetic AC_lee_as_aux__mod__magnetic
+run_const bool AC_ladd_disp_current_from_aux__mod__magnetic // from magnetic
+#define ladd_disp_current_from_aux__mod__magnetic AC_ladd_disp_current_from_aux__mod__magnetic
+run_const bool AC_lbb_as_aux__mod__magnetic // from magnetic
+#define lbb_as_aux__mod__magnetic AC_lbb_as_aux__mod__magnetic
+run_const bool AC_ljj_as_aux__mod__magnetic // from magnetic
+#define ljj_as_aux__mod__magnetic AC_ljj_as_aux__mod__magnetic
+run_const bool AC_ljxb_as_aux__mod__magnetic // from magnetic
+#define ljxb_as_aux__mod__magnetic AC_ljxb_as_aux__mod__magnetic
+run_const bool AC_luxb_as_aux__mod__magnetic // from magnetic
+#define luxb_as_aux__mod__magnetic AC_luxb_as_aux__mod__magnetic
+run_const bool AC_lugb_as_aux__mod__magnetic // from magnetic
+#define lugb_as_aux__mod__magnetic AC_lugb_as_aux__mod__magnetic
+run_const bool AC_lbgu_as_aux__mod__magnetic // from magnetic
+#define lbgu_as_aux__mod__magnetic AC_lbgu_as_aux__mod__magnetic
+run_const bool AC_lbdivu_as_aux__mod__magnetic // from magnetic
+#define lbdivu_as_aux__mod__magnetic AC_lbdivu_as_aux__mod__magnetic
+run_const bool AC_lua_as_aux__mod__magnetic // from magnetic
+#define lua_as_aux__mod__magnetic AC_lua_as_aux__mod__magnetic
+run_const bool AC_letasmag_as_aux__mod__magnetic // from magnetic
+#define letasmag_as_aux__mod__magnetic AC_letasmag_as_aux__mod__magnetic
+run_const bool AC_ljj_as_comaux__mod__magnetic // from magnetic
+#define ljj_as_comaux__mod__magnetic AC_ljj_as_comaux__mod__magnetic
+run_const bool AC_lbb_as_comaux__mod__magnetic // from magnetic
+#define lbb_as_comaux__mod__magnetic AC_lbb_as_comaux__mod__magnetic
+run_const bool AC_lb_ext_in_comaux__mod__magnetic // from magnetic
+#define lb_ext_in_comaux__mod__magnetic AC_lb_ext_in_comaux__mod__magnetic
+run_const bool AC_lbb_sph_as_aux__mod__magnetic // from magnetic
+#define lbb_sph_as_aux__mod__magnetic AC_lbb_sph_as_aux__mod__magnetic
+run_const bool AC_lbext_curvilinear__mod__magnetic // from magnetic
+#define lbext_curvilinear__mod__magnetic AC_lbext_curvilinear__mod__magnetic
+run_const bool AC_lsmooth_jj__mod__magnetic // from magnetic
+#define lsmooth_jj__mod__magnetic AC_lsmooth_jj__mod__magnetic
+run_const bool AC_lambipolar_diffusion__mod__magnetic // from magnetic
+#define lambipolar_diffusion__mod__magnetic AC_lambipolar_diffusion__mod__magnetic
+run_const bool AC_lcoulomb__mod__magnetic // from magnetic
+#define lcoulomb__mod__magnetic AC_lcoulomb__mod__magnetic
+run_const bool AC_lvacuum__mod__magnetic // from magnetic
+#define lvacuum__mod__magnetic AC_lvacuum__mod__magnetic
+run_const bool AC_loverride_ee__mod__magnetic // from magnetic
+#define loverride_ee__mod__magnetic AC_loverride_ee__mod__magnetic
+run_const bool AC_loverride_ee2__mod__magnetic // from magnetic
+#define loverride_ee2__mod__magnetic AC_loverride_ee2__mod__magnetic
+run_const bool AC_lignore_1rho_in_lorentz__mod__magnetic // from magnetic
+#define lignore_1rho_in_lorentz__mod__magnetic AC_lignore_1rho_in_lorentz__mod__magnetic
+run_const int AC_iedotx__mod__magnetic // from magnetic
+#define iedotx__mod__magnetic AC_iedotx__mod__magnetic
+run_const int AC_iedotz__mod__magnetic // from magnetic
+#define iedotz__mod__magnetic AC_iedotz__mod__magnetic
+run_const real AC_eta__mod__magnetic // from magnetic
+#define eta__mod__magnetic AC_eta__mod__magnetic
+run_const real AC_eta_hyper2__mod__magnetic // from magnetic
+#define eta_hyper2__mod__magnetic AC_eta_hyper2__mod__magnetic
+run_const real AC_eta_hyper3__mod__magnetic // from magnetic
+#define eta_hyper3__mod__magnetic AC_eta_hyper3__mod__magnetic
+run_const real AC_eta_hyper3_mesh__mod__magnetic // from magnetic
+#define eta_hyper3_mesh__mod__magnetic AC_eta_hyper3_mesh__mod__magnetic
+run_const real AC_eta_spitzer__mod__magnetic // from magnetic
+#define eta_spitzer__mod__magnetic AC_eta_spitzer__mod__magnetic
+run_const real AC_eta_anom__mod__magnetic // from magnetic
+#define eta_anom__mod__magnetic AC_eta_anom__mod__magnetic
+run_const real AC_eta_anom_thresh__mod__magnetic // from magnetic
+#define eta_anom_thresh__mod__magnetic AC_eta_anom_thresh__mod__magnetic
+run_const real AC_eta_int__mod__magnetic // from magnetic
+#define eta_int__mod__magnetic AC_eta_int__mod__magnetic
+run_const real AC_eta_ext__mod__magnetic // from magnetic
+#define eta_ext__mod__magnetic AC_eta_ext__mod__magnetic
+run_const real AC_wresistivity__mod__magnetic // from magnetic
+#define wresistivity__mod__magnetic AC_wresistivity__mod__magnetic
+run_const real AC_height_eta__mod__magnetic // from magnetic
+#define height_eta__mod__magnetic AC_height_eta__mod__magnetic
+run_const real AC_eta_out__mod__magnetic // from magnetic
+#define eta_out__mod__magnetic AC_eta_out__mod__magnetic
+run_const real AC_eta_cspeed__mod__magnetic // from magnetic
+#define eta_cspeed__mod__magnetic AC_eta_cspeed__mod__magnetic
+run_const real AC_tau_aa_exterior__mod__magnetic // from magnetic
+#define tau_aa_exterior__mod__magnetic AC_tau_aa_exterior__mod__magnetic
+run_const real AC_tauad__mod__magnetic // from magnetic
+#define tauad__mod__magnetic AC_tauad__mod__magnetic
+run_const real AC_eta_zwidth__mod__magnetic // from magnetic
+#define eta_zwidth__mod__magnetic AC_eta_zwidth__mod__magnetic
+run_const real AC_eta_rwidth__mod__magnetic // from magnetic
+#define eta_rwidth__mod__magnetic AC_eta_rwidth__mod__magnetic
+run_const real AC_eta_width_shock__mod__magnetic // from magnetic
+#define eta_width_shock__mod__magnetic AC_eta_width_shock__mod__magnetic
+run_const real AC_eta_zshock__mod__magnetic // from magnetic
+#define eta_zshock__mod__magnetic AC_eta_zshock__mod__magnetic
+run_const real AC_eta_rwidth0__mod__magnetic // from magnetic
+#define eta_rwidth0__mod__magnetic AC_eta_rwidth0__mod__magnetic
+run_const real AC_eta_rwidth1__mod__magnetic // from magnetic
+#define eta_rwidth1__mod__magnetic AC_eta_rwidth1__mod__magnetic
+run_const real AC_eta_xshock__mod__magnetic // from magnetic
+#define eta_xshock__mod__magnetic AC_eta_xshock__mod__magnetic
+run_const real AC_eta_r0__mod__magnetic // from magnetic
+#define eta_r0__mod__magnetic AC_eta_r0__mod__magnetic
+run_const real AC_eta_r1__mod__magnetic // from magnetic
+#define eta_r1__mod__magnetic AC_eta_r1__mod__magnetic
+run_const real AC_alphassm__mod__magnetic // from magnetic
+#define alphassm__mod__magnetic AC_alphassm__mod__magnetic
+run_const real AC_j_ext_quench__mod__magnetic // from magnetic
+#define j_ext_quench__mod__magnetic AC_j_ext_quench__mod__magnetic
+run_const real AC_b2_diamag__mod__magnetic // from magnetic
+#define b2_diamag__mod__magnetic AC_b2_diamag__mod__magnetic
+run_const real AC_ampl_fcont_aa__mod__magnetic // from magnetic
+#define ampl_fcont_aa__mod__magnetic AC_ampl_fcont_aa__mod__magnetic
+run_const real AC_llambda_aa__mod__magnetic // from magnetic
+#define llambda_aa__mod__magnetic AC_llambda_aa__mod__magnetic
+run_const real AC_vcrit_anom__mod__magnetic // from magnetic
+#define vcrit_anom__mod__magnetic AC_vcrit_anom__mod__magnetic
+run_const real AC_numag__mod__magnetic // from magnetic
+#define numag__mod__magnetic AC_numag__mod__magnetic
+run_const real AC_b0_magfric__mod__magnetic // from magnetic
+#define b0_magfric__mod__magnetic AC_b0_magfric__mod__magnetic
+run_const real AC_ekman_friction_aa__mod__magnetic // from magnetic
+#define ekman_friction_aa__mod__magnetic AC_ekman_friction_aa__mod__magnetic
+run_const real AC_exp_epspb__mod__magnetic // from magnetic
+#define exp_epspb__mod__magnetic AC_exp_epspb__mod__magnetic
+run_const real AC_ncr_quench__mod__magnetic // from magnetic
+#define ncr_quench__mod__magnetic AC_ncr_quench__mod__magnetic
+run_const real AC_ampl_eta_uz__mod__magnetic // from magnetic
+#define ampl_eta_uz__mod__magnetic AC_ampl_eta_uz__mod__magnetic
+run_const real AC_no_ohmic_heat_z0__mod__magnetic // from magnetic
+#define no_ohmic_heat_z0__mod__magnetic AC_no_ohmic_heat_z0__mod__magnetic
+run_const real AC_no_ohmic_heat_zwidth__mod__magnetic // from magnetic
+#define no_ohmic_heat_zwidth__mod__magnetic AC_no_ohmic_heat_zwidth__mod__magnetic
+run_const real AC_imp_alpha0__mod__magnetic // from magnetic
+#define imp_alpha0__mod__magnetic AC_imp_alpha0__mod__magnetic
+run_const real AC_imp_halpha__mod__magnetic // from magnetic
+#define imp_halpha__mod__magnetic AC_imp_halpha__mod__magnetic
+run_const real AC_c_light21__mod__magnetic // from magnetic
+#define c_light21__mod__magnetic AC_c_light21__mod__magnetic
+run_const real AC_betamin_jxb__mod__magnetic // from magnetic
+#define betamin_jxb__mod__magnetic AC_betamin_jxb__mod__magnetic
+run_const bool AC_lweyl_gauge__mod__magnetic // from magnetic
+#define lweyl_gauge__mod__magnetic AC_lweyl_gauge__mod__magnetic
+run_const bool AC_ladvective_gauge__mod__magnetic // from magnetic
+#define ladvective_gauge__mod__magnetic AC_ladvective_gauge__mod__magnetic
+run_const bool AC_lupw_aa__mod__magnetic // from magnetic
+#define lupw_aa__mod__magnetic AC_lupw_aa__mod__magnetic
+run_const bool AC_ladvective_gauge2__mod__magnetic // from magnetic
+#define ladvective_gauge2__mod__magnetic AC_ladvective_gauge2__mod__magnetic
+run_const bool AC_lforcing_cont_aa__mod__magnetic // from magnetic
+#define lforcing_cont_aa__mod__magnetic AC_lforcing_cont_aa__mod__magnetic
+run_const int AC_iforcing_cont_aa__mod__magnetic // from magnetic
+#define iforcing_cont_aa__mod__magnetic AC_iforcing_cont_aa__mod__magnetic
+run_const bool AC_lkinematic__mod__magnetic // from magnetic
+#define lkinematic__mod__magnetic AC_lkinematic__mod__magnetic
+run_const bool AC_lignore_bext_in_b2__mod__magnetic // from magnetic
+#define lignore_bext_in_b2__mod__magnetic AC_lignore_bext_in_b2__mod__magnetic
+run_const bool AC_luse_bext_in_b2__mod__magnetic // from magnetic
+#define luse_bext_in_b2__mod__magnetic AC_luse_bext_in_b2__mod__magnetic
+run_const bool AC_lmean_friction__mod__magnetic // from magnetic
+#define lmean_friction__mod__magnetic AC_lmean_friction__mod__magnetic
+run_const bool AC_llocal_friction__mod__magnetic // from magnetic
+#define llocal_friction__mod__magnetic AC_llocal_friction__mod__magnetic
+run_const bool AC_lambipolar_strong_coupling__mod__magnetic // from magnetic
+#define lambipolar_strong_coupling__mod__magnetic AC_lambipolar_strong_coupling__mod__magnetic
+run_const bool AC_lhalox__mod__magnetic // from magnetic
+#define lhalox__mod__magnetic AC_lhalox__mod__magnetic
+run_const bool AC_lno_ohmic_heat_bound_z__mod__magnetic // from magnetic
+#define lno_ohmic_heat_bound_z__mod__magnetic AC_lno_ohmic_heat_bound_z__mod__magnetic
+run_const bool AC_lmagneto_friction__mod__magnetic // from magnetic
+#define lmagneto_friction__mod__magnetic AC_lmagneto_friction__mod__magnetic
+run_const bool AC_limplicit_resistivity__mod__magnetic // from magnetic
+#define limplicit_resistivity__mod__magnetic AC_limplicit_resistivity__mod__magnetic
+run_const bool AC_lncr_correlated__mod__magnetic // from magnetic
+#define lncr_correlated__mod__magnetic AC_lncr_correlated__mod__magnetic
+run_const bool AC_lncr_anticorrelated__mod__magnetic // from magnetic
+#define lncr_anticorrelated__mod__magnetic AC_lncr_anticorrelated__mod__magnetic
+run_const bool AC_ladd_efield__mod__magnetic // from magnetic
+#define ladd_efield__mod__magnetic AC_ladd_efield__mod__magnetic
+run_const bool AC_lsld_bb__mod__magnetic // from magnetic
+#define lsld_bb__mod__magnetic AC_lsld_bb__mod__magnetic
+run_const bool AC_la_relprof_global__mod__magnetic // from magnetic
+#define la_relprof_global__mod__magnetic AC_la_relprof_global__mod__magnetic
+run_const bool AC_lmagnetic_slope_limited__mod__magnetic // from magnetic
+#define lmagnetic_slope_limited__mod__magnetic AC_lmagnetic_slope_limited__mod__magnetic
+run_const bool AC_lboris_correction__mod__magnetic // from magnetic
+#define lboris_correction__mod__magnetic AC_lboris_correction__mod__magnetic
+run_const bool AC_lnoinduction__mod__magnetic // from magnetic
+#define lnoinduction__mod__magnetic AC_lnoinduction__mod__magnetic
+run_const bool AC_limp_alpha__mod__magnetic // from magnetic
+#define limp_alpha__mod__magnetic AC_limp_alpha__mod__magnetic
+run_const real AC_fac_sld_magn__mod__magnetic // from magnetic
+#define fac_sld_magn__mod__magnetic AC_fac_sld_magn__mod__magnetic
+run_const real AC_ampl_efield__mod__magnetic // from magnetic
+#define ampl_efield__mod__magnetic AC_ampl_efield__mod__magnetic
+run_const real AC_rhoref__mod__magnetic // from magnetic
+#define rhoref__mod__magnetic AC_rhoref__mod__magnetic
+run_const real AC_rhoref1__mod__magnetic // from magnetic
+#define rhoref1__mod__magnetic AC_rhoref1__mod__magnetic
+run_const bool AC_lbext_moving_layer__mod__magnetic // from magnetic
+#define lbext_moving_layer__mod__magnetic AC_lbext_moving_layer__mod__magnetic
+run_const real AC_zbot_moving_layer__mod__magnetic // from magnetic
+#define zbot_moving_layer__mod__magnetic AC_zbot_moving_layer__mod__magnetic
+run_const real AC_ztop_moving_layer__mod__magnetic // from magnetic
+#define ztop_moving_layer__mod__magnetic AC_ztop_moving_layer__mod__magnetic
+run_const real AC_speed_moving_layer__mod__magnetic // from magnetic
+#define speed_moving_layer__mod__magnetic AC_speed_moving_layer__mod__magnetic
+run_const real AC_edge_moving_layer__mod__magnetic // from magnetic
+#define edge_moving_layer__mod__magnetic AC_edge_moving_layer__mod__magnetic
+run_const real AC_eta_shock_jump1__mod__magnetic // from magnetic
+#define eta_shock_jump1__mod__magnetic AC_eta_shock_jump1__mod__magnetic
+run_const real AC_eta_tdep__mod__magnetic // from magnetic
+#define eta_tdep__mod__magnetic AC_eta_tdep__mod__magnetic
+run_const real AC_arms__mod__magnetic // from magnetic
+#define arms__mod__magnetic AC_arms__mod__magnetic
+run_const real AC_r2__mod__magnetic // from magnetic
+#define r2__mod__magnetic AC_r2__mod__magnetic
+run_const real AC_gamma1__mod__magnetic // from magnetic
+#define gamma1__mod__magnetic AC_gamma1__mod__magnetic
+run_const int AC_string_enum_ambipolar_diffusion__mod__magnetic // from magnetic
+#define string_enum_ambipolar_diffusion__mod__magnetic AC_string_enum_ambipolar_diffusion__mod__magnetic
+run_const int AC_string_enum_rdep_profile__mod__magnetic // from magnetic
+#define string_enum_rdep_profile__mod__magnetic AC_string_enum_rdep_profile__mod__magnetic
+run_const int AC_string_enum_ihall_term__mod__magnetic // from magnetic
+#define string_enum_ihall_term__mod__magnetic AC_string_enum_ihall_term__mod__magnetic
+run_const real3 AC_b_ext__mod__magnetic // from magnetic
+#define b_ext__mod__magnetic AC_b_ext__mod__magnetic
+run_const real3 AC_b0_ext__mod__magnetic // from magnetic
+#define b0_ext__mod__magnetic AC_b0_ext__mod__magnetic
+run_const real3 AC_j_ext__mod__magnetic // from magnetic
+#define j_ext__mod__magnetic AC_j_ext__mod__magnetic
+run_const real3 AC_eta_aniso_hyper3__mod__magnetic // from magnetic
+#define eta_aniso_hyper3__mod__magnetic AC_eta_aniso_hyper3__mod__magnetic
+run_const bool3 AC_lfrozen_bb_bot__mod__magnetic // from magnetic
+#define lfrozen_bb_bot__mod__magnetic AC_lfrozen_bb_bot__mod__magnetic
+run_const bool3 AC_lfrozen_bb_top__mod__magnetic // from magnetic
+#define lfrozen_bb_top__mod__magnetic AC_lfrozen_bb_top__mod__magnetic
+run_const real AC_eta_xy__mod__magnetic[mx][my] // from magnetic
+#define eta_xy__mod__magnetic AC_eta_xy__mod__magnetic
+gmem real AC_geta_xy__mod__magnetic[mx][my][3] // from magnetic
+#define geta_xy__mod__magnetic AC_geta_xy__mod__magnetic
+gmem real AC_a_relprof__mod__magnetic[nx][ny][nz][3] // from magnetic
+#define a_relprof__mod__magnetic AC_a_relprof__mod__magnetic
+gmem real AC_eta_z__mod__magnetic[AC_mz] // from magnetic
+#define eta_z__mod__magnetic AC_eta_z__mod__magnetic
+gmem real AC_geta_z__mod__magnetic[AC_mz] // from magnetic
+#define geta_z__mod__magnetic AC_geta_z__mod__magnetic
+gmem real AC_eta_x__mod__magnetic[AC_mx] // from magnetic
+#define eta_x__mod__magnetic AC_eta_x__mod__magnetic
+gmem real AC_geta_x__mod__magnetic[AC_mx] // from magnetic
+#define geta_x__mod__magnetic AC_geta_x__mod__magnetic
+gmem real AC_eta_y__mod__magnetic[AC_my] // from magnetic
+#define eta_y__mod__magnetic AC_eta_y__mod__magnetic
+gmem real AC_geta_y__mod__magnetic[AC_my] // from magnetic
+#define geta_y__mod__magnetic AC_geta_y__mod__magnetic
+gmem real AC_feta_ztdep__mod__magnetic[AC_mz] // from magnetic
+#define feta_ztdep__mod__magnetic AC_feta_ztdep__mod__magnetic
+run_const int3 AC_string_enum_borderaa__mod__magnetic // from magnetic
+#define string_enum_borderaa__mod__magnetic AC_string_enum_borderaa__mod__magnetic
+gmem real AC_bz_stratified__mod__magnetic[AC_mz] // from magnetic
+#define bz_stratified__mod__magnetic AC_bz_stratified__mod__magnetic
+
+run_const int AC_iglobal_cs2__mod__equationofstate // from equationofstate
+#define iglobal_cs2__mod__equationofstate AC_iglobal_cs2__mod__equationofstate
+run_const real AC_lntt0__mod__equationofstate // from equationofstate
+#define lntt0__mod__equationofstate AC_lntt0__mod__equationofstate
+run_const real AC_tt0__mod__equationofstate // from equationofstate
+#define tt0__mod__equationofstate AC_tt0__mod__equationofstate
+run_const real AC_cs0__mod__equationofstate // from equationofstate
+#define cs0__mod__equationofstate AC_cs0__mod__equationofstate
+run_const real AC_cs20__mod__equationofstate // from equationofstate
+#define cs20__mod__equationofstate AC_cs20__mod__equationofstate
+run_const real AC_rho0__mod__equationofstate // from equationofstate
+#define rho0__mod__equationofstate AC_rho0__mod__equationofstate
+run_const real AC_lnrho0__mod__equationofstate // from equationofstate
+#define lnrho0__mod__equationofstate AC_lnrho0__mod__equationofstate
+run_const real AC_pp0__mod__equationofstate // from equationofstate
+#define pp0__mod__equationofstate AC_pp0__mod__equationofstate
+run_const real AC_gamma__mod__equationofstate // from equationofstate
+#define gamma__mod__equationofstate AC_gamma__mod__equationofstate
+run_const real AC_gamma_m1__mod__equationofstate // from equationofstate
+#define gamma_m1__mod__equationofstate AC_gamma_m1__mod__equationofstate
+run_const real AC_gamma1__mod__equationofstate // from equationofstate
+#define gamma1__mod__equationofstate AC_gamma1__mod__equationofstate
+run_const real AC_cp__mod__equationofstate // from equationofstate
+#define cp__mod__equationofstate AC_cp__mod__equationofstate
+run_const real AC_cp1__mod__equationofstate // from equationofstate
+#define cp1__mod__equationofstate AC_cp1__mod__equationofstate
+run_const real AC_cv__mod__equationofstate // from equationofstate
+#define cv__mod__equationofstate AC_cv__mod__equationofstate
+run_const real AC_cv1__mod__equationofstate // from equationofstate
+#define cv1__mod__equationofstate AC_cv1__mod__equationofstate
+run_const real AC_cs2top__mod__equationofstate // from equationofstate
+#define cs2top__mod__equationofstate AC_cs2top__mod__equationofstate
+run_const real AC_cs20_tdep_rate__mod__equationofstate // from equationofstate
+#define cs20_tdep_rate__mod__equationofstate AC_cs20_tdep_rate__mod__equationofstate
+run_const int AC_ieosvars__mod__equationofstate // from equationofstate
+#define ieosvars__mod__equationofstate AC_ieosvars__mod__equationofstate
+run_const int AC_ieosvar2__mod__equationofstate // from equationofstate
+#define ieosvar2__mod__equationofstate AC_ieosvar2__mod__equationofstate
+run_const bool AC_leos_isothermal__mod__equationofstate // from equationofstate
+#define leos_isothermal__mod__equationofstate AC_leos_isothermal__mod__equationofstate
+run_const bool AC_leos_isentropic__mod__equationofstate // from equationofstate
+#define leos_isentropic__mod__equationofstate AC_leos_isentropic__mod__equationofstate
+run_const bool AC_leos_localisothermal__mod__equationofstate // from equationofstate
+#define leos_localisothermal__mod__equationofstate AC_leos_localisothermal__mod__equationofstate
+run_const bool AC_lanelastic_lin__mod__equationofstate // from equationofstate
+#define lanelastic_lin__mod__equationofstate AC_lanelastic_lin__mod__equationofstate
+run_const bool AC_lcs_as_aux__mod__equationofstate // from equationofstate
+#define lcs_as_aux__mod__equationofstate AC_lcs_as_aux__mod__equationofstate
+run_const bool AC_lcs_as_comaux__mod__equationofstate // from equationofstate
+#define lcs_as_comaux__mod__equationofstate AC_lcs_as_comaux__mod__equationofstate
+run_const bool AC_lcs_tdep__mod__equationofstate // from equationofstate
+#define lcs_tdep__mod__equationofstate AC_lcs_tdep__mod__equationofstate
+gmem real AC_eth0z__mod__equationofstate[AC_mz] // from equationofstate
+#define eth0z__mod__equationofstate AC_eth0z__mod__equationofstate
+
+run_const real AC_nu__mod__viscosity // from viscosity
+#define nu__mod__viscosity AC_nu__mod__viscosity
+run_const real AC_nu_cspeed__mod__viscosity // from viscosity
+#define nu_cspeed__mod__viscosity AC_nu_cspeed__mod__viscosity
+run_const real AC_nu_tdep__mod__viscosity // from viscosity
+#define nu_tdep__mod__viscosity AC_nu_tdep__mod__viscosity
+run_const real AC_zeta__mod__viscosity // from viscosity
+#define zeta__mod__viscosity AC_zeta__mod__viscosity
+run_const real AC_nu_hyper2__mod__viscosity // from viscosity
+#define nu_hyper2__mod__viscosity AC_nu_hyper2__mod__viscosity
+run_const real AC_nu_hyper3__mod__viscosity // from viscosity
+#define nu_hyper3__mod__viscosity AC_nu_hyper3__mod__viscosity
+run_const real AC_nu_hyper3_mesh__mod__viscosity // from viscosity
+#define nu_hyper3_mesh__mod__viscosity AC_nu_hyper3_mesh__mod__viscosity
+run_const real AC_nu_shock__mod__viscosity // from viscosity
+#define nu_shock__mod__viscosity AC_nu_shock__mod__viscosity
+run_const real AC_nu_spitzer__mod__viscosity // from viscosity
+#define nu_spitzer__mod__viscosity AC_nu_spitzer__mod__viscosity
+run_const real AC_nu_spitzer_max__mod__viscosity // from viscosity
+#define nu_spitzer_max__mod__viscosity AC_nu_spitzer_max__mod__viscosity
+run_const real AC_nu_jump__mod__viscosity // from viscosity
+#define nu_jump__mod__viscosity AC_nu_jump__mod__viscosity
+run_const real AC_xnu__mod__viscosity // from viscosity
+#define xnu__mod__viscosity AC_xnu__mod__viscosity
+run_const real AC_xnu2__mod__viscosity // from viscosity
+#define xnu2__mod__viscosity AC_xnu2__mod__viscosity
+run_const real AC_znu__mod__viscosity // from viscosity
+#define znu__mod__viscosity AC_znu__mod__viscosity
+run_const real AC_widthnu__mod__viscosity // from viscosity
+#define widthnu__mod__viscosity AC_widthnu__mod__viscosity
+run_const real AC_widthnu2__mod__viscosity // from viscosity
+#define widthnu2__mod__viscosity AC_widthnu2__mod__viscosity
+run_const real AC_c_smag__mod__viscosity // from viscosity
+#define c_smag__mod__viscosity AC_c_smag__mod__viscosity
+run_const real AC_gamma_smag__mod__viscosity // from viscosity
+#define gamma_smag__mod__viscosity AC_gamma_smag__mod__viscosity
+run_const real AC_nu_jump2__mod__viscosity // from viscosity
+#define nu_jump2__mod__viscosity AC_nu_jump2__mod__viscosity
+run_const real AC_znu_shock__mod__viscosity // from viscosity
+#define znu_shock__mod__viscosity AC_znu_shock__mod__viscosity
+run_const real AC_widthnu_shock__mod__viscosity // from viscosity
+#define widthnu_shock__mod__viscosity AC_widthnu_shock__mod__viscosity
+run_const real AC_nu_jump_shock__mod__viscosity // from viscosity
+#define nu_jump_shock__mod__viscosity AC_nu_jump_shock__mod__viscosity
+run_const real AC_xnu_shock__mod__viscosity // from viscosity
+#define xnu_shock__mod__viscosity AC_xnu_shock__mod__viscosity
+run_const real AC_dynu__mod__viscosity // from viscosity
+#define dynu__mod__viscosity AC_dynu__mod__viscosity
+run_const real AC_pnlaw__mod__viscosity // from viscosity
+#define pnlaw__mod__viscosity AC_pnlaw__mod__viscosity
+run_const real AC_lambda_v0__mod__viscosity // from viscosity
+#define lambda_v0__mod__viscosity AC_lambda_v0__mod__viscosity
+run_const real AC_lambda_v1__mod__viscosity // from viscosity
+#define lambda_v1__mod__viscosity AC_lambda_v1__mod__viscosity
+run_const real AC_lambda_h1__mod__viscosity // from viscosity
+#define lambda_h1__mod__viscosity AC_lambda_h1__mod__viscosity
+run_const real AC_prm_turb__mod__viscosity // from viscosity
+#define prm_turb__mod__viscosity AC_prm_turb__mod__viscosity
+run_const real AC_meanfield_nub__mod__viscosity // from viscosity
+#define meanfield_nub__mod__viscosity AC_meanfield_nub__mod__viscosity
+run_const real AC_nu_infinity__mod__viscosity // from viscosity
+#define nu_infinity__mod__viscosity AC_nu_infinity__mod__viscosity
+run_const real AC_nu0__mod__viscosity // from viscosity
+#define nu0__mod__viscosity AC_nu0__mod__viscosity
+run_const real AC_non_newton_lambda__mod__viscosity // from viscosity
+#define non_newton_lambda__mod__viscosity AC_non_newton_lambda__mod__viscosity
+run_const real AC_carreau_exponent__mod__viscosity // from viscosity
+#define carreau_exponent__mod__viscosity AC_carreau_exponent__mod__viscosity
+run_const real AC_nu_smag_ma2_power__mod__viscosity // from viscosity
+#define nu_smag_ma2_power__mod__viscosity AC_nu_smag_ma2_power__mod__viscosity
+run_const real AC_nu_rcyl_min__mod__viscosity // from viscosity
+#define nu_rcyl_min__mod__viscosity AC_nu_rcyl_min__mod__viscosity
+run_const real AC_nnewton_tscale__mod__viscosity // from viscosity
+#define nnewton_tscale__mod__viscosity AC_nnewton_tscale__mod__viscosity
+run_const real AC_nnewton_step_width__mod__viscosity // from viscosity
+#define nnewton_step_width__mod__viscosity AC_nnewton_step_width__mod__viscosity
+run_const bool AC_lvisc_simplified__mod__viscosity // from viscosity
+#define lvisc_simplified__mod__viscosity AC_lvisc_simplified__mod__viscosity
+run_const bool AC_lvisc_nu_non_newtonian__mod__viscosity // from viscosity
+#define lvisc_nu_non_newtonian__mod__viscosity AC_lvisc_nu_non_newtonian__mod__viscosity
+run_const bool AC_lvisc_rho_nu_const__mod__viscosity // from viscosity
+#define lvisc_rho_nu_const__mod__viscosity AC_lvisc_rho_nu_const__mod__viscosity
+run_const bool AC_lvisc_rho_nu_const_bulk__mod__viscosity // from viscosity
+#define lvisc_rho_nu_const_bulk__mod__viscosity AC_lvisc_rho_nu_const_bulk__mod__viscosity
+run_const bool AC_lvisc_rho_nu_const_prefact__mod__viscosity // from viscosity
+#define lvisc_rho_nu_const_prefact__mod__viscosity AC_lvisc_rho_nu_const_prefact__mod__viscosity
+run_const bool AC_lvisc_sqrtrho_nu_const__mod__viscosity // from viscosity
+#define lvisc_sqrtrho_nu_const__mod__viscosity AC_lvisc_sqrtrho_nu_const__mod__viscosity
+run_const bool AC_lvisc_nu_cspeed__mod__viscosity // from viscosity
+#define lvisc_nu_cspeed__mod__viscosity AC_lvisc_nu_cspeed__mod__viscosity
+run_const bool AC_lvisc_mu_cspeed__mod__viscosity // from viscosity
+#define lvisc_mu_cspeed__mod__viscosity AC_lvisc_mu_cspeed__mod__viscosity
+run_const bool AC_lvisc_nu_const__mod__viscosity // from viscosity
+#define lvisc_nu_const__mod__viscosity AC_lvisc_nu_const__mod__viscosity
+run_const bool AC_lvisc_nu_tdep__mod__viscosity // from viscosity
+#define lvisc_nu_tdep__mod__viscosity AC_lvisc_nu_tdep__mod__viscosity
+run_const bool AC_lvisc_nu_prof__mod__viscosity // from viscosity
+#define lvisc_nu_prof__mod__viscosity AC_lvisc_nu_prof__mod__viscosity
+run_const bool AC_lvisc_nu_profx__mod__viscosity // from viscosity
+#define lvisc_nu_profx__mod__viscosity AC_lvisc_nu_profx__mod__viscosity
+run_const bool AC_lvisc_nu_profr__mod__viscosity // from viscosity
+#define lvisc_nu_profr__mod__viscosity AC_lvisc_nu_profr__mod__viscosity
+run_const bool AC_lvisc_nu_profr_powerlaw__mod__viscosity // from viscosity
+#define lvisc_nu_profr_powerlaw__mod__viscosity AC_lvisc_nu_profr_powerlaw__mod__viscosity
+run_const bool AC_lvisc_nu_profr_twosteps__mod__viscosity // from viscosity
+#define lvisc_nu_profr_twosteps__mod__viscosity AC_lvisc_nu_profr_twosteps__mod__viscosity
+run_const bool AC_lvisc_nu_profy_bound__mod__viscosity // from viscosity
+#define lvisc_nu_profy_bound__mod__viscosity AC_lvisc_nu_profy_bound__mod__viscosity
+run_const bool AC_lvisc_nut_from_magnetic__mod__viscosity // from viscosity
+#define lvisc_nut_from_magnetic__mod__viscosity AC_lvisc_nut_from_magnetic__mod__viscosity
+run_const bool AC_lvisc_nu_shock__mod__viscosity // from viscosity
+#define lvisc_nu_shock__mod__viscosity AC_lvisc_nu_shock__mod__viscosity
+run_const bool AC_lvisc_nu_shock_profz__mod__viscosity // from viscosity
+#define lvisc_nu_shock_profz__mod__viscosity AC_lvisc_nu_shock_profz__mod__viscosity
+run_const bool AC_lvisc_nu_shock_profr__mod__viscosity // from viscosity
+#define lvisc_nu_shock_profr__mod__viscosity AC_lvisc_nu_shock_profr__mod__viscosity
+run_const bool AC_lvisc_shock_simple__mod__viscosity // from viscosity
+#define lvisc_shock_simple__mod__viscosity AC_lvisc_shock_simple__mod__viscosity
+run_const bool AC_lvisc_hyper2_simplified__mod__viscosity // from viscosity
+#define lvisc_hyper2_simplified__mod__viscosity AC_lvisc_hyper2_simplified__mod__viscosity
+run_const bool AC_lvisc_hyper3_simplified__mod__viscosity // from viscosity
+#define lvisc_hyper3_simplified__mod__viscosity AC_lvisc_hyper3_simplified__mod__viscosity
+run_const bool AC_lvisc_hyper2_simplified_tdep__mod__viscosity // from viscosity
+#define lvisc_hyper2_simplified_tdep__mod__viscosity AC_lvisc_hyper2_simplified_tdep__mod__viscosity
+run_const bool AC_lvisc_hyper3_simplified_tdep__mod__viscosity // from viscosity
+#define lvisc_hyper3_simplified_tdep__mod__viscosity AC_lvisc_hyper3_simplified_tdep__mod__viscosity
+run_const bool AC_lvisc_hyper3_polar__mod__viscosity // from viscosity
+#define lvisc_hyper3_polar__mod__viscosity AC_lvisc_hyper3_polar__mod__viscosity
+run_const bool AC_lvisc_hyper3_mesh__mod__viscosity // from viscosity
+#define lvisc_hyper3_mesh__mod__viscosity AC_lvisc_hyper3_mesh__mod__viscosity
+run_const bool AC_lvisc_hyper3_mesh_residual__mod__viscosity // from viscosity
+#define lvisc_hyper3_mesh_residual__mod__viscosity AC_lvisc_hyper3_mesh_residual__mod__viscosity
+run_const bool AC_lvisc_hyper3_csmesh__mod__viscosity // from viscosity
+#define lvisc_hyper3_csmesh__mod__viscosity AC_lvisc_hyper3_csmesh__mod__viscosity
+run_const bool AC_lvisc_hyper3_rho_nu_const__mod__viscosity // from viscosity
+#define lvisc_hyper3_rho_nu_const__mod__viscosity AC_lvisc_hyper3_rho_nu_const__mod__viscosity
+run_const bool AC_lvisc_hyper3_mu_const_strict__mod__viscosity // from viscosity
+#define lvisc_hyper3_mu_const_strict__mod__viscosity AC_lvisc_hyper3_mu_const_strict__mod__viscosity
+run_const bool AC_lvisc_hyper3_nu_const_strict__mod__viscosity // from viscosity
+#define lvisc_hyper3_nu_const_strict__mod__viscosity AC_lvisc_hyper3_nu_const_strict__mod__viscosity
+run_const bool AC_lvisc_hyper3_cmu_const_strt_otf__mod__viscosity // from viscosity
+#define lvisc_hyper3_cmu_const_strt_otf__mod__viscosity AC_lvisc_hyper3_cmu_const_strt_otf__mod__viscosity
+run_const bool AC_lvisc_hyper3_rho_nu_const_symm__mod__viscosity // from viscosity
+#define lvisc_hyper3_rho_nu_const_symm__mod__viscosity AC_lvisc_hyper3_rho_nu_const_symm__mod__viscosity
+run_const bool AC_lvisc_hyper3_rho_nu_const_aniso__mod__viscosity // from viscosity
+#define lvisc_hyper3_rho_nu_const_aniso__mod__viscosity AC_lvisc_hyper3_rho_nu_const_aniso__mod__viscosity
+run_const bool AC_lvisc_hyper3_nu_const_aniso__mod__viscosity // from viscosity
+#define lvisc_hyper3_nu_const_aniso__mod__viscosity AC_lvisc_hyper3_nu_const_aniso__mod__viscosity
+run_const bool AC_lvisc_hyper3_rho_nu_const_bulk__mod__viscosity // from viscosity
+#define lvisc_hyper3_rho_nu_const_bulk__mod__viscosity AC_lvisc_hyper3_rho_nu_const_bulk__mod__viscosity
+run_const bool AC_lvisc_hyper3_nu_const__mod__viscosity // from viscosity
+#define lvisc_hyper3_nu_const__mod__viscosity AC_lvisc_hyper3_nu_const__mod__viscosity
+run_const bool AC_lvisc_smag_simplified__mod__viscosity // from viscosity
+#define lvisc_smag_simplified__mod__viscosity AC_lvisc_smag_simplified__mod__viscosity
+run_const bool AC_lvisc_smag_cross_simplified__mod__viscosity // from viscosity
+#define lvisc_smag_cross_simplified__mod__viscosity AC_lvisc_smag_cross_simplified__mod__viscosity
+run_const bool AC_lnusmag_as_aux__mod__viscosity // from viscosity
+#define lnusmag_as_aux__mod__viscosity AC_lnusmag_as_aux__mod__viscosity
+run_const bool AC_lvisc_heat_as_aux__mod__viscosity // from viscosity
+#define lvisc_heat_as_aux__mod__viscosity AC_lvisc_heat_as_aux__mod__viscosity
+run_const bool AC_lvisc_forc_as_aux__mod__viscosity // from viscosity
+#define lvisc_forc_as_aux__mod__viscosity AC_lvisc_forc_as_aux__mod__viscosity
+run_const bool AC_lvisc_mixture__mod__viscosity // from viscosity
+#define lvisc_mixture__mod__viscosity AC_lvisc_mixture__mod__viscosity
+run_const bool AC_lvisc_spitzer__mod__viscosity // from viscosity
+#define lvisc_spitzer__mod__viscosity AC_lvisc_spitzer__mod__viscosity
+run_const bool AC_lvisc_slope_limited__mod__viscosity // from viscosity
+#define lvisc_slope_limited__mod__viscosity AC_lvisc_slope_limited__mod__viscosity
+run_const bool AC_lvisc_schur_223__mod__viscosity // from viscosity
+#define lvisc_schur_223__mod__viscosity AC_lvisc_schur_223__mod__viscosity
+run_const bool AC_limplicit_viscosity__mod__viscosity // from viscosity
+#define limplicit_viscosity__mod__viscosity AC_limplicit_viscosity__mod__viscosity
+run_const bool AC_lmeanfield_nu__mod__viscosity // from viscosity
+#define lmeanfield_nu__mod__viscosity AC_lmeanfield_nu__mod__viscosity
+run_const bool AC_lmagfield_nu__mod__viscosity // from viscosity
+#define lmagfield_nu__mod__viscosity AC_lmagfield_nu__mod__viscosity
+run_const bool AC_llambda_effect__mod__viscosity // from viscosity
+#define llambda_effect__mod__viscosity AC_llambda_effect__mod__viscosity
+run_const bool AC_llambda_scale_with_nu__mod__viscosity // from viscosity
+#define llambda_scale_with_nu__mod__viscosity AC_llambda_scale_with_nu__mod__viscosity
+run_const bool AC_luse_nu_rmn_prof__mod__viscosity // from viscosity
+#define luse_nu_rmn_prof__mod__viscosity AC_luse_nu_rmn_prof__mod__viscosity
+run_const bool AC_lvisc_smag_ma__mod__viscosity // from viscosity
+#define lvisc_smag_ma__mod__viscosity AC_lvisc_smag_ma__mod__viscosity
+run_const bool AC_lsld_notensor__mod__viscosity // from viscosity
+#define lsld_notensor__mod__viscosity AC_lsld_notensor__mod__viscosity
+run_const real AC_damp_sound__mod__viscosity // from viscosity
+#define damp_sound__mod__viscosity AC_damp_sound__mod__viscosity
+run_const int AC_idiag_fviscm__mod__viscosity // from viscosity
+#define idiag_fviscm__mod__viscosity AC_idiag_fviscm__mod__viscosity
+run_const int AC_idiag_fviscmin__mod__viscosity // from viscosity
+#define idiag_fviscmin__mod__viscosity AC_idiag_fviscmin__mod__viscosity
+run_const int AC_idiag_fviscmax__mod__viscosity // from viscosity
+#define idiag_fviscmax__mod__viscosity AC_idiag_fviscmax__mod__viscosity
+run_const int AC_idiag_fviscrmsx__mod__viscosity // from viscosity
+#define idiag_fviscrmsx__mod__viscosity AC_idiag_fviscrmsx__mod__viscosity
+run_const int AC_idiag_qfviscm__mod__viscosity // from viscosity
+#define idiag_qfviscm__mod__viscosity AC_idiag_qfviscm__mod__viscosity
+run_const int AC_idiag_epsk_les__mod__viscosity // from viscosity
+#define idiag_epsk_les__mod__viscosity AC_idiag_epsk_les__mod__viscosity
+run_const int AC_idiag_sijoiojm__mod__viscosity // from viscosity
+#define idiag_sijoiojm__mod__viscosity AC_idiag_sijoiojm__mod__viscosity
+run_const int AC_idiag_reshock__mod__viscosity // from viscosity
+#define idiag_reshock__mod__viscosity AC_idiag_reshock__mod__viscosity
+run_const int AC_idiag_nud2uxbxm__mod__viscosity // from viscosity
+#define idiag_nud2uxbxm__mod__viscosity AC_idiag_nud2uxbxm__mod__viscosity
+run_const int AC_idiag_nud2uxbym__mod__viscosity // from viscosity
+#define idiag_nud2uxbym__mod__viscosity AC_idiag_nud2uxbym__mod__viscosity
+run_const int AC_idiag_nud2uxbzm__mod__viscosity // from viscosity
+#define idiag_nud2uxbzm__mod__viscosity AC_idiag_nud2uxbzm__mod__viscosity
+run_const int AC_idiag_viscforcezupmz__mod__viscosity // from viscosity
+#define idiag_viscforcezupmz__mod__viscosity AC_idiag_viscforcezupmz__mod__viscosity
+run_const int AC_idiag_viscforcezdownmz__mod__viscosity // from viscosity
+#define idiag_viscforcezdownmz__mod__viscosity AC_idiag_viscforcezdownmz__mod__viscosity
+run_const int AC_idiag_fviscmxy__mod__viscosity // from viscosity
+#define idiag_fviscmxy__mod__viscosity AC_idiag_fviscmxy__mod__viscosity
+run_const int AC_idiag_fviscymxy__mod__viscosity // from viscosity
+#define idiag_fviscymxy__mod__viscosity AC_idiag_fviscymxy__mod__viscosity
+run_const int AC_idiag_fviscrsphmphi__mod__viscosity // from viscosity
+#define idiag_fviscrsphmphi__mod__viscosity AC_idiag_fviscrsphmphi__mod__viscosity
+run_const int AC_string_enum_nnewton_type__mod__viscosity // from viscosity
+#define string_enum_nnewton_type__mod__viscosity AC_string_enum_nnewton_type__mod__viscosity
+run_const real3 AC_nu_aniso_hyper3__mod__viscosity // from viscosity
+#define nu_aniso_hyper3__mod__viscosity AC_nu_aniso_hyper3__mod__viscosity
+gmem real AC_lv0_rprof__mod__viscosity[AC_mx] // from viscosity
+#define lv0_rprof__mod__viscosity AC_lv0_rprof__mod__viscosity
+gmem real AC_lv1_rprof__mod__viscosity[AC_mx] // from viscosity
+#define lv1_rprof__mod__viscosity AC_lv1_rprof__mod__viscosity
+gmem real AC_lh1_rprof__mod__viscosity[AC_mx] // from viscosity
+#define lh1_rprof__mod__viscosity AC_lh1_rprof__mod__viscosity
+gmem real AC_der_lv0_rprof__mod__viscosity[AC_mx] // from viscosity
+#define der_lv0_rprof__mod__viscosity AC_der_lv0_rprof__mod__viscosity
+gmem real AC_der_lv1_rprof__mod__viscosity[AC_mx] // from viscosity
+#define der_lv1_rprof__mod__viscosity AC_der_lv1_rprof__mod__viscosity
+
+gmem real AC_etat_x__mod__magnetic_meanfield[AC_nx] // from magnetic_meanfield
+#define etat_x__mod__magnetic_meanfield AC_etat_x__mod__magnetic_meanfield
+gmem real AC_detat_x__mod__magnetic_meanfield[AC_nx] // from magnetic_meanfield
+#define detat_x__mod__magnetic_meanfield AC_detat_x__mod__magnetic_meanfield
+gmem real AC_etat_y__mod__magnetic_meanfield[AC_my] // from magnetic_meanfield
+#define etat_y__mod__magnetic_meanfield AC_etat_y__mod__magnetic_meanfield
+gmem real AC_detat_y__mod__magnetic_meanfield[AC_my] // from magnetic_meanfield
+#define detat_y__mod__magnetic_meanfield AC_detat_y__mod__magnetic_meanfield
+gmem real AC_etat_z__mod__magnetic_meanfield[AC_mz] // from magnetic_meanfield
+#define etat_z__mod__magnetic_meanfield AC_etat_z__mod__magnetic_meanfield
+gmem real AC_detat_z__mod__magnetic_meanfield[AC_mz] // from magnetic_meanfield
+#define detat_z__mod__magnetic_meanfield AC_detat_z__mod__magnetic_meanfield
+
+run_const bool AC_lviscosity_heat__mod__energy // from energy
+#define lviscosity_heat__mod__energy AC_lviscosity_heat__mod__energy
+
+run_const real AC_zgrav__mod__gravity // from gravity
+#define zgrav__mod__gravity AC_zgrav__mod__gravity
+
+run_const int AC_ncoarse__mod__cdata // from cdata
+#define ncoarse__mod__cdata AC_ncoarse__mod__cdata
+run_const bool AC_lcoarse__mod__cdata // from cdata
+#define lcoarse__mod__cdata AC_lcoarse__mod__cdata
+run_const real AC_t__mod__cdata // from cdata
+#define t__mod__cdata AC_t__mod__cdata
+run_const real AC_unit_magnetic__mod__cdata // from cdata
+#define unit_magnetic__mod__cdata AC_unit_magnetic__mod__cdata
+run_const bool AC_lfirstpoint__mod__cdata // from cdata
+#define lfirstpoint__mod__cdata AC_lfirstpoint__mod__cdata
+run_const int AC_m2__mod__cdata // from cdata
+#define m2__mod__cdata AC_m2__mod__cdata
+run_const int AC_n2__mod__cdata // from cdata
+#define n2__mod__cdata AC_n2__mod__cdata
+run_const real AC_dxmax__mod__cdata // from cdata
+#define dxmax__mod__cdata AC_dxmax__mod__cdata
+run_const bool AC_lcartesian_coords__mod__cdata // from cdata
+#define lcartesian_coords__mod__cdata AC_lcartesian_coords__mod__cdata
+run_const bool AC_lspherical_coords__mod__cdata // from cdata
+#define lspherical_coords__mod__cdata AC_lspherical_coords__mod__cdata
+run_const bool AC_lcylindrical_coords__mod__cdata // from cdata
+#define lcylindrical_coords__mod__cdata AC_lcylindrical_coords__mod__cdata
+run_const bool AC_lpipe_coords__mod__cdata // from cdata
+#define lpipe_coords__mod__cdata AC_lpipe_coords__mod__cdata
+run_const bool AC_lsphere_in_a_box__mod__cdata // from cdata
+#define lsphere_in_a_box__mod__cdata AC_lsphere_in_a_box__mod__cdata
+run_const bool AC_lcylinder_in_a_box__mod__cdata // from cdata
+#define lcylinder_in_a_box__mod__cdata AC_lcylinder_in_a_box__mod__cdata
+run_const bool AC_lyang__mod__cdata // from cdata
+#define lyang__mod__cdata AC_lyang__mod__cdata
+run_const real AC_r_int__mod__cdata // from cdata
+#define r_int__mod__cdata AC_r_int__mod__cdata
+run_const real AC_r_ext__mod__cdata // from cdata
+#define r_ext__mod__cdata AC_r_ext__mod__cdata
+run_const real AC_mu0__mod__cdata // from cdata
+#define mu0__mod__cdata AC_mu0__mod__cdata
+run_const real AC_mu01__mod__cdata // from cdata
+#define mu01__mod__cdata AC_mu01__mod__cdata
+run_const bool AC_lfirst__mod__cdata // from cdata
+#define lfirst__mod__cdata AC_lfirst__mod__cdata
+run_const bool AC_llast__mod__cdata // from cdata
+#define llast__mod__cdata AC_llast__mod__cdata
+run_const bool AC_ldt_paronly__mod__cdata // from cdata
+#define ldt_paronly__mod__cdata AC_ldt_paronly__mod__cdata
+run_const bool AC_ldt__mod__cdata // from cdata
+#define ldt__mod__cdata AC_ldt__mod__cdata
+run_const real AC_dt__mod__cdata // from cdata
+#define dt__mod__cdata AC_dt__mod__cdata
+run_const real AC_cdt__mod__cdata // from cdata
+#define cdt__mod__cdata AC_cdt__mod__cdata
+run_const real AC_cdtc__mod__cdata // from cdata
+#define cdtc__mod__cdata AC_cdtc__mod__cdata
+run_const real AC_cdt_poly__mod__cdata // from cdata
+#define cdt_poly__mod__cdata AC_cdt_poly__mod__cdata
+run_const real AC_cdtv__mod__cdata // from cdata
+#define cdtv__mod__cdata AC_cdtv__mod__cdata
+run_const real AC_cdtv2__mod__cdata // from cdata
+#define cdtv2__mod__cdata AC_cdtv2__mod__cdata
+run_const real AC_cdtv3__mod__cdata // from cdata
+#define cdtv3__mod__cdata AC_cdtv3__mod__cdata
+run_const real AC_cdtsrc__mod__cdata // from cdata
+#define cdtsrc__mod__cdata AC_cdtsrc__mod__cdata
+run_const int AC_nt__mod__cdata // from cdata
+#define nt__mod__cdata AC_nt__mod__cdata
+run_const real AC_x0__mod__cdata // from cdata
+#define x0__mod__cdata AC_x0__mod__cdata
+run_const real AC_z0__mod__cdata // from cdata
+#define z0__mod__cdata AC_z0__mod__cdata
+run_const real AC_lx__mod__cdata // from cdata
+#define lx__mod__cdata AC_lx__mod__cdata
+run_const real AC_ly__mod__cdata // from cdata
+#define ly__mod__cdata AC_ly__mod__cdata
+run_const real AC_trelax_poly__mod__cdata // from cdata
+#define trelax_poly__mod__cdata AC_trelax_poly__mod__cdata
+run_const bool AC_lmaximal_cdtv__mod__cdata // from cdata
+#define lmaximal_cdtv__mod__cdata AC_lmaximal_cdtv__mod__cdata
+run_const bool AC_lmaximal_cdt__mod__cdata // from cdata
+#define lmaximal_cdt__mod__cdata AC_lmaximal_cdt__mod__cdata
+run_const bool AC_llsode__mod__cdata // from cdata
+#define llsode__mod__cdata AC_llsode__mod__cdata
+run_const real AC_omega__mod__cdata // from cdata
+#define omega__mod__cdata AC_omega__mod__cdata
+run_const real AC_theta__mod__cdata // from cdata
+#define theta__mod__cdata AC_theta__mod__cdata
+run_const real AC_sshear__mod__cdata // from cdata
+#define sshear__mod__cdata AC_sshear__mod__cdata
+run_const bool AC_ldensity_nolog__mod__cdata // from cdata
+#define ldensity_nolog__mod__cdata AC_ldensity_nolog__mod__cdata
+run_const bool AC_lreference_state__mod__cdata // from cdata
+#define lreference_state__mod__cdata AC_lreference_state__mod__cdata
+run_const bool AC_lforcing_cont__mod__cdata // from cdata
+#define lforcing_cont__mod__cdata AC_lforcing_cont__mod__cdata
+run_const bool AC_lfirst_proc_y__mod__cdata // from cdata
+#define lfirst_proc_y__mod__cdata AC_lfirst_proc_y__mod__cdata
+run_const bool AC_lfirst_proc_z__mod__cdata // from cdata
+#define lfirst_proc_z__mod__cdata AC_lfirst_proc_z__mod__cdata
+run_const bool AC_llast_proc_y__mod__cdata // from cdata
+#define llast_proc_y__mod__cdata AC_llast_proc_y__mod__cdata
+run_const bool AC_llast_proc_z__mod__cdata // from cdata
+#define llast_proc_z__mod__cdata AC_llast_proc_z__mod__cdata
+run_const bool AC_lvisc_smag__mod__cdata // from cdata
+#define lvisc_smag__mod__cdata AC_lvisc_smag__mod__cdata
+run_const bool AC_ltemperature_nolog__mod__cdata // from cdata
+#define ltemperature_nolog__mod__cdata AC_ltemperature_nolog__mod__cdata
+run_const bool AC_lweno_transport__mod__cdata // from cdata
+#define lweno_transport__mod__cdata AC_lweno_transport__mod__cdata
+run_const bool AC_ladv_der_as_aux__mod__cdata // from cdata
+#define ladv_der_as_aux__mod__cdata AC_ladv_der_as_aux__mod__cdata
+run_const bool AC_lshock_heat__mod__cdata // from cdata
+#define lshock_heat__mod__cdata AC_lshock_heat__mod__cdata
+run_const bool AC_pretend_lntt__mod__cdata // from cdata
+#define pretend_lntt__mod__cdata AC_pretend_lntt__mod__cdata
+run_const int AC_ilnrho__mod__cdata // from cdata
+#define ilnrho__mod__cdata AC_ilnrho__mod__cdata
+run_const int AC_irho__mod__cdata // from cdata
+#define irho__mod__cdata AC_irho__mod__cdata
+run_const int AC_irho_b__mod__cdata // from cdata
+#define irho_b__mod__cdata AC_irho_b__mod__cdata
+run_const int AC_iss_b__mod__cdata // from cdata
+#define iss_b__mod__cdata AC_iss_b__mod__cdata
+run_const int AC_ipp__mod__cdata // from cdata
+#define ipp__mod__cdata AC_ipp__mod__cdata
+run_const int AC_iuu__mod__cdata // from cdata
+#define iuu__mod__cdata AC_iuu__mod__cdata
+run_const int AC_iux__mod__cdata // from cdata
+#define iux__mod__cdata AC_iux__mod__cdata
+run_const int AC_iuy__mod__cdata // from cdata
+#define iuy__mod__cdata AC_iuy__mod__cdata
+run_const int AC_iuz__mod__cdata // from cdata
+#define iuz__mod__cdata AC_iuz__mod__cdata
+run_const int AC_iss__mod__cdata // from cdata
+#define iss__mod__cdata AC_iss__mod__cdata
+run_const int AC_iphiuu__mod__cdata // from cdata
+#define iphiuu__mod__cdata AC_iphiuu__mod__cdata
+run_const int AC_ilorentz__mod__cdata // from cdata
+#define ilorentz__mod__cdata AC_ilorentz__mod__cdata
+run_const int AC_iuu0__mod__cdata // from cdata
+#define iuu0__mod__cdata AC_iuu0__mod__cdata
+run_const int AC_ioo__mod__cdata // from cdata
+#define ioo__mod__cdata AC_ioo__mod__cdata
+run_const int AC_ivv__mod__cdata // from cdata
+#define ivv__mod__cdata AC_ivv__mod__cdata
+run_const int AC_iaa__mod__cdata // from cdata
+#define iaa__mod__cdata AC_iaa__mod__cdata
+run_const int AC_iax__mod__cdata // from cdata
+#define iax__mod__cdata AC_iax__mod__cdata
+run_const int AC_iay__mod__cdata // from cdata
+#define iay__mod__cdata AC_iay__mod__cdata
+run_const int AC_iaz__mod__cdata // from cdata
+#define iaz__mod__cdata AC_iaz__mod__cdata
+run_const int AC_iuutest__mod__cdata // from cdata
+#define iuutest__mod__cdata AC_iuutest__mod__cdata
+run_const int AC_ijx__mod__cdata // from cdata
+#define ijx__mod__cdata AC_ijx__mod__cdata
+run_const int AC_ijy__mod__cdata // from cdata
+#define ijy__mod__cdata AC_ijy__mod__cdata
+run_const int AC_ijz__mod__cdata // from cdata
+#define ijz__mod__cdata AC_ijz__mod__cdata
+run_const int AC_inusmag__mod__cdata // from cdata
+#define inusmag__mod__cdata AC_inusmag__mod__cdata
+run_const int AC_ietasmag__mod__cdata // from cdata
+#define ietasmag__mod__cdata AC_ietasmag__mod__cdata
+run_const int AC_iex__mod__cdata // from cdata
+#define iex__mod__cdata AC_iex__mod__cdata
+run_const int AC_ialfven__mod__cdata // from cdata
+#define ialfven__mod__cdata AC_ialfven__mod__cdata
+run_const int AC_ihypvis__mod__cdata // from cdata
+#define ihypvis__mod__cdata AC_ihypvis__mod__cdata
+run_const int AC_itt__mod__cdata // from cdata
+#define itt__mod__cdata AC_itt__mod__cdata
+run_const int AC_ieth__mod__cdata // from cdata
+#define ieth__mod__cdata AC_ieth__mod__cdata
+run_const int AC_iglobal_ext_bx__mod__cdata // from cdata
+#define iglobal_ext_bx__mod__cdata AC_iglobal_ext_bx__mod__cdata
+run_const int AC_iglobal_ext_by__mod__cdata // from cdata
+#define iglobal_ext_by__mod__cdata AC_iglobal_ext_by__mod__cdata
+run_const int AC_iglobal_ext_bz__mod__cdata // from cdata
+#define iglobal_ext_bz__mod__cdata AC_iglobal_ext_bz__mod__cdata
+run_const int AC_iglobal_lnrho0__mod__cdata // from cdata
+#define iglobal_lnrho0__mod__cdata AC_iglobal_lnrho0__mod__cdata
+run_const bool AC_lpencil_check__mod__cdata // from cdata
+#define lpencil_check__mod__cdata AC_lpencil_check__mod__cdata
+run_const bool AC_lpencil_check_at_work__mod__cdata // from cdata
+#define lpencil_check_at_work__mod__cdata AC_lpencil_check_at_work__mod__cdata
+run_const bool AC_headtt__mod__cdata // from cdata
+#define headtt__mod__cdata AC_headtt__mod__cdata
+run_const bool AC_ldiagnos__mod__cdata // from cdata
+#define ldiagnos__mod__cdata AC_ldiagnos__mod__cdata
+run_const bool AC_l2davgfirst__mod__cdata // from cdata
+#define l2davgfirst__mod__cdata AC_l2davgfirst__mod__cdata
+run_const bool AC_l1davgfirst__mod__cdata // from cdata
+#define l1davgfirst__mod__cdata AC_l1davgfirst__mod__cdata
+run_const real AC_xfreeze_square__mod__cdata // from cdata
+#define xfreeze_square__mod__cdata AC_xfreeze_square__mod__cdata
+run_const real AC_yfreeze_square__mod__cdata // from cdata
+#define yfreeze_square__mod__cdata AC_yfreeze_square__mod__cdata
+run_const real AC_rfreeze_int__mod__cdata // from cdata
+#define rfreeze_int__mod__cdata AC_rfreeze_int__mod__cdata
+run_const real AC_rfreeze_ext__mod__cdata // from cdata
+#define rfreeze_ext__mod__cdata AC_rfreeze_ext__mod__cdata
+run_const bool AC_lfargo_advection__mod__cdata // from cdata
+#define lfargo_advection__mod__cdata AC_lfargo_advection__mod__cdata
+run_const bool AC_llocal_iso__mod__cdata // from cdata
+#define llocal_iso__mod__cdata AC_llocal_iso__mod__cdata
+run_const bool AC_lisotropic_advection__mod__cdata // from cdata
+#define lisotropic_advection__mod__cdata AC_lisotropic_advection__mod__cdata
+run_const bool AC_ldynamical_diffusion__mod__cdata // from cdata
+#define ldynamical_diffusion__mod__cdata AC_ldynamical_diffusion__mod__cdata
+run_const bool AC_lstratz__mod__cdata // from cdata
+#define lstratz__mod__cdata AC_lstratz__mod__cdata
+gmem real AC_x__mod__cdata[AC_mx] // from cdata
+#define x__mod__cdata AC_x__mod__cdata
+gmem real AC_dx_1__mod__cdata[AC_mx] // from cdata
+#define dx_1__mod__cdata AC_dx_1__mod__cdata
+gmem real AC_dvol_x__mod__cdata[AC_mx] // from cdata
+#define dvol_x__mod__cdata AC_dvol_x__mod__cdata
+gmem real AC_y__mod__cdata[AC_my] // from cdata
+#define y__mod__cdata AC_y__mod__cdata
+gmem real AC_dy_1__mod__cdata[AC_my] // from cdata
+#define dy_1__mod__cdata AC_dy_1__mod__cdata
+gmem real AC_dvol_y__mod__cdata[AC_my] // from cdata
+#define dvol_y__mod__cdata AC_dvol_y__mod__cdata
+gmem real AC_z__mod__cdata[AC_mz] // from cdata
+#define z__mod__cdata AC_z__mod__cdata
+gmem real AC_dz_1__mod__cdata[AC_mz] // from cdata
+#define dz_1__mod__cdata AC_dz_1__mod__cdata
+gmem real AC_dvol_z__mod__cdata[AC_mz] // from cdata
+#define dvol_z__mod__cdata AC_dvol_z__mod__cdata
+gmem real AC_r1_mn__mod__cdata[AC_nx] // from cdata
+#define r1_mn__mod__cdata AC_r1_mn__mod__cdata
+gmem real AC_sinth__mod__cdata[AC_my] // from cdata
+#define sinth__mod__cdata AC_sinth__mod__cdata
+gmem real AC_sin1th__mod__cdata[AC_my] // from cdata
+#define sin1th__mod__cdata AC_sin1th__mod__cdata
+gmem real AC_costh__mod__cdata[AC_my] // from cdata
+#define costh__mod__cdata AC_costh__mod__cdata
+gmem real AC_cotth__mod__cdata[AC_my] // from cdata
+#define cotth__mod__cdata AC_cotth__mod__cdata
+gmem real AC_sinph__mod__cdata[AC_mz] // from cdata
+#define sinph__mod__cdata AC_sinph__mod__cdata
+gmem real AC_cosph__mod__cdata[AC_mz] // from cdata
+#define cosph__mod__cdata AC_cosph__mod__cdata
+gmem real AC_rcyl_mn1__mod__cdata[AC_nx] // from cdata
+#define rcyl_mn1__mod__cdata AC_rcyl_mn1__mod__cdata
+run_const bool3 AC_lpole__mod__cdata // from cdata
+#define lpole__mod__cdata AC_lpole__mod__cdata
+run_const bool3 AC_lequidist__mod__cdata // from cdata
+#define lequidist__mod__cdata AC_lequidist__mod__cdata
+run_const real3 AC_xyz0__mod__cdata // from cdata
+#define xyz0__mod__cdata AC_xyz0__mod__cdata
+run_const real3 AC_xyz1__mod__cdata // from cdata
+#define xyz1__mod__cdata AC_xyz1__mod__cdata
+gmem real AC_reac_chem__mod__cdata[AC_nx] // from cdata
+#define reac_chem__mod__cdata AC_reac_chem__mod__cdata
+gmem real AC_reac_dust__mod__cdata[AC_nx] // from cdata
+#define reac_dust__mod__cdata AC_reac_dust__mod__cdata
+run_const int3 AC_iglobal_jext__mod__cdata // from cdata
+#define iglobal_jext__mod__cdata AC_iglobal_jext__mod__cdata
+run_const int3 AC_iglobal_eext__mod__cdata // from cdata
+#define iglobal_eext__mod__cdata AC_iglobal_eext__mod__cdata
+run_const bool AC_lpencil__mod__cdata[npencils] // from cdata
+#define lpencil__mod__cdata AC_lpencil__mod__cdata
+run_const bool AC_lfreeze_varsquare__mod__cdata[mcom] // from cdata
+#define lfreeze_varsquare__mod__cdata AC_lfreeze_varsquare__mod__cdata
+run_const bool AC_lfreeze_varint__mod__cdata[mcom] // from cdata
+#define lfreeze_varint__mod__cdata AC_lfreeze_varint__mod__cdata
+run_const bool AC_lfreeze_varext__mod__cdata[mcom] // from cdata
+#define lfreeze_varext__mod__cdata AC_lfreeze_varext__mod__cdata
+run_const bool AC_ltest_bcs__mod__cdata // from cdata
+#define ltest_bcs__mod__cdata AC_ltest_bcs__mod__cdata
+run_const bool AC_lmorton_curve__mod__cdata // from cdata
+#define lmorton_curve__mod__cdata AC_lmorton_curve__mod__cdata
+run_const real AC_dx__mod__cdata // from cdata
+#define dx__mod__cdata AC_dx__mod__cdata
+run_const real AC_dy__mod__cdata // from cdata
+#define dy__mod__cdata AC_dy__mod__cdata
+run_const real AC_dz__mod__cdata // from cdata
+#define dz__mod__cdata AC_dz__mod__cdata
+run_const bool AC_lcourant_dt__mod__cdata // from cdata
+#define lcourant_dt__mod__cdata AC_lcourant_dt__mod__cdata
+run_const int AC_itorder__mod__cdata // from cdata
+#define itorder__mod__cdata AC_itorder__mod__cdata
+run_const real AC_dtinc__mod__cdata // from cdata
+#define dtinc__mod__cdata AC_dtinc__mod__cdata
+run_const real AC_dtdec__mod__cdata // from cdata
+#define dtdec__mod__cdata AC_dtdec__mod__cdata
+run_const int AC_maux_vtxbuf_index__mod__cdata[mfarray] // from cdata
+#define maux_vtxbuf_index__mod__cdata AC_maux_vtxbuf_index__mod__cdata
+run_const int AC_num_substeps__mod__cdata // from cdata
+#define num_substeps__mod__cdata AC_num_substeps__mod__cdata

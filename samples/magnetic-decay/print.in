@@ -1,0 +1,11 @@
+it(i8)
+t(e10.3)
+dt(e10.3)
+urms(e10.3)
+uxmax(e10.12)
+uymax(e10.12)
+uzmax(e10.12)
+amax(e10.12)
+rhomax(e10.12)
+#ssmax(e10.3)
+

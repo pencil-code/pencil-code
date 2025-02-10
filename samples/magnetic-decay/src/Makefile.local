@@ -1,0 +1,20 @@
+###                             -*-Makefile-*-
+### Makefile for modular pencil code -- local part
+### Included by `Makefile'
+###
+
+MPICOMM   =   mpicomm
+HYDRO     =   hydro
+DENSITY   =   density
+MAGNETIC  =   magnetic
+FORCING   = noforcing
+VISCOSITY =   viscosity
+EOS       =   eos_idealgas
+FOURIER   =   fourier_fftpack
+#POWER     =   power_spectrum
+#POISSON   =   poisson
+REAL_PRECISION = double
+GPU       =   gpu_astaroth
+GPU_VENDOR=   nvidia
+MULTITHREADING= openmp
+RUNTIME_COMPILATION=on
