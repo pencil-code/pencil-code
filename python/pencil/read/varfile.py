@@ -357,7 +357,7 @@ class DataCube(object):
             import h5py
 
             run2D = param.lwrite_2d
-            print(dtype, "Fred")
+
             # Set up the global array.
             if not run2D:
                 self.f = np.zeros((total_vars, dim.mz, dim.my, dim.mx), dtype=precision)
@@ -374,7 +374,7 @@ class DataCube(object):
                     var_file = "VAR" + str(ivar) + ".h5"
 
             file_name = os.path.join(datadir, "allprocs", var_file)
-            print(dtype, "Fred2")
+
             with h5py.File(file_name, "r") as tmp:
                 for key in tmp["data"].keys():
                     if key in index.__dict__.keys():
