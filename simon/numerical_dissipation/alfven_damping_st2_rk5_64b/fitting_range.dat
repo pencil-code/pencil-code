@@ -1,0 +1,6 @@
+# Time range for fitting the data using exponentials.
+# run_name                          ti          tf
+n8_eta_0_nu_0                       0           -1
+n16_eta_0_nu_0                      0           -1
+n32_eta_0_nu_0                      0           -1
+n64_eta_0_nu_0                      0           -1
