@@ -100,7 +100,7 @@ module Dustdensity
   logical :: llog10_for_admom_above10=.true., lmomcons=.false., lmomconsb=.false.
   logical :: lmomcons2=.false., lmomcons3=.false., lmomcons3b=.false.
   logical :: lkernel_mean=.false., lpiecewise_constant_kernel=.false.
-  logical :: lfree_molecule=.false.
+  logical :: lfree_molecule=.false., lcondensing_species=.false.
   integer :: iadvec_ddensity=0
   logical, pointer :: llin_radiusbins, llog_massbins
   real, pointer :: deltamd, dustbin_width
@@ -180,7 +180,7 @@ module Dustdensity
 !
 !   4-jun-02/axel: adapted from hydro
 !
-      use FArrayManager, only: farray_register_pde, farray_index_append
+      use FArrayManager, only: farray_register_pde, farray_index_append, farray_register_auxiliary
       use General, only: itoa
       use SharedVariables, only: put_shared_variable
 !
@@ -230,11 +230,20 @@ module Dustdensity
         call farray_index_append('ndc',ndustspec)
 !
       endif
+!
+      if (ldustnucleation) then
+        call farray_register_auxiliary('nucl_rmin',inucl,communicated=.false.)
+        call farray_register_auxiliary('nucl_rate',inucrate,communicated=.false.)
+        call farray_register_auxiliary('supersat',isupsat,communicated=.false.)
+      endif     
       !
       !  Shared variables
       !
       if (lchemistry) then
         call put_shared_variable('ldustnucleation',ldustnucleation)
+!
+        if (dust_chemistry == "condensing_species") lcondensing_species=.true.
+        call put_shared_variable('lcondensing_species',lcondensing_species,caller='register_particles_radius')
       endif
 !
 !  Identify version number (generated automatically by CVS).
