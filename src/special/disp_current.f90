@@ -111,7 +111,7 @@ module Special
   integer :: idiag_sigErms=0    ! DIAG_DOC: $\left<\sigma_\mathrm{E}^2\right>^{1/2}$
   integer :: idiag_sigBrms=0    ! DIAG_DOC: $\left<\sigma_\mathrm{B}^2\right>^{1/2}$
   integer :: idiag_Johmrms=0    ! DIAG_DOC: $\left<\Jv^2\right>^{1/2}$
-  integer :: idiag_ebm=0        ! DIAG_DOC: $\left<{Ev\cdot\Bv\right>$
+  integer :: idiag_ebm=0        ! DIAG_DOC: $\left<\Ev\cdot\Bv\right>$
 !
 ! xy averaged diagnostics given in xyaver.in
 !
