@@ -452,11 +452,9 @@ module Chemistry
           endif
         endif
         if (ldustdensity .or. lparticles_radius) then
-          if  (lparticles_radius) then
-            call get_shared_variable('lcondensing_species',lcondensing_species)
-          endif
+          call get_shared_variable('lcondensing_species',lcondensing_species)
 
-          if (lcondensing_species .and. lparticles_radius) then
+          if (lcondensing_species .and. (lparticles_radius .or. ldustdensity)) then
             call find_species_index(condensing_species,i_cond_spec,ichem_cond_spec,found_specie)
             if (.not. found_specie) then
               print*,"condensing_species=",condensing_species
@@ -614,7 +612,7 @@ module Chemistry
 !
 ! Define some constants used for condensing species
 !
-      if (lcondensing_species .and. lparticles_radius) then
+      if (lcondensing_species .and. (lparticles_radius .or. ldustdensity)) then
         molar_mass_spec = species_constants(ichem_cond_spec,imass)
         atomic_m_spec=molar_mass_spec*m_u
         A_spec=sqrt(8.*k_B/(pi*atomic_m_spec))*molar_mass_spec/(4.*true_density_cond_spec)
@@ -837,7 +835,7 @@ module Chemistry
 !  All pencils that this chemistry module depends on are specified here.
 !
 !  13-aug-07/steveb: coded
-!
+      !
       lpenc_requested(i_gXXk) = .true.
       lpenc_requested(i_gYYk) = .true.
 !      if (lreactions)
@@ -1341,13 +1339,11 @@ module Chemistry
         ! Calculate saturation concentration of condensing species
         ! (This must be done before nucleation radius and rate are calculated)
         !
-        if (lparticles_radius) then
-          if (lnucleation .or. lcondensing_species) then
-            call cond_spec_sat_conc(p,conc_sat_spec)
-            p%conc_sat_spec=conc_sat_spec
-            f(l1:l2,m,n,isupsat)=p%chem_conc(:,ichem_cond_spec)&
-                /max(p%conc_sat_spec,1e-20)
-          endif
+        if (lnucleation .or. lcondensing_species) then
+          call cond_spec_sat_conc(p,conc_sat_spec)
+          p%conc_sat_spec=conc_sat_spec
+          f(l1:l2,m,n,isupsat)=p%chem_conc(:,ichem_cond_spec)&
+               /max(p%conc_sat_spec,1e-20)
         endif
         !
         !  Calculate nucleation rate and corresponding radius
