@@ -879,7 +879,8 @@ module Param_IO
 !
 !  This is to have one item per line in the file param.nml (Cray compiler denies it).
 !
-          call system_cmd("sed -i -e's/\(&[a-zA-Z0-9_]*\) \( *[^ ].*\)/\1\n\2/' -e's/,\([^,]*=\)/,\n\1/g' data/param.nml")
+          call system_cmd( &
+          "sed -i -e's/\(&[a-zA-Z0-9_]*\) \( *[^ ].*\)/\1\n\2/' -e's/,\([^,]*=\)/,\n\1/g' data/param.nml >& /dev/null")
         endif
       endif
 !
@@ -995,9 +996,10 @@ module Param_IO
           if (unit /= 6) then
             close(unit)
 !
-!  This is to have one item per line in the file param.nml (Cray compiler denies it).
+!  This is to have one item per line in the file param2.nml (Cray compiler denies it).
 !
-            call system_cmd("sed -i -e's/\(&[a-zA-Z0-9_]*\) \( *[^ ].*\)/\1\n\2/' -e's/,\([^,]*=\)/,\n\1/g' data/param2.nml")
+            call system_cmd( &
+            "sed -i -e's/\(&[a-zA-Z0-9_]*\) \( *[^ ].*\)/\1\n\2/' -e's/,\([^,]*=\)/,\n\1/g' data/param2.nml >& /dev_null")
           endif
 
         else                                    ! output in params.log, stdout or other file

@@ -25,7 +25,6 @@ program pc_configtest
   real, dimension (mx,my,mz,mfarray) :: f
 !
   lstart = .true.
-  lmpicomm = .false.
   lroot = .true.
   ipx = 0
   ipy = 0
@@ -82,10 +81,6 @@ program pc_configtest
 !
   call register_modules
   if (lparticles) call particles_register_modules
-!
-!  Define the lenergy logical
-!
-  lenergy = lentropy .or. ltemperature .or. lthermal_energy
 !
 !  Will we write all slots of f?
 !
