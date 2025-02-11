@@ -463,13 +463,23 @@ module Particles_temperature
 ! For the case of temperature equipartition, the modification to the temperature
 ! equation of the gas phase is done here, after the particle loop.
 !
-        if (ltemp_equip_part_gas .and. (.not. ltemp_equip_simplified)) then
-          if (ltemperature_nolog) then
-            df(l1:l2,m,n,iTT)  = (df(l1:l2,m,n,iTT)*p%rho*p%cv&
-                 +p%latent_heat+Qc_back/volume_cell)/(p%rho*p%cv+p%part_heatcap)
+        if (ltemp_equip_part_gas) then
+          if (ltemp_equip_simplified) then
+            if (ltemperature_nolog) then
+              df(l1:l2,m,n,iTT)  = df(l1:l2,m,n,iTT) &
+                   +p%latent_heat/(p%rho*p%cv)
+            else
+              df(l1:l2,m,n,ilnTT)= df(l1:l2,m,n,ilnTT) &
+                   +p%latent_heat/(p%rho*p%cv*p%TT)
+            endif
           else
-            df(l1:l2,m,n,ilnTT)= (df(l1:l2,m,n,ilnTT)*p%TT*p%rho*p%cv&
-                 +p%latent_heat+Qc_back/volume_cell)/((p%rho*p%cv+p%part_heatcap)*p%TT)
+            if (ltemperature_nolog) then
+              df(l1:l2,m,n,iTT)  = (df(l1:l2,m,n,iTT)*p%rho*p%cv&
+                   +p%latent_heat+Qc_back/volume_cell)/(p%rho*p%cv+p%part_heatcap)
+            else
+              df(l1:l2,m,n,ilnTT)= (df(l1:l2,m,n,ilnTT)*p%TT*p%rho*p%cv&
+                   +p%latent_heat+Qc_back/volume_cell)/((p%rho*p%cv+p%part_heatcap)*p%TT)
+            endif
           endif
         endif
 !
