@@ -1,6 +1,6 @@
 #include "../shock/kernels.ac"
 input real AC_dt
-input int AC_step_num
+input PC_SUB_STEP_NUMBER AC_step_num
 ComputeSteps AC_rhs(boundconds)
 {
 	shock_1_divu()
