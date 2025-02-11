@@ -98,6 +98,7 @@ module Special
    real :: mu5_const=0., gammaf5=0., source5=0.
    real :: gammaf5_input=0., t1_gammaf5=0., t2_gammaf5=0.
    real :: source5_input=0., t1_source5=0., t2_source5=0.
+   real :: source5_expt=0.
    real :: muS_const=0., coef_muS=0., coef_mu5=0., Cw=0.
    real, dimension(1) :: meanmu5=0.
    real :: flucmu5=0., meanB2=0., Brms=0.
@@ -154,7 +155,7 @@ module Special
       coef_muS, coef_mu5, Cw, lmuS, lCVE, lmu5adv, &
       lmu5divu_term, lmuSdivu_term, &
       reinitialize_mu5, rescale_mu5, gammaf5_tdep, t1_gammaf5, t2_gammaf5, &
-      source5_tdep, t1_source5, t2_source5, &
+      source5_tdep, t1_source5, t2_source5, source5_expt, &
       ldiffmu5_tdep, diffmu5_tdep_toffset, &
       diffmu5_tdep_t0, diffmu5_tdep_exponent, &
       lupw_mu5, lupw_muS
@@ -860,7 +861,7 @@ module Special
           source5=source5_input
           if (headtt.or.ldebug) print*,'source5=const=',source5
 !
-!  Time-dependent profile for Gamma.
+!  Time-dependent profile for source of mu5.
 !
         case ('step')
           if (t<=t1_source5) then
@@ -871,15 +872,27 @@ module Special
             source5=0.
           endif
 !
-!  Time-dependent profile for Gamma.
+!  Time-dependent profile for source of mu5.
 !
         case ('step_decay')
           if (t<=t1_source5) then
             source5=0.
           elseif (t<=t2_source5) then
-            source5=source5_input*exp(-gammaf5*(t-t1_source5))
+            !source5=source5_input*exp(-gammaf5*(t-t1_source5))
+            source5=source5_input*exp(-source5_expt*(t-t1_source5))
           else
             source5=0.
+          endif
+!
+!  Time-dependent profile for source of mu5.
+!
+        case ('step_decay_linear_ramp')
+          if (t<=t1_source5) then
+            source5=0.
+          elseif (t<=t2_source5) then
+            source5=source5_input*(t - t1_source5)/(t2_source5-t1_source5)
+          else
+            source5=source5_input*exp(-source5_expt*(t-t2_source5))
           endif
 !
 !  Default.
