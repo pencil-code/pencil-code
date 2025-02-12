@@ -6594,98 +6594,104 @@ iloop:do i=1,size(list2)
 !
       num = size (haystack, 1)
       interpol_tabulated = -impossible
-      if (num < 2) return
+      if (num < 2) then
+
+
 
       if (lower >= num) lower = num - 1
-      if ((upper <= lower) .or. (upper > num)) upper = num
+        if ((upper <= lower) .or. (upper > num)) upper = num
 !
-      if (haystack(lower) > haystack(upper)) then
+        if (haystack(lower) > haystack(upper)) then
 !
 !  Descending array:
 !
-        ! Search for lower limit, starting from last known position
-        inc = 2
-        do while ((lower > 1) .and. (needle > haystack(lower)))
-          upper = lower
-          lower = lower - inc
-          if (lower < 1) lower = 1
-          inc = inc * 2
-        enddo
-!
-        ! Search for upper limit, starting from last known position!
-        inc = 2
-        do while ((upper < num) .and. (needle < haystack(upper)))
-          lower = upper
-          upper = upper + inc
-          if (upper > num) upper = num
-          inc = inc * 2
-        enddo
-!
-        if (needle < haystack(upper)) then
-          ! Extrapolate needle value below range
-          lower = num - 1
-        elseif (needle > haystack(lower)) then
-          ! Extrapolate needle value above range
-          lower = 1
-        else
-          ! Interpolate needle value
-          do while (lower+1 < upper)
-            mid = lower + (upper - lower) / 2
-            if (needle >= haystack(mid)) then
-              upper = mid
-            else
-              lower = mid
-            endif
+          ! Search for lower limit, starting from last known position
+          inc = 2
+          do while ((lower > 1) .and. (needle > haystack(lower)))
+            upper = lower
+            lower = lower - inc
+            if (lower < 1) lower = 1
+            inc = inc * 2
           enddo
-        endif
-        upper = lower + 1
-        interpol_tabulated = lower + (haystack(lower) - needle)/(haystack(lower) - haystack(upper))
 !
-      elseif (haystack(lower) < haystack(upper)) then
+          ! Search for upper limit, starting from last known position!
+          inc = 2
+          do while ((upper < num) .and. (needle < haystack(upper)))
+            lower = upper
+            upper = upper + inc
+            if (upper > num) upper = num
+            inc = inc * 2
+          enddo
+!
+          if (needle < haystack(upper)) then
+            ! Extrapolate needle value below range
+            lower = num - 1
+          elseif (needle > haystack(lower)) then
+            ! Extrapolate needle value above range
+            lower = 1
+          else
+            ! Interpolate needle value
+            do while (lower+1 < upper)
+              mid = lower + (upper - lower) / 2
+              if (needle >= haystack(mid)) then
+                upper = mid
+              else
+                lower = mid
+              endif
+            enddo
+          endif
+          upper = lower + 1
+          interpol_tabulated = lower + (haystack(lower) - needle)/(haystack(lower) - haystack(upper))
+!
+        elseif (haystack(lower) < haystack(upper)) then
 !
 !  Ascending array:
 !
-        ! Search for lower limit, starting from last known position
-        inc = 2
-        do while ((lower > 1) .and. (needle < haystack(lower)))
-          upper = lower
-          lower = lower - inc
-          if (lower < 1) lower = 1
-          inc = inc * 2
-        enddo
-!
-        ! Search for upper limit, starting from last known position
-        inc = 2
-        do while ((upper < num) .and. (needle > haystack(upper)))
-          lower = upper
-          upper = upper + inc
-          if (upper > num) upper = num
-          inc = inc * 2
-        enddo
-!
-        if (needle > haystack(upper)) then
-          ! Extrapolate needle value above range
-          lower = num - 1
-        elseif (needle < haystack(lower)) then
-          ! Extrapolate needle value below range
-          lower = 1
-        else
-          ! Interpolate needle value
-          do while (lower+1 < upper)
-            mid = lower + (upper - lower) / 2
-            if (needle < haystack(mid)) then
-              upper = mid
-            else
-              lower = mid
-            endif
+          ! Search for lower limit, starting from last known position
+          inc = 2
+          do while ((lower > 1) .and. (needle < haystack(lower)))
+            upper = lower
+            lower = lower - inc
+            if (lower < 1) lower = 1
+            inc = inc * 2
           enddo
-        endif
-        upper = lower + 1
-        interpol_tabulated = lower + (needle - haystack(lower))/(haystack(upper) - haystack(lower))
-      else
-        interpol_tabulated = impossible
-      endif
 !
+          ! Search for upper limit, starting from last known position
+          inc = 2
+          do while ((upper < num) .and. (needle > haystack(upper)))
+            lower = upper
+            upper = upper + inc
+            if (upper > num) upper = num
+            inc = inc * 2
+          enddo
+!
+          if (needle > haystack(upper)) then
+            ! Extrapolate needle value above range
+            lower = num - 1
+          elseif (needle < haystack(lower)) then
+            ! Extrapolate needle value below range
+            lower = 1
+          else
+            ! Interpolate needle value
+            do while (lower+1 < upper)
+              mid = lower + (upper - lower) / 2
+              if (needle < haystack(mid)) then
+                upper = mid
+              else
+                lower = mid
+              endif
+            enddo
+          endif
+          upper = lower + 1
+          interpol_tabulated = lower + (needle - haystack(lower))/(haystack(upper) - haystack(lower))
+        else
+          interpol_tabulated = impossible
+        endif
+!
+!
+!
+      endif ! (num < 2)
+
     endfunction interpol_tabulated
 !***********************************************************************
     subroutine allocate_using_dims_1d(src, dims)

@@ -3558,9 +3558,9 @@ module Energy
 !
         if (any(beta_glnrho_scaled/=0.0)) then
           if (headtt) print*, 'denergy_dt: adding global pressure gradient force'
-          do j=1,3
-            df(l1:l2,m,n,(iux-1)+j) = df(l1:l2,m,n,(iux-1)+j) - p%cs2*beta_glnrho_scaled(j)
-          enddo
+          df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - p%cs2*beta_glnrho_scaled(1)
+          df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - p%cs2*beta_glnrho_scaled(2)
+          df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) - p%cs2*beta_glnrho_scaled(3)
         endif
 !
 !  Velocity damping in the coronal heating zone.
@@ -4558,10 +4558,13 @@ module Energy
 !
       case ('zero','0')
         f_target=0.0
+        call border_driving(f,df,p,f_target,iss)
       case ('constant')
         f_target=ss_const
+        call border_driving(f,df,p,f_target,iss)
       case ('initial-condition')
         call set_border_initcond(f,iss,f_target)
+        call border_driving(f,df,p,f_target,iss)
       case ('initial-temperature')
 !
 !  This boundary condition drives the entropy back not to the initial entropy,
@@ -4592,12 +4595,11 @@ module Energy
 !  The two lines above reduce to the one below
 !
         f_target = ss_init - gamma_m1*cv*(p%lnrho-lnrho_init)
+        call border_driving(f,df,p,f_target,iss)
 !
       case ('nothing')
-        return
       endselect
 !
-      call border_driving(f,df,p,f_target,iss)
 !
     endsubroutine set_border_entropy
 !***********************************************************************
@@ -7550,55 +7552,55 @@ module Energy
 
       if (.not.lmultilayer) then
         prof=amp; dprof=0.
-        return
-      endif
+      else
 
-      if (lgravz) then
-        prof=stored_prof(n-nghost)
-        dprof(:,3)=stored_dprof(n-nghost); dprof(:,1:2)=0.
-      elseif (l2D3D) then
+        if (lgravz) then
+          prof=stored_prof(n-nghost)
+          dprof(:,3)=stored_dprof(n-nghost); dprof(:,1:2)=0.
+        elseif (l2D3D) then
 
-        if (present(p).and.lhcond_global) then
-          prof = f(l1:l2,m,n,iglobal_hcond)
-          dprof= f(l1:l2,m,n,iglobal_glhc:iglobal_glhc+2)
-        else
-
-          if (present(p)) then
-            r_mn=p%r_mn
-            r_mn1=p%r_mn1
+          if (present(p).and.lhcond_global) then
+            prof = f(l1:l2,m,n,iglobal_hcond)
+            dprof= f(l1:l2,m,n,iglobal_glhc:iglobal_glhc+2)
           else
-            r_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
-            r_mn1=1./r_mn
+
+            if (present(p)) then
+              r_mn=p%r_mn
+              r_mn1=p%r_mn1
+            else
+              r_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
+              r_mn1=1./r_mn
+            endif
+
+            prof =  (amp1-1.)*der_step(r_mn,pos1,-widthss) &
+                   +(amp2-1.)*der_step(r_mn,pos2, widthss)
+            dprof(:,1) = prof*x(l1:l2)*r_mn1
+            dprof(:,2) = prof*y(  m  )*r_mn1
+
+            if (lcylinder_in_a_box) then
+              dprof(:,3) = 0.0
+            else
+              dprof(:,3) = prof*z(n)*r_mn1
+            endif
+
+            prof = 1.+(amp1-1.)*step(r_mn,pos1,-widthss) &
+                     +(amp2-1.)*step(r_mn,pos2, widthss)
+
+            if (loptest(llog)) then
+              do j=1,3; dprof(:,j)=dprof(:,j)/prof; enddo
+            else
+              dprof = amp*dprof
+            endif
+
+            prof = amp*prof
+
           endif
 
-          prof =  (amp1-1.)*der_step(r_mn,pos1,-widthss) &
-                 +(amp2-1.)*der_step(r_mn,pos2, widthss)
-          dprof(:,1) = prof*x(l1:l2)*r_mn1
-          dprof(:,2) = prof*y(  m  )*r_mn1
-
-          if (lcylinder_in_a_box) then
-            dprof(:,3) = 0.0
-          else
-            dprof(:,3) = prof*z(n)*r_mn1
-          endif
-
-          prof = 1.+(amp1-1.)*step(r_mn,pos1,-widthss) &
-                   +(amp2-1.)*step(r_mn,pos2, widthss)
-
-          if (loptest(llog)) then
-            do j=1,3; dprof(:,j)=dprof(:,j)/prof; enddo
-          else
-            dprof = amp*dprof
-          endif
-
-          prof = amp*prof
-
+        else  ! covers also lgravr=T
+          prof=stored_prof
+          dprof(:,1)=stored_dprof; dprof(:,2:3)=0.
         endif
-
-      else  ! covers also lgravr=T
-        prof=stored_prof
-        dprof(:,1)=stored_dprof; dprof(:,2:3)=0.
-      endif
+      endif !.not. lmultilayer
 
     endsubroutine get_prof_pencil
 !***********************************************************************

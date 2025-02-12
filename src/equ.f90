@@ -362,7 +362,13 @@ module Equ
         if (ldiagnos.or.l1davgfirst.or.l1dphiavg.or.l2davgfirst) then
                 !if (lroot) print*,'Diagnostic time - CPU=', t
         endif
+        !start_time = mpiwtime()
         call rhs_cpu(f,df,p,mass_per_proc,early_finalize)
+        !end_time = mpiwtime()
+        !if (lroot) print*,"rhs_cpu took:",end_time-start_time
+        !if (lroot) flush(6)
+        !sum_time = sum_time + end_time-start_time
+        !n_iterations = n_iterations + 1
 !
 !  Doing df-related work which cannot be finished inside the main mn-loop.
 !  (At the moment relevant for anelastic and Schur flows.)
@@ -1022,11 +1028,12 @@ module Equ
 !
 !  Skip points not belonging to coarse grid.
 !
-        lcoarse_mn=lcoarse.and.mexts(1)<=m.and.m<=mexts(2)
-        if (lcoarse_mn) then
-          lcoarse_mn=lcoarse_mn.and.ninds(0,m,n)>0
-          if (ninds(0,m,n)<=0) cycle
-        endif
+        !TP: not active for the GPU
+        !lcoarse_mn=lcoarse.and.mexts(1)<=m.and.m<=mexts(2)
+        !if (lcoarse_mn) then
+        !  lcoarse_mn=lcoarse_mn.and.ninds(0,m,n)>0
+        !  if (ninds(0,m,n)<=0) cycle
+        !endif
 !
 !  Store the velocity part of df array in a temporary array
 !  while solving the anelastic case.

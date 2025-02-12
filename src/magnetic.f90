@@ -1116,6 +1116,8 @@ module Magnetic
 
   real :: gamma, gamma1, gamma_m1
 
+  integer :: iedotx,iedotz
+
   contains
 !***********************************************************************
     subroutine register_magnetic
@@ -2085,6 +2087,9 @@ module Magnetic
 
       if (.not.lcoulomb.and.idiag_bzLammz/=0) &
         call fatal_error('initialize_magnetic', 'Coulomb gauge needs to be invoked for bzLamm')
+
+     iedotx=farray_index_by_name('eedot')
+     iedotz=iedotx+2
 
     endsubroutine initialize_magnetic
 !***********************************************************************
@@ -3750,7 +3755,7 @@ module Magnetic
           if (lbb_as_comaux) then
             if (lB_ext_in_comaux) then
               call get_bext(B_ext)
-              forall(j = 1:3, B_ext(j) /= 0.0) bb(:,j) = bb(:,j) + B_ext(j)
+              do j = 1,3; bb(:,j) = bb(:,j) + B_ext(j); enddo;
               if (headtt .and. imn == 1) print *, 'magnetic_before_boundary: B_ext = ', B_ext
             endif
             f(l1:l2,m,n,ibx:ibz) = bb
@@ -3881,7 +3886,6 @@ module Magnetic
 !
       use EquationOfState, only: rho0
       use General, only: notanumber
-      use FArrayManager, only: farray_index_by_name
       use SharedVariables, only: put_shared_variable
       use Sub
 !
@@ -3895,7 +3899,7 @@ module Magnetic
       real, dimension(3) :: B_ext, j_ext
       real :: c,s
       real :: Eaver, Baver !, b2m
-      integer :: i, j, ix, iedotx, iedotz
+      integer :: i, j, ix
 
       if (lfirstpoint) lproc_print=.true.
 ! aa
@@ -3940,14 +3944,14 @@ module Magnetic
         if (.not. (lbb_as_comaux .and. lB_ext_in_comaux) .and. (.not. ladd_global_field)) then
           call get_bext(B_ext,j_ext)
           if (any(B_ext/=0.)) then
-            forall(j = 1:3, B_ext(j) /= 0.0) p%bb(:,j) = p%bb(:,j) + B_ext(j)
+            do j = 1,3; p%bb(:,j) = p%bb(:,j) + B_ext(j); enddo;
             if (headtt) print *, 'calc_pencils_magnetic_pencpar: B_ext = ', B_ext
             if (headtt) print *, 'calc_pencils_magnetic_pencpar: logic = ', &
                         (lbb_as_comaux .and. lB_ext_in_comaux .and. ladd_global_field)
           endif
           ! The following does not happen if (lbb_as_comaux .and. lB_ext_in_comaux) !
 !AB: the following comes too early and is later done anyway
-         forall(j = 1:3, j_ext(j) /= 0.0) p%jj(:,j) = p%jj(:,j) + j_ext(j)
+          do j = 1,3;  p%jj(:,j) = p%jj(:,j) + j_ext(j); enddo;  
         endif
 !
 !  Add a precessing dipole not in the Bext field
@@ -4237,9 +4241,9 @@ module Magnetic
               call get_shared_variable('ascale', ascale, caller='initialize_magnetic')
               call get_shared_variable('Hscript', Hscript, caller='initialize_magnetic')
             else
-              allocate (ascale, Hscript)
-              ascale=1.
-              Hscript=1.
+              !allocate (ascale, Hscript)
+              !ascale=1.
+              !Hscript=1.
             endif
             if (iex>0) then
               Eabs=sqrt(f(l1:l2,m,n,iex)**2+f(l1:l2,m,n,iey)**2+f(l1:l2,m,n,iez)**2)
@@ -4305,8 +4309,6 @@ module Magnetic
 !
             if (loverride_ee2) then
               if (ladd_disp_current_from_aux) then
-                iedotx=farray_index_by_name('eedot')
-                iedotz=iedotx+2
                 if (iedotx>0 .and. iedotz>0) then
                   p%jj=mu01*p%curlb-c_light21*f(l1:l2,m,n,iedotx:iedotz)
                 else
@@ -4443,7 +4445,7 @@ module Magnetic
 !  limiting term,
 !
         if (rhomin_jxb>0) rho1_jxb=min(rho1_jxb,1/rhomin_jxb)
-        if (va2max_jxb>0 .and. (.not. betamin_jxb>0)) &
+        if (va2max_jxb>0 .and. (.not. (betamin_jxb>0))) &
           rho1_jxb = rho1_jxb * (1+(p%va2/va2max_jxb)**va2power_jxb)**(-1.0/va2power_jxb)
 
         if (betamin_jxb>0) then
@@ -4678,7 +4680,7 @@ module Magnetic
         if (lhydro.and.llorentzforce) then
           rho1_jxb=p%rho1
           if (rhomin_jxb>0) rho1_jxb=min(rho1_jxb,1/rhomin_jxb)
-          if (va2max_jxb>0 .and. (.not. betamin_jxb>0)) &
+          if (va2max_jxb>0 .and. (.not. (betamin_jxb>0))) &
             rho1_jxb = rho1_jxb * (1+(p%va2/va2max_jxb)**va2power_jxb)**(-1.0/va2power_jxb)
 
           if (betamin_jxb>0) then
@@ -4799,6 +4801,22 @@ module Magnetic
       p%jj=p%jj+jj_diamag
 !
     endsubroutine diamagnetism
+!***********************************************************************
+    subroutine calc_aaxyaver(aa_xyaver,f)
+
+!
+!  12-2-2025/TP: carved from daa_dt to separate average calculations. To get it running on the GPU would have to happen in
+!  before_boundary or after_boundary
+!
+      real, dimension(nx,3) :: aa_xyaver
+      real, dimension(mx,my,mz,mfarray) :: f
+      integer :: j
+      integer, parameter :: nxy=nxgrid*nygrid
+
+      do j=1,3
+        aa_xyaver(:,j)=sum(f(l1:l2,m1:m2,n,j+iax-1))/nxy
+      enddo
+    endsubroutine calc_aaxyaver
 !***********************************************************************
     subroutine daa_dt(f,df,p)
 !
@@ -5026,7 +5044,7 @@ module Magnetic
           if (lweyl_gauge) then
             fres = fres - eta_z(n) * mu0 * p%jj
           else
-            forall(j = 1:3) fres(:,j) = fres(:,j) + eta_z(n) * p%del2a(:,j)
+            do j = 1,3; fres(:,j) = fres(:,j) + eta_z(n) * p%del2a(:,j); enddo
             fres(:,3) = fres(:,3) + geta_z(n) * p%diva
           endif
           eta_total = eta_total + eta_z(n)
@@ -5322,7 +5340,7 @@ module Magnetic
 !
       if (lresi_etava) then
         if (lweyl_gauge) then
-          forall (i = 1:3) fres(:,i) = fres(:,i) - p%etava * p%jj(:,i)
+            do i = 1,3; fres(:,i) = fres(:,i) - p%etava * p%jj(:,i); enddo;
         endif
         eta_total = eta_total + p%etava
       endif
@@ -5331,7 +5349,7 @@ module Magnetic
 !
       if (lresi_vAspeed) then
         if (lweyl_gauge) then
-          forall (i = 1:3) fres(:,i) = fres(:,i) - p%etava * p%jj(:,i)
+                do i = 1,3; fres(:,i) = fres(:,i) - p%etava * p%jj(:,i); enddo;
         else
           do i=1,3
             fres(:,i) = fres(:,i) + mu0 * p%etava * p%del2a(:,i) + eta_va/vArms * p%diva * p%gva(:,i)
@@ -5341,17 +5359,17 @@ module Magnetic
       endif
 !
       if (lresi_etaj) then
-        forall (i = 1:3) fres(:,i) = fres(:,i) - p%etaj * p%jj(:,i)
+              do i = 1,3; fres(:,i) = fres(:,i) - p%etaj * p%jj(:,i); enddo;
         eta_total = eta_total + p%etaj
       endif
 !
       if (lresi_etaj2) then
-        forall (i = 1:3) fres(:,i) = fres(:,i) - p%etaj2 * p%jj(:,i)
+              do i = 1,3; fres(:,i) = fres(:,i) - p%etaj2 * p%jj(:,i); enddo;
         eta_total = eta_total + p%etaj2
       endif
 !
       if (lresi_etajrho) then
-        forall (i = 1:3) fres(:,i) = fres(:,i) - p%etajrho * p%jj(:,i)
+              do i = 1,3; fres(:,i) = fres(:,i) - p%etajrho * p%jj(:,i); enddo;
         eta_total = eta_total + p%etajrho
       endif
 !
@@ -5402,7 +5420,8 @@ module Magnetic
         eta_smag=(D_smag*dxmax)**2.*sign_jo*sqrt(p%jo*sign_jo)
         call multsv(eta_smag+eta,p%del2a,fres)
       endif
-      if (any((/lresi_smagorinsky,lresi_smagorinsky_nusmag,lresi_smagorinsky_cross/))) eta_total = eta_total + eta_smag
+      if (((lresi_smagorinsky .or. lresi_smagorinsky_nusmag .or. lresi_smagorinsky_cross))) eta_total = eta_total + eta_smag
+      if ((lresi_smagorinsky  .or. lresi_smagorinsky_nusmag .or. lresi_smagorinsky_cross)) eta_total = eta_total + eta_smag
 !
 !  Anomalous resistivity. Sets in when the ion-electron drift speed is
 !  larger than some critical value.
@@ -5533,9 +5552,7 @@ module Magnetic
 !  to Ekman friction; see below.
 !
       if (lmean_friction) then
-        do j=1,3
-          aa_xyaver(:,j)=sum(f(l1:l2,m1:m2,n,j+iax-1))/nxy
-        enddo
+        call calc_aaxyaver(aa_xyaver,f)
         dAdt = dAdt-LLambda_aa*aa_xyaver
       elseif (llocal_friction) then
         dAdt = dAdt-LLambda_aa*p%aa

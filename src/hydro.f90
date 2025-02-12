@@ -1364,8 +1364,8 @@ module Hydro
           call not_implemented('initialize_hydro','calculation of z average for Yin-Yang grid')
           !call initialize_zaver_yy(myl,nycap)
         endif
-        allocate(uumxy(mx,myl,3))
-        allocate(ruumxy(mx,myl,3))
+        allocate(uumxy(mx,my,3))
+        allocate(ruumxy(mx,my,3))
         uumxy=0.0
         ruumxy=0.0
       endif
@@ -3914,7 +3914,8 @@ module Hydro
 !  12-Mar-2017/WL: Agree, looks very specific.
 !
         if (lno_meridional_flow) then
-          f(l1:l2,m,n,iux:iuy)=0.0
+          f(l1:l2,m,n,iux)=0.0
+          f(l1:l2,m,n,iuy)=0.0
           df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-p%ugu(:,3)
         endif
 !
@@ -5656,9 +5657,8 @@ endif
 !
       real :: c2, s2
 !
-      if (Omega==0.) return
 !
-      if (theta==0) then
+      if (Omega /= 0. .and. theta==0) then
 !
         if (lcoriolis_force) then
 !
@@ -5734,9 +5734,7 @@ endif
 !
       real :: c2, s2
 !
-      if (Omega==0.) return
-!
-      if (lcoriolis_force) then
+      if (Omega /= 0.0 .and. lcoriolis_force) then
 !
         if (headtt) print*,'coriolis_cartesian_xaxis: Coriolis force; Omega, theta=', Omega, theta
 !
@@ -8154,7 +8152,8 @@ endif
         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*(f(l1:l2,m,n,iuz)-prof_amp1*prof_amp4(m))
 !            -prof_amp1*cos(20.*x(llx))*cos(20.*y(m)) )
       if (ldiffrot_test) then
-        f(l1:l2,m,n,iux:iuy) = 0.
+        f(l1:l2,m,n,iux) = 0.
+        f(l1:l2,m,n,iuy) = 0.
         if (lspherical_coords.or.lcartesian_coords) f(l1:l2,m,n,iuz) = prof_amp1*prof_amp4(m)
       endif
 !

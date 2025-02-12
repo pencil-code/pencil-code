@@ -21,6 +21,12 @@ module Magnetic_meanfield
   use General, only: keep_compiler_quiet
 !
   implicit none
+
+  !TP: having these declarations always present from the magnetic_meanfield modules makes things easier for transpilation
+  !so have them here for now. In future we can get rid of them
+  real, dimension(nx) :: etat_x, detat_x
+  real, dimension(my) :: etat_y, detat_y
+  real, dimension(mz) :: etat_z, detat_z
 !
   include 'meanfield.h'
 !

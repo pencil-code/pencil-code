@@ -2519,10 +2519,8 @@ module Density
 !  Accumulatively calculate the RHS of Schur flow equations, but only finalize after the mn loop.
 !
         density_rhs=p%uglnrho+p%divu
+        call accumulate_Schur_averages(density_rhs)
 !
-        Schur_dlnrho_RHS_xyaver_z(n-nghost) = Schur_dlnrho_RHS_xyaver_z(n-nghost)+sum(density_rhs)/nxygrid
-        Schur_dlnrho_RHS_zaver_xy(:,m-nghost) = Schur_dlnrho_RHS_zaver_xy(:,m-nghost)+density_rhs/nzgrid
-        Schur_dlnrho_RHS_xyzaver = Schur_dlnrho_RHS_xyzaver+sum(density_rhs)/nwgrid
       else
 !
 !  Continuity equation.
@@ -2723,7 +2721,9 @@ module Density
         endif
         if (lhydro.and.(.not.lhydro_potential)) then
           !  when using lhydro_potential, df doesn't have iux:iuz entries
-          forall(j = iux:iuz) df(l1:l2,m,n,j) = df(l1:l2,m,n,j) - p%uu(:,j-iuu+1) * tmp
+          df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - p%uu(:,1) * tmp;
+          df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - p%uu(:,2) * tmp;
+          df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) - p%uu(:,3) * tmp;
         endif
         if (lentropy.and.(.not.pretend_lnTT)) then
           df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%cv*tmp
@@ -3059,6 +3059,7 @@ module Density
         else
           f_target=1.
         endif
+        call border_driving(f,df,p,f_target,ilnrho)
 !
       case ('constant')
         if (ldensity_nolog) then
@@ -3066,16 +3067,16 @@ module Density
         else
           f_target=lnrho_const
         endif
+        call border_driving(f,df,p,f_target,ilnrho)
 !
       case ('initial-condition')
         call set_border_initcond(f,ilnrho,f_target)
+        call border_driving(f,df,p,f_target,ilnrho)
 !
       case ('nothing')
-        return
-!
+
       endselect
 !
-      call border_driving(f,df,p,f_target,ilnrho)
 !
     endsubroutine set_border_density
 !***********************************************************************
@@ -3981,6 +3982,16 @@ module Density
       endif
 !
     endfunction mean_density
+!***********************************************************************
+    subroutine accumulate_Schur_averages(density_rhs)
+!
+!  12-2-2025/TP: carved out from dlnrho_dt
+!
+        real, dimension(nx) :: density_rhs
+        Schur_dlnrho_RHS_xyaver_z(n-nghost) = Schur_dlnrho_RHS_xyaver_z(n-nghost)+sum(density_rhs)/nxygrid
+        Schur_dlnrho_RHS_zaver_xy(:,m-nghost) = Schur_dlnrho_RHS_zaver_xy(:,m-nghost)+density_rhs/nzgrid
+        Schur_dlnrho_RHS_xyzaver = Schur_dlnrho_RHS_xyzaver+sum(density_rhs)/nwgrid
+    endsubroutine accumulate_Schur_averages
 !***********************************************************************
     subroutine impose_density_ceiling(f)
 !
