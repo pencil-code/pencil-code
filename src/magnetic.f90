@@ -1733,7 +1733,7 @@ module Magnetic
             endif
           endif
           if (luse_scale_factor_in_sigma) then
-            if (.not.allocated(ascale)) allocate(ascale, Hscript)
+            if (.not.associated(ascale)) allocate(ascale, Hscript)
             ascale=1.
             Hscript=1.
           endif
