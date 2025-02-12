@@ -32,7 +32,7 @@
 !    NOT IMPLEMENTED FULLY YET - HOOKS NOT PLACED INTO THE PENCIL-CODE
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
-! Declare (for generation of backreact_infl_dummies.inc) the number of f array
+! Declare (for generation of special_dummies.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: lspecial = .true.
@@ -72,7 +72,7 @@
 ! Where geo_kws it replaced by the filename of your new module
 ! upto and not including the .f90
 !
-module backreact_infl
+module Special
 !
   use Cdata
   use General, only: keep_compiler_quiet
@@ -90,7 +90,7 @@ module backreact_infl
   integer :: iinfl_rho_chi=0
   real :: ncutoff_phi=1., infl_v=.1
   real :: axionmass=1.06e-6, axionmass2, ascale_ini=1.
-  real :: phi0=.44, dphi0=-1e-5, c_light_axion=1., lambda_axion=0., eps=.01
+  real :: phi0=.44, dphi0=-1.69e-7, c_light_axion=1., lambda_axion=0., eps=.01
   real :: amplphi=.1, ampldphi=.0, kx_phi=1., ky_phi=0., kz_phi=0., phase_phi=0., width=.1, offset=0.
   real :: initpower_phi=0.,  cutoff_phi=0.,  initpower2_phi=0.
   real :: initpower_dphi=0., cutoff_dphi=0., initpower2_dphi=0.
@@ -98,7 +98,8 @@ module backreact_infl
   real :: relhel_phi=0.
   real :: ddotam, a2rhopm, a2rhopm_all, a2rhom, a2rhom_all
   real :: edotbm, edotbm_all, e2m, e2m_all, b2m, b2m_all, a2rhophim, a2rhophim_all
-  real :: ebm, sigEm, sigBm, ebm_all, sigEm_all, sigBm_all
+!  real :: ebm, sigEm, sigBm, ebm_all, sigEm_all, sigBm_all
+  real :: sigEm, sigBm, sigEm_all, sigBm_all
   real :: a2rhogphim, a2rhogphim_all
   real :: lnascale, ascale, a2, a21, Hscript
   real :: Hscript0=0., scale_rho_chi_Heqn=1.
@@ -115,7 +116,7 @@ module backreact_infl
   character (len=labellen) :: Vprime_choice='quadratic', Hscript_choice='default'
   character (len=labellen), dimension(ninit) :: initspecial='nothing'
 !
-  namelist /backreact_infl_init_pars/ &
+  namelist /special_init_pars/ &
       initspecial, phi0, dphi0, axionmass, eps, ascale_ini, &
       c_light_axion, lambda_axion, amplphi, ampldphi, lno_noise_phi, lno_noise_dphi, &
       kx_phi, ky_phi, kz_phi, phase_phi, width, offset, &
@@ -124,7 +125,7 @@ module backreact_infl
       ncutoff_phi, lscale_tobox, Hscript0, Hscript_choice, infl_v, lflrw, &
       lrho_chi, scale_rho_chi_Heqn
 !
-  namelist /backreact_infl_run_pars/ &
+  namelist /special_run_pars/ &
       initspecial, phi0, dphi0, axionmass, eps, ascale_ini, &
       lbackreact_infl, lem_backreact, c_light_axion, lambda_axion, Vprime_choice, &
       lzeroHubble, ldt_backreact_infl, Ndiv, Hscript0, Hscript_choice, infl_v, &
@@ -264,7 +265,8 @@ module backreact_infl
             Vpotential=.5*axionmass2*phi0**2
             Hubble_ini=sqrt(8.*pi/3.*(.5*axionmass2*phi0**2*ascale_ini**2))
 !            dphi0=-ascale_ini*sqrt(2*eps/3.*Vpotential)
-            dphi0=-sqrt(1/(12.*pi))*axionmass*ascale_ini
+           ! dphi0=-sqrt(1/(12.*pi))*axionmass*ascale_ini
+           ! dphi0=-sqrt(16*pi/3)*axionmass*ascale_ini
             tstart=-1/(ascale_ini*Hubble_ini)
             t=tstart
             lnascale=log(ascale_ini)
@@ -529,7 +531,7 @@ module backreact_infl
       if (lrho_chi) then
         if (lnoncollinear_EB) then
           df_ode(iinfl_rho_chi)=df_ode(iinfl_rho_chi)-4.*Hscript*f_ode(iinfl_rho_chi) &
-            +(sigEm_all*e2m_all+sigBm_all*ebm_all)/ascale**3
+            +(sigEm_all*e2m_all+sigBm_all*edotbm_all)/ascale**3
         else
           df_ode(iinfl_rho_chi)=df_ode(iinfl_rho_chi)-4.*Hscript*f_ode(iinfl_rho_chi) &
             +e2m_all/(eta_tdep*ascale**3)
@@ -557,7 +559,7 @@ module backreact_infl
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=backreact_infl_init_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=special_init_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_init_pars
 !***********************************************************************
@@ -565,7 +567,7 @@ module backreact_infl
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=backreact_infl_init_pars)
+      write(unit, NML=special_init_pars)
 !
     endsubroutine write_special_init_pars
 !***********************************************************************
@@ -575,7 +577,7 @@ module backreact_infl
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=backreact_infl_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=special_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_run_pars
 !***********************************************************************
@@ -583,7 +585,7 @@ module backreact_infl
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=backreact_infl_run_pars)
+      write(unit, NML=special_run_pars)
 !
     endsubroutine write_special_run_pars
 !***********************************************************************
@@ -680,7 +682,7 @@ module backreact_infl
       a2rhophim=a2rhophim/nwgrid
       a2rhogphim=a2rhogphim/nwgrid
       ddotam=(four_pi_over_three/nwgrid)*ddotam
-      if (lphi_hom) then
+      if (lphi_hom .or. lrho_chi) then
         edotbm=edotbm/nwgrid
         call mpiallreduce_sum(edotbm,edotbm_all)
       endif
@@ -698,7 +700,7 @@ module backreact_infl
         b2m=b2m/nwgrid
         call mpiallreduce_sum(e2m,e2m_all)
         call mpiallreduce_sum(b2m,b2m_all)
-        call mpiallreduce_sum(ebm,ebm_all)
+ !       call mpiallreduce_sum(ebm,ebm_all)
         call mpiallreduce_sum(sigEm,sigEm_all)
         call mpiallreduce_sum(sigBm,sigBm_all)
       endif
@@ -794,9 +796,11 @@ module backreact_infl
       ddotam=ddotam+sum(ddota)
       a2rho=a2rho+a2*Vpotential
       a2rhom=a2rhom+sum(a2rho)
-      if (lmagnetic .and. lem_backreact .and. lphi_hom) then
-        call dot_mn(el,bb,edotb)
-        edotbm=edotbm+sum(edotb)
+      if (lmagnetic .and. lem_backreact) then
+        if (lphi_hom .or. lrho_chi) then
+          call dot_mn(el,bb,edotb)
+          edotbm=edotbm+sum(edotb)
+        endif
       endif
 !
 !  Compute e2m per pencil. It becomes the total e2m after calling
@@ -818,6 +822,6 @@ module backreact_infl
 !**  copies dummy routines from nospecial.f90 for any Special      **
 !**  routines not implemented in this file                         **
 !**                                                                **
-    include '../backreact_infl_dummies.inc'
+    include '../special_dummies.inc'
 !***********************************************************************
-endmodule backreact_infl
+endmodule Special
