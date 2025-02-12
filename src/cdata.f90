@@ -329,11 +329,8 @@ module Cdata
              lreference_state=.false., lfullvar_in_slices=.false., &
              lsubstract_reference_state=.false., ldensity_linearstart=.false.
   logical :: lforcing_cont=.false.
-  logical :: lwrite_slices=.false., lwrite_1daverages=.false., lwrite_2daverages=.false.
-  logical :: lwrite_tracers=.false., lwrite_fixed_points=.false.
-  logical :: lwrite_sound=.false.
-  logical :: lwrite_slice_xy2=.false.,lwrite_slice_xy=.false.,lwrite_slice_xz=.false.,lwrite_slice_yz=.false.
-  logical :: lwrite_slice_xy3=.false.,lwrite_slice_xy4=.false.,lwrite_slice_xz2=.false., lwrite_slice_r=.false.
+
+
   logical :: lgravx=.false.,lgravy=.false.,lgravz=.false.
   logical :: lgravx_gas=.true.,lgravy_gas=.true.,lgravz_gas=.true.
   logical :: lgravx_dust=.true.,lgravy_dust=.true.,lgravz_dust=.true.
@@ -530,7 +527,17 @@ module Cdata
                                          cnamez(:),cnamey(:),cnamex(:),cnamer(:)
   integer, dimension(:), allocatable :: inds_max_diags, inds_sum_diags
 
+  logical :: lfirst=.false.,llast=.false.,ldt=.true.,ldt_paronly=.false.
+!END C BINDING
+  integer, target :: m,n
+  integer :: nt=10000000, it=0, itorder=3, itsub=0, it_timing=0, it_rmv=0
   logical :: ltiming_io=.false.
+  logical :: lwrite_slices=.false., lwrite_1daverages=.false., lwrite_2daverages=.false.
+  logical :: lwrite_tracers=.false., lwrite_fixed_points=.false.
+  logical :: lwrite_sound=.false.
+  logical :: lwrite_slice_xy2=.false.,lwrite_slice_xy=.false.,lwrite_slice_xz=.false.,lwrite_slice_yz=.false.
+  logical :: lwrite_slice_xy3=.false.,lwrite_slice_xy4=.false.,lwrite_slice_xz2=.false., lwrite_slice_r=.false.
+
   logical :: lout=.false.,headt=.false.,headtt=.true.,lrmv=.false.
   logical :: ldiagnos=.false.,lvideo=.false.,lwrite_prof=.true.,lout_sound=.false.
   logical :: ltracers=.false.,lfixed_points=.false.

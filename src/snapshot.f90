@@ -411,9 +411,11 @@ module Snapshot
 !
       use General, only: keep_compiler_quiet
 
+      use General, only: keep_compiler_quiet
+
       character(LEN=fnlen) :: file
       real, dimension(:), intent(OUT) :: snaptimes   ! allocatable
-
+      
       call keep_compiler_quiet(snaptimes)
 
     endsubroutine read_predef_snaptimes

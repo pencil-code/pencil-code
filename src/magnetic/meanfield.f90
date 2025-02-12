@@ -31,7 +31,7 @@ module Magnetic_meanfield
 !  array for inputting alpha profile
 !
   real, dimension (mx,my) :: alpha_input
-  real, pointer :: B_ext2
+  real, pointer :: B_ext2, eta
   logical, pointer :: lweyl_gauge
 !
   real, dimension (nx,3,3) :: hij
@@ -60,7 +60,7 @@ module Magnetic_meanfield
 ! Input parameters
 !
   real :: Omega_ampl=0.0, dummy=0.0
-  real :: alpha_effect=0.0, alpha_quenching=0.0, delta_effect=0.0, alpha_zz=0.
+  real :: Calp=0.0, alpha_effect=0.0, alpha_quenching=0.0, delta_effect=0.0, alpha_zz=0.
   real :: gamma_effect=0.0, gamma_quenching=0.0
   real :: chit_quenching=0.0, chi_t0=0.0
   real :: meanfield_etat=0.0, meanfield_etat_height=1., meanfield_pumping=1.
@@ -124,7 +124,7 @@ module Magnetic_meanfield
   logical :: lshear_current_effect=.false., lalphass_disk=.false.
 !
   namelist /magn_mf_run_pars/ &
-      alpha_effect, alpha_quenching, alpha_rmax, alpha_exp, alpha_zz, &
+      Calp, alpha_effect, alpha_quenching, alpha_rmax, alpha_exp, alpha_zz, &
       gamma_effect, gamma_quenching, &
       alpha_eps, alpha_pom0, alpha_width, alpha_width2, alpha_aniso, &
       alpha_tensor, eta_tensor, &
@@ -261,8 +261,21 @@ module Magnetic_meanfield
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: kf_x_tmp, kf_x1_tmp, prof_tmp
-!      character (len=linelen) :: dummy
+      real :: kz1
       integer :: ierr, i, j
+!
+!  Get B_ext2 and eta from magnetic module.
+!
+      call get_shared_variable('B_ext2',B_ext2)
+      call get_shared_variable('eta',eta)
+!
+!  Possibility of giving Calp=alpha_effect/[(eta+etat)*k1]
+!
+       if (alpha_effect==0. .and. Calp/=0.) then
+         kz1=2.*pi/Lxyz(3)
+         alpha_effect=Calp*(eta+meanfield_etat)*kz1
+         if (lroot) print*,'alpha_effect=',alpha_effect
+       endif
 !
 !  check for alpha profile
 !
@@ -614,10 +627,6 @@ module Magnetic_meanfield
         hijk(:,3,3,1)=-hijk(:,2,2,1)
         hijk(:,3,2,1)=+hijk(:,2,3,1)
       endif
-!
-!  Get B_ext2 from magnetic module.
-!
-      call get_shared_variable('B_ext2',B_ext2)
 !
 !  thin disk model switch
 !
@@ -1329,11 +1338,18 @@ module Magnetic_meanfield
 !  alpha effect only to the toroidal component. Since p%mf_EMF
 !  was initialized only in the previous line, we can just set
 !  the r and theta components to zero (in spherical coordinates).
+!  In Cartesian coordinates, we want the x and z components to vanish,
+!  so we keep only the y-components.
 !
         if (lalpha_Omega_approx) then
-          p%mf_EMF(:,1:2)=0.
-          call fatal_error("calc_pencils_magn_mf: ", &
-              "lalpha_Omega_approx not implemented for this case")
+          if (lspherical_coords) then
+            p%mf_EMF(:,1:2)=0.
+            call fatal_error("calc_pencils_magn_mf: ", &
+                "lalpha_Omega_approx not implemented for this case")
+          else
+            p%mf_EMF(:,1)=0.
+            p%mf_EMF(:,3)=0.
+          endif
         endif
 !
 !  Apply eta tensor, but subtract part from etat for stability reasons.
@@ -1464,11 +1480,6 @@ module Magnetic_meanfield
           p%mf_EMF(:,j)=p%mf_EMF(:,j)+GWfac1*levi_civita(k,nn,j)*hij(:,i,nn)*p%bij(:,k,i) &
                                      -GWfac2*levi_civita(k,nn,i)*hij(:,j,nn)*p%bij(:,k,i) &
                                      -GWfac3*levi_civita(k,nn,i)*hijk(:,j,nn,i)*p%bb(:,k)
-if (ip<10 .and. levi_civita(k,nn,j) /= 0.) then
-  print*,'AXEL1, j,k,i,nn,eps, hij(1,i,nn),p%bij(1,2,1),p%mf_EMF(:,j)=',j,k,i,nn, &
-    levi_civita(k,nn,j),hij(1,i,nn),p%bij(1,k,i),p%mf_EMF(1,j), &
-    levi_civita(k,nn,j)*hij(1,i,nn)*p%bij(1,k,i)
-endif
         enddo
         enddo
         enddo
@@ -1657,9 +1668,7 @@ endif
 !
 !  Apply p%mf_EMF only if .not.lmagn_mf_demfdt; otherwise postpone.
 !
-if (ip<10) print*,'AXEL2, p%mf_EMF(:,2)=',p%mf_EMF(:,2)
         if (.not.lmagn_mf_demfdt) then
-if (ip<10) print*,'AXEL3, p%mf_EMF(:,2)=',p%mf_EMF(:,2)
           df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+p%mf_EMF
         endif
 !

@@ -15,13 +15,22 @@ set newdir=$1
 #
 cd $newdir/data
 mkdir allprocs
-(echo "restart-new-dir: from " $olddir; /bin/date) >> data/new_from.dir
+(echo "restart-new-dir: from " $olddir; /bin/date) >> new_from.dir
 cd $olddir
 (echo "restart-new-dir: to " $newdir; /bin/date) >> data/new_to.dir
 #
 #  copy from old to new run directory
 #
-cp data/param* $1/data
-cp data/allprocs/grid.dat $1/data/allprocs
-cp data/proc_bounds.dat $1/data/
-pc_copyvar v v $newdir -s -e
+cp data/param* $newdir/data
+#
+# is not necessary as proc_bounds.dat is recreated when missing; when yet done, grid/proc layout agreement must be checked
+#cp data/proc_bounds.dat $newdir/data/
+#
+set io_scheme = `tac $newdir/src/Makefile.local | grep '^ *IO *=' | sed -e's/^.*= *\(\w*\) *.*$/\1/'`
+if ( $io_scheme == 'io_hdf5' ) then
+  cp data/grid.h5 $newdir/data
+  ln -s $olddir/data/allprocs/var.h5 $newdir/data/allprocs/var.h5
+else
+  cp data/allprocs/grid.dat $newdir/data/allprocs
+  pc_copyvar v v $newdir -s -e
+endif

@@ -11,7 +11,7 @@
 !
 ! PENCILS PROVIDED Ywater, lambda; chem_conc(nchemspec)
 ! PENCILS PROVIDED nucl_rmin, nucl_rate, conc_satm, ff_cond
-! PENCILS PROVIDED cond_heat
+! PENCILS PROVIDED latent_heat
 !
 !***************************************************************
 module Chemistry

@@ -10,6 +10,8 @@
 ! MPVAR CONTRIBUTION 1
 ! CPARAM logical, parameter :: lparticles_radius=.true.
 !
+! PENCILS PROVIDED 
+!
 !***************************************************************
 module Particles_radius
 !
@@ -745,7 +747,7 @@ module Particles_radius
       !
       p%ff_cond=0.
       p%part_heatcap=0.
-      p%cond_heat=0.
+      p%latent_heat=0.
 !
 !  Change in particle radius due to condensation and evaporation.
 !

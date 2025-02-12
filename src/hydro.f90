@@ -555,6 +555,7 @@ module Hydro
   integer :: idiag_divuHrms=0   ! DIAG_DOC: $(\nabla_{\rm H}\cdot\uv_{\rm H})^{\rm rms}$
   integer :: idiag_uxxrms=0     ! DIAG_DOC: $u_{x,x}^{\rm rms}$
   integer :: idiag_uyyrms=0     ! DIAG_DOC: $u_{y,y}^{\rm rms}$
+  integer :: idiag_uzzrms=0     ! DIAG_DOC: $u_{z,z}^{\rm rms}$
   integer :: idiag_uxzrms=0     ! DIAG_DOC: $u_{x,z}^{\rm rms}$
   integer :: idiag_uyzrms=0     ! DIAG_DOC: $u_{y,z}^{\rm rms}$
   integer :: idiag_uzyrms=0     ! DIAG_DOC: $u_{z,y}^{\rm rms}$
@@ -3225,6 +3226,7 @@ module Hydro
 !
               if (full_3D) then
                 DD=(f(l1:l2,m,n,irho)-.5*B_ext2)/(1.-.25/f(l1:l2,m,n,ilorentz))+B_ext2
+!AB: not yet calculated
                 call invmat_DB(DD,p%bb,tmp33)
                 call multmv(tmp33,tmp3,p%uu)
               else
@@ -4223,6 +4225,7 @@ module Hydro
         if (idiag_divuHrms/=0) call sum_mn_name((p%uij(:,1,1)+p%uij(:,2,2))**2,idiag_divuHrms,lsqrt=.true.)
         if (idiag_uxxrms/=0) call sum_mn_name(p%uij(:,1,1)**2,idiag_uxxrms,lsqrt=.true.)
         if (idiag_uyyrms/=0) call sum_mn_name(p%uij(:,2,2)**2,idiag_uyyrms,lsqrt=.true.)
+        call sum_mn_name(p%uij(:,3,3)**2,idiag_uzzrms,lsqrt=.true.)
         if (idiag_uxzrms/=0) call sum_mn_name(p%uij(:,1,3)**2,idiag_uxzrms,lsqrt=.true.)
         if (idiag_uyzrms/=0) call sum_mn_name(p%uij(:,2,3)**2,idiag_uyzrms,lsqrt=.true.)
         if (idiag_uzyrms/=0) call sum_mn_name(p%uij(:,3,2)**2,idiag_uzyrms,lsqrt=.true.)
@@ -6573,6 +6576,7 @@ endif
         idiag_divuHrms=0
         idiag_uxxrms=0
         idiag_uyyrms=0
+        idiag_uzzrms=0
         idiag_uxzrms=0
         idiag_uyzrms=0
         idiag_uzyrms=0
@@ -6876,6 +6880,7 @@ endif
         call parse_name(iname,cname(iname),cform(iname),'divuHrms',idiag_divuHrms)
         call parse_name(iname,cname(iname),cform(iname),'uxxrms',idiag_uxxrms)
         call parse_name(iname,cname(iname),cform(iname),'uyyrms',idiag_uyyrms)
+        call parse_name(iname,cname(iname),cform(iname),'uzzrms',idiag_uzzrms)
         call parse_name(iname,cname(iname),cform(iname),'uxzrms',idiag_uxzrms)
         call parse_name(iname,cname(iname),cform(iname),'uyzrms',idiag_uyzrms)
         call parse_name(iname,cname(iname),cform(iname),'uzyrms',idiag_uzyrms)

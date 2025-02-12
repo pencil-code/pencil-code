@@ -175,6 +175,7 @@ module Cparam
   real, parameter :: pi_1=1./pi,pi4_1=(1.0)/(pi*pi*pi*pi),pi5_1=1.0/(pi*pi*pi*pi*pi)
   real, parameter :: sqrtpi=1.77245385090551602729816748334115d0
   real, parameter :: sqrt2=1.41421356237309504880168872420970d0
+  real, parameter :: sqrt21=1./sqrt2
   real, parameter :: sqrt2pi=sqrt2*sqrtpi
   real, parameter :: four_pi_over_three=4.0/3.0*pi
   real, parameter :: onethird=1./3., twothird=2./3., fourthird=4./3., onesixth=1./6.

@@ -25,7 +25,7 @@
 ! PENCILS PROVIDED glnpp(3); del2pp; mukmu1(nchemspec)
 ! PENCILS PROVIDED ccondens; ppwater
 ! PENCILS PROVIDED Ywater, nucl_rate, nucl_rmin, conc_sat_spec, ff_nucl,ff_cond
-! PENCILS PROVIDED cond_heat
+! PENCILS PROVIDED latent_heat
 !
 !***************************************************************
 module Chemistry
@@ -168,15 +168,15 @@ module Chemistry
   real :: gam_surf_energy_cgs=32.
   real :: nucleation_rate_coeff_cgs=1e19
   real :: molar_mass_spec, atomic_m_spec, A_spec
-  !real :: deltaH_cgs = 7.07e12 ! in erg/mol
-  real :: deltaH_cgs = 3.55e12 ! in erg/mol (based on Tboil and 1025C)
+  real :: deltaH_cgs = 7.07e12 ! in erg/mol
+  !real :: deltaH_cgs = 3.55e12 ! in erg/mol (based on Tboil and 1025C)
   real :: gam_surf_energy_mul_fac=1.0
   real :: conc_sat_spec_cgs=1e-8 !units of mol/cmˆ3
   logical, pointer :: ldustnucleation, lpartnucleation, lcondensing_species
   character(len=labellen) :: isurf_energy="const"
   character(len=labellen) :: iconc_sat_spec="const"
   character(len=30) :: inucl_pre_exp="const"      
-  logical :: lnoevap=.false., lnocondheat=.true.
+  logical :: lnoevap=.false., lnolatentheat=.true.
 !
 !   Atmospheric physics
 !
@@ -242,7 +242,7 @@ module Chemistry
       Ythresh, lchem_detailed, conc_sat_spec_cgs, inucl_pre_exp, lcorr_vel, &
       lgradP_terms, lnormalize_chemspec, lnormalize_chemspec_N2, &
       gam_surf_energy_cgs, isurf_energy, iconc_sat_spec, nucleation_rate_coeff_cgs, &
-      lnoevap, lnocondheat, gam_surf_energy_mul_fac
+      lnoevap, lnolatentheat, gam_surf_energy_mul_fac, deltaH_cgs
 !
 ! diagnostic variables (need to be consistent with reset list below)
 !
@@ -457,11 +457,9 @@ module Chemistry
           endif
         endif
         if (ldustdensity .or. lparticles_radius) then
-          if  (lparticles_radius) then
-            call get_shared_variable('lcondensing_species',lcondensing_species)
-          endif
+          call get_shared_variable('lcondensing_species',lcondensing_species)
 
-          if (lcondensing_species .and. lparticles_radius) then
+          if (lcondensing_species .and. (lparticles_radius .or. ldustdensity)) then
             call find_species_index(condensing_species,i_cond_spec,ichem_cond_spec,found_specie)
             if (.not. found_specie) then
               print*,"condensing_species=",condensing_species
@@ -619,7 +617,7 @@ module Chemistry
 !
 ! Define some constants used for condensing species
 !
-      if (lcondensing_species .and. lparticles_radius) then
+      if (lcondensing_species .and. (lparticles_radius .or. ldustdensity)) then
         molar_mass_spec = species_constants(ichem_cond_spec,imass)
         atomic_m_spec=molar_mass_spec*m_u
         A_spec=sqrt(8.*k_B/(pi*atomic_m_spec))*molar_mass_spec/(4.*true_density_cond_spec)
@@ -842,7 +840,7 @@ module Chemistry
 !  All pencils that this chemistry module depends on are specified here.
 !
 !  13-aug-07/steveb: coded
-!
+      !
       lpenc_requested(i_gXXk) = .true.
       lpenc_requested(i_gYYk) = .true.
 !      if (lreactions)
@@ -1346,13 +1344,11 @@ module Chemistry
         ! Calculate saturation concentration of condensing species
         ! (This must be done before nucleation radius and rate are calculated)
         !
-        if (lparticles_radius) then
-          if (lnucleation .or. lcondensing_species) then
-            call cond_spec_sat_conc(p,conc_sat_spec)
-            p%conc_sat_spec=conc_sat_spec
-            f(l1:l2,m,n,isupsat)=p%chem_conc(:,ichem_cond_spec)&
-                /max(p%conc_sat_spec,1e-20)
-          endif
+        if (lnucleation .or. lcondensing_species) then
+          call cond_spec_sat_conc(p,conc_sat_spec)
+          p%conc_sat_spec=conc_sat_spec
+          f(l1:l2,m,n,isupsat)=p%chem_conc(:,ichem_cond_spec)&
+               /max(p%conc_sat_spec,1e-20)
         endif
         !
         !  Calculate nucleation rate and corresponding radius
@@ -6645,7 +6641,7 @@ module Chemistry
 !
       p%ff_cond=0.
       p%part_heatcap=0.
-      p%cond_heat=0.
+      p%latent_heat=0.
       ff_cond_fact=4.*pi*mfluxcond*true_density_cond_spec
       do k=1,ndustspec
         p%ff_cond=p%ff_cond+ff_cond_fact*ad(k)**2*f(l1:l2,m,n,ind(k))*dustbin_width
@@ -6665,14 +6661,14 @@ module Chemistry
         df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - p%ff_cond*p%rho1
       endif
       !
-      ! Make pencil containing the heat due to condesation phase change
+      ! Make pencil containing the latent heat due to condesation phase change
       ! This may be added to the energy equation of the gas phase, but this
       ! is currently not implemented for the eulerian approach. See the
       ! lagrangian approach (cond_spec_cond_lagr) below for info of how it
       ! is done.
       !
-      if (.not. lnocondheat) then
-        p%cond_heat=p%cond_heat+p%ff_cond*deltaH_cgs/unit_temperature/molar_mass_spec*unit_mass
+      if (.not. lnolatentheat) then
+        p%latent_heat=p%latent_heat+p%ff_cond*deltaH_cgs/unit_temperature/molar_mass_spec*unit_mass
       endif
 ! 
     end subroutine cond_spec_cond
@@ -6707,15 +6703,15 @@ module Chemistry
         endif
       enddo
       !
-      ! Make pencil containing the heat due to condesation phase change
+      ! Make pencil containing the latent heat due to condesation phase change
       ! This may be added to the energy equation of the gas phase in
       ! particles_temperature.f90.
       !
-      if (.not. lnocondheat) then
+      if (.not. lnolatentheat) then
         ! NILS: Please check that theis correctly added to the energy
         ! NILS: equation before using this option.
         !call fatal_error("cond_spec_cond_lagr","Please check that this is correct")
-         p%cond_heat(ix)=p%cond_heat(ix)+p%ff_cond(ix)*deltaH_cgs/unit_temperature/molar_mass_spec*unit_mass 
+         p%latent_heat(ix)=p%latent_heat(ix)+p%ff_cond(ix)*deltaH_cgs/unit_temperature/molar_mass_spec*unit_mass 
       endif
 !
     end subroutine cond_spec_cond_lagr
@@ -6752,8 +6748,8 @@ module Chemistry
           !
           ! Add heat due to condesation phase change to the energy equation
           !
-          if (.not. lnocondheat) then
-            p%cond_heat(i)=p%cond_heat(i)+p%ff_nucl(i)*deltaH_cgs/unit_temperature/molar_mass_spec*unit_mass
+          if (.not. lnolatentheat) then
+            p%latent_heat(i)=p%latent_heat(i)+p%ff_nucl(i)*deltaH_cgs/unit_temperature/molar_mass_spec*unit_mass
           endif
         else
           p%nucl_rate(i)=0.
@@ -6799,11 +6795,11 @@ module Chemistry
         !
         df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) - p%ff_nucl
         !
-        ! Add heat due to condesation phase change to the energy equation.
+        ! Add latent heat due to condesation phase change to the energy equation.
         ! This is done in particles_temperature.f90.
         !
-        if (.not. lnocondheat) then
-          p%cond_heat=p%cond_heat+p%ff_nucl*deltaH_cgs/unit_temperature/molar_mass_spec*unit_mass
+        if (.not. lnolatentheat) then
+          p%latent_heat=p%latent_heat+p%ff_nucl*deltaH_cgs/unit_temperature/molar_mass_spec*unit_mass
         endif
         !
       endif

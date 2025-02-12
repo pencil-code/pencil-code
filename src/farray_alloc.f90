@@ -5,8 +5,8 @@
 ! Dynamical allocation of f and df.
 !
   real, dimension(:,:,:,:), allocatable :: df
-  real, dimension(:,:,:,:), allocatable, target :: f_arr
   real, dimension(:,:,:,:), pointer :: f
+  real, dimension(:,:,:,:), allocatable, target :: f_arr
 
   public :: f,df
   public :: initialize, finalize

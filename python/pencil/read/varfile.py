@@ -185,7 +185,7 @@ class DataCube(object):
         trimall=False,
         magic=None,
         sim=None,
-        precision="f",
+        precision="d",
         lpersist=False,
         dtype=np.float64,
         flist=None,
@@ -294,6 +294,8 @@ class DataCube(object):
         from scipy.io import FortranFile
         from pencil.math.derivatives import curl, curl2
         from pencil import read
+        if precision=="h":
+            precision = "half"
         if timing:
             import time
             start_time = time.time()
@@ -378,7 +380,16 @@ class DataCube(object):
             #
             import h5py
 
-            mx, my, mz = dim.mx, dim.my, dim.mz
+            run2D = param.lwrite_2d
+
+            # Set up the global array.
+            if not run2D:
+                self.f = np.zeros((total_vars, dim.mz, dim.my, dim.mx), dtype=precision)
+            else:
+                if dim.ny == 1:
+                    self.f = np.zeros((total_vars, dim.mz, dim.mx), dtype=precision)
+                else:
+                    self.f = np.zeros((total_vars, dim.my, dim.mx), dtype=precision)
 
             if not var_file:
                 if ivar < 0:
@@ -387,6 +398,7 @@ class DataCube(object):
                     var_file = "VAR" + str(ivar) + ".h5"
 
             file_name = os.path.join(datadir, "allprocs", var_file)
+
             with h5py.File(file_name, "r") as tmp:
                 if range_x:
                     x = (tmp["grid/x"][:]).astype(precision)
@@ -492,12 +504,12 @@ class DataCube(object):
 
             # Set up the global array.
             if not run2D:
-                self.f = np.zeros((total_vars, dim.mz, dim.my, dim.mx), dtype=dtype)
+                self.f = np.zeros((total_vars, dim.mz, dim.my, dim.mx), dtype=precision)
             else:
                 if dim.ny == 1:
-                    self.f = np.zeros((total_vars, dim.mz, dim.mx), dtype=dtype)
+                    self.f = np.zeros((total_vars, dim.mz, dim.mx), dtype=precision)
                 else:
-                    self.f = np.zeros((total_vars, dim.my, dim.mx), dtype=dtype)
+                    self.f = np.zeros((total_vars, dim.my, dim.mx), dtype=precision)
 
             x = np.zeros(dim.mx, dtype=precision)
             y = np.zeros(dim.my, dtype=precision)
@@ -538,16 +550,17 @@ class DataCube(object):
                 file_name = os.path.join(datadir, directory, var_file)
                 infile = FortranFile(file_name)
                 if not run2D:
-                    f_loc = dtype(infile.read_record(dtype=read_precision))
+                    f_loc = (infile.read_record(dtype=read_precision)).astype(precision)
                     f_loc = f_loc.reshape((-1, mzloc, myloc, mxloc))
+                    print(proc,f_loc.shape,f_loc.dtype)
                 else:
                     if dim.ny == 1:
-                        f_loc = dtype(infile.read_record(dtype=read_precision))
+                        f_loc = (infile.read_record(dtype=read_precision)).astype(precision)
                         f_loc = f_loc.reshape((-1, mzloc, mxloc))
                     else:
-                        f_loc = dtype(infile.read_record(dtype=read_precision))
+                        f_loc = (infile.read_record(dtype=read_precision)).astype(precision)
                         f_loc = f_loc.reshape((-1, myloc, mxloc))
-                raw_etc = infile.read_record(dtype=read_precision)
+                raw_etc = (infile.read_record(dtype=read_precision)).astype(precision)
                 if lpersist and directory==proc_dirs[0]:
                     persist(self, infile=infile, precision=read_precision, quiet=quiet)
                 infile.close()
@@ -654,8 +667,7 @@ class DataCube(object):
             if "bb" in magic:
                 # Compute the magnetic field before doing trimall.
                 aa = self.f[index.ax - 1 : index.az, ...]
-                self.bb = dtype(
-                    curl(
+                self.bb = curl(
                         aa,
                         dx=dx,
                         dy=dy,
@@ -665,7 +677,6 @@ class DataCube(object):
                         run2D=run2D,
                         coordinate_system=param.coord_system,
                         grid=grid,
-                    )
                 )
                 if trimall:
                     self.bb = self.bb[
@@ -678,8 +689,7 @@ class DataCube(object):
                         key = aatest[j*3][:-1]
                         value = index.__dict__[aatest[j*3]]
                         aa = self.f[value - 1 : value + 2, ...]
-                        bb = dtype(
-                            curl(
+                        bb = curl(
                                 aa,
                                 dx=dx,
                                 dy=dy,
@@ -689,7 +699,6 @@ class DataCube(object):
                                 run2D=run2D,
                                 coordinate_system=param.coord_system,
                                 grid=grid,
-                            )
                         )
                         if trimall:
                             setattr(self,"bb"+key[2:],bb[
@@ -704,8 +713,7 @@ class DataCube(object):
                             key = "aatest" + str(np.mod(j + 1, naatest))
                             value = index.__dict__["aatest1"] + 3 * j
                             aa = self.f[value - 1 : value + 2, ...]
-                            bb = dtype(
-                                curl(
+                            bb = curl(
                                     aa,
                                     dx=dx,
                                     dy=dy,
@@ -715,7 +723,6 @@ class DataCube(object):
                                     run2D=run2D,
                                     coordinate_system=param.coord_system,
                                     grid=grid,
-                                )
                             )
                             if trimall:
                                 setattr(self,"bb"+key[2:],bb[
@@ -726,8 +733,7 @@ class DataCube(object):
             if "jj" in magic:
                 # Compute the electric current field before doing trimall.
                 aa = self.f[index.ax - 1 : index.az, ...]
-                self.jj = dtype(
-                    curl2(
+                self.jj = curl2(
                         aa,
                         dx=dx,
                         dy=dy,
@@ -736,7 +742,6 @@ class DataCube(object):
                         y=y,
                         coordinate_system=param.coord_system,
                         grid=grid,
-                    )
                 )
                 if trimall:
                     self.jj = self.jj[
@@ -745,8 +750,7 @@ class DataCube(object):
             if "vort" in magic:
                 # Compute the vorticity field before doing trimall.
                 uu = self.f[index.ux - 1 : index.uz, ...]
-                self.vort = dtype(
-                    curl(
+                self.vort = curl(
                         uu,
                         dx=dx,
                         dy=dy,
@@ -756,7 +760,6 @@ class DataCube(object):
                         run2D=run2D,
                         coordinate_system=param.coord_system,
                         grid=grid,
-                    )
                 )
                 if trimall:
                     if run2D:
@@ -912,7 +915,7 @@ class DataCube(object):
                             + gamma / cp * self.ss
                             + (gamma - 1.0) * (lnrho - lnrho0)
                         )
-                        setattr(self, "tt", dtype(np.exp(lnTT)))
+                        setattr(self, "tt", np.exp(lnTT))
                     else:
                         raise AttributeError("Problem in magic: ss is missing ")
 
@@ -926,7 +929,6 @@ class DataCube(object):
                     setattr(
                         self,
                         "ss",
-                        dtype(
                             cp
                             / gamma
                             * (
@@ -934,13 +936,11 @@ class DataCube(object):
                                 - lnTT0
                                 - (gamma - 1.0) * (self.lnrho - lnrho0)
                             )
-                        ),
                     )
                 elif hasattr(self, "tt"):
                     setattr(
                         self,
                         "ss",
-                        dtype(
                             cp
                             / gamma
                             * (
@@ -948,7 +948,6 @@ class DataCube(object):
                                 - lnTT0
                                 - (gamma - 1.0) * (self.lnrho - lnrho0)
                             )
-                        ),
                     )
                 else:
                     raise AttributeError("Problem in magic: missing lnTT or tt")
@@ -970,15 +969,13 @@ class DataCube(object):
                     setattr(
                         self,
                         "pp",
-                        dtype(
                             (rho0 * cs20 / gamma)
                             * np.exp(gamma * (self.ss + lnrho - lnrho0))
-                        ),
                     )
                 elif hasattr(self, "lntt"):
-                    setattr(self, "pp", dtype((cp - cv) * np.exp(self.lnTT + lnrho)))
+                    setattr(self, "pp", (cp - cv) * np.exp(self.lnTT + lnrho))
                 elif hasattr(self, "tt"):
-                    setattr(self, "pp", dtype((cp - cv) * self.TT * np.exp(lnrho)))
+                    setattr(self, "pp", (cp - cv) * self.TT * np.exp(lnrho))
                 else:
                     raise AttributeError("Problem in magic: missing ss or lntt or tt")
 class _Persist():

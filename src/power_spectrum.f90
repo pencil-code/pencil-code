@@ -1495,7 +1495,6 @@ outer:  do ikz=1,nz
         a_im=0.
         b_im=0.
         !$omp end workshare
-
         if (ncpus==1) then
           open(1,file=trim(datadir)//'/bEP.dat',form='unformatted',position='append')
 !          write(1) bEP,t

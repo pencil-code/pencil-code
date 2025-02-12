@@ -40,7 +40,6 @@ module Magnetic
   use General, only: keep_compiler_quiet, loptest, itoa
   use Magnetic_meanfield
   use Messages, only: fatal_error,inevitably_fatal_error,warning,svn_id,timing,not_implemented
-  use SharedVariables, only: get_shared_variable
 !
   implicit none
 !
@@ -1265,7 +1264,6 @@ module Magnetic
       endif
 !
       call put_shared_variable('rhoref', rhoref)
-      call put_shared_variable('eta', eta)
 !
 !  Share lweyl_gauge
 !
@@ -1276,8 +1274,8 @@ module Magnetic
 !
 !  If meanfield theory is invoked, we need to tell the other routines
 !  eta is also needed with the chiral fluids procedure.
-!
-      if (lrun .and. (lmagn_mf.or.lspecial)) call put_shared_variable('eta',eta)
+!  Omit this now, because a few lines above we did this exact same line already.
+!     if (lrun .and. (lmagn_mf.or.lspecial)) call put_shared_variable('eta',eta)
 !
 !  Share the external magnetic field with module Shear.
 !
@@ -1306,7 +1304,7 @@ module Magnetic
       use Magnetic_meanfield, only: initialize_magn_mf
       use BorderProfiles, only: request_border_driving
       use FArrayManager
-      use SharedVariables, only: get_shared_variable, put_shared_variable
+      use SharedVariables, only: get_shared_variable, put_shared_variable, iSHVAR_ERR_NOSUCHVAR
       use EquationOfState, only: cs20, get_gamma_etc
       use Initcond
       use Forcing, only: n_forcing_cont
@@ -1314,7 +1312,7 @@ module Magnetic
       use Slices_methods, only: alloc_slice_buffers
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: i, j, nyl, nycap
+      integer :: i, j, nyl, nycap, ierr
       real :: eta_zdep_exponent
 !
       call get_gamma_etc(gamma)
@@ -1726,6 +1724,23 @@ module Magnetic
                            trim(iresistivity(i)))
         endselect
       enddo
+      if (lresi_eta_tdep .or. lresi_eta_xtdep .or. lresi_hyper2_tdep .or. lresi_hyper3_tdep) then
+        if (tdep_eta_type=='mean-field'.or.tdep_eta_type=='mean-field-local') then
+          if (luse_scale_factor_in_sigma) then
+            call get_shared_variable('ascale', ascale,ierr)
+            if (ierr==iSHVAR_ERR_NOSUCHVAR) then
+              luse_scale_factor_in_sigma=.false.
+            else
+              call get_shared_variable('Hscript', Hscript, caller='initialize_magnetic')
+            endif
+          endif
+          if (luse_scale_factor_in_sigma) then
+            if (.not.associated(ascale)) allocate(ascale, Hscript)
+            ascale=1.
+            Hscript=1.
+          endif
+        endif
+      endif
 !
 !  If lresi_eta_ztdep, compute z-dependent fraction here:
 !  It is called feta_ztdep, because it works only if lresi_eta_tdep.
@@ -2626,7 +2641,7 @@ module Magnetic
         call boundconds_y(f)
         call boundconds_z(f)
 !
-        call get_gamma_etc(cp=cp)
+        call get_gamma_etc(gamma,cp=cp)
 !
         do n=n1,n2
         do m=m1,m2
@@ -3886,7 +3901,7 @@ module Magnetic
 !
       use EquationOfState, only: rho0
       use General, only: notanumber
-      use SharedVariables, only: put_shared_variable
+      use SharedVariables, only: get_shared_variable
       use Sub
 !
       real, dimension (mx,my,mz,mfarray), intent(inout):: f
@@ -4193,18 +4208,10 @@ module Magnetic
 !
 !  eta_tdep (luse_scale_factor_in_sigma=T by default)
 !
-            if (luse_scale_factor_in_sigma) then
-              call get_shared_variable('ascale', ascale, caller='initialize_magnetic')
-              call get_shared_variable('Hscript', Hscript, caller='initialize_magnetic')
-            else
-              allocate (ascale, Hscript)
-              ascale=1.
-              Hscript=1.
-            endif
 !
 !  get other shared variables
 !
-      call get_shared_variable('lrho_chi',lrho_chi, caller='initialize_magnetic')
+            call get_shared_variable('lrho_chi',lrho_chi, caller='initialize_magnetic')
 !
 !  need e2m, b2m
 !
@@ -4215,14 +4222,15 @@ module Magnetic
 !               'not programmed for multiple procs or more than 1 dimension')
 !           Eaver=sqrt(sum(f(l1:l2,m,n,iex)**2+f(l1:l2,m,n,iey)**2+f(l1:l2,m,n,iez)**2)/nx)
 !           Baver=sqrt(sum(p%b2)/nx+B_ext2)
-!
+!XXX
             !call get_shared_variable('e2m_all', e2m_all, caller='initialize_magnetic')
             call get_shared_variable('e2m_all', e2m_all)
             call get_shared_variable('b2m_all', b2m_all)
             Eaver=sqrt(e2m_all)
             Baver=sqrt(b2m_all+B_ext2)
 !
-!  Note that eta_tdep=0 for Baver=0.
+!  Compute sigmaE. Note that eta_tdep=0 for Baver=0.
+!  By default, lno_eta_tdep is false.
 !
             if (Eaver<tini .or. lno_eta_tdep) then
               eta_tdep=eta_huge
@@ -4234,17 +4242,23 @@ module Magnetic
               endif
             endif
 !
+!  Compute sigmaB. Note that eta_tdep=0 for Baver=0.
+!
+!           if (lsigmaB_contribution) then
+!             if (Eaver<tini) then
+!               etaB_tdep_B1=eta_huge
+!             else
+!               if (Baver<tini) then
+!                 etaB_tdep_B1=6.*pi**3*Hscript/echarge**3/(Eaver*Baver)
+!               else
+!                 etaB_tdep_B1=6.*pi**2*Hscript/echarge**3*tanh(pi*Baver/Eaver)/(Eaver*Baver)
+!               endif
+!             endif
+!           endif
+!XX
 !  eta_tdep
 !
           case ('mean-field-local')
-            if (luse_scale_factor_in_sigma) then
-              call get_shared_variable('ascale', ascale, caller='initialize_magnetic')
-              call get_shared_variable('Hscript', Hscript, caller='initialize_magnetic')
-            else
-              !allocate (ascale, Hscript)
-              !ascale=1.
-              !Hscript=1.
-            endif
             if (iex>0) then
               Eabs=sqrt(f(l1:l2,m,n,iex)**2+f(l1:l2,m,n,iey)**2+f(l1:l2,m,n,iez)**2)
             else
@@ -4280,6 +4294,8 @@ module Magnetic
           elseif (lresi_eta_xtdep) then
             eta_total=eta_xtdep
           else
+            p%jj=0.
+            p%jj_ohm=0.
             eta_total=eta
           endif
 !
@@ -4293,12 +4309,16 @@ module Magnetic
 !  AB: eta_total and the rest are pencils, but it complains about inconsistent ranks. So I put (1).
 !  Here we may need to add the chiral part.
 !
-            if (lohm_evolve) then
-              p%jj_ohm=f(l1:l2,m,n,ijx:ijz)
-            else
-              do j=1,3
-                p%jj_ohm(:,j)=(p%el(:,j)+p%uxb(:,j))*mu01/eta_total
-              enddo
+            if (lresi_eta_tdep .or. lresi_eta_xtdep) then
+              if (lohm_evolve) then
+                p%jj_ohm=f(l1:l2,m,n,ijx:ijz)
+              else
+!
+                do j=1,3
+                  p%jj_ohm(:,j)=(p%el(:,j)+p%uxb(:,j))*mu01/eta_total
+                enddo
+!
+              endif
             endif
 !
 !  Compute current for Lorentz force.
@@ -6055,6 +6075,9 @@ module Magnetic
         if (tau_jj>0) then
           tau1_jj=1./tau_jj
           do j=1,3
+!
+!  Here we would need to add tau*sigmaB*B
+!
             dJdt(:,j)=tau1_jj*(p%el(:,j)+p%uxb(:,j))*mu01/eta_total
           enddo
           if (ell_jj/=0.) then
@@ -6200,9 +6223,8 @@ module Magnetic
       call max_mn_name(p%beta, idiag_betamax)
 
       if (idiag_betamin /= 0) call max_mn_name(-p%beta, idiag_betamin, lneg=.true.)
-
       if (idiag_Azmid_min /= 0) call max_mn_name(-p%aa(:,3)*xmask1_mag, idiag_Azmid_min, lneg=.true.)
-                                call max_mn_name(+p%aa(:,3)           , idiag_Azmid_max)
+      call max_mn_name( p%aa(:,3),idiag_Azmid_max)
 
       if (.not.lmultithread) then
 !
@@ -6563,8 +6585,8 @@ module Magnetic
         if (idiag_etasmagmin/=0) call max_mn_name(-eta_smag,idiag_etasmagmin,lneg=.true.)
         call max_mn_name(eta_smag,idiag_etasmagmax)
       endif
-      call save_name(eta1_aniso/(1.+quench_aniso*Arms),idiag_etaaniso)
-      call save_name(eta_aniso_BB/(1.+quench_aniso*Arms),idiag_etaanisoBB)
+      if (idiag_etaaniso/=0) call save_name(eta1_aniso/(1.+quench_aniso*Arms),idiag_etaaniso)
+      if (idiag_etaanisoBB/=0) call save_name(eta_aniso_BB/(1.+quench_aniso*Arms),idiag_etaanisoBB)
       call max_mn_name(p%etava,idiag_etavamax)
       call max_mn_name(p%etaj,idiag_etajmax)
       call max_mn_name(p%etaj2,idiag_etaj2max)
@@ -6899,15 +6921,15 @@ module Magnetic
 !
       if (lroot.and.m==mpoint.and.n==npoint) then
         !MR: i.e., only pointwise data from root proc domain can be obtained! Intended?
-        if (idiag_bxpt/=0) call save_name(p%bb(lpoint-nghost,1),idiag_bxpt)
-        if (idiag_bypt/=0) call save_name(p%bb(lpoint-nghost,2),idiag_bypt)
-        if (idiag_bzpt/=0) call save_name(p%bb(lpoint-nghost,3),idiag_bzpt)
+        call save_name(p%bb(lpoint-nghost,1),idiag_bxpt)
+        call save_name(p%bb(lpoint-nghost,2),idiag_bypt)
+        call save_name(p%bb(lpoint-nghost,3),idiag_bzpt)
         if (idiag_bxbypt/=0) call save_name(p%bb(lpoint-nghost,1)*p%bb(lpoint-nghost,2),idiag_bxbypt)
         if (idiag_bybzpt/=0) call save_name(p%bb(lpoint-nghost,2)*p%bb(lpoint-nghost,3),idiag_bybzpt)
         if (idiag_bzbxpt/=0) call save_name(p%bb(lpoint-nghost,3)*p%bb(lpoint-nghost,1),idiag_bzbxpt)
-        if (idiag_jxpt/=0) call save_name(p%jj(lpoint-nghost,1),idiag_jxpt)
-        if (idiag_jypt/=0) call save_name(p%jj(lpoint-nghost,2),idiag_jypt)
-        if (idiag_jzpt/=0) call save_name(p%jj(lpoint-nghost,3),idiag_jzpt)
+        call save_name(p%jj(lpoint-nghost,1),idiag_jxpt)
+        call save_name(p%jj(lpoint-nghost,2),idiag_jypt)
+        call save_name(p%jj(lpoint-nghost,3),idiag_jzpt)
       endif
 !
       if (lforcing_cont_aa_local) then
@@ -7306,7 +7328,7 @@ module Magnetic
             call zsum_mn_name_xy(tmp2,idiag_poynymxy,(/0,1,0/))
             call zsum_mn_name_xy(tmp2,idiag_poynzmxy,(/0,0,1/))
           endif
-          if (idiag_etatotalmxy/=0) call zsum_mn_name_xy(eta_total,idiag_etatotalmxy)
+          call zsum_mn_name_xy(eta_total,idiag_etatotalmxy)
         endif
         call zsum_mn_name_xy(p%beta1,idiag_beta1mxy)
 !
@@ -7463,7 +7485,6 @@ module Magnetic
 !
       use Boundcond, only: update_ghosts
       use Diagnostics, only: save_name
-      use SharedVariables, only: get_shared_variable
       use Sub, only: div, calc_all_diff_fluxes, dot2_mn, vecout_initialize
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
