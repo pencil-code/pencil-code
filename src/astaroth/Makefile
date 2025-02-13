@@ -71,6 +71,7 @@ CHEADERS = ../cparam_c.h ../cdata_c.h ../boundcond_c.h ../defines_cdata.h ../dia
 PCHEADER_DIR = .
 PC_HEADERS = $(PCHEADER_DIR)/PC_moduleflags.h $(PCHEADER_DIR)/PC_module_parfuncs.h $(PCHEADER_DIR)/PC_modulepars.h 
 RUNTIME_COMPILATION       ?= off
+TRANSPILATION             ?= off
 INLINING                  ?= off
 READ_OVERRIDES            ?= off
 OPTIMIZE_INPUT_PARAMS     ?= on
@@ -88,7 +89,7 @@ astaroth_$(PREC).so: $(SOURCES) forcing.h $(AC_HEADERS) $(PC_HEADERS) $(CHEADERS
 	echo USE_HIP=$(USE_HIP) && \
 	echo PRECISION=$(CMAKE_PREC) && \
 	cd build && export LDFLAGS="" && \
-	cmake -DDOUBLE_PRECISION=$(CMAKE_PREC) -DRUNTIME_COMPILATION=$(RUNTIME_COMPILATION) -DUSE_HIP=$(USE_HIP) -DSINGLEPASS_INTEGRATION=$(CMAKE_SINGLEPASS) -DUSE_DARDEL=$(USE_DARDEL) .. && \
+	cmake -DDOUBLE_PRECISION=$(CMAKE_PREC) -DRUNTIME_COMPILATION=$(RUNTIME_COMPILATION) -DTRANSPILATION=$(TRANSPILATION) -DUSE_HIP=$(USE_HIP) -DSINGLEPASS_INTEGRATION=$(CMAKE_SINGLEPASS) -DUSE_DARDEL=$(USE_DARDEL) .. && \
 	make -j && \
 	cd .. && \
 	mv ./build/libastaroth_$(PREC).so libastaroth_$(PREC).so
@@ -106,7 +107,7 @@ astaroth_$(PREC).so: $(SOURCES) forcing.h $(AC_HEADERS) $(PC_HEADERS) $(CHEADERS
 CMAKE_OPTIONS = -DMULTIGPU_ENABLED=OFF -DMPI_ENABLED=$(CMAKE_MPI) -DBUILD_SHARED_LIBS=ON -DSINGLEPASS_INTEGRATION=$(CMAKE_SINGLEPASS) -DUSE_CUDA_AWARE_MPI=ON -DMAX_THREADS_PER_BLOCK=512 \
                 -DPACKED_DATA_TRANSFERS=$(CMAKE_PACKED) -DDOUBLE_PRECISION=$(CMAKE_PREC) -DBUILD_SAMPLES=OFF -DUSE_HIP=$(USE_HIP) \
 		-DVERBOSE=OFF -DOPTIMIZE_INPUT_PARAMS=$(OPTIMIZE_INPUT_PARAMS) -DOPTIMIZE_MEM_ACCESSES=ON -DOPTIMIZE_ARRAYS=OFF -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) \
-	        -DBUILD_STANDALONE=OFF -DBUILD_UTILS=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DEXT_SOURCES=$(EXT_SOURCES) -DDSL_MODULE_FILE=$(DSL_MODULE_FILE) -DINLINING=$(INLINING)
+	        -DBUILD_STANDALONE=OFF -DOPTIMIZE_FIELDS=$(TRANSPILATION) -DELIMINATE_CONDITIONALS=$(TRANSPILATION) -DBUILD_UTILS=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DEXT_SOURCES=$(EXT_SOURCES) -DDSL_MODULE_FILE=$(DSL_MODULE_FILE) -DINLINING=$(INLINING)
 astaroth_libs:
 	echo "const char* cmake_options = \"-DDSL_MODULE_DIR=../$(DSL_MODULE_DIR)  $(CMAKE_OPTIONS)\";" > cmake_options.h
 	mkdir -p submodule/build  && cd submodule/build && export LDFLAGS=""  && \
@@ -127,11 +128,19 @@ $(PC_HEADERS): .sentinel
 	@rm -f $(PCHEADER_DIR)/PC_modulepars.h $(PCHEADER_DIR)/PC_module*funcs.h submodule/acc-runtime/$(DSL_MODULE_DIR)/PC_modulepardecs.h 
 	@echo '// automatically generated; do not edit!' > $(PCHEADER_DIR)/PC_modulepars.h
 	@echo '// automatically generated; do not edit!' > submodule/acc-runtime/$(DSL_MODULE_DIR)/PC_modulepardecs.h
+ifeq ($(TRANSPILATION),on)
+	@export DSL_MODULE_DIR=$(DSL_MODULE_DIR); \
+        for file in $(MODULESOURCES); do echo processing $$file ...; if [[ $$file =~ eos[_.] ]]; \
+	then ../scripts/phys_modules2c_transpilation par $$file equationofstate; \
+        else ../scripts/phys_modules2c_transpilation par $$file; fi; done
+	@touch .sentinel
+else
 	@export DSL_MODULE_DIR=$(DSL_MODULE_DIR); \
         for file in $(MODULESOURCES); do echo processing $$file ...; if [[ $$file =~ eos[_.] ]]; \
 	then ../scripts/phys_modules2c par $$file equationofstate; \
         else ../scripts/phys_modules2c par $$file; fi; done
 	@touch .sentinel
+endif
 #
 clean:
 	@rm -f $(OBJECTS)

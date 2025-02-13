@@ -28,6 +28,8 @@ s/real *( *kind *= *rkind8 *) *, *parameter *::/const double /
 s/int *(\([a-zA-Z0-9_]*\) *, *kind *= *ikind8 *)/(long long)\1/g
 s/integer *, *parameter *::/const int /
 s/logical *, *parameter *::/const bool /
+s/(\/ '/\ \/\*\* /g
+s/' \/)/\*\*\//g
 s/real *, *parameter *::/const real /
 s/\([^0-9a-zA-Z_]\)min(/\1MIN(/g
 s/\([^0-9a-zA-Z_]\)max(/\1MAX(/g

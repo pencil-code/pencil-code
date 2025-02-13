@@ -886,6 +886,10 @@ module Hydro
   real, dimension (nx,3) :: fint,fext
   real, dimension (nx,ny) :: omega_prof
 
+  integer :: string_enum_friction_tdep = 0
+  integer :: string_enum_uuprof = 0
+  integer, dimension(3) :: string_enum_borderuu = 0
+
   contains
 !***********************************************************************
     subroutine register_hydro
@@ -3270,11 +3274,17 @@ module Hydro
 !  if gradu is to be stored as auxiliary then we store it now
 !
         if (lgradu_as_aux .or. lparticles_lyapunov .or. lparticles_caustics .or. lparticles_tetrad) then
-          jk=0
-          do jj=1,3; do kk=1,3
-            f(l1:l2,m,n,iguij+jk) = p%uij(:,jj,kk)
-            jk=jk+1
-          enddo;enddo
+          f(l1:l2,m,n,igu11) = p%uij(:,1,1)
+          f(l1:l2,m,n,igu12) = p%uij(:,1,2)
+          f(l1:l2,m,n,igu13) = p%uij(:,1,3)
+
+          f(l1:l2,m,n,igu21) = p%uij(:,2,1)
+          f(l1:l2,m,n,igu22) = p%uij(:,2,2)
+          f(l1:l2,m,n,igu23) = p%uij(:,2,3)
+
+          f(l1:l2,m,n,igu31) = p%uij(:,3,1)
+          f(l1:l2,m,n,igu32) = p%uij(:,3,2)
+          f(l1:l2,m,n,igu33) = p%uij(:,3,3)
         endif
       endif
 !      if (.not.lpenc_loc_check_at_work) then
@@ -3809,7 +3819,7 @@ module Hydro
       integer :: i, j, ju
 !
       Fmax=1./impossible
-      if (n==nn(1).and.m==mm(1)) lproc_print=.true.
+      if (lfirstpoint) lproc_print=.true.
 
 !  Identify module and boundary conditions.
 
@@ -3904,9 +3914,9 @@ module Hydro
 !  WENO transport.
 !
         if (lweno_transport) then
-          do j=1,3
-            df(l1:l2,m,n,iux-1+j)=df(l1:l2,m,n,iux-1+j)-(p%transpurho(:,j)-p%uu(:,j)*p%transprho)*p%rho1
-          enddo
+          df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-(p%transpurho(:,1)-p%uu(:,1)*p%transprho)*p%rho1
+          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-(p%transpurho(:,2)-p%uu(:,2)*p%transprho)*p%rho1
+          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-(p%transpurho(:,3)-p%uu(:,3)*p%transprho)*p%rho1
         endif
 !
 !  No meridional flow : turn off the meridional flow (in spherical)
@@ -4084,11 +4094,13 @@ module Hydro
 !
       if ( lupdate_courant_dt.and.(lcdt_tauf.or.ldiagnos.and.idiag_dtF/=0) .or. &
            ldiagnos.and.idiag_taufmin/=0 ) then
-        where (abs(p%uu)>1)   !MR: What would in general be the significance of 1 here?
-          uu1=1./p%uu
-        elsewhere
-          uu1=1.
-        endwhere
+        do j=1,3
+          where (abs(p%uu(:,j))>1)   !MR: What would in general be the significance of 1 here?
+            uu1(:,j)=1./p%uu(:,j)
+          elsewhere
+            uu1(:,j)=1.
+          endwhere
+        enddo
         do j=1,3
           ftot=abs(df(l1:l2,m,n,iux+j-1)*uu1(:,j))
           if (ldt.and.lcdt_tauf) dt1_max=max(dt1_max,ftot/cdtf)
@@ -5562,24 +5574,24 @@ endif
 !
       do j=1,3
 
+        ju=j+iuu-1
         select case (borderuu(j))
 !
         case ('zero','0')
           f_target(:,j)=0.
+          call border_driving(f,df,p,f_target(:,j),ju)
 !
         case ('constant')
           f_target(:,j) = uu_const(j)
+          call border_driving(f,df,p,f_target(:,j),ju)
 !
         case ('initial-condition')
-          ju=j+iuu-1
           call set_border_initcond(f,ju,f_target(:,j))
+          call border_driving(f,df,p,f_target(:,j),ju)
 !
         case ('nothing')
-          cycle
         endselect
 
-        ju=j+iuu-1
-        call border_driving(f,df,p,f_target(:,j),ju)
 !
       enddo
 !
@@ -8385,8 +8397,14 @@ endif
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       if (velocity_ceiling>0.0) then
-        where (f(l1:l2,m,n,iux:iuz)> velocity_ceiling) f(l1:l2,m,n,iux:iuz)= velocity_ceiling
-        where (f(l1:l2,m,n,iux:iuz)<-velocity_ceiling) f(l1:l2,m,n,iux:iuz)=-velocity_ceiling
+
+        where (f(l1:l2,m,n,iux)> velocity_ceiling) f(l1:l2,m,n,iux)= velocity_ceiling
+        where (f(l1:l2,m,n,iuy)> velocity_ceiling) f(l1:l2,m,n,iuy)= velocity_ceiling
+        where (f(l1:l2,m,n,iuz)> velocity_ceiling) f(l1:l2,m,n,iuz)= velocity_ceiling
+
+        where (f(l1:l2,m,n,iux)<-velocity_ceiling) f(l1:l2,m,n,iux)=-velocity_ceiling
+        where (f(l1:l2,m,n,iuy)<-velocity_ceiling) f(l1:l2,m,n,iuy)=-velocity_ceiling
+        where (f(l1:l2,m,n,iuz)<-velocity_ceiling) f(l1:l2,m,n,iuz)=-velocity_ceiling
       endif
 !
     endsubroutine impose_velocity_ceiling
@@ -8506,13 +8524,119 @@ endif
     subroutine pushpars2c(p_par)
 
     use Syscalls, only: copy_addr
+    use General , only: string_to_enum
 
-    integer, parameter :: n_pars=3
+    integer, parameter :: n_pars=1000
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call copy_addr(lpressuregradient_gas,p_par(1))  ! int
     call copy_addr(lupw_uu,p_par(2))  ! int
     call copy_addr(ladvection_velocity,p_par(3))  ! int
+    call copy_addr(velocity_ceiling,p_par(4))
+    call copy_addr(r_omega,p_par(5))
+    call copy_addr(eps_hless,p_par(6))
+    call copy_addr(itij,p_par(7)) ! int
+    call copy_addr(ihless,p_par(8)) ! int
+    call copy_addr(llinearized_hydro,p_par(9)) ! bool
+    call copy_addr(lprecession,p_par(10)) ! bool
+    call copy_addr(lshear_rateofstrain,p_par(11)) ! bool
+    call copy_addr(luu_sph_as_aux,p_par(12)) ! bool
+    call copy_addr(lvv_as_aux,p_par(13)) ! bool
+    call copy_addr(lvv_as_comaux,p_par(14)) ! bool
+    call copy_addr(lcoriolis_force,p_par(15)) ! bool
+    call copy_addr(lshear_in_coriolis,p_par(16)) ! bool
+    call copy_addr(lcentrifugal_force,p_par(17)) ! bool
+    call copy_addr(lconservative,p_par(18)) ! bool
+    call copy_addr(lrelativistic,p_par(19)) ! bool
+    call copy_addr(full_3d,p_par(20)) ! bool
+    call copy_addr(lhiggsless,p_par(21)) ! bool
+    call copy_addr(lhiggsless_old,p_par(22)) ! bool
+    call copy_addr(ampl_omega,p_par(23))
+    call copy_addr(loutest,p_par(24)) ! bool
+    call copy_addr(ldiffrot_test,p_par(25)) ! bool
+    call copy_addr(tdamp,p_par(26))
+    call copy_addr(dampu,p_par(27))
+    call copy_addr(wdamp,p_par(28))
+    call copy_addr(dampuint,p_par(29))
+    call copy_addr(dampuext,p_par(30))
+    call copy_addr(rdampint,p_par(31))
+    call copy_addr(rdampext,p_par(32))
+    call copy_addr(ruxm,p_par(33))
+    call copy_addr(ruym,p_par(34))
+    call copy_addr(ruzm,p_par(35))
+    call copy_addr(tau_damp_ruxm1,p_par(36))
+    call copy_addr(tau_damp_ruym1,p_par(37))
+    call copy_addr(tau_damp_ruzm1,p_par(38))
+    call copy_addr(tau_damp_ruxm,p_par(39))
+    call copy_addr(tau_damp_ruym,p_par(40))
+    call copy_addr(tau_damp_ruzm,p_par(41))
+    call copy_addr(tau_diffrot1,p_par(42))
+    call copy_addr(omega_int,p_par(43))
+    call copy_addr(omega_fourier,p_par(44))
+    call copy_addr(ekman_friction,p_par(45))
+    call copy_addr(friction_tdep_toffset,p_par(46))
+    call copy_addr(friction_tdep_tau0,p_par(47))
+    call copy_addr(t1_ekman,p_par(48))
+    call copy_addr(t2_ekman,p_par(49))
+    call copy_addr(uzjet,p_par(50))
+    call copy_addr(ampl_fcont_uu,p_par(51))
+    call copy_addr(amp_centforce,p_par(52))
+    call copy_addr(sbaro0,p_par(53))
+    call copy_addr(lomega_int,p_par(54)) ! bool
+    call copy_addr(lalways_use_gij_etc,p_par(55)) ! bool
+    call copy_addr(lcalc_uumeanz,p_par(56)) ! bool
+    call copy_addr(lcalc_uumeanxy,p_par(57)) ! bool
+    call copy_addr(lcalc_uumean,p_par(58)) ! bool
+    call copy_addr(lcalc_uumeanx,p_par(59)) ! bool
+    call copy_addr(lcalc_uumeanxz,p_par(60)) ! bool
+    call copy_addr(lforcing_cont_uu,p_par(61)) ! bool
+    call copy_addr(lcoriolis_xdep,p_par(62)) ! bool
+    call copy_addr(lno_meridional_flow,p_par(63)) ! bool
+    call copy_addr(lrotation_xaxis,p_par(64)) ! bool
+    call copy_addr(lgradu_as_aux,p_par(65)) ! bool
+    call copy_addr(lomega_cyl_xy,p_par(66)) ! bool
+    call copy_addr(limpose_only_horizontal_uumz,p_par(67)) ! bool
+    call copy_addr(ltime_integrals_always,p_par(68)) ! bool
+    call copy_addr(lschur_3d3d1d_uu,p_par(69)) ! bool
+    call copy_addr(lschur_2d2d3d_uu,p_par(70)) ! bool
+    call copy_addr(lschur_2d2d1d_uu,p_par(71)) ! bool
+    call copy_addr(dtcor,p_par(72))
+    call copy_addr(shearx,p_par(73))
+    call copy_addr(ra,p_par(74))
+    call copy_addr(pr,p_par(75))
+    call copy_addr(cdt_tauf,p_par(76))
+    call copy_addr(lcdt_tauf,p_par(77)) ! bool
+    call copy_addr(idiag_uduum,p_par(78)) ! int
+    call copy_addr(idiag_taufmin,p_par(79)) ! int
+    call copy_addr(idiag_dtf,p_par(80)) ! int
+    call copy_addr(fade_fact,p_par(81))
+    call copy_addr(uumz,p_par(82)) ! (mz) (3)
+    call copy_addr(uumx,p_par(83)) ! (mx) (3)
+    call copy_addr(uumxy,p_par(84)) ! (mx) (my) (3)
+    call copy_addr(uumxz,p_par(85)) ! (mx) (mz) (3)
+    call copy_addr(uu_average_cyl,p_par(86)) ! (mx) (mz)
+    call copy_addr(uu_average_sph,p_par(87)) ! (mx) (my)
+    call copy_addr(profx_diffrot1,p_par(88)) ! (nx)
+    call copy_addr(profx_diffrot2,p_par(89)) ! (nx)
+    call copy_addr(profx_diffrot3,p_par(90)) ! (nx)
+    call copy_addr(profy_diffrot1,p_par(91)) ! (my)
+    call copy_addr(profy_diffrot2,p_par(92)) ! (my)
+    call copy_addr(profy_diffrot3,p_par(93)) ! (my)
+    call copy_addr(mat_cori,p_par(94)) ! (3) (3)
+    call copy_addr(mat_cent,p_par(95)) ! (3) (3)
+    call copy_addr(uu_const,p_par(96)) ! real3
+    call copy_addr(prof_om,p_par(97)) ! (nx)
+    call copy_addr(prof_amp1,p_par(98)) ! (nx)
+    call copy_addr(prof_amp3,p_par(99)) ! (mz)
+    call copy_addr(prof_amp4,p_par(100)) ! (my)
+    call copy_addr(uumz_prof,p_par(101)) ! (nz) (3)
+    call copy_addr(omega_prof,p_par(102)) ! (nx) (ny)
+
+    call string_to_enum(string_enum_friction_tdep,friction_tdep)
+    call copy_addr(string_enum_friction_tdep,p_par(103)) ! int
+    call string_to_enum(string_enum_uuprof,uuprof)
+    call copy_addr(string_enum_uuprof,p_par(104)) ! int
+    call copy_addr(string_enum_borderuu,p_par(105)) ! int3
 
     endsubroutine pushpars2c
 !***********************************************************************

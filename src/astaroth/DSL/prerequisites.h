@@ -5,6 +5,7 @@
 #define cpu_pow pow
 #define REAL_MAX AC_REAL_MAX
 
+const int prof_nz = 150
 struct PC_rhs_update
 {
 	real3 dt
@@ -32,6 +33,7 @@ struct PC_rhs_update
 #include "../stdlib/utils/intrinsics.h"
 
 #include "../../../cparam_c.h"
+#include "../../../cparam_pencils.inc_c.h"
 #include "PC_nghost.h"
 
 #define AC_n1 n1
@@ -45,7 +47,7 @@ struct PC_rhs_update
 #include "fieldecs.h"
 #include "../stdlib/grid.h"
 #include "../stdlib/integrators.h"
-#include "../stdlib/units.h"
+//#include "../stdlib/units.h"
 #include "../stdlib/utils/kernels.h"
 //#include "../stdlib/map.h"
 #include "PC_modulepardecs.h"
@@ -63,6 +65,7 @@ struct PC_rhs_update
   #define LENERGY 1       // a hack for the moment
 #endif
 output real AC_maximum_error
+output real AC_dt1_max
 
 #ifdef LDENSITY
   #define LNRHO RHO

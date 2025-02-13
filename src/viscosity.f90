@@ -231,6 +231,9 @@ module Viscosity
   real, dimension(mz) :: eth0z = 0.0
   real, dimension(nx) :: diffus_nu, diffus_nu3
 !
+  integer :: string_enum_nnewton_type = 0
+  integer :: string_enum_div_sld_visc = 0
+!
   contains
 !***********************************************************************
     subroutine register_viscosity
@@ -2983,8 +2986,9 @@ module Viscosity
     subroutine pushpars2c(p_par)
 
     use Syscalls, only: copy_addr
+    use General , only: string_to_enum
 
-    integer, parameter :: n_pars=9
+    integer, parameter :: n_pars=1000
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call copy_addr(nu,p_par(1))
@@ -2996,7 +3000,105 @@ module Viscosity
     call copy_addr(lvisc_nu_shock,p_par(7)) ! int
     call copy_addr(nu_hyper2,p_par(8))
     call copy_addr(lvisc_rho_nu_const_bulk,p_par(9)) ! int
-
+    call copy_addr(nu_cspeed,p_par(10))
+    call copy_addr(nu_tdep,p_par(11))
+    call copy_addr(nu_hyper3_mesh,p_par(12))
+    call copy_addr(nu_spitzer,p_par(13))
+    call copy_addr(nu_spitzer_max,p_par(14))
+    call copy_addr(nu_jump,p_par(15))
+    call copy_addr(xnu,p_par(16))
+    call copy_addr(xnu2,p_par(17))
+    call copy_addr(znu,p_par(18))
+    call copy_addr(widthnu,p_par(19))
+    call copy_addr(widthnu2,p_par(20))
+    call copy_addr(c_smag,p_par(21))
+    call copy_addr(gamma_smag,p_par(22))
+    call copy_addr(nu_jump2,p_par(23))
+    call copy_addr(znu_shock,p_par(24))
+    call copy_addr(widthnu_shock,p_par(25))
+    call copy_addr(nu_jump_shock,p_par(26))
+    call copy_addr(xnu_shock,p_par(27))
+    call copy_addr(dynu,p_par(28))
+    call copy_addr(pnlaw,p_par(29))
+    call copy_addr(lambda_v0,p_par(30))
+    call copy_addr(lambda_v1,p_par(31))
+    call copy_addr(lambda_h1,p_par(32))
+    call copy_addr(prm_turb,p_par(33))
+    call copy_addr(meanfield_nub,p_par(34))
+    call copy_addr(nu_infinity,p_par(35))
+    call copy_addr(nu0,p_par(36))
+    call copy_addr(non_newton_lambda,p_par(37))
+    call copy_addr(carreau_exponent,p_par(38))
+    call copy_addr(nu_smag_ma2_power,p_par(39))
+    call copy_addr(nu_rcyl_min,p_par(40))
+    call copy_addr(nnewton_tscale,p_par(41))
+    call copy_addr(nnewton_step_width,p_par(42))
+    call copy_addr(lvisc_simplified,p_par(43)) ! bool
+    call copy_addr(lvisc_nu_non_newtonian,p_par(44)) ! bool
+    call copy_addr(lvisc_rho_nu_const,p_par(45)) ! bool
+    call copy_addr(lvisc_rho_nu_const_prefact,p_par(46)) ! bool
+    call copy_addr(lvisc_sqrtrho_nu_const,p_par(47)) ! bool
+    call copy_addr(lvisc_nu_cspeed,p_par(48)) ! bool
+    call copy_addr(lvisc_mu_cspeed,p_par(49)) ! bool
+    call copy_addr(lvisc_nu_tdep,p_par(50)) ! bool
+    call copy_addr(lvisc_nu_prof,p_par(51)) ! bool
+    call copy_addr(lvisc_nu_profx,p_par(52)) ! bool
+    call copy_addr(lvisc_nu_profr,p_par(53)) ! bool
+    call copy_addr(lvisc_nu_profr_powerlaw,p_par(54)) ! bool
+    call copy_addr(lvisc_nu_profr_twosteps,p_par(55)) ! bool
+    call copy_addr(lvisc_nu_profy_bound,p_par(56)) ! bool
+    call copy_addr(lvisc_nut_from_magnetic,p_par(57)) ! bool
+    call copy_addr(lvisc_nu_shock_profz,p_par(58)) ! bool
+    call copy_addr(lvisc_nu_shock_profr,p_par(59)) ! bool
+    call copy_addr(lvisc_shock_simple,p_par(60)) ! bool
+    call copy_addr(lvisc_hyper2_simplified,p_par(61)) ! bool
+    call copy_addr(lvisc_hyper3_simplified,p_par(62)) ! bool
+    call copy_addr(lvisc_hyper2_simplified_tdep,p_par(63)) ! bool
+    call copy_addr(lvisc_hyper3_simplified_tdep,p_par(64)) ! bool
+    call copy_addr(lvisc_hyper3_polar,p_par(65)) ! bool
+    call copy_addr(lvisc_hyper3_mesh,p_par(66)) ! bool
+    call copy_addr(lvisc_hyper3_mesh_residual,p_par(67)) ! bool
+    call copy_addr(lvisc_hyper3_csmesh,p_par(68)) ! bool
+    call copy_addr(lvisc_hyper3_rho_nu_const,p_par(69)) ! bool
+    call copy_addr(lvisc_hyper3_mu_const_strict,p_par(70)) ! bool
+    call copy_addr(lvisc_hyper3_nu_const_strict,p_par(71)) ! bool
+    call copy_addr(lvisc_hyper3_cmu_const_strt_otf,p_par(72)) ! bool
+    call copy_addr(lvisc_hyper3_rho_nu_const_symm,p_par(73)) ! bool
+    call copy_addr(lvisc_hyper3_rho_nu_const_aniso,p_par(74)) ! bool
+    call copy_addr(lvisc_hyper3_nu_const_aniso,p_par(75)) ! bool
+    call copy_addr(lvisc_hyper3_rho_nu_const_bulk,p_par(76)) ! bool
+    call copy_addr(lvisc_smag_simplified,p_par(77)) ! bool
+    call copy_addr(lvisc_smag_cross_simplified,p_par(78)) ! bool
+    call copy_addr(lnusmag_as_aux,p_par(79)) ! bool
+    call copy_addr(lvisc_heat_as_aux,p_par(80)) ! bool
+    call copy_addr(lvisc_forc_as_aux,p_par(81)) ! bool
+    call copy_addr(lvisc_mixture,p_par(82)) ! bool
+    call copy_addr(lvisc_spitzer,p_par(83)) ! bool
+    call copy_addr(lvisc_slope_limited,p_par(84)) ! bool
+    call copy_addr(lvisc_schur_223,p_par(85)) ! bool
+    call copy_addr(limplicit_viscosity,p_par(86)) ! bool
+    call copy_addr(lmeanfield_nu,p_par(87)) ! bool
+    call copy_addr(lmagfield_nu,p_par(88)) ! bool
+    call copy_addr(llambda_effect,p_par(89)) ! bool
+    call copy_addr(llambda_scale_with_nu,p_par(90)) ! bool
+    call copy_addr(luse_nu_rmn_prof,p_par(91)) ! bool
+    call copy_addr(lvisc_smag_ma,p_par(92)) ! bool
+    call copy_addr(lsld_notensor,p_par(93)) ! bool
+    call copy_addr(lno_visc_heat_zbound,p_par(94)) ! bool
+    call copy_addr(no_visc_heat_z0,p_par(95))
+    call copy_addr(no_visc_heat_zwidth,p_par(96))
+    call copy_addr(damp_sound,p_par(97))
+    call copy_addr(nu_aniso_hyper3,p_par(98)) ! real3
+    call copy_addr(lv0_rprof,p_par(99)) ! (mx)
+    call copy_addr(lv1_rprof,p_par(100)) ! (mx)
+    call copy_addr(lh1_rprof,p_par(101)) ! (mx)
+    call copy_addr(der_lv0_rprof,p_par(102)) ! (mx)
+    call copy_addr(der_lv1_rprof,p_par(103)) ! (mx)
+    call string_to_enum(string_enum_nnewton_type ,nnewton_type)
+    call copy_addr(string_enum_nnewton_type ,p_par(104))
+    call string_to_enum(string_enum_div_sld_visc,div_sld_visc)
+    call copy_addr(string_enum_div_sld_visc,p_par(105))
+    
     endsubroutine pushpars2c
 !***********************************************************************
 endmodule Viscosity

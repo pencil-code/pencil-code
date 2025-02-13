@@ -3129,6 +3129,12 @@ endif
 ifeq ($(TIMESTEP),timestep)
 	@echo $(CUDA_RELPATH)'/timestep.f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources.h
 endif
+ifeq ($(MAGNETIC_MEANFIELD),magnetic/nomeanfield)
+	@echo $(CUDA_RELPATH)'/$(MAGNETIC_MEANFIELD).f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources.h
+endif
+ifeq ($(MAGNETIC),nomagnetic)
+	@echo $(CUDA_RELPATH)'/$(MAGNETIC).f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources.h
+endif
 ifeq ($(EOS),noeos)
 	@echo $(CUDA_RELPATH)'/noeos.f90' >> $(CUDA_MAKEDIR)/PC_modulesources.h
 else
@@ -3408,9 +3414,9 @@ ifneq ($(and $(IS_CRAY), $(filter-out $(GPU),nogpu)),)
 	$(FC) $(MOST_COMP_FLAGS) $(FSTD) -o cdata.o -c cdata_tmp.f90
 	@rm -f cdata_tmp.f90
 else
-	$(FC) $(MOST_COMP_FLAGS) $(FSTD) -o cdata.o -c cdata.f90
+       $(FC) $(MOST_COMP_FLAGS) $(FSTD) -o cdata.o -c cdata.f90
 endif
-#
+
 special_dummies.inc:  nospecial.f90 $(SPECIAL_MODULES:=.f90) Makefile.local
 ifeq ($(SPECIAL_MULT),1)
 	scripts/mkdummyinc -d nospecial.f90 -s $(SPECIAL).f90 -o special_dummies.inc

@@ -4517,8 +4517,9 @@ module EquationOfState
     subroutine pushpars2c(p_par)
 !
     use Syscalls, only: copy_addr
+    use General , only: string_to_enum
 
-    integer, parameter :: n_pars=12
+    integer, parameter :: n_pars=200
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 !
     call copy_addr(cs20,p_par(1))
@@ -4533,6 +4534,21 @@ module EquationOfState
     call copy_addr(cs2bot,p_par(10))
     call copy_addr(cs2top,p_par(11))
     call copy_addr(leos_isothermal,p_par(12))   ! int
+    call copy_addr(iglobal_cs2,p_par(13)) ! int
+    call copy_addr(tt0,p_par(14))
+    call copy_addr(cs0,p_par(15))
+    call copy_addr(rho0,p_par(16))
+    call copy_addr(pp0,p_par(17))
+    call copy_addr(cp1,p_par(18))
+    call copy_addr(cs20_tdep_rate,p_par(19))
+    call copy_addr(ieosvars,p_par(20)) ! int
+    call copy_addr(ieosvar2,p_par(21)) ! int
+    call copy_addr(leos_isentropic,p_par(22)) ! bool
+    call copy_addr(leos_localisothermal,p_par(23)) ! bool
+    call copy_addr(lanelastic_lin,p_par(24)) ! bool
+    call copy_addr(lcs_as_aux,p_par(25)) ! bool
+    call copy_addr(lcs_as_comaux,p_par(26)) ! bool
+    call copy_addr(lcs_tdep,p_par(27)) ! bool
 !
     endsubroutine pushpars2c
 !***********************************************************************

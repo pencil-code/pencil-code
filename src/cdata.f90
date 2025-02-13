@@ -51,7 +51,6 @@ module Cdata
   real(KIND=rkind8) :: k_B_set=1., m_u_set=1.
   integer, dimension(:,:), allocatable :: nexts
   integer, dimension(:,:,:), allocatable :: ninds
-  integer, target :: m,n
   logical :: lfirstpoint=.false.
 !
 !  Cartesian coordinate system.
@@ -199,7 +198,6 @@ module Cdata
   real :: nu_sts=0.1
   integer :: permute_sts=0
   integer:: ireset_tstart=2
-  integer :: nt=10000000, it=0, itorder=3, itsub=0, it_timing=0, it_rmv=0
   integer :: num_substeps = 3
 !
 !  Parameters related to message passing.
@@ -382,7 +380,7 @@ module Cdata
   integer :: ilnrho=0, irho=0
   integer :: irho_b=0, iss_b=0 ! Anelastic auxiliary variables (base state)
   integer, dimension(ndustrad) :: iapn=0
-  integer :: ipp,irhs=0,iTTold=0
+  integer :: ipp,irhs=0,iTTold=0,irhsx=0,irhsy=0,irhsz=0
   integer :: ipoly=0
   integer :: ip11=0,ip12=0,ip13=0
   integer :: ip21=0,ip22=0,ip23=0
@@ -527,7 +525,6 @@ module Cdata
                                          cnamez(:),cnamey(:),cnamex(:),cnamer(:)
   integer, dimension(:), allocatable :: inds_max_diags, inds_sum_diags
 
-  logical :: lfirst=.false.,llast=.false.,ldt=.true.,ldt_paronly=.false.
 !END C BINDING
   integer, target :: m,n
   integer :: nt=10000000, it=0, itorder=3, itsub=0, it_timing=0, it_rmv=0
@@ -846,6 +843,7 @@ module Cdata
 !  Size of mfarray to make sure we can store the handle (for 1 to mvar zero)
 !
    integer, dimension(mfarray) :: maux_vtxbuf_index = 0
+   integer :: string_enum_unit_system = 0
 !
 !  Define and initialize lambda5, so that it can be used to tell whether
 !  or not the chiral MHD special module is used.

@@ -346,11 +346,14 @@ module Equ
           !wait in case the last diagnostic tasks are not finished
 !         Not done for the first step since we haven't loaded any data to the GPU yet
           call copy_farray_from_GPU(f)
-!$        call save_diagnostic_controls
 !$        lmasterflags(PERF_DIAGS) = .true.
         endif
         start_time = mpiwtime()
         call rhs_gpu(f,itsub)
+!TP: should be done after rhs_gpu since if doing testing against cpu want to get the right value of dt
+        if (ldiagnos.or.l1davgfirst.or.l1dphiavg.or.l2davgfirst) then
+!$        call save_diagnostic_controls
+        endif
         end_time = mpiwtime()
         !if (lroot) print*,"iteration on gpu:",end_time-start_time
         !if (lroot) flush(6)
@@ -965,6 +968,19 @@ module Equ
 
     endsubroutine calc_all_pencils
 !***********************************************************************
+    subroutine check_if_necessary(f,lcommunicate)
+        real, dimension(mx,my,mz,mfarray) :: f
+        logical :: lcommunicate
+        if (lcommunicate) then
+          if (necessary(imn)) then
+            call finalize_isendrcv_bdry(f)
+            call boundconds_y(f)
+            call boundconds_z(f)
+            lcommunicate=.false.
+          endif
+        endif
+    endsubroutine check_if_necessary
+!***********************************************************************
     subroutine rhs_cpu(f,df,p,mass_per_proc,early_finalize)
 !
 !  Calculates rhss of the PDEs.
@@ -1049,14 +1065,7 @@ module Equ
 !
 !  Make sure all ghost points are set.
 !
-        if (lcommunicate) then
-          if (necessary(imn)) then
-            call finalize_isendrcv_bdry(f)
-            call boundconds_y(f)
-            call boundconds_z(f)
-            lcommunicate=.false.
-          endif
-        endif
+        call check_if_necessary(f,lcommunicate)
         call timing('pde','finished boundconds_z',mnloop=.true.)
 !
 !  For each pencil, accumulate through the different modules
@@ -1258,9 +1267,9 @@ module Equ
 !
         if (lanelastic) then
 !          call calc_pencils_density(f,p)
-          f(l1:l2,m,n,irhs)   = p%rho*df(l1:l2,m,n,iuu)
-          f(l1:l2,m,n,irhs+1) = p%rho*df(l1:l2,m,n,iuu+1)
-          f(l1:l2,m,n,irhs+2) = p%rho*df(l1:l2,m,n,iuu+2)
+          f(l1:l2,m,n,irhsx)   = p%rho*df(l1:l2,m,n,iuu)
+          f(l1:l2,m,n,irhsy) = p%rho*df(l1:l2,m,n,iuu+1)
+          f(l1:l2,m,n,irhsy) = p%rho*df(l1:l2,m,n,iuu+2)
           df(l1:l2,m,n,iux:iuz) = df_iuu_pencil + df(l1:l2,m,n,iux:iuz)
           call sum_mn(p%rho,mass_per_proc(1))
         endif

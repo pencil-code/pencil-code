@@ -38,7 +38,12 @@ module Magnetic
 !
   use Cdata
   use General, only: keep_compiler_quiet, loptest, itoa
-  use Magnetic_meanfield
+  !TP: this is ugly but needed to not take pushpars2c from magnetic_meanfield
+  !If someone knows a more elegant way to filter out a single equation from a module please make this cleaner!
+  use Magnetic_meanfield, only: register_magn_mf, initialize_magn_mf, init_aa_mf, pencil_criteria_magn_mf, pencil_interdep_magn_mf, &
+                                calc_diagnostics_meanfield,daa_dt_meanfield,read_magn_mf_init_pars,write_magn_mf_init_pars, &
+                                calc_pencils_magn_mf,read_magn_mf_run_pars,write_magn_mf_run_pars,pc_aasb_const_alpha,meanfield_after_boundary
+
   use Messages, only: fatal_error,inevitably_fatal_error,warning,svn_id,timing,not_implemented
 !
   implicit none
@@ -1117,6 +1122,17 @@ module Magnetic
 
   integer :: iedotx,iedotz
 
+  integer :: string_enum_tdep_eta_type = 0
+  integer :: string_enum_ambipolar_diffusion = 0
+  integer :: string_enum_rdep_profile = 0
+  integer :: string_enum_div_sld_magn = 0
+  integer :: string_enum_ihall_term = 0
+  integer :: string_enum_borderaa(3) = 0
+  integer :: string_enum_iforcing_continuous_aa = 0
+
+  !TP: moved here from saved variable
+  real, dimension(mz), save :: Bz_stratified
+
   contains
 !***********************************************************************
     subroutine register_magnetic
@@ -2106,6 +2122,13 @@ module Magnetic
      iedotx=farray_index_by_name('eedot')
      iedotz=iedotx+2
 
+!
+! set up z-stratification
+!
+        do iz = 1, mz
+          Bz_stratified(iz) = B0_ext_z * exp(-z(iz) / B0_ext_z_H)
+        enddo
+
     endsubroutine initialize_magnetic
 !***********************************************************************
     subroutine init_aa(f)
@@ -2507,7 +2530,8 @@ module Magnetic
           enddo; enddo
 !
         case ('relprof')
-          f(l1:l2,m1:m2,n1:n2,iax:iay)=A_relprof
+          f(l1:l2,m1:m2,n1:n2,iax)=A_relprof(:,:,:,1)
+          f(l1:l2,m1:m2,n1:n2,iay)=A_relprof(:,:,:,2)
 !
         case ('inclined-dipole')
 !
@@ -5952,7 +5976,10 @@ module Magnetic
 !
           dAdt= dAdt-(p%aa-f(l1:l2,m,n,iglobal_ax_ext:iglobal_az_ext))*tau_relprof1
         else
-          dAdt= dAdt-(p%aa-A_relprof(:,m-m1+1,n-n1+1,:))*tau_relprof1
+          !dAdt= dAdt-(p%aa-A_relprof(:,m-m1+1,n-n1+1,:))*tau_relprof1
+          dAdt(:,1)= dAdt(:,1)-(p%aa(:,1)-A_relprof(:,m-m1+1,n-n1+1,1))*tau_relprof1
+          dAdt(:,2)= dAdt(:,2)-(p%aa(:,2)-A_relprof(:,m-m1+1,n-n1+1,2))*tau_relprof1
+          dAdt(:,3)= dAdt(:,3)-(p%aa(:,3)-A_relprof(:,m-m1+1,n-n1+1,3))*tau_relprof1
         endif
       endif
 !
@@ -7580,25 +7607,19 @@ module Magnetic
 !
       do j=1,3
 !
+        ju=j+iaa-1
         select case (borderaa(j))
 !
         case ('zero','0')
           f_target(:,j)=0.
+          call border_driving(f,df,p,f_target(:,j),ju)
 !
         case ('initial-condition')
-          ju=j+iaa-1
           call set_border_initcond(f,ju,f_target(:,j))
+          call border_driving(f,df,p,f_target(:,j),ju)
 !
         case ('nothing')
-          cycle
-!
         endselect
-!
-!  apply border profile
-!
-        ju=j+iaa-1
-        call border_driving(f,df,p,f_target(:,j),ju)
-!
       enddo
 !
     endsubroutine set_border_magnetic
@@ -11342,17 +11363,6 @@ module Magnetic
 !
       integer, intent(in) :: pz
 !
-      integer :: iz
-      real, dimension(mz), save :: Bz_stratified
-      logical, save :: lfirst_call = .true.
-!
-      if (lfirst_call) then
-! set up z-stratification
-        do iz = 1, mz
-          Bz_stratified(iz) = B0_ext_z * exp(-z(iz) / B0_ext_z_H)
-        enddo
-        lfirst_call = .false.
-      endif
 !
       get_B0_ext_z = Bz_stratified(pz)
 !
@@ -11380,8 +11390,9 @@ module Magnetic
     subroutine pushpars2c(p_par)
 
     use Syscalls, only: copy_addr
+    use General , only: string_to_enum
 
-    integer, parameter :: n_pars=9
+    integer, parameter :: n_pars=1000
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call copy_addr(eta,p_par(1))
@@ -11393,6 +11404,261 @@ module Magnetic
     call copy_addr(lupw_aa,p_par(7)) ! int
     call copy_addr(llorentzforce,p_par(8)) ! int
     call copy_addr(linduction,p_par(9)) ! int
+    call copy_addr(iedotx,p_par(10)) ! int
+    call copy_addr(iedotz,p_par(11)) ! int
+    call copy_addr(b0_ext_z,p_par(12))
+    call copy_addr(b0_ext_z_h,p_par(13))
+    call copy_addr(t_bext,p_par(14))
+    call copy_addr(t0_bext,p_par(15))
+    call copy_addr(eta1_aniso,p_par(16))
+    call copy_addr(eta1_aniso_r,p_par(17))
+    call copy_addr(eta1_aniso_d,p_par(18))
+    call copy_addr(eta_shock,p_par(19))
+    call copy_addr(eta_shock2,p_par(20))
+    call copy_addr(alp_aniso,p_par(21))
+    call copy_addr(eta_aniso_bb,p_par(22))
+    call copy_addr(quench_aniso,p_par(23))
+    call copy_addr(eta_va,p_par(24))
+    call copy_addr(eta_j,p_par(25))
+    call copy_addr(eta_jrho,p_par(26))
+    call copy_addr(eta_min,p_par(27))
+    call copy_addr(eta_max,p_par(28))
+    call copy_addr(eta_huge,p_par(29))
+    call copy_addr(etaj20,p_par(30))
+    call copy_addr(va_min,p_par(31))
+    call copy_addr(varms,p_par(32))
+    call copy_addr(rhomin_jxb,p_par(33))
+    call copy_addr(va2max_jxb,p_par(34))
+    call copy_addr(va2max_boris,p_par(35))
+    call copy_addr(cmin,p_par(36))
+    call copy_addr(omega_bz_ext,p_par(37))
+    call copy_addr(inclaa,p_par(38))
+    call copy_addr(d_smag,p_par(39))
+    call copy_addr(b_ext2,p_par(40))
+    call copy_addr(nu_ni1,p_par(41))
+    call copy_addr(hall_term,p_par(42))
+    call copy_addr(battery_term,p_par(43))
+    call copy_addr(hall_tdep_t0,p_par(44))
+    call copy_addr(hall_tdep_exponent,p_par(45))
+    call copy_addr(hhall,p_par(46))
+    call copy_addr(hall_zdep_exponent,p_par(47))
+    call copy_addr(ampl_beltrami,p_par(48))
+    call copy_addr(eta_jump,p_par(49))
+    call copy_addr(eta_jump0,p_par(50))
+    call copy_addr(eta_jump1,p_par(51))
+    call copy_addr(etab,p_par(52))
+    call copy_addr(tau_relprof,p_par(53))
+    call copy_addr(tau_relprof1,p_par(54))
+    call copy_addr(dipole_moment,p_par(55))
+    call copy_addr(pm_smag1,p_par(56))
+    call copy_addr(echarge,p_par(57))
+    call copy_addr(va2power_jxb,p_par(58)) ! int
+    call copy_addr(iua,p_par(59)) ! int
+    call copy_addr(ilam,p_par(60)) ! int
+    call copy_addr(llorentz_rhoref,p_par(61)) ! bool
+    call copy_addr(ldiamagnetism,p_par(62)) ! bool
+    call copy_addr(lcovariant_magnetic,p_par(63)) ! bool
+    call copy_addr(ladd_global_field,p_par(64)) ! bool
+    call copy_addr(lresi_eta_tdep,p_par(65)) ! bool
+    call copy_addr(lresi_eta_xtdep,p_par(66)) ! bool
+    call copy_addr(lresi_eta_ztdep,p_par(67)) ! bool
+    call copy_addr(lresi_eta_tdep_t0_norm,p_par(68)) ! bool
+    call copy_addr(lresi_sqrtrhoeta_const,p_par(69)) ! bool
+    call copy_addr(lresi_eta_aniso,p_par(70)) ! bool
+    call copy_addr(lquench_eta_aniso,p_par(71)) ! bool
+    call copy_addr(lresi_etass,p_par(72)) ! bool
+    call copy_addr(lresi_hyper2_tdep,p_par(73)) ! bool
+    call copy_addr(lresi_hyper3_tdep,p_par(74)) ! bool
+    call copy_addr(lresi_hyper3_polar,p_par(75)) ! bool
+    call copy_addr(lresi_hyper3_mesh,p_par(76)) ! bool
+    call copy_addr(lresi_hyper3_csmesh,p_par(77)) ! bool
+    call copy_addr(lresi_hyper3_strict,p_par(78)) ! bool
+    call copy_addr(lresi_zdep,p_par(79)) ! bool
+    call copy_addr(lresi_ydep,p_par(80)) ! bool
+    call copy_addr(lresi_xdep,p_par(81)) ! bool
+    call copy_addr(lresi_rdep,p_par(82)) ! bool
+    call copy_addr(lresi_xydep,p_par(83)) ! bool
+    call copy_addr(lresi_hyper3_aniso,p_par(84)) ! bool
+    call copy_addr(lresi_eta_shock,p_par(85)) ! bool
+    call copy_addr(lresi_eta_shock2,p_par(86)) ! bool
+    call copy_addr(lresi_eta_shock_profz,p_par(87)) ! bool
+    call copy_addr(lresi_eta_shock_profr,p_par(88)) ! bool
+    call copy_addr(lresi_eta_shock_perp,p_par(89)) ! bool
+    call copy_addr(lresi_etava,p_par(90)) ! bool
+    call copy_addr(lresi_etaj,p_par(91)) ! bool
+    call copy_addr(lresi_etaj2,p_par(92)) ! bool
+    call copy_addr(lresi_etajrho,p_par(93)) ! bool
+    call copy_addr(lresi_shell,p_par(94)) ! bool
+    call copy_addr(lresi_smagorinsky,p_par(95)) ! bool
+    call copy_addr(lresi_smagorinsky_nusmag,p_par(96)) ! bool
+    call copy_addr(lresi_smagorinsky_cross,p_par(97)) ! bool
+    call copy_addr(lresi_anomalous,p_par(98)) ! bool
+    call copy_addr(lresi_spitzer,p_par(99)) ! bool
+    call copy_addr(lresi_cspeed,p_par(100)) ! bool
+    call copy_addr(lresi_vaspeed,p_par(101)) ! bool
+    call copy_addr(lalfven_as_aux,p_par(102)) ! bool
+    call copy_addr(lresi_magfield,p_par(103)) ! bool
+    call copy_addr(lresi_eta_proptouz,p_par(104)) ! bool
+    call copy_addr(lohmic_heat,p_par(105)) ! bool
+    call copy_addr(lneutralion_heat,p_par(106)) ! bool
+    call copy_addr(lj_ext,p_par(107)) ! bool
+    call copy_addr(lforcing_cont_aa_local,p_par(108)) ! bool
+    call copy_addr(lee_as_aux,p_par(109)) ! bool
+    call copy_addr(ladd_disp_current_from_aux,p_par(110)) ! bool
+    call copy_addr(lbb_as_aux,p_par(111)) ! bool
+    call copy_addr(ljj_as_aux,p_par(112)) ! bool
+    call copy_addr(ljxb_as_aux,p_par(113)) ! bool
+    call copy_addr(luxb_as_aux,p_par(114)) ! bool
+    call copy_addr(lugb_as_aux,p_par(115)) ! bool
+    call copy_addr(lbgu_as_aux,p_par(116)) ! bool
+    call copy_addr(lbdivu_as_aux,p_par(117)) ! bool
+    call copy_addr(lua_as_aux,p_par(118)) ! bool
+    call copy_addr(letasmag_as_aux,p_par(119)) ! bool
+    call copy_addr(ljj_as_comaux,p_par(120)) ! bool
+    call copy_addr(lbb_as_comaux,p_par(121)) ! bool
+    call copy_addr(lb_ext_in_comaux,p_par(122)) ! bool
+    call copy_addr(lbb_sph_as_aux,p_par(123)) ! bool
+    call copy_addr(lbext_curvilinear,p_par(124)) ! bool
+    call copy_addr(lcheck_positive_va2,p_par(125)) ! bool
+    call copy_addr(lsmooth_jj,p_par(126)) ! bool
+    call copy_addr(lambipolar_diffusion,p_par(127)) ! bool
+    call copy_addr(lcoulomb,p_par(128)) ! bool
+    call copy_addr(lvacuum,p_par(129)) ! bool
+    call copy_addr(loverride_ee,p_par(130)) ! bool
+    call copy_addr(loverride_ee2,p_par(131)) ! bool
+    call copy_addr(lignore_1rho_in_lorentz,p_par(132)) ! bool
+    call copy_addr(lohm_evolve,p_par(133)) ! bool
+    call copy_addr(eta_tdep_exponent,p_par(134))
+    call copy_addr(eta_tdep_t0,p_par(135))
+    call copy_addr(eta_tdep_toffset,p_par(136))
+    call copy_addr(eta_hyper3_mesh,p_par(137))
+    call copy_addr(eta_spitzer,p_par(138))
+    call copy_addr(eta_anom,p_par(139))
+    call copy_addr(eta_anom_thresh,p_par(140))
+    call copy_addr(eta_int,p_par(141))
+    call copy_addr(eta_ext,p_par(142))
+    call copy_addr(wresistivity,p_par(143))
+    call copy_addr(height_eta,p_par(144))
+    call copy_addr(eta_out,p_par(145))
+    call copy_addr(eta_cspeed,p_par(146))
+    call copy_addr(tau_aa_exterior,p_par(147))
+    call copy_addr(tauad,p_par(148))
+    call copy_addr(eta_zwidth,p_par(149))
+    call copy_addr(eta_rwidth,p_par(150))
+    call copy_addr(eta_width_shock,p_par(151))
+    call copy_addr(eta_zshock,p_par(152))
+    call copy_addr(eta_rwidth0,p_par(153))
+    call copy_addr(eta_rwidth1,p_par(154))
+    call copy_addr(eta_xshock,p_par(155))
+    call copy_addr(eta_r0,p_par(156))
+    call copy_addr(eta_r1,p_par(157))
+    call copy_addr(alphassm,p_par(158))
+    call copy_addr(j_ext_quench,p_par(159))
+    call copy_addr(b2_diamag,p_par(160))
+    call copy_addr(k1_ff,p_par(161))
+    call copy_addr(ampl_ff,p_par(162))
+    call copy_addr(swirl,p_par(163))
+    call copy_addr(ampl_fcont_aa,p_par(164))
+    call copy_addr(llambda_aa,p_par(165))
+    call copy_addr(vcrit_anom,p_par(166))
+    call copy_addr(numag,p_par(167))
+    call copy_addr(b0_magfric,p_par(168))
+    call copy_addr(ekman_friction_aa,p_par(169))
+    call copy_addr(exp_epspb,p_par(170))
+    call copy_addr(ncr_quench,p_par(171))
+    call copy_addr(ampl_eta_uz,p_par(172))
+    call copy_addr(no_ohmic_heat_z0,p_par(173))
+    call copy_addr(no_ohmic_heat_zwidth,p_par(174))
+    call copy_addr(imp_alpha0,p_par(175))
+    call copy_addr(imp_halpha,p_par(176))
+    call copy_addr(c_light21,p_par(177))
+    call copy_addr(betamin_jxb,p_par(178))
+    call copy_addr(lweyl_gauge,p_par(179)) ! bool
+    call copy_addr(ladvective_gauge,p_par(180)) ! bool
+    call copy_addr(ladvective_gauge2,p_par(181)) ! bool
+    call copy_addr(lforcing_cont_aa,p_par(182)) ! bool
+    call copy_addr(iforcing_cont_aa,p_par(183)) ! int
+    call copy_addr(lkinematic,p_par(184)) ! bool
+    call copy_addr(lignore_bext_in_b2,p_par(185)) ! bool
+    call copy_addr(luse_bext_in_b2,p_par(186)) ! bool
+    call copy_addr(lmean_friction,p_par(187)) ! bool
+    call copy_addr(llocal_friction,p_par(188)) ! bool
+    call copy_addr(lambipolar_strong_coupling,p_par(189)) ! bool
+    call copy_addr(lhalox,p_par(190)) ! bool
+    call copy_addr(lno_ohmic_heat_bound_z,p_par(191)) ! bool
+    call copy_addr(lmagneto_friction,p_par(192)) ! bool
+    call copy_addr(limplicit_resistivity,p_par(193)) ! bool
+    call copy_addr(lncr_correlated,p_par(194)) ! bool
+    call copy_addr(lncr_anticorrelated,p_par(195)) ! bool
+    call copy_addr(ladd_efield,p_par(196)) ! bool
+    call copy_addr(lsld_bb,p_par(197)) ! bool
+    call copy_addr(la_relprof_global,p_par(198)) ! bool
+    call copy_addr(lmagnetic_slope_limited,p_par(199)) ! bool
+    call copy_addr(lboris_correction,p_par(200)) ! bool
+    call copy_addr(lnoinduction,p_par(201)) ! bool
+    call copy_addr(lrhs_max,p_par(202)) ! bool
+    call copy_addr(limp_alpha,p_par(203)) ! bool
+    call copy_addr(fac_sld_magn,p_par(204))
+    call copy_addr(ampl_efield,p_par(205))
+    call copy_addr(rhoref,p_par(206))
+    call copy_addr(rhoref1,p_par(207))
+    call copy_addr(ell_jj,p_par(208))
+    call copy_addr(tau_jj,p_par(209))
+    call copy_addr(lbext_moving_layer,p_par(210)) ! bool
+    call copy_addr(lno_eta_tdep,p_par(211)) ! bool
+    call copy_addr(zbot_moving_layer,p_par(212))
+    call copy_addr(ztop_moving_layer,p_par(213))
+    call copy_addr(speed_moving_layer,p_par(214))
+    call copy_addr(edge_moving_layer,p_par(215))
+    call copy_addr(idiag_udotxbm,p_par(216)) ! int
+    call copy_addr(idiag_uxbdotm,p_par(217)) ! int
+    call copy_addr(eta_shock_jump1,p_par(218))
+    call copy_addr(arms,p_par(219))
+    call copy_addr(r2,p_par(220))
+    call copy_addr(r12,p_par(221))
+    call copy_addr(b_ext,p_par(223)) ! real3
+    call copy_addr(b0_ext,p_par(224)) ! real3
+    call copy_addr(b1_ext,p_par(225)) ! real3
+    call copy_addr(j_ext,p_par(226)) ! real3
+    call copy_addr(eta_aniso_hyper3,p_par(227)) ! real3
+    call copy_addr(lfrozen_bb_bot,p_par(228)) ! bool3
+    call copy_addr(lfrozen_bb_top,p_par(229)) ! bool3
+    call copy_addr(eta_xy,p_par(230)) ! (mx) (my)
+    call copy_addr(geta_xy,p_par(231)) ! (mx) (my) (3)
+    call copy_addr(a_relprof,p_par(232)) ! (nx) (ny) (nz) (3)
+    call copy_addr(eta_z,p_par(233)) ! (mz)
+    call copy_addr(geta_z,p_par(234)) ! (mz)
+    call copy_addr(eta_x,p_par(235)) ! (mx)
+    call copy_addr(geta_x,p_par(236)) ! (mx)
+    call copy_addr(eta_y,p_par(237)) ! (my)
+    call copy_addr(geta_y,p_par(238)) ! (my)
+    call copy_addr(feta_ztdep,p_par(239)) ! (mz)
+    call copy_addr(phix,p_par(240)) ! (mx)
+    call copy_addr(sinx,p_par(241)) ! (mx)
+    call copy_addr(cosx,p_par(242)) ! (mx)
+    call copy_addr(phiy,p_par(243)) ! (my)
+    call copy_addr(siny,p_par(244)) ! (my)
+    call copy_addr(cosy,p_par(245)) ! (my)
+    call copy_addr(phiz,p_par(246)) ! (mz)
+    call copy_addr(sinz,p_par(247)) ! (mz)
+    call copy_addr(cosz,p_par(248)) ! (mz)
+
+    call string_to_enum(string_enum_tdep_eta_type,tdep_eta_type)
+    call copy_addr(string_enum_tdep_eta_type,p_par(250)) ! int
+    call string_to_enum(string_enum_ambipolar_diffusion,ambipolar_diffusion)
+    call copy_addr(string_enum_ambipolar_diffusion,p_par(251)) ! int
+    call string_to_enum(string_enum_rdep_profile,rdep_profile)
+    call copy_addr(string_enum_rdep_profile,p_par(252)) ! int
+    call string_to_enum(string_enum_ihall_term,ihall_term)
+    call copy_addr(string_enum_ihall_term,p_par(253)) ! int
+    call string_to_enum(string_enum_iforcing_continuous_aa,iforcing_continuous_aa)
+    call copy_addr(string_enum_iforcing_continuous_aa,p_par(254)) ! int
+    call string_to_enum(string_enum_borderaa(1),borderaa(1))
+    call string_to_enum(string_enum_borderaa(2),borderaa(2))
+    call string_to_enum(string_enum_borderaa(3),borderaa(3))
+    call copy_addr(string_enum_borderaa,p_par(255)) ! int3
+    call copy_addr(bz_stratified,p_par(256)) ! (mz)
+    call copy_addr(eta_tdep,p_par(257))
 
     endsubroutine pushpars2c
 !***********************************************************************

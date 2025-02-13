@@ -67,6 +67,11 @@ module Gravity
   integer :: n_adjust_sphersym=0
   character (len=labellen) :: gravx_profile='zero', gravy_profile='zero', &
                               gravz_profile='zero', grav_type='default'
+
+  integer :: string_enum_gravx_profile = 0
+  integer :: string_enum_gravy_profile = 0
+  integer :: string_enum_gravz_profile = 0
+  integer :: string_enum_grav_type     = 0
 !
 !  Parameters used by other modules (only defined for other gravities)
 !
@@ -1450,12 +1455,39 @@ module Gravity
     subroutine pushpars2c(p_par)
 
     use Syscalls, only: copy_addr
+    use General , only: string_to_enum
 
-    integer, parameter :: n_pars=2
+    integer, parameter :: n_pars=400
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call copy_addr(gravz,p_par(1))
     call copy_addr(gravz_zpencil,p_par(2)) ! (mz)
+
+    call copy_addr(zgrav,p_par(3))
+    call copy_addr(accretor_grav,p_par(4))
+    call copy_addr(accretor_speed,p_par(5))
+    call copy_addr(accretor_rsoft,p_par(6))
+    call copy_addr(kaccretor,p_par(7))
+    call copy_addr(lxyzdependence,p_par(8)) ! bool
+    call copy_addr(lboussinesq_grav,p_par(9)) ! bool
+    call copy_addr(laccretor_peri,p_par(10)) ! bool
+    call copy_addr(gravx_xpencil,p_par(11)) ! (mx)
+    call copy_addr(potx_xpencil,p_par(12)) ! (mx)
+    call copy_addr(gravy_ypencil,p_par(13)) ! (my)
+    call copy_addr(poty_ypencil,p_par(14)) ! (my)
+    call copy_addr(potz_zpencil,p_par(15)) ! (mz)
+    call copy_addr(xdep,p_par(16)) ! (mx)
+    call copy_addr(zdep,p_par(17)) ! (mz)
+
+    call string_to_enum(string_enum_gravx_profile,gravx_profile)
+    call string_to_enum(string_enum_gravy_profile,gravy_profile)
+    call string_to_enum(string_enum_gravz_profile,gravz_profile)
+    call string_to_enum(string_enum_grav_type    ,grav_type)
+
+    call copy_addr(string_enum_gravx_profile,p_par(18))
+    call copy_addr(string_enum_gravy_profile,p_par(19))
+    call copy_addr(string_enum_gravz_profile,p_par(20))
+    call copy_addr(string_enum_grav_type    ,p_par(21))
 
     endsubroutine pushpars2c
 !***********************************************************************

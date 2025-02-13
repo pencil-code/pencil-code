@@ -70,6 +70,7 @@ module General
   public :: binomial,merge_lists,reallocate
   public :: point_and_get_size, allocate_using_dims
 !$ public :: signal_wait, signal_send, signal_init, get_cpu, set_cpu, omp_single
+  public :: string_to_enum
 ! 
 !
 !  State and default generator of random numbers.
@@ -6847,6 +6848,514 @@ iloop:do i=1,size(list2)
       endif
 
     endsubroutine
+!***********************************************************************
+    subroutine string_to_enum(dst,src)
+        integer :: dst
+        character(len=*) :: src
+
+        select case(src)
+        case('pde')
+        	dst = string_enum_pde_string
+        case('before lanelastic')
+        	dst = string_enum_before_lanelastic_string
+        case('calc_pencils_grid')
+        	dst = string_enum_calc_pencils_grid_string
+        case('position vector for ')
+        	dst = string_enum_position_vector_for__string
+        case('non-cartesian coordinates')
+        	dst = string_enum_nonZcartesian_coordinates_string
+        case('co-latitudinal unit vector for ')
+        	dst = string_enum_coZlatitudinal_unit_vector_for__string
+        case('calc_pencils_hydro_linearized')
+        	dst = string_enum_calc_pencils_hydro_linearized_string
+        case('u2 pencil not calculated')
+        	dst = string_enum_u2_pencil_not_calculated_string
+        case('sij2 pencil not calculated')
+        	dst = string_enum_sij2_pencil_not_calculated_string
+        case('uij5 pencil not calculated')
+        	dst = string_enum_uij5_pencil_not_calculated_string
+        case('o2 or oxu2 pencils not calculate')
+        	dst = string_enum_o2_or_oxu2_pencils_not_calculate_string
+        case('ou or oxu pencils not calculated')
+        	dst = string_enum_ou_or_oxu_pencils_not_calculated_string
+        case('ugu2 pencil not calculated')
+        	dst = string_enum_ugu2_pencil_not_calculated_string
+        case('ujukl pencils not calculated')
+        	dst = string_enum_ujukl_pencils_not_calculated_string
+        case('calc_pencils_hydro: call gij_etc')
+        	dst = string_enum_calc_pencils_hydroZ_call_gij_etc_string
+        case('no linearized weno transport')
+        	dst = string_enum_no_linearized_weno_transport_string
+        case('calc_pencils_hydro_nonlinear')
+        	dst = string_enum_calc_pencils_hydro_nonlinear_string
+        case('calc_pencils_density')
+        	dst = string_enum_calc_pencils_density_string
+        case('del6lnrho for linear mass density')
+        	dst = string_enum_del6lnrho_for_linear_mass_density_string
+        case('hlnrho linear mass density')
+        	dst = string_enum_hlnrho_linear_mass_density_string
+        case('density:iproc,it,m,n=')
+        	dst = string_enum_densityZiprocZitZmZnZ_string
+        case('nans in ac_transformed_pencil_glnrho')
+        	dst = string_enum_nans_in_ac_transformed_pencil_glnrho_string
+        case('ugrho for logarithmic mass density')
+        	dst = string_enum_ugrho_for_logarithmic_mass_density_string
+        case('del2rho for logarithmic mass density')
+        	dst = string_enum_del2rho_for_logarithmic_mass_density_string
+        case('del6rho for logarithmic mass density')
+        	dst = string_enum_del6rho_for_logarithmic_mass_density_string
+        case('calc_pencils_density_pnc')
+        	dst = string_enum_calc_pencils_density_pnc_string
+        case('rhos1')
+        	dst = string_enum_rhos1_string
+        case('glnrhos')
+        	dst = string_enum_glnrhos_string
+        case('calc_pencils_eos')
+        	dst = string_enum_calc_pencils_eos_string
+        case('rho1gpp not available')
+        	dst = string_enum_rho1gpp_not_available_string
+        case('rho1gpp not available 2')
+        	dst = string_enum_rho1gpp_not_available_2_string
+        case('del6ss for ilnrho_lntt')
+        	dst = string_enum_del6ss_for_ilnrho_lntt_string
+        case('no gradients yet for localisothermal')
+        	dst = string_enum_no_gradients_yet_for_localisothermal_string
+        case('entropy not needed for localisothermal')
+        	dst = string_enum_entropy_not_needed_for_localisothermal_string
+        case('full equation of state for ilnrho_cs2')
+        	dst = string_enum_full_equation_of_state_for_ilnrho_cs2_string
+        case('local isothermal case for ipp_ss')
+        	dst = string_enum_local_isothermal_case_for_ipp_ss_string
+        case('isentropic for (pp,lntt)')
+        	dst = string_enum_isentropic_for_ZppZlnttZ_string
+        case('local isothermal case for ipp_cs2')
+        	dst = string_enum_local_isothermal_case_for_ipp_cs2_string
+        case('del6ss for ilnrho_cs2')
+        	dst = string_enum_del6ss_for_ilnrho_cs2_string
+        case('geth is not available')
+        	dst = string_enum_geth_is_not_available_string
+        case('del2eth is not available')
+        	dst = string_enum_del2eth_is_not_available_string
+        case('eths is not available')
+        	dst = string_enum_eths_is_not_available_string
+        case('geths is not available')
+        	dst = string_enum_geths_is_not_available_string
+        case('hlntt for ilnrho_eth or irho_eth')
+        	dst = string_enum_hlntt_for_ilnrho_eth_or_irho_eth_string
+        case('unknown combination of eos vars')
+        	dst = string_enum_unknown_combination_of_eos_vars_string
+        case('calc_pencils_energy: max(advec_cs2) =')
+        	dst = string_enum_calc_pencils_energyZ_maxZadvec_cs2Z_Z_string
+        case('carreau')
+        	dst = string_enum_carreau_string
+        case('step')
+        	dst = string_enum_step_string
+        case('getnu_non_newtonian:')
+        	dst = string_enum_getnu_non_newtonianZ_string
+        case('no such nnewton_type: ')
+        	dst = string_enum_no_such_nnewton_typeZ__string
+        case('calc_pencils_viscosity')
+        	dst = string_enum_calc_pencils_viscosity_string
+        case('viscous heating ')
+        	dst = string_enum_viscous_heating__string
+        case('not implemented for lvisc_hyper3_polar')
+        	dst = string_enum_not_implemented_for_lvisc_hyper3_polar_string
+        case('not implemented for lvisc_hyper3_mesh')
+        	dst = string_enum_not_implemented_for_lvisc_hyper3_mesh_string
+        case('not implemented for lvisc_hyper3_csmesh')
+        	dst = string_enum_not_implemented_for_lvisc_hyper3_csmesh_string
+        case('del2fjv')
+        	dst = string_enum_del2fjv_string
+        case('viscous heating term ')
+        	dst = string_enum_viscous_heating_term__string
+        case('viscose')
+        	dst = string_enum_viscose_string
+        case('init_uu')
+        	dst = string_enum_init_uu_string
+        case('get_bext')
+        	dst = string_enum_get_bext_string
+        case('step_scalar')
+        	dst = string_enum_step_scalar_string
+        case('width must not be zero')
+        	dst = string_enum_width_must_not_be_zero_string
+        case('calc_pencils_magnetic_pencpar: b_ext = ')
+        	dst = string_enum_calc_pencils_magnetic_pencparZ_b_ext_Z__string
+        case('calc_pencils_magnetic_pencpar: logic = ')
+        	dst = string_enum_calc_pencils_magnetic_pencparZ_logic_Z__string
+        case('calc_pencils_magnetic_pencpar')
+        	dst = string_enum_calc_pencils_magnetic_pencpar_string
+        case('uuadvec_gaa for spherical coordinates')
+        	dst = string_enum_uuadvec_gaa_for_spherical_coordinates_string
+        case('constant')
+        	dst = string_enum_constant_string
+        case('ionization-equilibrium')
+        	dst = string_enum_ionizationZequilibrium_string
+        case('ionization-yh')
+        	dst = string_enum_ionizationZyh_string
+        case('set_ambipolar_diffusion')
+        	dst = string_enum_set_ambipolar_diffusion_string
+        case('no such ambipolar_diffusion: ')
+        	dst = string_enum_no_such_ambipolar_diffusionZ__string
+        case('calc_pencils_dustdensity')
+        	dst = string_enum_calc_pencils_dustdensity_string
+        case('average')
+        	dst = string_enum_average_string
+        case('neighbor')
+        	dst = string_enum_neighbor_string
+        case('neighbor_asymmetric')
+        	dst = string_enum_neighbor_asymmetric_string
+        case('dustdensity:coag_kernel')
+        	dst = string_enum_dustdensityZcoag_kernel_string
+        case('no such self_collisions: ')
+        	dst = string_enum_no_such_self_collisionsZ__string
+        case('coag_kernel')
+        	dst = string_enum_coag_kernel_string
+        case('this should never happen')
+        	dst = string_enum_this_should_never_happen_string
+        case('duu_dt')
+        	dst = string_enum_duu_dt_string
+        case('entered')
+        	dst = string_enum_entered_string
+        case('duu_dt: solve')
+        	dst = string_enum_duu_dtZ_solve_string
+        case('bcs for ')
+        	dst = string_enum_bcs_for__string
+        case('ux')
+        	dst = string_enum_ux_string
+        case('uy')
+        	dst = string_enum_uy_string
+        case('uz')
+        	dst = string_enum_uz_string
+        case('sld_char')
+        	dst = string_enum_sld_char_string
+        case('coriolis_cylindrical: omega=')
+        	dst = string_enum_coriolis_cylindricalZ_omegaZ_string
+        case('coriolis_cylindrical: omega=,theta=')
+        	dst = string_enum_coriolis_cylindricalZ_omegaZZthetaZ_string
+        case('coriolis_cylindrical')
+        	dst = string_enum_coriolis_cylindrical_string
+        case('coriolis_spherical: omega=')
+        	dst = string_enum_coriolis_sphericalZ_omegaZ_string
+        case('coriolis_spherical: omega,theta,phi=')
+        	dst = string_enum_coriolis_sphericalZ_omegaZthetaZphiZ_string
+        case('coriolis_spherical')
+        	dst = string_enum_coriolis_spherical_string
+        case('for omega not aligned with z or y axis')
+        	dst = string_enum_for_omega_not_aligned_with_z_or_y_axis_string
+        case('precession: omega_precession=')
+        	dst = string_enum_precessionZ_omega_precessionZ_string
+        case('coriolis_cartesian')
+        	dst = string_enum_coriolis_cartesian_string
+        case('if omega has y component')
+        	dst = string_enum_if_omega_has_y_component_string
+        case('coriolis_xdep: ampl_omega=')
+        	dst = string_enum_coriolis_xdepZ_ampl_omegaZ_string
+        case('duu_dt: max(advec_uu) =')
+        	dst = string_enum_duu_dtZ_maxZadvec_uuZ_Z_string
+        case('nothing')
+        	dst = string_enum_nothing_string
+        case('linear')
+        	dst = string_enum_linear_string
+        case('inverse')
+        	dst = string_enum_inverse_string
+        case('current')
+        	dst = string_enum_current_string
+        case('lmagnetic must be true')
+        	dst = string_enum_lmagnetic_must_be_true_string
+        case('bs04')
+        	dst = string_enum_bs04_string
+        case('bs04c')
+        	dst = string_enum_bs04c_string
+        case('bs04c1')
+        	dst = string_enum_bs04c1_string
+        case('bs04m')
+        	dst = string_enum_bs04m_string
+        case('hp09')
+        	dst = string_enum_hp09_string
+        case('sx')
+        	dst = string_enum_sx_string
+        case('solar_dc99')
+        	dst = string_enum_solar_dc99_string
+        case('vertical_shear')
+        	dst = string_enum_vertical_shear_string
+        case('vertical_compression')
+        	dst = string_enum_vertical_compression_string
+        case('remove_vertical_shear')
+        	dst = string_enum_remove_vertical_shear_string
+        case('vertical_shear_x')
+        	dst = string_enum_vertical_shear_x_string
+        case('vertical_shear_x_sinz')
+        	dst = string_enum_vertical_shear_x_sinz_string
+        case('vertical_shear_z')
+        	dst = string_enum_vertical_shear_z_string
+        case('vertical_shear_z2')
+        	dst = string_enum_vertical_shear_z2_string
+        case('vertical_shear_linear')
+        	dst = string_enum_vertical_shear_linear_string
+        case('tachocline')
+        	dst = string_enum_tachocline_string
+        case('solar_simple')
+        	dst = string_enum_solar_simple_string
+        case('radial_uniform_shear')
+        	dst = string_enum_radial_uniform_shear_string
+        case('breeze')
+        	dst = string_enum_breeze_string
+        case('slow_wind')
+        	dst = string_enum_slow_wind_string
+        case('radial_shear')
+        	dst = string_enum_radial_shear_string
+        case('radial_shear_damp')
+        	dst = string_enum_radial_shear_damp_string
+        case('damp_corona')
+        	dst = string_enum_damp_corona_string
+        case('damp_horiz_vel')
+        	dst = string_enum_damp_horiz_vel_string
+        case('latitudinal_shear')
+        	dst = string_enum_latitudinal_shear_string
+        case('damp_jets')
+        	dst = string_enum_damp_jets_string
+        case('spoke-like-nssl')
+        	dst = string_enum_spokeZlikeZnssl_string
+        case('uumz_profile')
+        	dst = string_enum_uumz_profile_string
+        case('omega_profile')
+        	dst = string_enum_omega_profile_string
+        case('zero')
+        	dst = string_enum_zero_string
+        case('0')
+        	dst = string_enum_0_string
+        case('initial-condition')
+        	dst = string_enum_initialZcondition_string
+        case('finished')
+        	dst = string_enum_finished_string
+        case('dlnrho_dt')
+        	dst = string_enum_dlnrho_dt_string
+        case('dlnrho_dt: solve')
+        	dst = string_enum_dlnrho_dtZ_solve_string
+        case('lnrho')
+        	dst = string_enum_lnrho_string
+        case('surface_z')
+        	dst = string_enum_surface_z_string
+        case('mass_source: cs20,cs0=')
+        	dst = string_enum_mass_sourceZ_cs20Zcs0Z_string
+        case('mass_source')
+        	dst = string_enum_mass_source_string
+        case('mass source with no profile')
+        	dst = string_enum_mass_source_with_no_profile_string
+        case('exponential')
+        	dst = string_enum_exponential_string
+        case('bump')
+        	dst = string_enum_bump_string
+        case('bump2')
+        	dst = string_enum_bump2_string
+        case('bumpr')
+        	dst = string_enum_bumpr_string
+        case('bumpx')
+        	dst = string_enum_bumpx_string
+        case('sph-step-down')
+        	dst = string_enum_sphZstepZdown_string
+        case('const')
+        	dst = string_enum_const_string
+        case('cylindric')
+        	dst = string_enum_cylindric_string
+        case('no such mass_source_profile: ')
+        	dst = string_enum_no_such_mass_source_profileZ__string
+        case('dlnrho_dt: diffrho=')
+        	dst = string_enum_dlnrho_dtZ_diffrhoZ_string
+        case('dlnrho_dt: diffrho_shock=')
+        	dst = string_enum_dlnrho_dtZ_diffrho_shockZ_string
+        case('dlnrho_dt: diffrho_hyper3=')
+        	dst = string_enum_dlnrho_dtZ_diffrho_hyper3Z_string
+        case('dlnrho_dt: diffrho_hyper3_mesh=')
+        	dst = string_enum_dlnrho_dtZ_diffrho_hyper3_meshZ_string
+        case('dlnrho_dt: diffrho_hyper3=(dx,dy,dz)=')
+        	dst = string_enum_dlnrho_dtZ_diffrho_hyper3ZZdxZdyZdzZZ_string
+        case('dlnrho_dt: diffrho_hyper3_strict=')
+        	dst = string_enum_dlnrho_dtZ_diffrho_hyper3_strictZ_string
+        case('dlnrho_dt: max(diffus_diffrho ) =')
+        	dst = string_enum_dlnrho_dtZ_maxZdiffus_diffrho_Z_Z_string
+        case('dlnrho_dt: max(diffus_diffrho3) =')
+        	dst = string_enum_dlnrho_dtZ_maxZdiffus_diffrho3Z_Z_string
+        case('before calc_diagnostics')
+        	dst = string_enum_before_calc_diagnostics_string
+        case('daa_dt')
+        	dst = string_enum_daa_dt_string
+        case('daa_dt: solve')
+        	dst = string_enum_daa_dtZ_solve_string
+        case('ax')
+        	dst = string_enum_ax_string
+        case('ay')
+        	dst = string_enum_ay_string
+        case('az')
+        	dst = string_enum_az_string
+        case('bx')
+        	dst = string_enum_bx_string
+        case('by')
+        	dst = string_enum_by_string
+        case('bz')
+        	dst = string_enum_bz_string
+        case('jx')
+        	dst = string_enum_jx_string
+        case('jy')
+        	dst = string_enum_jy_string
+        case('jz')
+        	dst = string_enum_jz_string
+        case('daa_dt: iresistivity=')
+        	dst = string_enum_daa_dtZ_iresistivityZ_string
+        case('two_step')
+        	dst = string_enum_two_step_string
+        case('two-step')
+        	dst = string_enum_twoZstep_string
+        case('two_step2')
+        	dst = string_enum_two_step2_string
+        case('two-step2')
+        	dst = string_enum_twoZstep2_string
+        case('(1p,5e11.3)')
+        	dst = string_enum_Z1pZ5e11Z3Z_string
+        case('eta_shell')
+        	dst = string_enum_eta_shell_string
+        case('daa_dt: use upwinding in advection term')
+        	dst = string_enum_daa_dtZ_use_upwinding_in_advection_term_string
+        case('t-dep')
+        	dst = string_enum_tZdep_string
+        case('z-dep')
+        	dst = string_enum_zZdep_string
+        case('daa_dt: hall_term=')
+        	dst = string_enum_daa_dtZ_hall_termZ_string
+        case('daa_dt: max(advec_hall) =')
+        	dst = string_enum_daa_dtZ_maxZadvec_hallZ_Z_string
+        case('daa_dt: battery_term=')
+        	dst = string_enum_daa_dtZ_battery_termZ_string
+        case('daa_dt: max(battery_term) =')
+        	dst = string_enum_daa_dtZ_maxZbattery_termZ_Z_string
+        case('daa_dt: height_eta,eta_out,lhalox=')
+        	dst = string_enum_daa_dtZ_height_etaZeta_outZlhaloxZ_string
+        case('calc_tau_aa_exterior: tau=')
+        	dst = string_enum_calc_tau_aa_exteriorZ_tauZ_string
+        case('f(l1:l2,m,n,iex:iez)=-dadt is set')
+        	dst = string_enum_fZl1Zl2ZmZnZiexZiezZZZdadt_is_set_string
+        case('daa_dt: max(diffus_eta)  =')
+        	dst = string_enum_daa_dtZ_maxZdiffus_etaZ__Z_string
+        case('daa_dt: max(diffus_eta2) =')
+        	dst = string_enum_daa_dtZ_maxZdiffus_eta2Z_Z_string
+        case('daa_dt: max(diffus_eta3) =')
+        	dst = string_enum_daa_dtZ_maxZdiffus_eta3Z_Z_string
+        case('aa.dat')
+        	dst = string_enum_aaZdat_string
+        case('bb.dat')
+        	dst = string_enum_bbZdat_string
+        case('jj.dat')
+        	dst = string_enum_jjZdat_string
+        case('del2a.dat')
+        	dst = string_enum_del2aZdat_string
+        case('jxbr.dat')
+        	dst = string_enum_jxbrZdat_string
+        case('jxb.dat')
+        	dst = string_enum_jxbZdat_string
+        case('df.dat')
+        	dst = string_enum_dfZdat_string
+        case('duud_dt: solve duud_dt')
+        	dst = string_enum_duud_dtZ_solve_duud_dt_string
+        case('udx')
+        	dst = string_enum_udx_string
+        case('udy')
+        	dst = string_enum_udy_string
+        case('udz')
+        	dst = string_enum_udz_string
+        case('epstein_cst')
+        	dst = string_enum_epstein_cst_string
+        case('epstein_cst_b')
+        	dst = string_enum_epstein_cst_b_string
+        case('stokes_cst_tausd')
+        	dst = string_enum_stokes_cst_tausd_string
+        case('stokes_varmass')
+        	dst = string_enum_stokes_varmass_string
+        case('epstein_var')
+        	dst = string_enum_epstein_var_string
+        case('epstein_gaussian_z')
+        	dst = string_enum_epstein_gaussian_z_string
+        case('get_stoppingtime')
+        	dst = string_enum_get_stoppingtime_string
+        case('no such drag law: ')
+        	dst = string_enum_no_such_drag_lawZ__string
+        case('duud_dt: add coriolis force; omega=')
+        	dst = string_enum_duud_dtZ_add_coriolis_forceZ_omegaZ_string
+        case('duud_dt: coriolis force; omega,theta=')
+        	dst = string_enum_duud_dtZ_coriolis_forceZ_omegaZthetaZ_string
+        case('duud_dt: max(diffus_nud) =')
+        	dst = string_enum_duud_dtZ_maxZdiffus_nudZ_Z_string
+        case('duud_dt: calculate diagnostic values...')
+        	dst = string_enum_duud_dtZ_calculate_diagnostic_valuesZZZ_string
+        case('dndmd_dt: solve dnd_dt, dmd_dt, dmi_dt')
+        	dst = string_enum_dndmd_dtZ_solve_dnd_dtZ_dmd_dtZ_dmi_dt_string
+        case('nd')
+        	dst = string_enum_nd_string
+        case('md')
+        	dst = string_enum_md_string
+        case('mi')
+        	dst = string_enum_mi_string
+        case('simplified')
+        	dst = string_enum_simplified_string
+        case('pscalar')
+        	dst = string_enum_pscalar_string
+        case('ice')
+        	dst = string_enum_ice_string
+        case('eoscalc_pencil')
+        	dst = string_enum_eoscalc_pencil_string
+        case('eoscalc_point')
+        	dst = string_enum_eoscalc_point_string
+        case('thermodynamic variable combination')
+        	dst = string_enum_thermodynamic_variable_combination_string
+        case('aerosol')
+        	dst = string_enum_aerosol_string
+        case('condensing_species_test')
+        	dst = string_enum_condensing_species_test_string
+        case('condensing_species')
+        	dst = string_enum_condensing_species_string
+        case('hat(om*t)')
+        	dst = string_enum_hatZomZtZ_string
+        case('cos(om*t)')
+        	dst = string_enum_cosZomZtZ_string
+        case('get_mfluxcond')
+        	dst = string_enum_get_mfluxcond_string
+        case('no such dust_chemistry: ')
+        	dst = string_enum_no_such_dust_chemistryZ__string
+        case('lin_radius')
+        	dst = string_enum_lin_radius_string
+        case('log_radius')
+        	dst = string_enum_log_radius_string
+        case('log_mass')
+        	dst = string_enum_log_mass_string
+        case('dndmd_dt')
+        	dst = string_enum_dndmd_dt_string
+        case('not implemented for llog_massbins yet')
+        	dst = string_enum_not_implemented_for_llog_massbins_yet_string
+        case('register_dustvelocity')
+        	dst = string_enum_register_dustvelocity_string
+        case('no valid dust_binning')
+        	dst = string_enum_no_valid_dust_binning_string
+        case('kk is too large')
+        	dst = string_enum_kk_is_too_large_string
+        case('dnd_dt: diffnd_hyper3_mesh=')
+        	dst = string_enum_dnd_dtZ_diffnd_hyper3_meshZ_string
+        case('dspecial_dt: solve dspecial_dt')
+        	dst = string_enum_dspecial_dtZ_solve_dspecial_dt_string
+        case('pde: maxadvec contains a nan at iproc=')
+        	dst = string_enum_pdeZ_maxadvec_contains_a_nan_at_iprocZ_string
+        case('advec_cs2  =')
+        	dst = string_enum_advec_cs2__Z_string
+        case('set_dt1_max')
+        	dst = string_enum_set_dt1_max_string
+        case('')
+        	dst = string_enum__string
+        case('rhs_cpu')
+        	dst = string_enum_rhs_cpu_string
+        case('end of mn loop')
+        	dst = string_enum_end_of_mn_loop_string
+        case default
+        	dst = string_enum_unknown_string_string
+        endselect
+    endsubroutine string_to_enum
 !***********************************************************************
 !$  subroutine signal_wait_single(lflag, lvalue)
 !

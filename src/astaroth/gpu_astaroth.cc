@@ -34,6 +34,54 @@ has_nans(AcMesh mesh_in);
 #endif
 #include "../cparam_c.h"
 
+#if TRANSPILATION
+  #define nu nu__mod__viscosity
+  #define nu_hyper2 nu_hyper2__mod__viscosity
+  #define nu_hyper3 nu_hyper3__mod__viscosity
+ 
+  #define gamma gamma__mod__equationofstate
+
+  #define eta eta__mod__magnetic
+  #define eta_hyper2 eta_hyper2__mod__magnetic
+  #define eta_hyper3 eta_hyper3__mod__magnetic
+
+  #define chi chi__mod__energy
+  #define chi_hyper2 chi_hyper2__mod__energy
+  #define chi_hyper3 chi_hyper3__mod__energy
+
+  #define lmorton_curve lmorton_curve__mod__cdata
+  #define ltest_bcs     ltest_bcs__mod__cdata
+  #define num_substeps  num_substeps__mod__cdata
+  #define maux_vtxbuf_index maux_vtxbuf_index__mod__cdata
+  #define ldt ldt__mod__cdata
+  #define lcourant_dt lcourant_dt__mod__cdata
+  #define dt dt__mod__cdata
+  #define dx dx__mod__cdata
+  #define dy dy__mod__cdata
+  #define dz dz__mod__cdata
+  #define mu0 mu0__mod__cdata
+  #define ldensity_nolog ldensity_nolog__mod__cdata 
+  #define cdt            cdt__mod__cdata 
+  #define itorder        itorder__mod__cdata
+  #define dtinc          dtinc__mod__cdata
+  #define dtdec          dtdec__mod__cdata
+  #define AC_ldensity_nolog AC_ldensity_nolog__mod__cdata
+  #define AC_mu0  AC_mu0__mod__cdata
+  #define cdtv  cdtv__mod__cdata
+  #define cdtv2 cdtv2__mod__cdata
+  #define cdtv3 cdtv3__mod__cdata
+
+  #define AC_sin1th    AC_sin1th__mod__cdata
+  #define AC_r1_mn     AC_r1_mn__mod__cdata
+  #define AC_sin1th    AC_sin1th__mod__cdata
+  #define AC_cot_theta AC_cot_theta__mod__cdata
+
+  #define lcylindrical_coords lcylindrical_coords__mod__cdata
+  #define lspherical_coords   lspherical_coords__mod__cdata
+  #define lcartesian_coords   lcartesian_coords__mod__cdata
+
+#endif
+
 AcReal dt1_interface{};
 static int rank;
 static AcMesh mesh = acInitMesh();
@@ -738,6 +786,9 @@ sign(const AcReal a, const AcReal b)
 AcReal
 calc_dt1_courant()
 {
+#if TRANSPILATION
+	return acDeviceGetOutput(acGridGetDevice(),AC_dt1_max);
+#endif
       AcReal maxadvec = 0.;
 #if LHYDRO
       maxadvec = acDeviceGetOutput(acGridGetDevice(), AC_maxadvec)/cdt;
@@ -753,11 +804,27 @@ calc_dt1_courant()
       //if (rank==0) printf("rank, maxadvec, maxdiffus, dt1_= %d %e %e %e \n", rank, maxadvec,max_diffus(maxchi_dyn), dt1_);
 }
 /***********************************************************************************************/
+AcReal
+GpuCalcDt()
+{
+	acGridSynchronizeStream(STREAM_ALL);
+  	acDeviceSetInput(acGridGetDevice(), AC_step_num, (PC_SUB_STEP_NUMBER) 0);
+	const auto graph = acGetOptimizedDSLTaskGraph(AC_calculate_timestep);
+	acGridExecuteTaskGraph(graph,1);
+	acGridSynchronizeStream(STREAM_ALL);
+        acDeviceSwapBuffers(acGridGetDevice());
+	return calc_dt1_courant();
+}
+/***********************************************************************************************/
 extern "C" void substepGPU(int isubstep)
 //
 //  Do the 'isubstep'th integration step on all GPUs on the node and handle boundaries.
 //
 {
+   //TP: with on does timestepping the way PC does it
+   const bool testing = false;
+   //TP: logs performance metrics of Astaroth
+   const bool log = false;
 #if LFORCING
   //Update forcing params
    if (isubstep == itorder) forcing_params.Update();  // calculate on CPU and load into GPU
@@ -788,6 +855,8 @@ extern "C" void substepGPU(int isubstep)
   //if we call set_dt after the first timestep there would be slight shift in dt what Pencil sees and what is actually used for time integration
   if (isubstep == 1) 
   {
+	  //TP: done to have the same timestep as PC when testing
+	  if(ldt && testing) dt1_interface = GpuCalcDt();
 	  if(ldt) set_dt(dt1_interface);
 	  acDeviceSetInput(acGridGetDevice(), AC_dt,dt);
   }
@@ -796,10 +865,10 @@ extern "C" void substepGPU(int isubstep)
   auto start = MPI_Wtime();
   acGridExecuteTaskGraph(rhs, 1);
   auto end = MPI_Wtime();
-  //fprintf(stderr,"RHS TOOK: %14e\n",end-start);
+  if(log && !rank) fprintf(stderr,"RHS TOOK: %14e\n",end-start);
   if (ldt &&
-	((isubstep == 5 && !lcourant_dt) 
-	|| (isubstep == 1 && lcourant_dt)
+        ((isubstep == 5 && !lcourant_dt) 
+        || (isubstep == 1 && lcourant_dt)
      ))
   {
       //acGridSynchronizeStream(STREAM_ALL);
@@ -820,7 +889,7 @@ extern "C" void substepGPU(int isubstep)
       	// Step above error threshold so decrease the next time step
       	const AcReal dt_temp = safety*dt*pow(maximum_error,dt_decrease);
       	// Don't decrease the time step by more than a factor of ten
-	constexpr AcReal decrease_factor = (AcReal)0.1;
+        constexpr AcReal decrease_factor = (AcReal)0.1;
       	dt_ = sign(max(abs(dt_temp), decrease_factor*abs(dt)), dt);
       } 
       else
@@ -1003,9 +1072,28 @@ void setupConfig(AcMeshInfo& config)
 { 
   // Enter basic parameters in config.
   #include "PC_modulepars.h"
+  //TP: loads for non-cartesian derivatives
+  //PCLoad(AC_inv_cyl_r,AC_rcyl_mn1);
+  //PCLoad(AC_inv_r,AC_r1_mn);
+  //PCLoad(AC_inv_sin_theta,AC_sin1th);
+  //PCLoad(AC_cot_theta,AC_cotth);
+
+  if(lcartesian_coords)
+  {
+          PCLoad(config, AC_coordinate_system, AC_CARTESIAN_COORDINATES);
+  }
+  if(lspherical_coords)
+  {
+          PCLoad(config, AC_coordinate_system, AC_SPHERICAL_COORDINATES);
+  }
+  if(lcylindrical_coords)
+  {
+          PCLoad(config, AC_coordinate_system, AC_CYLINDRICAL_COORDINATES);
+  }
 
   PCLoad(config, AC_domain_decomposition, (int3) {nprocx,nprocy,nprocz});
   PCLoad(config, AC_ngrid, (int3){nxgrid,nygrid,nzgrid});
+  PCLoad(config, AC_skip_single_gpu_optim, true);
   //TP: important this is correct even though we set AC_nx = nxgrid.
   //This is stupid but needed for now.
   //Hopefully in future we can deprecate AC_nx loading that AC_nxgrid loading becomes the default
@@ -1258,22 +1346,22 @@ extern "C" void updateInConfigScal(int index, AcReal value)
 /***********************************************************************************************/
 extern "C" int updateInConfigArrName(char *name)
 {
-    int ind = -1;
+    int index = -1;
     for (int i=0; i<NUM_REAL_ARRAYS; i++){
-       if (strcmp(get_array_info(static_cast<AcRealArrayParam>(i)).name,name)==0) ind=i;
+       if (strcmp(get_array_info(static_cast<AcRealArrayParam>(i)).name,name)==0) index=i;
     }
-    if (ind>-1) updateInConfigArr(ind);
-    return ind;
+    if (index>-1) updateInConfigArr(index);
+    return index;
 }
 /***********************************************************************************************/
 extern "C" int updateInConfigScalName(char *name, AcReal value)
 {
-    int ind = -1;
+    int index = -1;
     for (int i=0; i<NUM_REAL_PARAMS; i++){
-       if (strcmp(realparam_names[i],name)==0) ind=i;
+       if (strcmp(realparam_names[i],name)==0) index=i;
     }
-    if (ind>-1) updateInConfigScal(ind, value);
-    return ind;
+    if (index>-1) updateInConfigScal(index, value);
+    return index;
 }
 /**********************************************************************************************/
 extern "C" void finalizeGPU()
@@ -1697,5 +1785,7 @@ gpuSetDt()
 	set_dt(dt1_);
 	dt1_interface = dt1_;
         acDeviceSwapBuffers(acGridGetDevice());
+	loadFarray();
+	//TP: not strictly needed but for extra safety
 }
 /***********************************************************************************************/

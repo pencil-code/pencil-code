@@ -2132,4 +2132,21 @@ module Magnetic_meanfield
 !
     endsubroutine refresh_fluc_alpha_phase
 !***********************************************************************
+    subroutine pushpars2c(p_par)
+
+    use Syscalls, only: copy_addr
+    use General, only: string_to_enum
+
+    integer, parameter :: n_pars=1100
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+    call copy_addr(etat_x,p_par(1)) ! (nx)
+    call copy_addr(etat_y,p_par(2)) ! (my)
+    call copy_addr(etat_z,p_par(3)) ! (mz)
+    call copy_addr(detat_x,p_par(4)) ! (nx)
+    call copy_addr(detat_y,p_par(5)) ! (my)
+    call copy_addr(detat_z,p_par(6)) ! (mz)
+
+    endsubroutine
+!***********************************************************************
 endmodule Magnetic_meanfield

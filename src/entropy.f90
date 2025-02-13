@@ -174,9 +174,12 @@ module Energy
   character (len=intlen) :: iinit_str
   real, dimension (mz)  :: ss_mz
   real, dimension (nx) :: chit_aniso_prof, dchit_aniso_prof, penc_ones=1.0
+
+  integer, parameter :: max_n = max(nx,ny,nz)
   real, dimension (:), allocatable :: hcond_prof,dlnhcond_prof
   real, dimension (:), allocatable :: chit_prof_stored,chit_prof_fluct_stored
   real, dimension (:), allocatable :: dchit_prof_stored,dchit_prof_fluct_stored
+  integer :: hcond_prof_size,chit_prof_size,chit_prof_fluct_stored_size
   real, dimension(3) :: beta_glnrho_global=0.
 !
 !  xy-averaged field
@@ -495,6 +498,13 @@ module Energy
   logical :: lcalc_heat_cool
   real :: tau1_cool,rho01,hcond_Kconst    !,lnrho0,cs20
   real, dimension(:), pointer :: beta_glnrho_scaled
+
+  integer :: string_enum_div_sld_ene = 0
+  integer :: string_enum_cooling_profile = 0
+  integer :: string_enum_cooltype = 0
+  integer :: string_enum_heattype = 0
+  integer :: string_enum_borderss = 0
+
   contains
 !***********************************************************************
     subroutine register_energy
@@ -3523,7 +3533,7 @@ module Energy
 !
       Hmax = 1./impossible
       ssmax = 1./impossible
-      if (n==nn(1).and.m==mm(1)) lproc_print=.true.
+      if (lfirstpoint) lproc_print=.true.
 !
 !  Identify module and boundary conditions.
 !
@@ -5552,7 +5562,7 @@ module Energy
         do j=1,3; gss1(:,j)=p%gss(:,j)-gssmz(n-n1+1,j); enddo
         del2ss1=p%del2ss-del2ssmz(n-n1+1)
       else if (lcalc_ssmeanxy) then
-        gss1=p%gss-gssmx
+        do j=1,3;gss1(:,j)=p%gss(:,j)-gssmx(:,j); enddo
         del2ss1=p%del2ss-del2ssmx
       else
         gss1=p%gss
@@ -7395,7 +7405,11 @@ module Energy
       if (.not.lmultilayer) call fatal_error('get_gravz_heatcond', &
            "don't call if you have only one layer")
 !
-      if (.not.allocated(hcond_prof)) allocate(hcond_prof(nz),dlnhcond_prof(nz))
+      if (.not.allocated(hcond_prof)) then
+              !allocate(hcond_prof(nz),dlnhcond_prof(nz))
+              allocate(hcond_prof(max_n),dlnhcond_prof(max_n))
+              hcond_prof_size = nz
+      endif
 !
       hcond_prof = 1. + (hcond1-1.)*step(z(n1:n2),z1,-widthss) &
                       + (hcond2-1.)*step(z(n1:n2),z2, widthss)
@@ -7449,7 +7463,11 @@ module Energy
 !
 ! Kappa and its gradient are computed here
 !
-      if (.not.allocated(hcond_prof)) allocate(hcond_prof(nx),dlnhcond_prof(nx))
+      if (.not.allocated(hcond_prof))  then
+        !allocate(hcond_prof(nx),dlnhcond_prof(nx))
+        allocate(hcond_prof(max_n),dlnhcond_prof(max_n))
+        hcond_prof_size = nx
+      endif
       hcond_prof = -Lum/(4.*pi*x(l1:l2)**2*dTTdxc)
       dlnhcond_prof = Lum*cv*gamma_m1/(4.*pi*gravx) * dmpoly_dx/hcond_prof
 !                     MR: how can this be the derivative of hcond_prof?
@@ -7489,7 +7507,11 @@ module Energy
           ztop=zz2
         endif
 
-        if (.not.allocated(chit_prof_stored)) allocate(chit_prof_stored(nz),dchit_prof_stored(nz))
+        if (.not.allocated(chit_prof_stored)) then
+                !allocate(chit_prof_stored(nz),dchit_prof_stored(nz))
+                allocate(chit_prof_stored(max_n),dchit_prof_stored(max_n))
+                chit_prof_size = nz
+        endif
 
         chit_prof_stored = 1. + (chit_prof1-1.)*step(z(n1:n2),zbot,-widthss) &
                               + (chit_prof2-1.)*step(z(n1:n2),ztop, widthss)
@@ -7498,7 +7520,11 @@ module Energy
 !
       elseif (lspherical_coords.or.lconvection_gravx) then
 
-        if (.not.allocated(chit_prof_stored)) allocate(chit_prof_stored(nx),dchit_prof_stored(nx))
+        if (.not.allocated(chit_prof_stored)) then
+                chit_prof_size = nx
+                !allocate(chit_prof_stored(nx),dchit_prof_stored(nx))
+                allocate(chit_prof_stored(max_n),dchit_prof_stored(max_n))
+        endif
 
         select case (ichit)
           case ('nothing')
@@ -7633,22 +7659,31 @@ module Energy
           ztop=zz2_fluct
         endif
 !
-        if (.not.allocated(chit_prof_fluct_stored)) &
-          allocate(chit_prof_fluct_stored(nz),dchit_prof_fluct_stored(nz))
+        if (.not.allocated(chit_prof_fluct_stored)) then
+          chit_prof_fluct_stored_size = nz
+          !allocate(chit_prof_fluct_stored(nz),dchit_prof_fluct_stored(nz))
+          allocate(chit_prof_fluct_stored(max_n),dchit_prof_fluct_stored(max_n))
+        endif
         chit_prof_fluct_stored = chi_t1*(1. + (chit_fluct_prof1-1.)*step(z(n1:n2),zbot,-widthss) &
                                             + (chit_fluct_prof2-1.)*step(z(n1:n2),ztop, widthss))
         dchit_prof_fluct_stored = chi_t1*(  (chit_fluct_prof1-1.)*der_step(z(n1:n2),zbot,-widthss) &
                                           + (chit_fluct_prof2-1.)*der_step(z(n1:n2),ztop, widthss))
       elseif (lgravx) then
-        if (.not.allocated(chit_prof_fluct_stored)) &
-          allocate(chit_prof_fluct_stored(nx),dchit_prof_fluct_stored(nx))
+        if (.not.allocated(chit_prof_fluct_stored)) then
+          chit_prof_fluct_stored_size = nx
+          !allocate(chit_prof_fluct_stored(nx),dchit_prof_fluct_stored(nx))
+          allocate(chit_prof_fluct_stored(max_n),dchit_prof_fluct_stored(max_n))
+        endif
         chit_prof_fluct_stored = chi_t1*(1. + (chit_fluct_prof1-1.)*step(x(l1:l2),xbot_chit1,-widthss) &
                                             + (chit_fluct_prof2-1.)*step(x(l1:l2),xtop_chit1, widthss))
         dchit_prof_fluct_stored = chi_t1*(  (chit_fluct_prof1-1.)*der_step(x(l1:l2),xbot_chit1,-widthss) &
                                           + (chit_fluct_prof2-1.)*der_step(x(l1:l2),xtop_chit1, widthss))
       elseif (lgravr) then
-        if (.not.allocated(chit_prof_fluct_stored)) &
-          allocate(chit_prof_fluct_stored(nx),dchit_prof_fluct_stored(nx))
+        if (.not.allocated(chit_prof_fluct_stored)) then
+          chit_prof_fluct_stored_size = nx
+          !allocate(chit_prof_fluct_stored(nx),dchit_prof_fluct_stored(nx))
+          allocate(chit_prof_fluct_stored(max_n),dchit_prof_fluct_stored(max_n))
+        endif
         chit_prof_fluct_stored = chi_t1
         dchit_prof_fluct_stored = 0.
       else
@@ -8053,7 +8088,11 @@ module Energy
       logical :: exist
       integer :: stat,offset
 
-      if (.not.allocated(hcond_prof)) allocate(hcond_prof(nloc),dlnhcond_prof(nloc))
+      if (.not.allocated(hcond_prof)) then
+              hcond_prof_size = nloc
+              !allocate(hcond_prof(nloc),dlnhcond_prof(nloc))
+              allocate(hcond_prof(max_n),dlnhcond_prof(max_n))
+      endif
 !
 !  Read hcond and glhc and write into an array.
 !  If file is not found in run directory, search under trim(directory).
@@ -8208,8 +8247,9 @@ module Energy
     subroutine pushpars2c(p_par)
 
     use Syscalls, only: copy_addr
+    use General,  only: string_to_enum
 
-    integer, parameter :: n_pars=100
+    integer, parameter :: n_pars=500
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call copy_addr(chi,p_par(1))
@@ -8219,10 +8259,6 @@ module Energy
     call copy_addr(chi_hyper3,p_par(5))
     call copy_addr(chi_t0,p_par(6))
 
-    if (allocated(hcond_prof))    call copy_addr(hcond_prof,p_par(7))      ! (nz)   !tb replaced by a runtime dim
-    if (allocated(dlnhcond_prof)) call copy_addr(dlnhcond_prof,p_par(8))   ! (nz)
-    if (allocated(chit_prof_stored)) call copy_addr(chit_prof_stored,p_par(9))    ! (nz)
-    if (allocated(dchit_prof_stored)) call copy_addr(dchit_prof_stored,p_par(10)) ! (nz)
     call copy_addr(lheatc_hyper3ss,p_par(11)) ! int
     call copy_addr(lheatc_shock,p_par(12)) ! int
     call copy_addr(chi_shock,p_par(13))
@@ -8246,6 +8282,191 @@ module Energy
     call copy_addr(lchit_total,p_par(27))   ! int
     call copy_addr(chi_t,p_par(28))
     call copy_addr(lupw_ss,p_par(29))       ! bool
+
+    call copy_addr(tt_floor,p_par(30))
+    call copy_addr(widthss,p_par(31))
+    call copy_addr(widthss_int,p_par(32))
+    call copy_addr(widthss_ext,p_par(33))
+    call copy_addr(luminosity,p_par(34))
+    call copy_addr(wheat,p_par(35))
+    call copy_addr(cool,p_par(36))
+    call copy_addr(cool2,p_par(37))
+    call copy_addr(wpres,p_par(38))
+    call copy_addr(zcool,p_par(39))
+    call copy_addr(zcool2,p_par(40))
+    call copy_addr(rcool,p_par(41))
+    call copy_addr(ppcool,p_par(42))
+    call copy_addr(wcool,p_par(43))
+    call copy_addr(wcool2,p_par(44))
+    call copy_addr(cs2cool2,p_par(45))
+    call copy_addr(cs2_int,p_par(46))
+    call copy_addr(cs2_ext,p_par(47))
+    call copy_addr(cool_int,p_par(48))
+    call copy_addr(cool_ext,p_par(49))
+    call copy_addr(chi_jump_shock,p_par(50))
+    call copy_addr(xchi_shock,p_par(51))
+    call copy_addr(widthchi_shock,p_par(52))
+    call copy_addr(cs2cool,p_par(53))
+    call copy_addr(chi_cspeed,p_par(54))
+    call copy_addr(chi_shock2,p_par(55))
+    call copy_addr(chi_t1,p_par(56))
+    call copy_addr(chi_hyper3_mesh,p_par(57))
+    call copy_addr(chi_rho,p_par(58))
+    call copy_addr(kgperp,p_par(59))
+    call copy_addr(kgpara,p_par(60))
+    call copy_addr(tdown,p_par(61))
+    call copy_addr(allp,p_par(62))
+    call copy_addr(tt_powerlaw,p_par(63))
+    call copy_addr(ss_const,p_par(64))
+    call copy_addr(tau_ss_exterior,p_par(65))
+    call copy_addr(t0,p_par(66))
+    call copy_addr(ampl_imp_ss,p_par(67))
+    call copy_addr(kz_ss,p_par(68))
+    call copy_addr(cool_fac,p_par(69))
+    call copy_addr(chib,p_par(70))
+    call copy_addr(downflow_cs2cool_fac,p_par(71))
+    call copy_addr(hcond0,p_par(72))
+    call copy_addr(hcond1,p_par(73))
+    call copy_addr(chit_prof1,p_par(74))
+    call copy_addr(chit_prof2,p_par(75))
+    call copy_addr(hcond2,p_par(76))
+    call copy_addr(chit_aniso,p_par(77))
+    call copy_addr(chit_fluct_prof1,p_par(78))
+    call copy_addr(chit_fluct_prof2,p_par(79))
+    call copy_addr(tau_cor,p_par(80))
+    call copy_addr(tt_cor,p_par(81))
+    call copy_addr(z_cor,p_par(82))
+    call copy_addr(tauheat_buffer,p_par(83))
+    call copy_addr(ttheat_buffer,p_par(84))
+    call copy_addr(heat_gaussianz,p_par(85))
+    call copy_addr(heat_gaussianz_sigma,p_par(86))
+    call copy_addr(heat_gaussianblob,p_par(87))
+    call copy_addr(heat_gaussianblob_sigma,p_par(88))
+    call copy_addr(zheat_buffer,p_par(89))
+    call copy_addr(dheat_buffer1,p_par(90))
+    call copy_addr(heat_uniform,p_par(91))
+    call copy_addr(cool_uniform,p_par(92))
+    call copy_addr(cool_newton,p_par(93))
+    call copy_addr(cool_rtv,p_par(94))
+    call copy_addr(deltat_poleq,p_par(95))
+    call copy_addr(r_bcz,p_par(96))
+    call copy_addr(tau_cool,p_par(97))
+    call copy_addr(ttref_cool,p_par(98))
+    call copy_addr(tau_cool2,p_par(99))
+    call copy_addr(tau_cool_ss,p_par(100))
+    call copy_addr(tau_relax_ss,p_par(101))
+    call copy_addr(xbot,p_par(102))
+    call copy_addr(xtop,p_par(103))
+    call copy_addr(pres_cutoff,p_par(104))
+    call copy_addr(chimax_kramers,p_par(105))
+    call copy_addr(chimin_kramers,p_par(106))
+    call copy_addr(zheat_uniform_range,p_par(107))
+    call copy_addr(peh_factor,p_par(108))
+    call copy_addr(heat_ceiling,p_par(109))
+    call copy_addr(pr_smag1,p_par(110))
+    call copy_addr(nheat_rho,p_par(111))
+    call copy_addr(nheat_tt,p_par(112))
+    call copy_addr(iglobal_hcond,p_par(113)) ! int
+    call copy_addr(ippaux,p_par(114)) ! int
+    call copy_addr(cool_type,p_par(115)) ! int
+    call copy_addr(lheatc_kprof,p_par(116)) ! bool
+    call copy_addr(lheatc_kconst,p_par(117)) ! bool
+    call copy_addr(lheatc_sfluct,p_par(118)) ! bool
+    call copy_addr(lheatc_tensordiffusion,p_par(119)) ! bool
+    call copy_addr(lheatc_spitzer,p_par(120)) ! bool
+    call copy_addr(lheatc_hubeny,p_par(121)) ! bool
+    call copy_addr(lheatc_sqrtrhochiconst,p_par(122)) ! bool
+    call copy_addr(lheatc_smagorinsky,p_par(123)) ! bool
+    call copy_addr(lheatc_chit,p_par(124)) ! bool
+    call copy_addr(lheatc_corona,p_par(125)) ! bool
+    call copy_addr(lheatc_chi_cspeed,p_par(126)) ! bool
+    call copy_addr(lheatc_shock2,p_par(127)) ! bool
+    call copy_addr(lheatc_hyper3ss_polar,p_par(128)) ! bool
+    call copy_addr(lheatc_hyper3ss_aniso,p_par(129)) ! bool
+    call copy_addr(lheatc_hyper3ss_mesh,p_par(130)) ! bool
+    call copy_addr(lheatc_shock_profr,p_par(131)) ! bool
+    call copy_addr(lcooling_general,p_par(132)) ! bool
+    call copy_addr(lcooling_to_cs2cool,p_par(133)) ! bool
+    call copy_addr(lcalc_ssmean,p_par(134)) ! bool
+    call copy_addr(lcalc_ss_volaverage,p_par(135)) ! bool
+    call copy_addr(lcalc_cs2mean,p_par(136)) ! bool
+    call copy_addr(lcalc_cs2mz_mean,p_par(137)) ! bool
+    call copy_addr(lcalc_ssmeanxy,p_par(138)) ! bool
+    call copy_addr(lmultilayer,p_par(139)) ! bool
+    call copy_addr(ladvection_entropy,p_par(140)) ! bool
+    call copy_addr(lviscosity_heat,p_par(141)) ! bool
+    call copy_addr(lhcond_global,p_par(142)) ! bool
+    call copy_addr(lchit_aniso_simplified,p_par(143)) ! bool
+    call copy_addr(lchit_mean,p_par(144)) ! bool
+    call copy_addr(lchit_fluct,p_par(145)) ! bool
+    call copy_addr(lfpres_from_pressure,p_par(146)) ! bool
+    call copy_addr(lconvection_gravx,p_par(147)) ! bool
+    call copy_addr(lread_hcond,p_par(148)) ! bool
+    call copy_addr(ltau_cool_variable,p_par(149)) ! bool
+    call copy_addr(lprestellar_cool_iso,p_par(150)) ! bool
+    call copy_addr(lphotoelectric_heating,p_par(151)) ! bool
+    call copy_addr(lphotoelectric_heating_radius,p_par(152)) ! bool
+    call copy_addr(lborder_heat_variable,p_par(153)) ! bool
+    call copy_addr(lchromospheric_cooling,p_par(154)) ! bool
+    call copy_addr(lchi_shock_density_dep,p_par(155)) ! bool
+    call copy_addr(lhcond0_density_dep,p_par(156)) ! bool
+    call copy_addr(lenergy_slope_limited,p_par(157)) ! bool
+    call copy_addr(limpose_heat_ceiling,p_par(158)) ! bool
+    call copy_addr(lthdiff_hmax,p_par(159)) ! bool
+    call copy_addr(lrhs_max,p_par(160)) ! bool
+    call copy_addr(lchit_not,p_par(161)) ! bool
+    call copy_addr(lss_running_aver,p_par(162)) ! bool
+    call copy_addr(lchi_t1_noprof,p_par(163)) ! bool
+    call copy_addr(lheat_cool_gravz,p_par(164)) ! bool
+    call copy_addr(idiag_tauhmin,p_par(165)) ! int
+    call copy_addr(idiag_dth,p_par(166)) ! int
+    call copy_addr(lcalc_heat_cool,p_par(167)) ! bool
+    call copy_addr(tau1_cool,p_par(168))
+    call copy_addr(rho01,p_par(169))
+    call copy_addr(chi_hyper3_aniso,p_par(170)) ! real3
+    call copy_addr(grads0_imposed,p_par(171)) ! real3
+    call copy_addr(heat_gaussianblob_r0,p_par(172)) ! real3
+    call copy_addr(ss_volaverage,p_par(173)) ! (1)
+    call copy_addr(ss_mz,p_par(174)) ! (mz)
+    call copy_addr(chit_aniso_prof,p_par(175)) ! (nx)
+    call copy_addr(dchit_aniso_prof,p_par(176)) ! (nx)
+    call copy_addr(ssmz,p_par(177)) ! (mz)
+    call copy_addr(cs2mz,p_par(178)) ! (mz)
+    call copy_addr(gssmz,p_par(179)) ! (nz) (3)
+    call copy_addr(del2ssmz,p_par(180)) ! (nz)
+    call copy_addr(ssmx,p_par(181)) ! (mx)
+    call copy_addr(gssmx,p_par(182)) ! (nx) (3)
+    call copy_addr(cs2mx,p_par(183)) ! (nx)
+    call copy_addr(del2ssmx,p_par(184)) ! (nx)
+    call copy_addr(cs2mxy,p_par(185)) ! (nx) (my)
+    call copy_addr(ssmxy,p_par(186)) ! (nx) (my)
+    call copy_addr(cs2cool_x,p_par(187)) ! (nx)
+    call copy_addr(profz_heat,p_par(188)) ! (nz)
+    call copy_addr(profx_heat,p_par(189)) ! (nx)
+    call copy_addr(prof_lnt,p_par(190)) ! (prof_nz)
+    call copy_addr(prof_z,p_par(191)) ! (prof_nz)
+    call string_to_enum(string_enum_cooling_profile,cooling_profile)
+    call copy_addr(string_enum_cooling_profile,p_par(192)) ! int
+    call string_to_enum(string_enum_cooltype,cooltype)
+    call copy_addr(string_enum_cooltype,p_par(193)) ! int
+    call string_to_enum(string_enum_heattype,heattype)
+    call copy_addr(string_enum_heattype,p_par(194)) ! int
+    call string_to_enum(string_enum_borderss,borderss)
+    call copy_addr(string_enum_borderss,p_par(195)) ! int
+
+    call copy_addr(hcond_kconst,p_par(413))
+
+    call copy_addr(hcond_prof_size,p_par(414)) ! int
+    call copy_addr(chit_prof_size,p_par(415)) ! int
+    call copy_addr(chit_prof_fluct_stored_size,p_par(416)) ! int
+
+    if (allocated(hcond_prof)) call copy_addr(hcond_prof,p_par(456)) ! (max_n)
+    if (allocated(dlnhcond_prof)) call copy_addr(dlnhcond_prof,p_par(457)) ! (max_n)
+    if (allocated(chit_prof_stored)) call copy_addr(chit_prof_stored,p_par(458)) ! (max_n)
+    if (allocated(dchit_prof_stored)) call copy_addr(dchit_prof_stored,p_par(460)) ! (max_n)
+    if (allocated(chit_prof_fluct_stored)) call copy_addr(chit_prof_fluct_stored,p_par(459)) ! (max_n)
+    if (allocated(dchit_prof_fluct_stored)) call copy_addr(dchit_prof_fluct_stored,p_par(461)) ! (max_n)
+
 
     endsubroutine pushpars2c
 !***********************************************************************
