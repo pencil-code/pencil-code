@@ -39,7 +39,6 @@ module GPU
 
   include 'gpu.h'
 
-  real :: timestamp_farray = impossible
   !integer(KIND=ikind8) :: pFarr_GPU_in, pFarr_GPU_out
   type(C_PTR) :: pFarr_GPU_in, pFarr_GPU_out
 

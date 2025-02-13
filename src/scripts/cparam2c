@@ -1,3 +1,5 @@
+#!/bin/bash
+
 sed -f scripts/cparam.sed cparam.local > cparam.local_c.h
 
 echo '#define MIN(a,b) (a<b ? a : b)' > cparam_c.h

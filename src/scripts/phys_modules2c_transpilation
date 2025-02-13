@@ -1,5 +1,4 @@
 #!/bin/bash
-#
 
 if [[ $3 == '' ]]; then
   modname=`grep -m 1 '^ *module  *[a-zA-Z_]' $2 | sed -e's/module  *\([0-9a-zA-Z_]*\).*$/\L\1/'`

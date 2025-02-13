@@ -1,3 +1,5 @@
+#!/bin/bash
+
   if [[ $MODULE_NAME_ORDER == "CRAY" ]]; then
     echo -e '#pragma once\n#include "headers_c.h"\n' > cdata_c.h
     echo -e '  typedef REAL real3arr[3];\n  typedef int int3arr[3];\n typedef bool bool3arr[3];\n' >> cdata_c.h

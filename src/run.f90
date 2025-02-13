@@ -1237,7 +1237,6 @@ print*, 'run: lspec=', lspec
     integer, parameter :: n_pars=2000
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
-
 call copy_addr(ncoarse,p_par(1)) ! int
 call copy_addr(lcoarse,p_par(2)) ! bool
 call copy_addr(unit_magnetic,p_par(4))
