@@ -2895,6 +2895,8 @@ endif
 
 $(info Compiler: $(COMPILER))
 # If the compiler is from GCC, determine its version.
+IS_CRAY =
+MODULE_NAME_ORDER =
 ifneq (,$(shell $(FC) --version | grep -i GNU))
   GCC_VERSION = $(shell $(FC) -dumpversion)
   $(info GCC version: $(GCC_VERSION))
@@ -2903,11 +2905,11 @@ ifneq (,$(shell $(FC) --version | grep -i GNU))
     $(warning GCC version > 9 ==> allowing argument mismatch in $(MPICOMM).f90, $(PARTICLES_MPICOMM_SRC), $(SYSCALLS_SRC) and fftpack.f90.)
     ALLOW_ARG_MISMATCH = -fallow-argument-mismatch
   endif
-  IS_CRAY =
-  MODULE_NAME_ORDER =
 else
   IS_CRAY = $(shell $(FC) --version | grep -i Cray)
-  MODULE_NAME_ORDER = CRAY
+  ifneq ($(IS_CRAY),)
+    MODULE_NAME_ORDER = CRAY
+  endif
 endif
 #
 #
