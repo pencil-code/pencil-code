@@ -82,8 +82,12 @@ module Energy
       real, dimension (mx,my,mz,mfarray) :: f
 !
       real :: cp
-
-      call get_gamma_etc(gamma,cp)
+!
+!  The following only makes sense if leos=.true.
+!
+      if (leos) then
+        call get_gamma_etc(gamma,cp)
+      endif
 !
 !  Tell the equation of state that we're here and what f variable we use.
 !

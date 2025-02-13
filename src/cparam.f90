@@ -210,6 +210,9 @@ module Cparam
   real(KIND=rkind8), parameter :: G_Newton_cgs=6.6742d-8    ! [cm3/g/s2]
   real(KIND=rkind8), parameter :: density_scale_cgs=1.2435d21 ![cm] 403pc Reynolds 91, etc
   real(KIND=rkind8), parameter :: N_avogadro_cgs=6.022d23 ![1/mol]
+  real(KIND=rkind8), parameter :: alpha_fine=7.2973525643d-3
+  real(KIND=rkind8), parameter :: sigma_Thomson_cgs=6.652458732160d-25 ![cm^2]
+  real(KIND=rkind8), parameter :: e_cgs=4.8032047d-10  ![statcoulombs]
 !
   logical, parameter :: ALWAYS_FALSE=.false.
 !

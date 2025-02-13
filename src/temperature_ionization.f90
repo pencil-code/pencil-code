@@ -39,7 +39,7 @@ module Energy
   real :: heat_source_offset=0., heat_source_sigma=1.0, heat_source=0.0
   real :: pthresh=0., pbackground=0., pthreshnorm
   real :: xjump_mid=0.,yjump_mid=0.,zjump_mid=0.
-  real :: widthTT, amplTT1, amplTT2, delta_TT
+  real :: widthTT, amplTT1, amplTT2, delta_TT, hubble_energy=0.
   real, pointer :: reduce_cs2
   logical, pointer :: lreduced_sound_speed, lscale_to_cs2top
   logical, pointer :: lpressuregradient_gas
@@ -69,7 +69,7 @@ module Energy
       lheatc_chiconst_accurate,lheatc_hyper3,chi_hyper3, &
       iheatcond, zheat_uniform_range, heat_source_offset, &
       heat_source_sigma, heat_source, lheat_source, &
-      pthresh, pbackground,chi_shock
+      pthresh, pbackground,chi_shock, hubble_energy
 !
   integer :: idiag_TTmax=0    ! DIAG_DOC: $\max (T)$
   integer :: idiag_TTmin=0    ! DIAG_DOC: $\min (T)$
@@ -670,6 +670,16 @@ module Energy
           df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) - p%ugTT
         else
           df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - p%uglnTT
+        endif
+      endif
+!
+!  Hubble term
+!
+      if (hubble_energy/=0.) then
+        if (ltemperature_nolog) then
+          df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) - hubble_energy*p%TT
+        else
+          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - hubble_energy
         endif
       endif
 !

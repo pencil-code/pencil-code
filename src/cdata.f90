@@ -268,8 +268,9 @@ module Cdata
 !
   real(KIND=rkind8) :: unit_mass,unit_energy,unit_time,unit_flux,unit_pressure
   real(KIND=rkind8) :: k_B,m_u,m_p,m_e,m_H,m_He,eV, &
-                      chiH,chiH_,sigmaH_,sigmaSB,kappa_es
+                      chiH, chiH_, sigmaH_, sigmaSB, kappa_es
   real(KIND=rkind8) :: c_light=impossible,G_Newton=impossible,hbar=impossible
+  real(KIND=rkind8) :: sigma_Thomson=impossible
   real :: mu0=1., mu01=0. !  magnetic permeability [should be in Magnetic]
 !
 !  Derived units
