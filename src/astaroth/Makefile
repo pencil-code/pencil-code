@@ -1,3 +1,4 @@
+SHELL=/bin/bash
 
 #Importing environ variables into preprocessor
 #ENVIRON = -DMODPRE=${MODULE_PREFIX} -DMODIN=${MODULE_INFIX} -DMODSUF=${MODULE_SUFFIX}
@@ -89,6 +90,7 @@ astaroth_$(PREC).so: $(SOURCES) forcing.h $(AC_HEADERS) $(PC_HEADERS) $(CHEADERS
 	echo USE_HIP=$(USE_HIP) && \
 	echo PRECISION=$(CMAKE_PREC) && \
 	cd build && export LDFLAGS="" && \
+	CUDA_PATH=/opt/nvidia/hpc_sdk/Linux_x86_64/24.1/cuda \
 	cmake -DDOUBLE_PRECISION=$(CMAKE_PREC) -DRUNTIME_COMPILATION=$(RUNTIME_COMPILATION) -DTRANSPILATION=$(TRANSPILATION) -DUSE_HIP=$(USE_HIP) -DSINGLEPASS_INTEGRATION=$(CMAKE_SINGLEPASS) -DUSE_DARDEL=$(USE_DARDEL) .. && \
 	make -j && \
 	cd .. && \
@@ -111,10 +113,12 @@ CMAKE_OPTIONS = -DMULTIGPU_ENABLED=OFF -DMPI_ENABLED=$(CMAKE_MPI) -DBUILD_SHARED
 astaroth_libs:
 	echo "const char* cmake_options = \"-DDSL_MODULE_DIR=../$(DSL_MODULE_DIR)  $(CMAKE_OPTIONS)\";" > cmake_options.h
 	mkdir -p submodule/build  && cd submodule/build && export LDFLAGS=""  && \
+        CUDA_PATH=/opt/nvidia/hpc_sdk/Linux_x86_64/24.1/cuda \
 	cmake  $(CMAKE_OPTIONS) -DDSL_MODULE_DIR=../acc-runtime/$(DSL_MODULE_DIR) -DRUNTIME_COMPILATION=$(RUNTIME_COMPILATION) -DREAD_OVERRIDES=$(READ_OVERRIDES) .. \
 	&& make -j -I../../.. VERBOSE=0 # Build the core Astaroth library
 	@echo PRECISION=$(CMAKE_PREC)
 
+#        CMAKE_PREFIX_PATH="/opt/nvidia/hpc_sdk/Linux_x86_64/24.1/comm_libs/mpi/lib /opt/nvidia/hpc_sdk/Linux_x86_64/24.1/comm_libs/mpi/include" \
 update_astaroth_libs:
 	cd submodule/build && export LDFLAGS="" && \
 	make -I../../.. VERBOSE=0 # Build the core Astaroth library with existing Makefile.

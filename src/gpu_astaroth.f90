@@ -16,14 +16,15 @@ module GPU
 
   implicit none
 
-
 !$  interface
 !$    subroutine random_initial_condition() bind(C)
 !$    endsubroutine random_initial_condition
 !$  end interface
 
   external initialize_gpu_c
+  external register_gpu_c
   external finalize_gpu_c
+  external get_farray_ptr_gpu_c
   external rhs_gpu_c
   external load_farray_c
   external reload_gpu_config_c
@@ -38,7 +39,6 @@ module GPU
 
   include 'gpu.h'
 
-  real :: timestamp_farray = impossible
   !integer(KIND=ikind8) :: pFarr_GPU_in, pFarr_GPU_out
   type(C_PTR) :: pFarr_GPU_in, pFarr_GPU_out
 
@@ -77,7 +77,7 @@ contains
                                     trim(str(3:))//'"')
 !
       if (dt<=0.) dt = dtmin
-      call initialize_gpu_c(pFarr_GPU_in,pFarr_GPU_out,MPI_COMM_PENCIL)
+      call initialize_gpu_c(f,MPI_COMM_PENCIL)
 !
 ! Load farray to gpu
 !
@@ -92,11 +92,9 @@ contains
 !
     endsubroutine gpu_init
 !**************************************************************************
-    subroutine register_GPU(f)
+    subroutine register_GPU
 !
-      real, dimension(:,:,:,:), intent(IN) :: f
-
-      call register_gpu_c(f)
+      call register_gpu_c
 !
     endsubroutine register_GPU
 !**************************************************************************
@@ -105,6 +103,12 @@ contains
       call finalize_gpu_c
 !
     endsubroutine finalize_GPU
+!**************************************************************************
+    subroutine get_farray_ptr_gpu
+
+      call get_farray_ptr_gpu_c(pFarr_GPU_in)
+
+    endsubroutine get_farray_ptr_gpu
 !**************************************************************************
     subroutine rhs_GPU(f,isubstep)
 !

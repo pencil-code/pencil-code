@@ -1,3 +1,5 @@
+#!/bin/bash
+
 rm -f sub_c.h
 echo '# pragma once' > sub_c.h
 echo '# include "headers_c.h"' >> sub_c.h

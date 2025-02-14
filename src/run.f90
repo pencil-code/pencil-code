@@ -703,6 +703,7 @@ subroutine run_start() bind(C)
 !  Check whether quad precision is supported
 !
   if (rkind16<0) call warning('run','quad precision not supported, switch to double')
+  if (rkind16==rkind8) call warning('run','quad precision suppressed')
 !
   if (any(downsampl>1) .or. mvar_down>0 .or. maux_down>0) then
 !
@@ -767,7 +768,7 @@ subroutine run_start() bind(C)
   if (lparticles) call particles_register_modules
   call initialize
 !
-  call register_gpu(f)
+  call register_gpu
 !
 !  Inform about verbose level.
 !
@@ -1235,7 +1236,6 @@ print*, 'run: lspec=', lspec
 
     integer, parameter :: n_pars=2000
     integer(KIND=ikind8), dimension(n_pars) :: p_par
-
 
 call copy_addr(ncoarse,p_par(1)) ! int
 call copy_addr(lcoarse,p_par(2)) ! bool

@@ -60,7 +60,7 @@ module Equ
 ! To check ghost cell consistency, please uncomment the following line:
 !     use Ghost_check, only: check_ghosts_consistency
       use GhostFold, only: fold_df, fold_df_3points
-      use Gpu, only: rhs_gpu, copy_farray_from_GPU
+      use Gpu, only: rhs_gpu, copy_farray_from_GPU, get_farray_ptr_gpu
       use Gravity
       use Hydro
       use Interstellar, only: interstellar_before_boundary
@@ -113,6 +113,11 @@ module Equ
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call svn_id( &
            "$Id$")
+!
+!  Get the adress of the f-array on the GPU's global memory for use
+!  in offloading, training etc.
+!
+      if (lgpu) call get_farray_ptr_gpu
 !
 !  Initialize counter for calculating and communicating print results.
 !  Do diagnostics only in the first of the itorder substeps.

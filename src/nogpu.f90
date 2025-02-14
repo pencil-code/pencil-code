@@ -26,20 +26,16 @@ contains
     endsubroutine initialize_GPU
 !**************************************************************************
     subroutine gpu_init
-!
     endsubroutine gpu_init
 !**************************************************************************
-    subroutine register_GPU(f)
-!
-      real, dimension(:,:,:,:), intent(IN) :: f
-
-      call keep_compiler_quiet(f)
-!
+    subroutine register_GPU
     endsubroutine register_GPU
 !**************************************************************************
     subroutine finalize_GPU
-!
     endsubroutine finalize_GPU
+!**************************************************************************
+    subroutine get_farray_ptr_gpu
+    endsubroutine get_farray_ptr_gpu
 !**************************************************************************
     subroutine rhs_GPU(f,itsub)
 !

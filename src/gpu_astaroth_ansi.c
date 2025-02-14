@@ -21,17 +21,18 @@
 #include "headers_c.h"
 
 void initGPU();
-void registerGPU(REAL*);
-void initializeGPU(REAL**,REAL**,FINT);
+void registerGPU();
+void initializeGPU(REAL*, FINT);
 void finalizeGPU();
+void getFArrayIn(REAL **);
 void substepGPU(int );
 void copyFarray(REAL*);
 void loadFarray();
 void reloadConfig();
 void updateInConfigArr(int);
-int updateInConfigArrName(char *);
+int  updateInConfigArrName(char *);
 void updateInConfigScal(int,REAL);
-int updateInConfigScalName(char *, REAL);
+int  updateInConfigScalName(char *, REAL);
 void testRHS(REAL*,REAL*);
 void gpuSetDt();
 void random_initial_condition(void);
@@ -41,7 +42,7 @@ extern char *__cparam_MOD_coornames;
 extern REAL __cdata_MOD_y[14];
 extern REAL __cdata_MOD_dx, __cdata_MOD_dy, __cdata_MOD_dz;
 // ----------------------------------------------------------------------
-void FTNIZE(initialize_gpu_c)(REAL **farr_GPU_in, REAL **farr_GPU_out, FINT* comm_fint)
+void FTNIZE(initialize_gpu_c)(REAL* f, FINT* comm_fint)
 // Initializes GPU.  
 {
   /*
@@ -57,7 +58,7 @@ void FTNIZE(initialize_gpu_c)(REAL **farr_GPU_in, REAL **farr_GPU_out, FINT* com
   //printf("dy = %f\n", __cdata_MOD_dy);
   //printf("dz = %f\n", __cdata_MOD_dz);
 
-  initializeGPU(farr_GPU_in,farr_GPU_out,*comm_fint);
+  initializeGPU(f, *comm_fint);
 
 /*
   printf("xmin = %e\n", x[4]);
@@ -75,11 +76,11 @@ void FTNIZE(init_gpu_c)()
   initGPU();
 }
 /* ---------------------------------------------------------------------- */
-void FTNIZE(register_gpu_c)(REAL* f)
+void FTNIZE(register_gpu_c)()
 {
 // Allocates memory on GPU according to setup needs.
 
-  registerGPU(f);
+  registerGPU();
 }
 /* ---------------------------------------------------------------------- */
 void FTNIZE(finalize_gpu_c)()
@@ -87,6 +88,10 @@ void FTNIZE(finalize_gpu_c)()
 // Frees memory allocated on GPU.
 
   finalizeGPU();
+}
+void FTNIZE(get_farray_ptr_gpu_c)(REAL** p_f_in)
+{
+  getFArrayIn(p_f_in);
 }
 /* ---------------------------------------------------------------------- */
 void FTNIZE(rhs_gpu_c)
@@ -169,6 +174,7 @@ void FTNIZE(test_rhs_c)(REAL* f_in, REAL* df_truth)
 {
   testRHS(f_in,df_truth);
 }
+/* ---------------------------------------------------------------------- */
 void FTNIZE(gpu_set_dt_c)()
 {
 	gpuSetDt();
