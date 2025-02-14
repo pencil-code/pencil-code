@@ -66,6 +66,10 @@ else ()
 # less kernels.ptx
 # Additional compilation info: --resource-usage
 
+#TP: required when compiling with container on Puhti
+find_package(CUDAToolkit QUIET)
+include_directories(SYSTEM ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
+
 # Not supported with older CUDA
 # set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --Werror all-warnings")
 if (NOT DOUBLE_PRECISION)
