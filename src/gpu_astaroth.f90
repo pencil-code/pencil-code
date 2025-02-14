@@ -121,9 +121,9 @@ contains
 !
     endsubroutine rhs_GPU
 !**************************************************************************
-    subroutine gpu_set_dt()
+    subroutine gpu_set_dt
 !
-      call gpu_set_dt_c()
+      call gpu_set_dt_c
 !
     endsubroutine gpu_set_dt
 !**************************************************************************
@@ -253,7 +253,7 @@ contains
       endinterface
 
       !TP: uncomment if want to test from random initial condition
-      ! call random_initial_condition()
+      ! call random_initial_condition
       ! call copy_farray_from_GPU(f)
       df_copy = df
       p_copy = p
