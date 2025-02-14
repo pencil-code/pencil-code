@@ -3414,7 +3414,7 @@ ifneq ($(and $(IS_CRAY), $(filter-out $(GPU),nogpu)),)
 	$(FC) $(MOST_COMP_FLAGS) $(FSTD) -o cdata.o -c cdata_tmp.f90
 	@rm -f cdata_tmp.f90
 else
-       $(FC) $(MOST_COMP_FLAGS) $(FSTD) -o cdata.o -c cdata.f90
+	$(FC) $(MOST_COMP_FLAGS) $(FSTD) -o cdata.o -c cdata.f90
 endif
 
 special_dummies.inc:  nospecial.f90 $(SPECIAL_MODULES:=.f90) Makefile.local
