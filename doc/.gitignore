@@ -27,6 +27,7 @@ manual.vind
 *.vidx
 *.vind
 *-eps-converted-to.pdf
+inlinedoc-*.tex
 !implementation/chemistry/.DS_Store
 !implementation/chemistry/*.directory
 !implementation/chemistry/*.pyc
