@@ -23,6 +23,8 @@
     implicit none
     include 'training.h'
 
+    include "training.h"
+
     integer :: model_device=0
     integer :: it_train=-1, it_train_chkpt=-1, it_train_start=1
 

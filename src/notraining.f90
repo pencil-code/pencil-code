@@ -12,6 +12,8 @@
     implicit none
     include 'training.h'
 
+    include "training.h"
+
     contains
 !***************************************************************
     subroutine initialize_training
