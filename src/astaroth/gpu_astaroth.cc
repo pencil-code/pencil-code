@@ -71,14 +71,15 @@ has_nans(AcMesh mesh_in);
   #define cdtv2 cdtv2__mod__cdata
   #define cdtv3 cdtv3__mod__cdata
 
-  #define AC_sin1th    AC_sin1th__mod__cdata
-  #define AC_r1_mn     AC_r1_mn__mod__cdata
-  #define AC_sin1th    AC_sin1th__mod__cdata
-  #define AC_cot_theta AC_cot_theta__mod__cdata
 
   #define lcylindrical_coords lcylindrical_coords__mod__cdata
   #define lspherical_coords   lspherical_coords__mod__cdata
   #define lcartesian_coords   lcartesian_coords__mod__cdata
+  
+  #define rcyl_mn1 rcyl_mn1__mod__cdata
+  #define r1_mn    r1_mn__mod__cdata
+  #define sin1th   sin1th__mod__cdata
+  #define cotth    cotth__mod__cdata
 
 #endif
 
@@ -1073,10 +1074,10 @@ void setupConfig(AcMeshInfo& config)
   // Enter basic parameters in config.
   #include "PC_modulepars.h"
   //TP: loads for non-cartesian derivatives
-  //PCLoad(AC_inv_cyl_r,AC_rcyl_mn1);
-  //PCLoad(AC_inv_r,AC_r1_mn);
-  //PCLoad(AC_inv_sin_theta,AC_sin1th);
-  //PCLoad(AC_cot_theta,AC_cotth);
+  //PCLoad(config, AC_inv_cyl_r,rcyl_mn1);
+  //PCLoad(config, AC_inv_r,r1_mn);
+  //PCLoad(config, AC_inv_sin_theta,sin1th);
+  //PCLoad(config, AC_cot_theta,cotth);
 
   if(lcartesian_coords)
   {
