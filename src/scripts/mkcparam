@@ -425,7 +425,7 @@ $data_cparam_pencil .= "endtype pencil_case\n\n";
 # Define pencil indices:
 $i=1;
 foreach my $pencil (@pencil_names) {
-  $data_cparam_pencil .= "integer :: i_$pencil=$i\n";
+  $data_cparam_pencil .= "integer, parameter :: i_$pencil=$i\n";
   $i++;
 }
 
@@ -464,7 +464,6 @@ logical,            dimension(npencils):: lpencil         = .false.
 
 EOF
 update_file ("cparam_pencils.inc", $data_cparam_pencil);
-
 
 #
 # pencil_init.inc
