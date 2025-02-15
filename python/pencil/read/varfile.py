@@ -395,10 +395,12 @@ class DataCube(object):
                             dtype = precision
                         else:
                             dtype = type(tmp["persist"][key][0])
-                        pers_obj.__setattr__(
-                            key, (tmp["persist"][key][0]).astype(dtype)
-                        )
-                    self.__setattr__("persist", pers_obj)
+                        setattr(
+                            pers_obj,
+                            key,
+                            (tmp["persist"][key][0]).astype(dtype),
+                            )
+                    self.persist = pers_obj
         elif param.io_strategy == "dist":
             #
             #  Read scattered Fortran binary files.
