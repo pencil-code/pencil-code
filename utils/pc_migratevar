@@ -21,6 +21,7 @@ parser.add_argument('--dest-datadir', help="Data directory into which snapshots 
 parser.add_argument('--dest-var', help="filename of the destination snapshot. Note that for the last snapshot in a HDF5 simulation, you need to set this to 'var.h5'.", default = "var.dat", type = str )
 parser.add_argument('--copy-these', help="Comma-separated list of variables to copy (e.g. ux,uy,uz,ax,ay,az). The order of variables does not matter. Note that for vector variables such as uu, specifying uu will only copy ux; one needs to say 'ux,uy,uz' to copy all three components. If this argument is not specified, all variables that are present in both the source and destination simulations will be copied.", type = str )
 parser.add_argument('--write-t', help="Whether to copy the time into the new snapshot. If this option is not passed, the time of the new snapshot will be set to 0", default=False, action='store_true' )
+parser.add_argument('--persist', help="Whether to copy persistent variables into the new snapshot.", default=False, action='store_true' )
 
 args = parser.parse_args()
 
@@ -39,6 +40,7 @@ dest_datadir = args.dest_datadir
 src_var = args.src_var
 dest_var = args.dest_var
 write_t = args.write_t
+lpersist = args.persist
 
 if args.copy_these is None:
     keys_to_copy = None #Will be populated later.
@@ -66,21 +68,33 @@ def sizes_match(src_datadir, dest_datadir):
 
 #Get f array and indices from src simulation
 #TODO: Is it important/useful to copy ghost zones as well? Currently we don't do that.
-var = pc.read.var(var_file=src_var, datadir=src_datadir, trimall=True)
+var = pc.read.var(
+    var_file=src_var,
+    datadir=src_datadir,
+    trimall=True,
+    lpersist=True,
+    )
 f_old = var.f
 x_old = var.x
 y_old = var.y
 z_old = var.z
 t_old = var.t
+persist_old = var.persist.__dict__
 i_src = pc.read.index(datadir=src_datadir)
 i_src = pythonify(i_src)
 
 #Read in the f array of the new sim that was set by pc_start. We do this because we want to keep the initial conditions for variables which are not present in the source snapshot.
-var = pc.read.var(var_file=dest_var, datadir=dest_datadir, trimall=True)
+var = pc.read.var(
+    var_file=dest_var,
+    datadir=dest_datadir,
+    trimall=True,
+    lpersist=True,
+    )
 f_new = var.f
 x_new = var.x
 y_new = var.y
 z_new = var.z
+persist_old.update(var.persist.__dict__)
 
 #Get indices for destination sim.
 i_dest = pc.read.index(datadir=dest_datadir)
@@ -136,6 +150,9 @@ else:
 
 #Write out f_new into snapshots
 if io_strategy == 'dist':
+    if lpersist:
+        raise NotImplementedError("writing persistent variables into a snapshot is not implemented in pc.io.write_snapshot")
+    
     pc.io.write_snapshot(f_new,
         file_name=dest_var,
         datadir=dest_datadir,
@@ -154,6 +171,11 @@ if io_strategy == 'dist':
         dz=dz,
         )
 elif io_strategy == 'HDF5':
+    if lpersist:
+        persist = persist_old
+    else:
+        persist = None
+    
     pc.io.write_h5_snapshot(
         f_new,
         file_name=dest_var,
@@ -164,6 +186,7 @@ elif io_strategy == 'HDF5':
         overwrite=True,
         sim_datadir=dest_datadir,
         datadir=os.path.join(dest_datadir, "allprocs"),
+        persist=persist,
         )
 else:
     raise NotImplementedError(f"IO strategy {io_strategy} not supported")
