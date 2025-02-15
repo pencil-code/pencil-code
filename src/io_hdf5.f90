@@ -1132,6 +1132,7 @@ contains
 !  Read persistent data from snapshot file.
 !
 !  27-Oct-2018/PABourdin: coded
+!  15-feb-2025/Kishore: avoid overwriting value with uninitialized variable in case of unsuccessful read.
 !
       character (len=*), intent(in) :: label
       logical, intent(out) :: value
@@ -1139,7 +1140,7 @@ contains
       logical, dimension(1) :: read
 !
       read_persist_logical_0D = read_persist_logical_1D(label, read)
-      value = read(1)
+      if (.not.read_persist_logical_0D) value = read(1)
 !
     endfunction read_persist_logical_0D
 !***********************************************************************
@@ -1178,6 +1179,7 @@ contains
 !  Read persistent data from snapshot file.
 !
 !  27-Oct-2018/PABourdin: coded
+!  15-feb-2025/Kishore: avoid overwriting value with uninitialized variable in case of unsuccessful read.
 !
       character (len=*), intent(in) :: label
       integer, intent(out) :: value
@@ -1185,7 +1187,7 @@ contains
       integer, dimension(1) :: read
 !
       read_persist_int_0D = read_persist_int_1D(label, read)
-      value = read(1)
+      if (.not.read_persist_int_0D) value = read(1)
 !
     endfunction read_persist_int_0D
 !***********************************************************************
@@ -1220,6 +1222,7 @@ contains
 !  Read persistent data from snapshot file.
 !
 !  27-Oct-2018/PABourdin: coded
+!  15-feb-2025/Kishore: avoid overwriting value with uninitialized variable in case of unsuccessful read.
 !
       character (len=*), intent(in) :: label
       real, intent(out) :: value
@@ -1227,7 +1230,7 @@ contains
       real, dimension(1) :: read
 !
       read_persist_real_0D = read_persist_real_1D(label, read)
-      value = read(1)
+      if (.not.read_persist_real_0D) value = read(1)
 !
     endfunction read_persist_real_0D
 !***********************************************************************
