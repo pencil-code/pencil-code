@@ -12,20 +12,16 @@
 !***************************************************************
 module Signal_handling
 !
-  use Cparam
-  use Cdata
   use General, only: keep_compiler_quiet
-  use Messages
-!  Signal handling in run.f90
 !
   implicit none
-  private
-  public :: signal_prepare
-  public :: read_signal_init_pars
-  public :: write_signal_init_pars
-  public :: emergency_stop
+!
+  include "signal_handling.h"
+!
+!  Signal handling in run.f90
 !
   logical :: emergency_stop = .false.
+!
   contains
 !***********************************************************************
     subroutine signal_prepare()

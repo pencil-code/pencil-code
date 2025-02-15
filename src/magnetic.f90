@@ -11596,7 +11596,7 @@ module Magnetic
     call copy_addr(lmagnetic_slope_limited,p_par(199)) ! bool
     call copy_addr(lboris_correction,p_par(200)) ! bool
     call copy_addr(lnoinduction,p_par(201)) ! bool
-    call copy_addr(lrhs_max,p_par(202)) ! bool
+    !call copy_addr(lrhs_max,p_par(202)) ! bool
     call copy_addr(limp_alpha,p_par(203)) ! bool
     call copy_addr(fac_sld_magn,p_par(204))
     call copy_addr(ampl_efield,p_par(205))

@@ -17,17 +17,13 @@ module Signal_handling
 
   implicit none
 
-  private
-
-  public :: signal_prepare
-  public :: read_signal_init_pars
-  public :: write_signal_init_pars
-  public :: emergency_stop
-
+  include "signal_handling.h"
 !
   logical :: emergency_stop=.false.
   integer, dimension(2) :: sigval=-1  ! 2 is the max number of signal to catch
+!
 ! input parameters
+!
   namelist /signal_init_pars/ &
       sigval
 
