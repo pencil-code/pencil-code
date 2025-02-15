@@ -94,7 +94,7 @@ f_new = var.f
 x_new = var.x
 y_new = var.y
 z_new = var.z
-persist_old.update(var.persist.__dict__)
+persist_new = var.persist.__dict__
 
 #Get indices for destination sim.
 i_dest = pc.read.index(datadir=dest_datadir)
@@ -172,7 +172,8 @@ if io_strategy == 'dist':
         )
 elif io_strategy == 'HDF5':
     if lpersist:
-        persist = persist_old
+        persist_new.update(persist_old)
+        persist = persist_new
     else:
         persist = None
     
