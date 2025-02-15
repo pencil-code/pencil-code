@@ -304,6 +304,7 @@ class DataCube(object):
                 if block_id == 2000:
                     break
                 for key in record_types.keys():
+                    #Kishore: DANGER: there is a wrong assumption here that persistent variables must be scalars. A counter-example is forcing_location.
                     if record_types[key][0] == block_id:
                         tmp_val = infile.read_record(record_types[key][1])
                         pers_obj.__setattr__(key, tmp_val[0])
