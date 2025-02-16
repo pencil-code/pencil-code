@@ -6,6 +6,9 @@
   Comments: 
 */
 // General headers.
+//TP: hack! needed because rkind8 comes from cparam_c.h
+//TP: correct solution to filter the line in sed script but can't bothered to do it now
+const int rkind8 = 0;
 #include <math.h>
 #include <algorithm>
 #include <chrono>
@@ -75,6 +78,16 @@ has_nans(AcMesh mesh_in);
   #define lcylindrical_coords lcylindrical_coords__mod__cdata
   #define lspherical_coords   lspherical_coords__mod__cdata
   #define lcartesian_coords   lcartesian_coords__mod__cdata
+
+  #define lequidist lequidist__mod__cdata
+
+  #define dx_1 dx_1__mod__cdata
+  #define dy_1 dy_1__mod__cdata
+  #define dz_1 dz_1__mod__cdata
+
+  #define dx_tilde dx_tilde__mod__cdata
+  #define dy_tilde dy_tilde__mod__cdata
+  #define dz_tilde dz_tilde__mod__cdata
   
   #define rcyl_mn1 rcyl_mn1__mod__cdata
   #define r1_mn    r1_mn__mod__cdata
@@ -429,7 +442,6 @@ static AcTaskGraph *rhs_test_graph;
 static AcTaskGraph *rhs_test_rhs_1;
 
 // Other.
-static MPI_Comm comm_pencil;
 int halo_xz_size[2] = {0, 0}, halo_yz_size[2] = {0, 0};
 //static AcReal *xtop_buffer, *xbot_buffer, *ytop_buffer, *ybot_buffer;
 
@@ -1065,15 +1077,27 @@ extern "C" void initGPU()
 }
 /***********************************************************************************************/
 #define PCLoad acPushToConfig
+MPI_Comm comm_pencil = MPI_COMM_NULL;
 void setupConfig(AcMeshInfo& config)
 { 
   // Enter basic parameters in config.
   #include "PC_modulepars.h"
   //TP: loads for non-cartesian derivatives
-  //PCLoad(config, AC_inv_cyl_r,rcyl_mn1);
-  //PCLoad(config, AC_inv_r,r1_mn);
-  //PCLoad(config, AC_inv_sin_theta,sin1th);
-  //PCLoad(config, AC_cot_theta,cotth);
+  PCLoad(config, AC_inv_cyl_r,rcyl_mn1);
+  PCLoad(config, AC_inv_r,r1_mn);
+  PCLoad(config, AC_inv_sin_theta,sin1th);
+  PCLoad(config, AC_cot_theta,cotth);
+
+  //TP: loads for non-equidistant grids
+  PCLoad(config,AC_nonequidistant_grid, (AcBool3){!lequidist.x,!lequidist.y,!lequidist.z});
+  PCLoad(config,AC_inv_mapping_func_derivative_x,dx_1);
+  PCLoad(config,AC_inv_mapping_func_derivative_y,dy_1);
+  PCLoad(config,AC_inv_mapping_func_derivative_z,dz_1);
+
+  PCLoad(config,AC_mapping_func_tilde_x,dx_tilde);
+  PCLoad(config,AC_mapping_func_tilde_y,dy_tilde);
+  PCLoad(config,AC_mapping_func_tilde_z,dz_tilde);
+
 
   if(lcartesian_coords)
   {
@@ -1214,10 +1238,8 @@ extern "C" void initializeGPU(real* farray, int comm_fint)
 #if PACKED_DATA_TRANSFERS
   //initLoadStore();
 #endif
-
   comm_pencil = MPI_Comm_f2c(comm_fint);
   setupConfig(mesh.info);
-
   //TP: done after setupConfig since we need maux_vtxbuf_index
   //TP: this is an ugly way to do this but works for now
   {

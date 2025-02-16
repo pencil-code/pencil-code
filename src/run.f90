@@ -1353,6 +1353,7 @@ call copy_addr(lisotropic_advection,p_par(116)) ! bool
 call copy_addr(ldynamical_diffusion,p_par(117)) ! bool
 call copy_addr(lstratz,p_par(118)) ! bool
 call copy_addr(x,p_par(119)) ! (mx)
+
 call copy_addr(dx_1,p_par(120)) ! (mx)
 call copy_addr(dvol_x,p_par(121)) ! (mx)
 call copy_addr(y,p_par(122)) ! (my)
@@ -1476,6 +1477,9 @@ call copy_addr(ltime_integrals,p_par(1165)) ! bool
 
 call copy_addr(cdtf,p_par(1170))
 
+call copy_addr(dx_tilde,p_par(1171)) ! (mx)
+call copy_addr(dy_tilde,p_par(1172)) ! (my)
+call copy_addr(dz_tilde,p_par(1173)) ! (mz)
 
 endsubroutine pushpars2c
 !***********************************************************************

@@ -1484,10 +1484,10 @@ module Gravity
     call string_to_enum(string_enum_gravz_profile,gravz_profile)
     call string_to_enum(string_enum_grav_type    ,grav_type)
 
-    call copy_addr(string_enum_gravx_profile,p_par(18))
-    call copy_addr(string_enum_gravy_profile,p_par(19))
-    call copy_addr(string_enum_gravz_profile,p_par(20))
-    call copy_addr(string_enum_grav_type    ,p_par(21))
+    call copy_addr(string_enum_gravx_profile,p_par(18)) ! int
+    call copy_addr(string_enum_gravy_profile,p_par(19)) ! int
+    call copy_addr(string_enum_gravz_profile,p_par(20)) ! int
+    call copy_addr(string_enum_grav_type    ,p_par(21)) ! int
 
     endsubroutine pushpars2c
 !***********************************************************************
