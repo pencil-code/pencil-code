@@ -1194,8 +1194,8 @@ void checkConfig(AcMeshInfo &config)
   acLogFromRootProc(rank,"tforce_stop= %f %f \n", tforce_stop, config[AC_tforce_stop]);
   acLogFromRootProc(rank,"k1_ff,profx_ampl, val= %f %d %lf %lf\n", k1_ff, profx_ampl, profx_ampl[0], profx_ampl[nx-1]);
 #endif
-*/
   acLogFromRootProc(rank,"mu0= %f %f \n", (double)mu0, (double)config[AC_mu0]);
+*/
 }
 /***********************************************************************************************/
 extern "C" void getFArrayIn(AcReal **p_f_in)
@@ -1232,7 +1232,7 @@ extern "C" void copyVBApointers(AcReal **in, AcReal **out)
 void
 testBCs();     // ahead declaration
 /***********************************************************************************************/
-extern "C" void initializeGPU(real* farray, int comm_fint)
+extern "C" void initializeGPU(AcReal *farr, int comm_fint)
 {
   //Setup configurations used for initializing and running the GPU code
 #if PACKED_DATA_TRANSFERS
@@ -1246,16 +1246,16 @@ extern "C" void initializeGPU(real* farray, int comm_fint)
     size_t offset = 0;
     for (int i = 0; i < mvar; ++i)
     {
-      mesh.vertex_buffer[VertexBufferHandle(i)] = &farray[offset];
+      mesh.vertex_buffer[VertexBufferHandle(i)] = &farr[offset];
       offset += mw;
     }
-//printf("&farray[offset]= %p \n",&farray[offset]);fflush(stdout);
+//printf("&farray[offset]= %p \n",&farr[offset]);fflush(stdout);
 
     for (int i = 0; i < mfarray; ++i)
     {
       if (maux_vtxbuf_index[i])
       {
-              mesh.vertex_buffer[maux_vtxbuf_index[i]] = &farray[mw*i];
+        mesh.vertex_buffer[maux_vtxbuf_index[i]] = &farr[mw*i];
       }
     }
   }
@@ -1263,15 +1263,15 @@ extern "C" void initializeGPU(real* farray, int comm_fint)
 #include "cmake_options.h"
   acCompile(cmake_options,mesh.info);
   acLoadLibrary();
+  acCheckDeviceAvailability();
   acLogFromRootProc(rank, "Done setupConfig && acCompile\n");
   fflush(stdout);
 #else
+  acCheckDeviceAvailability();
   acLogFromRootProc(rank, "Done setupConfig\n");
   fflush(stdout);
 #endif
-  AcResult res = acCheckDeviceAvailability();
   checkConfig(mesh.info);
-  acCheckDeviceAvailability();
   acGridInit(mesh);
 
   mesh.info = acGridDecomposeMeshInfo(mesh.info);

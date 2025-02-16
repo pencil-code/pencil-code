@@ -318,15 +318,14 @@ subroutine timeloop(f,df,p)
   real :: wall_clock_time=0., time_per_step=0.
   real(KIND=rkind8) :: time_this_diagnostic
   integer :: it_this_diagnostic
-
-!TP: due to df being always limited to a kernel on the Astaroth side we have to know the timestep before we do the rhs
+!
+!TP: Due to df being always limited to a kernel on the Astaroth side we have to know the timestep before we do the rhs
 !    compared to the cpu where it is sufficient to know it after the rhs calculations
 !    so we take the timestep calculated at the start of the last timestep
 !    initially there is no previous timestep so we have a extra call here for there always to be a valid previous timestep
 !    no advancement happens here
-  if(lgpu .and. lcourant_dt .and. ldt) then
-        call gpu_set_dt()
-  endif
+!
+  if (lgpu .and. lcourant_dt .and. ldt) call gpu_set_dt()
 
   Time_loop: do while (it<=nt)
 !
@@ -1021,11 +1020,10 @@ subroutine run_start() bind(C)
 !  correct time; see the comment in the GW module.
 !
   if (lspec_start .and. t==tstart) lspec=.true.
-print*, 'run: lspec=', lspec
 !
 !  Save spectrum snapshot.
 !
-  !!!if (dspec/=impossible) call powersnap(f)
+  if (dspec/=impossible) call powersnap(f)
 !
 !  Initialize pencils in the pencil_case.
 !

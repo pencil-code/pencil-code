@@ -59,7 +59,6 @@ void FTNIZE(initialize_gpu_c)(REAL* f, FINT* comm_fint)
   //printf("dz = %f\n", __cdata_MOD_dz);
 
   initializeGPU(f, *comm_fint);
-
 /*
   printf("xmin = %e\n", x[4]);
   printf("xmax = %e\n", x[nx-1+3]);

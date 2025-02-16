@@ -41,8 +41,8 @@ module Syscalls
     module procedure copy_addr_real_2D
     module procedure copy_addr_real_3D
     module procedure copy_addr_real_4D
-    module procedure copy_addr_dble
-    module procedure copy_addr_dble_1D
+    !module procedure copy_addr_dble
+    !module procedure copy_addr_dble_1D
   endinterface
 !
   contains
