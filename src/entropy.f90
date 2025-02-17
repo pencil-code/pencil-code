@@ -175,7 +175,6 @@ module Energy
   real, dimension (mz)  :: ss_mz
   real, dimension (nx) :: chit_aniso_prof, dchit_aniso_prof, penc_ones=1.0
 
-  integer, parameter :: max_n = max(nx,ny,nz)
   real, dimension (:), allocatable :: hcond_prof,dlnhcond_prof
   real, dimension (:), allocatable :: chit_prof_stored,chit_prof_fluct_stored
   real, dimension (:), allocatable :: dchit_prof_stored,dchit_prof_fluct_stored

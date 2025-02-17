@@ -1229,7 +1229,7 @@ subroutine run_start() bind(C)
 !***********************************************************************
     subroutine pushpars2c(p_par)
 
-    use Syscalls, only: copy_addr
+    use Syscalls, only: copy_addr, copy_addr_dble
     use General, only: string_to_enum
 
     integer, parameter :: n_pars=2000
@@ -1237,8 +1237,8 @@ subroutine run_start() bind(C)
 
 call copy_addr(ncoarse,p_par(1)) ! int
 call copy_addr(lcoarse,p_par(2)) ! bool
-call copy_addr(unit_magnetic,p_par(4))
-call copy_addr(k_b,p_par(5))
+call copy_addr_dble(unit_magnetic,p_par(4))
+call copy_addr_dble(k_b,p_par(5))
 
 call copy_addr(m2,p_par(7)) ! int
 call copy_addr(n2,p_par(8)) ! int
@@ -1408,12 +1408,12 @@ call copy_addr(dtdec,p_par(345))
 call copy_addr(maux_vtxbuf_index,p_par(346)) ! int (mfarray)
 call copy_addr(num_substeps,p_par(347)) ! int
 
-call copy_addr(unit_length,p_par(349))
-call copy_addr(unit_temperature,p_par(350))
-call copy_addr(unit_mass,p_par(351))
-call copy_addr(unit_energy,p_par(352))
-call copy_addr(unit_time,p_par(353))
-call copy_addr(unit_pressure,p_par(354))
+call copy_addr_dble(unit_length,p_par(349))
+call copy_addr_dble(unit_temperature,p_par(350))
+call copy_addr_dble(unit_mass,p_par(351))
+call copy_addr_dble(unit_energy,p_par(352))
+call copy_addr_dble(unit_time,p_par(353))
+call copy_addr_dble(unit_pressure,p_par(354))
 call copy_addr(m_u,p_par(355))
 call copy_addr(lchemonly,p_par(357)) ! bool
 call copy_addr(iviscosity,p_par(358)) ! int
@@ -1422,8 +1422,8 @@ call copy_addr(xgrid,p_par(360)) ! (nxgrid)
 call copy_addr(lxyz,p_par(361)) ! real3
 call copy_addr(reac_dust,p_par(362)) ! (nx)
 call copy_addr(ichemspec,p_par(363)) ! (nchemspec)
-call copy_addr(unit_velocity,p_par(365))
-call copy_addr(unit_density,p_par(366))
+call copy_addr_dble(unit_velocity,p_par(365))
+call copy_addr_dble(unit_density,p_par(366))
 call copy_addr(m_p,p_par(367))
 call copy_addr(sigmasb,p_par(368))
 call copy_addr(cdts,p_par(369))
@@ -1478,6 +1478,7 @@ call copy_addr(cdtf,p_par(1170))
 call copy_addr(dx_tilde,p_par(1171)) ! (mx)
 call copy_addr(dy_tilde,p_par(1172)) ! (my)
 call copy_addr(dz_tilde,p_par(1173)) ! (mz)
+call copy_addr(lread_oldsnap,p_par(1171))
 
 endsubroutine pushpars2c
 !***********************************************************************
