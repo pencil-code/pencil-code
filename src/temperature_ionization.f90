@@ -40,6 +40,7 @@ module Energy
   real :: pthresh=0., pbackground=0., pthreshnorm
   real :: xjump_mid=0.,yjump_mid=0.,zjump_mid=0.
   real :: widthTT, amplTT1, amplTT2, delta_TT, hubble_energy=0.
+  real :: rad_temp_surr=298., opacity=0.  
   real, pointer :: reduce_cs2
   logical, pointer :: lreduced_sound_speed, lscale_to_cs2top
   logical, pointer :: lpressuregradient_gas
@@ -50,6 +51,7 @@ module Energy
   logical :: lheatc_chiconst=.false.,lheatc_chiconst_accurate=.false.
   logical :: lheatc_hyper3=.false.
   logical :: lheatc_shock=.false.
+  logical :: lrad_cool_heat=.false.
   integer, parameter :: nheatc_max=3
   logical :: lenergy_slope_limited=.false.
   character (len=labellen), dimension(ninit) :: initlnTT='nothing'
@@ -69,7 +71,8 @@ module Energy
       lheatc_chiconst_accurate,lheatc_hyper3,chi_hyper3, &
       iheatcond, zheat_uniform_range, heat_source_offset, &
       heat_source_sigma, heat_source, lheat_source, &
-      pthresh, pbackground,chi_shock, hubble_energy
+      pthresh, pbackground,chi_shock, hubble_energy, &
+      lrad_cool_heat,rad_temp_surr, opacity
 !
   integer :: idiag_TTmax=0    ! DIAG_DOC: $\max (T)$
   integer :: idiag_TTmin=0    ! DIAG_DOC: $\min (T)$
@@ -193,7 +196,7 @@ module Energy
 !
 !  Check whether we want heating/cooling
 !
-      lcalc_heat_cool = (heat_uniform/=0.0.or.tau_heat_cor>0.or.lheat_source)
+      lcalc_heat_cool = (heat_uniform/=0.0.or.tau_heat_cor>0.or.lheat_source.or. lrad_cool_heat)
 !
 !  Define bottom and top z positions
 !  (TH: This should really be global variables IMHO)
@@ -953,6 +956,12 @@ module Energy
       if (lheat_source) then
         fnorm=(2.*pi*heat_source_sigma**2)**1.5
         heat=heat+(heat_source/fnorm)*exp(-.5*((x(l1:l2)-heat_source_offset)/heat_source_sigma)**2)
+      endif
+      !
+      ! Radiative exchange with surroundings
+      !
+      if (lrad_cool_heat) then
+        heat=(rad_temp_surr**4-p%TT**4)*sigmaSB*opacity
       endif
 !
 !  add "coronal" heating (to simulate a hot corona)
