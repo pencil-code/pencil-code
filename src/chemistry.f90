@@ -176,6 +176,11 @@ module Chemistry
   character(len=labellen) :: iconc_sat_spec="const"
   character(len=30) :: inucl_pre_exp="const"      
   logical :: lnoevap=.false., lnolatentheat=.true.
+  !
+  character(len=30), dimension(nchemspec) :: init_premixed_fuel
+  real, dimension(nchemspec) :: init_fuel_molar_ratio
+  real, dimension(nchemspec) :: init_fuel_O2_demand
+  real :: init_temp_fuel, init_temp_oxidizer, init_phi
 !
 !   Atmospheric physics
 !
@@ -221,7 +226,8 @@ module Chemistry
       file_name, lreac_as_aux, init_zz1, init_zz2, flame_pos, &
       reac_rate_method,global_phi, lSmag_heat_transport, Pr_turb, lSmag_diffusion, z_cloud, &
       lhotspot, lchem_detailed, condensing_species, conc_sat_spec_cgs, &
-      true_density_cond_spec_cgs, delta_chem, press
+      true_density_cond_spec_cgs, delta_chem, press, init_premixed_fuel, &
+      init_fuel_molar_ratio,init_fuel_O2_demand,init_temp_fuel, init_temp_oxidizer, init_phi
 !
 !
 ! run parameters
@@ -730,6 +736,8 @@ module Chemistry
           call FlameMaster_ini(f,file_name)
         case ('flame_front_new')
           call flame_front_new(f)
+        case ('premixed_equiv_ratio')
+          call premixed_equiv_ratio(f)
         case ('double_shear_layer')
 !
 !  Double shear layer
@@ -5815,6 +5823,97 @@ module Chemistry
       close(file_id)
 !
     endsubroutine air_field
+
+    !***********************************************************************
+    subroutine premixed_equiv_ratio(f)
+      !      
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(nchemspec) :: conc=0.0, initial_massfractions=0.0, dens_spec=0.0
+      real :: conc_total, dens_total, mean_molar_mass
+      real :: rel_mass_oxidizer, rho, TT
+      integer :: i, j, ichem_O2, ichem_N2, ind_chem, ind_glob
+      logical :: found_specie
+      character(len=30) :: spe, specie_string
+!
+      !init_premixed_fuel(1)="SiO"
+      !init_premixed_fuel(2)="CO"
+      !init_fuel_molar_ratio(1)=0.5
+      !init_fuel_molar_ratio(2)=0.5
+      !init_fuel_O2_demand(1)=0.5
+      !init_fuel_O2_demand(2)=0.5
+      !phi=1.0
+
+      print*,"init_premixed_fuel=",init_premixed_fuel
+      
+      call find_species_index("O2",ind_glob,ichem_O2,found_specie)
+      conc(ichem_O2)=1.
+      call find_species_index("N2",ind_glob,ichem_N2,found_specie)
+      conc(ichem_N2)=conc(ichem_O2)*79./21.
+      !
+      ! Check that the molar ratios of the fuel sums to unity
+      !
+      if (sum(init_fuel_molar_ratio) .ne. 1.0) then
+        call fatal_error("premixed_equiv_ratio","init_fuel_molar_ratio must sum to unity.")
+      endif
+      !
+      ! Loop over all species and check which that are present
+      !
+      do i=1,nchemspec
+        if (init_fuel_molar_ratio(i) .gt. 0) then
+          specie_string=init_premixed_fuel(i)
+          call find_species_index(specie_string,ind_glob,ind_chem,found_specie)
+          conc(ind_chem)=conc(ichem_O2)*init_phi*init_fuel_molar_ratio(i)*init_fuel_O2_demand(i)
+          print*,"i,specie_string,ind_glob_ind_chem,found_specie=",i,specie_string,ind_glob,ind_chem,found_specie,conc(ind_chem)
+        endif
+      enddo
+      !
+      ! Find total molar concentration and use this to determine mass fractions
+      !
+      conc_total=sum(conc)
+      dens_spec=conc*species_constants(:,imass)
+      dens_total=sum(dens_spec)
+      mean_molar_mass=0.
+      do i=1,nchemspec
+        initial_massfractions(i)=dens_spec(i)/dens_total
+        f(:,:,:,ichemspec(i))=initial_massfractions(i)
+        mean_molar_mass=mean_molar_mass+conc(i)*species_constants(i,imass)/conc_total
+      enddo
+      !
+      ! Calculate temperature based on temperature of fuel and oxidizer streams
+      ! Here we assume that the heat capacities of the two streams are equal
+      !
+      rel_mass_oxidizer=initial_massfractions(ichem_O2)+initial_massfractions(ichem_N2)
+      TT=init_temp_oxidizer*(rel_mass_oxidizer)+init_temp_fuel*(1-rel_mass_oxidizer)
+      if (ltemperature_nolog) then
+        f(:,:,:,iTT)=TT
+      else
+        f(:,:,:,ilnTT)=alog(TT)
+      endif
+      !
+      ! Set density
+      !
+      rho=init_pressure*mean_molar_mass/(Rgas*TT)
+      if (ldensity_nolog) then
+        f(:,:,:,irho)=rho
+      else
+        f(:,:,:,ilnrho)=alog(rho)
+      endif
+      !
+      ! Print results
+      !
+      if (lroot) then
+        print*, 'Oxidizer temperature, [K] =', init_temp_oxidizer
+        print*, 'Fuel temperature, [K]     =', init_temp_fuel
+        print*, 'Mixture temperature, [K]  =', TT
+        print*, 'Pressure, [dyn]           =', init_pressure
+        print*, 'Density, [g/cm^3]         =', rho
+        do j=1,nchemspec
+          spe="Y("//trim(varname(ichemspec(j)))//")="
+          write (*,'(A10,F10.7)') spe,initial_massfractions(j)
+        enddo
+      endif
+!
+    endsubroutine premixed_equiv_ratio
 !***********************************************************************
 !          NSCBC boundary conditions
 !***********************************************************************
