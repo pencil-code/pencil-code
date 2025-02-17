@@ -156,7 +156,7 @@ module Special
 !
       call put_shared_variable('alpf',alpf,caller='register_disp_current')
       call put_shared_variable('lphi_hom',lphi_hom)
-      call put_shared_variable('lnoncollinear_EB',lphi_hom,caller='register_disp_current')
+      call put_shared_variable('lnoncollinear_EB',lnoncollinear_EB,caller='register_disp_current')
 !
       if (lroot) call svn_id( &
            "$Id$")
@@ -390,7 +390,7 @@ module Special
       type (pencil_case) :: p
 !
       real, dimension (nx) :: tmp
-      real, dimension (nx) :: boost, gam_EB, eprime, bprime, jprime !, sigE, sigB
+      real, dimension (nx) :: boost, gam_EB, eprime, bprime, jprime
       integer :: i,j,k
 !
       intent(in) :: f
