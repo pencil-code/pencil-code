@@ -430,6 +430,7 @@ make_astaroth_dir()
   adddir $src/astaroth/submodule
 ## subdirectories of submodule
   adddir $src/astaroth/submodule/acc-runtime 
+  adddir $src/astaroth/submodule/acc-comm
   adddir $src/astaroth/submodule/runtime_compilation
   adddir $src/astaroth/submodule/acc-runtime/built-in
   adddir $src/astaroth/submodule/acc-runtime/samples
@@ -459,6 +460,7 @@ link_astaroth_files()
 #  len=`expr match "$srcdir/cuda/astaroth/" '.*astaroth/'`
   for file in $srcdir/astaroth/*.cc $srcdir/astaroth/*.h $srcdir/astaroth/Makefile* $srcdir/astaroth/*.txt $srcdir/astaroth/*.sed $srcdir/astaroth/DSL/* \
               $srcdir/astaroth/submodule/CMakeLists.txt $srcdir/astaroth/submodule/include $srcdir/astaroth/submodule/stdlib \
+  	      $srcdir/astaroth/submodule/acc-comm/* \
               $srcdir/astaroth/submodule/acc-runtime/CMakeLists.txt \
               $srcdir/astaroth/submodule/acc-runtime/acc \
               $srcdir/astaroth/submodule/acc-runtime/api \
