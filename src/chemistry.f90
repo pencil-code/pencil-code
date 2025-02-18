@@ -6841,10 +6841,7 @@ module Chemistry
       ! particles_temperature.f90.
       !
       if (.not. lnolatentheat) then
-        ! NILS: Please check that theis correctly added to the energy
-        ! NILS: equation before using this option.
-        !call fatal_error("cond_spec_cond_lagr","Please check that this is correct")
-         p%latent_heat(ix)=p%latent_heat(ix)+p%ff_cond(ix)*deltaH_cgs/unit_temperature/molar_mass_spec*unit_mass 
+        p%latent_heat(ix)=p%latent_heat(ix)+ffcondp*deltaH_cgs/unit_temperature/molar_mass_spec*unit_mass
       endif
 !
     end subroutine cond_spec_cond_lagr
