@@ -271,7 +271,7 @@ module Chemistry
 !
   integer :: idiag_lambdam=0,idiag_lambdamax=0,idiag_lambdamin=0
   integer :: idiag_alpham=0,idiag_alphamax=0,idiag_alphamin=0
-  integer :: idiag_ffnucl=0, idiag_supersat=0
+  integer :: idiag_ffnucl=0, idiag_supersat=0, idiag_latent_heat=0
 !
 !  Auxiliaries.
 !
@@ -3567,6 +3567,9 @@ module Chemistry
           if (idiag_conc_satm/=0) call sum_mn_name(p%conc_sat_spec,idiag_conc_satm)
           if (idiag_ffnucl/= 0) call sum_mn_name(p%ff_nucl,idiag_ffnucl)
         endif
+        if (.not. lnolatentheat) then
+          if (idiag_latent_heat/= 0) call sum_mn_name(p%latent_heat,idiag_latent_heat)
+        endif
         if (isupsat/=0) then
           if (idiag_supersat/= 0) call sum_mn_name(f(l1:l2,m,n,isupsat),idiag_supersat)
         endif
@@ -3657,6 +3660,7 @@ module Chemistry
         idiag_alphamin = 0
         idiag_ffnucl = 0
         idiag_supersat = 0
+        idiag_latent_heat = 0
 !
         idiag_nuclrmin=0
         idiag_nuclrate=0
@@ -3712,6 +3716,7 @@ module Chemistry
         call parse_name(iname,cname(iname),cform(iname),'alphamin',idiag_alphamin)
         call parse_name(iname,cname(iname),cform(iname),'ffnucl',idiag_ffnucl)
         call parse_name(iname,cname(iname),cform(iname),'supersat',idiag_supersat)
+        call parse_name(iname,cname(iname),cform(iname),'latent_heat',idiag_latent_heat)
 !
 !  Sample for hard-coded diffusion diagnostics
 !
