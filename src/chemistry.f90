@@ -738,7 +738,7 @@ module Chemistry
           call flame_front_new(f)
         case ('premixed_equiv_ratio')
           call premixed_equiv_ratio(f)
-        case ('double_shear_layer')
+        case ('double_shear_layer', 'double_shear_layer_x')
 !
 !  Double shear layer
 !
@@ -769,16 +769,34 @@ module Chemistry
             write (*,'(A10,2F23.6)') "SUM",sum(amplchemk),sum(amplchemk2)
 
           endif
-          do m=1,my
-            der=2./delta_chem
-            prof=(tanh(der*(y(m)+widthchem))-   &
-                 tanh(der*(y(m)-widthchem)))/2.
-            do k=1,nchemspec
-              do n=1,mz
-                f(1:mx,m,n,ichemspec(k))=amplchemk(k)*prof +amplchemk2(k)*(1-prof) 
+!
+!  Different cases for x and y extent.
+!
+          if (initchem(j)=='double_shear_layer_x') then
+            do l=1,mx
+              der=2./delta_chem
+              prof=(tanh(der*(x(l)+widthchem))-   &
+                    tanh(der*(x(l)-widthchem)))/2.
+              do k=1,nchemspec
+                do n=1,mz
+                do m=1,my
+                  f(l,m,n,ichemspec(k))=amplchemk(k)*prof +amplchemk2(k)*(1-prof) 
+                enddo
+                enddo
               enddo
             enddo
-          enddo
+          else
+            do m=1,my
+              der=2./delta_chem
+              prof=(tanh(der*(y(m)+widthchem))-   &
+                   tanh(der*(y(m)-widthchem)))/2.
+              do k=1,nchemspec
+                do n=1,mz
+                  f(1:mx,m,n,ichemspec(k))=amplchemk(k)*prof +amplchemk2(k)*(1-prof) 
+                enddo
+              enddo
+            enddo
+          endif
           !
           call getmu_array(f,mu1_full)
           !

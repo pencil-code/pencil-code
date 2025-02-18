@@ -2102,6 +2102,20 @@ module Hydro
             enddo
           enddo
 !
+        case ('double_shear_layer_x')
+!
+!  Double shear layer (x-dependence)
+!
+          if (lroot) print*,'init_uu: Double shear layer (x-dependence)'
+          der=2./delta_u
+          prof=ampluu(j)*(tanh(der*(x(l1:l2)+widthuu))-   &
+                          tanh(der*(x(l1:l2)-widthuu)))/2.
+            do n=n1,n2
+            do m=m1,m2
+              f(l1:l2,m,n,iuy)=prof
+            enddo
+          enddo
+!
         case ('double_shear_layer')
 !
 !  Double shear layer

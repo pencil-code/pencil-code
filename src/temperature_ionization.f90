@@ -310,6 +310,7 @@ module Energy
       use InitialCondition, only: initial_condition_ss
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, dimension (nx) :: profx
       real :: der, prof
 !
       integer :: j
@@ -347,11 +348,22 @@ module Energy
           case ('yjump'); call jump(f,ilnTT,lnTT_left,lnTT_right,widthlnTT,xjump_mid,yjump_mid,zjump_mid,'y')
           case ('zjump'); call jump(f,ilnTT,lnTT_left,lnTT_right,widthlnTT,xjump_mid,yjump_mid,zjump_mid,'z')
           case ('gaussian-noise'); call gaunoise(ampl_lnTT,f,ilnTT)
+!
+          case ('double_shear_layer_x')
+            der=2./delta_TT
+            profx=(tanh(der*(x(l1:l2)+widthTT))-   &
+                   tanh(der*(x(l1:l2)-widthTT)))/2.
+            do n=n1,n2
+            do m=m1,m2
+              f(l1:l2,m,n,ilnTT)=alog(amplTT1*profx+amplTT2*(1-profx)) 
+            enddo
+            enddo
+!
           case ('double_shear_layer')
             do m=m1,m2
               der=2./delta_TT
               prof=(tanh(der*(y(m)+widthTT))-   &
-                   tanh(der*(y(m)-widthTT)))/2.
+                    tanh(der*(y(m)-widthTT)))/2.
               do n=n1,n2
                 f(l1:l2,m,n,ilnTT)=alog(amplTT1*prof +amplTT2*(1-prof)) 
               enddo
