@@ -145,6 +145,7 @@ module Density
   logical :: ldensity_slope_limited=.false.
   real :: h_sld_dens=2.0, nlf_sld_dens=1.0
   real, dimension(3) :: beta_glnrho_global = 0., beta_glnrho_scaled=0.
+!$omp declare target(reference_state)
 !
   namelist /density_init_pars/ &
       ampllnrho, initlnrho, widthlnrho, rho_left, rho_right, lnrho_const, &
@@ -291,10 +292,10 @@ module Density
   real, dimension(nx) :: diffus_diffrho3
   real :: density_floor_log, density_ceiling_log
 !
-  integer :: string_enum_ieos_profile = 0
-  integer :: string_enum_mass_source_profile = 0
-  integer :: string_enum_div_sld_dens = 0
-  integer :: string_enum_borderlnrho = 0
+  integer :: enum_ieos_profile = 0
+  integer :: enum_mass_source_profile = 0
+  integer :: enum_div_sld_dens = 0
+  integer :: enum_borderlnrho = 0
 
   contains
 !***********************************************************************
@@ -386,7 +387,6 @@ module Density
         call put_shared_variable('reference_state',reference_state)
         call put_shared_variable('reference_state_mass',reference_state_mass)
       endif
-
 
     endsubroutine register_density
 !***********************************************************************
@@ -889,7 +889,7 @@ module Density
 ! default to catch unknown values
 !
           case default
-            call fatal_error('initialize_density','no such mass_source_profile')
+            call fatal_error('initialize_density','no such mass_source_profile: '//trim(mass_source_profile))
         endselect
       endif
 !
@@ -3092,7 +3092,6 @@ module Density
 
       endselect
 !
-!
     endsubroutine set_border_density
 !***********************************************************************
 !  Here comes a collection of different density stratification routines
@@ -3387,8 +3386,6 @@ module Density
 !  Choose between different possibilities.
 !
       select case (mass_source_profile)
-        case ('nothing')
-          call not_implemented('mass_source','mass source with no profile')
         case ('exponential')
           dlnrhodt=mass_source_Mdot
         case('bump')
@@ -3423,8 +3420,6 @@ module Density
 !
 ! default to catch unknown values
 !
-        case default
-          call fatal_error('mass_source','no such mass_source_profile: '//trim(mass_source_profile))
         endselect
 !
 !  Add mass source.
@@ -4098,12 +4093,12 @@ module Density
     call copy_addr(lsubtract_init_stratification,p_par(45)) ! bool
     call copy_addr(ldensity_slope_limited,p_par(46)) ! bool
     call copy_addr(lupdate_mass_source,p_par(47)) ! bool
-    call string_to_enum(string_enum_ieos_profile,ieos_profile)
-    call copy_addr(string_enum_ieos_profile,p_par(48)) ! int
-    call string_to_enum(string_enum_mass_source_profile,mass_source_profile)
-    call copy_addr(string_enum_mass_source_profile,p_par(49)) ! int
-    call string_to_enum(string_enum_borderlnrho,borderlnrho)
-    call copy_addr(string_enum_borderlnrho,p_par(50)) ! int
+    call string_to_enum(enum_ieos_profile,ieos_profile)
+    call copy_addr(enum_ieos_profile,p_par(48)) ! int
+    call string_to_enum(enum_mass_source_profile,mass_source_profile)
+    call copy_addr(enum_mass_source_profile,p_par(49)) ! int
+    call string_to_enum(enum_borderlnrho,borderlnrho)
+    call copy_addr(enum_borderlnrho,p_par(50)) ! int
     call copy_addr(xblob,p_par(51)) ! (ninit)
     call copy_addr(yblob,p_par(52)) ! (ninit)
     call copy_addr(zblob,p_par(53)) ! (ninit)

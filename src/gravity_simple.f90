@@ -68,10 +68,10 @@ module Gravity
   character (len=labellen) :: gravx_profile='zero', gravy_profile='zero', &
                               gravz_profile='zero', grav_type='default'
 
-  integer :: string_enum_gravx_profile = 0
-  integer :: string_enum_gravy_profile = 0
-  integer :: string_enum_gravz_profile = 0
-  integer :: string_enum_grav_type     = 0
+  integer :: enum_gravx_profile = 0
+  integer :: enum_gravy_profile = 0
+  integer :: enum_gravz_profile = 0
+  integer :: enum_grav_type     = 0
 !
 !  Parameters used by other modules (only defined for other gravities)
 !
@@ -161,6 +161,52 @@ module Gravity
   real ::G4pi
   real, dimension(:,:), pointer :: reference_state
 !
+! for transpilation: strings used as case markers in select case statements tb executed on the GPU
+!                    When adding new cases, extend here (LEN and dimension), if necessary
+!
+     character(LEN=12),dimension(15),parameter :: gravx_profile_strings=(/ &
+      'zero', &
+      'const', &
+      'const_tilt', &
+      'linear_x', &
+      'linear_zdep', &
+      'tanh-pot', &
+      'sinusoidal', &
+      'Baker74', &
+      'kepler', &
+      'kepler_2d', &
+      'CZbot1', &
+      'CZmid1', &
+      'solid_sphere', &
+      'loop', &
+      'half-loop'/)
+
+      character(LEN=10),dimension(4),parameter :: gravy_profile_strings=(/ &
+      'zero','const','sinusoidal','kepler'/)
+
+      character(LEN=15),dimension(19),parameter :: gravz_profile_strings=(/ &
+      'zero', &
+      'const', &
+      'const_tilt', &
+      'tanh', &
+      'boussinesq', &
+      'const_zero', &
+      'linear', &
+      'solid_sphere', &
+      'profile', &
+      'spherical', &
+      'linear_xdep', &
+      'linear_smoothed', &
+      'sinusoidal', &
+      'loop', &
+      'kepler', &
+      'Ferriere', &
+      'Ferriere-R', &
+      'Galactic-hs', &
+      'reduced_top'/)
+
+      character(LEN=8),dimension(2),parameter :: grav_type_strings =(/'accretor','default'/)
+
   contains
 !***********************************************************************
     subroutine register_gravity
@@ -218,9 +264,8 @@ module Gravity
         if (gravx_profile == 'zero' .and. &
             gravy_profile == 'zero' .and. &
             gravz_profile == 'zero' .and. &
-            grav_type == 'default') then
+            grav_type == 'default') &
           call warning('initialize_gravity','You do not need gravity_simple for zero gravity')
-        endif
       endif
 !
 !  Possibility of specifying zref (if zinfty is not given).
@@ -975,9 +1020,7 @@ module Gravity
           p%gg(:,1) = fact*xaccretor
           p%gg(:,2) = fact*y(m)
           p%gg(:,3) = fact*z(n)
-          if (lpencil(i_epot)) then
-            p%epot=-accretor_grav*one_over_r
-          endif
+          if (lpencil(i_epot)) p%epot=-accretor_grav*one_over_r
         endif
 !
 !  timestep
@@ -990,8 +1033,6 @@ module Gravity
           p%gg(:,3) = gravz_zpencil(n)
         endif
         if (lpencil(i_epot)) p%epot=p%rho*(potx_xpencil(l1:l2)+poty_ypencil(m)+potz_zpencil(n))
-      case default
-        call fatal_error('calc_pencils_gravity','no such grav_type')
       endselect
 !
       call keep_compiler_quiet(f)
@@ -1477,14 +1518,13 @@ module Gravity
     subroutine pushpars2c(p_par)
 
     use Syscalls, only: copy_addr
-    use General , only: string_to_enum
+    use General , only: pos_in_array, string_to_enum
 
-    integer, parameter :: n_pars=400
+    integer, parameter :: n_pars=21
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call copy_addr(gravz,p_par(1))
     call copy_addr(gravz_zpencil,p_par(2)) ! (mz)
-
     call copy_addr(zgrav,p_par(3))
     call copy_addr(accretor_grav,p_par(4))
     call copy_addr(accretor_speed,p_par(5))
@@ -1501,15 +1541,19 @@ module Gravity
     call copy_addr(xdep,p_par(16)) ! (mx)
     call copy_addr(zdep,p_par(17)) ! (mz)
 
+!    enum_gravx_profile = pos_in_array(gravx_profile,gravx_profile_strings)
+!    enum_gravy_profile = pos_in_array(gravy_profile,gravy_profile_strings)
+!    enum_gravz_profile = pos_in_array(gravz_profile,gravz_profile_strings)
+!    enum_grav_type     = pos_in_array(grav_type,grav_type_strings)
     call string_to_enum(string_enum_gravx_profile,gravx_profile)
     call string_to_enum(string_enum_gravy_profile,gravy_profile)
     call string_to_enum(string_enum_gravz_profile,gravz_profile)
     call string_to_enum(string_enum_grav_type    ,grav_type)
 
-    call copy_addr(string_enum_gravx_profile,p_par(18)) ! int
-    call copy_addr(string_enum_gravy_profile,p_par(19)) ! int
-    call copy_addr(string_enum_gravz_profile,p_par(20)) ! int
-    call copy_addr(string_enum_grav_type    ,p_par(21)) ! int
+    call copy_addr(enum_gravx_profile,p_par(18))   ! int
+    call copy_addr(enum_gravy_profile,p_par(19))   ! int
+    call copy_addr(enum_gravz_profile,p_par(20))   ! int
+    call copy_addr(enum_grav_type    ,p_par(21))   ! int
 
     endsubroutine pushpars2c
 !***********************************************************************

@@ -37,20 +37,17 @@ void cleanup_sem() {
         }
     }
 }
-void
-register_exit_cleanup(const char* name)
+void register_exit_cleanup(const char* name)
 {
 	global_shm_name = name;
 	atexit(cleanup_shared_memory);
 }
-void
-register_sem_cleanup(const char* name)
+void register_sem_cleanup(const char* name)
 {
 	global_sem_name = name;
 	atexit(cleanup_sem);
 }
-int
-open_shm(const char* name, const int create)
+int open_shm(const char* name, const int create)
 {
     const int shm_fd = shm_open(name, create | O_RDWR, READ_AND_WRITE_PERMISSIONS_TO_ALL);
     if (shm_fd == -1) {
@@ -59,8 +56,7 @@ open_shm(const char* name, const int create)
     }
     return shm_fd;
 }
-shm
-create_shm(const char* name, const off_t size)
+shm create_shm(const char* name, const off_t size)
 {
     const int shm_fd = open_shm(name,O_CREAT);
     if (ftruncate(shm_fd, size) == -1) {
@@ -70,16 +66,14 @@ create_shm(const char* name, const off_t size)
     }
     return (shm){shm_fd,size};
 }
-bool
-shm_exists(const char* name)
+bool shm_exists(const char* name)
 {
     const int shm_fd = shm_open(name,  O_RDWR, READ_AND_WRITE_PERMISSIONS_TO_ALL);
     if (shm_fd != -1) close(shm_fd);
     return shm_fd != -1;
 
 }
-REAL*
-map_shm(const shm x)
+REAL* map_shm(const shm x)
 {
     REAL* addr = (REAL*)mmap(0, x.size, PROT_READ | PROT_WRITE, MAP_SHARED, x.fd, 0);
     if (addr == MAP_FAILED) {
@@ -89,20 +83,15 @@ map_shm(const shm x)
     }
     return addr;
 }
-REAL*
-get_shm(const int n_elems, const char* name)
+REAL* get_shm(const int n_elems, const char* name)
 {
     return map_shm(
 		    (shm){
 		    	open_shm(name,0),
 			n_elems*sizeof(REAL)
 		    });
-
 }
-
-
-REAL* 
-allocate_shm(const long long *n_elems, const char* name) {
+REAL* FTNIZE(allocate_shm)(const long long *n_elems, const char* name) {
 
     register_exit_cleanup(name);
     const off_t size = *n_elems*sizeof(REAL);
@@ -113,8 +102,7 @@ allocate_shm(const long long *n_elems, const char* name) {
     close(shm_res.fd);
     return res;
 }
-sem_t*
-create_sem(const char* name)
+sem_t* create_sem(const char* name)
 {
     sem_t* sem = sem_open(name, O_CREAT, 0666, 1);
     if (sem == SEM_FAILED) {
@@ -124,8 +112,7 @@ create_sem(const char* name)
     register_sem_cleanup(name);
     return sem;
 }
-sem_t*
-get_sem(const char* name)
+sem_t* get_sem(const char* name)
 {
     sem_t* sem = sem_open(name, 0);
     if (sem == SEM_FAILED) {
