@@ -37,6 +37,8 @@ module Cdata
   real(KIND=rkind8) :: unit_length=impossible,unit_velocity=impossible
   real(KIND=rkind8) :: unit_density=impossible,unit_temperature=impossible
   real(KIND=rkind8) :: unit_magnetic=impossible,unit_entropy=impossible
+  real(KIND=rkind8) :: sigma_Thomson=impossible
+  real :: mu0=1., mu01=0. !  magnetic permeability [should be in Magnetic]
 !
 !  Derived units
 !
@@ -175,7 +177,6 @@ module Cdata
   real :: r_int_border=impossible,r_ext_border=impossible
   real :: r_ref=1.,rsmooth=0.,box_volume=1.0
   real :: Area_xy=1., Area_yz=1., Area_xz=1.
-  real :: mu0=1., mu01=0. !  magnetic permeability [should be in Magnetic]
   logical :: lfirst=.false.,llast=.false.,ldt_paronly=.false.
   logical :: ldt=.true.
   logical :: lcourant_dt=.true.
