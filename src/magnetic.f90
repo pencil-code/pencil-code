@@ -178,7 +178,7 @@ module Magnetic
   real :: eta_power_x=0., eta_power_z=0.
   real :: z1_aa=0., z2_aa=0.
   real :: Pm_smag1=1., k1hel=0., k2hel=max_real, qexp_aa=0.
-  real :: nfact_aa=4.
+  real :: nfact_aa=4., hubble_magnetic=0.
   real :: r_inner=0., r_outer=0.
   real :: eta_tdep_loverride_ee=0., echarge=.55
   integer, target :: va2power_jxb = 5
@@ -290,7 +290,7 @@ module Magnetic
       r_inner, r_outer, lpower_profile_file, eta_jump0, eta_jump1, eta_jump2, &
       lcoulomb, qexp_aa, nfact_aa, lfactors_aa, lvacuum, l2d_aa, &
       loverride_ee_decide, eta_tdep_loverride_ee, z0_gaussian, width_gaussian, &
-      echarge, lnorm_aa_kk, lohm_evolve
+      echarge, lnorm_aa_kk, lohm_evolve, hubble_magnetic
 !
 ! Run parameters
 !
@@ -433,7 +433,7 @@ module Magnetic
       lbraginsky, eta_jump0, eta_jump1, lcoulomb, lvacuum, &
       loverride_ee_decide, eta_tdep_loverride_ee, loverride_ee2, lignore_1rho_in_Lorentz, &
       lbext_moving_layer, zbot_moving_layer, ztop_moving_layer, speed_moving_layer, edge_moving_layer, &
-      echarge, lno_eta_tdep, luse_scale_factor_in_sigma, ell_jj, tau_jj
+      echarge, lno_eta_tdep, luse_scale_factor_in_sigma, ell_jj, tau_jj, hubble_magnetic
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -1280,6 +1280,7 @@ module Magnetic
       endif
 !
       call put_shared_variable('rhoref', rhoref)
+      call put_shared_variable('echarge', echarge)
 !
 !  Share lweyl_gauge
 !
@@ -3983,7 +3984,11 @@ module Magnetic
         if (.not. (lbb_as_comaux .and. lB_ext_in_comaux) .and. (.not. ladd_global_field)) then
           call get_bext(B_ext,j_ext)
           if (any(B_ext/=0.)) then
-            do j = 1,3; p%bb(:,j) = p%bb(:,j) + B_ext(j); enddo;
+            if (hubble_magnetic/=0.) then
+              do j = 1,3; p%bb(:,j) = p%bb(:,j) + B_ext(j)/t**(2.*hubble_magnetic); enddo;
+            else
+              do j = 1,3; p%bb(:,j) = p%bb(:,j) + B_ext(j); enddo;
+            endif
             if (headtt) print *, 'calc_pencils_magnetic_pencpar: B_ext = ', B_ext
             if (headtt) print *, 'calc_pencils_magnetic_pencpar: logic = ', &
                         (lbb_as_comaux .and. lB_ext_in_comaux .and. ladd_global_field)
@@ -6036,6 +6041,12 @@ module Magnetic
         f(l1:l2,m,n,ibb_sphr) = p%bb(:,1)*p%evr(:,1)+p%bb(:,2)*p%evr(:,2)+p%bb(:,3)*p%evr(:,3)
         f(l1:l2,m,n,ibb_spht) = p%bb(:,1)*p%evth(:,1)+p%bb(:,2)*p%evth(:,2)+p%bb(:,3)*p%evth(:,3)
         f(l1:l2,m,n,ibb_sphp) = p%bb(:,1)*p%phix+p%bb(:,2)*p%phiy
+      endif
+!
+!  Hubble parameter
+!
+      if (hubble_magnetic/=0.) then
+        dAdt = dAdt - 2.*hubble_magnetic/t
       endif
 !
 !  Now add all the contribution to dAdt so far into df.

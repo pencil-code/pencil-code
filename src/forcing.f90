@@ -724,7 +724,8 @@ module Forcing
         enddo
         profz_ampl=1.; profz_hel=1.
 !
-!  just a change in intensity in the z direction
+!  Just a change in intensity in the z direction.
+!  Note that .5+.5*cos(z) = cos^2(z/2).
 !
       elseif (iforce_profile=='intensity') then
         profx_ampl=1.; profx_hel=1.
@@ -732,6 +733,16 @@ module Forcing
         profz_hel=1.
         do n=1,mz
           profz_ampl(n)=.5+.5*cos(z(n))
+        enddo
+!
+!  A steeper change in intensity in the z direction using .5+.5*tanh(5*cos(z))
+!
+      elseif (iforce_profile=='step-profile') then
+        profx_ampl=1.; profx_hel=1.
+        profy_ampl=1.; profy_hel=1.
+        profz_hel=1.
+        do n=1,mz
+          profz_ampl(n)=.5+.5*tanh(5.*cos(z(n)))
         enddo
 !
 !  Galactic profile both for intensity and helicity

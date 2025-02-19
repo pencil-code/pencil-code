@@ -62,7 +62,7 @@ module Gravity
   real :: g_E, g_F, Rgal=impossible, Rsol=impossible
   real :: cs0hs=0.0, H0hs=0.0
   real :: potx_const=0.0, poty_const=0.0, potz_const=0.0
-  real :: accretor_grav=0., accretor_speed=0., accretor_rsoft=0., kaccretor
+  real :: accretor_grav=0., accretor_speed=0., accretor_rsoft=0., kaccretor, cdt_accretor=0.
   integer :: n_pot=10
   integer :: n_adjust_sphersym=0
   character (len=labellen) :: gravx_profile='zero', gravy_profile='zero', &
@@ -109,7 +109,7 @@ module Gravity
       lboussinesq_grav, n_pot, grav_tilt, grav_amp, &
       potx_const,poty_const,potz_const, zclip, n_adjust_sphersym, gravitational_const, &
       mass_cent_body, g_A_factor, g_C_factor, g_B_factor, g_D_factor, Rsol, Rgal, &
-      grav_type, accretor_grav, accretor_speed, accretor_rsoft, laccretor_peri
+      grav_type, accretor_grav, accretor_speed, accretor_rsoft, laccretor_peri, cdt_accretor
 !
 !  Diagnostic variables for print.in
 ! (needs to be consistent with reset list below)
@@ -121,6 +121,10 @@ module Gravity
                                    ! DIAG_DOC: dV$ \quad(total potential
                                    ! DIAG_DOC: energy)
   integer :: idiag_ugm=0           ! DIAG_DOC: $\left<\uv \cdot \gv\right>$
+  integer :: idiag_rugm=0          ! DIAG_DOC: $\left<\varrho \uv \cdot \gv\right>$
+  integer :: idiag_rgxm=0          ! DIAG_DOC: $\left<\varrho g_x \right>$
+  integer :: idiag_Wgrav=0         ! DIAG_DOC: $\int\varrho \uv \cdot \gv \, dV$
+  integer :: idiag_Fgravx=0        ! DIAG_DOC: $\int\varrho g_x \, dV$
 !
 ! xy averaged diagnostics given in xyaver.in written every it1d timestep
 !
@@ -911,9 +915,14 @@ module Gravity
         lpenc_diagnos(i_epot)=.true.
         lpenc_diagnos(i_uu)=.true.
       endif
-      if (idiag_ugm/=0) then
+      if (idiag_ugm/=0 .or. idiag_rugm/=0 .or. idiag_Wgrav/=0) then
         lpenc_diagnos(i_uu)=.true.
         lpenc_diagnos(i_gg)=.true.
+        if (idiag_rugm/=0 .or. idiag_Wgrav/=0) lpenc_diagnos(i_rho)=.true.
+      endif
+      if (idiag_rgxm/=0 .or. idiag_Fgravx/=0) then
+        lpenc_diagnos(i_gg)=.true.
+        lpenc_diagnos(i_rho)=.true.
       endif
       if (idiag_epotmxy/=0) then
         lpenc_diagnos2d(i_epot)=.true.
@@ -970,6 +979,10 @@ module Gravity
             p%epot=-accretor_grav*one_over_r
           endif
         endif
+!
+!  timestep
+!
+        if (cdt_accretor/=0.) advec2=advec2+(accretor_speed*dline_1(:,1)/cdt_accretor)**2
       case ('default')
         if (lpencil(i_gg)) then
           p%gg(:,1) = gravx_xpencil(l1:l2)
@@ -1079,7 +1092,11 @@ module Gravity
         call sum_mn_name(p%epot,idiag_epot)
         if (idiag_ugm/=0) &
           call sum_mn_name(p%uu(:,1)*p%gg(:,1) + p%uu(:,2)*p%gg(:,2) + p%uu(:,3)*p%gg(:,3),idiag_ugm)
+        call sum_mn_name(p%rho*(p%uu(:,1)*p%gg(:,1) + p%uu(:,2)*p%gg(:,2) + p%uu(:,3)*p%gg(:,3)),idiag_rugm)
+        call sum_mn_name(p%rho*p%gg(:,1),idiag_rgxm)
         call integrate_mn_name(p%epot,idiag_epottot)
+        call integrate_mn_name(p%rho*(p%uu(:,1)*p%gg(:,1) + p%uu(:,2)*p%gg(:,2) + p%uu(:,3)*p%gg(:,3)),idiag_Wgrav)
+        call integrate_mn_name(p%rho*p%gg(:,1),idiag_Fgravx)
       endif
 !
 !  Gravity 1-D diagnostics.
@@ -1378,7 +1395,8 @@ module Gravity
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_epot=0; idiag_epottot=0; idiag_ugm=0
+        idiag_epot=0; idiag_epottot=0; idiag_ugm=0; idiag_rugm=0; idiag_rgxm=0
+        idiag_Wgrav=0; idiag_Fgravx=0
         idiag_epotmx=0; idiag_epotuxmx=0; idiag_epotmy=0; idiag_epotmz=0;
         idiag_epotmxy=0; idiag_epotuzmz=0; idiag_epotuxmxy=0
       endif
@@ -1389,6 +1407,10 @@ module Gravity
         call parse_name(iname,cname(iname),cform(iname),'epot',idiag_epot)
         call parse_name(iname,cname(iname),cform(iname),'epottot',idiag_epottot)
         call parse_name(iname,cname(iname),cform(iname),'ugm',idiag_ugm)
+        call parse_name(iname,cname(iname),cform(iname),'rugm',idiag_rugm)
+        call parse_name(iname,cname(iname),cform(iname),'rgxm',idiag_rgxm)
+        call parse_name(iname,cname(iname),cform(iname),'Wgrav',idiag_Wgrav)
+        call parse_name(iname,cname(iname),cform(iname),'Fgravx',idiag_Fgravx)
       enddo
 !
 !  Check for those quantities for which we want yz-averages.

@@ -180,6 +180,8 @@ module EquationOfState
 ! AXEL: yes, but magnetic has a problematic line
 ! AXEL: "if (ltemperature) lpenc_requested(i_cv1)=.true."
 !
+      if (lpenc_loc(i_cv)) p%cv=0.0
+      if (lpenc_loc(i_cp)) p%cp=0.0
       if (lpenc_loc(i_cv1)) p%cv1=0.0
       if (lpenc_loc(i_cp1)) p%cp1=0.0
       if (lpenc_loc(i_cs2)) p%cs2=cs20

@@ -2107,6 +2107,20 @@ module Hydro
             enddo
           enddo
 !
+        case ('double_shear_layer_x')
+!
+!  Double shear layer (x-dependence)
+!
+          if (lroot) print*,'init_uu: Double shear layer (x-dependence)'
+          der=2./delta_u
+          prof=ampluu(j)*(tanh(der*(x(l1:l2)+widthuu))-   &
+                          tanh(der*(x(l1:l2)-widthuu)))/2.
+            do n=n1,n2
+            do m=m1,m2
+              f(l1:l2,m,n,iuy)=prof
+            enddo
+          enddo
+!
         case ('double_shear_layer')
 !
 !  Double shear layer
@@ -3814,7 +3828,7 @@ module Hydro
       intent(inout) :: f,df
 
       real, dimension (nx,3) :: uu1, tmpv
-      real, dimension (nx) :: tmp, ftot, ugu_Schur_x, ugu_Schur_y, ugu_Schur_z
+      real, dimension (nx) :: tmp, ftot, ugu_Schur_x, ugu_Schur_y, ugu_Schur_z, arad_normal
       real, dimension (nx,3,3) :: puij_Schur
       integer :: i, j, ju
 !
@@ -4000,6 +4014,9 @@ module Hydro
             frict=ekman_friction*max(min(real(t-friction_tdep_toffset)/friction_tdep_tau0,1.),0.)
           case ('inverse')
             frict=ekman_friction/max(real(t),friction_tdep_toffset)
+          case ('Thomson')
+            arad_normal=4*sigmaSB/c_light
+            frict=ekman_friction*fourthird*p%yH*sigma_Thomson*arad_normal*p%TT**4/(m_p*c_light)
           case ('current')
             if (lmagnetic) then
               frict=ekman_friction*sqrt(p%j2)

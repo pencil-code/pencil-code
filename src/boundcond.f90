@@ -202,14 +202,18 @@ module Boundcond
       logical :: lbcxslc,lbcyslc,lbczslc
       character :: prec_in
       character(LEN=3) :: suff_xy2, suff_xz2, suff_yz2
-
-      call get_gamma_etc(gamma)
-      gamma1=1./gamma; gamma_m1=gamma-1.
-
-      if (leos_idealgas) then
-        call get_gamma_etc(cp=cp, cv=cv)
-        cp1=1./cp
+!
+!  The following only makes sense if leos=.true.
+!
+      if (leos) then
+        call get_gamma_etc(gamma)
+        gamma1=1./gamma; gamma_m1=gamma-1.
+        if (leos_idealgas) then
+          call get_gamma_etc(cp=cp, cv=cv)
+          cp1=1./cp
+        endif
       endif
+!
       if (lADI) call get_shared_variable('hcondADI', hcondADI)
 !
 ! Set proper BC code for Yin-Yang grid

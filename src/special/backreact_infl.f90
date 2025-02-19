@@ -98,13 +98,12 @@ module Special
   real :: relhel_phi=0.
   real :: ddotam, a2rhopm, a2rhopm_all, a2rhom, a2rhom_all
   real :: edotbm, edotbm_all, e2m, e2m_all, b2m, b2m_all, a2rhophim, a2rhophim_all
-!  real :: ebm, sigEm, sigBm, ebm_all, sigEm_all, sigBm_all
-  real :: sigEm, sigBm, sigEm_all, sigBm_all
+  real :: sigE1m, sigB1m, sigE1m_all, sigB1m_all, sigEm_all, sigBm_all
   real :: a2rhogphim, a2rhogphim_all
   real :: lnascale, ascale, a2, a21, Hscript
   real :: Hscript0=0., scale_rho_chi_Heqn=1.
   real, target :: ddotam_all
-  real, pointer :: alpf, eta_tdep
+  real, pointer :: alpf, eta_tdep, echarge
 ! real, dimension (:), pointer :: eta_xtdep
   real, dimension (nx) :: dt1_special
   logical :: lbackreact_infl=.true., lem_backreact=.true., lzeroHubble=.false.
@@ -204,6 +203,7 @@ module Special
         call get_shared_variable('alpf',alpf,caller='initialize_backreact_infl')
         call get_shared_variable('lphi_hom',lphi_hom)
         call get_shared_variable('lnoncollinear_EB',lnoncollinear_EB)
+        call get_shared_variable('echarge',echarge,caller='initialize_backreact_infl')
       else
         allocate(alpf)
         allocate(lphi_hom)
@@ -667,7 +667,7 @@ module Special
 !  In the following loop, go through all penciles and add up results to get e2m, etc.
 !
       ddotam=0.; a2rhopm=0.; a2rhom=0.; e2m=0; b2m=0; edotbm=0; a2rhophim=0.; a2rhogphim=0.
-      sigEm=0.; sigBm=0.
+      sigE1m=0.; sigB1m=0.
 !
 !  In the following, sum over all mn pencils.
 !
@@ -698,11 +698,12 @@ module Special
       if (lrho_chi) then
         e2m=e2m/nwgrid
         b2m=b2m/nwgrid
+        sigE1m=sigE1m/nwgrid
+        sigB1m=sigB1m/nwgrid
         call mpiallreduce_sum(e2m,e2m_all)
         call mpiallreduce_sum(b2m,b2m_all)
- !       call mpiallreduce_sum(ebm,ebm_all)
-        call mpiallreduce_sum(sigEm,sigEm_all)
-        call mpiallreduce_sum(sigBm,sigBm_all)
+        call mpiallreduce_sum(sigE1m,sigE1m_all)
+        call mpiallreduce_sum(sigB1m,sigB1m_all)
       endif
 !
       call mpireduce_sum(a2rhopm,a2rhopm_all)
@@ -712,12 +713,14 @@ module Special
       call mpiallreduce_sum(ddotam,ddotam_all)
 !
 !  Choice of prescription for Hscript
+!  Consider renaming Hscript -> Hscript2
 !
       if (lroot .and. lflrw) then
         select case (Hscript_choice)
           case ('default')
-            !Hscript=sqrt((8.*pi/3.)*a2rhom_all)
-            Hscript=(8.*pi/3.)*sqrt(a2rhom_all)
+            !Hscript=(8.*pi/3.)*sqrt(a2rhom_all)
+!AB: this version below was the old one, but appears incorrect
+            Hscript=sqrt((8.*pi/3.)*a2rhom_all)
           case ('set')
             Hscript=Hscript0
             a2=1.
@@ -734,6 +737,11 @@ module Special
       call mpibcast_real(e2m_all)
       call mpibcast_real(b2m_all)
 !
+!  Compute sigE and sigB from sigE1 and sigB1.
+!
+      sigEm_all=sigE1m_all/Hscript
+      sigBm_all=sigB1m_all/Hscript
+!
     endsubroutine special_after_boundary
 !***********************************************************************
     subroutine prep_ode_right(f)
@@ -743,7 +751,8 @@ module Special
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (nx,3) :: el, bb, gphi
       real, dimension (nx) :: e2, b2, gphi2, dphi, a2rhop, a2rho
-      real, dimension (nx) :: ddota, phi, Vpotential, edotb, sigE, sigB
+      real, dimension (nx) :: ddota, phi, Vpotential, edotb, sigE1, sigB1
+      real, dimension (nx) :: boost, gam_EB, eprime, bprime, jprime1
 !
 !  if requested, calculate here <dphi**2+gphi**2+(4./3.)*(E^2+B^2)/a^2>
 !
@@ -800,6 +809,19 @@ module Special
         if (lphi_hom .or. lrho_chi) then
           call dot_mn(el,bb,edotb)
           edotbm=edotbm+sum(edotb)
+!
+!  Repeat calculation of sigE and sigB
+!
+          if (lnoncollinear_EB) then
+            boost=sqrt((e2-b2)**2+4.*edotb**2)
+            gam_EB=sqrt21*sqrt(1.+(e2+b2)/boost)
+            eprime=sqrt21*sqrt(e2-b2+boost)
+            bprime=sqrt21*sqrt(b2-e2+boost)*sign(1.,edotb)
+            !jprime=echarge**3/(6.*pi**2*Hscript)*eprime*abs(bprime)/tanh(pi*abs(bprime)/eprime)
+            jprime1=echarge**3/(6.*pi**2)*eprime*abs(bprime)/tanh(pi*abs(bprime)/eprime)
+            sigE1=abs(jprime1)*eprime/(gam_EB*boost)
+            sigB1=abs(jprime1)*edotb/(eprime*gam_EB*boost)
+          endif
         endif
       endif
 !
@@ -809,8 +831,8 @@ module Special
       if (lmagnetic .and. lem_backreact .and. lrho_chi) then
         e2m=e2m+sum(e2)
         b2m=b2m+sum(b2)
-        sigEm=sigEm+sum(sigE)
-        sigBm=sigBm+sum(sigB)
+        sigE1m=sigE1m+sum(sigE1)
+        sigB1m=sigB1m+sum(sigB1)
       endif
 !
     endsubroutine prep_ode_right

@@ -272,6 +272,11 @@ module Register
       unit_flux=unit_energy/(unit_length**2*unit_time)
       if (unit_temperature/=impossible) unit_entropy = unit_velocity**2/unit_temperature
 !
+      if (lroot) then
+        print*,'alpha_fine =',alpha_fine
+        print*,'sigma_Thomson_cgs =',sigma_Thomson_cgs
+      endif
+!
 !  Convert physical constants to code units.
 !
       if (unit_system=='cgs') then
@@ -294,6 +299,7 @@ module Register
         kappa_es=kappa_es_cgs/(unit_length**2/unit_mass)
         c_light=c_light_cgs/unit_velocity
         G_Newton=G_Newton_cgs*unit_length**2*unit_density/unit_velocity**2
+        sigma_Thomson=sigma_Thomson_cgs/unit_length**2
       elseif (unit_system=='SI') then
         if (lroot.and.leos_ionization) print*, &
             'initialize_modules: unit_velocity, unit_density, etc, are in SI'
@@ -314,6 +320,7 @@ module Register
         kappa_es=kappa_es_cgs*1e-1/(unit_length**2/unit_mass)
         c_light=c_light_cgs*1e-2/unit_velocity
         G_Newton=G_Newton_cgs*1e-3*unit_length**2*unit_density/unit_velocity**2
+        sigma_Thomson=sigma_Thomson_cgs*1e-4/unit_length**2
       elseif (unit_system=='set') then
         sigmaSB=sigmaSB_set
         c_light=c_light_set

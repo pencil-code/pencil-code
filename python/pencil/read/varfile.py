@@ -327,6 +327,7 @@ class DataCube(object):
                 if block_id == 2000:
                     break
                 for key in record_types.keys():
+                    #Kishore: DANGER: there is a wrong assumption here that persistent variables must be scalars. A counter-example is forcing_location.
                     if record_types[key][0] == block_id:
                         tmp_val = infile.read_record(record_types[key][1])
                         pers_obj.__setattr__(key, tmp_val[0])
@@ -464,15 +465,15 @@ class DataCube(object):
                     deltay = (tmp["persist/shear_delta_y"][(0)]).astype(precision)
                 if lpersist:
                     pers_obj = _Persist()
+                    nprocs = dim.nprocx * dim.nprocy * dim.nprocz
                     for key in tmp["persist"].keys():
-                        if isinstance(tmp["persist"][key][0],float):
-                            dtype = precision
-                        else:
-                            dtype = type(tmp["persist"][key][0])
-                        pers_obj.__setattr__(
-                            key, (tmp["persist"][key][0]).astype(dtype)
-                        )
-                    self.__setattr__("persist", pers_obj)
+                        val = tmp["persist"][key][()]
+                        #Note that persistent variables need not be scalars (e.g. forcing_location)
+                        val_local = np.split(val, nprocs)[0].astype(precision)
+                        if len(val_local) == 1:
+                            val_local = val_local[0]
+                        setattr(pers_obj, key, val_local)
+                    self.persist = pers_obj
         elif param.io_strategy == "dist":
             #
             #  Read scattered Fortran binary files.

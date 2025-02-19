@@ -40,7 +40,7 @@ module NeutralDensity
   logical :: ldiffn_normal=.false.,ldiffn_hyper3=.false.,ldiffn_shock=.false.
   logical :: ldiffn_hyper3lnrhon=.false.,ldiffn_hyper3_aniso=.false.
   logical :: lfreeze_lnrhonint=.false.,lfreeze_lnrhonext=.false.
-  logical :: ldiffn_hyper3_polar=.false.
+  logical :: ldiffn_hyper3_polar=.false., luse_as_ionization=.false.
   logical :: lpretend_star,lramp_up
   real :: star_form_threshold=1.,star_form_exponent=1.5
   character (len=labellen), dimension(ninit) :: initlnrhon='nothing'
@@ -55,7 +55,7 @@ module NeutralDensity
        lcontinuity_neutral,lnrhon0,lnrhon_left,lnrhon_right, &
        alpha,zeta,kx_lnrhon,ky_lnrhon,kz_lnrhon,lpretend_star,&
        star_form_threshold,lramp_up,star_form_exponent, &
-       alpha_prescription
+       alpha_prescription, luse_as_ionization
 !
   namelist /neutraldensity_run_pars/ &
        diffrhon,diffrhon_hyper3,diffrhon_shock,   &
@@ -65,7 +65,7 @@ module NeutralDensity
        lnrhon_const,lcontinuity_neutral,borderlnrhon,    &
        diffrhon_hyper3_aniso,alpha,zeta,lpretend_star, &
        star_form_threshold,lramp_up,star_form_exponent, &
-       alpha_prescription
+       alpha_prescription, luse_as_ionization
 !
 !  Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -689,8 +689,12 @@ module NeutralDensity
          df(l1:l2,m,n,irhon)   = df(l1:l2,m,n,irhon)   - p%zeta*p%rhon        + p%alpha*p%rho**2
          df(l1:l2,m,n,ilnrho ) = df(l1:l2,m,n,ilnrho ) + p%zeta*p%rhon        - p%alpha*p%rho**2
       else
-         df(l1:l2,m,n,ilnrhon) = df(l1:l2,m,n,ilnrhon) - p%zeta               + p%alpha*p%rho**2*p%rhon1
-         df(l1:l2,m,n,ilnrho ) = df(l1:l2,m,n,ilnrho ) + p%zeta*p%rhon*p%rho1 - p%alpha*p%rho
+         if (luse_as_ionization) then
+           df(l1:l2,m,n,ilnrhon) = df(l1:l2,m,n,ilnrhon) - p%alpha*p%rhon1
+         else
+           df(l1:l2,m,n,ilnrhon) = df(l1:l2,m,n,ilnrhon) - p%zeta               + p%alpha*p%rho**2*p%rhon1
+           df(l1:l2,m,n,ilnrho ) = df(l1:l2,m,n,ilnrho ) + p%zeta*p%rhon*p%rho1 - p%alpha*p%rho
+         endif
       endif
 !
 !  Normal mass diffusion

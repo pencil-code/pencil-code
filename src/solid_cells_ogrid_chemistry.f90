@@ -68,7 +68,7 @@ module solid_cells_ogrid_chemistry
   logical, pointer ::  lcheminp,ldiffusion,ldiff_corr, lmech_simple
   logical, pointer ::  tran_exist, lThCond_simple
   logical, pointer :: lfilter_strict, lfilter, ladvection,lt_const
-  real, pointer, dimension(:,:) :: tran_data, Sijm, Sijp, stoichio
+  real, pointer, dimension(:,:) :: Sijm, Sijp, stoichio
   real, pointer, dimension(:,:) :: low_coeff, high_coeff, troe_coeff, a_k4
   real, pointer, dimension(:,:) :: orders_p, orders_m
   logical, pointer, dimension(:) :: photochem_case, Mplus_case, back
@@ -189,7 +189,7 @@ module solid_cells_ogrid_chemistry
 !
       real, dimension(mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid) :: f_og
       real, dimension(mx_ogrid,my_ogrid,mz_ogrid) :: mu1_full_og
-      integer :: i
+      integer :: i, i_O2
 
 !  calculate universal gas constant based on Boltzmann constant
 !  and the proton mass
@@ -261,7 +261,6 @@ module solid_cells_ogrid_chemistry
         call get_shared_variable('lcheminp',lcheminp)
         call get_shared_variable('lThCond_simple',lThCond_simple)
         call get_shared_variable('tran_exist',tran_exist)
-        call get_shared_variable('tran_data',tran_data)
         call get_shared_variable('lt_const',lt_const)
         call get_shared_variable('ladvection',ladvection)
         call get_shared_variable('lfilter',lfilter)

@@ -730,8 +730,8 @@ def write_h5_snapshot(
                 if not quiet:
                     print(key, type(persist[key][()]))
                     sys.stdout.flush()
-                arr = np.empty(nprocs, dtype=type(persist[key][()]))
-                arr[:] = persist[key][()]
+                val = np.atleast_1d(persist[key][()])
+                arr = np.concatenate([val]*nprocs)
                 dataset_h5(
                     pers_grp,
                     key,
