@@ -38,6 +38,7 @@ module Particles_coagulation
   real, pointer :: rhs_poisson_const
   real :: tstart_droplet_coagulation=impossible
   real :: reference_radius=5e-5
+  real :: part_melt_temp=0.
   logical :: ldroplet_coagulation_runtime=.false.
   logical :: lcoag_simultaneous=.false., lnoselfcollision=.true.
   logical :: lshear_in_vp=.true.
@@ -93,7 +94,7 @@ module Particles_coagulation
       sphericalKernel, normal_coagulation, tstart_droplet_coagulation, &
       lcheck_reference_radius, reference_radius, &
       lremove_particle_phys, lremove_particle, lremove_particle2, &
-      lcollision_output_swapped
+      lcollision_output_swapped, part_melt_temp
 !
   contains
 !***********************************************************************
@@ -507,6 +508,13 @@ module Particles_coagulation
                     endif
                   endif
 !
+!  A collision can not result in a coagulation if both particles are frozen
+!
+                  if (lparticles_temperature .and. &
+                       fp(k,iTp)<part_melt_temp .and. &
+                       fp(j,iTp)<part_melt_temp) then
+                    tau_coll1=0.0
+                  endif
                   if (tau_coll1/=0.0) then
 !
 !  The probability for a collision in this time-step is dt/tau_coll.
@@ -845,8 +853,8 @@ module Particles_coagulation
 !
       k=1
       do while (.true.)
-        if (fp(k,iap)<0.0) then
-          fp(k,iap)=-fp(k,iap)
+        if (fp(k,iap)<0.0 .and. k<=npar_loc) then
+          fp(k,iap)=-fp(k,iap)          
           call remove_particle(fp,ipar,k)
         else
           k=k+1
