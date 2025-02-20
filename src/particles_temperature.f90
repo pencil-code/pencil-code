@@ -218,7 +218,7 @@ module Particles_temperature
       real, dimension(:), allocatable :: q_reac, mass_loss,rep,nu
       real, dimension(:), allocatable :: Nuss_p
       real :: volume_cell, stefan_b,Prandtl
-      real :: Qc, Qrad, Qreac, Ap, heat_trans_coef, cond
+      real :: Qc, Qrad, Qreac, Ap, heat_trans_coef, cond, Qc_back_part
       integer :: k, inx0, ix0, iy0, iz0, ierr
       real :: rho1_point, weight, pmass,lambda_rad,xlambda,qabs
       integer :: ixx0, ixx1, iyy0, iyy1, izz0, izz1
@@ -381,15 +381,19 @@ module Particles_temperature
 !
             if (ltemp_equip_part_gas) then
               if (lparticles_number) then
-                Qc_back(inx0)=Qc_back(inx0)+fp(k,inpswarm)*volume_cell*(Qrad+Qreac)
+                Qc_back_part=fp(k,inpswarm)*volume_cell*(Qrad+Qreac)
+                Qc_back(inx0)=Qc_back(inx0)+Qc_back_part
               else
-                Qc_back(inx0)=Qc_back(inx0)+Qrad+Qreac
+                Qc_back_part=Qrad+Qreac
+                Qc_back(inx0)=Qc_back(inx0)+Qc_back_part
               endif
             else
               if (lparticles_number) then
-                Qc_back(inx0)=Qc_back(inx0)+Qc*fp(k,inpswarm)*volume_cell
+                Qc_back_part=Qc*fp(k,inpswarm)*volume_cell
+                Qc_back(inx0)=Qc_back(inx0)+Qc_back_part
               else
-                Qc_back(inx0)=Qc_back(inx0)+Qc
+                Qc_back_part=Qc
+                Qc_back(inx0)=Qc_back(inx0)+Qc_back_part
               endif
             endif
 !
@@ -418,20 +422,20 @@ module Particles_temperature
                   if (ltemperature_nolog) then
                     ! TT, rho
                     df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,iTT) = df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,iTT) &
-                         +Qc_back(inx0)*p%cv1(inx0)*weight_array/(f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,irho)*volume_cell)
+                         +Qc_back_part*p%cv1(inx0)*weight_array/(f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,irho)*volume_cell)
                   else
                     df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnTT) = df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnTT) &
-                         +Qc_back(inx0)*p%cv1(inx0)/exp(f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnTT)) &
+                         +Qc_back_part*p%cv1(inx0)/exp(f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnTT)) &
                          *weight_array/(f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,irho)*volume_cell)
                   endif
                 else
                   if (ltemperature_nolog) then
                     df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,iTT) = df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,iTT) &
-                         +Qc_back(inx0)*p%cv1(inx0)*weight_array/(exp(f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnrho))*volume_cell)
+                         +Qc_back_part*p%cv1(inx0)*weight_array/(exp(f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnrho))*volume_cell)
                   else
                     !     lnTT, lnrho
                     df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnTT) = df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnTT) &
-                         +Qc_back(inx0)*p%cv1(inx0)/exp(f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnTT)) &
+                         +Qc_back_part*p%cv1(inx0)/exp(f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnTT)) &
                          *weight_array/(exp(f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnrho))*volume_cell)
                   endif
                 endif
@@ -441,19 +445,19 @@ module Particles_temperature
                 if (ltemperature_nolog) then
                   ! TT, rho
                   f(ix0,iy0,iz0,idmpt) =  f(ix0,iy0,iz0,idmpt) &
-                       +Qc_back(inx0)*p%cv1(inx0)/(f(ix0,iy0,iz0,irho)*volume_cell)
+                       +Qc_back_part*p%cv1(inx0)/(f(ix0,iy0,iz0,irho)*volume_cell)
                 else
                   f(ix0,iy0,iz0,idmpt) =  f(ix0,iy0,iz0,idmpt) &
-                       +Qc_back(inx0)*p%cv1(inx0)*p%TT1(inx0)/(f(ix0,iy0,iz0,irho)*volume_cell)
+                       +Qc_back_part*p%cv1(inx0)*p%TT1(inx0)/(f(ix0,iy0,iz0,irho)*volume_cell)
                 endif
               else
                 if (ltemperature_nolog) then
                   f(ix0,iy0,iz0,idmpt) =  f(ix0,iy0,iz0,idmpt) &
-                       +Qc_back(inx0)*p%cv1(inx0)/(exp(f(ix0,iy0,iz0,ilnrho))*volume_cell)
+                       +Qc_back_part*p%cv1(inx0)/(exp(f(ix0,iy0,iz0,ilnrho))*volume_cell)
                 else
                   !     lnTT, lnrho
                   f(ix0,iy0,iz0,idmpt) =  f(ix0,iy0,iz0,idmpt) &
-                       +Qc_back(inx0)*p%cv1(inx0)*p%TT1(inx0)/(exp(f(ix0,iy0,iz0,ilnrho))*volume_cell)
+                       +Qc_back_part*p%cv1(inx0)*p%TT1(inx0)/(exp(f(ix0,iy0,iz0,ilnrho))*volume_cell)
                 endif
               endif
             endif
