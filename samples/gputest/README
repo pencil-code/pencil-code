@@ -12,9 +12,9 @@ To add Astaroth later to already installed Pencil Code:
 -------------------------------------------------------
 cd $PENCIL_HOME
 git checkout gputestv6
-git submodule update --init --recursive
+git submodule update --init --remote
 cd src/astaroth/submodule 
-git checkout PCinterface_2019-8-12
+git checkout origin PCinterface_2019-8-12
 
 Don't forget to set $PENCIL_HOME correctly - missing this is a common source of mess.
 

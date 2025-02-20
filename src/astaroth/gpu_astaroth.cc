@@ -862,10 +862,10 @@ extern "C" void substepGPU(int isubstep)
   //  acGridSynchronizeStream(STREAM_ALL);
   //}
   acDeviceSetInput(acGridGetDevice(), AC_step_num,(PC_SUB_STEP_NUMBER) (isubstep-1));
-  //acGridSynchronizeStream(STREAM_ALL);
   Device dev = acGridGetDevice();
   //TP: done in this more complex manner to ensure the actually integrated time and the time reported by Pencil agree
   //if we call set_dt after the first timestep there would be slight shift in dt what Pencil sees and what is actually used for time integration
+  
   if (isubstep == 1) 
   {
 	  //TP: done to have the same timestep as PC when testing
