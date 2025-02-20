@@ -171,6 +171,7 @@ module Chemistry
   !real :: deltaH_cgs = 3.55e12 ! in erg/mol (based on Tboil and 1025C)
   real :: gam_surf_energy_mul_fac=1.0
   real :: conc_sat_spec_cgs=1e-8 !units of mol/cmˆ3
+  real :: min_nucl_radius_cgs=1e-8 ! units of cm
   logical, pointer :: ldustnucleation, lpartnucleation, lcondensing_species
   character(len=labellen) :: isurf_energy="const"
   character(len=labellen) :: iconc_sat_spec="const"
@@ -7010,7 +7011,7 @@ module Chemistry
             nucleation_rate(i)=nucleation_rate_coeff*exp(tmp3/tmp4)
           else
             nucleation_rate(i)=0.0
-            nucleation_rmin(i)=0.0
+            nucleation_rmin(i)=min_nucl_radius_cgs/unit_length
           endif
         enddo
       else
