@@ -11,7 +11,7 @@
 ####SBATCH --mail-type=ALL
 #SBATCH --output=comp.out
 
-apptainer exec --nv -B $PENCIL_HOME:$PENCIL_HOME -B scripts:/opt/scripts -B /users/mreinhar/tmpdir:/opt/tmpdir torchfort_0.2.0.sif bash /opt/scripts/compile.sh
+apptainer exec --nv -B $PENCIL_HOME:$PENCIL_HOME -B scripts:/opt/scripts -B /users/$USER/tmpdir:/opt/tmpdir torchfort_bisonflex.sif bash /opt/scripts/compile.sh
 
 #apptainer exec --nv -B pencil-code:/opt/pencil-code -B scripts:/opt/scripts torchfort_0.2.0.sif bash
 #source $PENCIL_HOME/sourceme.sh

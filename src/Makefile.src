@@ -538,9 +538,9 @@ ifneq ($(GPU),nogpu)
 #
   ifneq ($(findstring gpu_astaroth, $(GPU)),)
 #
-    LD_LIB_PATH_OK := $(shell (echo $(LD_LIBRARY_PATH) |& grep 'src/astaroth') )
+    LD_LIB_PATH_OK := $(shell (echo $(LD_LIBRARY_PATH) | grep 'src/astaroth') )
     ifeq ($(LD_LIB_PATH_OK),)
-      $(warning Environment variable LD_LIBRARY_PATH doesn't contain paths "src/astaroth" etc!)
+      $(warning Environment variable LD_LIBRARY_PATH doesn't contain paths "src/astaroth" etc!: $(LD_LIBRARY_PATH))
       $(info Execution of [start|run].x might fail!)
 
       YESNO := $(shell bash -c 'read -p "Continue? (Y/N) " yesno; echo $$yesno')
@@ -3032,7 +3032,7 @@ technical=$(CPARAM_OBJ) $(CDATA_OBJ) $(MPICOMM_OBJ) $(BORDER_PROFILES_OBJ) $(BOU
 #
 #  Short hand notation for start.o dependencies.
 #
-start=$(technical) $(physics) nogpu.o notraining.o
+start=$(technical) $(physics) $(GPU_OBJ) dummy_astaroth_ansi.o $(TRAINING_OBJ)
 #
 #  Short hand notation for run.o dependencies.
 #

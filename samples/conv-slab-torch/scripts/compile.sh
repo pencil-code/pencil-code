@@ -1,16 +1,22 @@
 #!/bin/bash
 export PATH=/opt/hdf5/bin:$PATH 
-export PENCIL_HOME=/users/mreinhar/pencil-code
+export PENCIL_HOME=/users/$USER/pencil-code
+CWDIR=$PWD
 cd $PENCIL_HOME
+unset PENCIL_HOME
 source sourceme.sh
 export PATH=$PATH:$PENCIL_HOME/bin:$PENCIL_HOME/utils:$PENCIL_HOME/utils/axel:$PENCIL_HOME/utils/xiangyu:$PENCIL_HOME/remesh/bin:$PENCIL_HOME/src/scripts
 #echo command path = $PATH
-#echo library path = $LD_LIBRARY_PATH
-cd samples/conv-slab-torch
+echo library path = $LD_LIBRARY_PATH
+cd $CWDIR
 export TMPDIR=/opt/tmpdir
 echo $TMPDIR
 
-pc_build clean -f $PENCIL_HOME/config/compilers/separate/nvidia-fortran.conf TORCHFORT_PATH=/opt/torchfort HDF5_PATH=/opt/hdf5 FFLAGS+="-O0 -g -traceback"
+#pc_build clean -f $PENCIL_HOME/config/compilers/separate/nvidia-fortran.conf TORCHFORT_PATH=/opt/torchfort HDF5_PATH=/opt/hdf5 FFLAGS+="-O0 -g -traceback"
+pc_build -f $PENCIL_HOME/config/compilers/separate/nvidia-fortran.conf TORCHFORT_PATH=/opt/torchfort HDF5_PATH=/opt/hdf5 FFLAGS+="-O0 -g -traceback"
+#cd src/astaroth
+#make
+
 
 #pc_build -f $PENCIL_HOME/config/compilers/separate/nvidia-fortran.conf -t read_all_videofiles
 

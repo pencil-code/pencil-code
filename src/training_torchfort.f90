@@ -8,14 +8,20 @@
 !
   module Training
 
+
     use Cdata
     use General, only: itoa
     use Messages
-    use Cudafor
-    use Torchfort
-    use iso_c_binding
+    use Cudafor, only: cudaSetDevice,CUDASUCCESS
+    use Torchfort, only: torchfort_create_distributed_model, torchfort_create_model,&
+                         torchfort_result_success,torchfort_load_model,torchfort_load_checkpoint,&
+                         torchfort_save_model,torchfort_result_success,torchfort_save_checkpoint,&
+                         torchfort_inference,torchfort_train
+    !use iso_c_binding
+
 
     implicit none
+    include 'training.h'
 
     integer :: model_device=0
     integer :: it_train=-1, it_train_chkpt=-1

@@ -1414,7 +1414,7 @@ call copy_addr_dble(unit_mass,p_par(351))
 call copy_addr_dble(unit_energy,p_par(352))
 call copy_addr_dble(unit_time,p_par(353))
 call copy_addr_dble(unit_pressure,p_par(354))
-call copy_addr(m_u,p_par(355))
+call copy_addr_dble(m_u,p_par(355))
 call copy_addr(lchemonly,p_par(357)) ! bool
 call copy_addr(iviscosity,p_par(358)) ! int
 call copy_addr(ilntt,p_par(359)) ! int
@@ -1424,8 +1424,8 @@ call copy_addr(reac_dust,p_par(362)) ! (nx)
 call copy_addr(ichemspec,p_par(363)) ! (nchemspec)
 call copy_addr_dble(unit_velocity,p_par(365))
 call copy_addr_dble(unit_density,p_par(366))
-call copy_addr(m_p,p_par(367))
-call copy_addr(sigmasb,p_par(368))
+call copy_addr_dble(m_p,p_par(367))
+call copy_addr_dble(sigmasb,p_par(368))
 call copy_addr(cdts,p_par(369))
 call copy_addr(lgravx,p_par(370)) ! bool
 call copy_addr(lgravz,p_par(371)) ! bool

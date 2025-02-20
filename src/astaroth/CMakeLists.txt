@@ -68,7 +68,10 @@ else ()
 
 #TP: required when compiling with container on Puhti
 find_package(CUDAToolkit QUIET)
+enable_language(CUDA)
 include_directories(SYSTEM ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
+add_compile_options(-DDEVICE_ENABLED)
+add_compile_options(-DCUDA_ENABLED)
 
 # Not supported with older CUDA
 # set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --Werror all-warnings")

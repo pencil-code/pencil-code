@@ -5,6 +5,7 @@
 #define cpu_pow pow
 #define REAL_MAX AC_REAL_MAX
 
+const int rkind8 = 0
 const int prof_nz = 150
 struct PC_rhs_update
 {

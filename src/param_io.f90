@@ -57,7 +57,7 @@ module Param_IO
   use TestPerturb
   use Testscalar
   use Timeavg
-  use Training
+  use Training, only: read_training_run_pars, write_training_run_pars
   use Viscosity
 !
   implicit none

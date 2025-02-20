@@ -1083,6 +1083,7 @@ void setupConfig(AcMeshInfo& config)
   // Enter basic parameters in config.
   #include "PC_modulepars.h"
   //TP: loads for non-cartesian derivatives
+#if TRANSPILATION
   PCLoad(config, AC_inv_cyl_r,rcyl_mn1);
   PCLoad(config, AC_inv_r,r1_mn);
   PCLoad(config, AC_inv_sin_theta,sin1th);
@@ -1097,6 +1098,7 @@ void setupConfig(AcMeshInfo& config)
   PCLoad(config,AC_mapping_func_tilde_x,dx_tilde);
   PCLoad(config,AC_mapping_func_tilde_y,dy_tilde);
   PCLoad(config,AC_mapping_func_tilde_z,dz_tilde);
+#endif
 
 
   if(lcartesian_coords)

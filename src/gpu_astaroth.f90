@@ -16,6 +16,8 @@ module GPU
 
   implicit none
 
+  include 'gpu.h'
+
 !$  interface
 !$    subroutine random_initial_condition() bind(C)
 !$    endsubroutine random_initial_condition
@@ -37,7 +39,6 @@ module GPU
   integer, external :: update_on_gpu_arr_by_name_c
   integer, external :: update_on_gpu_scal_by_name_c
 
-  include 'gpu.h'
 
   !integer(KIND=ikind8) :: pFarr_GPU_in, pFarr_GPU_out
   type(C_PTR) :: pFarr_GPU_in, pFarr_GPU_out
