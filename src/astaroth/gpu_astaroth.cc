@@ -862,10 +862,10 @@ extern "C" void substepGPU(int isubstep)
   //  acGridSynchronizeStream(STREAM_ALL);
   //}
   acDeviceSetInput(acGridGetDevice(), AC_step_num,(PC_SUB_STEP_NUMBER) (isubstep-1));
-  //acGridSynchronizeStream(STREAM_ALL);
   Device dev = acGridGetDevice();
   //TP: done in this more complex manner to ensure the actually integrated time and the time reported by Pencil agree
   //if we call set_dt after the first timestep there would be slight shift in dt what Pencil sees and what is actually used for time integration
+  
   if (isubstep == 1) 
   {
 	  //TP: done to have the same timestep as PC when testing
@@ -1083,6 +1083,7 @@ void setupConfig(AcMeshInfo& config)
   // Enter basic parameters in config.
   #include "PC_modulepars.h"
   //TP: loads for non-cartesian derivatives
+#if TRANSPILATION
   PCLoad(config, AC_inv_cyl_r,rcyl_mn1);
   PCLoad(config, AC_inv_r,r1_mn);
   PCLoad(config, AC_inv_sin_theta,sin1th);
@@ -1097,6 +1098,7 @@ void setupConfig(AcMeshInfo& config)
   PCLoad(config,AC_mapping_func_tilde_x,dx_tilde);
   PCLoad(config,AC_mapping_func_tilde_y,dy_tilde);
   PCLoad(config,AC_mapping_func_tilde_z,dz_tilde);
+#endif
 
 
   if(lcartesian_coords)
