@@ -103,7 +103,7 @@
 
     integer(KIND=ikind8) :: libhandle
     integer(KIND=ikind8), dimension(n_special_modules_max,n_subroutines) :: special_sub_handles
-    character(LEN=64), dimension(n_subroutines) :: specific_subroutines
+    character(LEN=80) :: specific_subroutine
 
     contains
 !****************************************************************************
@@ -130,48 +130,29 @@
 !if (lroot) print*, 'special_modules_list=', trim(special_modules_list)//'<<<'
 
 !
-! If in gfortran trouble, comment the following in (for grav. waves + chiral MHD; mutatis
-! mutandis otherwise).
-!   
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!    n_special_modules=2
-!    special_modules(1)='gravitational_waves_htxk'
-!    special_modules(2)='chiral_mhd'
-!    mod_prefix='__'; mod_infix='_MOD_'; mod_suffix=''
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
     libhandle=dlopen_c('src/special.so'//char(0),RTLD_NOW)
     if (libhandle==0) &
       call fatal_error('initialize_mult_special','library src/special.so could not be opened')
 
-    if (lroot) &
+    if (lroot) then
       call extract_str("nm src/special.so|grep calc_pencils_special|grep "//trim(special_modules(1))// &
                        "|grep -i ' T '",parstr)
-    ipos=index(trim(parstr),' ',back=.true.)
-    line=parstr(ipos+1:)
+      ipos=index(trim(parstr),' ',back=.true.)
+      line=parstr(ipos+1:)
+    endif
+    call mpibcast(line)
 
     do i=1,n_special_modules
-      if (lroot) then
-        do j=1,n_subroutines
-          specific_subroutines(j) = trim(line)
-          call safe_string_replace(specific_subroutines(j),trim(special_modules(1)),trim(special_modules(i)))
-          call safe_string_replace(specific_subroutines(j),'calc_pencils_special',trim(special_subroutines(j)))
-          !print*, 'specific_subroutines(j)=',specific_subroutines(j)
-        enddo
-      endif
-      call mpibcast(specific_subroutines,n_subroutines)
-!
-! If in gfortran trouble, comment the following in.
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!        parstr=trim(mod_prefix)//trim(special_modules(i))//trim(mod_infix)//trim(special_subroutines(j))//trim(mod_suffix)
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
       do j=1,n_subroutines
-        sub_handle=dlsym_c(libhandle,trim(specific_subroutines(j))//char(0))
+        specific_subroutine = trim(line)
+        call safe_string_replace(specific_subroutine,trim(special_modules(1)),trim(special_modules(i)))
+        call safe_string_replace(specific_subroutine,'calc_pencils_special',trim(special_subroutines(j)))
+!if (lroot) print*, 'specific_subroutine=',specific_subroutine
+
+        sub_handle=dlsym_c(libhandle,trim(specific_subroutine)//char(0))
         if (sub_handle==0) &
           call fatal_error('initialize_mult_special','Error for symbol '// &
-          trim(specific_subroutines(j))//' in module '//trim(special_modules(i))) 
+          trim(specific_subroutine)//' in module '//trim(special_modules(i))) 
         special_sub_handles(i,j) = sub_handle
       enddo
     enddo

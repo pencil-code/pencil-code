@@ -1383,8 +1383,7 @@ print*, 'rank,ipx,ipy,ipz, find_proc=',rank, ipx,ipy,ipz, find_proc_node_localty
       istart = index(string,substr)
 
       if (istart + len(replmt)-1 > lenstr) then
-        print*, "safe_string_replace: ", &
-                "RUNTIME ERROR: REPLACEMENT TOO LONG - DECLINED'"
+        print*, "safe_string_replace: RUNTIME ERROR: REPLACEMENT TOO LONG - DECLINED"
         return
       endif
       istop = istart+lensub
