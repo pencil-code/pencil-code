@@ -34,6 +34,7 @@
   rhs /= TT
   gss = gradient(SS)
   del2ss = laplace(SS)
+  maxchi=0.
   //!!!#include "../entropy/heat_cond_hyper3.h"
   //!!!#include "../entropy/heat_cond_const_chi.h"
   #include "../entropy/heat_cond_kramers.h"
@@ -49,4 +50,4 @@
   }
   //rhs += -ugrad_upwd(SS, UU)
 #endif
-  return rhs
+  return (PC_rhs_update){real3(rhs,0.,0.),maxchi}
