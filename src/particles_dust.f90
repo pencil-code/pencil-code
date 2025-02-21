@@ -2587,7 +2587,7 @@ module Particles
                       ! Set the scalar to zero since the nucleii have now been moved to the particle phase
                       !
                       f(ii,jj,kk,icc) = 0.0
-                    endif
+                    endif                    
                   endif
                 enddo
               enddo
@@ -3620,7 +3620,7 @@ module Particles
         if (idiag_rhopart /= 0) then
           if (lparticles_radius .and. lparticles_number) then
             call sum_par_name(four_pi_rhopmat_over_three* &
-                fp(1:npar_loc,iap)**3*fp(1:npar_loc,inpswarm)*npar_loc,idiag_rhopart)
+                 fp(1:npar_loc,iap)**3*fp(1:npar_loc,inpswarm)*npar_loc,idiag_rhopart,len=npar_loc)
           endif
         endif
         
