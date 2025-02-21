@@ -577,7 +577,7 @@ module Particles_sub
 !
     endsubroutine calc_velocity_averages
 !***********************************************************************
-    subroutine sum_par_name(a,iname,lsqrt,llog10)
+    subroutine sum_par_name(a,iname,lsqrt,llog10,len)
 !
 !  Successively calculate sum of a, which is supplied at each call.
 !  Works for particle diagnostics. The number of particles is stored as
@@ -594,6 +594,7 @@ module Particles_sub
       real, dimension (:) :: a
       integer :: iname
       logical, optional :: lsqrt, llog10
+      integer, optional :: len
 !
       integer, dimension(mname), save :: icount=0
 !
@@ -603,9 +604,19 @@ module Particles_sub
           fname(iname)=0.0
           fweight(iname)=0.0
         endif
-!
-        fname(iname)  =fname(iname)  +sum(a)
-        fweight(iname)=fweight(iname)+size(a)
+        !
+        if (present(len)) then
+          if (len > 0) then
+            fname(iname)  =fname(iname)  +sum(a)
+            fweight(iname)=fweight(iname)+size(a)
+          else
+            fname(iname)  =fname(iname)  +0.
+            fweight(iname)=fweight(iname)+tini
+          endif
+        else
+          fname(iname)  =fname(iname)  +sum(a)
+          fweight(iname)=fweight(iname)+size(a)
+        endif
 !
 !  Set corresponding entry in itype_name
 !
@@ -632,7 +643,7 @@ module Particles_sub
 !
     endsubroutine sum_par_name
 !***********************************************************************
-    subroutine max_par_name(a,iname,lneg)
+    subroutine max_par_name(a,iname,lneg,len)
 !
 !  Successively calculate maximum of a, which is supplied at each call.
 !  Works for particle diagnostics.
@@ -642,11 +653,20 @@ module Particles_sub
       real, dimension (:) :: a
       integer :: iname
       logical, optional :: lneg
+      integer, optional :: len
 !
       if (iname/=0) then
 !
         fname(iname)=0.
-        fname(iname)=fname(iname)+maxval(a)
+        if (present(len)) then
+          if (len > 0) then
+            fname(iname)=fname(iname)+maxval(a)
+          else
+            fname(iname)=fname(iname)+0.
+          endif
+        else
+          fname(iname)=fname(iname)+maxval(a)
+        endif
 !
 !  Set corresponding entry in itype_name.
 !
@@ -660,8 +680,7 @@ module Particles_sub
 !
     endsubroutine max_par_name
 !***********************************************************************
-!    subroutine integrate_par_name(a,iname)
-    subroutine integrate_par_name(a,iname, lsqrt, llog10)
+    subroutine integrate_par_name(a,iname, lsqrt, llog10,len)
 !
 !  Calculate integral of a, which is supplied at each call.
 !  Works for particle diagnostics.
@@ -670,6 +689,7 @@ module Particles_sub
 !
       real, dimension (:) :: a
       logical, optional :: lsqrt, llog10
+      integer, optional :: len
       integer :: iname
 !
       integer, save :: icount=0
@@ -678,7 +698,15 @@ module Particles_sub
 !
         if (icount==0) fname(iname)=0
 !
-        fname(iname)=fname(iname)+sum(a)
+        if (present(len)) then
+          if (len > 0) then
+            fname(iname)=fname(iname)+sum(a)
+          else
+            fname(iname)=fname(iname)+0.
+          endif
+        else
+          fname(iname)=fname(iname)+sum(a)
+        endif
 !
 !  Set corresponding entry in itype_name.
 !
@@ -942,10 +970,12 @@ module Particles_sub
       integer, dimension (mpar_loc) :: ipar
       integer :: npar_found
 !
+      !NILS: Not clear why this is meaningful
       npar_found=0
 !
       call mpireduce_sum_int(npar_loc,npar_found)
       call keep_compiler_quiet(ipar)
+
 !
     endsubroutine count_particles
 !***********************************************************************

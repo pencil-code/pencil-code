@@ -1000,14 +1000,14 @@ if (ip<10 .and. k==1) print*,'AXEL: t,fp(k,iap)=',t,fp(k,iap)
 !  Diagnostic output.
 !
       if (ldiagnos) then
-        if (idiag_apm /= 0) call sum_par_name(fp(1:npar_loc,iap),idiag_apm)
-        if (idiag_ap2m /= 0) call sum_par_name(fp(1:npar_loc,iap)**2,idiag_ap2m)
-        if (idiag_ap3m /= 0) call sum_par_name(fp(1:npar_loc,iap)**3,idiag_ap3m)
-        if (idiag_apmin /= 0) call max_par_name(-fp(1:npar_loc,iap),idiag_apmin,lneg=.true.)
-        if (idiag_apmax /= 0) call max_par_name(fp(1:npar_loc,iap),idiag_apmax)
-        if (idiag_npswarmm /= 0) call sum_par_name(rhop_swarm/ &
-            (four_pi_rhopmat_over_three*fp(1:npar_loc,iap)**3),idiag_npswarmm)
-        if (idiag_ieffp /= 0) call sum_par_name(fp(1:npar_loc,ieffp),idiag_ieffp)
+        call sum_par_name(fp(1:npar_loc,iap),idiag_apm,len=npar_loc)
+        call sum_par_name(fp(1:npar_loc,iap)**2,idiag_ap2m,len=npar_loc)
+        call sum_par_name(fp(1:npar_loc,iap)**3,idiag_ap3m,len=npar_loc)
+        call max_par_name(-fp(1:npar_loc,iap),idiag_apmin,lneg=.true.,len=npar_loc)
+        call max_par_name(fp(1:npar_loc,iap),idiag_apmax,len=npar_loc)
+        call sum_par_name(rhop_swarm/ &
+             (four_pi_rhopmat_over_three*fp(1:npar_loc,iap)**3),idiag_npswarmm,len=npar_loc)
+        call sum_par_name(fp(1:npar_loc,ieffp),idiag_ieffp,len=npar_loc)
       endif
 !
       call keep_compiler_quiet(f,df)
