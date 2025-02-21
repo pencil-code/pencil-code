@@ -444,6 +444,10 @@ module Particles_mpicomm
               print*, 'migrate_particles: iproc_comm=', &
                   iproc_comm(1:nproc_comm)
               print*, 'migrate_particles: xxp=', fp(k,ixp:izp)
+              print*, 'migrate_particles: vvp=', fp(k,ivpx:ivpz)
+              if (lparticles_radius) then
+                print*, 'migrate_particles: ap =', fp(k,iap)
+              endif
               print*, 'migrate_particles: deltay=', deltay
               call fatal_error_local("","")
             endif
