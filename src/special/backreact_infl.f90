@@ -102,8 +102,9 @@ module Special
   real :: a2rhogphim, a2rhogphim_all
   real :: lnascale, ascale, a2, a21, Hscript
   real :: Hscript0=0., scale_rho_chi_Heqn=1.
+  real :: echarge=.0, echarge_const=.303
   real, target :: ddotam_all
-  real, pointer :: alpf, eta_tdep, echarge
+  real, pointer :: alpf, eta_tdep
 ! real, dimension (:), pointer :: eta_xtdep
   real, dimension (nx) :: dt1_special
   logical :: lbackreact_infl=.true., lem_backreact=.true., lzeroHubble=.false.
@@ -114,6 +115,7 @@ module Special
 !
   character (len=labellen) :: Vprime_choice='quadratic', Hscript_choice='default'
   character (len=labellen), dimension(ninit) :: initspecial='nothing'
+  character (len=50) :: echarge_type='const'
 !
   namelist /special_init_pars/ &
       initspecial, phi0, dphi0, axionmass, eps, ascale_ini, &
@@ -128,7 +130,7 @@ module Special
       initspecial, phi0, dphi0, axionmass, eps, ascale_ini, &
       lbackreact_infl, lem_backreact, c_light_axion, lambda_axion, Vprime_choice, &
       lzeroHubble, ldt_backreact_infl, Ndiv, Hscript0, Hscript_choice, infl_v, &
-      lflrw, lrho_chi, scale_rho_chi_Heqn
+      lflrw, lrho_chi, scale_rho_chi_Heqn, echarge_type
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -146,6 +148,8 @@ module Special
   integer :: idiag_a2rhophim=0   ! DIAG_DOC: $a^2 rho$
   integer :: idiag_a2rhogphim=0   ! DIAG_DOC: $0.5 <grad phi^2>$
   integer :: idiag_rho_chi=0   ! DIAG_DOC: $\rho_\chi$
+  integer :: idiag_sigEma=0    ! DIAG_DOC: $\rho_\chi$
+  integer :: idiag_sigBma=0    ! DIAG_DOC: $\rho_\chi$
 !
   contains
 !****************************************************************************
@@ -183,6 +187,7 @@ module Special
       call put_shared_variable('Hscript',Hscript)
       call put_shared_variable('e2m_all',e2m_all)
       call put_shared_variable('b2m_all',b2m_all)
+      call put_shared_variable('echarge',echarge,caller='register_backreact_infl')
       call put_shared_variable('lrho_chi',lrho_chi)
 !
     endsubroutine register_special
@@ -203,7 +208,6 @@ module Special
         call get_shared_variable('alpf',alpf,caller='initialize_backreact_infl')
         call get_shared_variable('lphi_hom',lphi_hom)
         call get_shared_variable('lnoncollinear_EB',lnoncollinear_EB)
-        call get_shared_variable('echarge',echarge,caller='initialize_backreact_infl')
       else
         allocate(alpf)
         allocate(lphi_hom)
@@ -329,7 +333,7 @@ module Special
       if (lmagnetic) then
         lpenc_requested(i_bb)=.true.
         lpenc_requested(i_el)=.true.
-        if (lrho_chi) lpenc_requested(i_e2)=.true.
+        if (lrho_chi .or. lnoncollinear_EB) lpenc_requested(i_e2)=.true.
       endif
 !
     endsubroutine pencil_criteria_special
@@ -512,7 +516,7 @@ module Special
       if (lflrw) then
         df_ode(iinfl_lna)=df_ode(iinfl_lna)+Hscript
       endif
-      ascale=exp(f_ode(iinfl_lna))
+      !ascale=exp(f_ode(iinfl_lna))
       rho_chi=f_ode(iinfl_rho_chi)
 !
 !  eta_tdep
@@ -549,6 +553,8 @@ module Special
         call save_name(a2rhophim_all,idiag_a2rhophim)
         call save_name(a2rhogphim_all,idiag_a2rhogphim)
         call save_name(rho_chi,idiag_rho_chi)
+        call save_name(sigEm_all,idiag_sigEma)
+        call save_name(sigBm_all,idiag_sigBma)
       endif
 !
     endsubroutine dspecial_dt_ode
@@ -608,7 +614,7 @@ module Special
         idiag_dphim=0; idiag_dphi2m=0; idiag_dphirms=0
         idiag_Hscriptm=0; idiag_lnam=0; idiag_ddotam=0
         idiag_a2rhopm=0; idiag_a2rhom=0; idiag_a2rhophim=0
-        idiag_a2rhogphim=0; idiag_rho_chi=0
+        idiag_a2rhogphim=0; idiag_rho_chi=0; idiag_sigEma=0; idiag_sigBma=0
       endif
 !
       do iname=1,nname
@@ -626,6 +632,8 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'a2rhophim',idiag_a2rhophim)
         call parse_name(iname,cname(iname),cform(iname),'a2rhogphim',idiag_a2rhogphim)
         call parse_name(iname,cname(iname),cform(iname),'rho_chi',idiag_rho_chi)
+        call parse_name(iname,cname(iname),cform(iname),'sigEma',idiag_sigEma)
+        call parse_name(iname,cname(iname),cform(iname),'sigBma',idiag_sigBma)
       enddo
 !!
 !!!  write column where which magnetic variable is stored
@@ -646,6 +654,7 @@ module Special
       use Sub, only: dot2_mn, grad, curl, dot_mn
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real :: energy_scale
 !      real, dimension (nx,3) :: el, bb, gphi
 !      real, dimension (nx) :: e2, b2, gphi2, dphi, a21, a2rhop, a2rho
 !      real, dimension (nx) :: ddota, phi, a2, Vpotential, edotb
@@ -659,6 +668,7 @@ module Special
         else
           a2=1.
         endif
+        ascale=sqrt(a2)
       endif
       a21=1./a2
       call mpibcast_real(a2)
@@ -682,7 +692,7 @@ module Special
       a2rhophim=a2rhophim/nwgrid
       a2rhogphim=a2rhogphim/nwgrid
       ddotam=(four_pi_over_three/nwgrid)*ddotam
-      if (lphi_hom .or. lrho_chi) then
+      if (lphi_hom .or. lrho_chi .or. lnoncollinear_EB) then
         edotbm=edotbm/nwgrid
         call mpiallreduce_sum(edotbm,edotbm_all)
       endif
@@ -695,7 +705,7 @@ module Special
 !       call get_shared_variable('eta_xtdep',eta_xtdep)
 !     endif
 !
-      if (lrho_chi) then
+      if (lrho_chi .or. lnoncollinear_EB) then
         e2m=e2m/nwgrid
         b2m=b2m/nwgrid
         sigE1m=sigE1m/nwgrid
@@ -737,10 +747,24 @@ module Special
       call mpibcast_real(e2m_all)
       call mpibcast_real(b2m_all)
 !
+!  Choice of echarge prescription.
+!
+      if (lnoncollinear_EB) then
+        select case (echarge_type)
+          case ('const')
+            echarge=echarge_const
+          case ('erun')
+            energy_scale=(.5*e2m_all+.5*b2m_all)**.25/ascale
+            echarge=1./sqrt(1./.35**2+41./(48.*pi**2)*alog(mass_zboson/energy_scale))
+        endselect
+      else
+        echarge=echarge_const
+      endif
+!
 !  Compute sigE and sigB from sigE1 and sigB1.
 !
-      sigEm_all=sigE1m_all/Hscript
-      sigBm_all=sigB1m_all/Hscript
+      sigEm_all=Chypercharge*echarge**3*sigE1m_all/Hscript
+      sigBm_all=Chypercharge*echarge**3*sigB1m_all/Hscript
 !
     endsubroutine special_after_boundary
 !***********************************************************************
@@ -806,11 +830,12 @@ module Special
       a2rho=a2rho+a2*Vpotential
       a2rhom=a2rhom+sum(a2rho)
       if (lmagnetic .and. lem_backreact) then
-        if (lphi_hom .or. lrho_chi) then
+        if (lphi_hom .or. lrho_chi .or. lnoncollinear_EB) then
           call dot_mn(el,bb,edotb)
           edotbm=edotbm+sum(edotb)
 !
-!  Repeat calculation of sigE and sigB
+!  Repeat calculation of sigE and sigB. Do this first without
+!  echarge and Hscript and apply those factors later.
 !
           if (lnoncollinear_EB) then
             boost=sqrt((e2-b2)**2+4.*edotb**2)
@@ -818,17 +843,17 @@ module Special
             eprime=sqrt21*sqrt(e2-b2+boost)
             bprime=sqrt21*sqrt(b2-e2+boost)*sign(1.,edotb)
             !jprime=echarge**3/(6.*pi**2*Hscript)*eprime*abs(bprime)/tanh(pi*abs(bprime)/eprime)
-            jprime1=echarge**3/(6.*pi**2)*eprime*abs(bprime)/tanh(pi*abs(bprime)/eprime)
+            jprime1=1./(6.*pi**2)*eprime*abs(bprime)/tanh(pi*abs(bprime)/eprime)
             sigE1=abs(jprime1)*eprime/(gam_EB*boost)
             sigB1=abs(jprime1)*edotb/(eprime*gam_EB*boost)
           endif
         endif
       endif
 !
-!  Compute e2m per pencil. It becomes the total e2m after calling
-!  prep_ode_right for each pencil.
+!  Compute e2m per pencil. It becomes the total e2m after calling prep_ode_right
+!  for each pencil. Also require either lrho_chi or lnoncollinear_EB
 !
-      if (lmagnetic .and. lem_backreact .and. lrho_chi) then
+      if ((lmagnetic .and. lem_backreact) .and. (lrho_chi .or. lnoncollinear_EB)) then
         e2m=e2m+sum(e2)
         b2m=b2m+sum(b2)
         sigE1m=sigE1m+sum(sigE1)

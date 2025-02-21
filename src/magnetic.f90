@@ -168,7 +168,7 @@ module Magnetic
   real :: non_ffree_factor=1.
   real :: etaB=0.
   real :: tau_relprof=0.0, tau_relprof1, amp_relprof=1.0 , k_relprof=1.0
-  real, pointer :: ascale, Hscript, e2m_all, b2m_all
+  real, pointer :: ascale, Hscript, e2m_all, b2m_all, echarge
   real :: cp=impossible
   real :: dipole_moment=0.0
   real :: eta_power_x=0., eta_power_z=0.
@@ -176,7 +176,7 @@ module Magnetic
   real :: Pm_smag1=1., k1hel=0., k2hel=max_real, qexp_aa=0.
   real :: nfact_aa=4., hubble_magnetic=0.
   real :: r_inner=0., r_outer=0.
-  real :: eta_tdep_loverride_ee=0., echarge=.55
+  real :: eta_tdep_loverride_ee=0.
   integer, target :: va2power_jxb = 5
   integer :: nbvec, nbvecmax=nx*ny*nz/4, iua=0, iLam=0, idiva=0
   integer :: N_modes_aa=1, naareset
@@ -286,7 +286,7 @@ module Magnetic
       r_inner, r_outer, lpower_profile_file, eta_jump0, eta_jump1, eta_jump2, &
       lcoulomb, qexp_aa, nfact_aa, lfactors_aa, lvacuum, l2d_aa, &
       loverride_ee_decide, eta_tdep_loverride_ee, z0_gaussian, width_gaussian, &
-      echarge, lnorm_aa_kk, lohm_evolve, hubble_magnetic
+      lnorm_aa_kk, lohm_evolve, hubble_magnetic
 !
 ! Run parameters
 !
@@ -429,7 +429,7 @@ module Magnetic
       lbraginsky, eta_jump0, eta_jump1, lcoulomb, lvacuum, &
       loverride_ee_decide, eta_tdep_loverride_ee, loverride_ee2, lignore_1rho_in_Lorentz, &
       lbext_moving_layer, zbot_moving_layer, ztop_moving_layer, speed_moving_layer, edge_moving_layer, &
-      echarge, lno_eta_tdep, luse_scale_factor_in_sigma, ell_jj, tau_jj, hubble_magnetic
+      lno_eta_tdep, luse_scale_factor_in_sigma, ell_jj, tau_jj, hubble_magnetic
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -1262,7 +1262,6 @@ module Magnetic
       endif
 !
       call put_shared_variable('rhoref', rhoref)
-      call put_shared_variable('echarge', echarge)
 !
 !  Share lweyl_gauge
 !
@@ -1732,6 +1731,7 @@ module Magnetic
             else
               call get_shared_variable('Hscript', Hscript, caller='initialize_magnetic')
             endif
+            call get_shared_variable('echarge', echarge)
           endif
           if (luse_scale_factor_in_sigma) then
             if (.not.associated(ascale)) allocate(ascale, Hscript)

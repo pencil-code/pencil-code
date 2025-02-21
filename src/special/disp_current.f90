@@ -44,9 +44,9 @@ module Special
   real :: ampla0=0.0, initpower_a0=0.0, initpower2_a0=0.0
   real :: cutoff_a0=0.0, ncutoff_a0=0.0, kpeak_a0=0.0
   real :: relhel_a0=0.0, kgaussian_a0=0.0, eta_ee=0.0
-  real :: weight_longitudinalE=2.0, echarge=.55
+  real :: weight_longitudinalE=2.0
   logical :: luse_scale_factor_in_sigma=.false.
-  real, pointer :: eta, ascale, Hscript
+  real, pointer :: eta, ascale, Hscript, echarge
   integer :: iGamma=0, ia0=0, idiva_name=0, ieedot=0, iedotx=0, iedoty=0, iedotz=0
   logical :: llongitudinalE=.true., llorenz_gauge_disp=.false., lskip_projection_ee=.false.
   logical :: lscale_tobox=.true., lskip_projection_a0=.false.
@@ -77,7 +77,7 @@ module Special
     alpf, llongitudinalE, llorenz_gauge_disp, lphi_hom, &
     leedot_as_aux, eta_ee, lcurlyA, beta_inflation, &
     weight_longitudinalE, lswitch_off_divJ, lswitch_off_Gamma, &
-    lnoncollinear_EB, echarge, luse_scale_factor_in_sigma
+    lnoncollinear_EB, luse_scale_factor_in_sigma
 !
 ! Declare any index variables necessary for main or
 !
@@ -111,6 +111,7 @@ module Special
   integer :: idiag_sigErms=0    ! DIAG_DOC: $\left<\sigma_\mathrm{E}^2\right>^{1/2}$
   integer :: idiag_sigBrms=0    ! DIAG_DOC: $\left<\sigma_\mathrm{B}^2\right>^{1/2}$
   integer :: idiag_Johmrms=0    ! DIAG_DOC: $\left<\Jv^2\right>^{1/2}$
+  integer :: idiag_echarge=0    ! DIAG_DOC: $\left<e_\mathrm{eff}\right>$
   integer :: idiag_ebm=0        ! DIAG_DOC: $\left<\Ev\cdot\Bv\right>$
 !
 ! xy averaged diagnostics given in xyaver.in
@@ -190,6 +191,7 @@ module Special
       if (luse_scale_factor_in_sigma) then
         call get_shared_variable('ascale', ascale, caller='initialize_magnetic')
         call get_shared_variable('Hscript', Hscript)
+        call get_shared_variable('echarge', echarge, caller='initialize_magnetic')
       else
         allocate (ascale, Hscript)
         ascale=1.
@@ -391,6 +393,7 @@ module Special
 !
       real, dimension (nx) :: tmp
       real, dimension (nx) :: boost, gam_EB, eprime, bprime, jprime
+      real, parameter :: Chypercharge=41./12.
       integer :: i,j,k
 !
       intent(in) :: f
@@ -416,25 +419,27 @@ module Special
       call dot2_mn(p%el,p%e2)
 !
 !  Compute fully non-collinear expression for the current density.
+!  This is for the spatially dependent sigE and sigB. The averaged ones are
+!  computed in backreact_infl.f90.
 !
-              if (lnoncollinear_EB) then
-                call dot(p%el,p%bb,p%eb)
-                boost=sqrt((p%e2-p%b2)**2+4.*p%eb**2)
-                gam_EB=sqrt21*sqrt(1.+(p%e2+p%b2)/boost)
-                eprime=sqrt21*sqrt(p%e2-p%b2+boost)
-                bprime=sqrt21*sqrt(p%b2-p%e2+boost)*sign(1.,p%eb)
-                jprime=echarge**3/(6.*pi**2*Hscript)*eprime*abs(bprime)/tanh(pi*abs(Bprime)/Eprime)
-                p%sigE=abs(jprime)*eprime/(gam_EB*boost)
-                p%sigB=abs(jprime)*p%eb/(eprime*gam_EB*boost)
-                do j=1,3
-                  p%jj_ohm(:,j)=p%sigE*p%el(:,j)+p%sigB*p%bb(:,j)
-                enddo
+      if (lnoncollinear_EB) then
+        call dot(p%el,p%bb,p%eb)
+        boost=sqrt((p%e2-p%b2)**2+4.*p%eb**2)
+        gam_EB=sqrt21*sqrt(1.+(p%e2+p%b2)/boost)
+        eprime=sqrt21*sqrt(p%e2-p%b2+boost)
+        bprime=sqrt21*sqrt(p%b2-p%e2+boost)*sign(1.,p%eb)
+        jprime=Chypercharge*echarge**3/(6.*pi**2*Hscript)*eprime*abs(bprime)/tanh(pi*abs(Bprime)/Eprime)
+        p%sigE=abs(jprime)*eprime/(gam_EB*boost)
+        p%sigB=abs(jprime)*p%eb/(eprime*gam_EB*boost)
+        do j=1,3
+          p%jj_ohm(:,j)=p%sigE*p%el(:,j)+p%sigB*p%bb(:,j)
+        enddo
                 !eta_tdep=1./sigE
 !             else
 !               do j=1,3
 !                 p%jj_ohm(:,j)=(p%el(:,j)+p%uxb(:,j))*mu01/eta_total
 !               enddo
-              endif
+      endif
 !
 ! edot2
 !
@@ -650,6 +655,7 @@ module Special
           call dot2_mn(p%jj_ohm,tmp)
           call sum_mn_name(tmp,idiag_Johmrms,lsqrt=.true.)
         endif
+        call save_name(echarge,idiag_echarge)
         call sum_mn_name(p%e2,idiag_erms,lsqrt=.true.)
         call sum_mn_name(p%edot2,idiag_edotrms,lsqrt=.true.)
         call max_mn_name(p%e2,idiag_emax,lsqrt=.true.)
@@ -663,11 +669,6 @@ module Special
         if (idiag_divJrms/=0) call sum_mn_name(p%divJ**2,idiag_divJrms,lsqrt=.true.)
         call sum_mn_name(p%divE,idiag_divEm)
         call sum_mn_name(p%divJ,idiag_divJm)
-!if (m==m1) then
-!  print*,'AXEL1 rhoe=',p%rhoe(1:3)
-!  print*,'AXEL1 divE=',p%divE(1:3)
-!  print*,'AXEL1 divJ=',p%divJ(1:3)
-!endif
         call save_name(mfpf,idiag_mfpf)
         call save_name(fppf,idiag_fppf)
         call save_name(scl_factor_target,idiag_afact)
@@ -748,9 +749,10 @@ module Special
         idiag_EEEM=0; idiag_erms=0; idiag_exm=0;idiag_eym=0;  idiag_ezm=0; idiag_emax=0
         idiag_edotrms=0; idiag_a0rms=0; idiag_grms=0; idiag_da0rms=0; idiag_BcurlEm=0
         idiag_mfpf=0; idiag_fppf=0; idiag_afact=0
-        idiag_rhoerms=0.; idiag_divErms=0.; idiag_divJrms=0.
-        idiag_rhoem=0.; idiag_divEm=0.; idiag_divJm=0.; idiag_constrainteqn=0.
-        idiag_ebm=0.; idiag_sigEm=0.; idiag_sigBm=0.; idiag_sigErms=0.; idiag_sigBrms=0.; idiag_Johmrms=0.
+        idiag_rhoerms=0; idiag_divErms=0; idiag_divJrms=0
+        idiag_rhoem=0; idiag_divEm=0; idiag_divJm=0; idiag_constrainteqn=0
+        idiag_ebm=0; idiag_sigEm=0; idiag_sigBm=0; idiag_sigErms=0; idiag_sigBrms=0; idiag_Johmrms=0
+        idiag_echarge=0
         cformv=''
       endif
 !
@@ -780,6 +782,7 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'sigErms',idiag_sigErms)
         call parse_name(iname,cname(iname),cform(iname),'sigBrms',idiag_sigBrms)
         call parse_name(iname,cname(iname),cform(iname),'Johmrms',idiag_Johmrms)
+        call parse_name(iname,cname(iname),cform(iname),'echarge',idiag_echarge)
         call parse_name(iname,cname(iname),cform(iname),'mfpf',idiag_mfpf)
         call parse_name(iname,cname(iname),cform(iname),'fppf',idiag_fppf)
         call parse_name(iname,cname(iname),cform(iname),'afact',idiag_afact)
