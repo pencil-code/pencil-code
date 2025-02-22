@@ -192,7 +192,7 @@ module Special
       if (luse_scale_factor_in_sigma) then
         call get_shared_variable('ascale', ascale, caller='initialize_magnetic')
         call get_shared_variable('Hscript', Hscript)
-        call get_shared_variable('echarge', echarge, caller='initialize_magnetic')
+        call get_shared_variable('echarge', echarge)
         call get_shared_variable('sigEm_all', sigEm_all, caller='initialize_magnetic')
         call get_shared_variable('sigBm_all', sigBm_all, caller='initialize_magnetic')
       else
