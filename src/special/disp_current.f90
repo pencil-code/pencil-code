@@ -46,12 +46,12 @@ module Special
   real :: relhel_a0=0.0, kgaussian_a0=0.0, eta_ee=0.0
   real :: weight_longitudinalE=2.0
   logical :: luse_scale_factor_in_sigma=.false.
-  real, pointer :: eta, ascale, Hscript, echarge
+  real, pointer :: eta, ascale, Hscript, echarge, sigEm_all, sigBm_all
   integer :: iGamma=0, ia0=0, idiva_name=0, ieedot=0, iedotx=0, iedoty=0, iedotz=0
   logical :: llongitudinalE=.true., llorenz_gauge_disp=.false., lskip_projection_ee=.false.
   logical :: lscale_tobox=.true., lskip_projection_a0=.false.
   logical :: lvectorpotential=.false., lphi_hom=.false.
-  logical :: lno_noise_ee=.false., lnoncollinear_EB=.false.
+  logical :: lno_noise_ee=.false., lnoncollinear_EB=.false., lnoncollinear_EB_aver=.false.
   logical :: leedot_as_aux=.false., lcurlyA=.true., lsolve_chargedensity=.false.
   logical :: lswitch_off_divJ=.false., lswitch_off_Gamma=.false.
   character(len=50) :: initee='zero', inita0='zero'
@@ -77,7 +77,7 @@ module Special
     alpf, llongitudinalE, llorenz_gauge_disp, lphi_hom, &
     leedot_as_aux, eta_ee, lcurlyA, beta_inflation, &
     weight_longitudinalE, lswitch_off_divJ, lswitch_off_Gamma, &
-    lnoncollinear_EB, luse_scale_factor_in_sigma
+    lnoncollinear_EB, lnoncollinear_EB_aver, luse_scale_factor_in_sigma
 !
 ! Declare any index variables necessary for main or
 !
@@ -158,6 +158,7 @@ module Special
       call put_shared_variable('alpf',alpf,caller='register_disp_current')
       call put_shared_variable('lphi_hom',lphi_hom)
       call put_shared_variable('lnoncollinear_EB',lnoncollinear_EB,caller='register_disp_current')
+      call put_shared_variable('lnoncollinear_EB_aver',lnoncollinear_EB_aver,caller='register_disp_current')
 !
       if (lroot) call svn_id( &
            "$Id$")
@@ -192,6 +193,8 @@ module Special
         call get_shared_variable('ascale', ascale, caller='initialize_magnetic')
         call get_shared_variable('Hscript', Hscript)
         call get_shared_variable('echarge', echarge, caller='initialize_magnetic')
+        call get_shared_variable('sigEm_all', sigEm_all, caller='initialize_magnetic')
+        call get_shared_variable('sigBm_all', sigBm_all, caller='initialize_magnetic')
       else
         allocate (ascale, Hscript)
         ascale=1.
@@ -317,7 +320,7 @@ module Special
 !
 ! Pencils for lnoncollinear_EB
 !
-      if (lnoncollinear_EB) then
+      if (lnoncollinear_EB .or. lnoncollinear_EB_aver) then
         lpenc_requested(i_bb)=.true.
         lpenc_requested(i_e2)=.true.
         lpenc_requested(i_b2)=.true.
@@ -422,24 +425,28 @@ module Special
 !  This is for the spatially dependent sigE and sigB. The averaged ones are
 !  computed in backreact_infl.f90.
 !
-      if (lnoncollinear_EB) then
-        call dot(p%el,p%bb,p%eb)
-        boost=sqrt((p%e2-p%b2)**2+4.*p%eb**2)
-        gam_EB=sqrt21*sqrt(1.+(p%e2+p%b2)/boost)
-        eprime=sqrt21*sqrt(p%e2-p%b2+boost)
-        bprime=sqrt21*sqrt(p%b2-p%e2+boost)*sign(1.,p%eb)
-        jprime=Chypercharge*echarge**3/(6.*pi**2*Hscript)*eprime*abs(bprime)/tanh(pi*abs(Bprime)/Eprime)
-        p%sigE=abs(jprime)*eprime/(gam_EB*boost)
-        p%sigB=abs(jprime)*p%eb/(eprime*gam_EB*boost)
+      if (lnoncollinear_EB .or. lnoncollinear_EB_aver) then
+        if (lnoncollinear_EB) then
+          call dot(p%el,p%bb,p%eb)
+          boost=sqrt((p%e2-p%b2)**2+4.*p%eb**2)
+          gam_EB=sqrt21*sqrt(1.+(p%e2+p%b2)/boost)
+          eprime=sqrt21*sqrt(p%e2-p%b2+boost)
+          bprime=sqrt21*sqrt(p%b2-p%e2+boost)*sign(1.,p%eb)
+          jprime=Chypercharge*echarge**3/(6.*pi**2*Hscript)*eprime*abs(bprime)/tanh(pi*abs(Bprime)/Eprime)
+          p%sigE=abs(jprime)*eprime/(gam_EB*boost)
+          p%sigB=abs(jprime)*p%eb/(eprime*gam_EB*boost)
+        elseif (lnoncollinear_EB_aver) then
+          p%sigE=sigEm_all
+          p%sigB=sigBm_all
+        endif
         do j=1,3
           p%jj_ohm(:,j)=p%sigE*p%el(:,j)+p%sigB*p%bb(:,j)
         enddo
-                !eta_tdep=1./sigE
+      endif
 !             else
 !               do j=1,3
 !                 p%jj_ohm(:,j)=(p%el(:,j)+p%uxb(:,j))*mu01/eta_total
 !               enddo
-      endif
 !
 ! edot2
 !
