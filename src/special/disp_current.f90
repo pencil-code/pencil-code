@@ -187,18 +187,22 @@ module Special
         call get_shared_variable('eta',eta, caller='initialize_magnetic')
       endif
 !
-!  eta_tdep (luse_scale_factor_in_sigma=T by default)
+!  The following are only obtained when luse_scale_factor_in_sigma=T
+!  (luse_scale_factor_in_sigma=F by default)
 !
       if (luse_scale_factor_in_sigma) then
-        call get_shared_variable('ascale', ascale, caller='initialize_magnetic')
+        call get_shared_variable('ascale', ascale)
         call get_shared_variable('Hscript', Hscript)
         call get_shared_variable('echarge', echarge)
-        call get_shared_variable('sigEm_all', sigEm_all, caller='initialize_magnetic')
-        call get_shared_variable('sigBm_all', sigBm_all, caller='initialize_magnetic')
+        call get_shared_variable('sigEm_all', sigEm_all)
+        call get_shared_variable('sigBm_all', sigBm_all)
       else
         allocate (ascale, Hscript)
         ascale=1.
-        Hscript=1.
+        Hscript=0.
+        echarge=0.
+        sigEm_all=0.
+        sigBm_all=0.
       endif
 !
       call keep_compiler_quiet(f)
