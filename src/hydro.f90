@@ -156,7 +156,7 @@ module Hydro
   logical :: lno_noise_uu=.false., lrho_nonuni_uu=.false.
   logical :: llorentz_limiter=.false., full_3D=.false.
   logical :: lhiggsless=.false., lhiggsless_old=.false.
-  logical :: lsqrt_qirro_uu=.false.
+  logical :: lsqrt_qirro_uu=.false., lset_uz_zero=.false.
   real, pointer :: profx_ffree(:),profy_ffree(:),profz_ffree(:)
   real :: B_ext2
   real :: incl_alpha = 0.0, rot_rr = 0.0
@@ -194,7 +194,7 @@ module Hydro
       amp_factor,kx_uu_perturb,llinearized_hydro, hydro_zaver_range, index_rSH, &
       ll_sh, mm_sh, delta_u, n_xprof, luu_fluc_as_aux, luu_sph_as_aux, nfact_uu, &
       lvv_as_aux, lvv_as_comaux, &
-      lfactors_uu, qirro_uu, lsqrt_qirro_uu, &
+      lfactors_uu, qirro_uu, lsqrt_qirro_uu, lset_uz_zero, &
       lno_noise_uu, lrho_nonuni_uu, lpower_profile_file_uu, &
       llorentz_limiter, lhiggsless, lhiggsless_old, vwall, alpha_hless, &
       xjump_mid, yjump_mid, zjump_mid, qini
@@ -2750,6 +2750,18 @@ module Hydro
               f(l,m,n,i) = f(l,m,n,i) * urandi*(tmp0-0.5)
             enddo; enddo; enddo
           enddo
+        endif
+      endif
+!
+!  In 2-D with nzgrid=1, setting uz=0 makes sense, but shouldn't
+!  be compulsory, so allow for this possibility in 2-D.
+!  This has been implemented in analogy to lset_AxAy_zero in magnetic.
+!
+      if (lset_uz_zero) then
+        if (nzgrid==1) then
+          f(:,:,:,iuz)=0.0
+        else
+          call fatal_error("init_uu","lset_uz_zero=T only allowed with nzgrid=1")
         endif
       endif
 !
