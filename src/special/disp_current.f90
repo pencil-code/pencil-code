@@ -30,7 +30,8 @@ module Special
 !
   include '../special.h'
 !
-  ! input parameters
+! input parameters
+!
   real :: ampl=1e-3, alpf=0.
   real :: ampl_ex=0.0, ampl_ey=0.0, ampl_ez=0.0, ampl_a0=0.0
   real :: kx_ex=0.0, kx_ey=0.0, kx_ez=0.0
@@ -55,6 +56,7 @@ module Special
   logical :: leedot_as_aux=.false., lcurlyA=.true., lsolve_chargedensity=.false.
   logical :: lswitch_off_divJ=.false., lswitch_off_Gamma=.false.
   character(len=50) :: initee='zero', inita0='zero'
+!
   namelist /special_init_pars/ &
     initee, inita0, alpf, &
     ampl_ex, ampl_ey, ampl_ez, ampl_a0, &
@@ -151,14 +153,13 @@ module Special
         call farray_register_pde('diva_name',idiva_name)
       endif
 !
-      if (llongitudinalE) then
+      if (llongitudinalE) &
         call farray_register_pde('Gamma',iGamma)
-      endif
 !
       call put_shared_variable('alpf',alpf,caller='register_disp_current')
       call put_shared_variable('lphi_hom',lphi_hom)
-      call put_shared_variable('lnoncollinear_EB',lnoncollinear_EB,caller='register_disp_current')
-      call put_shared_variable('lnoncollinear_EB_aver',lnoncollinear_EB_aver,caller='register_disp_current')
+      call put_shared_variable('lnoncollinear_EB',lnoncollinear_EB)
+      call put_shared_variable('lnoncollinear_EB_aver',lnoncollinear_EB_aver)
 !
       if (lroot) call svn_id( &
            "$Id$")
@@ -183,21 +184,20 @@ module Special
       if (c_light/=1.) call fatal_error('disp_current', "use unit_system='set'")
       c_light2=c_light**2
 !
-      if (lmagnetic .and. .not.lswitch_off_divJ) then
+      if (lmagnetic .and. .not.lswitch_off_divJ) &
         call get_shared_variable('eta',eta, caller='initialize_magnetic')
-      endif
 !
 !  The following are only obtained when luse_scale_factor_in_sigma=T
 !  (luse_scale_factor_in_sigma=F by default)
 !
       if (luse_scale_factor_in_sigma) then
-        call get_shared_variable('ascale', ascale)
+        call get_shared_variable('ascale', ascale, caller='initialize_magnetic')
         call get_shared_variable('Hscript', Hscript)
         call get_shared_variable('echarge', echarge)
         call get_shared_variable('sigEm_all', sigEm_all)
         call get_shared_variable('sigBm_all', sigBm_all)
       else
-        allocate (ascale, Hscript)
+        if (.not.associated(ascale)) allocate(ascale,Hscript,echarge,sigEm_all,sigBm_all)
         ascale=1.
         Hscript=0.
         echarge=0.
@@ -236,7 +236,6 @@ module Special
           call sinwave_phase(f,iex,ampl_ex,kx_ex,ky_ex,kz_ex,phase_ex)
           call sinwave_phase(f,iey,ampl_ey,kx_ey,ky_ey,kz_ey,phase_ey)
           call sinwave_phase(f,iez,ampl_ez,kx_ez,ky_ez,kz_ez,phase_ez)
-
         case ('power_randomphase_hel')
           call power_randomphase_hel(amplee,initpower_ee,initpower2_ee, &
             cutoff_ee,ncutoff_ee,kpeak_ee,f,iex,iez,relhel_ee,kgaussian_ee, &
@@ -244,11 +243,7 @@ module Special
             lno_noise=lno_noise_ee)
 !
         case default
-          !
-          !  Catch unknown values
-          !
-          if (lroot) print*,'initee: No such value for initee: ', trim(initee)
-          call stop_it("")
+          call fatal_error("init_special","no such initee: "//trim(initee))
       endselect
 !
 !  Initial condition for Gama
@@ -263,9 +258,7 @@ module Special
 !
 !  Initial condition for rhoe
 !
-      if (lsolve_chargedensity) then
-        f(:,:,:,irhoe)=0.
-      endif
+      if (lsolve_chargedensity) f(:,:,:,irhoe)=0.
 !
 !  Initialize diva_name if llorenz_gauge_disp=T
 !
@@ -287,17 +280,11 @@ module Special
               relhel_a0,kgaussian_a0, lskip_projection_a0, lvectorpotential, &
               lscale_tobox, lpower_profile_file=.false.)
           case default
-            !
-            !  Catch unknown values
-            !
-            if (lroot) print*,'initee: No such value for inita0: ', trim(inita0)
-            call stop_it("")
+            call fatal_error("init_special","no such inita0: "//trim(inita0))
         endselect
       endif
 !
-      if (leedot_as_aux) then
-        f(:,:,:,iedotx:iedotz)=0.
-      endif
+      if (leedot_as_aux) f(:,:,:,iedotx:iedotz)=0.
 !
     endsubroutine init_special
 !***********************************************************************
@@ -491,8 +478,7 @@ module Special
         do i=1,3
         do j=1,3
         do k=1,3
-          tmp=tmp+levi_civita(i,j,k)* &
-            (p%uij(:,j,i)*p%bb(:,k)+p%uu(:,j)*p%bij(:,k,i))
+          tmp=tmp+levi_civita(i,j,k)*(p%uij(:,j,i)*p%bb(:,k)+p%uu(:,j)*p%bij(:,k,i))
         enddo
         enddo
         enddo
@@ -575,9 +561,7 @@ module Special
 !
 !  Solve for charge density
 !
-        if (lsolve_chargedensity) then
-          df(l1:l2,m,n,irhoe)=df(l1:l2,m,n,irhoe)-p%divJ
-        endif
+        if (lsolve_chargedensity) df(l1:l2,m,n,irhoe)=df(l1:l2,m,n,irhoe)-p%divJ
 !
 !  Magneto-genesis from reheating. In the papers by Subramanian (2010) and Sharma+17,
 !  as well as BS21, the calliographic variable curly-A=f*A was introduced to get
@@ -642,9 +626,7 @@ module Special
 !
 !  Compute eedot_as_aux; currently ignore alpf/=0.
 !
-      if (leedot_as_aux) then
-        f(l1:l2,m,n,iedotx:iedotz)=c_light2*(p%curlb-mu0*p%jj_ohm)
-      endif
+      if (leedot_as_aux) f(l1:l2,m,n,iedotx:iedotz)=c_light2*(p%curlb-mu0*p%jj_ohm)
 !
 !  timestep constraint
 !
@@ -660,8 +642,8 @@ module Special
         call sum_mn_name(p%sigE,idiag_sigEm)
         call sum_mn_name(p%sigB,idiag_sigBm)
         call sum_mn_name(p%eb,idiag_ebm)
-        call sum_mn_name(p%sigE**2,idiag_sigErms,lsqrt=.true.)
-        call sum_mn_name(p%sigB**2,idiag_sigBrms,lsqrt=.true.)
+        if (idiag_sigErms/=0) call sum_mn_name(p%sigE**2,idiag_sigErms,lsqrt=.true.)
+        if (idiag_sigBrms/=0) call sum_mn_name(p%sigB**2,idiag_sigBrms,lsqrt=.true.)
         if (idiag_Johmrms/=0) then
           call dot2_mn(p%jj_ohm,tmp)
           call sum_mn_name(tmp,idiag_Johmrms,lsqrt=.true.)
@@ -688,7 +670,7 @@ module Special
             (f(l1:l2,m,n,idiva_name)**2+p%diva**2),idiag_grms,lsqrt=.true.)
           if (idiag_da0rms/=0) call sum_mn_name(f(l1:l2,m,n,idiva_name)**2,idiag_da0rms,lsqrt=.true.)
         endif
-        if (idiag_constrainteqn/=0) call sum_mn_name(constrainteqn,idiag_constrainteqn)
+        call sum_mn_name(constrainteqn,idiag_constrainteqn)
 !
         call xysum_mn_name_z(p%el(:,1),idiag_exmz)
         call xysum_mn_name_z(p%el(:,2),idiag_eymz)
