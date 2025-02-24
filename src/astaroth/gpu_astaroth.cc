@@ -869,8 +869,8 @@ extern "C" void substepGPU(int isubstep)
   if (isubstep == 1) 
   {
 	  //TP: done to have the same timestep as PC when testing
-	  if(ldt && testing) dt1_interface = GpuCalcDt();
-	  if(ldt) set_dt(dt1_interface);
+	  if (ldt && testing) dt1_interface = GpuCalcDt();
+	  if (ldt) set_dt(dt1_interface);
 	  acDeviceSetInput(acGridGetDevice(), AC_dt,dt);
   }
   //fprintf(stderr,"before acGridExecuteTaskGraph");
@@ -878,7 +878,7 @@ extern "C" void substepGPU(int isubstep)
   auto start = MPI_Wtime();
   acGridExecuteTaskGraph(rhs, 1);
   auto end = MPI_Wtime();
-  if(log && !rank) fprintf(stderr,"RHS TOOK: %14e\n",end-start);
+  if (log && !rank) fprintf(stderr,"RHS TOOK: %14e\n",end-start);
   if (ldt &&
         ((isubstep == 5 && !lcourant_dt) 
         || (isubstep == 1 && lcourant_dt)
@@ -1101,15 +1101,15 @@ void setupConfig(AcMeshInfo& config)
 #endif
 
 
-  if(lcartesian_coords)
+  if (lcartesian_coords)
   {
           PCLoad(config, AC_coordinate_system, AC_CARTESIAN_COORDINATES);
   }
-  if(lspherical_coords)
+  if (lspherical_coords)
   {
           PCLoad(config, AC_coordinate_system, AC_SPHERICAL_COORDINATES);
   }
-  if(lcylindrical_coords)
+  if (lcylindrical_coords)
   {
           PCLoad(config, AC_coordinate_system, AC_CYLINDRICAL_COORDINATES);
   }

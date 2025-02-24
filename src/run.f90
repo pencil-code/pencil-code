@@ -875,9 +875,9 @@ subroutine run_start() bind(C)
 !  This directory must exist, but may be linked to another disk.
 !
   f=0.
-  if (ip<=12.and.lroot) tvar1=mpiwtime()
+  if (lroot) tvar1=mpiwtime()
   call rsnap('var.dat',f,mvar_in,lread_nogrid)
-  if (ip<=12.and.lroot) print*,'rsnap: read snapshot var.dat in ',mpiwtime()-tvar1,' seconds'
+  if (lroot) print*,'rsnap: read snapshot var.dat in ',mpiwtime()-tvar1,' seconds'
 !
 !  If we decided to use a new grid, we need to overwrite the data
 !  that we just read in from var.dat. (Note that grid information
@@ -1141,7 +1141,9 @@ subroutine run_start() bind(C)
       if (lpointmasses) call pointmasses_write_snapshot('qvar.dat',ENUM=.false.)
       if (lsolid_cells) call wsnap_ogrid('ogvar.dat',ENUM=.false.)
 !
+      call timing(message='start writing ',instruct='initialize',lforce=ltiming_io)
       call wsnap('var.dat',f,mvar_io,ENUM=.false.)
+      call timing(message='end writing ',instruct='finalize',lforce=ltiming_io)
       call wsnap_timeavgs('timeavg.dat',ENUM=.false.)
 !
 !  dvar is written for analysis and debugging purposes only.
@@ -1164,7 +1166,6 @@ subroutine run_start() bind(C)
 !  in run_pars or init_pars.
 !
   if (save_lastsnap) then
-    if (dspec/=impossible.and.lroot) print*, 'save_lastsnap powersnap'
     if (dspec/=impossible) call powersnap(f,lwrite_last_powersnap)
   endif
 !
