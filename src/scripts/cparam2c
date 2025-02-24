@@ -10,8 +10,8 @@ if [[ $MODULE_NAME_ORDER == "CRAY" ]]; then
 else
   sed -f scripts/cparam.sed -e's/integer *:: *\([a-zA-Z0-9_]*\) *= *[^!;]*.*$//' cparam.f90 >> cparam_c.h
 fi
-# the following needs to stay here!
-echo '#pragma once' > cparam.inc_c.h
-sed -f scripts/cparam.sed cparam.inc >> cparam.inc_c.h
+# the following needs to stay here in this order!
 echo '#pragma once' > cparam_pencils.inc_c.h
 sed -f scripts/cparam.sed cparam_pencils.inc >> cparam_pencils.inc_c.h
+echo '#pragma once' > cparam.inc_c.h
+sed -f scripts/cparam.sed cparam.inc >> cparam.inc_c.h

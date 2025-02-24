@@ -2785,8 +2785,13 @@ module Viscosity
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: diss
-      real, dimension (nx) :: rr_sph,rr_cyl,g_r,OO2
+      real, dimension (nx) :: diss,rr_sph,rr_cyl,g_r,OO2
+!
+      if (nzgrid/=1 .or. lspherical_coords) &
+        call not_implemented("calc_visc_heat_ppd","dissipative heating for other than 2d (r-phi) disk")
+!
+      if (.not.lgrav) &
+        call fatal_error("calc_visc_heat_ppd","dissipative heating not meaningful w/o gravity")
 !
 ! 'Dissipative' heating term Y=9/4 \Sigma \nu \Omega_K^2
 !  Need to get correct angular velocity first
@@ -2803,8 +2808,6 @@ module Viscosity
       if (nzgrid==1) then
         diss = 9./4.*nu*OO2
         df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%TT1*diss
-      else
-        call not_implemented("calc_visc_heat_ppd","dissipation for other than 2d (r-phi) disk")
       endif
 !
     endsubroutine calc_visc_heat_ppd

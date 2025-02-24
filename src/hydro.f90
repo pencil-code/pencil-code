@@ -886,9 +886,9 @@ module Hydro
   real, dimension (nx,3) :: fint,fext
   real, dimension (nx,ny) :: omega_prof
 
-  integer :: string_enum_friction_tdep = 0
-  integer :: string_enum_uuprof = 0
-  integer, dimension(3) :: string_enum_borderuu = 0
+  integer :: enum_friction_tdep = 0
+  integer :: enum_uuprof = 0
+  integer, dimension(3) :: enum_borderuu = 0
 
   contains
 !***********************************************************************
@@ -5608,7 +5608,6 @@ endif
 !
         case ('nothing')
         endselect
-
 !
       enddo
 !
@@ -8546,6 +8545,8 @@ endif
     integer, parameter :: n_pars=1000
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
+    integer :: k
+
     call copy_addr(lpressuregradient_gas,p_par(1))  ! int
     call copy_addr(lupw_uu,p_par(2))  ! int
     call copy_addr(ladvection_velocity,p_par(3))  ! int
@@ -8649,11 +8650,12 @@ endif
     call copy_addr(uumz_prof,p_par(101)) ! (nz) (3)
     call copy_addr(omega_prof,p_par(102)) ! (nx) (ny)
 
-    call string_to_enum(string_enum_friction_tdep,friction_tdep)
-    call copy_addr(string_enum_friction_tdep,p_par(103)) ! int
-    call string_to_enum(string_enum_uuprof,uuprof)
-    call copy_addr(string_enum_uuprof,p_par(104)) ! int
-    call copy_addr(string_enum_borderuu,p_par(105)) ! int3
+    call string_to_enum(enum_friction_tdep,friction_tdep)
+    call copy_addr(enum_friction_tdep,p_par(103)) ! int
+    call string_to_enum(enum_uuprof,uuprof)
+    call copy_addr(enum_uuprof,p_par(104)) ! int
+    do k = 1,3; call string_to_enum(enum_borderuu(k),borderuu(k)); enddo
+    call copy_addr(enum_borderuu,p_par(105)) ! int3
 
     endsubroutine pushpars2c
 !***********************************************************************
