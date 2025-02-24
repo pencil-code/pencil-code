@@ -22,18 +22,18 @@
 
 void initGPU(){};
 void registerGPU(){};
-void initializeGPU(REAL*, FINT){};
+void initializeGPU(REAL* a, FINT b){};
 void finalizeGPU(){};
-void getFArrayIn(REAL **){};
-void substepGPU(int ){};
-void copyFarray(REAL*){};
+void getFArrayIn(REAL **a){};
+void substepGPU(int a){};
+void copyFarray(REAL*a){};
 void loadFarray(){};
 void reloadConfig(){};
-void updateInConfigArr(int){};
-int  updateInConfigArrName(char *){};
-void updateInConfigScal(int,REAL){};
-int  updateInConfigScalName(char *, REAL){};
-void testRHS(REAL*,REAL*){};
+void updateInConfigArr(int a){};
+int  updateInConfigArrName(char *a){};
+void updateInConfigScal(int a,REAL b){};
+int  updateInConfigScalName(char *a, REAL b){};
+void testRHS(REAL* a,REAL* b){};
 void gpuSetDt(){};
 void random_initial_condition(void){};
 

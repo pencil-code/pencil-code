@@ -68,8 +68,10 @@ has_nans(AcMesh mesh_in);
   #define itorder        itorder__mod__cdata
   #define dtinc          dtinc__mod__cdata
   #define dtdec          dtdec__mod__cdata
+
   #define AC_ldensity_nolog AC_ldensity_nolog__mod__cdata
   #define AC_mu0  AC_mu0__mod__cdata
+
   #define cdtv  cdtv__mod__cdata
   #define cdtv2 cdtv2__mod__cdata
   #define cdtv3 cdtv3__mod__cdata
@@ -1100,7 +1102,7 @@ void setupConfig(AcMeshInfo& config)
   PCLoad(config,AC_mapping_func_tilde_z,dz_tilde);
 #endif
 
-
+  PCLoad(config, AC_rk_order, itorder);
   if(lcartesian_coords)
   {
           PCLoad(config, AC_coordinate_system, AC_CARTESIAN_COORDINATES);

@@ -47,7 +47,7 @@ struct PC_rhs_update
 
 #include "fieldecs.h"
 #include "../stdlib/grid.h"
-#include "../stdlib/integrators.h"
+#include "../stdlib/optimized_integrators.h"
 //#include "../stdlib/units.h"
 #include "../stdlib/utils/kernels.h"
 //#include "../stdlib/map.h"
