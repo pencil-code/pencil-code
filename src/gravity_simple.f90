@@ -1545,10 +1545,10 @@ module Gravity
 !    enum_gravy_profile = pos_in_array(gravy_profile,gravy_profile_strings)
 !    enum_gravz_profile = pos_in_array(gravz_profile,gravz_profile_strings)
 !    enum_grav_type     = pos_in_array(grav_type,grav_type_strings)
-    call string_to_enum(string_enum_gravx_profile,gravx_profile)
-    call string_to_enum(string_enum_gravy_profile,gravy_profile)
-    call string_to_enum(string_enum_gravz_profile,gravz_profile)
-    call string_to_enum(string_enum_grav_type    ,grav_type)
+    call string_to_enum(enum_gravx_profile,gravx_profile)
+    call string_to_enum(enum_gravy_profile,gravy_profile)
+    call string_to_enum(enum_gravz_profile,gravz_profile)
+    call string_to_enum(enum_grav_type    ,grav_type)
 
     call copy_addr(enum_gravx_profile,p_par(18))   ! int
     call copy_addr(enum_gravy_profile,p_par(19))   ! int
