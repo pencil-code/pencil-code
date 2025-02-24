@@ -212,8 +212,7 @@ module Special
         call get_shared_variable('lnoncollinear_EB',lnoncollinear_EB)
         call get_shared_variable('lnoncollinear_EB_aver',lnoncollinear_EB_aver)
       else
-        allocate(alpf)
-        allocate(lphi_hom)
+        if (.not.associated(alpf)) allocate(alpf,lphi_hom)
         alpf=0.
         lphi_hom=.false.
       endif
