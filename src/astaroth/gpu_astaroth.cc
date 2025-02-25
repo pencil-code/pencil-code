@@ -1120,10 +1120,6 @@ void setupConfig(AcMeshInfo& config)
   PCLoad(config, AC_domain_decomposition, (int3) {nprocx,nprocy,nprocz});
   PCLoad(config, AC_ngrid, (int3){nxgrid,nygrid,nzgrid});
   PCLoad(config, AC_skip_single_gpu_optim, true);
-  //TP: important this is correct even though we set AC_nx = nxgrid.
-  //This is stupid but needed for now.
-  //Hopefully in future we can deprecate AC_nx loading that AC_nxgrid loading becomes the default
-  PCLoad(config, AC_nlocal, (int3){nxgrid,nygrid,nzgrid});
 
   PCLoad(config,AC_decompose_strategy,(int)AcDecomposeStrategy::External);
   if (lmorton_curve)
