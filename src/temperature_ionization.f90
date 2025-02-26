@@ -39,7 +39,7 @@ module Energy
   real :: heat_source_offset=0., heat_source_sigma=1.0, heat_source=0.0
   real :: pthresh=0., pbackground=0., pthreshnorm
   real :: xjump_mid=0.,yjump_mid=0.,zjump_mid=0.
-  real :: widthTT, amplTT1, amplTT2, delta_TT, hubble_energy=0.
+  real :: widthTT, amplTT1, amplTT2, delta_TT
   real :: rad_temp_surr=298., opacity=0.  
   real, pointer :: reduce_cs2
   logical, pointer :: lreduced_sound_speed, lscale_to_cs2top
@@ -51,7 +51,7 @@ module Energy
   logical :: lheatc_chiconst=.false.,lheatc_chiconst_accurate=.false.
   logical :: lheatc_hyper3=.false.
   logical :: lheatc_shock=.false.
-  logical :: lrad_cool_heat=.false.
+  logical :: lrad_cool_heat=.false., lhubble_energy=.false.
   integer, parameter :: nheatc_max=3
   logical :: lenergy_slope_limited=.false.
   character (len=labellen), dimension(ninit) :: initlnTT='nothing'
@@ -71,7 +71,7 @@ module Energy
       lheatc_chiconst_accurate,lheatc_hyper3,chi_hyper3, &
       iheatcond, zheat_uniform_range, heat_source_offset, &
       heat_source_sigma, heat_source, lheat_source, &
-      pthresh, pbackground,chi_shock, hubble_energy, &
+      pthresh, pbackground,chi_shock, lhubble_energy, &
       lrad_cool_heat,rad_temp_surr, opacity
 !
   integer :: idiag_TTmax=0    ! DIAG_DOC: $\max (T)$
@@ -95,6 +95,7 @@ module Energy
   integer :: idiag_csm=0
   integer :: idiag_csmax=0
   integer :: idiag_csmin=0
+  integer :: idiag_deltm=0
   integer :: idiag_mum=0      ! DIAG_DOC:
   integer :: idiag_ppmax=0    ! DIAG_DOC:
   integer :: idiag_ppmin=0    ! DIAG_DOC:
@@ -530,6 +531,7 @@ module Energy
       if (idiag_csm/=0) lpenc_diagnos(i_cs2)=.true.
       if (idiag_csmax/=0) lpenc_diagnos(i_cs2)=.true.
       if (idiag_csmin/=0) lpenc_diagnos(i_cs2)=.true.
+      if (idiag_deltm/=0) lpenc_diagnos(i_delta)=.true.
       if (idiag_eem/=0) lpenc_diagnos(i_ee)=.true.
       if (idiag_ppm/=0) lpenc_diagnos(i_pp)=.true.
       if (idiag_Tppm/=0) lpenc_diagnos(i_pp)=.true.
@@ -690,11 +692,11 @@ module Energy
 !
 !  Hubble term
 !
-      if (hubble_energy/=0.) then
+      if (lhubble_energy) then
         if (ltemperature_nolog) then
-          df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) - hubble_energy*p%TT
+          df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) - Hubble*ascale**1.5*p%TT
         else
-          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - hubble_energy
+          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - Hubble*ascale**1.5
         endif
       endif
 !
@@ -779,6 +781,7 @@ module Energy
         call sum_mn_name(p%cs2,idiag_csm,lsqrt=.true.)
         call max_mn_name(p%cs2,idiag_csmax,lsqrt=.true.)
         call max_mn_name(-sqrt(p%cs2),idiag_csmin,lneg=.true.)
+        call sum_mn_name(p%delta,idiag_deltm)
         if (idiag_mum/=0) call sum_mn_name(1./p%mu1,idiag_mum)
         if (ldt) then
           if (idiag_dtchi/=0) call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
@@ -1017,7 +1020,7 @@ module Energy
         idiag_dtchi=0; idiag_dtc=0
         idiag_eem=0; idiag_ppm=0; idiag_Tppm=0
         idiag_csm=0; idiag_csmax=0; idiag_csmin=0; idiag_ppmax=0
-        idiag_mum=0; idiag_mumz=0; idiag_TTmz=0; idiag_ssmz=0
+        idiag_deltm=0; idiag_mum=0; idiag_mumz=0; idiag_TTmz=0; idiag_ssmz=0
         idiag_eemz=0; idiag_ppmz=0; idiag_ppmin=0
         idiag_puzmz=0; idiag_pr1mz=0; idiag_eruzmz=0; idiag_ffakez=0
       endif
@@ -1045,6 +1048,7 @@ module Energy
         call parse_name(iname,cname(iname),cform(iname),'csm',idiag_csm)
         call parse_name(iname,cname(iname),cform(iname),'csmax',idiag_csmax)
         call parse_name(iname,cname(iname),cform(iname),'csmin',idiag_csmin)
+        call parse_name(iname,cname(iname),cform(iname),'deltm',idiag_deltm)
         call parse_name(iname,cname(iname),cform(iname),'mum',idiag_mum)
       enddo
 !

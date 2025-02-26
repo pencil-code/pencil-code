@@ -86,8 +86,8 @@ module Special
 ! Declare index of new variables in f array (if any).
 !
   integer :: iLCDM_lna=0, iLCDM_tph=0
-  real :: Omega_Lam=.73, Omega_rad=1e-4, Omega_mat, Hubble0=0.072, Hubble, ascale
-  real :: lna, tph, redshift0=4500.
+  real :: Omega_Lam=.73, Omega_rad=1e-4, Omega_mat, Hubble0=0.072 !, Hubble, ascale
+  real :: lna, tph, redshift0=4500., sqrt_ascale
 !
   namelist /special_init_pars/ &
       Omega_Lam, Omega_rad, Hubble0, redshift0
@@ -138,6 +138,7 @@ module Special
 !  Adjust Omega_mat to conformally flat universe.
 !
       Omega_mat=1.-(Omega_Lam+Omega_rad)
+      ascale=exp(f_ode(iLCDM_lna))
 !
       call keep_compiler_quiet(f)
 !
@@ -174,13 +175,9 @@ module Special
 !
 !  All pencils that this special module depends on are specified here.
 !
-!  18-07-06/tony: coded
+!  24-02-25/axel: adapted
 !
-!      if (lmagnetic .and. lbackreact_infl) lpenc_requested(i_infl_a21)=.true.
-!
-!  pencil for gradient of phi
-!
-!     lpenc_requested(i_gphi)=.true.
+!     if (ltemperature .and..not. lentropy .and..not. lthermal_energy) lpenc_requested(i_TT)=.true.
 !
 !  Magnetic field needed for Maxwell stress
 !
@@ -348,6 +345,10 @@ module Special
 !     use Sub, only: dot2_mn, grad, curl, dot_mn
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
+!
+!  Compute terms routinely used during this time step.
+!
+      sqrt_ascale=sqrt(ascale)
 !
     endsubroutine special_after_boundary
 !********************************************************************

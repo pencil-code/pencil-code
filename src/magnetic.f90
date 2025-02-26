@@ -168,13 +168,13 @@ module Magnetic
   real :: non_ffree_factor=1.
   real :: etaB=0.
   real :: tau_relprof=0.0, tau_relprof1, amp_relprof=1.0 , k_relprof=1.0
-  real, pointer :: ascale, Hscript, e2m_all, b2m_all, echarge
+  real, pointer :: Hscript, e2m_all, b2m_all, echarge
   real :: cp=impossible
   real :: dipole_moment=0.0
   real :: eta_power_x=0., eta_power_z=0.
   real :: z1_aa=0., z2_aa=0.
   real :: Pm_smag1=1., k1hel=0., k2hel=max_real, qexp_aa=0.
-  real :: nfact_aa=4., hubble_magnetic=0.
+  real :: nfact_aa=4.
   real :: r_inner=0., r_outer=0.
   real :: eta_tdep_loverride_ee=0.
   integer, target :: va2power_jxb = 5
@@ -226,7 +226,7 @@ module Magnetic
   logical, target, dimension (3) :: lfrozen_bb_bot=(/.false.,.false.,.false./)
   logical, target, dimension (3) :: lfrozen_bb_top=(/.false.,.false.,.false./)
   logical :: lohmic_heat=.true., lneutralion_heat=.true.
-  logical :: reinitialize_aa=.false.
+  logical :: reinitialize_aa=.false., lhubble_magnetic=.false.
   logical :: lB_ext_pot=.false., lJ_ext=.false.
   logical :: lforce_free_test=.false.
   logical :: lforcing_cont_aa_local=.false., lrandom_ampl_aa=.false.
@@ -286,7 +286,7 @@ module Magnetic
       r_inner, r_outer, lpower_profile_file, eta_jump0, eta_jump1, eta_jump2, &
       lcoulomb, qexp_aa, nfact_aa, lfactors_aa, lvacuum, l2d_aa, &
       loverride_ee_decide, eta_tdep_loverride_ee, z0_gaussian, width_gaussian, &
-      lnorm_aa_kk, lohm_evolve, hubble_magnetic
+      lnorm_aa_kk, lohm_evolve, lhubble_magnetic
 !
 ! Run parameters
 !
@@ -429,7 +429,7 @@ module Magnetic
       lbraginsky, eta_jump0, eta_jump1, lcoulomb, lvacuum, &
       loverride_ee_decide, eta_tdep_loverride_ee, loverride_ee2, lignore_1rho_in_Lorentz, &
       lbext_moving_layer, zbot_moving_layer, ztop_moving_layer, speed_moving_layer, edge_moving_layer, &
-      lno_eta_tdep, luse_scale_factor_in_sigma, ell_jj, tau_jj, hubble_magnetic
+      lno_eta_tdep, luse_scale_factor_in_sigma, ell_jj, tau_jj, lhubble_magnetic
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -1725,7 +1725,7 @@ module Magnetic
       if (lresi_eta_tdep .or. lresi_eta_xtdep .or. lresi_hyper2_tdep .or. lresi_hyper3_tdep) then
         if (tdep_eta_type=='mean-field'.or.tdep_eta_type=='mean-field-local') then
           if (luse_scale_factor_in_sigma) then
-            call get_shared_variable('ascale', ascale,ierr)
+!--         call get_shared_variable('ascale', ascale,ierr)
             if (ierr==iSHVAR_ERR_NOSUCHVAR) then
               luse_scale_factor_in_sigma=.false.
             else
@@ -1734,8 +1734,8 @@ module Magnetic
             call get_shared_variable('echarge', echarge)
           endif
           if (luse_scale_factor_in_sigma) then
-            if (.not.associated(ascale)) allocate(ascale, Hscript)
-            ascale=1.
+!--         if (.not.associated(ascale)) allocate(ascale, Hscript)
+!--         ascale=1.
             Hscript=1.
           endif
         endif
@@ -3950,8 +3950,9 @@ module Magnetic
         if (.not. (lbb_as_comaux .and. lB_ext_in_comaux) .and. (.not. ladd_global_field)) then
           call get_bext(B_ext,j_ext)
           if (any(B_ext/=0.)) then
-            if (hubble_magnetic/=0.) then
-              forall(j = 1:3, B_ext(j) /= 0.0) p%bb(:,j) = p%bb(:,j) + B_ext(j)/t**(2.*hubble_magnetic)
+            if (lhubble_magnetic) then
+              forall(j = 1:3, B_ext(j) /= 0.0) p%bb(:,j) = p%bb(:,j) + B_ext(j)/ascale**2
+              !forall(j = 1:3, B_ext(j) /= 0.0) p%bb(:,j) = p%bb(:,j) + B_ext(j)*exp(-2.*f_ode(iLCDM_lna))
             else
               forall(j = 1:3, B_ext(j) /= 0.0) p%bb(:,j) = p%bb(:,j) + B_ext(j)
             endif
@@ -5993,8 +5994,8 @@ module Magnetic
 !
 !  Hubble parameter
 !
-      if (hubble_magnetic/=0.) then
-        dAdt = dAdt - 2.*hubble_magnetic/t
+      if (lhubble_magnetic) then
+        dAdt = dAdt - 2.*Hubble*ascale**1.5*p%AA
       endif
 !
 !  Now add all the contribution to dAdt so far into df.

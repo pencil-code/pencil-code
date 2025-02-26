@@ -170,13 +170,15 @@ module Magnetic_meanfield
                                 ! DIAG_DOC: in the paper referred to as
                                 ! DIAG_DOC: $\left<q_g(\overline{B})\right>$
   integer :: idiag_qam=0        ! DIAG_DOC: $\left<q_a(\overline{B})\right>$
-  integer :: idiag_alpm=0       ! DIAG_DOC: $\left<\alpha\right>$
+  integer :: idiag_alpm=0       ! DIAG_DOC: $\left<\alpha\right>$  !(where is this implemented?)
   integer :: idiag_etatm=0      ! DIAG_DOC: $\left<\eta_{\rm t}\right>$
   integer :: idiag_EMFmz1=0     ! DIAG_DOC: $\left<{\cal E}\right>_{xy}|_x$
   integer :: idiag_EMFmz2=0     ! DIAG_DOC: $\left<{\cal E}\right>_{xy}|_y$
   integer :: idiag_EMFmz3=0     ! DIAG_DOC: $\left<{\cal E}\right>_{xy}|_z$
   integer :: idiag_EMFdotBm=0   ! DIAG_DOC: $\left<{\cal E}\cdot\Bv \right>$
   integer :: idiag_EMFdotB_int=0! DIAG_DOC: $\int{\cal E}\cdot\Bv dV$
+  integer :: idiag_alpKjbm=0    ! DIAG_DOC: $\left<\alpha_\mathrm{K}\overline{\Bv}\cdot\overline{\Jv}\right>$
+  integer :: idiag_alpKm=0      ! DIAG_DOC: $\left<\alpha_\mathrm{K}\right>$
   integer :: idiag_peffmxz=0    ! YAVG_DOC: $\left<{\cal P}_{\rm eff}\right>_{y}$
   integer :: idiag_alpmxz=0     ! YAVG_DOC: $\left<\alpha\right>_{y}$
 !
@@ -754,6 +756,11 @@ module Magnetic_meanfield
         lpenc_requested(i_bij)=.true.
         lpenc_requested(i_mf_EMF)=.true.
       endif
+!
+!  If idiag_alpKjbm/=0, we need j.b.
+!
+      if (idiag_alpKjbm/=0) lpenc_requested(i_jb)=.true.
+!
 !  thin-disk dynamo models
 !
       if (lalphass_disk) lpenc_requested(i_cs2)=.true.
@@ -1593,6 +1600,8 @@ module Magnetic_meanfield
         if (idiag_qsm/=0) call sum_mn_name(meanfield_qs_func,idiag_qsm)
         if (idiag_qpm/=0) call sum_mn_name(meanfield_qp_func,idiag_qpm)
         if (idiag_qem/=0) call sum_mn_name(meanfield_qe_func,idiag_qem)
+        if (idiag_alpKm/=0) call sum_mn_name(alpha_total,idiag_alpKm)
+        if (idiag_alpKjbm/=0) call sum_mn_name(alpha_total*p%jb,idiag_alpKjbm)
       endif
 !
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1.
@@ -1916,6 +1925,7 @@ module Magnetic_meanfield
         idiag_qsm=0; idiag_qpm=0; idiag_qem=0;
         idiag_EMFmz1=0; idiag_EMFmz2=0; idiag_EMFmz3=0; idiag_peffmxz=0
         idiag_qpmz=0; idiag_alpmxz=0
+        idiag_alpKm=0; idiag_alpKjbm=0
       endif
 !
 !  Check for those quantities that we want to evaluate online.
@@ -1924,6 +1934,8 @@ module Magnetic_meanfield
         call parse_name(iname,cname(iname),cform(iname),'qsm',idiag_qsm)
         call parse_name(iname,cname(iname),cform(iname),'qpm',idiag_qpm)
         call parse_name(iname,cname(iname),cform(iname),'qem',idiag_qem)
+        call parse_name(iname,cname(iname),cform(iname),'alpKm',idiag_alpKm)
+        call parse_name(iname,cname(iname),cform(iname),'alpKjbm',idiag_alpKjbm)
       enddo
 !
 !  Check for those quantities for which we want xy-averages.
