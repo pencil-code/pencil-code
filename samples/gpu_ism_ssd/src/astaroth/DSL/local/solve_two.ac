@@ -3,6 +3,7 @@
 #
 Kernel twopass_solve_intermediate(PC_SUB_STEP_NUMBER step_num, real dt) {
   //TP: this is the optimized version feel free to try the less optimized version which first copies alpha -> beta and beta -> alpha on gpu_astaroth.cc
+  //TP: should calculate errors only if ldt is true but that's fine for now
   df_uu  = duu_dt(step_num)
   df_aa  = daa_dt(step_num)
   df_rho = drho_dt(step_num)
