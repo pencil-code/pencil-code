@@ -370,9 +370,9 @@ sub build_remote_cmd {
           . 'cd "'.$prev_wd.'";'
     }
     if ($use_build) {
-        $remcmd .= "env PENCIL_HOME=\"$pencil_home\" ./bin/pc_auto-test ";
+        $remcmd .= "env PENCIL_HOME=\"$pencil_home\" PATH=\"$ENV{PATH}\" pc_auto-test ";
     } else {
-        $remcmd .= "env PENCIL_HOME=\"$pencil_home\" ./bin/auto-test ";
+        $remcmd .= "env PENCIL_HOME=\"$pencil_home\" PATH=\"$ENV{PATH}\" auto-test ";
     }
     $remcmd .= "--time ";
     if ($emails)             { $remcmd .= "--list-maintainers "; }
