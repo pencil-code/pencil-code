@@ -593,7 +593,7 @@ unless ($nolock or $list_only) {
 }
 
 # Remember current directory
-my $cwd = `pwd`; chomp($cwd);
+my $cwd = cwd();
 
 # pc_update_autotest
 system("$pencil_home/bin/pc_update_autotest.sh &");
@@ -1492,6 +1492,7 @@ sub test_rundir {
     $shortdir =~ s{^samples/}{};        # remove leading 'samples/'
     $0 =~ s/^\s*(\[.*?\])?\s*/[$shortdir] /;
 
+    chdir $cwd;
     # Go to directory and identify it
     if (! -d $dir) {
         print STDERR "No such directory: $dir\n";
@@ -1822,9 +1823,9 @@ sub get_path {
     my $file = shift;
 
     my $path = "";
-    if ($dir) { $path = $dir."/".$path; }
+    if ($dir) { $path = $dir."/"; }
     if ($log_dir) { $path = $log_dir."/".$path; }
-    elsif ($pencil_home) { $path = $pencil_home."/samples/".$path; }
+    elsif ($pencil_home) { $path = cwd()."/"; }
     return $path.$file;
 }
 # ---------------------------------------------------------------------- #
