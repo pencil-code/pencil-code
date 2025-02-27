@@ -19,6 +19,7 @@
 
   use Cdata
   use Messages, only: fatal_error
+  use Syscalls, only: memusage
   use iso_c_binding
 
   integer :: stat
@@ -41,6 +42,7 @@
 
     !mvar=nvar; maux=naux; maux_com=naux_com; mscratch=nscratch; mglobal=nglobal
 
+    if (lroot) print*, 'Memory usage before farray allocation=', memusage()/1024., 'MBytes'
     if (shared_mem_name/='') then
       fp = allocate_shm(nelems,shared_mem_name//char(0))
       call c_f_pointer(fp,f,(/mx,my,mz,mfarray/))
@@ -49,22 +51,21 @@
       f => f_arr
     endif
 
-    if (stat>0) call fatal_error('farray_alloc','Could not allocate memory for f')
+    if (stat>0) call fatal_error('farray_alloc','Could not allocate f')
     if (nt>0.and..not.lgpu) then
       allocate(df(mx,my,mz,mvar),STAT=stat)
-      if (stat>0) call fatal_error('farray_alloc','Could not allocate memory for df')
+      if (stat>0) call fatal_error('farray_alloc','Could not allocate df')
+    else
+      allocate(df(1,1,1,1))
     endif
-
-    f => f_arr
+    if (lroot) print*, 'Memory usage after farray allocation=', memusage()/1024., 'MBytes'
 
   endsubroutine initialize
 !******************************************************************************
   subroutine finalize
 
-    if (shared_mem_name=='') then
-      deallocate(f_arr)
-      ! deallocate fp?
-    endif
+    if (allocated(f_arr)) deallocate(f_arr)
+    !if (shared_mem_name=='') deallocate fp?
     if (allocated(df)) deallocate(df) 
 
   endsubroutine finalize

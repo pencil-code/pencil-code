@@ -8630,7 +8630,7 @@ endif
     call copy_addr(fade_fact,p_par(81))
     call copy_addr(uumz,p_par(82)) ! (mz) (3)
     call copy_addr(uumx,p_par(83)) ! (mx) (3)
-    call copy_addr(uumxy,p_par(84)) ! (mx) (my) (3)
+    if (allocated(uumxy)) call copy_addr(uumxy,p_par(84)) ! (mx) (my) (3)
     call copy_addr(uumxz,p_par(85)) ! (mx) (mz) (3)
     call copy_addr(uu_average_cyl,p_par(86)) ! (mx) (mz)
     call copy_addr(uu_average_sph,p_par(87)) ! (mx) (my)

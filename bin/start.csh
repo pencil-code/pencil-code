@@ -133,6 +133,10 @@ echo "" >> pc_commands.log
 date +'# %Y-%m-%d %H:%M:%S' >> pc_commands.log
 echo "$mpirun $mpirunops $npops $mpirunops2 $start_x $x_ops"
 echo "$mpirun $mpirunops $npops $mpirunops2 $start_x $x_ops" >> pc_commands.log
+#
+# Avoid use of GTL library.
+#
+unsetenv MPICH_GPU_SUPPORT_ENABLED
 time $mpirun $mpirunops $npops $mpirunops2 $start_x $x_ops
 #time $mpirun --bind-to core:overload-allowed $mpirunops $npops $mpirunops2 $start_x $x_ops
 #srun -n4 $start_x $x_ops

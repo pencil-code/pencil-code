@@ -55,12 +55,19 @@ OBJECTS = $(SOURCES:.cc=.o)
 
 #DSL_MODULE_DIR=samples/gputest
 DSL_MODULE_DIR = ../../DSL/local
+EXT_SOURCES = ../../DSL/*/*.h 
+
 ifeq ($(CMAKE_SINGLEPASS),ON)
   DSL_MODULE_FILE = solve_single.ac
+  #EXT_SOURCES += ../../DSL/local/solve_single.ac
 else
   DSL_MODULE_FILE = solve_two.ac
+  #EXT_SOURCES += ../../DSL/local/solve_two.ac
 endif
-EXT_SOURCES = ../../DSL/*/*.h ../../DSL/*/*.ac
+#
+ifneq ($(filter shock,$(MODULESOURCES)),)
+  EXT_SOURCES += ../../DSL/shock/*.ac
+endif
 
 # C headers in submodule
 AC_HEADERS=submodule/include/astaroth.h submodule/acc-runtime/api/math_utils.h
