@@ -86,7 +86,7 @@ module Special
 ! Declare index of new variables in f array (if any).
 !
   integer :: iLCDM_lna=0, iLCDM_tph=0
-  real :: Omega_Lam=.73, Omega_rad=1e-4, Omega_mat, Hubble0=0.072 !, Hubble, ascale
+  real :: Omega_Lam=.73, Omega_rad=1e-4, Omega_mat, Hubble0=0.072
   real :: lna, tph, redshift0=4500., sqrt_ascale
 !
   namelist /special_init_pars/ &
@@ -119,9 +119,6 @@ module Special
 !
       call farray_register_ode('LLCDM_lna',iLCDM_lna)
       call farray_register_ode('iLCDM_tph',iLCDM_tph)
-!
-      call put_shared_variable('ascale',ascale)
-      call put_shared_variable('Hubble',Hubble)
 !
     endsubroutine register_special
 !***********************************************************************

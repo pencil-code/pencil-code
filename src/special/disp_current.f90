@@ -47,7 +47,8 @@ module Special
   real :: relhel_a0=0.0, kgaussian_a0=0.0, eta_ee=0.0
   real :: weight_longitudinalE=2.0
   logical :: luse_scale_factor_in_sigma=.false.
-  real, pointer :: eta, ascale, Hscript, echarge, sigEm_all, sigBm_all
+  !real, pointer :: eta, ascale, Hscript, echarge, sigEm_all, sigBm_all
+  real, pointer :: eta, Hscript, echarge, sigEm_all, sigBm_all
   integer :: iGamma=0, ia0=0, idiva_name=0, ieedot=0, iedotx=0, iedoty=0, iedotz=0
   logical :: llongitudinalE=.true., llorenz_gauge_disp=.false., lskip_projection_ee=.false.
   logical :: lscale_tobox=.true., lskip_projection_a0=.false.
@@ -191,14 +192,12 @@ module Special
 !  (luse_scale_factor_in_sigma=F by default)
 !
       if (luse_scale_factor_in_sigma) then
-        call get_shared_variable('ascale', ascale, caller='initialize_magnetic')
         call get_shared_variable('Hscript', Hscript)
         call get_shared_variable('echarge', echarge)
         call get_shared_variable('sigEm_all', sigEm_all)
         call get_shared_variable('sigBm_all', sigBm_all)
       else
-        if (.not.associated(ascale)) allocate(ascale,Hscript,echarge,sigEm_all,sigBm_all)
-        ascale=1.
+        if (.not.associated(Hscript)) allocate(Hscript,echarge,sigEm_all,sigBm_all)
         Hscript=0.
         echarge=0.
         sigEm_all=0.

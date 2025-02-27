@@ -1725,7 +1725,6 @@ module Magnetic
       if (lresi_eta_tdep .or. lresi_eta_xtdep .or. lresi_hyper2_tdep .or. lresi_hyper3_tdep) then
         if (tdep_eta_type=='mean-field'.or.tdep_eta_type=='mean-field-local') then
           if (luse_scale_factor_in_sigma) then
-!--         call get_shared_variable('ascale', ascale,ierr)
             if (ierr==iSHVAR_ERR_NOSUCHVAR) then
               luse_scale_factor_in_sigma=.false.
             else
@@ -1734,8 +1733,6 @@ module Magnetic
             call get_shared_variable('echarge', echarge)
           endif
           if (luse_scale_factor_in_sigma) then
-!--         if (.not.associated(ascale)) allocate(ascale, Hscript)
-!--         ascale=1.
             Hscript=1.
           endif
         endif
@@ -3952,7 +3949,6 @@ module Magnetic
           if (any(B_ext/=0.)) then
             if (lhubble_magnetic) then
               forall(j = 1:3, B_ext(j) /= 0.0) p%bb(:,j) = p%bb(:,j) + B_ext(j)/ascale**2
-              !forall(j = 1:3, B_ext(j) /= 0.0) p%bb(:,j) = p%bb(:,j) + B_ext(j)*exp(-2.*f_ode(iLCDM_lna))
             else
               forall(j = 1:3, B_ext(j) /= 0.0) p%bb(:,j) = p%bb(:,j) + B_ext(j)
             endif

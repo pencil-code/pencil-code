@@ -100,7 +100,7 @@ module Special
   real :: edotbm, edotbm_all, e2m, e2m_all, b2m, b2m_all, a2rhophim, a2rhophim_all
   real :: sigE1m, sigB1m, sigE1m_all, sigB1m_all, sigEm_all, sigBm_all
   real :: a2rhogphim, a2rhogphim_all
-  real :: lnascale, ascale, a2, a21, Hscript
+  real :: lnascale, a2, a21, Hscript
   real :: Hscript0=0., scale_rho_chi_Heqn=1.
   real :: echarge=.0, echarge_const=.303
   real, target :: ddotam_all
@@ -183,7 +183,6 @@ module Special
       ispecialvar2=iinfl_dphi
 !
       call put_shared_variable('ddotam',ddotam_all,caller='register_backreact_infl')
-      call put_shared_variable('ascale',ascale)
       call put_shared_variable('Hscript',Hscript)
       call put_shared_variable('e2m_all',e2m_all)
       call put_shared_variable('b2m_all',b2m_all)
@@ -201,8 +200,17 @@ module Special
 !  06-oct-03/tony: coded
 !
       use SharedVariables, only: get_shared_variable
+      use FArrayManager, only: farray_index_by_name_ode
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      integer :: iLCDM_lna
+!
+      if (lflrw) then
+        iLCDM_lna=farray_index_by_name_ode('iLCDM_lna')
+        if (iLCDM_lna>0) call fatal_error('initialize_special', 'there is a conflict with iLCDM_lna')
+      endif
+!
+!  set axionmass**2
 !
       axionmass2=axionmass**2
 !
@@ -518,7 +526,6 @@ module Special
       if (lflrw) then
         df_ode(iinfl_lna)=df_ode(iinfl_lna)+Hscript
       endif
-      !ascale=exp(f_ode(iinfl_lna))
       rho_chi=f_ode(iinfl_rho_chi)
 !
 !  eta_tdep
