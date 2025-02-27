@@ -50,4 +50,5 @@
   }
   //rhs += -ugrad_upwd(SS, UU)
 #endif
-  return (PC_rhs_update){real3(rhs,0.,0.),maxchi}
+  reduce_max(maxchi, AC_maxchi)
+  return rhs
