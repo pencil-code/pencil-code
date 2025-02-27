@@ -50,5 +50,8 @@
   }
   //rhs += -ugrad_upwd(SS, UU)
 #endif
-  reduce_max(maxchi, AC_maxchi)
+  if(lcourant_dt && ldt && step_num == 0)
+  {
+  	reduce_max(maxchi, AC_maxchi)
+  }
   return rhs
