@@ -2,6 +2,8 @@
 
   use Cparam
 
+  implicit none
+
   real, dimension(mx,my,mz,mfarray) :: f
   real, dimension(:,:,:,:), allocatable :: df
 
@@ -11,6 +13,9 @@
   contains
 !***********************************************
   subroutine initialize
+
+    use Cdata, only: nt
+    use Messages, only: fatal_error
 
     integer :: stat
 
