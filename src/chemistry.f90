@@ -3507,7 +3507,7 @@ module Chemistry
       call timing('dchemistry_dt','before ldiagnos',mnloop=.true.)
       call calc_diagnostics_chemistry(f,p)
       call timing('dchemistry_dt','finished',mnloop=.true.)
-!
+      !
     endsubroutine dchemistry_dt
 !***********************************************************************
     subroutine calc_diagnostics_chemistry(f,p)
@@ -6880,7 +6880,11 @@ module Chemistry
               df(l1+i-1,m,n,kkk) = df(l1+i-1,m,n,kkk) + p%ff_nucl(i)*f(l1+i-1,m,n,kkk)/p%rho(i)
             endif
           enddo
-          df(l1+i-1,m,n,irho) = df(l1+i-1,m,n,irho) - p%ff_nucl(i)
+          if (ldensity_nolog) then
+            df(l1+i-1,m,n,irho) = df(l1+i-1,m,n,irho) - p%ff_nucl(i)
+          else
+            df(l1+i-1,m,n,ilnrho) = df(l1+i-1,m,n,ilnrho) - p%ff_nucl(i)*p%rho1(i)
+          endif
           !
           ! Add heat due to condesation phase change to the energy equation
           !
@@ -6929,7 +6933,11 @@ module Chemistry
         !
         ! The new nucleii also means that the density is reduced
         !
-        df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) - p%ff_nucl
+        if (ldensity_nolog) then
+          df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) - p%ff_nucl
+        else
+          df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - p%rho1*p%ff_nucl
+        endif
         !
         ! Add latent heat due to condesation phase change to the energy equation.
         ! This is done in particles_temperature.f90.
