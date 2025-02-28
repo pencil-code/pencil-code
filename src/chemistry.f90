@@ -743,33 +743,34 @@ module Chemistry
 !
 !  Double shear layer
 !
+          tmp1=0.
+          tmp2=0.
           if (lroot) then
-            tmp1=0.
-            tmp2=0.
             print*,'init_chemistry: Double shear layer'
             write (*,'(A10, 2A23)')"species","mass frac jet","mass frac co-flow"
             print*,"********************COMPOSITIONS****************************"
-            do k=1,nchemspec
-              write (*,'(A10,2F23.6)') trim(varname(ichemspec(k))), &
-                   amplchemk(k),amplchemk2(k)
-              tmp1=tmp1+amplchemk(k)  /species_constants(k,imass)
-              tmp2=tmp2+amplchemk2(k)/species_constants(k,imass)
-            enddo
-            write (*,'(A10,2F23.6)') "SUM",sum(amplchemk),sum(amplchemk2)
-
-            print*," "
-            
+          endif
+          do k=1,nchemspec
+            if (lroot) write (*,'(A10,2F23.6)') trim(varname(ichemspec(k))), &
+                 amplchemk(k),amplchemk2(k)
+            tmp1=tmp1+amplchemk(k)  /species_constants(k,imass)
+            tmp2=tmp2+amplchemk2(k)/species_constants(k,imass)
+          enddo
+          if (lroot) write (*,'(A10,2F23.6)') "SUM",sum(amplchemk),sum(amplchemk2)
+          
+          if (lroot) print*," "
+          
+          if (lroot) then
             write (*,'(A10, 2A23)')"species","mol frac jet","mol frac co-flow"
             print*,"********************COMPOSITIONS****************************"
-            do k=1,nchemspec
-              mol1=amplchemk(k)/species_constants(k,imass)/tmp1
-              mol2=amplchemk2(k)/species_constants(k,imass)/tmp2
-              write (*,'(A10,2F23.6)') trim(varname(ichemspec(k))), &
-                   mol1,mol2
-            enddo
-            write (*,'(A10,2F23.6)') "SUM",sum(amplchemk),sum(amplchemk2)
-
           endif
+          do k=1,nchemspec
+            mol1=amplchemk(k)/species_constants(k,imass)/tmp1
+            mol2=amplchemk2(k)/species_constants(k,imass)/tmp2
+            if (lroot) write (*,'(A10,2F23.6)') trim(varname(ichemspec(k))), &
+                 mol1,mol2
+          enddo
+          if (lroot) write (*,'(A10,2F23.6)') "SUM",sum(amplchemk),sum(amplchemk2)
 !
 !  Different cases for x and y extent.
 !
