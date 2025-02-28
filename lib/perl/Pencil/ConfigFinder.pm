@@ -280,6 +280,15 @@ sub get_host_id_system_info {
         || first_word_from_file('/etc/version')
       );
 
+    if (index($linux_type, "\\S") != -1) {
+        #On some systems (e.g. Arch Linux), /etc/issue contains strings like
+        # \S{PRETTY_NAME}, which use variables defined in /etc/os-release.
+        # If linux_type contains \S, it is likely we have run into such
+        # a system, and so we directly parse /etc/os-release .
+        #Kishore: Philippe, I believe this should handle the case you were trying to fix in commit 0c8c265bb4edd92c9880af90d6632e7bce9e222f ; if so, we may be able to remove the regex stuff a few lines below.
+        $linux_type = first_line_from_cmd('. /etc/os-release; printf %s "${NAME}" | cut -d " " -f 1')
+    }
+    
     my $id = 'host';
     $id .= "-$hostname"   if $hostname;
     $id .= "-$os_name"    if $os_name;
