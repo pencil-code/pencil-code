@@ -1001,13 +1001,15 @@ module Particles_radius
 !  Diagnostic output.
 !
       if (ldiagnos) then
-        call sum_par_name(fp(1:npar_loc,iap),idiag_apm,len=npar_loc)
-        call sum_par_name(fp(1:npar_loc,iap)**2,idiag_ap2m,len=npar_loc)
-        call sum_par_name(fp(1:npar_loc,iap)**3,idiag_ap3m,len=npar_loc)
-        call max_par_name(-fp(1:npar_loc,iap),idiag_apmin,lneg=.true.,len=npar_loc)
-        call max_par_name(fp(1:npar_loc,iap),idiag_apmax,len=npar_loc)
-        if (idiag_npswarmm/=0.and.npar_loc>0) call sum_par_name(rhop_swarm/ &
-             (four_pi_rhopmat_over_three*fp(1:npar_loc,iap)**3),idiag_npswarmm,len=npar_loc)
+        if (iap/=0) then
+          call sum_par_name(fp(1:npar_loc,iap),idiag_apm,len=npar_loc)
+          call sum_par_name(fp(1:npar_loc,iap)**2,idiag_ap2m,len=npar_loc)
+          call sum_par_name(fp(1:npar_loc,iap)**3,idiag_ap3m,len=npar_loc)
+          call max_par_name(-fp(1:npar_loc,iap),idiag_apmin,lneg=.true.,len=npar_loc)
+          call max_par_name(fp(1:npar_loc,iap),idiag_apmax,len=npar_loc)
+          if (idiag_npswarmm/=0.and.npar_loc>0) call sum_par_name(rhop_swarm/ &
+              (four_pi_rhopmat_over_three*fp(1:npar_loc,iap)**3),idiag_npswarmm,len=npar_loc)
+        endif
         if (lparticles_chemistry) then
           call sum_par_name(fp(1:npar_loc,ieffp),idiag_ieffp,len=npar_loc)
         endif

@@ -3509,12 +3509,18 @@ module Particles
         if (idiag_nparmin /= 0) call max_name(-npar_loc,idiag_nparmin,lneg=.true.)
         call max_name(+npar_loc,idiag_nparmax)
         if (idiag_nparpmax /= 0) call max_name(maxval(npar_imn),idiag_nparpmax)
-        call sum_par_name(fp(1:npar_loc,ixp),idiag_xpm)
-        call sum_par_name(fp(1:npar_loc,iyp),idiag_ypm)
-        call sum_par_name(fp(1:npar_loc,izp),idiag_zpm)
-        call max_par_name(fp(1:npar_loc,ixp),idiag_xpmax)
-        call max_par_name(fp(1:npar_loc,iyp),idiag_ypmax)
-        call max_par_name(fp(1:npar_loc,izp),idiag_zpmax)
+        if (ixp/=0) then
+          call sum_par_name(fp(1:npar_loc,ixp),idiag_xpm)
+          call max_par_name(fp(1:npar_loc,ixp),idiag_xpmax)
+        endif
+        if (iyp/=0) then
+          call sum_par_name(fp(1:npar_loc,iyp),idiag_ypm)
+          call max_par_name(fp(1:npar_loc,iyp),idiag_ypmax)
+        endif
+        if (izp/=0) then
+          call sum_par_name(fp(1:npar_loc,izp),idiag_zpm)
+          call max_par_name(fp(1:npar_loc,izp),idiag_zpmax)
+        endif
         if (idiag_xpmin /= 0)  call max_par_name(-fp(1:npar_loc,ixp),idiag_xpmin,lneg=.true.)
         if (idiag_ypmin /= 0)  call max_par_name(-fp(1:npar_loc,iyp),idiag_ypmin,lneg=.true.)
         if (idiag_zpmin /= 0)  call max_par_name(-fp(1:npar_loc,izp),idiag_zpmin,lneg=.true.)
@@ -3525,9 +3531,9 @@ module Particles
             fp(1:npar_loc,iyp)**2+fp(1:npar_loc,izp)**2),idiag_rpm)
         if (idiag_rp2m /= 0) call sum_par_name(fp(1:npar_loc,ixp)**2+ &
             fp(1:npar_loc,iyp)**2+fp(1:npar_loc,izp)**2,idiag_rp2m)
-        call sum_par_name(fp(1:npar_loc,ivpx),idiag_vpxm)
-        call sum_par_name(fp(1:npar_loc,ivpy),idiag_vpym)
-        call sum_par_name(fp(1:npar_loc,ivpz),idiag_vpzm)
+        if (ivpx/=0) call sum_par_name(fp(1:npar_loc,ivpx),idiag_vpxm)
+        if (ivpy/=0) call sum_par_name(fp(1:npar_loc,ivpy),idiag_vpym)
+        if (ivpz/=0) call sum_par_name(fp(1:npar_loc,ivpz),idiag_vpzm)
         if (idiag_vpxvpym /= 0) call sum_par_name( &
             fp(1:npar_loc,ivpx)*fp(1:npar_loc,ivpy),idiag_vpxvpym)
         if (idiag_vpxvpzm /= 0) call sum_par_name( &
@@ -3593,9 +3599,9 @@ module Particles
         if (idiag_vpmax /= 0) call max_par_name( &
             sqrt(sum(fp(1:npar_loc,ivpx:ivpz)**2,2)),idiag_vpmax)
         if (idiag_vrelpabsm /= 0) call calc_relative_velocity(f,fp,ineargrid)
-        call max_par_name(fp(1:npar_loc,ivpx),idiag_vpxmax)
-        call max_par_name(fp(1:npar_loc,ivpy),idiag_vpymax)
-        call max_par_name(fp(1:npar_loc,ivpz),idiag_vpzmax)
+        if (ivpx/=0) call max_par_name(fp(1:npar_loc,ivpx),idiag_vpxmax)
+        if (ivpy/=0) call max_par_name(fp(1:npar_loc,ivpy),idiag_vpymax)
+        if (ivpz/=0) call max_par_name(fp(1:npar_loc,ivpz),idiag_vpzmax)
         if (idiag_vpxmin /= 0) call max_par_name(-fp(1:npar_loc,ivpx),idiag_vpxmin,lneg=.true.)
         if (idiag_vpymin /= 0) call max_par_name(-fp(1:npar_loc,ivpy),idiag_vpymin,lneg=.true.)
         if (idiag_vpzmin /= 0) call max_par_name(-fp(1:npar_loc,ivpz),idiag_vpzmin,lneg=.true.)
