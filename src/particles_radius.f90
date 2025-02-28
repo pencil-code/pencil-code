@@ -866,7 +866,7 @@ module Particles_radius
 !  Damp approach to minimum size. The radius decreases linearly with time in
 !  the limit of small particles; therefore we need to damp the evaporation to
 !  avoid small time-steps.
-              !
+!
               if (dapdt < 0.0 .and. apmin > 0.0) then
                 dapdt = dapdt*min(1.0,(fp(k,iap)/apmin-1.0)**2)
                 if (lfirst .and. ldt) then
