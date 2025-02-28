@@ -197,7 +197,7 @@ module Dustvelocity
       real, dimension (mx,my,mz,mfarray) :: f
 !
       integer :: i, j, k
-      real :: gsurften, Eyoung, nu_Poisson, Eyoungred=1.0
+      real :: gsurften=0.0, Eyoung, nu_Poisson, Eyoungred=1.0
       real :: lnad
 !
 !  Copy boundary condition on first dust species to all others.
