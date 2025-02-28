@@ -510,10 +510,11 @@ module Particles_coagulation
 !
 !  A collision can not result in a coagulation if both particles are frozen
 !
-                  if (lparticles_temperature .and. &
-                       fp(k,iTp)<part_melt_temp .and. &
-                       fp(j,iTp)<part_melt_temp) then
-                    tau_coll1=0.0
+                  if (lparticles_temperature) then
+                    if (fp(k,iTp)<part_melt_temp .and. &
+                         fp(j,iTp)<part_melt_temp) then
+                      tau_coll1=0.0
+                    endif
                   endif
                   if (tau_coll1/=0.0) then
 !
