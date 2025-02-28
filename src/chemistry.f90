@@ -1386,6 +1386,13 @@ module Chemistry
             !
             f(l1:l2,m,n,inucl)=p%nucl_rmin
             f(l1:l2,m,n,inucrate)=p%nucl_rate
+            if (.not. lnolatentheat .and. it == 1) then
+              ! Initialize some pencil here at the first time-step. This is not
+              ! an ideal solution, but will do it like this now to make the
+              ! simulations reproducable (avoid *e-314 for the first time step).
+              p%latent_heat=0.
+              p%ff_cond=0.
+            endif
           endif
         endif
       endif
