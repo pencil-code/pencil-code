@@ -4496,8 +4496,12 @@ module Magnetic
       if (lpenc_loc(i_uxj)) call cross_mn(p%uu,p%jj,p%uxj)
 ! chibp
 !  FG: 23-05-24 GNU Fortran (Ubuntu 11.4.0-1ubuntu1~22.04) 11.4.0
-!  This breaks the pencil check on interstellar sample for above version, works on 9.4.0 and 11.2.0 ???
-      if (lpenc_loc(i_chibp)) p%chibp=atan2(p%bb(:,2),p%bb(:,1))+.5*pi
+!  FG: 27-02-25 GNU Fortran (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0
+!  atan2: Program received signal SIGFPE: Floating-point exception - erroneous arithmetic operation.
+!  added tini to exclude 0,0 argument
+!  not required for GNU 9.4.0 and 11.2.0 ???
+!
+      if (lpenc_loc(i_chibp)) p%chibp=atan2(p%bb(:,2),p%bb(:,1)+tini)+.5*pi
 ! StokesI
       if (lpenc_loc(i_StokesI)) p%StokesI=(p%bb(:,1)**2+p%bb(:,2)**2)**exp_epspb
 !
