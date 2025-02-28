@@ -52,7 +52,7 @@ module Dustvelocity
   real :: ad0=0.0, ad1=0.0, dimd1=0.333333, deltamd=1.0
   real :: nud_all=0.0, betad_all=0.0, tausd_all=0.0
   real :: viscd_exponent=0.0, adref_nud=0.0
-  real :: mmon, mumon, mumon1, surfmon, ustcst, unit_md=1.0
+  real :: mmon, mumon, surfmon, ustcst, unit_md=1.0
   real :: beta_dPdr_dust=0.0, beta_dPdr_dust_scaled=0.0,cdtd=0.2
   real :: gravx_dust=0.0
   real :: Omega_pseudo=0.0, u0_gas_pseudo=0.0, tausgmin=0.0, tausg1max=0.0
@@ -268,8 +268,6 @@ module Dustvelocity
         call fatal_error('initialize_dustvelocity','no valid dust chemistry specified')
 
       endselect
-
-      mumon1=1/mumon
 !
 !  Constant used in determination of sticking velocity
 !    (extra factor 2 from Dominik & Tielens, 1997, end of Sec. 3.2)
