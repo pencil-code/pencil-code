@@ -172,7 +172,6 @@ module Dustvelocity
 
       case default
         call fatal_error('register_dustvelocity','no valid dust_binning')
-
       endselect
 !
       call put_shared_variable('llin_radiusbins',llin_radiusbins)
@@ -197,7 +196,7 @@ module Dustvelocity
       real, dimension (mx,my,mz,mfarray) :: f
 !
       integer :: i, j, k
-      real :: gsurften=0.0, Eyoung, nu_Poisson, Eyoungred=1.0
+      real :: gsurften, Eyoung, nu_Poisson, Eyoungred
       real :: lnad
 !
 !  Copy boundary condition on first dust species to all others.
@@ -231,6 +230,7 @@ module Dustvelocity
 !
       if (lroot) print*, 'initialize_dustvelocity: dust_chemistry = ', dust_chemistry
 !
+      gsurften=0.; Eyoungred  = 1.
       select case (dust_chemistry)
 
       case ('nothing')
@@ -265,8 +265,7 @@ module Dustvelocity
       case ('simplified')
 
       case default
-        call fatal_error('initialize_dustvelocity','no valid dust chemistry specified')
-
+        call fatal_error('initialize_dustvelocity','no such dust_chemistry :'//trim(dust_chemistry))
       endselect
 !
 !  Constant used in determination of sticking velocity
@@ -323,8 +322,7 @@ module Dustvelocity
         llin_radiusbins=.false.
 
       case default
-        call fatal_error('register_dustvelocity','no valid dust_binning')
-
+        call fatal_error('register_dustvelocity','no such dust_binning: '//trim(dust_binning))
       endselect
       if (lroot .and. ip<14) print*,'initialize_dustvelocity: ad=',ad
       if (lroot) print*,'initialize_dustvelocity: minmax(ad)=',minval(ad),maxval(ad)
@@ -366,7 +364,7 @@ module Dustvelocity
 !  Do nothing by default.
 !
       case default
-        if (lroot) print*, 'initialize_dustvelocity: No betad calculation for draglaw='//trim(draglaw)
+        call information('initialize_dustvelocity','no betad calculation for draglaw='//trim(draglaw))
       endselect
 !
 !  Grain geometry
@@ -400,11 +398,8 @@ module Dustvelocity
             tausd1(:,k) = 1.0/tausd(k)
           enddo
 !
-!  Do nothing by default.
-!
         case default
           if (lroot) print*, 'initialize_dustvelocity: doing nothing for draglaw='//trim(draglaw)
-
         endselect
      endif
 !
@@ -851,7 +846,6 @@ module Dustvelocity
 !
         case default
           call fatal_error('init_uud','no such inituud: '//trim(inituud(j)))
-
         endselect
 !
 !  End loop over initial conditions
@@ -1043,8 +1037,6 @@ module Dustvelocity
                 p%sdij(:,i,j,k)=tmp_pencil_3x3(:,i,j)
               enddo
             enddo
-!          else
-!              call warning('calc_pencils_dustvelocity','No rate-of-strain tensor matches iviscd=', iviscd
           endif
         endif
 ! del2ud
@@ -1645,7 +1637,6 @@ module Dustvelocity
             0.5*(tanh((z(n)+z0taus)/widthtaus)+tanh((-z(n)+z0taus)/widthtaus)))
       case default
         call fatal_error("get_stoppingtime","no such drag law: "//trim(draglaw))
-
       endselect
 !
     endsubroutine get_stoppingtime
