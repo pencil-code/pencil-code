@@ -2735,7 +2735,7 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #CFLAGS=-O4 -DFUNDERSC=1
 #CFLAGS=-O4 -DFUNDERSC=0 #(ursa)
 #CFLAGS=-O3 -dalign -xarch=v9b -DFUNDERSC=1 #(corona[1-2])
-#LD_MPI=-L/opt/local/mpich/lib -lmpich -lsocket -lnsl -laio
+#LD_MPI=-L/opt/local/mpich/lib -lmpich -lsocket -lnsl -laio #(corona[1-2])
 #LD_MPI=-lmpi  #(corona[1-2])
 #LD_MPI= #(scrooge.)
 #F77=$(FC)
