@@ -40,17 +40,17 @@
   #include "../entropy/heat_cond_kramers.h"
 
 #if LHYDRO
-  if(lupw_ss)
+  if (lupw_ss)
   {
-  	rhs += - (dot(UU, gss) - dot(abs(UU),gradient_upwd(SS)))
+     rhs += - (dot(UU, gss) - dot(abs(UU),gradient_upwd(SS)))
+     //rhs += -ugrad_upwd(SS, UU)
   }
   else
   {
-  	rhs += - (dot(UU, gss))
+     rhs += - (dot(UU, gss))
   }
-  //rhs += -ugrad_upwd(SS, UU)
 #endif
-  if(lcourant_dt && ldt && step_num == 0)
+  if (lcourant_dt && ldt && step_num == 0)
   {
   	reduce_max(maxchi, AC_maxchi)
   }

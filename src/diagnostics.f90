@@ -308,6 +308,7 @@ module Diagnostics
       use IO, only: IO_strategy
       use HDF5_IO, only: output_timeseries
       use Sub, only: insert
+      use Syscalls, only: system_cmd
 !
       character (len=1000) :: fform,legend,line
       integer :: iname, nnamel
@@ -391,6 +392,7 @@ module Diagnostics
         write(lun,'(a)') trim(line)
         !flush(lun)               ! this is a F2003 feature...
         close(lun)
+        if (lupdate_cvs) call system_cmd("cvs ci -m 'automatic update' &")
 !
 !  Write to stdout.
 !

@@ -305,6 +305,7 @@ module Cdata
   logical :: lzaver_on_input=.false.
   logical :: lfatal_num_vector_369=.true.
   logical :: lsmooth_farray=.false.
+  logical :: lupdate_cvs=.false.
 !
 !  Entries related to the scale factor of the universe
 !
