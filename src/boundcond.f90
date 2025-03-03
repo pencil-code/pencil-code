@@ -5891,7 +5891,8 @@ module Boundcond
 !
        character (len=*), parameter :: vel_times_dat = 'driver/vel_times.dat'
        character (len=*), parameter :: vel_field_dat = 'driver/vel_field.dat'
-       integer :: unit=1
+       integer, parameter :: unit=1
+       integer(KIND=ikind8) :: rlen
 !
        if (ldownsampling) then
          call warning('uu_driver','Not available for downsampling')  !,lfirst_proc_xy)
@@ -5961,7 +5962,8 @@ module Boundcond
 !
            if (ierr>0) call fatal_error('uu_driver','could not allocate tmp', .true.)
 
-           open (unit,file=vel_field_dat,form='unformatted',status='unknown',recl=lend*nxgrid*nygrid,access='direct')
+           rlen=lend*nxgrid*nygrid
+           open (unit,file=vel_field_dat,form='unformatted',status='unknown',recl=rlen,access='direct')
 !
            read (unit,rec=2*frame-1) tmp
            do px=0, nprocx-1
@@ -6168,6 +6170,7 @@ module Boundcond
 !
       real, dimension (:,:,:), allocatable, save :: exp_fact ! exponential factor
       integer :: i
+      integer(KIND=ikind8) :: rlen
       real, parameter :: reduce_factor=0.25
 !
       real :: time_SI
@@ -6330,8 +6333,8 @@ module Boundcond
             if (allocated (vy_tmp)) deallocate (vy_tmp)
           endif
 !
-          open (10,file=mag_field_dat,form='unformatted',status='unknown', &
-              recl=lend*bnx*bny,access='direct')
+          rlen=lend*bnx*bny
+          open (10,file=mag_field_dat,form='unformatted',status='unknown',recl=rlen,access='direct')
           rec_l = 1 + (frame-1)*nprocxy
           rec_r = 1 + frame*nprocxy
           do py=1, nprocxy-1
