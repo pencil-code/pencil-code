@@ -787,6 +787,8 @@ module Special
           sigB1m_all=abs(jprime1)*edotbm_all/(eprime*gam_EB*boost)
         endif
 !
+!  Apply Chypercharge, echarge, and Hscript universally for aver and nonaver.
+!
         sigEm_all=Chypercharge*echarge**3*sigE1m_all/Hscript
         sigBm_all=Chypercharge*echarge**3*sigB1m_all/Hscript
       endif

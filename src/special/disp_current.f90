@@ -47,14 +47,15 @@ module Special
   real :: relhel_a0=0.0, kgaussian_a0=0.0, eta_ee=0.0
   real :: weight_longitudinalE=2.0
   logical :: luse_scale_factor_in_sigma=.false.
-  !real, pointer :: eta, ascale, Hscript, echarge, sigEm_all, sigBm_all
   real, pointer :: eta, Hscript, echarge, sigEm_all, sigBm_all
   integer :: iGamma=0, ia0=0, idiva_name=0, ieedot=0, iedotx=0, iedoty=0, iedotz=0
+  integer :: isigE=0, isigB=0
   logical :: llongitudinalE=.true., llorenz_gauge_disp=.false., lskip_projection_ee=.false.
   logical :: lscale_tobox=.true., lskip_projection_a0=.false.
   logical :: lvectorpotential=.false., lphi_hom=.false.
   logical :: lno_noise_ee=.false., lnoncollinear_EB=.false., lnoncollinear_EB_aver=.false.
   logical :: leedot_as_aux=.false., lcurlyA=.true., lsolve_chargedensity=.false.
+  logical :: lsigE_as_aux=.false., lsigB_as_aux=.false.
   logical :: lswitch_off_divJ=.false., lswitch_off_Gamma=.false.
   character(len=50) :: initee='zero', inita0='zero'
 !
@@ -71,14 +72,14 @@ module Special
     cutoff_ee, ncutoff_ee, kpeak_ee, relhel_ee, kgaussian_ee, &
     ampla0, initpower_a0, initpower2_a0, lno_noise_ee, &
     cutoff_a0, ncutoff_a0, kpeak_a0, relhel_a0, kgaussian_a0, &
-    leedot_as_aux, lsolve_chargedensity, &
+    leedot_as_aux, lsigE_as_aux, lsigB_as_aux, lsolve_chargedensity, &
     weight_longitudinalE
 !
   ! run parameters
   real :: beta_inflation=0.
   namelist /special_run_pars/ &
     alpf, llongitudinalE, llorenz_gauge_disp, lphi_hom, &
-    leedot_as_aux, eta_ee, lcurlyA, beta_inflation, &
+    leedot_as_aux, lsigE_as_aux, lsigB_as_aux, eta_ee, lcurlyA, beta_inflation, &
     weight_longitudinalE, lswitch_off_divJ, lswitch_off_Gamma, &
     lnoncollinear_EB, lnoncollinear_EB_aver, luse_scale_factor_in_sigma
 !
@@ -145,6 +146,12 @@ module Special
 !
       if (leedot_as_aux) &
         call register_report_aux('eedot', ieedot, iedotx, iedoty, iedotz)
+!
+      if (lsigE_as_aux) &
+        call register_report_aux('sigE', isigE)
+!
+      if (lsigB_as_aux) &
+        call register_report_aux('sigB', isigB)
 !
       if (lsolve_chargedensity) &
         call farray_register_pde('rhoe',irhoe)
@@ -284,6 +291,8 @@ module Special
       endif
 !
       if (leedot_as_aux) f(:,:,:,iedotx:iedotz)=0.
+      if (lsigE_as_aux) f(:,:,:,isigE)=0.
+      if (lsigB_as_aux) f(:,:,:,isigB)=0.
 !
     endsubroutine init_special
 !***********************************************************************
@@ -426,6 +435,11 @@ module Special
           p%sigE=abs(jprime)*eprime/(gam_EB*boost)
           p%sigB=abs(jprime)*p%eb/(eprime*gam_EB*boost)
         elseif (lnoncollinear_EB_aver) then
+!
+!  This is based on <E> and <B>. Later, when sigEm and sigBm diagonstics are being
+!  computed, those are then based on the same p%sigE and p%sigB values, and therefore
+!  also the same as sigEma and sigBma.
+!
           p%sigE=sigEm_all
           p%sigB=sigBm_all
         endif
@@ -627,6 +641,11 @@ module Special
 !
       if (leedot_as_aux) f(l1:l2,m,n,iedotx:iedotz)=c_light2*(p%curlb-mu0*p%jj_ohm)
 !
+!  If requested, put sigE and sigB into f array as auxiliaries.
+!
+      if (lsigE_as_aux) f(l1:l2,m,n,isigE)=p%sigE
+      if (lsigB_as_aux) f(l1:l2,m,n,isigB)=p%sigB
+!
 !  timestep constraint
 !
       if (lfirst.and.ldt) advec_cs2=max(advec_cs2,c_light2*dxyz_2)
@@ -791,6 +810,7 @@ module Special
 !
       if (lwrite_slices) then
         where(cnamev=='ee') cformv='DEFINED'
+        !where(cnamev=='ee' .or. cnamev=='sigE' .or. cnamev=='sigB') cformv='DEFINED'
       endif
 !
 !  write column where which magnetic variable is stored
@@ -832,7 +852,9 @@ module Special
 !
 !  Electric field.
 !
-      case ('ee'); call assign_slices_vec(slices,f,iee)
+      case ('ee');   call assign_slices_vec (slices,f,iee)
+      !case ('sigE'); call assign_slices_scal(slices,f,isigE)
+      !case ('sigB'); call assign_slices_scal(slices,f,isigB)
 !
       endselect
 !
