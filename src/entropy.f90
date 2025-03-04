@@ -1494,7 +1494,10 @@ module Energy
         idiag_chikrammin=0; idiag_chikrammax=0
       endif
 
-      if (lheatc_Kconst) hcond_Kconst=merge(Kbot,Kbot/tau_diff,tau_diff==0)
+      if (lheatc_Kconst) then 
+        hcond_Kconst=merge(1.,tau_diff,tau_diff==0)
+        hcond_Kconst=Kbot/hcond_Kconst
+      endif
 
       if (.not.(lheatc_Kprof.or.lheatc_kramers)) idiag_fturbxy=0
       if (.not.(lheatc_Kprof.or.lheatc_chiconst.or.lheatc_kramers.or.lheatc_smagorinsky)) idiag_fturbz=0
