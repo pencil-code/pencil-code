@@ -3545,8 +3545,8 @@ module Chemistry
           if (idiag_Ymin(ii)/= 0) call max_mn_name(-f(l1:l2,m,n,ichemspec(ii)),idiag_Ymin(ii),lneg=.true.)
           if (idiag_TYm(ii)/= 0) &
             call sum_mn_name(max(1.-f(l1:l2,m,n,ichemspec(ii))/Ythresh(ii),0.),idiag_TYm(ii))
-          call sum_mn_name( Diff_full_add(l1:l2,m,n,ii),idiag_diffm(ii))
-          call max_mn_name( Diff_full_add(l1:l2,m,n,ii),idiag_diffmax(ii))
+          if (idiag_diffm(ii)/= 0)   call sum_mn_name( Diff_full_add(l1:l2,m,n,ii),idiag_diffm(ii))
+          if (idiag_diffmax(ii)/= 0) call max_mn_name( Diff_full_add(l1:l2,m,n,ii),idiag_diffmax(ii))
           if (idiag_diffmin(ii)/= 0) call max_mn_name(-Diff_full_add(l1:l2,m,n,ii),idiag_diffmin(ii),lneg=.true.)
         enddo
 !
