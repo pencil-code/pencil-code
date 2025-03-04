@@ -211,6 +211,10 @@ module Chemistry
 !
   logical :: lhotspot=.false.
 !
+! mmx is 1 if nx=1, and it is mx if nx > 1
+!
+  integer :: mmx=2*nghost*min(1,nx-1)+nx
+!
 ! input parameters
   namelist /chemistry_init_pars/ &
       initchem, amplchem, kx_chem, ky_chem, kz_chem, widthchem, &
@@ -2627,8 +2631,8 @@ module Chemistry
 !                    proper exit when T_loc<T_low or T_loc>T_up
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx) ::  tmp_sum, tmp_sum2, nu_dyn, nuk_nuj, Phi
-      real, dimension(mx) :: cp_R_spec, T_loc, T_loc_2, T_loc_3, T_loc_4
+      real, dimension(mmx) ::  tmp_sum, tmp_sum2, nu_dyn, nuk_nuj, Phi
+      real, dimension(mmx) :: cp_R_spec, T_loc, T_loc_2, T_loc_3, T_loc_4
 !
       integer :: k, j, j2, j3
       real :: T_up, T_mid, T_low
@@ -5241,9 +5245,9 @@ module Chemistry
 !  the Chemkin theory manual
 !
       real, dimension(mx,my,mz,nchemspec) :: species_cond
-      real, dimension(mx) :: tmp_val, ZZ, FF, tmp_sum, tmp_sum2
-      real, dimension(mx) :: AA, BB, f_tran, f_rot, f_vib
-      real, dimension(mx) :: Cv_vib_R, T_st, pi_1_5, pi_2
+      real, dimension(mmx) :: tmp_val, ZZ, FF, tmp_sum, tmp_sum2
+      real, dimension(mmx) :: AA, BB, f_tran, f_rot, f_vib
+      real, dimension(mmx) :: Cv_vib_R, T_st, pi_1_5, pi_2
       real :: Cv_rot_R, Cv_tran_R
       integer :: j2,j3,k
 !
