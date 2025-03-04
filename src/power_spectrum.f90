@@ -5533,12 +5533,14 @@ endsubroutine pdf
           hv(1+kxx/nsum,1+kyy/nsum,1+kzz/nsum) + h_re(ikx,iky,ikz)*dx*dy*dz
     enddo; enddo; enddo
     !$omp single
-    if (lroot) allocate( hv_sum(nsub,nsub,nsub) )
+    !if (lroot) allocate( hv_sum(nsub,nsub,nsub) )
+    allocate( hv_sum(nsub,nsub,nsub) )
     call mpireduce_sum(hv,hv_sum,(/nsub,nsub,nsub/))
     if (lroot) then
       Iv(ikr)=sum(hv_sum**2)/(Lx*Ly*Lz)
-      deallocate(hv_sum)
+    !  deallocate(hv_sum)
     endif
+    deallocate(hv_sum)
     deallocate(hv)
     !$omp end single
   enddo
