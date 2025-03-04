@@ -106,9 +106,6 @@ module Chemistry
   real, allocatable, dimension(:) :: kreactions_profile_width, kreactions_alpha
 !
   integer :: mreactions
-
-      integer :: lll1, lll2
-      
 !
 !  The stociometric factors need to be reals for arbitrary reaction orders
 !
@@ -500,13 +497,7 @@ module Chemistry
       if (.not. data_file_exit) &
         call fatal_error('initialize_chemistry','there is no chemistry data file')
 !
-
-      lll1=l1
-      lll2=l2
-
       if (dimensionality==0) then
-!        ll1 = 1
-!        ll2 = mx
         ll1 = l1
         ll2 = l2
         mm1 = m1
@@ -2636,8 +2627,8 @@ module Chemistry
 !                    proper exit when T_loc<T_low or T_loc>T_up
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(nx) ::  tmp_sum, tmp_sum2, nu_dyn, nuk_nuj, Phi
-      real, dimension(nx) :: cp_R_spec, T_loc, T_loc_2, T_loc_3, T_loc_4
+      real, dimension(mx) ::  tmp_sum, tmp_sum2, nu_dyn, nuk_nuj, Phi
+      real, dimension(mx) :: cp_R_spec, T_loc, T_loc_2, T_loc_3, T_loc_4
 !
       integer :: k, j, j2, j3
       real :: T_up, T_mid, T_low
@@ -2677,8 +2668,8 @@ module Chemistry
 !
           do k = 1,nchemspec
             if (species_constants(k,imass) > 0.) &
-              XX_full(lll1:lll2,mm1:mm2,nn1:nn2,k) = f(lll1:lll2,mm1:mm2,nn1:nn2,ichemspec(k))*unit_mass &
-                      /(species_constants(k,imass)*mu1_full(lll1:lll2,mm1:mm2,nn1:nn2))
+              XX_full(ll1:ll2,mm1:mm2,nn1:nn2,k) = f(ll1:ll2,mm1:mm2,nn1:nn2,ichemspec(k))*unit_mass &
+                      /(species_constants(k,imass)*mu1_full(ll1:ll2,mm1:mm2,nn1:nn2))
           enddo
 !
 !          do m=m1,m2
@@ -2705,7 +2696,7 @@ module Chemistry
             cv_full = 0.
             do j3 = nn1,nn2
               do j2 = mm1,mm2
-                T_loc = TT_full(lll1:lll2,j2,j3)
+                T_loc = TT_full(ll1:ll2,j2,j3)
                 T_loc_2 = T_loc*T_loc
                 T_loc_3 = T_loc_2*T_loc
                 T_loc_4 = T_loc_3*T_loc
@@ -2744,26 +2735,26 @@ module Chemistry
                           +species_constants(k,iaa1(ii4))*T_loc_3 &
                           +species_constants(k,iaa1(ii5))*T_loc_4
                     endwhere
-                    cv_R_spec_full(lll1:lll2,j2,j3,k) = cp_R_spec-1.
+                    cv_R_spec_full(ll1:ll2,j2,j3,k) = cp_R_spec-1.
 !
 ! Check if the temperature are within bounds
 !
                     if (maxval(T_loc) > T_up .or. minval(T_loc) < T_low) then
                       print*,'iproc=',iproc
-                      print*,'TT_full(lll1:lll2,j2,j3)=',T_loc
+                      print*,'TT_full(ll1:ll2,j2,j3)=',T_loc
                       print*,'j2,j3=',j2,j3
                       call inevitably_fatal_error('calc_for_chem_mixture', &
-                          'TT_full(lll1:lll2,j2,j3) is outside range', .true.)
+                          'TT_full(ll1:ll2,j2,j3) is outside range', .true.)
                     endif
 !
 ! Find cp and cv for the mixture for the full domain
 !
-                    cp_full(lll1:lll2,j2,j3) = cp_full(lll1:lll2,j2,j3)+f(lll1:lll2,j2,j3,ichemspec(k))  &
+                    cp_full(ll1:ll2,j2,j3) = cp_full(ll1:ll2,j2,j3)+f(ll1:ll2,j2,j3,ichemspec(k))  &
                                       *cp_R_spec/species_constants(k,imass)*Rgas
-                    cv_full(lll1:lll2,j2,j3) = cv_full(lll1:lll2,j2,j3)+f(lll1:lll2,j2,j3,ichemspec(k))  &
-                                      *cv_R_spec_full(lll1:lll2,j2,j3,k)/species_constants(k,imass)*Rgas
+                    cv_full(ll1:ll2,j2,j3) = cv_full(ll1:ll2,j2,j3)+f(ll1:ll2,j2,j3,ichemspec(k))  &
+                                      *cv_R_spec_full(ll1:ll2,j2,j3,k)/species_constants(k,imass)*Rgas
 
-                    cp_spec_glo(lll1:lll2,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
+                    cp_spec_glo(ll1:ll2,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
 
                   endif
                 enddo
@@ -2785,7 +2776,7 @@ module Chemistry
                 do j2 = mm1,mm2
 !
                   if  (lone_spec) then
-                    f(lll1:lll2,j2,j3,iviscosity) = species_viscosity(lll1:lll2,j2,j3,1)/rho_full(lll1:lll2,j2,j3)
+                    f(ll1:ll2,j2,j3,iviscosity) = species_viscosity(ll1:ll2,j2,j3,1)/rho_full(ll1:ll2,j2,j3)
                   else
                     nu_dyn = 0.
                     do k = 1,nchemspec
@@ -2793,14 +2784,14 @@ module Chemistry
                         tmp_sum2 = 0.
                         do j = 1,nchemspec
                           mk_mj = species_constants(k,imass)/species_constants(j,imass)
-                          nuk_nuj = species_viscosity(lll1:lll2,j2,j3,k)/species_viscosity(lll1:lll2,j2,j3,j)
+                          nuk_nuj = species_viscosity(ll1:ll2,j2,j3,k)/species_viscosity(ll1:ll2,j2,j3,j)
                           Phi = 1./sqrt(8.)*1./sqrt(1.+mk_mj)*(1.+sqrt(nuk_nuj)*mk_mj**(-0.25))**2
-                          tmp_sum2 = tmp_sum2 + XX_full(lll1:lll2,j2,j3,j)*Phi
+                          tmp_sum2 = tmp_sum2 + XX_full(ll1:ll2,j2,j3,j)*Phi
                         enddo
-                        nu_dyn = nu_dyn + XX_full(lll1:lll2,j2,j3,k)*species_viscosity(lll1:lll2,j2,j3,k)/tmp_sum2
+                        nu_dyn = nu_dyn + XX_full(ll1:ll2,j2,j3,k)*species_viscosity(ll1:ll2,j2,j3,k)/tmp_sum2
                       endif
                     enddo
-                    f(lll1:lll2,j2,j3,iviscosity) = nu_dyn/rho_full(lll1:lll2,j2,j3)
+                    f(ll1:ll2,j2,j3,iviscosity) = nu_dyn/rho_full(ll1:ll2,j2,j3)
                   endif
 !
                 enddo
@@ -2814,13 +2805,13 @@ module Chemistry
               do j3 = nn1,nn2
                 do j2 = mm1,mm2
 !
-                  Diff_full(lll1:lll2,j2,j3,:) = 0.
+                  Diff_full(ll1:ll2,j2,j3,:) = 0.
                   if (.not. lone_spec) then
 !
                     if (lfix_Sc) then
                       do k = 1,nchemspec
                         if (species_constants(k,imass) > 0.) &
-                          Diff_full(lll1:lll2,j2,j3,k) = species_viscosity(lll1:lll2,j2,j3,k)/rho_full(lll1:lll2,j2,j3)/Sc_number
+                          Diff_full(ll1:ll2,j2,j3,k) = species_viscosity(ll1:ll2,j2,j3,k)/rho_full(ll1:ll2,j2,j3)/Sc_number
                       enddo
                     elseif (ldiffusion) then
 !
@@ -2834,12 +2825,12 @@ module Chemistry
                         do j = 1,nchemspec
                           if (species_constants(k,imass) > 0.) then
                             if (j /= k) then
-                              tmp_sum = tmp_sum + XX_full(lll1:lll2,j2,j3,j)/Bin_Diff_coef(lll1:lll2,j2,j3,j,k)
-                              tmp_sum2 = tmp_sum2 + XX_full(lll1:lll2,j2,j3,j)*species_constants(j,imass)
+                              tmp_sum = tmp_sum + XX_full(ll1:ll2,j2,j3,j)/Bin_Diff_coef(ll1:ll2,j2,j3,j,k)
+                              tmp_sum2 = tmp_sum2 + XX_full(ll1:ll2,j2,j3,j)*species_constants(j,imass)
                             endif
                           endif
                         enddo
-                        Diff_full_add(lll1:lll2,j2,j3,k) = mu1_full(lll1:lll2,j2,j3)*tmp_sum2/tmp_sum
+                        Diff_full_add(ll1:ll2,j2,j3,k) = mu1_full(ll1:ll2,j2,j3)*tmp_sum2/tmp_sum
                       enddo
                     endif
                   endif
@@ -5134,8 +5125,8 @@ module Chemistry
 !
       Na=N_avogadro_cgs
       tmp_local = 3./16.*sqrt(2.*k_B_cgs**3/pi)
-      prefactor(lll1:lll2,mm1:mm2,nn1:nn2) = tmp_local*sqrt(TT_full(lll1:lll2,mm1:mm2,nn1:nn2)) &
-          *unit_length**3/(Rgas_unit_sys*rho_full(lll1:lll2,mm1:mm2,nn1:nn2))
+      prefactor(ll1:ll2,mm1:mm2,nn1:nn2) = tmp_local*sqrt(TT_full(ll1:ll2,mm1:mm2,nn1:nn2)) &
+          *unit_length**3/(Rgas_unit_sys*rho_full(ll1:ll2,mm1:mm2,nn1:nn2))
 !
       omega = 'Omega11'
 !
@@ -5172,29 +5163,29 @@ module Chemistry
               do j3 = nn1,nn2
                 do j2 = mm1,mm2
                   if (ltemperature_nolog) then
-                    lnTjk(lll1:lll2,j2,j3) = log(f(lll1:lll2,j2,j3,ilnTT)/eps_jk)
+                    lnTjk(ll1:ll2,j2,j3) = log(f(ll1:ll2,j2,j3,ilnTT)/eps_jk)
                   else
-                    lnTjk(lll1:lll2,j2,j3) = f(lll1:lll2,j2,j3,ilnTT)-log(eps_jk)
+                    lnTjk(ll1:ll2,j2,j3) = f(ll1:ll2,j2,j3,ilnTT)-log(eps_jk)
                   endif
 !
-                  Omega_kl(lll1:lll2,j2,j3) = &
-                      1./(6.96945701E-1   +3.39628861E-1*lnTjk(lll1:lll2,j2,j3) &
-                      +1.32575555E-2*lnTjk(lll1:lll2,j2,j3)*lnTjk(lll1:lll2,j2,j3) &
-                      -3.41509659E-2*lnTjk(lll1:lll2,j2,j3)**3 &
-                      +7.71359429E-3*lnTjk(lll1:lll2,j2,j3)**4 &
-                      +6.16106168E-4*lnTjk(lll1:lll2,j2,j3)**5 &
-                      -3.27101257E-4*lnTjk(lll1:lll2,j2,j3)**6 &
-                      +2.51567029E-5*lnTjk(lll1:lll2,j2,j3)**7)
+                  Omega_kl(ll1:ll2,j2,j3) = &
+                      1./(6.96945701E-1   +3.39628861E-1*lnTjk(ll1:ll2,j2,j3) &
+                      +1.32575555E-2*lnTjk(ll1:ll2,j2,j3)*lnTjk(ll1:ll2,j2,j3) &
+                      -3.41509659E-2*lnTjk(ll1:ll2,j2,j3)**3 &
+                      +7.71359429E-3*lnTjk(ll1:ll2,j2,j3)**4 &
+                      +6.16106168E-4*lnTjk(ll1:ll2,j2,j3)**5 &
+                      -3.27101257E-4*lnTjk(ll1:ll2,j2,j3)**6 &
+                      +2.51567029E-5*lnTjk(ll1:ll2,j2,j3)**7)
                   delta_jk_star = delta_jk/(eps_jk*k_B_cgs*sigma_jk**3)
 !
-                  Omega_kl(lll1:lll2,j2,j3) = Omega_kl(lll1:lll2,j2,j3) &
-                      +0.19*delta_jk_star*delta_jk_star/(TT_full(lll1:lll2,j2,j3)/eps_jk)
+                  Omega_kl(ll1:ll2,j2,j3) = Omega_kl(ll1:ll2,j2,j3) &
+                      +0.19*delta_jk_star*delta_jk_star/(TT_full(ll1:ll2,j2,j3)/eps_jk)
                   if (j /= k) then
-                    Bin_Diff_coef(lll1:lll2,j2,j3,k,j) = prefactor(lll1:lll2,j2,j3)/mu1_full(lll1:lll2,j2,j3) &
-                        /(sqrt(m_jk)*sigma_jk*sigma_jk*Omega_kl(lll1:lll2,j2,j3))
+                    Bin_Diff_coef(ll1:ll2,j2,j3,k,j) = prefactor(ll1:ll2,j2,j3)/mu1_full(ll1:ll2,j2,j3) &
+                        /(sqrt(m_jk)*sigma_jk*sigma_jk*Omega_kl(ll1:ll2,j2,j3))
                   else
-                    Bin_Diff_coef(lll1:lll2,j2,j3,k,j) = prefactor(lll1:lll2,j2,j3) &
-                        /(sqrt(m_jk)*sigma_jk*sigma_jk*Omega_kl(lll1:lll2,j2,j3))*species_constants(k,imass)
+                    Bin_Diff_coef(ll1:ll2,j2,j3,k,j) = prefactor(ll1:ll2,j2,j3) &
+                        /(sqrt(m_jk)*sigma_jk*sigma_jk*Omega_kl(ll1:ll2,j2,j3))*species_constants(k,imass)
 !
                   endif
                 enddo
@@ -5204,7 +5195,7 @@ module Chemistry
 !
           do k = 1,nchemspec
             do j = 1,k-1
-              Bin_Diff_coef(lll1:lll2,mm1:mm2,nn1:nn2,k,j) = Bin_Diff_coef(lll1:lll2,mm1:mm2,nn1:nn2,j,k)
+              Bin_Diff_coef(ll1:ll2,mm1:mm2,nn1:nn2,k,j) = Bin_Diff_coef(ll1:ll2,mm1:mm2,nn1:nn2,j,k)
             enddo
           enddo
 !
@@ -5235,9 +5226,9 @@ module Chemistry
         endif
         call calc_collision_integral(omega,lnTk_array,Omega_kl)
 !
-        species_viscosity(lll1:lll2,mm1:mm2,nn1:nn2,k) = &
-             sqrt(TT_full(lll1:lll2,mm1:mm2,nn1:nn2))/(Omega_kl(lll1:lll2,mm1:mm2,nn1:nn2) &
-            +0.2*delta_st*delta_st/(TT_full(lll1:lll2,mm1:mm2,nn1:nn2)/tran_data(k,2)))*tmp_local2 &
+        species_viscosity(ll1:ll2,mm1:mm2,nn1:nn2,k) = &
+             sqrt(TT_full(ll1:ll2,mm1:mm2,nn1:nn2))/(Omega_kl(ll1:ll2,mm1:mm2,nn1:nn2) &
+            +0.2*delta_st*delta_st/(TT_full(ll1:ll2,mm1:mm2,nn1:nn2)/tran_data(k,2)))*tmp_local2 &
             /(unit_mass/unit_length/unit_time)
       enddo
 !      endif
@@ -5250,9 +5241,9 @@ module Chemistry
 !  the Chemkin theory manual
 !
       real, dimension(mx,my,mz,nchemspec) :: species_cond
-      real, dimension(nx) :: tmp_val, ZZ, FF, tmp_sum, tmp_sum2
-      real, dimension(nx) :: AA, BB, f_tran, f_rot, f_vib
-      real, dimension(nx) :: Cv_vib_R, T_st, pi_1_5, pi_2
+      real, dimension(mx) :: tmp_val, ZZ, FF, tmp_sum, tmp_sum2
+      real, dimension(mx) :: AA, BB, f_tran, f_rot, f_vib
+      real, dimension(mx) :: Cv_vib_R, T_st, pi_1_5, pi_2
       real :: Cv_rot_R, Cv_tran_R
       integer :: j2,j3,k
 !
@@ -5271,8 +5262,8 @@ module Chemistry
           tmp_sum2 = 0.
           do k = 1,nchemspec
             if (lspecies_cond_simplified) then
-              species_cond(lll1:lll2,j2,j3,k) = (species_viscosity(lll1:lll2,j2,j3,k))*&
-                ( cp_spec_glo(lll1:lll2,j2,j3,k) + 1.25*Rgas/species_constants(k,imass) )
+              species_cond(ll1:ll2,j2,j3,k) = (species_viscosity(ll1:ll2,j2,j3,k))*&
+                ( cp_spec_glo(ll1:ll2,j2,j3,k) + 1.25*Rgas/species_constants(k,imass) )
             else
 !
 ! Check if the molecule is a single atom (0), linear (1) or non-linear (2).
@@ -5284,11 +5275,11 @@ module Chemistry
               elseif (tran_data(k,1) == 1.) then
                 Cv_tran_R = 1.5
                 Cv_rot_R = 1.
-                Cv_vib_R = cv_R_spec_full(lll1:lll2,j2,j3,k)-2.5
+                Cv_vib_R = cv_R_spec_full(ll1:ll2,j2,j3,k)-2.5
               elseif (tran_data(k,1) == 2.) then
                 Cv_tran_R = 1.5
                 Cv_rot_R = 1.5
-                Cv_vib_R = cv_R_spec_full(lll1:lll2,j2,j3,k)-3.
+                Cv_vib_R = cv_R_spec_full(ll1:ll2,j2,j3,k)-3.
               else
                 Cv_tran_R = 0
                 Cv_rot_R = 0
@@ -5300,14 +5291,14 @@ module Chemistry
 ! atom molecules but not for the linear or non-linear molecules
 !
               if (tran_data(k,1) > 0. .and. (.not. lfix_Sc)) then
-                tmp_val = Bin_Diff_coef(lll1:lll2,j2,j3,k,k)*rho_full(lll1:lll2,j2,j3) &
-                    /species_viscosity(lll1:lll2,j2,j3,k)
+                tmp_val = Bin_Diff_coef(ll1:ll2,j2,j3,k,k)*rho_full(ll1:ll2,j2,j3) &
+                    /species_viscosity(ll1:ll2,j2,j3,k)
                 AA = 2.5-tmp_val
                 T_st = tran_data(k,2)/298.
                 FF = 1.+pi_1_5/2.*sqrt(T_st)+(pi_2/4.+2.) &
                     *(T_st)+pi_1_5*(T_st)**1.5
                 ZZ = tran_data(k,6)*FF
-                T_st = tran_data(k,2)/TT_full(lll1:lll2,j2,j3)
+                T_st = tran_data(k,2)/TT_full(ll1:ll2,j2,j3)
                 FF = 1.+pi_1_5/2.*sqrt(T_st)+(pi_2/4.+2.) &
                     *(T_st)+pi_1_5*(T_st)**1.5
                 ZZ = ZZ/FF
@@ -5320,7 +5311,7 @@ module Chemistry
                 f_rot = 0.0
                 f_vib = 0.0
               endif
-              species_cond(lll1:lll2,j2,j3,k) = (species_viscosity(lll1:lll2,j2,j3,k)) &
+              species_cond(ll1:ll2,j2,j3,k) = (species_viscosity(ll1:ll2,j2,j3,k)) &
                   /(species_constants(k,imass)/unit_mass)*Rgas* &
                   (f_tran*Cv_tran_R+f_rot*Cv_rot_R  &
                   +f_vib*Cv_vib_R)
@@ -5330,16 +5321,16 @@ module Chemistry
 ! tmp_sum and tmp_sum2 are used later to find the mixture averaged
 ! conductivity.
 !
-            tmp_sum = tmp_sum +XX_full(lll1:lll2,j2,j3,k)*species_cond(lll1:lll2,j2,j3,k)
-            tmp_sum2 = tmp_sum2 +XX_full(lll1:lll2,j2,j3,k)/species_cond(lll1:lll2,j2,j3,k)
+            tmp_sum = tmp_sum +XX_full(ll1:ll2,j2,j3,k)*species_cond(ll1:ll2,j2,j3,k)
+            tmp_sum2 = tmp_sum2 +XX_full(ll1:ll2,j2,j3,k)/species_cond(ll1:ll2,j2,j3,k)
           enddo
 !
 ! Find the mixture averaged conductivity
 !
           where (tmp_sum2 <= 0.)
-            lambda_full(lll1:lll2,j2,j3) = 0.
+            lambda_full(ll1:ll2,j2,j3) = 0.
           elsewhere
-            lambda_full(lll1:lll2,j2,j3) = 0.5*(tmp_sum+1./tmp_sum2)
+            lambda_full(ll1:ll2,j2,j3) = 0.5*(tmp_sum+1./tmp_sum2)
           endwhere
         enddo
       enddo
