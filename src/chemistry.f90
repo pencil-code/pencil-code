@@ -800,7 +800,7 @@ module Chemistry
             enddo
           endif
           !
-          call getmu_array(f,mu1_full)
+          call getmu_array(f,mu1_full,.true.)
           !
           ! Must also set density such that the pressure is correct
           !
@@ -6703,7 +6703,7 @@ module Chemistry
 !
     endsubroutine chemspec_normalization_N2
 !***********************************************************************
-    subroutine getmu_array(f,mu1_full)
+    subroutine getmu_array(f,mu1_full,linit)
 !
 !  Calculate mean molecular weight
 !
@@ -6714,15 +6714,29 @@ module Chemistry
       real, dimension (mx,my,mz) :: mu1_full
 !
       integer :: k
+      logical, optional :: linit
+!
+      if (.not. present(linit)) then
+        linit=.false.
+      endif
 !
 !  Mean molecular weight
 !
       mu1_full=0.
       do k=1,nchemspec
-        if (species_constants(k,imass)>0.) &
-          mu1_full(:,mm1:mm2,nn1:nn2)= &
-              mu1_full(:,mm1:mm2,nn1:nn2)+unit_mass*f(:,mm1:mm2,nn1:nn2,ichemspec(k)) &
-              /species_constants(k,imass)
+        if (species_constants(k,imass)>0.) then
+          if (linit) then
+            mu1_full(:,:,:)= &
+                 mu1_full(:,:,:)+unit_mass*&
+                 f(:,:,:,ichemspec(k)) &
+                 /species_constants(k,imass)
+          else
+            mu1_full(:,mm1:mm2,nn1:nn2)= &
+                 mu1_full(:,mm1:mm2,nn1:nn2)+unit_mass*&
+                 f(:,mm1:mm2,nn1:nn2,ichemspec(k)) &
+                 /species_constants(k,imass)
+          endif
+        endif
       enddo
 !
     endsubroutine getmu_array
