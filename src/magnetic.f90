@@ -40,9 +40,11 @@ module Magnetic
   use General, only: keep_compiler_quiet, loptest, itoa
   !TP: this is ugly but needed to not take pushpars2c from magnetic_meanfield
   !If someone knows a more elegant way to filter out a single equation from a module please make this cleaner!
-  use Magnetic_meanfield, only: register_magn_mf, initialize_magn_mf, init_aa_mf, pencil_criteria_magn_mf, pencil_interdep_magn_mf, &
-                                calc_diagnostics_meanfield,daa_dt_meanfield,read_magn_mf_init_pars,write_magn_mf_init_pars, &
-                                calc_pencils_magn_mf,read_magn_mf_run_pars,write_magn_mf_run_pars,pc_aasb_const_alpha,meanfield_after_boundary
+  use Magnetic_meanfield, only: register_magn_mf, initialize_magn_mf, init_aa_mf, pencil_criteria_magn_mf, &
+                                pencil_interdep_magn_mf, calc_diagnostics_meanfield,daa_dt_meanfield, &
+                                read_magn_mf_init_pars,write_magn_mf_init_pars, calc_pencils_magn_mf, &
+                                rprint_magn_mf, &
+                                read_magn_mf_run_pars,write_magn_mf_run_pars,pc_aasb_const_alpha,meanfield_after_boundary
 
   use Messages, only: fatal_error,inevitably_fatal_error,warning,svn_id,timing,not_implemented
 !
@@ -2126,9 +2128,13 @@ module Magnetic
 !
 ! set up z-stratification
 !
-        do iz = 1, mz
-          Bz_stratified(iz) = B0_ext_z * exp(-z(iz) / B0_ext_z_H)
-        enddo
+        if (B0_ext_z_H /= 0.) then
+          do iz = 1, mz
+            Bz_stratified(iz) = B0_ext_z * exp(-z(iz) / B0_ext_z_H)
+          enddo
+        else
+          Bz_stratified = 0.0
+        endif
 
     endsubroutine initialize_magnetic
 !***********************************************************************
@@ -4533,8 +4539,12 @@ module Magnetic
       if (lpenc_loc(i_uxj)) call cross_mn(p%uu,p%jj,p%uxj)
 ! chibp
 !  FG: 23-05-24 GNU Fortran (Ubuntu 11.4.0-1ubuntu1~22.04) 11.4.0
-!  This breaks the pencil check on interstellar sample for above version, works on 9.4.0 and 11.2.0 ???
-      if (lpenc_loc(i_chibp)) p%chibp=atan2(p%bb(:,2),p%bb(:,1))+.5*pi
+!  FG: 27-02-25 GNU Fortran (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0
+!  atan2: Program received signal SIGFPE: Floating-point exception - erroneous arithmetic operation.
+!  added tini to exclude 0,0 argument
+!  not required for GNU 9.4.0 and 11.2.0 ???
+!
+      if (lpenc_loc(i_chibp)) p%chibp=atan2(p%bb(:,2),p%bb(:,1)+tini)+.5*pi
 ! StokesI
       if (lpenc_loc(i_StokesI)) p%StokesI=(p%bb(:,1)**2+p%bb(:,2)**2)**exp_epspb
 !
