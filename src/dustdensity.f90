@@ -1558,7 +1558,8 @@ module Dustdensity
             if (.not.ldcore) then
               ! catch extremely large values in p%TT1 during pencil check
               T_tmp = AA*p%TT1
-              if (lpencil_check_at_work) T_tmp = T_tmp / exp(real(nint(alog(T_tmp))))
+              !NILS: Commented out the line below because it caused problems even when p%TT=1050.
+              !if (lpencil_check_at_work) T_tmp = T_tmp / exp(real(nint(alog(T_tmp))))
               p%ppsf(:,k)=p%ppsat*exp(T_tmp/(2.*dsize(k))-2.75e-8*0.1/(2.*(dsize(k)-1.01e-6)))
             endif
           endif
