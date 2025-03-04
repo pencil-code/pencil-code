@@ -800,7 +800,7 @@ module Chemistry
             enddo
           endif
           !
-          call getmu_array(f,mu1_full,.true.)
+          call getmu_array(f,mu1_full,linit=.true.)
           !
           ! Must also set density such that the pressure is correct
           !
@@ -6715,9 +6715,12 @@ module Chemistry
 !
       integer :: k
       logical, optional :: linit
+      logical :: llinit=.false.
 !
       if (.not. present(linit)) then
-        linit=.false.
+        llinit=.false.
+      else
+        llinit=linit
       endif
 !
 !  Mean molecular weight
@@ -6725,7 +6728,7 @@ module Chemistry
       mu1_full=0.
       do k=1,nchemspec
         if (species_constants(k,imass)>0.) then
-          if (linit) then
+          if (llinit) then
             mu1_full(:,:,:)= &
                  mu1_full(:,:,:)+unit_mass*&
                  f(:,:,:,ichemspec(k)) &
