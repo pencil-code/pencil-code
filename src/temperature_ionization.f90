@@ -582,11 +582,21 @@ module Energy
 !  (Needs to be here because of lupw_lnTT)
 !
       if (lpencil(i_uglnTT)) then
-        call u_dot_grad(f,ilnTT,p%glnTT,p%uu,p%uglnTT,UPWIND=lupw_lnTT)
+        if (ltemperature_nolog) then
+          call u_dot_grad(f,iTT,p%gTT,p%uu,p%ugTT,UPWIND=lupw_lnTT)
+          p%uglnTT = p%ugTT*p%TT1
+        else
+          call u_dot_grad(f,ilnTT,p%glnTT,p%uu,p%uglnTT,UPWIND=lupw_lnTT)
+        endif
       endif
 !
       if (lpencil(i_ugTT)) then
-        call u_dot_grad(f,iTT,p%gTT,p%uu,p%ugTT,UPWIND=lupw_lnTT)
+        if (ltemperature_nolog) then
+          call u_dot_grad(f,iTT,p%gTT,p%uu,p%ugTT,UPWIND=lupw_lnTT)
+        else
+          call u_dot_grad(f,ilnTT,p%glnTT,p%uu,p%uglnTT,UPWIND=lupw_lnTT)
+          p%ugTT = p%uglnTT*p%TT
+        endif
       endif
 ! tcond
       if (lpencil(i_tcond)) then
