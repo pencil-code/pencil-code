@@ -165,47 +165,50 @@ module Gravity
 !                    When adding new cases, extend here (LEN and dimension), if necessary
 !
      character(LEN=12),dimension(15),parameter :: gravx_profile_strings=(/ &
-      'zero', &
-      'const', &
-      'const_tilt', &
-      'linear_x', &
-      'linear_zdep', &
-      'tanh-pot', &
-      'sinusoidal', &
-      'Baker74', &
-      'kepler', &
-      'kepler_2d', &
-      'CZbot1', &
-      'CZmid1', &
+      'zero        ', &
+      'const       ', &
+      'const_tilt  ', &
+      'linear_x    ', &
+      'linear_zdep ', &
+      'tanh-pot    ', &
+      'sinusoidal  ', &
+      'Baker74     ', &
+      'kepler      ', &
+      'kepler_2d   ', &
+      'CZbot1      ', &
+      'CZmid1      ', &
       'solid_sphere', &
-      'loop', &
-      'half-loop'/)
+      'loop        ', &
+      'half-loop   '/)
 
       character(LEN=10),dimension(4),parameter :: gravy_profile_strings=(/ &
-      'zero','const','sinusoidal','kepler'/)
+      'zero      ', &
+      'const     ', & 
+      'sinusoidal', &
+      'kepler    '/)
 
       character(LEN=15),dimension(19),parameter :: gravz_profile_strings=(/ &
-      'zero', &
-      'const', &
-      'const_tilt', &
-      'tanh', &
-      'boussinesq', &
-      'const_zero', &
-      'linear', &
-      'solid_sphere', &
-      'profile', &
-      'spherical', &
-      'linear_xdep', &
+      'zero           ', &
+      'const          ', &
+      'const_tilt     ', &
+      'tanh           ', &
+      'boussinesq     ', &
+      'const_zero     ', &
+      'linear         ', &
+      'solid_sphere   ', &
+      'profile        ', &
+      'spherical      ', &
+      'linear_xdep    ', &
       'linear_smoothed', &
-      'sinusoidal', &
-      'loop', &
-      'kepler', &
-      'Ferriere', &
-      'Ferriere-R', &
-      'Galactic-hs', &
-      'reduced_top'/)
+      'sinusoidal     ', &
+      'loop           ', &
+      'kepler         ', &
+      'Ferriere       ', &
+      'Ferriere-R     ', &
+      'Galactic-hs    ', &
+      'reduced_top    '/)
 
-      character(LEN=8),dimension(2),parameter :: grav_type_strings =(/'accretor','default'/)
+      character(LEN=8),dimension(2),parameter :: grav_type_strings =(/'accretor','default '/)
 
   contains
 !***********************************************************************
