@@ -1718,7 +1718,7 @@ module Dustdensity
 ! rhodsum
       if (lpencil(i_rhodsum)) p%rhodsum=sum(p%rhod,2)
 ! rhodsum1
-      if (lpencil(i_rhodsum1)) p%rhodsum1=1./p%rhodsum
+      if (lpencil(i_rhodsum1)) p%rhodsum1=1./(p%rhodsum+tini)
 ! grhodsum
       if (lpencil(i_grhodsum)) p%grhodsum=sum(p%grhod,3)
 ! glnrhodsum
