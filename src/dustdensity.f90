@@ -1243,7 +1243,7 @@ module Dustdensity
         lpencil_in(i_nd)=.true.
         lpencil_in(i_md)=.true.
       endif
-      if (lpencil_in(i_rhod1)) lpencil_in(i_rhod)=.true.
+      !if (lpencil_in(i_rhod1)) lpencil_in(i_rhod)=.true.
       if (lpencil_in(i_epsd)) then
         lpencil_in(i_rho1)=.true.
         lpencil_in(i_rhod)=.true.
@@ -1266,8 +1266,9 @@ module Dustdensity
         lpencil_in(i_md)=.true.
       endif
       if (lpencil_in(i_glnrhod)) then
-        lpencil_in(i_grhod)=.true.
-        lpencil_in(i_rhod1)=.true.
+        !lpencil_in(i_grhod)=.true.
+        !lpencil_in(i_rhod1)=.true.
+        lpencil_in(i_glnnd)=.true.
       endif
       if (lpencil_in(i_rhodsum))  lpencil_in(i_rhod)=.true.
       if (lpencil_in(i_rhodsum1)) lpencil_in(i_rhodsum)=.true.
@@ -1367,6 +1368,7 @@ module Dustdensity
             call grad(f,ind(k),tmp_pencil_3)
             do i=1,3
               where (p%nd(:,k)/=0.0)
+                !NILS: Could the value of 1e-2 be too large here....
                 p%glnnd(:,i,k)=tmp_pencil_3(:,i)/(p%nd(:,k)+1e-2)
               endwhere
             enddo
@@ -1401,7 +1403,7 @@ module Dustdensity
 ! rhod
         if (lpencil(i_rhod)) p%rhod(:,k)=p%nd(:,k)*p%md(:,k)
 ! rhod1
-        if (lpencil(i_rhod1)) p%rhod1(:,k)=1/p%rhod(:,k)
+        !if (lpencil(i_rhod1)) p%rhod1(:,k)=1/p%rhod(:,k)
 ! epsd=rhod/rho
         if (lpencil(i_epsd)) p%epsd(:,k)=p%rhod(:,k)*p%rho1
 ! grhod
@@ -1413,7 +1415,10 @@ module Dustdensity
 ! glnrhod
         if (lpencil(i_glnrhod)) then
           do i=1,3
-            p%glnrhod(:,i,k)=p%rhod1(:,k)*p%grhod(:,i,k)
+            ! NILS: Use glnnd to avoid problems when nd (and therefore
+            ! NILS: also rhod) is zero.
+            !p%glnrhod(:,i,k)=p%grhod(:,i,k)/p%rhod(:,k)
+            p%glnrhod(:,i,k)=p%glnnd(:,i,k)
           enddo
         endif
 ! mi
@@ -1554,7 +1559,8 @@ module Dustdensity
             if (.not.ldcore) then
               ! catch extremely large values in p%TT1 during pencil check
               T_tmp = AA*p%TT1
-              if (lpencil_check_at_work) T_tmp = T_tmp / exp(real(nint(alog(T_tmp))))
+              !NILS: Commented out the line below because it caused problems even when p%TT=1050.
+              !if (lpencil_check_at_work) T_tmp = T_tmp / exp(real(nint(alog(T_tmp))))
               p%ppsf(:,k)=p%ppsat*exp(T_tmp/(2.*dsize(k))-2.75e-8*0.1/(2.*(dsize(k)-1.01e-6)))
             endif
           endif
@@ -1713,7 +1719,7 @@ module Dustdensity
 ! rhodsum
       if (lpencil(i_rhodsum)) p%rhodsum=sum(p%rhod,2)
 ! rhodsum1
-      if (lpencil(i_rhodsum1)) p%rhodsum1=1./p%rhodsum
+      if (lpencil(i_rhodsum1)) p%rhodsum1=1./(p%rhodsum+tini)
 ! grhodsum
       if (lpencil(i_grhodsum)) p%grhodsum=sum(p%grhod,3)
 ! glnrhodsum

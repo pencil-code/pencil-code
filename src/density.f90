@@ -126,9 +126,9 @@ module Density
   logical :: lSchur_3D3D1D=.false.
   logical :: lscale_tobox_lnrho=.false.
   logical, target :: lreduced_sound_speed=.false.
-  logical, target :: lscale_to_cs2top=.false.
+  logical, target :: lscale_to_cs2top=.false., lhubble_density=.false.
   logical :: lconserve_total_mass=.false.
-  real :: density_ceiling=-1., hubble_density=0.
+  real :: density_ceiling=-1.
   logical :: lreinitialize_lnrho=.false., lreinitialize_rho=.false.
   logical :: lsubtract_init_stratification=.false., lwrite_stratification=.false.
   character (len=labellen), dimension(ninit) :: initlnrho='nothing'
@@ -173,7 +173,7 @@ module Density
   namelist /density_run_pars/ &
       cdiffrho, diffrho, diffrho_hyper3, diffrho_hyper3_mesh, diffrho_shock, &
       cs2bot, cs2top, lupw_lnrho, lupw_rho, idiff, ldensity_nolog, &
-      lmass_source, lmass_source_random, diff_cspeed, hubble_density, &
+      lmass_source, lmass_source_random, diff_cspeed, lhubble_density, &
       mass_source_profile, mass_source_Mdot, mass_source_sigma, &
       mass_source_offset, rmax_mass_source, lnrho_int, lnrho_ext, &
       damplnrho_int, damplnrho_ext, wdamp, lfreeze_lnrhoint, lfreeze_lnrhoext, &
@@ -2636,11 +2636,11 @@ module Density
 !
 !  Hubble parameter
 !
-        if (hubble_density/=0.) then
+        if (lhubble_density) then
           if (ldensity_nolog) then
-            df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) - 3.*hubble_density/t
+            df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) - 3.*Hubble*ascale**1.5*p%rho
           else
-            df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - 3.*hubble_density/t
+            df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - 3.*Hubble*ascale**1.5
           endif
         endif
 !

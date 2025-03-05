@@ -319,24 +319,42 @@ module Particles_drag
 !
       type(pic), intent(inout) :: cell
       real, intent(in) :: dt
+      real, dimension(size(cell%p%eps)) :: eps,v1,v2,v3,dv1,dv2,dv3,apx
+      real :: u1,u2,u3,du1,du2,du3
+      eps = cell%p%eps
+      v1(:)=cell%p%v(1)
+      v2(:)=cell%p%v(2)
+      v3(:)=cell%p%v(3)
+      u1=cell%u(1)
+      u2=cell%u(2)
+      u3=cell%u(3)
 !
       rotation: if (Omega /= 0.0) then
-        call drag_mutual_omega(cell%p%eps, cell%p%v(1), cell%p%v(2), cell%u(1), cell%u(2), dt, &
-                               cell%p%dv(1), cell%p%dv(2), cell%du(1), cell%du(2))
+        call drag_mutual_omega(eps, v1, v2, u1, u2, dt, dv1, dv2, du1, du2)
+        cell%p%dv(1)=dv1
+        cell%p%dv(2)=dv2
+        cell%du(1)=du1
+        cell%du(2)=du2
       else rotation
         if (gx_gas /= 0.0) then
-          call drag_mutual(cell%p%eps, cell%p%v(1), cell%u(1), dt, cell%p%dv(1), cell%du(1), agas=gx_gas)
+          call drag_mutual(eps, v1, u1, dt, dv1, du1, agas=gx_gas)
         else
-          call drag_mutual(cell%p%eps, cell%p%v(1), cell%u(1), dt, cell%p%dv(1), cell%du(1))
+          call drag_mutual(eps, v1, u1, dt, dv1, du1)
         endif
-        call drag_mutual(cell%p%eps, cell%p%v(2), cell%u(2), dt, cell%p%dv(2), cell%du(2))
+        call drag_mutual(eps, v2, u2, dt, dv2, du2)
+        cell%p%dv(1)=dv1
+        cell%p%dv(2)=dv2
+        cell%du(1)=du1
+        cell%du(2)=du2
       endif rotation
 !
       if (gz_par_coeff /= 0.0) then
-        call drag_mutual(cell%p%eps, cell%p%v(3), cell%u(3), dt, cell%p%dv(3), cell%du(3), apar=particle_zaccel(cell%p%x(3)))
+        call drag_mutual(eps, v3, u3, dt, dv3, du3, apar=particle_zaccel(cell%p%x(3)))
       else
-        call drag_mutual(cell%p%eps, cell%p%v(3), cell%u(3), dt, cell%p%dv(3), cell%du(3))
+        call drag_mutual(eps, v3, u3, dt, dv3, du3)
       endif
+      cell%p%dv(3)=dv3
+      cell%du(3)=du3
 !
     endsubroutine drag_on_both
 !***********************************************************************

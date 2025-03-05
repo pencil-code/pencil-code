@@ -1007,7 +1007,8 @@ module FArrayManager
           NEWLINE // "also possible that someone unintentionally added *optional*" // &
           NEWLINE // "auxiliaries to MAUX CONTRIBUTION to one of the physics modules." // &
           NEWLINE // "Please urge them to move it to src/cparam.local under their" // &
-          NEWLINE // "specific application. "
+          NEWLINE // "specific application. " // &
+          NEWLINE // "Put lenforce_maux_check=F in run_pars to overide this. "
 !
       neq: if (naux /= maux) then
         if (lroot) print *, "farray_check_maux: naux, maux = ", naux, maux

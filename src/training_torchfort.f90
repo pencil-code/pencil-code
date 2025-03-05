@@ -24,7 +24,7 @@
     include 'training.h'
 
     integer :: model_device=0
-    integer :: it_train=-1, it_train_chkpt=-1
+    integer :: it_train=-1, it_train_chkpt=-1, it_train_start=1
 
     !real(KIND=rkind4), dimension(:,:,:,:,:), allocatable, device :: input, label, output
     real, dimension(:,:,:,:,:), allocatable, device :: input, label, output
@@ -40,8 +40,8 @@
     integer :: idiag_loss=0            ! DIAG_DOC: torchfort training loss
     integer :: idiag_tauerror=0        ! DIAG_DOC: $\sqrt{\left<(\sum_{i,j} u_i*u_j - tau_{ij})^2\right>}$
 
-    namelist /training_run_pars/ config_file, model, it_train, it_train_chkpt, luse_trained_tau, lscale, &
-                                 lwrite_sample, max_loss
+    namelist /training_run_pars/ config_file, model, it_train, it_train_start, it_train_chkpt, &
+                                 luse_trained_tau, lscale, lwrite_sample, max_loss
 !
     character(LEN=fnlen) :: model_output_dir, checkpoint_output_dir
     integer :: istat, train_step_ckpt, val_step_ckpt
@@ -58,6 +58,8 @@
       use Syscalls, only: system_cmd
 
       character(LEN=fnlen) :: modelfn
+
+      if (lreloading) return
 
       if (.not.lhydro) call fatal_error('initialize_training','needs HYDRO module')
       istat = cudaSetDevice(iproc)
@@ -100,9 +102,11 @@ print*, 'MODEL FILE=', trim(model_output_dir)//trim(config_file)
           call information('initialize_training','TORCHFORT MODEL "'//trim(modelfn)//'" LOADED SUCCESFULLY')
         endif
       else
-        if (file_exists(trim(checkpoint_output_dir)//'/'//trim(model)//'.ckpt')) then
+        !if (file_exists(trim(checkpoint_output_dir)//'/'//trim(model)//'.pt')) then
+        if (file_exists(trim(checkpoint_output_dir)//'/model.pt')) then
 
-          istat = torchfort_load_checkpoint(trim(model), trim(checkpoint_output_dir), train_step_ckpt, val_step_ckpt)
+          !istat = torchfort_load_checkpoint(trim(model), trim(checkpoint_output_dir), train_step_ckpt, val_step_ckpt)
+          istat = torchfort_load_checkpoint('model', trim(checkpoint_output_dir), train_step_ckpt, val_step_ckpt)
           if (istat /= TORCHFORT_RESULT_SUCCESS) then
             call fatal_error("initialize_training","when loading checkpoint: istat="//trim(itoa(istat)))
           else
@@ -234,10 +238,7 @@ print*, 'adresses:', loc(input), loc(output), loc(label)
 
       real, dimension (mx,my,mz,mfarray) :: f
 
-      integer :: start_it
-
-      start_it = 200
-      if (it<start_it) return
+      if (it<it_train_start) return
 
       if (mod(it,it_train)==0) then
 !
@@ -252,7 +253,7 @@ print*, 'adresses:', loc(input), loc(output), loc(label)
 !  input scaling.
 !
           if (lscale) then
-            if (it == start_it) then
+            if (it == it_train_start) then
               input_min = minval(uumean)
               input_max = maxval(uumean)
             endif
@@ -260,7 +261,7 @@ print*, 'adresses:', loc(input), loc(output), loc(label)
 !
 ! output scaling.
 !
-            if (it == start_it) then
+            if (it == it_train_start) then
               output_min = minval(f(:,:,:,itauxx:itauzz))
               output_max = maxval(f(:,:,:,itauxx:itauzz))
             endif

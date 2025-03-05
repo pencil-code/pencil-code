@@ -5880,7 +5880,7 @@ endsubroutine pdf
     use Mpicomm, only: mpireduce_sum
     use Sub, only: gij, gij_etc, curl_mn, cross_mn, del2v_etc
 !
-  integer, parameter :: nk=nxgrid/2
+  integer, parameter :: nk=max(nxgrid/2,nygrid/2,nzgrid/2)
   integer :: p,q,lp,lq,ivec,iky,ikz
   integer :: nlk_p, nlk_q
   real, dimension (mx,my,mz,mfarray) :: f

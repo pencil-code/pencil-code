@@ -77,6 +77,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #   30 02 * * *  cd $HOME/pencil-auto-test && svn up && bin/pencil-test --clean --html --mail=my@email.net --nice=15 --reload --short --timings-file=$HOME/public_html/autotest_timings.txt > $HOME/public_html/autotest.html
 
 use strict;
+use Cwd;
 use POSIX qw(strftime);
 use Getopt::Long;
 use IPC::Open2;
@@ -126,7 +127,7 @@ my $html        = ($opts{'H'} || $opts{'html'}        || 0 );
 my $local       = ($opts{'l'} || $opts{'local'}       || 0 );
 my $lock        = ($opts{'L'} || $opts{'lock'}        || 0 );
 my $clean       = ($opts{'c'} || $opts{'clean'}       || 0 );
-my $pencil_home = ($opts{'D'} || $opts{'pencil-home'} || '$PENCIL_HOME' || `pwd`);
+my $pencil_home = ($opts{'D'} || $opts{'pencil-home'} || '$PENCIL_HOME' || cwd());
 my $nice        = ($opts{'N'} || $opts{'nice'}        || 0 );
 my $infofile    = ($opts{'i'} || $opts{'infofile'}    || '' );
 my $update      = ($opts{'u'} || $opts{'update'}      || $opts{'U'}  || 0 ); # keeping -U for backwards compatibility
@@ -171,6 +172,9 @@ if ($local) {
 
 # Make sure we have /usr/sbin in path (which is where sendmail is often located)
 $ENV{PATH} = "$ENV{PATH}:/usr/sbin" unless ($ENV{PATH} =~ m{(^|:)/usr/sbin($|:)});
+
+# Add PENCIL_HOME/bin to the path
+$ENV{PATH} = '"'.$pencil_home.'/bin":'.$ENV{PATH} if ($pencil_home);
 
 if ($lock) {
     # Do not make a mess if another pencil-test is already running on this machine!
@@ -347,9 +351,10 @@ sub run_tests_on {
 sub build_remote_cmd {
 # Construct the command to send to the remote host
 
-    my $remcmd = "cd $pencil_home; ";
+    my $remcmd = "";
     if ($update) {
-        $remcmd .= ''
+        my $prev_wd=cwd();
+        $remcmd .= 'cd "'.$pencil_home.'";'
           . 'if [ -e .git ]; then'  # .git can be a directory or a file
           . '    (git stash -q -u || echo "UPDATE ERROR: git stash");'
           . '    (git fetch -q || echo "UPDATE ERROR: git fetch");'
@@ -362,11 +367,12 @@ sub build_remote_cmd {
           . '    echo "UPDATE ERROR: Neither git nor svn checkout";'
           . '    false;'
           . 'fi;'
+          . 'cd "'.$prev_wd.'";'
     }
     if ($use_build) {
-        $remcmd .= "env PENCIL_HOME=$pencil_home ./bin/pc_auto-test ";
+        $remcmd .= "env PENCIL_HOME=\"$pencil_home\" PATH=\"$ENV{PATH}\" pc_auto-test ";
     } else {
-        $remcmd .= "env PENCIL_HOME=$pencil_home ./bin/auto-test ";
+        $remcmd .= "env PENCIL_HOME=\"$pencil_home\" PATH=\"$ENV{PATH}\" auto-test ";
     }
     $remcmd .= "--time ";
     if ($emails)             { $remcmd .= "--list-maintainers "; }

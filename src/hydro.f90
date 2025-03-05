@@ -156,7 +156,7 @@ module Hydro
   logical :: lno_noise_uu=.false., lrho_nonuni_uu=.false.
   logical :: llorentz_limiter=.false., full_3D=.false.
   logical :: lhiggsless=.false., lhiggsless_old=.false.
-  logical :: lsqrt_qirro_uu=.false.
+  logical :: lsqrt_qirro_uu=.false., lset_uz_zero=.false.
   real, pointer :: profx_ffree(:),profy_ffree(:),profz_ffree(:)
   real, pointer :: B_ext2
   real :: incl_alpha = 0.0, rot_rr = 0.0
@@ -194,7 +194,7 @@ module Hydro
       amp_factor,kx_uu_perturb,llinearized_hydro, hydro_zaver_range, index_rSH, &
       ll_sh, mm_sh, delta_u, n_xprof, luu_fluc_as_aux, luu_sph_as_aux, nfact_uu, &
       lvv_as_aux, lvv_as_comaux, &
-      lfactors_uu, qirro_uu, lsqrt_qirro_uu, &
+      lfactors_uu, qirro_uu, lsqrt_qirro_uu, lset_uz_zero, &
       lno_noise_uu, lrho_nonuni_uu, lpower_profile_file_uu, &
       llorentz_limiter, lhiggsless, lhiggsless_old, vwall, alpha_hless, &
       xjump_mid, yjump_mid, zjump_mid, qini
@@ -2758,6 +2758,18 @@ module Hydro
         endif
       endif
 !
+!  In 2-D with nzgrid=1, setting uz=0 makes sense, but shouldn't
+!  be compulsory, so allow for this possibility in 2-D.
+!  This has been implemented in analogy to lset_AxAy_zero in magnetic.
+!
+      if (lset_uz_zero) then
+        if (nzgrid==1) then
+          f(:,:,:,iuz)=0.0
+        else
+          call fatal_error("init_uu","lset_uz_zero=T only allowed with nzgrid=1")
+        endif
+      endif
+!
 !  Initialize auxiliaries to zero.
 !
       if (lconservative) then
@@ -4264,16 +4276,20 @@ module Hydro
         if (idiag_rux2m/=0) call sum_mn_name(p%rho*p%uu(:,1)**2,idiag_rux2m)
         if (idiag_ruy2m/=0) call sum_mn_name(p%rho*p%uu(:,2)**2,idiag_ruy2m)
         if (idiag_ruz2m/=0) call sum_mn_name(p%rho*p%uu(:,3)**2,idiag_ruz2m)
-        call sum_mn_name(f(l1:l2,m,n,irho),idiag_T00m)
-        if (idiag_T0x2m/=0) call sum_mn_name(f(l1:l2,m,n,iux)**2,idiag_T0x2m)
-        if (idiag_T0y2m/=0) call sum_mn_name(f(l1:l2,m,n,iuy)**2,idiag_T0y2m)
-        if (idiag_T0z2m/=0) call sum_mn_name(f(l1:l2,m,n,iuy)**2,idiag_T0z2m)
-        call sum_mn_name(f(l1:l2,m,n,iTij+0),idiag_Txxm)
-        call sum_mn_name(f(l1:l2,m,n,iTij+1),idiag_Tyym)
-        call sum_mn_name(f(l1:l2,m,n,iTij+2),idiag_Tzzm)
-        call sum_mn_name(f(l1:l2,m,n,iTij+3),idiag_Txym)
-        call sum_mn_name(f(l1:l2,m,n,iTij+4),idiag_Tyzm)
-        call sum_mn_name(f(l1:l2,m,n,iTij+5),idiag_Tzxm)
+        call sum_mn_name(p%rho,idiag_T00m)
+        call sum_mn_name(p%uu(:,1)**2,idiag_T0x2m)
+        call sum_mn_name(p%uu(:,2)**2,idiag_T0y2m)
+        !Kishore: the below was f(l1:l2,m,n,iuy)**2 (so I changed it to p%uu(:,2)), but from the name it seems that it should be using uz. Axel, please check.
+        call sum_mn_name(p%uu(:,2)**2,idiag_T0z2m)
+        if (iTij/=0) then
+          !Kishore: if iTij==0, we will end up doing an out of bounds access. Ideally, the quantities below would be pencils, but I am just doing a quick fix for now.
+          call sum_mn_name(f(l1:l2,m,n,iTij+0),idiag_Txxm)
+          call sum_mn_name(f(l1:l2,m,n,iTij+1),idiag_Tyym)
+          call sum_mn_name(f(l1:l2,m,n,iTij+2),idiag_Tzzm)
+          call sum_mn_name(f(l1:l2,m,n,iTij+3),idiag_Txym)
+          call sum_mn_name(f(l1:l2,m,n,iTij+4),idiag_Tyzm)
+          call sum_mn_name(f(l1:l2,m,n,iTij+5),idiag_Tzxm)
+        endif
         call sum_mn_name(p%ekin,idiag_ekin)
         call sum_mn_name(p%ekin,idiag_EEK)
         if (idiag_EEK2/=0) call sum_mn_name(p%ekin**2,idiag_EEK2)

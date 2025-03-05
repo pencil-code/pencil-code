@@ -70,3 +70,31 @@ class PathWrapper(pathlib.WindowsPath if os.name == 'nt' else pathlib.PosixPath)
     def __radd__(self, other):
         self._add_warning()
         return str(other) + str(self)
+
+class SinglePrinter:
+    """
+    Instances of this class will print their output only on the MPI root process
+    
+    KG (2025-Feb-07): added
+    """
+    def __init__(self):
+        try:
+            from mpi4py import MPI
+            comm = MPI.COMM_WORLD
+            rank = comm.Get_rank()
+        except ImportError:
+            rank = 0
+        
+        if (rank == 0):
+            self.print = True
+        else:
+            self.print = False
+    
+    def __call__(self, message):
+        """
+        message: str
+        """
+        if self.print:
+            print(message)
+
+pc_print = SinglePrinter()

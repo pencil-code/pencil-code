@@ -190,6 +190,9 @@ module EquationOfState
 !
       if (lroot) then
         open (1,file=trim(datadir)//'/pc_constants.pro',position="append")
+        write (1,'(a,1pd26.16)') 'k_B=',k_B
+        write (1,'(a,1pd26.16)') 'm_H=',m_H
+        write (1,'(a,1pd26.16)') 'k_B_over_m_H=',k_B/m_H
         write (1,*) 'mu1_0=',mu1_0
         write (1,*) 'Rgas=',Rgas
         write (1,*) 'TT_ion=',TT_ion

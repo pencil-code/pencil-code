@@ -12,7 +12,7 @@ module General
   private
 !
   public :: gaunoise_number
-  public :: safe_character_assign, safe_character_append, safe_character_prepend
+  public :: safe_character_assign, safe_character_append, safe_character_prepend, safe_string_replace
   public :: lower_case,upper_case
   public :: random_seed_wrapper
   public :: random_number_wrapper, random_gen, normal_deviate
@@ -1521,6 +1521,39 @@ print*, 'rank,ipx,ipy,ipz, find_proc=',rank, ipx,ipy,ipz, find_proc_node_localty
       endif
 !
     endsubroutine safe_character_assign
+!***********************************************************************
+    subroutine safe_string_replace(string,substr,replmt)
+
+      character(LEN=*), intent(INOUT) :: string
+      character(LEN=*), intent(IN) :: substr,replmt
+
+      integer :: istart, istop, lensub, lenstr
+
+      lenstr = len(string)
+      lensub = len(substr)
+      istart = index(string,substr)
+
+      if (istart + len(replmt)-1 > lenstr) then
+        print*, "safe_string_replace: RUNTIME ERROR: REPLACEMENT TOO LONG - DECLINED"
+        return
+      endif
+      istop = istart+lensub
+
+      if (istart>1) then
+        if (istop>lenstr) then
+          string = string(:istart-1)//replmt
+        else
+          string = string(:istart-1)//replmt//string(istop:)
+        endif
+      else
+        if (istop>lenstr) then
+          string = replmt
+        else
+          string = replmt//string(istop:)
+        endif
+      endif
+
+    endsubroutine
 !***********************************************************************
     subroutine safe_character_append_2(str1,str2)
 !

@@ -543,6 +543,10 @@ module EquationOfState
           enddo
         endif
 !
+        if (lpenc_loc(i_csvap2)) then
+          call fatal_error("calc_pencils_eos_pencpar","csvap2 is never calculated. This should be fixed before use.")
+        endif
+!
 !  Pressure
 !
         if (lpenc_loc(i_pp)) p%pp = Rgas*p%TT*p%mu1*p%rho

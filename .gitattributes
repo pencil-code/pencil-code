@@ -4826,6 +4826,7 @@ src/solid_cells_ogrid_sub.f90 -text
 src/special.f90 -text
 src/special.h -text
 src/special/1D_loop.f90 -text
+src/special/Lambda_CDM.f90 -text
 src/special/NS_polecap.f90 -text
 src/special/README -text
 src/special/advective_gauge.f90 -text

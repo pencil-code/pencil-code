@@ -1278,6 +1278,22 @@ module Particles_main
       real :: rp, epsd2g_tmp
       integer :: k, ix0, iy0, iz0
 !
+! For the size-case, we want to remove undersized particles at every time step
+!     
+      select case (remove_particle_criteria)
+      case ('size')
+        k=1
+        do while (k<=npar_loc)             
+          if ( fp(k,iap) < remove_particle_criteria_size ) then
+            call remove_particle(fp,ipar,k,dfp,ineargrid)
+          else
+            k=k+1
+          endif
+        enddo
+      end select
+!
+! Now, do the removal at specif time
+!     
       if (remove_particle_at_time > 0) then        
         !
         ! Should this be moved to particles_dust.f90 and _blocks.f90 respectivly? (signed who?)
@@ -1336,18 +1352,6 @@ module Particles_main
                 endif
               enddo
               remove_particle_at_time = -1.
-
-            case ('size')
-              k=1
-              do while (k<=npar_loc)
-                if ( fp(k,iap) < remove_particle_criteria_size ) then
-                  call remove_particle(fp,ipar,k,dfp,ineargrid)
-!                  print*,"Removed particle:",k,fp(k,iap)
-                else
-                  k=k+1
-                endif
-              enddo
-              remove_particle_at_time = t+dt
             endselect
           else
             remove_particle_at_time = -1.
