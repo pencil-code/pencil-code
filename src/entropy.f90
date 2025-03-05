@@ -150,7 +150,7 @@ module Energy
              lhcond0_density_dep=.false.
   logical :: lenergy_slope_limited=.false.
   logical :: limpose_heat_ceiling=.false.
-  logical :: lthdiff_Hmax=.false., lrhs_max=.true.
+  logical :: lthdiff_Hmax=.false., lrhs_max=.false.
   logical :: lchit_noT=.false.
   logical :: lss_running_aver_as_aux=.false.
   logical :: lss_running_aver_as_var=.false.
