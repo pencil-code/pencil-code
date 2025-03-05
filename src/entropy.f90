@@ -1486,7 +1486,7 @@ module Energy
       endif
 
       if (lheatc_Kconst) then
-        hcond_Kconst=merge(1,tau_diff,tau_diff==0)
+        hcond_Kconst=merge(1.,tau_diff,tau_diff==0)
         hcond_Kconst=Kbot/hcond_Kconst
       endif
 
