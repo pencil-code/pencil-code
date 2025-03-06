@@ -1147,7 +1147,7 @@ void setupConfig(AcMeshInfo& config)
 #if LENTROPY
   //dev->output.real_outputs[AC_maxchi]=0.;
 #endif
-  acHostUpdateBuiltinParams(&config); 
+  acHostUpdateParams(&config); 
 }
 
 #undef x
