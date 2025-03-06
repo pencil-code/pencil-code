@@ -331,29 +331,33 @@ module Particles_drag
 !
       rotation: if (Omega /= 0.0) then
         call drag_mutual_omega(eps, v1, v2, u1, u2, dt, dv1, dv2, du1, du2)
+        cell%p%dv(1)=dv1
+        cell%p%dv(2)=dv2
+        cell%du(1)=du1
+        cell%du(2)=du2
       else rotation
         if (gx_gas /= 0.0) then
           call drag_mutual(eps, v1, u1, dt, dv1, du1, agas=gx_gas)
         else
           call drag_mutual(eps, v1, u1, dt, dv1, du1)
         endif
+        cell%p%dv(1)=dv1
+        cell%du(1)=du1
         call drag_mutual(eps, v2, u2, dt, dv2, du2)
+        cell%p%dv(2)=dv2
+        cell%du(2)=du2
       endif rotation
-      cell%p%dv(1)=dv1
-      cell%p%dv(2)=dv2
-      cell%du(1)=du1
-      cell%du(2)=du2
 !
       if (gz_par_coeff /= 0.0) then
         apx = particle_zaccel(cell%p%x(3))
         call drag_mutual(eps, v3, u3, dt, dv3, du3, apar=apx)
+        cell%p%dv(3)=dv3
+        cell%du(3)=du3
       else
-        call drag_mutual(eps, v2, u2, dt, dv2, du2)
+        call drag_mutual(eps, v3, u3, dt, dv3, du3)
+        cell%p%dv(3)=dv3
+        cell%du(3)=du3
       endif
-      cell%p%dv(1)=dv1
-      cell%p%dv(2)=dv2
-      cell%du(1)=du1
-      cell%du(2)=du2
 !
     endsubroutine drag_on_both
 !***********************************************************************
