@@ -341,9 +341,9 @@ module Particles_drag
         else
           call drag_mutual(eps, v1, u1, dt, dv1, du1)
         endif
+        call drag_mutual(eps, v2, u2, dt, dv2, du2)
         cell%p%dv(1)=dv1
         cell%du(1)=du1
-        call drag_mutual(eps, v2, u2, dt, dv2, du2)
         cell%p%dv(2)=dv2
         cell%du(2)=du2
       endif rotation
@@ -351,13 +351,11 @@ module Particles_drag
       if (gz_par_coeff /= 0.0) then
         apx = particle_zaccel(cell%p%x(3))
         call drag_mutual(eps, v3, u3, dt, dv3, du3, apar=apx)
-        cell%p%dv(3)=dv3
-        cell%du(3)=du3
       else
         call drag_mutual(eps, v3, u3, dt, dv3, du3)
-        cell%p%dv(3)=dv3
-        cell%du(3)=du3
       endif
+      cell%p%dv(3)=dv3
+      cell%du(3)=du3
 !
     endsubroutine drag_on_both
 !***********************************************************************
