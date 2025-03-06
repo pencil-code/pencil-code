@@ -1263,7 +1263,7 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint)
 #if AC_RUNTIME_COMPILATION
 #include "cmake_options.h"
   acCompile(cmake_options,mesh.info);
-  acLoadLibrary();
+  acLoadLibrary(rank == 0 ? stdout : NULL);
   acCheckDeviceAvailability();
   acLogFromRootProc(rank, "Done setupConfig && acCompile\n");
   fflush(stdout);
