@@ -343,14 +343,13 @@ module Particles_drag
         endif
         call drag_mutual(eps, v2, u2, dt, dv2, du2)
         cell%p%dv(1)=dv1
-        cell%du(1)=du1
         cell%p%dv(2)=dv2
+        cell%du(1)=du1
         cell%du(2)=du2
       endif rotation
 !
       if (gz_par_coeff /= 0.0) then
-        apx = particle_zaccel(cell%p%x(3))
-        call drag_mutual(eps, v3, u3, dt, dv3, du3, apar=apx)
+        call drag_mutual(eps, v3, u3, dt, dv3, du3, apar=particle_zaccel(cell%p%x(3)))
       else
         call drag_mutual(eps, v3, u3, dt, dv3, du3)
       endif
