@@ -305,11 +305,13 @@ module Cdata
   logical :: lzaver_on_input=.false.
   logical :: lfatal_num_vector_369=.true.
   logical :: lsmooth_farray=.false.
+  logical :: lupdate_cvs=.false.
 !
 !  Entries related to the scale factor of the universe
 !
   logical :: lread_scl_factor_file=.false., lread_scl_factor_file_new=.false.
   real :: scl_factor_target, Hp_target, appa_target, wweos_target
+  real :: Hubble=0., ascale=1.
 !
 ! Debugging
 !

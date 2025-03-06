@@ -5,7 +5,7 @@
 
 MPICOMM      =   mpicomm
 IO           =   io_hdf5
-TIMESTEP     =   timestep_rkf
+TIMESTEP     =   timestep_rkf_lowsto
 
 INITIAL_CONDITION = initial_condition/ths_equilibrium_ism
 HYDRO        =   hydro

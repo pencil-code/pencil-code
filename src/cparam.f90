@@ -211,6 +211,9 @@ module Cparam
   real(KIND=rkind8), parameter :: alpha_fine=7.2973525643d-3
   real(KIND=rkind8), parameter :: sigma_Thomson_cgs=6.652458732160d-25 ![cm^2]
   real(KIND=rkind8), parameter :: e_cgs=4.8032047d-10  ![statcoulombs]
+  real(KIND=rkind8), parameter :: Chypercharge=41./12. !(nondimensional)
+  real(KIND=rkind8), parameter :: mass_zboson=7.48e-18 !(in Mpl, not reduced)
+  real(KIND=rkind8), parameter :: mass_zboson_GeV=91.2 ![in GeV]
 !
   logical, parameter :: ALWAYS_FALSE=.false.
 !

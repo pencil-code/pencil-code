@@ -1,9 +1,9 @@
   module farray_alloc
-
-  use Cdata
 !
 ! Dynamical allocation of f and df.
-!
+! 
+  implicit none
+
   real, dimension(:,:,:,:), allocatable :: df
   real, dimension(:,:,:,:), pointer :: f
   real, dimension(:,:,:,:), allocatable, target :: f_arr

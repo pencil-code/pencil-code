@@ -3,13 +3,13 @@
 ! Initialisation parameters for interstellar
 !
 &init_pars
-  cvsid="fe0309a94"
+  cvsid="c25e24e7c"
   unit_length=3.08567758e21, unit_velocity=9.778122994895071e4
   unit_density=1.6737236e-24
-  xyz0=-0.032,-0.032,-1.998
-  xyz1=+0.032,+0.032,+1.998
+  xyz0=-0.032,-0.032,-0.398
+  xyz1=+0.032,+0.032,+0.398
   lperi=T,T,F
-  bcz = 's','s','ubs','ism','ism','s','s','a','a2'
+  bcz = 's','s','s','s','s','s','s','s','s'
   lwrite_aux=T
   lfix_unit_std=T
   ip=1963
@@ -43,8 +43,9 @@
   lSNII=T
   lSNI=T
   lSN_scale_rad=T
+  ltrim_profile=T
   N_mass=60.0
-  rfactor_SN=2.5
+  rfactor_SN=1.5
   SNII_factor=1.0
 /
 &shear_init_pars

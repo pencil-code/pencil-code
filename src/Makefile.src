@@ -269,7 +269,7 @@ ifeq ($(GSL),gsl_wrapper)
         $(info )
         $(info No GSL module seems to be loaded!)
         $(info Try (one of) the following: $(shell (module spider |& grep -i gsl | sed -e's/^.* \([^ ]*[Gg][Ss][Ll][^ ]*\) .*$$/\1/') ))
-        $(error )
+        #$(error )
       endif
     endif
   endif
@@ -653,7 +653,7 @@ ifneq ($(filter $(SPECIAL) $(IO) $(IO_IN) $(IO_OUT) $(TRAINING), $(HDF5_MODULES)
       ifeq ($(filter clean,$(target)),)
         $(info )
         $(info No HDF5 module seems to be loaded!)
-        $(error Try (one of) the following: $(shell (module spider |& grep -i hdf5 | sed -e's/^.* \([^ ]*[Hh][Dd][Ff]5[^ ]*\) .*$$/\1/') ))
+        #$(error Try (one of) the following: $(shell (module spider |& grep -i hdf5 | sed -e's/^.* \([^ ]*[Hh][Dd][Ff]5[^ ]*\) .*$$/\1/') ))
       endif
     endif
   endif

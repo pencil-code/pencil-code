@@ -2,19 +2,7 @@
 Input und output functions, like saving data.
 """
 
-try:
-    from mpi4py import MPI
-    comm = MPI.COMM_WORLD
-    rank = comm.Get_rank()
-    size = comm.Get_size()
-    l_mpi = True
-    l_mpi = l_mpi and (size != 1)
-except ImportError:
-    rank = 0
-    size = 1
-    comm = None
-    l_mpi = False
-
+from pencil.util import pc_print
 from .npfile import npfile
 from .mkdir import mkdir
 from .debug_breakpoint import debug_breakpoint
@@ -25,9 +13,8 @@ from .snapshot import *
 try:
     from .fort2h5 import *
 except:
-    if rank == 0:
-        print("Warning: Could not import io.fort2h5. Try:")
-        print("'pip3 install h5py' (Python 3) or 'pip install h5py' (Python 2).")
+    pc_print("Warning: Could not import io.fort2h5. Try:")
+    pc_print("'pip3 install h5py' (Python 3) or 'pip install h5py' (Python 2).")
 
 # io operation on cluster/computer
 from .get_systemid import get_systemid
@@ -45,9 +32,8 @@ try:
     from .dill_save import dill_save as save
     from .dill_exists import dill_exists as exists
 except:
-    if rank == 0:
-        print("Warning: Could not import io.dill*. Try:")
-        print("'pip3 install dill' (Python 3) or 'pip install dill' (Python 2).")
+    pc_print("Warning: Could not import io.dill*. Try:")
+    pc_print("'pip3 install dill' (Python 3) or 'pip install dill' (Python 2).")
 
 # pkl im-/exporter
 from .pkl_load import pkl_load  # as load

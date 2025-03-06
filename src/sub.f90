@@ -3293,7 +3293,8 @@ module Sub
 !
       do j=1,3
 !
-        call u_dot_grad_scl(f,k+j-1,gradf(:,j,:),uu,tmp,UPWIND=upwind)
+        ff=gradf(:,j,:)
+        call u_dot_grad_scl(f,k+j-1,ff,uu,tmp,UPWIND=upwind)
         if (loptest(ladd)) then
           ugradf(:,j)=ugradf(:,j)+tmp
         else

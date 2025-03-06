@@ -3699,7 +3699,6 @@ mn_loop:do n=n1,n2
 !  after these checks.
 !
 if (lroot) print*, "SNR%indx%iproc:",SNR%indx%iproc
-print*,"Fred was here, explode_SN: iproc, ierr, exp(maxlnTT)/TT_SN_max",iproc, exp(maxlnTT)/TT_SN_max
       if (lSN_eth.or.lSN_coolingmass) then
         mmpi=maxlnTT
         call mpiallreduce_max(mmpi,maxlnTT)
@@ -3707,7 +3706,6 @@ print*,"Fred was here, explode_SN: iproc, ierr, exp(maxlnTT)/TT_SN_max",iproc, e
       else
         maxTT=cloud_TT
       endif
-print*,"Fred was here, after MPI explode_SN: iproc, exp(maxlnTT)/TT_SN_max",iproc, exp(maxlnTT)/TT_SN_max
       if (lSN_eth.and..not.lSN_coolingmass) then
         if (present(ierr)) then
           mpiierr=ierr

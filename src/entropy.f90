@@ -150,7 +150,7 @@ module Energy
              lhcond0_density_dep=.false.
   logical :: lenergy_slope_limited=.false.
   logical :: limpose_heat_ceiling=.false.
-  logical :: lthdiff_Hmax=.false., lrhs_max=.true.
+  logical :: lthdiff_Hmax=.false., lrhs_max=.false.
   logical :: lchit_noT=.false.
   logical :: lss_running_aver_as_aux=.false.
   logical :: lss_running_aver_as_var=.false.
@@ -1494,7 +1494,10 @@ module Energy
         idiag_chikrammin=0; idiag_chikrammax=0
       endif
 
-      if (lheatc_Kconst) hcond_Kconst=merge(Kbot,Kbot/tau_diff,tau_diff==0)
+      if (lheatc_Kconst) then
+        hcond_Kconst=merge(1.,tau_diff,tau_diff==0)
+        hcond_Kconst=Kbot/hcond_Kconst
+      endif
 
       if (.not.(lheatc_Kprof.or.lheatc_kramers)) idiag_fturbxy=0
       if (.not.(lheatc_Kprof.or.lheatc_chiconst.or.lheatc_kramers.or.lheatc_smagorinsky)) idiag_fturbz=0

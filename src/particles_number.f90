@@ -386,8 +386,8 @@ module Particles_number
 !  Diagnostic output
 !
       if (ldiagnos) then
-        call sum_par_name(fp(1:npar_loc,inpswarm),idiag_npswarmm)
-        if (idiag_npsm/=0) call integrate_par_name(fp(1:npar_loc,inpswarm)/nwgrid,idiag_npsm)
+          call sum_par_name(fp(1:npar_loc,inpswarm),idiag_npswarmm,len=npar_loc)
+          call integrate_par_name(fp(1:npar_loc,inpswarm)/nwgrid,idiag_npsm,len=npar_loc)
       endif
 
       if (ldiagnos) then

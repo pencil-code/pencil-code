@@ -123,6 +123,8 @@ indices = [ $
   { name:'iinfl_lna', label:'Logarithmic scale factor', dims:1 }, $
   { name:'iispecial1', label:'special1', dims:1 }, $
   { name:'iispecial2', label:'special2', dims:1 }, $
+  { name:'isigE', label:'sigE', dims:1 }, $
+  { name:'isigB', label:'sigB', dims:1 }, $
   { name:'iaphi', label:'A_phi', dims:1 }, $
   { name:'ibphi', label:'B_phi', dims:1 }, $
   { name:'ibb', label:'Magnetic field', dims:3 }, $

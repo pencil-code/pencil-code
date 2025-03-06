@@ -5533,12 +5533,14 @@ endsubroutine pdf
           hv(1+kxx/nsum,1+kyy/nsum,1+kzz/nsum) + h_re(ikx,iky,ikz)*dx*dy*dz
     enddo; enddo; enddo
     !$omp single
-    if (lroot) allocate( hv_sum(nsub,nsub,nsub) )
+    !if (lroot) allocate( hv_sum(nsub,nsub,nsub) )
+    allocate( hv_sum(nsub,nsub,nsub) )
     call mpireduce_sum(hv,hv_sum,(/nsub,nsub,nsub/))
     if (lroot) then
       Iv(ikr)=sum(hv_sum**2)/(Lx*Ly*Lz)
-      deallocate(hv_sum)
+    !  deallocate(hv_sum)
     endif
+    deallocate(hv_sum)
     deallocate(hv)
     !$omp end single
   enddo
@@ -5878,7 +5880,7 @@ endsubroutine pdf
     use Mpicomm, only: mpireduce_sum
     use Sub, only: gij, gij_etc, curl_mn, cross_mn, del2v_etc
 !
-  integer, parameter :: nk=nxgrid/2
+  integer, parameter :: nk=max(nxgrid/2,nygrid/2,nzgrid/2)
   integer :: p,q,lp,lq,ivec,iky,ikz
   integer :: nlk_p, nlk_q
   real, dimension (mx,my,mz,mfarray) :: f

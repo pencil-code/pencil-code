@@ -164,6 +164,7 @@ module Gravity
 ! for transpilation: strings used as case markers in select case statements tb executed on the GPU
 !                    When adding new cases, extend here (LEN and dimension), if necessary
 !
+     !commented out for now since does not work at least in the container
      !character(LEN=*),dimension(15) :: gravx_profile_strings=(/ &
      ! 'zero', &
      ! 'const', &

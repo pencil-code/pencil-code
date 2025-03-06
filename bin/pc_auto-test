@@ -141,6 +141,7 @@ my %tests = (
                          streaming-instability-sink
                          1d-tests/hyperdiffusion
                          2d-tests/eccentricity-decay
+                         interstellar
                      )],
              # Level 3 for now contains all non-canonical tests that run
              # successfully
@@ -311,6 +312,7 @@ Options:
   -p,  --postproc=PP       \tApply postprocessor PP to output from make
   -F,  --file=<xx>         \tOnly run tests for samples that use module 'xx' (based on 'grep -w')
   -a,  --all-dirs          \tRecurse through all subdirectories of samples/
+       --here              \tRecurse through all subdirectories in current directory
        --level=LEV         \tRun only tests from level LEV
        --max-level=LEV     \tRun all tests below with level <= LEV (default: 2)
        --script-tests=TYPES\tRun script tests matching TYPES, a comma-separated
@@ -398,6 +400,7 @@ GetOptions(\%opts,
                -p=s --postproc=s
                -F=s --file=s
                -a   --all-dirs
+                    --here
                     --level=s
                     --max-level=s
                     --script-tests=s
@@ -449,6 +452,7 @@ my $short       = ($opts{'s'} || $opts{'short'}           || 0    );
 my $file        = ($opts{'F'} || $opts{'file'}            || ''   );
 my $postproc    = ($opts{'p'} || $opts{'postproc'}        || ''   );
 my $deep        = ($opts{'a'} || $opts{'all-dirs'}        || 0    );
+my $here        = (              $opts{'here'}            || 0    );
 my $level       = (              $opts{'level'}                   );
 my $max_level   = (              $opts{'max-level'}               );
 my $script_tests = (             $opts{'script-tests'}            );
@@ -590,14 +594,14 @@ unless ($nolock or $list_only) {
 }
 
 # Remember current directory
-my $cwd = `pwd`; chomp($cwd);
+my $cwd = cwd();
 
 # pc_update_autotest
 system("$pencil_home/bin/pc_update_autotest.sh &");
 
 # Make sure we are in the top directory and have the right PATH
 my $topdir = "$pencil_home";
-chdir $topdir;
+if (!$here) { chdir $topdir; }
 $ENV{PATH} .= ":$pencil_home/bin";
 
 # Don't follow these boring subdirectories when recursing through whole tree:
@@ -659,6 +663,9 @@ if (@ARGV) {
     if ($deep) {
         # Scan samples/ tree recursively
         find_test_dirs("$topdir/samples"); # populates @testdirs
+    } elsif ($here) {
+        # Scan the current directory for autotests
+        find_test_dirs(".");
     } else {
         # Use predefined directories
         my @sampdirs;
@@ -928,7 +935,7 @@ sub find_test_dirs {
 # Traverse the samples/ directory tree and find all run directories
     eval { require File::Find };
     if ($@) {
-        die "Could not load File::Find (required for the --deep option):\n"
+        die "Could not load File::Find (required for the --deep and --here option):\n"
           . "$@\n";
     }
     import File::Find qw( find );
@@ -1486,6 +1493,7 @@ sub test_rundir {
     $shortdir =~ s{^samples/}{};        # remove leading 'samples/'
     $0 =~ s/^\s*(\[.*?\])?\s*/[$shortdir] /;
 
+    chdir $cwd;
     # Go to directory and identify it
     if (! -d $dir) {
         print STDERR "No such directory: $dir\n";
@@ -1816,9 +1824,9 @@ sub get_path {
     my $file = shift;
 
     my $path = "";
-    if ($dir) { $path = $dir."/".$path; }
+    if ($dir) { $path = $dir."/"; }
     if ($log_dir) { $path = $log_dir."/".$path; }
-    elsif ($pencil_home) { $path = $pencil_home."/samples/".$path; }
+    elsif ($pencil_home) { $path = cwd()."/"; }
     return $path.$file;
 }
 # ---------------------------------------------------------------------- #

@@ -124,8 +124,9 @@ module Timestep
         dt0=0.
       else
         ldt = (dt==0.)
+        dt = abs(dt0)
       endif
-      !lcourant_dt=.false.
+      lcourant_dt=.false.
 !
       num_substeps = itter
     endsubroutine initialize_timestep

@@ -288,7 +288,6 @@ module Special
 !
       use Sub, only: register_report_aux
       use FArrayManager
-      use SharedVariables, only: get_shared_variable
 !
       if (lroot) call svn_id( &
            "$Id$")
@@ -343,22 +342,11 @@ module Special
         call farray_register_auxiliary('h31_realspace',ih31_realspace)
       endif
 !
-!  Check if we are solving for relativistic bulk motions, not just EoS.
-!
-      if (lhydro) then
-        call get_shared_variable('lconservative', lconservative, caller='register_magnetic')
-      else
-        allocate(lconservative)
-        lconservative=.false.
-      endif
-!
-!  Get base indix for Tij, if different from zero.
+!  Get base index for Tij, if different from zero.
 !
       iTij=farray_index_by_name('Tij')
 !
-      if (lscalar) then
-        iinfl_lna=farray_index_by_name_ode('infl_lna')
-      endif
+      if (lscalar) iinfl_lna=farray_index_by_name_ode('infl_lna')
 !
     endsubroutine register_special
 !***********************************************************************
@@ -369,6 +357,7 @@ module Special
 !  06-oct-03/tony: coded
 !
       use EquationOfState, only: cs0
+      use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       !logical :: lread_scl_factor_file_exists
@@ -387,6 +376,19 @@ module Special
       ij_table(3,2)=5
       ij_table(1,3)=6
 !
+!  Check if we are solving for relativistic bulk motions, not just EoS.
+!
+      if (lhydro) then
+        call get_shared_variable('lconservative', lconservative, caller='register_special')
+      else
+        if (.not.associated(lconservative)) allocate(lconservative)
+        lconservative=.false.
+      endif
+!
+!  get a"/a (here called ddotam)
+!
+      if (lscalar) call get_shared_variable('ddotam',ddotam)
+!
 !  determine trace factor
 !
       select case (ctrace_factor)
@@ -394,8 +396,7 @@ module Special
         case ('1/2'); trace_factor=.5
         case ('1/3'); trace_factor=onethird
         case default
-          call fatal_error("initialize_special: No such value for ctrace_factor:" &
-              ,trim(ctrace_factor))
+          call fatal_error("initialize_special","no such ctrace_factor: "//trim(ctrace_factor))
       endselect
 !
 !  Determine fourthird_in_stress. This factor is normally 4/3, but it can be
@@ -406,8 +407,7 @@ module Special
         case ('1'); fourthird_factor=1.
         case ('4/3'); fourthird_factor=fourthird
         case default
-          call fatal_error("initialize_special: No such value for fourthird_in_stress:" &
-              ,trim(fourthird_in_stress))
+          call fatal_error("initialize_special","no such fourthird_in_stress: "//trim(fourthird_in_stress))
       endselect
 !
 !  determine stress_prefactor and GW energy prefactor,
@@ -427,8 +427,7 @@ module Special
         case ('16piG_corr/c^2'); stress_prefactor=16.*pi*G_Newton_cgs/c_light_cgs**2;
           EGWpref=c_light_cgs**2/(16.*pi*G_Newton_cgs)
         case default
-          call fatal_error("initialize_special: No such value for ctrace_factor:" &
-              ,trim(ctrace_factor))
+          call fatal_error("initialize_special","no such ctrace_factor:"//trim(ctrace_factor))
       endselect
       if (headt) print*,'stress_prefactor=',stress_prefactor
       if (headt) print*,'EGWpref=',EGWpref
@@ -439,8 +438,7 @@ module Special
         case ('1'); c_light2=1.
         case ('cgs'); c_light2=c_light_cgs**2
         case default
-          call fatal_error("initialize_special: No such value for cc_light:" &
-              ,trim(ctrace_factor))
+          call fatal_error("initialize_special","no such cc_light:"//trim(ctrace_factor))
       endselect
       if (headt) print*,'c_light2=',c_light2
 !
@@ -457,12 +455,12 @@ module Special
 !
       if (.not.allocated(Tpq_re)) then
         allocate(Tpq_re(nx,ny,nz,6),stat=stat)
-        if (stat>0) call fatal_error('initialize_special','Could not allocate memory for Tpq_re')
+        if (stat>0) call fatal_error('initialize_special','Could not allocate Tpq_re')
       endif
 !
       if (.not.allocated(Tpq_im)) then
         allocate(Tpq_im(nx,ny,nz,6),stat=stat)
-        if (stat>0) call fatal_error('initialize_special','Could not allocate memory for Tpq_im')
+        if (stat>0) call fatal_error('initialize_special','Could not allocate Tpq_im')
       endif
 !
 !  Allocate memory for nonlinear source
@@ -470,7 +468,7 @@ module Special
       if (lnonlinear_source) then
         if (.not.allocated(nonlinear_Tpq_re)) then
           allocate(nonlinear_Tpq_re(nx,ny,nz,6),stat=stat)
-          if (stat>0) call fatal_error('initialize_special','Could not allocate memory for nonlinear_Tpq_re')
+          if (stat>0) call fatal_error('initialize_special','Could not allocate nonlinear_Tpq_re')
         endif
 !
 !  Need imaginary part only if lnonlinear_Tpq_trans=T
@@ -478,7 +476,7 @@ module Special
         if (lnonlinear_Tpq_trans) then
           if (.not.allocated(nonlinear_Tpq_im)) then
             allocate(nonlinear_Tpq_im(nx,ny,nz,6),stat=stat)
-            if (stat>0) call fatal_error('initialize_special','Could not allocate memory for nonlinear_Tpq_im')
+            if (stat>0) call fatal_error('initialize_special','Could not allocate nonlinear_Tpq_im')
           endif
         endif
       endif
@@ -493,10 +491,11 @@ module Special
     !   allocate(GWh_Gamma_ab(nk,nbin_angular),GWhhel_Gamma_ab(nk,nbin_angular), &
     !            GWh_Gamma_ang(nk,nbin_angular),GWhhel_Gamma_ang(nk,nbin_angular), &
     !    stat=stat)
-    !   if (stat>0) call fatal_error('initialize_special','Could not allocate memory for GWh_Gamma_ab etc')
+    !   if (stat>0) call fatal_error('initialize_special','Could not allocate GWh_Gamma_ab etc')
     ! endif
 !
-!  Possibility of reading scale factor file
+!  Possibility of reading scale factor file.
+!  The data are defined for the entire module and are therefore always available.
 !
       if (lread_scl_factor_file) then
         inquire(FILE="a_vs_eta.dat", EXIST=lread_scl_factor_file_exists)
@@ -535,7 +534,7 @@ module Special
           it_file=int((lgt_ini-lgt0)/dlgt)+1
           if (it_file<1.or.it_file>nt_file) then
             print*,'=',it_file, t_file(it_file), t_ini, t_file(it_file)+1
-            call fatal_error('initialize_special','it_ini<1.or.it_ini>nt')
+            call fatal_error('initialize_special','it_file<1 or it_file>nt_file')
           endif
           lgt1=lgt_file(it_file)
           lgt2=lgt_file(it_file+1)
@@ -555,7 +554,7 @@ module Special
           it_file=int((lgt_current-lgt0)/dlgt)+1
           if (it_file<1.or.it_file>nt_file) then
             print*,'=',it_file, t_file(it_file), t, t_file(it_file)+1, t_ini
-            call fatal_error('initialize_special','it<1.or.it>nt')
+            call fatal_error('initialize_special','it_file<1 or it_file>nt_file')
           endif
           !if (ip<14) print*,'ALBERTO: ',it_file, t_file(it_file), t, t_file(it_file)+1, t_ini
           lgt1=lgt_file(it_file)
@@ -831,8 +830,7 @@ module Special
           f(nghost+ikx,nghost+iky,nghost+ikz,iggT  )=real(gcomplex_new)
           f(nghost+ikx,nghost+iky,nghost+ikz,iggTim)=aimag(gcomplex_new)
         case default
-          call fatal_error("init_special: No such value for initGW:" &
-              ,trim(initGW))
+          call fatal_error("init_special","no such initGW: "//trim(initGW))
       endselect
 !
       if (lStress_as_aux) then
@@ -971,8 +969,8 @@ module Special
               endif
               if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)-p%bb(:,i)*p%bb(:,j)
               if (lelectmag) p%stress_ij(:,ij)=p%stress_ij(:,ij)-p%el(:,i)*p%el(:,j)
-!              if (lscalar_phi)   p%stress_ij(:,ij)=p%stress_ij(:,ij)+p%infl_a2*p%gphi(:,i)*p%gphi(:,j)
-              if (lscalar_phi)   p%stress_ij(:,ij)=p%stress_ij(:,ij) &
+!              if (lscalar_phi) p%stress_ij(:,ij)=p%stress_ij(:,ij)+p%infl_a2*p%gphi(:,i)*p%gphi(:,j)
+              if (lscalar_phi) p%stress_ij(:,ij)=p%stress_ij(:,ij) &
                 +exp(2*f_ode(iinfl_lna))*p%gphi(:,i)*p%gphi(:,j)
             endif
 !
@@ -1079,52 +1077,41 @@ module Special
       endif
       stress_prefactor2=stress_prefactor/scale_factor
 !
-!  Possibility of reading scale factor file.
-!  The actual reading happened in initialize_special, so here it
-!  just checks whether it has done it; the data are defined for
-!  the entire module and are therefore always available.
-!
       if (lread_scl_factor_file) then
-        inquire(FILE="a_vs_eta.dat", EXIST=lread_scl_factor_file_exists)
-        if (lread_scl_factor_file_exists) then
 
 !  t is given as t/t_ini by default, so to compare it with the stored values in the file, we
 !  need to use t*t_ini.
 !  So, lgt_current is not the log10 of the current time t, but of t/t_ini.
 !  At the end of the run, t=1.5e18, but t/t_ini=3.11900E+13 or so.
 !
-          lgt_current=alog10(real(t))+lgt_ini
-          it_file=int((lgt_current-lgt0)/dlgt)+1
-          if (it_file<1.or.it_file>nt_file) then
-            print*,'=',it_file, t_file(it_file), t, t_file(it_file+1), t_ini
-            call fatal_error('dspecial_dt','it<1.or.it>nt')
-          endif
-          !if (ip<14) print*,'ALBERTO: ',it_file, t_file(it_file), t, t_file(it_file)+1, t_ini
-          lgt1=lgt_file(it_file)
-          lgt2=lgt_file(it_file+1)
-          lgf1=lgff(it_file)
-          lgf2=lgff(it_file+1)
-          lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
-          scl_factor_target=10**lgf/a_ini
-          scale_factor=10**lgf/a_ini
-          !if (ip<14) print*,'ALBERTO, a/a_*: ',scl_factor_target
-          !if (ip<14) print*,'iproc,lgf1,lgf,lgf2=',iproc,lgf1,lgf,lgf2
-          lgf1=lgff2(it_file)
-          lgf2=lgff2(it_file+1)
-          lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
-          Hp_target=10**lgf/Hp_ini
-          !if (ip<14) print*,'ALBERTO HH/HH_*: ',Hp_target
-          !if (ip<14) print*,'iproc,lgt1,lgt,lgt2=',iproc,lgt1,lgt_current,lgt2
-          !if (ip<14) print*,'iproc,lgf1,lgf,lgf2=',iproc,lgf1,lgf,lgf2
-          lgf1=lgff3(it_file)
-          lgf2=lgff3(it_file+1)
-          lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
-          appa_target=10**lgf/Hp_ini**2
-          !if (ip<14) print*,'ALBERTO app/a/HH_*^2: ',appa_target
-        else
-          if (lroot) print*,'ln -s $PENCIL_HOME/samples/GravitationalWaves/scl_factor/a_vs_eta.dat .'
-          call fatal_error('dspecial_dt','we need the file a_vs_eta.dat')
+        lgt_current=alog10(real(t))+lgt_ini
+        it_file=int((lgt_current-lgt0)/dlgt)+1
+        if (it_file<1.or.it_file>nt_file) then
+          print*,'=',it_file, t_file(it_file), t, t_file(it_file+1), t_ini
+          call fatal_error('dspecial_dt','it<1.or.it>nt')
         endif
+        !if (ip<14) print*,'ALBERTO: ',it_file, t_file(it_file), t, t_file(it_file)+1, t_ini
+        lgt1=lgt_file(it_file)
+        lgt2=lgt_file(it_file+1)
+        lgf1=lgff(it_file)
+        lgf2=lgff(it_file+1)
+        lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
+        scl_factor_target=10**lgf/a_ini
+        scale_factor=10**lgf/a_ini
+        !if (ip<14) print*,'ALBERTO, a/a_*: ',scl_factor_target
+        !if (ip<14) print*,'iproc,lgf1,lgf,lgf2=',iproc,lgf1,lgf,lgf2
+        lgf1=lgff2(it_file)
+        lgf2=lgff2(it_file+1)
+        lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
+        Hp_target=10**lgf/Hp_ini
+        !if (ip<14) print*,'ALBERTO HH/HH_*: ',Hp_target
+        !if (ip<14) print*,'iproc,lgt1,lgt,lgt2=',iproc,lgt1,lgt_current,lgt2
+        !if (ip<14) print*,'iproc,lgf1,lgf,lgf2=',iproc,lgf1,lgf,lgf2
+        lgf1=lgff3(it_file)
+        lgf2=lgff3(it_file+1)
+        lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
+        appa_target=10**lgf/Hp_ini**2
+        !if (ip<14) print*,'ALBERTO app/a/HH_*^2: ',appa_target
       endif
 !
 !  Possibilty to compensate against the decaying stress in decaying turbulence.
@@ -1330,15 +1317,7 @@ module Special
 !
 !  07-aug-17/axel: coded
 
-      use SharedVariables, only: get_shared_variable
-!
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-!
-!  get a"/a (here called ddotam)
-!
-      if (lscalar) then
-        call get_shared_variable('ddotam',ddotam)
-      endif
 !
     endsubroutine special_after_boundary
 !***********************************************************************
@@ -2110,9 +2089,8 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
 
     endsubroutine make_spectra
 !***********************************************************************
-    subroutine special_calc_spectra(f,spectrum,spectrum_hel,&
-      spectrum_2d,spectrum_2d_hel,&
-      lfirstcall,kind)
+    subroutine special_calc_spectra(f,spectrum,spectrum_hel,spectrum_2d,spectrum_2d_hel, &
+                                    lfirstcall,kind)
 !
 !  Calculates GW spectra. For use with a single special module.
 !
@@ -2200,7 +2178,6 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
 !  07-aug-17/axel: coded
 !
       use Fourier, only: fourier_transform, fft_xyz_parallel, kx_fft, ky_fft, kz_fft
-      use SharedVariables, only: put_shared_variable
       use Diagnostics
 !
       real, dimension (:,:,:), allocatable :: S_T_re, S_T_im, S_X_re, S_X_im, g2T_re, g2T_im, g2X_re, g2X_im
@@ -2242,35 +2219,35 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
 !  Allocate memory for arrays.
 !
       allocate(S_T_re(nx,ny,nz),stat=stat)
-      if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate memory for S_T_re')
+      if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate S_T_re')
 !
       allocate(S_T_im(nx,ny,nz),stat=stat)
-      if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate memory for S_T_im')
+      if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate S_T_im')
 !
       allocate(S_X_re(nx,ny,nz),stat=stat)
-      if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate memory for S_X_re')
+      if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate S_X_re')
 !
       allocate(S_X_im(nx,ny,nz),stat=stat)
-      if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate memory for S_X_im')
+      if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate S_X_im')
 !
 !  Allocate 18 chunks of memory for nonlinear source
 !
       if (lnonlinear_source) then
         allocate(Hijkre(nx,ny,nz,3,6),stat=stat)
-        if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate memory for Hijkre')
+        if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate Hijkre')
 !
         allocate(Hijkim(nx,ny,nz,3,6),stat=stat)
-        if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate memory for Hijkim')
+        if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate Hijkim')
       endif
 !
 !  Allocate chunks for real and imaginary parts of one component of hij in real space at a time.
 !
       if (lreal_space_hij_as_aux) then
         allocate(hij_re(nx,ny,nz),stat=stat)
-        if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate memory for hij_re')
+        if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate hij_re')
 !
         allocate(hij_im(nx,ny,nz),stat=stat)
-        if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate memory for hij_im')
+        if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate hij_im')
 !
       endif
 !
@@ -2476,8 +2453,7 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
           case ('exponential')
             if (t>tdelk) delkt=exp(-(t-tdelk)/tau_delk)
           case default
-            call fatal_error("compute_gT_and_gX_from_gij: No such value for idelkt" &
-                ,trim(idelkt))
+            call fatal_error("compute_gT_and_gX_from_gij","no such idelkt"//trim(idelkt))
         endselect
       endif
 !
@@ -2520,8 +2496,7 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
               call fatal_error('dspecial_dt',"we need the file a_vs_eta.dat")
             endif
           case default
-            call fatal_error("compute_gT_and_gX_from_gij: No such value for ihorndeski_time" &
-                ,trim(ihorndeski_time))
+            call fatal_error("compute_gT_and_gX_from_gij","no such ihorndeski_time: "//trim(ihorndeski_time))
         endselect
         if (lread_scl_factor_file.and.lread_scl_factor_file_exists) then
           !if (ip<14.and..not.lroot) print*,'ALBERTO, Hp^2: ',Hp_target**2
