@@ -1148,6 +1148,7 @@ void setupConfig(AcMeshInfo& config)
   //dev->output.real_outputs[AC_maxchi]=0.;
 #endif
   acHostUpdateParams(&config); 
+  config.runtime_compilation_log_dst = "ac_compilation_log";
 }
 
 #undef x
@@ -1263,7 +1264,7 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint)
 #if AC_RUNTIME_COMPILATION
 #include "cmake_options.h"
   acCompile(cmake_options,mesh.info);
-  acLoadLibrary(rank == 0 ? stdout : NULL);
+  acLoadLibrary(rank == 0 ? stderr : NULL);
   acCheckDeviceAvailability();
   acLogFromRootProc(rank, "Done setupConfig && acCompile\n");
   fflush(stdout);
