@@ -77,9 +77,11 @@ module Fourier
 !
 !  Initializations of module auxiliaries.
 !
+      if (.not.lreloading) then 
         if (lactive_dimension(1)) allocate(wsavex(4*nxgrid+15,num_helper_threads))
         if (lactive_dimension(2)) allocate(wsavey(4*nygrid+15,num_helper_threads))
         if (lactive_dimension(3)) allocate(wsavez(4*nzgrid+15,num_helper_threads))
+      endif
 
 !$omp parallel num_threads(num_helper_threads)
 !$      thread_id = omp_get_thread_num()+1

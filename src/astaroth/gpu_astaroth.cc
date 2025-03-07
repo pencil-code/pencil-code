@@ -17,6 +17,7 @@ const int rkind8 = 0;
 #include <string.h>
 #include <unistd.h>
 #include <mpi.h>
+#include <sys/resource.h>
 
 #define CUDA_ERRCHK(X)
 
@@ -97,7 +98,15 @@ has_nans(AcMesh mesh_in);
   #define cotth    cotth__mod__cdata
 
 #endif
+/***********************************************************************************************/
+int memusage()
+  {
+    struct rusage usage;
+    int res=getrusage(RUSAGE_SELF,&usage);
 
+    return usage.ru_maxrss;
+  }
+/***********************************************************************************************/
 AcReal dt1_interface{};
 static int rank;
 static AcMesh mesh = acInitMesh();
@@ -1202,6 +1211,7 @@ void checkConfig(AcMeshInfo &config)
 /***********************************************************************************************/
 extern "C" void getFArrayIn(AcReal **p_f_in)
 {
+	return;   //!!!
   AcReal* out = NULL;
 
   AcReal* uux_ptr = NULL;
@@ -1241,7 +1251,9 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint)
   //initLoadStore();
 #endif
   comm_pencil = MPI_Comm_f2c(comm_fint);
+if (rank==0) printf("memusage before setconfig= %f MBytes\n", memusage()/1024.);
   setupConfig(mesh.info);
+if (rank==0) printf("memusage after setconfig= %f MBytes\n", memusage()/1024.);
   //TP: done after setupConfig since we need maux_vtxbuf_index
   //TP: this is an ugly way to do this but works for now
   {
@@ -1261,6 +1273,7 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint)
       }
     }
   }
+if (rank==0) printf("memusage after pointer assign= %f MBytes\n", memusage()/1024.);
 #if AC_RUNTIME_COMPILATION
 #include "cmake_options.h"
   acCompile(cmake_options,mesh.info);
@@ -1274,7 +1287,9 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint)
   fflush(stdout);
 #endif
   checkConfig(mesh.info);
+if (rank==0) printf("memusage grid_init= %f MBytes\n", memusage()/1024.);
   acGridInit(mesh);
+if (rank==0) printf("memusage after grid_init= %f MBytes\n", memusage()/1024.);
 
   mesh.info = acGridDecomposeMeshInfo(mesh.info);
   //TP: important to do before autotuning
@@ -1285,10 +1300,15 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint)
   for (int i = 0; i < num_substeps; ++i)
   {
   	acDeviceSetInput(acGridGetDevice(), AC_step_num,(PC_SUB_STEP_NUMBER)i);
+if (rank==0) printf("memusage before GetOptimizedDSLTaskGraph= %f MBytes\n", memusage()/1024.);
 	acGetOptimizedDSLTaskGraph(AC_rhs);
+if (rank==0) printf("memusage after GetOptimizedDSLTaskGraph= %f MBytes\n", memusage()/1024.);
   }
+if (rank==0) printf("memusage before store config= %f MBytes\n", memusage()/1024.);
   acStoreConfig(acDeviceGetLocalConfig(acGridGetDevice()), "PC-AC.conf");
+if (rank==0) printf("memusage after store config= %f MBytes\n", memusage()/1024.);
   acGridSynchronizeStream(STREAM_ALL);
+if (rank==0) printf("memusage after store synchronize stream= %f MBytes\n", memusage()/1024.);
   acLogFromRootProc(rank, "DONE initializeGPU\n");
   fflush(stdout);
   constexpr AcReal unit = 1.0;
@@ -1332,6 +1352,16 @@ extern "C" void reloadConfig()
   acGridSynchronizeStream(STREAM_ALL);
   acDeviceUpdate(acGridGetDevice(), mesh.info);
   acGridSynchronizeStream(STREAM_ALL);
+#if AC_RUNTIME_COMPILATION
+  acGridQuit();
+  acCloseLibrary();
+#include "cmake_options.h"
+  acCompile(cmake_options,mesh.info);
+  acLoadLibrary();
+  acGridInit(mesh);
+  acLogFromRootProc(rank, "Done setupConfig && acCompile\n");
+  fflush(stdout);
+#endif
 }
 /***********************************************************************************************/
 extern "C" void loadFarray()

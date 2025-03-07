@@ -1157,7 +1157,7 @@ module Hydro
       if (.not. ldamp_fade .and. (tfade_start >= 0.0) .and. (tdamp > 0.0)) ldamp_fade = .true.
       if (ldamp_fade .and. (tfade_start == -1.0)) tfade_start = 0.5 * tdamp
       if (ldamp_fade .and. (tfade_start >= tdamp) .and. (tdamp > 0.0)) &
-          call fatal_error ('initialize_hydro', 'Please set tfade_start < tdamp')
+          call fatal_error ('initialize_hydro', 'set tfade_start < tdamp')
 
       if (Omega/=0.) then
 !
@@ -1264,6 +1264,7 @@ module Hydro
         lcoriolis_force = .false.
         if (lroot) print *, 'initialize_hydro: turned off and hand over Coriolis force to Particles_drag. '
       endif
+      lcoriolis_force = lcoriolis_force .and. Omega/=0.
 !
       lshear_in_coriolis=lshear_in_coriolis.and.lcoriolis_force.and.lshear
 !
@@ -8558,7 +8559,7 @@ endif
     use Syscalls, only: copy_addr
     use General , only: string_to_enum
 
-    integer, parameter :: n_pars=1000
+    integer, parameter :: n_pars=110
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     integer :: k
@@ -8665,13 +8666,14 @@ endif
     call copy_addr(prof_amp4,p_par(100)) ! (my)
     call copy_addr(uumz_prof,p_par(101)) ! (nz) (3)
     call copy_addr(omega_prof,p_par(102)) ! (nx) (ny)
+    call copy_addr(Omegav,p_par(103)) ! (3)
 
     call string_to_enum(enum_friction_tdep,friction_tdep)
-    call copy_addr(enum_friction_tdep,p_par(103)) ! int
+    call copy_addr(enum_friction_tdep,p_par(104)) ! int
     call string_to_enum(enum_uuprof,uuprof)
-    call copy_addr(enum_uuprof,p_par(104)) ! int
+    call copy_addr(enum_uuprof,p_par(105)) ! int
     do k = 1,3; call string_to_enum(enum_borderuu(k),borderuu(k)); enddo
-    call copy_addr(enum_borderuu,p_par(105)) ! int3
+    call copy_addr(enum_borderuu,p_par(106)) ! int3
 
     endsubroutine pushpars2c
 !***********************************************************************
