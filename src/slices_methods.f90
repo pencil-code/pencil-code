@@ -76,7 +76,17 @@ private
 !  For spherical slices in Cartesian geometry:
 !
   real, dimension(:), allocatable :: cph_slice,sph_slice,cth_slice,sth_slice
-  integer :: ith_min,ith_max,iph_min,iph_max
+!
+!  Kishore (2025-Mar-07):
+!  If ith_min,ith_max,iph_min,iph_max are uninitialized, write_rslice_position
+!  attempts to write them out with no validation, resulting in lines like
+!  F ***** ***** ***** ***** R
+!  in slice_position.dat when compiled with, say, `-finit-integer=-99999999`.
+!  Such output cannot be handled by read_all_videofiles (Fortran runtime
+!  error: Bad integer for item 2 in list input). I have initialized them to
+!  zero as a quick fix. Matthias, please check.
+!
+  integer :: ith_min=0,ith_max=0,iph_min=0,iph_max=0
   real, dimension(:,:,:,:,:), allocatable :: rslice_interp_weights
   integer, dimension(:,:,:), allocatable :: rslice_adjec_corn_inds
 
