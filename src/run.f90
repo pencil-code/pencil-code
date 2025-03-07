@@ -875,6 +875,7 @@ subroutine run_start() bind(C)
 !  This directory must exist, but may be linked to another disk.
 !
   f=0.
+if (lroot) print*, 'memusage before rsnap=', memusage()/1024., 'MBytes'
   if (lroot) tvar1=mpiwtime()
   call rsnap('var.dat',f,mvar_in,lread_nogrid)
   if (lroot) print*,'rsnap: read snapshot var.dat in ',mpiwtime()-tvar1,' seconds'
@@ -948,6 +949,7 @@ subroutine run_start() bind(C)
 !  initialization. And final pre-timestepping setup.
 !  (must be done before need_XXXX can be used, for example)
 !
+if (lroot) print*, 'memusage before initialize modules=', memusage()/1024., 'MBytes'
   call initialize_timestep
   call initialize_modules(f)
   call initialize_boundcond
@@ -1233,7 +1235,7 @@ subroutine run_start() bind(C)
     use Syscalls, only: copy_addr, copy_addr_dble
     use General, only: string_to_enum
 
-    integer, parameter :: n_pars=2000
+    integer, parameter :: n_pars=1200
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
 call copy_addr(ncoarse,p_par(1)) ! int
@@ -1479,7 +1481,8 @@ call copy_addr(cdtf,p_par(1170))
 call copy_addr(dx_tilde,p_par(1171)) ! (mx)
 call copy_addr(dy_tilde,p_par(1172)) ! (my)
 call copy_addr(dz_tilde,p_par(1173)) ! (mz)
-call copy_addr(lread_oldsnap,p_par(1171))
+call copy_addr(lread_oldsnap,p_par(1174))  !  bool
+call copy_addr(lroot,p_par(1175)) ! bool
 
 endsubroutine pushpars2c
 !***********************************************************************

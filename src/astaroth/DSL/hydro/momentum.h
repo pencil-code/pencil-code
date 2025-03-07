@@ -15,7 +15,7 @@ else{
     rho1 = exp(-value(LNRHO))
     grho = glnrho/rho1
     lnrho = value(LNRHO)
-}   // v
+}
     rhs=real3(0.,0.,0.)
 #if LVISCOSITY
     #include "../hydro/viscosity.h"
@@ -32,6 +32,9 @@ else{
       else{
         rhs -= gradient_tensor(UU) * UU
       }
+    }
+    if (lcoriolis_force) {
+        rhs -= 2.*cross(Omegav,value(UU))
     }
     advec2 = 0.
     advec_cs2 = 0.
