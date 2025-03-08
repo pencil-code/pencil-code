@@ -8,6 +8,7 @@ import numpy as np
 import re
 import subprocess
 from typing import Any, Callable, List, Tuple
+import os
 
 try:
     from proboscis import TestProgram
@@ -144,3 +145,11 @@ def get_docstring_standalone(symbol: str, marker: str) -> None:
             marker, "\n  ".join(doc_lines)
         )
     )
+
+def get_rundir(path):
+    pencil_home = os.getenv("PENCIL_HOME")
+    assert pencil_home is not None
+    run_dir = os.path.join(pencil_home, path)
+    if not os.path.isdir(run_dir):
+        raise Exception("Run directory {} does not exist".format(run_dir))
+    return run_dir
