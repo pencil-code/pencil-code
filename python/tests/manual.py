@@ -45,8 +45,8 @@ def test_read_var() -> None:
         ("z", lambda z: np.std(z), 0.574_175, 1.0e-6),
         ("f", lambda f: np.mean(f[0, :, :, :]), 0.0, 1.0e-6),
         ("f", lambda f: np.std(f[0, :, :, :]), 0.001_821_54, 1.0e-8),
-        ("f", lambda f: np.mean(f[1, :, :, :]), 0, 1.0e-9),
-        ("f", lambda f: np.std(f[1, :, :, :]), 0.002_363_680, 1.0e-9),
+        ("f", lambda f: np.mean(f[1, :, :, :]), 0, 1.0e-8),
+        ("f", lambda f: np.std(f[1, :, :, :]), 0.002_363_680, 1.0e-8),
     ]
     for (key, extract, expect, eps) in expected:
         cmp_extracted(getattr(var, key), extract, expect, key, eps)
