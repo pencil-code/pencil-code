@@ -13,6 +13,7 @@ import numpy as np
 import os
 import re
 from typing import Any, List, Tuple
+import pytest
 
 import pencil as pc
 
@@ -28,6 +29,7 @@ from test_utils import (
 )
 
 
+@pytest.mark.integration
 def test_read_var() -> None:
     """Read var.dat (data cube) file."""
     var = pc.read.var(trimall=True, datadir=get_data_dir())
@@ -68,6 +70,7 @@ def test_get_help_standalone() -> None:
     )
 
 
+@pytest.mark.integration
 def test_read_ts_standalone() -> None:
     """Read time series in a separate Python process."""
     read_and_check_type(
@@ -83,6 +86,7 @@ def test_read_ts_standalone() -> None:
     )
 
 
+@pytest.mark.integration
 def test_read_var_standalone() -> None:
     """Read data cube in a separate Python process."""
     read_and_check_type(
@@ -97,6 +101,7 @@ def test_read_var_standalone() -> None:
     )
 
 
+@pytest.mark.integration
 def test_read_slices_standalone() -> None:
     """Read slices in a separate Python process."""
     read_and_check_type(
