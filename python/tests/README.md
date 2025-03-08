@@ -18,7 +18,7 @@ Any function in these files whose name starts with `test` is treated as a test.
 
 # Testing with multiple Python versions
 
-A configuration file for [_Tox_] is provided. Change into this directory and run
+A configuration file for [_Tox_](https://tox.wiki/) is provided. Change into this directory and run
 
 ```sh
 tox
