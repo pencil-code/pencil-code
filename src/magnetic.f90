@@ -11469,7 +11469,6 @@ module Magnetic
     call copy_addr(tau_relprof1,p_par(54))
     call copy_addr(dipole_moment,p_par(55))
     call copy_addr(pm_smag1,p_par(56))
-    call copy_addr(echarge,p_par(57))
     call copy_addr(va2power_jxb,p_par(58)) ! int
     call copy_addr(iua,p_par(59)) ! int
     call copy_addr(ilam,p_par(60)) ! int

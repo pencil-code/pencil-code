@@ -1484,6 +1484,8 @@ call copy_addr(dz_tilde,p_par(1173)) ! (mz)
 call copy_addr(lread_oldsnap,p_par(1174))  !  bool
 call copy_addr(lroot,p_par(1175)) ! bool
 
+call copy_addr(lperi,p_par(1176)) ! bool3
+
 endsubroutine pushpars2c
 !***********************************************************************
 endmodule Run_module

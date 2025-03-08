@@ -385,35 +385,65 @@ extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
 }
 
 AcReal
-to_real(void* param)
+to_real(void* param, const char* name)
 {
+	if(param == NULL)
+	{
+		fprintf(stderr,"Passed NULL to pushparsc: %s!!\n",name);
+		abort();
+	}
 	return *((AcReal*)param);
 }
 int
-to_int(void* param)
+to_int(void* param, const char* name)
 {
+	if(param == NULL)
+	{
+		fprintf(stderr,"Passed NULL to pushparsc: %s!!\n",name);
+		abort();
+	}
 	return *((int*)param);
 }
 bool
-to_bool(void* param)
+to_bool(void* param, const char* name)
 {
+	if(param == NULL)
+	{
+		fprintf(stderr,"Passed NULL to pushparsc: %s!!\n",name);
+		abort();
+	}
 	return *((bool*)param);
 }
 int3
-to_int3(void* param)
+to_int3(void* param, const char* name)
 {
+	if(param == NULL)
+	{
+		fprintf(stderr,"Passed NULL to pushparsc: %s!!\n",name);
+		abort();
+	}
         int* arr = (int*)param;
         return (int3){arr[0],arr[1],arr[2]};
 }
 AcReal3
-to_real3(void* param)
+to_real3(void* param, const char* name)
 {
+	if(param == NULL)
+	{
+		fprintf(stderr,"Passed NULL to pushparsc: %s!!\n",name);
+		abort();
+	}
         AcReal* arr = (AcReal*)param;
         return (AcReal3){arr[0],arr[1],arr[2]};
 }
 AcBool3
-to_bool3(void* param)
+to_bool3(void* param, const char* name)
 {
+	if(param == NULL)
+	{
+		fprintf(stderr,"Passed NULL to pushparsc: %s!!\n",name);
+		abort();
+	}
         bool* arr = (bool*)param;
         return (AcBool3){arr[0],arr[1],arr[2]};
 }
@@ -1143,6 +1173,8 @@ void setupConfig(AcMeshInfo& config)
 
   PCLoad(config,AC_ds,(AcReal3){dx,dy,dz});
 
+  PCLoad(config,AC_periodic_grid,lperi);
+
   // Enter physics related parameters in config.
 
   #if LDENSITY
@@ -1352,6 +1384,8 @@ extern "C" void reloadConfig()
   acGridSynchronizeStream(STREAM_ALL);
   acDeviceUpdate(acGridGetDevice(), mesh.info);
   acGridSynchronizeStream(STREAM_ALL);
+//TP: put on comment before Matthias commits acCloseLibrary
+/**
 #if AC_RUNTIME_COMPILATION
   acGridQuit();
   acCloseLibrary();
@@ -1362,6 +1396,7 @@ extern "C" void reloadConfig()
   acLogFromRootProc(rank, "Done setupConfig && acCompile\n");
   fflush(stdout);
 #endif
+**/
 }
 /***********************************************************************************************/
 extern "C" void loadFarray()
