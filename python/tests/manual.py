@@ -30,9 +30,9 @@ from test_utils import (
 
 
 @pytest.mark.integration
-def test_read_var() -> None:
+def test_read_var(datadir_conv_slab_noequi) -> None:
     """Read var.dat (data cube) file."""
-    var = pc.read.var(trimall=True, datadir=get_data_dir())
+    var = pc.read.var(trimall=True, datadir=datadir_conv_slab_noequi)
     _assert_equal_tuple(var.f.shape, (5, 32, 32, 32))
 
     def ident(x: Any) -> Any:
@@ -71,13 +71,13 @@ def test_get_help_standalone() -> None:
 
 
 @pytest.mark.integration
-def test_read_ts_standalone() -> None:
+def test_read_ts_standalone(datadir_conv_slab_noequi) -> None:
     """Read time series in a separate Python process."""
     read_and_check_type(
         [
             "time_series = pc.read.ts(",
             "    file_name='time_series.dat',",
-            "    datadir='{}'".format(get_data_dir()),
+            "    datadir='{}'".format(datadir_conv_slab_noequi),
             ")",
         ],
         variable="time_series",
@@ -87,12 +87,12 @@ def test_read_ts_standalone() -> None:
 
 
 @pytest.mark.integration
-def test_read_var_standalone() -> None:
+def test_read_var_standalone(datadir_conv_slab_noequi) -> None:
     """Read data cube in a separate Python process."""
     read_and_check_type(
         [
             "data_cube = pc.read.var(",
-            "    datadir='{}'".format(get_data_dir()),
+            "    datadir='{}'".format(datadir_conv_slab_noequi),
             ")",
         ],
         variable="data_cube",
@@ -102,14 +102,14 @@ def test_read_var_standalone() -> None:
 
 
 @pytest.mark.integration
-def test_read_slices_standalone() -> None:
+def test_read_slices_standalone(datadir_conv_slab) -> None:
     """Read slices in a separate Python process."""
     read_and_check_type(
         [
             "slices = pc.read.slices(",
             "    field='bb1',",
             "    extension='xy',",
-            "    datadir='{}'".format(get_data_dir2()),
+            "    datadir='{}'".format(datadir_conv_slab),
             ")",
         ],
         variable="slices",
@@ -121,46 +121,3 @@ def test_read_slices_standalone() -> None:
 def test_remesh() -> None:
     """Remeshing: [Not yet implemented]."""
     pass
-
-
-def get_data_dir() -> str:
-    sim = pc.sim.get(get_run_dir(), quiet=True)
-    datadir = sim.datadir
-    if not os.path.exists(os.path.join(datadir, "time_series.dat")):
-        #TODO: Is it a good idea to print stuff like this during a test? Is this information needed at all?
-        print("Compiling and running {}. This may take some time.".format(sim.path))
-        sim.compile(bashrc=False)
-        sim.run(bashrc=False)
-    return datadir
-
-
-def get_data_dir2() -> str:
-    sim = pc.sim.get(get_run_dir2(), quiet=True)
-    datadir = sim.datadir
-    if not os.path.exists(os.path.join(datadir, "time_series.dat")):
-        #TODO: Is it a good idea to print stuff like this during a test? Is this information needed at all?
-        print("Compiling and running {}. This may take some time.".format(sim.path))
-        sim.compile(bashrc=False)
-        sim.run(bashrc=False)
-    if not os.path.exists(os.path.join(datadir, "slice_position.dat")):
-        sim.bash("pc_build -t read_all_videofiles", bashrc=False, verbose=False)
-        sim.bash("src/read_all_videofiles.x", bashrc=False, verbose=False)
-    return datadir
-
-
-def get_run_dir() -> str:
-    pencil_home = os.getenv("PENCIL_HOME")
-    assert pencil_home is not None
-    run_dir = os.path.join(pencil_home, "samples", "conv-slab-noequi")
-    if not os.path.isdir(run_dir):
-        raise Exception("Run directory {} does not exist".format(run_dir))
-    return run_dir
-
-
-def get_run_dir2() -> str:
-    pencil_home = os.getenv("PENCIL_HOME")
-    assert pencil_home is not None
-    run_dir = os.path.join(pencil_home, "samples", "conv-slab")
-    if not os.path.isdir(run_dir):
-        raise Exception("Run directory {} does not exist".format(run_dir))
-    return run_dir
