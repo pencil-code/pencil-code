@@ -250,7 +250,7 @@ module Magnetic
   logical :: lskip_projection_aa=.false.
   logical :: lscale_tobox=.true., lsquash_aa=.false.
   logical :: lbraginsky=.false., l2d_aa=.false.
-  logical :: lcoulomb=.false.
+  logical :: lcoulomb=.false., learly_set_el_pencil=.false.
   logical :: lfactors_aa=.false., lvacuum=.false.
   logical :: loverride_ee=.false., loverride_ee2=.false., loverride_ee_decide=.false.
   logical :: lignore_1rho_in_Lorentz=.false., lnorm_aa_kk=.false., lohm_evolve=.false.
@@ -284,7 +284,7 @@ module Magnetic
       sheet_position,sheet_thickness,sheet_hyp,ll_sh,mm_sh, &
       source_zav,nzav,indzav,izav_start, k1hel, k2hel, lbb_sph_as_aux, &
       r_inner, r_outer, lpower_profile_file, eta_jump0, eta_jump1, eta_jump2, &
-      lcoulomb, qexp_aa, nfact_aa, lfactors_aa, lvacuum, l2d_aa, &
+      lcoulomb, learly_set_el_pencil, qexp_aa, nfact_aa, lfactors_aa, lvacuum, l2d_aa, &
       loverride_ee_decide, eta_tdep_loverride_ee, z0_gaussian, width_gaussian, &
       lnorm_aa_kk, lohm_evolve, lhubble_magnetic
 !
@@ -4098,8 +4098,6 @@ module Magnetic
       if (lpenc_loc(i_bij).and.lpenc_loc(i_del2a)) then
         if (lcartesian_coords) then
           call gij_etc(f,iaa,BIJ=p%bij,DEL2=p%del2a)
-          !if (lpenc_loc(i_jj) .and. .not. ljj_as_comaux) call curl_mn(p%bij,p%jj)
-!AB: the outcommented line above should now be removed
           if (lpenc_loc(i_curlb) .and. .not. ljj_as_comaux) call curl_mn(p%bij,p%curlb)
         else
           call gij_etc(f,iaa,AA=p%aa,AIJ=p%aij,BIJ=p%bij,DEL2=p%del2a, &
@@ -4303,11 +4301,10 @@ module Magnetic
               if (lohm_evolve) then
                 p%jj_ohm=f(l1:l2,m,n,ijx:ijz)
               else
-!
+                if (learly_set_el_pencil) p%el=f(l1:l2,m,n,iex:iez)
                 do j=1,3
                   p%jj_ohm(:,j)=(p%el(:,j)+p%uxb(:,j))*mu01/eta_total
                 enddo
-!
               endif
             endif
 !

@@ -58,7 +58,7 @@ module Energy
   real :: center2_x=0.0, center2_y=0.0, center2_z=0.0
   real :: kx_ss=1.0, ky_ss=1.0, kz_ss=1.0
   real :: thermal_background=0.0, thermal_peak=0.0, thermal_scaling=1.0
-  real :: cool_fac=1.0, chiB=0.0
+  real :: cool_fac=1.0, chiB=0.0, Lambda_const=0.
   real :: downflow_cs2cool_fac=1.0
   real, dimension(3) :: chi_hyper3_aniso=0.0
   real, dimension(3) :: gradS0_imposed=(/0.0,0.0,0.0/)
@@ -222,7 +222,7 @@ module Energy
       tauheat_buffer, TTheat_buffer, zheat_buffer, dheat_buffer1, &
       heat_gaussianz, heat_gaussianz_sigma, cs2top_ini, dcs2top_ini, &
       heat_gaussianblob, heat_gaussianblob_r0, heat_gaussianblob_sigma, &
-      chi_jump_shock, xchi_shock, widthchi_shock, &
+      chi_jump_shock, xchi_shock, widthchi_shock, Lambda_const, &
       heat_uniform, cool_uniform, cool_newton, lupw_ss, cool_int, cool_ext, &
       chi_hyper3, chi_hyper3_mesh, lturbulent_heat, deltaT_poleq, tdown, allp, &
       beta_glnrho_global, ladvection_entropy, lviscosity_heat, r_bcz, &
@@ -6410,6 +6410,8 @@ module Energy
       select case (cooltype)
       case('constant','plain')
         heat=heat-prof
+      case('Lambda-constant')
+        heat=heat-Lambda_const*p%rho**2
       case('corona')
         heat=heat-prof*p%cv*p%rho*(p%TT-TT_cor)
       case ('Temp')
