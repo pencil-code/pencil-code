@@ -260,8 +260,9 @@ module Particles_map
       type(particle), dimension(:), allocatable :: packet
       integer :: ngp, stat
       integer, dimension(:), allocatable :: gproc
-      real, dimension(:), allocatable :: x1, x2, x3, xp1, xp2, xp3, v1, v2, v3
+      real, dimension(:,:), allocatable :: xi_ghost, xp_ghost, v_ghost
       real, dimension(npar_loc,3) :: fpx, fpv
+      integer :: i
 !
 !  Assign gas properties.
 !
@@ -273,7 +274,7 @@ module Particles_map
       npsend = size(sendlist)
       ngp = sum(ngp_recv)
       allocate(packet(npsend), ghost(ngp), stat=stat)
-      if (stat /= 0) call fatal_error_local('distribute_particles', 'unable to allocate ghost particles.')
+      if (stat /= 0) call fatal_error_local('distribute_particles', 'unable to allocate ghost particles')
       call pack_particles(fp, sendlist, packet)
       call ghost_particles_send(npsend, packet, xi(sendlist,:), ngp_send, ngp_recv, ghost)
 !
@@ -281,55 +282,31 @@ module Particles_map
 !
       cell%np = 0
       call pic_count_particles(npar_loc, xi, cell)
-      allocate(x1(ngp), stat=stat)
-      allocate(x2(ngp), stat=stat)
-      allocate(x3(ngp), stat=stat)
-      x1=ghost%xi(1)
-      x2=ghost%xi(2)
-      x3=ghost%xi(3)
-      call pic_count_particles(ngp, (/ x1, x2, x3 /), cell)
+      allocate(xi_ghost(ngp,3), stat=stat)
+      do i=1,3; xi_ghost(:,i)=ghost%xi(i); enddo
+      call pic_count_particles(ngp, xi_ghost, cell)
       call pic_allocate(int(nw), cell)
 !
 !  Distribute particles into cells.
 !
       cell%np = 0
       allocate(gproc(ngp), stat=stat)
-      allocate(xp1(ngp), stat=stat)
-      allocate(xp2(ngp), stat=stat)
-      allocate(xp3(ngp), stat=stat)
-      allocate(v1(ngp), stat=stat)
-      allocate(v2(ngp), stat=stat)
-      allocate(v3(ngp), stat=stat)
       gproc=ghost%proc
-      xp1=ghost%x(1)
-      xp2=ghost%x(2)
-      xp3=ghost%x(3)
-      v1=ghost%v(1)
-      v2=ghost%v(2)
-      v3=ghost%v(3)
+      allocate(xp_ghost(ngp,3), stat=stat)
+      do i=1,3; xp_ghost(:,i)=ghost%x(i); enddo
+      allocate(v_ghost(ngp,3), stat=stat)
+      do i=1,3; v_ghost(:,i)=ghost%v(i); enddo
+
       fpx=fp(1:npar_loc,ixp:izp)
       fpv=fp(1:npar_loc,ivpx:ivpz)
-      setpar: if (lparticles_mass) then
+      if (lparticles_mass) then
         call pic_set_particles(npar_loc, spread(-1,1,npar_loc), xi, fpx, fpv, cell, fp(1:npar_loc,imp))
-        call pic_set_particles(ngp, gproc, (/ x1, x2, x3 /), (/ xp1, xp2, xp3 /), (/ v1, v2, v3 /), cell, ghost%weight)
-      else setpar
+        call pic_set_particles(ngp, gproc, xi_ghost, xp_ghost, v_ghost, cell, ghost%weight)
+      else
         call pic_set_particles(npar_loc, spread(-1,1,npar_loc), xi, fpx, fpv, cell)
-        call pic_set_particles(ngp, gproc, (/ x1, x2, x3 /), (/ xp1, xp2, xp3 /), (/ v1, v2, v3 /), cell)
-      endif setpar
+        call pic_set_particles(ngp, gproc, xi_ghost, xp_ghost, v_ghost, cell)
+      endif
       call pic_set_eps(cell)
-!
-      deallocate(packet, stat=stat)
-      !deallocate(gproc, stat=stat)
-      !deallocate(x1, stat=stat)
-      !deallocate(x2, stat=stat)
-      !deallocate(x2, stat=stat)
-      !deallocate(xp1, stat=stat)
-      !deallocate(xp2, stat=stat)
-      !deallocate(xp2, stat=stat)
-      !deallocate(v1, stat=stat)
-      !deallocate(v2, stat=stat)
-      !deallocate(v2, stat=stat)
-      if (stat /= 0) call warning('distribute_particles', 'unable to deallocate the working array.')
 !
     endsubroutine distribute_particles
 !***********************************************************************
@@ -993,7 +970,7 @@ module Particles_map
       loop: do i = 1, n
         dealloc: if (associated(cell(i)%p)) then
           deallocate(cell(i)%p, stat=istat)
-          if (istat /= 0) call warning('pic_deallocate', 'unable to deallocate particle array.')
+          if (istat /= 0) call warning('pic_deallocate', 'unable to deallocate particle array')
           nullify(cell(i)%p)
         endif dealloc
       enddo loop
