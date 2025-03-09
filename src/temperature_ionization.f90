@@ -40,7 +40,7 @@ module Energy
   real :: pthresh=0., pbackground=0., pthreshnorm
   real :: xjump_mid=0.,yjump_mid=0.,zjump_mid=0.
   real :: widthTT, amplTT1, amplTT2, delta_TT
-  real :: rad_temp_surr=298., opacity=0.  
+  real :: rad_temp_surr=298., opacity=0., arad_normal, heat_Thompson_fact=1.
   real, pointer :: reduce_cs2
   logical, pointer :: lreduced_sound_speed, lscale_to_cs2top
   logical, pointer :: lpressuregradient_gas
@@ -51,7 +51,8 @@ module Energy
   logical :: lheatc_chiconst=.false.,lheatc_chiconst_accurate=.false.
   logical :: lheatc_hyper3=.false.
   logical :: lheatc_shock=.false.
-  logical :: lrad_cool_heat=.false., lhubble_energy=.false.
+  logical :: lrad_cool_heat=.false., lheat_Thompson=.false.
+  logical :: lhubble_energy=.false., linclude_radpress=.false.
   integer, parameter :: nheatc_max=3
   logical :: lenergy_slope_limited=.false.
   character (len=labellen), dimension(ninit) :: initlnTT='nothing'
@@ -71,8 +72,8 @@ module Energy
       lheatc_chiconst_accurate,lheatc_hyper3,chi_hyper3, &
       iheatcond, zheat_uniform_range, heat_source_offset, &
       heat_source_sigma, heat_source, lheat_source, &
-      pthresh, pbackground,chi_shock, lhubble_energy, &
-      lrad_cool_heat,rad_temp_surr, opacity
+      pthresh, pbackground,chi_shock, lhubble_energy, linclude_radpress, &
+      lrad_cool_heat, lheat_Thompson, heat_Thompson_fact, rad_temp_surr, opacity
 !
   integer :: idiag_TTmax=0    ! DIAG_DOC: $\max (T)$
   integer :: idiag_TTmin=0    ! DIAG_DOC: $\min (T)$
@@ -97,6 +98,8 @@ module Energy
   integer :: idiag_csmin=0
   integer :: idiag_deltm=0
   integer :: idiag_mum=0      ! DIAG_DOC:
+  integer :: idiag_heatThm=0  ! DIAG_DOC: $\alpha_\mathrm{Th}$
+  integer :: idiag_TTref=0    ! DIAG_DOC: $T_\mathrm{ref}$
   integer :: idiag_ppmax=0    ! DIAG_DOC:
   integer :: idiag_ppmin=0    ! DIAG_DOC:
 !
@@ -248,6 +251,10 @@ module Energy
       if (llocal_iso) call fatal_error('initialize_energy', &
            'llocal_iso switches on the local isothermal approximation. '// &
            'Use ENERGY=energy in src/Makefile.local')
+!
+!  Radiation constant.
+!
+      arad_normal=4*sigmaSB/c_light
 !
 !  For diagnostics of pressure shock propagation
 !  Tppm = max(pthresh-p,0)/(pthresh-pbackground)
@@ -467,6 +474,11 @@ module Energy
 !
       if (ltemperature_nolog) lpenc_requested(i_TT)=.true.
 !
+      if (linclude_radpress) then
+        lpenc_requested(i_TT)=.true.
+        lpenc_requested(i_rho1)=.true.
+      endif
+!
       if (lparticles_temperature) lpenc_requested(i_tcond)=.true.
 !
       if (lslope_limit_diff) then
@@ -642,17 +654,18 @@ module Energy
 !  29-jul-14/axel: imported reduced sound speed from entropy module
 !
       use Special, only: special_calc_energy
-      use Sub, only: cubic_step,identify_bcs
+      use Sub, only: cubic_step, identify_bcs, multsv
       use Viscosity, only: calc_viscous_heat
       use Interstellar, only: calc_heat_cool_interstellar
+      use Diagnostics, only: save_name, sum_mn_name
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       real, dimension (mx,my,mz,mvar), intent (out) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx,3) :: damp
-      real, dimension (nx) :: Hmax
-      real :: prof
+      real, dimension (nx,3) :: damp, rhoT1gpp
+      real, dimension (nx) :: Hmax, heat_Thompson=0., radpress_fact, prad=0.
+      real :: prof, TTref=0., TT_CMB=2.7
 !
 !  Initialize maximum heating to zero
 !
@@ -670,7 +683,20 @@ module Energy
 !  Pressure term in momentum equation (setting lpressuregradient_gas to
 !  .false. allows suppressing pressure term for test purposes)
 !
-      if (lpressuregradient_gas) df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - p%rho1gpp
+      if (lpressuregradient_gas) then
+        if (lhubble_energy) then
+          if (linclude_radpress) then
+            prad=onethird*arad_normal*p%TT**4
+            radpress_fact=1./(1.+prad*p%rho1/c_light**2)
+            call multsv(sqrt_ascale*radpress_fact, p%rho1gpp, rhoT1gpp)
+            df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - rhoT1gpp
+          else
+            df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - sqrt_ascale*p%rho1gpp
+          endif
+        else
+          df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - p%rho1gpp
+        endif
+      endif
 !
 !  velocity damping in the coronal heating zone
 !
@@ -723,6 +749,17 @@ module Energy
 !
       if (linterstellar) call calc_heat_cool_interstellar(f,df,p,Hmax)
 !
+!  Radiative heating and cooling from Thompson scattering.
+!  Note that this expression is similar to but more complicated than
+!  that for lrad_cool_heat in calc_heat_cool.
+!  By default, the prefactor heat_Thompson_fact is unity.
+!
+      if (lheat_Thompson) then
+        heat_Thompson=8.*sigma_Thomson*p%yH*arad_normal*p%TT**4/(3.*m_e*c_light*(1.+p%yH))
+        TTref=TT_CMB/ascale
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - heat_Thompson_fact*heat_Thompson*(TTref/p%TT-1.)
+      endif
+!
 !  Need to add left-hand-side of the continuity equation (see manual)
 !
       if (ldensity) then
@@ -747,6 +784,11 @@ module Energy
       endif
 
       call calc_diagnostics_energy(f,p)
+!
+      if (lheat_Thompson) then
+        call sum_mn_name(heat_Thompson,idiag_heatThm)
+        call save_name(TTref,idiag_TTref)
+      endif
 !
     endsubroutine denergy_dt
 !***********************************************************************
@@ -1021,7 +1063,7 @@ module Energy
         idiag_eem=0; idiag_ppm=0; idiag_Tppm=0
         idiag_csm=0; idiag_csmax=0; idiag_csmin=0; idiag_ppmax=0
         idiag_deltm=0; idiag_mum=0; idiag_mumz=0; idiag_TTmz=0; idiag_ssmz=0
-        idiag_eemz=0; idiag_ppmz=0; idiag_ppmin=0
+        idiag_eemz=0; idiag_ppmz=0; idiag_ppmin=0; idiag_heatThm=0; idiag_TTref=0
         idiag_puzmz=0; idiag_pr1mz=0; idiag_eruzmz=0; idiag_ffakez=0
       endif
 !
@@ -1050,6 +1092,8 @@ module Energy
         call parse_name(iname,cname(iname),cform(iname),'csmin',idiag_csmin)
         call parse_name(iname,cname(iname),cform(iname),'deltm',idiag_deltm)
         call parse_name(iname,cname(iname),cform(iname),'mum',idiag_mum)
+        call parse_name(iname,cname(iname),cform(iname),'heatThm',idiag_heatThm)
+        call parse_name(iname,cname(iname),cform(iname),'TTref',idiag_TTref)
       enddo
 !
 !  Check for those quantities for which we want xy-averages.
