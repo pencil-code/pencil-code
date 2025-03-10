@@ -3227,6 +3227,7 @@ samples/helical-MHDturb/K_VECTORS/k80.dat -text
 samples/helical-MHDturb/NEVERLOCK -text
 samples/helical-MHDturb/README -text
 samples/helical-MHDturb/README.md -text
+samples/helical-MHDturb/bin/diff_power.csh -text
 samples/helical-MHDturb/bin/update_ref.csh -text
 samples/helical-MHDturb/idl/README -text
 samples/helical-MHDturb/idl/gen_decimated_kvectors.pro -text
