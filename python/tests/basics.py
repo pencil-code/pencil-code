@@ -9,7 +9,7 @@ import os
 import sys
 from typing import Any
 
-from test_utils import assert_equal, _pretty_print
+from test_utils import assert_equal, _pretty_print, get_rundir
 
 from pencil.sim.simulation import __Simulation__
 
@@ -35,7 +35,7 @@ def test_neat_short_tricks() -> None:
             file=sys.stderr,
         )
         raise Exception(e)
-    sim = pc.get_sim(get_run_dir())
+    sim = pc.get_sim(get_rundir("samples/2d-tests/2d_methane_flame/turbulent_field"))
 
     # Access a value from start.in / run.in
     _assert_sim_parameter(sim, "inituu", "gaussian-noise")
@@ -60,18 +60,3 @@ def _assert_sim_parameter(
             parameter, _pretty_print(value), _pretty_print(expected)
         ),
     )
-
-
-def get_run_dir() -> str:
-    pencil_home = os.getenv("PENCIL_HOME")
-    assert pencil_home is not None
-    run_dir = os.path.join(
-        pencil_home,
-        "samples",
-        "2d-tests",
-        "2d_methane_flame",
-        "turbulent_field",
-    )
-    if not os.path.isdir(run_dir):
-        raise Exception("Run directory {} does not exist".format(run_dir))
-    return run_dir

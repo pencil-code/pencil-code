@@ -865,6 +865,7 @@ module Hydro
   integer :: idiag_fkinxdownmxy=0 ! ZAVG_DOC: $\left<{1\over2}\varrho\uv^2
                                 ! ZAVG_DOC: u_{x\downarrow}\right>_{z}$
   integer :: idiag_nshift=0
+  integer :: idiag_pradrc2=0
   integer :: idiag_frict=0
 !
 !  Video data.
@@ -2862,7 +2863,13 @@ module Hydro
 !
 !  for dynamical friction
 !
-      if (ekman_friction/=0 .and. friction_tdep=='current') lpenc_requested(i_j2)=.true.
+      if (ekman_friction/=0) then
+        if (friction_tdep=='current') lpenc_requested(i_j2)=.true.
+        if (friction_tdep=='Thomson') then
+          lpenc_requested(i_TT)=.true.
+          lpenc_requested(i_rho)=.true.
+        endif
+      endif
 !
 !  video pencils
 !
@@ -3841,7 +3848,8 @@ module Hydro
       intent(inout) :: f,df
 
       real, dimension (nx,3) :: uu1, tmpv
-      real, dimension (nx) :: tmp, ftot, ugu_Schur_x, ugu_Schur_y, ugu_Schur_z, arad_normal
+      real, dimension (nx) :: tmp, ftot, ugu_Schur_x, ugu_Schur_y, ugu_Schur_z
+      real, dimension (nx) :: arad_normal, pradrc2
       real, dimension (nx,3,3) :: puij_Schur
       integer :: i, j, ju
 !
@@ -4029,6 +4037,7 @@ module Hydro
             frict=ekman_friction/max(real(t),friction_tdep_toffset)
           case ('Thomson')
             arad_normal=4*sigmaSB/c_light
+            pradrc2=onethird*arad_normal*p%TT**4/(p%rho*c_light**2)
             frict=ekman_friction*fourthird*p%yH*sigma_Thomson*arad_normal*p%TT**4/(m_p*c_light)
           case ('current')
             if (lmagnetic) then
@@ -4139,6 +4148,7 @@ module Hydro
       endif
 
       call calc_diagnostics_hydro(f,p)
+      call sum_mn_name(pradrc2,idiag_pradrc2)
 !
       call timing('duu_dt','finished',mnloop=.true.)
 !
@@ -5207,7 +5217,6 @@ module Hydro
       real :: cs201, cs2011
       integer ::  iter_relB
       integer :: i,j,l
-!XXX
 !
 !  In the conservative case, we calculate the Lorentz gamma squared and Tij here,
 !  rather than in before_boundary, because the B-field is unknown otherwise.
@@ -6697,7 +6706,7 @@ endif
         idiag_taufmin=0
         idiag_dtF=0
         idiag_nshift=0
-        idiag_frict=0
+        idiag_frict=0; idiag_pradrc2=0
         ivid_oo=0; ivid_o2=0; ivid_ou=0; ivid_divu=0; ivid_u2=0; ivid_Ma2=0; ivid_uu_sph=0
         idiag_ruxph1mz=0
         idiag_ruxph2mz=0
@@ -6959,6 +6968,7 @@ endif
         call parse_name(iname,cname(iname),cform(iname),'nshift',idiag_nshift)
         call parse_name(iname,cname(iname),cform(iname),'uduum',idiag_uduum)
         call parse_name(iname,cname(iname),cform(iname),'frict',idiag_frict)
+        call parse_name(iname,cname(iname),cform(iname),'pradrc2',idiag_pradrc2)
       enddo
 !
       if (idiag_u2tm/=0) then

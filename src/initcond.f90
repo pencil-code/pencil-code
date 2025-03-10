@@ -5260,7 +5260,7 @@ module Initcond
       lno_noise,nfact0,lfactors0,compk0,llogbranch0,initpower_med0, &
       kpeak_log0,kbreak0,ldouble0,nfactd0,qirro,lsqrt_qirro,time, &
       cs,lreinit,ltime_old,ltime_new,lrho_nonuni,ilnr,l2d, &
-      lnot_amp, lrandom_ampl)
+      lnot_amp, lrandom_ampl, lfixed_phase)
 !
 !  Produces helical (q**n * (1+q)**(N-n))*exp(-k**l/cutoff**l) spectrum
 !  when kgaussian=0, where q=k/kpeak, n=initpower, N=initpower2,
@@ -5289,12 +5289,13 @@ module Initcond
       use General, only: loptest, roptest
 !
       logical, intent(in), optional :: lscale_tobox, lsquash, lremain_in_fourier, ltime_old
-      logical, intent(in), optional :: ltime_new, lrho_nonuni, lnot_amp, lrandom_ampl
+      logical, intent(in), optional :: ltime_new, lrho_nonuni, lnot_amp, lrandom_ampl, lfixed_phase
       logical, intent(in), optional :: lpower_profile_file, lno_noise, lfactors0
       logical, intent(in), optional :: llogbranch0,ldouble0, lreinit, l2d, lsqrt_qirro
       logical :: lvectorpotential, lscale_tobox1, lsquash1, lremain_in_fourier1, lno_noise1
       logical :: lskip_projection,lfactors,llogbranch,ldouble, ltime, ltime_old1
       logical :: ltime_new1, lrho_nonuni1, l2d1, lsqrt_qirro1, lnot_amp1, lrandom_ampl1
+      logical :: lfixed_phase1
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i, i1, i2, ikx, iky, ikz, stat, ik, nk, ilnr1
       integer, intent(in), optional :: ilnr
@@ -5352,6 +5353,10 @@ module Initcond
 !  Check whether we want no_noise or not
 !
       lno_noise1 = loptest(lno_noise)
+!
+!  Check whether we want lfixed_phase or not
+!
+      lfixed_phase1 = loptest(lfixed_phase)
 !
 !  Check whether we want l2d or not
 !
@@ -5504,8 +5509,13 @@ module Initcond
               qexp11=1.-qexp1
               u_im(:,:,:,i)=ampl*sqrt(-2*(k2**qexp11-1.)/qexp11)
             endif
-            u_re(:,:,:,i)=u_im(:,:,:,i)*cos(pi*(2*r-1))
-            u_im(:,:,:,i)=u_im(:,:,:,i)*sin(pi*(2*r-1))
+!           if (lfixed_phase1) then
+!             u_re(:,:,:,i)=u_im(:,:,:,i)
+!           else
+            if (.not. lfixed_phase1) then
+              u_re(:,:,:,i)=u_im(:,:,:,i)*cos(pi*(2*r-1))
+              u_im(:,:,:,i)=u_im(:,:,:,i)*sin(pi*(2*r-1))
+            endif
           else
             u_re(:,:,:,i)=ampl*cos(pi*(2*r-1))
             u_im(:,:,:,i)=ampl*sin(pi*(2*r-1))
@@ -5543,6 +5553,15 @@ module Initcond
         enddo
       endif
       if (lroot) k2(1,1,1) = 1.  ! Avoid division by zero
+!
+!  Do phase correction (needed for Bunch-Davies vacuum).
+!
+      if (lfixed_phase1) then
+        do i=1,i2-i1+1
+          u_re(:,:,:,i)=u_im(:,:,:,i)*cos(-sqrt(k2)*t)
+          u_im(:,:,:,i)=u_im(:,:,:,i)*sin(-sqrt(k2)*t)
+        enddo
+      endif
 !
 !  To get the shell integrated power spectrum E ~ k^n, we need u ~ k^m
 !  and since E(k) ~ u^2 k^2 we have n=2m+2, so m=n/2-1 in 3-D.

@@ -87,7 +87,7 @@ module Special
 !
   integer :: iLCDM_lna=0, iLCDM_tph=0
   real :: Omega_Lam=.73, Omega_rad=1e-4, Omega_mat, Hubble0=0.072
-  real :: lna, tph, redshift0=4500., sqrt_ascale
+  real :: lna, tph, redshift0=4500.
 !
   namelist /special_init_pars/ &
       Omega_Lam, Omega_rad, Hubble0, redshift0
@@ -248,8 +248,6 @@ module Special
 !
       lna=f_ode(iLCDM_lna)
       tph=f_ode(iLCDM_tph)
-      ascale=exp(lna)
-      Hubble=Hubble0*sqrt(Omega_mat/ascale**3+Omega_Lam+Omega_rad/ascale**4)
 !
       df_ode(iLCDM_lna)=df_ode(iLCDM_lna)+ascale**1.5*Hubble
       df_ode(iLCDM_tph)=df_ode(iLCDM_tph)+ascale**1.5
@@ -343,9 +341,12 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
 !
-!  Compute terms routinely used during this time step.
+!  Compute terms routinely used during this time substep.
 !
+      lna=f_ode(iLCDM_lna)
+      ascale=exp(lna)
       sqrt_ascale=sqrt(ascale)
+      Hubble=Hubble0*sqrt(Omega_mat/ascale**3+Omega_Lam+Omega_rad/ascale**4)
 !
     endsubroutine special_after_boundary
 !********************************************************************

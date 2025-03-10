@@ -311,7 +311,7 @@ module Cdata
 !
   logical :: lread_scl_factor_file=.false., lread_scl_factor_file_new=.false.
   real :: scl_factor_target, Hp_target, appa_target, wweos_target
-  real :: Hubble=0., ascale=1.
+  real :: Hubble=0., ascale=1., sqrt_ascale=1.
 !
 ! Debugging
 !

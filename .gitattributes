@@ -3227,6 +3227,8 @@ samples/helical-MHDturb/K_VECTORS/k80.dat -text
 samples/helical-MHDturb/NEVERLOCK -text
 samples/helical-MHDturb/README -text
 samples/helical-MHDturb/README.md -text
+samples/helical-MHDturb/bin/diff_power.csh -text
+samples/helical-MHDturb/bin/update_ref.csh -text
 samples/helical-MHDturb/idl/README -text
 samples/helical-MHDturb/idl/gen_decimated_kvectors.pro -text
 samples/helical-MHDturb/idl/generate_kvectors.pro -text
@@ -3248,6 +3250,15 @@ samples/helical-MHDturb/print.in -text
 samples/helical-MHDturb/python/generate_kvectors.py -text
 samples/helical-MHDturb/reference.out -text
 samples/helical-MHDturb/reference_idl_var.out -text
+samples/helical-MHDturb/reference_power_kin.out -text
+samples/helical-MHDturb/reference_power_krms.out -text
+samples/helical-MHDturb/reference_power_lr.out -text
+samples/helical-MHDturb/reference_power_mag.out -text
+samples/helical-MHDturb/reference_powerhel_kin.out -text
+samples/helical-MHDturb/reference_powerhel_mag.out -text
+samples/helical-MHDturb/reference_poweru.out -text
+samples/helical-MHDturb/reference_proc0_zaverages.out -text
+samples/helical-MHDturb/reference_xyaverages.out -text
 samples/helical-MHDturb/run.in -text
 samples/helical-MHDturb/src/Makefile.local -text
 samples/helical-MHDturb/src/cparam.local -text

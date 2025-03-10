@@ -7,12 +7,12 @@ Test functions in pc.io
 
 import os
 from pencil.io import get_value_from_file
-from test_utils import make_test, assert_equal
+from test_utils import make_test, assert_equal, get_rundir
 
 
 def test_get_value_from_file() -> None:
     """Reading values from {start,run}.in"""
-    rundir = get_run_dir()
+    rundir = get_rundir("samples/conv-slab")
 
     def get_s(quantity):
         return get_value_from_file("start.in", quantity, filepath=rundir)
@@ -28,12 +28,3 @@ def test_get_value_from_file() -> None:
     assert_equal(get_r("gravz"), -1)
     assert_equal(get_r("gravz_profile"), "const")
     assert_equal(get_r("lupw_lnrho"), True)
-
-
-def get_run_dir() -> str:
-    pencil_home = os.getenv("PENCIL_HOME")
-    assert pencil_home is not None
-    run_dir = os.path.join(pencil_home, "samples", "conv-slab")
-    if not os.path.isdir(run_dir):
-        raise Exception("Run directory {} does not exist".format(run_dir))
-    return run_dir

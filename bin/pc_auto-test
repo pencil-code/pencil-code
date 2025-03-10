@@ -988,9 +988,15 @@ sub check_cmd_result {
     my $dt    = shift;
 
     if (($phase eq 'starting') || ($phase eq 'running')) {
-        # Check for missing MPI option "--oversubscribe".
+        # Check for missing MPI option "--oversubscribe"
         if ($msg =~ /use the [\-]*oversubscribe option/is) {
             my_ok(0, 1, "Not enough CPU cores! Try 'mpiexec' with the '--oversubscribe' option.", $dir, $phase);
+            return;
+        }
+
+        # Check for a LOCK file that is in the way
+        if ($msg =~ /^\s*pc_run:\s+found LOCK file([\s.]|$)/im) {
+            my_ok(0, 1, "There is a LOCK file in the way! Please check if it can be removed.", $dir, $phase);
             return;
         }
 

@@ -55,7 +55,7 @@ module Special
   logical :: lvectorpotential=.false., lphi_hom=.false.
   logical :: lno_noise_ee=.false., lnoncollinear_EB=.false., lnoncollinear_EB_aver=.false.
   logical :: leedot_as_aux=.false., lcurlyA=.true., lsolve_chargedensity=.false.
-  logical :: lsigE_as_aux=.false., lsigB_as_aux=.false.
+  logical :: lsigE_as_aux=.false., lsigB_as_aux=.false., lrandom_ampl_ee=.false., lfixed_phase_ee=.false.
   logical :: lswitch_off_divJ=.false., lswitch_off_Gamma=.false.
   character(len=50) :: initee='zero', inita0='zero'
 !
@@ -73,7 +73,7 @@ module Special
     ampla0, initpower_a0, initpower2_a0, lno_noise_ee, &
     cutoff_a0, ncutoff_a0, kpeak_a0, relhel_a0, kgaussian_a0, &
     leedot_as_aux, lsigE_as_aux, lsigB_as_aux, lsolve_chargedensity, &
-    weight_longitudinalE
+    weight_longitudinalE, lrandom_ampl_ee, lfixed_phase_ee, lskip_projection_ee
 !
   ! run parameters
   real :: beta_inflation=0.
@@ -246,7 +246,8 @@ module Special
           call power_randomphase_hel(amplee,initpower_ee,initpower2_ee, &
             cutoff_ee,ncutoff_ee,kpeak_ee,f,iex,iez,relhel_ee,kgaussian_ee, &
             lskip_projection_ee, lvectorpotential, lscale_tobox=lscale_tobox, &
-            lno_noise=lno_noise_ee)
+            lno_noise=lno_noise_ee, lrandom_ampl=lrandom_ampl_ee, &
+            lfixed_phase=lfixed_phase_ee)
 !
         case default
           call fatal_error("init_special","no such initee: "//trim(initee))
