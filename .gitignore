@@ -372,3 +372,14 @@ samples/corona/driver
 !samples/conv-slab-torch/scripts/.run_directories.log
 !samples/conv-slab-torch/scripts/pc_build_tmp_*
 !samples/conv-slab-torch/scripts/.pc_build_history
+!samples/helical-MHDturb/bin/.DS_Store
+!samples/helical-MHDturb/bin/*.directory
+!samples/helical-MHDturb/bin/*.pyc
+!samples/helical-MHDturb/bin/*~
+!samples/helical-MHDturb/bin/.*.swp
+!samples/helical-MHDturb/bin/host-ID
+!samples/helical-MHDturb/bin/revision.txt
+!samples/helical-MHDturb/bin/*-eps-converted-to.pdf
+!samples/helical-MHDturb/bin/.run_directories.log
+!samples/helical-MHDturb/bin/pc_build_tmp_*
+!samples/helical-MHDturb/bin/.pc_build_history
