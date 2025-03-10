@@ -41,6 +41,7 @@ module power_spectrum
   logical :: lhalf_factor_in_GW=.false., lcylindrical_spectra=.false.
   logical :: lhorizontal_spectra=.false., lvertical_spectra=.false.
   logical :: lread_gauss_quadrature=.false., lshear_frame_correlation=.false.
+  logical :: lzero_spec_zerok=.false.
   integer :: legendre_lmax=1
   integer :: firstout = 0
   logical :: lglq_dot_dat_exists=.false.
@@ -68,7 +69,7 @@ module power_spectrum
       lread_gauss_quadrature, legendre_lmax, lshear_frame_correlation, &
       power_format, kout_max, tout_min, tout_max, specflux_dp, specflux_dq, &
       lhorizontal_spectra, lvertical_spectra, ltrue_binning, max_k2, &
-      specflux_pmin, specflux_pmax
+      specflux_pmin, specflux_pmax, lzero_spec_zerok
 !
 ! real, allocatable, dimension(:,:) :: spectrum_2d, spectrumhel_2d
 ! real, allocatable, dimension(:,:) :: spectrum_2d_sum, spectrumhel_2d_sum
@@ -1620,6 +1621,13 @@ outer:  do ikz=1,nz
   if (lroot) then
     if (ip<10) print*,'Writing power spectrum ',sp &
          ,' to ',trim(datadir)//'/power_'//trim(sp)//'.dat'
+    !
+    !  set k=0 values to zero
+    !
+    if (lzero_spec_zerok) then
+      spectrum_sum(1)=0.
+      spectrumhel_sum(1)=0.
+    endif
     !
     spectrum_sum=.5*spectrum_sum
     open(1,file=trim(datadir)//'/power_'//trim(sp)//'.dat',position='append')
