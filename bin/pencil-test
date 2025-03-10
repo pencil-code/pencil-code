@@ -701,7 +701,7 @@ sub send_mail {
         my $plurals = ($nerrors<=1 ? '' : 's');
         $errmsg = "$nerrors error$plurals";
     } else {                    # most likely: lockfile exists
-        $errmsg = "There are errors";
+        $errmsg = "There are errors:\n".$nerrors."\n";
     }
 
     my $subject = "$errmsg from pencil-code autotest on $host";
