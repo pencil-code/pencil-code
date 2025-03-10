@@ -50,6 +50,7 @@ use constant QUIET       => 1;
 use constant LOCK_FAILED => 128; # return status if we can't get lock
 use Cwd;
 use File::Copy;
+use File::Compare;
 use POSIX qw(floor strftime);
 use Getopt::Long;
 use vars qw{ %failed $test_status }; # do we really need global vars here?
@@ -1370,6 +1371,44 @@ sub test_results {
             my_ok(0, 1, $msg, $dir, "results");
             return;
         }
+
+        # additional "reference_XYZ.out" versus "data/XYZ.dat" checks
+        my @refs = glob ("reference_*.out");
+        my ($ref_file, $cmp_file, @ref_lines, @cmp_lines, $ref_num, $cmp_num, @ref_values, @cmp_values, $ref_nv, $cmp_nv, $row, $col, $ref, $cmp);
+        foreach $ref_file (@refs) {
+            if ($ref_file !~ /^reference_(.*?)\.out$/s) { next; }
+            $cmp_file = "data/".$1.".dat";
+            if (!-r $ref_file || !-r $cmp_file) { next; } # data file does not exist
+            $cmp = compare ($ref_file, $cmp_file);
+            if ($cmp <= 0) { next; } # same content or error while reading
+            @ref_lines = read_values ($ref_file);
+            @cmp_lines = read_values ($cmp_file);
+            $ref_num = $#ref_lines;
+            $cmp_num = $#cmp_lines;
+            if ($ref_num != $cmp_num) {
+                my_ok(0, 1, "number of lines in reference and data of ".$cmp_file." is different (".$ref_num."!=".$cmp_num.")", $dir, "results");
+                return;
+            }
+            for ($row = 0; $row < $ref_num; $row++) {
+                @ref_values = eval ($ref_lines[$row]);
+                @cmp_values = eval ($cmp_lines[$row]);
+                $ref_nv = $#ref_values;
+                $cmp_nv = $#cmp_values;
+                if ($ref_nv != $cmp_nv) {
+                    my_ok(0, 1, "number of reference and data columns in line ".($row+1)." of ".$cmp_file." is different (".$ref_nv."!=".$cmp_nv.")", $dir, "results");
+                    return;
+                }
+                for ($col = 0; $col < $ref_nv; $col++) {
+                    $ref = $ref_values[$col];
+                    $cmp = $cmp_values[$col];
+                    if ($ref != $cmp) {
+                        my_ok(0, 1, "value column ".($col+1)." in line ".($row+1)." of ".$cmp_file." does not match the reference (".$ref."!=".$cmp.")", $dir, "results");
+                        return;
+                    }
+                }
+            }
+        }
+
         my_ok(0, 0, "", $dir, "results");
     }
 }
@@ -1481,6 +1520,22 @@ sub read_lines {
     }
     $_[0] = $msg;
     @lines;
+}
+# ---------------------------------------------------------------------- #
+sub read_values {
+# Read file an return list of non-empty values
+    my $file = shift;
+    my $msg = "";
+
+    my $data = join ("\n", read_lines ($file));
+    $data =~ s/[\t\r\f]+/ /gs;
+    $data =~ s/^ +//gm;
+    $data =~ s/ +$//gm;
+    $data =~ s/ +/,/gs;
+    $data = "[".$data."]";
+    $data =~ s/\n\s*/]\n[/gs;
+
+    return (split ("\n", $data));
 }
 # ---------------------------------------------------------------------- #
 sub test_rundir {
