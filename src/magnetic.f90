@@ -564,6 +564,8 @@ module Magnetic
   integer :: idiag_exabot=0     ! DIAG_DOC: $\int\Ev\times\Av\,dS|_{\rm bot}$
   integer :: idiag_exatop=0     ! DIAG_DOC: $\int\Ev\times\Av\,dS|_{\rm top}$
   integer :: idiag_exjm2=0      ! DIAG_DOC:
+! hongzhe: note emag is the integrated energy, whereas ekin is the volume average!
+!          the hydro counterpart of emag is ekintot
   integer :: idiag_emag=0       ! DIAG_DOC: $\int_V{1\over2\mu_0}\Bv^2\, dV$
   integer :: idiag_brms=0       ! DIAG_DOC: $\left<\Bv^2\right>^{1/2}$
   integer :: idiag_bfrms=0      ! DIAG_DOC: $\left<{\Bv'}^2\right>^{1/2}$
