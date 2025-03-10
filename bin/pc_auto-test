@@ -1386,23 +1386,23 @@ sub test_results {
             $ref_num = $#ref_lines;
             $cmp_num = $#cmp_lines;
             if ($ref_num != $cmp_num) {
-                my_ok(0, 1, "number of lines in reference and data of ".$cmp_file." is different (".$ref_num."!=".$cmp_num.")", $dir, "results");
+                my_ok(0, 1, "number of lines in reference and data of \"".$cmp_file."\" is different (".$ref_num." != ".$cmp_num.")", $dir, "results");
                 return;
             }
-            for ($row = 0; $row < $ref_num; $row++) {
-                @ref_values = eval ($ref_lines[$row]);
-                @cmp_values = eval ($cmp_lines[$row]);
+            for ($row = 0; $row <= $ref_num; $row++) {
+                eval ('@ref_values = '.$ref_lines[$row]);
+                eval ('@cmp_values = '.$cmp_lines[$row]);
                 $ref_nv = $#ref_values;
                 $cmp_nv = $#cmp_values;
                 if ($ref_nv != $cmp_nv) {
-                    my_ok(0, 1, "number of reference and data columns in line ".($row+1)." of ".$cmp_file." is different (".$ref_nv."!=".$cmp_nv.")", $dir, "results");
+                    my_ok(0, 1, "number of reference and data columns at line ".($row+1)." of \"".$cmp_file."\" is different (".$ref_nv." != ".$cmp_nv.")", $dir, "results");
                     return;
                 }
-                for ($col = 0; $col < $ref_nv; $col++) {
+                for ($col = 0; $col <= $ref_nv; $col++) {
                     $ref = $ref_values[$col];
                     $cmp = $cmp_values[$col];
                     if ($ref != $cmp) {
-                        my_ok(0, 1, "value column ".($col+1)." in line ".($row+1)." of ".$cmp_file." does not match the reference (".$ref."!=".$cmp.")", $dir, "results");
+                        my_ok(0, 1, "value in column ".($col+1)." at line ".($row+1)." of \"".$cmp_file."\" does not match the reference (".$ref." != ".$cmp.")", $dir, "results");
                         return;
                     }
                 }
@@ -1532,8 +1532,8 @@ sub read_values {
     $data =~ s/^ +//gm;
     $data =~ s/ +$//gm;
     $data =~ s/ +/,/gs;
-    $data = "[".$data."]";
-    $data =~ s/\n\s*/]\n[/gs;
+    $data = "(".$data.")";
+    $data =~ s/\n\s*/)\n(/gs;
 
     return (split ("\n", $data));
 }
