@@ -995,7 +995,7 @@ sub check_cmd_result {
         }
 
         # Check for a LOCK file that is in the way
-        if ($msg =~ /pc_run: found LOCK file/is) {
+        if ($msg =~ /^\s*pc_run:\s+found LOCK file([\s.]|$)/is) {
             my_ok(0, 1, "There is a LOCK file in the way! Please check if it can be removed.", $dir, $phase);
             return;
         }
