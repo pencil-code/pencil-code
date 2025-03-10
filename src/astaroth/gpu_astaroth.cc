@@ -1119,10 +1119,13 @@ extern "C" void initGPU()
 /***********************************************************************************************/
 #define PCLoad acPushToConfig
 MPI_Comm comm_pencil = MPI_COMM_NULL;
-void setupConfig(AcMeshInfo& config)
-{ 
+void modulepars(AcMeshInfo& config){
   // Enter basic parameters in config.
   #include "PC_modulepars.h"
+}
+void setupConfig(AcMeshInfo& config)
+{ 
+  modulepars(config);
   //TP: loads for non-cartesian derivatives
 #if TRANSPILATION
   PCLoad(config, AC_inv_cyl_r,rcyl_mn1);
@@ -1155,7 +1158,6 @@ void setupConfig(AcMeshInfo& config)
   {
           PCLoad(config, AC_coordinate_system, AC_CYLINDRICAL_COORDINATES);
   }
-
   PCLoad(config, AC_domain_decomposition, (int3) {nprocx,nprocy,nprocz});
   PCLoad(config, AC_ngrid, (int3){nxgrid,nygrid,nzgrid});
   PCLoad(config, AC_skip_single_gpu_optim, true);
@@ -1172,8 +1174,10 @@ void setupConfig(AcMeshInfo& config)
 // grid and geometry related parameters
 
   PCLoad(config,AC_ds,(AcReal3){dx,dy,dz});
-
+printf("ds %f %f %f \n",dx,dy,dz);
+fflush(stdout);
   PCLoad(config,AC_periodic_grid,lperi);
+  //PCLoad(config,AC_len,lxyz);
 
   // Enter physics related parameters in config.
 
@@ -1199,7 +1203,7 @@ void setupConfig(AcMeshInfo& config)
 void checkConfig(AcMeshInfo &config)
 {
  acLogFromRootProc(rank,"Check that config is correct\n");
- acLogFromRootProc(rank,"n[xyz]grid, d[xyz]: %d %d %d %.14f %.14f %.14f \n", nxgrid, nygrid, nzgrid, (double)dx, (double)dy, (double)dz);
+ acLogFromRootProc(rank,"d[xyz]: %.14f %.14f %.14f \n", dx, dy, dz);
 // acLogFromRootProc(rank,"rank= %d: l1, l2, n1, n2, m1, m2= %d %d %d %d %d %d \n", rank, l1, l2, n1, n2, m1, m2);
 // acLogFromRootProc(rank,"zlen= %.14f %.14f \n", config[AC_len].z, lxyz[2]);
  /*
@@ -1391,7 +1395,7 @@ extern "C" void reloadConfig()
   acCloseLibrary();
 #include "cmake_options.h"
   acCompile(cmake_options,mesh.info);
-  acLoadLibrary();
+  acLoadLibrary(rank == 0 ? stderr : NULL);
   acGridInit(mesh);
   acLogFromRootProc(rank, "Done setupConfig && acCompile\n");
   fflush(stdout);
