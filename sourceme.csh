@@ -54,8 +54,6 @@ if (! $?_sourceme) then		# called for the fist time?
                        $PENCIL_HOME/src/scripts \
                        $PENCIL_HOME/src/astaroth \
 		       $PENCIL_HOME/remesh/bin)
-		       $PENCIL_HOME/remesh/bin)
-    setenv PATH ${path}
 
     #  Set path for DX macros
     set _dxpath = "${PENCIL_HOME}/dx/macros:${PENCIL_HOME}/dx/macros/others"

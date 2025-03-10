@@ -471,6 +471,7 @@ subroutine timeloop(f,df,p)
 !  Time advance.
 !
     call time_step(f,df,p)
+    tdiagnos=t
 !
 !  If overlapping grids are used to get body-confined grid around the solids
 !  in the flow, call time step on these grids.
@@ -1025,6 +1026,7 @@ if (lroot) print*, 'memusage before initialize modules=', memusage()/1024., 'MBy
 !
 !  Save spectrum snapshot.
 !
+  tdiagnos=t
   if (dspec/=impossible) call powersnap(f)
 !
 !  Initialize pencils in the pencil_case.
