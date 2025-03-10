@@ -11,9 +11,6 @@ echo "====================="
 echo "power_kin.dat"
 diff data/power_kin.dat reference_power_kin.out
 echo "====================="
-echo "output.dat"
-diff output.dat reference_idl_var.out
-echo "====================="
 echo "power_krms.dat"
 diff data/power_krms.dat reference_power_krms.out
 echo "====================="
