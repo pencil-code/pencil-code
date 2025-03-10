@@ -549,7 +549,7 @@ outer:  do ikz=1,nz
       write(1,*) nk_truebin
       write(1,*) real(k2s(:nk_truebin))
     endif
-    write(1,*) t
+    write(1,*) tdiagnos
     write(1,power_format) spectrum_sum
     close(1)
   endif
@@ -654,7 +654,7 @@ outer:  do ikz=1,nz
          ,'to ',trim(datadir)//'/power'//trim(sp)//'_2d.dat'
     spectrum_sum=.5*spectrum_sum
     open(1,file=trim(datadir)//'/power'//trim(sp)//'_2d.dat',position='append')
-    write(1,*) t
+    write(1,*) tdiagnos
     write(1,power_format) spectrum_sum
     close(1)
   endif
@@ -1054,7 +1054,7 @@ outer:  do ikz=1,nz
 !
     endif
 !
-    write(1,*) t
+    write(1,*) tdiagnos
 !
   endif
 !
@@ -1693,7 +1693,7 @@ outer:  do ikz=1,nz
         write(1,'(i4,3p,8e10.2)') k, spectrum_sum(k)
       enddo
     else
-      write(1,*) t
+      write(1,*) tdiagnos
       write(1,power_format) spectrum_sum
     endif
     close(1)
@@ -1704,7 +1704,7 @@ outer:  do ikz=1,nz
         write(1,'(i4,3p,8e10.2)') k, spectrumhel_sum(k)
       enddo
     else
-      write(1,*) t
+      write(1,*) tdiagnos
       write(1,power_format) spectrumhel_sum
     endif
     close(1)
@@ -1722,7 +1722,7 @@ outer:  do ikz=1,nz
         enddo
         enddo
       else
-        write(1,*) t
+        write(1,*) tdiagnos
         write(1,power_format) cyl_spectrum_sum
       endif
       close(1)
@@ -1735,7 +1735,7 @@ outer:  do ikz=1,nz
         enddo
         enddo
       else
-        write(1,*) t
+        write(1,*) tdiagnos
         write(1,power_format) cyl_spectrumhel_sum
       endif
       close(1)
@@ -1964,7 +1964,7 @@ outer:  do ikz=1,nz
         write(1,'(i4,3p,8e10.2)') k, spectrum_sum(k)
       enddo
     else
-      write(1,*) t
+      write(1,*) tdiagnos
       write(1,power_format) spectrum_sum
     endif
     close(1)
@@ -1975,7 +1975,7 @@ outer:  do ikz=1,nz
         write(1,'(i4,3p,8e10.2)') k, spectrumhel_sum(k)
       enddo
     else
-      write(1,*) t
+      write(1,*) tdiagnos
       write(1,power_format) spectrumhel_sum
     endif
     close(1)
@@ -1989,7 +1989,7 @@ outer:  do ikz=1,nz
         write(1,'(i4,3p,8e10.2)') k, spectrum2_sum(k)
       enddo
     else
-      write(1,*) t
+      write(1,*) tdiagnos
       write(1,power_format) spectrum2_sum
     endif
     close(1)
@@ -2000,7 +2000,7 @@ outer:  do ikz=1,nz
         write(1,'(i4,3p,8e10.2)') k, spectrum2hel_sum(k)
       enddo
     else
-      write(1,*) t
+      write(1,*) tdiagnos
       write(1,power_format) spectrum2hel_sum
     endif
     close(1)
@@ -2192,7 +2192,7 @@ outer:  do ikz=1,nz
         write(1,'(i4,3p,8e10.2)') k, spectrum_sum(k)
       enddo
     else
-      write(1,*) t
+      write(1,*) tdiagnos
       write(1,power_format) spectrum_sum
     endif
     close(1)
@@ -2203,7 +2203,7 @@ outer:  do ikz=1,nz
         write(1,'(i4,3p,8e10.2)') k, spectrumhel_sum(k)
       enddo
     else
-      write(1,*) t
+      write(1,*) tdiagnos
       write(1,power_format) spectrumhel_sum
     endif
     close(1)
@@ -2387,7 +2387,7 @@ outer:  do ikz=1,nz
         write(1,'(i4,3p,8e10.2)') k, spectrum_sum(k)
       enddo
     else
-      write(1,*) t
+      write(1,*) tdiagnos
       write(1,power_format) spectrum_sum
     endif
     close(1)
@@ -2398,7 +2398,7 @@ outer:  do ikz=1,nz
         write(1,'(i4,3p,8e10.2)') k, spectrumhel_sum(k)
       enddo
     else
-      write(1,*) t
+      write(1,*) tdiagnos
       write(1,power_format) spectrumhel_sum
     endif
     close(1)
@@ -2579,7 +2579,7 @@ outer:  do ikz=1,nz
         write(1,'(i4,3p,8e10.2)') k, spectrum_sum(k)
       enddo
     else
-      write(1,*) t
+      write(1,*) tdiagnos
       write(1,power_format) spectrum_sum
     endif
     close(1)
@@ -2590,7 +2590,7 @@ outer:  do ikz=1,nz
         write(1,'(i4,3p,8e10.2)') k, spectrumhel_sum(k)
       enddo
     else
-      write(1,*) t
+      write(1,*) tdiagnos
       write(1,power_format) spectrumhel_sum
     endif
     close(1)
@@ -2855,7 +2855,7 @@ outer:  do ikz=1,nz
         write(1,'(i4,3p,8e10.2)') k, spectrum_sum(k)
       enddo
     else
-      write(1,*) t
+      write(1,*) tdiagnos
       if ( all(sp.ne.(/'Gab','Gan','GBb'/)) ) then
         write(1,power_format) spectrum_sum
       else
@@ -2871,7 +2871,7 @@ outer:  do ikz=1,nz
           write(1,'(i4,3p,8e10.2)') k, spectrumhel_sum(k)
         enddo
       else
-        write(1,*) t
+        write(1,*) tdiagnos
         if ( all(sp.ne.(/'Gab','Gan','GBb'/)) ) then
           write(1,power_format) spectrumhel_sum
         else
@@ -3201,20 +3201,20 @@ outer:  do ikz=1,nz
     else
        open(1,file=trim(datadir)//'/power_'//trim(sp)//'.dat',position='append')
     endif
-    write(1,*) t
+    write(1,*) tdiagnos
     write(1,power_format) spectrum_sum
     close(1)
     !
     if (lhorizontal_spectra) then
       open(1,file=trim(datadir)//'/power_hor_'//trim(sp)//'.dat',position='append')
-      write(1,*) t
+      write(1,*) tdiagnos
       write(1,power_format) hor_spectrum_sum
       close(1)
     endif
     !
     if (lvertical_spectra) then
       open(1,file=trim(datadir)//'/power_ver_'//trim(sp)//'.dat',position='append')
-      write(1,*) t
+      write(1,*) tdiagnos
       write(1,power_format) ver_spectrum_sum
       close(1)
     endif
@@ -3424,7 +3424,7 @@ outer:  do ikz=1,nz
       if (lroot.and.ip<10) print*, 'Writing power spectra of variable', sp, &
           'to ', trim(datadir)//'/power'//trim(sp)//trim(suffix)
       open(1,file=trim(datadir)//'/power'//trim(sp)//trim(suffix),position='append')
-      write(1,*) t
+      write(1,*) tdiagnos
 !
       if (lcomplex) then
         write(1,'(1p,8("(",e10.2,",",e10.2,")"))') spectrumx_sum/(nygrid*nzgrid)
@@ -3455,7 +3455,7 @@ outer:  do ikz=1,nz
         if (lroot.and.ip<10) print*, 'Writing power spectra of variable', sp, &
             'to ', trim(datadir)//'/power'//trim(sp)//trim(suffix)
         open(1,file=trim(datadir)//'/power'//trim(sp)//trim(suffix),position='append')
-        write(1,*) t
+        write(1,*) tdiagnos
         write(1,power_format) spectrumy_sum/(nxgrid*nzgrid)
         close(1)
       endif
@@ -3476,7 +3476,7 @@ outer:  do ikz=1,nz
         if (lroot.and.ip<10) print*,'Writing power spectra of variable', sp,  &
             'to ', trim(datadir)//'/power'//trim(sp)//trim(suffix)
         open(1,file=trim(datadir)//'/power'//trim(sp)//trim(suffix),position='append')
-        write(1,*) t
+        write(1,*) tdiagnos
         write(1,power_format) spectrumz_sum/(nxgrid*nygrid)
         close(1)
       endif
@@ -3714,7 +3714,7 @@ endsubroutine pdf
   !
   if (lroot) then
     open(1,file=trim(datadir)//'/pdf1d_ang_'//trim(sp)//'.dat',position='append')
-    write(1,*) t
+    write(1,*) tdiagnos
     write(1,*) pdf_ang_sum
     close(1)
   endif
@@ -3876,7 +3876,7 @@ endsubroutine pdf
     if (ip<10) print*,'Writing power spectra of variable',trim(sp) &
          ,'to ',trim(datadir)//'/power_phi'//trim(sp)//'.dat'
     open(1,file=trim(datadir)//'/power_phi'//trim(sp)//'.dat',position='append')
-    write(1,*) t
+    write(1,*) tdiagnos
 !
     if (lspherical_coords) then
       spectrum_sum=.5*spectrum_sum
@@ -4022,12 +4022,12 @@ endsubroutine pdf
      spectrum_sum=.5*spectrum_sum
      spectrumhel_sum=0.5*spectrumhel_sum
      open(1,file=trim(datadir)//'/power_phi_'//trim(sp)//'.dat',position='append')
-     write(1,*) t
+     write(1,*) tdiagnos
      write(1,power_format) spectrum_sum
      close(1)
 !
      open(1,file=trim(datadir)//'/powerhel_phi_'//trim(sp)//'.dat',position='append')
-     write(1,*) t
+     write(1,*) tdiagnos
      write(1,power_format) spectrumhel_sum
      close(1)
    endif
@@ -4124,7 +4124,7 @@ endsubroutine pdf
          ,'to ',trim(datadir)//'/power'//trim(sp)//'.dat'
     spectrum_sum=.5*spectrum_sum
     open(1,file=trim(datadir)//'/power'//trim(sp)//'.dat',position='append')
-    write(1,*) t
+    write(1,*) tdiagnos
     write(1,power_format) spectrum_sum
     close(1)
   endif
@@ -4352,19 +4352,19 @@ endsubroutine pdf
     if (lroot) then
       if (ip<10) print*,'Writing two point correlations to',trim(datadir)//'/polarspec_.dat'
       open(1,file=trim(datadir)//'/polarspec_lcoeff_a_'//trim(sp)//'.dat',position='append')
-      write(1,*) t
+      write(1,*) tdiagnos
       do i=1,legendre_lmax+1; do ikr=1,nk
         write(1,'(2i4,3p,8e10.2)') i-1,ikr-1,legendre_al_a_sum(i,ikr)
       enddo; enddo
       close(1)
       open(1,file=trim(datadir)//'/polarspec_lcoeff_b_'//trim(sp)//'.dat',position='append')
-      write(1,*) t
+      write(1,*) tdiagnos
       do i=1,legendre_lmax+1; do ikr=1,nk
         write(1,'(2i4,3p,8e10.2)') i-1,ikr-1,legendre_al_b_sum(i,ikr)
       enddo; enddo
       close(1)
       open(1,file=trim(datadir)//'/polarspec_lcoeff_c_'//trim(sp)//'.dat',position='append')
-      write(1,*) t
+      write(1,*) tdiagnos
       do i=1,legendre_lmax+1; do ikr=1,nk
         write(1,'(2i4,3p,8e10.2)') i-1,ikr-1,legendre_al_c_sum(i,ikr)
       enddo; enddo
@@ -4581,26 +4581,26 @@ endsubroutine pdf
       !  energy and helicity spectra in polar coordinates
       !  in the form (kr,mu,dmu,spec), kr=0,1,2,...
       open(1,file=trim(datadir)//'/polarspec_'//trim(sp)//'.dat',position='append')
-      write(1,*) t
+      write(1,*) tdiagnos
       do ikr=1,nk; do ikmu=1,nmu(ikr)
         write(1,'(i4,2p,8e10.2,3p,8e10.2,3p,8e10.2)') ikr-1,kmu(ikr,ikmu),dmu(ikr,ikmu),polar_spec_sum(ikr,ikmu)
       enddo; enddo
       close(1)
       open(1,file=trim(datadir)//'/polarspechel_'//trim(sp)//'.dat',position='append')
-      write(1,*) t
+      write(1,*) tdiagnos
       do ikr=1,nk; do ikmu=1,nmu(ikr)
         write(1,'(i4,2p,8e10.2,3p,8e10.2,3p,8e10.2)') ikr-1,kmu(ikr,ikmu),dmu(ikr,ikmu),polar_spechel_sum(ikr,ikmu)
       enddo; enddo
       close(1)
       !  legendre coefficients a_l, in the form (l,kr,a_l), l,kr=0,1,2,...,
       open(1,file=trim(datadir)//'/polarspec_lcoeff_'//trim(sp)//'.dat',position='append')
-      write(1,*) t
+      write(1,*) tdiagnos
       do i=1,legendre_lmax+1; do ikr=1,nk
         write(1,'(2i4,3p,8e10.2)') i-1,ikr-1,legendre_al_sum(i,ikr)
       enddo; enddo
       close(1)
       open(1,file=trim(datadir)//'/polarspechel_lcoeff_'//trim(sp)//'.dat',position='append')
-      write(1,*) t
+      write(1,*) tdiagnos
       do i=1,legendre_lmax+1; do ikr=1,nk
         write(1,'(2i4,3p,8e10.2)') i-1,ikr-1,legendre_alhel_sum(i,ikr)
       enddo; enddo
@@ -4744,7 +4744,7 @@ endsubroutine pdf
         write(1,'(i4,3p,8e10.2)') k, spectrum_sum(k)
       enddo
     else
-      write(1,*) t
+      write(1,*) tdiagnos
       write(1,power_format) spectrum_sum
     endif
     close(1)
@@ -4755,7 +4755,7 @@ endsubroutine pdf
         write(1,'(i4,3p,8e10.2)') k, spectrumhel_sum(k)
       enddo
     else
-      write(1,*) t
+      write(1,*) tdiagnos
       write(1,power_format) spectrumhel_sum
     endif
     close(1)
@@ -5008,7 +5008,7 @@ endsubroutine pdf
         write(1,'(i4,3p,8e10.2)') k, spectrum_sum(k)
       enddo
     else
-      write(1,*) t
+      write(1,*) tdiagnos
       write(1,power_format) spectrum_sum
     endif
     close(1)
@@ -5019,7 +5019,7 @@ endsubroutine pdf
         write(1,'(i4,3p,8e10.2)') k, spectrumhel_sum(k)
       enddo
     else
-      write(1,*) t
+      write(1,*) tdiagnos
       write(1,power_format) spectrumhel_sum
     endif
     close(1)
@@ -5035,7 +5035,7 @@ endsubroutine pdf
         write(1,'(i4,3p,8e10.2)') ikx, correlation_sum(ikx)
       enddo
     else
-      write(1,*) t
+      write(1,*) tdiagnos
       write(1,power_format) correlation_sum
     endif
     close(1)
@@ -5046,7 +5046,7 @@ endsubroutine pdf
         write(1,'(i4,3p,8e10.2)') ikx, correlationhel_sum(ikx)
       enddo
     else
-      write(1,*) t
+      write(1,*) tdiagnos
       write(1,power_format) correlationhel_sum
     endif
     close(1)
@@ -5063,7 +5063,7 @@ endsubroutine pdf
         enddo
         enddo
       else
-        write(1,*) t
+        write(1,*) tdiagnos
         write(1,power_format) cyl_spectrum_sum
       endif
       close(1)
@@ -5076,7 +5076,7 @@ endsubroutine pdf
         enddo
         enddo
       else
-        write(1,*) t
+        write(1,*) tdiagnos
         write(1,power_format) cyl_spectrumhel_sum
       endif
       close(1)
@@ -5334,36 +5334,36 @@ endsubroutine pdf
   if (lroot) then
     !
     open(1,file=trim(datadir)//'/powercor_scl_auto_'//trim(sp)//'.dat',position='append')
-    write(1,*) t
+    write(1,*) tdiagnos
     write(1,power_format) spectrum_sum
     close(1)
     !
     open(1,file=trim(datadir)//'/powercor_scl_'//trim(sp)//'.dat',position='append')
-    write(1,*) t
+    write(1,*) tdiagnos
     write(1,power_format) spectrumhel_sum
     close(1)
     !
     !  real-space correlation
     !
     open(1,file=trim(datadir)//'/correlation_scl_auto_'//trim(sp)//'.dat',position='append')
-    write(1,*) t
+    write(1,*) tdiagnos
     write(1,power_format) correlation_sum
     close(1)
     !
     open(1,file=trim(datadir)//'/correlation_scl_'//trim(sp)//'.dat',position='append')
-    write(1,*) t
+    write(1,*) tdiagnos
     write(1,power_format) correlationhel_sum
     close(1)
     !
     if (lcylindrical_spectra) then
       !
       open(1,file=trim(datadir)//'/cyl_powercor_scl_auto_'//trim(sp)//'.dat',position='append')
-      write(1,*) t
+      write(1,*) tdiagnos
       write(1,power_format) cyl_spectrum_sum
       close(1)
       !
       open(1,file=trim(datadir)//'/cyl_powercor_scl_'//trim(sp)//'.dat',position='append')
-      write(1,*) t
+      write(1,*) tdiagnos
     write(1,power_format) cyl_spectrumhel_sum
       close(1)
     endif
@@ -5598,27 +5598,27 @@ endsubroutine pdf
 !
   if (lroot) then
     open(1,file=trim(datadir)//'/Iv_bcc_'//trim(sp)//'.dat',position='append')
-    write(1,*) t
+    write(1,*) tdiagnos
     write(1,*) correl_sum(1,:)
     close(1)
     open(1,file=trim(datadir)//'/Iv_bcs_'//trim(sp)//'.dat',position='append')
-    write(1,*) t
+    write(1,*) tdiagnos
     write(1,*) correl_sum(2,:)
     close(1)
     open(1,file=trim(datadir)//'/Iv_spc_'//trim(sp)//'.dat',position='append')
-    write(1,*) t
+    write(1,*) tdiagnos
     write(1,*) correl_sum(3,:)
     close(1)
     open(1,file=trim(datadir)//'/Iv_sps_'//trim(sp)//'.dat',position='append')
-    write(1,*) t
+    write(1,*) tdiagnos
     write(1,*) correl_sum(4,:)
     close(1)
     open(1,file=trim(datadir)//'/power_'//trim(sp)//'.dat',position='append')
-    write(1,*) t
+    write(1,*) tdiagnos
     write(1,*) spectrum_sum
     close(1)
     open(1,file=trim(datadir)//'/Iv_bc_'//trim(sp)//'.dat',position='append')
-    write(1,*) t
+    write(1,*) tdiagnos
     write(1,*) Iv
     close(1)
   endif
@@ -5810,11 +5810,11 @@ endsubroutine pdf
     !
     if (lroot .and. t>=tout_min .and. t<=tout_max) then
       open(1,file=trim(datadir)//'/fft3dvec_'//trim(sp2)//'_'//trim(sp)//'_'//trim(spxyz)//'_re.dat',position='append')
-      write(1,*) t
+      write(1,*) tdiagnos
       write(1,'(1p,8e10.2)') fft_sum(1,:,:,:)
       close(1)
       open(1,file=trim(datadir)//'/fft3dvec_'//trim(sp2)//'_'//trim(sp)//'_'//trim(spxyz)//'_im.dat',position='append')
-      write(1,*) t
+      write(1,*) tdiagnos
       write(1,'(1p,8e10.2)') fft_sum(2,:,:,:)
       close(1)
     endif
@@ -6064,7 +6064,7 @@ endsubroutine pdf
     if (ip<10) print*,'Writing magnetic energy or helicity transfer rate to ', &
         trim(datadir)//'/power_transfer_mag_'//trim(sp)//'.dat'
     open(1,file=trim(datadir)//'/power_transfer_mag_'//trim(sp)//'.dat',position='append')
-    write(1,*) t
+    write(1,*) tdiagnos
     write(1,power_format) Tpq_sum
     close(1)
   endif
