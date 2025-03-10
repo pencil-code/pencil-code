@@ -1368,9 +1368,9 @@ sub test_results {
             $msg .= "\n";
             $msg .= join("  \n", 'Got:', read_lines($ts_file));
             my_ok(0, 1, $msg, $dir, "results");
-        } else {
-            my_ok(0, 0, "", $dir, "results");
+            return;
         }
+        my_ok(0, 0, "", $dir, "results");
     }
 }
 # ---------------------------------------------------------------------- #
