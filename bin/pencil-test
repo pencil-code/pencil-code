@@ -701,10 +701,10 @@ sub send_mail {
         my $plurals = ($nerrors<=1 ? '' : 's');
         $errmsg = "$nerrors error$plurals";
     } else {                    # most likely: lockfile exists
-        $errmsg = "There are errors:\n".$nerrors;
+        $errmsg = "There are errors ".$nerrors;
     }
 
-    my $subject = $errmsg."\nfrom pencil-code autotest on\n$host";
+    my $subject = $errmsg." from PC autotest on $host";
 
     # Add Reply-To: field if we have enough information
     my $reply_to = undef;
