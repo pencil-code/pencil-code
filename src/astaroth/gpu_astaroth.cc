@@ -1388,8 +1388,6 @@ extern "C" void reloadConfig()
   acGridSynchronizeStream(STREAM_ALL);
   acDeviceUpdate(acGridGetDevice(), mesh.info);
   acGridSynchronizeStream(STREAM_ALL);
-//TP: put on comment before Matthias commits acCloseLibrary
-/**
 #if AC_RUNTIME_COMPILATION
   acGridQuit();
   acCloseLibrary();
@@ -1400,7 +1398,6 @@ extern "C" void reloadConfig()
   acLogFromRootProc(rank, "Done setupConfig && acCompile\n");
   fflush(stdout);
 #endif
-**/
 }
 /***********************************************************************************************/
 extern "C" void loadFarray()
