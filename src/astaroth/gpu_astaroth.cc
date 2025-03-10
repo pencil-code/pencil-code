@@ -1174,8 +1174,6 @@ void setupConfig(AcMeshInfo& config)
 // grid and geometry related parameters
 
   PCLoad(config,AC_ds,(AcReal3){dx,dy,dz});
-printf("ds %f %f %f \n",dx,dy,dz);
-fflush(stdout);
   PCLoad(config,AC_periodic_grid,lperi);
   //TP: Astaroth has default formula for AC_len but we want to make sure AC_len = lxyz, in case the Astaroth formula does not cover everything like non-equidistant grids
   PCLoad(config,AC_len,lxyz);
