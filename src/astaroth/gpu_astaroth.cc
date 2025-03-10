@@ -1177,7 +1177,8 @@ void setupConfig(AcMeshInfo& config)
 printf("ds %f %f %f \n",dx,dy,dz);
 fflush(stdout);
   PCLoad(config,AC_periodic_grid,lperi);
-  //PCLoad(config,AC_len,lxyz);
+  //TP: Astaroth has default formula for AC_len but we want to make sure AC_len = lxyz, in case the Astaroth formula does not cover everything like non-equidistant grids
+  PCLoad(config,AC_len,lxyz);
 
   // Enter physics related parameters in config.
 
