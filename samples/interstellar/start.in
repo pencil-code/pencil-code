@@ -3,7 +3,7 @@
 ! Initialisation parameters for interstellar
 !
 &init_pars
-  cvsid="c25e24e7c"
+  cvsid="20a96485a"
   unit_length=3.08567758e21, unit_velocity=9.778122994895071e4
   unit_density=1.6737236e-24
   xyz0=-0.032,-0.032,-0.398
