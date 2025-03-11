@@ -471,7 +471,7 @@ subroutine timeloop(f,df,p)
 !  Time advance.
 !
     call time_step(f,df,p)
-    tdiagnos=t
+!    tdiagnos=t
 !
 !  If overlapping grids are used to get body-confined grid around the solids
 !  in the flow, call time step on these grids.
@@ -1026,7 +1026,7 @@ if (lroot) print*, 'memusage before initialize modules=', memusage()/1024., 'MBy
 !
 !  Save spectrum snapshot.
 !
-  tdiagnos=t
+!  tdiagnos=t
   if (dspec/=impossible) call powersnap(f)
 !
 !  Initialize pencils in the pencil_case.
@@ -1112,40 +1112,6 @@ if (lroot) print*, 'memusage before initialize modules=', memusage()/1024., 'MBy
 !$  endif
 !$omp barrier
 !$omp end parallel
-!
-!  Do exit when timestep has become too short.
-!  This may indicate an MPI communication problem, so the data are useless
-!  and won't be saved!
-!
-    if ((it<nt) .and. (dt<dtmin)) then
-      if (lroot) write(*,*) ' Time step has become too short: dt = ', dt
-      save_lastsnap=.false.
-      exit Time_loop
-    endif
-!
-!  Exit do loop if wall_clock_time has exceeded max_walltime.
-!
-    if (max_walltime>0.0) then
-      if (lroot.and.(wall_clock_time>max_walltime)) timeover=.true.
-      call mpibcast_logical(timeover,comm=MPI_COMM_WORLD)
-      if (timeover) then
-        if (lroot) then
-          print*
-          print*, 'Maximum walltime exceeded'
-        endif
-        exit Time_loop
-      endif
-    endif
-!
-!  Fatal errors sometimes occur only on a specific processor. In that case all
-!  processors must be informed about the problem before the code can stop.
-!
-    call fatal_error_local_collect
-    call timing('run','at the end of Time_loop',INSTRUCT='finalize')
-!
-    it=it+1
-    headt=.false.
-  enddo Time_loop
 !
   if (lroot) then
 !
