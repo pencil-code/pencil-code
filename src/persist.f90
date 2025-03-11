@@ -171,8 +171,7 @@ module Persist
         case (id_record_TIME_STEP)
           if (dt0==0) then
             done=read_persist ('TIME_STEP', dtmp)
-            if (.not.done) dt=abs(dtmp)
-            if (lgpu.and.dtmp<0) dt0=-dtmp
+            if (.not.done) dt0=dtmp
           endif
         case (id_record_EPS_RKF)
           if (eps_rkf0==0) then
@@ -220,11 +219,10 @@ module Persist
       endif
 !
       if (dt0==0.) then
-        dtmp=0.
         if (read_persist ('TIME_STEP', dtmp)) then
           call warning('input_persist_general_by_label','no persistent value of dt found')
         else
-          dt=dtmp
+          dt0=dtmp
         endif
       endif
 !

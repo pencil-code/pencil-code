@@ -1,0 +1,10 @@
+cp data/time_series.dat reference.out
+cp data/xyaverages.dat reference_xyaverages.out
+cp data/powerhel_mag.dat reference_powerhel_mag.out
+cp data/powerhel_kin.dat reference_powerhel_kin.out
+cp data/power_kin.dat reference_power_kin.out
+cp data/power_mag.dat reference_power_mag.out
+cp data/poweru.dat reference_poweru.out
+cp data/power_krms.dat reference_power_krms.out
+cp data/power_lr.dat reference_power_lr.out
+cp data/proc0/zaverages.dat reference_proc0_zaverages.out

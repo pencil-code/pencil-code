@@ -14,7 +14,6 @@ module Timestep
   real, parameter :: safety      =  0.95
   real            :: errcon, dt_next, dt_increase, dt_decrease
   real, dimension(mvar) :: farraymin
-  logical :: fixed_dt=.false.
 !
   contains
 !
@@ -34,31 +33,21 @@ module Timestep
                      'Runge-Kutta-Fehlberg itorder is 3: set to 5 for higher accuracy')
       endif
 !
-      if (dt0>0.) then
-        dt=dt0
-      elseif (dt0<0.) then
-        fixed_dt=.true.
-        dt=-dt0
-      else
-        if (dt==0) then
-          call warning('initialize_timestep','dt=0 not appropriate for Runge-Kutta-Fehlberg'// &
-                     'set to dt_epsi='//trim(rtoa(dt_epsi)))
-          dt=dt_epsi
+      ldt = (dt==0.)
+      if (ldt) then
+        if (dt0==0.) then
+          dt = dt_epsi
+        else
+          dt = dt0
         endif
       endif
+      lcourant_dt=.false.
 !
       if (eps_rkf0/=0.) eps_rkf=eps_rkf0
 !
-!  ldt is set after read_persistent in rsnap, so dt0==0 used to read,
-!  but ldt=F for write
-!
-      ldt=(dt==0.)
-      !overwrite the persistent time_step from dt0 in run.in if dt
-      !too high to initialize run
       dt_next=dt
       dt_increase=-1./(itorder+dtinc)
       dt_decrease=-1./(itorder-dtdec)
-      lcourant_dt=.false.
       num_substeps = itorder
 !
     endsubroutine initialize_timestep
@@ -116,7 +105,7 @@ module Timestep
           call rkck3(f, df, p, errmax)
         endif
         ! Step succeeded so exit
-        if (errmax <= 1.or.fixed_dt) exit
+        if (errmax <= 1.or..not.ldt) exit
         ! If f not to be stored for reiteration errmax constraint below must be removed TBA
         if (.not.lreiterate.and.errmax<=1.75) exit
         ! Step didn't succeed so decrease the time step
@@ -151,7 +140,7 @@ module Timestep
 !
 ! Time step to try next time
 !
-      if (.not. fixed_dt) then
+      if (ldt) then
         if (lreiterate) then
           dt_next = dt*errmax**dt_increase
         else

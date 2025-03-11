@@ -3698,7 +3698,7 @@ mn_loop:do n=n1,n2
 !  Broadcast maxlnTT from remnant to all processors so all take the same path
 !  after these checks.
 !
-if (lroot) print*, "SNR%indx%iproc:",SNR%indx%iproc
+!if (lroot) print*, "SNR%indx%iproc:",SNR%indx%iproc
       if (lSN_eth.or.lSN_coolingmass) then
         mmpi=maxlnTT
         call mpiallreduce_max(mmpi,maxlnTT)

@@ -117,14 +117,13 @@ module Timestep
 !
       if (eps_rkf0/=0.) eps_rkf=eps_rkf0
 !
-      if (dt0 < 0.) dt = 0
-      if (lgpu.and.dt0>0.) then
-        ldt = .true.
-        dt=dt0
-        dt0=0.
-      else
-        ldt = (dt==0.)
-        dt = abs(dt0)
+      ldt = (dt==0.)
+      if (ldt) then
+        if (dt0==0.) then
+          dt = dt_epsi
+        else
+          dt = dt0
+        endif
       endif
       lcourant_dt=.false.
 !
@@ -159,6 +158,7 @@ module Timestep
 !
 !  Determine a lower bound for each variable j by which to normalise the error
 !
+      dtdiagnos = dt
       if (.not.lgpu) then
         do j=1,mvar
           farraymin(j) = max(dt_ratio*maxval(abs(f(l1:l2,m1:m2,n1:n2,j))),dt_epsi)
