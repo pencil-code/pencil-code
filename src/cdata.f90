@@ -475,7 +475,7 @@ module Cdata
   integer :: nnamez=0,nnamey=0,nnamex=0,nnamer=0
   integer :: nname_sound=0, ncoords_sound=0
   integer :: nr_directions=1
-  real :: tdiagnos,t1ddiagnos,t2davgfirst
+  real :: tdiagnos,dtdiagnos,t1ddiagnos,t2davgfirst,eps_rkf_diagnos
   integer, parameter :: mname=100
   real, dimension (mname) :: fweight=0.0
   integer, dimension(:)   , allocatable :: itype_name
