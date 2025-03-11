@@ -22,5 +22,6 @@ GRAVITY      =   gravity_simple
 FORCING      = noforcing
 SHEAR        =   shear
 
-POWER        = nopower_spectrum
+FOURIER      =   fourier_fftpack
+POWER        =   power_spectrum
 REAL_PRECISION = double

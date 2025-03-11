@@ -4,18 +4,20 @@
 !
 &run_pars
   cvsid="c25e24e7c"
-  nt=5, it1=1, isave=1000, it1d=5000, itorder=4, tmax=0.005
+  nt=5, it1=1, isave=1000, itorder=4, tmax=0.005
   dt_epsi=1e-9, dtdec=0.5, dtinc=0.5, dt_ratio=1e-7, dtmin=1e-12, dt0=-1e-8
   leps_fixed=T
   eps_rkf0=0.001
   timestep_scaling=8*"rel_err"
-  !dsnap=.001, dvid=.00025, slice_position='m'
   bcz = 9*'s'
   ip=1963
   lpencil_check=T
   lpencil_check_small=T
   lshock_heat=F
   lbidiagonal_derij=F  !(use the slightly more accurate formulation for derij)
+  !! too high diagnostic cadence for auto-test purposes
+  d1davg=2e-9, dvid=2e-9, slice_position='m'
+  oned=T, lspec_start=T, dspec=2e-9, ou_spec=T, ab_spec=T !(for energy spectra)
 /
 &eos_run_pars
 /
@@ -48,8 +50,9 @@
 &interstellar_run_pars
 !! adjust SN radius above rfactor_SN for diffuse ISM
   lSN_scale_rad=T
+  ltrim_profile=T
   N_mass=60.0
-  rfactor_SN=2.5
+  rfactor_SN=1.5
   lSN_autofrackin=F
   lSN_coolingmass=F
 !! override persistent variables read in from varfile
@@ -72,4 +75,6 @@
   shock_div_pow=1.75
   dtfactor=0.2!2.5e-2
   con_bias=0.05
+/
+&power_spectrum_run_pars
 /
