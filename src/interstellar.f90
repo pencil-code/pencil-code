@@ -539,7 +539,7 @@ module Interstellar
       f(:,:,:,icooling)=0.0
       f(:,:,:,inetheat)=0.0
 !
-      if (lroot) print"(Fred1x,'initialize_interstellar: t_next_SNI =',e15.8)",t_next_SNI
+      if (lroot) print"(1x,'initialize_interstellar: t_next_SNI =',e15.8)",t_next_SNI
 !
       if (lroot.and.luniform_zdist_SNI) &
           print*,'initialize_interstellar: using UNIFORM z-distribution of SNI'
