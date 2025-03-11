@@ -1279,6 +1279,8 @@ extern "C" void copyVBApointers(AcReal **in, AcReal **out)
 void
 testBCs();     // forward declaration
 /***********************************************************************************************/
+extern "C" void loadFarray(); // forward declaration
+/***********************************************************************************************/
 extern "C" void reloadConfig(); // forward declaration
 
 void
@@ -1397,6 +1399,8 @@ reloadConfig()
   acDeviceUpdate(acGridGetDevice(), mesh.info);
   acGridSynchronizeStream(STREAM_ALL);
 #if AC_RUNTIME_COMPILATION
+  //TP: if quitting grid have to safe the current values of the vtxbufs since the device arrays are freed!
+  copyFarray(mesh.vertex_buffer[0]);
   acGridQuit();
   acCloseLibrary();
 #include "cmake_options.h"
@@ -1405,12 +1409,14 @@ reloadConfig()
   acGridInit(mesh);
   acLogFromRootProc(rank, "Done setupConfig && acCompile\n");
   fflush(stdout);
-#endif
   //TP: this is important that we don't overwrite the output buffer in middle of a timestep when the output buffer holds some meaning!
   autotune_all_integration_substeps();
+  //TP: restore the vtxbuf values before quitting grid
+  loadFarray();
+#endif
 }
 /***********************************************************************************************/
-extern "C" void loadFarray()
+void loadFarray()
 {
   /**
   if (has_nans(mesh)){
