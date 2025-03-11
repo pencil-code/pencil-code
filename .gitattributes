@@ -3257,7 +3257,6 @@ samples/helical-MHDturb/reference_power_mag.out -text
 samples/helical-MHDturb/reference_powerhel_kin.out -text
 samples/helical-MHDturb/reference_powerhel_mag.out -text
 samples/helical-MHDturb/reference_poweru.out -text
-samples/helical-MHDturb/reference_proc0_zaverages.out -text
 samples/helical-MHDturb/reference_xyaverages.out -text
 samples/helical-MHDturb/run.in -text
 samples/helical-MHDturb/src/Makefile.local -text

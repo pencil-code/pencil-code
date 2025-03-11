@@ -1113,6 +1113,40 @@ if (lroot) print*, 'memusage before initialize modules=', memusage()/1024., 'MBy
 !$omp barrier
 !$omp end parallel
 !
+!  Do exit when timestep has become too short.
+!  This may indicate an MPI communication problem, so the data are useless
+!  and won't be saved!
+!
+    if ((it<nt) .and. (dt<dtmin)) then
+      if (lroot) write(*,*) ' Time step has become too short: dt = ', dt
+      save_lastsnap=.false.
+      exit Time_loop
+    endif
+!
+!  Exit do loop if wall_clock_time has exceeded max_walltime.
+!
+    if (max_walltime>0.0) then
+      if (lroot.and.(wall_clock_time>max_walltime)) timeover=.true.
+      call mpibcast_logical(timeover,comm=MPI_COMM_WORLD)
+      if (timeover) then
+        if (lroot) then
+          print*
+          print*, 'Maximum walltime exceeded'
+        endif
+        exit Time_loop
+      endif
+    endif
+!
+!  Fatal errors sometimes occur only on a specific processor. In that case all
+!  processors must be informed about the problem before the code can stop.
+!
+    call fatal_error_local_collect
+    call timing('run','at the end of Time_loop',INSTRUCT='finalize')
+!
+    it=it+1
+    headt=.false.
+  enddo Time_loop
+!
   if (lroot) then
 !
     time2=mpiwtime()

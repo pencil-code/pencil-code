@@ -26,9 +26,3 @@ echo "====================="
 echo "xyaverages.dat"
 diff data/xyaverages.dat reference_xyaverages.out
 echo "====================="
-echo "xy.h5"
-diff data/averages/xy.h5 reference_averages_xy.h5
-echo "====================="
-echo "rho_yz.h5"
-diff data/slices/rho_yz.h5 reference_slices_rho_yz.h5
-echo "====================="

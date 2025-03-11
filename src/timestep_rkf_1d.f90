@@ -16,7 +16,7 @@ module Timestep
   real, parameter :: dt_increase      = -0.20
   real            :: errcon, dt_next
   real, dimension(mvar) :: farraymin
-  logical :: fixed_dt=.false.
+  logical :: lcourant_dt
 !
   contains
 !
@@ -26,20 +26,15 @@ module Timestep
       use Messages, only: warning
       use General, only: rtoa
 !
-      ldt = .false.
-!
-      if (dt0>0.) then
-        dt=dt0
-      elseif (dt0<0.) then
-        fixed_dt=.true.
-        dt=-dt0
+      ldt = (dt==0.)
+      if (ldt.and.dt0==0.) then
+        dt = dtmin
       else
-        if (dt==0) then
-          call warning('initialize_timestep','dt=0 not appropriate for Runge-Kutta-Fehlberg'// &
-                     'set to dt_epsi='//trim(rtoa(dt_epsi)))
-          dt=dt_epsi
-        endif
+        dt = dt0
       endif
+      !FRED after merger ldt used for adaptive time step and lcourant_dt=F
+      lcourant_dt=ldt
+      ldt=.false.
 !
       if (eps_rkf0/=0.) eps_rkf=eps_rkf0
       dt_next=dt
