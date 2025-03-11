@@ -193,6 +193,7 @@ module Mpicomm
 !$    integer :: thread_support
       integer :: iapp=0         ! (KIND=ikind8) ?
       integer :: flag
+      integer :: nprocs_penc
 !
 !$    call MPI_INIT_THREAD(MPI_THREAD_MULTIPLE,thread_support,mpierr)
 !$    if (thread_support < MPI_THREAD_MULTIPLE) then
@@ -222,6 +223,7 @@ module Mpicomm
 ! If there is only one application, iproc is unchanged and MPI_COMM_PENCIL=MPI_COMM_WORLD.
 !
       call MPI_COMM_SPLIT(MPI_COMM_WORLD, iapp, iproc, MPI_COMM_PENCIL, mpierr)
+      call MPI_COMM_SIZE(MPI_COMM_PENCIL, nprocs_penc, mpierr)
       call MPI_COMM_RANK(MPI_COMM_PENCIL, iproc, mpierr)
 !
       lroot = (iproc==root)                              ! refers to root of MPI_COMM_PENCIL!
@@ -264,6 +266,14 @@ module Mpicomm
         if (lroot) then
           print*, 'Laid out for ncpus (per grid) = ', ncpus, &
                   ', but nprocx*nprocy*nprocz=', nprocx*nprocy*nprocz
+        endif
+        call stop_it('mpicomm_init')
+      endif
+
+      if (ncpus/=nprocs_penc) then
+        if (lroot) then
+          print*, 'Laid out for ncpus (per grid) = ', ncpus, &
+                  ', but called with nprocs_penc=', nprocs_penc
         endif
         call stop_it('mpicomm_init')
       endif
