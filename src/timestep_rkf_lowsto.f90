@@ -25,6 +25,7 @@ module Timestep
   real            :: dt_increase, dt_decrease, errmax, errmaxs
   real            :: safety=0.95
   integer         :: itter
+  logical :: lcourant_dt
 !
   contains
 !***********************************************************************
@@ -117,16 +118,19 @@ module Timestep
 !
       if (eps_rkf0/=0.) eps_rkf=eps_rkf0
 !
-      if (dt0 < 0.) dt = 0
-      if (lgpu.and.dt0>0.) then
-        ldt = .true.
-        dt=dt0
-        dt0=0.
-      else
-        ldt = (dt==0.)
-        dt = abs(dt0)
+      ldt = (dt==0.)
+      if (ldt) then
+        if (dt0==0.) then
+          dt = dt_epsi
+        else
+          dt = dt0
+        endif
       endif
-      !lcourant_dt=.false.
+      !FRED after merger ldt used for adaptive time step and lcourant_dt=F
+      lcourant_dt=ldt
+      ldt=.false.
+      dtdiagnos = dt
+if (lroot) print*,"lcourant_dt",lcourant_dt,"dt",dt
 !
     endsubroutine initialize_timestep
 !***********************************************************************
@@ -158,6 +162,7 @@ module Timestep
 !
 !  Determine a lower bound for each variable j by which to normalise the error
 !
+      dt = dtdiagnos
       if (.not.lgpu) then
         do j=1,mvar
           farraymin(j) = max(dt_ratio*maxval(abs(f(l1:l2,m1:m2,n1:n2,j))),dt_epsi)
@@ -272,7 +277,8 @@ module Timestep
 !
 !  Check how much the maximum error satisfies the defined accuracy threshold
 !
-      if (itorder>2.and.ldt) then
+      !FRED after merger ldt used for adaptive time step to replace lcourant_dt here 
+      if (itorder>2.and.lcourant_dt) then
         do j=1,mvar
           do m=m1,m2; do n=n1,n2
             select case (timestep_scaling(j))
@@ -301,18 +307,19 @@ module Timestep
         errmaxs=errmaxs/eps_rkf
 !
         call mpiallreduce_max(errmaxs,errmax,MPI_COMM_WORLD)
-        if (ldt) then
+        !FRED after merger ldt used for adaptive time step to replace lcourant_dt here 
+        if (lcourant_dt) then
           if (errmax > 1) then
             ! Step above error threshold so decrease the next time step
             dt_temp = safety*dt*errmax**dt_decrease
             if (lroot.and.ip==6787) print*,"time_step: it",it,"dt",dt,&
                  "to ",dt_temp,"at errmax",errmax
             ! Don't decrease the time step by more than a factor of ten
-            dt = sign(max(abs(dt_temp), 0.1*abs(dt)), dt)
+            dtdiagnos = sign(max(abs(dt_temp), 0.1*abs(dt)), dt)
           else
             if (lroot.and.ip==6787) print*,"time_step increased: it",it,"dt",dt,&
                  "to ",dt*errmax**dt_increase,"at errmax",errmax
-            dt = dt*errmax**dt_increase
+            dtdiagnos = dt*errmax**dt_increase
           endif
         endif
       endif

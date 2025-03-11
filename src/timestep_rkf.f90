@@ -14,7 +14,7 @@ module Timestep
   real, parameter :: safety      =  0.95
   real            :: errcon, dt_next, dt_increase, dt_decrease
   real, dimension(mvar) :: farraymin
-  logical :: fixed_dt=.false.
+  logical :: lcourant_dt
 !
   contains
 !
@@ -34,27 +34,18 @@ module Timestep
                      'Runge-Kutta-Fehlberg itorder is 3: set to 5 for higher accuracy')
       endif
 !
-      if (dt0>0.) then
-        dt=dt0
-      elseif (dt0<0.) then
-        fixed_dt=.true.
-        dt=-dt0
+      ldt = (dt==0.)
+      if (ldt.and.dt0==0.) then
+        dt = dt_epsi
       else
-        if (dt==0) then
-          call warning('initialize_timestep','dt=0 not appropriate for Runge-Kutta-Fehlberg'// &
-                     'set to dt_epsi='//trim(rtoa(dt_epsi)))
-          dt=dt_epsi
-        endif
+        dt = dt0
       endif
+      !FRED after merger ldt used for adaptive time step and lcourant_dt=F
+      lcourant_dt=ldt
+      ldt=.false.
 !
       if (eps_rkf0/=0.) eps_rkf=eps_rkf0
 !
-!  ldt is set after read_persistent in rsnap, so dt0==0 used to read,
-!  but ldt=F for write
-!
-      ldt=.false.
-      !overwrite the persistent time_step from dt0 in run.in if dt
-      !too high to initialize run
       dt_next=dt
       dt_increase=-1./(itorder+dtinc)
       dt_decrease=-1./(itorder-dtdec)
@@ -114,7 +105,8 @@ module Timestep
           call rkck3(f, df, p, errmax)
         endif
         ! Step succeeded so exit
-        if (errmax <= 1.or.fixed_dt) exit
+        !FRED after merger ldt used for adaptive time step to replace lcourant_dt here 
+        if (errmax <= 1.or..not.lcourant_dt) exit
         ! If f not to be stored for reiteration errmax constraint below must be removed TBA
         if (.not.lreiterate.and.errmax<=1.75) exit
         ! Step didn't succeed so decrease the time step
@@ -149,7 +141,8 @@ module Timestep
 !
 ! Time step to try next time
 !
-      if (.not. fixed_dt) then
+      !FRED after merger ldt used for adaptive time step to replace lcourant_dt here 
+      if (lcourant_dt) then
         if (lreiterate) then
           dt_next = dt*errmax**dt_increase
         else
