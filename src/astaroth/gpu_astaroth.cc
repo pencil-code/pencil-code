@@ -1406,6 +1406,8 @@ reloadConfig()
   acLogFromRootProc(rank, "Done setupConfig && acCompile\n");
   fflush(stdout);
 #endif
+  //TP: this is important that we don't overwrite the output buffer in middle of a timestep when the output buffer holds some meaning!
+  autotune_all_integration_substeps();
 }
 /***********************************************************************************************/
 extern "C" void loadFarray()
