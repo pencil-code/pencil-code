@@ -3,9 +3,9 @@
 !  run parameters for interstellar
 !
 &run_pars
-  cvsid="20a96485a"
+  cvsid="5d67d8a3f"
   nt=5, it1=1, isave=1000, itorder=4, tmax=0.005
-  dt_epsi=1e-9, dtdec=0.5, dtinc=0.5, dt_ratio=1e-7, dtmin=1e-12, dt0=-1e-8
+  dt_epsi=1e-9, dtdec=0.5, dtinc=0.5, dt_ratio=1e-7, dtmin=1e-10, dt0=1e-8
   leps_fixed=T
   eps_rkf0=0.001
   timestep_scaling=8*"rel_err"
@@ -16,8 +16,8 @@
   lshock_heat=F
   lbidiagonal_derij=F  !(use the slightly more accurate formulation for derij)
   !! too high diagnostic cadence for auto-test purposes
-  d1davg=2e-9, dvid=2e-9, slice_position='m'
-  oned=T, lspec_start=T, dspec=2e-9, ou_spec=T, ab_spec=T !(for energy spectra)
+  d1davg=1e-9, dvid=1e-9, slice_position='m'
+  oned=T, lspec_start=F, dspec=1e-9, ou_spec=T, ab_spec=T !(for energy spectra)
 /
 &eos_run_pars
 /
