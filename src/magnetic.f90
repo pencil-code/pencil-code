@@ -567,6 +567,8 @@ module Magnetic
 ! hongzhe: note emag is the integrated energy, whereas ekin is the volume average!
 !          the hydro counterpart of emag is ekintot
   integer :: idiag_emag=0       ! DIAG_DOC: $\int_V{1\over2\mu_0}\Bv^2\, dV$
+  integer :: idiag_km0EM=0      ! DIAG_DOC: $\int E_M(k)\,dk$
+  integer :: idiag_km1EM=0      ! DIAG_DOC: $\int k^{-1} E_M(k)\,dk$
   integer :: idiag_brms=0       ! DIAG_DOC: $\left<\Bv^2\right>^{1/2}$
   integer :: idiag_bfrms=0      ! DIAG_DOC: $\left<{\Bv'}^2\right>^{1/2}$
   integer :: idiag_bf2m=0       ! DIAG_DOC: $\left<{\Bv'}^2\right>$
@@ -8073,7 +8075,8 @@ module Magnetic
 !  The following calculation involving spatial averages
 !
       use Mpicomm, only: mpibcast_real,MPI_COMM_WORLD
-
+      use Diagnostics, only: save_name
+!
       if (idiag_bmx/=0) call calc_bmx
       if (idiag_bmy/=0) call calc_bmy
       if (idiag_bmz/=0) call calc_bmz
@@ -8102,6 +8105,13 @@ module Magnetic
 !
       ampl_beltrami=ampl_ff-forcing_continuous_aa_amplfact*(bmz-ampl_ff)
       call mpibcast_real(ampl_beltrami,comm=MPI_COMM_WORLD)
+!
+!  Integral over magnetic spectra.
+!
+      if (ldiagnos) then
+        call save_name(km0EM,idiag_km0EM)
+        call save_name(km1EM,idiag_km1EM)
+      endif
 !
     endsubroutine calc_mfield
 !***********************************************************************
@@ -10155,7 +10165,7 @@ module Magnetic
         idiag_abuxmz=0; idiag_abuymz=0; idiag_abuzmz=0
         idiag_uabxmz=0; idiag_uabymz=0; idiag_uabzmz=0
         idiag_bzmz=0; idiag_bmx=0; idiag_bmy=0; idiag_bmz=0; idiag_embmz=0
-        idiag_bmzS2=0; idiag_bmzA2=0
+        idiag_km0EM=0; idiag_km1EM=0; idiag_bmzS2=0; idiag_bmzA2=0
         idiag_emxamz3=0; idiag_jmx=0; idiag_jmy=0; idiag_jmz=0; idiag_ambmz=0
         idiag_jmbmz=0; idiag_kmz=0; idiag_kx_aa=0
         idiag_ambmzh=0;idiag_ambmzn=0;idiag_ambmzs=0; idiag_bmzph=0
@@ -10478,6 +10488,8 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'b2b31m',idiag_b2b31m)
         call parse_name(iname,cname(iname),cform(iname),'udotxbm',idiag_udotxbm)
         call parse_name(iname,cname(iname),cform(iname),'uxbdotm',idiag_uxbdotm)
+        call parse_name(iname,cname(iname),cform(iname),'km0EM',idiag_km0EM)
+        call parse_name(iname,cname(iname),cform(iname),'km1EM',idiag_km1EM)
         call parse_name(iname,cname(iname),cform(iname),'bmx',idiag_bmx)
         call parse_name(iname,cname(iname),cform(iname),'bmy',idiag_bmy)
         call parse_name(iname,cname(iname),cform(iname),'bmz',idiag_bmz)
