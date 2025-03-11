@@ -512,7 +512,6 @@ module Cdata
   integer :: nr_directions=1
   integer :: itdiagnos
   real :: tdiagnos,dtdiagnos,t1ddiagnos,t2davgfirst,eps_rkf_diagnos
-  integer, parameter :: mname=100
   real, dimension (mname) :: fweight=0.0
   integer, dimension(:)   , allocatable :: itype_name
   real, dimension(:)      , allocatable, target :: fname,fname_keep
