@@ -1277,7 +1277,22 @@ extern "C" void copyVBApointers(AcReal **in, AcReal **out)
 }
 /***********************************************************************************************/
 void
-testBCs();     // ahead declaration
+testBCs();     // forward declaration
+/***********************************************************************************************/
+extern "C" void reloadConfig(); // forward declaration
+
+void
+autotune_all_integration_substeps()
+{
+  for (int i = 0; i < num_substeps; ++i)
+  {
+  	acDeviceSetInput(acGridGetDevice(), AC_step_num,(PC_SUB_STEP_NUMBER)i);
+if (rank==0) printf("memusage before GetOptimizedDSLTaskGraph= %f MBytes\n", memusage()/1024.);
+	acGetOptimizedDSLTaskGraph(AC_rhs);
+if (rank==0) printf("memusage after GetOptimizedDSLTaskGraph= %f MBytes\n", memusage()/1024.);
+  }
+}
+
 /***********************************************************************************************/
 extern "C" void initializeGPU(AcReal *farr, int comm_fint)
 {
@@ -1331,14 +1346,7 @@ if (rank==0) printf("memusage after grid_init= %f MBytes\n", memusage()/1024.);
   acDeviceSetInput(acGridGetDevice(), AC_step_num,(PC_SUB_STEP_NUMBER)0);
   acDeviceSetInput(acGridGetDevice(), AC_dt,dt);
   if (ltest_bcs) testBCs();
-  //TP: autotune for all substeps
-  for (int i = 0; i < num_substeps; ++i)
-  {
-  	acDeviceSetInput(acGridGetDevice(), AC_step_num,(PC_SUB_STEP_NUMBER)i);
-if (rank==0) printf("memusage before GetOptimizedDSLTaskGraph= %f MBytes\n", memusage()/1024.);
-	acGetOptimizedDSLTaskGraph(AC_rhs);
-if (rank==0) printf("memusage after GetOptimizedDSLTaskGraph= %f MBytes\n", memusage()/1024.);
-  }
+  autotune_all_integration_substeps();
 if (rank==0) printf("memusage before store config= %f MBytes\n", memusage()/1024.);
   acStoreConfig(acDeviceGetLocalConfig(acGridGetDevice()), "PC-AC.conf");
 if (rank==0) printf("memusage after store config= %f MBytes\n", memusage()/1024.);
@@ -1380,7 +1388,8 @@ extern "C" void copyFarray(AcReal* f)
   acGridSynchronizeStream(STREAM_ALL);
 }
 /***********************************************************************************************/
-extern "C" void reloadConfig()
+void
+reloadConfig()
 {
   mesh.info.run_consts = acInitCompInfo();
   setupConfig(mesh.info);
