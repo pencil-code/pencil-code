@@ -22,7 +22,7 @@ module Timestep
 !
   real, dimension(mvar) :: farraymin
   real, dimension (5) :: beta_hat, dt_beta_hat, dt_alpha_ts
-  real            :: dt_increase, dt_decrease, errmax, errmaxs
+  real            :: dt_increase, dt_decrease, errmax, errmaxs, dt_next
   real            :: safety=0.95
   integer         :: itter
 !
@@ -126,6 +126,7 @@ module Timestep
         endif
       endif
       lcourant_dt=.false.
+      dt_next = dt
 !
       num_substeps = itter
     endsubroutine initialize_timestep
@@ -158,7 +159,7 @@ module Timestep
 !
 !  Determine a lower bound for each variable j by which to normalise the error
 !
-      dtdiagnos = dt
+      dt = dt_next
       if (.not.lgpu) then
         do j=1,mvar
           farraymin(j) = max(dt_ratio*maxval(abs(f(l1:l2,m1:m2,n1:n2,j))),dt_epsi)
@@ -309,11 +310,11 @@ module Timestep
             if (lroot.and.ip==6787) print*,"time_step: it",it,"dt",dt,&
                  "to ",dt_temp,"at errmax",errmax
             ! Don't decrease the time step by more than a factor of ten
-            dt = sign(max(abs(dt_temp), 0.1*abs(dt)), dt)
+            dt_next = sign(max(abs(dt_temp), 0.1*abs(dt)), dt)
           else
             if (lroot.and.ip==6787) print*,"time_step increased: it",it,"dt",dt,&
                  "to ",dt*errmax**dt_increase,"at errmax",errmax
-            dt = dt*errmax**dt_increase
+            dt_next = dt*errmax**dt_increase
           endif
         endif
       endif
@@ -323,7 +324,7 @@ module Timestep
     subroutine split_update(f)
 !
 !  Integrate operator split terms.
-!
+!G
 !  14-dec-14/ccyang: coded
 !
       use Density, only: split_update_density
