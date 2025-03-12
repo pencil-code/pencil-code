@@ -264,6 +264,7 @@ module Cdata
   real :: dsnap=100., dsnap_down=0., d1davg=impossible, d2davg=100., dvid=0., dspec=impossible
   real :: dtracers=0., dfixed_points=0.
   real :: crash_file_dtmin_factor=-1.0
+  real :: km0EM=0., km1EM=0.
   integer :: farray_smooth_width=6
   integer :: isave=100, ialive=0, isaveglobal=0, nv1_capitalvar=1
   logical :: lwrite_ts_hdf5=.true., lsave=.false.

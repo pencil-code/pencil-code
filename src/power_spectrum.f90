@@ -1128,7 +1128,7 @@ outer:  do ikz=1,nz
   !
   endsubroutine power_xy
 !***********************************************************************
-  subroutine powerhel(f,sp,lfirstcall)
+  subroutine powerhel(f,sp,lfirstcall,sumspec,lnowrite)
 !
 !  Calculate power and helicity spectra (on spherical shells) of the
 !  variable specified by `sp', i.e. either the spectra of uu and kinetic
@@ -1139,11 +1139,12 @@ outer:  do ikz=1,nz
 !   3-oct-10/axel: added compution of krms (for realisability condition)
 !  22-jan-13/axel: corrected for x parallelization
 !
+    use Chiral, only: iXX_chiral, iYY_chiral, iXX2_chiral, iYY2_chiral
     use Fourier, only: fft_xyz_parallel
+    use General, only: loptest
+    use Magnetic, only: magnetic_calc_spectra
     use Mpicomm, only: mpireduce_sum
     use Sub, only: del2vi_etc, del2v_etc, cross, grad, curli, curl, dot2
-    use Chiral, only: iXX_chiral, iYY_chiral, iXX2_chiral, iYY2_chiral
-    use Magnetic, only: magnetic_calc_spectra
 !
   integer, parameter :: nk=nxgrid/2
   integer :: i, k, ikx, iky, ikz, jkz, im, in, ivec, ivec_jj
@@ -1151,16 +1152,18 @@ outer:  do ikz=1,nz
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx) :: bbi, jji, b2, j2
   real, dimension(nx,3) :: bb, bbEP, hhEP, jj, gtmp1, gtmp2
-  real, dimension(nk) :: nks,nks_sum
-  real, dimension(nk) :: k2m,k2m_sum,krms
+  real, dimension(nk) :: nks=0.,nks_sum=0.
+  real, dimension(nk) :: k2m=0.,k2m_sum=0., krms, km1
   real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
   real, dimension(nx,ny,nz,3) :: bEP, hEP
+  real, dimension(2), optional :: sumspec
   complex, dimension(nx,ny,nz) :: phi
   real, dimension(nk) :: spectrum,spectrum_sum
   real, dimension(nk) :: spectrumhel,spectrumhel_sum
   real, allocatable, dimension(:,:), save :: cyl_spectrum, cyl_spectrum_sum
   real, allocatable, dimension(:,:), save :: cyl_spectrumhel, cyl_spectrumhel_sum
   character (len=3) :: sp
+  logical, optional :: lnowrite
   logical, save :: lwrite_krms=.true.
   logical :: lfirstcall
 
@@ -1686,28 +1689,47 @@ outer:  do ikz=1,nz
       spectrumhel_sum(1)=0.
     endif
     !
-    spectrum_sum=.5*spectrum_sum
-    open(1,file=trim(datadir)//'/power_'//trim(sp)//'.dat',position='append')
-    if (lformat) then
-      do k = 1, nk
-        write(1,'(i4,3p,8e10.2)') k, spectrum_sum(k)
-      enddo
-    else
-      write(1,*) tdiagnos
-      write(1,power_format) spectrum_sum
-    endif
-    close(1)
+    !  Normalize
     !
-    open(1,file=trim(datadir)//'/powerhel_'//trim(sp)//'.dat',position='append')
-    if (lformat) then
-      do k = 1, nk
-        write(1,'(i4,3p,8e10.2)') k, spectrumhel_sum(k)
-      enddo
-    else
-      write(1,*) tdiagnos
-      write(1,power_format) spectrumhel_sum
+    spectrum_sum=.5*spectrum_sum
+    !
+    !  Write spectra to file.
+    !
+    if (.not. loptest(lnowrite)) then
+      open(1,file=trim(datadir)//'/power_'//trim(sp)//'.dat',position='append')
+      if (lformat) then
+        do k = 1, nk
+          write(1,'(i4,3p,8e10.2)') k, spectrum_sum(k)
+        enddo
+      else
+        write(1,*) t
+        write(1,power_format) spectrum_sum 
+      endif
+      close(1)
+      !
+      !  Write helicity spectra to file.
+      !
+      open(1,file=trim(datadir)//'/powerhel_'//trim(sp)//'.dat',position='append')
+      if (lformat) then
+        do k = 1, nk
+          write(1,'(i4,3p,8e10.2)') k, spectrumhel_sum(k)
+        enddo
+      else
+        write(1,*) tdiagnos
+        write(1,power_format) spectrumhel_sum 
+      endif
+      close(1)
     endif
-    close(1)
+    !
+    !  Sum over the spectrum (optional).
+    !
+    if (present(sumspec)) then
+      km1(1)=0.; do k=2,nk; km1(k)=1./(k-1.); enddo
+      sumspec(1)=sum(spectrum_sum)
+      sumspec(2)=sum(spectrum_sum*km1)
+    endif
+    !
+    !  Cylindrical spectra.
     !
     if (lcylindrical_spectra) then
       if (ip<10) print*,'Writing cylindrical power spectrum ',sp &
