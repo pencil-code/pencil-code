@@ -127,9 +127,9 @@ module Timestep
           if (it_rmv>0) lrmv=.false.
         endif
 !
-!  Set up particle derivative array.
+!  Set up particle derivative array (including df because of insert_nucleii in particles_dust.f90).
 !
-        if (lparticles) call particles_timestep_first(f)
+        if (lparticles) call particles_timestep_first(f,df)
 !
 !  Set up point masses derivative array
 !

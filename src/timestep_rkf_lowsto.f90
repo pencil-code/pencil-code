@@ -193,7 +193,7 @@ if (lroot) print*,"lcourant_dt",lcourant_dt,"dt",dt
 !
 !  Set up particle derivative array.
 !
-        if (lparticles.and..not.lgpu) call particles_timestep_first(falpha)
+        if (lparticles.and..not.lgpu) call particles_timestep_first(falpha,df)
 !
 !  Set up point masses derivative array
 !
