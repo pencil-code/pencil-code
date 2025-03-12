@@ -749,7 +749,7 @@ module Snapshot
       real, dimension (mx,my,mz,mfarray) :: f
       logical, optional :: lwrite_only
 !
-      logical :: llwrite_only=.false.,ldo_all
+      logical :: llwrite_only=.false.,ldo_all,lfirstcall_powerhel
       real, dimension (2) :: sumspec=0.
 !
 !  Set llwrite_only.
@@ -774,6 +774,7 @@ module Snapshot
         lspec=.false.
       else
         if (ldiagnos) then
+          lfirstcall_powerhel=.true.
           call powerhel(f,'mag',lfirstcall_powerhel, sumspec=sumspec, lnowrite=.true.)
           km0EM=sumspec(1)
           km1EM=sumspec(2)
