@@ -1702,7 +1702,7 @@ outer:  do ikz=1,nz
           write(1,'(i4,3p,8e10.2)') k, spectrum_sum(k)
         enddo
       else
-        write(1,*) t
+        write(1,*) tdiagnos
         write(1,power_format) spectrum_sum 
       endif
       close(1)
