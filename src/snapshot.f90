@@ -704,6 +704,7 @@ module Snapshot
       logical :: llwrite_only=.false.,ldo_all
       integer :: ivec,im,in,stat,ipos,ispec
       real, dimension (nx) :: bb
+      real, dimension (2) :: sumspec=0.
       character (LEN=40) :: str,sp1,sp2
       logical :: lfirstcall, lfirstcall_powerhel, lsqrt=.true.
 !
@@ -765,7 +766,15 @@ module Snapshot
         if (ou_spec)  call powerhel(f,'kin',lfirstcall_powerhel)
         if (oun_spec) call powerhel(f,'neu',lfirstcall_powerhel)
         if (ele_spec) call powerhel(f,'ele',lfirstcall_powerhel)
-        if (ab_spec)  call powerhel(f,'mag',lfirstcall_powerhel)
+        if (ab_spec) then
+          !if (ldiagnos) then
+            call powerhel(f,'mag',lfirstcall_powerhel, sumspec=sumspec)
+            km0EM=sumspec(1)
+            km1EM=sumspec(2)
+          !else
+          !  call powerhel(f,'mag',lfirstcall_powerhel)
+          !endif
+        endif
         if (ub_spec)  call powerhel(f,'u.b',lfirstcall_powerhel)
         if (azbz_spec)call powerhel(f,'mgz',lfirstcall_powerhel)
         if (bb2_spec) call powerhel(f,'bb2',lfirstcall_powerhel)
@@ -971,6 +980,12 @@ module Snapshot
         if (Hc_specflux) call power_transfer_mag(f,'Hc')
 !
         lspec=.false.
+      else
+        if (ldiagnos) then
+          call powerhel(f,'mag',lfirstcall_powerhel, sumspec=sumspec, lnowrite=.true.)
+          km0EM=sumspec(1)
+          km1EM=sumspec(2)
+        endif
       endif
 !
       deallocate(b_vec)
