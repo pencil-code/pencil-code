@@ -2589,7 +2589,7 @@ module Particles
                       ! particle phase
                       !
                       !f(ii,jj,kk,icc) = 0.0
-                      df(ii,jj,kk,icc) = -redfrac*f(ii,jj,kk,icc)/dt
+                      df(ii,jj,kk,icc) = df(ii,jj,kk,icc) - redfrac*f(ii,jj,kk,icc)/dt
                     endif                    
                   endif
                 enddo
