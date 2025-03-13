@@ -224,7 +224,7 @@ module Particles
         call put_shared_variable("tausp", tausp)
         call put_shared_variable("tausp_species", tausp_species)
         call put_shared_variable("tausp1_species", tausp1_species)
-      endif 
+      endif
 !
 !  Share Keplerian gravity.
 !
@@ -1286,16 +1286,18 @@ k_loop:   do while (.not. (k>npar_loc))
 !
     endsubroutine insert_particles
 !***********************************************************************
-    subroutine insert_nucleii(f,fp,ineargrid)
+    subroutine insert_nucleii(f,fp,ineargrid, df)
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mparray) :: fp
+      real, dimension(mx,my,mz,mvar) :: df
       integer, dimension (mpar_loc,3)    :: ineargrid
 !
       intent (inout) :: fp,ineargrid
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(df)
       call keep_compiler_quiet(ineargrid)
 !
     endsubroutine insert_nucleii
