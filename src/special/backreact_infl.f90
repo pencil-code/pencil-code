@@ -112,6 +112,7 @@ module Special
   logical :: lskip_projection_phi=.false., lvectorpotential=.false., lflrw=.false.
   logical :: lrho_chi=.false., lno_noise_phi=.false., lno_noise_dphi=.false.
   logical, pointer :: lphi_hom, lnoncollinear_EB, lnoncollinear_EB_aver
+  logical, pointer :: lcollinear_EB, lcollinear_EB_aver
 !
   character (len=labellen) :: Vprime_choice='quadratic', Hscript_choice='default'
   character (len=labellen), dimension(ninit) :: initspecial='nothing'
@@ -217,6 +218,8 @@ module Special
       if (lmagnetic .and. lem_backreact) then
         call get_shared_variable('alpf',alpf,caller='initialize_backreact_infl')
         call get_shared_variable('lphi_hom',lphi_hom)
+        call get_shared_variable('lcollinear_EB',lcollinear_EB)
+        call get_shared_variable('lcollinear_EB_aver',lcollinear_EB_aver)
         call get_shared_variable('lnoncollinear_EB',lnoncollinear_EB)
         call get_shared_variable('lnoncollinear_EB_aver',lnoncollinear_EB_aver)
       else
@@ -343,7 +346,8 @@ module Special
       if (lmagnetic) then
         lpenc_requested(i_bb)=.true.
         lpenc_requested(i_el)=.true.
-        if (lrho_chi .or. lnoncollinear_EB .or. lnoncollinear_EB_aver) lpenc_requested(i_e2)=.true.
+        if (lrho_chi .or. lnoncollinear_EB .or. lnoncollinear_EB_aver .or. &
+          lcollinear_EB .or. lcollinear_EB_aver) lpenc_requested(i_e2)=.true.
       endif
 !
     endsubroutine pencil_criteria_special
@@ -542,7 +546,8 @@ module Special
 !  so it is not itself being averaged.
 !
       if (lrho_chi) then
-        if (lnoncollinear_EB .or. lnoncollinear_EB_aver) then
+        if (lnoncollinear_EB .or. lnoncollinear_EB_aver .or. &
+          lcollinear_EB .or. lcollinear_EB_aver) then
           df_ode(iinfl_rho_chi)=df_ode(iinfl_rho_chi)-4.*Hscript*f_ode(iinfl_rho_chi) &
             +(sigEm_all*e2m_all+sigBm_all*edotbm_all)/ascale**3
         else
@@ -715,12 +720,13 @@ module Special
 !       call get_shared_variable('eta_xtdep',eta_xtdep)
 !     endif
 !
-      if (lrho_chi .or. lnoncollinear_EB .or. lnoncollinear_EB_aver) then
+      if (lrho_chi .or. lnoncollinear_EB .or. lnoncollinear_EB_aver &
+        .or. lcollinear_EB .or. lcollinear_EB_aver) then
         e2m=e2m/nwgrid
         b2m=b2m/nwgrid
         call mpiallreduce_sum(e2m,e2m_all)
         call mpiallreduce_sum(b2m,b2m_all)
-        if (lrho_chi .or. lnoncollinear_EB) then
+        if (lrho_chi .or. lnoncollinear_EB .or. lcollinear_EB) then
           sigE1m=sigE1m/nwgrid
           sigB1m=sigB1m/nwgrid
           call mpiallreduce_sum(sigE1m,sigE1m_all)
@@ -761,7 +767,8 @@ module Special
 !
 !  Choice of echarge prescription.
 !
-      if (lnoncollinear_EB .or. lnoncollinear_EB_aver) then
+      if (lnoncollinear_EB .or. lnoncollinear_EB_aver &
+        .or. lcollinear_EB .or. lcollinear_EB_aver) then
         select case (echarge_type)
           case ('const')
             echarge=echarge_const
@@ -774,8 +781,11 @@ module Special
       endif
 !
 !  Compute sigE and sigB from sigE1 and sigB1.
+!  The mean conductivities are also needed in the local cases,
+!  because they are used in the calculation of rho_chi.
 !
-      if (lnoncollinear_EB .or. lnoncollinear_EB_aver) then
+      if (lnoncollinear_EB .or. lnoncollinear_EB_aver &
+        .or. lcollinear_EB .or. lcollinear_EB_aver) then
         if (lnoncollinear_EB_aver) then
           boost=sqrt((e2m_all-b2m_all)**2+4.*edotbm_all**2)
           gam_EB=sqrt21*sqrt(1.+(e2m_all+b2m_all)/boost)
@@ -785,6 +795,14 @@ module Special
           jprime1=1./(6.*pi**2)*eprime*abs(bprime)/tanh(pi*abs(bprime)/eprime)
           sigE1m_all=abs(jprime1)*eprime/(gam_EB*boost)
           sigB1m_all=abs(jprime1)*edotbm_all/(eprime*gam_EB*boost)
+!
+!  Similarly for collinear case.
+!
+        elseif (lcollinear_EB_aver) then
+          eprime=sqrt(e2m_all)
+          bprime=sqrt(b2m_all)
+          sigE1m_all=1./(6.*pi**2)*bprime/tanh(pi*abs(bprime)/eprime)
+          sigB1m_all=0.
         endif
 !
 !  Apply Chypercharge, echarge, and Hscript universally for aver and nonaver.
@@ -857,7 +875,8 @@ module Special
       a2rho=a2rho+a2*Vpotential
       a2rhom=a2rhom+sum(a2rho)
       if (lmagnetic .and. lem_backreact) then
-        if (lphi_hom .or. lrho_chi .or. lnoncollinear_EB .or. lnoncollinear_EB_aver) then
+        if (lphi_hom .or. lrho_chi .or. lnoncollinear_EB .or. lnoncollinear_EB_aver &
+                                   .or. lcollinear_EB .or. lcollinear_EB_aver) then
           call dot_mn(el,bb,edotb)
           edotbm=edotbm+sum(edotb)
 !
@@ -875,6 +894,17 @@ module Special
             sigE1=abs(jprime1)*eprime/(gam_EB*boost)
             sigB1=abs(jprime1)*edotb/(eprime*gam_EB*boost)
           endif
+!
+!  Repeat calculation of sigE and sigB. Do this first without
+!  echarge and Hscript and apply those factors later.
+!  Do the following block only when lnoncollinear_EB, but not when lnoncollinear_EB_aver.
+!
+          if (lcollinear_EB) then
+            eprime=sqrt(e2)
+            bprime=sqrt(b2)
+            sigE1=1./(6.*pi**2)*bprime/tanh(pi*bprime/eprime)
+            sigB1=0.
+          endif
         endif
       endif
 !
@@ -883,10 +913,11 @@ module Special
 !  In case of lnoncollinear_EB_aver, do the computation outside prep_ode_right.
 !
       if ((lmagnetic .and. lem_backreact) .and. (lrho_chi)) then
-        if (lnoncollinear_EB .or. lnoncollinear_EB_aver) then
+        if (lnoncollinear_EB .or. lnoncollinear_EB_aver .or. &
+          lcollinear_EB .or. lcollinear_EB_aver) then
           e2m=e2m+sum(e2)
           b2m=b2m+sum(b2)
-          if ((lnoncollinear_EB)) then
+          if ((lnoncollinear_EB .or. lcollinear_EB)) then
             sigE1m=sigE1m+sum(sigE1)
             sigB1m=sigB1m+sum(sigB1)
           endif
