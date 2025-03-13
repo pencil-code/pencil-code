@@ -433,7 +433,8 @@ module Special
 !  This is for the *spatially dependent* sigE and sigB. The averaged ones are
 !  computed in backreact_infl.f90.
 !
-      if (lnoncollinear_EB .or. lnoncollinear_EB_aver) then
+      if (lnoncollinear_EB .or. lnoncollinear_EB_aver &
+        .or. lcollinear_EB .or. lcollinear_EB_aver) then
         if (lnoncollinear_EB) then
           call dot(p%el,p%bb,p%eb)
           boost=sqrt((p%e2-p%b2)**2+4.*p%eb**2)
