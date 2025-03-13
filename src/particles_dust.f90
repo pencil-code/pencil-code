@@ -2557,7 +2557,7 @@ module Particles
                       !  Initialize particle radius
                       !
                       if (lparticles_radius) then
-                        fp(k,iap)=f(ii,jj,kk,inucl)
+                        fp(k,iap)=f(ii,jj,kk,icc+1)/f(ii,jj,kk,icc)
                         if (lparticles_number) then
                           part_mass=4.*pi*fp(k,iap)**3/3.*true_density_cond_spec
                           fp(k,inpswarm)=mass_nucleii*redfrac/part_mass
@@ -2588,8 +2588,8 @@ module Particles
                       ! Set the scalar to zero since the nucleii have now been moved to the
                       ! particle phase
                       !
-                      !f(ii,jj,kk,icc) = 0.0
                       df(ii,jj,kk,icc) = df(ii,jj,kk,icc) - redfrac*f(ii,jj,kk,icc)/dt
+                      df(ii,jj,kk,icc+1) = df(ii,jj,kk,icc+1) - redfrac*f(ii,jj,kk,icc+1)/dt
                     endif                    
                   endif
                 enddo
