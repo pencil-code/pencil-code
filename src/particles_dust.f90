@@ -2454,7 +2454,7 @@ module Particles
 !
     endsubroutine insert_particles
 !***********************************************************************
-    subroutine insert_nucleii(f,fp,ineargrid)
+    subroutine insert_nucleii(f,fp,ineargrid,df)
 !
 ! Insert particles nucleii continuously (when lnucleation == T),
 ! A particle is inserted whenever the mass fraction of a scalar
@@ -2467,12 +2467,13 @@ module Particles
       use Particles_number, only: set_particle_number
 !
       real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mvar), intent(inout) :: df
       real, dimension(mpar_loc,mparray), intent(inout) :: fp
       integer, dimension(mpar_loc,3), intent(inout) :: ineargrid
       real, dimension(3) :: uup
 !
       logical, save :: linsertmore=.true.
-      real :: xx0, yy0, r2, r, mass_nucleii, part_mass, TTp
+      real :: xx0, yy0, r2, r, mass_nucleii, part_mass, TTp, redfrac=0.9
       integer :: j, k, n_insert, npar_loc_old, iii
       integer :: ii,jj,kk
       integer :: jproc,tag_id,tag0=283
@@ -2559,7 +2560,7 @@ module Particles
                         fp(k,iap)=f(ii,jj,kk,inucl)
                         if (lparticles_number) then
                           part_mass=4.*pi*fp(k,iap)**3/3.*true_density_cond_spec
-                          fp(k,inpswarm)=mass_nucleii/part_mass
+                          fp(k,inpswarm)=mass_nucleii*redfrac/part_mass
                         endif
                       endif
                       !
@@ -2584,9 +2585,11 @@ module Particles
 !
                       if (lparticles_diagnos_state) call insert_particles_diagnos_state(fp, npar_loc_old)
                       !
-                      ! Set the scalar to zero since the nucleii have now been moved to the particle phase
+                      ! Set the scalar to zero since the nucleii have now been moved to the
+                      ! particle phase
                       !
-                      f(ii,jj,kk,icc) = 0.0
+                      !f(ii,jj,kk,icc) = 0.0
+                      df(ii,jj,kk,icc) = -redfrac*f(ii,jj,kk,icc)/dt
                     endif                    
                   endif
                 enddo

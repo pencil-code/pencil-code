@@ -484,13 +484,14 @@ module Particles_main
 !
     endsubroutine particles_write_rmv
 !***********************************************************************
-    subroutine particles_timestep_first(f)
+    subroutine particles_timestep_first(f,df)
 !
 !  Setup dfp in the beginning of each itsub.
 !
 !  07-jan-05/anders: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mvar), intent(inout) :: df
 !
       call keep_compiler_quiet(f)
 !
@@ -503,7 +504,7 @@ module Particles_main
 !  Insert new and remove old particles continuously during the run
 !
       if (lfirst) then
-        call particles_insert_continuously(f)
+        call particles_insert_continuously(f,df)
         call particles_remove_continuously(f)
       endif
 !
@@ -1252,7 +1253,7 @@ module Particles_main
 
     endsubroutine particles_stochastic
 !***********************************************************************
-    subroutine particles_insert_continuously(f)
+    subroutine particles_insert_continuously(f,df)
 !
 !  Insert particles continuously, i.e. add particles in
 !  the beginning of a time step.
@@ -1260,9 +1261,10 @@ module Particles_main
 !  sep-09/kragset: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mvar), intent(inout) :: df
 !
       if (linsert_particles_continuously) call insert_particles(f,fp,ineargrid)
-      if (lpartnucleation) call insert_nucleii(f,fp,ineargrid)
+      if (lpartnucleation) call insert_nucleii(f,fp,ineargrid,df)
 !
     endsubroutine particles_insert_continuously
 !***********************************************************************
