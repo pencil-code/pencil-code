@@ -95,7 +95,7 @@ module Timestep
 !
 !  dt_beta_ts may be needed in other modules (like Dustdensity) for fixed dt.
 !
-! <<<<<<<<<<<<<<  the following should be omitted at some point <<<<<<<<<<<<<<
+! ==============  the following should be omitted at some point =============
 !  There is also an option to advance the time in progressively smaller
 !  fractions of the current time. This is used to model the end of inflation,
 !  when lfractional_tstep_negative should be used.
@@ -114,7 +114,7 @@ module Timestep
           dt_beta_ts=dt*beta_ts
   !     endif
       endif
-! >>>>>>>>>>>>>>>>>>>>  until here >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+! ==================  until here =========================================
 !
 !  Set up df and ds for each time sub.
 !
@@ -134,9 +134,9 @@ module Timestep
             if (it_rmv>0) lrmv=.false.
           endif
 !
-!  Set up particle derivative array.
+!  Set up particle derivative array (including df because of insert_nucleii in particles_dust.f90).
 !
-        if (lparticles .and. .not. lgpu) call particles_timestep_first(f)
+        if (lparticles .and. .not. lgpu) call particles_timestep_first(f,df)
 !
 !  Set up point masses derivative array
 !

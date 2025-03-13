@@ -128,7 +128,7 @@ module Initcond
 !
       integer :: i,j
       real, dimension (mx,my,mz,mfarray) :: f
-      real,optional :: kx,ky,kz,KKx,KKy,KKz
+      real, optional :: kx,ky,kz,KKx,KKy,KKz
       real :: ampl,kx1=pi/2.,ky1=0.,kz1=pi/2.,KKx1=0.,KKy1=0.,KKz1=0.
 !
 !  wavenumber k, helicity H=ampl (can be either sign)

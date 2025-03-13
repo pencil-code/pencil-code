@@ -82,14 +82,18 @@ module power_spectrum
 !
     endsubroutine power_xy
 !***********************************************************************
-    subroutine powerhel(f,sp,lfirstcall)
+    subroutine powerhel(f,sp,lfirstcall,sumspec,lnowrite)
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension(2), optional :: sumspec
       character (len=3) :: sp
       logical :: lfirstcall
+      logical, optional :: lnowrite
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(sp)
+      call keep_compiler_quiet(sumspec)
+      call keep_compiler_quiet(lnowrite)
       call keep_compiler_quiet(lfirstcall)
 !
     endsubroutine powerhel

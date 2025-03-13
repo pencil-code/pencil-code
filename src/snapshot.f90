@@ -743,12 +743,14 @@ module Snapshot
 !  22-apr-11/MR: added possibility to get xy-power-spectrum from xy_specs
 !
       use Boundcond, only: update_ghosts
+      use Power_spectrum, only: powerhel
       use Sub, only: update_snaptime
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical, optional :: lwrite_only
 !
-      logical :: llwrite_only=.false.,ldo_all
+      logical :: llwrite_only=.false.,ldo_all,lfirstcall_powerhel
+      real, dimension (2) :: sumspec=0.
 !
 !  Set llwrite_only.
 !
@@ -770,7 +772,13 @@ module Snapshot
         endif
 
         lspec=.false.
-!
+      else
+        if (ldiagnos) then
+          lfirstcall_powerhel=.true.
+          call powerhel(f,'mag',lfirstcall_powerhel, sumspec=sumspec, lnowrite=.true.)
+          km0EM=sumspec(1)
+          km1EM=sumspec(2)
+        endif
       endif
 
     endsubroutine powersnap
@@ -788,6 +796,7 @@ module Snapshot
 
       real, dimension (:,:,:), allocatable :: b_vec
       integer :: ivec,stat,ipos,ispec,nloc,mloc
+      real, dimension (2) :: sumspec=0.
       character (LEN=40) :: str,sp1,sp2
       logical :: lfirstcall, lfirstcall_powerhel, lsqrt
 
@@ -832,7 +841,15 @@ module Snapshot
         if (ou_spec)  call powerhel(f,'kin',lfirstcall_powerhel)
         if (oun_spec) call powerhel(f,'neu',lfirstcall_powerhel)
         if (ele_spec) call powerhel(f,'ele',lfirstcall_powerhel)
-        if (ab_spec)  call powerhel(f,'mag',lfirstcall_powerhel)
+        if (ab_spec) then
+          !if (ldiagnos) then
+            call powerhel(f,'mag',lfirstcall_powerhel, sumspec=sumspec)
+            km0EM=sumspec(1)
+            km1EM=sumspec(2)
+          !else
+          !  call powerhel(f,'mag',lfirstcall_powerhel)
+          !endif
+        endif
         if (ub_spec)  call powerhel(f,'u.b',lfirstcall_powerhel)
         if (azbz_spec)call powerhel(f,'mgz',lfirstcall_powerhel)
         if (bb2_spec) call powerhel(f,'bb2',lfirstcall_powerhel)
@@ -1054,7 +1071,9 @@ module Snapshot
         if (Hc_specflux) call power_transfer_mag(f,'Hc')
 !
 !$       lhelperflags(PERF_POWERSNAP) = .false.
-
+!
+!      deallocate(b_vec)
+!
     endsubroutine perform_powersnap
 !***********************************************************************
     subroutine update_auxiliaries(a)

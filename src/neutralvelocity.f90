@@ -39,12 +39,15 @@ module NeutralVelocity
   real :: colldrag=0,electron_pressure=1
   real :: nun=0.,csn0=0.,csn20,nun_hyper3=0.
   real :: rnoise_int=impossible,rnoise_ext=impossible
+  real :: uun_right=0., uun_left=0., widthuun=.1
+  real, dimension (nx,3,3) :: unij5
   character (len=labellen),dimension(ninit) :: iviscn=''
 !
   namelist /neutralvelocity_init_pars/ &
       ampluun, ampl_unx, ampl_uny, ampl_unz, &
       inituun, uun_const, Omega, lcoriolis_force, lcentrifugal_force, &
       ladvection_velocity,colldrag,csn0,kx_uun,ky_uun,kz_uun,&
+      uun_right, uun_left, widthuun, &
       rnoise_int,rnoise_ext
 !
 !  Run parameters.
@@ -230,6 +233,7 @@ module NeutralVelocity
       use InitialCondition, only: initial_condition_uun
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx) :: prof
       integer :: j,i
 !
 !  inituun corresponds to different initializations of uun (called from start).
@@ -255,6 +259,27 @@ module NeutralVelocity
         case ('gaussian-noise-rprof')
           call gaunoise_rprof(ampluun(j),f,iunx,iunz,rnoise_int,rnoise_ext)
         case ('follow-ions'); f(:,:,:,iunx:iunz)=f(:,:,:,iux:iuz)
+!
+        case ('shock-tube')
+!
+!  shock tube test (should be consistent with density module)
+!
+          if (lroot) print*,'init_uun: polytopic standing shock'
+          do n=n1,n2; do m=m1,m2
+            prof=.5*(1.+tanh(x(l1:l2)/widthuun))
+            f(l1:l2,m,n,iunx)=uun_left+(uun_right-uun_left)*prof
+          enddo; enddo
+!
+        case ('tanhx')
+!
+!  Burgers shock
+!
+          if (lroot) print*,'init_uun: Burgers shock'
+          prof=-ampluun(j)*tanh(.5*x(l1:l2)/widthuun)
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,iunx)=prof
+          enddo; enddo
+!
         case default
           call fatal_error("init_uun",'No such value for inituu: '//trim(inituun(j)))
 

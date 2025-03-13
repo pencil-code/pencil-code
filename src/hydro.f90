@@ -4142,7 +4142,7 @@ module Hydro
         enddo
         do j=1,3
           ftot=abs(df(l1:l2,m,n,iux+j-1)*uu1(:,j))
-          if (ldt.and.lcdt_tauf) dt1_max=max(dt1_max,ftot/cdtf)
+          if (lupdate_courant_dt.and.lcdt_tauf) dt1_max=max(dt1_max,ftot/cdtf)
           if (ldiagnos.and.(idiag_dtF/=0.or.idiag_taufmin/=0)) Fmax=max(Fmax,ftot)
         enddo
       endif
@@ -4182,7 +4182,7 @@ module Hydro
           uref=ampluu(1)*cos(kx_uu*x(l1:l2))
           call sum_mn_name(p%u2-2.*p%uu(:,2)*uref+uref**2,idiag_durms)
         endif
-        if (ldt.and.ladvection_velocity.and.idiag_dtu/=0) call max_mn_name(p%advec_uu/cdt,idiag_dtu,l_dt=.true.)
+        if (lupdate_courant_dt.and.ladvection_velocity.and.idiag_dtu/=0) call max_mn_name(p%advec_uu/cdt,idiag_dtu,l_dt=.true.)
         if (.not.lmultithread) then
           if (idiag_dtF/=0) call max_mn_name(Fmax/cdtf,idiag_dtF,l_dt=.true.)
           call max_mn_name(Fmax,idiag_taufmin,lreciprocal=.true.)

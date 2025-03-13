@@ -142,15 +142,17 @@ module Particles_main
 !
     endsubroutine particles_write_rmv
 !***********************************************************************
-    subroutine particles_timestep_first(f)
+    subroutine particles_timestep_first(f,df)
 !
 !  Setup dfp in the beginning of each itsub.
 !
 !  22-aug-05/anders: dummy
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
 !
       call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
 !
     endsubroutine particles_timestep_first
 !***********************************************************************
