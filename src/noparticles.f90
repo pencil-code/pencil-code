@@ -321,16 +321,18 @@ module Particles
 !
     endsubroutine insert_particles
 !***********************************************************************
-    subroutine insert_nucleii(f,fp,ineargrid)
+    subroutine insert_nucleii(f,fp,ineargrid,df)
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mparray) :: fp
+      real, dimension(mx,my,mz,mvar) :: df
       integer, dimension (mpar_loc,3)    :: ineargrid
 !
       intent (inout) :: fp,ineargrid
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(df)
       call keep_compiler_quiet(ineargrid)
 !
     endsubroutine insert_nucleii
