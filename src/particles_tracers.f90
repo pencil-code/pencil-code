@@ -551,7 +551,7 @@ module Particles
             if (nxgrid/=1) dfp(k,ixp) = dfp(k,ixp) + uu(1) ; fp(k,ivpx) = uu(1)
             if (nygrid/=1) dfp(k,iyp) = dfp(k,iyp) + uu(2) ; fp(k,ivpy) = uu(2)
             if (nzgrid/=1) dfp(k,izp) = dfp(k,izp) + uu(3) ; fp(k,ivpz) = uu(3)
-                          
+
           elseif (lcylindrical_coords) then
             if (nxgrid/=1) dfp(k,ixp) = dfp(k,ixp) + uu(1)
             if (nygrid/=1) dfp(k,iyp) = dfp(k,iyp) + uu(2)/max(fp(k,ixp),tini)
@@ -855,15 +855,17 @@ module Particles
 !
     endsubroutine insert_particles
 !***********************************************************************
-    subroutine insert_nucleii(f,fp,ineargrid)
+    subroutine insert_nucleii(f,fp,ineargrid,df)
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mparray) :: fp
+      real, dimension (mx,my,mz,mvar) :: df
       integer, dimension (mpar_loc,3)    :: ineargrid
 !
       intent (inout) :: fp,ineargrid
 !
       call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
       call keep_compiler_quiet(fp)
       call keep_compiler_quiet(ineargrid)
 !
