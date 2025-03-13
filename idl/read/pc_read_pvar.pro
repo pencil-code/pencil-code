@@ -253,6 +253,12 @@ varcontent[imp].variable = 'Particle mass (mp)'
 varcontent[imp].idlvar   = 'mp'
 varcontent[imp].idlinit  = INIT_SCALAR
 ;
+print,"born,iborn=",born,iborn
+default, born, 0
+varcontent[born].variable = 'Time of birth (tb)'
+varcontent[born].idlvar   = 'born'
+varcontent[born].idlinit  = INIT_SCALAR
+;
 default, iup11, 0
 varcontent[iup11].variable = 'grad uu at particle(up11)'
 varcontent[iup11].idlvar   = 'up11'
