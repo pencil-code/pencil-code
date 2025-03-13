@@ -253,7 +253,8 @@ module Chemistry
       Ythresh, lchem_detailed, conc_sat_spec_cgs, inucl_pre_exp, lcorr_vel, &
       lgradP_terms, lnormalize_chemspec, lnormalize_chemspec_N2, &
       gam_surf_energy_cgs, isurf_energy, iconc_sat_spec, nucleation_rate_coeff_cgs, &
-      lnoevap, lnolatentheat, gam_surf_energy_mul_fac, deltaH_cgs
+      lnoevap, lnolatentheat, gam_surf_energy_mul_fac, deltaH_cgs,&
+      min_nucl_radius_cgs
 !
 ! diagnostic variables (need to be consistent with reset list below)
 !
@@ -6932,6 +6933,7 @@ module Chemistry
         ! The mass of the nucleii is added to the passive scalar equation
         !
         df(l1:l2,m,n,icc) = df(l1:l2,m,n,icc) + p%ff_nucl*(1+p%cc(:,1))*p%rho1
+        df(l1:l2,m,n,icc+1) = df(l1:l2,m,n,icc+1) + p%nucl_rmin*p%ff_nucl*(1+p%cc(:,2))*p%rho1
         !
         !  Generating the nucleii consumes the condensing species
         !
