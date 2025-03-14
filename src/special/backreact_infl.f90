@@ -674,17 +674,15 @@ module Special
 !      real, dimension (nx) :: e2, b2, gphi2, dphi, a21, a2rhop, a2rho
 !      real, dimension (nx) :: ddota, phi, a2, Vpotential, edotb
 !
-!  if requested, calculate here <dphi**2+gphi**2+(4./3.)*(E^2+B^2)/a^2>
+!  If requested, calculate here <dphi**2+gphi**2+(4./3.)*(E^2+B^2)/a^2>.
+!  This needs to be done on all processors, because otherwise ascale
+!  is not known on all processors.
 !
-      if (lroot) then
-        if(lflrw) then
-          lnascale=f_ode(iinfl_lna)
-          a2=exp(2*lnascale)
-        else
-          a2=1.
-        endif
-        ascale=sqrt(a2)
+      if(lflrw) then
+        lnascale=f_ode(iinfl_lna)
+        ascale=exp(lnascale)
       endif
+      a2=ascale**2
       a21=1./a2
       call mpibcast_real(a2)
       call mpibcast_real(a21)
@@ -726,6 +724,10 @@ module Special
         b2m=b2m/nwgrid
         call mpiallreduce_sum(e2m,e2m_all)
         call mpiallreduce_sum(b2m,b2m_all)
+!
+!  The following is not done for averages. This is because sigE1m and sigB1m
+!  are calculated in their own section further below in the same routine.
+!
         if (lrho_chi .or. lnoncollinear_EB .or. lcollinear_EB) then
           sigE1m=sigE1m/nwgrid
           sigB1m=sigB1m/nwgrid
