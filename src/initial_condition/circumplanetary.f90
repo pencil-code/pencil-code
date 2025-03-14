@@ -85,7 +85,7 @@ module InitialCondition
   real :: g0=1.,density_power_law=0.,temperature_power_law=1., plasma_beta=25
   logical :: lexponential_smooth=.false.
   real :: radial_percent_smooth=10.0,rshift=0.0
-  real :: gravitational_const=0.
+  real :: gravitational_const_init=0.
   real :: magnetic_power_law=impossible
 !
 ! For the magnetic field
@@ -122,7 +122,7 @@ module InitialCondition
   namelist /initial_condition_pars/ g0,density_power_law,&
        temperature_power_law,lexponential_smooth,&
        radial_percent_smooth,rshift,lcorrect_selfgravity,&
-       gravitational_const,xmodes,ymodes,zmodes,rho_rms,&
+       gravitational_const_init,xmodes,ymodes,zmodes,rho_rms,&
        llowk_noise,xmid,lgaussian_distributed_noise,rborder_int,&
        rborder_ext,plasma_beta,ladd_field,initcond_aa,B_ext,&
        zmode_mag,rmode_mag,rm_int,rm_ext,Bz_const, &
