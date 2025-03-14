@@ -14,7 +14,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED ugss; Ma2; fpres(3); uglnTT; sglnTT(3); transprhos !,dsdr
-! PENCILS PROVIDED initss; initlnrho, uuadvec_gss; advec_cs2
+! PENCILS PROVIDED initss; initlnrho; uuadvec_gss; advec_cs2; cool_prof
 !
 !***************************************************************
 module Energy
@@ -103,12 +103,16 @@ module Energy
   real :: cs2top_ini=impossible, dcs2top_ini=impossible, TTbot_factor=1.
   real :: nheat_rho=1.0, nheat_TT=1.0
   real :: xjump_mid=0.0,yjump_mid=0.0,zjump_mid=0.0
+  real :: wpatch=0.0, amp_patch=1.0, patch_fac=1.0, coolfac=0.0
   integer, parameter :: nheatc_max=4
   integer :: iglobal_hcond=0
   integer :: iglobal_glhc=0
   integer :: ippaux=0
   integer, target :: isothtop=0
   integer :: cool_type=1
+  integer, parameter :: ncool_patch_max=500
+  integer :: ncool_patch=0
+  logical :: lcooling_patches=.false., lnew_cooling_patches=.false.
   logical :: lturbulent_heat=.false.
   logical :: lheatc_Kprof=.false., lheatc_Kconst=.false., lheatc_sfluct=.false.
   logical, target :: lheatc_chiconst=.false.
@@ -156,6 +160,7 @@ module Energy
   logical :: lss_running_aver_as_var=.false.
   logical :: lss_running_aver=.false.
   logical :: lFenth_as_aux=.false.
+  logical :: lcool_prof_as_var=.false.
   logical :: lss_flucz_as_aux=.false., lsld_char_wprofr=.false.
   logical :: lTT_flucz_as_aux=.false., lsld_char_cslimit=.false.
   logical :: lchi_t1_noprof=.false., lsld_char_rholimit=.false.
@@ -189,6 +194,10 @@ module Energy
   real, dimension (nx) :: cs2mx, del2ssmx
   real, dimension (nx,my) :: cs2mxy, ssmxy
 !
+!  Cooling patches
+!
+  real, dimension (ncool_patch_max) :: xpatch, ypatch
+!
 !  Input parameters.
 !
   namelist /entropy_init_pars/ &
@@ -207,7 +216,7 @@ module Energy
       hcond0_kramers, nkramers, alpha_MLT, lprestellar_cool_iso, lread_hcond, &
       limpose_heat_ceiling, heat_ceiling, lcooling_ss_mz, lss_running_aver_as_aux, &
       lss_running_aver_as_var, lFenth_as_aux, lss_flucz_as_aux, lTT_flucz_as_aux, &
-      xjump_mid, yjump_mid, zjump_mid
+      xjump_mid, yjump_mid, zjump_mid, lcool_prof_as_var
 !
 !  Run parameters.
 !
@@ -249,7 +258,9 @@ module Energy
       lss_flucz_as_aux, lTT_flucz_as_aux, rescale_hcond, wpres, &
       lcalc_cs2mz_mean_diag, lchi_t1_noprof, lheat_cool_gravz, lsmooth_ss_run_aver, &
       kx_ss, ky_ss, kz_ss, tau_relax_ss, ampl_imp_ss, TTbot_factor, &
-      heattype, nheat_rho, nheat_TT, lrhs_max
+      heattype, nheat_rho, nheat_TT, lrhs_max, &
+      wpatch, amp_patch, ncool_patch, &
+      patch_fac, coolfac, lnew_cooling_patches, lcool_prof_as_var
 !
 !  Diagnostic variables for print.in
 !  (need to be consistent with reset list below).
@@ -516,6 +527,12 @@ module Energy
         lss_running_aver=.true.
       endif
 !
+!  Register slot for a 3D cooling profile if required.
+!
+      if (lcool_prof_as_var) then
+        call farray_register_pde('cool_prof',icool_prof)
+      endif
+!
 !  Identify version number.
 !
       if (lroot) call svn_id( &
@@ -671,7 +688,7 @@ module Energy
       real, dimension (nx) :: tmpz_penc
       real :: beta1, beta0, TT_bcz, star_cte, cs2top_from_cool, ztop, zbot
       real :: dummy
-      integer :: i, j, n, m, stat, lend
+      integer :: i, j, n, m, stat, lend, nn
       logical :: lnothing, exist, opend
       character(LEN=11) :: formtd
       real, pointer :: gravx
@@ -1271,6 +1288,30 @@ module Energy
         case ('volheat_surfcool')
           profz_cool = 1.+tanh((z(n1:n2)-zcool)/(wcool))
           profz1_cool = 1.-(tanh((z(n1:n2)-zcool1)/(wcool1)))**2
+!
+!  Step-local-patches: add localized cooling patches to launch plume.
+!  With lcooling_to_cs2cool=T, the overall cooling identical to cooling
+!  profile 'step' is applied additionally.
+!
+        case ('step-local-patches')
+          profz_cool = step(z(n1:n2),z2,wcool)
+!
+!  Compute new patch positions only if in a fresh run or if requested.
+!
+          if (t > 0.and..not.(lnew_cooling_patches.or.lread_oldsnap_nocoolprof)) then
+            if (lroot) print*,'Using existing cooling profile from f-array'
+          else
+            if (lroot) print*,'Setting up new cooling profile.'
+            call initialize_cooling_patches(xpatch,ypatch)
+            do nn=1,ncool_patch
+              do n=n1,n2; do m=m1,m2
+                tmpz_penc = step(z(n),zcool,wcool)*exp(-0.5*((ypatch(nn)-y(m))**2 &
+                     + (xpatch(nn)-x(l1:l2))**2)/wpatch**2)
+                f(l1:l2,m,n,icool_prof) =  f(l1:l2,m,n,icool_prof) + tmpz_penc
+              enddo; enddo
+            enddo
+          endif
+          lcooling_patches=.true.
 !
 !  Cooling with a profile linear in z (unstable).
 !
@@ -3350,6 +3391,10 @@ module Energy
          lpenc_requested(i_cs2)=.true.
       endif
 !
+      if (lcooling_patches) then
+         lpenc_requested(i_cool_prof)=.true.
+      endif
+!
 ! Store initial stratification as pencils if f-array space allocated
 !
       if (iglobal_lnrho0/=0) lpenc_requested(i_initlnrho)=.true.
@@ -3492,6 +3537,8 @@ module Energy
           if (headtt.or.ldebug) print*, 'calc_pencils_energy: max(advec_cs2) =', maxval(p%advec_cs2)
         endif
       endif
+!
+      if (lcooling_patches.and.lpencil(i_cool_prof)) p%cool_prof=f(l1:l2,m,n,icool_prof)
 !
     endsubroutine calc_pencils_energy
 !***********************************************************************
@@ -4260,15 +4307,18 @@ module Energy
 !
       use EquationOfState, only: get_gamma_etc
       use Deriv, only: der_x, der2_x, der_z, der2_z
-      use Mpicomm, only: mpiallreduce_sum
+      use Mpicomm, only: mpiallreduce_sum, mpibcast_real_arr, MPI_COMM_WORLD
       use Sub, only: finalize_aver,calc_all_diff_fluxes,div,smooth,global_mean
+      Use General, only: random_number_wrapper
 !
       real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
 !
       real, dimension (mx,my,mz) :: cs2p, ruzp
       real, dimension (mz) :: ruzmz
 !
-      integer :: l,m,n,lf
+      real, dimension (ncool_patch_max) :: dxpatch, dypatch
+!
+      integer :: l,m,n,lf,nn
       real :: fact, tmp1
       real :: gamma,gamma_m1,cv,cv1,cp,cp1
 !
@@ -6485,12 +6535,15 @@ module Energy
         heat = heat - profz_cool(n-nghost)*(cs2mz(n)-cs2cool)/cs2cool
       else
 !
+        if (lcooling_patches) then
+          heat = heat - cool*amp_patch*p%cool_prof*(p%cs2-cs2cool*(1.0-coolfac))/(cs2cool*(1.0-coolfac))
+        endif
 !AB: the following seems incompatible with what has now been prepared above.
 !    But it breaks the auto-test (samples/conv-slab-noequi), so I enabled it
 !    with lcooling_to_cs2cool=.true. by default.
 !
         if (lcooling_to_cs2cool) heat = heat - profz_cool(n-nghost)*(p%cs2-cs2cool)/cs2cool
-
+!
       endif
 !
 !  Write divergence of cooling flux.
@@ -7787,6 +7840,72 @@ module Energy
       cs2cool_x=tmp1(ipx*nx+1:(ipx+1)*nx)
 !
     endsubroutine read_cooling_profile_x
+!***********************************************************************
+    subroutine initialize_cooling_patches(xpatch,ypatch)
+!
+!  Initialize locations of cooling patches. Alternatively read 
+!  positions from a file.
+!
+!  03-apr-2024/pjk: coded
+!
+      use Mpicomm, only: mpibcast_real_arr
+      Use General, only: random_number_wrapper
+!
+      real, dimension(ncool_patch_max), intent(out) :: xpatch, ypatch
+      real :: var1, var2
+      logical :: exist
+      logical :: lnewpatches = .false.
+      integer :: stat, nn
+!
+!  Try reading cooling_patches.dat from datadir
+!
+      if (lroot) then
+        inquire(file=trim(datadir)//'/cooling_patches.dat',exist=exist)
+        if (exist) then
+          open(36,file=trim(datadir)//'/cooling_patches.dat')
+        else
+          inquire(file=trim(directory)//'/cooling_patches.ascii',exist=exist)
+          if (exist) then
+            open(36,file=trim(directory)//'/cooling_patches.ascii')
+          else
+            print*,'initialize_cooling_patches: no input file cooling_patches.[dat,ascii], generating new xpatch, ypatch using random positions'
+            lnewpatches = .true.
+          endif
+        endif
+!
+!  Read profiles.
+!
+        do nn=1,ncool_patch_max
+          read(36,*,iostat=stat) var1, var2
+          if (stat<0) exit
+          if (ip<5) print*,'xpatch, ypatch: ',var1, var2
+          xpatch(nn)=var1
+          ypatch(nn)=var2
+        enddo
+        close(36)
+!
+      endif
+!
+      if (lroot .and. lnewpatches) then
+        call random_number_wrapper(xpatch)
+        call random_number_wrapper(ypatch)
+        xpatch = (xpatch - 0.5)*Lx
+        ypatch = (ypatch - 0.5)*Ly
+!
+!  Write positions to file
+!
+        open(11,file=trim(datadir)//'/cooling_patches.dat',status='unknown')
+        do nn=1,ncool_patch_max
+           write(11,*) xpatch(nn), ypatch(nn)
+        enddo
+        close(11)
+!
+      endif
+!
+      call mpibcast_real_arr(xpatch, ncool_patch_max)
+      call mpibcast_real_arr(ypatch, ncool_patch_max)
+!
+    endsubroutine initialize_cooling_patches
 !***********************************************************************
     subroutine strat_MLT(rhotop,mixinglength_flux,lnrhom,tempm,rhobot)
 !
