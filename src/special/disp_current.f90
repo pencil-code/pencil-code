@@ -45,6 +45,7 @@ module Special
   real :: ampla0=0.0, initpower_a0=0.0, initpower2_a0=0.0
   real :: cutoff_a0=0.0, ncutoff_a0=0.0, kpeak_a0=0.0
   real :: relhel_a0=0.0, kgaussian_a0=0.0, eta_ee=0.0
+  real :: sigE_prefactor=1., sigB_prefactor=1.
   real :: weight_longitudinalE=2.0
   logical :: luse_scale_factor_in_sigma=.false.
   real, pointer :: eta, Hscript, echarge, sigEm_all, sigBm_all
@@ -83,7 +84,8 @@ module Special
     leedot_as_aux, lsigE_as_aux, lsigB_as_aux, eta_ee, lcurlyA, beta_inflation, &
     weight_longitudinalE, lswitch_off_divJ, lswitch_off_Gamma, &
     lnoncollinear_EB, lnoncollinear_EB_aver, luse_scale_factor_in_sigma, &
-    lcollinear_EB, lcollinear_EB_aver
+    lcollinear_EB, lcollinear_EB_aver, &
+    sigE_prefactor, sigB_prefactor
 !
 ! Declare any index variables necessary for main or
 !
@@ -170,6 +172,8 @@ module Special
 !
       call put_shared_variable('alpf',alpf,caller='register_disp_current')
       call put_shared_variable('lphi_hom',lphi_hom)
+      call put_shared_variable('sigE_prefactor',sigE_prefactor)
+      call put_shared_variable('sigB_prefactor',sigB_prefactor)
       call put_shared_variable('lcollinear_EB',lcollinear_EB)
       call put_shared_variable('lcollinear_EB_aver',lcollinear_EB_aver)
       call put_shared_variable('lnoncollinear_EB',lnoncollinear_EB)
@@ -404,7 +408,6 @@ module Special
 !
       real, dimension (nx) :: tmp
       real, dimension (nx) :: boost, gam_EB, eprime, bprime, jprime
-      real, parameter :: Chypercharge=41./12.
       integer :: i,j,k
 !
       intent(in) :: f
@@ -430,8 +433,9 @@ module Special
       call dot2_mn(p%el,p%e2)
 !
 !  Compute fully non-collinear expression for the current density.
-!  This is for the *spatially dependent* sigE and sigB. The averaged ones are
-!  computed in backreact_infl.f90.
+!  This is for the *spatially dependent* sigE and sigB.
+!  The averaged ones are computed in backreact_infl.f90.
+!  Any change to the code must be the same both here and there.
 !
       if (lnoncollinear_EB .or. lnoncollinear_EB_aver &
         .or. lcollinear_EB .or. lcollinear_EB_aver) then
@@ -442,12 +446,12 @@ module Special
           eprime=sqrt21*sqrt(p%e2-p%b2+boost)
           bprime=sqrt21*sqrt(p%b2-p%e2+boost)*sign(1.,p%eb)
           jprime=Chypercharge*echarge**3/(6.*pi**2*Hscript)*eprime*abs(bprime)/tanh(pi*abs(Bprime)/Eprime)
-          p%sigE=abs(jprime)*eprime/(gam_EB*boost)
-          p%sigB=abs(jprime)*p%eb/(eprime*gam_EB*boost)
+          p%sigE=sigE_prefactor*abs(jprime)*eprime/(gam_EB*boost)
+          p%sigB=sigB_prefactor*abs(jprime)*p%eb/(eprime*gam_EB*boost)
         elseif (lcollinear_EB) then
           eprime=sqrt(p%e2)
           bprime=sqrt(p%b2)
-          p%sigE=Chypercharge*echarge**3/(6.*pi**2*Hscript)*bprime/tanh(pi*abs(Bprime)/Eprime)
+          p%sigE=sigE_prefactor*Chypercharge*echarge**3/(6.*pi**2*Hscript)*bprime/tanh(pi*abs(Bprime)/Eprime)
           p%sigB=0.
         elseif (lnoncollinear_EB_aver .or. lcollinear_EB_aver) then
 !
