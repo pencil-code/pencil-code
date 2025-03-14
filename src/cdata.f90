@@ -284,6 +284,7 @@ module Cdata
   logical :: lread_oldsnap_notestscalar=.false.
   logical :: lread_oldsnap_noisothmhd=.false.
   logical :: lread_oldsnap_nosink=.false.
+  logical :: lread_oldsnap_nocoolprof=.false.
   logical :: lnamelist_error=.false., ltolerate_namelist_errors=.false., lparam_nml=.false.
   logical :: lwrite_dim_again=.true., allproc_print=.true.
   logical :: lproc_print=.true.
@@ -460,7 +461,7 @@ module Cdata
   integer :: iFenth=0, iss_flucz=0, iTT_flucz=0, irho_flucz=0
   integer :: iuu_fluc=0, iuu_flucx=0, iuu_flucy=0, iuu_flucz=0
   integer :: iuu_sph=0, iuu_sphr=0, iuu_spht=0, iuu_sphp=0
-  integer :: ics=0
+  integer :: ics=0, icool_prof=0
 !
 !  Variables to count the occurance of derivative calls per timestep
 !  for optimisation purposes.  To use uncomment the array and

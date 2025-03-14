@@ -138,7 +138,7 @@ module Param_IO
       lnoghost_strati, ichannel1, ichannel2, tag_foreign, &
       lpoint, mpoint, npoint, lpoint2, mpoint2, npoint2, &
       lfatal_num_vector_369, density_scale_factor, &
-      lsmooth_farray,farray_smooth_width, radius_diag
+      lsmooth_farray,farray_smooth_width, radius_diag, lread_oldsnap_nocoolprof
 !
   namelist /run_pars/ &
       cvsid, ip, xyz0, xyz1, Lxyz, lperi, lpole, ncoarse, &
@@ -230,7 +230,8 @@ module Param_IO
       uu_fft3d, oo_fft3d, bb_fft3d, jj_fft3d, uu_xkyz, oo_xkyz, bb_xkyz, jj_xkyz, &
       uu_kx0z, oo_kx0z, bb_kx0z, jj_kx0z, bb_k00z, ee_k00z, gwT_fft3d, &
       Em_specflux, Hm_specflux, Hc_specflux, density_scale_factor, radius_diag, &
-      lmorton_curve, ltest_bcs,lsuppress_parallel_reductions, shared_mem_name, lupdate_cvs
+      lmorton_curve, ltest_bcs,lsuppress_parallel_reductions, shared_mem_name, lupdate_cvs, &
+      lread_oldsnap_nocoolprof
 !
   namelist /IO_pars/ &
       lcollective_IO, IO_strategy
