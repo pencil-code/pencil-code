@@ -94,7 +94,7 @@ module Particles
   real :: tstart_rpbeta=0.0, birthring_lifetime=huge1
   real :: rdiffconst_dragf=0.07, rdiffconst_pass=0.07
   real :: r0gaussz=1.0, qgaussz=0.0
-  real :: vapor_mixing_ratio_qvs=0., rhoa=1.0
+  real :: vapor_mixing_ratio_qvs=0., rhoa=1.0, redfrac=0.9
   real, pointer :: g1, rp1, rp1_smooth, t_ramp_mass, t_start_secondary
   integer :: l_hole=0, m_hole=0, n_hole=0
   integer :: iffg=0, ifgx=0, ifgy=0, ifgz=0, ibrtime=0
@@ -294,7 +294,8 @@ module Particles
       remove_particle_criteria_edtog, &
       ascalar_ngp, ascalar_cic, rp_int, rp_ext, rp_ext_width, lnpmin_exclude_zero, &
       lcondensation_rate, vapor_mixing_ratio_qvs, lfollow_gas, &
-      ltauascalar, rhoa, G_condensation, lpartnucleation, nucleation_threshold
+      ltauascalar, rhoa, G_condensation, lpartnucleation, nucleation_threshold, &
+      redfrac
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0      ! DIAG_DOC: $x_{part}$
   integer :: idiag_xpmin=0, idiag_ypmin=0, idiag_zpmin=0      ! DIAG_DOC: $x_{part}$
@@ -412,7 +413,8 @@ module Particles
         call farray_register_auxiliary('nucl_rmin',inucl,communicated=.false.)
         call farray_register_auxiliary('nucl_rate',inucrate,communicated=.false.)
         call farray_register_auxiliary('supersat',isupsat,communicated=.false.)
-      endif
+        call append_npvar('born',iborn)
+     endif
 !
 !  Special variable for stiff drag force equations.
 !
@@ -2473,7 +2475,7 @@ module Particles
       real, dimension(3) :: uup
 !
       logical, save :: linsertmore=.true.
-      real :: xx0, yy0, r2, r, mass_nucleii, part_mass, TTp, redfrac=0.9
+      real :: xx0, yy0, r2, r, mass_nucleii, part_mass, TTp
       integer :: j, k, n_insert, npar_loc_old, iii
       integer :: ii,jj,kk
       integer :: jproc,tag_id,tag0=283
@@ -2545,6 +2547,10 @@ module Particles
                       fp(k,ixp) = x(ii)
                       fp(k,iyp) = y(jj)
                       fp(k,izp) = z(kk)
+                      !
+                      ! Save the time when the particle was born
+                      !
+                      fp(k,iborn) = t
                       !
                       ! Give the particle the same velocity as the local fluid cell
                       !
