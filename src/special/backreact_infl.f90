@@ -105,6 +105,7 @@ module Special
   real :: echarge=.0, echarge_const=.303
   real, target :: ddotam_all
   real, pointer :: alpf, eta_tdep
+  real, pointer :: sigE_prefactor, sigB_prefactor
 ! real, dimension (:), pointer :: eta_xtdep
   real, dimension (nx) :: dt1_special
   logical :: lbackreact_infl=.true., lem_backreact=.true., lzeroHubble=.false.
@@ -218,6 +219,8 @@ module Special
       if (lmagnetic .and. lem_backreact) then
         call get_shared_variable('alpf',alpf,caller='initialize_backreact_infl')
         call get_shared_variable('lphi_hom',lphi_hom)
+        call get_shared_variable('sigE_prefactor',sigE_prefactor)
+        call get_shared_variable('sigB_prefactor',sigB_prefactor)
         call get_shared_variable('lcollinear_EB',lcollinear_EB)
         call get_shared_variable('lcollinear_EB_aver',lcollinear_EB_aver)
         call get_shared_variable('lnoncollinear_EB',lnoncollinear_EB)
@@ -227,6 +230,7 @@ module Special
         alpf=0.
         lphi_hom=.false.
       endif
+print*,'AXEL: sigB_prefactor=',sigB_prefactor
 !
       call keep_compiler_quiet(f)
 !
@@ -809,8 +813,8 @@ module Special
 !
 !  Apply Chypercharge, echarge, and Hscript universally for aver and nonaver.
 !
-        sigEm_all=Chypercharge*echarge**3*sigE1m_all/Hscript
-        sigBm_all=Chypercharge*echarge**3*sigB1m_all/Hscript
+        sigEm_all=sigE_prefactor*Chypercharge*echarge**3*sigE1m_all/Hscript
+        sigBm_all=sigB_prefactor*Chypercharge*echarge**3*sigB1m_all/Hscript
       endif
 !
     endsubroutine special_after_boundary
