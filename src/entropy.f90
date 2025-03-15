@@ -7868,7 +7868,8 @@ module Energy
           if (exist) then
             open(36,file=trim(directory)//'/cooling_patches.ascii')
           else
-            print*,'initialize_cooling_patches: no input file cooling_patches.[dat,ascii], generating new xpatch, ypatch using random positions'
+            print*,'initialize_cooling_patches: no input file cooling_patches.[dat,ascii],', &
+              'generating new xpatch, ypatch using random positions'
             lnewpatches = .true.
           endif
         endif
