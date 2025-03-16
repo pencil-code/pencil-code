@@ -68,7 +68,7 @@ module Particles_coagulation
   integer :: idiag_ncoagpm=0, idiag_ncoagpartpm=0, idiag_dt1_coag_par=0
 !
   real :: deltad = 1., a0 = 1.
-  real :: r1, r2, r3, r4, r5, r6, r7, r8, r_diff
+  real :: r1=0., r2=0., r3=0., r4=0., r5=0., r6=0., r7=0., r8=0., r_diff=0.
   integer :: idiag_k100_100=0, idiag_k100_80=0, idiag_k100_60=0, idiag_k100_50=0, &
              idiag_k100_40=0, idiag_k100_30=0, idiag_k100_20=0, idiag_k100_10=0, &
              idiag_k80_80=0, idiag_k80_60=0, idiag_k80_50=0, idiag_k80_40=0, &
