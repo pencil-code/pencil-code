@@ -147,6 +147,7 @@ module Particles
   logical :: lsimple_volume=.false.
   logical :: lnpmin_exclude_zero = .false.
   logical :: ltauascalar = .false., lfollow_gas=.false.
+  logical :: lset_df_insert_nucleii=.false.
   logical, pointer :: lramp_mass, lsecondary_wait
 !
   character(len=labellen) :: interp_pol_uu ='ngp'
@@ -295,7 +296,7 @@ module Particles
       ascalar_ngp, ascalar_cic, rp_int, rp_ext, rp_ext_width, lnpmin_exclude_zero, &
       lcondensation_rate, vapor_mixing_ratio_qvs, lfollow_gas, &
       ltauascalar, rhoa, G_condensation, lpartnucleation, nucleation_threshold, &
-      redfrac
+      redfrac, lset_df_insert_nucleii
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0      ! DIAG_DOC: $x_{part}$
   integer :: idiag_xpmin=0, idiag_ypmin=0, idiag_zpmin=0      ! DIAG_DOC: $x_{part}$
@@ -337,8 +338,8 @@ module Particles
   integer :: idiag_eccpxm=0, idiag_eccpym=0, idiag_eccpzm=0
   integer :: idiag_eccpx2m=0, idiag_eccpy2m=0, idiag_eccpz2m=0
   integer :: idiag_vprms=0, idiag_vpyfull2m=0, idiag_deshearbcsm=0
-  integer :: idiag_Shm=0, idiag_latentheatm
-  integer :: idiag_ffcondposm, idiag_ffcondnegm, idiag_ffcondm
+  integer :: idiag_Shm=0, idiag_latentheatm=0
+  integer :: idiag_ffcondposm=0, idiag_ffcondnegm=0, idiag_ffcondm=0
   integer, dimension(ndustrad) :: idiag_npvzmz=0, idiag_npvz2mz=0, idiag_nptz=0
   integer, dimension(ndustrad) :: idiag_npuzmz=0
 !
@@ -2594,9 +2595,14 @@ module Particles
                       ! Set the scalar to zero since the nucleii have now been moved to the
                       ! particle phase
                       !
-                      df(ii,jj,kk,icc) = df(ii,jj,kk,icc) - redfrac*f(ii,jj,kk,icc)/dt
-                      df(ii,jj,kk,icc+1) = df(ii,jj,kk,icc+1) - redfrac*f(ii,jj,kk,icc+1)/dt
-                    endif                    
+                      if (lset_df_insert_nucleii) then
+                         df(ii,jj,kk,icc) = df(ii,jj,kk,icc) - redfrac*f(ii,jj,kk,icc)/dt
+                         df(ii,jj,kk,icc+1) = df(ii,jj,kk,icc+1) - redfrac*f(ii,jj,kk,icc+1)/dt
+                      else
+                         f(ii,jj,kk,icc)   = (1.-redfrac)*f(ii,jj,kk,icc)
+                         f(ii,jj,kk,icc+1) = (1.-redfrac)*f(ii,jj,kk,icc+1)
+                      endif
+                    endif
                   endif
                 enddo
               enddo
@@ -2643,7 +2649,7 @@ module Particles
 !  sorting).
 !
         call sort_particles_imn(fp,ineargrid,ipar)
-      endif
+     endif
 !
     endsubroutine insert_nucleii
 !***********************************************************************
