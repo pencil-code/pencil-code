@@ -74,7 +74,7 @@ module Chemistry
   real :: str_thick=0.02
   real :: init_pressure=10.13e5
   real :: global_phi=impossible
-  real :: delta_chem, press
+  real :: delta_chem=0., press=0.
 !
   logical :: lone_spec=.false., lfilter_strict=.false.
 !
@@ -179,10 +179,10 @@ module Chemistry
   character(len=30) :: inucl_pre_exp="const"      
   logical :: lnoevap=.false., lnolatentheat=.true.
   !
-  character(len=30), dimension(nchemspec) :: init_premixed_fuel
-  real, dimension(nchemspec) :: init_fuel_molar_ratio
-  real, dimension(nchemspec) :: init_fuel_O2_demand
-  real :: init_temp_fuel, init_temp_oxidizer, init_phi
+  character(len=30), dimension(nchemspec) :: init_premixed_fuel="nothing"
+  real, dimension(nchemspec) :: init_fuel_molar_ratio=0.
+  real, dimension(nchemspec) :: init_fuel_O2_demand=0.
+  real :: init_temp_fuel=0., init_temp_oxidizer=0., init_phi=0.
 !
 !   Atmospheric physics
 !
@@ -1377,20 +1377,20 @@ module Chemistry
         ! Calculate saturation concentration of condensing species
         ! (This must be done before nucleation radius and rate are calculated)
         !
-        if (lnucleation .or. lcondensing_species) then
-          call cond_spec_sat_conc(p,conc_sat_spec)
-          p%conc_sat_spec=conc_sat_spec
-          f(l1:l2,m,n,isupsat)=p%chem_conc(:,ichem_cond_spec)&
+         if (lnucleation .or. lcondensing_species) then
+            call cond_spec_sat_conc(p,conc_sat_spec)
+            p%conc_sat_spec=conc_sat_spec
+            f(l1:l2,m,n,isupsat)=p%chem_conc(:,ichem_cond_spec)&
                /max(p%conc_sat_spec,1e-20)
         endif
         !
         !  Calculate nucleation rate and corresponding radius
         !
         if (lnucleation) then
-          if (lpencil(i_nucl_rate) .or. lpencil(i_nucl_rmin)) then
-            call cond_spec_nucl_rate(p,nucleation_rmin,nucleation_rate)
-            p%nucl_rate=nucleation_rate
-            p%nucl_rmin=nucleation_rmin
+           if (lpencil(i_nucl_rate) .or. lpencil(i_nucl_rmin)) then
+              call cond_spec_nucl_rate(p,nucleation_rmin,nucleation_rate)
+              p%nucl_rate=nucleation_rate
+              p%nucl_rmin=nucleation_rmin
             !
             ! Fill auxilliary array with radius and rate of nucleii. For use in
             ! insert_nucleii in particles_dust.f90 and for visualization
@@ -2900,7 +2900,7 @@ module Chemistry
           write (file_id,*) ''
           write (file_id,*) 'Species viscosity, g/cm/s,'
           do k = 1,nchemspec
-            write (file_id,'(7E12.4)') species_viscosity(l1,m1,n1,k),species_viscosity(l2-1,m1,n1,k)
+             write (file_id,'(7E12.4)') species_viscosity(l1,m1,n1,k),species_viscosity(l2,m2,n2,k)
           enddo
           write (file_id,*) ''
           write (file_id,*) 'Thermal cond, erg/(cm K s),'
@@ -6959,7 +6959,7 @@ module Chemistry
         !
         if (.not. lnolatentheat) then
           p%latent_heat=p%latent_heat+p%ff_nucl*deltaH_cgs/unit_temperature/molar_mass_spec*unit_mass
-        endif
+       endif
         !
       endif
 !
@@ -6984,12 +6984,13 @@ module Chemistry
 !***********************************************************************
     subroutine cond_spec_nucl_rate(p,nucleation_rmin,nucleation_rate)
       !
-      type (pencil_case) :: p
+      type (pencil_case), intent(in) :: p
+      real, dimension (nx), intent(out) :: nucleation_rate, nucleation_rmin
       !
       integer :: ichem, kkk, i
       real :: volume_spec_cgs=4.5e-23
       real :: volume_spec
-      real, dimension (nx) :: sat_ratio_spec, nucleation_rate, nucleation_rmin
+      real, dimension (nx) :: sat_ratio_spec
       real, dimension (nx) :: gam_surf_energy, chem_conc
       real :: tmp1, tmp2, tmp3, tmp4, nucleation_rate_coeff
       !
