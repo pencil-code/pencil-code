@@ -737,7 +737,7 @@ module Particles_radius
       type (pencil_case) :: p
       integer, dimension(mpar_loc,3) :: ineargrid
 !
-      real, dimension(nx) :: ap_equi, vth, dt1_condensation, rhovap
+      real, dimension(nx) :: ap_equi, vth, dt1_condensation=0., rhovap
       real, dimension(nx) :: total_surface_area, ppsat
       real, dimension(nx) :: rhocond_tot, rhosat, np_total, mfluxcond
       real, dimension(nx) :: tau_phase1, tau_evaporation1, tau_evaporation
@@ -760,8 +760,8 @@ module Particles_radius
 !DMDM
           rhovap = p%cc(:,1)*p%rho
           ppsat = 6.035e11*exp(-5938*p%TT1)  ! Valid for water
-          vth = sqrt(p%csvap2)
           if (.not. lascalar .and. .not. lcondensation_simplified .and. .not. lcondensing_species) then
+             vth = sqrt(p%csvap2)
             rhosat = gamma*ppsat/p%csvap2
           endif
           rhocond_tot = p%rhop+rhovap
