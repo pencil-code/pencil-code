@@ -37,7 +37,7 @@ module Particles_temperature
   logical :: lconst_part_temp=.false.
   logical :: lrayleigh_rad_limit=.false.
   integer :: idmpt=0,ndiffstepTT=3
-  real :: init_part_temp, emissivity=0.0
+  real :: init_part_temp=0., emissivity=0.0
   real :: rdiffconstTT = 0.1178
   real, dimension(:,:,:), allocatable :: weight_array
   real :: Twall=0.0

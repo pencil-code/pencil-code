@@ -213,7 +213,7 @@ module Hydro
   real :: omega_out=0., omega_in=0., omega_fourier=0.
   real :: width_ff_uu=1.,x1_ff_uu=0.,x2_ff_uu=0.
   real :: ekman_friction=0.0, friction_tdep_toffset=0.0, friction_tdep_tau0=0.
-  real :: t1_ekman, t2_ekman, uzjet=0.0
+  real :: t1_ekman=0., t2_ekman=0., uzjet=0.0
   real :: ampl_forc=0., k_forc=impossible, w_forc=0., x_forc=0., dx_forc=0.1
   real :: ampl_fcont_uu=1., k_diffrot=1., amp_centforce=1., Sbaro0=0.
   real :: uphi_rbot=1., uphi_rtop=1., uphi_step_width=0.
@@ -6246,7 +6246,7 @@ endif
 !
       read(parallel_unit, NML=hydro_run_pars, IOSTAT=iostat)
 !
-      if (lSGS_hydro) call read_SGS_hydro_run_pars(iostat)
+      if (lSGS_hydro) call read_SGS_hydro_run_pars(iostat)      
 !
     endsubroutine read_hydro_run_pars
 !***********************************************************************
