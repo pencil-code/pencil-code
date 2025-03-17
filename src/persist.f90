@@ -267,7 +267,7 @@ module Persist
             output_persistent_general = .true.
       endif
 !
-      if (.not.lstart.and.(.not.ldt.or.lgpu)) then
+      if (.not.lstart.and.(.not.lcourant_dt.or.lgpu)) then
         if (write_persist ('TIME_STEP', id_record_TIME_STEP, merge(-dt,dt,lgpu.and.ldt))) &
           output_persistent_general = .true.
       endif
