@@ -4301,7 +4301,7 @@ module Magnetic
 !  AB: eta_total and the rest are pencils, but it complains about inconsistent ranks. So I put (1).
 !  Here we may need to add the chiral part.
 !
-            if (lresi_eta_tdep .or. lresi_eta_xtdep) then
+            if (lresi_eta_tdep .or. lresi_eta_xtdep .or. eta/=0.) then
               if (lohm_evolve) then
                 p%jj_ohm=f(l1:l2,m,n,ijx:ijz)
               else
