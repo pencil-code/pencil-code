@@ -1867,6 +1867,7 @@ testBCs()
   acHostMeshDestroy(&mesh_to_copy);
   acHostMeshCopyVertexBuffers(tmp_mesh_to_store,mesh);
   acHostMeshDestroy(&tmp_mesh_to_store);
+  acGridDestroyTaskGraph(bcs);
 }
 /***********************************************************************************************/
 extern "C" void
