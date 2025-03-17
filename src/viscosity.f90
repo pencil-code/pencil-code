@@ -231,8 +231,8 @@ module Viscosity
   real, dimension(mz) :: eth0z = 0.0
   real, dimension(nx) :: diffus_nu, diffus_nu3
 !
-  integer :: string_enum_nnewton_type = 0
-  integer :: string_enum_div_sld_visc = 0
+  integer :: enum_nnewton_type = 0
+  integer :: enum_div_sld_visc = 0
 !
   contains
 !***********************************************************************
@@ -2233,8 +2233,7 @@ module Viscosity
 !
       if (lvisc_schur_223) then
         p%fvisc=p%fvisc+nu*p%del2u
-        p%fvisc(:,1)=p%fvisc(:,1)-nu*p%d2uidxj(:,1,3)
-        p%fvisc(:,2)=p%fvisc(:,2)-nu*p%d2uidxj(:,2,3)
+        p%fvisc(:,1:2)=p%fvisc(:,1:2)-nu*p%d2uidxj(:,1:2,3)
       endif
 !
 !  Calculate Lambda effect. Allow for the possibility of the
@@ -2875,6 +2874,20 @@ module Viscosity
 !
     endsubroutine dynamical_viscosity
 !***********************************************************************
+    subroutine split_update_viscosity(f)
+!
+!  Update the velocity by integrating the operator split viscous terms.
+!
+!  22-aug-13/ccyang: coded.
+!
+      use ImplicitDiffusion, only: integrate_diffusion
+!
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+!
+      if (limplicit_viscosity) call integrate_diffusion(get_viscosity_implicit, f, iux, iuz)
+!
+    endsubroutine split_update_viscosity
+!***********************************************************************
     subroutine get_viscosity_implicit(ndc, diffus_coeff, iz)
 !
 !  Gets the diffusion coefficient along a given pencil for the implicit algorithm.
@@ -2892,20 +2905,6 @@ module Viscosity
       endif
 !
     endsubroutine get_viscosity_implicit
-!***********************************************************************
-    subroutine split_update_viscosity(f)
-!
-!  Update the velocity by integrating the operator split viscous terms.
-!
-!  22-aug-13/ccyang: coded.
-!
-      use ImplicitDiffusion, only: integrate_diffusion
-!
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-!
-      if (limplicit_viscosity) call integrate_diffusion(get_viscosity_implicit, f, iux, iuz)
-!
-    endsubroutine split_update_viscosity
 !***********************************************************************
     subroutine calc_lambda(p,div_lambda)
 !
@@ -2991,7 +2990,7 @@ module Viscosity
     use Syscalls, only: copy_addr
     use General , only: string_to_enum
 
-    integer, parameter :: n_pars=1000
+    integer, parameter :: n_pars=200
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call copy_addr(nu,p_par(1))
@@ -3097,10 +3096,10 @@ module Viscosity
     call copy_addr(lh1_rprof,p_par(101)) ! (mx)
     call copy_addr(der_lv0_rprof,p_par(102)) ! (mx)
     call copy_addr(der_lv1_rprof,p_par(103)) ! (mx)
-    call string_to_enum(string_enum_nnewton_type ,nnewton_type)
-    call copy_addr(string_enum_nnewton_type ,p_par(104))
-    call string_to_enum(string_enum_div_sld_visc,div_sld_visc)
-    call copy_addr(string_enum_div_sld_visc,p_par(105))
+    call string_to_enum(enum_nnewton_type ,nnewton_type)
+    call copy_addr(enum_nnewton_type ,p_par(104))
+    call string_to_enum(enum_div_sld_visc,div_sld_visc)
+    call copy_addr(enum_div_sld_visc,p_par(105))
     
     endsubroutine pushpars2c
 !***********************************************************************

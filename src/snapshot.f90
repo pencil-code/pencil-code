@@ -274,6 +274,7 @@ module Snapshot
       use General, only: safe_character_assign, loptest
       use IO, only: log_filename_to_file
       use Sub, only: read_snaptime, update_snaptime
+      use Syscalls, only: system_cmd
       use Mpicomm, only: mpibarrier
 !
 !  The dimension msnap can either be mfarray (for f-array in run.f90)
@@ -358,6 +359,9 @@ module Snapshot
         ! update ghosts, because 'update_auxiliaries' may change the data
         if (.not. loptest(noghost).or.ncoarse>1) call update_ghosts(a)
         call safe_character_assign(file,trim(chsnap))
+        if (lbackup_snap.and..not.lstart) &
+            call system_cmd('mv -f '//trim(directory_snap)//'/'//trim(file)//' '// &
+                            trim(directory_snap)//'/'//trim(file)//'.bck '//' >& /dev/null')
         if (lmultithread.and.nt>0) then
           extpars%ind1=1; extpars%ind2=msnap; extpars%file=file
 !$        lmasterflags(PERF_WSNAP) = .true.
@@ -432,6 +436,8 @@ module Snapshot
       use IO, only: input_snap, input_snap_finalize
       use Persist, only: input_persistent
       use SharedVariables, only: get_shared_variable
+      use File_io, only: file_exists
+      use Syscalls, only: memusage
 !
 !  The dimension msnap can either be mfarray (for f-array in run.f90)
 !  or just mvar (for f-array in start.f90 or df-array in run.f90.
@@ -441,6 +447,7 @@ module Snapshot
       real, dimension (mx,my,mz,msnap) :: f
       real, dimension (:,:,:,:), allocatable :: f_oversize
       character (len=*) :: chsnap
+      character (len=fnlen) :: file
 !
       integer :: ivar
       real, dimension(:,:), pointer :: reference_state
@@ -456,6 +463,8 @@ module Snapshot
       else
         mode=1
       endif
+      file = chsnap
+      if (lbackup_snap.and..not. file_exists(trim(directory_snap)//'/'//trim(chsnap))) file = trim(chsnap)//'.bck'
 !
 !  No need to read maux variables as they will be calculated
 !  at the first time step -- even if lwrite_aux is set.
@@ -466,7 +475,7 @@ module Snapshot
 !
       if (lread_oldsnap_nomag) then
         if (lroot) print*,'read old snapshot file (but without magnetic field)'
-        call input_snap('var.dat',f,msnap-3,mode)
+        call input_snap(file,f,msnap-3,mode)
         if (lpersist) call input_persistent
         call input_snap_finalize
         ! shift the rest of the data
@@ -481,7 +490,7 @@ module Snapshot
 !
       elseif (lread_oldsnap_nopscalar) then
         if (lroot) print*,'read old snapshot file (but without passive scalar)'
-        call input_snap(chsnap,f,msnap-1,mode)
+        call input_snap(file,f,msnap-1,mode)
         if (lpersist) call input_persistent
         call input_snap_finalize
         ! shift the rest of the data
@@ -510,7 +519,7 @@ module Snapshot
         endif
 
         print*,'read old snapshot file (but without testfield/testflow),ntestfield,ntestflow=',ntestfield,ntestflow
-        call input_snap(chsnap,f,msnap-ntestfield-ntestflow,mode)
+        call input_snap(file,f,msnap-ntestfield-ntestflow,mode)
         if (lpersist) call input_persistent
         call input_snap_finalize
         ! shift the rest of the data
@@ -525,7 +534,7 @@ module Snapshot
 !
       elseif (lread_oldsnap_notestscalar) then
         if (lroot) print*,'read old snapshot file (but without testscalar),icctest,mvar,msnap=',icctest,mvar,msnap
-        call input_snap(chsnap,f,msnap-ntestscalar,mode)
+        call input_snap(file,f,msnap-ntestscalar,mode)
         if (lpersist) call input_persistent
         call input_snap_finalize
         ! shift the rest of the data
@@ -540,8 +549,8 @@ module Snapshot
 !
       elseif (lread_oldsnap_nohydro) then
         if (lroot) print*,'read old snapshot file nohydro mvar,msnap=',mvar,msnap
-        call input_snap(chsnap,f,msnap-4,mode)
-        !call input_snap(chsnap,f,msnap-nohydro_but_efield,mode)
+        call input_snap(file,f,msnap-4,mode)
+        !call input_snap(file,f,msnap-nohydro_but_efield,mode)
         if (lpersist) call input_persistent
         call input_snap_finalize
         ! shift the rest of the data
@@ -556,7 +565,7 @@ module Snapshot
 !
       elseif (lread_oldsnap_nohydro_nomu5) then
         if (lroot) print*,'read old snapshot file nohydro mvar,msnap=',mvar,msnap
-        call input_snap(chsnap,f,msnap-3,mode)
+        call input_snap(file,f,msnap-3,mode)
         if (lpersist) call input_persistent
         call input_snap_finalize
         ! shift the rest of the data
@@ -576,8 +585,8 @@ module Snapshot
 !
       elseif (lread_oldsnap_onlyA) then
         if (lroot) print*,'read old snapshot file onlyA mvar,msnap=',mvar,msnap
-        !call input_snap(chsnap,f,msnap-4,mode)
-        call input_snap(chsnap,f,3,mode)
+        !call input_snap(file,f,msnap-4,mode)
+        call input_snap(file,f,3,mode)
         if (lpersist) call input_persistent
         call input_snap_finalize
         ! shift the rest of the data
@@ -595,8 +604,8 @@ module Snapshot
 !
       elseif (lread_oldsnap_nohydro_efield) then
         if (lroot) print*,'read old snapshot file nohydro_but_efield mvar,msnap=',mvar,msnap
-        call input_snap(chsnap,f,msnap-1,mode)
-        !call input_snap(chsnap,f,msnap-nohydro_but_efield,mode)
+        call input_snap(file,f,msnap-1,mode)
+        !call input_snap(file,f,msnap-nohydro_but_efield,mode)
         if (lpersist) call input_persistent
         call input_snap_finalize
         ! shift the rest of the data
@@ -616,7 +625,7 @@ module Snapshot
       elseif (lread_oldsnap_nohydro_ekfield) then
         if (lroot) print*,'read old snapshot file nohydro_ekfield mvar,msnap=',mvar,msnap
         allocate(f_oversize(mx,my,mz,msnap+14))
-        call input_snap(chsnap,f_oversize,msnap+14,mode)
+        call input_snap(file,f_oversize,msnap+14,mode)
         if (lpersist) call input_persistent
         call input_snap_finalize
         ! shift the rest of the data
@@ -637,7 +646,7 @@ module Snapshot
       elseif (lread_oldsnap_mskipvar) then
         if (lroot) print*,'read old snapshot file with mskipvar mskipvar,msnap=',mskipvar,msnap
         allocate(f_oversize(mx,my,mz,msnap+mskipvar))
-        call input_snap(chsnap,f_oversize,msnap+mskipvar,mode)
+        call input_snap(file,f_oversize,msnap+mskipvar,mode)
         if (lpersist) call input_persistent
         call input_snap_finalize
         ! shift the rest of the data
@@ -653,14 +662,14 @@ module Snapshot
 !  NB: require lupw_rho->lupw_lnrho and diagnostics ..grho..->..glnrho..
 !
       !elseif (lread_oldsnap_rho2lnrho) then
-      !  call input_snap(chsnap,f,ilnrho-1,mode)
-      !  call input_snap(chsnap,f,ilnrho,mode,DATA_LABEL='rho',ivar0=ilnrho)
-      !  if (msnap>ilnrho) call input_snap(chsnap,f,msnap,mode,ivar0=ilnrho+1)
-      !  if (lpersist) call input_persistent(chsnap)
+      !  call input_snap(file,f,ilnrho-1,mode)
+      !  call input_snap(file,f,ilnrho,mode,DATA_LABEL='rho',ivar0=ilnrho)
+      !  if (msnap>ilnrho) call input_snap(file,f,msnap,mode,ivar0=ilnrho+1)
+      !  if (lpersist) call input_persistent(file)
       !  call input_snap_finalize
       else
-        call input_snap(chsnap,f,msnap,mode)
-        if (lpersist) call input_persistent(chsnap)
+        call input_snap(file,f,msnap,mode)
+        if (lpersist) call input_persistent(file)
         call input_snap_finalize
       endif
 !
@@ -761,7 +770,6 @@ module Snapshot
 !  update ghost zones for var.dat (cheap, since done infrequently).
 !
       if (lspec.or.llwrite_only) then
-
         if (.not.lstart.and.lgpu) call copy_farray_from_GPU(f)
         if (ldo_all) call update_ghosts(f)
 !

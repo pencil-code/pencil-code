@@ -46,7 +46,7 @@ module Magnetic
                                 rprint_magn_mf, &
                                 read_magn_mf_run_pars,write_magn_mf_run_pars,pc_aasb_const_alpha,meanfield_after_boundary
 
-  use Messages, only: fatal_error,inevitably_fatal_error,warning,svn_id,timing,not_implemented
+  use Messages, only: fatal_error,inevitably_fatal_error,warning,svn_id,timing,not_implemented,information
 !
   implicit none
 !
@@ -326,7 +326,7 @@ module Magnetic
   real, target :: betamin_jxb = 0.0
   real, dimension(mx,my) :: eta_xy
   real, dimension(mx,my,3) :: geta_xy
-  real, dimension(nx,ny,nz,3) :: A_relprof
+  real, dimension(nz,3) :: A_relprof
   real, dimension(mz) :: coskz,sinkz,eta_z,geta_z
   real, dimension(mx) :: eta_x,geta_x
   real, dimension(my) :: eta_y,geta_y
@@ -1128,16 +1128,18 @@ module Magnetic
 
   integer :: iedotx,iedotz
 
-  integer :: string_enum_tdep_eta_type = 0
-  integer :: string_enum_ambipolar_diffusion = 0
-  integer :: string_enum_rdep_profile = 0
-  integer :: string_enum_div_sld_magn = 0
-  integer :: string_enum_ihall_term = 0
-  integer :: string_enum_borderaa(3) = 0
-  integer :: string_enum_iforcing_continuous_aa = 0
+  integer :: enum_tdep_eta_type = 0
+  integer :: enum_ambipolar_diffusion = 0
+  integer :: enum_rdep_profile = 0
+  integer :: enum_div_sld_magn = 0
+  integer :: enum_ihall_term = 0
+  integer :: enum_borderaa(3) = 0
+  integer :: enum_iforcing_continuous_aa = 0
 
   !TP: moved here from saved variable
   real, dimension(mz), save :: Bz_stratified
+
+  logical :: lrelaxprof_glob_scaled
 
   contains
 !***********************************************************************
@@ -1866,29 +1868,37 @@ module Magnetic
                                  'z dependent relaxation profiles for A on Yin-Yang grid')
         endif
 
-        tau_relprof1=1./tau_relprof
-        select case (A_relaxprofile)
-        case('0,coskz,0')
-          A_relprof(:,:,:,1)=0.
-          do i=1,nx
-            do j=1,ny
-              A_relprof(i,j,:,2)=amp_relprof*cos(k_relprof*z(n1:n2))
-            enddo
-          enddo
-          A_relprof(:,:,:,3)=0.
-        case('sinkz,coskz,0')
-          do i=1,nx
-            do j=1,ny
-              A_relprof(i,j,:,1)=amp_relprof*sin(k_relprof*z(n1:n2))
-              A_relprof(i,j,:,2)=amp_relprof*cos(k_relprof*z(n1:n2))
-            enddo
-          enddo
-          A_relprof(:,:,:,3)=0.
-        case('aa_from_global')
-          if (lroot) print*, 'initialize_mag: Set A_relaxprofile to: ', A_relaxprofile
-          if (iglobal_ax_ext/=0 .or. iglobal_ay_ext/=0 .or. iglobal_az_ext/=0) &
-              A_relprof(:,:,:,1:3)=amp_relprof*f(l1:l2,m1:m2,n1:n2,iglobal_ax_ext:iglobal_az_ext)
-        endselect
+        if (lA_relprof_global) then
+          if (iglobal_ax_ext==0 .and. iglobal_ay_ext==0 .and. iglobal_az_ext==0) then
+            call warning('initialize_magnetic', &
+            'lA_relprof_global=T but global A profile not existent - relaxation suppressed')
+            tau_relprof=0.
+          endif
+        else
+          lrelaxprof_glob_scaled=.false.
+          tau_relprof1=1./tau_relprof
+
+          select case (A_relaxprofile)
+          case('0,coskz,0')
+            A_relprof(:,1)=0.
+            A_relprof(:,2)=amp_relprof*cos(k_relprof*z(n1:n2))
+            A_relprof(:,3)=0.
+          case('sinkz,coskz,0')
+            A_relprof(:,1)=amp_relprof*sin(k_relprof*z(n1:n2))
+            A_relprof(:,2)=amp_relprof*cos(k_relprof*z(n1:n2))
+            A_relprof(:,3)=0.
+          case('aa_from_global')
+            lrelaxprof_glob_scaled = iglobal_ax_ext/=0 .or. iglobal_ay_ext/=0 .or. iglobal_az_ext/=0
+            if (.not.lrelaxprof_glob_scaled) call warning('initialize_magnetic', &
+            'lA_relprof_global=F and A_relaxprofile==aa_from_global, but global A profile not existent' // &
+            ' - relaxation suppressed')
+            tau_relprof=0.
+          case default
+            call fatal_error('initialize_magnetic','no such A_relaxprofile: '//trim(A_relaxprofile))
+          endselect
+          call information('initialize_magnetic','set A_relaxprofile to: '//trim(A_relaxprofile))
+
+        endif
       endif
 !
 !  Write profile (uncomment for debugging)
@@ -2538,8 +2548,10 @@ module Magnetic
           enddo; enddo
 !
         case ('relprof')
-          f(l1:l2,m1:m2,n1:n2,iax)=A_relprof(:,:,:,1)
-          f(l1:l2,m1:m2,n1:n2,iay)=A_relprof(:,:,:,2)
+          do n=n1,n2
+            f(l1:l2,m1:m2,n,iax)=A_relprof(n-nghost,1)
+            f(l1:l2,m1:m2,n,iay)=A_relprof(n-nghost,2)
+          enddo
 !
         case ('inclined-dipole')
 !
@@ -5987,12 +5999,14 @@ module Magnetic
 !
 !  use the directly the global external vector potential
 !
-          dAdt= dAdt-(p%aa-f(l1:l2,m,n,iglobal_ax_ext:iglobal_az_ext))*tau_relprof1
+          dAdt = dAdt-(p%aa-f(l1:l2,m,n,iglobal_ax_ext:iglobal_az_ext))*tau_relprof1
         else
           !dAdt= dAdt-(p%aa-A_relprof(:,m-m1+1,n-n1+1,:))*tau_relprof1
-          dAdt(:,1)= dAdt(:,1)-(p%aa(:,1)-A_relprof(:,m-m1+1,n-n1+1,1))*tau_relprof1
-          dAdt(:,2)= dAdt(:,2)-(p%aa(:,2)-A_relprof(:,m-m1+1,n-n1+1,2))*tau_relprof1
-          dAdt(:,3)= dAdt(:,3)-(p%aa(:,3)-A_relprof(:,m-m1+1,n-n1+1,3))*tau_relprof1
+          if (lrelaxprof_glob_scaled) then
+            dAdt = dAdt-(p%aa-amp_relprof*f(l1:l2,m,n,iglobal_ax_ext:iglobal_az_ext))*tau_relprof1
+          else
+            dAdt = dAdt-(p%aa-A_relprof(n-nghost,1))*tau_relprof1
+          endif
         endif
       endif
 !
@@ -11671,20 +11685,20 @@ module Magnetic
     call copy_addr(sinz,p_par(247)) ! (mz)
     call copy_addr(cosz,p_par(248)) ! (mz)
 
-    call string_to_enum(string_enum_tdep_eta_type,tdep_eta_type)
-    call copy_addr(string_enum_tdep_eta_type,p_par(250)) ! int
-    call string_to_enum(string_enum_ambipolar_diffusion,ambipolar_diffusion)
-    call copy_addr(string_enum_ambipolar_diffusion,p_par(251)) ! int
-    call string_to_enum(string_enum_rdep_profile,rdep_profile)
-    call copy_addr(string_enum_rdep_profile,p_par(252)) ! int
-    call string_to_enum(string_enum_ihall_term,ihall_term)
-    call copy_addr(string_enum_ihall_term,p_par(253)) ! int
-    call string_to_enum(string_enum_iforcing_continuous_aa,iforcing_continuous_aa)
-    call copy_addr(string_enum_iforcing_continuous_aa,p_par(254)) ! int
-    call string_to_enum(string_enum_borderaa(1),borderaa(1))
-    call string_to_enum(string_enum_borderaa(2),borderaa(2))
-    call string_to_enum(string_enum_borderaa(3),borderaa(3))
-    call copy_addr(string_enum_borderaa,p_par(255)) ! int3
+    call string_to_enum(enum_tdep_eta_type,tdep_eta_type)
+    call copy_addr(enum_tdep_eta_type,p_par(250)) ! int
+    call string_to_enum(enum_ambipolar_diffusion,ambipolar_diffusion)
+    call copy_addr(enum_ambipolar_diffusion,p_par(251)) ! int
+    call string_to_enum(enum_rdep_profile,rdep_profile)
+    call copy_addr(enum_rdep_profile,p_par(252)) ! int
+    call string_to_enum(enum_ihall_term,ihall_term)
+    call copy_addr(enum_ihall_term,p_par(253)) ! int
+    call string_to_enum(enum_iforcing_continuous_aa,iforcing_continuous_aa)
+    call copy_addr(enum_iforcing_continuous_aa,p_par(254)) ! int
+    call string_to_enum(enum_borderaa(1),borderaa(1))
+    call string_to_enum(enum_borderaa(2),borderaa(2))
+    call string_to_enum(enum_borderaa(3),borderaa(3))
+    call copy_addr(enum_borderaa,p_par(255)) ! int3
     call copy_addr(bz_stratified,p_par(256)) ! (mz)
     call copy_addr(eta_tdep,p_par(257))
 

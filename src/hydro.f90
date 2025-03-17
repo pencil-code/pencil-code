@@ -3308,17 +3308,11 @@ module Hydro
 !  if gradu is to be stored as auxiliary then we store it now
 !
         if (lgradu_as_aux .or. lparticles_lyapunov .or. lparticles_caustics .or. lparticles_tetrad) then
-          f(l1:l2,m,n,igu11) = p%uij(:,1,1)
-          f(l1:l2,m,n,igu12) = p%uij(:,1,2)
-          f(l1:l2,m,n,igu13) = p%uij(:,1,3)
-
-          f(l1:l2,m,n,igu21) = p%uij(:,2,1)
-          f(l1:l2,m,n,igu22) = p%uij(:,2,2)
-          f(l1:l2,m,n,igu23) = p%uij(:,2,3)
-
-          f(l1:l2,m,n,igu31) = p%uij(:,3,1)
-          f(l1:l2,m,n,igu32) = p%uij(:,3,2)
-          f(l1:l2,m,n,igu33) = p%uij(:,3,3)
+          jk=0
+          do jj=1,3; do kk=1,3
+            f(l1:l2,m,n,iguij+jk) = p%uij(:,jj,kk)
+            jk=jk+1
+          enddo;enddo
         endif
       endif
 !      if (.not.lpenc_loc_check_at_work) then
@@ -3864,9 +3858,7 @@ module Hydro
         call identify_bcs('ux',iux)
         call identify_bcs('uy',iuy)
         call identify_bcs('uz',iuz)
-        if (lslope_limit_diff) then
-          call identify_bcs('sld_char',isld_char)
-        endif
+        if (lslope_limit_diff) call identify_bcs('sld_char',isld_char)
       endif
 !
 !  Advection term, i.e., subtract u.gradu.
@@ -3949,9 +3941,9 @@ module Hydro
 !  WENO transport.
 !
         if (lweno_transport) then
-          df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-(p%transpurho(:,1)-p%uu(:,1)*p%transprho)*p%rho1
-          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-(p%transpurho(:,2)-p%uu(:,2)*p%transprho)*p%rho1
-          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-(p%transpurho(:,3)-p%uu(:,3)*p%transprho)*p%rho1
+          do j=1,3
+            df(l1:l2,m,n,iux-1+j)=df(l1:l2,m,n,iux-1+j)-(p%transpurho(:,j)-p%uu(:,j)*p%transprho)*p%rho1
+          enddo
         endif
 !
 !  No meridional flow : turn off the meridional flow (in spherical)
@@ -3961,8 +3953,7 @@ module Hydro
 !  12-Mar-2017/WL: Agree, looks very specific.
 !
         if (lno_meridional_flow) then
-          f(l1:l2,m,n,iux)=0.0
-          f(l1:l2,m,n,iuy)=0.0
+          f(l1:l2,m,n,iux:iuy)=0.0
           df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-p%ugu(:,3)
         endif
 !
@@ -4133,13 +4124,11 @@ module Hydro
 !
       if ( lupdate_courant_dt.and.(lcdt_tauf.or.ldiagnos.and.idiag_dtF/=0) .or. &
            ldiagnos.and.idiag_taufmin/=0 ) then
-        do j=1,3
-          where (abs(p%uu(:,j))>1)   !MR: What would in general be the significance of 1 here?
-            uu1(:,j)=1./p%uu(:,j)
-          elsewhere
-            uu1(:,j)=1.
-          endwhere
-        enddo
+        where (abs(p%uu)>1)   !MR: What would in general be the significance of 1 here?
+          uu1=1./p%uu
+        elsewhere
+          uu1=1.
+        endwhere
         do j=1,3
           ftot=abs(df(l1:l2,m,n,iux+j-1)*uu1(:,j))
           if (lupdate_courant_dt.and.lcdt_tauf) dt1_max=max(dt1_max,ftot/cdtf)
@@ -5620,20 +5609,18 @@ endif
         ju=j+iuu-1
         select case (borderuu(j))
 !
+        case ('nothing'); cycle
         case ('zero','0')
           f_target(:,j)=0.
-          call border_driving(f,df,p,f_target(:,j),ju)
 !
         case ('constant')
           f_target(:,j) = uu_const(j)
-          call border_driving(f,df,p,f_target(:,j),ju)
 !
         case ('initial-condition')
           call set_border_initcond(f,ju,f_target(:,j))
-          call border_driving(f,df,p,f_target(:,j),ju)
 !
-        case ('nothing')
         endselect
+        call border_driving(f,df,p,f_target(:,j),ju)
 !
       enddo
 !
@@ -8212,8 +8199,7 @@ endif
         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*(f(l1:l2,m,n,iuz)-prof_amp1*prof_amp4(m))
 !            -prof_amp1*cos(20.*x(llx))*cos(20.*y(m)) )
       if (ldiffrot_test) then
-        f(l1:l2,m,n,iux) = 0.
-        f(l1:l2,m,n,iuy) = 0.
+        f(l1:l2,m,n,iux:iuy) = 0.
         if (lspherical_coords.or.lcartesian_coords) f(l1:l2,m,n,iuz) = prof_amp1*prof_amp4(m)
       endif
 !
@@ -8440,14 +8426,8 @@ endif
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       if (velocity_ceiling>0.0) then
-
-        where (f(l1:l2,m,n,iux)> velocity_ceiling) f(l1:l2,m,n,iux)= velocity_ceiling
-        where (f(l1:l2,m,n,iuy)> velocity_ceiling) f(l1:l2,m,n,iuy)= velocity_ceiling
-        where (f(l1:l2,m,n,iuz)> velocity_ceiling) f(l1:l2,m,n,iuz)= velocity_ceiling
-
-        where (f(l1:l2,m,n,iux)<-velocity_ceiling) f(l1:l2,m,n,iux)=-velocity_ceiling
-        where (f(l1:l2,m,n,iuy)<-velocity_ceiling) f(l1:l2,m,n,iuy)=-velocity_ceiling
-        where (f(l1:l2,m,n,iuz)<-velocity_ceiling) f(l1:l2,m,n,iuz)=-velocity_ceiling
+        where (f(l1:l2,m,n,iux:iuz)> velocity_ceiling) f(l1:l2,m,n,iux:iuz)= velocity_ceiling
+        where (f(l1:l2,m,n,iux:iuz)<-velocity_ceiling) f(l1:l2,m,n,iux:iuz)=-velocity_ceiling
       endif
 !
     endsubroutine impose_velocity_ceiling
