@@ -35,6 +35,10 @@ export LD_PRELOAD=./src/libPC.so
 #
 #To Ondrej: change this to point the the sample you want to run alongside on the CPU with this one
 export PC_CPU_SAMPLE=/users/toukopur/pencil-code/pencil-private/projects/PC-A/cpu
+#TP: should be same as --nodes in here
+export PC_CPU_SAMPLE_NODES=1
+#TP: for one-to-one mapping between GPUs and CPUs
+export PC_CPU_SAMPLE_RANKS_PER_NODE=8
 
 #TP: this does not matter if one is not using Allas.
 export OS_AUTH_URL=https://pouta.csc.fi:5001/v3
