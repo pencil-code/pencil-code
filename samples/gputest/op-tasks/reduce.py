@@ -95,7 +95,7 @@ import os
 #    print(f"Video saved as {output_file}")
 
 from ctypes import*
-@odop.task(name="PC-odop",max_runs=1,nodes=2)
+@odop.task(name="PC-odop",max_runs=1,nodes=os.environ["PC_CPU_SAMPLE_NODES"],cpus_per_rank=1,ranks_per_node=os.environ["PC_CPU_SAMPLE_RANKS_PER_NODE"])
 def main():
     os.chdir(os.environ["PC_CPU_SAMPLE"])
     print("HI from op task Python")
