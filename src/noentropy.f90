@@ -95,7 +95,7 @@ module Energy
         if (lroot) call warning('initialize_energy', &
            'llocal_iso=T. Make sure you have the appropriate INITIAL_CONDITION in Makefile.local')
         call select_eos_variable('cs2',-2) !special local isothermal
-      else
+      elseif (leos) then
         if (gamma == 1.) then
           call select_eos_variable('cs2',-1) !isothermal
         else
@@ -234,8 +234,13 @@ module Energy
         endif
         if (llocal_iso)  lpencil_in(i_glnTT)=.true.
       endif
-      if (lpencil_in(i_TT1) .and. gamma/=1.) lpencil_in(i_cs2)=.true.
-      if (lpencil_in(i_cs2) .and. gamma/=1.) lpencil_in(i_lnrho)=.true.
+!
+!  The following only makes sense if leos is true.
+!
+      if (leos) then
+        if (lpencil_in(i_TT1) .and. gamma/=1.) lpencil_in(i_cs2)=.true.
+        if (lpencil_in(i_cs2) .and. gamma/=1.) lpencil_in(i_lnrho)=.true.
+      endif
 !
     endsubroutine pencil_interdep_energy
 !***********************************************************************
