@@ -372,7 +372,8 @@ module Special
         lpenc_diagnos(i_curlE)=.true.
         lpenc_diagnos(i_BcurlE)=.true.
       endif
-
+!
+      if (idiag_ebm/=0) lpenc_diagnos(i_eb)=.true.
       if (idiag_a0rms/=0) lpenc_diagnos(i_a0)=.true.
       if (idiag_grms/=0) lpenc_diagnos(i_diva)=.true.
       if (idiag_edotrms/=0) lpenc_diagnos(i_edot2)=.true.
