@@ -1707,7 +1707,11 @@ outer:  do ikz=1,nz
     endif
     !
     if (lwrite_krms) then
-      krms=sqrt(k2m_sum/nks_sum)
+      where(nks_sum/=0)
+        krms=sqrt(k2m_sum/nks_sum)
+      elsewhere
+        krms=0.
+      endwhere
       open(1,file=trim(datadir)//'/power_krms.dat',position='append')
       write(1,power_format) krms
       close(1)
@@ -2788,7 +2792,7 @@ outer:  do ikz=1,nz
 !
   open(1,file=trim(datadir)//'/power_'//trim(sp)//'.dat',position='append')
 !
-!  XX
+!  Stress spectra
 !
   if (sp=='StT'.or.sp=='StX') then
 !
@@ -2871,7 +2875,11 @@ outer:  do ikz=1,nz
     endif
     !
     if (lwrite_krms_GWs) then
-      krms=sqrt(k2m_sum/nks_sum)
+      where(nks_sum/=0)
+        krms=sqrt(k2m_sum/nks_sum)
+      elsewhere
+        krms=0.
+      endwhere
       open(1,file=trim(datadir)//'/power_krms_GWs.dat',position='append')
       write(1,power_format) krms
       close(1)
