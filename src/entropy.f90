@@ -3594,7 +3594,7 @@ module Energy
               if (.not.allproc_print) lproc_print=.false.
             endif
             if (ip<6) print*, 'p%fpres =',p%fpres
-            call fatal_error('denergy_dt','',FORCE=.true.)
+            call fatal_error('denergy_dt','fatal_error w/o FORCE')
           endif
           df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + p%fpres
 !
