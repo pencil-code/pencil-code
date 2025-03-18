@@ -104,7 +104,7 @@ module Special
   real :: Hscript0=0., scale_rho_chi_Heqn=1.
   real :: echarge=.0, echarge_const=.303
   real, target :: ddotam_all
-  real, pointer :: alpf, eta_tdep
+  real, pointer :: alpf
   real, pointer :: sigE_prefactor, sigB_prefactor
 ! real, dimension (:), pointer :: eta_xtdep
   real, dimension (nx) :: dt1_special
@@ -230,7 +230,6 @@ module Special
         alpf=0.
         lphi_hom=.false.
       endif
-print*,'AXEL: sigB_prefactor=',sigB_prefactor
 !
       call keep_compiler_quiet(f)
 !
@@ -536,18 +535,7 @@ print*,'AXEL: sigB_prefactor=',sigB_prefactor
       endif
       rho_chi=f_ode(iinfl_rho_chi)
 !
-!  eta_tdep
-!
-      if (lmagnetic .and. lem_backreact) then
-        call get_shared_variable('eta_tdep',eta_tdep)
-      else
-        allocate(eta_tdep)
-        eta_tdep=0.
-      endif
-!
 !  Energy density of the charged particles.
-!  At the moment, eta_tdep is computed computed from the averaged e2m,
-!  so it is not itself being averaged.
 !
       if (lrho_chi) then
         if (lnoncollinear_EB .or. lnoncollinear_EB_aver .or. &
@@ -555,8 +543,7 @@ print*,'AXEL: sigB_prefactor=',sigB_prefactor
           df_ode(iinfl_rho_chi)=df_ode(iinfl_rho_chi)-4.*Hscript*f_ode(iinfl_rho_chi) &
             +(sigEm_all*e2m_all+sigBm_all*edotbm_all)/ascale**3
         else
-          df_ode(iinfl_rho_chi)=df_ode(iinfl_rho_chi)-4.*Hscript*f_ode(iinfl_rho_chi) &
-            +e2m_all/(eta_tdep*ascale**3)
+          df_ode(iinfl_rho_chi)=df_ode(iinfl_rho_chi)-4.*Hscript*f_ode(iinfl_rho_chi)
         endif
       endif
 !
