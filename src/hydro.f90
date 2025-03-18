@@ -1265,7 +1265,7 @@ module Hydro
         lcoriolis_force = .false.
         if (lroot) print *, 'initialize_hydro: turned off and hand over Coriolis force to Particles_drag. '
       endif
-      lcoriolis_force = lcoriolis_force .and. Omega/=0.
+      if (lrun) lcoriolis_force = lcoriolis_force .and. Omega/=0.
 !
       lshear_in_coriolis=lshear_in_coriolis.and.lcoriolis_force.and.lshear
 !
