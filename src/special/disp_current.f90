@@ -338,6 +338,11 @@ module Special
         lpenc_requested(i_b2)=.true.
       endif
 !
+   !  if (lnoncollinear_EB) then
+   !    lpenc_requested(i_eb)=.true.
+   !  endif
+      lpenc_requested(i_eb)=.true.
+!
       if (llorenz_gauge_disp) then
         lpenc_requested(i_diva)=.true.
       endif
@@ -433,6 +438,12 @@ module Special
       p%el=f(l1:l2,m,n,iex:iez)
       call dot2_mn(p%el,p%e2)
 !
+!  eb pencil
+!
+      if (lpenc_requested(i_eb)) then
+        call dot(p%el,p%bb,p%eb)
+      endif
+!
 !  Compute fully non-collinear expression for the current density.
 !  This is for the *spatially dependent* sigE and sigB.
 !  The averaged ones are computed in backreact_infl.f90.
@@ -441,7 +452,6 @@ module Special
       if (lnoncollinear_EB .or. lnoncollinear_EB_aver &
         .or. lcollinear_EB .or. lcollinear_EB_aver) then
         if (lnoncollinear_EB) then
-          call dot(p%el,p%bb,p%eb)
           boost=sqrt((p%e2-p%b2)**2+4.*p%eb**2)
           gam_EB=sqrt21*sqrt(1.+(p%e2+p%b2)/boost)
           eprime=sqrt21*sqrt(p%e2-p%b2+boost)
