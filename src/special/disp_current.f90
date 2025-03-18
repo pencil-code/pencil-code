@@ -456,13 +456,21 @@ module Special
           gam_EB=sqrt21*sqrt(1.+(p%e2+p%b2)/boost)
           eprime=sqrt21*sqrt(p%e2-p%b2+boost)
           bprime=sqrt21*sqrt(p%b2-p%e2+boost)*sign(1.,p%eb)
-          jprime=Chypercharge*echarge**3/(6.*pi**2*Hscript)*eprime*abs(bprime)/tanh(pi*abs(Bprime)/Eprime)
+          where (eprime/=0. .or. bprime/=0.)
+            jprime=Chypercharge*echarge**3/(6.*pi**2*Hscript)*eprime*abs(bprime)/tanh(pi*abs(bprime)/eprime)
+          elsewhere
+            jprime=0.
+          endwhere
           p%sigE=sigE_prefactor*abs(jprime)*eprime/(gam_EB*boost)
           p%sigB=sigB_prefactor*abs(jprime)*p%eb/(eprime*gam_EB*boost)
         elseif (lcollinear_EB) then
           eprime=sqrt(p%e2)
           bprime=sqrt(p%b2)
-          p%sigE=sigE_prefactor*Chypercharge*echarge**3/(6.*pi**2*Hscript)*bprime/tanh(pi*abs(Bprime)/Eprime)
+          where (eprime/=0. .or. bprime/=0.)
+            p%sigE=sigE_prefactor*Chypercharge*echarge**3/(6.*pi**2*Hscript)*bprime/tanh(pi*abs(bprime)/eprime)
+          elsewhere
+            p%sigE=0.
+          endwhere
           p%sigB=0.
         elseif (lnoncollinear_EB_aver .or. lcollinear_EB_aver) then
 !

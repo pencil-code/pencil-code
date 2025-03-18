@@ -784,18 +784,28 @@ module Special
           gam_EB=sqrt21*sqrt(1.+(e2m_all+b2m_all)/boost)
           eprime=sqrt21*sqrt(e2m_all-b2m_all+boost)
           bprime=sqrt21*sqrt(b2m_all-e2m_all+boost)*sign(1.,edotbm_all)
-          !jprime=echarge**3/(6.*pi**2*Hscript)*eprime*abs(bprime)/tanh(pi*abs(bprime)/eprime)
-          jprime1=1./(6.*pi**2)*eprime*abs(bprime)/tanh(pi*abs(bprime)/eprime)
-          sigE1m_all=abs(jprime1)*eprime/(gam_EB*boost)
-          sigB1m_all=abs(jprime1)*edotbm_all/(eprime*gam_EB*boost)
+          if (eprime/=0. .or. bprime/=0.) then
+            !jprime=echarge**3/(6.*pi**2*Hscript)*eprime*abs(bprime)/tanh(pi*abs(bprime)/eprime)
+            jprime1=1./(6.*pi**2)*eprime*abs(bprime)/tanh(pi*abs(bprime)/eprime)
+            sigE1m_all=abs(jprime1)*eprime/(gam_EB*boost)
+            sigB1m_all=abs(jprime1)*edotbm_all/(eprime*gam_EB*boost)
+          else
+            sigE1m_all=0.
+            sigB1m_all=0.
+          endif
 !
 !  Similarly for collinear case.
 !
         elseif (lcollinear_EB_aver) then
           eprime=sqrt(e2m_all)
           bprime=sqrt(b2m_all)
-          sigE1m_all=1./(6.*pi**2)*bprime/tanh(pi*abs(bprime)/eprime)
-          sigB1m_all=0.
+          if (eprime/=0. .or. bprime/=0.) then
+            sigE1m_all=1./(6.*pi**2)*bprime/tanh(pi*abs(bprime)/eprime)
+            sigB1m_all=0.
+          else
+            sigE1m_all=0.
+            sigB1m_all=0.
+          endif
         endif
 !
 !  Apply Chypercharge, echarge, and Hscript universally for aver and nonaver.
@@ -882,10 +892,15 @@ module Special
             gam_EB=sqrt21*sqrt(1.+(e2+b2)/boost)
             eprime=sqrt21*sqrt(e2-b2+boost)
             bprime=sqrt21*sqrt(b2-e2+boost)*sign(1.,edotb)
-            !jprime=echarge**3/(6.*pi**2*Hscript)*eprime*abs(bprime)/tanh(pi*abs(bprime)/eprime)
-            jprime1=1./(6.*pi**2)*eprime*abs(bprime)/tanh(pi*abs(bprime)/eprime)
-            sigE1=abs(jprime1)*eprime/(gam_EB*boost)
-            sigB1=abs(jprime1)*edotb/(eprime*gam_EB*boost)
+            where (eprime/=0. .or. bprime/=0.)
+              !jprime=echarge**3/(6.*pi**2*Hscript)*eprime*abs(bprime)/tanh(pi*abs(bprime)/eprime)
+              jprime1=1./(6.*pi**2)*eprime*abs(bprime)/tanh(pi*abs(bprime)/eprime)
+              sigE1=abs(jprime1)*eprime/(gam_EB*boost)
+              sigB1=abs(jprime1)*edotb/(eprime*gam_EB*boost)
+            elsewhere
+              sigE1=0.
+              sigB1=0.
+            endwhere
           endif
 !
 !  Repeat calculation of sigE and sigB. Do this first without
@@ -895,8 +910,13 @@ module Special
           if (lcollinear_EB) then
             eprime=sqrt(e2)
             bprime=sqrt(b2)
-            sigE1=1./(6.*pi**2)*bprime/tanh(pi*bprime/eprime)
-            sigB1=0.
+            where (eprime/=0. .or. bprime/=0.)
+              sigE1=1./(6.*pi**2)*bprime/tanh(pi*bprime/eprime)
+              sigB1=0.
+            elsewhere
+              sigE1=0.
+              sigB1=0.
+            endwhere
           endif
         endif
       endif
