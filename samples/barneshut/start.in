@@ -62,6 +62,6 @@
 &initial_condition_pars
   density_power_law=1.5
   temperature_power_law=0.5
-  gravitational_const=0.0
+  gravitational_const_init=0.0
   lcorrect_selfgravity=F
 /

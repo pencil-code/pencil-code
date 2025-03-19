@@ -655,6 +655,21 @@ module Snapshot
         enddo
         deallocate(f_oversize)
 !
+!  Read data without cooling profile
+!
+      elseif (lread_oldsnap_nocoolprof) then
+        if (lroot) print*,'read old snapshot file (but without cooling profile)'
+        call input_snap('var.dat',f,msnap-1,mode)
+        if (lpersist) call input_persistent
+        call input_snap_finalize
+        ! shift the rest of the data
+        if (icool_prof<mvar) then
+          do ivar=icool_prof+1,mvar
+            f(:,:,:,ivar)=f(:,:,:,ivar-1)
+          enddo
+        endif
+        f(:,:,:,icool_prof)=0.
+!
 !  Use default input configuration.
 !
 !  Read data using rho, and now convert to lnrho.

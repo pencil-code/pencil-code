@@ -81,7 +81,7 @@ module InitialCondition
   include '../initial_condition.h'
 !
   real :: g0=1.,density_power_law=0.,temperature_power_law=1.
-  real :: gravitational_const=0.
+  real :: gravitational_const_init=0.
 !
   real, dimension(0:6) :: coeff_cs2=(/0.,0.,0.,0.,0.,0.,0./)
 !
@@ -102,7 +102,7 @@ module InitialCondition
 !
   namelist /initial_condition_pars/ g0,density_power_law,&
        temperature_power_law,&
-       gravitational_const,r0_pot,qgshear,n_pot,&
+       gravitational_const_init,r0_pot,qgshear,n_pot,&
        lcorrect_pressuregradient,lpolynomial_fit_cs2,&
        ladd_noise_propto_cs,ampluu_cs_factor,&
        bump_radius,bump_ampl,bump_width,&

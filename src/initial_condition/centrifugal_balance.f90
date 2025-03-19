@@ -83,7 +83,7 @@ module InitialCondition
   real :: truncation_degree=2.,truncation_scale=1.
   logical :: lexponential_smooth=.false.
   real :: radial_percent_smooth=10.0,rshift=0.0
-  real :: gravitational_const=0.
+  real :: gravitational_const_init=0.
   real :: magnetic_power_law=impossible
   real :: dustdensity_powerlaw=1.5,edtog=0.01
 !
@@ -131,7 +131,7 @@ module InitialCondition
   namelist /initial_condition_pars/ g0,density_power_law,&
        truncation_degree,truncation_scale,temperature_power_law,&
        lexponential_smooth,radial_percent_smooth,rshift,&
-       lcorrect_selfgravity,gravitational_const,xmodes,ymodes,zmodes,&
+       lcorrect_selfgravity,gravitational_const_init,xmodes,ymodes,zmodes,&
        rho_rms,llowk_noise,xmid,lgaussian_distributed_noise,&
        rborder_int,rborder_ext,plasma_beta,ladd_field,initcond_aa,B_ext,&
        zmode_mag,rmode_mag,rm_int,rm_ext,Bz_const,r0_pot,qgshear,n_pot,&
@@ -1473,7 +1473,7 @@ module InitialCondition
       if (lselfgravity_logspirals) then
         rhs_poisson_const=1.0
       else
-        rhs_poisson_const=4*pi*gravitational_const
+        rhs_poisson_const=4*pi*gravitational_const_init
       endif
 !
 !  feed linear density into the poisson solver

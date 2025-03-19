@@ -94,7 +94,7 @@ module Particles
   real :: tstart_rpbeta=0.0, birthring_lifetime=huge1
   real :: rdiffconst_dragf=0.07, rdiffconst_pass=0.07
   real :: r0gaussz=1.0, qgaussz=0.0
-  real :: vapor_mixing_ratio_qvs=0., rhoa=1.0
+  real :: vapor_mixing_ratio_qvs=0., rhoa=1.0, redfrac=0.9
   real, pointer :: g1, rp1, rp1_smooth, t_ramp_mass, t_start_secondary
   integer :: l_hole=0, m_hole=0, n_hole=0
   integer :: iffg=0, ifgx=0, ifgy=0, ifgz=0, ibrtime=0
@@ -147,6 +147,7 @@ module Particles
   logical :: lsimple_volume=.false.
   logical :: lnpmin_exclude_zero = .false.
   logical :: ltauascalar = .false., lfollow_gas=.false.
+  logical :: lset_df_insert_nucleii=.false.
   logical, pointer :: lramp_mass, lsecondary_wait
 !
   character(len=labellen) :: interp_pol_uu ='ngp'
@@ -294,7 +295,8 @@ module Particles
       remove_particle_criteria_edtog, &
       ascalar_ngp, ascalar_cic, rp_int, rp_ext, rp_ext_width, lnpmin_exclude_zero, &
       lcondensation_rate, vapor_mixing_ratio_qvs, lfollow_gas, &
-      ltauascalar, rhoa, G_condensation, lpartnucleation, nucleation_threshold
+      ltauascalar, rhoa, G_condensation, lpartnucleation, nucleation_threshold, &
+      redfrac, lset_df_insert_nucleii
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0      ! DIAG_DOC: $x_{part}$
   integer :: idiag_xpmin=0, idiag_ypmin=0, idiag_zpmin=0      ! DIAG_DOC: $x_{part}$
@@ -336,8 +338,8 @@ module Particles
   integer :: idiag_eccpxm=0, idiag_eccpym=0, idiag_eccpzm=0
   integer :: idiag_eccpx2m=0, idiag_eccpy2m=0, idiag_eccpz2m=0
   integer :: idiag_vprms=0, idiag_vpyfull2m=0, idiag_deshearbcsm=0
-  integer :: idiag_Shm=0, idiag_latentheatm
-  integer :: idiag_ffcondposm, idiag_ffcondnegm, idiag_ffcondm
+  integer :: idiag_Shm=0, idiag_latentheatm=0
+  integer :: idiag_ffcondposm=0, idiag_ffcondnegm=0, idiag_ffcondm=0
   integer, dimension(ndustrad) :: idiag_npvzmz=0, idiag_npvz2mz=0, idiag_nptz=0
   integer, dimension(ndustrad) :: idiag_npuzmz=0
 !
@@ -412,7 +414,8 @@ module Particles
         call farray_register_auxiliary('nucl_rmin',inucl,communicated=.false.)
         call farray_register_auxiliary('nucl_rate',inucrate,communicated=.false.)
         call farray_register_auxiliary('supersat',isupsat,communicated=.false.)
-      endif
+        call append_npvar('born',iborn)
+     endif
 !
 !  Special variable for stiff drag force equations.
 !
@@ -2473,7 +2476,7 @@ module Particles
       real, dimension(3) :: uup
 !
       logical, save :: linsertmore=.true.
-      real :: xx0, yy0, r2, r, mass_nucleii, part_mass, TTp, redfrac=0.9
+      real :: xx0, yy0, r2, r, mass_nucleii, part_mass, TTp
       integer :: j, k, n_insert, npar_loc_old, iii
       integer :: ii,jj,kk
       integer :: jproc,tag_id,tag0=283
@@ -2546,6 +2549,10 @@ module Particles
                       fp(k,iyp) = y(jj)
                       fp(k,izp) = z(kk)
                       !
+                      ! Save the time when the particle was born
+                      !
+                      fp(k,iborn) = t
+                      !
                       ! Give the particle the same velocity as the local fluid cell
                       !
                       ineargrid(k,1)=ii
@@ -2557,7 +2564,7 @@ module Particles
                       !  Initialize particle radius
                       !
                       if (lparticles_radius) then
-                        fp(k,iap)=f(ii,jj,kk,inucl)
+                        fp(k,iap)=f(ii,jj,kk,icc+1)/f(ii,jj,kk,icc)
                         if (lparticles_number) then
                           part_mass=4.*pi*fp(k,iap)**3/3.*true_density_cond_spec
                           fp(k,inpswarm)=mass_nucleii*redfrac/part_mass
@@ -2588,9 +2595,14 @@ module Particles
                       ! Set the scalar to zero since the nucleii have now been moved to the
                       ! particle phase
                       !
-                      !f(ii,jj,kk,icc) = 0.0
-                      df(ii,jj,kk,icc) = df(ii,jj,kk,icc) - redfrac*f(ii,jj,kk,icc)/dt
-                    endif                    
+                      if (lset_df_insert_nucleii) then
+                         df(ii,jj,kk,icc) = df(ii,jj,kk,icc) - redfrac*f(ii,jj,kk,icc)/dt
+                         df(ii,jj,kk,icc+1) = df(ii,jj,kk,icc+1) - redfrac*f(ii,jj,kk,icc+1)/dt
+                      else
+                         f(ii,jj,kk,icc)   = (1.-redfrac)*f(ii,jj,kk,icc)
+                         f(ii,jj,kk,icc+1) = (1.-redfrac)*f(ii,jj,kk,icc+1)
+                      endif
+                    endif
                   endif
                 enddo
               enddo
@@ -2637,7 +2649,7 @@ module Particles
 !  sorting).
 !
         call sort_particles_imn(fp,ineargrid,ipar)
-      endif
+     endif
 !
     endsubroutine insert_nucleii
 !***********************************************************************

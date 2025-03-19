@@ -45,6 +45,7 @@ module Special
   real :: ampla0=0.0, initpower_a0=0.0, initpower2_a0=0.0
   real :: cutoff_a0=0.0, ncutoff_a0=0.0, kpeak_a0=0.0
   real :: relhel_a0=0.0, kgaussian_a0=0.0, eta_ee=0.0
+  real :: sigE_prefactor=1., sigB_prefactor=1.
   real :: weight_longitudinalE=2.0
   logical :: luse_scale_factor_in_sigma=.false.
   real, pointer :: eta, Hscript, echarge, sigEm_all, sigBm_all
@@ -54,6 +55,7 @@ module Special
   logical :: lscale_tobox=.true., lskip_projection_a0=.false.
   logical :: lvectorpotential=.false., lphi_hom=.false.
   logical :: lno_noise_ee=.false., lnoncollinear_EB=.false., lnoncollinear_EB_aver=.false.
+  logical :: lcollinear_EB=.false., lcollinear_EB_aver=.false.
   logical :: leedot_as_aux=.false., lcurlyA=.true., lsolve_chargedensity=.false.
   logical :: lsigE_as_aux=.false., lsigB_as_aux=.false., lrandom_ampl_ee=.false., lfixed_phase_ee=.false.
   logical :: lswitch_off_divJ=.false., lswitch_off_Gamma=.false.
@@ -81,7 +83,9 @@ module Special
     alpf, llongitudinalE, llorenz_gauge_disp, lphi_hom, &
     leedot_as_aux, lsigE_as_aux, lsigB_as_aux, eta_ee, lcurlyA, beta_inflation, &
     weight_longitudinalE, lswitch_off_divJ, lswitch_off_Gamma, &
-    lnoncollinear_EB, lnoncollinear_EB_aver, luse_scale_factor_in_sigma
+    lnoncollinear_EB, lnoncollinear_EB_aver, luse_scale_factor_in_sigma, &
+    lcollinear_EB, lcollinear_EB_aver, &
+    sigE_prefactor, sigB_prefactor
 !
 ! Declare any index variables necessary for main or
 !
@@ -164,8 +168,14 @@ module Special
       if (llongitudinalE) &
         call farray_register_pde('Gamma',iGamma)
 !
+!  The following variables are also used in special/backreact_infl.f90
+!
       call put_shared_variable('alpf',alpf,caller='register_disp_current')
       call put_shared_variable('lphi_hom',lphi_hom)
+      call put_shared_variable('sigE_prefactor',sigE_prefactor)
+      call put_shared_variable('sigB_prefactor',sigB_prefactor)
+      call put_shared_variable('lcollinear_EB',lcollinear_EB)
+      call put_shared_variable('lcollinear_EB_aver',lcollinear_EB_aver)
       call put_shared_variable('lnoncollinear_EB',lnoncollinear_EB)
       call put_shared_variable('lnoncollinear_EB_aver',lnoncollinear_EB_aver)
 !
@@ -196,7 +206,8 @@ module Special
         call get_shared_variable('eta',eta, caller='initialize_magnetic')
 !
 !  The following are only obtained when luse_scale_factor_in_sigma=T
-!  (luse_scale_factor_in_sigma=F by default)
+!  (luse_scale_factor_in_sigma=F by default, because they are defined
+!  in special/backreact_infl.f90, which may not be always be used).
 !
       if (luse_scale_factor_in_sigma) then
         call get_shared_variable('Hscript', Hscript)
@@ -318,13 +329,19 @@ module Special
       lpenc_requested(i_curlb)=.true.
       lpenc_requested(i_jj_ohm)=.true.
 !
-! Pencils for lnoncollinear_EB
+! Pencils for lnoncollinear_EB and lcollinear_EB cases.
 !
-      if (lnoncollinear_EB .or. lnoncollinear_EB_aver) then
+      if (lnoncollinear_EB .or. lnoncollinear_EB_aver &
+        .or. lcollinear_EB .or. lcollinear_EB_aver) then
         lpenc_requested(i_bb)=.true.
         lpenc_requested(i_e2)=.true.
         lpenc_requested(i_b2)=.true.
       endif
+!
+   !  if (lnoncollinear_EB) then
+   !    lpenc_requested(i_eb)=.true.
+   !  endif
+      lpenc_requested(i_eb)=.true.
 !
       if (llorenz_gauge_disp) then
         lpenc_requested(i_diva)=.true.
@@ -360,7 +377,8 @@ module Special
         lpenc_diagnos(i_curlE)=.true.
         lpenc_diagnos(i_BcurlE)=.true.
       endif
-
+!
+      if (idiag_ebm/=0) lpenc_diagnos(i_eb)=.true.
       if (idiag_a0rms/=0) lpenc_diagnos(i_a0)=.true.
       if (idiag_grms/=0) lpenc_diagnos(i_diva)=.true.
       if (idiag_edotrms/=0) lpenc_diagnos(i_edot2)=.true.
@@ -396,7 +414,6 @@ module Special
 !
       real, dimension (nx) :: tmp
       real, dimension (nx) :: boost, gam_EB, eprime, bprime, jprime
-      real, parameter :: Chypercharge=41./12.
       integer :: i,j,k
 !
       intent(in) :: f
@@ -421,21 +438,41 @@ module Special
       p%el=f(l1:l2,m,n,iex:iez)
       call dot2_mn(p%el,p%e2)
 !
-!  Compute fully non-collinear expression for the current density.
-!  This is for the spatially dependent sigE and sigB. The averaged ones are
-!  computed in backreact_infl.f90.
+!  eb pencil
 !
-      if (lnoncollinear_EB .or. lnoncollinear_EB_aver) then
+      if (lpenc_requested(i_eb)) then
+        call dot(p%el,p%bb,p%eb)
+      endif
+!
+!  Compute fully non-collinear expression for the current density.
+!  This is for the *spatially dependent* sigE and sigB.
+!  The averaged ones are computed in backreact_infl.f90.
+!  Any change to the code must be the same both here and there.
+!
+      if (lnoncollinear_EB .or. lnoncollinear_EB_aver &
+        .or. lcollinear_EB .or. lcollinear_EB_aver) then
         if (lnoncollinear_EB) then
-          call dot(p%el,p%bb,p%eb)
           boost=sqrt((p%e2-p%b2)**2+4.*p%eb**2)
           gam_EB=sqrt21*sqrt(1.+(p%e2+p%b2)/boost)
           eprime=sqrt21*sqrt(p%e2-p%b2+boost)
           bprime=sqrt21*sqrt(p%b2-p%e2+boost)*sign(1.,p%eb)
-          jprime=Chypercharge*echarge**3/(6.*pi**2*Hscript)*eprime*abs(bprime)/tanh(pi*abs(Bprime)/Eprime)
-          p%sigE=abs(jprime)*eprime/(gam_EB*boost)
-          p%sigB=abs(jprime)*p%eb/(eprime*gam_EB*boost)
-        elseif (lnoncollinear_EB_aver) then
+          where (eprime/=0. .or. bprime/=0.)
+            jprime=Chypercharge*echarge**3/(6.*pi**2*Hscript)*eprime*abs(bprime)/tanh(pi*abs(bprime)/eprime)
+          elsewhere
+            jprime=0.
+          endwhere
+          p%sigE=sigE_prefactor*abs(jprime)*eprime/(gam_EB*boost)
+          p%sigB=sigB_prefactor*abs(jprime)*p%eb/(eprime*gam_EB*boost)
+        elseif (lcollinear_EB) then
+          eprime=sqrt(p%e2)
+          bprime=sqrt(p%b2)
+          where (eprime/=0. .or. bprime/=0.)
+            p%sigE=sigE_prefactor*Chypercharge*echarge**3/(6.*pi**2*Hscript)*bprime/tanh(pi*abs(bprime)/eprime)
+          elsewhere
+            p%sigE=0.
+          endwhere
+          p%sigB=0.
+        elseif (lnoncollinear_EB_aver .or. lcollinear_EB_aver) then
 !
 !  This is based on <E> and <B>. Later, when sigEm and sigBm diagonstics are being
 !  computed, those are then based on the same p%sigE and p%sigB values, and therefore

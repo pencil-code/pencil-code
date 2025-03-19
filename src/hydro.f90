@@ -213,7 +213,7 @@ module Hydro
   real :: omega_out=0., omega_in=0., omega_fourier=0.
   real :: width_ff_uu=1.,x1_ff_uu=0.,x2_ff_uu=0.
   real :: ekman_friction=0.0, friction_tdep_toffset=0.0, friction_tdep_tau0=0.
-  real :: t1_ekman, t2_ekman, uzjet=0.0
+  real :: t1_ekman=0., t2_ekman=0., uzjet=0.0
   real :: ampl_forc=0., k_forc=impossible, w_forc=0., x_forc=0., dx_forc=0.1
   real :: ampl_fcont_uu=1., k_diffrot=1., amp_centforce=1., Sbaro0=0.
   real :: uphi_rbot=1., uphi_rtop=1., uphi_step_width=0.
@@ -627,6 +627,12 @@ module Hydro
   integer :: idiag_ux2mz=0      ! XYAVG_DOC: $\left<u_x^2\right>_{xy}$
   integer :: idiag_uy2mz=0      ! XYAVG_DOC: $\left<u_y^2\right>_{xy}$
   integer :: idiag_uz2mz=0      ! XYAVG_DOC: $\left<u_z^2\right>_{xy}$
+  integer :: idiag_ux3mz=0      ! XYAVG_DOC: $\left<u_x^3\right>_{xy}$
+  integer :: idiag_uy3mz=0      ! XYAVG_DOC: $\left<u_y^3\right>_{xy}$
+  integer :: idiag_uz3mz=0      ! XYAVG_DOC: $\left<u_z^3\right>_{xy}$
+  integer :: idiag_ux4mz=0      ! XYAVG_DOC: $\left<u_x^4\right>_{xy}$
+  integer :: idiag_uy4mz=0      ! XYAVG_DOC: $\left<u_y^4\right>_{xy}$
+  integer :: idiag_uz4mz=0      ! XYAVG_DOC: $\left<u_z^4\right>_{xy}$
   integer :: idiag_uz2upmz=0    ! XYAVG_DOC: $\left<u_{z\uparrow}^2\right>_{xy}$
   integer :: idiag_uz2downmz=0  ! XYAVG_DOC: $\left<u_{z\downarrow}^2\right>_{xy}$
   integer :: idiag_ox2mz=0      ! XYAVG_DOC: $\left< \omega_x^2 \right>_{xy}$
@@ -4609,6 +4615,12 @@ module Hydro
         if (idiag_ux2mz/=0) call xysum_mn_name_z(p%uu(:,1)**2,idiag_ux2mz)
         if (idiag_uy2mz/=0) call xysum_mn_name_z(p%uu(:,2)**2,idiag_uy2mz)
         if (idiag_uz2mz/=0) call xysum_mn_name_z(p%uu(:,3)**2,idiag_uz2mz)
+        if (idiag_ux3mz/=0) call xysum_mn_name_z(p%uu(:,1)**3,idiag_ux3mz)
+        if (idiag_uy3mz/=0) call xysum_mn_name_z(p%uu(:,2)**3,idiag_uy3mz)
+        if (idiag_uz3mz/=0) call xysum_mn_name_z(p%uu(:,3)**3,idiag_uz3mz)
+        if (idiag_ux4mz/=0) call xysum_mn_name_z(p%uu(:,1)**4,idiag_ux4mz)
+        if (idiag_uy4mz/=0) call xysum_mn_name_z(p%uu(:,2)**4,idiag_uy4mz)
+        if (idiag_uz4mz/=0) call xysum_mn_name_z(p%uu(:,3)**4,idiag_uz4mz)
         if (idiag_uzupmz/=0 .or. idiag_ruzupmz/=0 .or. idiag_uz2upmz/=0 .or. &
             idiag_fkinzupmz/=0 .or. idiag_Rxyupmz/=0 .or. idiag_Rxzupmz/=0 .or. &
             idiag_Ryzupmz/=0) then
@@ -6218,7 +6230,7 @@ endif
 !
       read(parallel_unit, NML=hydro_run_pars, IOSTAT=iostat)
 !
-      if (lSGS_hydro) call read_SGS_hydro_run_pars(iostat)
+      if (lSGS_hydro) call read_SGS_hydro_run_pars(iostat)      
 !
     endsubroutine read_hydro_run_pars
 !***********************************************************************
@@ -6360,6 +6372,12 @@ endif
         idiag_ux2mz=0
         idiag_uy2mz=0
         idiag_uz2mz=0
+        idiag_ux3mz=0
+        idiag_uy3mz=0
+        idiag_uz3mz=0
+        idiag_ux4mz=0
+        idiag_uy4mz=0
+        idiag_uz4mz=0
         idiag_uz2upmz=0
         idiag_uz2downmz=0
         idiag_ruxmx=0
@@ -7092,6 +7110,12 @@ endif
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'ux2mz',idiag_ux2mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uy2mz',idiag_uy2mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uz2mz',idiag_uz2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ux3mz',idiag_ux3mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uy3mz',idiag_uy3mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uz3mz',idiag_uz3mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ux4mz',idiag_ux4mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uy4mz',idiag_uy4mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uz4mz',idiag_uz4mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uz2upmz',idiag_uz2upmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uz2downmz',idiag_uz2downmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'ox2mz',idiag_ox2mz)
