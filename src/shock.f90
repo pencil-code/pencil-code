@@ -26,7 +26,6 @@
 !
 module Shock
 !
-  use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
@@ -86,7 +85,7 @@ module Shock
 !
       use FArrayManager
 !
-      call farray_register_auxiliary('shock',ishock,communicated=.true.)
+      call farray_register_auxiliary('shock',ishock,communicated=.true.,on_gpu=lgpu)
 !
 !  Writing files for use with IDL
 !
@@ -1776,6 +1775,13 @@ module Shock
       endif
 !
     endsubroutine bcshock_per_z
+!***********************************************************************
+    subroutine pushpars2c(p_par)
+
+    integer, parameter :: n_pars=0
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+    endsubroutine pushpars2c
 !***********************************************************************
 !
 !    include 'shock_profile.inc'

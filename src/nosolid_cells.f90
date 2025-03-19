@@ -305,4 +305,16 @@ module Solid_Cells
 !
     endsubroutine interpolate_particles_ogrid
 !***********************************************************************
+    subroutine sc_diags_reductions
+!
+!  30-mar-23/TP: Dummy
+!
+    endsubroutine sc_diags_reductions
+!***********************************************************************
+    subroutine sc_init_reduc_pointers
+!
+!  30-mar-23/TP: Dummy
+!
+    endsubroutine sc_init_reduc_pointers
+!***********************************************************************
 endmodule Solid_Cells

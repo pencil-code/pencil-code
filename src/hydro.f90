@@ -158,7 +158,7 @@ module Hydro
   logical :: lhiggsless=.false., lhiggsless_old=.false.
   logical :: lsqrt_qirro_uu=.false., lset_uz_zero=.false.
   real, pointer :: profx_ffree(:),profy_ffree(:),profz_ffree(:)
-  real :: B_ext2
+  real, pointer :: B_ext2
   real :: incl_alpha = 0.0, rot_rr = 0.0
   real :: xsphere = 0.0, ysphere = 0.0, zsphere = 0.0
   real :: amp_meri_circ = 0.0
@@ -893,6 +893,10 @@ module Hydro
   real, dimension (nx,3) :: fint,fext
   real, dimension (nx,ny) :: omega_prof
 
+  integer :: enum_friction_tdep = 0
+  integer :: enum_uuprof = 0
+  integer, dimension(3) :: enum_borderuu = 0
+
   contains
 !***********************************************************************
     subroutine register_hydro
@@ -1160,7 +1164,7 @@ module Hydro
       if (.not. ldamp_fade .and. (tfade_start >= 0.0) .and. (tdamp > 0.0)) ldamp_fade = .true.
       if (ldamp_fade .and. (tfade_start == -1.0)) tfade_start = 0.5 * tdamp
       if (ldamp_fade .and. (tfade_start >= tdamp) .and. (tdamp > 0.0)) &
-          call fatal_error ('initialize_hydro', 'Please set tfade_start < tdamp')
+          call fatal_error ('initialize_hydro', 'set tfade_start < tdamp')
 
       if (Omega/=0.) then
 !
@@ -1267,6 +1271,7 @@ module Hydro
         lcoriolis_force = .false.
         if (lroot) print *, 'initialize_hydro: turned off and hand over Coriolis force to Particles_drag. '
       endif
+      if (lrun) lcoriolis_force = lcoriolis_force .and. Omega/=0.
 !
       lshear_in_coriolis=lshear_in_coriolis.and.lcoriolis_force.and.lshear
 !
@@ -1372,8 +1377,8 @@ module Hydro
           call not_implemented('initialize_hydro','calculation of z average for Yin-Yang grid')
           !call initialize_zaver_yy(myl,nycap)
         endif
-        allocate(uumxy(mx,myl,3))
-        allocate(ruumxy(mx,myl,3))
+        allocate(uumxy(mx,my,3))
+        allocate(ruumxy(mx,my,3))
         uumxy=0.0
         ruumxy=0.0
       endif
@@ -1590,15 +1595,16 @@ module Hydro
         call not_implemented("initialize_hydro","Fargo advection without Fourier shift")
 !
 !  Allocate Lorentz gamma squared as part of auxiliary f-array.
-!  In the magnetic case, also define Bsquared, if needed.
+!  In the magnetic case, also define Bsquared, if needed and get B_ext2 from magnetic module.
 !
       if (lconservative) then
         f(:,:,:,iTij:iTij+5)=0.
         if (llorentz_as_aux) f(:,:,:,ilorentz)=0.
         if (lmagnetic) then
-          if (ibx==0) call fatal_error("hydro_before_boundary","must use lbb_as_comaux=T for lconservative=T")
+          if (ibx==0) call fatal_error("initialize_hydro","must use lbb_as_comaux=T for lconservative=T")
           if (allocated(Bsquared)) deallocate(Bsquared)
           allocate(Bsquared(mx))
+          call get_shared_variable('B_ext2',B_ext2)
         endif
       endif
 !
@@ -2816,9 +2822,8 @@ module Hydro
       if (lparticles_lyapunov .or. lparticles_caustics .or. lparticles_tetrad) &
         lpenc_requested(i_uij) = .true.
       if (ladvection_velocity) then
-        if (lweno_transport) then
+        if (lweno_transport.and.ldensity_nolog) then
           lpenc_requested(i_rho1)=.true.
-          lpenc_requested(i_transprho)=.true.
           lpenc_requested(i_transpurho)=.true.
         else
           lpenc_requested(i_ugu)=.true.
@@ -3162,7 +3167,7 @@ module Hydro
         call calc_pencils_hydro_nonlinear(f,p,lpenc_loc)
       endif
 ! advec_uu
-      if (lfirst.and.ldt.and.ladvection_velocity) then
+      if (lupdate_courant_dt.and.ladvection_velocity) then
         if (lmaximal_cdt) then
           p%advec_uu=max(abs(p%uu(:,1))*dline_1(:,1),&
                          abs(p%uu(:,2))*dline_1(:,2),&
@@ -3239,6 +3244,7 @@ module Hydro
       real, dimension (nx,3,3) :: tmp33
       real :: cs201,outest
       integer :: i, j, ju, jj, kk, jk
+      integer :: i_4_49_50, j_4_49_50
 !
       intent(in)   :: lpenc_loc
       intent(inout):: f,p
@@ -3331,6 +3337,13 @@ module Hydro
       endif
 ! sij
       if (lpenc_loc(i_sij)) call traceless_strain(p%uij,p%divu,p%sij,p%uu,lshear_rateofstrain)
+! do j_4_49_50=1,3
+! p%sij(:,j_4_49_50,j_4_49_50)=p%uij(:,j_4_49_50,j_4_49_50)-(1./3.)*p%divu
+! do i_4_49_50=j_4_49_50+1,3
+! p%sij(:,i_4_49_50,j_4_49_50)=.5*(p%uij(:,i_4_49_50,j_4_49_50)+p%uij(:,j_4_49_50,i_4_49_50))
+! p%sij(:,j_4_49_50,i_4_49_50)=p%sij(:,i_4_49_50,j_4_49_50)
+! enddo
+! enddo
 ! sij2
       if (lpenc_loc(i_sij2)) call multm2_sym_mn(p%sij,p%sij2)
 ! uij5
@@ -3485,7 +3498,7 @@ module Hydro
         enddo
       endif
 ! transpurho
-      if (lpenc_loc(i_transpurho)) then
+      if (lpenc_loc(i_transpurho).and.ldensity_nolog) then
         if (lreference_state) then
           call weno_transp(f,m,n,iux,irho,iux,iuy,iuz,p%transpurho(:,1),dx_1,dy_1,dz_1, &
                            ref1=reference_state(:,iref_rho))
@@ -3597,8 +3610,8 @@ module Hydro
           call fatal_error('calc_pencils_hydro_linearized', &
               'ugu pencil not calculated in lconservative case')
         else
-          call u_dot_grad(f,iuu0,p%u0ij,p%uu,ugu0,UPWIND=lupw_uu)
-          call u_dot_grad(f,iuu,p%uij,p%uu0,u0gu,UPWIND=lupw_uu)
+          ! call u_dot_grad(f,iuu0,p%u0ij,p%uu,ugu0,UPWIND=lupw_uu)
+          ! call u_dot_grad(f,iuu,p%uij,p%uu0,u0gu,UPWIND=lupw_uu)
         endif
         p%ugu = ugu0+u0gu
       endif
@@ -3708,7 +3721,6 @@ module Hydro
       real, dimension (mx,mz) :: fsum_tmp_cyl
       real, dimension (mx,my) :: fsum_tmp_sph
       real, dimension (mx) :: uphi
-      real :: nygrid1,nzgrid1
       integer ::  j
 !
 !  Remove mean momenta or mean flows if desired.
@@ -3757,11 +3769,10 @@ module Hydro
 !
         if (lcylindrical_coords) then
           fsum_tmp_cyl=0.
-          nygrid1=1./nygrid
           do n=1,mz
             do m=m1,m2
               uphi=f(:,m,n,iuy)
-              fsum_tmp_cyl(:,n)=fsum_tmp_cyl(:,n)+uphi*nygrid1
+              fsum_tmp_cyl(:,n)=fsum_tmp_cyl(:,n)+uphi
             enddo
           enddo
 !
@@ -3769,18 +3780,19 @@ module Hydro
 ! Sum over processors of same ipz, and different ipy
 ! --only relevant for 3D, but is here for generality
 !
+          fsum_tmp_cyl = fsum_tmp_cyl/nygrid
           call mpiallreduce_sum(fsum_tmp_cyl,uu_average_cyl,(/mx,mz/),idir=2)
           !idir=2 is equal to old LSUMY=.true.
 !
         elseif (lspherical_coords) then
-          nzgrid1=1./nzgrid
           fsum_tmp_sph=0.
           do n=n1,n2
             do m=1,my
               uphi=f(:,m,n,iuz)
-              fsum_tmp_sph(:,m)=fsum_tmp_sph(:,m)+uphi*nzgrid1
+              fsum_tmp_sph(:,m)=fsum_tmp_sph(:,m)+uphi
             enddo
           enddo
+          fsum_tmp_sph = fsum_tmp_sph/nzgrid
           call mpiallreduce_sum(fsum_tmp_sph,uu_average_sph,(/mx,my/),idir=3)
           !idir=3 is equal to old LSUMZ=.true.
 !
@@ -3842,19 +3854,17 @@ module Hydro
       integer :: i, j, ju
 !
       Fmax=1./impossible
-      if (n==nn(1).and.m==mm(1)) lproc_print=.true.
-!
+      if (lfirstpoint) lproc_print=.true.
+
 !  Identify module and boundary conditions.
-!
+
       call timing('duu_dt','entered',mnloop=.true.)
       if (headtt.or.ldebug) print*,'duu_dt: SOLVE'
       if (headtt) then
         call identify_bcs('ux',iux)
         call identify_bcs('uy',iuy)
         call identify_bcs('uz',iuz)
-        if (lslope_limit_diff) then
-          call identify_bcs('sld_char',isld_char)
-        endif
+        if (lslope_limit_diff) call identify_bcs('sld_char',isld_char)
       endif
 !
 !  Advection term, i.e., subtract u.gradu.
@@ -4005,7 +4015,7 @@ module Hydro
 !
 !  ``uu/dx'' for timestep
 !
-      if (lfirst.and.ldt.and.ladvection_velocity) then
+      if (lupdate_courant_dt.and.ladvection_velocity) then
         maxadvec=maxadvec+p%advec_uu
         if (headtt.or.ldebug) print*,'duu_dt: max(advec_uu) =',maxval(p%advec_uu)
       endif
@@ -4118,7 +4128,7 @@ module Hydro
 !
 !  Fred: Option to constrain timestep for large forces
 !
-      if ( lfirst.and.ldt.and.(lcdt_tauf.or.ldiagnos.and.idiag_dtF/=0) .or. &
+      if ( lupdate_courant_dt.and.(lcdt_tauf.or.ldiagnos.and.idiag_dtF/=0) .or. &
            ldiagnos.and.idiag_taufmin/=0 ) then
         where (abs(p%uu)>1)   !MR: What would in general be the significance of 1 here?
           uu1=1./p%uu
@@ -4127,7 +4137,7 @@ module Hydro
         endwhere
         do j=1,3
           ftot=abs(df(l1:l2,m,n,iux+j-1)*uu1(:,j))
-          if (ldt.and.lcdt_tauf) dt1_max=max(dt1_max,ftot/cdtf)
+          if (lupdate_courant_dt.and.lcdt_tauf) dt1_max=max(dt1_max,ftot/cdtf)
           if (ldiagnos.and.(idiag_dtF/=0.or.idiag_taufmin/=0)) Fmax=max(Fmax,ftot)
         enddo
       endif
@@ -4156,7 +4166,6 @@ module Hydro
       real, dimension (nx) :: rmask
       real :: kx,zbot
       integer :: k
-      logical, save :: lcorr_zero_dt=.false.
 !
 !  Calculate maxima and rms values for diagnostic purposes
 !
@@ -4168,10 +4177,8 @@ module Hydro
           uref=ampluu(1)*cos(kx_uu*x(l1:l2))
           call sum_mn_name(p%u2-2.*p%uu(:,2)*uref+uref**2,idiag_durms)
         endif
-        if (.not.lgpu) then
-          if (ldt) then
-            if (ladvection_velocity.and.idiag_dtu/=0) call max_mn_name(p%advec_uu/cdt,idiag_dtu,l_dt=.true.)
-          endif
+        if (lupdate_courant_dt.and.ladvection_velocity.and.idiag_dtu/=0) call max_mn_name(p%advec_uu/cdt,idiag_dtu,l_dt=.true.)
+        if (.not.lmultithread) then
           if (idiag_dtF/=0) call max_mn_name(Fmax/cdtf,idiag_dtF,l_dt=.true.)
           call max_mn_name(Fmax,idiag_taufmin,lreciprocal=.true.)
         endif
@@ -4536,23 +4543,13 @@ module Hydro
             !phidot=uu_average_cyl(:,n)*rcyl_mn1
             !nshift=phidot*dt*dy_1(m)
             !call max_mn_name(nshift,idiag_nshift)
-            if (dt==0.) then
-              lcorr_zero_dt=.true.
-              call max_mn_name(uu_average_cyl(l1:l2,n)*rcyl_mn1*dy_1(m),idiag_nshift)
-            else
-              call max_mn_name(uu_average_cyl(l1:l2,n)*rcyl_mn1*dt*dy_1(m),idiag_nshift)
-            endif
+            call max_mn_name(uu_average_cyl(l1:l2,n)*rcyl_mn1*dy_1(m),idiag_nshift,l_dt=.true.)
           elseif (lspherical_coords) then
             !mnghost=m-nghost
             !phidot=uu_average_sph(:,n)*rcyl_mn1  ! rcyl = r*sinth(m)
             !nshift=phidot*dt*dz_1(n)
             !call max_mn_name(nshift,idiag_nshift)
-            if (dt==0.) then
-              lcorr_zero_dt=.true.
-              call max_mn_name(uu_average_sph(l1:l2,m)*rcyl_mn1*dz_1(n),idiag_nshift)
-            else
-              call max_mn_name(uu_average_sph(l1:l2,m)*rcyl_mn1*dt*dz_1(n),idiag_nshift)
-            endif
+            call max_mn_name(uu_average_sph(l1:l2,m)*rcyl_mn1*dz_1(n),idiag_nshift,l_dt=.true.)
           endif
         endif
         if (othresh_per_orms/=0.) call vecout(41,trim(directory)//'/ovec',p%oo,othresh,novec)
@@ -4566,13 +4563,6 @@ module Hydro
 
         if (ekman_friction/=0) call sum_mn_name(frict,idiag_frict)
 
-      elseif (lcorr_zero_dt) then
-!
-!  Here all quantities should be updated the calculation of which requires dt which
-!  is zero at the very first diagnostics output time. (Doesn't work for itorder=1.)
-!
-        lcorr_zero_dt=.false.
-        if (lroot) fname(idiag_nshift)=fname(idiag_nshift)*dt
       endif  ! if (ldiagnos)
 
     endsubroutine calc_0d_diagnostics_hydro
@@ -5628,8 +5618,10 @@ endif
 !
       do j=1,3
 
+        ju=j+iuu-1
         select case (borderuu(j))
 !
+        case ('nothing'); cycle
         case ('zero','0')
           f_target(:,j)=0.
 !
@@ -5637,14 +5629,9 @@ endif
           f_target(:,j) = uu_const(j)
 !
         case ('initial-condition')
-          ju=j+iuu-1
           call set_border_initcond(f,ju,f_target(:,j))
 !
-        case ('nothing')
-          cycle
         endselect
-
-        ju=j+iuu-1
         call border_driving(f,df,p,f_target(:,j),ju)
 !
       enddo
@@ -5726,9 +5713,8 @@ endif
 !
       real :: c2, s2
 !
-      if (Omega==0.) return
 !
-      if (theta==0) then
+      if (Omega /= 0. .and. theta==0) then
 !
         if (lcoriolis_force) then
 !
@@ -5804,9 +5790,7 @@ endif
 !
       real :: c2, s2
 !
-      if (Omega==0.) return
-!
-      if (lcoriolis_force) then
+      if (Omega /= 0.0 .and. lcoriolis_force) then
 !
         if (headtt) print*,'coriolis_cartesian_xaxis: Coriolis force; Omega, theta=', Omega, theta
 !
@@ -7649,7 +7633,7 @@ endif
 !  24-aug-15/MR: corrected declaration of umx2
 !
       use Diagnostics, only: save_name
-      use Mpicomm, only: mpibcast_real, mpireduce_sum, MPI_COMM_WORLD
+      use Mpicomm, only: mpibcast_real, mpireduce_sum, MPI_COMM_WORLD, IXBEAM,IYBEAM
 !
       logical,save :: first=.true.
       real, dimension (nx,ny) :: fsumxy
@@ -7669,14 +7653,14 @@ endif
           umx=0.
         else
           if (lfirst_proc_z) then
-            call mpireduce_sum(fnamexy(idiag_uxmxy,:,:),fsumxy,(/nx,ny/),idir=2)
+            call mpireduce_sum(fnamexy(idiag_uxmxy,:,:),fsumxy,(/nx,ny/),idir=IYBEAM)
             uxmx=sum(fsumxy,dim=2)/nygrid
-            call mpireduce_sum(fnamexy(idiag_uymxy,:,:),fsumxy,(/nx,ny/),idir=2)
+            call mpireduce_sum(fnamexy(idiag_uymxy,:,:),fsumxy,(/nx,ny/),idir=IYBEAM)
             uymx=sum(fsumxy,dim=2)/nygrid
-            call mpireduce_sum(fnamexy(idiag_uzmxy,:,:),fsumxy,(/nx,ny/),idir=2)
+            call mpireduce_sum(fnamexy(idiag_uzmxy,:,:),fsumxy,(/nx,ny/),idir=IYBEAM)
             uzmx=sum(fsumxy,dim=2)/nygrid
           endif
-          if (lfirst_proc_yz) call mpireduce_sum(uxmx**2+uymx**2+uzmx**2,umx2,nx,idir=1)
+          if (lfirst_proc_yz) call mpireduce_sum(uxmx**2+uymx**2+uzmx**2,umx2,nx,idir=IXBEAM)
           umx=sqrt(sum(umx2)/nxgrid)
         endif
         call save_name(umx,idiag_umx)
@@ -7693,14 +7677,14 @@ endif
           umy=0.
         else
           if (lfirst_proc_z) then
-            call mpireduce_sum(fnamexy(idiag_uxmxy,:,:),fsumxy,(/nx,ny/),idir=1)
+            call mpireduce_sum(fnamexy(idiag_uxmxy,:,:),fsumxy,(/nx,ny/),idir=IXBEAM)
             uxmy=sum(fsumxy,dim=1)/nxgrid
-            call mpireduce_sum(fnamexy(idiag_uymxy,:,:),fsumxy,(/nx,ny/),idir=1)
+            call mpireduce_sum(fnamexy(idiag_uymxy,:,:),fsumxy,(/nx,ny/),idir=IXBEAM)
             uymy=sum(fsumxy,dim=1)/nxgrid
-            call mpireduce_sum(fnamexy(idiag_uzmxy,:,:),fsumxy,(/nx,ny/),idir=1)
+            call mpireduce_sum(fnamexy(idiag_uzmxy,:,:),fsumxy,(/nx,ny/),idir=IXBEAM)
             uzmy=sum(fsumxy,dim=1)/nxgrid
           endif
-          if (lfirst_proc_xz) call mpireduce_sum(uxmy**2+uymy**2+uzmy**2,umy2,ny,idir=2)
+          if (lfirst_proc_xz) call mpireduce_sum(uxmy**2+uymy**2+uzmy**2,umy2,ny,idir=IYBEAM)
           umy=sqrt(sum(umy2)/nygrid)
         endif
         call save_name(umy,idiag_umy)
@@ -7905,7 +7889,6 @@ endif
       integer,                            intent(in), optional :: indrho
 !
       real, dimension (nx) :: rho,rho1,mm
-      real :: fac
       real, dimension (indux:indux+2) :: rum, rum_tmp
       integer :: m,n,j,indrhol
       logical :: lref
@@ -7936,10 +7919,13 @@ endif
         endif
 !
         rum = 0.0
-        fac = 1.0/nwgrid
 !
 !  Go through all pencils.
 !
+        !!$omp target if(loffload) data
+        !!$omp target if(loffload) data update(reference_state,iref_rho,n1,n2,m1,m2,l1,l2) map(from: rum) has_device_addr(f)
+        !shared: lref, indrhol
+        !!$omp teams distribute parallel do collapse(2) private(rho,mm) reduction(+:rum)
         do n = n1,n2
         do m = m1,m2
 !
@@ -7956,20 +7942,25 @@ endif
 !
           do j=indux,indux+2
             mm = rho*f(l1:l2,m,n,j)
-            rum(j) = rum(j) + fac*sum(mm)
+            rum(j) = rum(j) + sum(mm)
           enddo
         enddo
         enddo
+        !!$omp end target
+        !!$omp end target data
 !
 !  Compute total sum for all processors.
 !  Allow here for the possibility to add mean_momentum.
 !  It needs to be subtracted here, because "rum" is removed.
 !
         call mpiallreduce_sum(rum,rum_tmp,3)
-        rum = rum_tmp - mean_momentum
+        rum = rum_tmp/nwgrid - mean_momentum
 !
 !  Compute inverse density, rho1.
 !
+        !!$omp target if(loffload) data map(to: rum) has_device_addr(f) 
+        !shared: lref, indrhol
+        !!$omp teams distribute parallel do collapse(2) private(rho1)
         do n = n1,n2
         do m = m1,m2
           if (ldensity_nolog) then
@@ -7989,6 +7980,7 @@ endif
           enddo
         enddo
         enddo
+        !!$omp end target
         if (lroot.and.ip<6) print*,'remove_mean_momenta: rum=',rum
       else
         call remove_mean(f,indux,indux+2)   ! as this is equivalent to remove
@@ -8579,11 +8571,123 @@ endif
     subroutine pushpars2c(p_par)
 
     use Syscalls, only: copy_addr
+    use General , only: string_to_enum
 
-    integer, parameter :: n_pars=1
+    integer, parameter :: n_pars=110
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
+    integer :: k
+
     call copy_addr(lpressuregradient_gas,p_par(1))  ! int
+    call copy_addr(lupw_uu,p_par(2))  ! int
+    call copy_addr(ladvection_velocity,p_par(3))  ! int
+    call copy_addr(velocity_ceiling,p_par(4))
+    call copy_addr(r_omega,p_par(5))
+    call copy_addr(eps_hless,p_par(6))
+    call copy_addr(itij,p_par(7)) ! int
+    call copy_addr(ihless,p_par(8)) ! int
+    call copy_addr(llinearized_hydro,p_par(9)) ! bool
+    call copy_addr(lprecession,p_par(10)) ! bool
+    call copy_addr(lshear_rateofstrain,p_par(11)) ! bool
+    call copy_addr(luu_sph_as_aux,p_par(12)) ! bool
+    call copy_addr(lvv_as_aux,p_par(13)) ! bool
+    call copy_addr(lvv_as_comaux,p_par(14)) ! bool
+    call copy_addr(lcoriolis_force,p_par(15)) ! bool
+    call copy_addr(lshear_in_coriolis,p_par(16)) ! bool
+    call copy_addr(lcentrifugal_force,p_par(17)) ! bool
+    call copy_addr(lconservative,p_par(18)) ! bool
+    call copy_addr(lrelativistic,p_par(19)) ! bool
+    call copy_addr(full_3d,p_par(20)) ! bool
+    call copy_addr(lhiggsless,p_par(21)) ! bool
+    call copy_addr(lhiggsless_old,p_par(22)) ! bool
+    call copy_addr(ampl_omega,p_par(23))
+    call copy_addr(loutest,p_par(24)) ! bool
+    call copy_addr(ldiffrot_test,p_par(25)) ! bool
+    call copy_addr(tdamp,p_par(26))
+    call copy_addr(dampu,p_par(27))
+    call copy_addr(wdamp,p_par(28))
+    call copy_addr(dampuint,p_par(29))
+    call copy_addr(dampuext,p_par(30))
+    call copy_addr(rdampint,p_par(31))
+    call copy_addr(rdampext,p_par(32))
+    call copy_addr(ruxm,p_par(33))
+    call copy_addr(ruym,p_par(34))
+    call copy_addr(ruzm,p_par(35))
+    call copy_addr(tau_damp_ruxm1,p_par(36))
+    call copy_addr(tau_damp_ruym1,p_par(37))
+    call copy_addr(tau_damp_ruzm1,p_par(38))
+    call copy_addr(tau_damp_ruxm,p_par(39))
+    call copy_addr(tau_damp_ruym,p_par(40))
+    call copy_addr(tau_damp_ruzm,p_par(41))
+    call copy_addr(tau_diffrot1,p_par(42))
+    call copy_addr(omega_int,p_par(43))
+    call copy_addr(omega_fourier,p_par(44))
+    call copy_addr(ekman_friction,p_par(45))
+    call copy_addr(friction_tdep_toffset,p_par(46))
+    call copy_addr(friction_tdep_tau0,p_par(47))
+    call copy_addr(t1_ekman,p_par(48))
+    call copy_addr(t2_ekman,p_par(49))
+    call copy_addr(uzjet,p_par(50))
+    call copy_addr(ampl_fcont_uu,p_par(51))
+    call copy_addr(amp_centforce,p_par(52))
+    call copy_addr(sbaro0,p_par(53))
+    call copy_addr(lomega_int,p_par(54)) ! bool
+    call copy_addr(lalways_use_gij_etc,p_par(55)) ! bool
+    call copy_addr(lcalc_uumeanz,p_par(56)) ! bool
+    call copy_addr(lcalc_uumeanxy,p_par(57)) ! bool
+    call copy_addr(lcalc_uumean,p_par(58)) ! bool
+    call copy_addr(lcalc_uumeanx,p_par(59)) ! bool
+    call copy_addr(lcalc_uumeanxz,p_par(60)) ! bool
+    call copy_addr(lforcing_cont_uu,p_par(61)) ! bool
+    call copy_addr(lcoriolis_xdep,p_par(62)) ! bool
+    call copy_addr(lno_meridional_flow,p_par(63)) ! bool
+    call copy_addr(lrotation_xaxis,p_par(64)) ! bool
+    call copy_addr(lgradu_as_aux,p_par(65)) ! bool
+    call copy_addr(lomega_cyl_xy,p_par(66)) ! bool
+    call copy_addr(limpose_only_horizontal_uumz,p_par(67)) ! bool
+    call copy_addr(ltime_integrals_always,p_par(68)) ! bool
+    call copy_addr(lschur_3d3d1d_uu,p_par(69)) ! bool
+    call copy_addr(lschur_2d2d3d_uu,p_par(70)) ! bool
+    call copy_addr(lschur_2d2d1d_uu,p_par(71)) ! bool
+    call copy_addr(dtcor,p_par(72))
+    call copy_addr(shearx,p_par(73))
+    call copy_addr(ra,p_par(74))
+    call copy_addr(pr,p_par(75))
+    call copy_addr(cdt_tauf,p_par(76))
+    call copy_addr(lcdt_tauf,p_par(77)) ! bool
+    call copy_addr(idiag_uduum,p_par(78)) ! int
+    call copy_addr(idiag_taufmin,p_par(79)) ! int
+    call copy_addr(idiag_dtf,p_par(80)) ! int
+    call copy_addr(fade_fact,p_par(81))
+    call copy_addr(uumz,p_par(82)) ! (mz) (3)
+    call copy_addr(uumx,p_par(83)) ! (mx) (3)
+    if (allocated(uumxy)) call copy_addr(uumxy,p_par(84)) ! (mx) (my) (3)
+    call copy_addr(uumxz,p_par(85)) ! (mx) (mz) (3)
+    call copy_addr(uu_average_cyl,p_par(86)) ! (mx) (mz)
+    call copy_addr(uu_average_sph,p_par(87)) ! (mx) (my)
+    call copy_addr(profx_diffrot1,p_par(88)) ! (nx)
+    call copy_addr(profx_diffrot2,p_par(89)) ! (nx)
+    call copy_addr(profx_diffrot3,p_par(90)) ! (nx)
+    call copy_addr(profy_diffrot1,p_par(91)) ! (my)
+    call copy_addr(profy_diffrot2,p_par(92)) ! (my)
+    call copy_addr(profy_diffrot3,p_par(93)) ! (my)
+    call copy_addr(mat_cori,p_par(94)) ! (3) (3)
+    call copy_addr(mat_cent,p_par(95)) ! (3) (3)
+    call copy_addr(uu_const,p_par(96)) ! real3
+    call copy_addr(prof_om,p_par(97)) ! (nx)
+    call copy_addr(prof_amp1,p_par(98)) ! (nx)
+    call copy_addr(prof_amp3,p_par(99)) ! (mz)
+    call copy_addr(prof_amp4,p_par(100)) ! (my)
+    call copy_addr(uumz_prof,p_par(101)) ! (nz) (3)
+    call copy_addr(omega_prof,p_par(102)) ! (nx) (ny)
+    call copy_addr(Omegav,p_par(103)) ! (3)
+
+    call string_to_enum(enum_friction_tdep,friction_tdep)
+    call copy_addr(enum_friction_tdep,p_par(104)) ! int
+    call string_to_enum(enum_uuprof,uuprof)
+    call copy_addr(enum_uuprof,p_par(105)) ! int
+    do k = 1,3; call string_to_enum(enum_borderuu(k),borderuu(k)); enddo
+    call copy_addr(enum_borderuu,p_par(106)) ! int3
 
     endsubroutine pushpars2c
 !***********************************************************************

@@ -1,5 +1,4 @@
 !  -*-f90-*-  (for emacs)    vim:set filetype=fortran:  (for vim)
-  private
 !
 ! functions
 !
@@ -12,3 +11,5 @@
     public :: calc_diagnostics_training, rprint_training
     public :: div_reynolds_stress
     public :: get_slices_training
+
+  private

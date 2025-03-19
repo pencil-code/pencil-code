@@ -1,0 +1,20 @@
+#include "../shock/highorder.h"
+#if LSHOCK
+Kernel shock_1_divu()
+{
+  write( SHOCK, divu_shock() )
+}
+
+Kernel shock_2_smooth()
+{
+  write( SHOCK, AC_dsmin*AC_dsmin*smooth(SHOCK) )
+}
+#else
+Kernel shock_1_divu()
+{
+}
+
+Kernel shock_2_smooth()
+{
+}
+#endif

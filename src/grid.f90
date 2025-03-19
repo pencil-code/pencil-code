@@ -998,7 +998,6 @@ module Grid
 !
       lcart_equi=(lcartesian_coords .and. all(lequidist))
       if (lcart_equi) then
-
 !
 !  FAG replaced old_cdtv flag with more general coordinate independent lmaximal
 !        if (old_cdtv) then
@@ -1017,9 +1016,6 @@ module Grid
             dxyz_4 = dline_1(:,1)**4 + dline_1(:,2)**4 + dline_1(:,3)**4
             dxyz_6 = dline_1(:,1)**6 + dline_1(:,2)**6 + dline_1(:,3)**6
           endif
-        !  dxyz_2 = dline_1(:,1)**2+dline_1(:,2)**2+dline_1(:,3)**2
-        !  dxyz_4 = dline_1(:,1)**4+dline_1(:,2)**4+dline_1(:,3)**4
-        !  dxyz_6 = dline_1(:,1)**6+dline_1(:,2)**6+dline_1(:,3)**6
 !        endif
 !
 !  Fill pencil with maximum gridspacing. Will be overwritten
@@ -2641,7 +2637,7 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
     endsubroutine get_grid_mn
 !**********************************************************************
     subroutine get_dVol(mm,nn,dV)
-!$omp declare target
+!!$omp declare target
 !
       integer,             intent(in ) :: mm,nn
       real, dimension(nx), intent(out) :: dV

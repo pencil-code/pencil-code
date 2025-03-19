@@ -5,6 +5,8 @@
 module Messages
 !
   use Cdata
+  use Mpicomm
+!$ use General, only: omp_single
 !$ use OMP_lib
 !
   implicit none
@@ -97,6 +99,7 @@ module Messages
       character(len=*), optional :: location, message
       logical, optional :: force
 !
+      !$ if (omp_single()) then
       if (present(location)) scaller=location
 !
       if (.not.llife_support) then
@@ -119,6 +122,7 @@ module Messages
         endif
 !
       endif
+      !$ endif
 !
     endsubroutine not_implemented
 !***********************************************************************
@@ -133,6 +137,7 @@ module Messages
 !
       logical :: fatal
 !
+      !$ if (omp_single()) then
       if (present(location)) scaller=location
 !
       if (.not.llife_support) then
@@ -156,6 +161,7 @@ module Messages
         endif
 !
       endif
+      !$ endif
 !
     endsubroutine fatal_error
 !***********************************************************************
@@ -175,6 +181,7 @@ module Messages
 !
       logical :: fatal
 !
+      !$ if (omp_single()) then
       if (present(location)) scaller=location
 !
       fatal=loptest(force)
@@ -187,8 +194,9 @@ module Messages
         write (*,*) trim(scaller) // ": " // trim(message)//'!!!'
       endif
 !
-      if (fatal) call die_immediately
-      call die_gracefully
+      if (fatal) call die_immediately()
+      call die_gracefully()
+      !$ endif
 !
     endsubroutine inevitably_fatal_error
 !***********************************************************************
@@ -202,6 +210,7 @@ module Messages
       character(len=*), optional :: location
       character(len=*)           :: message
 !
+      !$ if (omp_single()) then
       if (present(location)) scaller=location
 !
       if (.not.llife_support) then
@@ -224,6 +233,7 @@ module Messages
           message_stored=trim(message_stored)//'; '//trim(scaller)//": "//trim(message)
         endif
       endif
+      !$ endif
 !
     endsubroutine fatal_error_local
 !***********************************************************************
@@ -301,6 +311,7 @@ module Messages
       character(len=*), optional :: location
       character(len=*)           :: message
 !
+      !$ if (omp_single()) then
       if (present(location)) scaller=location
 
       if (.not.llife_support) then
@@ -316,6 +327,7 @@ module Messages
         if (ldie_onerror) call die_gracefully
 !
       endif
+      !$ endif
 !
     endsubroutine error
 !***********************************************************************
@@ -333,6 +345,7 @@ module Messages
       character (len=*)           :: message
       integer, optional :: ipr
 !
+      !$ if (omp_single()) then
       if (present(location)) scaller=location
 
       if (.not.llife_support) then
@@ -347,6 +360,7 @@ module Messages
         if (ldie_onwarning) call die_gracefully
 !
       endif
+      !$ endif
 !
     endsubroutine warning
 !***********************************************************************
@@ -364,6 +378,7 @@ module Messages
 
       integer :: level_ = iinformation_ip
 !
+      !$ if (omp_single()) then
       if (present(location)) scaller=location
 
       if (present(level)) level_=level
@@ -371,6 +386,7 @@ module Messages
       if ((iproc_world == ioptest(ipr,0)) .and. (message /= '')) then
         if (ip<=level_) write (*,*) trim(scaller) // ": " // trim(message)//'.'
       endif
+      !$ endif
 !
     endsubroutine information
 !***********************************************************************
@@ -554,7 +570,13 @@ module Messages
 !
         if (present(instruct)) then
           if (opened .and. (trim(instruct) == 'finalize')) then
-            if (.not.lfirst) write(lun,*) time, merge('',trim(scaller)//": "//trim(message)//'.',message=='')
+            if (.not.lfirst) then
+              if (message=='') then
+                write(lun,*) time
+              else
+                write(lun,*) time, trim(scaller)//": "//trim(message)//'.'
+              endif
+            endif
             close(lun)
             opened = .false.
           endif
@@ -1035,7 +1057,7 @@ module Messages
     call mpireduce_sum_int(memuse,memory)
 
     if (lroot) then
-      print'(1x,a,f9.3)', 'Maximum used memory per cpu [MBytes] = ', memcpu/1024.
+      print'(1x,a,f9.3)', 'Maximum used memory per MPI process [MBytes] = ', memcpu/1024.
       if (memory>1e6) then
         print'(1x,a,f12.3)', 'Maximum used memory [GBytes] = ', memory/1024.**2
       else

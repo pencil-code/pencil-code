@@ -626,7 +626,7 @@ module Heatflux
 !
     df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - rhs
 !
-    if (lfirst.and.ldt) then
+    if (lupdate_courant_dt) then
 !
 !     timestep constraints due to tau directly
 !
@@ -745,7 +745,7 @@ module Heatflux
       if (ivid_divq/=0) call store_slices(rhs,divq_xy,divq_xz,divq_yz,divq_xy2,divq_xy3,divq_xy4,divq_xz2)
     endif
 !
-    if (lfirst.and.ldt) then
+    if (lupdate_courant_dt) then
 !      b2_1=1./(p%b2+tini)
       dt_1_8th = nu_coll !+ e_m /sqrt(b2_1)
 
@@ -811,7 +811,7 @@ module Heatflux
 !
     df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - rhs
 !
-    if (lfirst.and.ldt) then
+    if (lupdate_courant_dt) then
 
       dt1_max=max(dt1_max,maxval(abs(rhs))/cdts)
 !

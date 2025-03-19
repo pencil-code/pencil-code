@@ -41,11 +41,12 @@ module Solid_Cells
   logical :: lnointerception=.false., lcheck_ba=.false.
   logical :: lclose_quad_rad_inter=.true.
   logical :: lset_flow_dir=.false.
-  real                          :: rhosum, flow_dir=0., T0, flow_dir_set=0.
-  integer                       :: irhocount
-  real                          :: theta_shift=1e-2
-  real                          :: limit_close_linear=0.5
-  real                          :: ineargridshift=1
+  real, target     :: rhosum
+  real             :: flow_dir=0., T0, flow_dir_set=0.
+  integer, target  :: irhocount
+  real             :: theta_shift=1e-2
+  real             :: limit_close_linear=0.5
+  real             :: ineargridshift=1
 !
   type solid_object
     character(len=10) :: form
@@ -80,12 +81,17 @@ module Solid_Cells
   integer :: idiag_Nusselt=0
 !
   integer, allocatable :: fpnearestgrid(:,:,:)
-  real, allocatable    :: c_dragx(:), c_dragy(:), c_dragz(:), Nusselt(:)
-  real, allocatable    :: c_dragx_p(:), c_dragy_p(:), c_dragz_p(:)
+  real, allocatable, target :: c_dragx(:), c_dragy(:), c_dragz(:), Nusselt(:)
+  real, allocatable, target :: c_dragx_p(:), c_dragy_p(:), c_dragz_p(:)
 !  Dummy variables
   real :: r_ogrid
   real :: r_int_outer
   real, dimension(3) :: xorigo_ogrid
+!  For multithreading purposes
+  real, pointer :: p_rhosum
+  real, pointer, dimension(:) :: p_c_dragy, p_c_dragx, p_c_dragz, p_Nusselt, p_c_dragx_p, p_c_dragz_p, p_c_dragy_p
+  integer, pointer :: p_irhocount
+  !$omp threadprivate(c_dragx, c_dragy, c_dragz, Nusselt, c_dragx_p, c_dragy_p, c_dragz_p, irhocount, rhosum)
 !
   contains
 !***********************************************************************
@@ -3744,5 +3750,43 @@ module Solid_Cells
       gp=0.
 !
     endsubroutine interpolate_particles_ogrid
+!***********************************************************************
+    subroutine sc_diags_reductions
+!
+!  Reduces accumulated diagnostic variables across threads. Only called if using OpenMP
+!
+!  30-mar-23/TP: coded
+!
+      if (ldiagnos) then
+        p_rhosum = p_rhosum + rhosum
+        p_irhocount = p_irhocount + irhocount
+        if (allocated(c_dragy)) p_c_dragy = p_c_dragy + c_dragy
+        if (allocated(c_dragz)) p_c_dragz = p_c_dragz + c_dragz
+        if (allocated(c_dragx)) p_c_dragx = p_c_dragx + c_dragx
+        if (allocated(Nusselt)) p_Nusselt = p_Nusselt + Nusselt
+        if (allocated(c_dragx_p)) p_c_dragx_p = p_c_dragx_p + c_dragx_p
+        if (allocated(c_dragy_p)) p_c_dragy_p = p_c_dragy_p + c_dragy_p
+        if (allocated(c_dragz_p)) p_c_dragz_p = p_c_dragz_p + c_dragz_p
+      endif
+
+    endsubroutine sc_diags_reductions
+!***********************************************************************
+    subroutine sc_init_reduc_pointers
+!
+!  Initiliazes solid_cells specific pointers needed in thread_reductions 
+!
+!  30-mar-23/TP: Coded
+!
+      p_rhosum => rhosum
+      p_irhocount => irhocount 
+      if (allocated(c_dragx)) p_c_dragx => c_dragx
+      if (allocated(c_dragy)) p_c_dragy => c_dragy
+      if (allocated(c_dragz)) p_c_dragz => c_dragz
+      if (allocated(Nusselt)) p_Nusselt => Nusselt
+      if (allocated(c_dragx_p)) p_c_dragx_p => c_dragx_p
+      if (allocated(c_dragy_p)) p_c_dragy_p => c_dragy_p
+      if (allocated(c_dragz_p)) p_c_dragz_p => c_dragz_p
+
+    endsubroutine sc_init_reduc_pointers
 !***********************************************************************
 endmodule Solid_Cells

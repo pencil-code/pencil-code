@@ -888,7 +888,7 @@ module solid_cells_ogrid_chemistry
 !
 !  For the timestep calculation, need maximum diffusion
 !
-!      if (lfirst .and. ldt) then
+!      if (lupdate_courant_dt) then
 !          diffus_chem=0.
 !          do j = 1,nx
 !            if (ldiffusion .and. .not. ldiff_simple) then
@@ -908,7 +908,7 @@ module solid_cells_ogrid_chemistry
 !
 ! NB: it should be discussed
 !
-!      if (lfirst .and. ldt) then
+!      if (lupdate_courant_dt) then
 !        if (lreactions .and.(.not. llsode)) then
 !
 !  calculate maximum of *relative* reaction rate if decaying,
@@ -1207,13 +1207,13 @@ module solid_cells_ogrid_chemistry
       real, dimension(nx_ogrid,nreactions), intent(out) :: vreact_p, vreact_m
 !
       type (pencil_case_ogrid) :: p_ogrid
-      real, dimension(nx_ogrid) :: dSR=0., dHRT=0., Kp, Kc
+      real, dimension(nx_ogrid) :: dSR, dHRT, Kp, Kc
       real, dimension(nx_ogrid) :: prod1, prod2
-      real, dimension(nx_ogrid) :: kf=0., kr=0.
+      real, dimension(nx_ogrid) :: kf, kr
       real, dimension(nx_ogrid) :: rho_cgs, p_atm
       real, dimension(nx_ogrid) :: mix_conc
       integer :: k, reac, i
-      real :: sum_tmp=0., ddd
+      real :: sum_tmp, ddd
       real :: Rcal, Rcal1, lnRgas, l10, lnp_atm
       logical, save :: lwrite_first=.true.
       character(len=fnlen) :: input_file="./data/react_ogr.out"
@@ -1248,50 +1248,50 @@ module solid_cells_ogrid_chemistry
 !  Find the product of the species molar consentrations (where
 !  each molar consentration is taken to the power of the number)
 !
-        if (lmech_simple) then
-          prod1 = 1.
-          prod2 = 1.
-          do k = 1,nchemspec
-            if (abs(orders_p(k,reac)) > 0.0) then
-              prod1 = prod1*(f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ichemspec(k))*rho_cgs(:) &
-                  /species_constants(k,imass))**orders_p(k,reac)   
-            endif
-            if (abs(orders_m(k,reac)) > 0.0) then       
-              prod2 = prod2*(f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ichemspec(k))*rho_cgs(:) &
-                  /species_constants(k,imass))**orders_m(k,reac)
-            endif
-          enddo
-          if (nchemspec==4) prod1=prod1*(Y_H2O*rho_cgs(:)/m_H2O)**orders_p(5,reac)
-        else
-          prod1 = 1.
-          prod2 = 1.
-          do k = 1,nchemspec
-            if (abs(Sijp(k,reac)) == 1) then
-              prod1 = prod1*(f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ichemspec(k))*rho_cgs(:) &
-                  /species_constants(k,imass))
-            elseif (abs(Sijp(k,reac)) == 2) then
-              prod1 = prod1*(f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ichemspec(k))*rho_cgs(:) &
-                  /species_constants(k,imass))*(f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ichemspec(k)) &
-                  *rho_cgs(:)/species_constants(k,imass))
-            elseif (abs(Sijp(k,reac)) > 0) then
-              prod1 = prod1*(f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ichemspec(k))*rho_cgs(:) &
-                  /species_constants(k,imass))**Sijp(k,reac)
-            endif
-          enddo
-          do k = 1,nchemspec
-            if (abs(Sijm(k,reac)) == 1.0) then
-              prod2 = prod2*(f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ichemspec(k))*rho_cgs(:) &
-                  /species_constants(k,imass))
-            elseif (abs(Sijm(k,reac)) == 2.0) then
-              prod2 = prod2*(f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ichemspec(k))*rho_cgs(:) &
-                  /species_constants(k,imass))*(f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ichemspec(k)) &
-                  *rho_cgs(:)/species_constants(k,imass))
-            elseif (abs(Sijm(k,reac)) > 0.0) then
-              prod2 = prod2*(f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ichemspec(k))*rho_cgs(:) &
-                  /species_constants(k,imass))**Sijm(k,reac)
-            endif
-          enddo
-        endif
+          if (lmech_simple) then
+            prod1 = 1.
+            prod2 = 1.
+            do k = 1,nchemspec
+              if (abs(orders_p(k,reac)) > 0.0) then
+                prod1 = prod1*(f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ichemspec(k))*rho_cgs(:) &
+                    /species_constants(k,imass))**orders_p(k,reac)   
+              endif
+              if (abs(orders_m(k,reac)) > 0.0) then       
+                prod2 = prod2*(f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ichemspec(k))*rho_cgs(:) &
+                    /species_constants(k,imass))**orders_m(k,reac)
+              endif
+            enddo
+            if (nchemspec==4) prod1=prod1*(Y_H2O*rho_cgs(:)/m_H2O)**orders_p(5,reac)
+          else
+            prod1 = 1.
+            prod2 = 1.
+            do k = 1,nchemspec
+              if (abs(Sijp(k,reac)) == 1) then
+                prod1 = prod1*(f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ichemspec(k))*rho_cgs(:) &
+                    /species_constants(k,imass))
+              elseif (abs(Sijp(k,reac)) == 2) then
+                prod1 = prod1*(f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ichemspec(k))*rho_cgs(:) &
+                    /species_constants(k,imass))*(f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ichemspec(k)) &
+                    *rho_cgs(:)/species_constants(k,imass))
+              elseif (abs(Sijp(k,reac)) > 0) then
+                prod1 = prod1*(f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ichemspec(k))*rho_cgs(:) &
+                    /species_constants(k,imass))**Sijp(k,reac)
+              endif
+            enddo
+            do k = 1,nchemspec
+              if (abs(Sijm(k,reac)) == 1.0) then
+                prod2 = prod2*(f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ichemspec(k))*rho_cgs(:) &
+                    /species_constants(k,imass))
+              elseif (abs(Sijm(k,reac)) == 2.0) then
+                prod2 = prod2*(f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ichemspec(k))*rho_cgs(:) &
+                    /species_constants(k,imass))*(f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ichemspec(k)) &
+                    *rho_cgs(:)/species_constants(k,imass))
+              elseif (abs(Sijm(k,reac)) > 0.0) then
+                prod2 = prod2*(f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ichemspec(k))*rho_cgs(:) &
+                    /species_constants(k,imass))**Sijm(k,reac)
+              endif
+            enddo
+          endif
 !
 !  Find forward rate constant for reaction 'reac'
 !
@@ -1299,77 +1299,77 @@ module solid_cells_ogrid_chemistry
 !
 !  Find backward rate constant for reaction 'reac'
 !
-        if (lmech_simple) then
-          !! 20.0301186564 = ln(5*10e8) !!
-          kr = 20.0301186564-E_an(reac)*Rcal1*TT1_loc
-         ! kr = 19.0833687-E_an(reac)*Rcal1*TT1_loc !changed A to obtain flamespeed as in GRI
-          sum_sp = 1.
-        else
-
-          dSR = 0.
-          dHRT = 0.
-          sum_tmp = 0.
-          do k = 1,nchemspec
-            dSR = dSR+(Sijm(k,reac) -Sijp(k,reac))*p_ogrid%S0_R(:,k)
-            dHRT = dHRT+(Sijm(k,reac)-Sijp(k,reac))*p_ogrid%H0_RT(:,k)
-            sum_tmp = sum_tmp+(Sijm(k,reac)-Sijp(k,reac))
-          enddo
-          Kp = dSR-dHRT
-!
-          if (sum_tmp == 0.) then
-            Kc = Kp
+          if (lmech_simple) then
+            !! 20.0301186564 = ln(5*10e8) !!
+            kr = 20.0301186564-E_an(reac)*Rcal1*TT1_loc
+           ! kr = 19.0833687-E_an(reac)*Rcal1*TT1_loc !changed A to obtain flamespeed as in GRI
+            sum_sp = 1.
           else
-            Kc = Kp+sum_tmp*(lnp_atm-p_ogrid%lnTT-lnRgas)
-          endif
+  
+            dSR = 0.
+            dHRT = 0.
+            sum_tmp = 0.
+            do k = 1,nchemspec
+              dSR = dSR+(Sijm(k,reac) -Sijp(k,reac))*p_ogrid%S0_R(:,k)
+              dHRT = dHRT+(Sijm(k,reac)-Sijp(k,reac))*p_ogrid%H0_RT(:,k)
+              sum_tmp = sum_tmp+(Sijm(k,reac)-Sijp(k,reac))
+            enddo
+            Kp = dSR-dHRT
+!
+            if (sum_tmp == 0.) then
+              Kc = Kp
+            else
+              Kc = Kp+sum_tmp*(lnp_atm-p_ogrid%lnTT-lnRgas)
+            endif
 !
 !  Multiply by third body reaction term
 !
-          if (minval(a_k4(:,reac)) < impossible) then
-            sum_sp = 0.
-            do k = 1,nchemspec
-              sum_sp = sum_sp+a_k4(k,reac)*f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ichemspec(k))  &
-                  *rho_cgs(:)/species_constants(k,imass)
-            enddo
-            mix_conc = sum_sp
-          else
-            sum_sp = 1.
-            mix_conc = rho_cgs(:)*(p_ogrid%RR(:)/Rgas)/unit_mass
-            !mix_conc = rho_cgs(:)*p_ogrid%mu1(:)/unit_mass
-          endif
+            if (minval(a_k4(:,reac)) < impossible) then
+              sum_sp = 0.
+              do k = 1,nchemspec
+                sum_sp = sum_sp+a_k4(k,reac)*f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ichemspec(k))  &
+                    *rho_cgs(:)/species_constants(k,imass)
+              enddo
+              mix_conc = sum_sp
+            else
+              sum_sp = 1.
+              mix_conc = rho_cgs(:)*(p_ogrid%RR(:)/Rgas)/unit_mass
+              !mix_conc = rho_cgs(:)*p_ogrid%mu1(:)/unit_mass
+            endif
 !
 !  The Lindeman approach to the fall of reactions
 !
-          if (maxval(abs(low_coeff(:,reac))) > 0.) then
-            B_n_0 = low_coeff(1,reac)
-            alpha_n_0 = low_coeff(2,reac)
-            E_an_0 = low_coeff(3,reac)
-            kf_0(:) = B_n_0+alpha_n_0*p_ogrid%lnTT(:)-E_an_0*Rcal1*TT1_loc(:)
-            Pr = exp(kf_0-kf)*mix_conc
-            kf = kf+log(Pr/(1.+Pr))
-          elseif (maxval(abs(high_coeff(:,reac))) > 0.) then
-            B_n_0 = high_coeff(1,reac)
-            alpha_n_0 = high_coeff(2,reac)
-            E_an_0 = high_coeff(3,reac)
-            kf_0(:) = B_n_0+alpha_n_0*p_ogrid%lnTT(:)-E_an_0*Rcal1*TT1_loc(:)
-            Pr = exp(kf_0-kf)*mix_conc
-            kf = kf-log(1.+Pr)
-          endif
+            if (maxval(abs(low_coeff(:,reac))) > 0.) then
+              B_n_0 = low_coeff(1,reac)
+              alpha_n_0 = low_coeff(2,reac)
+              E_an_0 = low_coeff(3,reac)
+              kf_0(:) = B_n_0+alpha_n_0*p_ogrid%lnTT(:)-E_an_0*Rcal1*TT1_loc(:)
+              Pr = exp(kf_0-kf)*mix_conc
+              kf = kf+log(Pr/(1.+Pr))
+            elseif (maxval(abs(high_coeff(:,reac))) > 0.) then
+              B_n_0 = high_coeff(1,reac)
+              alpha_n_0 = high_coeff(2,reac)
+              E_an_0 = high_coeff(3,reac)
+              kf_0(:) = B_n_0+alpha_n_0*p_ogrid%lnTT(:)-E_an_0*Rcal1*TT1_loc(:)
+              Pr = exp(kf_0-kf)*mix_conc
+              kf = kf-log(1.+Pr)
+            endif
 !
 ! The Troe approach
 !
-          if (maxval(abs(troe_coeff(:,reac))) > 0.) then
-            Fcent = (1.-troe_coeff(1,reac))*exp(-p_ogrid%TT(:)/troe_coeff(2,reac)) &
-                +troe_coeff(1,reac)*exp(-p_ogrid%TT(:)/troe_coeff(3,reac))
-            ccc = -0.4-0.67*log10(Fcent)
-            nnn = 0.75-1.27*log10(Fcent)
-            ddd = 0.14
-            lnPr = log10(Pr)
-            tmpF = ((lnPr+ccc)/(nnn-ddd*(lnPr+ccc)))**2
-            tmpF = 1./(1.+tmpF)
-            FF = tmpF*log10(Fcent)
-            FF = FF*l10
-            kf = kf+FF
-          endif
+            if (maxval(abs(troe_coeff(:,reac))) > 0.) then
+              Fcent = (1.-troe_coeff(1,reac))*exp(-p_ogrid%TT(:)/troe_coeff(2,reac)) &
+                  +troe_coeff(1,reac)*exp(-p_ogrid%TT(:)/troe_coeff(3,reac))
+              ccc = -0.4-0.67*log10(Fcent)
+              nnn = 0.75-1.27*log10(Fcent)
+              ddd = 0.14
+              lnPr = log10(Pr)
+              tmpF = ((lnPr+ccc)/(nnn-ddd*(lnPr+ccc)))**2
+              tmpF = 1./(1.+tmpF)
+              FF = tmpF*log10(Fcent)
+              FF = FF*l10
+              kf = kf+FF
+            endif
 !
 !  Find forward (vreact_p) and backward (vreact_m) rate of
 !  progress variable.
@@ -1377,7 +1377,7 @@ module solid_cells_ogrid_chemistry
 !
             kr = kf-Kc
 !
-        endif
+          endif
 !
           if (Mplus_case (reac)) then
             where (prod1 > 0.)
@@ -1405,11 +1405,10 @@ module solid_cells_ogrid_chemistry
           endif
 !
           if (.not. back(reac)) vreact_m(:,reac) = 0.
-        enddo
+        enddo  ! do reac = 1,nreactions
       endif
 !
-      if (lwrite_first .and. lroot) &
-          print*,'get_reaction_rate: writing react.out file'
+      if (lwrite_first .and. lroot) print*,'get_reaction_rate: writing react.out file'
       lwrite_first = .false.
 !
     endsubroutine get_reaction_rate_ogr

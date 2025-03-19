@@ -52,7 +52,6 @@ program pc_extract
   num_components = sum (global_size)
 !
   lstart = .true.
-  lmpicomm = .false.
   lroot = .true.
   ipx = 0
   ipy = 0
@@ -104,10 +103,6 @@ program pc_extract
 !  Register physics modules.
 !
   call register_modules
-!
-!  Define the lenergy logical
-!
-  lenergy = lentropy .or. ltemperature .or. lthermal_energy
 !
   if (lwrite_aux .and. .not. lread_aux) then
     if (lroot) then

@@ -108,7 +108,6 @@ module Magnetic
   real, dimension(3) :: eta_aniso_hyper3
   real, dimension(2) :: magnetic_xaver_range=(/-max_real,max_real/)
   real, dimension(2) :: magnetic_zaver_range=(/-max_real,max_real/)
-  real, dimension(nx,3) :: uxbb
   real, dimension(nx) :: eta_BB
   real, dimension(nx) :: xmask_mag
   real, dimension(nz) :: zmask_mag
@@ -2646,7 +2645,6 @@ module Magnetic
 ! uxb
       if (lpenc_loc(i_uxb)) then
         call cross_mn(p%uu,p%bb,p%uxb)
-        call cross_mn(p%uu,p%bbb,uxbb)
 !  add external e-field.
         do j=1,3
           if (iglobal_eext(j)/=0) p%uxb(:,j)=p%uxb(:,j)+f(l1:l2,m,n,iglobal_eext(j))
@@ -3044,6 +3042,7 @@ module Magnetic
       real, dimension (nx,3) :: ujiaj,gua,uxbxb,poynting
       real, dimension (nx,3) :: magfric,vmagfric2, baroclinic
       real, dimension (nx,3) :: dAdt, gradeta_shock
+      real, dimension (nx,3) :: uxbb
       real, dimension (nx) :: exabot,exatop, peta_shock
       real, dimension (nx) :: jxb_dotB0,uxb_dotB0
       real, dimension (nx) :: oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
@@ -4105,6 +4104,7 @@ module Magnetic
             .or. idiag_uxbmz/=0) then
           call dot(B_ext_inv,p%uxb,uxb_dotB0)
           if (idiag_uxbm/=0) call sum_mn_name(uxb_dotB0,idiag_uxbm)
+          call cross_mn(p%uu,p%bbb,uxbb)
           if (idiag_uxbmx/=0) call sum_mn_name(uxbb(:,1),idiag_uxbmx)
           if (idiag_uxbmy/=0) call sum_mn_name(uxbb(:,2),idiag_uxbmy)
           if (idiag_uxbmz/=0) call sum_mn_name(uxbb(:,3),idiag_uxbmz)

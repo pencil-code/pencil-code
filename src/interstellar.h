@@ -2,7 +2,6 @@
   private
 
   public :: register_interstellar
-
   public :: initialize_interstellar
 
   public :: read_interstellar_init_pars
@@ -24,3 +23,5 @@
   public :: calc_heat_cool_interstellar
   public :: input_persistent_interstellar
   public :: output_persistent_interstellar
+
+  public :: pushpars2c

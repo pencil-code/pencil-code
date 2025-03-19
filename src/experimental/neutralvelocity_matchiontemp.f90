@@ -39,7 +39,6 @@ module NeutralVelocity
   real :: colldrag=0,electron_pressure=1
   real :: nun=0.,csn0=0.,csn20,nun_hyper3=0.
   real :: rnoise_int=impossible,rnoise_ext=impossible
-  real, dimension (nx,3,3) :: unij5
   character (len=labellen),dimension(ninit) :: iviscn=''
 !
   namelist /neutralvelocity_init_pars/ &
@@ -87,6 +86,7 @@ module NeutralVelocity
   integer :: idiag_unrmr=0,idiag_unpmr=0,idiag_unzmr=0
   integer :: idiag_divunm=0,idiag_dtnun=0
 !
+
   contains
 !***********************************************************************
     subroutine register_neutralvelocity()
@@ -419,10 +419,6 @@ module NeutralVelocity
 !
 ! can't do unij5glnrho here, as calc_pencils_neutraldensity is called AFTER
 !
-      if (any(iviscn=='hyper3_nun-const')) then
-         call gij(f,iuun,unij5,5)
-         !call multmv(unij5,p%glnrhon,unij5glnrhon)
-      endif
 !
     endsubroutine calc_pencils_neutralvelocity
 !***********************************************************************
@@ -734,6 +730,7 @@ module NeutralVelocity
       real, dimension(nx,3) :: fvisc,unij5glnrhon
       real, dimension(nx) :: munrhon1,tmp
       real, dimension(nx) :: diffus_nun, diffus_nun3
+      real, dimension (nx,3,3) :: unij5
       integer :: i,j,jj,ju
       type (pencil_case) :: p
 !
@@ -779,7 +776,7 @@ module NeutralVelocity
          case ('hyper3_nun-const')
 !
 !  Viscous force: nun*(del6un+Sn.glnrhon), where Sn_ij=d^5 un_i/dx_j^5
-!
+            call gij(f,iuun,unij5,5)
             call multmv(unij5,p%glnrhon,unij5glnrhon)
 !
             if (headtt) print*, 'Viscous force (neutral): nun*(del6un+Sn.glnrhon)'

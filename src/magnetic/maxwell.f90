@@ -176,6 +176,7 @@ module Magnetic
   integer :: iakx, iaky, iakz, iakxim, iakyim, iakzim
   integer :: iekx, ieky, iekz, iekxim, iekyim, iekzim
   integer, parameter :: nk=nxgrid/2
+
   type :: magspectra
     real, dimension(nk) :: mag   ,ele
     real, dimension(nk) :: maghel,elehel
@@ -788,12 +789,16 @@ module Magnetic
 !
       integer :: ikx, iky, ikz, q, p, ik
       real :: k1, k2, k3, ksqr
-!
+! 
+!$omp parallel num_threads(num_helper_threads)
+      !$omp workshare   
       spectra%mag=0.; spectra%maghel=0.
       spectra%ele=0.; spectra%elehel=0.
+      !$omp end workshare   
 !
 !  Loop over all positions in k-space.
 !
+      !$omp do collapse(3) reduction(+:spectra%mag,spectra%maghel)
       do ikz=1,nz
         do iky=1,ny
           do ikx=1,nx
@@ -808,8 +813,10 @@ module Magnetic
 !  Debug output.
 !
             if (ldebug_print) then
+              !$omp critical
               if (ik <= 5) write(*,1000) iproc,ik,k1,k2,k3,f(nghost+ikx,nghost+iky,nghost+ikz,iggX  )
               1000 format(2i5,1p,4e11.2)
+              !$omp end critical
             endif
 !
             if (ik <= nk) then
@@ -880,7 +887,8 @@ module Magnetic
             endif
           enddo
         enddo
-      enddo
+      enddo     ! do ikz
+!$omp end parallel
 
     endsubroutine make_spectra
 !***********************************************************************
@@ -900,12 +908,20 @@ module Magnetic
         lfirstcall=.false.
       endif
 !
+!$omp parallel num_threads(num_helper_threads)
       select case(kind)
-      case ('mag'); spectrum=spectra%mag; spectrum_hel=spectra%maghel
-      case ('ele'); spectrum=spectra%ele; spectrum_hel=spectra%elehel
-      case default; call warning('magnetic_calc_spectra', &
-                      'kind of spectrum "'//kind//'" not implemented')
+      case ('mag')
+        !$omp workshare
+        spectrum=spectra%mag; spectrum_hel=spectra%maghel
+        !$omp end workshare
+      case ('ele')
+        !$omp workshare
+        spectrum=spectra%ele; spectrum_hel=spectra%elehel
+        !$omp end workshare
+      case default 
+        call warning('magnetic_calc_spectra','kind of spectrum "'//kind//'" not implemented')
       endselect
+!$omp end parallel
 !
     endsubroutine magnetic_calc_spectra
 !***********************************************************************
@@ -930,12 +946,20 @@ module Magnetic
 
       kindstr=char(kind(1))//char(kind(2))//char(kind(3))
 
+!$omp parallel num_threads(num_helper_threads)
       select case(kindstr)
-      case ('mag'); spectrum=spectra%mag; spectrum_hel=spectra%maghel
-      case ('ele'); spectrum=spectra%ele; spectrum_hel=spectra%elehel
-      case default; call warning('magnetic_calc_spectra', &
-                      'kind of spectrum "'//kindstr//'" not implemented')
+      case ('mag')
+        !$omp workshare
+        spectrum=spectra%mag; spectrum_hel=spectra%maghel
+        !$omp end workshare
+      case ('ele')
+        !$omp workshare
+        spectrum=spectra%ele; spectrum_hel=spectra%elehel
+        !$omp end workshare
+      case default
+        call warning('magnetic_calc_spectra','kind of spectrum "'//kindstr//'" not implemented')
       endselect
+!$omp end parallel
 
     endsubroutine magnetic_calc_spectra_byte
 !***********************************************************************
@@ -1526,7 +1550,6 @@ module Magnetic
       enddo; enddo
 !
 !  preparations; j is the first index of the array for the complex part.
-!
 !
       if (kx>0.and.kx<=nx-1) then
         if (ipx==0) then

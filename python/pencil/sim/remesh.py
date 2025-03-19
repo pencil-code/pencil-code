@@ -460,7 +460,7 @@ def src2dst_remesh(
       Size in megabytes of snapshot variable before chunked remesh is used.
 
     lfs : bool
-      Flag to set the striping for large file sizes to imporve IO efficiency.
+      Flag to set the striping for large file sizes to improve IO efficiency.
 
     MB : float
       Size of data to write contiguously before moving to new OST on lustre.

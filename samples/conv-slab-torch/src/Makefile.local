@@ -3,7 +3,7 @@
 ### Included by `Makefile'
 ###
 
-MPICOMM   = nompicomm
+MPICOMM   = mpicomm
 
 #================================
 # Please uncomment one IO option:
@@ -30,3 +30,7 @@ FORCING   = noforcing
 SHEAR     = noshear
 
 TRAINING  = training_torchfort
+GPU       =   gpu_astaroth
+GPU_VENDOR=   nvidia
+MULTITHREADING= openmp
+

@@ -72,6 +72,7 @@ module Special
   real, dimension(nx,ny,nz) :: dtau
 !
   type (InternalPencils) :: q
+  !$omp threadprivate(q)
 !
   integer :: ikappar,itau
 !

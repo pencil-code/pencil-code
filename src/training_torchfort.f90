@@ -8,20 +8,27 @@
 !
   module Training
 
+
     use Cdata
     use General, only: itoa
     use Messages
-    use Cudafor
-    use Torchfort
-    use iso_c_binding
+    use Cudafor, only: cudaSetDevice,CUDASUCCESS
+    use Torchfort, only: torchfort_create_distributed_model, torchfort_create_model,&
+                         torchfort_result_success,torchfort_load_model,torchfort_load_checkpoint,&
+                         torchfort_save_model,torchfort_result_success,torchfort_save_checkpoint,&
+                         torchfort_inference,torchfort_train
+    !use iso_c_binding
+
 
     implicit none
+    include 'training.h'
 
     integer :: model_device=0
     integer :: it_train=-1, it_train_chkpt=-1, it_train_start=1
 
+    !real(KIND=rkind4), dimension(:,:,:,:,:), allocatable, device :: input, label, output
     real, dimension(:,:,:,:,:), allocatable, device :: input, label, output
-    !real, dimension(:,:,:,:,:), allocatable :: input, label, output
+    real :: train_loss   !(KIND=rkind4) :: train_loss
 
     integer :: itau, itauxx, itauxy, itauxz, itauyy, itauyz, itauzz
 
@@ -39,9 +46,8 @@
     character(LEN=fnlen) :: model_output_dir, checkpoint_output_dir
     integer :: istat, train_step_ckpt, val_step_ckpt
     logical :: ltrained=.false., lckpt_written=.false.
-    real :: train_loss, tauerror
     real, dimension (mx,my,mz,3) :: uumean
-    real :: input_min, input_max, output_min, output_max
+    real :: tauerror, input_min, input_max, output_min, output_max
 
     contains
 !***************************************************************
@@ -229,7 +235,6 @@ print*, 'adresses:', loc(input), loc(output), loc(label)
     subroutine train(f)
    
       use Gpu, only: get_ptr_gpu
-      use Sub, only: smooth
 
       real, dimension (mx,my,mz,mfarray) :: f
 
@@ -264,7 +269,7 @@ print*, 'adresses:', loc(input), loc(output), loc(label)
           endif
 
           ! print*, output_min, output_max, input_min, input_max
-          input(:,:,:,:,1) = uumean                    ! host to device
+          input(:,:,:,:,1) = uumean                    ! host to device    !sngl(uumean)
           label(:,:,:,:,1) = f(:,:,:,itauxx:itauzz)    ! host to device
 
           istat = torchfort_train(model, input, label, train_loss)
@@ -357,7 +362,7 @@ print*, 'it,it_train_chkpt=', it,it_train_chkpt, trim(model),istat, trim(checkpo
         if (ltrained.and.lfirstpoint) then
           call sum_mn_name(spread(tauerror,1,nx),idiag_tauerror,lsqrt=.true.)
         else
-          call save_name(train_loss, idiag_loss)
+          call save_name(real(train_loss), idiag_loss)
         endif 
       endif 
 !

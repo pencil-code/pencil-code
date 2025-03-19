@@ -6630,6 +6630,7 @@ module Initcond
       real :: Bz_flux, Bz_flux_local
       logical :: exists
       integer :: alloc_err, rec_len
+      integer(KIND=ikind8) :: rlen
       real, parameter :: reduce_factor=0.25
 !
       ! file location settings
@@ -6656,7 +6657,8 @@ module Initcond
         call stop_it_if_any(.not. exists, &
             'mag_init: Magnetogram file not found: "'//trim(mag_field_dat)//'"')
         inquire (iolength=rec_len) 1.0d0
-        open (unit, file=mag_field_dat, form='unformatted', recl=rec_len*bnx*bny, access='direct')
+        rlen=rec_len*bnx*bny
+        open (unit, file=mag_field_dat, form='unformatted', recl=rlen, access='direct')
         do py = 1, nprocxy-1
           partner = find_proc(modulo(py,nprocx),py/nprocx,0)
           ! read Bz data for remote processors

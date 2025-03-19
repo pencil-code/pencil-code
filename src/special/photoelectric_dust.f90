@@ -83,6 +83,7 @@ module Special
     real, dimension(nx,3) :: fpres_localisotropic
   endtype InternalPencils
   type (InternalPencils) :: q
+  !$omp threadprivate(q)
 !
   real :: const1,const2,const3
   integer :: idiag_photom=0,idiag_photomax=0

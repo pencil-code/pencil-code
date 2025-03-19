@@ -1229,7 +1229,7 @@ module PointMasses
 !  that the distance to the N-body particle must not change too much in
 !  one time-step and additionally we use the free-fall time-scale.
 !
-          if (lfirst.and.ldt.and.ldt_pointmasses) then
+          if (lupdate_courant_dt.and.ldt_pointmasses) then
             if (.not.lcallpointmass) then
               v_ij = sqrt(sum((fp_pt(ivxq:ivzq)-fq(ks,ivxq:ivzq))**2))
             else
@@ -1298,7 +1298,7 @@ module PointMasses
 !
           if (ldiagnos) call calc_torque(ks,accg)
 !
-          if (lfirst.and.ldt.and.ldt_pointmasses) then
+          if (lupdate_courant_dt.and.ldt_pointmasses) then
             a_ij = sqrt(sum(accg**2))
             r_ij = r_ref
             dt1_max(l1-nghost) = max(dt1_max(l1-nghost),sqrt(a_ij/r_ij)/cdtq)

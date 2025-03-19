@@ -1,12 +1,18 @@
-heat_conduction_const_K() {
-    inv_AC_cp = 1. / AC_cp
-    grad_ln_chi = -gradient(LNRHO)
+// heat conduction for constant conductivity.
 
-    first_term = AC_gamma * inv_AC_cp * laplace(SS) + (AC_gamma - 1.) * laplace(LNRHO)
-    second_term = AC_gamma * inv_AC_cp * gradient(SS) + (AC_gamma - 1.) * gradient(LNRHO)
-    third_term = AC_gamma * (inv_AC_cp * gradient(SS) + gradient(LNRHO)) + grad_ln_chi
+    cp1 = 1./cp
+    grad_lnrho = gradient(LNRHO)
+    grad_ss = gradient(SS)
 
-    chi = AC_hcond_Kconst / (exp(value(LNRHO)) * AC_cp)
+    first_term = gamma *  cp1 * laplace(SS) + (gamma - 1.) * laplace(LNRHO)
+    second_term = gamma * cp1 * grad_ss + (gamma - 1.) * grad_lnrho
+    third_term = gamma * (cp1 * grad_ss) + (gamma - 1.)*grad_lnrho
 
-    return AC_cp * chi * (first_term + dot(second_term, third_term))
-}
+    chi = hcond_Kconst/(exp(value(LNRHO)) * cp)
+
+    if(step_num == 0 && lcourant_dt)
+    {
+    	reduce_max(chi,AC_maxchi)
+    }
+
+    rhs += cp * chi * (first_term + dot(second_term, third_term))

@@ -19,6 +19,10 @@ module Diagnostics
   public :: prep_finalize_thread_diagnos
   public :: diagnostic, initialize_time_integrals, get_average_density
   public :: xyaverages_z, xzaverages_y, yzaverages_x
+  public :: diagnostics_init_reduc_pointers
+  public :: diagnostics_diag_reductions
+  !public :: diagnostics_read_diag_accum, diagnostics_write_diag_accum
+  !public :: diagnostics_init_private_accumulators
   public :: phizaverages_r, yaverages_xz, zaverages_xy
   public :: phiaverages_rz
   public :: write_1daverages, write_2daverages
@@ -92,15 +96,18 @@ module Diagnostics
     module procedure zsum_mn_name_xy_mpar_vec
   endinterface zsum_mn_name_xy_mpar
 !
+  real, target, dimension (nrcyl) :: phiavg_norm
+  public :: phiavg_norm
+  !$omp threadprivate(phiavg_norm)
+
   private
 !
+  real, pointer, dimension(:) :: p_phiavg_norm
   real, dimension (nrcyl,nx) :: phiavg_profile=0.0
-  real, dimension (nrcyl) :: phiavg_norm
   real :: dVol_rel1, dA_xy_rel1, dA_yz_rel1, dA_xz_rel1, dL_y_rel1
 
   character (len=intlen) :: ch1davg, ch2davg
   integer :: ixav_max
-  integer :: nfirst=0
 !
 ! Variables for Yin-Yang grid: z-averages.
 !
@@ -265,12 +272,12 @@ module Diagnostics
 !
       call init_xaver
 !
-      nfirst = nn(1)
-
     endsubroutine initialize_diagnostics
 !***********************************************************************
     subroutine initialize_diagnostic_arrays
-
+!
+!  Not needed so far.
+!
       if (ldiagnos.and.allocated(fname)) fname=0.
       if (l1davgfirst) then
         if (allocated(fnamex)) fnamex=0.
@@ -301,6 +308,7 @@ module Diagnostics
       use IO, only: IO_strategy
       use HDF5_IO, only: output_timeseries
       use Sub, only: insert
+      use Syscalls, only: system_cmd
 !
       character (len=1000) :: fform,legend,line
       integer :: iname, nnamel
@@ -315,15 +323,15 @@ module Diagnostics
 !
       if (lroot) then
         call save_name(tdiagnos,idiag_t)
-        call save_name(dt,idiag_dt)
-        call save_name(eps_rkf,idiag_eps_rkf)
-        call save_name(one_real*(it-1),idiag_it)
+        call save_name(dtdiagnos,idiag_dt)
+        call save_name(eps_rkf_diagnos,idiag_eps_rkf)
+        call save_name(one_real*(itdiagnos-1),idiag_it)
 !
 !  Whenever itype_name=ilabel_max_dt, scale result by dt (for printing Courant
 !  time).
 !
         do iname=1,nname
-          if (itype_name(iname)==ilabel_max_dt) fname(iname)=dt*fname(iname)
+          if (itype_name(iname)==ilabel_max_dt) fname(iname)=dtdiagnos*fname(iname)
         enddo
 
         call gen_form_legend(fform,legend)
@@ -384,6 +392,7 @@ module Diagnostics
         write(lun,'(a)') trim(line)
         !flush(lun)               ! this is a F2003 feature...
         close(lun)
+        if (lupdate_cvs) call system_cmd("cvs ci -m 'automatic update' >& /dev/null &")
 !
 !  Write to stdout.
 !
@@ -803,9 +812,9 @@ module Diagnostics
 !
 !  Communicate over all processors.
 !
-      call mpireduce_max(fmax_tmp,fmax,nmax_count,MPI_COMM_WORLD)
-      call mpireduce_sum(fsum_tmp,fsum,nsum_count,comm=MPI_COMM_WORLD)  !,nonblock=maxreq)        ! wrong for Yin-Yang due to overlap
-      if (lweight_comm) call mpireduce_sum(fweight_tmp,fweight,nsum_count,comm=MPI_COMM_WORLD)!   ~
+      call mpireduce_max(fmax_tmp,fmax,nmax_count)
+      call mpireduce_sum(fsum_tmp,fsum,nsum_count)  !,nonblock=maxreq)        ! wrong for Yin-Yang due to overlap
+      if (lweight_comm) call mpireduce_sum(fweight_tmp,fweight,nsum_count)!   ~
       !call mpiwait(maxreq)
 !
 !  The result is present only on the root processor.
@@ -928,7 +937,7 @@ module Diagnostics
 !
     endsubroutine initialize_time_integrals
 !***********************************************************************
-    subroutine xyaverages_z
+    subroutine xyaverages_z(fnamez,ncountsz)
 !
 !  Calculate xy-averages (still depending on z)
 !  NOTE: these averages depend on z, so after summation in x and y they
@@ -946,6 +955,8 @@ module Diagnostics
 !
       real, dimension(nz,nprocz,nnamez) :: fsumz
       integer, dimension(nz) :: nsum, ncount
+      integer, dimension(:,:) :: ncountsz
+      real, dimension(:,:,:) :: fnamez
       integer :: idiag
 !
       if (nnamez>0) then
@@ -984,13 +995,14 @@ module Diagnostics
 !
     endsubroutine xyaverages_z
 !***********************************************************************
-    subroutine xzaverages_y
+    subroutine xzaverages_y(fnamey)
 !
 !  Calculate xz-averages (still depending on y).
 !
 !  12-oct-05/anders: adapted from xyaverages_z
 !
       real, dimension (ny,nprocy,nnamey) :: fsumy
+      real, dimension (:,:,:) :: fnamey
 !
 !  Communicate over all processors.
 !  The result is only present on the root processor.
@@ -1004,13 +1016,14 @@ module Diagnostics
 !
     endsubroutine xzaverages_y
 !***********************************************************************
-    subroutine yzaverages_x
+    subroutine yzaverages_x(fnamex)
 !
 !  Calculate yz-averages (still depending on x).
 !
 !   2-oct-05/anders: adapted from xyaverages_z
 !
       real, dimension (nx,nprocx,nnamex) :: fsumx
+      real, dimension (:,:,:) :: fnamex
 !
 !  Communicate over all processors.
 !  The result is only present on the root processor.
@@ -1022,7 +1035,7 @@ module Diagnostics
 !
     endsubroutine yzaverages_x
 !***********************************************************************
-    subroutine phizaverages_r
+    subroutine phizaverages_r(fnamer)
 !
 !  Calculate phiz-averages (still depending on r).
 !
@@ -1031,6 +1044,7 @@ module Diagnostics
       real, dimension (nrcyl,nnamer) :: fsumr
       integer :: iname
       real, dimension (nrcyl) :: norm
+      real, dimension (:,:) :: fnamer
 !
 !  Communicate over all processors.
 !  The result is only present on the root processor.
@@ -1038,7 +1052,7 @@ module Diagnostics
 !
       if (nnamer>0) then
         call mpireduce_sum(fnamer,fsumr,(/nrcyl,nnamer/))
-        if (ipz==0) call mpireduce_sum(phiavg_norm,norm,nrcyl,comm=MPI_COMM_XYPLANE)
+        if (ipz==0) call mpireduce_sum(phiavg_norm,norm,nrcyl)
         if (lroot) then
           do iname=1,nnamer
             fnamer(:,iname)=fsumr(:,iname)/(norm*nzgrid)
@@ -1048,13 +1062,14 @@ module Diagnostics
 !
     endsubroutine phizaverages_r
 !***********************************************************************
-    subroutine yaverages_xz
+    subroutine yaverages_xz(fnamexz)
 !
 !  Calculate y-averages (still depending on x and z).
 !
 !   7-jun-05/axel: adapted from zaverages_xy
 !
       real, dimension (nx,nz,nnamexz) :: fsumxz
+      real, dimension (:,:,:) :: fnamexz
 !
 !  Communicate over all processors along y beams.
 !  The result is only present on the y-root processors.
@@ -1066,7 +1081,7 @@ module Diagnostics
 !
     endsubroutine yaverages_xz
 !***********************************************************************
-    subroutine zaverages_xy
+    subroutine zaverages_xy(fnamexy)
 !
 !  Calculate z-averages (still depending on x and y).
 !
@@ -1078,6 +1093,7 @@ module Diagnostics
 
       real, dimension(:,:,:), allocatable :: fsumxy
       real :: fac
+      real, dimension(:,:,:) :: fnamexy
 !
       if (nnamexy>0) then
 
@@ -1105,7 +1121,7 @@ module Diagnostics
 !
     endsubroutine zaverages_xy
 !***********************************************************************
-    subroutine phiaverages_rz
+    subroutine phiaverages_rz(fnamerz)
 !
 !  Calculate azimuthal averages (as functions of r_cyl,z).
 !  NOTE: these averages depend on (r and) z, so after summation they
@@ -1117,6 +1133,7 @@ module Diagnostics
       integer :: i
       real, dimension(nrcyl,nz,nprocz,nnamerz) :: fsumrz
       real, dimension(nrcyl) :: norm
+      real, dimension(:,:,:,:) :: fnamerz
 !
 !  Communicate over all processors.
 !  The result is only present on the root processor
@@ -1124,7 +1141,7 @@ module Diagnostics
 !
       if (nnamerz>0) then
         call mpireduce_sum(fnamerz,fsumrz,(/nrcyl,nz,nprocz,nnamerz/))
-        if (ipz==0) call mpireduce_sum(phiavg_norm,norm,nrcyl,comm=MPI_COMM_XYPLANE)  ! avoid double comm!
+        if (ipz==0) call mpireduce_sum(phiavg_norm,norm,nrcyl,idir=12)  ! avoid double comm!
         if (lroot) then
           do i=1,nnamerz
             fnamerz(:,:,:,i)=fsumrz(:,:,:,i)/spread(spread(norm,2,nz),3,nprocz)
@@ -1155,6 +1172,7 @@ module Diagnostics
       real :: taver
 !
       taver = 0.0
+      t1ddiagnos = t
       ltimer = ip <= 12 .and. lroot
 !
       if (nnamez > 0) then
@@ -1269,6 +1287,7 @@ module Diagnostics
       real :: taver
 !
       taver = 0.0
+      t2davgfirst = t
       ltimer = ip <= 12 .and. lroot
 !
       if (lwrite_yaverages) then
@@ -1621,8 +1640,6 @@ module Diagnostics
 
       if (iname==0) return
 
-      if (loptest(lsqrt)) &
-        itype_name(iname)=ilabel_sum_sqrt
       if (loptest(lsqrt)) then
         itype_name(iname)=ilabel_sum_sqrt
       elseif (loptest(llog10)) then
@@ -2129,7 +2146,7 @@ module Diagnostics
       type (pencil_case) :: p
       real :: dv
       integer :: iname,i,isum
-      logical, save :: lfirsttime=.true.
+      ! logical, save :: lfirsttime=.true.
 !
       if (iname /= 0) then
 !
@@ -2137,10 +2154,10 @@ module Diagnostics
           rlim=p%rcyl_mn
         elseif (lsphere_in_a_box) then
           rlim=p%r_mn
-        elseif (lfirsttime) then
+        ! elseif (lfirsttime) then
           call warning("sum_lim_mn_name","no reason to call it when "// &
                "not using a cylinder or"//achar(10)//"a sphere embedded in a Cartesian grid")
-          lfirsttime=.false.
+          ! lfirsttime=.false.
         endif
 !
         dv=1.
@@ -2927,12 +2944,24 @@ module Diagnostics
 !
       if (lfirstpoint) phiavg_norm=0.
 !
-!  Normalization factor, not depending on n, so only done for n=nfirst.
+!  Normalization factor, not depending on n, so only done for n=nn(1)
 !  As we calculate z-averages, multiply by nzgrid when used.
 !
-      if (n==nfirst) phiavg_norm=phiavg_norm+sum(phiavg_profile,2)
+      if (n==nn(1)) phiavg_norm=phiavg_norm+sum(phiavg_profile,2)
 !
     endsubroutine calc_phiavg_profile
+!***********************************************************************
+    subroutine diagnostics_init_reduc_pointers
+!
+      p_phiavg_norm => phiavg_norm
+!
+    endsubroutine diagnostics_init_reduc_pointers
+!***********************************************************************
+    subroutine diagnostics_diag_reductions
+!
+      p_phiavg_norm = p_phiavg_norm + phiavg_norm
+!
+    endsubroutine diagnostics_diag_reductions
 !***********************************************************************
     subroutine phisum_mn_name_rz(a,iname)
 !
@@ -3654,22 +3683,51 @@ module Diagnostics
     endfunction name_is_present
 !***********************************************************************
     subroutine prep_finalize_thread_diagnos
-
+!
+!  For accumulated diagnostic variables get which reduction to perform:
+!  inds_max_diags/inds_sum_diags hold the indices of the fname entries,
+!  which need to be reduced by max/sum. Will be determined only once.
+!  Index vectors are threadprivate.
+!
+!  25-aug-23/TP: modified, bug fix
+!
       use General, only: allpos_in_array_int
 
-      integer :: nmax, nsum
-      logical, save :: firstcall=.true.
+      integer :: nmax, nsum, nmin, i
+      logical :: firstcall=.true., firstcall_from_pencil_check=.false.
+      integer, dimension(2) :: max_range, sum_range
+      !$omp threadprivate(firstcall)
+
+      max_range(1) = -5
+      max_range(2) = -1
+
+      sum_range(1) = 1
+      sum_range(2) = 40
+      
+!  Have to do this ugly workaround since the pencil tests call this function
+!  and we want the first non-pencil-test call.
+!
+      if (firstcall_from_pencil_check .and. .not. lpencil_check_at_work) then
+        firstcall = .true.
+        deallocate(inds_max_diags)
+        deallocate(inds_sum_diags)
+      endif
 
       if (.not.firstcall) return
 
-      nmax = allpos_in_array_int((/-5,-1/),itype_name)
-      allocate(inds_max_diags(nmax))
-      nmax = allpos_in_array_int((/-5,-1/),itype_name,inds_max_diags)
-      nsum = allpos_in_array_int((/1,40/),itype_name)
-      allocate(inds_sum_diags(nsum))
-      nsum = allpos_in_array_int((/1,40/),itype_name,inds_sum_diags)
+      nmax = allpos_in_array_int(max_range,itype_name)
+      if (nmax>0) then
+        allocate(inds_max_diags(nmax))
+        nmax = allpos_in_array_int(max_range,itype_name,inds_max_diags)
+      endif
+      nsum = allpos_in_array_int(sum_range,itype_name)
+      if (nsum>0) then
+        allocate(inds_sum_diags(nsum))
+        nsum = allpos_in_array_int(sum_range,itype_name,inds_sum_diags)
+      endif
 
       firstcall=.false.
+      firstcall_from_pencil_check=lpencil_check_at_work
 
     endsubroutine prep_finalize_thread_diagnos
 !***********************************************************************

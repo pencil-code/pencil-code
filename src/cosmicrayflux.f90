@@ -271,7 +271,7 @@ module Cosmicrayflux
       ! Unless the switch lcosmicrayflux_diffus_dt is used, kpara_t and kperp_t
       ! are treated as an advection contribution. Otherwise,
       ! tau*kperp_t/tau*kpara_t are used as cosmic ray diffusivities.
-      if (lfirst .and. ldt) then
+      if (lupdate_courant_dt) then
         if (lcosmicrayflux_diffus_dt) then
           if (lsubgrid_cr) then
             diffus_cr = max(maxval(vKperp)*tau*dxyz_2, &

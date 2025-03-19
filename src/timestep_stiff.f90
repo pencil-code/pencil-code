@@ -68,6 +68,7 @@ module Timestep
     subroutine initialize_timestep
 !
       ldt=.false.
+      lcourant_dt = .false.
 
     endsubroutine initialize_timestep
 !***********************************************************************

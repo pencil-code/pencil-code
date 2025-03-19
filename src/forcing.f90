@@ -1658,7 +1658,7 @@ module Forcing
 !***********************************************************************
     subroutine fconst_coefs_hel(force_fact,kkx,kky,kkz,nk,kav,coef1,coef2,coef3,kk,phase,fact,fda)
 !
-!  This routine is can be called with any values of kkx,kky,kkz
+!  This routine can be called with any values of kkx,kky,kkz
 !  to produce coef1,coef2,coef3,kk,phase,fact and fda.
 !
 !  08-aug-19/MR: modified to provide kk,phase,fact instead of fx,fy,fz
@@ -5189,7 +5189,7 @@ module Forcing
       integer,                intent(in) :: i
 !
       real, dimension (nx) :: argum,s
-      real ::  b0=1., s0=2., width=.2
+      real, parameter ::  b0=1., s0=2., width=.2
 !
 !  density for the magnetic flux flux ring
 !
@@ -5661,7 +5661,7 @@ module Forcing
       real, dimension (nx) :: tmp
       real :: fact, fact1, fact2, fpara, dfpara, sqrt21k1
       real :: kf, kx, ky, kz, nu, arg, ecost, esint
-      integer :: i2d1=1,i2d2=2,i2d3=3,modeN
+      integer :: i2d1,i2d2,i2d3,modeN
       real, dimension(nx) :: kdotxwt, cos_kdotxwt, sin_kdotxwt
 !
         select case (iforcing_cont(i))
@@ -6172,7 +6172,7 @@ module Forcing
 !***********************************************************************
     subroutine calc_diagnostics_forcing(p)
 !
-!  add a continuous forcing term (used to be in hydro.f90)
+!  Calculate diagnostics for continuous forcing.
 !
 !  17-sep-06/axel: coded
 !

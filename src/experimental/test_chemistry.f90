@@ -233,7 +233,7 @@ real, dimension(mx,my,mz,nchemspec) :: cp_spec_glo
 !
   integer :: ireac=0
   integer, dimension(nchemspec) :: ireaci=0
-
+  
   contains
 !
 !***********************************************************************
@@ -794,7 +794,7 @@ real, dimension(mx,my,mz,nchemspec) :: cp_spec_glo
       intent(in) :: f
       intent(inout) :: p
       integer :: k,i
-      integer :: ii1=1, ii2=2, ii3=3, ii4=4, ii5=5, ii6=6, ii7=7
+      integer, parameter :: ii1=1, ii2=2, ii3=3, ii4=4, ii5=5, ii6=6, ii7=7
       real :: T_low, T_up, T_mid
       real, dimension(nx) :: T_loc, TT_2, TT_3, TT_4
       logical :: ldiffusion2
@@ -2373,7 +2373,7 @@ real, dimension(mx,my,mz,nchemspec) :: cp_spec_glo
       character(len=fnlen) :: output_file="./data/mix_quant.out"
       character(len=15) :: writeformat
       integer :: file_id=123
-      integer :: ii1=1, ii2=2, ii3=3, ii4=4, ii5=5
+      integer, parameter :: ii1=1, ii2=2, ii3=3, ii4=4, ii5=5
 !
 !  Density and temperature
 !
@@ -2958,11 +2958,11 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
 !  indices
 !
       integer :: j, k,i,ii
-      integer :: i1=1, i2=2, i3=3, i4=4, i5=5, i6=6, i7=7, i8=8, i9=9, i10=10
-      integer :: i11=11, i12=12, i13=13, i14=14, i15=15, i16=16, i17=17, i18=18, i19=19
-      integer :: iz1=1, iz2=2, iz3=3, iz4=4, iz5=5, iz6=6, iz7=7, iz8=8, iz9=9, iz10=10
-      integer :: iz11=11, iz12=12, iz13=13, iz14=14, iz15=15, iz16=16, iz17=17
-      integer :: iz18=18, iz19=19
+      integer, parameter :: i1=1, i2=2, i3=3, i4=4, i5=5, i6=6, i7=7, i8=8, i9=9, i10=10
+      integer, parameter :: i11=11, i12=12, i13=13, i14=14, i15=15, i16=16, i17=17, i18=18, i19=19
+      integer, parameter :: iz1=1, iz2=2, iz3=3, iz4=4, iz5=5, iz6=6, iz7=7, iz8=8, iz9=9, iz10=10
+      integer, parameter :: iz11=11, iz12=12, iz13=13, iz14=14, iz15=15, iz16=16, iz17=17
+      integer, parameter :: iz18=18, iz19=19
 !
       intent(in) :: p,f
       intent(inout) :: df
@@ -4181,13 +4181,13 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
       real, dimension(nx,nreactions), intent(out) :: vreact_p, vreact_m
 !
       type (pencil_case) :: p
-      real, dimension(nx) :: dSR=0., dHRT=0., Kp, Kc
+      real, dimension(nx) :: dSR, dHRT, Kp, Kc
       real, dimension(nx) :: prod1, prod2
-      real, dimension(nx) :: kf=0., kr=0.
+      real, dimension(nx) :: kf, kr
       real, dimension(nx) :: rho_cgs, p_atm
       real, dimension(nx) :: mix_conc
       integer :: k, reac, i
-      real :: sum_tmp=0., ddd
+      real :: sum_tmp, ddd
       real :: Rcal, Rcal1, lnRgas, l10, lnp_atm
       logical, save :: lwrite_first=.true.
       character(len=fnlen) :: input_file="./data/react.out"
@@ -4516,8 +4516,8 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
       real, dimension(nx,nchemspec) :: molm
       type (pencil_case) :: p
       integer :: k,j,ii
-      integer :: i1=1, i2=2, i3=3, i4=4, i5=5, i6=6, i7=7, i8=8, i9=9, i10=10
-      integer :: i11=11, i12=12, i13=13, i14=14, i15=15, i16=16, i17=17, i18=18, i19=19
+      integer, parameter :: i1=1, i2=2, i3=3, i4=4, i5=5, i6=6, i7=7, i8=8, i9=9, i10=10
+      integer, parameter :: i11=11, i12=12, i13=13, i14=14, i15=15, i16=16, i17=17, i18=18, i19=19
 !
       eps = sqrt(epsilon(alpha))
 !
@@ -4944,8 +4944,8 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
       real, dimension(nx) :: del2chemspec
       real, dimension(nx) :: diff_op, diff_op1, diff_op2, diff_op3, del2XX, del2lnpp
       real, dimension(nx) :: glnpp_gXkYk, glnrho_glnpp, gD_glnpp, glnpp_glnpp
-      real, dimension(nx) :: sum_gdiff=0., gY_sumdiff, glnmu_glnpp
-      real, dimension(nx,3) :: sum_diff=0., dk_D
+      real, dimension(nx) :: sum_gdiff, gY_sumdiff, glnmu_glnpp
+      real, dimension(nx,3) :: sum_diff, dk_D
       real :: diff_k
       integer :: k,i
 !
@@ -4953,6 +4953,7 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
 !
       p%DYDt_diff = 0.
       diff_k = chem_diff
+      sum_diff=0.; sum_gdiff=0.
 !
 !  Loop over all chemical species.
 !
@@ -6402,4 +6403,17 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
 !
     endsubroutine read_transport_data
 !***********************************************************************
+    subroutine chemistry_init_diag_accum
+    endsubroutine chemistry_init_diag_accum
+!***********************************************************************
+    subroutine chemistry_init_reduc_pointers
+    endsubroutine chemistry_init_reduc_pointers
+!***********************************************************************
+    subroutine chemistry_diag_reductions
+    endsubroutine chemistry_diag_reductions 
+!***********************************************************************
+    subroutine chemistry_read_diag_accum
+    endsubroutine chemistry_read_diag_accum
+!***********************************************************************
+
 endmodule Chemistry

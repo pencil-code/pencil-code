@@ -1,8 +1,13 @@
-if [[ $MODULE_NAME_ORDER == "CRAY" ]]; then
-  sed -f scripts/cdata_CRAY.sed cdata.f90 > cdata_c.h
-else
-  sed -f scripts/cdata.sed cdata.f90 > cdata_c.h
-  sed -e's/MODULE_PREFIX/'$MODULE_PREFIX'/' -e's/MODULE_INFIX/'$MODULE_INFIX'/' -e's/MODULE_SUFFIX/'$MODULE_SUFFIX'/' tmp > defines_cdata.h
-  rm -f tmp
-fi
+#!/bin/bash
 
+  if [[ $MODULE_NAME_ORDER == "CRAY" ]]; then
+    echo -e '#pragma once\n#include "headers_c.h"\n' > cdata_c.h
+    echo -e '  typedef REAL real3arr[3];\n  typedef int int3arr[3];\n typedef bool bool3arr[3];\n' >> cdata_c.h
+    sed -f scripts/cdata_CRAY.sed cdata.f90 >> cdata_c.h
+    grep '#define' tmp >> cdata_c.h
+    rm -f tmp
+  else
+    sed -f scripts/cdata.sed cdata.f90 > cdata_c.h
+    sed -e's/MODULE_PREFIX/'$MODULE_PREFIX'/' -e's/MODULE_INFIX/'$MODULE_INFIX'/' -e's/MODULE_SUFFIX/'$MODULE_SUFFIX'/' tmp > defines_cdata.h
+    rm -f tmp
+  fi

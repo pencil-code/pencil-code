@@ -24,10 +24,13 @@
 !   27-sep-2023/KG: fixed calculation of wavenumbers for non-cubical boxes in
 !                   power and power_xy
 !
-module power_spectrum
+module Power_spectrum
 !
   use Cdata
-  use Messages, only: svn_id, warning, fatal_error
+  use Messages,only: svn_id, warning, fatal_error, information
+  use Mpicomm, only: MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+                     MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE
+!$ use OMP_lib
 !
   implicit none
 !
@@ -61,6 +64,16 @@ module power_spectrum
   logical :: lpowerdat_existed=.false.
   real :: L_min, L_min_xy
   integer :: nk_xyz, nk_xy
+  real, dimension(nxgrid) :: kx
+  real, dimension(nygrid) :: ky
+  real, dimension(nzgrid) :: kz
+!
+!TP: work buffers for power funcs
+!TP: TODO allocate these at initialize func based on are they actually used
+!
+  real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im,c_re,c_im,d_re,d_im,h_re,h_im
+  real, dimension(nx,ny,nz,3) :: a_vec_re,a_vec_im, b_vec_re
+  real, dimension(nx,ny,nz) :: a2
 !
   namelist /power_spectrum_run_pars/ &
       lintegrate_shell, lintegrate_z, lcomplex, ckxrange, ckyrange, czrange, &
@@ -84,9 +97,6 @@ module power_spectrum
 
       integer :: ikr, ikmu, ind, ikx, iky, ikz, i, len
       real :: k2
-      real, dimension(nxgrid) :: kx
-      real, dimension(nygrid) :: ky
-      real, dimension(nzgrid) :: kz
       integer, dimension(:), allocatable :: order
 
       !!! the following warnings should become fatal errors
@@ -151,8 +161,7 @@ module power_spectrum
         if (lglq_dot_dat_exists) then
           open(9,file='gauss_legendre_quadrature.dat',status='old')
           read(9,*) n_glq
-          if (n_glq<=legendre_lmax) call inevitably_fatal_error( &
-              'initialize_power_spectrum', &
+          if (n_glq<=legendre_lmax) call inevitably_fatal_error('initialize_power_spectrum', &
               'either smaller lmax or larger gauss_legendre_quadrature.dat required')
           if (.not.allocated(legendre_zeros)) allocate( legendre_zeros(n_glq,n_glq) )
           if (.not.allocated(glq_weight)) allocate( glq_weight(n_glq,n_glq) )
@@ -205,7 +214,19 @@ outer:  do ikz=1,nz
         call quick_sort(k2s(:nk_truebin),order)
 
       endif
- 
+
+!
+!  Define wave vectors, defined here for the *full* mesh.
+!  Each processor will see only part of it.
+!  Ignore *2*pi/Lx factor, because later we want k to be integers.
+!
+      if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
+        call warning("initialize_power_spectrum", "computation of wavevector wrong for non-cubical domains")
+
+      kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
+      ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
+      kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
+
       !if (.not.allocated(spectrum_2d)) then
       !  allocate(spectrum_2d(nk,nbin_angular), spectrumhel_2d(nk,nbin_angular), &
       !           spectrum_2d_sum(nk,nbin_angular), spectrumhel_2d_sum(nk,nbin_angular))
@@ -290,11 +311,10 @@ outer:  do ikz=1,nz
 !
       if (n_segment_x < 1) then
         call warning('read_power_spectrum_run_pars', 'n_segment_x < 1 ignored')
-         n_segment_x=1
+        n_segment_x=1
       endif
-      if (n_segment_x > 1) &
-        call fatal_error('read_power_spectrum_run_pars', &
-                         'n_segment_x > 1 -- segmented FFT not yet operational')
+      if (n_segment_x > 1) call fatal_error('read_power_spectrum_run_pars', &
+                           'n_segment_x > 1 -- segmented FFT not yet operational')
 
     endsubroutine read_power_spectrum_run_pars
 !***********************************************************************
@@ -384,10 +404,9 @@ outer:  do ikz=1,nz
 ! integer, pointer :: inp,irhop,iapn(:)
   integer :: nk
   integer :: i,k,ikx,iky,ikz,im,in,ivec
-  real, dimension(nx,ny,nz) :: a1,b1
-  real, dimension(nx) :: bb,oo
+  real, save, dimension(nx,ny,nz) :: a1,b1
   real :: k2
-  real, dimension(:), allocatable :: spectrum,spectrum_sum
+  real, dimension(:), save, allocatable :: spectrum,spectrum_sum
   character(LEN=fnlen) :: filename
   logical :: lwrite_ks
   !
@@ -401,52 +420,68 @@ outer:  do ikz=1,nz
   else
     nk=nk_xyz
   endif
-  allocate(spectrum(nk),spectrum_sum(nk))
+  if(.not. allocated(spectrum)) allocate(spectrum(nk),spectrum_sum(nk))
+
   spectrum=0.
-  spectrum_sum=0.
   !
   !  In fft, real and imaginary parts are handled separately.
   !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
   !  Added power spectra of rho^(1/2)*u and rho^(1/3)*u.
   !
+!if (lroot) print*, 'in power vor parallel sp='//sp, num_helper_threads, thread_id
+!flush(6)
+!$omp parallel num_threads(num_helper_threads) private(ivec,k,k2) reduction(+:spectrum) &
+!$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+!$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+!$ thread_id = omp_get_thread_num()+1
+
   do ivec=1,3
-     !
-     if (trim(sp)=='u') then
-        if (iuu==0) call fatal_error('power','iuu=0')
-        a1=f(l1:l2,m1:m2,n1:n2,iux+ivec-1)
-     elseif (trim(sp)=='ud') then
-        if (iuud(iapn_index)==0) call fatal_error('power','iuud=0')
-        a1=f(l1:l2,m1:m2,n1:n2,iuud(iapn_index)+ivec-1)
-     elseif (trim(sp)=='r2u') then
-        a1=f(l1:l2,m1:m2,n1:n2,iux+ivec-1)*exp(f(l1:l2,m1:m2,n1:n2,ilnrho)/2.)
-     elseif (trim(sp)=='r3u') then
-        a1=f(l1:l2,m1:m2,n1:n2,iux+ivec-1)*exp(f(l1:l2,m1:m2,n1:n2,ilnrho)/3.)
-     elseif (trim(sp)=='v') then
-        a1=f(l1:l2,m1:m2,n1:n2,ivx+ivec-1)
-     elseif (trim(sp)=='o') then
-        do n=n1,n2
-           do m=m1,m2
-              call curli(f,iuu,oo,ivec)
-              im=m-nghost
-              in=n-nghost
-              a1(:,im,in)=oo
-           enddo
+    if (trim(sp)=='u') then
+      if (iuu==0) call fatal_error('power','iuu=0')
+      !$omp workshare
+      a1 = f(l1:l2,m1:m2,n1:n2,iux+ivec-1)
+      !$omp end workshare
+    elseif (trim(sp)=='ud') then
+      if (iuud(iapn_index)==0) call fatal_error('power','iuud=0')
+      !$omp workshare
+      a1 = f(l1:l2,m1:m2,n1:n2,iuud(iapn_index)+ivec-1)
+      !$omp end workshare
+    elseif (trim(sp)=='r2u') then
+      !$omp workshare
+      a1 = f(l1:l2,m1:m2,n1:n2,iux+ivec-1)*exp(f(l1:l2,m1:m2,n1:n2,ilnrho)/2.)
+      !$omp end workshare
+    elseif (trim(sp)=='r3u') then
+      !$omp workshare
+      a1=f(l1:l2,m1:m2,n1:n2,iux+ivec-1)*exp(f(l1:l2,m1:m2,n1:n2,ilnrho)/3.)
+      !$omp end workshare
+    elseif (trim(sp)=='v') then
+      !$omp workshare
+      a1=f(l1:l2,m1:m2,n1:n2,ivx+ivec-1)
+      !$omp end workshare
+    elseif (trim(sp)=='o') then
+      !$omp do collapse(2)
+      do n=n1,n2
+        do m=m1,m2
+          call curli(f,iuu,a1(:,m-nghost,n-nghost),ivec)
         enddo
-     elseif (trim(sp)=='b') then
-        do n=n1,n2
-           do m=m1,m2
-              call curli(f,iaa,bb,ivec)
-              im=m-nghost
-              in=n-nghost
-              a1(:,im,in)=bb
-           enddo
+      enddo
+    elseif (trim(sp)=='b') then
+      !$omp do collapse(2)
+      do n=n1,n2
+        do m=m1,m2
+          call curli(f,iaa,a1(:,m-nghost,n-nghost),ivec)
         enddo
-     elseif (trim(sp)=='a') then
-        a1=f(l1:l2,m1:m2,n1:n2,iax+ivec-1)
-     else
-        print*,'There is no such sp=',trim(sp)
-     endif
-     b1=0.
+      enddo
+    elseif (trim(sp)=='a') then
+      !$omp workshare
+      a1 = f(l1:l2,m1:m2,n1:n2,iax+ivec-1)
+      !$omp end workshare
+    else
+      call warning('power','no such sp: '//trim(sp))
+    endif
+    !$omp workshare
+    b1 =0.
+    !$omp end workshare
 !
 !  Doing the Fourier transform
 !
@@ -454,37 +489,38 @@ outer:  do ikz=1,nz
 !
 !  integration over shells
 !
-     if (lroot .AND. ip<10) print*,'fft done; now integrate over shells...'
+     if (ip<10) call information('power','fft done; now integrate over shells')
      if (ltrue_binning) then
-!  
+!
 !  Sum spectral contributions into bins of k^2 - avoids rounding of k.
 !
+       !$omp do collapse(3)
        do ikz=1,nz
-          do iky=1,ny
-             do ikx=1,nx
-                k2=get_k2(ikx+ipx*nx, iky+ipy*ny, ikz+ipz*nz)
-                where(int(k2)==k2s) &
-                  spectrum=spectrum+a1(ikx,iky,ikz)**2+b1(ikx,iky,ikz)**2
-             enddo
-          enddo
+         do iky=1,ny
+           do ikx=1,nx
+             k2=get_k2(ikx+ipx*nx, iky+ipy*ny, ikz+ipz*nz)
+             where(int(k2)==k2s) spectrum=spectrum+a1(ikx,iky,ikz)**2+b1(ikx,iky,ikz)**2
+           enddo
+         enddo
        enddo
      else
+       !$omp do collapse(3)
        do ikz=1,nz
-          do iky=1,ny
-             do ikx=1,nx
-                k=nint(get_k(ikx+ipx*nx, iky+ipy*ny, ikz+ipz*nz))
-                if (k>=0 .and. k<=(nk-1)) spectrum(k+1)=spectrum(k+1) &
-                     +a1(ikx,iky,ikz)**2+b1(ikx,iky,ikz)**2
-             enddo
-          enddo
+         do iky=1,ny
+           do ikx=1,nx
+             k=nint(get_k(ikx+ipx*nx, iky+ipy*ny, ikz+ipz*nz))
+             if (k>=0 .and. k<=(nk-1)) spectrum(k+1)=spectrum(k+1) &
+                  +a1(ikx,iky,ikz)**2+b1(ikx,iky,ikz)**2
+           enddo
+         enddo
        enddo
      endif
-     !
-  enddo !(loop over ivec)
-  !
-  !  Summing up the results from the different processors
-  !  The result is available only on root
-  !
+ enddo !(loop over ivec)
+ !$omp end parallel
+ !
+ !  Summing up the results from the different processors
+ !  The result is available only on root
+ !
   call mpireduce_sum(spectrum,spectrum_sum,nk)
   !
   !  on root processor, write global result to file
@@ -513,8 +549,8 @@ outer:  do ikz=1,nz
       write(1,*) nk_truebin
       write(1,*) real(k2s(:nk_truebin))
     endif
-    write(1,*) t   
-    write(1,power_format) spectrum_sum 
+    write(1,*) tdiagnos
+    write(1,power_format) spectrum_sum
     close(1)
   endif
 !
@@ -534,12 +570,7 @@ outer:  do ikz=1,nz
   integer, parameter :: nk=nx/2
   integer :: i,k,ikx,iky,ikz,im,in,ivec
   real, dimension (mx,my,mz,mfarray) :: f
-  real, dimension(nx,ny,nz) :: a1,b1
-  real, dimension(nx) :: bb
   real, dimension(nk) :: spectrum,spectrum_sum
-  real, dimension(nxgrid) :: kx
-  real, dimension(nygrid) :: ky
-  real, dimension(nzgrid) :: kz
   character (len=1) :: sp
   !
   !  identify version
@@ -547,68 +578,66 @@ outer:  do ikz=1,nz
   if (lroot .AND. ip<10) call svn_id( &
        "$Id$")
 !
-! KG: added warning about wrong computation of wavenumbers.
 ! KG: See the function get_k2 for an example of how to calculate k2.
-  if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
-    call warning("power_2d", "computation of wavevector is wrong for non-cubical domains")
-  !
-  !  Define wave vector, defined here for the *full* mesh.
-  !  Each processor will see only part of it.
-  !  Ignore *2*pi/Lx factor, because later we want k to be integers
-  !
-  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
-  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
-  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
   !
   spectrum=0.
-  spectrum_sum=0.
   !
   !  In fft, real and imaginary parts are handled separately.
   !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
   !
+!$omp parallel private(ivec,k) num_threads(num_helper_threads) reduction(+:spectrum) &
+!$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+!$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+!$ thread_id = omp_get_thread_num()+1
   do ivec=1,3
      !
     if (sp=='u') then
-        a1=f(l1:l2,m1:m2,n1:n2,iux+ivec-1)
-     elseif (sp=='b') then
-        do n=n1,n2
-           do m=m1,m2
-              call curli(f,iaa,bb,ivec)
-              im=m-nghost
-              in=n-nghost
-              a1(:,im,in)=bb
-           enddo
+      !$omp workshare
+      a_re =f(l1:l2,m1:m2,n1:n2,iux+ivec-1)
+      !$omp end workshare
+    elseif (sp=='b') then
+      !$omp do collapse(2)
+      do n=n1,n2
+        do m=m1,m2
+          call curli(f,iaa,a_re(:,m-nghost,n-nghost),ivec)
         enddo
-     elseif (sp=='a') then
-        a1=f(l1:l2,m1:m2,n1:n2,iax+ivec-1)
-     else
-        print*,'There are no such sp=',sp
-     endif
-     b1=0
+      enddo
+    elseif (sp=='a') then
+      !$omp workshare
+      a_re =f(l1:l2,m1:m2,n1:n2,iax+ivec-1)
+      !$omp end workshare
+    else
+      call warning('power_2D','no such sp: '//trim(sp))
+    endif
+     !$omp workshare
+     a_im=0.
+     !$omp end workshare
 !
 !  Doing the Fourier transform
 !
      !print*, 'ivec1=', ivec
-     call fourier_transform_xz(a1,b1)    !!!! MR: causes error - ivec is set back from 1 to 0
+
+     call fourier_transform_xz(a_re,a_im)    !!!! MR: causes error - ivec is set back from 1 to 0
      !print*, 'ivec2=', ivec
 !    to be replaced by comp_spectrum( f, sp, ivec, ar, ai, fourier_transform_xz )
 !
 !  integration over shells
 !
-     if (lroot .AND. ip<10) print*,'fft done; now integrate over circles...'
+     if (ip<10) call information('power_2d','fft done; now integrate over circles')
+     !$omp do collapse(3)
      do ikz=1,nz
        do iky=1,ny
          do ikx=1,nx
            k=nint(sqrt(kx(ikx)**2+kz(ikz+ipz*nz)**2))
-           if (k>=0 .and. k<=(nk-1)) spectrum(k+1)=spectrum(k+1) &
-                +a1(ikx,iky,ikz)**2+b1(ikx,iky,ikz)**2
+           if (k>=0 .and. k<=(nk-1)) spectrum(k+1)=spectrum(k+1)+a_re(ikx,iky,ikz)**2+a_im(ikx,iky,ikz)**2
 !           if (iky==16 .and. ikx==16) &
-!           print*, 'power_2d:', ikx,iky,ikz,k,nk,a1(ikx,iky,ikz),b1(ikx,iky,ikz),spectrum(k+1)
+!           print*, 'power_2d:', ikx,iky,ikz,k,nk,a_re(ikx,iky,ikz),a_im(ikx,iky,ikz),spectrum(k+1)
          enddo
        enddo
      enddo
-     !
+!
   enddo !(loop over ivec)
+!$omp end parallel
 !
 !  Summing up the results from the different processors.
 !  The result is available only on root.
@@ -625,8 +654,8 @@ outer:  do ikz=1,nz
          ,'to ',trim(datadir)//'/power'//trim(sp)//'_2d.dat'
     spectrum_sum=.5*spectrum_sum
     open(1,file=trim(datadir)//'/power'//trim(sp)//'_2d.dat',position='append')
-    write(1,*) t
-    write(1,power_format) spectrum_sum 
+    write(1,*) tdiagnos
+    write(1,power_format) spectrum_sum
     close(1)
   endif
   !
@@ -644,65 +673,77 @@ outer:  do ikz=1,nz
 !
     implicit none
 !
-    real, dimension(mx,my,mz,mfarray) :: f
-    character (LEN=*)                 :: sp
-    integer, optional                 :: ivecp
-    real, dimension(nx,ny,nz)         :: ar, ai
+    real, dimension(mx,my,mz,mfarray), intent(in) :: f
+    character (LEN=*), intent(in)                 :: sp
+    integer, optional, intent(in)                 :: ivecp
+    real, dimension(nx,ny,nz), intent(out) :: ar, ai
 !
-    intent(in)  :: sp, f, ivecp
-    intent(out) :: ar
-    intent(out) :: ai
-!
-    real, dimension(nx) :: bb
     integer :: m,n,ind,ivec,i,la,le,ndelx
 !
     ivec = ioptest(ivecp,1)
+    if (sp == 'rho' .and. ivec>1) return
+    if (sp == 's' .and. ivec>1) return
 !
+!$omp parallel private(i,la,le,ndelx) num_threads(num_helper_threads) &
+!$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+!$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+!$ thread_id = omp_get_thread_num()+1
     if (sp=='u') then
-       if (iuu==0) call fatal_error('get_comp_spectrum','variable "u" not existent')
-       ar=f(l1:l2,m1:m2,n1:n2,iux+ivec-1)
+      if (iuu==0) call fatal_error('comp_spectrum_xy','variable "u" not existent')
+      !$omp workshare
+      ar =f(l1:l2,m1:m2,n1:n2,iux+ivec-1)
+      !$omp end workshare
     elseif (sp=='rho') then
-       if ( ldensity_nolog ) then
-         if (irho==0) call fatal_error('get_comp_spectrum','variable "rho" not existent')
-         ind = irho
-       else
-         if (ilnrho==0) call fatal_error('get_comp_spectrum','variable "lnrho" not existent')
-         ind = ilnrho
-       endif
-       if (ivec>1) return
-       ar=f(l1:l2,m1:m2,n1:n2,ind)
+      !$omp single
+      if ( ldensity_nolog ) then
+        if (irho==0) call fatal_error('comp_spectrum_xy','variable "rho" not existent')
+        ind = irho
+      else
+        if (ilnrho==0) call fatal_error('comp_spectrum_xy','variable "lnrho" not existent')
+        ind = ilnrho
+      endif
+      !$omp end single
+      !$omp workshare
+      ar=f(l1:l2,m1:m2,n1:n2,ind)
+      !$omp end workshare
     elseif (sp=='s') then
-       if (iss==0) call fatal_error('get_comp_spectrum','variable "s" not existent')
-       if (ivec>1) return
-       ar=f(l1:l2,m1:m2,n1:n2,iss)
+      if (iss==0) call fatal_error('comp_spectrum_xy','variable "s" not existent')
+      !$omp workshare
+      ar =f(l1:l2,m1:m2,n1:n2,iss)
+      !$omp end workshare
     elseif (sp=='b') then
-        if (iaa==0) call fatal_error('get_comp_spectrum','variable "b" not existent')
-        do n=n1,n2
-          do m=m1,m2
-             call curli(f,iaa,bb,ivec)
-             ar(:,m-nghost,n-nghost)=bb
-          enddo
-       enddo
+      if (iaa==0) call fatal_error('comp_spectrum_xy','variable "b" not existent')
+      !$omp do collapse(2)
+      do n=n1,n2      !!! MR: corrected from n1-nghost,n2-nghost
+        do m=m1,m2
+          call curli(f,iaa,ar(:,m-nghost,n-nghost),ivec)
+        enddo
+      enddo
     elseif (sp=='a') then
-       if (iaa==0) call fatal_error('get_comp_spectrum','variable "a" not existent')
-       ar=f(l1:l2,m1:m2,n1:n2,iax+ivec-1)
+      if (iaa==0) call fatal_error('comp_spectrum_xy','variable "a" not existent')
+      !$omp workshare
+      ar = f(l1:l2,m1:m2,n1:n2,iax+ivec-1)
+      !$omp end workshare
     elseif (sp=='jxb') then
-       if (ijxb==0) call fatal_error('get_comp_spectrum','variable "jxb" not existent')
-       ar=f(l1:l2,m1:m2,n1:n2,ijxbx+ivec-1)
+      if (ijxb==0) call fatal_error('comp_spectrum_xy','variable "jxb" not existent')
+      !$omp workshare
+      ar = f(l1:l2,m1:m2,n1:n2,ijxbx+ivec-1)
+      !$omp end workshare
     elseif (sp=='o') then
-        if (iuu==0) call fatal_error('get_comp_spectrum','variable "u" not existent')
-        do n=n1,n2
-          do m=m1,m2
-             call curli(f,iuu,bb,ivec)
-             ar(:,m-nghost,n-nghost)=bb
-          enddo
-       enddo
+      if (iuu==0) call fatal_error('comp_spectrum','variable "u" not existent')
+      !$omp do collapse(2)
+      do n=n1,n2
+        do m=m1,m2
+          call curli(f,iuu,ar(:,m-nghost,n-nghost),ivec)
+        enddo
+      enddo
     else
-       print*,'comp_spectrum_xy: Warning - There is no such sp=',sp
-       return
+      call fatal_error('comp_spectrum_xy',"no such sp: "//trim(sp))
     endif
 !
-    ai=0.
+    !$omp workshare
+    ai(:,:,n1:n2) = 0.
+    !$omp end workshare
 !
 !  Doing the Fourier transform
 !
@@ -722,6 +763,7 @@ outer:  do ikz=1,nz
 !     for nygrid/=1, you will have to call transp_xy on ar and ai (since
 !     the rest of the code now assumes that ar,ai have axis order (kx,ky,z).
     endif
+    !$omp end parallel
 !
    endsubroutine comp_spectrum_xy
 !***********************************************************************
@@ -744,7 +786,7 @@ outer:  do ikz=1,nz
    use Mpicomm, only: mpireduce_sum, mpigather_xy, mpigather_and_out_real, mpigather_and_out_cmplx, &
                       mpimerge_1d, ipz, mpibarrier, mpigather_z
    use General, only: itoa, write_full_columns, get_range_no, write_by_ranges
-  use Fourier, only: kx_fft, ky_fft
+   use Fourier, only: kx_fft, ky_fft
 !
   implicit none
 !
@@ -796,7 +838,7 @@ outer:  do ikz=1,nz
       cpos=4
     endif
   endif
-  if (cpos==0) call fatal_error('power_xy','no implementation for field '//trim(sp))
+  if (cpos==0) call fatal_error('power_xy','no such sp: '//trim(sp))
 
   if ( sp_field=='u' .or. sp_field=='b' .or. sp_field=='a' .or. sp_field=='jxb' ) then  ! for vector fields
     if (len(trim(sp))>=cpos) then                 ! component specification expected
@@ -891,6 +933,8 @@ outer:  do ikz=1,nz
   !
   do ivec=iveca,iveca+ncomp-1
 !
+! these are internally multithreaded
+!
     call comp_spectrum_xy( f, sp_field, ar, ai, ivec )
     if (l2nd) call comp_spectrum_xy( f, sp2, br, bi, ivec )
 !
@@ -902,6 +946,7 @@ outer:  do ikz=1,nz
 !  Summing up the results from the different processors
 !  The result is available only on root  !!??
 !
+    !TODO: multithread this, probably not that important
     do ikz=1,nz
       if (lintegrate_shell) then
 !
@@ -949,7 +994,7 @@ outer:  do ikz=1,nz
 !
     enddo
 !
-  enddo ! (do ivec=iveca,iveca+ncomp-1)
+  enddo ! do ivec=iveca,iveca+ncomp-1
 !
   if (lintegrate_shell .and. ipz==0) call mpimerge_1d(kshell,nk,12) ! filling of the shell-wavenumber vector
 !
@@ -975,7 +1020,10 @@ outer:  do ikz=1,nz
     endif
 !
     if ( firstout<n_spectra .and. .not. lpowerdat_existed) then
+!
 !  We only want to write all this metadata the first time this file is created, not every time pencil is run.
+!  MR: Really? some metadata might change between restarts.
+!
       write(1,'(a)') title
 !
       if (lintegrate_shell) then
@@ -995,8 +1043,7 @@ outer:  do ikz=1,nz
 !
       endif
 !
-      if (  zrange(1,1)>0 .and. &
-          (zrange(1,1)>1 .or. zrange(2,1)<nzgrid .or. zrange(3,1)>1) ) then
+      if ( zrange(1,1)>0 .and. (zrange(1,1)>1 .or. zrange(2,1)<nzgrid .or. zrange(3,1)>1) ) then
 !
         npz = get_range_no( zrange, nz_max )
 !
@@ -1007,7 +1054,7 @@ outer:  do ikz=1,nz
 !
     endif
 !
-    write(1,*) t
+    write(1,*) tdiagnos
 !
   endif
 !
@@ -1023,8 +1070,8 @@ outer:  do ikz=1,nz
     endif
 !
   elseif (lintegrate_z) then
-         call mpireduce_sum(spectrum2,spectrum2_sum,(/nx,ny/),3)
-         call mpigather_xy( spectrum2_sum, spectrum2_global, 0 )
+    call mpireduce_sum(spectrum2,spectrum2_sum,(/nx,ny/),3)
+    call mpigather_xy( spectrum2_sum, spectrum2_global, 0 )
 !
   elseif (lcomplex) then
     call mpigather_and_out_cmplx(spectrum3_cmplx,1,.false.,kxrange,kyrange,zrange)
@@ -1051,16 +1098,15 @@ outer:  do ikz=1,nz
 !
     else
 !
-      if (lintegrate_z) &
-        call write_by_ranges( 1, spectrum2_global, kxrange, kyrange, .true. )
-                                                                     ! transposing output, as in fourier_transform_xy
-                                                                     ! an unreverted transposition is performed
+      if (lintegrate_z) call write_by_ranges( 1, spectrum2_global, kxrange, kyrange, .true. )
+                        ! transposing output, as in fourier_transform_xy
+                        ! an unreverted transposition is performed
     endif
     close(1)
 !
   endif
 !
-  call mpibarrier          ! necessary ?
+  call mpibarrier
 !  print*, 'nach barrier:', iproc, ipy, ipz
 !
   if (lintegrate_shell) then
@@ -1104,29 +1150,26 @@ outer:  do ikz=1,nz
   integer :: i, k, ikx, iky, ikz, jkz, im, in, ivec, ivec_jj
   real :: k2
   real, dimension (mx,my,mz,mfarray) :: f
+  real, dimension(nx) :: bbi, jji, b2, j2
+  real, dimension(nx,3) :: bb, bbEP, hhEP, jj, gtmp1, gtmp2
+  real, dimension(nk) :: nks=0.,nks_sum=0.
+  real, dimension(nk) :: k2m=0.,k2m_sum=0., krms, km1
   real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
   real, dimension(nx,ny,nz,3) :: bEP, hEP
   real, dimension(2), optional :: sumspec
   complex, dimension(nx,ny,nz) :: phi
-  real, dimension(nx) :: bbi, jji, b2, j2
-  real, dimension(nx,3) :: bb, bbEP, hhEP, jj
-  real, dimension(nk) :: nks=0.,nks_sum=0.
-  real, dimension(nk) :: k2m=0.,k2m_sum=0., krms, km1
   real, dimension(nk) :: spectrum,spectrum_sum
   real, dimension(nk) :: spectrumhel,spectrumhel_sum
-  real, dimension(nk,nzgrid) :: cyl_spectrum, cyl_spectrum_sum
-  real, dimension(nk,nzgrid) :: cyl_spectrumhel, cyl_spectrumhel_sum
-  real, dimension(nxgrid) :: kx
-  real, dimension(nygrid) :: ky
-  real, dimension(nzgrid) :: kz
+  real, allocatable, dimension(:,:), save :: cyl_spectrum, cyl_spectrum_sum
+  real, allocatable, dimension(:,:), save :: cyl_spectrumhel, cyl_spectrumhel_sum
   character (len=3) :: sp
   logical, optional :: lnowrite
   logical, save :: lwrite_krms=.true.
   logical :: lfirstcall
-!
-!  passive scalar contributions (hardwired for now)
-!
-  real, dimension(nx,3) :: gtmp1,gtmp2
+
+  if(.not. allocated(cyl_spectrum)) then
+          allocate(cyl_spectrum(nk,nzgrid), cyl_spectrum_sum(nk,nzgrid), cyl_spectrumhel(nk,nzgrid), cyl_spectrumhel_sum(nk,nzgrid))
+  endif
 !
 !  identify version
 !
@@ -1135,36 +1178,33 @@ outer:  do ikz=1,nz
 ! KG: added warning about wrong computation of wavenumbers.
 ! KG: See the function get_k2 for an example of how to calculate k2.
   if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
-    call warning("powerhel", "computation of wavevector is wrong for non-cubical domains")
+    call warning("powerhel", "computation of wavevector wrong for non-cubical domains")
 !
 ! Select cases where spectra are precomputed
 !
   if (iaakim>0.or.ieekim>0) then
     call magnetic_calc_spectra(f,spectrum,spectrumhel,lfirstcall,sp)
   else
-  !
-  !  Define wave vector, defined here for the *full* mesh.
-  !  Each processor will see only part of it.
-  !  Ignore *2*pi/Lx factor, because later we want k to be integers
-  !
-  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
-  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
-  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
-  !
+!
+!$omp parallel private(ivec,jji,bb,jj,b2,j2,gtmp1,gtmp2,bbEP,k2,k,jkz) num_threads(num_helper_threads) &
+!$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+!$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+!$ thread_id = omp_get_thread_num()+1
+!
   !  initialize power spectrum to zero
   !
+  !$omp workshare
   k2m=0.
   nks=0.
   spectrum=0.
-  spectrum_sum=0.
   spectrumhel=0.
-  spectrumhel_sum=0.
+  !$omp end workshare
   !
   if (lcylindrical_spectra) then
+    !$omp workshare
     cyl_spectrum=0.
-    cyl_spectrum_sum=0.
     cyl_spectrumhel=0.
-    cyl_spectrumhel_sum=0.
+    !$omp end workshare
   endif
   !
   !  loop over all the components
@@ -1177,93 +1217,89 @@ outer:  do ikz=1,nz
     !
     if (sp=='kin') then
       if (iuu==0) call fatal_error('powerhel','iuu=0')
+      !$omp do collapse(2)
       do n=n1,n2
         do m=m1,m2
-          call curli(f,iuu,bbi,ivec)
-          im=m-nghost
-          in=n-nghost
-          a_re(:,im,in)=bbi  !(this corresponds to vorticity)
+          call curli(f,iuu,a_re(:,m-nghost,n-nghost),ivec)  !  corresponds to vorticity
         enddo
       enddo
-      b_re=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)  !(this corresponds to velocity)
-      a_im=0.
-      b_im=0.
+      !$omp workshare
+      b_re = f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)  !  corresponds to velocity
+      a_im = 0.
+      b_im = 0.
+      !$omp end workshare
 !
 !  neutral velocity power spectra (spectra of |un|^2 and on.un)
 !
     elseif (sp=='neu') then
       if (iuun==0) call fatal_error('powerhel','iuun=0')
+      !$omp do collapse(2)
       do n=n1,n2
         do m=m1,m2
-          call curli(f,iuun,bbi,ivec)
-          im=m-nghost
-          in=n-nghost
-          a_re(:,im,in)=bbi  !(this corresponds to vorticity)
+          call curli(f,iuun,a_re(:,m-nghost,n-nghost),ivec)  !  corresponds to vorticity
         enddo
       enddo
-      b_re=f(l1:l2,m1:m2,n1:n2,iuun+ivec-1)  !(this corresponds to velocity)
-      a_im=0.
-      b_im=0.
+      !$omp workshare
+      b_re = f(l1:l2,m1:m2,n1:n2,iuun+ivec-1)  !  corresponds to velocity
+      a_im = 0.
+      b_im = 0.
+      !$omp end workshare
 !
 !  magnetic power spectra (spectra of |B|^2 and A.B)
 !
     elseif (sp=='mag') then
-      if (iaa==0) call fatal_error('powerhel','iaa=0')
-      if (lmagnetic) then
+      if (iaa>0) then
+        !$omp do collapse(2)
         do n=n1,n2
           do m=m1,m2
-            call curli(f,iaa,bbi,ivec)
-            im=m-nghost
-            in=n-nghost
-            b_re(:,im,in)=bbi  !(this corresponds to magnetic field)
+            call curli(f,iaa,b_re(:,m-nghost,n-nghost),ivec)  !  corresponds to magnetic field
           enddo
         enddo
-        a_re=f(l1:l2,m1:m2,n1:n2,iaa+ivec-1)  !(corresponds to vector potential)
-        a_im=0.
-        b_im=0.
+        !$omp workshare
+        a_re = f(l1:l2,m1:m2,n1:n2,iaa+ivec-1)  ! corresponds to vector potential
+        a_im = 0.
+        b_im = 0.
+        !$omp end workshare
       else
-        if (headt) print*,'magnetic power spectra only work if lmagnetic=T'
+        if (headt) call warning('powerhel','magnetic power spectra only work if iaa>0')
       endif
 !
 !  magnetic power spectra (spectra of |J|^2 and J.B) !!! should be J.A
 !
     elseif (sp=='j.a') then
-      if (iaa==0) call fatal_error('powerhel','iaa=0')
-      if (lmagnetic) then
+      if (iaa>0) then
+        !$omp do collapse(2)
         do n=n1,n2
           do m=m1,m2
-          call del2vi_etc(f,iaa,ivec,curlcurl=jji)
-          im=m-nghost
-          in=n-nghost
-          b_re(:,im,in)=jji  !(this corresponds to the current density)
+            call del2vi_etc(f,iaa,ivec,curlcurl=b_re(:,m-nghost,n-nghost)) ! corresponds to current density
           enddo
         enddo
-        a_re=f(l1:l2,m1:m2,n1:n2,iaa+ivec-1)  !(corresponds to vector potential)
+        !$omp workshare
+        a_re=f(l1:l2,m1:m2,n1:n2,iaa+ivec-1)  ! corresponds to vector potential
         a_im=0.
         b_im=0.
+        !$omp end workshare
       else
-        if (headt) print*,'magnetic power spectra only work if lmagnetic=T'
+        if (headt) call warning('powerhel','magnetic power spectra only work if iaa>0')
       endif
 !
 !  current helicity spectrum (J.B)
 !
     elseif (sp=='j.b') then
-      if (iaa==0) call fatal_error('powerhel','iaa=0')
-      if (lmagnetic) then
+      if (iaa>0) then
+        !$omp do collapse(2)
         do n=n1,n2
           do m=m1,m2
-          call curli(f,iaa,bbi,ivec)
-          call del2vi_etc(f,iaa,ivec,curlcurl=jji)
-          im=m-nghost
-          in=n-nghost
-          a_re(:,im,in)=bbi  !(this corresponds to the magnetic field)
-          b_re(:,im,in)=jji  !(this corresponds to the current density)
+            call curli(f,iaa,a_re(:,m-nghost,n-nghost),ivec)  !  corresponds to magnetic field
+            call del2vi_etc(f,iaa,ivec,curlcurl=b_re(:,m-nghost,n-nghost)) !  corresponds to current density
           enddo
         enddo
+        !$omp workshare
         a_im=0.
         b_im=0.
+        !$omp end workshare
       else
-        if (headt) print*,'magnetic power spectra only work if lmagnetic=T'
+        if (headt) call warning('powerhel','magnetic power spectra only work if iaa>0')
       endif
 !
 !  Gravitational wave power spectra (breathing mode; diagonal components of gij)
@@ -1271,56 +1307,64 @@ outer:  do ikz=1,nz
 !
     elseif (sp=='GWd') then
       if (ihij==0.or.igij==0) call fatal_error('powerhel','ihij=0 or igij=0')
-      a_re=f(l1:l2,m1:m2,n1:n2,ihij+ivec-1)  !(corresponds to hii)
-      b_re=f(l1:l2,m1:m2,n1:n2,igij+ivec-1)  !(corresponds to gii)
+      !$omp workshare
+      a_re=f(l1:l2,m1:m2,n1:n2,ihij+ivec-1)  ! corresponds to hii
+      b_re=f(l1:l2,m1:m2,n1:n2,igij+ivec-1)  ! corresponds to gii
       a_im=0.
       b_im=0.
+      !$omp end workshare
 !
 !  Gravitational wave power spectra (off-diagonal components of gij)
 !  Also compute production of |hij|^2, i.e., hij*gij^*
 !
     elseif (sp=='GWe') then
       if (ihij==0.or.igij==0) call fatal_error('powerhel','igij=0 or igij=0')
-      a_re=f(l1:l2,m1:m2,n1:n2,ihij+ivec+2)  !(corresponds to hij)
-      b_re=f(l1:l2,m1:m2,n1:n2,igij+ivec+2)  !(corresponds to gij)
+      !$omp workshare
+      a_re=f(l1:l2,m1:m2,n1:n2,ihij+ivec+2)  ! corresponds to hij
+      b_re=f(l1:l2,m1:m2,n1:n2,igij+ivec+2)  ! corresponds to gij
       a_im=0.
       b_im=0.
+      !$omp end workshare
 !
 !  Gravitational wave power spectra (breathing mode; diagonal components of hij)
 !  Also compute production of |hij|^2, i.e., hij*gij^*
 !
     elseif (sp=='GWf') then
       if (ihij==0.or.igij==0) call fatal_error('powerhel','ihij=0 or igij=0')
-      a_re=f(l1:l2,m1:m2,n1:n2,igij+ivec-1)  !(corresponds to gii)
-      b_re=f(l1:l2,m1:m2,n1:n2,ihij+ivec-1)  !(corresponds to hii)
+      !$omp workshare
+      a_re=f(l1:l2,m1:m2,n1:n2,igij+ivec-1)  ! corresponds to gii
+      b_re=f(l1:l2,m1:m2,n1:n2,ihij+ivec-1)  ! corresponds to hii
       a_im=0.
       b_im=0.
+      !$omp end workshare
 !
 !  Gravitational wave power spectra (off-diagonal components of hij)
 !  Also compute production of |hij|^2, i.e., hij*gij^*
 !
     elseif (sp=='GWg') then
       if (ihij==0.or.igij==0) call fatal_error('powerhel','igij=0 or igij=0')
-      a_re=f(l1:l2,m1:m2,n1:n2,igij+ivec+2)  !(corresponds to gij)
-      b_re=f(l1:l2,m1:m2,n1:n2,ihij+ivec+2)  !(corresponds to hij)
+      !$omp workshare
+      a_re=f(l1:l2,m1:m2,n1:n2,igij+ivec+2)  ! corresponds to gij
+      b_re=f(l1:l2,m1:m2,n1:n2,ihij+ivec+2)  ! corresponds to hij
       a_im=0.
       b_im=0.
+      !$omp end workshare
 !
 !  spectrum of u.b
 !
     elseif (sp=='u.b') then
       if (iuu==0.or.iaa==0) call fatal_error('powerhel','iuu or iaa=0')
+      !$omp do collapse(2)
       do n=n1,n2
         do m=m1,m2
-          call curli(f,iaa,bbi,ivec)
-          im=m-nghost
-          in=n-nghost
-          b_re(:,im,in)=bbi  !(this corresponds to magnetic field)
+          call curli(f,iaa,b_re(:,m-nghost,n-nghost),ivec)   ! corresponds to magnetic field
         enddo
       enddo
-      a_re=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)  !(this corresponds to velocity)
+      !$omp workshare
+      a_re=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)  ! corresponds to velocity
       a_im=0.
       b_im=0.
+      !$omp end workshare
 !
 !  vertical magnetic power spectra (spectra of |Bz|^2 and Az.Bz)
 !  Do as before, but compute only for ivec=3.
@@ -1328,22 +1372,24 @@ outer:  do ikz=1,nz
 !
     elseif (sp=='mgz') then
       if (ivec==3) then
+        !$omp do collapse(2)
         do n=n1,n2
           do m=m1,m2
-            call curli(f,iaa,bbi,ivec)
-            im=m-nghost
-            in=n-nghost
-            b_re(:,im,in)=bbi  !(this corresponds to magnetic field)
+            call curli(f,iaa,b_re(:,m-nghost,n-nghost),ivec)    ! corresponds to magnetic field
           enddo
         enddo
-        a_re=f(l1:l2,m1:m2,n1:n2,iaa+ivec-1)  !(corresponds to vector potential)
+        !$omp workshare
+        a_re=f(l1:l2,m1:m2,n1:n2,iaa+ivec-1)  ! corresponds to vector potential
         a_im=0.
         b_im=0.
+        !$omp end workshare
       else
+        !$omp workshare
         a_re=0.
         b_re=0.
         a_im=0.
         b_im=0.
+        !$omp end workshare
       endif
 !
 !  vertical magnetic power spectra (spectra of |Bz|^2 and Az.Bz)
@@ -1352,27 +1398,34 @@ outer:  do ikz=1,nz
 !
     elseif (sp=='bb2') then
       if (ivec==3) then
+        !$omp do collapse(2)
         do n=n1,n2
           do m=m1,m2
             call curl(f,iaa,bb)
-            call dot2(bb,b2)
-            im=m-nghost
-            in=n-nghost
-            b_re(:,im,in)=b2
+            call dot2(bb,b2)    !!! this is not Bz^2!
+            b_re(:,m-nghost,n-nghost)=b2
           enddo
         enddo
         if (ilnrho/=0) then
+          !$omp workshare
           a_re=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
+          !$omp end workshare
         else
+          !$omp workshare
           a_re=0.
+          !$omp end workshare
         endif
+        !$omp workshare
         a_im=0.
         b_im=0.
+        !$omp end workshare
       else
+        !$omp workshare
         a_re=0.
         b_re=0.
         a_im=0.
         b_im=0.
+        !$omp end workshare
       endif
 !
 !  vertical magnetic power spectra (spectra of |Bz|^2 and Az.Bz)
@@ -1381,48 +1434,54 @@ outer:  do ikz=1,nz
 !
     elseif (sp=='jj2') then
       if (ivec==3) then
+        !$omp do
         do n=n1,n2
           do m=m1,m2
             call del2v_etc(f,iaa,curlcurl=jj)
             call dot2(jj,j2)
-            im=m-nghost
-            in=n-nghost
-            b_re(:,im,in)=j2
+            b_re(:,m-nghost,n-nghost)=j2
           enddo
+          if (ilnrho/=0) then
+            a_re(:,:,n)=exp(f(l1:l2,m1:m2,n,ilnrho))
+          else
+            a_re(:,:,n)=0.
+          endif
+          a_im(:,:,n)=0.
+          b_im(:,:,n)=0.
         enddo
-        if (ilnrho/=0) then
-          a_re=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
-        else
-          a_re=0.
-        endif
-        a_im=0.
-        b_im=0.
       else
+        !$omp workshare
         a_re=0.
         b_re=0.
         a_im=0.
         b_im=0.
+        !$omp end workshare
       endif
 !
 !  spectrum of uzs and s^2
 !
     elseif (sp=='uzs') then
       if (ivec==3) then
-        a_re=f(l1:l2,m1:m2,n1:n2,iuz)  !(this corresponds to uz)
-        b_re=f(l1:l2,m1:m2,n1:n2,iss)  !(this corresponds to ss)
+        !$omp workshare
+        a_re=f(l1:l2,m1:m2,n1:n2,iuz)  ! corresponds to uz
+        b_re=f(l1:l2,m1:m2,n1:n2,iss)  ! corresponds to ss
         a_im=0.
         b_im=0.
+        !$omp end workshare
       else
+        !$omp workshare
         a_re=0.
         b_re=0.
         a_im=0.
         b_im=0.
+        !$omp end workshare
       endif
 !
 !  magnetic energy spectra based on fields with Euler potentials
 !
     elseif (sp=='bEP') then
       if (iXX_chiral/=0.and.iYY_chiral/=0) then
+        !$omp do collapse(2)
         do n=n1,n2
           do m=m1,m2
             call grad(f,iXX_chiral,gtmp1)
@@ -1436,8 +1495,10 @@ outer:  do ikz=1,nz
             !                 -f(l1:l2,m,n,iYY_chiral)*gtmp1(:,ivec))
           enddo
         enddo
+        !$omp workshare
         a_im=0.
         b_im=0.
+        !$omp end workshare
         if (ncpus==1) then
           open(1,file=trim(datadir)//'/bEP.dat',form='unformatted',position='append')
 !          write(1) bEP,t
@@ -1488,39 +1549,40 @@ outer:  do ikz=1,nz
 !  Spectrum of uxj
 !
     elseif (sp=='uxj') then
+      !$omp do collapse(2)
       do n=n1,n2
         do m=m1,m2
           if (ivec==1) ivec_jj=2
           if (ivec==2) ivec_jj=1
           if (ivec/=3) call del2vi_etc(f,iaa,ivec_jj,curlcurl=jji)
-          im=m-nghost
-          in=n-nghost
-          if (ivec==1) b_re(:,im,in)=+jji
-          if (ivec==2) b_re(:,im,in)=-jji
-          if (ivec==3) b_re(:,im,in)=+0.
+          if (ivec==1) b_re(:,m-nghost,n-nghost)=+jji
+          if (ivec==2) b_re(:,m-nghost,n-nghost)=-jji
+          if (ivec==3) b_re(:,m-nghost,n-nghost)=+0.
         enddo
       enddo
+      !$omp workshare
       a_re=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)
       a_im=0.
       b_im=0.
+      !$omp end workshare
 !
 !  Spectrum of electric field, Sp(E) and E.B spectrum
 !
     elseif (sp=='ele') then
       if (iee==0.or.iaa==0) call fatal_error('powerhel','iee or iaa=0')
+      !$omp do collapse(2)
       do n=n1,n2
         do m=m1,m2
-          call curli(f,iaa,bbi,ivec)
-          im=m-nghost
-          in=n-nghost
-          a_re(:,im,in)=bbi  !(this corresponds to magnetic field)
+          call curli(f,iaa,a_re(:,m-nghost,n-nghost),ivec)  ! corresponds to magnetic field
         enddo
       enddo
+      !$omp workshare
       a_im=0.
       b_re=f(l1:l2,m1:m2,n1:n2,iee+ivec-1)
       b_im=0.
+      !$omp end workshare
     else
-      call fatal_error('powerhel','no spectrum defined for '//sp)
+      call fatal_error('powerhel','no such sp: '//trim(sp))
     endif
 !
 !  Doing the Fourier transform
@@ -1530,7 +1592,8 @@ outer:  do ikz=1,nz
 !
 !  integration over shells
 !
-    if (lroot .AND. ip<10) print*,'fft done; now integrate over shells...'
+    if (ip<10) call information('powerhel','fft done; now integrate over shells')
+    !$omp do collapse(3) reduction(+:spectrum,spectrumhel,k2m,nks)
     do ikz=1,nz
       do iky=1,ny
         do ikx=1,nx
@@ -1564,7 +1627,8 @@ outer:  do ikz=1,nz
 !  allow for possibility of cylindrical spectral
 !
     if (lcylindrical_spectra) then
-      if (lroot .AND. ip<10) print*,'fft done; now integrate over cylindrical shells...'
+      if (ip<10) call information('powerhel','fft done; now integrate over cylindrical shells')
+      !$omp do collapse(3) reduction(+:cyl_spectrum,cyl_spectrumhel)
       do ikz=1,nz
         do iky=1,ny
           do ikx=1,nx
@@ -1590,11 +1654,12 @@ outer:  do ikz=1,nz
       enddo
     endif
     !
-  enddo !(from loop over ivec)
+  enddo ! loop over ivec
+!$omp end parallel
 !
 !  end from communicated versus computed spectra (magnetic)
 !
-  endif
+  endif  ! if (iaakim>0.or.ieekim>0)
   !
   !  Summing up the results from the different processors.
   !  The result is available only on root.
@@ -1605,14 +1670,6 @@ outer:  do ikz=1,nz
   if (lcylindrical_spectra) then
     call mpireduce_sum(cyl_spectrum,cyl_spectrum_sum,(/nk,nzgrid/))
     call mpireduce_sum(cyl_spectrumhel,cyl_spectrumhel_sum,(/nk,nzgrid/))
-  endif
-!
-!  compute krms only once
-!
-  if (lwrite_krms) then
-    call mpireduce_sum(k2m,k2m_sum,nk)
-    call mpireduce_sum(nks,nks_sum,nk)
-    if (iproc/=root) lwrite_krms=.false.
   endif
   !
   !  on root processor, write global result to file
@@ -1645,7 +1702,7 @@ outer:  do ikz=1,nz
           write(1,'(i4,3p,8e10.2)') k, spectrum_sum(k)
         enddo
       else
-        write(1,*) t
+        write(1,*) tdiagnos
         write(1,power_format) spectrum_sum 
       endif
       close(1)
@@ -1658,7 +1715,7 @@ outer:  do ikz=1,nz
           write(1,'(i4,3p,8e10.2)') k, spectrumhel_sum(k)
         enddo
       else
-        write(1,*) t
+        write(1,*) tdiagnos
         write(1,power_format) spectrumhel_sum 
       endif
       close(1)
@@ -1687,8 +1744,8 @@ outer:  do ikz=1,nz
         enddo
         enddo
       else
-        write(1,*) t
-        write(1,power_format) cyl_spectrum_sum 
+        write(1,*) tdiagnos
+        write(1,power_format) cyl_spectrum_sum
       endif
       close(1)
       !
@@ -1700,13 +1757,19 @@ outer:  do ikz=1,nz
         enddo
         enddo
       else
-        write(1,*) t
-        write(1,power_format) cyl_spectrumhel_sum 
+        write(1,*) tdiagnos
+        write(1,power_format) cyl_spectrumhel_sum
       endif
       close(1)
     endif
-    !
-    if (lwrite_krms) then
+  endif  !  if (lroot)
+!
+!  compute krms only once
+!
+  if (lwrite_krms) then
+    call mpireduce_sum(k2m,k2m_sum,nk)
+    call mpireduce_sum(nks,nks_sum,nk)
+    if (lroot) then
       where(nks_sum/=0)
         krms=sqrt(k2m_sum/nks_sum)
       elsewhere
@@ -1715,8 +1778,8 @@ outer:  do ikz=1,nz
       open(1,file=trim(datadir)//'/power_krms.dat',position='append')
       write(1,power_format) krms
       close(1)
-      lwrite_krms=.false.
     endif
+    lwrite_krms=.false.
   endif
   !
   endsubroutine powerhel
@@ -1743,16 +1806,12 @@ outer:  do ikz=1,nz
   real, dimension(mx,my,mz,3) :: Lor
   real, dimension(:,:,:,:), allocatable :: tmpv, scrv
   real, dimension(:,:,:), allocatable :: c_re, c_im
-  real, dimension(nx,ny,nz) :: a_re, a_im, b_re, b_im
   real, dimension(nx,3) :: aa,bb,jj,jxb
   real, dimension(nx,3,3) :: aij,bij
-  real, dimension(nk) :: nks=0.,nks_sum=0.
-  real, dimension(nk) :: k2m=0.,k2m_sum=0.,krms
+  real, dimension(nk) :: nks,nks_sum
+  real, dimension(nk) :: k2m,k2m_sum,krms
   real, dimension(nk) :: spectrum, spectrum_sum, spectrum2, spectrum2_sum
   real, dimension(nk) :: spectrumhel, spectrumhel_sum, spectrum2hel, spectrum2hel_sum
-  real, dimension(nxgrid) :: kx
-  real, dimension(nygrid) :: ky
-  real, dimension(nzgrid) :: kz
   character (len=3) :: sp
   logical, save :: lwrite_krms=.true.
 !
@@ -1761,59 +1820,54 @@ outer:  do ikz=1,nz
   if (lroot .AND. ip<10) call svn_id( &
        "$Id$")
 !
-! KG: added warning about wrong computation of wavenumbers.
 ! KG: See the function get_k2 for an example of how to calculate k2.
-  if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
-    call warning("powerLor", "computation of wavevector is wrong for non-cubical domains")
-  !
-  !  Define wave vector, defined here for the *full* mesh.
-  !  Each processor will see only part of it.
-  !  Ignore *2*pi/Lx factor, because later we want k to be integers
-  !
-  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
-  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
-  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
   !
   !  Note, if lhydro=F, then f(:,:,:,1:3) does no longer contain
   !  velocity. In that case, we want the magnetic field instead.
   !
   if (.not.lhydro) then
     allocate(tmpv(mx,my,mz,3),stat=stat)
-    if (stat>0) call fatal_error('powerLor','Cannot allocate memory for tmpv')
+    if (stat>0) call fatal_error('powerLor','Cannot allocate tmpv')
     allocate(scrv(mx,my,mz,3),stat=stat)
-    if (stat>0) call fatal_error('powerLor','Cannot allocate memory for scrv')
+    if (stat>0) call fatal_error('powerLor','Cannot allocate scrv')
     allocate(c_re(nx,ny,nz),stat=stat)
-    if (stat>0) call fatal_error('powerLor','Cannot allocate memory for c_re')
+    if (stat>0) call fatal_error('powerLor','Cannot allocate c_re')
     allocate(c_im(nx,ny,nz),stat=stat)
-    if (stat>0) call fatal_error('powerLor','Cannot allocate memory for c_im')
+    if (stat>0) call fatal_error('powerLor','Cannot allocate c_im')
   endif
+
+!$omp parallel private(ivec,jxb,bb,jj,bij,aij,aa,k,k2) num_threads(num_helper_threads) &
+!$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+!$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+!$ thread_id = omp_get_thread_num()+1
   !
   !  initialize power spectrum to zero
   !
+  !$omp workshare
   k2m=0.
   nks=0.
   spectrum=0.
-  spectrum_sum=0.
   spectrumhel=0.
-  spectrumhel_sum=0.
   spectrum2=0.
-  spectrum2_sum=0.
   spectrum2hel=0.
-  spectrum2hel_sum=0.
+  !$omp end workshare
   !
   !  compute Lorentz force
   !
+!$omp do collapse(2)
   do m=m1,m2
   do n=n1,n2
-     aa=f(l1:l2,m,n,iax:iaz)
-     call gij(f,iaa,aij,1)
-     call gij_etc(f,iaa,aa,aij,bij)
-     call curl_mn(aij,bb,aa)
-     call curl_mn(bij,jj,bb)
-     call cross_mn(jj,bb,jxb)
-     Lor(l1:l2,m,n,:)=jxb
-     if (.not.lhydro) tmpv(l1:l2,m,n,:)=bb
-     if (.not.lhydro) scrv(l1:l2,m,n,:)=jj
+    aa=f(l1:l2,m,n,iax:iaz)
+    call gij(f,iaa,aij,1)
+    call gij_etc(f,iaa,aa,aij,bij)
+    call curl_mn(aij,bb,aa)
+    call curl_mn(bij,jj,bb)
+    call cross_mn(jj,bb,jxb)
+    Lor(l1:l2,m,n,:)=jxb
+    if (.not.lhydro) then
+      tmpv(l1:l2,m,n,:)=bb
+      scrv(l1:l2,m,n,:)=jj
+    endif
   enddo
   enddo
   !
@@ -1824,16 +1878,24 @@ outer:  do ikz=1,nz
 !  Lorentz force spectra (spectra of L*L^*)
 !
     if (sp=='Lor') then
-      b_re=Lor(l1:l2,m1:m2,n1:n2,ivec)
+      !$omp workshare
+      b_re(:,:,n)=Lor(l1:l2,m1:m2,n,ivec)
+      !$omp end workshare
       if (lhydro) then
+        !$omp workshare
         a_re=f(l1:l2,m1:m2,n1:n2,ivec)
+        !$omp end workshare
       else
+        !$omp workshare
         a_re=tmpv(l1:l2,m1:m2,n1:n2,ivec)
         c_re=scrv(l1:l2,m1:m2,n1:n2,ivec)
         c_im=0.
+        !$omp end workshare
       endif
+      !$omp workshare
       a_im=0.
       b_im=0.
+      !$omp end workshare
 !
     endif
 !
@@ -1845,7 +1907,8 @@ outer:  do ikz=1,nz
 !
 !  integration over shells
 !
-    if (lroot .AND. ip<10) print*,'fft done; now integrate over shells...'
+    if (ip<10) call information('powerLor','fft done; now integrate over shells')
+    !$omp do collapse(3) reduction(+:spectrum,spectrumhel,spectrum2hel,spectrum2,k2m,nks)
     do ikz=1,nz
       do iky=1,ny
         do ikx=1,nx
@@ -1889,7 +1952,8 @@ outer:  do ikz=1,nz
       enddo
     enddo
     !
-  enddo !(from loop over ivec)
+  enddo ! loop over ivec
+!$omp end parallel
   !
   !  Summing up the results from the different processors
   !  The result is available only on root
@@ -1926,7 +1990,7 @@ outer:  do ikz=1,nz
         write(1,'(i4,3p,8e10.2)') k, spectrum_sum(k)
       enddo
     else
-      write(1,*) t
+      write(1,*) tdiagnos
       write(1,power_format) spectrum_sum
     endif
     close(1)
@@ -1937,7 +2001,7 @@ outer:  do ikz=1,nz
         write(1,'(i4,3p,8e10.2)') k, spectrumhel_sum(k)
       enddo
     else
-      write(1,*) t
+      write(1,*) tdiagnos
       write(1,power_format) spectrumhel_sum
     endif
     close(1)
@@ -1951,7 +2015,7 @@ outer:  do ikz=1,nz
         write(1,'(i4,3p,8e10.2)') k, spectrum2_sum(k)
       enddo
     else
-      write(1,*) t
+      write(1,*) tdiagnos
       write(1,power_format) spectrum2_sum
     endif
     close(1)
@@ -1962,7 +2026,7 @@ outer:  do ikz=1,nz
         write(1,'(i4,3p,8e10.2)') k, spectrum2hel_sum(k)
       enddo
     else
-      write(1,*) t
+      write(1,*) tdiagnos
       write(1,power_format) spectrum2hel_sum
     endif
     close(1)
@@ -2002,16 +2066,12 @@ outer:  do ikz=1,nz
   real, dimension(mx,my,mz,3) :: Lor
   real, dimension(:,:,:,:), allocatable :: tmpv, scrv
   real, dimension(:,:,:), allocatable :: c_re, c_im
-  real, dimension(nx,ny,nz) :: a_re, a_im, b_re, b_im
   real, dimension(nx,3) :: aa,bb,jj,jxb
   real, dimension(nx,3,3) :: aij,bij
-  real, dimension(nk) :: nks=0.,nks_sum=0.
-  real, dimension(nk) :: k2m=0.,k2m_sum=0.,krms
+  real, dimension(nk) :: nks,nks_sum
+  real, dimension(nk) :: k2m,k2m_sum,krms
   real, dimension(nk) :: spectrum,spectrum_sum
   real, dimension(nk) :: spectrumhel,spectrumhel_sum
-  real, dimension(nxgrid) :: kx
-  real, dimension(nygrid) :: ky
-  real, dimension(nzgrid) :: kz
   character (len=3) :: sp
   logical, save :: lwrite_krms=.true.
 !
@@ -2020,18 +2080,7 @@ outer:  do ikz=1,nz
   if (lroot .AND. ip<10) call svn_id( &
        "$Id$")
 !
-! KG: added warning about wrong computation of wavenumbers.
 ! KG: See the function get_k2 for an example of how to calculate k2.
-  if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
-    call warning("powerLor_OLD", "computation of wavevector is wrong for non-cubical domains")
-  !
-  !  Define wave vector, defined here for the *full* mesh.
-  !  Each processor will see only part of it.
-  !  Ignore *2*pi/Lx factor, because later we want k to be integers
-  !
-  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
-  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
-  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
   !
   !  Note, if lhydro=F, then f(:,:,:,1:3) does no longer contain
   !  velocity. In that case, we want the magnetic field instead.
@@ -2052,9 +2101,7 @@ outer:  do ikz=1,nz
   k2m=0.
   nks=0.
   spectrum=0.
-  spectrum_sum=0.
   spectrumhel=0.
-  spectrumhel_sum=0.
   !
   !  compute Lorentz force
   !
@@ -2171,7 +2218,7 @@ outer:  do ikz=1,nz
         write(1,'(i4,3p,8e10.2)') k, spectrum_sum(k)
       enddo
     else
-      write(1,*) t
+      write(1,*) tdiagnos
       write(1,power_format) spectrum_sum
     endif
     close(1)
@@ -2182,7 +2229,7 @@ outer:  do ikz=1,nz
         write(1,'(i4,3p,8e10.2)') k, spectrumhel_sum(k)
       enddo
     else
-      write(1,*) t
+      write(1,*) tdiagnos
       write(1,power_format) spectrumhel_sum
     endif
     close(1)
@@ -2219,63 +2266,55 @@ outer:  do ikz=1,nz
   integer :: i,k,ikx,iky,ikz,ivec
   real :: k2
   real, dimension (mx,my,mz,mfarray) :: f
-  real, dimension (mx,my,mz,3) :: EMF,JJJ,EMB,BBB
-  real, dimension(nx,ny,nz) :: a_re,a_im, b_re,b_im, c_re,c_im, d_re,d_im
+  real, save, dimension (mx,my,mz,3) :: EMF,JJJ,EMB,BBB
   real, dimension(nx,3) :: uu,aa,bb,jj,uxb,uxj
   real, dimension(nx,3,3) :: aij,bij
-  real, dimension(nk) :: nks=0.,nks_sum=0.
-  real, dimension(nk) :: k2m=0.,k2m_sum=0.,krms
+  real, dimension(nk) :: nks,nks_sum
+  real, dimension(nk) :: k2m,k2m_sum,krms
   real, dimension(nk) :: spectrum,spectrum_sum
   real, dimension(nk) :: spectrumhel,spectrumhel_sum
-  real, dimension(nxgrid) :: kx
-  real, dimension(nygrid) :: ky
-  real, dimension(nzgrid) :: kz
   character (len=3) :: sp
   logical, save :: lwrite_krms=.true.
+
 !
 !  identify version
 !
   if (lroot .AND. ip<10) call svn_id( &
        "$Id$")
 !
-! KG: added warning about wrong computation of wavenumbers.
 ! KG: See the function get_k2 for an example of how to calculate k2.
-  if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
-    call warning("powerEMF", "computation of wavevector is wrong for non-cubical domains")
-  !
-  !  Define wave vector, defined here for the *full* mesh.
-  !  Each processor will see only part of it.
-  !  Ignore *2*pi/Lx factor, because later we want k to be integers
-  !
-  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
-  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
-  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
+
+!$omp parallel private(ivec,uu,aa,aij,bij,bb,jj,uxb,uxj,k,k2) num_threads(num_helper_threads) &
+!$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+!$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+!$ thread_id = omp_get_thread_num()+1
   !
   !  initialize power spectrum to zero
   !
+  !$omp workshare
   k2m=0.
   nks=0.
   spectrum=0.
-  spectrum_sum=0.
   spectrumhel=0.
-  spectrumhel_sum=0.
+  !$omp end workshare
   !
   !  compute EMFentz force
   !
+  !$omp do collapse(2)
   do m=m1,m2
   do n=n1,n2
-     uu=f(l1:l2,m,n,iux:iuz)
-     aa=f(l1:l2,m,n,iax:iaz)
-     call gij(f,iaa,aij,1)
-     call gij_etc(f,iaa,aa,aij,bij)
-     call curl_mn(aij,bb,aa)
-     call curl_mn(bij,jj,bb)
-     call cross_mn(uu,bb,uxb)
-     call cross_mn(uu,jj,uxj)
-     EMF(l1:l2,m,n,:)=uxb
-     EMB(l1:l2,m,n,:)=uxj
-     JJJ(l1:l2,m,n,:)=jj
-     BBB(l1:l2,m,n,:)=bb
+    uu=f(l1:l2,m,n,iux:iuz)
+    aa=f(l1:l2,m,n,iax:iaz)
+    call gij(f,iaa,aij,1)
+    call gij_etc(f,iaa,aa,aij,bij)
+    call curl_mn(aij,bb,aa)
+    call curl_mn(bij,jj,bb)
+    call cross_mn(uu,bb,uxb)
+    call cross_mn(uu,jj,uxj)
+    EMF(l1:l2,m,n,:)=uxb
+    EMB(l1:l2,m,n,:)=uxj
+    JJJ(l1:l2,m,n,:)=jj
+    BBB(l1:l2,m,n,:)=bb
   enddo
   enddo
   !
@@ -2286,6 +2325,7 @@ outer:  do ikz=1,nz
 !  Electromotive force spectra (spectra of L*L^*)
 !
     if (sp=='EMF') then
+      !$omp workshare
       a_re=EMF(l1:l2,m1:m2,n1:n2,ivec)
       b_re=JJJ(l1:l2,m1:m2,n1:n2,ivec)
       c_re=EMB(l1:l2,m1:m2,n1:n2,ivec)
@@ -2294,6 +2334,7 @@ outer:  do ikz=1,nz
       b_im=0.
       c_im=0.
       d_im=0.
+      !$omp end workshare
 !
     endif
 !
@@ -2306,7 +2347,8 @@ outer:  do ikz=1,nz
 !
 !  integration over shells
 !
-    if (lroot .AND. ip<10) print*,'fft done; now integrate over shells...'
+    if (ip<10) call information('powerEMF','fft done, now integrate over shells')
+    !$omp do collapse(3) reduction(+:spectrum,spectrumhel,k2m,nks)
     do ikz=1,nz
       do iky=1,ny
         do ikx=1,nx
@@ -2338,6 +2380,7 @@ outer:  do ikz=1,nz
     enddo
     !
   enddo !(from loop over ivec)
+!$omp end parallel
   !
   !  Summing up the results from the different processors
   !  The result is available only on root
@@ -2370,7 +2413,7 @@ outer:  do ikz=1,nz
         write(1,'(i4,3p,8e10.2)') k, spectrum_sum(k)
       enddo
     else
-      write(1,*) t
+      write(1,*) tdiagnos
       write(1,power_format) spectrum_sum
     endif
     close(1)
@@ -2381,7 +2424,7 @@ outer:  do ikz=1,nz
         write(1,'(i4,3p,8e10.2)') k, spectrumhel_sum(k)
       enddo
     else
-      write(1,*) t
+      write(1,*) tdiagnos
       write(1,power_format) spectrumhel_sum
     endif
     close(1)
@@ -2410,24 +2453,19 @@ outer:  do ikz=1,nz
 !
     use Fourier, only: fft_xyz_parallel
     use Mpicomm, only: mpireduce_sum
-    use Sub, only: gij, gij_etc, curl_mn, cross_mn, div_mn, multsv_mn, &
-        h_dot_grad_vec
+    use Sub, only: gij, gij_etc, curl_mn, cross_mn, div_mn, multsv_mn, h_dot_grad_vec
 !
   integer, parameter :: nk=nxgrid/2
   integer :: i,k,ikx,iky,ikz,ivec
   real :: k2
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension (mx,my,mz,3) :: Adv, Str, BBB
-  real, dimension(nx,ny,nz) :: a_re,a_im, b_re,b_im, c_re,c_im
   real, dimension(nx,3) :: uu, aa, bb, divu, bbdivu, bgradu, ugradb
   real, dimension(nx,3,3) :: uij, aij, bij
-  real, dimension(nk) :: nks=0.,nks_sum=0.
-  real, dimension(nk) :: k2m=0.,k2m_sum=0.,krms
+  real, dimension(nk) :: nks,nks_sum
+  real, dimension(nk) :: k2m,k2m_sum,krms
   real, dimension(nk) :: spectrum,spectrum_sum
   real, dimension(nk) :: spectrumhel,spectrumhel_sum
-  real, dimension(nxgrid) :: kx
-  real, dimension(nygrid) :: ky
-  real, dimension(nzgrid) :: kz
   character (len=3) :: sp
   logical, save :: lwrite_krms=.true.
 !
@@ -2436,47 +2474,42 @@ outer:  do ikz=1,nz
   if (lroot .AND. ip<10) call svn_id( &
        "$Id$")
 !
-! KG: added warning about wrong computation of wavenumbers.
 ! KG: See the function get_k2 for an example of how to calculate k2.
-  if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
-    call warning("powerTra", "computation of wavevector is wrong for non-cubical domains")
-  !
-  !  Define wave vector, defined here for the *full* mesh.
-  !  Each processor will see only part of it.
-  !  Ignore *2*pi/Lx factor, because later we want k to be integers
-  !
-  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
-  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
-  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
+
+!$omp parallel private(ivec,uu,aa,uij,aij,bij,divu,bb,bbdivu,ugradb,bgradu,k,k2) num_threads(num_helper_threads) &
+!$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+!$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+!$ thread_id = omp_get_thread_num()+1
   !
   !  initialize power spectrum to zero
   !
+  !$omp workshare
   k2m=0.
   nks=0.
   spectrum=0.
-  spectrum_sum=0.
   spectrumhel=0.
-  spectrumhel_sum=0.
+  !$omp end workshare
   !
   !  compute EMF transfer terms. Following Rempel (2014), we split
   !  curl(uxB) = -[uj*dj(Bi)+.5*Bi(divu)] -[-Bj*dj(ui)+.5*Bi(divu)]
   !            =  ---- advection --------  ------ stretching ------
   !
+  !$omp do collapse(2)
   do m=m1,m2
   do n=n1,n2
-     uu=f(l1:l2,m,n,iux:iuz)
-     aa=f(l1:l2,m,n,iax:iaz)
-     call gij(f,iuu,uij,1)
-     call gij(f,iaa,aij,1)
-     call gij_etc(f,iaa,aa,aij,bij)
-     call div_mn(uij,divu,uu)
-     call curl_mn(aij,bb,aa)
-     call multsv_mn(divu,bb,bbdivu)
-     call h_dot_grad_vec(uu,bij,bb,ugradb)
-     call h_dot_grad_vec(bb,uij,uu,bgradu)
-     Adv(l1:l2,m,n,:)=+ugradb+.5*bbdivu
-     Str(l1:l2,m,n,:)=-bgradu+.5*bbdivu
-     BBB(l1:l2,m,n,:)=bb
+    uu=f(l1:l2,m,n,iux:iuz)
+    aa=f(l1:l2,m,n,iax:iaz)
+    call gij(f,iuu,uij,1)
+    call gij(f,iaa,aij,1)
+    call gij_etc(f,iaa,aa,aij,bij)
+    call div_mn(uij,divu,uu)
+    call curl_mn(aij,bb,aa)
+    call multsv_mn(divu,bb,bbdivu)
+    call h_dot_grad_vec(uu,bij,bb,ugradb)
+    call h_dot_grad_vec(bb,uij,uu,bgradu)
+    Adv(l1:l2,m,n,:)=+ugradb+.5*bbdivu
+    Str(l1:l2,m,n,:)=-bgradu+.5*bbdivu
+    BBB(l1:l2,m,n,:)=bb
   enddo
   enddo
   !
@@ -2487,12 +2520,14 @@ outer:  do ikz=1,nz
 !  Electromotive force transfer spectra
 !
     if (sp=='Tra') then
+      !$omp workshare
       a_re=BBB(l1:l2,m1:m2,n1:n2,ivec)
       b_re=Adv(l1:l2,m1:m2,n1:n2,ivec)
       c_re=Str(l1:l2,m1:m2,n1:n2,ivec)
       a_im=0.
       b_im=0.
       c_im=0.
+      !$omp end workshare
 !
     endif
 !
@@ -2504,7 +2539,8 @@ outer:  do ikz=1,nz
 !
 !  integration over shells
 !
-    if (lroot .AND. ip<10) print*,'fft done; now integrate over shells...'
+    if (ip<10) call information('powerTra','fft done; now integrate over shells')
+    !$omp do collapse(3) reduction(+:spectrum,spectrumhel,k2m,nks)
     do ikz=1,nz
       do iky=1,ny
         do ikx=1,nx
@@ -2536,6 +2572,7 @@ outer:  do ikz=1,nz
     enddo
     !
   enddo !(from loop over ivec)
+!$omp end parallel
   !
   !  Summing up the results from the different processors
   !  The result is available only on root
@@ -2568,7 +2605,7 @@ outer:  do ikz=1,nz
         write(1,'(i4,3p,8e10.2)') k, spectrum_sum(k)
       enddo
     else
-      write(1,*) t
+      write(1,*) tdiagnos
       write(1,power_format) spectrum_sum
     endif
     close(1)
@@ -2579,7 +2616,7 @@ outer:  do ikz=1,nz
         write(1,'(i4,3p,8e10.2)') k, spectrumhel_sum(k)
       enddo
     else
-      write(1,*) t
+      write(1,*) tdiagnos
       write(1,power_format) spectrumhel_sum
     endif
     close(1)
@@ -2619,16 +2656,13 @@ outer:  do ikz=1,nz
 
   integer :: i,k,ikx,iky,ikz
   real :: k2
+  real, dimension(nk) :: nks,nks_sum
+  real, dimension(nk) :: k2m,k2m_sum,krms
   real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
-  real, dimension(nk) :: nks=0.,nks_sum=0.
-  real, dimension(nk) :: k2m=0.,k2m_sum=0.,krms
   real, dimension(nk,nbin_angular) :: spectrum_2d, spectrumhel_2d
   real, dimension(nk,nbin_angular) :: spectrum_2d_sum, spectrumhel_2d_sum
   real, allocatable, dimension(:) :: spectrum,spectrumhel
   real, allocatable, dimension(:) :: spectrum_sum,spectrumhel_sum
-  real, dimension(nxgrid) :: kx
-  real, dimension(nygrid) :: ky
-  real, dimension(nzgrid) :: kz
   logical, save :: lwrite_krms_GWs=.false.
   real :: sign_switch, kk1, kk2, kk3
 !
@@ -2639,7 +2673,7 @@ outer:  do ikz=1,nz
 ! KG: added warning about wrong computation of wavenumbers.
 ! KG: See the function get_k2 for an example of how to calculate k2.
   if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
-    call warning("powerGWs", "computation of wavevector is wrong for non-cubical domains")
+    call warning("powerGWs", "computation of wavevector wrong for non-cubic domains")
 !
 ! Select cases where spectra are precomputed
 !
@@ -2656,61 +2690,66 @@ outer:  do ikz=1,nz
       lfirstcall,sp)
   else
     allocate(spectrum(nk),spectrumhel(nk))
+
+!$omp parallel private(k,k2,kk1,kk2,kk3,sign_switch) num_threads(num_helper_threads) &
+!$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+!$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+!$ thread_id = omp_get_thread_num()+1
 !
 !  Initialize power spectrum to zero. The following lines only apply to
 !  the case where special/gravitational_waves_hij6.f90 is used.
 !
+    !$omp workshare
     k2m=0.
     nks=0.
     spectrum=0.
     spectrumhel=0.
-!
-!  Define wave vector, defined here for the *full* mesh.
-!  Each processor will see only part of it.
-!  Ignore *2*pi/Lx factor, because later we want k to be integers
-!
-    kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
-    ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
-    kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
+    !$omp end workshare
 !
 !  Gravitational wave tensor (spectra of g*g^* for gT and gX, where g=hdot)
 !
     if (sp=='GWs') then
       if (iggX>0.and.iggT>0.and.iggXim==0.and.iggTim==0) then
+        !$omp workshare
         a_re=f(l1:l2,m1:m2,n1:n2,iggX)
         b_re=f(l1:l2,m1:m2,n1:n2,iggT)
+        a_im=0.
+        b_im=0.
+        !$omp end workshare
       else
         call fatal_error('powerGWs','must have lggTX_as_aux=T')
       endif
-      a_im=0.
-      b_im=0.
 !
 !  Gravitational wave tensor (spectra of h*h^* for hT and hX)
 !
     elseif (sp=='GWh') then
       if (ihhX>0.and.ihhXim==0) then
+        !$omp workshare
         a_re=f(l1:l2,m1:m2,n1:n2,ihhX)
         b_re=f(l1:l2,m1:m2,n1:n2,ihhT)
+        a_im=0.
+        b_im=0.
+        !$omp end workshare
       else
         call fatal_error('powerGWs','must have lhhTX_as_aux=T')
       endif
-      a_im=0.
-      b_im=0.
 !
 !  Gravitational wave stress tensor (only if lStress_as_aux is requested)
 !  Note: for aux_stress='d2hdt2', the stress is replaced by GW_rhs.
 !
     elseif (sp=='Str') then
       if (iStressX>0.and.iStressXim==0) then
+        !$omp workshare
         a_re=f(l1:l2,m1:m2,n1:n2,iStressX)
         b_re=f(l1:l2,m1:m2,n1:n2,iStressT)
+        a_im=0.
+        b_im=0.
+        !$omp end workshare
       else
         call fatal_error('powerGWs','must have lStress_as_aux=T')
       endif
-      a_im=0.
-      b_im=0.
     else
-      call fatal_error('powerGWs','no valid spectrum (=sp) chosen')
+      call fatal_error('powerGWs','no such spectrum sp: '//trim(sp))
     endif
 !
 !  Doing the Fourier transform
@@ -2722,10 +2761,11 @@ outer:  do ikz=1,nz
 !
 !  integration over shells
 !
-    if (lroot .AND. ip<10) print*,'fft done; now integrate over shells...'
+    if (ip<10) call information('powerGWs','fft done, now integrate over shells')
 ! do ikz=1,nz
 !   do iky=1,ny
 !     do ikx=1,nx
+    !$omp do collapse(3) reduction(+:spectrum,spectrumhel,k2m,nks)
     do iky=1,nz
       do ikx=1,ny
         do ikz=1,nx
@@ -2746,29 +2786,23 @@ outer:  do ikz=1,nz
 !
 !  possibility of swapping the sign
 !
-             sign_switch=1.
-             if (kk3<0.) then
-               sign_switch=-1.
-             elseif (kk3==0.) then
-               if (kk2<0.) then
-                 sign_switch=-1.
-               elseif (kk2==0.) then
-                 if (kk1<0.) then
-                   sign_switch=-1.
-                 endif
-               endif
-             endif
+            sign_switch=1.
+            if (kk3<0.) then
+              sign_switch=-1.
+            elseif (kk3==0.) then
+              if (kk2<0.) then
+                sign_switch=-1.
+              elseif (kk2==0.) then
+                if (kk1<0.) sign_switch=-1.
+              endif
+            endif
 !
 !  sum energy and helicity spectra
 !
-            spectrum(k+1)=spectrum(k+1) &
-               +a_re(ikz,ikx,iky)**2 &
-               +a_im(ikz,ikx,iky)**2 &
-               +b_re(ikz,ikx,iky)**2 &
-               +b_im(ikz,ikx,iky)**2
-            spectrumhel(k+1)=spectrumhel(k+1)+2*sign_switch*( &
-               +a_im(ikz,ikx,iky)*b_re(ikz,ikx,iky) &
-               -a_re(ikz,ikx,iky)*b_im(ikz,ikx,iky))
+            spectrum(k+1)=spectrum(k+1)+a_re(ikz,ikx,iky)**2+a_im(ikz,ikx,iky)**2 &
+                                       +b_re(ikz,ikx,iky)**2+b_im(ikz,ikx,iky)**2
+            spectrumhel(k+1)=spectrumhel(k+1)+2*sign_switch*(+a_im(ikz,ikx,iky)*b_re(ikz,ikx,iky) &
+                                                             -a_re(ikz,ikx,iky)*b_im(ikz,ikx,iky))
 !
 !  compute krms only once
 !
@@ -2783,6 +2817,7 @@ outer:  do ikz=1,nz
         enddo
       enddo
     enddo
+!$omp end parallel
 !
 !  end from communicated versus computed spectra (GW spectra)
 !
@@ -2802,10 +2837,10 @@ outer:  do ikz=1,nz
     call mpireduce_sum(spectrumhel,spectrumhel_sum,nxgrid)
     call mpireduce_sum(spectrum,spectrum_sum,nxgrid)
   else
-    !
-    !  Summing up the results from the different processors
-    !  The result is available only on root
-    !
+!
+!  Summing up the results from the different processors
+!  The result is available only on root
+!
     call mpireduce_sum(spectrum   ,spectrum_sum   ,nk)
     call mpireduce_sum(spectrumhel,spectrumhel_sum,nk)
     !
@@ -2848,7 +2883,7 @@ outer:  do ikz=1,nz
         write(1,'(i4,3p,8e10.2)') k, spectrum_sum(k)
       enddo
     else
-      write(1,*) t
+      write(1,*) tdiagnos
       if ( all(sp.ne.(/'Gab','Gan','GBb'/)) ) then
         write(1,power_format) spectrum_sum
       else
@@ -2864,7 +2899,7 @@ outer:  do ikz=1,nz
           write(1,'(i4,3p,8e10.2)') k, spectrumhel_sum(k)
         enddo
       else
-        write(1,*) t
+        write(1,*) tdiagnos
         if ( all(sp.ne.(/'Gab','Gan','GBb'/)) ) then
           write(1,power_format) spectrumhel_sum
         else
@@ -2887,7 +2922,7 @@ outer:  do ikz=1,nz
     endif
   endif
   !
-  endsubroutine powerGWs
+  endsubroutine powerGWs !checked
 !***********************************************************************
   subroutine powerscl(f,sp,iapn_index,lsqrt)
 !
@@ -2913,13 +2948,9 @@ outer:  do ikz=1,nz
   integer :: i,k,ikx,iky,ikz, ivec, im, in, ia0
   real :: k2,fact
   real, dimension (mx,my,mz,mfarray) :: f
-  real, dimension(nx,ny,nz) :: a_re,a_im
   real, dimension(nk) :: spectrum,spectrum_sum
   real, dimension(nk) :: hor_spectrum, hor_spectrum_sum
   real, dimension(nk) :: ver_spectrum, ver_spectrum_sum
-  real, dimension(nxgrid) :: kx
-  real, dimension(nygrid) :: ky
-  real, dimension(nzgrid) :: kz
   real, dimension(nx) :: bbi
   real, dimension(nx,3) :: gLam
   character (len=*) :: sp
@@ -2932,32 +2963,38 @@ outer:  do ikz=1,nz
 ! KG: added warning about wrong computation of wavenumbers.
 ! KG: See the function get_k2 for an example of how to calculate k2.
   if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
-    call warning("powerscl", "computation of wavevector is wrong for non-cubical domains")
-  !
-  !  Define wave vector, defined here for the *full* mesh.
-  !  Each processor will see only part of it.
-  !  Ignore *2*pi/Lx factor, because later we want k to be integers
-  !
-  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
-  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
-  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
+    call warning("powerscl", "computation of wavevector wrong for non-cubic domains")
+
+  if (sp=='np') then
+    call get_shared_variable('inp', inp, caller='powerscl')
+  elseif (sp=='na') then
+    call get_shared_variable('iapn', iapn, caller='powerscl')
+  elseif (sp=='rp') then
+    call get_shared_variable('irhop', irhop, caller='powerscl')
+  endif
   if (nzgrid==1) kz=0. !(needed for 2-D runs)
+
+!$omp parallel private(ia0,k,k2,bbi,fact,gLam) num_threads(num_helper_threads) &
+!$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+!$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+!$ thread_id = omp_get_thread_num()+1
   !
   !  initialize power spectrum to zero
   !
+  !$omp workshare
   spectrum=0.
-  spectrum_sum=0.
   hor_spectrum=0.
-  hor_spectrum_sum=0.
   ver_spectrum=0.
-  ver_spectrum_sum=0.
+  !$omp end workshare
   !
   !  In fft, real and imaginary parts are handled separately.
   !  For "kin", calculate spectra of <uk^2> and <ok.uk>
   !  For "mag", calculate spectra of <bk^2> and <ak.bk>
   !
   if (sp=='ro') then
+    !$omp workshare
     a_re=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
+    !$omp end workshare
   !
   !  spectrum of lnrho (or normalized enthalpy).
   !  Need to take log if we work with linear density.
@@ -2965,114 +3002,168 @@ outer:  do ikz=1,nz
   elseif (sp=='a0') then
     ia0=farray_index_by_name('a0')
     if (ia0/=0) then
+      !$omp workshare
       a_re=f(l1:l2,m1:m2,n1:n2,ia0)
+      !$omp end workshare
     else
-      call warning ('powerscl',"ia0=0 doesn't work.")
+      call fatal_error('powerscl',"ia0=0 doesn't work for sp='a0'")
     endif
   elseif (sp=='u_m') then
     if (ilorentz>0) then
+      !$omp workshare
       a_re=sqrt(1.-1./f(l1:l2,m1:m2,n1:n2,ilorentz))
+      !$omp end workshare
     else
+      !$omp workshare
       a_re=sqrt(f(l1:l2,m1:m2,n1:n2,iux)**2 &
                +f(l1:l2,m1:m2,n1:n2,iuy)**2 &
                +f(l1:l2,m1:m2,n1:n2,iuz)**2)
+      !$omp end workshare
     endif
   elseif (sp=='ux') then
-    a_re=f(l1:l2,m1:m2,n1:n2,iux)
+      !$omp workshare
+      a_re=f(l1:l2,m1:m2,n1:n2,iux)
+      !$omp end workshare
   elseif (sp=='uy') then
-    a_re=f(l1:l2,m1:m2,n1:n2,iuy)
+      !$omp workshare
+      a_re=f(l1:l2,m1:m2,n1:n2,iuy)
+      !$omp end workshare
   elseif (sp=='uz') then
-    a_re=f(l1:l2,m1:m2,n1:n2,iuz)
+      !$omp workshare
+      a_re=f(l1:l2,m1:m2,n1:n2,iuz)
+      !$omp end workshare
   elseif (sp=='ucp') then
     !  Compressible part of the Helmholtz decomposition of uu
     !  uu = curl(A_uu) + grad(phiuu)
     !  We compute phiuu here, and take grad of phiuu later
+    !$omp do collapse(2)
     do n=n1,n2; do m=m1,m2
       call div(f,iuu,a_re(:,m-nghost,n-nghost))
     enddo; enddo
+    !TODO make this multithreaded, seems to require a lot of work
+    !$omp single
     call inverse_laplacian(a_re)
+    !$omp end single
+    !$omp barrier
   elseif (sp=='lr') then
     if (ldensity_nolog) then
+      !$omp workshare
       a_re=alog(f(l1:l2,m1:m2,n1:n2,irho))
+      !$omp end workshare
     else
+      !$omp workshare
       a_re=f(l1:l2,m1:m2,n1:n2,ilnrho)
+      !$omp end workshare
     endif
   elseif (sp=='po') then
+    !$omp workshare
     a_re=f(l1:l2,m1:m2,n1:n2,ipotself)
+    !$omp end workshare
   elseif (sp=='nd') then
+    !$omp workshare
     a_re=f(l1:l2,m1:m2,n1:n2,ind(iapn_index))
+    !$omp end workshare
   elseif (sp=='np') then
-    call get_shared_variable('inp', inp, caller='powerscl')
+    !$omp workshare
     a_re=f(l1:l2,m1:m2,n1:n2,inp)
+    !$omp end workshare
   elseif (sp=='na') then
-    call get_shared_variable('iapn', iapn, caller='powerscl')
+    !$omp workshare
     a_re=f(l1:l2,m1:m2,n1:n2,iapn(iapn_index))
+    !$omp end workshare
   elseif (sp=='rp') then
-    call get_shared_variable('irhop', irhop, caller='powerscl')
+    !$omp workshare
     a_re=f(l1:l2,m1:m2,n1:n2,irhop)
+    !$omp end workshare
   elseif (sp=='TT') then
+    !$omp workshare
     a_re=exp(f(l1:l2,m1:m2,n1:n2,ilnTT))
+    !$omp end workshare
   elseif (sp=='ss') then
+    !$omp workshare
     a_re=f(l1:l2,m1:m2,n1:n2,iss)
+    !$omp end workshare
   elseif (sp=='cc') then
     if (icc==0) call fatal_error('powerscl','icc=0, which is not allowed')
+    !$omp workshare
     a_re=f(l1:l2,m1:m2,n1:n2,icc)
+    !$omp end workshare
   elseif (sp=='cr') then
+    !$omp workshare
     a_re=f(l1:l2,m1:m2,n1:n2,iecr)
+    !$omp end workshare
   elseif (sp=='sp') then
+    !$omp workshare
     a_re=f(l1:l2,m1:m2,n1:n2,ispecialvar)
+    !$omp end workshare
   elseif (sp=='Ssp') then
+    !$omp workshare
     a_re=sqrt(abs(f(l1:l2,m1:m2,n1:n2,ispecialvar)))
+    !$omp end workshare
   elseif (sp=='mu') then
+    !$omp workshare
     a_re=f(l1:l2,m1:m2,n1:n2,ispecialvar2)
+    !$omp end workshare
   elseif (sp=='hr') then
+    !$omp workshare
     a_re=0.
+    !$omp end workshare
+    !$omp do collapse(3)
     do m=m1,m2
       do n=n1,n2
         do ivec=1,3
           call curli(f,iaa,bbi,ivec)
-          im=m-nghost
-          in=n-nghost
-          a_re(:,im,in)=a_re(:,im,in)+bbi*f(l1:l2,m,n,iaa-1+ivec)
+          a_re(:,m-nghost,n-nghost)=a_re(:,m-nghost,n-nghost)+bbi*f(l1:l2,m,n,iaa-1+ivec)
         enddo
       enddo
     enddo
+    !$omp workshare
     a_im=0.
+    !$omp end workshare
   elseif (sp=='b2') then  !  Sp(B^2)
+    !$omp workshare
     a_re=0.
+    !$omp end workshare
+    !$omp do collapse(3)
     do m=m1,m2
       do n=n1,n2
         do ivec=1,3
           call curli(f,iaa,bbi,ivec)
-          im=m-nghost
-          in=n-nghost
-          a_re(:,im,in)=a_re(:,im,in)+bbi**2
+          a_re(:,m-nghost,n-nghost)=a_re(:,m-nghost,n-nghost)+bbi**2
         enddo
       enddo
     enddo
+    !$omp workshare
     a_im=0.
+    !$omp end workshare
   elseif (sp=='ha') then
+    !$omp workshare
     a_re=0.
+    !$omp end workshare
+    !$omp do collapse(2)
     do m=m1,m2
       do n=n1,n2
         call grad(f,ispecialvar,gLam)
         do ivec=1,3
           call curli(f,iaa,bbi,ivec)
-          im=m-nghost
-          in=n-nghost
-          a_re(:,im,in)=a_re(:,im,in)+bbi*(f(l1:l2,m,n,iaa-1+ivec)+&
-              gLam(:,ivec))
+          a_re(:,m-nghost,n-nghost)=a_re(:,m-nghost,n-nghost)+bbi*(f(l1:l2,m,n,iaa-1+ivec)+gLam(:,ivec))
         enddo
       enddo
     enddo
+    !$omp workshare
     a_im=0.
+    !$omp end workshare
   endif
+  !$omp workshare
   a_im=0.
+  !$omp end workshare
 !
 !  Allow for talking the square root defined for pos/neg arguments.
 !
   if (present(lsqrt)) then
+    !$omp workshare
     a_re=sqrt(abs(a_re))*sign(a_re,1.)
+    !$omp end workshare
   endif
 !
 !  Doing the Fourier transform
@@ -3081,7 +3172,8 @@ outer:  do ikz=1,nz
 !
 !  integration over shells
 !
-  if (lroot .AND. ip<10) print*,'fft done; now integrate over shells...'
+  if (ip<10) call information('powerscl','fft done; now integrate over shells')
+  !$omp do collapse(3) reduction(+:spectrum,hor_spectrum,ver_spectrum)
   do ikz=1,nz
     do iky=1,ny
       do ikx=1,nx
@@ -3095,35 +3187,33 @@ outer:  do ikz=1,nz
         else
           fact=1.
         endif
-        if (k>=0 .and. k<=(nk-1)) then
+        if (k>=0 .and. k<=(nk-1)) &
           spectrum(k+1)=spectrum(k+1) &
              +fact*a_re(ikx,iky,ikz)**2 &
              +fact*a_im(ikx,iky,ikz)**2
-        endif
         !
         !  integration over the vertical direction
         !
         if (lhorizontal_spectra) then
           k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2
           k=nint(sqrt(k2))
-          if (k>=0 .and. k<=(nk-1)) then
+          if (k>=0 .and. k<=(nk-1)) &
             hor_spectrum(k+1)=hor_spectrum(k+1) &
              +fact*a_re(ikx,iky,ikz)**2+fact*a_im(ikx,iky,ikz)**2
-          endif
         endif
         !
         !  integration over the horizontal direction
         !
         if (lvertical_spectra) then
           k=nint(abs(kz(ikz+ipz*nz)))
-          if (k>=0 .and. k<=(nk-1)) then
+          if (k>=0 .and. k<=(nk-1)) &
             ver_spectrum(k+1)=ver_spectrum(k+1) &
              +fact*a_re(ikx,iky,ikz)**2+fact*a_im(ikx,iky,ikz)**2
-          endif
         endif
       enddo
     enddo
   enddo
+!$omp end parallel
   !
   !  Summing up the results from the different processors
   !  The result is available only on root
@@ -3143,26 +3233,26 @@ outer:  do ikz=1,nz
     else
        open(1,file=trim(datadir)//'/power_'//trim(sp)//'.dat',position='append')
     endif
-    write(1,*) t
+    write(1,*) tdiagnos
     write(1,power_format) spectrum_sum
     close(1)
     !
     if (lhorizontal_spectra) then
       open(1,file=trim(datadir)//'/power_hor_'//trim(sp)//'.dat',position='append')
-      write(1,*) t
+      write(1,*) tdiagnos
       write(1,power_format) hor_spectrum_sum
       close(1)
     endif
     !
     if (lvertical_spectra) then
       open(1,file=trim(datadir)//'/power_ver_'//trim(sp)//'.dat',position='append')
-      write(1,*) t
+      write(1,*) tdiagnos
       write(1,power_format) ver_spectrum_sum
       close(1)
     endif
   endif
   !
-  endsubroutine powerscl
+  endsubroutine powerscl   !checked
 !***********************************************************************
   subroutine power_1d(f,sp,ivec,ivar)
 !
@@ -3173,18 +3263,18 @@ outer:  do ikz=1,nz
 !    27-apr-14/nishant: added inz to compute power_x at a given z
 !
     use Fourier, only: fourier_transform_x
-    use Mpicomm, only: mpireduce_sum, stop_it, transp
+    use Mpicomm, only: mpireduce_sum, transp
     use Sub, only: curli
+    use General, only: itoa
 !
     real, dimension (mx,my,mz,mfarray) :: f
     character (len=1) :: sp
     integer :: ivec
     integer, optional :: ivar
+    real, dimension(nx,ny,nz), save :: a2
 !
     integer, parameter :: nk=nx/2
     integer :: ix,iy,iz,im,in,ikx,iky,ikz,nc
-    real, dimension(nx,ny,nz) :: a1,b1,a2
-    real, dimension(nx) :: bb
     real, dimension(:,:), allocatable :: spectrumx,spectrumx_sum
     real, dimension(nk) :: spectrumy,spectrumy_sum
     real, dimension(nk) :: spectrumz,spectrumz_sum
@@ -3195,110 +3285,105 @@ outer:  do ikz=1,nz
     if (lroot .AND. ip<10) call svn_id( &
         "$Id$")
 !
-!  In fft, real and imaginary parts are handled separately.
-!  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
-!
-    if (sp=='u') then
-      if (lhydro .or. lhydro_kinematic.and.iuu /= 0) then
-        a1=f(l1:l2,m1:m2,n1:n2,iux+ivec-1)
-      else
-        if (lroot) &
-            print*, 'power_1d: must have velocity in f-array for velocity power'
-        call fatal_error('power_1d','')
-      endif
-    elseif (sp=='b') then
-      if (lmagnetic) then
-        do n=n1,n2; do m=m1,m2
-          call curli(f,iaa,bb,ivec)
-          im=m-nghost
-          in=n-nghost
-          a1(:,im,in)=bb
-        enddo; enddo
-      else
-        if (lroot) &
-            print*, 'power_1d: must have magnetic module for magnetic power'
-        call fatal_error('power_1d','')
-      endif
-    elseif (sp=='a') then
-      if (lmagnetic) then
-        a1=f(l1:l2,m1:m2,n1:n2,iax+ivec-1)
-      else
-        if (lroot) &
-            print*, 'power_1d: must have magnetic module for magnetic power'
-        call fatal_error('power_1d','')
-      endif
-    elseif (sp=='p') then
-      if (present(ivar)) then
-        if (ivar>0) then
-          a1=f(l1:l2,m1:m2,n1:n2,ivar)
-        else
-          if (lroot) &
-              print*, 'power_1d: ivar must be >0, ivar=', ivar
-          call fatal_error('power_1d','')
-        endif
-      else
-        call fatal_error('power_1d','ivar not set')
-      endif
-    else
-      if (lroot) print*,'There is no such spectra variable: sp=',sp
-      call fatal_error('power_1d','')
-    endif
-    b1=0
-    a2=a1
-!
     if (lcomplex) then
       nc=2
     else
       nc=1
     endif
     allocate(spectrumx(nc,nk), spectrumx_sum(nc,nk) )
+
+!$omp parallel num_threads(num_helper_threads) &
+!$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+!$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+!$ thread_id = omp_get_thread_num()+1
 !
-! Need to initialize
+! Initialize spectra.
 !
+    !$omp workshare
     spectrumx=0.
-    spectrumx_sum=0.
     spectrumy=0.
-    spectrumy_sum=0.
     spectrumz=0.
-    spectrumz_sum=0.
+    !$omp end workshare
+!
+!  In fft, real and imaginary parts are handled separately.
+!  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
+!
+    if (sp=='u') then
+      if (lhydro .or. lhydro_kinematic.and.iuu /= 0) then
+        !$omp workshare
+        a_re=f(l1:l2,m1:m2,n1:n2,iux+ivec-1)
+        !$omp end workshare
+      else
+        call fatal_error('power_1d','must have velocity in f-array for velocity power')
+      endif
+    elseif (sp=='b') then
+      if (iaa>0) then
+        !$omp do collapse(2)
+        do n=n1,n2; do m=m1,m2
+          call curli(f,iaa,a_re(:,m-nghost,n-nghost),ivec)
+        enddo; enddo
+      else
+        call fatal_error('power_1d','must have iaa>0 for magnetic power')
+      endif
+    elseif (sp=='a') then
+      if (iaa>0) then
+        !$omp workshare
+        a_re=f(l1:l2,m1:m2,n1:n2,iax+ivec-1)
+        !$omp end workshare
+      else
+        call fatal_error('power_1d','must have iaa>0 for magnetic power')
+      endif
+    elseif (sp=='p') then
+      if (present(ivar)) then
+        if (ivar>0) then
+          !$omp workshare
+          a_re=f(l1:l2,m1:m2,n1:n2,ivar)
+          !$omp end workshare
+        else
+          call fatal_error('power_1d','ivar must be >0, ivar='//trim(itoa(ivar)))
+        endif
+      else
+        call fatal_error('power_1d','ivar not set')
+      endif
+    else
+      call fatal_error('power_1d','no such spectra variable: sp='//trim(sp))
+    endif
+    !$omp workshare
+    a_im=0.
+    a2=a_re
+    !$omp end workshare
 !
 !  Do the Fourier transform
 !
-    call fourier_transform_x(a1,b1)
-!
-!  Stop the run if FFT=nofft
-!
-    if (.not.lfft) &
-        call stop_it('Need FFT=fft in Makefile.local to get spectra!')
+    call fourier_transform_x(a_re,a_im)
 !
 !  Spectra in x-direction
 !
-   if (.not.lintegrate_z) then
-    !print*,'NISHANT inz=',inz
-    do ikx=1,nk; do iy=1,ny
-      if (lcomplex) then
-        spectrumx(:,ikx) = spectrumx(:,ikx) + &
-            (/a1(ikx,iy,inz), b1(ikx,iy,inz)/)
-      else
-        spectrumx(1,ikx) = spectrumx(1,ikx) + &
-            sqrt(a1(ikx,iy,inz)**2 + b1(ikx,iy,inz)**2)
-      endif
-    enddo; enddo
-   else
-    do ikx=1,nk; do iy=1,ny; do iz=1,nz
-      if (lcomplex) then
-        spectrumx(:,ikx) = spectrumx(:,ikx) + &
-            (/a1(ikx,iy,iz), b1(ikx,iy,iz)/)
-      else
-        spectrumx(1,ikx) = spectrumx(1,ikx) + &
-            sqrt(a1(ikx,iy,iz)**2 + b1(ikx,iy,iz)**2)
-      endif
-    enddo; enddo; enddo
-   endif
+    if (.not.lintegrate_z) then
+      !$omp do collapse(2) reduction(+:spectrumx)
+      do ikx=1,nk; do iy=1,ny
+        if (lcomplex) then
+          spectrumx(:,ikx) = spectrumx(:,ikx) + (/a_re(ikx,iy,inz), a_im(ikx,iy,inz)/)
+        else
+          spectrumx(1,ikx) = spectrumx(1,ikx) + sqrt(a_re(ikx,iy,inz)**2 + a_im(ikx,iy,inz)**2)
+        endif
+      enddo; enddo
+    else
+      !$omp do collapse(3) reduction(+:spectrumx)
+      do ikx=1,nk; do iy=1,ny; do iz=1,nz
+        if (lcomplex) then
+          spectrumx(:,ikx) = spectrumx(:,ikx) + (/a_re(ikx,iy,iz), a_im(ikx,iy,iz)/)
+        else
+          spectrumx(1,ikx) = spectrumx(1,ikx) + sqrt(a_re(ikx,iy,iz)**2 + a_im(ikx,iy,iz)**2)
+        endif
+      enddo; enddo; enddo
+    endif
 !
 !  Multiply all modes, except the constant mode, by two.
 !
+    !$omp workshare
     spectrumx(:,2:nk)=2*spectrumx(:,2:nk)
+    !$omp end workshare
 !
 !  Doing Fourier spectra in all directions if onedall=T
 !
@@ -3307,33 +3392,42 @@ outer:  do ikz=1,nz
 !  Spectra in y-direction
 !
       if (nygrid/=1) then
-        a1=a2
-        b1=0
-        call transp(a1,'y')
-        call fourier_transform_x(a1,b1)
+        !$omp workshare
+        a_re=a2
+        a_im=0.
+        !$omp end workshare
+        call transp(a_re,'y')
+        call fourier_transform_x(a_re,a_im)
+        !$omp do collapse(3) reduction(+:spectrumy)
         do iky=1,nk; do ix=1,nxgrid/nprocy; do iz=1,nz
-          spectrumy(iky) = spectrumy(iky) + &
-              sqrt(a1(iky,ix,iz)**2 + b1(iky,ix,iz)**2)
+          spectrumy(iky) = spectrumy(iky) + sqrt(a_re(iky,ix,iz)**2 + a_im(iky,ix,iz)**2)
         enddo; enddo; enddo
 !  Multiply all modes, except the constant mode, by two.
+        !$omp workshare
         spectrumy(2:nk)=2*spectrumy(2:nk)
+        !$omp end workshare
       endif
 !
 !  Spectra in z-direction
 !
       if (nzgrid/=1) then
-        a1=a2
-        b1=0
-        call transp(a1,'z')
-        call fourier_transform_x(a1,b1)
+        !$omp workshare
+        a_re=a2
+        a_im=0.
+        !$omp end workshare
+        call transp(a_re,'z')
+        call fourier_transform_x(a_re,a_im)
+        !$omp do collapse(3) reduction(+:spectrumz)
         do ikz=1,nk; do ix=1,nxgrid/nprocz; do iy=1,ny
-          spectrumz(ikz) = spectrumz(ikz) + &
-              sqrt(a1(ikz,iy,ix)**2 + b1(ikz,iy,ix)**2)
+          spectrumz(ikz) = spectrumz(ikz) + sqrt(a_re(ikz,iy,ix)**2 + a_im(ikz,iy,ix)**2)
         enddo; enddo; enddo
 !  Multiply all modes, except the constant mode, by two.
+        !$omp workshare
         spectrumz(2:nk)=2*spectrumz(2:nk)
+        !$omp end workshare
       endif
     endif
+!$omp end parallel
 !
 !  Summing up the results from the different processors
 !  The result is available only on root
@@ -3361,9 +3455,8 @@ outer:  do ikz=1,nz
     if (lroot) then
       if (lroot.and.ip<10) print*, 'Writing power spectra of variable', sp, &
           'to ', trim(datadir)//'/power'//trim(sp)//trim(suffix)
-      open(1,file=trim(datadir)//'/power'//trim(sp)//trim(suffix), &
-          position='append')
-      write(1,*) t
+      open(1,file=trim(datadir)//'/power'//trim(sp)//trim(suffix),position='append')
+      write(1,*) tdiagnos
 !
       if (lcomplex) then
         write(1,'(1p,8("(",e10.2,",",e10.2,")"))') spectrumx_sum/(nygrid*nzgrid)
@@ -3393,9 +3486,8 @@ outer:  do ikz=1,nz
 !  Append to diagnostics file
         if (lroot.and.ip<10) print*, 'Writing power spectra of variable', sp, &
             'to ', trim(datadir)//'/power'//trim(sp)//trim(suffix)
-        open(1,file=trim(datadir)//'/power'//trim(sp)//trim(suffix), &
-            position='append')
-        write(1,*) t
+        open(1,file=trim(datadir)//'/power'//trim(sp)//trim(suffix),position='append')
+        write(1,*) tdiagnos
         write(1,power_format) spectrumy_sum/(nxgrid*nzgrid)
         close(1)
       endif
@@ -3415,15 +3507,14 @@ outer:  do ikz=1,nz
 !  Append to diagnostics file
         if (lroot.and.ip<10) print*,'Writing power spectra of variable', sp,  &
             'to ', trim(datadir)//'/power'//trim(sp)//trim(suffix)
-        open(1,file=trim(datadir)//'/power'//trim(sp)//trim(suffix), &
-            position='append')
-        write(1,*) t
+        open(1,file=trim(datadir)//'/power'//trim(sp)//trim(suffix),position='append')
+        write(1,*) tdiagnos
         write(1,power_format) spectrumz_sum/(nxgrid*nygrid)
         close(1)
       endif
     endif
 !
-  endsubroutine power_1d
+    endsubroutine power_1d   ! checked
 !***********************************************************************
     subroutine pdf(f,variabl,pdf_mean,pdf_rms)
 !
@@ -3437,26 +3528,34 @@ outer:  do ikz=1,nz
       use Mpicomm, only: mpireduce_sum_int
       use SharedVariables, only: get_shared_variable
 !
-  integer :: l,i_pdf
-  integer, parameter :: n_pdf=3001
-  real, dimension (mx,my,mz,mfarray) :: f
-  real, dimension (nx,3) :: gcc
-  real, dimension (nx) :: pdf_var,gcc2
-  integer, dimension (n_pdf) :: pdf_yy, pdf_yy_sum
-  real :: pdf_mean, pdf_rms, pdf_dx, pdf_dx1, pdf_scl
-  character (len=120) :: pdf_file=''
-  character (len=*) :: variabl
-  logical :: logscale=.false.
-  integer, pointer :: ispecial
+    integer :: l,i_pdf
+    integer, parameter :: n_pdf=3001
+    real, dimension (mx,my,mz,mfarray) :: f
+    real, dimension (nx,3) :: gcc
+    real, dimension (nx) :: pdf_var,gcc2
+    integer, dimension (n_pdf) :: pdf_yy, pdf_yy_sum
+    real :: pdf_mean, pdf_rms, pdf_dx, pdf_dx1, pdf_scl
+    character (len=120) :: pdf_file=''
+    character (len=*) :: variabl
+    logical :: logscale=.false.
+    integer, pointer :: ispecial
+
+    if (variabl=='special' .or. variabl=='lnspecial') &
+      call get_shared_variable('ispecial', ispecial, caller='pdf')
 !
 !  initialize counter and set scaling factor
 !
    pdf_yy=0
-   pdf_yy_sum=0
    pdf_scl=1./pdf_rms
+!
+!$omp parallel private(pdf_var,logscale,gcc,gcc2,l,pdf_dx,pdf_dx1,i_pdf) num_threads(num_helper_threads) &
+!$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+!$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+!$ thread_id = omp_get_thread_num()+1
 !
 !  m-n loop
 !
+   !$omp do collapse(2) reduction(+:pdf_yy)
    do n=n1,n2
    do m=m1,m2
 !
@@ -3482,11 +3581,9 @@ outer:  do ikz=1,nz
        pdf_var=sqrt(gcc2)
        logscale=.true.
      elseif (variabl=='special') then
-       call get_shared_variable('ispecial', ispecial, caller='pdf')
        pdf_var=f(l1:l2,m,n,ispecial)
        logscale=.false.
      elseif (variabl=='lnspecial') then
-       call get_shared_variable('ispecial', ispecial, caller='pdf')
        pdf_var=alog(f(l1:l2,m,n,ispecial))
        logscale=.false.
      endif
@@ -3498,7 +3595,7 @@ outer:  do ikz=1,nz
        pdf_dx1=1./pdf_dx
        do l=l1,l2
          i_pdf=1+int(pdf_dx1*log10(pdf_scl*pdf_var(l))-pdf_min_logscale)
-         i_pdf=min(max(i_pdf,1),n_pdf)  !(make sure its inside array boundries)
+         i_pdf=min(max(i_pdf,1),n_pdf)  !(make sure it's inside array boundaries)
          pdf_yy(i_pdf)=pdf_yy(i_pdf)+1
        enddo
      else
@@ -3506,12 +3603,13 @@ outer:  do ikz=1,nz
        pdf_dx1=1./pdf_dx
        do l=l1,l2
          i_pdf=1+int(pdf_dx1*(pdf_scl*pdf_var(l)-pdf_min))
-         i_pdf=min(max(i_pdf,1),n_pdf)  !(make sure its inside array boundries)
+         i_pdf=min(max(i_pdf,1),n_pdf)  !(make sure it's inside array boundries)
          pdf_yy(i_pdf)=pdf_yy(i_pdf)+1
        enddo
      endif
    enddo
    enddo
+!$omp end parallel
 !
 !  Communicate and append from root processor.
 !
@@ -3530,6 +3628,7 @@ outer:  do ikz=1,nz
 !
 10 format(1p,e12.5,0p,i6,1p,5e12.4)
 11 format(8i10)
+!
 endsubroutine pdf
 !***********************************************************************
   subroutine pdf1d_ang(f,sp)
@@ -3552,74 +3651,81 @@ endsubroutine pdf
   integer :: i,ivec,ikx,iky,ikz,kr,ipdf
   integer, dimension(nk-1,npdf) :: pdf_ang,pdf_ang_sum
   real :: ang
-  real, dimension(nx,ny,nz,3) :: a_re,b_re
-  real, dimension(nx,ny,nz) :: ak,bk,aa,bb,ab
+  real, dimension(nx,ny,nz), save :: ak,bk,aa,bb,ab
   real, dimension(nx,3) :: bbi
-  real, dimension(nxgrid) :: kx
-  real, dimension(nygrid) :: ky
-  real, dimension(nzgrid) :: kz
   !
   !  identify version
   !
   if (lroot .AND. ip<10) call svn_id("$Id$")
   !
-  !  Define wave vector, defined here for the *full* mesh.
-  !  Each processor will see only part of it.
-  !  Ignore *2*pi/Lx factor, because later we want k to be integers
-  !
-  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
-  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
-  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
-  !
   !  Obtain vector fields
   !
+!$omp parallel private(bbi,aa,bb,ab,ak,bk,ang,ipdf,kr,ivec,ikx,iky,ikz) num_threads(num_helper_threads) &
+!$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+!$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+!$ thread_id = omp_get_thread_num()+1
+
   if (sp=='jb') then
     if (iaa==0)  call fatal_error('pdf_ang_1d','iaa=0')
+    !$omp do collapse(2)
     do n=n1,n2; do m=m1,m2
       call curl(f,iaa,bbi)
-      b_re(:,m-nghost,n-nghost,:)=bbi(:,:)  !  magnetic field
+      b_vec_re(:,m-nghost,n-nghost,:)=bbi  !  magnetic field
       call del2v_etc(f,iaa,curlcurl=bbi)
-      a_re(:,m-nghost,n-nghost,:)=bbi(:,:)  !  current density
+      a_vec_re(:,m-nghost,n-nghost,:)=bbi  !  current density
     enddo; enddo
   elseif (sp=='ub') then
     if (iaa==0)  call fatal_error('pdf_ang_1d','iaa=0')
+    !$omp do collapse(2)
     do n=n1,n2; do m=m1,m2
       call curl(f,iaa,bbi)
-      b_re(:,m-nghost,n-nghost,:)=bbi(:,:)  !  magnetic field
+      b_vec_re(:,m-nghost,n-nghost,:)=bbi  !  magnetic field
     enddo; enddo
-    a_re(:,:,:,:)=f(l1:l2,m1:m2,n1:n2,iuu:(iuu+2))
+    !$omp workshare
+    a_vec_re(:,:,:,:)=f(l1:l2,m1:m2,n1:n2,iuu:(iuu+2))
+    !$omp end workshare
   elseif (sp=='ou') then
+    !$omp do collapse(2)
     do n=n1,n2; do m=m1,m2
       call curl(f,iuu,bbi)
-      b_re(:,m-nghost,n-nghost,:)=bbi(:,:)  !  vorticity field
+      b_vec_re(:,m-nghost,n-nghost,:)=bbi  !  vorticity field
     enddo; enddo
-    a_re(:,:,:,:)=f(l1:l2,m1:m2,n1:n2,iuu:(iuu+2))
+    !$omp workshare
+    a_vec_re(:,:,:,:)=f(l1:l2,m1:m2,n1:n2,iuu:(iuu+2))
+    !$omp end workshare
   endif  !  sp
   !
   !  compute kr-dependent pdf
   !
-  pdf_ang=0
+  !$omp workshare
+  pdf_ang=0.
+  !$omp end workshare
   do kr=1,nk-1
     !
     !  initialize a.a, b.b, and a.b, for filtered fields
     !
+    !$omp workshare
     aa=0.; bb=0.; ab=0.
+    !$omp end workshare
     do ivec=1,3
       !
-      !  obtained filtered fields
+      !  Obtain filtered fields.
       !
-      call power_shell_filter(a_re(:,:,:,ivec),ak,kr)
-      call power_shell_filter(b_re(:,:,:,ivec),bk,kr)
+      call power_shell_filter(a_vec_re(:,:,:,ivec),ak,kr)
+      call power_shell_filter(b_vec_re(:,:,:,ivec),bk,kr)
       !
       !  dot products
       !
+      !$omp workshare
       aa = aa+ak**2
       bb = bb+bk**2
       ab = ab+ak*bk
+      !$omp end workshare
     enddo
     !
     !  compute pdf
     !
+    !$omp do collapse(3) reduction(+:pdf_ang)
     do ikx=1,nx; do iky=1,ny; do ikz=1,nz
       if (aa(ikx,iky,ikz)==0. .or. bb(ikx,iky,ikz)==0.) then
         pdf_ang(kr,npdf) = pdf_ang(kr,npdf)+1
@@ -3629,7 +3735,8 @@ endsubroutine pdf
         pdf_ang(kr,ipdf) = pdf_ang(kr,ipdf)+1
       endif
     enddo; enddo; enddo
-  enddo  !  kr
+  enddo  !  do kr
+!$omp end parallel
   !
   !  sum over processors
   !
@@ -3639,7 +3746,7 @@ endsubroutine pdf
   !
   if (lroot) then
     open(1,file=trim(datadir)//'/pdf1d_ang_'//trim(sp)//'.dat',position='append')
-    write(1,*) t
+    write(1,*) tdiagnos
     write(1,*) pdf_ang_sum
     close(1)
   endif
@@ -3661,13 +3768,12 @@ endsubroutine pdf
 ! ----------------------------------------------------------------------
 !
       use Sub, only: curli
-      use Mpicomm, only: stop_it, y2x, z2x
+      use Mpicomm, only: y2x, z2x
       use Fourier, only: fourier_transform_real_1
 !
   integer :: j,l,im,in,ivec,ispec,ifirst_fft
   real, dimension (mx,my,mz,mfarray) :: f
-  real, dimension(nx,ny,nz) :: a1
-  real, dimension(nx) :: bb
+  real, dimension(nx,ny,nz), save :: a1
   real, dimension(nygrid/2) :: spectrumy,spectrumy_sum
   real, dimension(nzgrid/2) :: spectrum,spectrum_sum
   real, dimension(nygrid) :: aatempy
@@ -3680,19 +3786,26 @@ endsubroutine pdf
   !
   if (lroot .AND. ip<10) call svn_id( &
        "$Id$")
-!--------------Makes sense only in spherical coordinate system -----------
+!
   if (.not.(lspherical_coords.or.lcylindrical_coords)) &
-      call stop_it("power_phi works only in spherical or cylindrical coords")
+      call fatal_error("power_phi","works only in spherical or cylindrical coords")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
   !  Ignore *2*pi/Lx factor, because later we want k to be integers
   !
-  !
   nVol2d=0.
+
+!$omp parallel private(ivec,ispec,aatemp,aatempy,spectrumy,spectrum,spec_real,spec_imag) num_threads(num_helper_threads) &
+!$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+!$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+!$ thread_id = omp_get_thread_num()+1
+!
+  !$omp workshare
   spectrum=0.
   spectrum_sum=0.
   spectrumy_sum=0.
+  !$omp end workshare
   !
   !  In fft, real and imaginary parts are handled separately.
   !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
@@ -3701,25 +3814,30 @@ endsubroutine pdf
   do ivec=1,3
     !
     if (trim(sp)=='u') then
+      !$omp workshare
       a1=f(l1:l2,m1:m2,n1:n2,iux+ivec-1)
+      !$omp end workshare
     elseif (trim(sp)=='b') then
+      !$omp do collapse(2)
       do n=n1,n2
         do m=m1,m2
-          call curli(f,iaa,bb,ivec)
-          im=m-nghost
-          in=n-nghost
-          a1(:,im,in)=bb
+          call curli(f,iaa,a1(:,m-nghost,n-nghost),ivec)
         enddo
       enddo
     elseif (trim(sp)=='a') then
+      !$omp workshare
       a1=f(l1:l2,m1:m2,n1:n2,iax+ivec-1)
+      !$omp end workshare
     else
-      print*,'There are no such sp=',trim(sp)
+      call warning('power_phi','no such sp: '//trim(sp))
     endif
 !
+    !$omp single
     ifirst_fft=1
-    do l=1,nx
-      if (lspherical_coords) then
+    !$omp end single
+    if (lspherical_coords) then
+      !$omp do collapse(3) reduction(+:spectrum_sum,nVol2d)
+      do l=1,nx
         do m=1,ny
           do j=1,nprocy
             call z2x(a1,l,m,j,aatemp)
@@ -3730,27 +3848,27 @@ endsubroutine pdf
 !AB: is nVol2d correctly initialized? Did this now above. OK?
 !
             if (lroot) then
-!             write(*,*)l,m,j,'got data shall fft'
+!             write(*,*)l,m,j,'got data, shall fft'
               call fourier_transform_real_1(aatemp,nzgrid,ifirst_fft,fftpack_temp)
+              !$omp atomic
               ifirst_fft = ifirst_fft+1
-              spectrum(1)=(aatemp(1)**2)&
-                     *r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)
+              spectrum(1)=(aatemp(1)**2)*r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)
               do ispec=2,nzgrid/2
                 spec_real=aatemp(2*ispec-2)
                 spec_imag=aatemp(2*ispec-1)
-                spectrum(ispec)= 2.*(spec_real**2+spec_imag**2)&
+                spectrum(ispec)= 2.*(spec_real**2+spec_imag**2) &
                      *r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)
               enddo
-              spectrum(nzgrid/2)=(aatemp(nzgrid)**2)&
-                     *r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)
+              spectrum(nzgrid/2)=(aatemp(nzgrid)**2)*r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)
               spectrum_sum=spectrum_sum+spectrum
               nVol2d = nVol2d+r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)
-            else
-              nVol2d=1.
             endif
           enddo ! loop over yproc
         enddo   ! loop over ny
-      elseif (lcylindrical_coords) then
+      enddo     ! loop over nx
+    elseif (lcylindrical_coords) then
+      !$omp do collapse(3) reduction(+:spectrumy_sum,nVol2d)
+      do l=1,nx
         do n=1,nz
           do j=1,nprocz
             call y2x(a1,l,n,j,aatempy)
@@ -3762,30 +3880,27 @@ endsubroutine pdf
             if (lroot) then
 !             write(*,*)l,n,j,'got data shall fft'
               call fourier_transform_real_1(aatempy,nygrid,ifirst_fft,fftpack_temp)
+              !$omp atomic
               ifirst_fft = ifirst_fft+1
-              spectrumy(1)=(aatempy(1)**2)&
-                     *rcyl_weight(l)
+              spectrumy(1)=(aatempy(1)**2)*rcyl_weight(l)
               do ispec=2,nygrid/2
                 spec_real=aatempy(2*ispec-2)
                 spec_imag=aatempy(2*ispec-1)
-                spectrumy(ispec)= 2.*(spec_real**2+spec_imag**2)&
-                     *rcyl_weight(l)
+                spectrumy(ispec)= 2.*(spec_real**2+spec_imag**2)*rcyl_weight(l)
               enddo
-              spectrumy(nygrid/2)=(aatempy(nygrid)**2)&
-                     *rcyl_weight(l)
+              spectrumy(nygrid/2)=(aatempy(nygrid)**2)*rcyl_weight(l)
               spectrumy_sum=spectrumy_sum+spectrumy
               nVol2d = nVol2d+rcyl_weight(l)
-            else
-              nVol2d=1.
             endif
           enddo ! loop over zproc
         enddo   ! loop over nz
-      else
-        call fatal_error('power_phi','neither spherical nor cylindrical')
-      endif
-    enddo     ! loop over nx
+      enddo     ! loop over nx
+    else
+      call fatal_error('power_phi','neither spherical nor cylindrical')
+    endif
 !
-  enddo !(from loop over ivec)
+  enddo   ! (loop over ivec)
+!$omp end parallel
 !
 !  append to diagnostics file
 !
@@ -3793,7 +3908,7 @@ endsubroutine pdf
     if (ip<10) print*,'Writing power spectra of variable',trim(sp) &
          ,'to ',trim(datadir)//'/power_phi'//trim(sp)//'.dat'
     open(1,file=trim(datadir)//'/power_phi'//trim(sp)//'.dat',position='append')
-    write(1,*) t
+    write(1,*) tdiagnos
 !
     if (lspherical_coords) then
       spectrum_sum=.5*spectrum_sum
@@ -3822,36 +3937,41 @@ endsubroutine pdf
 ! ----------------------------------------------------------------------
 !
     use Fourier, only: fourier_transform_real_1
-    use Mpicomm, only: z2x, stop_it
+    use Mpicomm, only: z2x
     use Sub, only: curli
 !
   integer :: j,l,im,in,ivec,ispec,ifirst_fft
   real, dimension (mx,my,mz,mfarray) :: f
-  real, dimension(nx,ny,nz) :: a1,b1
-  real, dimension(nx) :: bbi
+  real, dimension(nx,ny,nz), save :: a1,b1
   real, dimension(nzgrid/2) :: spectrum,spectrum_sum
   real, dimension(nzgrid/2) :: spectrumhel,spectrumhel_sum
   real, dimension(nzgrid) :: aatemp,bbtemp
   real, dimension(2*nzgrid+15) :: fftpack_temp
-  real :: nVol2d,spec_reala,spec_imaga,spec_realb,spec_imagb
+  real :: spec_reala,spec_imaga,spec_realb,spec_imagb
   character (len=*) :: sp
 !
 !  identify version
 !
   if (lroot .AND. ip<10) call svn_id( &
        "$Id$")
-!--------------Makes sense only in spherical coordinate system -----------
-  if (.not.lspherical_coords) call stop_it("powerhel_phi works only in spherical coordinates")
+!
+  if (.not.lspherical_coords) call fatal_error("powerhel_phi","works only in spherical coordinates")
 !
 !  Define wave vector, defined here for the *full* mesh.
 !  Each processor will see only part of it.
 !  Ignore *2*pi/Lx factor, because later we want k to be integers
 !
-!
+!$omp parallel private(ivec,spectrum,spectrumhel,aatemp,bbtemp,ispec,spec_reala,spec_imaga,spec_realb,spec_imagb) &
+!$omp num_threads(num_helper_threads) &
+!$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+!$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+!$ thread_id = omp_get_thread_num()+1
+  !$omp workshare
   spectrum=0.
   spectrum_sum=0.
   spectrumhel=0.
   spectrumhel_sum=0.
+  !$omp end workshare
 !
 !  In fft, real and imaginary parts are handled separately.
 !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
@@ -3860,88 +3980,86 @@ endsubroutine pdf
   do ivec=1,3
      !
      if (trim(sp)=='kin') then
+       !$omp do collapse(2)
        do n=n1,n2
          do m=m1,m2
-           call curli(f,iuu,bbi,ivec)
-           im=m-nghost
-           in=n-nghost
-           a1(:,im,in)=bbi  !(this corresponds to vorticity)
+           call curli(f,iuu,a1(:,m-nghost,n-nghost),ivec)  !  corresponds to vorticity
          enddo
        enddo
-       b1=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1) !(this corresponds to velocity)
+       !$omp workshare
+       b1=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1) !  corresponds to velocity
+       !$omp end workshare
      elseif (trim(sp)=='mag') then
-        do n=n1,n2
-           do m=m1,m2
-              call curli(f,iaa,bbi,ivec)
-              im=m-nghost
-              in=n-nghost
-              b1(:,im,in)=bbi !(this corresponds to magnetic field)
-           enddo
-        enddo
-        a1=f(l1:l2,m1:m2,n1:n2,iaa+ivec-1) !(this corresponds to vector potential)
+       !$omp do collapse(2)
+       do n=n1,n2
+         do m=m1,m2
+           call curli(f,iaa,b1(:,m-nghost,n-nghost),ivec) !  corresponds to magnetic field
+         enddo
+       enddo
+       !$omp workshare
+       a1=f(l1:l2,m1:m2,n1:n2,iaa+ivec-1) !  corresponds to vector potential
+       !$omp end workshare
      else
-        print*,'There are no such sp=',trim(sp)
+       call warning('powerhel_phi','no such sp: '//trim(sp))
      endif
 !
+     !$omp single
      ifirst_fft=1
+     !$omp end single
+     !$omp do collapse(3) reduction(+:spectrum_sum,spectrumhel_sum)
      do l=1,nx
        do m=1,ny
          do j=1,nprocy
            call z2x(a1,l,m,j,aatemp)
            call z2x(b1,l,m,j,bbtemp)
 ! For multiple processor runs aatemp exists only in the root
-! processor. Hence rest of the analysis is done only
-! in the root processor
+! processor. Hence rest of the analysis is done only in the root processor
            if (lroot) then
 !             write(*,*)l,m,j,'got data shall fft'
              call fourier_transform_real_1(aatemp,nzgrid,ifirst_fft,fftpack_temp)
              call fourier_transform_real_1(bbtemp,nzgrid,ifirst_fft,fftpack_temp)
+             !$omp atomic
              ifirst_fft = ifirst_fft+1
-             spectrum(1)=(bbtemp(1)*bbtemp(1))&
-                    *r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)
-             spectrumhel(1)=(aatemp(1)*bbtemp(1))&
-                    *r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)
+             spectrum(1)   =(bbtemp(1)*bbtemp(1))*r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)
+             spectrumhel(1)=(aatemp(1)*bbtemp(1))*r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)
              do ispec=2,nzgrid/2
                spec_reala=aatemp(2*ispec-2)
                spec_imaga=aatemp(2*ispec-1)
                spec_realb=bbtemp(2*ispec-2)
                spec_imagb=bbtemp(2*ispec-1)
-               spectrum(ispec)= 2.*(spec_realb*spec_realb+spec_imagb*spec_imagb)&
+               spectrum(ispec)= 2.*(spec_realb*spec_realb+spec_imagb*spec_imagb) &
                     *r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)
-               spectrumhel(ispec)= 2.*(spec_reala*spec_realb+spec_imaga*spec_imagb)&
+               spectrumhel(ispec)= 2.*(spec_reala*spec_realb+spec_imaga*spec_imagb) &
                     *r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)
              enddo
-             spectrumhel(nzgrid/2)=(aatemp(nzgrid)*bbtemp(nzgrid))&
+             spectrumhel(nzgrid/2)=(aatemp(nzgrid)*bbtemp(nzgrid)) &
                     *r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)
-             spectrum(nzgrid/2)=(bbtemp(nzgrid)*bbtemp(nzgrid))&
+             spectrum(nzgrid/2)=(bbtemp(nzgrid)*bbtemp(nzgrid)) &
                     *r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)
              spectrum_sum=spectrum_sum+spectrum
              spectrumhel_sum=spectrumhel_sum+spectrumhel
-             nVol2d = nVol2d+r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)
-           else
-             nVol2d=1.
            endif
          enddo ! loop over yproc
        enddo   ! loop over ny
      enddo     ! loop over nx
 !
-   enddo !(from loop over ivec)
+   enddo ! (loop over ivec)
+!$omp end parallel
 !
 !  append to diagnostics file
 !
    if (lroot) then
-     if (ip<10) print*,'Writing power spectrum ',sp &
-       ,' to ',trim(datadir)//'/power_'//trim(sp)//'.dat'
+     if (ip<10) print*,'Writing power spectrum ',sp,' to ',trim(datadir)//'/power_'//trim(sp)//'.dat'
 !
      spectrum_sum=.5*spectrum_sum
      spectrumhel_sum=0.5*spectrumhel_sum
      open(1,file=trim(datadir)//'/power_phi_'//trim(sp)//'.dat',position='append')
-     write(1,*) t
+     write(1,*) tdiagnos
      write(1,power_format) spectrum_sum
      close(1)
 !
      open(1,file=trim(datadir)//'/powerhel_phi_'//trim(sp)//'.dat',position='append')
-     write(1,*) t
+     write(1,*) tdiagnos
      write(1,power_format) spectrumhel_sum
      close(1)
    endif
@@ -3965,9 +4083,6 @@ endsubroutine pdf
   real, dimension(nx,ny,nz,3) :: a1,b1
   real, dimension(nx,3) :: tmp_a1
   real, dimension(nk) :: spectrum,spectrum_sum
-  real, dimension(nxgrid) :: kx
-  real, dimension(nygrid) :: ky
-  real, dimension(nzgrid) :: kz
   character (len=*) :: sp
   !
   !  identify version
@@ -3975,83 +4090,80 @@ endsubroutine pdf
   if (lroot .AND. ip<10) call svn_id( &
        "$Id$")
 !
-! KG: added warning about wrong computation of wavenumbers.
 ! KG: See the function get_k2 for an example of how to calculate k2.
-  if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
-    call warning("power_vec", "computation of wavevector is wrong for non-cubical domains")
-  !
-  !  Define wave vector, defined here for the *full* mesh.
-  !  Each processor will see only part of it.
-  !  Ignore *2*pi/Lx factor, because later we want k to be integers
-  !
-  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
-  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
-  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
   !
   spectrum=0.
-  spectrum_sum=0.
   !
   !  In fft, real and imaginary parts are handled separately.
   !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
   !  Added power spectra of rho^(1/2)*u and rho^(1/3)*u.
   !
+!$omp parallel private(ivec,k,tmp_a1) num_threads(num_helper_threads) &
+!$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+!$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+!$ thread_id = omp_get_thread_num()+1
+
   if (trim(sp)=='j') then
-     ! compute j = curl(curl(x))
-     do n=n1,n2
-       do m=m1,m2
-         call del2v_etc(f,iaa,curlcurl=tmp_a1)
-         a1(:,m-nghost,n-nghost,:) = tmp_a1
-       enddo
-     enddo
+    ! compute j = curl(curl(aa))
+    !$omp do collapse(2)
+    do n=n1,n2
+      do m=m1,m2
+        call del2v_etc(f,iaa,curlcurl=tmp_a1)
+        a1(:,m-nghost,n-nghost,:) = tmp_a1
+      enddo
+    enddo
   else
-     print*,'There are no such sp=',trim(sp)
+    call fatal_error('power_vec','no such sp: '//trim(sp))
   endif
-  b1=0
+  !$omp workshare
+  b1=0.
+  !$omp end workshare
 !
 !  Doing the Fourier transform
 !
   do ivec=1,3
-     call fourier_transform(a1(:,:,:,ivec),b1(:,:,:,ivec))
+    call fourier_transform(a1(:,:,:,ivec),b1(:,:,:,ivec))
 !
 !  integration over shells
 !
-     if (lroot .AND. ip<10) print*,'fft done; now integrate over shells...'
-     do ikz=1,nz
-        do iky=1,ny
-           do ikx=1,nx
-              k=nint(sqrt(kx(ikx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2))
-              if (k>=0 .and. k<=(nk-1)) spectrum(k+1)=spectrum(k+1) &
-                   +a1(ikx,iky,ikz,ivec)**2+b1(ikx,iky,ikz,ivec)**2
-           enddo
+    if (ip<10) call information('power_vec','fft done; now integrate over shells')
+    !$omp do collapse(3) reduction(+:spectrum)
+    do ikz=1,nz
+      do iky=1,ny
+        do ikx=1,nx
+          k=nint(sqrt(kx(ikx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2))
+          if (k>=0 .and. k<=(nk-1)) spectrum(k+1)=spectrum(k+1) &
+               +a1(ikx,iky,ikz,ivec)**2+b1(ikx,iky,ikz,ivec)**2
         enddo
-     enddo
-     !
-  enddo !(from loop over ivec)
-  !
-  !  Summing up the results from the different processors
-  !  The result is available only on root
-  !
+      enddo
+    enddo
+!
+  enddo !(loop over ivec)
+!$omp end parallel
+!
+!  Summing up the results from the different processors
+!  The result is available only on root
+!
   call mpireduce_sum(spectrum,spectrum_sum,nk)
-  !
-  !  on root processor, write global result to file
-  !  multiply by 1/2, so \int E(k) dk = (1/2) <u^2>
-  !
+!
+!  on root processor, write global result to file
+!  multiply by 1/2, so \int E(k) dk = (1/2) <u^2>
 !
 !  append to diagnostics file
 !
   if (lroot) then
-     if (ip<10) print*,'Writing power spectra of variable',trim(sp) &
-          ,'to ',trim(datadir)//'/power'//trim(sp)//'.dat'
-     spectrum_sum=.5*spectrum_sum
-     open(1,file=trim(datadir)//'/power'//trim(sp)//'.dat',position='append')
-     write(1,*) t
-     write(1,power_format) spectrum_sum
-     close(1)
+    if (ip<10) print*,'Writing power spectra of variable',trim(sp) &
+         ,'to ',trim(datadir)//'/power'//trim(sp)//'.dat'
+    spectrum_sum=.5*spectrum_sum
+    open(1,file=trim(datadir)//'/power'//trim(sp)//'.dat',position='append')
+    write(1,*) tdiagnos
+    write(1,power_format) spectrum_sum
+    close(1)
   endif
   !
   endsubroutine power_vec
 !***********************************************************************
-  subroutine polar_spectrum(f,sp)
+ subroutine polar_spectrum(f,sp)
 !
 !  In k space, calculate azimuthally averaged spectra in polar coordinates,
 !  and perform legendre decomposition.
@@ -4074,7 +4186,6 @@ endsubroutine pdf
     use Mpicomm, only: mpireduce_sum
     use General, only: plegendre
     use Sub, only: curli, del2vi_etc
-
 !
   integer, parameter :: nk=nxgrid/2
   integer :: i, ikx, iky, ikz, ivec, jvec, im, in
@@ -4083,27 +4194,22 @@ endsubroutine pdf
   real, allocatable, dimension(:,:) :: kmu, dmu
   real :: k2, mu, mu_offset, kmu2
   real, dimension (mx,my,mz,mfarray) :: f
-  real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
   !
-  real, dimension(nx,ny,nz) :: ux_re, ux_im
-  real, dimension(nx,ny,nz) :: uy_re, uy_im
-  real, dimension(nx,ny,nz) :: uz_re, uz_im
-  real, dimension(nx,ny,nz) :: h_re, ht_re
+  real, dimension(nx,ny,nz), save :: ux_re, ux_im
+  real, dimension(nx,ny,nz), save :: uy_re, uy_im
+  real, dimension(nx,ny,nz), save :: uz_re, uz_im
+  real, dimension(nx,ny,nz), save :: ht_re
   real, allocatable, dimension(:,:) :: vxx, vxy, vzz
   real, allocatable, dimension(:,:) :: coeff_a, coeff_b, coeff_c
   real, dimension(legendre_lmax+1,nk) :: legendre_al_a, legendre_al_a_sum
   real, dimension(legendre_lmax+1,nk) :: legendre_al_b, legendre_al_b_sum
   real, dimension(legendre_lmax+1,nk) :: legendre_al_c, legendre_al_c_sum
   !
-  real, dimension(nx) :: bbi, jji
   real, allocatable, dimension(:,:) :: jac !  jacobian when doing remeshing
   real, allocatable, dimension(:,:) :: polar_spec, polar_spec_sum
   real, allocatable, dimension(:,:) :: polar_spechel, polar_spechel_sum
   real, dimension(legendre_lmax+1,nk) :: legendre_al, legendre_al_sum
   real, dimension(legendre_lmax+1,nk) :: legendre_alhel, legendre_alhel_sum
-  real, dimension(nxgrid) :: kx
-  real, dimension(nygrid) :: ky
-  real, dimension(nzgrid) :: kz
   integer, dimension(1) :: temploc
   character (len=*) :: sp
 !
@@ -4111,18 +4217,7 @@ endsubroutine pdf
 !
   if (lroot .AND. ip<10) call svn_id("$Id$")
 !
-! KG: added warning about wrong computation of wavenumbers.
 ! KG: See the function get_k2 for an example of how to calculate k2.
-  if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
-    call warning("polar_spectrum", "computation of wavevector is wrong for non-cubical domains")
-  !
-  !  Define wave vector, defined here for the *full* mesh.
-  !  Each processor will see only part of it.
-  !  Ignore *2*pi/Lx factor, because later we want k to be integers
-  !
-  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
-  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
-  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
 !
 ! mesh for polar representation
 !
@@ -4168,26 +4263,37 @@ endsubroutine pdf
     enddo
   endif
 !
-!  compute spectra
+!  Compute spectra
 !
 !  For computing tensors, don't loop over ivec
+!
   if (sp=='uucor') then
+
+    allocate( vxx(nk,nmu(nk)) )
+    allocate( vzz(nk,nmu(nk)) )
+    allocate( vxy(nk,nmu(nk)) )
+
+!$omp parallel num_threads(num_helper_threads)
+!$ thread_id = omp_get_thread_num()+1
+
     if (iuu==0) call fatal_error('polar_spectrum','iuu=0')
+    !$omp workshare
     ux_re=f(l1:l2,m1:m2,n1:n2,iuu+1-1); ux_im=0.
     uy_re=f(l1:l2,m1:m2,n1:n2,iuu+2-1); uy_im=0.
     uz_re=f(l1:l2,m1:m2,n1:n2,iuu+3-1); uz_im=0.
+    !$omp end workshare
     call fft_xyz_parallel(ux_re,ux_im)
     call fft_xyz_parallel(uy_re,uy_im)
     call fft_xyz_parallel(uz_re,uz_im)
     !  initialize correlation functions
-    allocate( vxx(nk,nmu(nk)) )
-    allocate( vzz(nk,nmu(nk)) )
-    allocate( vxy(nk,nmu(nk)) )
+    !$omp workshare
     vxx=0.
     vxy=0.
     vzz=0.
+    !$omp end workshare
     !  calculate correlation functions
-    if (lroot .AND. ip<10) print*,'fft done; now integrate over cylindrical shells...'
+    if (ip<10) call information('polar_spectrum','fft done; now integrate over cylindrical shells')
+    !$omp do collapse(3) private(k2,ikr,mu,temploc,ikmu) reduction(+:vxx,vzz,vxy)
     do ikz=1,nz
       do iky=1,ny
         do ikx=1, nx
@@ -4228,28 +4334,31 @@ endsubroutine pdf
         enddo
       enddo
     enddo
-    !  initialize correlation coefficients and legendre coefficients
+    !$omp single
     allocate( coeff_a(nk,nmu(nk)) )
     allocate( coeff_b(nk,nmu(nk)) )
     allocate( coeff_c(nk,nmu(nk)) )
+    !$omp end single
+    !  initialize correlation coefficients and legendre coefficients
+    !$omp workshare
     coeff_a=0.
     coeff_b=0.
     coeff_c=0.
-    legendre_al_a=0.; legendre_al_a_sum=0.
-    legendre_al_b=0.; legendre_al_b_sum=0.
-    legendre_al_c=0.; legendre_al_c_sum=0.
+    legendre_al_a=0.
+    legendre_al_b=0.
+    legendre_al_c=0.
+    !$omp end workshare
     !
     !  compute legendre coefficients
     !  the (i-1)th oder legendre polynomial (i-1,m=0) is
     !  sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
     !
+    !$omp do private(ikmu,kmu2,i) reduction(+:legendre_al_a,legendre_al_b,legendre_al_c) !???
     do ikr=1,nk
       do ikmu=1,nmu(ikr)
         kmu2=kmu(ikr,ikmu)**2
-        coeff_a(ikr,ikmu)=( 4.*(1-kmu2)*vxx(ikr,ikmu)-kmu2*vzz(ikr,ikmu) )/ &
-            ( 2*pi*(2+kmu2) )
-        coeff_b(ikr,ikmu)=( -2.*(1-kmu2)*vxx(ikr,ikmu)+(1+kmu2)*vzz(ikr,ikmu) )/ &
-            ( pi*(2+kmu2) )
+        coeff_a(ikr,ikmu)=( 4.*(1-kmu2)*vxx(ikr,ikmu)-kmu2*vzz(ikr,ikmu) )/( 2*pi*(2+kmu2) )
+        coeff_b(ikr,ikmu)=(-2.*(1-kmu2)*vxx(ikr,ikmu)+(1+kmu2)*vzz(ikr,ikmu) )/( pi*(2+kmu2) )
         coeff_c(ikr,ikmu)=vxy(ikr,ikmu)/(2*pi)
         do i=1,legendre_lmax+1
           if (i<=nmu(ikr)) then  !  only meaningful when legendre order <= nmu-1
@@ -4266,28 +4375,28 @@ endsubroutine pdf
         enddo
       enddo
     enddo
+!$omp end parallel
     !  sum up results
     call mpireduce_sum(legendre_al_a,legendre_al_a_sum,(/legendre_lmax+1,nk/))
     call mpireduce_sum(legendre_al_b,legendre_al_b_sum,(/legendre_lmax+1,nk/))
     call mpireduce_sum(legendre_al_c,legendre_al_c_sum,(/legendre_lmax+1,nk/))
     !  on root processor, write to file; always in lformat
     if (lroot) then
-      if (ip<10) print*,'Writing two point correlations to'  &
-          ,trim(datadir)//'/polarspec_.dat'
+      if (ip<10) print*,'Writing two point correlations to',trim(datadir)//'/polarspec_.dat'
       open(1,file=trim(datadir)//'/polarspec_lcoeff_a_'//trim(sp)//'.dat',position='append')
-      write(1,*) t
+      write(1,*) tdiagnos
       do i=1,legendre_lmax+1; do ikr=1,nk
         write(1,'(2i4,3p,8e10.2)') i-1,ikr-1,legendre_al_a_sum(i,ikr)
       enddo; enddo
       close(1)
       open(1,file=trim(datadir)//'/polarspec_lcoeff_b_'//trim(sp)//'.dat',position='append')
-      write(1,*) t
+      write(1,*) tdiagnos
       do i=1,legendre_lmax+1; do ikr=1,nk
         write(1,'(2i4,3p,8e10.2)') i-1,ikr-1,legendre_al_b_sum(i,ikr)
       enddo; enddo
       close(1)
       open(1,file=trim(datadir)//'/polarspec_lcoeff_c_'//trim(sp)//'.dat',position='append')
-      write(1,*) t
+      write(1,*) tdiagnos
       do i=1,legendre_lmax+1; do ikr=1,nk
         write(1,'(2i4,3p,8e10.2)') i-1,ikr-1,legendre_al_c_sum(i,ikr)
       enddo; enddo
@@ -4297,15 +4406,21 @@ endsubroutine pdf
 !  for computing scalars, loop over ivec
 !
   else
-    !  initialize polar spectra and legendre coefficients
     allocate( polar_spec(nk,nmu(nk)) )
     allocate( polar_spec_sum(nk,nmu(nk)) )
     allocate( polar_spechel(nk,nmu(nk)) )
     allocate( polar_spechel_sum(nk,nmu(nk)) )
-    polar_spec=0.; polar_spec_sum=0.
-    polar_spechel=0.; polar_spechel_sum=0.
-    legendre_al=0.; legendre_al_sum=0.
-    legendre_alhel=0.; legendre_alhel_sum=0.
+
+!$omp parallel private(k2,ikr,mu,temploc,ikmu) num_threads(num_helper_threads)
+!$ thread_id = omp_get_thread_num()+1
+
+    !  initialize polar spectra and legendre coefficients
+    !$omp workshare
+    polar_spec=0.
+    polar_spechel=0.
+    legendre_al=0.
+    legendre_alhel=0.
+    !$omp end workshare
     !
     do ivec=1,3
       if (sp=='kin_omega') then
@@ -4314,105 +4429,115 @@ endsubroutine pdf
         if (iuust==0) call fatal_error('polar_spectrum','iuust=0')
         if (ioot==0) call fatal_error('polar_spectrum','ioot=0')
         if (ioost==0) call fatal_error('polar_spectrum','ioost=0')
+        !$omp workshare
         b_re=f(l1:l2,m1:m2,n1:n2,iuut+ivec-1)    ! the real part of u(\vec x,\omega)
         b_im=f(l1:l2,m1:m2,n1:n2,iuust+ivec-1)   ! the imaginary part of u(\vec x,\omega)
         a_re=f(l1:l2,m1:m2,n1:n2,ioot+ivec-1)    ! the real part of omega(\vec x,\omega)
         a_im=f(l1:l2,m1:m2,n1:n2,ioost+ivec-1)   ! the imaginary part of omega(\vec x,\omega)
+        !$omp end workshare
       elseif (sp=='uut') then
         if (iuu==0) call fatal_error('polar_spectrum','iuu=0')
         if (iuut==0) call fatal_error('polar_spectrum','iuut=0')
+        !$omp workshare
         b_re=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)
         b_im=0.
         a_re=f(l1:l2,m1:m2,n1:n2,iuut+ivec-1)
         a_im=0.
+        !$omp end workshare
       elseif (sp=='ouout') then
         if (iuu==0) call fatal_error('polar_spectrum','iuu=0')
         if (iuut==0) call fatal_error('polar_spectrum','iuut=0')
+        !$omp workshare
         h_re=0.
         ht_re=0.
+        !$omp end workshare
         !  helicity is a scalar and thus only computed at ivec=1
         if (ivec==1) then
           do jvec=1,3
+            !$omp do collapse(2)
             do n=n1,n2
             do m=m1,m2
-              call curli(f,iuu,bbi,jvec)
-              im=m-nghost
-              in=n-nghost
-              a_re(:,im,in)=bbi  !(this corresponds to vorticity)
+              call curli(f,iuu,a_re(:,m-nghost,n-nghost),jvec)  !  corresponds to vorticity
             enddo
             enddo
-            b_re=f(l1:l2,m1:m2,n1:n2,iuu+jvec-1)  !(this corresponds to velocity)
+            !$omp workshare
+            b_re=f(l1:l2,m1:m2,n1:n2,iuu+jvec-1)  !  corresponds to velocity
+            !$omp end workshare
+            !$omp do collapse(3)
             do ikx=1,nx; do iky=1,ny; do ikz=1,nz
-              h_re(ikx,iky,ikz)=h_re(ikx,iky,ikz)+ &
-                  a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz)
+              h_re(ikx,iky,ikz)=h_re(ikx,iky,ikz) + a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz)
             enddo; enddo; enddo
           enddo
           do jvec=1,3
+            !$omp do collapse(2)
             do n=n1,n2
             do m=m1,m2
-              call curli(f,iuut,bbi,jvec)
-              im=m-nghost
-              in=n-nghost
-              a_re(:,im,in)=bbi  !(this corresponds to vorticity)
+              call curli(f,iuut,a_re(:,m-nghost,n-nghost),jvec)  !  corresponds to vorticity
             enddo
             enddo
-            b_re=f(l1:l2,m1:m2,n1:n2,iuut+jvec-1)  !(this corresponds to velocity)
+            !$omp workshare
+            b_re=f(l1:l2,m1:m2,n1:n2,iuut+jvec-1)  !  corresponds to velocity
+            !$omp end workshare
+            !$omp do collapse(3)
             do ikx=1,nx; do iky=1,ny; do ikz=1,nz
-              ht_re(ikx,iky,ikz)=ht_re(ikx,iky,ikz)+ &
-                  a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz)
+              ht_re(ikx,iky,ikz)=ht_re(ikx,iky,ikz) + a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz)
             enddo; enddo; enddo
           enddo
+          !$omp workshare
           a_re=ht_re; b_re=h_re
+          !$omp end workshare
         else
+          !$omp workshare
           a_re=0.; b_re=0.
+          !$omp end workshare
         endif
         a_im=0.; b_im=0.
       elseif (sp=='kin') then
         if (iuu==0) call fatal_error('polar_spectrum','iuu=0')
+        !$omp do collapse(2)
         do n=n1,n2
           do m=m1,m2
-            call curli(f,iuu,bbi,ivec)
-            im=m-nghost
-            in=n-nghost
-            a_re(:,im,in)=bbi  !(this corresponds to vorticity)
+            call curli(f,iuu,a_re(:,m-nghost,n-nghost),ivec)  !  corresponds to vorticity
           enddo
         enddo
-        b_re=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)  !(this corresponds to velocity)
+        !$omp workshare
+        b_re=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)  !  corresponds to velocity
         a_im=0.
         b_im=0.
+        !$omp end workshare
       elseif (sp=='mag') then
         if (iaa==0) call fatal_error('polar_spectrum','iaa=0')
+        !$omp do collapse(2)
         do n=n1,n2
           do m=m1,m2
-            call curli(f,iaa,bbi,ivec)
-            im=m-nghost
-            in=n-nghost
-            b_re(:,im,in)=bbi  !(this corresponds to magnetic field)
+            call curli(f,iaa,b_re(:,m-nghost,n-nghost),ivec)  !  corresponds to magnetic field
           enddo
         enddo
-        a_re=f(l1:l2,m1:m2,n1:n2,iaa+ivec-1)  !(corresponds to vector potential)
+        !$omp workshare
+        a_re=f(l1:l2,m1:m2,n1:n2,iaa+ivec-1)  ! corresponds to vector potential
         a_im=0.
         b_im=0.
+        !$omp end workshare
       elseif (sp=='j.b') then
-        if (iaa==0) call fatal_error('powerhel','iaa=0')
+        if (iaa==0) call fatal_error('polar_spectrum','iaa=0')
+          !$omp do collapse(2)
           do n=n1,n2
             do m=m1,m2
-              call curli(f,iaa,bbi,ivec)
-              call del2vi_etc(f,iaa,ivec,curlcurl=jji)
-              im=m-nghost
-              in=n-nghost
-              a_re(:,im,in)=bbi  !(this corresponds to the magnetic field)
-              b_re(:,im,in)=jji  !(this corresponds to the current density)
+              call curli(f,iaa,a_re(:,m-nghost,n-nghost),ivec)  !  corresponds to magnetic field
+              call del2vi_etc(f,iaa,ivec,curlcurl=b_re(:,m-nghost,n-nghost))  !  corresponds to current density
             enddo
           enddo
+          !$omp workshare
           a_im=0.
           b_im=0.
+          !$omp end workshare
       endif
       !
       call fft_xyz_parallel(a_re,a_im)
       call fft_xyz_parallel(b_re,b_im)
       !  compute polar spectra as functions of kr=norm(kx,ky,kz) and kz/kr
-      if (lroot .AND. ip<10) print*,'fft done; now integrate azimuthally in k space...'
+      if (ip<10) call information('polar_spectrum','fft done; now integrate azimuthally in k space')
+      !$omp do collapse(3) reduction(+:polar_spec,polar_spechel)
       do ikz=1,nz
         do iky=1,ny
           do ikx=1,nx
@@ -4426,7 +4551,7 @@ endsubroutine pdf
                 polar_spec(ikr+1,ikmu)=polar_spec(ikr+1,ikmu)+jac(ikr+1,ikmu)*0.5*&
                     ( +b_re(ikx,iky,ikz)**2+b_im(ikx,iky,ikz)**2 )
                 polar_spec(ikr+1,ikmu+1)=polar_spec(ikr+1,ikmu+1)+jac(ikr+1,ikmu+1)*0.5*&
-                    ( +b_re(ikx,iky,ikz)**2+b_im(ikx,iky,ikz)**2 )  
+                    ( +b_re(ikx,iky,ikz)**2+b_im(ikx,iky,ikz)**2 )
                 polar_spechel(ikr+1,ikmu)=polar_spechel(ikr+1,ikmu)+jac(ikr+1,ikmu)*0.5*&
                     ( +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
                     +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz) )
@@ -4445,18 +4570,19 @@ endsubroutine pdf
           enddo
         enddo
       enddo
-    !  (from loop over ivec)
+    !  (loop over ivec)
     enddo
     !
     !  compute legendre coefficients
     !  the ith oder legendre polynomial (i,m=0) is
     !  sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
     !
+    !$omp do collapse(2) private(ikmu)
     do ikr=1,nk
       do i=1,legendre_lmax+1
         if (i<=nmu(ikr)) then  !  only meaningful when legendre order <= nmu-1
           do ikmu=1,nmu(ikr)
-            legendre_al(i,ikr)=legendre_al(i,ikr)+&
+            legendre_al(i,ikr)=legendre_al(i,ikr)+ &
                 dmu(ikr,ikmu)*(2.*i-1)/2.* &
                 polar_spec(ikr,ikmu)* &
                 sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
@@ -4468,6 +4594,7 @@ endsubroutine pdf
         endif
       enddo
     enddo
+!$omp end parallel
 !
 !  Summing up the results from the different processors.
 !  The result is available only on root.
@@ -4486,26 +4613,26 @@ endsubroutine pdf
       !  energy and helicity spectra in polar coordinates
       !  in the form (kr,mu,dmu,spec), kr=0,1,2,...
       open(1,file=trim(datadir)//'/polarspec_'//trim(sp)//'.dat',position='append')
-      write(1,*) t
+      write(1,*) tdiagnos
       do ikr=1,nk; do ikmu=1,nmu(ikr)
         write(1,'(i4,2p,8e10.2,3p,8e10.2,3p,8e10.2)') ikr-1,kmu(ikr,ikmu),dmu(ikr,ikmu),polar_spec_sum(ikr,ikmu)
       enddo; enddo
       close(1)
       open(1,file=trim(datadir)//'/polarspechel_'//trim(sp)//'.dat',position='append')
-      write(1,*) t
+      write(1,*) tdiagnos
       do ikr=1,nk; do ikmu=1,nmu(ikr)
         write(1,'(i4,2p,8e10.2,3p,8e10.2,3p,8e10.2)') ikr-1,kmu(ikr,ikmu),dmu(ikr,ikmu),polar_spechel_sum(ikr,ikmu)
       enddo; enddo
       close(1)
-      !  legendre coefficients a_l, in the form (l,kr,a_l), l,kr=0,1,2,..., 
+      !  legendre coefficients a_l, in the form (l,kr,a_l), l,kr=0,1,2,...,
       open(1,file=trim(datadir)//'/polarspec_lcoeff_'//trim(sp)//'.dat',position='append')
-      write(1,*) t
+      write(1,*) tdiagnos
       do i=1,legendre_lmax+1; do ikr=1,nk
         write(1,'(2i4,3p,8e10.2)') i-1,ikr-1,legendre_al_sum(i,ikr)
       enddo; enddo
       close(1)
       open(1,file=trim(datadir)//'/polarspechel_lcoeff_'//trim(sp)//'.dat',position='append')
-      write(1,*) t
+      write(1,*) tdiagnos
       do i=1,legendre_lmax+1; do ikr=1,nk
         write(1,'(2i4,3p,8e10.2)') i-1,ikr-1,legendre_alhel_sum(i,ikr)
       enddo; enddo
@@ -4518,7 +4645,7 @@ endsubroutine pdf
 !***********************************************************************
   subroutine power1d_plane(f,sp)
 !
-!  Calculate power and helicity spectra of planar-averaged 
+!  Calculate power and helicity spectra of planar-averaged
 !  variable specified by `sp', i.e. either the spectra of uu and kinetic
 !  helicity, or those of bb and magnetic helicity..
 !  Since this routine is only used at the end of a time step,
@@ -4533,35 +4660,27 @@ endsubroutine pdf
 !
   integer, parameter :: nk=nxgrid/2
   integer :: i, ikx, iky, ikz, im, in, ivec
-  integer :: k3, k
+  integer :: k3,k
   real, dimension (mx,my,mz,mfarray) :: f
-  real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
-  real, dimension(nx) :: bbi
   real, dimension(nk) :: spectrum,spectrum_sum
   real, dimension(nk) :: spectrumhel,spectrumhel_sum
-  real, dimension(nxgrid) :: kx
-  real, dimension(nygrid) :: ky
-  real, dimension(nzgrid) :: kz
   character (len=3) :: sp
 !
 !  identify version
 !
   if (lroot .AND. ip<10) call svn_id("$Id$")
-  !
-  !  Define wave vector, defined here for the *full* mesh.
-  !  Each processor will see only part of it.
-  !  Ignore *2*pi/Lx factor, because later we want k to be integers
-  !
-  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
-  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
-  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
+
+!$omp parallel private(ivec,k3,iky,ikx) num_threads(num_helper_threads) &
+!$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+!$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+!$ thread_id = omp_get_thread_num()+1
   !
   !  initialize power spectrum to zero
   !
+  !$omp workshare
   spectrum=0.
-  spectrum_sum=0.
   spectrumhel=0.
-  spectrumhel_sum=0.
+  !$omp end workshare
   !
   !  loop over all the components
   !
@@ -4572,37 +4691,36 @@ endsubroutine pdf
     !  For "mag", calculate spectra of <bk^2> and <ak.bk>
     !
     if (sp=='kin') then
-      if (iuu==0) call fatal_error('powerhel','iuu=0')
+      if (iuu==0) call fatal_error('power1d_plane','iuu=0')
+      !$omp do collapse(2)
       do n=n1,n2
         do m=m1,m2
-          call curli(f,iuu,bbi,ivec)
-          im=m-nghost
-          in=n-nghost
-          a_re(:,im,in)=bbi  !(this corresponds to vorticity)
+          call curli(f,iuu,a_re(:,m-nghost,n-nghost),ivec)  !  corresponds to vorticity
         enddo
       enddo
-      b_re=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)  !(this corresponds to velocity)
+      !$omp workshare
+      b_re=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)  !  corresponds to velocity
       a_im=0.
       b_im=0.
+      !$omp end workshare
 !
 !  magnetic power spectra (spectra of |B|^2 and A.B)
 !
     elseif (sp=='mag') then
-      if (iaa==0) call fatal_error('powerhel','iaa=0')
-      if (lmagnetic) then
+      if (iaa>0) then
+        !$omp do collapse(2)
         do n=n1,n2
           do m=m1,m2
-            call curli(f,iaa,bbi,ivec)
-            im=m-nghost
-            in=n-nghost
-            b_re(:,im,in)=bbi  !(this corresponds to magnetic field)
+            call curli(f,iaa,b_re(:,m-nghost,n-nghost),ivec)  !  corresponds to magnetic field
           enddo
         enddo
-        a_re=f(l1:l2,m1:m2,n1:n2,iaa+ivec-1)  !(corresponds to vector potential)
+        !$omp workshare
+        a_re=f(l1:l2,m1:m2,n1:n2,iaa+ivec-1)  !  corresponds to vector potential
         a_im=0.
         b_im=0.
+        !$omp end workshare
       else
-        if (headt) print*,'magnetic power spectra only work if lmagnetic=T'
+        if (headt) call warning('power1d_plane','magnetic power spectra only work if iaa>0')
       endif
     endif
 !
@@ -4613,25 +4731,27 @@ endsubroutine pdf
 !
 !  integration over shells
 !
-    if (lroot .AND. ip<10) print*,'fft done; now integrate over the xy plane...'
+    if (ip<10) call information('power1d_plane','fft done; now integrate over xy plane')
+    !$omp do reduction(+:spectrum, spectrumhel)
     do ikz=1,nz
       k3=nint(kz(ikz+ipz*nz))
       if (k3>=0 .and. k3<=nk-1) then
         do iky=1,ny
           do ikx=1,nx
-            spectrum(k3+1)=spectrum(k3+1) &
-             +2*b_re(ikx,iky,ikz)**2 &
-              +2*b_im(ikx,iky,ikz)**2
+            spectrum(k3+1)=spectrum(k3+1) + 2.*(b_re(ikx,iky,ikz)**2 + b_im(ikx,iky,ikz)**2)
             spectrumhel(k3+1)=spectrumhel(k3+1) &
-              +2*a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
-              +2*a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
+              +2.*(a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) + a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz))
           enddo
         enddo
       endif
     enddo
-    spectrum(1)=spectrum(1)/2
+
+    !$omp single
+    spectrum(1)=spectrum(1)/2  !MR: correct? this will be done threee times!
+    !$omp end single
     !
-  enddo !(from loop over ivec)
+  enddo !(loop over ivec)
+!$omp end parallel
   !
   !  Summing up the results from the different processors.
   !  The result is available only on root.
@@ -4656,7 +4776,7 @@ endsubroutine pdf
         write(1,'(i4,3p,8e10.2)') k, spectrum_sum(k)
       enddo
     else
-      write(1,*) t
+      write(1,*) tdiagnos
       write(1,power_format) spectrum_sum
     endif
     close(1)
@@ -4667,7 +4787,7 @@ endsubroutine pdf
         write(1,'(i4,3p,8e10.2)') k, spectrumhel_sum(k)
       enddo
     else
-      write(1,*) t
+      write(1,*) tdiagnos
       write(1,power_format) spectrumhel_sum
     endif
     close(1)
@@ -4687,9 +4807,8 @@ endsubroutine pdf
 !
     use Fourier, only: fft_xyz_parallel
     use Mpicomm, only: mpireduce_sum
-    use Sub, only: del2vi_etc, del2v_etc, cross, grad, curli, curl, dot2
+    use Sub, only: del2v_etc, cross, grad, curli, curl, dot2
     use Chiral, only: iXX_chiral, iYY_chiral
-    use Magnetic, only: magnetic_calc_spectra
     use Shear, only: shear_frame_transform
     use SharedVariables, only: get_shared_variable
 !
@@ -4699,21 +4818,17 @@ endsubroutine pdf
   real :: k2
   real, pointer :: t_cor
   real, dimension (mx,my,mz,mfarray) :: f
-  real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
-  real, dimension(nk) :: nks=0.,nks_sum=0.
-  real, dimension(nk) :: k2m=0.,k2m_sum=0.,krms
+  real, dimension(nk) :: nks,nks_sum
+  real, dimension(nk) :: k2m,k2m_sum,krms
   real, dimension(nk) :: spectrum,spectrum_sum
   real, dimension(nk) :: spectrumhel,spectrumhel_sum
   real, dimension(nxgrid) :: correlation,correlation_sum
   real, dimension(nxgrid) :: correlationhel,correlationhel_sum
-  real, dimension(nk,nzgrid) :: cyl_spectrum, cyl_spectrum_sum
-  real, dimension(nk,nzgrid) :: cyl_spectrumhel, cyl_spectrumhel_sum
-  real, dimension(nxgrid) :: kx
-  real, dimension(nygrid) :: ky
-  real, dimension(nzgrid) :: kz
+  real, save, dimension(nk,nzgrid) :: cyl_spectrum, cyl_spectrum_sum
+  real, save, dimension(nk,nzgrid) :: cyl_spectrumhel, cyl_spectrumhel_sum
   character (len=*) :: sp
   logical, save :: lwrite_krms=.true.
-!
+
 !  identify version
 !
   if (lroot .AND. ip<10) call svn_id("$Id$")
@@ -4721,38 +4836,39 @@ endsubroutine pdf
 ! KG: added warning about wrong computation of wavenumbers.
 ! KG: See the function get_k2 for an example of how to calculate k2.
   if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
-    call warning("power_cor", "computation of wavevector is wrong for non-cubical domains")
-  !
-  !  Define wave vector, defined here for the *full* mesh.
-  !  Each processor will see only part of it.
-  !  Ignore *2*pi/Lx factor, because later we want k to be integers
-  !
-  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
-  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
-  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
-  !
-  !  initialize power spectrum to zero
-  !
-  k2m=0.
-  nks=0.
-  spectrum=0.
-  spectrum_sum=0.
-  spectrumhel=0.
-  spectrumhel_sum=0.
-  correlation=0.
-  correlation_sum=0.
-  correlationhel=0.
-  correlationhel_sum=0.
-  !
-  if (lcylindrical_spectra) then
-    cyl_spectrum=0.
-    cyl_spectrum_sum=0.
-    cyl_spectrumhel=0.
-    cyl_spectrumhel_sum=0.
+    call warning("power_cor", "computation of wavevector wrong for non-cubical domains")
+
+  if (lshear_frame_correlation) then
+    if (.not. lshear) call fatal_error('power_cor','lshear=F; cannot do frame transform')
+    call get_shared_variable('t_cor',t_cor,caller='power_cor')
   endif
   !
   !  loop over all the components
   !
+!$omp parallel private(ivec,k,k2,jkx,jkz) num_threads(num_helper_threads) reduction(+:spectrum, &
+!$omp spectrumhel,correlation,correlationhel,cyl_spectrum,cyl_spectrumhel,k2m,nks) &
+!$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+!$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+!$ thread_id = omp_get_thread_num()+1
+  !
+  !  initialize power spectrum to zero
+  !
+  !$omp workshare
+  k2m=0.
+  nks=0.
+  spectrum=0.
+  spectrumhel=0.
+  correlation=0.
+  correlationhel=0.
+  !$omp end workshare
+  !
+  if (lcylindrical_spectra) then
+    !$omp workshare
+    cyl_spectrum=0.
+    cyl_spectrumhel=0.
+    !$omp end workshare
+  endif
+
   do ivec=1,3
     !
     !  Spectrum of iuu.iuut
@@ -4760,10 +4876,12 @@ endsubroutine pdf
     if (sp=='uut') then
       if (iuu==0)  call fatal_error('power_cor','iuu=0')
       if (iuut==0) call fatal_error('power_cor','iuut=0')
+      !$omp workshare
       b_re=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)
       b_im=0.
       a_re=f(l1:l2,m1:m2,n1:n2,iuut+ivec-1)
       a_im=0.
+      !$omp end workshare
     !
     !  correlation of u(t') with omega(t)
     !
@@ -4771,33 +4889,40 @@ endsubroutine pdf
       if (iuu==0)  call fatal_error('power_cor','iuu=0')
       if (iuut==0) call fatal_error('power_cor','iuut=0')
       if (ioo==0)  call fatal_error('power_cor','ioo=0')
+      !$omp workshare
       b_re=f(l1:l2,m1:m2,n1:n2,ioo+ivec-1)
       b_im=0.
       a_re=f(l1:l2,m1:m2,n1:n2,iuut+ivec-1)
       a_im=0.
+      !$omp end workshare
     !
     !  omega(t') with u(t)
     !
     elseif (sp=='uot') then
       if (iuu==0)  call fatal_error('power_cor','iuu=0')
       if (ioot==0) call fatal_error('power_cor','ioot=0')
+      !$omp workshare
       b_re=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)
       b_im=0.
       a_re=f(l1:l2,m1:m2,n1:n2,ioot+ivec-1)
       a_im=0.
+      !$omp end workshare
     endif
 !
 !  Transform a and b to the shear frame.
 !
+    !$omp barrier
+    !$omp single
     if (lshear_frame_correlation) then
-      call get_shared_variable('t_cor',t_cor)
-      if (.not. lshear) call fatal_error('power_cor','lshear=F; cannot do frame transform')
       call shear_frame_transform(a_re,t_cor)
-      call shear_frame_transform(b_re)
+      call shear_frame_transform(b_re)       !??? argument t_cor?
     endif
+    !$omp end single
+    !$omp barrier
 !
 !  before doing fft, compute real-space correlation
 !
+    !$omp do collapse(3)
     do ikx=1,nx
       do iky=1,ny
         do ikz=1,nz
@@ -4815,7 +4940,8 @@ endsubroutine pdf
 !
 !  integration over shells
 !
-    if (lroot .AND. ip<10) print*,'fft done; now integrate over shells...'
+    if (ip<10) call information('power_cor','fft done; now integrate over shells')
+    !$omp do collapse(3)
     do ikz=1,nz
       do iky=1,ny
         do ikx=1,nx
@@ -4849,7 +4975,8 @@ endsubroutine pdf
 !  allow for possibility of cylindrical spectral
 !
     if (lcylindrical_spectra) then
-      if (lroot .AND. ip<10) print*,'fft done; now integrate over cylindrical shells...'
+      if (ip<10) call information('power_cor','fft done; now integrate over cylindrical shells')
+      !$omp do collapse(3)
       do ikz=1,nz
         do iky=1,ny
           do ikx=1,nx
@@ -4875,7 +5002,8 @@ endsubroutine pdf
       enddo
     endif
     !
-  enddo !(from loop over ivec)
+  enddo !(loop over ivec)
+!$omp end parallel
   !
   !  Summing up the results from the different processors.
   !  The result is available only on root.
@@ -4912,7 +5040,7 @@ endsubroutine pdf
         write(1,'(i4,3p,8e10.2)') k, spectrum_sum(k)
       enddo
     else
-      write(1,*) t
+      write(1,*) tdiagnos
       write(1,power_format) spectrum_sum
     endif
     close(1)
@@ -4923,7 +5051,7 @@ endsubroutine pdf
         write(1,'(i4,3p,8e10.2)') k, spectrumhel_sum(k)
       enddo
     else
-      write(1,*) t
+      write(1,*) tdiagnos
       write(1,power_format) spectrumhel_sum
     endif
     close(1)
@@ -4939,7 +5067,7 @@ endsubroutine pdf
         write(1,'(i4,3p,8e10.2)') ikx, correlation_sum(ikx)
       enddo
     else
-      write(1,*) t
+      write(1,*) tdiagnos
       write(1,power_format) correlation_sum
     endif
     close(1)
@@ -4950,7 +5078,7 @@ endsubroutine pdf
         write(1,'(i4,3p,8e10.2)') ikx, correlationhel_sum(ikx)
       enddo
     else
-      write(1,*) t
+      write(1,*) tdiagnos
       write(1,power_format) correlationhel_sum
     endif
     close(1)
@@ -4967,7 +5095,7 @@ endsubroutine pdf
         enddo
         enddo
       else
-        write(1,*) t
+        write(1,*) tdiagnos
         write(1,power_format) cyl_spectrum_sum
       endif
       close(1)
@@ -4980,7 +5108,7 @@ endsubroutine pdf
         enddo
         enddo
       else
-        write(1,*) t
+        write(1,*) tdiagnos
         write(1,power_format) cyl_spectrumhel_sum
       endif
       close(1)
@@ -5019,58 +5147,26 @@ endsubroutine pdf
   integer :: i,ivec,ikx,iky,ikz,jkx,jkz,k
   real :: k2
   real, pointer :: t_cor
-  real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
-  real, dimension(nx,ny,nz) :: h_re,ht_re,h_im,ht_im
+  real, save, dimension(nx,ny,nz) :: ht_re,ht_im
   real, dimension(nk) :: spectrum,spectrum_sum
   real, dimension(nk) :: spectrumhel,spectrumhel_sum
   real, dimension(nxgrid) :: correlation,correlation_sum
   real, dimension(nxgrid) :: correlationhel,correlationhel_sum
-  real, dimension(nk,nzgrid) :: cyl_spectrum, cyl_spectrum_sum
-  real, dimension(nk,nzgrid) :: cyl_spectrumhel, cyl_spectrumhel_sum
-  real, dimension(nxgrid) :: kx
-  real, dimension(nygrid) :: ky
-  real, dimension(nzgrid) :: kz
+  real, allocatable, dimension(:,:), save :: cyl_spectrum, cyl_spectrum_sum
+  real, allocatable, dimension(:,:), save :: cyl_spectrumhel, cyl_spectrumhel_sum
   logical :: lconvol
-  !
-  !  identify version
-  !
+
+  if(.not. allocated(cyl_spectrum)) then
+          allocate(cyl_spectrum(nk,nzgrid), cyl_spectrum_sum(nk,nzgrid), cyl_spectrumhel(nk,nzgrid), cyl_spectrumhel_sum(nk,nzgrid))
+  endif
+!
   if (lroot .AND. ip<10) call svn_id("$Id$")
 !
-! KG: added warning about wrong computation of wavenumbers.
-! KG: See the function get_k2 for an example of how to calculate k2.
-  if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
-    call warning("power_cor_scl", "computation of wavevector is wrong for non-cubical domains")
-  !
-  !  Define wave vector, defined here for the *full* mesh.
-  !  Each processor will see only part of it.
-  !  Ignore *2*pi/Lx factor, because later we want k to be integers
-  !
-  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
-  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
-  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
-  !
-  !  initialize
-  !
-  spectrum=0.
-  spectrum_sum=0.
-  spectrumhel=0.
-  spectrumhel_sum=0.
-  correlation=0.
-  correlation_sum=0.
-  correlationhel=0.
-  correlationhel_sum=0.
-  !
-  if (lcylindrical_spectra) then
-    cyl_spectrum=0.
-    cyl_spectrum_sum=0.
-    cyl_spectrumhel=0.
-    cyl_spectrumhel_sum=0.
+  if (lshear_frame_correlation) then
+    if (.not. lshear) call fatal_error('power_cor_scl','lshear=F; cannot do frame transform')
+    call get_shared_variable('t_cor',t_cor)
   endif
-  !
-  h_re=0.
-  ht_re=0.
-  h_im=0.
-  ht_im=0.
+! KG: See the function get_k2 for an example of how to calculate k2.
   !
   select case (sp)
     case ('ouout')
@@ -5100,78 +5196,118 @@ endsubroutine pdf
       lconvol=.true.
   end select
   !
+!$omp parallel private(ivec,k,k2,jkx,jkz) num_threads(num_helper_threads) &
+!$omp reduction(+:spectrum,spectrumhel,correlation,correlationhel,cyl_spectrum,cyl_spectrumhel) &
+!$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+!$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+!$ thread_id = omp_get_thread_num()+1
+  !
+  !  initialize
+  !
+  !$omp workshare
+  spectrum=0.
+  spectrumhel=0.
+  correlation=0.
+  correlationhel=0.
+  !
+  h_re=0.
+  ht_re=0.
+  h_im=0.
+  ht_im=0.
+  !$omp end workshare
+  !
+  if (lcylindrical_spectra) then
+    !$omp workshare
+    cyl_spectrum=0.
+    cyl_spectrumhel=0.
+    !$omp end workshare
+  endif
+
   if (.not.lconvol) then
     do ivec=1,3
-      a_re = f(l1:l2,m1:m2,n1:n2,ivar2+ivec-1)
-      b_re = f(l1:l2,m1:m2,n1:n2,ivar1+ivec-1)
-      h_re = h_re + a_re*b_re
-      !
+      !$omp workshare
       a_re = f(l1:l2,m1:m2,n1:n2,ivar2t+ivec-1)
       b_re = f(l1:l2,m1:m2,n1:n2,ivar1t+ivec-1)
       ht_re = ht_re + a_re*b_re
+      !$omp end workshare
     enddo
     !
     !  transform to the shear frame.
     !
     if (lshear_frame_correlation) then
-      if (.not. lshear) call fatal_error('power_cor_scl',&
-          'lshear=F; cannot do frame transform')
-      call get_shared_variable('t_cor',t_cor)
+      !$omp barrier
+      !$omp single
       call shear_frame_transform(ht_re,t_cor)
       call shear_frame_transform(h_re)
+      !$omp end single
+      !$omp barrier
     endif
   else
     do ivec=1,3
+      !$omp workshare
       a_re = f(l1:l2,m1:m2,n1:n2,ivar2+ivec-1)
       b_re = f(l1:l2,m1:m2,n1:n2,ivar1+ivec-1)
       a_im = 0.
       b_im = 0.
+      !$omp end workshare
       !  Need convolution between a_re and b_re in the shear frame; do via FFT
       if (lshear_frame_correlation) then
-        if (.not. lshear) call fatal_error( &
-            'power_cor','lshear=F; cannot do frame transform')
+        !$omp barrier
+        !$omp single
         call shear_frame_transform(a_re)
         call shear_frame_transform(b_re)
+        !$omp end single
+        !$omp barrier
       endif
       call fft_xyz_parallel(a_re,a_im,lignore_shear=lshear_frame_correlation)
       call fft_xyz_parallel(b_re,b_im,lignore_shear=lshear_frame_correlation)
+      !$omp workshare
       h_re = h_re + a_re*b_re + a_im*b_im
       h_im = h_im + a_im*b_re - a_re*b_im
+      !$omp end workshare
     enddo
     call fft_xyz_parallel(h_re,h_im,linv=.true.,lignore_shear=lshear_frame_correlation)
     !
     do ivec=1,3
+      !$omp workshare
       a_re = f(l1:l2,m1:m2,n1:n2,ivar2t+ivec-1)
       b_re = f(l1:l2,m1:m2,n1:n2,ivar1t+ivec-1)
       a_im = 0.
       b_im = 0.
+      !$omp end workshare
       !  Need convolution between a_re and b_re in the shear frame; do via FFT
       if (lshear_frame_correlation) then
-        if (.not. lshear) call fatal_error( &
-            'power_cor','lshear=F; cannot do frame transform')
-        call get_shared_variable('t_cor',t_cor)
+        !$omp barrier
+        !$omp single
         call shear_frame_transform(a_re,t_cor)
         call shear_frame_transform(b_re,t_cor)
+        !$omp end single
+        !$omp barrier
       endif
       call fft_xyz_parallel(a_re,a_im,lignore_shear=lshear_frame_correlation)
       call fft_xyz_parallel(b_re,b_im,lignore_shear=lshear_frame_correlation)
+      !$omp workshare
       ht_re = ht_re + a_re*b_re + a_im*b_im
       ht_im = ht_im + a_im*b_re - a_re*b_im
+      !$omp end workshare
     enddo
     call fft_xyz_parallel(ht_re,ht_im,linv=.true.,lignore_shear=lshear_frame_correlation)
-    !
-  endif  !  lconvol
+!
+  endif  !  if (lconvol)
+  !$omp workshare
   a_re = ht_re
   a_im = ht_im
   b_re = h_re
   b_im = h_im
+  !$omp end workshare
   !
   !  before doing fft, compute real-space correlation
   !
+  !$omp do collapse(3) reduction(+:correlation,correlationhel)
   do ikx=1,nx; do iky=1,ny; do ikz=1,nz
     jkx=ikx+ipx*nx
-    correlation(jkx)   = correlation(jkx)    +b_re(ikx,iky,ikz)*b_re(ikx,iky,ikz)
-    correlationhel(jkx)= correlationhel(jkx) +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz)
+    correlation(jkx)   = correlation(jkx)   +b_re(ikx,iky,ikz)*b_re(ikx,iky,ikz)
+    correlationhel(jkx)= correlationhel(jkx)+a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz)
   enddo; enddo; enddo
   !
   !  Doing the Fourier transform
@@ -5181,33 +5317,35 @@ endsubroutine pdf
   !
   !  shell-integrated correlation
   !
+  !$omp do collapse(3) reduction(+:spectrum,spectrumhel)
   do ikz=1,nz; do iky=1,ny; do ikx=1,nx
     k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
     k=nint(sqrt(k2))
     if (k>=0 .and. k<=(nk-1)) then
       spectrum(k+1)=spectrum(k+1)+b_re(ikx,iky,ikz)**2+b_im(ikx,iky,ikz)**2
       spectrumhel(k+1)=spectrumhel(k+1)+a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
-          +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
+                                       +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
     endif
   enddo; enddo; enddo
   !
   !  azimuthally integrated correlation
   !
   if (lcylindrical_spectra) then
-    if (lroot .AND. ip<10) print*,'fft done; now integrate over cylindrical shells...'
+    if (ip<10) call information('power_cor_scl','fft done; now integrate over cylindrical shells')
+    !$omp do collapse(3) reduction(+:cyl_spectrum,cyl_spectrumhel)
     do ikz=1,nz; do iky=1,ny; do ikx=1,nx
       k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2
       jkz=nint(kz(ikz+ipz*nz))+nzgrid/2+1
       k=nint(sqrt(k2))
       if (k>=0 .and. k<=(nk-1)) then
-        cyl_spectrum(k+1,jkz)=cyl_spectrum(k+1,jkz) &
-            +b_re(ikx,iky,ikz)**2+b_im(ikx,iky,ikz)**2
+        cyl_spectrum(k+1,jkz)   =cyl_spectrum(k+1,jkz) + b_re(ikx,iky,ikz)**2+b_im(ikx,iky,ikz)**2
         cyl_spectrumhel(k+1,jkz)=cyl_spectrumhel(k+1,jkz) &
                +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
                +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
       endif
     enddo; enddo; enddo
   endif
+  !$omp end parallel
   !
   !  Summing up the results from the different processors.
   !  The result is available only on root.
@@ -5228,36 +5366,36 @@ endsubroutine pdf
   if (lroot) then
     !
     open(1,file=trim(datadir)//'/powercor_scl_auto_'//trim(sp)//'.dat',position='append')
-    write(1,*) t
+    write(1,*) tdiagnos
     write(1,power_format) spectrum_sum
     close(1)
     !
     open(1,file=trim(datadir)//'/powercor_scl_'//trim(sp)//'.dat',position='append')
-    write(1,*) t
+    write(1,*) tdiagnos
     write(1,power_format) spectrumhel_sum
     close(1)
     !
     !  real-space correlation
     !
     open(1,file=trim(datadir)//'/correlation_scl_auto_'//trim(sp)//'.dat',position='append')
-    write(1,*) t
+    write(1,*) tdiagnos
     write(1,power_format) correlation_sum
     close(1)
     !
     open(1,file=trim(datadir)//'/correlation_scl_'//trim(sp)//'.dat',position='append')
-    write(1,*) t
+    write(1,*) tdiagnos
     write(1,power_format) correlationhel_sum
     close(1)
     !
     if (lcylindrical_spectra) then
       !
       open(1,file=trim(datadir)//'/cyl_powercor_scl_auto_'//trim(sp)//'.dat',position='append')
-      write(1,*) t
+      write(1,*) tdiagnos
       write(1,power_format) cyl_spectrum_sum
       close(1)
       !
       open(1,file=trim(datadir)//'/cyl_powercor_scl_'//trim(sp)//'.dat',position='append')
-      write(1,*) t
+      write(1,*) tdiagnos
     write(1,power_format) cyl_spectrumhel_sum
       close(1)
     endif
@@ -5271,9 +5409,10 @@ endsubroutine pdf
 !
     use Fourier, only: fft_xyz_parallel
     use Mpicomm, only: mpireduce_sum
-    use Sub, only: del2vi_etc, del2v_etc, cross, grad, curli, curl, dot2
+    use Sub, only: del2v_etc, cross, grad, curli, curl, dot2
     use Magnetic, only: lcoulomb, iLam
     use Cdata, only: pi
+    use General, only: rtoa
 !
   integer, parameter :: nk=nxgrid/2
   integer :: i, ikx, iky, ikz, im, in, ivec, ikr
@@ -5282,17 +5421,12 @@ endsubroutine pdf
   real :: k2, rr, k, j0, j0x, j0y, j0z, j1, dx_2pi_box
   real, dimension(4) :: w
   real, dimension (mx,my,mz,mfarray) :: f
-  real, dimension(nx,ny,nz) :: a_re,b_re,h_re,h_im
-  real, dimension(nx,ny,nz) :: gLam
-  real, dimension(nx) :: bbi
+  real, save, dimension(nx,ny,nz) :: gLam
   real, dimension(nx,3) :: gLam_tmp
   real, dimension(4,nk) :: correl,correl_sum
   real, dimension(nk) :: spectrum,spectrum_sum
   real, allocatable, dimension(:,:,:) :: hv,hv_sum
   real, allocatable, dimension(:) :: Iv
-  real, dimension(nxgrid) :: kx
-  real, dimension(nygrid) :: ky
-  real, dimension(nzgrid) :: kz
   character (len=*) :: sp
 !
   !
@@ -5300,153 +5434,169 @@ endsubroutine pdf
   !
   if (lroot .AND. ip<10) call svn_id("$Id$")
 !
-! KG: added warning about wrong computation of wavenumbers.
 ! KG: See the function get_k2 for an example of how to calculate k2.
-  if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
-    call warning("quadratic_invariants", "computation of wavevector is wrong for non-cubical domains")
-  !
-  !  Define wave vector, defined here for the *full* mesh.
-  !  Each processor will see only part of it.
-  !  Ignore *2*pi/Lx factor, because later we want k to be integers
-  !  Note that this must also be taken into account when using dx -> dx_2pi_box.
-  !
-  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
-  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
-  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
-  !
-  !  initialize
-  !
-  h_re=0.
-  h_im=0.
-  correl=0.
-  correl_sum=0.
-  spectrum=0.
-  spectrum_sum=0.
+
   nv=1+nint(log(1.*nxgrid)/log(2.))
   nvmin=max(1,1+nint(log(nxgrid/256.)/log(2.)))
   if (lroot) then
     allocate(Iv(nv))
     Iv=0.
   endif
+
+!$omp parallel private(ivec,im,in,gLam_tmp,ikr,rr,dx_2pi_box) num_threads(num_helper_threads) &
+!$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+!$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+!$ thread_id = omp_get_thread_num()+1
+  !
+  !  initialize
+  !
+  !$omp workshare
+  h_re=0.
+  h_im=0.
+  correl=0.
+  spectrum=0.
+  !$omp end workshare
   !
   !  loop over all the components
   !
   do ivec=1,3
+
     if (sp=='saffman_ub') then
       if (iaa==0) call fatal_error('quadratic_invariants','iaa=0')
+      !$omp do collapse(2)
       do n=n1,n2; do m=m1,m2
-        call curli(f,iaa,bbi,ivec)
-        im=m-nghost
-        in=n-nghost
-        b_re(:,im,in)=bbi  !  magnetic field
+        call curli(f,iaa,b_re(:,m-nghost,n-nghost),ivec)  ! b_re - magnetic field
       enddo; enddo
+      !$omp workshare
       a_re=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)  !  velocity field
       h_re=h_re+a_re*b_re  !  cross helicity density
       h_im=0.
+      !$omp end workshare
     elseif (sp=='saffman_aa') then
       if (iaa==0) call fatal_error('quadratic_invariants','iaa=0')
+      !$omp workshare
       a_re=f(l1:l2,m1:m2,n1:n2,iaa+ivec-1)  !  vector potential
       h_re=h_re+a_re**2  !  vector potential squared
       h_im=0.
+      !$omp end workshare
     elseif (sp=='saffman_aa_c') then
       if (iaa==0) call fatal_error('quadratic_invariants','iaa=0')
       if (.not. lcoulomb) call fatal_error('quadratic_invariants','need lcoulomb=T')
+      !$omp do collapse(2)
       do n=n1,n2; do m=m1,m2
-        call grad(f,iLam,gLam_tmp)
+        call grad(f,iLam,gLam_tmp)   !MR: one should have a gradi
         im=m-nghost
         in=n-nghost
         gLam(:,im,in)=gLam_tmp(:,ivec)  !  grad Lambda
       enddo; enddo
+      !$omp workshare
       a_re=f(l1:l2,m1:m2,n1:n2,iaa+ivec-1)  !  vector potential
       a_re=a_re-gLam  !  vector potential in Coulomb gauge
       h_re=h_re+a_re**2  !  vector potential squared in Coulomb gauge
       h_im=0.
+      !$omp end workshare
     elseif (sp=='saffman_bb') then
       if (iaa==0) call fatal_error('quadratic_invariants','iaa=0')
+      !$omp do collapse(2)
       do n=n1,n2; do m=m1,m2
-        call curli(f,iaa,bbi,ivec)
-        im=m-nghost
-        in=n-nghost
-        b_re(:,im,in)=bbi  !  magnetic field
+        call curli(f,iaa,b_re(:,m-nghost,n-nghost),ivec)   !  magnetic field
       enddo; enddo
+      !$omp workshare
       h_re=h_re+b_re**2  !  magnetic energy density
       h_im=0.
+      !$omp end workshare
     elseif (sp=='saffman_mag') then
       if (iaa==0) call fatal_error('quadratic_invariants','iaa=0')
+      !$omp do collapse(2)
       do n=n1,n2; do m=m1,m2
-        call curli(f,iaa,bbi,ivec)
-        im=m-nghost
-        in=n-nghost
-        b_re(:,im,in)=bbi  !  magnetic field
+        call curli(f,iaa,b_re(:,m-nghost,n-nghost),ivec)    !  magnetic field
       enddo; enddo
+      !$omp workshare
       a_re=f(l1:l2,m1:m2,n1:n2,iaa+ivec-1)  !  vector potential
+      !$omp end workshare
 !
 !  For the Hosking integral with chiral chemical potential, we want to
 !  add the chiral chemical potential. Since it is a scalar, it is being
 !  added only when ivec=1. This is only done if lambda5/=0.
 !
       if (lambda5/=0. .and. ivec==1) then
-        if (ip<14 .and. lroot) print*,'quadratic_invariants: lambda5=',lambda5
+        if (ip<14) call information('quadratic_invariants','lambda5='//rtoa(lambda5))
         if (ispecialvar==0) call fatal_error('quadratic_invariants','ispecialvar=0')
+        !$omp workshare
         h_re=h_re+a_re*b_re+f(l1:l2,m1:m2,n1:n2,ispecialvar)*2./lambda5
+        !$omp end workshare
       else
+        !$omp workshare
         h_re=h_re+a_re*b_re  !  magnetic helicity density
+        !$omp end workshare
       endif
+      !$omp workshare
       h_im=0.
+      !$omp end workshare
     elseif (sp=='saffman_mag_c') then
       if (iaa==0) call fatal_error('quadratic_invariants','iaa=0')
       if (.not. lcoulomb) call fatal_error('quadratic_invariants','need lcoulomb=T')
+      !$omp do collapse(2)
       do n=n1,n2; do m=m1,m2
         im=m-nghost
         in=n-nghost
-        !
-        call curli(f,iaa,bbi,ivec)
-        b_re(:,im,in)=bbi  !  magnetic field
-        !
+        call curli(f,iaa,b_re(:,im,in),ivec)  !  magnetic field
         call grad(f,iLam,gLam_tmp)
         gLam(:,im,in)=gLam_tmp(:,ivec)  !  grad Lambda
       enddo; enddo
+      !$omp workshare
       a_re=f(l1:l2,m1:m2,n1:n2,iaa+ivec-1)  !  vector potential
-      a_re=a_re-gLam  !  vector potential in Coulomb gauge
+      a_re=a_re-gLam       !  vector potential in Coulomb gauge
       h_re=h_re+a_re*b_re  !  magnetic helicity density
       h_im=0.
+      !$omp end workshare
     else
       call fatal_error('quadratic_invariants','no invariant defined for '//sp)
     endif
     !
-  enddo !(from loop over ivec)
+  enddo !(loop over ivec)
   !
   !  the fsum method
   !
   do ikr=nvmin,nv
+    !$omp single
     nsum=2**(ikr-1)  !  sum over nsum grid points along each direction
     nsub=nxgrid/nsum  !  number of subvolumes alrong each direction
-    allocate( hv(nsub,nsub,nsub) )
-    allocate( hv_sum(nsub,nsub,nsub) )
-    hv=0.
-    hv_sum=0.
+    allocate( hv(nsub,nsub,nsub) ); hv=0.
+    !$omp end single
+    !$omp do collapse(3) private(kxx,kyy,kzz) reduction(+:hv)
     do ikx=1,nx; do iky=1,ny; do ikz=1,nz
       kxx = ikx+ipx*nx-1
       kyy = iky+ipy*ny-1
       kzz = ikz+ipz*nz-1
-      hv(1+kxx/nsum,1+kyy/nsum,1+kzz/nsum)= &
-          hv(1+kxx/nsum,1+kyy/nsum,1+kzz/nsum)+ &
-          h_re(ikx,iky,ikz)*dx*dy*dz
+      hv(1+kxx/nsum,1+kyy/nsum,1+kzz/nsum) = &
+          hv(1+kxx/nsum,1+kyy/nsum,1+kzz/nsum) + h_re(ikx,iky,ikz)*dx*dy*dz
     enddo; enddo; enddo
+    !$omp single
+    !if (lroot) allocate( hv_sum(nsub,nsub,nsub) )
+    allocate( hv_sum(nsub,nsub,nsub) )
     call mpireduce_sum(hv,hv_sum,(/nsub,nsub,nsub/))
-    if (lroot) Iv(ikr)=sum(hv_sum**2)/(Lx*Ly*Lz)
-    deallocate(hv,hv_sum)
+    if (lroot) then
+      Iv(ikr)=sum(hv_sum**2)/(Lx*Ly*Lz)
+    !  deallocate(hv_sum)
+    endif
+    deallocate(hv_sum)
+    deallocate(hv)
+    !$omp end single
   enddo
   !
   !  the spectral method
   !  Take into account that k is not normalized, so dx -> dx_2pi_box.
   !
   call fft_xyz_parallel(h_re,h_im)
+  !$omp workshare
   h_re = h_re*h_re + h_im*h_im  !  this is h^*(k) h(k)
+  !$omp end workshare
   !
   dx_2pi_box=twopi/nxgrid
   do ikr=1,nk
     rr = ikr*dx_2pi_box  !  rr=dx,2dx,...,Lx/2
+    !$omp do collapse(3) private(kxx,kyy,kzz,k2,k,kint,j0x,j0y,j0z,j1,j0,w,icor) reduction(+:spectrum,correl)
     do ikx=1,nx; do iky=1,ny; do ikz=1,nz
       kxx = kx(ikx+ipx*nx)       !  the true kx
       kyy = ky(iky+ipy*ny)       !  the true ky
@@ -5456,9 +5606,7 @@ endsubroutine pdf
       kint = nint(k)             !  nint(knorm)
       !  power spectrum of helicity only computed once, at ikr=1
       if (ikr==1) then
-        if ( kint>=0 .and. kint<=(nk-1) ) then
-          spectrum(kint+1) = spectrum(kint+1) + h_re(ikx,iky,ikz)
-        endif
+        if ( kint>=0 .and. kint<=nk-1 ) spectrum(kint+1) = spectrum(kint+1) + h_re(ikx,iky,ikz)
       endif
       !  int d^3k <w(k) h^*(k) h(k) >
       if (kxx==0.) then; j0x=1.;  else; j0x=sin(kxx*rr)/(kxx*rr); endif
@@ -5475,39 +5623,38 @@ endsubroutine pdf
       enddo
     enddo; enddo; enddo
   enddo
-  !
+!$omp end parallel
+!
   call mpireduce_sum(correl,correl_sum,(/4,nk/))
   call mpireduce_sum(spectrum,spectrum_sum,nk)
-  !
+!
   if (lroot) then
     open(1,file=trim(datadir)//'/Iv_bcc_'//trim(sp)//'.dat',position='append')
-    write(1,*) t
+    write(1,*) tdiagnos
     write(1,*) correl_sum(1,:)
     close(1)
     open(1,file=trim(datadir)//'/Iv_bcs_'//trim(sp)//'.dat',position='append')
-    write(1,*) t
+    write(1,*) tdiagnos
     write(1,*) correl_sum(2,:)
     close(1)
     open(1,file=trim(datadir)//'/Iv_spc_'//trim(sp)//'.dat',position='append')
-    write(1,*) t
+    write(1,*) tdiagnos
     write(1,*) correl_sum(3,:)
     close(1)
     open(1,file=trim(datadir)//'/Iv_sps_'//trim(sp)//'.dat',position='append')
-    write(1,*) t
+    write(1,*) tdiagnos
     write(1,*) correl_sum(4,:)
     close(1)
     open(1,file=trim(datadir)//'/power_'//trim(sp)//'.dat',position='append')
-    write(1,*) t
+    write(1,*) tdiagnos
     write(1,*) spectrum_sum
     close(1)
     open(1,file=trim(datadir)//'/Iv_bc_'//trim(sp)//'.dat',position='append')
-    write(1,*) t
+    write(1,*) tdiagnos
     write(1,*) Iv
     close(1)
-    !
-    deallocate(Iv)
   endif
-  !
+!
   endsubroutine quadratic_invariants
 !***********************************************************************
   subroutine power_fft3d_vec(f,sp,sp2)
@@ -5540,27 +5687,14 @@ endsubroutine pdf
 !
   integer :: ncomp,i,ivec,ikx,iky,ikz,jkx,jky,jkz
   integer :: kkout,kkoutx,kkouty,kkoutz
-  real, dimension(nx,ny,nz) :: a_re,a_im
-  real, dimension(nx) :: bbi
   real, allocatable, dimension(:,:,:,:) :: fft,fft_sum
-  real, dimension(nxgrid) :: kx
-  real, dimension(nygrid) :: ky
-  real, dimension(nzgrid) :: kz
   character (len=1) :: spxyz
   logical :: lfft
 !
 !  identify version
 !
   if (lroot .AND. ip<10) call svn_id("$Id$")
-  !
-  !  Define wave vector, defined here for the *full* mesh.
-  !  Each processor will see only part of it.
-  !  Ignore *2*pi/Lx factor, because later we want k to be integers
-  !
-  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
-  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
-  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
-  !
+!
   kkout=2*kout_max+1
   select case (sp2)
     case ('kxyz'); kkoutx=kkout; kkouty=kkout; kkoutz=kkout
@@ -5579,59 +5713,83 @@ endsubroutine pdf
   !
   !  loop over all components
   !
+!$omp parallel private(ivec,ikx,iky,jkx,jky,jkz) num_threads(num_helper_threads) reduction(+:fft) &
+!$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+!$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+!$ thread_id = omp_get_thread_num()+1
   do ivec=1,ncomp
     !
     !  initialize fft(real/imaginary,kx,ky,kz)
     !
+    !$omp workshare
     fft=0.
     fft_sum=0.
+    !$omp end workshare
     !
     if (sp=='uu') then
       if (iuu==0)  call fatal_error('power_fft3d_vec','iuu=0')
+      !$omp workshare
       a_re=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)
       a_im=0.
+      !$omp end workshare
     elseif (sp=='oo') then
       if (iuu==0)  call fatal_error('power_fft3d_vec','iuu=0')
+      !$omp do collapse(2)
       do n=n1,n2; do m=m1,m2
-        call curli(f,iuu,bbi,ivec)
-        a_re(:,m-nghost,n-nghost)=bbi
+        call curli(f,iuu,a_re(:,m-nghost,n-nghost),ivec)
       enddo; enddo
+      !$omp workshare
       a_im=0.
+      !$omp end workshare
     elseif (sp=='bb') then
       if (iaa==0)  call fatal_error('power_fft3d_vec','iaa=0')
+      !$omp do collapse(2)
       do n=n1,n2; do m=m1,m2
-        call curli(f,iaa,bbi,ivec)
-        a_re(:,m-nghost,n-nghost)=bbi
+        call curli(f,iaa,a_re(:,m-nghost,n-nghost),ivec)
       enddo; enddo
+      !$omp workshare
       a_im=0.
+      !$omp end workshare
     elseif (sp=='jj') then
       if (iaa==0)  call fatal_error('power_fft3d_vec','iaa=0')
+      !$omp do collapse(2)
       do n=n1,n2; do m=m1,m2
-        call del2vi_etc(f,iaa,ivec,curlcurl=bbi)
-        a_re(:,m-nghost,n-nghost)=bbi
+        call del2vi_etc(f,iaa,ivec,curlcurl=a_re(:,m-nghost,n-nghost))
       enddo; enddo
+      !$omp workshare
       a_im=0.
+      !$omp end workshare
     elseif (sp=='ee') then
       if (iee==0) call fatal_error('power_fft3d_vec','iee=0')
+      !$omp workshare
       a_re=f(l1:l2,m1:m2,n1:n2,iee+ivec-1)
       a_im=0.
+      !$omp end workshare
     elseif (sp=='gwT') then
       if (iStressT==0) call fatal_error('power_fft3d_vec','iStressT=0')
       if (ivec==1) then
+        !$omp workshare
         a_re=f(l1:l2,m1:m2,n1:n2,iStressT)
         a_im=f(l1:l2,m1:m2,n1:n2,iStressTim)
+        !$omp end workshare
       else
+        !$omp workshare
         a_re=f(l1:l2,m1:m2,n1:n2,iStressX)
         a_im=f(l1:l2,m1:m2,n1:n2,iStressXim)
+        !$omp end workshare
       endif
     endif
     !
     !  shear-frame transformation
     !
     if (lshear_frame_correlation) then
-      if (.not. lshear) call fatal_error('power_fft3d_vec',&
-          'lshear=F; cannot do frame transform')
+      if (.not. lshear) call fatal_error('power_fft3d_vec','lshear=F; cannot do frame transform')
+      !TODO: multithread
+      !$omp barrier
+      !$omp single
       call shear_frame_transform(a_re)
+      !$omp end single
+      !$omp barrier
     endif
     !
     !  Fourier transformation
@@ -5645,6 +5803,7 @@ endsubroutine pdf
       endif
     endif
     !
+    !$omp do
     do ikz=1,nz
       jkz=nint(kz(ikz+ipz*nz))+(kkoutz-1)/2+1
       if ( jkz>=1 .and. jkz<=kkoutz ) then
@@ -5669,6 +5828,8 @@ endsubroutine pdf
     !
     !  Summing up the results from the different processors.
     !
+    !$omp barrier
+    !$omp single
     call mpireduce_sum(fft,fft_sum,(/2,kkoutx,kkouty,kkoutz/))
     !
     !  append to diagnostics file
@@ -5681,16 +5842,19 @@ endsubroutine pdf
     !
     if (lroot .and. t>=tout_min .and. t<=tout_max) then
       open(1,file=trim(datadir)//'/fft3dvec_'//trim(sp2)//'_'//trim(sp)//'_'//trim(spxyz)//'_re.dat',position='append')
-      write(1,*) t
+      write(1,*) tdiagnos
       write(1,'(1p,8e10.2)') fft_sum(1,:,:,:)
       close(1)
       open(1,file=trim(datadir)//'/fft3dvec_'//trim(sp2)//'_'//trim(sp)//'_'//trim(spxyz)//'_im.dat',position='append')
-      write(1,*) t
+      write(1,*) tdiagnos
       write(1,'(1p,8e10.2)') fft_sum(2,:,:,:)
       close(1)
     endif
+    !$omp end single
+    !$omp barrier
     !
   enddo  ! ivec
+!$omp end parallel
   !
   deallocate(fft,fft_sum)
   !
@@ -5711,29 +5875,17 @@ endsubroutine pdf
 !
   integer, parameter :: nk=nxgrid/2
   integer :: i,ikx,iky,ikz,k
-  real, dimension(nx,ny,nz) :: a_re,a_im
   real :: k2
-  real, dimension(nxgrid) :: kx
-  real, dimension(nygrid) :: ky
-  real, dimension(nzgrid) :: kz
 !
-! KG: added warning about wrong computation of wavenumbers.
 ! KG: See the function get_k2 for an example of how to calculate k2.
-  if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
-    call warning("power_shell_filter", "computation of wavevector is wrong for non-cubical domains")
 !
-!  Define wave vector, defined here for the *full* mesh.
-!  Each processor will see only part of it.
-!  Ignore *2*pi/Lx factor, because later we want k to be integers
-!
-  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
-  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
-  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
-!
-  a_re(:,:,:)=a(:,:,:)
+  !$omp workshare
+  a_re=a
   a_im=0.
+  !$omp end workshare
   call fft_xyz_parallel(a_re,a_im)
 !
+  !$omp do collapse(3)
   do ikx=1,nx
   do iky=1,ny
   do ikz=1,nz
@@ -5748,7 +5900,9 @@ endsubroutine pdf
   enddo
 !
   call fft_xyz_parallel(a_re,a_im,linv=.true.,lneed_im=.false.)
-  ap(:,:,:)=a_re(:,:,:)
+  !$omp workshare
+  ap=a_re
+  !$omp end workshare
 !
   endsubroutine power_shell_filter
 !***********************************************************************
@@ -5763,7 +5917,6 @@ endsubroutine pdf
 !  24-aug-22/axel: made Tpq,Tpq_sum allocatable, of size (nlk+1)^2, where nk=2**nlk
 !  25-aug-22/hongzhe: introduced specflux_dp and specflux_dq
 !
-    use Fourier, only: fft_xyz_parallel
     use Mpicomm, only: mpireduce_sum
     use Sub, only: gij, gij_etc, curl_mn, cross_mn, del2v_etc
 !
@@ -5773,8 +5926,8 @@ endsubroutine pdf
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,3) :: uu,aa,bb,uxb,jj,curljj
   real, dimension(nx,3,3) :: aij,bij
-  real, dimension(nx,ny,nz,3) :: uuu,bbb,jjj,curljjj
-  real, dimension(nx,ny,nz,3) :: tmp_p,u_tmp,b_tmp,emf_q
+  real, save, dimension(nx,ny,nz,3) :: uuu,bbb,jjj,curljjj
+  real, save, dimension(nx,ny,nz,3) :: tmp_p,u_tmp,b_tmp,emf_q
   real, allocatable, dimension(:,:) :: Tpq,Tpq_sum
   character (len=2) :: sp
   logical :: lTpq_anti_symmetric
@@ -5801,22 +5954,27 @@ endsubroutine pdf
   else
     call fatal_error('power_transfer_mag','specflux_dq must be non-zero')
   endif
-  if (.not.allocated(Tpq)) allocate( Tpq(nlk_p,nlk_q) )
-  if (.not.allocated(Tpq_sum)) allocate( Tpq_sum(nlk_p,nlk_q) )
+  allocate( Tpq(nlk_p,nlk_q) )
 !
 !  In some cases Tpq is anti-symmetric in p and q
 !
   lTpq_anti_symmetric=.false.
-  if (specflux_dp==specflux_dq.and.nlk_p==nlk_q &
-      .and.sp=='Hm') lTpq_anti_symmetric=.true.
+  if (specflux_dp==specflux_dq .and. nlk_p==nlk_q .and. sp=='Hm') lTpq_anti_symmetric=.true.
+
+!$omp parallel private(uu,aa,bb,jj,aij,bij,curljj,lp,lq,p,q,ivec,uxb) num_threads(num_helper_threads) &
+!$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+!$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+!$ thread_id = omp_get_thread_num()+1
 !
 !  initialize spectral flux to zero
 !
+  !$omp workshare
   Tpq=0.
-  Tpq_sum=0.
+  !$omp end workshare
 !
 !  obtain u and b
 !
+  !$omp do collapse(2)
   do m=m1,m2
   do n=n1,n2
     uu=f(l1:l2,m,n,iux:iuz)
@@ -5825,9 +5983,9 @@ endsubroutine pdf
     call gij_etc(f,iaa,aa,aij,bij)
     call curl_mn(aij,bb,aa)
     call curl_mn(bij,jj,bb)
-    jjj(:,m-nghost,n-nghost,:)=jj(:,:)
-    uuu(:,m-nghost,n-nghost,:)=uu(:,:)
-    bbb(:,m-nghost,n-nghost,:)=bb(:,:)
+    jjj(:,m-nghost,n-nghost,:)=jj
+    uuu(:,m-nghost,n-nghost,:)=uu
+    bbb(:,m-nghost,n-nghost,:)=bb
   enddo
   enddo
 !
@@ -5835,12 +5993,12 @@ endsubroutine pdf
 !  we need curl of J, and we do this using ibb
 !
   if (sp=='Hc') then
-    if (ibb==0) call fatal_error('power_transfer_mag',&
-        'Hc_specflux needs lbb_as_aux=T')
+    if (ibb==0) call fatal_error('power_transfer_mag','Hc_specflux needs lbb_as_aux=T')
+    !$omp do collapse(2)
     do m=m1,m2
     do n=n1,n2
       call del2v_etc(f,ibb,curlcurl=curljj)
-      curljjj(:,m-nghost,n-nghost,:)=curljj(:,:)
+      curljjj(:,m-nghost,n-nghost,:)=curljj
     enddo
     enddo
   endif
@@ -5872,53 +6030,64 @@ endsubroutine pdf
     enddo
     !
     do lq=0,nlk_q-1
-    if (.not.(lTpq_anti_symmetric.and.lq>lp)) then
-      if (specflux_dq>0.) then
-        q=nint(specflux_dq*lq)
-      else
-        q=nint(abs(specflux_dq)**lq)
-      endif
-      !
-      !  obtain u_tmp and b_tmp
-      !
-      do ivec=1,3
-        if (sp=='Hm'.or.sp=='Hc') then
-          u_tmp(:,:,:,ivec)=uuu(:,:,:,ivec)
-          call power_shell_filter(bbb(:,:,:,ivec),b_tmp(:,:,:,ivec),q)
-        elseif (sp=='Em') then
-          call power_shell_filter(uuu(:,:,:,ivec),u_tmp(:,:,:,ivec),q)
-          b_tmp(:,:,:,ivec)=bbb(:,:,:,ivec)
+      if (.not.(lTpq_anti_symmetric.and.lq>lp)) then
+        if (specflux_dq>0.) then
+          q=nint(specflux_dq*lq)
+        else
+          q=nint(abs(specflux_dq)**lq)
         endif
-      enddo
-      !
-      !  compute emf_q=cross(u_tmp,b_tmp)
-      !
-      do iky=1,ny
-      do ikz=1,nz
-        uu=u_tmp(:,iky,ikz,:)
-        bb=b_tmp(:,iky,ikz,:)
-        call cross_mn(uu,bb,uxb)
-        emf_q(:,iky,ikz,:)=uxb
-      enddo
-      enddo
-      !
-      Tpq(lp+1,lq+1) = Tpq(lp+1,lq+1) + dx*dy*dz*sum(tmp_p*emf_q)
-    endif
+        !
+        !  obtain u_tmp and b_tmp
+        !
+        do ivec=1,3
+          if (sp=='Hm'.or.sp=='Hc') then
+            !$omp workshare
+            u_tmp(:,:,:,ivec)=uuu(:,:,:,ivec)
+            !$omp end workshare
+            call power_shell_filter(bbb(:,:,:,ivec),b_tmp(:,:,:,ivec),q)
+          elseif (sp=='Em') then
+            call power_shell_filter(uuu(:,:,:,ivec),u_tmp(:,:,:,ivec),q)
+            !$omp workshare
+            b_tmp(:,:,:,ivec)=bbb(:,:,:,ivec)
+            !$omp end workshare
+          endif
+        enddo
+        !
+        !  compute emf_q=cross(u_tmp,b_tmp)
+        !
+        !$omp do collapse(2)
+        do iky=1,ny
+        do ikz=1,nz
+          uu=u_tmp(:,iky,ikz,:)
+          bb=b_tmp(:,iky,ikz,:); call cross_mn(uu,bb,uxb); emf_q(:,iky,ikz,:)=uxb
+        enddo
+        enddo
+        !
+        !$omp workshare
+        tmp_p=tmp_p*emf_q
+        !$omp end workshare
+        !$omp single
+        Tpq(lp+1,lq+1) = Tpq(lp+1,lq+1) + dx*dy*dz*sum(tmp_p)  !only for equidistant grid
+        !$omp end single
+      endif
     enddo  !  from q
   enddo  !  from p
 !
 !  fill the q>p half of Tpq
 !
   if (lTpq_anti_symmetric) then
+    !$omp do
     do lp=0,nlk_p-1
     do lq=lp+1,nlk_q-1
       Tpq(lp+1,lq+1)=-Tpq(lq+1,lp+1)
     enddo
     enddo
   endif
+!$omp end parallel
 !
 !  sum over processors
 !
+  if (lroot) allocate( Tpq_sum(nlk_p,nlk_q) )
   call mpireduce_sum(Tpq,Tpq_sum,(/nlk_p,nlk_q/))
 !
 !  append to diagnostics file
@@ -5927,7 +6096,7 @@ endsubroutine pdf
     if (ip<10) print*,'Writing magnetic energy or helicity transfer rate to ', &
         trim(datadir)//'/power_transfer_mag_'//trim(sp)//'.dat'
     open(1,file=trim(datadir)//'/power_transfer_mag_'//trim(sp)//'.dat',position='append')
-    write(1,*) t
+    write(1,*) tdiagnos
     write(1,power_format) Tpq_sum
     close(1)
   endif
@@ -5935,6 +6104,7 @@ endsubroutine pdf
   endsubroutine power_transfer_mag
 !***********************************************************************
   function get_k2(ikx, iky, ikz) result(k2)
+!
 !   Note that ik{x,y,z} are global, not per-processor, indices.
 !   The result needs to be multiplied by (2*pi/L_min)**2 to get the actual k**2.
 !   We use L_min since having the bin size smaller than the smallest wavenumber
@@ -5943,14 +6113,16 @@ endsubroutine pdf
 !   27-sep-2023/KG: coded
 !
     use Fourier, only: kx_fft2, ky_fft2, kz_fft2
-    
+
     integer, intent (in) :: ikx, iky, ikz
     real :: k2
-    
+
     k2 = (L_min/(2*pi))**2 * ( kx_fft2(ikx) + ky_fft2(iky) + kz_fft2(ikz) )
+!
   endfunction get_k2
 !***********************************************************************
   function get_k(ikx, iky, ikz) result(k)
+!
 !   Note that ik{x,y,z} are global, not per-processor, indices.
 !   The result needs to be multiplied by (2*pi/L_min)to get the actual k.
 !   We use L_min since having the bin size smaller than the smallest wavenumber
@@ -5960,11 +6132,13 @@ endsubroutine pdf
 !
     integer, intent (in) :: ikx, iky, ikz
     real :: k
-    
+
     k = sqrt(get_k2(ikx, iky, ikz))
+!
   endfunction get_k
 !***********************************************************************
   function get_k2_xy(ikx, iky) result(k2)
+!
 !   Note that ik{x,y,z} are global, not per-processor, indices.
 !   The result needs to be multiplied by (2*pi/L_min_xy)**2 to get the actual k**2.
 !   We use L_min_xy since having the bin size smaller than the smallest wavenumber
@@ -5973,11 +6147,12 @@ endsubroutine pdf
 !   27-sep-2023/KG: coded
 !
     use Fourier, only: kx_fft2, ky_fft2
-    
+
     integer, intent (in) :: ikx, iky
     real :: k2
-    
+
     k2 = (L_min_xy/(2*pi))**2 * ( kx_fft2(ikx) + ky_fft2(iky) )
+!
   endfunction get_k2_xy
 !***********************************************************************
-endmodule power_spectrum
+endmodule Power_spectrum

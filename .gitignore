@@ -21,6 +21,11 @@ pc_build_tmp_*
 # first directory level
 samples/*/src/*
 !samples/*/src/*.local
+!samples/*/src/astaroth
+samples/*/src/astaroth/*
+!samples/*/src/astaroth/DSL
+samples/*/src/astaroth/DSL/*
+!samples/*/src/astaroth/DSL/local
 samples/*/*.csh
 samples/*/*.log
 samples/*/Makefile
@@ -75,6 +80,9 @@ samples/corona/driver
 !samples/backwards-compatible/data/proc0/var.dat
 !samples/backwards-compatible/data/proc0/dim.dat
 !samples/backwards-compatible/data/proc0/grid.dat
+src/*pars_c.h*
+src/.config-files
+src/astaroth/PC_*
 !src/astaroth/DSL/.DS_Store
 !src/astaroth/DSL/*.directory
 !src/astaroth/DSL/*.pyc

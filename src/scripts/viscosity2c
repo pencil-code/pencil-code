@@ -1,3 +1,5 @@
+#!/bin/bash
+
 rm -f viscosity_c.h
 echo '# pragma once' > viscosity_c.h
 echo '# include "headers_c.h"' >> viscosity_c.h

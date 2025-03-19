@@ -21,13 +21,15 @@ def var(*args, **kwargs):
     """
     var(var_file='', datadir='data', proc=-1, ivar=-1, quiet=True,
         trimall=False, magic=None, sim=None, precision='f', flist=None,
-        timing=True, fbloc=True, lvec=True, lonlyvec=False, lpersist=False)
+        timing=True, fbloc=True, lvec=True, lonlyvec=False, lpersist=False,
+        range_x=None, range_y=None, range_z=None,
+        irange_x=None, irange_y=None, irange_z=None)
 
     Read VAR files from Pencil Code. If proc < 0, then load all data
     and assemble, otherwise load VAR file from specified processor.
 
     The file format written by output() (and used, e.g. in var.dat)
-    consists of the followinig Fortran records:
+    consists of the following Fortran records:
     1. data(mx, my, mz, nvar)
     2. t(1), x(mx), y(my), z(mz), dx(1), dy(1), dz(1), deltay(1)
     Here nvar denotes the number of slots, i.e. 1 for one scalar field, 3
@@ -82,6 +84,13 @@ def var(*args, **kwargs):
 
      lpersist : bool
          Read the persistent variables if they exist
+
+     range_[xyz] : 2-tuple of real
+         coordinate range selection for subdomain
+
+     irange_[xyz] : 2-tuple of integer
+         index range selection for subdomain
+
 
     Returns
     -------
@@ -183,12 +192,20 @@ class DataCube(object):
         timing=True,
         fbloc=True,
         lvec=True,
-        lonlyvec=False
+        lonlyvec=False,
+        range_x=None,
+        range_y=None,
+        range_z=None,
+        irange_x=None,
+        irange_y=None,
+        irange_z=None
     ):
         """
         read(var_file='', datadir='data', proc=-1, ivar=-1, quiet=True,
              trimall=False, magic=None, sim=None, precision='f', flist=None,
-             timing=True, fbloc=True, lvec=True, lonlyvec=False, lpersist=False)
+             timing=True, fbloc=True, lvec=True, lonlyvec=False, lpersist=False,
+             range_x=None, range_y=None, range_z=None,
+             irange_x=None, irange_y=None, irange_z=None)
 
         Read VAR files from Pencil Code. If proc < 0, then load all data
         and assemble, otherwise load VAR file from specified processor.
@@ -248,6 +265,12 @@ class DataCube(object):
 
          lpersist : bool
              Read the persistent variables if they exist
+
+         range_[xyz] : 2-tuple of real
+             coordinate range selection for subdomain
+
+         irange_[xyz] : 2-tuple of integer
+             index range selection for subdomain
 
         Returns
         -------
@@ -351,6 +374,7 @@ class DataCube(object):
         else:
             total_vars = dim.mvar
 
+        run2D = param.lwrite_2d
         if param.io_strategy == "HDF5":
             #
             #  Read HDF5 files.
@@ -377,13 +401,63 @@ class DataCube(object):
             file_name = os.path.join(datadir, "allprocs", var_file)
 
             with h5py.File(file_name, "r") as tmp:
+                if range_x:
+                    x = (tmp["grid/x"][:]).astype(precision)
+                    irange_x = np.where( (x>=range_x[0]) & (x<=range_x[1]))
+                    #print("irange_x",type(irange_x), irange_x[0], irange_x[-1]+1)
+                    irange_x = (irange_x[0][0], irange_x[0][-1]+1)
+                else:
+                    if not irange_x:
+                        irange_x = (0,mx)
+                    else:
+                        irange_x = (max(irange_x[0],0),min(irange_x[1],mx))
+                mx = irange_x[1]-irange_x[0]
+                x = (tmp["grid/x"][irange_x[0]:irange_x[1]]).astype(precision)
+
+                if range_y:
+                    y = (tmp["grid/y"][:]).astype(precision)
+                    irange_y = np.where( (y>=range_y[1]) & (y<=range_y[2]))
+                    irange_y = (irange_y[0][0], irange_y[0][-1]+1)
+                else:
+                    if not irange_y:
+                        irange_y = (0,my)
+                    else:
+                        irange_y = (max(irange_y[0],0),min(irange_y[1],my))
+                        print("irange_y",type(irange_y), irange_y)
+                my = irange_y[1]-irange_y[0]
+                y = (tmp["grid/y"][irange_y[0]:irange_y[1]]).astype(precision)
+
+                if range_z:
+                    z = (tmp["grid/z"][:]).astype(precision)
+                    irange_z = np.where( (z>=range_z[1]) & (z<=range_z[2]))
+                    irange_z = (irange_z[0][0], irange_z[0][-1]+1)
+                else:
+                    if not irange_z:
+                        irange_z = (0,mz)
+                    else:
+                        irange_z = (max(irange_z[0],0),min(irange_z[1],mz))
+                mz = irange_z[1]-irange_z[0]
+                z = (tmp["grid/z"][irange_z[0]:irange_z[1]]).astype(precision)
+
+                # Set up the global array.
+                if run2D:
+                    if dim.ny == 1:
+                        self.f = np.zeros((total_vars, mz, mx), dtype=dtype)
+                    elif dim.nz == 1:
+                        self.f = np.zeros((total_vars, my, mx), dtype=dtype)
+                    else:
+                        self.f = np.zeros((total_vars, mz, my), dtype=dtype)
+                else:
+                    self.f = np.zeros((total_vars, mz, my, mx), dtype=dtype)
+
                 for key in tmp["data"].keys():
                     if key in index.__dict__.keys():
-                        self.f[index.__getattribute__(key) - 1, :] = tmp["data/" + key][:]
+                        self.f[index.__getattribute__(key) - 1, :, :, :] = dtype(
+                                tmp["data/" + key][irange_z[0]:irange_z[1],
+                                                   irange_y[0]:irange_y[1],
+                                                   irange_x[0]:irange_x[1]]
+                        )
                 t = (tmp["time"][()]).astype(precision)
-                x = (tmp["grid/x"][()]).astype(precision)
-                y = (tmp["grid/y"][()]).astype(precision)
-                z = (tmp["grid/z"][()]).astype(precision)
                 dx = (tmp["grid/dx"][()]).astype(precision)
                 dy = (tmp["grid/dy"][()]).astype(precision)
                 dz = (tmp["grid/dz"][()]).astype(precision)
@@ -404,8 +478,6 @@ class DataCube(object):
             #
             #  Read scattered Fortran binary files.
             #
-            run2D = param.lwrite_2d
-
             if dim.precision == "D":
                 read_precision = "d"
             else:

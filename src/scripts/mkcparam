@@ -450,26 +450,12 @@ foreach my $pencil (@pencil_names){
   $i++;
 }
 $data_cparam_pencil .= " /)\n";
-
-# Define pencil logicals, used by the code to distinguish between needed
-# and not needed pencils:
-$data_cparam_pencil .= <<"EOF";
-logical, parameter, dimension(npencils):: lpenc_required  = .false.
-logical,            dimension(npencils):: lpenc_diagnos   = .false.
-logical,            dimension(npencils):: lpenc_diagnos2d = .false.
-logical,            dimension(npencils):: lpenc_video     = .false.
-logical,            dimension(npencils):: lpenc_requested = .false.
-logical,            dimension(npencils):: lpencil         = .false.
-
-
-EOF
 update_file ("cparam_pencils.inc", $data_cparam_pencil);
-
 #
 # pencil_init.inc
 #
-
 # Generate pencil_init.inc, for initializing the pencil case:
+#
 my $data_pencil_init = <<"EOF";
 !  -*-f90-*-  (for emacs)    vim:set filetype=fortran:  (for vim)
 !  pencil_init.inc

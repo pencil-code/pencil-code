@@ -4,11 +4,11 @@
 ###
 
 LDMPI=-lmpi
-
+FSTD=-std=f2003
 MPICOMM   =   mpicomm
 IO        =   io_dist
 GPU       =   gpu_astaroth
-
+GPU_VENDOR = amd
 HYDRO     =   hydro
 DENSITY   =   density
 MAGNETIC  =   magnetic
@@ -17,5 +17,6 @@ EOS       =   eos_idealgas
 
 #FORCING   =   forcing
 SHEAR     = noshear
+MULTITHREADING = openmp
 
-#REAL_PRECISION = double
+REAL_PRECISION = double

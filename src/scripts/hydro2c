@@ -1,3 +1,5 @@
+#!/bin/bash
+
 rm -f hydro_c.h
 echo '# pragma once' > hydro_c.h
 echo '# include "headers_c.h"' >> hydro_c.h

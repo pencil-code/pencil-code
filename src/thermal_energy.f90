@@ -494,7 +494,7 @@ module Energy
 !
 !  ``cs2/dx^2'' for timestep
 !
-      if (ldensity.and.lhydro.and.lfirst.and.ldt) then
+      if (ldensity.and.lhydro.and.lupdate_courant_dt) then
         advec_cs2=p%cs2*dxyz_2
         if (headtt.or.ldebug) print*,'denergy_dt: max(advec_cs2) =',maxval(advec_cs2)
       endif
@@ -538,7 +538,7 @@ module Energy
       diffus_chi=0; diffus_chi3=0.
       if (chi/=0.0) then
         df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + chi * p%cp * (p%rho*p%del2TT + sum(p%grho*p%gTT, 2))
-        if (lfirst .and. ldt) diffus_chi = diffus_chi + gamma*chi*dxyz_2
+        if (lupdate_courant_dt) diffus_chi = diffus_chi + gamma*chi*dxyz_2
       endif
 !
 !  Shock diffusion
@@ -550,7 +550,7 @@ module Energy
         else stratz1
           df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + chi_shock*(p%shock*p%del2eth + sum(p%gshock*p%geth,2))
         endif stratz1
-        if (lfirst .and. ldt) diffus_chi = diffus_chi + chi_shock * p%shock * dxyz_2
+        if (lupdate_courant_dt) diffus_chi = diffus_chi + chi_shock * p%shock * dxyz_2
       endif shock
 !
 !  Mesh hyper-diffusion
@@ -560,7 +560,7 @@ module Energy
           call der6(f, ieth, d6eth, j, IGNOREDX=.true.)
           df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + chi_hyper3_mesh * d6eth * dline_1(:,j)
         enddo
-        if (lfirst .and. ldt) diffus_chi3 = diffus_chi3 + chi_hyper3_mesh*sum(dline_1,2)                  
+        if (lupdate_courant_dt) diffus_chi3 = diffus_chi3 + chi_hyper3_mesh*sum(dline_1,2)                  
       endif
 !
 !  Radiative diffusion (Rosseland approximation) through thermal energy diffusion.
@@ -570,10 +570,10 @@ module Energy
                              3.0*sum(p%gTT*p%gTT, 2) - p%TT*p%rho1*sum(p%grho*p%gTT, 2) + p%TT*p%del2TT )
 !       This expression has an extra TT/eth = cv1*rho1  to convert to the right units - needed because of the sigmaSB
 !       The timestep gets the factor TT/eth = cv1*rho1
-        if (lfirst .and. ldt) diffus_chi = diffus_chi &
+        if (lupdate_courant_dt) diffus_chi = diffus_chi &
             +(16.0*sigmaSB/(3.0*kappa_rosseland))*p%TT*p%TT*p%TT/p%rho *cv1*p%rho1 * dxyz_2
       endif
-      if (lfirst .and. ldt) then
+      if (lupdate_courant_dt) then
         maxdiffus=max(maxdiffus,diffus_chi)
         maxdiffus3=max(maxdiffus3,diffus_chi3)
       endif

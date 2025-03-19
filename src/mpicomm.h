@@ -3,6 +3,8 @@
 !
   private
 
+  public :: create_communicators
+
   public :: remap_to_pencil_xy_2D_other, unmap_from_pencil_xy_2D_other
 
   public :: update_neighbors, index_to_iproc_comm
@@ -81,6 +83,9 @@
   public :: MPI_COMM_WORLD, MPI_COMM_GRID, MPI_COMM_PENCIL, MPI_COMM_XYPLANE, MPI_COMM_XZPLANE, MPI_COMM_YZPLANE, &
             MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, MPI_COMM_RSLICE, &
             MPI_INFO_NULL, MPI_ANY_TAG, lyang
+
+
+
   public :: size_of_int, size_of_real, size_of_double
 !
   interface mpirecv_logical
@@ -411,6 +416,7 @@
   integer :: MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM
   integer :: MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE,MPI_COMM_RSLICE
   integer :: root_rslice
+
 !
 ! for protecting MPI_COMM_WORLD to be redefined by preprocessor
 ! 
@@ -423,3 +429,5 @@
   character(LEN=4), public :: cyinyang=' '
 
   integer :: mpi_precision, MPI_CMPLX
+!$omp threadprivate(MPI_COMM_GRID, MPI_COMM_PENCIL, MPI_COMM_XBEAM, MPI_COMM_YBEAM, MPI_COMM_ZBEAM, &
+!$omp MPI_COMM_XYPLANE, MPI_COMM_XZPLANE, MPI_COMM_YZPLANE, MPI_COMM_RSLICE)

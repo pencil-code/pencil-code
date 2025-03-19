@@ -64,7 +64,7 @@ module Boundcond
 !  Update all ghost zones of f.
 !
 !  21-sep-02/wolf: extracted from wsnaps
-!  28-mar-17/MR: added registration of already communicated variable ranges in f. 
+!  28-mar-17/MR: added registration of already communicated variable ranges in f.
 !
       use Grid, only: coarsegrid_interp
 
@@ -92,7 +92,7 @@ module Boundcond
 !  Update specific ghost zones of f.
 !
 !  11-aug-11/wlad: adapted from update_ghosts
-!  28-mar-17/MR: added registration of already communicated variable ranges in f. 
+!  28-mar-17/MR: added registration of already communicated variable ranges in f.
 !
       use General, only: add_merge_range
       use Grid, only: coarsegrid_interp
@@ -308,7 +308,7 @@ module Boundcond
             call position(idum,ipz,nz,iz2_bc,lread_slice_xy2)
             if (lread_slice_xy) then
               suff_xy2='xy2'
-            else 
+            else
               suff_xy2='xy'
             endif
           endif
@@ -322,23 +322,23 @@ module Boundcond
             call init_scattered_array(slc_dat_xy,nx,ny,mvar,sz_slc_chunk,lreloading)
             call get_slice_data(z(n1),find_proc(ipx,ipy,nprocz_in/2-1),'xy',slc_dat_xy,nt_slices)
           endif
-          if (lread_slice_xy2) then 
+          if (lread_slice_xy2) then
             call init_scattered_array(slc_dat_xy2,nx,ny,mvar,sz_slc_chunk,lreloading)
             call get_slice_data(z(n2),find_proc(ipx,ipy,nprocz_in/2-1),suff_xy2,slc_dat_xy2,nt_slices)
           endif
-          if (lread_slice_xz ) then 
+          if (lread_slice_xz ) then
             call init_scattered_array(slc_dat_xz ,nx,nz,mvar,sz_slc_chunk,lreloading)
             call get_slice_data(y(m1),find_proc(ipx,nprocy_in/2-1,ipz),'xz',slc_dat_xz,nt_slices)
           endif
-          if (lread_slice_xz2) then 
+          if (lread_slice_xz2) then
             call init_scattered_array(slc_dat_xz2,nx,nz,mvar,sz_slc_chunk,lreloading)
             call get_slice_data(y(m2),find_proc(ipx,nprocy_in/2-1,ipz),suff_xz2,slc_dat_xz2,nt_slices)
           endif
-          if (lread_slice_yz ) then 
+          if (lread_slice_yz ) then
             call init_scattered_array(slc_dat_yz ,ny,nz,mvar,sz_slc_chunk,lreloading)
             call get_slice_data(x(l1),find_proc(nprocx_in/2-1,ipy,ipz),'yz',slc_dat_yz,nt_slices)
           endif
-          if (lread_slice_yz2) then 
+          if (lread_slice_yz2) then
             call init_scattered_array(slc_dat_yz2,ny,nz,mvar,sz_slc_chunk,lreloading)
             call get_slice_data(x(l2),find_proc(nprocx_in/2-1,ipy,ipz),suff_yz2,slc_dat_yz2,nt_slices)
           endif
@@ -346,8 +346,8 @@ module Boundcond
           call mpibarrier
         else
           call fatal_error('initialize_boundcond','BC set from slice data not implemented for IO_strategy="HDF5"')
-        endif      
-      endif      
+        endif
+      endif
 
     endsubroutine initialize_boundcond
 !***********************************************************************
@@ -456,7 +456,7 @@ module Boundcond
 
       character(LEN=fnlen) :: slicedir, file
       real :: pos_slc
-     
+
       slicedir=trim(bc_slc_dir)//'/data/proc'//trim(itoa(iproc_slc))
 
       if (lhydro) then
@@ -499,7 +499,7 @@ module Boundcond
           call fatal_error_local('get_slice_data', 'slices in '//trim(file)// &
                                  ' at wrong position')
       endif
- 
+
     endsubroutine get_slice_data
 !***********************************************************************
     subroutine set_from_slice_x(f,topbot,j)
@@ -539,7 +539,7 @@ module Boundcond
       real, dimension (:,:,:,:) :: f
       integer, intent(IN) :: topbot
       integer :: j
-    
+
       integer, save :: ilayer=-1
       real, save :: last_gettime, timediff
       real, dimension(nx,nz,mvar), save :: ahead_data
@@ -578,7 +578,7 @@ module Boundcond
       real :: w
 
       lget=.false.
-      if (itsub==0.or.lfirst) then   
+      if (itsub==0.or.lfirst) then
 !
 ! update only in first substep of integration or before integration has started
 !
@@ -755,36 +755,36 @@ module Boundcond
                 case ('s')
                   ! BCX_DOC: symmetry, $f_{N+i}=f_{N-i}$;
                   ! BCX_DOC: implies $f'(x_N)=f'''(x_0)=0$
-                  call bc_sym_x(f,+1,topbot,j)
+                  call bc_sym_x(f,topbot,j,+1)
                 case ('sf')
                   ! BCX_DOC: symmetry with respect to interface
-                  call bc_sf_x(f,+1,topbot,j)
+                  call bc_sf_x(f,topbot,j,+1)
                 case ('ss')
                   ! BCX_DOC: symmetry, plus function value given
-                  call bc_symset_x(f,+1,topbot,j,val=fbcx(:,topbot))
+                  call bc_symset_x(f,topbot,j,+1,VAL=fbcx(j,topbot))
                 case ('sds')
-                  ! BCY_DOC: symmetric-derivative-set
-                  call bc_symderset_x(f,topbot,j,val=fbcx(:,topbot))
+                  ! BCX_DOC: symmetric-derivative-set
+                  call bc_symderset_x(f,topbot,j,VAL=fbcx(j,topbot))
                 case ('s0d')
                   ! BCX_DOC: symmetry, function value such that df/dx=0
                   call bc_symset0der_x(f,topbot,j)
                 case ('a')
                   ! BCX_DOC: antisymmetry, $f_{N+i}=-f_{N-i}$;
                   ! BCX_DOC: implies $f(x_N)=f''(x_0)=0$
-                  call bc_sym_x(f,-1,topbot,j)
+                  call bc_sym_x(f,topbot,j,-1)
                 case ('af')
                   ! BCX_DOC: antisymmetry with respect to interface
-                  call bc_sf_x(f,-1,topbot,j)
+                  call bc_sf_x(f,topbot,j,-1)
                 case ('a2')
                   ! BCX_DOC: antisymmetry relative to boundary value,
                   ! BCX_DOC: $f_{N+i}=2 f_{N}-f_{N-i}$;
                   ! BCX_DOC: implies $f''(x_0)=0$
-                  call bc_sym_x(f,-1,topbot,j,REL=.true.)
+                  call bc_sym_x(f,topbot,j,-1,REL=.true.)
                 case ('a2v')
                   ! BCX_DOC: set boundary value and antisymmetry relative to it
                   ! BCX_DOC: $f_{N+i}=2 f_{N}-f_{N-i}$;
                   ! BCX_DOC: implies $f''(x_0)=0$
-                  call bc_sym_x(f,-1,topbot,j,REL=.true.,val=fbcx(:,topbot))
+                  call bc_sym_x(f,topbot,j,-1,REL=.true.,VAL=fbcx(j,topbot))
                 case ('a2r')
                   ! BCX_DOC: sets $d^2f/dr^2 +2df/dr- 2f/r^2 = 0$
                   ! BCX_DOC: This is the replacement of zero second derivative
@@ -817,11 +817,7 @@ module Boundcond
                   call set_ghosts_for_onesided_ders(f,topbot,j,1)
                 case ('d1s')
                   ! BCX_DOC: onesided for 1st/2nd derivative in two first inner points, Dirichlet in boundary point
-                  if (topbot==BOT) then
-                    f(l1,:,:,j) = fbcx(j,topbot)
-                  else
-                    f(l2,:,:,j) = fbcx(j,topbot)
-                  endif
+                  call bc_set_val_x(f,topbot,j,fbcx(j,topbot))
                   call set_ghosts_for_onesided_ders(f,topbot,j,1,.true.)
                 case ('n1s')
                   ! BCX_DOC: onesided for 1st/2nd derivative in two first inner points, Neumann in boundary point
@@ -833,7 +829,7 @@ module Boundcond
                 case ('cT')
                   ! BCX_DOC: constant temperature (implemented as
                   ! BCX_DOC: condition for entropy $s$ or temperature $T$)
-                  call bc_ss_temp_x(f,topbot)
+                  if (j==iss .or. j==ilnTT) call bc_ss_temp_x(f,topbot)
                 case ('c1')
                   ! BCX_DOC: constant conductive flux
                   if (j==iss)   call bc_ss_flux_x(f,topbot)
@@ -865,7 +861,7 @@ module Boundcond
                 case ('f')
                   ! BCX_DOC: ``freeze'' value, i.e. maintain initial value; antisymm wrt boundary
                   call bc_freeze_var_x(topbot,j)
-                  call bc_sym_x(f,-1,topbot,j,REL=.true.)
+                  call bc_sym_x(f,topbot,j,-1,REL=.true.)
                 case ('fg')
                   ! BCX_DOC: ``freeze'' value, i.e. maintain initial
                   ! BCX_DOC: value at boundary, also mantaining the
@@ -877,41 +873,37 @@ module Boundcond
                   call bc_one_x(f,topbot,j)
                 case ('set')
                   ! BCX_DOC: set boundary value to \var{fbcx}
-                  call bc_sym_x(f,-1,topbot,j,REL=.true.,val=fbcx(:,topbot))
+                  call bc_sym_x(f,topbot,j,-1,REL=.true.,VAL=fbcx(j,topbot))
                 case ('st')
-                  ! BCX_DOC: set boundary value to \var{fbcx}
-                  ! Special time-dependent boundary condition to model temporal changes.
-                  ! The functional form and the functional values should be generalized.
-                  XXi0=0.04
-                  tau_XXi=10.
-                  XXi=XXi0*(1.-(1.+t/tau_XXi)*exp(-t/tau_XXi))
-                  fbcx(:,topbot)=XXi
-                  call bc_sym_x_ydep(f,-1,topbot,j,REL=.true.,val=fbcx(:,topbot))
+                  ! BCX_DOC: set boundary value to value generated by function bc_st.
+                  ! BCX_DOC: Special time-dependent boundary condition to model temporal changes.
+                  ! The functional form and the functional values should be generalized in function bc_st.
+                  call bc_sym_x_ydep(f,topbot,j,-1,REL=.true.,val=bc_st())
                 case ('der')
                   ! BCX_DOC: set derivative on boundary to \var{fbcx}
                   call bc_set_der_x(f,topbot,j,fbcx(j,topbot))
                 case ('slo')
                   ! BCX_DOC: set slope at the boundary = \var{fbcx}
-                  call bc_slope_x(f,fbcx(:,topbot),topbot,j)
+                  call bc_slope_x(f,topbot,j,fbcx(j,topbot))
                 case ('slp')
                   ! BCX_DOC: set slope at the boundary and in ghost cells = \var{fbcx}
-                  call bc_ghost_slope_x(f,fbcx(:,topbot),topbot,j)
+                  call bc_ghost_slope_x(f,topbot,j,fbcx(j,topbot))
                 case ('shx')
                   ! BCX_DOC: set shearing boundary proportional to x with slope=\var{fbcx} and abscissa=\var{fbcx2}
-                  call bc_shear_x(f,fbcx(:,topbot),fbcx_2(:,topbot),topbot,j)
+                  call bc_shear_x(f,topbot,j,fbcx(j,topbot),fbcx_2(j,topbot))
                 case ('shy')
                   ! BCX_DOC: set shearing boundary proportional to y with slope=\var{fbcx} and abscissa=\var{fbcx2}
-                  call bc_shear_y(f,fbcx(:,topbot),fbcx_2(:,topbot),topbot,j)
+                  call bc_shear_y(f,topbot,j,fbcx(j,topbot),fbcx_2(j,topbot))
                 case ('shz')
                   ! BCX_DOC: set shearing boundary proportional to z with slope=\var{fbcx} and abscissa=\var{fbcx2}
-                  call bc_shear_z(f,fbcx(:,topbot),fbcx_2(:,topbot),topbot,j)
+                  call bc_shear_z(f,topbot,j,fbcx(j,topbot),fbcx_2(j,topbot))
                 case ('dr0')
                   ! BCX_DOC: set boundary value [really??]
-                  call bc_dr0_x(f,fbcx(:,topbot),topbot,j)
+                  call bc_dr0_x(f,topbot,j,fbcx(j,topbot))
                 case ('ovr')
                   ! BCX_DOC: overshoot boundary condition
                   ! BCX_DOC:  ie $(d/dx-1/\mathrm{dist}) f = 0.$
-                  call bc_overshoot_x(f,fbcx(:,topbot),topbot,j)
+                  call bc_overshoot_x(f,topbot,j,fbcx(j,topbot))
                 case ('out')
                   ! BCX_DOC: allow outflow, but no inflow
                   ! BCX_DOC: forces ghost cells and boundary to not point inwards
@@ -922,7 +914,7 @@ module Boundcond
                   call bc_outflow_x_e1(f,topbot,j,.true.)
                 case ('ant')
                   ! BCX_DOC: stops and prompts for adding documentation
-                  call bc_antis_x(f,fbcx(:,topbot),topbot,j)
+                  call bc_antis_x(f,topbot,j,fbcx(j,topbot))
                 case ('e1')
                   ! BCX_DOC: extrapolation [describe]
                   call bcx_extrap_2_1(f,topbot,j)
@@ -940,27 +932,21 @@ module Boundcond
                   call bcx_extrap_linear(f, topbot, j)
                 case ('pl')
                   ! BCX_DOC: extrapolate using power law with the power index specified by fbcx
-                  if (j==ilnrho) then
-                    call bcx_extrap_powerlaw(f,topbot,j,fbcx(j,topbot),llog=.true.)
-                  else
-                    call bcx_extrap_powerlaw(f,topbot,j,fbcx(j,topbot),llog=.false.)
-                  endif
+                  call bcx_extrap_powerlaw(f,topbot,j,fbcx(j,topbot),llog=(j==ilnrho).and..not.ldensity_nolog)
                 case ('hat')
                   ! BCX_DOC: top hat jet profile in spherical coordinate.
                   !Defined only for the bottom boundary
-                  call bc_set_jethat_x(f,j,topbot,fbcx(:,topbot),fbcx_2(:,topbot))
+                  call bc_set_jethat_x(f,topbot,j,fbcx(j,topbot),fbcx_2(j,topbot))
                 case ('jet')
                   ! BCX_DOC: top hat jet profile in cartezian coordinate.
                   !Defined only for the bottom boundary
-                  call bc_set_jet_x(f,j,topbot,fbcx(:,topbot),fbcx_2(:,topbot))
+                  call bc_set_jet_x(f,topbot,j,fbcx(j,topbot),fbcx_2(j,topbot))
                 case ('spd')
                   ! BCX_DOC:  sets $d(rA_{\alpha})/dr = \mathtt{fbcx(j)}$
                   call bc_set_spder_x(f,topbot,j,fbcx(j,topbot))
                 case ('sfr')
                   ! BCX_DOC: stress-free boundary condition
                   ! BCX_DOC: for spherical coordinate system.
-                  if (j==iux) call fatal_error('boundconds_x', &
-                             'stress-free BC at r boundary not allowed for uu_r')
                   call bc_set_sfree_x(f,topbot,j)
                 case ('sr1')
                   ! BCX_DOC: Stress-free bc for spherical coordinate system.
@@ -993,32 +979,25 @@ module Boundcond
                   call bc_file_x(f,topbot,j)
                 case ('cfb')
                   ! BCX_DOC: radial centrifugal balance
-                  if (lcylindrical_coords) then
-                    call bc_lnrho_cfb_r_iso(f,topbot)
-                  else
-                    call not_implemented('bc_lnrho_cfb_r_iso','for other than cylindrical coordinates')
-                  endif
+                  call bc_lnrho_cfb_r_iso(f,topbot)
                 case ('g')
                   ! BCX_DOC: set to given value(s) or function
-                  call bc_force_x(f, -1, topbot, j)
-                case ('nil')
-                  ! BCX_DOC: do nothing; assume that everything is set
+                  call bc_force_x(f,topbot,j,-1)
                 case ('ioc')
                   ! BCX_DOC: inlet/outlet on western/eastern hemisphere
                   ! BCX_DOC: in cylindrical coordinates
-                  call bc_inlet_outlet_cyl(f,topbot,j,fbcx(:,topbot))
+                  call bc_inlet_outlet_cyl(f,topbot,j,fbcx(j,topbot))
                 case ('tay')
                   call tayler_expansion(f,topbot,j,'x')
-                case ('')
-                  ! BCX_DOC: do nothing; assume that everything is set
                 case ('exp')
                   ! BCX_DOC: exponentiate x ghost zone of other variable
                   call bc_expother_x(f,topbot,j,int(fbcx(j,topbot)))
                 case ('slc')
+                  ! BCX_DOC: set x ghost zones from slice.
                   call set_from_slice_x(f,topbot,j)
                   call set_ghosts_for_onesided_ders(f,topbot,j,1,.true.)
-                case ('no')
-!  don't change anything
+                case ('nil','','no')
+                  ! BCX_DOC: do nothing; assume that everything is set
                 case default
                   bc%bcname=bcx12(j,topbot)
                   bc%ivar=j
@@ -1095,12 +1074,14 @@ module Boundcond
           endif
 !
           jdone=0
-          do j=ivar1,ivar2
+          if (ip_ok) then
+
+            do j=ivar1,ivar2
 !
 ! Natalia: the next line is for the dustdensity case.
 ! If ndustspec is large, it is stupid to set bc for all dust species
 ! in start.in. But if one does not set them, they becomes 'p' by default
-! Since this problem is crutial  only for aerosol + chemistry
+! Since this problem is crucial  only for aerosol + chemistry
 ! the following condition is used. But this place should be modifyed somehow
 ! Any ideas?
 !
@@ -1108,8 +1089,6 @@ module Boundcond
 !
             if (ldebug) write(*,'(A,I1,A,I2,A,A)') ' bcy',topbot,'(',j,')=',bcy12(j,topbot)
 
-            if (ip_ok) then
-           
               is_vec = var_is_vec(j)
               select case (bcy12(j,topbot))
               case ('0')
@@ -1120,41 +1099,41 @@ module Boundcond
                 call bc_per_y(f,topbot,j)
               case ('pp')
                 ! BCY_DOC: periodic across the pole
-                call bc_pper_y(f,+1,topbot,j)
+                call bc_pper_y(f,topbot,j,+1)
               case ('yy')
                 ! BCY_DOC: Yin-Yang grid
                 call bc_yy_y(f,topbot,j)
               case ('ap')
                 ! BCY_DOC: anti-periodic across the pole
-                call bc_pper_y(f,-1,topbot,j)
+                call bc_pper_y(f,topbot,j,-1)
               case ('s')
-                ! BCY_DOC: symmetry symmetry, $f_{N+i}=f_{N-i}$;
-                  ! BCX_DOC: implies $f'(y_N)=f'''(y_0)=0$
-                call bc_sym_y(f,+1,topbot,j)
+                ! BCY_DOC: symmetry, $f_{N+i}=f_{N-i}$;
+                ! BCY_DOC: implies $f'(y_N)=f'''(y_0)=0$
+                call bc_sym_y(f,topbot,j,+1)
               case ('sf')
                 ! BCY_DOC: symmetry with respect to interface
-                call bc_sf_y(f,+1,topbot,j)
+                call bc_sf_y(f,topbot,j,+1)
               case ('ss')
                 ! BCY_DOC: symmetry, plus function value given
-                call bc_symset_y(f,+1,topbot,j,val=fbcy(:,topbot))
+                call bc_symset_y(f,topbot,j,+1,VAL=fbcy(j,topbot))
               case ('sds')
                 ! BCY_DOC: symmetric-derivative-set
-                call bc_symderset_y(f,topbot,j,val=fbcy(:,topbot))
+                call bc_symderset_y(f,topbot,j,VAL=fbcy(j,topbot))
               case ('cds')
                 ! BCY_DOC: complex symmetric-derivative-set
-                call bc_csymderset_y(f,topbot,j,val=fbcy(:,topbot))
+                call bc_csymderset_y(f,topbot,j,VAL=fbcy(j,topbot))
               case ('s0d')
                 ! BCY_DOC: symmetry, function value such that df/dy=0
                 call bc_symset0der_y(f,topbot,j)
               case ('a')
                 ! BCY_DOC: antisymmetry
-                call bc_sym_y(f,-1,topbot,j)
+                call bc_sym_y(f,topbot,j,-1)
               case ('af')
                 ! BCY_DOC: antisymmetry with respect to interface
-                call bc_sf_y(f,-1,topbot,j)
+                call bc_sf_y(f,topbot,j,-1)
               case ('a2')
                 ! BCY_DOC: antisymmetry relative to boundary value
-                call bc_sym_y(f,-1,topbot,j,REL=.true.)
+                call bc_sym_y(f,topbot,j,-1,REL=.true.)
               case ('v')
                 ! BCY_DOC: vanishing third derivative
                 call bc_van_y(f,topbot,j)
@@ -1170,11 +1149,7 @@ module Boundcond
                 call set_ghosts_for_onesided_ders(f,topbot,j,2)
               case ('d1s')
                 ! BCY_DOC: onesided for 1st and 2nd derivative in two first inner points, Dirichlet in boundary point
-                if (topbot==BOT) then
-                  f(:,m1,:,j) = fbcy(j,topbot)
-                else
-                  f(:,m2,:,j) = fbcy(j,topbot)
-                endif
+                call bc_set_val_y(f,topbot,j,fbcy(j,topbot))
                 call set_ghosts_for_onesided_ders(f,topbot,j,2,.true.)
               case ('n1s')
                 ! BCY_DOC: onesided for 1st and 2nd derivative in two first inner points, Neumann in boundary point
@@ -1196,12 +1171,12 @@ module Boundcond
                 ! BCY_DOC: freeze value
                 ! tell other modules not to change boundary value
                 call bc_freeze_var_y(topbot,j)
-                call bc_sym_y(f,-1,topbot,j,REL=.true.) ! antisymm wrt boundary
+                call bc_sym_y(f,topbot,j,-1,REL=.true.) ! antisymm wrt boundary
               case ('s+f')
                 ! BCY_DOC: freeze value
                 ! tell other modules not to change boundary value
                 call bc_freeze_var_y(topbot,j)
-                call bc_sym_y(f,+1,topbot,j) ! symm wrt boundary
+                call bc_sym_y(f,topbot,j,+1) ! symm wrt boundary
               case ('fg')
                 ! BCY_DOC: ``freeze'' value, i.e. maintain initial
                 !  value at boundary, also mantaining the
@@ -1211,25 +1186,25 @@ module Boundcond
               case ('fBs')
                 ! BCY_DOC: frozen-in B-field (s)
                 call bc_frozen_in_bb(topbot,j)
-                call bc_sym_y(f,+1,topbot,j) ! symmetry
+                call bc_sym_y(f,topbot,j,+1) ! symmetry
               case ('fB')
                 ! BCY_DOC: frozen-in B-field (a2)
                 call bc_frozen_in_bb(topbot,j)
-                !call bc_sym_z(f,-1,topbot,j,REL=.true.) ! antisymm wrt boundary
+                !call bc_sym_z(f,topbot,j,-1,REL=.true.) ! antisymm wrt boundary
 !AB: wasn't this a mistake??
-                call bc_sym_y(f,-1,topbot,j,REL=.true.) ! antisymm wrt boundary
+                call bc_sym_y(f,topbot,j,-1,REL=.true.) ! antisymm wrt boundary
               case ('1')
                 ! BCY_DOC: f=1 (for debugging)
                 call bc_one_y(f,topbot,j)
               case ('set')
                 ! BCY_DOC: set boundary value
-                call bc_sym_y(f,-1,topbot,j,REL=.true.,val=fbcy(:,topbot))
+                call bc_sym_y(f,topbot,j,-1,REL=.true.,VAL=fbcy(j,topbot))
               case ('sse')
                 ! BCY_DOC:  symmetry, set boundary value
-                call bc_sym_y(f,+1,topbot,j,val=fbcy(:,topbot))
+                call bc_sym_y(f,topbot,j,+1,VAL=fbcy(j,topbot))
               case ('sep')
                 ! BCY_DOC: set boundary value
-                call bc_sym_y(f,-1,topbot,j,REL=.true.,val=fbcy(:,topbot),val2=fbcy_1(:,topbot),val4=fbcy_2(:,topbot))
+                call bc_sym_y(f,topbot,j,-1,REL=.true.,VAL=fbcy(j,topbot),VAL2=fbcy_1(j,topbot),VAL4=fbcy_2(j,topbot))
               case ('e1')
                 ! BCY_DOC: extrapolation
                 call bcy_extrap_2_1(f,topbot,j)
@@ -1272,16 +1247,17 @@ module Boundcond
                 call bc_set_pfc_y(f,topbot,j)
               case ('str')
                 call bc_stratified_y(f,topbot,j)
-              case ('nil','')
-                ! BCY_DOC: do nothing; assume that everything is set
               case ('tay')
                 call tayler_expansion(f,topbot,j,'y')
               case ('exp')
                 ! BCY_DOC: exponentiate y ghost zone of other variable
                 call bc_expother_y(f,topbot,j,int(fbcy(j,topbot)))
               case ('slc')
+                ! BCY_DOC: set x ghost zones from slice.
                 call set_from_slice_y(f,topbot,j)
                 call set_ghosts_for_onesided_ders(f,topbot,j,2,.true.)
+              case ('nil','','no')
+                ! BCY_DOC: do nothing; assume that everything is set
               case default
                 bc%bcname=bcy12(j,topbot)
                 bc%ivar=j
@@ -1295,8 +1271,8 @@ module Boundcond
                 if (.not.bc%done) call fatal_error_local("boundconds_y", &
                   "no such boundary condition bcy1/2 = "//trim(bcy12(j,topbot))//" for j="//trim(itoa(j)))
               endselect
-            endif
-          enddo
+            enddo
+          endif
         enddo
       endselect
 !
@@ -1337,7 +1313,6 @@ module Boundcond
 !
       real, dimension (:,:,:,:) :: f
       integer, optional :: ivar1_opt, ivar2_opt
-      real, dimension (size(f,4)) :: fbcz_zero
       integer :: ivar1, ivar2, j, topbot
       logical :: ip_ok
       type (boundary_condition) :: bc
@@ -1364,9 +1339,9 @@ module Boundcond
           endif
 !
           jdone=0
-          do j=ivar1,ivar2
-            if (ldebug) write(*,'(A,I1,A,I2,A,A)') ' bcz',topbot,'(',j,')=',bcz12(j,topbot)
-            if (ip_ok) then
+          if (ip_ok) then
+            do j=ivar1,ivar2
+              if (ldebug) write(*,'(A,I1,A,I2,A,A)') ' bcz',topbot,'(',j,')=',bcz12(j,topbot)
 
               is_vec = var_is_vec(j)
 
@@ -1382,10 +1357,10 @@ module Boundcond
                 call bc_yy_z(f,topbot,j)
               case ('s')
                 ! BCZ_DOC: symmetry
-                call bc_sym_z(f,+1,topbot,j)
+                call bc_sym_z(f,topbot,j,+1)
               case ('sf')
                 ! BCZ_DOC: symmetry with respect to interface
-                call bc_sf_z(f,+1,topbot,j)
+                call bc_sf_z(f,topbot,j,+1)
               case ('s0d')
                 ! BCZ_DOC: symmetry, function value such that df/dz=0
                 call bc_symset0der_z(f,topbot,j)
@@ -1394,20 +1369,19 @@ module Boundcond
                 call bc_symset0der_z_v2(f,topbot,j)
               case ('a')
                 ! BCZ_DOC: antisymmetry
-                call bc_sym_z(f,-1,topbot,j)
+                call bc_sym_z(f,topbot,j,-1)
               case ('a2')
                 ! BCZ_DOC: antisymmetry relative to boundary value
-                call bc_sym_z(f,-1,topbot,j,REL=.true.)
+                call bc_sym_z(f,topbot,j,-1,REL=.true.)
               case ('a2v')
                 ! BCZ_DOC: set boundary value and antisymmetry relative to it
-                call bc_sym_z(f,-1,topbot,j,REL=.true.,val=fbcz(:,topbot))
+                call bc_sym_z(f,topbot,j,-1,REL=.true.,VAL=fbcz(j,topbot))
               case ('af')
                 ! BCZ_DOC: antisymmetry with respect to interface
-                call bc_sf_z(f,-1,topbot,j)
+                call bc_sf_z(f,topbot,j,-1)
               case ('a0d')
                 ! BCZ_DOC: antisymmetry with zero derivative
-                fbcz_zero=0.
-                call bc_sym_z(f,+1,topbot,j,VAL=fbcz_zero)
+                call bc_sym_z(f,topbot,j,+1,VAL=0.)
               case ('v')
                 ! BCZ_DOC: vanishing third derivative
                 call bc_van_z(f,topbot,j)
@@ -1419,11 +1393,7 @@ module Boundcond
                 call set_ghosts_for_onesided_ders(f,topbot,j,3)
               case ('d1s')
                 ! BCZ_DOC: onesided for 1st and 2nd derivative in two first inner points, Dirichlet in boundary point
-                if (topbot==BOT) then
-                  f(:,:,n1,j) = fbcz(j,topbot)
-                else
-                  f(:,:,n2,j) = fbcz(j,topbot)
-                endif
+                call bc_set_val_z(f,topbot,j,fbcz(j,topbot))
                 call set_ghosts_for_onesided_ders(f,topbot,j,3,.true.)
               case ('n1s')
                 ! BCZ_DOC: onesided for 1st and 2nd derivative in two first inner points, Neumann in boundary point
@@ -1434,14 +1404,11 @@ module Boundcond
                 call pc_aasb_const_alpha(f,topbot,j)
                 call set_ghosts_for_onesided_ders(f,topbot,j,3,.true.)
               case ('fg')
-                ! BCZ_DOC: ``freeze'' value, i.e. maintain initial
-                !  value at boundary, also mantaining the
-                !  ghost zones at the initial coded value, i.e.,
-                !  keep the gradient frozen as well
+                ! BCZ_DOC: ``freeze'' value, i.e. maintain initial value at boundary, also mantaining the
+                ! BCZ_DOC: ghost zones at the initial coded value, i.e., keep the gradient frozen as well
                 call bc_freeze_var_z(topbot,j)
               case ('c1')
-                ! BCZ_DOC: special boundary condition for $\ln\rho$ and $s$:
-                ! BCZ_DOC: constant heat flux through the boundary
+                ! BCZ_DOC: special boundary condition for $\ln\rho$ and $s$: constant heat flux through the boundary
                 if (j==iss) call bc_ss_flux(f,topbot)
                 if (j==iaa) call bc_aa_pot(f,topbot)
                 if (j==ilnTT) call bc_lnTT_flux_z(f,topbot)
@@ -1510,10 +1477,8 @@ module Boundcond
                 ! BCZ_DOC: hydrostatic extrapolation
                 ! BCZ_DOC: rho or lnrho is extrapolated linearily and the
                 ! BCZ_DOC: temperature is calculated in hydrostatic equilibrium.
-                if (.not. lgrav) &
-                    call fatal_error ('boundconds_z', "'hse' requires gravity")
-                if (.not. leos) call fatal_error ('boundconds_z', &
-                    "'hse' requires an eos module")
+                if (.not. lgrav) call fatal_error ('boundconds_z', "'hse' requires gravity")
+                if (.not. leos) call fatal_error ('boundconds_z', "'hse' requires an eos module")
                 if ((ilnrho == 0) .or. (ilnTT == 0)) &
                     call fatal_error ('boundconds_z', "'hse' requires lnrho and lnTT")
                 if (j == ilnTT) then
@@ -1593,26 +1558,26 @@ module Boundcond
                 ! BCZ_DOC: freeze value + antisymmetry
                 ! tell other modules not to change boundary value
                 call bc_freeze_var_z(topbot,j)
-                call bc_sym_z(f,-1,topbot,j,REL=.true.) ! antisymm wrt boundary
+                call bc_sym_z(f,topbot,j,-1,REL=.true.) ! antisymm wrt boundary
               case ('fs')
                 ! BCZ_DOC: freeze value + symmetry
                 ! tell other modules not to change boundary value
                 call bc_freeze_var_z(topbot,j)
-                call bc_sym_z(f,+1,topbot,j) ! symmetric wrt boundary
+                call bc_sym_z(f,topbot,j,+1) ! symmetric wrt boundary
               case ('fBs')
                 ! BCZ_DOC: frozen-in B-field (s)
                 call bc_frozen_in_bb(topbot,j)
-                call bc_sym_z(f,+1,topbot,j) ! symmetry
+                call bc_sym_z(f,topbot,j,+1) ! symmetry
               case ('fB')
                 ! BCZ_DOC: frozen-in B-field (a2)
                 call bc_frozen_in_bb(topbot,j)
-                call bc_sym_z(f,-1,topbot,j,REL=.true.) ! antisymm wrt boundary
+                call bc_sym_z(f,topbot,j,-1,REL=.true.) ! antisymm wrt boundary
               case ('g')
                 ! BCZ_DOC: set to given value(s) or function
-                 call bc_force_z(f,-1,topbot,j)
+                 call bc_force_z(f,topbot,j,-1)
               case ('gs')
                 ! BCZ_DOC:
-                 call bc_force_z(f,+1,topbot,j)
+                 call bc_force_z(f,topbot,j,+1)
               case ('1')
                 ! BCZ_DOC: f=1 (for debugging)
                 call bc_one_z(f,topbot,j)
@@ -1621,10 +1586,10 @@ module Boundcond
                 if (j==ilnrho) call bc_stellar_surface(f,topbot)
               case ('set')
                 ! BCZ_DOC: set boundary value
-                call bc_sym_z(f,-1,topbot,j,REL=.true.,val=fbcz(:,topbot))
+                call bc_sym_z(f,topbot,j,-1,REL=.true.,VAL=fbcz(j,topbot))
               case ('sep')
-                ! BCY_DOC: set boundary value
-                call bc_sym_z(f,-1,topbot,j,REL=.true.,val=fbcz(:,topbot),val2=fbcz_1(:,topbot),val4=fbcz_2(:,topbot))
+                ! BCZ_DOC: set boundary value
+                call bc_sym_z(f,topbot,j,-1,REL=.true.,VAL=fbcz(j,topbot),VAL2=fbcz_1(j,topbot),VAL4=fbcz_2(j,topbot))
               case ('der')
                 ! BCZ_DOC: set derivative on the boundary
                 call bc_set_der_z(f,topbot,j,fbcz(j,topbot))
@@ -1634,7 +1599,7 @@ module Boundcond
                 call bc_set_div_z(f,topbot,j,fbcz(j,topbot))
               case ('ovr')
                 ! BCZ_DOC: set boundary value
-                call bc_overshoot_z(f,fbcz(:,topbot),topbot,j)
+                call bc_overshoot_z(f,topbot,j,fbcz(j,topbot))
               case ('inf')
                 ! BCZ_DOC: allow inflow, but no outflow
                 call bc_inflow_z(f,topbot,j)
@@ -1650,8 +1615,8 @@ module Boundcond
                 ! BCZ_DOC: forces ghost cells and boundary to not point inwards
                 call bc_outflow_z(f,topbot,j,.true.)
               case ('crk')
-                ! BCY_DOC: no-inflow: copy value of last physical point
-                ! BCY_DOC: to all ghost cells, but suppressing any inflow
+                ! BCZ_DOC: no-inflow: copy value of last physical point
+                ! BCZ_DOC: to all ghost cells, but suppressing any inflow
                 call bc_copy_z_noinflow(f,topbot,j)
               case ('in0')
                 ! BCZ_DOC: allow inflow, but no outflow
@@ -1680,24 +1645,25 @@ module Boundcond
                 ! BCZ_DOC: forces massflux given as
                 ! BCZ_DOC: $\Sigma \rho_i ( u_i + u_0)=\textrm{fbcz1/2}(\rho)$
                 if (j==ilnrho) then
-                   call bc_wind_z(f,topbot,fbcz(j,topbot))
-                   call bc_sym_z(f,+1,topbot,j)           !  's'
-                   call bc_sym_z(f,+1,topbot,iuz)         !  's'
+                  call bc_wind_z(f,topbot,fbcz(j,topbot))
+                  call bc_sym_z(f,topbot,j,+1)           !  's'
+                  call bc_sym_z(f,topbot,iuz,+1)         !  's'
                 endif
               case ('cop')
                 ! BCZ_DOC: copy value of last physical point to all ghost cells
                 call bc_copy_z(f,topbot,j)
-              case ('nil')
-                ! BCZ_DOC: do nothing; assume that everything is set
               case ('tay')
                 call tayler_expansion(f,topbot,j,'z')
               case ('exp')
                 ! BCZ_DOC: exponentiate z ghost zone of other variable
                 call bc_expother_z(f,topbot,j,int(fbcz(j,topbot)))
               case ('slc')
+                ! BCZ_DOC: set x ghost zones from slice.
                 call set_from_slice_z(f,topbot,j)
                 !call set_ghosts_for_onesided_ders(f,topbot,j,3,.true.)
-                call bc_sym_z(f,-1,topbot,j,rel=.true.)
+                call bc_sym_z(f,topbot,j,-1,rel=.true.)
+              case ('nil','','no')
+                ! BCZ_DOC: do nothing; assume that everything is set
               case default
                 bc%bcname=bcz12(j,topbot)
                 bc%ivar=j
@@ -1711,8 +1677,8 @@ module Boundcond
                 if (.not.bc%done) call fatal_error_local("boundconds_z", &
                   "no such boundary condition bcz1/2 = "//trim(bcz12(j,topbot))//" for j="//trim(itoa(j)))
               endselect
-            endif
-          enddo
+            enddo
+          endif
         enddo
       endselect
 !
@@ -1723,7 +1689,7 @@ module Boundcond
 ! Apply boundary conditions to a 1D scalar of arbitrary size.
 !
 ! 29-may-12/ccyang: coded
-!  2-apr-15/MR: optional parameters d2_bound, bound for use in stress-free 
+!  2-apr-15/MR: optional parameters d2_bound, bound for use in stress-free
 !               and normal-field BCs added; these BCs, 'a' and 's' implemented
 !
 ! Input/Output Arguments
@@ -1793,7 +1759,7 @@ module Boundcond
       case ('cop') upper
         penc(ncell+1:ncell+nghost) = penc(ncell)
       case ('s') upper
-        penc(ncell+1:ncell+nghost) = penc(ncell-nghost:ncell-1) 
+        penc(ncell+1:ncell+nghost) = penc(ncell-nghost:ncell-1)
       case ('a') upper
         penc(ncell+1:ncell+nghost) = -penc(ncell-nghost:ncell-1)
         penc(ncell) = 0.
@@ -1863,7 +1829,6 @@ module Boundcond
 !
       case default
         call fatal_error("bc_per_x: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_per_x
@@ -1888,7 +1853,6 @@ module Boundcond
 !
       case default
         call fatal_error("bc_per_y: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_per_y
@@ -1912,7 +1876,7 @@ module Boundcond
 
       if (is_vec) then
 !
-!  Vector quantities need to be transformed from the Cartesian basis to 
+!  Vector quantities need to be transformed from the Cartesian basis to
 !  the local spherical basis.
 !
         jdone=j+2     ! requires adjacent vector components
@@ -1928,7 +1892,7 @@ module Boundcond
 
     endsubroutine bc_yy_y
 !***********************************************************************
-    subroutine bc_pper_y(f,sgn,topbot,j)
+    subroutine bc_pper_y(f,topbot,j,sgn)
 !
 !  Periodic boundary condition across the pole
 !
@@ -1963,7 +1927,6 @@ module Boundcond
         endif
       case default
         call fatal_error("bc_pper_y: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_pper_y
@@ -1988,7 +1951,6 @@ module Boundcond
 !
       case default
         call fatal_error("bc_per_z: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_per_z
@@ -1998,7 +1960,7 @@ module Boundcond
 !  After-communication handling of vector quantities for Yin-Yang grid.
 !
 !  30-nov-15/MR: coded
-!  29-feb-16/MR: avoided double transformation in ghost zone corners 
+!  29-feb-16/MR: avoided double transformation in ghost zone corners
 !                which is already done in bc_yy_y
 !
       use General, only: transform_cart_spher
@@ -2016,19 +1978,19 @@ module Boundcond
 
       if (is_vec) then
 !
-!  Vector quantities need to be transformed from the Cartesian basis to 
+!  Vector quantities need to be transformed from the Cartesian basis to
 !  the local spherical basis.
 !
         jdone=j+2     ! requires adjacent vector components
 
-        iya=1; iye=my          
+        iya=1; iye=my
         if (lfirst_proc_y) iya=m1
         if (llast_proc_y) iye=m2
-      
+
         if (topbot==BOT) then
           call transform_cart_spher(f,iya,iye,1,nghost,j)  ! in-place!
         else
-          call transform_cart_spher(f,iya,iye,n2+1,mz,j)   ! ~  
+          call transform_cart_spher(f,iya,iye,n2+1,mz,j)   ! ~
         endif
       else
         jdone=0
@@ -2093,35 +2055,31 @@ module Boundcond
                       /(-2*tmp1-6*tmp2)
       case default
         call fatal_error("bc_a2r_x: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_a2r_x
 !***********************************************************************
-    subroutine bc_sym_x(f,sgn,topbot,j,rel,val)
+    subroutine bc_sym_x(f,topbot,j,sgn,rel,val)
 !
 !  Symmetry boundary conditions.
-!  (f,-1,topbot,j)            --> antisymmetry             (f  =0)
-!  (f,+1,topbot,j)            --> symmetry                 (f' =0)
-!  (f,-1,topbot,j,REL=.true.) --> generalized antisymmetry (f''=0)
+!  (f,topbot,j,-1)            --> antisymmetry             (f  =0)
+!  (f,topbot,j,+1)            --> symmetry                 (f' =0)
+!  (f,topbot,j,-1,REL=.true.) --> generalized antisymmetry (f''=0)
 !  Don't combine rel=T and sgn=1, that wouldn't make much sense.
 !
 !  11-nov-02/wolf: coded
 !
       integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
-      real, dimension (:), optional :: val
+      real, optional :: val
       integer :: sgn,i,j
       logical, optional :: rel
-      logical :: relative
-!
-      if (present(rel)) then; relative=rel; else; relative=.false.; endif
 !
       select case (topbot)
 !
       case(BOT)               ! bottom boundary
-        if (present(val)) f(l1,:,:,j)=val(j)
-        if (relative) then
+        if (present(val)) f(l1,:,:,j)=val
+        if (loptest(rel)) then
           do i=1,nghost; f(l1-i,:,:,j)=2*f(l1,:,:,j)+sgn*f(l1+i,:,:,j); enddo
         else
           do i=1,nghost; f(l1-i,:,:,j)=              sgn*f(l1+i,:,:,j); enddo
@@ -2129,8 +2087,8 @@ module Boundcond
         endif
 !
       case(TOP)               ! top boundary
-        if (present(val)) f(l2,:,:,j)=val(j)
-        if (relative) then
+        if (present(val)) f(l2,:,:,j)=val
+        if (loptest(rel)) then
           do i=1,nghost; f(l2+i,:,:,j)=2*f(l2,:,:,j)+sgn*f(l2-i,:,:,j); enddo
         else
           do i=1,nghost; f(l2+i,:,:,j)=              sgn*f(l2-i,:,:,j); enddo
@@ -2139,17 +2097,16 @@ module Boundcond
 !
       case default
         call fatal_error("bc_sym_x: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_sym_x
 !***********************************************************************
-    subroutine bc_sym_x_ydep(f,sgn,topbot,j,rel,val)
+    subroutine bc_sym_x_ydep(f,topbot,j,sgn,rel,val)
 !
 !  Symmetry boundary conditions.
-!  (f,-1,topbot,j)            --> antisymmetry             (f  =0)
-!  (f,+1,topbot,j)            --> symmetry                 (f' =0)
-!  (f,-1,topbot,j,REL=.true.) --> generalized antisymmetry (f''=0)
+!  (f,topbot,j,-1)            --> antisymmetry             (f  =0)
+!  (f,topbot,j,+1)            --> symmetry                 (f' =0)
+!  (f,topbot,j,-1,REL=.true.) --> generalized antisymmetry (f''=0)
 !  Don't combine rel=T and sgn=1, that wouldn't make much sense.
 !
 !  11-nov-02/wolf: coded
@@ -2157,22 +2114,19 @@ module Boundcond
 !
       integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
-      real, dimension (:), optional :: val
+      real, optional :: val
       integer :: sgn,i,j
       logical, optional :: rel
-      logical :: relative
 !
       real :: ky
 !
       ky=2.*pi/Lxyz(2)
 !
-      if (present(rel)) then; relative=rel; else; relative=.false.; endif
-!
       select case (topbot)
 !
       case(BOT)               ! bottom boundary
-        if (present(val)) f(l1,:,:,j)=-.5-val(j)*spread(cos(ky*y),2,mz)
-        if (relative) then
+        if (present(val)) f(l1,:,:,j)=-.5-val*spread(cos(ky*y),2,mz)
+        if (loptest(rel)) then
           do i=1,nghost; f(l1-i,:,:,j)=2*f(l1,:,:,j)+sgn*f(l1+i,:,:,j); enddo
         else
           do i=1,nghost; f(l1-i,:,:,j)=              sgn*f(l1+i,:,:,j); enddo
@@ -2180,8 +2134,8 @@ module Boundcond
         endif
 !
       case(TOP)               ! top boundary
-        if (present(val)) f(l2,:,:,j)=-.5-val(j)*spread(cos(ky*y),2,mz)
-        if (relative) then
+        if (present(val)) f(l2,:,:,j)=-.5-val*spread(cos(ky*y),2,mz)
+        if (loptest(rel)) then
           do i=1,nghost; f(l2+i,:,:,j)=2*f(l2,:,:,j)+sgn*f(l2-i,:,:,j); enddo
         else
           do i=1,nghost; f(l2+i,:,:,j)=              sgn*f(l2-i,:,:,j); enddo
@@ -2190,7 +2144,6 @@ module Boundcond
 !
       case default
         call fatal_error("bc_sym_x_ydep: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_sym_x_ydep
@@ -2238,7 +2191,6 @@ module Boundcond
 !
       case default
         call fatal_error("bc_cpc_x: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_cpc_x
@@ -2279,7 +2231,6 @@ module Boundcond
 !
       case default
         call fatal_error("bc_cpz_x: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_cpz_x
@@ -2321,11 +2272,9 @@ module Boundcond
 !
       case default
         call fatal_error("bc_cpp_x: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_cpp_x
-
 !!***********************************************************************
 !    subroutine bc_spr_x(f,topbot,j)
 !!
@@ -2375,7 +2324,6 @@ module Boundcond
 !!
 !      case default
 !        call fatal_error("bc_spr_x: ","topbot should be BOT or TOP")
-!!
 !      endselect
 !!
 !    endsubroutine bc_spr_x
@@ -2413,37 +2361,33 @@ module Boundcond
 !
       case default
         call fatal_error("bc_spr_x: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_spr_x
 !***********************************************************************
-    subroutine bc_symset_x(f,sgn,topbot,j,rel,val)
+    subroutine bc_symset_x(f,topbot,j,sgn,rel,val)
 !
 !  This routine works like bc_sym_x, but sets the function value to val
 !
 !  Symmetry boundary conditions.
-!  (f,-1,topbot,j)            --> antisymmetry             (f  =0)
-!  (f,+1,topbot,j)            --> symmetry                 (f' =0)
-!  (f,-1,topbot,j,REL=.true.) --> generalized antisymmetry (f''=0)
+!  (f,topbot,j,-1)            --> antisymmetry             (f  =0)
+!  (f,topbot,j,+1)            --> symmetry                 (f' =0)
+!  (f,topbot,j,-1,REL=.true.) --> generalized antisymmetry (f''=0)
 !  Don't combine rel=T and sgn=1, that wouldn't make much sense.
 !
 !  11-nov-02/wolf: coded
 !
       integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
-      real, dimension (:), optional :: val
       integer :: sgn,i,j
       logical, optional :: rel
-      logical :: relative
-!
-      if (present(rel)) then; relative=rel; else; relative=.false.; endif
+      real, optional :: val
 !
       select case (topbot)
 !
       case(BOT)               ! bottom boundary
-        if (present(val)) f(l1,m1:m2,n1:n2,j)=val(j)
-        if (relative) then
+        if (present(val)) f(l1,m1:m2,n1:n2,j)=val
+        if (loptest(rel)) then
           do i=1,nghost; f(l1-i,:,:,j)=2*f(l1,:,:,j)+sgn*f(l1+i,:,:,j); enddo
         else
           do i=1,nghost; f(l1-i,:,:,j)=              sgn*f(l1+i,:,:,j); enddo
@@ -2451,8 +2395,8 @@ module Boundcond
         endif
 !
       case(TOP)               ! top boundary
-        if (present(val)) f(l2,m1:m2,n1:n2,j)=val(j)
-        if (relative) then
+        if (present(val)) f(l2,m1:m2,n1:n2,j)=val
+        if (loptest(rel)) then
           do i=1,nghost; f(l2+i,:,:,j)=2*f(l2,:,:,j)+sgn*f(l2-i,:,:,j); enddo
         else
           do i=1,nghost; f(l2+i,:,:,j)=              sgn*f(l2-i,:,:,j); enddo
@@ -2461,7 +2405,6 @@ module Boundcond
 !
       case default
         call fatal_error("bc_symset_x: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_symset_x
@@ -2474,20 +2417,19 @@ module Boundcond
 !
       integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
-      real, dimension (:) :: val
+      real :: val
       integer :: i,j
 !
       select case (topbot)
 !
       case(BOT)               ! bottom boundary
-        do i=1,nghost; f(l1-i,:,:,j)=f(l1+i,:,:,j)-dx2_bound(-i)*val(j); enddo
+        do i=1,nghost; f(l1-i,:,:,j)=f(l1+i,:,:,j)-dx2_bound(-i)*val; enddo
 !
       case(TOP)               ! top boundary
-        do i=1,nghost; f(l2+i,:,:,j)=f(l2-i,:,:,j)+dx2_bound( i)*val(j); enddo
+        do i=1,nghost; f(l2+i,:,:,j)=f(l2-i,:,:,j)+dx2_bound( i)*val; enddo
 !
       case default
         call fatal_error("bc_symderset_x: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_symderset_x
@@ -2530,12 +2472,11 @@ module Boundcond
 !
       case default
         call fatal_error("bc_symset0der_x: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_symset0der_x
 !***********************************************************************
-    subroutine bc_slope_x(f,slope,topbot,j,rel,val)
+    subroutine bc_slope_x(f,topbot,j,slope,rel,val)
 !
 ! FIXME: Documentation is missing => Axel?
 ! WARNING: the code for "rel=.true." is currently nowhere used.
@@ -2544,39 +2485,36 @@ module Boundcond
 !
       integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
-      real, dimension (:), optional :: val
-      real, dimension (:) :: slope
+      real :: slope
+      real, optional :: val
       integer :: i,j
       logical, optional :: rel
-      logical :: relative
-!
-      if (present(rel)) then; relative=rel; else; relative=.false.; endif
 !
       select case (topbot)
 !
       case(BOT)               ! bottom boundary
-        if (present(val)) f(l1,m1:m2,n1:n2,j)=val(j)
-        if (relative) then
+        if (present(val)) f(l1,m1:m2,n1:n2,j)=val
+        if (loptest(rel)) then
           do i=1,nghost
-            f(l1-i,:,:,j)=2*f(l1,:,:,j)+slope(j)*f(l1+i,:,:,j)*x(l1+i)/x(l1-i)
+            f(l1-i,:,:,j)=2*f(l1,:,:,j)+slope*f(l1+i,:,:,j)*x(l1+i)/x(l1-i)
           enddo
         else
           do i=1,nghost
-            f(l1-i,:,:,j)=f(l1+i,:,:,j)*(x(l1+i)/x(l1-i))**slope(j)
+            f(l1-i,:,:,j)=f(l1+i,:,:,j)*(x(l1+i)/x(l1-i))**slope
           enddo
 !         f(l1,:,:,j)=(2.*x(l1+1)*f(l1+1,:,:,j)-&
 !          .5*x(l1+2)*f(l1+2,:,:,j))/(1.5*x(l1))
         endif
 !
       case(TOP)               ! top boundary
-        if (present(val)) f(l2,m1:m2,n1:n2,j)=val(j)
-        if (relative) then
+        if (present(val)) f(l2,m1:m2,n1:n2,j)=val
+        if (loptest(rel)) then
           do i=1,nghost
-            f(l2+i,:,:,j)=2*f(l2,:,:,j)+slope(j)*f(l2-i,:,:,j)
+            f(l2+i,:,:,j)=2*f(l2,:,:,j)+slope*f(l2-i,:,:,j)
           enddo
         else
           do i=1,nghost
-            f(l2+i,:,:,j)=f(l2-i,:,:,j)*(x(l2-i)/x(l2+i))**slope(j)
+            f(l2+i,:,:,j)=f(l2-i,:,:,j)*(x(l2-i)/x(l2+i))**slope
           enddo
 !         f(l2,:,:,j)=(2.*x(l2-1)*f(l2-1,:,:,j)-&
 !           .5*x(l2-2)*f(l2-2,:,:,j))/(1.5*x(l2))
@@ -2584,19 +2522,18 @@ module Boundcond
 !
       case default
         call fatal_error("bc_slope_x: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_slope_x
 !***********************************************************************
-    subroutine bc_ghost_slope_x(f,slope,topbot,j)
+    subroutine bc_ghost_slope_x(f,topbot,j,slope)
 !
 !  This maintains a constant slope within the ghost cells.
 !
 !  02-Sep-2017/PABourdin: coded as a replacement for 'bc_slope_x'
 !
       real, dimension(:,:,:,:), intent(inout) :: f
-      real, dimension(:), intent(in) :: slope
+      real, intent(in) :: slope
       integer, intent(IN) :: topbot
       integer, intent(in) :: j
 !
@@ -2606,29 +2543,28 @@ module Boundcond
 !
       case(BOT)               ! bottom boundary
         do i = 1, nghost
-          f(l1-i,:,:,j) = f(l1,:,:,j) + slope(j) * (x(l1-i) - x(l1))
+          f(l1-i,:,:,j) = f(l1,:,:,j) + slope * (x(l1-i) - x(l1))
         enddo
 !
       case(TOP)               ! top boundary
         do i = 1, nghost
-          f(l2+i,:,:,j) = f(l2,:,:,j) + slope(j) * (x(l2+i) - x(l2))
+          f(l2+i,:,:,j) = f(l2,:,:,j) + slope * (x(l2+i) - x(l2))
         enddo
 !
       case default
         call fatal_error("bc_ghost_slope_x: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_ghost_slope_x
 !***********************************************************************
-    subroutine bc_shear_x(f,slope,abscissa,topbot,j)
+    subroutine bc_shear_x(f,topbot,j,slope,abscissa)
 !
 !  This maintains a constant shear proportional to x at the boundary.
 !
 !  02-Sep-2017/PABourdin: coded
 !
       real, dimension(:,:,:,:), intent(inout) :: f
-      real, dimension(:), intent(in) :: slope, abscissa
+      real, intent(in) :: slope, abscissa
       integer, intent(IN) :: topbot
       integer, intent(in) :: j
 !
@@ -2638,29 +2574,28 @@ module Boundcond
 !
       case(BOT)               ! bottom boundary
         do i = 1, nghost
-          f(l1-i,:,:,j) = abscissa(j) + slope(j) * x(l1-i)
+          f(l1-i,:,:,j) = abscissa + slope * x(l1-i)
         enddo
 !
       case(TOP)               ! top boundary
         do i = 1, nghost
-          f(l2+i,:,:,j) = abscissa(j) + slope(j) * x(l2+i)
+          f(l2+i,:,:,j) = abscissa + slope * x(l2+i)
         enddo
 !
       case default
         call fatal_error("bc_shear_x: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_shear_x
 !***********************************************************************
-    subroutine bc_shear_y(f,slope,abscissa,topbot,j)
+    subroutine bc_shear_y(f,topbot,j,slope,abscissa)
 !
 !  This maintains a constant shear proportional to y at the boundary.
 !
 !  04-Sep-2017/PABourdin: coded
 !
       real, dimension(:,:,:,:), intent(inout) :: f
-      real, dimension(:), intent(in) :: slope, abscissa
+      real, intent(in) :: slope, abscissa
       integer, intent(IN) :: topbot
       integer, intent(in) :: j
 !
@@ -2670,29 +2605,28 @@ module Boundcond
 !
       case(BOT)               ! bottom boundary
         do i = 1, nghost
-          f(:,m1-i,:,j) = abscissa(j) + slope(j) * y(m1-i)
+          f(:,m1-i,:,j) = abscissa + slope * y(m1-i)
         enddo
 !
       case(TOP)               ! top boundary
         do i = 1, nghost
-          f(:,m2+i,:,j) = abscissa(j) + slope(j) * y(m2+i)
+          f(:,m2+i,:,j) = abscissa + slope * y(m2+i)
         enddo
 !
       case default
         call fatal_error("bc_shear_y: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_shear_y
 !***********************************************************************
-    subroutine bc_shear_z(f,slope,abscissa,topbot,j)
+    subroutine bc_shear_z(f,topbot,j,slope,abscissa)
 !
 !  This maintains a constant shear proportional to z at the boundary.
 !
 !  04-Sep-2017/PABourdin: coded
 !
       real, dimension(:,:,:,:), intent(inout) :: f
-      real, dimension(:), intent(in) :: slope, abscissa
+      real, intent(in) :: slope, abscissa
       integer, intent(IN) :: topbot
       integer, intent(in) :: j
 !
@@ -2702,56 +2636,52 @@ module Boundcond
 !
       case(BOT)               ! bottom boundary
         do i = 1, nghost
-          f(:,:,n1-i,j) = abscissa(j) + slope(j) * z(n1-i)
+          f(:,:,n1-i,j) = abscissa + slope * z(n1-i)
         enddo
 !
       case(TOP)               ! top boundary
         do i = 1, nghost
-          f(:,:,n2+i,j) = abscissa(j) + slope(j) * z(n2+i)
+          f(:,:,n2+i,j) = abscissa + slope * z(n2+i)
         enddo
 !
       case default
         call fatal_error("bc_shear_z: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_shear_z
 !***********************************************************************
-    subroutine bc_dr0_x(f,slope,topbot,j,rel,val)
+    subroutine bc_dr0_x(f,topbot,j,slope,rel,val)
 !
 ! FIXME: This documentation is almost certainly wrong
 !
 !  Symmetry boundary conditions.
-!  (f,-1,topbot,j)            --> antisymmetry             (f  =0)
-!  (f,+1,topbot,j)            --> symmetry                 (f' =0)
-!  (f,-1,topbot,j,REL=.true.) --> generalized antisymmetry (f''=0)
+!  (f,topbot,j,-1)            --> antisymmetry             (f  =0)
+!  (f,topbot,j,+1)            --> symmetry                 (f' =0)
+!  (f,topbot,j,-1,REL=.true.) --> generalized antisymmetry (f''=0)
 !  Don't combine rel=T and sgn=1, that wouldn't make much sense.
 !
 !  25-feb-07/axel: adapted from bc_sym_x
 !
       integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
-      real, dimension (:), optional :: val
-      real, dimension (:) :: slope
+      real, optional :: val
+      real :: slope
       integer :: i,j
       ! Abbreviations to keep compiler from complaining in 1-d or 2-d:
       integer :: l1_4, l1_5, l1_6
       integer :: l2_4, l2_5, l2_6
       logical, optional :: rel
-      logical :: relative
 !
       l1_4=l1+4; l1_5=l1+5; l1_6=l1+6
       l2_4=l2-4; l2_5=l2-5; l2_6=l2-6
 !
-      if (present(rel)) then; relative=rel; else; relative=.false.; endif
-!
       select case (topbot)
 !
       case(BOT)               ! bottom boundary
-        if (present(val)) f(l1,m1:m2,n1:n2,j)=val(j)
-        if (relative) then
+        if (present(val)) f(l1,m1:m2,n1:n2,j)=val
+        if (loptest(rel)) then
           do i=1,nghost
-            f(l1-i,:,:,j)=2*f(l1,:,:,j)+slope(j)*f(l1+i,:,:,j)*x(l1+i)/x(l1-i)
+            f(l1-i,:,:,j)=2*f(l1,:,:,j)+slope*f(l1+i,:,:,j)*x(l1+i)/x(l1-i)
           enddo
         else
           f(l1,:,:,j)=(360.*x(l1+1)*f(l1+1,:,:,j)-450.*x(l1+2)*f(l1+2,:,:,j) &
@@ -2764,10 +2694,10 @@ module Boundcond
         endif
 !
       case(TOP)               ! top boundary
-        if (present(val)) f(l2,m1:m2,n1:n2,j)=val(j)
-        if (relative) then
+        if (present(val)) f(l2,m1:m2,n1:n2,j)=val
+        if (loptest(rel)) then
           do i=1,nghost
-            f(l2+i,:,:,j)=2*f(l2,:,:,j)+slope(j)*f(l2-i,:,:,j)
+            f(l2+i,:,:,j)=2*f(l2,:,:,j)+slope*f(l2-i,:,:,j)
           enddo
         else
           f(l2,:,:,j)=(360.*x(l2-1)*f(l2-1,:,:,j)-450.*x(l2-2)*f(l2-2,:,:,j) &
@@ -2781,12 +2711,11 @@ module Boundcond
 !
       case default
         call fatal_error("bc_dr0_x: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_dr0_x
 !***********************************************************************
-    subroutine bc_overshoot_x(f,dist,topbot,j)
+    subroutine bc_overshoot_x(f,topbot,j,dist)
 !
 !  Overshoot boundary conditions, ie (d/dx-1/dist) f = 0.
 !  Is implemented as d/dx [ f*exp(-x/dist) ] = 0,
@@ -2797,7 +2726,7 @@ module Boundcond
 !
       integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
-      real, dimension (:) :: dist
+      real :: dist
       integer :: i,j
 !
       select case (topbot)
@@ -2806,26 +2735,25 @@ module Boundcond
 !
       case(BOT)               ! bottom boundary
         do i=1,nghost
-          f(l1-i,:,:,j)=f(l1+i,:,:,j)*exp(-dx2_bound(-i)/dist(j))
+          f(l1-i,:,:,j)=f(l1+i,:,:,j)*exp(-dx2_bound(-i)/dist)
         enddo
 !
 !  top
 !
       case(TOP)               ! top boundary
         do i=1,nghost
-          f(l2+i,:,:,j)=f(l2-i,:,:,j)*exp(dx2_bound(i))/dist(j)
+          f(l2+i,:,:,j)=f(l2-i,:,:,j)*exp(dx2_bound(i)/dist)
         enddo
 !
 !  default
 !
       case default
         call fatal_error("bc_overshoot_x: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_overshoot_x
 !***********************************************************************
-    subroutine bc_overshoot_z(f,dist,topbot,j)
+    subroutine bc_overshoot_z(f,topbot,j,dist)
 !
 !  Overshoot boundary conditions, ie (d/dz-1/dist) f = 0.
 !  Is implemented as d/dz [ f*exp(-z/dist) ] = 0,
@@ -2836,7 +2764,7 @@ module Boundcond
 !
       integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
-      real, dimension (:) :: dist
+      real :: dist
       integer :: i,j
 !
       select case (topbot)
@@ -2845,93 +2773,88 @@ module Boundcond
 !
       case(BOT)               ! bottom boundary
         do i=1,nghost
-          f(:,:,n1-i,j)=f(:,:,n1+i,j)*exp(-dz2_bound(-i)/dist(j))
+          f(:,:,n1-i,j)=f(:,:,n1+i,j)*exp(-dz2_bound(-i)/dist)
         enddo
 !
 !  top
 !
       case(TOP)               ! top boundary
         do i=1,nghost
-          f(:,:,n2+i,j)=f(:,:,n2-i,j)*exp(dz2_bound(i)/dist(j))
+          f(:,:,n2+i,j)=f(:,:,n2-i,j)*exp(dz2_bound(i)/dist)
         enddo
 !
 !  default
 !
       case default
         call fatal_error("bc_overshoot_z: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_overshoot_z
 !***********************************************************************
-    subroutine bc_antis_x(f,slope,topbot,j,rel,val)
+    subroutine bc_antis_x(f,topbot,j,slope,rel,val)
 !
 !  Print a warning to prompt potential users to document this.
 !  This routine seems an experimental one to me (Axel)
 !
 !  Symmetry boundary conditions.
-!  (f,-1,topbot,j)            --> antisymmetry             (f  =0)
-!  (f,+1,topbot,j)            --> symmetry                 (f' =0)
-!  (f,-1,topbot,j,REL=.true.) --> generalized antisymmetry (f''=0)
+!  (f,topbot,j,-1)            --> antisymmetry             (f  =0)
+!  (f,topbot,j,+1)            --> symmetry                 (f' =0)
+!  (f,topbot,j,-1,REL=.true.) --> generalized antisymmetry (f''=0)
 !  Don't combine rel=T and sgn=1, that wouldn't make much sense.
 !
 !  25-feb-07/axel: adapted from bc_slope_x
 !
       integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
-      real, dimension (:), optional :: val
-      real, dimension (:) :: slope
+      real :: slope
       integer :: i,j
       logical, optional :: rel
-      logical :: relative
+      real, optional :: val
 !
 !  Print a warning to prompt potential users to document this.
 !
       call fatal_error('bc_antis_x','outdated/invalid? Document if needed')
 !
-      if (present(rel)) then; relative=rel; else; relative=.false.; endif
-!
       select case (topbot)
 !
       case(BOT)               ! bottom boundary
-        if (present(val)) f(l1,m1:m2,n1:n2,j)=val(j)
-        if (relative) then
+        if (present(val)) f(l1,m1:m2,n1:n2,j)=val
+        if (loptest(rel)) then
           do i=1,nghost
-            f(l1-i,:,:,j)=2*f(l1,:,:,j)+slope(j)*f(l1+i,:,:,j)*x(l1+i)/x(l1-i)
+            f(l1-i,:,:,j)=2*f(l1,:,:,j)+slope*f(l1+i,:,:,j)*x(l1+i)/x(l1-i)
           enddo
         else
           f(l1,:,:,j)=0.
           do i=1,nghost
-            f(l1-i,:,:,j)=-f(l1+i,:,:,j)*(x(l1+i)/x(l1-i))**slope(j)
+            f(l1-i,:,:,j)=-f(l1+i,:,:,j)*(x(l1+i)/x(l1-i))**slope
           enddo
         endif
 !
       case(TOP)               ! top boundary
-        if (present(val)) f(l2,m1:m2,n1:n2,j)=val(j)
-        if (relative) then
+        if (present(val)) f(l2,m1:m2,n1:n2,j)=val
+        if (loptest(rel)) then
           do i=1,nghost
-            f(l2+i,:,:,j)=2*f(l2,:,:,j)+slope(j)*f(l2-i,:,:,j)
+            f(l2+i,:,:,j)=2*f(l2,:,:,j)+slope*f(l2-i,:,:,j)
           enddo
         else
           f(l2,:,:,j)=0.
           do i=1,nghost
-            f(l2+i,:,:,j)=-f(l2-i,:,:,j)*(x(l2-i)/x(l2+i))**slope(j)
+            f(l2+i,:,:,j)=-f(l2-i,:,:,j)*(x(l2-i)/x(l2+i))**slope
           enddo
         endif
 !
       case default
         call fatal_error("bc_antis_x: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_antis_x
 !***********************************************************************
-    subroutine bc_sym_y(f,sgn,topbot,j,rel,val,val2,val4)
+    subroutine bc_sym_y(f,topbot,j,sgn,rel,val,val2,val4)
 !
 !  Symmetry boundary conditions.
-!  (f,-1,topbot,j)            --> antisymmetry             (f  =0)
-!  (f,+1,topbot,j)            --> symmetry                 (f' =0)
-!  (f,-1,topbot,j,REL=.true.) --> generalized antisymmetry (f''=0)
+!  (f,topbot,j,-1)            --> antisymmetry             (f  =0)
+!  (f,topbot,j,+1)            --> symmetry                 (f' =0)
+!  (f,topbot,j,-1,REL=.true.) --> generalized antisymmetry (f''=0)
 !  Don't combine rel=T and sgn=1, that wouldn't make much sense.
 !
 !  11-nov-02/wolf: coded
@@ -2940,20 +2863,17 @@ module Boundcond
 !
       integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
-      real, dimension (:), optional :: val,val2,val4
+      real, optional :: val,val2,val4
       integer :: sgn,i,j
       logical, optional :: rel
-      logical :: relative
-!
-      if (present(rel)) then; relative=rel; else; relative=.false.; endif
 !
       select case (topbot)
 !
       case(BOT)               ! bottom boundary
-        if (present(val)) f(:,m1,:,j)=val(j)
-        if (present(val2)) f(:,m1,:,j)=f(:,m1,:,j)+val2(j)*spread(x**2,2,size(f,3))
-        if (present(val4)) f(:,m1,:,j)=f(:,m1,:,j)+val4(j)*spread(x**4,2,size(f,3))
-        if (relative) then
+        if (present(val)) f(:,m1,:,j)=val
+        if (present(val2)) f(:,m1,:,j)=f(:,m1,:,j)+val2*spread(x**2,2,size(f,3))
+        if (present(val4)) f(:,m1,:,j)=f(:,m1,:,j)+val4*spread(x**4,2,size(f,3))
+        if (loptest(rel)) then
           do i=1,nghost; f(:,m1-i,:,j)=2*f(:,m1,:,j)+sgn*f(:,m1+i,:,j); enddo
         else
           do i=1,nghost; f(:,m1-i,:,j)=              sgn*f(:,m1+i,:,j); enddo
@@ -2961,10 +2881,10 @@ module Boundcond
         endif
 !
       case(TOP)               ! top boundary
-        if (present(val)) f(:,m2,:,j)=val(j)
-        if (present(val2)) f(:,m2,:,j)=f(:,m2,:,j)+val2(j)*spread(x**2,2,size(f,3))
-        if (present(val4)) f(:,m2,:,j)=f(:,m2,:,j)+val4(j)*spread(x**4,2,size(f,3))
-        if (relative) then
+        if (present(val)) f(:,m2,:,j)=val
+        if (present(val2)) f(:,m2,:,j)=f(:,m2,:,j)+val2*spread(x**2,2,size(f,3))
+        if (present(val4)) f(:,m2,:,j)=f(:,m2,:,j)+val4*spread(x**4,2,size(f,3))
+        if (loptest(rel)) then
           do i=1,nghost; f(:,m2+i,:,j)=2*f(:,m2,:,j)+sgn*f(:,m2-i,:,j); enddo
         else
           do i=1,nghost; f(:,m2+i,:,j)=              sgn*f(:,m2-i,:,j); enddo
@@ -2973,7 +2893,6 @@ module Boundcond
 !
       case default
         call fatal_error("bc_sym_y: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_sym_y
@@ -3034,7 +2953,6 @@ module Boundcond
 !
       case default
         call fatal_error("bc_sym_y: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_stratified_y
@@ -3092,21 +3010,20 @@ module Boundcond
 !
       case default
         call fatal_error("bc_sym_z: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_stratified_z
 !***********************************************************************
-    subroutine bc_symset_y(f,sgn,topbot,j,rel,val)
+    subroutine bc_symset_y(f,topbot,j,sgn,rel,val)
 !
 !  This routine works like bc_sym_y, but sets the function value to what
 !  it should be for vanishing one-sided derivative.
 !  At the moment the derivative is only 2nd order accurate.
 !
 !  Symmetry boundary conditions.
-!  (f,-1,topbot,j)            --> antisymmetry             (f  =0)
-!  (f,+1,topbot,j)            --> symmetry                 (f' =0)
-!  (f,-1,topbot,j,REL=.true.) --> generalized antisymmetry (f''=0)
+!  (f,topbot,j,-1)            --> antisymmetry             (f  =0)
+!  (f,topbot,j,+1)            --> symmetry                 (f' =0)
+!  (f,topbot,j,-1,REL=.true.) --> generalized antisymmetry (f''=0)
 !  Don't combine rel=T and sgn=1, that wouldn't make much sense.
 !
 !  11-nov-02/wolf: coded
@@ -3114,18 +3031,15 @@ module Boundcond
 !
       integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
-      real, dimension (:), optional :: val
+      real, optional :: val
       integer :: sgn,i,j
       logical, optional :: rel
-      logical :: relative
-!
-      if (present(rel)) then; relative=rel; else; relative=.false.; endif
 !
       select case (topbot)
 !
       case(BOT)               ! bottom boundary
-        if (present(val)) f(l1:l2,m1,n1:n2,j)=val(j)
-        if (relative) then
+        if (present(val)) f(l1:l2,m1,n1:n2,j)=val
+        if (loptest(rel)) then
           do i=1,nghost; f(:,m1-i,:,j)=2*f(:,m1,:,j)+sgn*f(:,m1+i,:,j); enddo
         else
           do i=1,nghost; f(:,m1-i,:,j)=              sgn*f(:,m1+i,:,j); enddo
@@ -3133,8 +3047,8 @@ module Boundcond
         endif
 !
       case(TOP)               ! top boundary
-        if (present(val)) f(l1:l2,m2,n1:n2,j)=val(j)
-        if (relative) then
+        if (present(val)) f(l1:l2,m2,n1:n2,j)=val
+        if (loptest(rel)) then
           do i=1,nghost; f(:,m2+i,:,j)=2*f(:,m2,:,j)+sgn*f(:,m2-i,:,j); enddo
         else
           do i=1,nghost; f(:,m2+i,:,j)=              sgn*f(:,m2-i,:,j); enddo
@@ -3143,7 +3057,6 @@ module Boundcond
 !
       case default
         call fatal_error("bc_symset_y: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_symset_y
@@ -3156,20 +3069,19 @@ module Boundcond
 !
       integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
-      real, dimension (:) :: val
+      real :: val
       integer :: i,j
 !
       select case (topbot)
 !
       case(BOT)               ! bottom boundary
-        do i=1,nghost; f(:,m1-i,:,j)=f(:,m1+i,:,j)-dy2_bound(-i)*val(j); enddo
+        do i=1,nghost; f(:,m1-i,:,j)=f(:,m1+i,:,j)-dy2_bound(-i)*val; enddo
 !
       case(TOP)               ! top boundary
-        do i=1,nghost; f(:,m2+i,:,j)=f(:,m2-i,:,j)+dy2_bound(i)*val(j); enddo
+        do i=1,nghost; f(:,m2+i,:,j)=f(:,m2-i,:,j)+dy2_bound(i)*val; enddo
 !
       case default
         call fatal_error("bc_symderset_y: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_symderset_y
@@ -3183,10 +3095,10 @@ module Boundcond
       integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       real, dimension (size(f,1),size(f,3)) :: derval
-      real, dimension (:) :: val
+      real :: val
       integer :: i,j
 !
-      derval=spread((xyz1(1)-x)*val(j),2,size(f,3))
+      derval=spread((xyz1(1)-x)*val,2,size(f,3))
       select case (topbot)
 !
       case(BOT)               ! bottom boundary
@@ -3197,7 +3109,6 @@ module Boundcond
 !
       case default
         call fatal_error("bc_csymderset_y: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_csymderset_y
@@ -3240,7 +3151,6 @@ module Boundcond
 !
       case default
         call fatal_error("bc_symset0der_y: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_symset0der_y
@@ -3294,17 +3204,16 @@ module Boundcond
 !
       case default
         call fatal_error("bc_spt_y: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_spt_y
 !***********************************************************************
-    subroutine bc_sym_z(f,sgn,topbot,j,rel,val,val2,val4)
+    subroutine bc_sym_z(f,topbot,j,sgn,rel,val,val2,val4)
 !
 !  Symmetry boundary conditions.
-!  (f,-1,topbot,j)            --> antisymmetry             (f  =0)
-!  (f,+1,topbot,j)            --> symmetry                 (f' =0)
-!  (f,-1,topbot,j,REL=.true.) --> generalized antisymmetry (f''=0)
+!  (f,topbot,j,-1)            --> antisymmetry             (f  =0)
+!  (f,topbot,j,+1)            --> symmetry                 (f' =0)
+!  (f,topbot,j,-1,REL=.true.) --> generalized antisymmetry (f''=0)
 !  Don't combine rel=T and sgn=1, that wouldn't make much sense.
 !
 !  11-nov-02/wolf: coded
@@ -3312,20 +3221,17 @@ module Boundcond
 !
       integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
-      real, dimension (:), optional :: val,val2,val4
+      real, optional :: val,val2,val4
       integer :: sgn,i,j
       logical, optional :: rel
-      logical :: relative
-!
-      if (present(rel)) then; relative=rel; else; relative=.false.; endif
 !
       select case (topbot)
 !
       case(BOT)               ! bottom boundary
-        if (present(val)) f(:,:,n1,j)=val(j)
-        if (present(val2)) f(:,:,n1,j)=f(:,:,n1,j)+val2(j)*spread(x**2,2,size(f,2))
-        if (present(val4)) f(:,:,n1,j)=f(:,:,n1,j)+val4(j)*spread(x**4,2,size(f,2))
-        if (relative) then
+        if (present(val)) f(:,:,n1,j)=val
+        if (present(val2)) f(:,:,n1,j)=f(:,:,n1,j)+val2*spread(x**2,2,size(f,2))
+        if (present(val4)) f(:,:,n1,j)=f(:,:,n1,j)+val4*spread(x**4,2,size(f,2))
+        if (loptest(rel)) then
           do i=1,nghost; f(:,:,n1-i,j)=2*f(:,:,n1,j)+sgn*f(:,:,n1+i,j);
             if (.false..and.j==3) then
 !if (i==1) print*, f(4,4:9,n1,j)
@@ -3339,16 +3245,16 @@ module Boundcond
             endif
           enddo
         else
-!if (ldownsampling) print*, 'size,n1,j=', size(f,1), size(f,2), size(f,3), size(f,4),n1,j 
+!if (ldownsampling) print*, 'size,n1,j=', size(f,1), size(f,2), size(f,3), size(f,4),n1,j
           do i=1,nghost; f(:,:,n1-i,j)=              sgn*f(:,:,n1+i,j); enddo
           if (sgn<0) f(:,:,n1,j) = 0. ! set bdry value=0 (indep of initcond)
         endif
 !
       case(TOP)               ! top boundary
-        if (present(val)) f(:,:,n2,j)=val(j)
-        if (present(val2)) f(:,:,n2,j)=f(:,:,n2,j)+val2(j)*spread(x**2,2,size(f,2))
-        if (present(val4)) f(:,:,n2,j)=f(:,:,n2,j)+val4(j)*spread(x**4,2,size(f,2))
-        if (relative) then
+        if (present(val)) f(:,:,n2,j)=val
+        if (present(val2)) f(:,:,n2,j)=f(:,:,n2,j)+val2*spread(x**2,2,size(f,2))
+        if (present(val4)) f(:,:,n2,j)=f(:,:,n2,j)+val4*spread(x**4,2,size(f,2))
+        if (loptest(rel)) then
           do i=1,nghost; f(:,:,n2+i,j)=f(:,:,n2,j)+(f(:,:,n2,j)+sgn*f(:,:,n2-i,j));
           enddo
         else
@@ -3358,12 +3264,11 @@ module Boundcond
 !
       case default
         call fatal_error("bc_sym_z: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_sym_z
 !***********************************************************************
-    subroutine bc_sf_x(f,sgn,topbot,j)
+    subroutine bc_sf_x(f,topbot,j,sgn)
 !
 !  Symmetric/antisymmetric boundary conditions with respect to the interface.
 !  i.e. where the reflection plane is between the last mesh point and first
@@ -3391,7 +3296,7 @@ module Boundcond
 !
     endsubroutine bc_sf_x
 !***********************************************************************
-    subroutine bc_sf_y(f,sgn,topbot,j)
+    subroutine bc_sf_y(f,topbot,j,sgn)
 !
 !  Symmetric/antisymmetric boundary conditions with respect to the interface.
 !  i.e. where the reflection plane is between the last mesh point and first
@@ -3419,7 +3324,7 @@ module Boundcond
 !
     endsubroutine bc_sf_y
 !***********************************************************************
-    subroutine bc_sf_z(f,sgn,topbot,j)
+    subroutine bc_sf_z(f,topbot,j,sgn)
 !
 !  Symmetric/antisymmetric boundary conditions with respect to the interface.
 !  i.e. where the reflection plane is between the last mesh point and first
@@ -3485,7 +3390,6 @@ module Boundcond
 !
       case default
         call fatal_error("bc_symset0der_z: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_symset0der_z
@@ -3513,7 +3417,6 @@ module Boundcond
 !
       case default
         call fatal_error('bc_set_der_x',"topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_set_der_x
@@ -3541,7 +3444,6 @@ module Boundcond
         do i=1,nghost; f(l2+i,:,:,j)=val; enddo
       case default
         call fatal_error('bc_fix_x',"topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_fix_x
@@ -3562,15 +3464,14 @@ module Boundcond
       logical, save :: lbc_file_x=.true.
 !
       if (ldownsampling) then
-        call warning('bc_file_x','Not available for downsampling')
+        call warning('bc_file_x','Not available for downsampling')    !,lfirst_proc_yz)
         return
       endif
 !
 !  Allocate memory for large array.
 !
       allocate(bc_file_x_array(mx,my,mz,mvar),stat=stat)
-      if (stat>0) call fatal_error('bc_file_x', &
-          'Could not allocate memory for bc_file_x_array')
+      if (stat>0) call fatal_error('bc_file_x','could not allocate bc_file_x_array')
 !
       if (lbc_file_x) then
         if (lroot) then
@@ -3581,13 +3482,13 @@ module Boundcond
             ! end of file
             if (lroot) print*,'need file with dimension: ',mx,my,mz,mvar
             deallocate(bc_file_x_array)
-            call stop_it("boundary file bc_file_x.dat has incorrect size")
+            call fatal_error('bc_file_x',"boundary file bc_file_x.dat has incorrect size")
           endif
           close(9)
         endif
         lbc_file_x=.false.
       endif
-      
+
       iszx=size(f,1)
 !
       select case (topbot)
@@ -3620,7 +3521,6 @@ module Boundcond
         enddo
       case default
         call fatal_error('bc_fix_x',"topbot should be BOT or TOP")
-!
       endselect
 !
       deallocate(bc_file_x_array)
@@ -3655,10 +3555,9 @@ module Boundcond
 !
         case default
           call fatal_error('bc_set_spder_x',"topbot should be BOT or TOP")
-!
         endselect
       else
-        call stop_it('bc_set_spder_x valid only in spherical coordinate system')
+        call fatal_error('bc_set_spder_x','valid only in spherical coordinates')
       endif
 !
     endsubroutine bc_set_spder_x
@@ -3695,7 +3594,6 @@ module Boundcond
 !
       case default
         call fatal_error('bc_set_pfc_x',"topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_set_pfc_x
@@ -3729,7 +3627,6 @@ module Boundcond
 !
       case default
         call fatal_error('bc_set_nfr_x',"topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_set_nfr_x
@@ -3751,7 +3648,7 @@ module Boundcond
       if (topbot==BOT) then
         call bval_from_3rd(f,topbot,j,1,-1./x(l1))
       else
-        call bval_from_3rd(f,topbot,j,1,-1./x(l2)) 
+        call bval_from_3rd(f,topbot,j,1,-1./x(l2))
       endif
       call set_ghosts_for_onesided_ders(f,topbot,j,1,.true.)
 !
@@ -3808,7 +3705,6 @@ module Boundcond
 !
       case default
         call fatal_error('bc_set_sa2_x',"topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_set_sa2_x
@@ -3836,6 +3732,9 @@ module Boundcond
       logical, pointer :: llambda_effect, llambda_scale_with_nu
       integer :: iy, k
       real :: fac,sth,lambda_exp
+
+      if (j==iux) call fatal_error('bc_set_sfree_x', &
+                                   'stress-free BC at r boundary not allowed for uu_r')
 !
 ! -------- Either case get the lambda variables first -----------
 !
@@ -3979,12 +3878,11 @@ module Boundcond
 !
       case default
         call fatal_error('bc_set_sfree_x',"topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_set_sfree_x
 ! **********************************************************************
-    subroutine bc_set_jethat_x(f,jj,topbot,fracall,uzeroall)
+    subroutine bc_set_jethat_x(f,topbot,jj,frac,uzero)
 !
 !  Sets tophat velocity profile at the inner (bot) boundary
 !
@@ -3996,8 +3894,8 @@ module Boundcond
       real, dimension (:,:,:,:), intent (inout) :: f
       integer, intent(in) :: jj
       integer :: i,j,k
-      real, dimension(:),intent(in) :: fracall,uzeroall
-      real :: frac,uzero,ylim,ymid,y1,zlim,zmid,z1
+      real, intent(in) :: frac,uzero
+      real :: ylim,ymid,y1,zlim,zmid,z1
       real :: yhat_min,yhat_max,zhat_min,zhat_max
       real, parameter :: width_hat=0.01
       real, dimension (m2-m1+1) :: hatprofy
@@ -4005,8 +3903,6 @@ module Boundcond
 !
       y1 = xyz1(2)
       z1 = xyz1(3)
-      frac = fracall(jj)
-      uzero = uzeroall(jj)
 !
       if (lspherical_coords)then
 !
@@ -4024,16 +3920,16 @@ module Boundcond
           hatprofz=step(z(n1:n2),zhat_min,width_hat)*(1.-step(z(n1:n2),zhat_max,width_hat))
           do j=m1,m2
             do k=n1,n2
-                f(l1,j,k,iux)= uzero*hatprofy(j)*hatprofz(k)
-                do i=1,nghost
-                  f(l1-i,j,k,iux)= uzero*hatprofy(j)*hatprofz(k)
-                enddo
+              f(l1,j,k,iux)= uzero*hatprofy(j)*hatprofz(k)
+              do i=1,nghost
+                f(l1-i,j,k,iux)= uzero*hatprofy(j)*hatprofz(k)
+              enddo
             enddo
           enddo
         case(TOP)               ! top boundary
-          call warning('bc_set_jethat_x','Jet flowing out of the exit boundary ?')
+          call warning('bc_set_jethat_x','jet flowing out of the exit boundary?')  !,lfirst_proc_yz)
           do i=1,nghost
-            f(l2+i,:,:,jj)=0.
+            f(l2+i,:,:,jj)=0.   !MR: but above it is iux!
           enddo
 !
         case default
@@ -4041,17 +3937,17 @@ module Boundcond
         endselect
 
      else
-        call stop_it('Boundary condition jethat is valid only in spherical coordinate system')
+        call fatal_error('bc_set_jethat_x','valid only in spherical coordinates')
      endif
 !
     endsubroutine bc_set_jethat_x
 ! **********************************************************************
-    subroutine bc_set_jet_x(f,jj,topbot,velocity,radius)
+    subroutine bc_set_jet_x(f,topbot,jj,vel,rad)
 !
 !  Sets tophat velocity profile at the inner (bot) boundary
 !
 !  06-nov-2013/nils: adapted from bc_set_jethat_x. Made this new routine
-!                    because there some awckward choices made in the
+!                    because there some awkward choices made in the
 !                    other one, and the other one is for spherical geometries.
 !
       use Sub, only: step
@@ -4061,11 +3957,7 @@ module Boundcond
       real, dimension (:,:,:,:), intent (inout) :: f
       integer, intent(in) :: jj
       integer :: i,j,k
-      real, dimension(:),intent(in) :: velocity,radius
-      real :: vel,rad
-!
-      vel = velocity(jj)
-      rad = radius(jj)
+      real, intent(in) :: vel,rad
 !
       if (lcartesian_coords) then
          select case (topbot)
@@ -4081,17 +3973,17 @@ module Boundcond
             enddo
 !
          case(TOP)               ! top boundary
-            call warning('bc_set_jet_x','jet flowing out of the exit boundary')
+            call warning('bc_set_jet_x','jet flowing out of the exit boundary')  !,lfirst_proc_yz)
             do i=1,nghost
-               f(l2+i,:,:,jj)=0.
+               f(l2+i,:,:,jj)=0.    !MR: but above it is iux!
             enddo
 !
          case default
-            call fatal_error('bc_set_jethat_x',"topbot should be BOT or TOP")
+            call fatal_error('bc_set_jet_x',"topbot should be BOT or TOP")
          endselect
 !
       else
-         call stop_it('Boundary condition jethat is valid only in spherical coordinate system')
+         call fatal_error('bc_set_jet_x','valid only in spherical coordinates')
       endif
 !
     endsubroutine bc_set_jet_x
@@ -4169,7 +4061,6 @@ module Boundcond
 !
       case default
         call fatal_error('bc_set_nfr_y',"topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_set_nfr_y
@@ -4313,7 +4204,6 @@ module Boundcond
 !
      case default
         call fatal_error('bc_set_sfree_y',"topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_set_sfree_y
@@ -4356,7 +4246,6 @@ module Boundcond
 !
       case default
         call fatal_error('bc_set_pfc_y',"topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_set_pfc_y
@@ -4384,7 +4273,6 @@ module Boundcond
 !
       case default
         call fatal_error('bc_set_der_y',"topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_set_der_y
@@ -4412,7 +4300,6 @@ module Boundcond
 !
       case default
         call fatal_error('bc_set_der_z',"topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_set_der_z
@@ -4446,7 +4333,6 @@ module Boundcond
 !
       case default
         call fatal_error('bc_set_der_x',"topbot should be BOT or TOP")
-!
       endselect
 !
 ! take the x derivative of ux
@@ -4489,10 +4375,64 @@ module Boundcond
 !
       case default
         call fatal_error('bc_set_div_z',"topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_set_div_z
+!***********************************************************************
+    real function bc_st()
+
+      real :: XXi0, tau_XXi
+
+      XXi0=0.04
+      tau_XXi=10.
+      bc_st=XXi0*(1.-(1.+t/tau_XXi)*exp(-t/tau_XXi))
+
+    endfunction bc_st
+!***********************************************************************
+    subroutine bc_set_val_z(f,topbot,j,val)
+
+      integer, intent(IN) :: topbot
+      real, dimension (:,:,:,:) :: f
+      integer :: j
+      real :: val
+
+        if (topbot==BOT) then
+          f(:,:,n1,j) = val
+        else
+          f(:,:,n2,j) = val
+        endif
+
+    endsubroutine bc_set_val_z
+!***********************************************************************
+    subroutine bc_set_val_y(f,topbot,j,val)
+
+      integer, intent(IN) :: topbot
+      real, dimension (:,:,:,:) :: f
+      integer :: j
+      real :: val
+!
+        if (topbot==BOT) then
+          f(:,m1,:,j) = val
+        else
+          f(:,m2,:,j) = val
+        endif
+
+    endsubroutine bc_set_val_y
+!***********************************************************************
+    subroutine bc_set_val_x(f,topbot,j,val)
+
+      integer, intent(IN) :: topbot
+      real, dimension (:,:,:,:) :: f
+      integer :: j
+      real :: val
+!
+        if (topbot==BOT) then
+          f(l1,:,:,j) = val
+        else
+          f(l2,:,:,j) = val
+        endif
+!
+    endsubroutine bc_set_val_x
 !***********************************************************************
     subroutine bc_van_x(f,topbot,j)
 !
@@ -4519,7 +4459,6 @@ module Boundcond
 !
       case default
         call fatal_error("bc_van_x: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_van_x
@@ -4549,7 +4488,6 @@ module Boundcond
 !
       case default
         call fatal_error("bc_van_y: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_van_y
@@ -4579,7 +4517,6 @@ module Boundcond
 !
       case default
         call fatal_error("bc_van_z: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_van_z
@@ -4591,10 +4528,10 @@ module Boundcond
 !
 !  30-jul-13/wlad: copied from z
 !  18-mar-22/wlad+debanjan: differentiated between log quantities
-!                           (lnrho and ss) and linear quantities (rho)     
+!                           (lnrho and ss) and linear quantities (rho)
 !
 !  TODO: generalize for all log and all linear quantities
-!        or else, just code a separate van3rd_log subroutine      
+!        or else, just code a separate van3rd_log subroutine
 !
       integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
@@ -4727,7 +4664,6 @@ module Boundcond
 !
       case default
         call fatal_error("bc_onesided_x_old ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_onesided_x_old
@@ -4772,7 +4708,6 @@ module Boundcond
 !
       case default
         call fatal_error("bc_onesided_z ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_onesided_z_orig
@@ -4803,7 +4738,6 @@ module Boundcond
 !
       case default
         call fatal_error("bc_extrap_2_1: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_extrap_2_1
@@ -4834,7 +4768,6 @@ module Boundcond
 !
       case default
         call fatal_error("bcx_extrap_2_1: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bcx_extrap_2_1
@@ -4865,7 +4798,6 @@ module Boundcond
 !
       case default
         call fatal_error("bcy_extrap_2_1: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bcy_extrap_2_1
@@ -4903,7 +4835,6 @@ module Boundcond
 !
       case default
         call fatal_error("bc_extrap_2_2: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_extrap_2_2
@@ -4941,7 +4872,6 @@ module Boundcond
 !
       case default
         call fatal_error("bcx_extrap_2_2: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bcx_extrap_2_2
@@ -4993,7 +4923,6 @@ module Boundcond
 !
       case default
         call fatal_error("bcx_extrap_frac_2: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bcx_extrap_frac_2
@@ -5031,7 +4960,6 @@ module Boundcond
 !
       case default
         call fatal_error("bcy_extrap_2_2: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bcy_extrap_2_2
@@ -5077,7 +5005,6 @@ module Boundcond
 !
       case default
         call fatal_error("bcy_extrap_2_3: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bcy_extrap_2_3
@@ -5120,7 +5047,6 @@ module Boundcond
 !
       case default
         call fatal_error("bc_extrap0_2_0: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_extrap0_2_0
@@ -5155,7 +5081,6 @@ module Boundcond
 !
       case default
         call fatal_error("bc_extrap0_2_1: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_extrap0_2_1
@@ -5198,7 +5123,6 @@ module Boundcond
 !
       case default
         call fatal_error("bc_extrap0_2_2: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_extrap0_2_2
@@ -5245,7 +5169,6 @@ module Boundcond
 !
       case default
         call fatal_error("bcx_extrap_2_3: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bcx_extrap_2_3
@@ -5289,8 +5212,7 @@ module Boundcond
         enddo
 !
       case default
-        print*, "bcx_extrap_powerlaw: ", topbot, " should be 'top' or 'bot'"
-!
+        call fatal_error('bcx_extrap_powerlaw', 'topbot should be BOT or TOP', lfirst_proc_xy)
       endselect
 !
     endsubroutine bcx_extrap_powerlaw
@@ -5326,7 +5248,6 @@ module Boundcond
 !
       case default
         call fatal_error('bcx_extrap_linear', 'topbot should be BOT or TOP', lfirst_proc_xy)
-!
       endselect
 !
     endsubroutine bcx_extrap_linear
@@ -5348,15 +5269,15 @@ module Boundcond
       select case (topbot)
       case(BOT)
         ! bottom (left end of the domain)
-        slope = (f(:,:,n1+1,j) - f(:,:,n1,j)) / dz2_bound(-1) 
+        slope = (f(:,:,n1+1,j) - f(:,:,n1,j)) / dz2_bound(-1)
         do i = 1, nghost
-          f(:,:,n1-i,j) = f(:,:,n1,j) - slope * dz2_bound(-i) 
+          f(:,:,n1-i,j) = f(:,:,n1,j) - slope * dz2_bound(-i)
         enddo
       case(TOP)
         ! top (right end of the domain)
         slope = (f(:,:,n2,j) - f(:,:,n2-1,j)) / dz2_bound(1)
         do i = 1, nghost
-          f(:,:,n2+i,j) = f(:,:,n2,j) + slope * dz2_bound(i) 
+          f(:,:,n2+i,j) = f(:,:,n2,j) + slope * dz2_bound(i)
         enddo
       case default
         call fatal_error ('bcz_extrapol', 'topbot should be BOT or TOP', lfirst_proc_xy)
@@ -5625,7 +5546,7 @@ module Boundcond
 !
     endsubroutine bc_db_x
 !***********************************************************************
-    subroutine bc_force_z(f,sgn,topbot,j)
+    subroutine bc_force_z(f,topbot,j,sgn)
 !
 !  Force values of j-th variable on vertical boundary topbot.
 !  This can either be used for freezing variables at the boundary, or for
@@ -5667,9 +5588,7 @@ module Boundcond
          case ('vel_time')
             call bc_force_ux_time(f,n1,j)
          case default
-            if (lroot) print*, "No such value for force_lower_bound: <", &
-                 trim(force_lower_bound),">"
-            call stop_it("")
+            call fatal_error('bc_force_z','no such force_lower_bound: '//trim(force_lower_bound))
          endselect
          !
          !  Now fill ghost zones imposing antisymmetry w.r.t. the values just set:
@@ -5693,9 +5612,7 @@ module Boundcond
          case ('vel_time')
             call bc_force_ux_time(f,n2,j)
          case default
-            if (lroot) print*, "No such value for force_upper_bound: <", &
-                 trim(force_upper_bound),">"
-            call stop_it("")
+            call fatal_error('bc_force_z','no such force_upper_bound: '//trim(force_upper_bound))
          endselect
          !
          !  Now fill ghost zones imposing antisymmetry w.r.t. the values just set:
@@ -5707,9 +5624,9 @@ module Boundcond
 !
     endsubroutine bc_force_z
 !***********************************************************************
-    subroutine bc_force_x(f, sgn, topbot, j)
+    subroutine bc_force_x(f,topbot,j,sgn)
 !
-!  Force values of j-th variable on x-boundaries topbot.
+!  Force values of j-th variable on x-boundaries.
 !
 !  09-mar-2007/dintrans: coded
 !
@@ -5720,6 +5637,12 @@ module Boundcond
       real, pointer :: ampl_forc, k_forc, w_forc
       integer :: sgn, i, j
 !
+      if (j /= iuy) call fatal_error("BC_FORCE_X","only valid for uy")
+      call get_shared_variable('ampl_forc', ampl_forc, caller='bc_force_x')
+      call get_shared_variable('k_forc', k_forc)
+      call get_shared_variable('w_forc', w_forc)
+      if (headtt) print*, 'BC_FORCE_X: ampl_forc, k_forc, w_forc=',ampl_forc, k_forc, w_forc
+!
       select case (topbot)
 !
 !  lower boundary
@@ -5727,17 +5650,9 @@ module Boundcond
       case(BOT)
          select case (force_lower_bound)
          case ('vel_time')
-           if (j /= iuy) call stop_it("BC_FORCE_X: only valid for uy")
-           call get_shared_variable('ampl_forc', ampl_forc, caller='bc_force_x')
-           call get_shared_variable('k_forc', k_forc)
-           call get_shared_variable('w_forc', w_forc)
-           if (headtt) print*, 'BC_FORCE_X: ampl_forc, k_forc, w_forc=',&
-               ampl_forc, k_forc, w_forc
            f(l1,:,:,iuy) = spread(ampl_forc*sin(k_forc*y)*cos(w_forc*t), 2, size(f,3))
          case default
-            if (lroot) print*, "No such value for force_lower_bound: <", &
-                 trim(force_lower_bound),">"
-            call stop_it("")
+            call fatal_error('bc_force_x','no such force_lower_bound: '//trim(force_lower_bound))
          endselect
          !
          !  Now fill ghost zones imposing antisymmetry w.r.t. the values just set:
@@ -5749,14 +5664,9 @@ module Boundcond
       case(TOP)
          select case (force_upper_bound)
          case ('vel_time')
-            if (j /= iuy) call stop_it("BC_FORCE_X: only valid for uy")
-            call get_shared_variable('ampl_forc', ampl_forc, caller='bc_force_x')
-            call get_shared_variable('k_forc', k_forc)
-            call get_shared_variable('w_forc', w_forc)
-            if (headtt) print*, 'BC_FORCE_X: ampl_forc, k_forc, w_forc=',ampl_forc, k_forc, w_forc
             f(l2,:,:,iuy) = spread(ampl_forc*sin(k_forc*y)*cos(w_forc*t), 2, size(f,3))
          case default
-            call fatal_error("bc_force_x","no such force_upper_bound: //trim(force_upper_bound)")
+            call fatal_error("bc_force_x","no such force_upper_bound: "//trim(force_upper_bound))
          endselect
          !
          !  Now fill ghost zones imposing antisymmetry w.r.t. the values just set:
@@ -5778,7 +5688,7 @@ module Boundcond
       integer :: idz,j
       real :: kx,ky
 !
-      if (iuz == 0) call stop_it("BC_FORCE_UXY_SIN_COS: Bad idea...")
+      if (iuz == 0) call fatal_error("BC_FORCE_UXY_SIN_COS","iuz=0 bad idea")
 !
       if (j==iux) then
         if (Ly>0) then; ky=2*pi/Ly; else; ky=0.; endif
@@ -5803,7 +5713,7 @@ module Boundcond
       integer :: idz,j
       real :: kx,ky
 !
-      if (iaz == 0) call stop_it("BC_FORCE_AXY_SIN_COS: Bad idea...")
+      if (iaz == 0) call fatal_error("BC_FORCE_AXY_SIN_COS","iaz=0 bad idea")
 !
       if (j==iax) then
         if (Ly>0) then; ky=2*pi/Ly; else; ky=0.; endif
@@ -5837,7 +5747,6 @@ module Boundcond
 !
       case default
         call fatal_error("bc_one_x: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_one_x
@@ -5862,7 +5771,6 @@ module Boundcond
 !
       case default
         call fatal_error("bc_one_y: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_one_y
@@ -5887,7 +5795,6 @@ module Boundcond
 !
       case default
         call fatal_error("bc_one_z: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_one_z
@@ -5984,10 +5891,11 @@ module Boundcond
 !
        character (len=*), parameter :: vel_times_dat = 'driver/vel_times.dat'
        character (len=*), parameter :: vel_field_dat = 'driver/vel_field.dat'
-       integer :: unit=1
+       integer, parameter :: unit=1
+       integer(KIND=ikind8) :: rlen
 !
        if (ldownsampling) then
-         call warning('uu_driver','Not available for downsampling')
+         call warning('uu_driver','Not available for downsampling')  !,lfirst_proc_xy)
          return
        endif
 !
@@ -6052,10 +5960,10 @@ module Boundcond
 
            allocate(tmp(nxgrid,nygrid),stat=ierr)
 !
-           if (ierr>0) call fatal_error('uu_driver', &
-              'Could not allocate memory for array please check', .true.)
+           if (ierr>0) call fatal_error('uu_driver','could not allocate tmp', .true.)
 
-           open (unit,file=vel_field_dat,form='unformatted',status='unknown',recl=lend*nxgrid*nygrid,access='direct')
+           rlen=lend*nxgrid*nygrid
+           open (unit,file=vel_field_dat,form='unformatted',status='unknown',recl=rlen,access='direct')
 !
            read (unit,rec=2*frame-1) tmp
            do px=0, nprocx-1
@@ -6262,6 +6170,7 @@ module Boundcond
 !
       real, dimension (:,:,:), allocatable, save :: exp_fact ! exponential factor
       integer :: i
+      integer(KIND=ikind8) :: rlen
       real, parameter :: reduce_factor=0.25
 !
       real :: time_SI
@@ -6271,7 +6180,7 @@ module Boundcond
       character (len=*), parameter :: mag_vel_field_dat = 'driver/mag_vel_field.dat'
 !
       if (ldownsampling) then
-        call warning('bc_force_aa_time','Not available for downsampling')
+        call warning('bc_force_aa_time','Not available for downsampling')   !,lfirst_proc_xy)
         return
       endif
 !
@@ -6311,22 +6220,22 @@ module Boundcond
 !
 !  Initialization of magnetograms and velocity fields.
         allocate(Bz0_l(bnx,bny),stat=stat)
-        if (stat>0) call fatal_error('bc_force_aa_time','Could not allocate memory for Bz0_l',.true.)
+        if (stat>0) call fatal_error('bc_force_aa_time','Could not allocate Bz0_l',.true.)
         allocate(Bz0_r(bnx,bny),stat=stat)
-        if (stat>0) call fatal_error('bc_force_aa_time','Could not allocate memory for Bz0_r',.true.)
+        if (stat>0) call fatal_error('bc_force_aa_time','Could not allocate Bz0_r',.true.)
         if (luse_vel_field) then
           allocate(vx_l(nx,ny),stat=stat)
-          if (stat>0) call fatal_error('bc_force_aa_time','Could not allocate memory for vx_l',.true.)
+          if (stat>0) call fatal_error('bc_force_aa_time','Could not allocate vx_l',.true.)
           allocate(vx_r(nx,ny),stat=stat)
-          if (stat>0) call fatal_error('bc_force_aa_time','Could not allocate memory for vx_r',.true.)
+          if (stat>0) call fatal_error('bc_force_aa_time','Could not allocate vx_r',.true.)
           allocate(vy_l(nx,ny),stat=stat)
-          if (stat>0) call fatal_error('bc_force_aa_time','Could not allocate memory for vy_l',.true.)
+          if (stat>0) call fatal_error('bc_force_aa_time','Could not allocate vy_l',.true.)
           allocate(vy_r(nx,ny),stat=stat)
-          if (stat>0) call fatal_error('bc_force_aa_time','Could not allocate memory for vy_r',.true.)
+          if (stat>0) call fatal_error('bc_force_aa_time','Could not allocate vy_r',.true.)
           allocate(vx(nx,ny),stat=stat)
-          if (stat>0) call fatal_error('bc_force_aa_time','Could not allocate memory for vx',.true.)
+          if (stat>0) call fatal_error('bc_force_aa_time','Could not allocate vx',.true.)
           allocate(vy(nx,ny),stat=stat)
-          if (stat>0) call fatal_error('bc_force_aa_time','Could not allocate memory for vy',.true.)
+          if (stat>0) call fatal_error('bc_force_aa_time','Could not allocate vy',.true.)
         endif
 !
         first_run = .false.
@@ -6334,7 +6243,7 @@ module Boundcond
       endif
 !
       allocate(Bz0(bnx,bny),stat=stat)
-      if (stat>0) call fatal_error('bc_force_aa_time','Could not allocate memory for Bz0',.true.)
+      if (stat>0) call fatal_error('bc_force_aa_time','Could not allocate Bz0',.true.)
 !
       time_SI = t*unit_time
 !
@@ -6370,9 +6279,9 @@ module Boundcond
 !
           if (luse_vel_field) then
             allocate (vx_tmp(nxgrid,nygrid), stat=stat)
-            if (stat>0) call fatal_error ('bc_force_aa_time', 'Could not allocate memory for vx_tmp', .true.)
+            if (stat>0) call fatal_error ('bc_force_aa_time', 'Could not allocate vx_tmp', .true.)
             allocate (vy_tmp(nxgrid,nygrid), stat=stat)
-            if (stat>0) call fatal_error ('bc_force_aa_time', 'Could not allocate memory for vy_tmp', .true.)
+            if (stat>0) call fatal_error ('bc_force_aa_time', 'Could not allocate vy_tmp', .true.)
             open (10, file=mag_vel_field_dat, form='unformatted', status='unknown', &
                 recl=lend*nxgrid*nygrid, access='direct')
 !
@@ -6424,8 +6333,8 @@ module Boundcond
             if (allocated (vy_tmp)) deallocate (vy_tmp)
           endif
 !
-          open (10,file=mag_field_dat,form='unformatted',status='unknown', &
-              recl=lend*bnx*bny,access='direct')
+          rlen=lend*bnx*bny
+          open (10,file=mag_field_dat,form='unformatted',status='unknown',recl=rlen,access='direct')
           rec_l = 1 + (frame-1)*nprocxy
           rec_r = 1 + frame*nprocxy
           do py=1, nprocxy-1
@@ -6490,7 +6399,7 @@ module Boundcond
       if (.not. allocated (exp_fact)) then
         ! Setup exponential factor for bottom boundary
         allocate (exp_fact(enx,eny,nghost+1), stat=stat)
-        if (stat > 0) call fatal_error ('bc_force_aa_time', 'Could not allocate memory for exp_fact', .true.)
+        if (stat > 0) call fatal_error ('bc_force_aa_time', 'Could not allocate exp_fact', .true.)
         call setup_extrapol_fact (z(1:n1), z(n1), exp_fact, reduce_factor)
       endif
 !
@@ -6542,7 +6451,6 @@ module Boundcond
 !
       case default
         call fatal_error('bc_lnTT_flux_x','topbot should be BOT or TOP')
-!
       endselect
 !
     endsubroutine bc_lnTT_flux_x
@@ -6586,7 +6494,6 @@ module Boundcond
 !
       case default
         call fatal_error('bc_lnTT_flux_z','topbot should be BOT or TOP')
-!
       endselect
 !
     endsubroutine bc_lnTT_flux_z
@@ -6621,7 +6528,7 @@ module Boundcond
 !  Do the 'c1' boundary condition (constant heat flux) for entropy.
 !
       call get_shared_variable('lheatc_kramers',lheatc_kramers, caller='bc_ss_flux_x')
-      call get_shared_variable('lheatc_chiconst',lheatc_chiconst, caller='bc_ss_flux_x')
+      call get_shared_variable('lheatc_chiconst',lheatc_chiconst)
       call get_shared_variable('lheatc_Kprof',lheatc_Kprof)
       call get_shared_variable('lheatc_Kconst',lheatc_Kconst)
       if (lheatc_kramers.and.lheatc_chiconst) call fatal_error('bc_ss_flux_x', &
@@ -6630,8 +6537,7 @@ module Boundcond
 !  Allocate memory for large arrays.
 !
       allocate(tmp_yz(size(f,2),size(f,3)),stat=stat)
-      if (stat>0) call fatal_error('bc_ss_flux_x', &
-          'Could not allocate memory for tmp_yz')
+      if (stat>0) call fatal_error('bc_ss_flux_x','could not allocate tmp_yz')
 !
       if (lheatc_kramers) then
 !
@@ -6649,8 +6555,7 @@ module Boundcond
 !
       if (lheatc_kramers.or.lheatc_chiconst.or.lreference_state) then
         allocate(work_yz(size(f,2),size(f,3)),stat=stat)
-        if (stat>0) call fatal_error('bc_ss_flux_x', &
-                                     'Could not allocate memory for work_yz')
+        if (stat>0) call fatal_error('bc_ss_flux_x','could not allocate work_yz')
       endif
       if (lheatc_kramers) then
         allocate(Krho1kr_yz(size(f,2),size(f,3)),stat=stat)
@@ -6660,7 +6565,7 @@ module Boundcond
 !
       if (lreference_state) &
         call get_shared_variable('reference_state',reference_state)
-! 
+!
       fac=gamma_m1/gamma
 !
 ! Check whether we want to do top or bottom (this is processor dependent)
@@ -6676,7 +6581,7 @@ module Boundcond
           if (headtt.and..not.(lheatc_Kprof.or.lheatc_Kconst)) then
 !           Kishore: I am not sure if FbotKbot is correctly set for any
 !           other iheatcond, so I will leave this as a warning for now.
-            call warning('bc_ss_flux_x', 'FbotKbot may not be correctly set. Please check it.')
+            call warning('bc_ss_flux_x', 'FbotKbot may not be correctly set. Please check')    !,lfirst_proc_yz)
           endif
           call get_shared_variable('FbotKbot',FbotKbot)
           if (headtt) print*,'bc_ss_flux_x: FbotKbot=',FbotKbot
@@ -6752,7 +6657,7 @@ module Boundcond
           if (headtt.and..not.(lheatc_Kprof.or.lheatc_Kconst)) then
 !           Kishore: I am not sure if FtopKtop is correctly set for any
 !           other iheatcond, so I will leave this as a warning for now.
-            call warning('bc_ss_flux_x', 'FtopKtop may not be correctly set. Please check it.')
+            call warning('bc_ss_flux_x', 'FtopKtop may not be correctly set. Please check')   !,lfirst_proc_yz)
           endif
           call get_shared_variable('FtopKtop',FtopKtop)
           if (headtt) print*,'bc_ss_flux_x: FtopKtop=',FtopKtop
@@ -6817,7 +6722,6 @@ module Boundcond
 !
         case default
           call fatal_error('bc_ss_flux_x','topbot should be BOT or TOP')
-!
         endselect
 !
 !  Deallocate large arrays.
@@ -6958,9 +6862,7 @@ module Boundcond
         enddo
 !
       case default
-!
         call fatal_error("bc_del2zero","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_del2zero
@@ -6991,7 +6893,6 @@ module Boundcond
 !
       case default
         call fatal_error("bc_zero_x: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_zero_x
@@ -7022,7 +6923,6 @@ module Boundcond
 !
       case default
         call fatal_error("bc_zero_y: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_zero_y
@@ -7053,7 +6953,6 @@ module Boundcond
 !
       case default
         call fatal_error("bc_zero_z: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_zero_z
@@ -7120,7 +7019,6 @@ module Boundcond
 !
       case default
         call fatal_error("bc_inflow_z: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_inflow_z
@@ -7187,7 +7085,6 @@ module Boundcond
 !
       case default
         call fatal_error("bc_outflow_x: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_outflow_x
@@ -7259,7 +7156,6 @@ module Boundcond
 !
       case default
         call fatal_error("bc_outflow_x: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_outflow_x_e1
@@ -7326,7 +7222,6 @@ module Boundcond
 !
       case default
         call fatal_error("bc_outflow_y: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_outflow_y
@@ -7394,7 +7289,6 @@ module Boundcond
 !
       case default
         call fatal_error("bc_outflow_z: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_outflow_z
@@ -7449,7 +7343,6 @@ module Boundcond
 !
       case default
         call fatal_error("bc_inflow_zero_deriv_z: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_inflow_zero_deriv_z
@@ -7504,7 +7397,6 @@ module Boundcond
 !
       case default
         call fatal_error("bc_outflow_zero_deriv_z: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_outflow_zero_deriv_z
@@ -7552,7 +7444,6 @@ module Boundcond
 !
       case default
         call fatal_error("bc_inflow_inwards_deriv_z: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_inflow_inwards_deriv_z
@@ -7600,7 +7491,6 @@ module Boundcond
 !
       case default
         call fatal_error("bc_outflow_outwards_deriv_z: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_outflow_outwards_deriv_z
@@ -7663,7 +7553,6 @@ module Boundcond
 !
       case default
         call fatal_error("bc_steady_z: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_steady_z
@@ -7696,7 +7585,6 @@ module Boundcond
 !
       case default
         call fatal_error("bc_copy_x: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_copy_x
@@ -7729,7 +7617,6 @@ module Boundcond
 !
       case default
         call fatal_error("bc_copy_y: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_copy_y
@@ -7781,7 +7668,6 @@ module Boundcond
 !
       case default
         call fatal_error("bc_copy_y_noinflow: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_copy_y_noinflow
@@ -7814,7 +7700,6 @@ module Boundcond
 !
       case default
         call fatal_error("bc_copy_z: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_copy_z
@@ -7841,7 +7726,6 @@ module Boundcond
 !
       case default
         call fatal_error("bc_expother_x: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_expother_x
@@ -7868,7 +7752,6 @@ module Boundcond
 !
       case default
         call fatal_error("bc_expother_y: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_expother_y
@@ -7895,7 +7778,6 @@ module Boundcond
 !
       case default
         call fatal_error("bc_expother_z: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_expother_z
@@ -7909,7 +7791,7 @@ module Boundcond
 !  the box). 'crk' is a no-inflow, purely outflow boundary. It sets the
 !  velocity to zero if that was pointing back to the box. The 'k' means
 !  "kill". "copy amd reduce if outflow, kill if inflow". Additionally the velocity
-!  in the ghost zones are reduced by a factor 
+!  in the ghost zones are reduced by a factor
 !  2i, where i is the i-th ghost zone
 !
 !  22-mar-2018/piyali: copied from bc_copy_z_noinflow
@@ -7949,7 +7831,6 @@ module Boundcond
 !
       case default
         call fatal_error("bc_copy_z_noinflow: ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_copy_z_noinflow
@@ -8115,7 +7996,7 @@ module Boundcond
       real :: delta_z, reduce_factor=1.
 !
       if (ldownsampling) then
-        call warning('bc_force_aa_time','Not available for downsampling')       
+        call warning('bc_force_aa_time','not available for downsampling')   !,lfirst_proc_xy)
         return
       endif
 
@@ -8269,7 +8150,6 @@ module Boundcond
 !
       case default
         call fatal_error('bc_aa_pot3', 'topbot should be BOT or TOP', lfirst_proc_xy)
-!
       endselect
 !
 !  The vector potential needs to be known outside of (l1:l2,m1:m2) as well
@@ -8373,7 +8253,6 @@ module Boundcond
 !
       case default
         call fatal_error('bc_aa_pot2', 'topbot should be BOT or TOP', lfirst_proc_xy)
-!
       endselect
 !
 !  The vector potential needs to be known outside of (l1:l2,m1:m2) as well
@@ -8535,7 +8414,7 @@ module Boundcond
       integer :: i, nxl, nyl
 !
       if (ldownsampling) then
-        call warning('bc_force_aa_time','Not available for downsampling')      
+        call warning('bc_force_aa_time','not available for downsampling')   !,lfirst_proc_xy)
         return
       endif
 !
@@ -8607,7 +8486,7 @@ module Boundcond
       integer :: nroot
 !
       if (ldownsampling) then
-        call warning('bc_force_aa_time','not available for downsampling')    
+        call warning('bc_force_aa_time','not available for downsampling')   !,lfirst_proc_xy)
         return
       endif
 !
@@ -8621,7 +8500,7 @@ module Boundcond
 !
 !   check for warnings
 !
-        if (.not. ldensity) call warning('bc_wind',"no defined density, using rho=1 ?")
+        if (.not. ldensity) call warning('bc_wind',"no defined density, using rho=1")    !,lfirst_proc_xy)
       endif
 !
       select case (topbot)
@@ -8719,7 +8598,7 @@ module Boundcond
       if (topbot==BOT) then
         tmp_x=-Fbot/hcondADI
         do i=1,nghost
-          f(:,4,n1-i,ilnTT)=f(:,4,n1+i,ilnTT)-dz2_bound(-i)*tmp_x
+          f(:,4,n1-i,ilnTT)=f(:,4,n1+i,ilnTT)-dz2_bound(-i)*tmp_x   !MR: only one y-point?
         enddo
       else
         call not_implemented('bc_ADI_flux_z', 'for top z boundary')
@@ -8744,9 +8623,9 @@ module Boundcond
       logical, save :: l1st=.true.
 !
       if (headtt) then
-        if (iuz == 0) call stop_it("BC_FORCE_UX_TIME: Bad idea...")
-        if (Lx  == 0) call stop_it("BC_FORCE_UX_TIME: Lx cannot be 0")
-        if (j /= iux) call stop_it("BC_FORCE_UX_TIME: only valid for ux")
+        if (iuz == 0) call fatal_error("BC_FORCE_UX_TIME","iuz bad idea")
+        if (Lx  == 0) call fatal_error("BC_FORCE_UX_TIME","Lx cannot be 0")
+        if (j /= iux) call fatal_error("BC_FORCE_UX_TIME","only valid for ux")
       endif
 !
       if (l1st) then
@@ -8755,9 +8634,8 @@ module Boundcond
         call get_shared_variable('w_forc', w_forc)
         call get_shared_variable('x_forc', x_forc)
         call get_shared_variable('dx_forc', dx_forc)
-        if (headt) print*, 'bc_force_ux_time: ampl_forc, k_forc, '//&
-             'w_forc, x_forc, dx_forc=', ampl_forc, k_forc, w_forc, &
-             x_forc, dx_forc
+        if (headtt) print*, 'bc_force_ux_time: ampl_forc, k_forc, '// &
+             'w_forc, x_forc, dx_forc=', ampl_forc, k_forc, w_forc, x_forc, dx_forc
         l1st=.false.
       endif
 !
@@ -8784,7 +8662,7 @@ module Boundcond
       integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       integer :: j,i
-      real, dimension(:) :: val
+      real :: val
 !
       select case (topbot)
       case(BOT)
@@ -8795,10 +8673,10 @@ module Boundcond
           if (      (y(m)>=xyz0(2) +   Lxyz(2)/4)&
               .and. (y(m)<=xyz0(2) + 3*Lxyz(2)/4)) then
             if (j==iux) then
-              f(l2,m,:,j) = cos(y(m))*val(j)
+              f(l2,m,:,j) = cos(y(m))*val
               do i=1,nghost; f(l2+i,m,:,j) = 2*f(l2,m,:,j) - f(l2-i,m,:,j); enddo
             elseif (j==iuy) then
-              f(l2,m,:,j) = -sin(y(m))*val(j)
+              f(l2,m,:,j) = -sin(y(m))*val
               do i=1,nghost; f(l2+i,m,:,j) = 2*f(l2,m,:,j) - f(l2-i,m,:,j); enddo
             elseif ((j==ilnrho) .or. (j==irho)) then
               do i=1,nghost; f(l2+i,m,:,j) = f(l2-i,m,:,j); enddo
@@ -8810,7 +8688,7 @@ module Boundcond
             elseif (j==iuy) then
               do i=1,nghost; f(l2+i,m,:,j) = f(l2-i,m,:,j); enddo
             elseif ((j==ilnrho) .or. (j==irho)) then
-              f(l2,m,:,j) = val(j)
+              f(l2,m,:,j) = val
               do i=1,nghost; f(l2+i,m,:,j) = 2*f(l2,m,:,j) - f(l2-i,m,:,j); enddo
             endif
           endif
@@ -8867,22 +8745,21 @@ module Boundcond
 !  bottom (left end of the domain)
       case(BOT)
         f(:,:,n1,j)=(-18.*f(:,:,n1+1,j) &
-                     +9.*f(:,:,n1+2,j) &
-                     -2.*f(:,:,n1+3,j))/11.
+                      +9.*f(:,:,n1+2,j) &
+                      -2.*f(:,:,n1+3,j))/11.
 !
         do i=1,nghost; f(:,:,n1-i,j)=f(:,:,n1+i,j); enddo
 !
 !  top (right end of the domain)
       case(TOP)
         f(:,:,n2,j)=(+18.*f(:,:,n2-1,j) &
-                     -9.*f(:,:,n2-2,j) &
-                     +2.*f(:,:,n2-3,j))/11.
+                      -9.*f(:,:,n2-2,j) &
+                      +2.*f(:,:,n2-3,j))/11.
 !
         do i=1,nghost; f(:,:,n2+i,j)=f(:,:,n2-i,j); enddo
 !
       case default
-        call fatal_error("bc_symset0der_z_v2: ","topbot should be BOT or TOP")
-!
+        call fatal_error("bc_symset0der_z_v2","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_symset0der_z_v2
@@ -9000,7 +8877,6 @@ module Boundcond
 !
       case default
         call fatal_error("bc_ctz ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_ctz
@@ -9035,7 +8911,6 @@ module Boundcond
 !
       case default
         call fatal_error("bc_cdz ","topbot should be BOT or TOP")
-!
       endselect
 !
     endsubroutine bc_cdz
@@ -9237,7 +9112,7 @@ module Boundcond
         select case (topbot)
         case(TOP)
           do k=1,3
-            f(l2+k,:,:,j)=0.    
+            f(l2+k,:,:,j)=0.
             do p=0,3
               f(l2+k,:,:,j) = f(l2+k,:,:,j)+coefs(p,k)*f(l2-p,:,:,j)
             enddo

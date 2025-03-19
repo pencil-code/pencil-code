@@ -247,5 +247,12 @@ module Interstellar
       call keep_compiler_quiet(f)
 !
     endsubroutine addmassflux
+!*****************************************************************************
+    subroutine pushpars2c(p_par)
+
+      integer, parameter :: n_pars=0
+      integer(KIND=ikind8), dimension(n_pars), intent(out) :: p_par
+
+    endsubroutine pushpars2c
 !***********************************************************************
 endmodule interstellar

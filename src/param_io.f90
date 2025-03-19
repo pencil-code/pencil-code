@@ -57,7 +57,7 @@ module Param_IO
   use TestPerturb
   use Testscalar
   use Timeavg
-  use Training
+  use Training, only: read_training_run_pars, write_training_run_pars
   use Viscosity
 !
   implicit none
@@ -95,7 +95,8 @@ module Param_IO
       lread_oldsnap_onlyA, lastaroth_output, astaroth_dest, &
       ireset_tstart, tstart, lghostfold_usebspline, &
       lread_aux, lwrite_aux, lkinflow_as_aux, lenforce_maux_check, &
-      lreport_undefined_diagnostics, pretend_lnTT, lprocz_slowest, nprocx_node, nprocy_node, nprocz_node, &
+      lreport_undefined_diagnostics, pretend_lnTT, lprocz_slowest, lmorton_curve, ltest_bcs,lsuppress_parallel_reductions, &
+      nprocx_node, nprocy_node, nprocz_node, &
       lcopysnapshots_exp, bcx, bcy, bcz, r_int, r_ext, r_ref, rsmooth, &
       r_int_border, r_ext_border, mu0, force_lower_bound, force_upper_bound, &
       lseparate_persist, ldistribute_persist, lpersist, lomit_add_data, &
@@ -178,7 +179,7 @@ module Param_IO
       lread_oldsnap_lnrho2rho, lread_oldsnap_nomag, lread_oldsnap_notestflow, lread_oldsnap_nopscalar, &
       lread_oldsnap_notestfield, lread_oldsnap_notestscalar, lread_oldsnap_noshear, lrepair_snap, linterpol_on_repair, &
       lread_oldsnap_nohydro, lread_oldsnap_nohydro_efield, lread_oldsnap_nohydro_ekfield, &
-      lread_oldsnap_noisothmhd, lread_oldsnap_onlyA, lastaroth_output, astaroth_dest, &
+      lread_oldsnap_noisothmhd, lread_oldsnap_onlyA, lastaroth_output, astaroth_dest, lbackup_snap, &
       lread_oldsnap_rho2lnrho, lread_oldsnap_nosink, lwrite_dim_again, lwrite_last_powersnap, &
       lread_aux, comment_char, ix, iy, iy2, iz, iz2, iz3, iz4, slice_position, &
       xbot_slice, xtop_slice, ybot_slice, ytop_slice, zbot_slice, ztop_slice, &
@@ -229,6 +230,7 @@ module Param_IO
       uu_fft3d, oo_fft3d, bb_fft3d, jj_fft3d, uu_xkyz, oo_xkyz, bb_xkyz, jj_xkyz, &
       uu_kx0z, oo_kx0z, bb_kx0z, jj_kx0z, bb_k00z, ee_k00z, gwT_fft3d, &
       Em_specflux, Hm_specflux, Hc_specflux, density_scale_factor, radius_diag, &
+      lmorton_curve, ltest_bcs,lsuppress_parallel_reductions, shared_mem_name, lupdate_cvs, &
       lread_oldsnap_nocoolprof
 !
   namelist /IO_pars/ &
@@ -799,6 +801,7 @@ module Param_IO
 !  19-aug-15/PABourdin: renamed from 'print_startpars' to 'write_all_init_pars'
 !
       use Particles_main, only: write_all_particles_init_pars
+      use Syscalls, only: system_cmd
 !
       character (len=*), optional, intent(in) :: file
 !
@@ -873,7 +876,14 @@ module Param_IO
 !
         if (lidl_output) call write_IDL_logicals(unit)
 !
-        if (present(file)) close(unit)
+        if (present(file)) then
+          close(unit)
+!
+!  This is to have one item per line in the file param.nml (Cray compiler denies it).
+!
+          call system_cmd( &
+          "sed -i -e's/\(&[a-zA-Z0-9_]*\) \( *[^ ].*\)/\1\n\2/' -e's/,\([^,]*=\)/,\n\1/g' data/param.nml >& /dev/null")
+        endif
       endif
 !
     endsubroutine write_all_init_pars
@@ -985,7 +995,14 @@ module Param_IO
 !
           write(unit,NML=IO_pars)
 
-          if (unit /= 6) close(unit)
+          if (unit /= 6) then
+            close(unit)
+!
+!  This is to have one item per line in the file param2.nml (Cray compiler denies it).
+!
+            call system_cmd( &
+            "sed -i -e's/\(&[a-zA-Z0-9_]*\) \( *[^ ].*\)/\1\n\2/' -e's/,\([^,]*=\)/,\n\1/g' data/param2.nml >& /dev/null")
+          endif
 
         else                                    ! output in params.log, stdout or other file
           ! Add separator, comment, and time.

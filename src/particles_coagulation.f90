@@ -197,7 +197,7 @@ module Particles_coagulation
         return
       end if
 !
-      if (lfirst.and.ldt) then
+      if (lupdate_courant_dt) then
 !
 !  Create list of shepherd and neighbour particles for each grid cell in the
 !  current pencil.

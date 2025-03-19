@@ -57,9 +57,12 @@ module Pencil_check
       logical :: lconsistent=.true., lconsistent_allproc=.false.
       logical :: ldie=.false.
       integer :: mem_stat1, mem_stat2
+      real :: save_dt
 !
       if (lroot) print*, 'pencil_consistency_check: checking pencil case'
       lpencil_check_at_work=.true.
+      !TP: save dt to be able to load it after the pencil check has been done
+      save_dt = dt
 !
 !  Prevent code from dying due to any errors.
 !
@@ -537,6 +540,9 @@ f_lop:  do iv=1,mvar
 !
       if (lroot) print*, 'pencil_consistency_check: all tests passed'
 !
+    !TP: load dt saved when the pencil consistency check was called
+    !This way we are side-effect free
+    dt = save_dt
     endsubroutine pencil_consistency_check
 !***********************************************************************
 endmodule Pencil_check

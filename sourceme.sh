@@ -48,7 +48,7 @@ if [ -z $_sourceme ]; then	# called for the first time?
     if [ -z $_sourceme_quiet ]; then echo "Adding $PENCIL_HOME/{bin,utils{,/axel},remesh/bin} to PATH"; fi
     # PATH=${PATH}:$PENCIL_HOME/bin:$PENCIL_HOME/utils:$PENCIL_HOME/utils/axel:$PENCIL_HOME/remesh/bin
     # remove first all paths, which contain "pencil-code" from PATH, then add (new) PC paths
-    PATH=`echo $PATH | sed -e's/[^:]*pencil-code[^:]*://g' -e's/[^:]*pencil-code[^:]* *$//' -e's/:$//'`:$PENCIL_HOME/bin:$PENCIL_HOME/utils:$PENCIL_HOME/utils/axel:$PENCIL_HOME/remesh/bin:$PENCIL_HOME/src/scripts
+    PATH=`echo $PATH | sed -e's/[^:]*pencil-code[^:]*://g' -e's/[^:]*pencil-code[^:]* *$//' -e's/:$//'`:$PENCIL_HOME/bin:$PENCIL_HOME/utils:$PENCIL_HOME/utils/axel:$PENCIL_HOME/utils/xiangyu:$PENCIL_HOME/remesh/bin:$PENCIL_HOME/src/scripts
 
     if ([ -d $PENCIL_HOME/src/astaroth/submodule/scripts ]); then
       export AC_HOME=$PENCIL_HOME/src/astaroth/submodule
@@ -75,9 +75,9 @@ if [ -z $_sourceme ]; then	# called for the first time?
     fi
     #  Set library path for linker
     if [ -z $LD_LIBRARY_PATH ]; then
-      LD_LIBRARY_PATH="./src:./src/astaroth:./src/astaroth/submodule/build/src/core:./src/astaroth/submodule/build/src/core/kernels:./src/astaroth/submodule/build/src/utils"
+      LD_LIBRARY_PATH="./src:./src/astaroth:./src/astaroth/submodule/build/src/core:./src/astaroth/submodule/build/src/core/kernels:./src/astaroth/submodule/build/src/utils:./src/astaroth/submodule/build/runtime_compilation"
     else
-      LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:./src:./src/astaroth:./src/astaroth/submodule/build/src/core:./src/astaroth/submodule/build/src/core/kernels:./src/astaroth/submodule/build/src/utils"
+      LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:./src:./src/astaroth:./src/astaroth/submodule/build/src/core:./src/astaroth/submodule/build/src/core/kernels:./src/astaroth/submodule/build/src/util:./src/astaroth/submodule/build/runtime_compilation"
     fi
 
     # Remember that sourceme has been successfully run

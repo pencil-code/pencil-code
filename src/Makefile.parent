@@ -26,6 +26,13 @@ default_to_be: Makefile_inc Fortran_standard
 	  echo "===== " $(MAKE) FROM_PARENT=src/ -f Makefile.src code "====="; \
 	  $(MAKE) FROM_PARENT=src/ -f Makefile.src default_to_be \
 	)
+# Build for production - only relevant when using Astaroth: enables run-time compilation.
+production:
+	(cd src; $(MAKE) FROM_PARENT=src/ -f Makefile.src production)
+
+#Builds Pencil Code as a shared library
+shared_lib: Makefile_inc Fortran_standard
+	(cd src; $(MAKE) FROM_PARENT=src/ -f Makefile.src libPC.so libPCStart.so)
 
 # Use calculated dependencies instead:
 depend dep:
@@ -142,7 +149,7 @@ Fortran_standard:
 	    echo "FSTD=$(FSTD_2003)" > src/Makefile-standard.inc; \
 	    ;; \
 	*) \
-	    echo "FSTD=$(FSTD_95)" > src/Makefile-standard.inc; \
+	    echo "FSTD=$(FSTD_2003)" > src/Makefile-standard.inc; \
 	    ;; \
 	esac;
 

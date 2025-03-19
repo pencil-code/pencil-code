@@ -1,13 +1,66 @@
-To clone with Astaroth:
-
-git clone --recurse-submodules https://<github username>@github.com/pencil-code/pencil-code.git
+To clone Pencil Code together with Astaroth:
+--------------------------------------------
+git clone -b gputestv6 --recurse-submodules https://<username>@github.com/pencil-code/pencil-code.git
+or
+git clone -b gputestv6 --recurse-submodules https://<username>@pencil-code.org/git/ pencil-code
+cd pencil-code
+source sourceme.sh
 cd src/astaroth/submodule
-git merge origin/master
+git checkout PCinterface_2019-8-12
 
-add Astaroth later:
-git submodule update --init --recursive
+To add Astaroth later to already installed Pencil Code:
+-------------------------------------------------------
+cd $PENCIL_HOME
+git checkout gputestv6
+git submodule update --init --remote
 cd src/astaroth/submodule 
-git checkout master
+git checkout origin PCinterface_2019-8-12
+
+Don't forget to set $PENCIL_HOME correctly - missing this is a common source of mess.
+
+To build with Astaroth:
+-----------------------
+On Clusters, load appropriate CUDA (for NVIDIA) or HIP (for AMD) and MPI modules, perhaps also CMake.
+Set 
+
+GPU            = gpu_astaroth
+GPU_VENDOR     = [nvidia|amd]     # nvidia is default
+MULTITHREADING = openmp
+
+in Makefile.local. At first time, this implies to repeat pc_setupsrc.
+
+Build Pencil Code as usual by make or pc_build
+   - when building with make, you need to set the MODULE_[PRE|IN|SUF]FIX environment variables as given in the config file for the chosen compiler on the given machine
+   - when building with pc_build, use the flag -s|--serial for safety 
+
+For gfortran:  the compilation flag  std95 must be set to f2003,
+               you must have LDFLAGS_MAIN = -Bdynamic -Wl,--export-dynamic in Makefile.src
+For CRAY:  you must have LDFLAGS_MAIN = -h dynamic -Wl,--export-dynamic in Makefile.src
+
+To run:
+-------
+In SLURM, set the following in the sbatch script:
+--ntasks          = <total number of MPI processes = total number of GPUs employed>
+--ntasks-per-node = <...> # ideally the number of all GPUs per node
+--cpus-per-task   = <...> # ideally the number of CPUs per node, divided by ntasks-per-node (some systems won't allow this maximum, so try less)
+on Puhti:
+--gres            = gpu:<device type>:<ntasks-per-node>
+on LUMI/Dardel:
+--gpus-per-node   = <ntasks-per-node>
+
+Also, there are usually separate partitions for GPU use.
+On some imperfectly configured machines, additional settings are required.
+[which OMP/MPI enironment settings?]
+
+
+
+
+
+
+
+
+
+
 
 ln -s /cfs/klemming/home/b/brandenb/scr/GPU-test/pencil-code/src/astaroth/submodule/acc-runtime/samples/gputest submodule/acc-runtime/samples/gputest
 module load rocm/5.0.2 craype-accel-amd-gfx90a cmake/3.20.1

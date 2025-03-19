@@ -116,6 +116,7 @@ module Sub
   public :: vortex
   public :: find_index_by_bisection
   public :: calc_scl_factor
+  public :: get_dxyzs
 !
   interface poly                ! Overload the `poly' function
     module procedure poly_0
@@ -1884,7 +1885,8 @@ module Sub
       real, dimension (:,:), intent (in), optional :: a
       logical, intent (in), optional :: lcovariant_derivative
       real, dimension (nx,3), intent (out) :: b
-      integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,a1,a2
+      integer, parameter :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7
+      integer :: a1,a2
 !
       b(:,1)=aij(:,3,2)-aij(:,2,3)
       b(:,2)=aij(:,1,3)-aij(:,3,1)
@@ -3282,20 +3284,17 @@ module Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3,3) :: gradf
-      real, dimension (nx,3) :: uu,ff,ugradf,grad_f_tmp
+      real, dimension (nx,3) :: uu,ff,ugradf
       real, dimension (nx) :: tmp
       integer :: j,k
       logical, optional :: upwind,ladd
 !
-      if (k<1 .or. k>mfarray) then
-        call fatal_error('u_dot_grad_vec','variable index is out of bounds')
-        return
-      endif
+      if (k<1 .or. k>mfarray) call fatal_error('u_dot_grad_vec','variable index k is out of bounds')
 !
       do j=1,3
 !
-        grad_f_tmp = gradf(:,j,:)
-        call u_dot_grad_scl(f,k+j-1,grad_f_tmp,uu,tmp,UPWIND=upwind)
+        ff=gradf(:,j,:)
+        call u_dot_grad_scl(f,k+j-1,ff,uu,tmp,UPWIND=upwind)
         if (loptest(ladd)) then
           ugradf(:,j)=ugradf(:,j)+tmp
         else
@@ -3345,10 +3344,7 @@ module Sub
       logical, optional :: ladd
       logical :: ladd1
 !
-      if (k<1 .or. k>mfarray) then
-        call fatal_error('u_dot_grad_vec','variable index is out of bounds')
-        return
-      endif
+      if (k<1 .or. k>mfarray) call fatal_error('u_dot_grad_vec','variable index k is out of bounds')
 !
       ladd1=loptest(ladd)
 !
@@ -3465,7 +3461,7 @@ module Sub
 !
       if (k<1 .or. k>mfarray) then
         call fatal_error('u_dot_grad_scl','variable index is out of bounds')
-        return
+        ! return
       endif
 !
       call dot_mn(uu,gradf,ugradf,ladd)
@@ -4014,7 +4010,7 @@ module Sub
       if (ddt > 0.) dt1_local=max(dt1_local,dt1_last)
       call mpiallreduce_max(dt1_local,dt1,MPI_COMM_WORLD)
 !
-!  not set the actual time step, based on dt1
+!  now set the actual time step, based on dt1
 !
       dt=1.0/dt1
       if (loutput_varn_at_exact_tsnap) call shift_dt(dt)
@@ -4045,7 +4041,10 @@ module Sub
       v2=sum(vv**2,2)
       do l=1,nx
         if (v2(l)>=thresh2) then
+          !$omp critical
           write(lun) l,m-nghost,n-nghost,vv(l,:)
+          !$omp end critical
+          !$omp atomic
           nvec=nvec+1
         endif
       enddo
@@ -4221,8 +4220,9 @@ module Sub
       real, dimension(-nghost:nghost,-nghost:nghost,-nghost:nghost), intent(in) :: kernel
       real, dimension(nx), intent(out) :: smth
 !
-      integer :: i=0, j=0, k=0, l
+      integer :: i, j, k, l
 !
+      i=0;j=0;k=0;
       if (nxgrid /=1) i=nghost
       if (nygrid /=1) j=nghost
       if (nzgrid /=1) k=nghost
@@ -5900,7 +5900,7 @@ nameloop: do
       real, dimension (nx,3) :: gecr,bb,bunit,hhh,gvKperp1,gvKpara1,tmpv
       real, dimension (nx) :: abs_b,b1,del2ecr,gecr2,vKperp,vKpara
       real, dimension (nx) :: hhh2,quenchfactor,rhs,tmp,tmpi,tmpj,tmpk
-      real :: limiter_tensordiff=3.
+      real, parameter :: limiter_tensordiff=3.
       integer :: i,j,k
       logical, optional :: llog
       real, optional, dimension (nx,3) :: gvKperp,gvKpara
@@ -7168,7 +7168,7 @@ nameloop: do
             elsewhere
               indxs = 8
             endwhere
-            call deri_3d_inds(f(1,1,1,k),del6f(1,j),indxs,j,lnometric=.true.)
+            call deri_3d_inds(f(:,:,:,k),del6f(:,j),indxs,j,lnometric=.true.)
           endif
 !
           del6f(:,j) = abs(hh(:,j))*del6f(:,j)
@@ -9158,5 +9158,16 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
       endif
 !
     endsubroutine calc_scl_factor
+!***********************************************************************    
+    function get_dxyzs() result(res)
+  
+      type :: real3
+        real :: x, y, z
+      endtype real3
+      type(real3) :: res
+  
+      res%x = dxyz_2(nghost); res%y=dxyz_4(nghost); res%z=dxyz_6(nghost)
+  
+    endfunction get_dxyzs
 !***********************************************************************    
 endmodule Sub

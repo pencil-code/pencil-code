@@ -2615,7 +2615,7 @@ module Particles
               dfp(1:npar_loc,ivpx:ivpz) = dfp(1:npar_loc,ivpx:ivpz) + gpp_arr(1:npar_loc,:)
             endif
 !  Limit time-step if particles close to gravity source.
-            if (ldt_grav_par.and.(lfirst.and.ldt)) then
+            if (ldt_grav_par.and.(lupdate_courant_dt)) then
               if (lcartesian_coords) then
                 vv_arr(1:npar_loc)=sqrt(fp(1:npar_loc,ivpx)**2+fp(1:npar_loc,ivpy)**2+fp(1:npar_loc,ivpz)**2)
               elseif (lcylindrical_coords) then
@@ -2679,7 +2679,7 @@ module Particles
                 dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + ggp
               endif
   !  Limit time-step if particles close to gravity source.
-              if (ldt_grav_par.and.(lfirst.and.ldt)) then
+              if (ldt_grav_par.and.(lupdate_courant_dt)) then
                 if (lcartesian_coords) then
                   vv=sqrt(fp(k,ivpx)**2+fp(k,ivpy)**2+fp(k,ivpz)**2)
                 elseif (lcylindrical_coords) then
@@ -2720,7 +2720,7 @@ module Particles
 !
 !  Contribution of dust particles to time step.
 !
-      if (lfirst.and.ldt.and.ldt_adv_par) then
+      if (lupdate_courant_dt.and.ldt_adv_par) then
         if (npar_imn(imn)/=0) then
           do k=k1_imn(imn),k2_imn(imn)
             ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
@@ -2866,7 +2866,7 @@ module Particles
 !
         if (npar_imn(imn)/=0) then
 !
-          if (lfirst.and.ldt) then
+          if (lupdate_courant_dt) then
             dt1_drag_dust=0.0
             if (ldragforce_gas_par) dt1_drag_gas=0.0
           endif
@@ -3459,7 +3459,7 @@ module Particles
 !  With drag force on the gas as well, the maximum time-step is set as
 !    dt1_drag = Sum_k[eps_k/tau_k]
 !
-              if (lfirst .and. ldt) then
+              if (lupdate_courant_dt) then
                 dt1_drag_dust(ix0-nghost) = max(dt1_drag_dust(ix0-nghost), tausp1_par)
                 if (ldragforce_gas_par) &
                   dt1_drag_gas(ix0-nghost) = dt1_drag_gas(ix0-nghost) + mp_vcell * p%rho1(ix0-nghost) * tausp1_par
@@ -3475,7 +3475,7 @@ module Particles
 !  time-steps are added up to give a valid expression even when the two are
 !  of similar magnitude.
 !
-          if (lfirst.and.ldt) then
+          if (lupdate_courant_dt) then
             if (ldragforce_gas_par) then
               dt1_drag=dt1_drag_dust+dt1_drag_gas
             else
@@ -3488,7 +3488,7 @@ module Particles
 !
 !  No particles in this pencil.
 !
-          if (lfirst.and.ldt) dt1_drag=0.0
+          if (lupdate_courant_dt) dt1_drag=0.0
         endif
       endif
 !
@@ -3601,7 +3601,7 @@ module Particles
         if (idiag_dvpx2m/=0 .or. idiag_dvpx2m/=0 .or. idiag_dvpx2m/=0 .or. &
             idiag_dvpm  /=0 .or. idiag_dvpmax/=0) call calculate_rms_speed(fp,ineargrid,p)
 
-        if (idiag_dtdragp/=0.and.(lfirst.and.ldt)) call max_mn_name(dt1_drag,idiag_dtdragp,l_dt=.true.)
+        if (idiag_dtdragp/=0.and.(lupdate_courant_dt)) call max_mn_name(dt1_drag,idiag_dtdragp,l_dt=.true.)
       endif
 !
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1
@@ -4380,7 +4380,7 @@ module Particles
             dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) - taucool1*(fp(k,ivpx:ivpz)-vvpm(ix0-nghost,:))
           enddo
 !
-          if (lfirst.and.ldt) dt1_max=max(dt1_max,taucool1/cdtp)
+          if (lupdate_courant_dt) dt1_max=max(dt1_max,taucool1/cdtp)
         endif
       endif
 !
@@ -4445,7 +4445,7 @@ module Particles
                                  sum(fp(k,ivpx:ivpz)*(fp(k,ivpx:ivpz)-vvpm(ix0-nghost,:)))
           enddo
 !
-          if (lfirst.and.ldt) dt1_max=max(dt1_max,tau_coll1/cdtp)
+          if (lupdate_courant_dt) dt1_max=max(dt1_max,tau_coll1/cdtp)
         endif
       endif
 !
@@ -4487,7 +4487,7 @@ module Particles
                 dfp(j,ivpx:ivpz) = dfp(j,ivpx:ivpz) - tau_cool1_par*(fp(j,ivpx:ivpz)-vbar_jk)
                 dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) - tau_cool1_par*(fp(k,ivpx:ivpz)-vbar_jk)
               enddo
-              if (lfirst.and.ldt) dt1_max=max(dt1_max(l),dt1_cool/cdtp)
+              if (lupdate_courant_dt) dt1_max=max(dt1_max(l),dt1_cool/cdtp)
 !  Go through all possible k.
               k=kneighbour(k)
             enddo
@@ -4566,7 +4566,7 @@ module Particles
               tau_coll1_tot(:,ispecies)=tau_coll1_tot(:,ispecies)+tau_coll1_species(:,ispecies,jspecies)
             enddo; enddo
           endif
-          if (lfirst.and.ldt) then
+          if (lupdate_courant_dt) then
             do ispecies=1,npar_species
               dt1_max=max(dt1_max,tau_coll1_tot(:,ispecies)/cdtp)
             enddo

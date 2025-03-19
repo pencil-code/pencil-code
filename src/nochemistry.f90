@@ -291,6 +291,18 @@ module Chemistry
 !
     endsubroutine chemspec_normalization_N2
 !***********************************************************************
+    subroutine chemistry_init_reduc_pointers
+!
+!    7-feb-24 TP: dummy
+!
+    endsubroutine chemistry_init_reduc_pointers
+!***********************************************************************
+    subroutine chemistry_diags_reductions
+!
+!    7-feb-24 TP: dummy
+!
+    endsubroutine chemistry_diags_reductions 
+!***********************************************************************
    subroutine find_species_index(species_name,ind_glob,ind_chem,found_specie)
 !
 !  Find index in the f array for specie

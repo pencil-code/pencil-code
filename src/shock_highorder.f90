@@ -25,7 +25,6 @@
 !***************************************************************
 module Shock
 !
-  use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
 !
@@ -76,6 +75,8 @@ module Shock
     module procedure shock_divu_perp_pencil
   endinterface
 !
+  real :: dt_div_pow=0.
+
   contains
 !***********************************************************************
     subroutine register_shock()
@@ -86,7 +87,7 @@ module Shock
       use FArrayManager
       use Messages, only: svn_id
 !
-      call farray_register_auxiliary('shock',ishock,communicated=.true.)
+      call farray_register_auxiliary('shock',ishock,communicated=.true.,on_gpu=lgpu)
 !
 !  Identify version number.
 !
@@ -135,6 +136,14 @@ module Shock
         ishock_max=max(min(ishock_max,nghost),1)
         call warning('initialize_shock', 'ishock_max='//trim(itoa(idum))// &
                      ' not between 1 and nghost. We set it to '//trim(itoa(ishock_max)))
+      endif
+!
+      if (shock_div_pow /= 1.) then
+        if (dtfactor>0.) then
+          dt_div_pow = dtfactor**(shock_div_pow-1)
+        else
+          shock_div_pow=1.
+        endif
       endif
 !
 !  Die if periodic boundary condition for shock viscosity, but not for
@@ -380,7 +389,7 @@ module Shock
       integer :: imn
       integer :: i,j,k
       integer :: ni,nj,nk
-      real :: shock_max, a=0., a1, dt_div_pow
+      real :: shock_max, a=0., a1
       logical :: lcommunicate
 !
 !  Initialize shock to impossibly large number to force code crash in case of
@@ -399,8 +408,6 @@ module Shock
 !  retain dimensionality of diffusion coefficient as L^2/t, dtfactor is some
 !  timescale relevant to the flow divergence, which keeps the peak diffusive
 !  coefficient of order unity in highly compressive shocks.
-!
-      if (shock_div_pow /= 1.) dt_div_pow = dtfactor**(shock_div_pow-1)
 !
       lcommunicate=.true.
       do imn=1,nyz
@@ -429,8 +436,7 @@ module Shock
             f(l1:l2,m,n,ishock) = abs(penc)
           endif
         endif
-        if (shock_div_pow /= 1.) f(l1:l2,m,n,ishock)=&
-            dt_div_pow*f(l1:l2,m,n,ishock)**shock_div_pow
+        if (shock_div_pow /= 1.) f(l1:l2,m,n,ishock)=dt_div_pow*f(l1:l2,m,n,ishock)**shock_div_pow
 !
 !  Add the linear term if requested
 !
@@ -566,7 +572,6 @@ module Shock
       integer :: ni,nj,nk
       logical :: lcommunicate
 !
-!
 !  Apply maximum within ishock_max zones to shock profile.
 !
 !  Take maximum over a number of grid cells
@@ -685,7 +690,7 @@ module Shock
 !
 !  Shock profile calculation.
 !
-      call calc_shock_profile(f)
+      if (.not. lgpu) call calc_shock_profile(f)
 
     endsubroutine shock_before_boundary
 !***********************************************************************
@@ -840,5 +845,21 @@ module Shock
       speed = sqrt(speed)
 !
     endfunction wave_speed
+!***********************************************************************
+    subroutine pushpars2c(p_par)
+
+    use Syscalls, only: copy_addr
+
+    integer, parameter :: n_pars=1000
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+    call copy_addr(ishock_max   ,p_par(1))  ! int
+    call copy_addr(div_threshold,p_par(2))
+    call copy_addr(shock_linear ,p_par(3))
+    call copy_addr(shock_div_pow,p_par(4))
+    call copy_addr(dt_div_pow   ,p_par(5))
+    call copy_addr(con_bias     ,p_par(6))
+
+    endsubroutine pushpars2c
 !***********************************************************************
 endmodule Shock

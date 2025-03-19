@@ -23,7 +23,7 @@ module Selfgravity
 !
   include 'selfgravity.h'
 !
-  real :: rhs_poisson_const=0.0
+  real :: rhs_poisson_const=0.
 !
   contains
 !***********************************************************************
@@ -33,6 +33,10 @@ module Selfgravity
 !
 !  15-may-06/anders+jeff: dummy
 !
+      use SharedVariables, only: put_shared_variable
+
+      call put_shared_variable('rhs_poisson_const',rhs_poisson_const, caller='register_selfgravity')
+
     endsubroutine register_selfgravity
 !***********************************************************************
     subroutine initialize_selfgravity(f)

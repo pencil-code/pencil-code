@@ -193,7 +193,7 @@ module Energy
 !
 !  ``cs2/dx^2'' for timestep
 !
-      if (lfirst.and.ldt) then
+      if (lupdate_courant_dt) then
         p%advec_cs2=cs2*dxyz_2
         if (headtt.or.ldebug) print*,'calc_pencils_energy: max(advec_cs2) =',maxval(p%advec_cs2)
       endif
@@ -236,7 +236,7 @@ module Energy
         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-cs2*(glnrho(:,3))
       endif
 
-      if (lfirst.and.ldt) advec_cs2 = p%advec_cs2
+      if (lupdate_courant_dt) advec_cs2 = p%advec_cs2
 
       call calc_diagnostics_energy(f,p)
 
@@ -253,7 +253,7 @@ module Energy
 !  Calculate energy related diagnostics
 !
       if (ldiagnos) then
-        if (lfirst.and.ldt.and.idiag_dtc/=0) call max_mn_name(sqrt(p%advec_cs2)/cdt,idiag_dtc,l_dt=.true.)
+        if (lupdate_courant_dt.and.idiag_dtc/=0) call max_mn_name(sqrt(p%advec_cs2)/cdt,idiag_dtc,l_dt=.true.)
         if (idiag_ugradpm/=0) then
           call dot_mn(p%uu,p%glnrho,p%uglnrho)
           call sum_mn_name(p%rho*p%cs2*p%uglnrho,idiag_ugradpm)

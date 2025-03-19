@@ -1,3 +1,5 @@
+#!/bin/bash
+
 rm -f mpicomm_c.h
 if [[ $MODULE_NAME_ORDER == "CRAY" ]]; then
   echo '# define finalize_isendrcv_bdry '$MODULE_PREFIX'finalize_isendrcv_bdry'$MODULE_INFIX'mpicomm'$MODULE_SUFFIX >> mpicomm_c.h

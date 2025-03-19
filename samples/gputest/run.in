@@ -5,15 +5,23 @@
 &run_pars
   cvsid='$Id$',
   ip=13,
-  nt=200, it1=10, isave=500, itorder=3, 
-  nt=20, it1=4, isave=500, itorder=3, 
-  nt=1, it1=1, isave=10, itorder=3, 
-  cdt=0.4, cdtv=0.3, dtmin=1e-6, dt=1.e-3
+
+  nt=2001, it1=20, isave=100, itorder=3,
+  !nt=21, it1=1, isave=100, itorder=3
+
+  cdt=0.4, cdtv=0.3, dtmin=1e-6, dt=1.e-6
+
+  dspec=2e-5, vel_spec=T, ab_spec=T
+
+  dvid=1e-5
+
+  dsnap=8e-5
+
   random_gen='nr_f90',
   slice_position='e'
   lpencil_check=F
   lpencil_check_small=F
-  lbidiagonal_derij=F  !(uses the slightly more accurate formulation for derij)
+  lbidiagonal_derij=T  !(uses the slightly more accurate formulation for derij)
   luse_oldgrid=F
 /
 &hydro_run_pars
@@ -28,7 +36,7 @@
 &viscosity_run_pars
   nu=1e-3                  !cp=2.5 version used nu=1e-4
 /
-&eos_run_pars   
+&eos_run_pars
 /
 &forcing_run_pars
    iforce='helical', force=0.07, relhel=1.
@@ -39,4 +47,5 @@
 &magnetic_run_pars
   eta=1e-3
 /
-
+&power_spectrum_run_pars
+/

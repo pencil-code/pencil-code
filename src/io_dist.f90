@@ -1248,15 +1248,15 @@ module Io
       call parse_filename(file,dir,fpart)
       if (dir == '.') call safe_character_assign(dir,directory_snap)
 !
-      open(lun_output,FILE=trim(dir)//'/'//flist,POSITION='append')
-      write(lun_output,'(A,1x,e16.8)') trim(fpart), t
-      close(lun_output)
+      open(lun_output-1,FILE=trim(dir)//'/'//flist,POSITION='append')
+      write(lun_output-1,'(A,1x,e16.8)') trim(fpart), t
+      close(lun_output-1)
 !
       if (lcopysnapshots_exp) then
         if (lroot) then
-          open(lun_output,FILE=trim(datadir)//'/move-me.list',POSITION='append')
-          write(lun_output,'(A)') trim(fpart)
-          close(lun_output)
+          open(lun_output-1,FILE=trim(datadir)//'/move-me.list',POSITION='append')
+          write(lun_output-1,'(A)') trim(fpart)
+          close(lun_output-1)
         endif
       endif
 !
@@ -1332,8 +1332,8 @@ module Io
         if (lroot) then
           write (lun_output) gx, gy, gz
           close (lun_output)
-       endif
-     endif
+        endif
+      endif
 !
     endsubroutine wgrid
 !***********************************************************************

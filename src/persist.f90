@@ -160,7 +160,6 @@ module Persist
         case (id_record_RANDOM_SEEDS)
           call random_seed_wrapper (GET=seed,CHANNEL=1)
           done=read_persist ('RANDOM_SEEDS', seed(1:nseed))
-!print*, 'persist-in: seed=', seed(1:nseed)
           if (.not.done) call random_seed_wrapper (PUT=seed,CHANNEL=1)
         case (id_record_RANDOM_SEEDS2)
           call random_seed_wrapper (GET=seed2,CHANNEL=2)
@@ -236,7 +235,6 @@ module Persist
         endif
       endif
 !
-!
     endsubroutine input_persist_general_by_label
 !***********************************************************************
     logical function output_persistent_general()
@@ -254,7 +252,6 @@ module Persist
       ! Don't write the seeds, if they are unchanged from their default value.
       call random_seed_wrapper (GET=seed,CHANNEL=1)
       if (any (seed(1:nseed) /= seed0)) then
-!print*, 'persist-out: seed=', seed(1:nseed)
         if (write_persist ('RANDOM_SEEDS', id_record_RANDOM_SEEDS, seed(1:nseed))) &
             output_persistent_general = .true.
       endif
@@ -267,12 +264,11 @@ module Persist
 !
       if (lshear) then
         if (write_persist ('SHEAR_DELTA_Y', id_record_SHEAR_DELTA_Y, deltay)) &
-!print*, 'persist-out: deltay=', deltay
             output_persistent_general = .true.
       endif
 !
-      if (.not.ldt) then
-        if (write_persist ('TIME_STEP', id_record_TIME_STEP, dt)) &
+      if (.not.lstart.and.(.not.lcourant_dt.or.lgpu)) then
+        if (write_persist ('TIME_STEP', id_record_TIME_STEP, merge(-dt,dt,lgpu.and.ldt))) &
           output_persistent_general = .true.
       endif
 !

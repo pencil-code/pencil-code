@@ -9,4 +9,5 @@
   public :: read_shock_run_pars,  write_shock_run_pars
   public :: pencil_criteria_shock, pencil_interdep_shock
   public :: calc_pencils_shock, calc_diagnostics_shock
+  public :: pushpars2c
 !

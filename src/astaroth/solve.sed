@@ -6,16 +6,16 @@
               s/ *[vec]*value[^,]*,/ /
               p
               g
-              s/rk3_intermediate\(.*,.*value.*\),.*)/rk3_final\1))/
+              s/rk3_intermediate\(.*,.*value *( *[a-zA-Z0-9_]* *)\),.*)/rk3_final\1, step_num) )/
               t store
               b cont
               : store
               h
               w sedtmp
               : cont
-              $ { a Kernel twopass_solve_final()\{
-                  r sedtmp
-                  a \}
+              $ { a fixed_boundary Kernel twopass_solve_final(int step_num)\{
+#                  r sedtmp
+#                  a \}
                 }
               d
               : end

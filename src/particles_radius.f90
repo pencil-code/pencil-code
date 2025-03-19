@@ -681,7 +681,7 @@ module Particles_radius
 !
 !  Time-step contribution of sweep-up.
 !
-              if (lfirst.and.ldt) dt1_sweepup(ix) = dt1_sweepup(ix) + np_swarm*pi*fp(k,iap)**2*deltavp
+              if (lupdate_courant_dt) dt1_sweepup(ix) = dt1_sweepup(ix) + np_swarm*pi*fp(k,iap)**2*deltavp
 !
             endif
 !
@@ -693,7 +693,7 @@ module Particles_radius
 !
 !  Time-step contribution of sweep-up.
 !
-        if (lfirst .and. ldt) then
+        if (lupdate_courant_dt) then
           dt1_sweepup = dt1_sweepup/cdtps
           dt1_max = max(dt1_max,dt1_sweepup)
         endif
@@ -765,7 +765,7 @@ module Particles_radius
             rhosat = gamma*ppsat/p%csvap2
           endif
           rhocond_tot = p%rhop+rhovap
-          if (lfirst .and. ldt) then
+          if (lupdate_courant_dt) then
             np_total = 0.0
             total_surface_area = 0.0
             dt1_condensation = 0.0
@@ -817,7 +817,7 @@ module Particles_radius
 !  Do not allow particles to become smaller than a minimum radius.
 !
               dapdt = -tau_damp_evap1*(fp(k,iap)-apmin)
-              if (lfirst .and. ldt) then
+              if (lupdate_courant_dt) then
                 dt1_condensation(ix) = max(dt1_condensation(ix),tau_damp_evap1)
               endif
             else
@@ -869,7 +869,7 @@ module Particles_radius
 !
               if (dapdt < 0.0 .and. apmin > 0.0) then
                 dapdt = dapdt*min(1.0,(fp(k,iap)/apmin-1.0)**2)
-                if (lfirst .and. ldt) then
+                if (lupdate_courant_dt) then
                   dt1_condensation(ix) = max(dt1_condensation(ix), abs(dapdt/(fp(k,iap)-apmin)))
                 endif
               endif
@@ -926,23 +926,21 @@ module Particles_radius
             if (ltemperature .and. llatent_heat) &
               df(ix0,m,n,ilnTT) = df(ix0,m,n,ilnTT) - latent_heat_SI*p%rho1(ix)*p%TT1(ix)*p%cv1(ix)*drhocdt
 !
-!            if (lfirst .and. ldt) then
-            if (lfirst .and. ldt .and. .not. lascalar .and. .not. lcondensation_simplified) then
+!            if (lupdate_courant_dt) then
+            if (lupdate_courant_dt .and. .not. lascalar .and. .not. lcondensation_simplified) then
               total_surface_area(ix) = total_surface_area(ix)+ 4*pi*fp(k,iap)**2*np_swarm*alpha_cond_par
               np_total(ix) = np_total(ix)+np_swarm
-            elseif (lfirst .and. ldt .and. lascalar .and. ldt_condensation) then
+            elseif (lupdate_courant_dt .and. lascalar .and. ldt_condensation) then
               tau_phase1(ix) = tau_phase1(ix)+4.0*pi*modified_vapor_diffusivity*fp(k,iap)*fp(k, inpswarm)
               if (ldt_evaporation) tau_evaporation1(ix) = -(2*G_condensation*f(ix,m,n,issat))/fp(k,iap)**2
-            elseif (lfirst .and. ldt .and. lcondensation_simplified .and. ldt_condensation) then
+            elseif (lupdate_courant_dt .and. lcondensation_simplified .and. ldt_condensation) then
               tau_phase1(ix) = tau_phase1(ix)+4.0*pi*modified_vapor_diffusivity*fp(k,iap)*fp(k, inpswarm)
             endif
           enddo
 !
 !  Time-step contribution of condensation.
 !
-!          if (lfirst .and. ldt) then
-          if (lfirst .and. ldt .and. .not. lascalar .and. .not. lcondensation_simplified .and. .not. lcondensing_species) then
-
+          if (lupdate_courant_dt .and. .not. lascalar .and. .not. lcondensation_simplified .and. .not. lcondensing_species) then
             ap_equi = ((p%rhop+(rhovap-rhosat))/(4.0/3.0*pi*rhopmat*np_swarm*p%np))**(1.0/3.0)
             do ix = 1,nx
               if (rhocond_tot(ix) > rhosat(ix)) then
@@ -950,12 +948,12 @@ module Particles_radius
                     pi*vth(ix)*np_total(ix)*ap_equi(ix)**2*alpha_cond)
               endif
             enddo
-          elseif (lfirst .and. ldt .and. lascalar .and. ldt_condensation) then
+          elseif (lupdate_courant_dt .and. lascalar .and. ldt_condensation) then
             do ix = 1,nx
               dt1_condensation(ix) = tau_phase1(ix)
               if (ldt_evaporation) dt1_condensation(ix) = max(tau_phase1(ix), tau_evaporation1(ix))
             enddo
-          elseif (lfirst .and. ldt .and. lcondensation_simplified .and. ldt_condensation) then  
+          elseif (lupdate_courant_dt .and. lcondensation_simplified .and. ldt_condensation) then  
             do ix = 1,nx
               if (ldt_evaporation) then
                 tau_evaporation1(ix) = -(2*GS_condensation)/ap0(1)**2
@@ -964,7 +962,7 @@ module Particles_radius
                 dt1_condensation(ix) = tau_phase1(ix)
               endif
             enddo
-          elseif (lfirst .and. ldt .and. ldt_condensation_off) then
+          elseif (lupdate_courant_dt .and. ldt_condensation_off) then
               dt1_condensation = 0.
           endif
         endif
@@ -976,7 +974,7 @@ module Particles_radius
 !
 !  Time-step contribution of condensation.
 !
-        if (lfirst .and. ldt) then
+        if (lupdate_courant_dt) then
           dt1_condensation = dt1_condensation/cdtpc
           dt1_max = max(dt1_max,dt1_condensation)
         endif

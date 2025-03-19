@@ -1240,7 +1240,7 @@ enddo; enddo
       real, dimension(nx) :: jrt,jtr
       character(LEN=80) :: mess
       character(LEN=20) :: cbuf
-      real :: limit=1e30
+      real, parameter :: limit=1e30
 !
       call keep_compiler_quiet(f)
 !

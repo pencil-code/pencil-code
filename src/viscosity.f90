@@ -51,6 +51,7 @@ module Viscosity
   character (len=labellen) :: div_sld_visc='2nd'
   real :: nnewton_tscale=0.0,nnewton_step_width=0.0
   real, dimension(nx) :: xmask_vis=0.,pnu=0.
+  !$omp threadprivate(pnu)
   real, dimension(2) :: vis_xaver_range=(/-max_real,max_real/)
   real, dimension(:), pointer :: etat_x, detat_x
   real, dimension(:), pointer :: etat_y, detat_y
@@ -229,6 +230,9 @@ module Viscosity
 !
   real, dimension(mz) :: eth0z = 0.0
   real, dimension(nx) :: diffus_nu, diffus_nu3
+!
+  integer :: enum_nnewton_type = 0
+  integer :: enum_div_sld_visc = 0
 !
   contains
 !***********************************************************************
@@ -579,7 +583,7 @@ module Viscosity
             call warning('initialize_viscosity','Viscosity coefficient nu is zero')
 
         if ((lvisc_rho_nu_const_bulk).and.zeta==0.0) &
-          call warning('initialize_viscosity','Viscosity coefficient zeta is zero')
+            call fatal_error('initialize_viscosity','Viscosity coefficient zeta is zero')
 
         if (lvisc_hyper2_simplified.and.nu_hyper2==0.0) &
             call fatal_error('initialize_viscosity','Viscosity coefficient nu_hyper2 is zero')
@@ -629,11 +633,10 @@ module Viscosity
 !  Dynamical hyper-diffusivity operates only for mesh formulation of hyper-viscosity
 !
         if (ldynamical_diffusion.and. &
-            .not.(lvisc_hyper3_mesh.or.lvisc_hyper3_mesh_residual.or.lvisc_hyper3_csmesh)) then
+            .not.(lvisc_hyper3_mesh.or.lvisc_hyper3_mesh_residual.or.lvisc_hyper3_csmesh)) &
           call fatal_error("initialize_viscosity", &
                "Dynamical diffusion requires mesh hyper-diffusion, switch ivisc='hyper3-mesh' "// &
                "'hyper3-mesh-residual', or 'hyper3-csmesh'")
-        endif
       endif
 
       if (lyinyang) then
@@ -1266,8 +1269,8 @@ module Viscosity
       p%fvisc=0.0                               !!! not needed
       if (lpencil(i_visc_heat)) p%visc_heat=0.0
 
-      ldiffus_total = lfirst .and. ldt .or. lpencil(i_diffus_total)
-      ldiffus_total3 = lfirst .and. ldt .or. lpencil(i_diffus_total3)
+      ldiffus_total = lupdate_courant_dt .or. lpencil(i_diffus_total)
+      ldiffus_total3 = lupdate_courant_dt .or. lpencil(i_diffus_total3)
       if (ldiffus_total.or.ldiffus_total3) then
         p%diffus_total=0.0
         p%diffus_total2=0.0
@@ -1779,7 +1782,7 @@ module Viscosity
           if (headtt) call warning('calc_pencils_viscosity', 'viscous heating '// &
                                    'not implemented for lvisc_hyper2_simplified')
         endif
-        if (lfirst .and. ldt) p%diffus_total2=p%diffus_total2+nu_hyper2
+        if (lupdate_courant_dt) p%diffus_total2=p%diffus_total2+nu_hyper2
       endif
 !
 !  viscous force: nu_hyper3*del6v (not momentum-conserving)
@@ -1801,7 +1804,7 @@ module Viscosity
           if (headtt) call warning('calc_pencils_viscosity', 'viscous heating '// &
                                    'not implemented for lvisc_hyper2_simplified')
         endif
-        if (lfirst .and. ldt) p%diffus_total2=p%diffus_total2+nu_tdep
+        if (lupdate_courant_dt) p%diffus_total2=p%diffus_total2+nu_tdep
       endif
 !
       if (lvisc_hyper3_simplified_tdep) then
@@ -2240,16 +2243,16 @@ module Viscosity
         if (lspherical_coords) then
           call calc_lambda(p,lambda_phi)
           if (llambda_scale_with_nu) then
-            p%fvisc(:,iuz)=p%fvisc(:,iuz) + nu*lambda_phi
+            p%fvisc(:,3)=p%fvisc(:,3) + nu*lambda_phi
           else
-            p%fvisc(:,iuz)=p%fvisc(:,iuz) + lambda_phi
+            p%fvisc(:,3)=p%fvisc(:,3) + lambda_phi
           endif
         elseif (lcylindrical_coords) then
           call calc_lambda_cylindric(p,lambda_phi)
           if (llambda_scale_with_nu) then
-            p%fvisc(:,iuy)=p%fvisc(:,iuy) + nu*lambda_phi
+            p%fvisc(:,2)=p%fvisc(:,2) + nu*lambda_phi
           else
-            p%fvisc(:,iuy)=p%fvisc(:,iuy) + lambda_phi
+            p%fvisc(:,2)=p%fvisc(:,2) + lambda_phi
           endif
         else
           call fatal_error("init_uu","coord_system should be spherical or cylindric")
@@ -2552,7 +2555,7 @@ module Viscosity
 !
 !  Calculate max total diffusion coefficient for timestep calculation etc.
 !
-      if (lfirst.and.ldt) then
+      if (lupdate_courant_dt) then
 
         diffus_nu = p%diffus_total*dxyz_2
         if (ldynamical_diffusion .and. lvisc_hyper3_mesh) then
@@ -2781,8 +2784,13 @@ module Viscosity
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: diss
-      real, dimension (nx) :: rr_sph,rr_cyl,g_r,OO2
+      real, dimension (nx) :: diss,rr_sph,rr_cyl,g_r,OO2
+!
+      if (nzgrid/=1 .or. lspherical_coords) &
+        call not_implemented("calc_visc_heat_ppd","dissipative heating for other than 2d (r-phi) disk")
+!
+      if (.not.lgrav) &
+        call fatal_error("calc_visc_heat_ppd","dissipative heating not meaningful w/o gravity")
 !
 ! 'Dissipative' heating term Y=9/4 \Sigma \nu \Omega_K^2
 !  Need to get correct angular velocity first
@@ -2799,8 +2807,6 @@ module Viscosity
       if (nzgrid==1) then
         diss = 9./4.*nu*OO2
         df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%TT1*diss
-      else
-        call not_implemented("calc_visc_heat_ppd","dissipation for other than 2d (r-phi) disk")
       endif
 !
     endsubroutine calc_visc_heat_ppd
@@ -2982,13 +2988,119 @@ module Viscosity
     subroutine pushpars2c(p_par)
 
     use Syscalls, only: copy_addr
+    use General , only: string_to_enum
 
-    integer, parameter :: n_pars=2
+    integer, parameter :: n_pars=200
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call copy_addr(nu,p_par(1))
     call copy_addr(zeta,p_par(2))
-
+    call copy_addr(nu_hyper3,p_par(3))
+    call copy_addr(nu_shock,p_par(4))
+    call copy_addr(lvisc_nu_const,p_par(5)) ! int
+    call copy_addr(lvisc_hyper3_nu_const,p_par(6)) ! int
+    call copy_addr(lvisc_nu_shock,p_par(7)) ! int
+    call copy_addr(nu_hyper2,p_par(8))
+    call copy_addr(lvisc_rho_nu_const_bulk,p_par(9)) ! int
+    call copy_addr(nu_cspeed,p_par(10))
+    call copy_addr(nu_tdep,p_par(11))
+    call copy_addr(nu_hyper3_mesh,p_par(12))
+    call copy_addr(nu_spitzer,p_par(13))
+    call copy_addr(nu_spitzer_max,p_par(14))
+    call copy_addr(nu_jump,p_par(15))
+    call copy_addr(xnu,p_par(16))
+    call copy_addr(xnu2,p_par(17))
+    call copy_addr(znu,p_par(18))
+    call copy_addr(widthnu,p_par(19))
+    call copy_addr(widthnu2,p_par(20))
+    call copy_addr(c_smag,p_par(21))
+    call copy_addr(gamma_smag,p_par(22))
+    call copy_addr(nu_jump2,p_par(23))
+    call copy_addr(znu_shock,p_par(24))
+    call copy_addr(widthnu_shock,p_par(25))
+    call copy_addr(nu_jump_shock,p_par(26))
+    call copy_addr(xnu_shock,p_par(27))
+    call copy_addr(dynu,p_par(28))
+    call copy_addr(pnlaw,p_par(29))
+    call copy_addr(lambda_v0,p_par(30))
+    call copy_addr(lambda_v1,p_par(31))
+    call copy_addr(lambda_h1,p_par(32))
+    call copy_addr(prm_turb,p_par(33))
+    call copy_addr(meanfield_nub,p_par(34))
+    call copy_addr(nu_infinity,p_par(35))
+    call copy_addr(nu0,p_par(36))
+    call copy_addr(non_newton_lambda,p_par(37))
+    call copy_addr(carreau_exponent,p_par(38))
+    call copy_addr(nu_smag_ma2_power,p_par(39))
+    call copy_addr(nu_rcyl_min,p_par(40))
+    call copy_addr(nnewton_tscale,p_par(41))
+    call copy_addr(nnewton_step_width,p_par(42))
+    call copy_addr(lvisc_simplified,p_par(43)) ! bool
+    call copy_addr(lvisc_nu_non_newtonian,p_par(44)) ! bool
+    call copy_addr(lvisc_rho_nu_const,p_par(45)) ! bool
+    call copy_addr(lvisc_rho_nu_const_prefact,p_par(46)) ! bool
+    call copy_addr(lvisc_sqrtrho_nu_const,p_par(47)) ! bool
+    call copy_addr(lvisc_nu_cspeed,p_par(48)) ! bool
+    call copy_addr(lvisc_mu_cspeed,p_par(49)) ! bool
+    call copy_addr(lvisc_nu_tdep,p_par(50)) ! bool
+    call copy_addr(lvisc_nu_prof,p_par(51)) ! bool
+    call copy_addr(lvisc_nu_profx,p_par(52)) ! bool
+    call copy_addr(lvisc_nu_profr,p_par(53)) ! bool
+    call copy_addr(lvisc_nu_profr_powerlaw,p_par(54)) ! bool
+    call copy_addr(lvisc_nu_profr_twosteps,p_par(55)) ! bool
+    call copy_addr(lvisc_nu_profy_bound,p_par(56)) ! bool
+    call copy_addr(lvisc_nut_from_magnetic,p_par(57)) ! bool
+    call copy_addr(lvisc_nu_shock_profz,p_par(58)) ! bool
+    call copy_addr(lvisc_nu_shock_profr,p_par(59)) ! bool
+    call copy_addr(lvisc_shock_simple,p_par(60)) ! bool
+    call copy_addr(lvisc_hyper2_simplified,p_par(61)) ! bool
+    call copy_addr(lvisc_hyper3_simplified,p_par(62)) ! bool
+    call copy_addr(lvisc_hyper2_simplified_tdep,p_par(63)) ! bool
+    call copy_addr(lvisc_hyper3_simplified_tdep,p_par(64)) ! bool
+    call copy_addr(lvisc_hyper3_polar,p_par(65)) ! bool
+    call copy_addr(lvisc_hyper3_mesh,p_par(66)) ! bool
+    call copy_addr(lvisc_hyper3_mesh_residual,p_par(67)) ! bool
+    call copy_addr(lvisc_hyper3_csmesh,p_par(68)) ! bool
+    call copy_addr(lvisc_hyper3_rho_nu_const,p_par(69)) ! bool
+    call copy_addr(lvisc_hyper3_mu_const_strict,p_par(70)) ! bool
+    call copy_addr(lvisc_hyper3_nu_const_strict,p_par(71)) ! bool
+    call copy_addr(lvisc_hyper3_cmu_const_strt_otf,p_par(72)) ! bool
+    call copy_addr(lvisc_hyper3_rho_nu_const_symm,p_par(73)) ! bool
+    call copy_addr(lvisc_hyper3_rho_nu_const_aniso,p_par(74)) ! bool
+    call copy_addr(lvisc_hyper3_nu_const_aniso,p_par(75)) ! bool
+    call copy_addr(lvisc_hyper3_rho_nu_const_bulk,p_par(76)) ! bool
+    call copy_addr(lvisc_smag_simplified,p_par(77)) ! bool
+    call copy_addr(lvisc_smag_cross_simplified,p_par(78)) ! bool
+    call copy_addr(lnusmag_as_aux,p_par(79)) ! bool
+    call copy_addr(lvisc_heat_as_aux,p_par(80)) ! bool
+    call copy_addr(lvisc_forc_as_aux,p_par(81)) ! bool
+    call copy_addr(lvisc_mixture,p_par(82)) ! bool
+    call copy_addr(lvisc_spitzer,p_par(83)) ! bool
+    call copy_addr(lvisc_slope_limited,p_par(84)) ! bool
+    call copy_addr(lvisc_schur_223,p_par(85)) ! bool
+    call copy_addr(limplicit_viscosity,p_par(86)) ! bool
+    call copy_addr(lmeanfield_nu,p_par(87)) ! bool
+    call copy_addr(lmagfield_nu,p_par(88)) ! bool
+    call copy_addr(llambda_effect,p_par(89)) ! bool
+    call copy_addr(llambda_scale_with_nu,p_par(90)) ! bool
+    call copy_addr(luse_nu_rmn_prof,p_par(91)) ! bool
+    call copy_addr(lvisc_smag_ma,p_par(92)) ! bool
+    call copy_addr(lsld_notensor,p_par(93)) ! bool
+    call copy_addr(lno_visc_heat_zbound,p_par(94)) ! bool
+    call copy_addr(no_visc_heat_z0,p_par(95))
+    call copy_addr(no_visc_heat_zwidth,p_par(96))
+    call copy_addr(damp_sound,p_par(97))
+    call copy_addr(nu_aniso_hyper3,p_par(98)) ! real3
+    call copy_addr(lv0_rprof,p_par(99)) ! (mx)
+    call copy_addr(lv1_rprof,p_par(100)) ! (mx)
+    call copy_addr(lh1_rprof,p_par(101)) ! (mx)
+    call copy_addr(der_lv0_rprof,p_par(102)) ! (mx)
+    call copy_addr(der_lv1_rprof,p_par(103)) ! (mx)
+    call string_to_enum(enum_nnewton_type ,nnewton_type)
+    call copy_addr(enum_nnewton_type ,p_par(104))
+    call string_to_enum(enum_div_sld_visc,div_sld_visc)
+    call copy_addr(enum_div_sld_visc,p_par(105))
+    
     endsubroutine pushpars2c
 !***********************************************************************
 endmodule Viscosity

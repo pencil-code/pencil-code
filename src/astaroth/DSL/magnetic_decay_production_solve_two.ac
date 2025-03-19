@@ -1,0 +1,18 @@
+#include "../prerequisites.h"
+
+Kernel twopass_solve_intermediate(int step_num, real dt) {
+  uu_dt, uu_max_advec = duu_dt(step_num)
+  write( UU, rk3_intermediate(previous(UU),   uu_dt, step_num, dt) )
+  write( RHO, rk3_intermediate(previous(RHO), dlnrho_dt(step_num), step_num, dt) )
+  write( AA, rk3_intermediate(previous(AA)  , daa_dt(step_num), step_num, dt) )
+  if (step_num == 0 && lcourant_dt)
+  {
+  	reduce_max(uu_max_advec, AC_maxadvec)
+  }
+}
+fixed_boundary Kernel twopass_solve_final(int step_num){
+  write( UU, rk3_final(previous(UU), value(UU), step_num) )
+  write( RHO, rk3_final(previous(RHO), value(RHO), step_num) )
+  write( AA, rk3_final(previous(AA), value(AA), step_num) )
+}
+#include "steps_two.h"

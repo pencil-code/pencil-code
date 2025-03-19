@@ -1157,7 +1157,7 @@ module Energy
 !
 !  ``cs2/dx^2'' for timestep
 !
-      if (lfirst.and.ldt.and.ldensity.and.lhydro) then
+      if (lupdate_courant_dt.and.ldensity.and.lhydro) then
         if (lreduced_sound_speed) then
 !          if (lscale_to_cs2top) then
 !            p%advec_cs2=reduce_cs2*cs2top*dxyz_2
@@ -1294,7 +1294,7 @@ module Energy
         else
           thdiff=thdiff+chi_hyper3*p%del6lnTT
         endif
-        if (lfirst.and.ldt) diffus_chi3=diffus_chi3+chi_hyper3*dxyz_6
+        if (lupdate_courant_dt) diffus_chi3=diffus_chi3+chi_hyper3*dxyz_6
         if (headtt) print*,'denergy_dt: chi_hyper3=', chi_hyper3
       endif
 !
@@ -1304,7 +1304,7 @@ module Energy
           if (.not.ltemperature_nolog) tmp=tmp*p%TT1
           thdiff = thdiff + chi_hyper3_mesh*pi5_1/60.*tmp*dline_1(:,j)
         enddo
-        if (lfirst.and.ldt) then
+        if (lupdate_courant_dt) then
           advec_hypermesh_ss=chi_hyper3_mesh*pi5_1*sqrt(dxyz_2)
           advec2_hypermesh=advec2_hypermesh+advec_hypermesh_ss**2
         endif
@@ -1317,7 +1317,7 @@ module Energy
           if (.not.ltemperature_nolog) tmp=tmp*p%TT1
           thdiff = thdiff + chi_hyper3*pi4_1*tmp*dline_1(:,j)**2
         enddo
-        if (lfirst.and.ldt) diffus_chi3=diffus_chi3+chi_hyper3*pi4_1*dxmin_pencil**4
+        if (lupdate_courant_dt) diffus_chi3=diffus_chi3+chi_hyper3*pi4_1*dxmin_pencil**4
         if (headtt) print*,'denergy_dt: chi_hyper3=', chi_hyper3
       endif
 !
@@ -1362,7 +1362,7 @@ module Energy
 !
 !  Information on the timescales.
 !
-      if (lfirst.and.ldt) then
+      if (lupdate_courant_dt) then
 
         maxdiffus=max(maxdiffus,diffus_chi)
         maxdiffus3=max(maxdiffus3,diffus_chi3)
@@ -1847,7 +1847,7 @@ module Energy
 !
       if (headtt) print*,'calc_heatcond_shock: added thdiff'
 !
-      if (lfirst.and.ldt) then
+      if (lupdate_courant_dt) then
         if (leos_idealgas) then
           diffus_chi=diffus_chi+(gamma*chi_shock*p%shock)*dxyz_2
         else
@@ -2031,7 +2031,7 @@ module Energy
 !
 !  Check maximum diffusion from thermal diffusion.
 !
-      if (lfirst.and.ldt) diffus_chi=diffus_chi+gamma*chi*dxyz_2
+      if (lupdate_courant_dt) diffus_chi=diffus_chi+gamma*chi*dxyz_2
 !
     endsubroutine calc_heatcond_constchi
 !***********************************************************************
@@ -2080,7 +2080,7 @@ module Energy
 !
 !  Check maximum diffusion from thermal diffusion.
 !
-      if (lfirst.and.ldt) diffus_chi=diffus_chi+gamma*chi_z*dxyz_2
+      if (lupdate_courant_dt) diffus_chi=diffus_chi+gamma*chi_z*dxyz_2
 !
     endsubroutine calc_heatcond_cubicstepchi
 !***********************************************************************
@@ -2123,7 +2123,7 @@ module Energy
 !
 !  Check maximum diffusion from thermal diffusion.
 !
-      if (lfirst.and.ldt) diffus_chi=diffus_chi+chix*dxyz_2
+      if (lupdate_courant_dt) diffus_chi=diffus_chi+chix*dxyz_2
 !
     endsubroutine calc_heatcond_constK
 !***********************************************************************
@@ -2169,7 +2169,7 @@ module Energy
 !
 !  Check maximum diffusion from thermal diffusion.
 !
-      if (lfirst.and.ldt) diffus_chi=diffus_chi+chix*dxyz_2
+      if (lupdate_courant_dt) diffus_chi=diffus_chi+chix*dxyz_2
 !
     endsubroutine calc_heatcond_Ktherm
 !***********************************************************************
@@ -2208,7 +2208,7 @@ module Energy
 
       df(l1:l2,m,n,ilntt) = df(l1:l2,m,n,ilntt) + thdiff
 
-      if (lfirst.and.ldt) diffus_chi=diffus_chi+(gamma*p%cp1*Krho1)*dxyz_2
+      if (lupdate_courant_dt) diffus_chi=diffus_chi+(gamma*p%cp1*Krho1)*dxyz_2
 
     endsubroutine calc_heatcond_kramers
 !***********************************************************************
@@ -2257,7 +2257,7 @@ module Energy
 !
 !  Check maximum diffusion from thermal diffusion.
 !
-      if (lfirst.and.ldt) diffus_chi=diffus_chi+gamma*chix*dxyz_2
+      if (lupdate_courant_dt) diffus_chi=diffus_chi+gamma*chix*dxyz_2
 !
     endsubroutine calc_heatcond_arctan
 !***********************************************************************
@@ -2328,7 +2328,7 @@ module Energy
 !
 !  Check maximum diffusion from thermal diffusion.
 !
-      if (lfirst.and.ldt) diffus_chi=diffus_chi+gamma*chix*dxyz_2
+      if (lupdate_courant_dt) diffus_chi=diffus_chi+gamma*chix*dxyz_2
 !
     endsubroutine calc_heatcond
 !***********************************************************************
@@ -2365,7 +2365,7 @@ module Energy
         cosbgT=cosbgT/sqrt(gT2*b2)
       endwhere
 !
-      if (lfirst.and.ldt) diffus_chi=diffus_chi+cosbgT*gamma*Kgpara*p%rho1*p%cp1*dxyz_2
+      if (lupdate_courant_dt) diffus_chi=diffus_chi+cosbgT*gamma*Kgpara*p%rho1*p%cp1*dxyz_2
 !
     endsubroutine calc_heatcond_tensor
 !***********************************************************************
@@ -2380,7 +2380,7 @@ module Energy
       real, dimension  (nx) :: part_den2
       real, dimension  (nx) :: lgT
 !
-      real                  :: a0=1., a1=1., a2=1.
+      real                  :: a0, a1, a2
 !
       character (len=3) :: channel
 !

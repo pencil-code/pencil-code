@@ -879,7 +879,7 @@ else if (($hn =~ atlas*) && ($USER =~ monteiro)) then
   set remote_top     = 0
   set local_binary = 0
 #--------------------------------------------------
-
+#else if (($hn =~ uan* && $masterhost == lumi)) then
 else if (($hn =~ nid* && $masterhost == lumi)) then
   echo "Lumi - CSC, Kajaani, Finland"
   if ($?SLURM_JOB_ID) then
@@ -1164,7 +1164,7 @@ else if (($hn =~ nid*) && ($masterhost =~ beskow)) then
   set remote_top     = 1
   set local_binary = 0
 #----------------------------------------------
-else if (($hn =~ nid*) ) then
+else if (($hn =~ nid*) && ($masterhost != lumi)) then
   echo "*********************************"
   echo " PDC machine Dardel, Stockholm   "
   set start_x=$cwd/src/start.x
@@ -1981,7 +1981,7 @@ else if (($hn =~ n[0-9]*) && (($USER =~ x_*) )) then
   set npops = ""
   set one_local_disc = 0
 #----------------------------------------------------
-else if ($hn =~ nid*) then
+else if ($hn =~ nid* && $masterhost != lumi) then
   echo "Hexagon cluster in Bergen"
   if ( $?PBS_JOBID ) then
     echo "Running job: $PBS_JOBID"

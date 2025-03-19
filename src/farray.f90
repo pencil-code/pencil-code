@@ -154,10 +154,12 @@ module FArrayManager
 !
     endsubroutine farray_register_global
 !***********************************************************************
-    subroutine farray_register_auxiliary(varname,ivar,communicated,vector,array,ierr)
+    subroutine farray_register_auxiliary(varname,ivar,communicated,on_gpu,vector,array,ierr)
 !
 !  Register an auxiliary variable in the f array.
 !
+      use Cdata,  only: maux_vtxbuf_index
+      use Cparam, only: mfarray
       use General, only: loptest
 !
       character (len=*), intent(in) :: varname
@@ -165,8 +167,10 @@ module FArrayManager
       logical, optional, intent(in) :: communicated
       integer, optional, intent(in) :: vector, array
       integer, optional, intent(out) :: ierr
+      logical, optional, intent(in) :: on_gpu
 !
       integer :: vartype
+      integer :: vtxbuf_index
 !
       if (loptest(communicated)) then
         vartype = iFARRAY_TYPE_COMM_AUXILIARY
@@ -175,6 +179,21 @@ module FArrayManager
       endif
 !
       call farray_register_variable(varname,ivar,vartype,vector=vector,array=array,ierr=ierr)
+
+      if (loptest(on_gpu)) then
+
+        !TP: first we get the largest non zero index in the index array
+        vtxbuf_index = maxval(maux_vtxbuf_index)
+        !TP: if the largest one is zero this is the first one and then we know its index to be 
+        !    mvar (because of C's zero-based indexing)
+        !    else it should be one more than the largest existing one
+        if (vtxbuf_index == 0) then
+          vtxbuf_index = mvar
+        else
+          vtxbuf_index = vtxbuf_index+1
+        endif
+        maux_vtxbuf_index(ivar) = vtxbuf_index
+      endif
 !
     endsubroutine farray_register_auxiliary
 !***********************************************************************

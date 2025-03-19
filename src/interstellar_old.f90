@@ -1671,7 +1671,7 @@ module Interstellar
 !  Limit timestep by the cooling time (having subtracted any heating)
 !  dt1_max=max(dt1_max,cdt_tauc*(cool)/ee,cdt_tauc*(heat)/ee)
 !
-      if (lfirst.and.ldt) then
+      if (lupdate_courant_dt) then
         dt1_max=max(dt1_max,(-heatcool)/(p%ee*cdt_tauc))
         where (heatcool>0.0) Hmax=Hmax+heatcool
         dt1_max=max(dt1_max,Hmax/(p%ee*cdt_tauc))
@@ -3489,7 +3489,7 @@ module Interstellar
           tmp=tmp2 + p%graddivu
           call multsv(profile,tmp,tmp2)
           call multsv_add(tmp2,p%divu,gprofile,tmp)
-          if (lfirst.and.ldt) p%diffus_total=p%diffus_total+sum(profile)
+          if (lupdate_courant_dt) p%diffus_total=p%diffus_total+sum(profile)
           SNRs(iSNR)%energy_loss=SNRs(iSNR)%energy_loss-sum(profile*p%divu**2)
           p%fvisc=p%fvisc+tmp
         endif

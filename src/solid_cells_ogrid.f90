@@ -4577,7 +4577,7 @@ module Solid_Cells
 !  Viscous heating and time step.
 !
 !        if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+2*p%nu*p%sij2
-!        if (lfirst .and. ldt) p%diffus_total=p%diffus_total+p%nu
+!        if (lupdate_courant_dt) p%diffus_total=p%diffus_total+p%nu
 !
       endif
 !
@@ -10088,5 +10088,32 @@ module Solid_Cells
 !    enddo
 !!
 !  endsubroutine flow_curvilinear_to_cartesian
+!***********************************************************************
+  subroutine sc_init_diag_accum
+!
+!  Need to initialize accumulators since master thread does not take part in diagnostics
+!  Dummy for solid cells ogrid
+!
+!  25-aug-23/TP: Coded
+!
+  endsubroutine sc_init_diag_accum
+!***********************************************************************
+  subroutine sc_diags_reductions
+!
+!  Reduces accumulated diagnostic variables across threads. Only called if using OpenMP
+!  Dummy for solid cells ogrid
+!
+!  30-mar-23/TP: coded
+!
+  endsubroutine sc_diags_reductions
+!***********************************************************************
+  subroutine sc_init_reduc_pointers
+!
+!  Initiliazes solid_cells specific pointers needed in thread_reductions 
+!  Dummy for solid cells ogrid
+!
+!  30-mar-23/TP: Coded
+!
+  endsubroutine sc_init_reduc_pointers
 !***********************************************************************
 endmodule solid_cells

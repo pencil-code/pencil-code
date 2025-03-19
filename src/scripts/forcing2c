@@ -1,3 +1,5 @@
+#!/bin/bash
+
 rm -f forcing_c.h
 echo '#pragma once' > forcing_c.h
 echo '#include "headers_c.h"' >> forcing_c.h

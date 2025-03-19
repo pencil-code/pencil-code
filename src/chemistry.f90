@@ -2,7 +2,7 @@
 !
 !  MODULE_DOC: This modules adds chemical species and reactions.
 !  MODULE_DOC: The units used in the chem.in files are cm3,mole,sec,kcal and K
-!  This was found out by comparing the mechanism found in 
+!  This was found out by comparing the mechanism found in
 !  samples/0D/chemistry_H2_ignition_delay
 !  with Flow Reactor Studies and Kinetic Modeling of the ReactionH/O22
 !  of  A. MUELLER, T. J. KIM, R. A. YETTER, F. L. DRYER
@@ -61,6 +61,7 @@ module Chemistry
   logical :: lchem_detailed=.true.
   logical :: lgradP_terms=.true.
   character(len=30) :: reac_rate_method = 'chemkin'
+! --AB--  character(len=30) :: inucl_pre_exp="const"
 ! parameters for initial conditions
   real :: init_x1=-0.2, init_x2=0.2
   real :: init_y1=-0.2, init_y2=0.2
@@ -203,7 +204,11 @@ module Chemistry
 !
 !   Diagnostics
 !
-  real, allocatable, dimension(:,:) :: net_react_m, net_react_p
+  real, allocatable, dimension(:,:), target :: net_react_m, net_react_p
+  !$omp threadprivate(net_react_m,net_react_p)
+! For concurrency
+  real, dimension(:,:), pointer :: p_net_react_m, p_net_react_p
+!
   real, dimension(nchemspec) :: Ythresh=0.
   logical :: lchemistry_diag=.false.
 !
@@ -344,7 +349,7 @@ module Chemistry
 !
       inquire (FILE='chem.inp', EXIST=lcheminp)
       if (.not. lcheminp) inquire (FILE='chem.in', EXIST=lcheminp)
-      
+
       inquire (FILE='chem.inp', EXIST=cheminp)
       inquire (FILE='chem.in', EXIST=chemin)
       if (cheminp .and. chemin) call fatal_error('chemistry', &
@@ -590,8 +595,8 @@ module Chemistry
       endif
 !
 !  04-18-11/Julien: Modified the computation of simple heat conductivity according
-!                   to Smooke & Giovangigli 1991. lambda_const is now equal 
-!                   to 2.58e-4 instead of 1e4, and represents the ratio \lambda0/cp0. 
+!                   to Smooke & Giovangigli 1991. lambda_const is now equal
+!                   to 2.58e-4 instead of 1e4, and represents the ratio \lambda0/cp0.
 !                   Formula:
 !                   \lambda = lambda_const*cp*(T/T0)**0.7, with T0 now = 298K
 !
@@ -600,7 +605,7 @@ module Chemistry
 !
 !  04-18-11/Julien: Changed the value of Diff_coef_const from 10 to 2.58e-4
 !                   according to Smooke & Giovangigli 1991. Now Diff_coef_const
-!                   does not represent a constant diffusion coefficient, 
+!                   does not represent a constant diffusion coefficient,
 !                   but \rho0 D0.
 !                   Diff_penc_add are still the diffusion coefficients. Formula:
 !                   D = Diff_coef_const/\rho*(T/T0)**n0.7, with T0 now = 298K.
@@ -1013,7 +1018,7 @@ module Chemistry
       intent(inout) :: f
       intent(inout) :: p
       integer :: k,i
-      integer :: ii1=1, ii2=2, ii3=3, ii4=4, ii5=5, ii6=6, ii7=7
+      integer, parameter :: ii1=1, ii2=2, ii3=3, ii4=4, ii5=5, ii6=6, ii7=7
       real :: T_low, T_up, T_mid
       real, dimension(nx) :: T_loc, TT_2, TT_3, TT_4
       logical :: ldiffusion2
@@ -1225,7 +1230,7 @@ module Chemistry
           endif
         elseif (lSmag_heat_transport) then
 !
-! Natalia 
+! Natalia
 ! turbulent heat transport in Smagorinsky case
 ! probably it should be moved to viscosity module
 !
@@ -1246,7 +1251,7 @@ module Chemistry
 ! There are 4 cases:
 ! 1) the case of simplifyed expression for the difusion coef. (Oran paper,)
 ! 2) the case of constant diffusion coefficients
-! 3) the case of constant Lewis numbers with diffusion coef. depending 
+! 3) the case of constant Lewis numbers with diffusion coef. depending
 !    on heat diffusivity
 ! 4) full complex diffusion coefficients
 !
@@ -1282,7 +1287,7 @@ module Chemistry
               enddo
             endif
 !
-!  Diffusion coefficient of a mixture with constant Lewis numbers and 
+!  Diffusion coefficient of a mixture with constant Lewis numbers and
 !  given heat conductivity
 !
           elseif (lDiff_lewis .and. lew_exist) then
@@ -1326,7 +1331,7 @@ module Chemistry
             endif
           enddo
         endif
-      endif      
+      endif
 !
 !  More initialization of pencils
 !
@@ -1759,14 +1764,14 @@ module Chemistry
           f(k,:,:,ilnTT) = log( init_TT2 )
         end if
         f(k,:,:,i_H2)  = init_H2
-        f(k,:,:,i_O2)  = init_O2 
+        f(k,:,:,i_O2)  = init_O2
         f(k,:,:,i_H2O) = init_H2O
         f(k,:,:,iux) = 0.0
       else
         if ( x(k)<=init_x1 )then
           f(k,:,:,ilnTT) = log( init_TT1 )
           f(k,:,:,i_H2)  = final_massfrac_H2
-          f(k,:,:,i_O2)  = final_massfrac_O2 
+          f(k,:,:,i_O2)  = final_massfrac_O2
           f(k,:,:,i_H2O) = final_massfrac_H2O
           f(k,:,:,iux) = 0.0
         else if ( x(k)>init_x2 )then
@@ -2645,7 +2650,7 @@ module Chemistry
       character(len=fnlen) :: output_file="./data/mix_quant.out"
       character(len=15) :: writeformat
       integer :: file_id=123
-      integer :: ii1=1, ii2=2, ii3=3, ii4=4, ii5=5
+      integer, parameter :: ii1=1, ii2=2, ii3=3, ii4=4, ii5=5
 !
 !  Density and temperature
 !
@@ -3239,11 +3244,11 @@ module Chemistry
 !  indices
 !
       integer :: j, k,i,ii
-      integer :: i1=1, i2=2, i3=3, i4=4, i5=5, i6=6, i7=7, i8=8, i9=9, i10=10
-      integer :: i11=11, i12=12, i13=13, i14=14, i15=15, i16=16, i17=17, i18=18, i19=19
-      integer :: iz1=1, iz2=2, iz3=3, iz4=4, iz5=5, iz6=6, iz7=7, iz8=8, iz9=9, iz10=10
-      integer :: iz11=11, iz12=12, iz13=13, iz14=14, iz15=15, iz16=16, iz17=17
-      integer :: iz18=18, iz19=19
+      integer, parameter :: i1=1, i2=2, i3=3, i4=4, i5=5, i6=6, i7=7, i8=8, i9=9, i10=10
+      integer, parameter :: i11=11, i12=12, i13=13, i14=14, i15=15, i16=16, i17=17, i18=18, i19=19
+      integer, parameter :: iz1=1, iz2=2, iz3=3, iz4=4, iz5=5, iz6=6, iz7=7, iz8=8, iz9=9, iz10=10
+      integer, parameter :: iz11=11, iz12=12, iz13=13, iz14=14, iz15=15, iz16=16, iz17=17
+      integer, parameter :: iz18=18, iz19=19
 !
       intent(in) :: p,f
       intent(inout) :: df
@@ -3469,7 +3474,7 @@ module Chemistry
 !
 !  For the timestep calculation, need maximum diffusion
 !
-      if (lfirst .and. ldt .and. (.not. lchemonly)) then
+      if (lupdate_courant_dt .and. (.not. lchemonly)) then
         if (.not. lcheminp) then
           diffus_chem = chem_diff*maxval(chem_diff_prefactor)*dxyz_2
         else
@@ -3492,7 +3497,7 @@ module Chemistry
 !
 ! NB: it should be discussed
 !
-      if (lfirst .and. ldt) then
+      if (lupdate_courant_dt) then
         if (lreactions .and.(.not. llsode .or. lchemonly)) then
 !
 !  calculate maximum of *relative* reaction rate if decaying,
@@ -3549,10 +3554,9 @@ module Chemistry
 !
         do ii = 1,nchemspec
           call sum_mn_name(f(l1:l2,m,n,ichemspec(ii)),idiag_Ym(ii))
-          call sum_mn_name(p%rho*f(l1:l2,m,n,ichemspec(ii)),idiag_rhoYm(ii))
+          if (idiag_rhoYm(ii)/=0) call sum_mn_name(p%rho*f(l1:l2,m,n,ichemspec(ii)),idiag_rhoYm(ii))
           call max_mn_name(f(l1:l2,m,n,ichemspec(ii)),idiag_Ymax(ii))
-          if (idiag_Ymin(ii)/= 0) &
-            call max_mn_name(-f(l1:l2,m,n,ichemspec(ii)),idiag_Ymin(ii),lneg=.true.)
+          if (idiag_Ymin(ii)/= 0) call max_mn_name(-f(l1:l2,m,n,ichemspec(ii)),idiag_Ymin(ii),lneg=.true.)
           if (idiag_TYm(ii)/= 0) &
             call sum_mn_name(max(1.-f(l1:l2,m,n,ichemspec(ii))/Ythresh(ii),0.),idiag_TYm(ii))
           if (idiag_diffm(ii)/= 0)   call sum_mn_name( Diff_full_add(l1:l2,m,n,ii),idiag_diffm(ii))
@@ -3563,23 +3567,23 @@ module Chemistry
         call sum_mn_name(cp_full(l1:l2,m,n),idiag_cpfull)
         call sum_mn_name(cv_full(l1:l2,m,n),idiag_cvfull)
 !
-        if (idiag_lambdam/=0) &
-             call sum_mn_name(lambda_full(l1:l2,m,n),idiag_lambdam) 
-        if (idiag_lambdamax/=0) &
-             call max_mn_name(lambda_full(l1:l2,m,n),idiag_lambdamax) 
-        if (idiag_lambdamin/=0) &
-             call max_mn_name(-lambda_full(l1:l2,m,n),idiag_lambdamin,lneg=.true.)
-         if (idiag_alpham/=0) &
-             call sum_mn_name(lambda_full(l1:l2,m,n)/(p%rho*cp_full(l1:l2,m,n)),idiag_alpham) 
+        call sum_mn_name(lambda_full(l1:l2,m,n),idiag_lambdam)
+        call max_mn_name(lambda_full(l1:l2,m,n),idiag_lambdamax)
+        if (idiag_lambdamin/=0) call max_mn_name(-lambda_full(l1:l2,m,n),idiag_lambdamin,lneg=.true.)
+        if (idiag_alpham/=0) &
+            call sum_mn_name(lambda_full(l1:l2,m,n)/(p%rho*cp_full(l1:l2,m,n)),idiag_alpham)
         if (idiag_alphamax/=0) &
-             call max_mn_name(lambda_full(l1:l2,m,n)/(p%rho*cp_full(l1:l2,m,n)),idiag_alphamax) 
+            call max_mn_name(lambda_full(l1:l2,m,n)/(p%rho*cp_full(l1:l2,m,n)),idiag_alphamax)
         if (idiag_alphamin/=0) &
-             call max_mn_name(-lambda_full(l1:l2,m,n)/(p%rho*cp_full(l1:l2,m,n)),idiag_alphamin,lneg=.true.)
+            call max_mn_name(-lambda_full(l1:l2,m,n)/(p%rho*cp_full(l1:l2,m,n)),idiag_alphamin,lneg=.true.)
         if (lnucleation) then
-          if (idiag_nuclrmin/=0) call sum_mn_name(p%nucl_rmin,idiag_nuclrmin)
-          if (idiag_nuclrate/=0) call sum_mn_name(p%nucl_rate,idiag_nuclrate)
-          if (idiag_conc_satm/=0) call sum_mn_name(p%conc_sat_spec,idiag_conc_satm)
-          if (idiag_ffnucl/= 0) call sum_mn_name(p%ff_nucl,idiag_ffnucl)
+          call sum_mn_name(p%nucl_rmin,idiag_nuclrmin)
+          call sum_mn_name(p%nucl_rate,idiag_nuclrate)
+          call sum_mn_name(p%conc_sat_spec,idiag_conc_satm)
+!         if (idiag_ffcondposm/= 0) call sum_mn_name(max(0.,p%ff_cond),idiag_ffcondposm)
+!         if (idiag_ffcondnegm/= 0) call sum_mn_name(min(0.,p%ff_cond),idiag_ffcondnegm)
+!         call sum_mn_name(p%ff_cond,idiag_ffcondm)
+!         call sum_mn_name(p%ff_nucl,idiag_ffnucl)
         endif
         if (.not. lnolatentheat) then
           if (idiag_latent_heat/= 0) call sum_mn_name(p%latent_heat,idiag_latent_heat)
@@ -3718,7 +3722,7 @@ module Chemistry
         call parse_name(iname,cname(iname),cform(iname),'nuclrate',idiag_nuclrate)
         call parse_name(iname,cname(iname),cform(iname),'conc_satm',idiag_conc_satm)
 !
-!   Sample for hard-coded heat capacity diagnostics 
+!   Sample for hard-coded heat capacity diagnostics
 !
 !        call parse_name(iname,cname(iname),cform(iname),'cp1m',idiag_cp1m)
         call parse_name(iname,cname(iname),cform(iname),'e_intm',idiag_e_intm)
@@ -3755,13 +3759,13 @@ module Chemistry
           if (get_species_nr(sname,'chemspec',nchemspec,'rprint_chemistry')>0) cformv(iname)='DEFINED'
         endif
       enddo
-!       
-      if (lwrite_slices) then 
+!
+      if (lwrite_slices) then
         where(cnamev=='nuclrmin') cformv='DEFINED'
         where(cnamev=='nuclrate') cformv='DEFINED'
         where(cnamev=='supersat') cformv='DEFINED'
       endif
-      
+
 !
     endsubroutine rprint_chemistry
 !***********************************************************************
@@ -3789,7 +3793,7 @@ module Chemistry
         else
           read(sname(9:),'(i3)') ispec
         endif
-! 
+!
         call assign_slices_scal(slices,f,ichemspec(ispec))
       endif
 !
@@ -4473,7 +4477,6 @@ module Chemistry
                     enddo
                     goto 100 ! this is an excellent example of "spaghetti code" [Bourdin.KIS]
 
-
                   else
                     found_new_reaction=.true.
                   endif
@@ -4535,15 +4538,12 @@ module Chemistry
                     StartInd=StartInd+1
                   else
                     if (VarNumber==1) then
-                      read (unit=ChemInpLine(StartInd:StopInd),fmt='(E25.8)')  &
-                          B_n(k)
+                      read (unit=ChemInpLine(StartInd:StopInd),fmt='(E25.8)') B_n(k)
                       if (B_n(k)/=0.) B_n(k)=log(B_n(k))
                     elseif (VarNumber==2) then
-                      read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)')  &
-                          alpha_n(k)
+                      read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)') alpha_n(k)
                     elseif (VarNumber==3) then
-                      read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)')  &
-                          E_an(k)
+                      read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)') E_an(k)
                     else
                       call fatal_error("read_reactions","no such VarNumber: "//trim(itoa(VarNumber)))
                     endif
@@ -4642,13 +4642,13 @@ module Chemistry
       real, dimension(nx,nreactions), intent(out) :: vreact_p, vreact_m
 !
       type (pencil_case) :: p
-      real, dimension(nx) :: dSR=0., dHRT=0., Kp, Kc
+      real, dimension(nx) :: dSR, dHRT, Kp, Kc
       real, dimension(nx) :: prod1, prod2
-      real, dimension(nx) :: kf=0., kr=0.
+      real, dimension(nx) :: kf, kr
       real, dimension(nx) :: rho_cgs, p_atm
       real, dimension(nx) :: mix_conc
       integer :: k, reac, i
-      real :: sum_tmp=0., ddd
+      real :: sum_tmp, ddd
       real :: Rcal, Rcal1, lnRgas, l10, lnp_atm
       logical, save :: lwrite_first=.true.
       character(len=fnlen) :: input_file="./data/react.out"
@@ -4672,9 +4672,9 @@ module Chemistry
         if (unit_system/="cgs") call fatal_error("get_reaction_rate","Unit system must be cgs.")
 
         !if (chemkin_units=="SI") then
-        !   
+        !
         !endif
-        
+
         Rcal = Rgas_unit_sys/4.184*1e-7
         Rcal1 = 1./Rcal
         lnRgas = log(Rgas)
@@ -4941,12 +4941,8 @@ module Chemistry
 !  Set reaction rate to zero when mass fractions of propane of oxygen is
 !  very close to zero.
 !
-      where (f(l1:l2,m,n,i_C3H8) < 1e-12)
-        vreact_p(:,1) = 0.
-      endwhere
-      where (f(l1:l2,m,n,i_O2) < 1e-12)
-        vreact_p(:,1) = 0.
-      endwhere
+      where (f(l1:l2,m,n,i_C3H8) < 1e-12) vreact_p(:,1) = 0.
+      where (f(l1:l2,m,n,i_O2) < 1e-12) vreact_p(:,1) = 0.
       vreact_m(:,1) = 0.
 !
     endsubroutine roux
@@ -4963,8 +4959,8 @@ module Chemistry
       real, dimension(nx,nchemspec) :: molm
       type (pencil_case) :: p
       integer :: k,j,ii
-      integer :: i1=1, i2=2, i3=3, i4=4, i5=5, i6=6, i7=7, i8=8, i9=9, i10=10
-      integer :: i11=11, i12=12, i13=13, i14=14, i15=15, i16=16, i17=17, i18=18, i19=19
+      integer,parameter :: i1=1, i2=2, i3=3, i4=4, i5=5, i6=6, i7=7, i8=8, i9=9, i10=10
+      integer,parameter :: i11=11, i12=12, i13=13, i14=14, i15=15, i16=16, i17=17, i18=18, i19=19
 !
       eps = sqrt(epsilon(alpha))
 !
@@ -5361,8 +5357,8 @@ module Chemistry
       real, dimension(nx) :: del2chemspec
       real, dimension(nx) :: diff_op, diff_op1, diff_op2, diff_op3, del2XX, del2lnpp
       real, dimension(nx) :: glnpp_gXkYk, glnrho_glnpp, gD_glnpp, glnpp_glnpp
-      real, dimension(nx) :: sum_gdiff=0., gY_sumdiff, glnmu_glnpp
-      real, dimension(nx,3) :: sum_diff=0., dk_D
+      real, dimension(nx) :: sum_gdiff, gY_sumdiff, glnmu_glnpp
+      real, dimension(nx,3) :: sum_diff, dk_D
       real :: diff_k
       integer :: k,i
 !
@@ -5653,7 +5649,7 @@ module Chemistry
       inquire (file='air.in',exist=airin)
       if (airdat .and. airin) &
         call fatal_error('chemistry','both air.in and air.dat found. Please decide for one')
-      
+
       if (airdat) open(file_id,file='air.dat')
       if (airin) open(file_id,file='air.in')
 !
@@ -5715,8 +5711,7 @@ module Chemistry
             StartInd=verify(ChemInpLine(StopInd:),' ')+StopInd-1
             StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
             read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)') YY_k
-            if (lroot) print*, ' mass fraction, %,    ', YY_k, &
-                species_constants(ind_chem,imass)
+            if (lroot) print*, ' volume fraction, %,    ', YY_k,species_constants(ind_chem,imass)
             if (species_constants(ind_chem,imass)>0.) then
               air_mass=air_mass+YY_k*0.01/species_constants(ind_chem,imass)
               print*,"ind_chem,YY_k,species_constants(ind_chem,imass),air_mass=",&
@@ -5767,12 +5762,10 @@ module Chemistry
             f(:,:,:,ilnTT)=alog(TT)!+f(:,:,:,ilnTT)
           endif
           if (ldensity_nolog) then
-            f(:,:,:,ilnrho)=(PP/(k_B_cgs/m_u_cgs)*&
-              air_mass/TT)/unit_mass*unit_length**3
+            f(:,:,:,ilnrho)=(PP/(k_B_cgs/m_u_cgs)*air_mass/TT)/unit_mass*unit_length**3
           else
-            tmp=(PP/(k_B_cgs/m_u_cgs)*&
-              air_mass/TT)/unit_mass*unit_length**3
-              f(:,:,:,ilnrho)=alog(tmp)
+            tmp=(PP/(k_B_cgs/m_u_cgs)*air_mass/TT)/unit_mass*unit_length**3
+            f(:,:,:,ilnrho)=alog(tmp)
           endif
           if (nxgrid>1) f(:,:,:,iux)=f(:,:,:,iux)+init_ux
         endif
@@ -5785,8 +5778,7 @@ module Chemistry
           f(:,:,:,ilnrho)=f(:,:,:,ilnrho)*(PP/(k_B_cgs/m_u_cgs)*&
             air_mass/TT)/unit_mass*unit_length**3
         else
-          tmp=f(:,:,:,ilnrho)*(PP/(k_B_cgs/m_u_cgs)*&
-            air_mass/TT)/unit_mass*unit_length**3
+          tmp=f(:,:,:,ilnrho)*(PP/(k_B_cgs/m_u_cgs)*air_mass/TT)/unit_mass*unit_length**3
           f(:,:,:,ilnrho)=alog(tmp)
         endif
         if (ltemperature_nolog) then
@@ -5813,29 +5805,21 @@ module Chemistry
 
       if (linit_temperature) then
         do i=1,mx
-        if (x(i)<=init_x1) then
-          f(i,:,:,ilnTT)=alog(init_TT1)
-        endif
-        if (x(i)>=init_x2) then
-          f(i,:,:,ilnTT)=alog(init_TT2)
-        endif
-        if (x(i)>init_x1 .and. x(i)<init_x2) then
-          if (init_x1 /= init_x2) then
-            f(i,:,:,ilnTT)=&
-               alog((x(i)-init_x1)/(init_x2-init_x1) &
-               *(init_TT2-init_TT1)+init_TT1)
+          if (x(i)<=init_x1) f(i,:,:,ilnTT)=alog(init_TT1)
+          if (x(i)>=init_x2) f(i,:,:,ilnTT)=alog(init_TT2)
+          if (x(i)>init_x1 .and. x(i)<init_x2) then
+            if (init_x1 /= init_x2) &
+              f(i,:,:,ilnTT)=&
+                 alog((x(i)-init_x1)/(init_x2-init_x1)*(init_TT2-init_TT1)+init_TT1)
           endif
-        endif
         enddo
       endif
 
       if (linit_density) then
         if (ldensity_nolog) then
-          f(:,:,:,ilnrho)=(PP/(k_B_cgs/m_u_cgs)*&
-            air_mass/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3
+          f(:,:,:,ilnrho)=(PP/(k_B_cgs/m_u_cgs)*air_mass/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3
         else
-          tmp=(PP/(k_B_cgs/m_u_cgs)*&
-            air_mass/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3
+          tmp=(PP/(k_B_cgs/m_u_cgs)*air_mass/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3
           f(:,:,:,ilnrho)=alog(tmp)
         endif
       endif
@@ -5854,7 +5838,7 @@ module Chemistry
           spe="Y("//trim(varname(ichemspec(j)))//")="
           write (*,'(A10,F10.7)') spe,initial_massfractions(j)
         enddo
-        
+
       endif
 
       close(file_id)
@@ -6862,7 +6846,7 @@ module Chemistry
       endif
 !
 ! Loop over all species and modify the species equation
-! 
+!
       do ichem = 1,nchemspec
         kkk=ichemspec(ichem)
         if (kkk==i_cond_spec) then
@@ -6925,7 +6909,7 @@ module Chemistry
           p%nucl_rate(i)=0.
         endif
       enddo
-!     
+!
     end subroutine cond_spec_nucl
 !***********************************************************************
     subroutine cond_spec_nucl_lagr(f,df,p)
@@ -6946,7 +6930,7 @@ module Chemistry
           p%ff_nucl=0.0
         end where
         !
-        ! The mass of the nucleii is added to the passive scalar equation 
+        ! The mass of the nucleii is added to the passive scalar equation
         !
         df(l1:l2,m,n,icc) = df(l1:l2,m,n,icc) + p%ff_nucl*(1+p%cc(:,1))*p%rho1
         df(l1:l2,m,n,icc+1) = df(l1:l2,m,n,icc+1) + p%nucl_rmin*p%ff_nucl*(1+p%cc(:,2))*p%rho1
@@ -6978,7 +6962,7 @@ module Chemistry
        endif
         !
       endif
-!     
+!
     end subroutine cond_spec_nucl_lagr
 !***********************************************************************
     subroutine condensing_species_rate(p,mfluxcond)
@@ -7027,7 +7011,6 @@ module Chemistry
           call fatal_error("cond_spec_nucl_rate","No such isurf_energy")
         endif
         volume_spec=volume_spec_cgs/unit_length**3
-        
         do i=1,nx
           if (sat_ratio_spec(i) > 1.0) then
             nucleation_rmin(i)=2.*gam_surf_energy(i)*volume_spec/&
@@ -7058,7 +7041,7 @@ module Chemistry
         nucleation_rate=0.0
         nucleation_rmin=0.0
       endif
-!      
+!
       end subroutine cond_spec_nucl_rate
 !***********************************************************************
       subroutine cond_spec_sat_conc(p,conc_sat_spec)
@@ -7083,6 +7066,24 @@ module Chemistry
         endif
         !
       end subroutine cond_spec_sat_conc
+!***********************************************************************
+    subroutine chemistry_init_reduc_pointers
+!
+! 7-feb-24/TP:  allocates memory needed for reductions
+!
+      if (allocated(net_react_m)) p_net_react_m => net_react_m
+      if (allocated(net_react_p)) p_net_react_p => net_react_p
+!
+    endsubroutine chemistry_init_reduc_pointers
+!***********************************************************************
+    subroutine chemistry_diags_reductions
+!
+! 7-feb-24/TP:  diag_reductions for chemistry
+!
+      if (allocated(net_react_m)) p_net_react_m = p_net_react_m + net_react_m
+      if (allocated(net_react_p)) p_net_react_p = p_net_react_p + net_react_p
+!
+    endsubroutine chemistry_diags_reductions
 !***********************************************************************
     include 'chemistry_common.inc'
 !***********************************************************************

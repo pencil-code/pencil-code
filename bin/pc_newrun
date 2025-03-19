@@ -157,9 +157,12 @@ cp *.in $targetdir
 [ -f data/emftensors.h5 ] && ln -s data/emftensors.h5 $targetdir/data/emftensors.h5
 if [ -n "`ls *.py 2>/dev/null`" ]; then cp *.py $targetdir; fi
 [ -f FAKE_PARALLEL_IO ] && touch $targetdir/FAKE_PARALLEL_IO
+[ -f job.sh ] && cp job.sh $targetdir
 [ -f pc_commands.log ] && cp pc_commands.log $targetdir && echo -e "\n# `date +'%Y-%m-%d %H:%M:%S'`\n# copied from '$olddir'" >>  $targetdir/pc_commands.log
 [ -f src/.moduleinfo ] && cp src/.moduleinfo $targetdir/src
 [ -f src/.config-files ] && cp src/.config-files $targetdir/src
+[ -d src/astaroth/DSL/local ] && cp src/astaroth/DSL/local/* $targetdir/src/astaroth/DSL/local
+
 #
 #  if same_source, then link all *.x files from the original directory.
 #  (We don't want to use a link to the entire src directory, because
@@ -185,6 +188,10 @@ if [ $same_source ]; then
 
     lnk=`readlink $olddir/src/special.so`
     if [ "$lnk" != "" ]; then ln -s $lnk .; fi
+
+    lnk=`readlink $olddir/src/astaroth/libastaroth_dbl.so`
+    if [ "$lnk" != "" ]; then ln -s $lnk astaroth/.; fi
+
   else
     cd $olddir;
     if [ -e src/.config-files ]; then 
@@ -195,6 +202,15 @@ if [ $same_source ]; then
     cd $targetdir/src 
     if [ -n "`ls $olddir/src/*.x 2>/dev/null`" ]; then ln -s $olddir/src/*.x . ; fi
     if [ -n "`ls $olddir/src/*.so 2>/dev/null`" ]; then ln -s $olddir/src/*.so . ; fi
+    if [ -n "`ls $olddir/src/astaroth/*.so 2>/dev/null`" ]; then ln -s $olddir/src/astaroth/*.so ./astaroth ; fi
+    if [ -n "`ls $olddir/src/astaroth/submodule/build/src/core/*.so 2>/dev/null`" ]; then
+      if [ ! -n "`ls astaroth/submodule/build/src/core 2>/dev/null`" ]; then mkdir -p astaroth/submodule/build/src/core ; fi
+      ln -s $olddir/src/astaroth/submodule/build/src/core/*.so astaroth/submodule/build/src/core
+    fi
+    if [ -n "`ls $olddir/src/astaroth/submodule/build/src/core/kernels/*.so 2>/dev/null`" ]; then
+      if [ ! -n "`ls astaroth/submodule/build/src/core/kernels 2>/dev/null`" ]; then mkdir -p astaroth/submodule/build/src/core/kernels ; fi
+      ln -s $olddir/src/astaroth/submodule/build/src/core/kernels/*.so astaroth/submodule/build/src/core/kernels
+    fi
   fi
   cp $olddir/src/*.inc .
   [ -f $olddir/src/revision.txt ] && cp $olddir/src/revision.txt .

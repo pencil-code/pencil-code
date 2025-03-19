@@ -36,6 +36,9 @@ contains
 
       if (dt0 < 0.) dt = 0
       ldt = (dt==0.)
+      lcourant_dt = .true.
+
+      num_substeps = 25
 
     endsubroutine initialize_timestep
 !***********************************************************************

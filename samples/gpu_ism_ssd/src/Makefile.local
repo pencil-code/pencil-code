@@ -1,0 +1,27 @@
+###                             -*-Makefile-*-
+### Makefile for modular pencil code -- local part
+### Included by `Makefile'
+###
+
+LDMPI=-lmpi
+FSTD=     =  file_io_f2003
+MPICOMM   =   mpicomm
+IO        =   io_dist
+GPU       =   gpu_astaroth
+GPU_VENDOR = amd
+HYDRO     =   hydro
+DENSITY   =   density
+MAGNETIC  =   magnetic
+ENTROPY   =   entropy
+EOS       =   eos_idealgas
+
+SHEAR     = noshear
+SHOCK     =   shock_highorder
+MULTITHREADING = openmp
+
+INTERSTELLAR =   interstellar
+
+FORCING      = noforcing
+
+POWER        = nopower_spectrum
+REAL_PRECISION = double

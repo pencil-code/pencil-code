@@ -14,7 +14,6 @@ module Timestep
   real, parameter :: safety      =  0.95
   real            :: errcon, dt_next, dt_increase, dt_decrease
   real, dimension(mvar) :: farraymin
-  logical :: lcourant_dt
 !
   contains
 !
@@ -35,20 +34,21 @@ module Timestep
       endif
 !
       ldt = (dt==0.)
-      if (ldt.and.dt0==0.) then
-        dt = dt_epsi
-      else
-        dt = dt0
+      if (ldt) then
+        if (dt0==0.) then
+          dt = dt_epsi
+        else
+          dt = dt0
+        endif
       endif
-      !FRED after merger ldt used for adaptive time step and lcourant_dt=F
-      lcourant_dt=ldt
-      ldt=.false.
+      lcourant_dt=.false.
 !
       if (eps_rkf0/=0.) eps_rkf=eps_rkf0
 !
       dt_next=dt
       dt_increase=-1./(itorder+dtinc)
       dt_decrease=-1./(itorder-dtdec)
+      num_substeps = itorder
 !
     endsubroutine initialize_timestep
 !***********************************************************************
@@ -105,8 +105,7 @@ module Timestep
           call rkck3(f, df, p, errmax)
         endif
         ! Step succeeded so exit
-        !FRED after merger ldt used for adaptive time step to replace lcourant_dt here 
-        if (errmax <= 1.or..not.lcourant_dt) exit
+        if (errmax <= 1.or..not.ldt) exit
         ! If f not to be stored for reiteration errmax constraint below must be removed TBA
         if (.not.lreiterate.and.errmax<=1.75) exit
         ! Step didn't succeed so decrease the time step
@@ -141,8 +140,7 @@ module Timestep
 !
 ! Time step to try next time
 !
-      !FRED after merger ldt used for adaptive time step to replace lcourant_dt here 
-      if (lcourant_dt) then
+      if (ldt) then
         if (lreiterate) then
           dt_next = dt*errmax**dt_increase
         else

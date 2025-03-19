@@ -1,0 +1,77 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+!  run parameters for interstellar
+!
+&run_pars
+  cvsid="8a1dc9355"
+  !nt=250000, it1=250, isave=5000, it1d=2500, itorder=3, tmax=0.05, dtmin=1e-10
+  nt=300, it1=20, isave=1000, it1d=5000, itorder=3, tmax=0.005, dtmin=1e-12, dt=1e-10
+  !dt=1e-8, dtdec=0.5, dtinc=0.5, dt_ratio=1e-2
+  !leps_fixed=T
+  !eps_rkf0=0.01
+  timestep_scaling="cons_frac_err","cons_frac_err","cons_frac_err","cons_frac_err","cons_frac_err","cons_frac_err","cons_frac_err","cons_frac_err"
+  dsnap=.001, dvid=.00025, slice_position='m'
+  !bcz = 's','s','ubs','ism','ism','s','s','a'
+  ip=1963
+  lpencil_check=T
+  lpencil_check_small=T
+  lbidiagonal_derij=F  !(use the slightly more accurate formulation for derij)
+/
+&eos_run_pars
+/
+&hydro_run_pars
+/
+&viscosity_run_pars
+  ivisc='nu-shock','hyper3-nu-const','nu-const'
+  nu_shock=1., nu_hyper3=7.5e-12, nu=4e-3
+/
+&density_run_pars
+  diffrho_shock=1.
+  lmassdiff_fix=T
+  idiff='shock',''
+  total_mass=1.1134865e-3
+  lconserve_total_mass=T
+/
+&grav_run_pars
+/
+&entropy_run_pars
+  iheatcond='shock','hyper3'
+  chi_shock=1.
+  chi_hyper3=7.5e-12
+  lrhs_max=F
+/
+&magnetic_run_pars
+  iresistivity='hyper3','eta-const'
+  eta_hyper3=7.5e-12,eta=8e-4
+  lrhs_max=F
+/
+&interstellar_run_pars
+!! adjust SN radius above rfactor_SN for diffuse ISM
+  luniform_zdist_SNI=T
+  lSN_scale_rad=T
+  N_mass=60.0
+  rfactor_SN=2.5
+  lSN_autofrackin=F
+  lSN_coolingmass=F
+!  t_next_SNI=1e-7, l_persist_overwrite_tSNI=T
+!! override persistent variables read in from varfile
+  lSNII=F, l_persist_overwrite_lSNII=T
+  lSNI=F, l_persist_overwrite_lSNI=T
+!  t_next_SNI=9e-4, l_persist_overwrite_tSNI=T
+!  t_next_SNII=9e-4, l_persist_overwrite_tSNII=T
+!! rest random number after crash for new SN site
+!  lreset_ism_seed=T
+!  seed_reset=1245
+/
+&shear_run_pars
+  qshear = 1.0
+/
+&shock_run_pars
+  ishock_max=1
+  lmax_shock=F
+  lgaussian_smooth=T
+  lconvergence_only=F
+  shock_div_pow=1.75
+  dtfactor=0.2!2.5e-2
+  con_bias=0.05
+/

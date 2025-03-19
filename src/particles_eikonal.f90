@@ -2547,7 +2547,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  Contribution of dust particles to time step.
 !
-      if (lfirst.and.ldt.and.ldt_adv_par) then
+      if (lupdate_courant_dt.and.ldt_adv_par) then
         if (npar_imn(imn)/=0) then
           do k=k1_imn(imn),k2_imn(imn)
             
@@ -2652,7 +2652,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
         if (npar_imn(imn)/=0) then
 !
-          if (lfirst.and.ldt) then
+          if (lupdate_courant_dt) then
             dt1_drag_dust=0.0
             if (ldragforce_gas_par) dt1_drag_gas=0.0
           endif
@@ -2811,7 +2811,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !  With drag force on the gas as well, the maximum time-step is set as
 !    dt1_drag = Sum_k[eps_k/tau_k]
 !
-              if (lfirst.and.ldt) then
+              if (lupdate_courant_dt) then
                 dt1_drag_dust(ix0-nghost)=max(dt1_drag_dust(ix0-nghost),tausp1_par)
                 if (ldragforce_gas_par) then
                   if (p%np(ix0-nghost)/=0.0) &
@@ -2829,7 +2829,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !  time-steps are added up to give a valid expression even when the two are
 !  of similar magnitude.
 !
-          if (lfirst.and.ldt) then
+          if (lupdate_courant_dt) then
             if (ldragforce_gas_par) then
               dt1_drag=dt1_drag_dust+dt1_drag_gas
             else
@@ -2842,7 +2842,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  No particles in this pencil.
 !
-          if (lfirst.and.ldt) dt1_drag=0.0
+          if (lupdate_courant_dt) dt1_drag=0.0
         endif
       endif
 !
@@ -2925,7 +2925,7 @@ k_loop:   do while (.not. (k>npar_loc))
         if (idiag_dvpx2m/=0 .or. idiag_dvpx2m/=0 .or. idiag_dvpx2m/=0 .or. &
             idiag_dvpm  /=0 .or. idiag_dvpmax/=0) call calculate_rms_speed(fp,ineargrid,p)
 
-        if (lfirst.and.ldt)  call max_mn_name(dt1_drag,idiag_dtdragp,l_dt=.true.)
+        if (lupdate_courant_dt)  call max_mn_name(dt1_drag,idiag_dtdragp,l_dt=.true.)
       endif
 !
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1
@@ -3452,7 +3452,7 @@ k_loop:   do while (.not. (k>npar_loc))
             dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) - taucool1*(fp(k,ivpx:ivpz)-vvpm(ix0-nghost,:))
           enddo
 !
-          if (lfirst.and.ldt) dt1_max=max(dt1_max,taucool1/cdtp)
+          if (lupdate_courant_dt) dt1_max=max(dt1_max,taucool1/cdtp)
         endif
       endif
 !
@@ -3514,7 +3514,7 @@ k_loop:   do while (.not. (k>npar_loc))
             endif
           enddo
 !
-          if (lfirst.and.ldt) dt1_max=max(dt1_max,tau_coll1/cdtp)
+          if (lupdate_courant_dt) dt1_max=max(dt1_max,tau_coll1/cdtp)
         endif
       endif
 !
@@ -3555,7 +3555,7 @@ k_loop:   do while (.not. (k>npar_loc))
                 dfp(j,ivpx:ivpz) = dfp(j,ivpx:ivpz) - tau_cool1_par*(fp(j,ivpx:ivpz)-vbar_jk)
                 dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) - tau_cool1_par*(fp(k,ivpx:ivpz)-vbar_jk)
               enddo
-              if (lfirst.and.ldt) dt1_max=max(dt1_max(l),dt1_cool/cdtp)
+              if (lupdate_courant_dt) dt1_max=max(dt1_max(l),dt1_cool/cdtp)
 !  Go through all possible k.
               k=kneighbour(k)
             enddo
@@ -3634,7 +3634,7 @@ k_loop:   do while (.not. (k>npar_loc))
               tau_coll1_tot(:,ispecies)=tau_coll1_tot(:,ispecies)+tau_coll1_species(:,ispecies,jspecies)
             enddo; enddo
           endif
-          if (lfirst.and.ldt) then
+          if (lupdate_courant_dt) then
             do ispecies=1,npar_species
               dt1_max=max(dt1_max,tau_coll1_tot(:,ispecies)/cdtp)
             enddo

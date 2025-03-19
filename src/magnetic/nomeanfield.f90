@@ -21,6 +21,12 @@ module Magnetic_meanfield
   use General, only: keep_compiler_quiet
 !
   implicit none
+
+  !TP: having these declarations always present from the magnetic_meanfield modules makes things easier for transpilation
+  !so have them here for now. In future we can get rid of them
+  real, dimension(nx) :: etat_x, detat_x
+  real, dimension(my) :: etat_y, detat_y
+  real, dimension(mz) :: etat_z, detat_z
 !
   include 'meanfield.h'
 !
@@ -72,6 +78,8 @@ module Magnetic_meanfield
 !
 !  Dummy routine
 !
+      use Cdata
+
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
@@ -173,6 +181,23 @@ module Magnetic_meanfield
       call keep_compiler_quiet(f)
 !
     endsubroutine meanfield_after_boundary
+!***********************************************************************
+    subroutine pushpars2c(p_par)
+
+    use Syscalls, only: copy_addr
+    use General, only: string_to_enum
+
+    integer, parameter :: n_pars=1100
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+    call copy_addr(etat_x,p_par(1)) ! (nx)
+    call copy_addr(etat_y,p_par(2)) ! (my)
+    call copy_addr(etat_z,p_par(3)) ! (mz)
+    call copy_addr(detat_x,p_par(4)) ! (nx)
+    call copy_addr(detat_y,p_par(5)) ! (my)
+    call copy_addr(detat_z,p_par(6)) ! (mz)
+
+    endsubroutine
 !***********************************************************************
 endmodule Magnetic_meanfield
 

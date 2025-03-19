@@ -17,14 +17,18 @@ s/\([^0-9a-zA-Z_]\)zgrid[ ,]/\1/
 s/\([^0-9a-zA-Z_]\)zgrid$/\1/
 #remove allocatable quantities
 /( *:/ d
-#make everything lowercase
-s/.*/\L&/g
 #remove array initializations
 s/(\/.*\/)//g
 #replace double precision exponent symbol by single precision one
 s/\([0-9.]\) *[dD] *\([-0-9]\)/\1E\2/g
 #remove lines containing implicit none
-/^ *implicit  *none/ d
+/implicit  *none/ d
+#make KIND lowercase
+s/KIND *=/kind=/
+s/integer *( *kind *= *ikind8 *) *::/long long/
+s/real *( *kind *= *rkind8 *) *::/ double/ 
+#remove volatile
+s/, *volatile//
 #remove comment at line end
 s/\([^ ]\) *!.*$/\1/
 #insert pragma and includes instead of module
@@ -34,10 +38,11 @@ s/^ *module .*$/  #pragma once \n  #include "headers_c.h" \n  #include "defines_
 s/, *dimension.*::/*::/
 #transform parameter attribute to const
 s/integer *, *parameter *\([\*]*\):: */const FINT \1/
+s/logical *, *parameter *\([\*]*\):: */const bool \1/
 #transform integer, real, logical, double precision with and without * into extern <type>, replace :: by ,. * remains
 s/integer *\([*]*\):: */extern FINT \1,/
 s/real *\([*]*\):: */extern REAL \1,/
-s/logical *\([*]*\):: */extern int \1,/
+s/logical *\([*]*\):: */extern bool \1,/
 s/double  *precision *\([*]*\):: */extern double \1,/
 s/integer *( *kind *= *ikind8 *) *\([*]*\):: */extern long long \1,/
 s/real *( *kind *= *rkind8 *) *\([*]*\):: */extern double \1,/ 
@@ -55,8 +60,8 @@ s/real *( *kind *= *rkind8 *) *\([*]*\):: */extern double \1,/
       s/^ *extern  *[a-zA-Z][a-zA-Z]* *[\*]* *,/,/
       # remove terminating , and & in continuation lines
       s/, *& *$//
-      s/, *\*\([a-zA-Z0-9_][a-zA-Z0-9_]*\) *= *\&[^,]*/#define \1_ MODULE_PREFIXcdataMODULE_INFIX\1MODULE_SUFFIX \n/g
-      s/, *\([a-zA-Z0-9_][a-zA-Z0-9_]*\)/#define \1 MODULE_PREFIXcdataMODULE_INFIX\1MODULE_SUFFIX \n/g
+      s/, *\*\([a-zA-Z0-9_][a-zA-Z0-9_]*\) *= *\&[^,]*/#define \1_ MODULE_PREFIXcdataMODULE_INFIX\L\1\UMODULE_SUFFIX \n/g
+      s/, *\([a-zA-Z0-9_][a-zA-Z0-9_]*\)/#define \1 MODULE_PREFIXcdataMODULE_INFIX\L\1\UMODULE_SUFFIX \n/g
       /^ *, *$/ d
       w tmp
       g

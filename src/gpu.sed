@@ -5,14 +5,13 @@
 /BORDER_PROFILES/ b end
 /DEBUG/ b end
 /DERIV/ b end
-/DSL_MODULE/ b end
 /FOURIER/ b end
 /GHOSTFOLD/ b end
 /GSL/ b end
 /INITIAL_CONDITION/ b end
 /FIXED_POINT/ b end
 /LSODE/ b end
-/MPICOMM/ b end
+#/MPICOMM/ b end
 /NSCBC/ b end
 /POWER/ b end
 /SIGNAL/ b end
@@ -22,13 +21,19 @@
 /SYSCALLS/ b end
 /TESTPERTURB/ b end
 /TIMEAVG/ b end
+/VISCOSITY/ b end
 /WENO_TRANSPORT/ b end
+/SHEAR/ b end
 /STREAMLINES/ b end
 /YINYANG/ b end
 /PARTICLES/ b end
 /IMPLICIT_DIFFUSION/ b end
+/MPICOMM/ b end
 /MULTITHREADING/ b end
-s/^ *[A-Z0-9_]* *= *noviscosity *$/#undef LVISCOSITY/ 
+/GPU_VENDOR/ b end
+/RUNTIME_COMPILATION/ b end
+/FARRAY/ b end
+#s/^ *VISCOSITY *= *noviscosity *$/#undef LVISCOSITY/ 
 t prin
 b cont0
 : prin

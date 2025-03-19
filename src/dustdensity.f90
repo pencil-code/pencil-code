@@ -47,6 +47,7 @@ module Dustdensity
   real, dimension(nx,ndustspec,ndustspec0) :: dndr_full, ppsf_full
 !  real, dimension(ndustspec0)  :: Ntot_i
   real, dimension(nx,ndustspec,ndustspec) :: dkern
+  !$omp threadprivate(dkern)
   real, dimension(ndustspec,ndustspec0) :: init_distr_ki
   real, dimension(ndustspec0) :: BB=0.
   real, dimension(ndustspec) :: dsize,init_distr2,amplnd_rel=0.
@@ -1332,9 +1333,9 @@ module Dustdensity
       real, dimension (nx,3) :: tmp_pencil_3
       real, dimension (ndustspec) :: ttt, ff_tmp
       real, dimension (nx,ndustspec) :: Nd_rho, CoagS
-      real :: aa0= 6.107799961, aa1= 4.436518521e-1
-      real :: aa2= 1.428945805e-2, aa3= 2.650648471e-4
-      real :: aa4= 3.031240396e-6, aa5= 2.034080948e-8, aa6= 6.136820929e-11
+      real, parameter :: aa0= 6.107799961, aa1= 4.436518521e-1
+      real, parameter :: aa2= 1.428945805e-2, aa3= 2.650648471e-4
+      real, parameter :: aa4= 3.031240396e-6, aa5= 2.034080948e-8, aa6= 6.136820929e-11
       integer :: i,k,mm,nn
 !
       intent(inout) :: f,p
@@ -1995,7 +1996,7 @@ module Dustdensity
 !
           if (ldiffd_simplified) then
             fdiffd=fdiffd + diffnd_ndustspec(k)*p%del2nd(:,k)
-            if (lfirst.and.ldt) diffus_diffnd=diffus_diffnd+diffnd_ndustspec(k)*dxyz_2
+            if (lupdate_courant_dt) diffus_diffnd=diffus_diffnd+diffnd_ndustspec(k)*dxyz_2
           endif
 !
 !  diffusive time step
@@ -2009,7 +2010,7 @@ module Dustdensity
               call del2fj(f,diffnd_anisotropic,ind(k),tmp1)
               fdiffd = fdiffd + tmp1
             endif
-            if (lfirst.and.ldt) diffus_diffnd=diffus_diffnd + &
+            if (lupdate_courant_dt) diffus_diffnd=diffus_diffnd + &
                                               (diffnd_anisotropic(1)*dline_1(:,1)**2 + &
                                                diffnd_anisotropic(2)*dline_1(:,2)**2 + &
                                                diffnd_anisotropic(3)*dline_1(:,3)**2)
@@ -2022,7 +2023,7 @@ module Dustdensity
               fdiffd = fdiffd + diffnd_ndustspec(k)*(p%del2nd(:,k) - p%gndglnrho(:,k) - &
                        p%nd(:,k)*p%del2lnrho)
             endif
-            if (lfirst.and.ldt) diffus_diffnd=diffus_diffnd+diffnd_ndustspec(k)*dxyz_2
+            if (lupdate_courant_dt) diffus_diffnd=diffus_diffnd+diffnd_ndustspec(k)*dxyz_2
           endif
 !
           if (ldiffd_hyper3) then
@@ -2031,7 +2032,7 @@ module Dustdensity
             else
               fdiffd = fdiffd + diffnd_hyper3*p%del6nd(:,k)
             endif
-            if (lfirst.and.ldt) diffus_diffnd3=diffus_diffnd3+diffnd_hyper3*dxyz_6
+            if (lupdate_courant_dt) diffus_diffnd3=diffus_diffnd3+diffnd_hyper3*dxyz_6
           endif
 !
           if (ldiffd_hyper3_polar) then
@@ -2039,7 +2040,7 @@ module Dustdensity
               call der6(f,ind(k),tmp1,j,IGNOREDX=.true.)
               fdiffd = fdiffd + diffnd_hyper3*pi4_1*tmp1*dline_1(:,j)**2
             enddo
-            if (lfirst.and.ldt) diffus_diffnd3=diffus_diffnd3+diffnd_hyper3*pi4_1*dxmin_pencil**4
+            if (lupdate_courant_dt) diffus_diffnd3=diffus_diffnd3+diffnd_hyper3*pi4_1*dxmin_pencil**4
           endif
 !
           if (ldiffd_hyper3_mesh) then
@@ -2047,7 +2048,7 @@ module Dustdensity
               call der6(f,ind(k),tmp1,j,IGNOREDX=.true.)
               fdiffd = fdiffd + diffnd_hyper3_mesh*pi5_1/60.*tmp1*dline_1(:,j)
             enddo
-            if (lfirst.and.ldt) then 
+            if (lupdate_courant_dt) then 
               advec_hypermesh_nd=diffnd_hyper3_mesh*pi5_1*sqrt(dxyz_2)
               advec2_hypermesh=advec2_hypermesh+advec_hypermesh_nd**2
             endif
@@ -2056,16 +2057,16 @@ module Dustdensity
 !
           if (ldiffd_hyper3lnnd) then
             if (ldustdensity_log) fdiffd = fdiffd + diffnd_hyper3*p%del6lnnd(:,k)
-            if (lfirst.and.ldt) diffus_diffnd3=diffus_diffnd3+diffnd_hyper3*dxyz_6
+            if (lupdate_courant_dt) diffus_diffnd3=diffus_diffnd3+diffnd_hyper3*dxyz_6
           endif
 !
           if (ldiffd_shock) then
             call dot_mn(p%gshock,p%gnd(:,:,k),gshockgnd)
             fdiffd = fdiffd + diffnd_shock*p%shock*p%del2nd(:,k) + diffnd_shock*gshockgnd
-            if (lfirst.and.ldt) diffus_diffnd=diffus_diffnd+diffnd_shock*p%shock*dxyz_2
+            if (lupdate_courant_dt) diffus_diffnd=diffus_diffnd+diffnd_shock*p%shock*dxyz_2
           endif
 
-          if (lfirst.and.ldt) then 
+          if (lupdate_courant_dt) then 
             maxdiffus=max(maxdiffus,diffus_diffnd)
             maxdiffus3=max(maxdiffus3,diffus_diffnd3)
           endif
@@ -2689,10 +2690,11 @@ module Dustdensity
       real, dimension (nx) :: TT,Kn, cor_factor, D_coeff, Di, Dk, Dik, KBC, vmean_i, vmean_k
       real, dimension (nx) :: vmean_ik, gamma_i, gamma_k, omega_i, omega_k, sigma_ik
 !
-      real :: deltavd,deltavd_drift=0,deltavd_therm=0
-      real :: deltavd_turbu=0, fact
-      real :: deltavd_drift2=0, deltavd_drift2a=0, deltavd_drift2b=0
-      real :: ust,tl01,teta1,mu_air,rho_air, kB=1.38e-16, Rik 
+      real :: deltavd,deltavd_therm
+      real :: deltavd_turbu, fact
+      real :: deltavd_drift2, deltavd_drift2a, deltavd_drift2b
+      real :: ust,tl01,teta1,mu_air,rho_air, Rik 
+      real, parameter :: kB=1.38e-16
       integer :: i,j,l,k,lgh
 !
       if (ldustcoagulation) then
@@ -2765,7 +2767,6 @@ module Dustdensity
                   call dot2(f(lgh,m,n,iudx(j):iudz(j))- &
                             f(lgh,m,n,iudx(i):iudz(i)),deltavd_drift2)
                 endif
-                deltavd_drift = sqrt(deltavd_drift2)
 !
 !  Relative thermal speed is only important for very light particles
 !  urms^2 = 8*kB*T/(pi*m_red)
@@ -2790,14 +2791,15 @@ module Dustdensity
                   elseif (tausd1(l,i) > teta1 .and. tausd1(l,j) > teta1) then
                     deltavd_turbu = ueta/teta*(tausd1(l,i)/tausd1(l,j)-1.)
                   else
-                    deltavd_turbu=0.
                     call fatal_error('coag_kernel','this should never happen')
                   endif
+                else
+                  deltavd_turbu = 0.
                 endif
 !
 !  Add all speed contributions quadratically
 !
-                deltavd = sqrt(deltavd_drift**2+deltavd_therm**2+deltavd_turbu**2+deltavd_imposed**2)
+                deltavd = sqrt(deltavd_drift2+deltavd_therm**2+deltavd_turbu**2+deltavd_imposed**2)
 !
 !  Stick only when relative speed is below sticking speed
 !
@@ -3384,8 +3386,9 @@ module Dustdensity
       real, dimension (nx,ndustspec) ::  ff,dff_dr
       real, dimension (ndustspec) :: dsize_loc
 
-      integer :: k,i1=1,i2=2,i3=3
-      integer :: ii1=ndustspec, ii2=ndustspec-1,ii3=ndustspec-2
+      integer :: k
+      integer, parameter :: i1=1,i2=min(ndustspec,2),i3=min(ndustspec,3)
+      integer, parameter :: ii1=ndustspec, ii2=max(ndustspec-1,1),ii3=max(ndustspec-2,1)
       real :: rr1=0.,rr2=0.,rr3=0.
       intent(in) :: ff, dsize_loc
       intent(out) :: dff_dr
@@ -3393,31 +3396,40 @@ module Dustdensity
 !  df/dx = y0*(2x-x1-x2)/(x01*x02)+y1*(2x-x0-x2)/(x10*x12)+y2*(2x-x0-x1)/(x20*x21)
 !  Where: x01 = x0-x1, x02 = x0-x2, x12 = x1-x2, etc.
 !
-      rr1=dsize_loc(i1)
-      rr2=dsize_loc(i2)
-      rr3=dsize_loc(i3)
+      if (ndustspec>=3) then
+
+        rr1=dsize_loc(i1)
+        rr2=dsize_loc(i2)
+        rr3=dsize_loc(i3)
 !
-      dff_dr(:,i1) = (ff(:,i1)*(rr1-rr2+rr1-rr3)/((rr1-rr2)*(rr1-rr3))  &
-                    - ff(:,i2)*(rr1-rr3)/((rr1-rr2)*(rr2-rr3)) &
-                    + ff(:,i3)*(rr1-rr2)/((rr1-rr3)*(rr2-rr3)) )
+        dff_dr(:,i1) = (ff(:,i1)*(rr1-rr2+rr1-rr3)/((rr1-rr2)*(rr1-rr3))  &
+                      - ff(:,i2)*(rr1-rr3)/((rr1-rr2)*(rr2-rr3)) &
+                      + ff(:,i3)*(rr1-rr2)/((rr1-rr3)*(rr2-rr3)) )
 !
 !  interior points (second order)
 !
-      do k=2,ndustspec-1
+        do k=2,ndustspec-1
 !
-        rr1=dsize_loc(k-1)
-        rr2=dsize_loc(k)
-        rr3=dsize_loc(k+1)
+          rr1=dsize_loc(k-1)
+          rr2=dsize_loc(k)
+          rr3=dsize_loc(k+1)
 !
-        dff_dr(:,k) =  ff(:,k-1)*(rr2-rr3)/((rr1-rr2)*(rr1-rr3)) &
-                      +ff(:,k  )*(2*rr2-rr1-rr3)/((rr2-rr1)*(rr2-rr3)) &
-                      +ff(:,k+1)*(2*rr2-rr1-rr2)/((rr3-rr1)*(rr3-rr2))
-      enddo
+          dff_dr(:,k) =  ff(:,k-1)*(rr2-rr3)/((rr1-rr2)*(rr1-rr3)) &
+                        +ff(:,k  )*(2*rr2-rr1-rr3)/((rr2-rr1)*(rr2-rr3)) &
+                        +ff(:,k+1)*(2*rr2-rr1-rr2)/((rr3-rr1)*(rr3-rr2))
+        enddo
 !
-      dff_dr(:,ndustspec)=-ff(:,ii3)*(rr2-rr3)/((rr1-rr2)*(rr1-rr3)) &
-                          +ff(:,ii2)*(rr1-rr3)/((rr1-rr2)*(rr2-rr3)) &
-                          -ff(:,ii1)*(rr1-rr3+rr2-rr3)/((rr1-rr3)*(rr2-rr3))
+        dff_dr(:,ndustspec)=-ff(:,ii3)*(rr2-rr3)/((rr1-rr2)*(rr1-rr3)) &
+                            +ff(:,ii2)*(rr1-rr3)/((rr1-rr2)*(rr2-rr3)) &
+                            -ff(:,ii1)*(rr1-rr3+rr2-rr3)/((rr1-rr3)*(rr2-rr3))
 !
+      elseif (ndustspec==2) then
+        dff_dr(:,1) = (ff(:,2) - ff(:,1))/(dsize_loc(2)-dsize_loc(1))
+        dff_dr(:,2) = dff_dr(:,1)
+      else
+        dff_dr(:,1) = 0.
+      endif
+
     endsubroutine deriv_size
 !***********************************************************************
     subroutine droplet_init(f)

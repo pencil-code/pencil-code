@@ -68,7 +68,7 @@ module Density
 !
 ! reference state, components:  1       2          3              4            5      6     7         8            9
 !                              rho, d rho/d z, d^2 rho/d z^2, d^6 rho/d z^6, d p/d z, s, d s/d z, d^2 s/d z^2, d^6 s/d z^6
-  real, dimension(nx,nref_vars) :: reference_state=0.
+  real, dimension(nx,9) :: reference_state=0.
   real, dimension(2) :: density_xaver_range=(/-max_real,max_real/)
   real, dimension(2) :: density_zaver_range=(/-max_real,max_real/)
   real :: lnrho_const=0.0, rho_const=1.0, Hrho=1., ggamma=impossible
@@ -145,6 +145,7 @@ module Density
   logical :: ldensity_slope_limited=.false.
   real :: h_sld_dens=2.0, nlf_sld_dens=1.0
   real, dimension(3) :: beta_glnrho_global = 0., beta_glnrho_scaled=0.
+!$omp declare target(reference_state)
 !
   namelist /density_init_pars/ &
       ampllnrho, initlnrho, widthlnrho, rho_left, rho_right, lnrho_const, &
@@ -291,6 +292,11 @@ module Density
   real, dimension(nx) :: diffus_diffrho3
   real :: density_floor_log, density_ceiling_log
 !
+  integer :: enum_ieos_profile = 0
+  integer :: enum_mass_source_profile = 0
+  integer :: enum_div_sld_dens = 0
+  integer :: enum_borderlnrho = 0
+
   contains
 !***********************************************************************
     subroutine register_density
@@ -382,7 +388,6 @@ module Density
         call put_shared_variable('reference_state_mass',reference_state_mass)
       endif
 
-
     endsubroutine register_density
 !***********************************************************************
     subroutine initialize_density(f)
@@ -437,8 +442,6 @@ module Density
       endif
 !
       if (.not.ldensity_nolog.and.lweno_transport) then
-        lweno_transport=.false.
-        !call warning('initialize_density','disabled WENO transport for logarithmic density')
         call fatal_error('initialize_density','cannot do WENO transport for logarithmic density!')
       endif
 
@@ -886,7 +889,7 @@ module Density
 ! default to catch unknown values
 !
           case default
-            call fatal_error('initialize_density','no such mass_source_profile')
+            call fatal_error('initialize_density','no such mass_source_profile: '//trim(mass_source_profile))
         endselect
       endif
 !
@@ -2521,10 +2524,8 @@ module Density
 !  Accumulatively calculate the RHS of Schur flow equations, but only finalize after the mn loop.
 !
         density_rhs=p%uglnrho+p%divu
+        call accumulate_Schur_averages(density_rhs)
 !
-        Schur_dlnrho_RHS_xyaver_z(n-nghost) = Schur_dlnrho_RHS_xyaver_z(n-nghost)+sum(density_rhs)/nxygrid
-        Schur_dlnrho_RHS_zaver_xy(:,m-nghost) = Schur_dlnrho_RHS_zaver_xy(:,m-nghost)+density_rhs/nzgrid
-        Schur_dlnrho_RHS_xyzaver = Schur_dlnrho_RHS_xyzaver+sum(density_rhs)/nwgrid
       else
 !
 !  Continuity equation.
@@ -2652,7 +2653,7 @@ module Density
       diffus_diffrho=0.; diffus_diffrho3=0.
       fdiff=0.0
 !
-      ldt_up = lfirst.and.ldt
+      ldt_up = lupdate_courant_dt
 !
       if (ldiff_normal) then  ! Normal diffusion operator
         if (ldensity_nolog) then
@@ -2678,7 +2679,7 @@ module Density
             fdiff = fdiff + diffrho*p%TT**diff_cspeed*(p%del2lnrho+p%glnrho2)
           endif
         endif
-        if (lfirst.and.ldt) diffus_diffrho=diffus_diffrho+diffrho
+        if (lupdate_courant_dt) diffus_diffrho=diffus_diffrho+diffrho
         if (headtt) print*,'dlnrho_dt: diffrho=', diffrho
       endif
 !
@@ -2735,7 +2736,9 @@ module Density
         endif
         if (lhydro.and.(.not.lhydro_potential)) then
           !  when using lhydro_potential, df doesn't have iux:iuz entries
-          forall(j = iux:iuz) df(l1:l2,m,n,j) = df(l1:l2,m,n,j) - p%uu(:,j-iuu+1) * tmp
+          df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - p%uu(:,1) * tmp;
+          df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - p%uu(:,2) * tmp;
+          df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) - p%uu(:,3) * tmp;
         endif
         if (lentropy.and.(.not.pretend_lnTT)) then
           df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%cv*tmp
@@ -2872,7 +2875,7 @@ module Density
 !
       endif   !  if (lSchur_3D3D1D) then ... else
 !
-      call timing('dlnrho_dt','before l2davgfirst',mnloop=.true.)
+      call timing('dlnrho_dt','before calc_diagnostics',mnloop=.true.)
       call calc_diagnostics_density(f,p)
       call timing('dlnrho_dt','finished',mnloop=.true.)
 !
@@ -3029,7 +3032,7 @@ module Density
         if (idiag_drhom/=0)    call sum_mn_name(p%rho-rho0,idiag_drhom)
         call sum_mn_name(p%ugrho,idiag_ugrhom)
         call sum_mn_name(p%uglnrho,idiag_uglnrhom)
-        if (.not.lgpu) then
+        if (.not.lmultithread) then
           if (idiag_dtd/=0) call max_mn_name(diffus_diffrho/cdtv,idiag_dtd,l_dt=.true.)
           if (idiag_dtd3/=0) call max_mn_name(diffus_diffrho3/cdtv3,idiag_dtd3,l_dt=.true.)
         endif
@@ -3071,6 +3074,7 @@ module Density
         else
           f_target=1.
         endif
+        call border_driving(f,df,p,f_target,ilnrho)
 !
       case ('constant')
         if (ldensity_nolog) then
@@ -3078,16 +3082,15 @@ module Density
         else
           f_target=lnrho_const
         endif
+        call border_driving(f,df,p,f_target,ilnrho)
 !
       case ('initial-condition')
         call set_border_initcond(f,ilnrho,f_target)
+        call border_driving(f,df,p,f_target,ilnrho)
 !
       case ('nothing')
-        return
-!
+
       endselect
-!
-      call border_driving(f,df,p,f_target,ilnrho)
 !
     endsubroutine set_border_density
 !***********************************************************************
@@ -3383,8 +3386,6 @@ module Density
 !  Choose between different possibilities.
 !
       select case (mass_source_profile)
-        case ('nothing')
-          call not_implemented('mass_source','mass source with no profile')
         case ('exponential')
           dlnrhodt=mass_source_Mdot
         case('bump')
@@ -3419,8 +3420,6 @@ module Density
 !
 ! default to catch unknown values
 !
-        case default
-          call fatal_error('mass_source','no such mass_source_profile: '//trim(mass_source_profile))
         endselect
 !
 !  Add mass source.
@@ -3994,6 +3993,16 @@ module Density
 !
     endfunction mean_density
 !***********************************************************************
+    subroutine accumulate_Schur_averages(density_rhs)
+!
+!  12-2-2025/TP: carved out from dlnrho_dt
+!
+        real, dimension(nx) :: density_rhs
+        Schur_dlnrho_RHS_xyaver_z(n-nghost) = Schur_dlnrho_RHS_xyaver_z(n-nghost)+sum(density_rhs)/nxygrid
+        Schur_dlnrho_RHS_zaver_xy(:,m-nghost) = Schur_dlnrho_RHS_zaver_xy(:,m-nghost)+density_rhs/nzgrid
+        Schur_dlnrho_RHS_xyzaver = Schur_dlnrho_RHS_xyzaver+sum(density_rhs)/nwgrid
+    endsubroutine accumulate_Schur_averages
+!***********************************************************************
     subroutine impose_density_ceiling(f)
 !
 !  Impose a maximum (log) density by setting all higher (log) densities to the maximum
@@ -4031,9 +4040,85 @@ module Density
     subroutine pushpars2c(p_par)
 
     use Syscalls, only: copy_addr
+    use General , only: string_to_enum
 
-    integer, parameter :: n_pars=0
+    integer, parameter :: n_pars=400
     integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+    call copy_addr(ldiff_shock,p_par(1)) ! int
+    call copy_addr(diffrho_shock,p_par(2))
+    call copy_addr(ldiff_hyper3lnrho,p_par(3)) ! int
+    call copy_addr(diffrho_hyper3,p_par(4))
+    call copy_addr(lupw_lnrho,p_par(5)) ! int
+
+    call copy_addr(lnrho_const,p_par(6))
+    call copy_addr(rho_const,p_par(7))
+    call copy_addr(diffrho,p_par(8))
+    call copy_addr(diff_cspeed,p_par(9))
+    call copy_addr(diffrho_hyper3_mesh,p_par(10))
+    call copy_addr(mass_source_omega,p_par(11))
+    call copy_addr(lnrho_int,p_par(12))
+    call copy_addr(lnrho_ext,p_par(13))
+    call copy_addr(damplnrho_int,p_par(14))
+    call copy_addr(damplnrho_ext,p_par(15))
+
+    call copy_addr(mass_source_mdot,p_par(17))
+    call copy_addr(mass_source_sigma,p_par(18))
+    call copy_addr(fnorm,p_par(19))
+    call copy_addr(mass_source_tau1,p_par(20))
+    call copy_addr(reduce_cs2,p_par(21))
+    call copy_addr(lrelativistic_eos,p_par(22)) ! bool
+    call copy_addr(ladvection_density,p_par(23)) ! bool
+    call copy_addr(lrelativistic_eos_term1,p_par(24)) ! bool
+    call copy_addr(lrelativistic_eos_term2,p_par(25)) ! bool
+    call copy_addr(lmass_source_random,p_par(26)) ! bool
+    call copy_addr(lcontinuity_gas,p_par(27)) ! bool
+    call copy_addr(lupw_rho,p_par(28)) ! bool
+    call copy_addr(ldiff_normal,p_par(29)) ! bool
+    call copy_addr(ldiff_hyper3,p_par(30)) ! bool
+    call copy_addr(ldiff_cspeed,p_par(31)) ! bool
+    call copy_addr(ldiff_hyper3_aniso,p_par(32)) ! bool
+    call copy_addr(ldiff_hyper3_polar,p_par(33)) ! bool
+    call copy_addr(lanti_shockdiffusion,p_par(34)) ! bool
+    call copy_addr(ldiff_hyper3_mesh,p_par(35)) ! bool
+    call copy_addr(ldiff_hyper3_strict,p_par(36)) ! bool
+    call copy_addr(ldiff_hyper3lnrho_strict,p_par(37)) ! bool
+    call copy_addr(ldiffusion_nolog,p_par(38)) ! bool
+    call copy_addr(lmassdiff_fix,p_par(39)) ! bool
+    call copy_addr(ldensity_profile_masscons,p_par(40)) ! bool
+    call copy_addr(lffree,p_par(41)) ! bool
+    call copy_addr(lschur_3d3d1d,p_par(42)) ! bool
+    call copy_addr(lreduced_sound_speed,p_par(43)) ! bool
+    call copy_addr(lscale_to_cs2top,p_par(44)) ! bool
+    call copy_addr(lsubtract_init_stratification,p_par(45)) ! bool
+    call copy_addr(ldensity_slope_limited,p_par(46)) ! bool
+    call copy_addr(lupdate_mass_source,p_par(47)) ! bool
+    call string_to_enum(enum_ieos_profile,ieos_profile)
+    call copy_addr(enum_ieos_profile,p_par(48)) ! int
+    call string_to_enum(enum_mass_source_profile,mass_source_profile)
+    call copy_addr(enum_mass_source_profile,p_par(49)) ! int
+    call string_to_enum(enum_borderlnrho,borderlnrho)
+    call copy_addr(enum_borderlnrho,p_par(50)) ! int
+    call copy_addr(xblob,p_par(51)) ! (ninit)
+    call copy_addr(yblob,p_par(52)) ! (ninit)
+    call copy_addr(zblob,p_par(53)) ! (ninit)
+    call copy_addr(dlnrhodz_init_z,p_par(54)) ! (mz)
+    call copy_addr(del2lnrho_glnrho2_init_z,p_par(55)) ! (mz)
+    call copy_addr(diffrho_hyper3_aniso,p_par(56)) ! real3
+    call copy_addr(profx_ffree,p_par(57)) ! (nx)
+    call copy_addr(dprofx_ffree,p_par(58)) ! (nx)
+    call copy_addr(profy_ffree,p_par(59)) ! (my)
+    call copy_addr(dprofy_ffree,p_par(60)) ! (my)
+    call copy_addr(profz_ffree,p_par(61)) ! (mz)
+    call copy_addr(dprofz_ffree,p_par(62)) ! (mz)
+    call copy_addr(profz_eos,p_par(63)) ! (mz)
+    call copy_addr(dprofz_eos,p_par(64)) ! (mz)
+    call copy_addr(fprofile_x,p_par(65)) ! (nx)
+    call copy_addr(fprofile_z,p_par(66)) ! (nz)
+    call copy_addr(reduce_cs2_profx,p_par(67)) ! (nx)
+    call copy_addr(reduce_cs2_profz,p_par(68)) ! (mz)
+    call copy_addr(reference_state,p_par(69)) ! (nx) (9)
+    call copy_addr(beta_glnrho_scaled,p_par(70)) ! real3
 
     endsubroutine pushpars2c
 !***********************************************************************

@@ -9,73 +9,82 @@
 module GPU
 !
   use Cdata
-  use General, only: keep_compiler_quiet, ioptest, loptest
-  use Mpicomm, only: stop_it
+  use General, only: keep_compiler_quiet, lpointer, ioptest, loptest
+  use Messages
+!$ use, intrinsic :: iso_c_binding
   use iso_c_binding
 
   implicit none
 
-  external initialize_gpu_c
-  external finalize_gpu_c
-  external rhs_gpu_c
-  external copy_farray_c
-  external pos_real_ptr_c
-
   include 'gpu.h'
+
+!$  interface
+!$    subroutine random_initial_condition() bind(C)
+!$    endsubroutine random_initial_condition
+!$  end interface
+
+  external initialize_gpu_c
+  external register_gpu_c
+  external finalize_gpu_c
+  external get_farray_ptr_gpu_c
+  external rhs_gpu_c
+  external load_farray_c
+  external reload_gpu_config_c
+  external test_rhs_c
+  external copy_farray_c
+  external update_on_gpu_arr_by_ind_c
+  external update_on_gpu_scal_by_ind_c
+  external pos_real_ptr_c
+  external gpu_set_dt_c
+  integer, external :: update_on_gpu_arr_by_name_c
+  integer, external :: update_on_gpu_scal_by_name_c
+
 
   !integer(KIND=ikind8) :: pFarr_GPU_in, pFarr_GPU_out
   type(C_PTR) :: pFarr_GPU_in, pFarr_GPU_out
-  
-contains
 
+contains
 !***********************************************************************
-    subroutine initialize_GPU
+    subroutine initialize_GPU(f)
 !
+      use Mpicomm, only: MPI_COMM_PENCIL
+
+      real, dimension(:,:,:,:), intent(IN) :: f
+
       character(LEN=512) :: str
 !
       str=''
       if (lanelastic) str=trim(str)//', '//'anelastic'
       if (lboussinesq) str=trim(str)//', '//'boussinesq'
-      !if (lenergy) str=trim(str)//', '//'energy'
-      if (ltemperature) str=trim(str)//', '//'temperature'
-      if (lshock) str=trim(str)//', '//'shock'
-      if (lgrav) str=trim(str)//', '//'gravity'
-      if (lheatflux) str=trim(str)//', '//'heatflux'
       if (lhyperresistivity_strict) str=trim(str)//', '//'hyperresi_strict'
       if (lhyperviscosity_strict) str=trim(str)//', '//'hypervisc_strict'
       if (lADI) str=trim(str)//', '//'implicit_physics'
       if (llorenz_gauge) str=trim(str)//', '//'lorenz_gauge'
-      if (ldustvelocity) str=trim(str)//', '//'dustvelocity'
-      if (ldustdensity) str=trim(str)//', '//'dustdensity'
       if (ltestscalar) str=trim(str)//', '//'testscalar'
       if (ltestfield) str=trim(str)//', '//'testfield'
       if (ltestflow) str=trim(str)//', '//'testflow'
-      if (linterstellar) str=trim(str)//', '//'interstellar'
-      if (lcosmicray) str=trim(str)//', '//'cosmicray'
-      if (lcosmicrayflux) str=trim(str)//', '//'cosmicrayflux'
       if (lshear) str=trim(str)//', '//'shear'
-      if (lpscalar) str=trim(str)//', '//'pscalar'
-      if (lascalar) str=trim(str)//', '//'ascalar'
       if (lradiation) str=trim(str)//', '//'radiation'
-      if (lchemistry) str=trim(str)//', '//'chemistry'
-      if (lchiral) str=trim(str)//', '//'chiral'
       if (ldetonate) str=trim(str)//', '//'detonate'
-      if (lneutralvelocity) str=trim(str)//', '//'neutralvelocity'
-      if (lneutraldensity) str=trim(str)//', '//'neutraldensity'
       if (lopacity) str=trim(str)//', '//'opacity'
-      if (lpolymer) str=trim(str)//', '//'polymer'
       if (lpointmasses) str=trim(str)//', '//'pointmasses'
       if (lpoisson) str=trim(str)//', '//'poisson'
       if (lselfgravity) str=trim(str)//', '//'selfgravity'
       if (lsolid_cells) str=trim(str)//', '//'solid_cells'
       if (lspecial) str=trim(str)//', '//'special'
-      if (lpower_spectrum) str=trim(str)//', '//'power_spectrum'
       if (lparticles) str=trim(str)//', '//'particles'
 
-      if (str/='') call stop_it('No GPU implementation for module(s) "'//trim(str(3:))//'"')
+      if (str/='') call fatal_error('initialize_GPU','no GPU implementation available for module(s) "'// &
+                                    trim(str(3:))//'"')
 !
-      call initialize_gpu_c(pFarr_GPU_in,pFarr_GPU_out)
-!print'(a,1x,Z0,1x,Z0)', 'pFarr_GPU_in,pFarr_GPU_out=', pFarr_GPU_in,pFarr_GPU_out
+      if (dt<=0.) dt = dtmin
+      call initialize_gpu_c(f,MPI_COMM_PENCIL)
+!
+! Load farray to gpu
+!
+      if (nt>0) call load_farray_to_GPU(f)
+
+  !print'(a,1x,Z0,1x,Z0)', 'pFarr_GPU_in,pFarr_GPU_out=', pFarr_GPU_in,pFarr_GPU_out
     endsubroutine initialize_GPU
 !**************************************************************************
     subroutine gpu_init
@@ -84,65 +93,40 @@ contains
 !
     endsubroutine gpu_init
 !**************************************************************************
-    subroutine register_GPU(f)
+    subroutine register_GPU
 !
-      real, dimension(:,:,:,:), intent(IN) :: f
-
-      call register_gpu_c(f)
+      call register_gpu_c
 !
     endsubroutine register_GPU
 !**************************************************************************
-    subroutine finalize_GPU
+    subroutine finalize_gpu
 !
       call finalize_gpu_c
 !
     endsubroutine finalize_GPU
 !**************************************************************************
-    subroutine rhs_GPU(f,isubstep,early_finalize)
+    subroutine get_farray_ptr_gpu
+
+      call get_farray_ptr_gpu_c(pFarr_GPU_in)
+
+    endsubroutine get_farray_ptr_gpu
+!**************************************************************************
+    subroutine rhs_GPU(f,isubstep)
 !
       use General, only: notanumber
 
       real, dimension (mx,my,mz,mfarray), intent(INOUT) :: f
       integer,                            intent(IN)    :: isubstep
-      logical,                            intent(IN)    :: early_finalize
 !
-      integer :: ll, mm, nn
-      real :: val
-      logical, save :: lvery_first=.true.
-
-      goto 1
-      val=1.
-      do nn=1,mz
-        do mm=1,my
-          do ll=1,mx
-            f(ll,mm,nn,iux)=val; val=val+1.
-      enddo; enddo; enddo
-
-      print*, 'vor integrate'
-      do nn=1,3
-        if (notanumber(f(:,:,nn,iux))) print*,'NaN in ux, lower z', nn
-      enddo
-      print*, '---------------'
-
-1     continue
-      call rhs_gpu_c(isubstep,lvery_first,early_finalize)
+      call rhs_gpu_c(isubstep)
 !
-      lvery_first=.false.
-
-      return
-!
-      if (.not.lroot) return
-      do nn=1,mz   !  nghost+1,mz-nghost
-        print*, 'nn=', nn
-        do mm=1,my
-          print'(22(1x,f7.0))',f(:,mm,nn,iux)
-      enddo; enddo
-
-      do nn=1,3
-        if (notanumber(f(:,:,nn,iux))) print*,'NaN in ux, lower z', nn                
-      enddo
-
     endsubroutine rhs_GPU
+!**************************************************************************
+    subroutine gpu_set_dt
+!
+      call gpu_set_dt_c
+!
+    endsubroutine gpu_set_dt
 !**************************************************************************
     function get_ptr_GPU(ind1,ind2,lout) result(pFarr)
 
@@ -176,10 +160,131 @@ contains
 !**************************************************************************
     subroutine copy_farray_from_GPU(f)
 
-      real, dimension (mx,my,mz,mfarray), intent(OUT) :: f
+!$    use General, only: signal_wait
 
-      call copy_farray_c(f(1,1,1,iux),f(1,1,1,iuy),f(1,1,1,iuz),f(1,1,1,ilnrho))
+      real, dimension (mx,my,mz,mfarray), intent(OUT) :: f
+      integer :: i
+!
+!$    if (lfarray_copied) return
+!
+! Have to wait since if doing diagnostics don't want to overwrite f.
+!
+!$    call signal_wait(lhelper_perf, .false.)
+      call copy_farray_c(f)
+!$    lfarray_copied = .true.
 
     endsubroutine copy_farray_from_GPU
+!**************************************************************************
+    subroutine load_farray_to_GPU(f)
+
+      real, dimension (mx,my,mz,mfarray), intent(IN) :: f
+
+      call load_farray_c
+
+    endsubroutine load_farray_to_GPU
+!**************************************************************************
+    subroutine reload_GPU_config
+
+      call reload_gpu_config_c
+
+    endsubroutine reload_GPU_config
+!**************************************************************************
+    subroutine update_on_gpu(index, varname, value)
+
+      integer, intent(inout) :: index
+      character(LEN=*),optional :: varname
+      real, optional :: value
+
+      if (index>=0) then
+        if (present(value)) then
+          call update_on_gpu_scal_by_ind_c(index,value)
+        else
+          call update_on_gpu_arr_by_ind_c(index)
+        endif
+      else
+        if (present(value)) then
+          index = update_on_gpu_scal_by_name_c(varname//char(0),value)
+        else
+          index = update_on_gpu_arr_by_name_c(varname//char(0))
+        endif
+        if (index<0) call fatal_error('update_on_gpu','variable "'//trim(varname)//'" not found')
+      endif
+
+    endsubroutine update_on_gpu
+!**************************************************************************
+ subroutine test_rhs_gpu(f,df,p,mass_per_proc,early_finalize,cpu_version)
+!
+!  Used to test the CPU rhs vs the DSL code
+!
+!  13-nov-23/TP: Written
+!
+      use MPIcomm
+      use Boundcond
+!$    use ISO_fortran_env, only: stdout => output_unit
+!$    use, intrinsic :: iso_c_binding
+      real, dimension (mx,my,mz,mfarray) :: f,f_copy,f_copy_2
+      real, dimension (mx,my,mz,mfarray) :: df,df_copy,ds
+      type (pencil_case) :: p,p_copy
+      real, dimension(1), intent(inout) :: mass_per_proc
+      logical ,intent(in) :: early_finalize
+      integer :: i,j,k,n
+      logical :: passed
+      real, parameter :: dt = 0.001
+      real, parameter, dimension(3) :: alpha = (/0.0, -(5.0/9.0), -(153.0/128.0)/)
+      real, parameter, dimension(3) :: beta = (/ 1. / 3., 15./ 16., 8. / 15. /)
+      integer, parameter :: num_of_steps = 100
+
+      interface
+        subroutine cpu_version(f,df,p,mass_per_proc,early_finalize)
+          import mx
+          import my
+          import mz
+          import mfarray
+          import pencil_case
+          real, dimension (mx,my,mz,mfarray) :: f
+          real, dimension (mx,my,mz,mfarray) :: df
+          type (pencil_case) :: p
+          real, dimension(1), intent(inout) :: mass_per_proc
+          logical ,intent(in) :: early_finalize
+
+          intent(inout) :: f
+          intent(inout) :: p
+          intent(out) :: df
+        endsubroutine cpu_version
+      endinterface
+
+      !TP: uncomment if want to test from random initial condition
+      ! call random_initial_condition
+      ! call copy_farray_from_GPU(f)
+      df_copy = df
+      p_copy = p
+      f_copy = f
+      f_copy_2 = f
+
+      do n=1,num_of_steps
+        if (lroot) print*,"GPU rhs test:    tcpu step: ",n
+        ds = 0.0
+        do i=1,3
+          call boundconds_x(f_copy)
+          call initiate_isendrcv_bdry(f_copy)
+          call finalize_isendrcv_bdry(f_copy)
+          call boundconds_y(f_copy)
+          call boundconds_z(f_copy)
+          df_copy = 0.0
+          ldiagnos =.true.
+          lfirst = .true.
+          lout = .true.
+          itsub = 1
+          call cpu_version(f_copy,df_copy,p,mass_per_proc,early_finalize)
+          ds = alpha(i)*ds + df_copy*dt
+          f_copy = f_copy + beta(i)*ds
+          !call perform_diagnostics(f_copy,p)
+        enddo
+      enddo
+
+    call test_rhs_c(f_copy_2,f_copy);
+    call die_gracefully
+
+  endsubroutine test_rhs_gpu
 !**************************************************************************
 endmodule GPU

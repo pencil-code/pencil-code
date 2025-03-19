@@ -26,8 +26,34 @@ module Cdata
   integer, dimension(2) :: mexts=(/-1,-1/)
   integer, dimension(:), allocatable :: nphis
   real, dimension(:), allocatable :: nphis1, nphis2
+  real(KIND=rkind8) :: t=0., toutoff=0.
+  real :: tslice, eps_rkf=1e-5, eps_stiff=1e-6, eps_rkf0=0.
+  real :: dsound=0., tsound=0., soundeps=1.e-4
+!
+!  Units (need to be in real(KIND=rkind8)).
+!
+  character (len=3) :: unit_system='cgs'
+  logical :: lfix_unit_std=.false.
+  real(KIND=rkind8) :: unit_length=impossible,unit_velocity=impossible
+  real(KIND=rkind8) :: unit_density=impossible,unit_temperature=impossible
+  real(KIND=rkind8) :: unit_magnetic=impossible,unit_entropy=impossible
+  real(KIND=rkind8) :: sigma_Thomson=impossible
+  real :: mu0=1., mu01=0. !  magnetic permeability [should be in Magnetic]
+!
+!  Derived units
+!
+  real(KIND=rkind8) :: unit_mass,unit_energy,unit_time,unit_flux,unit_pressure
+  real(KIND=rkind8) :: k_B,m_u,m_p,m_e,m_H,m_He,eV, &
+                      chiH,chiH_,sigmaH_,sigmaSB,kappa_es
+  real(KIND=rkind8) :: c_light=impossible,G_Newton=impossible,hbar=impossible
+!
+!  Derived units
+!
+  real(KIND=rkind8) :: sigmaSB_set=1., c_light_set=1., cp_set=1.
+  real(KIND=rkind8) :: k_B_set=1., m_u_set=1.
   integer, dimension(:,:), allocatable :: nexts
   integer, dimension(:,:,:), allocatable :: ninds
+  logical :: lfirstpoint=.false.
 !
 !  Cartesian coordinate system.
 !
@@ -35,6 +61,14 @@ module Cdata
   real, dimension (nx) :: dxyz_2, dxyz_4, dxyz_6, dVol
   real, dimension (nx) :: dxmax_pencil,dxmin_pencil
 !BEGIN C BINDING
+
+  integer :: l2i=mx-2*nghost+1
+  integer :: m2i=my-2*nghost+1
+  integer :: n2i=mz-2*nghost+1
+  integer :: l2=mx-nghost
+  integer :: m2=my-nghost
+  integer :: n2=mz-nghost
+
   real :: dVol_glob
   real, dimension (mx) :: x,dx_1,dx2,dx_tilde,xprim,dVol_x,dVol1_x
   real, dimension (mx) :: dAxy_x, dAxz_x
@@ -47,9 +81,9 @@ module Cdata
   real, dimension (nxgrid) :: xgrid, dx1grid, dxtgrid
   real, dimension (nygrid) :: ygrid, dy1grid, dytgrid
   real, dimension (nzgrid) :: zgrid, dz1grid, dztgrid
-  real, dimension(mxgrid) :: xglobal
-  real, dimension(mygrid) :: yglobal
-  real, dimension(mzgrid) :: zglobal
+  real, dimension (mxgrid) :: xglobal
+  real, dimension (mygrid) :: yglobal
+  real, dimension (mzgrid) :: zglobal
   real :: kx_nyq,ky_nyq,kz_nyq
 !
 !  Exact coefficients for non-equidistant grid at boundaries
@@ -136,45 +170,72 @@ module Cdata
 !
   character (len=labellen) :: der2_type='standard'
   logical :: lall_onesided=.false.
-!
-!  Box dimensions.
-!
   character (len=labellen), dimension(3) :: xyz_units='one'
-  real, dimension(3) :: Lxyz=impossible
-  real, dimension(3) :: xyz0=-pi,xyz1=impossible,xyz_star=0.0
+  real, dimension(3) :: Lxyz=impossible,xyz0=-pi,xyz1=impossible,xyz_star=0.0
   real, dimension(3) :: Lxyz_loc,xyz0_loc,xyz1_loc
-  real :: x0, y0, z0, Lx, Ly, Lz, wav1=impossible, wav1z=impossible
   real :: r_int=0.,r_ext=impossible   ! for spherical shell problems
   real :: r_int_border=impossible,r_ext_border=impossible
   real :: r_ref=1.,rsmooth=0.,box_volume=1.0
   real :: Area_xy=1., Area_yz=1., Area_xz=1.
+  logical :: lfirst=.false.,llast=.false.,ldt_paronly=.false.
+  logical :: ldt=.true.
+  logical :: lcourant_dt=.true.
+  logical :: lupdate_courant_dt=.false.
 !
 !  Time integration parameters.
 !
+  real :: dt=0.0
   real :: tmax=1e33, tstart=0.0
   real :: max_walltime=0.0  ! in seconds
-  real(KIND=rkind8) :: t=0., toutoff=0.
-  real :: dt=0.0, dt_incr=0.0, dt0=0.
+  real :: dt_incr=0.0, dt0=0.
   real :: cdt=0.9, cdts=1.0, cdtr=1.0, cdtc=1.0, cdt_poly=1.0
  !real :: cdtv=0.15, cdtv2=0.03, cdtv3=0.01
 !AB: 5 autotests failed after having decreased cdtv. I suggest to reassess
 !AB: this more carefully and discuss it first in the newsletter.
   real :: cdtv=0.25, cdtv2=0.03, cdtv3=0.01
   real :: cdtsrc=0.2, cdtf=0.9
-  real :: eps_rkf=1e-3, eps_stiff=1e-6, eps_rkf0=0., dtinc=0.5, dtdec=0.5
-  real :: ddt=0.0
+  real :: ddt=0.0, dtinc=0.5, dtdec=0.5
   real :: dtmin=1.0e-6, dtmax=1.0e37, dt_epsi=1e-7, dt_ratio=1e-5
   real :: nu_sts=0.1
-  real :: density_scale_factor=impossible
   integer :: permute_sts=0
   integer:: ireset_tstart=2
+  integer :: num_substeps = 3
+!
+!  Parameters related to message passing.
+!
+!
+  integer, dimension(-1:1,-1:1,-1:1) :: neighbors = 0
+  integer, dimension(26) :: iproc_comm = -1
+  integer :: nproc_comm = 0
+  integer :: ix=-1,iy=-1,iy2=-1,iz=-1,iz2=-1,iz3=-1,iz4=-1  !MR: dangerous names  ix -> ix_slice
+  integer :: ix_loc=1,iy_loc=1, iy2_loc=1
+  integer :: iz_loc=1,iz2_loc=1, iz3_loc=1, iz4_loc=1
+  integer :: iproc=0,ipx=0,ipy=0,ipz=0,iproc_world=0,ipatch=0
+  logical :: lprocz_slowest=.true., lzorder=.false., lmorton_curve=.false., ltest_bcs=.true.,lsuppress_parallel_reductions=.false.
+  integer :: xlneigh,ylneigh,zlneigh ! `lower' processor neighbours
+  integer :: xuneigh,yuneigh,zuneigh ! `upper' processor neighbours
+  integer :: poleneigh               ! `pole' processor neighbours
+  integer :: nprocx_node=0, nprocy_node=0, nprocz_node=0
+!
+!  Data for registering of already updated variable ghost zones for only partly
+!  updating by the *_after_timestep routines.
+!  num_after_timestep: number of such routines; updated_var_ranges: list of already updated
+!  variable ranges; ighosts_updated: counter for those, if -1 no registration is performed (default).
+!
+  integer, parameter :: num_after_timestep=5
+  integer, dimension(2,2*num_after_timestep) :: updated_var_ranges=0
+  integer :: ighosts_updated=-1
+!
+!  Box dimensions.
+!
+  real :: x0, y0, z0, Lx, Ly, Lz, wav1=impossible, wav1z=impossible
 !
   logical :: lini_t_eq_zero=.false.
   logical :: lini_t_eq_zero_once=.false.
   real, dimension (nx) :: advec_cs2=0.
   real, dimension (nx) :: maxadvec=0., advec2=0., advec2_hypermesh=0.
   real, dimension (nx) :: maxdiffus=0., maxdiffus2=0., maxdiffus3=0., maxsrc=0.
-  real, dimension (nx) :: dt1_max
+  real, target, dimension (nx) :: dt1_max
   real, dimension (nx) :: reac_chem, reac_dust
   real    :: trelax_poly, reac_pchem
   real, dimension (5) :: alpha_ts=0.0,beta_ts=0.0,dt_beta_ts=1.0,bhat_ts=0.0,dt_bhat_ts=1.0
@@ -202,7 +263,6 @@ module Cdata
   character (len=fmtlen) :: fmt_avgs='e14.5e3'
   logical :: lsnap=.false., lsnap_down=.false., lspec=.false., lspec_start=.false., lspec_at_tplusdt=.false.
   real :: dsnap=100., dsnap_down=0., d1davg=impossible, d2davg=100., dvid=0., dspec=impossible
-  real :: dsound=0., tsound=0., soundeps=1.e-4
   real :: dtracers=0., dfixed_points=0.
   real :: crash_file_dtmin_factor=-1.0
   real :: km0EM=0., km1EM=0.
@@ -211,7 +271,7 @@ module Cdata
   logical :: lwrite_ts_hdf5=.true., lsave=.false.
   logical :: lread_aux=.false., lwrite_aux=.false., lwrite_dvar=.false.
   logical :: lenforce_maux_check=.true., lwrite_avg1d_binary = .false.
-  logical :: lread_oldsnap=.false., lwrite_var_anyway=.false.
+  logical :: lread_oldsnap=.false., lwrite_var_anyway=.false., lbackup_snap=.false.
   logical :: lwrite_last_powersnap=.false., lwrite_fsum=.false.
   logical :: lread_oldsnap_rho2lnrho=.false., lread_oldsnap_nomag=.false.
   logical :: lread_oldsnap_lnrho2rho=.false., lread_oldsnap_noshear=.false.
@@ -248,6 +308,7 @@ module Cdata
   logical :: lzaver_on_input=.false.
   logical :: lfatal_num_vector_369=.true.
   logical :: lsmooth_farray=.false.
+  logical :: lupdate_cvs=.false.
 !
 !  Entries related to the scale factor of the universe
 !
@@ -258,28 +319,6 @@ module Cdata
 ! Debugging
 !
   integer :: ip=14
-!
-!  Units (need to be in real(KIND=rkind8)).
-!
-  character (len=3) :: unit_system='cgs'
-  logical :: lfix_unit_std=.false.
-  real(KIND=rkind8) :: unit_length=impossible,unit_velocity=impossible
-  real(KIND=rkind8) :: unit_density=impossible,unit_temperature=impossible
-  real(KIND=rkind8) :: unit_magnetic=impossible,unit_entropy=impossible
-!
-!  Derived units
-!
-  real(KIND=rkind8) :: unit_mass,unit_energy,unit_time,unit_flux,unit_pressure
-  real(KIND=rkind8) :: k_B,m_u,m_p,m_e,m_H,m_He,eV, &
-                      chiH, chiH_, sigmaH_, sigmaSB, kappa_es
-  real(KIND=rkind8) :: c_light=impossible,G_Newton=impossible,hbar=impossible
-  real(KIND=rkind8) :: sigma_Thomson=impossible
-  real :: mu0=1., mu01=0. !  magnetic permeability [should be in Magnetic]
-!
-!  Derived units
-!
-  real(KIND=rkind8) :: sigmaSB_set=1., c_light_set=1., cp_set=1.
-  real(KIND=rkind8) :: k_B_set=1., m_u_set=1.
 !
 !  Rotation and shear parameters.
 !
@@ -294,6 +333,8 @@ module Cdata
              lreference_state=.false., lfullvar_in_slices=.false., &
              lsubstract_reference_state=.false., ldensity_linearstart=.false.
   logical :: lforcing_cont=.false.
+
+
   logical :: lgravx=.false.,lgravy=.false.,lgravz=.false.
   logical :: lgravx_gas=.true.,lgravy_gas=.true.,lgravz_gas=.true.
   logical :: lgravx_dust=.true.,lgravy_dust=.true.,lgravz_dust=.true.
@@ -319,11 +360,19 @@ module Cdata
   logical :: ltestperturb=.false.
   logical :: lweno_transport=.false.
   logical :: lstart=.false., lrun=.false., lreloading=.false.
-  logical :: lenergy=.false.
   logical :: ladv_der_as_aux=.false.
   logical :: lghostfold_usebspline = .false.
   logical :: lcooling_ss_mz = .false.
   logical :: lshock_heat = .true.
+  real :: density_scale_factor=impossible
+!
+!  Used together with entropy, turns iss into ilntt (i.e., entropy
+!  becomes log temperature). It does the same as using the
+!  temperature_idealgas.f90 procedure, but draws on the more available
+!  functionality extent in entropy.f90.
+!
+  logical :: pretend_lnTT=.false.
+!END C BINDING
   logical :: lphase=.false.
 !
 !  Type counters.
@@ -337,7 +386,7 @@ module Cdata
   integer :: ilnrho=0, irho=0
   integer :: irho_b=0, iss_b=0 ! Anelastic auxiliary variables (base state)
   integer, dimension(ndustrad) :: iapn=0
-  integer :: ipp,irhs=0,iTTold=0
+  integer :: ipp,irhs=0,iTTold=0,irhsx=0,irhsy=0,irhsz=0
   integer :: ipoly=0
   integer :: ip11=0,ip12=0,ip13=0
   integer :: ip21=0,ip22=0,ip23=0
@@ -415,30 +464,6 @@ module Cdata
   integer :: iuu_sph=0, iuu_sphr=0, iuu_spht=0, iuu_sphp=0
   integer :: ics=0, icool_prof=0
 !
-!  Parameters related to message passing.
-!
-  integer, dimension(-1:1,-1:1,-1:1) :: neighbors = 0
-  integer, dimension(26) :: iproc_comm = -1
-  integer :: nproc_comm = 0
-  integer :: ix=-1,iy=-1,iy2=-1,iz=-1,iz2=-1,iz3=-1,iz4=-1  !MR: dangerous names  ix -> ix_slice
-  integer :: ix_loc=1,iy_loc=1, iy2_loc=1
-  integer :: iz_loc=1,iz2_loc=1, iz3_loc=1, iz4_loc=1
-  integer :: iproc=0,ipx=0,ipy=0,ipz=0,iproc_world=0,ipatch=0
-  logical :: lprocz_slowest=.true., lzorder=.false.
-  integer :: xlneigh,ylneigh,zlneigh ! `lower' processor neighbours
-  integer :: xuneigh,yuneigh,zuneigh ! `upper' processor neighbours
-  integer :: poleneigh               ! `pole' processor neighbours
-  integer :: nprocx_node=0, nprocy_node=0, nprocz_node=0
-!
-!  Data for registering of already updated variable ghost zones for only partly
-!  updating by the *_after_timestep routines.
-!  num_after_timestep: number of such routines; updated_var_ranges: list of already updated
-!  variable ranges; ighosts_updated: counter for those, if -1 no registration is performed (default).
-!
-  integer, parameter :: num_after_timestep=5
-  integer, dimension(2,2*num_after_timestep) :: updated_var_ranges=0
-  integer :: ighosts_updated=-1
-!
 !  Variables to count the occurance of derivative calls per timestep
 !  for optimisation purposes.  To use uncomment the array and
 !  set optimise_ders=.true.
@@ -454,6 +479,17 @@ module Cdata
   logical, dimension (ny*nz) :: necessary=.false.
   integer :: necessary_imn=0
   integer, dimension (my,mz) :: imn_array
+  character(LEN=labellen) :: shared_mem_name=''
+!
+!  Parameters related to the pencils
+!
+  logical, dimension(npencils) :: lpenc_diagnos   = .false.
+  logical, dimension(npencils) :: lpenc_diagnos2d = .false.
+  logical, dimension(npencils) :: lpenc_video     = .false.
+  logical, dimension(npencils) :: lpenc_requested = .false.
+  logical, dimension(npencils) :: lpencil         = .false.
+!$omp threadprivate(lpencil)
+!
 !
 !  Parameters related to the pencil check.
 !
@@ -477,8 +513,8 @@ module Cdata
   integer :: nnamez=0,nnamey=0,nnamex=0,nnamer=0
   integer :: nname_sound=0, ncoords_sound=0
   integer :: nr_directions=1
+  integer :: itdiagnos
   real :: tdiagnos,dtdiagnos,t1ddiagnos,t2davgfirst,eps_rkf_diagnos
-  integer, parameter :: mname=100
   real, dimension (mname) :: fweight=0.0
   integer, dimension(:)   , allocatable :: itype_name
   real, dimension(:)      , allocatable, target :: fname,fname_keep
@@ -486,7 +522,7 @@ module Cdata
   real, dimension(:,:,:)  , allocatable, target :: fnamex, fnamey, fnamez, fnamexy, fnamexz
   real, dimension(:,:,:,:), allocatable, target :: fnamerz
   integer, dimension(:,:) , allocatable :: sound_coords_list
-  integer, dimension(:,:) , allocatable :: ncountsz
+  integer, dimension(:,:) , allocatable, target :: ncountsz
   character (len=fmtlen), allocatable :: cform(:),cformv(:),cform_sound(:), &
                                          cformxy(:),cformxz(:),cformrz(:), &
                                          cformz(:),cformy(:),cformx(:),cformr(:)
@@ -495,7 +531,6 @@ module Cdata
                                          cnamez(:),cnamey(:),cnamex(:),cnamer(:)
   integer, dimension(:), allocatable :: inds_max_diags, inds_sum_diags
 
-  logical :: lfirst=.false.,llast=.false.,ldt=.true.,ldt_paronly=.false.
 !END C BINDING
   integer, target :: m,n
   integer :: nt=10000000, it=0, itorder=3, itsub=0, it_timing=0, it_rmv=0
@@ -505,8 +540,8 @@ module Cdata
   logical :: lwrite_sound=.false.
   logical :: lwrite_slice_xy2=.false.,lwrite_slice_xy=.false.,lwrite_slice_xz=.false.,lwrite_slice_yz=.false.
   logical :: lwrite_slice_xy3=.false.,lwrite_slice_xy4=.false.,lwrite_slice_xz2=.false., lwrite_slice_r=.false.
+
   logical :: lout=.false.,headt=.false.,headtt=.true.,lrmv=.false.
-  logical :: lfirstpoint=.false.
   logical :: ldiagnos=.false.,lvideo=.false.,lwrite_prof=.true.,lout_sound=.false.
   logical :: ltracers=.false.,lfixed_points=.false.
   logical :: l2davg=.false.,l2davgfirst=.false.
@@ -541,7 +576,6 @@ module Cdata
 !
   real :: yequator=0.,zequator=0.
   logical :: lequatory,lequatorz
-  integer, parameter :: mname_half=20
   integer, dimension (mname_half) :: itype_name_half=0
   real, dimension (mname_half,2) :: fname_half
   integer :: name_half_max=0, ntmax1Dav=500, ntmax2Dav=500
@@ -614,7 +648,6 @@ module Cdata
   logical :: j_spec=.false., jb_spec=.false., ja_spec=.false., oo_spec=.false., relvel_spec=.false.
   logical :: vel_phispec=.false.,mag_phispec=.false.,uxj_phispec=.false.,vec_phispec=.false.
   logical :: uxy_spec=.false., bxy_spec=.false., jxbxy_spec=.false.
-  integer, parameter :: n_xy_specs_max=10,nk_max=10, nz_max=10
   character (LEN=labellen*4) :: xy_spec=''
   character (LEN=labellen), dimension(n_xy_specs_max) :: xy_specs=''
   logical :: EP_spec=.false., hEP_spec=.false., nd_spec=.false., ud_spec=.false., abs_u_spec=.false.
@@ -779,13 +812,6 @@ module Cdata
 !
   logical :: lisotropic_advection=.false.
 !
-!  Used together with entropy, turns iss into ilntt (i.e., entropy
-!  becomes log temperature). It does the same as using the
-!  temperature_idealgas.f90 procedure, but draws on the more available
-!  functionality extent in entropy.f90.
-!
-  logical :: pretend_lnTT=.false.
-!
 !  Use lreport_undefined_diagnostics=F to suppress reporting of
 !  undefined diagnostics. It puts hashes, but sometimes incorrectly so.
 !
@@ -817,6 +843,14 @@ module Cdata
 !
   real :: tau_aver1 = 1.0
 !
+!  Info whether maux is needed and used on the GPU
+!  Index for var is non-zero iff var is used on the GPU
+!  The index corresponds to the vertex buffer index on Astaroth
+!  Size of mfarray to make sure we can store the handle (for 1 to mvar zero)
+!
+   integer, dimension(mfarray) :: maux_vtxbuf_index = 0
+   integer :: string_enum_unit_system = 0
+!
 !  Define and initialize lambda5, so that it can be used to tell whether
 !  or not the chiral MHD special module is used.
 !
@@ -824,21 +858,34 @@ module Cdata
 !
 !  Variables for concurrency
 !
-  logical :: lwriting_snapshots=.false.
-  logical :: lfinalized_diagnostics=.true., lwriting_diagnostics=.false.
-!
-!$ integer :: num_cores = 0
-!$ integer :: num_threads = 0
-!$ logical :: lthread_safe
+  logical :: lmultithread=.false.
+  logical :: l1dphiavg_save, l1davgfirst_save, ldiagnos_save, l2davgfirst_save
+  logical :: lout_save, l1davg_save, l2davg_save, lout_sound_save, lvideo_save
+  logical :: lchemistry_diag_save
+
+  real(KIND=rkind8) :: t_save
+  real :: t1ddiagnos_save,t2davgfirst_save,tslice_save,tsound_save
+
+!$ logical, volatile, dimension(n_helperflags) :: lhelperflags=(/.false.,.false.,.false.,.false./)
+!$ logical, volatile, dimension(n_helperflags) :: lmasterflags=(/.false.,.false.,.false.,.false./)
+!$ logical, volatile :: lfarray_copied = .false.
+  logical, dimension(npencils) :: lpencil_save = .false.
+  integer :: num_helper_threads=1, thread_id=1
+  integer, dimension(max_threads_possible) :: core_ids
+!$ logical, volatile :: lhelper_run=.true., lhelper_perf
+!$ logical :: loffload=.false.
 !
 ! threadprivate definitions for OpenMP
 !
-!!$omp threadprivate(dxyz_2,dxyz_4,dxyz_6,dvol,dxmax_pencil,dxmin_pencil,dline_1,lcoarse_mn, seed, m, n)
-!$omp threadprivate(dxyz_2,dxyz_4,dxyz_6,dxmax_pencil,dxmin_pencil,dline_1,lcoarse_mn, seed, m, n)
-!$omp threadprivate(lfirstpoint)
-!$omp threadprivate(fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound)
-!$omp threadprivate(l1dphiavg, l1davgfirst, l2davgfirst, ldiagnos)
-!$omp threadprivate(it,lout,l1davg,l2davg,lout_sound,lvideo,lwrite_slices)
+!$omp threadprivate(inds_max_diags, inds_sum_diags)
+!$omp threadprivate(dxyz_2,dxyz_4,dxyz_6,dvol,dxmax_pencil,dxmin_pencil,dline_1,lcoarse_mn, seed, m, n)
+!$omp threadprivate(lfirstpoint,thread_id)
+!$omp threadprivate(fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz)
+!$omp threadprivate(l1dphiavg, l1davgfirst, l2davgfirst, ldiagnos,lout, l1davg, l2davg, lout_sound, lvideo)
+!$omp threadprivate(tdiagnos,t1ddiagnos,t2davgfirst,tslice,tsound,itdiagnos,dtdiagnos,eps_rkf_diagnos)
+!
+! For use in offloaded code:
+!!$omp declare target(ldensity_nolog,l2,m2,n2)
 !
 !***********************************************************************
 endmodule Cdata

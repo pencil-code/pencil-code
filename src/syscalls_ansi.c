@@ -21,6 +21,7 @@
 #include <dlfcn.h>
 
 #include "headers_c.h"
+#include <stdbool.h>
 
 /* ---------------------------------------------------------------------- */
 void FTNIZE(extract_string_c)(char *extract_cmd, char *result, const FINT *size)
@@ -369,6 +370,12 @@ void FTNIZE(sizeof_real_c)
   void FTNIZE(copy_addr_c)(void *src, void **dest)
   {
     *dest=src;
+  }
+  void FTNIZE(copy_addr_c_bool)(int *src, void **dest, int* n)
+  {
+     bool* res = malloc(sizeof(bool)*(*n));
+     for(int i = 0; i < (*n); ++i) res[i] = (src[i] > 0);
+     *dest=(void*)res;
   }
 /* ---------------------------------------------------------------------- */
   FINT FTNIZE(mem_usage_c)()

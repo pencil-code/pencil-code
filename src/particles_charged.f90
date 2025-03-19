@@ -1627,7 +1627,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  Contribution of dust particles to time step.
 !
-      if (lfirst.and.ldt) then
+      if (lupdate_courant_dt) then
         if (npar_imn(imn)/=0) then
           do k=k1_imn(imn),k2_imn(imn)
               ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
@@ -1763,7 +1763,7 @@ k_loop:   do while (.not. (k>npar_loc))
         if (idiag_rhopmin/=0)  call max_mn_name(-p%rhop,idiag_rhopmin,lneg=.true.)
         if (idiag_epspmax/=0)  call max_mn_name(p%epsp,idiag_epspmax)
         if (idiag_epspmin/=0)  call max_mn_name(-p%epsp,idiag_epspmin,lneg=.true.)
-!        if (idiag_dtdragp/=0.and.(lfirst.and.ldt))  &
+!        if (idiag_dtdragp/=0.and.(lupdate_courant_dt))  &
 !            call max_mn_name(dt1_drag,idiag_dtdragp,l_dt=.true.)
         if (idiag_dvpx2m/=0 .or. idiag_dvpx2m/=0 .or. idiag_dvpx2m/=0 .or. &
             idiag_dvpm  /=0 .or. idiag_dvpmax/=0) call calculate_rms_speed(fp,ineargrid,p)

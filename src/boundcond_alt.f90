@@ -229,10 +229,10 @@ module Boundcond
                 case ('s')
                   ! BCX_DOC: symmetry, $f_{N+i}=f_{N-i}$;
                   ! BCX_DOC: implies $f'(x_N)=f'''(x_0)=0$
-                  call bc_sym_x(f,+1,topbot,j)
+                  call bc_sym_x(f,topbot,j,+1)
                 case ('ss')
                   ! BCX_DOC: symmetry, plus function value given
-                  call bc_symset_x(f,+1,topbot,j)
+                  call bc_symset_x(f,topbot,j,+1)
                 case ('sds')
                   ! BCY_DOC: symmetric-derivative-set
                   call bc_symderset_x(f,topbot,j,val=fbcx12)
@@ -242,12 +242,12 @@ module Boundcond
                 case ('a')
                   ! BCX_DOC: antisymmetry, $f_{N+i}=-f_{N-i}$;
                   ! BCX_DOC: implies $f(x_N)=f''(x_0)=0$
-                  call bc_sym_x(f,-1,topbot,j)
+                  call bc_sym_x(f,topbot,j,-1)
                 case ('a2')
                   ! BCX_DOC: antisymmetry relative to boundary value,
                   ! BCX_DOC: $f_{N+i}=2 f_{N}-f_{N-i}$;
                   ! BCX_DOC: implies $f''(x_0)=0$
-                  call bc_sym_x(f,-1,topbot,j,REL=.true.)
+                  call bc_sym_x(f,topbot,j,-1,REL=.true.)
                 case ('a2r')
                   ! BCX_DOC: sets $d^2f/dr^2 +2df/dr- 2f/r^2 = 0$
                   ! BCX_DOC: This is the replacement of zero second derivative
@@ -317,7 +317,7 @@ module Boundcond
                   ! BCX_DOC: ``freeze'' value, i.e. maintain initial
                   !  value at boundary
                   call bc_freeze_var_x(topbot,j)
-                  call bc_sym_x(f,-1,topbot,j,REL=.true.)
+                  call bc_sym_x(f,topbot,j,-1,REL=.true.)
                   ! antisymm wrt boundary
                 case ('fg')
                   ! BCX_DOC: ``freeze'' value, i.e. maintain initial
@@ -330,7 +330,7 @@ module Boundcond
                   call bc_one_x(f,topbot,j)
                 case ('set')
                   ! BCX_DOC: set boundary value to \var{fbcx12}
-                  call bc_sym_x(f,-1,topbot,j,REL=.true.,val=fbcx12)
+                  call bc_sym_x(f,topbot,j,-1,REL=.true.,val=fbcx12)
                 case ('der')
                   ! BCX_DOC: set derivative on boundary to \var{fbcx12}
                   call bc_set_der_x(f,topbot,j,fbcx12(j))
@@ -409,7 +409,7 @@ module Boundcond
                   endif
                 case ('g')
                   ! BCX_DOC: set to given value(s) or function
-                  call bc_force_x(f, -1, topbot, j)
+                  call bc_force_x(f,topbot,j,-1)
                 case ('nil')
                   ! BCX_DOC: do nothing; assume that everything is set
                 case ('ioc')
@@ -523,10 +523,10 @@ module Boundcond
               case ('s')
                 ! BCY_DOC: symmetry symmetry, $f_{N+i}=f_{N-i}$;
                   ! BCX_DOC: implies $f'(y_N)=f'''(y_0)=0$
-                call bc_sym_y(f,+1,topbot,j)
+                call bc_sym_y(f,topbot,j,+1)
               case ('ss')
                 ! BCY_DOC: symmetry, plus function value given
-                call bc_symset_y(f,+1,topbot,j)
+                call bc_symset_y(f,topbot,j,+1)
               case ('sds')
                 ! BCY_DOC: symmetric-derivative-set
                 call bc_symderset_y(f,topbot,j,val=fbcy12)
@@ -538,10 +538,10 @@ module Boundcond
                 call bc_symset0der_y(f,topbot,j)
               case ('a')
                 ! BCY_DOC: antisymmetry
-                call bc_sym_y(f,-1,topbot,j)
+                call bc_sym_y(f,topbot,j,-1)
               case ('a2')
                 ! BCY_DOC: antisymmetry relative to boundary value
-                call bc_sym_y(f,-1,topbot,j,REL=.true.)
+                call bc_sym_y(f,topbot,j,-1,REL=.true.)
               case ('v')
                 ! BCY_DOC: vanishing third derivative
                 call bc_van_y(f,topbot,j)
@@ -571,12 +571,12 @@ module Boundcond
                 ! BCY_DOC: freeze value
                 ! tell other modules not to change boundary value
                 call bc_freeze_var_y(topbot,j)
-                call bc_sym_y(f,-1,topbot,j,REL=.true.) ! antisymm wrt boundary
+                call bc_sym_y(f,topbot,j,-1,REL=.true.) ! antisymm wrt boundary
               case ('s+f')
                 ! BCY_DOC: freeze value
                 ! tell other modules not to change boundary value
                 call bc_freeze_var_y(topbot,j)
-                call bc_sym_y(f,+1,topbot,j) ! symm wrt boundary
+                call bc_sym_y(f,topbot,j,+1) ! symm wrt boundary
               case ('fg')
                 ! BCY_DOC: ``freeze'' value, i.e. maintain initial
                 !  value at boundary, also mantaining the
@@ -586,25 +586,25 @@ module Boundcond
               case ('fBs')
                 ! BCZ_DOC: frozen-in B-field (s)
                 call bc_frozen_in_bb(topbot,j)
-                call bc_sym_y(f,+1,topbot,j) ! symmetry
+                call bc_sym_y(f,topbot,j,+1) ! symmetry
               case ('fB')
                 ! BCZ_DOC: frozen-in B-field (a2)
                 call bc_frozen_in_bb(topbot,j)
-                !call bc_sym_z(f,-1,topbot,j,REL=.true.) ! antisymm wrt boundary
+                !call bc_sym_z(f,topbot,j,-1,REL=.true.) ! antisymm wrt boundary
 !AB: wasn't this a mistake??
-                call bc_sym_y(f,-1,topbot,j,REL=.true.) ! antisymm wrt boundary
+                call bc_sym_y(f,topbot,j,-1,REL=.true.) ! antisymm wrt boundary
               case ('1')
                 ! BCY_DOC: f=1 (for debugging)
                 call bc_one_y(f,topbot,j)
               case ('set')
                 ! BCY_DOC: set boundary value
-                call bc_sym_y(f,-1,topbot,j,REL=.true.,val=fbcy12)
+                call bc_sym_y(f,topbot,j,-1,REL=.true.,val=fbcy12)
               case ('sse')
                 ! BCY_DOC:  symmetry, set boundary value
-                call bc_sym_y(f,+1,topbot,j,val=fbcy12)
+                call bc_sym_y(f,topbot,j,+1,val=fbcy12)
               case ('sep')
                 ! BCY_DOC: set boundary value
-                call bc_sym_y(f,-1,topbot,j,REL=.true.,val=fbcy12,val2=fbcy12_1,val4=fbcy12_2)
+                call bc_sym_y(f,topbot,j,-1,REL=.true.,val=fbcy12,val2=fbcy12_1,val4=fbcy12_2)
               case ('e1')
                 ! BCY_DOC: extrapolation
                 call bcy_extrap_2_1(f,topbot,j)
@@ -739,10 +739,10 @@ module Boundcond
                 call bc_per_z(f,topbot,j)
               case ('s')
                 ! BCZ_DOC: symmetry
-                call bc_sym_z(f,+1,topbot,j)
+                call bc_sym_z(f,topbot,j,+1)
               case ('sf')
                 ! BCZ_DOC: symmetry with respect to interface
-                call bc_sf_z(f,+1,topbot,j)
+                call bc_sf_z(f,topbot,j,+1)
               case ('s0d')
                 ! BCZ_DOC: symmetry, function value such that df/dz=0
                 call bc_symset0der_z(f,topbot,j)
@@ -751,16 +751,16 @@ module Boundcond
                 call bc_symset0der_z_v2(f,topbot,j)
               case ('a')
                 ! BCZ_DOC: antisymmetry
-                call bc_sym_z(f,-1,topbot,j)
+                call bc_sym_z(f,topbot,j,-1)
               case ('a2')
                 ! BCZ_DOC: antisymmetry relative to boundary value
-                call bc_sym_z(f,-1,topbot,j,REL=.true.)
+                call bc_sym_z(f,topbot,j,-1,REL=.true.)
               case ('af')
                 ! BCZ_DOC: antisymmetry with respect to interface
-                call bc_sf_z(f,-1,topbot,j)
+                call bc_sf_z(f,topbot,j,-1)
               case ('a0d')
                 ! BCZ_DOC: antisymmetry with zero derivative
-                call bc_sym_z(f,+1,topbot,j,VAL=fbcz_zero)
+                call bc_sym_z(f,topbot,j,+1,VAL=fbcz_zero)
               case ('v')
                 ! BCZ_DOC: vanishing third derivative
                 call bc_van_z(f,topbot,j)
@@ -904,26 +904,26 @@ module Boundcond
                 ! BCZ_DOC: freeze value + antisymmetry
                 ! tell other modules not to change boundary value
                 call bc_freeze_var_z(topbot,j)
-                call bc_sym_z(f,-1,topbot,j,REL=.true.) ! antisymm wrt boundary
+                call bc_sym_z(f,topbot,j,-1,REL=.true.) ! antisymm wrt boundary
               case ('fs')
                 ! BCZ_DOC: freeze value + symmetry
                 ! tell other modules not to change boundary value
                 call bc_freeze_var_z(topbot,j)
-                call bc_sym_z(f,+1,topbot,j) ! symmetric wrt boundary
+                call bc_sym_z(f,topbot,j,+1) ! symmetric wrt boundary
               case ('fBs')
                 ! BCZ_DOC: frozen-in B-field (s)
                 call bc_frozen_in_bb(topbot,j)
-                call bc_sym_z(f,+1,topbot,j) ! symmetry
+                call bc_sym_z(f,topbot,j,+1) ! symmetry
               case ('fB')
                 ! BCZ_DOC: frozen-in B-field (a2)
                 call bc_frozen_in_bb(topbot,j)
-                call bc_sym_z(f,-1,topbot,j,REL=.true.) ! antisymm wrt boundary
+                call bc_sym_z(f,topbot,j,-1,REL=.true.) ! antisymm wrt boundary
               case ('g')
                 ! BCZ_DOC: set to given value(s) or function
-                 call bc_force_z(f,-1,topbot,j)
+                 call bc_force_z(f,topbot,j,-1)
               case ('gs')
                 ! BCZ_DOC:
-                 call bc_force_z(f,+1,topbot,j)
+                 call bc_force_z(f,topbot,j,+1)
               case ('1')
                 ! BCZ_DOC: f=1 (for debugging)
                 call bc_one_z(f,topbot,j)
@@ -932,10 +932,10 @@ module Boundcond
                 if (j==ilnrho) call bc_stellar_surface(f,topbot)
               case ('set')
                 ! BCZ_DOC: set boundary value
-                call bc_sym_z(f,-1,topbot,j,REL=.true.,val=fbcz12)
+                call bc_sym_z(f,topbot,j,-1,REL=.true.,val=fbcz12)
               case ('sep')
                 ! BCY_DOC: set boundary value
-                call bc_sym_z(f,-1,topbot,j,REL=.true.,val=fbcz12,val2=fbcz12_1,val4=fbcz12_2)
+                call bc_sym_z(f,topbot,j,-1,REL=.true.,val=fbcz12,val2=fbcz12_1,val4=fbcz12_2)
               case ('der')
                 ! BCZ_DOC: set derivative on the boundary
                 call bc_set_der_z(f,topbot,j,fbcz12(j))
@@ -989,7 +989,7 @@ module Boundcond
                 ! BCZ_DOC: $\Sigma \rho_i ( u_i + u_0)=\textrm{fbcz1/2}(\rho)$
                 if (j==ilnrho) then
                    call bc_wind_z(f,topbot,fbcz12(j))     !
-                   call bc_sym_z(f,+1,topbot,j)           !  's'
+                   call bc_sym_z(f,topbot,j,+1)           !  's'
                    call bc_sym_z(f,+1,topbot,iuz)         !  's'
                 endif
               case ('cop')
@@ -1315,12 +1315,12 @@ module Boundcond
 !
     endsubroutine bc_a2r_x
 !***********************************************************************
-    subroutine bc_sym_x(f,sgn,topbot,j,rel,val)
+    subroutine bc_sym_x(f,topbot,j,sgn,rel,val)
 !
 !  Symmetry boundary conditions.
-!  (f,-1,topbot,j)            --> antisymmetry             (f  =0)
-!  (f,+1,topbot,j)            --> symmetry                 (f' =0)
-!  (f,-1,topbot,j,REL=.true.) --> generalized antisymmetry (f''=0)
+!  (f,topbot,j,-1)            --> antisymmetry             (f  =0)
+!  (f,topbot,j,+1)            --> symmetry                 (f' =0)
+!  (f,topbot,j,-1,REL=.true.) --> generalized antisymmetry (f''=0)
 !  Don't combine rel=T and sgn=1, that wouldn't make much sense.
 !
 !  11-nov-02/wolf: coded
@@ -1546,14 +1546,14 @@ module Boundcond
 !
     endsubroutine bc_spr_x
 !***********************************************************************
-    subroutine bc_symset_x(f,sgn,topbot,j,rel,val)
+    subroutine bc_symset_x(f,topbot,j,sgn,rel,val)
 !
 !  This routine works like bc_sym_x, but sets the function value to val
 !
 !  Symmetry boundary conditions.
-!  (f,-1,topbot,j)            --> antisymmetry             (f  =0)
-!  (f,+1,topbot,j)            --> symmetry                 (f' =0)
-!  (f,-1,topbot,j,REL=.true.) --> generalized antisymmetry (f''=0)
+!  (f,topbot,j,-1)            --> antisymmetry             (f  =0)
+!  (f,topbot,j,+1)            --> symmetry                 (f' =0)
+!  (f,topbot,j,-1,REL=.true.) --> generalized antisymmetry (f''=0)
 !  Don't combine rel=T and sgn=1, that wouldn't make much sense.
 !
 !  11-nov-02/wolf: coded
@@ -1630,7 +1630,8 @@ module Boundcond
 !
       character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: i,j,i1=1,i2=2,i3=3,i4=4,i5=5,i6=6
+      integer :: i,j,
+      integer, parameter :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6
 !
       select case (topbot)
 !
@@ -1668,9 +1669,9 @@ module Boundcond
 ! FIXME: This documentation is almost certainly wrong
 !
 !  Symmetry boundary conditions.
-!  (f,-1,topbot,j)            --> antisymmetry             (f  =0)
-!  (f,+1,topbot,j)            --> symmetry                 (f' =0)
-!  (f,-1,topbot,j,REL=.true.) --> generalized antisymmetry (f''=0)
+!  (f,topbot,j,-1)            --> antisymmetry             (f  =0)
+!  (f,topbot,j,+1)            --> symmetry                 (f' =0)
+!  (f,topbot,j,-1,REL=.true.) --> generalized antisymmetry (f''=0)
 !  Don't combine rel=T and sgn=1, that wouldn't make much sense.
 !
 !  25-feb-07/axel: adapted from bc_sym_x
@@ -1727,9 +1728,9 @@ module Boundcond
 ! FIXME: This documentation is almost certainly wrong
 !
 !  Symmetry boundary conditions.
-!  (f,-1,topbot,j)            --> antisymmetry             (f  =0)
-!  (f,+1,topbot,j)            --> symmetry                 (f' =0)
-!  (f,-1,topbot,j,REL=.true.) --> generalized antisymmetry (f''=0)
+!  (f,topbot,j,-1)            --> antisymmetry             (f  =0)
+!  (f,topbot,j,+1)            --> symmetry                 (f' =0)
+!  (f,topbot,j,-1,REL=.true.) --> generalized antisymmetry (f''=0)
 !  Don't combine rel=T and sgn=1, that wouldn't make much sense.
 !
 !  25-feb-07/axel: adapted from bc_sym_x
@@ -1875,9 +1876,9 @@ module Boundcond
 !  This routine seems an experimental one to me (Axel)
 !
 !  Symmetry boundary conditions.
-!  (f,-1,topbot,j)            --> antisymmetry             (f  =0)
-!  (f,+1,topbot,j)            --> symmetry                 (f' =0)
-!  (f,-1,topbot,j,REL=.true.) --> generalized antisymmetry (f''=0)
+!  (f,topbot,j,-1)            --> antisymmetry             (f  =0)
+!  (f,topbot,j,+1)            --> symmetry                 (f' =0)
+!  (f,topbot,j,-1,REL=.true.) --> generalized antisymmetry (f''=0)
 !  Don't combine rel=T and sgn=1, that wouldn't make much sense.
 !
 !  25-feb-07/axel: adapted from bc_slope_x
@@ -1931,12 +1932,12 @@ module Boundcond
 !
     endsubroutine bc_antis_x
 !***********************************************************************
-    subroutine bc_sym_y(f,sgn,topbot,j,rel,val,val2,val4)
+    subroutine bc_sym_y(f,topbot,j,sgn,rel,val,val2,val4)
 !
 !  Symmetry boundary conditions.
-!  (f,-1,topbot,j)            --> antisymmetry             (f  =0)
-!  (f,+1,topbot,j)            --> symmetry                 (f' =0)
-!  (f,-1,topbot,j,REL=.true.) --> generalized antisymmetry (f''=0)
+!  (f,topbot,j,-1)            --> antisymmetry             (f  =0)
+!  (f,topbot,j,+1)            --> symmetry                 (f' =0)
+!  (f,topbot,j,-1,REL=.true.) --> generalized antisymmetry (f''=0)
 !  Don't combine rel=T and sgn=1, that wouldn't make much sense.
 !
 !  11-nov-02/wolf: coded
@@ -2044,16 +2045,16 @@ module Boundcond
 !
     endsubroutine bc_stratified_y
 !***********************************************************************
-    subroutine bc_symset_y(f,sgn,topbot,j,rel,val)
+    subroutine bc_symset_y(f,topbot,j,sgn,rel,val)
 !
 !  This routine works like bc_sym_y, but sets the function value to what
 !  it should be for vanishing one-sided derivative.
 !  At the moment the derivative is only 2nd order accurate.
 !
 !  Symmetry boundary conditions.
-!  (f,-1,topbot,j)            --> antisymmetry             (f  =0)
-!  (f,+1,topbot,j)            --> symmetry                 (f' =0)
-!  (f,-1,topbot,j,REL=.true.) --> generalized antisymmetry (f''=0)
+!  (f,topbot,j,-1)            --> antisymmetry             (f  =0)
+!  (f,topbot,j,+1)            --> symmetry                 (f' =0)
+!  (f,topbot,j,-1,REL=.true.) --> generalized antisymmetry (f''=0)
 !  Don't combine rel=T and sgn=1, that wouldn't make much sense.
 !
 !  11-nov-02/wolf: coded
@@ -2159,7 +2160,8 @@ module Boundcond
 !
       character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: i,j,i1=1,i2=2,i3=3,i4=4,i5=5,i6=6
+      integer :: i,j
+      integer, parameter :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6
 !
       select case (topbot)
 !
@@ -2246,12 +2248,12 @@ module Boundcond
 !
     endsubroutine bc_spt_y
 !***********************************************************************
-    subroutine bc_sym_z(f,sgn,topbot,j,rel,val,val2,val4)
+    subroutine bc_sym_z(f,topbot,j,sgn,rel,val,val2,val4)
 !
 !  Symmetry boundary conditions.
-!  (f,-1,topbot,j)            --> antisymmetry             (f  =0)
-!  (f,+1,topbot,j)            --> symmetry                 (f' =0)
-!  (f,-1,topbot,j,REL=.true.) --> generalized antisymmetry (f''=0)
+!  (f,topbot,j,-1)            --> antisymmetry             (f  =0)
+!  (f,topbot,j,+1)            --> symmetry                 (f' =0)
+!  (f,topbot,j,-1,REL=.true.) --> generalized antisymmetry (f''=0)
 !  Don't combine rel=T and sgn=1, that wouldn't make much sense.
 !
 !  11-nov-02/wolf: coded
@@ -2297,7 +2299,7 @@ module Boundcond
 !
     endsubroutine bc_sym_z
 !***********************************************************************
-    subroutine bc_sf_z(f,sgn,topbot,j)
+    subroutine bc_sf_z(f,topbot,j,sgn)
 !
 !  Symmetric/antisymmetric boundary conditions with respect to the interface.
 !
@@ -2333,7 +2335,8 @@ module Boundcond
 !
       character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: i,j,i1=1,i2=2,i3=3,i4=4,i5=5,i6=6
+      integer :: i,j
+      integer, parameter :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6
 !
       select case (topbot)
 !
@@ -4481,7 +4484,7 @@ module Boundcond
 !
     endsubroutine bc_db_x
 !***********************************************************************
-    subroutine bc_force_z(f,sgn,topbot,j)
+    subroutine bc_force_z(f,topbot,j,sgn)
 !
 !  Force values of j-th variable on vertical boundary topbot.
 !  This can either be used for freezing variables at the boundary, or for
@@ -4563,7 +4566,7 @@ module Boundcond
 !
     endsubroutine bc_force_z
 !***********************************************************************
-    subroutine bc_force_x(f, sgn, topbot, j)
+    subroutine bc_force_x(f, topbot, j, sgn)
 !
 !  Force values of j-th variable on x-boundaries topbot.
 !

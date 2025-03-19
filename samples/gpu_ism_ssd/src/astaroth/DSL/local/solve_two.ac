@@ -1,0 +1,85 @@
+#include "../prerequisites.h"
+#include "../shock/kernels.ac"
+#
+Kernel twopass_solve_intermediate(PC_SUB_STEP_NUMBER step_num, real dt) {
+  //TP: this is the optimized version feel free to try the less optimized version which first copies alpha -> beta and beta -> alpha on gpu_astaroth.cc
+  //TP: should calculate errors only if ldt is true but that's fine for now
+  df_uu  = duu_dt(step_num)
+  df_aa  = daa_dt(step_num)
+  df_rho = drho_dt(step_num)
+  df_ss  = denergy_dt(step_num)
+
+  uu_error  = rk4_error(df_uu  ,step_num,dt)
+  aa_error  = rk4_error(df_aa  ,step_num,dt)
+  rho_error = rk4_error(df_rho ,step_num,dt)
+  ss_error  = rk4_error(df_ss  ,step_num,dt)
+  
+  maximum_error = 0.0
+  //TP: nothing to cumulate for the first substep
+  if(step_num!=0)
+  {
+        uu_error  += ERROR_UU
+        aa_error  += ERROR_AA
+        rho_error += ERROR_RHO
+        ss_error  += ERROR_SS
+  }
+  //TP: done since e.g. UU stores now the initial state which beta update should read from
+  //For subsequent steps it should read from itself
+  //Last step is skipped since we want the beta version to finally end up in the 'proper' registers
+  if(step_num == 0)
+  {
+        write(BETA_UU ,rk4_beta(UU ,df_uu ,step_num,dt))
+        write(BETA_AA ,rk4_beta(AA ,df_aa ,step_num,dt))
+        write(BETA_RHO,rk4_beta(RHO,df_rho,step_num,dt))
+        write(BETA_SS ,rk4_beta(SS ,df_ss ,step_num,dt))
+  }
+  else if(step_num != 4)
+  {
+        write(BETA_UU ,rk4_beta(BETA_UU ,df_uu ,step_num,dt))
+        write(BETA_AA ,rk4_beta(BETA_AA ,df_aa ,step_num,dt))
+        write(BETA_RHO,rk4_beta(BETA_RHO,df_rho,step_num,dt))
+        write(BETA_SS ,rk4_beta(BETA_SS ,df_ss ,step_num,dt))
+  }
+  //Until the last step the 'proper' registers hold the alpha updates
+  //Except in the last one we overwrite them with the beta update
+  //No need to write the error out for the last substep
+  if(step_num != 4)
+  {
+        write(UU ,rk4_alpha(UU ,df_uu ,step_num,dt))
+        write(AA ,rk4_alpha(AA ,df_aa ,step_num,dt))
+        write(RHO,rk4_alpha(RHO,df_rho,step_num,dt))
+        write(SS ,rk4_alpha(SS ,df_ss ,step_num,dt))
+
+        write(ERROR_UU, uu_error)
+        write(ERROR_AA, aa_error)
+        write(ERROR_RHO,rho_error)
+        write(ERROR_SS, ss_error)
+  }
+  else
+  {
+        write(UU ,rk4_beta(BETA_UU ,df_uu ,step_num,dt))
+        write(AA ,rk4_beta(BETA_AA ,df_aa ,step_num,dt))
+        write(RHO,rk4_beta(BETA_RHO,df_rho,step_num,dt))
+        write(SS ,rk4_beta(BETA_SS ,df_ss ,step_num,dt))
+	
+        scal = max(abs(df_uu.x),AC_dt_epsi)
+        maximum_error = max(abs(uu_error.x/scal),maximum_error)
+        scal = max(abs(df_uu.y),AC_dt_epsi)
+        maximum_error = max(abs(uu_error.y/scal),maximum_error)
+        scal = max(abs(df_uu.z),AC_dt_epsi)
+        maximum_error = max(abs(uu_error.z/scal),maximum_error)
+        scal = max(abs(df_aa.x),AC_dt_epsi)
+        maximum_error = max(abs(aa_error.x/scal),maximum_error)
+        scal = max(abs(df_aa.y),AC_dt_epsi)
+        maximum_error = max(abs(aa_error.y/scal),maximum_error)
+        scal = max(abs(df_aa.z),AC_dt_epsi)
+        maximum_error = max(abs(aa_error.z/scal),maximum_error)
+        scal = max(abs(df_rho),AC_dt_epsi)
+        maximum_error = max(abs(rho_error/scal),maximum_error)
+        scal = max(abs(df_ss),AC_dt_epsi)
+        maximum_error = max(abs(ss_error/scal),maximum_error)
+  	reduce_max(maximum_error,AC_maximum_error)
+  } 
+}
+
+#include "steps_two.h"

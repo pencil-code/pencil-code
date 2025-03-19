@@ -21,29 +21,35 @@
 #include "headers_c.h"
 
 void initGPU();
-void registerGPU(REAL*);
-void initializeGPU();
+void registerGPU();
+void initializeGPU(REAL*, FINT);
 void finalizeGPU();
-void substepGPU(int isubstep, int full, int early_finalize);
-void copyFarray();
+void getFArrayIn(REAL **);
+void substepGPU(int );
+void copyFarray(REAL*);
+void loadFarray();
+void reloadConfig();
+void updateInConfigArr(int);
+int  updateInConfigArrName(char *);
+void updateInConfigScal(int,REAL);
+int  updateInConfigScalName(char *, REAL);
+void testRHS(REAL*,REAL*);
+void gpuSetDt();
+void random_initial_condition(void);
 
 // for Gnu Compiler
 extern char *__cparam_MOD_coornames;
 extern REAL __cdata_MOD_y[14];
 extern REAL __cdata_MOD_dx, __cdata_MOD_dy, __cdata_MOD_dz;
-extern FINT __cdata_MOD_llast_proc_x;
-extern FINT __hydro_MOD_idiag_umax;
 // ----------------------------------------------------------------------
-void FTNIZE(initialize_gpu_c)(REAL **farr_GPU_in, REAL **farr_GPU_out)
-/* Initializes GPU.
-*/
+void FTNIZE(initialize_gpu_c)(REAL* f, FINT* comm_fint)
+// Initializes GPU.  
 {
   /*
   printf("nx = %d\n", *nx);
   printf("ny = %d\n", *ny);
   printf("nz = %d\n", *nz);
   printf("omega = %e\n", cdata_mp_omega_);
-  printf("__hydro_MOD_idiag_umax = %d\n", __hydro_MOD_idiag_umax);
   */
   //printf("coornames(1)= %s", __cparam_MOD_coornames[0]);
 
@@ -51,11 +57,8 @@ void FTNIZE(initialize_gpu_c)(REAL **farr_GPU_in, REAL **farr_GPU_out)
   //printf("dx = %f\n", __cdata_MOD_dx);
   //printf("dy = %f\n", __cdata_MOD_dy);
   //printf("dz = %f\n", __cdata_MOD_dz);
-  //printf("llast_proc_x = %d\n", __cdata_MOD_llast_proc_x);
-  //printf("ldiagnos = %d\n", ldiagnos);
 
-  initializeGPU(farr_GPU_in,farr_GPU_out);
-
+  initializeGPU(f, *comm_fint);
 /*
   printf("xmin = %e\n", x[4]);
   printf("xmax = %e\n", x[nx-1+3]);
@@ -72,11 +75,11 @@ void FTNIZE(init_gpu_c)()
   initGPU();
 }
 /* ---------------------------------------------------------------------- */
-void FTNIZE(register_gpu_c)(REAL* f)
+void FTNIZE(register_gpu_c)()
 {
 // Allocates memory on GPU according to setup needs.
 
-  registerGPU(f);
+  registerGPU();
 }
 /* ---------------------------------------------------------------------- */
 void FTNIZE(finalize_gpu_c)()
@@ -85,9 +88,13 @@ void FTNIZE(finalize_gpu_c)()
 
   finalizeGPU();
 }
+void FTNIZE(get_farray_ptr_gpu_c)(REAL** p_f_in)
+{
+  getFArrayIn(p_f_in);
+}
 /* ---------------------------------------------------------------------- */
 void FTNIZE(rhs_gpu_c)
-     (FINT *isubstep, FINT *full, FINT *early_finalize)
+     (FINT *isubstep)
 
 /* Communication between CPU and GPU: copy (outer) halos from CPU to GPU, 
    copy "inner halos" from GPU to CPU; calculation of rhss of momentum eq.
@@ -124,11 +131,51 @@ void FTNIZE(rhs_gpu_c)
 {
   // copies data back and forth and peforms integration substep isubstep
 
-  substepGPU(*isubstep, *full, *early_finalize);
+  substepGPU(*isubstep);
 }
 /* ---------------------------------------------------------------------- */
-void FTNIZE(copy_farray_c)(REAL *uu_x, REAL *uu_y, REAL *uu_z, REAL *lnrho)
+void FTNIZE(copy_farray_c)(REAL* f)
 {
-  copyFarray(uu_x, uu_y, uu_z, lnrho);
+  copyFarray(f);
+}
+/* ---------------------------------------------------------------------- */
+void FTNIZE(load_farray_c)()
+{
+  loadFarray();
+}
+/* ---------------------------------------------------------------------- */
+void FTNIZE(reload_gpu_config_c)()
+{
+  reloadConfig();
+}
+/* ---------------------------------------------------------------------- */
+void FTNIZE(update_on_gpu_scal_by_ind_c)(int *index, REAL* value)
+{
+  updateInConfigScal(*index,*value);
+}
+/* ---------------------------------------------------------------------- */
+void FTNIZE(update_on_gpu_arr_by_ind_c)(int *index)
+{
+  updateInConfigArr(*index);
+}
+/* ---------------------------------------------------------------------- */
+int FTNIZE(update_on_gpu_scal_by_name_c)(char *varname, REAL* value)
+{
+  return updateInConfigScalName(varname,*value);
+}
+/* ---------------------------------------------------------------------- */
+int FTNIZE(update_on_gpu_arr_by_name_c)(char *varname)
+{
+  return updateInConfigArrName(varname);
+}
+/* ---------------------------------------------------------------------- */
+void FTNIZE(test_rhs_c)(REAL* f_in, REAL* df_truth)
+{
+  testRHS(f_in,df_truth);
+}
+/* ---------------------------------------------------------------------- */
+void FTNIZE(gpu_set_dt_c)()
+{
+	gpuSetDt();
 }
 /* ---------------------------------------------------------------------- */

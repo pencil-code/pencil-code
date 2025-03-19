@@ -79,6 +79,7 @@ program start
   use Mpicomm
   use NeutralDensity,   only: init_lnrhon
   use NeutralVelocity,  only: init_uun
+  use OMP_lib
   use Param_IO
   use Particles_main
   use Polymer,          only: init_poly
@@ -93,6 +94,7 @@ program start
   use Solid_Cells,      only: init_solid_cells
   use Special,          only: init_special, initialize_mult_special
   use Sub
+  use Syscalls,         only: memusage
   use Ascalar,          only: init_acc
   use Testfield,        only: init_aatest
   use Testflow,         only: init_uutest
@@ -103,12 +105,17 @@ program start
   integer :: i, ifilter, stat
   logical :: lnoerase=.false.
   real :: dang
+  integer :: memory, memuse, memcpu
 !
   lstart = .true.
 !
 !  Check processor layout, get processor numbers and define whether we are root.
 !
   call mpicomm_init
+!
+!  Initialize OpenMP use
+!
+!$ include 'omp_init.h'
 !
 !  Identify version.
 !
@@ -143,10 +150,6 @@ program start
     if (stat>0) call fatal_error('start','Could not allocate df')
     df=huge(1.0)
   endif
-!
-!  Define the lenergy logical
-!
-  lenergy=lentropy.or.ltemperature.or.lthermal_energy
 !
 !  Read initialization parameters from "start.in".
 !
@@ -564,7 +567,20 @@ program start
 !  Write information about pencils to disc.
 !
   call write_pencil_info
-!
+
+  memuse=memusage()
+  call mpireduce_max_int(memuse,memcpu)
+  call mpireduce_sum_int(memuse,memory)
+  if (lroot) then
+    print'(1x,a,f9.3)', 'Maximum used memory per cpu [MBytes] = ', memcpu/1024.
+    if (memory>1e6) then
+      print'(1x,a,f12.3)', 'Maximum used memory [GBytes] = ', memory/1024.**2
+    else
+      print'(1x,a,f12.3)', 'Maximum used memory [MBytes] = ', memory/1024.
+    endif
+    print*
+  endif
+  !
 !  Gvie all modules the possibility to exit properly.
 !
   call finalize_modules(f)

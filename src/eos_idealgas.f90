@@ -1516,7 +1516,7 @@ module EquationOfState
     endsubroutine eoscalc_farray
 !***********************************************************************
     subroutine eoscalc_point(ivars,var1,var2,iz,lnrho,ss,yH,lnTT,ee,pp,cs2)
-!$omp declare target
+!!$omp declare target
 !
 !   Calculate thermodynamical quantities
 !
@@ -3063,7 +3063,7 @@ module EquationOfState
       integer, intent(IN) :: topbot
       logical, optional :: lone_sided
 !
-      real :: tmp
+      real :: tmp, cs2top_loc
       integer :: i
       real, dimension(mx,my) :: lnrho_xy
 !
@@ -3148,11 +3148,14 @@ module EquationOfState
 
 !DM+PC next two lines need to be looked into.
 !AB: This was implemented in revision: 17029 dhruba.mitra, but it works!
-        if (lread_oldsnap) &
-          cs2top=cs20*exp(gamma*f(l2,m2,n2,iss)/cp+gamma_m1*(f(l2,m2,n2,ilnrho)-lnrho0))
+        if (lread_oldsnap) then
+          cs2top_loc=cs20*exp(gamma*f(l2,m2,n2,iss)/cp+gamma_m1*(f(l2,m2,n2,ilnrho)-lnrho0))
+        else
+          cs2top_loc=cs2top
+        endif
 !
         if (lentropy .and. .not. pretend_lnTT) then
-          tmp = 2*cv*log(cs2top/cs20)
+          tmp = 2*cv*log(cs2top_loc/cs20)
           call getlnrho(f(:,:,n2,ilnrho),lnrho_xy)
           f(:,:,n2,iss) = 0.5*tmp - (cp-cv)*(lnrho_xy-lnrho0)
           if (lreference_state) &
@@ -3179,7 +3182,7 @@ module EquationOfState
             endif
           endif
         elseif (lentropy .and. pretend_lnTT) then
-            f(:,:,n2,iss) = log(cs2top/gamma_m1)
+            f(:,:,n2,iss) = log(cs2top_loc/gamma_m1)
             if (loptest(lone_sided)) then
               call set_ghosts_for_onesided_ders(f,topbot,iss,3)
             else
@@ -3187,9 +3190,9 @@ module EquationOfState
             endif
         elseif (ltemperature) then
             if (ltemperature_nolog) then
-              f(:,:,n2,iTT)   = cs2top/gamma_m1
+              f(:,:,n2,iTT)   = cs2top_loc/gamma_m1
             else
-              f(:,:,n2,ilnTT) = log(cs2top/gamma_m1)
+              f(:,:,n2,ilnTT) = log(cs2top_loc/gamma_m1)
             endif
             if (loptest(lone_sided)) then
               call set_ghosts_for_onesided_ders(f,topbot,ilnTT,3)
@@ -3925,6 +3928,8 @@ module EquationOfState
       real :: potp,potm,rad,step
       integer :: i
 !
+      if (.not.lcylindrical_coords) & 
+          call not_implemented("bc_lnrho_cfb_r_iso","for other than cylindrical coordinates")
       select case (topbot)
 !
 !  Bottom boundary
@@ -4513,7 +4518,7 @@ module EquationOfState
 !
     use Syscalls, only: copy_addr
 
-    integer, parameter :: n_pars=6
+    integer, parameter :: n_pars=200
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 !
     call copy_addr(cs20,p_par(1))
@@ -4522,6 +4527,27 @@ module EquationOfState
     call copy_addr(cp,p_par(4))
     call copy_addr(lnrho0,p_par(5))
     call copy_addr(lnTT0,p_par(6))
+    call copy_addr(gamma_m1,p_par(7))
+    call copy_addr(gamma1,p_par(8))
+    call copy_addr(cv1,p_par(9))
+    call copy_addr(cs2bot,p_par(10))
+    call copy_addr(cs2top,p_par(11))
+    call copy_addr(leos_isothermal,p_par(12))   ! int
+    call copy_addr(iglobal_cs2,p_par(13)) ! int
+    call copy_addr(TT0,p_par(14))
+    call copy_addr(cs0,p_par(15))
+    call copy_addr(rho0,p_par(16))
+    call copy_addr(pp0,p_par(17))
+    call copy_addr(cp1,p_par(18))
+    call copy_addr(cs20_tdep_rate,p_par(19))
+    call copy_addr(ieosvars,p_par(20)) ! int
+    call copy_addr(ieosvar2,p_par(21)) ! int
+    call copy_addr(leos_isentropic,p_par(22)) ! bool
+    call copy_addr(leos_localisothermal,p_par(23)) ! bool
+    call copy_addr(lanelastic_lin,p_par(24)) ! bool
+    call copy_addr(lcs_as_aux,p_par(25)) ! bool
+    call copy_addr(lcs_as_comaux,p_par(26)) ! bool
+    call copy_addr(lcs_tdep,p_par(27)) ! bool
 !
     endsubroutine pushpars2c
 !***********************************************************************
