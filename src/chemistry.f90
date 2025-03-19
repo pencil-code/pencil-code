@@ -672,7 +672,8 @@ module Chemistry
           lnothing = .true.
         case ('constant')
           do k = 1,nchemspec
-            f(:,:,:,ichemspec(k)) = f(:,:,:,ichemspec(k)) + amplchemk2(k)
+            f(:,:,:,ichemspec(k)) = f(:,:,:,ichemspec(k)) + amplchemk(k)
+            print*,k,f(:,:,:,ichemspec(k))
           enddo
         case ('positive-noise')
           do k = 1,nchemspec
