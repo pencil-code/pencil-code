@@ -186,7 +186,6 @@ my %tests = (
              # Level 5 for now contains all non-canonical tests that run,
              # but produce wrong results
              5 => [qw(
-                         interstellar
                          hexagon
                          MHD-ABCforcing
                          taylor-couette
