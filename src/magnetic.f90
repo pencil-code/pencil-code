@@ -11667,7 +11667,7 @@ module Magnetic
     call copy_addr(lfrozen_bb_top,p_par(229)) ! bool3
     call copy_addr(eta_xy,p_par(230)) ! (mx) (my)
     call copy_addr(geta_xy,p_par(231)) ! (mx) (my) (3)
-    call copy_addr(a_relprof,p_par(232)) ! (nx) (ny) (nz) (3)
+    call copy_addr(a_relprof,p_par(232)) ! (nz) (3)
     call copy_addr(eta_z,p_par(233)) ! (mz)
     call copy_addr(geta_z,p_par(234)) ! (mz)
     call copy_addr(eta_x,p_par(235)) ! (mx)
