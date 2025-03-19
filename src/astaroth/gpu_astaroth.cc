@@ -1169,7 +1169,7 @@ void setupConfig(AcMeshInfo& config)
     PCLoad(config,AC_proc_mapping_strategy,(int)AcProcMappingStrategy::Linear);
 
   PCLoad(config,AC_MPI_comm_strategy,(int)AcMPICommStrategy::DuplicateUserComm);
-  config.comm = comm_pencil;
+  config.comm->handle = comm_pencil;
 
 // grid and geometry related parameters
 
