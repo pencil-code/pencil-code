@@ -357,7 +357,7 @@ Examples:
                                  # documented in bin/reaper
   pc_auto-test -a   # run tests in all subdirs of samples/ with a
                     # referece.out{,.double} file
-  pc_auto-test --level=1         # run all level 1 tests
+  pc_auto-test --level=1+2       # run all level 1 and level 2 tests
   pc_auto-test -l --max-level=1  # list test dirs in levels 0 and 1
   pc_auto-test -al  # list all dirs 'pc_auto-test -a' would run in
   pc_auto-test -aL  # list all run dirs under samples/, even those without
@@ -722,7 +722,7 @@ sub get_sampdirs {
         }
     }
 
-    my @requested_levels = split (/[,; ]+/s, $level);
+    my @requested_levels = split (/[+,; ]+/s, $level);
     my @dirs;
     foreach my $requested (sort {$a <=> $b} @requested_levels) {
         my @levels = grep { $_ == $requested } keys %tests;
