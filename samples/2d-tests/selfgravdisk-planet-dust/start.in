@@ -22,7 +22,7 @@
   temperature_power_law=1
   density_power_law=0.0
   lcorrect_selfgravity=T
-  gravitational_const=8.9e-4
+  gravitational_const_init=8.9e-4
 /
 &eos_init_pars
   cs0=0.05

@@ -1,6 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-   vim: set fileencoding=utf-8 :
 
+import sys
+sys.path.append('../../../python') #so that pencil can be imported without sourceme
+
 import pencil as pc
 import numpy as np
 

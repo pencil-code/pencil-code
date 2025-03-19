@@ -1770,7 +1770,11 @@ outer:  do ikz=1,nz
     call mpireduce_sum(k2m,k2m_sum,nk)
     call mpireduce_sum(nks,nks_sum,nk)
     if (lroot) then
-      krms=sqrt(k2m_sum/nks_sum)
+      where(nks_sum/=0)
+        krms=sqrt(k2m_sum/nks_sum)
+      elsewhere
+        krms=0.
+      endwhere
       open(1,file=trim(datadir)//'/power_krms.dat',position='append')
       write(1,power_format) krms
       close(1)
@@ -2823,6 +2827,8 @@ outer:  do ikz=1,nz
 !
   open(1,file=trim(datadir)//'/power_'//trim(sp)//'.dat',position='append')
 !
+!  Stress spectra
+!
   if (sp=='StT'.or.sp=='StX') then
 !
 !  transposing output, as in Fourier_transform_xy; an unreverted transposition is performed
@@ -2904,7 +2910,11 @@ outer:  do ikz=1,nz
     endif
     !
     if (lwrite_krms_GWs) then
-      krms=sqrt(k2m_sum/nks_sum)
+      where(nks_sum/=0)
+        krms=sqrt(k2m_sum/nks_sum)
+      elsewhere
+        krms=0.
+      endwhere
       open(1,file=trim(datadir)//'/power_krms_GWs.dat',position='append')
       write(1,power_format) krms
       close(1)

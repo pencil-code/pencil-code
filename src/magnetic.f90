@@ -4355,7 +4355,7 @@ module Magnetic
 !  AB: eta_total and the rest are pencils, but it complains about inconsistent ranks. So I put (1).
 !  Here we may need to add the chiral part.
 !
-            if (lresi_eta_tdep .or. lresi_eta_xtdep) then
+            if (lresi_eta_tdep .or. lresi_eta_xtdep .or. eta/=0.) then
               if (lohm_evolve) then
                 p%jj_ohm=f(l1:l2,m,n,ijx:ijz)
               else
@@ -11667,7 +11667,7 @@ module Magnetic
     call copy_addr(lfrozen_bb_top,p_par(229)) ! bool3
     call copy_addr(eta_xy,p_par(230)) ! (mx) (my)
     call copy_addr(geta_xy,p_par(231)) ! (mx) (my) (3)
-    call copy_addr(a_relprof,p_par(232)) ! (nx) (ny) (nz) (3)
+    call copy_addr(a_relprof,p_par(232)) ! (nz) (3)
     call copy_addr(eta_z,p_par(233)) ! (mz)
     call copy_addr(geta_z,p_par(234)) ! (mz)
     call copy_addr(eta_x,p_par(235)) ! (mx)

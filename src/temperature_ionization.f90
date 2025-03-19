@@ -39,7 +39,7 @@ module Energy
   real :: heat_source_offset=0., heat_source_sigma=1.0, heat_source=0.0
   real :: pthresh=0., pbackground=0., pthreshnorm
   real :: xjump_mid=0.,yjump_mid=0.,zjump_mid=0.
-  real :: widthTT, amplTT1, amplTT2, delta_TT
+  real :: widthTT=0., amplTT1=0., amplTT2=0., delta_TT=0.
   real :: rad_temp_surr=298., opacity=0., arad_normal, heat_Thompson_fact=1.
   real, pointer :: reduce_cs2
   logical, pointer :: lreduced_sound_speed, lscale_to_cs2top
