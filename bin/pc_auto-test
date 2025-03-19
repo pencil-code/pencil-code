@@ -23,7 +23,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #   matching to extract the relevant output lines.
 # To Do:
 # - Add an option to exclude those tests that use MPI
-# - Remove directory from /tmp when encountering Ctl-c
+# - Remove directory from /tmp when encountering Ctrl-C
 # - Treat `svn update' as separate stage that can be `OK' or not
 
 use strict;
