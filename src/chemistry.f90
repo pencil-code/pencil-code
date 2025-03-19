@@ -3868,6 +3868,7 @@ module Chemistry
       logical :: found_specie, lreal=.false.
       integer :: stoi_int
 !
+      stoi = 0.
       if ((ChemInpLine(StartInd:StopInd) /= "M" ) &
           .and. (ChemInpLine(StartInd:StartInd+1) /= "hv" )) then
         StartSpecie = verify(ChemInpLine(StartInd:StopInd),"1234567890")+StartInd-1
