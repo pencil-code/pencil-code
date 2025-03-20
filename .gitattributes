@@ -680,6 +680,9 @@ doc/implementation/correlation_time_uut/fig/pcortime.pdf -text
 doc/implementation/correlation_time_uut/notes.pdf -text
 doc/implementation/correlation_time_uut/notes.tex -text
 doc/implementation/correlation_time_uut/ts.pdf -text
+doc/implementation/displacement/Makefile -text
+doc/implementation/displacement/notes.pdf -text
+doc/implementation/displacement/notes.tex -text
 doc/implementation/hyperdiffusivity/README -text
 doc/implementation/hyperdiffusivity/hypvistest/README -text
 doc/implementation/hyperdiffusivity/hypvistest/idl/hypvistest.pro -text
