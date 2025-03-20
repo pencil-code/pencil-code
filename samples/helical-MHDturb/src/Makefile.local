@@ -15,6 +15,7 @@ PSCALAR  =   pscalar_nolog
 
 FOURIER  =   fourier_fftpack
 POWER    =   power_spectrum
+POISSON  =   poisson
 
 PARTICLES         =   particles_tracers
 PARTICLES_STALKER =   particles_stalker
