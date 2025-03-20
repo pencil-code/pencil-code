@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=test_torchfort
-#SBATCH --account=ituomine
+#SBATCH --account=project_2000403
 #SBATCH --partition=test
 #SBATCH --time=00:15:00
 #SBATCH --nodes=1

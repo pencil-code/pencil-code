@@ -43,6 +43,8 @@
 /
 &particles_stalker_run_pars
 /
+&poisson_run_pars
+/
 &power_spectrum_run_pars
   lzero_spec_zerok=T
 /
