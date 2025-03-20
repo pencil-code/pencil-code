@@ -129,7 +129,8 @@ module Energy
 !  6-nov-01/wolf: coded
 !
       use FArrayManager
-      use SharedVariables, only: put_shared_variable
+      use SharedVariables, only: put_shared_variable,get_shared_variable
+      logical, pointer :: lcalc_cp_full
 !
       if (ltemperature_nolog) then
         call farray_register_pde('TT',iTT)
@@ -162,6 +163,15 @@ module Energy
         call put_shared_variable('ladvection_temperature',ladvection_temperature)
         call put_shared_variable('lheatc_chiconst',lheatc_chiconst)
         call put_shared_variable('lupw_lnTT',lupw_lnTT)
+      endif
+
+      !TP: I do agree that getting and setting shared variables inside register
+      !    is ugly and should not generally be done. The motivation to do it is to prevent something even more ugly:
+      !    allocations happening on the right hand side. This way we can allocate inside initialize_eos in
+      !    eos_temperature_ionization instead of ioncalc
+      if(lheatc_chiconst .and. lheatc_chiconst_accurate) then
+        call get_shared_variable('lcalc_cp_full',lcalc_cp_full,caller='pencil_criteria_energy')
+        if(associated(lcalc_cp_full)) lcalc_cp_full = .true.
       endif
 !
     endsubroutine register_energy

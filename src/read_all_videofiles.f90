@@ -260,7 +260,6 @@ program rvid_box
 !
 !  Try to find number of timesteps from any existing slice.
 !
-    it = 0
     if (lfirst_slice) then
 
       if (lread_slice_xy) exists=find_slice(0,0,ipz1,field,'xy',fullname)
@@ -296,8 +295,8 @@ program rvid_box
         stop
       endif
 
+      it = 0
       iostat=0
-
       open(lun_read,file=trim(fullname),status='old',form='unformatted')
       do while (iostat==0)
         do istride=1,stride
