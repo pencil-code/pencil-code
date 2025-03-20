@@ -2906,7 +2906,7 @@ module Dustdensity
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real :: dndfac, dndfaci, dndfacj
+      real :: dndfac, dndfaci, dndfacj, tmp
       real :: momcons_term_x,momcons_term_y,momcons_term_z
       integer :: i,j,k,l,lgh
       logical :: lmdvar_noevolve=.false.
@@ -2965,8 +2965,10 @@ module Dustdensity
                     if (p%nd(l,k) < ndmin_for_mdvar) then
                       f(lgh,m,n,imd(k)) = p%md(l,i) + p%md(l,j)
                     else
+                      tmp=max(p%nd(l,k),epsi)
                       df(lgh,m,n,imd(k)) = df(lgh,m,n,imd(k)) - &
-                          (p%md(l,i) + p%md(l,j) - p%md(l,k))*1/p%nd(l,k)*dndfac
+                          (p%md(l,i) + p%md(l,j) - p%md(l,k))*1./tmp*dndfac
+                          !(p%md(l,i) + p%md(l,j) - p%md(l,k))*1./p%nd(l,k)*dndfac
                     endif
                   endif
                   if (lmice) then
