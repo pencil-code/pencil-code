@@ -121,6 +121,7 @@ module EquationOfState
            '$Id$')
 !
       call put_shared_variable('gamma',gamma,caller='register_eos')
+      call put_shared_variable('lcalc_cp_full',lcalc_cp_full,caller='register_eos')
 
       if (.not.ldensity) then
         call put_shared_variable('rho0',rho0)
@@ -183,6 +184,8 @@ module EquationOfState
       if (ldelta_as_aux) call register_report_aux('delta',idelta)
       if (lgamma_as_aux) call register_report_aux('gamma',igamma)
       if (lnabad_as_aux) call register_report_aux('nabad',inabad)
+
+      if (lcalc_cp_full .and. .not.allocated(cp_full)) allocate (cp_full(mx,my,mz))
 !
       if (lrun) call ioncalc(f)
 !
@@ -308,7 +311,6 @@ module EquationOfState
       if (lpencil_in(i_TT)) lpencil_in(i_lnTT)=.true.
       if (lpencil_in(i_TT1)) lpencil_in(i_TT)=.true.
 !
-      if (lpencil_in(i_gradcp)) lcalc_cp_full=.true.
 !
       if (lpencil_in(i_gTT)) then
         lpencil_in(i_TT)=.true.
@@ -423,7 +425,7 @@ module EquationOfState
 !
 !  Gradient of the above
 !
-      if (lpenc_loc(i_gradcp)) call grad(cp_full,p%gradcp)
+      if (lpenc_loc(i_gradcp) .and. lcalc_cp_full) call grad(cp_full,p%gradcp)
 !
 !  Polytropic index
 !
@@ -536,7 +538,6 @@ module EquationOfState
       real, dimension (mx) :: yH,rho1,TT1,rhs,sqrtrhs
       real, dimension (mx) :: mu1,yH_term_cp,TT_term_cp
 !
-      if (.not.allocated(cp_full)) allocate (cp_full(mx,my,mz))
 !
       if (lconst_yH) then
 !
