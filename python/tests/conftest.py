@@ -20,7 +20,7 @@ def datadir_conv_slab_noequi():
     if sim is False:
         raise RuntimeError(f"Could not get simulation in {rundir}")
 
-    sim.compile(bashrc=False, raise_errors=True)
+    sim.compile(bashrc=False, cleanall=True, raise_errors=True)
     sim.run(bashrc=False, cleardata=True, raise_errors=True)
 
     return sim.datadir
@@ -33,8 +33,8 @@ def datadir_conv_slab():
     if sim is False:
         raise RuntimeError(f"Could not get simulation in {rundir}")
 
-    sim.compile(bashrc=False, raise_errors=True)
-    sim.run(bashrc=False, raise_errors=True)
+    sim.compile(bashrc=False, cleanall=True, raise_errors=True)
+    sim.run(bashrc=False, cleardata=True, raise_errors=True)
 
     sim.bash(
         "pc_build -t read_all_videofiles",
