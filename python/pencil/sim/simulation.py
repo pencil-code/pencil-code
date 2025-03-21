@@ -668,8 +668,13 @@ class __Simulation__(object):
         return exists(join(self.path, "data", "time_series.dat"))
 
     def compile(
-        self, cleanall=True, fast=False, verbose=False, hostfile=None, bashrc=True
-    ):
+        self,
+        cleanall=True,
+        fast=False,
+        verbose=False,
+        hostfile=None,
+        **kwargs,
+        ):
         """Compiles the simulation. Per default the linking is done before the
         compiling process is called. This method will use your settings as
         defined in your .bashrc-file.
@@ -685,9 +690,7 @@ class __Simulation__(object):
         fast : bool
             Set True for fast compilation.
 
-        bashrc : bool
-            True: source bashrc in the subprocess
-            False: don't source bashrc in the subprocess. Instead, only pass along the environment variables from the current session.
+        Accepts all other keywords accepted by self.bash
         """
 
         from pencil import io
@@ -699,7 +702,7 @@ class __Simulation__(object):
         command.append("pc_build")
 
         if cleanall:
-            self.cleanall(verbose=verbose, hostfile=hostfile, bashrc=bashrc)
+            self.cleanall(verbose=verbose, hostfile=hostfile, **kwargs)
         if fast == True:
             command.append(" --fast")
         if hostfile:
@@ -711,14 +714,21 @@ class __Simulation__(object):
             command=" ".join(command),
             verbose=verbose,
             logfile=join(self.pc_dir, "compilelog_" + timestamp),
-            bashrc=bashrc,
-        )
+            **kwargs,
+            )
 
-    def build(self, cleanall=True, fast=False, verbose=False):
+    def build(self, **kwargs):
         """Same as compile()"""
-        return self.compile(cleanall=cleanall, fast=fast, verbose=verbose)
+        return self.compile(**kwargs)
 
-    def bash(self, command, verbose="last100", logfile=False, bashrc=True):
+    def bash(
+        self,
+        command,
+        verbose="last100",
+        logfile=False,
+        bashrc=True,
+        raise_errors=False,
+        ):
         """Executes command in simulation directory.
         This method will use your settings as defined in your .bashrc-file.
         A log file will be produced within 'self.path/pc'-folder
@@ -736,6 +746,9 @@ class __Simulation__(object):
         bashrc : bool
             True: source bashrc in the subprocess
             False: don't source bashrc in the subprocess. Instead, only pass along the environment variables from the current session.
+        
+        raise_errors: bool
+            If True, a nonzero return code for command will be raised as a Python error.
         """
 
         import subprocess
@@ -784,15 +797,18 @@ class __Simulation__(object):
         if rc == 0:
             return True
         else:
-            print(
-                "! ERROR: Execution ended with error code "
-                + str(rc)
+            message = (
+                f"! ERROR: Execution ended with error code {rc}"
                 + "!\n! Please check log file in"
-            )
-            print("! " + logfile)
-            return rc
+                + f"\n! {logfile}"
+                )
+            if raise_errors:
+                raise RuntimeError(message)
+            else:
+                print(message)
+                return rc
 
-    def cleanall(self, verbose=False, hostfile=None, bashrc=True):
+    def cleanall(self, verbose=False, hostfile=None, **kwargs):
         """Runs `pc_build --cleanall` in the simulation directory
 
         Parameters
@@ -800,9 +816,7 @@ class __Simulation__(object):
         verbose : bool
             Activate for verbosity.
 
-        bashrc : bool
-            True: source bashrc in the subprocess
-            False: don't source bashrc in the subprocess. Instead, only pass along the environment variables from the current session.
+        Accepts all other keywords accepted by self.bash
         """
 
         from pencil import io
@@ -823,8 +837,8 @@ class __Simulation__(object):
             command=" ".join(command),
             verbose=verbose,
             logfile=join(self.pc_dir, "cleanlog_" + timestamp),
-            bashrc=bashrc,
-        )
+            **kwargs,
+            )
 
     def clear_src(self, do_it=False, do_it_really=False):
         """This method clears the src directory of the simulation!
@@ -1114,7 +1128,7 @@ class __Simulation__(object):
             filename, quantity, newValue, sim=self, filepath=filepath, DEBUG=DEBUG
         )
 
-    def run(self, verbose=False, hostfile=None, bashrc=True, cleardata=False):
+    def run(self, verbose=False, hostfile=None, cleardata=False, **kwargs):
         """Runs the simulation.
 
         Parameters
@@ -1125,12 +1139,10 @@ class __Simulation__(object):
         hostfile : string
             Pencil config file to use
 
-        bashrc : bool
-            True: source bashrc in the subprocess
-            False: don't source bashrc in the subprocess. Instead, only pass along the environment variables from the current session.
-
         cleardata : bool
             Whether to clear existing data
+
+        Accepts all other keywords accepted by self.bash
         """
 
         from pencil import io
@@ -1165,5 +1177,5 @@ class __Simulation__(object):
             command=" ".join(command),
             verbose=verbose,
             logfile=join(self.pc_dir, "runlog_" + timestamp),
-            bashrc=bashrc,
-        )
+            **kwargs,
+            )
