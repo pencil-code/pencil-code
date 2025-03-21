@@ -2170,7 +2170,7 @@ The \cmd{pencil-test} script will use \cmd{pc_auto-test} if given the
   \prompt{unix> } pencil-test -b \
              -Wa,--max-level=1,--no-pencil-check  # quick pencil test
 \end{alltt}
-See \cmd{pencil-test --help} for a complete list of options.
+See \cmd{pencil-test --help} for a complete list of options, and section \ref{S-Testing} for more details.
 
 
 
@@ -8406,6 +8406,16 @@ following steps.
 
 \end{enumerate}
 
+%%%
+\subsection{Testing the postprocessing modules}
+
+Some of the samples contain additional scripts that test the Python and IDL postprocessing modules.
+The are not checked by \cmd{pc_auto-test} by default; to include these tests, use the \cmd{--script-tests} option, e.g.\@
+\begin{alltt}
+  pc_auto-test --max-level=3 --script-tests=python
+\end{alltt}
+
+The Python postprocessing modules contain an additional set of quick tests that can be invoked as described in \file{PENCIL_HOME/python/tests/README.md}.
 
 % ====================================================================== %
 
