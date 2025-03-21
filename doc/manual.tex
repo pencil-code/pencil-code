@@ -8407,6 +8407,47 @@ following steps.
 \end{enumerate}
 
 %%%
+\subsection{Auto-tests with systemd}
+On modern Linux systems, you can use systemd (instead of cron) to run periodic auto-tests.
+You need to create a couple of files in
+\file{\~{}/.config/systemd/user/}:
+
+\file{pencil_test.service}\footnote{
+Options and filepaths may need to be modified; note that \code{\%h} is used to denote the user's home directory.
+}
+\begin{alltt}
+  [Unit]
+  Description=Pencil-code test
+
+  [Service]
+  Type=simple
+  Environment="PENCIL_HOME=\%h/.software/pencil-code-for-tests"
+  ExecStart=\%h/.software/pencil-code-for-tests/bin/pencil-test \bs
+    -N 15 --update --html --clean --local --use-pc_auto-test \bs
+    --auto-test-options="--max-level=3 --script-tests=python --time-limit=5m"
+  StandardOutput=truncate:\%h/public_html/pencil_tests/master_full.html
+\end{alltt}
+(the backslashes can be left as-is) and
+\file{pencil_test.timer}
+\begin{alltt}
+  [Unit]
+  Description=Run pencil test daily at 10pm
+
+  [Timer]
+  OnCalendar=*-*-* 22:00:00
+  Persistent=True
+
+  [Install]
+  WantedBy=timers.target
+\end{alltt}
+
+After creating these files, run
+\begin{alltt}
+  systemctl --user enable pencil_test.timer
+  systemctl --user start pencil_test.timer
+\end{alltt}
+
+%%%
 \subsection{Testing the postprocessing modules}
 
 Some of the samples contain additional scripts that test the Python and IDL postprocessing modules.
