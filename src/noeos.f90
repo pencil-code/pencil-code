@@ -624,11 +624,12 @@ module EquationOfState
         call fatal_error('bc_ss_flux','invalid argument')
       endselect
 !
-      do il=1,mx
-        do im =1,my
-          call get_gamma_etc(cp=cp(il,im), cv=cv(il,im), f=f(il,im,n,:))
-        enddo
-      enddo
+!AXEL: not needed for noeos. Can remove if auto-test ok.
+  !   do il=1,mx
+  !     do im =1,my
+  !       call get_gamma_etc(cp=cp(il,im), cv=cv(il,im), f=f(il,im,n,:))
+  !     enddo
+  !   enddo
 !
       if (pretend_lnTT) then
 !

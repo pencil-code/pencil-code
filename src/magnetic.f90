@@ -32,7 +32,7 @@
 ! PENCILS PROVIDED hjj(3); hj2; hjb; coshjb
 ! PENCILS PROVIDED hjparallel; hjperp; nu_ni1
 ! PENCILS PROVIDED gamma_A2; clight2; gva(3); vmagfric(3)
-! PENCILS PROVIDED bb_sph(3); advec_va2; Lam
+! PENCILS PROVIDED bb_sph(3); advec_va2; Lam; gLam(3)
 !***************************************************************
 module Magnetic
 !
@@ -256,7 +256,7 @@ module Magnetic
   logical :: lskip_projection_aa=.false.
   logical :: lscale_tobox=.true., lsquash_aa=.false.
   logical :: lbraginsky=.false., l2d_aa=.false.
-  logical :: lcoulomb=.false., learly_set_el_pencil=.false.
+  logical :: lcoulomb=.false., lcoulomb_apply=.false., learly_set_el_pencil=.false.
   logical :: lfactors_aa=.false., lvacuum=.false.
   logical :: loverride_ee=.false., loverride_ee2=.false., loverride_ee_decide=.false.
   logical :: lignore_1rho_in_Lorentz=.false., lnorm_aa_kk=.false., lohm_evolve=.false.
@@ -290,7 +290,8 @@ module Magnetic
       sheet_position,sheet_thickness,sheet_hyp,ll_sh,mm_sh, &
       source_zav,nzav,indzav,izav_start, k1hel, k2hel, lbb_sph_as_aux, &
       r_inner, r_outer, lpower_profile_file, eta_jump0, eta_jump1, eta_jump2, &
-      lcoulomb, learly_set_el_pencil, qexp_aa, nfact_aa, lfactors_aa, lvacuum, l2d_aa, &
+      lcoulomb, lcoulomb_apply, learly_set_el_pencil, &
+      qexp_aa, nfact_aa, lfactors_aa, lvacuum, l2d_aa, &
       loverride_ee_decide, eta_tdep_loverride_ee, z0_gaussian, width_gaussian, &
       lnorm_aa_kk, lohm_evolve, lhubble_magnetic
 !
@@ -432,7 +433,7 @@ module Magnetic
       no_ohmic_heat_z0, no_ohmic_heat_zwidth, alev, lrhs_max, &
       lnoinduction, lA_relprof_global, nlf_sld_magn, fac_sld_magn, div_sld_magn, &
       lbb_sph_as_aux, ltime_integrals_always, dtcor, lvart_in_shear_frame, &
-      lbraginsky, eta_jump0, eta_jump1, lcoulomb, lvacuum, &
+      lbraginsky, eta_jump0, eta_jump1, lcoulomb, lcoulomb_apply, lvacuum, &
       loverride_ee_decide, eta_tdep_loverride_ee, loverride_ee2, lignore_1rho_in_Lorentz, &
       lbext_moving_layer, zbot_moving_layer, ztop_moving_layer, speed_moving_layer, edge_moving_layer, &
       lno_eta_tdep, luse_scale_factor_in_sigma, ell_jj, tau_jj, lhubble_magnetic
@@ -2905,7 +2906,11 @@ module Magnetic
 !
 !  for Coulomb gauge
 !
-      if (lcoulomb) lpenc_requested(i_diva)=.true.
+      if (lcoulomb) then
+        lpenc_requested(i_diva)=.true.
+        if (idiag_gLamam/=0 .or. idiag_gLambm/=0 &
+          .or. lcoulomb_apply) lpenc_requested(i_gLam)=.true.
+      endif
 !
 !  Pencils requested for diamagnetism
 !
@@ -3976,7 +3981,12 @@ module Magnetic
         else
           call div_other(f(:,:,:,iax:iaz),p%diva)
         endif
-        if (lcoulomb) f(l1:l2,m,n,idiva)=p%diva
+        if (lcoulomb) then
+          f(l1:l2,m,n,idiva)=p%diva
+          if (lpenc_loc(i_gLam)) then
+            call grad(f,iLam,p%gLam)
+          endif
+        endif
       endif
 ! aps
       if (lpenc_loc(i_aps)) p%aps=f(l1:l2,m,n,iaz)*p%rcyl_mn
@@ -6267,7 +6277,7 @@ module Magnetic
       type(pencil_case) :: p
 
       real, dimension (nx,3,3) :: bhatij
-      real, dimension (nx,3) :: exj, dexb, phib, jxbb, uxDxuxb, tmpv, gLam
+      real, dimension (nx,3) :: exj, dexb, phib, jxbb, uxDxuxb, tmpv
       real, dimension (nx) :: uxj_dotB0,b3b21,b3b12,b1b32,b1b23,b2b13,b2b31
       real, dimension (nx) :: jxb_dotB0,jxbrq,uxb_dotB0, gLama, gLamb
       real, dimension (nx) :: oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
@@ -6403,14 +6413,16 @@ module Magnetic
       if (idiag_aybym2/=0) call sum_mn_name(2.*p%aa(:,2)*p%bb(:,2),idiag_aybym2)
       call sum_mn_name(p%ab,idiag_abm)
       if (idiag_gLamam/=0) then
-        call grad(f,iLam,gLam)
-        call dot(gLam,p%aa,gLama)
+        call dot(p%gLam,p%aa,gLama)
         call sum_mn_name(gLama,idiag_gLamam)
       endif
       if (idiag_gLambm/=0) then
-        call grad(f,iLam,gLam)
-        call dot(gLam,p%bb,gLamb)
-        call sum_mn_name(gLamb,idiag_gLambm)
+        if (iLam/=0) then
+          call dot(p%gLam,p%bb,gLamb)
+          call sum_mn_name(gLamb,idiag_gLambm)
+        else
+          call fatal_error('calc_0d_diagnostics_magnetic', 'Coulomb gauge is needed')
+        endif
       endif
       if (idiag_a2b2m/=0) call sum_mn_name(p%a2*p%b2,idiag_a2b2m)
       if (idiag_j2b2m/=0) call sum_mn_name(p%j2*p%b2,idiag_j2b2m)
