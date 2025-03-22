@@ -689,10 +689,6 @@ module Cdata
   logical :: bb_k00z=.false., ee_k00z=.false., gwT_fft3d=.false.
   logical :: Em_specflux=.false., Hm_specflux=.false., Hc_specflux=.false.
 !
-!  Number of bins for Pulsar Timing Array
-!
- integer, parameter :: nbin_angular=19
-!
   ! Auxiliary parameters for boundary conditions:
   real, dimension(mcom,2) :: fbcx=0., fbcx_2=0.
   real, dimension(mcom,2) :: fbcy=0., fbcy_1=0., fbcy_2=0.
