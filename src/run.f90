@@ -1487,6 +1487,7 @@ call copy_addr(lread_oldsnap,p_par(1174))  !  bool
 call copy_addr(lroot,p_par(1175)) ! bool
 
 call copy_addr(lperi,p_par(1176)) ! bool3
+call copy_addr(lcpu_timestep_on_gpu,p_par(1177)) ! bool
 
 endsubroutine pushpars2c
 !***********************************************************************
