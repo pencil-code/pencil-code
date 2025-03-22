@@ -92,12 +92,12 @@ ifeq ($(RUNTIME_COMPILATION),ON)
 endif
 CMAKE_BUILD_TYPE          ?= Debug
 
+
 astaroth_$(PREC).so: $(SOURCES) forcing.h $(AC_HEADERS) $(PC_HEADERS) $(CHEADERS) astaroth_libs
 	mkdir -p build && \
 	echo USE_HIP=$(USE_HIP) && \
 	echo PRECISION=$(CMAKE_PREC) && \
-	cd build && export LDFLAGS="" && export CXX="" && export CC="" && \
-	CUDA_PATH=/opt/nvidia/hpc_sdk/Linux_x86_64/24.1/cuda \
+	cd build && export LDFLAGS="" && \
 	cmake -DDOUBLE_PRECISION=$(CMAKE_PREC) -DRUNTIME_COMPILATION=$(RUNTIME_COMPILATION) -DTRANSPILATION=$(TRANSPILATION) -DUSE_HIP=$(USE_HIP) -DSINGLEPASS_INTEGRATION=$(CMAKE_SINGLEPASS) -DUSE_DARDEL=$(USE_DARDEL) .. && \
 	make -j && \
 	cd .. && \
@@ -117,10 +117,11 @@ CMAKE_OPTIONS = -DMULTIGPU_ENABLED=OFF -DMPI_ENABLED=$(CMAKE_MPI) -DBUILD_SHARED
                 -DPACKED_DATA_TRANSFERS=$(CMAKE_PACKED) -DDOUBLE_PRECISION=$(CMAKE_PREC) -DBUILD_SAMPLES=OFF -DUSE_HIP=$(USE_HIP) \
 		-DVERBOSE=off -DOPTIMIZE_INPUT_PARAMS=$(OPTIMIZE_INPUT_PARAMS) -DOPTIMIZE_MEM_ACCESSES=ON -DOPTIMIZE_ARRAYS=$(RUNTIME_COMPILATION) -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) \
 	        -DBUILD_STANDALONE=OFF -DOPTIMIZE_FIELDS=$(TRANSPILATION) -DALLOW_DEAD_VARIABLES=$(RUNTIME_COMPILATION) -DELIMINATE_CONDITIONALS=$(TRANSPILATION) -DBUILD_UTILS=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DEXT_SOURCES=$(EXT_SOURCES) -DDSL_MODULE_FILE=$(DSL_MODULE_FILE) -DINLINING=$(INLINING) -DBUILD_ACM=OFF
+
+
 astaroth_libs:
 	echo "const char* cmake_options = \"  -DDSL_MODULE_DIR=../$(DSL_MODULE_DIR)  $(CMAKE_OPTIONS)\";" > cmake_options.h
-	mkdir -p submodule/build  && cd submodule/build && export LDFLAGS=""  && export CXX="" && export CC="" && \
-        CUDA_PATH=/opt/nvidia/hpc_sdk/Linux_x86_64/24.1/cuda \
+	mkdir -p submodule/build  && cd submodule/build && export LDFLAGS="" && \
 	cmake  $(CMAKE_OPTIONS) -DDSL_MODULE_DIR=../acc-runtime/$(DSL_MODULE_DIR) -DRUNTIME_COMPILATION=$(RUNTIME_COMPILATION) -DREAD_OVERRIDES=$(READ_OVERRIDES) .. \
 	&& make -j -I../../.. VERBOSE=0 # Build the core Astaroth library
 	@echo PRECISION=$(CMAKE_PREC)
