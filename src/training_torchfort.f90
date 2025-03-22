@@ -34,7 +34,7 @@
 
     character(LEN=fnlen) :: model='model', config_file="config_mlp_native.yaml", model_file
 
-    logical :: lroute_via_cpu, lcpu_traning, luse_trained_tau, lwrite_sample=.false., lscale=.true.
+    logical :: lroute_via_cpu, lcpu_training=.true., luse_trained_tau, lwrite_sample=.false., lscale=.true.
     real :: max_loss=1.e-4
 
     integer :: idiag_loss=0            ! DIAG_DOC: torchfort training loss
