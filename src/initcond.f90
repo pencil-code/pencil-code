@@ -38,7 +38,7 @@ module Initcond
   public :: triquad, isotdisk
   public :: diffrot, olddiffrot
   public :: const_omega
-  public :: powern, power_randomphase, power_randomphase_hel
+  public :: powern, power_randomphase, power_randomphase_hel, bunch_davies
   public :: planet, planet_hc
   public :: random_isotropic_KS, random_isotropic_shell
   public :: htanh, vtube, vtube_peri, htube, htube2, htube_x, hat, hat3d
@@ -5554,7 +5554,7 @@ module Initcond
       endif
       if (lroot) k2(1,1,1) = 1.  ! Avoid division by zero
 !
-!  Do phase correction (needed for Bunch-Davies vacuum).
+!  Do phase correction
 !
       if (lfixed_phase1) then
         do i=1,i2-i1+1
@@ -6126,6 +6126,149 @@ module Initcond
       if (allocated(kz)) deallocate(kz)
 !
     endsubroutine power_randomphase_hel
+!***********************************************************************
+    subroutine bunch_davies(f,i1a,i1b,i2a,i2b,ampl,kpeak)
+!
+!  21-mar-14/axel: adapted from power_randomphase_hel
+!
+      use Fourier, only: fft_xyz_parallel
+      use General, only: loptest, roptest
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: i, i1a, i1b, i2a, i2b, ikx, iky, ikz, stat, ik, nk
+      real, dimension (:,:,:,:), allocatable :: u_re, u_im, v_re, v_im
+      real, dimension (:,:,:), allocatable :: k1, r
+      real, dimension (:), allocatable :: kx, ky, kz
+      real, dimension (:), allocatable :: kk
+      real :: ampl, kpeak, scale_factor=1.
+!
+      if (ampl==0.) then
+        if (lroot) print*,'bunch_davies: set variables to zero; i1a,i1b,i2a,i2b=',i1a,i1b,i2a,i2b
+        f(:,:,:,i1a:i1b) = 0.
+        f(:,:,:,i2a:i2b) = 0.
+        return
+      endif
+!
+!  Allocate memory for arrays r and k1.
+!
+      allocate(k1(nx,ny,nz),stat=stat)
+      if (stat>0) call fatal_error('bunch_davies','Could not allocate k1')
+      allocate(r(nx,ny,nz),stat=stat)
+      if (stat>0) call fatal_error('bunch_davies','Could not allocate r')
+!
+!  Complex auxiliary arrary (u_re,u_im) and (v_re,v_im) 
+!
+      allocate(u_re(nx,ny,nz,3),stat=stat)
+      if (stat>0) call fatal_error('bunch_davies','Could not allocate u_re')
+      allocate(u_im(nx,ny,nz,3),stat=stat)
+      if (stat>0) call fatal_error('bunch_davies','Could not allocate u_im')
+      allocate(v_re(nx,ny,nz,3),stat=stat)
+      if (stat>0) call fatal_error('bunch_davies','Could not allocate v_re')
+      allocate(v_im(nx,ny,nz,3),stat=stat)
+      if (stat>0) call fatal_error('bunch_davies','Could not allocate v_im')
+!
+!  One-dimensional wavevector arrays.
+!
+      allocate(kx(nxgrid),stat=stat)
+      if (stat>0) call fatal_error('bunch_davies','Could not allocate kx')
+      allocate(ky(nygrid),stat=stat)
+      if (stat>0) call fatal_error('bunch_davies','Could not allocate ky')
+      allocate(kz(nzgrid),stat=stat)
+      if (stat>0) call fatal_error('bunch_davies','Could not allocate kz')
+!
+!  Scale factors if box size is not 2*pi
+!
+      scale_factor=2*pi/Lx
+      kx=cshift((/(i-nxgrid/2,i=0,nxgrid-1)/),nxgrid/2)*scale_factor
+      if (lroot.and.ip<10) print*,'AXEL: kx=',kx
+!
+      ky=cshift((/(i-nygrid/2,i=0,nygrid-1)/),nygrid/2)*scale_factor
+      if (lroot.and.ip<10) print*,'AXEL: ky=',ky
+!
+      kz=cshift((/(i-nzgrid/2,i=0,nzgrid-1)/),nzgrid/2)*scale_factor
+      if (lroot.and.ip<10) print*,'AXEL: kz=',kz
+!
+!  Set the 3 components of v_im to Gaussian-distributed random values.
+!
+      do i=1,3
+        call random_number_wrapper(r)
+        call random_number_wrapper(k1)
+        v_im(:,:,:,i)=sqrt(-2*log(r))*sin(2*pi*k1)
+      enddo
+!
+!  Set k1 = |k| array.
+!
+!  In 1-D
+      if (nzgrid==1.and.nygrid==1) then
+        ikz=1
+        iky=1
+        do ikx=1,nx
+          k1(ikx,iky,ikz)=sqrt(kx(ikx+ipx*nx)**2)
+        enddo
+!  In 2-D
+      elseif (nzgrid==1) then
+        ikz=1
+        do iky=1,ny
+          do ikx=1,nx
+            k1(ikx,iky,ikz)=sqrt(kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2)
+          enddo
+        enddo
+!  In 3-D
+      else
+        do ikz=1,nz
+          do iky=1,ny
+              do ikx=1,nx
+                k1(ikx,iky,ikz)=sqrt(kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2)
+              enddo
+          enddo
+        enddo
+      endif
+      if (lroot) k1(1,1,1) = 1.  ! To avoid division by zero.
+!
+!  Put cutoff at kpeak in v_im.
+!
+      where(k1>=kpeak)
+        v_im(:,:,:,1)=0.
+        v_im(:,:,:,2)=0.
+        v_im(:,:,:,3)=0.
+      endwhere
+!
+!  Compute Bunch-Davies vacuum, A = e^(-i*k*eta)/sqrt(2*k), so
+!  E = -dA/deta = +i*k*e^(-i*k*eta)/sqrt(2*k) = i*e^(-i*k*eta)*sqrt(k/2)
+!  Here, v_im serves as a temporary array until the last line.
+!
+      do i=1,3
+        u_re(:,:,:,i)=+ampl*v_im(:,:,:,i)*cos(-k1)/sqrt(k1*2.)
+        u_im(:,:,:,i)=+ampl*v_im(:,:,:,i)*sin(-k1)/sqrt(k1*2.)
+        v_re(:,:,:,i)=-ampl*v_im(:,:,:,i)*sin(-k1)*sqrt(k1/2.)
+        v_im(:,:,:,i)=+ampl*v_im(:,:,:,i)*cos(-k1)*sqrt(k1/2.)
+      enddo
+!
+!  Fourier transform to real space.
+!
+      do i=1,3
+        call fft_xyz_parallel(u_re(:,:,:,i),u_im(:,:,:,i),linv=.true.)
+        call fft_xyz_parallel(v_re(:,:,:,i),v_im(:,:,:,i),linv=.true.)
+      enddo
+!
+!  Use real parts of u and v for A and E.
+!
+      f(l1:l2,m1:m2,n1:n2,i1a:i1b)=u_re
+      f(l1:l2,m1:m2,n1:n2,i2a:i2b)=v_re
+!
+!  Deallocate arrays.
+!
+      if (allocated(k1)) deallocate(k1)
+      if (allocated(r))  deallocate(r)
+      if (allocated(u_re)) deallocate(u_re)
+      if (allocated(u_im)) deallocate(u_im)
+      if (allocated(v_re)) deallocate(v_re)
+      if (allocated(v_im)) deallocate(v_im)
+      if (allocated(kx)) deallocate(kx)
+      if (allocated(ky)) deallocate(ky)
+      if (allocated(kz)) deallocate(kz)
+!
+    endsubroutine bunch_davies
 !***********************************************************************
     subroutine random_isotropic_KS(initpower,f,i1,N_modes)
 !
