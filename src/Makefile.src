@@ -3056,7 +3056,7 @@ libPC.so: run.o | $(SPECIAL_DEPS) $(LIBGPU)
 	  $(LD) $(run) run.o $(LDFLAGS) $(LDFLAGS_MAIN) $(LDFLAGS_LIB) $(LD_MPI) $(LD_FOURIER) $(LIBSIG) $(LD_GSL) -shared -o libPC.so
 $(LIBGPU): $(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/Makefile.vendor
 #$(LIBGPU): $(GPU_DEPS)
-	cd astaroth && make MPICOMM=$(MPICOMM) RUNTIME_COMPILATION=$(RUNTIME_COMPILATION)
+	cd astaroth && make MPICOMM=$(MPICOMM) RUNTIME_COMPILATION=$(RUNTIME_COMPILATION) TRAINING=$(TRAINING)
 #
 special_preps:
 ifeq ($(SPECIAL_MULT),1)

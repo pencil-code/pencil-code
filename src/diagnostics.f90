@@ -59,6 +59,8 @@ module Diagnostics
   public :: allocate_diagnostic_names
   public :: allocate_diagnostic_arrays
   public :: calc_nnames
+  public :: save_diagnostic_controls
+  public :: restore_diagnostic_controls
 !
   interface max_name
     module procedure max_name_int
@@ -115,6 +117,11 @@ module Diagnostics
 ! Variables for Yin-Yang grid: z-averages.
 !
   real, dimension(:,:,:), allocatable :: fnamexy_cap
+!
+! TP: variables for communication between threads
+!
+  real ::  dt_save,eps_rkf_save
+  integer :: it_save
 
   contains
 !***********************************************************************
@@ -3943,5 +3950,69 @@ module Diagnostics
       endif
 
     endsubroutine allocate_diagnostic_arrays
+!***********************************************************************
+   subroutine save_diagnostic_controls
+!
+!  Saves threadprivate variables to shared ones.
+!
+!  25-aug-23/TP: Coded
+!
+    l1davgfirst_save = l1davgfirst
+    ldiagnos_save = ldiagnos
+    l1dphiavg_save = l1dphiavg
+    l2davgfirst_save = l2davgfirst
+
+    lout_save = lout
+    l1davg_save = l1davg
+    l2davg_save = l2davg
+    lout_sound_save = lout_sound
+    lvideo_save = lvideo
+!
+!  Record times for diagnostic and 2d average output.
+!
+    if (l1davgfirst) t1ddiagnos_save=t ! (1-D averages are for THIS time)
+    if (l2davgfirst) t2davgfirst_save=t ! (2-D averages are for THIS time)
+    if (lvideo     ) tslice_save=t ! (slices are for THIS time)
+    if (lout_sound ) tsound_save=t
+    if (ldiagnos) then
+      t_save  = t ! (diagnostics are for THIS time)
+      dt_save = dt
+      it_save = it
+      eps_rkf_save = eps_rkf
+    endif
+    lpencil_save = lpencil
+
+    endsubroutine save_diagnostic_controls
+!***********************************************************************
+    subroutine restore_diagnostic_controls
+!
+!   Restores the diagnostics flags that were saved when calculating diagnostics started.
+!
+!   13-nov-23/TP: Written
+!
+    l1davgfirst = l1davgfirst_save
+    ldiagnos = ldiagnos_save
+    l1dphiavg = l1dphiavg_save
+    l2davgfirst = l2davgfirst_save
+
+    lout = lout_save
+    l1davg = l1davg_save
+    l2davg = l2davg_save
+    lout_sound = lout_sound_save
+    lvideo = lvideo_save
+    t1ddiagnos = t1ddiagnos_save
+    t2davgfirst= t2davgfirst_save
+    tslice = tslice_save
+    tsound = tsound_save
+
+    if (ldiagnos) then
+      tdiagnos  = t_save
+      dtdiagnos = dt_save
+      itdiagnos = it_save
+      eps_rkf_diagnos = eps_rkf_save
+    endif
+    lpencil = lpencil_save
+
+    endsubroutine restore_diagnostic_controls
 !***********************************************************************
 endmodule Diagnostics
