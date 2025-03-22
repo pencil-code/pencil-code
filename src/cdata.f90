@@ -211,7 +211,8 @@ module Cdata
   integer :: ix_loc=1,iy_loc=1, iy2_loc=1
   integer :: iz_loc=1,iz2_loc=1, iz3_loc=1, iz4_loc=1
   integer :: iproc=0,ipx=0,ipy=0,ipz=0,iproc_world=0,ipatch=0
-  logical :: lprocz_slowest=.true., lzorder=.false., lmorton_curve=.false., ltest_bcs=.true.,lcpu_timestep_on_gpu=.false.,lsuppress_parallel_reductions=.false.
+  logical :: lprocz_slowest=.true.,lzorder=.false.,lmorton_curve=.false.,ltest_bcs=.true.,lcpu_timestep_on_gpu=.false., &
+             lsuppress_parallel_reductions=.false.
   logical :: lac_sparse_autotuning=.false.
   integer :: xlneigh,ylneigh,zlneigh ! `lower' processor neighbours
   integer :: xuneigh,yuneigh,zuneigh ! `upper' processor neighbours
@@ -690,7 +691,7 @@ module Cdata
 !
 !  Number of bins for Pulsar Timing Array
 !
- !integer :: nbin_angular=19
+ integer, parameter :: nbin_angular=19
 !
   ! Auxiliary parameters for boundary conditions:
   real, dimension(mcom,2) :: fbcx=0., fbcx_2=0.
