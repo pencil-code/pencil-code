@@ -1386,6 +1386,8 @@ sub test_results {
                 $cmp_nv = $#cmp_values;
                 if ($ref_nv != $cmp_nv) {
                     my_ok(0, 1, "number of reference and data columns at line ".($row+1)." of \"".$cmp_file."\" is different (".$ref_nv." != ".$cmp_nv.")", $dir, "results");
+                    print "< ".$ref_lines[$row]."\n";
+                    print "> ".$cmp_lines[$row]."\n";
                     return;
                 }
                 for ($col = 0; $col <= $ref_nv; $col++) {
@@ -1393,6 +1395,8 @@ sub test_results {
                     $cmp = $cmp_values[$col];
                     if ($ref != $cmp) {
                         my_ok(0, 1, "value in column ".($col+1)." at line ".($row+1)." of \"".$cmp_file."\" does not match the reference (".$ref." != ".$cmp.")", $dir, "results");
+                        print "< ".$ref_lines[$row]."\n";
+                        print "> ".$cmp_lines[$row]."\n";
                         return;
                     }
                 }
