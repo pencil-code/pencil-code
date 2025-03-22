@@ -1177,6 +1177,7 @@ void setupConfig(AcMeshInfo& config)
   //TP: Astaroth has default formula for AC_len but we want to make sure AC_len = lxyz, in case the Astaroth formula does not cover everything like non-equidistant grids
   PCLoad(config,AC_len,lxyz);
 
+  PCLoad(config,AC_sparse_autotuning,lac_sparse_autotuning);
   // Enter physics related parameters in config.
 
   #if LDENSITY

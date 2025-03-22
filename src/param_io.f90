@@ -230,7 +230,7 @@ module Param_IO
       uu_fft3d, oo_fft3d, bb_fft3d, jj_fft3d, uu_xkyz, oo_xkyz, bb_xkyz, jj_xkyz, &
       uu_kx0z, oo_kx0z, bb_kx0z, jj_kx0z, bb_k00z, ee_k00z, gwT_fft3d, &
       Em_specflux, Hm_specflux, Hc_specflux, density_scale_factor, radius_diag, &
-      lmorton_curve, ltest_bcs,lcpu_timestep_on_gpu,lsuppress_parallel_reductions, shared_mem_name, lupdate_cvs, &
+      lmorton_curve, ltest_bcs,lac_sparse_autotuning,lcpu_timestep_on_gpu,lsuppress_parallel_reductions, shared_mem_name, lupdate_cvs, &
       lread_oldsnap_nocoolprof
 !
   namelist /IO_pars/ &
