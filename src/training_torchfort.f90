@@ -83,7 +83,7 @@ print*, 'ltrained, modelfn=', ltrained, modelfn
 !
 ! TorchFort create model
 !
-print*, 'MODEL FILE=', trim(model_output_dir)//trim(config_file)
+      print*, 'CONFIG FILE=', trim(model_output_dir)//trim(config_file)
       if (lmpicomm) then
         istat = torchfort_create_distributed_model(trim(model), trim(model_output_dir)//trim(config_file), MPI_COMM_WORLD, iproc)
       else
