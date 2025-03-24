@@ -3104,7 +3104,6 @@ module Diagnostics
         if (ldebug) print*, 'allocate_sound: allocated memory for '// &
                             'fname_sound  with nname_sound  =', nnamel
 !
-        fname_sound = 0.0
 !
         allocate(cform_sound(nnamel),stat=ierr)
         if (ierr>0) call fatal_error('allocate_sound','Could not allocate cform_sound')
@@ -3125,6 +3124,8 @@ module Diagnostics
         integer, intent(in) :: nnamel
         integer :: ierr
         allocate(fname_sound(ncoords_sound,nnamel),stat=ierr)
+        fname_sound = 0.0
+
     endsubroutine allocate_sound_data
 !***********************************************************************
     subroutine sound_clean_up
