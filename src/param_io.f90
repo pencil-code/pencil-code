@@ -95,7 +95,7 @@ module Param_IO
       lread_oldsnap_onlyA, lastaroth_output, astaroth_dest, &
       ireset_tstart, tstart, lghostfold_usebspline, &
       lread_aux, lwrite_aux, lkinflow_as_aux, lenforce_maux_check, &
-      lreport_undefined_diagnostics, pretend_lnTT, lprocz_slowest, lmorton_curve, ltest_bcs,lsuppress_parallel_reductions, &
+      lreport_undefined_diagnostics, pretend_lnTT, lprocz_slowest, lmorton_curve, ltest_bcs, lsuppress_parallel_reductions, &
       nprocx_node, nprocy_node, nprocz_node, &
       lcopysnapshots_exp, bcx, bcy, bcz, r_int, r_ext, r_ref, rsmooth, &
       r_int_border, r_ext_border, mu0, force_lower_bound, force_upper_bound, &
@@ -230,8 +230,8 @@ module Param_IO
       uu_fft3d, oo_fft3d, bb_fft3d, jj_fft3d, uu_xkyz, oo_xkyz, bb_xkyz, jj_xkyz, &
       uu_kx0z, oo_kx0z, bb_kx0z, jj_kx0z, bb_k00z, ee_k00z, gwT_fft3d, &
       Em_specflux, Hm_specflux, Hc_specflux, density_scale_factor, radius_diag, &
-      lmorton_curve, ltest_bcs,lsuppress_parallel_reductions, shared_mem_name, lupdate_cvs, &
-      lread_oldsnap_nocoolprof
+      lmorton_curve, ltest_bcs,lac_sparse_autotuning,lcpu_timestep_on_gpu,lsuppress_parallel_reductions, &
+      shared_mem_name, lupdate_cvs, lread_oldsnap_nocoolprof
 !
   namelist /IO_pars/ &
       lcollective_IO, IO_strategy

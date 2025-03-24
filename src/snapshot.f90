@@ -780,6 +780,9 @@ module Snapshot
 !  Set llwrite_only.
 !
       if (present(lwrite_only)) llwrite_only=lwrite_only
+
+      if(.not. lmultithread) tdiagnos=t
+
       ldo_all=.not.llwrite_only
 !
 !  Check whether we want to output power snapshot. If so, then

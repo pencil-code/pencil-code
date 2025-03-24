@@ -624,6 +624,10 @@ module EquationOfState
         call fatal_error('bc_ss_flux','invalid argument')
       endselect
 !
+!AXEL: not needed for noeos. Can remove if auto-test ok.
+!KG: restored since this subroutine is used other EOS modules (even
+!KG: eos_idealgas) through the eos_dummies.inc mechanism. Commenting this out
+!KG: breaks most of the convection auto-tests (e.g. conv-slab)
       do il=1,mx
         do im =1,my
           call get_gamma_etc(cp=cp(il,im), cv=cv(il,im), f=f(il,im,n,:))

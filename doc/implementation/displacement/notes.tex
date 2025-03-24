@@ -1,0 +1,157 @@
+%$Id: notes.tex,v 1.106 2024/01/17 02:11:12 brandenb Exp $
+\documentclass{article}
+%\documentclass[twocolumn]{article}
+\setlength{\textwidth}{160mm}
+\setlength{\oddsidemargin}{-0mm}
+\setlength{\textheight}{220mm}
+\setlength{\topmargin}{-8mm}
+\usepackage{graphicx,natbib,bm,url,color}
+\graphicspath{{./fig/}{./png/}}
+\thispagestyle{empty}
+\input macros
+\def\red{\textcolor{red}}
+\def\blue{\textcolor{blue}}
+\title{}
+\author{}
+\date{\today,~ $ $Revision: 1.106 $ $}
+\begin{document}
+%\maketitle
+
+%\section{Solving the constraint equation for $\EE$}
+\section{Including the displacement current}
+
+\subsection{Maxwell equations}
+
+Amp\'ere's law with the displacement current $\partial\EE/\partial t$
+included reads
+\begin{equation}
+\frac{\partial\EE}{\partial t}=\nab\times\BB-\JJ.
+\label{dEdt}
+\end{equation}
+Here, we must obey the constraint equation for $\EE$,
+\begin{equation}
+\nab\cdot\EE=\rho_\mathrm{e}.
+\label{constraint}
+\end{equation}
+We also have $\nab\cdot\BB=0$, which is readily obeyed by expressing
+$\BB=\nab\times\AAA$ in terms of the magnetic vector potential $\AAA$
+and solving for the uncurled induction equation
+\begin{equation}
+\frac{\partial\AAA}{\partial t}=-\EE-\nab\psi.
+\label{dAdt}
+\end{equation}
+
+\subsection{Charge density and Ohm's law}
+
+We compute $\rho_\mathrm{e}$ by solving the continuity equation for the
+charge density.
+It is obtained by taking the divergence of \Eq{dEdt}, i.e.,
+\begin{equation}
+\frac{\partial\rho_\mathrm{e}}{\partial t}=-\nab\cdot\JJ,
+\label{drhoedt}
+\end{equation}
+which requires solving Ohm's law, i.e.,
+\begin{equation}
+\JJ=\sigma\left(\EE+\uu\times\BB\right),
+\label{Ohm}
+\end{equation}
+so
+\begin{equation}
+\nab\cdot\JJ=\sigma\left[\nab\cdot\EE+\nab\cdot(\uu\times\BB)\right],
+\label{divOhm}
+\end{equation}
+where the derivatives in
+\begin{equation}
+\nab\cdot(\uu\times\BB)=\epsilon_{ijk}\left(u_{j,i}B_k+u_j B_{k,i}\right)
+\label{divuxB}
+\end{equation}
+can be expressed in terms of $u_{j,i}$ and $B_{k,i}$, which are readily
+available.
+
+\subsection{Coulomb gauge}
+
+One way to satisfy \Eq{constraint} is to adopt the Coulomb
+gauge, $\nab\cdot\AAA=0$.
+By taking the divergence of \Eq{dAdt} and using the Coulomb gauge, we have
+$\nabla^2\psi=-\nab\cdot\EE$, so we have to solve a Poisson equation
+for the electrostatic (or scalar) potential $\psi$,
+\begin{equation}
+\nabla^2\psi=-\rho_\mathrm{e},
+\end{equation}
+which is analogous to the Poisson equation for the gravitational potential.
+
+\subsection{Weyl gauge}
+
+When using the Weyl gauge (also known as the temporal gauge),
+we can control the longitudinal modes of $\EE$, by defining
+\begin{equation}
+\Gamma=\nab\cdot\AAA
+\end{equation}
+and replacing $\nab\times\BB$ in \Eq{dEdt} by $-\nabla^2\AAA+\nab\Gamma$,
+so therefore \Eq{dEdt} becomes
+\begin{equation}
+\frac{\partial\EE}{\partial t}=-\nabla^2\AAA+\nab \Gamma-\JJ.
+\label{dE2dt}
+\end{equation}
+The longitudinal modes of $\EE$ are constrained by
+taking the divergence of \Eq{dAdt}, so we obtain
+\begin{equation}
+\frac{\partial\Gamma}{\partial t}=-\nab\cdot\EE.
+\label{dGdt}
+\end{equation}
+Following standard procedures employed in numerical relativity,
+and following a suggestion from Tanmay Vachaspati, we can
+replace $\nab\cdot\EE$ by the algebraic mean of $\nab\cdot\EE$ and
+$\rho_\mathrm{e}$, i.e., we solve
+\begin{equation}
+\frac{\partial\Gamma}{\partial t}=-(1-w)\nab\cdot\EE
+-w\rho_\mathrm{e}.
+\label{dG2dt}
+\end{equation}
+
+\section{Finite axion density}
+
+When the axion density $\phi$ is finite, \Eq{dEdt} is replaced by
+\begin{equation}
+\frac{\partial\EE}{\partial t}=\nab\times\BB-\JJ
+-\frac{\alpha}{f}\left(\dot{\phi}\BB+\nab\phi\times\EE\right).
+\label{dEdt2}
+\end{equation}
+Now \Eq{dEdt2} becomes
+\begin{equation}
+\frac{\partial\EE}{\partial t}=-\nabla^2\AAA+\nab \Gamma-\JJ
+-\frac{\alpha}{f}\left(\dot{\phi}\BB+\nab\phi\times\EE\right).
+\label{dE2dt2}
+\end{equation}
+The longitudinal modes of $\EE$ are constrained by
+\begin{equation}
+\nab\cdot\EE=\rho_\mathrm{e}-\frac{\alpha}{f}\BB\cdot\nab\phi.
+\end{equation}
+Instead of \Eq{dGdt}, we now solve
+\begin{equation}
+\frac{\partial\Gamma}{\partial t}=-(1-w)\nab\cdot\EE
+-w\rho_\mathrm{e}^\mathrm{tot},
+\label{dG2dt2}
+\end{equation}
+where $\rho_\mathrm{e}^\mathrm{tot}\equiv\rho_\mathrm{e}-(\alpha/f)\,\BB\cdot\nab\phi$.
+In the conducting case, we obtain $\rho_\mathrm{e}^\mathrm{tot}$ by solving the continuity
+equation for the charge density.
+It is obtained by taking the divergence of \Eq{dEdt2}, i.e.,
+\begin{equation}
+\frac{\partial\rho_\mathrm{e}^\mathrm{tot}}{\partial t}=-\nab\cdot\JJ^\mathrm{tot},
+\label{drhoedt}
+\end{equation}
+where
+\begin{equation}
+\JJ^\mathrm{tot}=\JJ+\frac{\alpha}{f}\left(\dot{\phi}\BB+\nab\phi\times\EE\right).
+\label{Jtot}
+\end{equation}
+
+In summary, when $\sigma=0$ and $\alpha\neq0$, we have to solve three dynamical equations:
+\Eq{dAdt}, \eq{dE2dt2}, and \Eq{dG2dt2}.
+When $\sigma=0$ and $\alpha=0$, the equations are linear and we just need
+to solve the two dynamical equations \Eqs{dAdt}{dE2dt}, as was done in
+BS21 and BHS21.
+When $\sigma\neq0$, we also have to solve \Eq{drhoedt}.
+
+\end{document}

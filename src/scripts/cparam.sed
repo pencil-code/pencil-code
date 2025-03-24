@@ -30,6 +30,7 @@ s/integer *, *parameter *::/const int /
 s/logical *, *parameter *::/const bool /
 s/(\/ '/\ \/\*\* /g
 s/' \/)/\*\*\//g
+s|^    /)|**/|g
 s/real *, *parameter *::/const real /
 s/\([^0-9a-zA-Z_]\)min(/\1MIN(/g
 s/\([^0-9a-zA-Z_]\)max(/\1MAX(/g

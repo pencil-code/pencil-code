@@ -2108,6 +2108,24 @@ module Hydro
 !
 !  U_phi = sin(theta)
 !
+      case ('Uy=sinx')
+        if (headtt) print*,'Uy = sin(x), ampl=',ampl_kinflow
+! uu
+        if (lpenc_loc(i_uu)) then
+          p%uu(:,1)=0.
+          p%uu(:,2)=ampl_kinflow*sin(x(l1:l2))
+          p%uu(:,3)=0.
+        endif
+! divu
+        if (lpenc_loc(i_divu)) p%divu=0.
+! uij
+        if (lpenc_loc(i_uij)) then
+          p%uij(:,:,:)=0.
+          p%uij(:,2,1)=+ampl_kinflow*cos(x(l1:l2))
+        endif
+!
+!  U_phi = sin(theta)
+!
       case ('Uz=siny')
         if (headtt) print*,'U_phi = sin(theta)',ampl_kinflow
 ! uu

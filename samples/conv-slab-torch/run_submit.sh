@@ -1,15 +1,20 @@
 #!/bin/bash
 #SBATCH --job-name=test_torchfort
-#SBATCH --account=ituomine
+#SBATCH --account=project_2000403
 #SBATCH --partition=gputest
-#SBATCH --time=00:15:00
+#SBATCH --time=00:03:00
 #SBATCH --nodes=1
-#SBATCH --ntasks=4
-#SBATCH --cpus-per-task=1
-#SBATCH --gres=gpu:a100:4
-#SBATCH --mem=32G
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=7
+#SBATCH --gres=gpu:v100:1
+##SBATCH --mem=32G
 #SBATCH -o slurm-%x_%J.out
 ####SBATCH --mail-type=ALL
 #SBATCH --output=train.out
 
-apptainer exec --nv -B /users/mreinhar/pencil-code:/users/mreinhar/pencil-code -B scripts:/opt/scripts -B /scratch/project_2001062/mreinhar/pencil-code/samples/conv-slab-torch/data:/scratch/project_2001062/mreinhar/pencil-code/samples/conv-slab-torch/data torchfort_0.2.0.sif bash /opt/scripts/run.sh
+#TP: for god knows for what reason a blank data folder gets generated on top of the correct data folder after running
+#TP: and even more weirdly if one deletes the blank folder the correct one reappears!
+apptainer exec --nv -B $PENCIL_HOME:$PENCIL_HOME -B scripts:/opt/scripts -B /scratch/project_2000403/toukopur/data:$PENCIL_HOME/samples/conv-slab-torch/data -B /scratch/project_2000403/toukopur/data:/data torchfort_bisonflex.sif bash rm -rf data
+
+apptainer exec --nv -B $PENCIL_HOME:$PENCIL_HOME -B scripts:/opt/scripts -B /scratch/project_2000403/toukopur/data:$PENCIL_HOME/samples/conv-slab-torch/data -B /scratch/project_2000403/toukopur/data:/data torchfort_bisonflex.sif bash /opt/scripts/run.sh
+

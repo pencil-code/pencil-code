@@ -4,15 +4,16 @@
 ! Run parameters
 !
 &run_pars
+  ip=7
   cvsid='$Id$',
-  nt=4001, it1=100, isave=200, itorder=3
-  dsnap=20., dvid=200.
+  nt=131, it1=100, isave=200, itorder=3
+  dsnap=20., dvid=200.,dt=1e-12,dtmin=1e-16
 !! uncomment the following block to see the free evolution of the system:
 !  nt=4000, it1=50, isave=2000, itorder=3
 !  dsnap=0.2, dvid=0.2
-  bcx = 'p','p','p', 'p',    'p'
-  bcy = 'p','p','p', 'p',    'p'
-  bcz = 's','s','a','a2','c1:cT'
+  !bcx = 'p','p','p', 'p',    'p'
+  !bcy = 'p','p','p', 'p',    'p'
+  !bcz = 's','s','a','a2','c1:cT'
   cdtv=0.30, cdt=0.4
   lpencil_check=T
 /
@@ -51,7 +52,8 @@
 
 ! tinit    -- initial time for smoothly switching on heating, etc
 &training_run_pars
-  it_train=10, it_train_chkpt=500
+  lroute_via_cpu=T
+  it_train=10, it_train_chkpt=100
   luse_trained_tau=F
   max_loss=1.e-5
   model='stationary'

@@ -7,6 +7,7 @@ Contains the classes and methods to read slice files.
 
 import numpy as np
 from math import ceil
+import warnings
 
 def slices(*args, **kwargs):
     """
@@ -515,6 +516,11 @@ class SliceSeries(object):
                     if not quiet:
                         print("Reshaping array")
                         sys.stdout.flush()
+
+                    if len(self.t) == 0:
+                        warnings.warn(f"Slice data from {file_name} has length zero; skipping")
+                        continue
+
                     self.t = np.array(self.t, dtype=precision)[:, 0]
                     slice_series = np.array(slice_series, dtype=precision)
                     slice_series = slice_series.reshape(islice, vsize, hsize)

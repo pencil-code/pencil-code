@@ -479,4 +479,62 @@ module File_io
 
     endsubroutine read_zaver
 !***********************************************************************
+   logical function read_name_format(in_file,cnamel,nnamel)
+!
+!  Unifies reading of *.in files which contain requests for diagnostic
+!  output in the form <name>(<format>); returns number of items read !
+!  properly from file 'in_file' (comment lines excluded) in
+!  'nnamel'; returns items in cnamel, which is allocated, if necessary, with
+!  the length <number of lines in 'in_file' + initial value of
+!  'nnamel'>; further allocations done in subroutine argument 'allocator' which
+!  takes same length as its parameter;
+!
+!  Return value is nnamel>0.
+!
+!   11-jan-11/MR: coded
+!   23-jan-11/MR: pointer based handling of cname-like arrays instead of allocatable
+!                 dummy parameter (the latter standardized only since FORTRAN 2000)
+!   24-jan-11/MR: removed allocation
+!   26-aug-13/MR: modification for uncounted comment lines in input file
+!   24-aug-15/MR: introduced use of nitems in parallel_open etc.
+!   21-mar-25/TP: moved from register to file_io_common
+!
+      use Cdata  , only: comment_char
+      use Messages, only: fatal_error
+!
+      character (len=*), intent(in) :: in_file
+      character (len=30), dimension(*), intent(out) :: cnamel
+      integer, intent(out) :: nnamel
+!
+      character (len=30) :: cname_tmp
+      integer :: io_err
+!
+      nnamel = 0
+!
+      call parallel_open(trim(in_file), remove_comments=.true., nitems=nnamel)
+!
+!  Read names and formats.
+!
+      if (nnamel>0) then
+        read(parallel_unit_vec,*) cnamel(1:nnamel)
+      else
+        do
+          read(parallel_unit_vec, *, iostat=io_err) cname_tmp
+          if (io_err < 0) exit ! EOF
+          if (io_err > 0) call fatal_error('read_name_format', &
+                                           'IO-error while reading "'//trim(in_file)//'"')
+          cname_tmp = adjustl(cname_tmp)
+          if ((cname_tmp /= ' ').and.(cname_tmp(1:1) /= '!').and.(cname_tmp(1:1) /= comment_char)) then
+            nnamel = nnamel+1
+            cnamel(nnamel) = cname_tmp
+          endif
+        enddo
+      endif
+!
+      read_name_format = nnamel>0
+!
+      call parallel_close
+!
+    endfunction read_name_format
+!***********************************************************************
 endmodule File_io

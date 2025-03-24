@@ -32,14 +32,15 @@ module Special
 !
 ! input parameters
 !
-  real :: ampl=1e-3, alpf=0.
+  real, dimension (ninit) :: amplee=0.0 !, kx_aa=1.0, ky_aa=1.0, kz_aa=1.0
+  real :: alpf=0.
   real :: ampl_ex=0.0, ampl_ey=0.0, ampl_ez=0.0, ampl_a0=0.0
   real :: kx_ex=0.0, kx_ey=0.0, kx_ez=0.0
   real :: ky_ex=0.0, ky_ey=0.0, ky_ez=0.0
   real :: kz_ex=0.0, kz_ey=0.0, kz_ez=0.0
   real :: kx_a0=0.0, ky_a0=0.0, kz_a0=0.0
   real :: phase_ex=0.0, phase_ey=0.0, phase_ez=0.0, phase_a0=0.0
-  real :: amplee=0.0, initpower_ee=0.0, initpower2_ee=0.0
+  real :: initpower_ee=0.0, initpower2_ee=0.0
   real :: cutoff_ee=0.0, ncutoff_ee=0.0, kpeak_ee=0.0
   real :: relhel_ee=0.0, kgaussian_ee=0.0
   real :: ampla0=0.0, initpower_a0=0.0, initpower2_a0=0.0
@@ -50,16 +51,18 @@ module Special
   logical :: luse_scale_factor_in_sigma=.false.
   real, pointer :: eta, Hscript, echarge, sigEm_all, sigBm_all
   integer :: iGamma=0, ia0=0, idiva_name=0, ieedot=0, iedotx=0, iedoty=0, iedotz=0
-  integer :: isigE=0, isigB=0
+  integer :: idivE=0, isigE=0, isigB=0
   logical :: llongitudinalE=.true., llorenz_gauge_disp=.false., lskip_projection_ee=.false.
   logical :: lscale_tobox=.true., lskip_projection_a0=.false.
   logical :: lvectorpotential=.false., lphi_hom=.false.
   logical :: lno_noise_ee=.false., lnoncollinear_EB=.false., lnoncollinear_EB_aver=.false.
   logical :: lcollinear_EB=.false., lcollinear_EB_aver=.false.
   logical :: leedot_as_aux=.false., lcurlyA=.true., lsolve_chargedensity=.false.
-  logical :: lsigE_as_aux=.false., lsigB_as_aux=.false., lrandom_ampl_ee=.false., lfixed_phase_ee=.false.
+  logical :: ldivE_as_aux=.false., lsigE_as_aux=.false., lsigB_as_aux=.false.
+  logical :: lrandom_ampl_ee=.false., lfixed_phase_ee=.false.
   logical :: lswitch_off_divJ=.false., lswitch_off_Gamma=.false.
-  character(len=50) :: initee='zero', inita0='zero'
+  character(len=50) :: inita0='zero'
+  character (len=labellen), dimension(ninit) :: initee='nothing'
 !
   namelist /special_init_pars/ &
     initee, inita0, alpf, &
@@ -74,18 +77,21 @@ module Special
     cutoff_ee, ncutoff_ee, kpeak_ee, relhel_ee, kgaussian_ee, &
     ampla0, initpower_a0, initpower2_a0, lno_noise_ee, &
     cutoff_a0, ncutoff_a0, kpeak_a0, relhel_a0, kgaussian_a0, &
-    leedot_as_aux, lsigE_as_aux, lsigB_as_aux, lsolve_chargedensity, &
-    weight_longitudinalE, lrandom_ampl_ee, lfixed_phase_ee, lskip_projection_ee
+    leedot_as_aux, ldivE_as_aux, lsigE_as_aux, lsigB_as_aux, &
+    lsolve_chargedensity, weight_longitudinalE, lswitch_off_Gamma, &
+    lrandom_ampl_ee, lfixed_phase_ee, lskip_projection_ee
 !
   ! run parameters
-  real :: beta_inflation=0.
+  real :: beta_inflation=0., rescale_ee=1.
+  logical :: reinitialize_ee=.false.
   namelist /special_run_pars/ &
     alpf, llongitudinalE, llorenz_gauge_disp, lphi_hom, &
-    leedot_as_aux, lsigE_as_aux, lsigB_as_aux, eta_ee, lcurlyA, beta_inflation, &
+    leedot_as_aux, ldivE_as_aux, lsigE_as_aux, lsigB_as_aux, &
+    eta_ee, lcurlyA, beta_inflation, &
     weight_longitudinalE, lswitch_off_divJ, lswitch_off_Gamma, &
     lnoncollinear_EB, lnoncollinear_EB_aver, luse_scale_factor_in_sigma, &
-    lcollinear_EB, lcollinear_EB_aver, &
-    sigE_prefactor, sigB_prefactor
+    lcollinear_EB, lcollinear_EB_aver, sigE_prefactor, sigB_prefactor, &
+    reinitialize_ee, initee, rescale_ee
 !
 ! Declare any index variables necessary for main or
 !
@@ -151,6 +157,9 @@ module Special
       if (leedot_as_aux) &
         call register_report_aux('eedot', ieedot, iedotx, iedoty, iedotz)
 !
+      if (ldivE_as_aux) &
+        call register_report_aux('divE', idivE)
+!
       if (lsigE_as_aux) &
         call register_report_aux('sigE', isigE)
 !
@@ -192,8 +201,10 @@ module Special
 !
       use FArrayManager
       use SharedVariables, only: get_shared_variable
+      use Initcond, only: gaunoise
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      integer :: j
 !
 !  Initialize module variables which are parameter dependent
 !  If one really wants to work with c_light /= 1,
@@ -222,6 +233,21 @@ module Special
         sigBm_all=0.
       endif
 !
+!  Reinitialize magnetic field using a small selection of perturbations
+!  that were mostly also available as initial conditions.
+!
+      if (reinitialize_ee) then
+        do j=1,ninit
+          select case (initee(j))
+          case ('rescale')
+            f(:,:,:,iex:iez)=rescale_ee*f(:,:,:,iex:iez)
+            if (llongitudinalE) f(:,:,:,iGamma)=rescale_ee*f(:,:,:,iGamma)
+          case ('gaussian-noise'); call gaunoise(amplee(j),f,iex,iez)
+          case default
+          endselect
+        enddo
+      endif
+!
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_special
@@ -236,47 +262,56 @@ module Special
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: diva
+      real, dimension (nx) :: divA, divE
+      integer :: j
 !
       intent(inout) :: f
 !
 !  SAMPLE IMPLEMENTATION
 !
-      select case (initee)
-        case ('nothing'); if (lroot) print*,'initee: nothing'
-        case ('zero'); f(:,:,:,iex:iez)=0.
-        case ('coswave-phase')
-          call coswave_phase(f,iex,ampl_ex,kx_ex,ky_ex,kz_ex,phase_ex)
-          call coswave_phase(f,iey,ampl_ey,kx_ey,ky_ey,kz_ey,phase_ey)
-          call coswave_phase(f,iez,ampl_ez,kx_ez,ky_ez,kz_ez,phase_ez)
-        case ('sinwave-phase')
-          call sinwave_phase(f,iex,ampl_ex,kx_ex,ky_ex,kz_ex,phase_ex)
-          call sinwave_phase(f,iey,ampl_ey,kx_ey,ky_ey,kz_ey,phase_ey)
-          call sinwave_phase(f,iez,ampl_ez,kx_ez,ky_ez,kz_ez,phase_ez)
-        case ('power_randomphase_hel')
-          call power_randomphase_hel(amplee,initpower_ee,initpower2_ee, &
-            cutoff_ee,ncutoff_ee,kpeak_ee,f,iex,iez,relhel_ee,kgaussian_ee, &
-            lskip_projection_ee, lvectorpotential, lscale_tobox=lscale_tobox, &
-            lno_noise=lno_noise_ee, lrandom_ampl=lrandom_ampl_ee, &
-            lfixed_phase=lfixed_phase_ee)
+      do j=1,ninit
+        select case (initee(j))
+          case ('nothing'); if (lroot) print*,'initee: nothing'
+          case ('zero'); f(:,:,:,iex:iez)=0.
+          case ('coswave-phase')
+            call coswave_phase(f,iex,ampl_ex,kx_ex,ky_ex,kz_ex,phase_ex)
+            call coswave_phase(f,iey,ampl_ey,kx_ey,ky_ey,kz_ey,phase_ey)
+            call coswave_phase(f,iez,ampl_ez,kx_ez,ky_ez,kz_ez,phase_ez)
+          case ('sinwave-phase')
+            call sinwave_phase(f,iex,ampl_ex,kx_ex,ky_ex,kz_ex,phase_ex)
+            call sinwave_phase(f,iey,ampl_ey,kx_ey,ky_ey,kz_ey,phase_ey)
+            call sinwave_phase(f,iez,ampl_ez,kx_ez,ky_ez,kz_ez,phase_ez)
+          case ('power_randomphase_hel')
+            call power_randomphase_hel(amplee(j),initpower_ee,initpower2_ee, &
+              cutoff_ee,ncutoff_ee,kpeak_ee,f,iex,iez,relhel_ee,kgaussian_ee, &
+              lskip_projection_ee, lvectorpotential, lscale_tobox=lscale_tobox, &
+              lno_noise=lno_noise_ee, lrandom_ampl=lrandom_ampl_ee, &
+              lfixed_phase=lfixed_phase_ee)
+          case ('Bunch-Davies')
+            call bunch_davies(f,iax,iaz,iex,iez,amplee(j),kpeak_ee)
+  !
+          case default
+            call fatal_error('init_ee','no such init_ee: "'//trim(initee(j))//'"')
+        endselect
+      enddo
 !
-        case default
-          call fatal_error("init_special","no such initee: "//trim(initee))
-      endselect
-!
-!  Initial condition for Gama
+!  Initial condition for Gamma = divA
 !
       if (llongitudinalE) then
-!        f(:,:,:,iGamma)=0.
-         do n=n1,n2; do m=m1,m2
-           call div(f,iaa,diva)
-           f(l1:l2,m,n,iGamma)=diva
-         enddo; enddo
+        do n=n1,n2; do m=m1,m2
+          call div(f,iaa,diva)
+          f(l1:l2,m,n,iGamma)=diva
+        enddo; enddo
       endif
 !
-!  Initial condition for rhoe
+!  Initial condition for rhoe = divE
 !
-      if (lsolve_chargedensity) f(:,:,:,irhoe)=0.
+      if (lsolve_chargedensity) then
+        do n=n1,n2; do m=m1,m2
+          call div(f,iee,divE)
+          f(l1:l2,m,n,irhoe)=divE
+        enddo; enddo
+      endif
 !
 !  Initialize diva_name if llorenz_gauge_disp=T
 !
@@ -303,6 +338,7 @@ module Special
       endif
 !
       if (leedot_as_aux) f(:,:,:,iedotx:iedotz)=0.
+      if (ldivE_as_aux) f(:,:,:,idivE)=0.
       if (lsigE_as_aux) f(:,:,:,isigE)=0.
       if (lsigB_as_aux) f(:,:,:,isigB)=0.
 !
@@ -352,6 +388,10 @@ module Special
       if (llongitudinalE) then
         lpenc_requested(i_divE)=.true.
         lpenc_requested(i_gGamma)=.true.
+      endif
+!
+      if (idiag_divEm/=0. .or. idiag_divErms/=0.) then
+        lpenc_requested(i_divE)=.true.
       endif
 !
 !  charge density
@@ -419,18 +459,19 @@ module Special
       intent(in) :: f
       intent(inout) :: p
 !
+!  Pencil for charge density.
+!
+      if (lsolve_chargedensity) p%rhoe=f(l1:l2,m,n,irhoe)
+!
 !  Terms for Gamma evolution.
 !
+      if (lpenc_requested(i_divE)) call div(f,iee,p%divE)
+      if (lpenc_requested(i_gGamma)) call grad(f,iGamma,p%gGamma)
+!
+!  Replace p%curlb by the combination -p%del2a+p%gGamma.
+!
       if (llongitudinalE) then
-        call div(f,iee,p%divE)
-        call grad(f,iGamma,p%gGamma)
         p%curlb=-p%del2a+p%gGamma
-        if (lsolve_chargedensity) p%rhoe=f(l1:l2,m,n,irhoe)
-!      else
-!        p%curlb=p%jj
-!        p%curlb=p%graddiva-p%del2a
-!        print*,'ram=p%graddiva',p%graddiva
-!        print*,'ram=p%del2a',p%del2a
       endif
 !
 ! el and e2 (note that this is called after magnetic, where sigma is computed)
@@ -456,17 +497,19 @@ module Special
           gam_EB=sqrt21*sqrt(1.+(p%e2+p%b2)/boost)
           eprime=sqrt21*sqrt(p%e2-p%b2+boost)
           bprime=sqrt21*sqrt(p%b2-p%e2+boost)*sign(1.,p%eb)
-          where (eprime/=0. .or. bprime/=0.)
+          where (eprime/=0. .and. bprime/=0.)
             jprime=Chypercharge*echarge**3/(6.*pi**2*Hscript)*eprime*abs(bprime)/tanh(pi*abs(bprime)/eprime)
+            p%sigE=sigE_prefactor*abs(jprime)*eprime/(gam_EB*boost)
+            p%sigB=sigB_prefactor*abs(jprime)*p%eb/(eprime*gam_EB*boost)
           elsewhere
             jprime=0.
+            p%sigE=0.
+            p%sigB=0.
           endwhere
-          p%sigE=sigE_prefactor*abs(jprime)*eprime/(gam_EB*boost)
-          p%sigB=sigB_prefactor*abs(jprime)*p%eb/(eprime*gam_EB*boost)
         elseif (lcollinear_EB) then
           eprime=sqrt(p%e2)
           bprime=sqrt(p%b2)
-          where (eprime/=0. .or. bprime/=0.)
+          where (eprime/=0. .and. bprime/=0.)
             p%sigE=sigE_prefactor*Chypercharge*echarge**3/(6.*pi**2*Hscript)*bprime/tanh(pi*abs(bprime)/eprime)
           elsewhere
             p%sigE=0.
@@ -485,10 +528,6 @@ module Special
           p%jj_ohm(:,j)=p%sigE*p%el(:,j)+p%sigB*p%bb(:,j)
         enddo
       endif
-!             else
-!               do j=1,3
-!                 p%jj_ohm(:,j)=(p%el(:,j)+p%uxb(:,j))*mu01/eta_total
-!               enddo
 !
 ! edot2
 !
@@ -577,6 +616,7 @@ module Special
       if (headtt) call identify_bcs('ee',iee)
 !
 !  Calculate rhs of Gamma equation and update curl
+!  Initialize tmp with axion term.
 !
       if (lphi_hom) then
         tmp=0.
@@ -590,16 +630,25 @@ module Special
         endif
       endif
       constrainteqn1=sqrt(p%divE**2+tmp**2)
+!
+!  in the following, should use "where"
+!
       if (any(constrainteqn1 == 0.)) then
         constrainteqn=0.
       else
         constrainteqn=(p%divE-tmp)/constrainteqn1
       endif
+!
+!  Solve for Gamma and possibly for charge density.
+!  Add to the existing tmp and update df(l1:l2,m,n,irhoe).
+!
       if (llongitudinalE) then
-        if (lsolve_chargedensity) tmp=tmp+f(l1:l2,m,n,irhoe)
-        if (.not.lswitch_off_Gamma) &
-          df(l1:l2,m,n,iGamma) = df(l1:l2,m,n,iGamma) - (1.-weight_longitudinalE)*p%divE &
-                                -weight_longitudinalE*tmp
+        if (lsolve_chargedensity) then
+          tmp=tmp+f(l1:l2,m,n,irhoe)
+          if (.not.lswitch_off_Gamma) df(l1:l2,m,n,iGamma)=df(l1:l2,m,n,iGamma) &
+            -(1.-weight_longitudinalE)*p%divE-weight_longitudinalE*tmp
+          df(l1:l2,m,n,irhoe)=df(l1:l2,m,n,irhoe)-p%divJ
+        endif
       endif
 !
 !  solve: dE/dt = curlB - ...
@@ -608,6 +657,9 @@ module Special
 !
       if (lmagnetic) then
         df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-p%el
+!
+!  Maxwell equation otherwise the same in both gauges.
+!
         df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)+c_light2*(p%curlb-mu0*p%jj_ohm)
 !
 !  Solve for charge density
@@ -681,6 +733,7 @@ module Special
 !
 !  If requested, put sigE and sigB into f array as auxiliaries.
 !
+      if (ldivE_as_aux) f(l1:l2,m,n,idivE)=p%divE
       if (lsigE_as_aux) f(l1:l2,m,n,isigE)=p%sigE
       if (lsigB_as_aux) f(l1:l2,m,n,isigB)=p%sigB
 !
@@ -710,10 +763,10 @@ module Special
         call max_mn_name(p%e2,idiag_emax,lsqrt=.true.)
         if (idiag_a0rms/=0) call sum_mn_name(p%a0**2,idiag_a0rms,lsqrt=.true.)
         call sum_mn_name(p%BcurlE,idiag_BcurlEm)
-        if (lsolve_chargedensity) then
-          call sum_mn_name(p%rhoe,idiag_rhoem)
-          if (idiag_rhoerms/=0) call sum_mn_name(p%rhoe**2,idiag_rhoerms,lsqrt=.true.)
-        endif
+  !     if (lsolve_chargedensity) then
+        call sum_mn_name(p%rhoe,idiag_rhoem)
+        call sum_mn_name(p%rhoe**2,idiag_rhoerms,lsqrt=.true.)
+  !     endif
         if (idiag_divErms/=0) call sum_mn_name(p%divE**2,idiag_divErms,lsqrt=.true.)
         if (idiag_divJrms/=0) call sum_mn_name(p%divJ**2,idiag_divJrms,lsqrt=.true.)
         call sum_mn_name(p%divE,idiag_divEm)
@@ -863,9 +916,14 @@ module Special
 !  Possibility to modify the f array after the boundaries are
 !  communicated.
 !
+!     use Poisson
+!, only: inverse_laplacian
+!     use Sub, only: div
+!
 !  06-jul-06/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension (nx) :: tmp
 !
       call keep_compiler_quiet(f)
 !
