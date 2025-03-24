@@ -836,7 +836,9 @@ module Register
 
       call calc_nnames
       call allocate_diagnostic_names
+      if(nnamexy > 0) lwrite_zaverages = read_name_format(zaver_in_file,cnamexy,nnamexy)
       call allocate_diagnostic_arrays
+
 !
 !  Read print.in.double if applicable, else print.in.
 !  Read in the list of variables to be printed.
@@ -927,18 +929,16 @@ module Register
 !  Read in the list of variables for xz-averages.
 !
 !
-      if (nnamey>0) then
-        lwrite_xzaverages = read_name_format(xzaver_in_file,cnamey,nnamey)
-      endif
+      if (nnamez>0) lwrite_xyaverages = read_name_format(xyaver_in_file,cnamez,nnamez)
+      if (lroot .and. (ip<14)) print*, 'rprint_list: nnamez=', nnamez
+
+      if (nnamey>0) lwrite_xzaverages = read_name_format(xzaver_in_file,cnamey,nnamey)
       if (lroot .and. (ip<14)) print*, 'rprint_list: nnamey=', nnamey
 !
 !  Read in the list of variables for yz-averages.
 !
 !
-      if (nnamex>0) then
-        lwrite_yzaverages = read_name_format(yzaver_in_file,cnamex,nnamex)
-      endif
-
+      if (nnamex>0) lwrite_yzaverages = read_name_format(yzaver_in_file,cnamex,nnamex)
       if (lroot .and. (ip<14)) print*, 'rprint_list: nnamex=', nnamex
 !
 !  Read in the list of variables for phi-z-averages.

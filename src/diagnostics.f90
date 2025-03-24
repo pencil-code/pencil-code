@@ -2910,6 +2910,7 @@ module Diagnostics
       integer,             intent(in) :: iname, m
 
       integer :: ml
+
 !
       if (iname==0) return
 !
@@ -3858,10 +3859,7 @@ module Diagnostics
       nnamer = max(0,parallel_count_lines(phizaver_in_file))
       nnamexz = parallel_count_lines(yaver_in_file)
       nnamexy = parallel_count_lines(zaver_in_file)
-      nnamexy = parallel_count_lines(zaver_in_file)
       nnamerz = parallel_count_lines(phiaver_in_file)
-      !TP: non-uniform TODO: make it better
-      if(nnamexy > 0) lwrite_zaverages = read_name_format(zaver_in_file,cnamexy,nnamexy)
 
 
     endsubroutine calc_nnames 
