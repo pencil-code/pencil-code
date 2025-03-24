@@ -19,7 +19,8 @@ export OMP_WAIT_POLICY=PASSIVE
 
 #ldd  src/run.x
 #bash
-#ls   data/training
+ls   data
+ls   data/training
 
 #pc_run start
 #pc_run run

@@ -6,7 +6,7 @@
 &run_pars
   ip=7
   cvsid='$Id$',
-  nt=4001, it1=100, isave=200, itorder=3
+  nt=131, it1=100, isave=200, itorder=3
   dsnap=20., dvid=200.,dt=1e-12,dtmin=1e-16
 !! uncomment the following block to see the free evolution of the system:
 !  nt=4000, it1=50, isave=2000, itorder=3
@@ -53,7 +53,7 @@
 ! tinit    -- initial time for smoothly switching on heating, etc
 &training_run_pars
   lroute_via_cpu=T
-  it_train=10, it_train_chkpt=500
+  it_train=10, it_train_chkpt=100
   luse_trained_tau=F
   max_loss=1.e-5
   model='stationary'
