@@ -51,14 +51,15 @@ module Special
   logical :: luse_scale_factor_in_sigma=.false.
   real, pointer :: eta, Hscript, echarge, sigEm_all, sigBm_all
   integer :: iGamma=0, ia0=0, idiva_name=0, ieedot=0, iedotx=0, iedoty=0, iedotz=0
-  integer :: isigE=0, isigB=0
+  integer :: idivE=0, isigE=0, isigB=0
   logical :: llongitudinalE=.true., llorenz_gauge_disp=.false., lskip_projection_ee=.false.
   logical :: lscale_tobox=.true., lskip_projection_a0=.false.
   logical :: lvectorpotential=.false., lphi_hom=.false.
   logical :: lno_noise_ee=.false., lnoncollinear_EB=.false., lnoncollinear_EB_aver=.false.
   logical :: lcollinear_EB=.false., lcollinear_EB_aver=.false.
   logical :: leedot_as_aux=.false., lcurlyA=.true., lsolve_chargedensity=.false.
-  logical :: lsigE_as_aux=.false., lsigB_as_aux=.false., lrandom_ampl_ee=.false., lfixed_phase_ee=.false.
+  logical :: ldivE_as_aux=.false., lsigE_as_aux=.false., lsigB_as_aux=.false.
+  logical :: lrandom_ampl_ee=.false., lfixed_phase_ee=.false.
   logical :: lswitch_off_divJ=.false., lswitch_off_Gamma=.false.
   character(len=50) :: inita0='zero'
   character (len=labellen), dimension(ninit) :: initee='nothing'
@@ -76,8 +77,8 @@ module Special
     cutoff_ee, ncutoff_ee, kpeak_ee, relhel_ee, kgaussian_ee, &
     ampla0, initpower_a0, initpower2_a0, lno_noise_ee, &
     cutoff_a0, ncutoff_a0, kpeak_a0, relhel_a0, kgaussian_a0, &
-    leedot_as_aux, lsigE_as_aux, lsigB_as_aux, lsolve_chargedensity, &
-    weight_longitudinalE, lswitch_off_Gamma, &
+    leedot_as_aux, ldivE_as_aux, lsigE_as_aux, lsigB_as_aux, &
+    lsolve_chargedensity, weight_longitudinalE, lswitch_off_Gamma, &
     lrandom_ampl_ee, lfixed_phase_ee, lskip_projection_ee
 !
   ! run parameters
@@ -85,7 +86,8 @@ module Special
   logical :: reinitialize_ee=.false.
   namelist /special_run_pars/ &
     alpf, llongitudinalE, llorenz_gauge_disp, lphi_hom, &
-    leedot_as_aux, lsigE_as_aux, lsigB_as_aux, eta_ee, lcurlyA, beta_inflation, &
+    leedot_as_aux, ldivE_as_aux, lsigE_as_aux, lsigB_as_aux, &
+    eta_ee, lcurlyA, beta_inflation, &
     weight_longitudinalE, lswitch_off_divJ, lswitch_off_Gamma, &
     lnoncollinear_EB, lnoncollinear_EB_aver, luse_scale_factor_in_sigma, &
     lcollinear_EB, lcollinear_EB_aver, sigE_prefactor, sigB_prefactor, &
@@ -154,6 +156,9 @@ module Special
 !
       if (leedot_as_aux) &
         call register_report_aux('eedot', ieedot, iedotx, iedoty, iedotz)
+!
+      if (ldivE_as_aux) &
+        call register_report_aux('divE', idivE)
 !
       if (lsigE_as_aux) &
         call register_report_aux('sigE', isigE)
@@ -257,7 +262,7 @@ module Special
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: diva
+      real, dimension (nx) :: divA, divE
       integer :: j
 !
       intent(inout) :: f
@@ -282,24 +287,31 @@ module Special
               lskip_projection_ee, lvectorpotential, lscale_tobox=lscale_tobox, &
               lno_noise=lno_noise_ee, lrandom_ampl=lrandom_ampl_ee, &
               lfixed_phase=lfixed_phase_ee)
+          case ('Bunch-Davies')
+            call bunch_davies(f,iax,iaz,iex,iez,amplee(j),kpeak_ee)
   !
           case default
             call fatal_error('init_ee','no such init_ee: "'//trim(initee(j))//'"')
         endselect
       enddo
 !
-!  Initial condition for Gamma
+!  Initial condition for Gamma = divA
 !
       if (llongitudinalE) then
-         do n=n1,n2; do m=m1,m2
-           call div(f,iaa,diva)
-           f(l1:l2,m,n,iGamma)=diva
-         enddo; enddo
+        do n=n1,n2; do m=m1,m2
+          call div(f,iaa,diva)
+          f(l1:l2,m,n,iGamma)=diva
+        enddo; enddo
       endif
 !
-!  Initial condition for rhoe (assumes E=0, for now)
+!  Initial condition for rhoe = divE
 !
-      if (lsolve_chargedensity) f(:,:,:,irhoe)=0.
+      if (lsolve_chargedensity) then
+        do n=n1,n2; do m=m1,m2
+          call div(f,iee,divE)
+          f(l1:l2,m,n,irhoe)=divE
+        enddo; enddo
+      endif
 !
 !  Initialize diva_name if llorenz_gauge_disp=T
 !
@@ -326,6 +338,7 @@ module Special
       endif
 !
       if (leedot_as_aux) f(:,:,:,iedotx:iedotz)=0.
+      if (ldivE_as_aux) f(:,:,:,idivE)=0.
       if (lsigE_as_aux) f(:,:,:,isigE)=0.
       if (lsigB_as_aux) f(:,:,:,isigB)=0.
 !
@@ -720,6 +733,7 @@ module Special
 !
 !  If requested, put sigE and sigB into f array as auxiliaries.
 !
+      if (ldivE_as_aux) f(l1:l2,m,n,idivE)=p%divE
       if (lsigE_as_aux) f(l1:l2,m,n,isigE)=p%sigE
       if (lsigB_as_aux) f(l1:l2,m,n,isigB)=p%sigB
 !

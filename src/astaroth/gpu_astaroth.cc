@@ -876,7 +876,6 @@ extern "C" void substepGPU(int isubstep)
 //
 {
    //TP: with on does timestepping the way PC does it
-   const bool testing = false;
    //TP: logs performance metrics of Astaroth
    const bool log = false;
 #if LFORCING
@@ -910,7 +909,7 @@ extern "C" void substepGPU(int isubstep)
   if (isubstep == 1) 
   {
 	  //TP: done to have the same timestep as PC when testing
-	  if (ldt && testing) dt1_interface = GpuCalcDt();
+	  if (ldt && lcpu_timestep_on_gpu) dt1_interface = GpuCalcDt();
 	  if (ldt) set_dt(dt1_interface);
 	  acDeviceSetInput(acGridGetDevice(), AC_dt,dt);
   }
@@ -1188,6 +1187,7 @@ void setupConfig(AcMeshInfo& config)
   //TP: Astaroth has default formula for AC_len but we want to make sure AC_len = lxyz, in case the Astaroth formula does not cover everything like non-equidistant grids
   PCLoad(config,AC_len,lxyz);
 
+  PCLoad(config,AC_sparse_autotuning,lac_sparse_autotuning);
   // Enter physics related parameters in config.
 
   #if LDENSITY
