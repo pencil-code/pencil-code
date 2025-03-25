@@ -1171,13 +1171,13 @@ void setupConfig(AcMeshInfo& config)
   PCLoad(config, AC_ngrid, (int3){nxgrid,nygrid,nzgrid});
   PCLoad(config, AC_skip_single_gpu_optim, true);
 
-  PCLoad(config,AC_decompose_strategy,(int)AcDecomposeStrategy::External);
+  PCLoad(config,AC_decompose_strategy,AC_DECOMPOSE_STRATEGY_EXTERNAL);
   if (lmorton_curve)
-    PCLoad(config,AC_proc_mapping_strategy,(int)AcProcMappingStrategy::Morton);
+    PCLoad(config,AC_proc_mapping_strategy,AC_PROC_MAPPING_STRATEGY_MORTON);
   else
-    PCLoad(config,AC_proc_mapping_strategy,(int)AcProcMappingStrategy::Linear);
+    PCLoad(config,AC_proc_mapping_strategy,AC_PROC_MAPPING_STRATEGY_LINEAR);
 
-  PCLoad(config,AC_MPI_comm_strategy,(int)AcMPICommStrategy::DuplicateUserComm);
+  PCLoad(config,AC_MPI_comm_strategy,AC_MPI_COMM_STRATEGY_DUP_USER);
   config.comm->handle = comm_pencil;
 
 // grid and geometry related parameters
