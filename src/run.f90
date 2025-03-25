@@ -1441,8 +1441,8 @@ call copy_addr(lcooling_ss_mz,p_par(375)) ! bool
 call copy_addr(iglobal_ss0,p_par(376)) ! int
 call copy_addr(iss_run_aver,p_par(377)) ! int
 call copy_addr(ttransient,p_par(379))
-call string_to_enum(string_enum_unit_system,unit_system)
-call copy_addr(string_enum_unit_system,p_par(380)) ! int
+call string_to_enum(enum_unit_system,unit_system)
+call copy_addr(enum_unit_system,p_par(380)) ! int
 call copy_addr(it_rmv,p_par(381)) ! int
 call copy_addr(ldivu_perp,p_par(383)) ! bool
 call copy_addr(nvar,p_par(384)) ! int

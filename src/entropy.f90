@@ -509,11 +509,11 @@ module Energy
   real :: tau1_cool,rho01,hcond_Kconst    !,lnrho0,cs20
   real, dimension(:), pointer :: beta_glnrho_scaled
 
-  integer :: string_enum_div_sld_ene = 0
-  integer :: string_enum_cooling_profile = 0
-  integer :: string_enum_cooltype = 0
-  integer :: string_enum_heattype = 0
-  integer :: string_enum_borderss = 0
+  integer :: enum_div_sld_ene = 0
+  integer :: enum_cooling_profile = 0
+  integer :: enum_cooltype = 0
+  integer :: enum_heattype = 0
+  integer :: enum_borderss = 0
 
   contains
 !***********************************************************************
@@ -8569,14 +8569,14 @@ module Energy
     call copy_addr(profx_heat,p_par(189)) ! (nx)
     call copy_addr(prof_lnt,p_par(190)) ! (prof_nz)
     call copy_addr(prof_z,p_par(191)) ! (prof_nz)
-    call string_to_enum(string_enum_cooling_profile,cooling_profile)
-    call copy_addr(string_enum_cooling_profile,p_par(192)) ! int
-    call string_to_enum(string_enum_cooltype,cooltype)
-    call copy_addr(string_enum_cooltype,p_par(193)) ! int
-    call string_to_enum(string_enum_heattype,heattype)
-    call copy_addr(string_enum_heattype,p_par(194)) ! int
-    call string_to_enum(string_enum_borderss,borderss)
-    call copy_addr(string_enum_borderss,p_par(195)) ! int
+    call string_to_enum(enum_cooling_profile,cooling_profile)
+    call copy_addr(enum_cooling_profile,p_par(192)) ! int
+    call string_to_enum(enum_cooltype,cooltype)
+    call copy_addr(enum_cooltype,p_par(193)) ! int
+    call string_to_enum(enum_heattype,heattype)
+    call copy_addr(enum_heattype,p_par(194)) ! int
+    call string_to_enum(enum_borderss,borderss)
+    call copy_addr(enum_borderss,p_par(195)) ! int
 
     call copy_addr(hcond_kconst,p_par(413))
 

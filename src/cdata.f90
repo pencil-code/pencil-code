@@ -850,7 +850,7 @@ module Cdata
 !  Size of mfarray to make sure we can store the handle (for 1 to mvar zero)
 !
    integer, dimension(mfarray) :: maux_vtxbuf_index = 0
-   integer :: string_enum_unit_system = 0
+   integer :: enum_unit_system = 0
 !
 !  Define and initialize lambda5, so that it can be used to tell whether
 !  or not the chiral MHD special module is used.
