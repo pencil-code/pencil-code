@@ -601,7 +601,7 @@ subroutine run_start() bind(C)
   use Boundcond,       only: update_ghosts, initialize_boundcond
   use Chemistry,       only: chemistry_clean_up
   use Diagnostics,     only: phiavg_norm, report_undefined_diagnostics, trim_averages,diagnostics_clean_up
-  use Equ,             only: initialize_pencils, debug_imn_arrays
+  use Equ,             only: initialize_pencils, debug_imn_arrays, rhs_sum_time
   use FArrayManager,   only: farray_clean_up
   use Farray_alloc
   use General,         only: random_seed_wrapper, touch_file, itoa
@@ -877,7 +877,7 @@ subroutine run_start() bind(C)
 !  This directory must exist, but may be linked to another disk.
 !
   f=0.
-if (lroot) print*, 'memusage before rsnap=', memusage()/1024., 'MBytes'
+  if (lroot .and. ldebug) print*, 'memusage before rsnap=', memusage()/1024., 'MBytes'
   if (lroot) tvar1=mpiwtime()
   call rsnap('var.dat',f,mvar_in,lread_nogrid)
   if (lroot) print*,'rsnap: read snapshot var.dat in ',mpiwtime()-tvar1,' seconds'
@@ -951,7 +951,7 @@ if (lroot) print*, 'memusage before rsnap=', memusage()/1024., 'MBytes'
 !  initialization. And final pre-timestepping setup.
 !  (must be done before need_XXXX can be used, for example)
 !
-if (lroot) print*, 'memusage before initialize modules=', memusage()/1024., 'MBytes'
+  if (lroot .and. ldebug) print*, 'memusage before initialize modules=', memusage()/1024., 'MBytes'
   call initialize_timestep
   call initialize_modules(f)
   call initialize_boundcond
@@ -1189,6 +1189,10 @@ if (lroot) print*, 'memusage before initialize modules=', memusage()/1024., 'MBy
       else
         write(*,'(A,1pG14.7)') ' Wall clock time/timestep/meshpoint [microsec] =', &
                                wall_clock_time/icount/nw/ncpus/1.0e-6
+        write(*,'(A,1pG14.7)') ' Wall clock time/timestep/local meshpoint [microsec] =', &
+                               wall_clock_time/icount/nw/1.0e-6
+        write(*,'(A,1pG14.7)') ' Rhs wall clock time/timestep/local meshpoint [microsec] =', &
+                               rhs_sum_time/icount/nw/1.0e-6
       endif
     endif
   endif
@@ -1405,6 +1409,7 @@ call copy_addr(dx,p_par(167))
 call copy_addr(dy,p_par(168))
 call copy_addr(dz,p_par(169))
 
+call copy_addr(ldebug,p_par(300)) ! bool
 call copy_addr(ltest_bcs,p_par(337)) ! bool
 call copy_addr(lmorton_curve,p_par(338)) ! bool
 call copy_addr(lcourant_dt,p_par(342)) ! bool

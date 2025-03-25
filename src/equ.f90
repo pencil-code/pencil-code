@@ -18,6 +18,8 @@ module Equ
   public :: perform_diagnostics
 !$ public :: write_diagnostics_wrapper
 !
+  real, public    :: rhs_sum_time=0.
+
   private
 !
   real, dimension(:)      , pointer :: p_fname, p_fname_keep
@@ -26,7 +28,6 @@ module Equ
   real, dimension(:,:,:,:), pointer :: p_fnamerz
   integer, dimension(:,:) , pointer :: p_ncountsz
   integer :: n_iterations=0
-  real    :: sum_time=0.
 !
   contains
 !***********************************************************************
@@ -361,7 +362,7 @@ module Equ
         end_time = mpiwtime()
         !if (lroot) print*,"iteration on gpu:",end_time-start_time
         !if (lroot) flush(6)
-        sum_time = sum_time + end_time-start_time
+        rhs_sum_time = rhs_sum_time + end_time-start_time
         n_iterations = n_iterations + 1
         !if (lroot) print*,"nth iteration: average time on gpu:",n_iterations, sum_time/n_iterations
         !if (lroot) flush(6)

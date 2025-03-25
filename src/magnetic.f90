@@ -4014,7 +4014,7 @@ module Magnetic
           call get_bext(B_ext,j_ext)
           if (any(B_ext/=0.)) then
             if (lhubble_magnetic) then
-              forall(j = 1:3, B_ext(j) /= 0.0) p%bb(:,j) = p%bb(:,j) + B_ext(j)/ascale**2
+              do j = 1,3; if(B_ext(j) /= 0.0) p%bb(:,j) = p%bb(:,j) + B_ext(j)/ascale**2; enddo;
             else
               do j = 1,3; p%bb(:,j) = p%bb(:,j) + B_ext(j); enddo;
             endif

@@ -38,6 +38,8 @@ has_nans(AcMesh mesh_in);
 #endif
 #include "../cparam_c.h"
 
+
+//TP: these are ugly but for the moment we live with these
 #if TRANSPILATION
   #define nu nu__mod__viscosity
   #define nu_hyper2 nu_hyper2__mod__viscosity
@@ -96,6 +98,12 @@ has_nans(AcMesh mesh_in);
   #define r1_mn    r1_mn__mod__cdata
   #define sin1th   sin1th__mod__cdata
   #define cotth    cotth__mod__cdata
+
+  #define lcpu_timestep_on_gpu   lcpu_timestep_on_gpu__mod__cdata
+  #define lperi                  lperi__mod__cdata
+  #define lxyz                   lxyz__mod__cdata
+  #define lac_sparse_autotuning  lac_sparse_autotuning__mod__cdata
+  #define ldebug ldebug__mod__cdata
 
 #endif
 /***********************************************************************************************/
@@ -1299,9 +1307,9 @@ autotune_all_integration_substeps()
   for (int i = 0; i < num_substeps; ++i)
   {
   	acDeviceSetInput(acGridGetDevice(), AC_step_num,(PC_SUB_STEP_NUMBER)i);
-if (rank==0) printf("memusage before GetOptimizedDSLTaskGraph= %f MBytes\n", memusage()/1024.);
+if (rank==0 && ldebug) printf("memusage before GetOptimizedDSLTaskGraph= %f MBytes\n", memusage()/1024.);
 	acGetOptimizedDSLTaskGraph(AC_rhs);
-if (rank==0) printf("memusage after GetOptimizedDSLTaskGraph= %f MBytes\n", memusage()/1024.);
+if (rank==0 && ldebug) printf("memusage after GetOptimizedDSLTaskGraph= %f MBytes\n", memusage()/1024.);
   }
 }
 
@@ -1313,9 +1321,7 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint)
   //initLoadStore();
 #endif
   comm_pencil = MPI_Comm_f2c(comm_fint);
-if (rank==0) printf("memusage before setconfig= %f MBytes\n", memusage()/1024.);
   setupConfig(mesh.info);
-if (rank==0) printf("memusage after setconfig= %f MBytes\n", memusage()/1024.);
   //TP: done after setupConfig since we need maux_vtxbuf_index
   //TP: this is an ugly way to do this but works for now
   {
@@ -1335,7 +1341,7 @@ if (rank==0) printf("memusage after setconfig= %f MBytes\n", memusage()/1024.);
       }
     }
   }
-if (rank==0) printf("memusage after pointer assign= %f MBytes\n", memusage()/1024.);
+if (rank==0 && ldebug) printf("memusage after pointer assign= %f MBytes\n", memusage()/1024.);
 #if AC_RUNTIME_COMPILATION
 #include "cmake_options.h"
   acCompile(cmake_options,mesh.info);
@@ -1349,9 +1355,9 @@ if (rank==0) printf("memusage after pointer assign= %f MBytes\n", memusage()/102
   fflush(stdout);
 #endif
   checkConfig(mesh.info);
-if (rank==0) printf("memusage grid_init= %f MBytes\n", memusage()/1024.);
+if (rank==0 && ldebug) printf("memusage grid_init= %f MBytes\n", memusage()/1024.);
   acGridInit(mesh);
-if (rank==0) printf("memusage after grid_init= %f MBytes\n", memusage()/1024.);
+if (rank==0 && ldebug) printf("memusage after grid_init= %f MBytes\n", memusage()/1024.);
 
   mesh.info = acGridDecomposeMeshInfo(mesh.info);
   //TP: important to do before autotuning
@@ -1359,11 +1365,11 @@ if (rank==0) printf("memusage after grid_init= %f MBytes\n", memusage()/1024.);
   acDeviceSetInput(acGridGetDevice(), AC_dt,dt);
   if (ltest_bcs) testBCs();
   autotune_all_integration_substeps();
-if (rank==0) printf("memusage before store config= %f MBytes\n", memusage()/1024.);
+if (rank==0 && ldebug) printf("memusage before store config= %f MBytes\n", memusage()/1024.);
   acStoreConfig(acDeviceGetLocalConfig(acGridGetDevice()), "PC-AC.conf");
-if (rank==0) printf("memusage after store config= %f MBytes\n", memusage()/1024.);
+if (rank==0 && ldebug) printf("memusage after store config= %f MBytes\n", memusage()/1024.);
   acGridSynchronizeStream(STREAM_ALL);
-if (rank==0) printf("memusage after store synchronize stream= %f MBytes\n", memusage()/1024.);
+if (rank==0 && ldebug) printf("memusage after store synchronize stream= %f MBytes\n", memusage()/1024.);
   acLogFromRootProc(rank, "DONE initializeGPU\n");
   fflush(stdout);
   constexpr AcReal unit = 1.0;

@@ -144,7 +144,7 @@ rm -f tmp
 #s/^#define *\([a-zA-Z0-9_]*\).*(( *\([a-zA-Z0-9_]*\) .*$/run_const \2 AC_\1 \/\/ from '$modname'\n#define \1 \AC_\1/
 if [ -f tmp1 ]; then
   sed -n '
-         s/^.*\/\/ *\(\[.*\]\) *\([a-zA-Z0-9_]*\)  *\([a-zA-Z0-9_]*\) *$/#define \2__mod__'$modname' to_\3(p_par_'$modname'\1)/
+         s/^.*\/\/ *\(\[.*\]\) *\([a-zA-Z0-9_]*\)  *\([a-zA-Z0-9_]*\) *$/#define \2__mod__'$modname' to_\3(p_par_'$modname'\1,"p_par_'$modname'\1")/
          t cont
          b dimen
          : cont
