@@ -45,6 +45,7 @@ module Register
       use FArrayManager,    only: farray_index_reset
       use Forcing,          only: register_forcing
       use Gravity,          only: register_gravity
+      use Gpu,              only: register_gpu
       use Heatflux,         only: register_heatflux
       use Hydro,            only: register_hydro
       use Hyperresi_strict, only: register_hyperresi_strict
@@ -159,6 +160,7 @@ module Register
       call register_heatflux
       call register_solid_cells
       call register_pointmasses
+      call register_gpu
       call register_training
 
       call farray_finalize_ode
@@ -759,63 +761,6 @@ module Register
 !
     endsubroutine pencil_interdep
 !***********************************************************************
-    logical function read_name_format(in_file,cnamel,nnamel)
-!
-!  Unifies reading of *.in files which contain requests for diagnostic
-!  output in the form <name>(<format>); returns number of items read !
-!  properly from file 'in_file' (comment lines excluded) in
-!  'nnamel'; returns items in cnamel, which is allocated, if necessary, with
-!  the length <number of lines in 'in_file' + initial value of
-!  'nnamel'>; further allocations done in subroutine argument 'allocator' which
-!  takes same length as its parameter;
-!
-!  Return value is nnamel>0.
-!
-!   11-jan-11/MR: coded
-!   23-jan-11/MR: pointer based handling of cname-like arrays instead of allocatable
-!                 dummy parameter (the latter standardized only since FORTRAN 2000)
-!   24-jan-11/MR: removed allocation
-!   26-aug-13/MR: modification for uncounted comment lines in input file
-!   24-aug-15/MR: introduced use of nitems in parallel_open etc.
-!
-      use File_io, only: parallel_open, parallel_close, parallel_unit_vec
-      use Cdata  , only: comment_char
-!
-      character (len=*), intent(in) :: in_file
-      character (len=30), dimension(*), intent(out) :: cnamel
-      integer, intent(out) :: nnamel
-!
-      character (len=30) :: cname_tmp
-      integer :: io_err
-!
-      nnamel = 0
-!
-      call parallel_open(trim(in_file), remove_comments=.true., nitems=nnamel)
-!
-!  Read names and formats.
-!
-      if (nnamel>0) then
-        read(parallel_unit_vec,*) cnamel(1:nnamel)
-      else
-        do
-          read(parallel_unit_vec, *, iostat=io_err) cname_tmp
-          if (io_err < 0) exit ! EOF
-          if (io_err > 0) call fatal_error('read_name_format', &
-                                           'IO-error while reading "'//trim(in_file)//'"')
-          cname_tmp = adjustl(cname_tmp)
-          if ((cname_tmp /= ' ').and.(cname_tmp(1:1) /= '!').and.(cname_tmp(1:1) /= comment_char)) then
-            nnamel = nnamel+1
-            cnamel(nnamel) = cname_tmp
-          endif
-        enddo
-      endif
-!
-      read_name_format = nnamel>0
-!
-      call parallel_close
-!
-    endfunction read_name_format
-!***********************************************************************
     subroutine rprint_list(lreset)
 !
 !  Read variables to print and to calculate averages of from control files.
@@ -828,6 +773,7 @@ module Register
 !  28-May-2015/Bourdin.KIS: renamed comment_chars to strip_comments
 !  24-Aug-2015/MR: broke up if ( read_name_format ... in two
 !  21-Mar-2016/MR: separate call for allocations of fnamexy* (due to Yin-Yang)
+!  24-Mar-2025/TP: refactored to make more modular: computation separate from allocations etc.
 !
 !  All numbers like nname etc. need to be initialized to zero in cdata!
 !
@@ -870,7 +816,7 @@ module Register
       use TestPerturb,     only: rprint_testperturb
       use Training,        only: rprint_training
       use PointMasses,     only: rprint_pointmasses
-      use File_io,         only: parallel_file_exists, parallel_count_lines
+      use File_io,         only: parallel_file_exists, parallel_count_lines, read_name_format
       use Io,              only: IO_strategy
 !
       logical, intent(IN) :: lreset
@@ -888,6 +834,12 @@ module Register
       character (LEN=*), parameter :: yaver_in_file    = 'yaver.in'
       character (LEN=*), parameter :: zaver_in_file    = 'zaver.in'
       character (LEN=*), parameter :: phiaver_in_file  = 'phiaver.in'
+
+      call calc_nnames
+      call allocate_diagnostic_names
+      if(nnamexy > 0) lwrite_zaverages = read_name_format(zaver_in_file,cnamexy,nnamexy)
+      call allocate_diagnostic_arrays
+
 !
 !  Read print.in.double if applicable, else print.in.
 !  Read in the list of variables to be printed.
@@ -902,15 +854,14 @@ module Register
 !
 !  Ignore comments in all lists.
 !
-      nname = max(0,parallel_count_lines(print_in_file,ignore_comments=.true.))
-!
+
       if (nname>0) then
-        call allocate_fnames(nname)
         ldummy = read_name_format(print_in_file,cname,nname)
       elseif ( nname==0 ) then
         call fatal_error('rprint_list','You must have a "'//trim(print_in_file)// &
                          '" file in the run directory with valid print requests!')
       endif
+
 !
       if (lroot .and. (ip<14)) print*, 'rprint_list: nname=', nname
 !
@@ -918,10 +869,8 @@ module Register
 !
       if ( dvid/=0.0 ) then
 
-        nnamev = max(0,parallel_count_lines(video_in_file))
 !
         if (nnamev>0) then
-          call allocate_vnames(nnamev)
           lwrite_slices = read_name_format(video_in_file,cnamev,nnamev)
           if ( .not.lwrite_slices ) dvid=0.0
         endif
@@ -946,11 +895,7 @@ module Register
 !
       if ( dimensionality>0 .and. dsound/=0.0 ) then
 
-        nname_sound = max(0,parallel_count_lines(sound_in_file))
-!
         if (nname_sound>0) then
-
-          call allocate_sound(nname_sound)
 
           if ( read_name_format(sound_in_file,cname_sound,nname_sound) ) then
             if (lwrite_sound) then
@@ -980,42 +925,28 @@ module Register
 !
 !  Read in the list of variables for xy-averages.
 !
-      nnamez = parallel_count_lines(xyaver_in_file)
-!
-      if (nnamez>0) then
-        call allocate_xyaverages(nnamez)
-        lwrite_xyaverages = read_name_format(xyaver_in_file,cnamez,nnamez)
-      endif
       if (lroot .and. (ip<14)) print*, 'rprint_list: nnamez=', nnamez
 !
 !  Read in the list of variables for xz-averages.
 !
-      nnamey = parallel_count_lines(xzaver_in_file)
 !
-      if (nnamey>0) then
-        call allocate_xzaverages(nnamey)
-        lwrite_xzaverages = read_name_format(xzaver_in_file,cnamey,nnamey)
-      endif
+      if (nnamez>0) lwrite_xyaverages = read_name_format(xyaver_in_file,cnamez,nnamez)
+      if (lroot .and. (ip<14)) print*, 'rprint_list: nnamez=', nnamez
+
+      if (nnamey>0) lwrite_xzaverages = read_name_format(xzaver_in_file,cnamey,nnamey)
       if (lroot .and. (ip<14)) print*, 'rprint_list: nnamey=', nnamey
 !
 !  Read in the list of variables for yz-averages.
 !
-      nnamex = parallel_count_lines(yzaver_in_file)
 !
-      if (nnamex>0) then
-        call allocate_yzaverages(nnamex)
-        lwrite_yzaverages = read_name_format(yzaver_in_file,cnamex,nnamex)
-      endif
-
+      if (nnamex>0) lwrite_yzaverages = read_name_format(yzaver_in_file,cnamex,nnamex)
       if (lroot .and. (ip<14)) print*, 'rprint_list: nnamex=', nnamex
 !
 !  Read in the list of variables for phi-z-averages.
 !
-      nnamer = max(0,parallel_count_lines(phizaver_in_file))
 !
       if (nnamer>0) then
         if (lcylinder_in_a_box.or.lsphere_in_a_box) then
-          call allocate_phizaverages(nnamer)
           lwrite_phizaverages = read_name_format(phizaver_in_file,cnamer,nnamer)
         else
           nnamer=0
@@ -1028,10 +959,7 @@ module Register
 !
 !  Read in the list of variables for y-averages.
 !
-      nnamexz = parallel_count_lines(yaver_in_file)
-!
       if (nnamexz>0) then
-        call allocate_yaverages(nnamexz)
         lwrite_yaverages = read_name_format(yaver_in_file,cnamexz,nnamexz)
       endif
 
@@ -1039,23 +967,14 @@ module Register
 !
 !  Read in the list of variables for z-averages.
 !
-      nnamexy = parallel_count_lines(zaver_in_file)
-!
-      if (nnamexy>0) then
-        call allocate_zaverages(nnamexy)
-        lwrite_zaverages = read_name_format(zaver_in_file,cnamexy,nnamexy)
-        if (lwrite_zaverages) call allocate_zaverages_data(nnamexy)
-      endif
 
       if (lroot .and. (ip<14)) print*, 'rprint_list: nnamexy=', nnamexy
 !
 !  Read in the list of variables for phi-averages.
 !
-      nnamerz = parallel_count_lines(phiaver_in_file)
 !
       if (nnamerz>0) then
         if (lcylinder_in_a_box.or.lsphere_in_a_box) then
-          call allocate_phiaverages(nnamerz)
           lwrite_phiaverages = read_name_format(phiaver_in_file,cnamerz,nnamerz)
         else
           nnamerz=0

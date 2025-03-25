@@ -25,8 +25,8 @@ module Equ
   real, dimension(:,:,:)  , pointer :: p_fnamex, p_fnamey, p_fnamez, p_fnamexy, p_fnamexz
   real, dimension(:,:,:,:), pointer :: p_fnamerz
   integer, dimension(:,:) , pointer :: p_ncountsz
-  real :: sum_time=0
   integer :: n_iterations=0
+  real    :: sum_time=0.
 !
   contains
 !***********************************************************************
@@ -658,6 +658,12 @@ module Equ
 !$omp copyin(fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz,phiavg_norm)
 !$    call restore_diagnostic_controls
 
+      
+!     TP: on some nvfortan compilers copyin does not seem to be enough to ensure diagnostic arrays are allocated
+!     TP: not sure was the copyin ever sufficient, but not that important since we can always explicitly check
+!$    if(.not. allocated(fname)) then
+!$            call allocate_diagnostic_arrays
+!$    endif
       lfirstpoint=.true.
       !TP: example code to explicitly set and get cores the thread are running on
       !TP: the flexible way to set this is with OMP_PROC_BIND=close,spread, but in case that fails one can be sure by using the code

@@ -34,14 +34,14 @@
 
     character(LEN=fnlen) :: model='model', config_file="config_mlp_native.yaml", model_file
 
-    logical :: luse_trained_tau, lwrite_sample=.false., lscale=.true.
+    logical :: lroute_via_cpu, lcpu_training=.true., luse_trained_tau, lwrite_sample=.false., lscale=.true.
     real :: max_loss=1.e-4
 
     integer :: idiag_loss=0            ! DIAG_DOC: torchfort training loss
     integer :: idiag_tauerror=0        ! DIAG_DOC: $\sqrt{\left<(\sum_{i,j} u_i*u_j - tau_{ij})^2\right>}$
 
     namelist /training_run_pars/ config_file, model, it_train, it_train_start, it_train_chkpt, &
-                                 luse_trained_tau, lscale, lwrite_sample, max_loss
+                                 luse_trained_tau, lscale, lwrite_sample, max_loss, lroute_via_cpu
 !
     character(LEN=fnlen) :: model_output_dir, checkpoint_output_dir
     integer :: istat, train_step_ckpt, val_step_ckpt
@@ -59,6 +59,7 @@
 
       character(LEN=fnlen) :: modelfn
 
+      lcpu_training = .not. lgpu .or. lroute_via_cpu
       if (lreloading) return
 
       if (.not.lhydro) call fatal_error('initialize_training','needs HYDRO module')
@@ -82,7 +83,7 @@ print*, 'ltrained, modelfn=', ltrained, modelfn
 !
 ! TorchFort create model
 !
-print*, 'MODEL FILE=', trim(model_output_dir)//trim(config_file)
+      print*, 'CONFIG FILE=', trim(model_output_dir)//trim(config_file)
       if (lmpicomm) then
         istat = torchfort_create_distributed_model(trim(model), trim(model_output_dir)//trim(config_file), MPI_COMM_WORLD, iproc)
       else
@@ -118,7 +119,7 @@ print*, 'MODEL FILE=', trim(model_output_dir)//trim(config_file)
 
       luse_trained_tau = luse_trained_tau.and.ltrained
 
-      if (.not.(lgpu.or.lstart)) then
+      if (lrun .and. lcpu_training) then
         allocate(input(mx, my, mz, 3, 1))
         allocate(output(mx, my, mz, 6, 1))
         allocate(label(mx, my, mz, 6, 1))
@@ -175,7 +176,7 @@ print*, 'adresses:', loc(input), loc(output), loc(label)
           ! Device to host
         if ((ldiagnos.or.lvideo).and.lfirst) then
           call calc_tau(f)
-          if (lgpu) then
+          if (.not. lcpu_training) then
           else
             f(:,:,:,itauxx:itauzz) = f(:,:,:,itauxx:itauzz) - output(:,:,:,:,1)
           endif
@@ -198,7 +199,7 @@ print*, 'adresses:', loc(input), loc(output), loc(label)
       real, dimension (:,:,:,:), pointer :: ptr_uu, ptr_tau
 
       ! Host to device
-      if (.not.lgpu) then
+      if (lcpu_training) then
         uumean = f(:,:,:,iux:iuz)
         call smooth(uumean,1,3,lgauss=.true.)
         input(:,:,:,:,1) = uumean    ! host to device
@@ -244,7 +245,7 @@ print*, 'adresses:', loc(input), loc(output), loc(label)
 !
 !  Smooth velocity.
 !
-        if (lgpu) then
+        if (.not. lcpu_training) then
           !TODO: smoothing/scaling etc. for uu and tau
           istat = torchfort_train(model, get_ptr_gpu(iux,iuz), get_ptr_gpu(itauxx,itauzz), train_loss)
         else
@@ -454,7 +455,7 @@ print*, 'ltrained .or. .not. lckpt_written=', ltrained, lckpt_written
           if (istat /= TORCHFORT_RESULT_SUCCESS) &
             call fatal_error("finalize_training","when saving model: istat="//trim(itoa(istat)))
         endif
-        if (.not.lgpu) deallocate(input,label,output)
+        if (lcpu_training) deallocate(input,label,output)
       endif
 
     endsubroutine finalize_training

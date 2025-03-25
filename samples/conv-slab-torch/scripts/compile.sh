@@ -12,8 +12,8 @@ cd $CWDIR
 export TMPDIR=/opt/tmpdir
 echo $TMPDIR
 #bash
-pc_build clean -f $PENCIL_HOME/config/compilers/separate/nvidia-fortran.conf TORCHFORT_PATH=/opt/torchfort HDF5_PATH=/opt/hdf5 FFLAGS+="-O0 -g -traceback"
-#pc_build -f $PENCIL_HOME/config/compilers/separate/nvidia-fortran.conf TORCHFORT_PATH=/opt/torchfort HDF5_PATH=/opt/hdf5 FFLAGS+="-O0 -g -traceback"
+#pc_build clean -f $PENCIL_HOME/config/compilers/separate/nvidia-fortran.conf TORCHFORT_PATH=/opt/torchfort HDF5_PATH=/opt/hdf5 FFLAGS+="-O0 -g -traceback"
+pc_build -f $PENCIL_HOME/config/compilers/separate/nvidia-fortran.conf TORCHFORT_PATH=/opt/torchfort HDF5_PATH=/opt/hdf5 FFLAGS+="-O0 -g -traceback"
 #cd src/astaroth && make
 #make
 

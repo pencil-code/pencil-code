@@ -769,6 +769,7 @@ module Snapshot
       use Boundcond, only: update_ghosts
       use Power_spectrum, only: powerhel
       use Sub, only: update_snaptime
+      use Diagnostics, only: save_diagnostic_controls
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical, optional :: lwrite_only
@@ -792,6 +793,7 @@ module Snapshot
         if (ldo_all) call update_ghosts(f)
 !
         if (lmultithread) then
+!$        call save_diagnostic_controls
 !$        lmasterflags(PERF_POWERSNAP) = .true.
         else
           call perform_powersnap(f)

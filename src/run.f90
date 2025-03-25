@@ -58,6 +58,7 @@ subroutine helper_loop(f,p)
 !
   use Boundcond, only: update_ghosts
   use Equ, only: perform_diagnostics
+  use Diagnostics, only:  restore_diagnostic_controls
 !$ use General, only: signal_wait, signal_send
   use Snapshot, only: perform_powersnap, perform_wsnap_ext, perform_wsnap_down
 !
@@ -67,8 +68,9 @@ subroutine helper_loop(f,p)
 ! 7-feb-24/TP: coded
 !
 !$  do while(lhelper_run)
-
 !$    call signal_wait(lhelper_perf,lhelper_run)
+!$    if (lhelper_run) call restore_diagnostic_controls
+
 !$    if (lhelper_run) call update_ghosts(f)
 !$    if (lhelper_run .and. lhelperflags(PERF_DIAGS)) then 
         !print*,"doing diag"
@@ -606,7 +608,7 @@ subroutine run_start() bind(C)
 !$ use General,        only: signal_init, get_cpu
   use Grid,            only: construct_grid, box_vol, grid_bound_data, set_coorsys_dimmask, &
                              construct_serial_arrays, coarsegrid_interp
-  use Gpu,             only: gpu_init, register_gpu, load_farray_to_GPU, initialize_gpu
+  use Gpu,             only: gpu_init, load_farray_to_GPU, initialize_gpu
   use HDF5_IO,         only: init_hdf5, initialize_hdf5, wdim
   use IO,              only: rgrid, wgrid, directory_names, rproc_bounds, wproc_bounds, output_globals, input_globals
   use Messages
@@ -768,7 +770,6 @@ subroutine run_start() bind(C)
   if (lparticles) call particles_register_modules
   call initialize
 !
-  call register_gpu
 !
 !  Inform about verbose level.
 !
@@ -1063,7 +1064,7 @@ if (lroot) print*, 'memusage before initialize modules=', memusage()/1024., 'MBy
   !$    core_ids(omp_get_thread_num()+1) = get_cpu()
   !$omp end parallel
   !$ call mpibarrier
-!
+
 !$omp parallel num_threads(num_helper_masters+1) &
 !$omp copyin(fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz,phiavg_norm)
 !

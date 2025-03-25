@@ -833,6 +833,8 @@ module Hydro
           p%uij(:,3,2)=sqrt2*ky_uukin*sin(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))
           p%uij(:,3,3)=+0.
         endif
+! oo (=curlu)
+        if (lpenc_loc(i_oo)) call curl_mn(p%uij,p%oo,p%uu)
 !
       case ('roberts-xz')
         if (headtt) print*,'Glen Roberts flow w.r.t. x and z; kx_uukin,kz_uukin=',kx_uukin,kz_uukin

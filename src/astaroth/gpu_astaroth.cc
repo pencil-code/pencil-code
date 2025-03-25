@@ -1107,6 +1107,16 @@ extern "C" void registerGPU()
 
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   mesh.info = acInitInfo();
+#if AC_RUNTIME_COMPILATION
+#else
+  AcResult res = acCheckDeviceAvailability();
+
+  if(res == AC_FAILURE) 
+  {
+	  fprintf(stderr,"No devices!\n");
+	  exit(EXIT_FAILURE);
+  }
+#endif
 }
 /***********************************************************************************************/
 extern "C" void initGPU()
