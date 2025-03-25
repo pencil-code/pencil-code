@@ -148,6 +148,7 @@ FTNIZE(cond_signal)(const int* cond_handle)
 	  assert(false); //Incorrect cond var handle
    }
 }
+/*
 int
 FTNIZE(get_cpu_c)()
 {
@@ -166,6 +167,7 @@ FTNIZE(set_cpu_c)(int* core_id_in)
     const int rc = pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset);
     return (bool)(1-rc);
 }
+*/
 void
 FTNIZE(cond_wait)(const int* cond_handle, volatile bool* flag, volatile bool* val)
 {
