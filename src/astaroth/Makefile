@@ -55,7 +55,7 @@ OBJECTS = $(SOURCES:.cc=.o)
 
 #DSL_MODULE_DIR=samples/gputest
 DSL_MODULE_DIR = ../../DSL/local
-EXT_SOURCES = ../../DSL/*/*.h 
+EXT_SOURCES = $(wildcard ../../DSL/*/*.h)
 
 ifeq ($(CMAKE_SINGLEPASS),ON)
   DSL_MODULE_FILE = solve_single.ac
@@ -66,7 +66,7 @@ else
 endif
 #
 ifneq ($(filter shock,$(MODULESOURCES)),)
-  EXT_SOURCES += ../../DSL/shock/*.ac
+  EXT_SOURCES += $(wildcard ../../DSL/shock/*.ac)
 endif
 
 # C headers in submodule
@@ -118,7 +118,6 @@ astaroth_$(PREC).so: $(SOURCES) forcing.h $(AC_HEADERS) $(PC_HEADERS) $(CHEADERS
 #	cd .. && \
 #	cp -r ./NUMA-scheduler/include .
 
-# $(DSL_MODULE_DIR)/*.ac $(DSL_MODULE_DIR)/*.h
 # -DRUNTIME_COMPILE=$(PRODUCTION)
 
 CMAKE_OPTIONS = -DMULTIGPU_ENABLED=OFF -DMPI_ENABLED=$(CMAKE_MPI) -DBUILD_SHARED_LIBS=ON -DSINGLEPASS_INTEGRATION=$(CMAKE_SINGLEPASS) -DUSE_CUDA_AWARE_MPI=ON -DMAX_THREADS_PER_BLOCK=512 \
