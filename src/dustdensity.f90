@@ -1270,6 +1270,8 @@ module Dustdensity
         !lpencil_in(i_rhod1)=.true.
         lpencil_in(i_glnnd)=.true.
       endif
+      if (lpencil_in(i_del2nd).and.ldustdensity_log) &
+           lpencil_in(i_glnnd2)=.true.
       if (lpencil_in(i_rhodsum))  lpencil_in(i_rhod)=.true.
       if (lpencil_in(i_rhodsum1)) lpencil_in(i_rhodsum)=.true.
       if (lpencil_in(i_grhodsum)) lpencil_in(i_grhod)=.true.
