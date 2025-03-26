@@ -785,7 +785,16 @@ module Snapshot
       if(.not. lmultithread) then
         tspec=t
       else 
-        tspec_save=t
+
+        !TP: if farray was already copied from the gpu during this iteration for rhs diagnostic purposes
+        !    it is not copied again for spectra. Instead we correct the timestamp to match with the data
+        !    which comes before time advancement.
+        !    When testing for agreement between CPU and GPU one can suppress all other output than spectra.
+        if(lrhs_diagnostic_output) then
+                tspec_save=t-dt
+        else
+                tspec_save=t
+        endif
       endif
 
       ldo_all=.not.llwrite_only
