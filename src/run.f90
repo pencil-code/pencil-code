@@ -1496,8 +1496,8 @@ call copy_addr(lperi,p_par(1176)) ! bool3
 call copy_addr(lcpu_timestep_on_gpu,p_par(1177)) ! bool
 call copy_addr(lac_sparse_autotuning,p_par(1178)) ! bool
 
-call copy_addr(sigma_thomson,p_par(1185))
-call copy_addr(c_light,p_par(1188))
+call copy_addr_dble(sigma_thomson,p_par(1185))
+call copy_addr_dble(c_light,p_par(1188))
 call copy_addr(hubble,p_par(1192))
 call copy_addr(ascale,p_par(1193))
 call copy_addr(iey,p_par(1194)) ! int
