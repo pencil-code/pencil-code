@@ -3152,6 +3152,10 @@ endif
 ifeq ($(MAGNETIC),nomagnetic)
 	@echo $(CUDA_RELPATH)'/$(MAGNETIC).f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources.h
 endif
+ifeq ($(ENERGY),noentropy)
+	@echo $(CUDA_RELPATH)'/$(ENERGY).f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources.h
+endif
+
 ifeq ($(EOS),noeos)
 	@echo $(CUDA_RELPATH)'/noeos.f90' >> $(CUDA_MAKEDIR)/PC_modulesources.h
 else

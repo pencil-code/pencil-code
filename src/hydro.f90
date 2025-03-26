@@ -113,6 +113,7 @@ module Hydro
   real :: mu_omega=0., gap=0., r_omega=0., w_omega=0.
   real :: z1_uu=0., z2_uu=0.
   real :: ABC_A=1., ABC_B=1., ABC_C=1.
+  real :: TG_A=1., TG_B=-1., TG_C=0.
   real :: vwall=.0, alpha_hless=.0, eps_hless=.0
   real :: xjump_mid=0.,yjump_mid=0.,zjump_mid=0.
   integer :: nb_rings=0
@@ -2025,6 +2026,18 @@ module Hydro
             f(l1:l2,m,n,iuy)=ampluu(j)*(ABC_B*sin(kx_uu*x(l1:l2))+ABC_A*cos(kz_uu*z(n))    )
             f(l1:l2,m,n,iuz)=ampluu(j)*(ABC_C*sin(ky_uu*y(m))    +ABC_B*cos(kx_uu*x(l1:l2)))
           enddo; enddo
+!
+        case ('TG')
+          if (headtt) print*,'Taylor-Green vortex'
+! uu
+          call sinx_cosy_cosz(ampluu(j)*TG_A,f,iux,kx_uu,ky_uu,kz_uu)
+          call cosx_siny_cosz(ampluu(j)*TG_B,f,iuy,kx_uu,ky_uu,kz_uu)
+          call sinx_siny_cosz(ampluu(j)*TG_C,f,iuy,kx_uu,ky_uu,kz_uu)
+          f(l1:l2,m1:m2,n1:n2,iuz) = 0.0
+          if(abs(TG_A*kx_uu + TG_B*ky_uu + TG_C*kz_uu) > tini) then
+                call fatal_error("init_uu", "For Taylor-Green Vortex TG_A*kx_uu + TG_B*ky_uu + TG_C*kz_uu has to be zero!")
+          endif
+
 !
         case ('potential')
           if (headtt) print*,'potential flow'

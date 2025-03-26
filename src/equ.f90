@@ -347,7 +347,6 @@ module Equ
       if (lgpu) then
         !call test_rhs_gpu(f,df,p,mass_per_proc,early_finalize,rhs_cpu)
         if (ldiagnos.or.l1davgfirst.or.l1dphiavg.or.l2davgfirst) then
-                !if (lroot) print*,'Diagnostic time - GPU=', t
           !wait in case the last diagnostic tasks are not finished
 !         Not done for the first step since we haven't loaded any data to the GPU yet
           call copy_farray_from_GPU(f)
@@ -360,19 +359,16 @@ module Equ
 !$        call save_diagnostic_controls
         endif
         end_time = mpiwtime()
-        !if (lroot) print*,"iteration on gpu:",end_time-start_time
-        !if (lroot) flush(6)
         rhs_sum_time = rhs_sum_time + end_time-start_time
         n_iterations = n_iterations + 1
-        !if (lroot) print*,"nth iteration: average time on gpu:",n_iterations, sum_time/n_iterations
-        !if (lroot) flush(6)
       else
         if (ldiagnos.or.l1davgfirst.or.l1dphiavg.or.l2davgfirst) then
                 !if (lroot) print*,'Diagnostic time - CPU=', t
         endif
-        !start_time = mpiwtime()
+        start_time = mpiwtime()
         call rhs_cpu(f,df,p,mass_per_proc,early_finalize)
-        !end_time = mpiwtime()
+        end_time = mpiwtime()
+        rhs_sum_time = rhs_sum_time + end_time-start_time
         !if (lroot) print*,"rhs_cpu took:",end_time-start_time
         !if (lroot) flush(6)
         !sum_time = sum_time + end_time-start_time
@@ -656,7 +652,7 @@ module Equ
       call init_reduc_pointers
 
 !$omp parallel if(.not. lsuppress_parallel_reductions) private(p) num_threads(num_helper_threads) &
-!$omp copyin(fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz,phiavg_norm)
+!$omp copyin(dxmax_pencil,fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz,phiavg_norm)
 !$    call restore_diagnostic_controls
 
       

@@ -4012,6 +4012,8 @@ module Diagnostics
       itdiagnos = it_save
       eps_rkf_diagnos = eps_rkf_save
     endif
+
+    tspec = tspec_save
     lpencil = lpencil_save
 
     endsubroutine restore_diagnostic_controls
