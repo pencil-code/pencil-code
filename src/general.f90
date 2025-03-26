@@ -7460,6 +7460,46 @@ iloop:do i=1,size(list2)
           dst = enum_append_string
         case('(4f14.7)')
           dst = enum_Z4f14Z7Z_string
+        case('standard')
+          dst = enum_standard_string
+        case('standard2')
+          dst = enum_standard2_string
+        case('log-switch-on')
+          dst = enum_logZswitchZon_string
+        case('linear-sigma')
+          dst = enum_linearZsigma_string
+        case('eta_table')
+          dst = enum_eta_table_string
+        case('magnetic_after_boundary')
+          dst = enum_magnetic_after_boundary_string
+        case('eta_table not yet completed')
+          dst = enum_eta_table_not_yet_completed_string
+        case('mean-field')
+          dst = enum_meanZfield_string
+        case('lrho_chi')
+          dst = enum_lrho_chi_string
+        case('initialize_magnetic')
+          dst = enum_initialize_magnetic_string
+        case('e2m_all')
+          dst = enum_e2m_all_string
+        case('b2m_all')
+          dst = enum_b2m_all_string
+        case('mean-field-local')
+          dst = enum_meanZfieldZlocal_string
+        case('electric field must be computed')
+          dst = enum_electric_field_must_be_computed_string
+        case('calc_pencils_magnetic: advec_va2  =')
+          dst = enum_calc_pencils_magneticZ_advec_va2__Z_string
+        case('thomson')
+          dst = enum_thomson_string
+        case('fatal_error w/o force')
+          dst = enum_fatal_error_wZo_force_string
+        case('lambda-constant')
+          dst = enum_lambdaZconstant_string
+        case('daa_dt: advec_hall =')
+          dst = enum_daa_dtZ_advec_hall_Z_string
+        case('tau_jj must be finite and positive')
+          dst = enum_tau_jj_must_be_finite_and_positive_string
         case default
           dst = enum_unknown_string_string
         endselect

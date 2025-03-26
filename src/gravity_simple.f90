@@ -1521,7 +1521,7 @@ module Gravity
     use Syscalls, only: copy_addr
     use General , only: pos_in_array, string_to_enum
 
-    integer, parameter :: n_pars=21
+    integer, parameter :: n_pars=50
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call copy_addr(gravz,p_par(1))
@@ -1555,6 +1555,7 @@ module Gravity
     call copy_addr(enum_gravy_profile,p_par(19))   ! int
     call copy_addr(enum_gravz_profile,p_par(20))   ! int
     call copy_addr(enum_grav_type    ,p_par(21))   ! int
+    call copy_addr(cdt_accretor,p_par(22))
 
     endsubroutine pushpars2c
 !***********************************************************************

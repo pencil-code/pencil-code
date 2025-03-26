@@ -11712,7 +11712,16 @@ module Magnetic
     call string_to_enum(enum_borderaa(3),borderaa(3))
     call copy_addr(enum_borderaa,p_par(255)) ! int3
     call copy_addr(bz_stratified,p_par(256)) ! (mz)
-    call copy_addr(eta_tdep,p_par(257))
+
+    call copy_addr(amp_relprof,p_par(258))
+    call copy_addr(lhubble_magnetic,p_par(259)) ! bool
+    call copy_addr(learly_set_el_pencil,p_par(260)) ! bool
+    !TP: needed for transpilation but name collides with hydro so will not work without
+    !    module qualified name, so to not break handwritten DSL code have it on comment
+    !call copy_addr(lrhs_max,p_par(261)) ! bool
+    !call copy_addr(gamma1,p_par(262))
+
+    call copy_addr(lrelaxprof_glob_scaled,p_par(263)) ! bool
 
     endsubroutine pushpars2c
 !***********************************************************************

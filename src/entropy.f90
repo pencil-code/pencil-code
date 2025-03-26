@@ -8584,6 +8584,11 @@ module Energy
     call copy_addr(chit_prof_size,p_par(415)) ! int
     call copy_addr(chit_prof_fluct_stored_size,p_par(416)) ! int
 
+    call copy_addr(lambda_const,p_par(417))
+    call copy_addr(amp_patch,p_par(418))
+    call copy_addr(coolfac,p_par(419))
+    call copy_addr(lcooling_patches,p_par(420)) ! bool
+
     if (allocated(hcond_prof)) call copy_addr(hcond_prof,p_par(456)) ! (max_n)
     if (allocated(dlnhcond_prof)) call copy_addr(dlnhcond_prof,p_par(457)) ! (max_n)
     if (allocated(chit_prof_stored)) call copy_addr(chit_prof_stored,p_par(458)) ! (max_n)

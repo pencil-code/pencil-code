@@ -4548,6 +4548,7 @@ module EquationOfState
     call copy_addr(lcs_as_aux,p_par(25)) ! bool
     call copy_addr(lcs_as_comaux,p_par(26)) ! bool
     call copy_addr(lcs_tdep,p_par(27)) ! bool
+    call copy_addr(eth0z,p_par(28)) ! (mz)
 !
     endsubroutine pushpars2c
 !***********************************************************************

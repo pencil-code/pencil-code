@@ -712,5 +712,25 @@ integer, parameter :: enum_ZtvartZdat_string = 431
 integer, parameter :: enum_unknown_string = 432
 integer, parameter :: enum_append_string = 433
 integer, parameter :: enum_Z4f14Z7Z_string = 434
+integer, parameter :: enum_standard_string = 435
+integer, parameter :: enum_standard2_string = 436
+integer, parameter :: enum_logZswitchZon_string = 437
+integer, parameter :: enum_linearZsigma_string = 438
+integer, parameter :: enum_eta_table_string = 439
+integer, parameter :: enum_magnetic_after_boundary_string = 440
+integer, parameter :: enum_eta_table_not_yet_completed_string = 441
+integer, parameter :: enum_meanZfield_string = 442
+integer, parameter :: enum_lrho_chi_string = 443
+integer, parameter :: enum_initialize_magnetic_string = 444
+integer, parameter :: enum_e2m_all_string = 445
+integer, parameter :: enum_b2m_all_string = 446
+integer, parameter :: enum_meanZfieldZlocal_string = 447
+integer, parameter :: enum_electric_field_must_be_computed_string = 448
+integer, parameter :: enum_calc_pencils_magneticZ_advec_va2__Z_string = 449
+integer, parameter :: enum_thomson_string = 450
+integer, parameter :: enum_fatal_error_wZo_force_string = 451
+integer, parameter :: enum_lambdaZconstant_string = 452
+integer, parameter :: enum_daa_dtZ_advec_hall_Z_string = 453
+integer, parameter :: enum_tau_jj_must_be_finite_and_positive_string = 454
 
 endmodule Cparam

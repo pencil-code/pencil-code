@@ -1242,7 +1242,7 @@ subroutine run_start() bind(C)
     use Syscalls, only: copy_addr, copy_addr_dble
     use General, only: string_to_enum
 
-    integer, parameter :: n_pars=1200
+    integer, parameter :: n_pars=1500
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
 call copy_addr(ncoarse,p_par(1)) ! int
@@ -1495,6 +1495,14 @@ call copy_addr(lroot,p_par(1175)) ! bool
 call copy_addr(lperi,p_par(1176)) ! bool3
 call copy_addr(lcpu_timestep_on_gpu,p_par(1177)) ! bool
 call copy_addr(lac_sparse_autotuning,p_par(1178)) ! bool
+
+call copy_addr(sigma_thomson,p_par(1185))
+call copy_addr(c_light,p_par(1188))
+call copy_addr(hubble,p_par(1192))
+call copy_addr(ascale,p_par(1193))
+call copy_addr(iey,p_par(1194)) ! int
+call copy_addr(iez,p_par(1195)) ! int
+call copy_addr(icool_prof,p_par(1196)) ! int
 
 endsubroutine pushpars2c
 !***********************************************************************
