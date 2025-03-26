@@ -575,7 +575,15 @@ module Special
         if (lswitch_off_divJ) then
           p%divJ=0.
         else
-          p%divJ=(p%divE+tmp)/(mu0*eta)
+          if (eta==0.) then
+!
+!  The following expression ignores gradients of p%sigE
+!
+            !call fatal_error('disp_current/calc_pencils_special', "eta=0 not ok here")
+            p%divJ=(p%divE+tmp)*p%sigE
+          else
+            p%divJ=(p%divE+tmp)/(mu0*eta)
+          endif
         endif
       endif
 !
