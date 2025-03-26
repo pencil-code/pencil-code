@@ -773,6 +773,7 @@ module Register
 !  28-May-2015/Bourdin.KIS: renamed comment_chars to strip_comments
 !  24-Aug-2015/MR: broke up if ( read_name_format ... in two
 !  21-Mar-2016/MR: separate call for allocations of fnamexy* (due to Yin-Yang)
+!  24-Mar-2025/TP: refactored to make more modular: computation separate from allocations etc.
 !
 !  All numbers like nname etc. need to be initialized to zero in cdata!
 !

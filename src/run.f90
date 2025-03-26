@@ -601,7 +601,7 @@ subroutine run_start() bind(C)
   use Boundcond,       only: update_ghosts, initialize_boundcond
   use Chemistry,       only: chemistry_clean_up
   use Diagnostics,     only: phiavg_norm, report_undefined_diagnostics, trim_averages,diagnostics_clean_up
-  use Equ,             only: initialize_pencils, debug_imn_arrays
+  use Equ,             only: initialize_pencils, debug_imn_arrays, rhs_sum_time
   use FArrayManager,   only: farray_clean_up
   use Farray_alloc
   use General,         only: random_seed_wrapper, touch_file, itoa
@@ -877,7 +877,7 @@ subroutine run_start() bind(C)
 !  This directory must exist, but may be linked to another disk.
 !
   f=0.
-if (lroot) print*, 'memusage before rsnap=', memusage()/1024., 'MBytes'
+  if (lroot .and. ldebug) print*, 'memusage before rsnap=', memusage()/1024., 'MBytes'
   if (lroot) tvar1=mpiwtime()
   call rsnap('var.dat',f,mvar_in,lread_nogrid)
   if (lroot) print*,'rsnap: read snapshot var.dat in ',mpiwtime()-tvar1,' seconds'
@@ -951,7 +951,7 @@ if (lroot) print*, 'memusage before rsnap=', memusage()/1024., 'MBytes'
 !  initialization. And final pre-timestepping setup.
 !  (must be done before need_XXXX can be used, for example)
 !
-if (lroot) print*, 'memusage before initialize modules=', memusage()/1024., 'MBytes'
+  if (lroot .and. ldebug) print*, 'memusage before initialize modules=', memusage()/1024., 'MBytes'
   call initialize_timestep
   call initialize_modules(f)
   call initialize_boundcond
@@ -1066,7 +1066,7 @@ if (lroot) print*, 'memusage before initialize modules=', memusage()/1024., 'MBy
   !$ call mpibarrier
 
 !$omp parallel num_threads(num_helper_masters+1) &
-!$omp copyin(fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz,phiavg_norm)
+!$omp copyin(dxmax_pencil,fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz,phiavg_norm)
 !
 !TP: remove master id from core ids since no one should run on master core and make sure new core ids indexing start from 1
 !$ if (omp_get_thread_num() == 1) helper_core_id = get_cpu()
@@ -1189,6 +1189,10 @@ if (lroot) print*, 'memusage before initialize modules=', memusage()/1024., 'MBy
       else
         write(*,'(A,1pG14.7)') ' Wall clock time/timestep/meshpoint [microsec] =', &
                                wall_clock_time/icount/nw/ncpus/1.0e-6
+        write(*,'(A,1pG14.7)') ' Wall clock time/timestep/local meshpoint [microsec] =', &
+                               wall_clock_time/icount/nw/1.0e-6
+        write(*,'(A,1pG14.7)') ' Rhs wall clock time/timestep/local meshpoint [microsec] =', &
+                               rhs_sum_time/icount/nw/1.0e-6
       endif
     endif
   endif
@@ -1238,7 +1242,7 @@ if (lroot) print*, 'memusage before initialize modules=', memusage()/1024., 'MBy
     use Syscalls, only: copy_addr, copy_addr_dble
     use General, only: string_to_enum
 
-    integer, parameter :: n_pars=1200
+    integer, parameter :: n_pars=1500
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
 call copy_addr(ncoarse,p_par(1)) ! int
@@ -1405,6 +1409,7 @@ call copy_addr(dx,p_par(167))
 call copy_addr(dy,p_par(168))
 call copy_addr(dz,p_par(169))
 
+call copy_addr(ldebug,p_par(300)) ! bool
 call copy_addr(ltest_bcs,p_par(337)) ! bool
 call copy_addr(lmorton_curve,p_par(338)) ! bool
 call copy_addr(lcourant_dt,p_par(342)) ! bool
@@ -1442,8 +1447,8 @@ call copy_addr(lcooling_ss_mz,p_par(375)) ! bool
 call copy_addr(iglobal_ss0,p_par(376)) ! int
 call copy_addr(iss_run_aver,p_par(377)) ! int
 call copy_addr(ttransient,p_par(379))
-call string_to_enum(string_enum_unit_system,unit_system)
-call copy_addr(string_enum_unit_system,p_par(380)) ! int
+call string_to_enum(enum_unit_system,unit_system)
+call copy_addr(enum_unit_system,p_par(380)) ! int
 call copy_addr(it_rmv,p_par(381)) ! int
 call copy_addr(ldivu_perp,p_par(383)) ! bool
 call copy_addr(nvar,p_par(384)) ! int
@@ -1490,6 +1495,14 @@ call copy_addr(lroot,p_par(1175)) ! bool
 call copy_addr(lperi,p_par(1176)) ! bool3
 call copy_addr(lcpu_timestep_on_gpu,p_par(1177)) ! bool
 call copy_addr(lac_sparse_autotuning,p_par(1178)) ! bool
+
+call copy_addr_dble(sigma_thomson,p_par(1185))
+call copy_addr_dble(c_light,p_par(1188))
+call copy_addr(hubble,p_par(1192))
+call copy_addr(ascale,p_par(1193))
+call copy_addr(iey,p_par(1194)) ! int
+call copy_addr(iez,p_par(1195)) ! int
+call copy_addr(icool_prof,p_par(1196)) ! int
 
 endsubroutine pushpars2c
 !***********************************************************************

@@ -118,7 +118,7 @@ module Density
   logical :: lfreeze_lnrhosqu=.false.
   logical :: lrho_as_aux=.false., ldiffusion_nolog=.false.
   logical :: lrho_flucz_as_aux=.false.
-  logical :: lmassdiff_fix = .true.,lmassdiff_fixmom = .false.,lmassdiff_fixkin = .false.
+  logical :: lmassdiff_fix = .false.,lmassdiff_fixmom = .false.,lmassdiff_fixkin = .false.
   logical :: lcheck_negative_density=.false.
   logical :: lcalc_lnrhomean=.false.
   logical :: ldensity_profile_masscons=.false.
@@ -692,13 +692,14 @@ module Density
             call fatal_error('initialize_density','A diffusion coefficient of diffrho_hyper3 is zero!')
         if (ldiff_shock .and. diffrho_shock==0.0) &
             call fatal_error('initialize_density','diffusion coefficient diffrho_shock is zero!')
+        if (ldiff_shock .and. linterstellar) lmassdiff_fix=.true.
         if (ldiff_normal.or.ldiff_cspeed.or.ldiff_shock) then
           if (.not.lmassdiff_fix) call warning('initialize_density', &
             'For diffusion energy/momentum correction should use lmassdiff_fix=T', 0)
         endif
         if (lmassdiff_fixkin.or.lmassdiff_fixmom) then
           lmassdiff_fix=.true.
-          call information('initialize_density','lmassdiff_fix=T now the default', 0)
+          call information('initialize_density','lmassdiff_fix=F now the default', 0)
         endif
 !
 !  Dynamical hyper-diffusivity operates only for mesh formulation of hyper-diffusion
@@ -4119,6 +4120,10 @@ module Density
     call copy_addr(reduce_cs2_profz,p_par(68)) ! (mz)
     call copy_addr(reference_state,p_par(69)) ! (nx) (9)
     call copy_addr(beta_glnrho_scaled,p_par(70)) ! real3
+    call copy_addr(lhubble_density,p_par(71)) ! bool
+    !TP: needed for transpilation but name collides with hydro so will not work without
+    !    module qualified name, so to not break handwritten DSL code have it on comment
+    !call copy_addr(wdamp,p_par(72))
 
     endsubroutine pushpars2c
 !***********************************************************************

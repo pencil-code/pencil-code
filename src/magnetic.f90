@@ -3795,7 +3795,7 @@ module Magnetic
           call curl_mn(aij, bb, A=f(:,m,n,iax:iaz))
 !
 !  calculate jj if requested
-!  (but this is not correct when displacement current is invoked)
+!  (but this is not needed when displacement current is invoked)
 !
           if (ljj_as_comaux) then
             if (irhoe/=0.and.ibb/=0) then
@@ -4014,7 +4014,7 @@ module Magnetic
           call get_bext(B_ext,j_ext)
           if (any(B_ext/=0.)) then
             if (lhubble_magnetic) then
-              forall(j = 1:3, B_ext(j) /= 0.0) p%bb(:,j) = p%bb(:,j) + B_ext(j)/ascale**2
+              do j = 1,3; if(B_ext(j) /= 0.0) p%bb(:,j) = p%bb(:,j) + B_ext(j)/ascale**2; enddo;
             else
               do j = 1,3; p%bb(:,j) = p%bb(:,j) + B_ext(j); enddo;
             endif
@@ -4239,6 +4239,7 @@ module Magnetic
 !  lresi_eta_tdep_t0_norm is not the default because of backward compatbility.
 !  The default is problematic because then eta_tdep /= eta for t < eta_tdep_t0.
 !
+!WRONG-INDENTATION start
       if (lresi_eta_tdep .or. lresi_eta_xtdep .or. lresi_hyper2_tdep .or. lresi_hyper3_tdep) then
         select case (tdep_eta_type)
           case ('const')
@@ -4338,9 +4339,12 @@ module Magnetic
 !indent end
         endif
       endif
+!WRONG-INDENTATION end
 !
 !  Check whether or not the displacement current is being computed.
 !  When iex>0, eta_total is not yet set, so we must do it here.
+!  Note, however, that p%jj_ohm can also be computed in disp_current,
+!  so we must not overwrite it here.
 !
         if (iex>0) then
           if (lresi_eta_tdep) then
@@ -4350,8 +4354,12 @@ module Magnetic
           elseif (lresi_eta_xtdep) then
             eta_total=eta_xtdep
           else
-            p%jj=0.
-            p%jj_ohm=0.
+!
+!  Must not overwrite jj_ohm here.
+!  Need to check that it is still always initialized.
+!
+            !p%jj=0.
+            !p%jj_ohm=0.
             eta_total=eta
           endif
 !
@@ -4363,7 +4371,8 @@ module Magnetic
 !
 !  The Ohm's current is independent of loverride_ee2, etc.
 !  AB: eta_total and the rest are pencils, but it complains about inconsistent ranks. So I put (1).
-!  Here we may need to add the chiral part.
+!  When the eta:s below are not known. p%jj_ohm may already have been computed in disp_current.
+!  Whether it works with lohm_evolve needs to be checked.
 !
             if (lresi_eta_tdep .or. lresi_eta_xtdep .or. eta/=0.) then
               if (lohm_evolve) then
@@ -4375,6 +4384,11 @@ module Magnetic
                 enddo
               endif
             endif
+!
+!  In (hopefully) all other cases, p%jj_ohm is either initialized
+!  to zero or known from disp_current, but can check here:
+!
+            if (ip<9) print*,'AXEL: p%jj_ohm(1,:)=',p%jj_ohm(1,:)
 !
 !  Compute current for Lorentz force.
 !  Note that loverride_ee2 is a "permanent" switch,
@@ -11712,7 +11726,16 @@ module Magnetic
     call string_to_enum(enum_borderaa(3),borderaa(3))
     call copy_addr(enum_borderaa,p_par(255)) ! int3
     call copy_addr(bz_stratified,p_par(256)) ! (mz)
-    call copy_addr(eta_tdep,p_par(257))
+
+    call copy_addr(amp_relprof,p_par(258))
+    call copy_addr(lhubble_magnetic,p_par(259)) ! bool
+    call copy_addr(learly_set_el_pencil,p_par(260)) ! bool
+    !TP: needed for transpilation but name collides with hydro so will not work without
+    !    module qualified name, so to not break handwritten DSL code have it on comment
+    !call copy_addr(lrhs_max,p_par(261)) ! bool
+    !call copy_addr(gamma1,p_par(262))
+
+    call copy_addr(lrelaxprof_glob_scaled,p_par(263)) ! bool
 
     endsubroutine pushpars2c
 !***********************************************************************

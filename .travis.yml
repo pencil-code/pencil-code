@@ -36,6 +36,3 @@ before_install:
 script:
   - source sourceme.sh
   - pc_auto-test --host-id travis-ci -t --max-level 1 --auto-clean
-
-vm:
- size: gpu-medium

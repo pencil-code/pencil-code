@@ -3100,6 +3100,9 @@ module Viscosity
     call copy_addr(enum_nnewton_type ,p_par(104))
     call string_to_enum(enum_div_sld_visc,div_sld_visc)
     call copy_addr(enum_div_sld_visc,p_par(105))
+    !TP: needed for transpilation but name collides with hydro so will not work without
+    !    module qualified name, so to not break handwritten DSL code have it on comment
+    !call copy_addr(eth0z,p_par(106)) ! (mz)
     
     endsubroutine pushpars2c
 !***********************************************************************

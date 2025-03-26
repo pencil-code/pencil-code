@@ -516,7 +516,7 @@ module Cdata
   integer :: nname_sound=0, ncoords_sound=0
   integer :: nr_directions=1
   integer :: itdiagnos
-  real :: tdiagnos,dtdiagnos,t1ddiagnos,t2davgfirst,eps_rkf_diagnos
+  real :: tspec,tdiagnos,dtdiagnos,t1ddiagnos,t2davgfirst,eps_rkf_diagnos
   real, dimension (mname) :: fweight=0.0
   integer, dimension(:)   , allocatable :: itype_name
   real, dimension(:)      , allocatable, target :: fname,fname_keep
@@ -847,7 +847,7 @@ module Cdata
 !  Size of mfarray to make sure we can store the handle (for 1 to mvar zero)
 !
    integer, dimension(mfarray) :: maux_vtxbuf_index = 0
-   integer :: string_enum_unit_system = 0
+   integer :: enum_unit_system = 0
 !
 !  Define and initialize lambda5, so that it can be used to tell whether
 !  or not the chiral MHD special module is used.
@@ -861,7 +861,7 @@ module Cdata
   logical :: lout_save, l1davg_save, l2davg_save, lout_sound_save, lvideo_save
   logical :: lchemistry_diag_save
 
-  real(KIND=rkind8) :: t_save
+  real(KIND=rkind8) :: t_save,tspec_save
   real :: t1ddiagnos_save,t2davgfirst_save,tslice_save,tsound_save
 
 !$ logical, volatile, dimension(n_helperflags) :: lhelperflags=(/.false.,.false.,.false.,.false./)
@@ -880,7 +880,7 @@ module Cdata
 !$omp threadprivate(lfirstpoint,thread_id)
 !$omp threadprivate(fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz)
 !$omp threadprivate(l1dphiavg, l1davgfirst, l2davgfirst, ldiagnos,lout, l1davg, l2davg, lout_sound, lvideo)
-!$omp threadprivate(tdiagnos,t1ddiagnos,t2davgfirst,tslice,tsound,itdiagnos,dtdiagnos,eps_rkf_diagnos)
+!$omp threadprivate(tspec,tdiagnos,t1ddiagnos,t2davgfirst,tslice,tsound,itdiagnos,dtdiagnos,eps_rkf_diagnos)
 !
 ! For use in offloaded code:
 !!$omp declare target(ldensity_nolog,l2,m2,n2)

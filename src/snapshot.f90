@@ -781,7 +781,12 @@ module Snapshot
 !
       if (present(lwrite_only)) llwrite_only=lwrite_only
 
-      if(.not. lmultithread) tdiagnos=t
+      !TP: unfortunately spectrum needs a different t than timeseries since they are in general different
+      if(.not. lmultithread) then
+        tspec=t
+      else 
+        tspec_save=t
+      endif
 
       ldo_all=.not.llwrite_only
 !
@@ -790,10 +795,9 @@ module Snapshot
 !
       if (lspec.or.llwrite_only) then
         if (.not.lstart.and.lgpu) call copy_farray_from_GPU(f)
-        if (ldo_all) call update_ghosts(f)
+        if (ldo_all .and. .not. lmultithread) call update_ghosts(f)
 !
         if (lmultithread) then
-!$        call save_diagnostic_controls
 !$        lmasterflags(PERF_POWERSNAP) = .true.
         else
           call perform_powersnap(f)

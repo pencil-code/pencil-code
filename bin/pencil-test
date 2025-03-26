@@ -51,6 +51,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #                                'type1:interp1,type2:interp2,...'. Use
 #                                'DEFAULT' to get all configured types
 #                                with their default interpreters
+#       --submodules          -- update all submodules when pulling
 #   -t <limit>,
 #       --time-limit=<limit>  -- Limit total time for each {start,run}.x phase
 #   -T <file>,
@@ -111,6 +112,7 @@ GetOptions(\%opts,
                -M=s --Mailer=s
                -p=s --postproc=s
                     --script-tests=s
+                    --submodules
                -t=s --time-limit=s
                -T=s --timings-file=s
                     --tag-stable
@@ -137,7 +139,8 @@ my $tag_stable  = (              $opts{'tag-stable'}  || 0 );
 my $emails      = ($opts{'m'} || $opts{'mail'}        || '');
 my $mailer      = ($opts{'M'} || $opts{'Mailer'}      || '');
 my $postproc    = ($opts{'p'} || $opts{'postproc'}    || '');
-my $script_tests = (             $opts{'script-tests'} || '');
+my $script_tests= (              $opts{'script-tests'}|| '');
+my $submodules  = (              $opts{'submodules'}  || 0 );
 my $time_limit  = ($opts{'t'} || $opts{'time-limit'}  || '');
 my $timingsfile = ($opts{'T'} || $opts{'timings-file'}|| '');
 my $with_xml    = ($opts{'x'} || $opts{'xml'}         || '');
@@ -354,12 +357,17 @@ sub build_remote_cmd {
     my $remcmd = "";
     if ($update) {
         my $prev_wd=cwd();
+	my $recurse_cmd = "";
+	if ($submodules) { 
+	    $recurse_cmd = '    (git submodule update --init --recursive || echo "UPDATE ERROR: git submodule");';
+	}
         $remcmd .= 'cd "'.$pencil_home.'";'
           . 'if [ -e .git ]; then'  # .git can be a directory or a file
           . '    (git stash -q -u || echo "UPDATE ERROR: git stash");'
           . '    (git fetch -q || echo "UPDATE ERROR: git fetch");'
           # . '    (git reset -q --hard @{u} || echo "UPDATE ERROR: git reset");'
           . '    (git pull --rebase -q || echo "UPDATE ERROR: git pull");'
+	  . $recurse_cmd
           . '    printf "Updated to git revision %s\n" $(git rev-parse HEAD);'
           . 'elif [ -d .svn ]; then'
           . '    (svn -q update || echo "UPDATE ERROR: svn update failed");'
