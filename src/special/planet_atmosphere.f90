@@ -402,6 +402,8 @@ module Special
         call fatal_error('special_calc_magnetic','no such ieta_PT')
       endselect
 !
+      if (leta_planet_as_aux) f(l1:l2,m,n,ieta_planet) = eta_x
+!
 ! Apply customized eta profile to the induction and heat equations
 !
       if (ieta_PT/='nothing') then
@@ -427,8 +429,6 @@ module Special
       call get_mu_ss(mu_ss,lon_ss,lat_ss)
 !
       call calc_Bext
-!
-      if (leta_planet_as_aux) f(l1:l2,m,n,ieta_planet) = eta_x
 !
       call keep_compiler_quiet(f)
 !
