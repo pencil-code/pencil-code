@@ -430,6 +430,8 @@ module Special
 !
       call calc_Bext
 !
+      if (leta_planet_as_aux) f(l1:l2,m,n,ieta_planet) = eta_x
+!
       call keep_compiler_quiet(f)
 !
     endsubroutine special_after_boundary
