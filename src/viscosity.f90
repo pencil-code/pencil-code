@@ -1267,6 +1267,7 @@ module Viscosity
 !
       real, dimension (nx,3) :: tmp,tmp2,gradnu,sgradnu,gradnu_shock
       real, dimension (nx) :: murho1,zetarho1,muTT,tmp3,tmp4,pnu_shock
+      real, dimension (nx) :: rr,dlnrhodx,du1dx,du2dx,du3dx,d2u1dx2,d2u2dx2,d2u3dx2
       real, dimension (nx) :: lambda_phi,prof,prof2,derprof,derprof2
       real, dimension (nx) :: gradnu_effective,fac,advec_hypermesh_uu
       real, dimension (nx,3) :: deljskl2,fvisc_nnewton2
