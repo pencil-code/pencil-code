@@ -39,6 +39,7 @@ module Diagnostics
   public :: sum_mn_name_halfy, surf_mn_name, sum_lim_mn_name
   public :: sum_mn_name_halfz
   public :: xysum_mn_name_z, xzsum_mn_name_y, yzsum_mn_name_x
+  public :: xymax_mn_name_z
   public :: phizsum_mn_name_r, ysum_mn_name_xz, zsum_mn_name_xy
   public :: phisum_mn_name_rz, calc_phiavg_profile
   public :: yzintegrate_mn_name_x, xzintegrate_mn_name_y, xyintegrate_mn_name_z
@@ -966,7 +967,7 @@ module Diagnostics
 !
       use General, only: itoa
 !
-      real, dimension(nz,nprocz) :: fsumz
+      real, dimension(nz,nprocz) :: fsumz, fmaxz
       integer, dimension(nz) :: nsum, ncount
       integer, dimension(:,:) :: ncountsz
       real, dimension(:,:,:) :: fnamez
@@ -1010,6 +1011,9 @@ module Diagnostics
           case(ilabel_sum)
             call mpireduce_sum(fnamez(:,:,idiag),fsumz,(/nz,nprocz/))
             if (lroot) fnamez(:,:,idiag)=fsumz*dA_xy_rel1
+          case(ilabel_max,ilabel_max_dt)
+            call mpireduce_max(fnamez(:,:,idiag),fmaxz,(/nz,nprocz/))
+            if (lroot) fnamez(:,:,idiag)=fmaxz(:,:)
           case default
             call fatal_error('xyaverages_z', 'itype_name_z has an unhandled value '// &
             trim(itoa(itype_name_z(idiag)))//' at idiag='//trim(itoa(idiag))// &
@@ -1188,6 +1192,7 @@ module Diagnostics
 !   7-aug-03/wolf: coded
 !  24-Nov-2018/PABourdin: redesigned
 !  09-nov-2022/ccyang: reorganized
+!  27-mar-2025/Kishore: handle ilabel_max_dt
 !
       use HDF5_IO, only: output_average
       use Mpicomm, only: mpiwtime
@@ -1195,12 +1200,16 @@ module Diagnostics
       logical, save :: lfirst_call = .true.
       logical :: ltimer
       real :: taver
+      integer :: iname
 !
       taver = 0.0
       t1ddiagnos = tdiagnos
       ltimer = ip <= 12 .and. lroot
 !
       if (nnamez > 0) then
+        do iname=1,nnamez
+          if (itype_name_z(iname)==ilabel_max_dt) fnamez(:,:,iname) = dt*fnamez(:,:,iname)
+        enddo
         if (ltimer) taver = mpiwtime()
         call output_average(datadir, 'xy', nnamez, cnamez, fnamez, nzgrid, t1ddiagnos, lwrite_avg1d_binary, lroot)
         if (ltimer) print *, 'write_1daverages: write xy in ', mpiwtime() - taver, ' seconds'
@@ -2377,6 +2386,44 @@ module Diagnostics
       endif
 !
     endsubroutine xysum_mn_name_z_npar
+!***********************************************************************
+    subroutine xymax_mn_name_z(a,iname,l_dt)
+!
+!  Successively calculate maximum over x,y of a, which is supplied at each call.
+!  The result fnamez is z-dependent.
+!
+!   27-mar-2025/Kishore: coded
+!
+      use Cdata, only: n
+!
+      real, dimension(nx), intent(in) :: a
+      integer, intent(in) :: iname
+      logical, optional, intent(in) :: l_dt
+!
+      integer :: nl
+!
+!  Only do something if iname is not zero.
+!
+      if (iname==0) return
+!
+!       Initialize to -impossible, including other parts of the z-array
+!       which are later merged with an mpi reduce command.
+!
+      !TODO: cleaner way?
+      if (lfirstpoint) fnamez(:,:,iname) = -impossible
+!
+!  n starts with nghost+1, so the correct index is n-nghost
+!
+      nl=n-nghost
+      fnamez(nl,ipz+1,iname)=max(fnamez(nl,ipz+1,iname),maxval(a))
+!
+      if (loptest(l_dt)) then
+        itype_name_z(iname)=ilabel_max_dt
+      else
+        itype_name_z(iname)=ilabel_max
+      endif
+!
+    endsubroutine xymax_mn_name_z
 !***********************************************************************
     subroutine xzsum_mn_name_y(a,iname)
 !
