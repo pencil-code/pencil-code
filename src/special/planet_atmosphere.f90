@@ -48,7 +48,7 @@ module Special
 !
   real :: ref_eta_dlog10p,ref_eta_log10p_min,ref_eta_log10p_max
   real :: ref_eta_dT
-  real, dimension(:), allocatable :: ref_eta_log10p,ref_eta_T,ref_etaP,ref_etaPT
+  real, dimension(:), allocatable :: ref_eta_log10p,ref_eta_T,ref_etaP,ref_etaPT,ref_log10etaPT
   integer :: ref_eta_nP, ref_eta_nT
 !
 ! Init parameters
@@ -73,6 +73,7 @@ module Special
   real :: frac_sponge_polar=0
   !
   logical :: linit_equilibrium=.false.
+  logical :: leta_planet_as_aux=.false.
 !
 ! Run parameters
 !
@@ -88,12 +89,12 @@ module Special
       lon_ss,lat_ss,peqtop,peqbot,tauradtop,tauradbot,&
       pradtop,pradbot,dTeqbot,dTeqtop,linit_equilibrium,&
       Bext_ampl,iBext,frac_sponge_r,frac_sponge_polar,q_sponge_polar,&
-      q_drag,q_sponge_r
+      q_drag,q_sponge_r,leta_planet_as_aux
 !
   namelist /special_run_pars/ &
       tau_slow_heating,t0_slow_heating,Bext_ampl,iBext,frac_sponge_r,&
       q_drag,q_sponge_r,&
-      dTeq_max,dTeqtop,dTeqbot,ieta_PT,eta_floor,eta_ceiling
+      dTeq_max,dTeqtop,dTeqbot,ieta_PT,eta_floor,eta_ceiling,leta_planet_as_aux
 !
 !
 ! Declare index of new variables in f array (if any).
@@ -109,10 +110,14 @@ module Special
 !****************************************************************************
     subroutine initialize_special(f)
 !
+      use Sub, only: register_report_aux
+!
       real, dimension (mx,my,mz,mfarray) :: f
 !
       if (.not.ltemperature_nolog) call fatal_error('initialize_special', &
           'special/planet_atmosphere is formulated in TT only')
+!
+      if (leta_planet_as_aux) call register_report_aux('eta_planet', ieta_planet)
 !
 !  convert y and z to latitude and longitude in rad
 !
@@ -373,10 +378,17 @@ module Special
                              log10(p%pp*pp2Pa),eta_x )
         eta_x = 10.**eta_x
       case ('eta_PT')
-        call interpolation2d(ref_eta_log10p,ref_eta_T,log10(ref_etaPT), &
+        call interpolation2d(ref_eta_log10p,ref_eta_T,ref_log10etaPT, &
                              ref_eta_nP,ref_eta_nT,ref_eta_dlog10p,ref_eta_dT, &
                              log10(p%pp*pp2Pa),p%TT*TT2K,eta_x )
         eta_x = 10.**eta_x
+        if (eta_floor>0.) then
+          where (eta_x<eta_floor) eta_x = eta_floor
+        endif
+      !
+        if (eta_ceiling>0.) then
+          where (eta_x>eta_ceiling) eta_x = eta_ceiling
+        endif
       case ('Perna+2010')
         !  reference: Perna+2010, Eq. (1) and Menou+2012 Sec. 3.3
         eta_x = 214.545 * exp(25188./p%TT/TT2K) * &
@@ -415,6 +427,8 @@ module Special
       call get_mu_ss(mu_ss,lon_ss,lat_ss)
 !
       call calc_Bext
+!
+      if (leta_planet_as_aux) f(l1:l2,m,n,ieta_planet) = eta_x
 !
       call keep_compiler_quiet(f)
 !
@@ -717,16 +731,6 @@ module Special
 !
       ref_etaP=ref_etaP/eta2si
 !
-!  add floor or ceiling
-!
-      if (eta_floor>0.) then
-        where (ref_etaP<eta_floor) ref_etaP = eta_floor
-      endif
-      !
-      if (eta_ceiling>0.) then
-        where (ref_etaP>eta_ceiling) ref_etaP = eta_ceiling
-      endif
-!
 !  for debug purpose, output the result
 !
       if (lroot) then
@@ -758,19 +762,19 @@ module Special
       read(1,*) ! skip the comment line
       ! pressure
       read(1,*) ref_eta_nP
-      if(allocated(ref_eta_log10p)) deallocate(ref_eta_log10p)
+      if (allocated(ref_eta_log10p)) deallocate(ref_eta_log10p)
       allocate(ref_eta_log10p(ref_eta_nP))
       read(1,*) ref_eta_log10p
       ref_eta_log10p = log10(ref_eta_log10p)
       ref_eta_dlog10p = (ref_eta_log10p(ref_eta_nP) - ref_eta_log10p(1)) / (ref_eta_nP-1.)
       ! temperature
       read(1,*) ref_eta_nT
-      if(allocated(ref_eta_T)) deallocate(ref_eta_T)
+      if (allocated(ref_eta_T)) deallocate(ref_eta_T)
       allocate(ref_eta_T(ref_eta_nT))
       read(1,*) ref_eta_T
       ref_eta_dT = (ref_eta_T(ref_eta_nT)-ref_eta_T(1)) / (ref_eta_nT-1.)
       ! eta, reshaping into 1d array
-      if(allocated(ref_etaPT)) deallocate(ref_etaPT)
+      if (allocated(ref_etaPT)) deallocate(ref_etaPT)
       allocate(ref_etaPT(ref_eta_nP*ref_eta_nT))
       read(1,*) ref_etaPT
 !
@@ -780,15 +784,11 @@ module Special
 !
       ref_etaPT=ref_etaPT/eta2si
 !
-!  add floor or ceiling
+!  store in log10
 !
-      if (eta_floor>0.) then
-        where (ref_etaPT<eta_floor) ref_etaPT = eta_floor
-      endif
-      !
-      if (eta_ceiling>0.) then
-        where (ref_etaPT>eta_ceiling) ref_etaPT = eta_ceiling
-      endif
+      if (allocated(ref_log10etaPT)) deallocate(ref_log10etaPT)
+      allocate(ref_log10etaPT(ref_eta_nP*ref_eta_nT))
+      ref_log10etaPT = log10(ref_etaPT)
 !
 !  for debug purpose, output the result
 !
