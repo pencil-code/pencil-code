@@ -31,6 +31,7 @@ module Viscosity
   character (len=labellen) :: lambda_profile='uniform'
   real :: nu=0.0, nu_cspeed=0.5
   real :: nu_tdep=0.0, nu_tdep_exponent=0.0, nu_tdep_t0=0.0, nu_tdep_toffset=0.0
+  real :: nu_r_reduce=0.0
   real :: zeta=0.0, nu_mol=0.0, nu_hyper2=0.0, nu_hyper3=0.0
   real :: nu_hyper3_mesh=5.0, nu_shock=0.0,nu_spitzer=0.0, nu_spitzer_max=0.0
   real :: nu_jump=1.0, xnu=1.0, xnu2=1.0, znu=1.0, widthnu=0.1, widthnu2=0.1
@@ -118,6 +119,7 @@ module Viscosity
   logical :: lsld_notensor=.false.
   logical :: lno_visc_heat_zbound=.false.
   logical, pointer :: lcalc_uuavg
+  logical :: lvisc_nu_reduce_ddr=.false.
   real :: no_visc_heat_z0=max_real, no_visc_heat_zwidth=0.0
   real :: damp_sound=0.
   real :: h_sld_visc=2.0, nlf_sld_visc=1.0
@@ -138,7 +140,7 @@ module Viscosity
       h_sld_visc,nlf_sld_visc, lnusmag_as_aux, lsld_notensor, &
       lvisc_smag_Ma, nu_smag_Ma2_power, nu_cspeed, lno_visc_heat_zbound, &
       no_visc_heat_z0,no_visc_heat_zwidth, div_sld_visc ,lvisc_forc_as_aux, &
-      lvisc_rho_nu_const_prefact, nu_rcyl_min
+      lvisc_rho_nu_const_prefact, nu_rcyl_min, nu_r_reduce
 !
 ! diagnostic variable markers (needs to be consistent with reset list below)
 !
@@ -562,6 +564,9 @@ module Viscosity
           if (lroot) print*,'viscous force: slope-limited diffusion'
           if (lroot) print*,'viscous force: using ',trim(div_sld_visc),' order'
           lvisc_slope_limited=.true.
+        case ('nu-reduce-ddr')
+          if (lroot) print*,'viscous force: r-derivative reduced in spherical coordinates'
+          lvisc_nu_reduce_ddr=.true.
         case ('nu-223schur')
           if (lroot) print*,'viscous force: nu-223schur'
           lvisc_schur_223=.true.
@@ -1212,6 +1217,12 @@ module Viscosity
       if (lvisc_schur_223) then
         lpenc_requested(i_del2u)=.true.
         lpenc_requested(i_d2uidxj)=.true.
+      endif
+      if (lvisc_nu_reduce_ddr) then
+        lpenc_requested(i_uu)=.true.
+        lpenc_requested(i_del2u)=.true.
+        lpenc_requested(i_sglnrho)=.true.
+        lpenc_requested(i_graddivu)=.true.
       endif
 !
 !  fviscmax has been revised to show absolute maximum rather than component
@@ -2234,6 +2245,39 @@ module Viscosity
       if (lvisc_schur_223) then
         p%fvisc=p%fvisc+nu*p%del2u
         p%fvisc(:,1:2)=p%fvisc(:,1:2)-nu*p%d2uidxj(:,1:2,3)
+      endif
+!
+!  viscous force: in spherical coordinates, reduce viscosity in the r direction
+!
+      if (lvisc_nu_reduce_ddr) then
+        rr = x(l1:l2)
+        call der_x(f(:,m,n,ilnrho),dlnrhodx)
+        call der_x(f(:,m,n,iux),du1dx)
+        call der_x(f(:,m,n,iuy),du2dx)
+        call der_x(f(:,m,n,iuz),du3dx)
+        call der2_x(f(:,m,n,iux),d2u1dx2)
+        call der2_x(f(:,m,n,iuy),d2u2dx2)
+        call der2_x(f(:,m,n,iuz),d2u3dx2)
+        !  the usual viscosity
+        do j=1,3
+          p%fvisc(:,j) = p%fvisc(:,j) + nu*(p%del2u(:,j) + 2.*p%sglnrho(:,j) + 1./3.*p%graddivu(:,j))
+        enddo
+
+        !  r component
+        tmp4 = -4.*p%uu(:,1)*(2.+cotth(m)+rr*dlnrhodx)+p%uu(:,2)*(2.-7.*cotth(m)-2.*rr*cotth(m)*dlnrhodx) &
+               +rr*(cotth(m)*du2dx+du1dx*(8.-2.*cotth(m)+4.*rr*dlnrhodx)+4.*rr*d2u1dx2)
+        p%fvisc(:,1) = p%fvisc(:,1) - 2.*nu*tmp4/6./rr**2.*nu_r_reduce
+        !  theta component
+        tmp4 = -4.*p%uu(:,1)*(2.+rr*dlnrhodx)-p%uu(:,2)*(4.*(cotth(m)+1./sinth(m)**2)+rr*(3.+2.*cotth(m))*dlnrhodx) &
+               +rr*(-2.*du1dx*(5.+rr*dlnrhodx)+du2dx*(6.-2.*cotth(m)+3.*rr*dlnrhodx) &
+               -2.*rr*d2u1dx2+3.*rr*d2u2dx2)
+        p%fvisc(:,2) = p%fvisc(:,2) - 2.*nu*tmp4/6./rr**2.*nu_r_reduce
+        !  phi component
+        tmp4 = 2.*p%uu(:,2)-3./sinth(m)**2*p%uu(:,3)-10.*rr*du1dx-2.*cotth(m)*p%uu(:,2)*(2.+cotth(m)+rr*dlnrhodx) &
+               -4.*p%uu(:,1)*(2.+2.*cotth(m)+rr*dlnrhodx)-rr*(2.*cotth(m)*du2dx+3.*p%uu(:,3)*dlnrhodx &
+                -3.*du3dx*(2.+rr*dlnrhodx)+2.*du1dx*(2.*cotth(m)+rr*dlnrhodx)+2.*rr*d2u1dx2 &
+                -3.*rr*d2u3dx2)
+        p%fvisc(:,3) = p%fvisc(:,3) - 2.*nu*tmp4/6./rr**2.*nu_r_reduce
       endif
 !
 !  Calculate Lambda effect. Allow for the possibility of the
