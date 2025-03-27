@@ -1257,7 +1257,7 @@ module Viscosity
 !  14-oct-15/MR: corrected viscous force for slope-limited flux
 !  03-apr-20/joern: restructured and fixed slope-limited diffusion
 !
-      use Deriv, only: der5i1j,der6
+      use Deriv, only: der5i1j,der6,der_x,der2_x
       use Diagnostics, only: max_mn_name, sum_mn_name
       use Sub
 !
