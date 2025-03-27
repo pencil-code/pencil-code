@@ -4901,6 +4901,24 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine mpireduce_max_arr
 !***********************************************************************
+    subroutine mpireduce_max_arr2(fmax_tmp,fmax,nreduce,comm)
+!
+!  Calculate total maximum for each array element and return to root.
+!
+      integer, dimension(2)  :: nreduce
+      real, dimension(nreduce(1),nreduce(2)) :: fmax_tmp,fmax
+      integer, optional :: comm
+!
+      integer :: num_elements
+!
+      if (any(nreduce==0)) return
+!
+      num_elements = product(nreduce)
+      call MPI_REDUCE(fmax_tmp, fmax, num_elements, mpi_precision, MPI_MAX, root, &
+                      ioptest(comm,MPI_COMM_GRID), mpierr)
+!
+    endsubroutine mpireduce_max_arr2
+!***********************************************************************
     subroutine mpireduce_min_scl(fmin_tmp,fmin,comm)
 !
 !  Calculate total minimum for each array element and return to root.
