@@ -1,0 +1,9 @@
+-rw-r--r-- 1 brandenb brandenb  148 mar 28 16:54 parameters.pro
+-rw-r--r-- 1 brandenb brandenb  124 mar 28 16:54 print.in
+-rw-r--r-- 1 brandenb brandenb  579 mar 28 17:03 run.in
+-rw-r--r-- 1 brandenb brandenb  368 mar 28 16:54 src/cparam.local
+-rw-r--r-- 1 brandenb brandenb  346 mar 28 16:54 src/Makefile.local
+-rw-r--r-- 1 brandenb brandenb 1822 mar 28 17:00 src/revision.txt
+-rw-r--r-- 1 brandenb brandenb  694 mar 28 16:54 start.in
+-rw-r--r-- 1 brandenb brandenb    7 mar 28 16:54 video.in
+-rw-r--r-- 1 brandenb brandenb   23 mar 28 16:54 yzaver.in

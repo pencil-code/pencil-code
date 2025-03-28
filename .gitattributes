@@ -2050,6 +2050,15 @@ samples/1d-tests/photo_stratification/start.in -text
 samples/1d-tests/photo_stratification/stratification.dat -text
 samples/1d-tests/photo_stratification/video.in -text
 samples/1d-tests/photo_stratification/xyaver.in -text
+samples/1d-tests/rel-shock/.log -text
+samples/1d-tests/rel-shock/parameters.pro -text
+samples/1d-tests/rel-shock/print.in -text
+samples/1d-tests/rel-shock/run.in -text
+samples/1d-tests/rel-shock/src/Makefile.local -text
+samples/1d-tests/rel-shock/src/cparam.local -text
+samples/1d-tests/rel-shock/start.in -text
+samples/1d-tests/rel-shock/video.in -text
+samples/1d-tests/rel-shock/yzaver.in -text
 samples/1d-tests/reversed_field_pinch/NEVERLOCK -text
 samples/1d-tests/reversed_field_pinch/README -text
 samples/1d-tests/reversed_field_pinch/idl/pscaling.pro -text
