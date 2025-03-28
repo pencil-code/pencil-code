@@ -4,8 +4,8 @@
 !
 &run_pars
   cvsid='$Id: run.in,v 1.1 2025/03/28 16:06:31 brandenb Exp $'
-  nt=40000, it1=10, cdt=0.8, cdtv=0.15, isave=50, itorder=3
-  !nt=80, it1=10, cdt=0.8, cdtv=0.15, isave=50, itorder=3
+  !nt=40000, it1=10, cdt=0.8, cdtv=0.15, isave=50, itorder=3
+  nt=400, it1=50, cdt=0.8, cdtv=0.15, isave=50, itorder=3
   !nt=2, it1=10, cdt=0.8, cdtv=0.15, isave=50, itorder=3
   dsnap=.5, dvid=0.002, tmax=3.2
   lpencil_check_small=F

@@ -2051,8 +2051,10 @@ samples/1d-tests/photo_stratification/stratification.dat -text
 samples/1d-tests/photo_stratification/video.in -text
 samples/1d-tests/photo_stratification/xyaver.in -text
 samples/1d-tests/rel-shock/.log -text
+samples/1d-tests/rel-shock/README -text
 samples/1d-tests/rel-shock/parameters.pro -text
 samples/1d-tests/rel-shock/print.in -text
+samples/1d-tests/rel-shock/reference.out -text
 samples/1d-tests/rel-shock/run.in -text
 samples/1d-tests/rel-shock/src/Makefile.local -text
 samples/1d-tests/rel-shock/src/cparam.local -text
