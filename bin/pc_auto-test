@@ -489,9 +489,9 @@ $list_only = 1 if ($list_all);
 
 my $timeout_command_found = check_timeout_found();
 if ($timeout_command_found && !$nolock) {
-    # The global lock is on by default because when the time limit is reached,
-    # reaper kills processes based on their name. If we are using the `timeout`
-    # utility, that concern does not apply, and one only needs local_lock.
+# The global lock is on by default because when the time limit is reached,
+# reaper kills processes based on their name. If we are using the `timeout`
+# utility, that concern does not apply, and one only needs local_lock.
     $local_lock = 1;
 }
 
@@ -540,8 +540,6 @@ if ($fast) {
 if ($debug) {
     push @pc_bisect,      "--debug";
 }
-
-my $timeout_command_found = check_timeout_found();
 
 my $host = `hostname`;
 chomp($host);
