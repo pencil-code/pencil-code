@@ -55,6 +55,7 @@ use POSIX qw(floor strftime);
 use Getopt::Long;
 use vars qw{ %failed $test_status }; # do we really need global vars here?
 use IPC::Open2;
+use Capture::Tiny qw(capture_merged);
 
 # ---------------------------------------------------------------------- #
 # Test the following subdirs of samples/ .
@@ -532,6 +533,8 @@ if ($debug) {
     push @pc_bisect,      "--debug";
 }
 
+my $timeout_command_found = check_timeout_found();
+
 my $host = `hostname`;
 chomp($host);
 
@@ -698,6 +701,16 @@ if (@ARGV) {
 }
 
 
+# ---------------------------------------------------------------------- #
+sub check_timeout_found {
+# Check if the timeout command exists on the system.
+    my $output;
+    my $status;
+    ($output, $status) = capture_merged {
+        system('timeout');
+    };
+    return ($status != -1);
+}
 # ---------------------------------------------------------------------- #
 sub get_sampdirs {
 # Return list of sample dirs that belong to $level .
@@ -1070,7 +1083,19 @@ sub test_timelimited_shell_cmd {
     my $maxtime  = shift;
     my $procname = shift;
     my @rest = @_;
-    return test_shell_cmd("reaper -t '$maxtime,$procname' '$cmd'", @rest);
+
+    my $time_limit;
+    if (Scalar::Util::looks_like_number($maxtime)) {
+        $time_limit = $maxtime;
+    } else {
+        $time_limit = Test::Parse::parse_time($maxtime);
+    }
+
+    if ($timeout_command_found) {
+        return test_shell_cmd("timeout -v --kill-after=10s --preserve-status $time_limit $cmd", @rest);
+    } else {
+        return test_shell_cmd("reaper -t '$maxtime,$procname' '$cmd'", @rest);
+    }
 }
 # ---------------------------------------------------------------------- #
 sub test_perl_cmd {
