@@ -55,6 +55,7 @@ use POSIX qw(floor strftime);
 use Getopt::Long;
 use vars qw{ %failed $test_status }; # do we really need global vars here?
 use IPC::Open2;
+use Capture::Tiny qw(capture_merged);
 
 # ---------------------------------------------------------------------- #
 # Test the following subdirs of samples/ .
@@ -540,6 +541,8 @@ if ($debug) {
     push @pc_bisect,      "--debug";
 }
 
+my $timeout_command_found = check_timeout_found();
+
 my $host = `hostname`;
 chomp($host);
 
@@ -704,8 +707,6 @@ if (@ARGV) {
         }
     }
 }
-
-
 # ---------------------------------------------------------------------- #
 sub check_timeout_found {
     # Check if the timeout command exists on the system.
