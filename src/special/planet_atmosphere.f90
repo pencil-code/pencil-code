@@ -380,7 +380,7 @@ module Special
       case ('eta_PT')
         call interpolation2d(ref_eta_log10p,ref_eta_T,ref_log10etaPT, &
                              ref_eta_nP,ref_eta_nT,ref_eta_dlog10p,ref_eta_dT, &
-                             log10(p%pp*pp2Pa),p%TT*TT2K,eta_x )
+                             log10(p%pp),p%TT,eta_x )
         eta_x = 10.**eta_x
         if (eta_floor>0.) then
           where (eta_x<eta_floor) eta_x = eta_floor
@@ -460,10 +460,10 @@ module Special
       eta2si = r2m**2./tt2s          !  eta to m^2/s
 !
       if (lroot) then
-        print*,'Constants for uit conversion: gamma,r2m,rho2kg_m3,u2m_s,cp2si,eta2si= ', &
+        print*,'Constants for uit conversion: gamma,r2m,rho2kg_m3,u2m_s,cp2si= ', &
                 gamma,r2m,rho2kg_m3,u2m_s,cp2si
         print*,'Constants for uit conversion: pp2Pa,TT2K,tt2s, g2m3_s2,eta2si= ', &
-                pp2Pa,TT2K,tt2s,g2m3_s2
+                pp2Pa,TT2K,tt2s,g2m3_s2,eta2si
       endif
 !
     endsubroutine  prepare_unit_conversion
@@ -752,7 +752,7 @@ module Special
       integer :: i,j
       logical :: leta_file_exists
 !
-!  read in eta, in SI unit
+!  read in eta(P,T) in SI unit and convert to code unit
 !
       inquire(FILE='eta_PT.txt', EXIST=leta_file_exists)
       if (.not.leta_file_exists) call fatal_error('read_eta_PT_file', &
@@ -765,24 +765,22 @@ module Special
       if (allocated(ref_eta_log10p)) deallocate(ref_eta_log10p)
       allocate(ref_eta_log10p(ref_eta_nP))
       read(1,*) ref_eta_log10p
-      ref_eta_log10p = log10(ref_eta_log10p)
+      ref_eta_log10p = log10(ref_eta_log10p/pp2Pa)
       ref_eta_dlog10p = (ref_eta_log10p(ref_eta_nP) - ref_eta_log10p(1)) / (ref_eta_nP-1.)
       ! temperature
       read(1,*) ref_eta_nT
       if (allocated(ref_eta_T)) deallocate(ref_eta_T)
       allocate(ref_eta_T(ref_eta_nT))
       read(1,*) ref_eta_T
+      ref_eta_T = ref_eta_T/TT2K
       ref_eta_dT = (ref_eta_T(ref_eta_nT)-ref_eta_T(1)) / (ref_eta_nT-1.)
       ! eta, reshaping into 1d array
       if (allocated(ref_etaPT)) deallocate(ref_etaPT)
       allocate(ref_etaPT(ref_eta_nP*ref_eta_nT))
       read(1,*) ref_etaPT
+      ref_etaPT=ref_etaPT/eta2si
 !
       close(1)
-!
-!  convert to code unit
-!
-      ref_etaPT=ref_etaPT/eta2si
 !
 !  store in log10
 !
@@ -860,10 +858,10 @@ module Special
       x2 = xref(ix+1)
       y1 = yref(iy)
       y2 = yref(iy+1)
-      z11 = zref((nxref-1)*ix+iy)
-      z12 = zref((nxref-1)*ix+iy+1)
-      z21 = zref((nxref-1)*(ix+1)+iy)
-      z22 = zref((nxref-1)*(ix+1)+iy+1)
+      z11 = zref((iy-1)*nxref + ix)
+      z12 = zref((iy  )*nxref + ix)
+      z21 = zref((iy-1)*nxref + ix+1)
+      z22 = zref((iy  )*nxref + ix+1)
       !
       fact = 1./(x1-x2)/(y1-y2)
       a0 = (x2*y2*z11-x2*y1*z12-x1*y2*z21+x1*y1*z22)*fact
