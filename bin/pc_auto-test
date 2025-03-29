@@ -707,6 +707,8 @@ if (@ARGV) {
 # ---------------------------------------------------------------------- #
 sub check_timeout_found {
     # Check if the timeout command exists on the system.
+    return 0; #Kishore: disabling the use of timeout for now as it causes problems on Norlx51
+    
     return (`which timeout` ne "");
 }
 # ---------------------------------------------------------------------- #
