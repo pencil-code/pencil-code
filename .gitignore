@@ -17,6 +17,7 @@ revision.txt
 .pc_build_history
 .run_directories.log
 pc_build_tmp_*
+/pencil-auto-test-*.pid
 #
 # first directory level
 samples/*/src/*
