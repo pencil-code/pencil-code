@@ -707,7 +707,7 @@ if (@ARGV) {
 # ---------------------------------------------------------------------- #
 sub check_timeout_found {
     # Check if the timeout command exists on the system.
-    return (`which timeout` != "");
+    return (`which timeout` ne "");
 }
 # ---------------------------------------------------------------------- #
 sub get_sampdirs {
