@@ -55,6 +55,7 @@ use POSIX qw(floor strftime);
 use Getopt::Long;
 use vars qw{ %failed $test_status }; # do we really need global vars here?
 use IPC::Open2;
+use Cwd qw(abs_path);
 
 # ---------------------------------------------------------------------- #
 # Test the following subdirs of samples/ .
@@ -496,6 +497,17 @@ if ($timeout_command_found && !$nolock) {
 
 if ($local_lock) { $lockdir = $pencil_home; }
 $lockfile = $lockdir."/pencil-auto-test-$user.pid";
+
+#If relative paths have been specified, convert to absolute paths. Otherwise,
+#$log_dir is treated as relative to the run directory (not the directory where
+#pc_auto-test was invoked).
+if ($log_dir ne '') {
+    $log_dir = abs_path($log_dir);
+}
+if ($previous_dir ne '') {
+    $previous_dir = abs_path($previous_dir);
+}
+
 
 my $makeopts  = '';
 if ($makejobs) { $makeopts = "--jobs=$makejobs"; }
