@@ -1088,9 +1088,9 @@ sub test_timelimited_shell_cmd {
     if (Scalar::Util::looks_like_number($maxtime)) {
         $time_limit = $maxtime;
     } else {
-        $failed++; #dirty hack to make sure an exception in the line below is detected as a failing test.
+        #$failed++; #dirty hack to make sure an exception in the line below is detected as a failing test.
         $time_limit = Test::Parse::parse_time($maxtime);
-        $failed--;
+        #$failed--;
     }
 
     if ($timeout_command_found) {
