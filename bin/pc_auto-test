@@ -55,7 +55,6 @@ use POSIX qw(floor strftime);
 use Getopt::Long;
 use vars qw{ %failed $test_status }; # do we really need global vars here?
 use IPC::Open2;
-use Capture::Tiny qw(capture_merged);
 
 # ---------------------------------------------------------------------- #
 # Test the following subdirs of samples/ .
@@ -707,10 +706,11 @@ if (@ARGV) {
 }
 # ---------------------------------------------------------------------- #
 sub check_timeout_found {
-    # Check if the timeout command exists on the system.
-    return 0; #Kishore: disabling the use of timeout for now as it causes problems on Norlx51
-    
-    return (`which timeout` ne "");
+# Check if the timeout command exists on the system.
+# Kishore: I am not sure how portable this is. Ideally one would use
+# Capture::Tiny, but that would add an extra perl dependency.
+    my $status = system('timeout &> /dev/null');
+    return ($status != -1);
 }
 # ---------------------------------------------------------------------- #
 sub get_sampdirs {
