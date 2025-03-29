@@ -706,11 +706,9 @@ if (@ARGV) {
 }
 # ---------------------------------------------------------------------- #
 sub check_timeout_found {
-# Check if the timeout command exists on the system.
-# Kishore: I am not sure how portable this is. Ideally one would use
-# Capture::Tiny, but that would add an extra perl dependency.
-    my $status = system('timeout &> /dev/null');
-    return ($status != -1);
+    # Check if the timeout command exists on the system.
+    my $status = system('which timeout');
+    return ($status != "");
 }
 # ---------------------------------------------------------------------- #
 sub get_sampdirs {
