@@ -707,8 +707,7 @@ if (@ARGV) {
 # ---------------------------------------------------------------------- #
 sub check_timeout_found {
     # Check if the timeout command exists on the system.
-    my $status = system('which timeout');
-    return ($status != "");
+    return (`which timeout` != "");
 }
 # ---------------------------------------------------------------------- #
 sub get_sampdirs {
