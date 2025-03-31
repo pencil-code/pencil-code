@@ -100,13 +100,13 @@ module Chemistry
   logical :: lSmag_diffusion=.false.
   logical :: lnormalize_chemspec=.false., lnormalize_chemspec_N2=.false.
   !
-  logical :: lfilter=.false.
+  logical :: lfilter=.false., lupw_chemspec=.false.
   logical :: lkreactions_profile=.false., lkreactions_alpha=.false.
   integer :: nreactions=0, nreactions1=0, nreactions2=0
   integer :: ll1, ll2, mm1, mm2, nn1, nn2
   real, allocatable, dimension(:) :: kreactions_profile_width, kreactions_alpha
 !
-  integer :: mreactions
+  integer :: mreactions, iadv=0
 !
 !  The stociometric factors need to be reals for arbitrary reaction orders
 !
@@ -254,7 +254,7 @@ module Chemistry
       lgradP_terms, lnormalize_chemspec, lnormalize_chemspec_N2, &
       gam_surf_energy_cgs, isurf_energy, iconc_sat_spec, nucleation_rate_coeff_cgs, &
       lnoevap, lnolatentheat, gam_surf_energy_mul_fac, deltaH_cgs,&
-      min_nucl_radius_cgs
+      min_nucl_radius_cgs, lupw_chemspec
 !
 ! diagnostic variables (need to be consistent with reset list below)
 !
@@ -634,6 +634,10 @@ module Chemistry
         atomic_m_spec=molar_mass_spec*m_u
         A_spec=sqrt(8.*k_B/(pi*atomic_m_spec))*molar_mass_spec/(4.*true_density_cond_spec)
       endif
+!
+! Do we want upwinding
+!
+      if (lupw_chemspec) iadv=1
 !
 !  write array dimension to chemistry diagnostics file
 !
@@ -3230,7 +3234,7 @@ module Chemistry
 !                     constant Lewis numbers
 !   10-jan-11/julien: modified to solve chemistry with LSODE
 !
-      use Sub, only: grad,dot_mn
+      use Sub, only: grad,dot_mn, u_dot_grad_alt
       use Special, only: special_calc_chemistry
 !
       real, dimension(mx,my,mz,mfarray) :: f
@@ -3292,7 +3296,10 @@ module Chemistry
 !
         if (lhydro .and. ladvection .and.(.not. lchemonly)) then
 !          call grad(f,ichemspec(k),gchemspec)
-          call dot_mn(p%uu,p%gYYk(:,:,k),ugchemspec)
+           !call dot_mn(p%uu,p%gYYk(:,:,k),ugchemspec)
+
+           call u_dot_grad_alt(f,ichemspec(k),p%gYYk(:,:,k),p%uu,ugchemspec,iadv)
+           
           if (lmobility) ugchemspec = ugchemspec*mobility(k)
           df(l1:l2,m,n,ichemspec(k)) = df(l1:l2,m,n,ichemspec(k))-ugchemspec
         endif
@@ -3581,10 +3588,10 @@ module Chemistry
           call sum_mn_name(p%nucl_rmin,idiag_nuclrmin)
           call sum_mn_name(p%nucl_rate,idiag_nuclrate)
           call sum_mn_name(p%conc_sat_spec,idiag_conc_satm)
-!         if (idiag_ffcondposm/= 0) call sum_mn_name(max(0.,p%ff_cond),idiag_ffcondposm)
-!         if (idiag_ffcondnegm/= 0) call sum_mn_name(min(0.,p%ff_cond),idiag_ffcondnegm)
-!         call sum_mn_name(p%ff_cond,idiag_ffcondm)
-!         call sum_mn_name(p%ff_nucl,idiag_ffnucl)
+          !if (idiag_ffcondposm/= 0) call sum_mn_name(max(0.,p%ff_cond),idiag_ffcondposm)
+          !if (idiag_ffcondnegm/= 0) call sum_mn_name(min(0.,p%ff_cond),idiag_ffcondnegm)
+          !call sum_mn_name(p%ff_cond,idiag_ffcondm)
+          call sum_mn_name(p%ff_nucl,idiag_ffnucl)
         endif
         if (.not. lnolatentheat) then
           if (idiag_latent_heat/= 0) call sum_mn_name(p%latent_heat,idiag_latent_heat)
