@@ -294,6 +294,8 @@ class DataCube(object):
         from scipy.io import FortranFile
         from pencil.math.derivatives import curl, curl2
         from pencil import read
+#        from pencil.read import FortranFileExt
+
         if precision=="h":
             precision = "half"
         if timing:
@@ -356,6 +358,7 @@ class DataCube(object):
             param = read.param(datadir=datadir, quiet=True, conflicts_quiet=True)
             index = read.index(datadir=datadir)
             grid = read.grid(datadir=datadir, quiet=True) # we can't use sim.grid because we want the untrimmed one
+        if param.io_strategy[-1] == '/': param.io_strategy = param.io_strategy[:-1]    # because of Python 3.10.10 bug!
 
         if var_file[0:2].lower() == "og":
             dim = read.ogdim(datadir, proc)
@@ -383,15 +386,6 @@ class DataCube(object):
 
             run2D = param.lwrite_2d
 
-            # Set up the global array.
-            if not run2D:
-                self.f = np.zeros((total_vars, dim.mz, dim.my, dim.mx), dtype=precision)
-            else:
-                if dim.ny == 1:
-                    self.f = np.zeros((total_vars, dim.mz, dim.mx), dtype=precision)
-                else:
-                    self.f = np.zeros((total_vars, dim.my, dim.mx), dtype=precision)
-
             if not var_file:
                 if ivar < 0:
                     var_file = "var.h5"
@@ -408,9 +402,9 @@ class DataCube(object):
                     irange_x = (irange_x[0][0], irange_x[0][-1]+1)
                 else:
                     if not irange_x:
-                        irange_x = (0,mx)
+                        irange_x = (0,dim.mx)
                     else:
-                        irange_x = (max(irange_x[0],0),min(irange_x[1],mx))
+                        irange_x = (max(irange_x[0],0),min(irange_x[1],dim.mx))
                 mx = irange_x[1]-irange_x[0]
                 x = (tmp["grid/x"][irange_x[0]:irange_x[1]]).astype(precision)
 
@@ -420,9 +414,9 @@ class DataCube(object):
                     irange_y = (irange_y[0][0], irange_y[0][-1]+1)
                 else:
                     if not irange_y:
-                        irange_y = (0,my)
+                        irange_y = (0,dim.my)
                     else:
-                        irange_y = (max(irange_y[0],0),min(irange_y[1],my))
+                        irange_y = (max(irange_y[0],0),min(irange_y[1],dim.my))
                         print("irange_y",type(irange_y), irange_y)
                 my = irange_y[1]-irange_y[0]
                 y = (tmp["grid/y"][irange_y[0]:irange_y[1]]).astype(precision)
@@ -433,9 +427,9 @@ class DataCube(object):
                     irange_z = (irange_z[0][0], irange_z[0][-1]+1)
                 else:
                     if not irange_z:
-                        irange_z = (0,mz)
+                        irange_z = (0,dim.mz)
                     else:
-                        irange_z = (max(irange_z[0],0),min(irange_z[1],mz))
+                        irange_z = (max(irange_z[0],0),min(irange_z[1],dim.mz))
                 mz = irange_z[1]-irange_z[0]
                 z = (tmp["grid/z"][irange_z[0]:irange_z[1]]).astype(precision)
 
