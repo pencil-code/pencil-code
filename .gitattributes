@@ -487,6 +487,7 @@ config/hosts/raven/host-raven15-GNU_Linux.conf -text
 config/hosts/roper/jean-zay.conf -text
 config/hosts/roper/roper-Dardel.conf -text
 config/hosts/rusty/rusty.conf -text
+config/hosts/sintef/Nils-sin-MBP.sintef.no.conf -text
 config/hosts/sintef/PGI-debug.conf -text
 config/hosts/sintef/PGI-optimize.conf -text
 config/hosts/sintef/host-Copernicus-GNU_Linux-Ubuntu.conf -text
