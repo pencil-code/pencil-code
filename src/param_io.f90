@@ -120,7 +120,7 @@ module Param_IO
       TT_spec, ss_spec, cc_spec, cr_spec, mu_spec, sp_spec, ssp_spec, sssp_spec, &
       isaveglobal, lr_spec, r2u_spec, &
       np_spec, np_ap_spec, rhop_spec, &
-      r3u_spec, rhocc_pdf, cc_pdf, lncc_pdf, gcc_pdf, lngcc_pdf, &
+      r3u_spec, rhocc_pdf, cc_pdf, lncc_pdf, gcc_pdf, lngcc_pdf, cosEB_pdf, &
       xyz_step, xi_step_frac, xi_step_width, dxi_fact, trans_width, &
       lcylinder_in_a_box, lsphere_in_a_box, llocal_iso, init_loops, lwrite_2d, &
       lcylindrical_gravity, &
@@ -168,7 +168,7 @@ module Param_IO
       TT_spec, ss_spec, cc_spec, cr_spec, mu_spec, sp_spec, ssp_spec, sssp_spec, &
       isaveglobal, lr_spec, r2u_spec, &
       np_spec, np_ap_spec, rhop_spec, &
-      r3u_spec, rhocc_pdf, cc_pdf, lncc_pdf, gcc_pdf, lngcc_pdf, &
+      r3u_spec, rhocc_pdf, cc_pdf, lncc_pdf, gcc_pdf, lngcc_pdf, cosEB_pdf, &
       lnspecial_pdf, special_pdf, ang_jb_pdf1d, ang_ub_pdf1d, ang_ou_pdf1d, &
       kinflow, ladv_der_as_aux, lkinflow_as_aux, &
       ampl_kinflow_x, ampl_kinflow_y, ampl_kinflow_z, &
