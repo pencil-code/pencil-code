@@ -855,7 +855,9 @@ module Equ
 !  Grid spacing. In case of equidistant grid and cartesian coordinates
 !  this is calculated before the (m,n) loop.
 !
-        if (.not. lcartesian_coords .or. .not.all(lequidist)) call get_grid_mn
+!  In case of GPU we calculate the line elements always since needed for transpilation
+!
+        if (lgpu .or. .not. lcartesian_coords .or. .not.all(lequidist)) call get_grid_mn
 !
 !  Calculate grid/geometry related pencils.
 !
