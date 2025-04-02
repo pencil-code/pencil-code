@@ -124,6 +124,9 @@ module Special
   integer :: idiag_sigBm=0      ! DIAG_DOC: $\left<\sigma_\mathrm{B}\right>$
   integer :: idiag_sigErms=0    ! DIAG_DOC: $\left<\sigma_\mathrm{E}^2\right>^{1/2}$
   integer :: idiag_sigBrms=0    ! DIAG_DOC: $\left<\sigma_\mathrm{B}^2\right>^{1/2}$
+  integer :: idiag_sigEE2m=0    ! DIAG_DOC: $\left<\sigma_\mathrm{E}\Ev^2\right>$
+  integer :: idiag_sigBBEm=0    ! DIAG_DOC: $\left<\sigma_\mathrm{E}\Bv\cdot\Ev\right>$
+  integer :: idiag_adphiBm=0    ! DIAG_DOC: $\left<(\alpha/f)<\phi'\Bv\cdot\Ev\right>$
   integer :: idiag_Johmrms=0    ! DIAG_DOC: $\left<\Jv^2\right>^{1/2}$
   integer :: idiag_echarge=0    ! DIAG_DOC: $\left<e_\mathrm{eff}\right>$
   integer :: idiag_ebm=0        ! DIAG_DOC: $\left<\Ev\cdot\Bv\right>$
@@ -761,6 +764,12 @@ module Special
         call sum_mn_name(p%eb,idiag_ebm)
         if (idiag_sigErms/=0) call sum_mn_name(p%sigE**2,idiag_sigErms,lsqrt=.true.)
         if (idiag_sigBrms/=0) call sum_mn_name(p%sigB**2,idiag_sigBrms,lsqrt=.true.)
+        call sum_mn_name(p%sigE*p%e2,idiag_sigEE2m)
+        call sum_mn_name(p%sigB*p%eb,idiag_sigBBEm)
+        if (idiag_adphiBm/=0) then
+          call dot(alpf*gtmp,p%el,tmp)
+          call sum_mn_name(tmp,idiag_adphiBm)
+        endif
         if (idiag_Johmrms/=0) then
           call dot2_mn(p%jj_ohm,tmp)
           call sum_mn_name(tmp,idiag_Johmrms,lsqrt=.true.)
@@ -861,7 +870,8 @@ module Special
         idiag_mfpf=0; idiag_fppf=0; idiag_afact=0
         idiag_rhoerms=0; idiag_divErms=0; idiag_divJrms=0
         idiag_rhoem=0; idiag_divEm=0; idiag_divJm=0; idiag_constrainteqn=0
-        idiag_ebm=0; idiag_sigEm=0; idiag_sigBm=0; idiag_sigErms=0; idiag_sigBrms=0; idiag_Johmrms=0
+        idiag_ebm=0; idiag_sigEm=0; idiag_sigBm=0; idiag_sigErms=0; idiag_sigBrms=0
+        idiag_Johmrms=0; idiag_adphiBm=0; idiag_sigEE2m=0; idiag_sigBBEm=0
         idiag_echarge=0
         cformv=''
       endif
@@ -891,6 +901,9 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'ebm',idiag_ebm)
         call parse_name(iname,cname(iname),cform(iname),'sigErms',idiag_sigErms)
         call parse_name(iname,cname(iname),cform(iname),'sigBrms',idiag_sigBrms)
+        call parse_name(iname,cname(iname),cform(iname),'sigEE2m',idiag_sigEE2m)
+        call parse_name(iname,cname(iname),cform(iname),'sigBBEm',idiag_sigBBEm)
+        call parse_name(iname,cname(iname),cform(iname),'adphiBm',idiag_adphiBm)
         call parse_name(iname,cname(iname),cform(iname),'Johmrms',idiag_Johmrms)
         call parse_name(iname,cname(iname),cform(iname),'echarge',idiag_echarge)
         call parse_name(iname,cname(iname),cform(iname),'mfpf',idiag_mfpf)
