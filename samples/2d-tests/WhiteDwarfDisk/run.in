@@ -37,8 +37,10 @@
 /
 &density_run_pars
   borderlnrho='initial-condition'
-  idiff='hyper3-mesh' ,'shock'
-  diffrho_hyper3_mesh=5 ,diffrho_shock=10.
+  !idiff='hyper3-mesh' ,'shock'
+  !diffrho_hyper3_mesh=5 ,diffrho_shock=10.
+  idiff='shock'
+  diffrho_shock=10.
   density_floor=1e-3
 /
 &grav_run_pars
