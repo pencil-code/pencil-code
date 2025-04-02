@@ -3580,6 +3580,13 @@ outer:  do ikz=1,nz
        call dot2_mn(gcc,gcc2)
        pdf_var=sqrt(gcc2)
        logscale=.true.
+     elseif (variabl=='cosEB') then
+       pdf_var=(f(l1:l2,m,n,iex)*f(l1:l2,m,n,ibx)+ &
+                f(l1:l2,m,n,iey)*f(l1:l2,m,n,iby)+ &
+                f(l1:l2,m,n,iez)*f(l1:l2,m,n,ibz))/sqrt( &
+               (f(l1:l2,m,n,iex)**2+f(l1:l2,m,n,iey)**2+f(l1:l2,m,n,iez)**2) &
+              *(f(l1:l2,m,n,ibx)**2+f(l1:l2,m,n,iby)**2+f(l1:l2,m,n,ibz)**2))
+       logscale=.false.
      elseif (variabl=='special') then
        pdf_var=f(l1:l2,m,n,ispecial)
        logscale=.false.
