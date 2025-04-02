@@ -63,6 +63,11 @@ module Cosmicray
   integer :: idiag_ecrdivum=0
   integer :: idiag_kmax=0
 !
+  integer :: idiag_ecrmz=0      !XYAVG_DOC: $\left< \epsilon_{cr} \right>_{xy}$
+  integer :: idiag_ecrph1mz=0      !XYAVG_DOC: $\left< \epsilon_{cr} \right>_{xy}|_{\rm phase 1}$
+  integer :: idiag_ecrph2mz=0      !XYAVG_DOC: $\left< \epsilon_{cr} \right>_{xy}|_{\rm phase 2}$
+  integer :: idiag_ecrph3mz=0      !XYAVG_DOC: $\left< \epsilon_{cr} \right>_{xy}|_{\rm phase 3}$
+!
   real, dimension(nx) :: vKperp
 
   contains
@@ -196,6 +201,7 @@ module Cosmicray
         lpenc_requested(i_bgecr)=.true.
         lpenc_requested(i_bglnrho)=.true.
       endif
+      if (idiag_ecrph1mz/=0 .or. idiag_ecrph2mz/=0 .or. idiag_ecrph3mz/=0) lpenc_diagnos(i_ss)=.true.
 !
       lpenc_diagnos(i_ecr)=.true.
 !
@@ -380,6 +386,12 @@ module Cosmicray
         call max_mn_name(vKperp,idiag_kmax)
       endif
 !
+        if (idiag_ecrmz/=0) call xysum_mn_name_z(p%ecr,idiag_ecrmz) 
+        if (idiag_ecrph1mz/=0) call xysum_mn_name_z(p%ecr,idiag_ecrph1mz,MASK=(p%ss <=ssmask1)) 
+        if (idiag_ecrph2mz/=0) call xysum_mn_name_z(p%ecr,idiag_ecrph2mz,MASK=(p%ss > ssmask1 .and. p%ss <= ssmask2)) 
+        if (idiag_ecrph3mz/=0) call xysum_mn_name_z(p%ecr,idiag_ecrph3mz,MASK=(p%ss > ssmask2)) 
+
+!
     endsubroutine calc_diagnostics_cosmicray
 !***********************************************************************
     subroutine read_cosmicray_init_pars(iostat)
@@ -436,6 +448,10 @@ module Cosmicray
       if (lreset) then
         idiag_ecrm=0; idiag_ecrdivum=0; idiag_ecrmax=0; idiag_kmax=0
         idiag_ecrpt=0; idiag_ecrmin=0
+        idiag_ecrmz=0
+        idiag_ecrph1mz=0
+        idiag_ecrph2mz=0
+        idiag_ecrph3mz=0
       endif
 !
 !  check for those quantities that we want to evaluate online
@@ -452,7 +468,10 @@ module Cosmicray
 !  check for those quantities for which we want xy-averages
 !
       do inamez=1,nnamez
-!        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ecrmz',idiag_ecrmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ecrmz',idiag_ecrmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ecrph1mz',idiag_ecrph1mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ecrph2mz',idiag_ecrph2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ecrph3mz',idiag_ecrph3mz)
       enddo
 !
 !  check for those quantities for which we want video slices
