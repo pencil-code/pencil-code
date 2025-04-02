@@ -386,10 +386,10 @@ module Cosmicray
         call max_mn_name(vKperp,idiag_kmax)
       endif
 !
-        if (idiag_ecrmz/=0) call xysum_mn_name_z(p%ecr,idiag_ecrmz) 
-        if (idiag_ecrph1mz/=0) call xysum_mn_name_z(p%ecr,idiag_ecrph1mz,MASK=(p%ss <=ssmask1)) 
-        if (idiag_ecrph2mz/=0) call xysum_mn_name_z(p%ecr,idiag_ecrph2mz,MASK=(p%ss > ssmask1 .and. p%ss <= ssmask2)) 
-        if (idiag_ecrph3mz/=0) call xysum_mn_name_z(p%ecr,idiag_ecrph3mz,MASK=(p%ss > ssmask2)) 
+        if (idiag_ecrmz/=0) call xysum_mn_name_z(p%ecr,idiag_ecrmz)
+        if (idiag_ecrph1mz/=0) call xysum_mn_name_z(p%ecr,idiag_ecrph1mz,MASK=(p%ss <=ssmask1))
+        if (idiag_ecrph2mz/=0) call xysum_mn_name_z(p%ecr,idiag_ecrph2mz,MASK=(p%ss > ssmask1 .and. p%ss <= ssmask2))
+        if (idiag_ecrph3mz/=0) call xysum_mn_name_z(p%ecr,idiag_ecrph3mz,MASK=(p%ss > ssmask2))
 
 !
     endsubroutine calc_diagnostics_cosmicray
