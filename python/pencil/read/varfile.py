@@ -417,7 +417,7 @@ class DataCube(object):
                         irange_y = (0,dim.my)
                     else:
                         irange_y = (max(irange_y[0],0),min(irange_y[1],dim.my))
-                        print("irange_y",type(irange_y), irange_y)
+
                 my = irange_y[1]-irange_y[0]
                 y = (tmp["grid/y"][irange_y[0]:irange_y[1]]).astype(precision)
 
@@ -432,6 +432,9 @@ class DataCube(object):
                         irange_z = (max(irange_z[0],0),min(irange_z[1],dim.mz))
                 mz = irange_z[1]-irange_z[0]
                 z = (tmp["grid/z"][irange_z[0]:irange_z[1]]).astype(precision)
+
+                if grid != None:
+                    grid.restrict(irange_x,irange_y,irange_z)
 
                 # Set up the global array.
                 if run2D:

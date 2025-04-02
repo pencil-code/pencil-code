@@ -72,6 +72,10 @@ Known Issues
 - Interactive plotting windows have trouble closing sometimes - based on pyvista
     Github this is a known issue in the VTK source.
 """
+import os
+os.environ['PYVISTA_USE_IPYVTK'] = 'true'
+os.environ['PYVISTA_USE_PANEL'] = 'true'
+
 # External libraries
 from sklearn.model_selection import ParameterGrid
 from tqdm import tqdm
@@ -438,10 +442,10 @@ class Plot3DSettings:
     mesh_cmap: str
         matplotlib compatible colormap for the mesh
     scalar_sbar_pos_x: float
-        The percentage (0 to 1) along the windows’s horizontal direction to place
+        The percentage (0 to 1) along the window's horizontal direction to place
         the bottom left corner of the colorbar. If None it is placed automatically.
     scalar_sbar_pos_y: float
-        The percentage (0 to 1) along the windows’s vertical direction to place
+        The percentage (0 to 1) along the window's vertical direction to place
         the bottom left corner of the colorbar. If None it is placed automatically.
 
     Scalarbar: Vectors | Streamlines
@@ -455,10 +459,10 @@ class Plot3DSettings:
     field_cmap: str
         Colormap for the plotter streamlines / vectors
     field_sbar_pos_x: float
-        The percentage (0 to 1) along the windows’s horizontal direction to place
+        The percentage (0 to 1) along the window's horizontal direction to place
         the bottom left corner of the colorbar. If None it is placed automatically.
     field_sbar_pos_y: float
-        The percentage (0 to 1) along the windows’s vertical direction to place
+        The percentage (0 to 1) along the window's vertical direction to place
         the bottom left corner of the colorbar. If None it is placed automatically.
 
     Orbit gif
@@ -1091,17 +1095,15 @@ class Pyvista3DPlot:
             del surfaces[i]
 
         lims = [self.mesh[scalars].min(), self.mesh[scalars].max()]
-        self.plotter = pv.Plotter(window_size=self.settings.window_size)
+        self.plotter = pv.Plotter(window_size=self.settings.window_size,off_screen=self.settings.off_screen)
         self.__plotterSettings(self.settings)
-
         for surf in surfaces:
             self.plotter.add_mesh(surf, cmap=cmap, clim=lims)
-
-        print(
-            '\n--> Pan around the camera to wanted angle, then press "q" to save image!\n'
-        )
+        if not self.settings.off_screen:
+            print('\n--> Pan around the camera to wanted angle, then press "q" to save image!\n'
+                  )
         self.plotter.show(auto_close=False)
-        self.plotter.screenshot(filename=f"{filename}.{self.settings.imageformat}")
+        self.plotter.screenshot(filename=self.outputdir / f"{filename}.{self.settings.imageformat}")
 
     def scalars(self):
         """
@@ -1182,7 +1184,7 @@ class Pyvista3DPlot:
             del surfaces[i]
 
         surface = surfaces[0].copy()
-        self.plotter = pv.Plotter(window_size=self.settings.window_size)
+        self.plotter = pv.Plotter(window_size=self.settings.window_size,off_screen=self.settings.off_screen)
         self.__plotterSettings(self.settings)
         self.plotter.open_gif(str(self.outputdir / filename))
         self.plotter.enable_depth_peeling()
@@ -1208,9 +1210,9 @@ class Pyvista3DPlot:
             # self.plotter.add_mesh(self.mesh.outline_corners(), color='k')
             self.plotter.add_mesh(self.mesh.outline(), color="k")
 
-        print(
-            '\n--> Pan around the camera to wanted angle, then press "q" to produce the movie!\n'
-        )
+        if not self.settings.off_screen:
+            print('\n--> Pan around the camera to wanted angle, then press "q" to produce the movie!\n')
+
         self.plotter.show(auto_close=False)
         print(f"Starting to create the isovalue gif, this might take a moment!")
         with tqdm(total=2 * len(surfaces), desc="Moving isovalue rendering:") as pbar:
@@ -1240,8 +1242,8 @@ class Pyvista3DPlot:
             window_size=settings.window_size, title="Plot Preview"
         )
         scalar_bar_args = {
-            "width": settings.sbar_width,
-            "height": settings.sbar_height,
+            "width": settings.cbar_width,
+            "height": settings.cbar_height,
             "vertical": settings.vertical_sbar,
         }
         self.plotter.add_mesh(
@@ -1253,9 +1255,7 @@ class Pyvista3DPlot:
         )
         self.plotter.show_bounds(color="black", location="outer")
 
-        print(
-            "--> NOTE! In spreview only the mesh is added by default, not vectors | streamlines are shown!"
-        )
+        print("--> NOTE! In spreview only the mesh is added by default, no vectors|streamlines are shown!")
 
         plotPreview(self.plotter)
 
