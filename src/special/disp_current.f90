@@ -101,6 +101,10 @@ module Special
 !
   integer :: idiag_EEEM=0       ! DIAG_DOC: $\left<\Ev^2+\Bv^2\right>/2$
   integer :: idiag_erms=0       ! DIAG_DOC: $\left<\Ev^2\right>^{1/2}$
+  integer :: idiag_eprimerms=0  ! DIAG_DOC: $\left<(E')^2\right>^{1/2}$
+  integer :: idiag_bprimerms=0  ! DIAG_DOC: $\left<(B')^2\right>^{1/2}$
+  integer :: idiag_jprimerms=0  ! DIAG_DOC: $\left<(J')^2\right>^{1/2}$
+  integer :: idiag_gam_EBrms=0  ! DIAG_DOC: $\left<(\gamma')^2\right>^{1/2}$
   integer :: idiag_edotrms=0    ! DIAG_DOC: $\left<\dot{\Ev}^2\right>^{1/2}$
   integer :: idiag_emax=0       ! DIAG_DOC: $\max(|\Ev|)$
   integer :: idiag_a0rms=0      ! DIAG_DOC: $\left<A_0^2\right>^{1/2}$
@@ -451,6 +455,7 @@ module Special
 !   24-nov-04/tony: coded
 !
       use Sub, only: grad, div, curl, del2v, dot2_mn, dot, levi_civita
+      use Diagnostics, only: sum_mn_name
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -530,6 +535,12 @@ module Special
         do j=1,3
           p%jj_ohm(:,j)=p%sigE*p%el(:,j)+p%sigB*p%bb(:,j)
         enddo
+!
+        call sum_mn_name(eprime**2,idiag_eprimerms,lsqrt=.true.)
+        call sum_mn_name(bprime**2,idiag_bprimerms,lsqrt=.true.)
+        call sum_mn_name(jprime**2,idiag_jprimerms,lsqrt=.true.)
+        call sum_mn_name(gam_EB**2,idiag_gam_EBrms,lsqrt=.true.)
+!
       endif
 !
 ! edot2
@@ -872,6 +883,7 @@ module Special
         idiag_rhoem=0; idiag_divEm=0; idiag_divJm=0; idiag_constrainteqn=0
         idiag_ebm=0; idiag_sigEm=0; idiag_sigBm=0; idiag_sigErms=0; idiag_sigBrms=0
         idiag_Johmrms=0; idiag_adphiBm=0; idiag_sigEE2m=0; idiag_sigBBEm=0
+        idiag_eprimerms=0; idiag_bprimerms=0; idiag_jprimerms=0; idiag_gam_EBrms=0; 
         idiag_echarge=0
         cformv=''
       endif
@@ -884,6 +896,10 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'exm',idiag_exm)
         call parse_name(iname,cname(iname),cform(iname),'eym',idiag_eym)
         call parse_name(iname,cname(iname),cform(iname),'ezm',idiag_ezm)
+        call parse_name(iname,cname(iname),cform(iname),'eprimerms',idiag_eprimerms)
+        call parse_name(iname,cname(iname),cform(iname),'bprimerms',idiag_bprimerms)
+        call parse_name(iname,cname(iname),cform(iname),'jprimerms',idiag_jprimerms)
+        call parse_name(iname,cname(iname),cform(iname),'gam_EBrms',idiag_gam_EBrms)
         call parse_name(iname,cname(iname),cform(iname),'edotrms',idiag_edotrms)
         call parse_name(iname,cname(iname),cform(iname),'emax',idiag_emax)
         call parse_name(iname,cname(iname),cform(iname),'a0rms',idiag_a0rms)
