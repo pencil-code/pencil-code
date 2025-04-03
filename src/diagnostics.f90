@@ -3164,7 +3164,6 @@ module Diagnostics
       fname=0.0
       fname_keep=0.0
 
-
     endsubroutine allocate_fnames
 !***********************************************************************
     subroutine allocate_cnames(nnamel)
@@ -3192,6 +3191,7 @@ module Diagnostics
       if (ldebug) print*, 'allocate_fnames    : allocated memory for '// &
                           'itype_name with nname   =', nnamel
       itype_name=ilabel_save
+
     endsubroutine
 !***********************************************************************
     subroutine allocate_vnames(nnamel)
@@ -3284,16 +3284,15 @@ module Diagnostics
 !
       integer :: stat
 !
-!
       allocate(fnamey(ny,nprocy,nnamel),stat=stat)
       if (stat>0) call fatal_error('allocate_xzaverages','Could not allocate fnamey', .true.)
       if (ldebug) print*, 'allocate_xzaverages: allocated memory for '// &
                           'fnamey  with nnamey  =', nnamel
       fnamey=0.0
+!
     endsubroutine allocate_xzaverages
 !***********************************************************************
     subroutine allocate_xzaverages_names(nnamel)
-
 !
 !   21-mar-25/TP: carved from allocate_xzaverages
 !
@@ -3310,6 +3309,7 @@ module Diagnostics
       if (ldebug) print*, 'allocate_xzaverages: allocated memory for '// &
                           'cformy  with nnamey  =', nnamel
       cformy=''
+
     endsubroutine allocate_xzaverages_names
 !***********************************************************************
     subroutine allocate_yzaverages(nnamel)
@@ -3329,13 +3329,13 @@ module Diagnostics
       if (ldebug) print*, 'allocate_yzaverages: allocated memory for '// &
                           'fnamex  with nnamex  =', nnamel
       fnamex=0.0
+
     endsubroutine allocate_yzaverages
 !***********************************************************************
     subroutine allocate_yzaverages_names(nnamel)
 !
 !   21-mar-25/TP: carved from allocate_yzaverages
 !
-
       integer, intent(in) :: nnamel
       integer :: stat
 
@@ -3370,6 +3370,7 @@ module Diagnostics
       if (ldebug) print*, 'allocate_phizaverages: allocated memory for '// &
                           'fnamer  with nnamer'
       fnamer=0.0
+
     endsubroutine allocate_phizaverages
 !***********************************************************************
     subroutine allocate_phizaverages_names(nnamel)
@@ -3383,7 +3384,6 @@ module Diagnostics
       if (ldebug) print*, 'allocate_phizaverages: allocated memory for '// &
                           'cnamer  with nnamer =', nnamel
       cnamer=''
-!
 !
       allocate(cformr(nnamel),stat=stat)
       if (stat>0) call fatal_error('allocate_phizaverages','Could not allocate cformr')
@@ -3410,6 +3410,7 @@ module Diagnostics
       if (ldebug) print*, 'allocate_yaverages : allocated memory for '// &
                           'fnamexz with nnamexz =', nnamel
       fnamexz=0.0
+!
     endsubroutine allocate_yaverages
 !*******************************************************************
     subroutine allocate_yaverages_names(nnamel)
@@ -3424,7 +3425,6 @@ module Diagnostics
       if (ldebug) print*, 'allocate_yaverages : allocated memory for '// &
                           'cnamexz with nnamexz =', nnamel
       cnamexz=''
-!
 !
       allocate(cformxz(nnamel),stat=stat)
       if (stat>0) call fatal_error('allocate_yaverages','Could not allocate cformxz')
@@ -3509,6 +3509,7 @@ module Diagnostics
       if (ldebug) print*, 'allocate_phiaverages : allocated memory for '// &
                           'fnamerz with nnamerz =', nnamel
       fnamerz=0.0
+!
     endsubroutine allocate_phiaverages
 !***********************************************************************
     subroutine allocate_phiaverages_names(nnamel)
@@ -3522,7 +3523,6 @@ module Diagnostics
       if (ldebug) print*, 'allocate_phiaverages : allocated memory for '// &
                           'cnamerz with nnamerz =', nnamel
       cnamerz=''
-!
 !
       allocate(cformrz(nnamel),stat=stat)
       if (stat>0) call fatal_error('allocate_phiaverages','Could not allocate cformrz')
@@ -3819,7 +3819,7 @@ module Diagnostics
 
     endsubroutine prep_finalize_thread_diagnos
 !***********************************************************************
-    subroutine    calc_nnames()
+    subroutine  calc_nnames
 !
 !  Calculates the sizes of diagnostic arrays
 !  21-mar-25/TP: carved out from rprint_list
@@ -3846,9 +3846,7 @@ module Diagnostics
 
       nname = max(0,parallel_count_lines(print_in_file,ignore_comments=.true.))
 
-      if ( dvid/=0.0 ) then
-        nnamev = max(0,parallel_count_lines(video_in_file))
-      endif
+      if ( dvid/=0.0 ) nnamev = max(0,parallel_count_lines(video_in_file))
 
       if ( dimensionality>0 .and. dsound/=0.0 ) then
         nname_sound = max(0,parallel_count_lines(sound_in_file))
@@ -3862,10 +3860,9 @@ module Diagnostics
       nnamexy = parallel_count_lines(zaver_in_file)
       nnamerz = parallel_count_lines(phiaver_in_file)
 
-
     endsubroutine calc_nnames 
 !***********************************************************************
-    subroutine allocate_diagnostic_names()
+    subroutine allocate_diagnostic_names
 !
 !  Allocates diagnostic arrays holding the names of the diagnostic outputs
 !  Separate from the data allocations because of multithreading concerns
@@ -3886,23 +3883,17 @@ module Diagnostics
       if (nnamex>0) call allocate_yzaverages_names(nnamex)
 
       if (nnamer>0) then
-        if (lcylinder_in_a_box.or.lsphere_in_a_box) then
-          call allocate_phizaverages_names(nnamer)
-        endif
+        if (lcylinder_in_a_box.or.lsphere_in_a_box) call allocate_phizaverages_names(nnamer)
       endif
 
       if (nnamexz>0) call allocate_yaverages_names(nnamexz)
 
-!
-      if (nnamexy>0) then
-        call allocate_zaverages(nnamexy)
-      endif
+      if (nnamexy>0) call allocate_zaverages(nnamexy)
 
       if (nnamerz>0) then
-        if (lcylinder_in_a_box.or.lsphere_in_a_box) then
-          call allocate_phiaverages_names(nnamerz)
-        endif
+        if (lcylinder_in_a_box.or.lsphere_in_a_box) call allocate_phiaverages_names(nnamerz)
       endif
+
     endsubroutine allocate_diagnostic_names
 !***********************************************************************
     subroutine allocate_diagnostic_arrays()
@@ -3911,13 +3902,10 @@ module Diagnostics
 !  Separate from the name allocations because of multithreading concerns
 !  21-mar-25/TP: coded
 !
-
-!
 !  Read print.in.double if applicable, else print.in.
 !  Read in the list of variables to be printed.
 !
       if (nname>0) call allocate_fnames(nname)
-
 
       if ( dimensionality>0 .and. dsound/=0.0 ) then
         if (nname_sound>0) call allocate_sound_data(nname_sound)
@@ -3930,22 +3918,17 @@ module Diagnostics
       if (nnamex>0) call allocate_yzaverages(nnamex)
 
       if (nnamer>0) then
-        if (lcylinder_in_a_box.or.lsphere_in_a_box) then
-          call allocate_phizaverages(nnamer)
-        endif
+        if (lcylinder_in_a_box.or.lsphere_in_a_box) call allocate_phizaverages(nnamer)
       endif
 
       if (nnamexz>0) call allocate_yaverages(nnamexz)
-
 !
       if (nnamexy>0) then
         if (lwrite_zaverages) call allocate_zaverages_data(nnamexy)
       endif
 
       if (nnamerz>0) then
-        if (lcylinder_in_a_box.or.lsphere_in_a_box) then
-          call allocate_phiaverages(nnamerz)
-        endif
+        if (lcylinder_in_a_box.or.lsphere_in_a_box) call allocate_phiaverages(nnamerz)
       endif
 
     endsubroutine allocate_diagnostic_arrays

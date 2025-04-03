@@ -464,7 +464,7 @@ module Register
       call finalize_boundcond(f)
       call finalize_deriv
       call finalize_io
-      if (lrun) then
+      if (lrun.and.nt>0) then
         call finalize_gpu
         call finalize_training
       endif

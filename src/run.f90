@@ -965,7 +965,7 @@ subroutine run_start() bind(C)
   call write_pencil_info
 
   lpencil = lpenc_requested
-  call initialize_gpu(f)
+  if (nt>0) call initialize_gpu(f)
 !
   if (it1d==impossible_int) then
     it1d=it1

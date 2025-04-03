@@ -42,7 +42,6 @@
 
     !mvar=nvar; maux=naux; maux_com=naux_com; mscratch=nscratch; mglobal=nglobal
 
-    if (lroot) print*, 'Memory usage before farray allocation=', memusage()/1024., 'MBytes'
     if (shared_mem_name/='') then
       fp = allocate_shm(nelems,shared_mem_name//char(0))
       call c_f_pointer(fp,f,(/mx,my,mz,mfarray/))
@@ -58,7 +57,6 @@
     else
       allocate(df(1,1,1,1))
     endif
-    if (lroot) print*, 'Memory usage after farray allocation=', memusage()/1024., 'MBytes'
 
   endsubroutine initialize
 !******************************************************************************
