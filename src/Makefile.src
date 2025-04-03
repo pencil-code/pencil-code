@@ -658,7 +658,15 @@ ifneq ($(filter $(SPECIAL) $(IO) $(IO_IN) $(IO_OUT) $(TRAINING), $(HDF5_MODULES)
       ifeq ($(filter clean,$(target)),)
         $(info )
         $(info No HDF5 module seems to be loaded!)
-        #$(error Try (one of) the following: $(shell (module spider |& grep -i hdf5 | sed -e's/^.* \([^ ]*[Hh][Dd][Ff]5[^ ]*\) .*$$/\1/') ))
+        $(info Try (one of) the following: $(shell (module spider |& grep -i hdf5 | sed -e's/^.* \([^ ]*[Hh][Dd][Ff]5[^ ]*\) .*$$/\1/') ) )
+        YESNO := $(shell bash -c 'read -p "Continue? (Y/N) " yesno; echo $$yesno')
+        ifeq ($(YESNO),N)
+          $(error Exit)
+        else
+          ifeq ($(YESNO),n)
+            $(error Exit)
+          endif
+        endif
       endif
     endif
   endif
@@ -2911,6 +2919,7 @@ else
   IS_CRAY = $(shell $(FC) --version | grep -i Cray)
   ifneq ($(IS_CRAY),)
     MODULE_NAME_ORDER = CRAY
+    $(info CRAY version: $(shell $(FC) --version))
   else
     IS_NVFOR = $(shell $(FC) --version | grep -i nvidia | sed -e's/^.*$$/NVIDIA/')
   endif
@@ -3038,7 +3047,7 @@ technical=$(CPARAM_OBJ) $(CDATA_OBJ) $(MPICOMM_OBJ) $(BORDER_PROFILES_OBJ) $(BOU
 #
 #  Short hand notation for start.o dependencies.
 #
-start=$(technical) $(physics) $(GPU_OBJ) dummy_astaroth_ansi.o $(TRAINING_OBJ)
+start=$(technical) $(physics) $(GPU_OBJ) nogpu_astaroth_ansi.o $(TRAINING_OBJ)
 #
 #  Short hand notation for run.o dependencies.
 #
@@ -3047,13 +3056,14 @@ run=$(technical) $(physics) $(GPU_OBJ) $(GPU_INTERFACE) $(TIMESTEP_OBJ) $(TRAINI
 #  Rules for compiling start.o, start.x, run.o, run.x.
 #
 start.o: $(start) $(OMP_HEADER) Makefile.local
+#
 start.x: start.o | $(SPECIAL_DEPS)
 	$(LD) $(start) start.o $(LDFLAGS) $(LDFLAGS_MAIN) $(LD_MPI) $(LD_FOURIER) $(LD_GSL) -o start.x
 libPCStart.so: start.o | $(SPECIAL_DEPS)
 	$(LD) $(start) start.o $(LDFLAGS) $(LDFLAGS_MAIN) $(LD_MPI) $(LD_FOURIER) $(LD_GSL) -shared -o libPCStart.so
-
 #
 run.o: $(run) $(OMP_HEADER) Makefile.local
+#
 run.x: run.o | $(SPECIAL_DEPS) $(LIBGPU)
 	$(LD) $(run) run.o $(LDFLAGS) $(LDFLAGS_MAIN) $(LDFLAGS_LIB) $(LD_MPI) $(LD_FOURIER) $(LIBSIG) $(LD_GSL) -o run.x
 	@rm -f exit_mn.h

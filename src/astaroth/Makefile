@@ -55,18 +55,19 @@ OBJECTS = $(SOURCES:.cc=.o)
 
 #DSL_MODULE_DIR=samples/gputest
 DSL_MODULE_DIR = ../../DSL/local
-EXT_SOURCES = $(wildcard ../../DSL/*/*.h)
+#EXT_SOURCES = $(wildcard ../../DSL/stdlib/*/*.h)   #doesn't work with symbolic links
+EXT_KERNELS =
 
 ifeq ($(CMAKE_SINGLEPASS),ON)
   DSL_MODULE_FILE = solve_single.ac
-  #EXT_SOURCES += ../../DSL/local/solve_single.ac
+  EXT_KERNELS += $(PWD)/DSL/local/solve_single.ac
 else
   DSL_MODULE_FILE = solve_two.ac
-  #EXT_SOURCES += ../../DSL/local/solve_two.ac
+  EXT_KERNELS += $(PWD)/DSL/local/solve_two.ac
 endif
 #
 ifneq ($(filter shock,$(MODULESOURCES)),)
-  EXT_SOURCES += $(wildcard ../../DSL/shock/*.ac)
+  EXT_KERNELS += $(wildcard $(PENCIL_HOME)/src/astaroth/DSL/shock/*.ac)
 endif
 
 # C headers in submodule
@@ -123,12 +124,21 @@ astaroth_$(PREC).so: $(SOURCES) forcing.h $(AC_HEADERS) $(PC_HEADERS) $(CHEADERS
 CMAKE_OPTIONS = -DMULTIGPU_ENABLED=OFF -DMPI_ENABLED=$(CMAKE_MPI) -DBUILD_SHARED_LIBS=ON -DSINGLEPASS_INTEGRATION=$(CMAKE_SINGLEPASS) -DUSE_CUDA_AWARE_MPI=ON -DMAX_THREADS_PER_BLOCK=512 \
                 -DPACKED_DATA_TRANSFERS=$(CMAKE_PACKED) -DDOUBLE_PRECISION=$(CMAKE_PREC) -DBUILD_SAMPLES=OFF -DUSE_HIP=$(USE_HIP) -DSUPPRESS_COMPILER_WARNINGS=$(SUPPRESS_COMPILER_WARNINGS) \
 		-DVERBOSE=off -DOPTIMIZE_INPUT_PARAMS=$(OPTIMIZE_INPUT_PARAMS) -DOPTIMIZE_MEM_ACCESSES=ON -DOPTIMIZE_ARRAYS=$(RUNTIME_COMPILATION) -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) \
-	        -DBUILD_STANDALONE=OFF -DOPTIMIZE_FIELDS=$(TRANSPILATION) -DALLOW_DEAD_VARIABLES=$(RUNTIME_COMPILATION) -DELIMINATE_CONDITIONALS=$(ELIMINATE_CONDITIONALS) -DBUILD_UTILS=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DEXT_SOURCES=$(EXT_SOURCES) -DDSL_MODULE_FILE=$(DSL_MODULE_FILE) -DINLINING=$(INLINING) -DBUILD_ACM=OFF
+	        -DBUILD_STANDALONE=OFF -DOPTIMIZE_FIELDS=$(TRANSPILATION) -DALLOW_DEAD_VARIABLES=$(RUNTIME_COMPILATION) -DELIMINATE_CONDITIONALS=$(ELIMINATE_CONDITIONALS) -DBUILD_UTILS=OFF \
+		-DCMAKE_POSITION_INDEPENDENT_CODE=ON -DDSL_MODULE_FILE=$(DSL_MODULE_FILE) -DINLINING=$(INLINING) -DBUILD_ACM=OFF   #-DEXT_SOURCES=$(EXT_SOURCES)
+#
+# External sources are provided with absolute pathnames to avoid any trouble with symbolic links.
+#
 astaroth_libs: $(PC_HEADERS)
-	echo "const char* cmake_options = \"  -DDSL_MODULE_DIR=../$(DSL_MODULE_DIR)  $(CMAKE_OPTIONS)\";" > cmake_options.h
+	@ext_srcs="`ls -m $$PENCIL_HOME/src/astaroth/DSL/*/*.h \
+		         $$PENCIL_HOME/src/astaroth/submodule/acc-runtime/stdlib/*.h \
+			 $$PENCIL_HOME/src/astaroth/submodule/acc-runtime/stdlib/*/*.h \
+			 $$PWD/DSL/local/*.h \
+			 |tr "\n" " "|sed -e's/, / /g'` $(EXT_KERNELS)" && \
+	echo "const char* cmake_options = \" -DEXT_SOURCES=$$ext_srcs -DDSL_MODULE_DIR=../$(DSL_MODULE_DIR) $(CMAKE_OPTIONS)\";" > cmake_options.h && \
 	mkdir -p submodule/build  && cd submodule/build && export LDFLAGS=""  &&  \
-	cmake  $(CMAKE_OPTIONS) -DDSL_MODULE_DIR=../acc-runtime/$(DSL_MODULE_DIR) -DRUNTIME_COMPILATION=$(RUNTIME_COMPILATION) -DREAD_OVERRIDES=$(READ_OVERRIDES) .. \
-	&& make -j -I../../.. VERBOSE=0 # Build the core Astaroth library
+	cmake  $(CMAKE_OPTIONS) -DEXT_SOURCES=$$ext_srcs -DDSL_MODULE_DIR=../acc-runtime/$(DSL_MODULE_DIR) -DRUNTIME_COMPILATION=$(RUNTIME_COMPILATION) -DREAD_OVERRIDES=$(READ_OVERRIDES) .. 
+	cd submodule/build && make -j -I../../.. VERBOSE=0 # Build the core Astaroth library
 	@echo PRECISION=$(CMAKE_PREC)
 
 #        CMAKE_PREFIX_PATH="/opt/nvidia/hpc_sdk/Linux_x86_64/24.1/comm_libs/mpi/lib /opt/nvidia/hpc_sdk/Linux_x86_64/24.1/comm_libs/mpi/include" \
@@ -161,7 +171,7 @@ endif
 #
 clean:
 	@rm -f $(OBJECTS)
-	@rm -f *.so .sentinel
+	@rm -f *.so .sentinel cmake_options.h
 	@if [[ -d submodule/build ]]; then rm -f -rI submodule/build; fi # Removes the files generated with cmake for the Astaroth code
 	@rm -rf build
 	@rm -rf scheduler-build
