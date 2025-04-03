@@ -118,7 +118,8 @@ module Density
   logical :: lfreeze_lnrhosqu=.false.
   logical :: lrho_as_aux=.false., ldiffusion_nolog=.false.
   logical :: lrho_flucz_as_aux=.false.
-  logical :: lmassdiff_fix = .false.,lmassdiff_fixmom = .false.,lmassdiff_fixkin = .false.
+  !logical :: lmassdiff_fix = .false.,lmassdiff_fixmom = .false.,lmassdiff_fixkin = .false.  !(after Fred's -r39918 of 2025-03-24 "Reverted default lmassdiff_fix to F with T for linterstellar+ldiff_shock"
+  logical :: lmassdiff_fix = .true.,lmassdiff_fixmom = .false.,lmassdiff_fixkin = .false.  !(AXEL: provert, i.e., revert the revert, although I doubt that it ever was a revert!)
   logical :: lcheck_negative_density=.false.
   logical :: lcalc_lnrhomean=.false.
   logical :: ldensity_profile_masscons=.false.
