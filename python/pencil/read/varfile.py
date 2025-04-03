@@ -291,10 +291,10 @@ class DataCube(object):
         """
 
         import os
-        from scipy.io import FortranFile
+#        from scipy.io import FortranFile
+        from .fortran_file import FortranFileExt
         from pencil.math.derivatives import curl, curl2
         from pencil import read
-#        from pencil.read import FortranFileExt
 
         if precision=="h":
             precision = "half"
@@ -544,9 +544,9 @@ class DataCube(object):
                 myloc = procdim.my
                 mzloc = procdim.mz
 
-                # Read the data.
+                # Read the data: f-array
                 file_name = os.path.join(datadir, directory, var_file)
-                infile = FortranFile(file_name)
+                infile = FortranFileExt(file_name,header_dtype=np.int32)
                 if not run2D:
                     f_loc = (infile.read_record(dtype=read_precision)).astype(precision)
                     f_loc = f_loc.reshape((-1, mzloc, myloc, mxloc))
@@ -558,7 +558,11 @@ class DataCube(object):
                     else:
                         f_loc = (infile.read_record(dtype=read_precision)).astype(precision)
                         f_loc = f_loc.reshape((-1, myloc, mxloc))
+
+                # Read the data: time, coordinates, etc.
                 raw_etc = (infile.read_record(dtype=read_precision)).astype(precision)
+
+                # Read the data: persistent variables
                 if lpersist and directory==proc_dirs[0]:
                     persist(self, infile=infile, precision=read_precision, quiet=quiet)
                 infile.close()
