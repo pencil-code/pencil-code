@@ -1430,6 +1430,7 @@ reloadConfig()
   //TP: restore the vtxbuf values before quitting grid
   loadFarray();
 #endif
+  acLogFromRootProc(rank, "DONE initializeGPU\n");
 }
 /***********************************************************************************************/
 void loadFarray()
