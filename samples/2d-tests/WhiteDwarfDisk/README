@@ -8,6 +8,10 @@ Added:
      21-feb-2019
 Status:
     works since 21-feb-2019
+    failed after r39918 of 2025-03-24 11:27:34, but reverted this change in density on 2025-04-03
+    2025-03-24 14:22:01 (r39919): reference.dat were changed (Fred's new version)
+    2025-03-29 10:35:39 (r39964): reference.dat were changed to Wlad's version r33811 of 2022-03-22
+    2025-03-29 13:34:44 (r39966): reference.dat were changed to Fred's new version
 Recommended resolution:
     256x256x1 (same hyperdiffusion as in sample)
     500000 particles 
