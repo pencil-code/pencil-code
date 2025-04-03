@@ -40,7 +40,7 @@ module Energy
   real, dimension (ninit) :: ampl_lnTT=0.0
   real :: lnTT_const=0.0, TT_const=1.0
   real :: Kgperp=0.0, Kgpara=0.0
-  real :: chi=impossible, chi_jump=1., chi_z0=0.0, chi_zwidth=0.0
+  real :: chi=impossible, chi_jump=1., chi_z0=0.0, chi_zwidth=0.0, chi_r_reduce=0.0
   real :: zbot=0.0, ztop=0.0
   real :: center1_x=0.0, center1_y=0.0, center1_z=0.0
   real :: r_bcz=0.0, chi_shock=0.0, chi_hyper3=0.0, chi_hyper3_mesh=5.0
@@ -59,7 +59,7 @@ module Energy
   logical :: lupw_lnTT=.false., lcalc_heat_cool=.false., lheatc_hyper3=.false.
   logical :: lheatc_Kconst=.false., lheatc_Kprof=.false., lheatc_Karctan=.false.
   logical :: lheatc_tensordiffusion=.false., lheatc_hyper3_mesh=.false.
-  logical :: lheatc_chiconst=.false., lheatc_chiconst_accurate=.false.
+  logical :: lheatc_chiconst=.false., lheatc_chiconst_accurate=.false., lheatc_chi_reduce_ddr=.false.
   logical :: lfreeze_lnTTint=.false., lfreeze_lnTText=.false.
   logical :: lhcond_global=.false., lheatc_chicubicstep=.false.
   logical :: lheatc_shock=.false., lheatc_hyper3_polar=.false.
@@ -110,7 +110,7 @@ module Energy
       cool, beta_bouss, borderss, lmultilayer, lcalc_TTmean, &
       temp_zaver_range, h_sld_ene, nlf_sld_ene, div_sld_ene, &
       gradTT0, w_sldchar_ene, chi_z0, chi_jump, chi_zwidth, &
-      hcond0_kramers, nkramers
+      hcond0_kramers, nkramers,chi_r_reduce
 !
 !  Diagnostic variables for print.in
 ! (needs to be consistent with reset list below)
@@ -383,6 +383,7 @@ module Energy
       lheatc_chiconst = .false.
       lheatc_chicubicstep = .false.
       lheatc_kramers= .false.
+      lheatc_chi_reduce_ddr=.false.
 !
 !  Initialize thermal diffusion.
 !
@@ -418,6 +419,9 @@ module Energy
         case ('chi-const')
           lheatc_chiconst=.true.
           call information('initialize_energy','heat conduction: constant chi')
+        case ('chi-no-ddrsph')
+          lheatc_chi_reduce_ddr=.true.
+          call information('initialize_energy','heat conduction: reduce chi in r direction')
         case ('chi-cubicstep')
           lheatc_chicubicstep=.true.
           call information('initialize_energy','heat conduction: cubic step profile of chi')
@@ -813,7 +817,7 @@ module Energy
         endif
       endif
 !
-      if (lheatc_chiconst.or.lheatc_chicubicstep) then
+      if (lheatc_chiconst.or.lheatc_chicubicstep.or.lheatc_chi_reduce_ddr) then
         if (ltemperature_nolog) then
           lpenc_requested(i_del2TT)=.true.
           lpenc_requested(i_gTT)=.true.
@@ -1266,6 +1270,7 @@ module Energy
 !
       diffus_chi=0.; diffus_chi3=0.
       if (lheatc_chiconst) call calc_heatcond_constchi(df,p)
+      if (lheatc_chi_reduce_ddr) call calc_heatcond_chi_no_ddrsph(f,df,p)
       if (lheatc_chicubicstep) call calc_heatcond_cubicstepchi(df,p)
       if (lheatc_Kconst)   call calc_heatcond_constK(df,p)
       if (lheatc_Kprof)    call calc_heatcond(f,df,p)
@@ -2034,6 +2039,42 @@ module Energy
       if (lupdate_courant_dt) diffus_chi=diffus_chi+gamma*chi*dxyz_2
 !
     endsubroutine calc_heatcond_constchi
+!***********************************************************************
+    subroutine calc_heatcond_chi_no_ddrsph(f,df,p)
+!
+!  For spherical coordinates only. Same as chi-const, but the
+!  r-gradient will be reduced by a factor of 1-chi_r_reduce,
+!  i.e. heat conduction in the radial direction is reduced.
+!
+!  27-mar-25/hongzhe and kuan: coded
+!
+      use Sub, only: dot
+      use Deriv, only: der_x,der2_x
+!
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      type (pencil_case), intent(in) :: p
+!
+      real, dimension (nx) :: rr, g2,g2_r, dlnrhodx, dTTdx, d2TTdx2
+!
+!  For now only implemented for ltemperature_nolog=T
+!
+      if ((.not.lspherical_coords) .or. (.not.ltemperature_nolog)) &
+        call not_implemented('calc_heatcond_chi_no_ddrsph', 'for non-spherical coords or lnTT')
+!
+      call dot(p%glnrho,p%gTT,g2)
+      g2=g2+p%del2TT
+!
+      rr=x(l1:l2)
+      call der_x(f(:,m,n,ilnrho),dlnrhodx)
+      call der_x(f(:,m,n,iTT),dTTdx)
+      call der2_x(f(:,m,n,iTT),d2TTdx2)
+      g2_r = dlnrhodx*dTTdx + 2./rr*dTTdx+d2TTdx2
+      g2 = g2 - chi_r_reduce*g2_r
+!
+      df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) + gamma*chi*g2
+!
+    endsubroutine calc_heatcond_chi_no_ddrsph
 !***********************************************************************
     subroutine calc_heatcond_cubicstepchi(df,p)
 !

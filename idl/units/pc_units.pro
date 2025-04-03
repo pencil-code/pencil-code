@@ -96,6 +96,34 @@ COMPILE_OPT IDL2,HIDDEN
                 magnetic_field:'T', $
                 current_density:'A/m^2' }
 ;
+  end else if (param.unit_system eq "set") then begin
+;
+    default, magnetic, sqrt (4*double (!pi)*1e-7/param.mu0 * density) * velocity
+    object = { temperature:temperature, $
+               density:density, $
+               mass:density*length^3, $
+               length:length, $
+               velocity:velocity, $
+               time:length/velocity, $
+               energy:density*velocity^2*length^3, $
+               specific_energy:velocity^2, $
+               magnetic_field:magnetic, $
+               current_density:velocity*sqrt(density/(param.mu0*4*!DPi*1.e-7))/length, $
+               ; j_SI = curlcurl(A_pc) * unit.current_density, $
+               system:'SI' }
+    pc_check_math,location='pc_units - SI unit calculation'
+    tex=texsyms()
+    symbols = { temperature:'K', $
+                density:tex.varrho, $
+                mass:'kg', $
+                length:'m', $
+                velocity:'m/s', $
+                time:'s', $
+                energy:'J', $
+                specific_energy:'J/kg', $
+                magnetic_field:'T', $
+                current_density:'A/m^2' }
+;
   end else begin
 ;
     print,"pc_units: Unit system tranformations for unit_system='",param.unit_system,"' are not implemented."

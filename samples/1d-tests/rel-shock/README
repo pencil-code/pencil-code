@@ -1,0 +1,17 @@
+Directory:
+    ${PENCIL_HOME}/samples/1d-tests/rel-shock
+SVN Id:
+    $Id$
+Maintainer:
+    Axel Brandenburg <brandenb/nordita[dot]org>
+Added:
+     28-Mar-2025
+Status:
+    succeeds # One of [succeeds|failing since <date>|obsolete| ...]
+Recommended resolution:
+    4608x1x1
+References:
+    $PENCIL_HOME/doc/implementation/relativistic/
+
+Comments:
+    none.

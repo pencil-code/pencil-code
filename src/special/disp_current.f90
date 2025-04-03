@@ -101,6 +101,10 @@ module Special
 !
   integer :: idiag_EEEM=0       ! DIAG_DOC: $\left<\Ev^2+\Bv^2\right>/2$
   integer :: idiag_erms=0       ! DIAG_DOC: $\left<\Ev^2\right>^{1/2}$
+  integer :: idiag_eprimerms=0  ! DIAG_DOC: $\left<(E')^2\right>^{1/2}$
+  integer :: idiag_bprimerms=0  ! DIAG_DOC: $\left<(B')^2\right>^{1/2}$
+  integer :: idiag_jprimerms=0  ! DIAG_DOC: $\left<(J')^2\right>^{1/2}$
+  integer :: idiag_gam_EBrms=0  ! DIAG_DOC: $\left<(\gamma')^2\right>^{1/2}$
   integer :: idiag_edotrms=0    ! DIAG_DOC: $\left<\dot{\Ev}^2\right>^{1/2}$
   integer :: idiag_emax=0       ! DIAG_DOC: $\max(|\Ev|)$
   integer :: idiag_a0rms=0      ! DIAG_DOC: $\left<A_0^2\right>^{1/2}$
@@ -124,6 +128,9 @@ module Special
   integer :: idiag_sigBm=0      ! DIAG_DOC: $\left<\sigma_\mathrm{B}\right>$
   integer :: idiag_sigErms=0    ! DIAG_DOC: $\left<\sigma_\mathrm{E}^2\right>^{1/2}$
   integer :: idiag_sigBrms=0    ! DIAG_DOC: $\left<\sigma_\mathrm{B}^2\right>^{1/2}$
+  integer :: idiag_sigEE2m=0    ! DIAG_DOC: $\left<\sigma_\mathrm{E}\Ev^2\right>$
+  integer :: idiag_sigBBEm=0    ! DIAG_DOC: $\left<\sigma_\mathrm{E}\Bv\cdot\Ev\right>$
+  integer :: idiag_adphiBm=0    ! DIAG_DOC: $\left<(\alpha/f)<\phi'\Bv\cdot\Ev\right>$
   integer :: idiag_Johmrms=0    ! DIAG_DOC: $\left<\Jv^2\right>^{1/2}$
   integer :: idiag_echarge=0    ! DIAG_DOC: $\left<e_\mathrm{eff}\right>$
   integer :: idiag_ebm=0        ! DIAG_DOC: $\left<\Ev\cdot\Bv\right>$
@@ -448,6 +455,7 @@ module Special
 !   24-nov-04/tony: coded
 !
       use Sub, only: grad, div, curl, del2v, dot2_mn, dot, levi_civita
+      use Diagnostics, only: sum_mn_name
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -527,6 +535,12 @@ module Special
         do j=1,3
           p%jj_ohm(:,j)=p%sigE*p%el(:,j)+p%sigB*p%bb(:,j)
         enddo
+!
+        call sum_mn_name(eprime**2,idiag_eprimerms,lsqrt=.true.)
+        call sum_mn_name(bprime**2,idiag_bprimerms,lsqrt=.true.)
+        call sum_mn_name(jprime**2,idiag_jprimerms,lsqrt=.true.)
+        call sum_mn_name(gam_EB**2,idiag_gam_EBrms,lsqrt=.true.)
+!
       endif
 !
 ! edot2
@@ -761,6 +775,12 @@ module Special
         call sum_mn_name(p%eb,idiag_ebm)
         if (idiag_sigErms/=0) call sum_mn_name(p%sigE**2,idiag_sigErms,lsqrt=.true.)
         if (idiag_sigBrms/=0) call sum_mn_name(p%sigB**2,idiag_sigBrms,lsqrt=.true.)
+        call sum_mn_name(p%sigE*p%e2,idiag_sigEE2m)
+        call sum_mn_name(p%sigB*p%eb,idiag_sigBBEm)
+        if (idiag_adphiBm/=0) then
+          call dot(alpf*gtmp,p%el,tmp)
+          call sum_mn_name(tmp,idiag_adphiBm)
+        endif
         if (idiag_Johmrms/=0) then
           call dot2_mn(p%jj_ohm,tmp)
           call sum_mn_name(tmp,idiag_Johmrms,lsqrt=.true.)
@@ -861,7 +881,9 @@ module Special
         idiag_mfpf=0; idiag_fppf=0; idiag_afact=0
         idiag_rhoerms=0; idiag_divErms=0; idiag_divJrms=0
         idiag_rhoem=0; idiag_divEm=0; idiag_divJm=0; idiag_constrainteqn=0
-        idiag_ebm=0; idiag_sigEm=0; idiag_sigBm=0; idiag_sigErms=0; idiag_sigBrms=0; idiag_Johmrms=0
+        idiag_ebm=0; idiag_sigEm=0; idiag_sigBm=0; idiag_sigErms=0; idiag_sigBrms=0
+        idiag_Johmrms=0; idiag_adphiBm=0; idiag_sigEE2m=0; idiag_sigBBEm=0
+        idiag_eprimerms=0; idiag_bprimerms=0; idiag_jprimerms=0; idiag_gam_EBrms=0; 
         idiag_echarge=0
         cformv=''
       endif
@@ -874,6 +896,10 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'exm',idiag_exm)
         call parse_name(iname,cname(iname),cform(iname),'eym',idiag_eym)
         call parse_name(iname,cname(iname),cform(iname),'ezm',idiag_ezm)
+        call parse_name(iname,cname(iname),cform(iname),'eprimerms',idiag_eprimerms)
+        call parse_name(iname,cname(iname),cform(iname),'bprimerms',idiag_bprimerms)
+        call parse_name(iname,cname(iname),cform(iname),'jprimerms',idiag_jprimerms)
+        call parse_name(iname,cname(iname),cform(iname),'gam_EBrms',idiag_gam_EBrms)
         call parse_name(iname,cname(iname),cform(iname),'edotrms',idiag_edotrms)
         call parse_name(iname,cname(iname),cform(iname),'emax',idiag_emax)
         call parse_name(iname,cname(iname),cform(iname),'a0rms',idiag_a0rms)
@@ -891,6 +917,9 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'ebm',idiag_ebm)
         call parse_name(iname,cname(iname),cform(iname),'sigErms',idiag_sigErms)
         call parse_name(iname,cname(iname),cform(iname),'sigBrms',idiag_sigBrms)
+        call parse_name(iname,cname(iname),cform(iname),'sigEE2m',idiag_sigEE2m)
+        call parse_name(iname,cname(iname),cform(iname),'sigBBEm',idiag_sigBBEm)
+        call parse_name(iname,cname(iname),cform(iname),'adphiBm',idiag_adphiBm)
         call parse_name(iname,cname(iname),cform(iname),'Johmrms',idiag_Johmrms)
         call parse_name(iname,cname(iname),cform(iname),'echarge',idiag_echarge)
         call parse_name(iname,cname(iname),cform(iname),'mfpf',idiag_mfpf)

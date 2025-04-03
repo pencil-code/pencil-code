@@ -1044,6 +1044,7 @@ module Snapshot
         if (lncc_pdf)      call pdf(f,'lncc' ,rhoccm,sqrt(cc2m))
         if (gcc_pdf)       call pdf(f,'gcc'  ,0.    ,sqrt(gcc2m))
         if (lngcc_pdf)     call pdf(f,'lngcc',0.    ,sqrt(gcc2m))
+        if (cosEB_pdf)     call pdf(f,'cosEB',0.    ,1.)
         if (lnspecial_pdf) call pdf(f,'lnspecial',0.,1.)
         if (special_pdf)   call pdf(f,'special',0.,1.)
 !

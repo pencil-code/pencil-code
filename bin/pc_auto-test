@@ -88,6 +88,7 @@ my %tests = (
                          0d-tests/heating_noionize
                          1d-tests/H2_flamespeed
                          1d-tests/horndeski_choiceIII
+                         1d-tests/rel-shock
                          1d-tests/inflationary-B-genesis
                          1d-tests/axionSU2back
                          chiral-diffusion
@@ -485,6 +486,14 @@ my @exit_status=('setting up directory',
 
 $list_only = 1 if ($list_all);
 
+my $timeout_command_found = check_timeout_found();
+if ($timeout_command_found && !$nolock) {
+    # The global lock is on by default because when the time limit is reached,
+    # reaper kills processes based on their name. If we are using the `timeout`
+    # utility, that concern does not apply, and one only needs local_lock.
+    $local_lock = 1;
+}
+
 if ($local_lock) { $lockdir = $pencil_home; }
 $lockfile = $lockdir."/pencil-auto-test-$user.pid";
 
@@ -697,6 +706,13 @@ if (@ARGV) {
 }
 
 
+# ---------------------------------------------------------------------- #
+sub check_timeout_found {
+    # Check if the timeout command exists on the system.
+    return 0; #Kishore: disabling the use of timeout for now as it causes problems on Norlx51
+    
+    return (`which timeout` ne "");
+}
 # ---------------------------------------------------------------------- #
 sub get_sampdirs {
 # Return list of sample dirs that belong to $level .
@@ -1069,7 +1085,21 @@ sub test_timelimited_shell_cmd {
     my $maxtime  = shift;
     my $procname = shift;
     my @rest = @_;
-    return test_shell_cmd("reaper -t '$maxtime,$procname' '$cmd'", @rest);
+
+    my $time_limit;
+    if (Scalar::Util::looks_like_number($maxtime)) {
+        $time_limit = $maxtime;
+    } else {
+        #$failed++; #dirty hack to make sure an exception in the line below is detected as a failing test.
+        $time_limit = Test::Parse::parse_time($maxtime);
+        #$failed--;
+    }
+
+    if ($timeout_command_found) {
+        return test_shell_cmd("timeout -v --kill-after=10s --preserve-status $time_limit $cmd", @rest);
+    } else {
+        return test_shell_cmd("reaper -t '$maxtime,$procname' '$cmd'", @rest);
+    }
 }
 # ---------------------------------------------------------------------- #
 sub test_perl_cmd {

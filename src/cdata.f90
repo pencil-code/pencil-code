@@ -425,6 +425,7 @@ module Cdata
   integer :: icctest=0,icctestpq=0,iug=0
   integer :: iam=0,iamx=0,iamy=0,iamz=0
   integer :: ivisc_heat=0,ibb=0,ibx=0,iby=0,ibz=0,ijj=0,ijx=0,ijy=0,ijz=0
+  integer :: ieta_planet=0
   integer :: ibb_sph=0, ibb_sphr=0, ibb_spht=0, ibb_sphp=0
   integer :: inusmag=0, ietasmag=0
   integer :: iaak, iaakim, ieek, ieekim
@@ -673,6 +674,7 @@ module Cdata
   logical :: ab_phispec=.false.,ou_phispec=.false.
   logical :: rhocc_pdf=.false.,cc_pdf=.false.,lncc_pdf=.false.
   logical :: gcc_pdf=.false., lngcc_pdf=.false., lnspecial_pdf=.false., special_pdf=.false.
+  logical :: cosEB_pdf=.false.
   logical :: ang_jb_pdf1d=.false., ang_ub_pdf1d=.false., ang_ou_pdf1d=.false.
   logical :: test_nonblocking=.false.,onedall=.false.
   logical :: lsfu=.false.,lsfb=.false.,lsfz1=.false.,lsfz2=.false.

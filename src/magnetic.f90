@@ -370,6 +370,7 @@ module Magnetic
   real :: w_sldchar_mag=1., tau_remove_meanaxy=1.0
   real :: rhoref=impossible, rhoref1
   real :: ell_jj=0., tau_jj=1.
+  real :: scl_uxb_in_ohm=1.
   character (len=labellen) :: A_relaxprofile='0,coskz,0'
   character (len=labellen) :: zdep_profile='fs'
   character (len=labellen) :: ydep_profile='two-step'
@@ -436,7 +437,8 @@ module Magnetic
       lbraginsky, eta_jump0, eta_jump1, lcoulomb, lcoulomb_apply, lvacuum, &
       loverride_ee_decide, eta_tdep_loverride_ee, loverride_ee2, lignore_1rho_in_Lorentz, &
       lbext_moving_layer, zbot_moving_layer, ztop_moving_layer, speed_moving_layer, edge_moving_layer, &
-      lno_eta_tdep, luse_scale_factor_in_sigma, ell_jj, tau_jj, lhubble_magnetic
+      lno_eta_tdep, luse_scale_factor_in_sigma, ell_jj, tau_jj, lhubble_magnetic, &
+      scl_uxb_in_ohm
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -4380,7 +4382,7 @@ module Magnetic
               else
                 if (learly_set_el_pencil) p%el=f(l1:l2,m,n,iex:iez)
                 do j=1,3
-                  p%jj_ohm(:,j)=(p%el(:,j)+p%uxb(:,j))*mu01/eta_total
+                  p%jj_ohm(:,j)=(p%el(:,j)+scl_uxb_in_ohm*p%uxb(:,j))*mu01/eta_total
                 enddo
               endif
             endif
