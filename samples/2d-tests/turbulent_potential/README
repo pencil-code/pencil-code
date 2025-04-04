@@ -8,6 +8,8 @@ Added:
      10-dec-2015
 Status:
     works since 10-dec-2015
+    failed after r39918 of 2025-03-24 11:27:34, but reverted this change in density on 2025-04-03
+    fixed by -r35654 (2023-06-13 08:17:50), and also by -r39964 (2025-03-29 10:35:39)
 Recommended resolution:
     As high as 2D can be. 
 Reference:
