@@ -25,8 +25,8 @@
 /
 &density_run_pars
   !lupw_rho=T
-  idiff='hyper3-cyl'
-  diffrho_hyper3=1e-3
+  !idiff='hyper3-cyl'
+  !diffrho_hyper3=1e-3
   borderlnrho='initial-condition'
 /
 &grav_run_pars
