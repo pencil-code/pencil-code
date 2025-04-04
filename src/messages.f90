@@ -206,7 +206,10 @@ module Messages
 !  at the end of the time-step.
 !
 !  17-may-2006/anders: coded
+!  4-apr-2025/TP: if using the GPU abort on local errors immediately since combining local errors is surprisingly expensive
+!                 and anyways if using the GPU I think as of date this is not even called
 !
+      use MPIComm, only: mpiabort
       character(len=*), optional :: location
       character(len=*)           :: message
 !
@@ -217,7 +220,7 @@ module Messages
 
         fatal_errors=fatal_errors+1
 !
-        if (lroot .or. (ncpus<=16 .and. (message/=''))) then
+        if (lgpu .or. lroot .or. (ncpus<=16 .and. (message/=''))) then
           call terminal_highlight_fatal_error
           write (*,'(A13)',ADVANCE='NO') "FATAL ERROR: "
           call terminal_defaultcolor
@@ -234,6 +237,8 @@ module Messages
         endif
       endif
       !$ endif
+      if(lgpu) call mpiabort
+
 !
     endsubroutine fatal_error_local
 !***********************************************************************
@@ -242,6 +247,7 @@ module Messages
 !  Collect fatal errors from processors and die if there are any.
 !
 !  17-may-2006/anders: coded
+!  4-apr-2025/TP: not done on the GPU since surprisingly expensive: instead MPI_ABORT on any local error immediately
 !
       use General, only: itoa
       use Mpicomm, only: mpireduce_sum_int, mpibcast_int, mpigather_scl_str, MPI_COMM_WORLD
@@ -252,10 +258,10 @@ module Messages
       character(LEN=linelen) :: preceding
       integer :: i, istart, iend
 
+      if (lgpu) return
       if (.not.llife_support) then
 
-        call mpireduce_sum_int(fatal_errors,fatal_errors_total,MPI_COMM_WORLD)
-        call mpibcast_int(fatal_errors_total,comm=MPI_COMM_WORLD)
+        call mpiallreduce_sum_int(fatal_errors,fatal_errors_total,MPI_COMM_WORLD)
 !
         if (fatal_errors_total/=0) then
           call mpigather_scl_str(message_stored,messages)
