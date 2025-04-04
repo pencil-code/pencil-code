@@ -2,6 +2,10 @@ Maintainer:
     Betsy Hernandez <betsyhern/gmail[dot]com>
 Added:
     2020-January-17
+Status:
+    works since 2020-01-18
+    failed after r39918 of 2025-03-24 11:27:34, but reverted this change in density on 2025-04-03
+    fixed by -r33821 (2022-03-24 19:25:57)
 Comments:
     Total torque on planet embedded in an adiabatic disk
 Recommended time steps:
