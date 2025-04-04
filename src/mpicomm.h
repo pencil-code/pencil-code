@@ -35,6 +35,8 @@
   public :: mpiscatterv, mpiscatterv_real_plain, scatter_snapshot
   public :: mpiwtime, mpiwtick
 
+  public :: mpiabort
+
   public :: mpisend_nonblock_real,mpisend_nonblock_int
   public :: mpirecv_nonblock_real,mpirecv_nonblock_int
 

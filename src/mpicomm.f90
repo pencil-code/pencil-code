@@ -5339,6 +5339,14 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine mpifinalize
 !***********************************************************************
+    subroutine mpiabort
+!
+!  Aborts the processes in PC (it is documented that in most systems this aborts all MPI processes)
+!
+    call MPI_ABORT(MPI_COMM_PENCIL,-1,mpierr)
+       
+    endsubroutine mpiabort
+!***********************************************************************
     function mpiwtime()
 !
       real(KIND=rkind8) :: mpiwtime

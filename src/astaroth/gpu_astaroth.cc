@@ -891,24 +891,6 @@ extern "C" void substepGPU(int isubstep)
    if (isubstep == itorder) forcing_params.Update();  // calculate on CPU and load into GPU
 #endif
 
-  //acGridSynchronizeStream(STREAM_DEFAULT);
-  //Transfer the updated ghost zone to the device(s) in the node
-
-  //if (full)
-  //{
-  //  if (has_nans(mesh))
-  //  {
-  //    acLogFromRootProc(rank,"had nans before starting GPU comp\n");
-  //    exit(0);
-  //  }
-  //  acLogFromRootProc(rank,"doing full i.e. loading\n");
-  //  acGridSynchronizeStream(STREAM_ALL);
-  //  acDeviceLoadMesh(acGridGetDevice(), STREAM_DEFAULT, mesh);
-  //  acGridSynchronizeStream(STREAM_ALL);
-  //  //set output buffer to 0 since if we are reading from it we don't want NaNs
-  //  AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
-  //  acGridSynchronizeStream(STREAM_ALL);
-  //}
   acDeviceSetInput(acGridGetDevice(), AC_step_num,(PC_SUB_STEP_NUMBER) (isubstep-1));
   Device dev = acGridGetDevice();
   //TP: done in this more complex manner to ensure the actually integrated time and the time reported by Pencil agree
@@ -932,10 +914,6 @@ extern "C" void substepGPU(int isubstep)
         || (isubstep == 1 && lcourant_dt)
      ))
   {
-      //acGridSynchronizeStream(STREAM_ALL);
-      //acGridFinalizeReduceLocal(rhs);
-      //TP: now done in executetaskgraph
-    
     constexpr AcReal unit = 1.0;
     AcReal dt1_{};
     if (!lcourant_dt)
@@ -959,20 +937,12 @@ extern "C" void substepGPU(int isubstep)
       }
       dt1_ = unit/dt_;
     }
-    //fprintf(stderr, "HMM MAX ADVEC, DIFFUS: %14e, %14e\n",maxadvec,max_diffus());
     else 
     {
       dt1_ = calc_dt1_courant();
     }
     dt1_interface = dt1_;
   }
-  //acGridSynchronizeStream(STREAM_ALL);
-  //acGridSynchronizeStream(STREAM_ALL);
-  // acLogFromRootProc(rank,"Done substep: %d\n",isubstep);
-  // fflush(stdout);
-  // int found_nan;
-  // FILE* diag_file = fopen("astaroth_timeseries.ts", "a");
-  // print_diagnostics(rank, 1, dt, dt,diag_file, 0.0001, 0.0001, &found_nan);
   return;
 }
 /***********************************************************************************************/
