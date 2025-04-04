@@ -16,6 +16,7 @@
 !
 ! PENCILS PROVIDED e2; edot2; el(3); a0; ga0(3); del2ee(3); curlE(3); BcurlE
 ! PENCILS PROVIDED rhoe, divJ, divE, gGamma(3); sigE, sigB; eb
+! PENCILS PROVIDED boost; gam_EB; eprime; bprime; jprime
 ! PENCILS EXPECTED infl_phi, infl_dphi, gphi(3)
 !***************************************************************
 !
@@ -105,6 +106,7 @@ module Special
   integer :: idiag_bprimerms=0  ! DIAG_DOC: $\left<(B')^2\right>^{1/2}$
   integer :: idiag_jprimerms=0  ! DIAG_DOC: $\left<(J')^2\right>^{1/2}$
   integer :: idiag_gam_EBrms=0  ! DIAG_DOC: $\left<(\gamma')^2\right>^{1/2}$
+  integer :: idiag_boostprms=0  ! DIAG_DOC: $\left<\mbox{boost}^2\right>^{1/2}$
   integer :: idiag_edotrms=0    ! DIAG_DOC: $\left<\dot{\Ev}^2\right>^{1/2}$
   integer :: idiag_emax=0       ! DIAG_DOC: $\max(|\Ev|)$
   integer :: idiag_a0rms=0      ! DIAG_DOC: $\left<A_0^2\right>^{1/2}$
@@ -461,7 +463,6 @@ module Special
       type (pencil_case) :: p
 !
       real, dimension (nx) :: tmp
-      real, dimension (nx) :: boost, gam_EB, eprime, bprime, jprime
       integer :: i,j,k
 !
       intent(in) :: f
@@ -501,24 +502,24 @@ module Special
       if (lnoncollinear_EB .or. lnoncollinear_EB_aver &
         .or. lcollinear_EB .or. lcollinear_EB_aver) then
         if (lnoncollinear_EB) then
-          boost=sqrt((p%e2-p%b2)**2+4.*p%eb**2)
-          gam_EB=sqrt21*sqrt(1.+(p%e2+p%b2)/boost)
-          eprime=sqrt21*sqrt(p%e2-p%b2+boost)
-          bprime=sqrt21*sqrt(p%b2-p%e2+boost)*sign(1.,p%eb)
-          where (eprime/=0. .and. bprime/=0.)
-            jprime=Chypercharge*echarge**3/(6.*pi**2*Hscript)*eprime*abs(bprime)/tanh(pi*abs(bprime)/eprime)
-            p%sigE=sigE_prefactor*abs(jprime)*eprime/(gam_EB*boost)
-            p%sigB=sigB_prefactor*abs(jprime)*p%eb/(eprime*gam_EB*boost)
+          p%boost=sqrt((p%e2-p%b2)**2+4.*p%eb**2)
+          p%gam_EB=sqrt21*sqrt(1.+(p%e2+p%b2)/p%boost)
+          p%eprime=sqrt21*sqrt(p%e2-p%b2+p%boost)
+          p%bprime=sqrt21*sqrt(p%b2-p%e2+p%boost)*sign(1.,p%eb)
+          where (p%eprime/=0. .and. p%bprime/=0.)
+            p%jprime=Chypercharge*echarge**3/(6.*pi**2*Hscript)*p%eprime*abs(p%bprime)/tanh(pi*abs(p%bprime)/p%eprime)
+            p%sigE=sigE_prefactor*abs(p%jprime)*p%eprime/(p%gam_EB*p%boost)
+            p%sigB=sigB_prefactor*abs(p%jprime)*p%eb/(p%eprime*p%gam_EB*p%boost)
           elsewhere
-            jprime=0.
+            p%jprime=0.
             p%sigE=0.
             p%sigB=0.
           endwhere
         elseif (lcollinear_EB) then
-          eprime=sqrt(p%e2)
-          bprime=sqrt(p%b2)
-          where (eprime/=0. .and. bprime/=0.)
-            p%sigE=sigE_prefactor*Chypercharge*echarge**3/(6.*pi**2*Hscript)*bprime/tanh(pi*abs(bprime)/eprime)
+          p%eprime=sqrt(p%e2)
+          p%bprime=sqrt(p%b2)
+          where (p%eprime/=0. .and. p%bprime/=0.)
+            p%sigE=sigE_prefactor*Chypercharge*echarge**3/(6.*pi**2*Hscript)*p%bprime/tanh(pi*abs(p%bprime)/p%eprime)
           elsewhere
             p%sigE=0.
           endwhere
@@ -535,11 +536,6 @@ module Special
         do j=1,3
           p%jj_ohm(:,j)=p%sigE*p%el(:,j)+p%sigB*p%bb(:,j)
         enddo
-!
-        call sum_mn_name(eprime**2,idiag_eprimerms,lsqrt=.true.)
-        call sum_mn_name(bprime**2,idiag_bprimerms,lsqrt=.true.)
-        call sum_mn_name(jprime**2,idiag_jprimerms,lsqrt=.true.)
-        call sum_mn_name(gam_EB**2,idiag_gam_EBrms,lsqrt=.true.)
 !
       endif
 !
@@ -789,6 +785,11 @@ module Special
         call sum_mn_name(p%e2,idiag_erms,lsqrt=.true.)
         call sum_mn_name(p%edot2,idiag_edotrms,lsqrt=.true.)
         call max_mn_name(p%e2,idiag_emax,lsqrt=.true.)
+        call sum_mn_name(p%eprime**2,idiag_eprimerms,lsqrt=.true.)
+        call sum_mn_name(p%bprime**2,idiag_bprimerms,lsqrt=.true.)
+        call sum_mn_name(p%jprime**2,idiag_jprimerms,lsqrt=.true.)
+        call sum_mn_name(p%gam_EB**2,idiag_gam_EBrms,lsqrt=.true.)
+        call sum_mn_name(p%boost**2 ,idiag_boostprms,lsqrt=.true.)
         if (idiag_a0rms/=0) call sum_mn_name(p%a0**2,idiag_a0rms,lsqrt=.true.)
         call sum_mn_name(p%BcurlE,idiag_BcurlEm)
   !     if (lsolve_chargedensity) then
@@ -884,7 +885,7 @@ module Special
         idiag_ebm=0; idiag_sigEm=0; idiag_sigBm=0; idiag_sigErms=0; idiag_sigBrms=0
         idiag_Johmrms=0; idiag_adphiBm=0; idiag_sigEE2m=0; idiag_sigBBEm=0
         idiag_eprimerms=0; idiag_bprimerms=0; idiag_jprimerms=0; idiag_gam_EBrms=0; 
-        idiag_echarge=0
+        idiag_boostprms=0; idiag_echarge=0
         cformv=''
       endif
 !
@@ -900,6 +901,7 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'bprimerms',idiag_bprimerms)
         call parse_name(iname,cname(iname),cform(iname),'jprimerms',idiag_jprimerms)
         call parse_name(iname,cname(iname),cform(iname),'gam_EBrms',idiag_gam_EBrms)
+        call parse_name(iname,cname(iname),cform(iname),'boostprms',idiag_boostprms)
         call parse_name(iname,cname(iname),cform(iname),'edotrms',idiag_edotrms)
         call parse_name(iname,cname(iname),cform(iname),'emax',idiag_emax)
         call parse_name(iname,cname(iname),cform(iname),'a0rms',idiag_a0rms)
