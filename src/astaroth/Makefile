@@ -57,13 +57,14 @@ OBJECTS = $(SOURCES:.cc=.o)
 DSL_MODULE_DIR = ../../DSL/local
 #EXT_SOURCES = $(wildcard ../../DSL/stdlib/*/*.h)   #doesn't work with symbolic links
 EXT_KERNELS =
+CWD := $(PWD)
 
 ifeq ($(CMAKE_SINGLEPASS),ON)
   DSL_MODULE_FILE = solve_single.ac
-  EXT_KERNELS += $(PWD)/DSL/local/solve_single.ac
+  EXT_KERNELS += $(CWD)/DSL/local/solve_single.ac
 else
   DSL_MODULE_FILE = solve_two.ac
-  EXT_KERNELS += $(PWD)/DSL/local/solve_two.ac
+  EXT_KERNELS += $(CWD)/DSL/local/solve_two.ac
 endif
 #
 ifneq ($(filter shock,$(MODULESOURCES)),)
@@ -131,10 +132,10 @@ CMAKE_OPTIONS = -DMULTIGPU_ENABLED=OFF -DMPI_ENABLED=$(CMAKE_MPI) -DBUILD_SHARED
 #
 astaroth_libs: $(PC_HEADERS)
 	@ext_srcs="`ls -m $$PENCIL_HOME/src/astaroth/DSL/*/*.h \
-		         $$PENCIL_HOME/src/astaroth/submodule/acc-runtime/stdlib/*.h \
-			 $$PENCIL_HOME/src/astaroth/submodule/acc-runtime/stdlib/*/*.h \
-			 $$PWD/DSL/local/*.h \
-			 |tr "\n" " "|sed -e's/, / /g'` $(EXT_KERNELS)" && \
+		          $$PENCIL_HOME/src/astaroth/submodule/acc-runtime/stdlib/*.h \
+			  $$PENCIL_HOME/src/astaroth/submodule/acc-runtime/stdlib/*/*.h \
+			  $(CWD)/DSL/local/*.h \
+			  |tr "\n" " "|sed -e's/, / /g'` $(EXT_KERNELS)" && \
 	echo "const char* cmake_options = \" -DEXT_SOURCES=$$ext_srcs -DDSL_MODULE_DIR=../$(DSL_MODULE_DIR) $(CMAKE_OPTIONS)\";" > cmake_options.h && \
 	mkdir -p submodule/build  && cd submodule/build && export LDFLAGS=""  &&  \
 	cmake  $(CMAKE_OPTIONS) -DEXT_SOURCES=$$ext_srcs -DDSL_MODULE_DIR=../acc-runtime/$(DSL_MODULE_DIR) -DRUNTIME_COMPILATION=$(RUNTIME_COMPILATION) -DREAD_OVERRIDES=$(READ_OVERRIDES) .. 
