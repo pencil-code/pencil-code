@@ -1574,6 +1574,11 @@ module Mpicomm
 !
     endsubroutine mpifinalize
 !***********************************************************************
+    subroutine mpiabort
+!
+    STOP 1                    ! Return nonzero exit status
+    endsubroutine mpiabort
+!***********************************************************************
     function mpiwtime()
 !
 !  Mimic the MPI_WTIME() timer function. On many machines, the
