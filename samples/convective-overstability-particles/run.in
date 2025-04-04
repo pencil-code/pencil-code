@@ -23,6 +23,7 @@
 &density_run_pars
   idiff='hyper3-mesh','shock'
   diffrho_hyper3_mesh=20,diffrho_shock=1.
+  lmassdiff_fix = .true.
 /
 &entropy_run_pars
  TTref_cool=2.5e-2
