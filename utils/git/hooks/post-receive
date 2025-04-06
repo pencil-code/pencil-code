@@ -1,0 +1,30 @@
+#!/bin/bash
+
+# This is meant to be installed on a server that hosts a git repo. If any user
+# pushes a commit that modifies the reference data in a sample directory, this
+# will print a warning asking them to contact the maintainers. To use this
+# script, copy it into the folder `.git/hooks/`, and rename it as
+# `post-receive`.
+
+lreference_changed=0 #fake boolean (1 is true, 0 is false)
+
+while read -r oldrev newrev refname
+do
+    if test "$refname" != "refs/heads/master"; then
+        exit 0
+    fi
+    
+    changed_files="$(git diff --name-only $oldrev $newrev -- samples | grep 'reference*.out')"
+    
+    if test -n "$changed_files"; then
+        lreference_changed=1
+        echo "----------WARNING---------"
+        echo "You have changed the following reference data:"
+        echo "$changed_files"
+        echo "--------------------------"
+    fi
+done
+
+if test $lreference_changed -eq 1; then
+    echo "Please contact the maintainers of these samples and justify updating the reference data."
+fi
