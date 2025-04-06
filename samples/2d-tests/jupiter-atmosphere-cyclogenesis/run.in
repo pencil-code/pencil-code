@@ -26,6 +26,7 @@
   diffrho_shock=5.
   lfreeze_lnrhoext=T
   borderlnrho='initial-condition'
+  lmassdiff_fix=T
 /
 &hydro_run_pars
   lpressuregradient_gas=F
