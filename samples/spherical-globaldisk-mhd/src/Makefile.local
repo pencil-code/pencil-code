@@ -3,7 +3,7 @@
 ### Included by `Makefile'
 ###
 
-MPICOMM   =   mpicomm
+MPICOMM   = nompicomm
 
 #================================
 # Please uncomment one IO option:
