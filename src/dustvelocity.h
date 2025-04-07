@@ -9,6 +9,7 @@
   public :: pencil_criteria_dustvelocity, pencil_interdep_dustvelocity
 
   public :: copy_bcs_dust
+  public :: pushpars2c
 
 ! Shouldn't really be here
   public :: nd0, rhod0, ldustcoagulation, ldustcondensation

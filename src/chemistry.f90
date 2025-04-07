@@ -32,7 +32,9 @@ module Chemistry
 !
   use Cdata
   use General, only: keep_compiler_quiet, itoa
-  use EquationOfState
+  use EquationOfState, only: cp_const,lpres_grad,imass,&
+                             getdensity,gettemperature,getpressure
+
   use Messages, only: svn_id,timing,fatal_error,inevitably_fatal_error,warning,not_implemented
 !
   implicit none
@@ -7095,5 +7097,16 @@ module Chemistry
     endsubroutine chemistry_diags_reductions
 !***********************************************************************
     include 'chemistry_common.inc'
+!***********************************************************************
+    subroutine pushpars2c(p_par)
+
+    use Syscalls, only: copy_addr
+
+    integer, parameter :: n_pars=1
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+    call copy_addr(rgas,p_par(1))
+
+    endsubroutine pushpars2c
 !***********************************************************************
 endmodule Chemistry

@@ -379,8 +379,12 @@ module Gravity
 !***********************************************************************
     subroutine pushpars2c(p_par)
 
-    integer, parameter :: n_pars=0
+    use Syscalls, only: copy_addr
+
+    integer, parameter :: n_pars=1
     integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+    call copy_addr(zgrav,p_par(1))
 
     endsubroutine pushpars2c
 !***********************************************************************

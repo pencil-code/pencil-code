@@ -127,6 +127,13 @@ module Dustvelocity
 !
   real, dimension (nx) :: diffus_nud,diffus_nud3,advec_hypermesh_uud
 
+!
+! For strings to enums
+!
+   integer :: enum_draglaw = 0
+   integer :: enum_borderuud = 0
+   integer :: enum_dust_chemistry = 0
+   integer :: enum_dust_binning = 0
   contains
 !***********************************************************************
     subroutine register_dustvelocity()
@@ -1104,7 +1111,6 @@ module Dustvelocity
 !  Calculated from master equation d(wx-ux)/dt = A + B*(wx-ux) = 0.
 !
         if (ldustvelocity_shorttausd .and. any(tausd1(:,k)>=shorttaus1limit)) then
-
           if (lgrav) then
             AA_sfta=p%gg
           else
@@ -1202,6 +1208,9 @@ module Dustvelocity
           if (Omega_pseudo/=0.0) then
             df(l1:l2,m,n,iux)  = df(l1:l2,m,n,iux)  - Omega_pseudo*(p%uu(:,1)-u0_gas_pseudo)
             df(l1:l2,m,n,iudx) = df(l1:l2,m,n,iudx) - Omega_pseudo*p%uud(:,1,:)
+            !TP: seems weird that during the loop over species we loop over them again in the expression above
+            !    would assume it would look like the following?:
+            !    df(l1:l2,m,n,iudx(k)) = df(l1:l2,m,n,iudx(k)) - Omega_pseudo*p%uud(:,1,k)
           endif
 !
 !  Add viscosity on dust
@@ -1427,21 +1436,24 @@ module Dustvelocity
 !
       case ('zero','0')
         f_target=0.
+        do j=1,3
+          ju=j+iuud(k)-1
+          call border_driving(f,df,p,f_target(:,j),ju)
+        enddo
 !
       case ('initial-condition')
         do j=1,3
           ju=j+iuud(k)-1
           call set_border_initcond(f,ju,f_target(:,j))
         enddo
+        do j=1,3
+          ju=j+iuud(k)-1
+          call border_driving(f,df,p,f_target(:,j),ju)
+        enddo
 !
       case ('nothing')
-        return
       endselect
 !
-      do j=1,3
-        ju=j+iuud(k)-1
-        call border_driving(f,df,p,f_target(:,j),ju)
-      enddo
 !
     endsubroutine set_border_dustvelocity
 !***********************************************************************
@@ -1801,5 +1813,78 @@ module Dustvelocity
       endselect
 !
     endsubroutine get_slices_dustvelocity
+!***********************************************************************
+    subroutine pushpars2c(p_par)
+
+    use Syscalls, only: copy_addr
+    use General , only: string_to_enum
+
+    integer, parameter :: n_pars=200
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+     call copy_addr(ustcst,p_par(1))
+     call copy_addr(unit_md,p_par(2))
+     call copy_addr(mumon,p_par(3))
+     call copy_addr(mmon,p_par(4))
+     call copy_addr(nd0,p_par(5))
+     call copy_addr(ldustcoagulation,p_par(6)) ! bool
+     call copy_addr(ldustcondensation,p_par(7)) ! bool
+     call copy_addr(md0,p_par(8))
+     call copy_addr(mu_ext,p_par(9))
+     call copy_addr(ad1,p_par(10))
+     call copy_addr(beta_dpdr_dust,p_par(11))
+     call copy_addr(beta_dpdr_dust_scaled,p_par(12))
+     call copy_addr(cdtd,p_par(13))
+     call copy_addr(gravx_dust,p_par(14))
+     call copy_addr(omega_pseudo,p_par(15))
+     call copy_addr(u0_gas_pseudo,p_par(16))
+     call copy_addr(tausgmin,p_par(17))
+     call copy_addr(tausg1max,p_par(18))
+     call copy_addr(dust_pressure_factor,p_par(19))
+     call copy_addr(shorttaus1limit,p_par(20))
+     call copy_addr(scalehtaus,p_par(21))
+     call copy_addr(z0taus,p_par(22))
+     call copy_addr(widthtaus,p_par(23))
+     call copy_addr(dustbin_width,p_par(24))
+     call copy_addr(ladvection_dust,p_par(25)) ! bool
+     call copy_addr(lcoriolisforce_dust,p_par(26)) ! bool
+     call copy_addr(ldragforce_dust,p_par(27)) ! bool
+     call copy_addr(ldragforce_gas,p_par(28)) ! bool
+     call copy_addr(ldust_pressure,p_par(29)) ! bool
+     call copy_addr(ldustvelocity_shorttausd,p_par(30)) ! bool
+     call copy_addr(lviscd_simplified,p_par(31)) ! bool
+     call copy_addr(lviscd_nud_const,p_par(32)) ! bool
+     call copy_addr(lviscd_shock,p_par(33)) ! bool
+     call copy_addr(lviscd_shock_simplified,p_par(34)) ! bool
+     call copy_addr(lviscd_hyper3_simplified,p_par(35)) ! bool
+     call copy_addr(lviscd_hyper3_rhod_nud_const,p_par(36)) ! bool
+     call copy_addr(lviscd_hyper3_nud_const,p_par(37)) ! bool
+     call copy_addr(lviscd_hyper3_polar,p_par(38)) ! bool
+     call copy_addr(lviscd_hyper3_mesh,p_par(39)) ! bool
+     call copy_addr(lstokes_highspeed_corr,p_par(40)) ! bool
+     call copy_addr(lpifactor1,p_par(41)) ! bool
+     call copy_addr(lpifactor2,p_par(42)) ! bool
+     call string_to_enum(enum_draglaw,draglaw)
+     call copy_addr(enum_draglaw,p_par(43)) ! int
+     call string_to_enum(enum_borderuud,borderuud)
+     call copy_addr(enum_borderuud,p_par(44)) ! int
+     call string_to_enum(enum_dust_chemistry,dust_chemistry)
+     call copy_addr(enum_dust_chemistry,p_par(45)) ! int
+     call string_to_enum(enum_dust_binning,dust_binning)
+     call copy_addr(enum_dust_binning,p_par(46)) ! int
+     call copy_addr(scolld,p_par(47)) ! (ndustspec) (ndustspec)
+     call copy_addr(mdplus,p_par(48)) ! (ndustspec)
+     call copy_addr(mdminus,p_par(49)) ! (ndustspec)
+     call copy_addr(surfd,p_par(50)) ! (ndustspec)
+     call copy_addr(ad,p_par(51)) ! (ndustspec)
+     call copy_addr(tausd,p_par(52)) ! (ndustspec)
+     call copy_addr(rhodsad1,p_par(53)) ! (ndustspec)
+     call copy_addr(betad,p_par(54)) ! (ndustspec)
+     call copy_addr(nud,p_par(55)) ! (ndustspec)
+     call copy_addr(nud_hyper3,p_par(56)) ! (ndustspec)
+     call copy_addr(nud_shock,p_par(57)) ! (ndustspec)
+     call copy_addr(nud_hyper3_mesh,p_par(58)) ! (ndustspec)
+
+   endsubroutine pushpars2c
 !***********************************************************************
 endmodule Dustvelocity
