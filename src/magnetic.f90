@@ -11738,6 +11738,7 @@ module Magnetic
     !call copy_addr(gamma1,p_par(262))
 
     call copy_addr(lrelaxprof_glob_scaled,p_par(263)) ! bool
+    call copy_addr(scl_uxb_in_ohm,p_par(264))
 
     endsubroutine pushpars2c
 !***********************************************************************
