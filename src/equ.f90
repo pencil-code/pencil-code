@@ -346,7 +346,7 @@ module Equ
 !
       if (lgpu) then
         !call test_rhs_gpu(f,df,p,mass_per_proc,early_finalize,rhs_cpu)
-        if (ldiagnos.or.l1davgfirst.or.l1dphiavg.or.l2davgfirst) then
+        if (ldiagnos.or.l1davgfirst.or.l1dphiavg.or.l2davgfirst.or.lvideo) then
           !wait in case the last diagnostic tasks are not finished
 !         Not done for the first step since we haven't loaded any data to the GPU yet
           call copy_farray_from_GPU(f)
@@ -355,7 +355,7 @@ module Equ
         start_time = mpiwtime()
         call rhs_gpu(f,itsub)
 !TP: should be done after rhs_gpu since if doing testing against cpu want to get the right value of dt
-        if (ldiagnos.or.l1davgfirst.or.l1dphiavg.or.l2davgfirst) then
+        if (ldiagnos.or.l1davgfirst.or.l1dphiavg.or.l2davgfirst.or.lvideo) then
 !$        call save_diagnostic_controls
         endif
         end_time = mpiwtime()
