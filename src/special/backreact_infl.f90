@@ -103,6 +103,7 @@ module Special
   real :: lnascale, a2, a21, Hscript
   real :: Hscript0=0., scale_rho_chi_Heqn=1.
   real :: echarge=.0, echarge_const=.303
+  real :: count_eb0_all=0.
   real, target :: ddotam_all
   real, pointer :: alpf
   real, pointer :: sigE_prefactor, sigB_prefactor
@@ -146,12 +147,13 @@ module Special
   integer :: idiag_lnam=0      ! DIAG_DOC: $\left<\ln a\right>$
   integer :: idiag_ddotam=0    ! DIAG_DOC: $a''/a$
   integer :: idiag_a2rhopm=0   ! DIAG_DOC: $a^2 (rho+p)$
-  integer :: idiag_a2rhom=0   ! DIAG_DOC: $a^2 rho$
-  integer :: idiag_a2rhophim=0   ! DIAG_DOC: $a^2 rho$
-  integer :: idiag_a2rhogphim=0   ! DIAG_DOC: $0.5 <grad phi^2>$
-  integer :: idiag_rho_chi=0   ! DIAG_DOC: $\rho_\chi$
-  integer :: idiag_sigEma=0    ! DIAG_DOC: $\rho_\chi$
-  integer :: idiag_sigBma=0    ! DIAG_DOC: $\rho_\chi$
+  integer :: idiag_a2rhom=0    ! DIAG_DOC: $a^2 rho$
+  integer :: idiag_a2rhophim=0  ! DIAG_DOC: $a^2 rho$
+  integer :: idiag_a2rhogphim=0 ! DIAG_DOC: $0.5 <grad phi^2>$
+  integer :: idiag_rho_chi=0    ! DIAG_DOC: $\rho_\chi$
+  integer :: idiag_sigEma=0     ! DIAG_DOC: $\rho_\chi$
+  integer :: idiag_sigBma=0     ! DIAG_DOC: $\rho_\chi$
+  integer :: idiag_count_eb0a=0 ! DIAG_DOC: $f_\mathrm{EB0}$
 !
   contains
 !****************************************************************************
@@ -536,6 +538,7 @@ module Special
       rho_chi=f_ode(iinfl_rho_chi)
 !
 !  Energy density of the charged particles.
+!  This is currently only done for <sigE>*<E^2>, and not for <sigE*E^2>.
 !
       if (lrho_chi) then
         if (lnoncollinear_EB .or. lnoncollinear_EB_aver .or. &
@@ -560,6 +563,8 @@ module Special
         call save_name(rho_chi,idiag_rho_chi)
         call save_name(sigEm_all,idiag_sigEma)
         call save_name(sigBm_all,idiag_sigBma)
+        if (lnoncollinear_EB_aver .or. lcollinear_EB_aver) &
+          call save_name(count_eb0_all,idiag_count_eb0a)
       endif
 !
     endsubroutine dspecial_dt_ode
@@ -619,7 +624,8 @@ module Special
         idiag_dphim=0; idiag_dphi2m=0; idiag_dphirms=0
         idiag_Hscriptm=0; idiag_lnam=0; idiag_ddotam=0
         idiag_a2rhopm=0; idiag_a2rhom=0; idiag_a2rhophim=0
-        idiag_a2rhogphim=0; idiag_rho_chi=0; idiag_sigEma=0; idiag_sigBma=0
+        idiag_a2rhogphim=0; idiag_rho_chi=0; idiag_sigEma=0
+        idiag_sigBma=0; idiag_count_eb0a=0
       endif
 !
       do iname=1,nname
@@ -639,6 +645,7 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'rho_chi',idiag_rho_chi)
         call parse_name(iname,cname(iname),cform(iname),'sigEma',idiag_sigEma)
         call parse_name(iname,cname(iname),cform(iname),'sigBma',idiag_sigBma)
+        call parse_name(iname,cname(iname),cform(iname),'count_eb0a',idiag_count_eb0a)
       enddo
 !!
 !!!  write column where which magnetic variable is stored
@@ -788,9 +795,11 @@ module Special
             jprime1=1./(6.*pi**2)*eprime*abs(bprime)/tanh(pi*abs(bprime)/eprime)
             sigE1m_all=abs(jprime1)*eprime/(gam_EB*boost)
             sigB1m_all=abs(jprime1)*edotbm_all/(eprime*gam_EB*boost)
+            count_eb0_all=0.
           else
             sigE1m_all=0.
             sigB1m_all=0.
+            count_eb0_all=1.
           endif
 !
 !  Similarly for collinear case.
@@ -801,9 +810,11 @@ module Special
           if (eprime/=0. .and. bprime/=0.) then
             sigE1m_all=1./(6.*pi**2)*bprime/tanh(pi*abs(bprime)/eprime)
             sigB1m_all=0.
+            count_eb0_all=0.
           else
             sigE1m_all=0.
             sigB1m_all=0.
+            count_eb0_all=1.
           endif
         endif
 !
@@ -921,7 +932,7 @@ module Special
 !
 !  Compute e2m per pencil. It becomes the total e2m after calling prep_ode_right
 !  for each pencil. Also require either lrho_chi or lnoncollinear_EB
-!  In case of lnoncollinear_EB_aver, do the computation outside prep_ode_right.
+!  In case of lnoncollinear_EB_aver or lcollinear_EB_aver, do the computation outside prep_ode_right.
 !
       if ((lmagnetic .and. lem_backreact) .and. (lrho_chi)) then
         if (lnoncollinear_EB .or. lnoncollinear_EB_aver .or. &

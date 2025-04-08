@@ -15,7 +15,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED e2; edot2; el(3); a0; ga0(3); del2ee(3); curlE(3); BcurlE
-! PENCILS PROVIDED rhoe, divJ, divE, gGamma(3); sigE, sigB; eb
+! PENCILS PROVIDED rhoe, divJ, divE, gGamma(3); sigE, sigB; eb; count_eb0
 ! PENCILS PROVIDED boost; gam_EB; eprime; bprime; jprime
 ! PENCILS EXPECTED infl_phi, infl_dphi, gphi(3)
 !***************************************************************
@@ -119,6 +119,7 @@ module Special
   integer :: idiag_divJm=0      ! DIAG_DOC: $\left<\nab\Jv\right>$
   integer :: idiag_divEm=0      ! DIAG_DOC: $\left<\nab\Ev\right>$
   integer :: idiag_rhoem=0      ! DIAG_DOC: $\left<\rho_e\right>$
+  integer :: idiag_count_eb0=0  ! DIAG_DOC: $f_\mathrm{EB0}$
   integer :: idiag_mfpf=0       ! DIAG_DOC: $-f'/f$
   integer :: idiag_fppf=0       ! DIAG_DOC: $f''/f$
   integer :: idiag_afact=0      ! DIAG_DOC: $a$ (scale factor)
@@ -457,7 +458,6 @@ module Special
 !   24-nov-04/tony: coded
 !
       use Sub, only: grad, div, curl, del2v, dot2_mn, dot, levi_civita
-      use Diagnostics, only: sum_mn_name
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -510,18 +510,22 @@ module Special
             p%jprime=Chypercharge*echarge**3/(6.*pi**2*Hscript)*p%eprime*abs(p%bprime)/tanh(pi*abs(p%bprime)/p%eprime)
             p%sigE=sigE_prefactor*abs(p%jprime)*p%eprime/(p%gam_EB*p%boost)
             p%sigB=sigB_prefactor*abs(p%jprime)*p%eb/(p%eprime*p%gam_EB*p%boost)
+            p%count_eb0=0.
           elsewhere
             p%jprime=0.
             p%sigE=0.
             p%sigB=0.
+            p%count_eb0=1.
           endwhere
         elseif (lcollinear_EB) then
           p%eprime=sqrt(p%e2)
           p%bprime=sqrt(p%b2)
           where (p%eprime/=0. .and. p%bprime/=0.)
             p%sigE=sigE_prefactor*Chypercharge*echarge**3/(6.*pi**2*Hscript)*p%bprime/tanh(pi*abs(p%bprime)/p%eprime)
+            p%count_eb0=0.
           elsewhere
             p%sigE=0.
+            p%count_eb0=1.
           endwhere
           p%sigB=0.
         elseif (lnoncollinear_EB_aver .or. lcollinear_EB_aver) then
@@ -533,6 +537,9 @@ module Special
           p%sigE=sigEm_all
           p%sigB=sigBm_all
         endif
+!
+!  Now compute current, using any of the 4 expressions above.
+!
         do j=1,3
           p%jj_ohm(:,j)=p%sigE*p%el(:,j)+p%sigB*p%bb(:,j)
         enddo
@@ -794,12 +801,14 @@ module Special
         call sum_mn_name(p%BcurlE,idiag_BcurlEm)
   !     if (lsolve_chargedensity) then
         call sum_mn_name(p%rhoe,idiag_rhoem)
+        call sum_mn_name(p%count_eb0,idiag_count_eb0)
         call sum_mn_name(p%rhoe**2,idiag_rhoerms,lsqrt=.true.)
   !     endif
         if (idiag_divErms/=0) call sum_mn_name(p%divE**2,idiag_divErms,lsqrt=.true.)
         if (idiag_divJrms/=0) call sum_mn_name(p%divJ**2,idiag_divJrms,lsqrt=.true.)
         call sum_mn_name(p%divE,idiag_divEm)
         call sum_mn_name(p%divJ,idiag_divJm)
+        call sum_mn_name(p%count_eb0,idiag_count_eb0)  !XX
         call save_name(mfpf,idiag_mfpf)
         call save_name(fppf,idiag_fppf)
         call save_name(scl_factor_target,idiag_afact)
@@ -881,7 +890,7 @@ module Special
         idiag_edotrms=0; idiag_a0rms=0; idiag_grms=0; idiag_da0rms=0; idiag_BcurlEm=0
         idiag_mfpf=0; idiag_fppf=0; idiag_afact=0
         idiag_rhoerms=0; idiag_divErms=0; idiag_divJrms=0
-        idiag_rhoem=0; idiag_divEm=0; idiag_divJm=0; idiag_constrainteqn=0
+        idiag_rhoem=0; idiag_count_eb0=0; idiag_divEm=0; idiag_divJm=0; idiag_constrainteqn=0
         idiag_ebm=0; idiag_sigEm=0; idiag_sigBm=0; idiag_sigErms=0; idiag_sigBrms=0
         idiag_Johmrms=0; idiag_adphiBm=0; idiag_sigEE2m=0; idiag_sigBBEm=0
         idiag_eprimerms=0; idiag_bprimerms=0; idiag_jprimerms=0; idiag_gam_EBrms=0; 
@@ -914,6 +923,7 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'divEm',idiag_divEm)
         call parse_name(iname,cname(iname),cform(iname),'divJm',idiag_divJm)
         call parse_name(iname,cname(iname),cform(iname),'rhoem',idiag_rhoem)
+        call parse_name(iname,cname(iname),cform(iname),'count_eb0',idiag_count_eb0)
         call parse_name(iname,cname(iname),cform(iname),'sigEm',idiag_sigEm)
         call parse_name(iname,cname(iname),cform(iname),'sigBm',idiag_sigBm)
         call parse_name(iname,cname(iname),cform(iname),'ebm',idiag_ebm)
