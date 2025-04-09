@@ -3148,6 +3148,9 @@ module Viscosity
     !TP: needed for transpilation but name collides with hydro so will not work without
     !    module qualified name, so to not break handwritten DSL code have it on comment
     !call copy_addr(eth0z,p_par(106)) ! (mz)
+    call copy_addr(nu_r_reduce,p_par(107))
+    call copy_addr(lvisc_nu_reduce_ddr,p_par(108)) ! bool
+
     
     endsubroutine pushpars2c
 !***********************************************************************
