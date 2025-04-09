@@ -63,7 +63,6 @@ contains
       if (ltestscalar) str=trim(str)//', '//'testscalar'
       if (ltestfield) str=trim(str)//', '//'testfield'
       if (ltestflow) str=trim(str)//', '//'testflow'
-      if (lshear) str=trim(str)//', '//'shear'
       if (lradiation) str=trim(str)//', '//'radiation'
       if (ldetonate) str=trim(str)//', '//'detonate'
       if (lopacity) str=trim(str)//', '//'opacity'

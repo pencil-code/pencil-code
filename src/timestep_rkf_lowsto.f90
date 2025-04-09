@@ -159,7 +159,7 @@ module Timestep
 !
 !  Determine a lower bound for each variable j by which to normalise the error
 !
-      dt = dt_next
+      if (.not. lgpu) dt = dt_next
       if (.not.lgpu) then
         do j=1,mvar
           farraymin(j) = max(dt_ratio*maxval(abs(f(l1:l2,m1:m2,n1:n2,j))),dt_epsi)
@@ -270,51 +270,56 @@ module Timestep
 !
 !  Integrate operator split terms.
 !
-      call split_update(f(:,:,:,:))
+      if(.not. lgpu) then
+        call split_update(f(:,:,:,:))
 !
 !  Check how much the maximum error satisfies the defined accuracy threshold
 !
-      if (itorder>2.and.ldt) then
-        do j=1,mvar
-          do m=m1,m2; do n=n1,n2
-            select case (timestep_scaling(j))
-              case ('cons_frac_err')
-                !requires initial f state to be stored
-                !depricated
-                if (lroot.and.lfirst.and.it==1) call warning("time_step","recommend 'rel_err' vs 'cons_frac_error'")
-                scal = max(abs(f(l1:l2,m,n,j))+abs(df(l1:l2,m,n,j)),farraymin(j))
-                errmaxs = max(maxval(abs(errdf(:,m-nghost,n-nghost,j))/scal),errmaxs)
-              case ('rel_err')
-                !initial f state can be overwritten
-                scal = max(abs(f(l1:l2,m,n,j)),farraymin(j))
-                errmaxs = max(maxval(abs(errdf(:,m-nghost,n-nghost,j))/scal),errmaxs)
-              case ('abs_err')
-                !initial f state can be overwritten
-                if (lroot.and.lfirst.and.it==1) call warning("time_step","recommend 'rel_err' vs 'abs_err'")
-                errmaxs = max(maxval(abs(errdf(:,m-nghost,n-nghost,j))),errmaxs)
-              case ('none')
-                ! No error check
-            endselect
-          enddo; enddo
-        enddo
+        if (itorder>2.and.ldt) then
+          do j=1,mvar
+            do m=m1,m2; do n=n1,n2
+              select case (timestep_scaling(j))
+                case ('cons_frac_err')
+                  !requires initial f state to be stored
+                  !depricated
+                  if (lroot.and.lfirst.and.it==1) call warning("time_step","recommend 'rel_err' vs 'cons_frac_error'")
+                  scal = max(abs(f(l1:l2,m,n,j))+abs(df(l1:l2,m,n,j)),farraymin(j))
+                  errmaxs = max(maxval(abs(errdf(:,m-nghost,n-nghost,j))/scal),errmaxs)
+                case ('rel_err')
+                  !initial f state can be overwritten
+                  scal = max(abs(f(l1:l2,m,n,j)),farraymin(j))
+                  !TP: farraymin not yet implemented on GPU so use the following to test against GPU implementation
+                  !TP: unclear to me how important this minimum bounding is and would we need it on the GPU also?
+                  !scal = max(abs(f(l1:l2,m,n,j)),dt_epsi)
+                  errmaxs = max(maxval(abs(errdf(:,m-nghost,n-nghost,j))/scal),errmaxs)
+                case ('abs_err')
+                  !initial f state can be overwritten
+                  if (lroot.and.lfirst.and.it==1) call warning("time_step","recommend 'rel_err' vs 'abs_err'")
+                  errmaxs = max(maxval(abs(errdf(:,m-nghost,n-nghost,j))),errmaxs)
+                case ('none')
+                  ! No error check
+              endselect
+            enddo; enddo
+          enddo
 !
 ! Divide your maximum error by the required accuracy
 !
-        errmaxs=errmaxs/eps_rkf
+          errmaxs=errmaxs/eps_rkf
 !
-        call mpiallreduce_max(errmaxs,errmax,MPI_COMM_WORLD)
-        if (ldt) then
-          if (errmax > 1) then
-            ! Step above error threshold so decrease the next time step
-            dt_temp = safety*dt*errmax**dt_decrease
-            if (lroot.and.ip==6787) print*,"time_step: it",it,"dt",dt,&
-                 "to ",dt_temp,"at errmax",errmax
-            ! Don't decrease the time step by more than a factor of ten
-            dt_next = sign(max(abs(dt_temp), 0.1*abs(dt)), dt)
-          else
-            if (lroot.and.ip==6787) print*,"time_step increased: it",it,"dt",dt,&
-                 "to ",dt*errmax**dt_increase,"at errmax",errmax
-            dt_next = dt*errmax**dt_increase
+          call mpiallreduce_max(errmaxs,errmax,MPI_COMM_WORLD)
+          if (ldt) then
+            if (errmax > 1) then
+              ! Step above error threshold so decrease the next time step
+              dt_temp = safety*dt*errmax**dt_decrease
+              if (lroot.and.ip==6787) print*,"time_step: it",it,"dt",dt,&
+                   "to ",dt_temp,"at errmax",errmax
+              ! Don't decrease the time step by more than a factor of ten
+              dt_next = sign(max(abs(dt_temp), 0.1*abs(dt)), dt)
+            else
+              if (lroot.and.ip==6787) print*,"time_step increased: it",it,"dt",dt,&
+                   "to ",dt*errmax**dt_increase,"at errmax",errmax
+              dt_next = dt*errmax**dt_increase
+            endif
           endif
         endif
       endif

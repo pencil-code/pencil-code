@@ -919,7 +919,7 @@ extern "C" void substepGPU(int isubstep)
     AcReal dt1_{};
     if (!lcourant_dt)
     {
-      const AcReal maximum_error = acDeviceGetOutput(acGridGetDevice(), AC_maximum_error);
+      const AcReal maximum_error = acDeviceGetOutput(acGridGetDevice(), AC_maximum_error)/eps_rkf;
       AcReal dt_{};
       const AcReal dt_increase=-unit/(itorder+dtinc);
       const AcReal dt_decrease=-unit/(itorder-dtdec);
@@ -1399,12 +1399,15 @@ reloadConfig()
   acGridInit(mesh);
   acLogFromRootProc(rank, "Done setupConfig && acCompile\n");
   fflush(stdout);
+  fflush(stderr);
   //TP: this is important that we don't overwrite the output buffer in middle of a timestep when the output buffer holds some meaning!
   autotune_all_integration_substeps();
   //TP: restore the vtxbuf values before quitting grid
   loadFarray();
 #endif
   acLogFromRootProc(rank, "DONE initializeGPU\n");
+  fflush(stdout);
+  fflush(stderr);
 }
 /***********************************************************************************************/
 void loadFarray()
