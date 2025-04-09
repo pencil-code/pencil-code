@@ -1116,7 +1116,6 @@ void setupConfig(AcMeshInfo& config)
   modulepars(config);
   //TP: loads for non-cartesian derivatives
 #if TRANSPILATION
-  PCLoad(config, AC_shear,lshear);
   PCLoad(config, AC_inv_cyl_r,rcyl_mn1);
   PCLoad(config, AC_inv_r,r1_mn);
   PCLoad(config, AC_inv_sin_theta,sin1th);
@@ -1134,6 +1133,7 @@ void setupConfig(AcMeshInfo& config)
 #endif
 
   PCLoad(config, AC_rk_order, itorder);
+  PCLoad(config, AC_shear,lshear);
 
   if (lcartesian_coords)
   {
