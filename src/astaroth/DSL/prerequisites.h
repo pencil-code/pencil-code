@@ -13,6 +13,8 @@ struct PC_rhs_update
 	real max_advec
 }
 
+#include "PC_nghost.h"
+
 #define AC_mx AC_mlocal.x
 #define AC_my AC_mlocal.y
 #define AC_mz AC_mlocal.z
@@ -35,7 +37,6 @@ struct PC_rhs_update
 
 #include "../../../cparam_c.h"
 #include "../../../cparam_pencils.inc_c.h"
-#include "PC_nghost.h"
 
 #define AC_n1 n1
 #define AC_m1 m1
