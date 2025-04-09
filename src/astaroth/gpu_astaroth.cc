@@ -899,6 +899,7 @@ extern "C" void substepGPU(int isubstep)
 #endif
 
   acDeviceSetInput(acGridGetDevice(), AC_step_num,(PC_SUB_STEP_NUMBER) (isubstep-1));
+  if(lshear && isubstep == 1) acDeviceSetInput(acGridGetDevice(), AC_shear_delta_y,deltay);
   Device dev = acGridGetDevice();
   //TP: done in this more complex manner to ensure the actually integrated time and the time reported by Pencil agree
   //if we call set_dt after the first timestep there would be slight shift in dt what Pencil sees and what is actually used for time integration
@@ -1124,6 +1125,7 @@ void setupConfig(AcMeshInfo& config)
   modulepars(config);
   //TP: loads for non-cartesian derivatives
 #if TRANSPILATION
+  PCLoad(config, AC_shear,lshear);
   PCLoad(config, AC_inv_cyl_r,rcyl_mn1);
   PCLoad(config, AC_inv_r,r1_mn);
   PCLoad(config, AC_inv_sin_theta,sin1th);
@@ -1338,6 +1340,8 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint)
   //TP: important to do before autotuning
   acDeviceSetInput(acGridGetDevice(), AC_step_num,(PC_SUB_STEP_NUMBER)0);
   acDeviceSetInput(acGridGetDevice(), AC_dt,dt);
+  acDeviceSetInput(acGridGetDevice(), AC_shear_delta_y,deltay);
+
   if (ltest_bcs) testBCs();
   autotune_all_integration_substeps();
   if (rank==0 && ldebug) printf("memusage before store config= %f MBytes\n", memusage()/1024.);
@@ -1345,8 +1349,11 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint)
   if (rank==0 && ldebug) printf("memusage after store config= %f MBytes\n", memusage()/1024.);
   acGridSynchronizeStream(STREAM_ALL);
   if (rank==0 && ldebug) printf("memusage after store synchronize stream= %f MBytes\n", memusage()/1024.);
+  
+  const auto train_graph = acGetDSLTaskGraph(train_prepare);
   acLogFromRootProc(rank, "DONE initializeGPU\n");
   fflush(stdout);
+
   constexpr AcReal unit = 1.0;
   dt1_interface = unit/dt;
 }
@@ -1494,6 +1501,7 @@ has_nans(AcMesh mesh_in)
       {
         for (size_t ivar = 0; ivar < NUM_VTXBUF_HANDLES; ivar++)
         {
+          if (mesh_in.vertex_buffer[ivar] == NULL) continue;
           if (isnan(mesh_in.vertex_buffer[ivar][DEVICE_VTXBUF_IDX(i, j, k)]))
           {
             res = true;
@@ -1703,7 +1711,8 @@ testBCs()
   				acGridTaskGraphHasPeriodicBoundcondsY(rhs) && 
   				acGridTaskGraphHasPeriodicBoundcondsZ(rhs) 
 				;
-  if (all_periodic) return;
+  if (all_periodic && !lshear) return;
+  if(lshear) acLogFromRootProc(rank,"testBCS: deltay: %7e\n",deltay);
   auto bcs = acGetDSLTaskGraph(boundconds);
 
   AcMesh tmp_mesh_to_store;
@@ -1720,7 +1729,7 @@ testBCs()
 
 
   int ivar1 = 1;
-  int ivar2 = NUM_VTXBUF_HANDLES;
+  int ivar2 = mvar;
   boundconds_x_c(mesh.vertex_buffer[0],&ivar1,&ivar2);
   boundconds_y_c(mesh.vertex_buffer[0],&ivar1,&ivar2);
   boundconds_z_c(mesh.vertex_buffer[0],&ivar1,&ivar2);
@@ -1749,7 +1758,7 @@ testBCs()
   int3 largest_diff_point{};
   //AcReal epsilon = 0.0;
 
-  auto skip_x = acGridTaskGraphHasPeriodicBoundcondsX(rhs) || false;
+  auto skip_x = (acGridTaskGraphHasPeriodicBoundcondsX(rhs) && !lshear) || false;
   auto skip_y = acGridTaskGraphHasPeriodicBoundcondsY(rhs) || false;
   auto skip_z = acGridTaskGraphHasPeriodicBoundcondsZ(rhs) || false;
 
@@ -1788,7 +1797,7 @@ testBCs()
 	  )continue;
 	  //if (i < NGHOST | i > dims.n1.x  || j < NGHOST || j > dims.n1.y) continue;
 	++num_of_points;
-        for (int ivar = 0; ivar < NUM_VTXBUF_HANDLES; ivar++)
+        for (int ivar = 0; ivar < mvar; ivar++)
         {
           AcReal out_val = mesh_to_copy.vertex_buffer[ivar][DEVICE_VTXBUF_IDX(i, j, k)];
           AcReal true_val = mesh.vertex_buffer[ivar][DEVICE_VTXBUF_IDX(i, j, k)];
@@ -1834,7 +1843,7 @@ testBCs()
   passed &= !has_nans(mesh);
   if (!passed)
   {
-  	for (int ivar=0;ivar<NUM_VTXBUF_HANDLES;ivar++)
+  	for (int ivar=0;ivar<mvar;ivar++)
 	{
     		acLogFromRootProc(0,"ratio of values wrong for field: %s\t %f\n",field_names[ivar],(double)num_of_points_where_different[ivar]/num_of_points);
 		if (different_in[ivar][bot_x]) acLogFromRootProc(0,"different in BOT_X\n");
@@ -1857,6 +1866,7 @@ testBCs()
     	exit(EXIT_FAILURE);
   }
   fflush(stdout);
+
   acHostMeshDestroy(&mesh_to_copy);
   acHostMeshCopyVertexBuffers(tmp_mesh_to_store,mesh);
   acHostMeshDestroy(&tmp_mesh_to_store);

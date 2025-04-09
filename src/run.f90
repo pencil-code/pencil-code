@@ -1503,6 +1503,8 @@ call copy_addr(ascale,p_par(1193))
 call copy_addr(iey,p_par(1194)) ! int
 call copy_addr(iez,p_par(1195)) ! int
 call copy_addr(icool_prof,p_par(1196)) ! int
+call copy_addr(deltay,p_par(1197))
+
 
 endsubroutine pushpars2c
 !***********************************************************************
