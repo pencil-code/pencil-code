@@ -38,7 +38,6 @@ has_nans(AcMesh mesh_in);
 #endif
 #include "../cparam_c.h"
 
-
 //TP: these are ugly but for the moment we live with these
 #if TRANSPILATION
   #define nu nu__mod__viscosity
@@ -78,7 +77,6 @@ has_nans(AcMesh mesh_in);
   #define cdtv  cdtv__mod__cdata
   #define cdtv2 cdtv2__mod__cdata
   #define cdtv3 cdtv3__mod__cdata
-
 
   #define lcylindrical_coords lcylindrical_coords__mod__cdata
   #define lspherical_coords   lspherical_coords__mod__cdata
@@ -391,41 +389,44 @@ extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
   acLogFromRootProc(rank,"abs range: %.7e-%7e\n",(double)min_abs_value,(double)max_abs_value);
   fflush(stdout);
 }
-
+/***********************************************************************************************/
 AcReal
 to_real(void* param, const char* name)
 {
-	if(param == NULL)
+	if (param == NULL)
 	{
 		fprintf(stderr,"Passed NULL to pushparsc: %s!!\n",name);
 		abort();
 	}
 	return *((AcReal*)param);
 }
+/***********************************************************************************************/
 int
 to_int(void* param, const char* name)
 {
-	if(param == NULL)
+	if (param == NULL)
 	{
 		fprintf(stderr,"Passed NULL to pushparsc: %s!!\n",name);
 		abort();
 	}
 	return *((int*)param);
 }
+/***********************************************************************************************/
 bool
 to_bool(void* param, const char* name)
 {
-	if(param == NULL)
+	if (param == NULL)
 	{
 		fprintf(stderr,"Passed NULL to pushparsc: %s!!\n",name);
 		abort();
 	}
 	return *((bool*)param);
 }
+/***********************************************************************************************/
 int3
 to_int3(void* param, const char* name)
 {
-	if(param == NULL)
+	if (param == NULL)
 	{
 		fprintf(stderr,"Passed NULL to pushparsc: %s!!\n",name);
 		abort();
@@ -433,10 +434,11 @@ to_int3(void* param, const char* name)
         int* arr = (int*)param;
         return (int3){arr[0],arr[1],arr[2]};
 }
+/***********************************************************************************************/
 AcReal3
 to_real3(void* param, const char* name)
 {
-	if(param == NULL)
+	if (param == NULL)
 	{
 		fprintf(stderr,"Passed NULL to pushparsc: %s!!\n",name);
 		abort();
@@ -444,10 +446,11 @@ to_real3(void* param, const char* name)
         AcReal* arr = (AcReal*)param;
         return (AcReal3){arr[0],arr[1],arr[2]};
 }
+/***********************************************************************************************/
 AcBool3
 to_bool3(void* param, const char* name)
 {
-	if(param == NULL)
+	if (param == NULL)
 	{
 		fprintf(stderr,"Passed NULL to pushparsc: %s!!\n",name);
 		abort();
@@ -455,7 +458,7 @@ to_bool3(void* param, const char* name)
         bool* arr = (bool*)param;
         return (AcBool3){arr[0],arr[1],arr[2]};
 }
-
+/***********************************************************************************************/
 
 __thread int tp_int;
 typedef void (*rangefunc)(const int a, const int b);
@@ -799,6 +802,7 @@ visc_get_max_diffus()
 	  {0.0,0.0,0.0};
 #endif
 }
+/***********************************************************************************************/
 std::array<AcReal,3>
 magnetic_get_max_diffus()
 {
@@ -809,6 +813,7 @@ magnetic_get_max_diffus()
 	  {0.0,0.0,0.0};
 #endif
 }
+/***********************************************************************************************/
 std::array<AcReal,3>
 energy_get_max_diffus()
 {
@@ -820,6 +825,7 @@ energy_get_max_diffus()
 	  {0.0,0.0,0.0};
 #endif
 }
+/***********************************************************************************************/
 std::array<AcReal,3>
 elem_wise_max(const std::array<AcReal,3>& a,const std::array<AcReal,3>& b,const std::array<AcReal,3>& c)
 {
@@ -830,6 +836,7 @@ elem_wise_max(const std::array<AcReal,3>& a,const std::array<AcReal,3>& b,const 
 	  std::max(std::max(a[2],b[2]),c[2])
 	};
 }
+/***********************************************************************************************/
 
 AcReal max_diffus(AcReal );
 /***********************************************************************************************/
@@ -976,7 +983,7 @@ extern "C" void substepGPU(int isubstep)
   return;
 }
 /***********************************************************************************************/
-/**
+/*
 extern "C" void testBcKernel(AcReal *farray_in, AcReal *farray_truth)
 {
   AcMesh mesh_true;
@@ -1102,7 +1109,7 @@ extern "C" void testBcKernel(AcReal *farray_in, AcReal *farray_truth)
   }
   return;
 }
-**/
+*/
 /***********************************************************************************************/
 extern "C" void registerGPU()
 {
@@ -1119,7 +1126,7 @@ extern "C" void registerGPU()
 #else
   AcResult res = acCheckDeviceAvailability();
 
-  if(res == AC_FAILURE) 
+  if (res == AC_FAILURE) 
   {
 	  fprintf(stderr,"No devices!\n");
 	  exit(EXIT_FAILURE);
@@ -1136,10 +1143,12 @@ extern "C" void initGPU()
 /***********************************************************************************************/
 #define PCLoad acPushToConfig
 MPI_Comm comm_pencil = MPI_COMM_NULL;
+/***********************************************************************************************/
 void modulepars(AcMeshInfo& config){
   // Enter basic parameters in config.
   #include "PC_modulepars.h"
 }
+/***********************************************************************************************/
 void setupConfig(AcMeshInfo& config)
 { 
   modulepars(config);
@@ -1212,7 +1221,7 @@ void setupConfig(AcMeshInfo& config)
   acHostUpdateParams(&config); 
   config.runtime_compilation_log_dst = "ac_compilation.log";
 }
-
+/***********************************************************************************************/
 #undef x
 #undef y
 #undef z
@@ -1294,25 +1303,21 @@ extern "C" void copyVBApointers(AcReal **in, AcReal **out)
   acDeviceGetVertexBufferPtrs(acGridGetDevice(),VertexBufferHandle(0),in,out);
 }
 /***********************************************************************************************/
-void
-testBCs();     // forward declaration
-/***********************************************************************************************/
+void testBCs();     // forward declaration
 extern "C" void loadFarray(); // forward declaration
-/***********************************************************************************************/
 extern "C" void reloadConfig(); // forward declaration
-
+/***********************************************************************************************/
 void
 autotune_all_integration_substeps()
 {
   for (int i = 0; i < num_substeps; ++i)
   {
   	acDeviceSetInput(acGridGetDevice(), AC_step_num,(PC_SUB_STEP_NUMBER)i);
-if (rank==0 && ldebug) printf("memusage before GetOptimizedDSLTaskGraph= %f MBytes\n", memusage()/1024.);
+        if (rank==0 && ldebug) printf("memusage before GetOptimizedDSLTaskGraph= %f MBytes\n", memusage()/1024.);
 	acGetOptimizedDSLTaskGraph(AC_rhs);
-if (rank==0 && ldebug) printf("memusage after GetOptimizedDSLTaskGraph= %f MBytes\n", memusage()/1024.);
+        if (rank==0 && ldebug) printf("memusage after GetOptimizedDSLTaskGraph= %f MBytes\n", memusage()/1024.);
   }
 }
-
 /***********************************************************************************************/
 extern "C" void initializeGPU(AcReal *farr, int comm_fint)
 {
@@ -1341,7 +1346,7 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint)
       }
     }
   }
-if (rank==0 && ldebug) printf("memusage after pointer assign= %f MBytes\n", memusage()/1024.);
+  if (rank==0 && ldebug) printf("memusage after pointer assign= %f MBytes\n", memusage()/1024.);
 #if AC_RUNTIME_COMPILATION
 #include "cmake_options.h"
   acCompile(cmake_options,mesh.info);
@@ -1355,9 +1360,9 @@ if (rank==0 && ldebug) printf("memusage after pointer assign= %f MBytes\n", memu
   fflush(stdout);
 #endif
   checkConfig(mesh.info);
-if (rank==0 && ldebug) printf("memusage grid_init= %f MBytes\n", memusage()/1024.);
+  if (rank==0 && ldebug) printf("memusage grid_init= %f MBytes\n", memusage()/1024.);
   acGridInit(mesh);
-if (rank==0 && ldebug) printf("memusage after grid_init= %f MBytes\n", memusage()/1024.);
+  if (rank==0 && ldebug) printf("memusage after grid_init= %f MBytes\n", memusage()/1024.);
 
   mesh.info = acGridDecomposeMeshInfo(mesh.info);
   //TP: important to do before autotuning
@@ -1365,11 +1370,11 @@ if (rank==0 && ldebug) printf("memusage after grid_init= %f MBytes\n", memusage(
   acDeviceSetInput(acGridGetDevice(), AC_dt,dt);
   if (ltest_bcs) testBCs();
   autotune_all_integration_substeps();
-if (rank==0 && ldebug) printf("memusage before store config= %f MBytes\n", memusage()/1024.);
+  if (rank==0 && ldebug) printf("memusage before store config= %f MBytes\n", memusage()/1024.);
   acStoreConfig(acDeviceGetLocalConfig(acGridGetDevice()), "PC-AC.conf");
-if (rank==0 && ldebug) printf("memusage after store config= %f MBytes\n", memusage()/1024.);
+  if (rank==0 && ldebug) printf("memusage after store config= %f MBytes\n", memusage()/1024.);
   acGridSynchronizeStream(STREAM_ALL);
-if (rank==0 && ldebug) printf("memusage after store synchronize stream= %f MBytes\n", memusage()/1024.);
+  if (rank==0 && ldebug) printf("memusage after store synchronize stream= %f MBytes\n", memusage()/1024.);
   acLogFromRootProc(rank, "DONE initializeGPU\n");
   fflush(stdout);
   constexpr AcReal unit = 1.0;
@@ -1530,6 +1535,7 @@ has_nans(AcMesh mesh_in)
   }
   return res;
 }
+/***********************************************************************************************/
 AcReal max_diffus(AcReal maxchi_dyn)
 {
   AcReal3 dxyz_vals = get_dxyzs();
@@ -1890,10 +1896,10 @@ extern "C" void
 gpuSetDt()
 {
 	acGridSynchronizeStream(STREAM_ALL);
-	if(!lcourant_dt)
+	if (!lcourant_dt)
 	{
-		fprintf(stderr,"gpuSetDt works only for Courant timestep!!\n");
-		exit(EXIT_FAILURE);
+       	  fprintf(stderr,"gpuSetDt works only for Courant timestep!!\n");
+	  exit(EXIT_FAILURE);
 	}
 	//TP: not needed but for extra safety
   	acDeviceSetInput(acGridGetDevice(), AC_step_num, (PC_SUB_STEP_NUMBER) 0);
