@@ -1519,7 +1519,7 @@ call copy_addr(iaztestpq,p_par(1127)) ! int
 call copy_addr(iaxtest,p_par(1128)) ! int
 call copy_addr(iaytest,p_par(1129)) ! int
 call copy_addr(iaztest,p_par(1130)) ! int
-call copy_addr(iyytest,p_par(1131)) ! int
+call copy_addr(iaytest,p_par(1131)) ! int
 call copy_addr(iuztestpq,p_par(1132)) ! int
 call copy_addr(ihhtestpq,p_par(1133)) ! int
 
