@@ -104,6 +104,9 @@ has_nans(AcMesh mesh_in);
   #define lxyz                   lxyz__mod__cdata
   #define lac_sparse_autotuning  lac_sparse_autotuning__mod__cdata
   #define ldebug ldebug__mod__cdata
+  
+  #define deltay  deltay__mod__cdata
+  #define eps_rkf eps_rkf__mod__cdata
 
 #endif
 /***********************************************************************************************/
