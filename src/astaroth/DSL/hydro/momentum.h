@@ -65,6 +65,13 @@ else{
 #endif
     if (step_num == 0 && ldt && lcourant_dt)
     {
-    	reduce_max(sum(abs(value(UU))/AC_ds) + sqrt(advec2), AC_maxadvec)
+	max_advec = sum(abs(value(UU))/AC_ds) + sqrt(advec2)
+#if LSHEAR
+	if(lshear)
+	{
+		max_advec += abs(uy0[vertexIdx.x-NGHOST]*dy_1[vertexIdx.y])
+	}
+#endif
+    	reduce_max(max_advec, AC_maxadvec)
     }
     return rhs 
