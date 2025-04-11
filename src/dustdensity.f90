@@ -1486,6 +1486,11 @@ module Dustdensity
                 enddo; enddo
               endif
               call del6(f,iglobal_nd,p%del6nd(:,k))
+              !TP: Given the above formulation is incorrect 
+              !    (one should not assume the halos to be up to date at least without setting early_finalize)
+              !    could we replace it with the one below?
+              !    Would make GPU porting easier
+              !call del6_exp(f,ilnnd(k),p%del6nd(:,k))
             endif
           else
             call del6(f,ind(k),p%del6nd(:,k))
