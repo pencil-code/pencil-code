@@ -1194,7 +1194,7 @@ void setupConfig(AcMeshInfo& config)
   //dev->output.real_outputs[AC_maxchi]=0.;
 #endif
   acHostUpdateParams(&config); 
-  config.runtime_compilation_log_dst = "ac_compilation.log";
+  if(!ltraining) config.runtime_compilation_log_dst = "ac_compilation.log";
 }
 /***********************************************************************************************/
 #undef x
