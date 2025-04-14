@@ -1311,7 +1311,6 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint)
       mesh.vertex_buffer[VertexBufferHandle(i)] = &farr[offset];
       offset += mw;
     }
-//printf("&farray[offset]= %p \n",&farr[offset]);fflush(stdout);
 
     for (int i = 0; i < mfarray; ++i)
     {
@@ -1319,6 +1318,17 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint)
       {
         mesh.vertex_buffer[maux_vtxbuf_index[i]] = &farr[mw*i];
       }
+    }
+    //TP: for now for training we have all slots filled since we might want to read TAU components to the host for calculating validation error
+    if(ltraining)
+    {
+    	for(int i = 0; i < NUM_VTXBUF_HANDLES; ++i)
+    	{
+	   if(mesh.vertex_buffer[i] == NULL)
+	   {
+    	    	mesh.vertex_buffer[i] = (AcReal*)malloc(sizeof(AcReal)*mw);
+	   }
+    	}
     }
   }
   if (rank==0 && ldebug) printf("memusage after pointer assign= %f MBytes\n", memusage()/1024.);
@@ -1382,7 +1392,9 @@ extern "C" void copyFarray(AcReal* f)
   //acDeviceStoreMesh(acGridGetDevice(), STREAM_DEFAULT, &mesh);
   //TP: for now only copy the advanced fields back
   //TODO: should auxiliaries needed on the GPU like e.g. Shock be copied? They can always be recomputed on the host if needed
-  for (int i = 0; i < mvar; ++i)
+  //If doing training we read all since we might want TAU components to calculate e.g. validation error
+  const int end = ltraining ? NUM_VTXBUF_HANDLES : mvar;
+  for (int i = 0; i < end; ++i)
   {
 	  acDeviceStoreVertexBuffer(acGridGetDevice(),STREAM_DEFAULT,VertexBufferHandle(i),&mesh);
   }
