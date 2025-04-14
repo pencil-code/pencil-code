@@ -25,6 +25,22 @@ contains
 
     endsubroutine initialize_GPU
 !**************************************************************************
+    subroutine read_gpu_run_pars(iostat)
+!
+      integer, intent(out) :: iostat
+!
+      iostat = 0
+!
+    endsubroutine read_gpu_run_pars
+!***********************************************************************
+    subroutine write_gpu_run_pars(unit)
+!
+      integer, intent(in) :: unit
+!
+      call keep_compiler_quiet(unit)
+!
+    endsubroutine write_gpu_run_pars
+!***********************************************************************
     subroutine gpu_init
     endsubroutine gpu_init
 !**************************************************************************
