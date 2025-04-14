@@ -1,8 +1,9 @@
 #!/bin/bash
 #export PENCIL_HOME=/users/mreinha
+CWD=$PWD
 cd $PENCIL_HOME
 source sourceme.sh
-cd $PENCIL_HOME/samples/conv-slab-torch
+cd $CWD
 export PATH=${PATH}:$PENCIL_HOME/bin:$PENCIL_HOME/utils:$PENCIL_HOME/utils/axel:$PENCIL_HOME/utils/xiangyu:$PENCIL_HOME/remesh/bin:$PENCIL_HOME/src/scripts
 export PATH=${PATH}:./src/astaroth:./src/astaroth/submodule/build/src/core:./src/astaroth/submodule/build/src/core/kernels
 export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:./src/astaroth:./src/astaroth/submodule/build/src/core:./src/astaroth/submodule/build/src/core/kernels
