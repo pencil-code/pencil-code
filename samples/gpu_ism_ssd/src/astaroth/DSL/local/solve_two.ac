@@ -27,10 +27,10 @@ Kernel twopass_solve_intermediate(PC_SUB_STEP_NUMBER step_num, real dt) {
   df_rho = drho_dt(step_num)
   df_ss  = denergy_dt(step_num)
 
-  uu_error  = rk4_error(df_uu  ,step_num,dt)
-  aa_error  = rk4_error(df_aa  ,step_num,dt)
-  rho_error = rk4_error(df_rho ,step_num,dt)
-  ss_error  = rk4_error(df_ss  ,step_num,dt)
+  uu_error  = rkf4_error(df_uu  ,step_num,dt)
+  aa_error  = rkf4_error(df_aa  ,step_num,dt)
+  rho_error = rkf4_error(df_rho ,step_num,dt)
+  ss_error  = rkf4_error(df_ss  ,step_num,dt)
  
   maximum_error = 0.0
   //TP: nothing to cumulate for the first substep
@@ -46,10 +46,10 @@ Kernel twopass_solve_intermediate(PC_SUB_STEP_NUMBER step_num, real dt) {
   //Last step is skipped since we want the beta version to finally end up in the 'proper' registers
   if(step_num == 0)
   {
-        write(BETA_UU ,rk4_beta(UU ,df_uu ,step_num,dt))
-        write(BETA_AA ,rk4_beta(AA ,df_aa ,step_num,dt))
-        write(BETA_RHO,rk4_beta(RHO,df_rho,step_num,dt))
-        write(BETA_SS ,rk4_beta(SS ,df_ss ,step_num,dt))
+        write(BETA_UU ,rkf4_beta(UU ,df_uu ,step_num,dt))
+        write(BETA_AA ,rkf4_beta(AA ,df_aa ,step_num,dt))
+        write(BETA_RHO,rkf4_beta(RHO,df_rho,step_num,dt))
+        write(BETA_SS ,rkf4_beta(SS ,df_ss ,step_num,dt))
 
 	//TP: not needed if one directly uses dt_epsi
 	reduce_max(max(AC_dt_ratio*abs(UU.x),AC_dt_epsi), uux_initial_max)
@@ -65,20 +65,20 @@ Kernel twopass_solve_intermediate(PC_SUB_STEP_NUMBER step_num, real dt) {
   }
   else if(step_num != 4)
   {
-        write(BETA_UU ,rk4_beta(BETA_UU ,df_uu ,step_num,dt))
-        write(BETA_AA ,rk4_beta(BETA_AA ,df_aa ,step_num,dt))
-        write(BETA_RHO,rk4_beta(BETA_RHO,df_rho,step_num,dt))
-        write(BETA_SS ,rk4_beta(BETA_SS ,df_ss ,step_num,dt))
+        write(BETA_UU ,rkf4_beta(BETA_UU ,df_uu ,step_num,dt))
+        write(BETA_AA ,rkf4_beta(BETA_AA ,df_aa ,step_num,dt))
+        write(BETA_RHO,rkf4_beta(BETA_RHO,df_rho,step_num,dt))
+        write(BETA_SS ,rkf4_beta(BETA_SS ,df_ss ,step_num,dt))
   }
   //Until the last step the 'proper' registers hold the alpha updates
   //Except in the last one we overwrite them with the beta update
   //No need to write the error out for the last substep
   if(step_num != 4)
   {
-        write(UU ,rk4_alpha(UU ,df_uu ,step_num,dt))
-        write(AA ,rk4_alpha(AA ,df_aa ,step_num,dt))
-        write(RHO,rk4_alpha(RHO,df_rho,step_num,dt))
-        write(SS ,rk4_alpha(SS ,df_ss ,step_num,dt))
+        write(UU ,rkf4_alpha(UU ,df_uu ,step_num,dt))
+        write(AA ,rkf4_alpha(AA ,df_aa ,step_num,dt))
+        write(RHO,rkf4_alpha(RHO,df_rho,step_num,dt))
+        write(SS ,rkf4_alpha(SS ,df_ss ,step_num,dt))
 
         write(ERROR_UU, uu_error)
         write(ERROR_AA, aa_error)
@@ -87,10 +87,10 @@ Kernel twopass_solve_intermediate(PC_SUB_STEP_NUMBER step_num, real dt) {
   }
   else
   {
-        uu_final = rk4_beta(BETA_UU ,df_uu ,step_num,dt)
-        aa_final = rk4_beta(BETA_AA ,df_aa ,step_num,dt)
-        rho_final = rk4_beta(BETA_RHO,df_rho,step_num,dt)
-        ss_final = rk4_beta(BETA_SS ,df_ss ,step_num,dt)
+        uu_final  = rkf4_beta(BETA_UU ,df_uu ,step_num,dt)
+        aa_final  = rkf4_beta(BETA_AA ,df_aa ,step_num,dt)
+        rho_final = rkf4_beta(BETA_RHO,df_rho,step_num,dt)
+        ss_final  = rkf4_beta(BETA_SS ,df_ss ,step_num,dt)
 
 	write(UU ,uu_final)
 	write(AA ,aa_final)
