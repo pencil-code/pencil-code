@@ -1318,6 +1318,17 @@ void setupConfig(AcMeshInfo& config)
 #endif
   acHostUpdateParams(&config); 
   if(!ltraining) config.runtime_compilation_log_dst = "ac_compilation.log";
+  char cwd[9000];
+  cwd[0] = '\0';
+  const char* err = getcwd(cwd, sizeof(cwd));
+  if(err == NULL) 
+  {
+	  fprintf(stderr,"Was not able to get cwd!\n");
+	  exit(EXIT_FAILURE);
+  }
+  char build_path[18000];
+  sprintf(build_path,"%s/src/astaroth/submodule/build",cwd);
+  config.runtime_compilation_build_path = strdup(build_path);
 }
 /***********************************************************************************************/
 #undef x
@@ -1458,7 +1469,7 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint)
 #if AC_RUNTIME_COMPILATION
 #include "cmake_options.h"
   acCompile(cmake_options,mesh.info);
-  acLoadLibrary(rank == 0 ? stderr : NULL);
+  acLoadLibrary(rank == 0 ? stderr : NULL,mesh.info);
   acCheckDeviceAvailability();
   acLogFromRootProc(rank, "Done setupConfig && acCompile\n");
   fflush(stdout);
@@ -1539,7 +1550,7 @@ reloadConfig()
   acCloseLibrary();
 #include "cmake_options.h"
   acCompile(cmake_options,mesh.info);
-  acLoadLibrary(rank == 0 ? stderr : NULL);
+  acLoadLibrary(rank == 0 ? stderr : NULL,mesh.info);
   acGridInit(mesh);
   acLogFromRootProc(rank, "Done setupConfig && acCompile\n");
   fflush(stdout);
