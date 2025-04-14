@@ -1281,6 +1281,7 @@ module Magnetic
       call put_shared_variable('lresi_eta_tdep', lresi_eta_tdep)
       if (lrun) call put_shared_variable('eta_tdep',eta_tdep)
       call put_shared_variable('eta', eta)
+      call put_shared_variable('lohm_evolve', lohm_evolve)
       call put_shared_variable('loverride_ee', loverride_ee)
 !
 !  Share several parameters for Alfven limiter with module Shock.
@@ -2734,6 +2735,13 @@ module Magnetic
       if (lconservative) then
         f(:,:,:,irho)=f(:,:,:,irho)+.5*B_ext2
         if (lroot) print*,'added to T00: .5*B_ext2= ', .5*B_ext2
+      endif
+!
+!  Initialize current to zero, if defined.
+!
+      if (lohm_evolve) then
+print*,'AXEL99, ijx,ijz', ijx,ijz
+        f(l1:l2,m,n,ijx:ijz)=f(l1:l2,m,n,ijx:ijz)+1e22
       endif
 !
     endsubroutine init_aa
@@ -4377,6 +4385,7 @@ module Magnetic
 !  Whether it works with lohm_evolve needs to be checked.
 !
             if (lresi_eta_tdep .or. lresi_eta_xtdep .or. eta/=0.) then
+print*,'AXEL: should not be here (eta) ... '
               if (lohm_evolve) then
                 p%jj_ohm=f(l1:l2,m,n,ijx:ijz)
               else
@@ -6157,7 +6166,9 @@ module Magnetic
 !
 !  Evolve current density.
 !
+      if (lresi_eta_tdep .or. lresi_eta_xtdep .or. eta/=0.) then
       if (lohm_evolve) then
+print*,'AXEL2: should not be here (eta) ... '
         if (tau_jj>0) then
           tau1_jj=1./tau_jj
           do j=1,3
@@ -6174,6 +6185,7 @@ module Magnetic
         else
           call fatal_error('daa_dt','tau_jj must be finite and positive')
         endif
+      endif
       endif
 !
 !  Do diagnostics, which includes also slices.
