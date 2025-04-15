@@ -59,6 +59,7 @@ module Param_IO
   use Timeavg
   use Training, only: read_training_run_pars, write_training_run_pars
   use Viscosity
+  use GPU, only: read_gpu_run_pars, write_gpu_run_pars
 !
   implicit none
 !
@@ -230,7 +231,7 @@ module Param_IO
       uu_fft3d, oo_fft3d, bb_fft3d, jj_fft3d, uu_xkyz, oo_xkyz, bb_xkyz, jj_xkyz, &
       uu_kx0z, oo_kx0z, bb_kx0z, jj_kx0z, bb_k00z, ee_k00z, gwT_fft3d, &
       Em_specflux, Hm_specflux, Hc_specflux, density_scale_factor, radius_diag, &
-      lmorton_curve, ltest_bcs,lac_sparse_autotuning,lcpu_timestep_on_gpu,lsuppress_parallel_reductions, &
+      lmorton_curve, lsuppress_parallel_reductions, &
       shared_mem_name, lupdate_cvs, lread_oldsnap_nocoolprof
 !
   namelist /IO_pars/ &
@@ -622,6 +623,7 @@ module Param_IO
         call read_namelist(read_python_run_pars         ,'python'            ,lpython)
         call read_namelist(read_implicit_diff_run_pars  ,'implicit_diffusion',limplicit_diffusion)
         call read_namelist(read_training_run_pars       ,'training'          ,ltraining)
+        call read_namelist(read_gpu_run_pars            ,'gpu'               ,lgpu)
 !
         call read_all_particles_run_pars
 !
@@ -990,6 +992,7 @@ module Param_IO
           call write_python_run_pars(unit)
           call write_implicit_diff_run_pars(unit)
           call write_training_run_pars(unit)
+          call write_gpu_run_pars(unit)
 !
           call write_all_particles_run_pars(unit)
 !

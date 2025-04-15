@@ -384,13 +384,13 @@ outer:  do ikz=1,nz
 !
     endsubroutine write_power_spectrum_run_pars
 !***********************************************************************
-    subroutine power(f,sp,iapn_index)
+    subroutine power_parallel_portion(f,sp,iapn_index,spectrum,a1,b1,nk)
+
 !
-!  Calculate power spectra (on spherical shells) of the variable
-!  specified by `sp'.
-!  Since this routine is only used at the end of a time step,
-!  one could in principle reuse the df array for memory purposes.
+! This subroutine is needed since OpenMP works weirdly with the ivec index, declaring it inside
+! the parallel region forces it to be private
 !
+
       use Fourier, only: fft_xyz_parallel
       use Mpicomm, only: mpireduce_sum
       use General, only: itoa
@@ -400,42 +400,14 @@ outer:  do ikz=1,nz
   real, dimension (mx,my,mz,mfarray) :: f
   character (len=*) :: sp
   integer, intent(in), optional :: iapn_index
-
-! integer, pointer :: inp,irhop,iapn(:)
+  real, dimension(:) :: spectrum
+  real, dimension(nx,ny,nz) :: a1,b1
   integer :: nk
-  integer :: i,k,ikx,iky,ikz,im,in,ivec
-  real, save, dimension(nx,ny,nz) :: a1,b1
-  real :: k2
-  real, dimension(:), save, allocatable :: spectrum,spectrum_sum
-  character(LEN=fnlen) :: filename
-  logical :: lwrite_ks
-  !
-  !  identify version
-  !
-  if (lroot .AND. ip<10) call svn_id( &
-       "$Id$")
-  !
-  if (ltrue_binning) then
-    nk=nk_truebin
-  else
-    nk=nk_xyz
-  endif
-  if(.not. allocated(spectrum)) allocate(spectrum(nk),spectrum_sum(nk))
 
-  spectrum=0.
-  !
-  !  In fft, real and imaginary parts are handled separately.
-  !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
-  !  Added power spectra of rho^(1/2)*u and rho^(1/3)*u.
-  !
-!if (lroot) print*, 'in power vor parallel sp='//sp, num_helper_threads, thread_id
-!flush(6)
-!$omp parallel num_threads(num_helper_threads) private(ivec,k,k2) reduction(+:spectrum) &
-!$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
-!$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
-!$ thread_id = omp_get_thread_num()+1
+  integer :: ivec,ikx,iky,ikz,k,k2
 
-  do ivec=1,3
+      do ivec=1,3
+
     if (trim(sp)=='u') then
       if (iuu==0) call fatal_error('power','iuu=0')
       !$omp workshare
@@ -515,13 +487,66 @@ outer:  do ikz=1,nz
          enddo
        enddo
      endif
+
  enddo !(loop over ivec)
+    endsubroutine power_parallel_portion
+!***********************************************************************
+    subroutine power(f,sp,iapn_index)
+!
+!  Calculate power spectra (on spherical shells) of the variable
+!  specified by `sp'.
+!  Since this routine is only used at the end of a time step,
+!  one could in principle reuse the df array for memory purposes.
+!
+      use Fourier, only: fft_xyz_parallel
+      use Mpicomm, only: mpireduce_sum
+      use General, only: itoa
+      use Sub, only: curli
+      use File_io, only: file_exists
+!
+  real, dimension (mx,my,mz,mfarray) :: f
+  character (len=*) :: sp
+  integer, intent(in), optional :: iapn_index
+
+! integer, pointer :: inp,irhop,iapn(:)
+  integer :: nk
+  integer :: i,k,ikx,iky,ikz,im,in
+  real, save, dimension(nx,ny,nz) :: a1,b1
+  real :: k2
+  real, dimension(:), save, allocatable :: spectrum,spectrum_sum
+  character(LEN=fnlen) :: filename
+  logical :: lwrite_ks
+  !
+  !  identify version
+  !
+  if (lroot .AND. ip<10) call svn_id( &
+       "$Id$")
+  !
+  if (ltrue_binning) then
+    nk=nk_truebin
+  else
+    nk=nk_xyz
+  endif
+  if(.not. allocated(spectrum)) allocate(spectrum(nk),spectrum_sum(nk))
+
+  spectrum=0.
+  !
+  !  In fft, real and imaginary parts are handled separately.
+  !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
+  !  Added power spectra of rho^(1/2)*u and rho^(1/3)*u.
+  !
+!$omp parallel num_threads(num_helper_threads) reduction(+:spectrum) &
+!$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+!$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+!$ thread_id = omp_get_thread_num()+1
+        call power_parallel_portion(f,sp,iapn_index,spectrum,a1,b1,nk)
  !$omp end parallel
  !
  !  Summing up the results from the different processors
  !  The result is available only on root
  !
   call mpireduce_sum(spectrum,spectrum_sum,nk)
+
   !
   !  on root processor, write global result to file
   !  multiply by 1/2, so \int E(k) dk = (1/2) <u^2>

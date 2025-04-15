@@ -1185,7 +1185,18 @@ void setupConfig(AcMeshInfo& config)
   //dev->output.real_outputs[AC_maxchi]=0.;
 #endif
   acHostUpdateParams(&config); 
-  config.runtime_compilation_log_dst = "ac_compilation.log";
+  if(!ltraining) config.runtime_compilation_log_dst = "ac_compilation.log";
+  char cwd[9000];
+  cwd[0] = '\0';
+  const char* err = getcwd(cwd, sizeof(cwd));
+  if(err == NULL) 
+  {
+	  fprintf(stderr,"Was not able to get cwd!\n");
+	  exit(EXIT_FAILURE);
+  }
+  char build_path[18000];
+  sprintf(build_path,"%s/src/astaroth/submodule/build",cwd);
+  config.runtime_compilation_build_path = strdup(build_path);
 }
 
 #undef x
@@ -1306,7 +1317,6 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint)
       mesh.vertex_buffer[VertexBufferHandle(i)] = &farr[offset];
       offset += mw;
     }
-//printf("&farray[offset]= %p \n",&farr[offset]);fflush(stdout);
 
     for (int i = 0; i < mfarray; ++i)
     {
@@ -1315,12 +1325,23 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint)
         mesh.vertex_buffer[maux_vtxbuf_index[i]] = &farr[mw*i];
       }
     }
+    //TP: for now for training we have all slots filled since we might want to read TAU components to the host for calculating validation error
+    if(ltraining)
+    {
+    	for(int i = 0; i < NUM_VTXBUF_HANDLES; ++i)
+    	{
+	   if(mesh.vertex_buffer[i] == NULL)
+	   {
+    	    	mesh.vertex_buffer[i] = (AcReal*)malloc(sizeof(AcReal)*mw);
+	   }
+    	}
+    }
   }
 if (rank==0 && ldebug) printf("memusage after pointer assign= %f MBytes\n", memusage()/1024.);
 #if AC_RUNTIME_COMPILATION
 #include "cmake_options.h"
   acCompile(cmake_options,mesh.info);
-  acLoadLibrary(rank == 0 ? stderr : NULL);
+  acLoadLibrary(rank == 0 ? stderr : NULL,mesh.info);
   acCheckDeviceAvailability();
   acLogFromRootProc(rank, "Done setupConfig && acCompile\n");
   fflush(stdout);
@@ -1376,7 +1397,9 @@ extern "C" void copyFarray(AcReal* f)
   //acDeviceStoreMesh(acGridGetDevice(), STREAM_DEFAULT, &mesh);
   //TP: for now only copy the advanced fields back
   //TODO: should auxiliaries needed on the GPU like e.g. Shock be copied? They can always be recomputed on the host if needed
-  for (int i = 0; i < mvar; ++i)
+  //If doing training we read all since we might want TAU components to calculate e.g. validation error
+  const int end = ltraining ? NUM_VTXBUF_HANDLES : mvar;
+  for (int i = 0; i < end; ++i)
   {
 	  acDeviceStoreVertexBuffer(acGridGetDevice(),STREAM_DEFAULT,VertexBufferHandle(i),&mesh);
   }
@@ -1398,7 +1421,7 @@ reloadConfig()
   acCloseLibrary();
 #include "cmake_options.h"
   acCompile(cmake_options,mesh.info);
-  acLoadLibrary(rank == 0 ? stderr : NULL);
+  acLoadLibrary(rank == 0 ? stderr : NULL,mesh.info);
   acGridInit(mesh);
   acLogFromRootProc(rank, "Done setupConfig && acCompile\n");
   fflush(stdout);
