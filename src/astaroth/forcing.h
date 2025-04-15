@@ -2,7 +2,7 @@
 
 #include "../forcing_c.h"
 
-typedef struct ForcingParams{
+typedef struct ForcingParams {
 
 // contains parameters returned by PC routine forcing_pars_hel
 
@@ -23,5 +23,5 @@ typedef struct ForcingParams{
       acDeviceLoadVectorUniform(device, STREAM_DEFAULT, AC_fda, TOACREAL3(fda));
       acDeviceLoadVectorUniform(device, STREAM_DEFAULT, AC_kk, TOACREAL3(kk));
     }
-};
+} ForcingParams;
 static ForcingParams forcing_params;
