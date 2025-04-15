@@ -581,6 +581,71 @@ outer:  do ikz=1,nz
 !
     endsubroutine power
 !***********************************************************************
+    subroutine power_2d_parallel_portion(f,sp,spectrum)
+
+!
+! 15-apr-25/TP: refactored from power_2d because of multithreading issues
+!
+      use Fourier, only: fourier_transform_xz
+      use Sub, only: curli
+
+      integer, parameter :: nk=nx/2
+
+      real, dimension (mx,my,mz,mfarray) :: f
+      character (len=1) :: sp
+      real, dimension(nk) :: spectrum,spectrum_sum
+      integer :: i,k,ikx,iky,ikz,im,in,ivec
+
+       do ivec=1,3
+          !
+         if (sp=='u') then
+           !$omp workshare
+           a_re =f(l1:l2,m1:m2,n1:n2,iux+ivec-1)
+           !$omp end workshare
+         elseif (sp=='b') then
+           !$omp do collapse(2)
+           do n=n1,n2
+             do m=m1,m2
+               call curli(f,iaa,a_re(:,m-nghost,n-nghost),ivec)
+             enddo
+           enddo
+         elseif (sp=='a') then
+           !$omp workshare
+           a_re =f(l1:l2,m1:m2,n1:n2,iax+ivec-1)
+           !$omp end workshare
+         else
+           call warning('power_2D','no such sp: '//trim(sp))
+         endif
+          !$omp workshare
+          a_im=0.
+          !$omp end workshare
+!
+!       Doing the Fourier transform
+!
+          !print*, 'ivec1=', ivec
+
+          call fourier_transform_xz(a_re,a_im)    !!!! MR: causes error - ivec is set back from 1 to 0
+          !print*, 'ivec2=', ivec
+!         to be replaced by comp_spectrum( f, sp, ivec, ar, ai, fourier_transform_xz )
+!
+!       integration over shells
+!
+          if (ip<10) call information('power_2d','fft done; now integrate over circles')
+          !$omp do collapse(3)
+          do ikz=1,nz
+            do iky=1,ny
+              do ikx=1,nx
+                k=nint(sqrt(kx(ikx)**2+kz(ikz+ipz*nz)**2))
+                if (k>=0 .and. k<=(nk-1)) spectrum(k+1)=spectrum(k+1)+a_re(ikx,iky,ikz)**2+a_im(ikx,iky,ikz)**2
+!                if (iky==16 .and. ikx==16) &
+!                print*, 'power_2d:', ikx,iky,ikz,k,nk,a_re(ikx,iky,ikz),a_im(ikx,iky,ikz),spectrum(k+1)
+              enddo
+            enddo
+          enddo
+!
+       enddo !(loop over ivec)
+    endsubroutine power_2d_parallel_portion
+!***********************************************************************
     subroutine power_2d(f,sp)
 !
 !  Calculate power spectra (on circles) of the variable
@@ -588,14 +653,12 @@ outer:  do ikz=1,nz
 !  Since this routine is only used at the end of a time step,
 !  one could in principle reuse the df array for memory purposes.
 !
-      use Fourier, only: fourier_transform_xz
       use Mpicomm, only: mpireduce_sum
-      use Sub, only: curli
 !
   integer, parameter :: nk=nx/2
-  integer :: i,k,ikx,iky,ikz,im,in,ivec
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nk) :: spectrum,spectrum_sum
+  integer :: i,k,ikx,iky,ikz,im,in
   character (len=1) :: sp
   !
   !  identify version
@@ -610,58 +673,11 @@ outer:  do ikz=1,nz
   !  In fft, real and imaginary parts are handled separately.
   !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
   !
-!$omp parallel private(ivec,k) num_threads(num_helper_threads) reduction(+:spectrum) &
+!$omp parallel private(k) num_threads(num_helper_threads) reduction(+:spectrum) &
 !$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
 !$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
 !$ thread_id = omp_get_thread_num()+1
-  do ivec=1,3
-     !
-    if (sp=='u') then
-      !$omp workshare
-      a_re =f(l1:l2,m1:m2,n1:n2,iux+ivec-1)
-      !$omp end workshare
-    elseif (sp=='b') then
-      !$omp do collapse(2)
-      do n=n1,n2
-        do m=m1,m2
-          call curli(f,iaa,a_re(:,m-nghost,n-nghost),ivec)
-        enddo
-      enddo
-    elseif (sp=='a') then
-      !$omp workshare
-      a_re =f(l1:l2,m1:m2,n1:n2,iax+ivec-1)
-      !$omp end workshare
-    else
-      call warning('power_2D','no such sp: '//trim(sp))
-    endif
-     !$omp workshare
-     a_im=0.
-     !$omp end workshare
-!
-!  Doing the Fourier transform
-!
-     !print*, 'ivec1=', ivec
-
-     call fourier_transform_xz(a_re,a_im)    !!!! MR: causes error - ivec is set back from 1 to 0
-     !print*, 'ivec2=', ivec
-!    to be replaced by comp_spectrum( f, sp, ivec, ar, ai, fourier_transform_xz )
-!
-!  integration over shells
-!
-     if (ip<10) call information('power_2d','fft done; now integrate over circles')
-     !$omp do collapse(3)
-     do ikz=1,nz
-       do iky=1,ny
-         do ikx=1,nx
-           k=nint(sqrt(kx(ikx)**2+kz(ikz+ipz*nz)**2))
-           if (k>=0 .and. k<=(nk-1)) spectrum(k+1)=spectrum(k+1)+a_re(ikx,iky,ikz)**2+a_im(ikx,iky,ikz)**2
-!           if (iky==16 .and. ikx==16) &
-!           print*, 'power_2d:', ikx,iky,ikz,k,nk,a_re(ikx,iky,ikz),a_im(ikx,iky,ikz),spectrum(k+1)
-         enddo
-       enddo
-     enddo
-!
-  enddo !(loop over ivec)
+        call power_2d_parallel_portion(f,sp,spectrum)
 !$omp end parallel
 !
 !  Summing up the results from the different processors.
