@@ -719,7 +719,7 @@ outer:  do ikz=1,nz
     integer, optional, intent(in)                 :: ivecp
     real, dimension(nx,ny,nz), intent(out) :: ar, ai
 !
-    integer :: m,n,ind,ivec,i,la,le,ndelx
+    integer :: ind,ivec,i,la,le,ndelx
 !
     ivec = ioptest(ivecp,1)
     if (sp == 'rho' .and. ivec>1) return
@@ -838,7 +838,6 @@ outer:  do ikz=1,nz
   !integer, parameter :: nk=nx/2                      ! actually nxgrid/2 *sqrt(2.)  !!!
 !
   integer :: i,il,jl,k,ikx,iky,ikz,ivec,nk,ncomp,nkx,nky,npz,nkl,iveca,cpos
-  real,    dimension(nx,ny,nz)            :: ar,ai
   real,    dimension(:,:,:), allocatable  :: br,bi
   real,    allocatable, dimension(:)      :: spectrum1,spectrum1_sum, kshell
   real,    allocatable, dimension(:,:)    :: spectrum2,spectrum2_sum,spectrum2_global
@@ -976,7 +975,7 @@ outer:  do ikz=1,nz
 !
 ! these are internally multithreaded
 !
-    call comp_spectrum_xy( f, sp_field, ar, ai, ivec )
+    call comp_spectrum_xy( f, sp_field, a_re, a_im, ivec )
     if (l2nd) call comp_spectrum_xy( f, sp2, br, bi, ivec )
 !
 !  integration over shells
@@ -1001,9 +1000,9 @@ outer:  do ikz=1,nz
               kshell(k+1) = k*2*pi/L_min_xy
 !
               if (l2nd) then
-                prods = 0.5*(ar(ikx,iky,ikz)*br(ikx,iky,ikz)+ai(ikx,iky,ikz)*bi(ikx,iky,ikz))
+                prods = 0.5*(a_re(ikx,iky,ikz)*br(ikx,iky,ikz)+a_im(ikx,iky,ikz)*bi(ikx,iky,ikz))
               else
-                prods = 0.5*(ar(ikx,iky,ikz)**2+ai(ikx,iky,ikz)**2)
+                prods = 0.5*(a_re(ikx,iky,ikz)**2+a_im(ikx,iky,ikz)**2)
               endif
 !
               if (lintegrate_z) then
@@ -1018,15 +1017,15 @@ outer:  do ikz=1,nz
       else
 !
         if (l2nd) then
-          prod = ar(:,:,ikz)*br(:,:,ikz)+ai(:,:,ikz)*bi(:,:,ikz)
+          prod = a_re(:,:,ikz)*br(:,:,ikz)+a_im(:,:,ikz)*bi(:,:,ikz)
         elseif ( .not. lcomplex ) then
-          prod = ar(:,:,ikz)**2+ai(:,:,ikz)**2
+          prod = a_re(:,:,ikz)**2+a_im(:,:,ikz)**2
         endif
 !
         if (lintegrate_z) then
           spectrum2(:,:)=spectrum2(:,:)+(0.5*dz)*prod                 ! equidistant grid required
         elseif ( lcomplex ) then
-          spectrum3_cmplx(:,:,ikz,ivec-iveca+1)=cmplx(ar(:,:,ikz),ai(:,:,ikz))
+          spectrum3_cmplx(:,:,ikz,ivec-iveca+1)=cmplx(a_re(:,:,ikz),a_im(:,:,ikz))
         else
           spectrum3(:,:,ikz)=spectrum3(:,:,ikz)+0.5*prod
         endif
@@ -1195,10 +1194,9 @@ outer:  do ikz=1,nz
   real, dimension(nx,3) :: bb, bbEP, hhEP, jj, gtmp1, gtmp2
   real, dimension(nk) :: nks=0.,nks_sum=0.
   real, dimension(nk) :: k2m=0.,k2m_sum=0., krms, km1
-  real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
-  real, dimension(nx,ny,nz,3) :: bEP, hEP
+  real, save, dimension(nx,ny,nz,3) :: bEP, hEP
   real, dimension(2), optional :: sumspec
-  complex, dimension(nx,ny,nz) :: phi
+  complex, save, dimension(nx,ny,nz) :: phi
   real, dimension(nk) :: spectrum,spectrum_sum
   real, dimension(nk) :: spectrumhel,spectrumhel_sum
   real, allocatable, dimension(:,:), save :: cyl_spectrum, cyl_spectrum_sum
@@ -2699,7 +2697,6 @@ outer:  do ikz=1,nz
   real :: k2
   real, dimension(nk) :: nks,nks_sum
   real, dimension(nk) :: k2m,k2m_sum,krms
-  real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
   real, dimension(nk,nbin_angular) :: spectrum_2d, spectrumhel_2d
   real, dimension(nk,nbin_angular) :: spectrum_2d_sum, spectrumhel_2d_sum
   real, allocatable, dimension(:) :: spectrum,spectrumhel
@@ -4128,7 +4125,7 @@ endsubroutine pdf
   integer, parameter :: nk=nx/2
   integer :: i,k,ikx,iky,ikz,ivec
   real, dimension (mx,my,mz,mfarray) :: f
-  real, dimension(nx,ny,nz,3) :: a1,b1
+  real, save, dimension(nx,ny,nz,3) :: a1,b1
   real, dimension(nx,3) :: tmp_a1
   real, dimension(nk) :: spectrum,spectrum_sum
   character (len=*) :: sp
