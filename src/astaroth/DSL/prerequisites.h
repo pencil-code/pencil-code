@@ -77,9 +77,6 @@ output real AC_dt1_max
 
 #ifdef LFORCING
   #include "../forcing/pcstyleforcing.h"
-  #define ADDFORCE + force
-#else
-  #define ADDFORCE
 #endif
 
 #include "equations.h"

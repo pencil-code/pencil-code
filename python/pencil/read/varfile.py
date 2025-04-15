@@ -643,11 +643,14 @@ class DataCube(object):
                             self.f[i0z:i1z, i0y:i1y, i0x:i1x] = f_loc[
                                 i0zloc:i1zloc, i0yloc:i1yloc, i0xloc:i1xloc
                             ]
-                else:
+                else:                    # reading from a single processor
                     self.f = f_loc
                     x = x_loc
                     y = y_loc
                     z = z_loc
+                    if grid != None:     # overwrite global grid by local grid to enable "magic" calculations
+                        grid = read.grid(datadir=datadir,proc=proc)
+
         else:
             raise NotImplementedError(
                 "IO strategy {} not supported by the Python module.".format(
