@@ -83,6 +83,7 @@ use POSIX qw(strftime);
 use Getopt::Long;
 use IPC::Open2;
 use constant SUCCESS => 1;      # return value
+use Cwd qw(abs_path);
 
 my (%opts);                     # Variables written by GetOptions
 my (%emails, %pos, %neg, %sendmailto); # Info on mailing if tests fail
@@ -184,6 +185,16 @@ if ($lock) {
     my $instances_running = `ps aux | grep -v "grep" | grep "perl" | grep "$0" | wc -l`;
     $instances_running =~ s/\s+$//s;
     if ($instances_running > 1) { die ("ERROR: another 'pencil-test' is already running here!\n"); }
+}
+
+#If relative paths have been specified, convert to absolute paths. Otherwise,
+#$log_dir is treated as relative to $PENCIL_HOME (not the directory where
+#pencil-test was invoked).
+if ($log_dir ne '') {
+    $log_dir = abs_path($log_dir);
+}
+if ($previous_dir ne '') {
+    $previous_dir = abs_path($previous_dir);
 }
 
 # Make a backup of the previous logfile directory
