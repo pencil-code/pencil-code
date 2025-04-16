@@ -811,7 +811,10 @@ outer:  do ikz=1,nz
     endif
 !
     !$omp workshare
-    ai(:,:,n1:n2) = 0.
+    !ai(:,:,n1:n2) = 0.
+! KG: ai has size nx,ny,nz, so the above leads to out-of-bounds access.
+! KG: I'm not sure why the above was being tried, so I'll leave it as a comment for now
+    ai = 0.
     !$omp end workshare
 !
 !  Doing the Fourier transform
