@@ -235,7 +235,7 @@ outer:  do ikz=1,nz
       !if (.not.allocated(spectrum_2d)) then
       !  allocate(spectrum_2d(nk,nbin_angular), spectrumhel_2d(nk,nbin_angular), &
       !           spectrum_2d_sum(nk,nbin_angular), spectrumhel_2d_sum(nk,nbin_angular))
-      lsplit_power_xy_in_z = lsplit_power_xy_in_z .and. lintegrate_shell .and. .not. lintegrate_z
+      lsplit_power_xy_in_z = lsplit_power_xy_in_z .and. .not. lintegrate_z
 !
 ! Initialize shell wave-numbers for power_xy
 !
