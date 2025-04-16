@@ -1,1 +1,13 @@
-Modified cartesian-convection-kramers to test implementation of bounds on the Kramers conductivity.
+Directory:
+    ${PENCIL_HOME}/samples/cartesian-convection-kramers-chimax
+SVN Id:
+    $Id$
+Maintainer:
+    Kishore G <kishore96/gmail[dot]com>
+Added:
+    20-Jun-2024
+Status
+    succeeds
+Comments
+    Modified version of cartesian-convection-kramers that tests the
+    implementation of bounds on the Kramers conductivity.
