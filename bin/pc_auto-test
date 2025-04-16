@@ -168,6 +168,7 @@ my %tests = (
                          interlocked-fluxrings
                          conv-slab-flat
                          coronae_heatflux_boris
+                         power_xy/complex
                          testfield_nonlin_z
                          spherical-convection
                          spherical-convection-corona
