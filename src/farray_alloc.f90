@@ -63,7 +63,7 @@
   subroutine finalize
 
     if (allocated(f_arr)) deallocate(f_arr)
-    !if (shared_mem_name=='') deallocate fp?
+    !if (shared_mem_name=='') deallocate fp   !?
     if (allocated(df)) deallocate(df) 
 
   endsubroutine finalize
