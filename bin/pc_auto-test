@@ -169,6 +169,8 @@ my %tests = (
                          conv-slab-flat
                          coronae_heatflux_boris
                          power_xy/complex
+                         power_xy/integrate_shell
+                         power_xy/integrate_shell_z
                          testfield_nonlin_z
                          spherical-convection
                          spherical-convection-corona
