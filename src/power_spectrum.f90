@@ -48,9 +48,6 @@ module Power_spectrum
   integer :: legendre_lmax=1
   integer :: firstout = 0
   logical :: lglq_dot_dat_exists=.false.
-  !TP: This is a feature flag for optimized power_xy in case it is asked in only a single plane
-  !    Don't want to pessimize the performance of the general usage of power_xy so for now we 
-  !    have this feature flag
   logical :: lsplit_power_xy_in_z= .false.
   integer :: n_glq=1
 !
@@ -97,7 +94,7 @@ module Power_spectrum
     subroutine initialize_power_spectrum
 !
       use Messages
-      use General, only: binomial, pos_in_array, quick_sort
+      use General, only: binomial, pos_in_array, quick_sort, get_range_no
       use Mpicomm, only: mpiallreduce_merge,mpimerge_1d
 
       integer :: ikr, ikmu, ind, ikx, iky, ikz, i, len, k
@@ -235,7 +232,14 @@ outer:  do ikz=1,nz
       !if (.not.allocated(spectrum_2d)) then
       !  allocate(spectrum_2d(nk,nbin_angular), spectrumhel_2d(nk,nbin_angular), &
       !           spectrum_2d_sum(nk,nbin_angular), spectrumhel_2d_sum(nk,nbin_angular))
-      lsplit_power_xy_in_z = lsplit_power_xy_in_z .and. .not. lintegrate_z
+
+      !TP: This enables to perform the FFT only on those xy-planes which are asked for instead of the whole grid.
+      !    Enabling it only if less than 10 (which is totally arbitrary) planes are asked for because the
+      !    communication of the old scheme might be faster if one wants the spectra across all of z. 
+      !    One could either benchmark is this actually the case or modify the new scheme to also
+      !    use bigger but fewer MPI calls. 
+      !    However this adequately covers the actual use case in mind for now.
+      lsplit_power_xy_in_z = (.not. lintegrate_z) .and. get_range_no( zrange, nz_max ) <= 10
 !
 ! Initialize shell wave-numbers for power_xy
 !
