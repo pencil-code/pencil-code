@@ -1,0 +1,14 @@
+Directory:
+    ${PENCIL_HOME}/samples/power_xy/complex
+SVN Id:
+    $Id$
+Maintainer:
+    Kishore G <kishore96/gmail[dot]com>
+Added:
+    16-Apr-2025
+Status:
+    Running fails (out of bounds array access) on master
+    Works fine on a branch of mine that does not include the changes from gputestv6
+Comments:
+    Modified samples/conv-slab to test the power_xy subroutine.
+    Reference data are from a version of the code before the gputestv6 merger.
