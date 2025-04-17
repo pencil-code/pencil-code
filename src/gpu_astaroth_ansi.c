@@ -20,6 +20,8 @@
 
 #include "headers_c.h"
 
+void torch_train_c_api(REAL*); 
+void torch_infer_c_api();
 void initGPU();
 void registerGPU();
 void initializeGPU(REAL*, FINT);
@@ -41,6 +43,18 @@ void random_initial_condition(void);
 extern char *__cparam_MOD_coornames;
 extern REAL __cdata_MOD_y[14];
 extern REAL __cdata_MOD_dx, __cdata_MOD_dy, __cdata_MOD_dz;
+
+
+void FTNIZE(torchtrain_c)(REAL* loss_val)
+{
+	torch_train_c_api(loss_val);
+}
+
+void FTNIZE(torchinfer_c)(int flag)
+{
+	torch_infer_c_api(flag);
+}
+
 // ----------------------------------------------------------------------
 void FTNIZE(initialize_gpu_c)(REAL* f, FINT* comm_fint)
 // Initializes GPU.  

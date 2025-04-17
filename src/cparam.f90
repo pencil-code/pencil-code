@@ -11,8 +11,8 @@ module Cparam
   integer, parameter :: ikind1=selected_int_kind(2)   ! 1-byte integer kind
   integer, parameter :: rkind8=selected_real_kind(12) ! 8-byte real kind
   integer, parameter :: rkind4=selected_real_kind(6)  ! 4-byte real kind
-  integer, parameter :: rkind16 = selected_real_kind(33, 4931) ! 16-byte real kind - not accepted by all compilers
-  !integer, parameter :: rkind16 = rkind8
+ ! integer, parameter :: rkind16 = selected_real_kind(33, 4931) ! 16-byte real kind - not accepted by all compilers
+  integer, parameter :: rkind16 = rkind8
 !
   include 'cparam.local'
 !

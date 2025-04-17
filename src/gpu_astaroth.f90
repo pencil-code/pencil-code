@@ -22,7 +22,9 @@ module GPU
 !$    subroutine random_initial_condition() bind(C)
 !$    endsubroutine random_initial_condition
 !$  end interface
-
+  
+  external torchtrain_c 
+  external torchinfer_c
   external initialize_gpu_c
   external register_gpu_c
   external finalize_gpu_c
@@ -44,6 +46,17 @@ module GPU
   type(C_PTR) :: pFarr_GPU_in, pFarr_GPU_out
 
 contains
+
+  subroutine train_c(f)
+    real :: f
+    call torchtrain_c(f)
+  endsubroutine train_c  
+  
+  subroutine infer_c(flag)
+    integer :: flag
+    call torchinfer_C(flag)
+  endsubroutine infer_c
+
 !***********************************************************************
     subroutine initialize_GPU(f)
 !
