@@ -50,6 +50,7 @@ module Special
   real :: sigE_prefactor=1., sigB_prefactor=1.
   real :: weight_longitudinalE=2.0
   logical :: luse_scale_factor_in_sigma=.false.
+  logical, pointer :: lohm_evolve
   real, pointer :: eta, Hscript, echarge, sigEm_all, sigBm_all
   integer :: iGamma=0, ia0=0, idiva_name=0, ieedot=0, iedotx=0, iedoty=0, iedotz=0
   integer :: idivE=0, isigE=0, isigB=0
@@ -235,12 +236,14 @@ module Special
         call get_shared_variable('echarge', echarge)
         call get_shared_variable('sigEm_all', sigEm_all)
         call get_shared_variable('sigBm_all', sigBm_all)
+        call get_shared_variable('lohm_evolve', lohm_evolve)
       else
         if (.not.associated(Hscript)) allocate(Hscript,echarge,sigEm_all,sigBm_all)
         Hscript=0.
         echarge=0.
         sigEm_all=0.
         sigBm_all=0.
+!  need to add something with lohm_evolve
       endif
 !
 !  Reinitialize magnetic field using a small selection of perturbations
@@ -540,9 +543,13 @@ module Special
 !
 !  Now compute current, using any of the 4 expressions above.
 !
-        do j=1,3
-          p%jj_ohm(:,j)=p%sigE*p%el(:,j)+p%sigB*p%bb(:,j)
-        enddo
+        if (lohm_evolve) then
+          p%jj_ohm=f(l1:l2,m,n,ijx:ijz)
+        else
+          do j=1,3
+            p%jj_ohm(:,j)=p%sigE*p%el(:,j)+p%sigB*p%bb(:,j)
+          enddo
+        endif
 !
       endif
 !
@@ -628,9 +635,10 @@ module Special
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx,3) :: gtmp
+      real, dimension (nx,3) :: gtmp, dJdt, del2JJ
       real, dimension (nx) :: tmp, del2a0, constrainteqn, constrainteqn1
       real :: inflation_factor=0., mfpf=0., fppf=0.
+      integer :: j
 !
       intent(in) :: p
       intent(inout) :: f, df
@@ -755,6 +763,40 @@ module Special
 !  Compute eedot_as_aux; currently ignore alpf/=0.
 !
       if (leedot_as_aux) f(l1:l2,m,n,iedotx:iedotz)=c_light2*(p%curlb-mu0*p%jj_ohm)
+!
+!  Evolving current
+!
+      if (lnoncollinear_EB .or. lnoncollinear_EB_aver &
+        .or. lcollinear_EB .or. lcollinear_EB_aver) then
+        if (lohm_evolve) then
+    !     if (tau_jj>0) then
+    !       tau1_jj=1./tau_jj
+    !       do j=1,3
+!
+!  Here we would need to add tau*sigmaB*B
+!
+    !         dJdt(:,j)=tau1_jj*(p%el(:,j)+p%uxb(:,j))*mu01/eta_total
+    !       enddo
+    !       if (ell_jj/=0.) then
+    !         call del2v(f,ijx,del2jj)
+    !         dJdt=dJdt+(ell_jj**2*tau1_jj)*del2jj
+    !       endif
+    !       df(l1:l2,m,n,ijx:ijz)=df(l1:l2,m,n,ijx:ijz)+dJdt
+    !     else
+if (f(l1,m,n,ijx)==0.) then
+  print*,'AXEL start j/=0 '
+            do j=1,3
+  f(l1:l2,m,n,ijx-1+j)=p%sigE*p%el(:,j)
+            enddo
+endif
+            do j=1,3
+              dJdt(:,j)=3.*Hscript*p%sigE*p%el(:,j)
+            enddo
+            df(l1:l2,m,n,ijx:ijz)=df(l1:l2,m,n,ijx:ijz)+dJdt
+            !call fatal_error('daa_dt','tau_jj must be finite and positive')
+    !     endif
+        endif
+      endif
 !
 !  If requested, put sigE and sigB into f array as auxiliaries.
 !

@@ -45,6 +45,9 @@ module GPU
   !integer(KIND=ikind8) :: pFarr_GPU_in, pFarr_GPU_out
   type(C_PTR) :: pFarr_GPU_in, pFarr_GPU_out
 
+  namelist /gpu_run_pars/ &
+        ltest_bcs,lac_sparse_autotuning,lcpu_timestep_on_gpu
+
 contains
 
   subroutine train_c(f)
@@ -99,6 +102,24 @@ contains
   !print'(a,1x,Z0,1x,Z0)', 'pFarr_GPU_in,pFarr_GPU_out=', pFarr_GPU_in,pFarr_GPU_out
     endsubroutine initialize_GPU
 !**************************************************************************
+    subroutine read_gpu_run_pars(iostat)
+!
+      use File_io, only: parallel_unit
+!
+      integer, intent(out) :: iostat
+!
+      read(parallel_unit, NML=gpu_run_pars, IOSTAT=iostat)
+!
+    endsubroutine read_gpu_run_pars 
+!***********************************************************************
+    subroutine write_gpu_run_pars(unit)
+!
+      integer, intent(in) :: unit
+!
+      write(unit, NML=gpu_run_pars)
+!
+    endsubroutine write_gpu_run_pars
+!***********************************************************************
     subroutine gpu_init
 !
       call init_gpu_c

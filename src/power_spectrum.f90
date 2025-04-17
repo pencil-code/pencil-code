@@ -48,6 +48,7 @@ module Power_spectrum
   integer :: legendre_lmax=1
   integer :: firstout = 0
   logical :: lglq_dot_dat_exists=.false.
+  logical :: lsplit_power_xy_in_z= .false.
   integer :: n_glq=1
 !
   character (LEN=linelen) :: ckxrange='', ckyrange='', czrange=''
@@ -74,6 +75,7 @@ module Power_spectrum
   real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im,c_re,c_im,d_re,d_im,h_re,h_im
   real, dimension(nx,ny,nz,3) :: a_vec_re,a_vec_im, b_vec_re
   real, dimension(nx,ny,nz) :: a2
+  real, dimension(:), allocatable :: kshell
 !
   namelist /power_spectrum_run_pars/ &
       lintegrate_shell, lintegrate_z, lcomplex, ckxrange, ckyrange, czrange, &
@@ -92,10 +94,10 @@ module Power_spectrum
     subroutine initialize_power_spectrum
 !
       use Messages
-      use General, only: binomial, pos_in_array, quick_sort
-      use Mpicomm, only: mpiallreduce_merge
+      use General, only: binomial, pos_in_array, quick_sort, get_range_no
+      use Mpicomm, only: mpiallreduce_merge,mpimerge_1d
 
-      integer :: ikr, ikmu, ind, ikx, iky, ikz, i, len
+      integer :: ikr, ikmu, ind, ikx, iky, ikz, i, len, k
       real :: k2
       integer, dimension(:), allocatable :: order
 
@@ -231,6 +233,35 @@ outer:  do ikz=1,nz
       !  allocate(spectrum_2d(nk,nbin_angular), spectrumhel_2d(nk,nbin_angular), &
       !           spectrum_2d_sum(nk,nbin_angular), spectrumhel_2d_sum(nk,nbin_angular))
 
+      !TP: This enables to perform the FFT only on those xy-planes which are asked for instead of the whole grid.
+      !    Enabling it only if less than 10 (which is totally arbitrary) planes are asked for because the
+      !    communication of the old scheme might be faster if one wants the spectra across all of z. 
+      !    One could either benchmark is this actually the case or modify the new scheme to also
+      !    use bigger but fewer MPI calls. 
+      !    However this adequately covers the actual use case in mind for now.
+      lsplit_power_xy_in_z = (.not. lintegrate_z) .and. get_range_no( zrange, nz_max ) <= 10
+!
+! Initialize shell wave-numbers for power_xy
+!
+      if(lintegrate_shell) then
+        allocate( kshell(nk_xy) )
+!
+! To initialize variables with NaN, please only use compiler flags. (Bourdin.KIS)
+!
+        kshell = -1.0
+        do ikz=1,nz
+          do iky=1,ny
+            do ikx=1,nx
+                k=nint(sqrt(get_k2_xy(ikx+ipx*nx, iky+ipy*ny))) ! i.e. wavenumber index k
+                                                                ! is |\vec{k}|/(2*pi/Lx)
+                if ( k>=0 .and. k<=nk_xy-1 ) then
+                  kshell(k+1) = k*2*pi/L_min_xy
+                endif
+            enddo
+          enddo
+        enddo
+        if (ipz==0) call mpimerge_1d(kshell,nk_xy,12) ! filling of the shell-wavenumber vector
+      endif
     endsubroutine initialize_power_spectrum
 !***********************************************************************
     subroutine read_power_spectrum_run_pars(iostat)
@@ -581,6 +612,71 @@ outer:  do ikz=1,nz
 !
     endsubroutine power
 !***********************************************************************
+    subroutine power_2d_parallel_portion(f,sp,spectrum)
+
+!
+! 15-apr-25/TP: refactored from power_2d because of multithreading issues
+!
+      use Fourier, only: fourier_transform_xz
+      use Sub, only: curli
+
+      integer, parameter :: nk=nx/2
+
+      real, dimension (mx,my,mz,mfarray) :: f
+      character (len=1) :: sp
+      real, dimension(nk) :: spectrum,spectrum_sum
+      integer :: i,k,ikx,iky,ikz,im,in,ivec
+
+       do ivec=1,3
+          !
+         if (sp=='u') then
+           !$omp workshare
+           a_re =f(l1:l2,m1:m2,n1:n2,iux+ivec-1)
+           !$omp end workshare
+         elseif (sp=='b') then
+           !$omp do collapse(2)
+           do n=n1,n2
+             do m=m1,m2
+               call curli(f,iaa,a_re(:,m-nghost,n-nghost),ivec)
+             enddo
+           enddo
+         elseif (sp=='a') then
+           !$omp workshare
+           a_re =f(l1:l2,m1:m2,n1:n2,iax+ivec-1)
+           !$omp end workshare
+         else
+           call warning('power_2D','no such sp: '//trim(sp))
+         endif
+          !$omp workshare
+          a_im=0.
+          !$omp end workshare
+!
+!       Doing the Fourier transform
+!
+          !print*, 'ivec1=', ivec
+
+          call fourier_transform_xz(a_re,a_im)    !!!! MR: causes error - ivec is set back from 1 to 0
+          !print*, 'ivec2=', ivec
+!         to be replaced by comp_spectrum( f, sp, ivec, ar, ai, fourier_transform_xz )
+!
+!       integration over shells
+!
+          if (ip<10) call information('power_2d','fft done; now integrate over circles')
+          !$omp do collapse(3)
+          do ikz=1,nz
+            do iky=1,ny
+              do ikx=1,nx
+                k=nint(sqrt(kx(ikx)**2+kz(ikz+ipz*nz)**2))
+                if (k>=0 .and. k<=(nk-1)) spectrum(k+1)=spectrum(k+1)+a_re(ikx,iky,ikz)**2+a_im(ikx,iky,ikz)**2
+!                if (iky==16 .and. ikx==16) &
+!                print*, 'power_2d:', ikx,iky,ikz,k,nk,a_re(ikx,iky,ikz),a_im(ikx,iky,ikz),spectrum(k+1)
+              enddo
+            enddo
+          enddo
+!
+       enddo !(loop over ivec)
+    endsubroutine power_2d_parallel_portion
+!***********************************************************************
     subroutine power_2d(f,sp)
 !
 !  Calculate power spectra (on circles) of the variable
@@ -588,14 +684,12 @@ outer:  do ikz=1,nz
 !  Since this routine is only used at the end of a time step,
 !  one could in principle reuse the df array for memory purposes.
 !
-      use Fourier, only: fourier_transform_xz
       use Mpicomm, only: mpireduce_sum
-      use Sub, only: curli
 !
   integer, parameter :: nk=nx/2
-  integer :: i,k,ikx,iky,ikz,im,in,ivec
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nk) :: spectrum,spectrum_sum
+  integer :: i,k,ikx,iky,ikz,im,in
   character (len=1) :: sp
   !
   !  identify version
@@ -610,58 +704,11 @@ outer:  do ikz=1,nz
   !  In fft, real and imaginary parts are handled separately.
   !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
   !
-!$omp parallel private(ivec,k) num_threads(num_helper_threads) reduction(+:spectrum) &
+!$omp parallel private(k) num_threads(num_helper_threads) reduction(+:spectrum) &
 !$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
 !$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
 !$ thread_id = omp_get_thread_num()+1
-  do ivec=1,3
-     !
-    if (sp=='u') then
-      !$omp workshare
-      a_re =f(l1:l2,m1:m2,n1:n2,iux+ivec-1)
-      !$omp end workshare
-    elseif (sp=='b') then
-      !$omp do collapse(2)
-      do n=n1,n2
-        do m=m1,m2
-          call curli(f,iaa,a_re(:,m-nghost,n-nghost),ivec)
-        enddo
-      enddo
-    elseif (sp=='a') then
-      !$omp workshare
-      a_re =f(l1:l2,m1:m2,n1:n2,iax+ivec-1)
-      !$omp end workshare
-    else
-      call warning('power_2D','no such sp: '//trim(sp))
-    endif
-     !$omp workshare
-     a_im=0.
-     !$omp end workshare
-!
-!  Doing the Fourier transform
-!
-     !print*, 'ivec1=', ivec
-
-     call fourier_transform_xz(a_re,a_im)    !!!! MR: causes error - ivec is set back from 1 to 0
-     !print*, 'ivec2=', ivec
-!    to be replaced by comp_spectrum( f, sp, ivec, ar, ai, fourier_transform_xz )
-!
-!  integration over shells
-!
-     if (ip<10) call information('power_2d','fft done; now integrate over circles')
-     !$omp do collapse(3)
-     do ikz=1,nz
-       do iky=1,ny
-         do ikx=1,nx
-           k=nint(sqrt(kx(ikx)**2+kz(ikz+ipz*nz)**2))
-           if (k>=0 .and. k<=(nk-1)) spectrum(k+1)=spectrum(k+1)+a_re(ikx,iky,ikz)**2+a_im(ikx,iky,ikz)**2
-!           if (iky==16 .and. ikx==16) &
-!           print*, 'power_2d:', ikx,iky,ikz,k,nk,a_re(ikx,iky,ikz),a_im(ikx,iky,ikz),spectrum(k+1)
-         enddo
-       enddo
-     enddo
-!
-  enddo !(loop over ivec)
+        call power_2d_parallel_portion(f,sp,spectrum)
 !$omp end parallel
 !
 !  Summing up the results from the different processors.
@@ -695,6 +742,7 @@ outer:  do ikz=1,nz
     use Sub,      only: curli
     use General,  only: ioptest
     use Fourier,  only: fourier_transform_xy, fft_xy_parallel
+    use MPIComm,  only: ipz
 !
     implicit none
 !
@@ -703,7 +751,7 @@ outer:  do ikz=1,nz
     integer, optional, intent(in)                 :: ivecp
     real, dimension(nx,ny,nz), intent(out) :: ar, ai
 !
-    integer :: m,n,ind,ivec,i,la,le,ndelx
+    integer :: ind,ivec,i,la,le,ndelx,local_z_position,global_z_position
 !
     ivec = ioptest(ivecp,1)
     if (sp == 'rho' .and. ivec>1) return
@@ -767,13 +815,30 @@ outer:  do ikz=1,nz
     endif
 !
     !$omp workshare
-    ai(:,:,n1:n2) = 0.
+    !ai(:,:,n1:n2) = 0.
+! KG: ai has size nx,ny,nz, so the above leads to out-of-bounds access.
+! KG: I'm not sure why the above was being tried, so I'll leave it as a comment for now
+    ai = 0.
     !$omp end workshare
 !
 !  Doing the Fourier transform
 !
     if (nygrid/=1) then
-      call fft_xy_parallel(ar,ai)
+      if(lsplit_power_xy_in_z) then
+        do i=1,nz_max
+          if ( zrange(1,i) > 0 ) then
+            do global_z_position=zrange(1,i), zrange(2,i), zrange(3,i)
+              local_z_position = global_z_position - ipz*nz 
+              !TP: if local_z_position is negative the correct position is below this process if greater than nz then above this process
+              if(local_z_position > 0 .and. local_z_position <= nz) then
+                call fft_xy_parallel(ar(:,:,local_z_position),ai(:,:,local_z_position))
+              endif
+            enddo
+          endif
+        enddo
+      else
+        call fft_xy_parallel(ar,ai)
+      endif
     else
       ndelx=nxgrid/n_segment_x      ! segmented work not yet operational -> n_segment_x always 1.
       le=0
@@ -809,7 +874,7 @@ outer:  do ikz=1,nz
 !    4-nov-16/MR: correction: no k_x, k_y output for shell-integrated spectra
 !
    use Mpicomm, only: mpireduce_sum, mpigather_xy, mpigather_and_out_real, mpigather_and_out_cmplx, &
-                      mpimerge_1d, ipz, mpibarrier, mpigather_z
+                      ipz, mpibarrier, mpigather_z
    use General, only: itoa, write_full_columns, get_range_no, write_by_ranges
    use Fourier, only: kx_fft, ky_fft
 !
@@ -821,10 +886,9 @@ outer:  do ikz=1,nz
 !
   !integer, parameter :: nk=nx/2                      ! actually nxgrid/2 *sqrt(2.)  !!!
 !
-  integer :: i,il,jl,k,ikx,iky,ikz,ivec,nk,ncomp,nkx,nky,npz,nkl,iveca,cpos
-  real,    dimension(nx,ny,nz)            :: ar,ai
+  integer :: i,il,jl,k,ikx,iky,ikz,ivec,nk,ncomp,nkx,nky,npz,nkl,iveca,cpos,local_z_position,global_z_position
   real,    dimension(:,:,:), allocatable  :: br,bi
-  real,    allocatable, dimension(:)      :: spectrum1,spectrum1_sum, kshell
+  real,    allocatable, dimension(:)      :: spectrum1,spectrum1_sum
   real,    allocatable, dimension(:,:)    :: spectrum2,spectrum2_sum,spectrum2_global
   real,    allocatable, dimension(:,:,:)  :: spectrum3
   complex, allocatable, dimension(:,:,:,:):: spectrum3_cmplx
@@ -885,11 +949,6 @@ outer:  do ikz=1,nz
 !
     title = 'Shell-integrated'
     nk = nk_xy
-    allocate( kshell(nk) )
-!
-! To initialize variables with NaN, please only use compiler flags. (Bourdin.KIS)
-!
-    kshell = -1.0
 !
     if (lintegrate_z) then
 !
@@ -960,7 +1019,7 @@ outer:  do ikz=1,nz
 !
 ! these are internally multithreaded
 !
-    call comp_spectrum_xy( f, sp_field, ar, ai, ivec )
+    call comp_spectrum_xy( f, sp_field, a_re, a_im, ivec )
     if (l2nd) call comp_spectrum_xy( f, sp2, br, bi, ivec )
 !
 !  integration over shells
@@ -971,7 +1030,8 @@ outer:  do ikz=1,nz
 !  Summing up the results from the different processors
 !  The result is available only on root  !!??
 !
-    !TODO: multithread this, probably not that important
+!  Could be multithreaded but now we know power routines anyway spent most of their time in communication
+!
     do ikz=1,nz
       if (lintegrate_shell) then
 !
@@ -982,12 +1042,10 @@ outer:  do ikz=1,nz
                                                             ! is |\vec{k}|/(2*pi/Lx)
             if ( k>=0 .and. k<=nk-1 ) then
 !
-              kshell(k+1) = k*2*pi/L_min_xy
-!
               if (l2nd) then
-                prods = 0.5*(ar(ikx,iky,ikz)*br(ikx,iky,ikz)+ai(ikx,iky,ikz)*bi(ikx,iky,ikz))
+                prods = 0.5*(a_re(ikx,iky,ikz)*br(ikx,iky,ikz)+a_im(ikx,iky,ikz)*bi(ikx,iky,ikz))
               else
-                prods = 0.5*(ar(ikx,iky,ikz)**2+ai(ikx,iky,ikz)**2)
+                prods = 0.5*(a_re(ikx,iky,ikz)**2+a_im(ikx,iky,ikz)**2)
               endif
 !
               if (lintegrate_z) then
@@ -1002,15 +1060,15 @@ outer:  do ikz=1,nz
       else
 !
         if (l2nd) then
-          prod = ar(:,:,ikz)*br(:,:,ikz)+ai(:,:,ikz)*bi(:,:,ikz)
+          prod = a_re(:,:,ikz)*br(:,:,ikz)+a_im(:,:,ikz)*bi(:,:,ikz)
         elseif ( .not. lcomplex ) then
-          prod = ar(:,:,ikz)**2+ai(:,:,ikz)**2
+          prod = a_re(:,:,ikz)**2+a_im(:,:,ikz)**2
         endif
 !
         if (lintegrate_z) then
           spectrum2(:,:)=spectrum2(:,:)+(0.5*dz)*prod                 ! equidistant grid required
         elseif ( lcomplex ) then
-          spectrum3_cmplx(:,:,ikz,ivec-iveca+1)=cmplx(ar(:,:,ikz),ai(:,:,ikz))
+          spectrum3_cmplx(:,:,ikz,ivec-iveca+1)=cmplx(a_re(:,:,ikz),a_im(:,:,ikz))
         else
           spectrum3(:,:,ikz)=spectrum3(:,:,ikz)+0.5*prod
         endif
@@ -1021,7 +1079,6 @@ outer:  do ikz=1,nz
 !
   enddo ! do ivec=iveca,iveca+ncomp-1
 !
-  if (lintegrate_shell .and. ipz==0) call mpimerge_1d(kshell,nk,12) ! filling of the shell-wavenumber vector
 !
   if (lroot) then
 !
@@ -1090,7 +1147,20 @@ outer:  do ikz=1,nz
     if (lintegrate_z) then
       call mpireduce_sum(spectrum1,spectrum1_sum,nk)
     else
-      call mpireduce_sum(spectrum2,spectrum2_sum,(/nk,nz/),12)
+      if(lsplit_power_xy_in_z) then
+        do i=1,nz_max
+          if ( zrange(1,i) > 0 ) then
+            do global_z_position=zrange(1,i), zrange(2,i), zrange(3,i)
+              local_z_position = global_z_position - ipz*nz
+              if(local_z_position > 0 .and. local_z_position <= nz) then
+                call mpireduce_sum(spectrum2(:,local_z_position),spectrum2_sum(:,local_z_position),nk,12)
+              endif
+            enddo
+          endif
+        enddo
+      else 
+        call mpireduce_sum(spectrum2,spectrum2_sum,(/nk,nz/),12)
+      endif
       call mpigather_z(spectrum2_sum,spectrum2_global,nk)
     endif
 !
@@ -1136,7 +1206,6 @@ outer:  do ikz=1,nz
 !
   if (lintegrate_shell) then
 !
-    deallocate(kshell)
     if (lintegrate_z) then
       deallocate(spectrum1,spectrum1_sum)
     else
@@ -1179,10 +1248,9 @@ outer:  do ikz=1,nz
   real, dimension(nx,3) :: bb, bbEP, hhEP, jj, gtmp1, gtmp2
   real, dimension(nk) :: nks=0.,nks_sum=0.
   real, dimension(nk) :: k2m=0.,k2m_sum=0., krms, km1
-  real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
-  real, dimension(nx,ny,nz,3) :: bEP, hEP
+  real, save, dimension(nx,ny,nz,3) :: bEP, hEP
   real, dimension(2), optional :: sumspec
-  complex, dimension(nx,ny,nz) :: phi
+  complex, save, dimension(nx,ny,nz) :: phi
   real, dimension(nk) :: spectrum,spectrum_sum
   real, dimension(nk) :: spectrumhel,spectrumhel_sum
   real, allocatable, dimension(:,:), save :: cyl_spectrum, cyl_spectrum_sum
@@ -2683,7 +2751,6 @@ outer:  do ikz=1,nz
   real :: k2
   real, dimension(nk) :: nks,nks_sum
   real, dimension(nk) :: k2m,k2m_sum,krms
-  real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
   real, dimension(nk,nbin_angular) :: spectrum_2d, spectrumhel_2d
   real, dimension(nk,nbin_angular) :: spectrum_2d_sum, spectrumhel_2d_sum
   real, allocatable, dimension(:) :: spectrum,spectrumhel
@@ -4112,7 +4179,7 @@ endsubroutine pdf
   integer, parameter :: nk=nx/2
   integer :: i,k,ikx,iky,ikz,ivec
   real, dimension (mx,my,mz,mfarray) :: f
-  real, dimension(nx,ny,nz,3) :: a1,b1
+  real, save, dimension(nx,ny,nz,3) :: a1,b1
   real, dimension(nx,3) :: tmp_a1
   real, dimension(nk) :: spectrum,spectrum_sum
   character (len=*) :: sp
