@@ -496,4 +496,20 @@ print*, 'ltrained .or. .not. lckpt_written=', ltrained, lckpt_written
 
     endsubroutine write_sample
 !***************************************************************
+    subroutine pushpars2c(p_par)
+
+    use Syscalls, only: copy_addr
+
+    integer, parameter :: n_pars=50
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+    call copy_addr(itauxx,p_par(1)) ! int
+    call copy_addr(itauxy,p_par(2)) ! int
+    call copy_addr(itauxz,p_par(3)) ! int
+    call copy_addr(itauyy,p_par(4)) ! int
+    call copy_addr(itauyz,p_par(5)) ! int
+    call copy_addr(itauzz,p_par(6)) ! int
+
+    endsubroutine pushpars2c
+!***********************************************************************
   endmodule Training
