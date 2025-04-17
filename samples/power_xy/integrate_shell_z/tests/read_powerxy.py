@@ -8,7 +8,7 @@ Test reading power_xy
 # Set up Python load path and configure a matplotlib backend that does not
 # need X11. This needs to happen before importing the pencil module.
 import sys
-sys.path.append('../../../python')
+sys.path.append('../../../../python')
 import matplotlib
 matplotlib.use('agg')
 import numpy as np
