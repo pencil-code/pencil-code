@@ -3267,41 +3267,45 @@ module Hydro
 !
       if (lpenc_loc(i_uu)) then
         if (lconservative) then
-          tmp3=f(l1:l2,m,n,iux:iuz)
-          if (lrelativistic) then
+          if (lvv_as_aux .or. lvv_as_comaux) then
+            p%uu=f(l1:l2,m,n,ivx:ivz)
+          else
+            tmp3=f(l1:l2,m,n,iux:iuz)
+            if (lrelativistic) then
 !
 !  In the relativistic case, which must also be conservative, cs201=4/3, if cs2=1/3.
 !  At this point, the Lorentz factor gamma^2 is already available.
 !  We solve here Eq. (39) of the notes.
 !
-            cs201=cs20+1.
-            tmp_rho=f(l1:l2,m,n,irho)
-            if (.not.lhiggsless_old.and.lhiggsless) then
-              where(real(t) < f(l1:l2,m,n,ihless)) tmp_rho=tmp_rho-eps_hless
-            endif
-            if (lmagnetic) then
+              cs201=cs20+1.
+              tmp_rho=f(l1:l2,m,n,irho)
+              if (.not.lhiggsless_old.and.lhiggsless) then
+                where(real(t) < f(l1:l2,m,n,ihless)) tmp_rho=tmp_rho-eps_hless
+              endif
+              if (lmagnetic) then
 !
-              if (full_3D) then
-                DD=(f(l1:l2,m,n,irho)-.5*B_ext2)/(1.-.25/f(l1:l2,m,n,ilorentz))+B_ext2
+                if (full_3D) then
+                  DD=(f(l1:l2,m,n,irho)-.5*B_ext2)/(1.-.25/f(l1:l2,m,n,ilorentz))+B_ext2
 !AB: not yet calculated
-                call invmat_DB(DD,p%bb,tmp33)
-                call multmv(tmp33,tmp3,p%uu)
+                  call invmat_DB(DD,p%bb,tmp33)
+                  call multmv(tmp33,tmp3,p%uu)
+                else
+                  tmp=1./((f(l1:l2,m,n,irho)-.5*B_ext2)/(1.-.25/f(l1:l2,m,n,ilorentz))+B_ext2)
+                  call multsv_mn(tmp,tmp3,p%uu)
+                endif
               else
-                tmp=1./((f(l1:l2,m,n,irho)-.5*B_ext2)/(1.-.25/f(l1:l2,m,n,ilorentz))+B_ext2)
+                tmp=1./(tmp_rho/(1.-.25/f(l1:l2,m,n,ilorentz)))
                 call multsv_mn(tmp,tmp3,p%uu)
               endif
-            else
-              tmp=1./(tmp_rho/(1.-.25/f(l1:l2,m,n,ilorentz)))
-              call multsv_mn(tmp,tmp3,p%uu)
-            endif
 !print*,'AXEL7: used B_ext2'
 !
 !  In the non-relativisitic (but conservative) case, f(:,:,:,iuu) is the momentum,
 !  so to get the velocity, we have to divide by it.
 !
-          else
-            p%rho1=1./f(l1:l2,m,n,irho)
-            call multsv_mn(p%rho1,tmp3,p%uu)
+            else
+              p%rho1=1./f(l1:l2,m,n,irho)
+              call multsv_mn(p%rho1,tmp3,p%uu)
+            endif
           endif
         else
           p%uu=f(l1:l2,m,n,iux:iuz)
@@ -3312,8 +3316,10 @@ module Hydro
 !  the iuu slot does not correspond to the actual velocity, which is the
 !  case when lconservative or lrelativity.
 !
-!--   if (lvv_as_aux .or. lvv_as_comaux) f(l1:l2,m,n,ivx:ivz) = p%uu
-!XX
+  !if (m==m1 .and. n==n1) print*,'AXEL-11 vv from f ar=',f(l1,m,n,ivx:ivz)
+  !if (m==m1 .and. n==n1) print*,'AXEL-11 vv from p%uu=',p%uu(1,:)
+  !    if (lvv_as_aux .or. lvv_as_comaux) f(l1:l2,m,n,ivx:ivz) = p%uu
+!
 ! u2
       if (lpenc_loc(i_u2)) call dot2_mn(p%uu,p%u2)
 ! uij
