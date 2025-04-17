@@ -106,6 +106,13 @@ has_nans(AcMesh mesh_in);
   
   #define deltay  deltay__mod__cdata
   #define eps_rkf eps_rkf__mod__cdata
+  
+  #define itauxx itauxx__mod__training
+  #define itauxy itauxy__mod__training
+  #define itauxz itauxz__mod__training
+  #define itauyy itauyy__mod__training
+  #define itauyz itauyz__mod__training
+  #define itauzz itauzz__mod__training
 
 #endif
 
@@ -1435,35 +1442,38 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint)
   //initLoadStore();
 #endif
 #if TRAINING
-	if(itauxx != TAU.xx)
 	{
-		fprintf(stderr,"Mismatch of indeces for tau components!!\n");
-		exit(EXIT_FAILURE);
-	}
-	if(itauxy != TAU.xy)
-	{
-		fprintf(stderr,"Mismatch of indeces for tau components!!\n");
-		exit(EXIT_FAILURE);
-	}
-	if(itauxz != TAU.xz)
-	{
-		fprintf(stderr,"Mismatch of indeces for tau components!!\n");
-		exit(EXIT_FAILURE);
-	}
-	if(itauyy != TAU.yy)
-	{
-		fprintf(stderr,"Mismatch of indeces for tau components!!\n");
-		exit(EXIT_FAILURE);
-	}
-	if(itauyz != TAU.yz)
-	{
-		fprintf(stderr,"Mismatch of indeces for tau components!!\n");
-		exit(EXIT_FAILURE);
-	}
-	if(itauzz != TAU.zz)
-	{
-		fprintf(stderr,"Mismatch of indeces for tau components!!\n");
-		exit(EXIT_FAILURE);
+		#include "user_constants.h"
+		if(itauxx != TAU.xx)
+		{
+			fprintf(stderr,"Mismatch of indeces for tau components!!\n");
+			exit(EXIT_FAILURE);
+		}
+		if(itauxy != TAU.xy)
+		{
+			fprintf(stderr,"Mismatch of indeces for tau components!!\n");
+			exit(EXIT_FAILURE);
+		}
+		if(itauxz != TAU.xz)
+		{
+			fprintf(stderr,"Mismatch of indeces for tau components!!\n");
+			exit(EXIT_FAILURE);
+		}
+		if(itauyy != TAU.yy)
+		{
+			fprintf(stderr,"Mismatch of indeces for tau components!!\n");
+			exit(EXIT_FAILURE);
+		}
+		if(itauyz != TAU.yz)
+		{
+			fprintf(stderr,"Mismatch of indeces for tau components!!\n");
+			exit(EXIT_FAILURE);
+		}
+		if(itauzz != TAU.zz)
+		{
+			fprintf(stderr,"Mismatch of indeces for tau components!!\n");
+			exit(EXIT_FAILURE);
+		}
 	}
 #endif
   comm_pencil = MPI_Comm_f2c(comm_fint);
