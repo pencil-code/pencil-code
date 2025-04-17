@@ -5059,7 +5059,10 @@ print*,'AXEL: should not be here (eta) ... '
                     if (lignore_1rho_in_Lorentz) then
                       df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%jxb
                     else
-                      df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%jxbr
+                      select case (ascale_type)
+                        case ('default'); df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%jxbr
+                        case ('superconformal'); df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+ascale*p%jxbr
+                      endselect
                     endif
                   endif
                 else
@@ -6100,7 +6103,7 @@ print*,'AXEL: should not be here (eta) ... '
         f(l1:l2,m,n,ibb_sphp) = p%bb(:,1)*p%phix+p%bb(:,2)*p%phiy
       endif
 !
-!  Hubble parameter
+!  Hubble parameter (doesn't look generic)
 !
       if (lhubble_magnetic) then
         dAdt = dAdt - 2.*Hubble*ascale**1.5*p%AA
