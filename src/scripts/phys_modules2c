@@ -1,16 +1,15 @@
 #!/bin/bash
 
 if [[ $3 == '' ]]; then
-  modname=`grep -m 1 '^ *module  *[a-zA-Z_]' $2 | sed -e's/module  *\([0-9a-zA-Z_]*\).*$/\L\1/'`
+  modname=`grep -m 1 '^ *module  *[a-zA-Z_]' $2 | sed -e's/ *module  *\([0-9a-zA-Z_]*\).*$/\L\1/'`
 else
   modname=$3
 fi
-orig_modname=$(echo "$modname")
+orig_modname=$modname
 #Run_module is actually supposed to push cdata stuff so rename it here
 modname=$(echo "$modname" | sed -e's/run_module/cdata/')
 #Remove whitespace
 modname=$(echo "$modname" | sed -e 's/[[:space:]]//g')
-
 #if [[ $modname =~ entropy.* ]] || [[ $modname =~ temperature_.* ]] || [[ $modname == thermal_energy ]]; then
 #  modname='energy'
 #elif [[ $modname =~ eos_.* ]]; then
@@ -48,6 +47,7 @@ sed -n '
   /subroutine/ d
   /call  *keep_compiler/ d
   /use / d
+  /^ *!/ d
   /set_type *(/ d
   p
   }
