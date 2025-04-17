@@ -1434,6 +1434,38 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint)
 #if PACKED_DATA_TRANSFERS
   //initLoadStore();
 #endif
+#if TRAINING
+	if(itauxx != TAU.xx)
+	{
+		fprintf(stderr,"Mismatch of indeces for tau components!!\n");
+		exit(EXIT_FAILURE);
+	}
+	if(itauxy != TAU.xy)
+	{
+		fprintf(stderr,"Mismatch of indeces for tau components!!\n");
+		exit(EXIT_FAILURE);
+	}
+	if(itauxz != TAU.xz)
+	{
+		fprintf(stderr,"Mismatch of indeces for tau components!!\n");
+		exit(EXIT_FAILURE);
+	}
+	if(itauyy != TAU.yy)
+	{
+		fprintf(stderr,"Mismatch of indeces for tau components!!\n");
+		exit(EXIT_FAILURE);
+	}
+	if(itauyz != TAU.yz)
+	{
+		fprintf(stderr,"Mismatch of indeces for tau components!!\n");
+		exit(EXIT_FAILURE);
+	}
+	if(itauzz != TAU.zz)
+	{
+		fprintf(stderr,"Mismatch of indeces for tau components!!\n");
+		exit(EXIT_FAILURE);
+	}
+#endif
   comm_pencil = MPI_Comm_f2c(comm_fint);
   setupConfig(mesh.info);
   //TP: done after setupConfig since we need maux_vtxbuf_index
