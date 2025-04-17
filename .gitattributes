@@ -4856,6 +4856,7 @@ src/special/NS_polecap.f90 -text
 src/special/README -text
 src/special/advective_gauge.f90 -text
 src/special/alphadisk.f90 -text
+src/special/ascale_collapse.f90 -text
 src/special/atmosphere.f90 -text
 src/special/axionSU2back.f90 -text
 src/special/backreact_infl.f90 -text
