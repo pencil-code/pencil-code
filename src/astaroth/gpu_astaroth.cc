@@ -153,7 +153,7 @@ float MSE(){
 #if TRAINING
 	#include "user_constants.h"
 	
-	auto temp = acGetOptimizedDSLTaskGraph(subtract_pred);
+	auto temp = acGetOptimizedDSLTaskGraph(calc_validation_loss);
 	acGridSynchronizeStream(STREAM_ALL);
 	acGridExecuteTaskGraph(temp,1);
 	acGridSynchronizeStream(STREAM_ALL);
@@ -165,25 +165,25 @@ float MSE(){
 	AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
 
 
-	copyFarray(NULL);
+	//copyFarray(NULL);
 
 	
-	float sum = 0;
+	//float sum = 0;
 
-	for(size_t z = dims.n0.x; z < dims.n1.x; z++){	
-		for(size_t y = dims.n0.y; y < dims.n1.y; y++){
-			for(size_t x = dims.n0.z; x < dims.n1.z; x++){
-				sum += mesh.vertex_buffer[TAU_INFERRED.xx][DEVICE_VTXBUF_IDX(z,y,x)] * mesh.vertex_buffer[TAU_INFERRED.xx][DEVICE_VTXBUF_IDX(z,y,x)];
-				sum += mesh.vertex_buffer[TAU_INFERRED.yy][DEVICE_VTXBUF_IDX(z,y,x)] * mesh.vertex_buffer[TAU_INFERRED.yy][DEVICE_VTXBUF_IDX(z,y,x)];
-				sum += mesh.vertex_buffer[TAU_INFERRED.zz][DEVICE_VTXBUF_IDX(z,y,x)] * mesh.vertex_buffer[TAU_INFERRED.zz][DEVICE_VTXBUF_IDX(z,y,x)];
-				sum += mesh.vertex_buffer[TAU_INFERRED.xy][DEVICE_VTXBUF_IDX(z,y,x)] * mesh.vertex_buffer[TAU_INFERRED.xy][DEVICE_VTXBUF_IDX(z,y,x)];
-				sum += mesh.vertex_buffer[TAU_INFERRED.yz][DEVICE_VTXBUF_IDX(z,y,x)] * mesh.vertex_buffer[TAU_INFERRED.yz][DEVICE_VTXBUF_IDX(z,y,x)];
-				sum += mesh.vertex_buffer[TAU_INFERRED.xz][DEVICE_VTXBUF_IDX(z,y,x)] * mesh.vertex_buffer[TAU_INFERRED.xz][DEVICE_VTXBUF_IDX(z,y,x)];
-			}
-		}
-	}
+	//for(size_t z = dims.n0.x; z < dims.n1.x; z++){	
+	//	for(size_t y = dims.n0.y; y < dims.n1.y; y++){
+	//		for(size_t x = dims.n0.z; x < dims.n1.z; x++){
+	//			sum += mesh.vertex_buffer[TAU_INFERRED.xx][DEVICE_VTXBUF_IDX(z,y,x)] * mesh.vertex_buffer[TAU_INFERRED.xx][DEVICE_VTXBUF_IDX(z,y,x)];
+	//			sum += mesh.vertex_buffer[TAU_INFERRED.yy][DEVICE_VTXBUF_IDX(z,y,x)] * mesh.vertex_buffer[TAU_INFERRED.yy][DEVICE_VTXBUF_IDX(z,y,x)];
+	//			sum += mesh.vertex_buffer[TAU_INFERRED.zz][DEVICE_VTXBUF_IDX(z,y,x)] * mesh.vertex_buffer[TAU_INFERRED.zz][DEVICE_VTXBUF_IDX(z,y,x)];
+	//			sum += mesh.vertex_buffer[TAU_INFERRED.xy][DEVICE_VTXBUF_IDX(z,y,x)] * mesh.vertex_buffer[TAU_INFERRED.xy][DEVICE_VTXBUF_IDX(z,y,x)];
+	//			sum += mesh.vertex_buffer[TAU_INFERRED.yz][DEVICE_VTXBUF_IDX(z,y,x)] * mesh.vertex_buffer[TAU_INFERRED.yz][DEVICE_VTXBUF_IDX(z,y,x)];
+	//			sum += mesh.vertex_buffer[TAU_INFERRED.xz][DEVICE_VTXBUF_IDX(z,y,x)] * mesh.vertex_buffer[TAU_INFERRED.xz][DEVICE_VTXBUF_IDX(z,y,x)];
+	//		}
+	//	}
+	//}
 	
-	return (sum/(6*32*32*32));
+	return (acDeviceGetOutput(acGridGetDevice(), AC_l2_sum))/(6*32*32*32);
 #endif
 }
 
@@ -204,10 +204,6 @@ extern "C" void torch_infer_c_api(int flag){
 	}
 
 
-	auto losses = acGetOptimizedDSLTaskGraph(subtract_pred);
-	acGridSynchronizeStream(STREAM_ALL);
-	acGridExecuteTaskGraph(losses,1);
-	acGridSynchronizeStream(STREAM_ALL);
 
 	AcReal* out = NULL;
 	
