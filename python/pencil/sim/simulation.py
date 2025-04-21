@@ -113,7 +113,7 @@ class __Simulation__(object):
         self,
         path_root=".",
         name=False,
-        start_optionals=False,
+        start_optionals=True,
         optionals=True,
         quiet=True,
         rename_submit_script=False,
@@ -244,14 +244,16 @@ class __Simulation__(object):
         optionals = tmp
 
         # optional files to be copied
-        if type(start_optionals) == type(["list"]):
+        if isinstance(start_optionals, list):
             start_optionals = self.start_optionals + start_optionals
-        if start_optionals == False:
+        elif start_optionals is False:
+            start_optionals = []
+        elif start_optionals is True:
             start_optionals = self.start_optionals
-        if type(start_optionals) == type("string"):
+        elif isinstance(start_optionals, str):
             start_optionals = [start_optionals]
-        if type(start_optionals) != type(["list"]):
-            print("! ERROR: start_optionals must be of type list!")
+        else:
+            raise TypeError("start_optionals must be of type list, str, or bool!")
 
         tmp = []
         for opt in start_optionals:
