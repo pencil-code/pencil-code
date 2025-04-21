@@ -305,8 +305,13 @@ class __Simulation__(object):
                 )
                 return False
 
+        if self.started():
+            start_components = self.start_components
+        else:
+            start_components = []
+
         # check existance of self.start_components
-        for comp in self.start_components:
+        for comp in start_components:
             if not exists(join(self.datadir, comp)):
                 print(
                     "! ERROR: Couldnt find start_component "
@@ -365,7 +370,7 @@ class __Simulation__(object):
                 debug_breakpoint()
             copyfile(f_path, copy_to)
 
-        for f in self.start_components + start_optionals:
+        for f in start_components + start_optionals:
             f_path = abspath(join(self.datadir, f))
             copy_to = abspath(join(path_newsim_data, f))
             if f_path == copy_to:
