@@ -309,7 +309,7 @@ class __Simulation__(object):
         for comp in self.start_components:
             if not exists(join(self.datadir, comp)):
                 print(
-                    "! ERROR: Couldnt find component "
+                    "! ERROR: Couldnt find start_component "
                     + comp
                     + " from simulation "
                     + self.name
