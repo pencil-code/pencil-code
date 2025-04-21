@@ -224,14 +224,17 @@ class __Simulation__(object):
         else:
             has_initial_condition_dir = False
 
-        if type(optionals) == type(["list"]):
-            optionals = self.optionals + optionals  # optional files to be copied
-        if optionals == True:
-            optionals = self.optionals
-        if type(optionals) == type("string"):
+        if isinstance(optionals, list):
+            optionals = self.optionals + optionals
+        elif isinstance(optionals, str):
+            #Kishore: why is it that only in this case, self.optionals is not appended?
             optionals = [optionals]
-        if type(optionals) != type(["list"]):
-            print("! ERROR: optionals must be of type list!")
+        elif optionals is True:
+            optionals = self.optionals
+        elif optionals is False:
+            optionals = []
+        else:
+            raise TypeError("optionals must be bool, string, or list")
 
         tmp = []
         for opt in optionals:
