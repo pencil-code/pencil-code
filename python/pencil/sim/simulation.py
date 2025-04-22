@@ -669,11 +669,11 @@ class __Simulation__(object):
 
     def compile(
         self,
-        cleanall=True,
+        cleanall=False,
         fast=False,
         verbose=False,
         hostfile=None,
-        autoclean=False,
+        autoclean=True,
         **kwargs,
         ):
         """Compiles the simulation. Per default the linking is done before the
