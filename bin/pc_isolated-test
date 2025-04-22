@@ -75,6 +75,6 @@ env -u PATH -u _sourceme -u PYTHONPATH bash --norc << EOF
 export PENCIL_HOME=$(pwd)
 _sourceme_quiet=1; . $PENCIL_HOME/sourceme.sh; unset _sourceme_quiet
 
-pc_auto-test -C $auto_test_options
+pc_auto-test --auto-clean $auto_test_options
 
 EOF
