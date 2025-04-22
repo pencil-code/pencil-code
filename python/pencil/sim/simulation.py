@@ -732,7 +732,7 @@ class __Simulation__(object):
                 #If cleanall was already passed, no point in cleaning again and retrying.
                 return self.compile(
                     cleanall=True,
-                    autoclean=False,
+                    autoclean=False, #prevent infinite recursion
                     fast=fast,
                     verbose=verbose,
                     hostfile=hostfile,
