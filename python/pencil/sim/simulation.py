@@ -10,6 +10,9 @@ import numpy as np
 
 from pencil.util import PathWrapper, pc_print
 
+class CommandFailedError(RuntimeError):
+    pass
+
 def simulation(*args, **kwargs):
     """
     simulation(*args, **kwargs)
@@ -674,7 +677,6 @@ class __Simulation__(object):
         verbose=False,
         hostfile=None,
         autoclean=True,
-        raise_errors=False,
         **kwargs,
         ):
         """Compiles the simulation. Per default the linking is done before the
@@ -715,27 +717,29 @@ class __Simulation__(object):
         if verbose != False:
             print(f"! Compiling {self.path}")
 
-        ret = self.bash(
-            command=" ".join(command),
-            verbose=verbose,
-            logfile=join(self.pc_dir, "compilelog_" + timestamp),
-            raise_errors=(raise_errors and not autoclean), #if auto-clean is specified, we should ignore errors here
-            **kwargs,
-            )
-
-        if (ret is not True) and autoclean and (not cleanall):
-            #If cleanall was already passed, no point in cleaning again and retrying.
-            return self.compile(
-                cleanall=True,
-                autoclean=False,
-                fast=fast,
+        try:
+            ret = self.bash(
+                command=" ".join(command),
                 verbose=verbose,
-                hostfile=hostfile,
-                raise_errors=raise_errors,
+                logfile=join(self.pc_dir, "compilelog_" + timestamp),
                 **kwargs,
                 )
-        else:
-            return ret
+        except CommandFailedError:
+            if not autoclean:
+                raise
+        finally:
+            if (ret is not True) and autoclean and (not cleanall):
+                #If cleanall was already passed, no point in cleaning again and retrying.
+                return self.compile(
+                    cleanall=True,
+                    autoclean=False,
+                    fast=fast,
+                    verbose=verbose,
+                    hostfile=hostfile,
+                    **kwargs,
+                    )
+            else:
+                return ret
 
     def build(self, **kwargs):
         """Same as compile()"""
@@ -823,7 +827,7 @@ class __Simulation__(object):
                 + f"\n! {logfile}"
                 )
             if raise_errors:
-                raise RuntimeError(message)
+                raise CommandFailedError(message)
             else:
                 print(message)
                 return rc
