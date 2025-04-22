@@ -6,9 +6,6 @@
   Comments: 
 */
 // General headers.
-//TP: hack! needed because rkind8 comes from cparam_c.h
-//TP: correct solution to filter the line in sed script but can't bothered to do it now
-const int rkind8 = 0;
 #include <math.h>
 #include <algorithm>
 #include <chrono>

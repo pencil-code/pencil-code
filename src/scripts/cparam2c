@@ -5,11 +5,7 @@ sed -f scripts/cparam.sed cparam.local > cparam.local_c.h
 echo '#define MIN(a,b) (a<b ? a : b)' > cparam_c.h
 echo '#define MAX(a,b) (a>b ? a : b)' >> cparam_c.h
 
-if [[ $MODULE_NAME_ORDER == "CRAY" ]]; then
-  sed -f scripts/cparam.sed -e's/integer *:: *\([a-zA-Z0-9_]*\) *= *[^!;]*.*$//' cparam.f90 >> cparam_c.h
-else
-  sed -f scripts/cparam.sed -e's/integer *:: *\([a-zA-Z0-9_]*\) *= *[^!;]*.*$//' cparam.f90 >> cparam_c.h
-fi
+sed -f scripts/cparam.sed cparam.f90 >> cparam_c.h
 # the following needs to stay here in this order!
 echo '#pragma once' > cparam_pencils.inc_c.h
 sed -f scripts/cparam.sed cparam_pencils.inc >> cparam_pencils.inc_c.h

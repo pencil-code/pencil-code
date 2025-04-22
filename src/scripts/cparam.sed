@@ -13,6 +13,7 @@ s/\([0-9.]\) *[dD] *\([-0-9]\)/\1E\2/g
 /implicit  *none/ d
 /cparam_pencils\.inc/ d
 /dimension *(/ d
+/integer, *parameter *:: *[ir]kind[0-9]* *=/ d
 s/, *bind *( *c *)//
 s/\([a-zA-Z0-9_]*\) *\*\* *\([^,]*\)\([,$]\)/cpu_pow(\1,\2)\3/g
 s/\([a-zA-Z0-9_]*\) *\*\* *\([^,]*\) *$/cpu_pow(\1,\2)/g
