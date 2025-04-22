@@ -674,6 +674,7 @@ class __Simulation__(object):
         verbose=False,
         hostfile=None,
         autoclean=True,
+        raise_errors=False,
         **kwargs,
         ):
         """Compiles the simulation. Per default the linking is done before the
@@ -718,6 +719,7 @@ class __Simulation__(object):
             command=" ".join(command),
             verbose=verbose,
             logfile=join(self.pc_dir, "compilelog_" + timestamp),
+            raise_errors=(raise_errors and not autoclean), #if auto-clean is specified, we should ignore errors here
             **kwargs,
             )
 
@@ -729,6 +731,7 @@ class __Simulation__(object):
                 fast=fast,
                 verbose=verbose,
                 hostfile=hostfile,
+                raise_errors=raise_errors,
                 **kwargs,
                 )
         else:
