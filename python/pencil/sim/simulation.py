@@ -673,6 +673,7 @@ class __Simulation__(object):
         fast=False,
         verbose=False,
         hostfile=None,
+        autoclean=False,
         **kwargs,
         ):
         """Compiles the simulation. Per default the linking is done before the
@@ -689,6 +690,9 @@ class __Simulation__(object):
 
         fast : bool
             Set True for fast compilation.
+
+        autoclean : bool
+            If compilation fails, automatically set cleanall=True and retry.
 
         Accepts all other keywords accepted by self.bash
         """
@@ -710,12 +714,25 @@ class __Simulation__(object):
         if verbose != False:
             print(f"! Compiling {self.path}")
 
-        return self.bash(
+        ret = self.bash(
             command=" ".join(command),
             verbose=verbose,
             logfile=join(self.pc_dir, "compilelog_" + timestamp),
             **kwargs,
             )
+
+        if (ret is not True) and autoclean and (not cleanall):
+            #If cleanall was already passed, no point in cleaning again and retrying.
+            return self.compile(
+                cleanall=True,
+                autoclean=False,
+                fast=fast,
+                verbose=verbose,
+                hostfile=hostfile,
+                **kwargs,
+                )
+        else:
+            return ret
 
     def build(self, **kwargs):
         """Same as compile()"""
