@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # Clone a given branch of pencil and test it
-# Note that a local path can also be specified to --repo (e.g. --repo="~/Documents/pencil-code")
+# Note that a local path can also be specified to --repo
 # Example usage:
-# pc_isolated-test --branch master --repo "~/Documents/pencil-code" --auto-test-options "--max-level=1 --time-limit=5m"
+# pc_isolated-test --branch master --repo "file:///home/kishore/pencil-code" --auto-test-options "--max-level=1 --time-limit=5m"
 #
 # DANGER: things can break horribly if you edit this script while it is running.
 
