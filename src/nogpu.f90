@@ -64,33 +64,19 @@ contains
 !
     endsubroutine rhs_GPU
 !**************************************************************************
-    function get_ptr_GPU(ind1,ind2,lout) result(pFarr)
+    function get_ptr_GPU(ind1,ind2,lout,nbatch_training) result(pFarr)
 
       integer :: ind1
-      integer, optional :: ind2
+      integer, optional :: ind2, nbatch_training
       logical, optional :: lout
 
       real, dimension(:,:,:,:), pointer :: pFarr
 
-      call keep_compiler_quiet(ind1,ind2)
+      call keep_compiler_quiet(ind1,ind2,nbatch_training)
       call keep_compiler_quiet(lout)
       call keep_compiler_quiet(pFarr)
 
     endfunction get_ptr_GPU
-!**************************************************************************
-    function get_ptr_GPU_for_training(ind1,ind2,lout) result(pFarr)
-
-      integer :: ind1
-      integer, optional :: ind2
-      logical, optional :: lout
-
-      real, dimension(:,:,:,:,:), pointer :: pFarr
-
-      call keep_compiler_quiet(ind1,ind2)
-      call keep_compiler_quiet(lout)
-      call keep_compiler_quiet(pFarr)
-
-    endfunction get_ptr_GPU_for_training
 !**************************************************************************
     subroutine copy_farray_from_GPU(f)
 
@@ -141,15 +127,23 @@ contains
     endsubroutine test_rhs_gpu
 !**************************************************************************
     subroutine gpu_set_dt()
+
     endsubroutine gpu_set_dt
 !**************************************************************************
-    subroutine infer_c(flag)
-    integer :: flag
-    endsubroutine infer_c
-!**************************************************************************
-    subroutine train_c(f)
-    real :: f
-    endsubroutine train_c
-!**************************************************************************
+    subroutine infer_gpu(flag)
 
+    integer :: flag
+
+    call keep_compiler_quiet(flag)
+
+    endsubroutine infer_gpu
+!**************************************************************************
+    subroutine train_gpu(f)
+
+    real :: f
+
+    call keep_compiler_quiet(f)
+
+    endsubroutine train_gpu
+!**************************************************************************
 endmodule  GPU
