@@ -2607,6 +2607,7 @@ samples/2d-tests/radiation_doppler/idl/ppower.pro -text
 samples/2d-tests/radiation_doppler/idl/pvar.pro -text
 samples/2d-tests/radiation_doppler/parameters.pro -text
 samples/2d-tests/radiation_doppler/print.in -text
+samples/2d-tests/radiation_doppler/reference.out -text
 samples/2d-tests/radiation_doppler/run.in -text
 samples/2d-tests/radiation_doppler/src/Makefile.local -text
 samples/2d-tests/radiation_doppler/src/cparam.local -text
