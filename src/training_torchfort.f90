@@ -136,7 +136,7 @@ print*, 'ltrained, modelfn=', ltrained, modelfn
       if (lroot) call svn_id( &
            "$Id$")
 !
-      call farray_register_auxiliary('tau',itau,vector=6)
+      call farray_register_auxiliary('tau',itau,vector=6,on_gpu=lgpu)
 !
 !  Indices to access tau.
 !
