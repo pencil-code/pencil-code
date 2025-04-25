@@ -4,7 +4,7 @@ import pytest
 import pencil as pc
 from test_utils import get_rundir
 
-pencil_home = pathlib.Path(__file__).parent/"../.."
+pencil_home = pathlib.Path(__file__).parent.parent.parent
 os.environ["PENCIL_HOME"] = str(pencil_home)
 
 #The following seems dirty, but is needed for subprocesses to be initialized with the correct Python path
