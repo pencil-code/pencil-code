@@ -18,6 +18,7 @@ const int rkind8 = 0;
 #include <unistd.h>
 #include <mpi.h>
 #include <sys/resource.h>
+#include <fstream>
 
 #define CUDA_ERRCHK(X)
 
@@ -147,7 +148,7 @@ extern "C" void torch_train_c_api(AcReal *loss_val){
 	
   auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
 	acGridSynchronizeStream(STREAM_ALL);
-	acGridExecuteTaskGraph(temp,1);
+	acGridExecuteTaskGraph(bcs,1);
 	acGridSynchronizeStream(STREAM_ALL);
 
 	torch_trainCAPI(uumean_ptr, TAU_ptr, loss_val);
@@ -172,7 +173,7 @@ float MSE(){
 	AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
 
 
-	//copyFarray(NULL);
+	copyFarray(NULL);
 
 	
 	//float sum = 0;
@@ -189,6 +190,8 @@ float MSE(){
 	//		}
 	//	}
 	//}
+	
+
 	
 	return (acDeviceGetOutput(acGridGetDevice(), AC_l2_sum))/(6*32*32*32);
 #endif
@@ -233,6 +236,53 @@ extern "C" void torch_infer_c_api(int flag){
 	float vloss = MSE();
 
 	printf("Validation error is: %f\n", vloss);
+
+	std::ofstream myFile;
+	myFile.open("sclices.out");
+
+	copyFarray(NULL);
+	const auto DEVICE_VTXBUF_IDX = [&](const int x, const int y, const int z)
+					{
+						return acVertexBufferIdx(x, y, z, mesh.info);
+					};
+	AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
+
+	for(size_t i = dims.n0.x; i < dims.n1.x; i++){
+		for(size_t j = dims.n0.y; j < dims.n1.y; j++){
+			for(size_t k = dims.n0.z; k < dims.n1.z; k++){
+				if(k == 20){	
+					myFile << "TAU xx, x: " << i  << " y: " << j << " ,value: " << mesh.vertex_buffer[TAU.xx][DEVICE_VTXBUF_IDX(i, j, k)] << "\n"; 	
+					myFile << "TAU xx infered, x: " << i  << " y: " << j << " ,value: " << mesh.vertex_buffer[TAU_INFERRED.xx][DEVICE_VTXBUF_IDX(i, j, k)] << "\n"; 	
+
+					myFile << "TAU yy, x: " << i  << " y: " << j << " ,value: " << mesh.vertex_buffer[TAU.yy][DEVICE_VTXBUF_IDX(i, j, k)] << "\n"; 	
+					myFile << "TAU yy infered, x: " << i  << " y: " << j << " ,value: " << mesh.vertex_buffer[TAU_INFERRED.yy][DEVICE_VTXBUF_IDX(i, j, k)] << "\n"; 	
+
+					myFile << "TAU zz, x: " << i  << " y: " << j << " ,value: " << mesh.vertex_buffer[TAU.zz][DEVICE_VTXBUF_IDX(i, j, k)] << "\n"; 	
+					myFile << "TAU zz infered, x: " << i  << " y: " << j << " ,value: " << mesh.vertex_buffer[TAU_INFERRED.zz][DEVICE_VTXBUF_IDX(i, j, k)] << "\n"; 	
+
+					myFile << "TAU xy, x: " << i  << " y: " << j << " ,value: " << mesh.vertex_buffer[TAU.xy][DEVICE_VTXBUF_IDX(i, j, k)] << "\n"; 	
+					myFile << "TAU xy infered, x: " << i  << " y: " << j << " ,value: " << mesh.vertex_buffer[TAU_INFERRED.xy][DEVICE_VTXBUF_IDX(i, j, k)] << "\n"; 	
+
+					myFile << "TAU yz, x: " << i  << " y: " << j << " ,value: " << mesh.vertex_buffer[TAU.yz][DEVICE_VTXBUF_IDX(i, j, k)] << "\n"; 	
+					myFile << "TAU yz infered, x: " << i  << " y: " << j << " ,value: " << mesh.vertex_buffer[TAU_INFERRED.yz][DEVICE_VTXBUF_IDX(i, j, k)] << "\n"; 	
+
+					myFile << "TAU xz, x: " << i  << " y: " << j << " ,value: " << mesh.vertex_buffer[TAU.xz][DEVICE_VTXBUF_IDX(i, j, k)] << "\n"; 	
+					myFile << "TAU xz infered, x: " << i  << " y: " << j << " ,value: " << mesh.vertex_buffer[TAU_INFERRED.xz][DEVICE_VTXBUF_IDX(i, j, k)] << "\n"; 	
+
+					myFile << "UUMEAN X x: " << i << " y: " << j << " ,value: " << mesh.vertex_buffer[UUMEAN.x][DEVICE_VTXBUF_IDX(i, j, k)] << "\n";
+					myFile << "UUMEAN Y x: " << i << " y: " << j << " ,value: " << mesh.vertex_buffer[UUMEAN.y][DEVICE_VTXBUF_IDX(i, j, k)] << "\n";
+					myFile << "UUMEAN Z x: " << i << " y: " << j << " ,value: " << mesh.vertex_buffer[UUMEAN.z][DEVICE_VTXBUF_IDX(i, j, k)] << "\n";
+
+					
+					myFile << "UUX x: " << i << " y: " << j << " ,value: " << mesh.vertex_buffer[UUX][DEVICE_VTXBUF_IDX(i, j, k)] << "\n";
+					myFile << "UUY x: " << i << " y: " << j << " ,value: " << mesh.vertex_buffer[UUY][DEVICE_VTXBUF_IDX(i, j, k)] << "\n";
+					myFile << "UUZ x: " << i << " y: " << j << " ,value: " << mesh.vertex_buffer[UUZ][DEVICE_VTXBUF_IDX(i, j, k)] << "\n";
+				}
+			}
+		}	
+	}
+	myFile.close();	
+
 #endif
 }
 
@@ -1441,9 +1491,13 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint)
 #if PACKED_DATA_TRANSFERS
   //initLoadStore();
 #endif
+  comm_pencil = MPI_Comm_f2c(comm_fint);
+  setupConfig(mesh.info);
 #if TRAINING
+  #include "user_constants.h"
+  fprintf(stderr,"INDEX OF TAU.xx: %d\n",acGetTAU_Xx());
+/**
 	{
-		#include "user_constants.h"
 		if(itauxx != TAU.xx)
 		{
 			fprintf(stderr,"Mismatch of indeces for tau components!!\n");
@@ -1475,9 +1529,8 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint)
 			exit(EXIT_FAILURE);
 		}
 	}
+	**/
 #endif
-  comm_pencil = MPI_Comm_f2c(comm_fint);
-  setupConfig(mesh.info);
   //TP: done after setupConfig since we need maux_vtxbuf_index
   //TP: this is an ugly way to do this but works for now
   {

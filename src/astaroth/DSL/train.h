@@ -115,34 +115,24 @@ Kernel scale(){
 }
 
 Kernel loss_calc(){
-write(TAU_INFERRED.xx, TAU_INFERRED.xx - TAU.xx)
-write(TAU_INFERRED.yy, TAU_INFERRED.yy - TAU.yy)
-write(TAU_INFERRED.zz, TAU_INFERRED.zz - TAU.zz)
-write(TAU_INFERRED.xy, TAU_INFERRED.xy - TAU.xy)
-write(TAU_INFERRED.yz, TAU_INFERRED.yz - TAU.yz)
-write(TAU_INFERRED.xz, TAU_INFERRED.xz - TAU.zz)
 }
 
 
-output real sumxx, sumyy, sumzz, sumxy, sumyz, sumxz
-real val_loss
-Kernel sum_pred(){
-	reduce_sum(TAU_INFERRED.xx, sumxx)
-	reduce_sum(TAU_INFERRED.yy, sumyy)
-	reduce_sum(TAU_INFERRED.zz, sumzz)
-	reduce_sum(TAU_INFERRED.xy, sumxy)
-	reduce_sum(TAU_INFERRED.yz, sumyz)
-	reduce_sum(TAU_INFERRED.xz, sumxz)
-	
-	real sums = (sumxx * sumxx) + (sumyy * sumyy) + (sumzz * sumzz) + (sumxy * sumxy) + (sumyz * sumyz) + (sumxz * sumxz)
-	
-
+output real AC_l2_sum
+Kernel l2_sum(){
+   real res = 0.0
+   res +=  (TAU_INFERRED.xx - TAU.xx)*(TAU_INFERRED.xx - TAU.xx)
+   res +=  (TAU_INFERRED.yy - TAU.yy)*(TAU_INFERRED.yy - TAU.yy)
+   res +=  (TAU_INFERRED.zz - TAU.zz)*(TAU_INFERRED.zz - TAU.zz)
+   res +=  (TAU_INFERRED.xy - TAU.xy)*(TAU_INFERRED.xy - TAU.xy)
+   res +=  (TAU_INFERRED.yz - TAU.yz)*(TAU_INFERRED.yz - TAU.yz)
+   res +=  (TAU_INFERRED.xz - TAU.zz)*(TAU_INFERRED.xz - TAU.zz)
+	 reduce_sum(res,AC_l2_sum)
 }
 
 
-ComputeSteps subtract_pred(boundconds){
-	loss_calc()
-
+ComputeSteps calc_validation_loss(boundconds){
+	l2_sum()
 }
 
 
