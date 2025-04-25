@@ -5,11 +5,19 @@ import os
 
 import pencil as pc
 
-pencil_home = pathlib.Path(__file__).parent/"../.."
-samples_path = pencil_home/"samples"
-samples_with_scripttests = set()
-for p in samples_path.glob("**/tests/*.py"):
-    samples_with_scripttests.add(p.parent.parent)
+from test_utils import get_rundir
+
+samples_with_scripttests = [
+    #each entry is a string, the path relative to PENCIL_HOME
+    #to mark a failing test, use
+    ##pytest.param(path, marks=pytest.mark.xfail)
+    "samples/helical-MHDturb",
+    "samples/continuous-forcing-from-file",
+    "samples/conv-slab-noequi",
+    "samples/power_xy/integrate_shell_z",
+    "samples/power_xy/complex",
+    "samples/power_xy/integrate_shell",
+    ]
 
 #Assumes sourceme.sh has been run in the current context.
 env = {}
@@ -19,8 +27,9 @@ for var in ['PATH', 'PYTHONPATH', 'PENCIL_HOME']:
 @pytest.mark.integration
 @pytest.mark.parametrize("path", samples_with_scripttests)
 def test_script_pcautotest(path):
+    rundir = get_rundir(path)
     res = subprocess.run(
-        ["pc_auto-test", "--auto-clean", "--script-tests=python", str(path)],
+        ["pc_auto-test", "--auto-clean", "--script-tests=python", str(rundir)],
         env=env,
         shell=True,
         universal_newlines=True,
