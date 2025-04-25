@@ -21,7 +21,12 @@ samples_with_scripttests = [
 
 #Assumes sourceme.sh has been run in the current context.
 env = {}
-for var in ['PATH', 'PYTHONPATH', 'PENCIL_HOME']:
+for var in [
+    "PATH",
+    "PYTHONPATH",
+    "PENCIL_HOME",
+    "HOME",
+    ]:
     env[var] = os.environ[var]
 
 @pytest.mark.integration
