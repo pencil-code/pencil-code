@@ -1,0 +1,80 @@
+#!/bin/bash
+
+# Clone a given branch of pencil and test it
+# Note that a local path can also be specified to --repo
+# Example usage:
+# pc_isolated-test --branch master --repo "file:///home/kishore/pencil-code" --auto-test-options "--max-level=1 --time-limit=5m"
+#
+# DANGER: things can break horribly if you edit this script while it is running.
+
+# BEGIN option parsing
+#https://stackoverflow.com/questions/192249/how-do-i-parse-command-line-arguments-in-bash/29754866#29754866
+set -o errexit -o pipefail -o noclobber -o nounset
+
+LONGOPTS=branch:,auto-test-options:,repo:
+OPTIONS=b:o:r:
+
+PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@") || exit 2
+eval set -- "$PARSED"
+
+auto_test_options="--max-level=1"
+branchname=master
+repo="https://pencil-code.org/git"
+while true; do
+    case "$1" in
+        -b|--branch)
+            branchname=$2
+            shift 2
+            ;;
+        -o|--auto-test-options)
+            auto_test_options=$2
+            shift 2
+            ;;
+        -r|--repo)
+            repo=$2
+            shift 2
+            ;;
+        --)
+            shift
+            break
+            ;;
+        *)
+            echo "Error in parsing options"
+            exit 3
+            ;;
+    esac
+done
+# END option parsing
+
+sanitized_repo_name=$(echo $repo | tr -d ':/') #remove characters which would cause problems in folder names.
+tmpdir=~/.cache/pc_isolated_test
+foldername="pencil-code-$branchname-$sanitized_repo_name"
+
+set -e
+
+if ! test -e "$tmpdir"; then
+    mkdir -p "$tmpdir"
+fi
+cd "$tmpdir"
+
+if test -e "$foldername"; then
+    echo "Destination folder exists; assuming repo has already been cloned"
+    cd $foldername
+    git fetch --depth=1
+    git reset --hard "origin/$branchname"
+else
+    git clone --depth=1 --branch "$branchname" "$repo" "$foldername"
+    cd "$foldername"
+    git remote set-branches origin "$branchname"
+fi
+
+#Start with a clean environment to avoid conflicts with already-enabled versions of Pencil
+# env -i bash --norc << EOF #Even $HOME is not set here, which causes problems.
+env -u PATH -u _sourceme -u PYTHONPATH bash --norc << EOF
+
+export PENCIL_HOME=$(pwd)
+_sourceme_quiet=1; . $PENCIL_HOME/sourceme.sh; unset _sourceme_quiet
+
+pc_auto-test --auto-clean $auto_test_options
+
+EOF

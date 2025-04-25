@@ -2607,6 +2607,7 @@ samples/2d-tests/radiation_doppler/idl/ppower.pro -text
 samples/2d-tests/radiation_doppler/idl/pvar.pro -text
 samples/2d-tests/radiation_doppler/parameters.pro -text
 samples/2d-tests/radiation_doppler/print.in -text
+samples/2d-tests/radiation_doppler/reference.out -text
 samples/2d-tests/radiation_doppler/run.in -text
 samples/2d-tests/radiation_doppler/src/Makefile.local -text
 samples/2d-tests/radiation_doppler/src/cparam.local -text
@@ -4856,6 +4857,7 @@ src/special/NS_polecap.f90 -text
 src/special/README -text
 src/special/advective_gauge.f90 -text
 src/special/alphadisk.f90 -text
+src/special/ascale_collapse.f90 -text
 src/special/atmosphere.f90 -text
 src/special/axionSU2back.f90 -text
 src/special/backreact_infl.f90 -text

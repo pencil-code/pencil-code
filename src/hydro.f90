@@ -2032,8 +2032,7 @@ module Hydro
 ! uu
           call sinx_cosy_cosz(ampluu(j)*TG_A,f,iux,kx_uu,ky_uu,kz_uu)
           call cosx_siny_cosz(ampluu(j)*TG_B,f,iuy,kx_uu,ky_uu,kz_uu)
-          call sinx_siny_cosz(ampluu(j)*TG_C,f,iuy,kx_uu,ky_uu,kz_uu)
-          f(l1:l2,m1:m2,n1:n2,iuz) = 0.0
+          call sinx_siny_cosz(ampluu(j)*TG_C,f,iuz,kx_uu,ky_uu,kz_uu)
           if(abs(TG_A*kx_uu + TG_B*ky_uu + TG_C*kz_uu) > tini) then
                 call fatal_error("init_uu", "For Taylor-Green Vortex TG_A*kx_uu + TG_B*ky_uu + TG_C*kz_uu has to be zero!")
           endif

@@ -1,9 +1,3 @@
-fixed_boundary Kernel twopass_solve_final(int step_num){
-  write( F_UU,  rk_final(F_UU, step_num) )
-  write( F_RHO, rk_final(F_RHO,step_num) )
-}
-
-
 struct real6
 {
         real xx;
@@ -14,6 +8,7 @@ struct real6
         real xz;
         real yz;
 }
+
 struct Field6
 {
         Field xx;
@@ -25,12 +20,9 @@ struct Field6
         Field yz;
 }
 
-
 Field6 TAU
 Field3 UUMEAN
-
 Field6 TAU_INFERRED
-
 
 Kernel initial_tau(){
 	write(TAU.xx, UUX*UUX)	
@@ -43,19 +35,16 @@ Kernel initial_tau(){
 	write(UUMEAN.x, gaussian_smooth(UUX))
 	write(UUMEAN.y, gaussian_smooth(UUY))
 	write(UUMEAN.z, gaussian_smooth(UUZ))
-	
 }
-
 
 Kernel smooth_stressTensor(){
 	write(TAU, gaussian_smooth(TAU))
-
 }
 
 Kernel final_tau(){
-	 UX = UUMEAN.x
-	 UY = UUMEAN.y
-	 UZ = UUMEAN.z
+	UX = UUMEAN.x
+	UY = UUMEAN.y
+	UZ = UUMEAN.z
 
 	write(TAU.xx, -(UX*UX) + TAU.xx)
 	write(TAU.yy, -(UY*UY) + TAU.yy)
@@ -65,7 +54,6 @@ Kernel final_tau(){
 	write(TAU.xz, -(UX*UZ) + TAU.xz)
 }
 
-
 output real minTau
 output real maxTau
 
@@ -73,7 +61,6 @@ output real minUUMEAN
 output real maxUUMEAN
 
 Kernel reduction_tau(){
-
 	
 	real minimumTAU = min(TAU.xx, min(TAU.yy, min(TAU.zz, min(TAU.xy, min(TAU.yz, TAU.xz)))))
 	reduce_min(minimumTAU, minTau)
@@ -81,29 +68,24 @@ Kernel reduction_tau(){
 	real maximumTAU = max(TAU.xx, max(TAU.yy, max(TAU.zz, max(TAU.xy, max(TAU.yz, TAU.xz)))))
 	reduce_max(maximumTAU, maxTau)
 
-
 	real minimumUUMEAN = min(UUMEAN.x, min(UUMEAN.y, UUMEAN.z))
 	reduce_min(minimumUUMEAN, minUUMEAN)
-
 
 	real maximumUUMEAN = max(UUMEAN.x, max(UUMEAN.y, UUMEAN.z))
 	reduce_max(maximumUUMEAN, maxUUMEAN)
 }
 
-
 train_descale(Field f, real minv, real maxv){
 	return f * (maxv - minv) + minv
 }
 
-
-train_scale(Field6 f, real minv,  real maxv)
+train_scale(Field6 f, real minv, real maxv)
 {
 	real max_min = maxv-minv
 	return real6((value(f.xx) - minv) / max_min, (value(f.yy) - minv) / max_min, (value(f.zz) - minv) / max_min, (value(f.xy) - minv) / max_min, (value(f.yz) - minv) / max_min, (value(f.xz) - minv) / max_min) 
 }
 
-
-train_scale(Field3 f, real minv,  real maxv)
+train_scale(Field3 f, real minv, real maxv)
 {
 	real max_min = maxv-minv
 	return real3((value(f.x) - minv) / max_min, (value(f.y) - minv) / max_min, (value(f.z) - minv) / max_min) 
@@ -112,9 +94,6 @@ train_scale(Field3 f, real minv,  real maxv)
 Kernel scale(){
 	write(TAU, train_scale(TAU, minTau, maxTau))
 	write(UUMEAN, train_scale(UUMEAN, minUUMEAN, maxUUMEAN))
-}
-
-Kernel loss_calc(){
 }
 
 
@@ -135,13 +114,13 @@ ComputeSteps calc_validation_loss(boundconds){
 	l2_sum()
 }
 
-
 ComputeSteps train_prepare(boundconds){
 	initial_tau()
 	smooth_stressTensor()
 	final_tau()
-	
 	reduction_tau()
-	scale()
 
+	//if (lscale) {
+          scale()
+        //}
 }

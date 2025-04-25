@@ -23,8 +23,6 @@ module GPU
 !$    endsubroutine random_initial_condition
 !$  end interface
   
-  external torchtrain_c 
-  external torchinfer_c
   external initialize_gpu_c
   external register_gpu_c
   external finalize_gpu_c
@@ -38,9 +36,10 @@ module GPU
   external update_on_gpu_scal_by_ind_c
   external pos_real_ptr_c
   external gpu_set_dt_c
+  external torchtrain_c 
+  external torchinfer_c
   integer, external :: update_on_gpu_arr_by_name_c
   integer, external :: update_on_gpu_scal_by_name_c
-
 
   !integer(KIND=ikind8) :: pFarr_GPU_in, pFarr_GPU_out
   type(C_PTR) :: pFarr_GPU_in, pFarr_GPU_out
@@ -49,17 +48,20 @@ module GPU
         ltest_bcs,lac_sparse_autotuning,lcpu_timestep_on_gpu
 
 contains
+!***********************************************************************
+  subroutine train_gpu(f)
 
-  subroutine train_c(f)
     real :: f
     call torchtrain_c(f)
-  endsubroutine train_c  
-  
-  subroutine infer_c(flag)
-    integer :: flag
-    call torchinfer_C(flag)
-  endsubroutine infer_c
 
+  endsubroutine train_gpu 
+!***********************************************************************
+  subroutine infer_gpu(flag)
+
+    integer :: flag
+    call torchinfer_c(flag)
+
+  endsubroutine infer_gpu
 !***********************************************************************
     subroutine initialize_GPU(f)
 !
@@ -161,13 +163,13 @@ contains
 !
     endsubroutine gpu_set_dt
 !**************************************************************************
-    function get_ptr_GPU(ind1,ind2,lout) result(pFarr)
-
-      use Cparam
-      use iso_c_binding
-
+    function get_ptr_GPU(ind1,ind2,lout,nbatch_training) result(pFarr)
+!
+!  Fetches the address of the f-array counterpart on the GPU for slots from ind1 to ind2
+!  and transforms it to a Fortran pointer.
+!
       integer :: ind1
-      integer, optional :: ind2
+      integer, optional :: ind2, nbatch_training
       logical, optional :: lout
 
       real, dimension(:,:,:,:), pointer :: pFarr
@@ -183,44 +185,28 @@ contains
       endinterface
 
       i2 = ioptest(ind2,ind1)
-      if (loptest(lout)) then
-        call c_f_pointer(pos_real_ptr_c(pFarr_GPU_out,ind1-1),pFarr,(/mx,my,mz,i2-ind1+1/))
+      if (present(nbatch_training)) then
+
+        if (nbatch_training/=1) &
+          call fatal_error('get_ptr_GPU', 'nbatch_training/=1 not meaningful')
+!
+!  For training, the Fortran pointers need to be 5-dimensional; last dimension is the batch size, &
+!  at the moment only one is meaningful.
+!
+        if (loptest(lout)) then
+          call c_f_pointer(pos_real_ptr_c(pFarr_GPU_out,ind1-1),pFarr,(/mx,my,mz,i2-ind1+1,nbatch_training/))
+        else
+          call c_f_pointer(pos_real_ptr_c(pFarr_GPU_in,ind1-1),pFarr,(/mx,my,mz,i2-ind1+1,nbatch_training/))
+        endif
       else
-        call c_f_pointer(pos_real_ptr_c(pFarr_GPU_in,ind1-1),pFarr,(/mx,my,mz,i2-ind1+1/))
+        if (loptest(lout)) then
+          call c_f_pointer(pos_real_ptr_c(pFarr_GPU_out,ind1-1),pFarr,(/mx,my,mz,i2-ind1+1/))
+        else
+          call c_f_pointer(pos_real_ptr_c(pFarr_GPU_in,ind1-1),pFarr,(/mx,my,mz,i2-ind1+1/))
+        endif
       endif
 
     endfunction get_ptr_GPU
-!**************************************************************************
-    function get_ptr_GPU_for_training(ind1,ind2,lout) result(pFarr)
-
-      !TP: for training needs to be 5-dimensional (last dimension being the batch size)
-      use Cparam
-      use iso_c_binding
-
-      integer :: ind1
-      integer, optional :: ind2
-      logical, optional :: lout
-
-      real, dimension(:,:,:,:,:), pointer :: pFarr
-
-      integer :: i2
-
-      interface
-        type(c_ptr) function pos_real_ptr_c(ptr,ind)
-          import :: c_ptr, ikind8
-          type(c_ptr) :: ptr
-          integer :: ind
-        endfunction
-      endinterface
-
-      i2 = ioptest(ind2,ind1)
-      if (loptest(lout)) then
-        call c_f_pointer(pos_real_ptr_c(pFarr_GPU_out,ind1-1),pFarr,(/mx,my,mz,i2-ind1+1,1/))
-      else
-        call c_f_pointer(pos_real_ptr_c(pFarr_GPU_in,ind1-1),pFarr,(/mx,my,mz,i2-ind1+1,1/))
-      endif
-
-    endfunction get_ptr_GPU_for_training
 !**************************************************************************
     subroutine copy_farray_from_GPU(f)
 
@@ -254,7 +240,9 @@ contains
     endsubroutine reload_GPU_config
 !**************************************************************************
     subroutine update_on_gpu(index, varname, value)
-
+!
+!  Updates an element of the Astaroth configuration, identified by name or index, on the GPU.
+!
       integer, intent(inout) :: index
       character(LEN=*),optional :: varname
       real, optional :: value
@@ -286,6 +274,7 @@ contains
       use Boundcond
 !$    use ISO_fortran_env, only: stdout => output_unit
 !$    use, intrinsic :: iso_c_binding
+
       real, dimension (mx,my,mz,mfarray) :: f,f_copy,f_copy_2
       real, dimension (mx,my,mz,mfarray) :: df,df_copy,ds
       type (pencil_case) :: p,p_copy

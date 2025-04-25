@@ -1,7 +1,10 @@
 % Created 2016-06-09 Thu 08:31
 \documentclass[12pt,pdftex]{article}
-\usepackage[postscript]{ucs}
-\usepackage[utf8x]{inputenc}
+%% Kishore: The following two break compilation with recent texlive versions;
+%% Kishore: see https://tex.stackexchange.com/questions/366019/unicode-with-pdflatex#366180
+% \usepackage[postscript]{ucs}
+% \usepackage[utf8x]{inputenc}
+\usepackage{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage{fixltx2e}
 \usepackage{graphicx}
@@ -297,7 +300,7 @@ Files unknown to Git & \texttt{git clean}\\
  & Non-git commands\\
 \bottomrule
 \end{tabular}
-\end{table}\footnotetext[6]{Leaving important Git commits dangling (≈ unused) for more than two
+\end{table}\footnotetext[6]{Leaving important Git commits dangling (unused) for more than two
 weeks counts as insisting on data loss.}
 
 
