@@ -30,6 +30,7 @@ for var in [
     env[var] = os.environ[var]
 
 @pytest.mark.integration
+@pytest.mark.pcautotest
 @pytest.mark.parametrize("path", samples_with_scripttests)
 def test_script_pcautotest(path):
     rundir = get_rundir(path)
