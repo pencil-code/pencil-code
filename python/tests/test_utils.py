@@ -10,21 +10,13 @@ import subprocess
 from typing import Any, Callable, List, Tuple
 import os
 
-try:
-    from proboscis import TestProgram
-    from proboscis import test as make_test
-    from proboscis.asserts import assert_true, assert_equal, fail
-except ImportError:
-    print("These tests work best with Proboscis installed:")
-    print("  pip3 install proboscis")
-    print("Continuing with dummy implementation")
-    from proboscis_dummy import (
-        TestProgram,
-        make_test,
-        assert_true,
-        assert_equal,
-        fail,
-    )  # noqa
+from proboscis_dummy import (
+    TestProgram,
+    make_test,
+    assert_true,
+    assert_equal,
+    fail,
+    )
 
 
 def _assert_close(
