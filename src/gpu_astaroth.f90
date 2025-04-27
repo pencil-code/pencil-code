@@ -172,7 +172,7 @@ contains
       integer, optional :: ind2, nbatch_training
       logical, optional :: lout
 
-      real, dimension(:,:,:,:), pointer :: pFarr
+      real, dimension(:,:,:,:,:), pointer :: pFarr
 
       integer :: i2
 
@@ -200,9 +200,9 @@ contains
         endif
       else
         if (loptest(lout)) then
-          call c_f_pointer(pos_real_ptr_c(pFarr_GPU_out,ind1-1),pFarr,(/mx,my,mz,i2-ind1+1/))
+          call c_f_pointer(pos_real_ptr_c(pFarr_GPU_out,ind1-1),pFarr,(/mx,my,mz,i2-ind1+1,1/))
         else
-          call c_f_pointer(pos_real_ptr_c(pFarr_GPU_in,ind1-1),pFarr,(/mx,my,mz,i2-ind1+1/))
+          call c_f_pointer(pos_real_ptr_c(pFarr_GPU_in,ind1-1),pFarr,(/mx,my,mz,i2-ind1+1,1/))
         endif
       endif
 
