@@ -158,7 +158,7 @@ extern "C" void torch_train_c_api(AcReal *loss_val){
 
 float MSE(){
 	//TP: to Shreyas put this on comment until you commit the new DSL code in training/train.h
-	/**
+	
 #if TRAINING
 	#include "user_constants.h"
 	
@@ -196,9 +196,8 @@ float MSE(){
 	
 	return (acDeviceGetOutput(acGridGetDevice(), AC_l2_sum))/(6*32*32*32);
 #endif
-	**/
+	
 	//TP: for same reason a dummy return for now
-	return 0.0;
 }
 
 
