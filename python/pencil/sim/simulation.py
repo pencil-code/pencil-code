@@ -10,6 +10,9 @@ import numpy as np
 
 from pencil.util import PathWrapper, pc_print
 
+class CommandFailedError(RuntimeError):
+    pass
+
 def simulation(*args, **kwargs):
     """
     simulation(*args, **kwargs)
@@ -110,7 +113,7 @@ class __Simulation__(object):
         self,
         path_root=".",
         name=False,
-        start_optionals=False,
+        start_optionals=True,
         optionals=True,
         quiet=True,
         rename_submit_script=False,
@@ -221,14 +224,17 @@ class __Simulation__(object):
         else:
             has_initial_condition_dir = False
 
-        if type(optionals) == type(["list"]):
-            optionals = self.optionals + optionals  # optional files to be copied
-        if optionals == True:
-            optionals = self.optionals
-        if type(optionals) == type("string"):
+        if isinstance(optionals, list):
+            optionals = self.optionals + optionals
+        elif isinstance(optionals, str):
+            #Kishore: why is it that only in this case, self.optionals is not appended?
             optionals = [optionals]
-        if type(optionals) != type(["list"]):
-            print("! ERROR: optionals must be of type list!")
+        elif optionals is True:
+            optionals = self.optionals
+        elif optionals is False:
+            optionals = []
+        else:
+            raise TypeError("optionals must be bool, string, or list")
 
         tmp = []
         for opt in optionals:
@@ -238,14 +244,16 @@ class __Simulation__(object):
         optionals = tmp
 
         # optional files to be copied
-        if type(start_optionals) == type(["list"]):
+        if isinstance(start_optionals, list):
             start_optionals = self.start_optionals + start_optionals
-        if start_optionals == False:
+        elif start_optionals is False:
+            start_optionals = []
+        elif start_optionals is True:
             start_optionals = self.start_optionals
-        if type(start_optionals) == type("string"):
+        elif isinstance(start_optionals, str):
             start_optionals = [start_optionals]
-        if type(start_optionals) != type(["list"]):
-            print("! ERROR: start_optionals must be of type list!")
+        else:
+            raise TypeError("start_optionals must be of type list, str, or bool!")
 
         tmp = []
         for opt in start_optionals:
@@ -297,11 +305,16 @@ class __Simulation__(object):
                 )
                 return False
 
+        if self.started():
+            start_components = self.start_components
+        else:
+            start_components = []
+
         # check existance of self.start_components
-        for comp in self.start_components:
+        for comp in start_components:
             if not exists(join(self.datadir, comp)):
                 print(
-                    "! ERROR: Couldnt find component "
+                    "! ERROR: Couldnt find start_component "
                     + comp
                     + " from simulation "
                     + self.name
@@ -357,7 +370,7 @@ class __Simulation__(object):
                 debug_breakpoint()
             copyfile(f_path, copy_to)
 
-        for f in self.start_components + start_optionals:
+        for f in start_components + start_optionals:
             f_path = abspath(join(self.datadir, f))
             copy_to = abspath(join(path_newsim_data, f))
             if f_path == copy_to:
@@ -669,10 +682,11 @@ class __Simulation__(object):
 
     def compile(
         self,
-        cleanall=True,
+        cleanall=False,
         fast=False,
         verbose=False,
         hostfile=None,
+        autoclean=True,
         **kwargs,
         ):
         """Compiles the simulation. Per default the linking is done before the
@@ -689,6 +703,9 @@ class __Simulation__(object):
 
         fast : bool
             Set True for fast compilation.
+
+        autoclean : bool
+            If compilation fails, automatically set cleanall=True and retry.
 
         Accepts all other keywords accepted by self.bash
         """
@@ -710,12 +727,31 @@ class __Simulation__(object):
         if verbose != False:
             print(f"! Compiling {self.path}")
 
-        return self.bash(
-            command=" ".join(command),
-            verbose=verbose,
-            logfile=join(self.pc_dir, "compilelog_" + timestamp),
-            **kwargs,
-            )
+        try:
+            ret = self.bash(
+                command=" ".join(command),
+                verbose=verbose,
+                logfile=join(self.pc_dir, "compilelog_" + timestamp),
+                **kwargs,
+                )
+        except CommandFailedError:
+            if autoclean:
+                ret = None
+            else:
+                raise
+        finally:
+            if (ret is not True) and autoclean and (not cleanall):
+                #If cleanall was already passed, no point in cleaning again and retrying.
+                return self.compile(
+                    cleanall=True,
+                    autoclean=False, #prevent infinite recursion
+                    fast=fast,
+                    verbose=verbose,
+                    hostfile=hostfile,
+                    **kwargs,
+                    )
+            else:
+                return ret
 
     def build(self, **kwargs):
         """Same as compile()"""
@@ -803,7 +839,7 @@ class __Simulation__(object):
                 + f"\n! {logfile}"
                 )
             if raise_errors:
-                raise RuntimeError(message)
+                raise CommandFailedError(message)
             else:
                 print(message)
                 return rc
