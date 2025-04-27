@@ -24,6 +24,12 @@ Field6 TAU
 Field3 UUMEAN
 Field6 TAU_INFERRED
 
+calc_uumean()
+{
+	write(UUMEAN.x, gaussian_smooth(UUX))
+	write(UUMEAN.y, gaussian_smooth(UUY))
+	write(UUMEAN.z, gaussian_smooth(UUZ))
+}
 Kernel initial_tau(){
 	write(TAU.xx, UUX*UUX)	
 	write(TAU.yy, UUY*UUY)	
@@ -32,9 +38,12 @@ Kernel initial_tau(){
 	write(TAU.yz, UUY*UUZ)	
 	write(TAU.xz, UUX*UUZ)
 
-	write(UUMEAN.x, gaussian_smooth(UUX))
-	write(UUMEAN.y, gaussian_smooth(UUY))
-	write(UUMEAN.z, gaussian_smooth(UUZ))
+	calc_uumean()
+}
+
+Kernel uumean_kernel()
+{
+	calc_uumean()
 }
 
 Kernel smooth_stressTensor(){
@@ -112,6 +121,9 @@ Kernel l2_sum(){
 
 ComputeSteps calc_validation_loss(boundconds){
 	l2_sum()
+}
+ComputeSteps get_uumean(boundconds){
+	uumean_kernel()	
 }
 
 ComputeSteps train_prepare(boundconds){
