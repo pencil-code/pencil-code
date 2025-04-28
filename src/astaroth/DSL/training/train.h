@@ -160,6 +160,9 @@ Kernel scale(){
 	write(TAU, train_scale(TAU, minTau, maxTau))
 	write(UUMEAN, train_scale(UUMEAN, minUUMEAN, maxUUMEAN))
 }
+Kernel scale_uumean(){
+	write(UUMEAN, train_scale(UUMEAN, minUUMEAN, maxUUMEAN))
+}
 
 Kernel loss_calc(){
 }
@@ -191,6 +194,8 @@ ComputeSteps calc_validation_loss(boundconds){
 }
 ComputeSteps get_uumean(boundconds){
 	uumean_kernel()	
+	reduction_tau()
+	//scale_uumean()
 }
 
 
