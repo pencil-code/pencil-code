@@ -189,6 +189,9 @@ Kernel descale_tau(){
 ComputeSteps calc_validation_loss(boundconds){
 	l2_sum()
 }
+ComputeSteps get_uumean(boundconds){
+	uumean_kernel()	
+}
 
 
 ComputeSteps train_prepare(boundconds){
