@@ -2029,6 +2029,7 @@ module Hydro
 !
         case ('TG')
           if (headtt) print*,'Taylor-Green vortex'
+          f(:,:,:,iux:iuz) = 0.0
 ! uu
           call sinx_cosy_cosz(ampluu(j)*TG_A,f,iux,kx_uu,ky_uu,kz_uu)
           call cosx_siny_cosz(ampluu(j)*TG_B,f,iuy,kx_uu,ky_uu,kz_uu)
