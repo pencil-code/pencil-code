@@ -11640,7 +11640,6 @@ print*,'AXEL2: should not be here (eta) ... '
     call copy_addr(alphassm,p_par(158))
     call copy_addr(j_ext_quench,p_par(159))
     call copy_addr(b2_diamag,p_par(160))
-    call copy_addr(k1_ff,p_par(161))
     call copy_addr(ampl_ff,p_par(162))
     call copy_addr(swirl,p_par(163))
     call copy_addr(ampl_fcont_aa,p_par(164))
@@ -11751,9 +11750,11 @@ print*,'AXEL2: should not be here (eta) ... '
     !    module qualified name, so to not break handwritten DSL code have it on comment
     !call copy_addr(lrhs_max,p_par(261)) ! bool
     !call copy_addr(gamma1,p_par(262))
+    !call copy_addr(k1_ff,p_par(161))
 
     call copy_addr(lrelaxprof_glob_scaled,p_par(263)) ! bool
     call copy_addr(scl_uxb_in_ohm,p_par(264))
+
 
     endsubroutine pushpars2c
 !***********************************************************************
