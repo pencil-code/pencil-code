@@ -33,6 +33,7 @@ struct PC_rhs_update
 
 #include "../../PC_moduleflags.h"
 #include "../stdlib/math"
+#include "../stdlib/grid/funcs.h"
 #include "../stdlib/utils/intrinsics.h"
 
 #include "../../../cparam_c.h"
@@ -47,7 +48,6 @@ struct PC_rhs_update
 #define AC_mzgrid mzgrid
 
 #include "fieldecs.h"
-#include "../stdlib/grid.h"
 #include "../stdlib/optimized_integrators.h"
 //#include "../stdlib/units.h"
 #include "../stdlib/utils/kernels.h"

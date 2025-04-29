@@ -253,9 +253,10 @@ float MSE(){
 	copyFarray(NULL);
 
 	return (acDeviceGetOutput(acGridGetDevice(), AC_l2_sum))/(6*32*32*32);
+#else
+	return 0.0;
 #endif
 	
-	//TP: for same reason a dummy return for now
 }
 
 
