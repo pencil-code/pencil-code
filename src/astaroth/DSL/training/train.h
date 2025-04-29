@@ -38,7 +38,7 @@ Stencil avgr1
 	[0][1][-1] = 1/27,
 	[0][1][0] = 1/27,
 	[0][1][1] = 1/27,
-
+	
 
 
 	[1][-1][-1] = 1/27,
@@ -48,7 +48,7 @@ Stencil avgr1
 	[1][0][-1] = 1/27,
 	[1][0][0] = 1/27,
 	[1][0][1] = 1/27,
-
+	
 	[1][1][-1] = 1/27,
 	[1][1][0] = 1/27,
 	[1][1][1] = 1/27,
@@ -65,30 +65,30 @@ Stencil avgr1
 
 
 
-Kernel initial_tau(){
-	write(TAU.xx, UUX*UUX)
-	write(TAU.yy, UUY*UUY)
-	write(TAU.zz, UUZ*UUZ)
-	write(TAU.xy, UUX*UUZ)
-	write(TAU.yz, UUY*UUZ)
+Kernel tau_uumean(){
+	write(TAU.xx, UUX*UUX)	
+	write(TAU.yy, UUY*UUY)	
+	write(TAU.zz, UUZ*UUZ)	
+	write(TAU.xy, UUX*UUZ)	
+	write(TAU.yz, UUY*UUZ)	
 	write(TAU.xz, UUX*UUZ)
 
 	write(UUMEAN.x, gaussian_smooth(UUX))
 	write(UUMEAN.y, gaussian_smooth(UUY))
-	write(UUMEAN.z, UUZ)
-
+	write(UUMEAN.z, gaussian_smooth(UUZ))
+	
 
 }
 
 
-Kernel smooth_stressTensor(){
+Kernel smooth_tau(){
 	write(TAU, gaussian_smooth(TAU))
 }
 
 Kernel final_tau(){
-	UX = UUMEAN.x
-	UY = UUMEAN.y
-	UZ = UUMEAN.z
+	 UX = UUMEAN.x
+	 UY = UUMEAN.y
+	 UZ = UUMEAN.z
 
 	write(TAU.xx, -(UX*UX) + TAU.xx)
 	write(TAU.yy, -(UY*UY) + TAU.yy)
@@ -105,8 +105,7 @@ output real maxTau
 output real minUUMEAN
 output real maxUUMEAN
 
-Kernel reduction_tau(){
-
+Kernel reduce_uumean_tau(){
 
 	real minimumTAU = min(TAU.xx, min(TAU.yy, min(TAU.zz, min(TAU.xy, min(TAU.yz, TAU.xz)))))
 	reduce_min(minimumTAU, minTau)
@@ -114,27 +113,27 @@ Kernel reduction_tau(){
 	real maximumTAU = max(TAU.xx, max(TAU.yy, max(TAU.zz, max(TAU.xy, max(TAU.yz, TAU.xz)))))
 	reduce_max(maximumTAU, maxTau)
 
-
 	real minimumUUMEAN = min(UUMEAN.x, min(UUMEAN.y, UUMEAN.z))
 	reduce_min(minimumUUMEAN, minUUMEAN)
 
 
 	real maximumUUMEAN = max(UUMEAN.x, max(UUMEAN.y, UUMEAN.z))
 	reduce_max(maximumUUMEAN, maxUUMEAN)
+
 }
 
 
 train_descale(Field6 f, real minv, real maxv)
-{
+{	
 	real max_min = maxv-minv
-	return real6((value(f.xx) * max_min) + minv, (value(f.yy) * max_min) + minv, (value(f.zz) * max_min) + minv, (value(f.xy) * max_min) + minv,(value(f.yz) * max_min) + minv, (value(f.xz) * max_min) + minv)
+	return real6((value(f.xx) * max_min) + minv, (value(f.yy) * max_min) + minv, (value(f.zz) * max_min) + minv, (value(f.xy) * max_min) + minv,(value(f.yz) * max_min) + minv, (value(f.xz) * max_min) + minv)	
 }
 
 
 train_descale(Field3 f, real minv, real maxv)
-{
+{	
 	real max_min = maxv-minv
-	return real3((value(f.x) * max_min) + minv, (value(f.y) * max_min) + minv, (value(f.z)))
+	return real3((value(f.x) * max_min) + minv, (value(f.y) * max_min) + minv, (value(f.z) * max_min ) + minv)
 }
 
 
@@ -142,7 +141,7 @@ train_descale(Field3 f, real minv, real maxv)
 train_scale(Field6 f, real minv,  real maxv)
 {
 	real max_min = maxv-minv
-	return real6((value(f.xx) - minv) / max_min, (value(f.yy) - minv) / max_min, (value(f.zz) - minv) / max_min, (value(f.xy) - minv) / max_min, (value(f.yz) - minv) / max_min, (value(f.xz) - minv) / max_min)
+	return real6((value(f.xx) - minv) / max_min, (value(f.yy) - minv) / max_min, (value(f.zz) - minv) / max_min, (value(f.xy) - minv) / max_min, (value(f.yz) - minv) / max_min, (value(f.xz) - minv) / max_min) 
 }
 
 
@@ -150,21 +149,15 @@ train_scale(Field3 f, real minv,  real maxv)
 {
 	real max_min = maxv-minv
 
-	return real3((value(f.x) - minv) / max_min, (value(f.y) - minv) / max_min, (value(f.z)))
+	return real3((value(f.x) - minv) / max_min, (value(f.y) - minv) / max_min, (value(f.z) - minv) / max_min) 
+	
 
-
-
+	
 }
 
 Kernel scale(){
 	write(TAU, train_scale(TAU, minTau, maxTau))
 	write(UUMEAN, train_scale(UUMEAN, minUUMEAN, maxUUMEAN))
-}
-Kernel scale_uumean(){
-	write(UUMEAN, train_scale(UUMEAN, minUUMEAN, maxUUMEAN))
-}
-
-Kernel loss_calc(){
 }
 
 
@@ -177,7 +170,7 @@ Kernel l2_sum(){
    res +=  (TAU_INFERRED.xy - TAU.xy)*(TAU_INFERRED.xy - TAU.xy)
    res +=  (TAU_INFERRED.yz - TAU.yz)*(TAU_INFERRED.yz - TAU.yz)
    res +=  (TAU_INFERRED.xz - TAU.zz)*(TAU_INFERRED.xz - TAU.zz)
-	reduce_sum(res,AC_l2_sum)
+	 reduce_sum(res,AC_l2_sum)
 }
 
 Kernel descale_uumean(){
@@ -186,31 +179,27 @@ Kernel descale_uumean(){
 
 Kernel descale_tau(){
 	write(TAU, train_descale(TAU, minTau, maxTau))
-	write(TAU_INFERRED, train_descale(TAU_INFERRED, minTau, maxTau))
+	//write(TAU_INFERRED, train_descale(TAU_INFERRED, minTau, maxTau))
 }
 
 ComputeSteps calc_validation_loss(boundconds){
 	l2_sum()
 }
-ComputeSteps get_uumean(boundconds){
-	uumean_kernel()	
-	reduction_tau()
-	//scale_uumean()
-}
 
 
 ComputeSteps train_prepare(boundconds){
-	initial_tau()
-	smooth_stressTensor()
+	tau_uumean()
+	smooth_tau()
 	final_tau()
 
-	reduction_tau()
+
+	reduce_uumean_tau()
 	scale()
+
 }
 
 ComputeSteps descale(boundconds){
 
 	descale_uumean()
 	descale_tau()
-
 }
