@@ -577,8 +577,7 @@ ifneq ($(GPU),nogpu)
         RUNTIME_COMPILATION = off
       endif
       ifneq ($(IS_CRAY),)
-        #TP: mpi_gtl_hsa and pe/lib64 is to enable CUDA_AWARE_MPI
-        #good that this is still here
+        #TP: mpi_gtl_hsa and pe/lib64 is to enable CUDA_AWARE_MPI on LUMI and Dardel
         override LDFLAGS_LIB += -L /opt/cray/pe/lib64 -lmpi_gtl_hsa
       endif
 #      override LDFLAGS += -l:libmt-fortran.a -l:libmt.a -lstdc++
