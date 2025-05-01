@@ -1169,9 +1169,12 @@ module Forcing
           open(1,file='forcing_cont.dat',status='old')
           read(1,*) fcont_from_file_read_input
           close(1)
-          fcont_from_file(:,:,:,1) = fcont_from_file_read_input(1,l1-nghost+ipx*nx:l2-nghost+ipx*nx,m1-nghost+ipy*ny:m2-nghost+ipy*ny,n1-nghost+ipz*nz:n2-nghost+ipz*nz)
-          fcont_from_file(:,:,:,2) = fcont_from_file_read_input(2,l1-nghost+ipx*nx:l2-nghost+ipx*nx,m1-nghost+ipy*ny:m2-nghost+ipy*ny,n1-nghost+ipz*nz:n2-nghost+ipz*nz)
-          fcont_from_file(:,:,:,3) = fcont_from_file_read_input(3,l1-nghost+ipx*nx:l2-nghost+ipx*nx,m1-nghost+ipy*ny:m2-nghost+ipy*ny,n1-nghost+ipz*nz:n2-nghost+ipz*nz)
+          fcont_from_file(:,:,:,1) = fcont_from_file_read_input(1,l1-nghost+ipx*nx:l2-nghost+ipx*nx, &
+            m1-nghost+ipy*ny:m2-nghost+ipy*ny,n1-nghost+ipz*nz:n2-nghost+ipz*nz)
+          fcont_from_file(:,:,:,2) = fcont_from_file_read_input(2,l1-nghost+ipx*nx:l2-nghost+ipx*nx, &
+            m1-nghost+ipy*ny:m2-nghost+ipy*ny,n1-nghost+ipz*nz:n2-nghost+ipz*nz)
+          fcont_from_file(:,:,:,3) = fcont_from_file_read_input(3,l1-nghost+ipx*nx:l2-nghost+ipx*nx, &
+            m1-nghost+ipy*ny:m2-nghost+ipy*ny,n1-nghost+ipz*nz:n2-nghost+ipz*nz)
           deallocate(fcont_from_file_read_input)
         endif
       enddo
