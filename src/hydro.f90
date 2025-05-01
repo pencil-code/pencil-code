@@ -560,6 +560,7 @@ module Hydro
   integer :: idiag_uxzrms=0     ! DIAG_DOC: $u_{x,z}^{\rm rms}$
   integer :: idiag_uyzrms=0     ! DIAG_DOC: $u_{y,z}^{\rm rms}$
   integer :: idiag_uzyrms=0     ! DIAG_DOC: $u_{z,y}^{\rm rms}$
+  integer :: idiag_sld_char_rms=0
   integer :: idiag_urmsn=0,idiag_urmss=0,idiag_urmsh=0
   integer :: idiag_ormsn=0,idiag_ormss=0,idiag_ormsh=0
   integer :: idiag_oumn=0,idiag_oums=0,idiag_oumh=0
@@ -3333,11 +3334,17 @@ module Hydro
 !  if gradu is to be stored as auxiliary then we store it now
 !
         if (lgradu_as_aux .or. lparticles_lyapunov .or. lparticles_caustics .or. lparticles_tetrad) then
-          jk=0
-          do jj=1,3; do kk=1,3
-            f(l1:l2,m,n,iguij+jk) = p%uij(:,jj,kk)
-            jk=jk+1
-          enddo;enddo
+          f(l1:l2,m,n,iguij+0) = p%uij(:,1,1)
+          f(l1:l2,m,n,iguij+1) = p%uij(:,1,2)
+          f(l1:l2,m,n,iguij+2) = p%uij(:,1,3)
+
+          f(l1:l2,m,n,iguij+3) = p%uij(:,2,1)
+          f(l1:l2,m,n,iguij+4) = p%uij(:,2,2)
+          f(l1:l2,m,n,iguij+5) = p%uij(:,2,3)
+
+          f(l1:l2,m,n,iguij+6) = p%uij(:,3,1)
+          f(l1:l2,m,n,iguij+7) = p%uij(:,3,2)
+          f(l1:l2,m,n,iguij+8) = p%uij(:,3,3)
         endif
       endif
 !      if (.not.lpenc_loc_check_at_work) then
@@ -4083,8 +4090,7 @@ module Hydro
       if (lboussinesq.and.ltemperature) then
         if (lsphere_in_a_box) then
           do j=1,3
-            ju=j+iuu-1
-            df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju) + p%r_mn*Ra*Pr*f(l1:l2,m,n,iTT)*p%evr(:,j)
+            df(l1:l2,m,n,iuu-1+j)=df(l1:l2,m,n,iuu-1+j) + p%r_mn*Ra*Pr*f(l1:l2,m,n,iTT)*p%evr(:,j)
           enddo
         else
           df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+Ra*Pr*f(l1:l2,m,n,iTT) !  gravity in the opposite z direction
@@ -4149,11 +4155,14 @@ module Hydro
 !
       if ( lupdate_courant_dt.and.(lcdt_tauf.or.ldiagnos.and.idiag_dtF/=0) .or. &
            ldiagnos.and.idiag_taufmin/=0 ) then
-        where (abs(p%uu)>1)   !MR: What would in general be the significance of 1 here?
-          uu1=1./p%uu
-        elsewhere
-          uu1=1.
-        endwhere
+
+        do j =1,3
+                where (abs(p%uu(:,j))>1)   !MR: What would in general be the significance of 1 here?
+                  uu1(:,j)=1./p%uu(:,j)
+                elsewhere
+                  uu1(:,j)=1.
+                endwhere
+        enddo
         do j=1,3
           ftot=abs(df(l1:l2,m,n,iux+j-1)*uu1(:,j))
           if (lupdate_courant_dt.and.lcdt_tauf) dt1_max=max(dt1_max,ftot/cdtf)
@@ -4295,6 +4304,7 @@ module Hydro
         if (idiag_uxzrms/=0) call sum_mn_name(p%uij(:,1,3)**2,idiag_uxzrms,lsqrt=.true.)
         if (idiag_uyzrms/=0) call sum_mn_name(p%uij(:,2,3)**2,idiag_uyzrms,lsqrt=.true.)
         if (idiag_uzyrms/=0) call sum_mn_name(p%uij(:,3,2)**2,idiag_uzyrms,lsqrt=.true.)
+        if (idiag_sld_char_rms/=0) call sum_mn_name(f(l1:l2,m,n,isld_char)**2,idiag_sld_char_rms,lsqrt=.true.)
         if (idiag_duxdzma/=0) call sum_mn_name(abs(p%uij(:,1,3)),idiag_duxdzma)
         if (idiag_duydzma/=0) call sum_mn_name(abs(p%uij(:,2,3)),idiag_duydzma)
 !
@@ -5640,18 +5650,20 @@ endif
         ju=j+iuu-1
         select case (borderuu(j))
 !
-        case ('nothing'); cycle
+        case ('nothing');
         case ('zero','0')
           f_target(:,j)=0.
+          call border_driving(f,df,p,f_target(:,j),ju)
 !
         case ('constant')
           f_target(:,j) = uu_const(j)
+          call border_driving(f,df,p,f_target(:,j),ju)
 !
         case ('initial-condition')
           call set_border_initcond(f,ju,f_target(:,j))
+          call border_driving(f,df,p,f_target(:,j),ju)
 !
         endselect
-        call border_driving(f,df,p,f_target(:,j),ju)
 !
       enddo
 !
@@ -5707,10 +5719,9 @@ endif
 !  matrix multiply
 !
       do j=1,3
-      do i=1,3
-        k=iuu-1+i
-        df(l1:l2,m,n,k)=df(l1:l2,m,n,k) + mat_cent(i,j)*p%rr(:,j) + mat_cori(i,j)*p%uu(:,j)
-      enddo
+        df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux) + mat_cent(1,j)*p%rr(:,j) + mat_cori(1,j)*p%uu(:,j)
+        df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy) + mat_cent(2,j)*p%rr(:,j) + mat_cori(2,j)*p%uu(:,j)
+        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz) + mat_cent(3,j)*p%rr(:,j) + mat_cori(3,j)*p%uu(:,j)
       enddo
 !
     endsubroutine precession
@@ -6786,6 +6797,7 @@ endif
         idiag_ouph1mz=0
         idiag_ouph2mz=0
         idiag_ouph3mz=0
+        idiag_sld_char_rms=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -6993,6 +7005,7 @@ endif
         call parse_name(iname,cname(iname),cform(iname),'uduum',idiag_uduum)
         call parse_name(iname,cname(iname),cform(iname),'frict',idiag_frict)
         call parse_name(iname,cname(iname),cform(iname),'pradrc2',idiag_pradrc2)
+        call parse_name(iname,cname(iname),cform(iname),'sld_char_rms',idiag_sld_char_rms)
       enddo
 !
       if (idiag_u2tm/=0) then
@@ -8469,8 +8482,13 @@ endif
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       if (velocity_ceiling>0.0) then
-        where (f(l1:l2,m,n,iux:iuz)> velocity_ceiling) f(l1:l2,m,n,iux:iuz)= velocity_ceiling
-        where (f(l1:l2,m,n,iux:iuz)<-velocity_ceiling) f(l1:l2,m,n,iux:iuz)=-velocity_ceiling
+        where (f(l1:l2,m,n,iux)> velocity_ceiling) f(l1:l2,m,n,iux)= velocity_ceiling
+        where (f(l1:l2,m,n,iuy)> velocity_ceiling) f(l1:l2,m,n,iuy)= velocity_ceiling
+        where (f(l1:l2,m,n,iuz)> velocity_ceiling) f(l1:l2,m,n,iuz)= velocity_ceiling
+
+        where (f(l1:l2,m,n,iux)<-velocity_ceiling) f(l1:l2,m,n,iux)=-velocity_ceiling
+        where (f(l1:l2,m,n,iuy)<-velocity_ceiling) f(l1:l2,m,n,iuy)=-velocity_ceiling
+        where (f(l1:l2,m,n,iuz)<-velocity_ceiling) f(l1:l2,m,n,iuz)=-velocity_ceiling
       endif
 !
     endsubroutine impose_velocity_ceiling
@@ -8707,6 +8725,7 @@ endif
     call copy_addr(enum_uuprof,p_par(105)) ! int
     do k = 1,3; call string_to_enum(enum_borderuu(k),borderuu(k)); enddo
     call copy_addr(enum_borderuu,p_par(106)) ! int3
+    call copy_addr(w_sldchar_hyd,p_par(107))
 
     endsubroutine pushpars2c
 !***********************************************************************

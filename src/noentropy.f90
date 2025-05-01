@@ -593,11 +593,12 @@ module Energy
 
     use Syscalls, only: copy_addr
 
-    integer, parameter :: n_pars=1
+    integer, parameter :: n_pars=2
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
       call keep_compiler_quiet(p_par)
       call copy_addr(lviscosity_heat,p_par(1)) ! bool
+      call copy_addr(w_sldchar_ene,p_par(2))
 
     endsubroutine pushpars2c
 !***********************************************************************

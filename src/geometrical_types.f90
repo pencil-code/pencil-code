@@ -56,8 +56,9 @@
     type(torus_rect) :: torus
     real(KIND=rkind8) :: t
 
-    if (torus%Omega_prec==0.) return
-    torus%ph=torus%ph0+torus%Omega_prec*t
+    if (torus%Omega_prec /= 0.) then
+        torus%ph=torus%ph0+torus%Omega_prec*t
+    endif
 
     endsubroutine torus_precess
 !***********************************************************************
@@ -66,9 +67,9 @@
     type(torus_rect) :: torus
     real(KIND=rkind8) :: t
 
-    if (all(torus%wob_om.eq.0.)) return
-
-    torus%center=torus%center0+torus%wob_amp*cos(torus%wob_om*t+torus%wob_phase)
+    if (torus%wob_om(1) /= 0.0 .and. torus%wob_om(2) /= 0.0 .and. torus%wob_om(3) /= 0.0) then
+        torus%center=torus%center0+torus%wob_amp*cos(torus%wob_om*t+torus%wob_phase)
+     endif
 
     endsubroutine torus_wobble
 !***********************************************************************
@@ -77,9 +78,10 @@
     type(torus_rect) :: torus
     real(KIND=rkind8) :: t
 
-    if (torus%extr_rate.eq.0.) return
+    if (torus%extr_rate /= 0.) then
+        torus%r_in=max(torus%r_in0*(1.+torus%extr_rate*t),0.d0)
+    endif
 
-    torus%r_in=max(torus%r_in0*(1.+torus%extr_rate*t),0.d0)
 
     endsubroutine torus_extend_r
 !***********************************************************************
@@ -88,9 +90,10 @@
     type(torus_rect) :: torus
     real(KIND=rkind8) :: t
 
-    if (torus%extz_rate.eq.0.) return
+    if (torus%extz_rate /= 0.) then
+        torus%height=max(torus%height0*(1.+torus%extz_rate*t),0.d0)
+    endif
 
-    torus%height=max(torus%height0*(1.+torus%extz_rate*t),0.d0)
 
     endsubroutine torus_extend_z
 !***********************************************************************

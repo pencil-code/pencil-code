@@ -3159,6 +3159,9 @@ endif
 ifeq ($(MAGNETIC_MEANFIELD),magnetic/nomeanfield)
 	@grep 'magnetic\/nomeanfield\.f90' $(CUDA_MAKEDIR)/PC_modulesources.h > /dev/null || echo $(CUDA_RELPATH)'/$(MAGNETIC_MEANFIELD).f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources.h
 endif
+ifeq ($(GRAVITY),nogravity)
+	@echo $(CUDA_RELPATH)'/$(GRAVITY).f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources.h
+endif
 ifeq ($(MAGNETIC),nomagnetic)
 	@grep nomagnetic\.f90 $(CUDA_MAKEDIR)/PC_modulesources.h > /dev/null || echo $(CUDA_RELPATH)'/$(MAGNETIC).f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources.h
 endif
