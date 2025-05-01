@@ -7522,6 +7522,138 @@ iloop:do i=1,size(list2)
           dst = enum_daa_dtZ_advec_hall_Z_string
         case('tau_jj must be finite and positive')
           dst = enum_tau_jj_must_be_finite_and_positive_string
+        case('forcing: add continuous forcing')
+          dst = enum_forcingZ_add_continuous_forcing_string
+        case('fy=const')
+          dst = enum_fyZconst_string
+        case('fz=const')
+          dst = enum_fzZconst_string
+        case('abc')
+          dst = enum_abc_string
+        case('schur_nonhelical')
+          dst = enum_schur_nonhelical_string
+        case('schur_helical')
+          dst = enum_schur_helical_string
+        case('abctdep')
+          dst = enum_abctdep_string
+        case('aka')
+          dst = enum_aka_string
+        case('grav_z')
+          dst = enum_grav_z_string
+        case('uniform_vorticity')
+          dst = enum_uniform_vorticity_string
+        case('kolmogorovflow-x')
+          dst = enum_kolmogorovflowZx_string
+        case('kolmogorovflow-z')
+          dst = enum_kolmogorovflowZz_string
+        case('nocos')
+          dst = enum_nocos_string
+        case('straining')
+          dst = enum_straining_string
+        case('strainingexcact')
+          dst = enum_strainingexcact_string
+        case('forcing_cont')
+          dst = enum_forcing_cont_string
+        case('shock')
+          dst = enum_shock_string
+        case('hyper')
+          dst = enum_hyper_string
+        case('getnu')
+          dst = enum_getnu_string
+        case('some viscosity')
+          dst = enum_some_viscosity_string
+        case('robertsflowii')
+          dst = enum_robertsflowii_string
+        case('robertsflowmask')
+          dst = enum_robertsflowmask_string
+        case('robertsflow2d')
+          dst = enum_robertsflow2d_string
+        case('robertsflow_exact')
+          dst = enum_robertsflow_exact_string
+        case('robertsflow-zdep')
+          dst = enum_robertsflowZzdep_string
+        case('z-dependent roberts flow; eps_fcont=')
+          dst = enum_zZdependent_roberts_flowZ_eps_fcontZ_string
+        case('elevator-flow')
+          dst = enum_elevatorZflow_string
+        case('z-dependent elevator-flow; eps_fcont=')
+          dst = enum_zZdependent_elevatorZflowZ_eps_fcontZ_string
+        case('roberts-for-ssd')
+          dst = enum_robertsZforZssd_string
+        case('sinx')
+          dst = enum_sinx_string
+        case('(0,0,cosx)')
+          dst = enum_Z0Z0ZcosxZ_string
+        case('(0,0,cosxcosy)')
+          dst = enum_Z0Z0ZcosxcosyZ_string
+        case('b=(0,0,cosxcosy)')
+          dst = enum_bZZ0Z0ZcosxcosyZ_string
+        case('(0,x,0)')
+          dst = enum_Z0ZxZ0Z_string
+        case('(0,sinxsint,0)')
+          dst = enum_Z0ZsinxsintZ0Z_string
+        case('(0,sinx,0)')
+          dst = enum_Z0ZsinxZ0Z_string
+        case('(0,cosx*cosz,0)')
+          dst = enum_Z0ZcosxZcoszZ0Z_string
+        case('(0,sinx*exp(-z^2),0)')
+          dst = enum_Z0ZsinxZexpZZzZ2ZZ0Z_string
+        case('(0,aycont_z,0)')
+          dst = enum_Z0Zaycont_zZ0Z_string
+        case('(sinz,cosz,0)')
+          dst = enum_ZsinzZcoszZ0Z_string
+        case('tg')
+          dst = enum_tg_string
+        case('tg-random-nonhel')
+          dst = enum_tgZrandomZnonhel_string
+        case('tg-random-hel')
+          dst = enum_tgZrandomZhel_string
+        case('cosx*cosy*cosz')
+          dst = enum_cosxZcosyZcosz_string
+        case('gp')
+          dst = enum_gp_string
+        case('galloway-proctor-92')
+          dst = enum_gallowayZproctorZ92_string
+        case('gp_tc13')
+          dst = enum_gp_tc13_string
+        case('gp_tc13_yzx')
+          dst = enum_gp_tc13_yzx_string
+        case('mbi_emf')
+          dst = enum_mbi_emf_string
+        case('j0_k1x')
+          dst = enum_j0_k1x_string
+        case('fluxring_cylindrical')
+          dst = enum_fluxring_cylindrical_string
+        case('counter_centrifugal')
+          dst = enum_counter_centrifugal_string
+        case('vortex')
+          dst = enum_vortex_string
+        case('blob')
+          dst = enum_blob_string
+        case('zblob')
+          dst = enum_zblob_string
+        case('vert_field_blob')
+          dst = enum_vert_field_blob_string
+        case('ks')
+          dst = enum_ks_string
+        case('exp(-x2-y2)')
+          dst = enum_expZZx2Zy2Z_string
+        case('xz')
+          dst = enum_xz_string
+        case('1-(4/3)(1-r^2/4)*r^2')
+          dst = enum_1ZZ4Z3ZZ1ZrZ2Z4ZZrZ2_string
+        case('tidal')
+          dst = enum_tidal_string
+        case('from_file')
+          dst = enum_from_file_string
+        case('no such iforcing_cont: ')
+          dst = enum_no_such_iforcing_contZ__string
+        case('axel: should not be here (eta) ... ')
+          dst = enum_axelZ_should_not_be_here_ZetaZ_ZZZ__string
+        case('superconformal')
+          dst = enum_superconformal_string
+        case('axel2: should not be here (eta) ... ')
+          dst = enum_axel2Z_should_not_be_here_ZetaZ_ZZZ__string
         case default
           dst = enum_unknown_string_string
         endselect

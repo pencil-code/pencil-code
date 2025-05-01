@@ -3149,6 +3149,9 @@ endif
 ifeq ($(MAGNETIC_MEANFIELD),magnetic/nomeanfield)
 	@echo $(CUDA_RELPATH)'/$(MAGNETIC_MEANFIELD).f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources.h
 endif
+ifeq ($(GRAVITY),nogravity)
+	@echo $(CUDA_RELPATH)'/$(GRAVITY).f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources.h
+endif
 ifeq ($(MAGNETIC),nomagnetic)
 	@echo $(CUDA_RELPATH)'/$(MAGNETIC).f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources.h
 endif

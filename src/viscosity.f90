@@ -28,6 +28,7 @@ module Viscosity
 !
   integer, parameter :: nvisc_max=4
   character (len=labellen), dimension(nvisc_max) :: ivisc=''
+
   character (len=labellen) :: lambda_profile='uniform'
   real :: nu=0.0, nu_cspeed=0.5
   real :: nu_tdep=0.0, nu_tdep_exponent=0.0, nu_tdep_t0=0.0, nu_tdep_toffset=0.0
@@ -235,6 +236,8 @@ module Viscosity
 !
   integer :: enum_nnewton_type = 0
   integer :: enum_div_sld_visc = 0
+  integer, dimension(nvisc_max) :: enum_ivisc= 0
+  character (len=labellen) :: ivis_res
 !
   contains
 !***********************************************************************
@@ -259,7 +262,7 @@ module Viscosity
         lslope_limit_diff = .true.
         if (dimensionality<3) lisotropic_advection=.true.
         if (isld_char == 0) then
-          call farray_register_auxiliary('sld_char',isld_char,communicated=.true.)
+          call farray_register_auxiliary('sld_char',isld_char,communicated=.true.,on_gpu=lgpu)
           if (lroot) write(15,*) 'sld_char = fltarr(mx,my,mz)*one'
           aux_var(aux_count)=',sld_char'
           if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=trim(aux_var(aux_count))//' $'
@@ -752,6 +755,14 @@ module Viscosity
         call fatal_error("initialize_viscosity",'You are using both radial and horizontal '// &
                          'profiles for a viscosity jump. Likely not reasonable' )
 !
+      do i=1,nvisc_max !not assuming Lapacian is listed first
+        if (index(ivisc(i),"shock")/=0.or.index(ivisc(i),"hyper")/=0) then
+          continue
+        else
+          ivis_res = ivisc(i)
+          exit
+        endif
+      enddo
     endsubroutine initialize_viscosity
 !***********************************************************************
     subroutine initialize_lambda
@@ -2870,14 +2881,7 @@ module Viscosity
 !
       if (present(nu_input)) nu_input=nu
       if (present(ivis)) then
-        do i=1,nvisc_max !not assuming Lapacian is listed first
-          if (index(ivisc(i),"shock")/=0.or.index(ivisc(i),"hyper")/=0) then
-            continue
-          else
-            ivis=ivisc(i)
-            exit
-          endif
-        enddo
+              ivis = ivis_res
       endif
       if (present(nu_pencil)) then
 
@@ -3036,6 +3040,7 @@ module Viscosity
     use General , only: string_to_enum
 
     integer, parameter :: n_pars=200
+    integer :: i
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call copy_addr(nu,p_par(1))
@@ -3148,9 +3153,15 @@ module Viscosity
     !TP: needed for transpilation but name collides with hydro so will not work without
     !    module qualified name, so to not break handwritten DSL code have it on comment
     !call copy_addr(eth0z,p_par(106)) ! (mz)
+
     call copy_addr(nu_r_reduce,p_par(107))
     call copy_addr(lvisc_nu_reduce_ddr,p_par(108)) ! bool
-
+    call copy_addr(h_sld_visc,p_par(109))
+    call copy_addr(nlf_sld_visc,p_par(110))
+    do i = 1,nvisc_max
+        call string_to_enum(enum_ivisc(i),ivisc(i))
+    enddo
+    call copy_addr(enum_ivisc,p_par(111)) ! int (nvisc_max)
     
     endsubroutine pushpars2c
 !***********************************************************************

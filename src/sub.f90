@@ -7740,6 +7740,7 @@ nameloop: do
       character(LEN=*), optional, intent(in) :: heat_type
 !
       real :: nlf, h_slope_limited, one_16, fdif_limit
+      !TP: not used!!
       type (pencil_case), intent(in) :: p
       integer :: j,k,ix
       logical :: ldiv_4th

@@ -322,7 +322,7 @@ module Density
         if (dimensionality<3) lisotropic_advection=.true.
         lslope_limit_diff = .true.
         if (isld_char == 0) then
-          call farray_register_auxiliary('sld_char',isld_char,communicated=.true.)
+          call farray_register_auxiliary('sld_char',isld_char,communicated=.true.,on_gpu=lgpu)
           if (lroot) write(15,*) 'sld_char = fltarr(mx,my,mz)*one'
           aux_var(aux_count)=',sld_char'
           if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=trim(aux_var(aux_count))//' $'
@@ -4123,7 +4123,10 @@ module Density
     call copy_addr(lhubble_density,p_par(71)) ! bool
     !TP: needed for transpilation but name collides with hydro so will not work without
     !    module qualified name, so to not break handwritten DSL code have it on comment
-    !call copy_addr(wdamp,p_par(72))
+    call copy_addr(wdamp,p_par(72))
+    
+    call copy_addr(h_sld_dens,p_par(73))
+    call copy_addr(nlf_sld_dens,p_par(74))
 
     endsubroutine pushpars2c
 !***********************************************************************

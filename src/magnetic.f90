@@ -1253,7 +1253,7 @@ module Magnetic
         if (dimensionality<3) lisotropic_advection=.true.
         lbb_as_comaux=lsld_bb
         if (isld_char == 0) then
-          call farray_register_auxiliary('sld_char',isld_char,communicated=.true.)
+          call farray_register_auxiliary('sld_char',isld_char,communicated=.true.,on_gpu=lgpu)
           if (lroot) write(15,*) 'sld_char= fltarr(mx,my,mz)*one'
           aux_var(aux_count)=',sld_char'
           if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=trim(aux_var(aux_count))//' $'
@@ -5629,8 +5629,7 @@ print*,'AXEL: should not be here (eta) ... '
         endwhere
         if (lquench_eta_aniso) tmp1=tmp1/(1.+quench_aniso*Arms)
         do j=1,3
-          ju=j-1+iaa
-          df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)-tmp1*p%jb*p%bb(:,j)
+          df(l1:l2,m,n,iaa-1+j)=df(l1:l2,m,n,iaa-1+j)-tmp1*p%jb*p%bb(:,j)
         enddo
         eta_total = eta_total + eta_aniso_BB
       endif
@@ -5639,8 +5638,7 @@ print*,'AXEL: should not be here (eta) ... '
 !
       if (lambipolar_diffusion) then
         do j=1,3
-          ju=j-1+iaa
-          df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)+p%nu_ni1*p%jxbrxb(:,j)
+          df(l1:l2,m,n,iaa-1+j)=df(l1:l2,m,n,iaa-1+j)+p%nu_ni1*p%jxbrxb(:,j)
         enddo
         if (lentropy .and. lneutralion_heat) then
           if (pretend_lnTT) then
@@ -6058,17 +6056,21 @@ print*,'AXEL: should not be here (eta) ... '
 !
       if (lupdate_courant_dt.and.lrhs_max) then
         if (lhydro) then
-          where (abs(p%uu)>1)   !MR: What is the significance of unity in this criterion?
-            uu1=1./p%uu
-          elsewhere
-            uu1=1.
-          endwhere
+          do j =1,3
+                where (abs(p%uu(:,j))>1)   !MR: What is the significance of unity in this criterion?
+                  uu1(:,j)=1./p%uu(:,j)
+                elsewhere
+                  uu1(:,j)=1.
+                endwhere
+          enddo
         endif
-        where (abs(p%aa)>1)
-          aa1=1./p%aa
-        elsewhere
-          aa1=1.
-        endwhere
+        do j =1,3
+          where (abs(p%aa(:,j))>1)
+            aa1(:,j)=1./p%aa(:,j)
+          elsewhere
+            aa1(:,j)=1.
+          endwhere
+        enddo
         do j=1,3
           dAtot=abs(dAdt(:,j)*aa1(:,j))
           dt1_max=max(dt1_max,dAtot/cdtf)
@@ -11754,6 +11756,9 @@ print*,'AXEL2: should not be here (eta) ... '
 
     call copy_addr(lrelaxprof_glob_scaled,p_par(263)) ! bool
     call copy_addr(scl_uxb_in_ohm,p_par(264))
+    call copy_addr(w_sldchar_mag,p_par(265))
+    call copy_addr(h_sld_magn,p_par(266))
+    call copy_addr(nlf_sld_magn,p_par(267))
 
 
     endsubroutine pushpars2c

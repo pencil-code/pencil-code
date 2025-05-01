@@ -135,6 +135,7 @@ module Forcing
   real, dimension (my,n_forcing_cont_max) :: siny,cosy,sinyt,cosyt,embedy,expmk2y2
   real, dimension (mz,n_forcing_cont_max) :: sinz,cosz,sinzt,coszt,embedz
   real, dimension (100,n_forcing_cont_max) :: xi_GP,eta_GP
+  real, allocatable, dimension (:,:,:,:) :: fcont_from_file_read_input
   real, allocatable, dimension (:,:,:,:) :: fcont_from_file
 !
   namelist /forcing_run_pars/ &
@@ -214,6 +215,7 @@ module Forcing
   real, allocatable, dimension (:) :: KS_omega !or through whole field for each wavenumber?
   integer :: KS_modes = 25
 !
+  integer, dimension(n_forcing_cont_max) :: enum_iforcing_cont = 0
   contains
 !
 !***********************************************************************
@@ -1159,13 +1161,18 @@ module Forcing
           siny(:,i)=sin(2.*pi*y/Lxyz(2))
        elseif (iforcing_cont(i)=='from_file') then
           if (allocated(fcont_from_file)) deallocate(fcont_from_file)
-          allocate(fcont_from_file(3,nxgrid,nygrid,nzgrid))
+          allocate(fcont_from_file_read_input(3,nxgrid,nygrid,nzgrid))
+          allocate(fcont_from_file(nx,ny,nz,3))
           
           ! To create forcing_cont.dat, see function pc.util.write_forcing_cont in the Python module.
           if (lroot.and.ip<14) print*,'initialize_forcing: opening forcing_cont.dat'
           open(1,file='forcing_cont.dat',status='old')
-          read(1,*) fcont_from_file
+          read(1,*) fcont_from_file_read_input
           close(1)
+          fcont_from_file(:,:,:,1) = fcont_from_file_read_input(1,l1-nghost+ipx*nx:l2-nghost+ipx*nx,m1-nghost+ipy*ny:m2-nghost+ipy*ny,n1-nghost+ipz*nz:n2-nghost+ipz*nz)
+          fcont_from_file(:,:,:,2) = fcont_from_file_read_input(2,l1-nghost+ipx*nx:l2-nghost+ipx*nx,m1-nghost+ipy*ny:m2-nghost+ipy*ny,n1-nghost+ipz*nz:n2-nghost+ipz*nz)
+          fcont_from_file(:,:,:,3) = fcont_from_file_read_input(3,l1-nghost+ipx*nx:l2-nghost+ipx*nx,m1-nghost+ipy*ny:m2-nghost+ipy*ny,n1-nghost+ipz*nz:n2-nghost+ipz*nz)
+          deallocate(fcont_from_file_read_input)
         endif
       enddo
       if (n_forcing_cont==0) call warning('forcing','no valid continuous iforcing_cont specified')
@@ -5803,16 +5810,31 @@ module Forcing
           force(:,3)=+relhel*tmp*cosx(l1:l2,i)*cosy(m,i)*sqrt2
         case('RobertsFlow2d')
           fact=ampl_ff(i)
-          i2d1=1;i2d2=2;i2d3=3
-          if (l2dxz) then
-            i2d1=2;i2d2=1;i2d3=2
+          !i2d1=1;i2d2=2;i2d3=3
+          !if (l2dxz) then
+          !  i2d1=2;i2d2=1;i2d3=2
+          !endif
+          !if (l2dyz) then
+          !  i2d1=3;i2d2=2;i2d3=1
+          !endif
+          !force(:,i2d1)=-fact*cos(k2d*x(l1:l2))*sin(k2d*y(m))
+          !force(:,i2d2)=+fact*sin(k2d*x(l1:l2))*cos(k2d*y(m))
+          !force(:,i2d3)= 0.
+          !TP: wrote out in full to help transpilation
+          !TP: preserved l2dxz even though seems wrong in the sense that first second index is initialized and later zerod?
+          if(l2dxz) then
+            force(:,2)=-fact*cos(k2d*x(l1:l2))*sin(k2d*y(m))
+            force(:,1)=+fact*sin(k2d*x(l1:l2))*cos(k2d*y(m))
+            force(:,2)= 0.
+          else if(l2dyz) then
+            force(:,3)=-fact*cos(k2d*x(l1:l2))*sin(k2d*y(m))
+            force(:,2)=+fact*sin(k2d*x(l1:l2))*cos(k2d*y(m))
+            force(:,1)= 0.
+          else
+            force(:,1)=-fact*cos(k2d*x(l1:l2))*sin(k2d*y(m))
+            force(:,2)=+fact*sin(k2d*x(l1:l2))*cos(k2d*y(m))
+            force(:,3)= 0.
           endif
-          if (l2dyz) then
-            i2d1=3;i2d2=2;i2d3=1
-          endif
-          force(:,i2d1)=-fact*cos(k2d*x(l1:l2))*sin(k2d*y(m))
-          force(:,i2d2)=+fact*sin(k2d*x(l1:l2))*cos(k2d*y(m))
-          force(:,i2d3)= 0.
         case ('RobertsFlow_exact')
           kx=kf_fcont(i); ky=kf_fcont(i)
           kf=sqrt(kx*kx+ky*ky)
@@ -6154,9 +6176,9 @@ module Forcing
 !   (e.g. either uu or aa).
 !
       case('from_file')
-        force(:,1) = fcont_from_file(1,l1-nghost+ipx*nx:l2-nghost+ipx*nx,m-nghost+ipy*ny,n-nghost+ipz*nz)
-        force(:,2) = fcont_from_file(2,l1-nghost+ipx*nx:l2-nghost+ipx*nx,m-nghost+ipy*ny,n-nghost+ipz*nz)
-        force(:,3) = fcont_from_file(3,l1-nghost+ipx*nx:l2-nghost+ipx*nx,m-nghost+ipy*ny,n-nghost+ipz*nz)
+        force(:,1) = fcont_from_file(:,m-nghost,n-nghost,1)
+        force(:,2) = fcont_from_file(:,m-nghost,n-nghost,2)
+        force(:,3) = fcont_from_file(:,m-nghost,n-nghost,3)
         force=ampl_ff(i)*force
 !
 !  nothing 
@@ -6389,8 +6411,10 @@ module Forcing
     subroutine pushpars2c(p_par)
 
     use Syscalls, only: copy_addr
+    use General , only: string_to_enum
 
-    integer, parameter :: n_pars=9
+    integer, parameter :: n_pars=100
+    integer :: i
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call copy_addr(k1_ff,p_par(1))
@@ -6402,6 +6426,79 @@ module Forcing
     call copy_addr(profx_hel,p_par(7))   ! (nx)
     call copy_addr(profy_hel,p_par(8))   ! (my)
     call copy_addr(profz_hel,p_par(9))   ! (mz)
+    call copy_addr(n_forcing_cont,p_par(10)) ! int
+    call copy_addr(relhel,p_par(11))
+    call copy_addr(r_ff,p_par(12))
+    call copy_addr(rel_zcomp,p_par(13))
+    call copy_addr(bconst,p_par(14))
+    call copy_addr(bslope,p_par(15))
+    call copy_addr(width_ff,p_par(16))
+    call copy_addr(radius_ff,p_par(17))
+    call copy_addr(omega_ff,p_par(18))
+    call copy_addr(omega_double_ff,p_par(19))
+    call copy_addr(ampl_double_ff,p_par(20))
+    call copy_addr(lmomentum_ff,p_par(21)) ! bool
+    call copy_addr(lff_as_aux,p_par(22)) ! bool
+    call copy_addr(lforcing_osc,p_par(23)) ! bool
+    call copy_addr(lforcing_osc2,p_par(24)) ! bool
+    call copy_addr(lforcing_osc_double,p_par(25)) ! bool
+    call copy_addr(xminf,p_par(26))
+    call copy_addr(xmaxf,p_par(27))
+    call copy_addr(k2d,p_par(28)) ! int
+    call copy_addr(l2dxz,p_par(29)) ! bool
+    call copy_addr(l2dyz,p_par(30)) ! bool
+    call copy_addr(ampl_diffrot,p_par(31))
+    call copy_addr(omega_exponent,p_par(32))
+    call copy_addr(phi_tidal,p_par(33))
+    call copy_addr(omega_vortex,p_par(34))
+    call copy_addr(idiag_rufm,p_par(35)) ! int
+    call copy_addr(idiag_rufint,p_par(36)) ! int
+    call copy_addr(idiag_ufm,p_par(37)) ! int
+    call copy_addr(idiag_ofm,p_par(38)) ! int
+    call copy_addr(idiag_qfm,p_par(39)) ! int
+    call copy_addr(ks_modes,p_par(40)) ! int
+    call copy_addr(location_fixed,p_par(41)) ! (3) (2)
+    call copy_addr(profx_ampl1,p_par(42)) ! (nx)
+    call copy_addr(lgentle,p_par(43)) ! bool (n_forcing_cont_max)
+    call copy_addr(ampl_ff,p_par(44)) ! (n_forcing_cont_max)
+    call copy_addr(kf_fcont,p_par(45)) ! (n_forcing_cont_max)
+    call copy_addr(omega_fcont,p_par(46)) ! (n_forcing_cont_max)
+    call copy_addr(eps_fcont,p_par(47)) ! (n_forcing_cont_max)
+    call copy_addr(tgentle,p_par(48)) ! (n_forcing_cont_max)
+    call copy_addr(ampl_bb,p_par(49)) ! (n_forcing_cont_max)
+    call copy_addr(width_bb,p_par(50)) ! (n_forcing_cont_max)
+    call copy_addr(z_bb,p_par(51)) ! (n_forcing_cont_max)
+    call copy_addr(eta_bb,p_par(52)) ! (n_forcing_cont_max)
+    call copy_addr(fcont_ampl,p_par(53)) ! (n_forcing_cont_max)
+    call copy_addr(abc_a,p_par(54)) ! (n_forcing_cont_max)
+    call copy_addr(abc_b,p_par(55)) ! (n_forcing_cont_max)
+    call copy_addr(abc_c,p_par(56)) ! (n_forcing_cont_max)
+    call copy_addr(theta_tg,p_par(57)) ! (n_forcing_cont_max)
+    call copy_addr(phi1_ff,p_par(58)) ! (my) (n_forcing_cont_max)
+    call copy_addr(phi2_ff,p_par(59)) ! (mx) (n_forcing_cont_max)
+    call copy_addr(sinx,p_par(60)) ! (mx) (n_forcing_cont_max)
+    call copy_addr(cosx,p_par(61)) ! (mx) (n_forcing_cont_max)
+    call copy_addr(sinxt,p_par(62)) ! (mx) (n_forcing_cont_max)
+    call copy_addr(cosxt,p_par(63)) ! (mx) (n_forcing_cont_max)
+    call copy_addr(expmk2x2,p_par(64)) ! (mx) (n_forcing_cont_max)
+    call copy_addr(siny,p_par(65)) ! (my) (n_forcing_cont_max)
+    call copy_addr(cosy,p_par(66)) ! (my) (n_forcing_cont_max)
+    call copy_addr(sinyt,p_par(67)) ! (my) (n_forcing_cont_max)
+    call copy_addr(cosyt,p_par(68)) ! (my) (n_forcing_cont_max)
+    call copy_addr(expmk2y2,p_par(69)) ! (my) (n_forcing_cont_max)
+    call copy_addr(sinz,p_par(70)) ! (mz) (n_forcing_cont_max)
+    call copy_addr(cosz,p_par(71)) ! (mz) (n_forcing_cont_max)
+    call copy_addr(sinzt,p_par(72)) ! (mz) (n_forcing_cont_max)
+    call copy_addr(coszt,p_par(73)) ! (mz) (n_forcing_cont_max)
+    do i = 1,n_forcing_cont_max
+        call string_to_enum(enum_iforcing_cont(i),iforcing_cont(i))
+    enddo
+    call copy_addr(enum_iforcing_cont,p_par(74)) ! int (n_forcing_cont_max)
+    call copy_addr(fcont_from_file,p_par(75)) ! (nx) (ny) (nz) (3)
+    call copy_addr(ks_k,p_par(76)) ! (3) (ks_modes)
+    call copy_addr(ks_a,p_par(77)) ! (3) (ks_modes)
+    call copy_addr(ks_b,p_par(78)) ! (3) (ks_modes)
+    call copy_addr(ks_omega,p_par(79)) ! (ks_modes)
 
     endsubroutine pushpars2c
 !*******************************************************************

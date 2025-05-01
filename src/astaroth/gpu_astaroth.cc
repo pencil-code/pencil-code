@@ -116,6 +116,7 @@ has_nans(AcMesh mesh_in);
   #define itauyz itauyz__mod__training
   #define itauzz itauzz__mod__training
 
+  #define lread_all_vars_from_device lread_all_vars_from_device__mod__cdata
 #endif
 
 AcReal dt1_interface{};
@@ -1634,7 +1635,9 @@ extern "C" void copyFarray(AcReal* f)
   //TP: for now only copy the advanced fields back
   //TODO: should auxiliaries needed on the GPU like e.g. Shock be copied? They can always be recomputed on the host if needed
   //If doing training we read all since we might want TAU components to calculate e.g. validation error
-  const int end = ltraining ? NUM_VTXBUF_HANDLES : mvar;
+  const int end = ltraining ? NUM_VTXBUF_HANDLES : 
+	  	  lread_all_vars_from_device ? mfarray :
+		  mvar;
   for (int i = 0; i < end; ++i)
   {
 	  acDeviceStoreVertexBuffer(acGridGetDevice(),STREAM_DEFAULT,VertexBufferHandle(i),&mesh);
