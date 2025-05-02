@@ -216,6 +216,9 @@ module Forcing
   integer :: KS_modes = 25
 !
   integer, dimension(n_forcing_cont_max) :: enum_iforcing_cont = 0
+  logical, dimension(2) :: lforce_helical = .false.
+  logical :: lsecond_force = .false.
+
   contains
 !
 !***********************************************************************
@@ -1186,6 +1189,16 @@ module Forcing
 !
       if (r_ff /=0. .or. rcyl_ff/=0.) profz_k = tanh(z/width_ff)
 !
+!  Useful logicals for GPU
+!
+    
+    select case(iforce)
+        case ('helical', '2'); lforce_helical(1) = .true.
+    endselect
+    select case(iforce2)
+        case ('helical', '2'); lforce_helical(2) = .true.
+    endselect
+    lsecond_force = iforce2 /= 'zero'
     endsubroutine initialize_forcing
 !***********************************************************************
     subroutine addforce(f)
@@ -6502,6 +6515,8 @@ module Forcing
     call copy_addr(ks_a,p_par(77)) ! (3) (ks_modes)
     call copy_addr(ks_b,p_par(78)) ! (3) (ks_modes)
     call copy_addr(ks_omega,p_par(79)) ! (ks_modes)
+    call copy_addr(lforce_helical,p_par(80)) ! bool (2)
+    call copy_addr(lsecond_force,p_par(81)) ! bool
 
     endsubroutine pushpars2c
 !*******************************************************************
