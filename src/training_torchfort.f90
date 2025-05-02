@@ -249,6 +249,7 @@ print*, 'ltrained, modelfn=', ltrained, modelfn
       if (mod(it,it_train)==0) then
 !
         if (.not. lfortran_launched) then
+         !TP: this is to calculate validation loss
          call infer_gpu(0)
           !TODO: smoothing/scaling etc. for uu and tau
          !istat = torchfort_train(model, get_ptr_gpu(iux,iuz,nbatch_training=1), &
