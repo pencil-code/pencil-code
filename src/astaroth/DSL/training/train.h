@@ -3,11 +3,11 @@ fixed_boundary Kernel twopass_solve_final(int step_num){
   write( F_RHO, rk_final(F_RHO,step_num) )
 }
 
-Field3 UUMEAN
+communicated Field3 UUMEAN
 
 
 
-Field6 TAU_INFERRED
+communicated Field6 TAU_INFERRED
 
 
 Stencil avgr1
@@ -193,13 +193,14 @@ ComputeSteps train_prepare(boundconds){
 	final_tau()
 
 
-	reduce_uumean_tau()
-	scale()
+	//reduce_uumean_tau()
+	//scale()
 
 }
 
-ComputeSteps descale(boundconds){
+//ComputeSteps descale(boundconds){
 
-	descale_uumean()
-	descale_tau()
-}
+	//descale_uumean()
+	//descale_tau()
+
+//}

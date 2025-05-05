@@ -4,10 +4,11 @@
 #include <string>
 #include <fstream>
 #include <stdio.h>
+#include <mpi.h>
 
 extern "C" void torch_trainCAPI(float* input, float* label, float* loss_val){
 
-//	torchfort_result_t result = torchfort_set_manual_seed(123);
+	torchfort_result_t result = torchfort_set_manual_seed(943442);
 
 //	std::ofstream myFile;
 //	myFile.open("t.out");
@@ -30,6 +31,7 @@ extern "C" void torch_trainCAPI(float* input, float* label, float* loss_val){
 
 extern "C" void torch_inferCAPI(float* input, float* label){
 
+	torchfort_result_t result = torchfort_set_manual_seed(943442);
 	int64_t input_shape[5] = {1, 3, 38, 38, 38};
 	int64_t label_shape[5] = {1, 6, 38, 38, 38};
 
@@ -40,4 +42,18 @@ extern "C" void torch_inferCAPI(float* input, float* label){
  {
  		fprintf(stderr,"torchfort_train failed!\n");
  }
+}
+
+
+
+
+extern "C" void torch_createmodel(const char* name, const char* config_fname,MPI_Comm mpi_comm, int device){
+	
+	torchfort_result_t result = torchfort_set_manual_seed(943442);
+	torchfort_result_t res = torchfort_create_distributed_model("cnn", "data/training/unet_torchscript.pt", MPI_COMM_WORLD, 0);
+
+ 	if(res != TORCHFORT_RESULT_SUCCESS)
+ 	{
+		fprintf(stderr,"torchfort_train failed!\n");
+ 	}
 }

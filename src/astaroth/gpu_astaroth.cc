@@ -20,7 +20,7 @@
 #define CUDA_ERRCHK(X)
 
 int counter = 0;
-
+int done = 0;
 
 // Astaroth headers.
 #include "astaroth.h"
@@ -125,72 +125,63 @@ extern "C" void copyFarray(AcReal* f);
 
 extern "C" void torch_trainCAPI(float* input, float* label, float* loss_val);
 extern "C" void torch_inferCAPI(float* input, float* label);
+extern "C" void torch_createmodel(const char* name, const char* config_fname, MPI_Comm mpi_comm, int device);
 
 
-void print_debug(){
+void print_debug() {
+    #if TRAINING
+    #include "user_constants.h"
+	/*	
+    auto temp = acGetOptimizedDSLTaskGraph(descale);
+    acGridSynchronizeStream(STREAM_ALL);
+    acGridExecuteTaskGraph(temp, 1);
+    acGridSynchronizeStream(STREAM_ALL);
+*/
 
-#if TRAINING
-	#include "user_constants.h"
+		std::ofstream myFile;
+		std::string fileString = "slices/slices_" + std::to_string(counter) + ".csv";	
+		myFile.open(fileString);
+
+    myFile << "it,TAU_xx,TAU_xx_inferred,TAU_yy,TAU_yy_inferred,TAU_zz,TAU_zz_inferred,"
+           << "TAU_xy,TAU_xy_inferred,TAU_yz,TAU_yz_inferred,TAU_xz,TAU_xz_inferred,UUMEAN_x,UUMEAN_y,UUMEAN_z,"
+           << "UUX,UUY,UUZ\n";
+
+
+    copyFarray(NULL);
+    const auto DEVICE_VTXBUF_IDX = [&](const int x, const int y, const int z) {
+        return acVertexBufferIdx(x, y, z, mesh.info);
+    };
+
+    AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
 	
-	if(counter % 25 == 0){
-	
-	auto temp = acGetOptimizedDSLTaskGraph(descale);
-	acGridSynchronizeStream(STREAM_ALL);
-	acGridExecuteTaskGraph(temp,1);
-	acGridSynchronizeStream(STREAM_ALL);
 
-	copyFarray(NULL);
-	const auto DEVICE_VTXBUF_IDX = [&](const int x, const int y, const int z)
-					{
-						return acVertexBufferIdx(x, y, z, mesh.info);
-					};
-	AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
+    for (size_t i = dims.m0.x; i < dims.m1.x; i++) {
+        for (size_t j = dims.m0.y; j < dims.m1.y; j++) {
+            for (size_t k = dims.m0.z; k < dims.m1.z; k++) {
 
-	std::ofstream myFile;
-	std::string fileString = "sclices_" + std::to_string(counter) + ".csv";
-	myFile.open(fileString);
-	myFile << "field,x,y,value\n";
-	for(size_t i = dims.n0.x; i < dims.n1.x; i++){
-		for(size_t j = dims.n0.y; j < dims.n1.y; j++){
-			for(size_t k = dims.n0.z; k < dims.n1.z; k++){
-				
-				if(k == 20){	
-
-					myFile << "TAU_xx," << i << "," << j << "," << mesh.vertex_buffer[TAU.xx][DEVICE_VTXBUF_IDX(i, j, k)] << "\n";
-					myFile << "TAU_xx_inferred," << i << "," << j << "," << mesh.vertex_buffer[TAU_INFERRED.xx][DEVICE_VTXBUF_IDX(i, j, k)] << "\n";
-
-					myFile << "TAU_yy," << i << "," << j << "," << mesh.vertex_buffer[TAU.yy][DEVICE_VTXBUF_IDX(i, j, k)] << "\n";
-					myFile << "TAU_yy_inferred," << i << "," << j << "," << mesh.vertex_buffer[TAU_INFERRED.yy][DEVICE_VTXBUF_IDX(i, j, k)] << "\n";
-
-					myFile << "TAU_zz," << i << "," << j << "," << mesh.vertex_buffer[TAU.zz][DEVICE_VTXBUF_IDX(i, j, k)] << "\n";
-					myFile << "TAU_zz_inferred," << i << "," << j << "," << mesh.vertex_buffer[TAU_INFERRED.zz][DEVICE_VTXBUF_IDX(i, j, k)] << "\n";
-
-					myFile << "TAU_xy," << i << "," << j << "," << mesh.vertex_buffer[TAU.xy][DEVICE_VTXBUF_IDX(i, j, k)] << "\n";
-					myFile << "TAU_xy_inferred," << i << "," << j << "," << mesh.vertex_buffer[TAU_INFERRED.xy][DEVICE_VTXBUF_IDX(i, j, k)] << "\n";
-
-					myFile << "TAU_yz," << i << "," << j << "," << mesh.vertex_buffer[TAU.yz][DEVICE_VTXBUF_IDX(i, j, k)] << "\n";
-					myFile << "TAU_yz_inferred," << i << "," << j << "," << mesh.vertex_buffer[TAU_INFERRED.yz][DEVICE_VTXBUF_IDX(i, j, k)] << "\n";
-
-					myFile << "TAU_xz," << i << "," << j << "," << mesh.vertex_buffer[TAU.xz][DEVICE_VTXBUF_IDX(i, j, k)] << "\n";
-					myFile << "TAU_xz_inferred," << i << "," << j << "," << mesh.vertex_buffer[TAU_INFERRED.xz][DEVICE_VTXBUF_IDX(i, j, k)] << "\n";
-
-					myFile << "UUMEAN_x," << i << "," << j << "," << mesh.vertex_buffer[UUMEAN.x][DEVICE_VTXBUF_IDX(i, j, k)] << "\n";
-					myFile << "UUMEAN_y," << i << "," << j << "," << mesh.vertex_buffer[UUMEAN.y][DEVICE_VTXBUF_IDX(i, j, k)] << "\n";
-					myFile << "UUMEAN_z," << i << "," << j << "," << mesh.vertex_buffer[UUMEAN.z][DEVICE_VTXBUF_IDX(i, j, k)] << "\n";
-
-					myFile << "UUX," << i << "," << j << "," << mesh.vertex_buffer[UUX][DEVICE_VTXBUF_IDX(i, j, k)] << "\n";
-					myFile << "UUY," << i << "," << j << "," << mesh.vertex_buffer[UUY][DEVICE_VTXBUF_IDX(i, j, k)] << "\n";
-					myFile << "UUZ," << i << "," << j << "," << mesh.vertex_buffer[UUZ][DEVICE_VTXBUF_IDX(i, j, k)] << "\n";
-
-					}
-				}
-			}	
-		}
-
-	myFile.close();	
-	}
-
-#endif
+                myFile << counter << ","
+                       << mesh.vertex_buffer[TAU.xx][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[TAU_INFERRED.xx][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[TAU.yy][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[TAU_INFERRED.yy][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[TAU.zz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[TAU_INFERRED.zz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[TAU.xy][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[TAU_INFERRED.xy][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[TAU.yz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[TAU_INFERRED.yz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[TAU.xz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[TAU_INFERRED.xz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[UUMEAN.x][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[UUMEAN.y][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[UUMEAN.z][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[UUX][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[UUY][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[UUZ][DEVICE_VTXBUF_IDX(i, j, k)] << "\n";
+            }
+        }
+    }
+    #endif
 }
 
 
@@ -198,9 +189,9 @@ void print_debug(){
 extern "C" void torch_train_c_api(AcReal *loss_val){
 	
 #if TRAINING
-	counter++;
-
 	#include "user_constants.h"
+
+	std::cout << "Counter is: " << counter << "\n"; 
 	
 
 	auto temp = acGetOptimizedDSLTaskGraph(train_prepare);
@@ -223,23 +214,30 @@ extern "C" void torch_train_c_api(AcReal *loss_val){
 	acGridSynchronizeStream(STREAM_ALL);
 	acGridExecuteTaskGraph(bcs,1);
 	acGridSynchronizeStream(STREAM_ALL);
+	float avgloss = 0;
 
-
-	torch_trainCAPI(uumean_ptr, TAU_ptr, loss_val);
-	
-	printf("Loss after training: %f\n", *loss_val);
+	for(int batch = 0; batch<5; batch++){
+		torch_trainCAPI(uumean_ptr, TAU_ptr, loss_val);
+		avgloss = avgloss + *loss_val;
+	}
+	printf("Loss after training: %f\n", avgloss/5);
+	counter++;
 #endif
 }
 
 float MSE(){
-	//TP: to Shreyas put this on comment until you commit the new DSL code in training/train.h
-	
 #if TRAINING
 	#include "user_constants.h"
 	
 	auto temp = acGetOptimizedDSLTaskGraph(calc_validation_loss);
 	acGridSynchronizeStream(STREAM_ALL);
 	acGridExecuteTaskGraph(temp,1);
+	acGridSynchronizeStream(STREAM_ALL);
+
+
+  auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
+	acGridSynchronizeStream(STREAM_ALL);
+	acGridExecuteTaskGraph(bcs,1);
 	acGridSynchronizeStream(STREAM_ALL);
 
 	const auto DEVICE_VTXBUF_IDX = [&](const int x, const int y, const int z)
@@ -253,9 +251,7 @@ float MSE(){
 
 	return (acDeviceGetOutput(acGridGetDevice(), AC_l2_sum))/(6*32*32*32);
 #else
-	return 0.0;
 #endif
-	
 }
 
 
@@ -271,30 +267,35 @@ extern "C" void torch_infer_c_api(int flag){
 		acGridSynchronizeStream(STREAM_ALL);
 
 
-	AcReal* out = NULL;
+		AcReal* out = NULL;
 	
-	AcReal* uumean_ptr = NULL;
-	AcReal* tau_infer_ptr = NULL;
+		AcReal* uumean_ptr = NULL;
+		AcReal* tau_infer_ptr = NULL;
 
-	acDeviceGetVertexBufferPtrs(acGridGetDevice(), TAU_INFERRED.xx, &tau_infer_ptr, &out);
-	acDeviceGetVertexBufferPtrs(acGridGetDevice(), UUMEAN.x, &uumean_ptr, &out);
+		acDeviceGetVertexBufferPtrs(acGridGetDevice(), TAU_INFERRED.xx, &tau_infer_ptr, &out);
+		acDeviceGetVertexBufferPtrs(acGridGetDevice(), UUMEAN.x, &uumean_ptr, &out);
 
 	
 	
-  auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
-	acGridSynchronizeStream(STREAM_ALL);
-	acGridExecuteTaskGraph(bcs,1);
-	acGridSynchronizeStream(STREAM_ALL);
+  	auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
+		acGridSynchronizeStream(STREAM_ALL);
+		acGridExecuteTaskGraph(bcs,1);
+		acGridSynchronizeStream(STREAM_ALL);
 
+		torch_inferCAPI(uumean_ptr, tau_infer_ptr);
+		
 
-	torch_inferCAPI(uumean_ptr, tau_infer_ptr);
-	
-	float vloss = MSE();
+		float vloss = MSE();
+		
+		
+  	bcs = acGetOptimizedDSLTaskGraph(boundconds);	
+		acGridSynchronizeStream(STREAM_ALL);
+		acGridExecuteTaskGraph(bcs,1);
+		acGridSynchronizeStream(STREAM_ALL);
 
-	printf("Validation error is: %f\n", vloss);
-	printf("counter is: %d\n", counter);
-	print_debug();
-#endif
+		printf("Validation error is: %f\n", vloss);
+		print_debug();
+	#endif
 }
 
 
@@ -342,7 +343,7 @@ extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
     offset += mw;
   }
   offset = 0;
-  for (int i = 0; i < NUM_VTXBUF_HANDLES; ++i)
+	for (int i = 0; i < NUM_VTXBUF_HANDLES; ++i)
   {
     mesh_true.vertex_buffer[VertexBufferHandle(i)] = &dfarray_truth[offset];
     offset += mw;
@@ -2125,6 +2126,8 @@ testBCs()
 
   acHostMeshDestroy(&mesh_to_copy);
   acHostMeshCopyVertexBuffers(tmp_mesh_to_store,mesh);
+  acHostMeshDestroy(&tmp_mesh_to_store);
+  acGridDestroyTaskGraph(bcs);
   acHostMeshDestroy(&tmp_mesh_to_store);
   acGridDestroyTaskGraph(bcs);
 }
