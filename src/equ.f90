@@ -640,6 +640,7 @@ module Equ
       use Selfgravity, only: calc_diagnostics_selfgrav
       use Shear, only: calc_diagnostics_shear
       use Shock, only: calc_diagnostics_shock
+      use Training, only: calc_diagnostics_training
       use Viscosity, only: calc_diagnostics_viscosity
       use Diagnostics
 !$    use OMP_lib
@@ -714,6 +715,7 @@ module Equ
         call calc_diagnostics_selfgrav(p)
         call calc_diagnostics_shear(p)
         call calc_diagnostics_shock(p)
+        call calc_diagnostics_training
         call calc_diagnostics_viscosity(p)
 
         lfirstpoint=.false.
@@ -1144,7 +1146,7 @@ module Equ
 !
         if (lpointmasses) call pointmasses_pde_pencil(f,df,p)
 
-        if (ltraining) call calc_diagnostics_training(f,p)
+        if (ltraining) call calc_diagnostics_training
 !
 !  Call diagnostics that involves the full right hand side
 !  This must be done at the end of all calls that might modify df.

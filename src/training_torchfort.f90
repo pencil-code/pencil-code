@@ -74,7 +74,6 @@
           call system_cmd('mkdir '//trim(model_output_dir))
         else
           ltrained = file_exists(trim(modelfn))
-print*, 'ltrained, modelfn=', ltrained, modelfn
         endif
       endif
       call mpibcast(ltrained)
@@ -361,12 +360,11 @@ print*, 'it,it_train_chkpt=', it,it_train_chkpt, trim(model),istat, trim(checkpo
 
     endsubroutine div_reynolds_stress
 !***************************************************************
-    subroutine calc_diagnostics_training(f,p)
+    subroutine calc_diagnostics_training
 
       use Diagnostics, only: sum_mn_name, save_name
 
-      real, dimension (mx,my,mz,mfarray) :: f
-      type(pencil_case) :: p
+      !real, dimension (mx,my,mz,mfarray) :: f
 
       integer :: i,j,jtau
 
@@ -441,17 +439,17 @@ print*, 'it,it_train_chkpt=', it,it_train_chkpt, trim(model),istat, trim(checkpo
         idum=0
         call parse_name(inamev,cnamev(inamev),cformv(inamev),'tauzz',idum) 
         idum=0
-        call parse_name(inamev,cnamev(inamev),cformv(inamev),'tauxxerr',idum)
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'tauerrxx',idum)
         idum=0
-        call parse_name(inamev,cnamev(inamev),cformv(inamev),'tauxyerr',idum) 
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'tauerrxy§',idum) 
         idum=0
-        call parse_name(inamev,cnamev(inamev),cformv(inamev),'tauxzerr',idum) 
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'tauerrxz',idum) 
         idum=0
-        call parse_name(inamev,cnamev(inamev),cformv(inamev),'tauyyerr',idum) 
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'tauerryy',idum) 
         idum=0
-        call parse_name(inamev,cnamev(inamev),cformv(inamev),'tauyzerr',idum) 
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'tauerryz',idum) 
         idum=0
-        call parse_name(inamev,cnamev(inamev),cformv(inamev),'tauzzerr',idum) 
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'tauerrzz',idum) 
       enddo
 
     endsubroutine rprint_training
@@ -461,8 +459,8 @@ print*, 'it,it_train_chkpt=', it,it_train_chkpt, trim(model),istat, trim(checkpo
 !  Save trained model.
 !
       if (.not.lstart) then
-print*, 'ltrained .or. .not. lckpt_written=', ltrained, lckpt_written
-        if (ltrained .or. lckpt_written) then
+!print*, 'ltrained .or. .not. lckpt_written=', ltrained, lckpt_written
+        if (ltrained .or. .not.lckpt_written) then
           istat = torchfort_save_model(model, trim(model_output_dir)//trim(model_file))
           if (istat /= TORCHFORT_RESULT_SUCCESS) &
             call fatal_error("finalize_training","when saving model: istat="//trim(itoa(istat)))
