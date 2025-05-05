@@ -3161,7 +3161,7 @@ module Viscosity
     do i = 1,nvisc_max
         call string_to_enum(enum_ivisc(i),ivisc(i))
     enddo
-    call copy_addr(enum_ivisc,p_par(111)) ! int (nvisc_max)
+    call copy_addr(enum_ivisc,p_par(111)) ! int (4)
     
     endsubroutine pushpars2c
 !***********************************************************************
