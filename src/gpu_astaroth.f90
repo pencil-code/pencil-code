@@ -49,10 +49,10 @@ module GPU
 
 contains
 !***********************************************************************
-  subroutine train_gpu(f)
+  subroutine train_gpu(loss)
 
-    real :: f
-    call torchtrain_c(f)
+    real :: loss
+    call torchtrain_c(loss)
 
   endsubroutine train_gpu 
 !***********************************************************************
