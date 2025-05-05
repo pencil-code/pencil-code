@@ -212,7 +212,7 @@ module Cdata
   integer :: iz_loc=1,iz2_loc=1, iz3_loc=1, iz4_loc=1
   integer :: iproc=0,ipx=0,ipy=0,ipz=0,iproc_world=0,ipatch=0
   logical :: lprocz_slowest=.true.,lzorder=.false.,lmorton_curve=.false.,ltest_bcs=.true.,lcpu_timestep_on_gpu=.false., &
-             lsuppress_parallel_reductions=.false.
+             lsuppress_parallel_reductions=.false.,lread_all_vars_from_device = .false.
   logical :: lac_sparse_autotuning=.false.
   integer :: xlneigh,ylneigh,zlneigh ! `lower' processor neighbours
   integer :: xuneigh,yuneigh,zuneigh ! `upper' processor neighbours
@@ -318,6 +318,7 @@ module Cdata
   real :: scl_factor_target, Hp_target, appa_target, wweos_target
   real :: Hubble=0., ascale=1., sqrt_ascale=1.
   character(LEN=fnlen) :: ascale_type='default'
+  integer :: enum_ascale_type = 0
 !
 ! Debugging
 !

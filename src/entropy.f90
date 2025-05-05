@@ -551,7 +551,7 @@ module Energy
         lslope_limit_diff = .true.
         if (dimensionality<3)lisotropic_advection=.true.
         if (isld_char == 0) then
-          call farray_register_auxiliary('sld_char',isld_char,communicated=.true.)
+          call farray_register_auxiliary('sld_char',isld_char,communicated=.true.,on_gpu=lgpu)
           if (lroot) write(15,*) 'sld_char = fltarr(mx,my,mz)*one'
           aux_var(aux_count)=',sld_char'
           if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=trim(aux_var(aux_count))//' $'
@@ -8595,6 +8595,7 @@ module Energy
     if (allocated(dchit_prof_stored)) call copy_addr(dchit_prof_stored,p_par(460)) ! (max_n)
     if (allocated(chit_prof_fluct_stored)) call copy_addr(chit_prof_fluct_stored,p_par(459)) ! (max_n)
     if (allocated(dchit_prof_fluct_stored)) call copy_addr(dchit_prof_fluct_stored,p_par(461)) ! (max_n)
+    call copy_addr(w_sldchar_ene,p_par(462))
 
 
     endsubroutine pushpars2c

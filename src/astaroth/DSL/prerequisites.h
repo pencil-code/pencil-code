@@ -35,6 +35,7 @@ struct PC_rhs_update
 #include "../stdlib/math"
 #include "../stdlib/grid/funcs.h"
 #include "../stdlib/utils/intrinsics.h"
+#include "../stdlib/slope_limited_diffusion.h"
 
 #include "../../../cparam_c.h"
 #include "../../../cparam_pencils.inc_c.h"

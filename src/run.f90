@@ -1266,7 +1266,6 @@ call copy_addr(r_int,p_par(18))
 call copy_addr(r_ext,p_par(19))
 call copy_addr(mu0,p_par(20))
 call copy_addr(mu01,p_par(21))
-call copy_addr(llast,p_par(23)) ! bool
 call copy_addr(ldt_paronly,p_par(24)) ! bool
 call copy_addr(ldt,p_par(25)) ! bool
 call copy_addr(dt,p_par(26))
@@ -1521,6 +1520,10 @@ call copy_addr(iaytest,p_par(1129)) ! int
 call copy_addr(iaztest,p_par(1130)) ! int
 call copy_addr(iuztestpq,p_par(1132)) ! int
 call copy_addr(ihhtestpq,p_par(1133)) ! int
+call copy_addr(lread_all_vars_from_device,p_par(1134)) ! bool
+
+call string_to_enum(enum_ascale_type,ascale_type)
+call copy_addr(enum_ascale_type,p_par(1135)) ! int
 
 endsubroutine pushpars2c
 !***********************************************************************

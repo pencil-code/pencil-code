@@ -116,6 +116,9 @@ has_nans(AcMesh mesh_in);
   #define itauyz itauyz__mod__training
   #define itauzz itauzz__mod__training
 
+  #define lread_all_vars_from_device lread_all_vars_from_device__mod__cdata
+  #define lsecond_force lsecond_force__mod__forcing
+  #define lforce_helical lforce_helical__mod__forcing
 #endif
 
 AcReal dt1_interface{};
@@ -659,13 +662,11 @@ AcReal cpu_pow(AcReal const val, AcReal exponent)
 // PC interface headers.
 #include "PC_moduleflags.h"
 //#include "../cdata_c.h"
-#if LFORCING
-  #include "../forcing_c.h"     // provides forcing_pars_hel
-#endif
 #include "../sub_c.h"           // provides set_dt
 #include "../boundcond_c.h"     // provides boundconds[xyz] etc.
 //#include "../mpicomm_c.h"       // provides finalize_sendrcv_bdry
 #include "PC_module_parfuncs.h" // provides stuff from physics modules
+				//
 				//
 //TP: x,y and z macros are too general
 
@@ -673,6 +674,7 @@ AcReal cpu_pow(AcReal const val, AcReal exponent)
   #include "loadStore.h"
 #endif
 #if LFORCING
+  #include "../forcing_c.h"     // provides forcing_pars_hel
   #include "forcing.h"
 #endif
 // Astaroth objects instantiation.
@@ -1084,6 +1086,11 @@ extern "C" void substepGPU(int isubstep)
    const bool log = false;
 #if LFORCING
   //Update forcing params
+   if (lsecond_force) 
+   {
+	   fprintf(stderr,"Second forcing force not yet implemented on GPU!\n");
+	   exit(EXIT_FAILURE);
+   }
    if (isubstep == itorder) forcing_params.Update();  // calculate on CPU and load into GPU
 #endif
 
@@ -1635,7 +1642,9 @@ extern "C" void copyFarray(AcReal* f)
   //TP: for now only copy the advanced fields back
   //TODO: should auxiliaries needed on the GPU like e.g. Shock be copied? They can always be recomputed on the host if needed
   //If doing training we read all since we might want TAU components to calculate e.g. validation error
-  const int end = ltraining ? NUM_VTXBUF_HANDLES : mvar;
+  const int end = ltraining ? NUM_VTXBUF_HANDLES : 
+	  	  lread_all_vars_from_device ? mfarray :
+		  mvar;
   for (int i = 0; i < end; ++i)
   {
 	  acDeviceStoreVertexBuffer(acGridGetDevice(),STREAM_DEFAULT,VertexBufferHandle(i),&mesh);
