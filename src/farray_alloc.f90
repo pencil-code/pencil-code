@@ -1,4 +1,4 @@
-  module farray_alloc
+  module Farray_alloc
 !
 ! Dynamical allocation of f and df.
 ! 
@@ -8,7 +8,7 @@
   real, dimension(:,:,:,:), pointer :: f
   real, dimension(:,:,:,:), allocatable, target :: f_arr
 
-  public :: f,df
+  public :: f, df
   public :: initialize, finalize
 
   external :: allocate_shm
@@ -68,4 +68,4 @@
 
   endsubroutine finalize
 !******************************************************************************
-  endmodule
+  endmodule Farray_alloc
