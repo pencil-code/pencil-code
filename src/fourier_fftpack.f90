@@ -14,9 +14,7 @@ module Fourier
 !
   include 'fourier.h'
 !
-  complex, dimension (nxgrid) :: ax
-  complex, dimension (nygrid) :: ay
-  complex, dimension (nzgrid) :: az
+  complex, dimension (nx) :: ax,ay,az
   !$omp threadprivate(ax,ay,az)
   
   real, dimension (:,:), allocatable :: wsavex
