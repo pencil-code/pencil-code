@@ -14,14 +14,12 @@ module Fourier
 !
   include 'fourier.h'
 !
-  complex, dimension (nxgrid) :: ax
-  complex, dimension (nygrid) :: ay
-  complex, dimension (nzgrid) :: az
+  complex, dimension(nx) :: ax,ay,az
   !$omp threadprivate(ax,ay,az)
   
-  real, dimension (:,:), allocatable :: wsavex
-  real, dimension (:,:), allocatable :: wsavey
-  real, dimension (:,:), allocatable :: wsavez
+  real, dimension(:,:), allocatable :: wsavex
+  real, dimension(:,:), allocatable :: wsavey
+  real, dimension(:,:), allocatable :: wsavez
 
   interface fourier_transform_other
     module procedure fourier_transform_other_1
@@ -60,14 +58,14 @@ module Fourier
     module procedure fft_xyz_parallel_4D
   endinterface
 !
-  real, dimension (:,:), allocatable :: p_re_2d, p_im_2d   ! data in pencil shape
-  real, dimension (:,:), allocatable :: t_re_2d, t_im_2d   ! data in transposed pencil shape
+  real, dimension(:,:), allocatable :: p_re_2d, p_im_2d   ! data in pencil shape
+  real, dimension(:,:), allocatable :: t_re_2d, t_im_2d   ! data in transposed pencil shape
 
-  real, dimension (:,:,:), allocatable :: p_re_3d, p_im_3d   ! data in pencil shape
-  real, dimension (:,:,:), allocatable :: t_re_3d, t_im_3d   ! data in transposed pencil shape
+  real, dimension(:,:,:), allocatable :: p_re_3d, p_im_3d   ! data in pencil shape
+  real, dimension(:,:,:), allocatable :: t_re_3d, t_im_3d   ! data in transposed pencil shape
 
-  real, dimension (:,:,:,:), allocatable :: p_re_4d, p_im_4d   ! data in pencil shape
-  real, dimension (:,:,:,:), allocatable :: t_re_4d, t_im_4d   ! data in transposed pencil shape
+  real, dimension(:,:,:,:), allocatable :: p_re_4d, p_im_4d   ! data in pencil shape
+  real, dimension(:,:,:,:), allocatable :: t_re_4d, t_im_4d   ! data in transposed pencil shape
 !
   contains
 !***********************************************************************
@@ -117,10 +115,10 @@ module Fourier
         !!$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do collapse(2)
         do n=1,nz; do m=1,ny
-          ax(1:nx)=cmplx(a_re(:,m,n),a_im(:,m,n))
+          ax=cmplx(a_re(:,m,n),a_im(:,m,n))
           call cfftf(nxgrid,ax,wsavex(:,thread_id))
-          a_re(:,m,n)=real(ax(1:nx))
-          a_im(:,m,n)=aimag(ax(1:nx))
+          a_re(:,m,n)=real(ax)
+          a_im(:,m,n)=aimag(ax)
         enddo; enddo
         !!$omp end parallel
 !
@@ -138,10 +136,10 @@ module Fourier
           !!$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
           !$omp do collapse(2)
           do n=1,nz; do l=1,ny
-            ax(1:nx)=cmplx(a_re(:,l,n),a_im(:,l,n))
+            ax=cmplx(a_re(:,l,n),a_im(:,l,n))
             call cfftf(nxgrid,ax,wsavex(:,thread_id))
-            a_re(:,l,n)=real(ax(1:nx))
-            a_im(:,l,n)=aimag(ax(1:nx))
+            a_re(:,l,n)=real(ax)
+            a_im(:,l,n)=aimag(ax)
           enddo; enddo
           !!$omp end parallel
         endif
@@ -160,10 +158,10 @@ module Fourier
           !!$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
           !$omp do collapse(2)
           do m=1,nz; do l=1,ny
-            ax(1:nx)=cmplx(a_re(:,l,m),a_im(:,l,m))
+            ax=cmplx(a_re(:,l,m),a_im(:,l,m))
             call cfftf(nxgrid,ax,wsavex(:,thread_id))
-            a_re(:,l,m)=real(ax(1:nx))
-            a_im(:,l,m)=aimag(ax(1:nx))
+            a_re(:,l,m)=real(ax)
+            a_im(:,l,m)=aimag(ax)
           enddo; enddo
           !!$omp end parallel
         endif
@@ -182,10 +180,10 @@ module Fourier
           !!$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
           !$omp do collapse(2)
           do m=1,nz; do l=1,ny
-            ax(1:nx)=cmplx(a_re(:,l,m),a_im(:,l,m))
+            ax=cmplx(a_re(:,l,m),a_im(:,l,m))
             call cfftb(nxgrid,ax,wsavex(:,thread_id))
-            a_re(:,l,m)=real(ax(1:nx))
-            a_im(:,l,m)=aimag(ax(1:nx))
+            a_re(:,l,m)=real(ax)
+            a_im(:,l,m)=aimag(ax)
           enddo; enddo
           !!$omp end parallel
         endif
@@ -204,10 +202,10 @@ module Fourier
           !!$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
           !$omp do collapse(2)
           do n=1,nz; do l=1,ny
-            ax(1:nx)=cmplx(a_re(:,l,n),a_im(:,l,n))
+            ax=cmplx(a_re(:,l,n),a_im(:,l,n))
             call cfftb(nxgrid,ax,wsavex(:,thread_id))
-            a_re(:,l,n)=real(ax(1:nx))
-            a_im(:,l,n)=aimag(ax(1:nx))
+            a_re(:,l,n)=real(ax)
+            a_im(:,l,n)=aimag(ax)
           enddo; enddo
           !!$omp end parallel
         endif
@@ -226,10 +224,10 @@ module Fourier
         !!$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do collapse(2)
         do n=1,nz; do m=1,ny
-          ax(1:nx)=cmplx(a_re(:,m,n),a_im(:,m,n))
+          ax=cmplx(a_re(:,m,n),a_im(:,m,n))
           call cfftb(nxgrid,ax,wsavex(:,thread_id))
-          a_re(:,m,n)=real(ax(1:nx))
-          a_im(:,m,n)=aimag(ax(1:nx))
+          a_re(:,m,n)=real(ax)
+          a_im(:,m,n)=aimag(ax)
         enddo; enddo
         !!$omp end parallel
       endif
@@ -383,10 +381,10 @@ module Fourier
       !!$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
       !$omp do collapse(2)
       do n=1,nz; do m=1,ny
-        ax(1:nx)=cmplx(a_re(:,m,n),a_im(:,m,n))
+        ax=cmplx(a_re(:,m,n),a_im(:,m,n))
         call cfftf(nxgrid,ax,wsavex(:,thread_id))
-        a_re(:,m,n)=real(ax(1:nx))
-        a_im(:,m,n)=aimag(ax(1:nx))
+        a_re(:,m,n)=real(ax)
+        a_im(:,m,n)=aimag(ax)
       enddo; enddo
       !!$omp end parallel
       
@@ -400,10 +398,10 @@ module Fourier
       !!$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
       !$omp do collapse(2)
       do l=1,nz; do m=1,ny
-        ax(1:nx)=cmplx(a_re(:,m,l),a_im(:,m,l))
+        ax=cmplx(a_re(:,m,l),a_im(:,m,l))
         call cfftf(nxgrid,ax,wsavex(:,thread_id))
-        a_re(:,m,n)=real(ax(1:nx))/nwgrid     ! normalize
-        a_im(:,m,n)=aimag(ax(1:nx))/nwgrid
+        a_re(:,m,n)=real(ax)/nwgrid     ! normalize
+        a_im(:,m,n)=aimag(ax)/nwgrid
       enddo; enddo
       !!$omp end parallel
 !
@@ -448,10 +446,10 @@ module Fourier
         !!$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do collapse(2)
         do n=1,nz; do m=1,ny
-          ax(1:nx)=cmplx(a_re(:,m,n),a_im(:,m,n))
+          ax=cmplx(a_re(:,m,n),a_im(:,m,n))
           call cfftf(nxgrid,ax,wsavex(:,thread_id))
-          a_re(:,m,n)=real(ax(1:nx))/nxgrid
-          a_im(:,m,n)=aimag(ax(1:nx))/nxgrid
+          a_re(:,m,n)=real(ax)/nxgrid
+          a_im(:,m,n)=aimag(ax)/nxgrid
         enddo; enddo
         !!$omp end parallel
 !
@@ -464,10 +462,10 @@ module Fourier
         !!$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do collapse(2)
         do n=1,nz; do m=1,ny
-          ax(1:nx)=cmplx(a_re(:,m,n),a_im(:,m,n))
+          ax=cmplx(a_re(:,m,n),a_im(:,m,n))
           call cfftb(nxgrid,ax,wsavex(:,thread_id))
-          a_re(:,m,n)=real(ax(1:nx))
-          a_im(:,m,n)=aimag(ax(1:nx))
+          a_re(:,m,n)=real(ax)
+          a_im(:,m,n)=aimag(ax)
         enddo; enddo
         !!$omp end parallel
 !
@@ -725,14 +723,14 @@ module Fourier
           !!$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
           !$omp do collapse(2)
           do n=1,nz; do l=1,ny
-            ay(1:nx)=cmplx(a_re(:,l,n),a_im(:,l,n))
+            ay=cmplx(a_re(:,l,n),a_im(:,l,n))
             call cfftf(nxgrid,ay,wsavex(:,thread_id))
 !  Shift y-coordinate so that x-direction is periodic. This is best done in
 !  k-space, by multiplying the complex amplitude by exp[i*ky*deltay(x)].
             deltay_x=-deltay*(x(l+nghost+ipy*ny)-(x0+Lx/2))/Lx
             ay(two:nxgrid)=ay(two:nxgrid)*exp(cmplx(0.0, ky_fft(two:nxgrid)*deltay_x))
-            a_re(:,l,n)=real(ay(1:nx))
-            a_im(:,l,n)=aimag(ay(1:nx))
+            a_re(:,l,n)=real(ay)
+            a_im(:,l,n)=aimag(ay)
           enddo; enddo
           !!$omp end parallel
         endif
@@ -747,10 +745,10 @@ module Fourier
         !!$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do collapse(2)
         do n=1,nz; do m=1,ny
-          ax(1:nx)=cmplx(a_re(:,m,n),a_im(:,m,n))
+          ax=cmplx(a_re(:,m,n),a_im(:,m,n))
           call cfftf(nxgrid,ax,wsavex(:,thread_id))
-          a_re(:,m,n)=real(ax(1:nx))/nwgrid
-          a_im(:,m,n)=aimag(ax(1:nx))/nwgrid
+          a_re(:,m,n)=real(ax)/nwgrid
+          a_im(:,m,n)=aimag(ax)/nwgrid
         enddo; enddo
         !!$omp end parallel
 !
@@ -764,10 +762,10 @@ module Fourier
           !!$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
           !$omp do collapse(2)
           do l=1,nz; do m=1,ny
-            az(1:nx)=cmplx(a_re(:,m,l),a_im(:,m,l))
+            az=cmplx(a_re(:,m,l),a_im(:,m,l))
             call cfftf(nxgrid,az,wsavex(:,thread_id))
-            a_re(:,m,l)=real(az(1:nx))
-            a_im(:,m,l)=aimag(az(1:nx))
+            a_re(:,m,l)=real(az)
+            a_im(:,m,l)=aimag(az)
           enddo; enddo
           !!$omp end parallel
         endif
@@ -780,10 +778,10 @@ module Fourier
           !!$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
           !$omp do collapse(2)
           do l=1,nz; do m=1,ny
-            az(1:nx)=cmplx(a_re(:,m,l),a_im(:,m,l))
+            az=cmplx(a_re(:,m,l),a_im(:,m,l))
             call cfftb(nxgrid,az,wsavex(:,thread_id))
-            a_re(:,m,l)=real(az(1:nx))
-            a_im(:,m,l)=aimag(az(1:nx))
+            a_re(:,m,l)=real(az)
+            a_im(:,m,l)=aimag(az)
           enddo; enddo
           !!$omp end parallel
         endif
@@ -799,10 +797,10 @@ module Fourier
         !!$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do collapse(2)
         do n=1,nz; do m=1,ny
-          ax(1:nx)=cmplx(a_re(:,m,n),a_im(:,m,n))
+          ax=cmplx(a_re(:,m,n),a_im(:,m,n))
           call cfftb(nxgrid,ax,wsavex(:,thread_id))
-          a_re(:,m,n)=real(ax(1:nx))
-          a_im(:,m,n)=aimag(ax(1:nx))
+          a_re(:,m,n)=real(ax)
+          a_im(:,m,n)=aimag(ax)
         enddo; enddo
         !!$omp end parallel
 !
@@ -818,13 +816,13 @@ module Fourier
           !!$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
           !$omp do collapse(2)
           do n=1,nz; do l=1,ny
-            ay(1:nx)=cmplx(a_re(:,l,n),a_im(:,l,n))
+            ay=cmplx(a_re(:,l,n),a_im(:,l,n))
 !  Shift y-coordinate back to regular frame (see above).
             deltay_x=-deltay*(x(l+nghost+ipy*ny)-(x0+Lx/2))/Lx
             ay(two:nxgrid)=ay(two:nxgrid)*exp(cmplx(0.0,-ky_fft(two:nxgrid)*deltay_x))
             call cfftb(nxgrid,ay,wsavex(:,thread_id))
-            a_re(:,l,n)=real(ay(1:nx))
-            a_im(:,l,n)=aimag(ay(1:nx))
+            a_re(:,l,n)=real(ay)
+            a_im(:,l,n)=aimag(ay)
           enddo; enddo
           !!$omp end parallel
           call transp(a_re,'y' )  ! Deliver array back in (x,y,z) order.
@@ -887,15 +885,15 @@ module Fourier
           !!$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
           !$omp do collapse(2)
           do n=1,nz; do l=1,ny
-            ay(1:nx)=cmplx(a_re(:,l,n),a_im(:,l,n))
+            ay=cmplx(a_re(:,l,n),a_im(:,l,n))
             call cfftf(nxgrid,ay,wsavex(:,thread_id))
 !  Shift y-coordinate so that x-direction is periodic. This is best done in
 !  k-space, by multiplying the complex amplitude by exp[i*ky*deltay(x)].
             deltay_x=-deltay*(x(l+nghost+ipy*ny)-(x0+Lx/2))/Lx
             !This seems strange, breaks if two is a parameter 
             ay(two:nx)=ay(two:nx)*exp(cmplx(0.0, ky_fft(two:nxgrid)*deltay_x))
-            a_re(:,l,n)=real(ay(1:nx))
-            a_im(:,l,n)=aimag(ay(1:nx))
+            a_re(:,l,n)=real(ay)
+            a_im(:,l,n)=aimag(ay)
           enddo; enddo
           !!$omp end parallel
         endif
@@ -911,10 +909,10 @@ module Fourier
         !!$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do collapse(2)
         do n=1,nz; do m=1,ny
-          ax(1:nx)=cmplx(a_re(:,m,n),a_im(:,m,n))
+          ax=cmplx(a_re(:,m,n),a_im(:,m,n))
           call cfftf(nxgrid,ax,wsavex(:,thread_id))
-          a_re(:,m,n)=real(ax(1:nx))/nxygrid
-          a_im(:,m,n)=aimag(ax(1:nx))/nxygrid
+          a_re(:,m,n)=real(ax)/nxygrid
+          a_im(:,m,n)=aimag(ax)/nxygrid
         enddo; enddo
         !!$omp end parallel
       else
@@ -925,10 +923,10 @@ module Fourier
         !!$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do collapse(2)
         do n=1,nz; do m=1,ny
-          ax(1:nx)=cmplx(a_re(:,m,n),a_im(:,m,n))
+          ax=cmplx(a_re(:,m,n),a_im(:,m,n))
           call cfftb(nxgrid,ax,wsavex(:,thread_id))
-          a_re(:,m,n)=real(ax(1:nx))
-          a_im(:,m,n)=aimag(ax(1:nx))
+          a_re(:,m,n)=real(ax)
+          a_im(:,m,n)=aimag(ax)
         enddo; enddo
         !!$omp end parallel
 !
@@ -944,13 +942,13 @@ module Fourier
           !!$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
           !$omp do collapse(2)
           do n=1,nz; do l=1,ny
-            ay(1:nx)=cmplx(a_re(:,l,n),a_im(:,l,n))
+            ay=cmplx(a_re(:,l,n),a_im(:,l,n))
 !  Shift y-coordinate back to regular frame (see above).
             deltay_x=-deltay*(x(l+nghost+ipy*ny)-(x0+Lx/2))/Lx
             ay(two:nxgrid)=ay(two:nxgrid)*exp(cmplx(0.0,-ky_fft(two:nxgrid)*deltay_x))
             call cfftb(nxgrid,ay,wsavex(:,thread_id))
-            a_re(:,l,n)=real(ay(1:nx))
-            a_im(:,l,n)=aimag(ay(1:nx))
+            a_re(:,l,n)=real(ay)
+            a_im(:,l,n)=aimag(ay)
           enddo; enddo
           !!$omp end parallel
           call transp(a_re,'y' )  ! Deliver array back in (x,y,z) order.
