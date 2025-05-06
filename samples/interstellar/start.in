@@ -44,7 +44,7 @@
   lSNI=T
   lSN_scale_rad=T
   ltrim_profile=T
-  N_mass=60.0
+  N_mass=50.0
   rfactor_SN=1.5
   SNII_factor=1.0
 /

@@ -5,7 +5,7 @@
 &run_pars
   cvsid="5d67d8a3f"
   nt=5, it1=1, isave=1000, itorder=4, tmax=0.005
-  dt_epsi=1e-9, dtdec=0.5, dtinc=0.5, dt_ratio=1e-7, dtmin=1e-10, dt0=1e-8
+  dt_epsi=1e-5, dtdec=0.5, dtinc=0.5, dt_ratio=1e-3, dtmin=1e-10, dt0=1e-8
   leps_fixed=T
   eps_rkf0=0.001
   timestep_scaling=8*"rel_err"
@@ -51,7 +51,7 @@
 !! adjust SN radius above rfactor_SN for diffuse ISM
   lSN_scale_rad=T
   ltrim_profile=T
-  N_mass=60.0
+  N_mass=50.0
   rfactor_SN=1.5
   lSN_autofrackin=F
   lSN_coolingmass=F
@@ -59,7 +59,7 @@
 !  lSNII=T, l_persist_overwrite_lSNII=T
 !  lSNI=T, l_persist_overwrite_lSNI=T
 !  t_next_SNI=9e-4, l_persist_overwrite_tSNI=T
-!  t_next_SNII=9e-4, l_persist_overwrite_tSNII=T
+  t_next_SNII=1.3e-8, l_persist_overwrite_tSNII=T
 !! rest random number after crash for new SN site
 !  lreset_ism_seed=T
 !  seed_reset=1245
