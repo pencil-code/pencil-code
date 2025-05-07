@@ -290,7 +290,7 @@ module Density
   logical :: lupdate_mass_source
   real, dimension(nx) :: diffus_diffrho
   real, dimension(nx) :: diffus_diffrho3
-  real :: density_floor_log, density_ceiling_log
+  real :: density_floor_log, density_ceiling_log, wdamp_rho
 !
   integer :: enum_ieos_profile = 0
   integer :: enum_mass_source_profile = 0
@@ -872,6 +872,7 @@ module Density
 !
 !  precalculate mass-source profiles.
 !
+        wdamp_rho=wdamp
         if (mass_source_profile(1:4)=='bump') fnorm=(2.*pi*mass_source_sigma**2)**1.5
         select case (mass_source_profile)
           case ('nothing')
@@ -884,7 +885,7 @@ module Density
             if (.not.lspherical_coords) call fatal_error('initialize_density', &
                 'you have chosen mass-source profiles "sph-step-down",'//achar(10)// &
                 ' but coordinate system is not spherical!')
-            fprofile_x=mass_source_Mdot*stepdown(r1_mn,rmax_mass_source,wdamp)
+            fprofile_x=mass_source_Mdot*stepdown(r1_mn,rmax_mass_source,wdamp_rho)
           case ('exponential','const','cylindric','bump')
 !
 ! default to catch unknown values
@@ -3411,12 +3412,12 @@ module Density
 !
 !  Cylindrical profile for inner cylinder.
 !
-          pdamp=1.-step(p%rcyl_mn,r_int,wdamp) ! inner damping profile
+          pdamp=1.-step(p%rcyl_mn,r_int,wdamp_rho) ! inner damping profile
           dlnrhodt=-damplnrho_int*pdamp*(f(l1:l2,m,n,ilnrho)-lnrho_int)
 !
 !  Cylindrical profile for outer cylinder.
 !
-          pdamp=step(p%rcyl_mn,r_ext,wdamp) ! outer damping profile
+          pdamp=step(p%rcyl_mn,r_ext,wdamp_rho) ! outer damping profile
           dlnrhodt=dlnrhodt-damplnrho_ext*pdamp*(f(l1:l2,m,n,ilnrho)-lnrho_ext)
 !
 ! default to catch unknown values
@@ -4123,7 +4124,7 @@ module Density
     call copy_addr(lhubble_density,p_par(71)) ! bool
     !TP: needed for transpilation but name collides with hydro so will not work without
     !    module qualified name, so to not break handwritten DSL code have it on comment
-    call copy_addr(wdamp,p_par(72))
+    call copy_addr(wdamp_rho,p_par(72))
     
     call copy_addr(h_sld_dens,p_par(73))
     call copy_addr(nlf_sld_dens,p_par(74))
