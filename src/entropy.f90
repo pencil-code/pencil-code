@@ -792,7 +792,7 @@ module Energy
         if (cool+cool2/=0.) then
           cs2top_from_cool = (cool*cs2cool + cool2*cs2cool2)/(cool+cool2)
         else
-!         KG: there is no cooling, so setting of cs2cool in the next if-else 
+!         KG: there is no cooling, so setting of cs2cool in the next if-else
 !         KG: will not affect the simulation
           cs2top_from_cool = 0
         endif
@@ -3603,7 +3603,10 @@ module Energy
               if (.not.allproc_print) lproc_print=.false.
             endif
             if (ip<6) print*, 'p%fpres =',p%fpres
-            call fatal_error('denergy_dt','fatal_error w/o FORCE')
+            !call fatal_error('denergy_dt','fatal_error w/o FORCE')
+            !Fred reverted Axel's change above, reapplying FORCE to ensure all processes terminate, otherwise job hangs costing billing units
+            !Axel to revisit why change was needed in due course
+            call fatal_error('denergy_dt','fatal_error with FORCE', FORCE=.true.)
           endif
           df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + p%fpres
 !
@@ -7883,7 +7886,7 @@ module Energy
 !***********************************************************************
     subroutine initialize_cooling_patches(xpatch,ypatch)
 !
-!  Initialize locations of cooling patches. Alternatively read 
+!  Initialize locations of cooling patches. Alternatively read
 !  positions from a file.
 !
 !  03-apr-2024/pjk: coded
@@ -8402,7 +8405,7 @@ module Energy
     call copy_addr(profr1_cool,p_par(24))   ! (nx)
     call copy_addr(profr2_cool,p_par(25))   ! (nx)
     call copy_addr(profr_heat,p_par(26))    ! (nx)
-    
+
     call copy_addr(lchit_total,p_par(27))   ! int
     call copy_addr(chi_t,p_par(28))
     call copy_addr(lupw_ss,p_par(29))       ! bool
