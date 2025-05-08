@@ -3210,7 +3210,7 @@ print*,'AXEL99, ijx,ijz', ijx,ijz
           .or. idiag_uxbcmx/=0 .or. idiag_uxbcmy/=0 &
           .or. idiag_uxbsmx/=0 .or. idiag_uxbsmy/=0 &
           .or. idiag_Expt/=0 .or. idiag_Eypt/=0 .or. idiag_Ezpt/=0) lpenc_diagnos(i_uxbb)=.true.
-  
+
       if (idiag_uxBrms/=0 .or. idiag_Rmrms/=0 .or. idiag_Rmmz/=0) &
           lpenc_diagnos(i_uxb2)=.true.
       if (idiag_beta1m/=0 .or. idiag_beta1max/=0 .or. idiag_beta1mz/=0) &
@@ -4034,7 +4034,7 @@ print*,'AXEL99, ijx,ijz', ijx,ijz
           endif
           ! The following does not happen if (lbb_as_comaux .and. lB_ext_in_comaux) !
 !AB: the following comes too early and is later done anyway
-          do j = 1,3;  p%jj(:,j) = p%jj(:,j) + j_ext(j); enddo;  
+          do j = 1,3;  p%jj(:,j) = p%jj(:,j) + j_ext(j); enddo;
         endif
 !
 !  Add a precessing dipole not in the Bext field
@@ -4836,7 +4836,7 @@ print*,'AXEL: should not be here (eta) ... '
           advec2=advec2 + tmp1
         endif
 !
-      endif 
+      endif
 !
     endsubroutine calc_pencils_magnetic_pencpar
 !***********************************************************************
@@ -10218,7 +10218,7 @@ print*,'AXEL2: should not be here (eta) ... '
         idiag_uxjxm=0; idiag_uyjxm=0; idiag_uzjxm=0
         idiag_uxjym=0; idiag_uyjym=0; idiag_uzjym=0
         idiag_uxjzm=0; idiag_uyjzm=0; idiag_uzjzm=0
-        idiag_fbm=30; idiag_fxbxm=0; idiag_epsM=0; idiag_epsM_LES=0
+        idiag_fbm=0; idiag_fxbxm=0; idiag_epsM=0; idiag_epsM_LES=0
         idiag_epsM2=0; idiag_epsM3=0; idiag_epsM4=0
         idiag_epsAD=0; idiag_epsMmz=0
         idiag_bxpt=0; idiag_bypt=0; idiag_bzpt=0
@@ -11234,7 +11234,7 @@ print*,'AXEL2: should not be here (eta) ... '
 ! Integrate in R to get lambda, using N=6 composite Simpson's rule.
 ! Ghost zones in r needed for glambda_r.
 !
-      do i=l1,l2 
+      do i=l1,l2
         lambda(i,:) = dx/6.*(   glambda_rz(i-3,:)                +glambda_rz(i+3,:) + &
                              4*(glambda_rz(i-2,:)+glambda_rz(i,:)+glambda_rz(i+2,:))+ &
                              2*(glambda_rz(i-1,:)                +glambda_rz(i+1,:)))
