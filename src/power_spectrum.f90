@@ -235,15 +235,16 @@ outer:  do ikz=1,nz
 
       !TP: This enables to perform the FFT only on those xy-planes which are asked for instead of the whole grid.
       !    Enabling it only if less than 10 (which is totally arbitrary) planes are asked for because the
-      !    communication of the old scheme might be faster if one wants the spectra across all of z. 
+      !    communication of the old scheme might be faster if one wants the spectra across all of z.
       !    One could either benchmark is this actually the case or modify the new scheme to also
-      !    use bigger but fewer MPI calls. 
+      !    use bigger but fewer MPI calls.
       !    However this adequately covers the actual use case in mind for now.
       lsplit_power_xy_in_z = (.not. lintegrate_z) .and. get_range_no( zrange, nz_max ) <= 10
 !
 ! Initialize shell wave-numbers for power_xy
 !
       if(lintegrate_shell) then
+        if (allocated(kshell)) deallocate(kshell)
         allocate( kshell(nk_xy) )
 !
 ! To initialize variables with NaN, please only use compiler flags. (Bourdin.KIS)
@@ -828,7 +829,7 @@ outer:  do ikz=1,nz
         do i=1,nz_max
           if ( zrange(1,i) > 0 ) then
             do global_z_position=zrange(1,i), zrange(2,i), zrange(3,i)
-              local_z_position = global_z_position - ipz*nz 
+              local_z_position = global_z_position - ipz*nz
               !TP: if local_z_position is negative the correct position is below this process if greater than nz then above this process
               if(local_z_position > 0 .and. local_z_position <= nz) then
                 call fft_xy_parallel(ar(:,:,local_z_position),ai(:,:,local_z_position))
@@ -1158,7 +1159,7 @@ outer:  do ikz=1,nz
             enddo
           endif
         enddo
-      else 
+      else
         call mpireduce_sum(spectrum2,spectrum2_sum,(/nk,nz/),12)
       endif
       call mpigather_z(spectrum2_sum,spectrum2_global,nk)
@@ -1796,7 +1797,7 @@ outer:  do ikz=1,nz
         enddo
       else
         write(1,*) tspec
-        write(1,power_format) spectrum_sum 
+        write(1,power_format) spectrum_sum
       endif
       close(1)
       !
@@ -1809,7 +1810,7 @@ outer:  do ikz=1,nz
         enddo
       else
         write(1,*) tspec
-        write(1,power_format) spectrumhel_sum 
+        write(1,power_format) spectrumhel_sum
       endif
       close(1)
     endif
