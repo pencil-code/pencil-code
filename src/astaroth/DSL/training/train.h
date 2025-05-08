@@ -1,7 +1,7 @@
 #if LTRAINING
 communicated Field3 UUMEAN
-communicated Field6 TAU
-communicated Field6 TAU_INFERRED
+communicated FieldSymmetricTensor TAU
+communicated FieldSymmetricTensor TAU_INFERRED
 
 Stencil avgr1
 {
@@ -101,10 +101,10 @@ Kernel reduce_uumean_tau(){
 	reduce_max(maximumUUMEAN, maxUUMEAN)
 }
 
-train_descale(Field6 f, real minv, real maxv)
+train_descale(FieldSymmetricTensor f, real minv, real maxv)
 {	
 	real max_min = maxv-minv
-	return real6((value(f.xx) * max_min) + minv, (value(f.yy) * max_min) + minv, (value(f.zz) * max_min) + minv, (value(f.xy) * max_min) + minv,(value(f.yz) * max_min) + minv, (value(f.xz) * max_min) + minv)	
+	return real_symmetric_tensor((value(f.xx) * max_min) + minv, (value(f.yy) * max_min) + minv, (value(f.zz) * max_min) + minv, (value(f.xy) * max_min) + minv,(value(f.yz) * max_min) + minv, (value(f.xz) * max_min) + minv)
 }
 
 train_descale(Field3 f, real minv, real maxv)
@@ -113,10 +113,10 @@ train_descale(Field3 f, real minv, real maxv)
 	return real3((value(f.x) * max_min) + minv, (value(f.y) * max_min) + minv, (value(f.z) * max_min ) + minv)
 }
 
-train_scale(Field6 f, real minv,  real maxv)
+train_scale(FieldSymmetricTensor f, real minv,  real maxv)
 {
 	real max_min = maxv-minv
-	return real6((value(f.xx) - minv)/max_min, (value(f.yy) - minv)/max_min, (value(f.zz) - minv)/max_min, (value(f.xy) - minv)/max_min, (value(f.yz) - minv)/max_min, (value(f.xz) - minv)/max_min) 
+	return real_symmetric_tensor((value(f.xx) - minv)/max_min, (value(f.yy) - minv)/max_min, (value(f.zz) - minv)/max_min, (value(f.xy) - minv)/max_min, (value(f.yz) - minv)/max_min, (value(f.xz) - minv)/max_min)
 }
 
 train_scale(Field3 f, real minv,  real maxv)
