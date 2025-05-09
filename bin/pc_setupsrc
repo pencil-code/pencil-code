@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #                      pc_setupsrc
 #                     -------------
 # Description:
@@ -431,7 +431,6 @@ make_astaroth_dir()
 ## subdirectories of submodule
   adddir $src/astaroth/submodule/acc-runtime 
   adddir $src/astaroth/submodule/acc-comm
-  adddir $src/astaroth/submodule/runtime_compilation
   adddir $src/astaroth/submodule/acc-runtime/samples
   adddir $src/astaroth/submodule/acc-runtime/samples/mhd
   adddir $src/astaroth/submodule/acc-runtime/samples/mhd_modular
@@ -468,7 +467,7 @@ link_astaroth_files()
               $srcdir/astaroth/submodule/acc-runtime/samples/gputest/* \
               $srcdir/astaroth/submodule/acc-runtime/samples/mhd_modular/* \
               $srcdir/astaroth/submodule/src \
-              $srcdir/astaroth/submodule/runtime_compilation/* \
+              $srcdir/astaroth/submodule/runtime_compilation \
               $srcdir/astaroth/NUMA-scheduler
   do
     file_for_link $file
