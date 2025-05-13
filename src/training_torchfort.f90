@@ -48,6 +48,7 @@
     logical :: ltrained=.false., lckpt_written=.false.
     real, dimension (mx,my,mz,3) :: uumean
     real :: tauerror, input_min, input_max, output_min, output_max
+    real, dimension(mx, my, mz, 6) :: tau_pred
 
     contains
 !***************************************************************
@@ -250,12 +251,12 @@
       if (mod(it,it_train)==0) then
 !
         if (.not. lfortran_launched) then
-         !TP: this is to calculate validation loss
-         call infer_gpu(0)
+          !TP: this is to calculate validation loss
+          call infer_gpu(0)
           !TODO: smoothing/scaling etc. for uu and tau
-         !istat = torchfort_train(model, get_ptr_gpu(iux,iuz,nbatch_training=1), &
-         !                               get_ptr_gpu(itauxx,itauzz,nbatch_training=1), train_loss)
-         call train_gpu(train_loss)
+          !istat = torchfort_train(model, get_ptr_gpu(iux,iuz,nbatch_training=1), &
+          !                               get_ptr_gpu(itauxx,itauzz,nbatch_training=1), train_loss)
+          call train_gpu(train_loss)
         else
           call calc_tau(f)
 !
@@ -282,29 +283,20 @@
           label(:,:,:,:,1) = f(:,:,:,itauxx:itauzz)    ! host to device
 
           istat = torchfort_train(model, input, label, train_loss)
-!print*, 'TRAIN', it, train_loss!   ltrained!, input_min, input_max
-!
-! output for plotting
-!
-          if (lwrite_sample .and. mod(it, 50)==0) then
-            call write_sample(f(:,:,:,itauxx), mx, my, mz, "target_"//trim(itoa(iproc))//".hdf5")
-            istat = torchfort_inference(model, input, output)
-            f(:,:,:,itauxx:itauzz) = output(:,:,:,:,1)
-            if (lscale) call descale(f(:,:,1:1,itauxx:itauzz), output_min, output_max)
-            call write_sample(f(:,:,1:1,itauxx:itauzz), mx, my, mz, "pred_"//trim(itoa(iproc))//".hdf5")
-          endif
+!print*, 'TRAIN', it, train_loss
 
         endif
 
         if (istat /= TORCHFORT_RESULT_SUCCESS) call fatal_error("train","istat="//trim(itoa(istat)))
 
         if (train_loss <= max_loss) ltrained=.true.
+
         if (lroot.and.lfirst.and.mod(it,it_train_chkpt)==0) then
           istat = torchfort_save_checkpoint(trim(model), trim(checkpoint_output_dir))
           if (istat /= TORCHFORT_RESULT_SUCCESS) &
             call fatal_error("train","when saving checkpoint: istat="//trim(itoa(istat)))
           lckpt_written = .true.
-print*, 'it,it_train_chkpt=', it,it_train_chkpt, trim(model),istat, trim(checkpoint_output_dir), lckpt_written
+!print*, 'it,it_train_chkpt=', it,it_train_chkpt, trim(model),istat, trim(checkpoint_output_dir), lckpt_written
         endif
       endif
 
@@ -362,13 +354,33 @@ print*, 'it,it_train_chkpt=', it,it_train_chkpt, trim(model),istat, trim(checkpo
 
     endsubroutine div_reynolds_stress
 !***************************************************************
-    subroutine calc_diagnostics_training
+    subroutine calc_diagnostics_training(f)
 
       use Diagnostics, only: sum_mn_name, save_name
+      use Sub, only: smooth
 
-      !real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
 
       integer :: i,j,jtau
+!
+! output for plotting
+!
+      if (lvideo .or. lwrite_sample .and. mod(it, 50)==0) then
+!
+!  Smooth velocity.
+!
+        uumean = f(:,:,:,iux:iuz)
+        call smooth(uumean,1,3,lgauss=.true.)
+
+        input(:,:,:,:,1) = uumean                    ! host to device    !sngl(uumean)
+        istat = torchfort_inference(model, input, output)
+        tau_pred = output(:,:,:,:,1)
+        if (lscale) call descale(tau_pred, output_min, output_max)
+        if (lwrite_sample .and. mod(it, 50)==0) then
+          call write_sample(f(:,:,:,itauxx), mx, my, mz, "target_"//trim(itoa(iproc))//".hdf5")
+          call write_sample(tau_pred(:,:,:,1), mx, my, mz, "pred_"//trim(itoa(iproc))//".hdf5")
+        endif
+      endif
 
       if (ldiagnos) then
         if (ltrained.and.lfirstpoint) then
@@ -393,14 +405,23 @@ print*, 'it,it_train_chkpt=', it,it_train_chkpt, trim(model),istat, trim(checkpo
 !
       select case (trim(slices%name))
 !
-!  Velocity field.
+!  Original tau field.
 !
-        case ('tauxxerr'); call assign_slices_scal(slices,f,itauxx)
-        case ('tauxyerr'); call assign_slices_scal(slices,f,itauxy)
-        case ('tauxzerr'); call assign_slices_scal(slices,f,itauxz)
-        case ('tauyyerr'); call assign_slices_scal(slices,f,itauyy)
-        case ('tauyzerr'); call assign_slices_scal(slices,f,itauyz)
-        case ('tauzzerr'); call assign_slices_scal(slices,f,itauzz)
+        case ('tauxx'); call assign_slices_scal(slices,f,itauxx)
+        case ('tauxy'); call assign_slices_scal(slices,f,itauxy)
+        case ('tauxz'); call assign_slices_scal(slices,f,itauxz)
+        case ('tauyy'); call assign_slices_scal(slices,f,itauyy)
+        case ('tauyz'); call assign_slices_scal(slices,f,itauyz)
+        case ('tauzz'); call assign_slices_scal(slices,f,itauzz)
+!
+!  Predicted tau field.
+!
+        case ('taupredxx'); call assign_slices_scal(slices,tau_pred,1)
+        case ('taupredyy'); call assign_slices_scal(slices,tau_pred,2)
+        case ('taupredzz'); call assign_slices_scal(slices,tau_pred,3)
+        case ('taupredxy'); call assign_slices_scal(slices,tau_pred,4)
+        case ('taupredxz'); call assign_slices_scal(slices,tau_pred,5)
+        case ('taupredyz'); call assign_slices_scal(slices,tau_pred,6)
 
       end select
 
@@ -431,27 +452,27 @@ print*, 'it,it_train_chkpt=', it,it_train_chkpt, trim(model),istat, trim(checkpo
         idum=0
         call parse_name(inamev,cnamev(inamev),cformv(inamev),'tauxx',idum)
         idum=0
-        call parse_name(inamev,cnamev(inamev),cformv(inamev),'tauxy',idum) 
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'tauxy',idum)
         idum=0
-        call parse_name(inamev,cnamev(inamev),cformv(inamev),'tauxz',idum) 
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'tauxz',idum)
         idum=0
-        call parse_name(inamev,cnamev(inamev),cformv(inamev),'tauyy',idum) 
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'tauyy',idum)
         idum=0
-        call parse_name(inamev,cnamev(inamev),cformv(inamev),'tauyz',idum) 
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'tauyz',idum)
         idum=0
-        call parse_name(inamev,cnamev(inamev),cformv(inamev),'tauzz',idum) 
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'tauzz',idum)
         idum=0
-        call parse_name(inamev,cnamev(inamev),cformv(inamev),'tauerrxx',idum)
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'taupredxx',idum)
         idum=0
-        call parse_name(inamev,cnamev(inamev),cformv(inamev),'tauerrxy§',idum) 
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'taupredxy',idum)
         idum=0
-        call parse_name(inamev,cnamev(inamev),cformv(inamev),'tauerrxz',idum) 
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'taupredxz',idum)
         idum=0
-        call parse_name(inamev,cnamev(inamev),cformv(inamev),'tauerryy',idum) 
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'taupredyy',idum)
         idum=0
-        call parse_name(inamev,cnamev(inamev),cformv(inamev),'tauerryz',idum) 
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'taupredyz',idum)
         idum=0
-        call parse_name(inamev,cnamev(inamev),cformv(inamev),'tauerrzz',idum) 
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'taupredzz',idum)
       enddo
 
     endsubroutine rprint_training

@@ -8,7 +8,7 @@ function check_slices_par, field, stride, readdir, switches, nth_rslice=nth_rsli
 ; 17-mar-20/MR: added xyz line
 ;  7-jul-20/PAB: added regex hook, added check for existence of orig field
 ;
-fields=rstringlist('video.in')
+fields=rstringlist('video.in',commchar='#!')    ; ignores lines beginning with # or !
 if (strtrim(fields[0],2) eq '') then begin
   message, 'No entries in "video.in"!', /warn
   return, 0
@@ -23,6 +23,7 @@ endif
 ;
 field_base = field
 pos = stregex(field,'[1-9][0-9]*[xyz]?$')
+
 if (pos lt 0) then pos = stregex(field,'[xyz]$')
 if (pos le 1) then pos = 0
 if (pos ge 0) then field_base = strtrim(strmid(field,0,pos),2)
