@@ -1,6 +1,7 @@
-  function rstringlist, file, silent=silent
+  function rstringlist, file, silent=silent, commchar=commchar
 ;
 ; Reads a list of strings in file (one or more per line) into returned array.
+; If commchar is given, ignore string swhich begin with one of the characters in commchar.
 ; Returns one-empty-element array if file can't be read or is contains only empty strings.
 ;
     on_ioerror, openerr
@@ -11,7 +12,15 @@
 
     while ~ eof(lun) do begin
       readf, lun, str
-      str_chain += str+' '
+      if keyword_set(commchar) then begin
+;
+; Ignore string if first non-blank character is in list of comment characters commchar
+;
+        if stregex(str,'^ *['+strtrim(commchar,2)+']') eq -1 then $
+          str_chain += str+' '
+      endif else $
+        str_chain += str+' '
+
     endwhile
 
     close, lun

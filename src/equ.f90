@@ -715,7 +715,7 @@ module Equ
         call calc_diagnostics_selfgrav(p)
         call calc_diagnostics_shear(p)
         call calc_diagnostics_shock(p)
-        call calc_diagnostics_training
+        call calc_diagnostics_training(f)
         call calc_diagnostics_viscosity(p)
 
         lfirstpoint=.false.
@@ -1146,7 +1146,7 @@ module Equ
 !
         if (lpointmasses) call pointmasses_pde_pencil(f,df,p)
 
-        if (ltraining) call calc_diagnostics_training
+        if (ltraining) call calc_diagnostics_training(f)
 !
 !  Call diagnostics that involves the full right hand side
 !  This must be done at the end of all calls that might modify df.
