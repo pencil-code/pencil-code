@@ -1,4 +1,4 @@
 [submodule "src/astaroth/submodule"]
 	path = src/astaroth/submodule
 	url = https://bitbucket.org/jpekkila/astaroth.git
-        branch = PCinterface_2019-8-12
+        branch = develop
