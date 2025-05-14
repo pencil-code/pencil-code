@@ -140,18 +140,22 @@ void FTNIZE(rhs_gpu_c)
    If full=1, however, copy the full arrays.
 */
 {
-  // copies data back and forth and peforms integration substep isubstep
+// Performs integration substep on GPU.
 
   substepGPU(*isubstep);
 }
 /* ---------------------------------------------------------------------- */
 void FTNIZE(copy_farray_c)(REAL* f)
 {
+// Copies vertex buffers from GPU into f-array on CPU.
+
   copyFarray(f);
 }
 /* ---------------------------------------------------------------------- */
 void FTNIZE(load_farray_c)()
 {
+// Copies f-array on CPU to vertex buffers on GPU.
+
   loadFarray();
 }
 /* ---------------------------------------------------------------------- */
