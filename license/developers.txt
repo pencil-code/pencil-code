@@ -66,6 +66,7 @@ Luiz F. S. Rodrigues, luiz.rodrigues/ncl.ac.uk,      ,                     +44 1
 Ewa Karchniwy,        ewa.karchniwy/ntnu.no,         ,                     ,                  +48 662 998 910,          NTNU, Silesian University of Technology
 Vartika Pandey,       vartika.pandey/uni-graz.at,    VartikaPandey97,      ,                  ,                         University of Graz
 Hongzhe Zhou,         hongzhe.zhou/sjtu.edu.cn,      ,                     ,                  +86 150 2138 2423,        TDLI, Shanghai Jiao Tong University
+Isabella Kraus,       isabella.kraus/uni-graz.at,    IsabellaKraus         ,                  ,                         University of Graz   
 ------------------------------------------------------------------------------------------------------------------------------------------------
 Please add further names (in alphabetical order) that have been forgotten so far!
 This file is located in the directory
