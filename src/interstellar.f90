@@ -3414,10 +3414,10 @@ mn_loop:do n=n1,n2
             else
               radius_max=SNR%feat%radius
             endif
-            SNR%feat%radius=0.25*(3*radius_min+radius_max)
+            SNR%feat%radius=0.5*(radius_min+radius_max)
             call get_properties(f,SNR,rhom,ekintot,rhomin)
             Nsol_ratio=SNvol*rhom*SNR%feat%radius**3
-            if ((Nsol_ratio>=1).and.(abs(Nsol_ratio-1)<Nsol_ratio_best)) then
+            if ((Nsol_ratio>=1).and.(abs(Nsol_ratio-1)<=Nsol_ratio_best)) then
               Nsol_ratio_best=Nsol_ratio
               radius_best=SNR%feat%radius
             endif
@@ -3431,9 +3431,9 @@ mn_loop:do n=n1,n2
               write(1,'("explode_SN: Nsol       ",e11.4)') Nsol_ratio*sol_mass_tot/solar_mass
               close(1)
             endif
+            SNR%feat%radius=radius_best
             if (radius_max-radius_min<SNR%feat%dr*0.01) exit
           enddo
-          SNR%feat%radius=radius_best
           call get_properties(f,SNR,rhom,ekintot,rhomin)
         endif
       endif
@@ -3446,8 +3446,6 @@ mn_loop:do n=n1,n2
           ierr=iEXPLOSION_TOO_RARIFIED
           if (.not.lSN_list) return
         endif
-        SNR%feat%rhom=rhom
-        call get_properties(f,SNR,rhom,ekintot,rhomin,ierr)
       else
         call get_properties(f,SNR,rhom,ekintot,rhomin)
       endif
@@ -4030,7 +4028,7 @@ mn_loop:do n=n1,n2
       use Mpicomm, only: mpiallreduce_sum,mpiallreduce_min,mpiallreduce_max
       use Grid, only: get_dVol
 !
-      real, intent(inout), dimension(mx,my,mz,mfarray) :: f
+      real, intent(in), dimension(mx,my,mz,mfarray) :: f
       type (SNRemnant), intent(in) :: remnant
       real, intent(out) :: rhom, ekintot, rhomin
       integer, optional :: ierr
