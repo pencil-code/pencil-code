@@ -168,6 +168,8 @@
 !***************************************************************
     subroutine training_before_boundary(f)
      
+      use Sub, only: smooth
+
       real, dimension (mx,my,mz,mfarray) :: f
 
       if (ltrained) then
@@ -188,6 +190,27 @@
         endif
       else
         if (lfirst) call train(f)
+      endif
+!
+! output for plotting
+!
+      if (lvideo .or. lwrite_sample .and. mod(it, 50)==0) then
+!
+!  Smooth velocity.
+!
+        uumean = f(:,:,:,iux:iuz)
+        call smooth(uumean,1,3,lgauss=.true.)
+        input(:,:,:,:,1) = uumean                    ! host to device    !sngl(uumean)
+        istat = torchfort_inference(model, input, output)
+        tau_pred = output(:,:,:,:,1)                 ! device to host
+
+        if (lscale) call descale(tau_pred, output_min, output_max)
+
+        if (lwrite_sample .and. mod(it, 50)==0) then
+          call write_sample(f(:,:,:,itauxx), mx, my, mz, "target_"//trim(itoa(iproc))//".hdf5")
+          call write_sample(tau_pred(:,:,:,1), mx, my, mz, "pred_"//trim(itoa(iproc))//".hdf5")
+        endif
+
       endif
 
     endsubroutine training_before_boundary
@@ -357,34 +380,14 @@
     subroutine calc_diagnostics_training(f)
 
       use Diagnostics, only: sum_mn_name, save_name
-      use Sub, only: smooth
 
       real, dimension (mx,my,mz,mfarray) :: f
 
       integer :: i,j,jtau
-!
-! output for plotting
-!
-      if (lvideo .or. lwrite_sample .and. mod(it, 50)==0) then
-!
-!  Smooth velocity.
-!
-        uumean = f(:,:,:,iux:iuz)
-        call smooth(uumean,1,3,lgauss=.true.)
-
-        input(:,:,:,:,1) = uumean                    ! host to device    !sngl(uumean)
-        istat = torchfort_inference(model, input, output)
-        tau_pred = output(:,:,:,:,1)
-        if (lscale) call descale(tau_pred, output_min, output_max)
-        if (lwrite_sample .and. mod(it, 50)==0) then
-          call write_sample(f(:,:,:,itauxx), mx, my, mz, "target_"//trim(itoa(iproc))//".hdf5")
-          call write_sample(tau_pred(:,:,:,1), mx, my, mz, "pred_"//trim(itoa(iproc))//".hdf5")
-        endif
-      endif
 
       if (ldiagnos) then
         if (ltrained.and.lfirstpoint) then
-          call sum_mn_name(spread(tauerror,1,nx),idiag_tauerror,lsqrt=.true.)
+          if (idiag_tauerror/=0) call sum_mn_name(spread(tauerror,1,nx),idiag_tauerror,lsqrt=.true.)
         else
           call save_name(real(train_loss), idiag_loss)
         endif 

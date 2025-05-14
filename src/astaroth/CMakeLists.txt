@@ -5,16 +5,15 @@
 cmake_minimum_required(VERSION 3.19)
 
 ## Options
-option(DOUBLE_PRECISION       "Generates double precision code."                        ON)
-option(USE_HIP                "Use HIP as the underlying GPGPU library instead of CUDA" ON)
-option(USE_OMP                "Enables use of openmp"                                   ON)
-option(USE_DARDEL             "Target machine is Dardel(PDC, Stockholm"                 OFF)
-option(PACKED_DATA_TRANSFERS  "Enables kernel for packed data transfers"                OFF)
-option(SINGLEPASS_INTEGRATION "Enables single pass integration"                         OFF)
-option(RUNTIME_COMPILATION    "Enables runtime compilation"                         OFF)
-option(TRANSPILATION          "Tmp flag to make interface compatible with transpiled code"                         OFF)
-option (TRAINING							"Using torchfort"																					OFF)
-
+option(DOUBLE_PRECISION       "Generates double precision code."                           ON)
+option(USE_HIP                "Use HIP as the underlying GPGPU library instead of CUDA"    ON)
+option(USE_OMP                "Enables use of openmp"                                      ON)
+option(USE_DARDEL             "Target machine is Dardel(PDC, Stockholm"                    OFF)
+option(PACKED_DATA_TRANSFERS  "Enables kernel for packed data transfers"                   OFF)
+option(SINGLEPASS_INTEGRATION "Enables single pass integration"                            OFF)
+option(RUNTIME_COMPILATION    "Enables runtime compilation"                                OFF)
+option(TRANSPILATION          "Tmp flag to make interface compatible with transpiled code" OFF)
+option(TRAINING	              "Using torchfort"						   OFF)
 
 ## Project settings
 project(astaroth C CXX)
@@ -32,22 +31,19 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # For IDE highlighting (clangd)
 
 ## Build type
 if (NOT CMAKE_BUILD_TYPE)
-set(CMAKE_BUILD_TYPE "Release") # Default
+  set(CMAKE_BUILD_TYPE "Release") # Default
 endif()
 message(STATUS "Build type: " ${CMAKE_BUILD_TYPE})
 
-
 ## CUDA/HIP
 if (USE_HIP)
-add_definitions(-DAC_USE_HIP=1)
-
-	
+  add_definitions(-DAC_USE_HIP=1)
 
 #set(GPU_TARGETS "gfx908" CACHE STRING "GPU target")
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --offload-arch=gfx908 --offload-arch=gfx90a")
 
 # Workaround for finding HIP on Triton
-list(APPEND CMAKE_PREFIX_PATH /opt/rocm/hip /opt/rocm)
+  list(APPEND CMAKE_PREFIX_PATH /opt/rocm/hip /opt/rocm)
 
 # Rocm
 #include_directories(/opt/rocm/include)
@@ -69,11 +65,11 @@ else ()
 # Additional compilation info: --resource-usage
 
 #TP: required when compiling with container on Puhti
-find_package(CUDAToolkit QUIET)
-enable_language(CUDA)
-include_directories(SYSTEM ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
-add_compile_options(-DDEVICE_ENABLED)
-add_compile_options(-DCUDA_ENABLED)
+  find_package(CUDAToolkit QUIET)
+  enable_language(CUDA)
+  include_directories(SYSTEM ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
+  add_compile_options(-DDEVICE_ENABLED)
+  add_compile_options(-DCUDA_ENABLED)
 
 # Not supported with older CUDA
 # set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --Werror all-warnings")
@@ -84,11 +80,12 @@ add_compile_options(-DCUDA_ENABLED)
 #set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xptxas -dlcm=cg") # Cache global loads in L2 (default on >= NVIDIA Fermi)
 
 # Set device code architecture
-if (NOT CUDA_ARCHITECTURES)
-set(CMAKE_CUDA_ARCHITECTURES 60 61 70 80) # Default
-else ()
-set(CMAKE_CUDA_ARCHITECTURES ${CUDA_ARCHITECTURES}) # User-specified
-endif()
+  if (NOT CUDA_ARCHITECTURES)
+    set(CMAKE_CUDA_ARCHITECTURES 60 61 70 80) # Default
+  else ()
+    set(CMAKE_CUDA_ARCHITECTURES ${CUDA_ARCHITECTURES}) # User-specified
+  endif()
+
 endif()
 #if (USE_OMP)
 #find_package(OpenMP)
@@ -119,8 +116,8 @@ else()
   find_package(MPI REQUIRED COMPONENTS C)
   include_directories(${MPI_C_INCLUDE_DIRS})
 endif()
-add_definitions(-DAC_MPI_ENABLED=1)
 
+add_definitions(-DAC_MPI_ENABLED=1)
 add_definitions(-DAC_DEFAULT_CONFIG="${CMAKE_SOURCE_DIR}/config/astaroth.conf")
 
 ## Includes
@@ -131,6 +128,7 @@ include_directories(./submodule/acc-runtime/api)
 link_directories(./submodule/build/src/core)
 
 add_compile_options(-DMODPRE=${MODULE_PREFIX} -DMODIN=${MODULE_INFIX} -DMODSUF=${MODULE_SUFFIX})
+
 if (DOUBLE_PRECISION)
   add_definitions(-DAC_DOUBLE_PRECISION=1)
   set(PREC "dbl")
@@ -138,34 +136,39 @@ else()
   add_definitions(-DAC_DOUBLE_PRECISION=0)
   set(PREC "sgl")
 endif()
-if(RUNTIME_COMPILATION)
-	add_definitions(-DAC_RUNTIME_COMPILATION=1)
+
+if (RUNTIME_COMPILATION)
+  add_definitions(-DAC_RUNTIME_COMPILATION=1)
 else()
-	add_definitions(-DAC_RUNTIME_COMPILATION=0)
+  add_definitions(-DAC_RUNTIME_COMPILATION=0)
 endif()
-if(TRANSPILATION)
-	add_definitions(-DTRANSPILATION=1)
+
+if (TRANSPILATION)
+  add_definitions(-DTRANSPILATION=1)
 else()
-	add_definitions(-DTRANSPILATION=0)
+  add_definitions(-DTRANSPILATION=0)
 endif()
-if(TRAINING)
-	add_definitions(-DTRAINING=1)
+
+if (TRAINING)
+  add_definitions(-DTRAINING=1)
 else()
-	add_definitions(-DTRAINING=0)
+  add_definitions(-DTRAINING=0)
 endif()
+
 if (PACKED_DATA_TRANSFERS)
   add_compile_options(-DPACKED_DATA_TRANSFERS=1)
   add_library(astaroth_${PREC} SHARED gpu_astaroth.cc loadStore.cc)
 else()
-	if(TRAINING)	
-  	add_library(astaroth_${PREC} SHARED gpu_astaroth.cc torch.cc)
-		include_directories(/opt/torchfort/include/)
-		link_directories(/opt/torchfort/lib/)
-		target_link_libraries(astaroth_${PREC} /opt/torchfort/lib/libtorchfort.so)
-	else()
- 		add_library(astaroth_${PREC} SHARED gpu_astaroth.cc)
-	endif()
+
+  if (TRAINING)	
+    add_library(astaroth_${PREC} SHARED gpu_astaroth.cc torch.cc)
+    include_directories(/opt/torchfort/include/)
+    link_directories(/opt/torchfort/lib/)
+    target_link_libraries(astaroth_${PREC} /opt/torchfort/lib/libtorchfort.so)
+  else()
+    add_library(astaroth_${PREC} SHARED gpu_astaroth.cc)
+  endif()
+
 endif()
+
 target_link_libraries(astaroth_${PREC} astaroth_core)
-
-
