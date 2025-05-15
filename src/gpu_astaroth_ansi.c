@@ -202,7 +202,7 @@ void FTNIZE(gpu_set_dt_c)()
   gpuSetDt();
 }
 /* ---------------------------------------------------------------------- */
-void FTNIZE(calcQ_gpu_c)(int3 *dir, int3 *stop, real *dlength, real3 *unit_vec){
+void FTNIZE(calcQ_gpu_c)(int3 *dir, int3 *stop, real *dlength, real3 *unit_vec, int *lperiodic){
  // performs ray integration along direction dir for all possible starting points in subdomain,
  // communication and final correction of Q 
 

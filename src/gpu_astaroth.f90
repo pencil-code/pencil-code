@@ -342,13 +342,14 @@ contains
 
   endsubroutine test_rhs_gpu
 !**************************************************************************
-    subroutine calcQ_gpu(dir, stop, dlength, unit_vec)
+    subroutine calcQ_gpu(dir, stop, dlength, unit_vec, lperiodic)
 
       integer, dimension(3) :: dir, stop
       real, dimension(mz) :: dlength
       real, dimension(3) :: unit_vec
+      logical :: lperiodic
 
-      call calcQ_gpu_c(dir, stop, dlength, unit_vec)
+      call calcQ_gpu_c(dir, stop, dlength, unit_vec, lperiodic)
  
     endsubroutine calcQ_gpu
 !**************************************************************************
