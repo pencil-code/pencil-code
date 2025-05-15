@@ -56,8 +56,8 @@ void FTNIZE(torchinfer_c)(int flag)
 }
 /* ---------------------------------------------------------------------- */
 void FTNIZE(initialize_gpu_c)(REAL* f, FINT* comm_fint)
-// Initializes GPU.  
 {
+// Initializes GPU.  
   /*
   printf("nx = %d\n", *nx);
   printf("ny = %d\n", *ny);
@@ -99,13 +99,13 @@ void FTNIZE(finalize_gpu_c)()
 
   finalizeGPU();
 }
+/* ---------------------------------------------------------------------- */
 void FTNIZE(get_farray_ptr_gpu_c)(REAL** p_f_in)
 {
   getFArrayIn(p_f_in);
 }
 /* ---------------------------------------------------------------------- */
-void FTNIZE(rhs_gpu_c)
-     (FINT *isubstep)
+void FTNIZE(rhs_gpu_c)(FINT *isubstep)
 
 /* Communication between CPU and GPU: copy (outer) halos from CPU to GPU, 
    copy "inner halos" from GPU to CPU; calculation of rhss of momentum eq.
@@ -191,6 +191,12 @@ void FTNIZE(test_rhs_c)(REAL* f_in, REAL* df_truth)
 /* ---------------------------------------------------------------------- */
 void FTNIZE(gpu_set_dt_c)()
 {
-	gpuSetDt();
+  gpuSetDt();
+}
+/* ---------------------------------------------------------------------- */
+void FTNIZE(calcQ_gpu_c)(int3 *dir, int3 *stop, real *dlength, real3 *unit_vec){
+ // performs ray integration along direction dir for all possible starting points in subdomain,
+ // communication and final correction of Q 
+
 }
 /* ---------------------------------------------------------------------- */

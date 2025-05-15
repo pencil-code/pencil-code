@@ -53,8 +53,8 @@ module Radiation
   integer, parameter :: mnu=2
   integer, parameter :: maxdir=26
 !
-  real, dimension (mx,my,mz) :: Srad, tau=0., Qrad=0., Qrad0=0.
-  real, dimension (mx,my) :: Irad_refl_xy
+  real, dimension (:,:,:), allocatable :: Srad, tau, Qrad, Qrad0
+  real, dimension (:,:), allocatable :: Irad_refl_xy
   real, target, dimension (:,:,:), allocatable :: Jrad_xy
   real, target, dimension (:,:,:), allocatable :: Jrad_xy2
   real, target, dimension (:,:,:), allocatable :: Jrad_xy3
@@ -436,7 +436,7 @@ module Radiation
           read (1,*) header
         endif
         call mpibcast(nlnTT_table)
-        allocate(lnTT_table(nlnTT_table),lnSS_table(nlnTT_table,nnu))
+        if (.not.allocated(nlnTT_table)) allocate(lnTT_table(nlnTT_table),lnSS_table(nlnTT_table,nnu))
         if (lroot) then
           do itable=1,nlnTT_table
             read(1,*) lnTT_table(itable),lnSS_table(itable,:)
@@ -466,28 +466,33 @@ module Radiation
       if (ivid_Jrad/=0) &
         call alloc_slice_buffers(Jrad_xy,Jrad_xz,Jrad_yz,Jrad_xy2,Jrad_xy3,Jrad_xy4,Jrad_xz2,ncomp=nnu)
 !
+      if (ldoppler_rad) then
+!
 !  Switch factor for Doppler term
 !
-      if (ldoppler_rad_includeQder) then
-        Qderfact=1.
-      else
-        Qderfact=0.
-      endif
+        if (ldoppler_rad_includeQder) then
+          Qderfact=1.
+        else
+          Qderfact=0.
+        endif
 !
 !  Switch second factor for Doppler term
 !
-      if (ldoppler_rad_includeQfact) then
-        Qfact=1.
-      else
-        Qfact=0.
-      endif
+        if (ldoppler_rad_includeQfact) then
+          Qfact=1.
+        else
+          Qfact=0.
+        endif
 !
 !  Switch third factor for Doppler term
 !
-      if (ldoppler_rad_includeQ2fact) then
-        Q2fact=1.
+        if (ldoppler_rad_includeQ2fact) then
+          Q2fact=1.
+        else
+          Q2fact=0.
+        endif
       else
-        Q2fact=0.
+        ldoppler_rad_includeQ = .false.
       endif
 !
       call get_gamma_etc(gamma)
@@ -500,7 +505,7 @@ module Radiation
 ! MR: all procs read the same files? - can't be correct for ncpus>1.
 !
       if (opacity_type=='read_file') then
-        allocate(tmp_noghost(nx,ny,nz))
+        if (.not.allocated(tmp_noghost)) allocate(tmp_noghost(nx,ny,nz))
         open (lun_input, file=trim(directory_prestart)//'/kapparho.dat', form='unformatted')
         read (lun_input) tmp_noghost
         close(lun_input)
@@ -516,7 +521,13 @@ module Radiation
         Srad(l1:l2,m1:m2,n1-1)=impossible
         Srad(l1:l2,m1:m2,n2+1)=impossible
       endif
+      
+      if (.not.lgpu .and. .not.allocated(Srad)) &
+        allocate(Srad(mx,my,mz), tau(mx,my,mz), Qrad(mx,my,mz), Qrad0(mx,my,mz))
+      Qrad0=0.
 
+      if (.not.lgpu .and. .not.allocated(Irad_refl_xy)) allocate(Irad_refl_xy(mx,my))
+        
     endsubroutine initialize_radiation
 !***********************************************************************
     subroutine calc_angle_weights
@@ -621,8 +632,11 @@ module Radiation
 !  16-jun-03/axel+tobi: coded
 !   5-dec-13/axel: alterations to allow non-gray opacities
 !
+      use Gpu, only: calcQ_gpu
+
       real, dimension(mx,my,mz,mfarray) :: f
 !
+      real, dimension(mz) :: dlength
       integer :: i,j,ij,k,inu
 !
 !  Identifier.
@@ -663,24 +677,29 @@ module Radiation
 !
             do idir=1,ndir
 !
-              call raydirection
+              call raydirection(dlength)
 !
 !  Do the 3 steps: first intrinsic (compute intensive),
 !  then communication (not compute intensive),
 !  and finally revision (again compute intensive).
 !
-              if (lintrinsic) call Qintrinsic(f)
+              if (lgpu) then
+                call calcQ_gpu(dir(idir,:), (/llstop,mmstop,nnstop/), dlength, &
+                               unit_vec(idir,:), lperiodic_ray)
+              else
+                if (lintrinsic) call Qintrinsic(f,dlength)
 !
-              if (lcommunicate) then
-                if (lperiodic_ray) then
-                  call Qperiodic
-                else
-                  call Qpointers
-                  call Qcommunicate
+                if (lcommunicate) then
+                  if (lperiodic_ray) then
+                    call Qperiodic
+                  else
+                    call Qpointers
+                    call Qcommunicate
+                  endif
                 endif
-              endif
 !
-              if (lrevision) call Qrevision
+                if (lrevision) call Qrevision
+              endif
 !
 !  Calculate heating rate, so at the end of the loop
 !  f(:,:,:,iQrad) = \int_{4\pi} (I-S) d\Omega, not divided by 4pi.
@@ -754,12 +773,14 @@ module Radiation
 !
     endsubroutine radtransfer
 !***********************************************************************
-    subroutine raydirection
+    subroutine raydirection(dlength)
 !
 !  Determine certain variables depending on the ray direction.
 !
 !  10-nov-03/tobi: coded
 !
+      real, dimension(mz), intent(out) :: dlength
+
       if (ldebug.and.headt) print*,'raydirection'
 !
 !  Get direction components.
@@ -817,9 +838,17 @@ module Radiation
         raydir_str=lrad_str//mrad_str//nrad_str
       endif
 !
+!  Line elements (only valid for equidistant grid in xy).
+!
+      if (nzgrid/=1) then
+        dlength=sqrt((dx*lrad)**2+(dy*mrad)**2+(nrad/dz_1)**2)
+      else
+        dlength=sqrt((dx*lrad)**2+(dy*mrad)**2+(nrad/dz)**2)  !MR: Shouldn't nrad be 0???
+      endif
+!
     endsubroutine raydirection
 !***********************************************************************
-    subroutine Qintrinsic(f)
+    subroutine Qintrinsic(f,dlength)
 !
 !  Integration radiation transfer equation along rays.
 !
@@ -832,7 +861,8 @@ module Radiation
       use Debug_IO, only: output
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
-      real,dimension(mz) :: dlength
+      real, dimension(mz), intent(in) :: dlength
+
       real :: Srad1st,Srad2nd,dSdtau_m,dSdtau_p
       real :: Qrad1st,dQdtau_m,dQdtau_p
       real :: dtau_m,dtau_p,emdtau1,emdtau2,emdtau
@@ -842,14 +872,6 @@ module Radiation
 !  Identifier.
 !
       if (ldebug.and.headt) print*,'Qintrinsic'
-!
-!  Line elements (only valid for equidistant grid in xy).
-!
-      if (nzgrid/=1) then
-        dlength=sqrt((dx*lrad)**2+(dy*mrad)**2+(nrad/dz_1)**2)
-      else 
-        dlength=sqrt((dx*lrad)**2+(dy*mrad)**2+(nrad/dz)**2)  !MR: Shouldn't nrad be 0???
-      endif
 !
 !  Set optical depth and intensity initially to zero.
 !
@@ -883,20 +905,20 @@ module Radiation
 !  p and m refers to +1/2 or -1/2.
 !
         Srad1st=(dSdtau_p*dtau_m+dSdtau_m*dtau_p)/(dtau_m+dtau_p)
-        Srad2nd=2*(dSdtau_p-dSdtau_m)/(dtau_m+dtau_p)
+        Srad2nd=2.*(dSdtau_p-dSdtau_m)/(dtau_m+dtau_p)
         if (dtau_m>dtau_thresh_max) then
           emdtau=0.0
           emdtau1=1.0
           emdtau2=-1.0
         elseif (dtau_m<dtau_thresh_min) then
-          emdtau1=dtau_m*(1-0.5*dtau_m*(1-dtau_m/3))
+          emdtau1=dtau_m*(1.-0.5*dtau_m*(1.-dtau_m/3.))
           emdtau=1-emdtau1
-          emdtau2=-dtau_m**2*(0.5-dtau_m/3)
+          emdtau2=-dtau_m**2*(0.5-dtau_m/3.)
         else
 !AB 2-jun-24 why only -dtau_m and not -dtau_p?
           emdtau=exp(-dtau_m)
-          emdtau1=1-emdtau
-          emdtau2=emdtau*(1+dtau_m)-1
+          emdtau1=1.-emdtau
+          emdtau2=emdtau*(1.+dtau_m)-1.
         endif
         tau(l,m,n)=tau(l-lrad,m-mrad,n-nrad)+dtau_m
 !
@@ -904,7 +926,6 @@ module Radiation
 !  In the code, we talk about a, b, and c, for Qn^up/dn, where
 !  -(1-emdtau) = -b_{n+1/2} and -[emdtau*(1+dtau_m)-1] = +c_{n+1/2}.
 !  This is based on either Qn^up or Qn^dn.
-!  Srad1st = ??
 !
         Qrad(l,m,n)=Qrad(l-lrad,m-mrad,n-nrad)*emdtau-Srad1st*emdtau1-Srad2nd*emdtau2
 !
@@ -957,7 +978,7 @@ module Radiation
 !
 !  compute extra terms: 4*S*u.n and its derivative
 !
-          if (ldoppler_rad_includeQ) then
+          if (ldoppler_rad_includeQ) then   !MR: ask earlier!?
 !if (l==l1+1.and.m==m1+1) print*,'AXEL: idir,u_dot_n=',idir,u_dot_n,hemisign
             Qrad(l,m,n)=Qrad(l,m,n) &
                      !+emdtau1* u_dot_n*(4.*Srad(l,m,n)+Qrad(l,m,n))*Q2fact &
@@ -1669,9 +1690,7 @@ module Radiation
 !
 ! Upper limit radiative heating by qrad_max
 !
-        do l=l1-radx, l2+radx
-          if (f(l,m,n,iQrad) > qrad_max) f(l,m,n,iQrad)=qrad_max
-        enddo
+        f(l1-radx:l2+radx,m,n,iQrad) = min(f(l1-radx:l2+radx,m,n,iQrad),qrad_max)
       endif
 !
 !  Add radiative cooling.
@@ -1812,9 +1831,9 @@ module Radiation
 !             print*,'AXEL: 3rd term=',radpressure/c_light
             endif
           endif
-        endif
+        endif   !   if (ldoppler_rad)
 !
-      endif
+      endif   !   if (lradpressure)
 !--     call multmv_sym(PP,uu,PPuu)
 !--     df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+radpressure-uu*4*pi*Srad-PPuu
 !--     alpha=16*!pi/3*Srad*kappa
@@ -2777,24 +2796,29 @@ module Radiation
 
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
-    call copy_addr(unit_vec, p_par(1))
+    call copy_addr(unit_vec, p_par(1))              ! (maxdir) (3)
     call copy_addr(Qderfact, p_par(2))
     call copy_addr(Qfact, p_par(3))
     call copy_addr(Q2fact, p_par(4))
-    call copy_addr(ldoppler_rad, p_par(5))
-    call copy_addr(ldoppler_rad_includeQ, p_par(6))
-    call copy_addr(scalefactor_Srad, p_par(7))      ! mnu
-    call copy_addr(scalefactor_kappa, p_par(8))     ! mnu
+    call copy_addr(ldoppler_rad, p_par(5))          ! bool
+    call copy_addr(ldoppler_rad_includeQ, p_par(6)) ! bool
+    call copy_addr(scalefactor_Srad, p_par(7))      ! (mnu)
+    call copy_addr(scalefactor_kappa, p_par(8))     ! (mnu)
     call copy_addr(scalefactor_cooling, p_par(9))
     call copy_addr(scalefactor_radpressure, p_par(10))
     call copy_addr(scalefactor_radpressure1, p_par(11))
     call copy_addr(scalefactor_radpressure2, p_par(12))
-    call copy_addr(kappa_cst, p_par(13))            ! mnu
-    call copy_addr(kappa20_cst, p_par(14))          ! mnu
+    call copy_addr(kappa_cst, p_par(13))            ! (mnu)
+    call copy_addr(kappa20_cst, p_par(14))          ! (mnu)
     call copy_addr(kapparho_floor, p_par(15))
     call copy_addr(kapparho_cst, p_par(16))
-    call copy_addr(weight, p_par(17))               ! maxdir
-    call copy_addr(weightn, p_par(18))              ! maxdir
+    call copy_addr(weight, p_par(17))               ! (maxdir)
+    call copy_addr(weightn, p_par(18))              ! (maxdir)
+    call copy_addr(dtau_thresh_max, p_par(19))
+    call copy_addr(dtau_thresh_min, p_par(20))
+    call copy_addr(lradpress, p_par(21))            ! bool
+    call copy_addr(lradflux, p_par(22))             ! bool
+    call copy_addr(ij_table, p_par(23))             ! int (3) (3)
 
     endsubroutine pushpars2c
 !***********************************************************************

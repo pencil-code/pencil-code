@@ -38,6 +38,8 @@ module GPU
   external gpu_set_dt_c
   external torchtrain_c 
   external torchinfer_c
+  external calcQ_gpu_c
+
   integer, external :: update_on_gpu_arr_by_name_c
   integer, external :: update_on_gpu_scal_by_name_c
 
@@ -339,5 +341,15 @@ contains
     call die_gracefully
 
   endsubroutine test_rhs_gpu
+!**************************************************************************
+    subroutine calcQ_gpu(dir, stop, dlength, unit_vec)
+
+      integer, dimension(3) :: dir, stop
+      real, dimension(mz) :: dlength
+      real, dimension(3) :: unit_vec
+
+      call calcQ_gpu_c(dir, stop, dlength, unit_vec)
+ 
+    endsubroutine calcQ_gpu
 !**************************************************************************
 endmodule GPU
