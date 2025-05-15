@@ -436,7 +436,7 @@ module Radiation
           read (1,*) header
         endif
         call mpibcast(nlnTT_table)
-        if (.not.allocated(nlnTT_table)) allocate(lnTT_table(nlnTT_table),lnSS_table(nlnTT_table,nnu))
+        if (.not.allocated(lnTT_table)) allocate(lnTT_table(nlnTT_table),lnSS_table(nlnTT_table,nnu))
         if (lroot) then
           do itable=1,nlnTT_table
             read(1,*) lnTT_table(itable),lnSS_table(itable,:)
