@@ -44,6 +44,14 @@ extern char *__cparam_MOD_coornames;
 extern REAL __cdata_MOD_y[14];
 extern REAL __cdata_MOD_dx, __cdata_MOD_dy, __cdata_MOD_dz;
 
+typedef struct real3{
+  REAL x,y,z;
+} real3;
+
+typedef struct int3{
+  int x,y,z;
+} int3;
+
 /* ---------------------------------------------------------------------- */
 void FTNIZE(torchtrain_c)(REAL* loss_val)
 {
