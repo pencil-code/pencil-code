@@ -684,8 +684,8 @@ module Radiation
 !  and finally revision (again compute intensive).
 !
               if (lgpu) then
-                call calcQ_gpu(dir(idir,:), (/llstop,mmstop,nnstop/), dlength, &
-                               unit_vec(idir,:), lperiodic_ray)
+                !call calcQ_gpu(dir(idir,:), (/llstop,mmstop,nnstop/), dlength, &
+                !               unit_vec(idir,:), lperiodic_ray)
               else
                 if (lintrinsic) call Qintrinsic(f,dlength)
 !
