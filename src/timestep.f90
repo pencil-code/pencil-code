@@ -58,13 +58,7 @@ module Timestep
         call not_implemented('initialize_timestep','itorder= '//trim(itoa(itorder)))
       endif
 
-      if (dt0 < 0.) dt = 0
-      if (lgpu.and.dt0>0.) then
-        ldt = .true.
-        dt0=0.
-      else
-        ldt = (dt==0.)
-      endif
+      ldt = (dt==0.)
       lcourant_dt = .true.
 
       num_substeps = itorder
