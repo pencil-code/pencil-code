@@ -87,13 +87,13 @@ module Special
 !
   integer :: iLCDM_lna=0, iLCDM_tph=0
   real :: Omega_Lam=.73, Omega_rad=1e-4, Omega_mat, Hubble0=0.072
-  real :: lna, tph, redshift0=4500.
+  real :: lna, tph, redshift0=4500., nconformal=1.5
 !
   namelist /special_init_pars/ &
-      Omega_Lam, Omega_rad, Hubble0, redshift0
+      Omega_Lam, Omega_rad, Hubble0, redshift0, nconformal, ascale_type
 !
   namelist /special_run_pars/ &
-      Omega_Lam, Omega_rad, Hubble0
+      Omega_Lam, Omega_rad, Hubble0, ascale_type
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -150,7 +150,7 @@ module Special
       use Mpicomm, only: mpibcast_real
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: Vpotential, Hubble_ini, infl_gam
+      real :: Vpotential, Hubble_ini, infl_gam, tph_init
       integer :: j
 !
       intent(inout) :: f
@@ -160,8 +160,13 @@ module Special
       ascale=1./(1.+redshift0)
       Hubble=Hubble0*sqrt(Omega_mat/ascale**3+Omega_Lam+Omega_rad/ascale**4)
 !
+!  initial condition for physical time.
+!
+      !tph_init=twothird*ascale**1.5/Hubble0
+      tph_init=ascale**2/(2.*Hubble0*Omega_rad**.5)
+!
       f_ode(iLCDM_lna)=alog(ascale)
-      f_ode(iLCDM_tph)=twothird*ascale**1.5/Hubble0
+      f_ode(iLCDM_tph)=tph_init
 !
       call mpibcast_real(ascale)
       call mpibcast_real(Hubble)
@@ -249,8 +254,11 @@ module Special
       lna=f_ode(iLCDM_lna)
       tph=f_ode(iLCDM_tph)
 !
-      df_ode(iLCDM_lna)=df_ode(iLCDM_lna)+ascale**1.5*Hubble
-      df_ode(iLCDM_tph)=df_ode(iLCDM_tph)+ascale**1.5
+!  dlna/dtph=H, and since dt=dtph/a^nconformal, we have
+!  so dlna/dt=dlna/dtph*dtph/dt=H*dtph/dt=H*a^nconformal.
+!
+      df_ode(iLCDM_lna)=df_ode(iLCDM_lna)+ascale**nconformal*Hubble
+      df_ode(iLCDM_tph)=df_ode(iLCDM_tph)+ascale**nconformal
 !
 !  Diagnostics
 !
