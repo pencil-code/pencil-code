@@ -11,7 +11,7 @@
     use Cdata
     use General, only: itoa
     use Messages
-    use Cudafor, only: cudaSetDevice,CUDASUCCESS
+    use Cudafor, only: cudaSetDevice,CUDASUCCESS,cudaGetDeviceCount
     use Torchfort, only: torchfort_create_distributed_model, torchfort_create_model,&
                          torchfort_result_success,torchfort_load_model,torchfort_load_checkpoint,&
                          torchfort_save_model,torchfort_result_success,torchfort_save_checkpoint,&
@@ -57,12 +57,16 @@
       use Syscalls, only: system_cmd
 
       character(LEN=fnlen) :: modelfn
+      integer :: ndevs
 
       lfortran_launched = .not. lgpu .or. lroute_via_cpu
       if (lreloading) return
 
       if (.not.lhydro) call fatal_error('initialize_training','needs HYDRO module')
-      istat = cudaSetDevice(iproc)
+
+      istat = cudaGetDeviceCount(ndevs)
+      if (istat /= CUDASUCCESS) call fatal_error('initialize_training','cudaGetDeviceCount failed')
+      istat = cudaSetDevice(mod(iproc,ndevs))
       if (istat /= CUDASUCCESS) call fatal_error('initialize_training','cudaSetDevice failed')
   
       model_output_dir=trim(datadir)//'/training/' 
@@ -83,7 +87,8 @@
 !
       print*, 'CONFIG FILE=', trim(model_output_dir)//trim(config_file)
       if (lmpicomm) then
-        istat = torchfort_create_distributed_model(trim(model), trim(model_output_dir)//trim(config_file), MPI_COMM_WORLD, iproc)
+        istat = torchfort_create_distributed_model(trim(model), trim(model_output_dir)//trim(config_file), &
+                                                   MPI_COMM_WORLD, mod(iproc,ndevs))
       else
         istat = torchfort_create_model(trim(model), trim(model_output_dir)//trim(config_file), model_device)
       endif
@@ -164,7 +169,7 @@
 
     endsubroutine write_training_run_pars
 !***************************************************************
-    subroutine training_before_boundary(f)
+    subroutine training_after_boundary(f)
      
       use Sub, only: smooth
 
@@ -180,7 +185,6 @@
 ! Copy data from device to host.
 !
             f(:,:,:,itauxx:itauzz) = f(:,:,:,itauxx:itauzz) - output(:,:,:,:,1)
-          else
           endif
           tauerror = sum(f(l1:l2,m1:m2,n1:n2,itauxx:itauzz)**2)/nx
         else
@@ -194,14 +198,10 @@
 !
       if (lvideo .or. lwrite_sample .and. mod(it, 50)==0) then
 !
-!  Smooth velocity.
-!
-        uumean = f(:,:,:,iux:iuz)
-        call smooth(uumean,1,3,lgauss=.true.)
-        input(:,:,:,:,1) = uumean                    ! host to device    !sngl(uumean)
-        istat = torchfort_inference(model, input, output)
-        tau_pred = output(:,:,:,:,1)                 ! device to host
+        call calc_tau(f)
 
+        call infer(f)
+        tau_pred = output(:,:,:,:,1)                 ! device to host
         if (lscale) call descale(tau_pred, output_min, output_max)
 
         if (lwrite_sample .and. mod(it, 50)==0) then
@@ -211,7 +211,7 @@
 
       endif
 
-    endsubroutine training_before_boundary
+    endsubroutine training_after_boundary
 !***************************************************************
     subroutine infer(f)
     
@@ -227,6 +227,7 @@
 !
         uumean = f(:,:,:,iux:iuz)
         call smooth(uumean,1,3,lgauss=.true.)
+        if (lscale) call scale(uumean, input_min, input_max)
 !
 ! Copy data from host to device.
 !
@@ -288,6 +289,7 @@
               input_min = minval(uumean)
               input_max = maxval(uumean)
             endif
+
             call scale(uumean, input_min, input_max)
 !
 ! output scaling.

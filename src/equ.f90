@@ -85,7 +85,7 @@ module Equ
       use Testfield
       use Testflow
       use Testscalar
-      use Training, only: training_before_boundary
+      use Training, only: training_after_boundary
       use Viscosity, only: viscosity_after_boundary
       use Grid, only: coarsegrid_interp
 !$    use OMP_lib
@@ -167,7 +167,7 @@ module Equ
                      lparticles_spin.or.lsolid_cells.or. &
                      lchemistry.or.lweno_transport .or. lbfield .or. &
 !                     lslope_limit_diff .or. lvisc_smag .or. &
-                     lvisc_smag .or. &
+                     lvisc_smag .or. ltraining .or. &
                      lyinyang .or. lgpu .or. &   !!!
                      ncoarse>1
 !
@@ -196,26 +196,25 @@ module Equ
 !
 !  Call "before_boundary" hooks (for f array precalculation)
 !
-        if(.not. lgpu) then
-                if (ldustdensity)  call dustdensity_before_boundary(f)
-                if (linterstellar) call interstellar_before_boundary(f)
-                if (ldensity.or.lboussinesq) call density_before_boundary(f)
-                if (lhydro.or.lhydro_kinematic) call hydro_before_boundary(f)
-                if (lmagnetic)     call magnetic_before_boundary(f)
-                                   call energy_before_boundary(f)
-                if (lshear)        call shear_before_boundary(f)
-                if (lchiral)       call chiral_before_boundary(f)
-                if (lspecial)      call special_before_boundary(f)
-                if (ltestflow)     call testflow_before_boundary(f)
-                if (ltestfield)    call testfield_before_boundary(f)
-                if (lparticles)    call particles_before_boundary(f)
-                if (lpscalar)      call pscalar_before_boundary(f)
-                if (ldetonate)     call detonate_before_boundary(f)
-                if (lchemistry)    call chemistry_before_boundary(f)
-                if (lparticles.and.lspecial) call particles_special_bfre_bdary(f)
-                if (lshock)        call shock_before_boundary(f)
+        if (.not. lgpu) then
+          if (ldustdensity)  call dustdensity_before_boundary(f)
+          if (linterstellar) call interstellar_before_boundary(f)
+          if (ldensity.or.lboussinesq) call density_before_boundary(f)
+          if (lhydro.or.lhydro_kinematic) call hydro_before_boundary(f)
+          if (lmagnetic)     call magnetic_before_boundary(f)
+                             call energy_before_boundary(f)
+          if (lshear)        call shear_before_boundary(f)
+          if (lchiral)       call chiral_before_boundary(f)
+          if (lspecial)      call special_before_boundary(f)
+          if (ltestflow)     call testflow_before_boundary(f)
+          if (ltestfield)    call testfield_before_boundary(f)
+          if (lparticles)    call particles_before_boundary(f)
+          if (lpscalar)      call pscalar_before_boundary(f)
+          if (ldetonate)     call detonate_before_boundary(f)
+          if (lchemistry)    call chemistry_before_boundary(f)
+          if (lparticles.and.lspecial) call particles_special_bfre_bdary(f)
+          if (lshock)        call shock_before_boundary(f)
         endif
-        if (ltraining)     call training_before_boundary(f)
 !
 !  Prepare x-ghost zones; required before f-array communication
 !  AND shock calculation
@@ -320,23 +319,24 @@ module Equ
 !
         call timing('pde','before "after_boundary" calls')
 !
-        if (lhydro)                 call hydro_after_boundary(f)
-        if (lviscosity)             call viscosity_after_boundary(f)
-        if (lmagnetic)              call magnetic_after_boundary(f)
-        if (ldustdensity)           call dustdensity_after_boundary(f)
-        if (lenergy)                call energy_after_boundary(f)
-        if (lgrav)                  call gravity_after_boundary(f)
-        if (lforcing)               call forcing_after_boundary(f)
-        if (lpolymer)               call calc_polymer_after_boundary(f)
-        if (ltestscalar)            call testscalar_after_boundary(f)
-        if (ltestfield)             call testfield_after_boundary(f)
+        if (lhydro)          call hydro_after_boundary(f)
+        if (lviscosity)      call viscosity_after_boundary(f)
+        if (lmagnetic)       call magnetic_after_boundary(f)
+        if (ldustdensity)    call dustdensity_after_boundary(f)
+        if (lenergy)         call energy_after_boundary(f)
+        if (lgrav)           call gravity_after_boundary(f)
+        if (lforcing)        call forcing_after_boundary(f)
+        if (lpolymer)        call calc_polymer_after_boundary(f)
+        if (ltestscalar)     call testscalar_after_boundary(f)
+        if (ltestfield)      call testfield_after_boundary(f)
 !AB: quick fix
-        !if (ltestfield)             call testfield_after_boundary(f,p)
-        if (ldensity)               call density_after_boundary(f)
-        if (lneutraldensity)        call neutraldensity_after_boundary(f)
-        if (ltestflow)              call calc_ltestflow_nonlin_terms(f,df)  ! should not use df!
-        if (lmagn_mf)               call meanfield_after_boundary(f)
-        if (lspecial)               call special_after_boundary(f)
+        !if (ltestfield)      call testfield_after_boundary(f,p)
+        if (ldensity)        call density_after_boundary(f)
+        if (lneutraldensity) call neutraldensity_after_boundary(f)
+        if (ltestflow)       call calc_ltestflow_nonlin_terms(f,df)  ! should not use df!
+        if (lmagn_mf)        call meanfield_after_boundary(f)
+        if (lspecial)        call special_after_boundary(f)
+        if (ltraining)       call training_after_boundary(f)
 !
 !  Calculate quantities for a chemical mixture. This is done after
 !  communication has finalized since many of the arrays set up here
