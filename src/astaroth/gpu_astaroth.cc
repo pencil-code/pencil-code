@@ -124,9 +124,9 @@ AcReal dt1_interface;
 static int rank;
 static AcMesh mesh = acInitMesh();
 
-extern "C" void torch_trainCAPI(int sub_dims[3], float* input, float* label, float* loss_val);
-extern "C" void torch_inferCAPI(int sub_dims[3], float* input, float* label);
-//extern "C" void torch_createmodel(const char* name, const char* config_fname, MPI_Comm mpi_comm, int device);
+void torch_trainCAPI(int sub_dims[3], float* input, float* label, float* loss_val, bool dble=false);
+void torch_inferCAPI(int sub_dims[3], float* input, float* label, bool dble=false);
+//void torch_createmodel(const char* name, const char* config_fname, MPI_Comm mpi_comm, int device);
 
 /***********************************************************************************************/
 extern "C" void copyFarray(AcReal* f)
@@ -243,7 +243,11 @@ extern "C" void torch_train_c_api(AcReal *loss_val){
 	acGridSynchronizeStream(STREAM_ALL);
 	float avgloss = 0;
 	for (int batch = 0; batch<5; batch++){
-		torch_trainCAPI((int[]){mx,my,mz}, uumean_ptr, TAU_ptr, loss_val);
+		torch_trainCAPI((int[]){mx,my,mz}, uumean_ptr, TAU_ptr, loss_val
+#if DOUBLE_PRECISION
+                                , true
+#endif
+                               );
 		avgloss = avgloss + *loss_val;
 	}
 	printf("Loss after training: %f\n", avgloss/5);
@@ -297,7 +301,11 @@ extern "C" void torch_infer_c_api(int flag){
 	acGridExecuteTaskGraph(bcs,1);
 	acGridSynchronizeStream(STREAM_ALL);
 
-	torch_inferCAPI((int[]){mx,my,mz}, uumean_ptr, tau_infer_ptr);
+	torch_inferCAPI((int[]){mx,my,mz}, uumean_ptr, tau_infer_ptr
+#if DOUBLE_PRECISION
+                                , true
+#endif
+                       );
 
 	float vloss = MSE();
 		
