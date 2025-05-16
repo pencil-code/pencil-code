@@ -2737,7 +2737,7 @@ module Magnetic
         if (lroot) print*,'added to T00: .5*B_ext2= ', .5*B_ext2
       endif
 !
-!  Initialize current to zero, if defined.
+!  Initialize current to something, if defined.
 !
       if (lohm_evolve) then
 print*,'AXEL99, ijx,ijz', ijx,ijz
