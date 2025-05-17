@@ -190,6 +190,7 @@ module Radiation
 !
   real :: gamma
   real, dimension(nx) :: dt1_rad, diffus_chi
+  real, dimension(:,:), allocatable :: dlength
 !
   contains
 !***********************************************************************
@@ -377,6 +378,18 @@ module Radiation
 !  Total number of directions; correct for latest idir+1 operation.
 !
       ndir=idir-1
+      if (allocated(dlength)) deallocate(dlength)
+      allocate(dlength(mz,ndir))
+!
+!  Line elements (only valid for equidistant grid in xy).
+!
+      do idir=1,ndir
+        if (nzgrid/=1) then
+          dlength(:,idir)=sqrt((dx*dir(idir,1))**2+(dy*dir(idir,2))**2+(dir(idir,3)/dz_1)**2)
+        else
+          dlength(:,idir)=sqrt((dx*dir(idir,1))**2+(dy*dir(idir,2))**2+(dz*dir(idir,3))**2) !MR: Shouldn't nrad be 0???
+        endif
+      enddo
 !
 !  Determine when terms like exp(-dtau)-1 are to be evaluated as a power series.
 !
@@ -522,11 +535,13 @@ module Radiation
         Srad(l1:l2,m1:m2,n2+1)=impossible
       endif
       
-      if (.not.lgpu .and. .not.allocated(Srad)) &
-        allocate(Srad(mx,my,mz), tau(mx,my,mz), Qrad(mx,my,mz), Qrad0(mx,my,mz))
-      Qrad0=0.
+      if (.not.lgpu) then
+        if (.not.allocated(Srad)) &
+          allocate(Srad(mx,my,mz), tau(mx,my,mz), Qrad(mx,my,mz), Qrad0(mx,my,mz))
+        Srad=0.; Qrad=0.; Qrad0=0.; tau=0.
 
-      if (.not.lgpu .and. .not.allocated(Irad_refl_xy)) allocate(Irad_refl_xy(mx,my))
+        if (.not.allocated(Irad_refl_xy)) allocate(Irad_refl_xy(mx,my))
+      endif
         
     endsubroutine initialize_radiation
 !***********************************************************************
@@ -592,7 +607,7 @@ module Radiation
 !  Calculate the weights.
 !
         mu2=dx**2/(dx**2+dz**2)
-        xaxis=1/42.*(4.-1./mu2) ; yaxis=xaxis
+        xaxis=1/42.*(4.-1./mu2); yaxis=xaxis
         zaxis=(21.-54.*mu2+34.*mu2**2)/(210.*(mu2-1)**2)
         xyplane=2./105.*(4.-1./mu2)
         yzplane=(5.-6.*mu2)/(420.*mu2*(mu2-1)**2) ; xzplane=yzplane
@@ -636,7 +651,6 @@ module Radiation
 
       real, dimension(mx,my,mz,mfarray) :: f
 !
-      real, dimension(mz) :: dlength
       integer :: i,j,ij,k,inu
 !
 !  Identifier.
@@ -677,17 +691,17 @@ module Radiation
 !
             do idir=1,ndir
 !
-              call raydirection(dlength)
+              call raydirection
 !
 !  Do the 3 steps: first intrinsic (compute intensive),
 !  then communication (not compute intensive),
 !  and finally revision (again compute intensive).
 !
               if (lgpu) then
-                !call calcQ_gpu(dir(idir,:), (/llstop,mmstop,nnstop/), dlength, &
+                !call calcQ_gpu(idir, dir(idir,:), (/llstop,mmstop,nnstop/), &
                 !               unit_vec(idir,:), lperiodic_ray)
               else
-                if (lintrinsic) call Qintrinsic(f,dlength)
+                if (lintrinsic) call Qintrinsic(f)
 !
                 if (lcommunicate) then
                   if (lperiodic_ray) then
@@ -773,14 +787,12 @@ module Radiation
 !
     endsubroutine radtransfer
 !***********************************************************************
-    subroutine raydirection(dlength)
+    subroutine raydirection
 !
 !  Determine certain variables depending on the ray direction.
 !
 !  10-nov-03/tobi: coded
 !
-      real, dimension(mz), intent(out) :: dlength
-
       if (ldebug.and.headt) print*,'raydirection'
 !
 !  Get direction components.
@@ -838,17 +850,9 @@ module Radiation
         raydir_str=lrad_str//mrad_str//nrad_str
       endif
 !
-!  Line elements (only valid for equidistant grid in xy).
-!
-      if (nzgrid/=1) then
-        dlength=sqrt((dx*lrad)**2+(dy*mrad)**2+(nrad/dz_1)**2)
-      else
-        dlength=sqrt((dx*lrad)**2+(dy*mrad)**2+(nrad/dz)**2)  !MR: Shouldn't nrad be 0???
-      endif
-!
     endsubroutine raydirection
 !***********************************************************************
-    subroutine Qintrinsic(f,dlength)
+    subroutine Qintrinsic(f)
 !
 !  Integration radiation transfer equation along rays.
 !
@@ -861,7 +865,6 @@ module Radiation
       use Debug_IO, only: output
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
-      real, dimension(mz), intent(in) :: dlength
 
       real :: Srad1st,Srad2nd,dSdtau_m,dSdtau_p
       real :: Qrad1st,dQdtau_m,dQdtau_p
@@ -885,10 +888,10 @@ module Radiation
       do l=llstart,llstop,lsign
         dtau_m=sqrt(f(l-lrad,m-mrad,n-nrad,ikapparho)* &
                     f(l,m,n,ikapparho))* &
-                    0.5*(dlength(n-nrad)+dlength(n))
+                    0.5*(dlength(n-nrad,idir)+dlength(n,idir))
         dtau_p=sqrt(f(l+lrad,m+mrad,n+nrad,ikapparho)* &
                     f(l,m,n,ikapparho))* &
-                    0.5*(dlength(n)+dlength(n+nrad))
+                    0.5*(dlength(n,idir)+dlength(n+nrad,idir))
 !
 !  Avoid divisions by zero when the optical depth is such.
 !
@@ -2819,6 +2822,7 @@ module Radiation
     call copy_addr(lradpress, p_par(21))            ! bool
     call copy_addr(lradflux, p_par(22))             ! bool
     call copy_addr(ij_table, p_par(23))             ! int (3) (3)
+    call copy_addr(dlength, p_par(24))              ! (mz) (ndir)
 
     endsubroutine pushpars2c
 !***********************************************************************
