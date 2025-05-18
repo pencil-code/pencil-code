@@ -15,7 +15,11 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED e2; edot2; el(3); a0; ga0(3); del2ee(3); curlE(3); BcurlE
+<<<<<<< HEAD
 ! PENCILS PROVIDED rhoe, divJ, divE, gGamma(3); sigE, sigB; eb; count_eb0
+=======
+! PENCILS PROVIDED rhoe, divJ, divE, gGamma(3); sigE, sigB; eb
+>>>>>>> b569d6591 (added new diagnostics)
 ! PENCILS PROVIDED boost; gam_EB; eprime; bprime; jprime
 ! PENCILS EXPECTED infl_phi, infl_dphi, gphi(3)
 !***************************************************************
@@ -106,6 +110,7 @@ module Special
   integer :: idiag_bprimerms=0  ! DIAG_DOC: $\left<(B')^2\right>^{1/2}$
   integer :: idiag_jprimerms=0  ! DIAG_DOC: $\left<(J')^2\right>^{1/2}$
   integer :: idiag_gam_EBrms=0  ! DIAG_DOC: $\left<(\gamma')^2\right>^{1/2}$
+  integer :: idiag_boostprms=0  ! DIAG_DOC: $\left<\mbox{boost}^2\right>^{1/2}$
   integer :: idiag_edotrms=0    ! DIAG_DOC: $\left<\dot{\Ev}^2\right>^{1/2}$
   integer :: idiag_emax=0       ! DIAG_DOC: $\max(|\Ev|)$
   integer :: idiag_a0rms=0      ! DIAG_DOC: $\left<A_0^2\right>^{1/2}$
@@ -510,7 +515,10 @@ module Special
             p%jprime=Chypercharge*echarge**3/(6.*pi**2*Hscript)*p%eprime*abs(p%bprime)/tanh(pi*abs(p%bprime)/p%eprime)
             p%sigE=sigE_prefactor*abs(p%jprime)*p%eprime/(p%gam_EB*p%boost)
             p%sigB=sigB_prefactor*abs(p%jprime)*p%eb/(p%eprime*p%gam_EB*p%boost)
+<<<<<<< HEAD
             p%count_eb0=0.
+=======
+>>>>>>> b569d6591 (added new diagnostics)
           elsewhere
             p%jprime=0.
             p%sigE=0.
@@ -543,11 +551,6 @@ module Special
         do j=1,3
           p%jj_ohm(:,j)=p%sigE*p%el(:,j)+p%sigB*p%bb(:,j)
         enddo
-!
-        call sum_mn_name(eprime**2,idiag_eprimerms,lsqrt=.true.)
-        call sum_mn_name(bprime**2,idiag_bprimerms,lsqrt=.true.)
-        call sum_mn_name(jprime**2,idiag_jprimerms,lsqrt=.true.)
-        call sum_mn_name(gam_EB**2,idiag_gam_EBrms,lsqrt=.true.)
 !
       endif
 !
@@ -899,7 +902,7 @@ module Special
         idiag_ebm=0; idiag_sigEm=0; idiag_sigBm=0; idiag_sigErms=0; idiag_sigBrms=0
         idiag_Johmrms=0; idiag_adphiBm=0; idiag_sigEE2m=0; idiag_sigBBEm=0
         idiag_eprimerms=0; idiag_bprimerms=0; idiag_jprimerms=0; idiag_gam_EBrms=0; 
-        idiag_echarge=0
+        idiag_boostprms=0; idiag_echarge=0
         cformv=''
       endif
 !
@@ -915,6 +918,7 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'bprimerms',idiag_bprimerms)
         call parse_name(iname,cname(iname),cform(iname),'jprimerms',idiag_jprimerms)
         call parse_name(iname,cname(iname),cform(iname),'gam_EBrms',idiag_gam_EBrms)
+        call parse_name(iname,cname(iname),cform(iname),'boostprms',idiag_boostprms)
         call parse_name(iname,cname(iname),cform(iname),'edotrms',idiag_edotrms)
         call parse_name(iname,cname(iname),cform(iname),'emax',idiag_emax)
         call parse_name(iname,cname(iname),cform(iname),'a0rms',idiag_a0rms)
