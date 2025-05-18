@@ -1696,18 +1696,9 @@ module Radiation
 !  Add radiative cooling, either from the intensity or in the diffusion
 !  approximation (if either lrad_cool_diffus=F or lrad_pres_diffus=F).
 !
-<<<<<<< HEAD
-      if (lrad_cool_diffus.or.lrad_pres_diffus) call calc_rad_diffusion(f,p)
-      if (lno_rad_heating .and. (qrad_max > 0)) then
-!
-! Upper limit radiative heating by qrad_max
-!
-        f(l1-radx:l2+radx,m,n,iQrad) = min(f(l1-radx:l2+radx,m,n,iQrad),qrad_max)
-=======
       if (lrad_cool_diffus.or.lrad_pres_diffus) then
         call calc_rad_diffusion(f,p,Qrad_diffus)
         f(l1:l2,m,n,iQrad) = Qrad_diffus
->>>>>>> 02a3a348d (radiation_ray,temperature_ionization and eos_temperature_ionization modules to PC-A. Btw reference data for solar-atmosphere-magnetic is out of date. TODO: GPU kernels for ray stepping)
       endif
 !
 !  Add radiative cooling.
@@ -2890,6 +2881,8 @@ module Radiation
     call copy_addr(kappa_ceiling,p_par(72))
     call string_to_enum(enum_opacity_type,opacity_type)
     call copy_addr(enum_opacity_type,p_par(73)) ! int
+    call copy_addr(ndir,p_par(74)) ! int
+    call copy_addr(dlength,p_par(75)) ! (mz) (ndir)
 
     endsubroutine pushpars2c
 !***********************************************************************
