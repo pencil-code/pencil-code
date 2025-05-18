@@ -1393,10 +1393,12 @@ call copy_addr(lpencil,p_par(151)) ! bool (npencils)
 call copy_addr(lfreeze_varsquare,p_par(152)) ! bool (mcom)
 call copy_addr(lfreeze_varint,p_par(153)) ! bool (mcom)
 call copy_addr(lfreeze_varext,p_par(154)) ! bool (mcom)
+
 call copy_addr(iuud,p_par(155)) ! int (ndustspec)
 call copy_addr(iudx,p_par(156)) ! int (ndustspec)
 call copy_addr(iudy,p_par(157)) ! int (ndustspec)
 call copy_addr(iudz,p_par(158)) ! int (ndustspec)
+
 call copy_addr(ilnnd,p_par(159)) ! int (ndustspec)
 call copy_addr(ind,p_par(160)) ! int (ndustspec)
 call copy_addr(imd,p_par(161)) ! int (ndustspec)
@@ -1452,8 +1454,6 @@ call copy_addr(enum_unit_system,p_par(380)) ! int
 call copy_addr(it_rmv,p_par(381)) ! int
 call copy_addr(ldivu_perp,p_par(383)) ! bool
 call copy_addr(nvar,p_par(384)) ! int
-call copy_addr(iam,p_par(385)) ! int
-call copy_addr(iamy,p_par(386)) ! int
 call copy_addr(ibx,p_par(387)) ! int
 call copy_addr(ibz,p_par(388)) ! int
 call copy_addr(ishock,p_par(389)) ! int
@@ -1507,6 +1507,21 @@ call copy_addr(deltay,p_par(1197))
 call copy_addr(dt_epsi,p_par(1198))
 call copy_addr(eps_rkf,p_par(1199))
 call copy_addr(dt_ratio,p_par(1120))
+call copy_addr(ntestflow,p_par(1121)) ! int
+
+call copy_addr(iam,p_par(1122)) ! int
+call copy_addr(iamx,p_par(1123)) ! int
+call copy_addr(iamy,p_par(1124)) ! int
+call copy_addr(iamz,p_par(1125)) ! int
+
+call copy_addr(iaatest,p_par(1126)) ! int
+call copy_addr(iaztestpq,p_par(1127)) ! int
+call copy_addr(iaxtest,p_par(1128)) ! int
+call copy_addr(iaytest,p_par(1129)) ! int
+call copy_addr(iaztest,p_par(1130)) ! int
+call copy_addr(iyytest,p_par(1131)) ! int
+call copy_addr(iuztestpq,p_par(1132)) ! int
+call copy_addr(ihhtestpq,p_par(1133)) ! int
 
 endsubroutine pushpars2c
 !***********************************************************************
