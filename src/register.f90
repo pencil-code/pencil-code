@@ -402,7 +402,9 @@ module Register
       call initialize_magnetic(f)
       call initialize_lorenz_gauge(f)
       call initialize_polymer(f)
-      call initialize_power_spectrum
+      !call initialize_power_spectrum
+!AB: is this needed also for start? I have problems with stricter compiler settings when there is only x-extent (2025-05-17)
+      if (lrun) call initialize_power_spectrum
       call initialize_testscalar(f)
       call initialize_testfield(f)
       call initialize_testflow(f)

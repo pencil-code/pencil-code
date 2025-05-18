@@ -72,6 +72,7 @@ module Forcing
   logical :: lforcing_osc = .false., lforcing_osc2 = .false., lforcing_osc_double = .false.
   real :: scale_kvectorx=1.,scale_kvectory=1.,scale_kvectorz=1.
   logical :: old_forcing_evector=.false., lforcing_coefs_hel_double=.false.
+  logical :: lforce_always_all_compomemts=.false.
   character (len=labellen) :: iforce='zero', iforce2='zero'
   character (len=labellen) :: iforce_profile='nothing'
   character (len=labellen) :: iforce_tprofile='nothing'
@@ -174,7 +175,7 @@ module Forcing
        omega_tidal, R0_tidal, phi_tidal, omega_vortex, &
        lforce_ramp_down, tforce_ramp_down, tauforce_ramp_down, &
        n_hel_sin_pow, kzlarge, cs0eff, channel_force, torus, Omega_vortex, &
-       lrandom_time,laniso_forcing_old, &
+       lrandom_time,laniso_forcing_old, lforce_always_all_compomemts, &
        lforcing_osc, lforcing_osc2, lforcing_osc_double, &
        tcor_GP, kmin_GP,kmax_GP,nk_GP,beta_GP, n_axisrot_angles, &
        SR_alpha_shift, alpha_shift, ell_shift, SR_ell_shift, ncol, lfastSR
@@ -1998,6 +1999,7 @@ module Forcing
 !                seems not to be meaningful.
 !  12-jan-18/axel: added periodic forcing for omega_ff /= 0.
 !   3-aug-22/axel: added omega_double_ff for second forcing function
+!  18-may-25/axel: added lforce_always_all_compomemts to overwrite restriction of lactive_dimension(j).
 !
       use Mpicomm, only: mpireduce_sum
       use Sub
@@ -2291,7 +2293,7 @@ module Forcing
 !
         call fatal_error('forcing_hel','check that radial profile with rcyl_ff/=0. works')
         do j=1,3
-          if (lactive_dimension(j)) then
+          if (lforce_always_all_compomemts .or. lactive_dimension(j)) then
             jf=j+ifff-1
             do n=n1,n2
               do m=m1,m2
