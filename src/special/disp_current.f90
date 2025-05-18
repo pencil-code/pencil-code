@@ -63,7 +63,7 @@ module Special
   logical :: ldivE_as_aux=.false., lsigE_as_aux=.false., lsigB_as_aux=.false.
   logical :: lrandom_ampl_ee=.false., lfixed_phase_ee=.false., lallow_bprime_zero=.false.
   logical :: lswitch_off_divJ=.false., lswitch_off_Gamma=.false., lmass_suppression=.false.
-  character(len=50) :: inita0='zero'
+  character(len=labellen) :: inita0='zero'
   character (len=labellen), dimension(ninit) :: initee='nothing'
 !
   namelist /special_init_pars/ &
