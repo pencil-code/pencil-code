@@ -15,11 +15,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED e2; edot2; el(3); a0; ga0(3); del2ee(3); curlE(3); BcurlE
-<<<<<<< HEAD
 ! PENCILS PROVIDED rhoe, divJ, divE, gGamma(3); sigE, sigB; eb; count_eb0
-=======
-! PENCILS PROVIDED rhoe, divJ, divE, gGamma(3); sigE, sigB; eb
->>>>>>> b569d6591 (added new diagnostics)
 ! PENCILS PROVIDED boost; gam_EB; eprime; bprime; jprime
 ! PENCILS EXPECTED infl_phi, infl_dphi, gphi(3)
 !***************************************************************
@@ -462,7 +458,6 @@ module Special
 !   24-nov-04/tony: coded
 !
       use Sub, only: grad, div, curl, del2v, dot2_mn, dot, levi_civita
-      use Diagnostics, only: sum_mn_name
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -515,10 +510,7 @@ module Special
             p%jprime=Chypercharge*echarge**3/(6.*pi**2*Hscript)*p%eprime*abs(p%bprime)/tanh(pi*abs(p%bprime)/p%eprime)
             p%sigE=sigE_prefactor*abs(p%jprime)*p%eprime/(p%gam_EB*p%boost)
             p%sigB=sigB_prefactor*abs(p%jprime)*p%eb/(p%eprime*p%gam_EB*p%boost)
-<<<<<<< HEAD
             p%count_eb0=0.
-=======
->>>>>>> b569d6591 (added new diagnostics)
           elsewhere
             p%jprime=0.
             p%sigE=0.
@@ -898,7 +890,7 @@ module Special
         idiag_edotrms=0; idiag_a0rms=0; idiag_grms=0; idiag_da0rms=0; idiag_BcurlEm=0
         idiag_mfpf=0; idiag_fppf=0; idiag_afact=0
         idiag_rhoerms=0; idiag_divErms=0; idiag_divJrms=0
-        idiag_rhoem=0; idiag_divEm=0; idiag_divJm=0; idiag_constrainteqn=0
+        idiag_rhoem=0; idiag_count_eb0=0; idiag_divEm=0; idiag_divJm=0; idiag_constrainteqn=0
         idiag_ebm=0; idiag_sigEm=0; idiag_sigBm=0; idiag_sigErms=0; idiag_sigBrms=0
         idiag_Johmrms=0; idiag_adphiBm=0; idiag_sigEE2m=0; idiag_sigBBEm=0
         idiag_eprimerms=0; idiag_bprimerms=0; idiag_jprimerms=0; idiag_gam_EBrms=0; 
