@@ -1,0 +1,17 @@
+CONFLICT (content): Merge conflict in bin/pc_setupsrc
+CONFLICT (content): Merge conflict in python/pencil/read/varfile.py
+CONFLICT (content): Merge conflict in samples/gpu_ism_ssd/src/astaroth/DSL/local/solve_two.ac
+CONFLICT (content): Merge conflict in src/astaroth/DSL/forcing/getforce.h
+CONFLICT (content): Merge conflict in src/astaroth/Makefile
+CONFLICT (content): Merge conflict in src/astaroth/forcing.h
+CONFLICT (content): Merge conflict in src/astaroth/gpu_astaroth.cc
+CONFLICT (modify/delete): src/dummy_astaroth_ansi.c deleted in HEAD and modified in master.  Version master of src/dummy_astaroth_ansi.c left in tree.
+CONFLICT (content): Merge conflict in src/gpu.h
+CONFLICT (content): Merge conflict in src/magnetic.f90
+CONFLICT (content): Merge conflict in src/nogravity.f90
+CONFLICT (content): Merge conflict in src/run.f90
+CONFLICT (content): Merge conflict in src/special/backreact_infl.f90
+CONFLICT (content): Merge conflict in src/special/disp_current.f90
+CONFLICT (content): Merge conflict in src/timestep_rkf_lowsto.f90
+CONFLICT (content): Merge conflict in src/training_torchfort.f90
+CONFLICT (content): Merge conflict in src/viscosity.f90

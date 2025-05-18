@@ -27,10 +27,10 @@ Kernel twopass_solve_intermediate(PC_SUB_STEP_NUMBER step_num, real dt) {
   df_rho = drho_dt(step_num)
   df_ss  = denergy_dt(step_num)
 
-  uu_error  = rkf4_error(df_uu  ,step_num,dt)
-  aa_error  = rkf4_error(df_aa  ,step_num,dt)
-  rho_error = rkf4_error(df_rho ,step_num,dt)
-  ss_error  = rkf4_error(df_ss  ,step_num,dt)
+  uu_error  = rkf4_error(df_uu , step_num,dt)
+  aa_error  = rkf4_error(df_aa , step_num,dt)
+  rho_error = rkf4_error(df_rho, step_num,dt)
+  ss_error  = rkf4_error(df_ss , step_num,dt)
  
   maximum_error = 0.0
   //TP: nothing to cumulate for the first substep

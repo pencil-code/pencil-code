@@ -469,7 +469,7 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: tmp, mass_suppression_fact, tanh_term
+      real, dimension (nx) :: tmp, mass_suppression_fact
       integer :: i,j,k
 !
       intent(inout) :: f
@@ -543,7 +543,6 @@ module Special
               p%count_eb0=1.
             endwhere
           endif
-
 
         elseif (lcollinear_EB) then
           p%eprime=sqrt(p%e2)

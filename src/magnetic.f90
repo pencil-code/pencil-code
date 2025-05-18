@@ -11760,7 +11760,6 @@ print*,'AXEL2: should not be here (eta) ... '
     call copy_addr(h_sld_magn,p_par(266))
     call copy_addr(nlf_sld_magn,p_par(267))
 
-
     endsubroutine pushpars2c
 !***********************************************************************
 endmodule Magnetic

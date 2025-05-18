@@ -165,13 +165,44 @@ contains
 !
     endsubroutine gpu_set_dt
 !**************************************************************************
-    function get_ptr_GPU(ind1,ind2,lout,nbatch_training) result(pFarr)
+    function get_ptr_GPU(ind1,ind2,lout) result(pFarr)
 !
 !  Fetches the address of the f-array counterpart on the GPU for slots from ind1 to ind2
 !  and transforms it to a Fortran pointer.
 !
       integer :: ind1
-      integer, optional :: ind2, nbatch_training
+      integer, optional :: ind2
+      logical, optional :: lout
+
+      real, dimension(:,:,:,:), pointer :: pFarr
+
+      integer :: i2
+
+      interface
+        type(c_ptr) function pos_real_ptr_c(ptr,ind)
+          import :: c_ptr, ikind8
+          type(c_ptr) :: ptr
+          integer :: ind
+        endfunction
+      endinterface
+
+      i2 = ioptest(ind2,ind1)
+      if (loptest(lout)) then
+        call c_f_pointer(pos_real_ptr_c(pFarr_GPU_out,ind1-1),pFarr,(/mx,my,mz,i2-ind1+1,1/))
+      else
+        call c_f_pointer(pos_real_ptr_c(pFarr_GPU_in,ind1-1),pFarr,(/mx,my,mz,i2-ind1+1,1/))
+      endif
+
+    endfunction get_ptr_GPU
+!**************************************************************************
+    function get_ptr_GPU_training(ind1,ind2,lout) result(pFarr)
+
+      !TP: for training needs to be 5-dimensional (last dimension being the batch size)
+      use Cparam
+      use iso_c_binding
+
+      integer :: ind1
+      integer, optional :: ind2
       logical, optional :: lout
 
       real, dimension(:,:,:,:,:), pointer :: pFarr
@@ -208,7 +239,7 @@ contains
         endif
       endif
 
-    endfunction get_ptr_GPU
+    endfunction get_ptr_GPU_training
 !**************************************************************************
     subroutine copy_farray_from_GPU(f)
 

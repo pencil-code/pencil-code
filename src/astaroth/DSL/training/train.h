@@ -145,24 +145,14 @@ Kernel l2_sum(){
 Kernel descale_uumean(){
 	write(UUMEAN, train_descale(UUMEAN, minUUMEAN, maxUUMEAN))
 }
-ComputeSteps get_uumean(boundconds){
-	uumean_kernel()	
-}
 
 Kernel descale_tau(){
 	write(TAU, train_descale(TAU, minTau, maxTau))
 	//write(TAU_INFERRED, train_descale(TAU_INFERRED, minTau, maxTau))
 }
 
-Kernel sum_pred(){
-	reduce_sum(TAU_INFERRED.xx, sumxx)
-	reduce_sum(TAU_INFERRED.yy, sumyy)
-	reduce_sum(TAU_INFERRED.zz, sumzz)
-	reduce_sum(TAU_INFERRED.xy, sumxy)
-	reduce_sum(TAU_INFERRED.yz, sumyz)
-	reduce_sum(TAU_INFERRED.xz, sumxz)
-	
-	real sums = (sumxx * sumxx) + (sumyy * sumyy) + (sumzz * sumzz) + (sumxy * sumxy) + (sumyz * sumyz) + (sumxz * sumxz)
+ComputeSteps calc_validation_loss(boundconds){
+	l2_sum()
 }
 
 ComputeSteps train_prepare(boundconds){
