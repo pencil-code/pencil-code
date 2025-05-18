@@ -21,6 +21,7 @@ const int rkind8 = 0;
 
 #define CUDA_ERRCHK(X)
 
+
 // Astaroth headers.
 #include "astaroth.h"
 bool
@@ -107,6 +108,133 @@ has_nans(AcMesh mesh_in);
   #define eps_rkf eps_rkf__mod__cdata
 
 #endif
+
+AcReal dt1_interface{};
+static int rank;
+static AcMesh mesh = acInitMesh();
+extern "C" void copyFarray(AcReal* f);
+
+extern "C" void torch_trainCAPI(float* input, float* label, float* loss_val);
+extern "C" void torch_inferCAPI(float* input, float* label);
+
+extern "C" void torch_train_c_api(AcReal *loss_val){
+	
+#if TRAINING
+
+	#include "user_constants.h"
+
+	auto temp = acGetOptimizedDSLTaskGraph(train_prepare);
+	acGridSynchronizeStream(STREAM_ALL);
+	acGridExecuteTaskGraph(temp,1);
+	acGridSynchronizeStream(STREAM_ALL);
+
+	AcReal* out = NULL;
+	
+	AcReal* uumean_ptr = NULL;
+	AcReal* TAU_ptr = NULL;
+
+	acDeviceGetVertexBufferPtrs(acGridGetDevice(), TAU.xx, &TAU_ptr, &out);
+	acDeviceGetVertexBufferPtrs(acGridGetDevice(), UUMEAN.x, &uumean_ptr, &out);
+
+	
+	
+  auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
+	acGridSynchronizeStream(STREAM_ALL);
+	acGridExecuteTaskGraph(temp,1);
+	acGridSynchronizeStream(STREAM_ALL);
+
+	torch_trainCAPI(uumean_ptr, TAU_ptr, loss_val);
+	
+	printf("Loss after training: %f\n", *loss_val);
+#endif
+}
+
+float MSE(){
+#if TRAINING
+	#include "user_constants.h"
+	
+	auto temp = acGetOptimizedDSLTaskGraph(subtract_pred);
+	acGridSynchronizeStream(STREAM_ALL);
+	acGridExecuteTaskGraph(temp,1);
+	acGridSynchronizeStream(STREAM_ALL);
+
+	const auto DEVICE_VTXBUF_IDX = [&](const int x, const int y, const int z)
+					{
+						return acVertexBufferIdx(x, y, z, mesh.info);
+					};
+	AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
+
+
+	copyFarray(NULL);
+
+	
+	float sum = 0;
+
+	for(size_t z = dims.n0.x; z < dims.n1.x; z++){	
+		for(size_t y = dims.n0.y; y < dims.n1.y; y++){
+			for(size_t x = dims.n0.z; x < dims.n1.z; x++){
+				sum += mesh.vertex_buffer[TAU_INFERRED.xx][DEVICE_VTXBUF_IDX(z,y,x)] * mesh.vertex_buffer[TAU_INFERRED.xx][DEVICE_VTXBUF_IDX(z,y,x)];
+				sum += mesh.vertex_buffer[TAU_INFERRED.yy][DEVICE_VTXBUF_IDX(z,y,x)] * mesh.vertex_buffer[TAU_INFERRED.yy][DEVICE_VTXBUF_IDX(z,y,x)];
+				sum += mesh.vertex_buffer[TAU_INFERRED.zz][DEVICE_VTXBUF_IDX(z,y,x)] * mesh.vertex_buffer[TAU_INFERRED.zz][DEVICE_VTXBUF_IDX(z,y,x)];
+				sum += mesh.vertex_buffer[TAU_INFERRED.xy][DEVICE_VTXBUF_IDX(z,y,x)] * mesh.vertex_buffer[TAU_INFERRED.xy][DEVICE_VTXBUF_IDX(z,y,x)];
+				sum += mesh.vertex_buffer[TAU_INFERRED.yz][DEVICE_VTXBUF_IDX(z,y,x)] * mesh.vertex_buffer[TAU_INFERRED.yz][DEVICE_VTXBUF_IDX(z,y,x)];
+				sum += mesh.vertex_buffer[TAU_INFERRED.xz][DEVICE_VTXBUF_IDX(z,y,x)] * mesh.vertex_buffer[TAU_INFERRED.xz][DEVICE_VTXBUF_IDX(z,y,x)];
+			}
+		}
+	}
+	
+	return (sum/(6*32*32*32));
+#endif
+}
+
+
+
+
+extern "C" void torch_infer_c_api(int flag){	
+#if TRAINING
+	#include "user_constants.h"
+
+	// calling infer by itself
+	// so need to initialize TAU components
+	if(flag==0){
+		auto temp = acGetOptimizedDSLTaskGraph(train_prepare);
+		acGridSynchronizeStream(STREAM_ALL);
+		acGridExecuteTaskGraph(temp,1);
+		acGridSynchronizeStream(STREAM_ALL);
+	}
+
+
+	auto losses = acGetOptimizedDSLTaskGraph(subtract_pred);
+	acGridSynchronizeStream(STREAM_ALL);
+	acGridExecuteTaskGraph(losses,1);
+	acGridSynchronizeStream(STREAM_ALL);
+
+	AcReal* out = NULL;
+	
+	AcReal* uumean_ptr = NULL;
+	AcReal* tau_infer_ptr = NULL;
+
+	acDeviceGetVertexBufferPtrs(acGridGetDevice(), TAU_INFERRED.xx, &tau_infer_ptr, &out);
+	acDeviceGetVertexBufferPtrs(acGridGetDevice(), UUMEAN.x, &uumean_ptr, &out);
+
+	
+	
+  auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
+	acGridSynchronizeStream(STREAM_ALL);
+	acGridExecuteTaskGraph(bcs,1);
+	acGridSynchronizeStream(STREAM_ALL);
+
+
+	torch_inferCAPI(uumean_ptr, tau_infer_ptr);
+	
+	float vloss = MSE();
+
+	printf("Validation error is: %f\n", vloss);
+#endif
+}
+
+
+
 /***********************************************************************************************/
 int memusage()
   {
@@ -116,9 +244,6 @@ int memusage()
     return usage.ru_maxrss;
   }
 /***********************************************************************************************/
-AcReal dt1_interface{};
-static int rank;
-static AcMesh mesh = acInitMesh();
 extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
 {
   const auto DEVICE_VTXBUF_IDX = [&](const int x, const int y, const int z)
@@ -1169,6 +1294,8 @@ void setupConfig(AcMeshInfo& config)
   else
     PCLoad(config,AC_proc_mapping_strategy,AC_PROC_MAPPING_STRATEGY_LINEAR);
 
+	
+	PCLoad(config, AC_include_3d_halo_corners, ltraining);
   PCLoad(config,AC_MPI_comm_strategy,AC_MPI_COMM_STRATEGY_DUP_USER);
   config.comm->handle = comm_pencil;
 

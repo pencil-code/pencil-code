@@ -127,5 +127,13 @@ contains
     subroutine gpu_set_dt()
     endsubroutine gpu_set_dt
 !**************************************************************************
+    subroutine infer_c(flag)
+    integer :: flag
+    endsubroutine infer_c
+!**************************************************************************
+    subroutine train_c(f)
+    real :: f
+    endsubroutine train_c
+!**************************************************************************
 
 endmodule  GPU

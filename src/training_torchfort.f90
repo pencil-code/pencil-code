@@ -194,7 +194,7 @@ print*, 'adresses:', loc(input), loc(output), loc(label)
 !***************************************************************
     subroutine infer(f)
     
-      use Gpu, only: get_ptr_gpu_for_training
+      use Gpu, only: get_ptr_gpu_for_training, infer_c
       use Sub, only: smooth
 
       real, dimension (mx,my,mz,mfarray) :: f
@@ -209,7 +209,8 @@ print*, 'adresses:', loc(input), loc(output), loc(label)
       else
         !call get_ptr_gpu(ptr_uu,iux,iuz)
         !call get_ptr_gpu(ptr_tau,tauxx,tauzz)
-        istat = torchfort_inference(model, get_ptr_gpu_for_training(iux,iuz), get_ptr_gpu_for_training(itauxx,itauzz))
+        !istat = torchfort_inference(model, get_ptr_gpu_for_training(iux,iuz), get_ptr_gpu_for_training(itauxx,itauzz))
+        call infer_c(0)
       endif
 
       if (istat /= TORCHFORT_RESULT_SUCCESS) &
@@ -237,19 +238,23 @@ print*, 'adresses:', loc(input), loc(output), loc(label)
 !***************************************************************
     subroutine train(f)
    
-      use Gpu, only: get_ptr_gpu_for_training
+      use Gpu, only: get_ptr_gpu_for_training, train_c, infer_c
+
 
       real, dimension (mx,my,mz,mfarray) :: f
 
       if (it<it_train_start) return
 
       if (mod(it,it_train)==0) then
+
 !
 !  Smooth velocity.
 !
         if (.not. lcpu_training) then
+         call infer_c(0)
           !TODO: smoothing/scaling etc. for uu and tau
-          istat = torchfort_train(model, get_ptr_gpu_for_training(iux,iuz), get_ptr_gpu_for_training(itauxx,itauzz), train_loss)
+         !istat = torchfort_train(model, get_ptr_gpu_for_training(iux,iuz), get_ptr_gpu_for_training(itauxx,itauzz), train_loss)
+         call train_c(train_loss)
         else
           call calc_tau(f)
 !

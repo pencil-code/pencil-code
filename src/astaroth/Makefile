@@ -82,6 +82,7 @@ PCHEADER_DIR = .
 PC_HEADERS = $(PCHEADER_DIR)/PC_moduleflags.h $(PCHEADER_DIR)/PC_module_parfuncs.h $(PCHEADER_DIR)/PC_modulepars.h 
 RUNTIME_COMPILATION       ?= off
 TRAINING                  ?= notraining
+CMAKE_TRAINING_VALUE      ?= off
 TRANSPILATION             ?= off
 INLINING                  ?= off
 READ_OVERRIDES            ?= off
@@ -97,6 +98,7 @@ endif
 
 ifeq ($(TRAINING),training_torchfort) 
 	SUPPRESS_COMPILER_WARNINGS = on
+	CMAKE_TRAINING_VALUE = on
 endif
 
 CMAKE_BUILD_TYPE          ?= Debug
@@ -108,7 +110,7 @@ astaroth_$(PREC).so: $(SOURCES) forcing.h $(AC_HEADERS) $(PC_HEADERS) $(CHEADERS
 	echo USE_HIP=$(USE_HIP) && \
 	echo PRECISION=$(CMAKE_PREC) && \
 	cd build && export LDFLAGS=""  && \
-	cmake -DDOUBLE_PRECISION=$(CMAKE_PREC) -DRUNTIME_COMPILATION=$(RUNTIME_COMPILATION) -DTRANSPILATION=$(TRANSPILATION) -DUSE_HIP=$(USE_HIP) -DSINGLEPASS_INTEGRATION=$(CMAKE_SINGLEPASS) -DUSE_DARDEL=$(USE_DARDEL) .. && \
+	cmake -DDOUBLE_PRECISION=$(CMAKE_PREC) -DRUNTIME_COMPILATION=$(RUNTIME_COMPILATION) -DTRANSPILATION=$(TRANSPILATION) -DUSE_HIP=$(USE_HIP) -DSINGLEPASS_INTEGRATION=$(CMAKE_SINGLEPASS) -DUSE_DARDEL=$(USE_DARDEL) -DTRAINING=$(CMAKE_TRAINING_VALUE) .. && \
 	make -j && \
 	cd .. && \
 	mv ./build/libastaroth_$(PREC).so libastaroth_$(PREC).so
