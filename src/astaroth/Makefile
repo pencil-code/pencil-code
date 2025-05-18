@@ -56,8 +56,8 @@ OBJECTS = $(SOURCES:.cc=.o)
 #DSL_MODULE_DIR=samples/gputest
 DSL_MODULE_DIR = ../../DSL/local
 #EXT_SOURCES = $(wildcard ../../DSL/stdlib/*/*.h)   #doesn't work with symbolic links
+CWD = $(PWD)
 EXT_KERNELS =
-CWD := $(PWD)
 
 ifeq ($(CMAKE_SINGLEPASS),ON)
   DSL_MODULE_FILE = solve_single.ac
@@ -104,7 +104,6 @@ endif
 CMAKE_BUILD_TYPE          ?= Debug
 SUPPRESS_COMPILER_WARNINGS ?= off
 
-
 astaroth_$(PREC).so: $(SOURCES) forcing.h $(AC_HEADERS) $(PC_HEADERS) $(CHEADERS) astaroth_libs
 	mkdir -p build && \
 	echo USE_HIP=$(USE_HIP) && \
@@ -134,9 +133,10 @@ CMAKE_OPTIONS = -DMULTIGPU_ENABLED=OFF -DMPI_ENABLED=$(CMAKE_MPI) -DBUILD_SHARED
 #
 astaroth_libs: $(PC_HEADERS)
 	@ext_srcs="`ls -m $$PENCIL_HOME/src/astaroth/DSL/*/*.h \
+                          $$PENCIL_HOME/src/astaroth/DSL/*.h \
 		          $$PENCIL_HOME/src/astaroth/submodule/acc-runtime/stdlib/*.h \
 			  $$PENCIL_HOME/src/astaroth/submodule/acc-runtime/stdlib/*/*.h \
-			  $(CWD)/DSL/local/*.h \
+                          $(CWD)/src/astaroth/DSL/local/*.h \
 			  |tr "\n" " "|sed -e's/, / /g'` $(EXT_KERNELS)" && \
 	echo "const char* cmake_options = \" -DEXT_SOURCES=$$ext_srcs -DDSL_MODULE_DIR=../$(DSL_MODULE_DIR) $(CMAKE_OPTIONS)\";" > cmake_options.h && \
 	mkdir -p submodule/build  && cd submodule/build && export LDFLAGS=""  &&  \

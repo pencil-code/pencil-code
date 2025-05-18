@@ -188,7 +188,6 @@ void print_debug() {
 
 
 extern "C" void torch_train_c_api(AcReal *loss_val){
-	
 #if TRAINING
 	#include "user_constants.h"
 
@@ -208,8 +207,6 @@ extern "C" void torch_train_c_api(AcReal *loss_val){
 
 	acDeviceGetVertexBufferPtrs(acGridGetDevice(), TAU.xx, &TAU_ptr, &out);
 	acDeviceGetVertexBufferPtrs(acGridGetDevice(), UUMEAN.x, &uumean_ptr, &out);
-
-	
 	
   auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
 	acGridSynchronizeStream(STREAM_ALL);
@@ -225,7 +222,7 @@ extern "C" void torch_train_c_api(AcReal *loss_val){
 	counter++;
 #endif
 }
-
+/***********************************************************************************************/
 float MSE(){
 #if TRAINING
 	#include "user_constants.h"
@@ -247,17 +244,13 @@ float MSE(){
 					};
 	AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
 
-
 	copyFarray(NULL);
 
 	return (acDeviceGetOutput(acGridGetDevice(), AC_l2_sum))/(6*32*32*32);
 #else
 #endif
 }
-
-
-
-
+/***********************************************************************************************/
 extern "C" void torch_infer_c_api(int flag){	
 #if TRAINING
 	#include "user_constants.h"
@@ -298,9 +291,6 @@ extern "C" void torch_infer_c_api(int flag){
 		print_debug();
 	#endif
 }
-
-
-
 /***********************************************************************************************/
 int memusage()
   {
@@ -1102,7 +1092,7 @@ extern "C" void substepGPU(int isubstep)
 #endif
 
   acDeviceSetInput(acGridGetDevice(), AC_step_num,(PC_SUB_STEP_NUMBER) (isubstep-1));
-  if(lshear && isubstep == 1) acDeviceSetInput(acGridGetDevice(), AC_shear_delta_y,deltay);
+  if (lshear && isubstep == 1) acDeviceSetInput(acGridGetDevice(), AC_shear_delta_y,deltay);
   Device dev = acGridGetDevice();
   //TP: done in this more complex manner to ensure the actually integrated time and the time reported by Pencil agree
   //if we call set_dt after the first timestep there would be slight shift in dt what Pencil sees and what is actually used for time integration
@@ -1397,11 +1387,11 @@ void setupConfig(AcMeshInfo& config)
   //dev->output.real_outputs[AC_maxchi]=0.;
 #endif
   acHostUpdateParams(&config); 
-  if(!ltraining) config.runtime_compilation_log_dst = "ac_compilation.log";
+  if (!ltraining) config.runtime_compilation_log_dst = "ac_compilation.log";
   char cwd[9000];
   cwd[0] = '\0';
   const char* err = getcwd(cwd, sizeof(cwd));
-  if(err == NULL) 
+  if (err == NULL) 
   {
 	  fprintf(stderr,"Was not able to get cwd!\n");
 	  exit(EXIT_FAILURE);
@@ -1522,32 +1512,32 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint)
 /**
 	{
 		#include "user_constants.h"
-		if(itauxx-1 != TAU.xx)
+		if (itauxx-1 != TAU.xx)
 		{
 			fprintf(stderr,"Mismatch of indeces for tauxx : %d,%d!!\n",itauxx,TAU.xx);
 			exit(EXIT_FAILURE);
 		}
-		if(itauxy-1 != TAU.xy)
+		if (itauxy-1 != TAU.xy)
 		{
 			fprintf(stderr,"Mismatch of indeces for tauxy !!\n");
 			exit(EXIT_FAILURE);
 		}
-		if(itauxz-1 != TAU.xz)
+		if (itauxz-1 != TAU.xz)
 		{
 			fprintf(stderr,"Mismatch of indeces for tauxz !!\n");
 			exit(EXIT_FAILURE);
 		}
-		if(itauyy-1 != TAU.yy)
+		if (itauyy-1 != TAU.yy)
 		{
 			fprintf(stderr,"Mismatch of indeces for tauyy!!\n");
 			exit(EXIT_FAILURE);
 		}
-		if(itauyz-1 != TAU.yz)
+		if (itauyz-1 != TAU.yz)
 		{
 			fprintf(stderr,"Mismatch of indeces for tauyz !!\n");
 			exit(EXIT_FAILURE);
 		}
-		if(itauzz-1 != TAU.zz)
+		if (itauzz-1 != TAU.zz)
 		{
 			fprintf(stderr,"Mismatch of indeces for tauzz !!\n");
 			exit(EXIT_FAILURE);
@@ -1573,11 +1563,11 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint)
       }
     }
     //TP: for now for training we have all slots filled since we might want to read TAU components to the host for calculating validation error
-    if(ltraining)
+    if (ltraining)
     {
     	for(int i = 0; i < NUM_VTXBUF_HANDLES; ++i)
     	{
-	   if(mesh.vertex_buffer[i] == NULL)
+	   if (mesh.vertex_buffer[i] == NULL)
 	   {
     	    	mesh.vertex_buffer[i] = (AcReal*)malloc(sizeof(AcReal)*mw);
 	   }
@@ -1985,7 +1975,7 @@ testBCs()
   				acGridTaskGraphHasPeriodicBoundcondsZ(rhs) 
 				;
   if (all_periodic && !lshear) return;
-  if(lshear) acLogFromRootProc(rank,"testBCS: deltay: %7e\n",deltay);
+  if (lshear) acLogFromRootProc(rank,"testBCS: deltay: %7e\n",deltay);
   auto bcs = acGetDSLTaskGraph(boundconds);
 
   AcMesh tmp_mesh_to_store;
