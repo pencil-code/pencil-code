@@ -1128,6 +1128,7 @@ void setupConfig(AcMeshInfo& config)
   modulepars(config);
   //TP: loads for non-cartesian derivatives
 #if TRANSPILATION
+  PCLoad(config, AC_shear,lshear);
   PCLoad(config, AC_inv_cyl_r,rcyl_mn1);
   PCLoad(config, AC_inv_r,r1_mn);
   PCLoad(config, AC_inv_sin_theta,sin1th);
@@ -1352,6 +1353,7 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint)
   if (rank==0 && ldebug) printf("memusage after store config= %f MBytes\n", memusage()/1024.);
   acGridSynchronizeStream(STREAM_ALL);
   if (rank==0 && ldebug) printf("memusage after store synchronize stream= %f MBytes\n", memusage()/1024.);
+  const auto train_graph = acGetDSLTaskGraph(train_prepare);
   acLogFromRootProc(rank, "DONE initializeGPU\n");
   fflush(stdout);
 
