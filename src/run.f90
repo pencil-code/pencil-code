@@ -1521,9 +1521,20 @@ call copy_addr(iaztest,p_par(1130)) ! int
 call copy_addr(iuztestpq,p_par(1132)) ! int
 call copy_addr(ihhtestpq,p_par(1133)) ! int
 call copy_addr(lread_all_vars_from_device,p_par(1134)) ! bool
+call copy_addr(enum_ascale_type,p_par(1135)) ! int
 
 call string_to_enum(enum_ascale_type,ascale_type)
-call copy_addr(enum_ascale_type,p_par(1135)) ! int
+call copy_addr_dble(unit_flux,p_par(1201))
+call copy_addr(iyh,p_par(1202)) ! int
+call copy_addr_dble(kappa_es,p_par(1209))
+call copy_addr(sqrt_ascale,p_par(1215))
+call copy_addr(iqrad,p_par(1217)) ! int
+call copy_addr(ikapparho,p_par(1218)) ! int
+call copy_addr(ikr_frad,p_par(1219)) ! int
+call copy_addr_dble(m_e,p_par(1222))
+call copy_addr(ip,p_par(1223))
+call copy_addr_dble(m_h,p_par(1224))
+call copy_addr_dble(sigmah_,p_par(1225))
 
 endsubroutine pushpars2c
 !***********************************************************************

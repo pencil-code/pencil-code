@@ -2083,6 +2083,35 @@ module EquationOfState
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call copy_addr(cs20,p_par(1))
+    call copy_addr(mu1_0,p_par(2))
+    call copy_addr(rgas,p_par(3))
+    call copy_addr(tt_ion,p_par(4))
+    call copy_addr(lntt_ion,p_par(5))
+    call copy_addr(rho_h,p_par(6))
+    call copy_addr(rho_e,p_par(7))
+    call copy_addr(rho_he,p_par(8))
+    call copy_addr(lnrho_h,p_par(9))
+    call copy_addr(lnrho_e,p_par(10))
+    call copy_addr(lnrho_he,p_par(11))
+    call copy_addr(xhe,p_par(12))
+    call copy_addr(rho0,p_par(13))
+    call copy_addr(lnrho0,p_par(14))
+    call copy_addr(lcalc_cp_full,p_par(15)) ! bool
+    call copy_addr(lss_as_aux,p_par(16)) ! bool
+    call copy_addr(lpp_as_aux,p_par(17)) ! bool
+    call copy_addr(lcs_as_aux,p_par(18)) ! bool
+    call copy_addr(lcp_as_aux,p_par(19)) ! bool
+    call copy_addr(lcv_as_aux,p_par(20)) ! bool
+    call copy_addr(lgamma_as_aux,p_par(21)) ! bool
+    call copy_addr(lnabad_as_aux,p_par(22)) ! bool
+    call copy_addr(ldelta_as_aux,p_par(23)) ! bool
+    call copy_addr(tt_ion_,p_par(24))
+    call copy_addr(lntt_ion_,p_par(25))
+    call copy_addr(rho_e_,p_par(26))
+    call copy_addr(lnrho_e_,p_par(27))
+    call copy_addr(ymetals,p_par(28))
+    call copy_addr(lhminus_opacity_correction,p_par(29)) ! bool
+    call copy_addr(kappa0,p_par(30))
 
     endsubroutine pushpars2c
 !***********************************************************************

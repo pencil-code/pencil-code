@@ -7654,6 +7654,74 @@ iloop:do i=1,size(list2)
           dst = enum_superconformal_string
         case('axel2: should not be here (eta) ... ')
           dst = enum_axel2Z_should_not_be_here_ZetaZ_ZZZ__string
+        case('gss')
+          dst = enum_gss_string
+        case('del2ss')
+          dst = enum_del2ss_string
+        case('get_gamma_etc')
+          dst = enum_get_gamma_etc_string
+        case('advec_crad2=')
+          dst = enum_advec_crad2Z_string
+        case('lte')
+          dst = enum_lte_string
+        case('eoscalc_farray')
+          dst = enum_eoscalc_farray_string
+        case('no such pencil size')
+          dst = enum_no_such_pencil_size_string
+        case('calculation of cs2')
+          dst = enum_calculation_of_cs2_string
+        case('two-colored')
+          dst = enum_twoZcolored_string
+        case('cos')
+          dst = enum_cos_string
+        case('b2')
+          dst = enum_b2_string
+        case('calc_srad_b2')
+          dst = enum_calc_srad_b2_string
+        case('no magnetic field available')
+          dst = enum_no_magnetic_field_available_string
+        case('b2+w2')
+          dst = enum_b2Zw2_string
+        case('calc_srad_w2')
+          dst = enum_calc_srad_w2_string
+        case('no velocity field available')
+          dst = enum_no_velocity_field_available_string
+        case('read_file')
+          dst = enum_read_file_string
+        case('source_function')
+          dst = enum_source_function_string
+        case('no such source_function_type: ')
+          dst = enum_no_such_source_function_typeZ__string
+        case('/srad.dat')
+          dst = enum_ZsradZdat_string
+        case('hminus')
+          dst = enum_hminus_string
+        case('total_rosseland_mean')
+          dst = enum_total_rosseland_mean_string
+        case('kappa_es')
+          dst = enum_kappa_es_string
+        case('kappa_cst')
+          dst = enum_kappa_cst_string
+        case('kapparho_cst')
+          dst = enum_kapparho_cst_string
+        case('kappa_kconst')
+          dst = enum_kappa_kconst_string
+        case('kappa_power_law')
+          dst = enum_kappa_power_law_string
+        case('kappa_double_power_law')
+          dst = enum_kappa_double_power_law_string
+        case('tsquare')
+          dst = enum_tsquare_string
+        case('kramers')
+          dst = enum_kramers_string
+        case('dust-infrared')
+          dst = enum_dustZinfrared_string
+        case('rad_ionization')
+          dst = enum_rad_ionization_string
+        case('opacity')
+          dst = enum_opacity_string
+        case('no such opacity_type: ')
+          dst = enum_no_such_opacity_typeZ__string
         case default
           dst = enum_unknown_string_string
         endselect
