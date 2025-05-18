@@ -9,62 +9,12 @@ Field3 UUMEAN
 
 Field6 TAU_INFERRED
 
-
-Stencil avgr1
+calc_uumean()
 {
-
-	[-1][-1][-1] = 1/27,
-	[-1][-1][0] = 1/27,
-	[-1][-1][1] = 1/27,
-
-	[-1][0][-1] = 1/27,
-	[-1][0][0] = 1/27,
-	[-1][0][1] = 1/27,
-
-	[-1][1][-1] = 1/27,
-	[-1][1][0] = 1/27,
-	[-1][1][1] = 1/27,
-
-
-
-	[0][-1][-1] = 1/27,
-	[0][-1][0] = 1/27,
-	[0][-1][1] = 1/27,
-
-	[0][0][-1] = 1/27,
-	[0][0][0] = 1/27,
-	[0][0][1] = 1/27,
-
-	[0][1][-1] = 1/27,
-	[0][1][0] = 1/27,
-	[0][1][1] = 1/27,
-
-
-
-	[1][-1][-1] = 1/27,
-	[1][-1][0] = 1/27,
-	[1][-1][1] = 1/27,
-
-	[1][0][-1] = 1/27,
-	[1][0][0] = 1/27,
-	[1][0][1] = 1/27,
-
-	[1][1][-1] = 1/27,
-	[1][1][0] = 1/27,
-	[1][1][1] = 1/27,
-
+	write(UUMEAN.x, gaussian_smooth(UUX))
+	write(UUMEAN.y, gaussian_smooth(UUY))
+	write(UUMEAN.z, gaussian_smooth(UUZ))
 }
-
-
-
-
-
-
-
-
-
-
-
 Kernel initial_tau(){
 	write(TAU.xx, UUX*UUX)
 	write(TAU.yy, UUY*UUY)
@@ -73,11 +23,12 @@ Kernel initial_tau(){
 	write(TAU.yz, UUY*UUZ)
 	write(TAU.xz, UUX*UUZ)
 
-	write(UUMEAN.x, gaussian_smooth(UUX))
-	write(UUMEAN.y, gaussian_smooth(UUY))
-	write(UUMEAN.z, UUZ)
+	calc_uumean()
+}
 
-
+Kernel uumean_kernel()
+{
+	calc_uumean()
 }
 
 
@@ -179,6 +130,9 @@ Kernel l2_sum(){
 
 Kernel descale_uumean(){
 	write(UUMEAN, train_descale(UUMEAN, minUUMEAN, maxUUMEAN))
+}
+ComputeSteps get_uumean(boundconds){
+	uumean_kernel()	
 }
 
 Kernel descale_tau(){

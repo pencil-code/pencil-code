@@ -269,6 +269,7 @@ extern "C" void torch_infer_c_api(int flag){
 		acGridSynchronizeStream(STREAM_ALL);
 
 
+	acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(get_uumean),1);
 
 
 	AcReal* out = NULL;
