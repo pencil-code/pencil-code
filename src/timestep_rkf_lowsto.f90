@@ -287,9 +287,10 @@ module Timestep
                   errmaxs = max(maxval(abs(errdf(:,m-nghost,n-nghost,j))/scal),errmaxs)
                 case ('rel_err')
                   !initial f state can be overwritten
-                  !TP: what is the meaning of taking the initial state into account like this?
-                  !    is it to remove unnecessary low timesteps or something like that?
                   scal = max(abs(f(l1:l2,m,n,j)),farraymin(j))
+                  !TP: farraymin not yet implemented on GPU so use the following to test against GPU implementation
+                  !TP: unclear to me how important this minimum bounding is and would we need it on the GPU also?
+                  !scal = max(abs(f(l1:l2,m,n,j)),dt_epsi)
                   errmaxs = max(maxval(abs(errdf(:,m-nghost,n-nghost,j))/scal),errmaxs)
                 case ('abs_err')
                   !initial f state can be overwritten
