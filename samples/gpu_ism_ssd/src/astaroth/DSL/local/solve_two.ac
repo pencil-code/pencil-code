@@ -1,6 +1,4 @@
 #include "../prerequisites.h"
-#include "../shock/kernels.ac"
-#
 
 auxiliary Field3 BETA_UU
 auxiliary Field3 BETA_AA
@@ -12,7 +10,17 @@ auxiliary Field3 ERROR_AA
 auxiliary Field  ERROR_RHO
 auxiliary Field  ERROR_SS
 
-//TP: tested 10-apr-2025 to work with the convection setup
+output real uux_initial_max
+output real uuy_initial_max
+output real uuz_initial_max
+       
+output real aax_initial_max
+output real aay_initial_max
+output real aaz_initial_max
+
+output real rho_initial_max
+output real ss_initial_max
+//TP: tested to work on 10-apr-2025
 Kernel twopass_solve_intermediate(PC_SUB_STEP_NUMBER step_num, real dt) {
   df_uu  = duu_dt(step_num)
   df_aa  = daa_dt(step_num)
@@ -89,21 +97,23 @@ Kernel twopass_solve_intermediate(PC_SUB_STEP_NUMBER step_num, real dt) {
 	write(RHO,rho_final)
 	write(SS ,ss_final)
 	
-        scal = max(abs(uu_final.x),AC_dt_epsi)
+	//TP: using dt_epsi instead of the initial maximums give the same answer on a small test problem
+        //TP: but for completeness have the other scheme here
+        real scal = max(abs(uu_final.x),uux_initial_max)
         maximum_error = max(abs(uu_error.x/scal),maximum_error)
-        scal = max(abs(uu_final.y),AC_dt_epsi)
+        scal = max(abs(uu_final.y),uuy_initial_max)
         maximum_error = max(abs(uu_error.y/scal),maximum_error)
-        scal = max(abs(uu_final.z),AC_dt_epsi)
+        scal = max(abs(uu_final.z),uuz_initial_max)
         maximum_error = max(abs(uu_error.z/scal),maximum_error)
-        scal = max(abs(aa_final.x),AC_dt_epsi)
+        scal = max(abs(aa_final.x),aax_initial_max)
         maximum_error = max(abs(aa_error.x/scal),maximum_error)
-        scal = max(abs(aa_final.y),AC_dt_epsi)
+        scal = max(abs(aa_final.y),aay_initial_max)
         maximum_error = max(abs(aa_error.y/scal),maximum_error)
-        scal = max(abs(aa_final.z),AC_dt_epsi)
+        scal = max(abs(aa_final.z),aaz_initial_max)
         maximum_error = max(abs(aa_error.z/scal),maximum_error)
-        scal = max(abs(rho_final),AC_dt_epsi)
+        scal = max(abs(rho_final),rho_initial_max)
         maximum_error = max(abs(rho_error/scal),maximum_error)
-        scal = max(abs(ss_final),AC_dt_epsi)
+        scal = max(abs(ss_final),ss_initial_max)
         maximum_error = max(abs(ss_error/scal),maximum_error)
   	reduce_max(maximum_error,AC_maximum_error)
 	/**
@@ -130,7 +140,7 @@ Kernel twopass_solve_intermediate(PC_SUB_STEP_NUMBER step_num, real dt) {
 
 //Kernel twopass_solve_intermediate(PC_SUB_STEP_NUMBER step_num, real dt) {
 //  write( UU, rk3_intermediate(previous(UU),  duu_dt(step_num), step_num, dt) )
-//  write( RHO, rk3_intermediate(previous(RHO),  dlnrho_dt(step_num), step_num, dt) )
+//  write( RHO, rk3_intermediate(previous(RHO),  drho_dt(step_num), step_num, dt) )
 //  write( SS, rk3_intermediate(previous(SS),  denergy_dt(step_num), step_num, dt) )
 //  write( AA, rk3_intermediate(previous(AA),  daa_dt(step_num), step_num, dt) )
 //}
