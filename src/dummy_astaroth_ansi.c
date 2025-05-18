@@ -50,7 +50,7 @@ void FTNIZE(torchtrain_c)(REAL* loss_val)
 	torch_train_c_api(loss_val);
 }
 
-void FTNIZE(torchinfer_c)(int flag)
+void FTNIZE(torchinfer_c)(int *flag)
 {
 	torch_infer_c_api(flag);
 }
@@ -192,3 +192,7 @@ void FTNIZE(gpu_set_dt_c)()
 	gpuSetDt();
 }
 /* ---------------------------------------------------------------------- */
+void FTNIZE(calcq_gpu_c)(int *idir, int *dir, int *stop, int *unit_vec, int *lperiodic)
+{
+}
+/* ------------------------------------------------------------------- */

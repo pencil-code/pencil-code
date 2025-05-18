@@ -58,7 +58,7 @@ void FTNIZE(torchtrain_c)(REAL* loss_val)
 	torch_train_c_api(loss_val);
 }
 /* ---------------------------------------------------------------------- */
-void FTNIZE(torchinfer_c)(int flag)
+void FTNIZE(torchinfer_c)(int *flag)
 {
 	torch_infer_c_api(flag);
 }
@@ -202,7 +202,7 @@ void FTNIZE(gpu_set_dt_c)()
   gpuSetDt();
 }
 /* ---------------------------------------------------------------------- */
-void FTNIZE(calcQ_gpu_c)(int3 *dir, int3 *stop, real *dlength, real3 *unit_vec, int *lperiodic){
+void FTNIZE(calcq_gpu_c)(int *idir, int3 *dir, int3 *stop, real3 *unit_vec, int *lperiodic){
  // performs ray integration along direction dir for all possible starting points in subdomain,
  // communication and final correction of Q 
 

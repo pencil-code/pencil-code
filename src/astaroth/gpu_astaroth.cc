@@ -279,7 +279,7 @@ float MSE(){
 #endif
 }
 /***********************************************************************************************/
-extern "C" void torch_infer_c_api(int flag){	
+extern "C" void torch_infer_c_api(int *flag){	
 #if TRAINING
 	#include "user_constants.h"
 	
