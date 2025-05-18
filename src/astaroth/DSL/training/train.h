@@ -111,6 +111,9 @@ Kernel scale(){
 	write(TAU, train_scale(TAU, minTau, maxTau))
 	write(UUMEAN, train_scale(UUMEAN, minUUMEAN, maxUUMEAN))
 }
+Kernel scale_uumean(){
+	write(UUMEAN, train_scale(UUMEAN, minUUMEAN, maxUUMEAN))
+}
 
 Kernel loss_calc(){
 }
@@ -150,9 +153,10 @@ Kernel sum_pred(){
 	
 	real sums = (sumxx * sumxx) + (sumyy * sumyy) + (sumzz * sumzz) + (sumxy * sumxy) + (sumyz * sumyz) + (sumxz * sumxz)
 }
-
-ComputeSteps subtract_pred(boundconds){
-	loss_calc()
+ComputeSteps get_uumean(boundconds){
+	uumean_kernel()	
+	reduction_tau()
+	//scale_uumean()
 }
 
 
