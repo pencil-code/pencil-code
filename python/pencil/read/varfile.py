@@ -402,9 +402,9 @@ class DataCube(object):
                     irange_x = (irange_x[0][0], irange_x[0][-1]+1)
                 else:
                     if not irange_x:
-                        irange_x = (0,dim.mx)
+                        irange_x = np.arange(tmp["settings/mx"][0])
                     else:
-                        irange_x = (max(irange_x[0],0),min(irange_x[1],dim.mx))
+                        irange_x = np.arange(max(irange_x[0],0),min(irange_x[1],tmp["settings/mx"][0]))
                 mx = irange_x[1]-irange_x[0]
                 x = (tmp["grid/x"][irange_x[0]:irange_x[1]]).astype(precision)
 
@@ -414,10 +414,10 @@ class DataCube(object):
                     irange_y = (irange_y[0][0], irange_y[0][-1]+1)
                 else:
                     if not irange_y:
-                        irange_y = (0,dim.my)
+                        irange_y = np.arange(tmp["settings/my"][0])
                     else:
-                        irange_y = (max(irange_y[0],0),min(irange_y[1],dim.my))
-
+                        irange_y = np.arange(max(irange_y[0],0),min(irange_y[1],tmp["settings/my"][0]))
+                        print("irange_y",type(irange_y), irange_y)
                 my = irange_y[1]-irange_y[0]
                 y = (tmp["grid/y"][irange_y[0]:irange_y[1]]).astype(precision)
 
@@ -427,9 +427,9 @@ class DataCube(object):
                     irange_z = (irange_z[0][0], irange_z[0][-1]+1)
                 else:
                     if not irange_z:
-                        irange_z = (0,dim.mz)
+                        irange_z = np.arange(tmp["settings/mz"][0])
                     else:
-                        irange_z = (max(irange_z[0],0),min(irange_z[1],dim.mz))
+                        irange_z = np.arange(max(irange_z[0],0),min(irange_z[1],tmp["settings/mz"][0]))
                 mz = irange_z[1]-irange_z[0]
                 z = (tmp["grid/z"][irange_z[0]:irange_z[1]]).astype(precision)
 
