@@ -136,7 +136,7 @@ astaroth_libs: $(PC_HEADERS)
                           $$PENCIL_HOME/src/astaroth/DSL/*.h \
 		          $$PENCIL_HOME/src/astaroth/submodule/acc-runtime/stdlib/*.h \
 			  $$PENCIL_HOME/src/astaroth/submodule/acc-runtime/stdlib/*/*.h \
-                          $(CWD)/src/astaroth/DSL/local/*.h \
+                          $(CWD)/DSL/local/*.h \
 			  |tr "\n" " "|sed -e's/, / /g'` $(EXT_KERNELS)" && \
 	echo "const char* cmake_options = \" -DEXT_SOURCES=$$ext_srcs -DDSL_MODULE_DIR=../$(DSL_MODULE_DIR) $(CMAKE_OPTIONS)\";" > cmake_options.h && \
 	mkdir -p submodule/build  && cd submodule/build && export LDFLAGS=""  &&  \

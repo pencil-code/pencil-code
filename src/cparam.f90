@@ -16,7 +16,6 @@ module Cparam
 !
   include 'cparam.local'
 !
-!
   integer, parameter :: nx=nxgrid/nprocx,ny=nygrid/nprocy,nz=nzgrid/nprocz,nyz=ny*nz
   integer, parameter :: max_n = max(nx,max(ny,nz))
   integer, parameter :: nxygrid=nxgrid*nygrid,nxzgrid=nxgrid*nzgrid,nyzgrid=nygrid*nzgrid

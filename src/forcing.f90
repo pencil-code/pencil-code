@@ -1191,14 +1191,14 @@ module Forcing
 !
 !  Useful logicals for GPU
 !
-    
     select case(iforce)
-        case ('helical', '2'); lforce_helical(1) = .true.
+      case ('helical', '2'); lforce_helical(1) = .true.
     endselect
     select case(iforce2)
-        case ('helical', '2'); lforce_helical(2) = .true.
+      case ('helical', '2'); lforce_helical(2) = .true.
     endselect
     lsecond_force = iforce2 /= 'zero'
+!
     endsubroutine initialize_forcing
 !***********************************************************************
     subroutine addforce(f)
@@ -5227,9 +5227,9 @@ module Forcing
 !***********************************************************************
     subroutine calc_counter_centrifugal(force,i)
 !
-!   4-aug-11/dhruba+axel: adapted from fluxring_cylindrical
-! Calculates the force required to counter the centrifugal force coming
-! from an existing differential rotation.
+!  4-aug-11/dhruba+axel: adapted from fluxring_cylindrical
+!  Calculates the force required to counter the centrifugal force coming
+!  from an existing differential rotation.
 !
       real, dimension (nx,3), intent(out):: force
       integer,                intent(in) :: i
@@ -5247,8 +5247,8 @@ module Forcing
 !***********************************************************************
     subroutine calc_GP_TC13(i,sp)
 !
-!   4-apr-22/hongzhe: The Galloway-Proctor forcing used in Tobias &
-! Cattaneo (2013). See also Appendix A of Pongkitiwanichakul+2016.
+!  4-apr-22/hongzhe: The Galloway-Proctor forcing used in Tobias &
+!  Cattaneo (2013). See also Appendix A of Pongkitiwanichakul+2016.
 !
       use General, only: random_number_wrapper
 !
@@ -5838,11 +5838,11 @@ module Forcing
           !force(:,i2d3)= 0.
           !TP: wrote out in full to help transpilation
           !TP: preserved l2dxz even though seems wrong in the sense that first second index is initialized and later zerod?
-          if(l2dxz) then
+          if (l2dxz) then
             force(:,2)=-fact*cos(k2d*x(l1:l2))*sin(k2d*y(m))
             force(:,1)=+fact*sin(k2d*x(l1:l2))*cos(k2d*y(m))
             force(:,2)= 0.
-          else if(l2dyz) then
+          else if (l2dyz) then
             force(:,3)=-fact*cos(k2d*x(l1:l2))*sin(k2d*y(m))
             force(:,2)=+fact*sin(k2d*x(l1:l2))*cos(k2d*y(m))
             force(:,1)= 0.
@@ -6182,7 +6182,6 @@ module Forcing
             siny(m,i)     * 2.*sin(phi_tidal) * sin(omega_ff*t) + &
             z(n)          * sin(phi_tidal)**2 * cos(omega_ff*t) )
 !
-!
 !  possibility of putting zero, e.g., for purely magnetic forcings
 !
       case('zero')
@@ -6401,7 +6400,6 @@ module Forcing
 !  write column where which forcing variable is stored
 !
       if (lwr) then
-!
       endif
 !
     endsubroutine rprint_forcing

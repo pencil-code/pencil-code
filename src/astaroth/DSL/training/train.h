@@ -1,17 +1,10 @@
-fixed_boundary Kernel twopass_solve_final(int step_num){
-  write( F_UU,  rk_final(F_UU, step_num) )
-  write( F_RHO, rk_final(F_RHO,step_num) )
-}
-
+#if LTRAINING
 communicated Field3 UUMEAN
-
-
-
+communicated Field6 TAU
 communicated Field6 TAU_INFERRED
 
-calc_uumean()
+Stencil avgr1
 {
-
 	[-1][-1][-1] = 1/27,
 	[-1][-1][0] = 1/27,
 	[-1][-1][1] = 1/27,
@@ -25,7 +18,6 @@ calc_uumean()
 	[-1][1][1] = 1/27,
 
 
-
 	[0][-1][-1] = 1/27,
 	[0][-1][0] = 1/27,
 	[0][-1][1] = 1/27,
@@ -37,9 +29,8 @@ calc_uumean()
 	[0][1][-1] = 1/27,
 	[0][1][0] = 1/27,
 	[0][1][1] = 1/27,
+
 	
-
-
 	[1][-1][-1] = 1/27,
 	[1][-1][0] = 1/27,
 	[1][-1][1] = 1/27,
@@ -51,18 +42,7 @@ calc_uumean()
 	[1][1][-1] = 1/27,
 	[1][1][0] = 1/27,
 	[1][1][1] = 1/27,
-
 }
-
-
-
-
-
-
-
-
-
-
 
 Kernel tau_uumean(){
 	write(TAU.xx, UUX*UUX)	
@@ -75,22 +55,22 @@ Kernel tau_uumean(){
 	write(UUMEAN.x, gaussian_smooth(UUX))
 	write(UUMEAN.y, gaussian_smooth(UUY))
 	write(UUMEAN.z, gaussian_smooth(UUZ))
-	
 }
-Kernel uumean_kernel()
-{
-	calc_uumean()
-}
-
 
 Kernel smooth_tau(){
-	write(TAU, gaussian_smooth(TAU))
+	//write(TAU, gaussian_smooth(TAU))
+	write(TAU.xx, gaussian_smooth(TAU.xx))
+	write(TAU.xy, gaussian_smooth(TAU.xy))
+	write(TAU.xz, gaussian_smooth(TAU.xz))
+	write(TAU.yy, gaussian_smooth(TAU.yy))
+	write(TAU.yz, gaussian_smooth(TAU.yz))
+	write(TAU.zz, gaussian_smooth(TAU.zz))
 }
 
 Kernel final_tau(){
-	 UX = UUMEAN.x
-	 UY = UUMEAN.y
-	 UZ = UUMEAN.z
+	UX = UUMEAN.x
+	UY = UUMEAN.y
+	UZ = UUMEAN.z
 
 	write(TAU.xx, -(UX*UX) + TAU.xx)
 	write(TAU.yy, -(UY*UY) + TAU.yy)
@@ -99,7 +79,6 @@ Kernel final_tau(){
 	write(TAU.yz, -(UY*UZ) + TAU.yz)
 	write(TAU.xz, -(UX*UZ) + TAU.xz)
 }
-
 
 output real minTau
 output real maxTau
@@ -118,12 +97,9 @@ Kernel reduce_uumean_tau(){
 	real minimumUUMEAN = min(UUMEAN.x, min(UUMEAN.y, UUMEAN.z))
 	reduce_min(minimumUUMEAN, minUUMEAN)
 
-
 	real maximumUUMEAN = max(UUMEAN.x, max(UUMEAN.y, UUMEAN.z))
 	reduce_max(maximumUUMEAN, maxUUMEAN)
-
 }
-
 
 train_descale(Field6 f, real minv, real maxv)
 {	
@@ -131,30 +107,22 @@ train_descale(Field6 f, real minv, real maxv)
 	return real6((value(f.xx) * max_min) + minv, (value(f.yy) * max_min) + minv, (value(f.zz) * max_min) + minv, (value(f.xy) * max_min) + minv,(value(f.yz) * max_min) + minv, (value(f.xz) * max_min) + minv)	
 }
 
-
 train_descale(Field3 f, real minv, real maxv)
 {	
 	real max_min = maxv-minv
 	return real3((value(f.x) * max_min) + minv, (value(f.y) * max_min) + minv, (value(f.z) * max_min ) + minv)
 }
 
-
-
 train_scale(Field6 f, real minv,  real maxv)
 {
 	real max_min = maxv-minv
-	return real6((value(f.xx) - minv) / max_min, (value(f.yy) - minv) / max_min, (value(f.zz) - minv) / max_min, (value(f.xy) - minv) / max_min, (value(f.yz) - minv) / max_min, (value(f.xz) - minv) / max_min) 
+	return real6((value(f.xx) - minv)/max_min, (value(f.yy) - minv)/max_min, (value(f.zz) - minv)/max_min, (value(f.xy) - minv)/max_min, (value(f.yz) - minv)/max_min, (value(f.xz) - minv)/max_min) 
 }
-
 
 train_scale(Field3 f, real minv,  real maxv)
 {
 	real max_min = maxv-minv
-
 	return real3((value(f.x) - minv) / max_min, (value(f.y) - minv) / max_min, (value(f.z) - minv) / max_min) 
-	
-
-	
 }
 
 Kernel scale(){
@@ -162,17 +130,16 @@ Kernel scale(){
 	write(UUMEAN, train_scale(UUMEAN, minUUMEAN, maxUUMEAN))
 }
 
-
 output real AC_l2_sum
 Kernel l2_sum(){
-   real res = 0.0
+   res = 0.0
    res +=  (TAU_INFERRED.xx - TAU.xx)*(TAU_INFERRED.xx - TAU.xx)
    res +=  (TAU_INFERRED.yy - TAU.yy)*(TAU_INFERRED.yy - TAU.yy)
    res +=  (TAU_INFERRED.zz - TAU.zz)*(TAU_INFERRED.zz - TAU.zz)
    res +=  (TAU_INFERRED.xy - TAU.xy)*(TAU_INFERRED.xy - TAU.xy)
    res +=  (TAU_INFERRED.yz - TAU.yz)*(TAU_INFERRED.yz - TAU.yz)
    res +=  (TAU_INFERRED.xz - TAU.zz)*(TAU_INFERRED.xz - TAU.zz)
-	 reduce_sum(res,AC_l2_sum)
+   reduce_sum(res,AC_l2_sum)
 }
 
 Kernel descale_uumean(){
@@ -198,16 +165,13 @@ Kernel sum_pred(){
 	real sums = (sumxx * sumxx) + (sumyy * sumyy) + (sumzz * sumzz) + (sumxy * sumxy) + (sumyz * sumyz) + (sumxz * sumxz)
 }
 
-
 ComputeSteps train_prepare(boundconds){
 	tau_uumean()
 	smooth_tau()
 	final_tau()
 
-
 	//reduce_uumean_tau()
 	//scale()
-
 }
 
 //ComputeSteps descale(boundconds){
@@ -216,3 +180,4 @@ ComputeSteps train_prepare(boundconds){
 	//descale_tau()
 
 //}
+#endif
