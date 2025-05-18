@@ -8,7 +8,6 @@
 !
   module Training
 
-
     use Cdata
     use General, only: itoa
     use Messages
@@ -18,7 +17,6 @@
                          torchfort_save_model,torchfort_result_success,torchfort_save_checkpoint,&
                          torchfort_inference,torchfort_train
     !use iso_c_binding
-
 
     implicit none
     include 'training.h'
@@ -36,7 +34,7 @@
 
     character(LEN=fnlen) :: model='model', config_file="config_mlp_native.yaml", model_file
 
-    logical :: lroute_via_cpu, lcpu_training=.true., luse_trained_tau, lwrite_sample=.false., lscale=.true.
+    logical :: lroute_via_cpu=.false., lfortran_launched, luse_trained_tau, lwrite_sample=.false., lscale=.true.
     real :: max_loss=1.e-4
 
     integer :: idiag_loss=0            ! DIAG_DOC: torchfort training loss
@@ -61,7 +59,7 @@
 
       character(LEN=fnlen) :: modelfn
 
-      lcpu_training = .not. lgpu .or. lroute_via_cpu
+      lfortran_launched = .not. lgpu .or. lroute_via_cpu
       if (lreloading) return
 
       if (.not.lhydro) call fatal_error('initialize_training','needs HYDRO module')
@@ -121,11 +119,10 @@ print*, 'ltrained, modelfn=', ltrained, modelfn
 
       luse_trained_tau = luse_trained_tau.and.ltrained
 
-      if (lrun .and. lcpu_training) then
-        allocate(input(mx, my, mz, 3, 1))
+      if (lrun .and. lfortran_launched) then
+        allocate(input (mx, my, mz, 3, 1))
         allocate(output(mx, my, mz, 6, 1))
-        allocate(label(mx, my, mz, 6, 1))
-print*, 'adresses:', loc(input), loc(output), loc(label)
+        allocate(label (mx, my, mz, 6, 1))
       endif
 
     endsubroutine initialize_training
@@ -174,13 +171,16 @@ print*, 'adresses:', loc(input), loc(output), loc(label)
       real, dimension (mx,my,mz,mfarray) :: f
 
       if (ltrained) then
+
         call infer(f)
-          ! Device to host
         if ((ldiagnos.or.lvideo).and.lfirst) then
           call calc_tau(f)
-          if (.not. lcpu_training) then
-          else
+          if (lfortran_launched) then
+!
+! Copy data from device to host.
+!
             f(:,:,:,itauxx:itauzz) = f(:,:,:,itauxx:itauzz) - output(:,:,:,:,1)
+          else
           endif
           tauerror = sum(f(l1:l2,m1:m2,n1:n2,itauxx:itauzz)**2)/nx
         else
@@ -194,23 +194,27 @@ print*, 'adresses:', loc(input), loc(output), loc(label)
 !***************************************************************
     subroutine infer(f)
     
-      use Gpu, only: get_ptr_gpu_for_training, infer_c
+      use Gpu, only: get_ptr_gpu, infer_gpu
       use Sub, only: smooth
 
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (:,:,:,:), pointer :: ptr_uu, ptr_tau
 
-      ! Host to device
-      if (lcpu_training) then
+      if (lfortran_launched) then
+!
+! Smooth velocity -> "mean".
+!
         uumean = f(:,:,:,iux:iuz)
         call smooth(uumean,1,3,lgauss=.true.)
-        input(:,:,:,:,1) = uumean    ! host to device
+!
+! Copy data from host to device.
+!
+        input(:,:,:,:,1) = uumean
         istat = torchfort_inference(model, input, output)
       else
-        !call get_ptr_gpu(ptr_uu,iux,iuz)
-        !call get_ptr_gpu(ptr_tau,tauxx,tauzz)
-        !istat = torchfort_inference(model, get_ptr_gpu_for_training(iux,iuz), get_ptr_gpu_for_training(itauxx,itauzz))
-        call infer_c(0)
+        !istat = torchfort_inference(model, get_ptr_gpu(iux,iuz,nbatch_training=1), &
+        !                                   get_ptr_gpu(itauxx,itauzz,nbatch_training=1))
+        call infer_gpu(0)
       endif
 
       if (istat /= TORCHFORT_RESULT_SUCCESS) &
@@ -238,23 +242,20 @@ print*, 'adresses:', loc(input), loc(output), loc(label)
 !***************************************************************
     subroutine train(f)
    
-      use Gpu, only: get_ptr_gpu_for_training, train_c, infer_c
-
+      use Gpu, only: get_ptr_gpu, train_gpu, infer_gpu
 
       real, dimension (mx,my,mz,mfarray) :: f
 
       if (it<it_train_start) return
 
       if (mod(it,it_train)==0) then
-
 !
-!  Smooth velocity.
-!
-        if (.not. lcpu_training) then
-         call infer_c(0)
+        if (.not. lfortran_launched) then
+         call infer_gpu(0)
           !TODO: smoothing/scaling etc. for uu and tau
-         !istat = torchfort_train(model, get_ptr_gpu_for_training(iux,iuz), get_ptr_gpu_for_training(itauxx,itauzz), train_loss)
-         call train_c(train_loss)
+         !istat = torchfort_train(model, get_ptr_gpu(iux,iuz,nbatch_training=1), &
+         !                               get_ptr_gpu(itauxx,itauzz,nbatch_training=1), train_loss)
+         call train_gpu(train_loss)
         else
           call calc_tau(f)
 !
@@ -314,7 +315,9 @@ print*, 'it,it_train_chkpt=', it,it_train_chkpt, trim(model),istat, trim(checkpo
       use Sub, only: smooth
 
       real, dimension (mx,my,mz,mfarray) :: f
-
+!
+!  Smooth velocity.
+!
       uumean = f(:,:,:,iux:iuz)
       call smooth(uumean,1,3,lgauss=.true.)
 !
@@ -328,7 +331,9 @@ print*, 'it,it_train_chkpt=', it,it_train_chkpt, trim(model),istat, trim(checkpo
       f(:,:,:,itauxz) = f(:,:,:,iux)*f(:,:,:,iuz)
 
       call smooth(f,itauxx,itauzz, lgauss=.true.)
-
+!
+!  Substract stresses from mean velocity.
+!
       f(:,:,:,itauxx) = -uumean(:,:,:,1)**2 + f(:,:,:,itauxx)
       f(:,:,:,itauyy) = -uumean(:,:,:,2)**2 + f(:,:,:,itauyy)
       f(:,:,:,itauzz) = -uumean(:,:,:,3)**2 + f(:,:,:,itauzz)
@@ -453,8 +458,9 @@ print*, 'it,it_train_chkpt=', it,it_train_chkpt, trim(model),istat, trim(checkpo
     endsubroutine rprint_training
 !***************************************************************
     subroutine finalize_training
-
-!  Saving trained model.
+!
+!  Save trained model.
+!
       if (.not.lstart) then
 print*, 'ltrained .or. .not. lckpt_written=', ltrained, lckpt_written
         if (ltrained .or. lckpt_written) then
@@ -462,7 +468,7 @@ print*, 'ltrained .or. .not. lckpt_written=', ltrained, lckpt_written
           if (istat /= TORCHFORT_RESULT_SUCCESS) &
             call fatal_error("finalize_training","when saving model: istat="//trim(itoa(istat)))
         endif
-        if (lcpu_training) deallocate(input,label,output)
+        if (lfortran_launched) deallocate(input,label,output)
       endif
 
     endsubroutine finalize_training
@@ -509,6 +515,7 @@ print*, 'ltrained .or. .not. lckpt_written=', ltrained, lckpt_written
     call copy_addr(itauyy,p_par(4)) ! int
     call copy_addr(itauyz,p_par(5)) ! int
     call copy_addr(itauzz,p_par(6)) ! int
+    call copy_addr(lscale,p_par(7)) ! bool
 
     endsubroutine pushpars2c
 !***********************************************************************
