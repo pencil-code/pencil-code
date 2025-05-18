@@ -155,6 +155,8 @@ extern "C" void torch_train_c_api(AcReal *loss_val){
 }
 
 float MSE(){
+	//TP: to Shreyas put this on comment until you commit the new DSL code in training/train.h
+	/**
 #if TRAINING
 	#include "user_constants.h"
 	
@@ -192,6 +194,9 @@ float MSE(){
 	
 	return (acDeviceGetOutput(acGridGetDevice(), AC_l2_sum))/(6*32*32*32);
 #endif
+	**/
+	//TP: for same reason a dummy return for now
+	return 0.0;
 }
 
 
@@ -1036,6 +1041,10 @@ calc_dt1_courant()
 #if TRANSPILATION
 	return acDeviceGetOutput(acGridGetDevice(),AC_dt1_max);
 #endif
+	//TP: temporary measure should not be done but at the moment we want to compile TG without TRANSPILATION=on
+#if TRAINING
+	return acDeviceGetOutput(acGridGetDevice(),AC_dt1_max);
+#endif
       AcReal maxadvec = 0.;
 #if LHYDRO
       maxadvec = acDeviceGetOutput(acGridGetDevice(), AC_maxadvec)/cdt;
@@ -1495,34 +1504,35 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint)
   fprintf(stderr,"INDEX OF TAU.xx: %d\n",acGetTAU_Xx());
 /**
 	{
-		if(itauxx != TAU.xx)
+		#include "user_constants.h"
+		if(itauxx-1 != TAU.xx)
 		{
-			fprintf(stderr,"Mismatch of indeces for tau components!!\n");
+			fprintf(stderr,"Mismatch of indeces for tauxx : %d,%d!!\n",itauxx,TAU.xx);
 			exit(EXIT_FAILURE);
 		}
-		if(itauxy != TAU.xy)
+		if(itauxy-1 != TAU.xy)
 		{
-			fprintf(stderr,"Mismatch of indeces for tau components!!\n");
+			fprintf(stderr,"Mismatch of indeces for tauxy !!\n");
 			exit(EXIT_FAILURE);
 		}
-		if(itauxz != TAU.xz)
+		if(itauxz-1 != TAU.xz)
 		{
-			fprintf(stderr,"Mismatch of indeces for tau components!!\n");
+			fprintf(stderr,"Mismatch of indeces for tauxz !!\n");
 			exit(EXIT_FAILURE);
 		}
-		if(itauyy != TAU.yy)
+		if(itauyy-1 != TAU.yy)
 		{
-			fprintf(stderr,"Mismatch of indeces for tau components!!\n");
+			fprintf(stderr,"Mismatch of indeces for tauyy!!\n");
 			exit(EXIT_FAILURE);
 		}
-		if(itauyz != TAU.yz)
+		if(itauyz-1 != TAU.yz)
 		{
-			fprintf(stderr,"Mismatch of indeces for tau components!!\n");
+			fprintf(stderr,"Mismatch of indeces for tauyz !!\n");
 			exit(EXIT_FAILURE);
 		}
-		if(itauzz != TAU.zz)
+		if(itauzz-1 != TAU.zz)
 		{
-			fprintf(stderr,"Mismatch of indeces for tau components!!\n");
+			fprintf(stderr,"Mismatch of indeces for tauzz !!\n");
 			exit(EXIT_FAILURE);
 		}
 	}

@@ -142,7 +142,7 @@ print*, 'ltrained, modelfn=', ltrained, modelfn
 !
 !  Indices to access tau.
 !
-      itauxx=itau; itauxy=itau+1; itauxz=itau+2; itauyy=itau+3; itauyz=itau+4; itauzz=itau+5
+      itauxx=itau; itauyy=itau+1; itauzz=itau+2; itauxy=itau+3; itauxz=itau+4; itauyz=itau+5
 
     endsubroutine register_training
 !***********************************************************************

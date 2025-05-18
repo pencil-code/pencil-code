@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [[ $3 == '' ]]; then
-  modname=`grep -m 1 '^ *module  *[a-zA-Z_]' $2 | sed -e's/module  *\([0-9a-zA-Z_]*\).*$/\L\1/'`
+  modname=`grep -m 1 '^ *module  *[a-zA-Z_]' $2 | sed -e's/ *module  *\([0-9a-zA-Z_]*\).*$/\L\1/'`
 else
   modname=$3
 fi
@@ -47,6 +47,7 @@ sed -n '
   /subroutine/ d
   /call  *keep_compiler/ d
   /use / d
+  /^ *!/ d
   /set_type *(/ d
   p
   }
@@ -176,9 +177,6 @@ if [ -f tmp1 ]; then
          s/^#define *\([a-zA-Z0-9_]*\) (( *\([a-zA-Z0-9_]*\) \*).*\/\/ *(\([a-zA-Z0-9_][a-zA-Z0-9_+\*\/-]*\)) *(\([a-zA-Z0-9_][a-zA-Z0-9_+\*\/-]*\)) *$/gmem real AC_\1[\3][\4] \/\/ from '$modname'\n#define \1 \AC_\1/
          s/^#define *\([a-zA-Z0-9_]*\) (( *\([a-zA-Z0-9_]*\) \*).*\/\/ *(\([a-zA-Z0-9_][a-zA-Z0-9_+\*\/-]*\)) *(\([a-zA-Z0-9_][a-zA-Z0-9_+\*\/-]*\)) *(\([a-zA-Z0-9_][a-zA-Z0-9_+\*\/-]*\)) *$/gmem real AC_\1[\3][\4][\5] \/\/ from '$modname'\n#define \1 \AC_\1/
          s/^#define *\([a-zA-Z0-9_]*\) (( *\([a-zA-Z0-9_]*\) \*).*\/\/ *(\([a-zA-Z0-9_][a-zA-Z0-9_+\*\/-]*\)) *(\([a-zA-Z0-9_][a-zA-Z0-9_+\*\/-]*\)) *(\([a-zA-Z0-9_][a-zA-Z0-9_+\*\/-]*\)) *(\([a-zA-Z0-9_][a-zA-Z0-9_+\*\/-]*\)) *$/gmem real AC_\1[\3][\4][\5][\6] \/\/ from '$modname'\n#define \1 \AC_\1/
-	 s/gmem real AC_x\[AC_mx\].*//
-	 s/gmem real AC_y\[AC_my\].*//
-	 s/gmem real AC_z\[AC_mz\].*//
          H
          : end
          $ {

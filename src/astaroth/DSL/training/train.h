@@ -1,8 +1,3 @@
-fixed_boundary Kernel twopass_solve_final(int step_num){
-  write( F_UU, rk_final(F_UU, step_num) )
-  write( F_RHO,rk_final(F_RHO,step_num) )
-}
-
 struct real6
 {
         real xx;
