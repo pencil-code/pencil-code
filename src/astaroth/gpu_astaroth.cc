@@ -1352,7 +1352,6 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint)
   if (rank==0 && ldebug) printf("memusage after store config= %f MBytes\n", memusage()/1024.);
   acGridSynchronizeStream(STREAM_ALL);
   if (rank==0 && ldebug) printf("memusage after store synchronize stream= %f MBytes\n", memusage()/1024.);
-  const auto train_graph = acGetDSLTaskGraph(train_prepare);
   acLogFromRootProc(rank, "DONE initializeGPU\n");
   fflush(stdout);
 
