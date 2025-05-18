@@ -1415,8 +1415,6 @@ reloadConfig()
   loadFarray();
 #endif
   acLogFromRootProc(rank, "DONE initializeGPU\n");
-  fflush(stdout);
-  fflush(stderr);
 }
 /***********************************************************************************************/
 void loadFarray()
