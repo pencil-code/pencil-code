@@ -129,40 +129,7 @@ void torch_inferCAPI(int sub_dims[3], float* input, float* label, bool dble=fals
 //void torch_createmodel(const char* name, const char* config_fname, MPI_Comm mpi_comm, int device);
 
 /***********************************************************************************************/
-extern "C" void copyFarray(AcReal* f)
-{
-  #include "user_constants.h"
-  /*
-  if (has_nans(mesh)){
-    acLogFromRootProc(rank,"found nans while copying\n");
-    exit(0);
-  }
-  */
-  AcMesh mesh_to_copy;
-  size_t offset = 0;
-  for (int i = 0; i < NUM_VTXBUF_HANDLES; ++i)
-  {
-    mesh_to_copy.vertex_buffer[VertexBufferHandle(i)] = &f[offset];
-//printf("mesh %d %p \n",i, mesh.vertex_buffer[VertexBufferHandle(i)]);
-    offset += mw;
-  }
-  mesh_to_copy.info = mesh.info;
-
-  acGridSynchronizeStream(STREAM_ALL);
-  //acDeviceStoreMesh(acGridGetDevice(), STREAM_DEFAULT, &mesh_to_copy);
-  //acDeviceStoreMesh(acGridGetDevice(), STREAM_DEFAULT, &mesh);
-  //TP: for now only copy the advanced fields back
-  //TODO: should auxiliaries needed on the GPU like e.g. Shock be copied? They can always be recomputed on the host if needed
-  //If doing training we read all since we might want TAU components to calculate e.g. validation error
-  const int end = ltraining ? NUM_VTXBUF_HANDLES : 
-	  	  AC_lread_all_vars_from_device ? mfarray : mvar;
-
-  for (int i = 0; i < end; ++i)
-  {
-	  acDeviceStoreVertexBuffer(acGridGetDevice(),STREAM_DEFAULT,VertexBufferHandle(i),&mesh);
-  }
-  acGridSynchronizeStream(STREAM_ALL);
-}
+extern "C" void copyFarray(AcReal* f);
 /***********************************************************************************************/
 void print_debug() {
 #if TRAINING
@@ -1419,6 +1386,41 @@ void setupConfig(AcMeshInfo& config)
 #undef x
 #undef y
 #undef z
+/***********************************************************************************************/
+void copyFarray(AcReal* f)
+{
+  #include "user_constants.h"
+  /*
+  if (has_nans(mesh)){
+    acLogFromRootProc(rank,"found nans while copying\n");
+    exit(0);
+  }
+  */
+  AcMesh mesh_to_copy;
+  size_t offset = 0;
+  for (int i = 0; i < NUM_VTXBUF_HANDLES; ++i)
+  {
+    mesh_to_copy.vertex_buffer[VertexBufferHandle(i)] = &f[offset];
+//printf("mesh %d %p \n",i, mesh.vertex_buffer[VertexBufferHandle(i)]);
+    offset += mw;
+  }
+  mesh_to_copy.info = mesh.info;
+
+  acGridSynchronizeStream(STREAM_ALL);
+  //acDeviceStoreMesh(acGridGetDevice(), STREAM_DEFAULT, &mesh_to_copy);
+  //acDeviceStoreMesh(acGridGetDevice(), STREAM_DEFAULT, &mesh);
+  //TP: for now only copy the advanced fields back
+  //TODO: should auxiliaries needed on the GPU like e.g. Shock be copied? They can always be recomputed on the host if needed
+  //If doing training we read all since we might want TAU components to calculate e.g. validation error
+  const int end = ltraining ? NUM_VTXBUF_HANDLES : 
+	  	  lread_all_vars_from_device ? mfarray : mvar;
+
+  for (int i = 0; i < end; ++i)
+  {
+	  acDeviceStoreVertexBuffer(acGridGetDevice(),STREAM_DEFAULT,VertexBufferHandle(i),&mesh);
+  }
+  acGridSynchronizeStream(STREAM_ALL);
+}
 /***********************************************************************************************/
 void checkConfig(AcMeshInfo &config)
 {
