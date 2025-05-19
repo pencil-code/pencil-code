@@ -1063,10 +1063,6 @@ calc_dt1_courant()
 #if TRANSPILATION
 	return acDeviceGetOutput(acGridGetDevice(),AC_dt1_max);
 #endif
-	//TP: temporary measure should not be done but at the moment we want to compile TG without TRANSPILATION=on
-#if TRAINING
-	return acDeviceGetOutput(acGridGetDevice(),AC_dt1_max);
-#endif
       AcReal maxadvec = 0.;
 #if LHYDRO
       maxadvec = acDeviceGetOutput(acGridGetDevice(), AC_maxadvec)/cdt;
@@ -1076,10 +1072,7 @@ calc_dt1_courant()
 #if LENTROPY
       maxchi_dyn = acDeviceGetOutput(acGridGetDevice(), AC_maxchi);
 #endif
-      //fprintf(stderr, "HMM MAX ADVEC, DIFFUS: %14e, %14e\n",maxadvec,max_diffus());
       return (AcReal)sqrt(pow(maxadvec, 2) + pow(max_diffus(maxchi_dyn), 2));
-      //acDeviceSetInput(acGridGetDevice(),AC_dt,dt);
-      //if (rank==0) printf("rank, maxadvec, maxdiffus, dt1_= %d %e %e %e \n", rank, maxadvec,max_diffus(maxchi_dyn), dt1_);
 }
 /***********************************************************************************************/
 AcReal
