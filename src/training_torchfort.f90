@@ -100,11 +100,9 @@
           call information('initialize_training','TORCHFORT MODEL "'//trim(modelfn)//'" LOADED SUCCESFULLY')
         endif
       else
-        !if (file_exists(trim(checkpoint_output_dir)//'/'//trim(model)//'.pt')) then
-        if (file_exists(trim(checkpoint_output_dir)//'/model.pt')) then
-
-          !istat = torchfort_load_checkpoint(trim(model), trim(checkpoint_output_dir), train_step_ckpt, val_step_ckpt)
-          istat = torchfort_load_checkpoint('model', trim(checkpoint_output_dir), train_step_ckpt, val_step_ckpt)
+        if (file_exists(trim(checkpoint_output_dir)//'/'//trim(model)//'.pt')) then
+          
+          istat = torchfort_load_checkpoint(trim(model), trim(checkpoint_output_dir), train_step_ckpt, val_step_ckpt)
           if (istat /= TORCHFORT_RESULT_SUCCESS) then
             call fatal_error("initialize_training","when loading checkpoint: istat="//trim(itoa(istat)))
           else
@@ -211,7 +209,7 @@
       else
         !istat = torchfort_inference(model, get_ptr_gpu(iux,iuz,nbatch_training=1), &
         !                                   get_ptr_gpu(itauxx,itauzz,nbatch_training=1))
-        call infer_gpu(0)
+        call infer_gpu(1)
       endif
 
       if (istat /= TORCHFORT_RESULT_SUCCESS) &
@@ -253,6 +251,7 @@
           !TODO: smoothing/scaling etc. for uu and tau
          !istat = torchfort_train(model, get_ptr_gpu(iux,iuz,nbatch_training=1), &
          !                               get_ptr_gpu(itauxx,itauzz,nbatch_training=1), train_loss)
+         !print*, 'calling train'
          call train_gpu(train_loss)
         else
           call calc_tau(f)

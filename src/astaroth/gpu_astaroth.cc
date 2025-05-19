@@ -133,12 +133,6 @@ extern "C" void torch_createmodel(const char* name, const char* config_fname, MP
 void print_debug() {
     #if TRAINING
     #include "user_constants.h"
-	/*	
-    auto temp = acGetOptimizedDSLTaskGraph(descale);
-    acGridSynchronizeStream(STREAM_ALL);
-    acGridExecuteTaskGraph(temp, 1);
-    acGridSynchronizeStream(STREAM_ALL);
-*/
 
 		std::ofstream myFile;
 		std::string fileString = "slices/slices_" + std::to_string(counter) + ".csv";	
@@ -154,8 +148,7 @@ void print_debug() {
         return acVertexBufferIdx(x, y, z, mesh.info);
     };
 
-    AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
-	
+  	
 
     for (size_t i = dims.m0.x; i < dims.m1.x; i++) {
         for (size_t j = dims.m0.y; j < dims.m1.y; j++) {
@@ -183,7 +176,7 @@ void print_debug() {
             }
         }
     }
-    #endif
+	#endif
 }
 
 
@@ -194,10 +187,39 @@ extern "C" void torch_train_c_api(AcReal *loss_val){
 
 	std::cout << "Counter is: " << counter << "\n"; 
 	
-
-	auto temp = acGetOptimizedDSLTaskGraph(train_prepare);
+	
+	auto calc_uumean_tau = acGetOptimizedDSLTaskGraph(initialize_uumean_tau);
 	acGridSynchronizeStream(STREAM_ALL);
-	acGridExecuteTaskGraph(temp,1);
+	acGridExecuteTaskGraph(calc_uumean_tau, 1);
+	acGridSynchronizeStream(STREAM_ALL);
+
+  auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
+	acGridSynchronizeStream(STREAM_ALL);
+	acGridExecuteTaskGraph(bcs,1);
+	acGridSynchronizeStream(STREAM_ALL);
+
+	if(counter == 0){
+		auto calc_scale = acGetOptimizedDSLTaskGraph(calc_scaling);
+		acGridSynchronizeStream(STREAM_ALL);
+		acGridExecuteTaskGraph(calc_scale, 1);
+		acGridSynchronizeStream(STREAM_ALL);
+
+		
+  	bcs = acGetOptimizedDSLTaskGraph(boundconds);	
+		acGridSynchronizeStream(STREAM_ALL);
+		acGridExecuteTaskGraph(bcs,1);
+		acGridSynchronizeStream(STREAM_ALL);
+	}
+	
+	auto scale_uumean_tau = acGetOptimizedDSLTaskGraph(scale);
+	acGridSynchronizeStream(STREAM_ALL);
+	acGridExecuteTaskGraph(scale_uumean_tau, 1);
+	acGridSynchronizeStream(STREAM_ALL);
+
+
+  bcs = acGetOptimizedDSLTaskGraph(boundconds);	
+	acGridSynchronizeStream(STREAM_ALL);
+	acGridExecuteTaskGraph(bcs,1);
 	acGridSynchronizeStream(STREAM_ALL);
 
 	AcReal* out = NULL;
@@ -209,10 +231,7 @@ extern "C" void torch_train_c_api(AcReal *loss_val){
 	acDeviceGetVertexBufferPtrs(acGridGetDevice(), TAU.xx, &TAU_ptr, &out);
 	acDeviceGetVertexBufferPtrs(acGridGetDevice(), UUMEAN.x, &uumean_ptr, &out);
 	
-  auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
-	acGridSynchronizeStream(STREAM_ALL);
-	acGridExecuteTaskGraph(bcs,1);
-	acGridSynchronizeStream(STREAM_ALL);
+
 	float avgloss = 0;
 
 	for(int batch = 0; batch<5; batch++){
@@ -227,25 +246,31 @@ extern "C" void torch_train_c_api(AcReal *loss_val){
 float MSE(){
 #if TRAINING
 	#include "user_constants.h"
+
+
+	auto descale_uumean_tau = acGetOptimizedDSLTaskGraph(descale);
+	acGridSynchronizeStream(STREAM_ALL);
+	acGridExecuteTaskGraph(descale_uumean_tau, 1);
+	acGridSynchronizeStream(STREAM_ALL);
+
 	
-	auto temp = acGetOptimizedDSLTaskGraph(calc_validation_loss);
-	acGridSynchronizeStream(STREAM_ALL);
-	acGridExecuteTaskGraph(temp,1);
-	acGridSynchronizeStream(STREAM_ALL);
-
-
   auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
 	acGridSynchronizeStream(STREAM_ALL);
 	acGridExecuteTaskGraph(bcs,1);
 	acGridSynchronizeStream(STREAM_ALL);
 
-	const auto DEVICE_VTXBUF_IDX = [&](const int x, const int y, const int z)
-					{
-						return acVertexBufferIdx(x, y, z, mesh.info);
-					};
-	AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
 
-	copyFarray(NULL);
+
+	auto calc_infered_loss = acGetOptimizedDSLTaskGraph(calc_validation_loss);
+	acGridSynchronizeStream(STREAM_ALL);
+	acGridExecuteTaskGraph(calc_infered_loss, 1);
+	acGridSynchronizeStream(STREAM_ALL);
+
+  bcs = acGetOptimizedDSLTaskGraph(boundconds);	
+	acGridSynchronizeStream(STREAM_ALL);
+	acGridExecuteTaskGraph(bcs,1);
+	acGridSynchronizeStream(STREAM_ALL);
+
 
 	return (acDeviceGetOutput(acGridGetDevice(), AC_l2_sum))/(6*32*32*32);
 #else
@@ -256,9 +281,26 @@ extern "C" void torch_infer_c_api(int flag){
 #if TRAINING
 	#include "user_constants.h"
 	
-		auto temp = acGetOptimizedDSLTaskGraph(train_prepare);
+		auto calc_uumean_tau = acGetOptimizedDSLTaskGraph(initialize_uumean_tau);
 		acGridSynchronizeStream(STREAM_ALL);
-		acGridExecuteTaskGraph(temp,1);
+		acGridExecuteTaskGraph(calc_uumean_tau, 1);
+		acGridSynchronizeStream(STREAM_ALL);
+
+  	auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
+		acGridSynchronizeStream(STREAM_ALL);
+		acGridExecuteTaskGraph(bcs,1);
+		acGridSynchronizeStream(STREAM_ALL);
+
+
+
+		auto scale_uumean_tau = acGetOptimizedDSLTaskGraph(scale);
+		acGridSynchronizeStream(STREAM_ALL);
+		acGridExecuteTaskGraph(scale_uumean_tau, 1);
+		acGridSynchronizeStream(STREAM_ALL);
+
+  	bcs = acGetOptimizedDSLTaskGraph(boundconds);	
+		acGridSynchronizeStream(STREAM_ALL);
+		acGridExecuteTaskGraph(bcs,1);
 		acGridSynchronizeStream(STREAM_ALL);
 
 
@@ -270,23 +312,11 @@ extern "C" void torch_infer_c_api(int flag){
 		acDeviceGetVertexBufferPtrs(acGridGetDevice(), TAU_INFERRED.xx, &tau_infer_ptr, &out);
 		acDeviceGetVertexBufferPtrs(acGridGetDevice(), UUMEAN.x, &uumean_ptr, &out);
 
-	
-	
-  	auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
-		acGridSynchronizeStream(STREAM_ALL);
-		acGridExecuteTaskGraph(bcs,1);
-		acGridSynchronizeStream(STREAM_ALL);
-
 		torch_inferCAPI(uumean_ptr, tau_infer_ptr);
 		
 
 		float vloss = MSE();
-		
-		
-  	bcs = acGetOptimizedDSLTaskGraph(boundconds);	
-		acGridSynchronizeStream(STREAM_ALL);
-		acGridExecuteTaskGraph(bcs,1);
-		acGridSynchronizeStream(STREAM_ALL);
+  	
 
 		printf("Validation error is: %f\n", vloss);
 		print_debug();
