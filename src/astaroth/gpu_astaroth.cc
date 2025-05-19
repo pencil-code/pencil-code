@@ -232,11 +232,7 @@ extern "C" void torch_train_c_api(AcReal *loss_val){
 
 	float avgloss = 0;
 	for (int batch = 0; batch<5; batch++){
-		torch_trainCAPI((int[]){mx,my,mz}, uumean_ptr, TAU_ptr, loss_val
-#if DOUBLE_PRECISION
-                                , true
-#endif
-                               );
+		torch_trainCAPI((int[]){mx,my,mz}, uumean_ptr, TAU_ptr, loss_val, AC_DOUBLE_PRECISION);
 		avgloss = avgloss + *loss_val;
 	}
 	printf("Loss after training: %f\n", avgloss/5);
@@ -313,7 +309,7 @@ extern "C" void torch_infer_c_api(int *flag){
 	acDeviceGetVertexBufferPtrs(acGridGetDevice(), UUMEAN.x, &uumean_ptr, &out);
 
 		
-	torch_inferCAPI((int[]){mx,my,mz}, uumean_ptr, tau_infer_ptr,DOUBLE_PRECISION);
+	torch_inferCAPI((int[]){mx,my,mz}, uumean_ptr, tau_infer_ptr, AC_DOUBLE_PRECISION);
 
 	float vloss = MSE();
   	
