@@ -47,9 +47,6 @@ else
   CMAKE_PACKED = OFF
 endif
 
-#for now set packed data transfers off
-CMAKE_PACKED=OFF
-
 CMAKE_SINGLEPASS = OFF
 OBJECTS = $(SOURCES:.cc=.o) 
 
@@ -80,25 +77,27 @@ CHEADERS = ../cparam_c.h ../cdata_c.h ../boundcond_c.h ../defines_cdata.h ../for
 # Pencil Code related C headers in . (pencil-code/src/astaroth)
 PCHEADER_DIR = .
 PC_HEADERS = $(PCHEADER_DIR)/PC_moduleflags.h $(PCHEADER_DIR)/PC_module_parfuncs.h $(PCHEADER_DIR)/PC_modulepars.h 
-RUNTIME_COMPILATION       ?= off
-TRAINING                  ?= notraining
-CMAKE_TRAINING_VALUE      ?= off
-TRANSPILATION             ?= off
-INLINING                  ?= off
-READ_OVERRIDES            ?= off
-ELIMINATE_CONDITIONALS    ?= $(TRANSPILATION)
-OPTIMIZE_INPUT_PARAMS     ?= on
+
+RUNTIME_COMPILATION      ?= off
+TRAINING                 ?= notraining
+CMAKE_TRAINING_VALUE     ?= off
+TRANSPILATION            ?= off
+INLINING                 ?= off
+READ_OVERRIDES           ?= off
+ELIMINATE_CONDITIONALS   ?= $(TRANSPILATION)
+OPTIMIZE_INPUT_PARAMS    ?= on
 
 ifeq ($(RUNTIME_COMPILATION),on) 
-	CMAKE_BUILD_TYPE          ?= RelWithDebInfo
+	CMAKE_BUILD_TYPE ?= RelWithDebInfo
 endif
 ifeq ($(RUNTIME_COMPILATION),ON) 
-	CMAKE_BUILD_TYPE          ?= RelWithDebInfo
+	CMAKE_BUILD_TYPE ?= RelWithDebInfo
 endif
 
 ifeq ($(TRAINING),training_torchfort) 
 	SUPPRESS_COMPILER_WARNINGS = on
 	CMAKE_TRAINING_VALUE = on
+        SOURCES += torch.cc
 endif
 
 CMAKE_BUILD_TYPE          ?= Debug

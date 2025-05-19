@@ -2326,20 +2326,45 @@ module Initcond
       fac1=sqrt(2.)*ampl*k/kf
       fac2=sqrt(2.)*ampl*relhel
 !
-      j=i+0; f(:,:,:,j)=f(:,:,:,j)-fac1*spread(spread(cos(k*x),2,my),3,mz)&
-                                       *spread(spread(sin(k*y),1,mx),3,mz)
+      if (flowtype=='I-shift' .or. flowtype=='II-shift') then
 !
-      j=i+1; f(:,:,:,j)=f(:,:,:,j)+fac1*spread(spread(sin(k*x),2,my),3,mz)&
-                                       *spread(spread(cos(k*y),1,mx),3,mz)
+!  shifted by 90 degrees in the x and y directions
 !
-      if (flowtype=='I') then
-        j=i+2; f(:,:,:,j)=f(:,:,:,j)+fac2*spread(spread(cos(k*x),2,my),3,mz)&
+        j=i+0; f(:,:,:,j)=f(:,:,:,j)+fac1*spread(spread(sin(k*x),2,my),3,mz)&
                                          *spread(spread(cos(k*y),1,mx),3,mz)
-      elseif (flowtype=='II') then
-        j=i+2; f(:,:,:,j)=f(:,:,:,j)+fac2*spread(spread(sin(k*x),2,my),3,mz)&
+!
+        j=i+1; f(:,:,:,j)=f(:,:,:,j)-fac1*spread(spread(cos(k*x),2,my),3,mz)&
                                          *spread(spread(sin(k*y),1,mx),3,mz)
+!
+        if (flowtype=='I-shift') then
+          j=i+2; f(:,:,:,j)=f(:,:,:,j)+fac2*spread(spread(sin(k*x),2,my),3,mz)&
+                                           *spread(spread(sin(k*y),1,mx),3,mz)
+        elseif (flowtype=='II-shift') then
+          j=i+2; f(:,:,:,j)=f(:,:,:,j)+fac2*spread(spread(cos(k*x),2,my),3,mz)&
+                                           *spread(spread(cos(k*y),1,mx),3,mz)
+        else
+          call fatal_error('robertsflow','no such flowtype')
+        endif
       else
-        call fatal_error('robertsflow','no such flowtype')
+!
+!  original, where field = curl(phi*zz)+phi*zz and curl(phi*zz)+tilde(phi)*zz
+!  with phi=cosk0x*cosk0y for flows I and II, respectively.
+!
+        j=i+0; f(:,:,:,j)=f(:,:,:,j)-fac1*spread(spread(cos(k*x),2,my),3,mz)&
+                                         *spread(spread(sin(k*y),1,mx),3,mz)
+!
+        j=i+1; f(:,:,:,j)=f(:,:,:,j)+fac1*spread(spread(sin(k*x),2,my),3,mz)&
+                                         *spread(spread(cos(k*y),1,mx),3,mz)
+!
+        if (flowtype=='I') then
+          j=i+2; f(:,:,:,j)=f(:,:,:,j)+fac2*spread(spread(cos(k*x),2,my),3,mz)&
+                                           *spread(spread(cos(k*y),1,mx),3,mz)
+        elseif (flowtype=='II') then
+          j=i+2; f(:,:,:,j)=f(:,:,:,j)+fac2*spread(spread(sin(k*x),2,my),3,mz)&
+                                           *spread(spread(sin(k*y),1,mx),3,mz)
+        else
+          call fatal_error('robertsflow','no such flowtype')
+        endif
       endif
 !
     endsubroutine robertsflow
@@ -6174,8 +6199,8 @@ module Initcond
 !
       if (ampl==0.) then
         if (lroot) print*,'bunch_davies: set variables to zero; i1a,i1b,i2a,i2b=',i1a,i1b,i2a,i2b
-        f(:,:,:,i1a:i1b) = 0.
-        f(:,:,:,i2a:i2b) = 0.
+        !f(:,:,:,i1a:i1b) = 0.
+        !f(:,:,:,i2a:i2b) = 0.
         return
       endif
 !
@@ -6258,9 +6283,9 @@ module Initcond
 !  Put cutoff at kpeak in v_im.
 !
       where(k1>=kpeak)
-        v_im(:,:,:,1)=0.
-        v_im(:,:,:,2)=0.
-        v_im(:,:,:,3)=0.
+        v_im(:,:,:,1)=v_im(:,:,:,1)*(kpeak/k1)**3
+        v_im(:,:,:,2)=v_im(:,:,:,2)*(kpeak/k1)**3
+        v_im(:,:,:,3)=v_im(:,:,:,3)*(kpeak/k1)**3
       endwhere
 !
 !  Compute Bunch-Davies vacuum, A = e^(-i*k*eta)/sqrt(2*k), so
@@ -6283,8 +6308,8 @@ module Initcond
 !
 !  Use real parts of u and v for A and E.
 !
-      f(l1:l2,m1:m2,n1:n2,i1a:i1b)=u_re
-      f(l1:l2,m1:m2,n1:n2,i2a:i2b)=v_re
+      f(l1:l2,m1:m2,n1:n2,i1a:i1b)=f(l1:l2,m1:m2,n1:n2,i1a:i1b)+u_re
+      f(l1:l2,m1:m2,n1:n2,i2a:i2b)=f(l1:l2,m1:m2,n1:n2,i2a:i2b)+v_re
 !
 !  Deallocate arrays.
 !

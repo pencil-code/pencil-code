@@ -48,7 +48,7 @@ module Special
   real :: cutoff_a0=0.0, ncutoff_a0=0.0, kpeak_a0=0.0
   real :: relhel_a0=0.0, kgaussian_a0=0.0, eta_ee=0.0
   real :: sigE_prefactor=1., sigB_prefactor=1.
-  real :: weight_longitudinalE=2.0
+  real :: weight_longitudinalE=2.0, mass_chi=0.
   logical :: luse_scale_factor_in_sigma=.false.
   logical, pointer :: lohm_evolve
   real, pointer :: eta, Hscript, echarge, sigEm_all, sigBm_all
@@ -61,8 +61,8 @@ module Special
   logical :: lcollinear_EB=.false., lcollinear_EB_aver=.false.
   logical :: leedot_as_aux=.false., lcurlyA=.true., lsolve_chargedensity=.false.
   logical :: ldivE_as_aux=.false., lsigE_as_aux=.false., lsigB_as_aux=.false.
-  logical :: lrandom_ampl_ee=.false., lfixed_phase_ee=.false.
-  logical :: lswitch_off_divJ=.false., lswitch_off_Gamma=.false.
+  logical :: lrandom_ampl_ee=.false., lfixed_phase_ee=.false., lallow_bprime_zero=.false.
+  logical :: lswitch_off_divJ=.false., lswitch_off_Gamma=.false., lmass_suppression=.false.
   character(len=50) :: inita0='zero'
   character (len=labellen), dimension(ninit) :: initee='nothing'
 !
@@ -93,7 +93,8 @@ module Special
     weight_longitudinalE, lswitch_off_divJ, lswitch_off_Gamma, &
     lnoncollinear_EB, lnoncollinear_EB_aver, luse_scale_factor_in_sigma, &
     lcollinear_EB, lcollinear_EB_aver, sigE_prefactor, sigB_prefactor, &
-    reinitialize_ee, initee, rescale_ee
+    reinitialize_ee, initee, rescale_ee, lmass_suppression, mass_chi, &
+    lallow_bprime_zero
 !
 ! Declare any index variables necessary for main or
 !
@@ -198,6 +199,9 @@ module Special
       call put_shared_variable('lcollinear_EB_aver',lcollinear_EB_aver)
       call put_shared_variable('lnoncollinear_EB',lnoncollinear_EB)
       call put_shared_variable('lnoncollinear_EB_aver',lnoncollinear_EB_aver)
+      call put_shared_variable('lmass_suppression',lmass_suppression)
+      call put_shared_variable('lallow_bprime_zero',lallow_bprime_zero)
+      call put_shared_variable('mass_chi',mass_chi)
 !
       if (lroot) call svn_id( &
            "$Id$")
@@ -465,10 +469,10 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: tmp
+      real, dimension (nx) :: tmp, mass_suppression_fact, tanh_term
       integer :: i,j,k
 !
-      intent(in) :: f
+      intent(inout) :: f
       intent(inout) :: p
 !
 !  Pencil for charge density.
@@ -501,6 +505,7 @@ module Special
 !  This is for the *spatially dependent* sigE and sigB.
 !  The averaged ones are computed in backreact_infl.f90.
 !  Any change to the code must be the same both here and there.
+!  Location 1 for conductivity.
 !
       if (lnoncollinear_EB .or. lnoncollinear_EB_aver &
         .or. lcollinear_EB .or. lcollinear_EB_aver) then
@@ -509,17 +514,37 @@ module Special
           p%gam_EB=sqrt21*sqrt(1.+(p%e2+p%b2)/p%boost)
           p%eprime=sqrt21*sqrt(p%e2-p%b2+p%boost)
           p%bprime=sqrt21*sqrt(p%b2-p%e2+p%boost)*sign(1.,p%eb)
-          where (p%eprime/=0. .and. p%bprime/=0.)
-            p%jprime=Chypercharge*echarge**3/(6.*pi**2*Hscript)*p%eprime*abs(p%bprime)/tanh(pi*abs(p%bprime)/p%eprime)
-            p%sigE=sigE_prefactor*abs(p%jprime)*p%eprime/(p%gam_EB*p%boost)
-            p%sigB=sigB_prefactor*abs(p%jprime)*p%eb/(p%eprime*p%gam_EB*p%boost)
-            p%count_eb0=0.
-          elsewhere
-            p%jprime=0.
-            p%sigE=0.
-            p%sigB=0.
-            p%count_eb0=1.
-          endwhere
+          if (lallow_bprime_zero) then
+            where (p%eprime/=0.)
+              where (p%bprime/=0.)
+                p%jprime=Chypercharge*echarge**3/(6.*pi**2*Hscript)*p%eprime*abs(p%bprime)/tanh(pi*abs(p%bprime)/p%eprime)
+              elsewhere
+                p%jprime=Chypercharge*echarge**3/(6.*pi**3*Hscript)*p%eprime**2
+              endwhere
+              p%sigE=sigE_prefactor*abs(p%jprime)*p%eprime/(p%gam_EB*p%boost)
+              p%sigB=sigB_prefactor*abs(p%jprime)*p%eb/(p%eprime*p%gam_EB*p%boost)
+              p%count_eb0=0.
+            elsewhere
+              p%jprime=0.
+              p%sigE=0.
+              p%sigB=0.
+              p%count_eb0=1.
+            endwhere
+          else
+            where (p%eprime/=0. .and. p%bprime/=0.)
+              p%jprime=Chypercharge*echarge**3/(6.*pi**2*Hscript)*p%eprime*abs(p%bprime)/tanh(pi*abs(p%bprime)/p%eprime)
+              p%sigE=sigE_prefactor*abs(p%jprime)*p%eprime/(p%gam_EB*p%boost)
+              p%sigB=sigB_prefactor*abs(p%jprime)*p%eb/(p%eprime*p%gam_EB*p%boost)
+              p%count_eb0=0.
+            elsewhere
+              p%jprime=0.
+              p%sigE=0.
+              p%sigB=0.
+              p%count_eb0=1.
+            endwhere
+          endif
+
+
         elseif (lcollinear_EB) then
           p%eprime=sqrt(p%e2)
           p%bprime=sqrt(p%b2)
@@ -530,6 +555,10 @@ module Special
             p%sigE=0.
             p%count_eb0=1.
           endwhere
+          if (lmass_suppression) then
+            mass_suppression_fact=exp(-pi*mass_chi**2/(Chypercharge**onethird*echarge*sqrt(p%e2)))
+            p%sigE=p%sigE*mass_suppression_fact
+          endif
           p%sigB=0.
         elseif (lnoncollinear_EB_aver .or. lcollinear_EB_aver) then
 !
@@ -549,6 +578,7 @@ module Special
           do j=1,3
             p%jj_ohm(:,j)=p%sigE*p%el(:,j)+p%sigB*p%bb(:,j)
           enddo
+          if (ijx/=0) f(l1:l2,m,n,ijx:ijz) = p%jj_ohm
         endif
 !
       endif

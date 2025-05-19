@@ -38,15 +38,19 @@
 
     endsubroutine write_training_run_pars
 !***************************************************************
-    subroutine training_before_boundary(f)
+    subroutine training_after_boundary(f)
 
       real, dimension (mx,my,mz,mfarray) :: f
 
       call keep_compiler_quiet(f)
 
-    endsubroutine training_before_boundary
+    endsubroutine training_after_boundary
 !***************************************************************
-    subroutine calc_diagnostics_training
+    subroutine calc_diagnostics_training(f)
+
+      real, dimension (mx,my,mz,mfarray) :: f
+
+      call keep_compiler_quiet(f)
 
     endsubroutine calc_diagnostics_training
 !***********************************************************************

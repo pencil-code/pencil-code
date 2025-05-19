@@ -149,7 +149,7 @@ train_descale(Field3 f, real minv, real maxv)
 train_scale(FieldSymmetricTensor f, real minv,  real maxv)
 {
 	real max_min = maxv-minv
-	return real_symmetric_tensor((value(f.xx) - minv)/max_min, (value(f.yy) - minv)/max_min, (value(f.zz) - minv)/max_min, (value(f.xy) - minv)/max_min, (value(f.yz) - minv)/max_min, (value(f.xz) - minv)/max_min) 
+	return real_symmetric_tensor((value(f.xx) - minv)/max_min, (value(f.yy) - minv)/max_min, (value(f.zz) - minv)/max_min, (value(f.xy) - minv)/max_min, (value(f.yz) - minv)/max_min, (value(f.xz) - minv)/max_min)
 }
 
 train_scale(Field3 f, real minv,  real maxv)

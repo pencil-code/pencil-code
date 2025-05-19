@@ -72,6 +72,7 @@ module Forcing
   logical :: lforcing_osc = .false., lforcing_osc2 = .false., lforcing_osc_double = .false.
   real :: scale_kvectorx=1.,scale_kvectory=1.,scale_kvectorz=1.
   logical :: old_forcing_evector=.false., lforcing_coefs_hel_double=.false.
+  logical :: lforce_always_all_compomemts=.false.
   character (len=labellen) :: iforce='zero', iforce2='zero'
   character (len=labellen) :: iforce_profile='nothing'
   character (len=labellen) :: iforce_tprofile='nothing'
@@ -174,7 +175,7 @@ module Forcing
        omega_tidal, R0_tidal, phi_tidal, omega_vortex, &
        lforce_ramp_down, tforce_ramp_down, tauforce_ramp_down, &
        n_hel_sin_pow, kzlarge, cs0eff, channel_force, torus, Omega_vortex, &
-       lrandom_time,laniso_forcing_old, &
+       lrandom_time,laniso_forcing_old, lforce_always_all_compomemts, &
        lforcing_osc, lforcing_osc2, lforcing_osc_double, &
        tcor_GP, kmin_GP,kmax_GP,nk_GP,beta_GP, n_axisrot_angles, &
        SR_alpha_shift, alpha_shift, ell_shift, SR_ell_shift, ncol, lfastSR
@@ -1587,7 +1588,7 @@ module Forcing
           rho1=1.
         endif
         do j=1,3
-          if (lactive_dimension(j)) then
+          if (lforce_always_all_compomemts .or. lactive_dimension(j)) then
             jf=j+ifff-1
             forcing_rhs(:,j) = profx_ampl*profy_ampl(m)*profz_ampl(n) &
                               *rho1*real(ikk(j)*fx(l1:l2)*fy(m)*fz(n))
@@ -1998,6 +1999,7 @@ module Forcing
 !                seems not to be meaningful.
 !  12-jan-18/axel: added periodic forcing for omega_ff /= 0.
 !   3-aug-22/axel: added omega_double_ff for second forcing function
+!  18-may-25/axel: added lforce_always_all_compomemts to overwrite restriction of lactive_dimension(j).
 !
       use Mpicomm, only: mpireduce_sum
       use Sub
@@ -2118,9 +2120,13 @@ module Forcing
                 if (lmomentum_ff) force_ampl=force_ampl*rho1
               endif
             endif
-
+!
+!  Apply forcing only into direction of an active dimension, unless we have
+!  lforce_always_all_compomemts, in which case we apply forcing anyway.
+!  This is the line that is executed by default.
+!
             do j=1,3
-              if (lactive_dimension(j)) then
+              if (lforce_always_all_compomemts .or. lactive_dimension(j)) then
 !
 !  Primary forcing function: assemble here forcing_rhs(:,j).
 !  Add here possibility of periodic forcing proportional to cos(om*t).
@@ -2238,7 +2244,7 @@ module Forcing
 !
             if (ifff/=0.and..not.lhelical_test.and.lxycorr_forcing) then
               do j=1,3
-                if (lactive_dimension(j)) then
+                if (lforce_always_all_compomemts .or. lactive_dimension(j)) then
                   jf=j+ifff-1
                   if (j==1) f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf) + forcing_rhs(:,2)*force2_scl
                   if (j==2) f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf) + forcing_rhs(:,1)*force2_scl
@@ -2291,7 +2297,7 @@ module Forcing
 !
         call fatal_error('forcing_hel','check that radial profile with rcyl_ff/=0. works')
         do j=1,3
-          if (lactive_dimension(j)) then
+          if (lforce_always_all_compomemts .or. lactive_dimension(j)) then
             jf=j+ifff-1
             do n=n1,n2
               do m=m1,m2
@@ -2593,9 +2599,12 @@ module Forcing
             endif
             if (lwork_ff) force_ampl=calc_force_ampl(f,fx,fy,fz,profy_ampl(m)*profz_ampl(n) &
                                                      *cmplx(coef1,profy_hel(m)*profz_hel(n)*coef2))
+!  Apply forcing only into direction of an active dimension, unless we have
+!  lforce_always_all_compomemts, in which case we apply forcing anyway.
+!
             variable_rhs=f(l1:l2,m,n,iffx:iffz)
             do j=1,3
-              if (lactive_dimension(j)) then
+              if (lforce_always_all_compomemts .or. lactive_dimension(j)) then
 !
                 forcing_rhs(:,j)=rho1*profx_ampl*profy_ampl(m)*profz_ampl(n)*force_ampl &
                   *real(cmplx(coef1(j),profx_hel*profy_hel(m)*profz_hel(n)*coef2(j)) &
@@ -2701,7 +2710,7 @@ module Forcing
 !
           call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff works')
           do j=1,3
-            if (lactive_dimension(j)) then
+            if (lforce_always_all_compomemts .or. lactive_dimension(j)) then
               jf=j+ifff-1
               sig = relhel*profz_k(n)
               coef1(1)=cmplx(k*kex,sig*kkex)
@@ -2935,7 +2944,7 @@ module Forcing
         do m=m1,m2
           variable_rhs=f(l1:l2,m,n,iffx:iffz)
           do j=1,3
-            if (lactive_dimension(j)) then
+            if (lforce_always_all_compomemts .or. lactive_dimension(j)) then
               jf=j+ifff-1
               if (y(m)>equator)then
                 forcing_rhs(:,j) = rho1*real(cmplx(coef1(j),coef2(j))*fx(l1:l2)*fy(m)*fz(n)) &
@@ -3445,7 +3454,7 @@ module Forcing
           forcing_rhs(:,1)=+fact*sinx(l1:l2)*cosy(m)*cosz(n)
           forcing_rhs(:,2)=-fact*cosx(l1:l2)*siny(m)*cosz(n)
           do j=1,3
-            if (lactive_dimension(j)) then
+            if (lforce_always_all_compomemts .or. lactive_dimension(j)) then
               jf=j+ifff-1
               f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)
             endif
@@ -3646,7 +3655,7 @@ module Forcing
           variable_rhs=f(l1:l2,m,n,iffx:iffz)
           forcing_rhs(:,3)=fact*siny(m)
           do j=1,3
-            if (lactive_dimension(j)) then
+            if (lforce_always_all_compomemts .or. lactive_dimension(j)) then
               jf=j+ifff-1
               f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)
             endif
@@ -3841,7 +3850,7 @@ module Forcing
               variable_rhs=f(l1:l2,m,n,iffx:iffz)
               if (iphiuu==0) then
                 do j=1,3
-                  if (lactive_dimension(j)) then
+                  if (lforce_always_all_compomemts .or. lactive_dimension(j)) then
                     jf=j+ifff-1
                     if (iforce_profile=='nothing') then
                       forcing_rhs(:,j)=gaussian_fact*delta(:,j)
@@ -4051,7 +4060,7 @@ module Forcing
 !  add to the relevant variable
 !
           do j=1,3
-            if (lactive_dimension(j)) then
+            if (lforce_always_all_compomemts .or. lactive_dimension(j)) then
               jf=j+ifff-1
               f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+fact*variable_rhs(:,j)
             endif
@@ -4138,7 +4147,7 @@ module Forcing
       do n=n1,n2
         do m=m1,m2
           do j=1,3
-            if (lactive_dimension(j)) then
+            if (lforce_always_all_compomemts .or. lactive_dimension(j)) then
               jf=j+ifff-1
               if (modulo(j-1,2)==0) then
                 call random_number_wrapper(r,CHANNEL=channel_force)

@@ -21,7 +21,7 @@
 #include "headers_c.h"
 
 void torch_train_c_api(REAL*); 
-void torch_infer_c_api();
+void torch_infer_c_api(int *);
 void initGPU();
 void registerGPU();
 void initializeGPU(REAL*, FINT);
@@ -44,30 +44,35 @@ extern char *__cparam_MOD_coornames;
 extern REAL __cdata_MOD_y[14];
 extern REAL __cdata_MOD_dx, __cdata_MOD_dy, __cdata_MOD_dz;
 
+typedef struct real3{
+  REAL x,y,z;
+} real3;
 
+typedef struct int3{
+  int x,y,z;
+} int3;
+
+/* ---------------------------------------------------------------------- */
 void FTNIZE(torchtrain_c)(REAL* loss_val)
 {
 	torch_train_c_api(loss_val);
 }
-
-void FTNIZE(torchinfer_c)(int flag)
+/* ---------------------------------------------------------------------- */
+void FTNIZE(torchinfer_c)(int *flag)
 {
 	torch_infer_c_api(flag);
 }
-
-// ----------------------------------------------------------------------
+/* ---------------------------------------------------------------------- */
 void FTNIZE(initialize_gpu_c)(REAL* f, FINT* comm_fint)
-// Initializes GPU.  
 {
+// Initializes GPU.  
   /*
   printf("nx = %d\n", *nx);
   printf("ny = %d\n", *ny);
   printf("nz = %d\n", *nz);
-  printf("omega = %e\n", cdata_mp_omega_);
   */
   //printf("coornames(1)= %s", __cparam_MOD_coornames[0]);
 
-  //printf("ymin = %f\n", __cdata_MOD_y[0]);
   //printf("dx = %f\n", __cdata_MOD_dx);
   //printf("dy = %f\n", __cdata_MOD_dy);
   //printf("dz = %f\n", __cdata_MOD_dz);
@@ -102,13 +107,13 @@ void FTNIZE(finalize_gpu_c)()
 
   finalizeGPU();
 }
+/* ---------------------------------------------------------------------- */
 void FTNIZE(get_farray_ptr_gpu_c)(REAL** p_f_in)
 {
   getFArrayIn(p_f_in);
 }
 /* ---------------------------------------------------------------------- */
-void FTNIZE(rhs_gpu_c)
-     (FINT *isubstep)
+void FTNIZE(rhs_gpu_c)(FINT *isubstep)
 
 /* Communication between CPU and GPU: copy (outer) halos from CPU to GPU, 
    copy "inner halos" from GPU to CPU; calculation of rhss of momentum eq.
@@ -143,18 +148,22 @@ void FTNIZE(rhs_gpu_c)
    If full=1, however, copy the full arrays.
 */
 {
-  // copies data back and forth and peforms integration substep isubstep
+// Performs integration substep on GPU.
 
   substepGPU(*isubstep);
 }
 /* ---------------------------------------------------------------------- */
 void FTNIZE(copy_farray_c)(REAL* f)
 {
+// Copies vertex buffers from GPU into f-array on CPU.
+
   copyFarray(f);
 }
 /* ---------------------------------------------------------------------- */
 void FTNIZE(load_farray_c)()
 {
+// Copies f-array on CPU to vertex buffers on GPU.
+
   loadFarray();
 }
 /* ---------------------------------------------------------------------- */
@@ -190,6 +199,12 @@ void FTNIZE(test_rhs_c)(REAL* f_in, REAL* df_truth)
 /* ---------------------------------------------------------------------- */
 void FTNIZE(gpu_set_dt_c)()
 {
-	gpuSetDt();
+  gpuSetDt();
+}
+/* ---------------------------------------------------------------------- */
+void FTNIZE(calcQ_gpu_c)(int3 *dir, int3 *stop, REAL *dlength, real3 *unit_vec, int *lperiodic){
+ // performs ray integration along direction dir for all possible starting points in subdomain,
+ // communication and final correction of Q 
+
 }
 /* ---------------------------------------------------------------------- */

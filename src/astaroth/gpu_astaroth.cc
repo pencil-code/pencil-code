@@ -22,7 +22,7 @@
 int counter = 0;
 int done = 0;
 
-// Astaroth headers.
+// Astaroth headers
 #include "astaroth.h"
 bool
 has_nans(AcMesh mesh_in);
@@ -120,18 +120,19 @@ has_nans(AcMesh mesh_in);
   #define lforce_helical lforce_helical__mod__forcing
 #endif
 
-AcReal dt1_interface{};
+AcReal dt1_interface;
 static int rank;
 static AcMesh mesh = acInitMesh();
+
+void torch_trainCAPI(int sub_dims[3], float* input, float* label, float* loss_val, bool dble=false);
+void torch_inferCAPI(int sub_dims[3], float* input, float* label, bool dble=false);
+//void torch_createmodel(const char* name, const char* config_fname, MPI_Comm mpi_comm, int device);
+
+/***********************************************************************************************/
 extern "C" void copyFarray(AcReal* f);
-
-extern "C" void torch_trainCAPI(float* input, float* label, float* loss_val);
-extern "C" void torch_inferCAPI(float* input, float* label);
-extern "C" void torch_createmodel(const char* name, const char* config_fname, MPI_Comm mpi_comm, int device);
-
-
+/***********************************************************************************************/
 void print_debug() {
-    #if TRAINING
+#if TRAINING
     #include "user_constants.h"
 
 		std::ofstream myFile;
@@ -142,13 +143,12 @@ void print_debug() {
            << "TAU_xy,TAU_xy_inferred,TAU_yz,TAU_yz_inferred,TAU_xz,TAU_xz_inferred,UUMEAN_x,UUMEAN_y,UUMEAN_z,"
            << "UUX,UUY,UUZ\n";
 
-
     copyFarray(NULL);
     const auto DEVICE_VTXBUF_IDX = [&](const int x, const int y, const int z) {
         return acVertexBufferIdx(x, y, z, mesh.info);
     };
 
-  	
+    AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
 
     for (size_t i = dims.m0.x; i < dims.m1.x; i++) {
         for (size_t j = dims.m0.y; j < dims.m1.y; j++) {
@@ -178,9 +178,7 @@ void print_debug() {
     }
 	#endif
 }
-
-
-
+/***********************************************************************************************/
 extern "C" void torch_train_c_api(AcReal *loss_val){
 #if TRAINING
 	#include "user_constants.h"
@@ -233,9 +231,12 @@ extern "C" void torch_train_c_api(AcReal *loss_val){
 	
 
 	float avgloss = 0;
-
-	for(int batch = 0; batch<5; batch++){
-		torch_trainCAPI(uumean_ptr, TAU_ptr, loss_val);
+	for (int batch = 0; batch<5; batch++){
+		torch_trainCAPI((int[]){mx,my,mz}, uumean_ptr, TAU_ptr, loss_val
+#if DOUBLE_PRECISION
+                                , true
+#endif
+                               );
 		avgloss = avgloss + *loss_val;
 	}
 	printf("Loss after training: %f\n", avgloss/5);
@@ -260,7 +261,6 @@ float MSE(){
 	acGridSynchronizeStream(STREAM_ALL);
 
 
-
 	auto calc_infered_loss = acGetOptimizedDSLTaskGraph(calc_validation_loss);
 	acGridSynchronizeStream(STREAM_ALL);
 	acGridExecuteTaskGraph(calc_infered_loss, 1);
@@ -272,12 +272,13 @@ float MSE(){
 	acGridSynchronizeStream(STREAM_ALL);
 
 
-	return (acDeviceGetOutput(acGridGetDevice(), AC_l2_sum))/(6*32*32*32);
+	return (acDeviceGetOutput(acGridGetDevice(), AC_l2_sum))/(6*nx*ny*nz);
 #else
+        return 0;
 #endif
 }
 /***********************************************************************************************/
-extern "C" void torch_infer_c_api(int flag){	
+extern "C" void torch_infer_c_api(int *flag){	
 #if TRAINING
 	#include "user_constants.h"
 	
@@ -303,24 +304,23 @@ extern "C" void torch_infer_c_api(int flag){
 		acGridExecuteTaskGraph(bcs,1);
 		acGridSynchronizeStream(STREAM_ALL);
 
+	AcReal* out = NULL;
 
-		AcReal* out = NULL;
-	
-		AcReal* uumean_ptr = NULL;
-		AcReal* tau_infer_ptr = NULL;
+	AcReal* uumean_ptr = NULL;
+	AcReal* tau_infer_ptr = NULL;
 
-		acDeviceGetVertexBufferPtrs(acGridGetDevice(), TAU_INFERRED.xx, &tau_infer_ptr, &out);
-		acDeviceGetVertexBufferPtrs(acGridGetDevice(), UUMEAN.x, &uumean_ptr, &out);
+	acDeviceGetVertexBufferPtrs(acGridGetDevice(), TAU_INFERRED.xx, &tau_infer_ptr, &out);
+	acDeviceGetVertexBufferPtrs(acGridGetDevice(), UUMEAN.x, &uumean_ptr, &out);
 
-		torch_inferCAPI(uumean_ptr, tau_infer_ptr);
 		
+	torch_inferCAPI((int[]){mx,my,mz}, uumean_ptr, tau_infer_ptr,DOUBLE_PRECISION);
 
-		float vloss = MSE();
+	float vloss = MSE();
   	
 
-		printf("Validation error is: %f\n", vloss);
-		print_debug();
-	#endif
+	printf("Validation error is: %f\n", vloss);
+	print_debug();
+#endif
 }
 /***********************************************************************************************/
 int memusage()
@@ -685,8 +685,7 @@ AcReal cpu_pow(AcReal const val, AcReal exponent)
 #include "../boundcond_c.h"     // provides boundconds[xyz] etc.
 //#include "../mpicomm_c.h"       // provides finalize_sendrcv_bdry
 #include "PC_module_parfuncs.h" // provides stuff from physics modules
-				//
-				//
+
 //TP: x,y and z macros are too general
 
 #if PACKED_DATA_TRANSFERS
@@ -1425,6 +1424,41 @@ void setupConfig(AcMeshInfo& config)
 #undef y
 #undef z
 /***********************************************************************************************/
+void copyFarray(AcReal* f)
+{
+  #include "user_constants.h"
+  /*
+  if (has_nans(mesh)){
+    acLogFromRootProc(rank,"found nans while copying\n");
+    exit(0);
+  }
+  */
+  AcMesh mesh_to_copy;
+  size_t offset = 0;
+  for (int i = 0; i < NUM_VTXBUF_HANDLES; ++i)
+  {
+    mesh_to_copy.vertex_buffer[VertexBufferHandle(i)] = &f[offset];
+//printf("mesh %d %p \n",i, mesh.vertex_buffer[VertexBufferHandle(i)]);
+    offset += mw;
+  }
+  mesh_to_copy.info = mesh.info;
+
+  acGridSynchronizeStream(STREAM_ALL);
+  //acDeviceStoreMesh(acGridGetDevice(), STREAM_DEFAULT, &mesh_to_copy);
+  //acDeviceStoreMesh(acGridGetDevice(), STREAM_DEFAULT, &mesh);
+  //TP: for now only copy the advanced fields back
+  //TODO: should auxiliaries needed on the GPU like e.g. Shock be copied? They can always be recomputed on the host if needed
+  //If doing training we read all since we might want TAU components to calculate e.g. validation error
+  const int end = ltraining ? NUM_VTXBUF_HANDLES : 
+	  	  lread_all_vars_from_device ? mfarray : mvar;
+
+  for (int i = 0; i < end; ++i)
+  {
+	  acDeviceStoreVertexBuffer(acGridGetDevice(),STREAM_DEFAULT,VertexBufferHandle(i),&mesh);
+  }
+  acGridSynchronizeStream(STREAM_ALL);
+}
+/***********************************************************************************************/
 void checkConfig(AcMeshInfo &config)
 {
  acLogFromRootProc(rank,"Check that config is correct\n");
@@ -1589,7 +1623,7 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint)
     //TP: for now for training we have all slots filled since we might want to read TAU components to the host for calculating validation error
     if (ltraining)
     {
-    	for(int i = 0; i < NUM_VTXBUF_HANDLES; ++i)
+    	for (int i = 0; i < NUM_VTXBUF_HANDLES; ++i)
     	{
 	   if (mesh.vertex_buffer[i] == NULL)
 	   {
@@ -1605,16 +1639,14 @@ if (rank==0 && ldebug) printf("memusage after pointer assign= %f MBytes\n", memu
   acLoadLibrary(rank == 0 ? stderr : NULL,mesh.info);
   acCheckDeviceAvailability();
   acLogFromRootProc(rank, "Done setupConfig && acCompile\n");
-  fflush(stdout);
 #else
-  acCheckDeviceAvailability();
   acLogFromRootProc(rank, "Done setupConfig\n");
-  fflush(stdout);
 #endif
+  fflush(stdout);
   checkConfig(mesh.info);
-if (rank==0 && ldebug) printf("memusage grid_init= %f MBytes\n", memusage()/1024.);
+  if (rank==0 && ldebug) printf("memusage grid_init= %f MBytes\n", memusage()/1024.);
   acGridInit(mesh);
-if (rank==0 && ldebug) printf("memusage after grid_init= %f MBytes\n", memusage()/1024.);
+  if (rank==0 && ldebug) printf("memusage after grid_init= %f MBytes\n", memusage()/1024.);
 
   mesh.info = acGridDecomposeMeshInfo(mesh.info);
   //TP: important to do before autotuning
@@ -1624,51 +1656,15 @@ if (rank==0 && ldebug) printf("memusage after grid_init= %f MBytes\n", memusage(
 		
   if (ltest_bcs) testBCs();
   autotune_all_integration_substeps();
-if (rank==0 && ldebug) printf("memusage before store config= %f MBytes\n", memusage()/1024.);
+  if (rank==0 && ldebug) printf("memusage before store config= %f MBytes\n", memusage()/1024.);
   acStoreConfig(acDeviceGetLocalConfig(acGridGetDevice()), "PC-AC.conf");
-if (rank==0 && ldebug) printf("memusage after store config= %f MBytes\n", memusage()/1024.);
+  if (rank==0 && ldebug) printf("memusage after store config= %f MBytes\n", memusage()/1024.);
   acGridSynchronizeStream(STREAM_ALL);
-if (rank==0 && ldebug) printf("memusage after store synchronize stream= %f MBytes\n", memusage()/1024.);
+  if (rank==0 && ldebug) printf("memusage after store synchronize stream= %f MBytes\n", memusage()/1024.);
   acLogFromRootProc(rank, "DONE initializeGPU\n");
   fflush(stdout);
   constexpr AcReal unit = 1.0;
   dt1_interface = unit/dt;
-
-
-}
-/***********************************************************************************************/
-extern "C" void copyFarray(AcReal* f)
-{
-  /*
-  if (has_nans(mesh)){
-    acLogFromRootProc(rank,"found nans while copying\n");
-    exit(0);
-  }
-  */
-  AcMesh mesh_to_copy;
-  size_t offset = 0;
-  for (int i = 0; i < NUM_VTXBUF_HANDLES; ++i)
-  {
-    mesh_to_copy.vertex_buffer[VertexBufferHandle(i)] = &f[offset];
-//printf("mesh %d %p \n",i, mesh.vertex_buffer[VertexBufferHandle(i)]);
-    offset += mw;
-  }
-  mesh_to_copy.info = mesh.info;
-
-  acGridSynchronizeStream(STREAM_ALL);
-  //acDeviceStoreMesh(acGridGetDevice(), STREAM_DEFAULT, &mesh_to_copy);
-  //acDeviceStoreMesh(acGridGetDevice(), STREAM_DEFAULT, &mesh);
-  //TP: for now only copy the advanced fields back
-  //TODO: should auxiliaries needed on the GPU like e.g. Shock be copied? They can always be recomputed on the host if needed
-  //If doing training we read all since we might want TAU components to calculate e.g. validation error
-  const int end = ltraining ? NUM_VTXBUF_HANDLES : 
-	  	  lread_all_vars_from_device ? mfarray :
-		  mvar;
-  for (int i = 0; i < end; ++i)
-  {
-	  acDeviceStoreVertexBuffer(acGridGetDevice(),STREAM_DEFAULT,VertexBufferHandle(i),&mesh);
-  }
-  acGridSynchronizeStream(STREAM_ALL);
 }
 /***********************************************************************************************/
 void
@@ -1680,7 +1676,7 @@ reloadConfig()
   acDeviceUpdate(acGridGetDevice(), mesh.info);
   acGridSynchronizeStream(STREAM_ALL);
 #if AC_RUNTIME_COMPILATION
-  //TP: if quitting grid have to safe the current values of the vtxbufs since the device arrays are freed!
+  //save the current values of the vtxbufs since the device arrays are freed by acGridQuit
   copyFarray(mesh.vertex_buffer[0]);
   acGridQuit();
   acCloseLibrary();
@@ -1696,7 +1692,7 @@ reloadConfig()
   //TP: restore the vtxbuf values before quitting grid
   loadFarray();
 #endif
-  acLogFromRootProc(rank, "DONE initializeGPU\n");
+  acLogFromRootProc(rank, "DONE reloading on GPU\n");
   fflush(stdout);
   fflush(stderr);
 }
@@ -1810,7 +1806,7 @@ AcReal max_diffus(AcReal maxchi_dyn)
   return max_diffusions[0]*dxyz_vals.x/cdtv + max_diffusions[1]*dxyz_vals.y/cdtv2 + max_diffusions[2]*dxyz_vals.z/cdtv3;
 }
 /***********************************************************************************************/
-//TP: this is not written the the most optimally since it needs two extra copies of the mesh where at least the tmp
+//TP: this is not written the most optimally since it needs two extra copies of the mesh where at least the tmp
 //could be circumvented by temporarily using the output buffers on the GPU to store the f-array and load back from there
 //but if we truly hit the mem limit for now the user can of course simply test the bcs with a smaller mesh and skip the test with a larger mesh
 
@@ -1832,8 +1828,8 @@ sym_z(AcMesh mesh_in)
 	   i >= NGHOST && i < dims.n1.x &&
 	   j >= NGHOST && j < dims.n1.y &&
 	   k >= NGHOST && k < dims.n1.z
-	  )continue;
-	 if (k >= NGHOST && k < dims.n1.z) continue;
+	   ) continue;
+	if (k >= NGHOST && k < dims.n1.z) continue;
         for (int ivar = 0; ivar < NUM_VTXBUF_HANDLES; ivar++)
         {
 	 //BOT
@@ -1887,8 +1883,8 @@ check_sym_z(AcMesh mesh_in)
 	   i >= NGHOST && i < dims.n1.x &&
 	   j >= NGHOST && j < dims.n1.y &&
 	   k >= NGHOST && k < dims.n1.z
-	  )continue;
-	 if (k >= NGHOST && k < dims.n1.z) continue;
+	   ) continue;
+	if (k >= NGHOST && k < dims.n1.z) continue;
         for (int ivar = 0; ivar < NUM_VTXBUF_HANDLES; ivar++)
         {
 	 //BOT
@@ -1943,8 +1939,8 @@ check_sym_x(const AcMesh mesh_in)
 	   i >= NGHOST && i < dims.n1.x &&
 	   j >= NGHOST && j < dims.n1.y &&
 	   k >= NGHOST && k < dims.n1.z
-	  )continue;
-	 if (i >= NGHOST && i < dims.n1.x) continue;
+	   ) continue;
+	if (i >= NGHOST && i < dims.n1.x) continue;
         for (int ivar = UUY; ivar <= UUY; ivar++)
         {
 	 //BOT
@@ -1958,7 +1954,6 @@ check_sym_x(const AcMesh mesh_in)
 		{
 			fprintf(stderr,"WRONG\n");
 			exit(EXIT_FAILURE);
-
 		}
 	 }
 	 //TOP:
@@ -1972,7 +1967,6 @@ check_sym_x(const AcMesh mesh_in)
 		{
 			fprintf(stderr,"WRONG\n");
 			exit(EXIT_FAILURE);
-
 		}
 	 }
 	}

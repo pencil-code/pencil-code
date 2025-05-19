@@ -53,8 +53,8 @@ module Radiation
   integer, parameter :: mnu=2
   integer, parameter :: maxdir=26
 !
-  real, dimension (mx,my,mz) :: Srad, tau=0., Qrad=0., Qrad0=0.
-  real, dimension (mx,my) :: Irad_refl_xy
+  real, dimension (:,:,:), allocatable :: Srad, tau, Qrad, Qrad0
+  real, dimension (:,:), allocatable :: Irad_refl_xy
   real, target, dimension (:,:,:), allocatable :: Jrad_xy
   real, target, dimension (:,:,:), allocatable :: Jrad_xy2
   real, target, dimension (:,:,:), allocatable :: Jrad_xy3
@@ -190,7 +190,10 @@ module Radiation
 !
   real :: gamma
   real, dimension(nx) :: dt1_rad, diffus_chi
+  real, dimension(:,:), allocatable :: dlength
 !
+  integer :: enum_source_function_type = 0
+  integer :: enum_opacity_type = 0
   contains
 !***********************************************************************
     subroutine register_radiation
@@ -377,6 +380,18 @@ module Radiation
 !  Total number of directions; correct for latest idir+1 operation.
 !
       ndir=idir-1
+      if (allocated(dlength)) deallocate(dlength)
+      allocate(dlength(mz,ndir))
+!
+!  Line elements (only valid for equidistant grid in xy).
+!
+      do idir=1,ndir
+        if (nzgrid/=1) then
+          dlength(:,idir)=sqrt((dx*dir(idir,1))**2+(dy*dir(idir,2))**2+(dir(idir,3)/dz_1)**2)
+        else
+          dlength(:,idir)=sqrt((dx*dir(idir,1))**2+(dy*dir(idir,2))**2+(dz*dir(idir,3))**2) !MR: Shouldn't nrad be 0???
+        endif
+      enddo
 !
 !  Determine when terms like exp(-dtau)-1 are to be evaluated as a power series.
 !
@@ -436,7 +451,7 @@ module Radiation
           read (1,*) header
         endif
         call mpibcast(nlnTT_table)
-        allocate(lnTT_table(nlnTT_table),lnSS_table(nlnTT_table,nnu))
+        if (.not.allocated(lnTT_table)) allocate(lnTT_table(nlnTT_table),lnSS_table(nlnTT_table,nnu))
         if (lroot) then
           do itable=1,nlnTT_table
             read(1,*) lnTT_table(itable),lnSS_table(itable,:)
@@ -466,28 +481,33 @@ module Radiation
       if (ivid_Jrad/=0) &
         call alloc_slice_buffers(Jrad_xy,Jrad_xz,Jrad_yz,Jrad_xy2,Jrad_xy3,Jrad_xy4,Jrad_xz2,ncomp=nnu)
 !
+      if (ldoppler_rad) then
+!
 !  Switch factor for Doppler term
 !
-      if (ldoppler_rad_includeQder) then
-        Qderfact=1.
-      else
-        Qderfact=0.
-      endif
+        if (ldoppler_rad_includeQder) then
+          Qderfact=1.
+        else
+          Qderfact=0.
+        endif
 !
 !  Switch second factor for Doppler term
 !
-      if (ldoppler_rad_includeQfact) then
-        Qfact=1.
-      else
-        Qfact=0.
-      endif
+        if (ldoppler_rad_includeQfact) then
+          Qfact=1.
+        else
+          Qfact=0.
+        endif
 !
 !  Switch third factor for Doppler term
 !
-      if (ldoppler_rad_includeQ2fact) then
-        Q2fact=1.
+        if (ldoppler_rad_includeQ2fact) then
+          Q2fact=1.
+        else
+          Q2fact=0.
+        endif
       else
-        Q2fact=0.
+        ldoppler_rad_includeQ = .false.
       endif
 !
       call get_gamma_etc(gamma)
@@ -500,7 +520,7 @@ module Radiation
 ! MR: all procs read the same files? - can't be correct for ncpus>1.
 !
       if (opacity_type=='read_file') then
-        allocate(tmp_noghost(nx,ny,nz))
+        if (.not.allocated(tmp_noghost)) allocate(tmp_noghost(nx,ny,nz))
         open (lun_input, file=trim(directory_prestart)//'/kapparho.dat', form='unformatted')
         read (lun_input) tmp_noghost
         close(lun_input)
@@ -516,7 +536,15 @@ module Radiation
         Srad(l1:l2,m1:m2,n1-1)=impossible
         Srad(l1:l2,m1:m2,n2+1)=impossible
       endif
+      
+      if (.not.lgpu) then
+        if (.not.allocated(Srad)) &
+          allocate(Srad(mx,my,mz), tau(mx,my,mz), Qrad(mx,my,mz), Qrad0(mx,my,mz))
+        Srad=0.; Qrad=0.; Qrad0=0.; tau=0.
 
+        if (.not.allocated(Irad_refl_xy)) allocate(Irad_refl_xy(mx,my))
+      endif
+        
     endsubroutine initialize_radiation
 !***********************************************************************
     subroutine calc_angle_weights
@@ -581,7 +609,7 @@ module Radiation
 !  Calculate the weights.
 !
         mu2=dx**2/(dx**2+dz**2)
-        xaxis=1/42.*(4.-1./mu2) ; yaxis=xaxis
+        xaxis=1/42.*(4.-1./mu2); yaxis=xaxis
         zaxis=(21.-54.*mu2+34.*mu2**2)/(210.*(mu2-1)**2)
         xyplane=2./105.*(4.-1./mu2)
         yzplane=(5.-6.*mu2)/(420.*mu2*(mu2-1)**2) ; xzplane=yzplane
@@ -621,6 +649,8 @@ module Radiation
 !  16-jun-03/axel+tobi: coded
 !   5-dec-13/axel: alterations to allow non-gray opacities
 !
+      use Gpu, only: calcQ_gpu
+
       real, dimension(mx,my,mz,mfarray) :: f
 !
       integer :: i,j,ij,k,inu
@@ -669,18 +699,23 @@ module Radiation
 !  then communication (not compute intensive),
 !  and finally revision (again compute intensive).
 !
-              if (lintrinsic) call Qintrinsic(f)
+              if (lgpu) then
+                !call calcQ_gpu(idir, dir(idir,:), (/llstop,mmstop,nnstop/), &
+                !               unit_vec(idir,:), lperiodic_ray)
+              else
+                if (lintrinsic) call Qintrinsic(f)
 !
-              if (lcommunicate) then
-                if (lperiodic_ray) then
-                  call Qperiodic
-                else
-                  call Qpointers
-                  call Qcommunicate
+                if (lcommunicate) then
+                  if (lperiodic_ray) then
+                    call Qperiodic
+                  else
+                    call Qpointers
+                    call Qcommunicate
+                  endif
                 endif
-              endif
 !
-              if (lrevision) call Qrevision
+                if (lrevision) call Qrevision
+              endif
 !
 !  Calculate heating rate, so at the end of the loop
 !  f(:,:,:,iQrad) = \int_{4\pi} (I-S) d\Omega, not divided by 4pi.
@@ -752,6 +787,11 @@ module Radiation
         enddo  !  inu loop
       endif    !  if ((.not.lsingle_ray) .or. (lsingle_ray.and.lvideo.and.lfirst))
 !
+! Upper limit radiative heating by qrad_max
+!
+      if (lno_rad_heating .and. (qrad_max > 0)) then
+          where(f(:,:,:,iQrad) > qrad_max) f(:,:,:,iQrad)=qrad_max
+      endif
     endsubroutine radtransfer
 !***********************************************************************
     subroutine raydirection
@@ -832,7 +872,7 @@ module Radiation
       use Debug_IO, only: output
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
-      real,dimension(mz) :: dlength
+
       real :: Srad1st,Srad2nd,dSdtau_m,dSdtau_p
       real :: Qrad1st,dQdtau_m,dQdtau_p
       real :: dtau_m,dtau_p,emdtau1,emdtau2,emdtau
@@ -842,14 +882,6 @@ module Radiation
 !  Identifier.
 !
       if (ldebug.and.headt) print*,'Qintrinsic'
-!
-!  Line elements (only valid for equidistant grid in xy).
-!
-      if (nzgrid/=1) then
-        dlength=sqrt((dx*lrad)**2+(dy*mrad)**2+(nrad/dz_1)**2)
-      else 
-        dlength=sqrt((dx*lrad)**2+(dy*mrad)**2+(nrad/dz)**2)  !MR: Shouldn't nrad be 0???
-      endif
 !
 !  Set optical depth and intensity initially to zero.
 !
@@ -863,10 +895,10 @@ module Radiation
       do l=llstart,llstop,lsign
         dtau_m=sqrt(f(l-lrad,m-mrad,n-nrad,ikapparho)* &
                     f(l,m,n,ikapparho))* &
-                    0.5*(dlength(n-nrad)+dlength(n))
+                    0.5*(dlength(n-nrad,idir)+dlength(n,idir))
         dtau_p=sqrt(f(l+lrad,m+mrad,n+nrad,ikapparho)* &
                     f(l,m,n,ikapparho))* &
-                    0.5*(dlength(n)+dlength(n+nrad))
+                    0.5*(dlength(n,idir)+dlength(n+nrad,idir))
 !
 !  Avoid divisions by zero when the optical depth is such.
 !
@@ -883,20 +915,20 @@ module Radiation
 !  p and m refers to +1/2 or -1/2.
 !
         Srad1st=(dSdtau_p*dtau_m+dSdtau_m*dtau_p)/(dtau_m+dtau_p)
-        Srad2nd=2*(dSdtau_p-dSdtau_m)/(dtau_m+dtau_p)
+        Srad2nd=2.*(dSdtau_p-dSdtau_m)/(dtau_m+dtau_p)
         if (dtau_m>dtau_thresh_max) then
           emdtau=0.0
           emdtau1=1.0
           emdtau2=-1.0
         elseif (dtau_m<dtau_thresh_min) then
-          emdtau1=dtau_m*(1-0.5*dtau_m*(1-dtau_m/3))
+          emdtau1=dtau_m*(1.-0.5*dtau_m*(1.-dtau_m/3.))
           emdtau=1-emdtau1
-          emdtau2=-dtau_m**2*(0.5-dtau_m/3)
+          emdtau2=-dtau_m**2*(0.5-dtau_m/3.)
         else
 !AB 2-jun-24 why only -dtau_m and not -dtau_p?
           emdtau=exp(-dtau_m)
-          emdtau1=1-emdtau
-          emdtau2=emdtau*(1+dtau_m)-1
+          emdtau1=1.-emdtau
+          emdtau2=emdtau*(1.+dtau_m)-1.
         endif
         tau(l,m,n)=tau(l-lrad,m-mrad,n-nrad)+dtau_m
 !
@@ -904,7 +936,6 @@ module Radiation
 !  In the code, we talk about a, b, and c, for Qn^up/dn, where
 !  -(1-emdtau) = -b_{n+1/2} and -[emdtau*(1+dtau_m)-1] = +c_{n+1/2}.
 !  This is based on either Qn^up or Qn^dn.
-!  Srad1st = ??
 !
         Qrad(l,m,n)=Qrad(l-lrad,m-mrad,n-nrad)*emdtau-Srad1st*emdtau1-Srad2nd*emdtau2
 !
@@ -957,7 +988,7 @@ module Radiation
 !
 !  compute extra terms: 4*S*u.n and its derivative
 !
-          if (ldoppler_rad_includeQ) then
+          if (ldoppler_rad_includeQ) then   !MR: ask earlier!?
 !if (l==l1+1.and.m==m1+1) print*,'AXEL: idir,u_dot_n=',idir,u_dot_n,hemisign
             Qrad(l,m,n)=Qrad(l,m,n) &
                      !+emdtau1* u_dot_n*(4.*Srad(l,m,n)+Qrad(l,m,n))*Q2fact &
@@ -1659,25 +1690,25 @@ module Radiation
       real, dimension (nx) :: cooling, kappa
       real, dimension (nx) :: cgam, ell, chi, dtrad_thick, dtrad_thin
       real, dimension (nx) :: dt1rad_cgam
+      real, dimension (nx) :: Qrad_diffus
       integer :: l
 !
 !  Add radiative cooling, either from the intensity or in the diffusion
 !  approximation (if either lrad_cool_diffus=F or lrad_pres_diffus=F).
 !
-      if (lrad_cool_diffus.or.lrad_pres_diffus) call calc_rad_diffusion(f,p)
-      if (lno_rad_heating .and. (qrad_max > 0)) then
-!
-! Upper limit radiative heating by qrad_max
-!
-        do l=l1-radx, l2+radx
-          if (f(l,m,n,iQrad) > qrad_max) f(l,m,n,iQrad)=qrad_max
-        enddo
+      if (lrad_cool_diffus.or.lrad_pres_diffus) then
+        call calc_rad_diffusion(f,p,Qrad_diffus)
+        f(l1:l2,m,n,iQrad) = Qrad_diffus
       endif
 !
 !  Add radiative cooling.
 !
       if (lcooling) then
-        cooling=f(l1:l2,m,n,iQrad)
+        if (lrad_cool_diffus.or.lrad_pres_diffus) then
+                cooling=Qrad_diffus
+        else
+                cooling=f(l1:l2,m,n,iQrad)
+        endif
 !
 !  Possibility of rescaling the radiative cooling term.
 !
@@ -1812,9 +1843,9 @@ module Radiation
 !             print*,'AXEL: 3rd term=',radpressure/c_light
             endif
           endif
-        endif
+        endif   !   if (ldoppler_rad)
 !
-      endif
+      endif   !   if (lradpressure)
 !--     call multmv_sym(PP,uu,PPuu)
 !--     df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+radpressure-uu*4*pi*Srad-PPuu
 !--     alpha=16*!pi/3*Srad*kappa
@@ -1839,7 +1870,8 @@ module Radiation
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       logical, save :: lfirst=.true.
       integer, dimension(mx) :: ilnTT_table
-      real, dimension(mx,my) :: z_cutoff1
+      !TP: put on comment since does not seem to be used
+      !real, dimension(mx,my) :: z_cutoff1
       real, dimension(mx) :: lnTT
       integer :: inu
       integer :: ierr
@@ -1852,24 +1884,24 @@ module Radiation
         if (lcutoff_opticallythin) then
 !
 ! This works for stratification in the z-direction
-!
-          z_cutoff1=z_cutoff
-          if (.not. lcutoff_zconst) then
-            do l=l1-radx,l2+radx 
-            do m=m1-rady,m2+rady
-            do n=n1-radz,n2+radz
-!
-! Put Srad smoothly to zero for z above which the
-! photon mean free path kappa*rho > 1/(1000*dz) 
-!
-              if (abs(f(l,m,n,ikapparho)-1.0e-3*dz_1(n)) < epsi) then
-                z_cutoff1(l,m)=min(max(z(n),zclip_dwn),zclip_up)
-                exit
-              endif
-            enddo
-            enddo
-            enddo
-          endif
+!!
+!          z_cutoff1=z_cutoff
+!          if (.not. lcutoff_zconst) then
+!            do l=l1-radx,l2+radx 
+!            do m=m1-rady,m2+rady
+!            do n=n1-radz,n2+radz
+!!
+!! Put Srad smoothly to zero for z above which the
+!! photon mean free path kappa*rho > 1/(1000*dz) 
+!!
+!              if (abs(f(l,m,n,ikapparho)-1.0e-3*dz_1(n)) < epsi) then
+!                z_cutoff1(l,m)=min(max(z(n),zclip_dwn),zclip_up)
+!                exit
+!              endif
+!            enddo
+!            enddo
+!            enddo
+!          endif
           do n=n1-radz,n2+radz
           do m=m1-rady,m2+rady
             call eoscalc(f,mx,lnTT=lnTT)
@@ -2012,9 +2044,7 @@ module Radiation
 !                                               (1./kappa_rad+1./kappa_cond)
           if (lcutoff_opticallythin .and. z(n) > z_cutoff) &
              kappa_tot=0.5*(1.-tanh((lntt-log(1.0d4))/log(2.0)))/(1./kappa_rad+1./kappa_cond)
-          do i=1,mx 
-            kappa_tot(i)=min(kappa_tot(i),kappa_ceiling)
-          enddo
+          kappa_tot = min(kappa_tot,kappa_ceiling)
           f(:,m,n,ikapparho)=exp(lnrho)*kappa_tot*scalefactor_kappa(inu)
         enddo
         enddo
@@ -2130,17 +2160,15 @@ module Radiation
         do n=n1-radz,n2+radz
         do m=m1-rady,m2+rady
           call eoscalc(f,mx,lnrho=lnrho,lnTT=lnTT)
-          do i=1,mx
-            if (exp(lnTT(i))<=150) then
-              tmp(i)=2e-4*exp(lnTT(i))**2
-            elseif (exp(lnTT(i))>=200) then
-              k1=0.861353*lnTT(i)-4.56372
-              tmp(i)=exp(k1)
-            else
-              k2=-5.22826*lnTT(i)+27.7010
-              tmp(i)=exp(k2)
-            endif
-          enddo
+          where (exp(lnTT) <= 150)
+              tmp=2e-4*exp(lnTT)**2
+          else where(exp(lnTT)>=200)
+              !k1
+              tmp=exp(0.861353*lnTT-4.56372)
+         elsewhere
+              !k2
+              tmp=exp(-5.22826*lnTT+27.7010)
+          endwhere
           f(:,m,n,ikapparho)=kapparho_floor+exp(lnrho)*tmp
         enddo
         enddo
@@ -2189,7 +2217,7 @@ module Radiation
       case ('read_file')
 !
       case ('nothing')
-        f(l1:l2,m1-rady:m2+rady,n1-radz:n2+radz,ikapparho)=0.0
+        f(l1-radx:l2+radx,m1-rady:m2+rady,n1-radz:n2+radz,ikapparho)=0.0
 !
       case default
         call fatal_error('opacity','no such opacity_type: '//trim(opacity_type))
@@ -2671,7 +2699,7 @@ module Radiation
 !
     endsubroutine get_slices_radiation
 !***********************************************************************
-    subroutine calc_rad_diffusion(f,p)
+    subroutine calc_rad_diffusion(f,p,Qrad_diffus)
 !
 !  Radiation in the diffusion approximation.
 !
@@ -2688,11 +2716,13 @@ module Radiation
       type (pencil_case) :: p
       real, dimension (nx) :: Krad,chi_rad,g2,advec_crad2
       real, dimension (nx) :: local_optical_depth,opt_thin,opt_thick
+      real, dimension (nx) :: Qrad_diffus
       real :: fact
       integer :: j,k
 !
       intent(inout) :: f
       intent(in) :: p
+      intent(out) :: Qrad_diffus
 !
 !  Calculate diffusion coefficient, Krad=16*sigmaSB*T^3/(3*kappa*rho).
 !
@@ -2704,7 +2734,7 @@ module Radiation
 !
       if (lrad_cool_diffus.and.lcooling) then
         call dot(4*p%glnTT-p%glnrho,p%glnTT,g2)
-        f(l1:l2,m,n,iQrad)=Krad*p%TT*(p%del2lnTT+g2)
+        Qrad_diffus=Krad*p%TT*(p%del2lnTT+g2)
       endif
 !
 !  Radiative flux, Frad = -K*gradT; note that -div(Frad)=Qrad.
@@ -2772,29 +2802,87 @@ module Radiation
     subroutine pushpars2c(p_par)
 
     use Syscalls, only: copy_addr
+    use General,  only: string_to_enum
 
-    integer, parameter :: n_pars=40
+    integer, parameter :: n_pars=100
 
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
-    call copy_addr(unit_vec, p_par(1))
+    call copy_addr(unit_vec, p_par(1))              ! (maxdir) (3)
     call copy_addr(Qderfact, p_par(2))
     call copy_addr(Qfact, p_par(3))
     call copy_addr(Q2fact, p_par(4))
-    call copy_addr(ldoppler_rad, p_par(5))
-    call copy_addr(ldoppler_rad_includeQ, p_par(6))
-    call copy_addr(scalefactor_Srad, p_par(7))      ! mnu
-    call copy_addr(scalefactor_kappa, p_par(8))     ! mnu
+    call copy_addr(ldoppler_rad, p_par(5)) ! bool
+    call copy_addr(ldoppler_rad_includeq, p_par(6)) ! bool
+    call copy_addr(scalefactor_srad, p_par(7))      ! (mnu)
+    call copy_addr(scalefactor_kappa, p_par(8))     ! (mnu)
     call copy_addr(scalefactor_cooling, p_par(9))
     call copy_addr(scalefactor_radpressure, p_par(10))
     call copy_addr(scalefactor_radpressure1, p_par(11))
     call copy_addr(scalefactor_radpressure2, p_par(12))
-    call copy_addr(kappa_cst, p_par(13))            ! mnu
-    call copy_addr(kappa20_cst, p_par(14))          ! mnu
+    call copy_addr(kappa_cst, p_par(13))            ! (mnu)
+    call copy_addr(kappa20_cst, p_par(14))          ! (mnu)
     call copy_addr(kapparho_floor, p_par(15))
     call copy_addr(kapparho_cst, p_par(16))
-    call copy_addr(weight, p_par(17))               ! maxdir
-    call copy_addr(weightn, p_par(18))              ! maxdir
+    call copy_addr(weight, p_par(17))               ! (maxdir)
+    call copy_addr(weightn, p_par(18))              ! (maxdir)
+    call copy_addr(arad,p_par(19))
+    call copy_addr(srad_const,p_par(20))
+    call copy_addr(amplsrad,p_par(21))
+    call copy_addr(radius_srad,p_par(22))
+    call copy_addr(kx_srad,p_par(23))
+    call copy_addr(ky_srad,p_par(24))
+    call copy_addr(kz_srad,p_par(25))
+    call copy_addr(lntt_table0,p_par(26))
+    call copy_addr(dlntt_table,p_par(27))
+    call copy_addr(z_cutoff,p_par(28))
+    call copy_addr(nlntt_table,p_par(29)) ! int
+    call copy_addr(lcutoff_opticallythin,p_par(30)) ! bool
+    call copy_addr(cdtrad,p_par(31))
+    call copy_addr(cdtrad_thin,p_par(32))
+    call copy_addr(cdtrad_thick,p_par(33))
+    call copy_addr(cdtrad_cgam,p_par(34))
+    call copy_addr(cool_wid,p_par(35))
+    call copy_addr(ikr_press,p_par(36)) ! int
+    call copy_addr(lcooling,p_par(37)) ! bool
+    call copy_addr(lradpressure,p_par(38)) ! bool
+    call copy_addr(lradflux,p_par(39)) ! bool
+    call copy_addr(lrad_cool_diffus,p_par(40)) ! bool
+    call copy_addr(lrad_pres_diffus,p_par(41)) ! bool
+    call copy_addr(lcdtrad_old,p_par(42)) ! bool
+    call copy_addr(idiag_qradrms,p_par(43)) ! int
+    call copy_addr(idiag_qradmax,p_par(44)) ! int
+    call copy_addr(gamma,p_par(45))
+    call copy_addr(ij_table,p_par(47)) ! (3) (3)
+    call string_to_enum(enum_source_function_type,source_function_type)
+    call copy_addr(enum_source_function_type,p_par(48)) ! int
+    call copy_addr(nnu,p_par(50)) ! int
+    call copy_addr(lntt_table,p_par(51)) ! (nlntt_table)
+    call copy_addr(lnss_table,p_par(52)) ! (nlntt_table) (nnu)
+    call copy_addr(kappa_kconst,p_par(53))
+    call copy_addr(kapparho_const,p_par(54))
+    call copy_addr(amplkapparho,p_par(55))
+    call copy_addr(radius_kapparho,p_par(56))
+    call copy_addr(kx_kapparho,p_par(57))
+    call copy_addr(ky_kapparho,p_par(58))
+    call copy_addr(kz_kapparho,p_par(59))
+    call copy_addr(expo_rho_opa,p_par(60))
+    call copy_addr(expo_temp_opa,p_par(61))
+    call copy_addr(expo_temp_opa_buff,p_par(62))
+    call copy_addr(expo2_rho_opa,p_par(63))
+    call copy_addr(expo2_temp_opa,p_par(64))
+    call copy_addr(ref_rho_opa,p_par(65))
+    call copy_addr(ref_temp_opa,p_par(66))
+    call copy_addr(knee_temp_opa,p_par(67))
+    call copy_addr(width_temp_opa,p_par(68))
+    call copy_addr(tt_bump,p_par(69))
+    call copy_addr(sigma_bump,p_par(70))
+    call copy_addr(ampl_bump,p_par(71))
+    call copy_addr(kappa_ceiling,p_par(72))
+    call string_to_enum(enum_opacity_type,opacity_type)
+    call copy_addr(enum_opacity_type,p_par(73)) ! int
+    call copy_addr(ndir,p_par(74)) ! int
+    call copy_addr(dlength,p_par(75)) ! (mz) (ndir)
 
     endsubroutine pushpars2c
 !***********************************************************************

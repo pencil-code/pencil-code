@@ -3,6 +3,7 @@
 SVN Id:
     $Id$
 Maintainer:
+    Axel Brandenburg <brandenb/nordita[dot]org>
 Added:
     08-May-2002
 Status:
@@ -28,3 +29,5 @@ Note:
     To simplify the input of in this sample, the specification of
     the input parameters cdt=0.4, cdtv=0.3, will be dropped in the
     future. The default is cdtv=0.25, so the result would change.
+    Radiation along 1 ray (not even 2) is included to allow 3-D volume
+    rendering via radiation along the diagonal direction.

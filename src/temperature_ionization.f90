@@ -1209,6 +1209,35 @@ module Energy
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call copy_addr(chi,p_par(1))
+    call copy_addr(heat_uniform,p_par(2))
+    call copy_addr(chi_hyper3,p_par(3))
+    call copy_addr(chi_shock,p_par(4))
+    call copy_addr(ztop,p_par(5))
+    call copy_addr(tau_heat_cor,p_par(6))
+    call copy_addr(tau_damp_cor,p_par(7))
+    call copy_addr(zcor,p_par(8))
+    call copy_addr(tt_cor,p_par(9))
+    call copy_addr(zheat_uniform_range,p_par(10))
+    call copy_addr(heat_source_offset,p_par(11))
+    call copy_addr(heat_source_sigma,p_par(12))
+    call copy_addr(heat_source,p_par(13))
+    call copy_addr(rad_temp_surr,p_par(14))
+    call copy_addr(opacity,p_par(15))
+    call copy_addr(arad_normal,p_par(16))
+    call copy_addr(heat_thompson_fact,p_par(17))
+    call copy_addr(lheat_source,p_par(18)) ! bool
+    call copy_addr(ladvection_temperature,p_par(19)) ! bool
+    call copy_addr(lviscosity_heat,p_par(20)) ! bool
+    call copy_addr(lupw_lntt,p_par(21)) ! bool
+    call copy_addr(lcalc_heat_cool,p_par(22)) ! bool
+    call copy_addr(lheatc_chiconst,p_par(23)) ! bool
+    call copy_addr(lheatc_chiconst_accurate,p_par(24)) ! bool
+    call copy_addr(lheatc_hyper3,p_par(25)) ! bool
+    call copy_addr(lheatc_shock,p_par(26)) ! bool
+    call copy_addr(lrad_cool_heat,p_par(27)) ! bool
+    call copy_addr(lheat_thompson,p_par(28)) ! bool
+    call copy_addr(lhubble_energy,p_par(29)) ! bool
+    call copy_addr(linclude_radpress,p_par(30)) ! bool
 
     endsubroutine pushpars2c
 !***********************************************************************

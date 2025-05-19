@@ -146,4 +146,15 @@ contains
 
     endsubroutine train_gpu
 !**************************************************************************
-endmodule  GPU
+    subroutine calcQ_gpu(dir, stop, dlength, unit_vec)
+
+      integer, dimension(3) :: dir, stop
+      real, dimension(mx) :: dlength
+      real, dimension(3) :: unit_vec
+
+      call keep_compiler_quiet(dlength)
+      call keep_compiler_quiet(unit_vec)
+
+    endsubroutine calcQ_gpu
+!**************************************************************************
+endmodule GPU

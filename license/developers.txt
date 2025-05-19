@@ -9,63 +9,64 @@ of active developers is particularly important if somebody checks in
 something that breaks the auto-test, for example.
 In such cases that person must expect phone calls even outside office hours.
 
-Name,                 email,                         svn-name,             office,            mobile/home/alternative,  skype-name,  institution
+Name,                 email,                         svn-name,             office,            mobile/home/alternative,  institution
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-Omer Anjum,           oanjum/illinois.edu,           oa98105,              ,                  ,                         ,            Aalto Univ. & Illinois, USA
-Natalia Babkovskaia,  nbabkovskaia/gmail.com,        NBabkovskaia,         +358 8 553 1939,   +358 40 5286784,          ,            University of Helsinki
-Iouri Belokopytov,    iourib/kth.se,                 ,                     +46 8 553 784 29   ,+46 705 933 639          ,            Nordita
-Steve Berukoff,       steveb/physics.ucla.edu,       ,                     ,                  ,                         ,            National Solar Observatory Boulder
-Sven Bingert,         bingert/mps.mpg.de,            sven.bingert,         +49 5556 979 358,  +49 179 2126192,          ,            GWDG Gottingen
-Philippe Bourdin,     pc/bourdin.ch,                 PABourdin,            +43 316 380 5258,  +43 720 513 493,          angiebecker.ch, University of Graz
-Axel Brandenburg,     brandenb/nordita.org,          AxelBrandenburg,      ++46 8 5537 8707,  +46 73 270 4376,	        axelbrandenburg, Nordita
-Simon Candelaresi,    iomsn1/gmail.com,              iomsn,                +44 141 330 0807,                            iomsn1,      University of Glasgow
-Chi-kwan Chan,        ckch/nordita.org,              chanchikwan,          +46 8 5537 8573,   +46 7273 91600,           ,            Steward Observatory Arizona
-Piyali Chatterjee,    mppiyali/gmail.com,            mppiyali,             +91 80 2254 1242,  +47 9845 2367,            mppiyali,    Indian Institute of Astrophysics
-Fabio Del Sordo,      fabio/nordita.org,             fadiesis,             +46 8 5537 8277,   +46 700629700,            fabiodelsordo, Institute of Space Science, Barcelona
-Boris Dintrans,       boris.dintrans/gmail.com,	     boris.dintrans,       +33 4 67141400,                    ,         bdintrans,   CNRS/CINES
-Wolfgang Dobler,      wdobler/gmail.com,             wdobler,              +49 33201 43791,   +49 151 28123472,         wolfgangdobler,
-Thomas Gastine,       gastine/mps.mpg.de,            ,                     +49 5556 979 456,  ,                         ,            Max-Planck-Institut für Sonnensystemforschung Göttingen
-Fred A. Gent,         frederick.gent/aalto.fi,       fred.gent.ncl,        +358 50 344 9122,  +44 7779 364 893 (mob),   fred_gent,   Aalto University+Nordita
-Gustavo Guerrero,     tavo.buk/gmail.com,            ,                     +46 8 5537 8718,   +46 76 089 1432,          ,            Universidade Federal de Minas Gerais
-Anders Johansen,      anders/astro.lu.se,            ,                     +46 46 22 21589,   +46 736 84 96 98,         ,            Lund Observatory+Copenhagen
-Nils E.L. Haugen,     Nils.E.Haugen/sintef.no,       ,                     +47 986 08 683,    +47 986 08 683,           ,            SINTEF & Norges teknisk-naturvitenskapelige universitet
-Tobias Heinemann,     tobias.heinemann/gmail.com,    ,                     +1 609 734 8298,   ,                         ,            University of Copenhagen
-Alexander Hubbard,    alex.i.hubbard/gmail.com,      ,                     +46 8 5537 8573,   +46 70 924 2713,          ,            American Museum of Natural History
-Sarah Jabbari,        sarahjab/nordita.org,          ,                     ,                  +46 70 097 2365 (mob),    Sarah Jab,   Saab
-André Kapelrud,       kapelrud/stud.ntnu.no,         ,                     ,                  ,                         ,            Norges teknisk-naturvitenskapelige universitet
-Koen Kemel,           koentjekemel/hotmail.com,      ,                     +46 8 5537 8277,   ,                         ,            Huntsman Corporation Salt Lake City
-Jonas Kruger,         jnskrueger/gmail.com,          jnskrueger,           +47 7359 3734,     +47 908 78 865,           ,            Norges teknisk-naturvitenskapelige universitet
-Maarit Korpi-Lagg     maarit.korpi-lagg/aalto.fi     ,                     +49 551 3849 79402,+49 151 158 76515,        maramiral,   MPS Göttingen, Aalto University
-Petri Käpylä,         pkapyla/leibniz-kis.de         ,                     +49 331 7499 522,  +49 151 523 15712,        pkapyla,     Kiepenheuer Institut
-Michiel Lambrechts,   michiel.lambrechts/gmail.com,  ,                     ,                  +46 73 613 71 11,         ,            Lund Observatory
-Illa R. Losada,       illa.rivero.losada/gmail.com,  illarl,               ,                  +46 70 772 6604 (mob),    ,            McDonald Observatory, USA
-Wladimir Lyra,        wladimir.lyra/gmail.com,       wladimir.lyra,        +1 818 393 2487,   +1 347 419 6711,          wladimir81,  New Mexico State University
-Tony Mee,             antony/onlymee.co.uk,          mee,                  +44 207 9950683,   +44 7787 767 772,         ,            Bank of America, Merryll Lynch, London
-Dhrubaditya Mitra,    dhruba.mitra/gmail.com,        dhruba,               +46 8 5537 8575,   +46 738 969 494, +46 730 547 603,      dhrubaditya, NORDITA
-Mikhail Modestov,     mikhail3/kth.se,               ,                     +46 8 5537 8039,   +46 73 8600 130,          ,            IAC, Teneriffe
-Jeffrey S. Oishi,     jsoishi/gmail.com,             ,                     +1 347 432 9203,   ,                         ,            Farmingdale State College
-Raphael Plasson,      ,                              ,                     +46 7 3575 8374,   ,                         ,            Harvard University
-Matthias Rheinhardt,  mreinhardt/nordita.org,        rei,                  +358 50 4480159,   ,+49 1590 2984560         ,            Aalto University
-Alex Richert,         alexrichert/gmail.com,         alexrichert,          ,                  ,                         ,            Penn State University
-Alberto Roper Pol     alberto.roperpol/unige.ch,     AlbertoRoper,         +33 749 341453                                            University of Geneva
-Graeme R. Sarson,     g.r.sarson/ncl.ac.uk,          ,                     +44 191 222 5375,  ,                         ,            Newcastle University
-Julien Savre,         juliensavre/gmail.com,         ,                     +46 46 222 3624,   +46 7 00 94 71 55,        ,            University of Cambridge
-Jennifer Schober,     schober.jen@gmail.com,         ,                     +41 76 723 43 64   ,                         ,            Laboratoire d'astrophysique, EPFL
-Ramkishor Sharma,     ramkishor.sharma/su.se         ,                     ,                  +46767530270              ,            Nordita
-Nishant K. Singh,     nishant.cosmo/gmail.com,       ,                     +91 9916785745,    ,                         ,            IUCAA
-Andrew Snodin,        andrew.snodin/ncl.ac.uk,       ,                     ,                  ,                         ,            King Mongkut's University of Technology North Bangkok
-Sharanya Sur,         sur/iucaa.ernet.in,            ,                     +91 2560 4115,     +91 94 210 37 292,        ,            Indian Institute of Astrophysics
-Andreas Svedin,       andreas/astro.columbia.edu,    ,                     +1 917 348 1018,   +46 73 968 86 56,         ,            NORDITA
-Johannes Tschernitz,  johannes.tschernitz/uni-graz.at,joh-tsch             ,                  ,                         ,            University of Graz
-Jörn Warnecke,        joern.warnecke/gmail.com,      joern.warnecke,       +49 551 384 979 398, +49 176 31545191,       dehrgeif,    Max-Planck-Institut für Sonnensystemforschung Göttingen
-Tijmen van Wettum,    ,                              TvanWettum,           ,                  ,                         ,            Transfer Solutions Leerdam Netherlands
-Chao-Chin Yang,       ccyang/ua.edu,                 ccyang/ua.edu,        +1 205 348 3792,   ,                         ,            The University of Alabama
-Tarek A. Yousef,      tarek/pvv.org,                 ,                     +44 798 122 8515,  ,                         ,            Norges teknisk-naturvitenskapelige universitet
-Xiang-Yu Li,          xiang.yu.li.phy/gmail.com,     ,                     ,                  +46 73 627 2556,          ,            NORDITA
-Luiz F. S. Rodrigues, luiz.rodrigues/ncl.ac.uk,      ,                     +44 191 208 3560,  ,                         luizfelippesr, Newcastle University
-Ewa Karchniwy,        ewa.karchniwy/ntnu.no,         ,                     ,                  +48 662 998 910,          ,            NTNU, Silesian University of Technology
-Vartika Pandey,       vartika.pandey/uni-graz.at,    VartikaPandey97,      ,                  ,                         ,            University of Graz
-Hongzhe Zhou,         hongzhe.zhou/sjtu.edu.cn,      ,                     ,                  +86 150 2138 2423,        ,            TDLI, Shanghai Jiao Tong University
+Omer Anjum,           oanjum/illinois.edu,           oa98105,              ,                  ,                         Aalto Univ. & Illinois, USA
+Natalia Babkovskaia,  nbabkovskaia/gmail.com,        NBabkovskaia,         +358 8 553 1939,   +358 40 5286784,          University of Helsinki
+Iouri Belokopytov,    iourib/kth.se,                 ,                     +46 8 553 784 29   ,+46 705 933 639          Nordita
+Steve Berukoff,       steveb/physics.ucla.edu,       ,                     ,                  ,                         National Solar Observatory Boulder
+Sven Bingert,         bingert/mps.mpg.de,            sven.bingert,         +49 5556 979 358,  +49 179 2126192,          GWDG Gottingen
+Philippe Bourdin,     pc/bourdin.ch,                 PABourdin,            +43 316 380 5258,  +43 720 513 493,          University of Graz
+Axel Brandenburg,     brandenb/nordita.org,          AxelBrandenburg,      ++46 8 5537 8707,  +46 73 270 4376,	        Nordita
+Simon Candelaresi,    iomsn1/gmail.com,              iomsn,                +44 141 330 0807,  ,                         University of Glasgow
+Chi-kwan Chan,        ckch/nordita.org,              chanchikwan,          +46 8 5537 8573,   +46 7273 91600,           Steward Observatory Arizona
+Piyali Chatterjee,    mppiyali/gmail.com,            mppiyali,             +91 80 2254 1242,  +47 9845 2367,            Indian Institute of Astrophysics
+Fabio Del Sordo,      fabio/nordita.org,             fadiesis,             +46 8 5537 8277,   +46 700629700,            Institute of Space Science, Barcelona
+Boris Dintrans,       boris.dintrans/gmail.com,	     boris.dintrans,       +33 4 67141400,    ,                         CNRS/CINES
+Wolfgang Dobler,      wdobler/gmail.com,             wdobler,              +49 33201 43791,   +49 151 28123472,
+Thomas Gastine,       gastine/mps.mpg.de,            ,                     +49 5556 979 456,  ,                         Max-Planck-Institut für Sonnensystemforschung Göttingen
+Fred A. Gent,         frederick.gent/aalto.fi,       fred.gent.ncl,        +358 50 344 9122,  +44 7779 364 893 (mob),   Aalto University+Nordita
+Gustavo Guerrero,     tavo.buk/gmail.com,            ,                     +46 8 5537 8718,   +46 76 089 1432,          Universidade Federal de Minas Gerais
+Anders Johansen,      anders/astro.lu.se,            ,                     +46 46 22 21589,   +46 736 84 96 98,         Lund Observatory+Copenhagen
+Nils E.L. Haugen,     Nils.E.Haugen/sintef.no,       ,                     +47 986 08 683,    +47 986 08 683,           SINTEF & Norges teknisk-naturvitenskapelige universitet
+Tobias Heinemann,     tobias.heinemann/gmail.com,    ,                     +1 609 734 8298,   ,                         University of Copenhagen
+Alexander Hubbard,    alex.i.hubbard/gmail.com,      ,                     +46 8 5537 8573,   +46 70 924 2713,          American Museum of Natural History
+Sarah Jabbari,        sarahjab/nordita.org,          ,                     ,                  +46 70 097 2365 (mob),    Saab
+André Kapelrud,       kapelrud/stud.ntnu.no,         ,                     ,                  ,                         Norges teknisk-naturvitenskapelige universitet
+Koen Kemel,           koentjekemel/hotmail.com,      ,                     +46 8 5537 8277,   ,                         Huntsman Corporation Salt Lake City
+Jonas Kruger,         jnskrueger/gmail.com,          jnskrueger,           +47 7359 3734,     +47 908 78 865,           Norges teknisk-naturvitenskapelige universitet
+Maarit Korpi-Lagg     maarit.korpi-lagg/aalto.fi     ,                     +49 551 3849 79402,+49 151 158 76515,        MPS Göttingen, Aalto University
+Petri Käpylä,         pkapyla/leibniz-kis.de         ,                     +49 331 7499 522,  +49 151 523 15712,        Kiepenheuer Institut Freiburg
+Michiel Lambrechts,   michiel.lambrechts/gmail.com,  ,                     ,                  +46 73 613 71 11,         Lund Observatory
+Illa R. Losada,       illa.rivero.losada/gmail.com,  illarl,               ,                  +46 70 772 6604 (mob),    McDonald Observatory, USA
+Wladimir Lyra,        wladimir.lyra/gmail.com,       wladimir.lyra,        +1 818 393 2487,   +1 347 419 6711,          New Mexico State University
+Tony Mee,             antony/onlymee.co.uk,          mee,                  +44 207 9950683,   +44 7787 767 772,         Bank of America, Merryll Lynch, London
+Dhrubaditya Mitra,    dhruba.mitra/gmail.com,        dhruba,               +46 8 5537 8575,   +46 738 969 494, +46 730 547 603, NORDITA
+Mikhail Modestov,     mikhail3/kth.se,               ,                     +46 8 5537 8039,   +46 73 8600 130,          IAC, Teneriffe
+Jeffrey S. Oishi,     jsoishi/gmail.com,             ,                     +1 347 432 9203,   ,                         Farmingdale State College
+Raphael Plasson,      ,                              ,                     +46 7 3575 8374,   ,                         Harvard University
+Matthias Rheinhardt,  mreinhardt/nordita.org,        rei,                  +358 50 4480159,   ,+49 1590 2984560         Aalto University
+Alex Richert,         alexrichert/gmail.com,         alexrichert,          ,                  ,                         Penn State University
+Alberto Roper Pol     alberto.roperpol/unige.ch,     AlbertoRoper,         +33 749 341453     ,                         University of Geneva
+Graeme R. Sarson,     g.r.sarson/ncl.ac.uk,          ,                     +44 191 222 5375,  ,                         Newcastle University
+Julien Savre,         juliensavre/gmail.com,         ,                     +46 46 222 3624,   +46 7 00 94 71 55,        University of Cambridge
+Jennifer Schober,     schober.jen@gmail.com,         ,                     +41 76 723 43 64   ,                         Laboratoire d'astrophysique, EPFL
+Ramkishor Sharma,     ramkishor.sharma/su.se         ,                     ,                  +46767530270              Nordita
+Nishant K. Singh,     nishant.cosmo/gmail.com,       ,                     +91 9916785745,    ,                         IUCAA
+Andrew Snodin,        andrew.snodin/ncl.ac.uk,       ,                     ,                  ,                         King Mongkut's University of Technology North Bangkok
+Sharanya Sur,         sur/iucaa.ernet.in,            ,                     +91 2560 4115,     +91 94 210 37 292,        Indian Institute of Astrophysics
+Andreas Svedin,       andreas/astro.columbia.edu,    ,                     +1 917 348 1018,   +46 73 968 86 56,         NORDITA
+Johannes Tschernitz,  johannes.tschernitz/tu-braunschweig.de,joh-tsch,     ,                  ,                         Technical University of Braunschweig
+Jörn Warnecke,        joern.warnecke/gmail.com,      joern.warnecke,       +49 551 384 979 398, +49 176 31545191,       Max-Planck-Institut für Sonnensystemforschung Göttingen
+Tijmen van Wettum,    ,                              TvanWettum,           ,                  ,                         First8 Conclusion, Netherlands
+Chao-Chin Yang,       ccyang/ua.edu,                 ccyang/ua.edu,        +1 205 348 3792,   ,                         The University of Alabama
+Tarek A. Yousef,      tarek/pvv.org,                 ,                     +44 798 122 8515,  ,                         Norges teknisk-naturvitenskapelige universitet
+Xiang-Yu Li,          xiang.yu.li.phy/gmail.com,     ,                     ,                  +46 73 627 2556,          NORDITA
+Luiz F. S. Rodrigues, luiz.rodrigues/ncl.ac.uk,      ,                     +44 191 208 3560,  ,                         Newcastle University
+Ewa Karchniwy,        ewa.karchniwy/ntnu.no,         ,                     ,                  +48 662 998 910,          NTNU, Silesian University of Technology
+Vartika Pandey,       vartika.pandey/uni-graz.at,    VartikaPandey97,      ,                  ,                         University of Graz
+Hongzhe Zhou,         hongzhe.zhou/sjtu.edu.cn,      ,                     ,                  +86 150 2138 2423,        TDLI, Shanghai Jiao Tong University
+Isabella Kraus,       isabella.kraus/uni-graz.at,    IsabellaKraus         ,                  ,                         University of Graz   
 ------------------------------------------------------------------------------------------------------------------------------------------------
 Please add further names (in alphabetical order) that have been forgotten so far!
 This file is located in the directory

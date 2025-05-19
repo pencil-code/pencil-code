@@ -106,7 +106,7 @@ module Special
   real :: count_eb0_all=0.
   real, target :: ddotam_all
   real, pointer :: alpf
-  real, pointer :: sigE_prefactor, sigB_prefactor
+  real, pointer :: sigE_prefactor, sigB_prefactor, mass_chi
 ! real, dimension (:), pointer :: eta_xtdep
   real, dimension (nx) :: dt1_special
   logical :: lbackreact_infl=.true., lem_backreact=.true., lzeroHubble=.false.
@@ -114,7 +114,8 @@ module Special
   logical :: lskip_projection_phi=.false., lvectorpotential=.false., lflrw=.false.
   logical :: lrho_chi=.false., lno_noise_phi=.false., lno_noise_dphi=.false.
   logical, pointer :: lphi_hom, lnoncollinear_EB, lnoncollinear_EB_aver
-  logical, pointer :: lcollinear_EB, lcollinear_EB_aver
+  logical, pointer :: lcollinear_EB, lcollinear_EB_aver, lmass_suppression
+  logical, pointer :: lallow_bprime_zero
 !
   character (len=labellen) :: Vprime_choice='quadratic', Hscript_choice='default'
   character (len=labellen), dimension(ninit) :: initspecial='nothing'
@@ -227,6 +228,9 @@ module Special
         call get_shared_variable('lcollinear_EB_aver',lcollinear_EB_aver)
         call get_shared_variable('lnoncollinear_EB',lnoncollinear_EB)
         call get_shared_variable('lnoncollinear_EB_aver',lnoncollinear_EB_aver)
+        call get_shared_variable('lmass_suppression',lmass_suppression)
+        call get_shared_variable('lallow_bprime_zero',lallow_bprime_zero)
+        call get_shared_variable('mass_chi',mass_chi)
       else
         if (.not.associated(alpf)) allocate(alpf,lphi_hom)
         alpf=0.
@@ -242,7 +246,7 @@ module Special
 !  initialise special condition; called from start.f90
 !  06-oct-2003/tony: coded
 !
-      use Initcond, only: gaunoise, sinwave_phase, hat, power_randomphase_hel, power_randomphase
+      use Initcond, only: gaunoise, sinwave_phase, hat, power_randomphase_hel, power_randomphase, bunch_davies
       use Mpicomm, only: mpibcast_real
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -317,7 +321,8 @@ module Special
               cutoff_dphi,ncutoff_phi,kpeak_dphi,f,iinfl_dphi,iinfl_dphi, &
               relhel_phi,kgaussian_phi, lskip_projection_phi, lvectorpotential, &
               lscale_tobox, lpower_profile_file=.false., lno_noise=lno_noise_dphi)
-  
+          case ('Bunch-Davies')
+            call bunch_davies(f,iinfl_phi,iinfl_phi,iinfl_dphi,iinfl_dphi,amplphi,kpeak_phi)
           case default
             call fatal_error("init_special: No such initspecial: ", trim(initspecial(j)))
         endselect
@@ -667,7 +672,7 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real :: boost, gam_EB, eprime, bprime, jprime1
-      real :: energy_scale
+      real :: energy_scale, mass_suppression_fact
 !      real, dimension (nx,3) :: el, bb, gphi
 !      real, dimension (nx) :: e2, b2, gphi2, dphi, a21, a2rhop, a2rho
 !      real, dimension (nx) :: ddota, phi, a2, Vpotential, edotb
@@ -803,6 +808,7 @@ module Special
           endif
 !
 !  Similarly for collinear case.
+!  Mass suppression is currently defined for the collinear case only.
 !
         elseif (lcollinear_EB_aver) then
           eprime=sqrt(e2m_all)
@@ -815,6 +821,10 @@ module Special
             sigE1m_all=0.
             sigB1m_all=0.
             count_eb0_all=1.
+          endif
+          if (lmass_suppression) then
+            mass_suppression_fact=exp(-pi*mass_chi**2/(Chypercharge**onethird*echarge*eprime))
+            sigE1m_all=sigE1m_all*mass_suppression_fact
           endif
         endif
 !
@@ -837,6 +847,8 @@ module Special
       real, dimension (nx) :: boost, gam_EB, eprime, bprime, jprime1
 !
 !  if requested, calculate here <dphi**2+gphi**2+(4./3.)*(E^2+B^2)/a^2>
+!  rhop is purely an output quantity
+!  It is called a2rhom because rhom=a2rhom/a^2.
 !
       phi=f(l1:l2,m,n,iinfl_phi)
       dphi=f(l1:l2,m,n,iinfl_dphi)
@@ -852,6 +864,9 @@ module Special
         a2rho=0.5*(dphi**2+gphi2)
         a2rhophim=a2rhophim+sum(a2rho)
       endif
+!
+!  Note the .5*fourthird factor in front of (e2+b2)*a21, but that is
+!  just for rhop, which is output quantity.
 !
       if (iex/=0 .and. lem_backreact) then
         el=f(l1:l2,m,n,iex:iez)
@@ -902,19 +917,35 @@ module Special
             gam_EB=sqrt21*sqrt(1.+(e2+b2)/boost)
             eprime=sqrt21*sqrt(e2-b2+boost)
             bprime=sqrt21*sqrt(b2-e2+boost)*sign(1.,edotb)
-            where (eprime/=0. .and. bprime/=0.)
-              jprime1=1./(6.*pi**2)*eprime*abs(bprime)/tanh(pi*abs(bprime)/eprime)
-              sigE1=abs(jprime1)*eprime/(gam_EB*boost)
-              sigB1=abs(jprime1)*edotb/(eprime*gam_EB*boost)
-            elsewhere
-              sigE1=0.
-              sigB1=0.
-            endwhere
+            if (lallow_bprime_zero) then
+              where (eprime/=0.)
+                where (bprime/=0.)
+                  jprime1=1./(6.*pi**2)*eprime*abs(bprime)/tanh(pi*abs(bprime)/eprime)
+                elsewhere
+                  jprime1=1./(6.*pi**3)*eprime**2
+                endwhere
+                sigE1=abs(jprime1)*eprime/(gam_EB*boost)
+                sigB1=abs(jprime1)*edotb/(eprime*gam_EB*boost)
+              elsewhere
+                sigE1=0.
+                sigB1=0.
+              endwhere
+            else
+              where (eprime/=0. .and. bprime/=0.)
+                jprime1=1./(6.*pi**2)*eprime*abs(bprime)/tanh(pi*abs(bprime)/eprime)
+                sigE1=abs(jprime1)*eprime/(gam_EB*boost)
+                sigB1=abs(jprime1)*edotb/(eprime*gam_EB*boost)
+              elsewhere
+                sigE1=0.
+                sigB1=0.
+              endwhere
+            endif
           endif
 !
 !  Repeat calculation of sigE and sigB. Do this first without
 !  echarge and Hscript and apply those factors later.
 !  Do the following block only when lnoncollinear_EB, but not when lnoncollinear_EB_aver.
+!  Note: no multiplication by mass suppression factor is or can be done here.
 !
           if (lcollinear_EB) then
             eprime=sqrt(e2)

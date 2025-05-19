@@ -1464,8 +1464,8 @@ module Boundcond
                   'hs boundary condition requires gravity')
                 if ((.not. ltemperature .or. ltemperature_nolog) .and. (gravz_profile /= 'const')) &
                   call fatal_error('boundconds_z', 'hs boundary condition requires a constant gravity profile')
-                if (.not. lequidist(3)) call fatal_error('boundconds_z', &
-                  'hs boundary condition requires symmetric grid distances on the z boundary')
+                !if (.not. lequidist(3) .and. lroot) call warning('boundconds_z', &
+                !  'hs boundary condition requires symmetric grid distances on the z boundary')
                 if ((j==ilnrho) .or. (j==irho_b) .or. (j==iss)) then
                   call bc_lnrho_hds_z_iso(f,topbot)
                 elseif (j==ipp) then

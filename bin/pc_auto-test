@@ -2014,12 +2014,7 @@ sub mark_failed {
                 }
             }
             if ($works == $fails - 1) {
-                # The following line does not work on Norlx51 (ubuntu 12.04) because of its outdated SVN client:
-                #my $author = `svn info "$pencil_home" --revision $fails --show-item last-changed-author`;
-                # This is the temporary replacement code
-                my $author = `svn info "$pencil_home" --revision $fails --xml`;
-                if ($author =~ /<author>\s*(.*)<\/author>/is) { $author = $1; }
-                else { $author = "problem obtaining author information"; }
+                my $author = `svn info "$pencil_home" --revision $fails --show-item last-changed-author`;
                 chomp $author;
                 print "===> This is the offending commit from: $author$readme\n";
             }
@@ -2051,10 +2046,7 @@ sub get_current_revision {
         # Get current SVN revision and GIT hash
         if (-d "$pencil_home/.svn") {
             # SVN revision
-            # The following line fails on Norlx51 (ubuntu 12.04) with old SVN client:
-            #$current_revision = `svn info "$pencil_home" --show-item revision`;
-            my $result = `svn info "$pencil_home" --xml`;
-            if ($result =~ /revision\s*=\s*"(\d+)"/is) { $current_revision = $1; }
+            $current_revision = `svn info "$pencil_home" --show-item revision`;
             if (!$current_revision) {
                 $current_revision = "Problem obtaining SVN revision!";
             } else {
@@ -2063,7 +2055,7 @@ sub get_current_revision {
                 while (!$current_hash && ($tries < 4)) {
                     if ($tries > 0) { sleep (3*$tries); }
                     $tries++;
-                    $current_hash = `wget -q "http://pencil-code.org/translate.php?output=plain&revision=$current_revision" -O -`;
+                    $current_hash = `wget -q "https://pencil-code.org/translate.php?output=plain&revision=$current_revision" -O -`;
                     chomp ($current_hash);
                 }
             }

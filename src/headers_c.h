@@ -1,6 +1,5 @@
 /*                             headers_c.h
                                -----------
-
    $Id$
    Description:
      Common headers for all of our C files. Mostly required to get the
