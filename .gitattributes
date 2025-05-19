@@ -4114,6 +4114,9 @@ src/SGS_hydro.f90 -text
 src/SGS_hydro.h -text
 src/ascalar.f90 -text
 src/ascalar.h -text
+src/astaroth/DSL/radiation/Qfinalize.h -text
+src/astaroth/DSL/radiation/Qintrinsic.h -text
+src/astaroth/DSL/radiation/Qrevision.h -text
 src/astaroth/Makefile -text
 src/astaroth/Makefile.depend -text
 src/astaroth/Makefile.extern -text

@@ -414,3 +414,14 @@ src/astaroth/PC_*
 !samples/1d-tests/rel-shock/.run_directories.log
 !samples/1d-tests/rel-shock/pc_build_tmp_*
 !samples/1d-tests/rel-shock/.pc_build_history
+!src/astaroth/DSL/radiation/.DS_Store
+!src/astaroth/DSL/radiation/*.directory
+!src/astaroth/DSL/radiation/*.pyc
+!src/astaroth/DSL/radiation/*~
+!src/astaroth/DSL/radiation/.*.swp
+!src/astaroth/DSL/radiation/host-ID
+!src/astaroth/DSL/radiation/revision.txt
+!src/astaroth/DSL/radiation/*-eps-converted-to.pdf
+!src/astaroth/DSL/radiation/.pc_build_history
+!src/astaroth/DSL/radiation/.run_directories.log
+!src/astaroth/DSL/radiation/pc_build_tmp_*
