@@ -116,6 +116,7 @@ has_nans(AcMesh mesh_in);
   #define itauzz itauzz__mod__training
 
   #define lread_all_vars_from_device lread_all_vars_from_device__mod__cdata
+  #define lcuda_aware_mpi            lcuda_aware_mpi__mod__cdata
   #define lsecond_force lsecond_force__mod__forcing
   #define lforce_helical lforce_helical__mod__forcing
 #endif
@@ -1325,6 +1326,7 @@ void modulepars(AcMeshInfo& config){
 void setupConfig(AcMeshInfo& config)
 { 
   modulepars(config);
+  PCLoad(config, AC_use_cuda_aware_mpi,lcuda_aware_mpi);
   //TP: loads for non-cartesian derivatives
 #if TRANSPILATION
   PCLoad(config, AC_inv_cyl_r,rcyl_mn1);
