@@ -3,8 +3,8 @@ Field  QRADTOT
 Field  RADPRESS[9]
 // all correspond to f-array slots
 
-// Provide weight*[idir] as weight*; unit_vec[idir] as unit_vec; ij_table
-Kernel Qfinalize(real weight, real weightn, real unit_vec[3], int ij_table[3][3]) {
+// Provide weight*[idir] as weight*; unit_vec[idir] as unit_vec
+Kernel Qfinalize(real weight, real weightn, real unit_vec[3]) {
 
 // Standard kernel: one thread per grid point in subdomain
 
