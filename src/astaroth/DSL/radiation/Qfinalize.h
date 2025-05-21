@@ -8,7 +8,7 @@ Kernel Qfinalize(real weight, real weightn, real unit_vec[3]) {
 
 // Standard kernel: one thread per grid point in subdomain
 
-    idx = DEVICE_VTXBUF_IDX[l,m,n]
+    idx = DEVICE_VTXBUF_IDX(l,m,n)
     QRADTOT[idx] += weight*QRAD*KAPPARHO
 
 //  Calculate radiative flux.
@@ -26,7 +26,7 @@ Kernel Qfinalize(real weight, real weightn, real unit_vec[3]) {
     if (lradpress) {
       for j in range(0,3){
         for i in range(0,j){
-          k=ij_table[i][j]-1     // order!!!
+          k=ij_table[i][j]-1     // order?
           RADPRESS[idx][k] += weightn*unit_vec[i]*unit_vec[j]*tmp/c_light
         }
       }
