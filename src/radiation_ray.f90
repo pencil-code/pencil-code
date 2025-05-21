@@ -701,7 +701,7 @@ module Radiation
 !
               if (lgpu) then
                 !call calcQ_gpu(idir, dir(idir,:), (/llstop,mmstop,nnstop/), &
-                !               unit_vec(idir,:), lperiodic_ray)
+                !               weight(idir), weightn(idir), unit_vec(idir,:), lperiodic_ray)
               else
                 if (lintrinsic) call Qintrinsic(f)
 !
@@ -715,7 +715,6 @@ module Radiation
                 endif
 !
                 if (lrevision) call Qrevision
-              endif
 !
 !  Calculate heating rate, so at the end of the loop
 !  f(:,:,:,iQrad) = \int_{4\pi} (I-S) d\Omega, not divided by 4pi.
@@ -723,31 +722,32 @@ module Radiation
 !  Turn this now into heating rate by multiplying with opacity.
 !  This allows the opacity to be frequency-dependent.
 !
-              f(:,:,:,iQrad)=f(:,:,:,iQrad)+weight(idir)*Qrad*f(:,:,:,ikapparho)
+                f(:,:,:,iQrad)=f(:,:,:,iQrad)+weight(idir)*Qrad*f(:,:,:,ikapparho)
 !
 !  Calculate radiative flux. Multiply it here by opacity to have the correct
 !  frequency-dependent contributions from all frequencies.
 !
-              if (lradflux) then
-                do j=1,3
-                  k=iKR_Frad+(j-1)
-                  f(:,:,:,k)=f(:,:,:,k)+weightn(idir)*unit_vec(idir,j)*(Qrad+Srad)*f(:,:,:,ikapparho)
-                enddo
-              endif
+                if (lradflux) then
+                  do j=1,3
+                    k=iKR_Frad+(j-1)
+                    f(:,:,:,k)=f(:,:,:,k)+weightn(idir)*unit_vec(idir,j)*(Qrad+Srad)*f(:,:,:,ikapparho)
+                  enddo
+                endif
 !
 !  Calculate radiative pressure. Multiply it here by opacity to have the correct
 !  frequency-dependent contributions from all frequencies.
 !
-              if (lradpress) then
-                do j=1,3
-                do i=1,j
-                  ij=ij_table(i,j)
-                  k=iKR_press+(ij-1)
-                  f(:,:,:,k)= f(:,:,:,k)+weightn(idir)*unit_vec(idir,i)*unit_vec(idir,j) &
-                             *(Qrad+Srad)*f(:,:,:,ikapparho)/c_light
-                enddo
-                enddo
-              endif
+                if (lradpress) then
+                  do j=1,3
+                  do i=1,j
+                    ij=ij_table(i,j)
+                    k=iKR_press+(ij-1)
+                    f(:,:,:,k)= f(:,:,:,k)+weightn(idir)*unit_vec(idir,i)*unit_vec(idir,j) &
+                               *(Qrad+Srad)*f(:,:,:,ikapparho)/c_light
+                  enddo
+                  enddo
+                endif
+              endif      !   if (lgpu) ... else
 !
 !  Store outgoing intensity in case of lower reflective boundary condition.
 !  We need to set Iup=Idown+I0 at the lower boundary. We must first integrate
