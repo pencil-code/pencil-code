@@ -10,6 +10,7 @@
     use General, only: keep_compiler_quiet
 
     implicit none
+
     include 'training.h'
 
     contains

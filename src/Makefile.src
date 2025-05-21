@@ -3037,7 +3037,7 @@ technical=$(CPARAM_OBJ) $(CDATA_OBJ) $(MPICOMM_OBJ) $(BORDER_PROFILES_OBJ) $(BOU
 #
 #  Short hand notation for start.o dependencies.
 #
-start=$(technical) $(physics) $(GPU_OBJ) dummy_astaroth_ansi.o $(TRAINING_OBJ)
+start=$(technical) $(physics) $(GPU_OBJ) nogpu_astaroth_ansi.o $(TRAINING_OBJ)
 #
 #  Short hand notation for run.o dependencies.
 #

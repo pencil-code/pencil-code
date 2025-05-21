@@ -789,9 +789,9 @@ module Radiation
 !
 ! Upper limit radiative heating by qrad_max
 !
-      if (lno_rad_heating .and. (qrad_max > 0)) then
-          where(f(:,:,:,iQrad) > qrad_max) f(:,:,:,iQrad)=qrad_max
-      endif
+      if (lno_rad_heating .and. (qrad_max > 0)) &
+         f(l1-radx:l2+radx,m,n,iQrad) = min(f(l1-radx:l2+radx,m,n,iQrad),qrad_max)
+
     endsubroutine radtransfer
 !***********************************************************************
     subroutine raydirection

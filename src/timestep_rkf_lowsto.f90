@@ -289,8 +289,8 @@ module Timestep
 !
 !  Integrate operator split terms.
 !
-      if(.not. lgpu) then
-        call split_update(falpha(:,:,:,:))
+      if (.not. lgpu) then
+        call split_update(falpha)
 !
 !  Check how much the maximum error satisfies the defined accuracy threshold
 !

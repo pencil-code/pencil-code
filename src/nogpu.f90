@@ -64,19 +64,33 @@ contains
 !
     endsubroutine rhs_GPU
 !**************************************************************************
-    function get_ptr_GPU(ind1,ind2,lout,nbatch_training) result(pFarr)
+    function get_ptr_GPU(ind1,ind2,lout) result(pFarr)
 
       integer :: ind1
-      integer, optional :: ind2, nbatch_training
+      integer, optional :: ind2
       logical, optional :: lout
 
       real, dimension(:,:,:,:), pointer :: pFarr
 
-      call keep_compiler_quiet(ind1,ind2,nbatch_training)
+      call keep_compiler_quiet(ind1,ind2)
       call keep_compiler_quiet(lout)
       call keep_compiler_quiet(pFarr)
 
     endfunction get_ptr_GPU
+!**************************************************************************
+    function get_ptr_GPU_training(ind1,ind2,lout) result(pFarr)
+
+      integer :: ind1
+      integer, optional :: ind2
+      logical, optional :: lout
+
+      real, dimension(:,:,:,:,:), pointer :: pFarr
+
+      call keep_compiler_quiet(ind1,ind2)
+      call keep_compiler_quiet(lout)
+      call keep_compiler_quiet(pFarr)
+
+    endfunction get_ptr_GPU_training
 !**************************************************************************
     subroutine copy_farray_from_GPU(f)
 
@@ -146,12 +160,15 @@ contains
 
     endsubroutine train_gpu
 !**************************************************************************
-    subroutine calcQ_gpu(dir, stop, dlength, unit_vec)
+    subroutine calcQ_gpu(idir, dir, stop, dlength, unit_vec, lperiodic)
 
+      integer :: idir
       integer, dimension(3) :: dir, stop
       real, dimension(mx) :: dlength
       real, dimension(3) :: unit_vec
+      logical :: lperiodic
 
+      call keep_compiler_quiet(dir,stop)
       call keep_compiler_quiet(dlength)
       call keep_compiler_quiet(unit_vec)
 

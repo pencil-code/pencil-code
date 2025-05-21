@@ -359,7 +359,7 @@ module Snapshot
         ! update ghosts, because 'update_auxiliaries' may change the data
         if (.not. loptest(noghost).or.ncoarse>1) call update_ghosts(a)
         call safe_character_assign(file,trim(chsnap))
-        if (lbackup_snap.and..not.lstart) &
+        if (lbackup_snap .and. .not.lstart .and. .not.(chsnap=='crash.dat' .or. chsnap(1:1)=='d' )) &
             call system_cmd('mv -f '//trim(directory_snap)//'/'//trim(file)//' '// &
                             trim(directory_snap)//'/'//trim(file)//'.bck '//' >& /dev/null')
         if (lmultithread.and.nt>0) then

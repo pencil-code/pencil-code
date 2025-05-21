@@ -19,6 +19,7 @@
     !use iso_c_binding
 
     implicit none
+
     include 'training.h'
 
     integer :: model_device=0
@@ -213,7 +214,7 @@
 !***************************************************************
     subroutine infer(f)
     
-      use Gpu, only: get_ptr_gpu, infer_gpu
+      use Gpu, only: get_ptr_gpu_training, infer_gpu
       use Sub, only: smooth
 
       real, dimension (mx,my,mz,mfarray) :: f
@@ -232,8 +233,8 @@
         input(:,:,:,:,1) = uumean
         istat = torchfort_inference(model, input, output)
       else
-        !istat = torchfort_inference(model, get_ptr_gpu(iux,iuz,nbatch_training=1), &
-        !                                   get_ptr_gpu(itauxx,itauzz,nbatch_training=1))
+        !istat = torchfort_inference(model, get_ptr_gpu_training(iux,iuz), &
+        !                                   get_ptr_gpu_training(itauxx,itauzz))
         call infer_gpu(1)
       endif
 
@@ -262,7 +263,7 @@
 !***************************************************************
     subroutine train(f)
    
-      use Gpu, only: get_ptr_gpu, train_gpu, infer_gpu
+      use Gpu, only: get_ptr_gpu_training, train_gpu, infer_gpu
 
       real, dimension (mx,my,mz,mfarray) :: f
 
@@ -274,8 +275,8 @@
           !TP: this is to calculate validation loss
           call infer_gpu(0)
           !TODO: smoothing/scaling etc. for uu and tau
-          !istat = torchfort_train(model, get_ptr_gpu(iux,iuz,nbatch_training=1), &
-          !                               get_ptr_gpu(itauxx,itauzz,nbatch_training=1), train_loss)
+          !istat = torchfort_train(model, get_ptr_gpu_training(iux,iuz), &
+          !                               get_ptr_gpu_training(itauxx,itauzz), train_loss)
           call train_gpu(train_loss)
         else
           call calc_tau(f)

@@ -345,7 +345,7 @@ notraining.o: training.h notraining.f90 $(GENERAL_OBJ)
 #
 gpu_astaroth_ansi.o: gpu_astaroth_ansi.c headers_c.h Makefile.local
 #
-dummy_astaroth_ansi.o: dummy_astaroth_ansi.c headers_c.h Makefile.local
+nogpu_astaroth_ansi.o: nogpu_astaroth_ansi.c headers_c.h Makefile.local
 #
 $(LSODE_FC_OBJ): $(LSODE_FC_SRC) $(CDATA_OBJ) $(CHEMISTRY_OBJ)
 #
