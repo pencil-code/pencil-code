@@ -313,7 +313,7 @@
         if (istat /= TORCHFORT_RESULT_SUCCESS) call fatal_error("train","istat="//trim(itoa(istat)))
 
         if (train_loss <= max_loss) ltrained=.true.
-        if ((it_train_end >= 0) && it >= it_train_end) ltrained=.true.
+        if ((it_train_end >= 0) .and. it >= it_train_end) ltrained=.true.
 
         if (lroot.and.lfirst.and.mod(it,it_train_chkpt)==0) then
           istat = torchfort_save_checkpoint(trim(model), trim(checkpoint_output_dir))
