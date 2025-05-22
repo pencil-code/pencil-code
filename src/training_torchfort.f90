@@ -23,7 +23,7 @@
     include 'training.h'
 
     integer :: model_device=0
-    integer :: it_train=-1, it_train_chkpt=-1, it_train_start=1
+    integer :: it_train=-1, it_train_chkpt=-1, it_train_start=1,it_train_end=-1
 
     !real(KIND=rkind4), dimension(:,:,:,:,:), allocatable, device :: input, label, output
     real, dimension(:,:,:,:,:), allocatable, device :: input, label, output
@@ -40,7 +40,8 @@
     integer :: idiag_tauerror=0        ! DIAG_DOC: $\sqrt{\left<(\sum_{i,j} u_i*u_j - tau_{ij})^2\right>}$
 
     namelist /training_run_pars/ config_file, model, it_train, it_train_start, it_train_chkpt, &
-                                 luse_trained_tau, lscale, lwrite_sample, max_loss, lroute_via_cpu
+                                 luse_trained_tau, lscale, lwrite_sample, max_loss, lroute_via_cpu,&
+                                 it_train_end
 !
     character(LEN=fnlen) :: model_output_dir, checkpoint_output_dir
     integer :: istat, train_step_ckpt, val_step_ckpt
@@ -312,6 +313,7 @@
         if (istat /= TORCHFORT_RESULT_SUCCESS) call fatal_error("train","istat="//trim(itoa(istat)))
 
         if (train_loss <= max_loss) ltrained=.true.
+        if ((it_train_end >= 0) && it >= it_train_end) ltrained=.true.
 
         if (lroot.and.lfirst.and.mod(it,it_train_chkpt)==0) then
           istat = torchfort_save_checkpoint(trim(model), trim(checkpoint_output_dir))
