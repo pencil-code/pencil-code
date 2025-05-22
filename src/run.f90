@@ -1536,6 +1536,7 @@ call copy_addr(ip,p_par(1223))
 call copy_addr_dble(m_h,p_par(1224))
 call copy_addr_dble(sigmah_,p_par(1225))
 call copy_addr(lcuda_aware_mpi,p_par(1226)) ! bool
+call copy_addr(it,p_par(1227)) ! int
 
 endsubroutine pushpars2c
 !***********************************************************************

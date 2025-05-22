@@ -64,6 +64,7 @@ has_nans(AcMesh mesh_in);
   #define ldt ldt__mod__cdata
   #define lcourant_dt lcourant_dt__mod__cdata
   #define dt dt__mod__cdata
+  #define it it__mod__cdata
   #define dx dx__mod__cdata
   #define dy dy__mod__cdata
   #define dz dz__mod__cdata
