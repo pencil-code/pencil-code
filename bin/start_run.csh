@@ -275,14 +275,17 @@ endif
 if ($?LOADL_STEP_ID) then
   echo $LOADL_STEP_ID " # RUN STARTED on "$LOADL_STEP_CLASS `date` \
     >> $datadir/jobid.dat
+    svn info --show-item revision $PENCIL_HOME/ >>data/jobid.dat
 endif
 if ($?SLURM_JOB_ID) then
   echo $SLURM_JOB_ID " # RUN STARTED on "$SLURMD_NODENAME `date` \
     >> $datadir/jobid.dat
+    svn info --show-item revision $PENCIL_HOME/ >>data/jobid.dat
 endif
 # EASY job (PDC):
 if ($?SP_JID) then
   echo $SP_JID " # RUN STARTED on " `date` >> $datadir/jobid.dat
+  svn info --show-item revision $PENCIL_HOME/ >>data/jobid.dat
 endif
 
 # Write time and current working directory into log file
@@ -337,10 +340,12 @@ pc_deprecated_slice_links
 #endif
 if ($?SLURM_JOB_ID) then
   echo $SLURM_JOB_ID " # RUN FINISHED on "$SLURMD_NODENAME `date` >> $datadir/jobid.dat
+  svn info --show-item revision $PENCIL_HOME/ >>data/jobid.dat
 endif
 # EASY job (PDC):
 if ($?SP_JID) then
   echo $SP_JID " # RUN FINISHED on " `date` >> $datadir/jobid.dat
+  svn info --show-item revision $PENCIL_HOME/ >>data/jobid.dat
 endif
 
 # look for RERUN file
