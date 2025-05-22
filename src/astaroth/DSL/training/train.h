@@ -1,4 +1,4 @@
-#if LTRAINING
+//#if LTRAINING
 communicated Field3 UUMEAN
 communicated FieldSymmetricTensor TAU
 communicated FieldSymmetricTensor TAU_INFERRED
@@ -80,11 +80,11 @@ Kernel final_tau(){
 	write(TAU.xz, -(UX*UZ) + TAU.xz)
 }
 
-output real minTAU
-output real maxTAU
+global output real minTAU
+global output real maxTAU
 
-output real minUUMEAN
-output real maxUUMEAN
+global output real minUUMEAN
+global output real maxUUMEAN
 
 Kernel reduce_uumean_tau(){
 	real minimumTAU = min(TAU.xx, min(TAU.yy, min(TAU.zz, min(TAU.xy, min(TAU.yz, TAU.xz)))))
@@ -100,11 +100,11 @@ Kernel reduce_uumean_tau(){
 	reduce_max(maximumUUMEAN, maxUUMEAN)
 }
 
-output real minTAUxx, minTAUyy, minTAUzz, minTAUxy, minTAUyz, minTAUxz
-output real maxTAUxx, maxTAUyy, maxTAUzz, maxTAUxy, maxTAUyz, maxTAUxz
+global output real minTAUxx, minTAUyy, minTAUzz, minTAUxy, minTAUyz, minTAUxz
+global output real maxTAUxx, maxTAUyy, maxTAUzz, maxTAUxy, maxTAUyz, maxTAUxz
 
-output real minUUMEANx, minUUMEANy, minUUMEANz
-output real maxUUMEANx, maxUUMEANy, maxUUMEANz
+global output real minUUMEANx, minUUMEANy, minUUMEANz
+global output real maxUUMEANx, maxUUMEANy, maxUUMEANz
 
 Kernel component_wise_reduce(){
 	reduce_min(TAU.xx, minTAUxx)
@@ -200,7 +200,7 @@ component_wise_descale_uumean(Field3 f, real minx, real miny, real minz, real ma
 	return real3(descaled_x, descaled_y, descaled_z)
 }
 
-output real AC_l2_sum
+global output real AC_l2_sum
 Kernel l2_sum(){
    res = 0.0
    res +=  (TAU_INFERRED.xx - TAU.xx)*(TAU_INFERRED.xx - TAU.xx)
@@ -252,4 +252,4 @@ ComputeSteps scale(boundconds){
 ComputeSteps descale(boundconds){
 	descale_kernel()
 }
-#endif
+//#endif
