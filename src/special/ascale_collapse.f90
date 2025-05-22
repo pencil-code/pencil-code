@@ -151,7 +151,7 @@ module Special
       use Mpicomm, only: mpibcast_real
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: Vpotential, Hubble_ini, infl_gam
+      real :: Vpotential
       integer :: j
 !
       intent(inout) :: f

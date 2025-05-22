@@ -304,9 +304,6 @@ module Special
               lskip_projection_ee, lvectorpotential, lscale_tobox=lscale_tobox, &
               lno_noise=lno_noise_ee, lrandom_ampl=lrandom_ampl_ee, &
               lfixed_phase=lfixed_phase_ee)
-          case ('Bunch-Davies')
-            call bunch_davies(f,iax,iaz,iex,iez,amplee(j),kpeak_ee)
-  !
           case default
             call fatal_error('init_ee','no such init_ee: "'//trim(initee(j))//'"')
         endselect

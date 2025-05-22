@@ -220,6 +220,7 @@ module Hydro
   real :: uphi_rbot=1., uphi_rtop=1., uphi_step_width=0.
   integer :: novec,novecmax=nx*ny*nz/4, niter_relB=1
   logical :: ldamp_fade=.false.,lOmega_int=.false.,lupw_uu=.false.
+  logical :: lhubble_hydro=.false.
   logical :: lfreeze_uint=.false.,lfreeze_uext=.false.
   logical :: lremove_mean_angmom=.false.
   logical :: lremove_mean_momenta=.false.
@@ -287,7 +288,7 @@ module Hydro
       interior_bc_hydro_profile, lhydro_bc_interior, z1_interior_bc_hydro, &
       velocity_ceiling, ampl_Omega, lcoriolis_xdep, &
       ekman_friction, friction_tdep, friction_tdep_toffset, friction_tdep_tau0, &
-      t1_ekman, t2_ekman, &
+      t1_ekman, t2_ekman, lhubble_hydro, &
       ampl_forc, k_forc, w_forc, x_forc, dx_forc, ampl_fcont_uu, Sbaro0, &
       lno_meridional_flow, lrotation_xaxis, k_diffrot,Shearx, rescale_uu, &
       hydro_xaver_range, Ra, Pr, llinearized_hydro, lremove_mean_angmom, &
@@ -4080,6 +4081,13 @@ module Hydro
         endselect
         call multsv_mn(frict,p%uu,tmpv)
         df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-tmpv
+      endif
+!
+!  Hubble friction, here the term for supercomoving coordinates with nconf1p5.
+!  This could be steered later with the ascale_type parameter in cdata.f90.
+!
+      if (lhubble_hydro) then
+        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-.5*Hubble*ascale**1.5*p%uu
       endif
 !
 !  Boussinesq approximation: -g_z*alpha*(T-T_0) added.

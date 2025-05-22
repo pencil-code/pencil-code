@@ -6184,7 +6184,8 @@ module Initcond
 !***********************************************************************
     subroutine bunch_davies(f,i1a,i1b,i2a,i2b,ampl,kpeak)
 !
-!  21-mar-14/axel: adapted from power_randomphase_hel
+!  21-mar-25/axel: adapted from power_randomphase_hel
+!  21-may-25/axel: when kpeak<0, interpret is as sharp cutoff; powerlaw otherwise.
 !
       use Fourier, only: fft_xyz_parallel
       use General, only: loptest, roptest
@@ -6282,15 +6283,25 @@ module Initcond
 !
 !  Put cutoff at kpeak in v_im.
 !
-      where(k1>=kpeak)
-        v_im(:,:,:,1)=v_im(:,:,:,1)*(kpeak/k1)**3
-        v_im(:,:,:,2)=v_im(:,:,:,2)*(kpeak/k1)**3
-        v_im(:,:,:,3)=v_im(:,:,:,3)*(kpeak/k1)**3
-      endwhere
+      if (kpeak<0.) then
+        where(k1>=abs(kpeak))
+          v_im(:,:,:,1)=0.
+          v_im(:,:,:,2)=0.
+          v_im(:,:,:,3)=0.
+        endwhere
+      else
+        where(k1>=kpeak)
+          v_im(:,:,:,1)=v_im(:,:,:,1)*(kpeak/k1)**3
+          v_im(:,:,:,2)=v_im(:,:,:,2)*(kpeak/k1)**3
+          v_im(:,:,:,3)=v_im(:,:,:,3)*(kpeak/k1)**3
+        endwhere
+      endif
 !
 !  Compute Bunch-Davies vacuum, A = e^(-i*k*eta)/sqrt(2*k), so
 !  E = -dA/deta = +i*k*e^(-i*k*eta)/sqrt(2*k) = i*e^(-i*k*eta)*sqrt(k/2)
 !  Here, v_im serves as a temporary array until the last line.
+!  The correct prefactor ampl of H = Hscript/a should be applied in the
+!  call tp this routine.
 !
       do i=1,3
         u_re(:,:,:,i)=+ampl*v_im(:,:,:,i)*cos(-k1)/sqrt(k1*2.)

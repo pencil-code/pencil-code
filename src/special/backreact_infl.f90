@@ -32,7 +32,7 @@
 !    NOT IMPLEMENTED FULLY YET - HOOKS NOT PLACED INTO THE PENCIL-CODE
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
-! Declare (for generation of special_dummies.inc) the number of f array
+! Declare (for generation of backreact_infl_dummies.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: lspecial = .true.
@@ -72,7 +72,7 @@
 ! Where geo_kws it replaced by the filename of your new module
 ! upto and not including the .f90
 !
-module Special
+module backreact_infl
 !
   use Cdata
   use General, only: keep_compiler_quiet
@@ -102,6 +102,7 @@ module Special
   real :: a2rhogphim, a2rhogphim_all
   real :: lnascale, a2, a21, Hscript
   real :: Hscript0=0., scale_rho_chi_Heqn=1.
+  real :: amplee_BD_prefactor=0., kpeak_ee_BD=0.
   real :: echarge=.0, echarge_const=.303
   real :: count_eb0_all=0.
   real, target :: ddotam_all
@@ -116,21 +117,20 @@ module Special
   logical, pointer :: lphi_hom, lnoncollinear_EB, lnoncollinear_EB_aver
   logical, pointer :: lcollinear_EB, lcollinear_EB_aver, lmass_suppression
   logical, pointer :: lallow_bprime_zero
-!
   character (len=labellen) :: Vprime_choice='quadratic', Hscript_choice='default'
   character (len=labellen), dimension(ninit) :: initspecial='nothing'
   character (len=50) :: echarge_type='const'
 !
-  namelist /special_init_pars/ &
+  namelist /backreact_infl_init_pars/ &
       initspecial, phi0, dphi0, axionmass, eps, ascale_ini, &
       c_light_axion, lambda_axion, amplphi, ampldphi, lno_noise_phi, lno_noise_dphi, &
       kx_phi, ky_phi, kz_phi, phase_phi, width, offset, &
       initpower_phi, initpower2_phi, cutoff_phi, kgaussian_phi, kpeak_phi, &
       initpower_dphi, initpower2_dphi, cutoff_dphi, kpeak_dphi, &
       ncutoff_phi, lscale_tobox, Hscript0, Hscript_choice, infl_v, lflrw, &
-      lrho_chi, scale_rho_chi_Heqn
+      lrho_chi, scale_rho_chi_Heqn, amplee_BD_prefactor, kpeak_ee_BD
 !
-  namelist /special_run_pars/ &
+  namelist /backreact_infl_run_pars/ &
       initspecial, phi0, dphi0, axionmass, eps, ascale_ini, &
       lbackreact_infl, lem_backreact, c_light_axion, lambda_axion, Vprime_choice, &
       lzeroHubble, ldt_backreact_infl, Ndiv, Hscript0, Hscript_choice, infl_v, &
@@ -250,7 +250,7 @@ module Special
       use Mpicomm, only: mpibcast_real
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: Vpotential, Hubble_ini, infl_gam
+      real :: Vpotential, Hubble_ini, infl_gam, amplphi_BD, amplee_BD
       integer :: j
 !
       intent(inout) :: f
@@ -321,8 +321,17 @@ module Special
               cutoff_dphi,ncutoff_phi,kpeak_dphi,f,iinfl_dphi,iinfl_dphi, &
               relhel_phi,kgaussian_phi, lskip_projection_phi, lvectorpotential, &
               lscale_tobox, lpower_profile_file=.false., lno_noise=lno_noise_dphi)
+!
+!  For Bunch-Davies, the amplitude Hubble_ini is used.
+!  We apply this optionally here also to the gauge field.
+!
           case ('Bunch-Davies')
-            call bunch_davies(f,iinfl_phi,iinfl_phi,iinfl_dphi,iinfl_dphi,amplphi,kpeak_phi)
+            amplphi_BD=amplphi*Hubble_ini
+            call bunch_davies(f,iinfl_phi,iinfl_phi,iinfl_dphi,iinfl_dphi,amplphi_BD,kpeak_phi)
+            if (amplee_BD_prefactor/=0.) then
+              amplee_BD=amplee_BD_prefactor*Hubble_ini
+              call bunch_davies(f,iax,iaz,iex,iez,amplee_BD,kpeak_ee_BD)
+            endif
           case default
             call fatal_error("init_special: No such initspecial: ", trim(initspecial(j)))
         endselect
@@ -580,7 +589,7 @@ module Special
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=special_init_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=backreact_infl_init_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_init_pars
 !***********************************************************************
@@ -588,7 +597,7 @@ module Special
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=special_init_pars)
+      write(unit, NML=backreact_infl_init_pars)
 !
     endsubroutine write_special_init_pars
 !***********************************************************************
@@ -598,7 +607,7 @@ module Special
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=special_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=backreact_infl_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_run_pars
 !***********************************************************************
@@ -606,7 +615,7 @@ module Special
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=special_run_pars)
+      write(unit, NML=backreact_infl_run_pars)
 !
     endsubroutine write_special_run_pars
 !***********************************************************************
@@ -986,6 +995,6 @@ module Special
 !**  copies dummy routines from nospecial.f90 for any Special      **
 !**  routines not implemented in this file                         **
 !**                                                                **
-    include '../special_dummies.inc'
+    include '../backreact_infl_dummies.inc'
 !***********************************************************************
-endmodule Special
+endmodule backreact_infl

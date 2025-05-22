@@ -150,7 +150,7 @@ module Special
       use Mpicomm, only: mpibcast_real
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: Vpotential, Hubble_ini, infl_gam, tph_init
+      real :: Vpotential, tph_init
       integer :: j
 !
       intent(inout) :: f
@@ -162,7 +162,6 @@ module Special
 !
 !  initial condition for physical time.
 !
-      !tph_init=twothird*ascale**1.5/Hubble0
       tph_init=ascale**2/(2.*Hubble0*Omega_rad**.5)
 !
       f_ode(iLCDM_lna)=alog(ascale)

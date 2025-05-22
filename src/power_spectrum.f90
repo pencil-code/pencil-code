@@ -23,6 +23,7 @@
 !   corresp. changes at the moment only in effect in power_xy
 !   27-sep-2023/KG: fixed calculation of wavenumbers for non-cubical boxes in
 !                   power and power_xy
+!   20-may-25/axel: introduced lcorrect_integer_kcalc=F (=T for correct 1D calc)
 !
 module Power_spectrum
 !
@@ -63,8 +64,13 @@ module Power_spectrum
   integer, dimension(:), allocatable :: k2s
   integer :: nk_truebin=0
   logical :: lpowerdat_existed=.false.
+  logical :: lcorrect_integer_kcalc=.false.
   real :: L_min, L_min_xy
   integer :: nk_xyz, nk_xy
+!
+!  These values of kx, ky, kz are integers, in units of the box wavenumber.
+!  This is in contrast to kx_fft, ky_fft, kz_fft, which are normalized.
+!
   real, dimension(nxgrid) :: kx
   real, dimension(nygrid) :: ky
   real, dimension(nzgrid) :: kz
@@ -84,7 +90,7 @@ module Power_spectrum
       lread_gauss_quadrature, legendre_lmax, lshear_frame_correlation, &
       power_format, kout_max, tout_min, tout_max, specflux_dp, specflux_dq, &
       lhorizontal_spectra, lvertical_spectra, ltrue_binning, max_k2, &
-      specflux_pmin, specflux_pmax, lzero_spec_zerok
+      specflux_pmin, specflux_pmax, lzero_spec_zerok, lcorrect_integer_kcalc
 !
 ! real, allocatable, dimension(:,:) :: spectrum_2d, spectrumhel_2d
 ! real, allocatable, dimension(:,:) :: spectrum_2d_sum, spectrumhel_2d_sum
@@ -96,6 +102,7 @@ module Power_spectrum
       use Messages
       use General, only: binomial, pos_in_array, quick_sort, get_range_no
       use Mpicomm, only: mpiallreduce_merge,mpimerge_1d
+      use Fourier, only: kx_fft, ky_fft, kz_fft
 
       integer :: ikr, ikmu, ind, ikx, iky, ikz, i, len, k
       real :: k2
@@ -225,9 +232,15 @@ outer:  do ikz=1,nz
       if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
         call warning("initialize_power_spectrum", "computation of wavevector wrong for non-cubical domains")
 
-      kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
-      ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
-      kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
+      if (lcorrect_integer_kcalc) then
+        kx=cshift((/(i-nxgrid/2,i=0,nxgrid-1)/),nxgrid/2) !*2*pi/Lx
+        ky=cshift((/(i-nygrid/2,i=0,nygrid-1)/),nygrid/2) !*2*pi/Ly
+        kz=cshift((/(i-nzgrid/2,i=0,nzgrid-1)/),nzgrid/2) !*2*pi/Lz
+      else
+        kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
+        ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
+        kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
+      endif
 
       !if (.not.allocated(spectrum_2d)) then
       !  allocate(spectrum_2d(nk,nbin_angular), spectrumhel_2d(nk,nbin_angular), &
@@ -1285,7 +1298,8 @@ outer:  do ikz=1,nz
 !$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
 !$ thread_id = omp_get_thread_num()+1
 !
-  !  initialize power spectrum to zero
+  !  Initialize power spectrum to zero.
+  !  For vectors, this is done only once, namely for the first component.
   !
   !$omp workshare
   k2m=0.
