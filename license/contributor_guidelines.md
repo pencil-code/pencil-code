@@ -22,7 +22,7 @@ To change the email address used for your commits, see
 
 Major announcements regarding the code will be made on
 <https://groups.google.com/g/pencil-code-discuss/c/HnS4i9Xrx7o>;
-it is recommended that you subscribe to this mailing list
+it is recommended that you subscribe to this mailing list.
 
 # Recommended development style
 
@@ -35,7 +35,7 @@ To effectively use Git, see `doc/git/git-best-practises.pdf`
 
 ### Fortran
 
-Fortran code, see section 9.1 ('The PENCIL CODE coding standard') of the manual (`doc/manual.pdf`)
+See section 9.1 ('The PENCIL CODE coding standard') of the manual (`doc/manual.pdf`)
 
 ### Python
 - Four spaces (not tabs) for indentation
