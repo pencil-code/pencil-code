@@ -45,7 +45,7 @@
 !
     character(LEN=fnlen) :: model_output_dir, checkpoint_output_dir
     integer :: istat, train_step_ckpt, val_step_ckpt
-    logical :: ltrained=.false., lckpt_written=.false.
+    logical :: ltrained=.false., lckpt_written=.false.,lmodel_saved=.false.
     real, dimension (mx,my,mz,3) :: uumean
     real :: tauerror, input_min, input_max, output_min, output_max
     real, dimension(mx, my, mz, 6) :: tau_pred
@@ -262,6 +262,13 @@
 
     endsubroutine
 !***************************************************************
+    subroutine save_model
+       istat = torchfort_save_model(model, trim(model_output_dir)//trim(model_file))
+       if (istat /= TORCHFORT_RESULT_SUCCESS) &
+         call fatal_error("save_model","when saving model: istat="//trim(itoa(istat)))
+       lmodel_saved = .true.
+    endsubroutine save_model
+!***************************************************************
     subroutine train(f)
    
       use Gpu, only: get_ptr_gpu_training, train_gpu, infer_gpu
@@ -314,8 +321,9 @@
 
         if (train_loss <= max_loss) ltrained=.true.
         if ((it_train_end >= 0) .and. it >= it_train_end) ltrained=.true.
-
-        if (lroot.and.lfirst.and.mod(it,it_train_chkpt)==0) then
+        if(ltrained) then
+                call save_model
+        else if (lroot.and.lfirst.and.mod(it,it_train_chkpt)==0) then
           istat = torchfort_save_checkpoint(trim(model), trim(checkpoint_output_dir))
           if (istat /= TORCHFORT_RESULT_SUCCESS) &
             call fatal_error("train","when saving checkpoint: istat="//trim(itoa(istat)))
@@ -487,10 +495,9 @@
 !
       if (.not.lstart) then
 !print*, 'ltrained .or. .not. lckpt_written=', ltrained, lckpt_written
-        if (ltrained .or. .not.lckpt_written) then
-          istat = torchfort_save_model(model, trim(model_output_dir)//trim(model_file))
-          if (istat /= TORCHFORT_RESULT_SUCCESS) &
-            call fatal_error("finalize_training","when saving model: istat="//trim(itoa(istat)))
+        !TP: now redundant (since model is saved immediately after ltrained becomes true in train) but for now lets keep it for safety
+        if (ltrained .and. .not.lmodel_saved) then
+                call save_model
         endif
         if (lfortran_launched) deallocate(input,label,output)
       endif
