@@ -186,10 +186,15 @@ my %tests = (
                          2d-tests/selfgrav-shearwave-dust-par
                      )],
              # Level 5 for now contains all non-canonical tests that run,
-             # but produce wrong results
+             # but produce wrong results - and need immediate action (fixme)
              5 => [qw(
+                         interstellar
                          superparticle-coagulation
                          superparticle-condensation-coagulation
+                     )],
+             # Level 6 for now contains all non-canonical tests that run,
+             # but produce wrong results
+             6 => [qw(
                          hexagon
                          MHD-ABCforcing
                          taylor-couette
@@ -217,22 +222,21 @@ my %tests = (
                          1d-tests/solar-atmosphere
                          0d-tests/reactive_particles
                      )],
-             # Level 6 for now contains all non-canonical tests that
-             # start, but don't run successfully
-             6 => [qw(
-                         0d-tests/coagulation-fragmentation
-                         interstellar
-                     )],
              # Level 7 for now contains all non-canonical tests that
-             # compile, but don't start sucessfully
+             # start, but don't run successfully
              7 => [qw(
+                         0d-tests/coagulation-fragmentation
+                     )],
+             # Level 8 for now contains all non-canonical tests that
+             # compile, but don't start sucessfully
+             8 => [qw(
                          interstellar_ion
                          turb-cylindrical-disk
                          2d-tests/A3+chi11+Ra1e5
                      )],
-             # Level 8 for now contains all non-canonical tests that don't
+             # Level 9 for now contains all non-canonical tests that don't
              # compile sucessfully
-             8 => [qw(
+             9 => [qw(
                          multigrid
                          2d-tests/radiation_doppler
                      )],
