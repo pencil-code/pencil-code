@@ -263,10 +263,12 @@
     endsubroutine
 !***************************************************************
     subroutine save_model
+      if (iproc == root) print*,"Saving model to ",trim(model_output_dir)//trim(model_file)
        istat = torchfort_save_model(model, trim(model_output_dir)//trim(model_file))
        if (istat /= TORCHFORT_RESULT_SUCCESS) &
          call fatal_error("save_model","when saving model: istat="//trim(itoa(istat)))
        lmodel_saved = .true.
+      if (iproc == root) print*,"Model saved to ",trim(model_output_dir)//trim(model_file)
     endsubroutine save_model
 !***************************************************************
     subroutine train(f)
