@@ -641,16 +641,12 @@ module Radiation
 !***********************************************************************
     subroutine calcQ(f)
       use Gpu, only: calcQ_gpu, source_function_and_opacity_gpu
-      use MpiComm
 
       real, dimension(mx,my,mz,mfarray) :: f
 !
       integer :: i,j,ij,k,inu
       real :: start_time,end_time
-      start_time = mpiwtime()
       if (lintrinsic) call Qintrinsic(f)
-      end_time = mpiwtime()
-      print*,"Qintrinsic ", "(" ,lsign , msign,nsign, ")", "took ",(end_time-start_time)*10e3, " milliseconds"
 !
       if (lcommunicate) then
         if (lperiodic_ray) then
