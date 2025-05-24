@@ -8734,6 +8734,7 @@ endif
     do k = 1,3; call string_to_enum(enum_borderuu(k),borderuu(k)); enddo
     call copy_addr(enum_borderuu,p_par(106)) ! int3
     call copy_addr(w_sldchar_hyd,p_par(107))
+    call copy_addr(lhubble_hydro,p_par(108)) ! bool
 
     endsubroutine pushpars2c
 !***********************************************************************

@@ -30,6 +30,10 @@ void FTNIZE(rhs_gpu_c)(FINT *isubstep)
 {
 }
 /* ------------------------------------------------------------------- */
+void FTNIZE(source_function_and_opacity_gpu_c)(int *inu)
+{
+}
+/* ------------------------------------------------------------------- */
 void FTNIZE(copy_farray_c)(REAL* f)
 {
 }

@@ -174,4 +174,9 @@ contains
 
     endsubroutine calcQ_gpu
 !**************************************************************************
+    subroutine source_function_and_opacity_gpu(inu)
+            integer :: inu
+            call keep_compiler_quiet(inu)
+    endsubroutine
+!**************************************************************************
 endmodule GPU

@@ -1094,6 +1094,18 @@ GpuCalcDt()
 	return calc_dt1_courant();
 }
 /***********************************************************************************************/
+extern "C" void sourceFunctionAndOpacity(int inu)
+{
+#if LRADIATION
+  	acDeviceSetInput(acGridGetDevice(), AC_frequency_bin,inu);
+	acGridHaloExchange();
+	const auto info = acDeviceGetLocalConfig(acGridGetDevice());
+	const Volume start = acGetMinNN(info)-(Volume){1,1,1};
+	const Volume end   = acGetMaxNN(info)+(Volume){1,1,1};
+	acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraphWithBounds(get_source_function_and_opacity,start,end),1);
+#endif
+}
+/***********************************************************************************************/
 extern "C" void substepGPU(int isubstep)
 //
 //  Do the 'isubstep'th integration step on all GPUs on the node and handle boundaries.

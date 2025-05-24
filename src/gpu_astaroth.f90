@@ -28,6 +28,7 @@ module GPU
   external finalize_gpu_c
   external get_farray_ptr_gpu_c
   external rhs_gpu_c
+  external source_function_and_opacity_gpu_c
   external load_farray_c
   external reload_gpu_config_c
   external test_rhs_c
@@ -83,7 +84,6 @@ contains
       if (ltestscalar) str=trim(str)//', '//'testscalar'
       if (ltestfield) str=trim(str)//', '//'testfield'
       if (ltestflow) str=trim(str)//', '//'testflow'
-      if (lradiation) str=trim(str)//', '//'radiation'
       if (ldetonate) str=trim(str)//', '//'detonate'
       if (lopacity) str=trim(str)//', '//'opacity'
       if (lpointmasses) str=trim(str)//', '//'pointmasses'
@@ -369,5 +369,10 @@ contains
       call calcQ_gpu_c(idir, dir, stop, unit_vec, lperiodic)
  
     endsubroutine calcQ_gpu
+!**************************************************************************
+    subroutine source_function_and_opacity_gpu(inu)
+            integer :: inu
+            call source_function_and_opacity_gpu_c(inu)
+    endsubroutine
 !**************************************************************************
 endmodule GPU

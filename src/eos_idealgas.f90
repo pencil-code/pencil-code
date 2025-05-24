@@ -4551,7 +4551,9 @@ module EquationOfState
     call copy_addr(eth0z,p_par(28)) ! (mz)
     call copy_addr(xhe,p_par(29))
     call copy_addr(mu,p_par(30))
-!
+    call copy_addr(rho0z,p_par(31)) ! (mz)
+    call copy_addr(ieosvar1,p_par(32)) ! int
+
     endsubroutine pushpars2c
 !***********************************************************************
 !********************************************************************

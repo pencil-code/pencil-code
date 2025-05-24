@@ -639,6 +639,63 @@ module Radiation
 !
     endsubroutine calc_angle_weights
 !***********************************************************************
+    subroutine calcQ(f)
+      use Gpu, only: calcQ_gpu, source_function_and_opacity_gpu
+      use MpiComm
+
+      real, dimension(mx,my,mz,mfarray) :: f
+!
+      integer :: i,j,ij,k,inu
+      real :: start_time,end_time
+      start_time = mpiwtime()
+      if (lintrinsic) call Qintrinsic(f)
+      end_time = mpiwtime()
+      print*,"Qintrinsic ", "(" ,lsign , msign,nsign, ")", "took ",(end_time-start_time)*10e3, " milliseconds"
+!
+      if (lcommunicate) then
+        if (lperiodic_ray) then
+          call Qperiodic
+        else
+          call Qpointers
+          call Qcommunicate
+        endif
+      endif
+!
+      if (lrevision) call Qrevision
+!
+!  Calculate heating rate, so at the end of the loop
+!  f(:,:,:,iQrad) = \int_{4\pi} (I-S) d\Omega, not divided by 4pi.
+!  In the paper the directional Q is defined with the opposite sign.
+!  Turn this now into heating rate by multiplying with opacity.
+!  This allows the opacity to be frequency-dependent.
+!
+      f(:,:,:,iQrad)=f(:,:,:,iQrad)+weight(idir)*Qrad*f(:,:,:,ikapparho)
+!
+!  Calculate radiative flux. Multiply it here by opacity to have the correct
+!  frequency-dependent contributions from all frequencies.
+!
+      if (lradflux) then
+        do j=1,3
+          k=iKR_Frad+(j-1)
+          f(:,:,:,k)=f(:,:,:,k)+weightn(idir)*unit_vec(idir,j)*(Qrad+Srad)*f(:,:,:,ikapparho)
+        enddo
+      endif
+!
+!  Calculate radiative pressure. Multiply it here by opacity to have the correct
+!  frequency-dependent contributions from all frequencies.
+!
+      if (lradpress) then
+        do j=1,3
+        do i=1,j
+          ij=ij_table(i,j)
+          k=iKR_press+(ij-1)
+          f(:,:,:,k)= f(:,:,:,k)+weightn(idir)*unit_vec(idir,i)*unit_vec(idir,j) &
+                     *(Qrad+Srad)*f(:,:,:,ikapparho)/c_light
+        enddo
+        enddo
+      endif
+    endsubroutine calcQ
+!***********************************************************************
     subroutine radtransfer(f)
 !
 !  Integration of the radiative transfer equation along rays.
@@ -649,8 +706,7 @@ module Radiation
 !  16-jun-03/axel+tobi: coded
 !   5-dec-13/axel: alterations to allow non-gray opacities
 !
-      use Gpu, only: calcQ_gpu
-
+      use Gpu, only: calcQ_gpu, source_function_and_opacity_gpu
       real, dimension(mx,my,mz,mfarray) :: f
 !
       integer :: i,j,ij,k,inu
@@ -679,8 +735,12 @@ module Radiation
 !
 !  Calculate source function and opacity.
 !
-          call source_function(f,inu)
-          call opacity(f,inu)
+          if(lgpu) then
+                  call source_function_and_opacity_gpu(inu)
+          else
+                call source_function(f,inu)
+                call opacity(f,inu)
+          endif
 !
 !  Do the rest only if we do not do diffusion approximation.
 !  If *either* lrad_cool_diffus *or* lrad_pres_diffus, no rays are computed.
@@ -703,51 +763,7 @@ module Radiation
                 !call calcQ_gpu(idir, dir(idir,:), (/llstop,mmstop,nnstop/), &
                 !               weight(idir), weightn(idir), unit_vec(idir,:), lperiodic_ray)
               else
-                if (lintrinsic) call Qintrinsic(f)
-!
-                if (lcommunicate) then
-                  if (lperiodic_ray) then
-                    call Qperiodic
-                  else
-                    call Qpointers
-                    call Qcommunicate
-                  endif
-                endif
-!
-                if (lrevision) call Qrevision
-!
-!  Calculate heating rate, so at the end of the loop
-!  f(:,:,:,iQrad) = \int_{4\pi} (I-S) d\Omega, not divided by 4pi.
-!  In the paper the directional Q is defined with the opposite sign.
-!  Turn this now into heating rate by multiplying with opacity.
-!  This allows the opacity to be frequency-dependent.
-!
-                f(:,:,:,iQrad)=f(:,:,:,iQrad)+weight(idir)*Qrad*f(:,:,:,ikapparho)
-!
-!  Calculate radiative flux. Multiply it here by opacity to have the correct
-!  frequency-dependent contributions from all frequencies.
-!
-                if (lradflux) then
-                  do j=1,3
-                    k=iKR_Frad+(j-1)
-                    f(:,:,:,k)=f(:,:,:,k)+weightn(idir)*unit_vec(idir,j)*(Qrad+Srad)*f(:,:,:,ikapparho)
-                  enddo
-                endif
-!
-!  Calculate radiative pressure. Multiply it here by opacity to have the correct
-!  frequency-dependent contributions from all frequencies.
-!
-                if (lradpress) then
-                  do j=1,3
-                  do i=1,j
-                    ij=ij_table(i,j)
-                    k=iKR_press+(ij-1)
-                    f(:,:,:,k)= f(:,:,:,k)+weightn(idir)*unit_vec(idir,i)*unit_vec(idir,j) &
-                               *(Qrad+Srad)*f(:,:,:,ikapparho)/c_light
-                  enddo
-                  enddo
-                endif
-              endif      !   if (lgpu) ... else
+                call calcQ(f)
 !
 !  Store outgoing intensity in case of lower reflective boundary condition.
 !  We need to set Iup=Idown+I0 at the lower boundary. We must first integrate
@@ -763,18 +779,19 @@ module Radiation
 !
 !  where dtau=kappa*rho(n1)*dz.
 !
-              if ((bc_rad1(3)=='R').or.(bc_rad1(3)=='R+F')) then
-                if ((ndir==2).and.(idir==1).and.(ipz==ipzstop)) &
-                    Irad_refl_xy=Srad(:,:,nnstop)+Qrad(:,:,nnstop)* &
-                    (1.0-f(:,:,nnstop,ikapparho)/dz_1(nnstop))
-              endif
+                if ((bc_rad1(3)=='R').or.(bc_rad1(3)=='R+F')) then
+                  if ((ndir==2).and.(idir==1).and.(ipz==ipzstop)) &
+                      Irad_refl_xy=Srad(:,:,nnstop)+Qrad(:,:,nnstop)* &
+                      (1.0-f(:,:,nnstop,ikapparho)/dz_1(nnstop))
+                endif
 !
+              endif
             enddo   !  idir loop
           endif     !  if (lrad_cool_diffus.or.lrad_pres_diffus)
 !
 !  Calculate slices of J=S+Q/(4pi).
 !
-          if (lvideo.and.lfirst.and.ivid_Jrad/=0) then
+          if (.not. lgpu .and. lvideo.and.lfirst.and.ivid_Jrad/=0) then
             if (lwrite_slice_yz) Jrad_yz(:,:,inu) =Qrad(ix_loc,m1:m2,n1:n2) +Srad(ix_loc,m1:m2,n1:n2)
             if (lwrite_slice_xz) Jrad_xz(:,:,inu) =Qrad(l1:l2,iy_loc,n1:n2) +Srad(l1:l2,iy_loc,n1:n2)
             if (lwrite_slice_xz2)Jrad_xz2(:,:,inu)=Qrad(l1:l2,iy2_loc,n1:n2)+Srad(l1:l2,iy2_loc,n1:n2)
@@ -789,7 +806,7 @@ module Radiation
 !
 ! Upper limit radiative heating by qrad_max
 !
-      if (lno_rad_heating .and. (qrad_max > 0)) &
+      if (.not. lgpu .and. lno_rad_heating .and. (qrad_max > 0)) &
          f(l1-radx:l2+radx,m,n,iQrad) = min(f(l1-radx:l2+radx,m,n,iQrad),qrad_max)
 
     endsubroutine radtransfer
@@ -2685,7 +2702,9 @@ module Radiation
 !
 ! Source function
 !
-        case ('Srad'); call assign_slices_f_scal(slices,Srad,1)
+        case ('Srad'); 
+                if (lgpu) call fatal_error('get_slices_radiation','Can not get Srad slices with GPU yet!')
+                call assign_slices_f_scal(slices,Srad,1)
 !
 !  Opacity
 !
