@@ -645,7 +645,7 @@ module Radiation
       real, dimension(mx,my,mz,mfarray) :: f
 !
       integer :: i,j,ij,k,inu
-      real :: start_time,end_time
+!
       if (lintrinsic) call Qintrinsic(f)
 !
       if (lcommunicate) then
