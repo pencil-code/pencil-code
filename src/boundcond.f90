@@ -835,7 +835,8 @@ module Boundcond
                   if (j==iss)   call bc_ss_flux_x(f,topbot)
                   if (j==ilnTT) call bc_lnTT_flux_x(f,topbot)
                 case ('Fgs')
-                  ! BCX_DOC: Fconv = - chi_t*rho*T*grad(s)
+                  ! BCX_DOC: black body:
+                  ! BCX_DOC: - chi_t*rho*T*grad(s) - K*grad(T) = sigmaSBt*T**4
                   if (j==iss) call bc_ss_flux_turb_x(f,topbot)
                 case ('Fct')
                   ! BCX_DOC: Fbot = - K*grad(T) - chi_t*rho*T*grad(s)
@@ -1416,7 +1417,8 @@ module Boundcond
                 ! BCZ_DOC: complex
                 if (j==iss) call bc_ss_flux(f,topbot,.true.)
               case ('Fgs')
-                ! BCZ_DOC: Fconv = - chi_t*rho*T*grad(s)
+                ! BCZ_DOC: black body:
+                ! BCZ_DOC: - chi_t*rho*T*grad(s) - K*grad(T) = sigmaSBt*T**4
                 if (j==iss) call bc_ss_flux_turb(f,topbot)
               case ('Fct')
                 ! BCZ_DOC: Fbot = - K*grad(T) - chi_t*rho*T*grad(s)
