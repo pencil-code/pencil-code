@@ -2500,6 +2500,7 @@ module Density
 !
       use Deriv, only: der6
       use Special, only: special_calc_density
+      use EquationOfState, only: get_gamma_etc
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2510,6 +2511,7 @@ module Density
       intent(inout) :: df,f
 !
       real, dimension (nx) :: fdiff
+      real :: gamma
       real, dimension (nx) :: tmp
       real, dimension (nx,3) :: tmpv
       real, dimension (nx) :: density_rhs, density_rhs_tmp, advec_hypermesh_rho
@@ -2748,6 +2750,7 @@ module Density
             df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%cv*tmp
           else
             !Fred: reference Piyali - missing gamma from correction
+            call get_gamma_etc(gamma)
             df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - gamma*p%cv*tmp
           endif
         elseif (lentropy.and.pretend_lnTT) then
