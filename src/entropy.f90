@@ -3643,6 +3643,7 @@ module Energy
         endif
 !
 !  Velocity damping in the coronal heating zone.
+!  NOTE: same functionality as uuprof='damp_corona' in hydro.f90
 !
         if (tau_cor>0) then
           ztop=xyz0(3)+Lxyz(3)
