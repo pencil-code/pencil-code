@@ -119,6 +119,7 @@ module Density
   logical :: lrho_as_aux=.false., ldiffusion_nolog=.false.
   logical :: lrho_flucz_as_aux=.false.
   logical :: lmassdiff_fix = .false.,lmassdiff_fixmom = .false.,lmassdiff_fixkin = .false.
+  logical :: lgamma_is_1 = .true.
   logical :: lcheck_negative_density=.false.
   logical :: lcalc_lnrhomean=.false.
   logical :: ldensity_profile_masscons=.false.
@@ -157,7 +158,7 @@ module Density
       co1_ss, co2_ss, Sigma1, idiff, ldensity_nolog, wdamp, lcontinuity_gas, &
       lisothermal_fixed_Hrho, density_floor, lanti_shockdiffusion, &
       density_floor_profile, density_floor_exp, &
-      lmassdiff_fix, lmassdiff_fixmom, lmassdiff_fixkin,  &
+      lmassdiff_fix, lmassdiff_fixmom, lmassdiff_fixkin, &
       lrho_as_aux, ldiffusion_nolog, lnrho_z_shift, powerlr, zoverh, hoverr, &
       lffree, ffree_profile, rzero_ffree, wffree, rho_top, rho_bottom, &
       r0_rho, invgrav_ampl, rnoise_int, rnoise_ext, datafile, mass_cloud, &
@@ -181,7 +182,7 @@ module Density
       lfreeze_lnrhosqu, density_floor, lanti_shockdiffusion, lrho_as_aux, &
       density_floor_profile, density_floor_exp, &
       ldiffusion_nolog, lcheck_negative_density, &
-      lmassdiff_fix, lmassdiff_fixmom, lmassdiff_fixkin,&
+      lmassdiff_fix, lmassdiff_fixmom, lmassdiff_fixkin, lgamma_is_1, &
       lcalc_lnrhomean, ldensity_profile_masscons, lffree, ffree_profile, &
       rzero_ffree, wffree, tstart_mass_source, tstop_mass_source, &
       density_xaver_range, mass_source_tau1, reduce_cs2, &
@@ -2743,7 +2744,12 @@ module Density
           df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) - p%uu(:,3) * tmp;
         endif
         if (lentropy.and.(.not.pretend_lnTT)) then
-          df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%cv*tmp
+          if (lgamma_is_1) then
+            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%cv*tmp
+          else
+            !Fred: reference Piyali - missing gamma from correction
+            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - gamma*p%cv*tmp
+          endif
         elseif (lentropy.and.pretend_lnTT) then
           df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - tmp
         elseif (ltemperature.and.(.not. ltemperature_nolog)) then
@@ -4125,7 +4131,7 @@ module Density
     !TP: needed for transpilation but name collides with hydro so will not work without
     !    module qualified name, so to not break handwritten DSL code have it on comment
     call copy_addr(wdamp_rho,p_par(72))
-    
+
     call copy_addr(h_sld_dens,p_par(73))
     call copy_addr(nlf_sld_dens,p_par(74))
 
