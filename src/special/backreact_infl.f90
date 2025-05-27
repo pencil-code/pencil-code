@@ -32,7 +32,7 @@
 !    NOT IMPLEMENTED FULLY YET - HOOKS NOT PLACED INTO THE PENCIL-CODE
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
-! Declare (for generation of backreact_infl_dummies.inc) the number of f array
+! Declare (for generation of special_dummies.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: lspecial = .true.
@@ -72,7 +72,7 @@
 ! Where geo_kws it replaced by the filename of your new module
 ! upto and not including the .f90
 !
-module backreact_infl
+module Special
 !
   use Cdata
   use General, only: keep_compiler_quiet
@@ -114,14 +114,14 @@ module backreact_infl
   logical :: lscale_tobox=.true.,ldt_backreact_infl=.true., lconf_time=.true.
   logical :: lskip_projection_phi=.false., lvectorpotential=.false., lflrw=.false.
   logical :: lrho_chi=.false., lno_noise_phi=.false., lno_noise_dphi=.false.
-  logical, pointer :: lphi_hom, lnoncollinear_EB, lnoncollinear_EB_aver
+  logical, pointer :: lphi_hom, lphi_linear_regime, lnoncollinear_EB, lnoncollinear_EB_aver
   logical, pointer :: lcollinear_EB, lcollinear_EB_aver, lmass_suppression
   logical, pointer :: lallow_bprime_zero
   character (len=labellen) :: Vprime_choice='quadratic', Hscript_choice='default'
   character (len=labellen), dimension(ninit) :: initspecial='nothing'
   character (len=50) :: echarge_type='const'
 !
-  namelist /backreact_infl_init_pars/ &
+  namelist /special_init_pars/ &
       initspecial, phi0, dphi0, axionmass, eps, ascale_ini, &
       c_light_axion, lambda_axion, amplphi, ampldphi, lno_noise_phi, lno_noise_dphi, &
       kx_phi, ky_phi, kz_phi, phase_phi, width, offset, &
@@ -130,7 +130,7 @@ module backreact_infl
       ncutoff_phi, lscale_tobox, Hscript0, Hscript_choice, infl_v, lflrw, &
       lrho_chi, scale_rho_chi_Heqn, amplee_BD_prefactor, kpeak_ee_BD
 !
-  namelist /backreact_infl_run_pars/ &
+  namelist /special_run_pars/ &
       initspecial, phi0, dphi0, axionmass, eps, ascale_ini, &
       lbackreact_infl, lem_backreact, c_light_axion, lambda_axion, Vprime_choice, &
       lzeroHubble, ldt_backreact_infl, Ndiv, Hscript0, Hscript_choice, infl_v, &
@@ -222,6 +222,7 @@ module backreact_infl
       if (lmagnetic .and. lem_backreact) then
         call get_shared_variable('alpf',alpf,caller='initialize_backreact_infl')
         call get_shared_variable('lphi_hom',lphi_hom)
+        call get_shared_variable('lphi_linear_regime',lphi_linear_regime)
         call get_shared_variable('sigE_prefactor',sigE_prefactor)
         call get_shared_variable('sigB_prefactor',sigB_prefactor)
         call get_shared_variable('lcollinear_EB',lcollinear_EB)
@@ -232,9 +233,10 @@ module backreact_infl
         call get_shared_variable('lallow_bprime_zero',lallow_bprime_zero)
         call get_shared_variable('mass_chi',mass_chi)
       else
-        if (.not.associated(alpf)) allocate(alpf,lphi_hom)
+        if (.not.associated(alpf)) allocate(alpf,lphi_hom,lphi_linear_regime)
         alpf=0.
         lphi_hom=.false.
+        lphi_linear_regime=.false.
       endif
 !
       call keep_compiler_quiet(f)
@@ -493,14 +495,16 @@ module backreact_infl
       if (lmagnetic .and. lem_backreact) then
         if (lconf_time) then
           if (lphi_hom) then
-            df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)+alpf*edotbm_all*a21
+            if (.not. lphi_linear_regime) &
+              df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)+alpf*edotbm_all*a21
           else
             call dot_mn(p%el,p%bb,tmp)
             df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)+alpf*tmp*a21
           endif
         else
-           if (lphi_hom) then
-            df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)+alpf*edotbm_all*a21**2
+          if (lphi_hom) then
+            if (.not. lphi_linear_regime) &
+              df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)+alpf*edotbm_all*a21**2
           else
             call dot_mn(p%el,p%bb,tmp)
             df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)+alpf*tmp*a21**2
@@ -589,7 +593,7 @@ module backreact_infl
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=backreact_infl_init_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=special_init_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_init_pars
 !***********************************************************************
@@ -597,7 +601,7 @@ module backreact_infl
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=backreact_infl_init_pars)
+      write(unit, NML=special_init_pars)
 !
     endsubroutine write_special_init_pars
 !***********************************************************************
@@ -607,7 +611,7 @@ module backreact_infl
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=backreact_infl_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=special_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_run_pars
 !***********************************************************************
@@ -615,7 +619,7 @@ module backreact_infl
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=backreact_infl_run_pars)
+      write(unit, NML=special_run_pars)
 !
     endsubroutine write_special_run_pars
 !***********************************************************************
@@ -883,7 +887,7 @@ module backreact_infl
         call dot2_mn(bb,b2)
         call dot2_mn(el,e2)
         a2rhop=a2rhop+(.5*fourthird)*(e2+b2)*a21
-        a2rho=a2rho+.5*(e2+b2)*a21
+        if (.not. lphi_linear_regime) a2rho=a2rho+.5*(e2+b2)*a21
         if (lrho_chi) then
           a2rho=a2rho+scale_rho_chi_Heqn*a2*f_ode(iinfl_rho_chi)
         endif
@@ -995,6 +999,6 @@ module backreact_infl
 !**  copies dummy routines from nospecial.f90 for any Special      **
 !**  routines not implemented in this file                         **
 !**                                                                **
-    include '../backreact_infl_dummies.inc'
+    include '../special_dummies.inc'
 !***********************************************************************
-endmodule backreact_infl
+endmodule Special

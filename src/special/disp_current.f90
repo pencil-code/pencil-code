@@ -56,7 +56,7 @@ module Special
   integer :: idivE=0, isigE=0, isigB=0
   logical :: llongitudinalE=.true., llorenz_gauge_disp=.false., lskip_projection_ee=.false.
   logical :: lscale_tobox=.true., lskip_projection_a0=.false.
-  logical :: lvectorpotential=.false., lphi_hom=.false.
+  logical :: lvectorpotential=.false., lphi_hom=.false., lphi_linear_regime=.false.
   logical :: lno_noise_ee=.false., lnoncollinear_EB=.false., lnoncollinear_EB_aver=.false.
   logical :: lcollinear_EB=.false., lcollinear_EB_aver=.false.
   logical :: leedot_as_aux=.false., lcurlyA=.true., lsolve_chargedensity=.false.
@@ -74,7 +74,7 @@ module Special
     kz_ex, kz_ey, kz_ez, &
     kx_a0, ky_a0, kz_a0, &
     phase_ex, phase_ey, phase_ez, phase_a0, &
-    llongitudinalE, llorenz_gauge_disp, lphi_hom, &
+    llongitudinalE, llorenz_gauge_disp, lphi_hom, lphi_linear_regime, &
     amplee, initpower_ee, initpower2_ee, lscale_tobox, &
     cutoff_ee, ncutoff_ee, kpeak_ee, relhel_ee, kgaussian_ee, &
     ampla0, initpower_a0, initpower2_a0, lno_noise_ee, &
@@ -87,7 +87,7 @@ module Special
   real :: beta_inflation=0., rescale_ee=1.
   logical :: reinitialize_ee=.false.
   namelist /special_run_pars/ &
-    alpf, llongitudinalE, llorenz_gauge_disp, lphi_hom, &
+    alpf, llongitudinalE, llorenz_gauge_disp, lphi_hom, lphi_linear_regime, &
     leedot_as_aux, ldivE_as_aux, lsigE_as_aux, lsigB_as_aux, &
     eta_ee, lcurlyA, beta_inflation, &
     weight_longitudinalE, lswitch_off_divJ, lswitch_off_Gamma, &
@@ -193,6 +193,7 @@ module Special
 !
       call put_shared_variable('alpf',alpf,caller='register_disp_current')
       call put_shared_variable('lphi_hom',lphi_hom)
+      call put_shared_variable('lphi_linear_regime',lphi_linear_regime)
       call put_shared_variable('sigE_prefactor',sigE_prefactor)
       call put_shared_variable('sigB_prefactor',sigB_prefactor)
       call put_shared_variable('lcollinear_EB',lcollinear_EB)
