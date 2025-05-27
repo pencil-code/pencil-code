@@ -21,7 +21,7 @@
 #include "headers_c.h"
 
 void torch_train_c_api(REAL*); 
-void torch_infer_c_api(int *);
+void torch_infer_c_api(int);
 void initGPU();
 void registerGPU();
 void initializeGPU(REAL*, FINT);
@@ -59,9 +59,9 @@ void FTNIZE(torchtrain_c)(REAL* loss_val)
 	torch_train_c_api(loss_val);
 }
 /* ---------------------------------------------------------------------- */
-void FTNIZE(torchinfer_c)(int *flag)
+void FTNIZE(torchinfer_c)(FINT* itsub)
 {
-	torch_infer_c_api(flag);
+	torch_infer_c_api(*itsub);
 }
 /* ---------------------------------------------------------------------- */
 void FTNIZE(initialize_gpu_c)(REAL* f, FINT* comm_fint)

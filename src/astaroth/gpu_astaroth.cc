@@ -20,8 +20,10 @@
 #define CUDA_ERRCHK(X)
 
 int counter = 0;
+int train_counter = 0;
 int done = 0;
 int my_rank;
+bool calculated_coeff_scales = false;
 
 
 // Astaroth headers
@@ -135,124 +137,11 @@ void torch_inferCAPI(int sub_dims[3], float* input, float* label, bool dble=fals
 /***********************************************************************************************/
 extern "C" void copyFarray(AcReal* f);
 /***********************************************************************************************/
-void print_debug() {
-#if TRAINING
-    #include "user_constants.h"
-		
-		MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
-
-		std::ofstream myFile;
-		std::string fileString = "slices/slices_" + std::to_string(my_rank) + "_" + std::to_string(counter) + ".csv";	
-		myFile.open(fileString);
-
-    myFile << "it,TAU_xx,TAU_xx_inferred,TAU_yy,TAU_yy_inferred,TAU_zz,TAU_zz_inferred,"
-           << "TAU_xy,TAU_xy_inferred,TAU_yz,TAU_yz_inferred,TAU_xz,TAU_xz_inferred,UUMEAN_x,UUMEAN_y,UUMEAN_z,"
-           << "UUX,UUY,UUZ,x,y,z\n";
-
-	  acGridHaloExchange();
-    copyFarray(NULL);
-    const auto DEVICE_VTXBUF_IDX = [&](const int x, const int y, const int z) {
-        return acVertexBufferIdx(x, y, z, mesh.info);
-    };
-
-    AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
-
-    for (size_t i = dims.m0.x; i < dims.m1.x; i++) {
-        for (size_t j = dims.m0.y; j < dims.m1.y; j++) {
-            for (size_t k = dims.m0.z; k < dims.m1.z; k++) {
-
-                myFile << counter << ","
-                       << mesh.vertex_buffer[TAU.xx][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[TAU_INFERRED.xx][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[TAU.yy][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[TAU_INFERRED.yy][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[TAU.zz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[TAU_INFERRED.zz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[TAU.xy][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[TAU_INFERRED.xy][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[TAU.yz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[TAU_INFERRED.yz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[TAU.xz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[TAU_INFERRED.xz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[UUMEAN.x][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[UUMEAN.y][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[UUMEAN.z][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[UUX][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[UUY][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[UUZ][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-											 << i << "," << j << "," << k << "\n";
-            }
-        }
-    }
-	#endif
-}
-/***********************************************************************************************/
-extern "C" void torch_train_c_api(AcReal *loss_val){
-#if TRAINING
-	#include "user_constants.h"
-	
-
-	
-	
-	auto calc_uumean_tau = acGetOptimizedDSLTaskGraph(initialize_uumean_tau);
-	acGridSynchronizeStream(STREAM_ALL);
-	acGridExecuteTaskGraph(calc_uumean_tau, 1);
-	acGridSynchronizeStream(STREAM_ALL);
-
-  auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
-	acGridSynchronizeStream(STREAM_ALL);
-	acGridExecuteTaskGraph(bcs,1);
-	acGridSynchronizeStream(STREAM_ALL);
-
-	if(counter == 0){
-		auto calc_scale = acGetOptimizedDSLTaskGraph(calc_scaling);
-		acGridSynchronizeStream(STREAM_ALL);
-		acGridExecuteTaskGraph(calc_scale, 1);
-		acGridSynchronizeStream(STREAM_ALL);
-
-		
-  	bcs = acGetOptimizedDSLTaskGraph(boundconds);	
-		acGridSynchronizeStream(STREAM_ALL);
-		acGridExecuteTaskGraph(bcs,1);
-		acGridSynchronizeStream(STREAM_ALL);
-	}
-	
-	auto scale_uumean_tau = acGetOptimizedDSLTaskGraph(scale);
-	acGridSynchronizeStream(STREAM_ALL);
-	acGridExecuteTaskGraph(scale_uumean_tau, 1);
-	acGridSynchronizeStream(STREAM_ALL);
-
-
-  bcs = acGetOptimizedDSLTaskGraph(boundconds);	
-	acGridSynchronizeStream(STREAM_ALL);
-	acGridExecuteTaskGraph(bcs,1);
-	acGridSynchronizeStream(STREAM_ALL);
-
-	AcReal* out = NULL;
-	
-	AcReal* uumean_ptr = NULL;
-	AcReal* TAU_ptr = NULL;
-	*loss_val = 0.1;
-
-	acDeviceGetVertexBufferPtrs(acGridGetDevice(), TAU.xx, &TAU_ptr, &out);
-	acDeviceGetVertexBufferPtrs(acGridGetDevice(), UUMEAN.x, &uumean_ptr, &out);
-
-
-	acGridHaloExchange();
-	float avgloss = 0;
-	for (int batch = 0; batch<5; batch++){
-		torch_trainCAPI((int[]){mx,my,mz}, uumean_ptr, TAU_ptr, loss_val, AC_DOUBLE_PRECISION);
-		avgloss = avgloss + *loss_val;
-	}
-	printf("Loss after training: %f\n", avgloss/5);
-	counter++;
-#endif
-}
+void print_debug();
 /***********************************************************************************************/
 float MSE(){
 #if TRAINING
 	#include "user_constants.h"
-
 
 	auto descale_uumean_tau = acGetOptimizedDSLTaskGraph(descale);
 	acGridSynchronizeStream(STREAM_ALL);
@@ -266,6 +155,7 @@ float MSE(){
 	acGridSynchronizeStream(STREAM_ALL);
 
 
+
 	auto calc_infered_loss = acGetOptimizedDSLTaskGraph(calc_validation_loss);
 	acGridSynchronizeStream(STREAM_ALL);
 	acGridExecuteTaskGraph(calc_infered_loss, 1);
@@ -277,56 +167,9 @@ float MSE(){
 	acGridSynchronizeStream(STREAM_ALL);
 
 
-	return (acDeviceGetOutput(acGridGetDevice(), AC_l2_sum))/(6*nx*ny*nz);
+	return (acDeviceGetOutput(acGridGetDevice(), AC_l2_sum))/(6*nxgrid*nygrid*nzgrid);
 #else
         return 0;
-#endif
-}
-/***********************************************************************************************/
-extern "C" void torch_infer_c_api(int *flag){	
-#if TRAINING
-	#include "user_constants.h"
-	
-
-		auto calc_uumean_tau = acGetOptimizedDSLTaskGraph(initialize_uumean_tau);
-		acGridSynchronizeStream(STREAM_ALL);
-		acGridExecuteTaskGraph(calc_uumean_tau, 1);
-		acGridSynchronizeStream(STREAM_ALL);
-
-  	auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
-		acGridSynchronizeStream(STREAM_ALL);
-		acGridExecuteTaskGraph(bcs,1);
-		acGridSynchronizeStream(STREAM_ALL);
-
-
-
-		auto scale_uumean_tau = acGetOptimizedDSLTaskGraph(scale);
-		acGridSynchronizeStream(STREAM_ALL);
-		acGridExecuteTaskGraph(scale_uumean_tau, 1);
-		acGridSynchronizeStream(STREAM_ALL);
-
-  	bcs = acGetOptimizedDSLTaskGraph(boundconds);	
-		acGridSynchronizeStream(STREAM_ALL);
-		acGridExecuteTaskGraph(bcs,1);
-		acGridSynchronizeStream(STREAM_ALL);
-
-	AcReal* out = NULL;
-
-	AcReal* uumean_ptr = NULL;
-	AcReal* tau_infer_ptr = NULL;
-
-	acDeviceGetVertexBufferPtrs(acGridGetDevice(), TAU_INFERRED.xx, &tau_infer_ptr, &out);
-	acDeviceGetVertexBufferPtrs(acGridGetDevice(), UUMEAN.x, &uumean_ptr, &out);
-
-		
-	acGridHaloExchange();
-	torch_inferCAPI((int[]){mx,my,mz}, uumean_ptr, tau_infer_ptr, AC_DOUBLE_PRECISION);
-
-	float vloss = MSE();
-  	
-
-	printf("Validation error is: %f\n", vloss);
-	print_debug();
 #endif
 }
 /***********************************************************************************************/
@@ -1007,6 +850,198 @@ void print_diagnostics(const int pid, const int step, const AcReal dt_, const Ac
   fflush(stdout);
 }
 ***/
+/***********************************************************************************************/
+void print_debug() {
+if(it % 5 !=0) return;
+#if TRAINING
+    #include "user_constants.h"
+		printf("true it is running print");
+		counter = it;
+
+		MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+
+		std::ofstream myFile;
+		std::string fileString = "slices/snapshot_" + std::to_string(my_rank) + "_" + std::to_string(it) + ".csv";	
+		myFile.open(fileString);
+
+    myFile << "it,TAU_xx,TAU_xx_inferred,TAU_yy,TAU_yy_inferred,TAU_zz,TAU_zz_inferred,"
+           << "TAU_xy,TAU_xy_inferred,TAU_yz,TAU_yz_inferred,TAU_xz,TAU_xz_inferred,UUMEAN_x,UUMEAN_y,UUMEAN_z,"
+           << "UUX,UUY,UUZ,x,y,z\n";
+
+	  acGridHaloExchange();
+    copyFarray(NULL);
+
+  	const auto DEVICE_VTXBUF_IDX = [&](const int x, const int y, const int z)
+  				{
+					return acVertexBufferIdx(x,y,z,mesh.info);
+  				};
+
+    AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
+				
+	
+    for (size_t i = dims.n0.x; i < dims.n1.x; i++) {
+        for (size_t j = dims.n0.y; j < dims.n1.y; j++) {
+            for (size_t k = dims.n0.z; k < dims.n1.z; k++) {
+
+                myFile << it << ","
+                       << mesh.vertex_buffer[TAU.xx][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[TAU_INFERRED.xx][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[TAU.yy][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[TAU_INFERRED.yy][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[TAU.zz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[TAU_INFERRED.zz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[TAU.xy][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[TAU_INFERRED.xy][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[TAU.yz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[TAU_INFERRED.yz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[TAU.xz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[TAU_INFERRED.xz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[UUMEAN.x][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[UUMEAN.y][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[UUMEAN.z][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[UUX][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[UUY][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[UUZ][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+											 << i << "," << j << "," << k << "\n";
+            }
+        }
+    }
+	#endif
+}
+
+extern "C" void scaling(){
+
+		auto calc_scale = acGetOptimizedDSLTaskGraph(calc_scaling);
+		acGridSynchronizeStream(STREAM_ALL);
+		acGridExecuteTaskGraph(calc_scale, 1);
+		acGridSynchronizeStream(STREAM_ALL);
+
+		
+  	auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
+		acGridSynchronizeStream(STREAM_ALL);
+		acGridExecuteTaskGraph(bcs,1);
+		acGridSynchronizeStream(STREAM_ALL);
+
+		calculated_coeff_scales = true;
+}
+
+
+/***********************************************************************************************/
+extern "C" void torch_train_c_api(AcReal *loss_val){
+#if TRAINING
+	#include "user_constants.h"
+	
+
+	
+	
+	auto calc_uumean_tau = acGetOptimizedDSLTaskGraph(initialize_uumean_tau);
+	acGridSynchronizeStream(STREAM_ALL);
+	acGridExecuteTaskGraph(calc_uumean_tau, 1);
+	acGridSynchronizeStream(STREAM_ALL);
+
+  auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
+	acGridSynchronizeStream(STREAM_ALL);
+	acGridExecuteTaskGraph(bcs,1);
+	acGridSynchronizeStream(STREAM_ALL);
+
+	if(!calculated_coeff_scales){
+		scaling();
+	}
+	
+	auto scale_uumean_tau = acGetOptimizedDSLTaskGraph(scale);
+	acGridSynchronizeStream(STREAM_ALL);
+	acGridExecuteTaskGraph(scale_uumean_tau, 1);
+	acGridSynchronizeStream(STREAM_ALL);
+
+
+  bcs = acGetOptimizedDSLTaskGraph(boundconds);	
+	acGridSynchronizeStream(STREAM_ALL);
+	acGridExecuteTaskGraph(bcs,1);
+	acGridSynchronizeStream(STREAM_ALL);
+
+	AcReal* out = NULL;
+	
+	AcReal* uumean_ptr = NULL;
+	AcReal* TAU_ptr = NULL;
+	*loss_val = 0.1;
+
+	acDeviceGetVertexBufferPtrs(acGridGetDevice(), TAU.xx, &TAU_ptr, &out);
+	acDeviceGetVertexBufferPtrs(acGridGetDevice(), UUMEAN.x, &uumean_ptr, &out);
+
+
+	acGridHaloExchange();
+
+	double start;
+	double end;
+
+	start = MPI_Wtime();
+	float avgloss = 0;
+	
+	torch_trainCAPI((int[]){mx,my,mz}, uumean_ptr, TAU_ptr, loss_val, AC_DOUBLE_PRECISION);
+	/*
+	for (int batch = 0; batch<5; batch++){
+		torch_trainCAPI((int[]){mx,my,mz}, uumean_ptr, TAU_ptr, loss_val, AC_DOUBLE_PRECISION);
+		avgloss = avgloss + *loss_val;
+	}
+	*/
+	end = MPI_Wtime();
+	printf("Time for one time step: %f\n", (end-start));
+	printf("Loss after training: %f\n", *loss_val);
+	train_counter++;
+#endif
+}
+/***********************************************************************************************/
+extern "C" void torch_infer_c_api(int itstub){	
+#if TRAINING
+	#include "user_constants.h"
+	
+
+		auto calc_uumean_tau = acGetOptimizedDSLTaskGraph(initialize_uumean_tau);
+		acGridSynchronizeStream(STREAM_ALL);
+		acGridExecuteTaskGraph(calc_uumean_tau, 1);
+		acGridSynchronizeStream(STREAM_ALL);
+
+  	auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
+		acGridSynchronizeStream(STREAM_ALL);
+		acGridExecuteTaskGraph(bcs,1);
+		acGridSynchronizeStream(STREAM_ALL);
+
+
+		if(!calculated_coeff_scales){
+			scaling();
+		}
+
+
+		auto scale_uumean_tau = acGetOptimizedDSLTaskGraph(scale);
+		acGridSynchronizeStream(STREAM_ALL);
+		acGridExecuteTaskGraph(scale_uumean_tau, 1);
+		acGridSynchronizeStream(STREAM_ALL);
+
+  	bcs = acGetOptimizedDSLTaskGraph(boundconds);	
+		acGridSynchronizeStream(STREAM_ALL);
+		acGridExecuteTaskGraph(bcs,1);
+		acGridSynchronizeStream(STREAM_ALL);
+
+	AcReal* out = NULL;
+
+	AcReal* uumean_ptr = NULL;
+	AcReal* tau_infer_ptr = NULL;
+
+	acDeviceGetVertexBufferPtrs(acGridGetDevice(), TAU_INFERRED.xx, &tau_infer_ptr, &out);
+	acDeviceGetVertexBufferPtrs(acGridGetDevice(), UUMEAN.x, &uumean_ptr, &out);
+
+		
+	acGridHaloExchange();
+	torch_inferCAPI((int[]){mx,my,mz}, uumean_ptr, tau_infer_ptr, AC_DOUBLE_PRECISION);
+
+	float vloss = MSE();
+ 	
+	if(itstub == 1){
+		printf("Validation error is: %f\n", vloss);
+		print_debug();
+	}
+#endif
+}
 /***********************************************************************************************/
 std::array<AcReal,3>
 visc_get_max_diffus()
