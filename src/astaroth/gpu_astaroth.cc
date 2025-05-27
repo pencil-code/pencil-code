@@ -576,472 +576,13 @@ AcReal3 DCONST(const AcReal3Param param)
   return mesh.info[param];
 }
 /***********************************************************************************************/
-//TP: for testing not usually used
-/***
-static const AcReal DER1_3_E = 1.0;
-static const AcReal DER1_2_E = -9.0;
-static const AcReal DER1_1_E = 45.0;
-static const AcReal DER1_E_DIV = 60.0;
-static const AcReal AC_inv_dsx = 20.3718327157626;
-static const AcReal AC_inv_dsy = 20.3718327157626;
-static const AcReal AC_inv_dsz = 20.3718327157626;
-static const bool symmetric_der = true;
-AcReal
-derxx(const int x, const int y, const int z, AcMesh mesh, const int field)
-{
-    AcReal inv = AC_inv_dsx*AC_inv_dsx;
-    AcReal derxx = inv*DER2_0*mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x,y,z)];
-    derxx += inv*DER2_1*(mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x-1,y,z)]+mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x+1,y,z)]);
-    derxx += inv*DER2_2*(mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x-2,y,z)]+mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x+2,y,z)]);
-    derxx += inv*DER2_3*(mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x-3,y,z)]+mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x+3,y,z)]);
-    return derxx;
-}
-AcReal
-derx_astaroth(const int x, const int y, const int z, AcMesh mesh, const int field)
-{
-  AcReal derx = (-AC_inv_dsx*DER1_3)*(mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x-3,y,z)]);
-  derx += (-AC_inv_dsx*DER1_2)*(mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x-2,y,z)]);
-  derx += (-AC_inv_dsx*DER1_1)*(mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x-1,y,z)]);
-
-  derx += (AC_inv_dsx*DER1_1)*(mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x+1,y,z)]);
-  derx += (AC_inv_dsx*DER1_2)*(mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x+2,y,z)]);
-  derx += (AC_inv_dsx*DER1_3)*(mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x+3,y,z)]);
-
-  return derx;
-}
-AcReal
-derx_symmetric(const int x, const int y, const int z, AcMesh mesh, const int field)
-{
-  AcReal derx = AC_inv_dsx*DER1_3*(mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x+3,y,z)]-mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x-3,y,z)]);
-  derx += AC_inv_dsx*DER1_2*(mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x+2,y,z)]-mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x-2,y,z)]);
-  derx += AC_inv_dsx*DER1_1*(mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x+1,y,z)]-mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x-1,y,z)]);
-  return derx;
-}
-AcReal
-derx_exact(const int x, const int y, const int z, AcMesh mesh, const int field)
-{
-  const AcReal divider = AC_inv_dsx*(1/DER1_E_DIV);
-  AcReal derx = DER1_1_E*(mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x+1,y,z)]-mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x-1,y,z)]);
-  derx += DER1_2_E*(mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x+2,y,z)]-mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x-2,y,z)]);
-  derx += DER1_3_E*(mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x+3,y,z)]-mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x-3,y,z)]);
-  return divider*derx;
-}
-AcReal
-derx(const int x, const int y, const int z, AcMesh mesh, const int field)
-{
-  if (symmetric_der) return derx_symmetric(x,y,z,mesh,field);
-  return derx_astaroth(x,y,z,mesh,field);
-}
-AcReal
-dery_exact(const int x, const int y, const int z, AcMesh mesh, const int field)
-{
-  const AcReal divider = AC_inv_dsy*(1/DER1_E_DIV);
-  AcReal dery = DER1_1_E*(mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x,y+1,z)]-mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x,y-1,z)]);
-  dery += DER1_2_E*(mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x,y+2,z)]-mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x,y-2,z)]);
-  dery += DER1_3_E*(mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x,y+3,z)]-mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x,y-3,z)]);
-  return divider*dery;
-}
-AcReal
-dery_symmetric(const int x, const int y, const int z, AcMesh mesh, const int field)
-{
-  AcReal dery = AC_inv_dsy*DER1_3*(mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x,y+3,z)]-mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x,y-3,z)]);
-  dery += AC_inv_dsy*DER1_2*(mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x,y+2,z)]-mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x,y-2,z)]);
-  dery += AC_inv_dsy*DER1_1*(mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x,y+1,z)]-mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x,y-1,z)]);
-  return dery;
-}
-AcReal
-dery_astaroth(const int x, const int y, const int z, AcMesh mesh, const int field)
-{
-  AcReal dery = (-AC_inv_dsy*DER1_3)*(mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x,y-3,z)]);
-  dery += (-AC_inv_dsy*DER1_2)*(mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x,y-2,z)]);
-  dery += (-AC_inv_dsy*DER1_1)*(mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x,y-1,z)]);
-
-  dery += (AC_inv_dsy*DER1_1)*(mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x,y+1,z)]);
-  dery += (AC_inv_dsy*DER1_2)*(mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x,y+2,z)]);
-  dery += (AC_inv_dsy*DER1_3)*(mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x,y+3,z)]);
-
-  return dery;
-}
-AcReal
-dery(const int x, const int y, const int z, AcMesh mesh, const int field)
-{
-  if (symmetric_der) return dery_symmetric(x,y,z,mesh,field);
-  return dery_astaroth(x,y,z,mesh,field);
-}
-AcReal
-derz_exact(const int x, const int y, const int z, AcMesh mesh, const int field)
-{
-  const AcReal divider = AC_inv_dsz*(1/DER1_E_DIV);
-
-  AcReal derz = DER1_1_E*(mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x,y,z+1)]-mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x,y,z-1)]);
-  derz += DER1_2_E*(mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x,y,z+2)]-mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x,y,z-2)]);
-  derz += DER1_3_E*(mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x,y,z+3)]-mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x,y,z-3)]);
-  return divider*derz;
-}
-AcReal
-derz_symmetric(const int x, const int y, const int z, AcMesh mesh, const int field)
-{
-  AcReal derz = AC_inv_dsz*DER1_3*(mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x,y,z+3)]-mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x,y,z-3)]);
-  derz += AC_inv_dsz*DER1_2*(mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x,y,z+2)]-mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x,y,z-2)]);
-  derz += AC_inv_dsz*DER1_1*(mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x,y,z+1)]-mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x,y,z-1)]);
-  return derz;
-}
-AcReal
-derz_astaroth(const int x, const int y, const int z, AcMesh mesh, const int field)
-{
-  AcReal derz = (-AC_inv_dsz*DER1_3)*(mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x,y,z-3)]);
-  derz += (-AC_inv_dsz*DER1_2)*(mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x,y,z-2)]);
-  derz += (-AC_inv_dsz*DER1_1)*(mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x,y,z-1)]);
-
-  derz += (AC_inv_dsz*DER1_1)*(mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x,y,z+1)]);
-  derz += (AC_inv_dsz*DER1_2)*(mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x,y,z+2)]);
-  derz += (AC_inv_dsz*DER1_3)*(mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x,y,z+3)]);
-
-  return derz;
-}
-AcReal
-derz(const int x, const int y, const int z, AcMesh mesh, const int field)
-{
-  if (symmetric_der) return derz_symmetric(x,y,z,mesh,field);
-  return derz_astaroth(x,y,z,mesh,field);
-}
-AcReal
-divergence_symmetric(const int x, const int y, const int z, AcMesh mesh, const int field)
-{
-  return derx_symmetric(x,y,z,mesh,field) + dery_symmetric(x,y,z,mesh,field+1) + derz_symmetric(x,y,z,mesh,field+2);
-}
-AcReal
-divergence_exact(const int x, const int y, const int z, AcMesh mesh, const int field)
-{
-  return derx_exact(x,y,z,mesh,field) + dery_exact(x,y,z,mesh,field+1) + derz_exact(x,y,z,mesh,field+2);
-}
-AcReal
-divergence_astaroth(const int x, const int y, const int z, AcMesh mesh, const int field)
-{
-  return derx_astaroth(x,y,z,mesh,field) + dery_astaroth(x,y,z,mesh,field+1) + derz_astaroth(x,y,z,mesh,field+2);
-}
-AcReal
-divergence(const int x, const int y, const int z, AcMesh mesh, const int field)
-{
-  if (symmetric_der) return divergence_symmetric(x,y,z,mesh,field);
-  return divergence_astaroth(x,y,z,mesh,field);
-}
-AcReal3
-gradient_exact(const int x, const int y, const int z, AcMesh mesh, const int field)
-{
-  return {derx_exact(x,y,z,mesh,field), dery_exact(x,y,z,mesh,field), derz_exact(x,y,z,mesh,field)};
-}
-AcReal3
-gradient_symmetric(const int x, const int y, const int z, AcMesh mesh, const int field)
-{
-  return {derx_symmetric(x,y,z,mesh,field), dery_symmetric(x,y,z,mesh,field), derz_symmetric(x,y,z,mesh,field)};
-}
-AcReal3
-gradient_astaroth(const int x, const int y, const int z, AcMesh mesh, const int field)
-{
-  return {derx_astaroth(x,y,z,mesh,field), dery_astaroth(x,y,z,mesh,field), derz_astaroth(x,y,z,mesh,field)};
-}
-AcReal3
-gradient(const int x, const int y, const int z, AcMesh mesh, const int field)
-{
-  if (symmetric_der) return gradient_symmetric(x,y,z,mesh,field);
-  return gradient_astaroth(x,y,z,mesh,field);
-}
-AcMatrix
-gradients_symmetric(const int x, const int y, const int z, AcMesh mesh, const int field)
-{
-  return AcMatrix(gradient_symmetric(x,y,z,mesh,field),gradient_symmetric(x,y,z,mesh,field+1),gradient_symmetric(x,y,z,mesh,field+2));
-}
-AcMatrix
-gradients_astaroth(const int x, const int y, const int z, AcMesh mesh, const int field)
-{
-  return AcMatrix(gradient_astaroth(x,y,z,mesh,field),gradient_astaroth(x,y,z,mesh,field+1),gradient_astaroth(x,y,z,mesh,field+2));
-}
-AcReal3
-vecvalue(const int x, const int y, const int z, AcMesh mesh, const int field)
-{
-  return{mesh.vertex_buffer[field][DEVICE_VTXBUF_IDX(x,y,z)],mesh.vertex_buffer[field+1][DEVICE_VTXBUF_IDX(x,y,z)],mesh.vertex_buffer[field+2][DEVICE_VTXBUF_IDX(x,y,z)]};
-}
-AcMatrix
-gradients(const int x, const int y, const int z, AcMesh mesh, const int field)
-{
-  if (symmetric_der) return gradients_symmetric(x,y,z,mesh,field);
-  return gradients_astaroth(x,y,z,mesh,field);
-}
-***/
+void print_debug();
 /***********************************************************************************************/
-/****
-void print_diagnostics(const int pid, const int step, const AcReal dt_, const AcReal simulation_time,
-                       FILE *diag_file, const AcReal sink_mass, const AcReal accreted_mass,
-                       int *found_nan)
-{
-  AcReal buf_rms, buf_max, buf_min;
-  const int max_name_width = 16;
-
-#if LHYDRO
-  // Calculate rms, min and max from the velocity vector field
-  acGridReduceVec(STREAM_DEFAULT, RTYPE_MAX, UUX, UUY, UUZ, &buf_max);
-  acGridReduceVec(STREAM_DEFAULT, RTYPE_MIN, UUX, UUY, UUZ, &buf_min);
-  acGridReduceVec(STREAM_DEFAULT, RTYPE_RMS, UUX, UUY, UUZ, &buf_rms);
-#endif
-
-  if (pid == 0)
-  {
-    //(pid, "Step %d, t_step %.3e, dt %e s\n", step, double(simulation_time), double(dt_));
-    //(pid, "  %*s: min %.3e,\trms %.3e,\tmax %.3e\n", max_name_width, "uu total",
-    // double(buf_min), double(buf_rms), double(buf_max));
-    fprintf(diag_file, "%d %e %e %e %e %e ", step, double(simulation_time), double(dt_),
-            double(buf_min), double(buf_rms), double(buf_max));
-  }
-
-#if LBFIELD
-  acGridReduceVec(STREAM_DEFAULT, RTYPE_MAX, BFIELDX, BFIELDY, BFIELDZ, &buf_max);
-  acGridReduceVec(STREAM_DEFAULT, RTYPE_MIN, BFIELDX, BFIELDY, BFIELDZ, &buf_min);
-  acGridReduceVec(STREAM_DEFAULT, RTYPE_RMS, BFIELDX, BFIELDY, BFIELDZ, &buf_rms);
-
-  acLogFromRootProc(pid, "  %*s: min %.3e,\trms %.3e,\tmax %.3e\n", max_name_width, "bb total",
-                    double(buf_min), double(buf_rms), double(buf_max));
-  if (pid == 0) fprintf(diag_file, "%e %e %e ", double(buf_min), double(buf_rms), double(buf_max));
-
-  acGridReduceVecScal(STREAM_DEFAULT, RTYPE_ALFVEN_MAX, BFIELDX, BFIELDY, BFIELDZ, RHO, &buf_max);
-  acGridReduceVecScal(STREAM_DEFAULT, RTYPE_ALFVEN_MIN, BFIELDX, BFIELDY, BFIELDZ, RHO, &buf_min);
-  acGridReduceVecScal(STREAM_DEFAULT, RTYPE_ALFVEN_RMS, BFIELDX, BFIELDY, BFIELDZ, RHO, &buf_rms);
-
-  acLogFromRootProc(pid, "  %*s: min %.3e,\trms %.3e,\tmax %.3e\n", max_name_width, "vA total",
-                    double(buf_min), double(buf_rms), double(buf_max));
-  if (pid == 0) fprintf(diag_file, "%e %e %e ", double(buf_min), double(buf_rms), double(buf_max));
-#endif
-
-  // Calculate rms, min and max from the variables as scalars
-
-  for (int i = 0; i < NUM_VTXBUF_HANDLES; ++i)
-  {
-    acGridReduceScal(STREAM_DEFAULT, RTYPE_MAX, VertexBufferHandle(i), &buf_max);
-    acGridReduceScal(STREAM_DEFAULT, RTYPE_MIN, VertexBufferHandle(i), &buf_min);
-    acGridReduceScal(STREAM_DEFAULT, RTYPE_RMS, VertexBufferHandle(i), &buf_rms);
-
-    acLogFromRootProc(pid, "  %*s: min %.3e,\trms %.3e,\tmax %.3e\n", max_name_width,
-                      vtxbuf_names[i], double(buf_min), double(buf_rms), double(buf_max));
-    if (pid == 0)
-    {
-      fprintf(diag_file, "%e %e %e ", double(buf_min), double(buf_rms), double(buf_max));
-    }
-
-    if (isnan(buf_max) || isnan(buf_min) || isnan(buf_rms))
-    {
-      *found_nan = 1;
-    }
-  }
-
-  if ((sink_mass >= AcReal(0.0)) || (accreted_mass >= AcReal(0.0)))
-  {
-    if (pid == 0)
-    {
-      fprintf(diag_file, "%e %e ", double(sink_mass), double(accreted_mass));
-    }
-  }
-
-  if (pid == 0)
-  {
-    fprintf(diag_file, "\n");
-  }
-
-  fflush(diag_file);
-  fflush(stdout);
-}
-***/
+extern "C" void scaling();
 /***********************************************************************************************/
-void print_debug() {
-if(it % 5 !=0) return;
-#if TRAINING
-    #include "user_constants.h"
-		printf("true it is running print");
-		counter = it;
-
-		MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
-
-		std::ofstream myFile;
-		std::string fileString = "slices/snapshot_" + std::to_string(my_rank) + "_" + std::to_string(it) + ".csv";	
-		myFile.open(fileString);
-
-    myFile << "it,TAU_xx,TAU_xx_inferred,TAU_yy,TAU_yy_inferred,TAU_zz,TAU_zz_inferred,"
-           << "TAU_xy,TAU_xy_inferred,TAU_yz,TAU_yz_inferred,TAU_xz,TAU_xz_inferred,UUMEAN_x,UUMEAN_y,UUMEAN_z,"
-           << "UUX,UUY,UUZ,x,y,z\n";
-
-	  acGridHaloExchange();
-    copyFarray(NULL);
-
-  	const auto DEVICE_VTXBUF_IDX = [&](const int x, const int y, const int z)
-  				{
-					return acVertexBufferIdx(x,y,z,mesh.info);
-  				};
-
-    AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
-				
-	
-    for (size_t i = dims.n0.x; i < dims.n1.x; i++) {
-        for (size_t j = dims.n0.y; j < dims.n1.y; j++) {
-            for (size_t k = dims.n0.z; k < dims.n1.z; k++) {
-
-                myFile << it << ","
-                       << mesh.vertex_buffer[TAU.xx][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[TAU_INFERRED.xx][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[TAU.yy][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[TAU_INFERRED.yy][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[TAU.zz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[TAU_INFERRED.zz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[TAU.xy][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[TAU_INFERRED.xy][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[TAU.yz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[TAU_INFERRED.yz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[TAU.xz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[TAU_INFERRED.xz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[UUMEAN.x][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[UUMEAN.y][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[UUMEAN.z][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[UUX][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[UUY][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[UUZ][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-											 << i << "," << j << "," << k << "\n";
-            }
-        }
-    }
-	#endif
-}
-
-extern "C" void scaling(){
-
-		auto calc_scale = acGetOptimizedDSLTaskGraph(calc_scaling);
-		acGridSynchronizeStream(STREAM_ALL);
-		acGridExecuteTaskGraph(calc_scale, 1);
-		acGridSynchronizeStream(STREAM_ALL);
-
-		
-  	auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
-		acGridSynchronizeStream(STREAM_ALL);
-		acGridExecuteTaskGraph(bcs,1);
-		acGridSynchronizeStream(STREAM_ALL);
-
-		calculated_coeff_scales = true;
-}
-
-
+extern "C" void torch_train_c_api(AcReal *loss_val);
 /***********************************************************************************************/
-extern "C" void torch_train_c_api(AcReal *loss_val){
-#if TRAINING
-	#include "user_constants.h"
-	
-
-	
-	
-	auto calc_uumean_tau = acGetOptimizedDSLTaskGraph(initialize_uumean_tau);
-	acGridSynchronizeStream(STREAM_ALL);
-	acGridExecuteTaskGraph(calc_uumean_tau, 1);
-	acGridSynchronizeStream(STREAM_ALL);
-
-  auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
-	acGridSynchronizeStream(STREAM_ALL);
-	acGridExecuteTaskGraph(bcs,1);
-	acGridSynchronizeStream(STREAM_ALL);
-
-	if(!calculated_coeff_scales){
-		scaling();
-	}
-	
-	auto scale_uumean_tau = acGetOptimizedDSLTaskGraph(scale);
-	acGridSynchronizeStream(STREAM_ALL);
-	acGridExecuteTaskGraph(scale_uumean_tau, 1);
-	acGridSynchronizeStream(STREAM_ALL);
-
-
-  bcs = acGetOptimizedDSLTaskGraph(boundconds);	
-	acGridSynchronizeStream(STREAM_ALL);
-	acGridExecuteTaskGraph(bcs,1);
-	acGridSynchronizeStream(STREAM_ALL);
-
-	AcReal* out = NULL;
-	
-	AcReal* uumean_ptr = NULL;
-	AcReal* TAU_ptr = NULL;
-	*loss_val = 0.1;
-
-	acDeviceGetVertexBufferPtrs(acGridGetDevice(), TAU.xx, &TAU_ptr, &out);
-	acDeviceGetVertexBufferPtrs(acGridGetDevice(), UUMEAN.x, &uumean_ptr, &out);
-
-
-	acGridHaloExchange();
-
-	double start;
-	double end;
-
-	start = MPI_Wtime();
-	float avgloss = 0;
-	
-	torch_trainCAPI((int[]){mx,my,mz}, uumean_ptr, TAU_ptr, loss_val, AC_DOUBLE_PRECISION);
-	/*
-	for (int batch = 0; batch<5; batch++){
-		torch_trainCAPI((int[]){mx,my,mz}, uumean_ptr, TAU_ptr, loss_val, AC_DOUBLE_PRECISION);
-		avgloss = avgloss + *loss_val;
-	}
-	*/
-	end = MPI_Wtime();
-	printf("Time for one time step: %f\n", (end-start));
-	printf("Loss after training: %f\n", *loss_val);
-	train_counter++;
-#endif
-}
-/***********************************************************************************************/
-extern "C" void torch_infer_c_api(int itstub){	
-#if TRAINING
-	#include "user_constants.h"
-	
-
-		auto calc_uumean_tau = acGetOptimizedDSLTaskGraph(initialize_uumean_tau);
-		acGridSynchronizeStream(STREAM_ALL);
-		acGridExecuteTaskGraph(calc_uumean_tau, 1);
-		acGridSynchronizeStream(STREAM_ALL);
-
-  	auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
-		acGridSynchronizeStream(STREAM_ALL);
-		acGridExecuteTaskGraph(bcs,1);
-		acGridSynchronizeStream(STREAM_ALL);
-
-
-		if(!calculated_coeff_scales){
-			scaling();
-		}
-
-
-		auto scale_uumean_tau = acGetOptimizedDSLTaskGraph(scale);
-		acGridSynchronizeStream(STREAM_ALL);
-		acGridExecuteTaskGraph(scale_uumean_tau, 1);
-		acGridSynchronizeStream(STREAM_ALL);
-
-  	bcs = acGetOptimizedDSLTaskGraph(boundconds);	
-		acGridSynchronizeStream(STREAM_ALL);
-		acGridExecuteTaskGraph(bcs,1);
-		acGridSynchronizeStream(STREAM_ALL);
-
-	AcReal* out = NULL;
-
-	AcReal* uumean_ptr = NULL;
-	AcReal* tau_infer_ptr = NULL;
-
-	acDeviceGetVertexBufferPtrs(acGridGetDevice(), TAU_INFERRED.xx, &tau_infer_ptr, &out);
-	acDeviceGetVertexBufferPtrs(acGridGetDevice(), UUMEAN.x, &uumean_ptr, &out);
-
-		
-	acGridHaloExchange();
-	torch_inferCAPI((int[]){mx,my,mz}, uumean_ptr, tau_infer_ptr, AC_DOUBLE_PRECISION);
-
-	float vloss = MSE();
- 	
-	if(itstub == 1){
-		printf("Validation error is: %f\n", vloss);
-		print_debug();
-	}
-#endif
-}
+extern "C" void torch_infer_c_api(int itstub);
 /***********************************************************************************************/
 std::array<AcReal,3>
 visc_get_max_diffus()
@@ -1471,6 +1012,196 @@ void setupConfig(AcMeshInfo& config)
 #undef x
 #undef y
 #undef z
+/***********************************************************************************************/
+void torch_infer_c_api(int itstub){	
+#if TRAINING
+	#include "user_constants.h"
+	
+
+		auto calc_uumean_tau = acGetOptimizedDSLTaskGraph(initialize_uumean_tau);
+		acGridSynchronizeStream(STREAM_ALL);
+		acGridExecuteTaskGraph(calc_uumean_tau, 1);
+		acGridSynchronizeStream(STREAM_ALL);
+
+  	auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
+		acGridSynchronizeStream(STREAM_ALL);
+		acGridExecuteTaskGraph(bcs,1);
+		acGridSynchronizeStream(STREAM_ALL);
+
+
+		if(!calculated_coeff_scales){
+			scaling();
+		}
+
+
+		auto scale_uumean_tau = acGetOptimizedDSLTaskGraph(scale);
+		acGridSynchronizeStream(STREAM_ALL);
+		acGridExecuteTaskGraph(scale_uumean_tau, 1);
+		acGridSynchronizeStream(STREAM_ALL);
+
+  	bcs = acGetOptimizedDSLTaskGraph(boundconds);	
+		acGridSynchronizeStream(STREAM_ALL);
+		acGridExecuteTaskGraph(bcs,1);
+		acGridSynchronizeStream(STREAM_ALL);
+
+	AcReal* out = NULL;
+
+	AcReal* uumean_ptr = NULL;
+	AcReal* tau_infer_ptr = NULL;
+
+	acDeviceGetVertexBufferPtrs(acGridGetDevice(), TAU_INFERRED.xx, &tau_infer_ptr, &out);
+	acDeviceGetVertexBufferPtrs(acGridGetDevice(), UUMEAN.x, &uumean_ptr, &out);
+
+		
+	acGridHaloExchange();
+	torch_inferCAPI((int[]){mx,my,mz}, uumean_ptr, tau_infer_ptr, AC_DOUBLE_PRECISION);
+
+	float vloss = MSE();
+ 	
+	if(itstub == 1){
+		printf("Validation error is: %f\n", vloss);
+		print_debug();
+	}
+#endif
+}
+/***********************************************************************************************/
+void torch_train_c_api(AcReal *loss_val) {
+#if TRAINING
+	#include "user_constants.h"
+	
+
+	
+	
+	auto calc_uumean_tau = acGetOptimizedDSLTaskGraph(initialize_uumean_tau);
+	acGridSynchronizeStream(STREAM_ALL);
+	acGridExecuteTaskGraph(calc_uumean_tau, 1);
+	acGridSynchronizeStream(STREAM_ALL);
+
+  auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
+	acGridSynchronizeStream(STREAM_ALL);
+	acGridExecuteTaskGraph(bcs,1);
+	acGridSynchronizeStream(STREAM_ALL);
+
+	if(!calculated_coeff_scales){
+		scaling();
+	}
+	
+	auto scale_uumean_tau = acGetOptimizedDSLTaskGraph(scale);
+	acGridSynchronizeStream(STREAM_ALL);
+	acGridExecuteTaskGraph(scale_uumean_tau, 1);
+	acGridSynchronizeStream(STREAM_ALL);
+
+
+  bcs = acGetOptimizedDSLTaskGraph(boundconds);	
+	acGridSynchronizeStream(STREAM_ALL);
+	acGridExecuteTaskGraph(bcs,1);
+	acGridSynchronizeStream(STREAM_ALL);
+
+	AcReal* out = NULL;
+	
+	AcReal* uumean_ptr = NULL;
+	AcReal* TAU_ptr = NULL;
+	*loss_val = 0.1;
+
+	acDeviceGetVertexBufferPtrs(acGridGetDevice(), TAU.xx, &TAU_ptr, &out);
+	acDeviceGetVertexBufferPtrs(acGridGetDevice(), UUMEAN.x, &uumean_ptr, &out);
+
+
+	acGridHaloExchange();
+
+	double start;
+	double end;
+
+	start = MPI_Wtime();
+	float avgloss = 0;
+	
+	torch_trainCAPI((int[]){mx,my,mz}, uumean_ptr, TAU_ptr, loss_val, AC_DOUBLE_PRECISION);
+	/*
+	for (int batch = 0; batch<5; batch++){
+		torch_trainCAPI((int[]){mx,my,mz}, uumean_ptr, TAU_ptr, loss_val, AC_DOUBLE_PRECISION);
+		avgloss = avgloss + *loss_val;
+	}
+	*/
+	end = MPI_Wtime();
+	printf("Time for one time step: %f\n", (end-start));
+	printf("Loss after training: %f\n", *loss_val);
+	train_counter++;
+#endif
+}
+/***********************************************************************************************/
+void print_debug() {
+if(it % 5 !=0) return;
+#if TRAINING
+    #include "user_constants.h"
+		printf("true it is running print");
+		counter = it;
+
+		MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+
+		std::ofstream myFile;
+		std::string fileString = "slices/snapshot_" + std::to_string(my_rank) + "_" + std::to_string(it) + ".csv";	
+		myFile.open(fileString);
+
+    myFile << "it,TAU_xx,TAU_xx_inferred,TAU_yy,TAU_yy_inferred,TAU_zz,TAU_zz_inferred,"
+           << "TAU_xy,TAU_xy_inferred,TAU_yz,TAU_yz_inferred,TAU_xz,TAU_xz_inferred,UUMEAN_x,UUMEAN_y,UUMEAN_z,"
+           << "UUX,UUY,UUZ,x,y,z\n";
+
+	  acGridHaloExchange();
+    copyFarray(NULL);
+
+  	const auto DEVICE_VTXBUF_IDX = [&](const int x, const int y, const int z)
+  				{
+					return acVertexBufferIdx(x,y,z,mesh.info);
+  				};
+
+    AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
+				
+	
+    for (size_t i = dims.n0.x; i < dims.n1.x; i++) {
+        for (size_t j = dims.n0.y; j < dims.n1.y; j++) {
+            for (size_t k = dims.n0.z; k < dims.n1.z; k++) {
+
+                myFile << it << ","
+                       << mesh.vertex_buffer[TAU.xx][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[TAU_INFERRED.xx][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[TAU.yy][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[TAU_INFERRED.yy][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[TAU.zz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[TAU_INFERRED.zz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[TAU.xy][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[TAU_INFERRED.xy][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[TAU.yz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[TAU_INFERRED.yz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[TAU.xz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[TAU_INFERRED.xz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[UUMEAN.x][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[UUMEAN.y][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[UUMEAN.z][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[UUX][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[UUY][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[UUZ][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+											 << i << "," << j << "," << k << "\n";
+            }
+        }
+    }
+	#endif
+}
+void scaling(){
+#if LTRAINING
+		auto calc_scale = acGetOptimizedDSLTaskGraph(calc_scaling);
+		acGridSynchronizeStream(STREAM_ALL);
+		acGridExecuteTaskGraph(calc_scale, 1);
+		acGridSynchronizeStream(STREAM_ALL);
+
+		
+  	auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
+		acGridSynchronizeStream(STREAM_ALL);
+		acGridExecuteTaskGraph(bcs,1);
+		acGridSynchronizeStream(STREAM_ALL);
+
+		calculated_coeff_scales = true;
+#endif
+}
 /***********************************************************************************************/
 void copyFarray(AcReal* f)
 {
