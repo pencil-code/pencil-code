@@ -10,6 +10,7 @@
 Contains the parameters of the simulation.
 """
 import warnings
+from pencil.util import copy_docstring
 
 try:
     import f90nml
@@ -22,51 +23,6 @@ except:
     'pip install f90nml' (Python 2)."
     )
     lnml = False
-
-
-def param(*args, **kwargs):
-    """
-    param(datadir='data', param1=False, param2=False, quiet=True,
-         conflicts_quiet=False, asdict=True, nest_dict=True, append_units=True)
-
-    Read Pencil Code simulation parameters.
-    Requires: nl2python perl script (based on Wolfgang Dobler's nl2idl script).
-
-    Parameters
-    ----------
-    datadir : string
-      Directory where the data is stored.
-
-    param1 : bool
-      Selects the set of parameters only from start.
-
-    param2 : bool
-      Selects the set of parameters only from run.
-
-    quiet : bool
-      Flag for switching of output.
-
-    conflicts_quiet : bool
-      Flag for switching off printing duplicate labels.
-
-    asdict : bool
-      Reads parameters as dictionary.
-
-    nest_dict : bool
-      Reads parameters as nested dictionary.
-
-    append_units : bool
-      Derives dimensional units from standard code units.
-
-    Returns
-    -------
-    Instance of the pencil.read.param.Param class.
-    All of the selected parameters are imported as class members.
-    """
-
-    param_tmp = Param()
-    param_tmp.read(*args, **kwargs)
-    return param_tmp
 
 
 class Param(object):
@@ -465,3 +421,9 @@ class Param(object):
         return params, param_conflicts, name_list, super_name_list
 
 class _Foo(object): pass
+
+@copy_docstring(Param.read)
+def param(*args, **kwargs):
+    param_tmp = Param()
+    param_tmp.read(*args, **kwargs)
+    return param_tmp
