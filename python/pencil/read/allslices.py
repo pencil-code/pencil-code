@@ -8,71 +8,7 @@ Contains the classes and methods to read slice files.
 import numpy as np
 from math import ceil
 import warnings
-
-def slices(*args, **kwargs):
-    """
-    slices(field='', extension='', datadir='data', proc=-1, old_file=False,
-          precision='f', iter_list=list(), quiet=True,
-          tstart=0, tend=None)
-
-    Read Pencil Code slice data.
-
-    Parameters
-    ----------
-    field : string or list of strings
-        Name of the field(s) to be read.
-
-    extension : string or list of strings
-        Specifies the plane slice(s).
-
-    datadir : string
-        Directory where the data is stored.
-
-    proc : int
-        Processor to be read. If -1 read all and assemble to one array.
-
-    old_file : bool
-        Flag for reading old file format.
-
-    precision : string
-        Precision of the data. Either float 'f' or double 'd'.
-
-    iter_list : list
-        Iteration indices for which to sample the slices.
-
-    quiet : bool
-        Flag for switching off output.
-
-    tstart : float
-        Start time interval from which to sample slices.
-
-    tend : float
-        End time interval from which to sample slices.
-
-    Returns
-    -------
-    Class containing the fields and slices as attributes.
-
-    Notes
-    -----
-    Use the attribute keys to get a list of attributes
-
-    Examples
-    --------
-    >>> vsl = pc.read.slices()
-    >>> vsl.keys()
-    t
-    xy
-    xy2
-    xz
-    yz
-    position
-    coordinate
-    """
-
-    slices_tmp = SliceSeries()
-    slices_tmp.read(*args, **kwargs)
-    return slices_tmp
+from pencil.util import copy_docstring
 
 
 class SliceSeries(object):
@@ -539,3 +475,9 @@ class SliceSeries(object):
                 setattr(self, "coordinate", ind_object)
 
 class _Foo(object): pass
+
+@copy_docstring(SliceSeries.read)
+def slices(*args, **kwargs):
+    slices_tmp = SliceSeries()
+    slices_tmp.read(*args, **kwargs)
+    return slices_tmp
