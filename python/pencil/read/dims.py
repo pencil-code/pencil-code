@@ -6,33 +6,8 @@ Contains the classes and methods to read the simulation dimensions.
 """
 import numpy as np
 from pencil import read
+from pencil.util import copy_docstring
 from os.path import join
-
-
-def dim(*args, **kwargs):
-    """
-    dim(datadir='data', proc=-1)
-
-    Read the dim.dat file.
-
-    Parameters
-    ----------
-    datadir : string
-      Directory where the data is stored.
-
-    proc : int
-      Processor to be read. If proc is -1, then read the 'global'
-      dimensions. If proc is >=0, then read the dim.dat in the
-      corresponding processor directory.
-
-    Returns
-    -------
-    Class containing the domain dimension information.
-    """
-
-    dim_tmp = Dim()
-    dim_tmp.read(*args, **kwargs)
-    return dim_tmp
 
 
 class Dim(object):
@@ -224,3 +199,9 @@ class Dim(object):
                 self.mxgrid = self.mygrid = self.mzgrid = 0
 
         return 0
+
+@copy_docstring(Dim.read)
+def dim(*args, **kwargs):
+    dim_tmp = Dim()
+    dim_tmp.read(*args, **kwargs)
+    return dim_tmp
