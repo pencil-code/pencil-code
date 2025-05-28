@@ -202,8 +202,9 @@ class DataCube(object):
     ):
         """
         read(var_file='', datadir='data', proc=-1, ivar=-1, quiet=True,
-             trimall=False, magic=None, sim=None, precision='f', flist=None,
-             timing=True, fbloc=True, lvec=True, lonlyvec=False, lpersist=False,
+             trimall=False, magic=None, sim=None, precision='d',
+             lpersist=False, dtype=np.float64, flist=None,
+             timing=True, fbloc=True, lvec=True, lonlyvec=False,
              range_x=None, range_y=None, range_z=None,
              irange_x=None, irange_y=None, irange_z=None)
 
@@ -239,7 +240,7 @@ class DataCube(object):
          trimall : bool
              Trim the data cube to exclude ghost zones.
 
-         magic : bool
+         magic : list of strings
              If present list of derived values to be computed from the data, e.g. B = curl(A).
 
          sim : pencil code simulation object
