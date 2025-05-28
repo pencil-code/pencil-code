@@ -49,12 +49,15 @@ class PDim(object):
 
     def read(self, datadir="data"):
         """
-        read(pdim(sim=None, datadir='data')
+        read(sim=None, datadir='data')
 
         Read the pdim.dat file.
 
         Parameters
         ----------
+        sim : obj
+            Specifies the simulation object from which to obtain the datadir.
+        
         datadir : string
             Directory where the data is stored.
 
