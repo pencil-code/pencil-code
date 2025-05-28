@@ -11,63 +11,11 @@ import sys
 import numpy as np
 from pencil import read
 from pencil.math import natural_sort
+from pencil.util import copy_docstring
 import glob
 import time
 import os
 from collections.abc import Iterable
-
-def aver(*args, **kwargs):
-    """
-    aver(plane_list=None, datadir='data', proc=-1, var_index=-1, proc=-1):
-
-    Read Pencil Code average data.
-
-    Parameters
-    ----------
-    plane_list : list of string
-        A list of the 2d/1d planes over which the averages were taken.
-        Takes 'xy', 'xz', 'yz', 'y', 'z'.
-        By default, it is [p for p in ["xy", "xz", "yz"] if corresponding_dot_in_file_exists_in_simdir].
-
-    iter_list : list of int
-        Iteration indices for which to sample the slices.
-
-    avfile_list , infile_list : list of string
-        File names if alternative to standard files used.
-
-    var_index : int
-        Index of variable from among within the 'y' or 'z' averages.
-        Takes an integer value < len(yaver.in or zaver.in).
-
-    datadir : string
-        Directory where the data is stored. By default, "data"
-
-    simdir : string
-        Simulation directory containing the .in files.
-        By default, current directory.
-
-    proc : int
-        Processor to be read. If -1 read all and assemble to one array.
-        Only affects the reading of 'yaverages.dat' and 'zaverages.dat'.
-
-    precision : string
-        Float (f), double (d) or half (half).
-
-    Returns
-    -------
-    Class containing the averages.
-
-    Examples
-    --------
-    >>> aver = pc.read.aver()
-    >>> avr.lnrho.shape
-    (134, 134, 134)
-    """
-
-    averages_tmp = Averages()
-    averages_tmp.read(*args, **kwargs)
-    return averages_tmp
-
 
 class Averages(object):
     """
@@ -817,6 +765,12 @@ class Averages(object):
         convert = lambda text: int(text) if text.isdigit() else text.lower()
         alphanum_key = lambda key: [convert(c) for c in re.split("([0-9]+)", key)]
         return sorted(l, key=alphanum_key)
+
+@copy_docstring(Averages.read)
+def aver(*args, **kwargs):
+    averages_tmp = Averages()
+    averages_tmp.read(*args, **kwargs)
+    return averages_tmp
 
 class _Plane():
     """
