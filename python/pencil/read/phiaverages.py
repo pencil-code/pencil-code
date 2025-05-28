@@ -6,37 +6,7 @@ Contains the classes and methods to read phi-averaged files.
 """
 
 import sys
-
-
-def phiaver(*args, **kwargs):
-    """
-     phiaver(datadir="data", avg_file="1", var_index=-1, iter_list=None, precision="f")
-
-     Read Pencil Code phi-averaged data.
-
-
-     Keyword arguments:
-
-    datadir : string
-        Directory where the data is stored.
-
-    avg_file : int
-        Number of average file to be read.
-
-    var_index : int
-        Index of single variable taken from among the 'phi' averages.
-        Takes an integer value < len(phiaver.in).
-
-    iter_list : list of int
-        Iteration indices for which to sample the slices.
-
-    precision : string
-        Float (f), double (d) or half (half).
-    """
-
-    averages_tmp = Averages()
-    averages_tmp.read(*args, **kwargs)
-    return averages_tmp
+from pencil.util import copy_docstring
 
 
 class Averages(object):
@@ -254,3 +224,9 @@ class Averages(object):
             raw_data = data3.reshape(nvars, nz_phiavg, nr_phiavg)
 
             return t, r_cyl, z_cyl, raw_data
+
+@copy_docstring(Averages.read)
+def phiaver(*args, **kwargs):
+    averages_tmp = Averages()
+    averages_tmp.read(*args, **kwargs)
+    return averages_tmp
