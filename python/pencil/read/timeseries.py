@@ -6,40 +6,7 @@
 Contains the classes and methods to read the time series file.
 """
 
-
-def ts(*args, **kwargs):
-    """
-    ts(file_name='time_series.dat', datadir='data',
-       quiet=False, comment_char='#', sim=None, unique_clean=False)
-
-    Read Pencil Code time series data.
-
-    Parameters
-    ----------
-    file_name : string
-        Name of the time series file.
-        For supernova data change file_name to 'sn_series.dat'.
-
-    datadir : string
-        Directory where the data is stored.
-
-    quiet : bool
-        Flag for switching off output.
-
-    comment_char : string
-        Comment character in the time series file.
-
-    sim : obj
-      Simulation object from which to take the datadir.
-
-    unique_clean : bool
-      Set True, np.unique is used to clean up the ts, e.g. remove errors
-      at the end of crashed runs.
-    """
-
-    ts_tmp = TimeSeries()
-    ts_tmp.read(*args, **kwargs)
-    return ts_tmp
+from pencil.util import copy_docstring
 
 
 class TimeSeries(object):
@@ -178,3 +145,9 @@ class TimeSeries(object):
                 tmp = self.__getattribute__(key)[ilist]
                 self.__delattr__(key)
                 setattr(self, key, tmp)
+
+@copy_docstring(TimeSeries.read)
+def ts(*args, **kwargs):
+    ts_tmp = TimeSeries()
+    ts_tmp.read(*args, **kwargs)
+    return ts_tmp
