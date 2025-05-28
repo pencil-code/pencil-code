@@ -1,17 +1,4 @@
-def pstalk(*args, **kwargs):
-    """
-    Read PSTALK files from Pencil Code using IDL.
-    Uses IDL<->Python Bridge, this must be activated manually!
-
-    Args:
-        - datadir      specify datadir, default False
-        - sim           specify simulation from which you want to read
-        - swap_endian   change if needed to True, default False
-        - quiet         verbosity, default False
-    """
-
-    var_tmp = ParticleStalkData(*args, **kwargs)
-    return var_tmp
+from pencil.util import copy_docstring
 
 
 class ParticleStalkData(object):
@@ -170,3 +157,8 @@ class ParticleStalkData(object):
                     if hasattr(self, key.lower()):
                         continue
                     setattr(self, key.lower(), ps[key][0].T)
+
+@copy_docstring(ParticleStalkData.__init__)
+def pstalk(*args, **kwargs):
+    var_tmp = ParticleStalkData(*args, **kwargs)
+    return var_tmp
