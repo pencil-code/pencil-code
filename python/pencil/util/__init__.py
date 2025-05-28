@@ -98,3 +98,21 @@ class SinglePrinter:
             print(message)
 
 pc_print = SinglePrinter()
+
+def copy_docstring(original):
+    """
+    Decorator, to be used for wrapper functions, that makes the docstring of a
+    particular function the same as another function.
+    
+    Rationale: if you consider pc.read.aver and pc.read.averages.Averages.read,
+    both the docstrings are currently independently defined, but the former is
+    simply a wrapper for the other. When new functionality is added to the
+    latter, the docstring for the former is almost never updated, leading to
+    the users being shown outdated help text.
+    
+    Copied from https://softwareengineering.stackexchange.com/a/386758
+    """
+    def wrapper(target):
+        target.__doc__ = original.__doc__
+        return target
+    return wrapper
