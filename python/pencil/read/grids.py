@@ -5,39 +5,7 @@
 Contains classes and methods to read the grid data.
 """
 
-
-def grid(*args, **kwargs):
-    """
-    grid(datadir='data', proc=-1, quiet=False, trim=False)
-
-    Read the grid data from the pencil code simulation.
-    If proc < 0, then load all data and assemble.
-    Otherwise, load grid from specified processor.
-
-    Parameters
-    ----------
-    datadir : string
-      Directory where the data is stored.
-
-    proc : int
-      Processor to be read. If proc is -1, then read the 'global'
-      grid. If proc is >=0, then read the grid.dat in the
-      corresponding processor directory.
-
-    quiet : bool
-      Flag for switching of output.
-
-    trim : bool
-      Cuts off the ghost points.
-
-    Returns
-    -------
-    Class containing the grid information.
-    """
-
-    grid_tmp = Grid()
-    grid_tmp.read(*args, **kwargs)
-    return grid_tmp
+from pencil.util import copy_docstring
 
 
 class Grid(object):
@@ -296,3 +264,9 @@ class Grid(object):
         self.Lx = Lx
         self.Ly = Ly
         self.Lz = Lz
+
+@copy_docstring(Grid.read)
+def grid(*args, **kwargs):
+    grid_tmp = Grid()
+    grid_tmp.read(*args, **kwargs)
+    return grid_tmp
