@@ -9,51 +9,10 @@ Contains the classes and methods to read the power spectra.
 import os
 import numpy as np
 from pencil import read
-from pencil.util import ffloat
+from pencil.util import ffloat, copy_docstring
 import re
 import warnings
 import functools
-
-def power(*args, **kwargs):
-    """
-    power(datadir='data', file_name='', quiet=False)
-
-    Read the power spectra.
-
-    Parameters
-    ----------
-    datadir : string
-        Directory where the data is stored.
-
-    file_name : string
-        Filename to read.
-        If a filename is given, only that power spectrum is read.
-        By default it reads all the power spectrum files.
-
-    quiet : bool
-        Flag for switching off output.
-
-    Returns
-    -------
-    Class containing the different power spectrum as attributes.
-
-    Notes
-    -----
-    Use the attribute keys to get a list of attributes
-
-    Examples
-    --------
-    >>> pw = pc.read.power()
-    >>> pw.keys()
-    t
-    kin
-    krms
-    hel_kin
-    """
-
-    power_tmp = Power()
-    power_tmp.read(*args, **kwargs)
-    return power_tmp
 
 
 class Power(object):
@@ -430,3 +389,9 @@ class Power(object):
             nk = 1
 
         return int(nk)
+
+@copy_docstring(Power.read)
+def power(*args, **kwargs):
+    power_tmp = Power()
+    power_tmp.read(*args, **kwargs)
+    return power_tmp
