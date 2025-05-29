@@ -24,7 +24,7 @@ cd $olddir
 cp data/param* $newdir/data
 #
 # is not necessary as proc_bounds.dat is recreated when missing; when yet done, grid/proc layout agreement must be checked
-#cp data/proc_bounds.dat $newdir/data/
+cp data/proc_bounds.dat $newdir/data
 #
 set io_scheme = `tac $newdir/src/Makefile.local | grep '^ *IO *=' | sed -e's/^.*= *\(\w*\) *.*$/\1/'`
 if ( $io_scheme == 'io_hdf5' ) then
