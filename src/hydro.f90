@@ -5292,7 +5292,9 @@ module Hydro
 !  The magnetic case can only be done iteratively, so we first compute
 !  gamma for the nonmagnetic case.
 !
-      if (lrelativistic_eos) cs201=1.+cs20
+      if (ldensity) then
+        if (lrelativistic_eos) cs201=1.+cs20
+      endif
       cs2011=1./cs201
       if (lconservative) then
         if (iTij==0) call fatal_error("hydro_after_boundary","must compute Tij for lconservative")
