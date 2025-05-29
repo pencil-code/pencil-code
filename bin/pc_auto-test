@@ -653,30 +653,6 @@ if (@ARGV) {
     for my $d (@ARGV) {
         test_rundir("$d", $makeopts);
     }
-    if ((scalar @ARGV)==1) {
-        if (%failed) {
-            # Do some bizarre chicken sacrifice voodoo
-            # [wd 29-Jan-2007:] Tried to sanitize this without knowing what
-            #                   it was supposed to do
-
-            # Assuming that the exit code is supposed to indicate the
-            # worst phase that failed (i.e., 2 means setting up directory
-            # failed, ..., 7 means results are wrong, 8 means something
-            # unexpected failed, see @exit_status above):
-            my $exit_code=1;
-            # Loop through exit codes, starting with most serious one:
-            foreach my $status (@exit_status) {
-                # Exit if any of the exit codes stored in %failed matches
-                # $status:
-                if (grep /^$status$/, values %failed) {
-                    exit $exit_code;
-                } else {
-                    $exit_code++;
-                }
-            }
-            exit $exit_code;    # Still here? Then exit now.
-        }
-    }
 } else {
     ## No dirs in cmd line -> do standard program
     if ($deep) {
