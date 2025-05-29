@@ -1008,6 +1008,9 @@ module Diagnostics
 !
         do idiag=1,nnamez
           select case(itype_name_z(idiag))
+          case(ilabel_save)
+            call mpireduce_sum(fnamez(:,:,idiag),fsumz,(/nz,nprocz/))
+            if (lroot) fnamez(:,:,idiag)=fsumz
           case(ilabel_sum)
             call mpireduce_sum(fnamez(:,:,idiag),fsumz,(/nz,nprocz/))
             if (lroot) fnamez(:,:,idiag)=fsumz*dA_xy_rel1
