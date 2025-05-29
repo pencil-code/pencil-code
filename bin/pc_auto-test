@@ -2015,7 +2015,7 @@ sub mark_failed {
                     print "===> Found the offending commit:\n";
                     print "SVN: $fails\n";
                     if ($log_dir) {
-                         print 'GIT: <a href="'.$base_URL.'commit/'.$offending.'">'.$offending."</a>\n";
+                        print 'GIT: <a href="'.$base_URL.'commit/'.$offending.'">'.$offending."</a>\n";
                     } else {
                         print "GIT: ".$offending."\n";
                     }
