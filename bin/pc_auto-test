@@ -646,13 +646,10 @@ my %t_global = (
                );
 my $t0_global = get_time();         # remember start time
 
+# determine directories to be tested
 if (@ARGV) {
     ## Process dirs given in cmd line
-    @ARGV = map { s{^(?!/)}{$cwd/}; $_ } @ARGV; # Make '.' and similar work
-    $ntests = @ARGV;
-    for my $d (@ARGV) {
-        test_rundir("$d", $makeopts);
-    }
+    @testdirs = map { s{^(?!/)}{$cwd/}; $_ } @ARGV; # Make '.' and similar work
 } else {
     ## No dirs in cmd line -> do standard program
     if ($deep) {
@@ -682,21 +679,23 @@ if (@ARGV) {
         }
         @testdirs = @testdirs_tmp;
     }
-    $ntests = @testdirs;
-    if ($nodelist) {
-        # Run tests in parallel
-        my @nodes=split /,/ , $nodelist;
-        my $passthru_opts = '';
-        if ($clean)    { $passthru_opts .= '-C '; }
-        if ($makejobs) { $passthru_opts .= " --jobs=$makejobs"; }
-        if ($parallel) { $passthru_opts .= " --parallel"; }
-        if ($opts{'c'} || $opts{'compile-only'}) { $passthru_opts .= ' -c'; }
-        do_tests_in_parallel(\@testdirs, \@nodes, $passthru_opts);
-    } else {
-        # Run tests consecutively
-        for my $d (@testdirs) {
-            test_rundir("$d", $makeopts);
-        }
+}
+
+# run the tests
+$ntests = @testdirs;
+if ($nodelist) {
+    # Run tests in parallel
+    my @nodes=split /,/ , $nodelist;
+    my $passthru_opts = '';
+    if ($clean)    { $passthru_opts .= '-C '; }
+    if ($makejobs) { $passthru_opts .= " --jobs=$makejobs"; }
+    if ($parallel) { $passthru_opts .= " --parallel"; }
+    if ($opts{'c'} || $opts{'compile-only'}) { $passthru_opts .= ' -c'; }
+    do_tests_in_parallel(\@testdirs, \@nodes, $passthru_opts);
+} else {
+    # Run tests consecutively
+    for my $d (@testdirs) {
+        test_rundir("$d", $makeopts);
     }
 }
 
