@@ -276,7 +276,8 @@ module Energy
 !  it may still be a good idea to put cs0=1/sqrt(3)=0.57735
 !
               if (ldensity.and.lrelativistic_eos) then
-                if (.not.lconservative) p%fpres(:,j)=-.75*p%cs2*p%glnrho(:,j)
+                !if (.not.lconservative) p%fpres(:,j)=-.75*p%cs2*p%glnrho(:,j)
+                if (.not.lconservative) p%fpres(:,j)=-p%cs2/(1 + p%cs2)*p%glnrho(:,j)
               else
                 p%fpres(:,j)=-p%cs2*p%glnrho(:,j)
               endif
