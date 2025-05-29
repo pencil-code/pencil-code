@@ -1041,6 +1041,12 @@ sub check_cmd_result {
             my_ok(0, 1, "Fortran runtime error: ".$1, $dir, $phase);
             return;
         }
+
+        # Check for segmentation fault
+        if ($msg =~ /^\s*Program received signal SIGSEGV: Segmentation fault[\s\-]*(.*)$/im) {
+            my_ok(0, 1, "Segmentation fault: ".$1, $dir, $phase);
+            return;
+        }
     }
 
     my_ok($error, $arg, $msg, $dir, $phase, $quiet, $dt);
