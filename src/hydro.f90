@@ -3330,7 +3330,7 @@ module Hydro
               ! p%rho1=1./f(l1:l2,m,n,irho)
               p%rho1=1./tmp_rho
               call multsv_mn(p%rho1,tmp3,p%uu)
-              p%uu=p%uu*cs2011
+              !p%uu=p%uu*cs2011
             endif
           endif
         else
