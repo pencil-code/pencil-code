@@ -1590,6 +1590,9 @@ module Hydro
       if (ldensity) then
         call get_shared_variable('lrelativistic_eos', lrelativistic_eos)
         call get_shared_variable('lrelativistic_eos_corr', lrelativistic_eos_corr)
+      else
+        allocate(lrelativistic_eos)
+        lrelativistic_eos=.false.
       endif
 !
       if (ltime_integrals) then
@@ -5292,9 +5295,7 @@ module Hydro
 !  The magnetic case can only be done iteratively, so we first compute
 !  gamma for the nonmagnetic case.
 !
-      if (ldensity) then
-        if (lrelativistic_eos) cs201=1.+cs20
-      endif
+      if (lrelativistic_eos) cs201=1.+cs20
       cs2011=1./cs201
       if (lconservative) then
         if (iTij==0) call fatal_error("hydro_after_boundary","must compute Tij for lconservative")
