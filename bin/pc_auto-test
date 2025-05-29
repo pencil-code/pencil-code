@@ -2051,9 +2051,9 @@ sub mark_success {
 # ---------------------------------------------------------------------- #
 sub get_current_revision {
 # Get current revision only if not previously obtained
-    $current_hash = "";
     if (!defined ($current_revision)) {
         # Get current SVN revision and GIT hash
+        $current_hash = "";
         if (-d "$pencil_home/.svn") {
             # SVN revision
             $current_revision = `svn info "$pencil_home" --show-item revision`;
