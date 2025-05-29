@@ -1061,6 +1061,7 @@ module Hydro
 !
       call put_shared_variable('lconservative',lconservative)
       call put_shared_variable('lhiggsless',lhiggsless)
+      call put_shared_variable('lrelativistic',lrelativistic)
 
       call put_shared_variable ('tdamp', tdamp)
       call put_shared_variable ('ldamp_fade', ldamp_fade)

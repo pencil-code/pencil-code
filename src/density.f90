@@ -105,7 +105,7 @@ module Density
   logical :: lrelativistic_eos=.false., ladvection_density=.true.
   logical :: lrelativistic_eos_corr=.false.
   logical :: lrelativistic_eos_term1=.true., lrelativistic_eos_term2=.true.
-  logical, pointer :: lconservative, lhiggsless
+  logical, pointer :: lconservative, lhiggsless, lrelativistic
   logical :: lisothermal_fixed_Hrho=.false.
   logical :: lmass_source=.false., lmass_source_random=.false., lcontinuity_gas=.true.
   logical :: lupw_lnrho=.false.,lupw_rho=.false.
@@ -997,6 +997,7 @@ module Density
 !
       if (lhydro.and..not.lhydro_potential.and.iphiuu==0) then
         call get_shared_variable('lconservative', lconservative)
+        call get_shared_variable('lrelativistic', lrelativistic)
       else
         allocate(lconservative)
         lconservative=.false.
@@ -2156,10 +2157,17 @@ module Density
       if (idiag_inertiaxx_car/=0 .or. idiag_inertiayy_car/=0 .or. &
           idiag_inertiazz_car/=0 .or. idiag_sphmass/=0) lpenc_diagnos(i_r_mn)=.true.
 !
-      if (lconservative) then
-        lpenc_requested(i_lorentz)=.true.
-        if (lhiggsless)  lpenc_requested(i_hless)=.true.
-      endif
+      !if (lconservative) then
+      !  lpenc_requested(i_lorentz)=.true.
+      !  if (lhiggsless)  lpenc_requested(i_hless)=.true.
+      !endif
+      !
+      ! higgsless does not require conservative and lorentz
+      ! should be requested when lrelativistic, independently of
+      ! conservative or not
+      !
+      if (lrelativistic) lpenc_requested(i_lorentz)=.true.
+      if (lhiggsless)  lpenc_requested(i_hless)=.true.
 !
     endsubroutine pencil_criteria_density
 !***********************************************************************
@@ -2209,6 +2217,7 @@ module Density
       if (lpencil_in(i_ekin)) then
         lpencil_in(i_rho)=.true.
         lpencil_in(i_u2)=.true.
+        if (lrelativistic) lpencil_in(i_lorentz)=.true.
       endif
 !
     endsubroutine pencil_interdep_density
@@ -2225,6 +2234,7 @@ module Density
       logical, dimension(:), intent(IN) :: lpenc_loc
       intent(in) :: f
       intent(inout) :: p
+      real :: cs201=1.
 !
 !  Differentiate between log density and linear density.
 !
@@ -2235,8 +2245,11 @@ module Density
       endif
 ! ekin
       if (lpenc_loc(i_ekin)) then
-        if (lconservative) then
-          p%ekin=fourthird*p%rho*p%lorentz*p%u2
+        !if (lconservative) then
+        if (lrelativistic) then
+          !p%ekin=fourthird*p%rho*p%lorentz*p%u2
+          if (lrelativistic_eos) cs201=1.+cs20
+          p%ekin=cs201*p%rho*p%lorentz*p%u2
         else
           p%ekin=0.5*p%rho*p%u2
         endif
