@@ -151,7 +151,7 @@ if (!$current_revision) { die "Problem obtaining current SVN revision!\n"; }
 chomp $current_revision;
 
 # bisect
-my $test_command = "@pc_auto_test --keep-fail-info-on-success --overwrite-fail-info --auto-clean --no-bisect 'samples/$test'";
+my $test_command = "@pc_auto_test --keep-fail-info-on-success --overwrite-fail-info --auto-clean 'samples/$test'";
 if ($debug) { print "Test command: |$test_command|\n"; }
 do {
 	my $num = $bad - $good + 1;
