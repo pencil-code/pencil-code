@@ -1,18 +1,32 @@
 #!/bin/bash
 
-# Clone a given branch of pencil and test it
-# Note that a local path can also be specified to --repo
-# Example usage:
-# pc_isolated-test --branch master --repo "file:///home/kishore/pencil-code" --auto-test-options "--max-level=1 --time-limit=5m"
-#
 # DANGER: things can break horribly if you edit this script while it is running.
+
+help='''Clone a given branch of pencil to a temporary directory and test it.
+
+Example usage:
+    pc_isolated-test --branch gputestv6
+    
+    pc_isolated-test --branch master --repo "file:///home/kishore/pencil-code" --auto-test-options "--max-level=1 --time-limit=5m"
+
+Options:
+    -h,--help               Show this help
+    -r,--repo               URL of the Git repository to use. Note
+                            that a local path can also be specified
+                            here as "file:///path/to/repo".
+                            Default: "https://pencil-code.org/git"
+    -b,--branch             Branch to test.
+                            Default: master
+    -o,--auto-test-options  Options to pass to pc_auto-test.
+                            Default: "--max-level=1"
+'''
 
 # BEGIN option parsing
 #https://stackoverflow.com/questions/192249/how-do-i-parse-command-line-arguments-in-bash/29754866#29754866
 set -o errexit -o pipefail -o noclobber -o nounset
 
-LONGOPTS=branch:,auto-test-options:,repo:
-OPTIONS=b:o:r:
+LONGOPTS=branch:,auto-test-options:,repo:,help
+OPTIONS=b:o:r:h
 
 PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@") || exit 2
 eval set -- "$PARSED"
@@ -33,6 +47,10 @@ while true; do
         -r|--repo)
             repo=$2
             shift 2
+            ;;
+        -h|--help)
+            echo "$help"
+            exit 0
             ;;
         --)
             shift
