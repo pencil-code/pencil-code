@@ -153,7 +153,7 @@ module Hydro
   logical :: lreflecteddy=.false.,louinit=.false.
   logical :: lskip_projection=.false.
   logical :: lconservative=.false., lrelativistic=.false.
-  logical, pointer :: lrelativistic_eos
+  logical, pointer :: lrelativistic_eos, lrelativistic_eos_corr
   logical :: lno_noise_uu=.false., lrho_nonuni_uu=.false.
   logical :: llorentz_limiter=.false., full_3D=.false.
   logical :: lhiggsless=.false., lhiggsless_old=.false.
@@ -984,7 +984,7 @@ module Hydro
         endif
       endif
 !
-!  Define the Higgs less field
+!  Define the Higgsless field
 !
       if (lhiggsless) call farray_register_auxiliary('hless',ihless,communicated=.true.)
 !
@@ -1584,8 +1584,13 @@ module Hydro
 !  Check if we are solving the relativistic eos equations.
 !  In that case we'd need to get lrelativistic_eos from density.
 !  But this only makes sense when we are are not already fully relativistic.
+!  alberto: what does the last sentence mean? lrelativistic_eos is always
+!           relevant
 !
-      if (ldensity) call get_shared_variable('lrelativistic_eos', lrelativistic_eos)
+      if (ldensity) then
+        call get_shared_variable('lrelativistic_eos', lrelativistic_eos)
+        call get_shared_variable('lrelativistic_eos_corr', lrelativistic_eos_corr)
+      endif
 !
       if (ltime_integrals) then
         if (.not.(ltime_integrals_always .or. dtcor<=0.)) call put_shared_variable('t_cor',t_cor)
@@ -3257,7 +3262,7 @@ module Hydro
       real, dimension (nx) :: tmp_rho
       real, dimension (nx,3) :: tmp3
       real, dimension (nx,3,3) :: tmp33
-      real :: cs201,outest
+      real :: cs201=1., cs2011, outest
       integer :: i, j, ju, jj, kk, jk
       integer :: i_4_49_50, j_4_49_50
 !
@@ -3273,17 +3278,29 @@ module Hydro
             p%uu=f(l1:l2,m,n,ivx:ivz)
           else
             tmp3=f(l1:l2,m,n,iux:iuz)
+            if (lrelativistic_eos) cs201=1.+cs20
+            cs2011=1./cs201
+!
+! alberto: tmp_rho is required to be reconstructed for higgsless
+!
+            tmp_rho=f(l1:l2,m,n,irho)
+            if (.not.lhiggsless_old.and.lhiggsless) then
+              where(real(t) < f(l1:l2,m,n,ihless)) tmp_rho=tmp_rho-eps_hless
+            else
+              if (lhiggsless_old) call warning('calc_pencils_hydro',&
+                            'pencil u is not correctly computed for lhiggsless_old')
+            endif
             if (lrelativistic) then
 !
 !  In the relativistic case, which must also be conservative, cs201=4/3, if cs2=1/3.
 !  At this point, the Lorentz factor gamma^2 is already available.
 !  We solve here Eq. (39) of the notes.
 !
-              cs201=cs20+1.
-              tmp_rho=f(l1:l2,m,n,irho)
-              if (.not.lhiggsless_old.and.lhiggsless) then
-                where(real(t) < f(l1:l2,m,n,ihless)) tmp_rho=tmp_rho-eps_hless
-              endif
+              !cs201=cs20+1.
+              ! tmp_rho=f(l1:l2,m,n,irho)
+              !if (.not.lhiggsless_old.and.lhiggsless) then
+              !  where(real(t) < f(l1:l2,m,n,ihless)) tmp_rho=tmp_rho-eps_hless
+              !endif
               if (lmagnetic) then
 !
                 if (full_3D) then
@@ -3296,7 +3313,11 @@ module Hydro
                   call multsv_mn(tmp,tmp3,p%uu)
                 endif
               else
-                tmp=1./(tmp_rho/(1.-.25/f(l1:l2,m,n,ilorentz)))
+                ! alberto: when llorentz_as_aux is not chosen this will not
+                !          be correct
+                !tmp=1./(tmp_rho/(1.-.25/f(l1:l2,m,n,ilorentz)))
+                tmp=1.-cs20*cs2011/f(l1:l2,m,n,ilorentz)
+                tmp=tmp/tmp_rho
                 call multsv_mn(tmp,tmp3,p%uu)
               endif
 !print*,'AXEL7: used B_ext2'
@@ -3305,8 +3326,11 @@ module Hydro
 !  so to get the velocity, we have to divide by it.
 !
             else
-              p%rho1=1./f(l1:l2,m,n,irho)
+              ! corrected when Higgsless is chosen
+              ! p%rho1=1./f(l1:l2,m,n,irho)
+              p%rho1=1./tmp_rho
               call multsv_mn(p%rho1,tmp3,p%uu)
+              p%uu=p%uu*cs2011
             endif
           endif
         else
@@ -5248,11 +5272,11 @@ module Hydro
       real, dimension (3) :: OO, dOO, uum0
       real, dimension (mx,3) :: ss
       real, dimension (mx) :: ss2, hydro_energy, hydro_energy1, rat, rat0, vA2_pseudo
-      real, dimension (mx) :: rho, rho1, press, rho_gam21, rho_gam20, lorentz_gamma2
+      real, dimension (mx) :: rho, rho1, press, rho_gam21, rho_gam20, lorentz_gamma2=1.
       real, dimension (mx) :: delx
       real :: dely, delz
       real :: c,s,sinalp,cosalp,OO2,alpha_precession_rad
-      real :: cs201, cs2011
+      real :: cs201=1., cs2011
       integer ::  iter_relB
       integer :: i,j,l
 !
@@ -5268,10 +5292,12 @@ module Hydro
 !  The magnetic case can only be done iteratively, so we first compute
 !  gamma for the nonmagnetic case.
 !
+      if (lrelativistic_eos) cs201=1.+cs20
+      cs2011=1./cs201
       if (lconservative) then
         if (iTij==0) call fatal_error("hydro_after_boundary","must compute Tij for lconservative")
-        cs201=cs20+1.
-        cs2011=1./cs201
+        !cs201=cs20+1.
+        !cs2011=1./cs201
         do n=1,mz
         do m=1,my
           if (ldensity) then
@@ -5325,7 +5351,11 @@ endif
             else
               rat=rat0
             endif
-            lorentz_gamma2=(.5-rat*cs20*cs2011+sqrt(.25-rat*cs20*cs2011**2))/(1.-rat)
+            lorentz_gamma2=1./(1.-rat)
+            if (lrelativistic_eos) &
+                  lorentz_gamma2=lorentz_gamma2*(.5-rat*cs20*cs2011 + &
+                          sqrt(.25-rat*cs20*cs2011**2))
+            !lorentz_gamma2=(.5-rat*cs20*cs2011+sqrt(.25-rat*cs20*cs2011**2))/(1.-rat)
 !
 !  In the magnetic case, we need to solve lorentz_gamma2 iteratively; first initialize it:
 !  We also don't know rho yet (because it involves gamma^2), so we iterate for that, too.

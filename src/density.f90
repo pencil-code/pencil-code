@@ -103,6 +103,7 @@ module Density
   integer, parameter :: ndiff_max=4
   integer :: iglobal_gg=0
   logical :: lrelativistic_eos=.false., ladvection_density=.true.
+  logical :: lrelativistic_eos_corr=.false.
   logical :: lrelativistic_eos_term1=.true., lrelativistic_eos_term2=.true.
   logical, pointer :: lconservative, lhiggsless
   logical :: lisothermal_fixed_Hrho=.false.
@@ -164,7 +165,7 @@ module Density
       r0_rho, invgrav_ampl, rnoise_int, rnoise_ext, datafile, mass_cloud, &
       T_cloud, cloud_mode, T_cloud_out_rel, xi_coeff, density_xaver_range, &
       dens_coeff, temp_coeff, temp_trans, temp_coeff_out, reduce_cs2, &
-      lreduced_sound_speed, lrelativistic_eos, &
+      lreduced_sound_speed, lrelativistic_eos, lrelativistic_eos_corr,  &
       lscale_to_cs2top, density_zaver_range, &
       ieos_profile, width_eos_prof, kpeak_lnrho, initpower_lnrho, cutoff_lnrho, &
       lconserve_total_mass, total_mass, ireference_state, lrho_flucz_as_aux,&
@@ -186,7 +187,8 @@ module Density
       lcalc_lnrhomean, ldensity_profile_masscons, lffree, ffree_profile, &
       rzero_ffree, wffree, tstart_mass_source, tstop_mass_source, &
       density_xaver_range, mass_source_tau1, reduce_cs2, &
-      lreduced_sound_speed, lrelativistic_eos, ladvection_density, &
+      lreduced_sound_speed, lrelativistic_eos, lrelativistic_eos_corr, &
+      ladvection_density, &
       xblob, yblob, zblob, mass_source_omega, lscale_to_cs2top, &
       density_zaver_range, rss_coef1, rss_coef2, &
       ieos_profile, width_eos_prof, beta_glnrho_global, &
@@ -359,6 +361,14 @@ module Density
 !  Communicate lrelativistic_eos to magnetic too.
 !
       call put_shared_variable('lrelativistic_eos',lrelativistic_eos)
+
+      ! only allow lrelativistic_eos_corr when lrelativistic_eos
+      if (.not.lrelativistic_eos.and.lrelativistic_eos_corr) then
+        lrelativistic_eos_corr=.false.
+        call warning('register_density', &
+          'to use lrelativistic_eos_corr, set lrelativistic_eos true')
+      endif
+      call put_shared_variable('lrelativistic_eos_corr',lrelativistic_eos_corr)
 !
 !  Communicate lffree to entropy too.
 !
@@ -999,7 +1009,7 @@ module Density
         lhiggsless=.false.
       endif
 !
-       if (lhydro.and.lhiggsless) call get_shared_variable('eps_hless',eps_hless)
+      if (lhydro.and.lhiggsless) call get_shared_variable('eps_hless',eps_hless)
 
       if (lcontinuity_gas.and..not.lweno_transport.and.ldensity_nolog.and.lconservative.and..not.lhydro) &
         call fatal_error_local('initialize_density','divss not available without hydro')
@@ -2497,6 +2507,7 @@ module Density
 !                  not default for hyperdiff, but correction applies
 !                  to all fdiff if lmassdiff_fix=T
 !  03-apr-20/joern: restructured and fixed slope-limited diffusion
+!  06-mar-25/alberto: added corrections in the subrelativistic limit
 !
       use Deriv, only: der6
       use Special, only: special_calc_density
@@ -2517,6 +2528,7 @@ module Density
       real, dimension (nx) :: density_rhs, density_rhs_tmp, advec_hypermesh_rho
       integer :: j
       logical :: ldt_up
+      real :: cs201=1., cs20_corr=1.
 !
 !  Identify module and boundary conditions.
 !
@@ -2539,6 +2551,11 @@ module Density
         if (.not. lweno_transport .and. .not. lffree .and. .not. lreduced_sound_speed .and. &
             ieos_profile=='nothing' .and. .not. lfargo_advection) then
 !
+!  alberto: added subrelativistic correction when relativistic_eos is used
+!
+          if (lrelativistic_eos) cs201=1.+cs20
+          if (lrelativistic_eos_corr) cs20_corr=(1.-cs20)/cs201
+!
 !  Evolution of rho; set and initiate density_rhs
 !
           if (ldensity_nolog) then
@@ -2546,15 +2563,17 @@ module Density
               density_rhs=-p%divss
             else
               density_rhs=-p%rho*p%divu
-              if (ladvection_density) density_rhs = density_rhs - p%ugrho
-              if (lrelativistic_eos) density_rhs=fourthird*density_rhs
+              !if (ladvection_density) density_rhs = density_rhs - p%ugrho
+              !if (lrelativistic_eos) density_rhs=fourthird*density_rhs
+              if (ladvection_density) density_rhs = density_rhs - cs20_corr*p%ugrho
+              density_rhs=cs201*density_rhs
             endif
 !
 !  Evolution of lnrho: set here density_rhs
 !
           else
             density_rhs= - p%divu
-            if (ladvection_density) density_rhs = density_rhs - p%uglnrho
+            if (ladvection_density) density_rhs = density_rhs - cs20_corr*p%uglnrho
 !
 !  The following few lines only enter without lconservative,
 !  and also only without ldensity_nolog, but with lrelativistic_eos.
@@ -2569,9 +2588,11 @@ module Density
                   if (lrelativistic_eos_term2) density_rhs_tmp=density_rhs_tmp-p%uglnrho
                   call multvs(p%uu,density_rhs_tmp,tmpv)
                 endif
-                df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-onethird*tmpv
+                !df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-onethird*tmpv
+                df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-cs20*tmpv
               endif
-              density_rhs=fourthird*density_rhs
+              !density_rhs=fourthird*density_rhs
+              density_rhs=cs201*density_rhs
             endif
           endif
 
