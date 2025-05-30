@@ -144,6 +144,7 @@ my %tests = (
                          streaming-instability-sink
                          1d-tests/hyperdiffusion
                          2d-tests/eccentricity-decay
+                         interstellar
                      )],
              # Level 3 for now contains all non-canonical tests that run
              # successfully
@@ -181,7 +182,6 @@ my %tests = (
              # Level 4 for now contains all non-canonical tests that run,
              # but produce wrong results - and need immediate action (fixme)
              4 => [qw(
-                         interstellar
                          superparticle-coagulation
                          superparticle-condensation-coagulation
                      )],
