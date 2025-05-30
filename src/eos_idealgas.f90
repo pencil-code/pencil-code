@@ -36,7 +36,8 @@ module EquationOfState
   real :: lnTT0=impossible, TT0=impossible
   real :: xHe=0.0
   real :: mu=1.0
-  real :: cs0=1.0, cs20=1.0, cs20t, rho0=1., lnrho0=0., rho01=1.0, pp0=1.0
+  !real :: cs0=1.0, cs20=1.0, cs20t, rho0=1., lnrho0=0., rho01=1.0, pp0=1.0
+  real :: cs0=impossible, cs20=1.0, cs20t, rho0=1., lnrho0=0., rho01=1.0, pp0=1.0
   real :: gamma=5.0/3.0
   real :: Rgas_cgs=0.0, Rgas, error_cp=1.0e-6
   real :: gamma_m1    !(=gamma-1)
@@ -58,6 +59,7 @@ module EquationOfState
   character (len=labellen) :: meanfield_Beq_profile
   real, pointer :: meanfield_Beq, chit_quenching, uturb
   real, dimension(:), pointer :: B_ext
+  logical, pointer :: lrelativistic_eos
 !
   real :: Cp_const=impossible
   real :: Pr_number=0.7
@@ -148,6 +150,23 @@ module EquationOfState
       gamma1=1/gamma
       lnrho0=log(rho0)
       rho01 = 1./rho0
+!
+!  alberto: if lrelativistic_eos=T and cs0=impossible, then set default value to 1/sqrt(3)
+!
+      if (ldensity) then
+        call get_shared_variable('lrelativistic_eos',lrelativistic_eos, &
+                                                     caller='initialize_eos')
+      else
+        allocate(lrelativistic_eos)
+        lrelativistic_eos=.false.
+      endif
+      if (cs0==impossible) then
+        if (lrelativistic_eos) then
+          cs0=one_over_sqrt3
+        else
+          cs0=1.
+        endif
+      endif
 !
 !  Avoid floating overflow if cs0 was not set.
 !
