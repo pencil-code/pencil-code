@@ -1001,6 +1001,8 @@ module Density
       else
         allocate(lconservative)
         lconservative=.false.
+        allocate(lrelativistic)
+        lrelativistic=.false.
       endif
 !
       if (lhydro.and..not.lhydro_potential) then
