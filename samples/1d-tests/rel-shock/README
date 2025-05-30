@@ -8,10 +8,13 @@ Added:
      28-Mar-2025
 Status:
     succeeds # One of [succeeds|failing since <date>|obsolete| ...]
+    29-May-2025: After Alberto's change, the old data can be reproduced with lrelativistic_eos=T
 Recommended resolution:
     4608x1x1
 References:
     $PENCIL_HOME/doc/implementation/relativistic/
-
 Comments:
-    none.
+    To get a useful shock tube test, uncomment the line
+    nt=40000, it1=10, cdt=0.8, cdtv=0.15, isave=50, itorder=3
+    in run.in, so it will run until t=3.
+
