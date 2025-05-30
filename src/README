@@ -125,6 +125,12 @@ merged into the main trunk.
        but it is still experimental and should not be used for
        production runs.
 
+The density_stratified option of the density module
+---------------------------------------------------
+
+Implemented in r21524 | chaochinyang | 2014-05-03 21:53:59 +0200 (Sat, 03 May 2014)
+Implemented continuity equation with balanced density stratification.
+
 The coagulation module
 ----------------------
 

@@ -52,6 +52,7 @@ module Density
   real :: diffrho_hyper3_mesh = 0.0
   real, dimension(3) :: beta_glnrho_global=0.,beta_glnrho_scaled=0.
   logical :: lrelativistic_eos=.false., lwrite_stratification=.false.
+  logical :: lrelativistic_eos_corr=.false.
 !
   namelist /density_init_pars/ initrho, amplrho, beta_glnrho_global, lconserve_mass, lmassdiff_fix, &
                                lwrite_stratification
@@ -135,6 +136,15 @@ module Density
 !  Communicate lrelativistic_eos to entropy too.
 !
       call put_shared_variable('lrelativistic_eos',lrelativistic_eos,caller='register_density') 
+ 
+     ! only allow lrelativistic_eos_corr when lrelativistic_eos
+      if (.not.lrelativistic_eos.and.lrelativistic_eos_corr) then
+        lrelativistic_eos_corr=.false.
+        call warning('register_density', &
+          'to use lrelativistic_eos_corr, set lrelativistic_eos true')
+      endif
+      call put_shared_variable('lrelativistic_eos_corr',lrelativistic_eos_corr)
+!
       call put_shared_variable('lffree',lffree)
 !
       call put_shared_variable('beta_glnrho_global',beta_glnrho_global)
