@@ -84,7 +84,7 @@ if [ -z $_sourceme ]; then	# called for the first time?
     _sourceme="set"
 
     # export CDPATH PATH IDL_PATH
-    export PATH DXMACROS IDL_PATH PYTHONPATH _sourceme
+    export PATH DXMACROS IDL_PATH PYTHONPATH LD_LIBRARY_PATH _sourceme
 
   else
     if [ -n $PENCIL_HOME ]; then
