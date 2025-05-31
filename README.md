@@ -23,7 +23,7 @@ svn checkout https://pencil-code.org/svn/trunk pencil-code
 To get started, run one of the samples:
 ```sh
 unix>  cd pencil-code
-unix>  source sourceme.csh  [or . sourceme.sh]
+unix>  source sourceme.sh
 unix>  cd samples/conv-slab
 unix>  mkdir data
 ```
