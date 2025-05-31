@@ -2,9 +2,10 @@ The Pencil Code
 ---------------
 The Pencil Code is a high-order finite-difference code for compressible hydrodynamic flows with magnetic fields and particles. It is highly modular and can easily be adapted to different types of problems. The code runs efficiently under MPI on massively parallel shared- or distributed-memory computers.
 
-The Pencil Code moved to
-[GitHub](https://github.com/pencil-code/pencil-code)
-on 19 April 2015. It was previously hosted at
+The Pencil Code is available from
+[pencil-code.org](https://pencil-code.org/) and is mirrored to
+[GitHub](https://github.com/pencil-code/pencil-code).
+It was previously hosted at
 [Google Code](https://code.google.com/p/pencil-code/).
 
 In order to checkout the code with
@@ -12,7 +13,8 @@ In order to checkout the code with
 ```sh
 svn checkout https://pencil-code.org/svn/trunk pencil-code --username=<your-username>
 ```
-where `<your-username>` is your username on account.pencil-code.org
+where `<your-username>` is your GitHub username that you should use identically to register on account.pencil-code.org for write access to the code repository.
+For read-only access, a username is not required.
 
 To get started, run one of the samples:
 ```sh
