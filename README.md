@@ -50,11 +50,6 @@ session, you can insert the following into your .bashrc and/or .bash_profile:
 export PENCIL_HOME=$HOME/pencil-code  [or wherever you have the code]
 _sourceme_quiet=1; . $PENCIL_HOME/sourceme.sh; unset _sourceme_quiet
 ```
-If you are using csh insert the following into your .cshrc:
-```sh
-setenv PENCIL_HOME $HOME/pencil-code  [or wherever you have the code]
-source $PENCIL_HOME/sourceme.csh
-```
 
 ## Documentation
 
