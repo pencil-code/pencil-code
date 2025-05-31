@@ -13,7 +13,7 @@ In order to checkout the code with read-write premissions
 ```sh
 svn checkout https://pencil-code.org/svn/trunk pencil-code --username=<your-username>
 ```
-where `<your-username>` is your GitHub username that you should use identically to register on account.pencil-code.org for write access to the code repository.
+where `<your-username>` is your GitHub username that you should use identically to register on [account.pencil-code.org](https://account.pencil-code.org/) for write access to the code repository.
 
 For read-only access via SVN, a username is not required:
 ```sh
