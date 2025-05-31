@@ -8,13 +8,17 @@ The Pencil Code is available from
 It was previously hosted at
 [Google Code](https://code.google.com/p/pencil-code/).
 
-In order to checkout the code with
+In order to checkout the code with read-write premissions
 [Subversion](https://subversion.apache.org), use the command
 ```sh
 svn checkout https://pencil-code.org/svn/trunk pencil-code --username=<your-username>
 ```
 where `<your-username>` is your GitHub username that you should use identically to register on account.pencil-code.org for write access to the code repository.
-For read-only access, a username is not required.
+
+For read-only access via SVN, a username is not required:
+```sh
+svn checkout https://pencil-code.org/svn/trunk pencil-code
+```
 
 To get started, run one of the samples:
 ```sh
