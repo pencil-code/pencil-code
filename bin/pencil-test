@@ -341,6 +341,7 @@ sub run_tests_on {
     if ($result =~ /^(?:Test|All [0-9]+ tests) succeeded\./m) {
         # All performed tests were successful
         mark_all_succeeded($host);
+        icon_result(1);
         # Create a stable tag, if requested
         tag_stable_on_success($result,$host) if ($tag_stable);
     }
@@ -357,6 +358,8 @@ sub run_tests_on {
         }
         # Some tests had errors => send emails
         notify_on_error($result,$shost,$update_error);
+        # Not all performed tests were successful
+        icon_result(0);
     }
 
     $first = 0;
@@ -531,6 +534,27 @@ sub mark_all_succeeded {
     close (LAST) or die "Error while closing '$last' file: $!\n"
 }
 # ---------------------------------------------------------------------- #
+sub icon_result {
+    my $result = (shift || 0);
+
+    if (!$local) { die "Not yet implemented to write icon on remote host!\n"; }
+
+    my $icon;
+    if ($result) {
+        $icon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 42 42"><path d="m21 5c9.378 0 16 6.633 16 16 0 9.366-6.622 16-16 16-9.377 0-16-6.634-16-16 0-9.367 6.623-16 16-16m0-4c-11.046 0-20 8.954-20 20 0 11.045 8.954 20 20 20 11.045 0 20-8.955 20-20 0-11.046-8.955-20-20-20z" fill="#5DF24F" /><path d="m12.593 22.904s0.845-0.904 2.032-1.904 2.875-2.563 2.875-2.563l4.688 7.063s2.83-6.455 6.563-11.25 5.625-6.688 5.625-6.688 0.281 3.031 0.345 5.406c0.063 2.375-0.345 5.365-0.345 5.365s-3.088 1.191-6.125 5.083c-3.897 4.994-5.688 8.708-5.688 8.708s-1.563-1.499-4.313-4.374-5.657-4.846-5.657-4.846z" fill="#018700" /></svg>';
+    }
+    else {
+        $icon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path id="rect3801" style="stroke-linejoin:round;stroke:#bf030f;stroke-width:.25;fill:#e2080c" d="m5.5 2-3.5 3.5v5l3.5 3.5h5l3.5-3.5v-5l-3.5-3.5h-5zm0.0312 1.4062 2.4688 2.4688l2.4688-2.4688 2.125 2.125-2.469 2.4688 2.4688 2.4688-2.125 2.125-2.469-2.469-2.4688 2.469-2.125-2.125 2.4688-2.469-2.4688-2.4688 2.125-2.125z"/></svg>';
+    }
+
+    # Output icon
+    my $svg = "result.svg";
+    if ($log_dir) { $svg = $log_dir."/".$svg; }
+    open (SVG, ">$svg") or die "Error while writing '$svg' file: $!\n";
+    print SVG $icon;
+    close (SVG) or die "Error while closing '$svg' file: $!\n"
+}
+# ---------------------------------------------------------------------- #
 sub tag_stable_on_success {
 ## Create a stable tag if auto-test was successful
     my $result = (shift || '');
@@ -539,10 +563,17 @@ sub tag_stable_on_success {
 
     return if ($result =~ /^Failed ([0-9]+) test/m);
 
+    my $clear = "";
     my $cmd = "";
     if (-d "$pencil_home/.svn") {
         # SVN tagging
-        $cmd = "svn copy ^/trunk ^/tags/stable_".$date." -m \"automatic validation completed: auto-test on $host\" > /dev/null";
+        $clear = "svn rm ^/tags/stable";
+        #$cmd = "svn copy ^/trunk ^/tags/stable_".$date." -m \"automatic validation completed: auto-test on $host\" > /dev/null";
+        my $last = "LAST_SUCCESS";
+        if ($log_dir) { $last = $log_dir."/".$last; }
+        my $version = `cat "$last"`;
+        chomp ($version);
+        $cmd = "svn copy ^/trunk ^/tags/stable -m \"Passed the full auto-test on ".$host." (".$date.")\n".$version."\" > /dev/null";
     }
     elsif (-e "$pencil_home/.git") {
         # GIT tagging
@@ -555,9 +586,13 @@ sub tag_stable_on_success {
     }
 
     # execute on remote host, if requested
-    if (!$local) { $cmd = "ssh -x -n $host 'cd \$PENCIL_HOME;".$cmd."'"; }
+    if (!$local) {
+        $clear = "ssh -x -n $host 'cd \$PENCIL_HOME;".$clear."'";
+        $cmd = "ssh -x -n $host 'cd \$PENCIL_HOME;".$cmd."'";
+    }
 
     # execute tagging command
+    system ($clear);
     system ($cmd);
 }
 # ---------------------------------------------------------------------- #
