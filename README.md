@@ -10,9 +10,9 @@ on 19 April 2015. It was previously hosted at
 In order to checkout the code with
 [Subversion](https://subversion.apache.org), use the command
 ```sh
-svn checkout https://github.com/pencil-code/pencil-code/trunk pencil-code --username <github-username>
+svn checkout https://pencil-code.org/svn/trunk pencil-code --username=<your-username>
 ```
-where `<github-username>` is your GitHub username.
+where `<your-username>` is your username on account.pencil-code.org
 
 To get started, run one of the samples:
 ```sh
