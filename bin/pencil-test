@@ -567,7 +567,7 @@ sub tag_stable_on_success {
     my $cmd = "";
     if (-d "$pencil_home/.svn") {
         # SVN tagging
-        $clear = "svn rm ^/tags/stable";
+        $clear = "svn rm ^/tags/stable -m \"Remove old stable tag.\"";
         #$cmd = "svn copy ^/trunk ^/tags/stable_".$date." -m \"automatic validation completed: auto-test on $host\" > /dev/null";
         my $last = "LAST_SUCCESS";
         if ($log_dir) { $last = $log_dir."/".$last; }
