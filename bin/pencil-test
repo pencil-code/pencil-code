@@ -243,7 +243,7 @@ sub run_tests_on {
     my ($host) = @_;
     chomp $host;
 
-    print STDERR "run_test_on($host)" if ($debug);
+    print STDERR "run_tests_on($host)" if ($debug);
 
     my ($shost) = ($host =~ /([^.]*)/); # host name without domain
     $shost = "\u$shost";
@@ -537,8 +537,6 @@ sub mark_all_succeeded {
 sub icon_result {
     my $result = (shift || 0);
 
-    if (!$local) { die "Not yet implemented to write icon on remote host!\n"; }
-
     my $icon;
     if ($result) {
         $icon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 42 42"><path d="m21 5c9.378 0 16 6.633 16 16 0 9.366-6.622 16-16 16-9.377 0-16-6.634-16-16 0-9.367 6.623-16 16-16m0-4c-11.046 0-20 8.954-20 20 0 11.045 8.954 20 20 20 11.045 0 20-8.955 20-20 0-11.046-8.955-20-20-20z" fill="#5DF24F" /><path d="m12.593 22.904s0.845-0.904 2.032-1.904 2.875-2.563 2.875-2.563l4.688 7.063s2.83-6.455 6.563-11.25 5.625-6.688 5.625-6.688 0.281 3.031 0.345 5.406c0.063 2.375-0.345 5.365-0.345 5.365s-3.088 1.191-6.125 5.083c-3.897 4.994-5.688 8.708-5.688 8.708s-1.563-1.499-4.313-4.374-5.657-4.846-5.657-4.846z" fill="#018700" /></svg>';
@@ -546,6 +544,12 @@ sub icon_result {
     else {
         $icon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path id="rect3801" style="stroke-linejoin:round;stroke:#bf030f;stroke-width:.25;fill:#e2080c" d="m5.5 2-3.5 3.5v5l3.5 3.5h5l3.5-3.5v-5l-3.5-3.5h-5zm0.0312 1.4062 2.4688 2.4688l2.4688-2.4688 2.125 2.125-2.469 2.4688 2.4688 2.4688-2.125 2.125-2.469-2.469-2.4688 2.469-2.125-2.125 2.4688-2.469-2.4688-2.4688 2.125-2.125z"/></svg>';
     }
+    icon_write ($icon);
+}
+# ---------------------------------------------------------------------- #
+sub icon_write {
+    my $icon = shift;
+    if (!$local) { die "Not yet implemented to write icon on remote host!\n"; }
 
     # Output icon
     my $svg = "result.svg";
