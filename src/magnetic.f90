@@ -5062,6 +5062,8 @@ print*,'AXEL: should not be here (eta) ... '
                       select case (ascale_type)
                         case ('default'); df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%jxbr
                         case ('superconformal'); df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+ascale*p%jxbr
+                        case ('general'); df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+ascale**(2.*nconformal-3.)*p%jxbr
+                          print*,'AXEL: exponent 2.*nconformal-3.=', 2.*nconformal-3.
                       endselect
                     endif
                   endif
@@ -6109,6 +6111,7 @@ print*,'AXEL: should not be here (eta) ... '
 !
       if (lhubble_magnetic) then
         dAdt = dAdt - 2.*Hubble*ascale**1.5*p%AA
+        call fatal_error('daa_dt','setting lhubble_hydro=T is not correct')
       endif
 !
 !  Now add all the contribution to dAdt so far into df.

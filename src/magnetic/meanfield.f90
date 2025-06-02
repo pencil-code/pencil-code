@@ -39,6 +39,7 @@ module Magnetic_meanfield
   real, dimension (nx) :: kf_x, kf_x1
   real, dimension (my) :: kf_y
   real, dimension (mz) :: kf_z
+  real, dimension (nz) :: fpatches=0, xpatches=0
 !
 !  arrays for the fluctuating alpha effect in axisymmetric spherical coordinates
 !
@@ -102,6 +103,8 @@ module Magnetic_meanfield
   real :: GWfac1=1., GWfac2=1., GWfac3=1.
   real :: fluc_alp_m=1.0, sigma_alpha=1.0
   real :: b2_to_u2=0.0, shear_current_sh=0.0
+  real :: sigx=0.0, sigz=0.0
+  integer :: npatches=1, npatches_actual
   real, dimension(3) :: alpha_aniso=0.
   real, dimension(3,3) :: alpha_tensor=0., eta_tensor=0.
   real, dimension(ny,3,3) :: alpha_tensor_y=0., eta_tensor_y=0.
@@ -122,6 +125,9 @@ module Magnetic_meanfield
   logical :: lread_alpha_tensor_z=.false., lread_alpha_tensor_z_as_y=.false.
   logical :: lread_eta_tensor_z=.false., lread_eta_tensor_z_as_y=.false.
   logical :: lshear_current_effect=.false., lalphass_disk=.false.
+  logical :: ltest_patches=.false.
+  real :: ampluu_kinematic=0.
+  real, dimension(:), allocatable :: xcenter, zcenter, roty, cy, sy
 !
   namelist /magn_mf_run_pars/ &
       Calp, alpha_effect, alpha_quenching, alpha_rmax, alpha_exp, alpha_zz, &
@@ -133,6 +139,7 @@ module Magnetic_meanfield
       x_surface, x_surface2, z_surface, &
       alpha_rmin, kx_alpha, &
       qp_model,&
+      npatches, sigx, sigz, ltest_patches, ampluu_kinematic, &
       ldelta_profile, delta_effect, delta_profile, &
       meanfield_etat, meanfield_etat_height, meanfield_etat_profile, &
       meanfield_etat_width, meanfield_etat_exp, meanfield_etat_corona, meanfield_Beq_width, &
@@ -259,12 +266,15 @@ module Magnetic_meanfield
 !  20-may-03/axel: reinitialize_aa added
 !
       use Sub, only: erfunc
+      use General, only: random_number_wrapper
       use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: kf_x_tmp, kf_x1_tmp, prof_tmp
-      real :: kz1
-      integer :: ierr, i, j
+      real, dimension (nz) :: rpatches
+      real :: kz1, cont_count=0., rpatch_norm
+      integer :: ierr, i, j, ipatchz_count, ipatchz, npatchz
+      logical :: file_exist
 !
 !  Get B_ext2 and eta from magnetic module.
 !
@@ -640,6 +650,68 @@ module Magnetic_meanfield
 !
       if (alpha_profile=='fluc-alpha-disk') call calc_fluc_alp_cells
 !
+!  Patches allows one to place small dynamos in the domain. Their distribution
+!  may be uniform in space if the file npatchz.txt does not exist.
+!
+      if (alpha_profile=='patches') then
+        inquire(file='npatchz.txt',exist=file_exist)
+        if (file_exist) then
+          open(1,file='npatchz.txt')
+          do n=1,nz
+            read(1,*) i,fpatches(n),xpatches(n)
+          enddo
+          close(1)
+        endif
+!
+        allocate(xcenter(npatches))
+        allocate(zcenter(npatches))
+        allocate(roty(npatches))
+        allocate(cy(npatches))
+        allocate(sy(npatches))
+        call random_number_wrapper(xcenter)
+        call random_number_wrapper(zcenter)
+        call random_number_wrapper(rpatches)
+!
+!  Assume full x-range if the file npatchz.txt does not exist.
+!
+        if (file_exist) then
+          ipatchz_count=0
+          do n=1,nz
+!
+!  number of patches per z value
+!
+            rpatch_norm=nz/sum(rpatches)
+            npatchz=nint(rpatch_norm*rpatches(n)*fpatches(n)*npatches)
+            cont_count=cont_count+2.*rpatches(n)*fpatches(n)*npatches
+!
+!  Allow for multiple patches; loop over all of them.
+!  Print a line of there are too many for each patch (for now).
+!  The actual number of patches (npatches_actual) may be smaller than npatches.
+!
+            do ipatchz=1,npatchz
+              ipatchz_count=ipatchz_count+1
+              if (ipatchz_count<=npatches) then
+                xcenter(ipatchz_count)=-xpatches(n)+2.*xpatches(n)*xcenter(ipatchz_count)
+                zcenter(ipatchz_count)=z(n+nghost)
+                print*,n,z(n+nghost),npatchz,ipatchz_count,cont_count,2.*rpatches(n)*fpatches(n)*npatches
+              else
+                print*,'too many patches: ipatchz_count,cont_count=',ipatchz_count,cont_count
+              endif
+            enddo
+          enddo
+          npatches_actual=ipatchz_count
+        else
+          xcenter=xyz0(1)+(xyz1(1)-xyz0(1))*xcenter 
+          zcenter=xyz0(3)+(xyz1(3)-xyz0(3))*zcenter 
+          npatches_actual=npatches
+        endif
+!
+!  Assume random orientation angles for all patches.
+!
+        call random_number_wrapper(roty)
+        cy=cos(360.*roty*dtor)
+        sy=sin(360.*roty*dtor)
+      endif
     endsubroutine initialize_magn_mf
 !***********************************************************************
     subroutine init_aa_mf(f)
@@ -873,8 +945,9 @@ module Magnetic_meanfield
       real, dimension (nx) :: shear_current_sh_tmp, disk_height, z_over_h
       real, dimension (nx,3) :: Bk_Bki, exa_meanfield, glnchit_prof, glnchit, XXj
       real, dimension (nx,3) :: meanfield_getat_tmp, getat_cross_B_tmp, B2glnrho, glnchit2
+      real, dimension (nx) :: r2, x1, z1, x11, z11
       real :: kx,fact
-      integer :: i, j, k, nn, l
+      integer :: i, j, k, nn, l, ipatch
 !
       intent(inout) :: f,p
 !
@@ -1079,6 +1152,25 @@ module Magnetic_meanfield
         case ('sinz'); alpha_tmp=sin(z(n))
         case ('cos(z/2)'); alpha_tmp=cos(.5*z(n))
         case ('cos(z/2)_with_halo'); alpha_tmp=max(cos(.5*z(n)),0.)
+        case ('patches')
+          alpha_tmp=0.
+          do ipatch=1, npatches_actual
+            x1=2.*atan(tan(.5*(x(l1:l2)-xcenter(ipatch))))
+            z1=2.*atan(tan(.5*(z(n)-    zcenter(ipatch))))
+            x11=+cy(ipatch)*x1+sy(ipatch)*z1
+            z11=-sy(ipatch)*x1+cy(ipatch)*z1
+            r2=.5*(x11/sigx)**2+.5*(z11/sigz)**2
+            alpha_tmp=alpha_tmp+z11*exp(-r2)
+            if (iux/=0) then
+              if (ltest_patches) then
+                p%uu(:,1)=p%uu(:,1)+ampluu_kinematic*    exp(-r2)
+                p%uu(:,2)=p%uu(:,2)+ampluu_kinematic*x11*exp(-r2)
+                p%uu(:,3)=p%uu(:,3)+ampluu_kinematic*z11*exp(-r2)
+              else
+                p%uu(:,2)=p%uu(:,2)+ampluu_kinematic*x11*exp(-r2)
+              endif
+            endif
+          enddo
         case ('sphere')
           if (lspherical_coords) then
             rr=x(l1:l2)
