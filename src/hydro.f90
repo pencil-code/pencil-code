@@ -3906,6 +3906,7 @@ module Hydro
       real, dimension (nx) :: tmp, ftot, ugu_Schur_x, ugu_Schur_y, ugu_Schur_z
       real, dimension (nx) :: arad_normal, pradrc2
       real, dimension (nx,3,3) :: puij_Schur
+      real :: hubble_factor
       integer :: i, j, ju
 !
       Fmax=1./impossible
@@ -4115,7 +4116,12 @@ module Hydro
 !  This could be steered later with the ascale_type parameter in cdata.f90.
 !
       if (lhubble_hydro) then
-        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-.5*Hubble*ascale**1.5*p%uu
+        select case (ascale_type)
+          case ('default'); hubble_factor=.5*Hubble*ascale**1.5
+          case ('general'); hubble_factor=(2.-nconformal)*Hubble*ascale**nconformal
+        endselect
+        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-hubble_factor*p%uu
+        print*,'AXEL: hubble_factor=',2.-nconformal,hubble_factor
       endif
 !
 !  Boussinesq approximation: -g_z*alpha*(T-T_0) added.

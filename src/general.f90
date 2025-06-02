@@ -619,7 +619,8 @@ print*, 'rank,ipx,ipy,ipz, find_proc=',rank, ipx,ipy,ipz, find_proc_node_localty
     subroutine gaunoise_number(gn)
 !
 ! Gaussian random number generator with unit variance and zero mean.
-! Returns a pair of random numbers.
+! Returns a pair of random numbers using the Box-Muller transform; see
+! https://en.wikipedia.org/wiki/Box%E2%80%93Muller_transform
 !
       real,dimension(2),intent(out) :: gn
       real :: r,p
