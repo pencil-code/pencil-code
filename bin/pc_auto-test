@@ -503,6 +503,17 @@ if ($timeout_command_found && !$nolock) {
     $local_lock = 1;
 }
 
+if ($time_limit && !Scalar::Util::looks_like_number($time_limit)) {
+    my $parsed_time_limit = eval {Test::Parse::parse_time($time_limit)};
+    if ($@) {
+        $failed++;
+        $failure_message = "time limit: $@";
+        exit;
+    } else {
+        $time_limit = $parsed_time_limit
+    }
+}
+
 if ($local_lock) { $lockdir = $pencil_home; }
 $lockfile = $lockdir."/pencil-auto-test-$user.pid";
 
@@ -1078,23 +1089,14 @@ sub test_timelimited_shell_cmd {
 # Test shell command, but run it through reaper to limit total time it is
 # allowed to take
     my $cmd      = shift;
-    my $maxtime  = shift;
+    my $time_limit  = shift;
     my $procname = shift;
     my @rest = @_;
-
-    my $time_limit;
-    if (Scalar::Util::looks_like_number($maxtime)) {
-        $time_limit = $maxtime;
-    } else {
-        #$failed++; #dirty hack to make sure an exception in the line below is detected as a failing test.
-        $time_limit = Test::Parse::parse_time($maxtime);
-        #$failed--;
-    }
 
     if ($timeout_command_found) {
         return test_shell_cmd("timeout -v --kill-after=10s --preserve-status $time_limit $cmd", @rest);
     } else {
-        return test_shell_cmd("reaper -t '$maxtime,$procname' '$cmd'", @rest);
+        return test_shell_cmd("reaper -t '$time_limit,$procname' '$cmd'", @rest);
     }
 }
 # ---------------------------------------------------------------------- #
@@ -1128,20 +1130,13 @@ sub test_timelimited_perl_cmd {
 # ($error_count, $message).
 # Return error message.
     my $cmd   = shift;
-    my $time_limit_str   = shift;
+    my $time_limit   = shift;
     my $dir   = (shift || "<Unknown directory>");
     my $phase = (shift || "<Unknown phase>");
     my $quiet = (shift || 0);   # flag for suppressing the 'ok'
     my $t_ref = shift;
 
     print STDERR "\nRunning Perl command\n" if ($debug);
-
-    my $time_limit;
-    if (Scalar::Util::looks_like_number($time_limit_str)) {
-        $time_limit = $time_limit_str;
-    } else {
-        $time_limit = Test::Parse::parse_time($time_limit_str);
-    }
 
     my ($error_count, $res) = (0, '');
     eval {
