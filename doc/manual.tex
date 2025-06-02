@@ -1298,6 +1298,39 @@ In this case, you need to first undefine the environment variable
   \prompt{sh> } . ./sourceme.sh
 \end{alltt}
 
+\paragraph{Note 5}
+\index{Modulefile}
+If you want to be able to easily handle multiple versions/branches of Pencil, you can use the `modulefile' mechanism that is used on most clusters to load libraries and programs.
+Create a file at, say, \File{\$HOME/.modulefiles/pencil-local} with the following contents:
+%Kishore: copying the following block from the compiled PDF leads to spurious newlines being inserted. Any idea how to fix this?
+\begin{verbatim}
+  #%Module4.6#####################################################################
+
+  proc ModulesHelp {} {
+    global version prefix
+
+    puts stderr "\tmodules - loads the modules software"
+    puts stderr "& application environment"
+    puts stderr "\n\tThis adds $prefix/* to several of the"
+    puts stderr "\tenvironment variables."
+    puts stderr "\n\tVersion $version\n"
+  }
+
+  module-whatis   "Environment setup for the Pencil code"
+
+  #change the following line according to the location of your local copy of Pencil
+  setenv          PENCIL_HOME     $env(HOME)/.software/pencil-code
+
+  setenv          _sourceme_quiet 1
+  source-sh       bash            $env(PENCIL_HOME)/sourceme.sh
+  unsetenv        _sourceme_quiet
+\end{verbatim}
+To your \File{~/.bashrc}, add
+\begin{verbatim}
+  MODULEPATH=$HOME/.modulefiles:$MODULEPATH
+\end{verbatim}
+If you now open a new shell and run \code{module avail}, you will find the \code{pencil-local} module created above listed as an option.
+This requires version 4.6 of the \code{modules} program.
 
 
 \subsubsection{Linking scripts and source files}
