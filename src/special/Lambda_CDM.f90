@@ -82,12 +82,12 @@ module Special
 !
   include '../special.h'
 !
-!
 ! Declare index of new variables in f array (if any).
+! ascale_type and nconformal are defined in cdata.
 !
   integer :: iLCDM_lna=0, iLCDM_tph=0
   real :: Omega_Lam=.73, Omega_rad=1e-4, Omega_mat, Hubble0=0.072
-  real :: lna, tph, redshift0=4500., nconformal=1.5
+  real :: lna, tph, redshift0=4500.
 !
   namelist /special_init_pars/ &
       Omega_Lam, Omega_rad, Hubble0, redshift0, nconformal, ascale_type

@@ -6196,7 +6196,7 @@ module Initcond
       real, dimension (:,:,:), allocatable :: k1, r
       real, dimension (:), allocatable :: kx, ky, kz
       real, dimension (:), allocatable :: kk
-      real :: ampl, kpeak, scale_factor=1.
+      real :: ampl, kpeak, scale_factor=1.,ksteepness=5.
 !
       if (ampl==0.) then
         if (lroot) print*,'bunch_davies: set variables to zero; i1a,i1b,i2a,i2b=',i1a,i1b,i2a,i2b
@@ -6245,10 +6245,12 @@ module Initcond
       if (lroot.and.ip<10) print*,'AXEL: kz=',kz
 !
 !  Set the 3 components of v_im to Gaussian-distributed random values.
+!  If it is a scalar, then there should be only one entry.
 !
-      do i=1,3
+      do i=1,1+i1b-i1a
         call random_number_wrapper(r)
         call random_number_wrapper(k1)
+        v_re(:,:,:,i)=sqrt(-2*log(r))*cos(2*pi*k1)
         v_im(:,:,:,i)=sqrt(-2*log(r))*sin(2*pi*k1)
       enddo
 !
@@ -6283,38 +6285,47 @@ module Initcond
 !
 !  Put cutoff at kpeak in v_im.
 !
-      if (kpeak<0.) then
-        where(k1>=abs(kpeak))
-          v_im(:,:,:,1)=0.
-          v_im(:,:,:,2)=0.
-          v_im(:,:,:,3)=0.
-        endwhere
-      else
-        where(k1>=kpeak)
-          v_im(:,:,:,1)=v_im(:,:,:,1)*(kpeak/k1)**3
-          v_im(:,:,:,2)=v_im(:,:,:,2)*(kpeak/k1)**3
-          v_im(:,:,:,3)=v_im(:,:,:,3)*(kpeak/k1)**3
-        endwhere
-      endif
+!     if (kpeak<0.) then
+!       where(k1>=abs(kpeak))
+!         v_im(:,:,:,1)=0.
+!         v_im(:,:,:,2)=0.
+!         v_im(:,:,:,3)=0.
+!       endwhere
+!     else
+!       where(k1>=kpeak)
+!         v_im(:,:,:,1)=v_im(:,:,:,1)*(kpeak/k1)**3
+!         v_im(:,:,:,2)=v_im(:,:,:,2)*(kpeak/k1)**3
+!         v_im(:,:,:,3)=v_im(:,:,:,3)*(kpeak/k1)**3
+!       endwhere
+!     endif
 !
 !  Compute Bunch-Davies vacuum, A = e^(-i*k*eta)/sqrt(2*k), so
 !  E = -dA/deta = +i*k*e^(-i*k*eta)/sqrt(2*k) = i*e^(-i*k*eta)*sqrt(k/2)
 !  Here, v_im serves as a temporary array until the last line.
 !  The correct prefactor ampl of H = Hscript/a should be applied in the
 !  call tp this routine.
+!  exp(-i*k1) = cos(-i*k1) + i*sin(-i*k1)
 !
-      do i=1,3
-        u_re(:,:,:,i)=+ampl*v_im(:,:,:,i)*cos(-k1)/sqrt(k1*2.)
-        u_im(:,:,:,i)=+ampl*v_im(:,:,:,i)*sin(-k1)/sqrt(k1*2.)
-        v_re(:,:,:,i)=-ampl*v_im(:,:,:,i)*sin(-k1)*sqrt(k1/2.)
-        v_im(:,:,:,i)=+ampl*v_im(:,:,:,i)*cos(-k1)*sqrt(k1/2.)
+      do i=1,1+i1b-i1a
+        !u_re(:,:,:,i)=+ampl*v_im(:,:,:,i)*cos(-k1)/sqrt(k1*2.)
+        !u_im(:,:,:,i)=+ampl*v_im(:,:,:,i)*sin(-k1)/sqrt(k1*2.)
+        u_re(:,:,:,i)=+ampl*v_re(:,:,:,i)/sqrt(2.*k1)*.5*(1.-tanh(ksteepness*(k1/kpeak-1.)))
+        u_im(:,:,:,i)=+ampl*v_im(:,:,:,i)/sqrt(2.*k1)*.5*(1.-tanh(ksteepness*(k1/kpeak-1.)))
+        v_re(:,:,:,i)=-ampl*u_im(:,:,:,i)*k1
+        v_im(:,:,:,i)=+ampl*u_re(:,:,:,i)*k1
+print*,'AXEL2a=',i,sum(u_re(:,:,:,i)**2+u_im(:,:,:,i)**2)
+print*,'AXEL2b=',i,sum(v_re(:,:,:,i)**2+v_im(:,:,:,i)**2)
       enddo
 !
 !  Fourier transform to real space.
 !
-      do i=1,3
+      do i=1,1+i1b-i1a
         call fft_xyz_parallel(u_re(:,:,:,i),u_im(:,:,:,i),linv=.true.)
         call fft_xyz_parallel(v_re(:,:,:,i),v_im(:,:,:,i),linv=.true.)
+print*,'AXEL3a=',i,sum(u_re(:,:,:,i)**2+u_im(:,:,:,i)**2)/nxgrid
+print*,'AXEL4a=',i,sum(u_re(:,:,:,i)**2)/nxgrid
+print*,'AXEL3b=',i,sum(v_re(:,:,:,i)**2+v_im(:,:,:,i)**2)/nxgrid
+print*,'AXEL4b=',i,sum(v_re(:,:,:,i)**2)/nxgrid
       enddo
 !
 !  Use real parts of u and v for A and E.
