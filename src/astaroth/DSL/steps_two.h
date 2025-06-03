@@ -1,7 +1,11 @@
+#include "../shock/kernels.ac"
 input real AC_dt
 input PC_SUB_STEP_NUMBER AC_step_num
 ComputeSteps AC_rhs(boundconds)
 {
+	shock_1_divu()
+	shock_2_max()
+	shock_3_smooth()
         twopass_solve_intermediate(AC_step_num,AC_dt)
         twopass_solve_final(AC_step_num)
 }

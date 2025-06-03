@@ -5,7 +5,15 @@ Kernel shock_1_divu()
   write( SHOCK, divu_shock() )
 }
 
-Kernel shock_2_smooth()
+Kernel shock_2_max()
+{
+  if(lmax_shock)
+  {
+  	write( SHOCK, max5(SHOCK))
+  }
+}
+
+Kernel shock_3_smooth()
 {
   write( SHOCK, AC_dsmin*AC_dsmin*smooth(SHOCK) )
 }
@@ -14,7 +22,11 @@ Kernel shock_1_divu()
 {
 }
 
-Kernel shock_2_smooth()
+Kernel shock_2_max()
+{
+}
+
+Kernel shock_3_smooth()
 {
 }
 #endif

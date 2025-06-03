@@ -859,6 +859,7 @@ module Shock
     call copy_addr(shock_div_pow,p_par(4))
     call copy_addr(dt_div_pow   ,p_par(5))
     call copy_addr(con_bias     ,p_par(6))
+    call copy_addr(lmax_shock   ,p_par(7)) ! bool
 
     endsubroutine pushpars2c
 !***********************************************************************
