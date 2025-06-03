@@ -338,7 +338,7 @@ Options:
        --fast              \tShortcut for the option FFLAGS+=-O0 of pc_build
        --log-dir=<dir>     \tDirectory to store the logfiles (default: .)
        --previous-dir=<dir>\tDirectory for logfiles of the previous run (default: off)
-       --bisect            \tTry to bisect to find offending commit (useful for automatic tests)
+       --bisect            \tBisect to the offending commit (useful for automatic tests)
        --keep-fail-info-on-success \tDo not delete failure information on successful test (for bisecting)
        --overwrite-fail-info \tUpdate failure information even if it already exists (for bisecting)
 Examples:
