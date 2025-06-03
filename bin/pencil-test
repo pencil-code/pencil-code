@@ -56,6 +56,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #       --time-limit=<limit>  -- Limit total time for each {start,run}.x phase
 #   -T <file>,
 #       --timings-file=<file> -- Append timings to <file>
+#       --tag-stable          -- Add 'stable' tag if all tests succeeded
 #   -b
 #       --use-pc_auto-test    -- Run pc_auto-test as backend, not auto-test
 #                                (mnemonic: compile with 'build', not 'make').
