@@ -467,8 +467,7 @@ link_astaroth_files()
               $srcdir/astaroth/submodule/acc-runtime/samples/gputest/* \
               $srcdir/astaroth/submodule/acc-runtime/samples/mhd_modular/* \
               $srcdir/astaroth/submodule/src \
-              $srcdir/astaroth/submodule/runtime_compilation \
-              $srcdir/astaroth/NUMA-scheduler
+              $srcdir/astaroth/submodule/runtime_compilation
   do
     file_for_link $file
   done
