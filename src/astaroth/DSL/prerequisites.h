@@ -67,7 +67,7 @@ struct PC_rhs_update
   output real AC_maxchi
   #define LENERGY 1       // a hack for the moment
 #endif
-output real AC_maximum_error
+global output real AC_maximum_error
 output real AC_dt1_max
 
 #ifdef LDENSITY
