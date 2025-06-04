@@ -4331,10 +4331,10 @@ outer:do ikz=1,nz
 !                     gauss_legendre_quadrature.dat
 !  10-dec-20/hongzhe: merged subroutines corfunc_cyl and anisoq_diag into this one
 !
-      use Fourier, only: fft_xyz_parallel
-      use Mpicomm, only: mpireduce_sum
-      use General, only: plegendre
-      use Sub, only: curli, del2vi_etc
+    use Fourier, only: fft_xyz_parallel
+    use Mpicomm, only: mpireduce_sum
+    use General, only: plegendre
+    use Sub, only: curli, del2vi_etc
 !
     integer, parameter :: nk=nxgrid/2
     integer :: i, ikx, iky, ikz, ivec, jvec, im, in
@@ -4444,44 +4444,44 @@ outer:do ikz=1,nz
       if (ip<10) call information('polar_spectrum','fft done; now integrate over cylindrical shells')
       !$omp do collapse(3) private(k2,ikr,mu,temploc,ikmu) reduction(+:vxx,vzz,vxy)
       do ikz=1,nz
-        do iky=1,ny
-          do ikx=1, nx
-            k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
-            ikr=nint(sqrt(k2))
-            mu=kz(ikz+ipz*nz)/sqrt(k2)
-            if (ikr>=0. .and. ikr<=(nk-1)) then
-              temploc=minloc(abs(kmu(ikr+1,:)-mu))
-              ikmu=temploc(1)
-              if (mu==0. .and. mod(nmu(ikr+1),2)==0) then
-                vxx(ikr+1,ikmu)=vxx(ikr+1,ikmu)+ jac(ikr+1,ikmu)*0.5*0.5*( &
-                    +ux_re(ikx,iky,ikz)**2+ux_im(ikx,iky,ikz)**2 &
-                    +uy_re(ikx,iky,ikz)**2+uy_im(ikx,iky,ikz)**2 )
-                vxx(ikr+1,ikmu+1)=vxx(ikr+1,ikmu+1)+ jac(ikr+1,ikmu+1)*0.5*0.5*( &
-                    +ux_re(ikx,iky,ikz)**2+ux_im(ikx,iky,ikz)**2 &
-                    +uy_re(ikx,iky,ikz)**2+uy_im(ikx,iky,ikz)**2 )
-                vzz(ikr+1,ikmu)=vzz(ikr+1,ikmu)+ jac(ikr+1,ikmu)*0.5*( &
-                    uz_re(ikx,iky,ikz)**2+uz_im(ikx,iky,ikz)**2 )
-                vzz(ikr+1,ikmu+1)=vzz(ikr+1,ikmu+1)+ jac(ikr+1,ikmu+1)*0.5*( &
-                    uz_re(ikx,iky,ikz)**2+uz_im(ikx,iky,ikz)**2 )
-                vxy(ikr+1,ikmu)=vxy(ikr+1,ikmu)+ jac(ikr+1,ikmu)*0.5*( &
-                    ux_re(ikx,iky,ikz)*uy_im(ikx,iky,ikz) &
-                    -ux_im(ikx,iky,ikz)*uy_re(ikx,iky,ikz) )
-                vxy(ikr+1,ikmu+1)=vxy(ikr+1,ikmu+1)+ jac(ikr+1,ikmu+1)*0.5*( &
-                    ux_re(ikx,iky,ikz)*uy_im(ikx,iky,ikz) &
-                    -ux_im(ikx,iky,ikz)*uy_re(ikx,iky,ikz) )
-              else
-                vxx(ikr+1,ikmu)=vxx(ikr+1,ikmu)+jac(ikr+1,ikmu)*0.5*( &
-                    ux_re(ikx,iky,ikz)**2+ux_im(ikx,iky,ikz)**2 &
-                    +uy_re(ikx,iky,ikz)**2+uy_im(ikx,iky,ikz)**2 )
-                vzz(ikr+1,ikmu)=vzz(ikr+1,ikmu)+ jac(ikr+1,ikmu)*( &
-                    uz_re(ikx,iky,ikz)**2+uz_im(ikx,iky,ikz)**2 )
-                vxy(ikr+1,ikmu)=vxy(ikr+1,ikmu)+ jac(ikr+1,ikmu)*( &
-                    ux_re(ikx,iky,ikz)*uy_im(ikx,iky,ikz) &
-                    -ux_im(ikx,iky,ikz)*uy_re(ikx,iky,ikz) )
-              endif
-            endif
-          enddo
-        enddo
+      do iky=1,ny
+      do ikx=1, nx
+        k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
+        ikr=nint(sqrt(k2))
+        mu=kz(ikz+ipz*nz)/sqrt(k2)
+        if (ikr>=0. .and. ikr<=(nk-1)) then
+          temploc=minloc(abs(kmu(ikr+1,:)-mu))
+          ikmu=temploc(1)
+          if (mu==0. .and. mod(nmu(ikr+1),2)==0) then
+            vxx(ikr+1,ikmu)=vxx(ikr+1,ikmu)+ jac(ikr+1,ikmu)*0.5*0.5*( &
+                +ux_re(ikx,iky,ikz)**2+ux_im(ikx,iky,ikz)**2 &
+                +uy_re(ikx,iky,ikz)**2+uy_im(ikx,iky,ikz)**2 )
+            vxx(ikr+1,ikmu+1)=vxx(ikr+1,ikmu+1)+ jac(ikr+1,ikmu+1)*0.5*0.5*( &
+                +ux_re(ikx,iky,ikz)**2+ux_im(ikx,iky,ikz)**2 &
+                +uy_re(ikx,iky,ikz)**2+uy_im(ikx,iky,ikz)**2 )
+            vzz(ikr+1,ikmu)=vzz(ikr+1,ikmu)+ jac(ikr+1,ikmu)*0.5*( &
+                uz_re(ikx,iky,ikz)**2+uz_im(ikx,iky,ikz)**2 )
+            vzz(ikr+1,ikmu+1)=vzz(ikr+1,ikmu+1)+ jac(ikr+1,ikmu+1)*0.5*( &
+                uz_re(ikx,iky,ikz)**2+uz_im(ikx,iky,ikz)**2 )
+            vxy(ikr+1,ikmu)=vxy(ikr+1,ikmu)+ jac(ikr+1,ikmu)*0.5*( &
+                ux_re(ikx,iky,ikz)*uy_im(ikx,iky,ikz) &
+                -ux_im(ikx,iky,ikz)*uy_re(ikx,iky,ikz) )
+            vxy(ikr+1,ikmu+1)=vxy(ikr+1,ikmu+1)+ jac(ikr+1,ikmu+1)*0.5*( &
+                ux_re(ikx,iky,ikz)*uy_im(ikx,iky,ikz) &
+                -ux_im(ikx,iky,ikz)*uy_re(ikx,iky,ikz) )
+          else
+            vxx(ikr+1,ikmu)=vxx(ikr+1,ikmu)+jac(ikr+1,ikmu)*0.5*( &
+                ux_re(ikx,iky,ikz)**2+ux_im(ikx,iky,ikz)**2 &
+                +uy_re(ikx,iky,ikz)**2+uy_im(ikx,iky,ikz)**2 )
+            vzz(ikr+1,ikmu)=vzz(ikr+1,ikmu)+ jac(ikr+1,ikmu)*( &
+                uz_re(ikx,iky,ikz)**2+uz_im(ikx,iky,ikz)**2 )
+            vxy(ikr+1,ikmu)=vxy(ikr+1,ikmu)+ jac(ikr+1,ikmu)*( &
+                ux_re(ikx,iky,ikz)*uy_im(ikx,iky,ikz) &
+                -ux_im(ikx,iky,ikz)*uy_re(ikx,iky,ikz) )
+          endif
+        endif
+      enddo
+      enddo
       enddo
       !$omp single
       allocate( coeff_a(nk,nmu(nk)) )
@@ -4504,25 +4504,25 @@ outer:do ikz=1,nz
 !
       !$omp do private(ikmu,kmu2,i) reduction(+:legendre_al_a,legendre_al_b,legendre_al_c) !???
       do ikr=1,nk
-        do ikmu=1,nmu(ikr)
-          kmu2=kmu(ikr,ikmu)**2
-          coeff_a(ikr,ikmu)=( 4.*(1-kmu2)*vxx(ikr,ikmu)-kmu2*vzz(ikr,ikmu) )/( 2*pi*(2+kmu2) )
-          coeff_b(ikr,ikmu)=(-2.*(1-kmu2)*vxx(ikr,ikmu)+(1+kmu2)*vzz(ikr,ikmu) )/( pi*(2+kmu2) )
-          coeff_c(ikr,ikmu)=vxy(ikr,ikmu)/(2*pi)
-          do i=1,legendre_lmax+1
-            if (i<=nmu(ikr)) then  !  only meaningful when legendre order <= nmu-1
-              legendre_al_a(i,ikr)=legendre_al_a(i,ikr)+ &
-                  dmu(ikr,ikmu)*(2*i-1)/2*coeff_a(ikr,ikmu)* &
-                  sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
-              legendre_al_b(i,ikr)=legendre_al_b(i,ikr)+ &
-                  dmu(ikr,ikmu)*(2*i-1)/2*coeff_b(ikr,ikmu)* &
-                  sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
-              legendre_al_c(i,ikr)=legendre_al_c(i,ikr)+ &
-                  dmu(ikr,ikmu)*(2*i-1)/2*coeff_c(ikr,ikmu)* &
-                  sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
-            endif
-          enddo
+      do ikmu=1,nmu(ikr)
+        kmu2=kmu(ikr,ikmu)**2
+        coeff_a(ikr,ikmu)=( 4.*(1-kmu2)*vxx(ikr,ikmu)-kmu2*vzz(ikr,ikmu) )/( 2*pi*(2+kmu2) )
+        coeff_b(ikr,ikmu)=(-2.*(1-kmu2)*vxx(ikr,ikmu)+(1+kmu2)*vzz(ikr,ikmu) )/( pi*(2+kmu2) )
+        coeff_c(ikr,ikmu)=vxy(ikr,ikmu)/(2*pi)
+        do i=1,legendre_lmax+1
+          if (i<=nmu(ikr)) then  !  only meaningful when legendre order <= nmu-1
+            legendre_al_a(i,ikr)=legendre_al_a(i,ikr)+ &
+                dmu(ikr,ikmu)*(2*i-1)/2*coeff_a(ikr,ikmu)* &
+                sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
+            legendre_al_b(i,ikr)=legendre_al_b(i,ikr)+ &
+                dmu(ikr,ikmu)*(2*i-1)/2*coeff_b(ikr,ikmu)* &
+                sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
+            legendre_al_c(i,ikr)=legendre_al_c(i,ikr)+ &
+                dmu(ikr,ikmu)*(2*i-1)/2*coeff_c(ikr,ikmu)* &
+                sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
+          endif
         enddo
+      enddo
       enddo
       !$omp end parallel
       !  sum up results
@@ -4647,10 +4647,10 @@ outer:do ikz=1,nz
           if (iuu==0) call fatal_error('polar_spectrum','iuu=0')
           !$omp do collapse(2)
           do n_loc=n1,n2
-            do m_loc=m1,m2
-              m=m_loc;n=n_loc
-              call curli(f,iuu,a_re(:,m-nghost,n-nghost),ivec)  !  corresponds to vorticity
-            enddo
+          do m_loc=m1,m2
+            m=m_loc;n=n_loc
+            call curli(f,iuu,a_re(:,m-nghost,n-nghost),ivec)  !  corresponds to vorticity
+          enddo
           enddo
           !$omp workshare
           b_re=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)  !  corresponds to velocity
@@ -4661,10 +4661,10 @@ outer:do ikz=1,nz
           if (iaa==0) call fatal_error('polar_spectrum','iaa=0')
           !$omp do collapse(2)
           do n_loc=n1,n2
-            do m_loc=m1,m2
-              m=m_loc;n=n_loc
-              call curli(f,iaa,b_re(:,m-nghost,n-nghost),ivec)  !  corresponds to magnetic field
-            enddo
+          do m_loc=m1,m2
+            m=m_loc;n=n_loc
+            call curli(f,iaa,b_re(:,m-nghost,n-nghost),ivec)  !  corresponds to magnetic field
+          enddo
           enddo
           !$omp workshare
           a_re=f(l1:l2,m1:m2,n1:n2,iaa+ivec-1)  ! corresponds to vector potential
@@ -4675,11 +4675,11 @@ outer:do ikz=1,nz
           if (iaa==0) call fatal_error('polar_spectrum','iaa=0')
             !$omp do collapse(2)
             do n_loc=n1,n2
-              do m_loc=m1,m2
-                m=m_loc;n=n_loc
-                call curli(f,iaa,a_re(:,m-nghost,n-nghost),ivec)  !  corresponds to magnetic field
-                call del2vi_etc(f,iaa,ivec,curlcurl=b_re(:,m-nghost,n-nghost))  !  corresponds to current density
-              enddo
+            do m_loc=m1,m2
+              m=m_loc;n=n_loc
+              call curli(f,iaa,a_re(:,m-nghost,n-nghost),ivec)  !  corresponds to magnetic field
+              call del2vi_etc(f,iaa,ivec,curlcurl=b_re(:,m-nghost,n-nghost))  !  corresponds to current density
+            enddo
             enddo
             !$omp workshare
             a_im=0.
@@ -4693,60 +4693,60 @@ outer:do ikz=1,nz
         if (ip<10) call information('polar_spectrum','fft done; now integrate azimuthally in k space')
         !$omp do collapse(3) reduction(+:polar_spec,polar_spechel)
         do ikz=1,nz
-          do iky=1,ny
-            do ikx=1,nx
-              k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
-              ikr=nint(sqrt(k2))
-              mu=kz(ikz+ipz*nz)/sqrt(k2)
-              if (ikr>=0. .and. ikr<=(nk-1)) then
-                temploc=minloc(abs(kmu(ikr+1,:)-mu))
-                ikmu=temploc(1)
-                if (mu==0. .and. mod(nmu(ikr+1),2)==0) then  !  interpolate mu=0
-                  polar_spec(ikr+1,ikmu)=polar_spec(ikr+1,ikmu)+jac(ikr+1,ikmu)*0.5*&
-                      ( +b_re(ikx,iky,ikz)**2+b_im(ikx,iky,ikz)**2 )
-                  polar_spec(ikr+1,ikmu+1)=polar_spec(ikr+1,ikmu+1)+jac(ikr+1,ikmu+1)*0.5*&
-                      ( +b_re(ikx,iky,ikz)**2+b_im(ikx,iky,ikz)**2 )
-                  polar_spechel(ikr+1,ikmu)=polar_spechel(ikr+1,ikmu)+jac(ikr+1,ikmu)*0.5*&
-                      ( +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
-                      +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz) )
-                  polar_spechel(ikr+1,ikmu+1)=polar_spechel(ikr+1,ikmu+1)+jac(ikr+1,ikmu+1)*0.5*&
-                      ( +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
-                      +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz) )
-                else
-                  polar_spec(ikr+1,ikmu)=polar_spec(ikr+1,ikmu)+jac(ikr+1,ikmu)*( &
-                      +b_re(ikx,iky,ikz)**2+b_im(ikx,iky,ikz)**2 )
-                  polar_spechel(ikr+1,ikmu)=polar_spechel(ikr+1,ikmu)+jac(ikr+1,ikmu)* (&
-                      +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
-                      +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz) )
-                endif
-              endif
-          !  end of loop through all points
-            enddo
-          enddo
+        do iky=1,ny
+        do ikx=1,nx
+          k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
+          ikr=nint(sqrt(k2))
+          mu=kz(ikz+ipz*nz)/sqrt(k2)
+          if (ikr>=0. .and. ikr<=(nk-1)) then
+            temploc=minloc(abs(kmu(ikr+1,:)-mu))
+            ikmu=temploc(1)
+            if (mu==0. .and. mod(nmu(ikr+1),2)==0) then  !  interpolate mu=0
+              polar_spec(ikr+1,ikmu)=polar_spec(ikr+1,ikmu)+jac(ikr+1,ikmu)*0.5*&
+                  ( +b_re(ikx,iky,ikz)**2+b_im(ikx,iky,ikz)**2 )
+              polar_spec(ikr+1,ikmu+1)=polar_spec(ikr+1,ikmu+1)+jac(ikr+1,ikmu+1)*0.5*&
+                  ( +b_re(ikx,iky,ikz)**2+b_im(ikx,iky,ikz)**2 )
+              polar_spechel(ikr+1,ikmu)=polar_spechel(ikr+1,ikmu)+jac(ikr+1,ikmu)*0.5*&
+                  ( +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
+                  +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz) )
+              polar_spechel(ikr+1,ikmu+1)=polar_spechel(ikr+1,ikmu+1)+jac(ikr+1,ikmu+1)*0.5*&
+                  ( +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
+                  +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz) )
+            else
+              polar_spec(ikr+1,ikmu)=polar_spec(ikr+1,ikmu)+jac(ikr+1,ikmu)*( &
+                  +b_re(ikx,iky,ikz)**2+b_im(ikx,iky,ikz)**2 )
+              polar_spechel(ikr+1,ikmu)=polar_spechel(ikr+1,ikmu)+jac(ikr+1,ikmu)* (&
+                  +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
+                  +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz) )
+            endif
+          endif
+        !  end of loop through all points
+        enddo
+        enddo
         enddo
       !  (loop over ivec)
       enddo
-      !
-      !  compute legendre coefficients
-      !  the ith oder legendre polynomial (i,m=0) is
-      !  sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
-      !
+!
+!  compute legendre coefficients
+!  the ith oder legendre polynomial (i,m=0) is
+!  sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
+!
       !$omp do collapse(2) private(ikmu)
       do ikr=1,nk
-        do i=1,legendre_lmax+1
-          if (i<=nmu(ikr)) then  !  only meaningful when legendre order <= nmu-1
-            do ikmu=1,nmu(ikr)
-              legendre_al(i,ikr)=legendre_al(i,ikr)+ &
-                  dmu(ikr,ikmu)*(2.*i-1)/2.* &
-                  polar_spec(ikr,ikmu)* &
-                  sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
-              legendre_alhel(i,ikr)=legendre_alhel(i,ikr)+ &
-                  dmu(ikr,ikmu)*(2*i-1)/2* &
-                  polar_spechel(ikr,ikmu)* &
-                  sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
-            enddo
-          endif
-        enddo
+      do i=1,legendre_lmax+1
+        if (i<=nmu(ikr)) then  !  only meaningful when legendre order <= nmu-1
+          do ikmu=1,nmu(ikr)
+            legendre_al(i,ikr)=legendre_al(i,ikr)+ &
+                dmu(ikr,ikmu)*(2.*i-1)/2.* &
+                polar_spec(ikr,ikmu)* &
+                sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
+            legendre_alhel(i,ikr)=legendre_alhel(i,ikr)+ &
+                dmu(ikr,ikmu)*(2*i-1)/2* &
+                polar_spechel(ikr,ikmu)* &
+                sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
+          enddo
+        endif
+      enddo
       enddo
       !$omp end parallel
 !
@@ -4848,10 +4848,10 @@ outer:do ikz=1,nz
         if (iuu==0) call fatal_error('power1d_plane','iuu=0')
         !$omp do collapse(2)
         do n_loc=n1,n2
-          do m_loc=m1,m2
-            m=m_loc;n=n_loc
-            call curli(f,iuu,a_re(:,m-nghost,n-nghost),ivec)  !  corresponds to vorticity
-          enddo
+        do m_loc=m1,m2
+          m=m_loc;n=n_loc
+          call curli(f,iuu,a_re(:,m-nghost,n-nghost),ivec)  !  corresponds to vorticity
+        enddo
         enddo
         !$omp workshare
         b_re=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)  !  corresponds to velocity
@@ -4865,10 +4865,10 @@ outer:do ikz=1,nz
         if (iaa>0) then
           !$omp do collapse(2)
           do n_loc=n1,n2
-            do m_loc=m1,m2
-              m=m_loc;n=n_loc
-              call curli(f,iaa,b_re(:,m-nghost,n-nghost),ivec)  !  corresponds to magnetic field
-            enddo
+          do m_loc=m1,m2
+            m=m_loc;n=n_loc
+            call curli(f,iaa,b_re(:,m-nghost,n-nghost),ivec)  !  corresponds to magnetic field
+          enddo
           enddo
           !$omp workshare
           a_re=f(l1:l2,m1:m2,n1:n2,iaa+ivec-1)  !  corresponds to vector potential
@@ -4893,11 +4893,11 @@ outer:do ikz=1,nz
         k3=nint(kz(ikz+ipz*nz))
         if (k3>=0 .and. k3<=nk-1) then
           do iky=1,ny
-            do ikx=1,nx
-              spectrum(k3+1)=spectrum(k3+1) + 2.*(b_re(ikx,iky,ikz)**2 + b_im(ikx,iky,ikz)**2)
-              spectrumhel(k3+1)=spectrumhel(k3+1) &
-                +2.*(a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) + a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz))
-            enddo
+          do ikx=1,nx
+            spectrum(k3+1)=spectrum(k3+1) + 2.*(b_re(ikx,iky,ikz)**2 + b_im(ikx,iky,ikz)**2)
+            spectrumhel(k3+1)=spectrumhel(k3+1) &
+              +2.*(a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) + a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz))
+          enddo
           enddo
         endif
       enddo
