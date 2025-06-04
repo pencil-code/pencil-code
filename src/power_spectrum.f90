@@ -3069,210 +3069,210 @@ outer:do ikz=1,nz
     use SharedVariables, only: get_shared_variable
     use FArrayManager
 !
-  logical, intent(in), optional :: lsqrt
-  integer, intent(in), optional :: iapn_index
-  integer, pointer :: inp,irhop,iapn(:)
-  integer, parameter :: nk=nxgrid/2
-  integer :: i,k,ikx,iky,ikz, ivec, im, in, ia0
-  real :: k2,fact
-  real, dimension (mx,my,mz,mfarray) :: f
-  real, dimension(nk) :: spectrum,spectrum_sum
-  real, dimension(nk) :: hor_spectrum, hor_spectrum_sum
-  real, dimension(nk) :: ver_spectrum, ver_spectrum_sum
-  real, dimension(nx) :: bbi
-  real, dimension(nx,3) :: gLam
-  character (len=*) :: sp
-  !
-  !  identify version
-  !
-  if (lroot .AND. ip<10) call svn_id( &
-       "$Id$")
+    logical, intent(in), optional :: lsqrt
+    integer, intent(in), optional :: iapn_index
+    integer, pointer :: inp,irhop,iapn(:)
+    integer, parameter :: nk=nxgrid/2
+    integer :: i,k,ikx,iky,ikz, ivec, im, in, ia0
+    real :: k2,fact
+    real, dimension (mx,my,mz,mfarray) :: f
+    real, dimension(nk) :: spectrum,spectrum_sum
+    real, dimension(nk) :: hor_spectrum, hor_spectrum_sum
+    real, dimension(nk) :: ver_spectrum, ver_spectrum_sum
+    real, dimension(nx) :: bbi
+    real, dimension(nx,3) :: gLam
+    character (len=*) :: sp
+!
+!  identify version
+!
+    if (lroot .AND. ip<10) call svn_id( &
+         "$Id$")
 !
 ! KG: added warning about wrong computation of wavenumbers.
 ! KG: See the function get_k2 for an example of how to calculate k2.
-  if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
-    call warning("powerscl", "computation of wavevector wrong for non-cubic domains")
-
-  if (sp=='np') then
-    call get_shared_variable('inp', inp, caller='powerscl')
-  elseif (sp=='na') then
-    call get_shared_variable('iapn', iapn, caller='powerscl')
-  elseif (sp=='rp') then
-    call get_shared_variable('irhop', irhop, caller='powerscl')
-  endif
-  if (nzgrid==1) kz=0. !(needed for 2-D runs)
-
-!$omp parallel private(ia0,k,k2,bbi,fact,gLam) num_threads(num_helper_threads) &
-!$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
-!$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
-!$ thread_id = omp_get_thread_num()+1
-  !
-  !  initialize power spectrum to zero
-  !
-  !$omp workshare
-  spectrum=0.
-  hor_spectrum=0.
-  ver_spectrum=0.
-  !$omp end workshare
-  !
-  !  In fft, real and imaginary parts are handled separately.
-  !  For "kin", calculate spectra of <uk^2> and <ok.uk>
-  !  For "mag", calculate spectra of <bk^2> and <ak.bk>
-  !
-  if (sp=='ro') then
-    !$omp workshare
-    a_re=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
-    !$omp end workshare
-  !
-  !  spectrum of lnrho (or normalized enthalpy).
-  !  Need to take log if we work with linear density.
-  !
-  elseif (sp=='a0') then
-    ia0=farray_index_by_name('a0')
-    if (ia0/=0) then
-      !$omp workshare
-      a_re=f(l1:l2,m1:m2,n1:n2,ia0)
-      !$omp end workshare
-    else
-      call fatal_error('powerscl',"ia0=0 doesn't work for sp='a0'")
+    if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
+      call warning("powerscl", "computation of wavevector wrong for non-cubic domains")
+  
+    if (sp=='np') then
+      call get_shared_variable('inp', inp, caller='powerscl')
+    elseif (sp=='na') then
+      call get_shared_variable('iapn', iapn, caller='powerscl')
+    elseif (sp=='rp') then
+      call get_shared_variable('irhop', irhop, caller='powerscl')
     endif
-  elseif (sp=='u_m') then
-    if (ilorentz>0) then
+    if (nzgrid==1) kz=0. !(needed for 2-D runs)
+  
+    !$omp parallel private(ia0,k,k2,bbi,fact,gLam) num_threads(num_helper_threads) &
+    !$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+    !$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+    !$ thread_id = omp_get_thread_num()+1
+!
+!  initialize power spectrum to zero
+!
+    !$omp workshare
+    spectrum=0.
+    hor_spectrum=0.
+    ver_spectrum=0.
+    !$omp end workshare
+!
+!  In fft, real and imaginary parts are handled separately.
+!  For "kin", calculate spectra of <uk^2> and <ok.uk>
+!  For "mag", calculate spectra of <bk^2> and <ak.bk>
+!
+    if (sp=='ro') then
       !$omp workshare
-      a_re=sqrt(1.-1./f(l1:l2,m1:m2,n1:n2,ilorentz))
+      a_re=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
       !$omp end workshare
-    else
+!
+!  spectrum of lnrho (or normalized enthalpy).
+!  Need to take log if we work with linear density.
+!
+    elseif (sp=='a0') then
+      ia0=farray_index_by_name('a0')
+      if (ia0/=0) then
+        !$omp workshare
+        a_re=f(l1:l2,m1:m2,n1:n2,ia0)
+        !$omp end workshare
+      else
+        call fatal_error('powerscl',"ia0=0 doesn't work for sp='a0'")
+      endif
+    elseif (sp=='u_m') then
+      if (ilorentz>0) then
+        !$omp workshare
+        a_re=sqrt(1.-1./f(l1:l2,m1:m2,n1:n2,ilorentz))
+        !$omp end workshare
+      else
+        !$omp workshare
+        a_re=sqrt(f(l1:l2,m1:m2,n1:n2,iux)**2 &
+                 +f(l1:l2,m1:m2,n1:n2,iuy)**2 &
+                 +f(l1:l2,m1:m2,n1:n2,iuz)**2)
+        !$omp end workshare
+      endif
+    elseif (sp=='ux') then
+        !$omp workshare
+        a_re=f(l1:l2,m1:m2,n1:n2,iux)
+        !$omp end workshare
+    elseif (sp=='uy') then
+        !$omp workshare
+        a_re=f(l1:l2,m1:m2,n1:n2,iuy)
+        !$omp end workshare
+    elseif (sp=='uz') then
+        !$omp workshare
+        a_re=f(l1:l2,m1:m2,n1:n2,iuz)
+        !$omp end workshare
+    elseif (sp=='ucp') then
+      !  Compressible part of the Helmholtz decomposition of uu
+      !  uu = curl(A_uu) + grad(phiuu)
+      !  We compute phiuu here, and take grad of phiuu later
+      !$omp do collapse(2)
+      do n_loc=n1,n2; do m_loc=m1,m2
+        m=m_loc;n=n_loc
+        call div(f,iuu,a_re(:,m-nghost,n-nghost))
+      enddo; enddo
+      !TODO make this multithreaded, seems to require a lot of work
+      !$omp single
+      call inverse_laplacian(a_re)
+      !$omp end single
+      !$omp barrier
+    elseif (sp=='lr') then
+      if (ldensity_nolog) then
+        !$omp workshare
+        a_re=alog(f(l1:l2,m1:m2,n1:n2,irho))
+        !$omp end workshare
+      else
+        !$omp workshare
+        a_re=f(l1:l2,m1:m2,n1:n2,ilnrho)
+        !$omp end workshare
+      endif
+    elseif (sp=='po') then
       !$omp workshare
-      a_re=sqrt(f(l1:l2,m1:m2,n1:n2,iux)**2 &
-               +f(l1:l2,m1:m2,n1:n2,iuy)**2 &
-               +f(l1:l2,m1:m2,n1:n2,iuz)**2)
+      a_re=f(l1:l2,m1:m2,n1:n2,ipotself)
       !$omp end workshare
-    endif
-  elseif (sp=='ux') then
+    elseif (sp=='nd') then
       !$omp workshare
-      a_re=f(l1:l2,m1:m2,n1:n2,iux)
+      a_re=f(l1:l2,m1:m2,n1:n2,ind(iapn_index))
       !$omp end workshare
-  elseif (sp=='uy') then
+    elseif (sp=='np') then
       !$omp workshare
-      a_re=f(l1:l2,m1:m2,n1:n2,iuy)
+      a_re=f(l1:l2,m1:m2,n1:n2,inp)
       !$omp end workshare
-  elseif (sp=='uz') then
+    elseif (sp=='na') then
       !$omp workshare
-      a_re=f(l1:l2,m1:m2,n1:n2,iuz)
+      a_re=f(l1:l2,m1:m2,n1:n2,iapn(iapn_index))
       !$omp end workshare
-  elseif (sp=='ucp') then
-    !  Compressible part of the Helmholtz decomposition of uu
-    !  uu = curl(A_uu) + grad(phiuu)
-    !  We compute phiuu here, and take grad of phiuu later
-    !$omp do collapse(2)
-    do n_loc=n1,n2; do m_loc=m1,m2
-      m=m_loc;n=n_loc
-      call div(f,iuu,a_re(:,m-nghost,n-nghost))
-    enddo; enddo
-    !TODO make this multithreaded, seems to require a lot of work
-    !$omp single
-    call inverse_laplacian(a_re)
-    !$omp end single
-    !$omp barrier
-  elseif (sp=='lr') then
-    if (ldensity_nolog) then
+    elseif (sp=='rp') then
       !$omp workshare
-      a_re=alog(f(l1:l2,m1:m2,n1:n2,irho))
+      a_re=f(l1:l2,m1:m2,n1:n2,irhop)
       !$omp end workshare
-    else
+    elseif (sp=='TT') then
       !$omp workshare
-      a_re=f(l1:l2,m1:m2,n1:n2,ilnrho)
+      a_re=exp(f(l1:l2,m1:m2,n1:n2,ilnTT))
       !$omp end workshare
-    endif
-  elseif (sp=='po') then
-    !$omp workshare
-    a_re=f(l1:l2,m1:m2,n1:n2,ipotself)
-    !$omp end workshare
-  elseif (sp=='nd') then
-    !$omp workshare
-    a_re=f(l1:l2,m1:m2,n1:n2,ind(iapn_index))
-    !$omp end workshare
-  elseif (sp=='np') then
-    !$omp workshare
-    a_re=f(l1:l2,m1:m2,n1:n2,inp)
-    !$omp end workshare
-  elseif (sp=='na') then
-    !$omp workshare
-    a_re=f(l1:l2,m1:m2,n1:n2,iapn(iapn_index))
-    !$omp end workshare
-  elseif (sp=='rp') then
-    !$omp workshare
-    a_re=f(l1:l2,m1:m2,n1:n2,irhop)
-    !$omp end workshare
-  elseif (sp=='TT') then
-    !$omp workshare
-    a_re=exp(f(l1:l2,m1:m2,n1:n2,ilnTT))
-    !$omp end workshare
-  elseif (sp=='ss') then
-    !$omp workshare
-    a_re=f(l1:l2,m1:m2,n1:n2,iss)
-    !$omp end workshare
-  elseif (sp=='cc') then
-    if (icc==0) call fatal_error('powerscl','icc=0, which is not allowed')
-    !$omp workshare
-    a_re=f(l1:l2,m1:m2,n1:n2,icc)
-    !$omp end workshare
-  elseif (sp=='cr') then
-    !$omp workshare
-    a_re=f(l1:l2,m1:m2,n1:n2,iecr)
-    !$omp end workshare
-  elseif (sp=='sp') then
-    !$omp workshare
-    a_re=f(l1:l2,m1:m2,n1:n2,ispecialvar)
-    !$omp end workshare
-  elseif (sp=='Ssp') then
-    !$omp workshare
-    a_re=sqrt(abs(f(l1:l2,m1:m2,n1:n2,ispecialvar)))
-    !$omp end workshare
-  elseif (sp=='mu') then
-    !$omp workshare
-    a_re=f(l1:l2,m1:m2,n1:n2,ispecialvar2)
-    !$omp end workshare
-  elseif (sp=='hr') then
-    !$omp workshare
-    a_re=0.
-    !$omp end workshare
-    !$omp do collapse(3)
-    do m_loc=m1,m2
+    elseif (sp=='ss') then
+      !$omp workshare
+      a_re=f(l1:l2,m1:m2,n1:n2,iss)
+      !$omp end workshare
+    elseif (sp=='cc') then
+      if (icc==0) call fatal_error('powerscl','icc=0, which is not allowed')
+      !$omp workshare
+      a_re=f(l1:l2,m1:m2,n1:n2,icc)
+      !$omp end workshare
+    elseif (sp=='cr') then
+      !$omp workshare
+      a_re=f(l1:l2,m1:m2,n1:n2,iecr)
+      !$omp end workshare
+    elseif (sp=='sp') then
+      !$omp workshare
+      a_re=f(l1:l2,m1:m2,n1:n2,ispecialvar)
+      !$omp end workshare
+    elseif (sp=='Ssp') then
+      !$omp workshare
+      a_re=sqrt(abs(f(l1:l2,m1:m2,n1:n2,ispecialvar)))
+      !$omp end workshare
+    elseif (sp=='mu') then
+      !$omp workshare
+      a_re=f(l1:l2,m1:m2,n1:n2,ispecialvar2)
+      !$omp end workshare
+    elseif (sp=='hr') then
+      !$omp workshare
+      a_re=0.
+      !$omp end workshare
+      !$omp do collapse(3)
+      do m_loc=m1,m2
       do n_loc=n1,n2
-        do ivec=1,3
-          m=m_loc;n=n_loc
-          call curli(f,iaa,bbi,ivec)
-          a_re(:,m-nghost,n-nghost)=a_re(:,m-nghost,n-nghost)+bbi*f(l1:l2,m,n,iaa-1+ivec)
-        enddo
+      do ivec=1,3
+        m=m_loc;n=n_loc
+        call curli(f,iaa,bbi,ivec)
+        a_re(:,m-nghost,n-nghost)=a_re(:,m-nghost,n-nghost)+bbi*f(l1:l2,m,n,iaa-1+ivec)
       enddo
-    enddo
-    !$omp workshare
-    a_im=0.
-    !$omp end workshare
-  elseif (sp=='b2') then  !  Sp(B^2)
-    !$omp workshare
-    a_re=0.
-    !$omp end workshare
-    !$omp do collapse(3)
-    do m_loc=m1,m2
+      enddo
+      enddo
+      !$omp workshare
+      a_im=0.
+      !$omp end workshare
+    elseif (sp=='b2') then  !  Sp(B^2)
+      !$omp workshare
+      a_re=0.
+      !$omp end workshare
+      !$omp do collapse(3)
+      do m_loc=m1,m2
       do n_loc=n1,n2
-        do ivec=1,3
-          m=m_loc;n=n_loc
-          call curli(f,iaa,bbi,ivec)
-          a_re(:,m-nghost,n-nghost)=a_re(:,m-nghost,n-nghost)+bbi**2
-        enddo
+      do ivec=1,3
+        m=m_loc;n=n_loc
+        call curli(f,iaa,bbi,ivec)
+        a_re(:,m-nghost,n-nghost)=a_re(:,m-nghost,n-nghost)+bbi**2
       enddo
-    enddo
-    !$omp workshare
-    a_im=0.
-    !$omp end workshare
-  elseif (sp=='ha') then
-    !$omp workshare
-    a_re=0.
-    !$omp end workshare
-    !$omp do collapse(2)
-    do m_loc=m1,m2
+      enddo
+      enddo
+      !$omp workshare
+      a_im=0.
+      !$omp end workshare
+    elseif (sp=='ha') then
+      !$omp workshare
+      a_re=0.
+      !$omp end workshare
+      !$omp do collapse(2)
+      do m_loc=m1,m2
       do n_loc=n1,n2
         m=m_loc;n=n_loc
         call grad(f,ispecialvar,gLam)
@@ -3281,109 +3281,109 @@ outer:do ikz=1,nz
           a_re(:,m-nghost,n-nghost)=a_re(:,m-nghost,n-nghost)+bbi*(f(l1:l2,m,n,iaa-1+ivec)+gLam(:,ivec))
         enddo
       enddo
-    enddo
+      enddo
+      !$omp workshare
+      a_im=0.
+      !$omp end workshare
+    endif
     !$omp workshare
     a_im=0.
     !$omp end workshare
-  endif
-  !$omp workshare
-  a_im=0.
-  !$omp end workshare
 !
 !  Allow for talking the square root defined for pos/neg arguments.
 !
-  if (present(lsqrt)) then
-    !$omp workshare
-    a_re=sqrt(abs(a_re))*sign(a_re,1.)
-    !$omp end workshare
-  endif
+    if (present(lsqrt)) then
+      !$omp workshare
+      a_re=sqrt(abs(a_re))*sign(a_re,1.)
+      !$omp end workshare
+    endif
 !
 !  Doing the Fourier transform
 !
-  call fft_xyz_parallel(a_re,a_im)
+    call fft_xyz_parallel(a_re,a_im)
 !
 !  integration over shells
 !
-  if (ip<10) call information('powerscl','fft done; now integrate over shells')
-  !$omp do collapse(3) reduction(+:spectrum,hor_spectrum,ver_spectrum)
-  do ikz=1,nz
+    if (ip<10) call information('powerscl','fft done; now integrate over shells')
+    !$omp do collapse(3) reduction(+:spectrum,hor_spectrum,ver_spectrum)
+    do ikz=1,nz
     do iky=1,ny
-      do ikx=1,nx
-        !
-        !  integration over shells
-        !
-        k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
+    do ikx=1,nx
+      !
+      !  integration over shells
+      !
+      k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
+      k=nint(sqrt(k2))
+      if (sp=='ucp') then
+        fact=k2  !  take gradient
+      else
+        fact=1.
+      endif
+      if (k>=0 .and. k<=(nk-1)) &
+        spectrum(k+1)=spectrum(k+1) &
+           +fact*a_re(ikx,iky,ikz)**2 &
+           +fact*a_im(ikx,iky,ikz)**2
+      !
+      !  integration over the vertical direction
+      !
+      if (lhorizontal_spectra) then
+        k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2
         k=nint(sqrt(k2))
-        if (sp=='ucp') then
-          fact=k2  !  take gradient
-        else
-          fact=1.
-        endif
         if (k>=0 .and. k<=(nk-1)) &
-          spectrum(k+1)=spectrum(k+1) &
-             +fact*a_re(ikx,iky,ikz)**2 &
-             +fact*a_im(ikx,iky,ikz)**2
-        !
-        !  integration over the vertical direction
-        !
-        if (lhorizontal_spectra) then
-          k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2
-          k=nint(sqrt(k2))
-          if (k>=0 .and. k<=(nk-1)) &
-            hor_spectrum(k+1)=hor_spectrum(k+1) &
-             +fact*a_re(ikx,iky,ikz)**2+fact*a_im(ikx,iky,ikz)**2
-        endif
-        !
-        !  integration over the horizontal direction
-        !
-        if (lvertical_spectra) then
-          k=nint(abs(kz(ikz+ipz*nz)))
-          if (k>=0 .and. k<=(nk-1)) &
-            ver_spectrum(k+1)=ver_spectrum(k+1) &
-             +fact*a_re(ikx,iky,ikz)**2+fact*a_im(ikx,iky,ikz)**2
-        endif
-      enddo
+          hor_spectrum(k+1)=hor_spectrum(k+1) &
+           +fact*a_re(ikx,iky,ikz)**2+fact*a_im(ikx,iky,ikz)**2
+      endif
+      !
+      !  integration over the horizontal direction
+      !
+      if (lvertical_spectra) then
+        k=nint(abs(kz(ikz+ipz*nz)))
+        if (k>=0 .and. k<=(nk-1)) &
+          ver_spectrum(k+1)=ver_spectrum(k+1) &
+           +fact*a_re(ikx,iky,ikz)**2+fact*a_im(ikx,iky,ikz)**2
+      endif
     enddo
-  enddo
-!$omp end parallel
-  !
-  !  Summing up the results from the different processors
-  !  The result is available only on root
-  !
-  call mpireduce_sum(spectrum,spectrum_sum,nk)
-  if (lhorizontal_spectra) call mpireduce_sum(hor_spectrum,hor_spectrum_sum,nk)
-  if (lvertical_spectra) call mpireduce_sum(ver_spectrum,ver_spectrum_sum,nk)
-  !
-  !  append to diagnostics file
-  !
-  if (lroot) then
-    if (ip<10) print*,'Writing power spectrum ',sp &
-         ,' to ',trim(datadir)//'/power_'//trim(sp)//'.dat'
-    if (sp=='na' .or. sp=='nd') then
-       open(1,file=trim(datadir)//'/power_'//trim(sp)//'-'//&
-            trim(itoa(iapn_index))//'.dat',position='append')
-    else
-       open(1,file=trim(datadir)//'/power_'//trim(sp)//'.dat',position='append')
-    endif
-    write(1,*) tspec
-    write(1,power_format) spectrum_sum
-    close(1)
-    !
-    if (lhorizontal_spectra) then
-      open(1,file=trim(datadir)//'/power_hor_'//trim(sp)//'.dat',position='append')
+    enddo
+    enddo
+    !$omp end parallel
+!
+!  Summing up the results from the different processors
+!  The result is available only on root
+!
+    call mpireduce_sum(spectrum,spectrum_sum,nk)
+    if (lhorizontal_spectra) call mpireduce_sum(hor_spectrum,hor_spectrum_sum,nk)
+    if (lvertical_spectra) call mpireduce_sum(ver_spectrum,ver_spectrum_sum,nk)
+!
+!  append to diagnostics file
+!
+    if (lroot) then
+      if (ip<10) print*,'Writing power spectrum ',sp &
+           ,' to ',trim(datadir)//'/power_'//trim(sp)//'.dat'
+      if (sp=='na' .or. sp=='nd') then
+         open(1,file=trim(datadir)//'/power_'//trim(sp)//'-'//&
+              trim(itoa(iapn_index))//'.dat',position='append')
+      else
+         open(1,file=trim(datadir)//'/power_'//trim(sp)//'.dat',position='append')
+      endif
       write(1,*) tspec
-      write(1,power_format) hor_spectrum_sum
+      write(1,power_format) spectrum_sum
       close(1)
+!
+      if (lhorizontal_spectra) then
+        open(1,file=trim(datadir)//'/power_hor_'//trim(sp)//'.dat',position='append')
+        write(1,*) tspec
+        write(1,power_format) hor_spectrum_sum
+        close(1)
+      endif
+!
+      if (lvertical_spectra) then
+        open(1,file=trim(datadir)//'/power_ver_'//trim(sp)//'.dat',position='append')
+        write(1,*) tspec
+        write(1,power_format) ver_spectrum_sum
+        close(1)
+      endif
     endif
-    !
-    if (lvertical_spectra) then
-      open(1,file=trim(datadir)//'/power_ver_'//trim(sp)//'.dat',position='append')
-      write(1,*) tspec
-      write(1,power_format) ver_spectrum_sum
-      close(1)
-    endif
-  endif
-  !
+!
   endsubroutine powerscl   !checked
 !***********************************************************************
   subroutine power_1d(f,sp,ivec,ivar)
@@ -3424,10 +3424,10 @@ outer:do ikz=1,nz
     endif
     allocate(spectrumx(nc,nk), spectrumx_sum(nc,nk) )
 
-!$omp parallel num_threads(num_helper_threads) &
-!$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
-!$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
-!$ thread_id = omp_get_thread_num()+1
+    !$omp parallel num_threads(num_helper_threads) &
+    !$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+    !$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+    !$ thread_id = omp_get_thread_num()+1
 !
 ! Initialize spectra.
 !
@@ -3560,7 +3560,7 @@ outer:do ikz=1,nz
         !$omp end workshare
       endif
     endif
-!$omp end parallel
+    !$omp end parallel
 !
 !  Summing up the results from the different processors
 !  The result is available only on root
