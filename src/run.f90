@@ -1532,7 +1532,7 @@ call copy_addr(iqrad,p_par(1217)) ! int
 call copy_addr(ikapparho,p_par(1218)) ! int
 call copy_addr(ikr_frad,p_par(1219)) ! int
 call copy_addr_dble(m_e,p_par(1222))
-call copy_addr(ip,p_par(1223))
+call copy_addr(ip,p_par(1223)) ! int
 call copy_addr_dble(m_h,p_par(1224))
 call copy_addr_dble(sigmah_,p_par(1225))
 call copy_addr(lcuda_aware_mpi,p_par(1226)) ! bool
