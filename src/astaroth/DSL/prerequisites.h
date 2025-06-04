@@ -68,6 +68,10 @@ struct PC_rhs_update
   #define LENERGY 1       // a hack for the moment
 #endif
 global output real AC_maximum_error
+#ifdef LVISCOSITY
+  output real AC_maxnu
+#endif
+
 output real AC_dt1_max
 
 #ifdef LDENSITY
@@ -78,9 +82,6 @@ output real AC_dt1_max
 
 #ifdef LFORCING
   #include "../forcing/pcstyleforcing.h"
-  #define ADDFORCE + force
-#else
-  #define ADDFORCE
 #endif
 
 #include "equations.h"

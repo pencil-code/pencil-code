@@ -698,8 +698,6 @@ if ($nodelist) {
         test_rundir("$d", $makeopts);
     }
 }
-
-
 # ---------------------------------------------------------------------- #
 sub check_timeout_found {
     # Check if the timeout command exists on the system.
@@ -920,7 +918,6 @@ sub my_ok {
     if ($summarize_t) {
         record_time($phase, $dt);
     }
-
 }
 # ---------------------------------------------------------------------- #
 sub record_time {
@@ -949,9 +946,7 @@ sub find_test_dirs {
           },
           @rootdirs);
 
-
 #      $File::Find::prune = 1;
-
 }
 # ---------------------------------------------------------------------- #
 sub FF_wanted {
@@ -2118,7 +2113,6 @@ sub get_maintainers {
     return @emails;
 }
 # ---------------------------------------------------------------------- #
-
 ## Summarize results
 END {
 
@@ -2247,5 +2241,3 @@ END {
         exit 0;
     }
 }
-
-# End of file pc_auto-test

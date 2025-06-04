@@ -55,7 +55,7 @@ else
   fi
 fi
 #
-#  save current working directory and make new run directory and go there.
+#  Save current working directory and make new run directory and go there.
 #
 parentdir=`pwd`
 echo "Parent directory: " $parentdir
@@ -75,9 +75,8 @@ targetdir=`pwd`
 #  the new one is generated
 #
 $PENCIL_HOME/bin/pc_mkdatadir
-
 #
-#  write source directory name into file new_from.dir
+#  Write source directory name into file new_from.dir
 #
 [ -e data/new_from.dir ] || touch data/new_from.dir
 (echo $olddir; /bin/date) >> data/new_from.dir
@@ -106,7 +105,6 @@ $PENCIL_HOME/bin/pc_mkdatadir
 #  This gives the possibility to link your own routines
 #  into src (pc_setupsrc below won't overwrite those)
 #
-
   [ -f $parentdir/bin/pc_setupsrc.local ] && $parentdir/bin/pc_setupsrc.local
 #
 #  continue with the usual setup procedure
@@ -162,13 +160,12 @@ if [ -n "`ls *.py 2>/dev/null`" ]; then cp *.py $targetdir; fi
 [ -f src/.moduleinfo ] && cp src/.moduleinfo $targetdir/src
 [ -f src/.config-files ] && cp src/.config-files $targetdir/src
 [ -d src/astaroth/DSL/local ] && cp src/astaroth/DSL/local/* $targetdir/src/astaroth/DSL/local
-
 #
-#  if same_source, then link all *.x files from the original directory.
+#  if same_source, then link all *.x and *.so files from the original directory.
 #  (We don't want to use a link to the entire src directory, because
 #  then a run directory that is checked in would not possess a record
 #  of it's own src/*.local files.)
-#  Also: copy $olddir/src/*.inc, which are needed for remeshing.
+#  Also: copy $olddir/src/*.inc, which are needed for remeshing.  MR: really?
 #
 if [ $same_source ]; then
   cd $targetdir/src
@@ -189,11 +186,31 @@ if [ $same_source ]; then
     lnk=`readlink $olddir/src/special.so`
     if [ "$lnk" != "" ]; then ln -s $lnk .; fi
 
-    lnk=`readlink $olddir/src/astaroth/libastaroth_dbl.so`
-    if [ "$lnk" != "" ]; then ln -s $lnk astaroth/.; fi
+    if [ -e $olddir/src/astaroth ]; then
 
+      lnk=`readlink $olddir/src/astaroth/libastaroth_dbl.so`
+      if [ "$lnk" != "" ]; then ln -s $lnk astaroth/.; fi
+
+      lnk=`readlink $olddir/src/astaroth/libastaroth_sgl.so`
+      if [ "$lnk" != "" ]; then ln -s $lnk astaroth/.; fi
+
+      if [ -e $olddir/src/astaroth/submodule/build ]; then
+        mkdir -p astaroth/submodule/build/src/core/kernels
+        mkdir astaroth/submodule/build/runtime_compilation
+        mkdir -p astaroth/submodule/build/acc-runtime/acc
+        lnk=`readlink $olddir/src/astaroth/submodule/build/src/core/libastaroth_core.so`
+        if [ "$lnk" != "" ]; then ln -s  $lnk ./astaroth/submodule/build/src/core; fi 
+        lnk=`readlink $olddir/src/astaroth/submodule/build/src/core/kernels/libkernels.so`
+        if [ "$lnk" != "" ]; then ln -s  $lnk ./astaroth/submodule/build/src/core/kernels; fi
+        lnk=`readlink $olddir/src/astaroth/submodule/build/runtime_compilation/libacc_runtime_compiler.so`
+        if [ "$lnk" != "" ]; then ln -s  $lnk ./astaroth/submodule/build/runtime_compilation; fi
+        lnk=`readlink $olddir/src/astaroth/submodule/build/acc-runtime/acc/acc`
+        if [ "$lnk" != "" ]; then ln -s  $lnk ./astaroth/submodule/build/acc-runtime/acc; fi
+      fi
+    fi
   else
     cd $olddir;
+    echo Building minimal helper set ...
     if [ -e src/.config-files ]; then 
       pc_build -l -q -s -t helper_min >& /dev/null;
     else
@@ -205,11 +222,16 @@ if [ $same_source ]; then
     if [ -n "`ls $olddir/src/astaroth/*.so 2>/dev/null`" ]; then ln -s $olddir/src/astaroth/*.so ./astaroth ; fi
     if [ -n "`ls $olddir/src/astaroth/submodule/build/src/core/*.so 2>/dev/null`" ]; then
       if [ ! -n "`ls astaroth/submodule/build/src/core 2>/dev/null`" ]; then mkdir -p astaroth/submodule/build/src/core ; fi
-      ln -s $olddir/src/astaroth/submodule/build/src/core/*.so astaroth/submodule/build/src/core
+      cp -s $olddir/src/astaroth/submodule/build/src/core/*.so ./astaroth/submodule/build/src/core
+    fi
+    if [ -n "`ls $olddir/src/astaroth/submodule/build/runtime_compilation 2>/dev/null`" ]; then
+      if [ ! -n "`ls astaroth/submodule/build/runtime_compilation 2>/dev/null`" ]; then mkdir -p astaroth/submodule/build/runtime_compilation ; fi
+      cp -s $olddir/src/astaroth/submodule/build/runtime_compilation/libacc_runtime_compiler.so ./astaroth/submodule/build/runtime_compilation
     fi
     if [ -n "`ls $olddir/src/astaroth/submodule/build/src/core/kernels/*.so 2>/dev/null`" ]; then
       if [ ! -n "`ls astaroth/submodule/build/src/core/kernels 2>/dev/null`" ]; then mkdir -p astaroth/submodule/build/src/core/kernels ; fi
       ln -s $olddir/src/astaroth/submodule/build/src/core/kernels/*.so astaroth/submodule/build/src/core/kernels
+      cp -s $olddir/src/astaroth/submodule/build/src/core/kernels/*.so astaroth/submodule/build/src/core/kernels
     fi
   fi
   cp $olddir/src/*.inc .

@@ -1,5 +1,5 @@
-#include "../shock/highorder.h"
 #if LSHOCK
+#include "../shock/highorder.h"
 Kernel shock_1_divu()
 {
   write( SHOCK, divu_shock() )
@@ -7,9 +7,9 @@ Kernel shock_1_divu()
 
 Kernel shock_2_max()
 {
-  if(lmax_shock)
+  if (lmax_shock)
   {
-  	write( SHOCK, max5(SHOCK))
+    write( SHOCK, max5(SHOCK))
   }
 }
 
@@ -21,11 +21,9 @@ Kernel shock_3_smooth()
 Kernel shock_1_divu()
 {
 }
-
 Kernel shock_2_max()
 {
 }
-
 Kernel shock_3_smooth()
 {
 }

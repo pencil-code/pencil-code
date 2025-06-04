@@ -25,11 +25,8 @@ int done = 0;
 int my_rank;
 bool calculated_coeff_scales = false;
 
-
 // Astaroth headers
 #include "astaroth.h"
-bool
-has_nans(AcMesh mesh_in);
 
 #define real AcReal
 #include "math_utils.h"
@@ -84,7 +81,6 @@ has_nans(AcMesh mesh_in);
   #define cdtv2 cdtv2__mod__cdata
   #define cdtv3 cdtv3__mod__cdata
 
-
   #define lcylindrical_coords lcylindrical_coords__mod__cdata
   #define lspherical_coords   lspherical_coords__mod__cdata
   #define lcartesian_coords   lcartesian_coords__mod__cdata
@@ -128,16 +124,98 @@ has_nans(AcMesh mesh_in);
 
 AcReal dt1_interface;
 static int rank;
+static MPI_Comm comm_pencil = MPI_COMM_NULL;
+
+// Astaroth objects instantiation.
 static AcMesh mesh = acInitMesh();
+//static AcMesh test_mesh;
+static AcTaskGraph *randomize_graph;
+static AcTaskGraph *rhs_test_graph;
+static AcTaskGraph *rhs_test_rhs_1;
 
 void torch_trainCAPI(int sub_dims[3], float* input, float* label, float* loss_val, bool dble=false);
 void torch_inferCAPI(int sub_dims[3], float* input, float* label, bool dble=false);
 //void torch_createmodel(const char* name, const char* config_fname, MPI_Comm mpi_comm, int device);
 
+extern "C" void copyFarray(AcReal* f);    // ahead declaration
+
 /***********************************************************************************************/
-extern "C" void copyFarray(AcReal* f);
+int memusage()
+{
+    struct rusage usage;
+    int res=getrusage(RUSAGE_SELF,&usage);
+
+    return usage.ru_maxrss;
+}
 /***********************************************************************************************/
-void print_debug();
+AcReal cpu_pow(AcReal const val, AcReal exponent)
+{
+// Masks hip GPU power function.
+    return std::pow(val, exponent);
+}
+/***********************************************************************************************/
+AcReal sign(const AcReal a, const AcReal b)
+{
+	return (b < (AcReal)0.0) ? -abs(a) : abs(a);
+}
+/***********************************************************************************************/
+void print_debug() {
+#if TRAINING
+    if (it % 5 !=0) return;
+    #include "user_constants.h"
+		printf("true it is running print");
+		counter = it;
+
+		MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+
+		std::ofstream myFile;
+		std::string fileString = "slices/snapshot_" + std::to_string(my_rank) + "_" + std::to_string(it) + ".csv";	
+		myFile.open(fileString);
+
+    myFile << "it,TAU_xx,TAU_xx_inferred,TAU_yy,TAU_yy_inferred,TAU_zz,TAU_zz_inferred,"
+           << "TAU_xy,TAU_xy_inferred,TAU_yz,TAU_yz_inferred,TAU_xz,TAU_xz_inferred,UUMEAN_x,UUMEAN_y,UUMEAN_z,"
+           << "UUX,UUY,UUZ,x,y,z\n";
+
+    acGridHaloExchange();
+    copyFarray(NULL);
+
+    const auto DEVICE_VTXBUF_IDX = [&](const int x, const int y, const int z)
+  			{
+  				return acVertexBufferIdx(x,y,z,mesh.info);
+  			};
+
+    AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
+				
+	
+    for (size_t i = dims.n0.x; i < dims.n1.x; i++) {
+        for (size_t j = dims.n0.y; j < dims.n1.y; j++) {
+            for (size_t k = dims.n0.z; k < dims.n1.z; k++) {
+
+                myFile << it << ","
+                       << mesh.vertex_buffer[TAU.xx][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[TAU_INFERRED.xx][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[TAU.yy][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[TAU_INFERRED.yy][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[TAU.zz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[TAU_INFERRED.zz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[TAU.xy][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[TAU_INFERRED.xy][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[TAU.yz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[TAU_INFERRED.yz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[TAU.xz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[TAU_INFERRED.xz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[UUMEAN.x][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[UUMEAN.y][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[UUMEAN.z][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[UUX][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[UUY][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[UUZ][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+											 << i << "," << j << "," << k << "\n";
+            }
+        }
+    }
+	#endif
+}
 /***********************************************************************************************/
 float MSE(){
 #if TRAINING
@@ -147,25 +225,21 @@ float MSE(){
 	acGridSynchronizeStream(STREAM_ALL);
 	acGridExecuteTaskGraph(descale_uumean_tau, 1);
 	acGridSynchronizeStream(STREAM_ALL);
-
 	
-  auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
+  	auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
 	acGridSynchronizeStream(STREAM_ALL);
 	acGridExecuteTaskGraph(bcs,1);
 	acGridSynchronizeStream(STREAM_ALL);
-
-
 
 	auto calc_infered_loss = acGetOptimizedDSLTaskGraph(calc_validation_loss);
 	acGridSynchronizeStream(STREAM_ALL);
 	acGridExecuteTaskGraph(calc_infered_loss, 1);
 	acGridSynchronizeStream(STREAM_ALL);
 
-  bcs = acGetOptimizedDSLTaskGraph(boundconds);	
+  	bcs = acGetOptimizedDSLTaskGraph(boundconds);	
 	acGridSynchronizeStream(STREAM_ALL);
 	acGridExecuteTaskGraph(bcs,1);
 	acGridSynchronizeStream(STREAM_ALL);
-
 
 	return (acDeviceGetOutput(acGridGetDevice(), AC_l2_sum))/(6*nxgrid*nygrid*nzgrid);
 #else
@@ -173,13 +247,82 @@ float MSE(){
 #endif
 }
 /***********************************************************************************************/
-int memusage()
-  {
-    struct rusage usage;
-    int res=getrusage(RUSAGE_SELF,&usage);
+void torch_infer_c_api(int *itstub){	
+#if TRAINING
+	#include "user_constants.h"
 
-    return usage.ru_maxrss;
+	auto calc_uumean_tau = acGetOptimizedDSLTaskGraph(initialize_uumean_tau);
+	acGridSynchronizeStream(STREAM_ALL);
+	acGridExecuteTaskGraph(calc_uumean_tau, 1);
+	acGridSynchronizeStream(STREAM_ALL);
+
+  	auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
+	acGridSynchronizeStream(STREAM_ALL);
+	acGridExecuteTaskGraph(bcs,1);
+	acGridSynchronizeStream(STREAM_ALL);
+
+	if (!calculated_coeff_scales){
+		scaling();
+	}
+
+	auto scale_uumean_tau = acGetOptimizedDSLTaskGraph(scale);
+	acGridSynchronizeStream(STREAM_ALL);
+	acGridExecuteTaskGraph(scale_uumean_tau, 1);
+	acGridSynchronizeStream(STREAM_ALL);
+
+  	bcs = acGetOptimizedDSLTaskGraph(boundconds);	
+	acGridSynchronizeStream(STREAM_ALL);
+	acGridExecuteTaskGraph(bcs,1);
+	acGridSynchronizeStream(STREAM_ALL);
+
+	AcReal* out = NULL;
+	AcReal* uumean_ptr = NULL;
+	AcReal* tau_infer_ptr = NULL;
+
+	acDeviceGetVertexBufferPtrs(acGridGetDevice(), TAU_INFERRED.xx, &tau_infer_ptr, &out);
+	acDeviceGetVertexBufferPtrs(acGridGetDevice(), UUMEAN.x, &uumean_ptr, &out);
+		
+	acGridHaloExchange();
+	torch_inferCAPI((int[]){mx,my,mz}, uumean_ptr, tau_infer_ptr, AC_DOUBLE_PRECISION);
+
+	float vloss = MSE();
+ 	
+	if (*itstub == 1){
+		printf("Validation error is: %f\n", vloss);
+		print_debug();
+	}
+#endif
+}
+/***********************************************************************************************/
+bool has_nans(AcMesh mesh_in)
+{
+  bool res = false;
+  AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
+  const auto DEVICE_VTXBUF_IDX = [&](const int x, const int y, const int z)
+  				{
+					return acVertexBufferIdx(x,y,z,mesh.info);
+  				};
+  for (size_t i = dims.n0.x; i < dims.n1.x; i++)
+  {
+    for (size_t j = dims.n0.y; j < dims.n1.y; j++)
+    {
+      for (size_t k = dims.n0.z; k < dims.n1.z; k++)
+      {
+        for (size_t ivar = 0; ivar < NUM_VTXBUF_HANDLES; ivar++)
+        {
+          if (mesh_in.vertex_buffer[ivar] == NULL) continue;
+          if (isnan(mesh_in.vertex_buffer[ivar][DEVICE_VTXBUF_IDX(i, j, k)]))
+          {
+            res = true;
+            acLogFromRootProc(rank,"nan at %d,%d,%d\n", i, j, k);
+            acLogFromRootProc(rank,"field = %d", ivar);
+          }
+        }
+      }
+    }
   }
+  return res;
+}
 /***********************************************************************************************/
 extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
 {
@@ -454,9 +597,8 @@ extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
   acLogFromRootProc(rank,"abs range: %.7e-%7e\n",(double)min_abs_value,(double)max_abs_value);
   fflush(stdout);
 }
-
-AcReal
-to_real(void* param, const char* name)
+/***********************************************************************************************/
+AcReal to_real(void* param, const char* name)
 {
 	if (param == NULL)
 	{
@@ -465,8 +607,8 @@ to_real(void* param, const char* name)
 	}
 	return *((AcReal*)param);
 }
-int
-to_int(void* param, const char* name)
+/***********************************************************************************************/
+int to_int(void* param, const char* name)
 {
 	if (param == NULL)
 	{
@@ -475,8 +617,8 @@ to_int(void* param, const char* name)
 	}
 	return *((int*)param);
 }
-bool
-to_bool(void* param, const char* name)
+/***********************************************************************************************/
+bool to_bool(void* param, const char* name)
 {
 	if (param == NULL)
 	{
@@ -485,8 +627,8 @@ to_bool(void* param, const char* name)
 	}
 	return *((bool*)param);
 }
-int3
-to_int3(void* param, const char* name)
+/***********************************************************************************************/
+int3 to_int3(void* param, const char* name)
 {
 	if (param == NULL)
 	{
@@ -496,8 +638,8 @@ to_int3(void* param, const char* name)
         int* arr = (int*)param;
         return (int3){arr[0],arr[1],arr[2]};
 }
-AcReal3
-to_real3(void* param, const char* name)
+/***********************************************************************************************/
+AcReal3 to_real3(void* param, const char* name)
 {
 	if (param == NULL)
 	{
@@ -507,8 +649,8 @@ to_real3(void* param, const char* name)
         AcReal* arr = (AcReal*)param;
         return (AcReal3){arr[0],arr[1],arr[2]};
 }
-AcBool3
-to_bool3(void* param, const char* name)
+/***********************************************************************************************/
+AcBool3 to_bool3(void* param, const char* name)
 {
 	if (param == NULL)
 	{
@@ -518,42 +660,20 @@ to_bool3(void* param, const char* name)
         bool* arr = (bool*)param;
         return (AcBool3){arr[0],arr[1],arr[2]};
 }
-
-
-__thread int tp_int;
-typedef void (*rangefunc)(const int a, const int b);
-
-AcReal cpu_pow(AcReal const val, AcReal exponent)
-{
-// masks hip GPU power function.
-  return std::pow(val, exponent);
-}
+/***********************************************************************************************/
+//typedef void (*rangefunc)(const int a, const int b);
+/***********************************************************************************************/
 // PC interface headers.
 #include "PC_moduleflags.h"
 //#include "../cdata_c.h"
 #include "../sub_c.h"           // provides set_dt
 #include "../boundcond_c.h"     // provides boundconds[xyz] etc.
-//#include "../mpicomm_c.h"       // provides finalize_sendrcv_bdry
 #include "PC_module_parfuncs.h" // provides stuff from physics modules
 
-//TP: x,y and z macros are too general
-
-#if PACKED_DATA_TRANSFERS
-  #include "loadStore.h"
-#endif
 #if LFORCING
   #include "../forcing_c.h"     // provides forcing_pars_hel
   #include "forcing.h"
 #endif
-// Astaroth objects instantiation.
-//static AcMesh test_mesh;
-static AcTaskGraph *randomize_graph;
-static AcTaskGraph *rhs_test_graph;
-static AcTaskGraph *rhs_test_rhs_1;
-
-// Other.
-int halo_xz_size[2] = {0, 0}, halo_yz_size[2] = {0, 0};
-//static AcReal *xtop_buffer, *xbot_buffer, *ytop_buffer, *ybot_buffer;
 
 /***********************************************************************************************/
 int DCONST(const AcIntParam param)
@@ -576,75 +696,157 @@ AcReal3 DCONST(const AcReal3Param param)
   return mesh.info[param];
 }
 /***********************************************************************************************/
-void print_debug();
+#define PCLoad acPushToConfig
 /***********************************************************************************************/
-extern "C" void scaling();
+void setupConfig(AcMeshInfo& config)
+{ 
+  #include "PC_modulepars.h"
+
+  PCLoad(config, AC_use_cuda_aware_mpi,lcuda_aware_mpi);
+  //TP: loads for non-Cartesian derivatives
+#if TRANSPILATION
+  PCLoad(config, AC_inv_cyl_r,rcyl_mn1);
+  PCLoad(config, AC_inv_r,r1_mn);
+  PCLoad(config, AC_inv_sin_theta,sin1th);
+  PCLoad(config, AC_cot_theta,cotth);
+
+  //TP: loads for non-equidistant grids
+  PCLoad(config,AC_nonequidistant_grid, (AcBool3){!lequidist.x,!lequidist.y,!lequidist.z});
+  PCLoad(config,AC_inv_mapping_func_derivative_x,dx_1);
+  PCLoad(config,AC_inv_mapping_func_derivative_y,dy_1);
+  PCLoad(config,AC_inv_mapping_func_derivative_z,dz_1);
+
+  PCLoad(config,AC_mapping_func_tilde_x,dx_tilde);
+  PCLoad(config,AC_mapping_func_tilde_y,dy_tilde);
+  PCLoad(config,AC_mapping_func_tilde_z,dz_tilde);
+#endif
+
+  PCLoad(config, AC_rk_order, itorder);
+  PCLoad(config, AC_shear,lshear);
+
+  if (lcartesian_coords)
+  {
+          PCLoad(config, AC_coordinate_system, AC_CARTESIAN_COORDINATES);
+  }
+  if (lspherical_coords)
+  {
+          PCLoad(config, AC_coordinate_system, AC_SPHERICAL_COORDINATES);
+  }
+  if (lcylindrical_coords)
+  {
+          PCLoad(config, AC_coordinate_system, AC_CYLINDRICAL_COORDINATES);
+  }
+  PCLoad(config, AC_domain_decomposition, (int3) {nprocx,nprocy,nprocz});
+  PCLoad(config, AC_ngrid, (int3){nxgrid,nygrid,nzgrid});
+  PCLoad(config, AC_skip_single_gpu_optim, true);
+
+  PCLoad(config,AC_decompose_strategy,AC_DECOMPOSE_STRATEGY_EXTERNAL);
+  if (lmorton_curve)
+    PCLoad(config,AC_proc_mapping_strategy,AC_PROC_MAPPING_STRATEGY_MORTON);
+  else
+    PCLoad(config,AC_proc_mapping_strategy,AC_PROC_MAPPING_STRATEGY_LINEAR);
+
+  PCLoad(config, AC_include_3d_halo_corners, ltraining);
+  PCLoad(config,AC_MPI_comm_strategy,AC_MPI_COMM_STRATEGY_DUP_USER);
+  config.comm->handle = comm_pencil;
+
+// grid and geometry related parameters
+
+  PCLoad(config,AC_ds,(AcReal3){dx,dy,dz});
+  PCLoad(config,AC_periodic_grid,lperi);
+  //TP: Astaroth has default formula for AC_len but we want to make sure AC_len = lxyz, in case the Astaroth formula does not cover everything like non-equidistant grids
+  PCLoad(config,AC_len,lxyz);
+
+  PCLoad(config,AC_sparse_autotuning,lac_sparse_autotuning);
+  // Enter physics related parameters in config.
+
+  #if LDENSITY
+    PCLoad(config,AC_ldensity_nolog,ldensity_nolog);
+    //printf("ldensity_nolog is %d \n",config[AC_ldensity_nolog]);//ldensity_nolog);
+  #endif
+  //Device dev = acGridGetDevice();
+#if LHYDRO
+  //dev->output.real_outputs[AC_maxadvec]=0.;
+#endif
+#if LENTROPY
+  //dev->output.real_outputs[AC_maxchi]=0.;
+#endif
+  acHostUpdateParams(&config); 
+  if (!ltraining) config.runtime_compilation_log_dst = "ac_compilation.log";
+  char cwd[9000];
+  cwd[0] = '\0';
+  const char* err = getcwd(cwd, sizeof(cwd));
+  if (err == NULL) 
+  {
+	  fprintf(stderr,"Was not able to get cwd!\n");
+	  exit(EXIT_FAILURE);
+  }
+  char build_path[18000];
+  sprintf(build_path,"%s/src/astaroth/submodule/build",cwd);
+  config.runtime_compilation_build_path = strdup(build_path);
+}
 /***********************************************************************************************/
-extern "C" void torch_train_c_api(AcReal *loss_val);
+//TP: x,y and z macros are too general
+#undef x
+#undef y
+#undef z
 /***********************************************************************************************/
-extern "C" void torch_infer_c_api(int itstub);
-/***********************************************************************************************/
-std::array<AcReal,3>
-visc_get_max_diffus()
+std::array<AcReal,3> visc_get_max_diffus()
 {
-	return
 #if LVISCOSITY
-	  {nu,nu_hyper2,nu_hyper3};
+	 return {nu,nu_hyper2,nu_hyper3};
 #else
-	  {0.0,0.0,0.0};
+	 return {0.0,0.0,0.0};
 #endif
 }
-std::array<AcReal,3>
-magnetic_get_max_diffus()
+/***********************************************************************************************/
+std::array<AcReal,3> magnetic_get_max_diffus()
 {
-	return
 #if LMAGNETIC
-	  {eta,eta_hyper2,eta_hyper3};
+	return {eta,eta_hyper2,eta_hyper3};
 #else
-	  {0.0,0.0,0.0};
+	return {0.0,0.0,0.0};
 #endif
 }
-std::array<AcReal,3>
-energy_get_max_diffus()
+/***********************************************************************************************/
+std::array<AcReal,3> energy_get_max_diffus()
 {
  	constexpr AcReal chi_hyper2=0.;
-	return
 #if LENTROPY
-	  {gamma*chi,gamma*chi_hyper2,gamma*chi_hyper3};
+	return {gamma*chi,gamma*chi_hyper2,gamma*chi_hyper3};
 #else
-	  {0.0,0.0,0.0};
+	return {0.0,0.0,0.0};
 #endif
 }
-std::array<AcReal,3>
-elem_wise_max(const std::array<AcReal,3>& a,const std::array<AcReal,3>& b,const std::array<AcReal,3>& c)
+/***********************************************************************************************/
+std::array<AcReal,3> elem_wise_max(const std::array<AcReal,3>& a,const std::array<AcReal,3>& b,const std::array<AcReal,3>& c)
 {
-	return 
-	{
+ return {
 	  std::max(std::max(a[0],b[0]),c[0]),
 	  std::max(std::max(a[1],b[1]),c[1]),
 	  std::max(std::max(a[2],b[2]),c[2])
 	};
 }
-
-AcReal max_diffus(AcReal );
 /***********************************************************************************************/
-bool
-has_nans(AcMesh mesh_in);
-/***********************************************************************************************/
-AcReal
-sign(const AcReal a, const AcReal b)
+AcReal max_diffus(AcReal maxnu_dyn, AcReal maxchi_dyn)
 {
-	if (b < (AcReal)0.0)
-		return -abs(a);
-	else
-		return abs(a);
+  AcReal3 dxyz_vals = get_dxyzs();
+
+  auto max_diffusions = elem_wise_max(visc_get_max_diffus(), magnetic_get_max_diffus(), energy_get_max_diffus());
+#if LENTROPY
+  max_diffusions[0] = std::max(max_diffusions[0],maxchi_dyn);
+#endif
+#if LVISCOSITY
+  max_diffusions[0] = std::max(max_diffusions[0],maxnu_dyn);
+#endif
+
+  return max_diffusions[0]*dxyz_vals.x/cdtv + max_diffusions[1]*dxyz_vals.y/cdtv2 + max_diffusions[2]*dxyz_vals.z/cdtv3;
 }
 /***********************************************************************************************/
-AcReal
-calc_dt1_courant()
+AcReal calc_dt1_courant()
 {
 #if TRANSPILATION
-	return acDeviceGetOutput(acGridGetDevice(),AC_dt1_max);
+      return acDeviceGetOutput(acGridGetDevice(),AC_dt1_max);
 #endif
       AcReal maxadvec = 0.;
 #if LHYDRO
@@ -655,11 +857,15 @@ calc_dt1_courant()
 #if LENTROPY
       maxchi_dyn = acDeviceGetOutput(acGridGetDevice(), AC_maxchi);
 #endif
-      return (AcReal)sqrt(pow(maxadvec, 2) + pow(max_diffus(maxchi_dyn), 2));
+      AcReal maxnu_dyn = 0.;
+#if LVISCOSITY
+      maxnu_dyn = acDeviceGetOutput(acGridGetDevice(), AC_maxnu);
+if (rank==0) printf("maxnu_dyn= %e \n", maxnu_dyn);
+#endif
+      return (AcReal)sqrt(pow(maxadvec, 2) + pow(max_diffus(maxnu_dyn,maxchi_dyn), 2));
 }
 /***********************************************************************************************/
-AcReal
-GpuCalcDt()
+AcReal GpuCalcDt()
 {
 	acGridSynchronizeStream(STREAM_ALL);
   	acDeviceSetInput(acGridGetDevice(), AC_step_num, (PC_SUB_STEP_NUMBER) 0);
@@ -682,81 +888,7 @@ extern "C" void sourceFunctionAndOpacity(int inu)
 #endif
 }
 /***********************************************************************************************/
-extern "C" void substepGPU(int isubstep)
-//
-//  Do the 'isubstep'th integration step on all GPUs on the node and handle boundaries.
-//
-{
-   //TP: with on does timestepping the way PC does it
-   //TP: logs performance metrics of Astaroth
-   const bool log = false;
-#if LFORCING
-  //Update forcing params
-   if (lsecond_force) 
-   {
-	   fprintf(stderr,"Second forcing force not yet implemented on GPU!\n");
-	   exit(EXIT_FAILURE);
-   }
-   if (isubstep == itorder) forcing_params.Update();  // calculate on CPU and load into GPU
-#endif
-
-  acDeviceSetInput(acGridGetDevice(), AC_step_num,(PC_SUB_STEP_NUMBER) (isubstep-1));
-  if (lshear && isubstep == 1) acDeviceSetInput(acGridGetDevice(), AC_shear_delta_y,deltay);
-  Device dev = acGridGetDevice();
-  //TP: done in this more complex manner to ensure the actually integrated time and the time reported by Pencil agree
-  //if we call set_dt after the first timestep there would be slight shift in dt what Pencil sees and what is actually used for time integration
-  
-  if (isubstep == 1) 
-  {
-	  //TP: done to have the same timestep as PC when testing
-	  if (ldt && lcpu_timestep_on_gpu) dt1_interface = GpuCalcDt();
-	  if (ldt) set_dt(dt1_interface);
-	  acDeviceSetInput(acGridGetDevice(), AC_dt,dt);
-  }
-  //fprintf(stderr,"before acGridExecuteTaskGraph");
-  AcTaskGraph *rhs =  acGetOptimizedDSLTaskGraph(AC_rhs);
-  auto start = MPI_Wtime();
-  acGridExecuteTaskGraph(rhs, 1);
-  auto end = MPI_Wtime();
-  if (log && !rank) fprintf(stderr,"RHS TOOK: %14e\n",end-start);
-  if (ldt &&
-        ((isubstep == 5 && !lcourant_dt) 
-        || (isubstep == 1 && lcourant_dt)
-     ))
-  {
-    constexpr AcReal unit = 1.0;
-    AcReal dt1_{};
-    if (!lcourant_dt)
-    {
-      const AcReal maximum_error = acDeviceGetOutput(acGridGetDevice(), AC_maximum_error)/eps_rkf;
-      AcReal dt_{};
-      const AcReal dt_increase=-unit/(itorder+dtinc);
-      const AcReal dt_decrease=-unit/(itorder-dtdec);
-      constexpr AcReal safety=(AcReal)0.95;
-      if (maximum_error > 1)
-      {
-      	// Step above error threshold so decrease the next time step
-      	const AcReal dt_temp = safety*dt*pow(maximum_error,dt_decrease);
-      	// Don't decrease the time step by more than a factor of ten
-        constexpr AcReal decrease_factor = (AcReal)0.1;
-      	dt_ = sign(max(abs(dt_temp), decrease_factor*abs(dt)), dt);
-      } 
-      else
-      {
-      	dt_ = dt*pow(maximum_error,dt_increase);
-      }
-      dt1_ = unit/dt_;
-    }
-    else 
-    {
-      dt1_ = calc_dt1_courant();
-    }
-    dt1_interface = dt1_;
-  }
-  return;
-}
-/***********************************************************************************************/
-/**
+/*
 extern "C" void testBcKernel(AcReal *farray_in, AcReal *farray_truth)
 {
   AcMesh mesh_true;
@@ -883,7 +1015,7 @@ extern "C" void testBcKernel(AcReal *farray_in, AcReal *farray_truth)
   }
   return;
 }
-**/
+*/
 /***********************************************************************************************/
 extern "C" void registerGPU()
 {
@@ -908,299 +1040,154 @@ extern "C" void registerGPU()
 #endif
 }
 /***********************************************************************************************/
-extern "C" void initGPU()
-{
-  // Check whether there is (at least) one GPU available
-  //TP: moved to initializeGPU since with runtime compilation should call only after Astaroth is loaded
-  //AcResult res = acCheckDeviceAvailability();
-}
-/***********************************************************************************************/
-#define PCLoad acPushToConfig
-MPI_Comm comm_pencil = MPI_COMM_NULL;
-void modulepars(AcMeshInfo& config){
-  // Enter basic parameters in config.
-  #include "PC_modulepars.h"
-}
-void setupConfig(AcMeshInfo& config)
-{ 
-  modulepars(config);
-  PCLoad(config, AC_use_cuda_aware_mpi,lcuda_aware_mpi);
-  //TP: loads for non-cartesian derivatives
-#if TRANSPILATION
-  PCLoad(config, AC_inv_cyl_r,rcyl_mn1);
-  PCLoad(config, AC_inv_r,r1_mn);
-  PCLoad(config, AC_inv_sin_theta,sin1th);
-  PCLoad(config, AC_cot_theta,cotth);
-
-  //TP: loads for non-equidistant grids
-  PCLoad(config,AC_nonequidistant_grid, (AcBool3){!lequidist.x,!lequidist.y,!lequidist.z});
-  PCLoad(config,AC_inv_mapping_func_derivative_x,dx_1);
-  PCLoad(config,AC_inv_mapping_func_derivative_y,dy_1);
-  PCLoad(config,AC_inv_mapping_func_derivative_z,dz_1);
-
-  PCLoad(config,AC_mapping_func_tilde_x,dx_tilde);
-  PCLoad(config,AC_mapping_func_tilde_y,dy_tilde);
-  PCLoad(config,AC_mapping_func_tilde_z,dz_tilde);
-#endif
-
-  PCLoad(config, AC_rk_order, itorder);
-  PCLoad(config, AC_shear,lshear);
-
-  if (lcartesian_coords)
-  {
-          PCLoad(config, AC_coordinate_system, AC_CARTESIAN_COORDINATES);
-  }
-  if (lspherical_coords)
-  {
-          PCLoad(config, AC_coordinate_system, AC_SPHERICAL_COORDINATES);
-  }
-  if (lcylindrical_coords)
-  {
-          PCLoad(config, AC_coordinate_system, AC_CYLINDRICAL_COORDINATES);
-  }
-  PCLoad(config, AC_domain_decomposition, (int3) {nprocx,nprocy,nprocz});
-  PCLoad(config, AC_ngrid, (int3){nxgrid,nygrid,nzgrid});
-  PCLoad(config, AC_skip_single_gpu_optim, true);
-
-  PCLoad(config,AC_decompose_strategy,AC_DECOMPOSE_STRATEGY_EXTERNAL);
-  if (lmorton_curve)
-    PCLoad(config,AC_proc_mapping_strategy,AC_PROC_MAPPING_STRATEGY_MORTON);
-  else
-    PCLoad(config,AC_proc_mapping_strategy,AC_PROC_MAPPING_STRATEGY_LINEAR);
-
-	
-	PCLoad(config, AC_include_3d_halo_corners, ltraining);
-  PCLoad(config,AC_MPI_comm_strategy,AC_MPI_COMM_STRATEGY_DUP_USER);
-  config.comm->handle = comm_pencil;
-
-// grid and geometry related parameters
-
-  PCLoad(config,AC_ds,(AcReal3){dx,dy,dz});
-  PCLoad(config,AC_periodic_grid,lperi);
-  //TP: Astaroth has default formula for AC_len but we want to make sure AC_len = lxyz, in case the Astaroth formula does not cover everything like non-equidistant grids
-  PCLoad(config,AC_len,lxyz);
-
-  PCLoad(config,AC_sparse_autotuning,lac_sparse_autotuning);
-  // Enter physics related parameters in config.
-
-  #if LDENSITY
-    PCLoad(config,AC_ldensity_nolog,ldensity_nolog);
-    //printf("ldensity_nolog is %d \n",config[AC_ldensity_nolog]);//ldensity_nolog);
-  #endif
-  //Device dev = acGridGetDevice();
-#if LHYDRO
-  //dev->output.real_outputs[AC_maxadvec]=0.;
-#endif
-#if LENTROPY
-  //dev->output.real_outputs[AC_maxchi]=0.;
-#endif
-  acHostUpdateParams(&config); 
-  if (!ltraining) config.runtime_compilation_log_dst = "ac_compilation.log";
-  char cwd[9000];
-  cwd[0] = '\0';
-  const char* err = getcwd(cwd, sizeof(cwd));
-  if (err == NULL) 
-  {
-	  fprintf(stderr,"Was not able to get cwd!\n");
-	  exit(EXIT_FAILURE);
-  }
-  char build_path[18000];
-  sprintf(build_path,"%s/src/astaroth/submodule/build",cwd);
-  config.runtime_compilation_build_path = strdup(build_path);
-}
-
-#undef x
-#undef y
-#undef z
-/***********************************************************************************************/
-void torch_infer_c_api(int itstub){	
-#if TRAINING
-	#include "user_constants.h"
-	
-
-		auto calc_uumean_tau = acGetOptimizedDSLTaskGraph(initialize_uumean_tau);
-		acGridSynchronizeStream(STREAM_ALL);
-		acGridExecuteTaskGraph(calc_uumean_tau, 1);
-		acGridSynchronizeStream(STREAM_ALL);
-
-  	auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
-		acGridSynchronizeStream(STREAM_ALL);
-		acGridExecuteTaskGraph(bcs,1);
-		acGridSynchronizeStream(STREAM_ALL);
-
-
-		if(!calculated_coeff_scales){
-			scaling();
-		}
-
-
-		auto scale_uumean_tau = acGetOptimizedDSLTaskGraph(scale);
-		acGridSynchronizeStream(STREAM_ALL);
-		acGridExecuteTaskGraph(scale_uumean_tau, 1);
-		acGridSynchronizeStream(STREAM_ALL);
-
-  	bcs = acGetOptimizedDSLTaskGraph(boundconds);	
-		acGridSynchronizeStream(STREAM_ALL);
-		acGridExecuteTaskGraph(bcs,1);
-		acGridSynchronizeStream(STREAM_ALL);
-
-	AcReal* out = NULL;
-
-	AcReal* uumean_ptr = NULL;
-	AcReal* tau_infer_ptr = NULL;
-
-	acDeviceGetVertexBufferPtrs(acGridGetDevice(), TAU_INFERRED.xx, &tau_infer_ptr, &out);
-	acDeviceGetVertexBufferPtrs(acGridGetDevice(), UUMEAN.x, &uumean_ptr, &out);
-
-		
-	acGridHaloExchange();
-	torch_inferCAPI((int[]){mx,my,mz}, uumean_ptr, tau_infer_ptr, AC_DOUBLE_PRECISION);
-
-	float vloss = MSE();
- 	
-	if(itstub == 1){
-		printf("Validation error is: %f\n", vloss);
-		print_debug();
-	}
-#endif
-}
-/***********************************************************************************************/
 void torch_train_c_api(AcReal *loss_val) {
 #if TRAINING
-	#include "user_constants.h"
+  #include "user_constants.h"
 	
-
-	
-	
-	auto calc_uumean_tau = acGetOptimizedDSLTaskGraph(initialize_uumean_tau);
-	acGridSynchronizeStream(STREAM_ALL);
-	acGridExecuteTaskGraph(calc_uumean_tau, 1);
-	acGridSynchronizeStream(STREAM_ALL);
+  auto calc_uumean_tau = acGetOptimizedDSLTaskGraph(initialize_uumean_tau);
+  acGridSynchronizeStream(STREAM_ALL);
+  acGridExecuteTaskGraph(calc_uumean_tau, 1);
+  acGridSynchronizeStream(STREAM_ALL);
 
   auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
-	acGridSynchronizeStream(STREAM_ALL);
-	acGridExecuteTaskGraph(bcs,1);
-	acGridSynchronizeStream(STREAM_ALL);
+  acGridSynchronizeStream(STREAM_ALL);
+  acGridExecuteTaskGraph(bcs,1);
+  acGridSynchronizeStream(STREAM_ALL);
+  
+  if (!calculated_coeff_scales){
+  	scaling();
+  }
 
-	if(!calculated_coeff_scales){
-		scaling();
-	}
-	
-	auto scale_uumean_tau = acGetOptimizedDSLTaskGraph(scale);
-	acGridSynchronizeStream(STREAM_ALL);
-	acGridExecuteTaskGraph(scale_uumean_tau, 1);
-	acGridSynchronizeStream(STREAM_ALL);
+  auto scale_uumean_tau = acGetOptimizedDSLTaskGraph(scale);
+  acGridSynchronizeStream(STREAM_ALL);
+  acGridExecuteTaskGraph(scale_uumean_tau, 1);
+  acGridSynchronizeStream(STREAM_ALL);
 
 
   bcs = acGetOptimizedDSLTaskGraph(boundconds);	
+  acGridSynchronizeStream(STREAM_ALL);
+  acGridExecuteTaskGraph(bcs,1);
+  acGridSynchronizeStream(STREAM_ALL);
+  
+  AcReal* out = NULL;
+  
+  AcReal* uumean_ptr = NULL;
+  AcReal* TAU_ptr = NULL;
+  *loss_val = 0.1;
+  
+  acDeviceGetVertexBufferPtrs(acGridGetDevice(), TAU.xx, &TAU_ptr, &out);
+  acDeviceGetVertexBufferPtrs(acGridGetDevice(), UUMEAN.x, &uumean_ptr, &out);
+  
+  
+  acGridHaloExchange();
+  
+  double start, end;
+  
+  start = MPI_Wtime();
+  float avgloss = 0;
+  
+  torch_trainCAPI((int[]){mx,my,mz}, uumean_ptr, TAU_ptr, loss_val, AC_DOUBLE_PRECISION);
+  /*
+  for (int batch = 0; batch<5; batch++){
+  	torch_trainCAPI((int[]){mx,my,mz}, uumean_ptr, TAU_ptr, loss_val, AC_DOUBLE_PRECISION);
+  	avgloss = avgloss + *loss_val;
+  }
+  */
+  end = MPI_Wtime();
+  printf("Time for one time step: %f\n", (end-start));
+  printf("Loss after training: %f\n", *loss_val);
+  train_counter++;
+#endif
+}
+/***********************************************************************************************/
+void scaling(){
+#if LTRAINING
+	auto calc_scale = acGetOptimizedDSLTaskGraph(calc_scaling);
+	acGridSynchronizeStream(STREAM_ALL);
+	acGridExecuteTaskGraph(calc_scale, 1);
+	acGridSynchronizeStream(STREAM_ALL);
+		
+  	auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
 	acGridSynchronizeStream(STREAM_ALL);
 	acGridExecuteTaskGraph(bcs,1);
 	acGridSynchronizeStream(STREAM_ALL);
 
-	AcReal* out = NULL;
-	
-	AcReal* uumean_ptr = NULL;
-	AcReal* TAU_ptr = NULL;
-	*loss_val = 0.1;
-
-	acDeviceGetVertexBufferPtrs(acGridGetDevice(), TAU.xx, &TAU_ptr, &out);
-	acDeviceGetVertexBufferPtrs(acGridGetDevice(), UUMEAN.x, &uumean_ptr, &out);
-
-
-	acGridHaloExchange();
-
-	double start;
-	double end;
-
-	start = MPI_Wtime();
-	float avgloss = 0;
-	
-	torch_trainCAPI((int[]){mx,my,mz}, uumean_ptr, TAU_ptr, loss_val, AC_DOUBLE_PRECISION);
-	/*
-	for (int batch = 0; batch<5; batch++){
-		torch_trainCAPI((int[]){mx,my,mz}, uumean_ptr, TAU_ptr, loss_val, AC_DOUBLE_PRECISION);
-		avgloss = avgloss + *loss_val;
-	}
-	*/
-	end = MPI_Wtime();
-	printf("Time for one time step: %f\n", (end-start));
-	printf("Loss after training: %f\n", *loss_val);
-	train_counter++;
+	calculated_coeff_scales = true;
 #endif
 }
 /***********************************************************************************************/
-void print_debug() {
-if(it % 5 !=0) return;
-#if TRAINING
-    #include "user_constants.h"
-		printf("true it is running print");
-		counter = it;
-
-		MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
-
-		std::ofstream myFile;
-		std::string fileString = "slices/snapshot_" + std::to_string(my_rank) + "_" + std::to_string(it) + ".csv";	
-		myFile.open(fileString);
-
-    myFile << "it,TAU_xx,TAU_xx_inferred,TAU_yy,TAU_yy_inferred,TAU_zz,TAU_zz_inferred,"
-           << "TAU_xy,TAU_xy_inferred,TAU_yz,TAU_yz_inferred,TAU_xz,TAU_xz_inferred,UUMEAN_x,UUMEAN_y,UUMEAN_z,"
-           << "UUX,UUY,UUZ,x,y,z\n";
-
-	  acGridHaloExchange();
-    copyFarray(NULL);
-
-  	const auto DEVICE_VTXBUF_IDX = [&](const int x, const int y, const int z)
-  				{
-					return acVertexBufferIdx(x,y,z,mesh.info);
-  				};
-
-    AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
-				
-	
-    for (size_t i = dims.n0.x; i < dims.n1.x; i++) {
-        for (size_t j = dims.n0.y; j < dims.n1.y; j++) {
-            for (size_t k = dims.n0.z; k < dims.n1.z; k++) {
-
-                myFile << it << ","
-                       << mesh.vertex_buffer[TAU.xx][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[TAU_INFERRED.xx][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[TAU.yy][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[TAU_INFERRED.yy][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[TAU.zz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[TAU_INFERRED.zz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[TAU.xy][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[TAU_INFERRED.xy][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[TAU.yz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[TAU_INFERRED.yz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[TAU.xz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[TAU_INFERRED.xz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[UUMEAN.x][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[UUMEAN.y][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[UUMEAN.z][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[UUX][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[UUY][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[UUZ][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-											 << i << "," << j << "," << k << "\n";
-            }
-        }
-    }
-	#endif
-}
-void scaling(){
-#if LTRAINING
-		auto calc_scale = acGetOptimizedDSLTaskGraph(calc_scaling);
-		acGridSynchronizeStream(STREAM_ALL);
-		acGridExecuteTaskGraph(calc_scale, 1);
-		acGridSynchronizeStream(STREAM_ALL);
-
-		
-  	auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
-		acGridSynchronizeStream(STREAM_ALL);
-		acGridExecuteTaskGraph(bcs,1);
-		acGridSynchronizeStream(STREAM_ALL);
-
-		calculated_coeff_scales = true;
+extern "C" void substepGPU(int isubstep)
+//
+//  Do the 'isubstep'th integration step on all GPUs on the node and handle boundaries.
+//
+{
+   //TP: with on does timestepping the way PC does it
+   //TP: logs performance metrics of Astaroth
+   const bool log = false;
+#if LFORCING
+  //Update forcing params
+   if (lsecond_force) 
+   {
+	   fprintf(stderr,"Second forcing force not yet implemented on GPU!\n");
+	   exit(EXIT_FAILURE);
+   }
+   if (isubstep == itorder) forcing_params.Update();  // calculate on CPU and load into GPU
 #endif
+
+  acDeviceSetInput(acGridGetDevice(), AC_step_num,(PC_SUB_STEP_NUMBER) (isubstep-1));
+  if (lshear && isubstep == 1) acDeviceSetInput(acGridGetDevice(), AC_shear_delta_y,deltay);
+  Device dev = acGridGetDevice();
+  //TP: done in this more complex manner to ensure the actually integrated time and the time reported by Pencil agree
+  //if we call set_dt after the first timestep there would be slight shift in dt what Pencil sees and what is actually used for time integration
+  
+  if (isubstep == 1) 
+  {
+	  //TP: done to have the same timestep as PC when testing
+	  if (ldt && lcpu_timestep_on_gpu) dt1_interface = GpuCalcDt();
+	  if (ldt) set_dt(dt1_interface);
+	  acDeviceSetInput(acGridGetDevice(), AC_dt,dt);
+  }
+  //fprintf(stderr,"before acGridExecuteTaskGraph");
+  AcTaskGraph *rhs =  acGetOptimizedDSLTaskGraph(AC_rhs);
+  auto start = MPI_Wtime();
+  acGridExecuteTaskGraph(rhs, 1);
+  auto end = MPI_Wtime();
+  if (log && !rank) fprintf(stderr,"RHS TOOK: %14e\n",end-start);
+  if (ldt &&
+        (  (isubstep == 5 && !lcourant_dt) 
+        || (isubstep == 1 && lcourant_dt)
+     ))
+  {
+    constexpr AcReal unit = 1.0;
+    AcReal dt1_;
+    if (!lcourant_dt)
+    {
+      const AcReal maximum_error = acDeviceGetOutput(acGridGetDevice(), AC_maximum_error)/eps_rkf;
+      AcReal dt_;
+      const AcReal dt_increase=-unit/(itorder+dtinc);
+      const AcReal dt_decrease=-unit/(itorder-dtdec);
+      constexpr AcReal safety=(AcReal)0.95;
+      if (maximum_error > 1)
+      {
+      	// Step above error threshold so decrease the next time step
+      	const AcReal dt_temp = safety*dt*pow(maximum_error,dt_decrease);
+      	// Don't decrease the time step by more than a factor of ten
+        constexpr AcReal decrease_factor = (AcReal)0.1;
+      	dt_ = sign(max(abs(dt_temp), decrease_factor*abs(dt)), dt);
+      } 
+      else
+      {
+      	dt_ = dt*pow(maximum_error,dt_increase);
+      }
+      dt1_ = unit/dt_;
+    }
+    else 
+    {
+      dt1_ = calc_dt1_courant();
+    }
+    dt1_interface = dt1_;
+  }
+  return;
 }
 /***********************************************************************************************/
 void copyFarray(AcReal* f)
@@ -1285,7 +1272,7 @@ void checkConfig(AcMeshInfo &config)
 /***********************************************************************************************/
 extern "C" void getFArrayIn(AcReal **p_f_in)
 {
-	return;   //!!!
+  return;   //!!!
   AcReal* out = NULL;
 
   AcReal* uux_ptr = NULL;
@@ -1315,15 +1302,7 @@ extern "C" void copyVBApointers(AcReal **in, AcReal **out)
   acDeviceGetVertexBufferPtrs(acGridGetDevice(),VertexBufferHandle(0),in,out);
 }
 /***********************************************************************************************/
-void
-testBCs();     // forward declaration
-/***********************************************************************************************/
-extern "C" void loadFarray(); // forward declaration
-/***********************************************************************************************/
-extern "C" void reloadConfig(); // forward declaration
-
-void
-autotune_all_integration_substeps()
+void autotune_all_integration_substeps()
 {
   for (int i = 0; i < num_substeps; ++i)
   {
@@ -1333,14 +1312,32 @@ if (rank==0 && ldebug) printf("memusage before GetOptimizedDSLTaskGraph= %f MByt
 if (rank==0 && ldebug) printf("memusage after GetOptimizedDSLTaskGraph= %f MBytes\n", memusage()/1024.);
   }
 }
+/***********************************************************************************************/
+extern "C" void loadFarray()
+{
+  /**
+  if (has_nans(mesh)){
+    acLogFromRootProc(rank,"found nans while copying\n");
+    exit(0);
+  }
+  **/
+  acGridSynchronizeStream(STREAM_ALL);
+  {
+    for (int i = 0; i < mvar; ++i)
+  	acDeviceLoadVertexBuffer(acGridGetDevice(), STREAM_DEFAULT, mesh, VertexBufferHandle(i));
 
+    for (int i = 0; i < mfarray; ++i)
+      if (maux_vtxbuf_index[i])
+  		acDeviceLoadVertexBuffer(acGridGetDevice(), STREAM_DEFAULT, mesh, VertexBufferHandle(maux_vtxbuf_index[i]));
+  }
+  acGridSynchronizeStream(STREAM_ALL);
+}
+/***********************************************************************************************/
+void testBCs();     // forward declaration
 /***********************************************************************************************/
 extern "C" void initializeGPU(AcReal *farr, int comm_fint)
 {
   //Setup configurations used for initializing and running the GPU code
-#if PACKED_DATA_TRANSFERS
-  //initLoadStore();
-#endif
   comm_pencil = MPI_Comm_f2c(comm_fint);
   setupConfig(mesh.info);
 #if TRAINING
@@ -1446,8 +1443,7 @@ if (rank==0 && ldebug) printf("memusage after pointer assign= %f MBytes\n", memu
   dt1_interface = unit/dt;
 }
 /***********************************************************************************************/
-void
-reloadConfig()
+extern "C" void reloadConfig()
 {
   mesh.info.run_consts = acInitCompInfo();
   setupConfig(mesh.info);
@@ -1474,26 +1470,6 @@ reloadConfig()
   acLogFromRootProc(rank, "DONE reloading on GPU\n");
   fflush(stdout);
   fflush(stderr);
-}
-/***********************************************************************************************/
-void loadFarray()
-{
-  /**
-  if (has_nans(mesh)){
-    acLogFromRootProc(rank,"found nans while copying\n");
-    exit(0);
-  }
-  **/
-  acGridSynchronizeStream(STREAM_ALL);
-  {
-    for (int i = 0; i < mvar; ++i)
-  	acDeviceLoadVertexBuffer(acGridGetDevice(), STREAM_DEFAULT, mesh, VertexBufferHandle(i));
-
-    for (int i = 0; i < mfarray; ++i)
-      if (maux_vtxbuf_index[i])
-  		acDeviceLoadVertexBuffer(acGridGetDevice(), STREAM_DEFAULT, mesh, VertexBufferHandle(maux_vtxbuf_index[i]));
-  }
-  acGridSynchronizeStream(STREAM_ALL);
 }
 /***********************************************************************************************/
 extern "C" void updateInConfigArr(int index)
@@ -1529,9 +1505,6 @@ extern "C" int updateInConfigScalName(char *name, AcReal value)
 /**********************************************************************************************/
 extern "C" void finalizeGPU()
 {
-#if PACKED_DATA_TRANSFERS
-  //acDeviceStoreMesh(acGridGetDevice(), STREAM_DEFAULT, &mesh);  // needed?
-#endif
   // Deallocate everything on the GPUs and reset
   AcResult res = acGridQuit();
 }
@@ -1545,52 +1518,11 @@ extern "C" void random_initial_condition()
   //acGridSynchronizeStream(STREAM_ALL);
 }
 /***********************************************************************************************/
-bool
-has_nans(AcMesh mesh_in)
-{
-  bool res = false;
-  AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
-  const auto DEVICE_VTXBUF_IDX = [&](const int x, const int y, const int z)
-  				{
-					return acVertexBufferIdx(x,y,z,mesh.info);
-  				};
-  for (size_t i = dims.n0.x; i < dims.n1.x; i++)
-  {
-    for (size_t j = dims.n0.y; j < dims.n1.y; j++)
-    {
-      for (size_t k = dims.n0.z; k < dims.n1.z; k++)
-      {
-        for (size_t ivar = 0; ivar < NUM_VTXBUF_HANDLES; ivar++)
-        {
-          if (mesh_in.vertex_buffer[ivar] == NULL) continue;
-          if (isnan(mesh_in.vertex_buffer[ivar][DEVICE_VTXBUF_IDX(i, j, k)]))
-          {
-            res = true;
-            acLogFromRootProc(rank,"nan at %d,%d,%d\n", i, j, k);
-            acLogFromRootProc(rank,"field = %d", ivar);
-          }
-        }
-      }
-    }
-  }
-  return res;
-}
-AcReal max_diffus(AcReal maxchi_dyn)
-{
-  AcReal3 dxyz_vals = get_dxyzs();
-  auto max_diffusions = elem_wise_max(visc_get_max_diffus(), magnetic_get_max_diffus(), energy_get_max_diffus());
-#if LENTROPY
-  max_diffusions[0] = std::max(max_diffusions[0],maxchi_dyn);
-#endif
-  return max_diffusions[0]*dxyz_vals.x/cdtv + max_diffusions[1]*dxyz_vals.y/cdtv2 + max_diffusions[2]*dxyz_vals.z/cdtv3;
-}
-/***********************************************************************************************/
 //TP: this is not written the most optimally since it needs two extra copies of the mesh where at least the tmp
 //could be circumvented by temporarily using the output buffers on the GPU to store the f-array and load back from there
 //but if we truly hit the mem limit for now the user can of course simply test the bcs with a smaller mesh and skip the test with a larger mesh
 
-void
-sym_z(AcMesh mesh_in)
+void sym_z(AcMesh mesh_in)
 {
   const auto DEVICE_VTXBUF_IDX = [&](const int x, const int y, const int z)
   				{
@@ -1611,34 +1543,33 @@ sym_z(AcMesh mesh_in)
 	if (k >= NGHOST && k < dims.n1.z) continue;
         for (int ivar = 0; ivar < NUM_VTXBUF_HANDLES; ivar++)
         {
-	 //BOT
-	 if (k < NGHOST)
-	 {
-	 	const auto idx = DEVICE_VTXBUF_IDX(i,j,k);
-		const auto offset = NGHOST-k;
-	 	const auto domain_z= NGHOST+offset;
-	 	const auto domain_idx = DEVICE_VTXBUF_IDX(i,j,domain_z);
-		mesh_in.vertex_buffer[ivar][idx] = mesh_in.vertex_buffer[ivar][domain_idx];
-		//mesh_in.vertex_buffer[ivar][idx] = mesh.vertex_buffer[ivar][idx];
-	 }
-	 //TOP:
-	 else
-	 {
-	 	const auto idx = DEVICE_VTXBUF_IDX(i,j,k);
-		const auto offset = k-mesh_in.info[AC_nlocal_max].z+1;
-	 	const auto domain_z= mesh_in.info[AC_nlocal_max].z-offset;
-	 	const auto domain_idx = DEVICE_VTXBUF_IDX(i,j,domain_z);
-		mesh_in.vertex_buffer[ivar][idx] = mesh_in.vertex_buffer[ivar][domain_idx];
-		//mesh_in.vertex_buffer[ivar][idx] = mesh.vertex_buffer[ivar][idx];
-	 }
+	  //BOT
+	  if (k < NGHOST)
+	  {
+	  	const auto idx = DEVICE_VTXBUF_IDX(i,j,k);
+	        const auto offset = NGHOST-k;
+	  	const auto domain_z= NGHOST+offset;
+	  	const auto domain_idx = DEVICE_VTXBUF_IDX(i,j,domain_z);
+	        mesh_in.vertex_buffer[ivar][idx] = mesh_in.vertex_buffer[ivar][domain_idx];
+	        //mesh_in.vertex_buffer[ivar][idx] = mesh.vertex_buffer[ivar][idx];
+	  }
+	  //TOP:
+	  else
+	  {
+	  	const auto idx = DEVICE_VTXBUF_IDX(i,j,k);
+	        const auto offset = k-mesh_in.info[AC_nlocal_max].z+1;
+	  	const auto domain_z= mesh_in.info[AC_nlocal_max].z-offset;
+	  	const auto domain_idx = DEVICE_VTXBUF_IDX(i,j,domain_z);
+	        mesh_in.vertex_buffer[ivar][idx] = mesh_in.vertex_buffer[ivar][domain_idx];
+	        //mesh_in.vertex_buffer[ivar][idx] = mesh.vertex_buffer[ivar][idx];
+	  }
 	}
       }
     }
   }
 }
 /***********************************************************************************************/
-void
-check_sym_z(AcMesh mesh_in)
+void check_sym_z(AcMesh mesh_in)
 {
   const auto DEVICE_VTXBUF_IDX = [&](const int x, const int y, const int z)
   				{
@@ -1666,35 +1597,34 @@ check_sym_z(AcMesh mesh_in)
 	if (k >= NGHOST && k < dims.n1.z) continue;
         for (int ivar = 0; ivar < NUM_VTXBUF_HANDLES; ivar++)
         {
-	 //BOT
-	 if (k < NGHOST)
-	 {
-	 	const auto idx = DEVICE_VTXBUF_IDX(i,j,k);
-		const auto offset = NGHOST-k;
-	 	const auto domain_z= NGHOST+offset;
-	 	const auto domain_idx = DEVICE_VTXBUF_IDX(i,j,domain_z);
-		if (mesh_in.vertex_buffer[ivar][idx] !=  mesh_in.vertex_buffer[ivar][domain_idx])
-			printf("WRONG\n");
-	 }
-	 //TOP:
-	 else
-	 {
-	 	const auto idx = DEVICE_VTXBUF_IDX(i,j,k);
-		const auto offset = k-mesh_in.info[AC_nlocal_max].z+1;
-	 	const auto domain_z= mesh_in.info[AC_nlocal_max].z-offset;
-	 	const auto domain_idx = DEVICE_VTXBUF_IDX(i,j,domain_z);
-		mesh_in.vertex_buffer[ivar][idx] = mesh.vertex_buffer[ivar][domain_idx];
-		if (mesh_in.vertex_buffer[ivar][idx] !=  mesh_in.vertex_buffer[ivar][domain_idx])
-			printf("WRONG\n");
-	 }
+	  //BOT
+	  if (k < NGHOST)
+	  {
+	  	const auto idx = DEVICE_VTXBUF_IDX(i,j,k);
+	        const auto offset = NGHOST-k;
+	  	const auto domain_z= NGHOST+offset;
+	  	const auto domain_idx = DEVICE_VTXBUF_IDX(i,j,domain_z);
+	        if (mesh_in.vertex_buffer[ivar][idx] !=  mesh_in.vertex_buffer[ivar][domain_idx])
+	         	printf("WRONG\n");
+	  }
+	  //TOP:
+	  else
+	  {
+	  	const auto idx = DEVICE_VTXBUF_IDX(i,j,k);
+	        const auto offset = k-mesh_in.info[AC_nlocal_max].z+1;
+	  	const auto domain_z= mesh_in.info[AC_nlocal_max].z-offset;
+	  	const auto domain_idx = DEVICE_VTXBUF_IDX(i,j,domain_z);
+	        mesh_in.vertex_buffer[ivar][idx] = mesh.vertex_buffer[ivar][domain_idx];
+	        if (mesh_in.vertex_buffer[ivar][idx] !=  mesh_in.vertex_buffer[ivar][domain_idx])
+	         	printf("WRONG\n");
+	  }
 	}
       }
     }
   }
 }
 /***********************************************************************************************/
-void
-check_sym_x(const AcMesh mesh_in)
+void check_sym_x(const AcMesh mesh_in)
 {
   const auto DEVICE_VTXBUF_IDX = [&](const int x, const int y, const int z)
   				{
@@ -1722,40 +1652,39 @@ check_sym_x(const AcMesh mesh_in)
 	if (i >= NGHOST && i < dims.n1.x) continue;
         for (int ivar = UUY; ivar <= UUY; ivar++)
         {
-	 //BOT
-	 if (i < NGHOST)
-	 {
-	 	const auto idx = DEVICE_VTXBUF_IDX(i,j,k);
-		const auto offset = NGHOST-i;
-	 	const auto domain_x= NGHOST+offset;
-	 	const auto domain_idx = DEVICE_VTXBUF_IDX(domain_x,j,k);
-		if (mesh_in.vertex_buffer[ivar][idx] !=  mesh_in.vertex_buffer[ivar][domain_idx])
-		{
-			fprintf(stderr,"WRONG\n");
-			exit(EXIT_FAILURE);
-		}
-	 }
-	 //TOP:
-	 else
-	 {
-	 	const auto idx = DEVICE_VTXBUF_IDX(i,j,k);
-		const auto offset = i-mesh_in.info[AC_nlocal_max].x+1;
-	 	const auto domain_x= mesh_in.info[AC_nlocal_max].x-offset;
-	 	const auto domain_idx = DEVICE_VTXBUF_IDX(domain_x,j,k);
-		if (mesh_in.vertex_buffer[ivar][idx] !=  mesh_in.vertex_buffer[ivar][domain_idx])
-		{
-			fprintf(stderr,"WRONG\n");
-			exit(EXIT_FAILURE);
-		}
-	 }
+	  //BOT
+	  if (i < NGHOST)
+	  {
+	  	const auto idx = DEVICE_VTXBUF_IDX(i,j,k);
+	 	const auto offset = NGHOST-i;
+	  	const auto domain_x= NGHOST+offset;
+	  	const auto domain_idx = DEVICE_VTXBUF_IDX(domain_x,j,k);
+	 	if (mesh_in.vertex_buffer[ivar][idx] !=  mesh_in.vertex_buffer[ivar][domain_idx])
+	 	{
+	 		fprintf(stderr,"WRONG\n");
+	 		exit(EXIT_FAILURE);
+	 	}
+	  }
+	  //TOP:
+	  else
+	  {
+	  	const auto idx = DEVICE_VTXBUF_IDX(i,j,k);
+	 	const auto offset = i-mesh_in.info[AC_nlocal_max].x+1;
+	  	const auto domain_x= mesh_in.info[AC_nlocal_max].x-offset;
+	  	const auto domain_idx = DEVICE_VTXBUF_IDX(domain_x,j,k);
+	 	if (mesh_in.vertex_buffer[ivar][idx] !=  mesh_in.vertex_buffer[ivar][domain_idx])
+	 	{
+	 		fprintf(stderr,"WRONG\n");
+	 		exit(EXIT_FAILURE);
+	 	}
+	  }
 	}
       }
     }
   }
 }
 /***********************************************************************************************/
-void
-testBCs()
+void testBCs()
 {
   // Set random seed for reproducibility
   srand(321654987);
@@ -1764,11 +1693,9 @@ testBCs()
 					return acVertexBufferIdx(x,y,z,acGridGetLocalMeshInfo());
   				};
   AcTaskGraph* rhs = acGetOptimizedDSLTaskGraph(AC_rhs);
-  const bool all_periodic = 
-  				acGridTaskGraphHasPeriodicBoundcondsX(rhs) && 
-  				acGridTaskGraphHasPeriodicBoundcondsY(rhs) && 
-  				acGridTaskGraphHasPeriodicBoundcondsZ(rhs) 
-				;
+  const bool all_periodic = acGridTaskGraphHasPeriodicBoundcondsX(rhs) && 
+  			    acGridTaskGraphHasPeriodicBoundcondsY(rhs) && 
+  			    acGridTaskGraphHasPeriodicBoundcondsZ(rhs); 
   if (all_periodic && !lshear) return;
   if (lshear) acLogFromRootProc(rank,"testBCS: deltay: %7e\n",deltay);
   auto bcs = acGetDSLTaskGraph(boundconds);
@@ -1784,7 +1711,6 @@ testBCs()
   acGridSynchronizeStream(STREAM_ALL);
   acDeviceLoadMesh(acGridGetDevice(), STREAM_DEFAULT, mesh);
   acGridSynchronizeStream(STREAM_ALL);
-
 
   int ivar1 = 1;
   int ivar2 = mvar;
@@ -1852,7 +1778,7 @@ testBCs()
 	   i >= NGHOST && i < dims.n1.x &&
 	   j >= NGHOST && j < dims.n1.y &&
 	   k >= NGHOST && k < dims.n1.z
-	  )continue;
+	  ) continue;
 	  //if (i < NGHOST | i > dims.n1.x  || j < NGHOST || j > dims.n1.y) continue;
 	++num_of_points;
         for (int ivar = 0; ivar < mvar; ivar++)
@@ -1933,8 +1859,7 @@ testBCs()
   acGridDestroyTaskGraph(bcs);
 }
 /***********************************************************************************************/
-extern "C" void
-gpuSetDt()
+extern "C" void gpuSetDt()
 {
 	acGridSynchronizeStream(STREAM_ALL);
 	if (!lcourant_dt)

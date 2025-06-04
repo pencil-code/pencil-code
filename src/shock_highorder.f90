@@ -532,7 +532,7 @@ module Shock
           call bb_unitvec_shock(f,bb_hat)
           call shock_divu_perp(f,bb_hat,penc,penc_perp)
           f(l1:l2,m,n,ishock_perp)=max(0.,-penc_perp)
-          if (shock_div_pow /= 1.) f(l1:l2,m,n,ishock_perp)=&
+          if (shock_div_pow /= 1.) f(l1:l2,m,n,ishock_perp) = &
               dt_div_pow*f(l1:l2,m,n,ishock_perp)**shock_div_pow
 !
         enddo
@@ -819,7 +819,7 @@ module Shock
 !
 !  Add the Alfven speed.
 !
-      alfven: if (lmagnetic) then
+      if (lmagnetic) then
 !
         if (lbfield) then
           bb = f(l1:l2,m,n,ibx:ibz)
@@ -840,7 +840,7 @@ module Shock
           speed = speed + mu01 / rho0 * b2
         endif
 !
-      endif alfven
+      endif
 !
       speed = sqrt(speed)
 !
@@ -850,7 +850,7 @@ module Shock
 
     use Syscalls, only: copy_addr
 
-    integer, parameter :: n_pars=1000
+    integer, parameter :: n_pars=100
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call copy_addr(ishock_max   ,p_par(1))  ! int
@@ -860,6 +860,7 @@ module Shock
     call copy_addr(dt_div_pow   ,p_par(5))
     call copy_addr(con_bias     ,p_par(6))
     call copy_addr(lmax_shock   ,p_par(7)) ! bool
+    call copy_addr(lconvergence_only,p_par(8))  ! bool
 
     endsubroutine pushpars2c
 !***********************************************************************

@@ -78,6 +78,10 @@ from tqdm import tqdm
 import pyvista as pv
 import pencil as pc
 import numpy as np
+import os
+
+os.environ['PYVISTA_USE_IPYVTK'] = 'true'
+os.environ['PYVISTA_USE_PANEL'] = 'true'
 
 # Python libraries
 from dataclasses import dataclass, asdict
@@ -438,10 +442,10 @@ class Plot3DSettings:
     mesh_cmap: str
         matplotlib compatible colormap for the mesh
     scalar_sbar_pos_x: float
-        The percentage (0 to 1) along the windows’s horizontal direction to place
+        The percentage (0 to 1) along the window's horizontal direction to place
         the bottom left corner of the colorbar. If None it is placed automatically.
     scalar_sbar_pos_y: float
-        The percentage (0 to 1) along the windows’s vertical direction to place
+        The percentage (0 to 1) along the window's vertical direction to place
         the bottom left corner of the colorbar. If None it is placed automatically.
 
     Scalarbar: Vectors | Streamlines
@@ -455,10 +459,10 @@ class Plot3DSettings:
     field_cmap: str
         Colormap for the plotter streamlines / vectors
     field_sbar_pos_x: float
-        The percentage (0 to 1) along the windows’s horizontal direction to place
+        The percentage (0 to 1) along the window's horizontal direction to place
         the bottom left corner of the colorbar. If None it is placed automatically.
     field_sbar_pos_y: float
-        The percentage (0 to 1) along the windows’s vertical direction to place
+        The percentage (0 to 1) along the window's vertical direction to place
         the bottom left corner of the colorbar. If None it is placed automatically.
 
     Orbit gif
@@ -572,6 +576,14 @@ class Plot3DSettings:
     ### Slices
     normal: str = "x"
     origin: tuple = None
+
+    ### Subdomain
+    range_x: tuple=None
+    range_y: tuple=None
+    range_z: tuple=None
+    irange_x: tuple=None
+    irange_y: tuple=None
+    irange_z: tuple=None
 
     def __post_init__(self):
         if self.stream_params == None:
@@ -761,12 +773,18 @@ class Pyvista3DPlot:
         scalar_key,
         datadir="./data",
         precision="f",
-        magic="bb",
+        magic="None",
         ivar=-1,
         coordinates="cartesian",
         outputdir=f"./stream_output",
         settings=Plot3DSettings(),
         debug=False,
+        irange_x=None,
+        irange_y=None,
+        irange_z=None,
+        range_x=None,
+        range_y=None,
+        range_z=None,
     ):
         """
         Initialization for the Pyvista3DPlot object.
@@ -834,7 +852,9 @@ class Pyvista3DPlot:
         self.vector_key = vector_key
 
         self.var = pc.read.var(
-            datadir=datadir, precision=precision, trimall=True, magic=magic, ivar=ivar
+            datadir=datadir, precision=precision, trimall=True, magic=magic, ivar=ivar,
+            irange_x=irange_x, irange_y=irange_y, irange_z=irange_z,
+            range_x=range_x, range_y=range_y, range_z=range_z
         )
         self.grid = pc.read.grid(datadir=datadir, trim=True)
 
@@ -1075,17 +1095,16 @@ class Pyvista3DPlot:
             del surfaces[i]
 
         lims = [self.mesh[scalars].min(), self.mesh[scalars].max()]
-        self.plotter = pv.Plotter(window_size=self.settings.window_size)
+        self.plotter = pv.Plotter(window_size=self.settings.window_size,off_screen=self.settings.off_screen)
         self.__plotterSettings(self.settings)
 
         for surf in surfaces:
             self.plotter.add_mesh(surf, cmap=cmap, clim=lims)
 
-        print(
-            '\n--> Pan around the camera to wanted angle, then press "q" to save image!\n'
-        )
+        if not self.settings.off_screen:
+            print('\n--> Pan around the camera to wanted angle, then press "q" to save image!\n')
         self.plotter.show(auto_close=False)
-        self.plotter.screenshot(filename=f"{filename}.{self.settings.imageformat}")
+        self.plotter.screenshot(filename=self.outputdir / f"{filename}.{self.settings.imageformat}")
 
     def scalars(self):
         """
@@ -1166,7 +1185,7 @@ class Pyvista3DPlot:
             del surfaces[i]
 
         surface = surfaces[0].copy()
-        self.plotter = pv.Plotter(window_size=self.settings.window_size)
+        self.plotter = pv.Plotter(window_size=self.settings.window_size,off_screen=self.settings.off_screen)
         self.__plotterSettings(self.settings)
         self.plotter.open_gif(str(self.outputdir / filename))
         self.plotter.enable_depth_peeling()
@@ -1192,9 +1211,8 @@ class Pyvista3DPlot:
             # self.plotter.add_mesh(self.mesh.outline_corners(), color='k')
             self.plotter.add_mesh(self.mesh.outline(), color="k")
 
-        print(
-            '\n--> Pan around the camera to wanted angle, then press "q" to produce the movie!\n'
-        )
+        if not self.settings.off_screen:
+            print('\n--> Pan around the camera to wanted angle, then press "q" to produce the movie!\n')
         self.plotter.show(auto_close=False)
         print(f"Starting to create the isovalue gif, this might take a moment!")
         with tqdm(total=2 * len(surfaces), desc="Moving isovalue rendering:") as pbar:
@@ -1224,8 +1242,8 @@ class Pyvista3DPlot:
             window_size=settings.window_size, title="Plot Preview"
         )
         scalar_bar_args = {
-            "width": settings.sbar_width,
-            "height": settings.sbar_height,
+            "width": settings.cbar_width,
+            "height": settings.cbar_height,
             "vertical": settings.vertical_sbar,
         }
         self.plotter.add_mesh(
@@ -1237,9 +1255,7 @@ class Pyvista3DPlot:
         )
         self.plotter.show_bounds(color="black", location="outer")
 
-        print(
-            "--> NOTE! In spreview only the mesh is added by default, not vectors | streamlines are shown!"
-        )
+        print("--> NOTE! In spreview only the mesh is added by default, vectors|streamlines are not shown!")
 
         plotPreview(self.plotter)
 

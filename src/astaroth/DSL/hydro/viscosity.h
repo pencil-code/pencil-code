@@ -10,6 +10,7 @@ if (lvisc_hyper3_nu_const){
 #if LSHOCK
 if (lvisc_nu_shock){
    divu = divergence(UU)
-   rhs += nu_shock*(value(SHOCK)*( divu * glnrho + gradient_of_divergence(UU) ) + divu*gradient(SHOCK))
+   rhs += nu_shock*(SHOCK*( divu * glnrho + gradient_of_divergence(UU) ) + divu*gradient(SHOCK))
+   reduce_max(nu_shock*SHOCK,AC_maxnu)
 }
 #endif

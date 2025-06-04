@@ -400,24 +400,6 @@ link_initial_condition_files()
   fi
 }
 #
-make_cuda_dir()
-{
-## cuda subdirectory
-  [ -h $src/cuda ] && rm $src/cuda
-  adddir $src/cuda
-## cuda/src_new subdirectory
-  [ -h $src/cuda/src_new ] && rm $src/cuda/src_new
-  adddir $src/cuda/src_new
-## subdirectories of src_new
-  adddir $src/cuda/src_new/utils
-  adddir $src/cuda/src_new/common
-  adddir $src/cuda/src_new/gpu
-  adddir $src/cuda/src_new/diagnostics
-  adddir $src/cuda/src_new/gpu/cuda
-  adddir $src/cuda/src_new/gpu/cuda/core
-  adddir $src/cuda/src_new/gpu/cuda/generic
-}
-#
 make_astaroth_dir()
 {
 ## astaroth subdirectory
@@ -430,10 +412,8 @@ make_astaroth_dir()
   adddir $src/astaroth/submodule
 ## subdirectories of submodule
   adddir $src/astaroth/submodule/acc-runtime 
-  adddir $src/astaroth/submodule/acc-comm
   adddir $src/astaroth/submodule/acc-runtime/samples
   adddir $src/astaroth/submodule/acc-runtime/samples/mhd
-  adddir $src/astaroth/submodule/acc-runtime/samples/mhd_modular
   adddir $src/astaroth/submodule/acc-runtime/samples/gputest
 }
 #
@@ -455,17 +435,14 @@ link_astaroth_files()
   old_dir="`pwd`"
   cd $src/astaroth
   to_link=
-#  len=`expr match "$srcdir/cuda/astaroth/" '.*astaroth/'`
   for file in $srcdir/astaroth/*.cc $srcdir/astaroth/*.h $srcdir/astaroth/Makefile* $srcdir/astaroth/*.txt $srcdir/astaroth/*.sed $srcdir/astaroth/DSL/* \
               $srcdir/astaroth/submodule/CMakeLists.txt $srcdir/astaroth/submodule/include $srcdir/astaroth/submodule/stdlib \
-              $srcdir/astaroth/submodule/acc-comm \
               $srcdir/astaroth/submodule/acc-runtime/CMakeLists.txt \
               $srcdir/astaroth/submodule/acc-runtime/acc \
               $srcdir/astaroth/submodule/acc-runtime/api \
               $srcdir/astaroth/submodule/acc-runtime/built-in \
               $srcdir/astaroth/submodule/acc-runtime/samples/mhd/* \
               $srcdir/astaroth/submodule/acc-runtime/samples/gputest/* \
-              $srcdir/astaroth/submodule/acc-runtime/samples/mhd_modular/* \
               $srcdir/astaroth/submodule/src \
               $srcdir/astaroth/submodule/runtime_compilation
   do
@@ -480,54 +457,6 @@ link_astaroth_files()
     ln -s $file `echo $file | sed -r 's/^.*astaroth\///'`
   done
   
-  cd $old_dir
-}
-#
-link_cuda_files()
-{
-#
-#  LINK all *.* to local src/cuda directory
-#
-  echo "Linking files in '$src/cuda'."
-  old_dir="`pwd`"
-  cd $src/cuda
-  n=0
-  to_link=
-  for file in $srcdir/cuda/src/*.cc $srcdir/cuda/src/*.cuh $srcdir/cuda/src/*.cpp $srcdir/cuda/src/*.h $srcdir/cuda/src/makefile $srcdir/cuda/src/makefile.* $srcdir/cuda/src/*.conf 
-  do
-    if [ -f $file ] || [ -d $file ]; then
-      if [ -h "`basename $file`" ]; then
-        rm -f "`basename $file`"
-        to_link="$to_link $file"
-        #ln -s $file .
-      elif [ -f "`basename $file`" ] \
-        || [ -d "`basename $file`" ]; then
-        n="`expr $n + 1`"
-        existf="$existf`basename $file` "
-      else
-        to_link="$to_link $file"
-        #ln -s $file .
-      fi
-    else
-      echo "No such file: $file"
-    fi
-  done
-  [ "$to_link" ] && ln -s $to_link .
-
-  echo "Linking files in '$src/cuda/src_new'."
-  cd $src/cuda/src_new
-  to_link=
-  len=`expr match "$srcdir/cuda/src_new/" '.*src_new/'`
-  for file in $srcdir/cuda/src_new/*.cc $srcdir/cuda/src_new/*.txt $srcdir/cuda/src_new/Makefile* $srcdir/cuda/src_new/utils/*.h $srcdir/cuda/src_new/common/*.cc $srcdir/cuda/src_new/common/*.txt $srcdir/cuda/src_new/common/*.h $srcdir/cuda/src_new/gpu/*.cc $srcdir/cuda/src_new/gpu/*.txt $srcdir/cuda/src_new/gpu/*.h $srcdir/cuda/src_new/diagnostics/*.h $srcdir/cuda/src_new/diagnostics/*.cc $srcdir/cuda/src_new/gpu/cuda/*.cc* $srcdir/cuda/src_new/gpu/cuda/core/*.cc* $srcdir/cuda/src_new/gpu/cuda/generic/*.cu*
-  do
-    file_for_link $file
-  done
-  for file in $to_link
-  do 
-#    ln -s $file ${file:$len}
-    ln -s $file `echo $file | sed -r 's/^.*src_new\///'`
-  done
-
   cd $old_dir
 }
 #

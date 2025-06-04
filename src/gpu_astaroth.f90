@@ -123,12 +123,6 @@ contains
       write(unit, NML=gpu_run_pars)
 !
     endsubroutine write_gpu_run_pars
-!***********************************************************************
-    subroutine gpu_init
-!
-      call init_gpu_c
-!
-    endsubroutine gpu_init
 !**************************************************************************
     subroutine register_GPU
 !

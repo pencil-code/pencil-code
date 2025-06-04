@@ -292,9 +292,12 @@ class DataCube(object):
         """
 
         import os
-        from scipy.io import FortranFile
+        #from scipy.io import FortranFile
+        from .fortran_file import FortranFileExt
+
         from pencil.math.derivatives import curl, curl2
         from pencil import read
+
         if precision=="h":
             precision = "half"
         if timing:
@@ -358,6 +361,8 @@ class DataCube(object):
             index = read.index(datadir=datadir)
             grid = read.grid(datadir=datadir, quiet=True) # we can't use sim.grid because we want the untrimmed one
 
+        if param.io_strategy[-1] == '/': param.io_strategy = param.io_strategy[:-1]    # because of Python 3.10.10 bug!
+
         if var_file[0:2].lower() == "og":
             dim = read.ogdim(datadir, proc)
         elif var_file[0:4] == "VARd":
@@ -383,15 +388,6 @@ class DataCube(object):
             import h5py
 
             run2D = param.lwrite_2d
-
-            # Set up the global array.
-            if not run2D:
-                self.f = np.zeros((total_vars, dim.mz, dim.my, dim.mx), dtype=precision)
-            else:
-                if dim.ny == 1:
-                    self.f = np.zeros((total_vars, dim.mz, dim.mx), dtype=precision)
-                else:
-                    self.f = np.zeros((total_vars, dim.my, dim.mx), dtype=precision)
 
             if not var_file:
                 if ivar < 0:
@@ -439,6 +435,9 @@ class DataCube(object):
                         irange_z = (max(irange_z[0],0),min(irange_z[1],tmp["settings/mz"][0]))
                 mz = irange_z[1]-irange_z[0]
                 z = (tmp["grid/z"][irange_z[0]:irange_z[1]]).astype(precision)
+
+                if grid != None:
+                    grid.restrict(irange_x,irange_y,irange_z)
 
                 # Set up the global array.
                 if run2D:
@@ -548,9 +547,9 @@ class DataCube(object):
                 myloc = procdim.my
                 mzloc = procdim.mz
 
-                # Read the data.
+                # Read the data: f-array
                 file_name = os.path.join(datadir, directory, var_file)
-                infile = FortranFile(file_name)
+                infile = FortranFileExt(file_name,header_dtype=np.int32)
                 if not run2D:
                     f_loc = (infile.read_record(dtype=read_precision)).astype(precision)
                     f_loc = f_loc.reshape((-1, mzloc, myloc, mxloc))
@@ -562,7 +561,11 @@ class DataCube(object):
                     else:
                         f_loc = (infile.read_record(dtype=read_precision)).astype(precision)
                         f_loc = f_loc.reshape((-1, myloc, mxloc))
+
+                # Read the data: time, coordinates, etc.
                 raw_etc = (infile.read_record(dtype=read_precision)).astype(precision)
+
+                # Read the data: persistent variables
                 if lpersist and directory==proc_dirs[0]:
                     persist(self, infile=infile, precision=read_precision, quiet=quiet)
                 infile.close()
@@ -643,11 +646,13 @@ class DataCube(object):
                             self.f[i0z:i1z, i0y:i1y, i0x:i1x] = f_loc[
                                 i0zloc:i1zloc, i0yloc:i1yloc, i0xloc:i1xloc
                             ]
-                else:
+                else:                    # reading from a single processor
                     self.f = f_loc
                     x = x_loc
                     y = y_loc
                     z = z_loc
+                    if grid != None:     # overwrite global grid by local grid to enable "magic" calculations
+                        grid = read.grid(datadir=datadir,proc=proc)
         else:
             raise NotImplementedError(
                 "IO strategy {} not supported by the Python module.".format(

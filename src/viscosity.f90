@@ -1345,10 +1345,10 @@ module Viscosity
         enddo
         call getnu_non_newtonian(p%sij2,p%nu,gradnu_effective)
         do ii=1,3
-          p%fvisc(:,ii)=p%nu(:)*p%del2u(:,ii) + gradnu_effective(:)*fvisc_nnewton2(:,ii)
+          p%fvisc(:,ii)=p%nu*p%del2u(:,ii) + gradnu_effective*fvisc_nnewton2(:,ii)
         enddo
 !
-        if (ldiffus_total) p%diffus_total=p%diffus_total+nu
+        if (ldiffus_total) p%diffus_total=p%diffus_total+p%nu
       endif
 !
 !  viscous force: mu/rho*(del2u+graddivu/3)

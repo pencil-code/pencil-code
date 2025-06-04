@@ -21,8 +21,7 @@
 #include "headers_c.h"
 
 void torch_train_c_api(REAL*); 
-void torch_infer_c_api(int);
-void initGPU();
+void torch_infer_c_api(int *);
 void registerGPU();
 void initializeGPU(REAL*, FINT);
 void finalizeGPU();
@@ -87,12 +86,6 @@ void FTNIZE(initialize_gpu_c)(REAL* f, FINT* comm_fint)
   printf("zmin = %e\n", z[4]);
   printf("zmax = %e\n", z[nz-1+3]);
 */
-}
-/* ---------------------------------------------------------------------- */
-void FTNIZE(init_gpu_c)()
-{
-// Initializes GPU use.
-  initGPU();
 }
 /* ---------------------------------------------------------------------- */
 void FTNIZE(register_gpu_c)()

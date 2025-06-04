@@ -41,9 +41,6 @@ contains
 !
     endsubroutine write_gpu_run_pars
 !***********************************************************************
-    subroutine gpu_init
-    endsubroutine gpu_init
-!**************************************************************************
     subroutine register_GPU
     endsubroutine register_GPU
 !**************************************************************************

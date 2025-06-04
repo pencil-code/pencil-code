@@ -1,20 +1,20 @@
 To clone Pencil Code together with Astaroth:
 --------------------------------------------
-git clone -b gputestv6 --recurse-submodules https://<username>@github.com/pencil-code/pencil-code.git
+git clone -b master --recurse-submodules https://<username>@github.com/pencil-code/pencil-code.git
 or
-git clone -b gputestv6 --recurse-submodules https://<username>@pencil-code.org/git/ pencil-code
+git clone -b master --recurse-submodules https://<username>@pencil-code.org/git/ pencil-code
 cd pencil-code
 source sourceme.sh
 cd src/astaroth/submodule
-git checkout PCinterface_2019-8-12
+git checkout develop
 
 To add Astaroth later to already installed Pencil Code:
 -------------------------------------------------------
 cd $PENCIL_HOME
-git checkout gputestv6
+git checkout master
 git submodule update --init --remote
 cd src/astaroth/submodule 
-git checkout origin PCinterface_2019-8-12
+git checkout origin develop
 
 Don't forget to set $PENCIL_HOME correctly - missing this is a common source of mess.
 

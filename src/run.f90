@@ -150,19 +150,13 @@ subroutine reload(f, lreload_file, lreload_always_file)
 
     call initialize_hdf5
     call initialize_timestep
-if (lgpu.and.lroot) print*, 'vor copy_farray_from_GPU'
-if (lroot) flush(6)
     if (lgpu) call copy_farray_from_GPU(f)
     call initialize_modules(f)
     call initialize_boundcond
     if (lparticles) call particles_initialize_modules(f)
     if (lgpu) then
-if (lroot) print*, 'vor reload_GPU_config'
-if (lroot) flush(6)
       call reload_GPU_config
       call load_farray_to_GPU(f)
-if (lroot) print*, 'nach load_to_GPU'
-if (lroot) flush(6)
     endif
     call choose_pencils
     call write_all_run_pars('IDL')       ! data to param2.nml
@@ -608,7 +602,7 @@ subroutine run_start() bind(C)
 !$ use General,        only: signal_init, get_cpu
   use Grid,            only: construct_grid, box_vol, grid_bound_data, set_coorsys_dimmask, &
                              construct_serial_arrays, coarsegrid_interp
-  use Gpu,             only: gpu_init, load_farray_to_GPU, initialize_gpu
+  use Gpu,             only: load_farray_to_GPU, initialize_gpu
   use HDF5_IO,         only: init_hdf5, initialize_hdf5, wdim
   use IO,              only: rgrid, wgrid, directory_names, rproc_bounds, wproc_bounds, output_globals, input_globals
   use Messages
@@ -657,10 +651,6 @@ subroutine run_start() bind(C)
 !  Get processor numbers and define whether we are root.
 !
   call mpicomm_init
-!
-!  Initialize GPU use and make threadpool.
-!
-  call gpu_init
 !
 !  Initialize OpenMP use
 !

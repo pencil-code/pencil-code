@@ -265,9 +265,9 @@ ifeq ($(GSL),gsl_wrapper)
   ifneq ($(MODULE_CMD),)
     GSL_LOADED := $(shell (module list |& grep -i gsl) )
     ifeq ($(GSL_LOADED),)
-      ifeq ($(filter clean,$(target)),)
+      ifeq ($(filter clean cleann cleanall distclean,$(target)),)
         $(info )
-        $(info No GSL module seems to be loaded!)
+        $(warning No GSL module seems to be loaded!)
         $(info Try (one of) the following: $(shell (module spider |& grep -i gsl | sed -e's/^.* \([^ ]*[Gg][Ss][Ll][^ ]*\) .*$$/\1/') ))
         #$(error )
       endif
@@ -437,7 +437,7 @@ ifeq ($(MPICOMM),$(filter $(MPICOMM), mpicomm))
   ifneq ($(and $(ncpus), $(nprocx), $(nprocy), $(nprocz)),)
     nprocs := $(shell echo $$(( $(nprocx) * $(nprocy) * $(nprocz))))
     ifneq ($(strip $(ncpus)),$(strip $(nprocs)))
-      ifeq ($(filter clean,$(target)),)
+      ifeq ($(filter clean cleann cleanall distclean,$(target)),)
         $(info )
         $(error Cannot build: ncpus /= nprocx*nprocy*nprocz.)
       endif
@@ -447,7 +447,7 @@ else
   YINYANG = noyinyang
   ifneq ($(ncpus),)
     ifneq ($(ncpus),1)
-      ifeq ($(filter clean,$(target)),)
+      ifeq ($(filter clean cleann cleanall distclean,$(target)),)
         $(info )
         $(error Cannot build: ncpus > 1, but MPICOMM = nompicomm.)
       endif
@@ -466,7 +466,7 @@ ifeq ($(SPECIAL),nospecial)
   SPECIAL_MODULES =
 else
   ifeq ($(SPECIAL),special)
-    ifeq ($(filter clean,$(target)),)
+    ifeq ($(filter clean cleann cleanall distclean,$(target)),)
       $(info )
       $(error Cannot build: SPECIAL must not be set to special, but to individual module(s) in directory "special"! Exit.)
     endif
@@ -496,14 +496,16 @@ ifeq ($(TRAINING),training_torchfort)
   ifneq ($(MODULE_CMD),)
     CUDA_LOADED := $(shell (module list |& grep -i cuda) )
     ifeq ($(CUDA_LOADED),)
-      $(warning  No CUDA module seems to be loaded (needed for training)!)
-      $(info Try (one of) the following: $(shell (module spider |& grep -i cuda | sed -e's/^.* \([^ ]*[Cc][Uu][Dd][Aa][^ ]*\) .*$$/\1/') ) )
-      YESNO := $(shell bash -c 'read -p "Continue? (Y/N) " yesno; echo $$yesno')
-      ifeq ($(YESNO),N)
-        $(error Exit.)
-      else
-        ifeq ($(YESNO),n)
+      ifeq ($(filter clean cleann cleanall distclean,$(target)),)
+        $(warning  No CUDA module seems to be loaded (needed for training)!)
+        $(info Try (one of) the following: $(shell (module spider |& grep -i cuda | sed -e's/^.* \([^ ]*[Cc][Uu][Dd][Aa][^ ]*\) .*$$/\1/') ) )
+        YESNO := $(shell bash -c 'read -p "Continue? (Y/N) " yesno; echo $$yesno')
+        ifeq ($(YESNO),N)
           $(error Exit.)
+        else
+          ifeq ($(YESNO),n)
+            $(error Exit.)
+          endif
         endif
       endif
     endif
@@ -524,7 +526,7 @@ ifneq ($(GPU),nogpu)
     CUDA_LOADED := $(shell (module list |& grep -i cuda) )
     ROCM_LOADED := $(shell (module list |& grep -i rocm) )
     ifeq ($(CUDA_LOADED)$(ROCM_LOADED),)
-      ifeq ($(filter clean,$(target)),)
+      ifeq ($(filter clean cleann cleanall distclean,$(target)),)
         $(info )
         $(warning  No CUDA or ROCM module seems to be loaded!)
         $(info Try (one of) the following: $(shell (module spider |& grep -i cuda | sed -e's/^.* \([^ ]*[Cc][Uu][Dd][Aa][^ ]*\) .*$$/\1/') ) )
@@ -654,10 +656,18 @@ ifneq ($(filter $(SPECIAL) $(IO) $(IO_IN) $(IO_OUT) $(TRAINING), $(HDF5_MODULES)
   ifneq ($(MODULE_CMD),)
     HDF5_LOADED := $(shell (module list |& grep -i hdf5) || (module list |& grep -i hf5) )
     ifeq ($(HDF5_LOADED),)
-      ifeq ($(filter clean,$(target)),)
+      ifeq ($(filter clean cleann cleanall distclean,$(target)),)
         $(info )
-        $(info No HDF5 module seems to be loaded!)
-        #$(error Try (one of) the following: $(shell (module spider |& grep -i hdf5 | sed -e's/^.* \([^ ]*[Hh][Dd][Ff]5[^ ]*\) .*$$/\1/') ))
+        $(warning No HDF5 module seems to be loaded!)
+        $(info Try (one of) the following: $(shell (module spider |& grep -i hdf5 | sed -e's/^.* \([^ ]*[Hh][Dd][Ff]5[^ ]*\) .*$$/\1/') ) )
+        YESNO := $(shell bash -c 'read -p "Continue? (Y/N) " yesno; echo $$yesno')
+        ifeq ($(YESNO),N)
+          $(error Exit)
+        else
+          ifeq ($(YESNO),n)
+            $(error Exit)
+          endif
+        endif
       endif
     endif
   endif
@@ -2910,6 +2920,7 @@ else
   IS_CRAY = $(shell $(FC) --version | grep -i Cray)
   ifneq ($(IS_CRAY),)
     MODULE_NAME_ORDER = CRAY
+    $(info CRAY version: $(shell $(FC) --version))
   else
     IS_NVFOR = $(shell $(FC) --version | grep -i nvidia | sed -e's/^.*$$/NVIDIA/')
   endif
@@ -3140,22 +3151,22 @@ $(CUDA_INCDIR)/PC_moduleflags.h: Makefile.local $(CPARAM_OBJ) $(CDATA_OBJ)
 	@sed -f gpu.sed.tmp < Makefile.local >> $(CUDA_INCDIR)/PC_moduleflags.h; rm -f gpu.sed.tmp
 ifeq ($(VISCOSITY),viscosity)
 	@echo '#define LVISCOSITY 1 // '$(CUDA_RELPATH)'/viscosity.f90' >> $(CUDA_INCDIR)/PC_moduleflags.h
-	@echo $(CUDA_RELPATH)'/viscosity.f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources.h
+	@grep ' viscosity\.f90' $(CUDA_MAKEDIR)/PC_modulesources.h > /dev/null || echo $(CUDA_RELPATH)'/viscosity.f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources.h
 endif
 ifeq ($(TIMESTEP),timestep)
 	@echo $(CUDA_RELPATH)'/timestep.f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources.h
 endif
 ifeq ($(MAGNETIC_MEANFIELD),magnetic/nomeanfield)
-	@echo $(CUDA_RELPATH)'/$(MAGNETIC_MEANFIELD).f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources.h
+	@grep 'magnetic\/nomeanfield\.f90' $(CUDA_MAKEDIR)/PC_modulesources.h > /dev/null || echo $(CUDA_RELPATH)'/$(MAGNETIC_MEANFIELD).f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources.h
 endif
 ifeq ($(GRAVITY),nogravity)
 	@echo $(CUDA_RELPATH)'/$(GRAVITY).f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources.h
 endif
 ifeq ($(MAGNETIC),nomagnetic)
-	@echo $(CUDA_RELPATH)'/$(MAGNETIC).f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources.h
+	@grep nomagnetic\.f90 $(CUDA_MAKEDIR)/PC_modulesources.h > /dev/null || echo $(CUDA_RELPATH)'/$(MAGNETIC).f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources.h
 endif
 ifeq ($(ENERGY),noentropy)
-	@echo $(CUDA_RELPATH)'/$(ENERGY).f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources.h
+	@grep noentropy\.f90 $(CUDA_MAKEDIR)/PC_modulesources.h > /dev/null || echo $(CUDA_RELPATH)'/$(ENERGY).f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources.h
 endif
 	@grep '[a-zA-Z_]*eos.*f90' $(CUDA_MAKEDIR)/PC_modulesources.h > /dev/null || echo $(CUDA_RELPATH)'/$(EOS).f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources.h
 	@echo $(CUDA_RELPATH)'/run.f90' >> $(CUDA_MAKEDIR)/PC_modulesources.h
@@ -3219,17 +3230,16 @@ ifeq ($(wildcard $(DSL_WORKDIR)/solve_two.ac),)
 	@echo '#include "steps_single.h"' >> $(DSL_WORKDIR)/solve_single.ac
 	@cp $(DSL_WORKDIR)/../steps_single.h $(DSL_WORKDIR)
 	@cp $(DSL_WORKDIR)/../steps_two.h $(DSL_WORKDIR)
-ifeq ($(HYDRO),hydro)
-ifneq ($(FORCING),noforcing)
+  ifeq ($(HYDRO),hydro)
+    ifneq ($(FORCING),noforcing)
 	@if ( ! grep 'forcing/getforce\.h' $(DSL_WORKDIR)/solve_single.ac > /dev/null ); then \
-	  sed -i -e'/singlepass_solve/ a   #include "../forcing/getforce.h"\n' -e'/vecwrite( *UU/ s/) *$$/ ADDFORCE)/' $(DSL_WORKDIR)/solve_single.ac; \
+	sed -i -e'/singlepass_solve/ i   \#include "../forcing/getforce.h"\n' -e'/write( *UU/ s/) *$$/ + get_deltacorr_force(step_num) )/' $(DSL_WORKDIR)/solve_single.ac; \
 	fi
 	@if ( ! grep 'forcing/getforce\.h' $(DSL_WORKDIR)/solve_two.ac> /dev/null ); then \
-	  sed -i -e'/twopass_solve_final/ a   \#include "../forcing/getforce.h"\n' -e'/vecwrite( *UU.*final/ s/) *$$/ ADDFORCE)/' $(DSL_WORKDIR)/solve_two.ac; \
+	sed -i -e'/twopass_solve_final/ i   \#include "../forcing/getforce.h"\n' -e'/write( *UU.*final/ s/) *$$/ + get_deltacorr_force(step_num) )/' $(DSL_WORKDIR)/solve_two.ac; \
 	fi
-endif
-endif
-else
+    endif
+  endif
 endif
 	@scripts/bc2ast
 
