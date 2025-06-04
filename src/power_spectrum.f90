@@ -3925,38 +3925,37 @@ outer:do ikz=1,nz
     real, dimension(2*nzgrid+15) :: fftpack_temp
     real :: nVol2d,spec_real,spec_imag
     character (len=*) :: sp
-    !
-    !  identify version
-    !
+!
+!  identify version
+!
     if (lroot .AND. ip<10) call svn_id( &
          "$Id$")
-  !
+!
     if (.not.(lspherical_coords.or.lcylindrical_coords)) &
         call fatal_error("power_phi","works only in spherical or cylindrical coords")
-    !
-    !  Define wave vector, defined here for the *full* mesh.
-    !  Each processor will see only part of it.
-    !  Ignore *2*pi/Lx factor, because later we want k to be integers
-    !
+!
+!  Define wave vector, defined here for the *full* mesh.
+!  Each processor will see only part of it.
+!  Ignore *2*pi/Lx factor, because later we want k to be integers
+!
     nVol2d=0.
 
-  !$omp parallel private(ivec,ispec,aatemp,aatempy,spectrumy,spectrum,spec_real,spec_imag) num_threads(num_helper_threads) &
-  !$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
-  !$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
-  !$ thread_id = omp_get_thread_num()+1
-  !
+    !$omp parallel private(ivec,ispec,aatemp,aatempy,spectrumy,spectrum,spec_real,spec_imag) num_threads(num_helper_threads) &
+    !$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+    !$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+    !$ thread_id = omp_get_thread_num()+1
+!
     !$omp workshare
     spectrum=0.
     spectrum_sum=0.
     spectrumy_sum=0.
     !$omp end workshare
-    !
-    !  In fft, real and imaginary parts are handled separately.
-    !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
-    !  Added power spectra of rho^(1/2)*u and rho^(1/3)*u.
-    !
+!
+!  In fft, real and imaginary parts are handled separately.
+!  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
+!  Added power spectra of rho^(1/2)*u and rho^(1/3)*u.
+!
     do ivec=1,3
-      !
       if (trim(sp)=='u') then
         !$omp workshare
         a1=f(l1:l2,m1:m2,n1:n2,iux+ivec-1)
@@ -3976,71 +3975,70 @@ outer:do ikz=1,nz
       else
         call warning('power_phi','no such sp: '//trim(sp))
       endif
-  !
       !$omp single
       ifirst_fft=1
       !$omp end single
       if (lspherical_coords) then
         !$omp do collapse(3) reduction(+:spectrum_sum,nVol2d)
         do l=1,nx
-          do m_loc=1,ny
-            do j=1,nprocy
-              m=m_loc
-              call z2x(a1,l,m,j,aatemp)
-  !
-  ! For multiple processor runs aatemp exists only in the root
-  ! processor. Hence rest of the analysis is done only
-  ! in the root processor
-  !AB: is nVol2d correctly initialized? Did this now above. OK?
-  !
-              if (lroot) then
-  !             write(*,*)l,m,j,'got data, shall fft'
-                call fourier_transform_real_1(aatemp,nzgrid,ifirst_fft,fftpack_temp)
-                !$omp atomic
-                ifirst_fft = ifirst_fft+1
-                spectrum(1)=(aatemp(1)**2)*r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)
-                do ispec=2,nzgrid/2
-                  spec_real=aatemp(2*ispec-2)
-                  spec_imag=aatemp(2*ispec-1)
-                  spectrum(ispec)= 2.*(spec_real**2+spec_imag**2) &
-                       *r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)
-                enddo
-                spectrum(nzgrid/2)=(aatemp(nzgrid)**2)*r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)
-                spectrum_sum=spectrum_sum+spectrum
-                nVol2d = nVol2d+r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)
-              endif
-            enddo ! loop over yproc
-          enddo   ! loop over ny
+        do m_loc=1,ny
+        do j=1,nprocy
+          m=m_loc
+          call z2x(a1,l,m,j,aatemp)
+!  
+!   For multiple processor runs aatemp exists only in the root
+!   processor. Hence rest of the analysis is done only
+!   in the root processor
+!   AB: is nVol2d correctly initialized? Did this now above. OK?
+!  
+          if (lroot) then
+!            write(*,*)l,m,j,'got data, shall fft'
+            call fourier_transform_real_1(aatemp,nzgrid,ifirst_fft,fftpack_temp)
+            !$omp atomic
+            ifirst_fft = ifirst_fft+1
+            spectrum(1)=(aatemp(1)**2)*r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)
+            do ispec=2,nzgrid/2
+              spec_real=aatemp(2*ispec-2)
+              spec_imag=aatemp(2*ispec-1)
+              spectrum(ispec)= 2.*(spec_real**2+spec_imag**2) &
+                   *r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)
+            enddo
+            spectrum(nzgrid/2)=(aatemp(nzgrid)**2)*r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)
+            spectrum_sum=spectrum_sum+spectrum
+            nVol2d = nVol2d+r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)
+          endif
+        enddo ! loop over yproc
+        enddo   ! loop over ny
         enddo     ! loop over nx
       elseif (lcylindrical_coords) then
         !$omp do collapse(3) reduction(+:spectrumy_sum,nVol2d)
         do l=1,nx
-          do n_loc=1,nz
-            do j=1,nprocz
-              n=n_loc
-              call y2x(a1,l,n,j,aatempy)
+        do n_loc=1,nz
+        do j=1,nprocz
+          n=n_loc
+          call y2x(a1,l,n,j,aatempy)
 !
 !   For multiple processor runs aatemp exists only in the root
 !   processor. Hence rest of the analysis is done only
 !   in the root processor
 !
-              if (lroot) then
-!             write(*,*)l,n,j,'got data shall fft'
-                call fourier_transform_real_1(aatempy,nygrid,ifirst_fft,fftpack_temp)
-                !$omp atomic
-                ifirst_fft = ifirst_fft+1
-                spectrumy(1)=(aatempy(1)**2)*rcyl_weight(l)
-                do ispec=2,nygrid/2
-                  spec_real=aatempy(2*ispec-2)
-                  spec_imag=aatempy(2*ispec-1)
-                  spectrumy(ispec)= 2.*(spec_real**2+spec_imag**2)*rcyl_weight(l)
-                enddo
-                spectrumy(nygrid/2)=(aatempy(nygrid)**2)*rcyl_weight(l)
-                spectrumy_sum=spectrumy_sum+spectrumy
-                nVol2d = nVol2d+rcyl_weight(l)
-              endif
-            enddo ! loop over zproc
-          enddo   ! loop over nz
+          if (lroot) then
+!            write(*,*)l,n,j,'got data shall fft'
+            call fourier_transform_real_1(aatempy,nygrid,ifirst_fft,fftpack_temp)
+            !$omp atomic
+            ifirst_fft = ifirst_fft+1
+            spectrumy(1)=(aatempy(1)**2)*rcyl_weight(l)
+            do ispec=2,nygrid/2
+              spec_real=aatempy(2*ispec-2)
+              spec_imag=aatempy(2*ispec-1)
+              spectrumy(ispec)= 2.*(spec_real**2+spec_imag**2)*rcyl_weight(l)
+            enddo
+            spectrumy(nygrid/2)=(aatempy(nygrid)**2)*rcyl_weight(l)
+            spectrumy_sum=spectrumy_sum+spectrumy
+            nVol2d = nVol2d+rcyl_weight(l)
+          endif
+        enddo ! loop over zproc
+        enddo   ! loop over nz
         enddo     ! loop over nx
       else
         call fatal_error('power_phi','neither spherical nor cylindrical')
