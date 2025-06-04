@@ -1279,7 +1279,7 @@ outer:  do ikz=1,nz
     logical :: lfirstcall
   
     if(.not. allocated(cyl_spectrum)) then
-            allocate(cyl_spectrum(nk,nzgrid), cyl_spectrum_sum(nk,nzgrid), cyl_spectrumhel(nk,nzgrid), cyl_spectrumhel_sum(nk,nzgrid))
+      allocate(cyl_spectrum(nk,nzgrid), cyl_spectrum_sum(nk,nzgrid), cyl_spectrumhel(nk,nzgrid), cyl_spectrumhel_sum(nk,nzgrid))
     endif
 !
 !  identify version
@@ -5082,13 +5082,13 @@ outer:  do ikz=1,nz
 !
       !$omp do collapse(3)
       do ikx=1,nx
-        do iky=1,ny
-          do ikz=1,nz
-            jkx=ikx+ipx*nx
-            correlation(jkx)   = correlation(jkx)    +b_re(ikx,iky,ikz)*b_re(ikx,iky,ikz)
-            correlationhel(jkx)= correlationhel(jkx) +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz)
-          enddo
-        enddo
+      do iky=1,ny
+      do ikz=1,nz
+        jkx=ikx+ipx*nx
+        correlation(jkx)   = correlation(jkx)    +b_re(ikx,iky,ikz)*b_re(ikx,iky,ikz)
+        correlationhel(jkx)= correlationhel(jkx) +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz)
+      enddo
+      enddo
       enddo
 !
 !  Doing the Fourier transform
@@ -5101,33 +5101,33 @@ outer:  do ikz=1,nz
       if (ip<10) call information('power_cor','fft done; now integrate over shells')
       !$omp do collapse(3)
       do ikz=1,nz
-        do iky=1,ny
-          do ikx=1,nx
-            k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
-            k=nint(sqrt(k2))
-            if (k>=0 .and. k<=(nk-1)) then
+      do iky=1,ny
+      do ikx=1,nx
+        k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
+        k=nint(sqrt(k2))
+        if (k>=0 .and. k<=(nk-1)) then
 !
 !  sum energy and helicity spectra
 !
-              spectrum(k+1)=spectrum(k+1) &
-                 +b_re(ikx,iky,ikz)**2 &
-                 +b_im(ikx,iky,ikz)**2
-              spectrumhel(k+1)=spectrumhel(k+1) &
-                 +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
-                 +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
+          spectrum(k+1)=spectrum(k+1) &
+             +b_re(ikx,iky,ikz)**2 &
+             +b_im(ikx,iky,ikz)**2
+          spectrumhel(k+1)=spectrumhel(k+1) &
+             +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
+             +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
 !
 !  compute krms only once
 !
-              if (lwrite_krms) then
-                k2m(k+1)=k2m(k+1)+k2
-                nks(k+1)=nks(k+1)+1.
-              endif
+          if (lwrite_krms) then
+            k2m(k+1)=k2m(k+1)+k2
+            nks(k+1)=nks(k+1)+1.
+          endif
 !
 !  end of loop through all points
 !
-            endif
-          enddo
-        enddo
+        endif
+      enddo
+      enddo
       enddo
 !
 !  allow for possibility of cylindrical spectral
@@ -5136,27 +5136,27 @@ outer:  do ikz=1,nz
         if (ip<10) call information('power_cor','fft done; now integrate over cylindrical shells')
         !$omp do collapse(3)
         do ikz=1,nz
-          do iky=1,ny
-            do ikx=1,nx
-              k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2
-              jkz=nint(kz(ikz+ipz*nz))+nzgrid/2+1
-              k=nint(sqrt(k2))
-              if (k>=0 .and. k<=(nk-1)) then
+        do iky=1,ny
+        do ikx=1,nx
+          k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2
+          jkz=nint(kz(ikz+ipz*nz))+nzgrid/2+1
+          k=nint(sqrt(k2))
+          if (k>=0 .and. k<=(nk-1)) then
 !
 !  sum energy and helicity spectra
 !
-                cyl_spectrum(k+1,jkz)=cyl_spectrum(k+1,jkz) &
-                   +b_re(ikx,iky,ikz)**2 &
-                   +b_im(ikx,iky,ikz)**2
-                cyl_spectrumhel(k+1,jkz)=cyl_spectrumhel(k+1,jkz) &
-                   +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
-                   +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
+            cyl_spectrum(k+1,jkz)=cyl_spectrum(k+1,jkz) &
+               +b_re(ikx,iky,ikz)**2 &
+               +b_im(ikx,iky,ikz)**2
+            cyl_spectrumhel(k+1,jkz)=cyl_spectrumhel(k+1,jkz) &
+               +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
+               +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
 !
 !  end of loop through all points
 !
-              endif
-            enddo
-          enddo
+          endif
+        enddo
+        enddo
         enddo
       endif
       !
@@ -6083,8 +6083,8 @@ outer:  do ikz=1,nz
 !  24-aug-22/axel: made Tpq,Tpq_sum allocatable, of size (nlk+1)^2, where nk=2**nlk
 !  25-aug-22/hongzhe: introduced specflux_dp and specflux_dq
 !
-      use Mpicomm, only: mpireduce_sum
-      use Sub, only: gij, gij_etc, curl_mn, cross_mn, del2v_etc
+    use Mpicomm, only: mpireduce_sum
+    use Sub, only: gij, gij_etc, curl_mn, cross_mn, del2v_etc
 !
     integer, parameter :: nk=max(nxgrid/2,nygrid/2,nzgrid/2)
     integer :: p,q,lp,lq,ivec,iky,ikz
