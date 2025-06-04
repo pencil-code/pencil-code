@@ -3838,37 +3838,37 @@ outer:do ikz=1,nz
       a_vec_re(:,:,:,:)=f(l1:l2,m1:m2,n1:n2,iuu:(iuu+2))
       !$omp end workshare
     endif  !  sp
-    !
-    !  compute kr-dependent pdf
-    !
+!
+!  compute kr-dependent pdf
+!
     !$omp workshare
     pdf_ang=0.
     !$omp end workshare
     do kr=1,nk-1
-      !
-      !  initialize a.a, b.b, and a.b, for filtered fields
-      !
+!
+!  initialize a.a, b.b, and a.b, for filtered fields
+!
       !$omp workshare
       aa=0.; bb=0.; ab=0.
       !$omp end workshare
       do ivec=1,3
-        !
-        !  Obtain filtered fields.
-        !
+!
+!  Obtain filtered fields.
+!
         call power_shell_filter(a_vec_re(:,:,:,ivec),ak,kr)
         call power_shell_filter(b_vec_re(:,:,:,ivec),bk,kr)
-        !
-        !  dot products
-        !
+!
+!  dot products
+!
         !$omp workshare
         aa = aa+ak**2
         bb = bb+bk**2
         ab = ab+ak*bk
         !$omp end workshare
       enddo
-      !
-      !  compute pdf
-      !
+!
+!  compute pdf
+!
       !$omp do collapse(3) reduction(+:pdf_ang)
       do ikx=1,nx; do iky=1,ny; do ikz=1,nz
         if (aa(ikx,iky,ikz)==0. .or. bb(ikx,iky,ikz)==0.) then
@@ -3880,21 +3880,21 @@ outer:do ikz=1,nz
         endif
       enddo; enddo; enddo
     enddo  !  do kr
-!$omp end parallel
-  !
-  !  sum over processors
-  !
+    !$omp end parallel
+!
+!  sum over processors
+!
   call mpireduce_sum_int(pdf_ang,pdf_ang_sum,(/nk-1,npdf/))
-  !
-  !  write to file
-  !
+!
+!  write to file
+!
   if (lroot) then
     open(1,file=trim(datadir)//'/pdf1d_ang_'//trim(sp)//'.dat',position='append')
     write(1,*) tspec
     write(1,*) pdf_ang_sum
     close(1)
   endif
-  !
+!
   endsubroutine pdf1d_ang
 !***********************************************************************
   subroutine power_phi(f,sp)
