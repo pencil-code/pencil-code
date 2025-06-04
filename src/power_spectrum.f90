@@ -2780,279 +2780,276 @@ outer:do ikz=1,nz
     use Sub, only: gij, gij_etc, curl_mn, cross_mn
     use Special, only: special_calc_spectra
 !
-  real, dimension (mx,my,mz,mfarray) :: f
-  character (len=3) :: sp
-  logical :: lfirstcall
-
-  integer, parameter :: nk=nxgrid/2
-
-  integer :: i,k,ikx,iky,ikz
-  real :: k2
-  real, dimension(nk) :: nks,nks_sum
-  real, dimension(nk) :: k2m,k2m_sum,krms
-  real, dimension(nk,nbin_angular) :: spectrum_2d, spectrumhel_2d
-  real, dimension(nk,nbin_angular) :: spectrum_2d_sum, spectrumhel_2d_sum
-  real, allocatable, dimension(:) :: spectrum,spectrumhel
-  real, allocatable, dimension(:) :: spectrum_sum,spectrumhel_sum
-  logical, save :: lwrite_krms_GWs=.false.
-  real :: sign_switch, kk1, kk2, kk3
+    real, dimension (mx,my,mz,mfarray) :: f
+    character (len=3) :: sp
+    logical :: lfirstcall
+  
+    integer, parameter :: nk=nxgrid/2
+  
+    integer :: i,k,ikx,iky,ikz
+    real :: k2
+    real, dimension(nk) :: nks,nks_sum
+    real, dimension(nk) :: k2m,k2m_sum,krms
+    real, dimension(nk,nbin_angular) :: spectrum_2d, spectrumhel_2d
+    real, dimension(nk,nbin_angular) :: spectrum_2d_sum, spectrumhel_2d_sum
+    real, allocatable, dimension(:) :: spectrum,spectrumhel
+    real, allocatable, dimension(:) :: spectrum_sum,spectrumhel_sum
+    logical, save :: lwrite_krms_GWs=.false.
+    real :: sign_switch, kk1, kk2, kk3
 !
 !  identify version
 !
-  if (lroot .AND. ip<10) call svn_id("$Id$")
+    if (lroot .AND. ip<10) call svn_id("$Id$")
 !
 ! KG: added warning about wrong computation of wavenumbers.
 ! KG: See the function get_k2 for an example of how to calculate k2.
-  if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
-    call warning("powerGWs", "computation of wavevector wrong for non-cubic domains")
+    if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
+      call warning("powerGWs", "computation of wavevector wrong for non-cubic domains")
 !
 ! Select cases where spectra are precomputed
 !
-  if (iggXim>0.or.iggTim>0) then
-    if (sp=='StT'.or.sp=='StX') then
-      allocate(spectrum(nxgrid),spectrumhel(nxgrid))
-      allocate(spectrum_sum(nxgrid),spectrumhel_sum(nxgrid))
+    if (iggXim>0.or.iggTim>0) then
+      if (sp=='StT'.or.sp=='StX') then
+        allocate(spectrum(nxgrid),spectrumhel(nxgrid))
+        allocate(spectrum_sum(nxgrid),spectrumhel_sum(nxgrid))
+      else
+        allocate(spectrum(nk),spectrumhel(nk))
+        allocate(spectrum_sum(nk),spectrumhel_sum(nk))
+      endif
+      call special_calc_spectra(f,spectrum,spectrumhel, &
+        spectrum_2d,spectrumhel_2d, &
+        lfirstcall,sp)
     else
       allocate(spectrum(nk),spectrumhel(nk))
-      allocate(spectrum_sum(nk),spectrumhel_sum(nk))
-    endif
-    call special_calc_spectra(f,spectrum,spectrumhel, &
-      spectrum_2d,spectrumhel_2d, &
-      lfirstcall,sp)
-  else
-    allocate(spectrum(nk),spectrumhel(nk))
-
-!$omp parallel private(k,k2,kk1,kk2,kk3,sign_switch) num_threads(num_helper_threads) &
-!$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
-!$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
-!$ thread_id = omp_get_thread_num()+1
+  
+      !$omp parallel private(k,k2,kk1,kk2,kk3,sign_switch) num_threads(num_helper_threads) &
+      !$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+      !$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+      !$ thread_id = omp_get_thread_num()+1
 !
 !  Initialize power spectrum to zero. The following lines only apply to
 !  the case where special/gravitational_waves_hij6.f90 is used.
 !
-    !$omp workshare
-    k2m=0.
-    nks=0.
-    spectrum=0.
-    spectrumhel=0.
-    !$omp end workshare
+      !$omp workshare
+      k2m=0.
+      nks=0.
+      spectrum=0.
+      spectrumhel=0.
+      !$omp end workshare
 !
 !  Gravitational wave tensor (spectra of g*g^* for gT and gX, where g=hdot)
 !
-    if (sp=='GWs') then
-      if (iggX>0.and.iggT>0.and.iggXim==0.and.iggTim==0) then
-        !$omp workshare
-        a_re=f(l1:l2,m1:m2,n1:n2,iggX)
-        b_re=f(l1:l2,m1:m2,n1:n2,iggT)
-        a_im=0.
-        b_im=0.
-        !$omp end workshare
-      else
-        call fatal_error('powerGWs','must have lggTX_as_aux=T')
-      endif
+      if (sp=='GWs') then
+        if (iggX>0.and.iggT>0.and.iggXim==0.and.iggTim==0) then
+          !$omp workshare
+          a_re=f(l1:l2,m1:m2,n1:n2,iggX)
+          b_re=f(l1:l2,m1:m2,n1:n2,iggT)
+          a_im=0.
+          b_im=0.
+          !$omp end workshare
+        else
+          call fatal_error('powerGWs','must have lggTX_as_aux=T')
+        endif
 !
 !  Gravitational wave tensor (spectra of h*h^* for hT and hX)
 !
-    elseif (sp=='GWh') then
-      if (ihhX>0.and.ihhXim==0) then
-        !$omp workshare
-        a_re=f(l1:l2,m1:m2,n1:n2,ihhX)
-        b_re=f(l1:l2,m1:m2,n1:n2,ihhT)
-        a_im=0.
-        b_im=0.
-        !$omp end workshare
-      else
-        call fatal_error('powerGWs','must have lhhTX_as_aux=T')
-      endif
+      elseif (sp=='GWh') then
+        if (ihhX>0.and.ihhXim==0) then
+          !$omp workshare
+          a_re=f(l1:l2,m1:m2,n1:n2,ihhX)
+          b_re=f(l1:l2,m1:m2,n1:n2,ihhT)
+          a_im=0.
+          b_im=0.
+          !$omp end workshare
+        else
+          call fatal_error('powerGWs','must have lhhTX_as_aux=T')
+        endif
 !
 !  Gravitational wave stress tensor (only if lStress_as_aux is requested)
 !  Note: for aux_stress='d2hdt2', the stress is replaced by GW_rhs.
 !
-    elseif (sp=='Str') then
-      if (iStressX>0.and.iStressXim==0) then
-        !$omp workshare
-        a_re=f(l1:l2,m1:m2,n1:n2,iStressX)
-        b_re=f(l1:l2,m1:m2,n1:n2,iStressT)
-        a_im=0.
-        b_im=0.
-        !$omp end workshare
+      elseif (sp=='Str') then
+        if (iStressX>0.and.iStressXim==0) then
+          !$omp workshare
+          a_re=f(l1:l2,m1:m2,n1:n2,iStressX)
+          b_re=f(l1:l2,m1:m2,n1:n2,iStressT)
+          a_im=0.
+          b_im=0.
+          !$omp end workshare
+        else
+          call fatal_error('powerGWs','must have lStress_as_aux=T')
+        endif
       else
-        call fatal_error('powerGWs','must have lStress_as_aux=T')
+        call fatal_error('powerGWs','no such spectrum sp: '//trim(sp))
       endif
-    else
-      call fatal_error('powerGWs','no such spectrum sp: '//trim(sp))
-    endif
 !
 !  Doing the Fourier transform
 !
-    !call fft_xyz_parallel(a_re,a_im)
-    !call fft_xyz_parallel(b_re,b_im)
-    call fourier_transform(a_re,a_im)
-    call fourier_transform(b_re,b_im)
+      !call fft_xyz_parallel(a_re,a_im)
+      !call fft_xyz_parallel(b_re,b_im)
+      call fourier_transform(a_re,a_im)
+      call fourier_transform(b_re,b_im)
 !
 !  integration over shells
 !
-    if (ip<10) call information('powerGWs','fft done, now integrate over shells')
-! do ikz=1,nz
-!   do iky=1,ny
-!     do ikx=1,nx
-    !$omp do collapse(3) reduction(+:spectrum,spectrumhel,k2m,nks)
-    do iky=1,nz
-      do ikx=1,ny
-        do ikz=1,nx
-          k2=kx(ikx+ipy*ny)**2+ky(iky+ipz*nz)**2+kz(ikz+ipx*nx)**2
-          k=nint(sqrt(k2))
-          if (k>=0 .and. k<=(nk-1)) then
+      if (ip<10) call information('powerGWs','fft done, now integrate over shells')
+      !$omp do collapse(3) reduction(+:spectrum,spectrumhel,k2m,nks)
+      do iky=1,nz
+        do ikx=1,ny
+          do ikz=1,nx
+            k2=kx(ikx+ipy*ny)**2+ky(iky+ipz*nz)**2+kz(ikz+ipx*nx)**2
+            k=nint(sqrt(k2))
+            if (k>=0 .and. k<=(nk-1)) then
 !
 !  Switch sign for the same k vectors for which we also
 !  switched the sign of e_X. Define (kk1,kk2,kk3) as short-hand
 !
-            kk1=kx(ikx+ipy*ny)
-            kk2=ky(iky+ipz*nz)
-            kk3=kz(ikz+ipx*nx)
+              kk1=kx(ikx+ipy*ny)
+              kk2=ky(iky+ipz*nz)
+              kk3=kz(ikz+ipx*nx)
 !
-            !kk1=kx(ikx+ipx*nx)
-            !kk2=ky(iky+ipy*ny)
-            !kk3=kz(ikz+ipz*nz)
+              !kk1=kx(ikx+ipx*nx)
+              !kk2=ky(iky+ipy*ny)
+              !kk3=kz(ikz+ipz*nz)
 !
 !  possibility of swapping the sign
 !
-            sign_switch=1.
-            if (kk3<0.) then
-              sign_switch=-1.
-            elseif (kk3==0.) then
-              if (kk2<0.) then
+              sign_switch=1.
+              if (kk3<0.) then
                 sign_switch=-1.
-              elseif (kk2==0.) then
-                if (kk1<0.) sign_switch=-1.
+              elseif (kk3==0.) then
+                if (kk2<0.) then
+                  sign_switch=-1.
+                elseif (kk2==0.) then
+                  if (kk1<0.) sign_switch=-1.
+                endif
               endif
-            endif
 !
 !  sum energy and helicity spectra
 !
-            spectrum(k+1)=spectrum(k+1)+a_re(ikz,ikx,iky)**2+a_im(ikz,ikx,iky)**2 &
-                                       +b_re(ikz,ikx,iky)**2+b_im(ikz,ikx,iky)**2
-            spectrumhel(k+1)=spectrumhel(k+1)+2*sign_switch*(+a_im(ikz,ikx,iky)*b_re(ikz,ikx,iky) &
-                                                             -a_re(ikz,ikx,iky)*b_im(ikz,ikx,iky))
+              spectrum(k+1)=spectrum(k+1)+a_re(ikz,ikx,iky)**2+a_im(ikz,ikx,iky)**2 &
+                                         +b_re(ikz,ikx,iky)**2+b_im(ikz,ikx,iky)**2
+              spectrumhel(k+1)=spectrumhel(k+1)+2*sign_switch*(+a_im(ikz,ikx,iky)*b_re(ikz,ikx,iky) &
+                                                               -a_re(ikz,ikx,iky)*b_im(ikz,ikx,iky))
 !
 !  compute krms only once
 !
-            if (lwrite_krms_GWs) then
-              k2m(k+1)=k2m(k+1)+k2
-              nks(k+1)=nks(k+1)+1.
-            endif
+              if (lwrite_krms_GWs) then
+                k2m(k+1)=k2m(k+1)+k2
+                nks(k+1)=nks(k+1)+1.
+              endif
 !
 !  end of loop through all points
 !
-          endif
+            endif
+          enddo
         enddo
       enddo
-    enddo
-!$omp end parallel
+     !$omp end parallel
 !
 !  end from communicated versus computed spectra (GW spectra)
 !
-  endif
+    endif
 !
 !  open
 !
-  open(1,file=trim(datadir)//'/power_'//trim(sp)//'.dat',position='append')
+    open(1,file=trim(datadir)//'/power_'//trim(sp)//'.dat',position='append')
 !
 !  Stress spectra
 !
-  if (sp=='StT'.or.sp=='StX') then
+    if (sp=='StT'.or.sp=='StX') then
 !
 !  transposing output, as in Fourier_transform_xy; an unreverted transposition is performed
 !  but no transposition when nygrid=1 (e.g., in 2-D setup for 1-D spectrum)
 !
-    call mpireduce_sum(spectrumhel,spectrumhel_sum,nxgrid)
-    call mpireduce_sum(spectrum,spectrum_sum,nxgrid)
-  else
+      call mpireduce_sum(spectrumhel,spectrumhel_sum,nxgrid)
+      call mpireduce_sum(spectrum,spectrum_sum,nxgrid)
+    else
 !
 !  Summing up the results from the different processors
 !  The result is available only on root
 !
-    call mpireduce_sum(spectrum   ,spectrum_sum   ,nk)
-    call mpireduce_sum(spectrumhel,spectrumhel_sum,nk)
-    !
-    if ( any(sp.eq.(/'Gab','Gan','GBb'/)) ) then
-      call mpireduce_sum(spectrum_2d   ,spectrum_2d_sum   ,(/nk,nbin_angular/))
-      call mpireduce_sum(spectrumhel_2d,spectrumhel_2d_sum,(/nk,nbin_angular/))
+      call mpireduce_sum(spectrum   ,spectrum_sum   ,nk)
+      call mpireduce_sum(spectrumhel,spectrumhel_sum,nk)
+!
+      if ( any(sp.eq.(/'Gab','Gan','GBb'/)) ) then
+        call mpireduce_sum(spectrum_2d   ,spectrum_2d_sum   ,(/nk,nbin_angular/))
+        call mpireduce_sum(spectrumhel_2d,spectrumhel_2d_sum,(/nk,nbin_angular/))
+      endif
+!
     endif
-    !
-  endif
 !
 !  compute krms only once
 !
-  if (lwrite_krms_GWs) then
-    call mpireduce_sum(k2m,k2m_sum,nk)
-    call mpireduce_sum(nks,nks_sum,nk)
-    if (iproc/=root) lwrite_krms_GWs=.false.
-  endif
-  !
-  !  on root processor, write global result to file
-  !  multiply by 1/2, so \int E(k) dk = (1/2) <u^2>
-  !  ok for helicity, so \int F(k) dk = <o.u> = 1/2 <o*.u+o.u*>
-  !
-  !  append to diagnostics file
-  !
-  if (lroot) then
-    if (ip<10) print*,'Writing power spectrum ',sp &
-         ,' to ',trim(datadir)//'/power_'//trim(sp)//'.dat'
-    !
-    !  half factor or not?
-    !  By default (lhalf_factor_in_GW=F), we have total(S) = gg2m.
-    !  Otherwise we have total(S) = (1/2) * gg2m.
-    !
-    if (lhalf_factor_in_GW) then
-      spectrum_sum=.5*spectrum_sum
-      spectrumhel=.5*spectrumhel
+    if (lwrite_krms_GWs) then
+      call mpireduce_sum(k2m,k2m_sum,nk)
+      call mpireduce_sum(nks,nks_sum,nk)
+      if (iproc/=root) lwrite_krms_GWs=.false.
     endif
-    !
-    if (lformat) then
-      do k = 1, nk
-        write(1,'(i4,3p,8e10.2)') k, spectrum_sum(k)
-      enddo
-    else
-      write(1,*) tspec
-      if ( all(sp.ne.(/'Gab','Gan','GBb'/)) ) then
-        write(1,power_format) spectrum_sum
-      else
-        write(1,power_format) spectrum_2d_sum
+!
+!  on root processor, write global result to file
+!  multiply by 1/2, so \int E(k) dk = (1/2) <u^2>
+!  ok for helicity, so \int F(k) dk = <o.u> = 1/2 <o*.u+o.u*>
+!
+!  append to diagnostics file
+!
+    if (lroot) then
+      if (ip<10) print*,'Writing power spectrum ',sp &
+           ,' to ',trim(datadir)//'/power_'//trim(sp)//'.dat'
+!
+!  half factor or not?
+!  By default (lhalf_factor_in_GW=F), we have total(S) = gg2m.
+!  Otherwise we have total(S) = (1/2) * gg2m.
+!
+      if (lhalf_factor_in_GW) then
+        spectrum_sum=.5*spectrum_sum
+        spectrumhel=.5*spectrumhel
       endif
-    endif
-    close(1)
-    !
-    if ( all(sp.ne.(/'SCL','VCT','Tpq','TGW'/)) ) then
-      open(1,file=trim(datadir)//'/powerhel_'//trim(sp)//'.dat',position='append')
+!
       if (lformat) then
         do k = 1, nk
-          write(1,'(i4,3p,8e10.2)') k, spectrumhel_sum(k)
+          write(1,'(i4,3p,8e10.2)') k, spectrum_sum(k)
         enddo
       else
         write(1,*) tspec
         if ( all(sp.ne.(/'Gab','Gan','GBb'/)) ) then
-          write(1,power_format) spectrumhel_sum
+          write(1,power_format) spectrum_sum
         else
-          write(1,power_format) spectrumhel_2d_sum
+          write(1,power_format) spectrum_2d_sum
         endif
       endif
       close(1)
+!
+      if ( all(sp.ne.(/'SCL','VCT','Tpq','TGW'/)) ) then
+        open(1,file=trim(datadir)//'/powerhel_'//trim(sp)//'.dat',position='append')
+        if (lformat) then
+          do k = 1, nk
+            write(1,'(i4,3p,8e10.2)') k, spectrumhel_sum(k)
+          enddo
+        else
+          write(1,*) tspec
+          if ( all(sp.ne.(/'Gab','Gan','GBb'/)) ) then
+            write(1,power_format) spectrumhel_sum
+          else
+            write(1,power_format) spectrumhel_2d_sum
+          endif
+        endif
+        close(1)
+      endif
+!
+      if (lwrite_krms_GWs) then
+        where(nks_sum/=0)
+          krms=sqrt(k2m_sum/nks_sum)
+        elsewhere
+          krms=0.
+        endwhere
+        open(1,file=trim(datadir)//'/power_krms_GWs.dat',position='append')
+        write(1,power_format) krms
+        close(1)
+        lwrite_krms_GWs=.false.
+      endif
     endif
-    !
-    if (lwrite_krms_GWs) then
-      where(nks_sum/=0)
-        krms=sqrt(k2m_sum/nks_sum)
-      elsewhere
-        krms=0.
-      endwhere
-      open(1,file=trim(datadir)//'/power_krms_GWs.dat',position='append')
-      write(1,power_format) krms
-      close(1)
-      lwrite_krms_GWs=.false.
-    endif
-  endif
-  !
+!
   endsubroutine powerGWs !checked
 !***********************************************************************
   subroutine powerscl(f,sp,iapn_index,lsqrt)
