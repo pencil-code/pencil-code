@@ -3657,9 +3657,9 @@ outer:do ikz=1,nz
 !
 !    2-dec-03/axel: coded
 !
-      use Sub, only: grad, dot2_mn
-      use Mpicomm, only: mpireduce_sum_int
-      use SharedVariables, only: get_shared_variable
+    use Sub, only: grad, dot2_mn
+    use Mpicomm, only: mpireduce_sum_int
+    use SharedVariables, only: get_shared_variable
 !
     integer :: l,i_pdf
     integer, parameter :: n_pdf=3001
@@ -3681,10 +3681,10 @@ outer:do ikz=1,nz
     pdf_yy=0
     pdf_scl=1./pdf_rms
 !
-!$omp parallel private(pdf_var,logscale,gcc,gcc2,l,pdf_dx,pdf_dx1,i_pdf) num_threads(num_helper_threads) &
-!$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
-!$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
-!$ thread_id = omp_get_thread_num()+1
+    !$omp parallel private(pdf_var,logscale,gcc,gcc2,l,pdf_dx,pdf_dx1,i_pdf) num_threads(num_helper_threads) &
+    !$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+    !$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+    !$ thread_id = omp_get_thread_num()+1
 !
 !  m-n loop
 !
@@ -3750,7 +3750,7 @@ outer:do ikz=1,nz
       endif
     enddo
     enddo
-!$omp end parallel
+    !$omp end parallel
 !
 !  Communicate and append from root processor.
 !
