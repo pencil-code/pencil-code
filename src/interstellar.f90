@@ -3138,8 +3138,11 @@ Get_z:if (lroot) then
 ! FG notes for omp: irho_ss, lentropy, nx, lgpu, iEXPLOSION_TOO_HOT priv ierr
         !!$omp target if(loffload) !map(from: ierr,cum_mass) map(tofrom: SNR) & !needs: cloud_rho,lncloud_TT,preSN) &
         !!$omp        has_device_addr(f)  !globals: ip, irho,ilnrho,ilnTT,iss,ldensity_nolog
-        !$omp  parallel do collapse(2) num_threads(num_helper_threads) private(dV,rho,lnTT,l,ipsn) &
-        !$omp reduction(+:cum_mass) firstprivate(lfound) !!!reduction unclear
+        !TP: this is not safe to multithread naively
+        !TP: if one want so multithread this then multithread the scan operation to calculate the CDF and after that pick the random
+        !number
+        !!$omp  parallel do collapse(2) num_threads(num_helper_threads) private(dV,rho,lnTT,l,ipsn) &
+        !!$omp reduction(+:cum_mass) firstprivate(lfound) !!!reduction unclear
 mn_loop:do n=n1,n2
         do m=m1,m2
           !$ if (lfound) cycle
@@ -3177,14 +3180,16 @@ mn_loop:do n=n1,n2
                   endif
                 enddo
                 !$ lfound = .true.
-                include 'exit_mn.h' !exits mn_loop if not multi-threaded, otherwise does nothing
+                !TP: this is not safe!
+                !include 'exit_mn.h' !exits mn_loop if not multi-threaded, otherwise does nothing
                                     !exit_mn.h is only temporarily created by make!
               endif
             endif
           enddo
         enddo
         enddo mn_loop   !!!MR: whatif lfound=.false.? FG: cum_mass in (0,1) as is franSN(1) but needs to be checked before use
-        !$omp end  parallel do
+        !TP: see comment at the start of mn_loop
+        !!$omp end  parallel do
         !!$omp end target
         if (ip==1963) then
           tmpsite=(/SNR%indx%l,SNR%indx%m,SNR%indx%n,SNR%indx%iproc/)
