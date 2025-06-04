@@ -410,8 +410,10 @@ module Energy
   integer :: idiag_fturbfz=0    ! XYAVG_DOC: $\left<\varrho T \chi_t \nabla_z
                                 ! XYAVG_DOC: s'\right>_{xy}$ \quad(turbulent
                                 ! XYAVG_DOC: heat flux)
-  integer :: idiag_dcoolz=0     ! XYAVG_DOC: surface cooling flux
-  integer :: idiag_heatmz=0     ! XYAVG_DOC: heating
+  integer :: idiag_dcoolz=0     ! XYAVG_DOC: divergence of heating term
+                                ! XYAVG_DOC: (only for get_heat_cool_gravz)
+  integer :: idiag_heatmz=0     ! XYAVG_DOC: divergence of heating term
+                                ! XYAVG_DOC: (all terms except tau_relax_ss and tau_cool_ss)
   integer :: idiag_Kkramersmz=0 ! XYAVG_DOC: $\left< K_0 T^{(3-b)}/\rho^{(a+1)} \right>_{xy}$
   integer :: idiag_ethmz=0      ! XYAVG_DOC: $\left<\varrho e\right>_{xy}$
   integer :: idiag_fpreszmz=0   ! XYAVG_DOC: $-\left<\frac{\nabla p}{\varrho}\right>_{xy}$
