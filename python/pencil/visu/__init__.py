@@ -22,7 +22,7 @@ try:
     from . import pv_plotter_utils
     from . import pv_volume_plotter
 #    from . import rvid_box_vista
-except Exception as e:
+except ImportError as e:
     pc_print(f"Exception while loading PyVista plotter tools. Exception: {e}")
     pc_print(
         "Warning: Make sure you have all the required libraries! See pv_plotter.py"
@@ -31,6 +31,6 @@ except Exception as e:
 
 try:
     from . import rvid_box
-except:
+except ImportError:
     pc_print("Warning: Could not import visu.rvid_box. Try:")
     pc_print("$ conda install -c plotly plotly-orca psutil requests")
