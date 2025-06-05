@@ -7,8 +7,7 @@ from .util import pc_print
 
 try:
     import h5py
-# except ImportError:
-except:
+except ImportError:
     pc_print(
         "Error: You need to install h5py library doing 'pip3 install h5py' (Python 3) \
             or 'pip install h5py' (Python 2)."
@@ -17,7 +16,8 @@ except:
 try:
     import os
     os.environ['HDF5_USE_FILE_LOCKING']='FALSE'
-except:
+except ImportError:
+    #Kishore/2025-Jun-05: what kind of situation is this expected to fail in? `os` is part of the Python standard library.
     pc_print("os could not be imported -> HDF5 file locking still in effect.")
     
 # Load sub-modules.
