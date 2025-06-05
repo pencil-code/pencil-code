@@ -247,7 +247,7 @@ float MSE(){
 #endif
 }
 /***********************************************************************************************/
-void torch_infer_c_api(int *itstub){	
+extern "C" void torch_infer_c_api(int *itstub){	
 #if TRAINING
 	#include "user_constants.h"
 
@@ -1040,7 +1040,7 @@ extern "C" void registerGPU()
 #endif
 }
 /***********************************************************************************************/
-void torch_train_c_api(AcReal *loss_val) {
+extern "C" void torch_train_c_api(AcReal *loss_val) {
 #if TRAINING
   #include "user_constants.h"
 	
