@@ -95,7 +95,7 @@ class Stream(object):
                 with warnings.catch_warnings():
                     warnings.filterwarnings("ignore", category=Warning)
                     from eqtools.trispline import Spline
-            except:
+            except ImportError:
                 print(
                     "Warning: Could not import eqtools.trispline.Spline for tricubic interpolation.\n"
                 )
