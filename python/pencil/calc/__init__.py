@@ -18,6 +18,6 @@ from .Gaussian_averages import kernel_smooth, gauss_3Dsmooth
 
 try:
     from .aver2h5 import *
-except:
+except ImportError:
     pc_print("Warning: Could not import calc.aver2h5. Try:")
     pc_print("'pip3 install h5py' (Python 3) or 'pip install h5py' (Python 2).")
