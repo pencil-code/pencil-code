@@ -12,7 +12,7 @@ from .snapshot import *
 
 try:
     from .fort2h5 import *
-except:
+except ImportError:
     pc_print("Warning: Could not import io.fort2h5. Try:")
     pc_print("'pip3 install h5py' (Python 3) or 'pip install h5py' (Python 2).")
 
@@ -31,7 +31,7 @@ try:
     from .dill_load import dill_load as load
     from .dill_save import dill_save as save
     from .dill_exists import dill_exists as exists
-except:
+except ImportError:
     pc_print("Warning: Could not import io.dill*. Try:")
     pc_print("'pip3 install dill' (Python 3) or 'pip install dill' (Python 2).")
 
