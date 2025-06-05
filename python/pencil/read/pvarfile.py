@@ -260,32 +260,6 @@ class ParticleData(object):
                 read_precision = "f"
 
             if isinstance(proclist, list):
-                proc = 0
-            if proc < 0:
-                proc_dirs = self.__natural_sort(
-                    filter(lambda s: s.startswith("proc"), os.listdir(datadir))
-                )
-                if proc_dirs.count("proc_bounds.dat") > 0:
-                    proc_dirs.remove("proc_bounds.dat")
-                if param.lcollective_io:
-                    # A collective IO strategy is being used
-                    proc_dirs = ["allprocs"]
-            #                else:
-            #                    proc_dirs = proc_dirs[::dim.nprocx*dim.nprocy]
-                ptmp=np.zeros((npvar,pdim.npar), dtype=dtype)
-                if ID:
-                    idtmp=np.zeros((pdim.npar), dtype=dtype)
-
-                ind0 = 0
-                for directory in proc_dirs:
-                    file_name = join(datadir, directory, pvarfile)
-                    ids, data, ind1 = self._read_singleproc_dat(file_name, dtype, read_precision, pdim.mpvar)
-                    if ID:
-                        idtmp[ind0:ind0+ind1] = ids
-                    for idx, key in zip(range(npvar),pfkeys.keys()):
-                        ptmp[idx, ind0:ind0+ind1] = data[pfkeys[key]-1]
-                    ind0 += ind1
-            elif isinstance(proclist, list):
                 ind1 = 0
                 proc_dirs = list()
                 for idir in proclist:
@@ -296,10 +270,22 @@ class ParticleData(object):
                         ind1 += infile.read_record(dtype='i')[0]
                         infile.close()
                     else:
-                        print("{} is not a valid proc directory".format(idir))
-                ptmp=np.zeros((npvar,ind1), dtype=dtype)
+                        raise ValueError(f"{idir} is not a valid proc directory")
+                npar = ind1
+            elif proc < 0:
+                proc_dirs = self.__natural_sort(
+                    filter(lambda s: s.startswith("proc"), os.listdir(datadir))
+                )
+                if proc_dirs.count("proc_bounds.dat") > 0:
+                    proc_dirs.remove("proc_bounds.dat")
+                if param.lcollective_io:
+                    proc_dirs = ["allprocs"]
+                npar = pdim.npar
+
+            if proc_dirs is not None:
+                ptmp=np.zeros((npvar,npar), dtype=dtype)
                 if ID:
-                    idtmp=np.zeros((ind1), dtype=dtype)
+                    idtmp=np.zeros((npar), dtype=dtype)
 
                 ind0 = 0
                 for directory in proc_dirs:
