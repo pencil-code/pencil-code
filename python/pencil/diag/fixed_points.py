@@ -684,7 +684,7 @@ class FixedPoint(object):
 
         try:
             import h5py
-        except:
+        except ImportError:
             print("Error in diag/fixed_points.py: Dependency of h5py not fullfilled.")
 
         self.params.destination = destination
