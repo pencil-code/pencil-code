@@ -712,6 +712,10 @@ module Density
           lmassdiff_fix=.true.
           call information('initialize_density','lmassdiff_fix=F now the default', 0)
         endif
+        if (lmassdiff_fix.and.lgamma_is_1.and.lentropy) then
+          call warning('initialize_density','set lgamma_is_1=F if gamma/=1 with entropy', 0)
+        endif
+
 !
 !  Dynamical hyper-diffusivity operates only for mesh formulation of hyper-diffusion
 !
