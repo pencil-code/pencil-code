@@ -229,7 +229,8 @@ class ParticleData(object):
         npvar = len(pfkeys)
         if ID:
             pfkeys["ID"] = -1
-        print(pfkeys.keys())
+        if not quiet:
+            print(pfkeys.keys())
 
         #cleanup of varfile string
         if not ipvar<0:
