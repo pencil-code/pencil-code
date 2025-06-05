@@ -123,7 +123,7 @@ class ParticleData(object):
         pvarfile="",
         datadir="data",
         proc=-1,
-        proclist=0,
+        proclist=None,
         ipvar=-1,
         quiet=True,
         pflist=None,
