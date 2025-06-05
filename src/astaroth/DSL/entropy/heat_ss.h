@@ -21,7 +21,9 @@
 #if LHYDRO
   if (lvisc_nu_const){rhs += 2. * nu * contract(traceless_rateof_strain(UU))}
   if (lvisc_rho_nu_const_bulk){rhs += zeta * rho1 * divergence(UU) * divergence(UU)}   // precalculated?
+#if LSHOCK
   if (lvisc_nu_shock && lshock_heat) {rhs += nu_shock * SHOCK * divergence(UU) * divergence(UU)}
+#endif
 #endif
 #if LMAGNETIC
   j = (gradient_of_divergence(AA) - laplace(AA))/mu0
