@@ -86,6 +86,8 @@ output real AC_dt1_max
 
 #include "equations.h"
 
+global output real AC_current_total_mass
+
 enum PC_SUB_STEP_NUMBER
 {
 	PC_FIRST_SUB_STEP,

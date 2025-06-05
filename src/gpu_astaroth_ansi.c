@@ -17,6 +17,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <dlfcn.h>
+#include <stdbool.h>
 
 #include "headers_c.h"
 
@@ -27,6 +28,7 @@ void initializeGPU(REAL*, FINT);
 void finalizeGPU();
 void getFArrayIn(REAL **);
 void substepGPU(int );
+void beforeBoundaryGPU(bool, int);
 void sourceFunctionAndOpacity(int);
 void copyFarray(REAL*);
 void loadFarray();
@@ -105,6 +107,13 @@ void FTNIZE(finalize_gpu_c)()
 void FTNIZE(get_farray_ptr_gpu_c)(REAL** p_f_in)
 {
   getFArrayIn(p_f_in);
+}
+/* ---------------------------------------------------------------------- */
+void FTNIZE(before_boundary_gpu_c)(FINT *lrmv, FINT *isubstep)
+{
+  beforeBoundaryGPU(
+		  (*lrmv == 1) ? true : false,
+		  *isubstep);
 }
 /* ---------------------------------------------------------------------- */
 void FTNIZE(rhs_gpu_c)(FINT *isubstep)

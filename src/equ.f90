@@ -60,7 +60,7 @@ module Equ
 ! To check ghost cell consistency, please uncomment the following line:
 !     use Ghost_check, only: check_ghosts_consistency
       use GhostFold, only: fold_df, fold_df_3points
-      use Gpu, only: rhs_gpu, copy_farray_from_GPU, get_farray_ptr_gpu
+      use Gpu, only: before_boundary_gpu, rhs_gpu, copy_farray_from_GPU, get_farray_ptr_gpu
       use Gravity
       use Hydro
       use Interstellar, only: interstellar_before_boundary
@@ -214,6 +214,8 @@ module Equ
           if (lchemistry)    call chemistry_before_boundary(f)
           if (lparticles.and.lspecial) call particles_special_bfre_bdary(f)
           if (lshock)        call shock_before_boundary(f)
+        else
+          call before_boundary_gpu(f,lrmv,itsub)
         endif
 !
 !  Prepare x-ghost zones; required before f-array communication

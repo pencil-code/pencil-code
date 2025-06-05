@@ -4171,12 +4171,12 @@ module Density
     call copy_addr(reference_state,p_par(69)) ! (nx) (9)
     call copy_addr(beta_glnrho_scaled,p_par(70)) ! real3
     call copy_addr(lhubble_density,p_par(71)) ! bool
-    !TP: needed for transpilation but name collides with hydro so will not work without
-    !    module qualified name, so to not break handwritten DSL code have it on comment
     call copy_addr(wdamp_rho,p_par(72))
 
     call copy_addr(h_sld_dens,p_par(73))
     call copy_addr(nlf_sld_dens,p_par(74))
+    call copy_addr(lconserve_total_mass,p_par(75)) ! bool
+    call copy_addr(total_mass,p_par(76))
 
     endsubroutine pushpars2c
 !***********************************************************************

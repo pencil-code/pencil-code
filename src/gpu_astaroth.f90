@@ -28,6 +28,7 @@ module GPU
   external finalize_gpu_c
   external get_farray_ptr_gpu_c
   external rhs_gpu_c
+  external before_boundary_gpu_c
   external source_function_and_opacity_gpu_c
   external load_farray_c
   external reload_gpu_config_c
@@ -152,6 +153,26 @@ contains
       call rhs_gpu_c(isubstep)
 !
     endsubroutine rhs_GPU
+!**************************************************************************
+    subroutine before_boundary_gpu(f,lrmv,isubstep)
+!
+      use General, only: notanumber
+
+      real, dimension (mx,my,mz,mfarray), intent(INOUT) :: f
+      integer,                            intent(IN)    :: isubstep
+      logical :: lrmv
+      integer :: lrmv_int
+!
+      
+      !TP: pass int since integers are more compatible with C than logical to booleans
+      if(lrmv) then
+        lrmv_int = 1
+      else
+        lrmv_int = 0
+      endif
+      call before_boundary_gpu_c(lrmv_int,isubstep)
+!
+    endsubroutine before_boundary_gpu
 !**************************************************************************
     subroutine gpu_set_dt
 !

@@ -61,6 +61,19 @@ contains
 !
     endsubroutine rhs_GPU
 !**************************************************************************
+    subroutine before_boundary_gpu(f,lrmv,itsub)
+!
+      real, dimension (:,:,:,:) :: f
+      integer :: itsub
+      logical :: early_finalize
+      logical :: lrmv
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(lrmv)
+      call keep_compiler_quiet(itsub)
+!
+    endsubroutine before_boundary_gpu
+!**************************************************************************
     function get_ptr_GPU(ind1,ind2,lout) result(pFarr)
 
       integer :: ind1

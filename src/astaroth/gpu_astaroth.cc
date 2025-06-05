@@ -120,6 +120,9 @@ bool calculated_coeff_scales = false;
   #define lcuda_aware_mpi            lcuda_aware_mpi__mod__cdata
   #define lsecond_force lsecond_force__mod__forcing
   #define lforce_helical lforce_helical__mod__forcing
+
+  #define lrmv lrmv__mod__cdata
+  #define lconserve_total_mass lconserve_total_mass__mod__density
 #endif
 
 AcReal dt1_interface;
@@ -1114,6 +1117,12 @@ void scaling(){
 
 	calculated_coeff_scales = true;
 #endif
+}
+/***********************************************************************************************/
+extern "C" void beforeBoundaryGPU(bool lrmv, int isubstep)
+{
+ 	acDeviceSetInput(acGridGetDevice(), AC_lrmv,lrmv);
+	acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_before_boundary_steps),1);
 }
 /***********************************************************************************************/
 extern "C" void substepGPU(int isubstep)
