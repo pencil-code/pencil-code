@@ -1,5 +1,6 @@
 import numpy as np
 import os
+from scipy.io import FortranFile
 
 def pvar(*args, **kwargs):
     """
@@ -200,7 +201,6 @@ class ParticleData(object):
         """
 
         from os.path import expanduser, isdir, join
-        from scipy.io import FortranFile
         from pencil import read
         from pencil.math import is_number
 
@@ -276,21 +276,15 @@ class ParticleData(object):
                 if ID:
                     idtmp=np.zeros((pdim.npar), dtype=dtype)
 
-                ind0, ind1 = 0, 0
+                ind0 = 0
                 for directory in proc_dirs:
                     file_name = join(datadir, directory, pvarfile)
-                    # Read the data.
-                    infile = FortranFile(file_name)
-                    ind1 = infile.read_record(dtype='i')[0]
-                    tmp = infile.read_record(dtype='i')
+                    ids, data, ind1 = self._read_singleproc_dat(file_name, dtype, read_precision, pdim.mpvar)
                     if ID:
-                        idtmp[ind0:ind0+ind1] = tmp
-                    tmp = dtype(infile.read_record(dtype=read_precision))
-                    tmp = tmp.reshape((pdim.mpvar,ind1))
+                        idtmp[ind0:ind0+ind1] = ids
                     for idx, key in zip(range(npvar),pfkeys.keys()):
-                        ptmp[idx, ind0:ind0+ind1] = tmp[pfkeys[key]-1]
+                        ptmp[idx, ind0:ind0+ind1] = data[pfkeys[key]-1]
                     ind0 += ind1
-                    infile.close()
             elif isinstance(proclist, list):
                 ind1 = 0
                 proc_dirs = list()
@@ -307,33 +301,22 @@ class ParticleData(object):
                 if ID:
                     idtmp=np.zeros((ind1), dtype=dtype)
 
-                ind0, ind1 = 0, 0
+                ind0 = 0
                 for directory in proc_dirs:
                     file_name = join(datadir, directory, pvarfile)
-                    # Read the data.
-                    infile = FortranFile(file_name)
-                    ind1 = infile.read_record(dtype='i')[0]
-                    tmp = infile.read_record(dtype='i')
+                    ids, data, ind1 = self._read_singleproc_dat(file_name, dtype, read_precision, pdim.mpvar)
                     if ID:
-                        idtmp[ind0:ind0+ind1] = tmp
-                    tmp = dtype(infile.read_record(dtype=read_precision))
-                    tmp = tmp.reshape((pdim.mpvar,ind1))
+                        idtmp[ind0:ind0+ind1] = ids
                     for idx, key in zip(range(npvar),pfkeys.keys()):
-                        ptmp[idx, ind0:ind0+ind1] = tmp[pfkeys[key]-1]
+                        ptmp[idx, ind0:ind0+ind1] = data[pfkeys[key]-1]
                     ind0 += ind1
-                    infile.close()
             else:
                 file_name = join(datadir, "proc" + str(proc), pvarfile)
-                infile = FortranFile(file_name)
-                ind1 = infile.read_record(dtype='i')
-                tmp = infile.read_record(dtype='i')
+                ids, data, _ = self._read_singleproc_dat(file_name, dtype, read_precision, pdim.mpvar)
                 if ID:
-                    idtmp = tmp
-                tmp = dtype(infile.read_record(dtype=read_precision))
-                tmp = tmp.reshape((pdim.mpvar,ind1))
-                infile.close()
+                    idtmp = ids
                 for idx, key in zip(range(npvar),pfkeys.keys()):
-                    ptmp[idx] = tmp[pfkeys[key]-1]
+                    ptmp[idx] = data[pfkeys[key]-1]
 
             for idx, key in zip(range(npvar),pfkeys.keys()):
                 if "ID" in key:
@@ -378,3 +361,11 @@ class ParticleData(object):
         convert = lambda text: int(text) if text.isdigit() else text.lower()
         alphanum_key = lambda key: [convert(c) for c in re.split("([0-9]+)", key)]
         return sorted(procs_list, key=alphanum_key)
+
+    def _read_singleproc_dat(self, file_name, output_dtype, read_precision, mpvar):
+        with FortranFile(file_name) as infile:
+            ind1 = infile.read_record(dtype='i')[0]
+            ids = infile.read_record(dtype='i')
+            data = output_dtype(infile.read_record(dtype=read_precision))
+            data = data.reshape((mpvar,ind1))
+            return ids, data, ind1
