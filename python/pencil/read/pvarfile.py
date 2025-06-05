@@ -245,6 +245,7 @@ class ParticleData(object):
             pvarfile = "P" + varfile
         if len(pvarfile)==0:
             pvarfile = "pvar.dat"
+
         if param.io_strategy == "HDF5":
             import h5py
             pvarfile = str.strip(pvarfile, ".dat") + ".h5"
@@ -252,7 +253,6 @@ class ParticleData(object):
                 for key in hf["part"].keys():
                     if key in pfkeys.keys():
                         setattr(self, key.lower(), hf["part"][key][()])
-        #
         else:
             if dim.precision == "D":
                 read_precision = "d"
@@ -323,6 +323,7 @@ class ParticleData(object):
                     setattr(self, key.lower(), idtmp)
                 else:
                     setattr(self, key.lower(), ptmp[idx])
+
         try:
             #Position vector
             setattr(self, "xxp", np.array([self.xp, self.yp, self.zp]))
