@@ -21,7 +21,7 @@
 #include "headers_c.h"
 
 void torch_train_c_api(REAL*); 
-void torch_infer_c_api(int *);
+void torch_infer_c_api(int);
 void registerGPU();
 void initializeGPU(REAL*, FINT);
 void finalizeGPU();

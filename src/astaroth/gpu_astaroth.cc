@@ -247,7 +247,7 @@ float MSE(){
 #endif
 }
 /***********************************************************************************************/
-extern "C" void torch_infer_c_api(int *itstub){	
+extern "C" void torch_infer_c_api(int itstub){	
 #if TRAINING
 	#include "user_constants.h"
 
@@ -287,7 +287,7 @@ extern "C" void torch_infer_c_api(int *itstub){
 
 	float vloss = MSE();
  	
-	if (*itstub == 1){
+	if (itstub == 1){
 		printf("Validation error is: %f\n", vloss);
 		print_debug();
 	}
