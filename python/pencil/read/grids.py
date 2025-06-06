@@ -265,12 +265,6 @@ class Grid(object):
         self.Ly = Ly
         self.Lz = Lz
 
-@copy_docstring(Grid.read)
-    def grid(*args, **kwargs):
-        grid_tmp = Grid()
-        grid_tmp.read(*args, **kwargs)
-        return grid_tmp
-
     def restrict(self,irange_x,irange_y,irange_z):
         """
         Restrict the grid arrays according to the index ranges irange_[xyz]
@@ -289,3 +283,10 @@ class Grid(object):
             self.z = self.z[irange_z[0]:irange_z[1]]
             self.dz_1 = self.dz_1[irange_z[0]:irange_z[1]]
             self.dz_tilde = self.dz_tilde[irange_z[0]:irange_z[1]]
+
+
+@copy_docstring(Grid.read)
+def grid(*args, **kwargs):
+    grid_tmp = Grid()
+    grid_tmp.read(*args, **kwargs)
+    return grid_tmp
