@@ -298,17 +298,17 @@ class ParticleData(object):
         """
         Note that at least with io_dist, all the particle variables (including
         aux) are written out into the snapshots (see
-        io_dist.f90/output_part_snap). I am not sure if the auxiliary variables
-        should be kept in the snapshot; Fred's earlier implementation seemed to
-        assume the auxiliary variables are not there, and so I am discarding
-        them here.
+        io_dist.f90/output_part_snap).
+
+        Kishore: I am not sure if the auxiliary variables should be kept in the
+        Kishore: snapshot; Fred's earlier implementation seemed to assume the
+        Kishore: auxiliary variables are not in the snapshot.
         """
         with FortranFile(file_name) as infile:
             ind1 = infile.read_record(dtype='i')[0]
             ids = infile.read_record(dtype='i')
             data = output_dtype(infile.read_record(dtype=read_precision))
             data = data.reshape((mpvar+mpaux,ind1))
-            data = data[:mpvar] #discard the aux variables
             return ids, data, ind1
 
     def _read_pvar_nonhdf5(self, dim, pdim, param, proclist, proc, datadir, npvar, dtype, ID, pvarfile, pfkeys):
