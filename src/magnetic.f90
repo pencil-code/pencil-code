@@ -313,7 +313,7 @@ module Magnetic
   real :: eta_x0=1.0, eta_x1=1.0, eta_y0=1.0, eta_y1=1.0
   real :: eta_r0=1.0, eta_r1=1.0
   real :: alphaSSm=0.0, J_ext_quench=0.0, B2_diamag=0.0
-  real :: k1_ff=1.0, ampl_ff=1.0, swirl=1.0
+  real :: k1_ff=1.0, ampl_ff=1.0, swirl=1.0, k1_ff_mag
   real :: k1x_ff=1.0, k1y_ff=1.0, k1z_ff=1.0
   real :: inertial_length=0.0, linertial_2
   real :: forcing_continuous_aa_phasefact=1.0
@@ -1978,6 +1978,7 @@ module Magnetic
 !  Calculate coskz and sinkz for calculating the phase of a Beltrami field
 !  The choice to use k1_ff may not be optimal, but keep it for now.
 !
+      k1_ff_mag=k1_ff
       if (idiag_bsinphz/=0 .or. idiag_bcosphz/=0 &
           .or. idiag_uxbcmx/=0 .or. idiag_uxbcmy/=0 &
           .or. idiag_uxbsmx/=0 .or. idiag_uxbsmy/=0 ) then
@@ -11642,6 +11643,7 @@ print*,'AXEL2: should not be here (eta) ... '
     call copy_addr(alphassm,p_par(158))
     call copy_addr(j_ext_quench,p_par(159))
     call copy_addr(b2_diamag,p_par(160))
+    call copy_addr(k1_ff_mag,p_par(161))
     call copy_addr(ampl_ff,p_par(162))
     call copy_addr(swirl,p_par(163))
     call copy_addr(ampl_fcont_aa,p_par(164))
@@ -11752,7 +11754,6 @@ print*,'AXEL2: should not be here (eta) ... '
     !    module qualified name, so to not break handwritten DSL code have it on comment
     !call copy_addr(lrhs_max,p_par(261)) ! bool
     !call copy_addr(gamma1,p_par(262))
-    !call copy_addr(k1_ff,p_par(161))
 
     call copy_addr(lrelaxprof_glob_scaled,p_par(263)) ! bool
     call copy_addr(scl_uxb_in_ohm,p_par(264))
