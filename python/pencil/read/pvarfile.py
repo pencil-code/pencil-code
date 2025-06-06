@@ -294,12 +294,21 @@ class ParticleData(object):
         alphanum_key = lambda key: [convert(c) for c in re.split("([0-9]+)", key)]
         return sorted(procs_list, key=alphanum_key)
 
-    def _read_singleproc_dat(self, file_name, output_dtype, read_precision, mpvar):
+    def _read_singleproc_dat(self, file_name, output_dtype, read_precision, mpvar, mpaux):
+        """
+        Note that at least with io_dist, all the particle variables (including
+        aux) are written out into the snapshots (see
+        io_dist.f90/output_part_snap). I am not sure if the auxiliary variables
+        should be kept in the snapshot; Fred's earlier implementation seemed to
+        assume the auxiliary variables are not there, and so I am discarding
+        them here.
+        """
         with FortranFile(file_name) as infile:
             ind1 = infile.read_record(dtype='i')[0]
             ids = infile.read_record(dtype='i')
             data = output_dtype(infile.read_record(dtype=read_precision))
-            data = data.reshape((mpvar,ind1))
+            data = data.reshape((mpvar+mpaux,ind1))
+            data = data[:mpvar] #discard the aux variables
             return ids, data, ind1
 
     def _read_pvar_nonhdf5(self, dim, pdim, param, proclist, proc, datadir, npvar, dtype, ID, pvarfile, pfkeys):
@@ -339,7 +348,7 @@ class ParticleData(object):
             ind0 = 0
             for directory in proc_dirs:
                 file_name = join(datadir, directory, pvarfile)
-                ids, data, ind1 = self._read_singleproc_dat(file_name, dtype, read_precision, pdim.mpvar)
+                ids, data, ind1 = self._read_singleproc_dat(file_name, dtype, read_precision, pdim.mpvar, pdim.mpaux)
                 if ID:
                     idtmp[ind0:ind0+ind1] = ids
                 for idx, key in zip(range(npvar),pfkeys.keys()):
@@ -347,7 +356,7 @@ class ParticleData(object):
                 ind0 += ind1
         else:
             file_name = join(datadir, "proc" + str(proc), pvarfile)
-            ids, data, _ = self._read_singleproc_dat(file_name, dtype, read_precision, pdim.mpvar)
+            ids, data, _ = self._read_singleproc_dat(file_name, dtype, read_precision, pdim.mpvar, pdim.mpaux)
             if ID:
                 idtmp = ids
             for idx, key in zip(range(npvar),pfkeys.keys()):
