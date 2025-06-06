@@ -1105,6 +1105,9 @@ sub test_perl_cmd {
 # Return error message.
     my $cmd   = shift;
     return test_timelimited_perl_cmd($cmd, 0, @_);
+
+    #Kishore: can the code below ever be active? There is a return above.
+
     my $dir   = (shift || "<Unknown directory>");
     my $phase = (shift || "<Unknown phase>");
     my $quiet = (shift || 0);   # flag for suppressing the 'ok'
