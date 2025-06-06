@@ -1451,8 +1451,9 @@ sub test_scripts {
         }
     }
 
+    my $n_tests = @tests;
     print "    Running script tests.. ";
-    printf "$indi_fmt ", '';
+    printf "$indi_fmt ", "($n_tests tests)";
 
     my $test_cmd = sub {
         $tester->run_tests(@tests);
