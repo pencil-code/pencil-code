@@ -1,0 +1,5 @@
+This file exists to prevent the default LOCKing
+behaviour which prevents run.x being run twice 
+simultaneously in one run directory.
+
+This allows you to break out of auto-test easily.

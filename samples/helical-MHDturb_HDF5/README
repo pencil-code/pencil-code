@@ -1,0 +1,21 @@
+Directory:
+    ${PENCIL_HOME}/samples/helical-MHDturb-HDF5
+SVN Id:
+    $Id$
+Maintainer:
+    Kishore G <kishore96/gmail[dot]com>
+Added:
+    04-Jun-2025
+Status:
+    succeeds # One of [succeeds|failing since <date>|obsolete| ...]
+Comments:
+    Identical to helical-MHDTurb, except that io_hdf5 is used (and we use
+    mpicomm since nompicomm does not work with hdf5_io_parallel). The purpose
+    is to test whether the Python routines in pc.read work with HDF5 simulations.
+    The current reference data are the same as in the standard (nohdf5,
+    nompicomm) sample. Note that in the Python module, the HDF5 2D averages are
+    transposed (x-z) as compared to the io_dist ones: with HDF5, the axis
+    ordering of yaver is [t,z,x]; while without HDF5, it is [t,x,z].
+    
+    I have also removed the lzero_spec_zerok option from power_spectrum_run_pars
+    to get the sample to work on my somewhat older development branch.

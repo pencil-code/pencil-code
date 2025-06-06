@@ -1,0 +1,36 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-   vim: set fileencoding=utf-8 :
+
+# Set up Python load path and configure a matplotlib backend that does not
+# need X11. This needs to happen before importing the pencil module.
+import sys
+sys.path.append('../../../python')
+import matplotlib
+matplotlib.use('agg')
+import numpy as np
+import pencil as pc
+
+
+# Description:
+#   Read time series and data cube, write a few values
+
+datadir = '../data'
+
+ts = pc.read.ts(datadir=datadir, quiet=True)
+var = pc.read.var(datadir=datadir, trimall=True, quiet=True)
+
+
+# Now write to file
+file = open('read_data.out', 'w')
+
+file.write('ts.times :')
+for t in ts.t[0:5]:
+    file.write(' %g' % (t, ))
+file.write('\n')
+
+file.write('aa(5,5,0:4,1) :')
+for a in var.aa[1, 0:5, 5, 5]:
+    file.write(' %g' % (a, ))
+file.write('\n')
+
+file.close()

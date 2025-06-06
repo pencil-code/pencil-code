@@ -1,0 +1,34 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Initialisation parameters for forced helical MHD turbulence
+!
+&init_pars
+  cvsid='$Id$',
+  !random_gen='system'  !(these commented lines are other possible options)
+  !random_gen='min_std'
+  random_gen='nr_f90'
+/
+&eos_init_pars
+  gamma=1.
+/
+&hydro_init_pars
+/
+&density_init_pars
+/
+&magnetic_init_pars
+  !initaa='Beltrami-y', amplaa=-0.01  !(+ve amplaa means now positive helicity)
+  initaa='gaussian-noise', amplaa=1e-4
+  lcoulomb=T
+/
+&pscalar_init_pars
+  initlncc='wave-z', ampllncc=1e-0
+/
+&particles_init_pars
+  initxxp='random'
+  lparticlemesh_cic=T
+/
+&particles_stalker_init_pars
+  dstalk=0.1
+/
+&poisson_init_pars
+/
