@@ -925,6 +925,9 @@ module Hydro
 !
 !  20-nov-04/anders: coded
 !
+      lpenc_requested(i_divu)=.true.
+      lpenc_requested(i_u2)=.true.
+!
       if (lparticles_lyapunov .or. lparticles_caustics) lpenc_requested(i_uij) = .true.
 !AXEL if (ladvection_velocity) then
 !       if (lweno_transport) then
@@ -936,8 +939,6 @@ module Hydro
 !     endif
 !     if (lprecession) lpenc_requested(i_rr)=.true.
 !     if (ldt.or.(ekman_friction/=0)) lpenc_requested(i_uu)=.true.
-!
-      if (lisotropic_advection) lpenc_requested(i_u2)=.true.
 !
 !  The following only play a role if lsphere_in_a_box
 !  and there is a buoyancy term. (If only hydro, there is no buoyancy.)
