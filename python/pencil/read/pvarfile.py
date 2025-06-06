@@ -253,7 +253,7 @@ class ParticleData(object):
                     if key in pfkeys.keys():
                         setattr(self, key.lower(), hf["part"][key][()])
         else:
-            self._read_pvar_nonhdf5(dim, pdim, param, proclist, proc, datadir, npvar, dtype, ID, pvarfile)
+            self._read_pvar_nonhdf5(dim, pdim, param, proclist, proc, datadir, npvar, dtype, ID, pvarfile, pfkeys)
 
         try:
             #Position vector
@@ -302,7 +302,7 @@ class ParticleData(object):
             data = data.reshape((mpvar,ind1))
             return ids, data, ind1
 
-    def _read_pvar_nonhdf5(self, dim, pdim, param, proclist, proc, datadir, npvar, dtype, ID, pvarfile):
+    def _read_pvar_nonhdf5(self, dim, pdim, param, proclist, proc, datadir, npvar, dtype, ID, pvarfile, pfkeys):
         if dim.precision == "D":
             read_precision = "d"
         else:
