@@ -1139,6 +1139,8 @@ sub test_timelimited_perl_cmd {
 
     print STDERR "\nRunning Perl command\n" if ($debug);
 
+    my $n_tests = 0;
+    my $n_failed = 0;
     my ($error_count, $res) = (0, '');
     eval {
         local $SIG{ALRM} = sub { die "timed out\n" }; # NB: \n is required here
@@ -1149,12 +1151,16 @@ sub test_timelimited_perl_cmd {
         $error_count += $bad;
         $res .= $output if $bad;
         print STDERR "good: $good, bad: $bad, errors: $error_count\n" if $debug;
+        $n_tests = $good + $bad;
+        $n_failed = $bad;
     };
     if ($@) {
         die unless $@ eq "timed out\n";  # propagate unexpected errors
         $error_count++;
         $res .= ' -- ' if defined $res;
         $res .= 'Timed out';
+    } else {
+        $res = "Failed $n_failed/$n_tests script tests.\n$res";
     }
 
     print STDERR " ..done \n" if ($debug);
