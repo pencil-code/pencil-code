@@ -506,7 +506,11 @@ class Averages(object):
                 # Kishore: Fred, you replaced var_names[0] by the above, but this breaks the reading of 2D averages (e.g. yaver). Can you please check if what I have now done below addresses your concern?
                 if len(var_names) > 0:
                     data_shape = [len(itlist), *tmp[f"{itlist[0]}/{var_names[0]}"].shape]
+                else:
+                    #TODO (Kishore): should this be an error? I can't think of a legitimate situation where var_names is empty (see the `if var_names is not None:` block at the beginning of this function, where a length-zero var_names is explicitly overridden, and entries of var_names not in `variables` are explicitly removed).
+                    pass
                 for var in var_names:
+                    #TODO (Kishore): should this be np.nan, so that there is a distinction between the average being zero and the average not being present for that particular time?
                     setattr(ext_object, var, np.zeros(data_shape, dtype=precision))
 
                 t = np.zeros(len(itlist), dtype=precision)
