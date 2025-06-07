@@ -461,7 +461,15 @@ module Equ
         if (ldiagnos.or.l1davgfirst.or.l1dphiavg.or.l2davgfirst) then
         endif
       elseif (lfirst) then
-        if (lout) then
+        if (lout.or.l1davgfirst.or.l1dphiavg.or.l2davgfirst) then
+          ! Kishore: lout is just
+          ! Kishore: `lout = (mod(it-1,it1) == 0) .and. (it > it1start)`.
+          ! Kishore: If the user is specifying d1davg or d2davg, this need not
+          ! Kishore: coincide with the iterations at which the 1D and 2D
+          ! Kishore: averages should be output. write_{1,2}daverages now uses
+          ! Kishore: tdiagnos for the timestamp that is written to the average
+          ! Kishore: files, and so I have modified the condition to ensure
+          ! Kishore: tdiagnos is updated when needed.
           tdiagnos  = t
           itdiagnos = it
           dtdiagnos = dt

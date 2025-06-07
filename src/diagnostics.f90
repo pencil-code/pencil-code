@@ -1182,7 +1182,7 @@ module Diagnostics
       real :: taver
 !
       taver = 0.0
-      t1ddiagnos = t
+      t1ddiagnos = tdiagnos
       ltimer = ip <= 12 .and. lroot
 !
       if (nnamez > 0) then
@@ -1297,7 +1297,7 @@ module Diagnostics
       real :: taver
 !
       taver = 0.0
-      t2davgfirst = t
+      t2davgfirst = tdiagnos
       ltimer = ip <= 12 .and. lroot
 !
       if (lwrite_yaverages) then
