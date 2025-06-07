@@ -6311,10 +6311,10 @@ module Initcond
         !u_im(:,:,:,i)=+ampl*v_im(:,:,:,i)*sin(-k1)/sqrt(k1*2.)
         u_re(:,:,:,i)=+ampl*v_re(:,:,:,i)/sqrt(2.*k1)*.5*(1.-tanh(ksteepness*(k1/kpeak-1.)))
         u_im(:,:,:,i)=+ampl*v_im(:,:,:,i)/sqrt(2.*k1)*.5*(1.-tanh(ksteepness*(k1/kpeak-1.)))
-        v_re(:,:,:,i)=-ampl*u_im(:,:,:,i)*k1
-        v_im(:,:,:,i)=+ampl*u_re(:,:,:,i)*k1
-print*,'AXEL2a=',i,sum(u_re(:,:,:,i)**2+u_im(:,:,:,i)**2)
-print*,'AXEL2b=',i,sum(v_re(:,:,:,i)**2+v_im(:,:,:,i)**2)
+        v_re(:,:,:,i)=-k1*u_im(:,:,:,i)
+        v_im(:,:,:,i)=+k1*u_re(:,:,:,i)
+print*,'AXEL2a=',iproc,i,sum(u_re(:,:,:,i)**2+u_im(:,:,:,i)**2)
+print*,'AXEL2b=',iproc,i,sum(v_re(:,:,:,i)**2+v_im(:,:,:,i)**2)
       enddo
 !
 !  Fourier transform to real space.
@@ -6322,10 +6322,11 @@ print*,'AXEL2b=',i,sum(v_re(:,:,:,i)**2+v_im(:,:,:,i)**2)
       do i=1,1+i1b-i1a
         call fft_xyz_parallel(u_re(:,:,:,i),u_im(:,:,:,i),linv=.true.)
         call fft_xyz_parallel(v_re(:,:,:,i),v_im(:,:,:,i),linv=.true.)
-print*,'AXEL3a=',i,sum(u_re(:,:,:,i)**2+u_im(:,:,:,i)**2)/nxgrid
-print*,'AXEL4a=',i,sum(u_re(:,:,:,i)**2)/nxgrid
-print*,'AXEL3b=',i,sum(v_re(:,:,:,i)**2+v_im(:,:,:,i)**2)/nxgrid
-print*,'AXEL4b=',i,sum(v_re(:,:,:,i)**2)/nxgrid
+print*,'AXEL3a=',iproc,i,sum(u_re(:,:,:,i)**2+u_im(:,:,:,i)**2)/nwgrid
+print*,'AXEL4a=',iproc,i,sum(u_re(:,:,:,i)**2)/nxgrid
+print*,'AXEL3b=',iproc,i,sum(v_re(:,:,:,i)**2+v_im(:,:,:,i)**2)/nwgrid
+print*,'AXEL4b=',iproc,i,sum(v_re(:,:,:,i)**2)/nxgrid
+print*,'AXEL5 =',iproc,nwgrid
       enddo
 !
 !  Use real parts of u and v for A and E.
