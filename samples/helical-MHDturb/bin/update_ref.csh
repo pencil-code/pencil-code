@@ -7,3 +7,4 @@ cp data/power_mag.dat reference_power_mag.out
 cp data/poweru.dat reference_poweru.out
 cp data/power_krms.dat reference_power_krms.out
 cp data/power_lr.dat reference_power_lr.out
+cp data/proc0/zaverages.dat reference_proc0_zaverages.out
