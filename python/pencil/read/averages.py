@@ -499,11 +499,18 @@ class Averages(object):
             else:
                 start_time = time.time()
 
-                testkey = list(tmp[str(itlist[0])].keys())[0]
-                data_shape = [len(itlist), *tmp[str(itlist[0])][testkey].shape]
-                t = np.zeros(data_shape[0], dtype=precision)
+                # testkey = list(tmp[str(itlist[0])].keys())[0] #Fred
+                # testkey = var_names[0] #Kishore
+                # data_shape = [len(itlist), *tmp[str(itlist[0])][testkey].shape]
+                # t = np.zeros(data_shape[0], dtype=precision)
+                # Kishore: Fred, you replaced var_names[0] by the above, but this breaks the reading of 2D averages (e.g. yaver). Can you please check if what I have now done below addresses your concern?
+                if len(var_names) > 0:
+                    data_shape = [len(itlist), *tmp[f"{itlist[0]}/{var_names[0]}"].shape]
                 for var in var_names:
                     setattr(ext_object, var, np.zeros(data_shape, dtype=precision))
+
+                t = np.zeros(len(itlist), dtype=precision)
+
                 for t_idx, tmp_idx in enumerate(itlist):
                     t[t_idx] = tmp[f"{tmp_idx}/time"][()]
                     for var in var_names:
