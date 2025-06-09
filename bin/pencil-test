@@ -576,17 +576,20 @@ sub tag_stable_on_success {
 
     return if ($result =~ /^Failed ([0-9]+) test/m);
 
+    if (!$local) { die "Stable tagging works only for local tests!\n"; }
+
     my $clear = "";
     my $cmd = "";
     if (-d "$pencil_home/.svn") {
-        # SVN tagging
+        # prepare SVN tagging
         $clear = "svn rm ^/tags/stable -m \"Remove old stable tag.\"";
-        #$cmd = "svn copy ^/trunk ^/tags/stable_".$date." -m \"automatic validation completed: auto-test on $host\" > /dev/null";
         my $last = "LAST_SUCCESS";
         if ($log_dir) { $last = $log_dir."/".$last; }
         my $version = `cat "$last"`;
         chomp ($version);
         $cmd = "svn copy ^/trunk ^/tags/stable -m \"Passed the full auto-test on ".$host." (".$date.")\n".$version."\" > /dev/null";
+        # execute SVN commands
+        system ($clear." && ".$cmd);
     }
     elsif (-e "$pencil_home/.git") {
         # GIT tagging
@@ -597,16 +600,6 @@ sub tag_stable_on_success {
         warn "Stable tagging not possible without SVN or GIT!\n";
         return;
     }
-
-    # execute on remote host, if requested
-    if (!$local) {
-        $clear = "ssh -x -n $host 'cd \$PENCIL_HOME;".$clear."'";
-        $cmd = "ssh -x -n $host 'cd \$PENCIL_HOME;".$cmd."'";
-    }
-
-    # execute tagging command
-    system ($clear);
-    system ($cmd);
 }
 # ---------------------------------------------------------------------- #
 sub notify_on_error {
