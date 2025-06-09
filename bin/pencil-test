@@ -226,7 +226,9 @@ my $icon_hash = '7deb02b921bc718c4d50803d8554d19f';
 icon_write ($icon_hourglass);
 my $first = 1;
 if ($local) {
-    run_tests_on(`hostname`);
+    my $host = `hostname`;
+    if ($host eq "lorraine.pab-software.com") { $host = "pencil-code.org"; }
+    run_tests_on($host);
 } else {
     foreach my $host (@ARGV) {
         run_tests_on($host)
