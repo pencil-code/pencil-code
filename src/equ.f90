@@ -458,7 +458,9 @@ module Equ
       endif     ! if (.not. lgpu)
 
       if (lmultithread) then
+        !Kishore: is it correct that tdiagnos does not need to be updated when lmultithread=T? If so, please leave a comment explaining why.
         if (ldiagnos.or.l1davgfirst.or.l1dphiavg.or.l2davgfirst) then
+          !Kishore: is this block supposed to be empty?
         endif
       elseif (lfirst) then
         if (lout.or.l1davgfirst.or.l1dphiavg.or.l2davgfirst) then
