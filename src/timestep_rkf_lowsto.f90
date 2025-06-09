@@ -162,7 +162,6 @@ module Timestep
 !  Assign pointers f and falpha to canonical farray
 !
       f => f_arr
-      falpha_arr = f_arr
       if (.not. lgpu) dt = dt_next
 !
 !  Determine a lower bound for each variable j by which to normalise the error
@@ -201,11 +200,11 @@ module Timestep
 !  Alternate registers for substep advance.
 !
         if (mod(itsub,2)==0) then
-          f => f_arr
-          falpha => falpha_arr
-        else
           falpha => f_arr
           f => falpha_arr
+        else
+          f => f_arr
+          falpha => falpha_arr
         endif
 !
 !  Set up particle derivative array.
@@ -284,13 +283,14 @@ module Timestep
 !  Increase time.
 !
         t = t + dtsub
+        if (llast.and.mod(itsub,2)==1) f_arr = falpha_arr
 !
       enddo substep_loop
 !
 !  Integrate operator split terms.
 !
       if (.not. lgpu) then
-        call split_update(falpha)
+        call split_update(f_arr)
 !
 !  Check how much the maximum error satisfies the defined accuracy threshold
 !
@@ -302,13 +302,13 @@ module Timestep
                   !requires initial f state to be stored
                   !depricated
                   if (lroot.and.lfirst.and.it==1) call warning("time_step","recommend 'rel_err' vs 'cons_frac_error'")
-                  scal = max(abs(falpha(l1:l2,m,n,j))+abs(df(l1:l2,m,n,j)),farraymin(j))
+                  scal = max(abs(f_arr(l1:l2,m,n,j))+abs(df(l1:l2,m,n,j)),farraymin(j))
                   errmaxs = max(maxval(abs(errdf(:,m-nghost,n-nghost,j))/scal),errmaxs)
                 case ('rel_err')
                   !initial f state can be overwritten
                   !TP: what is the meaning of taking the initial state into account like this?
                   !    is it to remove unnecessary low timesteps or something like that?
-                  scal = max(abs(falpha(l1:l2,m,n,j)),farraymin(j))
+                  scal = max(abs(f_arr(l1:l2,m,n,j)),farraymin(j))
                   errmaxs = max(maxval(abs(errdf(:,m-nghost,n-nghost,j))/scal),errmaxs)
                 case ('abs_err')
                   !initial f state can be overwritten
