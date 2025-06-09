@@ -198,34 +198,23 @@ class Averages(object):
                             "plane_list and avfile_list must have matching length and order"
                         )
             else:
+                good_planes = []
                 aver_file_name_list = []
                 in_file_name_list = []
-                if plane_list.count("xy") > 0:
-                    if os.path.exists(os.path.join(simdir, "xyaver.in")):
-                        in_file_name_list.append("xyaver.in")
-                        aver_file_name_list.append("xyaverages.dat")
-                if plane_list.count("xz") > 0:
-                    if os.path.exists(os.path.join(simdir, "xzaver.in")):
-                        in_file_name_list.append("xzaver.in")
-                        aver_file_name_list.append("xzaverages.dat")
-                if plane_list.count("yz") > 0:
-                    if os.path.exists(os.path.join(simdir, "yzaver.in")):
-                        in_file_name_list.append("yzaver.in")
-                        aver_file_name_list.append("yzaverages.dat")
-                if plane_list.count("y") > 0:
-                    if os.path.exists(os.path.join(simdir, "yaver.in")):
-                        in_file_name_list.append("yaver.in")
-                        aver_file_name_list.append("yaverages.dat")
-                if plane_list.count("z") > 0:
-                    if os.path.exists(os.path.join(simdir, "zaver.in")):
-                        in_file_name_list.append("zaver.in")
-                        aver_file_name_list.append("zaverages.dat")
-                if plane_list.count("phi") > 0:
-                    if os.path.exists(os.path.join(simdir, "phiaver.in")):
+                for plane in plane_list:
+                    if plane in ["xy", "xz", "yz", "y", "z"] and os.path.exists(os.path.join(simdir, f"{plane}aver.in")):
+                        good_planes.append(plane)
+                        in_file_name_list.append(f"{plane}aver.in")
+                        aver_file_name_list.append(f"{plane}averages.dat")
+                    elif plane == "phi" and os.path.exists(os.path.join(simdir, "phiaver.in")):
+                        # Kishore (2025-Jun-09) is the use of a HDF5 file below correct? TODO
+                        good_planes.append("phi")
                         in_file_name_list.append("data/averages/phiavg.list")
                         aver_file_name_list.append(os.path.join("averages", "phi.h5"))
-                if not in_file_name_list:
-                    raise ValueError("invalid plane name")
+                plane_list = good_planes
+
+                if len(good_planes) == 0:
+                    raise ValueError("All the specified planes are invalid")
 
             if not quiet:
                 print(plane_list, in_file_name_list, aver_file_name_list)
