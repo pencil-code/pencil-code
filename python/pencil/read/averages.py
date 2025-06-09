@@ -390,7 +390,7 @@ class Averages(object):
         """
         Determine if string is equal new line.
         """
-
+        #Kishore (2025-06-09): this no longer seems to be used (TODO)
         return line == "\n"
 
     def __read_h5_aver(
