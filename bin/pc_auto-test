@@ -169,6 +169,7 @@ my %tests = (
                          interlocked-fluxrings
                          conv-slab-flat
                          coronae_heatflux_boris
+                         helical-MHDturb_HDF5
                          power_xy/complex
                          power_xy/integrate_shell
                          power_xy/integrate_shell_z
