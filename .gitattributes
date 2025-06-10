@@ -3292,6 +3292,7 @@ samples/hexagon/run.in -text
 samples/hexagon/src/Makefile.local -text
 samples/hexagon/src/cparam.local -text
 samples/hexagon/start.in -text
+samples/higgsless/NEVERLOCK -text
 samples/higgsless/README.md -text
 samples/higgsless/higgsless.dat -text
 samples/higgsless/parameters.pro -text

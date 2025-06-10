@@ -22,7 +22,7 @@
 /
 &density_init_pars
   !initlnrho='nolog-shock-tube', rho_left=1e-1, rho_right=1., widthlnrho=-.01
-  lrelativistic_eos=F
+  lrelativistic_eos=T
   ldensity_nolog=T
 /
 &special_init_pars
