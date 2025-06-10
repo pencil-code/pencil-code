@@ -278,12 +278,12 @@ module Timestep
           falpha(l1:l2,m1:m2,n1:n2,1:mvar) =  f(l1:l2,m1:m2,n1:n2,1:mvar) &
                                                +  (dtsub - dt_alpha_ts(itsub)) * df(l1:l2,m1:m2,n1:n2,1:mvar)
           if (mfarray>mvar) falpha(:,:,:,mvar+1:mfarray) = f(:,:,:,mvar+1:mfarray)
+          if (llast.and.mod(itsub,2)==1) f_arr = falpha_arr
         endif
 !
 !  Increase time.
 !
         t = t + dtsub
-        if (llast.and.mod(itsub,2)==1) f_arr = falpha_arr
 !
       enddo substep_loop
 !

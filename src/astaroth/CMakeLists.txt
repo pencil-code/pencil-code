@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.19)
 
 ## Options
 option(DOUBLE_PRECISION       "Generates double precision code."                           ON)
-option(USE_HIP                "Use HIP as the underlying GPGPU library instead of CUDA"    ON)
+option(USE_HIP                "Use HIP as the underlying GPGPU library instead of CUDA"    OFF)
 option(USE_OMP                "Enables use of openmp"                                      ON)
 option(USE_DARDEL             "Target machine is Dardel(PDC, Stockholm"                    OFF)
 option(PACKED_DATA_TRANSFERS  "Enables kernel for packed data transfers"                   OFF)
@@ -35,58 +35,39 @@ if (NOT CMAKE_BUILD_TYPE)
 endif()
 message(STATUS "Build type: " ${CMAKE_BUILD_TYPE})
 
-## CUDA/HIP
-if (USE_HIP)
-  add_definitions(-DAC_USE_HIP=1)
+find_package(CUDAToolkit QUIET)
+find_package(HIP QUIET)
+if (NOT USE_HIP AND CUDAToolkit_FOUND)
+    message(STATUS "CUDA found")
+    enable_language(CUDA)
+    add_compile_options(-DDEVICE_ENABLED)
+    add_compile_options(-DCUDA_ENABLED)
+    include_directories(SYSTEM ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}) # Silence warnings originating from CUDA headers
 
-#set(GPU_TARGETS "gfx908" CACHE STRING "GPU target")
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --offload-arch=gfx908 --offload-arch=gfx90a")
+    ##TP: do not set GPU architectures to speedup debug compilations
+    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    else()
+    	set(CMAKE_CUDA_ARCHITECTURES "60;61;70;80")
+    endif()
+    message(STATUS "Enabled CUDA architectures (Astaroth): " ${CMAKE_CUDA_ARCHITECTURES})
+elseif (USE_HIP OR HIP_FOUND)
+    set(USE_HIP ON)
+    message(STATUS "HIP found")
+    enable_language(HIP)
+    add_compile_options(-DDEVICE_ENABLED)
+    add_compile_options(-DHIP_ENABLED)
+    include_directories(SYSTEM ${HIP_INCLUDE_DIRS}) # Silence warnings originating from HIP headers
 
-# Workaround for finding HIP on Triton
-  list(APPEND CMAKE_PREFIX_PATH /opt/rocm/hip /opt/rocm)
-
-# Rocm
-#include_directories(/opt/rocm/include)
-#link_directories(/opt/rocm/lib)
-
-# Roctracer
-#include_directories(/opt/rocm/roctracer/include)
-#link_directories(/opt/rocm/roctracer/lib)
-
-else ()
-
-# Commented out CUDA host compiler flags: seem to be ignored anyways
-#string (REPLACE " " "," CUDA_COMMON_FLAGS "${COMMON_FLAGS}")
-#set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -forward-unknown-to-host-compiler -Wall -Wextra -Wdouble-promotion -Wfloat-conversion -Wshadow --compiler-options=${CUDA_COMMON_FLAGS}")
-
-# To inspect ptx, run
-# cmake .. && make -j && nvcc -DAC_DOUBLE_PRECISION=1 --generate-code=arch=compute_60,code=[compute_60,sm_60] -c ../src/core/kernels/kernels.cu -I acc-runtime/api/ -I ../include/ -I ../acc-runtime/api/ -I ../acc-runtime -ptx -Xptxas=-Werror,--warn-on-double-precision-use
-# less kernels.ptx
-# Additional compilation info: --resource-usage
-
-#TP: required when compiling with container on Puhti
-  find_package(CUDAToolkit QUIET)
-  enable_language(CUDA)
-  include_directories(SYSTEM ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
-  add_compile_options(-DDEVICE_ENABLED)
-  add_compile_options(-DCUDA_ENABLED)
-
-# Not supported with older CUDA
-# set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --Werror all-warnings")
-#if (NOT DOUBLE_PRECISION)
-#set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xptxas=--warn-on-double-precision-use") # -Werror,
-#endif()
-#set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xptxas -dlcm=ca") # Cache global loads in L1
-#set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xptxas -dlcm=cg") # Cache global loads in L2 (default on >= NVIDIA Fermi)
-
-# Set device code architecture
-  if (NOT CUDA_ARCHITECTURES)
-    set(CMAKE_CUDA_ARCHITECTURES 60 61 70 80) # Default
-  else ()
-    set(CMAKE_CUDA_ARCHITECTURES ${CUDA_ARCHITECTURES}) # User-specified
-  endif()
-
+    ##TP: do not set GPU architectures to speedup debug compilations
+    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    else()
+    	set(CMAKE_HIP_ARCHITECTURES "gfx90a;gfx908")
+    endif()
+    message(STATUS "Enabled HIP architectures (Astaroth): " ${CMAKE_HIP_ARCHITECTURES})
+else()
+    message(ERROR "Did not find CUDA or HIP")
 endif()
+
 #if (USE_OMP)
 #find_package(OpenMP)
 #if (OPENMP_FOUND)

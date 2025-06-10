@@ -8,7 +8,6 @@ FSTD=     =  file_io_f2003
 MPICOMM   =   mpicomm
 IO        =   io_dist
 GPU       =   gpu_astaroth
-GPU_VENDOR = amd
 HYDRO     =   hydro
 DENSITY   =   density
 MAGNETIC  =   magnetic
@@ -22,6 +21,7 @@ MULTITHREADING = openmp
 INTERSTELLAR =   interstellar
 
 FORCING      = noforcing
-
+TIMESTEP = timestep_rkf_lowsto
 POWER        = nopower_spectrum
 REAL_PRECISION = double
+RUNTIME_COMPILATION=on

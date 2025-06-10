@@ -23,124 +23,93 @@ output real aaz_initial_max
 output real rho_initial_max
 output real ss_initial_max
 
+
+rkf4_update(real df, PC_SUB_STEP_NUMBER step_num, real dt, Field ERROR, Field BETA, Field F, reduce_dst, real maximum_error)
+{
+	error = rkf4_error(df,step_num,dt)
+	if(step_num != 0)
+	{
+		error += ERROR
+	}
+	if(step_num == 0)
+        {
+        	write(BETA,rkf4_beta(F,df,step_num,dt))
+		reduce_max(max(AC_dt_ratio*abs(F),AC_dt_epsi), reduce_dst)
+        }
+  	else if (step_num != 4)
+  	{
+  	      write(BETA,rkf4_beta(BETA,df,step_num,dt))
+  	}
+  	//Until the last step the 'proper' registers hold the alpha updates
+  	//Except in the last one we overwrite them with the beta update
+  	//No need to write the error out for the last substep
+  	if (step_num != 4)
+  	{
+  	      write(F,rkf4_alpha(F,df,step_num,dt))
+
+  	      write(ERROR,error)
+  	}
+  	else
+  	{
+  	      final = rkf4_beta(BETA,df,step_num,dt)
+  	      write(F,final)
+  	      
+  	      real scal = max(abs(final),output_value(reduce_dst))
+  	      return max(abs(error/scal),maximum_error)
+  	} 
+	return 0.0;
+}
+
+rkf4_update(real3 df, PC_SUB_STEP_NUMBER step_num, real dt, Field3 ERROR, Field3 BETA, Field3 F, reduce_dst_x, reduce_dst_y,reduce_dst_z,real maximum_error)
+{
+	error = rkf4_error(df,step_num,dt)
+	if(step_num != 0)
+	{
+		error += ERROR
+	}
+	if(step_num == 0)
+        {
+        	write(BETA,rkf4_beta(F,df,step_num,dt))
+		reduce_max(max(AC_dt_ratio*abs(F.x),AC_dt_epsi), reduce_dst_x)
+		reduce_max(max(AC_dt_ratio*abs(F.y),AC_dt_epsi), reduce_dst_y)
+		reduce_max(max(AC_dt_ratio*abs(F.z),AC_dt_epsi), reduce_dst_z)
+        }
+  	else if (step_num != 4)
+  	{
+  	      write(BETA,rkf4_beta(BETA,df,step_num,dt))
+  	}
+  	//Until the last step the 'proper' registers hold the alpha updates
+  	//Except in the last one we overwrite them with the beta update
+  	//No need to write the error out for the last substep
+  	if (step_num != 4)
+  	{
+  	      write(F,rkf4_alpha(F,df,step_num,dt))
+  	      write(ERROR,error)
+  	}
+  	else
+  	{
+  	      final = rkf4_beta(BETA,df,step_num,dt)
+  	      write(F,final)
+  	      
+  	      real scal = max(abs(final.x),output_value(reduce_dst_x))
+  	      real new_maximum_error = max(abs(error.x/scal),maximum_error)
+  	      scal = max(abs(final.y),output_value(reduce_dst_y))
+  	      new_maximum_error = max(abs(error.y/scal),new_maximum_error)
+  	      scal = max(abs(final.z),output_value(reduce_dst_z))
+  	      new_maximum_error = max(abs(error.z/scal),new_maximum_error)
+	      return new_maximum_error
+  	} 
+	return 0.0;
+}
+
 //TP: tested to work on 10-apr-2025
 Kernel twopass_solve_intermediate(PC_SUB_STEP_NUMBER step_num, real dt) {
-
-  df_uu  = duu_dt(step_num)
-  df_aa  = daa_dt(step_num)
-  df_rho = drho_dt(step_num)
-  df_ss  = denergy_dt(step_num)
-
-  uu_error  = rkf4_error(df_uu ,step_num,dt)
-  aa_error  = rkf4_error(df_aa ,step_num,dt)
-  rho_error = rkf4_error(df_rho,step_num,dt)
-  ss_error  = rkf4_error(df_ss ,step_num,dt)
- 
-  maximum_error = 0.0
-  //TP: nothing to cumulate for the first substep
-  if (step_num!=0)
-  {
-        uu_error  += ERROR_UU
-        aa_error  += ERROR_AA
-        rho_error += ERROR_RHO
-        ss_error  += ERROR_SS
-  }
-  //TP: done since e.g. UU stores now the initial state which beta update should read from
-  //For subsequent steps it should read from itself
-  //Last step is skipped since we want the beta version to finally end up in the 'proper' registers
-  if (step_num == 0)
-  {
-        write(BETA_UU ,rkf4_beta(UU ,df_uu ,step_num,dt))
-        write(BETA_AA ,rkf4_beta(AA ,df_aa ,step_num,dt))
-        write(BETA_RHO,rkf4_beta(RHO,df_rho,step_num,dt))
-        write(BETA_SS ,rkf4_beta(SS ,df_ss ,step_num,dt))
-
-	//TP: not needed if one directly uses dt_epsi
-	reduce_max(max(AC_dt_ratio*abs(UU.x),AC_dt_epsi), uux_initial_max)
-	reduce_max(max(AC_dt_ratio*abs(UU.y),AC_dt_epsi), uuy_initial_max)
-	reduce_max(max(AC_dt_ratio*abs(UU.z),AC_dt_epsi), uuz_initial_max)
-
-	reduce_max(max(AC_dt_ratio*abs(AA.x),AC_dt_epsi), aax_initial_max)
-	reduce_max(max(AC_dt_ratio*abs(AA.y),AC_dt_epsi), aay_initial_max)
-	reduce_max(max(AC_dt_ratio*abs(AA.z),AC_dt_epsi), aaz_initial_max)
-
-	reduce_max(max(AC_dt_ratio*abs(RHO),AC_dt_epsi), rho_initial_max)
-	reduce_max(max(AC_dt_ratio*abs(SS),AC_dt_epsi),  ss_initial_max)
-  }
-  else if (step_num != 4)
-  {
-        write(BETA_UU ,rkf4_beta(BETA_UU ,df_uu ,step_num,dt))
-        write(BETA_AA ,rkf4_beta(BETA_AA ,df_aa ,step_num,dt))
-        write(BETA_RHO,rkf4_beta(BETA_RHO,df_rho,step_num,dt))
-        write(BETA_SS ,rkf4_beta(BETA_SS ,df_ss ,step_num,dt))
-  }
-  //Until the last step the 'proper' registers hold the alpha updates
-  //Except in the last one we overwrite them with the beta update
-  //No need to write the error out for the last substep
-  if (step_num != 4)
-  {
-        write(UU ,rkf4_alpha(UU ,df_uu ,step_num,dt))
-        write(AA ,rkf4_alpha(AA ,df_aa ,step_num,dt))
-        write(RHO,rkf4_alpha(RHO,df_rho,step_num,dt))
-        write(SS ,rkf4_alpha(SS ,df_ss ,step_num,dt))
-
-        write(ERROR_UU, uu_error)
-        write(ERROR_AA, aa_error)
-        write(ERROR_RHO,rho_error)
-        write(ERROR_SS, ss_error)
-  }
-  else
-  {
-        uu_final  = rkf4_beta(BETA_UU ,df_uu ,step_num,dt)
-        aa_final  = rkf4_beta(BETA_AA ,df_aa ,step_num,dt)
-        rho_final = rkf4_beta(BETA_RHO,df_rho,step_num,dt)
-        ss_final  = rkf4_beta(BETA_SS ,df_ss ,step_num,dt)
-
-	write(UU ,uu_final)
-	write(AA ,aa_final)
-	write(RHO,rho_final)
-	write(SS ,ss_final)
-	
-        real scal = max(abs(uu_final.x),uux_initial_max)
-        maximum_error = max(abs(uu_error.x/scal),maximum_error)
-        scal = max(abs(uu_final.y),uuy_initial_max)
-        maximum_error = max(abs(uu_error.y/scal),maximum_error)
-        scal = max(abs(uu_final.z),uuz_initial_max)
-        maximum_error = max(abs(uu_error.z/scal),maximum_error)
-        scal = max(abs(aa_final.x),aax_initial_max)
-        maximum_error = max(abs(aa_error.x/scal),maximum_error)
-        scal = max(abs(aa_final.y),aay_initial_max)
-        maximum_error = max(abs(aa_error.y/scal),maximum_error)
-        scal = max(abs(aa_final.z),aaz_initial_max)
-        maximum_error = max(abs(aa_error.z/scal),maximum_error)
-        scal = max(abs(rho_final),rho_initial_max)
-        maximum_error = max(abs(rho_error/scal),maximum_error)
-        scal = max(abs(ss_final),ss_initial_max)
-        maximum_error = max(abs(ss_error/scal),maximum_error)
-  	reduce_max(maximum_error,AC_maximum_error)
-
-	//TP: using dt_epsi instead of the initial maxima gives the same answer on a small test problem
-        //TP: but for completeness have the other scheme here on comment
-	/**
-        scal = max(abs(uu_final.x),AC_dt_epsi)
-        maximum_error = max(abs(uu_error.x/scal),maximum_error)
-        scal = max(abs(uu_final.y),AC_dt_epsi)
-        maximum_error = max(abs(uu_error.y/scal),maximum_error)
-        scal = max(abs(uu_final.z),AC_dt_epsi)
-        maximum_error = max(abs(uu_error.z/scal),maximum_error)
-        scal = max(abs(aa_final.x),AC_dt_epsi)
-        maximum_error = max(abs(aa_error.x/scal),maximum_error)
-        scal = max(abs(aa_final.y),AC_dt_epsi)
-        maximum_error = max(abs(aa_error.y/scal),maximum_error)
-        scal = max(abs(aa_final.z),AC_dt_epsi)
-        maximum_error = max(abs(aa_error.z/scal),maximum_error)
-        scal = max(abs(rho_final),AC_dt_epsi)
-        maximum_error = max(abs(rho_error/scal),maximum_error)
-        scal = max(abs(ss_final),AC_dt_epsi)
-        maximum_error = max(abs(ss_error/scal),maximum_error)
-  	reduce_max(maximum_error,AC_maximum_error)
-	**/
-  } 
+  maximum_error = 0.0 
+  maximum_error = rkf4_update(duu_dt(step_num),step_num,dt,ERROR_UU,BETA_UU,UU,uux_initial_max,uuy_initial_max,uuz_initial_max,maximum_error)
+  maximum_error = rkf4_update(daa_dt(step_num),step_num,dt,ERROR_AA,BETA_AA,AA,aax_initial_max,aay_initial_max,aaz_initial_max,maximum_error)
+  maximum_error = rkf4_update(drho_dt(step_num),step_num,dt,ERROR_RHO,BETA_RHO,RHO,rho_initial_max,maximum_error)
+  maximum_error = rkf4_update(denergy_dt(step_num),step_num,dt,ERROR_SS,BETA_SS,SS,ss_initial_max,maximum_error)
+  if(step_num == 4) reduce_max(maximum_error,AC_maximum_error)
 }
 
 //Kernel twopass_solve_intermediate(PC_SUB_STEP_NUMBER step_num, real dt) {

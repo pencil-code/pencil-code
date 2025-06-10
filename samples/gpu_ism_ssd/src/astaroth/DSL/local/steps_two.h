@@ -1,12 +1,24 @@
+#include "../shock/kernels.ac"
+#include "../density/mass_conservation.h"
 input real AC_dt
-//input int AC_step_num
 input PC_SUB_STEP_NUMBER AC_step_num
+input bool AC_lrmv
 ComputeSteps AC_rhs(boundconds)
 {
 	shock_1_divu()
-	shock_2_smooth()
+	shock_2_max()
+	shock_3_smooth()
         twopass_solve_intermediate(AC_step_num,AC_dt)
-        //twopass_solve_final(AC_step_num)
+        twopass_solve_final(AC_step_num)
+}
+ComputeSteps AC_calculate_timestep(boundconds)
+{
+	twopass_solve_intermediate(PC_FIRST_SUB_STEP,AC_dt)
+}
+ComputeSteps AC_before_boundary_steps(boundconds)
+{
+	get_current_total_mass(AC_lrmv)
+	fix_mass_drift(AC_lrmv)
 }
 BoundConds boundconds{
   #include "boundconds.h"
