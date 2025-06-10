@@ -11,9 +11,9 @@ samples_with_scripttests = [
     #each entry is a string, the path relative to PENCIL_HOME
     #to mark a failing test, use
     ##pytest.param(path, marks=pytest.mark.xfail)
-    pytest.param("samples/helical-MHDturb", marks=pytest.mark.xfail(reason="broken after merging gputestv6")),
+    "samples/helical-MHDturb",
     "samples/continuous-forcing-from-file",
-    pytest.param("samples/conv-slab-noequi", marks=pytest.mark.xfail(reason="broken after merging gputestv6")),
+    "samples/conv-slab-noequi",
     "samples/power_xy/integrate_shell_z",
     "samples/power_xy/complex",
     "samples/power_xy/integrate_shell",
