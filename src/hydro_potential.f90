@@ -1169,9 +1169,13 @@ module Hydro
       endif
 ! advec_uu
       if (lupdate_courant_dt.and.ladvection_velocity) then
-        if (lmaximal_cdt) p%advec_uu=max(abs(p%uu(:,1))*dline_1(:,1),&
-                                         abs(p%uu(:,2))*dline_1(:,2),&
-                                         abs(p%uu(:,3))*dline_1(:,3))
+        if (lmaximal_cdt) then
+          p%advec_uu=max(abs(p%uu(:,1))*dline_1(:,1),&
+                         abs(p%uu(:,2))*dline_1(:,2),&
+                         abs(p%uu(:,3))*dline_1(:,3))
+        else
+          p%advec_uu=sum(abs(p%uu)*dline_1,2)
+        endif
 !
 !  Empirically, it turns out that we need to take the full 3-D velocity
 !  into account for computing the time step. It is not clear why.
@@ -1183,7 +1187,13 @@ module Hydro
         if (lisotropic_advection) then
            if (dimensionality<3) p%advec_uu=sqrt(p%u2*dxyz_2)
         endif
-        if (notanumber(p%advec_uu)) print*, 'advec_uu =',p%advec_uu
+
+        if (notanumber(p%advec_uu)) then
+          if (lproc_print) then
+            print*, 'calc_pencils_hydro: p%advec_uu =',p%advec_uu
+            if (.not.allproc_print) lproc_print=.false.
+          endif
+        endif
       else
         p%advec_uu=0.0
       endif
