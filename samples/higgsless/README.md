@@ -12,7 +12,8 @@ Isak Stomberg <isak.stomberg/desy[dot]de>
 
 ## Status:
 
-still testing
+22-dec-23/axel: still testing
+10-jun-25/isak: the new T00m now denotes 1/(1+alpha); therefore the difference.
 
 ## Recommended resolution:
 
