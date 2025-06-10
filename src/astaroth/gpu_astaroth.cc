@@ -863,7 +863,7 @@ AcReal calc_dt1_courant()
       AcReal maxnu_dyn = 0.;
 #if LVISCOSITY
       maxnu_dyn = acDeviceGetOutput(acGridGetDevice(), AC_maxnu);
-if (rank==0) printf("maxnu_dyn= %e \n", maxnu_dyn);
+//if (rank==0) printf("maxnu_dyn= %e \n", maxnu_dyn);
 #endif
       return (AcReal)sqrt(pow(maxadvec, 2) + pow(max_diffus(maxnu_dyn,maxchi_dyn), 2));
 }

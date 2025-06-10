@@ -17,8 +17,9 @@ present(var)
 {
 	return true
 }
-bc_steady_z(topbot, VtxBuffer field)
+bc_steady_z(boundary, topbot, VtxBuffer field)
 {
+  suppress_unused_warning(boundary)
   int i;
   if (topbot == AC_bot) {
     if (field[vertexIdx.x][vertexIdx.y][AC_n1-1] <= 0.0) {
@@ -60,8 +61,9 @@ bc_steady_z(topbot, VtxBuffer field)
   }
 }
 #if LENERGY
-bc_ss_flux(topbot)
+bc_ss_flux(boundary, topbot)
 {
+  suppress_unused_warning(boundary)
   real tmp_xy;
   real cs2_xy;
   real rho_xy;
@@ -151,8 +153,9 @@ bc_ss_flux(topbot)
 }
 #endif
 
-bc_sym_x(AC_TOP_BOT topbot, VtxBuffer field,int sgn,bool rel)
+bc_sym_x(AcBoundary boundary, AC_TOP_BOT topbot, VtxBuffer field,int sgn,bool rel)
 {
+  suppress_unused_warning(boundary)
   int i;
   if (topbot == AC_bot) {
     if (rel) {
@@ -188,8 +191,9 @@ bc_sym_x(AC_TOP_BOT topbot, VtxBuffer field,int sgn,bool rel)
   }
 }
 
-bc_sym_y(AC_TOP_BOT topbot, VtxBuffer field,int sgn,bool rel)
+bc_sym_y(AcBoundary boundary, AC_TOP_BOT topbot, VtxBuffer field,int sgn,bool rel)
 {
+  suppress_unused_warning(boundary)
   int i;
   if (topbot == AC_bot) {
     if (rel) {
@@ -225,8 +229,9 @@ bc_sym_y(AC_TOP_BOT topbot, VtxBuffer field,int sgn,bool rel)
   }
 }
 
-bc_sym_z(AC_TOP_BOT topbot, VtxBuffer field,int sgn,bool rel)
+bc_sym_z(AcBoundary boundary, AC_TOP_BOT topbot, VtxBuffer field,int sgn,bool rel)
 {
+  suppress_unused_warning(boundary)
   int i;
   if (topbot == AC_bot) {
     if (rel) {
@@ -262,8 +267,9 @@ bc_sym_z(AC_TOP_BOT topbot, VtxBuffer field,int sgn,bool rel)
   }
 }   
 
-bc_set_der_x(topbot, VtxBuffer field,val)
+bc_set_der_x(boundary, topbot, VtxBuffer field,val)
 {
+  suppress_unused_warning(boundary)
   int i;
   if (topbot == AC_bot) {
     for i in 1:NGHOST+1 {
@@ -279,8 +285,9 @@ bc_set_der_x(topbot, VtxBuffer field,val)
   }
 }
 
-bc_set_der_y(topbot, VtxBuffer field,val)
+bc_set_der_y(boundary, topbot, VtxBuffer field,val)
 {
+  suppress_unused_warning(boundary)
   int i;
   if (topbot == AC_bot) {
     for i in 1:NGHOST+1 {
@@ -296,8 +303,9 @@ bc_set_der_y(topbot, VtxBuffer field,val)
   }
 }
 
-bc_set_der_z(topbot, VtxBuffer field,val)
+bc_set_der_z(boundary, topbot, VtxBuffer field,val)
 {
+  suppress_unused_warning(boundary)
   int i;
   if (topbot == AC_bot) {
     for i in 1:NGHOST+1 {
@@ -314,8 +322,9 @@ bc_set_der_z(topbot, VtxBuffer field,val)
 }
 
 #if LENERGY
-bc_ss_temp_z(AC_TOP_BOT topbot,bool lone_sided)
+bc_ss_temp_z(AcBoundary boundary, AC_TOP_BOT topbot,bool lone_sided)
 {
+suppress_unused_warning(boundary)
 real tmp
 real lnrho_xy
 if(topbot == AC_bot) {;
