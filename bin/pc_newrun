@@ -152,6 +152,7 @@ cp *.in $targetdir
 [ -f chiral_list.dat ] && cp chiral_list.dat $targetdir
 [ -f a_vs_eta.dat ] && cp a_vs_eta.dat $targetdir
 [ -f chiral_listZZ.dat ] && cp chiral_listZZ.dat $targetdir
+[ -f npatchz.txt ] && cp npatchz.txt $targetdir
 [ -f data/emftensors.h5 ] && ln -s data/emftensors.h5 $targetdir/data/emftensors.h5
 if [ -n "`ls *.py 2>/dev/null`" ]; then cp *.py $targetdir; fi
 [ -f FAKE_PARALLEL_IO ] && touch $targetdir/FAKE_PARALLEL_IO

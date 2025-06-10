@@ -222,6 +222,7 @@ my %tests = (
                          0d-tests/heating_ionize_temp
                          1d-tests/solar-atmosphere
                          0d-tests/reactive_particles
+                         higgsless
                      )],
              # Level 7 for now contains all non-canonical tests that
              # start, but don't run successfully
