@@ -8379,12 +8379,12 @@ module Energy
           if (z_ref < 1) then
             lnQ(px) = -max_real
             delta_lnTT(px) = intlnT(2) - intlnT(1)
-            cycle
+          else
+            z_ref = min(z_ref,36)
+            frac = pos - z_ref
+            lnQ(px) = intlnQ(z_ref) * (1.0-frac) + intlnQ(z_ref+1) * frac
+            delta_lnTT(px) = intlnT(z_ref+1) - intlnT(z_ref)
           endif
-          if (z_ref > 36) z_ref = 36
-          frac = pos - z_ref
-          lnQ(px) = intlnQ(z_ref) * (1.0-frac) + intlnQ(z_ref+1) * frac
-          delta_lnTT(px) = intlnT(z_ref+1) - intlnT(z_ref)
         enddo
 !
     endsubroutine get_lnQ

@@ -7,7 +7,7 @@ Kernel shock_1_divu()
 
 Kernel shock_2_max()
 {
-  if (lmax_shock)
+  if (AC_lmax_shock__mod__shock)
   {
     write( SHOCK, max5(SHOCK))
   }

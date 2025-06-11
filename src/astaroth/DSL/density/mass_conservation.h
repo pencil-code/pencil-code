@@ -1,9 +1,9 @@
 #if LDENSITY
 Kernel get_current_total_mass(bool lrmv)
 {
-	if(lrmv && lconserve_total_mass)
+	if(lrmv && AC_lconserve_total_mass__mod__density)
 	{
-		rho = (ldensity_nolog) ? value(RHO) : exp(LNRHO);
+		rho = (AC_ldensity_nolog__mod__cdata) ? value(RHO) : exp(LNRHO);
 		integration_weight = AC_ds.x*AC_ds.y*AC_ds.z;
 		reduce_sum(rho*integration_weight,AC_current_total_mass)
 	}
@@ -11,10 +11,10 @@ Kernel get_current_total_mass(bool lrmv)
 Kernel fix_mass_drift(bool lrmv)
 {
 
-    if(lrmv && lconserve_total_mass)
+    if(lrmv && AC_lconserve_total_mass__mod__density)
     {
-     	real fact=total_mass/AC_current_total_mass
-     	if(ldensity_nolog)
+     	real fact=AC_total_mass__mod__density/AC_current_total_mass
+     	if(AC_ldensity_nolog__mod__cdata)
      	{
      	        write(RHO,fact*RHO)
      	}

@@ -831,5 +831,12 @@ integer, parameter :: enum_dustZinfrared_string = 551
 integer, parameter :: enum_rad_ionization_string = 552
 integer, parameter :: enum_opacity_string = 553
 integer, parameter :: enum_no_such_opacity_typeZ__string = 554
+integer, parameter :: enum_calc_pencils_hydro_string = 555
+integer, parameter :: enum_general_string = 556
+integer, parameter :: enum_axelZ_hubble_factorZ_string = 557
+integer, parameter :: enum_fatal_error_with_force_string = 558
+integer, parameter :: enum_calc_heat_cool_interstellar_string = 559
+integer, parameter :: enum_axelZ_exponent_2ZZnconformalZ3ZZ_string = 560
+integer, parameter :: enum_setting_lhubble_hydroZt_is_not_correct_string = 561
 
 endmodule Cparam

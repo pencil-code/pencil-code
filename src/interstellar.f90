@@ -413,6 +413,7 @@ module Interstellar
   character (len=labellen) :: mass_profile    = 'gaussian'
   character (len=labellen) :: clabel=' '
   logical :: ltrim_profile=.false.
+  integer :: enum_heating_select = 0
 !
 !  Variables required for returning mass to disk given no inflow
 !  boundary condition used in addmassflux
@@ -1910,6 +1911,8 @@ module Interstellar
 
       real, dimension (nx) :: heat,cool,heatcool
       real, dimension (nx) :: damp_profile, gsh2
+
+      integer :: i
 !
 !  Identifier
 !
@@ -1918,8 +1921,13 @@ module Interstellar
 !  Not all eos define cv1, and this routine is called after
 !  calc_all_pencils, so p%cv1 cannot be modified here
 !
-      if (ltemperature_nolog.and.any(p%cv1 == impossible)) &
-        call fatal_error("calc_heat_cool_interstellar","p%cv1 not set by eos")
+        
+      if(ltemperature_nolog) then
+        do i=1,nx
+          if (p%cv1(i) == impossible) &
+            call fatal_error("calc_heat_cool_interstellar","p%cv1 not set by eos")
+        enddo
+      endif
 !
       heat=p%heat
       cool=p%cool
@@ -1931,7 +1939,7 @@ module Interstellar
 !  Division by density to balance LHS of entropy equation
 !
       if (lSN) then
-        if (laverage_SNI_heating)  heat=heat+heat_SNI_profile (n-nghost)*heatingfunction_scale(SNI)
+        if (laverage_SNI_heating)  heat=heat+heat_SNI_profile(n-nghost)*heatingfunction_scale(SNI)
         if (laverage_SNII_heating) heat=heat+heat_SNII_profile(n-nghost)*heatingfunction_scale(SNII)
       endif
 !
@@ -4737,24 +4745,35 @@ mn_loop:do n=n1,n2
     subroutine pushpars2c(p_par)
 
       use Syscalls, only: copy_addr, copy_addr_dble_1D
+      use General , only: string_to_enum
 
-      integer, parameter :: n_pars=12
+      integer, parameter :: n_pars=100
       integer(KIND=ikind8), dimension(n_pars), intent(out) :: p_par
 !
-      call copy_addr(GammaUV,p_par(1))
-      call copy_addr(cUV,p_par(2))
-      call copy_addr(T0UV,p_par(3))
+      call copy_addr(gammauv,p_par(1))
+      call copy_addr(cuv,p_par(2))
+      call copy_addr(t0uv,p_par(3))
       call copy_addr(ncool,p_par(4))                  ! int
 !
       call copy_addr(heatingfunction_scale,p_par(5))  ! (2)
-      call copy_addr(heat_SNI_profile,p_par(6))        ! (nz)
-      call copy_addr(heat_SNII_profile,p_par(7))       ! (nz)
+      call copy_addr(heat_sni_profile,p_par(6))        ! (nz)
+      call copy_addr(heat_snii_profile,p_par(7))       ! (nz)
 
-      call copy_addr(lncoolT,p_par(8))          ! (11)
-      call copy_addr_dble_1D(lncoolH,p_par(9))  ! (11)
-      call copy_addr(coolB,p_par(10))            ! (11)
+      call copy_addr(lncoolt,p_par(8))          ! (11)
+      call copy_addr_dble_1D(lncoolh,p_par(9))  ! (11)
+      call copy_addr(coolb,p_par(10))            ! (11)
       call copy_addr(heating_rate_code,p_par(11))
-      call copy_addr(lSN,p_par(12))              ! int
+      call copy_addr(lsn,p_par(12))              ! int
+      call copy_addr(average_sni_heating,p_par(13))
+      call copy_addr(average_snii_heating,p_par(14))
+      call copy_addr(heatcool_shock_cutoff_rate1,p_par(15))
+      call copy_addr(lheatcool_shock_cutoff,p_par(16)) ! bool
+      call copy_addr(laverage_sni_heating,p_par(17)) ! bool
+      call copy_addr(laverage_snii_heating,p_par(18)) ! bool
+      call copy_addr(heat_z,p_par(21)) ! (mz)
+      call string_to_enum(enum_heating_select,heating_select)
+      call copy_addr(enum_heating_select,p_par(22)) ! int
+      !call copy_addr(gamma,p_par(19))
 !      call copy_addr(heat_z,p_par(13))   ! (mz)
 
     endsubroutine pushpars2c

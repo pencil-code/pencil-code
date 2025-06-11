@@ -4177,6 +4177,8 @@ module Density
     call copy_addr(nlf_sld_dens,p_par(74))
     call copy_addr(lconserve_total_mass,p_par(75)) ! bool
     call copy_addr(total_mass,p_par(76))
+    call copy_addr(lrelativistic_eos_corr,p_par(77)) ! bool
+    call copy_addr(lgamma_is_1,p_par(78)) ! bool
 
     endsubroutine pushpars2c
 !***********************************************************************

@@ -152,7 +152,7 @@ if [ -f tmp1 ]; then
          b dimen
          : cont
          p
-         s/^#define *\([a-zA-Z0-9_]*\) to_\([a-zA-Z0-9_]*\).*$/run_const \2 AC_\1 \/\/ from '$modname'\n#define \1 \AC_\1/
+         s/^#define *\([a-zA-Z0-9_]*\) to_\([a-zA-Z0-9_]*\).*$/run_const \2 AC_\1 \/\/ from '$modname'\n#define \1 \AC_\1\n#define \AC_\1__mod__'$modname' \AC_\1/
 	 s/.*run_const real AC_dt //
 	 s/#define dt AC_dt//
 	 s/.*run_const real AC_dt__mod__cdata //
@@ -165,18 +165,18 @@ if [ -f tmp1 ]; then
          s/^.*\/\/ *\(\[.*\]\) *\([a-zA-Z0-9_]*\)  *\([a-zA-Z0-9_]*\) *\(( *[a-zA-Z0-9_+\*\/-]* *)\) *\(( *[a-zA-Z0-9_+\*\/-]* *)\) *\(( *[a-zA-Z0-9_+\*\/-]* *)\) *$/#define \2 ((\3 *) p_'$1'_'$modname'\1) \/\/ \4 \5 \6/
          s/^.*\/\/ *\(\[.*\]\) *\([a-zA-Z0-9_]*\)  *\([a-zA-Z0-9_]*\) *\(( *[a-zA-Z0-9_+\*\/-]* *)\) *\(( *[a-zA-Z0-9_+\*\/-]* *)\) *\(( *[a-zA-Z0-9_+\*\/-]* *)\) *\(( *[a-zA-Z0-9_+\*\/-]* *)\) *$/#define \2 ((\3 *) p_'$1'_'$modname'\1) \/\/ \4 \5 \6 \7/
          p
-         s/^#define *\([a-zA-Z0-9_]*\) (( *\([a-zA-Z0-9_]*\) \*).*\/\/ *(\([mn]\)\([xyz]*\)\(grid\)\?) *$/gmem real AC_\1[AC_\3\4\5] \/\/ from '$modname'\n#define \1 \AC_\1/
-	 s/^#define *\([a-zA-Z0-9_]*\) (( *\([a-zA-Z0-9_]*\) \*).*\/\/ *(\(max_n\)) *$/gmem real AC_\1[max_n] \/\/ from '$modname'\n#define \1 \AC_\1/
+         s/^#define *\([a-zA-Z0-9_]*\) (( *\([a-zA-Z0-9_]*\) \*).*\/\/ *(\([mn]\)\([xyz]*\)\(grid\)\?) *$/gmem real AC_\1[AC_\3\4\5] \/\/ from '$modname'\n#define \1 \AC_\1\n#define \AC_\1__mod__'$modname' \AC_\1/
+	 s/^#define *\([a-zA-Z0-9_]*\) (( *\([a-zA-Z0-9_]*\) \*).*\/\/ *(\(max_n\)) *$/gmem real AC_\1[max_n] \/\/ from '$modname'\n#define \1 \AC_\1\n#define \AC_\1__mod__'$modname' \AC_\1/
 
-	 s/^#define *\([a-zA-Z0-9_]*\) (( *\([a-zA-Z0-9_]*\) \*).*\/\/ *(\(hcond_prof_size\)) *$/gmem real AC_\1[hcond_prof_size] \/\/ from '$modname'\n#define \1 \AC_\1/
-	 s/^#define *\([a-zA-Z0-9_]*\) (( *\([a-zA-Z0-9_]*\) \*).*\/\/ *(\(chit_prof_size\)) *$/gmem real AC_\1[chit_prof_size] \/\/ from '$modname'\n#define \1 \AC_\1/
-	 s/^#define *\([a-zA-Z0-9_]*\) (( *\([a-zA-Z0-9_]*\) \*).*\/\/ *(\(chit_prof_fluct_stored_size\)) *$/gmem real AC_\1[chit_prof_fluct_stored_size] \/\/ from '$modname'\n#define \1 \AC_\1/
+	 s/^#define *\([a-zA-Z0-9_]*\) (( *\([a-zA-Z0-9_]*\) \*).*\/\/ *(\(hcond_prof_size\)) *$/gmem real AC_\1[hcond_prof_size] \/\/ from '$modname'\n#define \1 \AC_\1\n#define \AC_\1__mod__'$modname' \AC_\1/
+	 s/^#define *\([a-zA-Z0-9_]*\) (( *\([a-zA-Z0-9_]*\) \*).*\/\/ *(\(chit_prof_size\)) *$/gmem real AC_\1[chit_prof_size] \/\/ from '$modname'\n#define \1 \AC_\1\n#define \AC_\1__mod__'$modname' \AC_\1/
+	 s/^#define *\([a-zA-Z0-9_]*\) (( *\([a-zA-Z0-9_]*\) \*).*\/\/ *(\(chit_prof_fluct_stored_size\)) *$/gmem real AC_\1[chit_prof_fluct_stored_size] \/\/ from '$modname'\n#define \1 \AC_\1\n#define \AC_\1__mod__'$modname' \AC_\1/
 
-         s/^#define *\([a-zA-Z0-9_]*\) (( *\([a-zA-Z0-9_]*\) \*).*\/\/ *(\([a-zA-Z0-9_][a-zA-Z0-9_+\*\/-]*\)) *$/run_const \2 AC_\1[\3] \/\/ from '$modname'\n#define \1 \AC_\1/
+         s/^#define *\([a-zA-Z0-9_]*\) (( *\([a-zA-Z0-9_]*\) \*).*\/\/ *(\([a-zA-Z0-9_][a-zA-Z0-9_+\*\/-]*\)) *$/run_const \2 AC_\1[\3] \/\/ from '$modname'\n#define \1 \AC_\1\n#define \AC_\1__mod__'$modname' \AC_\1/
          s/^#define *\([a-zA-Z0-9_]*\) (( *\([a-zA-Z0-9_]*\) \*).*\/\/ *(\([mn]\)\([xyz]*\)\(grid\)\?) *(\([mn]\)\([xyz]*\)\(grid\)\?) *$/gmem real AC_\1[AC_\3\4\5][AC_\6\7\8] \/\/ from '$modname'\n#define \1 \AC_\1/
          s/^#define *\([a-zA-Z0-9_]*\) (( *\([a-zA-Z0-9_]*\) \*).*\/\/ *(\([a-zA-Z0-9_][a-zA-Z0-9_+\*\/-]*\)) *(\([a-zA-Z0-9_][a-zA-Z0-9_+\*\/-]*\)) *$/gmem real AC_\1[\3][\4] \/\/ from '$modname'\n#define \1 \AC_\1/
-         s/^#define *\([a-zA-Z0-9_]*\) (( *\([a-zA-Z0-9_]*\) \*).*\/\/ *(\([a-zA-Z0-9_][a-zA-Z0-9_+\*\/-]*\)) *(\([a-zA-Z0-9_][a-zA-Z0-9_+\*\/-]*\)) *(\([a-zA-Z0-9_][a-zA-Z0-9_+\*\/-]*\)) *$/gmem real AC_\1[\3][\4][\5] \/\/ from '$modname'\n#define \1 \AC_\1/
-         s/^#define *\([a-zA-Z0-9_]*\) (( *\([a-zA-Z0-9_]*\) \*).*\/\/ *(\([a-zA-Z0-9_][a-zA-Z0-9_+\*\/-]*\)) *(\([a-zA-Z0-9_][a-zA-Z0-9_+\*\/-]*\)) *(\([a-zA-Z0-9_][a-zA-Z0-9_+\*\/-]*\)) *(\([a-zA-Z0-9_][a-zA-Z0-9_+\*\/-]*\)) *$/gmem real AC_\1[\3][\4][\5][\6] \/\/ from '$modname'\n#define \1 \AC_\1/
+         s/^#define *\([a-zA-Z0-9_]*\) (( *\([a-zA-Z0-9_]*\) \*).*\/\/ *(\([a-zA-Z0-9_][a-zA-Z0-9_+\*\/-]*\)) *(\([a-zA-Z0-9_][a-zA-Z0-9_+\*\/-]*\)) *(\([a-zA-Z0-9_][a-zA-Z0-9_+\*\/-]*\)) *$/gmem real AC_\1[\3][\4][\5] \/\/ from '$modname'\n#define \1 \AC_\1\n#define \AC_\1__mod__'$modname' \AC_\1/
+         s/^#define *\([a-zA-Z0-9_]*\) (( *\([a-zA-Z0-9_]*\) \*).*\/\/ *(\([a-zA-Z0-9_][a-zA-Z0-9_+\*\/-]*\)) *(\([a-zA-Z0-9_][a-zA-Z0-9_+\*\/-]*\)) *(\([a-zA-Z0-9_][a-zA-Z0-9_+\*\/-]*\)) *(\([a-zA-Z0-9_][a-zA-Z0-9_+\*\/-]*\)) *$/gmem real AC_\1[\3][\4][\5][\6] \/\/ from '$modname'\n#define \1 \AC_\1\n#define \AC_\1__mod__'$modname' \AC_\1/
 	 s/#define x AC.*//
 	 s/#define y AC.*//
 	 s/#define z AC.*//

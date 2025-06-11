@@ -7723,6 +7723,20 @@ iloop:do i=1,size(list2)
           dst = enum_opacity_string
         case('no such opacity_type: ')
           dst = enum_no_such_opacity_typeZ__string
+        case('calc_pencils_hydro')
+          dst = enum_calc_pencils_hydro_string
+        case('general')
+          dst = enum_general_string
+        case('axel: hubble_factor=')
+          dst = enum_axelZ_hubble_factorZ_string
+        case('fatal_error with force')
+          dst = enum_fatal_error_with_force_string
+        case('calc_heat_cool_interstellar')
+          dst = enum_calc_heat_cool_interstellar_string
+        case('axel: exponent 2.*nconformal-3.=')
+          dst = enum_axelZ_exponent_2ZZnconformalZ3ZZ_string
+        case('setting lhubble_hydro=t is not correct')
+          dst = enum_setting_lhubble_hydroZt_is_not_correct_string
         case default
           dst = enum_unknown_string_string
         endselect

@@ -13,17 +13,17 @@ divu_shock()
 //if (blockIdx.x==0 && blockIdx.y==0 && threadIdx.x==8 && threadIdx.y==8 && threadIdx.z==8) {print("div= %e \n",divu)}
 
     tmp = 0.
-    if (lconvergence_only) {
+    if (AC_lconvergence_only__mod__shock) {
       tmp = max(0.,-divu)
     } else {
-      if (con_bias != 0.) {
-        tmp = max(0.,-divu) + max(0.,con_bias*divu)
+      if (AC_con_bias__mod__shock != 0.) {
+        tmp = max(0.,-divu) + max(0.,AC_con_bias__mod__shock*divu)
       } else {
         tmp = abs(divu)
       }
     }
 
-    if (shock_div_pow != 1.) {tmp = dt_div_pow * pow(tmp,shock_div_pow)}
+    if (AC_shock_div_pow__mod__shock != 1.) {tmp = AC_dt_div_pow__mod__shock * pow(tmp,AC_shock_div_pow__mod__shock)}
 
     return tmp
 }
