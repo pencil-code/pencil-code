@@ -128,6 +128,9 @@ subroutine reload(f, lreload_file, lreload_always_file)
 ! If rkf timestep retain the current dt for continuity rather than reset
 ! with option to initialize_timestep to dt0/=0 from run.in if intended.
 !
+!TP: important for synchronization purposes that this happens before anything else
+    if (lgpu) call copy_farray_from_GPU(f)
+
     if (ldt) then
       dt=0.0
     else
@@ -150,7 +153,6 @@ subroutine reload(f, lreload_file, lreload_always_file)
 
     call initialize_hdf5
     call initialize_timestep
-    if (lgpu) call copy_farray_from_GPU(f)
     call initialize_modules(f)
     call initialize_boundcond
     if (lparticles) call particles_initialize_modules(f)

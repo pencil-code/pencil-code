@@ -143,14 +143,6 @@ void torch_inferCAPI(int sub_dims[3], float* input, float* label, bool dble=fals
 extern "C" void copyFarray(AcReal* f);    // ahead declaration
 
 /***********************************************************************************************/
-int memusage()
-{
-    struct rusage usage;
-    int res=getrusage(RUSAGE_SELF,&usage);
-
-    return usage.ru_maxrss;
-}
-/***********************************************************************************************/
 AcReal cpu_pow(AcReal const val, AcReal exponent)
 {
 // Masks hip GPU power function.
@@ -703,8 +695,9 @@ AcReal3 DCONST(const AcReal3Param param)
 /***********************************************************************************************/
 void setupConfig(AcMeshInfo& config)
 { 
+  config = acInitInfo();
   #include "PC_modulepars.h"
-
+  
   PCLoad(config, AC_use_cuda_aware_mpi,lcuda_aware_mpi);
   //TP: loads for non-Cartesian derivatives
 #if TRANSPILATION
@@ -1316,9 +1309,9 @@ void autotune_all_integration_substeps()
   for (int i = 0; i < num_substeps; ++i)
   {
   	acDeviceSetInput(acGridGetDevice(), AC_step_num,(PC_SUB_STEP_NUMBER)i);
-if (rank==0 && ldebug) printf("memusage before GetOptimizedDSLTaskGraph= %f MBytes\n", memusage()/1024.);
+if (rank==0 && ldebug) printf("memusage before GetOptimizedDSLTaskGraph= %f MBytes\n", acMemUsage()/1024.);
 	acGetOptimizedDSLTaskGraph(AC_rhs);
-if (rank==0 && ldebug) printf("memusage after GetOptimizedDSLTaskGraph= %f MBytes\n", memusage()/1024.);
+if (rank==0 && ldebug) printf("memusage after GetOptimizedDSLTaskGraph= %f MBytes\n", acMemUsage()/1024.);
   }
 }
 /***********************************************************************************************/
@@ -1417,7 +1410,7 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint)
     	}
     }
   }
-if (rank==0 && ldebug) printf("memusage after pointer assign= %f MBytes\n", memusage()/1024.);
+if (rank==0 && ldebug) printf("memusage after pointer assign= %f MBytes\n", acMemUsage()/1024.);
 #if AC_RUNTIME_COMPILATION
 #include "cmake_options.h"
   acCompile(cmake_options,mesh.info);
@@ -1429,9 +1422,9 @@ if (rank==0 && ldebug) printf("memusage after pointer assign= %f MBytes\n", memu
 #endif
   fflush(stdout);
   checkConfig(mesh.info);
-  if (rank==0 && ldebug) printf("memusage grid_init= %f MBytes\n", memusage()/1024.);
+  if (rank==0 && ldebug) printf("memusage grid_init= %f MBytes\n", acMemUsage()/1024.);
   acGridInit(mesh);
-  if (rank==0 && ldebug) printf("memusage after grid_init= %f MBytes\n", memusage()/1024.);
+  if (rank==0 && ldebug) printf("memusage after grid_init= %f MBytes\n", acMemUsage()/1024.);
 
   mesh.info = acGridDecomposeMeshInfo(mesh.info);
   //TP: important to do before autotuning
@@ -1441,11 +1434,11 @@ if (rank==0 && ldebug) printf("memusage after pointer assign= %f MBytes\n", memu
 		
   if (ltest_bcs) testBCs();
   autotune_all_integration_substeps();
-  if (rank==0 && ldebug) printf("memusage before store config= %f MBytes\n", memusage()/1024.);
+  if (rank==0 && ldebug) printf("memusage before store config= %f MBytes\n", acMemUsage()/1024.);
   acStoreConfig(acDeviceGetLocalConfig(acGridGetDevice()), "PC-AC.conf");
-  if (rank==0 && ldebug) printf("memusage after store config= %f MBytes\n", memusage()/1024.);
+  if (rank==0 && ldebug) printf("memusage after store config= %f MBytes\n", acMemUsage()/1024.);
   acGridSynchronizeStream(STREAM_ALL);
-  if (rank==0 && ldebug) printf("memusage after store synchronize stream= %f MBytes\n", memusage()/1024.);
+  if (rank==0 && ldebug) printf("memusage after store synchronize stream= %f MBytes\n", acMemUsage()/1024.);
   acLogFromRootProc(rank, "DONE initializeGPU\n");
   fflush(stdout);
   constexpr AcReal unit = 1.0;
@@ -1454,7 +1447,6 @@ if (rank==0 && ldebug) printf("memusage after pointer assign= %f MBytes\n", memu
 /***********************************************************************************************/
 extern "C" void reloadConfig()
 {
-  mesh.info.run_consts = acInitCompInfo();
   setupConfig(mesh.info);
   acGridSynchronizeStream(STREAM_ALL);
   acDeviceUpdate(acGridGetDevice(), mesh.info);
@@ -1463,7 +1455,12 @@ extern "C" void reloadConfig()
   //save the current values of the vtxbufs since the device arrays are freed by acGridQuit
   copyFarray(mesh.vertex_buffer[0]);
   acGridQuit();
-  acCloseLibrary();
+  const AcResult closed_res = acCloseLibrary();
+  if(closed_res != AC_SUCCESS)
+  {
+	  if(rank == 0) fprintf(stderr,"Was not successful in closing Astaroth lib!\n");
+	  exit(EXIT_FAILURE);
+  }
 #include "cmake_options.h"
   acCompile(cmake_options,mesh.info);
   acLoadLibrary(rank == 0 ? stderr : NULL,mesh.info);
