@@ -1078,6 +1078,8 @@ module Hydro
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call copy_addr(lpressuregradient_gas,p_par(1)) ! bool
+
+    endsubroutine pushpars2c
 !***********************************************************************
 endmodule Hydro
 

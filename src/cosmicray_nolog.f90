@@ -719,6 +719,7 @@ module Cosmicray
     endsubroutine impose_ecr_floor
 !***********************************************************************
     subroutine pushpars2c
+
     use Syscalls, only: copy_addr
     use General , only: string_to_enum
 
@@ -740,6 +741,7 @@ module Cosmicray
     call copy_addr(blimiter_cr,p_par(12))
     call copy_addr(simplified_cosmicray_tensor,p_par(13)) ! bool
     call copy_addr(lupw_ecr,p_par(14)) ! bool
-    endsubroutine
+
+    endsubroutine pushpars2c
 !***********************************************************************
 endmodule Cosmicray
