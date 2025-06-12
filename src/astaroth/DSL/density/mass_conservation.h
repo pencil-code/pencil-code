@@ -1,4 +1,6 @@
 #if LDENSITY
+global output real AC_current_total_mass
+
 Kernel get_current_total_mass(bool lrmv)
 {
 	if(lrmv && AC_lconserve_total_mass__mod__density)
@@ -28,10 +30,10 @@ Kernel fix_mass_drift(bool lrmv)
     }
 }
 #else
-Kernel get_current_total_mass()
+Kernel get_current_total_mass(bool lrmv)
 {
 }
-Kernel fix_mass_drift()
+Kernel fix_mass_drift(bool lrmv)
 {
 }
 #endif

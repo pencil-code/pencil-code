@@ -1137,7 +1137,7 @@ extern "C" void substepGPU(int isubstep)
 #endif
 
   acDeviceSetInput(acGridGetDevice(), AC_step_num,(PC_SUB_STEP_NUMBER) (isubstep-1));
-  if (lshear && isubstep == 1) acDeviceSetInput(acGridGetDevice(), AC_shear_delta_y,deltay);
+  if (lshear && isubstep == 1) acDeviceSetInput(acGridGetDevice(), AC_shear_delta_y, deltay);
   Device dev = acGridGetDevice();
   //TP: done in this more complex manner to ensure the actually integrated time and the time reported by Pencil agree
   //if we call set_dt after the first timestep there would be slight shift in dt what Pencil sees and what is actually used for time integration
@@ -1155,10 +1155,10 @@ extern "C" void substepGPU(int isubstep)
   acGridExecuteTaskGraph(rhs, 1);
   auto end = MPI_Wtime();
   if (log && !rank) fprintf(stderr,"RHS TOOK: %14e\n",end-start);
-  if (ldt &&
-        (  (isubstep == 5 && !lcourant_dt) 
-        || (isubstep == 1 && lcourant_dt)
-     ))
+  if (ldt && (   (isubstep == 5 && !lcourant_dt) 
+              || (isubstep == 1 &&  lcourant_dt)
+             )
+     )
   {
     constexpr AcReal unit = 1.0;
     AcReal dt1_;
@@ -1309,9 +1309,9 @@ void autotune_all_integration_substeps()
   for (int i = 0; i < num_substeps; ++i)
   {
   	acDeviceSetInput(acGridGetDevice(), AC_step_num,(PC_SUB_STEP_NUMBER)i);
-if (rank==0 && ldebug) printf("memusage before GetOptimizedDSLTaskGraph= %f MBytes\n", acMemUsage()/1024.);
+        if (rank==0 && ldebug) printf("memusage before GetOptimizedDSLTaskGraph= %f MBytes\n", acMemUsage()/1024.);
 	acGetOptimizedDSLTaskGraph(AC_rhs);
-if (rank==0 && ldebug) printf("memusage after GetOptimizedDSLTaskGraph= %f MBytes\n", acMemUsage()/1024.);
+        if (rank==0 && ldebug) printf("memusage after GetOptimizedDSLTaskGraph= %f MBytes\n", acMemUsage()/1024.);
   }
 }
 /***********************************************************************************************/
@@ -1410,7 +1410,7 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint)
     	}
     }
   }
-if (rank==0 && ldebug) printf("memusage after pointer assign= %f MBytes\n", acMemUsage()/1024.);
+  if (rank==0 && ldebug) printf("memusage after pointer assign= %f MBytes\n", acMemUsage()/1024.);
 #if AC_RUNTIME_COMPILATION
 #include "cmake_options.h"
   acCompile(cmake_options,mesh.info);
@@ -1441,6 +1441,7 @@ if (rank==0 && ldebug) printf("memusage after pointer assign= %f MBytes\n", acMe
   if (rank==0 && ldebug) printf("memusage after store synchronize stream= %f MBytes\n", acMemUsage()/1024.);
   acLogFromRootProc(rank, "DONE initializeGPU\n");
   fflush(stdout);
+
   constexpr AcReal unit = 1.0;
   dt1_interface = unit/dt;
 }

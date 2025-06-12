@@ -3232,10 +3232,6 @@ ifeq ($(wildcard $(DSL_WORKDIR)/solve_two.ac),)
 	@sed -f $(CUDA_MAKEDIR)/solve.sed $(DSL_WORKDIR)/solve.ac > $(DSL_WORKDIR)/solve_two.ac
 	@echo '}' >> sedtmp; cat sedtmp >> $(DSL_WORKDIR)/solve_two.ac; rm -f sedtmp
 	@mv $(DSL_WORKDIR)/solve.ac $(DSL_WORKDIR)/solve_single.ac
-	@echo '#include "steps_two.h"' >> $(DSL_WORKDIR)/solve_two.ac
-	@echo '#include "steps_single.h"' >> $(DSL_WORKDIR)/solve_single.ac
-	@cp $(DSL_WORKDIR)/../steps_single.h $(DSL_WORKDIR)
-	@cp $(DSL_WORKDIR)/../steps_two.h $(DSL_WORKDIR)
   ifeq ($(HYDRO),hydro)
     ifneq ($(FORCING),noforcing)
 	@if ( ! grep 'forcing/getforce\.h' $(DSL_WORKDIR)/solve_single.ac > /dev/null ); then \

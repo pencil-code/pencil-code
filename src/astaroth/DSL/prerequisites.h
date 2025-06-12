@@ -13,6 +13,15 @@ struct PC_rhs_update
 	real max_advec
 }
 
+enum PC_SUB_STEP_NUMBER
+{
+	PC_FIRST_SUB_STEP,
+	PC_SECOND_SUB_STEP,
+	PC_THIRD_SUB_STEP,
+	PC_FOURTH_SUB_STEP,
+	PC_FIFTH_SUB_STEP,
+}
+
 #include "PC_nghost.h"
 
 #define AC_mx AC_mlocal.x
@@ -84,15 +93,5 @@ output real AC_dt1_max
   #include "../forcing/pcstyleforcing.h"
 #endif
 
+#include "../steps_two.h"
 #include "equations.h"
-
-global output real AC_current_total_mass
-
-enum PC_SUB_STEP_NUMBER
-{
-	PC_FIRST_SUB_STEP,
-	PC_SECOND_SUB_STEP,
-	PC_THIRD_SUB_STEP,
-	PC_FOURTH_SUB_STEP,
-	PC_FIFTH_SUB_STEP,
-}

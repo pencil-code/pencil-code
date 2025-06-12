@@ -1,8 +1,10 @@
 #include "../shock/kernels.ac"
 #include "../density/mass_conservation.h"
+
 input real AC_dt
 input PC_SUB_STEP_NUMBER AC_step_num
 input bool AC_lrmv
+
 ComputeSteps AC_rhs(boundconds)
 {
 	shock_1_divu()
@@ -33,7 +35,6 @@ BoundConds boundconds{
 //  bc_sym_z(BOUNDARY_Z_TOP, 1.0,AC_top,UUY,false)
 //  bc_sym_z(BOUNDARY_Z_TOP, 1.0,AC_top,UUZ,false)
 //
-//
 //  bc_sym_z(BOUNDARY_Z_TOP, 1.0,AC_top,AAX,false)
 //  bc_sym_z(BOUNDARY_Z_TOP, 1.0,AC_top,AAY,false)
 //  bc_sym_z(BOUNDARY_Z_TOP, 1.0,AC_top,AAZ,false)
@@ -44,7 +45,6 @@ BoundConds boundconds{
 //  bc_sym_z(BOUNDARY_Z_BOT, 1.0,AC_bot,UUX,false)
 //  bc_sym_z(BOUNDARY_Z_BOT, 1.0,AC_bot,UUY,false)
 //  bc_sym_z(BOUNDARY_Z_BOT, 1.0,AC_bot,UUZ,false)
-//
 //
 //  bc_sym_z(BOUNDARY_Z_BOT, 1.0,AC_bot,AAX,false)
 //  bc_sym_z(BOUNDARY_Z_BOT, 1.0,AC_bot,AAY,false)
@@ -67,8 +67,6 @@ BoundConds boundconds{
 //
 //  bc_ss_flux(BOUNDARY_Z_TOP, AC_top)
 //
-//
-//
 //  bc_sym_z(BOUNDARY_Z_BOT, 1.0,AC_bot,AAX,false)
 //  bc_sym_z(BOUNDARY_Z_BOT, 1.0,AC_bot,AAY,false)
 //  bc_sym_z(BOUNDARY_Z_BOT, 1.0,AC_bot,AAZ,false)
@@ -80,6 +78,5 @@ BoundConds boundconds{
 //
 //  bc_ism(BOUNDARY_Z_BOT, AC_bot,RHO)
 //  bc_ism(BOUNDARY_Z_TOP, AC_top,RHO)
-//
 //}
 
