@@ -314,8 +314,8 @@ module Cosmicray
 !  cosmic ray pressure is: pcr=(gammacr-1)*ecr
 !
       if (.not.lnegl .and. lhydro) then
-        do j=0,2
-          df(l1:l2,m,n,iux+j) = df(l1:l2,m,n,iux+j) - gammacr1*p%rho1*p%gecr(:,1+j)
+        do j=1,3
+          df(l1:l2,m,n,iux+j-1) = df(l1:l2,m,n,iux+j-1) - gammacr1*p%rho1*p%gecr(:,j)
         enddo
       endif
 !
@@ -717,5 +717,29 @@ module Cosmicray
       endif
 !
     endsubroutine impose_ecr_floor
+!***********************************************************************
+    subroutine pushpars2c
+    use Syscalls, only: copy_addr
+    use General , only: string_to_enum
+
+    integer, parameter :: n_pars=100
+    integer :: i
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+    call copy_addr(gammacr,p_par(1))
+    call copy_addr(gammacr1,p_par(2))
+    call copy_addr(ampl_qcr2,p_par(3))
+    call copy_addr(lnegl,p_par(4)) ! bool
+    call copy_addr(lvariable_tensor_diff,p_par(5)) ! bool
+    call copy_addr(lalfven_advect,p_par(6)) ! bool
+    call copy_addr(cosmicray_diff,p_par(7))
+    call copy_addr(ampl_qcr,p_par(8))
+    call copy_addr(k_para,p_par(9))
+    call copy_addr(k_perp,p_par(10))
+    call copy_addr(limiter_cr,p_par(11))
+    call copy_addr(blimiter_cr,p_par(12))
+    call copy_addr(simplified_cosmicray_tensor,p_par(13)) ! bool
+    call copy_addr(lupw_ecr,p_par(14)) ! bool
+    endsubroutine
 !***********************************************************************
 endmodule Cosmicray

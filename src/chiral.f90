@@ -88,6 +88,7 @@ module Chiral
   real, dimension (nx) :: del2XX_chiral, del2YY_chiral,del2ZZ_chiral
   real :: chiral_fisherR2_tdep
 !
+  integer :: enum_chiral_reaction = 0
   contains
 !***********************************************************************
     subroutine register_chiral()
@@ -844,5 +845,38 @@ contains
       endsubroutine QQ_chiral
 
     endsubroutine get_slices_chiral
+!***********************************************************************
+    subroutine pushpars2c
+    use Syscalls, only: copy_addr
+    use General , only: string_to_enum
+
+    integer, parameter :: n_pars=100
+    integer :: i
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
+   
+    call copy_addr(ixx_chiral,p_par(1)) ! int
+    call copy_addr(iyy_chiral,p_par(2)) ! int
+    call copy_addr(izz_chiral,p_par(3)) ! int
+    call copy_addr(llorentzforceep,p_par(4)) ! bool
+    call copy_addr(lzz_chiral,p_par(5)) ! bool
+    call copy_addr(chiral_diffxx,p_par(6))
+    call copy_addr(chiral_diff,p_par(7))
+    call copy_addr(chiral_crossinhibition,p_par(8))
+    call copy_addr(chiral_fidelity,p_par(9))
+    call copy_addr(chiral_diffzz,p_par(10))
+    call copy_addr(chiral_fishernu,p_par(11))
+    call copy_addr(chiral_fisherk,p_par(12))
+    call copy_addr(chiral_fishermu,p_par(13))
+    call copy_addr(chiral_fisherh,p_par(14))
+    call copy_addr(chiral_fisherr,p_par(15))
+    call copy_addr(limposed_gradient,p_par(16)) ! bool
+    call copy_addr(lupw_chiral,p_par(17)) ! bool
+    call copy_addr(chiral_fisherr2_tdep,p_par(18))
+    call copy_addr(gradx0,p_par(19)) ! real3
+    call copy_addr(grady0,p_par(20)) ! real3
+    call copy_addr(gzz_chiral,p_par(21)) ! (nx) (3)
+    call string_to_enum(enum_chiral_reaction,chiral_reaction)
+    call copy_addr(enum_chiral_reaction,p_par(22))
+    endsubroutine pushpars2c
 !***********************************************************************
 endmodule Chiral

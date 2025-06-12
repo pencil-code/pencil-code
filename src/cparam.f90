@@ -838,5 +838,19 @@ integer, parameter :: enum_fatal_error_with_force_string = 558
 integer, parameter :: enum_calc_heat_cool_interstellar_string = 559
 integer, parameter :: enum_axelZ_exponent_2ZZnconformalZ3ZZ_string = 560
 integer, parameter :: enum_setting_lhubble_hydroZt_is_not_correct_string = 561
+integer, parameter :: enum_duu_dtZ_diagnostics_ZZZ_string = 562
+integer, parameter :: enum_solve_dxy_dt_string = 563
+integer, parameter :: enum_xx_chiral_string = 564
+integer, parameter :: enum_yy_chiral_string = 565
+integer, parameter :: enum_bahn_model_string = 566
+integer, parameter :: enum_fisher_string = 567
+integer, parameter :: enum_fishers_equation_string = 568
+integer, parameter :: enum_growth_rateZ_string = 569
+integer, parameter :: enum_carrying_capacityZ_string = 570
+integer, parameter :: enum_sir_string = 571
+integer, parameter :: enum_sir_equation_string = 572
+integer, parameter :: enum_chiral_reaction_string = 573
+integer, parameter :: enum_no_such_chiral_reactionZ__string = 574
+integer, parameter :: enum_dxy_chiral_dtZ_maxZdiffus_chiralZ_Z_string = 575
 
 endmodule Cparam

@@ -58,7 +58,6 @@ module Hydro
   real, allocatable, dimension (:) :: Zl,dZldr,Pl,dPldtheta
   real :: ampl_fcont_uu=1., w_sld_cs=0.0
   logical :: lforcing_cont_uu=.false.
-  integer :: pushpars2c  ! should be procedure pointer (F2003)
 !
   integer :: idiag_u2m=0,idiag_um2=0,idiag_oum=0,idiag_o2m=0
   integer :: idiag_uxpt=0,idiag_uypt=0,idiag_uzpt=0
@@ -1069,6 +1068,16 @@ module Hydro
       call keep_compiler_quiet(f)
 
     endsubroutine calc_gradu
+!***********************************************************************
+    subroutine pushpars2c(p_par)
+
+    use Syscalls, only: copy_addr
+    use General , only: string_to_enum
+
+    integer, parameter :: n_pars=10
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+    call copy_addr(lpressuregradient_gas,p_par(1)) ! bool
 !***********************************************************************
 endmodule Hydro
 

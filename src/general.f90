@@ -7737,6 +7737,34 @@ iloop:do i=1,size(list2)
           dst = enum_axelZ_exponent_2ZZnconformalZ3ZZ_string
         case('setting lhubble_hydro=t is not correct')
           dst = enum_setting_lhubble_hydroZt_is_not_correct_string
+        case('duu_dt: diagnostics ...')
+          dst = enum_duu_dtZ_diagnostics_ZZZ_string
+        case('solve dxy_dt')
+          dst = enum_solve_dxy_dt_string
+        case('xx_chiral')
+          dst = enum_xx_chiral_string
+        case('yy_chiral')
+          dst = enum_yy_chiral_string
+        case('bahn_model')
+          dst = enum_bahn_model_string
+        case('fisher')
+          dst = enum_fisher_string
+        case('fishers equation')
+          dst = enum_fishers_equation_string
+        case('growth rate=')
+          dst = enum_growth_rateZ_string
+        case('carrying capacity=')
+          dst = enum_carrying_capacityZ_string
+        case('sir')
+          dst = enum_sir_string
+        case('sir equation')
+          dst = enum_sir_equation_string
+        case('chiral_reaction')
+          dst = enum_chiral_reaction_string
+        case('no such chiral_reaction: ')
+          dst = enum_no_such_chiral_reactionZ__string
+        case('dxy_chiral_dt: max(diffus_chiral) =')
+          dst = enum_dxy_chiral_dtZ_maxZdiffus_chiralZ_Z_string
         case default
           dst = enum_unknown_string_string
         endselect

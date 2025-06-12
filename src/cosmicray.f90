@@ -282,9 +282,9 @@ module Cosmicray
 !  should rename lnegl to, eg, lcrpressureforce
 !
       if (.not.lnegl .and. lhydro) then
-        do j=0,2
-          df(l1:l2,m,n,iux+j) = df(l1:l2,m,n,iux+j) - &
-                                gammacr1*p%rho1*p%gecr(:,1+j)*exp(p%ecr(:))
+        do j=1,3
+          df(l1:l2,m,n,iux+j-1) = df(l1:l2,m,n,iux+j-1) - &
+                                gammacr1*p%rho1*p%gecr(:,j)*exp(p%ecr(:))
         enddo
       endif
 !
@@ -589,5 +589,13 @@ module Cosmicray
       if (ecr_floor>0.) f(:,:,:,iecr) = max(ecr_floor_log,f(:,:,:,ilnrho))
 !
     endsubroutine impose_ecr_floor
+!***********************************************************************
+    subroutine pushpars2c
+    use Syscalls, only: copy_addr
+    use General , only: string_to_enum
+
+    integer, parameter :: n_pars=100
+    integer :: i
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
 !***********************************************************************
 endmodule Cosmicray

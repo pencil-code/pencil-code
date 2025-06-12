@@ -214,4 +214,13 @@ module Chiral
 !
     endsubroutine get_slices_chiral
 !***********************************************************************
+    subroutine pushpars2c
+    use Syscalls, only: copy_addr
+    use General , only: string_to_enum
+
+    integer, parameter :: n_pars=1
+    integer :: i
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
+    endsubroutine
+!***********************************************************************
 endmodule Chiral

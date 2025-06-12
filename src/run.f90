@@ -1530,6 +1530,8 @@ call copy_addr_dble(sigmah_,p_par(1225))
 call copy_addr(lcuda_aware_mpi,p_par(1226)) ! bool
 call copy_addr(it,p_par(1227)) ! int
 call copy_addr(nconformal,p_par(1228)) 
+call copy_addr(ifcr,p_par(1233)) ! int
+call copy_addr(iecr,p_par(1234)) ! int
 
 endsubroutine pushpars2c
 !***********************************************************************

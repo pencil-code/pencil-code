@@ -3162,6 +3162,12 @@ endif
 ifeq ($(GRAVITY),nogravity)
 	@echo $(CUDA_RELPATH)'/$(GRAVITY).f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources.h
 endif
+ifeq ($(HYDRO),nohydro)
+	@echo $(CUDA_RELPATH)'/$(HYDRO).f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources.h
+endif
+ifeq ($(DENSITY),nodensity)
+	@echo $(CUDA_RELPATH)'/$(DENSITY).f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources.h
+endif
 ifeq ($(MAGNETIC),nomagnetic)
 	@grep nomagnetic\.f90 $(CUDA_MAKEDIR)/PC_modulesources.h > /dev/null || echo $(CUDA_RELPATH)'/$(MAGNETIC).f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources.h
 endif

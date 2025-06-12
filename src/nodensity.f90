@@ -31,7 +31,6 @@ module Density
   real, dimension (mz,1) :: lnrhomz
 !
   include 'density.h'
-  integer :: pushpars2c 
 
   interface calc_pencils_density
     module procedure calc_pencils_density_pnc
@@ -393,5 +392,15 @@ module Density
       call keep_compiler_quiet(f)
 
     endsubroutine impose_density_ceiling
+!***********************************************************************
+    subroutine pushpars2c(p_par)
+
+    use Syscalls, only: copy_addr
+    use General , only: string_to_enum
+
+    integer, parameter :: n_pars=10
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+    call copy_addr(beta_glnrho_scaled,p_par(1)) ! real3
 !***********************************************************************
 endmodule Density
