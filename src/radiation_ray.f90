@@ -640,6 +640,7 @@ module Radiation
     endsubroutine calc_angle_weights
 !***********************************************************************
     subroutine calcQ(f)
+
       use Gpu, only: calcQ_gpu, source_function_and_opacity_gpu
 
       real, dimension(mx,my,mz,mfarray) :: f
@@ -690,6 +691,7 @@ module Radiation
         enddo
         enddo
       endif
+
     endsubroutine calcQ
 !***********************************************************************
     subroutine radtransfer(f)
@@ -2827,9 +2829,9 @@ module Radiation
     call copy_addr(Qderfact, p_par(2))
     call copy_addr(Qfact, p_par(3))
     call copy_addr(Q2fact, p_par(4))
-    call copy_addr(ldoppler_rad, p_par(5)) ! bool
-    call copy_addr(ldoppler_rad_includeq, p_par(6)) ! bool
-    call copy_addr(scalefactor_srad, p_par(7))      ! (mnu)
+    call copy_addr(ldoppler_rad, p_par(5))          ! bool
+    call copy_addr(ldoppler_rad_includeQ, p_par(6)) ! bool
+    call copy_addr(scalefactor_Srad, p_par(7))      ! (mnu)
     call copy_addr(scalefactor_kappa, p_par(8))     ! (mnu)
     call copy_addr(scalefactor_cooling, p_par(9))
     call copy_addr(scalefactor_radpressure, p_par(10))
@@ -2842,38 +2844,38 @@ module Radiation
     call copy_addr(weight, p_par(17))               ! (maxdir)
     call copy_addr(weightn, p_par(18))              ! (maxdir)
     call copy_addr(arad,p_par(19))
-    call copy_addr(srad_const,p_par(20))
-    call copy_addr(amplsrad,p_par(21))
-    call copy_addr(radius_srad,p_par(22))
-    call copy_addr(kx_srad,p_par(23))
-    call copy_addr(ky_srad,p_par(24))
-    call copy_addr(kz_srad,p_par(25))
+    call copy_addr(Srad_const,p_par(20))
+    call copy_addr(amplSrad,p_par(21))
+    call copy_addr(radius_Srad,p_par(22))
+    call copy_addr(kx_Srad,p_par(23))
+    call copy_addr(ky_Srad,p_par(24))
+    call copy_addr(kz_Srad,p_par(25))
     call copy_addr(lntt_table0,p_par(26))
     call copy_addr(dlntt_table,p_par(27))
     call copy_addr(z_cutoff,p_par(28))
-    call copy_addr(nlntt_table,p_par(29)) ! int
+    call copy_addr(nlntt_table,p_par(29))           ! int
     call copy_addr(lcutoff_opticallythin,p_par(30)) ! bool
     call copy_addr(cdtrad,p_par(31))
     call copy_addr(cdtrad_thin,p_par(32))
     call copy_addr(cdtrad_thick,p_par(33))
     call copy_addr(cdtrad_cgam,p_par(34))
     call copy_addr(cool_wid,p_par(35))
-    call copy_addr(ikr_press,p_par(36)) ! int
-    call copy_addr(lcooling,p_par(37)) ! bool
-    call copy_addr(lradpressure,p_par(38)) ! bool
-    call copy_addr(lradflux,p_par(39)) ! bool
-    call copy_addr(lrad_cool_diffus,p_par(40)) ! bool
-    call copy_addr(lrad_pres_diffus,p_par(41)) ! bool
-    call copy_addr(lcdtrad_old,p_par(42)) ! bool
-    call copy_addr(idiag_qradrms,p_par(43)) ! int
-    call copy_addr(idiag_qradmax,p_par(44)) ! int
+    call copy_addr(ikr_press,p_par(36))             ! int
+    call copy_addr(lcooling,p_par(37))              ! bool
+    call copy_addr(lradpressure,p_par(38))          ! bool
+    call copy_addr(lradflux,p_par(39))              ! bool
+    call copy_addr(lrad_cool_diffus,p_par(40))      ! bool
+    call copy_addr(lrad_pres_diffus,p_par(41))      ! bool
+    call copy_addr(lcdtrad_old,p_par(42))           ! bool
+    call copy_addr(idiag_Qradrms,p_par(43))         ! int
+    call copy_addr(idiag_Qradmax,p_par(44))         ! int
     call copy_addr(gamma,p_par(45))
-    call copy_addr(ij_table,p_par(47)) ! (3) (3)
+    call copy_addr(ij_table,p_par(47))              ! (3) (3)
     call string_to_enum(enum_source_function_type,source_function_type)
     call copy_addr(enum_source_function_type,p_par(48)) ! int
-    call copy_addr(nnu,p_par(50)) ! int
-    call copy_addr(lntt_table,p_par(51)) ! (nlntt_table)
-    call copy_addr(lnss_table,p_par(52)) ! (nlntt_table) (nnu)
+    call copy_addr(nnu,p_par(50))                   ! int
+    call copy_addr(lntt_table,p_par(51))            ! (nlntt_table)
+    call copy_addr(lnss_table,p_par(52))            ! (nlntt_table) (nnu)
     call copy_addr(kappa_kconst,p_par(53))
     call copy_addr(kapparho_const,p_par(54))
     call copy_addr(amplkapparho,p_par(55))
@@ -2896,8 +2898,11 @@ module Radiation
     call copy_addr(kappa_ceiling,p_par(72))
     call string_to_enum(enum_opacity_type,opacity_type)
     call copy_addr(enum_opacity_type,p_par(73)) ! int
-    call copy_addr(ndir,p_par(74)) ! int
-    call copy_addr(dlength,p_par(75)) ! (mz) (ndir)
+    call copy_addr(ndir,p_par(74))              ! int
+    call copy_addr(dlength,p_par(75))           ! (mz) (ndir)
+    call copy_addr(lradpress,p_par(76))         ! bool
+    call copy_addr(dtau_thresh_min, p_par(77))
+    call copy_addr(dtau_thresh_max, p_par(78))
 
     endsubroutine pushpars2c
 !***********************************************************************
