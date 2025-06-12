@@ -35,6 +35,7 @@ if (NOT CMAKE_BUILD_TYPE)
 endif()
 message(STATUS "Build type: " ${CMAKE_BUILD_TYPE})
 
+
 find_package(CUDAToolkit QUIET)
 find_package(HIP QUIET)
 if (NOT USE_HIP AND CUDAToolkit_FOUND)
@@ -66,6 +67,12 @@ elseif (USE_HIP OR HIP_FOUND)
     message(STATUS "Enabled HIP architectures (Astaroth): " ${CMAKE_HIP_ARCHITECTURES})
 else()
     message(ERROR "Did not find CUDA or HIP")
+endif()
+
+if (USE_HIP)
+    add_definitions(-DAC_USE_HIP=1)
+else()
+    add_definitions(-DAC_USE_HIP=0)
 endif()
 
 #if (USE_OMP)
