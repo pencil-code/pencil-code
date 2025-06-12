@@ -21,7 +21,7 @@ module Timestep
   include 'timestep.h'
 !
   real, dimension(mvar) :: farraymin
-  real, dimension (mx,my,mz,mfarray), target :: falpha_arr
+  real, dimension (:,:,:,:), allocatable, target :: falpha_arr
   real, dimension (:,:,:,:), pointer :: falpha
   real, dimension (nx,ny,nz,mvar) :: errdf
   real, dimension (5) :: beta_hat, dt_beta_hat, dt_alpha_ts
@@ -50,6 +50,7 @@ module Timestep
       use Messages, only: not_implemented, warning
       use General, only: itoa, rtoa
 !
+      if(.not. allocated(falpha_arr) .and. .not. lgpu) allocate(falpha_arr(mx,my,mz,mfarray))
       if (itorder==1) then
         if (lgpu) then
           if (lroot) call warning("initialize_timestep","itorder 1 not implemented on GPU switched to 4")
