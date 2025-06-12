@@ -1778,8 +1778,15 @@ module Shock
 !***********************************************************************
     subroutine pushpars2c(p_par)
 
-    integer, parameter :: n_pars=0
+    integer, parameter :: n_pars=10
     integer(KIND=ikind8), dimension(n_pars) :: p_par
+    logical, save :: lconvergence_only = .true.,lmax_shock=.true.
+    logical, real :: con_bias = 0.1, shock_div_pow=1.0,dt_div_pow=0.
+    call copy_addr(lconvergence_only,p_par(1)) ! bool
+    call copy_addr(con_bias,p_par(2))
+    call copy_addr(shock_div_pow,p_par(3))
+    call copy_addr(dt_div_pow,p_par(4))
+    call copy_addr(lmax_shock,p_par(5)) ! bool
 
     endsubroutine pushpars2c
 !***********************************************************************

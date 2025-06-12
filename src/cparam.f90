@@ -852,5 +852,10 @@ integer, parameter :: enum_sir_equation_string = 572
 integer, parameter :: enum_chiral_reaction_string = 573
 integer, parameter :: enum_no_such_chiral_reactionZ__string = 574
 integer, parameter :: enum_dxy_chiral_dtZ_maxZdiffus_chiralZ_Z_string = 575
+integer, parameter :: enum_ac_transformed_pencil_ppsat_Z__string = 576
+integer, parameter :: enum_ac_transformed_pencil_ppsf_Z__string = 577
+integer, parameter :: enum_ac_transformed_pencil_tt_Z__string = 578
+integer, parameter :: enum_dss_dtZ_maxZadvec_cs2Z_Z_string = 579
+integer, parameter :: enum_droplet_redistr_string = 580
 
 endmodule Cparam

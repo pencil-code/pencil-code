@@ -378,6 +378,26 @@ module Special
 
     endsubroutine dspecial_dt_ode
 !***********************************************************************
+    subroutine pushpars2c
+
+      use Syscalls, only: copy_addr
+      use General , only: string_to_enum
+
+      integer, parameter :: n_pars=20
+      integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+      call copy_addr(mu,p_par(1))
+      call copy_addr(ldust_pressureforce,p_par(2)) ! bool
+      call copy_addr(lradiation_prdrag,p_par(3)) ! bool
+      call copy_addr(ldivrhop_by_vol,p_par(4)) ! bool
+      call copy_addr(const1,p_par(5))
+      call copy_addr(const2,p_par(6))
+      call copy_addr(const3,p_par(7))
+      call copy_addr(gamma1,p_par(8))
+      call copy_addr(const_pr,p_par(9)) ! (ndustspec)
+
+    endsubroutine pushpars2c
+!***********************************************************************
 !
 !***********************************************************************
 !***********************************************************************

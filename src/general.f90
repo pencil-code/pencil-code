@@ -7765,6 +7765,16 @@ iloop:do i=1,size(list2)
           dst = enum_no_such_chiral_reactionZ__string
         case('dxy_chiral_dt: max(diffus_chiral) =')
           dst = enum_dxy_chiral_dtZ_maxZdiffus_chiralZ_Z_string
+        case('ac_transformed_pencil_ppsat = ')
+          dst = enum_ac_transformed_pencil_ppsat_Z__string
+        case('ac_transformed_pencil_ppsf = ')
+          dst = enum_ac_transformed_pencil_ppsf_Z__string
+        case('ac_transformed_pencil_tt = ')
+          dst = enum_ac_transformed_pencil_tt_Z__string
+        case('dss_dt: max(advec_cs2) =')
+          dst = enum_dss_dtZ_maxZadvec_cs2Z_Z_string
+        case('droplet_redistr')
+          dst = enum_droplet_redistr_string
         case default
           dst = enum_unknown_string_string
         endselect

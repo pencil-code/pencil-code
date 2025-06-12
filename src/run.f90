@@ -1424,7 +1424,6 @@ call copy_addr(iviscosity,p_par(358)) ! int
 call copy_addr(ilntt,p_par(359)) ! int
 call copy_addr(xgrid,p_par(360)) ! (nxgrid)
 call copy_addr(lxyz,p_par(361)) ! real3
-call copy_addr(reac_dust,p_par(362)) ! (nx)
 call copy_addr(ichemspec,p_par(363)) ! (nchemspec)
 call copy_addr_dble(unit_velocity,p_par(365))
 call copy_addr_dble(unit_density,p_par(366))
