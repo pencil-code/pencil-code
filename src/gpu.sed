@@ -60,7 +60,6 @@ b end
 : cont1
 /IO[_ ]/ b end
 #s/^.*= *\([A-Za-z0-9_][A-Za-z0-9_]*\)/#define \U\1/ 
-#s/^ *\([A-Z0-9_][A-Z0-9_]*\) *= *\([a-z0-9_][a-z0-9_]*\) *$/#define \1 \/\/ ..\/..\/\2.f90/ 
 s/^ *\([A-Z0-9_][A-Z0-9_]*\) *= *\([a-z0-9_][a-z0-9_]*\) *$/#define L\1 1 \/\/ ..\/\2.f90/ 
 p
 s/.*\/\/ *\(\.\.[\/\.]*\/[a-z0-9_][a-z0-9_]*\.f90\) *$/\1 \\/
@@ -69,16 +68,21 @@ H
 $! d
 ${
 g
+#if there is a PRECISION=... entry, put it as the first line, add \n MODULESOURCES= \ and append the parts
+#before and after the PRECISION entry with an additional \ in between to fill the empty line
 /DOUBLE/ {
-          s/^\(.*\)PRECISION=DOUBLE\(.*\)$/PRECISION=DOUBLE\nMODULESOURCES= \\\1\2\\/
+          s/^\(.*\)PRECISION=DOUBLE\(.*\)$/PRECISION=DOUBLE\nMODULESOURCES= \\\1\\\2/
           t out
          }
 /SINGLE/ {
-          s/^\(.*\)PRECISION=SINGLE\(.*\)$/PRECISION=SINGLE\nMODULESOURCES= \\\1\2\\/
+          s/^\(.*\)PRECISION=SINGLE\(.*\)$/PRECISION=SINGLE\nMODULESOURCES= \\\1\\\2/
           t out
          }
+#if there is no PRECISION=... entry, put as first line MODULESOURCES= \ and append the remaining part
 s/^\(.*\)$/MODULESOURCES= \\\1/
 : out
+#write pattern space to PC_modulesources.h
 w CUDA_MAKEDIR/PC_modulesources.h
+#delete pattern space
 d
 }
