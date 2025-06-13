@@ -1,3 +1,4 @@
+#if LSHEAR
 real shear_rhs[AC_nvar__mod__cdata]
 for i in 0:AC_nvar__mod__cdata
 {
@@ -70,3 +71,4 @@ if(lshear)
   }
   if (AC_iam__mod__cdata!=0) shear_rhs[AC_iamx__mod__cdata-1] -=AC_sshear__mod__cdata*Field(AC_iamy__mod__cdata-1)
 }
+#endif
