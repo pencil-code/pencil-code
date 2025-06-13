@@ -183,9 +183,11 @@ module Timestep
 !
 !  Initialize error to zero
 !
-      errmax=0.
-      errmaxs=0.
-      errdf=0.
+      if (.not. lgpu) then
+        errmax=0.
+        errmaxs=0.
+        errdf=0.
+      endif
 !
 !  Enter substep loop
 !
