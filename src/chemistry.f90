@@ -636,10 +636,10 @@ module Chemistry
       write (1,*) nchemspec,nreactions
       close (1)
 !
-    a_k4_min = minval(a_k4,1)
-    low_coeff_abs_max = maxval(abs(low_coeff),1)
-    high_coeff_abs_max = maxval(abs(high_coeff),1)
-    troe_coeff_abs_max = maxval(abs(troe_coeff),1)
+    if(allocated(a_k4))       a_k4_min = minval(a_k4,1)
+    if(allocated(low_coeff))  low_coeff_abs_max = maxval(abs(low_coeff),1)
+    if(allocated(high_coeff)) high_coeff_abs_max = maxval(abs(high_coeff),1)
+    if(allocated(troe_coeff)) troe_coeff_abs_max = maxval(abs(troe_coeff),1)
     endsubroutine initialize_chemistry
 !***********************************************************************
     subroutine init_chemistry(f)
