@@ -631,4 +631,22 @@ module Polymer
 !
     endsubroutine rprint_polymer
 !***********************************************************************
+    subroutine pushpars2c(p_par)
+
+    use Syscalls, only: copy_addr
+    use General , only: string_to_enum
+
+    integer, parameter :: n_pars=10
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+    call copy_addr(lpolyback,p_par(1)) ! bool
+    call copy_addr(lpolyadvect,p_par(2)) ! bool
+    call copy_addr(lupw_poly,p_par(3)) ! bool
+    call copy_addr(mu_poly,p_par(4))
+    call copy_addr(tau_poly,p_par(5))
+    call copy_addr(tau_poly1,p_par(6))
+    call copy_addr(eta_poly,p_par(7))
+
+    endsubroutine pushpars2c
+!***********************************************************************
 endmodule Polymer

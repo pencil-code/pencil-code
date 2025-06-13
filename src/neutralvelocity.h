@@ -7,3 +7,4 @@
   public :: rprint_neutralvelocity
   public :: init_uun, calc_pencils_neutralvelocity, duun_dt, calc_diagnostics_neutralvel
   public :: pencil_criteria_neutralvelocity, pencil_interdep_neutralvelocity
+  public :: pushpars2c

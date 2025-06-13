@@ -7789,6 +7789,116 @@ iloop:do i=1,size(list2)
           dst = enum_becker_doring_string
         case('before ldiagnos')
           dst = enum_before_ldiagnos_string
+        case('del2m')
+          dst = enum_del2m_string
+        case('oldroyd-b')
+          dst = enum_oldroydZb_string
+        case('div_mn_2tensor')
+          dst = enum_div_mn_2tensor_string
+        case('in spherical coordinates')
+          dst = enum_in_spherical_coordinates_string
+        case('cylindrical coordinates')
+          dst = enum_cylindrical_coordinates_string
+        case('fene-p')
+          dst = enum_feneZp_string
+        case('calc_pencils_polymer')
+          dst = enum_calc_pencils_polymer_string
+        case('no such poly_model: ')
+          dst = enum_no_such_poly_modelZ__string
+        case('dpoly_dt: solve')
+          dst = enum_dpoly_dtZ_solve_string
+        case('p11')
+          dst = enum_p11_string
+        case('p22')
+          dst = enum_p22_string
+        case('p33')
+          dst = enum_p33_string
+        case('p12')
+          dst = enum_p12_string
+        case('p13')
+          dst = enum_p13_string
+        case('p32')
+          dst = enum_p32_string
+        case('simple')
+          dst = enum_simple_string
+        case('cholesky')
+          dst = enum_cholesky_string
+        case('dpoly_dt')
+          dst = enum_dpoly_dt_string
+        case('poly_algo: cholesky decomposition')
+          dst = enum_poly_algoZ_cholesky_decomposition_string
+        case('no such poly_algo: ')
+          dst = enum_no_such_poly_algoZ__string
+        case('dpoly_dt: max(diffus_eta_poly) =')
+          dst = enum_dpoly_dtZ_maxZdiffus_eta_polyZ_Z_string
+        case('dpoly_dt: max(trelax_poly) =')
+          dst = enum_dpoly_dtZ_maxZtrelax_polyZ_Z_string
+        case('ac_transformed_pencil_advec_uun  =')
+          dst = enum_ac_transformed_pencil_advec_uun__Z_string
+        case('advec_csn2 =')
+          dst = enum_advec_csn2_Z_string
+        case('temp_dep')
+          dst = enum_temp_dep_string
+        case('calc_pencils_neutraldensity')
+          dst = enum_calc_pencils_neutraldensity_string
+        case('no energy equation is used')
+          dst = enum_no_energy_equation_is_used_string
+        case('no such value for alpha_prescription')
+          dst = enum_no_such_value_for_alpha_prescription_string
+        case('dlnrhon_dt: solve dlnrhon_dt')
+          dst = enum_dlnrhon_dtZ_solve_dlnrhon_dt_string
+        case('lnrhon')
+          dst = enum_lnrhon_string
+        case('rhon')
+          dst = enum_rhon_string
+        case('dlnrhon_dt: diffrhon=')
+          dst = enum_dlnrhon_dtZ_diffrhonZ_string
+        case('dlnrhon_dt: diffrhon_hyper3=')
+          dst = enum_dlnrhon_dtZ_diffrhon_hyper3Z_string
+        case('dlnrhon_dt: diffrhon_hyper3=(dx,dy,dz)=')
+          dst = enum_dlnrhon_dtZ_diffrhon_hyper3ZZdxZdyZdzZZ_string
+        case('dlnrhon_dt: diffrhon_shock=')
+          dst = enum_dlnrhon_dtZ_diffrhon_shockZ_string
+        case('dlnrhon_dt: max(diffus_diffrhon) =')
+          dst = enum_dlnrhon_dtZ_maxZdiffus_diffrhonZ_Z_string
+        case('stratification')
+          dst = enum_stratification_string
+        case('duun_dt: solve')
+          dst = enum_duun_dtZ_solve_string
+        case('unx')
+          dst = enum_unx_string
+        case('uny')
+          dst = enum_uny_string
+        case('unz')
+          dst = enum_unz_string
+        case('duun_dt: add coriolis force; omega=')
+          dst = enum_duun_dtZ_add_coriolis_forceZ_omegaZ_string
+        case('duun_dt: add centrifugal force; omega=')
+          dst = enum_duun_dtZ_add_centrifugal_forceZ_omegaZ_string
+        case('duun_dt: coriolis force; omega, theta=')
+          dst = enum_duun_dtZ_coriolis_forceZ_omegaZ_thetaZ_string
+        case('rhon_nun-const')
+          dst = enum_rhon_nunZconst_string
+        case('nun-const')
+          dst = enum_nunZconst_string
+        case('hyper3_nun-const')
+          dst = enum_hyper3_nunZconst_string
+        case('hyper3-cyl')
+          dst = enum_hyper3Zcyl_string
+        case('hyper3_cyl')
+          dst = enum_hyper3_cyl_string
+        case('hyper3-sph')
+          dst = enum_hyper3Zsph_string
+        case('hyper3_sph')
+          dst = enum_hyper3_sph_string
+        case('(i21)')
+          dst = enum_Zi21Z_string
+        case('calc_viscous_force_neutral')
+          dst = enum_calc_viscous_force_neutral_string
+        case('no such iviscn(')
+          dst = enum_no_such_iviscnZ_string
+        case('): ')
+          dst = enum_ZZ__string
         case default
           dst = enum_unknown_string_string
         endselect

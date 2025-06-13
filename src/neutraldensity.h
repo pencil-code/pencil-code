@@ -10,3 +10,4 @@
   public :: pencil_criteria_neutraldensity, pencil_interdep_neutraldensity
   public :: calc_pencils_neutraldensity, calc_diagnostics_neutraldens
   public :: neutraldensity_after_boundary
+  public :: pushpars2c

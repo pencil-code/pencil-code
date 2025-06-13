@@ -81,6 +81,8 @@ module NeutralDensity
   real :: alpha_time
   real, dimension(nx) :: diffus_diffrhon
 
+  integer :: enum_alpha_prescription = 0
+  integer :: enum_borderlnrhon = 0
   contains
 !***********************************************************************
     subroutine register_neutraldensity
@@ -852,20 +854,23 @@ module NeutralDensity
 !
       case ('zero','0')
          f_target=0.
+         if (lneutraldensity_nolog) f_target=exp(f_target)
+         call border_driving(f,df,p,f_target,ilnrhon)
       case ('constant')
          f_target=lnrhon_const
+         if (lneutraldensity_nolog) f_target=exp(f_target)
+         call border_driving(f,df,p,f_target,ilnrhon)
       case ('stratification')
          !OO_sph = sqrt((r_mn**2 + r0_pot**2)**(-1.5))
          !OO_cyl = sqrt((rcyl_mn**2 + r0_pot**2)**(-1.5))
          !cs = OO_cyl*rcyl_mn*cs0
          !f_target=lnrhon_const - 0.5*(theta/cs0)**2
          f_target=(p%rcyl_mn-p%r_mn)/(cs20*p%r_mn)
+         if (lneutraldensity_nolog) f_target=exp(f_target)
+         call border_driving(f,df,p,f_target,ilnrhon)
       case ('nothing')
-         return
       endselect
 !
-      if (lneutraldensity_nolog) f_target=exp(f_target)
-      call border_driving(f,df,p,f_target,ilnrhon)
 !
     endsubroutine set_border_neutraldensity
 !***********************************************************************
@@ -958,5 +963,42 @@ module NeutralDensity
       endif
 !
     endsubroutine rprint_neutraldensity
+!***********************************************************************
+    subroutine pushpars2c(p_par)
+
+    use Syscalls, only: copy_addr
+    use General , only: string_to_enum
+
+    integer, parameter :: n_pars=30
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+
+    call copy_addr(diffrhon,p_par(1))
+    call copy_addr(diffrhon_hyper3,p_par(2))
+    call copy_addr(diffrhon_shock,p_par(3))
+    call copy_addr(lnrhon_const,p_par(4))
+    call copy_addr(rhon_const,p_par(5))
+    call copy_addr(alpha,p_par(6))
+    call copy_addr(zeta,p_par(7))
+    call copy_addr(lcontinuity_neutral,p_par(8)) ! bool
+    call copy_addr(lupw_lnrhon,p_par(9)) ! bool
+    call copy_addr(lupw_rhon,p_par(10)) ! bool
+    call copy_addr(ldiffn_normal,p_par(11)) ! bool
+    call copy_addr(ldiffn_hyper3,p_par(12)) ! bool
+    call copy_addr(ldiffn_shock,p_par(13)) ! bool
+    call copy_addr(ldiffn_hyper3lnrhon,p_par(14)) ! bool
+    call copy_addr(ldiffn_hyper3_aniso,p_par(15)) ! bool
+    call copy_addr(ldiffn_hyper3_polar,p_par(16)) ! bool
+    call copy_addr(luse_as_ionization,p_par(17)) ! bool
+    call copy_addr(lpretend_star,p_par(18)) ! bool
+    call copy_addr(star_form_threshold,p_par(19))
+    call copy_addr(star_form_exponent,p_par(20))
+    call copy_addr(alpha_time,p_par(21))
+    call copy_addr(diffrhon_hyper3_aniso,p_par(22)) ! real3
+    call string_to_enum(enum_alpha_prescription,alpha_prescription)
+    call copy_addr(enum_alpha_prescription,p_par(23)) ! int
+    call string_to_enum(enum_borderlnrhon,borderlnrhon)
+    call copy_addr(enum_borderlnrhon,p_par(24)) ! int
+    endsubroutine pushpars2c
 !***********************************************************************
 endmodule NeutralDensity

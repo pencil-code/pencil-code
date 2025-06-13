@@ -1530,6 +1530,12 @@ call copy_addr(it,p_par(1227)) ! int
 call copy_addr(nconformal,p_par(1228)) 
 call copy_addr(ifcr,p_par(1233)) ! int
 call copy_addr(iecr,p_par(1234)) ! int
+call copy_addr(ipoly,p_par(1239)) ! int
+call copy_addr(ipoly_fr,p_par(1240)) ! int
+call copy_addr(lneutraldensity_nolog,p_par(1241)) ! bool
+call copy_addr(ilnrhon,p_par(1241)) ! int
+call copy_addr(irhon,p_par(1242)) ! int
+call copy_addr(iuun,p_par(1243)) ! int
 
 endsubroutine pushpars2c
 !***********************************************************************

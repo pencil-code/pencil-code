@@ -93,6 +93,8 @@ module NeutralVelocity
 ! Auxiliaries
 !
   real, dimension(nx) :: cions_rhon,cneut_rho,diffus_nun
+  integer, dimension(ninit) :: enum_iviscn = 0
+  integer :: enum_borderuun = 0
 
   contains
 !***********************************************************************
@@ -756,20 +758,27 @@ module NeutralVelocity
       select case (borderuun)
       case ('zero','0')
         f_target=0.
+        do j=1,3
+          ju=j+iuun-1
+          call border_driving(f,df,p,f_target(:,j),ju)
+        enddo
       case ('initial-condition')
         !f_target=f(l1:l2,mcount,ncount,iunx:iunz)
+        do j=1,3
+          ju=j+iuun-1
+          call border_driving(f,df,p,f_target(:,j),ju)
+        enddo
       case ('constant')
         do j=1,3
           f_target(:,j) = uun_const(j)
         enddo
+        do j=1,3
+          ju=j+iuun-1
+          call border_driving(f,df,p,f_target(:,j),ju)
+        enddo
       case ('nothing')
-        return
       endselect
 !
-      do j=1,3
-        ju=j+iuun-1
-        call border_driving(f,df,p,f_target(:,j),ju)
-      enddo
 !
     endsubroutine set_border_neutralvelocity
 !***********************************************************************
@@ -1061,5 +1070,36 @@ module NeutralVelocity
       endif
 !
     endsubroutine rprint_neutralvelocity
+!***********************************************************************
+    subroutine pushpars2c(p_par)
+
+    use Syscalls, only: copy_addr
+    use General , only: string_to_enum
+
+    integer, parameter :: n_pars=20
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
+    integer :: i
+
+    call copy_addr(lcoriolis_force,p_par(1)) ! bool
+    call copy_addr(lcentrifugal_force,p_par(2)) ! bool
+    call copy_addr(ladvection_velocity,p_par(3)) ! bool
+    call copy_addr(lpressuregradient,p_par(4)) ! bool
+    call copy_addr(lviscneutral,p_par(5)) ! bool
+    call copy_addr(lelectron_pressure,p_par(6)) ! bool
+    call copy_addr(colldrag,p_par(7))
+    call copy_addr(electron_pressure,p_par(8))
+    call copy_addr(nun,p_par(9))
+    call copy_addr(csn20,p_par(10))
+    call copy_addr(nun_hyper3,p_par(11))
+    call copy_addr(lupw_uun,p_par(12)) ! bool
+    call copy_addr(idiag_fricneut,p_par(13)) ! int
+    call copy_addr(idiag_fricions,p_par(14)) ! int
+    call copy_addr(uun_const,p_par(15)) ! real3
+    do i = 1,ninit; call string_to_enum(enum_iviscn(i),iviscn(i)); enddo
+    call copy_addr(enum_iviscn,p_par(16)) ! int (ninit)
+    call string_to_enum(enum_borderuun,borderuun)
+    call copy_addr(enum_borderuun,p_par(17)) ! int
+
+    endsubroutine pushpars2c
 !***********************************************************************
 endmodule Neutralvelocity
