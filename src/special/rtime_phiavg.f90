@@ -50,8 +50,6 @@ module Special
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
-  use EquationOfState
-!
   implicit none
 !
   include '../special.h'
