@@ -1074,6 +1074,48 @@ endif
 !
     endsubroutine get_slices_special
 !***********************************************************************
+    subroutine pushpars2c(p_par)
+
+    use Syscalls, only: copy_addr
+    use General , only: string_to_enum
+
+    integer, parameter :: n_pars=40
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+    call copy_addr(alpf,p_par(1))
+    call copy_addr(eta_ee,p_par(2))
+    call copy_addr(sige_prefactor,p_par(3))
+    call copy_addr(sigb_prefactor,p_par(4))
+    call copy_addr(mass_chi,p_par(5))
+    call copy_addr(igamma,p_par(6)) ! int
+    call copy_addr(ia0,p_par(7)) ! int
+    call copy_addr(idiva_name,p_par(8)) ! int
+    call copy_addr(llongitudinale,p_par(9)) ! bool
+    call copy_addr(llorenz_gauge_disp,p_par(10)) ! bool
+    call copy_addr(lphi_hom,p_par(11)) ! bool
+    call copy_addr(lnoncollinear_eb,p_par(12)) ! bool
+    call copy_addr(lnoncollinear_eb_aver,p_par(13)) ! bool
+    call copy_addr(lcollinear_eb,p_par(14)) ! bool
+    call copy_addr(lcollinear_eb_aver,p_par(15)) ! bool
+    call copy_addr(leedot_as_aux,p_par(16)) ! bool
+    call copy_addr(lcurlya,p_par(17)) ! bool
+    call copy_addr(lsolve_chargedensity,p_par(18)) ! bool
+    call copy_addr(ldive_as_aux,p_par(19)) ! bool
+    call copy_addr(lsige_as_aux,p_par(20)) ! bool
+    call copy_addr(lsigb_as_aux,p_par(21)) ! bool
+    call copy_addr(lallow_bprime_zero,p_par(22)) ! bool
+    call copy_addr(lswitch_off_divj,p_par(23)) ! bool
+    call copy_addr(lswitch_off_gamma,p_par(24)) ! bool
+    call copy_addr(lmass_suppression,p_par(25)) ! bool
+    call copy_addr(beta_inflation,p_par(26))
+    call copy_addr(c_light2,p_par(27))
+    call copy_addr(idiag_bcurlem,p_par(28)) ! int
+    call copy_addr(idiag_adphibm,p_par(29)) ! int
+    call copy_addr(idiag_johmrms,p_par(30)) ! int
+
+
+    endsubroutine pushpars2c
+!***********************************************************************
 !
 !********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************

@@ -7899,6 +7899,10 @@ iloop:do i=1,size(list2)
           dst = enum_no_such_iviscnZ_string
         case('): ')
           dst = enum_ZZ__string
+        case('ee')
+          dst = enum_ee_string
+        case('t, inflation_factor=')
+          dst = enum_tZ_inflation_factorZ_string
         case default
           dst = enum_unknown_string_string
         endselect

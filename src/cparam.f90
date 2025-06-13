@@ -919,5 +919,7 @@ integer, parameter :: enum_Zi21Z_string = 639
 integer, parameter :: enum_calc_viscous_force_neutral_string = 640
 integer, parameter :: enum_no_such_iviscnZ_string = 641
 integer, parameter :: enum_ZZ__string = 642
+integer, parameter :: enum_ee_string = 643
+integer, parameter :: enum_tZ_inflation_factorZ_string = 644
 
 endmodule Cparam
