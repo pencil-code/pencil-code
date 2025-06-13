@@ -7777,6 +7777,18 @@ iloop:do i=1,size(list2)
           dst = enum_droplet_redistr_string
         case('advec_cg2  =')
           dst = enum_advec_cg2__Z_string
+        case('1step_test')
+          dst = enum_1step_test_string
+        case('find_species_index')
+          dst = enum_find_species_index_string
+        case('for this eos')
+          dst = enum_for_this_eos_string
+        case('i_o2, i_c3h8, ichem_o2, ichem_c3h8=')
+          dst = enum_i_o2Z_i_c3h8Z_ichem_o2Z_ichem_c3h8Z_string
+        case('becker_doring')
+          dst = enum_becker_doring_string
+        case('before ldiagnos')
+          dst = enum_before_ldiagnos_string
         case default
           dst = enum_unknown_string_string
         endselect

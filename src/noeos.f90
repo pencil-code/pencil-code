@@ -1945,6 +1945,8 @@ module EquationOfState
     call copy_addr(lnrho0,p_par(5))
     call copy_addr(lnTT0,p_par(6))
     call copy_addr(rho0,p_par(7))
+    call copy_addr(imass,p_par(8)) ! int
+    call copy_addr(cp_const,p_par(9))
 
     endsubroutine pushpars2c
 !***********************************************************************

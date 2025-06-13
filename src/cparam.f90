@@ -858,5 +858,11 @@ integer, parameter :: enum_ac_transformed_pencil_tt_Z__string = 578
 integer, parameter :: enum_dss_dtZ_maxZadvec_cs2Z_Z_string = 579
 integer, parameter :: enum_droplet_redistr_string = 580
 integer, parameter :: enum_advec_cg2__Z_string = 581
+integer, parameter :: enum_1step_test_string = 582
+integer, parameter :: enum_find_species_index_string = 583
+integer, parameter :: enum_for_this_eos_string = 584
+integer, parameter :: enum_i_o2Z_i_c3h8Z_ichem_o2Z_ichem_c3h8Z_string = 585
+integer, parameter :: enum_becker_doring_string = 586
+integer, parameter :: enum_before_ldiagnos_string = 587
 
 endmodule Cparam

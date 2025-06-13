@@ -1375,7 +1375,6 @@ call copy_addr(lpole,p_par(136)) ! bool3
 call copy_addr(lequidist,p_par(137)) ! bool3
 call copy_addr(xyz0,p_par(138)) ! real3
 call copy_addr(xyz1,p_par(139)) ! real3
-call copy_addr(reac_chem,p_par(140)) ! (nx)
 call copy_addr(beta_ts,p_par(141)) ! (5)
 call copy_addr(dt_beta_ts,p_par(142)) ! (5)
 call copy_addr(iglobal_jext,p_par(149)) ! int3

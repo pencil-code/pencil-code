@@ -3709,6 +3709,7 @@ module Dustdensity
         call copy_addr(mi,p_par(71)) ! (ndustspec)
         call copy_addr(diffnd_anisotropic,p_par(72)) ! real3
         call copy_addr(kernel_mean,p_par(73)) ! (ndustspec) (ndustspec)
+        call copy_addr(lcondensing_species,p_par(74)) ! bool
 
     endsubroutine pushpars2c
 !***********************************************************************

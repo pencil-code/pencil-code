@@ -181,8 +181,13 @@ module Dustdensity
     use Syscalls, only: copy_addr
     use General , only: string_to_enum
 
-    integer, parameter :: n_pars=1
+    integer, parameter :: n_pars=10
     integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+    logical, save :: lcondensing_species=.false.
+
+     call copy_addr(lcondensing_species,p_par(1)) ! bool
+
     endsubroutine pushpars2c
 !***********************************************************************
 endmodule Dustdensity
