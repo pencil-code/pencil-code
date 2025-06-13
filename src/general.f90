@@ -635,8 +635,8 @@ print*, 'rank,ipx,ipy,ipz, find_proc=',rank, ipx,ipy,ipz, find_proc_node_localty
 !***********************************************************************
     subroutine random_number_wrapper_0(a,channel)
 !
-!  Fills a with a random number calculated with one of the generators
-!  available with random_gen.
+!  Fills the array "a" with a random number calculated with one of the
+!  generators available with random_gen.
 !
       use Cdata, only: lroot
 !

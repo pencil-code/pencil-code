@@ -102,7 +102,7 @@ module Special
   real :: a2rhogphim, a2rhogphim_all
   real :: lnascale, a2, a21, Hscript
   real :: Hscript0=0., scale_rho_chi_Heqn=1.
-  real :: amplee_BD_prefactor=0., kpeak_ee_BD=0.
+  real :: amplee_BD_prefactor=0., deriv_prefactor_ee=-1.
   real :: echarge=.0, echarge_const=.303
   real :: count_eb0_all=0.
   real, target :: ddotam_all
@@ -110,7 +110,9 @@ module Special
   real, pointer :: sigE_prefactor, sigB_prefactor, mass_chi
 ! real, dimension (:), pointer :: eta_xtdep
   real, dimension (nx) :: dt1_special
-  logical :: lbackreact_infl=.true., lem_backreact=.true., lzeroHubble=.false.
+  !logical :: lbackreact_infl=.true., lem_backreact=.true., lzeroHubble=.false.
+!AB: lbackreact_infl is not used!!
+  logical :: lem_backreact=.true., lzeroHubble=.false.
   logical :: lscale_tobox=.true.,ldt_backreact_infl=.true., lconf_time=.true.
   logical :: lskip_projection_phi=.false., lvectorpotential=.false., lflrw=.false.
   logical :: lrho_chi=.false., lno_noise_phi=.false., lno_noise_dphi=.false.
@@ -128,11 +130,13 @@ module Special
       initpower_phi, initpower2_phi, cutoff_phi, kgaussian_phi, kpeak_phi, &
       initpower_dphi, initpower2_dphi, cutoff_dphi, kpeak_dphi, &
       ncutoff_phi, lscale_tobox, Hscript0, Hscript_choice, infl_v, lflrw, &
-      lrho_chi, scale_rho_chi_Heqn, amplee_BD_prefactor, kpeak_ee_BD
+      lrho_chi, scale_rho_chi_Heqn, amplee_BD_prefactor, deriv_prefactor_ee
+
 !
   namelist /special_run_pars/ &
       initspecial, phi0, dphi0, axionmass, eps, ascale_ini, &
-      lbackreact_infl, lem_backreact, c_light_axion, lambda_axion, Vprime_choice, &
+      !lbackreact_infl, lem_backreact, c_light_axion, lambda_axion, Vprime_choice, &
+      lem_backreact, c_light_axion, lambda_axion, Vprime_choice, &
       lzeroHubble, ldt_backreact_infl, Ndiv, Hscript0, Hscript_choice, infl_v, &
       lflrw, lrho_chi, scale_rho_chi_Heqn, echarge_type
 !
@@ -252,7 +256,7 @@ module Special
       use Mpicomm, only: mpibcast_real
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: Vpotential, Hubble_ini, infl_gam, amplphi_BD, amplee_BD
+      real :: Vpotential, Hubble_ini, infl_gam, amplphi_BD, amplee_BD, deriv_prefactor
       integer :: j
 !
       intent(inout) :: f
@@ -328,11 +332,14 @@ module Special
 !  We apply this optionally here also to the gauge field.
 !
           case ('Bunch-Davies')
+            if (lroot) print*,'Hubble_ini=',Hubble_ini
             amplphi_BD=amplphi*Hubble_ini
-            call bunch_davies(f,iinfl_phi,iinfl_phi,iinfl_dphi,iinfl_dphi,amplphi_BD,kpeak_phi)
+            deriv_prefactor=1.
+            call bunch_davies(f,iinfl_phi,iinfl_phi,iinfl_dphi,iinfl_dphi,amplphi_BD,kpeak_phi,deriv_prefactor)
             if (amplee_BD_prefactor/=0.) then
+              deriv_prefactor=deriv_prefactor_ee
               amplee_BD=amplee_BD_prefactor*Hubble_ini
-              call bunch_davies(f,iax,iaz,iex,iez,amplee_BD,kpeak_ee_BD)
+              call bunch_davies(f,iax,iaz,iex,iez,amplee_BD,kpeak_phi,deriv_prefactor)
             endif
           case default
             call fatal_error("init_special: No such initspecial: ", trim(initspecial(j)))

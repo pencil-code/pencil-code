@@ -6182,7 +6182,7 @@ module Initcond
 !
     endsubroutine power_randomphase_hel
 !***********************************************************************
-    subroutine bunch_davies(f,i1a,i1b,i2a,i2b,ampl,kpeak)
+    subroutine bunch_davies(f,i1a,i1b,i2a,i2b,ampl,kpeak,deriv_prefactor)
 !
 !  21-mar-25/axel: adapted from power_randomphase_hel
 !  21-may-25/axel: when kpeak<0, interpret is as sharp cutoff; powerlaw otherwise.
@@ -6196,7 +6196,7 @@ module Initcond
       real, dimension (:,:,:), allocatable :: k1, r
       real, dimension (:), allocatable :: kx, ky, kz
       real, dimension (:), allocatable :: kk
-      real :: ampl, kpeak, scale_factor=1.,ksteepness=5.
+      real :: ampl, kpeak, deriv_prefactor, scale_factor=1.,ksteepness=5.
 !
       if (ampl==0.) then
         if (lroot) print*,'bunch_davies: set variables to zero; i1a,i1b,i2a,i2b=',i1a,i1b,i2a,i2b
@@ -6332,7 +6332,7 @@ print*,'AXEL5 =',iproc,nwgrid
 !  Use real parts of u and v for A and E.
 !
       f(l1:l2,m1:m2,n1:n2,i1a:i1b)=f(l1:l2,m1:m2,n1:n2,i1a:i1b)+u_re
-      f(l1:l2,m1:m2,n1:n2,i2a:i2b)=f(l1:l2,m1:m2,n1:n2,i2a:i2b)+v_re
+      f(l1:l2,m1:m2,n1:n2,i2a:i2b)=f(l1:l2,m1:m2,n1:n2,i2a:i2b)+v_re*deriv_prefactor
 !
 !  Deallocate arrays.
 !
