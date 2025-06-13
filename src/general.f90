@@ -7775,6 +7775,8 @@ iloop:do i=1,size(list2)
           dst = enum_dss_dtZ_maxZadvec_cs2Z_Z_string
         case('droplet_redistr')
           dst = enum_droplet_redistr_string
+        case('advec_cg2  =')
+          dst = enum_advec_cg2__Z_string
         case default
           dst = enum_unknown_string_string
         endselect

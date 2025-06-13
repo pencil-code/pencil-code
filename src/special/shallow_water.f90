@@ -279,11 +279,11 @@ module Special
       real, dimension(mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
-      if (lgamma_plane)     q%gr2            = gamma_rr2          (:,m-m1+1)
-      if (lmass_relaxation) q%eta_init       = eta_relaxation     (:,m-m1+1)
+      if (lgamma_plane)     q%gr2            = gamma_rr2(:,m-m1+1)
+      if (lmass_relaxation) q%eta_init       = eta_relaxation(:,m-m1+1)
       if (lcalc_storm) then
                             q%storm_function = storm_function_grid(:,m-m1+1)
-         if (lsubsidence)   q%subsidence     = subsidence_grid    (:,m-m1+1)
+         if (lsubsidence)   q%subsidence     = subsidence_grid(:,m-m1+1)
       endif
       if (ljet_reinforcement) then
         q%uu_jet(:,1) = ujet(:,m-m1+1,1)
@@ -448,8 +448,7 @@ module Special
 !  Momentum equation; rho = g*eta  
 !
     do i=1,3
-      ju = i+iuu-1
-      df(l1:l2,m,n,ju) =  df(l1:l2,m,n,ju) - p%grho(:,i) 
+      df(l1:l2,m,n,iux+i-1) =  df(l1:l2,m,n,iux+i-1) - p%grho(:,i) 
     enddo
 !
 !  Add the Coriolis parameter (fcoriolis=2*Omega)
@@ -866,6 +865,35 @@ module Special
 !
     endsubroutine rprint_special
 !***********************************************************************
+    subroutine pushpars2c
+
+      use Syscalls, only: copy_addr
+      use General , only: string_to_enum
+
+      integer, parameter :: n_pars=20
+      integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+      call copy_addr(fcoriolis,p_par(1))
+      call copy_addr(tmass_relaxation1,p_par(2))
+      call copy_addr(tau_jet1,p_par(3))
+      call copy_addr(ladvection_base_height,p_par(4)) ! bool
+      call copy_addr(lcompression_base_height,p_par(5)) ! bool
+      call copy_addr(lcoriolis_force,p_par(6)) ! bool
+      call copy_addr(lmass_relaxation,p_par(7)) ! bool
+      call copy_addr(lgamma_plane,p_par(8)) ! bool
+      call copy_addr(lcalc_storm,p_par(9)) ! bool
+      call copy_addr(lsubsidence,p_par(10)) ! bool
+      call copy_addr(ljet_reinforcement,p_par(11)) ! bool
+      call copy_addr(h0,p_par(12)) ! (mx) (my)
+      call copy_addr(gradh0,p_par(13)) ! (nx) (ny) (2)
+      call copy_addr(ujet,p_par(14)) ! (nx) (ny) (2)
+      call copy_addr(gamma_rr2,p_par(15)) ! (nx) (ny)
+      call copy_addr(eta_relaxation,p_par(16)) ! (nx) (ny)
+      call copy_addr(storm_function_grid,p_par(17)) ! (nx) (ny)
+      call copy_addr(subsidence_grid,p_par(18)) ! (nx) (ny)
+
+    endsubroutine pushpars2c
+!********************************************************************
 !********************************************************************
 !
 !********************************************************************

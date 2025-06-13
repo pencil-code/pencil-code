@@ -857,5 +857,6 @@ integer, parameter :: enum_ac_transformed_pencil_ppsf_Z__string = 577
 integer, parameter :: enum_ac_transformed_pencil_tt_Z__string = 578
 integer, parameter :: enum_dss_dtZ_maxZadvec_cs2Z_Z_string = 579
 integer, parameter :: enum_droplet_redistr_string = 580
+integer, parameter :: enum_advec_cg2__Z_string = 581
 
 endmodule Cparam
