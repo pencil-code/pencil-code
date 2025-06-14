@@ -1572,6 +1572,7 @@ python/pencil/read/pstalk.py -text
 python/pencil/read/pvarfile.py -text
 python/pencil/read/timeseries.py -text
 python/pencil/read/varfile.py -text
+python/pencil/read/varraw.py -text
 python/pencil/read/zprof.py -text
 python/pencil/requirements.txt -text
 python/pencil/setup.py -text
