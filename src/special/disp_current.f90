@@ -1,7 +1,7 @@
 ! $Id$
 !
-!  Electric field, dE/dt = curlB, currently only for the special case
-!  of no fluid induction.
+!  Electric field, dE/dt = curlB, originally only for the special case
+!  of no fluid induction, but now fluid motions are also included.
 !
 !  25-feb-07/axel: adapted from nospecial.f90
 !
