@@ -17,6 +17,7 @@ from .allslices import slices
 from .averages import aver
 from .pvarfile import pvar
 from .phiaverages import phiaver
+from .varraw import varraw
 
 # idl workarounds
 from .pstalk import pstalk
