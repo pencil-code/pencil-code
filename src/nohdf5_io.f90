@@ -397,15 +397,17 @@ module HDF5_IO
 !
     endsubroutine output_hdf5_3D
 !***********************************************************************
-    subroutine output_hdf5_4D(name, data, nv)
+    subroutine output_hdf5_4D(name, data, nv, compress)
 !
       character (len=*), intent(in) :: name
       integer, intent(in) :: nv
       real, dimension (mx,my,mz,nv), intent(in) :: data
+      logical, optional, intent(in) :: compress
 !
       call fatal_error ('output_hdf5_4D', 'You can not use HDF5 without setting an HDF5_IO module.')
       call keep_compiler_quiet(name)
       call keep_compiler_quiet(data)
+      call keep_compiler_quiet(compress)
 !
     endsubroutine output_hdf5_4D
 !***********************************************************************
