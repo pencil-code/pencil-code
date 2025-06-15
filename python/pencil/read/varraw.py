@@ -407,7 +407,7 @@ class Varraw(object):
             markers = 0 if f77 == 0 else 1
 
             # Iterate over processors.
-            t = dtype(-1.0)
+            t = None
 
             for ipz in range(ipz_start, ipz_end + 1):
                 for ipy in range(ipy_start, ipy_end + 1):
@@ -542,7 +542,7 @@ class Varraw(object):
                                 y[y_off:y_end + 1] = y_loc
                                 z[z_off:z_end + 1] = z_loc
 
-                            if t < 0.0:
+                            if t is None:
                                 t = t_test
                             if t != t_test:
                                 print(
