@@ -1,9 +1,11 @@
 #include "../shock/kernels.ac"
 #include "../density/mass_conservation.h"
+#include "../selfgravity.h"
 
 input real AC_dt
 input PC_SUB_STEP_NUMBER AC_step_num
 input bool AC_lrmv
+input real AC_t
 
 ComputeSteps AC_rhs(boundconds)
 {
@@ -20,6 +22,22 @@ ComputeSteps AC_calculate_timestep(boundconds)
 	shock_3_smooth()
 	twopass_solve_intermediate(PC_FIRST_SUB_STEP,AC_dt)
 }
+
+ComputeSteps AC_calc_selfgravity_rhs(boundconds)
+{
+	selfgravity_calc_rhs()
+}
+ComputeSteps AC_calc_final_potential(boundconds)
+{
+	calc_final_potential(AC_t)
+}
+
+ComputeSteps AC_sor_step(boundconds)
+{
+	selfgravity_sor_step(0)
+	selfgravity_sor_step(1)
+}
+
 ComputeSteps AC_before_boundary_steps(boundconds)
 {
 	get_current_total_mass(AC_lrmv)

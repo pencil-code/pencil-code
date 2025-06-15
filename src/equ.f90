@@ -215,7 +215,7 @@ module Equ
           if (lparticles.and.lspecial) call particles_special_bfre_bdary(f)
           if (lshock)        call shock_before_boundary(f)
         else
-          call before_boundary_gpu(f,lrmv,itsub)
+          call before_boundary_gpu(f,lrmv,itsub,t)
         endif
 !
 !  Prepare x-ghost zones; required before f-array communication

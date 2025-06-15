@@ -154,12 +154,13 @@ contains
 !
     endsubroutine rhs_GPU
 !**************************************************************************
-    subroutine before_boundary_gpu(f,lrmv,isubstep)
+    subroutine before_boundary_gpu(f,lrmv,isubstep,t)
 !
       use General, only: notanumber
 
       real, dimension (mx,my,mz,mfarray), intent(INOUT) :: f
       integer,                            intent(IN)    :: isubstep
+      real(KIND=rkind8), intent(IN) :: t
       logical :: lrmv
       integer :: lrmv_int
 !
@@ -170,7 +171,7 @@ contains
       else
         lrmv_int = 0
       endif
-      call before_boundary_gpu_c(lrmv_int,isubstep)
+      call before_boundary_gpu_c(lrmv_int,isubstep,t)
 !
     endsubroutine before_boundary_gpu
 !**************************************************************************

@@ -123,6 +123,7 @@ bool calculated_coeff_scales = false;
 
   #define lrmv lrmv__mod__cdata
   #define lconserve_total_mass lconserve_total_mass__mod__density
+  #define tstart_selfgrav tstart_selfgrav__mod__selfgravity
 #endif
 
 AcReal dt1_interface;
@@ -1112,10 +1113,23 @@ void scaling(){
 #endif
 }
 /***********************************************************************************************/
-extern "C" void beforeBoundaryGPU(bool lrmv, int isubstep)
+extern "C" void beforeBoundaryGPU(bool lrmv, int isubstep, double t)
 {
  	acDeviceSetInput(acGridGetDevice(), AC_lrmv,lrmv);
+ 	acDeviceSetInput(acGridGetDevice(), AC_t,AcReal(t));
 	acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_before_boundary_steps),1);
+#if LSELFGRAVITY
+	if(t>=tstart_selfgrav)
+	{
+		acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_calc_selfgravity_rhs),1);
+		//TP: A placeholder, in the future choose the number of solving steps based on the norm of the residual
+		for(int i = 0; i < 100; ++i)
+		{
+			acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_sor_step),1);
+		}
+		acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_calc_final_potential),1);
+	}
+#endif
 }
 /***********************************************************************************************/
 extern "C" void substepGPU(int isubstep)

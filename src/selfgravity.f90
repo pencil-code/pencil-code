@@ -664,6 +664,9 @@ module Selfgravity
     call copy_addr(idiag_gpgzm,p_par(11)) ! int
     call copy_addr(idiag_rugpotselfm,p_par(12)) ! int
     call copy_addr(idiag_gpotself2m,p_par(13)) ! int
+    call copy_addr(rho0z,p_par(14)) ! (mz)
+    call copy_addr(rhs_poisson_const,p_par(15))
+    call copy_addr(tselfgrav_gentle,p_par(16)) 
 
 
     endsubroutine pushpars2c
