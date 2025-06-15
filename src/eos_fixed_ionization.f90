@@ -601,7 +601,7 @@ module EquationOfState
       real, intent(out), optional :: yH,lnTT
       real, intent(out), optional :: ee,pp,cs2
 
-      if (.not.any((/ilnrho_ss, ilnrho_ee, ilnrho_pp, ilnrho_lnTT/)==ivars))  &
+      if(ilnrho_ss /= ivars .and. ilnrho_ee /= ivars .and. ilnrho_pp /= ivars .and. ilnrho_lnTT /= ivars) &
         call fatal_error('eoscalc_point','invalid combination of thermodynamic variables')
 
       ivars_mod=ivars
@@ -688,7 +688,7 @@ module EquationOfState
       real, dimension(nx), intent(out), optional :: yH,lnTT
       real, dimension(nx), intent(out), optional :: ee,pp,cs2
 
-      if (.not.any((/ilnrho_ss, ilnrho_ee, ilnrho_pp, ilnrho_lnTT/)==ivars))  &
+      if(ilnrho_ss /= ivars .and. ilnrho_ee /= ivars .and. ilnrho_pp /= ivars .and. ilnrho_lnTT /= ivars) &
         call fatal_error('eoscalc_point','invalid combination of thermodynamic variables')
 
       ivars_mod=ivars
@@ -1260,10 +1260,25 @@ module EquationOfState
 
     use Syscalls, only: copy_addr
 
-    integer, parameter :: n_pars=1
+    integer, parameter :: n_pars=20
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call copy_addr(cs20,p_par(1))
+    call copy_addr(lnttss,p_par(2))
+    call copy_addr(lnttlnrho,p_par(3))
+    call copy_addr(lntt0,p_par(4))
+    call copy_addr(tt_ion,p_par(5))
+    call copy_addr(ss_ion,p_par(6))
+    call copy_addr(ee_ion,p_par(7))
+    call copy_addr(yh0,p_par(8))
+    call copy_addr(xhe,p_par(9))
+    call copy_addr(xh2,p_par(10))
+    call copy_addr(cs0,p_par(11))
+    call copy_addr(rho0,p_par(12))
+    call copy_addr(lnrho0,p_par(13))
+    call copy_addr(gamma,p_par(14))
+    call copy_addr(nabla_ad,p_par(15))
+    call copy_addr(cs2top,p_par(16))
 
     endsubroutine pushpars2c
 !***********************************************************************
