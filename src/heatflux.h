@@ -10,3 +10,4 @@
   public :: calc_pencils_heatflux, calc_diagnostics_heatflux
   public :: pencil_criteria_heatflux
   public :: pencil_interdep_heatflux
+  public :: pushpars2c

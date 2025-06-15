@@ -8775,6 +8775,7 @@ endif
     call copy_addr(enum_borderuu,p_par(106)) ! int3
     call copy_addr(w_sldchar_hyd,p_par(107))
     call copy_addr(lhubble_hydro,p_par(108)) ! bool
+    call copy_addr(prra,p_par(109))
 
     endsubroutine pushpars2c
 !***********************************************************************

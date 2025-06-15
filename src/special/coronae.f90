@@ -4646,11 +4646,11 @@ module Special
        endif
 !
        if (n == irefz) then
-         df(l1:l2,m,irefz,iax) = (ax_init(:,m-nghost)-f(l1:l2,m,irefz,iax)) &
+         df(l1:l2,m,n,iax) = (ax_init(:,m-nghost)-f(l1:l2,m,n,iax)) &
              * aa_tau_inv
-         df(l1:l2,m,irefz,iay) = (ay_init(:,m-nghost)-f(l1:l2,m,irefz,iay)) &
+         df(l1:l2,m,n,iay) = (ay_init(:,m-nghost)-f(l1:l2,m,n,iay)) &
              * aa_tau_inv
-         df(l1:l2,m,irefz,iaz) = (az_init(:,m-nghost)-f(l1:l2,m,irefz,iaz)) &
+         df(l1:l2,m,n,iaz) = (az_init(:,m-nghost)-f(l1:l2,m,n,iaz)) &
              * aa_tau_inv
        endif
 !
@@ -4675,6 +4675,74 @@ module Special
       call keep_compiler_quiet(f)
 !
     endsubroutine finalize_special
+!***********************************************************************
+    subroutine pushpars2c(p_par)
+
+    use Syscalls, only: copy_addr
+    use General , only: string_to_enum
+
+    integer, parameter :: n_pars=70
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+    call copy_addr(kpara,p_par(1))
+    call copy_addr(kc,p_par(2))
+    call copy_addr(ksat,p_par(3))
+    call copy_addr(kiso,p_par(4))
+    call copy_addr(cool_rtv,p_par(5))
+    call copy_addr(exp_rtv,p_par(6))
+    call copy_addr(cubic_rtv,p_par(7))
+    call copy_addr(tanh_rtv,p_par(8))
+    call copy_addr(width_rtv,p_par(9))
+    call copy_addr(hyper3_chi,p_par(10))
+    call copy_addr(hyper3_diffrho,p_par(11))
+    call copy_addr(hyper3_eta,p_par(12))
+    call copy_addr(hyper3_nu,p_par(13))
+    call copy_addr(r_hyperchi,p_par(14))
+    call copy_addr(r_hypereta,p_par(15))
+    call copy_addr(r_hypernu,p_par(16))
+    call copy_addr(r_hyperdiffrho,p_par(17))
+    call copy_addr(tau_inv_newton,p_par(18))
+    call copy_addr(exp_newton,p_par(19))
+    call copy_addr(tanh_newton,p_par(20))
+    call copy_addr(cubic_newton,p_par(21))
+    call copy_addr(tau_inv_newton_mark,p_par(22))
+    call copy_addr(width_newton,p_par(23))
+    call copy_addr(gauss_newton,p_par(24))
+    call copy_addr(init_time,p_par(25))
+    call copy_addr(init_width,p_par(26))
+    call copy_addr(hcond_grad,p_par(27))
+    call copy_addr(hcond_grad_iso,p_par(28))
+    call copy_addr(limiter_tensordiff,p_par(29))
+    call copy_addr(irefz,p_par(30)) ! int
+    call copy_addr(lfilter_farray,p_par(31)) ! bool
+    call copy_addr(mark,p_par(32)) ! bool
+    call copy_addr(lchen,p_par(33)) ! bool
+    call copy_addr(ldensity_floor_c,p_par(34)) ! bool
+    call copy_addr(ldensity_floor,p_par(35)) ! bool
+    call copy_addr(hcond1,p_par(36))
+    call copy_addr(aa_tau_inv,p_par(37))
+    call copy_addr(chi_re,p_par(38))
+    call copy_addr(damp_amp,p_par(39))
+    call copy_addr(mach_chen,p_par(40))
+    call copy_addr(maxva,p_par(41))
+    call copy_addr(sub_step_hcond,p_par(42)) ! bool
+    call copy_addr(hyper_heating,p_par(43)) ! bool
+    call copy_addr(lnrho_min,p_par(44))
+    call copy_addr(gamma,p_par(45))
+    call copy_addr(filter_strength,p_par(46)) ! (mvar)
+    call copy_addr(heat_par_b2,p_par(47)) ! (1)
+    call copy_addr(heat_par_exp,p_par(48)) ! (2)
+    call copy_addr(heat_par_exp2,p_par(49)) ! (2)
+    call copy_addr(heat_par_exp3,p_par(50)) ! real3
+    call copy_addr(heat_par_full,p_par(51)) ! (9)
+    call copy_addr(heat_par_rappazzo,p_par(52)) ! (1)
+    call copy_addr(heat_par_schrijver04,p_par(53)) ! (1)
+    call copy_addr(b2,p_par(54)) ! (nx) (ny)
+    call copy_addr(blength,p_par(55)) ! (nx) (ny) (nz)
+    call copy_addr(lntt_init_prof,p_par(56)) ! (mz)
+    call copy_addr(lnrho_init_prof,p_par(57)) ! (mz)
+
+    endsubroutine pushpars2c
 !***********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************

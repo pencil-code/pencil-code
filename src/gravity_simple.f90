@@ -1556,6 +1556,8 @@ module Gravity
     call copy_addr(enum_gravz_profile,p_par(20))   ! int
     call copy_addr(enum_grav_type    ,p_par(21))   ! int
     call copy_addr(cdt_accretor,p_par(22))
+    call copy_addr(z1,p_par(23))
+    call copy_addr(z2,p_par(24))
 
     endsubroutine pushpars2c
 !***********************************************************************

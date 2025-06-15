@@ -823,4 +823,25 @@ module Heatflux
 !
   endsubroutine noadvection_non_fourier_spitzer
 !***********************************************************************
+    subroutine pushpars2c(p_par)
+
+    use Syscalls, only: copy_addr
+    use General , only: string_to_enum
+
+    integer, parameter :: n_pars=20
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+    call copy_addr(lnfs2,p_par(1)) ! bool
+    call copy_addr(ltau_spitzer_va,p_par(2)) ! bool
+    call copy_addr(saturation_flux,p_par(3))
+    call copy_addr(tau_inv_spitzer,p_par(4))
+    call copy_addr(ksaturation,p_par(5))
+    call copy_addr(kc,p_par(6))
+    call copy_addr(kspitzer_para,p_par(7))
+    call copy_addr(hyper3_coeff,p_par(8))
+    call copy_addr(va2max_tau_boris,p_par(9))
+    call copy_addr(nu_ee,p_par(10))
+
+    endsubroutine pushpars2c
+!***********************************************************************
 endmodule Heatflux

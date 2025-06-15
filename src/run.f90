@@ -1540,6 +1540,25 @@ call copy_addr(hp_target,p_par(1249))
 call copy_addr(appa_target,p_par(1250))
 call copy_addr(iee,p_par(1251)) ! int
 call copy_addr(irhoe,p_par(1252)) ! int
+call copy_addr(r_int_border,p_par(1254))
+call copy_addr(r_ext_border,p_par(1255))
+call copy_addr(ipz,p_par(1259)) ! int
+call copy_addr(lz,p_par(1260))
+call copy_addr(iqx,p_par(1262)) ! int
+call copy_addr(iqy,p_par(1263)) ! int
+call copy_addr(iqz,p_par(1264)) ! int
+call copy_addr(iqq,p_par(1265)) ! int
+call copy_addr(mpoint,p_par(1270)) ! int
+call copy_addr(npoint,p_par(1271)) ! int
+call copy_addr(wborder_int,p_par(1272))
+call copy_addr(wborder_ext,p_par(1273))
+call copy_addr(tborder,p_par(1274))
+call copy_addr(theta_lower_border,p_par(1275))
+call copy_addr(wborder_theta_lower,p_par(1276))
+call copy_addr(theta_upper_border,p_par(1277))
+call copy_addr(wborder_theta_upper,p_par(1278))
+call copy_addr(lmeridional_border_drive,p_par(1279)) ! bool
+call copy_addr(rcyl_mn,p_par(1280)) ! (nx)
 
 endsubroutine pushpars2c
 !***********************************************************************

@@ -1707,27 +1707,42 @@ module Energy
         else
           f_target=1.0
         endif
+
+        if (ltemperature_nolog) then
+          call border_driving(f,df,p,f_target,iTT)
+        else
+          call border_driving(f,df,p,f_target,ilnTT)
+        endif
+
       case ('constant')
         if (ltemperature_nolog) then
           f_target=TT_const
         else
           f_target=lnTT_const
         endif
+
+        if (ltemperature_nolog) then
+          call border_driving(f,df,p,f_target,iTT)
+        else
+          call border_driving(f,df,p,f_target,ilnTT)
+        endif
+
       case ('initial-condition')
         if (ltemperature_nolog) then
           call set_border_initcond(f,iTT,f_target)
         else
           call set_border_initcond(f,ilnTT,f_target)
         endif
+
+        if (ltemperature_nolog) then
+          call border_driving(f,df,p,f_target,iTT)
+        else
+          call border_driving(f,df,p,f_target,ilnTT)
+        endif
+
       case ('nothing')
-        return
       endselect
 !
-      if (ltemperature_nolog) then
-        call border_driving(f,df,p,f_target,iTT)
-      else
-        call border_driving(f,df,p,f_target,ilnTT)
-      endif
 !
     endsubroutine set_border_entropy
 !***********************************************************************
@@ -3106,10 +3121,60 @@ module Energy
 
     use Syscalls, only: copy_addr
 
-    integer, parameter :: n_pars=1
+    integer, parameter :: n_pars=60
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call copy_addr(chi,p_par(1))
+    call copy_addr(widthlntt,p_par(2))
+    call copy_addr(lntt_const,p_par(3))
+    call copy_addr(tt_const,p_par(4))
+    call copy_addr(kgperp,p_par(5))
+    call copy_addr(kgpara,p_par(6))
+    call copy_addr(chi_jump,p_par(7))
+    call copy_addr(chi_z0,p_par(8))
+    call copy_addr(chi_r_reduce,p_par(9))
+    call copy_addr(r_bcz,p_par(10))
+    call copy_addr(chi_shock,p_par(11))
+    call copy_addr(chi_hyper3,p_par(12))
+    call copy_addr(chi_hyper3_mesh,p_par(13))
+    call copy_addr(tbump,p_par(14))
+    call copy_addr(kmin,p_par(15))
+    call copy_addr(kmax,p_par(16))
+    call copy_addr(hole_slope,p_par(17))
+    call copy_addr(hole_width,p_par(18))
+    call copy_addr(hcond0,p_par(19))
+    call copy_addr(hcond1,p_par(20))
+    call copy_addr(hcond2,p_par(21))
+    call copy_addr(luminosity,p_par(22))
+    call copy_addr(wheat,p_par(23))
+    call copy_addr(rcool,p_par(24))
+    call copy_addr(wcool,p_par(25))
+    call copy_addr(cool,p_par(26))
+    call copy_addr(beta_bouss,p_par(27))
+    call copy_addr(h_sld_ene,p_par(28))
+    call copy_addr(nlf_sld_ene,p_par(29))
+    call copy_addr(ladvection_temperature,p_par(30)) ! bool
+    call copy_addr(lupw_lntt,p_par(31)) ! bool
+    call copy_addr(lcalc_heat_cool,p_par(32)) ! bool
+    call copy_addr(lheatc_hyper3,p_par(33)) ! bool
+    call copy_addr(lheatc_kconst,p_par(34)) ! bool
+    call copy_addr(lheatc_kprof,p_par(35)) ! bool
+    call copy_addr(lheatc_karctan,p_par(36)) ! bool
+    call copy_addr(lheatc_tensordiffusion,p_par(37)) ! bool
+    call copy_addr(lheatc_hyper3_mesh,p_par(38)) ! bool
+    call copy_addr(lheatc_chiconst,p_par(39)) ! bool
+    call copy_addr(lheatc_chi_reduce_ddr,p_par(40)) ! bool
+    call copy_addr(lhcond_global,p_par(41)) ! bool
+    call copy_addr(lheatc_chicubicstep,p_par(42)) ! bool
+    call copy_addr(lheatc_shock,p_par(43)) ! bool
+    call copy_addr(lheatc_hyper3_polar,p_par(44)) ! bool
+    call copy_addr(lheatc_ktherm,p_par(45)) ! bool
+    call copy_addr(lheatc_kramers,p_par(46)) ! bool
+    call copy_addr(hcond0_kramers,p_par(47))
+    call copy_addr(nkramers,p_par(48))
+    call copy_addr(lviscosity_heat,p_par(49)) ! bool
+    call copy_addr(iglobal_hcond,p_par(50)) ! int
+    call copy_addr(iglobal_glhc,p_par(51)) ! int
 
     endsubroutine pushpars2c
 !***********************************************************************

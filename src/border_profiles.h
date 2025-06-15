@@ -6,6 +6,7 @@
   public :: calc_pencils_borderprofiles
   public :: border_quenching, border_driving
   public :: set_border_initcond
+  public :: pushpars2c
 
   integer, parameter, public :: i_BORDER_ZERO    = 1
   integer, parameter, public :: i_BORDER_SPECIAL = 2
