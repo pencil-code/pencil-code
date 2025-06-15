@@ -61,16 +61,18 @@ contains
 !
     endsubroutine rhs_GPU
 !**************************************************************************
-    subroutine before_boundary_gpu(f,lrmv,itsub)
+    subroutine before_boundary_gpu(f,lrmv,itsub,t)
 !
       real, dimension (:,:,:,:) :: f
       integer :: itsub
       logical :: early_finalize
       logical :: lrmv
+      real, intent(IN) :: t
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lrmv)
       call keep_compiler_quiet(itsub)
+      call keep_compiler_quiet(t)
 !
     endsubroutine before_boundary_gpu
 !**************************************************************************
