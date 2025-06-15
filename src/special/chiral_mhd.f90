@@ -936,6 +936,53 @@ module Special
 !
     endsubroutine special_after_boundary
 !***********************************************************************
+    subroutine pushpars2c(p_par)
+
+    use Syscalls, only: copy_addr
+    use General , only: string_to_enum
+
+    integer, parameter :: n_pars=50
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+    call copy_addr(diffmu5,p_par(1))
+    call copy_addr(diffmus,p_par(2))
+    call copy_addr(diffmu5_hyper2,p_par(3))
+    call copy_addr(diffmus_hyper2,p_par(4))
+    call copy_addr(diffmu5_hyper3,p_par(5))
+    call copy_addr(diffmus_hyper3,p_par(6))
+    call copy_addr(gammaf5,p_par(7))
+    call copy_addr(source5,p_par(8))
+    call copy_addr(t1_gammaf5,p_par(9))
+    call copy_addr(coef_mus,p_par(10))
+    call copy_addr(coef_mu5,p_par(11))
+    call copy_addr(cw,p_par(12))
+    call copy_addr(diffmu5_,p_par(13))
+    call copy_addr(cdtchiral,p_par(14))
+    call copy_addr(imu5,p_par(15)) ! int
+    call copy_addr(imus,p_par(16)) ! int
+    call copy_addr(lmus,p_par(17)) ! bool
+    call copy_addr(lcve,p_par(18)) ! bool
+    call copy_addr(ldiffmu5_hyper2_simplified,p_par(19)) ! bool
+    call copy_addr(ldiffmus_hyper2_simplified,p_par(20)) ! bool
+    call copy_addr(ldiffmu5_hyper3_simplified,p_par(21)) ! bool
+    call copy_addr(ldiffmus_hyper3_simplified,p_par(22)) ! bool
+    call copy_addr(lmu5adv,p_par(23)) ! bool
+    call copy_addr(lmusadv,p_par(24)) ! bool
+    call copy_addr(lmu5divu_term,p_par(25)) ! bool
+    call copy_addr(lmusdivu_term,p_par(26)) ! bool
+    call copy_addr(ldt_chiral_mhd,p_par(27)) ! bool
+    call copy_addr(lupw_mu5,p_par(28)) ! bool
+    call copy_addr(lupw_mus,p_par(29)) ! bool
+    call copy_addr(idiag_gmu5rms,p_par(30)) ! int
+    call copy_addr(idiag_gmusrms,p_par(31)) ! int
+    call copy_addr(idiag_bgmu5rms,p_par(32)) ! int
+    call copy_addr(idiag_bgmusrms,p_par(33)) ! int
+    call copy_addr(idiag_mu5bjm,p_par(34)) ! int
+    call copy_addr(idiag_mu5bjrms,p_par(35)) ! int
+    call copy_addr(meanmu5,p_par(36)) ! (1)
+
+    endsubroutine pushpars2c
+!***********************************************************************
 !********************************************************************
 !********************************************************************
 !************        DO NOT DELETE THE FOLLOWING        *************

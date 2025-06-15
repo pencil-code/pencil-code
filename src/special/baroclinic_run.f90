@@ -425,6 +425,26 @@ module Special
 !
     endsubroutine special_calc_energy
 !***********************************************************************
+    subroutine pushpars2c(p_par)
+
+    use Syscalls, only: copy_addr
+    use General , only: string_to_enum
+
+    integer, parameter :: n_pars=10
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+    call copy_addr(rho01,p_par(1))
+    call copy_addr(cs201,p_par(2))
+    call copy_addr(gammam11,p_par(3))
+    call copy_addr(bshear,p_par(4))
+    call copy_addr(p0,p_par(5))
+    call copy_addr(lstratification,p_par(6)) ! bool
+    call copy_addr(lstatic_stratification,p_par(7)) ! bool
+    call copy_addr(gamma,p_par(8))
+    call copy_addr(rtime_strat,p_par(9)) ! (nz)
+
+    endsubroutine pushpars2c
+!***********************************************************************
 !********************************************************************
 !
 !********************************************************************

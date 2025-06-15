@@ -925,5 +925,15 @@ integer, parameter :: enum_alpha_attractors_string = 645
 integer, parameter :: enum_quadratic_string = 646
 integer, parameter :: enum_dspecial_dtZ_no_such_v_choiceZ__string = 647
 integer, parameter :: enum_axelZ_mqZ_xiZ_epsqeZ_epsqbZ_string = 648
+integer, parameter :: enum_global_gg_string = 649
+integer, parameter :: enum_secondary_body_gravity_string = 650
+integer, parameter :: enum_not_coded_for_cartesian_string = 651
+integer, parameter :: enum_sinusoidal_string = 652
+integer, parameter :: enum_rampup_secondary_mass_string = 653
+integer, parameter :: enum_no_such_iramp_functionZ__string = 654
+integer, parameter :: enum_plummer_string = 655
+integer, parameter :: enum_boley_string = 656
+integer, parameter :: enum_saving_initial_condition_for_ivarZ_string = 657
+integer, parameter :: enum_set_border_initcond_string = 658
 
 endmodule Cparam

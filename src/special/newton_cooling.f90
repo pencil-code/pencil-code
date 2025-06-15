@@ -576,6 +576,24 @@ module Special
 !
     endsubroutine special_calc_diagnostics
 !***********************************************************************
+    subroutine pushpars2c(p_par)
+
+    use Syscalls, only: copy_addr
+    use General , only: string_to_enum
+
+    integer, parameter :: n_pars=10
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+    call copy_addr(taucool_floor,p_par(1))
+    call copy_addr(laddheatingrate,p_par(2)) ! bool
+    call copy_addr(ikappar,p_par(3)) ! int
+    call copy_addr(itau,p_par(4)) ! int
+    call copy_addr(gamma1,p_par(5))
+    call copy_addr(gamma_m1,p_par(6))
+
+    endsubroutine pushpars2c
+!***********************************************************************
+!***********************************************************************
 !********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************

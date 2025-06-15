@@ -1559,6 +1559,10 @@ call copy_addr(theta_upper_border,p_par(1277))
 call copy_addr(wborder_theta_upper,p_par(1278))
 call copy_addr(lmeridional_border_drive,p_par(1279)) ! bool
 call copy_addr(rcyl_mn,p_par(1280)) ! (nx)
+call copy_addr(lcylindrical_gravity,p_par(1281)) ! bool
+call copy_addr(lcorotational_frame,p_par(1282)) ! bool
+call copy_addr(omega_corot,p_par(1283))
+call copy_addr(lambda5,p_par(1284))
 
 endsubroutine pushpars2c
 !***********************************************************************

@@ -94,6 +94,8 @@ module Gravity
 !
   integer :: idiag_torque=0
 !
+  integer :: enum_iramp_function = 0
+  integer :: enum_ipotential_secondary = 0
   contains
 !***********************************************************************
     subroutine register_gravity
@@ -1370,8 +1372,27 @@ module Gravity
 
     use Syscalls, only: copy_addr
 
-    integer, parameter :: n_pars=0
+    integer, parameter :: n_pars=20
     integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+    call copy_addr(g1,p_par(1))
+    call copy_addr(rp1,p_par(2))
+    call copy_addr(rp1_smooth,p_par(3))
+    call copy_addr(rp1_smooth1,p_par(4))
+    call copy_addr(zgrav,p_par(5))
+    call copy_addr(t_ramp_mass,p_par(6))
+    call copy_addr(t1_ramp_mass,p_par(7))
+    call copy_addr(lgravity_gas,p_par(8)) ! bool
+    call copy_addr(lgravity_neutrals,p_par(9)) ! bool
+    call copy_addr(lgravity_dust,p_par(10)) ! bool
+    call copy_addr(lindirect_terms,p_par(11)) ! bool
+    call copy_addr(lramp_mass,p_par(12)) ! bool
+    call copy_addr(lsecondary_wait,p_par(13)) ! bool
+    call copy_addr(lcoriolis_force_gravity,p_par(14)) ! bool
+    call copy_addr(lcentrifugal_force_gravity,p_par(15)) ! bool
+    call copy_addr(t_start_secondary,p_par(16))
+    call copy_addr(enum_iramp_function,p_par(17)) ! int
+    call copy_addr(enum_ipotential_secondary,p_par(18)) ! int
 
     endsubroutine pushpars2c
 !***********************************************************************

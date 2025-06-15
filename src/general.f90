@@ -7911,6 +7911,26 @@ iloop:do i=1,size(list2)
           dst = enum_dspecial_dtZ_no_such_v_choiceZ__string
         case('axel: mq, xi, epsqe, epsqb=')
           dst = enum_axelZ_mqZ_xiZ_epsqeZ_epsqbZ_string
+        case('global_gg')
+          dst = enum_global_gg_string
+        case('secondary_body_gravity')
+          dst = enum_secondary_body_gravity_string
+        case('not coded for cartesian')
+          dst = enum_not_coded_for_cartesian_string
+        case('sinusoidal')
+          dst = enum_sinusoidal_string
+        case('rampup_secondary_mass')
+          dst = enum_rampup_secondary_mass_string
+        case('no such iramp_function: ')
+          dst = enum_no_such_iramp_functionZ__string
+        case('plummer')
+          dst = enum_plummer_string
+        case('boley')
+          dst = enum_boley_string
+        case('saving initial condition for ivar=')
+          dst = enum_saving_initial_condition_for_ivarZ_string
+        case('set_border_initcond')
+          dst = enum_set_border_initcond_string
         case default
           dst = enum_unknown_string_string
         endselect
