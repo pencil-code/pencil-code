@@ -846,18 +846,9 @@ module EquationOfState
 !
     endsubroutine eosperturb
 !!***********************************************************************
-    subroutine eoscalc_farray(f,psize,lnrho,yH,lnTT,ee,pp,cs2,kapparho)
+    subroutine eoscalc_farray_range(f,psize,lnrho,yH,lnTT,ee,pp,cs2,kapparho,i1,i2)
 !
-!   Calculate thermodynamical quantities
-!
-!    2-feb-03/axel: simple example coded
-!   13-jun-03/tobi: the ionization fraction as part of the f-array
-!                   now needs to be given as an argument as input
-!   17-nov-03/tobi: moved calculation of cs2 and cp1tilde to
-!                   subroutine pressure_gradient
-!   10-feb-23/fred: call to pressure_gradient to yield cs2
-!
-      use Sub
+!   15-jun-25/TP: carved out from eoscalc_farray
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       integer, intent(in) :: psize
@@ -866,13 +857,7 @@ module EquationOfState
       real, dimension(psize), intent(out), optional :: ee,pp,kapparho
       real, dimension(psize), optional :: cs2
       real, dimension(psize) :: lnrho_,yH_,lnTT_,TT,fractions,exponent
-      integer :: i1,i2
-!
-      select case (psize)
-        case (nx); i1=l1; i2=l2
-        case (mx); i1=1; i2=mx
-        case default; call fatal_error("eoscalc_farray","no such pencil size")
-      end select
+      integer, intent(in) :: i1,i2
 
       lnrho_=f(i1:i2,m,n,ilnrho)
       yH_   =f(i1:i2,m,n,iyH)
@@ -903,6 +888,37 @@ module EquationOfState
         kapparho = exp(exponent + alog(yH_+yMetals))*(1-yH_)*kappa0
       endif
 !
+    endsubroutine eoscalc_farray_range
+!!***********************************************************************
+    subroutine eoscalc_farray(f,psize,lnrho,yH,lnTT,ee,pp,cs2,kapparho)
+!
+!   Calculate thermodynamical quantities
+!
+!    2-feb-03/axel: simple example coded
+!   13-jun-03/tobi: the ionization fraction as part of the f-array
+!                   now needs to be given as an argument as input
+!   17-nov-03/tobi: moved calculation of cs2 and cp1tilde to
+!                   subroutine pressure_gradient
+!   10-feb-23/fred: call to pressure_gradient to yield cs2
+!
+!   15-jun-25/TP:   moved calculation with ranges to its own subroutine
+!
+      use Sub
+!
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      integer, intent(in) :: psize
+      real, dimension(psize), intent(out), optional :: lnrho
+      real, dimension(psize), intent(out), optional :: yH,lnTT
+      real, dimension(psize), intent(out), optional :: ee,pp,kapparho
+      real, dimension(psize), optional :: cs2
+      real, dimension(psize) :: lnrho_,yH_,lnTT_,TT,fractions,exponent
+!
+      select case (psize)
+        case (nx); call eoscalc_farray_range(f,psize,lnrho,yH,lnTT,ee,pp,cs2,kapparho,l1,l2)
+        case (mx); call eoscalc_farray_range(f,psize,lnrho,yH,lnTT,ee,pp,cs2,kapparho,1,mx)
+        case default; call fatal_error("eoscalc_farray","no such pencil size")
+      end select
+
     endsubroutine eoscalc_farray
 !***********************************************************************
     subroutine eoscalc_point_(ivars,var1,var2,lnrho,ss,yH,lnTT,ee,pp,cs2)
@@ -1386,6 +1402,7 @@ module EquationOfState
       real               :: dyHold,dyH,yHl,yHh,f,df,temp
       integer            :: i
       integer, parameter :: maxit=1000
+      logical :: success = .false.
 !
       if (present(rterror)) rterror=.false.
       if (present(rtdebug)) then
@@ -1399,7 +1416,10 @@ module EquationOfState
 !
       call saha(ivars,var1,var2,yH,f,df)
 !
-      do i=1,maxit
+      i = 0
+      success = .false.
+      do while(i <= maxit .and. .not. success)
+        i = i + 1
         if (present(rtdebug)) then
           if (rtdebug) print*,'rtsafe: i,yH=',i,yH
         endif
@@ -1409,15 +1429,15 @@ module EquationOfState
           dyHold=dyH
           dyH=0.5*(yHl-yHh)
           yH=yHh+dyH
-          if (yHh==yH) return
+          if (yHh==yH) success = .true.
         else
           dyHold=dyH
           dyH=f/df
           temp=yH
           yH=yH-dyH
-          if (temp==yH) return
+          if (temp==yH) success = .true.
         endif
-        if (abs(dyH)<yHacc*yH) return
+        if (abs(dyH)<yHacc*yH) success = .true.
         call saha(ivars,var1,var2,yH,f,df)
         if (f<0) then
           yHh=yH
@@ -1426,7 +1446,7 @@ module EquationOfState
         endif
       enddo
 !
-      if (present(rterror)) rterror=.true.
+      if (.not. success .and. present(rterror)) rterror=.true.
 !
     endsubroutine rtsafe
 !***********************************************************************
@@ -2305,10 +2325,31 @@ module EquationOfState
 
     use Syscalls, only: copy_addr
 
-    integer, parameter :: n_pars=1
+    integer, parameter :: n_pars=30
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call copy_addr(cs20,p_par(1))
+    call copy_addr(tt_ion,p_par(2))
+    call copy_addr(lntt_ion,p_par(3))
+    call copy_addr(tt_ion_,p_par(4))
+    call copy_addr(lntt_ion_,p_par(5))
+    call copy_addr(ss_ion,p_par(6))
+    call copy_addr(ee_ion,p_par(7))
+    call copy_addr(xhe_term,p_par(8))
+    call copy_addr(ss_ion1,p_par(9))
+    call copy_addr(lnrho_e,p_par(10))
+    call copy_addr(lnrho_e_,p_par(11))
+    call copy_addr(lnrho_h,p_par(12))
+    call copy_addr(rgas,p_par(13))
+    call copy_addr(mu1yhxhe,p_par(14))
+    call copy_addr(xhe,p_par(15))
+    call copy_addr(yhacc,p_par(16))
+    call copy_addr(cs0,p_par(17))
+    call copy_addr(rho0,p_par(18))
+    call copy_addr(lnrho0,p_par(19))
+    call copy_addr(lpp_as_aux,p_par(20)) ! bool
+    call copy_addr(lcp_as_aux,p_par(21)) ! bool
+    call copy_addr(cs2top,p_par(22))
 
     endsubroutine pushpars2c
 !***********************************************************************
