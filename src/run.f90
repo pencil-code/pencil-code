@@ -1563,6 +1563,8 @@ call copy_addr(lcylindrical_gravity,p_par(1281)) ! bool
 call copy_addr(lcorotational_frame,p_par(1282)) ! bool
 call copy_addr(omega_corot,p_par(1283))
 call copy_addr(lambda5,p_par(1284))
+call copy_addr(ipotself,p_par(1285)) ! int
+call copy_addr(igpotselfx,p_par(1286)) ! int
 
 endsubroutine pushpars2c
 !***********************************************************************

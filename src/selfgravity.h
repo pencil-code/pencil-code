@@ -8,3 +8,4 @@
   public :: read_selfgravity_init_pars, write_selfgravity_init_pars
   public :: read_selfgravity_run_pars, write_selfgravity_run_pars
   public :: rprint_selfgravity
+  public :: pushpars2c

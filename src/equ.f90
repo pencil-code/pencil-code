@@ -188,15 +188,15 @@ module Equ
         if (lparticles) call particles_boundconds(f)
         if (lpointmasses) call boundconds_pointmasses
 !
+!  Call "before_boundary" hooks (for f array precalculation)
+!
+        if (.not. lgpu) then
+!
 !  Calculate the potential of the self gravity. Must be done before
 !  communication in order to be able to take the gradient of the potential
 !  later.
 !
-        call calc_selfpotential(f)
-!
-!  Call "before_boundary" hooks (for f array precalculation)
-!
-        if (.not. lgpu) then
+          call calc_selfpotential(f)
           if (ldustdensity)  call dustdensity_before_boundary(f)
           if (linterstellar) call interstellar_before_boundary(f)
           if (ldensity.or.lboussinesq) call density_before_boundary(f)

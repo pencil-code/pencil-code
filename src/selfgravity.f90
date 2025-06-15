@@ -643,4 +643,29 @@ module Selfgravity
 !
     endsubroutine rprint_selfgravity
 !***********************************************************************
+    subroutine pushpars2c(p_par)
+
+    use Syscalls, only: copy_addr
+    use General , only: string_to_enum
+
+    integer, parameter :: n_pars=20
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+    call copy_addr(gravitational_const,p_par(1))
+    call copy_addr(tstart_selfgrav,p_par(2))
+    call copy_addr(lselfgravity_gas,p_par(3)) ! bool
+    call copy_addr(lselfgravity_dust,p_par(4)) ! bool
+    call copy_addr(lselfgravity_neutrals,p_par(5)) ! bool
+    call copy_addr(ljeans_stiffening,p_par(6)) ! bool
+    call copy_addr(nj_stiff,p_par(7)) ! int
+    call copy_addr(stiff_gamma,p_par(8))
+    call copy_addr(idiag_grgpm,p_par(9)) ! int
+    call copy_addr(idiag_grgzm,p_par(10)) ! int
+    call copy_addr(idiag_gpgzm,p_par(11)) ! int
+    call copy_addr(idiag_rugpotselfm,p_par(12)) ! int
+    call copy_addr(idiag_gpotself2m,p_par(13)) ! int
+
+
+    endsubroutine pushpars2c
+!***********************************************************************
 endmodule Selfgravity
