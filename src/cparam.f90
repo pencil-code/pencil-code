@@ -921,5 +921,9 @@ integer, parameter :: enum_no_such_iviscnZ_string = 641
 integer, parameter :: enum_ZZ__string = 642
 integer, parameter :: enum_ee_string = 643
 integer, parameter :: enum_tZ_inflation_factorZ_string = 644
+integer, parameter :: enum_alpha_attractors_string = 645
+integer, parameter :: enum_quadratic_string = 646
+integer, parameter :: enum_dspecial_dtZ_no_such_v_choiceZ__string = 647
+integer, parameter :: enum_axelZ_mqZ_xiZ_epsqeZ_epsqbZ_string = 648
 
 endmodule Cparam

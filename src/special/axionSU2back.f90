@@ -137,6 +137,7 @@ module Special
   integer :: idiag_grandxy=0      ! ZAVG_DOC: $\left< {\cal T}^Q\right>_{z}$
   integer :: idiag_grantxy=0      ! ZAVG_DOC: $\left< {\cal T}^\chi\right>_{z}$
 !
+  integer :: enum_v_choice = 0
   contains
 !
 !***********************************************************************
@@ -1654,6 +1655,67 @@ module Special
       enddo
 !
     endsubroutine rprint_special
+    subroutine pushpars2c(p_par)
+
+    use Syscalls, only: copy_addr
+!***********************************************************************
+    use General , only: string_to_enum
+
+    integer, parameter :: n_pars=100
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+    call copy_addr(iaxi_q,p_par(1)) ! int
+    call copy_addr(iaxi_qdot,p_par(2)) ! int
+    call copy_addr(iaxi_chi,p_par(3)) ! int
+    call copy_addr(iaxi_chidot,p_par(4)) ! int
+    call copy_addr(ndivt,p_par(5)) ! int
+    call copy_addr(iaxi_psi,p_par(6)) ! int
+    call copy_addr(iaxi_psidot,p_par(7)) ! int
+    call copy_addr(iaxi_tr,p_par(8)) ! int
+    call copy_addr(iaxi_trdot,p_par(9)) ! int
+    call copy_addr(iaxi_psil,p_par(10)) ! int
+    call copy_addr(iaxi_psildot,p_par(11)) ! int
+    call copy_addr(iaxi_tl,p_par(12)) ! int
+    call copy_addr(iaxi_tldot,p_par(13)) ! int
+    call copy_addr(iaxi_impsi,p_par(14)) ! int
+    call copy_addr(iaxi_impsidot,p_par(15)) ! int
+    call copy_addr(iaxi_imtr,p_par(16)) ! int
+    call copy_addr(iaxi_imtrdot,p_par(17)) ! int
+    call copy_addr(iaxi_impsil,p_par(18)) ! int
+    call copy_addr(iaxi_impsildot,p_par(19)) ! int
+    call copy_addr(iaxi_imtl,p_par(20)) ! int
+    call copy_addr(iaxi_imtldot,p_par(21)) ! int
+    call copy_addr(iaxi_lna,p_par(22)) ! int
+    call copy_addr(iaxi_phi,p_par(23)) ! int
+    call copy_addr(iaxi_phidot,p_par(24)) ! int
+    call copy_addr(fdecay,p_par(25))
+    call copy_addr(g,p_par(26))
+    call copy_addr(mu,p_par(27))
+    call copy_addr(q0,p_par(28))
+    call copy_addr(mpl2,p_par(29))
+    call copy_addr(lamf,p_par(30))
+    call copy_addr(m_inflaton,p_par(31))
+    call copy_addr(m_phi,p_par(32))
+    call copy_addr(inflaton_ini,p_par(33))
+    call copy_addr(alpha,p_par(34))
+    call copy_addr(m_alpha,p_par(35))
+    call copy_addr(n_alpha,p_par(36))
+    call copy_addr(sgn,p_par(37))
+    call copy_addr(lwith_eps,p_par(38)) ! bool
+    call copy_addr(lswap_sign,p_par(39)) ! bool
+    call copy_addr(lconf_time,p_par(40)) ! bool
+    call copy_addr(lanalytic,p_par(41)) ! bool
+    call copy_addr(lim_psi_tr,p_par(42)) ! bool
+    call copy_addr(lleft_psil_tl,p_par(43)) ! bool
+    call copy_addr(lkeep_mq_const,p_par(44)) ! bool
+    call copy_addr(lhubble_var,p_par(45)) ! bool
+    call copy_addr(lhubble,p_par(46)) ! bool
+    call copy_addr(k,p_par(47)) ! (nx)
+    call string_to_enum(enum_v_choice,v_choice)
+    call copy_addr(enum_v_choice,p_par(48)) ! int
+
+    endsubroutine pushpars2c
+!***********************************************************************
 !***********************************************************************
 !
 !********************************************************************

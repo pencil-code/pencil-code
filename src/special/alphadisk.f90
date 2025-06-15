@@ -1338,6 +1338,23 @@ module Special
       endif
 !
     endsubroutine calc_opacity
+!***********************************************************************
+    subroutine pushpars2c(p_par)
+
+    use Syscalls, only: copy_addr
+    use General , only: string_to_enum
+
+    integer, parameter :: n_pars=10
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+     call copy_addr(one_over_three_pi,p_par(1))
+     call copy_addr(lwind,p_par(2)) ! bool
+     call copy_addr(isigma,p_par(3)) ! int
+     call copy_addr(imdot,p_par(4)) ! int
+     call copy_addr(rr1,p_par(5)) ! (nx)
+     call copy_addr(swind,p_par(6)) ! (nx)
+    endsubroutine pushpars2c
+!***********************************************************************
 !********************************************************************
 !
 !********************************************************************

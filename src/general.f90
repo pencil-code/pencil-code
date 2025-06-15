@@ -7903,6 +7903,14 @@ iloop:do i=1,size(list2)
           dst = enum_ee_string
         case('t, inflation_factor=')
           dst = enum_tZ_inflation_factorZ_string
+        case('alpha_attractors')
+          dst = enum_alpha_attractors_string
+        case('quadratic')
+          dst = enum_quadratic_string
+        case('dspecial_dt: no such v_choice: ')
+          dst = enum_dspecial_dtZ_no_such_v_choiceZ__string
+        case('axel: mq, xi, epsqe, epsqb=')
+          dst = enum_axelZ_mqZ_xiZ_epsqeZ_epsqbZ_string
         case default
           dst = enum_unknown_string_string
         endselect
