@@ -54,6 +54,7 @@ Jennifer Schober,     schober.jen@gmail.com,         ,                     +41 7
 Ramkishor Sharma,     ramkishor.sharma/su.se         ,                     ,                  +46767530270              Nordita
 Nishant K. Singh,     nishant.cosmo/gmail.com,       ,                     +91 9916785745,    ,                         IUCAA
 Andrew Snodin,        andrew.snodin/ncl.ac.uk,       ,                     ,                  ,                         King Mongkut's University of Technology North Bangkok
+Sankalp Srivastava,   sankalp.srivastava/iiap.res.in ,                     ,                  ,                         Indian Institute of Astrophysics
 Sharanya Sur,         sur/iucaa.ernet.in,            ,                     +91 2560 4115,     +91 94 210 37 292,        Indian Institute of Astrophysics
 Andreas Svedin,       andreas/astro.columbia.edu,    ,                     +1 917 348 1018,   +46 73 968 86 56,         NORDITA
 Johannes Tschernitz,  johannes.tschernitz/tu-braunschweig.de,joh-tsch,     ,                  ,                         Technical University of Braunschweig
