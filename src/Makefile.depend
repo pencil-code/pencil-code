@@ -209,27 +209,28 @@ $(POWER_OBJ): power_spectrum.h $(POWER_SRC) $(COMMON_DEPS) $(GENERAL_OBJ) $(MAGN
 #
 $(STRUCT_FUNC_OBJ): struct_func.h $(STRUCT_FUNC_SRC) $(COMMON_DEPS) $(GENERAL_OBJ)
 #
+$(SPECIAL_OBJ): special.h $(COMMON_DEPS) $(SYSCALLS_OBJ)
 ifeq ($(SPECIAL),special/NS_polecap)
   physics += special/potekhin_cond.o
-  $(SPECIAL_OBJ): special.h $(SPECIAL_SRC) special_dummies.inc $(COMMON_DEPS) $(EOS_OBJ) $(INITCOND_OBJ) $(DEBUG_IO_OBJ) $(GRID_OBJ) $(PARTICLES_CDATA_OBJ) $(SLICES_METHODS_OBJ) special/potekhin_cond.o
+  $(SPECIAL_OBJ): $(SPECIAL_SRC) special_dummies.inc $(EOS_OBJ) $(INITCOND_OBJ) $(DEBUG_IO_OBJ) $(GRID_OBJ) $(PARTICLES_CDATA_OBJ) $(SLICES_METHODS_OBJ) special/potekhin_cond.o
 else ifeq ($(SPECIAL),special/meanfield_e_tensor)
   #polynomialroots.o: polynomialroots.f90
   technical +=  polynomialroots.o
   technical_nompi +=  polynomialroots.o
-  $(SPECIAL_OBJ): special.h $(SPECIAL_SRC) special_dummies.inc $(COMMON_DEPS) $(EOS_OBJ) $(INITCOND_OBJ) $(DEBUG_IO_OBJ) $(GRID_OBJ) $(PARTICLES_CDATA_OBJ) $(SLICES_METHODS_OBJ) polynomialroots.o
+  $(SPECIAL_OBJ): $(SPECIAL_SRC) special_dummies.inc $(EOS_OBJ) $(INITCOND_OBJ) $(DEBUG_IO_OBJ) $(GRID_OBJ) $(PARTICLES_CDATA_OBJ) $(SLICES_METHODS_OBJ) polynomialroots.o
 else ifeq ($(SPECIAL),nospecial)
-  $(SPECIAL_OBJ): special.h $(NOSPECIAL_SRC) $(COMMON_DEPS)
+  $(SPECIAL_OBJ): $(NOSPECIAL_SRC)
 else ifeq ($(filter-out pressure_bump,$(SPECIAL_OBJ)),)
-  $(SPECIAL_OBJ): special.h $(SPECIAL_SRC) $(COMMON_DEPS) $(EOS_OBJ) $(DENSITY_OBJ) $(FILE_IO_OBJ) $(SLICES_METHODS_OBJ)
+  $(SPECIAL_OBJ): $(SPECIAL_SRC) special_dummies.inc $(EOS_OBJ) $(DENSITY_OBJ) $(FILE_IO_OBJ) $(SLICES_METHODS_OBJ)
 else ifeq ($(filter-out atmosphere chem_stream internal_flow jet,$(SPECIAL_OBJ)),)
-  $(SPECIAL_OBJ): special.h $(SPECIAL_SRC) special_dummies.inc $(COMMON_DEPS) $(EOS_OBJ) $(INITCOND_OBJ) $(DEBUG_IO_OBJ) $(GRID_OBJ) $(SLICES_METHODS_OBJ)
+  $(SPECIAL_OBJ): $(SPECIAL_SRC) special_dummies.inc $(EOS_OBJ) $(INITCOND_OBJ) $(DEBUG_IO_OBJ) $(GRID_OBJ) $(SLICES_METHODS_OBJ)
 else ifeq ($(shell grep -i '^ *use  *particles_cdata' $(SPECIAL_SRC)),)
-  $(SPECIAL_OBJ): special.h $(SPECIAL_SRC) special_dummies.inc $(COMMON_DEPS) $(EOS_OBJ) $(INITCOND_OBJ) $(DEBUG_IO_OBJ) $(GRID_OBJ) $(PARTICLES_CDATA_OBJ) $(SLICES_METHODS_OBJ)
+  $(SPECIAL_OBJ): $(SPECIAL_SRC) special_dummies.inc $(EOS_OBJ) $(INITCOND_OBJ) $(DEBUG_IO_OBJ) $(GRID_OBJ) $(PARTICLES_CDATA_OBJ) $(SLICES_METHODS_OBJ)
 else
-  $(SPECIAL_OBJ): special.h $(SPECIAL_SRC) special_dummies.inc $(COMMON_DEPS) $(EOS_OBJ) $(INITCOND_OBJ) $(DEBUG_IO_OBJ) $(GRID_OBJ) $(SLICES_METHODS_OBJ) $(SHARED_VARIABLES_OBJ)
+  $(SPECIAL_OBJ): $(SPECIAL_SRC) special_dummies.inc $(EOS_OBJ) $(INITCOND_OBJ) $(DEBUG_IO_OBJ) $(GRID_OBJ) $(SLICES_METHODS_OBJ) $(SHARED_VARIABLES_OBJ)
 endif
 ifneq ($(shell grep -i '^ *use  *particles_sub' $(SPECIAL_SRC)),)
-  $(SPECIAL_OBJ): special.h $(SPECIAL_SRC) special_dummies.inc $(COMMON_DEPS) $(EOS_OBJ) $(INITCOND_OBJ) $(DEBUG_IO_OBJ) $(GRID_OBJ) $(PARTICLES_SUB_OBJ) $(SLICES_METHODS_OBJ)
+  $(SPECIAL_OBJ): $(SPECIAL_SRC) special_dummies.inc $(EOS_OBJ) $(INITCOND_OBJ) $(DEBUG_IO_OBJ) $(GRID_OBJ) $(PARTICLES_SUB_OBJ) $(SLICES_METHODS_OBJ)
 endif
 $(SPECIAL_MODULES:=.o): special.h $(SPECIAL_MODULES:=.f90) special_dummies.inc $(COMMON_DEPS) $(EOS_OBJ) $(INITCOND_OBJ) $(DEBUG_IO_OBJ) $(GRID_OBJ) $(SLICES_METHODS_OBJ)
 #
