@@ -9,7 +9,7 @@
 module GPU
 !
   use Cdata
-  use General, only: keep_compiler_quiet, lpointer
+  use General, only: keep_compiler_quiet, lpointer, keep_compiler_quiet_dble
 
   implicit none
 
@@ -67,12 +67,12 @@ contains
       integer :: itsub
       logical :: early_finalize
       logical :: lrmv
-      real, intent(IN) :: t
+      real(KIND=rkind8), intent(IN) :: t
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lrmv)
       call keep_compiler_quiet(itsub)
-      call keep_compiler_quiet(t)
+      call keep_compiler_quiet_dble(t)
 !
     endsubroutine before_boundary_gpu
 !**************************************************************************

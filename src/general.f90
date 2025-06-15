@@ -19,6 +19,7 @@ module General
   public :: parse_filename
 !
   public :: keep_compiler_quiet
+  public :: keep_compiler_quiet_dble
 !
   public :: setup_mm_nn
   public :: find_index_range, find_index, find_index_range_hill, pos_in_array, allpos_in_array_int
@@ -1043,6 +1044,19 @@ print*, 'rank,ipx,ipy,ipz, find_proc=',rank, ipx,ipy,ipz, find_proc_node_localty
       endif
 !
     endsubroutine keep_compiler_quiet_r
+!***********************************************************************
+    subroutine keep_compiler_quiet_dble(v1,v2,v3,v4)
+      real(KIND=rkind8)     :: v1,v2,v3,v4
+      optional ::                 v2,v3,v4
+      if (ALWAYS_FALSE) then
+        write(0,*) 'keep_compiler_quiet_r: Never got here...'
+        print*,                  v1
+        if (present(v2)) print*, v2
+        if (present(v3)) print*, v3
+        if (present(v4)) print*, v4
+        STOP 1
+      endif
+    endsubroutine keep_compiler_quiet_dble
 !***********************************************************************
     subroutine keep_compiler_quiet_r1d(v1,v2,v3,v4)
 !
