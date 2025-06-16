@@ -82,6 +82,7 @@ global output real AC_maximum_error
 #endif
 
 output real AC_dt1_max
+global output  real AC_Arms
 
 #ifdef LDENSITY
   #define LNRHO RHO

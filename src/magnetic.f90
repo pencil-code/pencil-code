@@ -11702,7 +11702,6 @@ print*,'AXEL2: should not be here (eta) ... '
     call copy_addr(idiag_udotxbm,p_par(216)) ! int
     call copy_addr(idiag_uxbdotm,p_par(217)) ! int
     call copy_addr(eta_shock_jump1,p_par(218))
-    call copy_addr(arms,p_par(219))
     call copy_addr(r2,p_par(220))
     call copy_addr(r12,p_par(221))
     call copy_addr(b_ext,p_par(223)) ! real3
