@@ -3288,6 +3288,55 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
 !
     endsubroutine get_slices_special
 !***********************************************************************
+    subroutine pushpars2c(p_par)
+
+    use Syscalls, only: copy_addr
+    use General , only: string_to_enum
+
+    integer, parameter :: n_pars=40
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+    call copy_addr(trace_factor,p_par(1))
+    call copy_addr(stress_prefactor,p_par(2))
+    call copy_addr(fourthird_factor,p_par(3))
+    call copy_addr(nscale_factor_conformal,p_par(4))
+    call copy_addr(tshift,p_par(5))
+    call copy_addr(t_equality,p_par(6))
+    call copy_addr(t_acceleration,p_par(7))
+    call copy_addr(lgamma_factor,p_par(8)) ! bool
+    call copy_addr(lreynolds,p_par(9)) ! bool
+    call copy_addr(lelectmag,p_par(10)) ! bool
+    call copy_addr(lscalar,p_par(11)) ! bool
+    call copy_addr(lscalar_phi,p_par(12)) ! bool
+    call copy_addr(lreheating_gw,p_par(13)) ! bool
+    call copy_addr(lmatter_gw,p_par(14)) ! bool
+    call copy_addr(ldark_energy_gw,p_par(15)) ! bool
+    call copy_addr(lonly_mag,p_par(16)) ! bool
+    call copy_addr(lstress,p_par(17)) ! bool
+    call copy_addr(lstress_ramp,p_par(18)) ! bool
+    call copy_addr(lstress_upscale,p_par(19)) ! bool
+    call copy_addr(lturnoff,p_par(20)) ! bool
+    call copy_addr(tstress_ramp,p_par(21))
+    call copy_addr(stress_upscale_rate,p_par(22))
+    call copy_addr(stress_upscale_exp,p_par(23))
+    call copy_addr(tturnoff,p_par(24))
+    call copy_addr(t_ini,p_par(25))
+    call copy_addr(itij,p_par(26)) ! int
+    call copy_addr(iinfl_lna,p_par(27)) ! int
+    call copy_addr(lgt0,p_par(28))
+    call copy_addr(dlgt,p_par(29))
+    call copy_addr(lgt_ini,p_par(30))
+    call copy_addr(a_ini,p_par(31))
+    call copy_addr(hp_ini,p_par(32))
+    call copy_addr(tau_stress_comp,p_par(33))
+    call copy_addr(exp_stress_comp,p_par(34))
+    call copy_addr(tau_stress_kick,p_par(35))
+    call copy_addr(fac_stress_kick,p_par(36))
+    call copy_addr(ij_table,p_par(37)) ! (3) (3)
+
+    endsubroutine pushpars2c
+!***********************************************************************
+!***********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************
 !**  This is an automatically generated include file that creates  **
