@@ -31,7 +31,6 @@
 /MULTITHREADING/ b end
 /GPU_VENDOR/ b end
 /RUNTIME_COMPILATION/ b end
-/SPECIAL/ b end
 /FARRAY/ b end
 #s/^ *VISCOSITY *= *noviscosity *$/#undef LVISCOSITY/ 
 t prin
@@ -60,9 +59,10 @@ b end
 : cont1
 /IO[_ ]/ b end
 #s/^.*= *\([A-Za-z0-9_][A-Za-z0-9_]*\)/#define \U\1/ 
-s/^ *\([A-Z0-9_][A-Z0-9_]*\) *= *\([a-z0-9_][a-z0-9_]*\) *$/#define L\1 1 \/\/ ..\/\2.f90/ 
+s/\([a-zA-Z_0-9]\)  *\([a-zA-Z_0-9]\)/\1.f90 ..\/\2/g
+s/^ *\([A-Z_][A-Z0-9_]*\) *= *\([A-Za-z0-9_][A-Za-z0-9_/. ]*\) *$/#define L\1 1 \/\/ ..\/\2.f90/ 
 p
-s/.*\/\/ *\(\.\.[\/\.]*\/[a-z0-9_][a-z0-9_]*\.f90\) *$/\1 \\/
+s/.*\/\/ *\([a-zA-Z_0-9\.].*[a-zA-Z_0-9]\) *$/\1 \\/
 H
 : end
 $! d
