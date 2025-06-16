@@ -56,10 +56,10 @@
                           I_INPUT_PERSIST_SPECIAL=33, &
                           I_INPUT_PERSIST_SPECIAL_ID=34, &
                           I_OUTPUT_PERSISTENT_SPECIAL=35, &
-                          I_SPECIAL_PARTICLES_AFTER_DTSUB=36, &
-                          I_SPECIAL_PUSHPARS2C=37
+                          I_SPECIAL_PARTICLES_AFTER_DTSUB=36
+                          !I_SPECIAL_PUSHPARS2C=37
     
-    integer, parameter :: n_subroutines=37
+    integer, parameter :: n_subroutines=36
     integer, parameter :: n_special_modules_max=3
 !
     integer :: n_special_modules
@@ -100,8 +100,8 @@
                            'input_persist_special        ', &
                            'input_persist_special_id     ', &
                            'output_persistent_special    ', &
-                           'special_particles_after_dtsub', &
-                           'special_pushpars2c           '   /)
+                           'special_particles_after_dtsub'   /)
+                           !'special_pushpars2c           '   /)
 
     integer(KIND=ikind8) :: libhandle
     integer(KIND=ikind8), dimension(n_special_modules_max,n_subroutines) :: special_sub_handles
