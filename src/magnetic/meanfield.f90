@@ -39,11 +39,11 @@ module Magnetic_meanfield
   real, dimension (nx) :: kf_x, kf_x1
   real, dimension (my) :: kf_y
   real, dimension (mz) :: kf_z
-  real, dimension (nz) :: fpatches=0, xpatches=0
+  real, dimension (nz) :: fpatches=0, xpatches=0, ypatches=0
 !
 !  arrays for the fluctuating alpha effect in axisymmetric spherical coordinates
 !
-  integer :: channel_magn_mf=1, nr_cell=1, nth_cell=1
+  integer :: channel_magn_mf=1, channel_magn_mf2=2, nr_cell=1, nth_cell=1
   integer, dimension (nx) :: ir_cell=1
   integer, dimension (nx,my) :: itheta_cell=1
   real, dimension (nx) :: tau_cell=1.0
@@ -104,7 +104,7 @@ module Magnetic_meanfield
   real :: fluc_alp_m=1.0, sigma_alpha=1.0
   real :: b2_to_u2=0.0, shear_current_sh=0.0
   real :: sigx=0.0, sigz=0.0
-  integer :: npatches=1, npatches_actual
+  integer :: npatches=1, npatches_actual, seed_magn_mf2=5555
   real, dimension(3) :: alpha_aniso=0.
   real, dimension(3,3) :: alpha_tensor=0., eta_tensor=0.
   real, dimension(ny,3,3) :: alpha_tensor_y=0., eta_tensor_y=0.
@@ -125,9 +125,9 @@ module Magnetic_meanfield
   logical :: lread_alpha_tensor_z=.false., lread_alpha_tensor_z_as_y=.false.
   logical :: lread_eta_tensor_z=.false., lread_eta_tensor_z_as_y=.false.
   logical :: lshear_current_effect=.false., lalphass_disk=.false.
-  logical :: ltest_patches=.false.
+  logical :: ltest_patches=.false., lOmega_effect_meanfield=.false.
   real :: ampluu_kinematic=0.
-  real, dimension(:), allocatable :: xcenter, zcenter, roty, cy, sy
+  real, dimension(:), allocatable :: xcenter, ycenter, zcenter, roty, cy, sy
 !
   namelist /magn_mf_run_pars/ &
       Calp, alpha_effect, alpha_quenching, alpha_rmax, alpha_exp, alpha_zz, &
@@ -138,8 +138,8 @@ module Magnetic_meanfield
       chit_quenching, chi_t0, lqp_profile, lqpx_profile, qp_width, qpx_width, &
       x_surface, x_surface2, z_surface, &
       alpha_rmin, kx_alpha, &
-      qp_model,&
-      npatches, sigx, sigz, ltest_patches, ampluu_kinematic, &
+      qp_model, seed_magn_mf2, &
+      npatches, sigx, sigz, ltest_patches, lOmega_effect_meanfield, ampluu_kinematic, &
       ldelta_profile, delta_effect, delta_profile, &
       meanfield_etat, meanfield_etat_height, meanfield_etat_profile, &
       meanfield_etat_width, meanfield_etat_exp, meanfield_etat_corona, meanfield_Beq_width, &
@@ -266,7 +266,7 @@ module Magnetic_meanfield
 !  20-may-03/axel: reinitialize_aa added
 !
       use Sub, only: erfunc
-      use General, only: random_number_wrapper
+      use General, only: random_number_wrapper, random_seed_wrapper, random_gen
       use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -664,13 +664,22 @@ module Magnetic_meanfield
         endif
 !
         allocate(xcenter(npatches))
+        allocate(ycenter(npatches))
         allocate(zcenter(npatches))
         allocate(roty(npatches))
         allocate(cy(npatches))
         allocate(sy(npatches))
-        call random_number_wrapper(xcenter)
-        call random_number_wrapper(zcenter)
-        call random_number_wrapper(rpatches)
+!
+!  Use channel=channel_magn_mf2=2 for all these patches.
+!
+        if (random_gen/='nr_f90') call fatal_error('initialize_magn_mf', &
+          'must use random_gen=nr_f90, because we need channel=2!')
+        seed2=0; seed2(1)=seed_magn_mf2
+        call random_seed_wrapper(PUT=seed2,CHANNEL=channel_magn_mf2)
+        call random_number_wrapper(xcenter,CHANNEL=channel_magn_mf2)
+        call random_number_wrapper(ycenter,CHANNEL=channel_magn_mf2)
+        call random_number_wrapper(zcenter,CHANNEL=channel_magn_mf2)
+        call random_number_wrapper(rpatches,CHANNEL=channel_magn_mf2)
 !
 !  Assume full x-range if the file npatchz.txt does not exist.
 !
@@ -692,6 +701,7 @@ module Magnetic_meanfield
               ipatchz_count=ipatchz_count+1
               if (ipatchz_count<=npatches) then
                 xcenter(ipatchz_count)=-xpatches(n)+2.*xpatches(n)*xcenter(ipatchz_count)
+                ycenter(ipatchz_count)=-ypatches(n)+2.*ypatches(n)*ycenter(ipatchz_count)
                 zcenter(ipatchz_count)=z(n+nghost)
                 print*,n,z(n+nghost),npatchz,ipatchz_count,cont_count,2.*rpatches(n)*fpatches(n)*npatches
               else
@@ -702,13 +712,14 @@ module Magnetic_meanfield
           npatches_actual=ipatchz_count
         else
           xcenter=xyz0(1)+(xyz1(1)-xyz0(1))*xcenter 
+          ycenter=xyz0(2)+(xyz1(2)-xyz0(2))*ycenter 
           zcenter=xyz0(3)+(xyz1(3)-xyz0(3))*zcenter 
           npatches_actual=npatches
         endif
 !
 !  Assume random orientation angles for all patches.
 !
-        call random_number_wrapper(roty)
+        call random_number_wrapper(roty,CHANNEL=channel_magn_mf2)
         cy=cos(360.*roty*dtor)
         sy=sin(360.*roty*dtor)
       endif
@@ -945,7 +956,7 @@ module Magnetic_meanfield
       real, dimension (nx) :: shear_current_sh_tmp, disk_height, z_over_h
       real, dimension (nx,3) :: Bk_Bki, exa_meanfield, glnchit_prof, glnchit, XXj
       real, dimension (nx,3) :: meanfield_getat_tmp, getat_cross_B_tmp, B2glnrho, glnchit2
-      real, dimension (nx) :: r2, x1, z1, x11, z11
+      real, dimension (nx) :: r2, x1, y1, z1, x11, y11, z11
       real :: kx,fact
       integer :: i, j, k, nn, l, ipatch
 !
@@ -1156,10 +1167,12 @@ module Magnetic_meanfield
           alpha_tmp=0.
           do ipatch=1, npatches_actual
             x1=2.*atan(tan(.5*(x(l1:l2)-xcenter(ipatch))))
-            z1=2.*atan(tan(.5*(z(n)-    zcenter(ipatch))))
+            y1=2.*atan(tan(.5*(y(m    )-ycenter(ipatch))))
+            z1=2.*atan(tan(.5*(z(n    )-zcenter(ipatch))))
             x11=+cy(ipatch)*x1+sy(ipatch)*z1
             z11=-sy(ipatch)*x1+cy(ipatch)*z1
-            r2=.5*(x11/sigx)**2+.5*(z11/sigz)**2
+            y11=            y1
+            r2=.5*(x11/sigx)**2+.5*(y11/sigx)**2+.5*(z11/sigz)**2
             alpha_tmp=alpha_tmp+z11*exp(-r2)
             if (iux/=0) then
               if (ltest_patches) then
@@ -1167,7 +1180,11 @@ module Magnetic_meanfield
                 p%uu(:,2)=p%uu(:,2)+ampluu_kinematic*x11*exp(-r2)
                 p%uu(:,3)=p%uu(:,3)+ampluu_kinematic*z11*exp(-r2)
               else
+                p%uu(:,1)=p%uu(:,1)-ampluu_kinematic*y11*exp(-r2)
                 p%uu(:,2)=p%uu(:,2)+ampluu_kinematic*x11*exp(-r2)
+!if (n>40 .and. n<128) print*,'AXEL1: z(n),p%uu(128,2)=',z(n),maxval(p%uu(:,2))
+!print*,'AXEL1: z(n),p%uu(128,2)=',z(n),minval(p%uu(:,2)),maxval(p%uu(:,2))
+!print*,'AXEL1: n,p%uu(128,2)=',n,maxval(p%uu(:,2))
               endif
             endif
           enddo
@@ -1719,6 +1736,8 @@ module Magnetic_meanfield
 !
 !  27-jul-10/axel: coded
 !
+      use Sub, only: cross_mn
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -1727,6 +1746,7 @@ module Magnetic_meanfield
       intent(inout) :: df,f
 !
       real, dimension(nx) :: diffus_eta
+      real, dimension(nx,3) :: tmpv
 !
 !  Identify module and boundary conditions.
 !
@@ -1788,6 +1808,16 @@ module Magnetic_meanfield
       if (lrhs_term2) then
         df(l1:l2,m,n,iay)=df(l1:l2,m,n,iay)+rhs_termy
         df(l1:l2,m,n,iaz)=df(l1:l2,m,n,iaz)+rhs_termz
+      endif
+!
+!  Apply here the Omega effect when the mean flow is only calculated in
+!  this mean-field module. In that case, it was not previously applied.
+!
+      if (lOmega_effect_meanfield) then
+        call cross_mn(p%uu,p%bb,tmpv)
+        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+tmpv
+!if (n>90 .and. n<128) print*,'AXEL2: n,p%uu(128,2)=',n,p%uu(128,2)
+!print*,'AXEL2: z(n),p%uu(128,2)=',z(n),minval(p%uu(:,2)),maxval(p%uu(:,2))
       endif
 !
 !  Time-advance of secondary mean-field modules.
