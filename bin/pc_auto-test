@@ -186,6 +186,7 @@ my %tests = (
              4 => [qw(
                          superparticle-coagulation
                          superparticle-condensation-coagulation
+                         backreact_infl
                      )],
              # Level 5 for now contains overlong tests (e.g. test that
              # compile, start and then run -- but take too long time)
