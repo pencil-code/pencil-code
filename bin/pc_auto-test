@@ -146,6 +146,7 @@ my %tests = (
                          1d-tests/hyperdiffusion
                          2d-tests/eccentricity-decay
                          interstellar
+                         supernova-driven-turbulence/1Dhd_init_equidistant
                      )],
              # Level 3 for now contains all non-canonical tests that run
              # successfully
