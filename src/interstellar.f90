@@ -12,7 +12,7 @@
 ! MAUX CONTRIBUTION 2
 !!! COMMUNICATED AUXILIARIES 1
 !
-! PENCILS PROVIDED heat; cool; heatcool
+! PENCILS PROVIDED heat; cool; heatcool; damping
 !
 !*****************************************************************************
 module Interstellar
@@ -482,6 +482,7 @@ module Interstellar
       energy_Nsigma, lSN_momentum, lSN_coolingmass, Nsol_added
 !
   real :: gamma
+  real, dimension(nx) :: heat_prefactor
 !
   contains
 !
@@ -549,7 +550,11 @@ module Interstellar
       lSN_ecr=lcosmicray.and.lSN_ecr
       lSN_fcr=lcosmicrayflux.and.lSN_fcr.and.lSN_ecr
 !
-      call get_gamma_etc(gamma)
+      if (pretend_lnTT.and.leos_idealgas) then
+        call get_gamma_etc(gamma)
+        heat_prefactor = gamma
+      endif
+!
       if (leos_idealgas) then
         call getmu(f,mu)
       else
@@ -702,6 +707,8 @@ module Interstellar
       else
         lheatcool_shock_cutoff=.false.
       endif
+      if (cooling_select=="off".and.heating_select=="off".and..not.lSNI.and..not.lSNII) &
+        lheatcool_shock_cutoff=.false. 
 !
 !  Slopeyness used for tanh rounding profiles etc.
 !
@@ -713,14 +720,16 @@ module Interstellar
       if (SN_interval_rhom==impossible) SN_interval_rhom=SN_interval_rhom_cgs/unit_density
       t_interval(SNI )= 1./( SNI_factor *  SNI_area_rate * Lx * Ly)
       t_interval(SNII)= 1./(SNII_factor * SNII_area_rate * Lx * Ly)
-      if (average_SNI_heating == impossible) average_SNI_heating = &
-          r_SNI *ampl_SN/(sqrt(2*pi)*h_SNI*SN_interval_rhom)
-      if (average_SNII_heating == impossible) average_SNII_heating = &
-          r_SNII*ampl_SN/(sqrt(2*pi)*h_SNII*SN_interval_rhom)
       if (lroot.and.ip==1963) print &
           "(1x,'initialize_interstellar: t_interval_SNI, SNI rate =',2e11.4)", &
           t_interval(SNI),SNI_factor*SNI_area_rate
+      if (lroot.and.(laverage_SNI_heating.or.laverage_SNII_heating)) &
+          call warning('initialize_interstellar',&
+            'default average_SN*_heating changed from impossible to 0, ' // &
+            'if laverage_SN*_heating automatically set unless non-zero run.in')
       if (laverage_SNI_heating) then
+        if (average_SNI_heating==0.) average_SNI_heating = &
+            r_SNI *ampl_SN/(sqrt(2*pi)*h_SNI*SN_interval_rhom)
         if (lSN) then
           if (lroot.and.ip==1963) print &
               "(1x,'initialize_interstellar: average_SNI_heating =',e11.4)", &
@@ -734,10 +743,12 @@ module Interstellar
               heatingfunction_scalefactor
         endif
       else
-        average_SNI_heating = 0.
+        average_SNI_heating=0.
         if (lroot.and.ip==1963) print*, 'initialize_interstellar: average_SNI_heating = 0'
       endif
       if (laverage_SNII_heating) then
+        if (average_SNII_heating==0.) average_SNII_heating = &
+            r_SNII*ampl_SN/(sqrt(2*pi)*h_SNII*SN_interval_rhom)
         if (lSN) then
           if (lroot.and.ip==1963) print &
               "(1x,'initialize_interstellar: average_SNII_heating =',e11.4)", &
@@ -751,7 +762,7 @@ module Interstellar
               heatingfunction_scalefactor
         endif
       else
-        average_SNII_heating = 0.
+        average_SNII_heating=0.
         if (lroot.and.ip==1963) print*,'initialize_interstellar: average_SNII_heating =0'
       endif
       if ((laverage_SNI_heating.or.laverage_SNII_heating).and..not.(lSN)) &
@@ -1643,7 +1654,10 @@ module Interstellar
         lpenc_requested(i_TT1)=.true.
       endif
       if (ltemperature_nolog) lpenc_requested(i_cv1)=.true.
-      if (lheatcool_shock_cutoff) lpenc_requested(i_gshock)=.true.
+      if (lheatcool_shock_cutoff) then
+        lpenc_requested(i_gshock)=.true.
+        lpenc_requested(i_damping)=.true.
+      endif
 !
       if (idiag_taucmin/=0.or.idiag_Hmax_ism/=0) then
         if (ltemperature_nolog.and.ltemperature) then
@@ -1668,16 +1682,27 @@ module Interstellar
 !
       logical, dimension(npencils) :: lpencil_in
 !
+      if (lpencil_in(i_heatcool)) then
+        lpencil_in(i_cool)=.true.
+        lpencil_in(i_heat)=.true.
+      endif
       if (lpencil_in(i_cool)) then
         lpencil_in(i_lnTT)=.true.
         lpencil_in(i_lnrho)=.true.
       endif
       if (lpencil_in(i_heat)) then
-        lpencil_in(i_lnTT)=.true.
+        lpencil_in(i_TT)=.true.
       endif
-      if (lpencil_in(i_heatcool)) then
-        lpencil_in(i_cool)=.true.
-        lpencil_in(i_heat)=.true.
+      if (lpencil_in(i_cool).or.lpencil_in(i_heat)) then
+        if (.not.(ltemperature_nolog.and.ltemperature).or.pretend_lnTT) then
+          lpencil_in(i_TT)=.true.
+          lpencil_in(i_TT1)=.true.
+        endif
+        if (ltemperature_nolog) lpencil_in(i_cv1)=.true.
+        if (lheatcool_shock_cutoff) then 
+          lpencil_in(i_gshock)=.true.
+          lpencil_in(i_damping)=.true.
+        endif
       endif
 !
     endsubroutine pencil_interdep_interstellar
@@ -1690,29 +1715,19 @@ module Interstellar
       real, dimension(mx,my,mz,mfarray), intent(IN)   :: f
       type(pencil_case),                 intent(INOUT):: p
 !
-      if (lpencil(i_cool)) call calc_cool_func(p%cool,p%lnTT,p%lnrho)
+      if (lpencil(i_damping)) then 
+        call calc_damping(p%damping,p%gshock)
 !
-      if (lpencil(i_heat)) call calc_heat(p%heat,p%TT)
+        if (lpencil(i_cool)) call calc_cool_func(p%cool,p%lnTT,p%lnrho,damp=p%damping)
 !
-!  For clarity with lentropy we have constructed the rhs in erg/s/g [=T*Ds/Dt]
-!  so therefore we now need to multiply by TT1, or otherwise.
+        if (lpencil(i_heat)) call calc_heat(p%heat,p%TT,damp=p%damping)
+      else
 !
-      if (ltemperature) then
-        if (ltemperature_nolog) then
-          p%heat=p%heat*p%cv1
-          p%cool=p%cool*p%cv1
-        else
-          p%heat=p%heat/p%ee
-          p%cool=p%cool/p%ee
-        endif
-      elseif (pretend_lnTT) then
-        p%heat=p%heat*gamma
-        p%cool=p%cool*gamma
-      else   !? if (lentropy) then
-        p%heat=p%heat*p%TT1
-        p%cool=p%cool*p%TT1
-        !heatcool=p%TT1*(heat-cool)
+        if (lpencil(i_cool)) call calc_cool_func(p%cool,p%lnTT,p%lnrho)
+!
+        if (lpencil(i_heat)) call calc_heat(p%heat,p%TT)
       endif
+!
       if (lpencil(i_heatcool)) p%heatcool=p%heat-p%cool
 !
     endsubroutine calc_pencils_interstellar
@@ -1829,6 +1844,7 @@ module Interstellar
 !  22-mar-10/fred:
 !  adapted from galactic-hs,ferriere-hs
 !  13-jul-15/fred: requires initial_condition/hs_equilibrium_ism.f90
+!  17-jun-25/fred: recommend instead initial_condition/ths_equilibrium_ism.f90 
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mz), intent(out) :: zheat
@@ -1900,8 +1916,8 @@ module Interstellar
 !  19-nov-02/graeme: adapted from calc_heat_cool
 !  10-aug-03/axel: TT is used as input
 !   3-apr-06/axel: add ltemperature switch
+!  17-jun-25/fred: moved much to pencils to enable GPUs
 !
-      use Sub, only: dot2
       use Messages, only: fatal_error
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
@@ -1929,35 +1945,18 @@ module Interstellar
         enddo
       endif
 !
-      heat=p%heat
-      cool=p%cool
-!
-!  Average SN heating (due to SNI and SNII)
-!  The amplitudes of both types is assumed the same (=ampl_SN)
-!  Added option to gradually remove average heating as SN are introduced when
-!  initial condition is in equilibrium prepared in 1D
-!  Division by density to balance LHS of entropy equation
-!
-      if (lSN) then
-        if (laverage_SNI_heating)  heat=heat+heat_SNI_profile(n-nghost)*heatingfunction_scale(SNI)
-        if (laverage_SNII_heating) heat=heat+heat_SNII_profile(n-nghost)*heatingfunction_scale(SNII)
+      if (ltemperature) then
+        if (ltemperature_nolog) then
+          heat_prefactor=p%cv1
+        else
+          heat_prefactor=1/p%ee
+        endif
+      elseif (.not.pretend_lnTT) then
+        heat_prefactor=p%TT1
       endif
-!
-!  Prevent unresolved heating/cooling in shocks. This is deprecated as
-!  use of RKF timestep control or the mor coarse RHS timestep control
-!  appended to the Courant timestep control is effective without
-!  unphysical artefacts. Fred
-!
-      if (lheatcool_shock_cutoff) then
-        call dot2(p%gshock,gsh2)
-!
-        damp_profile=exp(-(gsh2*heatcool_shock_cutoff_rate1))
-!
-        cool=cool*damp_profile
-        heat=heat*damp_profile
-      endif
-!
-      heatcool=heat-cool
+      heat = heat_prefactor*p%heat
+      cool = heat_prefactor*p%cool
+      heatcool = heat-cool
 !
 !  Save result in aux variables
 !  cool=rho*Lambda/TT, heatcool=(Gamma-rho*Lambda)/TT
@@ -1965,22 +1964,18 @@ module Interstellar
       f(l1:l2,m,n,icooling) = cool
       f(l1:l2,m,n,inetheat) = heatcool
 !
-      call calc_diagnostics_interstellar(p)
-!
 !  Limit timestep by the cooling time (having subtracted any heating)
+!  dt1_max=max(dt1_max,cdt_tauc*(cool)/ee,cdt_tauc*(heat)/ee)
 !
-!  FG: todo this applies a primarily negative heatcool to positive Hmax
-!      which controls the ldt time step in energy RHS. Require to sum
-!      Hmax with abs(heatcool) or to compute cooling timestep separately
-!      Hmax may need to be max(abs(Hmax)) for ldt??
-!
-      if (ldt.and.lfirst .or. ldiagnos) then
+      if (ldt.and.lfirst.or.ldiagnos) then
         if (ltemperature.or.pretend_lnTT) then
           Hmax=Hmax+heatcool
         else
           Hmax=Hmax+heatcool*p%TT
         endif
       endif
+!
+      call calc_diagnostics_interstellar(p)
 !
 !  Apply heating/cooling to temperature/entropy variable
 !
@@ -1992,7 +1987,7 @@ module Interstellar
 !
     endsubroutine calc_heat_cool_interstellar
 !*****************************************************************************
-    subroutine calc_cool_func(cool,lnTT,lnrho)
+    subroutine calc_cool_func(cool,lnTT,lnrho,damp)
 !
 !  This routine calculates the temperature dependent radiative cooling.
 !  Applies Rosen et al., ApJ, 413, 137, 1993 ('RBN') OR
@@ -2009,9 +2004,11 @@ module Interstellar
 !
 !  [Currently, coolT(1) is not modified, but this may be necessary
 !  to avoid creating gas too cold to resolve.]
+!  17-jun-25/fred: included shock damping to apply directly to pencils
 !
       real, dimension (nx), intent(out) :: cool
       real, dimension (nx), intent(in) :: lnTT, lnrho
+      real, dimension (nx), intent(in), optional :: damp
       integer :: i
 !
       cool=0.0
@@ -2020,10 +2017,11 @@ module Interstellar
           cool=cool+exp(lncoolH(i)+lnrho+lnTT*coolB(i))
         endwhere
       enddo
+      if (present(damp)) cool = cool*damp
 
     endsubroutine calc_cool_func
 !*****************************************************************************
-    subroutine calc_heat(heat,TT)
+    subroutine calc_heat(heat,TT,damp)
 !
 !  This routine adds UV heating, cf. Wolfire et al., ApJ, 443, 152, 1995
 !  with the values above, this gives about 0.012 erg/g/s (T < ~1.E4 K)
@@ -2032,9 +2030,12 @@ module Interstellar
 !
 !  Control with heating_select in interstellar_init_pars/run_pars.
 !  Default heating_rate GammaUV = 0.015.
+!  17-jun-25/fred: included shock damping to apply directly to pencils
+!  17-jun-25/fred: moved average heating here to apply directly to pencils
 !
       real, dimension (nx), intent(out) :: heat
       real, dimension (nx), intent(in) :: TT
+      real, dimension (nx), intent(in), optional :: damp
 !
 !  Constant heating with a rate heating_rate[erg/g/s].
 !
@@ -2056,7 +2057,56 @@ module Interstellar
         heat = 0.
       endif
 !
+!  Average SN heating (due to SNI and SNII)
+!  The amplitudes of both types is assumed the same (=ampl_SN)
+!  Added option to gradually remove average heating as SN are introduced when
+!  initial condition is in equilibrium prepared in 1D
+!  Division by density to balance LHS of entropy equation
+!
+      if (laverage_SNI_heating) then
+        if (lSNI.or.lSNII) then
+          heat=heat+average_SNI_heating *exp(-(2.0*z(n)/h_SNI )**2)*&
+              t_interval(SNI) /(t_interval(SNI) +t*heatingfunction_fadefactor)&
+                                         *heatingfunction_scalefactor
+        else
+          heat=heat+average_SNI_heating *exp(-(2.0*z(n)/h_SNI )**2)*&
+                    heatingfunction_scalefactor
+        endif
+      endif
+      if (laverage_SNII_heating) then
+        if (lSNI.or.lSNII) then
+          heat=heat+average_SNII_heating*exp(-(2.0*z(n)/h_SNII)**2)*&
+              t_interval(SNII)/(t_interval(SNII)+t*heatingfunction_fadefactor)&
+                                         *heatingfunction_scalefactor
+        else
+          heat=heat+average_SNII_heating*exp(-(2.0*z(n)/h_SNII)**2)*&
+                    heatingfunction_scalefactor
+        endif
+      endif
+!
+      if (present(damp)) heat = heat*damp
+!
     endsubroutine calc_heat
+!*****************************************************************************
+    subroutine calc_damping(damp_profile,gshock)
+!
+!  Prevent unresolved heating/cooling in shocks. 
+!  Has become redundant as timestepping and shock controls have improved
+!  Separated to be calculated as pencil following GPU implementation
+!  Early cooling in the shock prematurely inhibits the strength of the
+!  shock wave and also drives down the timestep. Fred
+!
+      use Sub, only: dot2
+!
+      real, dimension (nx), intent(out) :: damp_profile
+      real, dimension (nx,3), intent(in) :: gshock
+      real, dimension (nx) :: gsh2
+!
+      call dot2(gshock,gsh2)
+!
+      damp_profile=exp(-(gsh2*heatcool_shock_cutoff_rate1))
+!
+    endsubroutine calc_damping
 !*****************************************************************************
     subroutine check_SN(f)
 !
