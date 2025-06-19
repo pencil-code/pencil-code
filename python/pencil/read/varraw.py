@@ -223,6 +223,7 @@ class Varraw(object):
         import os
         from scipy.io import FortranFile
         from pencil import read
+        from collections import defaultdict
 
         if var_list is None:
             var_list = []
@@ -335,6 +336,40 @@ class Varraw(object):
 
             varcontent = dict(
                 sorted(index.__dict__.items(), key=lambda item: item[1]))
+
+            # Filter duplicate indices read in from index.pro, if any.
+            # In case of duplicate indices, keep only the variable name ending with 'x'.
+            # If the duplicate indices have multiple variable names ending with 'x', keep the last one ending with 'x'.
+            # If the duplicate indices have no variable name ending with 'x', keep the last one.
+            # The criteria might need more refining.
+            index_to_varname = defaultdict(list)
+
+            for k, v in varcontent.items():
+                index_to_varname[v].append(k)
+
+            filtered_varcontent = {}
+
+            for v, keys in index_to_varname.items():
+                if len(keys) == 1:
+                    filtered_varcontent[keys[0]] = v
+                else:
+                    varnames_with_x = [k for k in keys if k.endswith('x')]
+                    if varnames_with_x:
+                        keptname = varnames_with_x[-1]
+                        print(
+                            f"Warning: From index.pro, names {keys} share index {v}. Keeping name: '{keptname}' for this index.")
+                    else:
+                        keptname = keys[-1]
+                        print(
+                            f"Warning: From index.pro, names {keys} share index {v}. Keeping name: '{keptname}' for this index.")
+                    filtered_varcontent[keptname] = v
+
+            varcontent = filtered_varcontent
+
+            # Safety check before proceeding.
+            if len(varcontent) != mvar_io:
+                raise ValueError(
+                    "Inconsistency: no. of variables read in from index.pro doesn't match total no. of variables from dimensions file")
 
             content = ', '.join(varcontent.keys())
 
