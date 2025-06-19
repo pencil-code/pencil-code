@@ -127,6 +127,13 @@
 
     call get_env_var("PC_MODULES_LIST", special_modules_list)
     n_special_modules=parser(trim(special_modules_list),special_modules,' ')
+    !Remove trailing newlines
+    do i=1,n_special_modules
+        if (len_trim(special_modules(i)) > 0 .and. &
+        special_modules(i)(len_trim(special_modules(i)):len_trim(special_modules(i))) == CHAR(10)) then
+                 special_modules(i) = special_modules(i)(:len_trim(special_modules(i))-1)
+        end if
+    enddo
 !if (lroot) print*, 'special_modules_list=', trim(special_modules_list)//'<<<'
 
 !
