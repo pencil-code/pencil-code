@@ -2430,7 +2430,7 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 ##FFLAGS=-O3 -fcheck=all #(uan02*)
 #FFLAGS_DOUBLE=-fdefault-real-8 -fdefault-double-8 #(uan02*)
 ##
-##  Dardel (Axel, gFortran compiler, uan01)
+##  Dardel (Axel, gFortran compiler, login1)
 ##
 #FC=ftn #(login1*)
 #F90=$(FC) #(login1*)
@@ -3059,19 +3059,24 @@ run=$(technical) $(physics) $(GPU_OBJ) $(GPU_INTERFACE) $(TIMESTEP_OBJ) $(TRAINI
 start.o: $(start) $(OMP_HEADER) Makefile.local
 start.x: start.o | $(SPECIAL_DEPS)
 	$(LD) $(start) start.o $(LDFLAGS) $(LDFLAGS_MAIN) $(LD_MPI) $(LD_FOURIER) $(LD_GSL) -o start.x
-libPCStart.so: start.o | $(SPECIAL_DEPS)
-	$(LD) $(start) start.o $(LDFLAGS) $(LDFLAGS_MAIN) $(LD_MPI) $(LD_FOURIER) $(LD_GSL) -shared -o libPCStart.so
-
 #
 run.o: $(run) $(OMP_HEADER) Makefile.local
 run.x: run.o | $(SPECIAL_DEPS) $(LIBGPU)
 	$(LD) $(run) run.o $(LDFLAGS) $(LDFLAGS_MAIN) $(LDFLAGS_LIB) $(LD_MPI) $(LD_FOURIER) $(LIBSIG) $(LD_GSL) -o run.x
 	@rm -f exit_mn.h
 #
+#  Rules for linking start and run as shared libararies.
+#
+libPCStart.so: start.o | $(SPECIAL_DEPS)
+	$(LD) $(start) start.o $(LDFLAGS) $(LDFLAGS_MAIN) $(LD_MPI) $(LD_FOURIER) $(LD_GSL) -shared -o libPCStart.so
+#
 libPC.so: run.o | $(SPECIAL_DEPS) $(LIBGPU)
 	  $(LD) $(run) run.o $(LDFLAGS) $(LDFLAGS_MAIN) $(LDFLAGS_LIB) $(LD_MPI) $(LD_FOURIER) $(LIBSIG) $(LD_GSL) -shared -o libPC.so
-$(LIBGPU): $(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/Makefile.vendor
+#
+#  Rule for building the Astaroth and interface libraries.
+#
 #$(LIBGPU): $(GPU_DEPS)
+$(LIBGPU): $(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/Makefile.vendor
 	cd astaroth && make MPICOMM=$(MPICOMM) RUNTIME_COMPILATION=$(RUNTIME_COMPILATION) TRAINING=$(TRAINING)
 #
 special_preps:
@@ -3162,7 +3167,6 @@ endif
 ifeq ($(DUSTDENSITY),nodustdensity)
 	@echo $(CUDA_RELPATH)'/$(DUSTDENSITY).f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources.h
 endif
-	@echo $(CUDA_RELPATH)'/$(SPECIAL).f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources.h
 ifeq ($(GRAVITY),nogravity)
 	@echo $(CUDA_RELPATH)'/$(GRAVITY).f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources.h
 endif
@@ -3641,6 +3645,7 @@ clean:  slender
 	rm -f nompicomm_*.f90 mpicomm_*.f90 # temporary workaround to remove old "mpicomm_double.f90"
 	rm -f $(CUDA_MAKEDIR)/Makefile.vendor
 	rm -f $(CUDA_MAKEDIR)/Makefile.module_info
+	rm -f *_c.h && ln -s $(PENCIL_HOME)/src/headers_c.h .
 #done so the interface make can clean after this, otherwise that clean has to come first
 	@if [ -d ./astaroth ]; then touch ./astaroth/PC_modulesources.h; fi
 	@printf "# %s\n" "Empty" "(This file was written by 'make')" > Makefile.inc

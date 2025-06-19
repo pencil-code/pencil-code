@@ -2,8 +2,17 @@ SHELL=/bin/bash
 
 #Importing environ variables into preprocessor
 #ENVIRON = -DMODPRE=${MODULE_PREFIX} -DMODIN=${MODULE_INFIX} -DMODSUF=${MODULE_SUFFIX}
+#
+# Get recent target.
+#       
+target := $(firstword $(MAKECMDGOALS))
+#
+# Avoid missing parts when cleaning
+#
+ifeq ($(filter clean,$(target)),)
 
 include PC_modulesources.h
+include Makefile.module_info
 
 ifeq ($(PRECISION),DOUBLE)
   ENVIRON = -DDOUBLE_PRECISION=1
@@ -15,9 +24,6 @@ else
   PREC=sgl
   CMAKE_PREC = OFF
 endif
-
-include Makefile.target
-include Makefile.module_info
 
 ifeq ($(MPICOMM),nompicomm)
   CMAKE_MPI = OFF
@@ -62,7 +68,7 @@ endif
 AC_HEADERS=submodule/include/astaroth.h submodule/acc-runtime/api/math_utils.h
 
 # C headers in pencil-code/src 
-CHEADERS = ../cparam_c.h ../cdata_c.h ../boundcond_c.h ../defines_cdata.h ../forcing_c.h ../sub_c.h ../mpicomm_c.h
+CHEADERS = ../cparam_c.h ../cdata_c.h ../boundcond_c.h ../defines_cdata.h ../forcing_c.h ../sub_c.h #../mpicomm_c.h
 
 # Pencil Code related C headers in . (pencil-code/src/astaroth)
 PCHEADER_DIR = .
@@ -108,6 +114,7 @@ CMAKE_OPTIONS = -DMULTIGPU_ENABLED=OFF -DMPI_ENABLED=$(CMAKE_MPI) -DBUILD_SHARED
 		-DVERBOSE=off -DOPTIMIZE_INPUT_PARAMS=$(OPTIMIZE_INPUT_PARAMS) -DOPTIMIZE_MEM_ACCESSES=ON -DOPTIMIZE_ARRAYS=$(RUNTIME_COMPILATION) -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) \
 	        -DBUILD_STANDALONE=OFF -DOPTIMIZE_FIELDS=$(TRANSPILATION) -DALLOW_DEAD_VARIABLES=$(RUNTIME_COMPILATION) -DELIMINATE_CONDITIONALS=$(ELIMINATE_CONDITIONALS) -DBUILD_UTILS=OFF \
 		-DCMAKE_POSITION_INDEPENDENT_CODE=ON -DDSL_MODULE_FILE=$(DSL_MODULE_FILE) -DINLINING=$(INLINING) -DBUILD_ACM=OFF -DPROFILING_ENABLED=OFF
+endif
 #
 # External sources are provided with absolute pathnames to avoid any trouble with symbolic links.
 #

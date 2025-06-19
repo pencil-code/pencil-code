@@ -12,6 +12,6 @@
 	@cd ..; scripts/sub2c
 ../boundcond_c.h: ../boundcond.f90 ../scripts/boundcond2c
 	@cd ..; scripts/boundcond2c
-../mpicomm_c.h: ../mpicomm.f90 ../scripts/mpicomm2c
-	@cd ..; scripts/mpicomm2c
+#../mpicomm_c.h: ../mpicomm.f90 ../scripts/mpicomm2c
+#	@cd ..; scripts/mpicomm2c
 
