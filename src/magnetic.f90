@@ -2737,11 +2737,10 @@ module Magnetic
         if (lroot) print*,'added to T00: .5*B_ext2= ', .5*B_ext2
       endif
 !
-!  Initialize current to something, if defined.
+!  Initialize current to zero, if lohm_evolve=T.
 !
       if (lohm_evolve) then
-print*,'AXEL99, ijx,ijz', ijx,ijz
-        f(l1:l2,m,n,ijx:ijz)=f(l1:l2,m,n,ijx:ijz)+1e22
+        f(l1:l2,:,:,ijx:ijz)=0.
       endif
 !
     endsubroutine init_aa

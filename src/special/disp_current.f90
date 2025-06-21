@@ -81,7 +81,8 @@ module Special
     cutoff_a0, ncutoff_a0, kpeak_a0, relhel_a0, kgaussian_a0, &
     leedot_as_aux, ldivE_as_aux, lsigE_as_aux, lsigB_as_aux, &
     lsolve_chargedensity, weight_longitudinalE, lswitch_off_Gamma, &
-    lrandom_ampl_ee, lfixed_phase_ee, lskip_projection_ee
+    lrandom_ampl_ee, lfixed_phase_ee, lskip_projection_ee, &
+    luse_scale_factor_in_sigma
 !
   ! run parameters
   real :: beta_inflation=0., rescale_ee=1.
@@ -810,18 +811,16 @@ module Special
     !       endif
     !       df(l1:l2,m,n,ijx:ijz)=df(l1:l2,m,n,ijx:ijz)+dJdt
     !     else
-if (f(l1,m,n,ijx)==0.) then
-  print*,'AXEL start j/=0 '
-            do j=1,3
-  f(l1:l2,m,n,ijx-1+j)=p%sigE*p%el(:,j)
-            enddo
-endif
-            do j=1,3
-              dJdt(:,j)=3.*Hscript*p%sigE*p%el(:,j)
-            enddo
-            df(l1:l2,m,n,ijx:ijz)=df(l1:l2,m,n,ijx:ijz)+dJdt
-            !call fatal_error('daa_dt','tau_jj must be finite and positive')
-    !     endif
+!if (f(l1,m,n,ijx)==0.) then
+!  print*,'AXEL start j/=0 '
+!            do j=1,3
+!  f(l1:l2,m,n,ijx-1+j)=p%sigE*p%el(:,j)
+!            enddo
+!endif
+          do j=1,3
+            dJdt(:,j)=3.*Hscript*p%sigE*p%el(:,j)
+          enddo
+          df(l1:l2,m,n,ijx:ijz)=df(l1:l2,m,n,ijx:ijz)+dJdt
         endif
       endif
 !
