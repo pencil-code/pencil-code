@@ -248,7 +248,7 @@ module Special
         echarge=0.
         sigEm_all=0.
         sigBm_all=0.
-!  need to add something with lohm_evolve
+        lohm_evolve=.false.
       endif
 !
 !  Reinitialize magnetic field using a small selection of perturbations
