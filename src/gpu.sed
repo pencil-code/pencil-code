@@ -5,7 +5,6 @@
 /BORDER_PROFILES/ b end
 /DEBUG/ b end
 /DERIV/ b end
-/FOURIER/ b end
 /GHOSTFOLD/ b end
 /GSL/ b end
 /INITIAL_CONDITION/ b end

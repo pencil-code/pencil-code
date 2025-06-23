@@ -3190,6 +3190,7 @@ endif
 	@echo ' ' >> $(CUDA_MAKEDIR)/PC_modulesources.h
 	@sed -e'1 i RUNTIME_COMPILATION='$(RUNTIME_COMPILATION) -i $(CUDA_MAKEDIR)/PC_modulesources.h
 	@echo ' ' >> $(CUDA_INCDIR)/PC_moduleflags.h
+	@sed -E 's/special\/([^ ]+)/L\U\1/g; s/ /\n/g; 1s/^/#define /; s/$$/ 1/g' <<< $(SPECIAL) >> $(CUDA_INCDIR)/PC_moduleflags.h
 #
 #  Generation of field (PDE variable) declarations for DSL code obeying the registration order: fieldecs.h .
 #  Generation of (empty) RHS functions and integration kernel: equations.h and solve.ac .

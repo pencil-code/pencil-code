@@ -935,5 +935,11 @@ integer, parameter :: enum_plummer_string = 655
 integer, parameter :: enum_boley_string = 656
 integer, parameter :: enum_saving_initial_condition_for_ivarZ_string = 657
 integer, parameter :: enum_set_border_initcond_string = 658
+integer, parameter :: enum_jump_string = 659
+integer, parameter :: enum_compute_gt_and_gx_from_gij_string = 660
+integer, parameter :: enum_no_such_idelkt_string = 661
+integer, parameter :: enum_ZhorndeskiZZ__string = 662
+integer, parameter :: enum_Zhorndeski1ZZ__string = 663
+integer, parameter :: enum_Zhorndeski2ZZ__string = 664
 
 endmodule Cparam

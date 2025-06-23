@@ -7945,6 +7945,18 @@ iloop:do i=1,size(list2)
           dst = enum_saving_initial_condition_for_ivarZ_string
         case('set_border_initcond')
           dst = enum_set_border_initcond_string
+        case('jump')
+          dst = enum_jump_string
+        case('compute_gt_and_gx_from_gij')
+          dst = enum_compute_gt_and_gx_from_gij_string
+        case('no such idelkt')
+          dst = enum_no_such_idelkt_string
+        case('(horndeski): ')
+          dst = enum_ZhorndeskiZZ__string
+        case('(horndeski1): ')
+          dst = enum_Zhorndeski1ZZ__string
+        case('(horndeski2): ')
+          dst = enum_Zhorndeski2ZZ__string
         case default
           dst = enum_unknown_string_string
         endselect

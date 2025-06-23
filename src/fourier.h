@@ -16,6 +16,7 @@
   public :: setup_extrapol_fact, vect_pot_extrapol_z_parallel, field_extrapol_z_parallel
   public :: fourier_transform_real_1
   public :: fft_xy_parallel_2D_other
+  public :: pushpars2c
 !  
   public :: kx_fft, kx_fft2
   public :: ky_fft, ky_fft2

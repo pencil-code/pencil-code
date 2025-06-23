@@ -4634,4 +4634,16 @@ module Fourier
 !
     endsubroutine fourier_transform_real_1
 !***********************************************************************
+    subroutine pushpars2c(p_par)
+
+    use Syscalls, only: copy_addr
+    use General , only: string_to_enum
+
+    integer, parameter :: n_pars=3
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
+    call copy_addr(kx_fft,p_par(1)) ! (nxgrid)
+    call copy_addr(ky_fft,p_par(2)) ! (nygrid)
+    call copy_addr(kz_fft,p_par(3)) ! (nzgrid)
+    endsubroutine pushpars2c
+!***********************************************************************
 endmodule Fourier

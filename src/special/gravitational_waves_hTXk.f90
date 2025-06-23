@@ -277,6 +277,7 @@ module Special
 
   type(GWspectra) :: spectra
 
+  integer :: enum_idelkt = 0
   contains
 !***********************************************************************
     subroutine register_special
@@ -3332,7 +3333,29 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
     call copy_addr(exp_stress_comp,p_par(34))
     call copy_addr(tau_stress_kick,p_par(35))
     call copy_addr(fac_stress_kick,p_par(36))
-    call copy_addr(ij_table,p_par(37)) ! (3) (3)
+    call copy_addr(lswitch_sign_e_x,p_par(38)) ! bool
+    call copy_addr(linflation,p_par(39)) ! bool
+    call copy_addr(ldelkt,p_par(40)) ! bool
+    call copy_addr(lnonlinear_source,p_par(41)) ! bool
+    call copy_addr(lnonlinear_tpq_trans,p_par(42)) ! bool
+    call copy_addr(lhorndeski,p_par(43)) ! bool
+    call copy_addr(lhorndeski_xi,p_par(44)) ! bool
+    call copy_addr(lnophase_in_stress,p_par(45)) ! bool
+    call copy_addr(llinphase_in_stress,p_par(46)) ! bool
+    call copy_addr(lconstmod_in_stress,p_par(47)) ! bool
+    call copy_addr(llighthill,p_par(48)) ! bool
+    call copy_addr(delk,p_par(49))
+    call copy_addr(tdelk,p_par(50))
+    call copy_addr(tau_delk,p_par(51))
+    call copy_addr(horndeski_alpm_eff,p_par(52))
+    call copy_addr(horndeski_alpm_eff2,p_par(53))
+    call copy_addr(horndeski_alpt_eff,p_par(54))
+    call copy_addr(slope_linphase_in_stress,p_par(55))
+    call copy_addr(appa_om,p_par(56))
+    call copy_addr(k_in_stress,p_par(57))
+    call copy_addr(itorder_gw,p_par(58)) ! int
+    call string_to_enum(enum_idelkt,idelkt)
+    call copy_addr(enum_idelkt,p_par(59)) ! int
 
     endsubroutine pushpars2c
 !***********************************************************************
