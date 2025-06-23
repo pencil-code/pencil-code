@@ -313,7 +313,7 @@ module Magnetic
   real :: eta_x0=1.0, eta_x1=1.0, eta_y0=1.0, eta_y1=1.0
   real :: eta_r0=1.0, eta_r1=1.0
   real :: alphaSSm=0.0, J_ext_quench=0.0, B2_diamag=0.0
-  real :: k1_ff=1.0, ampl_ff=1.0, swirl=1.0
+  real :: k1_ff=1.0, ampl_ff=1.0, swirl=1.0, k1_ff_mag
   real :: k1x_ff=1.0, k1y_ff=1.0, k1z_ff=1.0
   real :: inertial_length=0.0, linertial_2
   real :: forcing_continuous_aa_phasefact=1.0
