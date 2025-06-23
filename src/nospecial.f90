@@ -690,6 +690,12 @@ module Special
 
     endfunction output_persistent_special
 !***********************************************************************
+    subroutine calc_diagnostics_special(f,p)
+      real, dimension(mx,my,mz,mvar) :: f
+      type (pencil_case) :: p
+      call keep_compiler_quiet(p)
+    endsubroutine calc_diagnostics_special
+!***********************************************************************
     subroutine pushpars2c(p_par)
 
       integer, parameter :: n_pars=0

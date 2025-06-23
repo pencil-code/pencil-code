@@ -41,6 +41,7 @@
   public :: set_init_parameters
   public :: input_persistent_special, output_persistent_special
 
+  public calc_diagnostics_special
   public :: pushpars2c
 
   interface input_persistent_special

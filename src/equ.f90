@@ -656,6 +656,7 @@ module Equ
       use Shock, only: calc_diagnostics_shock
       use Training, only: calc_diagnostics_training
       use Viscosity, only: calc_diagnostics_viscosity
+      use Special, only: calc_diagnostics_special
       use Diagnostics
 !$    use OMP_lib
 !$    use General, only: get_cpu, set_cpu
@@ -729,6 +730,7 @@ module Equ
         call calc_diagnostics_shock(p)
         call calc_diagnostics_training(f)
         call calc_diagnostics_viscosity(p)
+        call calc_diagnostics_special(f,p)
 
         lfirstpoint=.false.
       enddo

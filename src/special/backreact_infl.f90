@@ -594,6 +594,22 @@ module Special
 !
     endsubroutine dspecial_dt_ode
 !***********************************************************************
+    subroutine calc_diagnostics_special(f,p)
+      use Diagnostics
+      real, dimension(mx,my,mz,mvar) :: f
+      type(pencil_case) :: p
+      real, dimension(nx) :: dphi,phi
+
+      dphi=f(l1:l2,m,n,iinfl_dphi)
+      phi=f(l1:l2,m,n,iinfl_phi)
+      call sum_mn_name(phi,idiag_phim)
+      if (idiag_phi2m/=0) call sum_mn_name(phi**2,idiag_phi2m)
+      if (idiag_phirms/=0) call sum_mn_name(phi**2,idiag_phirms,lsqrt=.true.)
+      call sum_mn_name(dphi,idiag_dphim)
+      if (idiag_dphi2m/=0) call sum_mn_name(dphi**2,idiag_dphi2m)
+      if (idiag_dphirms/=0) call sum_mn_name(dphi**2,idiag_dphirms,lsqrt=.true.)
+    endsubroutine calc_diagnostics_special
+!***********************************************************************
     subroutine read_special_init_pars(iostat)
 !
       use File_io, only: parallel_unit

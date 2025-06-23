@@ -641,6 +641,50 @@ module Special
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
+    subroutine calc_constrainteqn(p,tmp,constrainteqn)
+      type(pencil_case) :: p
+      real, dimension(nx),intent(IN) :: tmp
+      real, dimension(nx), intent(OUT) :: constrainteqn
+      real, dimension(nx) :: constrainteqn1
+      constrainteqn1=sqrt(p%divE**2+tmp**2)
+!
+!  in the following, should use "where"
+!
+      constrainteqn1=sqrt(p%divE**2+tmp**2)
+      if (any(constrainteqn1 == 0.)) then
+        constrainteqn=0.
+      else
+        constrainteqn=(p%divE-tmp)/constrainteqn1
+      endif
+     endsubroutine calc_constrainteqn
+!***********************************************************************
+      real function get_mfpf()
+              get_mfpf = beta_inflation*Hp_target
+      end function get_mfpf
+!***********************************************************************
+      real function get_fppf()
+              get_fppf=beta_inflation*((beta_inflation+1.)*Hp_target**2-appa_target)
+      end function get_fppf
+!***********************************************************************
+      subroutine calc_axion_term(p,dst)
+      use Sub
+      type(pencil_case) :: p
+      real, dimension(nx), intent(OUT) :: dst
+
+      if (lphi_hom) then
+        dst=0.
+        weight_longitudinalE=0.
+      else
+        if (alpf/=0.) then
+          call dot(p%bb,p%gphi,dst)
+          dst=-alpf*dst
+        else
+          dst=0.
+        endif
+      endif
+
+      endsubroutine calc_axion_term
+!***********************************************************************
     subroutine dspecial_dt(f,df,p)
 !
 !  calculate right hand side of ONE OR MORE extra coupled PDEs
@@ -679,26 +723,7 @@ module Special
 !  Calculate rhs of Gamma equation and update curl
 !  Initialize tmp with axion term.
 !
-      if (lphi_hom) then
-        tmp=0.
-        weight_longitudinalE=0.
-      else
-        if (alpf/=0.) then
-          call dot(p%bb,p%gphi,tmp)
-          tmp=-alpf*tmp
-        else
-          tmp=0.
-        endif
-      endif
-      constrainteqn1=sqrt(p%divE**2+tmp**2)
-!
-!  in the following, should use "where"
-!
-      if (any(constrainteqn1 == 0.)) then
-        constrainteqn=0.
-      else
-        constrainteqn=(p%divE-tmp)/constrainteqn1
-      endif
+      call calc_axion_term(p,tmp)
 !
 !  Solve for Gamma and possibly for charge density.
 !  Add to the existing tmp and update df(l1:l2,m,n,irhoe).
@@ -837,63 +862,62 @@ module Special
 !  diagnostics
 !
       if (ldiagnos) then
-        if (idiag_EEEM/=0) call sum_mn_name(.5*(p%e2+p%b2),idiag_EEEM)
-        call sum_mn_name(p%el(:,1),idiag_exm)
-        call sum_mn_name(p%el(:,2),idiag_eym)
-        call sum_mn_name(p%el(:,3),idiag_ezm)
-        call sum_mn_name(p%sigE,idiag_sigEm)
-        call sum_mn_name(p%sigB,idiag_sigBm)
-        call sum_mn_name(p%eb,idiag_ebm)
-        if (idiag_sigErms/=0) call sum_mn_name(p%sigE**2,idiag_sigErms,lsqrt=.true.)
-        if (idiag_sigBrms/=0) call sum_mn_name(p%sigB**2,idiag_sigBrms,lsqrt=.true.)
-        call sum_mn_name(p%sigE*p%e2,idiag_sigEE2m)
-        call sum_mn_name(p%sigB*p%eb,idiag_sigBBEm)
-        if (idiag_adphiBm/=0) then
-          call dot(alpf*gtmp,p%el,tmp)
-          call sum_mn_name(tmp,idiag_adphiBm)
-        endif
-        if (idiag_Johmrms/=0) then
-          call dot2_mn(p%jj_ohm,tmp)
-          call sum_mn_name(tmp,idiag_Johmrms,lsqrt=.true.)
-        endif
-        call save_name(echarge,idiag_echarge)
-        call sum_mn_name(p%e2,idiag_erms,lsqrt=.true.)
-        call sum_mn_name(p%edot2,idiag_edotrms,lsqrt=.true.)
-        call max_mn_name(p%e2,idiag_emax,lsqrt=.true.)
-        call sum_mn_name(p%eprime**2,idiag_eprimerms,lsqrt=.true.)
-        call sum_mn_name(p%bprime**2,idiag_bprimerms,lsqrt=.true.)
-        call sum_mn_name(p%jprime**2,idiag_jprimerms,lsqrt=.true.)
-        call sum_mn_name(p%gam_EB**2,idiag_gam_EBrms,lsqrt=.true.)
-        call sum_mn_name(p%boost**2 ,idiag_boostprms,lsqrt=.true.)
-        if (idiag_a0rms/=0) call sum_mn_name(p%a0**2,idiag_a0rms,lsqrt=.true.)
-        call sum_mn_name(p%BcurlE,idiag_BcurlEm)
-  !     if (lsolve_chargedensity) then
-        call sum_mn_name(p%rhoe,idiag_rhoem)
-        call sum_mn_name(p%count_eb0,idiag_count_eb0)
-        call sum_mn_name(p%rhoe**2,idiag_rhoerms,lsqrt=.true.)
-  !     endif
-        if (idiag_divErms/=0) call sum_mn_name(p%divE**2,idiag_divErms,lsqrt=.true.)
-        if (idiag_divJrms/=0) call sum_mn_name(p%divJ**2,idiag_divJrms,lsqrt=.true.)
-        call sum_mn_name(p%divE,idiag_divEm)
-        call sum_mn_name(p%divJ,idiag_divJm)
-        call sum_mn_name(p%count_eb0,idiag_count_eb0)  !XX
-        call save_name(mfpf,idiag_mfpf)
-        call save_name(fppf,idiag_fppf)
-        call save_name(scl_factor_target,idiag_afact)
-        if (idiva_name>0) then
-          if (idiag_grms/=0) call sum_mn_name((f(l1:l2,m,n,idiva_name)-p%diva)**2/ &
-            (f(l1:l2,m,n,idiva_name)**2+p%diva**2),idiag_grms,lsqrt=.true.)
-          if (idiag_da0rms/=0) call sum_mn_name(f(l1:l2,m,n,idiva_name)**2,idiag_da0rms,lsqrt=.true.)
-        endif
-        call sum_mn_name(constrainteqn,idiag_constrainteqn)
-!
-        call xysum_mn_name_z(p%el(:,1),idiag_exmz)
-        call xysum_mn_name_z(p%el(:,2),idiag_eymz)
-        call xysum_mn_name_z(p%el(:,3),idiag_ezmz)
-!
+              call calc_diagnostics_special(f,p)
       endif
 !
     endsubroutine dspecial_dt
+!***********************************************************************
+    subroutine calc_diagnostics_special(f,p)
+      use Sub
+      use Diagnostics
+      real, dimension(mx,my,mz,mvar) :: f
+      type(pencil_case) :: p
+      real, dimension(nx) :: tmp,constrainteqn
+      real :: mfpf=0.,fppf=0.
+      real, dimension(nx,3) :: gtmp
+
+      if (beta_inflation/=0.) then
+          mfpf=get_mfpf()
+          fppf=get_fppf()
+      endif
+      if (idiag_EEEM/=0) call sum_mn_name(.5*(p%e2+p%b2),idiag_EEEM)
+      call sum_mn_name(p%el(:,1),idiag_exm)
+      call sum_mn_name(p%el(:,2),idiag_eym)
+      call sum_mn_name(p%el(:,3),idiag_ezm)
+      call sum_mn_name(p%sigE,idiag_sigEm)
+      call sum_mn_name(p%sigB,idiag_sigBm)
+      call sum_mn_name(p%eb,idiag_ebm)
+      if (idiag_sigErms/=0) call sum_mn_name(p%sigE**2,idiag_sigErms,lsqrt=.true.)
+      if (idiag_sigBrms/=0) call sum_mn_name(p%sigB**2,idiag_sigBrms,lsqrt=.true.)
+      call sum_mn_name(p%sigE*p%e2,idiag_sigEE2m)
+      call sum_mn_name(p%sigB*p%eb,idiag_sigBBEm)
+      if (idiag_adphiBm/=0) then
+        if (alpf/=0.) call calc_helical_term(p,gtmp)
+        call dot(alpf*gtmp,p%el,tmp)
+        call sum_mn_name(tmp,idiag_adphiBm)
+      endif
+      if (idiag_Johmrms/=0) then
+        call dot2_mn(p%jj_ohm,tmp)
+        call sum_mn_name(tmp,idiag_Johmrms,lsqrt=.true.)
+      endif
+      call save_name(echarge,idiag_echarge)
+      call sum_mn_name(p%e2,idiag_erms,lsqrt=.true.)
+      call sum_mn_name(p%edot2,idiag_edotrms,lsqrt=.true.)
+      call max_mn_name(p%e2,idiag_emax,lsqrt=.true.)
+      call sum_mn_name(p%eprime**2,idiag_eprimerms,lsqrt=.true.)
+      call sum_mn_name(p%bprime**2,idiag_bprimerms,lsqrt=.true.)
+      call sum_mn_name(p%jprime**2,idiag_jprimerms,lsqrt=.true.)
+      call sum_mn_name(p%gam_EB**2,idiag_gam_EBrms,lsqrt=.true.)
+      call sum_mn_name(p%boost**2 ,idiag_boostprms,lsqrt=.true.)
+      if (idiag_a0rms/=0) call sum_mn_name(p%a0**2,idiag_a0rms,lsqrt=.true.)
+      call sum_mn_name(p%BcurlE,idiag_BcurlEm)
+  !   if (lsolve_chargedensity) then
+      call sum_mn_name(p%rhoe,idiag_rhoem)
+      call sum_mn_name(p%count_eb0,idiag_count_eb0)
+      call sum_mn_name(p%rhoe**2,idiag_rhoerms,lsqrt=.true.)
+  !   endif
+      if (idiag_divErms/=0) call sum_mn_name(p%divE**2,idiag_divErms,lsqrt=.true.)
+    endsubroutine calc_diagnostics_special
 !***********************************************************************
     subroutine read_special_init_pars(iostat)
 !
