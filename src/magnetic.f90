@@ -1976,13 +1976,13 @@ module Magnetic
       if (lmagn_mf) call initialize_magn_mf(f)
 !
 !  Calculate coskz and sinkz for calculating the phase of a Beltrami field
-!  The choice to use k1_ff may not be optimal, but keep it for now.
 !
+      k1_ff_mag=k1_ff
       if (idiag_bsinphz/=0 .or. idiag_bcosphz/=0 &
           .or. idiag_uxbcmx/=0 .or. idiag_uxbcmy/=0 &
           .or. idiag_uxbsmx/=0 .or. idiag_uxbsmy/=0 ) then
-        sinkz=sin(k1_ff*z)
-        coskz=cos(k1_ff*z)
+        sinkz=sin(k1_ff_mag*z)
+        coskz=cos(k1_ff_mag*z)
       endif
 !
 !  When adding a magnetic field to a snapshot of a nomagnetic simulation,
@@ -2052,13 +2052,13 @@ module Magnetic
           cosz=cos(k1z_ff*z)
         elseif (iforcing_continuous_aa=='RobertsFlow') then
           if (lroot) print*,'forcing_continuous: RobertsFlow'
-          sinx=sin(k1_ff*x); cosx=cos(k1_ff*x)
-          siny=sin(k1_ff*y); cosy=cos(k1_ff*y)
+          sinx=sin(k1_ff_mag*x); cosx=cos(k1_ff_mag*x)
+          siny=sin(k1_ff_mag*y); cosy=cos(k1_ff_mag*y)
         elseif (iforcing_continuous_aa=='Beltrami-z') then
           if (lroot) print*,'forcing_continuous: Beltrami-z'
           ampl_beltrami=ampl_ff
-          sinz=sin(k1_ff*z+phase_beltrami)
-          cosz=cos(k1_ff*z+phase_beltrami)
+          sinz=sin(k1_ff_mag*z+phase_beltrami)
+          cosz=cos(k1_ff_mag*z+phase_beltrami)
         endif
 
       endif
@@ -7659,8 +7659,8 @@ print*,'AXEL2: should not be here (eta) ... '
       if (lforcing_cont_aa_local.and.iforcing_continuous_aa=='Beltrami-z') then
         if (phase_beltrami/=phase_beltrami_before) then
           phase_beltrami_before=phase_beltrami
-          sinz=sin(k1_ff*z+phase_beltrami)
-          cosz=cos(k1_ff*z+phase_beltrami)
+          sinz=sin(k1_ff_mag*z+phase_beltrami)
+          cosz=cos(k1_ff_mag*z+phase_beltrami)
         endif
       endif
 !
@@ -8084,7 +8084,7 @@ print*,'AXEL2: should not be here (eta) ... '
         forcing_rhs(:,2)=+fact*sinx(l1:l2)*cosy(m)
         forcing_rhs(:,3)=+fact*cosx(l1:l2)*cosy(m)*sqrt(2.)
       elseif (iforcing_continuous_aa=='Beltrami-z') then
-        fact=-eta*k1_ff*ampl_beltrami
+        fact=-eta*k1_ff_mag*ampl_beltrami
         forcing_rhs(:,1)=fact*cosz(n)
         forcing_rhs(:,2)=fact*sinz(n)
         forcing_rhs(:,3)=0.
@@ -8815,7 +8815,7 @@ print*,'AXEL2: should not be here (eta) ... '
       integer :: jprocz
 !
       if (first) then
-        sinz=sin(k1_ff*z_allprocs); cosz=cos(k1_ff*z_allprocs)
+        sinz=sin(k1_ff_mag*z_allprocs); cosz=cos(k1_ff_mag*z_allprocs)
       endif
 !
 !  print warning if bxmz and bymz are not calculated
@@ -11753,7 +11753,7 @@ print*,'AXEL2: should not be here (eta) ... '
     !    module qualified name, so to not break handwritten DSL code have it on comment
     !call copy_addr(lrhs_max,p_par(261)) ! bool
     !call copy_addr(gamma1,p_par(262))
-    !call copy_addr(k1_ff,p_par(161))
+    call copy_addr(k1_ff_mag,p_par(161))
 
     call copy_addr(lrelaxprof_glob_scaled,p_par(263)) ! bool
     call copy_addr(scl_uxb_in_ohm,p_par(264))
