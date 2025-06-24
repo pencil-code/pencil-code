@@ -5,6 +5,7 @@
 module Syscalls
 !
   use Cparam, only: ikind8
+  use Geometrical_types, only: torus_rect
 
   implicit none
 !
@@ -41,6 +42,7 @@ module Syscalls
     module procedure copy_addr_real_2D
     module procedure copy_addr_real_3D
     module procedure copy_addr_real_4D
+    module procedure copy_addr_torus_rect
     !module procedure copy_addr_dble
     !module procedure copy_addr_dble_1D
   endinterface
@@ -461,6 +463,15 @@ module Syscalls
     call copy_addr_c(var,caddr)
 
     endsubroutine copy_addr_real
+!***********************************************************************
+    subroutine copy_addr_torus_rect(var, caddr)
+
+    type(torus_rect), intent(IN) :: var
+    integer(KIND=ikind8), intent(OUT) :: caddr
+
+    call copy_addr_c(var,caddr)
+
+    endsubroutine copy_addr_torus_rect
 !***********************************************************************
     subroutine get_char_arr(strarr,strlen,arrlen)
 

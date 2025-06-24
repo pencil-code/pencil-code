@@ -6526,6 +6526,6 @@ module Forcing
     call copy_addr(lsecond_force,p_par(81)) ! bool
     call copy_addr(torus,p_par(82)) ! torus_rect
 
-    endsubroutine pushpars2
+    endsubroutine pushpars2c
 !*******************************************************************
 endmodule Forcing
