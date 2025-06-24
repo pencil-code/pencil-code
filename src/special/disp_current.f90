@@ -249,6 +249,7 @@ module Special
         echarge=0.
         sigEm_all=0.
         sigBm_all=0.
+        allocate(lohm_evolve)
         lohm_evolve=.false.
       endif
 !
@@ -884,10 +885,9 @@ module Special
       real :: mfpf=0.,fppf=0.
       real, dimension(nx,3) :: gtmp
 
-      if (beta_inflation/=0.) then
-          mfpf=get_mfpf()
-          fppf=get_fppf()
-      endif
+      call save_name(get_mfpf(),idiag_mfpf)
+      call save_name(get_fppf(),idiag_fppf)
+      call save_name(scl_factor_target,idiag_afact)
       if (idiag_EEEM/=0) call sum_mn_name(.5*(p%e2+p%b2),idiag_EEEM)
       call sum_mn_name(p%el(:,1),idiag_exm)
       call sum_mn_name(p%el(:,2),idiag_eym)
