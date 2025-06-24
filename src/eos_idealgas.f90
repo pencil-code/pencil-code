@@ -4574,6 +4574,19 @@ module EquationOfState
     call copy_addr(ieosvar1,p_par(32)) ! int
     call copy_addr(lpres_grad,p_par(33)) ! bool
 
+    call copy_addr(ilnrho_ss,p_par(34)) ! int
+    call copy_addr(irho_ss,p_par(35)) ! int
+    call copy_addr(ilnrho_lntt,p_par(36)) ! int
+    call copy_addr(irho_lntt,p_par(37)) ! int
+    call copy_addr(ilnrho_tt,p_par(38)) ! int
+    call copy_addr(irho_tt,p_par(39)) ! int
+    call copy_addr(ilnrho_cs2,p_par(40)) ! int
+    call copy_addr(irho_cs2,p_par(41)) ! int
+    call copy_addr(ipp_ss,p_par(42)) ! int
+    call copy_addr(ipp_cs2,p_par(43)) ! int
+    call copy_addr(irho_eth,p_par(44)) ! int
+    call copy_addr(ilnrho_eth,p_par(45)) ! int
+
     endsubroutine pushpars2c
 !***********************************************************************
 !********************************************************************

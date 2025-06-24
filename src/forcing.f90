@@ -6524,7 +6524,8 @@ module Forcing
     call copy_addr(ks_omega,p_par(79)) ! (ks_modes)
     call copy_addr(lforce_helical,p_par(80)) ! bool (2)
     call copy_addr(lsecond_force,p_par(81)) ! bool
+    call copy_addr(torus,p_par(82)) ! torus_rect
 
-    endsubroutine pushpars2c
+    endsubroutine pushpars2
 !*******************************************************************
 endmodule Forcing

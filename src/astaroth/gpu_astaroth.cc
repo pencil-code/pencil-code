@@ -604,6 +604,19 @@ AcReal to_real(void* param, const char* name)
 	return *((AcReal*)param);
 }
 /***********************************************************************************************/
+#if TRANSPILATION
+torus_rect to_torus_rect(void* param, const char* name)
+{
+	if (param == NULL)
+	{
+		fprintf(stderr,"Passed NULL to pushparsc: %s!!\n",name);
+		abort();
+	}
+	//TP: placeholder for now before testing is torus_react being POD sufficient for save access here
+	return (torus_rect){};
+}
+#endif
+/***********************************************************************************************/
 int to_int(void* param, const char* name)
 {
 	if (param == NULL)
