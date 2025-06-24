@@ -596,7 +596,7 @@ module Special
 !***********************************************************************
     subroutine calc_diagnostics_special(f,p)
       use Diagnostics
-      real, dimension(mx,my,mz,mvar) :: f
+      real, dimension(mx,my,mz,mfarray) :: f
       type(pencil_case) :: p
       real, dimension(nx) :: dphi,phi
 
