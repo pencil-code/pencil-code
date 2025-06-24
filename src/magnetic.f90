@@ -5779,8 +5779,12 @@ print*,'AXEL: should not be here (eta) ... '
 !  and in bottommost (topmost) pencils.
 !
       do j=1,3
-        if (lfrozen_bb_bot(j).and.lfirst_proc_z.and.n==n1) fres(:,j)=0.
-        if (lfrozen_bb_top(j).and.llast_proc_z.and.n==n2) fres(:,j)=0.
+        if (lfrozen_bb_bot(j)) then
+                if(lfirst_proc_z.and.n==n1) fres(:,j)=0.
+        endif
+        if (lfrozen_bb_top(j)) then
+                if (llast_proc_z.and.n==n2) fres(:,j)=0.
+        endif
       enddo
 !
 !  Induction equation.
