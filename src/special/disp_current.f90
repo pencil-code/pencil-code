@@ -685,6 +685,19 @@ module Special
 
       endsubroutine calc_axion_term
 !***********************************************************************
+      subroutine calc_helical_term(p,gtmp)
+          use Sub
+          type(pencil_case), intent(IN) :: p
+          real, dimension(nx,3), intent(OUT) :: gtmp
+
+          if (lphi_hom) then
+            call multsv(p%infl_dphi,p%bb,gtmp)
+          else
+            call cross(p%gphi,p%el,gtmp)
+            call multsv_add(gtmp,p%infl_dphi,p%bb,gtmp)
+          endif
+      endsubroutine
+!***********************************************************************
     subroutine dspecial_dt(f,df,p)
 !
 !  calculate right hand side of ONE OR MORE extra coupled PDEs
@@ -785,12 +798,7 @@ module Special
 !  Use the combined routine multsv_add if both terms are included.
 !
         if (alpf/=0.) then
-          if (lphi_hom) then
-            call multsv(p%infl_dphi,p%bb,gtmp)
-          else
-            call cross(p%gphi,p%el,gtmp)
-            call multsv_add(gtmp,p%infl_dphi,p%bb,gtmp)
-          endif
+          call calc_helical_term(p,gtmp)
 !          print*,"p%infl_phi",p%infl_phi
 !          print*,"p%infl_dphi",p%infl_dphi
           df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)-alpf*gtmp
@@ -917,6 +925,11 @@ module Special
       call sum_mn_name(p%rhoe**2,idiag_rhoerms,lsqrt=.true.)
   !   endif
       if (idiag_divErms/=0) call sum_mn_name(p%divE**2,idiag_divErms,lsqrt=.true.)
+      if(idiag_constrainteqn > 0) then
+        call calc_axion_term(p,tmp)
+        call calc_constrainteqn(p,tmp,constrainteqn)
+        call sum_mn_name(constrainteqn,idiag_constrainteqn)
+      endif
     endsubroutine calc_diagnostics_special
 !***********************************************************************
     subroutine read_special_init_pars(iostat)
