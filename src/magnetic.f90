@@ -11423,6 +11423,17 @@ print*,'AXEL2: should not be here (eta) ... '
           if (present(J_ext_out)) J_ext_out=0.
 
         endif precess
+!
+!  Make the field gently increasing.
+!
+        if (t_bext > 0.0 .and. t < t_bext) then
+          if (t <= t0_bext) then
+            B_ext_out = B0_ext
+          else
+            B_ext_out = B0_ext + 0.5*(1.-cos(pi*(t-t0_bext)/(t_bext-t0_bext)))*(B_ext_out-B0_ext)
+          endif
+          if (present(J_ext_out)) J_ext_out=0.
+        endif
       else addBext
 !
 !  Or no background field.
@@ -11431,17 +11442,6 @@ print*,'AXEL2: should not be here (eta) ... '
         if (present(J_ext_out)) J_ext_out=0.
 !
       endif addBext
-!
-!  Make the field gently increasing.
-!
-      if (t_bext > 0.0 .and. t < t_bext) then
-        if (t <= t0_bext) then
-          B_ext_out = B0_ext
-        else
-          B_ext_out = B0_ext + 0.5*(1.-cos(pi*(t-t0_bext)/(t_bext-t0_bext)))*(B_ext_out-B0_ext)
-        endif
-        if (present(J_ext_out)) J_ext_out=0.
-      endif
 !
     endsubroutine get_bext
 !***********************************************************************
