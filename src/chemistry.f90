@@ -298,6 +298,9 @@ module Chemistry
   integer :: enum_isurf_energy = 0
   integer :: enum_inucl_pre_exp = 0
 
+  integer :: i_O2_glob,ichem_O2, i_C3H8_glob,ichem_C3H8
+  logical :: lO2, lC3H8
+  real    :: mO2, mC3H8
   contains
 !
 !***********************************************************************
@@ -368,6 +371,13 @@ module Chemistry
         call put_shared_variable('true_density_cond_spec',true_density_cond_spec)
       endif
 !
+!
+!  Find indices for oxygen and propane
+!
+      call find_species_index('O2',i_O2_glob,ichem_O2,lO2)
+      call find_species_index('C3H8',i_C3H8_glob,ichem_C3H8,lC3H8)
+      if (lO2)   mO2 = species_constants(ichem_O2,imass)
+      if (lC3H8) mC3H8 = species_constants(ichem_C3H8,imass)
     endsubroutine register_chemistry
 !***********************************************************************
     subroutine initialize_chemistry(f)
@@ -4918,10 +4928,9 @@ module Chemistry
       real, dimension(nx,nreactions), intent(out) :: vreact_p, vreact_m
       type (pencil_case) :: p
 !
-      real :: mC3H8, mO2, Rcal, f_phi, E_a
+      real :: Rcal, f_phi, E_a
       real :: init_C3H8, init_O2
-      integer :: i_O2, i_C3H8, ichem_O2, ichem_C3H8, j
-      logical :: lO2, lC3H8
+      integer :: i_O2, i_C3H8, j
       real, dimension(nx) :: activation_energy, pre_exp, term1, term2
 !
       if (nreactions /= 1) call fatal_error('roux','nreactions should always be 1')
@@ -4932,21 +4941,14 @@ module Chemistry
 !
       Rcal = Rgas_unit_sys/4.14*1e-7
 !
-!  Find indices for oxygen and propane
-!
-      call find_species_index('O2',i_O2,ichem_O2,lO2)
-      call find_species_index('C3H8',i_C3H8,ichem_C3H8,lC3H8)
-!
 !  Check that oxygen and propane exist and find their molar masses
 !
-      if (lO2) then
-        mO2 = species_constants(ichem_O2,imass)
-      else
+      i_O2   = i_O2_glob
+      i_C3H8 = i_C3H8_glob
+      if (.not. lO2) then
         call fatal_error('roux','O2 is not defined')
       endif
-      if (lC3H8) then
-        mC3H8 = species_constants(ichem_C3H8,imass)
-      else
+      if (.not. lC3H8) then
         call fatal_error('roux','C3H8 is not defined')
       endif
 !
@@ -7246,6 +7248,14 @@ module Chemistry
     call copy_addr(high_coeff_abs_max,p_par(114)) ! (nreactions)
     call copy_addr(troe_coeff_abs_max,p_par(115)) ! (nreactions)
     call copy_addr(a_k4_min,p_par(123)) ! (nreactions)
+    call copy_addr(i_O2_glob,p_par(124)) ! int
+    call copy_addr(ichem_O2,p_par(125)) ! int
+    call copy_addr(i_C3H8_glob,p_par(126)) ! int
+    call copy_addr(ichem_C3H8,p_par(127)) ! int
+    call copy_addr(lO2,p_par(128)) ! bool
+    call copy_addr(lC3H8,p_par(129)) ! bool
+    call copy_addr(mO2,p_par(130))
+    call copy_addr(mC3H8,p_par(131))
 
     endsubroutine pushpars2c
 !***********************************************************************
