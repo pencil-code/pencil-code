@@ -91,7 +91,6 @@ contains
       if (lpoisson) str=trim(str)//', '//'poisson'
       if (lselfgravity) str=trim(str)//', '//'selfgravity'
       if (lsolid_cells) str=trim(str)//', '//'solid_cells'
-      if (lspecial) str=trim(str)//', '//'special'
       if (lparticles) str=trim(str)//', '//'particles'
 
       if (str/='') call fatal_error('initialize_GPU','no GPU implementation available for module(s) "'// &

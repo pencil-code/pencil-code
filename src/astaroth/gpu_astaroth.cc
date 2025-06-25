@@ -1337,6 +1337,9 @@ void autotune_all_integration_substeps()
   {
   	acDeviceSetInput(acGridGetDevice(), AC_step_num,(PC_SUB_STEP_NUMBER)i);
         if (rank==0 && ldebug) printf("memusage before GetOptimizedDSLTaskGraph= %f MBytes\n", acMemUsage()/1024.);
+  	acDeviceSetInput(acGridGetDevice(), AC_lrmv,false);
+	acGetOptimizedDSLTaskGraph(AC_rhs);
+  	acDeviceSetInput(acGridGetDevice(), AC_lrmv,true);
 	acGetOptimizedDSLTaskGraph(AC_rhs);
         if (rank==0 && ldebug) printf("memusage after GetOptimizedDSLTaskGraph= %f MBytes\n", acMemUsage()/1024.);
   }
