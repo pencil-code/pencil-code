@@ -16,19 +16,20 @@
 ; MODIFICATION HISTORY:
 ;     Written by: Anders Johansen (johansen@mpia.de) on 28.06.2007
 ;
-function read_slice_extrema, lun, extr
+function read_slice_extrema, lun, extr, single=single
 
   labdum=bytarr(15) 
   label='Global extrema:'
 
-  if is_defined(lun_1) then begin
+  if is_defined(lun) then begin
+
     extr=make_array(2,type= single ? 4 : type_idl)
-    on_ioerror, noextr
     point_lun, -lun, fpos
     readu, lun, labdum, extr
-    return, string(labdum) eq label
-noextr:
-    point_lun, lun, fpos
+    if string(labdum) eq label then $
+      return, 1 $
+    else $
+      point_lun, lun, fpos
   endif
   return, 0
 
@@ -39,7 +40,10 @@ function read_slice_chunk, unit, it, tmp, t_tmp, pos, slice
   common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 
   if is_defined(unit) then begin
-    if (eof(unit)) then return, 1
+    if (eof(unit)) then begin
+      undefine, unit
+      return, 1
+    endif
     t_tmp=one
     readu, unit, tmp, t_tmp, pos
     slice[*,*,it]=tmp
@@ -309,39 +313,49 @@ if (njump gt 0) then begin
   endfor
 endif
 ;
-; Read slices at nt times.
+if proc eq -1 then begin
+;
 ; Stride is not (again) applied if data are already collected from all processors.
 ;
-if proc eq -1 then begin
   stride=1
 ;
 ; Trying to read global extrema (might not exist in file)
+; These might in the future be used to globally scale the data for plotting, thus avoiding double read.
 ;
-  exist_xy_extr  = read_slice_extrema(lun_1, xy_extr)
-  exist_xy2_extr = read_slice_extrema(lun_2, xy2_extr)
-  exist_xy3_extr = read_slice_extrema(lun_3, xy3_extr)
-  exist_xy4_extr = read_slice_extrema(lun_4, xy4_extr)
-  exist_xz_extr  = read_slice_extrema(lun_5, xz_extr)
-  exist_xz2_extr = read_slice_extrema(lun_6, xz2_extr)
-  exist_yz_extr  = read_slice_extrema(lun_7, yz_extr)
-  exist_r_extr   = read_slice_extrema(lun_8, r_extr)
-endif
+  exist_xy_extr  = read_slice_extrema(lun_1, xy_extr, single=single)
+  exist_xy2_extr = read_slice_extrema(lun_2, xy2_extr, single=single)
+  exist_xy3_extr = read_slice_extrema(lun_3, xy3_extr, single=single)
+  exist_xy4_extr = read_slice_extrema(lun_4, xy4_extr, single=single)
+  exist_xz_extr  = read_slice_extrema(lun_5, xz_extr, single=single)
+  exist_xz2_extr = read_slice_extrema(lun_6, xz2_extr, single=single)
+  exist_yz_extr  = read_slice_extrema(lun_7, yz_extr, single=single)
+  exist_r_extr   = read_slice_extrema(lun_8, r_extr, single=single)
 
+endif
+;
+; Read slices at nt times.
+;
+break=0
 for it=0,nt-1,stride do begin
+
+  break = break or read_slice_chunk( lun_1, it, xy_tmp, t_tmp, slice_zpos, xy) 
+  break = break or read_slice_chunk( lun_2, it, xy_tmp, t_tmp, slice_z2pos, xy2)
+  break = break or read_slice_chunk( lun_3, it, xy_tmp, t_tmp, slice_z3pos, xy3)
+  break = break or read_slice_chunk( lun_4, it, xy_tmp, t_tmp, slice_z4pos, xy4)
+  break = break or read_slice_chunk( lun_5, it, xz_tmp, t_tmp, slice_ypos, xz) 
+  break = break or read_slice_chunk( lun_6, it, xz_tmp, t_tmp, slice_y2pos, xz2)
+  break = break or read_slice_chunk( lun_7, it, yz_tmp, t_tmp, slice_xpos, yz)
+  break = break or read_slice_chunk( lun_8, it, r_tmp,  t_tmp, slice_rpos, r)
+
+  t[it]=t_tmp
 ;
 ; Stop if end of file reached.
 ;
-  if read_slice_chunk( lun_1, it, xy_tmp, t_tmp, slice_zpos, xy) then break
-  if read_slice_chunk( lun_2, it, xy_tmp, t_tmp, slice_z2pos, xy2) then break
-  if read_slice_chunk( lun_3, it, xy_tmp, t_tmp, slice_z3pos, xy3) then break
-  if read_slice_chunk( lun_4, it, xy_tmp, t_tmp, slice_z4pos, xy4) then break
-  if read_slice_chunk( lun_5, it, xz_tmp, t_tmp, slice_ypos, xz) then break
-  if read_slice_chunk( lun_6, it, xz_tmp, t_tmp, slice_y2pos, xz2) then break
-  if read_slice_chunk( lun_7, it, yz_tmp, t_tmp, slice_xpos, yz) then break
-  if read_slice_chunk( lun_8, it, r_tmp,  t_tmp, slice_rpos, r) then break
+  if break then break
 
-  t[it]=t_tmp
 endfor
+if not break then $
+  print, 'WARNING: nt=', nt, 'was not enough to read the slices completely!!!'
 ;
 ; Close files.
 ;
