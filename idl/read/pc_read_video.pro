@@ -16,6 +16,36 @@
 ; MODIFICATION HISTORY:
 ;     Written by: Anders Johansen (johansen@mpia.de) on 28.06.2007
 ;
+function read_slice_extrema, lun, extr
+
+  labdum=bytarr(15) 
+  label='Global extrema:'
+
+  if is_defined(lun_1) then begin
+    extr=make_array(2,type= single ? 4 : type_idl)
+    on_ioerror, noextr
+    point_lun, -lun, fpos
+    readu, lun, labdum, extr
+    return, string(labdum) eq label
+noextr:
+    point_lun, lun, fpos
+  endif
+  return, 0
+
+end
+
+function read_slice_chunk, unit, it, tmp, t_tmp, pos, slice
+
+  if is_defined(unit) then begin
+    if (eof(unit)) then return, 0
+    t_tmp=one
+    readu, unit, tmp, t_tmp, pos
+    slice[*,*,it]=tmp
+  endif
+  return, 1
+
+end
+
 pro pc_read_video, field=field, object=object, nt=nt, njump=njump, stride=stride, $
     dim=dim, datadir=datadir, proc=proc, swap_endian=swap_endian, help=help, $
     xy2read=xy2read, xyread=xyread, xzread=xzread, yzread=yzread, xz2read=xz2read, $
@@ -127,6 +157,7 @@ endif
 ; call read_videofiles if necessary.
 ;
 present=0
+
 if (s.xyread) then begin
   tag='xy'
   file_slice=readdir+'/slice_'+field+'.xy'
@@ -142,7 +173,7 @@ endif
 if (s.xy2read) then begin
   tag='xy2'
   file_slice=readdir+'/slice_'+field+'.xy2'
-  xy2_tmp=make_array(dim.nx,dim.ny, type=type_idl)
+  if not is_defined(xy_tmp) then xy_tmp=make_array(dim.nx,dim.ny, type=type_idl)
   xy2= make_array(dim.nx,dim.ny,nt, type= single ? 4 : type_idl)
   if (proc eq -1) and (not file_test(file_slice)) then $
     spawn, 'echo Data missing - calling read_videofiles.; read_videofiles '+strtrim(field,2)+' '+strtrim(stride,2)+' >& /dev/null'
@@ -154,7 +185,7 @@ endif
 if (s.xy3read) then begin
   tag='xy3'
   file_slice=readdir+'/slice_'+field+'.xy3'
-  xy3_tmp=make_array(dim.nx,dim.ny, type=type_idl)
+  if not is_defined(xy_tmp) then xy_tmp=make_array(dim.nx,dim.ny, type=type_idl)
   xy3= make_array(dim.nx,dim.ny,nt, type= single ? 4 : type_idl)
   if (proc eq -1) and (not file_test(file_slice)) then $
     spawn, 'echo Data missing - calling read_videofiles.; read_videofiles '+strtrim(field,2)+' '+strtrim(stride,2)+' >& /dev/null'
@@ -166,7 +197,7 @@ endif
 if (s.xy4read) then begin
   tag='xy4'
   file_slice=readdir+'/slice_'+field+'.xy4'
-  xy4_tmp=make_array(dim.nx,dim.ny, type=type_idl)
+  if not is_defined(xy_tmp) then xy_tmp=make_array(dim.nx,dim.ny, type=type_idl)
   xy4= make_array(dim.nx,dim.ny,nt,type= single ? 4 : type_idl)
   if (proc eq -1) and (not file_test(file_slice)) then $
     spawn, 'echo Data missing - calling read_videofiles.; read_videofiles '+strtrim(field,2)+' '+strtrim(stride,2)+' >& /dev/null'
@@ -190,7 +221,7 @@ endif
 if (s.xz2read) then begin
   tag='xz2'
   file_slice=readdir+'/slice_'+field+'.xz2'
-  xz2_tmp=make_array(dim.nx,dim.nz, type=type_idl)
+  if not is_defined(xz_tmp) then xz_tmp=make_array(dim.nx,dim.nz, type=type_idl)
   xz2=make_array(dim.nx,dim.nz,nt, type= single ? 4 : type_idl)
   if (proc eq -1) and (not file_test(file_slice)) then $
     spawn, 'echo Data missing - calling read_videofiles.; read_videofiles '+strtrim(field,2)+' '+strtrim(stride,2)+' >& /dev/null'
@@ -279,52 +310,34 @@ endif
 ; Read slices at nt times.
 ; Stride is not (again) applied if data are already collected from all processors.
 ;
-if proc eq -1 then stride=1
+if proc eq -1 then begin
+  stride=1
+;
+; Trying to read global extrema (might not exist in file)
+;
+  exist_xy_extr  = read_slice_extrema(lun_1, xy_extr)
+  exist_xy2_extr = read_slice_extrema(lun_2, xy2_extr)
+  exist_xy3_extr = read_slice_extrema(lun_3, xy3_extr)
+  exist_xy4_extr = read_slice_extrema(lun_4, xy4_extr)
+  exist_xz_extr  = read_slice_extrema(lun_5, xz_extr)
+  exist_xz2_extr = read_slice_extrema(lun_6, xz2_extr)
+  exist_yz_extr  = read_slice_extrema(lun_7, yz_extr)
+  exist_r_extr   = read_slice_extrema(lun_8, r_extr)
+endif
 
 for it=0,nt-1,stride do begin
 ;
 ; Stop if end of file reached.
 ;
-  if is_defined(lun_1) then begin
-    if (eof(lun_1)) then break
-    readu, lun_1, xy_tmp, t_tmp, slice_zpos
-    xy [*,*,it]=xy_tmp
-  endif
-  if is_defined(lun_2) then begin
-    if (eof(lun_2)) then break
-    readu, lun_2, xy2_tmp, t_tmp, slice_z2pos 
-    xy2[*,*,it]=xy2_tmp
-  endif
-  if is_defined(lun_3) then begin
-    if (eof(lun_3)) then break
-    readu, lun_3, xy3_tmp, t_tmp, slice_z3pos 
-    xy3[*,*,it]=xy3_tmp
-  endif
-  if is_defined(lun_4) then begin
-    if (eof(lun_4)) then break
-    readu, lun_4, xy4_tmp, t_tmp, slice_z4pos
-    xy4[*,*,it]=xy4_tmp
-  endif
-  if is_defined(lun_5) then begin
-    if (eof(lun_5)) then break
-    readu, lun_5, xz_tmp, t_tmp, slice_ypos 
-    xz [*,*,it]=xz_tmp
-  endif
-  if is_defined(lun_6) then begin
-    if (eof(lun_6)) then break
-    readu, lun_6, xz2_tmp, t_tmp, slice_y2pos 
-    xz2[*,*,it]=xz2_tmp
-  endif
-  if is_defined(lun_7) then begin
-    if (eof(lun_7)) then break
-    readu, lun_7, yz_tmp, t_tmp, slice_xpos 
-    yz [*,*,it]=yz_tmp
-  endif
-  if is_defined(lun_8) then begin
-    if (eof(lun_8)) then break
-    readu, lun_8, r_tmp, t_tmp, slice_rpos
-    r [*,*,it]=r_tmp
-  endif
+  if read_slice_chunk( lun_1, it, xy_tmp, t_tmp, slice_zpos, xy) then break
+  if read_slice_chunk( lun_2, it, xy_tmp, t_tmp, slice_z2pos, xy2) then break
+  if read_slice_chunk( lun_3, it, xy_tmp, t_tmp, slice_z3pos, xy3) then break
+  if read_slice_chunk( lun_4, it, xy_tmp, t_tmp, slice_z4pos, xy4) then break
+  if read_slice_chunk( lun_5, it, xz_tmp, t_tmp, slice_ypos, xz) then break
+  if read_slice_chunk( lun_6, it, xz_tmp, t_tmp, slice_y2pos, xz2) then break
+  if read_slice_chunk( lun_7, it, yz_tmp, t_tmp, slice_xpos, yz) then break
+  if read_slice_chunk( lun_8, it, r_tmp,  t_tmp, slice_rpos, r) then break
+
   t[it]=t_tmp
 endfor
 ;
@@ -364,7 +377,7 @@ if s.xy2read then object=create_struct(object,'xy2',xy2)
 if s.xy3read then object=create_struct(object,'xy3',xy3)
 if s.xy4read then object=create_struct(object,'xy4',xy4)
 if s.xz2read then object=create_struct(object,'xz2',xz2)
-if s.rread then object=create_struct(object,'r',r)
+if s.rread   then object=create_struct(object,'r',r)
 ;
 ; If requested print a summary.
 ;
@@ -378,7 +391,7 @@ if keyword_set(print) then begin
   if s.xy3read then print, 'min(xy3), max(xy3) = ', min(xy3), ', ', max(xy3)
   if s.xy4read then print, 'min(xy4), max(xy4) = ', min(xy4), ', ', max(xy4)
   if s.xz2read then print, 'min(xz2), max(xz2) = ', min(xz2), ', ', max(xz2)
-  if s.rread   then print, 'min(r),   max(r)   = ', min(r), ', ', max(r)
+  if s.rread   then print, 'min(r),   max(r)   = ', min(r), ', ',   max(r)
 endif
 
 mask = [s.xyread,s.xzread,s.yzread,s.xy2read,s.xy3read,s.xy4read,s.xz2read,s.rread]
