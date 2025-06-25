@@ -3205,6 +3205,24 @@ module Chemistry
 !
     endsubroutine astrobiology_data
 !***********************************************************************
+    subroutine get_sum_DYDts(p,sum_DYDt,sum_hhk_DYDt_reac)
+
+      type(pencil_case), intent(IN) :: p
+      real, dimension(nx), intent(OUT) :: sum_DYDt, sum_hhk_DYDt_reac
+      integer :: k
+
+      sum_DYDt = 0.
+      sum_hhk_DYDt_reac = 0.
+      do k = 1,nchemspec
+        if (species_constants(k,imass) > 0.) then
+          sum_DYDt = sum_DYDt+Rgas/species_constants(k,imass)*(p%DYDt_reac(:,k)+p%DYDt_diff(:,k))
+          if (lreactions) then
+            sum_hhk_DYDt_reac = sum_hhk_DYDt_reac-p%hhk_full(:,k)*p%DYDt_reac(:,k)
+          endif
+        endif
+      enddo
+     endsubroutine
+!***********************************************************************
     subroutine dchemistry_dt(f,df,p)
 !
 !  calculate right hand side of ONE OR MORE extra coupled PDEs
@@ -3366,18 +3384,13 @@ module Chemistry
                 *Cp_const/lambda_const*beta*(beta-1.)*f(l1,m,n,iux)*f(l1,m,n,iux)
           enddo
         else
-          sum_DYDt = 0.
-          sum_hhk_DYDt_reac = 0.
           sum_dk_ghk = 0.
+          call get_sum_DYDts(p,sum_DYDt,sum_hhk_DYDt_reac)
 !
 !  Reaction terms
 !
           do k = 1,nchemspec
             if (species_constants(k,imass) > 0.) then
-              sum_DYDt = sum_DYDt+Rgas/species_constants(k,imass)*(p%DYDt_reac(:,k)+p%DYDt_diff(:,k))
-              if (lreactions) then
-                sum_hhk_DYDt_reac = sum_hhk_DYDt_reac-p%hhk_full(:,k)*p%DYDt_reac(:,k)
-              endif
 !
 !  Sum over all species of diffusion terms
 !
@@ -3447,10 +3460,6 @@ module Chemistry
         endif
 !
         if (lheatc_chemistry .and.(.not. lchemonly)) call calc_heatcond_chemistry(f,df,p)
-      endif
-!
-      if (lreactions .and. ireac /= 0 .and. ((.not. llsode).or. lchemonly)) then
-        if (llast) call get_reac_rate(sum_hhk_DYDt_reac,f,p)   ! updates f!!!
       endif
 !
 !  Atmosphere case
@@ -3534,9 +3543,15 @@ module Chemistry
 !
       real, dimension(mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-      real, dimension(nx) :: ff_condm
+      real, dimension(nx) :: ff_condm,sum_DYDt,sum_hhk_DYDt_reac
 
       integer :: ii
+!
+      if (lreactions .and. ireac /= 0 .and. ((.not. llsode).or. lchemonly)) then
+        !TP: sum_hhk_DYDt_reac is needed only if maux == nchemspec+1
+        if (maux == nchemspec+1) call get_sum_DYDts(p,sum_DYDt,sum_hhk_DYDt_reac)
+        if (llast) call get_reac_rate(sum_hhk_DYDt_reac,f,p)   ! updates f!!!
+      endif
 
       if (ldustdensity .or. lparticles) then
          if (lnucleation .or. lcondensing_species) then
