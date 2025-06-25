@@ -1716,12 +1716,14 @@ module Density
 !
       real :: fact,cur_mass
       real, dimension (nx) :: tmp
+      integer :: n_loc
 !
     
-      !$omp workshare
-      if ( (.not.ldensity_nolog) .and. (irho/=0) ) &
+      if ( (.not.ldensity_nolog) .and. (irho/=0) ) then
+          !$omp workshare
           f(l1:l2,m1:m2,n1:n2,irho)=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
-       !$omp end workshare
+          !$omp end workshare
+      endif
 !
 !  Calculate mean (= xy-average) of lnrho.
 !
@@ -1732,7 +1734,7 @@ module Density
         lnrhomz=0.
         !$omp end workshare
         !$omp do
-        do n=n1,n2
+        do n_loc=n1,n2
           if (ldensity_nolog) then
             lnrhomz(n,1)=lnrhomz(n,1)+sum(alog(f(l1:l2,m1:m2,n,irho)))
           else
@@ -1753,7 +1755,7 @@ module Density
 !
         if (lrho_flucz_as_aux) then
           !$omp do
-          do n=n1,n2
+          do n_loc=n1,n2
             f(l1:l2,m1:m2,n,irho_flucz)=exp(f(l1:l2,m1:m2,n,ilnrho))-exp(lnrhomz(n,1))
           enddo
           !$omp end do
