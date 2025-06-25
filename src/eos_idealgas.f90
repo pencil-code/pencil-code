@@ -4551,7 +4551,7 @@ module EquationOfState
     call copy_addr(cv1,p_par(9))
     call copy_addr(cs2bot,p_par(10))
     call copy_addr(cs2top,p_par(11))
-    call copy_addr(leos_isothermal,p_par(12))   ! int
+    call copy_addr(leos_isothermal,p_par(12))   ! bool
     call copy_addr(iglobal_cs2,p_par(13)) ! int
     call copy_addr(TT0,p_par(14))
     call copy_addr(cs0,p_par(15))

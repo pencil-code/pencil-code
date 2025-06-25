@@ -82,6 +82,7 @@ s/^\(.*\)$/MODULESOURCES= \\\1/
 : out
 #write pattern space to PC_modulesources.h
 w CUDA_MAKEDIR/PC_modulesources.h
+#w PC_modulesources.h
 #delete pattern space
 d
 }

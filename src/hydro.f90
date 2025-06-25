@@ -8663,9 +8663,9 @@ endif
 
     integer :: k
 
-    call copy_addr(lpressuregradient_gas,p_par(1))  ! int
-    call copy_addr(lupw_uu,p_par(2))  ! int
-    call copy_addr(ladvection_velocity,p_par(3))  ! int
+    call copy_addr(lpressuregradient_gas,p_par(1))  ! bool
+    call copy_addr(lupw_uu,p_par(2))  ! bool
+    call copy_addr(ladvection_velocity,p_par(3))  ! bool
     call copy_addr(velocity_ceiling,p_par(4))
     call copy_addr(r_omega,p_par(5))
     call copy_addr(eps_hless,p_par(6))

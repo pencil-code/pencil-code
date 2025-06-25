@@ -8404,8 +8404,8 @@ module Energy
     call copy_addr(chi_hyper3,p_par(5))
     call copy_addr(chi_t0,p_par(6))
 
-    call copy_addr(lheatc_hyper3ss,p_par(11)) ! int
-    call copy_addr(lheatc_shock,p_par(12)) ! int
+    call copy_addr(lheatc_hyper3ss,p_par(11)) ! bool
+    call copy_addr(lheatc_shock,p_par(12)) ! bool
     call copy_addr(chi_shock,p_par(13))
 
     call copy_addr(FbotKbot,p_par(14))
@@ -8413,9 +8413,9 @@ module Energy
 
     call copy_addr(Fbot,p_par(16))
     call copy_addr(Ftop,p_par(17))
-    call copy_addr(lheatc_chiconst,p_par(18)) ! int
-    call copy_addr(lheatc_kramers,p_par(19))  ! int
-    call copy_addr(pretend_lnTT,p_par(20))    ! int
+    call copy_addr(lheatc_chiconst,p_par(18)) ! bool
+    call copy_addr(lheatc_kramers,p_par(19))  ! bool
+    call copy_addr(pretend_lnTT,p_par(20))    ! bool
 
     call copy_addr(profz_cool,p_par(21))    ! (nz)
     call copy_addr(profz1_cool,p_par(22))   ! (nz)
@@ -8424,7 +8424,7 @@ module Energy
     call copy_addr(profr2_cool,p_par(25))   ! (nx)
     call copy_addr(profr_heat,p_par(26))    ! (nx)
 
-    call copy_addr(lchit_total,p_par(27))   ! int
+    call copy_addr(lchit_total,p_par(27))   ! bool
     call copy_addr(chi_t,p_par(28))
     call copy_addr(lupw_ss,p_par(29))       ! bool
 

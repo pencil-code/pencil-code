@@ -4132,11 +4132,11 @@ module Density
     integer, parameter :: n_pars=400
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
-    call copy_addr(ldiff_shock,p_par(1)) ! int
+    call copy_addr(ldiff_shock,p_par(1)) ! bool
     call copy_addr(diffrho_shock,p_par(2))
-    call copy_addr(ldiff_hyper3lnrho,p_par(3)) ! int
+    call copy_addr(ldiff_hyper3lnrho,p_par(3)) ! bool
     call copy_addr(diffrho_hyper3,p_par(4))
-    call copy_addr(lupw_lnrho,p_par(5)) ! int
+    call copy_addr(lupw_lnrho,p_par(5)) ! bool
 
     call copy_addr(lnrho_const,p_par(6))
     call copy_addr(rho_const,p_par(7))

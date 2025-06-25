@@ -11492,12 +11492,12 @@ print*,'AXEL2: should not be here (eta) ... '
     call copy_addr(eta,p_par(1))
     call copy_addr(eta_hyper2,p_par(2))
     call copy_addr(eta_hyper3,p_par(3))
-    call copy_addr(lresi_eta_const,p_par(4)) ! int
-    call copy_addr(lresi_hyper2,p_par(5)) ! int
-    call copy_addr(lresi_hyper3,p_par(6)) ! int
-    call copy_addr(lupw_aa,p_par(7)) ! int
-    call copy_addr(llorentzforce,p_par(8)) ! int
-    call copy_addr(linduction,p_par(9)) ! int
+    call copy_addr(lresi_eta_const,p_par(4)) ! bool
+    call copy_addr(lresi_hyper2,p_par(5)) ! bool
+    call copy_addr(lresi_hyper3,p_par(6)) ! bool
+    call copy_addr(lupw_aa,p_par(7)) ! bool
+    call copy_addr(llorentzforce,p_par(8)) ! bool
+    call copy_addr(linduction,p_par(9)) ! bool
     call copy_addr(iedotx,p_par(10)) ! int
     call copy_addr(iedotz,p_par(11)) ! int
     call copy_addr(b0_ext_z,p_par(12))
@@ -11651,7 +11651,7 @@ print*,'AXEL2: should not be here (eta) ... '
     call copy_addr(ampl_ff,p_par(162))
     call copy_addr(swirl,p_par(163))
     call copy_addr(ampl_fcont_aa,p_par(164))
-    call copy_addr(llambda_aa,p_par(165))
+    call copy_addr(LLambda_aa,p_par(165))
     call copy_addr(vcrit_anom,p_par(166))
     call copy_addr(numag,p_par(167))
     call copy_addr(b0_magfric,p_par(168))
