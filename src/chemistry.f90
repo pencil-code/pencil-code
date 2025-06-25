@@ -1389,12 +1389,6 @@ module Chemistry
               call cond_spec_nucl_rate(p,nucleation_rmin,nucleation_rate)
               p%nucl_rate=nucleation_rate
               p%nucl_rmin=nucleation_rmin
-            !
-            ! Fill auxilliary array with radius and rate of nucleii. For use in
-            ! insert_nucleii in particles_dust.f90 and for visualization
-            !
-            f(l1:l2,m,n,inucl)=p%nucl_rmin
-            f(l1:l2,m,n,inucrate)=p%nucl_rate
             if (.not. lnolatentheat .and. it == 1) then
               ! Initialize some pencil here at the first time-step. This is not
               ! an ideal solution, but will do it like this now to make the
@@ -3548,6 +3542,16 @@ module Chemistry
          if (lnucleation .or. lcondensing_species) then
             f(l1:l2,m,n,isupsat)=p%chem_conc(:,ichem_cond_spec)&
                /max(p%conc_sat_spec,1e-20)
+        endif
+        if (lnucleation) then
+           if (lpencil(i_nucl_rate) .or. lpencil(i_nucl_rmin)) then
+            !
+            ! Fill auxilliary array with radius and rate of nucleii. For use in
+            ! insert_nucleii in particles_dust.f90 and for visualization
+            !
+            f(l1:l2,m,n,inucl)=p%nucl_rmin
+            f(l1:l2,m,n,inucrate)=p%nucl_rate
+          endif
         endif
       endif
 
