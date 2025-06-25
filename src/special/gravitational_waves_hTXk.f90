@@ -1141,8 +1141,9 @@ module Special
 !  diagnostics
 !
       if (ldiagnos) then
-      endif
         call calc_diagnostics_special(f,p)
+      endif
+
       else
         if (headtt.or.ldebug) print*,'dspecial_dt: DONT SOLVE dspecial_dt'
       endif
