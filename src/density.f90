@@ -1714,8 +1714,7 @@ module Density
       real, dimension (mx,my,mz,mfarray) :: f
       intent(inout) :: f
 !
-      real :: fact,cur_mass
-      real, dimension (nx) :: tmp
+      real :: fact
       integer :: n_loc
 !
     
@@ -1736,9 +1735,9 @@ module Density
         !$omp do
         do n_loc=n1,n2
           if (ldensity_nolog) then
-            lnrhomz(n,1)=lnrhomz(n,1)+sum(alog(f(l1:l2,m1:m2,n,irho)))
+            lnrhomz(n_loc,1)=lnrhomz(n_loc,1)+sum(alog(f(l1:l2,m1:m2,n_loc,irho)))
           else
-            lnrhomz(n,1)=lnrhomz(n,1)+sum(f(l1:l2,m1:m2,n,ilnrho))
+            lnrhomz(n_loc,1)=lnrhomz(n_loc,1)+sum(f(l1:l2,m1:m2,n_loc,ilnrho))
           endif
         enddo
         !$omp end do
@@ -1756,7 +1755,7 @@ module Density
         if (lrho_flucz_as_aux) then
           !$omp do
           do n_loc=n1,n2
-            f(l1:l2,m1:m2,n,irho_flucz)=exp(f(l1:l2,m1:m2,n,ilnrho))-exp(lnrhomz(n,1))
+            f(l1:l2,m1:m2,n_loc,irho_flucz)=exp(f(l1:l2,m1:m2,n_loc,ilnrho))-exp(lnrhomz(n_loc,1))
           enddo
           !$omp end do
         endif
