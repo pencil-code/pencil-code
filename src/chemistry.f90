@@ -1377,11 +1377,9 @@ module Chemistry
         ! Calculate saturation concentration of condensing species
         ! (This must be done before nucleation radius and rate are calculated)
         !
-         if (lnucleation .or. lcondensing_species) then
-            call cond_spec_sat_conc(p,conc_sat_spec)
-            p%conc_sat_spec=conc_sat_spec
-            f(l1:l2,m,n,isupsat)=p%chem_conc(:,ichem_cond_spec)&
-               /max(p%conc_sat_spec,1e-20)
+        if (lnucleation .or. lcondensing_species) then
+           call cond_spec_sat_conc(p,conc_sat_spec)
+           p%conc_sat_spec=conc_sat_spec
         endif
         !
         !  Calculate nucleation rate and corresponding radius
@@ -3545,6 +3543,13 @@ module Chemistry
       real, dimension(nx) :: ff_condm
 
       integer :: ii
+
+      if (ldustdensity .or. lparticles) then
+         if (lnucleation .or. lcondensing_species) then
+            f(l1:l2,m,n,isupsat)=p%chem_conc(:,ichem_cond_spec)&
+               /max(p%conc_sat_spec,1e-20)
+        endif
+      endif
 
       if (ldiagnos) then
         if (idiag_dtchem /= 0) call max_mn_name(reac_chem/cdtc,idiag_dtchem,l_dt=.true.)
