@@ -36,13 +36,15 @@ end
 
 function read_slice_chunk, unit, it, tmp, t_tmp, pos, slice
 
+  common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
+
   if is_defined(unit) then begin
-    if (eof(unit)) then return, 0
+    if (eof(unit)) then return, 1
     t_tmp=one
     readu, unit, tmp, t_tmp, pos
     slice[*,*,it]=tmp
   endif
-  return, 1
+  return, 0
 
 end
 
