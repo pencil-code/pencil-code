@@ -106,7 +106,7 @@ module Density
 !
 !  Dummy Variables
 !
-  real, dimension(mz,1) :: lnrhomz
+  !real, dimension(mz,1) :: lnrhomz
   logical :: lcalc_lnrhomean = .false.
   logical :: lupw_lnrho = .false.,lffree=.false.
 !
@@ -892,6 +892,13 @@ module Density
       call keep_compiler_quiet(f)
 !
   endsubroutine density_after_boundary
+!***********************************************************************
+    subroutine density_before_boundary_diagnostics(f)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      call keep_compiler_quiet(f)
+    endsubroutine density_before_boundary_diagnostics
 !***********************************************************************
     subroutine density_before_boundary(f)
 !

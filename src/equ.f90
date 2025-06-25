@@ -199,6 +199,7 @@ module Equ
           call calc_selfpotential(f)
           if (ldustdensity)  call dustdensity_before_boundary(f)
           if (linterstellar) call interstellar_before_boundary(f)
+          if (ldensity .and. ldiagnos) call density_before_boundary_diagnostics(f)
           if (ldensity.or.lboussinesq) call density_before_boundary(f)
           if (lhydro.or.lhydro_kinematic) call hydro_before_boundary(f)
           if (lmagnetic)     call magnetic_before_boundary(f)
@@ -752,6 +753,14 @@ module Equ
 
       endsubroutine calc_all_module_diagnostics
 !*****************************************************************************
+      subroutine calc_all_before_boundary_diagnostics(f)
+        use Density, only: density_before_boundary_diagnostics
+        real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
+        !$omp parallel if(.not. lsuppress_parallel_reductions) num_threads(num_helper_threads)
+                call density_before_boundary_diagnostics(f)
+        !$omp end parallel
+      endsubroutine calc_all_before_boundary_diagnostics
+!*****************************************************************************
       subroutine perform_diagnostics(f,p)
 
 !$    use General, only: signal_send
@@ -759,6 +768,7 @@ module Equ
       real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
       type (pencil_case) :: p
 
+        call calc_all_before_boundary_diagnostics(f)
         call calc_all_module_diagnostics(f,p)     ! by all helper threads
         call finalize_diagnostics                 ! by diagmaster (MPI comm.)
         call write_diagnostics(f)                 !       ~

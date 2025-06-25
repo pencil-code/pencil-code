@@ -1701,6 +1701,66 @@ module Density
 !
     endsubroutine init_lnrho
 !***********************************************************************
+    subroutine density_before_boundary_diagnostics(f)
+!
+!   25-jun-25/TP: Carved from density_before_boundary.
+!                 Observed that irho_flucz is only calculated for diagnostics purposes.
+!                 So having this function servers two purposes: saving unnecessary computation
+!                 and more importantly enabling to reuse diagnostic code when using the GPU
+!    
+!
+      use Sub, only: finalize_aver
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      intent(inout) :: f
+!
+      real :: fact,cur_mass
+      real, dimension (nx) :: tmp
+!
+    
+      !$omp workshare
+      if ( (.not.ldensity_nolog) .and. (irho/=0) ) &
+          f(l1:l2,m1:m2,n1:n2,irho)=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
+       !$omp end workshare
+!
+!  Calculate mean (= xy-average) of lnrho.
+!
+      if (lcalc_lnrhomean) then
+!
+        fact=1./nxygrid
+        !$omp workshare
+        lnrhomz=0.
+        !$omp end workshare
+        !$omp do
+        do n=n1,n2
+          if (ldensity_nolog) then
+            lnrhomz(n,1)=lnrhomz(n,1)+sum(alog(f(l1:l2,m1:m2,n,irho)))
+          else
+            lnrhomz(n,1)=lnrhomz(n,1)+sum(f(l1:l2,m1:m2,n,ilnrho))
+          endif
+        enddo
+        !$omp end do
+        !$omp workshare
+        lnrhomz=fact*lnrhomz
+        !$omp end workshare
+
+        !$omp single
+        call finalize_aver(nprocxy,12,lnrhomz)
+        !$omp end single
+        !$omp barrier
+!
+!  the following is only correct if we are using lnrho
+!
+        if (lrho_flucz_as_aux) then
+          !$omp do
+          do n=n1,n2
+            f(l1:l2,m1:m2,n,irho_flucz)=exp(f(l1:l2,m1:m2,n,ilnrho))-exp(lnrhomz(n,1))
+          enddo
+          !$omp end do
+        endif
+      endif
+    endsubroutine density_before_boundary_diagnostics
+!***********************************************************************
     subroutine density_before_boundary(f)
 !
 !  Actions to take before boundary conditions are applied.
@@ -1725,31 +1785,6 @@ module Density
 !
       if ( (.not.ldensity_nolog) .and. (irho/=0) ) &
           f(l1:l2,m1:m2,n1:n2,irho)=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
-!
-!  Calculate mean (= xy-average) of lnrho.
-!
-      if (lcalc_lnrhomean) then
-!
-        fact=1./nxygrid
-        lnrhomz=0.
-        do n=n1,n2
-          if (ldensity_nolog) then
-            lnrhomz(n,1)=lnrhomz(n,1)+sum(alog(f(l1:l2,m1:m2,n,irho)))
-          else
-            lnrhomz(n,1)=lnrhomz(n,1)+sum(f(l1:l2,m1:m2,n,ilnrho))
-          endif
-        enddo
-        lnrhomz=fact*lnrhomz
-        call finalize_aver(nprocxy,12,lnrhomz)
-!
-!  the following is only correct if we are using lnrho
-!
-        if (lrho_flucz_as_aux) then
-          do n=n1,n2
-            f(l1:l2,m1:m2,n,irho_flucz)=exp(f(l1:l2,m1:m2,n,ilnrho))-exp(lnrhomz(n,1))
-          enddo
-        endif
-      endif
 !
       if (lrmv) then
 !
