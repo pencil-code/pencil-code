@@ -40,7 +40,8 @@ module Density
 !
   logical :: lwrite_debug=.false.
 !
-  real, dimension (nz) :: lnrhomz,glnrhomz
+  real, dimension (mz) :: lnrhomz
+  real, dimension (nz) :: glnrhomz
   real :: dx_2, dz_2
   real, pointer :: chi
   real, dimension(3) :: beta_glnrho_global=0., beta_glnrho_scaled=0.
@@ -778,6 +779,14 @@ module Density
       call keep_compiler_quiet(p)
 
     endsubroutine calc_diagnostics_density
+!***********************************************************************
+    subroutine density_before_boundary_diagnostics(f)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+! 
+      call keep_compiler_quiet(f)
+
+    endsubroutine density_before_boundary_diagnostics
 !***********************************************************************s
     subroutine write_z_stratification(f)
 

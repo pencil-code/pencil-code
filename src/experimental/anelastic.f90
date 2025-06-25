@@ -58,8 +58,8 @@ module Density
   real, dimension(3) :: beta_glnrho_global=0.0, beta_glnrho_scaled=0.0
   real, target :: plaw=0.0
   real :: lnrho_z_shift=0.0
-  real, dimension (mz,1) :: lnrhomz
-  real, dimension (nz,3) :: glnrhomz
+  real, dimension (mz) :: lnrhomz
+  real, dimension (nz) :: glnrhomz
   real :: powerlr=3.0, zoverh=1.5, hoverr=0.05
   real :: init_average_density
   real, target :: mpoly=impossible
@@ -1379,6 +1379,14 @@ module Density
       call keep_compiler_quiet(p)
 
     endsubroutine calc_diagnostics_density
+!***********************************************************************
+    subroutine density_before_boundary_diagnostics(f)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+! 
+      call keep_compiler_quiet(f)
+
+    endsubroutine density_before_boundary_diagnostics
 !***********************************************************************
     subroutine write_z_stratification(f)
 

@@ -39,7 +39,7 @@ module Density
   real, dimension (ninit) :: xblob=0.0, yblob=0.0, zblob=0.0
   real, dimension (ninit) :: kx_lnrho=1.0, ky_lnrho=1.0, kz_lnrho=1.0
   real, dimension (ninit) :: kxx_lnrho=0.0, kyy_lnrho=0.0, kzz_lnrho=0.0
-  real, dimension (mz,1) :: lnrhomz
+  real, dimension (mz) :: lnrhomz
   real, dimension (nz) :: lnrho_init_z_nz=0.0
   real, dimension (mz) :: lnrho_init_z=0.0
   real, dimension (mz) :: dlnrhodz_init_z=0.0, del2lnrho_glnrho2_init_z=0.0
@@ -1705,10 +1705,9 @@ module Density
 !
 !   25-jun-25/TP: Carved from density_before_boundary.
 !                 Observed that irho_flucz is only calculated for diagnostics purposes.
-!                 So having this function servers two purposes: saving unnecessary computation
-!                 and more importantly enabling to reuse diagnostic code when using the GPU
+!                 So having this function serves two purposes: saving unnecessary computation
+!                 and more importantly enabling to reuse diagnostic code when using the GPU.
 !    
-!
       use Sub, only: finalize_aver
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1717,11 +1716,10 @@ module Density
       real :: fact
       integer :: n_loc
 !
-    
       if ( (.not.ldensity_nolog) .and. (irho/=0) ) then
-          !$omp workshare
-          f(l1:l2,m1:m2,n1:n2,irho)=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
-          !$omp end workshare
+        !$omp workshare
+        f(l1:l2,m1:m2,n1:n2,irho)=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
+        !$omp end workshare
       endif
 !
 !  Calculate mean (= xy-average) of lnrho.
@@ -1735,9 +1733,9 @@ module Density
         !$omp do
         do n_loc=n1,n2
           if (ldensity_nolog) then
-            lnrhomz(n_loc,1)=lnrhomz(n_loc,1)+sum(alog(f(l1:l2,m1:m2,n_loc,irho)))
+            lnrhomz(n_loc)=lnrhomz(n_loc)+sum(alog(f(l1:l2,m1:m2,n_loc,irho)))
           else
-            lnrhomz(n_loc,1)=lnrhomz(n_loc,1)+sum(f(l1:l2,m1:m2,n_loc,ilnrho))
+            lnrhomz(n_loc)=lnrhomz(n_loc)+sum(f(l1:l2,m1:m2,n_loc,ilnrho))
           endif
         enddo
         !$omp end do
@@ -1755,11 +1753,12 @@ module Density
         if (lrho_flucz_as_aux) then
           !$omp do
           do n_loc=n1,n2
-            f(l1:l2,m1:m2,n_loc,irho_flucz)=exp(f(l1:l2,m1:m2,n_loc,ilnrho))-exp(lnrhomz(n_loc,1))
+            f(l1:l2,m1:m2,n_loc,irho_flucz)=exp(f(l1:l2,m1:m2,n_loc,ilnrho))-exp(lnrhomz(n_loc))
           enddo
           !$omp end do
         endif
       endif
+
     endsubroutine density_before_boundary_diagnostics
 !***********************************************************************
     subroutine density_before_boundary(f)

@@ -2083,7 +2083,7 @@ mn:   do n=n1,n2
                   f(l1:l2,m1:m2,n,jaatest)=f(l1:l2,m1:m2,n,jaa)-aamz(n,j)
                   f(l1:l2,m1:m2,n,juutest)=f(l1:l2,m1:m2,n,juu)-uumz(n,j)
                 enddo
-                f(l1:l2,m1:m2,n,ihxtest)=f(l1:l2,m1:m2,n,ihxtest)-lnrhomz(n-n1+1,1)
+                f(l1:l2,m1:m2,n,ihxtest)=f(l1:l2,m1:m2,n,ihxtest)-lnrhomz(n)
               enddo
             else
               call fatal_error('rescaling_testfield', &

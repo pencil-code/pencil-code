@@ -28,7 +28,7 @@ module Density
   implicit none
 !
   logical :: lcalc_lnrhomean=.false.,lupw_lnrho=.false.
-  !real, dimension (mz,1) :: lnrhomz
+  !real, dimension (mz) :: lnrhomz
 !
   include 'density.h'
 
@@ -192,6 +192,7 @@ module Density
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call keep_compiler_quiet(f)
+
     endsubroutine density_before_boundary_diagnostics
 !***********************************************************************
     subroutine density_before_boundary(f)
