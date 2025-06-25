@@ -344,6 +344,7 @@ program rvid_box
           enddo
           call safe_character_assign(wfile,trim(datadir)//trim(file))
           open(lun_write,file=trim(wfile),form='unformatted')
+          !write(lun_write) 'Global extrema:', minval(xy_t), maxval(xy_t)
           do i=1,it
             write(lun_write,iostat=iostat) xy_t(:,:,i),t_array(i),slice_pos
           enddo
@@ -387,6 +388,7 @@ program rvid_box
           enddo
           call safe_character_assign(wfile,trim(datadir)//trim(file))
           open(lun_write,file=trim(wfile),form='unformatted')
+          !write(lun_write) 'Global extrema:', minval(xy_t), maxval(xy_t)
           do i=1,it
             write(lun_write,iostat=iostat) xy_t(:,:,i),t_array(i),slice_pos
           enddo
@@ -430,6 +432,7 @@ program rvid_box
           enddo
           call safe_character_assign(wfile,trim(datadir)//trim(file))
           open(lun_write,file=trim(wfile),form='unformatted')
+          !write(lun_write) 'Global extrema:', minval(xy_t), maxval(xy_t)
           do i=1,it
             write(lun_write,iostat=iostat) xy_t(:,:,i),t_array(i),slice_pos
           enddo
@@ -473,6 +476,7 @@ program rvid_box
           enddo
           call safe_character_assign(wfile,trim(datadir)//trim(file))
           open(lun_write,file=trim(wfile),form='unformatted')
+          !write(lun_write) 'Global extrema:', minval(xy_t), maxval(xy_t)
           do i=1,it
             write(lun_write,iostat=iostat) xy_t(:,:,i),t_array(i),slice_pos
           enddo
@@ -516,6 +520,7 @@ program rvid_box
           enddo
           call safe_character_assign(wfile,trim(datadir)//trim(file))
           open(lun_write,file=trim(wfile),form='unformatted')
+          !write(lun_write) 'Global extrema:', minval(xz_t), maxval(xz_t)
           do i=1,it
             write(lun_write,iostat=iostat) xz_t(:,:,i),t_array(i),slice_pos
           enddo
@@ -559,6 +564,7 @@ program rvid_box
           enddo
           call safe_character_assign(wfile,trim(datadir)//trim(file))
           open(lun_write,file=trim(wfile),form='unformatted')
+          !write(lun_write) 'Global extrema:', minval(xz_t), maxval(xz_t)
           do i=1,it
             write(lun_write,iostat=iostat) xz_t(:,:,i),t_array(i),slice_pos
           enddo
@@ -602,6 +608,7 @@ program rvid_box
           enddo
           call safe_character_assign(wfile,trim(datadir)//trim(file))
           open(lun_write,file=trim(wfile),form='unformatted')
+          !write(lun_write) 'Global extrema:', minval(yz_t), maxval(xz_t)
           do i=1,it
             write(lun_write,iostat=iostat) yz_t(:,:,i),t_array(i),slice_pos
           enddo
@@ -664,6 +671,7 @@ program rvid_box
 
           call safe_character_assign(wfile,trim(datadir)//trim(file))
           open(lun_write,file=trim(wfile),form='unformatted')
+          !write(lun_write) 'Global extrema:', minval(r_t), maxval(r_t)
           do i=1,it
             write(lun_write,iostat=iostat) r_t(:,:,i),t_array(i),slice_pos
           enddo

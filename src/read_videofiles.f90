@@ -447,7 +447,11 @@ program read_videofiles
       if (present(yz)) then
         write (lun) size(yz,2)
         write (lun) yz
+        !write (lun) 'Global extrema:', minval(data_yy), maxval(data_yy)
+      else
+        !write (lun) 'Global extrema:', minval(data), maxval(data)
       endif
+
       do frame = 1, num_frames
         if (present(yz)) then
           write (lun) data_yy(:,frame), times(frame), pos
