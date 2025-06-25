@@ -1017,6 +1017,62 @@ module Special
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
+    subroutine    compute_scl_factor
+!
+!   25-jun-2025/TP: carved from dspecial_dt
+! 
+      if (lreheating_GW) then
+        scale_factor=.25*(t+1.)**2
+      elseif (lmatter_GW) then
+        scale_factor=t**2/t_equality
+      elseif (ldark_energy_GW) then
+        scale_factor=t_acceleration**3/(t*t_equality)
+      elseif (lscalar) then
+!        scale_factor=sqrt(p%infl_a2(1))
+        scale_factor=exp(f_ode(iinfl_lna))
+      else
+        if (t+tshift==0.) then
+          scale_factor=1.
+        else
+          scale_factor=(t+tshift)**nscale_factor_conformal
+        endif
+      endif
+    endsubroutine compute_scl_factor
+!***********************************************************************
+    subroutine read_scl_factor_etc
+!
+!   25-jun-2025/TP: carved from dspecial_dt
+! 
+        lgt_current=alog10(real(t))+lgt_ini
+        it_file=int((lgt_current-lgt0)/dlgt)+1
+        if (it_file<1.or.it_file>nt_file) then
+          print*,'=',it_file, t_file(it_file), t, t_file(it_file+1), t_ini
+          call fatal_error('dspecial_dt','it<1.or.it>nt')
+        endif
+        !if (ip<14) print*,'ALBERTO: ',it_file, t_file(it_file), t, t_file(it_file)+1, t_ini
+        lgt1=lgt_file(it_file)
+        lgt2=lgt_file(it_file+1)
+        lgf1=lgff(it_file)
+        lgf2=lgff(it_file+1)
+        lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
+        scl_factor_target=10**lgf/a_ini
+        scale_factor=10**lgf/a_ini
+        !if (ip<14) print*,'ALBERTO, a/a_*: ',scl_factor_target
+        !if (ip<14) print*,'iproc,lgf1,lgf,lgf2=',iproc,lgf1,lgf,lgf2
+        lgf1=lgff2(it_file)
+        lgf2=lgff2(it_file+1)
+        lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
+        Hp_target=10**lgf/Hp_ini
+        !if (ip<14) print*,'ALBERTO HH/HH_*: ',Hp_target
+        !if (ip<14) print*,'iproc,lgt1,lgt,lgt2=',iproc,lgt1,lgt_current,lgt2
+        !if (ip<14) print*,'iproc,lgf1,lgf,lgf2=',iproc,lgf1,lgf,lgf2
+        lgf1=lgff3(it_file)
+        lgf2=lgff3(it_file+1)
+        lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
+        appa_target=10**lgf/Hp_ini**2
+        !if (ip<14) print*,'ALBERTO app/a/HH_*^2: ',appa_target
+    endsubroutine read_scl_factor_etc
+!***********************************************************************
     subroutine dspecial_dt(f,df,p)
 !
 !  calculate right hand side of ONE OR MORE extra coupled PDEs
@@ -1060,22 +1116,7 @@ module Special
 !  If that is not the case either, we put scale_factor=1.
 !  At the next timestep, this will no longer be a problem.
 !
-      if (lreheating_GW) then
-        scale_factor=.25*(t+1.)**2
-      elseif (lmatter_GW) then
-        scale_factor=t**2/t_equality
-      elseif (ldark_energy_GW) then
-        scale_factor=t_acceleration**3/(t*t_equality)
-      elseif (lscalar) then
-!        scale_factor=sqrt(p%infl_a2(1))
-        scale_factor=exp(f_ode(iinfl_lna))
-      else
-        if (t+tshift==0.) then
-          scale_factor=1.
-        else
-          scale_factor=(t+tshift)**nscale_factor_conformal
-        endif
-      endif
+      call compute_scl_factor
       stress_prefactor2=stress_prefactor/scale_factor
 !
       if (lread_scl_factor_file) then
@@ -1085,34 +1126,7 @@ module Special
 !  So, lgt_current is not the log10 of the current time t, but of t/t_ini.
 !  At the end of the run, t=1.5e18, but t/t_ini=3.11900E+13 or so.
 !
-        lgt_current=alog10(real(t))+lgt_ini
-        it_file=int((lgt_current-lgt0)/dlgt)+1
-        if (it_file<1.or.it_file>nt_file) then
-          print*,'=',it_file, t_file(it_file), t, t_file(it_file+1), t_ini
-          call fatal_error('dspecial_dt','it<1.or.it>nt')
-        endif
-        !if (ip<14) print*,'ALBERTO: ',it_file, t_file(it_file), t, t_file(it_file)+1, t_ini
-        lgt1=lgt_file(it_file)
-        lgt2=lgt_file(it_file+1)
-        lgf1=lgff(it_file)
-        lgf2=lgff(it_file+1)
-        lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
-        scl_factor_target=10**lgf/a_ini
-        scale_factor=10**lgf/a_ini
-        !if (ip<14) print*,'ALBERTO, a/a_*: ',scl_factor_target
-        !if (ip<14) print*,'iproc,lgf1,lgf,lgf2=',iproc,lgf1,lgf,lgf2
-        lgf1=lgff2(it_file)
-        lgf2=lgff2(it_file+1)
-        lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
-        Hp_target=10**lgf/Hp_ini
-        !if (ip<14) print*,'ALBERTO HH/HH_*: ',Hp_target
-        !if (ip<14) print*,'iproc,lgt1,lgt,lgt2=',iproc,lgt1,lgt_current,lgt2
-        !if (ip<14) print*,'iproc,lgf1,lgf,lgf2=',iproc,lgf1,lgf,lgf2
-        lgf1=lgff3(it_file)
-        lgf2=lgff3(it_file+1)
-        lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
-        appa_target=10**lgf/Hp_ini**2
-        !if (ip<14) print*,'ALBERTO app/a/HH_*^2: ',appa_target
+        call read_scl_factor_etc
       endif
 !
 !  Possibilty to compensate against the decaying stress in decaying turbulence.
