@@ -441,7 +441,7 @@ module Magnetic
     use Syscalls, only: copy_addr
     use General , only: string_to_enum
 
-    integer, parameter :: n_pars=1000
+    integer, parameter :: n_pars=1
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call copy_addr(b_ext2,p_par(1))

@@ -1533,7 +1533,6 @@ call copy_addr(iecr,p_par(1234)) ! int
 call copy_addr(ipoly,p_par(1239)) ! int
 call copy_addr(ipoly_fr,p_par(1240)) ! int
 call copy_addr(lneutraldensity_nolog,p_par(1241)) ! bool
-call copy_addr(ilnrhon,p_par(1241)) ! int
 call copy_addr(irhon,p_par(1242)) ! int
 call copy_addr(iuun,p_par(1243)) ! int
 call copy_addr(iee,p_par(1251)) ! int
@@ -1579,6 +1578,10 @@ call copy_addr(istressxim,p_par(1299)) ! int
 call copy_addr(n_odevars,p_par(1300)) ! int
 call copy_addr(f_ode,p_par(1301)) ! (n_odevars)
 call copy_addr(tstart,p_par(1302))
+call copy_addr(iunx,p_par(1303)) ! int
+call copy_addr(iuny,p_par(1304)) ! int
+call copy_addr(iunz,p_par(1305)) ! int
+call copy_addr(ilnrhon,p_par(1306)) ! int
 
 endsubroutine pushpars2c
 !***********************************************************************

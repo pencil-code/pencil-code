@@ -406,7 +406,7 @@ module Density
     use Syscalls, only: copy_addr
     use General , only: string_to_enum
 
-    integer, parameter :: n_pars=10
+    integer, parameter :: n_pars=1
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call copy_addr(beta_glnrho_scaled,p_par(1)) ! real3
