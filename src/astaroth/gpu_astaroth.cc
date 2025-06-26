@@ -1782,9 +1782,9 @@ void testBCs()
   int3 largest_diff_point{};
   //AcReal epsilon = 0.0;
 
-  auto skip_x = (acGridTaskGraphHasPeriodicBoundcondsX(rhs) && !lshear) || false;
-  auto skip_y = acGridTaskGraphHasPeriodicBoundcondsY(rhs) || false;
-  auto skip_z = acGridTaskGraphHasPeriodicBoundcondsZ(rhs) || false;
+  auto skip_x = (acGridTaskGraphHasPeriodicBoundcondsX(rhs) && !lshear) || nxgrid == 1;
+  auto skip_y = acGridTaskGraphHasPeriodicBoundcondsY(rhs) || nygrid == 1;
+  auto skip_z = acGridTaskGraphHasPeriodicBoundcondsZ(rhs) || nzgrid == 1;
 
   auto start_x =  skip_x ? NGHOST : 0;
   auto start_y =  skip_y ? NGHOST : 0;
@@ -1896,7 +1896,6 @@ void testBCs()
   acHostMeshDestroy(&tmp_mesh_to_store);
   acGridDestroyTaskGraph(bcs);
   acHostMeshDestroy(&tmp_mesh_to_store);
-  acGridDestroyTaskGraph(bcs);
 }
 /***********************************************************************************************/
 extern "C" void gpuSetDt()
