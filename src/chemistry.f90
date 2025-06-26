@@ -371,13 +371,6 @@ module Chemistry
         call put_shared_variable('true_density_cond_spec',true_density_cond_spec)
       endif
 !
-!
-!  Find indices for oxygen and propane
-!
-      call find_species_index('O2',i_O2_glob,ichem_O2,lO2)
-      call find_species_index('C3H8',i_C3H8_glob,ichem_C3H8,lC3H8)
-      if (lO2)   mO2 = species_constants(ichem_O2,imass)
-      if (lC3H8) mC3H8 = species_constants(ichem_C3H8,imass)
     endsubroutine register_chemistry
 !***********************************************************************
     subroutine initialize_chemistry(f)
@@ -408,6 +401,13 @@ module Chemistry
         if (unit_temperature /= 1) &
              call fatal_error('initialize_chemistry','unit_temperature must be unity for chemistry')
       endif
+!
+!  Find indices for oxygen and propane and their masses
+!
+      call find_species_index('O2',i_O2_glob,ichem_O2,lO2)
+      call find_species_index('C3H8',i_C3H8_glob,ichem_C3H8,lC3H8)
+      if (lO2)   mO2 = species_constants(ichem_O2,imass)
+      if (lC3H8) mC3H8 = species_constants(ichem_C3H8,imass)
 !
 !  calculate universal gas constant based on Boltzmann constant
 !  and the proton mass
