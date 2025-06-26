@@ -73,8 +73,8 @@ else
   boundcond_sed x
   for (( i=0; i<$nfields ; i++ )); do 
     #echo ${bot[$i]} ${top[$i]} ${fields[$i]};
-    make_ac_bound_cond ${bot[$i]} ${fields[$i]} X BOT
-    make_ac_bound_cond ${top[$i]} ${fields[$i]} X TOP
+    make_ac_bound_cond ${bot[$i]} Field\(${i}\) X BOT
+    make_ac_bound_cond ${top[$i]} Field\(${i}\) X TOP
   done
   rm -f tmp
 fi
@@ -84,8 +84,8 @@ if [[ ${lperi[1]} == 'T' ]]; then
 else
   boundcond_sed y
   for (( i=0; i<$nfields ; i++ )); do 
-    make_ac_bound_cond ${bot[$i]} ${fields[$i]} Y BOT
-    make_ac_bound_cond ${top[$i]} ${fields[$i]} Y TOP
+    make_ac_bound_cond ${bot[$i]} Field\(${i}\) Y BOT
+    make_ac_bound_cond ${top[$i]} Field\(${i}\) Y TOP
   done
   rm -f tmp
 fi
@@ -95,8 +95,8 @@ if [[ ${lperi[2]} == 'T' ]]; then
 else
   boundcond_sed z
   for (( i=0; i<$nfields ; i++ )); do 
-    make_ac_bound_cond ${bot[$i]} ${fields[$i]} Z BOT
-    make_ac_bound_cond ${top[$i]} ${fields[$i]} Z TOP
+    make_ac_bound_cond ${bot[$i]} Field\(${i}\) Z BOT
+    make_ac_bound_cond ${top[$i]} Field\(${i}\) Z TOP
   done
   rm -f tmp
 fi
