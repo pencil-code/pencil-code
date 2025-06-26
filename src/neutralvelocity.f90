@@ -495,7 +495,7 @@ module NeutralVelocity
       real, dimension (nx) :: ionization,recombination
 !
       real :: c2,s2
-      integer :: j,jn,ji
+      integer :: j
 !
 !  identify module and boundary conditions
 !
@@ -562,24 +562,22 @@ module NeutralVelocity
       cneut_rho=(colldrag+recombination)*p%rho
 !
       do j=1,3
-        jn=j+iuun-1
 !
 ! neutrals gain momentum by recombination
 !
-        df(l1:l2,m,n,jn)=df(l1:l2,m,n,jn) + cneut_rho*(p%uu(:,j)-p%uun(:,j))
+        df(l1:l2,m,n,iuun-1+j)=df(l1:l2,m,n,iuun-1+j) + cneut_rho*(p%uu(:,j)-p%uun(:,j))
 !
 ! ions gain momentum by ionization and electron pressure
 !
         if (lhydro) then
-          ji=j+iuu -1
-          df(l1:l2,m,n,ji)=df(l1:l2,m,n,ji) - cions_rhon*(p%uu(:,j)-p%uun(:,j))
+          df(l1:l2,m,n,iuu-1+j)=df(l1:l2,m,n,iuu-1+j) - cions_rhon*(p%uu(:,j)-p%uun(:,j))
 !
 ! add electron pressure to the ions if needed
 ! This adds to the already entered contribution from noentropy.f90
 ! df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%fpres
 ! and thus implies altogether a factor of 2, which is correct.
 !
-          if (lelectron_pressure) df(l1:l2,m,n,ji)=df(l1:l2,m,n,ji)+electron_pressure*p%fpres(:,j)
+          if (lelectron_pressure) df(l1:l2,m,n,iuu-1+j)=df(l1:l2,m,n,iuu-1+j)+electron_pressure*p%fpres(:,j)
         endif
 !
       enddo
