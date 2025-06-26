@@ -3060,6 +3060,7 @@ module Chemistry
         if (stat > 0) call fatal_error("astrobiology_data","Couldn't allocate kreactions_profile_width")
         allocate(kreactions_alpha(mreactions),STAT=stat)
         if (stat > 0) call fatal_error("astrobiology_data","Couldn't allocate kreactions_alpha")
+        kreactions_alpha = 0.
         allocate(back(mreactions),STAT=stat)
         if (stat > 0) call fatal_error("astrobiology_data","Couldn't allocate back")
       endif
@@ -7185,7 +7186,7 @@ module Chemistry
     call copy_addr(chem_diff_prefactor,p_par(42)) ! (nchemspec)
     call copy_addr(mobility,p_par(44)) ! (nchemspec)
     call copy_addr(species_constants,p_par(47)) ! (nchemspec) (18)
-    call copy_addr(kreactions_alpha,p_par(49)) ! (mreactions)
+    if (allocated(kreactions_alpha)) call copy_addr(kreactions_alpha,p_par(49)) ! (mreactions)
     call copy_addr(kreactions_p,p_par(50)) ! (mreactions)
     call copy_addr(kreactions_z,p_par(51)) ! (mz) (mreactions)
     call copy_addr(kreactions_m,p_par(52)) ! (mreactions)
@@ -7248,14 +7249,14 @@ module Chemistry
     call copy_addr(high_coeff_abs_max,p_par(114)) ! (nreactions)
     call copy_addr(troe_coeff_abs_max,p_par(115)) ! (nreactions)
     call copy_addr(a_k4_min,p_par(123)) ! (nreactions)
-    call copy_addr(i_O2_glob,p_par(124)) ! int
-    call copy_addr(ichem_O2,p_par(125)) ! int
-    call copy_addr(i_C3H8_glob,p_par(126)) ! int
-    call copy_addr(ichem_C3H8,p_par(127)) ! int
-    call copy_addr(lO2,p_par(128)) ! bool
-    call copy_addr(lC3H8,p_par(129)) ! bool
-    call copy_addr(mO2,p_par(130))
-    call copy_addr(mC3H8,p_par(131))
+    call copy_addr(i_o2_glob,p_par(124)) ! int
+    call copy_addr(ichem_o2,p_par(125)) ! int
+    call copy_addr(i_c3h8_glob,p_par(126)) ! int
+    call copy_addr(ichem_c3h8,p_par(127)) ! int
+    call copy_addr(lo2,p_par(128)) ! bool
+    call copy_addr(lc3h8,p_par(129)) ! bool
+    call copy_addr(mo2,p_par(130))
+    call copy_addr(mc3h8,p_par(131))
 
     endsubroutine pushpars2c
 !***********************************************************************

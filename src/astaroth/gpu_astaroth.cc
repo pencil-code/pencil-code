@@ -598,7 +598,7 @@ AcReal to_real(void* param, const char* name)
 {
 	if (param == NULL)
 	{
-		fprintf(stderr,"Passed NULL to pushparsc: %s!!\n",name);
+		fprintf(stderr,"Passed NULL to pushparsc, expected real: %s!!\n",name);
 		abort();
 	}
 	return *((AcReal*)param);
@@ -621,7 +621,7 @@ int to_int(void* param, const char* name)
 {
 	if (param == NULL)
 	{
-		fprintf(stderr,"Passed NULL to pushparsc: %s!!\n",name);
+		fprintf(stderr,"Passed NULL to pushparsc, expected int: %s!!\n",name);
 		abort();
 	}
 	return *((int*)param);
@@ -631,7 +631,7 @@ bool to_bool(void* param, const char* name)
 {
 	if (param == NULL)
 	{
-		fprintf(stderr,"Passed NULL to pushparsc: %s!!\n",name);
+		fprintf(stderr,"Passed NULL to pushparsc, expected bool: %s!!\n",name);
 		abort();
 	}
 	return *((bool*)param);
@@ -641,7 +641,7 @@ int3 to_int3(void* param, const char* name)
 {
 	if (param == NULL)
 	{
-		fprintf(stderr,"Passed NULL to pushparsc: %s!!\n",name);
+		fprintf(stderr,"Passed NULL to pushparsc, expected int3: %s!!\n",name);
 		abort();
 	}
         int* arr = (int*)param;
@@ -652,7 +652,7 @@ AcReal3 to_real3(void* param, const char* name)
 {
 	if (param == NULL)
 	{
-		fprintf(stderr,"Passed NULL to pushparsc: %s!!\n",name);
+		fprintf(stderr,"Passed NULL to pushparsc, expected real3: %s!!\n",name);
 		abort();
 	}
         AcReal* arr = (AcReal*)param;
@@ -663,7 +663,7 @@ AcBool3 to_bool3(void* param, const char* name)
 {
 	if (param == NULL)
 	{
-		fprintf(stderr,"Passed NULL to pushparsc: %s!!\n",name);
+		fprintf(stderr,"Passed NULL to pushparsc, expected bool3: %s!!\n",name);
 		abort();
 	}
         bool* arr = (bool*)param;
@@ -1414,10 +1414,13 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint)
   //TP: done after setupConfig since we need maux_vtxbuf_index
   //TP: this is an ugly way to do this but works for now
   {
+    const size_t z_offset = (nzgrid == 1) ? NGHOST*mx*my : 0;
     size_t offset = 0;
     for (int i = 0; i < mvar; ++i)
     {
-      mesh.vertex_buffer[VertexBufferHandle(i)] = &farr[offset];
+      {
+      }
+      mesh.vertex_buffer[VertexBufferHandle(i)] = &farr[offset + z_offset];
       offset += mw;
     }
 
