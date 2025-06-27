@@ -738,10 +738,8 @@ module Magnetic_meanfield
       real, dimension (mx,my,mz,mfarray) :: f
 !
       integer :: j
-!XXX
-print*,'AXEL1'
+!
       do j=1,ninit
-print*,'AXEL2',j
         select case (init_mf(j))
         case ('nothing'); if (lroot .and. j==1) print*,'init_aa: nothing'
         case ('patches'); f(:,:,:,iax:iaz) = 99.
@@ -1197,10 +1195,10 @@ print*,'AXEL2',j
               else
                 p%uu(:,1)=p%uu(:,1)-ampluu_kinematic*y11*exp(-r2)
                 p%uu(:,2)=p%uu(:,2)+ampluu_kinematic*x11*exp(-r2)
-!if (n>40 .and. n<128) print*,'AXEL1: z(n),p%uu(128,2)=',z(n),maxval(p%uu(:,2))
-!print*,'AXEL1: z(n),p%uu(128,2)=',z(n),minval(p%uu(:,2)),maxval(p%uu(:,2))
-!print*,'AXEL1: n,p%uu(128,2)=',n,maxval(p%uu(:,2))
               endif
+            else
+              p%aa(:,2)=p%aa(:,2)+ampluu_kinematic*x11*exp(-r2)
+              f(l1:l2,m,n,iay)=f(l1:l2,m,n,iay)+ampluu_kinematic*x11*exp(-r2)
             endif
           enddo
         case ('sphere')
@@ -1831,8 +1829,6 @@ print*,'AXEL2',j
       if (lOmega_effect_meanfield) then
         call cross_mn(p%uu,p%bb,tmpv)
         df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+tmpv
-!if (n>90 .and. n<128) print*,'AXEL2: n,p%uu(128,2)=',n,p%uu(128,2)
-!print*,'AXEL2: z(n),p%uu(128,2)=',z(n),minval(p%uu(:,2)),maxval(p%uu(:,2))
       endif
 !
 !  Time-advance of secondary mean-field modules.
