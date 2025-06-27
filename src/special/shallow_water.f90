@@ -299,7 +299,6 @@ module Special
 !
 !  TODO: dtgh is giving a diagnostic timestep not bound between 0 and 1. Check. 
 !      
-      use Diagnostics
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -313,19 +312,7 @@ module Special
       if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dSPECIAL_dt'
 !
       if (ldiagnos) then
-        if (idiag_dtgh/=0) &
-             call max_mn_name(sqrt(advec_cg2)/cdt,idiag_dtgh,l_dt=.true.)
-!  
-! Added a KE energy diagnostic for domain-summed values following Brueshaber et al., 2019 
-!  
-        if (idiag_totKE/=0) &
-             call integrate_mn_name(0.5 * (c0 + p%rho) * p%u2 , idiag_totKE)
-        !if (idiag_pstratm/=0) &
-        !     call sum_mn_name(strat,idiag_pstratm)
-        !if (idiag_pstratmax/=0) &
-        !     call max_mn_name(strat,idiag_pstratmax)
-        !if (idiag_pstratmin/=0) &
-        !     call max_mn_name(-strat,idiag_pstratmin,lneg=.true.)
+              call calc_diagnostics_special(f,p)
       endif
 !
       call keep_compiler_quiet(f)
@@ -333,6 +320,29 @@ module Special
       call keep_compiler_quiet(p)
 !
     endsubroutine dspecial_dt
+!***********************************************************************
+    subroutine calc_diagnostics_special(f,p)
+!
+!  28-jun-25/TP: carved from dspecial_dt
+!
+      use Diagnostics
+      real,dimension(mx,my,mz,mfarray) :: f
+      type(pencil_case) :: p
+
+      if (idiag_dtgh/=0) &
+           call max_mn_name(sqrt(advec_cg2)/cdt,idiag_dtgh,l_dt=.true.)
+!  
+! Added a KE energy diagnostic for domain-summed values following Brueshaber et al., 2019 
+!  
+      if (idiag_totKE/=0) &
+           call integrate_mn_name(0.5 * (c0 + p%rho) * p%u2 , idiag_totKE)
+      !if (idiag_pstratm/=0) &
+      !     call sum_mn_name(strat,idiag_pstratm)
+      !if (idiag_pstratmax/=0) &
+      !     call max_mn_name(strat,idiag_pstratmax)
+      !if (idiag_pstratmin/=0) &
+      !     call max_mn_name(-strat,idiag_pstratmin,lneg=.true.)
+    endsubroutine calc_diagnostics_special
 !***********************************************************************
     subroutine read_special_run_pars(iostat)
 !
@@ -774,7 +784,7 @@ module Special
         lfirstcall=.false.
       endif
       if (t >= tsnap) then
-	tsnap = tsnap + dsnap
+        tsnap = tsnap + dsnap
         nsnap = nsnap + 1
         insnap=itoa(nsnap)
         call output_storms(trim(datadir)//'/STORMS'//trim(insnap))
