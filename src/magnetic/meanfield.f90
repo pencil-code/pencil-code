@@ -57,6 +57,7 @@ module Magnetic_meanfield
   character (len=labellen) :: Omega_profile='nothing', alpha_profile='const'
   character (len=labellen) :: EMF_profile='nothing', delta_profile='const'
   character (len=labellen) :: shear_current_profile='nothing',fluc_alp_profile='gaussian'
+  character (len=labellen), dimension(ninit) :: init_mf='nothing'
 !
 ! Input parameters
 !
@@ -87,7 +88,8 @@ module Magnetic_meanfield
   logical :: lGW_tensor=.false.
 !
   namelist /magn_mf_init_pars/ &
-      x1_alp, x2_alp, y1_alp, y2_alp
+      x1_alp, x2_alp, y1_alp, y2_alp, &
+      init_mf
 !
 ! Run parameters
 !
@@ -734,6 +736,19 @@ module Magnetic_meanfield
 !   6-jan-2011/axel: adapted from magnetic
 !
       real, dimension (mx,my,mz,mfarray) :: f
+!
+      integer :: j
+!XXX
+print*,'AXEL1'
+      do j=1,ninit
+print*,'AXEL2',j
+        select case (init_mf(j))
+        case ('nothing'); if (lroot .and. j==1) print*,'init_aa: nothing'
+        case ('patches'); f(:,:,:,iax:iaz) = 99.
+        case default
+          call fatal_error('init_aa','no such init_mf: "'//trim(init_mf(j))//'"')
+        endselect
+      enddo
 !
 !  Initialize secondary mean-field modules.
 !
