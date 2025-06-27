@@ -5260,35 +5260,7 @@ module Hydro
 
     endsubroutine update_for_time_integrals_hydro
 !***********************************************************************
-    subroutine hydro_after_boundary(f)
-!
-!  Calculate <rho*ux> and <rho*uy> when tau_damp_ruxm, tau_damp_ruym,
-!  or tau_damp_ruzm are different from zero. Was used to remove net
-!  momenta in any of the three directions. A better method is now
-!  to set lremove_mean_momenta=T in the call to remove_mean_momenta.
-!  Calculates <U>, when lcalc_uumean=.true.
-!
-!   9-nov-06/axel: adapted from calc_ltestfield_pars
-!  31-jul-08/axel: Poincare force with O=(sinalp*cosot,sinalp*sinot,cosalp)
-!  12-sep-13/MR  : use finalize_aver
-!
-      use Sub, only: finalize_aver, vecout_initialize, dot2_mx, dot2
-      use EquationOfState, only: cs20
-
-      real, dimension (mx,my,mz,mfarray) :: f
-      intent(inout) :: f
-
-      real, dimension (3,3) :: mat_cent1=0.,mat_cent2=0.,mat_cent3=0.
-      real, dimension (3) :: OO, dOO, uum0
-      real, dimension (mx,3) :: ss
-      real, dimension (mx) :: ss2, hydro_energy, hydro_energy1, rat, rat0, vA2_pseudo
-      real, dimension (mx) :: rho, rho1, press, rho_gam21, rho_gam20, lorentz_gamma2=1.
-      real, dimension (mx) :: delx
-      real :: dely, delz
-      real :: c,s,sinalp,cosalp,OO2,alpha_precession_rad
-      real :: cs201=1., cs2011
-      integer ::  iter_relB
-      integer :: i,j,l
+    subroutine hydro_after_boundary_conservative(f)
 !
 !  In the conservative case, we calculate the Lorentz gamma squared and Tij here,
 !  rather than in before_boundary, because the B-field is unknown otherwise.
@@ -5301,10 +5273,24 @@ module Hydro
 !  Allowed for possibility to save relativistic Lorentz factor as aux.
 !  The magnetic case can only be done iteratively, so we first compute
 !  gamma for the nonmagnetic case.
+
 !
-      if (lrelativistic_eos) cs201=1.+cs20
-      cs2011=1./cs201
-      if (lconservative) then
+!  28-jun-25/TP  : carved from hydro_after_boundary
+!
+      use Sub, only:  dot2_mx, dot2
+      use EquationOfState, only: cs20
+      real, dimension (mx,my,mz,mfarray) :: f
+      intent(inout) :: f
+      real :: cs201=1., cs2011
+      real, dimension (mx) :: delx
+      real, dimension (mx) :: rho, rho1, press, rho_gam21, rho_gam20, lorentz_gamma2=1.
+      real, dimension (mx) :: ss2, hydro_energy, hydro_energy1, rat, rat0, vA2_pseudo
+      real :: dely, delz
+      integer ::  iter_relB,i,j
+      real, dimension (mx,3) :: ss
+
+        if (lrelativistic_eos) cs201=1.+cs20
+        cs2011=1./cs201
         if (iTij==0) call fatal_error("hydro_after_boundary","must compute Tij for lconservative")
         !cs201=cs20+1.
         !cs2011=1./cs201
@@ -5314,10 +5300,10 @@ module Hydro
             if (lmagnetic) then
               if (ibx==0) call fatal_error("hydro_after_boundary","must use lbb_as_comaux=T")
               call dot2(f(:,m,n,ibx:ibz),Bsquared)
-if (m==4.and.n==4) then
-  print*,'AXEL: after hydro: bb(:,1)=', f(:,4,4,ibx)
-  print*,'AXEL: Bsquared=',m,n,Bsquared(:)
-endif
+              if (m==4.and.n==4) then
+                print*,'AXEL: after hydro: bb(:,1)=', f(:,4,4,ibx)
+                print*,'AXEL: Bsquared=',m,n,Bsquared(:)
+              endif
               if (B_ext2/=0.) then
                 hydro_energy=f(:,m,n,irho)-.5*B_ext2
               else
@@ -5458,9 +5444,32 @@ endif
     !     endif
         enddo
         enddo
+    endsubroutine hydro_after_boundary_conservative
+!***********************************************************************
+    subroutine hydro_after_boundary(f)
 !
-!  Here is the endif of lconservative.
+!  Calculate <rho*ux> and <rho*uy> when tau_damp_ruxm, tau_damp_ruym,
+!  or tau_damp_ruzm are different from zero. Was used to remove net
+!  momenta in any of the three directions. A better method is now
+!  to set lremove_mean_momenta=T in the call to remove_mean_momenta.
+!  Calculates <U>, when lcalc_uumean=.true.
 !
+!   9-nov-06/axel: adapted from calc_ltestfield_pars
+!  31-jul-08/axel: Poincare force with O=(sinalp*cosot,sinalp*sinot,cosalp)
+!  12-sep-13/MR  : use finalize_aver
+!
+      use Sub, only: finalize_aver, vecout_initialize, dot2_mx, dot2
+
+      real, dimension (mx,my,mz,mfarray) :: f
+      intent(inout) :: f
+
+      real, dimension (3,3) :: mat_cent1=0.,mat_cent2=0.,mat_cent3=0.
+      real, dimension (3) :: OO, dOO, uum0
+      real :: c,s,sinalp,cosalp,OO2,alpha_precession_rad
+      integer :: i,j,l
+!
+      if (lconservative) then
+        call hydro_after_boundary_conservative(f)
       endif
 !
 !  possibility of setting interior boundary conditions
