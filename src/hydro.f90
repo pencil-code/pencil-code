@@ -118,7 +118,7 @@ module Hydro
   real :: xjump_mid=0.,yjump_mid=0.,zjump_mid=0.
   integer :: nb_rings=0
   integer :: neddy=0
-  integer :: iTij=0, ihless=0, jhless=0, nhless=0
+  integer :: iTij=0, ihless=0, nhless=0
   real, dimension(:), allocatable :: thless, xhless, yhless, zhless
   real, dimension(:), allocatable :: Bsquared
 !
@@ -1112,7 +1112,7 @@ module Hydro
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mz) :: c, s
-      integer :: j,myl ! currently unused: nycap
+      integer :: j,myl,jhless ! currently unused: nycap
       real :: slope,uinn,uext,zbot
       logical :: lvectorpotential=.false.
 !
@@ -1862,7 +1862,7 @@ module Hydro
       real :: a2, rr2, wall_smoothing
       real :: dis, xold,yold,uprof, factx, factz, sph, sph_har_der, der
       real :: dely, delz
-      integer :: j,i,l,ixy,ix,iy,iz,iz0,iyz,iter,niter=100
+      integer :: j,i,l,ixy,ix,iy,iz,iz0,iyz,iter,niter=100,jhless
       logical :: lvectorpotential=.false.
 !
       real, dimension(:), pointer :: beta_glnrho_scaled
@@ -5286,7 +5286,7 @@ module Hydro
       real, dimension (mx) :: rho, rho1, press, rho_gam21, rho_gam20, lorentz_gamma2=1.
       real, dimension (mx) :: ss2, hydro_energy, hydro_energy1, rat, rat0, vA2_pseudo
       real :: dely, delz
-      integer ::  iter_relB,i,j
+      integer ::  iter_relB,i,j,jhless
       real, dimension (mx,3) :: ss
 
         if (lrelativistic_eos) cs201=1.+cs20
@@ -8667,7 +8667,7 @@ module Hydro
     use Syscalls, only: copy_addr
     use General , only: string_to_enum
 
-    integer, parameter :: n_pars=110
+    integer, parameter :: n_pars=120
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     integer :: k
@@ -8785,6 +8785,15 @@ module Hydro
     call copy_addr(w_sldchar_hyd,p_par(107))
     call copy_addr(lhubble_hydro,p_par(108)) ! bool
     call copy_addr(prra,p_par(109))
+    call copy_addr(vwall,p_par(110))
+    call copy_addr(alpha_hless,p_par(111))
+    call copy_addr(nhless,p_par(113)) ! int
+    call copy_addr(llorentz_as_aux,p_par(114)) ! bool
+    call copy_addr(niter_relb,p_par(115)) ! int
+    call copy_addr(thless,p_par(116)) ! (nhless)
+    call copy_addr(xhless,p_par(117)) ! (nhless)
+    call copy_addr(yhless,p_par(118)) ! (nhless)
+    call copy_addr(zhless,p_par(119)) ! (nhless)
 
     endsubroutine pushpars2c
 !***********************************************************************
