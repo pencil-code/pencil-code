@@ -87,8 +87,10 @@ module Chiral
   real, dimension (nx,3) :: gXX_chiral, gYY_chiral, gZZ_chiral
   real, dimension (nx) :: del2XX_chiral, del2YY_chiral,del2ZZ_chiral
   real :: chiral_fisherR2_tdep
+  !$omp threadprivate(gXX_chiral,gYY_chiral,gZZ_chiral,del2XX_chiral,del2YY_chiral,del2ZZ_chiral)
 !
   integer :: enum_chiral_reaction = 0
+  real :: pp,qq
   contains
 !***********************************************************************
     subroutine register_chiral()
@@ -140,6 +142,12 @@ module Chiral
 !
       call keep_compiler_quiet(f)
 !
+!  fidelity factor
+!
+      pp=.5*(1.+chiral_fidelity)
+      qq=.5*(1.-chiral_fidelity)
+!
+      print*,"YY init: ",f(l1:l2,m1:m2,n1:n2,2)
     endsubroutine initialize_chiral
 !***********************************************************************
     subroutine init_chiral(f)
@@ -364,7 +372,6 @@ module Chiral
       real, dimension (nx) :: RRYY_chiral,YY2_chiral
       real, dimension (nx) :: RR21_chiral
       real, dimension (nx) :: diffus_chiral
-      real :: pp,qq
       integer :: j
 !
 !  identify module and boundary conditions
@@ -456,11 +463,6 @@ module Chiral
       XX2_chiral=.5*XX_chiral**2/max(RRXX_chiral, tini)
       YY2_chiral=.5*YY_chiral**2/max(RRYY_chiral, tini)
       RR21_chiral=1./max(XX2_chiral+YY2_chiral, tini)
-!
-!  fidelity factor
-!
-      pp=.5*(1.+chiral_fidelity)
-      qq=.5*(1.-chiral_fidelity)
 !
 !  final reaction equation
 !
@@ -846,13 +848,12 @@ contains
 
     endsubroutine get_slices_chiral
 !***********************************************************************
-    subroutine pushpars2c
+    subroutine pushpars2c(p_par)
 
     use Syscalls, only: copy_addr
     use General , only: string_to_enum
 
-    integer, parameter :: n_pars=100
-    integer :: i
+    integer, parameter :: n_pars=30
     integer(KIND=ikind8), dimension(n_pars) :: p_par
    
     call copy_addr(ixx_chiral,p_par(1)) ! int
@@ -875,9 +876,10 @@ contains
     call copy_addr(chiral_fisherr2_tdep,p_par(18))
     call copy_addr(gradx0,p_par(19)) ! real3
     call copy_addr(grady0,p_par(20)) ! real3
-    call copy_addr(gzz_chiral,p_par(21)) ! (nx) (3)
     call string_to_enum(enum_chiral_reaction,chiral_reaction)
-    call copy_addr(enum_chiral_reaction,p_par(22))
+    call copy_addr(enum_chiral_reaction,p_par(22)) ! int
+    call copy_addr(pp,p_par(23)) 
+    call copy_addr(qq,p_par(24)) 
 
     endsubroutine pushpars2c
 !***********************************************************************

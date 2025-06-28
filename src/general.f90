@@ -6919,11 +6919,32 @@ iloop:do i=1,size(list2)
 
     endsubroutine
 !***********************************************************************
-    subroutine string_to_enum(dst,src)
+    function to_lower_helper(str) result(lower)
+    !
+    ! 28-jun-25/TP: coded (this is needed since we support older versions of Fortran standard than f2008)
+    !
+      implicit none
+      character(*), intent(in) :: str
+      character(len(str)) :: lower
+      integer :: i, code
+    
+      do i = 1, len(str)
+        code = iachar(str(i:i))
+        if (code >= iachar('A') .and. code <= iachar('Z')) then
+          lower(i:i) = achar(code + 32)
+        else
+          lower(i:i) = str(i:i)
+        end if
+      end do
+    end function
+!***********************************************************************
+    subroutine string_to_enum(dst,src_in)
 
         integer :: dst
-        character(len=*) :: src
+        character(len=*) :: src_in
+        character(len(src_in)) :: src
 
+        src = to_lower_helper(src_in)
         select case(src)
         case('pde')
           dst = enum_pde_string

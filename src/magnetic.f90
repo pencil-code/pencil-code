@@ -11651,7 +11651,7 @@ print*,'AXEL2: should not be here (eta) ... '
     call copy_addr(ampl_ff,p_par(162))
     call copy_addr(swirl,p_par(163))
     call copy_addr(ampl_fcont_aa,p_par(164))
-    call copy_addr(LLambda_aa,p_par(165))
+    call copy_addr(llambda_aa,p_par(165))
     call copy_addr(vcrit_anom,p_par(166))
     call copy_addr(numag,p_par(167))
     call copy_addr(b0_magfric,p_par(168))

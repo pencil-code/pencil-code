@@ -1575,8 +1575,6 @@ call copy_addr(iggtim,p_par(1296)) ! int
 call copy_addr(iggxim,p_par(1297)) ! int
 call copy_addr(istresstim,p_par(1298)) ! int
 call copy_addr(istressxim,p_par(1299)) ! int
-call copy_addr(n_odevars,p_par(1300)) ! int
-call copy_addr(f_ode,p_par(1301)) ! (n_odevars)
 call copy_addr(tstart,p_par(1302))
 call copy_addr(iunx,p_par(1303)) ! int
 call copy_addr(iuny,p_par(1304)) ! int

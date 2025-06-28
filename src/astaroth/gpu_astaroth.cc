@@ -1222,36 +1222,65 @@ extern "C" void substepGPU(int isubstep)
 void copyFarray(AcReal* f)
 {
   #include "user_constants.h"
-  /*
-  if (has_nans(mesh)){
-    acLogFromRootProc(rank,"found nans while copying\n");
-    exit(0);
-  }
-  */
-  AcMesh mesh_to_copy;
-  size_t offset = 0;
-  for (int i = 0; i < NUM_VTXBUF_HANDLES; ++i)
-  {
-    mesh_to_copy.vertex_buffer[VertexBufferHandle(i)] = &f[offset];
-//printf("mesh %d %p \n",i, mesh.vertex_buffer[VertexBufferHandle(i)]);
-    offset += mw;
-  }
-  mesh_to_copy.info = mesh.info;
 
   acGridSynchronizeStream(STREAM_ALL);
-  //acDeviceStoreMesh(acGridGetDevice(), STREAM_DEFAULT, &mesh_to_copy);
-  //acDeviceStoreMesh(acGridGetDevice(), STREAM_DEFAULT, &mesh);
   //TP: for now only copy the advanced fields back
   //TODO: should auxiliaries needed on the GPU like e.g. Shock be copied? They can always be recomputed on the host if needed
   //If doing training we read all since we might want TAU components to calculate e.g. validation error
   const int end = ltraining ? NUM_VTXBUF_HANDLES : 
 	  	  lread_all_vars_from_device ? mfarray : mvar;
 
+  AcMesh* dst = &mesh;
+  AcMesh tmp;
+  if(dimensionality == 1)
+  {
+  	acHostMeshCopy(mesh, &tmp);
+	dst = &tmp;
+  }
   for (int i = 0; i < end; ++i)
   {
-	  acDeviceStoreVertexBuffer(acGridGetDevice(),STREAM_DEFAULT,VertexBufferHandle(i),&mesh);
+	  acDeviceStoreVertexBuffer(acGridGetDevice(),STREAM_DEFAULT,VertexBufferHandle(i),dst);
   }
   acGridSynchronizeStream(STREAM_ALL);
+  //TP: Astaroth does allocate ghost zones for 1d simulations, and unlike for xy  we cannot simply offset into the farray so have to manually copy the values
+  //    This is fine since 1d simulations are anyways mainly for testing
+  if(dimensionality == 1)
+  {
+ 	if(nxgrid != 1)
+	{
+		for(int x = 0; x < nx; ++x)
+		{
+  			for (int i = 0; i < end; ++i)
+  			{
+				const size_t f_index = (NGHOST+x)+ mx*(NGHOST + my*(NGHOST));
+				mesh.vertex_buffer[i][f_index] = dst->vertex_buffer[i][NGHOST+x];
+			}
+		}
+	}
+ 	if(nygrid != 1)
+	{
+		for(int y = 0; y < ny; ++y)
+		{
+  			for (int i = 0; i < end; ++i)
+  			{
+				const size_t f_index = (NGHOST)+ mx*((y+NGHOST) + my*(NGHOST));
+				mesh.vertex_buffer[i][f_index] = dst->vertex_buffer[i][NGHOST+y];
+			}
+		}
+	}
+ 	if(nzgrid != 1)
+	{
+		for(int z = 0; z < nz; ++z)
+		{
+  			for (int i = 0; i < end; ++i)
+  			{
+				const size_t f_index = (NGHOST)+ mx*(NGHOST + my*(z+NGHOST));
+				mesh.vertex_buffer[i][f_index] = dst->vertex_buffer[i][NGHOST+z];
+			}
+		}
+	}
+  	acHostMeshDestroy(&tmp);
+  }
 }
 /***********************************************************************************************/
 void checkConfig(AcMeshInfo &config)
@@ -1347,22 +1376,57 @@ void autotune_all_integration_substeps()
 /***********************************************************************************************/
 extern "C" void loadFarray()
 {
-  /**
-  if (has_nans(mesh)){
-    acLogFromRootProc(rank,"found nans while copying\n");
-    exit(0);
+  AcMesh src = mesh;
+  AcMesh tmp;
+  if(dimensionality == 1)
+  {
+  	acHostMeshCopy(mesh, &tmp);
+	src = tmp;
+ 	if(nxgrid != 1)
+	{
+    		for (int i = 0; i < mvar; ++i)
+  		{
+			for(int x = 0; x < nx; ++x)
+			{
+				const size_t f_index = (NGHOST+x)+ mx*(NGHOST + my*(NGHOST));
+				src.vertex_buffer[i][NGHOST+x]  = mesh.vertex_buffer[i][f_index];
+			}
+		}
+	}
+	else if(nygrid != 1)
+	{
+    		for (int i = 0; i < mvar; ++i)
+  		{
+			for(int y = 0; y < ny; ++y)
+			{
+				const size_t f_index = (NGHOST)+ mx*((NGHOST+y) + my*(NGHOST));
+				src.vertex_buffer[i][NGHOST+y]  = mesh.vertex_buffer[i][f_index];
+			}
+		}
+	}
+	else if(nzgrid != 1)
+	{
+    		for (int i = 0; i < mvar; ++i)
+  		{
+			for(int z = 0; z < nz; ++z)
+			{
+				const size_t f_index = (NGHOST)+ mx*(NGHOST + my*(z+NGHOST));
+				src.vertex_buffer[i][NGHOST+z]  = mesh.vertex_buffer[i][f_index];
+			}
+		}
+	}
   }
-  **/
   acGridSynchronizeStream(STREAM_ALL);
   {
     for (int i = 0; i < mvar; ++i)
-  	acDeviceLoadVertexBuffer(acGridGetDevice(), STREAM_DEFAULT, mesh, VertexBufferHandle(i));
+  	acDeviceLoadVertexBuffer(acGridGetDevice(), STREAM_DEFAULT, src, VertexBufferHandle(i));
 
     for (int i = 0; i < mfarray; ++i)
       if (maux_vtxbuf_index[i])
-  		acDeviceLoadVertexBuffer(acGridGetDevice(), STREAM_DEFAULT, mesh, VertexBufferHandle(maux_vtxbuf_index[i]));
+  		acDeviceLoadVertexBuffer(acGridGetDevice(), STREAM_DEFAULT, src, VertexBufferHandle(maux_vtxbuf_index[i]));
   }
   acGridSynchronizeStream(STREAM_ALL);
+  if(dimensionality == 1) acHostMeshDestroy(&tmp);
 }
 /***********************************************************************************************/
 void testBCs();     // forward declaration
@@ -1414,7 +1478,7 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint)
   //TP: done after setupConfig since we need maux_vtxbuf_index
   //TP: this is an ugly way to do this but works for now
   {
-    const size_t z_offset = (nzgrid == 1) ? NGHOST*mx*my : 0;
+    const size_t z_offset  = (dimensionality == 2 && nzgrid == 1) ? NGHOST*mx*my : 0;
     size_t offset = 0;
     for (int i = 0; i < mvar; ++i)
     {
@@ -1446,7 +1510,9 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint)
   if (rank==0 && ldebug) printf("memusage after pointer assign= %f MBytes\n", acMemUsage()/1024.);
 #if AC_RUNTIME_COMPILATION
 #include "cmake_options.h"
-  acCompile(cmake_options,mesh.info);
+  char src_cmake_options[10000];
+  sprintf(src_cmake_options,"%s -DELIMINATE_CONDITIONALS=%s",cmake_options,TRANSPILATION ? "on" : "off");
+  acCompile(src_cmake_options,mesh.info);
   acLoadLibrary(rank == 0 ? stderr : NULL,mesh.info);
   acCheckDeviceAvailability();
   acLogFromRootProc(rank, "Done setupConfig && acCompile\n");
@@ -1496,7 +1562,9 @@ extern "C" void reloadConfig()
 	  exit(EXIT_FAILURE);
   }
 #include "cmake_options.h"
-  acCompile(cmake_options,mesh.info);
+  char src_cmake_options[10000];
+  sprintf(src_cmake_options,"%s -DELIMINATE_CONDITIONALS=%s",cmake_options,TRANSPILATION ? "on" : "off");
+  acCompile(src_cmake_options,mesh.info);
   acLoadLibrary(rank == 0 ? stderr : NULL,mesh.info);
   acGridInit(mesh);
   acLogFromRootProc(rank, "Done setupConfig && acCompile\n");
