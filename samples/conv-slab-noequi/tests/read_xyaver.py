@@ -23,14 +23,12 @@ av = pc.read.aver(
     quiet=True,
     )
 
+def write(f, qty):
+    f.write(f"{qty} :")
+    for xp in eval(qty):
+        f.write(f' {xp:g}')
+    f.write('\n')
+
 with open(f'{__file__[:-3]}.out', 'w') as f:
-    f.write('av.t :')
-    for t in av.t[:5]:
-        f.write(f' {t:g}')
-    f.write('\n')
-
-    f.write('av.xy.u2mz[3,:4] :')
-    for a in av.xy.u2mz[3,:4]:
-        f.write(f' {a:g}')
-    f.write('\n')
-
+    write(f, "av.t[:5]")
+    write(f, "av.xy.u2mz[3,:4]")
