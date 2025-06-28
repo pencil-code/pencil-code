@@ -12,6 +12,8 @@ Your interactions with the community should follow the code described in `licens
 
 ## Contactability
 
+Add your contact details to `license/developers.txt`.
+
 When you make a commit using Git, your email address is stored with the commit metadata.
 Make sure the email address you use is one you regularly monitor.
 In case there are any problems with your commit, you may be contacted by other developers.
