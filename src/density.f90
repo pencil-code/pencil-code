@@ -3033,7 +3033,7 @@ module Density
         endif
         if (idiag_rhoupmz/=0 .or. idiag_rho2upmz/=0 .or. idiag_rhof2upmz/=0) then
           where (p%uu(:,3) > 0.)
-            uzmask = p%uu(:,3)/abs(p%uu(:,3))
+            uzmask = 1
           elsewhere
             uzmask=0.
           endwhere
@@ -3045,7 +3045,7 @@ module Density
         endif
         if (idiag_rhodownmz/=0 .or. idiag_rho2downmz/=0 .or. idiag_rhof2downmz/=0) then
           where (p%uu(:,3) < 0.)
-            uzmask = -p%uu(:,3)/abs(p%uu(:,3))
+            uzmask = 1
           elsewhere
             uzmask=0.
           endwhere

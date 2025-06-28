@@ -4013,7 +4013,7 @@ module Energy
             idiag_ssf2upmz/=0 .or. idiag_TTupmz/=0 .or. idiag_TT2upmz/=0 .or. &
             idiag_TTf2upmz/=0 .or. idiag_uzTTupmz/=0) then
           where (p%uu(:,3) > 0.)
-            uzmask = p%uu(:,3)/abs(p%uu(:,3))
+            uzmask = 1
           elsewhere
             uzmask = 0.
           endwhere
@@ -4038,7 +4038,7 @@ module Energy
             idiag_ssf2downmz/=0 .or. idiag_TTdownmz/=0 .or. idiag_TT2downmz/=0 .or. &
             idiag_TTf2downmz/=0 .or. idiag_uzTTdownmz/=0) then
           where (p%uu(:,3) < 0.)
-            uzmask = -p%uu(:,3)/abs(p%uu(:,3))
+            uzmask = 1
           elsewhere
             uzmask = 0.
           endwhere
