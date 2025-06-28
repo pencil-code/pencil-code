@@ -23,8 +23,10 @@ To change the email address used for your commits, see
 ## Mailing lists
 
 Major announcements regarding the code will be made on
-<https://groups.google.com/g/pencil-code-discuss/c/HnS4i9Xrx7o>;
+<https://groups.google.com/g/pencil-code-discuss>;
 it is recommended that you subscribe to this mailing list.
+Changes to the Python module can be discussed on
+<https://groups.google.com/g/pencil-code-python>
 
 # Recommended development style
 
