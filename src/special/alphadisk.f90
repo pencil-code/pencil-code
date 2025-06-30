@@ -1369,7 +1369,7 @@ module Special
     use Syscalls, only: copy_addr
     use General , only: string_to_enum
 
-    integer, parameter :: n_pars=10
+    integer, parameter :: n_pars=20
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
      call copy_addr(one_over_three_pi,p_par(1))
