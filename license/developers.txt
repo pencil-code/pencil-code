@@ -46,6 +46,7 @@ Dhrubaditya Mitra,    dhruba.mitra/gmail.com,        dhruba,               +46 8
 Mikhail Modestov,     mikhail3/kth.se,               ,                     +46 8 5537 8039,   +46 73 8600 130,          IAC, Teneriffe
 Jeffrey S. Oishi,     jsoishi/gmail.com,             ,                     +1 347 432 9203,   ,                         Farmingdale State College
 Raphael Plasson,      ,                              ,                     +46 7 3575 8374,   ,                         Harvard University
+Touko Puro,           touko.puro@aalto.fi,           ToxPuro,              +358 44 0868560,   ,                         Aalto University
 Matthias Rheinhardt,  mreinhardt/nordita.org,        rei,                  +358 50 4480159,   ,+49 1590 2984560         Aalto University
 Alex Richert,         alexrichert/gmail.com,         alexrichert,          ,                  ,                         Penn State University
 Alberto Roper Pol     alberto.roperpol/unige.ch,     AlbertoRoper,         +33 749 341453     ,                         University of Geneva
