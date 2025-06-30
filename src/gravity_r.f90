@@ -134,6 +134,7 @@ module Gravity
       use Sub, only: poly, step, get_radial_distance
       use Mpicomm
       use SharedVariables, only: put_shared_variable
+      use FArrayManager, only: farray_use_global
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3) :: gg_mn=0.0
@@ -141,6 +142,7 @@ module Gravity
       real :: rs=0.0
       logical :: lpade=.true. ! set to false for 1/r potential
       integer :: j
+      integer, pointer :: iglobal_gg_tmp
 !
 !  Pre-calculate the angular frequency of the rotating frame in the case a
 !  secondary stationary body is added to the simulation.
@@ -436,6 +438,9 @@ module Gravity
       call put_shared_variable('n_pot',n_pot)
       call put_shared_variable('cpot',cpot)
       call put_shared_variable('cpot2',cpot2)
+!  Get iglobal_gg by name in case it was registered by density
+      call farray_use_global('global_gg',iglobal_gg_tmp)
+      iglobal_gg = iglobal_gg_tmp
 !
     endsubroutine initialize_gravity
 !***********************************************************************
@@ -524,19 +529,15 @@ module Gravity
 !
 !  12-nov-04/anders: coded
 !
-      use FArrayManager, only: farray_use_global
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3):: ggp
       type (pencil_case) :: p
-      integer, pointer :: iglobal_gg
 !
       intent(in) :: f
 !
-      call farray_use_global('global_gg',iglobal_gg)
 !
       if (lpencil(i_gg)) then
-        call farray_use_global('global_gg',iglobal_gg)
         p%gg = f(l1:l2,m,n,iglobal_gg:iglobal_gg+2)
 !
 !  If there is a secondary body whose mass is changing in time (ramped-up), then 
