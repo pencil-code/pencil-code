@@ -352,12 +352,12 @@ print("not implemented set_ghosts_for_onesided_ders");
 }
 else {
 if (AC_ldensity_nolog) {;
-for i in 1:AC_NGHOST+1 {
+for i in 1:NGHOST+1 {
 SS[vertexIdx.x][vertexIdx.y][AC_n1-i-1] = -SS[vertexIdx.x][vertexIdx.y][AC_n1+i-1] + tmp  - 2*(AC_cp-AC_cv)*(lnrho_xy-AC_lnrho0);
 }
 }
 else {
-for i in 1:AC_NGHOST+1 {
+for i in 1:NGHOST+1 {
 SS[vertexIdx.x][vertexIdx.y][AC_n1-i-1] = -SS[vertexIdx.x][vertexIdx.y][AC_n1+i-1] + tmp  - (AC_cp-AC_cv)*(LNRHO[vertexIdx.x][vertexIdx.y][AC_n1+i-1]+LNRHO[vertexIdx.x][vertexIdx.y][AC_n1-i-1]-2*AC_lnrho0);
 }
 }
@@ -375,7 +375,7 @@ if (loptest_return_value_2) {;
 print("not implemented set_ghosts_for_onesided_ders");
 }
 else {
-for i in 1:AC_NGHOST+1 {
+for i in 1:NGHOST+1 {
 SS[vertexIdx.x][vertexIdx.y][AC_n1-i-1]=2*SS[vertexIdx.x][vertexIdx.y][AC_n1-1]-SS[vertexIdx.x][vertexIdx.y][AC_n1+i-1];
 }
 }
@@ -397,7 +397,7 @@ if (loptest_return_value_3) {;
 print("not implemented set_ghosts_for_onesided_ders");
 }
 else {
-for i in 1:AC_NGHOST+1 {
+for i in 1:NGHOST+1 {
 LNTT[vertexIdx.x][vertexIdx.y][AC_n1-i-1]=2*LNTT[vertexIdx.x][vertexIdx.y][AC_n1-1]-LNTT[vertexIdx.x][vertexIdx.y][AC_n1+i-1];
 }
 }
@@ -432,12 +432,12 @@ print("not implemented set_ghosts_for_onesided_ders");
 }
 else {
 if (AC_ldensity_nolog) {;
-for i in 1:AC_NGHOST+1 {
+for i in 1:NGHOST+1 {
 SS[vertexIdx.x][vertexIdx.y][AC_n2+i-1] = -SS[vertexIdx.x][vertexIdx.y][AC_n2-i-1] + tmp  - 2*(AC_cp-AC_cv)*(lnrho_xy-AC_lnrho0);
 }
 }
 else {
-for i in 1:AC_NGHOST+1 {
+for i in 1:NGHOST+1 {
 SS[vertexIdx.x][vertexIdx.y][AC_n2+i-1] = -SS[vertexIdx.x][vertexIdx.y][AC_n2-i-1] + tmp  - (AC_cp-AC_cv)*(LNRHO[vertexIdx.x][vertexIdx.y][AC_n2-i-1]+LNRHO[vertexIdx.x][vertexIdx.y][AC_n2+i-1]-2*AC_lnrho0);
 }
 }
@@ -455,7 +455,7 @@ if (loptest_return_value_6) {;
 print("not implemented set_ghosts_for_onesided_ders");
 }
 else {
-for i in 1:AC_NGHOST+1 {
+for i in 1:NGHOST+1 {
 SS[vertexIdx.x][vertexIdx.y][AC_n2+i-1]=2*SS[vertexIdx.x][vertexIdx.y][AC_n2-1]-SS[vertexIdx.x][vertexIdx.y][AC_n2-i-1];
 }
 }
@@ -477,7 +477,7 @@ if (loptest_return_value_7) {;
 print("not implemented set_ghosts_for_onesided_ders");
 }
 else {
-for i in 1:AC_NGHOST+1 {
+for i in 1:NGHOST+1 {
 LNTT[vertexIdx.x][vertexIdx.y][AC_n2+i-1]=2*LNTT[vertexIdx.x][vertexIdx.y][AC_n2-1]-LNTT[vertexIdx.x][vertexIdx.y][AC_n2-i-1];
 }
 }

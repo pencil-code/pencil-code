@@ -15,7 +15,8 @@ Kernel shock_2_max()
 
 Kernel shock_3_smooth()
 {
-  write( SHOCK, AC_dsmin*AC_dsmin*smooth(SHOCK) )
+  smoothed_shock = AC_lgaussian_smooth__mod__shock ? smooth(SHOCK) : binomial_smooth(SHOCK)
+  write( SHOCK, AC_dsmin*AC_dsmin*smoothed_shock)
 }
 #else
 Kernel shock_1_divu()

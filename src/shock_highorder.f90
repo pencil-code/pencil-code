@@ -861,6 +861,7 @@ module Shock
     call copy_addr(con_bias     ,p_par(6))
     call copy_addr(lmax_shock   ,p_par(7)) ! bool
     call copy_addr(lconvergence_only,p_par(8))  ! bool
+    call copy_addr(lgaussian_smooth,p_par(9)) ! bool
 
     endsubroutine pushpars2c
 !***********************************************************************
