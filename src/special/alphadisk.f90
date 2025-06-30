@@ -122,6 +122,8 @@ module Special
      module procedure sigma_to_mdot_pt
    endinterface
 !
+  real :: minsigma,maxsigma,dsig,dsig1
+  real :: minlnsigma,maxlnsigma,dlnsig,dlnsig1
   contains
 !***********************************************************************
     subroutine register_special
@@ -384,6 +386,15 @@ module Special
 !
     endsubroutine init_special
 !***********************************************************************
+    subroutine precalc_interpolation_parameters
+
+      minsigma=minval(sigma_table) ; maxsigma=maxval(sigma_table)
+      dsig = (maxsigma-minsigma)/(nsigma_table-1) ; dsig1=1./dsig
+!
+      minlnsigma =minval(lnsigma_table) ; maxlnsigma =maxval(lnsigma_table)
+      dlnsig = (maxlnsigma-minlnsigma)/(nsigma_table-1) ; dlnsig1=1./dlnsig
+    endsubroutine precalc_interpolation_parameters
+!***********************************************************************
     subroutine precalc_temperatures(f)
 !
 !  This subroutine sets two look-up tables for temperature,
@@ -456,6 +467,11 @@ module Special
         print*,'minmax temperature table 1',minval(tmid1_table),maxval(tmid1_table)
         print*,'minmax temperature table 2',minval(tmid2_table),maxval(tmid2_table)
       endif
+
+!
+!  Pre-calculate the parameters needed for the linear interpolation.
+!
+      call precalc_interpolation_parameters
 !
     endsubroutine precalc_temperatures
 !***********************************************************************
@@ -946,22 +962,8 @@ module Special
       real :: sig,sdo,sup
       real :: lnsig,lnsdo,lnsup
       integer :: isig_do,isig_up
-      real, save :: minsigma,maxsigma,dsig,dsig1
-      real, save :: minlnsigma,maxlnsigma,dlnsig,dlnsig1
-      logical, save :: lfirstcall=.true.
       integer :: i
 !
-!  Pre-calculate the parameters needed for the linear interpolation.
-!
-      if (lfirstcall) then
-        minsigma=minval(sigma_table) ; maxsigma=maxval(sigma_table)
-        dsig = (maxsigma-minsigma)/(nsigma_table-1) ; dsig1=1./dsig
-!
-        minlnsigma=minval(lnsigma_table) ; maxlnsigma=maxval(lnsigma_table)
-        dlnsig = (maxlnsigma-minlnsigma)/(nsigma_table-1) ; dlnsig1=1./dlnsig
-!
-        lfirstcall=.false.
-      endif
 !
       do i=1,nx
 !
