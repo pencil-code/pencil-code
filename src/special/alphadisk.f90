@@ -498,6 +498,15 @@ module Special
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
+    subroutine get_nu(f,nu)
+!
+!  30-jun-25/TP: carved from dspecial_dt
+!
+      real, dimension(mx,my,mz,mfarray), intent(IN) :: f
+      real, dimension(nx), intent(OUT) :: nu
+      nu=f(l1:l2,m,n,imdot)*one_over_three_pi/f(l1:l2,m,n,isigma)
+    endsubroutine get_nu
+!***********************************************************************
     subroutine dspecial_dt(f,df,p)
 !
 !  calculate right hand side of ONE OR MORE extra coupled PDEs
@@ -513,12 +522,11 @@ module Special
 !  06-oct-03/tony: coded
 !  01-aug-11/wlad: adapted
 !
-      use Diagnostics, only: sum_mn_name, max_mn_name, yzsum_mn_name_x 
       use Sub, only: grad,del2
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: nu,del2sigmanu,gsigmanu,psigma
+      real, dimension (nx) :: nu,del2sigmanu,gsigmanu
       real, dimension (nx,3) :: tmp_vec
       type (pencil_case) :: p
 !
@@ -549,8 +557,7 @@ module Special
         df(l1:l2,m,n,isigma) = df(l1:l2,m,n,isigma) - swind
       endif
 
-      if (lfirst.and.ldt.or.ldiagnos.or.l1davgfirst) psigma=f(l1:l2,m,n,isigma)
-      if (lfirst.and.ldt.or.ldiagnos) nu=f(l1:l2,m,n,imdot)*one_over_three_pi/psigma
+      if (lfirst.and.ldt) call get_nu(f,nu)
 !
 !  Contribution to the time-step from diffusion.
 !  (should the wind also play a role?).
@@ -562,8 +569,29 @@ module Special
 !
 !  Diagnostics.
 !
+      call calc_diagnostics_special(f,p)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
+!
+    endsubroutine dspecial_dt
+!***********************************************************************
+    subroutine calc_diagnostics_special(f,p)
+ !
+ !  30-jun-25:TP carved from dspecial_dt
+ !
+      use Diagnostics, only: sum_mn_name, max_mn_name, yzsum_mn_name_x 
+
+      real, dimension(mx,my,mz,mfarray), intent(IN) :: f
+      type(pencil_case), intent(IN) :: p
+      real, dimension (nx) :: psigma,nu
+
+      if(ldiagnos .or. l1davgfirst) psigma = f(l1:l2,m,n,isigma)
       if (ldiagnos) then
-        if (idiag_dtyear/=0) call sum_mn_name(.4*dx**2/(3*nu),idiag_dtyear)
+
+        if (idiag_dtyear/=0) then 
+                call get_nu(f,nu)
+                call sum_mn_name(.4*dx**2/(3*nu),idiag_dtyear)
+        endif
         call sum_mn_name(psigma,idiag_sigmam)
         call max_mn_name(psigma,idiag_sigmamax)
         if (idiag_sigmamin/=0) call max_mn_name(-psigma,idiag_sigmamin,lneg=.true.)
@@ -574,12 +602,9 @@ module Special
       if (l1davgfirst) then
         call yzsum_mn_name_x(psigma,idiag_sigmamx)
       endif
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine dspecial_dt
+    endsubroutine calc_diagnostics_special
 !***********************************************************************
+!
     subroutine read_special_init_pars(iostat)
 !
       use File_io, only: parallel_unit
