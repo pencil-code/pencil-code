@@ -30,6 +30,10 @@ void FTNIZE(before_boundary_gpu_c)(FINT* lrmv, FINT *isubstep, double *t)
 {
 }
 /* ------------------------------------------------------------------- */
+void FTNIZE(after_timestep_gpu_c)()
+{
+}
+/* ---------------------------------------------------------------------- */
 void FTNIZE(source_function_and_opacity_gpu_c)(int *inu)
 {
 }

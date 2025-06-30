@@ -81,6 +81,7 @@ module Timestep
           solid_cells_timestep_second
       use Shear, only: advance_shear
       use Sub, only: set_dt, shift_dt
+      use GPU, only: after_timestep_gpu
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -193,6 +194,7 @@ module Timestep
         endif
 !
       if (.not. lgpu) call update_after_substep(f,df,dtsub,llast)
+      if (lgpu) call after_timestep_gpu
 !
         ! [PAB] according to MR this breaks the autotest.
         ! @Piyali: there must be a reason to add an additional global communication,

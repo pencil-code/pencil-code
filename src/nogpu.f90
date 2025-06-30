@@ -76,6 +76,9 @@ contains
 !
     endsubroutine before_boundary_gpu
 !**************************************************************************
+    subroutine after_timestep_gpu
+    endsubroutine after_timestep_gpu
+!**************************************************************************
     function get_ptr_GPU(ind1,ind2,lout) result(pFarr)
 
       integer :: ind1

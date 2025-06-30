@@ -1145,6 +1145,11 @@ extern "C" void beforeBoundaryGPU(bool lrmv, int isubstep, double t)
 #endif
 }
 /***********************************************************************************************/
+extern "C" void afterTimeStepGPU()
+{
+	acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_after_timestep),1);
+}
+/***********************************************************************************************/
 extern "C" void substepGPU(int isubstep)
 //
 //  Do the 'isubstep'th integration step on all GPUs on the node and handle boundaries.
@@ -1172,7 +1177,7 @@ extern "C" void substepGPU(int isubstep)
   if (isubstep == 1) 
   {
 	  //TP: done to have the same timestep as PC when testing
-	  if (ldt && lcpu_timestep_on_gpu) dt1_interface = GpuCalcDt();
+	  if (ldt && lcourant_dt && lcpu_timestep_on_gpu) dt1_interface = GpuCalcDt();
 	  if (ldt) set_dt(dt1_interface);
 	  acDeviceSetInput(acGridGetDevice(), AC_dt,dt);
   }
@@ -1384,12 +1389,16 @@ extern "C" void loadFarray()
 	src = tmp;
  	if(nxgrid != 1)
 	{
-    		for (int i = 0; i < mvar; ++i)
+    		for (int i = 0; i < mfarray; ++i)
   		{
+			const int index = (i < mvar) ? i :
+					  maux_vtxbuf_index[i] ? maux_vtxbuf_index[i] :
+					  -1;
+			if(index == -1) continue;
 			for(int x = 0; x < nx; ++x)
 			{
 				const size_t f_index = (NGHOST+x)+ mx*(NGHOST + my*(NGHOST));
-				src.vertex_buffer[i][NGHOST+x]  = mesh.vertex_buffer[i][f_index];
+				src.vertex_buffer[index][NGHOST+x]  = mesh.vertex_buffer[index][f_index];
 			}
 		}
 	}
@@ -1532,6 +1541,8 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint)
   acDeviceSetInput(acGridGetDevice(), AC_shear_delta_y,deltay);
 		
   if (ltest_bcs) testBCs();
+  //TP: for autotuning
+  afterTimeStepGPU();
   autotune_all_integration_substeps();
   if (rank==0 && ldebug) printf("memusage before store config= %f MBytes\n", acMemUsage()/1024.);
   acStoreConfig(acDeviceGetLocalConfig(acGridGetDevice()), "PC-AC.conf");
@@ -1969,6 +1980,7 @@ void testBCs()
 extern "C" void gpuSetDt()
 {
 	acGridSynchronizeStream(STREAM_ALL);
+	beforeBoundaryGPU(false,0,0.0);
 	if (!lcourant_dt)
 	{
 		fprintf(stderr,"gpuSetDt works only for Courant timestep!!\n");

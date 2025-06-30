@@ -153,6 +153,23 @@ bc_ss_flux(boundary, topbot)
 }
 #endif
 
+bc_copy_x(AcBoundary boundary, AC_TOP_BOT topbot,VtxBuffer j)
+{
+  suppress_unused_warning(boundary)
+  if(topbot == AC_bot) {
+    j[AC_l1-1-1][vertexIdx.y][vertexIdx.z]=j[AC_l1-1][vertexIdx.y][vertexIdx.z]
+    j[AC_l1-2-1][vertexIdx.y][vertexIdx.z]=j[AC_l1-1][vertexIdx.y][vertexIdx.z]
+    j[AC_l1-3-1][vertexIdx.y][vertexIdx.z]=j[AC_l1-1][vertexIdx.y][vertexIdx.z]
+  }
+  else if(topbot == AC_top) {
+    j[1+AC_l2-1][vertexIdx.y][vertexIdx.z]=j[AC_l2-1][vertexIdx.y][vertexIdx.z]
+    j[2+AC_l2-1][vertexIdx.y][vertexIdx.z]=j[AC_l2-1][vertexIdx.y][vertexIdx.z]
+    j[3+AC_l2-1][vertexIdx.y][vertexIdx.z]=j[AC_l2-1][vertexIdx.y][vertexIdx.z]
+  }
+  else {
+  }
+}
+
 bc_sym_x(AcBoundary boundary, AC_TOP_BOT topbot, VtxBuffer field,int sgn,bool rel)
 {
   suppress_unused_warning(boundary)

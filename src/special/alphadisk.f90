@@ -124,6 +124,7 @@ module Special
 !
   real :: minsigma,maxsigma,dsig,dsig1
   real :: minlnsigma,maxlnsigma,dlnsig,dlnsig1
+  integer :: enum_temperature_model = 0
   contains
 !***********************************************************************
     subroutine register_special
@@ -141,8 +142,8 @@ module Special
 !  Register variables needed for alpha disk.
 !
       call farray_register_pde('sigma',isigma)
-      call farray_register_auxiliary('mdot',imdot,communicated=.true.)
-      call farray_register_auxiliary('tmid',itmid)
+      call farray_register_auxiliary('mdot',imdot,communicated=.true.,on_gpu=lgpu)
+      call farray_register_auxiliary('tmid',itmid,on_gpu=lgpu)
 !
 ! Write to read special variables with pc_varcontent
 !
@@ -1371,7 +1372,7 @@ module Special
     use Syscalls, only: copy_addr
     use General , only: string_to_enum
 
-    integer, parameter :: n_pars=20
+    integer, parameter :: n_pars=35
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
      call copy_addr(one_over_three_pi,p_par(1))
@@ -1388,6 +1389,21 @@ module Special
      call copy_addr(c2,p_par(12)) ! (nx)
      call copy_addr(c3,p_par(13)) ! (nx)
      call copy_addr(nut_global,p_par(14)) ! (nx)
+     call copy_addr(itmid,p_par(15)) ! int
+     call string_to_enum(enum_temperature_model,temperature_model)
+     call copy_addr(enum_temperature_model,p_par(18)) ! int
+     call copy_addr(sigma_table,p_par(20)) !  (nsigma_table)
+     call copy_addr(lnsigma_table,p_par(21)) !  (nsigma_table)
+     call copy_addr(tmid1_table,p_par(22)) ! (nsigma_table) (nx)
+     call copy_addr(tmid2_table,p_par(23)) ! (nsigma_table) (nx)
+     call copy_addr(maxsigma,p_par(24)) 
+     call copy_addr(minsigma,p_par(25)) 
+     call copy_addr(dsig,p_par(26)) 
+     call copy_addr(dsig1,p_par(27)) 
+     call copy_addr(maxlnsigma,p_par(28)) 
+     call copy_addr(minlnsigma,p_par(29)) 
+     call copy_addr(dlnsig,p_par(30)) 
+     call copy_addr(dlnsig1,p_par(31)) 
     endsubroutine pushpars2c
 !***********************************************************************
 !********************************************************************

@@ -1237,7 +1237,7 @@ subroutine run_start() bind(C)
 
     integer, parameter :: n_pars=1500
     integer, pointer :: iglobal_gg_tmp
-    integer :: iglobal_gg,ierr
+    integer, save :: iglobal_gg,ierr
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
 call copy_addr(ncoarse,p_par(1)) ! int

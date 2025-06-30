@@ -2,6 +2,7 @@
 #include "../density/mass_conservation.h"
 #include "../selfgravity.h"
 #include "../magnetic/before_boundary.h"
+#include "../alphadisk/after_timestep.h"
 
 input real AC_dt
 input PC_SUB_STEP_NUMBER AC_step_num
@@ -44,6 +45,10 @@ ComputeSteps AC_before_boundary_steps(boundconds)
 	get_current_total_mass(AC_lrmv)
 	fix_mass_drift(AC_lrmv)
 	magnetic_before_boundary_reductions()
+}
+ComputeSteps AC_after_timestep(boundconds)
+{
+	after_timestep_alphadisk()
 }
 BoundConds boundconds{
   #include "boundconds.h"
