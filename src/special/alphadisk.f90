@@ -1378,6 +1378,14 @@ module Special
      call copy_addr(imdot,p_par(4)) ! int
      call copy_addr(rr1,p_par(5)) ! (nx)
      call copy_addr(swind,p_par(6)) ! (nx)
+     call copy_addr(sigma_middle,p_par(7))
+     call copy_addr(sigma_floor,p_par(8))
+     call copy_addr(nsigma_table,p_par(9)) ! int
+     call copy_addr(cprime,p_par(10))
+     call copy_addr(c1,p_par(11)) ! (nx)
+     call copy_addr(c2,p_par(12)) ! (nx)
+     call copy_addr(c3,p_par(13)) ! (nx)
+     call copy_addr(nut_global,p_par(14)) ! (nx)
     endsubroutine pushpars2c
 !***********************************************************************
 !********************************************************************

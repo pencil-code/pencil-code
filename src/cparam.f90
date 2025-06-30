@@ -941,5 +941,15 @@ integer, parameter :: enum_no_such_idelkt_string = 661
 integer, parameter :: enum_ZhorndeskiZZ__string = 662
 integer, parameter :: enum_Zhorndeski1ZZ__string = 663
 integer, parameter :: enum_Zhorndeski2ZZ__string = 664
+integer, parameter :: enum_hayashi_string = 665
+integer, parameter :: enum_radiative_string = 666
+integer, parameter :: enum_sigmaZ_string = 667
+integer, parameter :: enum_all_sigmaeZ_string = 668
+integer, parameter :: enum_sigma_to_mdot_mn_string = 669
+integer, parameter :: enum_sigmaZmaxsigmaZ_string = 670
+integer, parameter :: enum_get_tmid_string = 671
+integer, parameter :: enum_sigmaZ_isig_doZ_minsigma__string = 672
+integer, parameter :: enum_sigmaZ_isig_upZ_maxsigma__string = 673
+integer, parameter :: enum_sigmaZminsigmaZ_string = 674
 
 endmodule Cparam

@@ -7978,6 +7978,26 @@ iloop:do i=1,size(list2)
           dst = enum_Zhorndeski1ZZ__string
         case('(horndeski2): ')
           dst = enum_Zhorndeski2ZZ__string
+        case('hayashi')
+          dst = enum_hayashi_string
+        case('radiative')
+          dst = enum_radiative_string
+        case('sigma=')
+          dst = enum_sigmaZ_string
+        case('all sigmae=')
+          dst = enum_all_sigmaeZ_string
+        case('sigma_to_mdot_mn')
+          dst = enum_sigma_to_mdot_mn_string
+        case('sigma,maxsigma=')
+          dst = enum_sigmaZmaxsigmaZ_string
+        case('get_tmid')
+          dst = enum_get_tmid_string
+        case('sigma, isig_do, minsigma ')
+          dst = enum_sigmaZ_isig_doZ_minsigma__string
+        case('sigma, isig_up, maxsigma ')
+          dst = enum_sigmaZ_isig_upZ_maxsigma__string
+        case('sigma,minsigma=')
+          dst = enum_sigmaZminsigmaZ_string
         case default
           dst = enum_unknown_string_string
         endselect
