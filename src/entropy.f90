@@ -6630,10 +6630,12 @@ module Energy
 !
 !       prof = 0.5*(1+tanh((r_mn-1.)/wcool))
 !
-      if (lcylindrical_coords) then
-        prof = step(p%rcyl_mn,rcool,wcool)
-      else
-        prof = step(p%r_mn,rcool,wcool)
+      if (cooltype /= 'shell') then
+        if (lcylindrical_coords) then
+          prof = step(p%rcyl_mn,rcool,wcool)
+        else
+          prof = step(p%r_mn,rcool,wcool)
+        endif
       endif
 !
 !  Pick type of cooling.
