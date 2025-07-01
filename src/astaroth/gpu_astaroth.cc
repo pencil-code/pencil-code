@@ -1433,6 +1433,10 @@ extern "C" void loadFarray()
     for (int i = 0; i < mfarray; ++i)
       if (maux_vtxbuf_index[i])
   		acDeviceLoadVertexBuffer(acGridGetDevice(), STREAM_DEFAULT, src, VertexBufferHandle(maux_vtxbuf_index[i]));
+    for(int i = mvar+maux; i < mfarray; ++i)
+    {
+  	acDeviceLoadVertexBuffer(acGridGetDevice(), STREAM_DEFAULT, src, VertexBufferHandle(i));
+    }
   }
   acGridSynchronizeStream(STREAM_ALL);
   if(dimensionality == 1) acHostMeshDestroy(&tmp);
@@ -1488,13 +1492,9 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint)
   //TP: this is an ugly way to do this but works for now
   {
     const size_t z_offset  = (dimensionality == 2 && nzgrid == 1) ? NGHOST*mx*my : 0;
-    size_t offset = 0;
     for (int i = 0; i < mvar; ++i)
     {
-      {
-      }
-      mesh.vertex_buffer[VertexBufferHandle(i)] = &farr[offset + z_offset];
-      offset += mw;
+      mesh.vertex_buffer[VertexBufferHandle(i)] = &farr[mw*i+ z_offset];
     }
 
     for (int i = 0; i < mfarray; ++i)
@@ -1503,6 +1503,10 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint)
       {
         mesh.vertex_buffer[maux_vtxbuf_index[i]] = &farr[mw*i];
       }
+    }
+    for(int i = mvar+maux; i < mfarray; ++i)
+    {
+        mesh.vertex_buffer[i] = &farr[mw*i];
     }
     //TP: for now for training we have all slots filled since we might want to read TAU components to the host for calculating validation error
     if (ltraining)
