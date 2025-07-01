@@ -6607,19 +6607,21 @@ module Energy
 !      real :: zbot,ztop
       intent(in) :: p
 !
-      select case (heattype)
-      case ('gaussian', 'Gaussian') ! heating with a spatially fixed Gaussian profile
-        if (nzgrid == 1) then
-          prof = exp(-0.5*(p%r_mn/wheat)**2) * (2*pi*wheat**2)**(-1.)  ! 2-D heating profile
-        else
-          prof = exp(-0.5*(p%r_mn/wheat)**2) * (2*pi*wheat**2)**(-1.5) ! 3-D one
-        endif
-      case ('cs2-rho') ! heating depending on ambient density and temperature
-        prof = (p%rho/rho0)**nheat_rho*(p%cs2/cs20)**nheat_TT
-      case default
-        call fatal_error('get_heat_cool_gravr','no such heattype: '//trim(heattype))
-      endselect
-      heat = luminosity*prof
+      if (luminosity /= 0.) then
+        select case (heattype)
+        case ('gaussian', 'Gaussian') ! heating with a spatially fixed Gaussian profile
+          if (nzgrid == 1) then
+            prof = exp(-0.5*(p%r_mn/wheat)**2) * (2*pi*wheat**2)**(-1.)  ! 2-D heating profile
+          else
+            prof = exp(-0.5*(p%r_mn/wheat)**2) * (2*pi*wheat**2)**(-1.5) ! 3-D one
+          endif
+        case ('cs2-rho') ! heating depending on ambient density and temperature
+          prof = (p%rho/rho0)**nheat_rho*(p%cs2/cs20)**nheat_TT
+        case default
+          call fatal_error('get_heat_cool_gravr','no such heattype: '//trim(heattype))
+        endselect
+        heat = luminosity*prof
+      endif
 !
       if (headt .and. lfirst .and. ip<=9) call output_pencil('heat.dat',heat,1)
 !
