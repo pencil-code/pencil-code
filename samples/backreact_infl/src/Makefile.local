@@ -3,7 +3,7 @@
 ### Included by `Makefile'
 ###
 
-MPICOMM=mpicomm
+MPICOMM=nompicomm
 GRAVITY=nogravity
 FORCING=noforcing
 ENTROPY=noentropy

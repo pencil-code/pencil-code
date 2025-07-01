@@ -5,8 +5,7 @@
 &run_pars
   cvsid="$Id$"
   nt=20, it1=2, isave=5000, itorder=3
-! itsnap=2000, dvid=5e5, tmax=7e8, dtmin=-1e-12
-  dvid=5e5, tmax=7e8, dtmin=-1e-12
+  itsnap=20, dvid=5e5, tmax=7e8, dtmin=-1e-12
   itspec=20, ab_spec=T, ele_spec=T, sp_spec=T, mu_spec=T
   GWs_spec=T, GWh_spec=T, Str_spec=T
   lwrite_aux=F
