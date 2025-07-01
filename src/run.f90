@@ -1457,6 +1457,8 @@ call copy_addr(fbcy_bot,p_par(393)) ! (mcom)
 call copy_addr(fbcy_top,p_par(394)) ! (mcom)
 call copy_addr(fbcz_bot,p_par(395)) ! (mcom)
 call copy_addr(fbcz_top,p_par(396)) ! (mcom)
+call copy_addr(lcoarse_mn,p_par(400)) ! bool
+call copy_addr(ltime_integrals,p_par(401)) ! bool
 
 call copy_addr(dx2_bound,p_par(1164)) ! (2*nghost+1)
 call copy_addr(dy2_bound,p_par(1165)) ! (2*nghost+1)
@@ -1473,8 +1475,6 @@ call copy_addr(fbcx_2,p_par(1161)) ! (mcom) (2)
 call copy_addr(fbcy_2,p_par(1162)) ! (mcom) (2)
 call copy_addr(fbcz_2,p_par(1163)) ! (mcom) (2)
  
-call copy_addr(lcoarse_mn,p_par(1164)) ! bool
-call copy_addr(ltime_integrals,p_par(1165)) ! bool
 
 call copy_addr(cdtf,p_par(1170))
 
@@ -1590,7 +1590,9 @@ else
   iglobal_gg = iglobal_gg_tmp
 endif
 call copy_addr(iglobal_gg,p_par(1307)) ! int
-
+call copy_addr(coeffs_1_x,p_par(1308)) ! (2*nghost+1) (2)
+call copy_addr(coeffs_1_y,p_par(1309)) ! (2*nghost+1) (2)
+call copy_addr(coeffs_1_z,p_par(1310)) ! (2*nghost+1) (2)
 endsubroutine pushpars2c
 !***********************************************************************
 endmodule Run_module
