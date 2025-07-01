@@ -6750,30 +6750,28 @@ module Boundcond
 !
       integer :: i,ll,ia,ie
 !
-      if ( .not.lequidist(1) ) then
-        if ( heatflux_deriv_x( f, inh, fac, topbot ) ) return
-      endif
-!
-      if (topbot==BOT) then
-        ll=l1; ia=1; ie=nghost
-      else
-        ll=l2; ia=-nghost; ie=-1
-      endif
+      if ( lequidist(1) .or. .not.heatflux_deriv_x( f, inh, fac, topbot )) then
+        if (topbot==BOT) then
+          ll=l1; ia=1; ie=nghost
+        else
+          ll=l2; ia=-nghost; ie=-1
+        endif
 
-      do i=ia,ie
-        if (ldensity_nolog) then
-          if (present(coef)) then
-            f(ll-i,:,:,iss)=f(ll+i,:,:,iss)+fac* &
-                ( (f(ll+i,:,:,irho)-f(ll-i,:,:,irho))*coef + dx2_bound(-i)*inh )
+        do i=ia,ie
+          if (ldensity_nolog) then
+            if (present(coef)) then
+              f(ll-i,:,:,iss)=f(ll+i,:,:,iss)+fac* &
+                  ( (f(ll+i,:,:,irho)-f(ll-i,:,:,irho))*coef + dx2_bound(-i)*inh )
+            else
+              f(ll-i,:,:,iss)=f(ll+i,:,:,iss)+fac* &
+                  (log(f(ll+i,:,:,irho)/f(ll-i,:,:,irho)) + dx2_bound(-i)*inh)
+            endif
           else
             f(ll-i,:,:,iss)=f(ll+i,:,:,iss)+fac* &
-                (log(f(ll+i,:,:,irho)/f(ll-i,:,:,irho)) + dx2_bound(-i)*inh)
+                (f(ll+i,:,:,ilnrho)-f(ll-i,:,:,ilnrho) + dx2_bound(-i)*inh)
           endif
-        else
-          f(ll-i,:,:,iss)=f(ll+i,:,:,iss)+fac* &
-              (f(ll+i,:,:,ilnrho)-f(ll-i,:,:,ilnrho) + dx2_bound(-i)*inh)
-        endif
-      enddo
+        enddo
+      endif
 !
   endsubroutine heatflux_boundcond_x
 !***********************************************************************
