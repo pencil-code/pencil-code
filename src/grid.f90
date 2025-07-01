@@ -2686,6 +2686,9 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
 !  08-apr-15/MR: coded
 !  23-nov-20/ccyang: added xyz[01]_loc and Lxyz_loc
 !
+      use Mpicomm, only: mpiallreduce_max
+      real, dimension(2*nghost+1) :: tmp
+
       xyz0_loc(1) = procx_bounds(ipx)
       xyz1_loc(1) = procx_bounds(ipx+1)
 !
@@ -2704,6 +2707,8 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
           dx2_bound(nghost:1:-1)  = 2.*(x(l2)-x(l2-nghost:l2-1))
 !
         call calc_bound_coeffs(x,coeffs_1_x)
+        tmp = dx2_bound
+        call mpiallreduce_max(tmp,dx2_bound,2*nghost+1)
       endif
 
       if (nygrid>1) then
@@ -2713,6 +2718,8 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
           dy2_bound(nghost:1:-1)  = 2.*(y(m2)-y(m2-nghost:m2-1))
 !
         call calc_bound_coeffs(y,coeffs_1_y)
+        tmp = dy2_bound
+        call mpiallreduce_max(tmp,dy2_bound,2*nghost+1)
       endif
 
       if (nzgrid>1) then
@@ -2722,8 +2729,11 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
           dz2_bound(nghost:1:-1)  = 2.*(z(n2)-z(n2-nghost:n2-1))
 !
         call calc_bound_coeffs(z,coeffs_1_z)
+        tmp = dz2_bound
+        call mpiallreduce_max(tmp,dz2_bound,2*nghost+1)
       endif
 !
+
     endsubroutine grid_bound_data
 !***********************************************************************
     subroutine generate_halfgrid(x12,y12,z12)
