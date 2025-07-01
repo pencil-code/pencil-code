@@ -472,6 +472,22 @@ module Special
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
+    subroutine get_oogmu5(p,oogmu5)
+      use Sub, only: dot
+
+      type(pencil_case) :: p
+      real,dimension(nx) :: oogmu5
+      call dot(p%oo,p%gmu5,oogmu5)
+    endsubroutine get_oogmu5
+!***********************************************************************
+    subroutine get_oogmuS(p,oogmuS)
+      use Sub, only: dot
+
+      type(pencil_case) :: p
+      real,dimension(nx) :: oogmuS
+      call dot(p%oo,p%gmuS,oogmuS)
+    endsubroutine get_oogmuS
+!***********************************************************************
     subroutine dspecial_dt(f,df,p)
 !
 !  calculate right hand side of ONE OR MORE extra coupled PDEs
@@ -492,7 +508,6 @@ module Special
 !  28-aug-21/jenny: added hyperdiffusion (hyper3)
 !
       use Sub, only: multsv, dot_mn, dot2_mn, dot_mn_vm_trans, dot, curl_mn, gij
-      use Diagnostics, only: sum_mn_name, max_mn_name, save_name
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -501,8 +516,8 @@ module Special
       intent(in) :: f,p
       intent(inout) :: df
 !
-      real, dimension (nx) :: bgmuS, bgmu5, EB, uujj, bbjj, gmu52, bdotgmuS, bdotgmu5
-      real, dimension (nx) :: muSmu5, oobb, oogmuS, oogmu5, gmuS2, unity=1.
+      real, dimension (nx) :: EB, uujj, bdotgmuS, bdotgmu5
+      real, dimension (nx) :: muSmu5, oobb, oogmuS, oogmu5
       real, dimension (nx,3) :: mu5bb, muSmu5oo
 !
 !  Identify module and boundary conditions.
@@ -536,7 +551,7 @@ module Special
       if (lmu5divu_term) df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) - p%mu5*p%divu
 !
       if (lCVE) then
-        call dot(p%oo,p%gmu5,oogmu5)
+        call get_oogmu5(p,oogmu5)
         df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) - 2.*Cw*p%mu5*oogmu5
       endif
 !
@@ -575,8 +590,8 @@ module Special
         df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) - coef_mu5*bdotgmuS  
         if (lCVE) then   
           call dot(p%oo,p%bb,oobb)
-          call dot(p%oo,p%gmuS,oogmuS)
-          call dot(p%oo,p%gmu5,oogmu5)
+          call get_oogmuS(p,oogmuS)
+          call get_oogmu5(p,oogmu5)
           df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) - lambda5*eta*muSmu5*oobb - 2.*Cw*p%muS*oogmuS
           df(l1:l2,m,n,imuS) = df(l1:l2,m,n,imuS) - Cw*p%mu5*oogmuS -Cw*p%muS*oogmu5
         endif
@@ -628,6 +643,20 @@ module Special
 !
 !  Diagnostics
 !
+!
+      call calc_diagnostics_special(f,p)
+    endsubroutine dspecial_dt
+!***********************************************************************
+    subroutine calc_diagnostics_special(f,p)
+
+      use Sub, only: dot_mn, dot2_mn
+      use Diagnostics, only: sum_mn_name, max_mn_name, save_name
+
+      real, dimension (nx) :: bbjj, bgmuS,bgmu5,gmu52,gmuS2,unity=1.
+      real, dimension (nx) :: oogmuS,oogmu5
+      real,dimension(mx,my,mz,mfarray) :: f
+      type(pencil_case) :: p
+
       if (ldiagnos) then
         call sum_mn_name(p%muS,idiag_muSm)
         if (idiag_muSrms/=0) call sum_mn_name(p%muS**2,idiag_muSrms,lsqrt=.true.)
@@ -669,8 +698,14 @@ module Special
           call dot_mn(p%bb,p%jj,bbjj)
           call sum_mn_name((p%mu5*bbjj)**2,idiag_mu5bjrms,lsqrt=.true.)
         endif
-        if (idiag_oogmu5rms/=0) call sum_mn_name(oogmu5**2,idiag_oogmu5rms,lsqrt=.true.)
-        if (idiag_oogmuSrms/=0) call sum_mn_name(oogmuS**2,idiag_oogmuSrms,lsqrt=.true.)
+        if (idiag_oogmu5rms/=0) then
+          call get_oogmu5(p,oogmu5)
+          call sum_mn_name(oogmu5**2,idiag_oogmu5rms,lsqrt=.true.)
+        endif
+        if (idiag_oogmuSrms/=0) then
+          call get_oogmuS(p,oogmuS)
+          call sum_mn_name(oogmuS**2,idiag_oogmuSrms,lsqrt=.true.)
+        endif
         if (idiag_dt_lambda5/=0) call max_mn_name(-(1./dt1_lambda5),idiag_dt_lambda5,lneg=.true.)
         if (idiag_dt_D5/=0) call max_mn_name(-(1./dt1_D5),idiag_dt_D5,lneg=.true.)
         if (idiag_dt_gammaf5/=0) call max_mn_name(-(1./dt1_gammaf5),idiag_dt_gammaf5,lneg=.true.)
@@ -684,8 +719,8 @@ module Special
         if (idiag_Dmu5_tdep/=0) call max_mn_name(unity*diffmu5_,idiag_Dmu5_tdep)
         call sum_mn_name(p%jj(:,1), idiag_jxm)
      endif
-!
-    endsubroutine dspecial_dt
+
+    endsubroutine calc_diagnostics_special
 !***********************************************************************
     subroutine read_special_init_pars(iostat)
 !
