@@ -239,7 +239,11 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		Heat_cool_conduction: 'Heating / cooling due to heat conduction', $
 		Heat_cool_rad_loss: 'Heating / cooling due to radiative losses', $
 		Heat_cool_part: 'Heating / cooling per particle', $
-		Heat_cool_newton: 'Heating / cooling due to newton cooling' $
+		Heat_cool_newton: 'Heating / cooling due to newton cooling', $
+		B0_strat_z: 'External B stratification along z', $
+		P_mag: 'Magnetic pressure', $
+		grad_P_mag: 'Gradient of magnetic pressure', $
+		scale_height_B_strat: 'External B stratification with added scale_height' $
 	}
 
 	; List of code variable aliases.
@@ -484,7 +488,11 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		Heat_cool_conduction:['Temp', 'rho'],$
 		Heat_cool_rad_loss:['Temp', 'rho'],$
 		Heat_cool_part:['Temp', 'rho','n_rho'],$
-		Heat_cool_newton:['Temp', 'rho'] $
+		Heat_cool_newton:['Temp', 'rho'], $
+		B0_strat_z:'', $
+		P_mag:'B', $
+		grad_P_mag:'B', $
+		scale_height_B_strat:'' $
 	}
 
 	if (num_species ge 1) then begin
