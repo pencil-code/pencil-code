@@ -47,6 +47,7 @@ module Magnetic
                                 read_magn_mf_run_pars,write_magn_mf_run_pars,pc_aasb_const_alpha,meanfield_after_boundary
 
   use Messages, only: fatal_error,inevitably_fatal_error,warning,svn_id,timing,not_implemented,information
+  use Special, only: scale_height_init_z           !Access the scale height profile from solar_corona.f90
 !
   implicit none
 !
@@ -11452,11 +11453,25 @@ print*,'AXEL2: should not be here (eta) ... '
     real function get_B0_ext_z(pz)
 !
 !  Get the external magnetic field stratification along z.
-!
-!  vpandey: coded
+!  vpandey: 2.July.2025
 !
       integer, intent(in) :: pz
 !
+      integer :: iz
+      real, dimension(mz), save :: Bz_stratified
+      logical, save :: lfirst_call = .true.
+!
+      if (lfirst_call) then
+        if (allocated (scale_height_init_z)) then
+! set up z-stratification
+          do iz = 1, mz
+            Bz_stratified(iz) = B0_ext_z * exp(-z(iz) / scale_height_init_z(iz))
+          enddo
+        else
+          call fatal_error('get_B0_ext_z','scale_height_init_z is not allocated')
+        endif
+        lfirst_call = .false.
+      endif
 !
       get_B0_ext_z = Bz_stratified(pz)
 !
