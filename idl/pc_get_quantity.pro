@@ -481,7 +481,7 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		gamma = pc_get_parameter ('gamma', label=quantity)
 		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho', ghost=ghost)
 		if (n_elements (Temp) eq 0) then Temp = pc_compute_quantity (vars, index, 'Temp', ghost=ghost)
-		if (n_elements (P_therm) eq 0) then P_therm = cp_SI * (gamma - 1.0) / gamma * rho * Temp
+		if (n_elements (P_therm) eq 0) then P_therm = cp_SI * ((gamma - 1.0) / gamma) * rho * Temp
 		return, P_therm
 	end
 	if (strcmp (quantity, 'grad_P_therm', /fold_case)) then begin
@@ -839,6 +839,14 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		end
 		return, grad_P_mag
 	end
+;vpandey 1 July 2025
+	if (strcmp (quantity, 'scale_height_B_strat', /fold_case)) then begin
+		;External magnetic_field with scale-height added
+		z_SI               = pc_compute_quantity (vars, index, 'z', ghost=ghost)
+		B0_ext_z           = pc_get_parameter ('B0_ext_z', label=quantity) * unit.magnetic_field
+		scale_height	   = spread (read_profile('prof_scale_height.dat', z_SI), [0,1], [nx,ny])
+		return, B0_ext_z * exp(-z_SI / scale_height)
+	end
 	if (strcmp (quantity, 'grad_P_mag_abs', /fold_case)) then begin
 		; Absolute value of Gradient of magnetic pressure
 		if (n_elements (grad_P_mag) eq 0) then grad_P_mag = pc_compute_quantity (vars, index, 'grad_P_mag')
@@ -887,10 +895,18 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		B0_ext_z = pc_get_parameter ('B0_ext_z', label=quantity)
 		if (B0_ext_z gt 0.0) then begin
 			; Add external magnetic field B_ext_z
-			B0_strat_z = pc_compute_quantity (vars, index, 'B0_strat_z', ghost=ghost)
-			B_ext = dblarr (gnx, gny, gnz, 3)
-			B_ext[*,*,*,2] = spread (B0_strat_z, [0,1], [gnx,gny])
-			return, B_ext
+			B0_ext_z_H = pc_get_parameter ('B0_ext_z_H', label=quantity)
+			if (B0_ext_z_H ne 0.0) then begin
+				B0_strat_z = pc_compute_quantity (vars, index, 'B0_strat_z', ghost=ghost)
+				B_ext = dblarr (gnx, gny, gnz, 3)
+				B_ext[*,*,*,2] = spread (B0_strat_z, [0,1], [gnx,gny])
+				return, B_ext
+			end else begin
+				B0_strat_z_H = pc_compute_quantity (vars, index, 'scale_height_B_strat', ghost=ghost)
+				B_ext = dblarr (gnx, gny, gnz, 3)
+				B_ext[*,*,*,2] = spread (B0_strat_z_H, [0,1], [gnx,gny])
+				return, B_ext
+			end
 		endif
 		return, 0
 	end
