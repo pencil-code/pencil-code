@@ -442,7 +442,7 @@ module Special
       real :: var_lnrho, var_lnTT, var_z
       real, dimension(:), allocatable :: prof_lnrho, prof_lnTT, prof_z
       logical :: lread_prof_uu, lread_prof_lnrho, lread_prof_lnTT, lread_prof_deltaT, lread_prof_deltaE, lread_prof_deltarho, &
-          lread_prof_E,lread_prof_deltaH_part, lread_prof_deltaH_vol
+          lread_prof_E,lread_prof_deltaH_part, lread_prof_deltaH_vol, lread_prof_scale_height
 !
       ! file location settings
       character(len=*), parameter :: stratification_dat = 'stratification.dat'
@@ -452,6 +452,7 @@ module Special
       character(len=*), parameter :: deltaT_dat = 'driver/prof_deltaT.dat'
       character(len=*), parameter :: deltaE_dat = 'driver/prof_deltaE.dat'
       character(len=*), parameter :: deltaH_part_dat = 'driver/prof_deltaH_part.dat'
+      character(len=*), parameter :: scale_height_dat = 'driver/prof_scale_height.dat'
       character(len=*), parameter :: deltaH_vol_dat = 'driver/prof_deltaH_vol.dat'
       character(len=*), parameter :: E_dat = 'driver/prof_E.dat'
       character(len=*), parameter :: deltarho_dat = 'driver/prof_deltarho.dat'
@@ -464,6 +465,7 @@ module Special
       lread_prof_deltaT = (index (prof_type, 'prof_') == 1) .and. (index (prof_type, '_deltaT') > 0)
       lread_prof_deltaE = (index (prof_type, 'prof_') == 1) .and. (index (prof_type, '_deltaE') > 0)
       lread_prof_deltaH_part = (index (prof_type, 'prof_') == 1) .and. (index (prof_type, '_deltaH_part') > 0)
+      lread_prof_scale_height = (index (prof_type, 'prof_') == 1) .and. (index (prof_type, '_scale_height') > 0)
       lread_prof_deltaH_vol = (index (prof_type, 'prof_') == 1) .and. (index (prof_type, '_deltaH_vol') > 0)
       lread_prof_E = (index (prof_type, 'prof_') == 1) .and. (index (prof_type, '_E') > 0)
       lread_prof_deltarho = (index (prof_type, 'prof_') == 1) .and. (index (prof_type, '_deltarho') > 0)
@@ -498,7 +500,8 @@ module Special
         deallocate (prof_lnTT, prof_lnrho, prof_z)
 !
       elseif (lread_prof_uu .or. lread_prof_lnrho .or. lread_prof_lnTT .or. lread_prof_deltaT &
-          .or. lread_prof_deltaE .or. lread_prof_deltarho .or. lread_prof_deltaH_part .or. lread_prof_deltaH_vol) then
+          .or. lread_prof_deltaE .or. lread_prof_deltarho .or. lread_prof_deltaH_part &
+          .or. lread_prof_scale_height.or. lread_prof_deltaH_vol) then
 !
         ! read vertical velocity profile for interpolation
         if (lread_prof_uu) &
@@ -534,6 +537,12 @@ module Special
         if (lread_prof_deltaH_part) then
           allocate (deltaH_part_init_z(mz))
           call read_profile (deltaH_part_dat, deltaH_part_init_z, real(unit_energy/unit_time), .false.)
+        endif
+!
+        ! read scale height profile for external magnetic field
+        if (lread_prof_scale_height) then
+          allocate (scale_height_init_z(mz))
+          call read_profile (scale_height_dat, scale_height_init_z, real(unit_length), .false.)
         endif
 !
         ! read heating per particle differences profile
