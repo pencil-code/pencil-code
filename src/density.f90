@@ -69,6 +69,7 @@ module Density
 ! reference state, components:  1       2          3              4            5      6     7         8            9
 !                              rho, d rho/d z, d^2 rho/d z^2, d^6 rho/d z^6, d p/d z, s, d s/d z, d^2 s/d z^2, d^6 s/d z^6
   real, dimension(nx,9) :: reference_state=0.
+  real, dimension(mx,9) :: reference_state_padded=0.
   real, dimension(2) :: density_xaver_range=(/-max_real,max_real/)
   real, dimension(2) :: density_zaver_range=(/-max_real,max_real/)
   real :: lnrho_const=0.0, rho_const=1.0, Hrho=1., ggamma=impossible
@@ -1028,6 +1029,10 @@ module Density
 !
       if (density_floor>0.) density_floor_log=alog(density_floor)
       if (density_ceiling>0.) density_ceiling_log=alog(density_ceiling)
+
+      !TP: used in boundary conditions on Astaroth side
+      reference_state_padded = 0.
+      reference_state_padded(l1:l2,:) = reference_state
 !
     endsubroutine initialize_density
 !***********************************************************************
@@ -4214,6 +4219,7 @@ module Density
     call copy_addr(total_mass,p_par(76))
     call copy_addr(lrelativistic_eos_corr,p_par(77)) ! bool
     call copy_addr(lgamma_is_1,p_par(78)) ! bool
+    call copy_addr(reference_state_padded,p_par(79)) ! (mx) (9)
 
     endsubroutine pushpars2c
 !***********************************************************************
