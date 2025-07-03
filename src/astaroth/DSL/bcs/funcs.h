@@ -505,4 +505,683 @@ else {
 }
 #endif
 
+/**
+bc_set_sfree_x(AcBoundary boundary, AC_TOP_BOT topbot,Field j)
+{
+  suppress_unused_warning(boundary)
+  int k
+  real fac
+  real sth
+  real lambda_exp
+  if(topbot == AC_bot) {
+    if (AC_llambda_effect__mod__viscosity) {
+      if (AC_lspherical_coords__mod__cdata){
+        if (j==AC_iuz__mod__cdata) {
+          sth=AC_sinth__mod__cdata[vertexIdx.y]
+          if (AC_llambda_scale_with_nu__mod__viscosity) {
+            lambda_exp=1.+(AC_lambda_v0b__mod__viscosity+AC_lambda_v1b__mod__viscosity*sth*sth)
+          }
+          else {
+            lambda_exp=1.+(AC_lambda_v0b__mod__viscosity+AC_lambda_v1b__mod__viscosity*sth*sth)/AC_nu__mod__viscosity
+          }
+          fac=pow((1.-AC_dx2_bound__mod__cdata[-1+AC_NGHOST__mod__cparam+1-1]/AC_x__mod__cdata[1+l1-1]),lambda_exp)
+          if (AC_omega__mod__cdata==0) {
+            j[l1-1-1][vertexIdx.y][vertexIdx.z] = j[1+l1-1][vertexIdx.y][vertexIdx.z]*fac
+          }
+          else {
+            j[l1-1-1][vertexIdx.y][vertexIdx.z] = (j[1+l1-1][vertexIdx.y][vertexIdx.z]+AC_omega__mod__cdata*AC_x__mod__cdata[1+l1-1]*sth)*fac  -AC_omega__mod__cdata*(AC_x__mod__cdata[1+l1-1]-AC_dx2_bound__mod__cdata[-1+AC_NGHOST__mod__cparam+1-1])*sth
+          }
+          fac=pow((1.-AC_dx2_bound__mod__cdata[-2+AC_NGHOST__mod__cparam+1-1]/AC_x__mod__cdata[2+l1-1]),lambda_exp)
+          if (AC_omega__mod__cdata==0) {
+            j[l1-2-1][vertexIdx.y][vertexIdx.z] = j[2+l1-1][vertexIdx.y][vertexIdx.z]*fac
+          }
+          else {
+            j[l1-2-1][vertexIdx.y][vertexIdx.z] = (j[2+l1-1][vertexIdx.y][vertexIdx.z]+AC_omega__mod__cdata*AC_x__mod__cdata[2+l1-1]*sth)*fac  -AC_omega__mod__cdata*(AC_x__mod__cdata[2+l1-1]-AC_dx2_bound__mod__cdata[-2+AC_NGHOST__mod__cparam+1-1])*sth
+          }
+          fac=pow((1.-AC_dx2_bound__mod__cdata[-3+AC_NGHOST__mod__cparam+1-1]/AC_x__mod__cdata[3+l1-1]),lambda_exp)
+          if (AC_omega__mod__cdata==0) {
+            j[l1-3-1][vertexIdx.y][vertexIdx.z] = j[3+l1-1][vertexIdx.y][vertexIdx.z]*fac
+          }
+          else {
+            j[l1-3-1][vertexIdx.y][vertexIdx.z] = (j[3+l1-1][vertexIdx.y][vertexIdx.z]+AC_omega__mod__cdata*AC_x__mod__cdata[3+l1-1]*sth)*fac  -AC_omega__mod__cdata*(AC_x__mod__cdata[3+l1-1]-AC_dx2_bound__mod__cdata[-3+AC_NGHOST__mod__cparam+1-1])*sth
+          }
+        }
+      }
+      else if (AC_lcylindrical_coords__mod__cdata) {
+        if (j==AC_iuy__mod__cdata) {
+          if (AC_llambda_scale_with_nu__mod__viscosity) {
+            lambda_exp=1.+AC_lambda_v0b__mod__viscosity
+          }
+          else {
+            lambda_exp=1.+AC_lambda_v0b__mod__viscosity/AC_nu__mod__viscosity
+          }
+          fac=pow((1.-AC_dx2_bound__mod__cdata[-1+AC_NGHOST__mod__cparam+1-1]/AC_x__mod__cdata[1+l1-1]),lambda_exp)
+          if (AC_omega__mod__cdata==0) {
+            j[l1-1-1][vertexIdx.y][vertexIdx.z] = j[1+l1-1][vertexIdx.y][vertexIdx.z]*fac
+          }
+          else {
+            j[l1-1-1][vertexIdx.y][vertexIdx.z] = (j[1+l1-1][vertexIdx.y][vertexIdx.z]+AC_omega__mod__cdata*AC_x__mod__cdata[1+l1-1])*fac
+          }
+          fac=pow((1.-AC_dx2_bound__mod__cdata[-2+AC_NGHOST__mod__cparam+1-1]/AC_x__mod__cdata[2+l1-1]),lambda_exp)
+          if (AC_omega__mod__cdata==0) {
+            j[l1-2-1][vertexIdx.y][vertexIdx.z] = j[2+l1-1][vertexIdx.y][vertexIdx.z]*fac
+          }
+          else {
+            j[l1-2-1][vertexIdx.y][vertexIdx.z] = (j[2+l1-1][vertexIdx.y][vertexIdx.z]+AC_omega__mod__cdata*AC_x__mod__cdata[2+l1-1])*fac
+          }
+          fac=pow((1.-AC_dx2_bound__mod__cdata[-3+AC_NGHOST__mod__cparam+1-1]/AC_x__mod__cdata[3+l1-1]),lambda_exp)
+          if (AC_omega__mod__cdata==0) {
+            j[l1-3-1][vertexIdx.y][vertexIdx.z] = j[3+l1-1][vertexIdx.y][vertexIdx.z]*fac
+          }
+          else {
+            j[l1-3-1][vertexIdx.y][vertexIdx.z] = (j[3+l1-1][vertexIdx.y][vertexIdx.z]+AC_omega__mod__cdata*AC_x__mod__cdata[3+l1-1])*fac
+          }
+        }
+      }
+      else {
+      }
+    }
+    else {
+      j[l1-1-1][vertexIdx.y][vertexIdx.z] = j[1+l1-1][vertexIdx.y][vertexIdx.z]*(1.-AC_dx2_bound__mod__cdata[-1+AC_NGHOST__mod__cparam+1-1]/AC_x__mod__cdata[1+l1-1])
+      j[l1-2-1][vertexIdx.y][vertexIdx.z] = j[2+l1-1][vertexIdx.y][vertexIdx.z]*(1.-AC_dx2_bound__mod__cdata[-2+AC_NGHOST__mod__cparam+1-1]/AC_x__mod__cdata[2+l1-1])
+      j[l1-3-1][vertexIdx.y][vertexIdx.z] = j[3+l1-1][vertexIdx.y][vertexIdx.z]*(1.-AC_dx2_bound__mod__cdata[-3+AC_NGHOST__mod__cparam+1-1]/AC_x__mod__cdata[3+l1-1])
+    }
+  }
+  else if(topbot == AC_top) {
+    if (AC_llambda_effect__mod__viscosity) {
+      if (AC_lspherical_coords__mod__cdata){
+        if (j==AC_iuz__mod__cdata) {
+          sth=AC_sinth__mod__cdata[vertexIdx.y]
+          if (AC_llambda_scale_with_nu__mod__viscosity) {
+            lambda_exp=1.+(AC_lambda_v0t__mod__viscosity+AC_lambda_v1t__mod__viscosity*sth*sth)
+          }
+          else {
+            lambda_exp=1.+(AC_lambda_v0t__mod__viscosity+AC_lambda_v1t__mod__viscosity*sth*sth)/AC_nu__mod__viscosity
+          }
+          fac=pow((1.+AC_dx2_bound__mod__cdata[2+AC_NGHOST__mod__cparam-1]/AC_x__mod__cdata[AC_l2__mod__cdata-1-1]),lambda_exp)
+          if (AC_omega__mod__cdata==0) {
+            j[1+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z] = j[AC_l2__mod__cdata-1-1][vertexIdx.y][vertexIdx.z]*fac
+          }
+          else {
+            j[1+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z] = (j[AC_l2__mod__cdata-1-1][vertexIdx.y][vertexIdx.z]+AC_omega__mod__cdata*AC_x__mod__cdata[AC_l2__mod__cdata-1-1]*sth)*fac  -AC_omega__mod__cdata*(AC_x__mod__cdata[AC_l2__mod__cdata-1-1]+AC_dx2_bound__mod__cdata[2+AC_NGHOST__mod__cparam-1])*sth
+          }
+          fac=pow((1.+AC_dx2_bound__mod__cdata[3+AC_NGHOST__mod__cparam-1]/AC_x__mod__cdata[AC_l2__mod__cdata-2-1]),lambda_exp)
+          if (AC_omega__mod__cdata==0) {
+            j[2+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z] = j[AC_l2__mod__cdata-2-1][vertexIdx.y][vertexIdx.z]*fac
+          }
+          else {
+            j[2+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z] = (j[AC_l2__mod__cdata-2-1][vertexIdx.y][vertexIdx.z]+AC_omega__mod__cdata*AC_x__mod__cdata[AC_l2__mod__cdata-2-1]*sth)*fac  -AC_omega__mod__cdata*(AC_x__mod__cdata[AC_l2__mod__cdata-2-1]+AC_dx2_bound__mod__cdata[3+AC_NGHOST__mod__cparam-1])*sth
+          }
+          fac=pow((1.+AC_dx2_bound__mod__cdata[4+AC_NGHOST__mod__cparam-1]/AC_x__mod__cdata[AC_l2__mod__cdata-3-1]),lambda_exp)
+          if (AC_omega__mod__cdata==0) {
+            j[3+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z] = j[AC_l2__mod__cdata-3-1][vertexIdx.y][vertexIdx.z]*fac
+          }
+          else {
+            j[3+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z] = (j[AC_l2__mod__cdata-3-1][vertexIdx.y][vertexIdx.z]+AC_omega__mod__cdata*AC_x__mod__cdata[AC_l2__mod__cdata-3-1]*sth)*fac  -AC_omega__mod__cdata*(AC_x__mod__cdata[AC_l2__mod__cdata-3-1]+AC_dx2_bound__mod__cdata[4+AC_NGHOST__mod__cparam-1])*sth
+          }
+        }
+      }
+      else if (AC_lcylindrical_coords__mod__cdata) {
+        if (j==AC_iuy__mod__cdata) {
+          if (AC_llambda_scale_with_nu__mod__viscosity) {
+            lambda_exp=1.+AC_lambda_v0t__mod__viscosity
+          }
+          else {
+            lambda_exp=1.+AC_lambda_v0t__mod__viscosity/AC_nu__mod__viscosity
+          }
+          fac=pow((1.+AC_dx2_bound__mod__cdata[2+AC_NGHOST__mod__cparam-1]/AC_x__mod__cdata[AC_l2__mod__cdata-1-1]),lambda_exp)
+          if (AC_omega__mod__cdata==0) {
+            j[1+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z] = j[AC_l2__mod__cdata-1-1][vertexIdx.y][vertexIdx.z]*fac
+          }
+          else {
+            j[1+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z] = (j[AC_l2__mod__cdata-1-1][vertexIdx.y][vertexIdx.z]+AC_omega__mod__cdata*AC_x__mod__cdata[AC_l2__mod__cdata-1-1])*fac
+          }
+          fac=pow((1.+AC_dx2_bound__mod__cdata[3+AC_NGHOST__mod__cparam-1]/AC_x__mod__cdata[AC_l2__mod__cdata-2-1]),lambda_exp)
+          if (AC_omega__mod__cdata==0) {
+            j[2+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z] = j[AC_l2__mod__cdata-2-1][vertexIdx.y][vertexIdx.z]*fac
+          }
+          else {
+            j[2+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z] = (j[AC_l2__mod__cdata-2-1][vertexIdx.y][vertexIdx.z]+AC_omega__mod__cdata*AC_x__mod__cdata[AC_l2__mod__cdata-2-1])*fac
+          }
+          fac=pow((1.+AC_dx2_bound__mod__cdata[4+AC_NGHOST__mod__cparam-1]/AC_x__mod__cdata[AC_l2__mod__cdata-3-1]),lambda_exp)
+          if (AC_omega__mod__cdata==0) {
+            j[3+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z] = j[AC_l2__mod__cdata-3-1][vertexIdx.y][vertexIdx.z]*fac
+          }
+          else {
+            j[3+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z] = (j[AC_l2__mod__cdata-3-1][vertexIdx.y][vertexIdx.z]+AC_omega__mod__cdata*AC_x__mod__cdata[AC_l2__mod__cdata-3-1])*fac
+          }
+        }
+      }
+      else {
+      }
+    }
+    else {
+      j[1+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]= j[AC_l2__mod__cdata-1-1][vertexIdx.y][vertexIdx.z]*(1.+AC_dx2_bound__mod__cdata[2+AC_NGHOST__mod__cparam-1]/AC_x__mod__cdata[AC_l2__mod__cdata-1-1])
+      j[2+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]= j[AC_l2__mod__cdata-2-1][vertexIdx.y][vertexIdx.z]*(1.+AC_dx2_bound__mod__cdata[3+AC_NGHOST__mod__cparam-1]/AC_x__mod__cdata[AC_l2__mod__cdata-2-1])
+      j[3+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]= j[AC_l2__mod__cdata-3-1][vertexIdx.y][vertexIdx.z]*(1.+AC_dx2_bound__mod__cdata[4+AC_NGHOST__mod__cparam-1]/AC_x__mod__cdata[AC_l2__mod__cdata-3-1])
+    }
+  }
+  else {
+  }
+}
 
+bc_set_sfree_y(AcBoundary boundary,AC_TOP_BOT topbot,Field j)
+{
+  suppress_unused_warning(boundary)
+  int k
+  real cos2thm_k
+  real cos2thmpk
+  real somega
+  real lh1
+  if (AC_llambda_effect__mod__viscosity) {
+    lh1=AC_lambda_h1__mod__viscosity*AC_lh1_rprof__mod__viscosity[vertexIdx.x]
+  }
+  if(topbot == AC_bot) {
+    if (AC_llambda_effect__mod__viscosity && (j==AC_iuz__mod__cdata)) {
+      if (AC_lambda_h1__mod__viscosity!=0.) {
+        cos2thm_k=( AC_costh__mod__cdata[m1-1-1]* AC_costh__mod__cdata[m1-1-1])-(AC_sinth__mod__cdata[m1-1-1]*AC_sinth__mod__cdata[m1-1-1])
+        cos2thmpk=( AC_costh__mod__cdata[1+m1-1]* AC_costh__mod__cdata[1+m1-1])-(AC_sinth__mod__cdata[1+m1-1]*AC_sinth__mod__cdata[1+m1-1])
+        if (AC_omega__mod__cdata==0) {
+          if (AC_llambda_scale_with_nu__mod__viscosity) {
+            j[vertexIdx.x][m1-1-1][vertexIdx.z]= j[vertexIdx.x][1+m1-1][vertexIdx.z]*  (exp(lh1*cos2thmpk/(4.))*AC_sin1th__mod__cdata[1+m1-1])  *(exp(-lh1*cos2thm_k/(4.))*AC_sinth__mod__cdata[m1-1-1])
+          }
+          else {
+            j[vertexIdx.x][m1-1-1][vertexIdx.z]= j[vertexIdx.x][1+m1-1][vertexIdx.z]*  (exp(lh1*cos2thmpk/(4.*AC_nu__mod__viscosity))*AC_sin1th__mod__cdata[1+m1-1])  *(exp(-lh1*cos2thm_k/(4.*AC_nu__mod__viscosity))*AC_sinth__mod__cdata[m1-1-1])
+          }
+        }
+        else {
+          if (AC_llambda_scale_with_nu__mod__viscosity) {
+            somega=AC_x__mod__cdata[vertexIdx.x]*AC_omega__mod__cdata*AC_sinth__mod__cdata[m1-1-1]*(  exp(cos2thmpk*lh1/(4.)) /exp((cos2thm_k)*lh1/(4.)) -1.)
+            j[vertexIdx.x][m1-1-1][vertexIdx.z]= j[vertexIdx.x][1+m1-1][vertexIdx.z]*  (exp(lh1*cos2thmpk/(4.))*AC_sin1th__mod__cdata[1+m1-1])  *(exp(-lh1*cos2thm_k/(4.))*AC_sinth__mod__cdata[m1-1-1])  +somega
+          }
+          else {
+            somega=AC_x__mod__cdata[vertexIdx.x]*AC_omega__mod__cdata*AC_sinth__mod__cdata[m1-1-1]*(  exp(cos2thmpk*lh1/(4.*AC_nu__mod__viscosity)) /exp((cos2thm_k)*lh1/(4.*AC_nu__mod__viscosity)) -1.)
+            j[vertexIdx.x][m1-1-1][vertexIdx.z]= j[vertexIdx.x][1+m1-1][vertexIdx.z]*  (exp(lh1*cos2thmpk/(4.*AC_nu__mod__viscosity))*AC_sin1th__mod__cdata[1+m1-1])  *(exp(-lh1*cos2thm_k/(4.*AC_nu__mod__viscosity))*AC_sinth__mod__cdata[m1-1-1])  +somega
+          }
+        }
+        cos2thm_k=( AC_costh__mod__cdata[m1-2-1]* AC_costh__mod__cdata[m1-2-1])-(AC_sinth__mod__cdata[m1-2-1]*AC_sinth__mod__cdata[m1-2-1])
+        cos2thmpk=( AC_costh__mod__cdata[2+m1-1]* AC_costh__mod__cdata[2+m1-1])-(AC_sinth__mod__cdata[2+m1-1]*AC_sinth__mod__cdata[2+m1-1])
+        if (AC_omega__mod__cdata==0) {
+          if (AC_llambda_scale_with_nu__mod__viscosity) {
+            j[vertexIdx.x][m1-2-1][vertexIdx.z]= j[vertexIdx.x][2+m1-1][vertexIdx.z]*  (exp(lh1*cos2thmpk/(4.))*AC_sin1th__mod__cdata[2+m1-1])  *(exp(-lh1*cos2thm_k/(4.))*AC_sinth__mod__cdata[m1-2-1])
+          }
+          else {
+            j[vertexIdx.x][m1-2-1][vertexIdx.z]= j[vertexIdx.x][2+m1-1][vertexIdx.z]*  (exp(lh1*cos2thmpk/(4.*AC_nu__mod__viscosity))*AC_sin1th__mod__cdata[2+m1-1])  *(exp(-lh1*cos2thm_k/(4.*AC_nu__mod__viscosity))*AC_sinth__mod__cdata[m1-2-1])
+          }
+        }
+        else {
+          if (AC_llambda_scale_with_nu__mod__viscosity) {
+            somega=AC_x__mod__cdata[vertexIdx.x]*AC_omega__mod__cdata*AC_sinth__mod__cdata[m1-2-1]*(  exp(cos2thmpk*lh1/(4.)) /exp((cos2thm_k)*lh1/(4.)) -1.)
+            j[vertexIdx.x][m1-2-1][vertexIdx.z]= j[vertexIdx.x][2+m1-1][vertexIdx.z]*  (exp(lh1*cos2thmpk/(4.))*AC_sin1th__mod__cdata[2+m1-1])  *(exp(-lh1*cos2thm_k/(4.))*AC_sinth__mod__cdata[m1-2-1])  +somega
+          }
+          else {
+            somega=AC_x__mod__cdata[vertexIdx.x]*AC_omega__mod__cdata*AC_sinth__mod__cdata[m1-2-1]*(  exp(cos2thmpk*lh1/(4.*AC_nu__mod__viscosity)) /exp((cos2thm_k)*lh1/(4.*AC_nu__mod__viscosity)) -1.)
+            j[vertexIdx.x][m1-2-1][vertexIdx.z]= j[vertexIdx.x][2+m1-1][vertexIdx.z]*  (exp(lh1*cos2thmpk/(4.*AC_nu__mod__viscosity))*AC_sin1th__mod__cdata[2+m1-1])  *(exp(-lh1*cos2thm_k/(4.*AC_nu__mod__viscosity))*AC_sinth__mod__cdata[m1-2-1])  +somega
+          }
+        }
+        cos2thm_k=( AC_costh__mod__cdata[m1-3-1]* AC_costh__mod__cdata[m1-3-1])-(AC_sinth__mod__cdata[m1-3-1]*AC_sinth__mod__cdata[m1-3-1])
+        cos2thmpk=( AC_costh__mod__cdata[3+m1-1]* AC_costh__mod__cdata[3+m1-1])-(AC_sinth__mod__cdata[3+m1-1]*AC_sinth__mod__cdata[3+m1-1])
+        if (AC_omega__mod__cdata==0) {
+          if (AC_llambda_scale_with_nu__mod__viscosity) {
+            j[vertexIdx.x][m1-3-1][vertexIdx.z]= j[vertexIdx.x][3+m1-1][vertexIdx.z]*  (exp(lh1*cos2thmpk/(4.))*AC_sin1th__mod__cdata[3+m1-1])  *(exp(-lh1*cos2thm_k/(4.))*AC_sinth__mod__cdata[m1-3-1])
+          }
+          else {
+            j[vertexIdx.x][m1-3-1][vertexIdx.z]= j[vertexIdx.x][3+m1-1][vertexIdx.z]*  (exp(lh1*cos2thmpk/(4.*AC_nu__mod__viscosity))*AC_sin1th__mod__cdata[3+m1-1])  *(exp(-lh1*cos2thm_k/(4.*AC_nu__mod__viscosity))*AC_sinth__mod__cdata[m1-3-1])
+          }
+        }
+        else {
+          if (AC_llambda_scale_with_nu__mod__viscosity) {
+            somega=AC_x__mod__cdata[vertexIdx.x]*AC_omega__mod__cdata*AC_sinth__mod__cdata[m1-3-1]*(  exp(cos2thmpk*lh1/(4.)) /exp((cos2thm_k)*lh1/(4.)) -1.)
+            j[vertexIdx.x][m1-3-1][vertexIdx.z]= j[vertexIdx.x][3+m1-1][vertexIdx.z]*  (exp(lh1*cos2thmpk/(4.))*AC_sin1th__mod__cdata[3+m1-1])  *(exp(-lh1*cos2thm_k/(4.))*AC_sinth__mod__cdata[m1-3-1])  +somega
+          }
+          else {
+            somega=AC_x__mod__cdata[vertexIdx.x]*AC_omega__mod__cdata*AC_sinth__mod__cdata[m1-3-1]*(  exp(cos2thmpk*lh1/(4.*AC_nu__mod__viscosity)) /exp((cos2thm_k)*lh1/(4.*AC_nu__mod__viscosity)) -1.)
+            j[vertexIdx.x][m1-3-1][vertexIdx.z]= j[vertexIdx.x][3+m1-1][vertexIdx.z]*  (exp(lh1*cos2thmpk/(4.*AC_nu__mod__viscosity))*AC_sin1th__mod__cdata[3+m1-1])  *(exp(-lh1*cos2thm_k/(4.*AC_nu__mod__viscosity))*AC_sinth__mod__cdata[m1-3-1])  +somega
+          }
+        }
+      }
+    }
+    else {
+      j[vertexIdx.x][m1-1-1][vertexIdx.z]= j[vertexIdx.x][1+m1-1][vertexIdx.z]*(sin(AC_y__mod__cdata[1+m1-1]-AC_dy2_bound__mod__cdata[-1+AC_NGHOST__mod__cparam+1-1])*AC_sin1th__mod__cdata[1+m1-1])
+      j[vertexIdx.x][m1-2-1][vertexIdx.z]= j[vertexIdx.x][2+m1-1][vertexIdx.z]*(sin(AC_y__mod__cdata[2+m1-1]-AC_dy2_bound__mod__cdata[-2+AC_NGHOST__mod__cparam+1-1])*AC_sin1th__mod__cdata[2+m1-1])
+      j[vertexIdx.x][m1-3-1][vertexIdx.z]= j[vertexIdx.x][3+m1-1][vertexIdx.z]*(sin(AC_y__mod__cdata[3+m1-1]-AC_dy2_bound__mod__cdata[-3+AC_NGHOST__mod__cparam+1-1])*AC_sin1th__mod__cdata[3+m1-1])
+    }
+  }
+  else if(topbot == AC_top) {
+    if ((AC_llambda_effect__mod__viscosity) && (j==AC_iuz__mod__cdata)) {
+      if (AC_lambda_h1__mod__viscosity!=0.) {
+        cos2thm_k=( AC_costh__mod__cdata[AC_m2__mod__cdata-1-1]* AC_costh__mod__cdata[AC_m2__mod__cdata-1-1])-(AC_sinth__mod__cdata[AC_m2__mod__cdata-1-1]*AC_sinth__mod__cdata[AC_m2__mod__cdata-1-1])
+        cos2thmpk=( AC_costh__mod__cdata[1+AC_m2__mod__cdata-1]* AC_costh__mod__cdata[1+AC_m2__mod__cdata-1])-(AC_sinth__mod__cdata[1+AC_m2__mod__cdata-1]*AC_sinth__mod__cdata[1+AC_m2__mod__cdata-1])
+        if (AC_omega__mod__cdata==0){
+          if (AC_llambda_scale_with_nu__mod__viscosity) {
+            j[vertexIdx.x][1+AC_m2__mod__cdata-1][vertexIdx.z]= j[vertexIdx.x][AC_m2__mod__cdata-1-1][vertexIdx.z]*  (exp(lh1*cos2thm_k/(4.))*AC_sin1th__mod__cdata[AC_m2__mod__cdata-1-1])  *(exp(-lh1*cos2thmpk/(4.))*AC_sinth__mod__cdata[1+AC_m2__mod__cdata-1])
+          }
+          else {
+            j[vertexIdx.x][1+AC_m2__mod__cdata-1][vertexIdx.z]= j[vertexIdx.x][AC_m2__mod__cdata-1-1][vertexIdx.z]*  (exp(lh1*cos2thm_k/(4.*AC_nu__mod__viscosity))*AC_sin1th__mod__cdata[AC_m2__mod__cdata-1-1])  *(exp(-lh1*cos2thmpk/(4.*AC_nu__mod__viscosity))*AC_sinth__mod__cdata[1+AC_m2__mod__cdata-1])
+          }
+        }
+        else {
+          if (AC_llambda_scale_with_nu__mod__viscosity) {
+            somega=AC_x__mod__cdata[vertexIdx.x]*AC_omega__mod__cdata*AC_sinth__mod__cdata[1+AC_m2__mod__cdata-1]*(  exp(cos2thm_k*lh1/(4.))     /exp(cos2thmpk*lh1/(4.))-1.)
+            j[vertexIdx.x][1+AC_m2__mod__cdata-1][vertexIdx.z]= j[vertexIdx.x][AC_m2__mod__cdata-1-1][vertexIdx.z]*  (exp(lh1*cos2thm_k/(4.))*AC_sin1th__mod__cdata[AC_m2__mod__cdata-1-1])  *(exp(-lh1*cos2thmpk/(4.))*AC_sinth__mod__cdata[1+AC_m2__mod__cdata-1])  +somega
+          }
+          else {
+            somega=AC_x__mod__cdata[vertexIdx.x]*AC_omega__mod__cdata*AC_sinth__mod__cdata[1+AC_m2__mod__cdata-1]*(  exp(cos2thm_k*lh1/(4.*AC_nu__mod__viscosity))     /exp(cos2thmpk*lh1/(4.*AC_nu__mod__viscosity))-1.)
+            j[vertexIdx.x][1+AC_m2__mod__cdata-1][vertexIdx.z]= j[vertexIdx.x][AC_m2__mod__cdata-1-1][vertexIdx.z]*  (exp(lh1*cos2thm_k/(4.*AC_nu__mod__viscosity))*AC_sin1th__mod__cdata[AC_m2__mod__cdata-1-1])  *(exp(-lh1*cos2thmpk/(4.*AC_nu__mod__viscosity))*AC_sinth__mod__cdata[1+AC_m2__mod__cdata-1])  +somega
+          }
+        }
+        cos2thm_k=( AC_costh__mod__cdata[AC_m2__mod__cdata-2-1]* AC_costh__mod__cdata[AC_m2__mod__cdata-2-1])-(AC_sinth__mod__cdata[AC_m2__mod__cdata-2-1]*AC_sinth__mod__cdata[AC_m2__mod__cdata-2-1])
+        cos2thmpk=( AC_costh__mod__cdata[2+AC_m2__mod__cdata-1]* AC_costh__mod__cdata[2+AC_m2__mod__cdata-1])-(AC_sinth__mod__cdata[2+AC_m2__mod__cdata-1]*AC_sinth__mod__cdata[2+AC_m2__mod__cdata-1])
+        if (AC_omega__mod__cdata==0){
+          if (AC_llambda_scale_with_nu__mod__viscosity) {
+            j[vertexIdx.x][2+AC_m2__mod__cdata-1][vertexIdx.z]= j[vertexIdx.x][AC_m2__mod__cdata-2-1][vertexIdx.z]*  (exp(lh1*cos2thm_k/(4.))*AC_sin1th__mod__cdata[AC_m2__mod__cdata-2-1])  *(exp(-lh1*cos2thmpk/(4.))*AC_sinth__mod__cdata[2+AC_m2__mod__cdata-1])
+          }
+          else {
+            j[vertexIdx.x][2+AC_m2__mod__cdata-1][vertexIdx.z]= j[vertexIdx.x][AC_m2__mod__cdata-2-1][vertexIdx.z]*  (exp(lh1*cos2thm_k/(4.*AC_nu__mod__viscosity))*AC_sin1th__mod__cdata[AC_m2__mod__cdata-2-1])  *(exp(-lh1*cos2thmpk/(4.*AC_nu__mod__viscosity))*AC_sinth__mod__cdata[2+AC_m2__mod__cdata-1])
+          }
+        }
+        else {
+          if (AC_llambda_scale_with_nu__mod__viscosity) {
+            somega=AC_x__mod__cdata[vertexIdx.x]*AC_omega__mod__cdata*AC_sinth__mod__cdata[2+AC_m2__mod__cdata-1]*(  exp(cos2thm_k*lh1/(4.))     /exp(cos2thmpk*lh1/(4.))-1.)
+            j[vertexIdx.x][2+AC_m2__mod__cdata-1][vertexIdx.z]= j[vertexIdx.x][AC_m2__mod__cdata-2-1][vertexIdx.z]*  (exp(lh1*cos2thm_k/(4.))*AC_sin1th__mod__cdata[AC_m2__mod__cdata-2-1])  *(exp(-lh1*cos2thmpk/(4.))*AC_sinth__mod__cdata[2+AC_m2__mod__cdata-1])  +somega
+          }
+          else {
+            somega=AC_x__mod__cdata[vertexIdx.x]*AC_omega__mod__cdata*AC_sinth__mod__cdata[2+AC_m2__mod__cdata-1]*(  exp(cos2thm_k*lh1/(4.*AC_nu__mod__viscosity))     /exp(cos2thmpk*lh1/(4.*AC_nu__mod__viscosity))-1.)
+            j[vertexIdx.x][2+AC_m2__mod__cdata-1][vertexIdx.z]= j[vertexIdx.x][AC_m2__mod__cdata-2-1][vertexIdx.z]*  (exp(lh1*cos2thm_k/(4.*AC_nu__mod__viscosity))*AC_sin1th__mod__cdata[AC_m2__mod__cdata-2-1])  *(exp(-lh1*cos2thmpk/(4.*AC_nu__mod__viscosity))*AC_sinth__mod__cdata[2+AC_m2__mod__cdata-1])  +somega
+          }
+        }
+        cos2thm_k=( AC_costh__mod__cdata[AC_m2__mod__cdata-3-1]* AC_costh__mod__cdata[AC_m2__mod__cdata-3-1])-(AC_sinth__mod__cdata[AC_m2__mod__cdata-3-1]*AC_sinth__mod__cdata[AC_m2__mod__cdata-3-1])
+        cos2thmpk=( AC_costh__mod__cdata[3+AC_m2__mod__cdata-1]* AC_costh__mod__cdata[3+AC_m2__mod__cdata-1])-(AC_sinth__mod__cdata[3+AC_m2__mod__cdata-1]*AC_sinth__mod__cdata[3+AC_m2__mod__cdata-1])
+        if (AC_omega__mod__cdata==0){
+          if (AC_llambda_scale_with_nu__mod__viscosity) {
+            j[vertexIdx.x][3+AC_m2__mod__cdata-1][vertexIdx.z]= j[vertexIdx.x][AC_m2__mod__cdata-3-1][vertexIdx.z]*  (exp(lh1*cos2thm_k/(4.))*AC_sin1th__mod__cdata[AC_m2__mod__cdata-3-1])  *(exp(-lh1*cos2thmpk/(4.))*AC_sinth__mod__cdata[3+AC_m2__mod__cdata-1])
+          }
+          else {
+            j[vertexIdx.x][3+AC_m2__mod__cdata-1][vertexIdx.z]= j[vertexIdx.x][AC_m2__mod__cdata-3-1][vertexIdx.z]*  (exp(lh1*cos2thm_k/(4.*AC_nu__mod__viscosity))*AC_sin1th__mod__cdata[AC_m2__mod__cdata-3-1])  *(exp(-lh1*cos2thmpk/(4.*AC_nu__mod__viscosity))*AC_sinth__mod__cdata[3+AC_m2__mod__cdata-1])
+          }
+        }
+        else {
+          if (AC_llambda_scale_with_nu__mod__viscosity) {
+            somega=AC_x__mod__cdata[vertexIdx.x]*AC_omega__mod__cdata*AC_sinth__mod__cdata[3+AC_m2__mod__cdata-1]*(  exp(cos2thm_k*lh1/(4.))     /exp(cos2thmpk*lh1/(4.))-1.)
+            j[vertexIdx.x][3+AC_m2__mod__cdata-1][vertexIdx.z]= j[vertexIdx.x][AC_m2__mod__cdata-3-1][vertexIdx.z]*  (exp(lh1*cos2thm_k/(4.))*AC_sin1th__mod__cdata[AC_m2__mod__cdata-3-1])  *(exp(-lh1*cos2thmpk/(4.))*AC_sinth__mod__cdata[3+AC_m2__mod__cdata-1])  +somega
+          }
+          else {
+            somega=AC_x__mod__cdata[vertexIdx.x]*AC_omega__mod__cdata*AC_sinth__mod__cdata[3+AC_m2__mod__cdata-1]*(  exp(cos2thm_k*lh1/(4.*AC_nu__mod__viscosity))     /exp(cos2thmpk*lh1/(4.*AC_nu__mod__viscosity))-1.)
+            j[vertexIdx.x][3+AC_m2__mod__cdata-1][vertexIdx.z]= j[vertexIdx.x][AC_m2__mod__cdata-3-1][vertexIdx.z]*  (exp(lh1*cos2thm_k/(4.*AC_nu__mod__viscosity))*AC_sin1th__mod__cdata[AC_m2__mod__cdata-3-1])  *(exp(-lh1*cos2thmpk/(4.*AC_nu__mod__viscosity))*AC_sinth__mod__cdata[3+AC_m2__mod__cdata-1])  +somega
+          }
+        }
+      }
+    }
+    else {
+      j[vertexIdx.x][1+AC_m2__mod__cdata-1][vertexIdx.z]= j[vertexIdx.x][AC_m2__mod__cdata-1-1][vertexIdx.z]*(sin(AC_y__mod__cdata[AC_m2__mod__cdata-1-1]+AC_dy2_bound__mod__cdata[2+AC_NGHOST__mod__cparam-1])*AC_sin1th__mod__cdata[AC_m2__mod__cdata-1-1])
+      j[vertexIdx.x][2+AC_m2__mod__cdata-1][vertexIdx.z]= j[vertexIdx.x][AC_m2__mod__cdata-2-1][vertexIdx.z]*(sin(AC_y__mod__cdata[AC_m2__mod__cdata-2-1]+AC_dy2_bound__mod__cdata[3+AC_NGHOST__mod__cparam-1])*AC_sin1th__mod__cdata[AC_m2__mod__cdata-2-1])
+      j[vertexIdx.x][3+AC_m2__mod__cdata-1][vertexIdx.z]= j[vertexIdx.x][AC_m2__mod__cdata-3-1][vertexIdx.z]*(sin(AC_y__mod__cdata[AC_m2__mod__cdata-3-1]+AC_dy2_bound__mod__cdata[4+AC_NGHOST__mod__cparam-1])*AC_sin1th__mod__cdata[AC_m2__mod__cdata-3-1])
+    }
+  }
+  else {
+  }
+}
+
+bc_ss_flux_x(AcBoundary boundary, AC_TOP_BOT topbot)
+{
+  suppress_unused_warning(boundary)
+  real ftop
+  real work_yz
+  real tmp_yz
+  int i
+  int stat
+  real fac
+  real cp
+  real get_cp_return_value_0_2
+  real get_cv_return_value_1_2
+  real get_cp_return_value_0_3
+  real get_cv_return_value_1_3
+  int i_5
+  int ll_5
+  int ia_5
+  int ie_5
+  bool heatflux_deriv_x_return_value_4_5
+  int i_6
+  int ll_6
+  int ia_6
+  int ie_6
+  bool heatflux_deriv_x_return_value_4_6
+  int i_7
+  int ll_7
+  int ia_7
+  int ie_7
+  bool heatflux_deriv_x_return_value_4_7
+  int i_8
+  int ll_8
+  int ia_8
+  int ie_8
+  bool heatflux_deriv_x_return_value_4_8
+  if (AC_lheatc_kramers__mod__energy) {
+      get_cp_return_value_0_2=AC_cp__mod__equationofstate
+      cp=get_cp_return_value_0_2
+  }
+  if (AC_lheatc_chiconst__mod__energy) {
+      get_cp_return_value_0_3=AC_cp__mod__equationofstate
+      cp=get_cp_return_value_0_3
+  }
+  fac=AC_gamma_m1__mod__equationofstate/AC_gamma__mod__equationofstate
+  if(topbot == AC_bot) {
+    if (AC_pretend_lntt__mod__cdata) {
+      SS[l1-1-1][vertexIdx.y][vertexIdx.z]=SS[1+l1-1][vertexIdx.y][vertexIdx.z]+AC_dx2_bound__mod__cdata[-1+AC_NGHOST__mod__cparam+1-1]*AC_FbotKbot__mod__energy/exp(SS[l1-1][vertexIdx.y][vertexIdx.z])
+      SS[l1-2-1][vertexIdx.y][vertexIdx.z]=SS[2+l1-1][vertexIdx.y][vertexIdx.z]+AC_dx2_bound__mod__cdata[-2+AC_NGHOST__mod__cparam+1-1]*AC_FbotKbot__mod__energy/exp(SS[l1-1][vertexIdx.y][vertexIdx.z])
+      SS[l1-3-1][vertexIdx.y][vertexIdx.z]=SS[3+l1-1][vertexIdx.y][vertexIdx.z]+AC_dx2_bound__mod__cdata[-3+AC_NGHOST__mod__cparam+1-1]*AC_FbotKbot__mod__energy/exp(SS[l1-1][vertexIdx.y][vertexIdx.z])
+    }
+    else {
+      if (AC_ldensity_nolog__mod__cdata) {
+        if (AC_lheatc_kramers__mod__energy || AC_lheatc_chiconst__mod__energy) {
+          work_yz=RHO[l1-1][vertexIdx.y][vertexIdx.z]
+        }
+        if (AC_lreference_state__mod__cdata) {
+          tmp_yz= AC_cs20__mod__equationofstate*exp(AC_gamma_m1__mod__equationofstate*(log(RHO[l1-1][vertexIdx.y][vertexIdx.z]+AC_reference_state__mod__density[1-1][AC_iref_rho__mod__cparam-1])-AC_lnrho0__mod__equationofstate)   +AC_gamma__mod__equationofstate*(SS[l1-1][vertexIdx.y][vertexIdx.z]+AC_reference_state__mod__density[1-1][AC_iref_s__mod__cparam-1]))
+        }
+        else {
+          tmp_yz=AC_cs20__mod__equationofstate*exp(AC_gamma_m1__mod__equationofstate*(log(RHO[l1-1][vertexIdx.y][vertexIdx.z])-AC_lnrho0__mod__equationofstate)+AC_gamma__mod__equationofstate*SS[l1-1][vertexIdx.y][vertexIdx.z])
+        }
+      }
+      else {
+        if (AC_lheatc_kramers__mod__energy || AC_lheatc_chiconst__mod__energy) {
+          work_yz=exp(LNRHO[l1-1][vertexIdx.y][vertexIdx.z])
+        }
+        tmp_yz=AC_cs20__mod__equationofstate*exp(AC_gamma_m1__mod__equationofstate*(LNRHO[l1-1][vertexIdx.y][vertexIdx.z]-AC_lnrho0__mod__equationofstate)+AC_gamma__mod__equationofstate*SS[l1-1][vertexIdx.y][vertexIdx.z])
+      }
+      if (AC_lheatc_kramers__mod__energy) {
+        krho1kr_yz = AC_hcond0_kramers__mod__energy*pow(work_yz,(-2*AC_nkramers__mod__energy-1))*pow((tmp_yz/(cp*AC_gamma_m1__mod__equationofstate)),(6.5*AC_nkramers__mod__energy))
+        if (AC_chimin_kramers__mod__energy>0) {
+          krho1kr_yz = max(krho1kr_yz, AC_chimin_kramers__mod__energy*cp)
+        }
+        if (AC_chimax_kramers__mod__energy>0) {
+          krho1kr_yz = min(krho1kr_yz, AC_chimax_kramers__mod__energy*cp)
+        }
+        tmp_yz=AC_Fbot__mod__energy/(work_yz*krho1kr_yz*tmp_yz)
+      }
+      else if (AC_lheatc_chiconst__mod__energy) {
+        tmp_yz=AC_Fbot__mod__energy/(work_yz*AC_chi__mod__energy*cp*tmp_yz)
+      }
+      else {
+        tmp_yz=AC_FbotKbot__mod__energy/tmp_yz
+      }
+      if (AC_lreference_state__mod__cdata) {
+        work_yz= 1./(RHO[l1-1][vertexIdx.y][vertexIdx.z]+AC_reference_state__mod__density[1-1][AC_iref_rho__mod__cparam-1])
+        tmp_yz = tmp_yz + AC_reference_state__mod__density[1-1][AC_iref_gs__mod__cparam-1]/fac + AC_reference_state__mod__density[1-1][AC_iref_grho__mod__cparam-1]*work_yz
+        heatflux_deriv_x_return_value_4_5 = true
+        if( AC_lequidist__mod__cdata.x  ||  ! heatflux_deriv_x_return_value_4_5) {
+          if (AC_bot==AC_bot) {
+            ll_5=l1
+            ia_5=1
+            ie_5=AC_NGHOST__mod__cparam
+          }
+          else {
+            ll_5=AC_l2__mod__cdata
+            ia_5=-AC_NGHOST__mod__cparam
+            ie_5=-1
+          }
+          for i_5 in ia_5:ie_5+1 {
+            if (AC_ldensity_nolog__mod__cdata) {
+              if (present(work_yz)) {
+                SS[ll_5-i_5-1][vertexIdx.y][vertexIdx.z]=SS[ll_5+i_5-1][vertexIdx.y][vertexIdx.z]+fac*  ( (RHO[ll_5+i_5-1][vertexIdx.y][vertexIdx.z]-RHO[ll_5-i_5-1][vertexIdx.y][vertexIdx.z])*work_yz + AC_dx2_bound__mod__cdata[-i_5+AC_NGHOST__mod__cparam+1-1]*tmp_yz )
+              }
+              else {
+                SS[ll_5-i_5-1][vertexIdx.y][vertexIdx.z]=SS[ll_5+i_5-1][vertexIdx.y][vertexIdx.z]+fac*  (log(RHO[ll_5+i_5-1][vertexIdx.y][vertexIdx.z]/RHO[ll_5-i_5-1][vertexIdx.y][vertexIdx.z]) + AC_dx2_bound__mod__cdata[-i_5+AC_NGHOST__mod__cparam+1-1]*tmp_yz)
+              }
+            }
+            else {
+              SS[ll_5-i_5-1][vertexIdx.y][vertexIdx.z]=SS[ll_5+i_5-1][vertexIdx.y][vertexIdx.z]+fac*  (LNRHO[ll_5+i_5-1][vertexIdx.y][vertexIdx.z]-LNRHO[ll_5-i_5-1][vertexIdx.y][vertexIdx.z] + AC_dx2_bound__mod__cdata[-i_5+AC_NGHOST__mod__cparam+1-1]*tmp_yz)
+            }
+          }
+        }
+      }
+      else {
+        heatflux_deriv_x_return_value_4_6 = true
+        if( AC_lequidist__mod__cdata.x  ||  ! heatflux_deriv_x_return_value_4_6) {
+          if (AC_bot==AC_bot) {
+            ll_6=l1
+            ia_6=1
+            ie_6=AC_NGHOST__mod__cparam
+          }
+          else {
+            ll_6=AC_l2__mod__cdata
+            ia_6=-AC_NGHOST__mod__cparam
+            ie_6=-1
+          }
+          for i_6 in ia_6:ie_6+1 {
+            if (AC_ldensity_nolog__mod__cdata) {
+              if (false) {
+              }
+              else {
+                SS[ll_6-i_6-1][vertexIdx.y][vertexIdx.z]=SS[ll_6+i_6-1][vertexIdx.y][vertexIdx.z]+fac*  (log(RHO[ll_6+i_6-1][vertexIdx.y][vertexIdx.z]/RHO[ll_6-i_6-1][vertexIdx.y][vertexIdx.z]) + AC_dx2_bound__mod__cdata[-i_6+AC_NGHOST__mod__cparam+1-1]*tmp_yz)
+              }
+            }
+            else {
+              SS[ll_6-i_6-1][vertexIdx.y][vertexIdx.z]=SS[ll_6+i_6-1][vertexIdx.y][vertexIdx.z]+fac*  (LNRHO[ll_6+i_6-1][vertexIdx.y][vertexIdx.z]-LNRHO[ll_6-i_6-1][vertexIdx.y][vertexIdx.z] + AC_dx2_bound__mod__cdata[-i_6+AC_NGHOST__mod__cparam+1-1]*tmp_yz)
+            }
+          }
+        }
+      }
+    }
+  }
+  else if(topbot == AC_top) {
+    if (AC_pretend_lntt__mod__cdata) {
+      SS[1+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]=SS[AC_l2__mod__cdata-1-1][vertexIdx.y][vertexIdx.z]-AC_dx2_bound__mod__cdata[2+AC_NGHOST__mod__cparam-1]*AC_FtopKtop__mod__energy/exp(SS[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z])
+      SS[2+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]=SS[AC_l2__mod__cdata-2-1][vertexIdx.y][vertexIdx.z]-AC_dx2_bound__mod__cdata[3+AC_NGHOST__mod__cparam-1]*AC_FtopKtop__mod__energy/exp(SS[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z])
+      SS[3+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]=SS[AC_l2__mod__cdata-3-1][vertexIdx.y][vertexIdx.z]-AC_dx2_bound__mod__cdata[4+AC_NGHOST__mod__cparam-1]*AC_FtopKtop__mod__energy/exp(SS[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z])
+    }
+    else {
+      if (AC_ldensity_nolog__mod__cdata) {
+        if (AC_lheatc_kramers__mod__energy || AC_lheatc_chiconst__mod__energy) {
+          work_yz=RHO[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]
+        }
+        if (AC_lreference_state__mod__cdata) {
+          tmp_yz=AC_cs20__mod__equationofstate*exp(AC_gamma_m1__mod__equationofstate*(log(RHO[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]+AC_reference_state__mod__density[nx-1][AC_iref_rho__mod__cparam-1])-AC_lnrho0__mod__equationofstate)  +AC_gamma__mod__equationofstate*(SS[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]+AC_reference_state__mod__density[nx-1][AC_iref_s__mod__cparam-1]))
+        }
+        else {
+          tmp_yz=AC_cs20__mod__equationofstate*exp(AC_gamma_m1__mod__equationofstate*(log(RHO[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z])-AC_lnrho0__mod__equationofstate)+AC_gamma__mod__equationofstate*SS[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z])
+        }
+      }
+      else {
+        if (AC_lheatc_kramers__mod__energy || AC_lheatc_chiconst__mod__energy) {
+          work_yz=exp(LNRHO[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z])
+        }
+        tmp_yz=AC_cs20__mod__equationofstate*exp(AC_gamma_m1__mod__equationofstate*(LNRHO[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]-AC_lnrho0__mod__equationofstate)+AC_gamma__mod__equationofstate*SS[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z])
+      }
+      if (AC_lheatc_kramers__mod__energy) {
+        krho1kr_yz = AC_hcond0_kramers__mod__energy*pow(work_yz,(-2*AC_nkramers__mod__energy-1))*pow((tmp_yz/(cp*AC_gamma_m1__mod__equationofstate)),(6.5*AC_nkramers__mod__energy))
+        if (AC_chimin_kramers__mod__energy>0) {
+          krho1kr_yz = max(krho1kr_yz, AC_chimin_kramers__mod__energy*cp)
+        }
+        if (AC_chimax_kramers__mod__energy>0) {
+          krho1kr_yz = min(krho1kr_yz, AC_chimax_kramers__mod__energy*cp)
+        }
+        tmp_yz=ftop/(work_yz*krho1kr_yz*tmp_yz)
+      }
+      else if (AC_lheatc_chiconst__mod__energy) {
+        tmp_yz=ftop/(work_yz*AC_chi__mod__energy*cp*tmp_yz)
+      }
+      else {
+        tmp_yz=AC_FtopKtop__mod__energy/tmp_yz
+      }
+      if (AC_lreference_state__mod__cdata) {
+        tmp_yz = tmp_yz + AC_reference_state__mod__density[nx-1][AC_iref_gs__mod__cparam-1]
+      }
+      if (AC_lreference_state__mod__cdata) {
+        work_yz= 1./(RHO[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]+AC_reference_state__mod__density[nx-1][AC_iref_rho__mod__cparam-1])
+        tmp_yz = tmp_yz + AC_reference_state__mod__density[nx-1][AC_iref_gs__mod__cparam-1]/fac + AC_reference_state__mod__density[nx-1][AC_iref_grho__mod__cparam-1]*work_yz
+        heatflux_deriv_x_return_value_4_7 = true
+        if( AC_lequidist__mod__cdata.x  ||  ! heatflux_deriv_x_return_value_4_7) {
+          if (AC_top==AC_bot) {
+            ll_7=l1
+            ia_7=1
+            ie_7=AC_NGHOST__mod__cparam
+          }
+          else {
+            ll_7=AC_l2__mod__cdata
+            ia_7=-AC_NGHOST__mod__cparam
+            ie_7=-1
+          }
+          for i_7 in ia_7:ie_7+1 {
+            if (AC_ldensity_nolog__mod__cdata) {
+              if (present(work_yz)) {
+                SS[ll_7-i_7-1][vertexIdx.y][vertexIdx.z]=SS[ll_7+i_7-1][vertexIdx.y][vertexIdx.z]+fac*  ( (RHO[ll_7+i_7-1][vertexIdx.y][vertexIdx.z]-RHO[ll_7-i_7-1][vertexIdx.y][vertexIdx.z])*work_yz + AC_dx2_bound__mod__cdata[-i_7+AC_NGHOST__mod__cparam+1-1]*-tmp_yz )
+              }
+              else {
+                SS[ll_7-i_7-1][vertexIdx.y][vertexIdx.z]=SS[ll_7+i_7-1][vertexIdx.y][vertexIdx.z]+fac*  (log(RHO[ll_7+i_7-1][vertexIdx.y][vertexIdx.z]/RHO[ll_7-i_7-1][vertexIdx.y][vertexIdx.z]) + AC_dx2_bound__mod__cdata[-i_7+AC_NGHOST__mod__cparam+1-1]*-tmp_yz)
+              }
+            }
+            else {
+              SS[ll_7-i_7-1][vertexIdx.y][vertexIdx.z]=SS[ll_7+i_7-1][vertexIdx.y][vertexIdx.z]+fac*  (LNRHO[ll_7+i_7-1][vertexIdx.y][vertexIdx.z]-LNRHO[ll_7-i_7-1][vertexIdx.y][vertexIdx.z] + AC_dx2_bound__mod__cdata[-i_7+AC_NGHOST__mod__cparam+1-1]*-tmp_yz)
+            }
+          }
+        }
+      }
+      else {
+        heatflux_deriv_x_return_value_4_8 = true
+        if( AC_lequidist__mod__cdata.x  ||  ! heatflux_deriv_x_return_value_4_8) {
+          if (AC_top==AC_bot) {
+            ll_8=l1
+            ia_8=1
+            ie_8=AC_NGHOST__mod__cparam
+          }
+          else {
+            ll_8=AC_l2__mod__cdata
+            ia_8=-AC_NGHOST__mod__cparam
+            ie_8=-1
+          }
+          for i_8 in ia_8:ie_8+1 {
+            if (AC_ldensity_nolog__mod__cdata) {
+              if (false) {
+              }
+              else {
+                SS[ll_8-i_8-1][vertexIdx.y][vertexIdx.z]=SS[ll_8+i_8-1][vertexIdx.y][vertexIdx.z]+fac*  (log(RHO[ll_8+i_8-1][vertexIdx.y][vertexIdx.z]/RHO[ll_8-i_8-1][vertexIdx.y][vertexIdx.z]) + AC_dx2_bound__mod__cdata[-i_8+AC_NGHOST__mod__cparam+1-1]*-tmp_yz)
+              }
+            }
+            else {
+              SS[ll_8-i_8-1][vertexIdx.y][vertexIdx.z]=SS[ll_8+i_8-1][vertexIdx.y][vertexIdx.z]+fac*  (LNRHO[ll_8+i_8-1][vertexIdx.y][vertexIdx.z]-LNRHO[ll_8-i_8-1][vertexIdx.y][vertexIdx.z] + AC_dx2_bound__mod__cdata[-i_8+AC_NGHOST__mod__cparam+1-1]*-tmp_yz)
+            }
+          }
+        }
+      }
+    }
+  }
+}
+bc_ss_flux_turb_x(AcBoundary boundary, AC_TOP_BOT topbot)
+{
+  suppress_unused_warning(boundary)
+  int i
+  real rho_yz
+  real cs2_yz
+  real dsdx_yz
+  if(topbot == AC_bot) {
+    if (AC_pretend_lntt__mod__cdata) {
+      SS[l1-1-1][vertexIdx.y][vertexIdx.z]=SS[1+l1-1][vertexIdx.y][vertexIdx.z] +  AC_dx2_bound__mod__cdata[-1+AC_NGHOST__mod__cparam+1-1]*AC_sigmasbt__mod__equationofstate*(exp(SS[l1-1][vertexIdx.y][vertexIdx.z])*exp(SS[l1-1][vertexIdx.y][vertexIdx.z])*exp(SS[l1-1][vertexIdx.y][vertexIdx.z]))/AC_hcondxbot__mod__energy
+      SS[l1-2-1][vertexIdx.y][vertexIdx.z]=SS[2+l1-1][vertexIdx.y][vertexIdx.z] +  AC_dx2_bound__mod__cdata[-2+AC_NGHOST__mod__cparam+1-1]*AC_sigmasbt__mod__equationofstate*(exp(SS[l1-1][vertexIdx.y][vertexIdx.z])*exp(SS[l1-1][vertexIdx.y][vertexIdx.z])*exp(SS[l1-1][vertexIdx.y][vertexIdx.z]))/AC_hcondxbot__mod__energy
+      SS[l1-3-1][vertexIdx.y][vertexIdx.z]=SS[3+l1-1][vertexIdx.y][vertexIdx.z] +  AC_dx2_bound__mod__cdata[-3+AC_NGHOST__mod__cparam+1-1]*AC_sigmasbt__mod__equationofstate*(exp(SS[l1-1][vertexIdx.y][vertexIdx.z])*exp(SS[l1-1][vertexIdx.y][vertexIdx.z])*exp(SS[l1-1][vertexIdx.y][vertexIdx.z]))/AC_hcondxbot__mod__energy
+    }
+    else {
+      if (AC_ldensity_nolog__mod__cdata) {
+        if (AC_lreference_state__mod__cdata) {
+          rho_yz=LNRHO[l1-1][vertexIdx.y][vertexIdx.z]+AC_reference_state__mod__density[1-1][AC_iref_rho__mod__cparam-1]
+        }
+        else {
+          rho_yz=LNRHO[l1-1][vertexIdx.y][vertexIdx.z]
+        }
+      }
+      else {
+        rho_yz=exp(LNRHO[l1-1][vertexIdx.y][vertexIdx.z])
+      }
+      if (AC_ldensity_nolog__mod__cdata) {
+        cs2_yz=SS[l1-1][vertexIdx.y][vertexIdx.z]
+        if (AC_lreference_state__mod__cdata) {
+          cs2_yz = cs2_yz+AC_reference_state__mod__density[1-1][AC_iref_s__mod__cparam-1]
+        }
+        cs2_yz=AC_cs20__mod__equationofstate*exp(AC_gamma_m1__mod__equationofstate*(log(rho_yz)-AC_lnrho0__mod__equationofstate)+AC_cv1__mod__equationofstate*cs2_yz)
+      }
+      else {
+        cs2_yz=AC_cs20__mod__equationofstate*exp(AC_gamma_m1__mod__equationofstate*(LNRHO[l1-1][vertexIdx.y][vertexIdx.z]-AC_lnrho0__mod__equationofstate)+AC_cv1__mod__equationofstate*SS[l1-1][vertexIdx.y][vertexIdx.z])
+      }
+      tt_yz=cs2_yz/(AC_gamma_m1__mod__equationofstate*AC_cp__mod__equationofstate)
+      dlnrhodx_yz= AC_coeffs_1_x__mod__cdata[NGHOST+1-1][1-1]*(LNRHO[1+l1-1][vertexIdx.y][vertexIdx.z]-LNRHO[l1-1-1][vertexIdx.y][vertexIdx.z])  +AC_coeffs_1_x__mod__cdata[NGHOST+2-1][1-1]*(LNRHO[2+l1-1][vertexIdx.y][vertexIdx.z]-LNRHO[l1-2-1][vertexIdx.y][vertexIdx.z])  +AC_coeffs_1_x__mod__cdata[NGHOST+3-1][1-1]*(LNRHO[3+l1-1][vertexIdx.y][vertexIdx.z]-LNRHO[l1-3-1][vertexIdx.y][vertexIdx.z])
+      if (AC_ldensity_nolog__mod__cdata) {
+        if (AC_lreference_state__mod__cdata) {
+          dlnrhodx_yz=dlnrhodx_yz + AC_reference_state__mod__density[1-1][AC_iref_grho__mod__cparam-1]
+          dlnrhodx_yz=dlnrhodx_yz/(rho_yz + AC_reference_state__mod__density[1-1][AC_iref_rho__mod__cparam-1])
+        }
+        else {
+          dlnrhodx_yz=dlnrhodx_yz/rho_yz
+        }
+      }
+      if (AC_lheatc_kramers__mod__energy) {
+        dsdx_yz=-AC_cv__mod__equationofstate*( (AC_sigmasbt__mod__equationofstate/AC_hcond0_kramers__mod__energy)*pow(tt_yz,(3-6.5*AC_nkramers__mod__energy))*pow(rho_yz,(2.*AC_nkramers__mod__energy))  +AC_gamma_m1__mod__equationofstate*dlnrhodx_yz)
+      }
+      else {
+        dsdx_yz=-(AC_sigmasbt__mod__equationofstate*(tt_yz*tt_yz*tt_yz)+AC_hcondxbot__mod__energy*AC_gamma_m1__mod__equationofstate*dlnrhodx_yz)/  (AC_chit_prof1__mod__energy*AC_chi_t__mod__energy*rho_yz+AC_hcondxbot__mod__energy/AC_cv__mod__equationofstate)
+      }
+      if (AC_lreference_state__mod__cdata) {
+        dsdx_yz = dsdx_yz - AC_reference_state__mod__density[1-1][AC_iref_gs__mod__cparam-1]
+      }
+      SS[l1-1-1][vertexIdx.y][vertexIdx.z]=SS[1+l1-1][vertexIdx.y][vertexIdx.z]-AC_dx2_bound__mod__cdata[-1+AC_NGHOST__mod__cparam+1-1]*dsdx_yz
+      SS[l1-2-1][vertexIdx.y][vertexIdx.z]=SS[2+l1-1][vertexIdx.y][vertexIdx.z]-AC_dx2_bound__mod__cdata[-2+AC_NGHOST__mod__cparam+1-1]*dsdx_yz
+      SS[l1-3-1][vertexIdx.y][vertexIdx.z]=SS[3+l1-1][vertexIdx.y][vertexIdx.z]-AC_dx2_bound__mod__cdata[-3+AC_NGHOST__mod__cparam+1-1]*dsdx_yz
+    }
+  }
+  else if(topbot == AC_top) {
+    if (AC_pretend_lntt__mod__cdata) {
+      SS[1+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]=SS[AC_l2__mod__cdata-1-1][vertexIdx.y][vertexIdx.z] +  AC_dx2_bound__mod__cdata[2+AC_NGHOST__mod__cparam-1]*AC_sigmasbt__mod__equationofstate*(exp(SS[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z])*exp(SS[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z])*exp(SS[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]))/AC_hcondxtop__mod__energy
+      SS[2+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]=SS[AC_l2__mod__cdata-2-1][vertexIdx.y][vertexIdx.z] +  AC_dx2_bound__mod__cdata[3+AC_NGHOST__mod__cparam-1]*AC_sigmasbt__mod__equationofstate*(exp(SS[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z])*exp(SS[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z])*exp(SS[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]))/AC_hcondxtop__mod__energy
+      SS[3+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]=SS[AC_l2__mod__cdata-3-1][vertexIdx.y][vertexIdx.z] +  AC_dx2_bound__mod__cdata[4+AC_NGHOST__mod__cparam-1]*AC_sigmasbt__mod__equationofstate*(exp(SS[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z])*exp(SS[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z])*exp(SS[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]))/AC_hcondxtop__mod__energy
+    }
+    else {
+      if (AC_ldensity_nolog__mod__cdata) {
+        if (AC_lreference_state__mod__cdata) {
+          rho_yz=LNRHO[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]+AC_reference_state__mod__density[nx-1][AC_iref_rho__mod__cparam-1]
+        }
+        else {
+          rho_yz=LNRHO[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]
+        }
+      }
+      else {
+        rho_yz=exp(LNRHO[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z])
+      }
+      if (AC_ldensity_nolog__mod__cdata) {
+        cs2_yz=SS[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]
+        if (AC_lreference_state__mod__cdata) {
+          cs2_yz = cs2_yz+AC_reference_state__mod__density[nx-1][AC_iref_s__mod__cparam-1]
+        }
+        cs2_yz=AC_cs20__mod__equationofstate*exp(AC_gamma_m1__mod__equationofstate*(log(rho_yz)-AC_lnrho0__mod__equationofstate)+AC_cv1__mod__equationofstate*cs2_yz)
+      }
+      else {
+        cs2_yz=AC_cs20__mod__equationofstate*exp(AC_gamma_m1__mod__equationofstate*(LNRHO[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]-AC_lnrho0__mod__equationofstate)+AC_cv1__mod__equationofstate*SS[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z])
+      }
+      tt_yz=cs2_yz/(AC_gamma_m1__mod__equationofstate*AC_cp__mod__equationofstate)
+      dlnrhodx_yz= AC_coeffs_1_x__mod__cdata[NGHOST+1-1][2-1]*(LNRHO[1+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]-LNRHO[AC_l2__mod__cdata-1-1][vertexIdx.y][vertexIdx.z])  +AC_coeffs_1_x__mod__cdata[NGHOST+2-1][2-1]*(LNRHO[2+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]-LNRHO[AC_l2__mod__cdata-2-1][vertexIdx.y][vertexIdx.z])  +AC_coeffs_1_x__mod__cdata[NGHOST+3-1][2-1]*(LNRHO[3+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]-LNRHO[AC_l2__mod__cdata-3-1][vertexIdx.y][vertexIdx.z])
+      if (AC_ldensity_nolog__mod__cdata) {
+        if (AC_lreference_state__mod__cdata) {
+          dlnrhodx_yz=dlnrhodx_yz + AC_reference_state__mod__density[nx-1][AC_iref_grho__mod__cparam-1]
+          dlnrhodx_yz=dlnrhodx_yz/(rho_yz + AC_reference_state__mod__density[nx-1][AC_iref_rho__mod__cparam-1])
+        }
+        else {
+          dlnrhodx_yz=dlnrhodx_yz/rho_yz
+        }
+      }
+      if (AC_lheatc_kramers__mod__energy  ||  (AC_hcondxtop__mod__energy != 0.0)) {
+        hcond_total = AC_hcondxtop__mod__energy
+        if (AC_lheatc_kramers__mod__energy) {
+          hcond_total = hcond_total +  AC_hcond0_kramers__mod__energy*pow(tt_yz,(6.5*AC_nkramers__mod__energy))*pow(rho_yz,(-2.*AC_nkramers__mod__energy))
+        }
+        dsdx_yz = -(AC_sigmasbt__mod__equationofstate*(tt_yz*tt_yz*tt_yz)+hcond_total*AC_gamma_m1__mod__equationofstate*dlnrhodx_yz) /  (AC_chit_prof2__mod__energy*AC_chi_t__mod__energy*rho_yz+hcond_total/AC_cv__mod__equationofstate)
+        if (AC_lreference_state__mod__cdata) {
+          dsdx_yz = dsdx_yz - AC_reference_state__mod__density[nx-1][AC_iref_gs__mod__cparam-1]
+        }
+        SS[1+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]=SS[AC_l2__mod__cdata-1-1][vertexIdx.y][vertexIdx.z]+AC_dx2_bound__mod__cdata[2+AC_NGHOST__mod__cparam-1]*dsdx_yz
+        SS[2+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]=SS[AC_l2__mod__cdata-2-1][vertexIdx.y][vertexIdx.z]+AC_dx2_bound__mod__cdata[3+AC_NGHOST__mod__cparam-1]*dsdx_yz
+        SS[3+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]=SS[AC_l2__mod__cdata-3-1][vertexIdx.y][vertexIdx.z]+AC_dx2_bound__mod__cdata[4+AC_NGHOST__mod__cparam-1]*dsdx_yz
+      }
+    }
+  }
+  else {
+  }
+}
+**/
