@@ -1501,12 +1501,12 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint)
     {
       if (maux_vtxbuf_index[i])
       {
-        mesh.vertex_buffer[maux_vtxbuf_index[i]] = &farr[mw*i];
+        mesh.vertex_buffer[maux_vtxbuf_index[i]] = &farr[mw*i + z_offset];
       }
     }
     for(int i = mvar+maux; i < mfarray; ++i)
     {
-        mesh.vertex_buffer[i] = &farr[mw*i];
+        mesh.vertex_buffer[i] = &farr[mw*i + z_offset];
     }
     //TP: for now for training we have all slots filled since we might want to read TAU components to the host for calculating validation error
     if (ltraining)
