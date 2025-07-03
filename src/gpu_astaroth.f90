@@ -315,12 +315,13 @@ contains
 !$    use, intrinsic :: iso_c_binding
 
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (:,:,:,:), allocatable :: f_copy,f_diff,df_copy
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p,p_copy
       real, dimension(1), intent(inout) :: mass_per_proc
       logical ,intent(in) :: early_finalize
 
+      real, dimension (:,:,:,:), allocatable :: f_copy,f_diff,df_copy
+      integer :: i
       interface
         subroutine cpu_version(f,df,p,mass_per_proc,early_finalize)
           import mx
@@ -342,6 +343,10 @@ contains
       endinterface
 
       allocate(f_copy(mx,my,mz,mfarray),f_diff(mx,my,mz,mfarray),df_copy(mx,my,mz,mvar))
+
+      if(itorder /= 1) then
+          call fatal_error('test_rhs_gpu','Need itorder to be 1!')
+      endif
       f_copy = f
       df_copy = 0.0
       call rhs_gpu(f,itsub)
@@ -360,6 +365,11 @@ contains
 
       print*,"Max comp diff: ",maxval(f_diff(l1:l2,m1:m2,n1:n2,1:mvar))
       print*,"Max comp diff loc: ",maxloc(f_diff(l1:l2,m1:m2,n1:n2,1:mvar))
+
+      do i = 1,mvar
+        print*,"Max comp diff for ",i,": ",maxval(f_diff(l1:l2,m1:m2,n1:n2,i))
+        print*,"Max comp loc  for ",i,": ",maxloc(f_diff(l1:l2,m1:m2,n1:n2,i))
+      enddo
 
     call die_gracefully
 
