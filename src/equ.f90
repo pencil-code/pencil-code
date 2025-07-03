@@ -60,7 +60,7 @@ module Equ
 ! To check ghost cell consistency, please uncomment the following line:
 !     use Ghost_check, only: check_ghosts_consistency
       use GhostFold, only: fold_df, fold_df_3points
-      use Gpu, only: before_boundary_gpu, rhs_gpu, copy_farray_from_GPU, get_farray_ptr_gpu
+      use Gpu, only: before_boundary_gpu, rhs_gpu, copy_farray_from_GPU, get_farray_ptr_gpu,test_rhs_gpu
       use Gravity
       use Hydro
       use Interstellar, only: interstellar_before_boundary

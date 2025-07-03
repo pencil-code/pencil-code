@@ -314,17 +314,12 @@ contains
 !$    use ISO_fortran_env, only: stdout => output_unit
 !$    use, intrinsic :: iso_c_binding
 
-      real, dimension (mx,my,mz,mfarray) :: f,f_copy,f_copy_2
-      real, dimension (mx,my,mz,mfarray) :: df,df_copy,ds
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:), allocatable :: f_copy,f_diff,df_copy
+      real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p,p_copy
       real, dimension(1), intent(inout) :: mass_per_proc
       logical ,intent(in) :: early_finalize
-      integer :: i,j,k,n
-      logical :: passed
-      real, parameter :: dt = 0.001
-      real, parameter, dimension(3) :: alpha = (/0.0, -(5.0/9.0), -(153.0/128.0)/)
-      real, parameter, dimension(3) :: beta = (/ 1. / 3., 15./ 16., 8. / 15. /)
-      integer, parameter :: num_of_steps = 100
 
       interface
         subroutine cpu_version(f,df,p,mass_per_proc,early_finalize)
@@ -332,9 +327,10 @@ contains
           import my
           import mz
           import mfarray
+          import mvar
           import pencil_case
           real, dimension (mx,my,mz,mfarray) :: f
-          real, dimension (mx,my,mz,mfarray) :: df
+          real, dimension (mx,my,mz,mvar) :: df
           type (pencil_case) :: p
           real, dimension(1), intent(inout) :: mass_per_proc
           logical ,intent(in) :: early_finalize
@@ -345,36 +341,26 @@ contains
         endsubroutine cpu_version
       endinterface
 
-      !TP: uncomment if want to test from random initial condition
-      ! call random_initial_condition
-      ! call copy_farray_from_GPU(f)
-      df_copy = df
-      p_copy = p
+      allocate(f_copy(mx,my,mz,mfarray),f_diff(mx,my,mz,mfarray),df_copy(mx,my,mz,mvar))
       f_copy = f
-      f_copy_2 = f
+      df_copy = 0.0
+      call rhs_gpu(f,itsub)
+      call copy_farray_from_GPU(f)
 
-      do n=1,num_of_steps
-        if (lroot) print*,"GPU rhs test:    tcpu step: ",n
-        ds = 0.0
-        do i=1,3
-          call boundconds_x(f_copy)
-          call initiate_isendrcv_bdry(f_copy)
-          call finalize_isendrcv_bdry(f_copy)
-          call boundconds_y(f_copy)
-          call boundconds_z(f_copy)
-          df_copy = 0.0
-          ldiagnos =.true.
-          lfirst = .true.
-          lout = .true.
-          itsub = 1
-          call cpu_version(f_copy,df_copy,p,mass_per_proc,early_finalize)
-          ds = alpha(i)*ds + df_copy*dt
-          f_copy = f_copy + beta(i)*ds
-          !call perform_diagnostics(f_copy,p)
-        enddo
-      enddo
+      call boundconds_x(f_copy)
+      call initiate_isendrcv_bdry(f_copy)
+      call finalize_isendrcv_bdry(f_copy)
+      call boundconds_y(f_copy)
+      call boundconds_z(f_copy)
+      call cpu_version(f_copy,df_copy,p,mass_per_proc,early_finalize)
+      f_copy = f_copy + dt*df_copy
+      f_diff = abs((f_copy-f)/f_copy)
+      print*,"Max diff: ",maxval(f_diff(:,:,:,1:mvar))
+      print*,"Max diff loc: ",maxloc(f_diff(:,:,:,1:mvar))
 
-    call test_rhs_c(f_copy_2,f_copy);
+      print*,"Max comp diff: ",maxval(f_diff(l1:l2,m1:m2,n1:n2,1:mvar))
+      print*,"Max comp diff loc: ",maxloc(f_diff(l1:l2,m1:m2,n1:n2,1:mvar))
+
     call die_gracefully
 
   endsubroutine test_rhs_gpu

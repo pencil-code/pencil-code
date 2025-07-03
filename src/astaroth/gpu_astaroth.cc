@@ -1644,7 +1644,7 @@ extern "C" void random_initial_condition()
 //TP: this is not written the most optimally since it needs two extra copies of the mesh where at least the tmp
 //could be circumvented by temporarily using the output buffers on the GPU to store the f-array and load back from there
 //but if we truly hit the mem limit for now the user can of course simply test the bcs with a smaller mesh and skip the test with a larger mesh
-
+/***********************************************************************************************/
 void sym_z(AcMesh mesh_in)
 {
   const auto DEVICE_VTXBUF_IDX = [&](const int x, const int y, const int z)
@@ -1911,7 +1911,7 @@ void testBCs()
           AcReal abs_diff = fabs(out_val - true_val);
           if (fabs(true_val) > max_abs_value) max_abs_value = fabs(true_val);
           if (fabs(true_val) < min_abs_value) min_abs_value = fabs(true_val);
-          if ((abs_diff/true_val) > epsilon || (true_val == (AcReal)0.0 && fabs(out_val) > (AcReal)pow(0.1,13)) || (epsilon == (AcReal)0.0 && true_val != out_val))
+          if (fabs(abs_diff/true_val) > epsilon || (true_val == (AcReal)0.0 && fabs(out_val) > (AcReal)pow(0.1,13)) || (epsilon == (AcReal)0.0 && true_val != out_val))
           {
 	    different_in[ivar][bot_x] |= i < NGHOST;
 	    different_in[ivar][top_x] |= i >= dims.n1.x;
@@ -1946,6 +1946,7 @@ void testBCs()
       }
     }
   }
+
 
   passed &= !has_nans(mesh);
   if (!passed)
