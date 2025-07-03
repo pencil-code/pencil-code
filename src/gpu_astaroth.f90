@@ -359,7 +359,7 @@ contains
       call boundconds_z(f_copy)
       call cpu_version(f_copy,df_copy,p,mass_per_proc,early_finalize)
       f_copy = f_copy + dt*df_copy
-      f_diff = abs((f_copy-f)/f_copy)
+      f_diff = abs((f_copy-f)/(f_copy+tini))
       print*,"Max diff: ",maxval(f_diff(:,:,:,1:mvar))
       print*,"Max diff loc: ",maxloc(f_diff(:,:,:,1:mvar))
 
