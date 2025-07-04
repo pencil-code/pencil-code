@@ -220,8 +220,7 @@ module Special
 !
   character (len=fnlen) :: interpname
   integer :: dataload_len=1, tensor_times_len=-1, iload=0
-  real, dimension(nx)     :: tmpline
-  real, dimension(nx,3)   :: tmppencil,emftmp
+  real, dimension(nx,3)   :: emftmp
   real, dimension(nx,3,3) :: tmptensor
 !
 ! special symmetries
@@ -1481,6 +1480,18 @@ endif
 !!      endif
 !      emftmp=0
 !
+      call calc_diagnostics_special(f,p)
+      call keep_compiler_quiet(f,df)
+!
+    endsubroutine dspecial_dt
+!***********************************************************************
+    subroutine calc_diagnostics_special(f,p)
+      real, dimension(mx,my,mz,mfarray) :: f
+      type(pencil_case) :: p
+
+      real, dimension(nx,3)   :: tmppencil
+      real, dimension(nx)     :: tmpline
+      call keep_compiler_quiet(f)
       if (ldiagnos) then
 
         tmppencil = emftmp - p%emf
@@ -1617,10 +1628,7 @@ endif
         call zsum_mn_name_xy(p%kappa_coefs(:,2,2,3),idiag_kappayyzmxy)
         call zsum_mn_name_xy(p%kappa_coefs(:,3,2,3),idiag_kappazyzmxy)
       endif
-
-      call keep_compiler_quiet(f,df)
-!
-    endsubroutine dspecial_dt
+    endsubroutine calc_diagnostics_special
 !***********************************************************************
     subroutine read_special_init_pars(iostat)
 !
@@ -1868,6 +1876,8 @@ endif
       real :: diffus_tmp
       type (pencil_case), intent(in) :: p
       integer :: i,j,k
+      real, dimension(nx,3)   :: tmppencil
+      real, dimension(nx)     :: tmpline
 !
       call keep_compiler_quiet(f)
 !
