@@ -527,7 +527,7 @@ module Special
 !
       use EquationOfState, only: cs20
 !      
-      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
       real, dimension(nx) :: rr_cyl,TT_init,heating_rate
@@ -543,18 +543,20 @@ module Special
         if (lfirst.and.ldt) dt1_max=max(dt1_max,q%taucool1/cdts)
       endif
 !
-      call special_calc_diagnostics(f)
+      call calc_diagnostics_special(f,p)
 !
     endsubroutine special_calc_energy
 !***********************************************************************
-    subroutine special_calc_diagnostics(f)
+    subroutine calc_diagnostics_special(f,p)
 
       use Diagnostics
 !
-      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      type(pencil_case), intent(in) :: p
 !
       real, dimension (nx) :: kappa
 !
+      call keep_compiler_quiet(p)
       if (ldiagnos) then 
       
         kappa=f(l1:l2,m,n,ikappar)
@@ -574,7 +576,7 @@ module Special
         if (idiag_dts/=0) call max_mn_name(q%taucool1/cdts,idiag_dts,l_dt=.true.)
       endif
 !
-    endsubroutine special_calc_diagnostics
+    endsubroutine calc_diagnostics_special
 !***********************************************************************
     subroutine pushpars2c(p_par)
 
