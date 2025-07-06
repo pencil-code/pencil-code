@@ -952,6 +952,7 @@ module Equ
 !  6-jul-25/TP: carved from pde
 !
       use Chiral, only: chiral_before_boundary
+      use Chemistry, only: chemistry_before_boundary
       use Energy, only: energy_before_boundary
       use Density, only: density_before_boundary,density_before_boundary_diagnostics
       use Detonate, only: detonate_before_boundary
@@ -961,8 +962,9 @@ module Equ
       use Selfgravity, only: calc_selfpotential
       use Shock, only: shock_before_boundary 
       use Special, only: special_before_boundary
-      use Particles_main, only: particles_before_boundary
+      use Particles_main, only: particles_before_boundary,particles_special_bfre_bdary
       use Pscalar, only: pscalar_before_boundary
+      use Testflow, only: testflow_before_boundary
       use Testfield, only: testfield_before_boundary
       real, dimension(mx,my,mz,mfarray) :: f
 !
