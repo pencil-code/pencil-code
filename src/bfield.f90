@@ -285,6 +285,9 @@ module Magnetic
 !
     endsubroutine initialize_magnetic
 !***********************************************************************
+    subroutine       initialize_magnetic_after_special
+    endsubroutine    initialize_magnetic_after_special
+!***********************************************************************
     subroutine init_aa(f)
 !
 !  Sets the initial conditions relevant to Magnetic.

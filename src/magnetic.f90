@@ -1141,7 +1141,7 @@ module Magnetic
   integer :: enum_iforcing_continuous_aa = 0
 
   !TP: moved here from saved variable
-  real, dimension(mz), save :: Bz_stratified
+  real, dimension(mz) :: Bz_stratified
 
   logical :: lrelaxprof_glob_scaled
 
@@ -2153,6 +2153,22 @@ module Magnetic
         endif
 
     endsubroutine initialize_magnetic
+!***********************************************************************
+    subroutine initialize_magnetic_after_special
+!
+! 6-jun-25/TP: Introduced to get rid of this initialization out of the rhs
+!
+      if (B0_ext_z /= 0.0) then
+        if (allocated (scale_height_init_z)) then
+! set up z-stratification
+          do iz = 1, mz
+            Bz_stratified(iz) = B0_ext_z * exp(-z(iz) / scale_height_init_z(iz))
+          enddo
+        else
+          call fatal_error('initialize_magnetic_after_special','scale_height_init_z is not allocated')
+        endif
+      endif
+    endsubroutine initialize_magnetic_after_special
 !***********************************************************************
     subroutine init_aa(f)
 !
@@ -4067,9 +4083,9 @@ module Magnetic
 !
 !  Add Bz stratification.
 !
-        if (B0_ext_z /= 0.0) then
-          p%bb(:,3) = p%bb(:,3) + get_B0_ext_z(n)
-        endif
+      if (B0_ext_z /= 0.0) then
+        p%bb(:,3) = p%bb(:,3) + get_B0_ext_z(n)
+      endif
 !
 !  b2 now (since 18 June 2013) includes B_ext by default.
 !  This can be changed by setting lignore_Bext_in_b2=T
@@ -11456,22 +11472,6 @@ print*,'AXEL2: should not be here (eta) ... '
 !  vpandey: 2.July.2025
 !
       integer, intent(in) :: pz
-!
-      integer :: iz
-      real, dimension(mz), save :: Bz_stratified
-      logical, save :: lfirst_call = .true.
-!
-      if (lfirst_call) then
-        if (allocated (scale_height_init_z)) then
-! set up z-stratification
-          do iz = 1, mz
-            Bz_stratified(iz) = B0_ext_z * exp(-z(iz) / scale_height_init_z(iz))
-          enddo
-        else
-          call fatal_error('get_B0_ext_z','scale_height_init_z is not allocated')
-        endif
-        lfirst_call = .false.
-      endif
 !
       get_B0_ext_z = Bz_stratified(pz)
 !
