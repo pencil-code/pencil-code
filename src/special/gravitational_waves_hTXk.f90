@@ -2138,9 +2138,8 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
       real, dimension(nx,ny,nz,3,6) :: Hijkim,Hijkre
       integer :: ikx,iky,ikz
       real, dimension (3) :: e1, e2, kvec
-      integer :: i,j,p,q,ik,stat,ij,pq,ip,jq,jStress_ij
-      real :: fact, delkt, om2_min, kmin
-      real :: ksqr, one_over_k2, k1, k2, k3, k1sqr, k2sqr, k3sqr, ksqrt
+      integer :: i,j,p,q,ik,stat,ij,jStress_ij
+      real :: ksqr, k1, k2, k3, k1sqr, k2sqr, k3sqr
       real :: hhTre, hhTim, hhXre, hhXim
       real :: e_ij_T, e_ij_X
       real :: eTT, eTX, eXT, eXX
@@ -2255,7 +2254,7 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
       integer :: i,j
       integer :: ikx,iky,ikz
       real, dimension (3) :: e1, e2, kvec
-      real :: fact, delkt, om2_min, kmin
+      real :: fact, delkt, kmin
       real :: ksqr, one_over_k2, k1, k2, k3, k1sqr, k2sqr, k3sqr, ksqrt
       real :: hhTre, hhTim, hhXre, hhXim
       real :: e_ij_T, e_ij_X
@@ -2473,6 +2472,12 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
         appa_om=appa_om*horndeski_alpM_eff+horndeski_alpM_eff2
         appa_om=appa_om+horndeski_alpM_eff3
       endif
+
+!  Compute om2_min, below which no GWs are computed.
+!  Choose 1e-4 arbitrarily.
+!
+      kmin=2*pi/sqrt(Lx**2+Ly**2+Lz**2)
+      om2_min=(1e-4*kmin)**2
 !
 !  Set ST=SX=0 and reset all spectra.
 !
@@ -2903,7 +2908,7 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
       real, dimension (6) :: Pij=0., kij=0., e_T, e_X, Sij_re, Sij_im, delij=0.
       real, dimension (:,:,:,:,:), allocatable :: Hijkre, Hijkim
       real, dimension (3) :: e1, e2, kvec
-      integer :: i,j,p,q,ik,ikx,iky,ikz,stat,ij,pq,ip,jq,jStress_ij
+      integer :: i,j,p,q,ik,ikx,iky,ikz,stat,ij,pq,ip,jStress_ij
       real :: fact, delkt, om2_min, kmin
       real :: ksqr, one_over_k2, k1, k2, k3, k1sqr, k2sqr, k3sqr, ksqrt
       real :: hhTre, hhTim, hhXre, hhXim, coefAre, coefAim
@@ -2968,11 +2973,6 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
 !
       endif
 !
-!  Compute om2_min, below which no GWs are computed.
-!  Choose 1e-4 arbitrarily.
-!
-      kmin=2*pi/sqrt(Lx**2+Ly**2+Lz**2)
-      om2_min=(1e-4*kmin)**2
 !
 !  set delta_ij
 !
