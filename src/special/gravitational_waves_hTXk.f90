@@ -2849,24 +2849,25 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
 !
 !  Set origin to zero. It is given by (1,1,1) on root processor.
 !
-              !f(nghost+1,nghost+1,nghost+1,ihhT  ) = 0.
-              !f(nghost+1,nghost+1,nghost+1,ihhTim) = 0.
-              !f(nghost+1,nghost+1,nghost+1,iggT  ) = 0.
-              !f(nghost+1,nghost+1,nghost+1,iggTim) = 0.
+              f(nghost+1,nghost+1,nghost+1,ihhT  ) = 0.
+              f(nghost+1,nghost+1,nghost+1,ihhTim) = 0.
+              f(nghost+1,nghost+1,nghost+1,iggT  ) = 0.
+              f(nghost+1,nghost+1,nghost+1,iggTim) = 0.
 !
-              !f(nghost+1,nghost+1,nghost+1,ihhX  ) = 0.
-              !f(nghost+1,nghost+1,nghost+1,ihhXim) = 0.
-              !f(nghost+1,nghost+1,nghost+1,iggX  ) = 0.
-              !f(nghost+1,nghost+1,nghost+1,iggXim) = 0.
-              f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  ) = 0.
-              f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim) = 0.
-              f(nghost+ikx,nghost+iky,nghost+ikz,iggT  ) = 0.
-              f(nghost+ikx,nghost+iky,nghost+ikz,iggTim) = 0.
+              f(nghost+1,nghost+1,nghost+1,ihhX  ) = 0.
+              f(nghost+1,nghost+1,nghost+1,ihhXim) = 0.
+              f(nghost+1,nghost+1,nghost+1,iggX  ) = 0.
+              f(nghost+1,nghost+1,nghost+1,iggXim) = 0.
+              !TP: should be equivalent but for now keep the old one
+              !f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  ) = 0.
+              !f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim) = 0.
+              !f(nghost+ikx,nghost+iky,nghost+ikz,iggT  ) = 0.
+              !f(nghost+ikx,nghost+iky,nghost+ikz,iggTim) = 0.
 !
-              f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  ) = 0.
-              f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim) = 0.
-              f(nghost+ikx,nghost+iky,nghost+ikz,iggX  ) = 0.
-              f(nghost+ikx,nghost+iky,nghost+ikz,iggXim) = 0.
+              !f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  ) = 0.
+              !f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim) = 0.
+              !f(nghost+ikx,nghost+iky,nghost+ikz,iggX  ) = 0.
+              !f(nghost+ikx,nghost+iky,nghost+ikz,iggXim) = 0.
 
             endif
 !
