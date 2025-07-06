@@ -591,10 +591,12 @@ integer, parameter :: enum_pdeZ_maxadvec_contains_a_nan_at_iprocZ_string = 311
 integer, parameter :: enum_advec_cs2__Z_string = 312
 integer, parameter :: enum_set_dt1_max_string = 313
 integer, parameter :: enum_cst_string = 314
+
 integer, parameter :: enum_wolfire_string = 315
 integer, parameter :: enum_wolfire_min_string = 316
 integer, parameter :: enum_thermalZhs_string = 317
 integer, parameter :: enum_off_string = 318
+
 integer, parameter :: enum_calc_heat_cool_interstellarZ_enter_string = 319
 integer, parameter :: enum_calc_pencils_dustdensity_string = 320
 integer, parameter :: enum_average_string = 321

@@ -590,7 +590,7 @@ module Cosmicray
 !
     endsubroutine impose_ecr_floor
 !***********************************************************************
-    subroutine pushpars2c
+    subroutine pushpars2c(p_par)
 
     use Syscalls, only: copy_addr
     use General , only: string_to_enum

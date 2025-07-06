@@ -4573,6 +4573,7 @@ module EquationOfState
     call copy_addr(rho0z,p_par(31)) ! (mz)
     call copy_addr(ieosvar1,p_par(32)) ! int
     call copy_addr(lpres_grad,p_par(33)) ! bool
+    call copy_addr(sigmasbt,p_par(34)) 
 
     endsubroutine pushpars2c
 !***********************************************************************

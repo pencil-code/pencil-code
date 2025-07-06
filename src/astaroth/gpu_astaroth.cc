@@ -42,6 +42,7 @@ bool calculated_coeff_scales = false;
 
 //TP: these are ugly but for the moment we live with these
 #if TRANSPILATION
+  #define lbidiagonal_derij lbidiagonal_derij__mod__cdata
   #define nu nu__mod__viscosity
   #define nu_hyper2 nu_hyper2__mod__viscosity
   #define nu_hyper3 nu_hyper3__mod__viscosity
@@ -713,6 +714,7 @@ void setupConfig(AcMeshInfo& config)
   #include "PC_modulepars.h"
   
   PCLoad(config, AC_use_cuda_aware_mpi,lcuda_aware_mpi);
+  PCLoad(config, AC_bidiagonal_derij,lbidiagonal_derij);
   //TP: loads for non-Cartesian derivatives
 #if TRANSPILATION
   PCLoad(config, AC_inv_cyl_r,rcyl_mn1);
@@ -1865,9 +1867,9 @@ void testBCs()
   int3 largest_diff_point{};
   //AcReal epsilon = 0.0;
 
-  auto skip_x = (acGridTaskGraphHasPeriodicBoundcondsX(rhs) && !lshear) || nxgrid == 1;
-  auto skip_y = acGridTaskGraphHasPeriodicBoundcondsY(rhs) || nygrid == 1;
-  auto skip_z = acGridTaskGraphHasPeriodicBoundcondsZ(rhs) || nzgrid == 1;
+  auto skip_x = nxgrid == 1;
+  auto skip_y = nygrid == 1;
+  auto skip_z = nzgrid == 1;
 
   auto start_x =  skip_x ? NGHOST : 0;
   auto start_y =  skip_y ? NGHOST : 0;

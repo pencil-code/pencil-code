@@ -1236,8 +1236,8 @@ subroutine run_start() bind(C)
     use FarrayManager, only: farray_use_global
 
     integer, parameter :: n_pars=1500
-    integer, pointer :: iglobal_gg_tmp
-    integer, save :: iglobal_gg,ierr
+    integer, pointer :: iglobal_gg_tmp,iglobal_glnTT_tmp
+    integer, save :: iglobal_gg,iglobal_glnTT,ierr
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
 call copy_addr(ncoarse,p_par(1)) ! int
@@ -1583,16 +1583,28 @@ call copy_addr(iunx,p_par(1303)) ! int
 call copy_addr(iuny,p_par(1304)) ! int
 call copy_addr(iunz,p_par(1305)) ! int
 call copy_addr(ilnrhon,p_par(1306)) ! int
+
 call farray_use_global('global_gg',iglobal_gg_tmp,ierr=ierr)
 if (ierr /= 0) then
   iglobal_gg = 0
 else
   iglobal_gg = iglobal_gg_tmp
 endif
+
 call copy_addr(iglobal_gg,p_par(1307)) ! int
 call copy_addr(coeffs_1_x,p_par(1308)) ! (2*nghost+1) (2)
 call copy_addr(coeffs_1_y,p_par(1309)) ! (2*nghost+1) (2)
 call copy_addr(coeffs_1_z,p_par(1310)) ! (2*nghost+1) (2)
+
+call farray_use_global('glnTT',iglobal_glnTT_tmp,ierr=ierr)
+if (ierr /= 0) then
+  iglobal_glnTT = 0
+else
+  iglobal_glnTT = iglobal_glnTT_tmp
+endif
+call copy_addr(iglobal_glntt,p_par(1311)) ! int
+call copy_addr(lbidiagonal_derij,p_par(1312)) ! bool
+
 endsubroutine pushpars2c
 !***********************************************************************
 endmodule Run_module

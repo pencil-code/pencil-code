@@ -43,4 +43,8 @@ bc_ss_temp_z(AcBoundary boundary,AC_TOP_BOT topbot)
 {
   bc_ss_temp_z(boundary,topbot,false)
 }
+bc_ss_flux(AcBoundary boundary, AC_TOP_BOT topbot)
+{
+	bc_ss_flux(boundary,topbot,false)
+}
 #endif

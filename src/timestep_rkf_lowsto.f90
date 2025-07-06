@@ -104,6 +104,7 @@ module Timestep
                       -1672844663538./4480602732383., &
                        2114624349019./3568978502595., &
                        5198255086312./14908931495163. /)
+
         beta_hat =  (/ 1016888040809./7410784769900., &
                       11231460423587./58533540763752.,&
                       -1563879915014./6823010717585., &
@@ -177,9 +178,6 @@ module Timestep
         enddo
         if (lroot.and.it==1) print*,"farraymin",farraymin
       endif
-      dt_beta_ts=dt*beta_ts
-      dt_beta_hat=dt*(beta_ts-beta_hat)
-      dt_alpha_ts=dt*alpha_ts
 !
 !  Initialize error to zero
 !
@@ -237,6 +235,12 @@ module Timestep
 !  Change df according to the chosen physics modules.
 !
         call pde(f,df,p)
+!  Done here since with GPU dt is set at the first substep of pde
+        if (lfirst) then
+          dt_beta_ts=dt*beta_ts
+          dt_beta_hat=dt*(beta_ts-beta_hat)
+          dt_alpha_ts=dt*alpha_ts
+        endif
 !
         if (lode.and..not.lgpu) call ode
 !

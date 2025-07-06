@@ -7998,6 +7998,16 @@ iloop:do i=1,size(list2)
           dst = enum_sigmaZ_isig_upZ_maxsigma__string
         case('sigma,minsigma=')
           dst = enum_sigmaZminsigmaZ_string
+        case('cst')
+          dst = enum_cst_string
+        case('wolfire')
+          dst = enum_wolfire_string
+        case('wolfire_min')
+          dst = enum_wolfire_min_string
+        case('thermal-hs')
+          dst = enum_thermalZhs_string
+        case('off')
+          dst = enum_off_string
         case default
           dst = enum_unknown_string_string
         endselect

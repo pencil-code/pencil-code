@@ -690,7 +690,7 @@ module Shock
 !
 !  Shock profile calculation.
 !
-      if (.not. lgpu) call calc_shock_profile(f)
+      call calc_shock_profile(f)
 
     endsubroutine shock_before_boundary
 !***********************************************************************

@@ -274,5 +274,5 @@ Kernel after_timestep_alphadisk(){
   write(F_TMID,DF_TMID)
 }
 #else
-Kernel special_after_timestep_alphadisk(){}
+Kernel after_timestep_alphadisk(){}
 #endif

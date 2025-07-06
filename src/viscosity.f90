@@ -3162,6 +3162,10 @@ module Viscosity
         call string_to_enum(enum_ivisc(i),ivisc(i))
     enddo
     call copy_addr(enum_ivisc,p_par(111)) ! int (4)
+    call copy_addr(lambda_v0b,p_par(112)) 
+    call copy_addr(lambda_v1b,p_par(113)) 
+    call copy_addr(lambda_v0t,p_par(114)) 
+    call copy_addr(lambda_v1t,p_par(115)) 
     
     endsubroutine pushpars2c
 !***********************************************************************

@@ -107,9 +107,10 @@ contains
 
     endfunction get_ptr_GPU_training
 !**************************************************************************
-    subroutine copy_farray_from_GPU(f)
+    subroutine copy_farray_from_GPU(f,nowait_)
 
       real, dimension (:,:,:,:), intent(OUT) :: f
+      logical, optional :: nowait_
 
       call keep_compiler_quiet(f)
 
@@ -138,22 +139,6 @@ contains
       if (present(value)) call keep_compiler_quiet(value)
 
     endsubroutine update_on_gpu
-!**************************************************************************
-    subroutine test_rhs_gpu(f,df,p,mass_per_proc,early_finalize,cpu_version)
-!
-!  Used to test different implementations of rhs_cpu.
-!
-!  13-nov-23/TP: Written
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mfarray) :: df
-      type (pencil_case) :: p
-      real, dimension(1), intent(inout) :: mass_per_proc
-      logical ,intent(in) :: early_finalize
-
-      external cpu_version
-
-    endsubroutine test_rhs_gpu
 !**************************************************************************
     subroutine gpu_set_dt()
 

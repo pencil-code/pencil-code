@@ -50,9 +50,7 @@ module Equ
       use Chiral
       use Chemistry
       use Density
-      use Detonate, only: detonate_before_boundary
       use Diagnostics
-      use Dustdensity, only: dustdensity_after_boundary, dustdensity_before_boundary
       use Energy
       use EquationOfState
       use Forcing, only: forcing_after_boundary
@@ -60,16 +58,15 @@ module Equ
 ! To check ghost cell consistency, please uncomment the following line:
 !     use Ghost_check, only: check_ghosts_consistency
       use GhostFold, only: fold_df, fold_df_3points
-      use Gpu, only: before_boundary_gpu, rhs_gpu, copy_farray_from_GPU, get_farray_ptr_gpu,test_rhs_gpu
+      use Gpu, only: before_boundary_gpu, rhs_gpu, copy_farray_from_GPU, get_farray_ptr_gpu
       use Gravity
       use Hydro
-      use Interstellar, only: interstellar_before_boundary
       use Magnetic
-      use Magnetic_meanfield, only: meanfield_after_boundary
       use Hypervisc_strict, only: hyperviscosity_strict
       use Hyperresi_strict, only: hyperresistivity_strict
       use NeutralDensity, only: neutraldensity_after_boundary
       use NSCBC
+      use Magnetic_meanfield, only: meanfield_after_boundary
       use Particles_main
       use Poisson
       use Pscalar
@@ -78,9 +75,9 @@ module Equ
       use Radiation
       use Selfgravity
       use Shear
-      use Shock, only: shock_before_boundary, calc_shock_profile_simple
+      use Shock, only: calc_shock_profile_simple
       use Solid_Cells, only: update_solid_cells, dsolid_dt_integrate
-      use Special, only: special_before_boundary,special_after_boundary
+      use Special, only: special_after_boundary
       use Sub
       use Testfield
       use Testflow
@@ -190,31 +187,11 @@ module Equ
 !
 !  Call "before_boundary" hooks (for f array precalculation)
 !
+        call before_boundary_shared(f)
+        !call test_rhs_gpu(f,df,p,mass_per_proc,early_finalize,rhs_cpu)
+
         if (.not. lgpu) then
-!
-!  Calculate the potential of the self gravity. Must be done before
-!  communication in order to be able to take the gradient of the potential
-!  later.
-!
-          call calc_selfpotential(f)
-          if (ldustdensity)  call dustdensity_before_boundary(f)
-          if (linterstellar) call interstellar_before_boundary(f)
-          if (ldensity .and. ldiagnos) call density_before_boundary_diagnostics(f)
-          if (ldensity.or.lboussinesq) call density_before_boundary(f)
-          if (lhydro.or.lhydro_kinematic) call hydro_before_boundary(f)
-          if (lmagnetic)     call magnetic_before_boundary(f)
-                             call energy_before_boundary(f)
-          if (lshear)        call shear_before_boundary(f)
-          if (lchiral)       call chiral_before_boundary(f)
-          if (lspecial)      call special_before_boundary(f)
-          if (ltestflow)     call testflow_before_boundary(f)
-          if (ltestfield)    call testfield_before_boundary(f)
-          if (lparticles)    call particles_before_boundary(f)
-          if (lpscalar)      call pscalar_before_boundary(f)
-          if (ldetonate)     call detonate_before_boundary(f)
-          if (lchemistry)    call chemistry_before_boundary(f)
-          if (lparticles.and.lspecial) call particles_special_bfre_bdary(f)
-          if (lshock)        call shock_before_boundary(f)
+          call before_boundary_cpu(f)
         else
           call before_boundary_gpu(f,lrmv,itsub,t)
         endif
@@ -351,7 +328,6 @@ module Equ
       call timing('pde','after "after_boundary" calls')
 !
       if (lgpu) then
-        !call test_rhs_gpu(f,df,p,mass_per_proc,early_finalize,rhs_cpu)
         if (lrhs_diagnostic_output) then
           !wait in case the last diagnostic tasks are not finished
 !         Not done for the first step since we haven't loaded any data to the GPU yet
@@ -954,6 +930,61 @@ module Equ
           endif
         endif
     endsubroutine check_if_necessary
+!***********************************************************************
+    subroutine before_boundary_shared(f)
+!  These before_boundaries are shared between CPU and GPU (that e.g. set parameters are done infrequently enough 
+!  to not take a performance hit from moving buffer between host and device)
+!
+!  6-jul-25/TP: carved from pde
+!
+      use Shear, only: shear_before_boundary
+      use Interstellar, only: interstellar_before_boundary
+
+      real, dimension(mx,my,mz,mfarray) :: f
+
+      if (linterstellar) call interstellar_before_boundary(f)
+      if (lshear)        call shear_before_boundary(f)
+    endsubroutine before_boundary_shared
+!***********************************************************************
+    subroutine before_boundary_cpu(f)
+!
+!  6-jul-25/TP: carved from pde
+!
+      use Energy, only: energy_before_boundary
+      use Density, only: density_before_boundary,density_before_boundary_diagnostics
+      use Detonate, only: detonate_before_boundary
+      use Dustdensity, only: dustdensity_after_boundary, dustdensity_before_boundary
+      use Hydro, only: hydro_before_boundary
+      use Magnetic, only: magnetic_before_boundary
+      use Selfgravity, only: calc_selfpotential
+      use Shock, only: shock_before_boundary 
+      use Special, only: special_before_boundary
+      real, dimension(mx,my,mz,mfarray) :: f
+!
+!  Calculate the potential of the self gravity. Must be done before
+!  communication in order to be able to take the gradient of the potential
+!  later.
+!
+        
+      call calc_selfpotential(f)
+      if (ldustdensity)  call dustdensity_before_boundary(f)
+      if (ldensity .and. ldiagnos) call density_before_boundary_diagnostics(f)
+      if (ldensity.or.lboussinesq) call density_before_boundary(f)
+      if (lhydro.or.lhydro_kinematic) call hydro_before_boundary(f)
+      if (lmagnetic)     call magnetic_before_boundary(f)
+                         call energy_before_boundary(f)
+      if (lchiral)       call chiral_before_boundary(f)
+      if (lspecial)      call special_before_boundary(f)
+      if (ltestflow)     call testflow_before_boundary(f)
+      if (ltestfield)    call testfield_before_boundary(f)
+      if (lparticles)    call particles_before_boundary(f)
+      if (lpscalar)      call pscalar_before_boundary(f)
+      if (ldetonate)     call detonate_before_boundary(f)
+      if (lchemistry)    call chemistry_before_boundary(f)
+      if (lparticles.and.lspecial) call particles_special_bfre_bdary(f)
+      if (lshock)        call shock_before_boundary(f)
+
+    endsubroutine before_boundary_cpu
 !***********************************************************************
     subroutine rhs_cpu(f,df,p,mass_per_proc,early_finalize)
 !
@@ -1662,113 +1693,38 @@ module Equ
 
     endsubroutine set_dt1_max
 !***********************************************************************
-    subroutine test_dt(f,df,p,rhs_1,rhs_2)
+ subroutine test_rhs_gpu(f,df,p,mass_per_proc,early_finalize,cpu_version)
 !
-!   Test different implementations of dt subroutines.
-!
-!   13-nov-23/TP: Written
-!
-      real, dimension (mx,my,mz,mfarray) :: f,f_copy
-      real, dimension (mx,my,mz,mfarray) :: df,df_copy
-      integer :: i,j,k,n
-      type (pencil_case) :: p,p_copy
-
-      intent(inout) :: f
-      intent(in) :: p
-      intent(inout) :: df
-      logical :: passed
-
-      !external rhs_1, rhs_2
-      interface
-        subroutine rhs_1(f,df,p)
-          import mx
-          import my
-          import mz
-          import mfarray
-          import pencil_case
-          real, dimension (mx,my,mz,mfarray) :: f
-          real, dimension (mx,my,mz,mfarray) :: df
-          type (pencil_case) :: p
-
-          intent(inout) :: f
-          intent(in) :: p
-          intent(inout) :: df
-        endsubroutine rhs_1
-      endinterface
-
-      interface
-        subroutine rhs_2(f,df,p)
-          import mx
-          import my
-          import mz
-          import mfarray
-          import pencil_case
-          real, dimension (mx,my,mz,mfarray) :: f
-          real, dimension (mx,my,mz,mfarray) :: df
-          type (pencil_case) :: p
-
-          intent(inout) :: f
-          intent(in) :: p
-          intent(inout) :: df
-        endsubroutine rhs_2
-      endinterface
-
-      df_copy = df
-      p_copy = p
-      f_copy = f
-      call rhs_1(f,df,p)
-      call rhs_2(f_copy,df_copy,p_copy)
-      passed = .true.
-      do i=1,mx
-        do j=1,my
-          do k=1,mz
-            do n=1,mfarray
-              if (df_copy(i,j,k,n) /= df(i,j,k,n)) then
-                print*,"Wrong at: ",i,j,k,n
-                print*,"diff",df_copy(i,j,k,n) - df(i,j,k,n)
-                passed = .false.
-              endif
-            enddo
-          enddo
-        enddo
-      enddo
-      if (passed) then
-        print*,"passed test :)"
-      else
-        print*,"did not pass test :/"
-      endif
-      print*,iux,iuy,iuz,iss,ilnrho
-
-      call die_gracefully
-
-    endsubroutine test_dt
-!***********************************************************************
-    subroutine test_rhs(f,df,p,mass_per_proc,early_finalize,rhs_1,rhs_2)
-
-!  Used to test different implementations of rhs_cpu.
+!  Used to test the CPU rhs vs the DSL code
 !
 !  13-nov-23/TP: Written
 !
-      real, dimension (mx,my,mz,mfarray) :: f,f_copy
-      real, dimension (mx,my,mz,mfarray) :: df,df_copy
+      use MPIcomm
+      use Boundcond
+      use Gpu, only: before_boundary_gpu, rhs_gpu, copy_farray_from_GPU, get_farray_ptr_gpu
+      use Deriv, only: der
+!$    use ISO_fortran_env, only: stdout => output_unit
+!$    use, intrinsic :: iso_c_binding
+
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p,p_copy
       real, dimension(1), intent(inout) :: mass_per_proc
       logical ,intent(in) :: early_finalize
 
-      integer :: i,j,k,n
-      logical :: passed
-      real :: relative_diff,max_relative_diff
-
-      !external rhs_1, rhs_2
+      real, dimension (:,:,:,:), allocatable :: f_copy,f_diff,df_copy,f_beta
+      real, dimension (nx) :: gss_x
+      integer :: i
       interface
-        subroutine rhs_1(f,df,p,mass_per_proc,early_finalize)
+        subroutine cpu_version(f,df,p,mass_per_proc,early_finalize)
           import mx
           import my
           import mz
           import mfarray
+          import mvar
           import pencil_case
           real, dimension (mx,my,mz,mfarray) :: f
-          real, dimension (mx,my,mz,mfarray) :: df
+          real, dimension (mx,my,mz,mvar) :: df
           type (pencil_case) :: p
           real, dimension(1), intent(inout) :: mass_per_proc
           logical ,intent(in) :: early_finalize
@@ -1776,58 +1732,75 @@ module Equ
           intent(inout) :: f
           intent(inout) :: p
           intent(out) :: df
-        endsubroutine rhs_1
+        endsubroutine cpu_version
       endinterface
 
-      interface
-        subroutine rhs_2(f,df,p,mass_per_proc,early_finalize)
-          import mx
-          import my
-          import mz
-          import mfarray
-          import pencil_case
-          real, dimension (mx,my,mz,mfarray) :: f
-          real, dimension (mx,my,mz,mfarray) :: df
-          type (pencil_case) :: p
-          real, dimension(1), intent(inout) :: mass_per_proc
-          logical ,intent(in) :: early_finalize
+      allocate(f_copy(mx,my,mz,mfarray),f_diff(mx,my,mz,mfarray),df_copy(mx,my,mz,mvar),f_beta(mx,my,mz,mfarray))
 
-          intent(inout) :: f
-          intent(inout) :: p
-          intent(out) :: df
-        endsubroutine rhs_2
-      endinterface
-
-      max_relative_diff = -1.0
-      df_copy = df
-      p_copy = p
-      f_copy = f
-      call rhs_1(f,df,p,mass_per_proc,early_finalize)
-      call rhs_2(f_copy,df_copy,p_copy,mass_per_proc,early_finalize)
-      passed = .true.
-      do i=1,mx
-        do j=1,my
-          do k=1,mz
-            do n=1,mfarray
-              if (df_copy(i,j,k,n) /= df(i,j,k,n)) then
-                print*,"Wrong at: ",i,j,k,n
-                relative_diff = (df_copy(i,j,k,n) - df(i,j,k,n))/df(i,j,k,n)
-                print*,"relative diff:",relative_diff
-                max_relative_diff = max(relative_diff, max_relative_diff)
-                passed = .false.
-              endif
-            enddo
-          enddo
-        enddo
-      enddo
-      if (passed) then
-        print*,"passed test :)"
-      else
-        print*,"did not pass test :/"
-        call die_gracefully
+      if(itorder /= 1) then
+          call fatal_error('test_rhs_gpu','Need itorder to be 1!')
       endif
-      print*,"max relative diff: ",max_relative_diff
+      f_copy = f
+      do itsub = 1,1
+        call before_boundary_gpu(f,lrmv,itsub,t)
+        call rhs_gpu(f,itsub)
 
-    endsubroutine test_rhs
+        df_copy = 0.0
+        call before_boundary_cpu(f_copy)
+        !if(itsub == 1) then
+        !        f_beta = f_copy
+        !endif
+        call boundconds_x(f_copy)
+        call initiate_isendrcv_bdry(f_copy)
+        call finalize_isendrcv_bdry(f_copy)
+        call boundconds_y(f_copy)
+        call boundconds_z(f_copy)
+        call cpu_version(f_copy,df_copy,p,mass_per_proc,early_finalize)
+        f_copy(l1:l2,m1:m2,n1:n2,1:mvar) = f_copy(l1:l2,m1:m2,n1:n2,1:mvar) + df_copy(l1:l2,m1:m2,n1:n2,:)*dt
+
+        !f_beta(l1:l2,m1:m2,n1:n2,1:mvar) = f_beta(l1:l2,m1:m2,n1:n2,1:mvar) + df_copy(l1:l2,m1:m2,n1:n2,:)*dt*beta_ts(itsub)
+        call copy_farray_from_GPU(f,.true.)
+        !if (itsub == 5) f_copy(l1:l2,m1:m2,n1:n2,1:mvar) = f_beta(l1:l2,m1:m2,n1:n2,1:mvar)
+      enddo
+
+      call copy_farray_from_GPU(f)
+      f_diff = abs((f_copy-f)/(f_copy+tini))
+      if (nxgrid == 1 .and. nygrid == 1) then
+        print*,"Max diff: ",maxval(f_diff(l1,m1,:,1:mvar))
+        print*,"Max diff loc: ",maxloc(f_diff(l1,m1,:,1:mvar))
+
+        print*,"Max comp diff: ",maxval(f_diff(l1,m1,n1:n2,1:mvar))
+        print*,"Max comp diff loc: ",maxloc(f_diff(l1,m1,n1:n2,1:mvar))
+
+        do i = 1,mvar
+          print*,"Max comp diff for ",i,": ",maxval(f_diff(l1,m1,n1:n2,i))
+          print*,"Max comp loc  for ",i,": ",maxloc(f_diff(l1,m1,n1:n2,i))
+        enddo
+      else
+        print*,"Max diff: ",maxval(f_diff(:,:,:,1:mvar))
+        print*,"Max diff x: ",maxval(f_diff(:,m1:m2,n1:n2,1:mvar))
+        print*,"Max diff y: ",maxval(f_diff(l1:l2,:,n1:n2,1:mvar))
+        print*,"Max diff z: ",maxval(f_diff(l1:l2,m1:m2,:,1:mvar))
+
+        print*,"Max diff xy: ",maxval(f_diff(:,:,n1:n2,1:mvar))
+        print*,"Max diff xz: ",maxval(f_diff(:,m1:m2,:,1:mvar))
+        print*,"Max diff loc xz: ",maxloc(f_diff(:,m1:m2,:,1:mvar))
+
+        print*,"Max diff yz: ",maxval(f_diff(l1:l2,:,:,1:mvar))
+        print*,"Max diff loc: ",maxloc(f_diff(:,:,:,1:mvar))
+
+        print*,"Max comp diff: ",maxval(f_diff(l1:l2,m1:m2,n1:n2,1:mvar))
+        print*,"Max comp diff loc: ",maxloc(f_diff(l1:l2,m1:m2,n1:n2,1:mvar))
+
+        do i = 1,mfarray
+          print*,"Max comp diff for ",i,": ",maxval(f_diff(l1:l2,m1:m2,n1:n2,i))
+          print*,"Avg comp diff for ",i,": ",sum(f_diff(l1:l2,m1:m2,n1:n2,i))/(nx*ny*nz)
+          print*,"Max comp loc  for ",i,": ",maxloc(f_diff(l1:l2,m1:m2,n1:n2,i))
+        enddo
+      endif
+
+    call die_gracefully
+
+  endsubroutine test_rhs_gpu
 !***********************************************************************
 endmodule Equ

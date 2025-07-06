@@ -247,12 +247,20 @@ contains
 
     endfunction get_ptr_GPU_training
 !**************************************************************************
-    subroutine copy_farray_from_GPU(f)
+    subroutine copy_farray_from_GPU(f,nowait_)
 
 !$    use General, only: signal_wait
 
       real, dimension (mx,my,mz,mfarray), intent(OUT) :: f
+      logical, optional :: nowait_
+      logical :: nowait
       integer :: i
+
+      nowait = loptest(nowait_)
+      if (nowait) then
+        call copy_farray_c(f)
+        return
+      endif
 !
 !$    if (lfarray_copied) return
 !
@@ -302,78 +310,6 @@ contains
       endif
 
     endsubroutine update_on_gpu
-!**************************************************************************
- subroutine test_rhs_gpu(f,df,p,mass_per_proc,early_finalize,cpu_version)
-!
-!  Used to test the CPU rhs vs the DSL code
-!
-!  13-nov-23/TP: Written
-!
-      use MPIcomm
-      use Boundcond
-!$    use ISO_fortran_env, only: stdout => output_unit
-!$    use, intrinsic :: iso_c_binding
-
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      type (pencil_case) :: p,p_copy
-      real, dimension(1), intent(inout) :: mass_per_proc
-      logical ,intent(in) :: early_finalize
-
-      real, dimension (:,:,:,:), allocatable :: f_copy,f_diff,df_copy
-      integer :: i
-      interface
-        subroutine cpu_version(f,df,p,mass_per_proc,early_finalize)
-          import mx
-          import my
-          import mz
-          import mfarray
-          import mvar
-          import pencil_case
-          real, dimension (mx,my,mz,mfarray) :: f
-          real, dimension (mx,my,mz,mvar) :: df
-          type (pencil_case) :: p
-          real, dimension(1), intent(inout) :: mass_per_proc
-          logical ,intent(in) :: early_finalize
-
-          intent(inout) :: f
-          intent(inout) :: p
-          intent(out) :: df
-        endsubroutine cpu_version
-      endinterface
-
-      allocate(f_copy(mx,my,mz,mfarray),f_diff(mx,my,mz,mfarray),df_copy(mx,my,mz,mvar))
-
-      if(itorder /= 1) then
-          call fatal_error('test_rhs_gpu','Need itorder to be 1!')
-      endif
-      f_copy = f
-      df_copy = 0.0
-      call rhs_gpu(f,itsub)
-      call copy_farray_from_GPU(f)
-
-      call boundconds_x(f_copy)
-      call initiate_isendrcv_bdry(f_copy)
-      call finalize_isendrcv_bdry(f_copy)
-      call boundconds_y(f_copy)
-      call boundconds_z(f_copy)
-      call cpu_version(f_copy,df_copy,p,mass_per_proc,early_finalize)
-      f_copy = f_copy + dt*df_copy
-      f_diff = abs((f_copy-f)/(f_copy+tini))
-      print*,"Max diff: ",maxval(f_diff(:,:,:,1:mvar))
-      print*,"Max diff loc: ",maxloc(f_diff(:,:,:,1:mvar))
-
-      print*,"Max comp diff: ",maxval(f_diff(l1:l2,m1:m2,n1:n2,1:mvar))
-      print*,"Max comp diff loc: ",maxloc(f_diff(l1:l2,m1:m2,n1:n2,1:mvar))
-
-      do i = 1,mvar
-        print*,"Max comp diff for ",i,": ",maxval(f_diff(l1:l2,m1:m2,n1:n2,i))
-        print*,"Max comp loc  for ",i,": ",maxloc(f_diff(l1:l2,m1:m2,n1:n2,i))
-      enddo
-
-    call die_gracefully
-
-  endsubroutine test_rhs_gpu
 !**************************************************************************
     subroutine calcQ_gpu(idir, dir, stop, unit_vec, lperiodic)
 
