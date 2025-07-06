@@ -8008,6 +8008,22 @@ iloop:do i=1,size(list2)
           dst = enum_thermalZhs_string
         case('off')
           dst = enum_off_string
+        case('tanh')
+          dst = enum_tanh_string
+        case('exp')
+          dst = enum_exp_string
+        case('scale_factor_power')
+          dst = enum_scale_factor_power_string
+        case('matter')
+          dst = enum_matter_string
+        case('dspecial_dt')
+          dst = enum_dspecial_dt_string
+        case('we need the file a_vs_eta.dat')
+          dst = enum_we_need_the_file_a_vs_etaZdat_string
+        case('dark_energy')
+          dst = enum_dark_energy_string
+        case('no such ihorndeski_time: ')
+          dst = enum_no_such_ihorndeski_timeZ__string
         case default
           dst = enum_unknown_string_string
         endselect

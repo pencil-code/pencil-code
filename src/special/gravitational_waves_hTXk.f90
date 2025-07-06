@@ -278,6 +278,7 @@ module Special
   type(GWspectra) :: spectra
 
   integer :: enum_idelkt = 0
+  integer :: enum_ihorndeski_time = 0
   contains
 !***********************************************************************
     subroutine register_special
@@ -3404,6 +3405,8 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
     call copy_addr(itorder_gw,p_par(58)) ! int
     call string_to_enum(enum_idelkt,idelkt)
     call copy_addr(enum_idelkt,p_par(59)) ! int
+    call string_to_enum(enum_ihorndeski_time,ihorndeski_time)
+    call copy_addr(enum_ihorndeski_time,p_par(60)) ! int
 
     endsubroutine pushpars2c
 !***********************************************************************

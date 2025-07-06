@@ -953,5 +953,14 @@ integer, parameter :: enum_get_tmid_string = 671
 integer, parameter :: enum_sigmaZ_isig_doZ_minsigma__string = 672
 integer, parameter :: enum_sigmaZ_isig_upZ_maxsigma__string = 673
 integer, parameter :: enum_sigmaZminsigmaZ_string = 674
+integer, parameter :: enum_tanh_string = 675
+integer, parameter :: enum_exp_string = 676
+integer, parameter :: enum_scale_factor_power_string = 677
+integer, parameter :: enum_matter_string = 678
+integer, parameter :: enum_dspecial_dt_string = 679
+integer, parameter :: enum_we_need_the_file_a_vs_etaZdat_string = 680
+integer, parameter :: enum_dark_energy_string = 681
+integer, parameter :: enum_no_such_ihorndeski_timeZ__string = 682
+
 
 endmodule Cparam
