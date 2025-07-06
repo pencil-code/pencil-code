@@ -2127,107 +2127,26 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
 
     endsubroutine special_calc_spectra_byte
 !***********************************************************************
-    subroutine compute_gT_and_gX_from_gij(f,label)
+    subroutine compute_Hijk(f,Hijkim,Hijkre)
 !
-!  Compute the transverse part of the stress tensor by going into Fourier space.
-!  It also allows for the inclusion of nonlinear corrections to the wave equation.
-!  Alternatively, we can also solve the Lighthill equation if lLighthill=T.
+!  6-jul-25/TP: carved from compute_gT_and_gX_from_gij
 !
-!  07-aug-17/axel: coded
-!
-      use Fourier, only: fourier_transform, fft_xyz_parallel, kx_fft, ky_fft, kz_fft
-      use Diagnostics
-!
-      real, dimension (:,:,:), allocatable :: S_T_re, S_T_im, S_X_re, S_X_im, g2T_re, g2T_im, g2X_re, g2X_im
-      real, dimension (:,:,:), allocatable :: hij_re, hij_im
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (6) :: Pij=0., kij=0., e_T, e_X, Sij_re, Sij_im, delij=0.
-      real, dimension (:,:,:,:,:), allocatable :: Hijkre, Hijkim
+      use Fourier, only: kx_fft, ky_fft, kz_fft
+
+      real, dimension(mx,my,mz,mvar) :: f
+      real, dimension(nx,ny,nz,3,6) :: Hijkim,Hijkre
+      integer :: ikx,iky,ikz
       real, dimension (3) :: e1, e2, kvec
-      integer :: i,j,p,q,ik,ikx,iky,ikz,stat,ij,pq,ip,jq,jStress_ij
+      integer :: i,j,p,q,ik,stat,ij,pq,ip,jq,jStress_ij
       real :: fact, delkt, om2_min, kmin
       real :: ksqr, one_over_k2, k1, k2, k3, k1sqr, k2sqr, k3sqr, ksqrt
-      real :: hhTre, hhTim, hhXre, hhXim, coefAre, coefAim
-      real :: ggTre, ggTim, ggXre, ggXim, coefBre, coefBim
+      real :: hhTre, hhTim, hhXre, hhXim
       real :: e_ij_T, e_ij_X
-      real :: cosot, sinot, sinot_minus, om12, om, om1, om2, dt1
       real :: eTT, eTX, eXT, eXX
-      real :: discrim2
-      !real :: horndeski_alpM_eff, horndeski_alpM_eff2
-      !real :: horndeski_alpM_eff3
-      !real :: horndeski_alpT_eff
-      real :: Om_rat_Lam, Om_rat_Mat
-      real :: Om_rat_matt, Om_rat_tot1
-      real :: dS_T_re, dS_T_im, dS_X_re, dS_X_im
-      complex :: coefA, coefB, om_cmplx
-      complex :: hcomplex_new, gcomplex_new
-      complex :: discrim, det1, lam1, lam2, explam1t, explam2t
-      complex :: cosoth, cosotg, sinoth, sinotg
+      real, dimension (6) :: e_T, e_X
       intent(inout) :: f
       character (len=2) :: label
       logical :: lsign_om2
-!
-!  Check that the relevant arrays are registered
-!
-      if (.not.lStress_as_aux.and.label=='St') call fatal_error('compute_gT_and_gX_from_gij','lStress_as_aux must be true')
-!
-!  For testing purposes, if lno_transverse_part=T, we would not need to
-!  compute the Fourier transform, so we would skip the rest.
-!
-!  Allocate memory for arrays.
-!
-      allocate(S_T_re(nx,ny,nz),stat=stat)
-      if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate S_T_re')
-!
-      allocate(S_T_im(nx,ny,nz),stat=stat)
-      if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate S_T_im')
-!
-      allocate(S_X_re(nx,ny,nz),stat=stat)
-      if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate S_X_re')
-!
-      allocate(S_X_im(nx,ny,nz),stat=stat)
-      if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate S_X_im')
-!
-!  Allocate 18 chunks of memory for nonlinear source
-!
-      if (lnonlinear_source) then
-        allocate(Hijkre(nx,ny,nz,3,6),stat=stat)
-        if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate Hijkre')
-!
-        allocate(Hijkim(nx,ny,nz,3,6),stat=stat)
-        if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate Hijkim')
-      endif
-!
-!  Allocate chunks for real and imaginary parts of one component of hij in real space at a time.
-!
-      if (lreal_space_hij_as_aux) then
-        allocate(hij_re(nx,ny,nz),stat=stat)
-        if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate hij_re')
-!
-        allocate(hij_im(nx,ny,nz),stat=stat)
-        if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate hij_im')
-!
-      endif
-!
-!  Compute om2_min, below which no GWs are computed.
-!  Choose 1e-4 arbitrarily.
-!
-      kmin=2*pi/sqrt(Lx**2+Ly**2+Lz**2)
-      om2_min=(1e-4*kmin)**2
-!
-!  set delta_ij
-!
-      delij(1:3)=1.
-      delij(4:6)=0.
-!
-!  Set k^2 array. Note that in Fourier space, kz is the fastest index and has
-!  the full nx extent (which, currently, must be equal to nxgrid).
-!  But call it one_over_k2.
-!  Added for computation of Hijk
-!  Begin by setting nonlinear_Tpq_re=0.
-!
-      if (lnonlinear_source) then
-        nonlinear_Tpq_re=0.
         do ikz=1,nz
           do iky=1,ny
             do ikx=1,nx
@@ -2322,84 +2241,146 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
             enddo
           enddo
         enddo
+    endsubroutine compute_Hijk
+!***********************************************************************
+    subroutine compute_hij(f,i,j,hij_re,hij_im)
 !
-!  Go back with Hijkre into real space:
+!  6-jul-25/TP: carved from compute_gT_and_gX_from_gij
 !
-        do i=1,3
-        do j=1,6
-          call fft_xyz_parallel(Hijkre(:,:,:,i,j),Hijkim(:,:,:,i,j),linv=.true.)
-        enddo
-        enddo
+      use Fourier, only: kx_fft, ky_fft, kz_fft
+
+      real, dimension(mx,my,mz,mvar) :: f
+      real, dimension(nx,ny,nz) :: hij_re,hij_im
+      integer :: i,j
+      integer :: ikx,iky,ikz
+      real, dimension (3) :: e1, e2, kvec
+      real :: fact, delkt, om2_min, kmin
+      real :: ksqr, one_over_k2, k1, k2, k3, k1sqr, k2sqr, k3sqr, ksqrt
+      real :: hhTre, hhTim, hhXre, hhXim
+      real :: e_ij_T, e_ij_X
+      real :: eTT, eTX, eXT, eXX
+
+       do ikz=1,nz
+         do iky=1,ny
+           do ikx=1,nx
+             k1=kx_fft(ikx+ipx*nx)
+             k2=ky_fft(iky+ipy*ny)
+             k3=kz_fft(ikz+ipz*nz)
+             k1sqr=k1**2
+             k2sqr=k2**2
+             k3sqr=k3**2
+             ksqr=k1sqr+k2sqr+k3sqr
 !
-!  Now we compute nonlinear_Tpq_re in real space, so the imaginary
-!  part must be zero and is not used.
+!  for ksqr/=0, set up k vector
 !
-        do i=1,3
-        do j=1,3
-          ij=ij_table(i,j)
-          do p=1,3
-          do q=1,3
-            pq=ij_table(p,q)
-            nonlinear_Tpq_re(:,:,:,pq)=nonlinear_Tpq_re(:,:,:,pq) &
-                +Hijkre(:,:,:,p,ij)*Hijkre(:,:,:,q,ij)
-! -             +Hijkre(:,:,:,p,ij)*Hijkre(:,:,:,q,ij) &
-! -             -Hijkim(:,:,:,p,ij)*Hijkim(:,:,:,q,ij)
-          enddo
-          enddo
-        enddo
-        enddo
+              if (ksqr/=0.) then
 !
-! end of if condition for nonlinear_source
+!  compute e1 and e2 vectors
 !
-      endif
+              if(abs(k1)<abs(k2)) then
+                if(abs(k1)<abs(k3)) then !(k1 is pref dir)
+                  e1=(/0.,-k3,+k2/)
+                  e2=(/k2sqr+k3sqr,-k2*k1,-k3*k1/)
+                else !(k3 is pref dir)
+                  e1=(/k2,-k1,0./)
+                  e2=(/k1*k3,k2*k3,-(k1sqr+k2sqr)/)
+                endif
+              else !(k2 smaller than k1)
+                if(abs(k2)<abs(k3)) then !(k2 is pref dir)
+                  e1=(/-k3,0.,+k1/)
+                  e2=(/+k1*k2,-(k1sqr+k3sqr),+k3*k2/)
+                else !(k3 is pref dir)
+                  e1=(/k2,-k1,0./)
+                  e2=(/k1*k3,k2*k3,-(k1sqr+k2sqr)/)
+                endif
+              endif
 !
-!  Assemble stress, Tpq, and transform to Fourier space.
-!  Add nonlinear source here, before transforming
+!  normalize e1 and e2
 !
-      if (label=='St') then
-        Tpq_re(:,:,:,:)=f(l1:l2,m1:m2,n1:n2,iStress_ij:iStress_ij+5)
-        Tpq_im=0.0
+              e1=e1/sqrt(e1(1)**2+e1(2)**2+e1(3)**2)
+              e2=e2/sqrt(e2(1)**2+e2(2)**2+e2(3)**2)
 !
-!  diagnostics
+!  compute e_T and e_X
 !
-        if (ldiagnos) then
-          lfirstpoint=.true.
-          do n=n1,n2
-          do m=m1,m2
-            if (idiag_nlin2/=0) call sum_mn_name(( &
-              nonlinear_Tpq_re(:,m-m1+1,n-n1+1,1)**2 &
-             +nonlinear_Tpq_re(:,m-m1+1,n-n1+1,2)**2 &
-             +nonlinear_Tpq_re(:,m-m1+1,n-n1+1,3)**2 &
-             +2.*nonlinear_Tpq_re(:,m-m1+1,n-n1+1,4)**2 &
-             +2.*nonlinear_Tpq_re(:,m-m1+1,n-n1+1,5)**2 &
-             +2.*nonlinear_Tpq_re(:,m-m1+1,n-n1+1,6)**2)/nx,idiag_nlin2)
-            !call sum_mn_name( &
-            if (idiag_nlin0/=0) call sum_mn_name(( &
-              Tpq_re(:,m-m1+1,n-n1+1,1)**2 &
-             +Tpq_re(:,m-m1+1,n-n1+1,2)**2 &
-             +Tpq_re(:,m-m1+1,n-n1+1,3)**2 &
-             +2.*Tpq_re(:,m-m1+1,n-n1+1,4)**2 &
-             +2.*Tpq_re(:,m-m1+1,n-n1+1,5)**2 &
-             +2.*Tpq_re(:,m-m1+1,n-n1+1,6)**2)/nx,idiag_nlin0)
-            lfirstpoint=.false.
-          enddo
-          enddo
-        endif
+              e_ij_T=e1(i)*e1(j)-e2(i)*e2(j)
+              e_ij_X=e1(i)*e2(j)+e2(i)*e1(j)
 !
-        if (lnonlinear_source) then
-          if (nonlinear_source_fact/=0.) nonlinear_Tpq_re=nonlinear_Tpq_re*nonlinear_source_fact
-          if (lnonlinear_Tpq_trans) then
-            nonlinear_Tpq_im=0.
-            call fft_xyz_parallel(nonlinear_Tpq_re(:,:,:,:),nonlinear_Tpq_im(:,:,:,:))
-          else
-            Tpq_re(:,:,:,:)=Tpq_re(:,:,:,:)+nonlinear_Tpq_re(:,:,:,:)
-          endif
-        endif
+!  possibility of swapping the sign of e_X
 !
-!  Transform to Fourier space
+              if (lswitch_sign_e_X) then
+                if (k3<0.) then
+                  e_ij_X=-e_ij_X
+                elseif (k3==0.) then
+                  if (k2<0.) then
+                    e_ij_X=-e_ij_X
+                  elseif (k2==0.) then
+                    if (k1<0.) then
+                      e_ij_X=-e_ij_X
+                    endif
+                  endif
+                endif
+              endif
 !
-        call fft_xyz_parallel(Tpq_re(:,:,:,:),Tpq_im(:,:,:,:))
-      endif
+!  Introduce shorthands.
+!
+              hhTre=f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  )
+              hhXre=f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  )
+              hhTim=f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim)
+              hhXim=f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim)
+!
+!  Assemble hij
+!
+              hij_re(ikx,iky,ikz)=e_ij_T*hhTre+e_ij_X*hhXre
+              hij_im(ikx,iky,ikz)=e_ij_T*hhTim+e_ij_X*hhXim
+!
+! endif from "if (ksqr/=0.) then"
+!
+              else
+                hij_re(ikx,iky,ikz)=0.
+                hij_im(ikx,iky,ikz)=0.
+              endif
+!
+!  end of ikx, iky, and ikz loops
+!
+           enddo
+         enddo
+       enddo
+    endsubroutine compute_hij
+!***********************************************************************
+    subroutine solve_and_stress(f,S_T_re,S_T_im,S_X_re,S_X_im)
+!   TODO: The name is simply a placeholder since could not come up with a better name
+!
+!  6-jul-25/TP: carved from compute_gT_and_gX_from_gij
+!
+      use Fourier, only: fourier_transform, fft_xyz_parallel, kx_fft, ky_fft, kz_fft
+      use Diagnostics
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx,ny,nz) :: S_T_re,S_T_im,S_X_re,S_X_im
+      real, dimension (6) :: Pij=0., kij=0., e_T, e_X, Sij_re, Sij_im, delij=0.
+      real, dimension (3) :: e1, e2, kvec
+      integer :: i,j,p,q,ik,ikx,iky,ikz,stat,ij,pq,ip,jq,jStress_ij
+      real :: fact, delkt, om2_min, kmin
+      real :: ksqr, one_over_k2, k1, k2, k3, k1sqr, k2sqr, k3sqr, ksqrt
+      real :: hhTre, hhTim, hhXre, hhXim, coefAre, coefAim
+      real :: ggTre, ggTim, ggXre, ggXim, coefBre, coefBim
+      real :: e_ij_T, e_ij_X
+      real :: cosot, sinot, sinot_minus, om12, om, om1, om2, dt1
+      real :: eTT, eTX, eXT, eXX
+      real :: discrim2
+      !real :: horndeski_alpM_eff, horndeski_alpM_eff2
+      !real :: horndeski_alpM_eff3
+      !real :: horndeski_alpT_eff
+      real :: Om_rat_Lam, Om_rat_Mat
+      real :: Om_rat_matt, Om_rat_tot1
+      real :: dS_T_re, dS_T_im, dS_X_re, dS_X_im
+      complex :: coefA, coefB, om_cmplx
+      complex :: hcomplex_new, gcomplex_new
+      complex :: discrim, det1, lam1, lam2, explam1t, explam2t
+      complex :: cosoth, cosotg, sinoth, sinotg
+      intent(inout) :: f
+      character (len=2) :: label
+      logical :: lsign_om2
 !
 !  determine time-dependent delkt
 !
@@ -2420,6 +2401,7 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
 !
 ! alberto (sep 8 2023), added option to solve for \xi in Horndeski theories
 !
+      if (lgpu .and. .not. lread_scl_factor_file) call compute_scl_factor
       if (lhorndeski.or.lhorndeski_xi) then
         select case (ihorndeski_time)
           case ('const')
@@ -2867,15 +2849,24 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
 !
 !  Set origin to zero. It is given by (1,1,1) on root processor.
 !
-              f(nghost+1,nghost+1,nghost+1,ihhT  ) = 0.
-              f(nghost+1,nghost+1,nghost+1,ihhTim) = 0.
-              f(nghost+1,nghost+1,nghost+1,iggT  ) = 0.
-              f(nghost+1,nghost+1,nghost+1,iggTim) = 0.
+              !f(nghost+1,nghost+1,nghost+1,ihhT  ) = 0.
+              !f(nghost+1,nghost+1,nghost+1,ihhTim) = 0.
+              !f(nghost+1,nghost+1,nghost+1,iggT  ) = 0.
+              !f(nghost+1,nghost+1,nghost+1,iggTim) = 0.
 !
-              f(nghost+1,nghost+1,nghost+1,ihhX  ) = 0.
-              f(nghost+1,nghost+1,nghost+1,ihhXim) = 0.
-              f(nghost+1,nghost+1,nghost+1,iggX  ) = 0.
-              f(nghost+1,nghost+1,nghost+1,iggXim) = 0.
+              !f(nghost+1,nghost+1,nghost+1,ihhX  ) = 0.
+              !f(nghost+1,nghost+1,nghost+1,ihhXim) = 0.
+              !f(nghost+1,nghost+1,nghost+1,iggX  ) = 0.
+              !f(nghost+1,nghost+1,nghost+1,iggXim) = 0.
+              f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  ) = 0.
+              f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim) = 0.
+              f(nghost+ikx,nghost+iky,nghost+ikz,iggT  ) = 0.
+              f(nghost+ikx,nghost+iky,nghost+ikz,iggTim) = 0.
+!
+              f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  ) = 0.
+              f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim) = 0.
+              f(nghost+ikx,nghost+iky,nghost+ikz,iggX  ) = 0.
+              f(nghost+ikx,nghost+iky,nghost+ikz,iggXim) = 0.
 
             endif
 !
@@ -2891,6 +2882,189 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
           enddo
         enddo
       enddo
+    endsubroutine solve_and_stress
+!***********************************************************************
+    subroutine compute_gT_and_gX_from_gij(f,label)
+!
+!  Compute the transverse part of the stress tensor by going into Fourier space.
+!  It also allows for the inclusion of nonlinear corrections to the wave equation.
+!  Alternatively, we can also solve the Lighthill equation if lLighthill=T.
+!
+!  07-aug-17/axel: coded
+!
+      use Fourier, only: fourier_transform, fft_xyz_parallel, kx_fft, ky_fft, kz_fft
+      use Diagnostics
+!
+      real, dimension (:,:,:), allocatable :: S_T_re, S_T_im, S_X_re, S_X_im, g2T_re, g2T_im, g2X_re, g2X_im
+      real, dimension (:,:,:), allocatable :: hij_re, hij_im
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (6) :: Pij=0., kij=0., e_T, e_X, Sij_re, Sij_im, delij=0.
+      real, dimension (:,:,:,:,:), allocatable :: Hijkre, Hijkim
+      real, dimension (3) :: e1, e2, kvec
+      integer :: i,j,p,q,ik,ikx,iky,ikz,stat,ij,pq,ip,jq,jStress_ij
+      real :: fact, delkt, om2_min, kmin
+      real :: ksqr, one_over_k2, k1, k2, k3, k1sqr, k2sqr, k3sqr, ksqrt
+      real :: hhTre, hhTim, hhXre, hhXim, coefAre, coefAim
+      real :: ggTre, ggTim, ggXre, ggXim, coefBre, coefBim
+      real :: e_ij_T, e_ij_X
+      real :: cosot, sinot, sinot_minus, om12, om, om1, om2, dt1
+      real :: eTT, eTX, eXT, eXX
+      real :: discrim2
+      !real :: horndeski_alpM_eff, horndeski_alpM_eff2
+      !real :: horndeski_alpM_eff3
+      !real :: horndeski_alpT_eff
+      real :: Om_rat_Lam, Om_rat_Mat
+      real :: Om_rat_matt, Om_rat_tot1
+      real :: dS_T_re, dS_T_im, dS_X_re, dS_X_im
+      complex :: coefA, coefB, om_cmplx
+      complex :: hcomplex_new, gcomplex_new
+      complex :: discrim, det1, lam1, lam2, explam1t, explam2t
+      complex :: cosoth, cosotg, sinoth, sinotg
+      intent(inout) :: f
+      character (len=2) :: label
+      logical :: lsign_om2
+!
+!  Check that the relevant arrays are registered
+!
+      if (.not.lStress_as_aux.and.label=='St') call fatal_error('compute_gT_and_gX_from_gij','lStress_as_aux must be true')
+!
+!  For testing purposes, if lno_transverse_part=T, we would not need to
+!  compute the Fourier transform, so we would skip the rest.
+!
+!  Allocate memory for arrays.
+!
+      allocate(S_T_re(nx,ny,nz),stat=stat)
+      if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate S_T_re')
+!
+      allocate(S_T_im(nx,ny,nz),stat=stat)
+      if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate S_T_im')
+!
+      allocate(S_X_re(nx,ny,nz),stat=stat)
+      if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate S_X_re')
+!
+      allocate(S_X_im(nx,ny,nz),stat=stat)
+      if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate S_X_im')
+!
+!  Allocate 18 chunks of memory for nonlinear source
+!
+      if (lnonlinear_source) then
+        allocate(Hijkre(nx,ny,nz,3,6),stat=stat)
+        if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate Hijkre')
+!
+        allocate(Hijkim(nx,ny,nz,3,6),stat=stat)
+        if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate Hijkim')
+      endif
+!
+!  Allocate chunks for real and imaginary parts of one component of hij in real space at a time.
+!
+      if (lreal_space_hij_as_aux) then
+        allocate(hij_re(nx,ny,nz),stat=stat)
+        if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate hij_re')
+!
+        allocate(hij_im(nx,ny,nz),stat=stat)
+        if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate hij_im')
+!
+      endif
+!
+!  Compute om2_min, below which no GWs are computed.
+!  Choose 1e-4 arbitrarily.
+!
+      kmin=2*pi/sqrt(Lx**2+Ly**2+Lz**2)
+      om2_min=(1e-4*kmin)**2
+!
+!  set delta_ij
+!
+      delij(1:3)=1.
+      delij(4:6)=0.
+!
+!  Set k^2 array. Note that in Fourier space, kz is the fastest index and has
+!  the full nx extent (which, currently, must be equal to nxgrid).
+!  But call it one_over_k2.
+!  Added for computation of Hijk
+!  Begin by setting nonlinear_Tpq_re=0.
+!
+      if (lnonlinear_source) then
+        nonlinear_Tpq_re=0.
+        call compute_Hijk(f,Hijkre,Hijkim)
+!
+!  Go back with Hijkre into real space:
+!
+        do i=1,3
+        do j=1,6
+          call fft_xyz_parallel(Hijkre(:,:,:,i,j),Hijkim(:,:,:,i,j),linv=.true.)
+        enddo
+        enddo
+!
+!  Now we compute nonlinear_Tpq_re in real space, so the imaginary
+!  part must be zero and is not used.
+!
+        do i=1,3
+        do j=1,3
+          ij=ij_table(i,j)
+          do p=1,3
+          do q=1,3
+            pq=ij_table(p,q)
+            nonlinear_Tpq_re(:,:,:,pq)=nonlinear_Tpq_re(:,:,:,pq) &
+                +Hijkre(:,:,:,p,ij)*Hijkre(:,:,:,q,ij)
+! -             +Hijkre(:,:,:,p,ij)*Hijkre(:,:,:,q,ij) &
+! -             -Hijkim(:,:,:,p,ij)*Hijkim(:,:,:,q,ij)
+          enddo
+          enddo
+        enddo
+        enddo
+!
+! end of if condition for nonlinear_source
+!
+      endif
+!
+!  Assemble stress, Tpq, and transform to Fourier space.
+!  Add nonlinear source here, before transforming
+!
+      if (label=='St') then
+        Tpq_re(:,:,:,:)=f(l1:l2,m1:m2,n1:n2,iStress_ij:iStress_ij+5)
+        Tpq_im=0.0
+!
+!  diagnostics
+!
+        if (ldiagnos) then
+          lfirstpoint=.true.
+          do n=n1,n2
+          do m=m1,m2
+            if (idiag_nlin2/=0) call sum_mn_name(( &
+              nonlinear_Tpq_re(:,m-m1+1,n-n1+1,1)**2 &
+             +nonlinear_Tpq_re(:,m-m1+1,n-n1+1,2)**2 &
+             +nonlinear_Tpq_re(:,m-m1+1,n-n1+1,3)**2 &
+             +2.*nonlinear_Tpq_re(:,m-m1+1,n-n1+1,4)**2 &
+             +2.*nonlinear_Tpq_re(:,m-m1+1,n-n1+1,5)**2 &
+             +2.*nonlinear_Tpq_re(:,m-m1+1,n-n1+1,6)**2)/nx,idiag_nlin2)
+            !call sum_mn_name( &
+            if (idiag_nlin0/=0) call sum_mn_name(( &
+              Tpq_re(:,m-m1+1,n-n1+1,1)**2 &
+             +Tpq_re(:,m-m1+1,n-n1+1,2)**2 &
+             +Tpq_re(:,m-m1+1,n-n1+1,3)**2 &
+             +2.*Tpq_re(:,m-m1+1,n-n1+1,4)**2 &
+             +2.*Tpq_re(:,m-m1+1,n-n1+1,5)**2 &
+             +2.*Tpq_re(:,m-m1+1,n-n1+1,6)**2)/nx,idiag_nlin0)
+            lfirstpoint=.false.
+          enddo
+          enddo
+        endif
+!
+        if (lnonlinear_source) then
+          if (nonlinear_source_fact/=0.) nonlinear_Tpq_re=nonlinear_Tpq_re*nonlinear_source_fact
+          if (lnonlinear_Tpq_trans) then
+            nonlinear_Tpq_im=0.
+            call fft_xyz_parallel(nonlinear_Tpq_re(:,:,:,:),nonlinear_Tpq_im(:,:,:,:))
+          else
+            Tpq_re(:,:,:,:)=Tpq_re(:,:,:,:)+nonlinear_Tpq_re(:,:,:,:)
+          endif
+        endif
+!
+!  Transform to Fourier space
+!
+        call fft_xyz_parallel(Tpq_re(:,:,:,:),Tpq_im(:,:,:,:))
+      endif
+      call solve_and_stress(f,S_T_re,S_X_re,S_T_im,S_X_im)
 !
 !  back to real space: hTX
 !  re-utilize S_T_re, etc as workspace.
@@ -2943,91 +3117,7 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
 !  Loop over all positions in k-space.
 !  Indentation not done yet.
 !
-          do ikz=1,nz
-            do iky=1,ny
-              do ikx=1,nx
-                k1=kx_fft(ikx+ipx*nx)
-                k2=ky_fft(iky+ipy*ny)
-                k3=kz_fft(ikz+ipz*nz)
-                k1sqr=k1**2
-                k2sqr=k2**2
-                k3sqr=k3**2
-                ksqr=k1sqr+k2sqr+k3sqr
-!
-!  for ksqr/=0, set up k vector
-!
-                if (ksqr/=0.) then
-!
-!  compute e1 and e2 vectors
-!
-                  if(abs(k1)<abs(k2)) then
-                    if(abs(k1)<abs(k3)) then !(k1 is pref dir)
-                      e1=(/0.,-k3,+k2/)
-                      e2=(/k2sqr+k3sqr,-k2*k1,-k3*k1/)
-                    else !(k3 is pref dir)
-                      e1=(/k2,-k1,0./)
-                      e2=(/k1*k3,k2*k3,-(k1sqr+k2sqr)/)
-                    endif
-                  else !(k2 smaller than k1)
-                    if(abs(k2)<abs(k3)) then !(k2 is pref dir)
-                      e1=(/-k3,0.,+k1/)
-                      e2=(/+k1*k2,-(k1sqr+k3sqr),+k3*k2/)
-                    else !(k3 is pref dir)
-                      e1=(/k2,-k1,0./)
-                      e2=(/k1*k3,k2*k3,-(k1sqr+k2sqr)/)
-                    endif
-                  endif
-!
-!  normalize e1 and e2
-!
-                  e1=e1/sqrt(e1(1)**2+e1(2)**2+e1(3)**2)
-                  e2=e2/sqrt(e2(1)**2+e2(2)**2+e2(3)**2)
-!
-!  compute e_T and e_X
-!
-                  e_ij_T=e1(i)*e1(j)-e2(i)*e2(j)
-                  e_ij_X=e1(i)*e2(j)+e2(i)*e1(j)
-!
-!  possibility of swapping the sign of e_X
-!
-                  if (lswitch_sign_e_X) then
-                    if (k3<0.) then
-                      e_ij_X=-e_ij_X
-                    elseif (k3==0.) then
-                      if (k2<0.) then
-                        e_ij_X=-e_ij_X
-                      elseif (k2==0.) then
-                        if (k1<0.) then
-                          e_ij_X=-e_ij_X
-                        endif
-                      endif
-                    endif
-                  endif
-!
-!  Introduce shorthands.
-!
-                  hhTre=f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  )
-                  hhXre=f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  )
-                  hhTim=f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim)
-                  hhXim=f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim)
-!
-!  Assemble hij
-!
-                  hij_re(ikx,iky,ikz)=e_ij_T*hhTre+e_ij_X*hhXre
-                  hij_im(ikx,iky,ikz)=e_ij_T*hhTim+e_ij_X*hhXim
-!
-! endif from "if (ksqr/=0.) then"
-!
-                else
-                  hij_re(ikx,iky,ikz)=0.
-                  hij_im(ikx,iky,ikz)=0.
-                endif
-!
-!  end of ikx, iky, and ikz loops
-!
-              enddo
-            enddo
-          enddo
+          call compute_hij(f,i,j,hij_re,hij_im)
 !
 !  Go back with Hijkre into real space:
 !
