@@ -50,6 +50,7 @@ module Equ
       use Chiral
       use Chemistry
       use Density
+      use Dustdensity, only: dustdensity_after_boundary
       use Diagnostics
       use Energy
       use EquationOfState
@@ -950,15 +951,19 @@ module Equ
 !
 !  6-jul-25/TP: carved from pde
 !
+      use Chiral, only: chiral_before_boundary
       use Energy, only: energy_before_boundary
       use Density, only: density_before_boundary,density_before_boundary_diagnostics
       use Detonate, only: detonate_before_boundary
-      use Dustdensity, only: dustdensity_after_boundary, dustdensity_before_boundary
+      use Dustdensity, only: dustdensity_before_boundary
       use Hydro, only: hydro_before_boundary
       use Magnetic, only: magnetic_before_boundary
       use Selfgravity, only: calc_selfpotential
       use Shock, only: shock_before_boundary 
       use Special, only: special_before_boundary
+      use Particles_main, only: particles_before_boundary
+      use Pscalar, only: pscalar_before_boundary
+      use Testfield, only: testfield_before_boundary
       real, dimension(mx,my,mz,mfarray) :: f
 !
 !  Calculate the potential of the self gravity. Must be done before
