@@ -2138,11 +2138,9 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
       real, dimension(nx,ny,nz,3,6) :: Hijkim,Hijkre
       integer :: ikx,iky,ikz
       real, dimension (3) :: e1, e2, kvec
-      integer :: i,j,p,q,ik,stat,ij,jStress_ij
+      integer :: i,j,p,q,ik,ij
       real :: ksqr, k1, k2, k3, k1sqr, k2sqr, k3sqr
       real :: hhTre, hhTim, hhXre, hhXim
-      real :: e_ij_T, e_ij_X
-      real :: eTT, eTX, eXT, eXX
       real, dimension (6) :: e_T, e_X
       intent(inout) :: f
       character (len=2) :: label
@@ -2254,11 +2252,9 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
       integer :: i,j
       integer :: ikx,iky,ikz
       real, dimension (3) :: e1, e2, kvec
-      real :: fact, delkt, kmin
-      real :: ksqr, one_over_k2, k1, k2, k3, k1sqr, k2sqr, k3sqr, ksqrt
+      real :: ksqr, k1, k2, k3, k1sqr, k2sqr, k3sqr, ksqrt
       real :: hhTre, hhTim, hhXre, hhXim
       real :: e_ij_T, e_ij_X
-      real :: eTT, eTX, eXT, eXX
 
        do ikz=1,nz
          do iky=1,ny
@@ -2907,29 +2903,9 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (6) :: Pij=0., kij=0., e_T, e_X, Sij_re, Sij_im, delij=0.
       real, dimension (:,:,:,:,:), allocatable :: Hijkre, Hijkim
-      real, dimension (3) :: e1, e2, kvec
-      integer :: i,j,p,q,ik,ikx,iky,ikz,stat,ij,pq,ip,jStress_ij
-      real :: fact, delkt, om2_min, kmin
-      real :: ksqr, one_over_k2, k1, k2, k3, k1sqr, k2sqr, k3sqr, ksqrt
-      real :: hhTre, hhTim, hhXre, hhXim, coefAre, coefAim
-      real :: ggTre, ggTim, ggXre, ggXim, coefBre, coefBim
-      real :: e_ij_T, e_ij_X
-      real :: cosot, sinot, sinot_minus, om12, om, om1, om2, dt1
-      real :: eTT, eTX, eXT, eXX
-      real :: discrim2
-      !real :: horndeski_alpM_eff, horndeski_alpM_eff2
-      !real :: horndeski_alpM_eff3
-      !real :: horndeski_alpT_eff
-      real :: Om_rat_Lam, Om_rat_Mat
-      real :: Om_rat_matt, Om_rat_tot1
-      real :: dS_T_re, dS_T_im, dS_X_re, dS_X_im
-      complex :: coefA, coefB, om_cmplx
-      complex :: hcomplex_new, gcomplex_new
-      complex :: discrim, det1, lam1, lam2, explam1t, explam2t
-      complex :: cosoth, cosotg, sinoth, sinotg
+      integer :: i,j,p,q,ik,ikx,iky,ikz,stat,ij,pq,ip
       intent(inout) :: f
       character (len=2) :: label
-      logical :: lsign_om2
 !
 !  Check that the relevant arrays are registered
 !
