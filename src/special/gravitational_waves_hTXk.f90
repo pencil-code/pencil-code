@@ -2143,8 +2143,6 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
       real :: hhTre, hhTim, hhXre, hhXim
       real, dimension (6) :: e_T, e_X
       intent(inout) :: f
-      character (len=2) :: label
-      logical :: lsign_om2
         do ikz=1,nz
           do iky=1,ny
             do ikx=1,nx
@@ -2375,7 +2373,6 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
       complex :: discrim, det1, lam1, lam2, explam1t, explam2t
       complex :: cosoth, cosotg, sinoth, sinotg
       intent(inout) :: f
-      character (len=2) :: label
       logical :: lsign_om2
 !
 !  determine time-dependent delkt
