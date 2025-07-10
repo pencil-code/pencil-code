@@ -1487,6 +1487,7 @@ module Forcing
       complex, dimension (mz) :: fz
       complex, dimension (3) :: ikk
       integer :: ik,j,jf
+      logical :: lmagforce_2D
 !
       do
         call random_number_wrapper(fran,CHANNEL=channel_force)
