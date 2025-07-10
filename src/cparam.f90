@@ -28,6 +28,7 @@ module Cparam
   character(LEN=2), dimension(12), parameter :: compnames=(/'x ','y ','z ','xx','xy','xz','yx','yy','yz','zx','zy','zz'/)
   integer, dimension(6),parameter :: compinds_6=(/1,2,3,5,6,9/)
   logical, dimension(3), parameter :: lactive_dimension = (/ nxgrid > 1, nygrid > 1, nzgrid > 1 /)
+  logical, dimension(3), parameter :: linactive_dimension = (/ nxgrid == 1, nygrid == 1, nzgrid == 1 /)
   integer, parameter :: dimensionality=min(nxgrid-1,1)+min(nygrid-1,1)+min(nzgrid-1,1)
   integer, dimension(3), parameter :: grid_dims=(/nx,ny,nz/)
 !

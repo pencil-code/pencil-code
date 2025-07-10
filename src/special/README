@@ -36,6 +36,18 @@ Accretion Disks:
   baroclinic_run.f90
   fargo.f90
 
+Early Universe Cosmology:
+  backreact_infl.f90
+  chiral_mhd.f90
+  disp_current.f90
+  gravitational_waves_hTXk.f90
+
+to clean up modifications due to use of multiple special models, do:
+  pc_mkspecial.sh backreact_infl.f90
+  pc_mkspecial.sh chiral_mhd.f90
+  pc_mkspecial.sh disp_current.f90
+  pc_mkspecial.sh gravitational_waves_hTXk.f90
+
 Meanfield MHD:
   meanfield_alpm_alternate.f90
   meanfield_alpm_etat.f90

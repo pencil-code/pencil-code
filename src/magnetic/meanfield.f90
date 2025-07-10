@@ -106,7 +106,7 @@ module Magnetic_meanfield
   real :: fluc_alp_m=1.0, sigma_alpha=1.0
   real :: b2_to_u2=0.0, shear_current_sh=0.0
   real :: sigx=0.0, sigz=0.0
-  integer :: npatches=1, npatches_actual, seed_magn_mf2=5555
+  integer :: npatches=1, npatches_actual, seed_magn_mf2=5555, nmultipole=1
   real, dimension(3) :: alpha_aniso=0.
   real, dimension(3,3) :: alpha_tensor=0., eta_tensor=0.
   real, dimension(ny,3,3) :: alpha_tensor_y=0., eta_tensor_y=0.
@@ -141,7 +141,7 @@ module Magnetic_meanfield
       x_surface, x_surface2, z_surface, &
       alpha_rmin, kx_alpha, &
       qp_model, seed_magn_mf2, &
-      npatches, sigx, sigz, ltest_patches, lOmega_effect_meanfield, ampluu_kinematic, &
+      npatches, nmultipole, sigx, sigz, ltest_patches, lOmega_effect_meanfield, ampluu_kinematic, &
       ldelta_profile, delta_effect, delta_profile, &
       meanfield_etat, meanfield_etat_height, meanfield_etat_profile, &
       meanfield_etat_width, meanfield_etat_exp, meanfield_etat_corona, meanfield_Beq_width, &
@@ -705,7 +705,7 @@ module Magnetic_meanfield
                 xcenter(ipatchz_count)=-xpatches(n)+2.*xpatches(n)*xcenter(ipatchz_count)
                 ycenter(ipatchz_count)=-ypatches(n)+2.*ypatches(n)*ycenter(ipatchz_count)
                 zcenter(ipatchz_count)=z(n+nghost)
-                print*,n,z(n+nghost),npatchz,ipatchz_count,cont_count,2.*rpatches(n)*fpatches(n)*npatches
+                !print*,n,z(n+nghost),npatchz,ipatchz_count,cont_count,2.*rpatches(n)*fpatches(n)*npatches
               else
                 print*,'too many patches: ipatchz_count,cont_count=',ipatchz_count,cont_count
               endif
@@ -713,11 +713,15 @@ module Magnetic_meanfield
           enddo
           npatches_actual=ipatchz_count
         else
-          xcenter=xyz0(1)+(xyz1(1)-xyz0(1))*xcenter 
-          ycenter=xyz0(2)+(xyz1(2)-xyz0(2))*ycenter 
-          zcenter=xyz0(3)+(xyz1(3)-xyz0(3))*zcenter 
+          !xcenter=xyz0(1)+(xyz1(1)-xyz0(1))*xcenter 
+          !ycenter=xyz0(2)+(xyz1(2)-xyz0(2))*ycenter 
+          !zcenter=xyz0(3)+(xyz1(3)-xyz0(3))*zcenter 
+          xcenter=0.
+          ycenter=0.
+          zcenter=0.
           npatches_actual=npatches
         endif
+        print*,'npatches_actual=',npatches_actual
 !
 !  Assume random orientation angles for all patches.
 !
@@ -969,7 +973,7 @@ module Magnetic_meanfield
       real, dimension (nx) :: shear_current_sh_tmp, disk_height, z_over_h
       real, dimension (nx,3) :: Bk_Bki, exa_meanfield, glnchit_prof, glnchit, XXj
       real, dimension (nx,3) :: meanfield_getat_tmp, getat_cross_B_tmp, B2glnrho, glnchit2
-      real, dimension (nx) :: r2, x1, y1, z1, x11, y11, z11
+      real, dimension (nx) :: r2, x1, y1, z1, x11, y11, z11, radial_func
       real :: kx,fact
       integer :: i, j, k, nn, l, ipatch
 !
@@ -1197,8 +1201,18 @@ module Magnetic_meanfield
                 p%uu(:,2)=p%uu(:,2)+ampluu_kinematic*x11*exp(-r2)
               endif
             else
-              p%aa(:,2)=p%aa(:,2)+ampluu_kinematic*x11*exp(-r2)
-              f(l1:l2,m,n,iay)=f(l1:l2,m,n,iay)+ampluu_kinematic*x11*exp(-r2)
+              radial_func=1./sqrt(max(1.,r2))
+              select case (nmultipole)
+                !case (1) p%aa(:,2)=p%aa(:,2)+ampluu_kinematic*x11*radial_func**3
+                !case (2) p%aa(:,2)=p%aa(:,2)+ampluu_kinematic*x11*zz1*radial_func**5
+                case (1)
+                  f(l1:l2,m,n,iay)=f(l1:l2,m,n,iay)+ampluu_kinematic*x11*radial_func**3
+                case (2)
+                  f(l1:l2,m,n,iay)=f(l1:l2,m,n,iay)+ampluu_kinematic*x11*z11*radial_func**5
+                case default;
+                  call inevitably_fatal_error('calc_pencils_magnetic', &
+                  'no such value of nmultipole')
+              endselect
             endif
           enddo
         case ('sphere')

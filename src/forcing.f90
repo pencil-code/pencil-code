@@ -1588,7 +1588,10 @@ module Forcing
           rho1=1.
         endif
         do j=1,3
-          if (lforce_always_all_compomemts .or. lactive_dimension(j)) then
+          !if (lforce_always_all_compomemts .or. lactive_dimension(j)) then
+          lmagforce_2D=.false.
+          if ( .not.lmagforce_2D .and. (lforce_always_all_compomemts .or. lactive_dimension(j))
+            .or. lmagforce_2D .and. linactive_dimension(j) ) then
             jf=j+ifff-1
             forcing_rhs(:,j) = profx_ampl*profy_ampl(m)*profz_ampl(n) &
                               *rho1*real(ikk(j)*fx(l1:l2)*fy(m)*fz(n))

@@ -3772,12 +3772,153 @@ outer:do ikz=1,nz
 !
   endsubroutine pdf
 !***********************************************************************
+  subroutine pdf_2d(f,variabl,pdf_mean,pdf_rms,igrad1,igrad2,iweight,lweight)
+!
+!  Calculated pdf of scalar field.
+!  This routine is in this module, because it is always called at the
+!  same time when spectra are invoked (called in wsnaps).
+!
+!    2-dec-03/axel: coded
+!
+    use Sub, only: grad, dot2_mn
+    use Mpicomm, only: mpireduce_sum_int
+    use SharedVariables, only: get_shared_variable
+!
+    integer :: l, i_pdf, i_pdfy
+    integer :: n_pdf=100, n_pdfy=100
+    integer :: pdfx_min, pdfx_max, pdfy_min, pdfy_max
+    real, allocatable, dimension(:,:) :: pdf_yy, pdf_yy_sum
+    real, dimension (mx,my,mz,mfarray) :: f
+    real, dimension (nx,3) :: grad1, grad2, gcc
+    real, dimension (nx) :: pdf_var,gcc2
+    integer, dimension (2) :: nreduce
+    real :: pdf_mean, pdf_rms, pdf_dx, pdf_dx1, pdf_scl
+    !real :: pdfy_mean, pdfy_rms, pdf_dy, pdf_dy1, pdfy_scl
+    real :: pdf_dy, pdf_dy1
+    character (len=120) :: pdf_file=''
+    character (len=*) :: variabl
+    logical :: logscale=.false.
+    integer, pointer :: ispecial
+    integer, intent(in), optional :: igrad1, igrad2
+    integer, intent(in), optional :: iweight
+    logical, intent(in), optional :: lweight
+!
+    if (variabl=='special' .or. variabl=='lnspecial') &
+      call get_shared_variable('ispecial', ispecial, caller='pdf')
+!
+!  initialize counter and set scaling factor
+!
+    pdf_yy=0
+    pdf_scl=1./pdf_rms
+    allocate(pdf_yy(n_pdf,n_pdfy))
+    allocate(pdf_yy_sum(n_pdf,n_pdfy))
+!
+    !$omp parallel private(pdf_var,logscale,gcc,gcc2,l,pdf_dx,pdf_dx1,i_pdf) num_threads(num_helper_threads) &
+    !$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+    !$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+    !$ thread_id = omp_get_thread_num()+1
+!
+!  m-n loop
+!
+    !$omp do collapse(2) reduction(+:pdf_yy)
+    do n_loc=n1,n2
+    do m_loc=m1,m2
+      m=m_loc;n=n_loc
+!
+!  select the right variable
+!
+      if (variabl=='rhocc') then
+        pdf_var=exp(f(l1:l2,m,n,ilnrho))*f(l1:l2,m,n,ilncc)-pdf_mean
+        logscale=.false.
+      elseif (variabl=='cc') then
+        pdf_var=f(l1:l2,m,n,ilncc)-pdf_mean
+        logscale=.false.
+      elseif (variabl=='lncc') then
+        pdf_var=abs(f(l1:l2,m,n,ilncc)-pdf_mean)
+        logscale=.true.
+      elseif (variabl=='gcc') then
+        call grad(f,ilncc,gcc)
+        call dot2_mn(gcc,gcc2)
+        pdf_var=sqrt(gcc2)
+        logscale=.false.
+      elseif (variabl=='lngcc') then
+        call grad(f,ilncc,gcc)
+        call dot2_mn(gcc,gcc2)
+        pdf_var=sqrt(gcc2)
+        logscale=.true.
+      elseif (variabl=='cos_grad1_grad2') then
+        call grad(f,igrad1,grad1)
+        call grad(f,igrad2,grad2)
+        pdf_var=(grad1(:,1)*grad2(:,1)+grad1(:,2)*grad2(:,2)+grad1(:,3)*grad2(:,3))/sqrt( &
+                (grad1(:,1)**2+grad1(:,2)**2+grad1(:,3)**2)* &
+                (grad2(:,1)**2+grad2(:,2)**2+grad2(:,3)**2))
+        if (lweight) pdf_var=pdf_var*f(l1:l2,m,n,iweight)
+        logscale=.false.
+      elseif (variabl=='special') then
+        pdf_var=f(l1:l2,m,n,ispecial)
+        logscale=.false.
+      elseif (variabl=='lnspecial') then
+        pdf_var=alog(f(l1:l2,m,n,ispecial))
+        logscale=.false.
+      endif
+!
+!  put in the right pdf slot
+!
+      if (logscale) then
+        pdf_dx=(pdf_max_logscale-pdf_min_logscale)/n_pdf
+        pdf_dx1=1./pdf_dx
+        do l=l1,l2
+          i_pdf=1+int(pdf_dx1*log10(pdf_scl*pdf_var(l))-pdf_min_logscale)
+          i_pdf=min(max(i_pdf,1),n_pdf)  !(make sure it's inside array boundaries)
+          pdf_yy(i_pdf,i_pdfy)=pdf_yy(i_pdf,i_pdfy)+1
+        enddo
+      else
+        pdf_dx=(pdf_max-pdf_min)/n_pdf
+        pdf_dy=(pdfy_max-pdfy_min)/n_pdfy
+        pdf_dx1=1./pdf_dx
+        pdf_dy1=1./pdf_dy
+        do l=l1,l2
+          i_pdf =1+int(pdf_dx1*(pdf_scl*pdf_var(l)-pdf_min))
+          i_pdfy=1+int(pdf_dy1*(pdf_scl*pdf_var(l)-pdfy_min))
+          i_pdf =min(max(i_pdf ,1),n_pdf)   !(make sure it's inside array boundries)
+          i_pdfy=min(max(i_pdfy,1),n_pdfy)  !(make sure it's inside array boundries)
+          pdf_yy(i_pdf,i_pdfy)=pdf_yy(i_pdf,i_pdfy)+1
+        enddo
+      endif
+    enddo
+    enddo
+    !$omp end parallel
+!
+!  Communicate and append from root processor.
+!
+    nreduce(1)=n_pdf
+    nreduce(2)=n_pdfy
+    !AB: doesn't
+!   call mpireduce_sum_int(pdf_yy,pdf_yy_sum,nreduce)
+
+    if (lroot) then
+       pdf_file=trim(datadir)//'/pdf_'//trim(variabl)//'.dat'
+       open(1,file=trim(pdf_file),position='append')
+       if (logscale) then
+         write(1,10) t, n_pdf, pdf_dx, pdf_max_logscale, pdf_min_logscale, pdf_mean, pdf_rms
+       else
+         write(1,10) t, n_pdf, pdf_dx, pdf_max, pdf_min, pdf_mean, pdf_rms
+       endif
+       write(1,11) pdf_yy_sum
+       close(1)
+    endif
+!
+10 format(1p,e12.5,0p,i6,1p,5e12.4)
+11 format(8i10)
+!
+  endsubroutine pdf_2d
+!***********************************************************************
   subroutine pdf1d_ang(f,sp)
 !
 !  Computes scale-by-scale pdfs of the cosine of the angle between
 !  two vector fields in the configuration space. The last column of
-!  the pdf counts the places where one or both of the two fields
-!  vanishes.
+!  the pdf counts the number of places where one or both of the two
+!  fields vanish.
 !
 !   30-jun-22/hongzhe: coded
 !
