@@ -182,6 +182,8 @@ module Forcing
 !
 ! other variables (needs to be consistent with reset list below)
 !
+  integer :: idiag_bfm=0        ! DIAG_DOC: $\left<\Bv\cdot\fv\right>$
+  integer :: idiag_jfm=0        ! DIAG_DOC: $\left<\Jv\cdot\fv\right>$
   integer :: idiag_rufm=0       ! DIAG_DOC: $\left<\rho\fv\cdot\uv\right>$
   integer :: idiag_rufint=0
   integer :: idiag_ufm=0        ! DIAG_DOC: $\left<\fv\cdot\uv\right>$
@@ -2013,10 +2015,10 @@ module Forcing
 !
       real, dimension (mx,my,mz,mfarray), intent(INOUT) :: f
 
-      real, dimension (nx) :: rho1,ruf,rho,force_ampl
+      real, dimension (nx) :: rho1, ruf, rho, force_ampl, bdotf, jdotf
       real, dimension (nx,3) :: variable_rhs,forcing_rhs,forcing_rhs2
       real, dimension (nx,3) :: forcing_rhs_old,forcing_rhs2_old
-      real, dimension (nx,3) :: force_all
+      real, dimension (nx,3) :: force_all, bb, jj
       real, dimension (3), save :: fda, fda2, fda_old, fda2_old
       complex, dimension (mx), save :: fx=0., fx2=0., fx_old=0., fx2_old=0.
       complex, dimension (my), save :: fy=0., fy2=0., fy_old=0., fy2_old=0.
@@ -2259,7 +2261,8 @@ module Forcing
 !  Sum up.
 !
             if (lout) then
-              if (idiag_rufm  /=0 .or. idiag_ruxfxm/=0 .or. idiag_ruxfym/=0 .or. &
+              if (idiag_bfm/=0 .or. idiag_jfm/=0 .or. idiag_rufm/=0 .or. &
+                  idiag_ruxfxm/=0 .or. idiag_ruxfym/=0 .or. &
                   idiag_ruyfxm/=0 .or. idiag_ruyfym/=0 .or. idiag_ruzfzm/=0     ) then
 !
 !  Compute density.
@@ -2287,6 +2290,18 @@ module Forcing
                 if (idiag_ruyfxm/=0) call sum_mn_name(rho*f(l1:l2,m,n,iuy)*forcing_rhs(:,1),idiag_ruyfxm)
                 if (idiag_ruyfym/=0) call sum_mn_name(rho*f(l1:l2,m,n,iuy)*forcing_rhs(:,2),idiag_ruyfym)
                 if (idiag_ruzfzm/=0) call sum_mn_name(rho*f(l1:l2,m,n,iuz)*forcing_rhs(:,3),idiag_ruzfzm)
+                if (idiag_bfm/=0) then
+                  if (iaa==0) call fatal_error('forcing_hel','iaa=0 is not ok for computing bb')
+                  call curl(f,iaa,bb)
+                  call dot_mn(bb,forcing_rhs,bdotf)
+                  call sum_mn_name(bdotf,idiag_bfm)
+                endif
+                if (idiag_jfm/=0) then
+                  if (iaa==0) call fatal_error('forcing_hel','iaa=0 is not ok for computing jj')
+                  call del2v_etc(f,iaa,curlcurl=jj)
+                  call dot_mn(jj,forcing_rhs,jdotf)
+                  call sum_mn_name(jdotf,idiag_jfm)
+                endif
               endif
             endif
 !
@@ -2329,6 +2344,8 @@ module Forcing
 !  For printouts, rufm needs to be communicated.
 !
       if (lout) then
+        if (idiag_bfm/=0)    call mpireduce_sum(fname(idiag_bfm)/nwgrid,fname(idiag_bfm))
+        if (idiag_jfm/=0)    call mpireduce_sum(fname(idiag_jfm)/nwgrid,fname(idiag_jfm))
         if (idiag_rufm/=0)   call mpireduce_sum(fname(idiag_rufm)/nwgrid,fname(idiag_rufm))
         if (idiag_ruxfxm/=0) call mpireduce_sum(fname(idiag_ruxfxm)/nwgrid,fname(idiag_ruxfxm))
         if (idiag_ruxfym/=0) call mpireduce_sum(fname(idiag_ruxfym)/nwgrid,fname(idiag_ruxfym))
@@ -6384,7 +6401,8 @@ module Forcing
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_rufm=0; idiag_rufint=0; idiag_ufm=0; idiag_ofm=0; idiag_qfm=0; idiag_ffm=0
+        idiag_bfm=0; idiag_jfm=0; idiag_rufm=0; idiag_rufint=0; idiag_ufm=0
+        idiag_ofm=0; idiag_qfm=0; idiag_ffm=0
         idiag_ruxfxm=0; idiag_ruyfym=0; idiag_ruzfzm=0
         idiag_ruxfym=0; idiag_ruyfxm=0
 !       idiag_fxbxm=0; idiag_fxbym=0; idiag_fxbzm=0
@@ -6394,6 +6412,8 @@ module Forcing
 !
       if (lroot.and.ip<14) print*,'rprint_forcing: run through parse list'
       do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'bfm',idiag_bfm)
+        call parse_name(iname,cname(iname),cform(iname),'jfm',idiag_jfm)
         call parse_name(iname,cname(iname),cform(iname),'rufm',idiag_rufm)
         call parse_name(iname,cname(iname),cform(iname),'rufint',idiag_rufint)
         call parse_name(iname,cname(iname),cform(iname),'ruxfxm',idiag_ruxfxm)
@@ -6517,6 +6537,8 @@ module Forcing
     call copy_addr(cosz,p_par(71)) ! (mz) (n_forcing_cont_max)
     call copy_addr(sinzt,p_par(72)) ! (mz) (n_forcing_cont_max)
     call copy_addr(coszt,p_par(73)) ! (mz) (n_forcing_cont_max)
+    call copy_addr(idiag_bfm,p_par(74)) ! int  !AB: is this ok??
+    call copy_addr(idiag_jfm,p_par(75)) ! int  !AB: is this ok??
     do i = 1,n_forcing_cont_max
         call string_to_enum(enum_iforcing_cont(i),iforcing_cont(i))
     enddo
