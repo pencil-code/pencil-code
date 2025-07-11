@@ -144,6 +144,11 @@ endelse
 if (bcz eq 'p') then begin
   f[*,*,   0:n1-1,*]=f[*,*,n2-2:n2  ,*]
   f[*,*,n2+1:mz-1,*]=f[*,*,  n1:n1+2,*]
+endif else if (bcz eq 'a2') then begin
+  for iz=1,3 do begin
+  f[*,*,n1-iz,*]=2*f[*,*,n1,*]-f[*,*,n1+iz,*]
+  f[*,*,n2+iz,*]=2*f[*,*,n2,*]-f[*,*,n2-iz,*]
+  endfor
 endif else begin
   print, 'pc_setghost: boundary condition bcz=''', bcz, ''' is not implemented - returning'
   return, f
