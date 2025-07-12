@@ -22,7 +22,7 @@
 &disp_current_run_pars
   lmass_suppression=T, mass_chi=1e-2
   luse_scale_factor_in_sigma=T
-  lcollinear_EB=T, sigB_prefactor=1., sigE_prefactor=1.
+  lnoncollinear_EB=T, sigB_prefactor=1., sigE_prefactor=1.
   lallow_bprime_zero=T
   lphi_hom=F, lphi_linear_regime=F
   alpf=60.
