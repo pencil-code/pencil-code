@@ -125,13 +125,13 @@ module Special
 !
   namelist /special_init_pars/ &
       initspecial, phi0, dphi0, axionmass, eps, ascale_ini, &
-      c_light_axion, lambda_axion, amplphi, ampldphi, lno_noise_phi, lno_noise_dphi, &
+      lem_backreact, c_light_axion, lambda_axion, amplphi, ampldphi, lno_noise_phi, lno_noise_dphi, &
       kx_phi, ky_phi, kz_phi, phase_phi, width, offset, &
       initpower_phi, initpower2_phi, cutoff_phi, kgaussian_phi, kpeak_phi, &
       initpower_dphi, initpower2_dphi, cutoff_dphi, kpeak_dphi, &
       ncutoff_phi, lscale_tobox, Hscript0, Hscript_choice, infl_v, lflrw, &
-      lrho_chi, scale_rho_chi_Heqn, amplee_BD_prefactor, deriv_prefactor_ee
-
+      lrho_chi, scale_rho_chi_Heqn, amplee_BD_prefactor, deriv_prefactor_ee, &
+      echarge_type
 !
   namelist /special_run_pars/ &
       initspecial, phi0, dphi0, axionmass, eps, ascale_ini, &
@@ -237,10 +237,22 @@ module Special
         call get_shared_variable('lallow_bprime_zero',lallow_bprime_zero)
         call get_shared_variable('mass_chi',mass_chi)
       else
-        if (.not.associated(alpf)) allocate(alpf,lphi_hom,lphi_linear_regime)
+        if (.not.associated(alpf)) allocate(alpf,lphi_hom,lphi_linear_regime, &
+          sigE_prefactor, sigB_prefactor, lcollinear_EB, lcollinear_EB_aver, &
+          lnoncollinear_EB, lnoncollinear_EB_aver, lmass_suppression, &
+          lallow_bprime_zero, mass_chi)
         alpf=0.
         lphi_hom=.false.
         lphi_linear_regime=.false.
+        sigE_prefactor=0.
+        sigB_prefactor=0.
+        lcollinear_EB=.false.
+        lcollinear_EB_aver=.false.
+        lnoncollinear_EB=.false.
+        lnoncollinear_EB_aver=.false.
+        lmass_suppression=.false.
+        lallow_bprime_zero=.false.
+        mass_chi=0.
       endif
 !
       call keep_compiler_quiet(f)
