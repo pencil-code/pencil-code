@@ -294,13 +294,24 @@ module Forcing
           lmhd_forcing=lmagnetic_forcing.and.lhydro_forcing .or. &
                        ltestfield_forcing.and.ltestflow_forcing
         endif 
+!
+!  For magnetic forcing, set ifff, iffx, iffy, and iffz indices
+!  to those of the vector potential.
+!
         if (lmagnetic_forcing) then
           ifff=iaa; iffx=iax; iffy=iay; iffz=iaz
         endif 
+!
+!  Neutral velocity forcing.
+!
         if (lneutral_forcing) then
           if (iuun==0) call fatal_error("lneutral_forcing","uun==0")
           ifff=iuun; iffx=iunx; iffy=iuny; iffz=iunz
         endif 
+!
+!  Standard velocity forcing. If also lmagnetic_forcing=T, we set
+!  the second set of indices.
+!
         if (lhydro_forcing) then
           if (lmagnetic_forcing) then
             i2fff=iuu; i2ffx=iux; i2ffy=iuy; i2ffz=iuz
@@ -312,13 +323,16 @@ module Forcing
             endif
           endif
         endif
+!
+!  Possible error detetion.
+!
         if (.not.(lmagnetic_forcing.or.lhydro_forcing.or.lneutral_forcing.or. &
                   ltestfield_forcing.or.ltestflow_forcing)) &
           call fatal_error("initialize_forcing","No forcing function set")
-        
+!
         if (ldebug) print*,'initialize_forcing: ifff=',ifff
 !
-!  check whether we want constant forcing at each timestep,
+!  Check whether we want constant work term at each timestep,
 !  in which case lwork_ff is set to true.
 !
         if (work_ff/=0.) then
@@ -328,12 +342,12 @@ module Forcing
         endif
       endif
 !
-!  initialize location to location_fixed
+!  Initialize location to location_fixed.
 !
       location=location_fixed(:,1)
       location2=location_fixed(:,2)
 !
-!  vertical profiles for amplitude and helicity of the forcing
+!  Vertical profiles for amplitude and helicity of the forcing
 !  default is constant profiles for rms velocity and helicity.
 !
       if (iforce_profile=='nothing') then
@@ -367,7 +381,7 @@ module Forcing
           profz_hel(n)= -1.+2.*step(z(n),equator-ck_equator_gap,ck_gap_step)
         enddo
 !
-!  step function change in intensity of helicity at zff_hel
+!  Step function change in intensity of helicity at zff_hel.
 !
       elseif (iforce_profile=='step_ampl=z') then
         profx_ampl=1.; profx_hel=1.
@@ -377,7 +391,7 @@ module Forcing
           profz_ampl(n)=step(z(n),zff_hel,width_ff)
         enddo
 !
-!  sign change of helicity proportional to cosy
+!  sign change of helicity proportional to cosy.
 !
       elseif (iforce_profile=='equator_hel=cosy') then
         profx_ampl=1.; profx_hel=1.
@@ -387,7 +401,7 @@ module Forcing
         enddo
         profz_ampl=1.; profz_hel=1.
 !
-! step function profile
+!  step function profile.
 !
       elseif (iforce_profile=='equator_hel=step') then
         profx_ampl=1.; profx_hel=1.
@@ -402,7 +416,7 @@ module Forcing
       elseif (iforce_profile=='equator_hel=z') then
         call fatal_error("initialize_forcing","use 'equator_hel=z/L' instead of 'equator_hel=z'")
 !
-!  Linear profile of helicity, normalized by ztop (or -zbot, if it is bigger)
+!  Linear profile of helicity, normalized by ztop (or -zbot, if it is bigger).
 !
       elseif (iforce_profile=='equator_hel=z/L') then
         profx_ampl=1.; profx_hel=1.
@@ -2134,17 +2148,21 @@ module Forcing
             do j=1,3
               if (lforce_always_all_compomemts .or. lactive_dimension(j)) then
 !
-!  Primary forcing function: assemble here forcing_rhs(:,j).
+!  Primary forcing function: assemble here forcing_rhs(:,j) and forcing_rhs_old.
 !  Add here possibility of periodic forcing proportional to cos(om*t).
-!  By default, omega_ff=0.
+!  By default, omega_ff=0, so cos(omega_ff*t)=1.
 !
                 forcing_rhs(:,j) = force_ampl*fda(j)*cos(omega_ff*t) &
                                   *real(cmplx(coef1(j),profx_hel*profyz_hel_coef2(j))*fxyz)
-
+!
+!  Compressive contributions to forcing when qforce/=0.
+!
                 if (qforce/=0.) &
                   forcing_rhs_old(:,j) = force_ampl*fda_old(j)*cos(omega_ff*t) &
                                         *real(cmplx(coef1(j),profx_hel*profyz_hel_coef2(j))*fxyz_old)
-
+!
+!  Setting here forcing_rhs2 and forcing_rhs2_old (when lmhd_forcing=T).
+!
                 if (lmhd_forcing) then
                   forcing_rhs2(:,j) = force_ampl*fda2(j)*cos(omega_ff*t) & 
                                      *real(cmplx(coef1b(j),profx_hel*profyz_hel_coef2b(j))*fxyz2)
@@ -2166,11 +2184,13 @@ module Forcing
                                           *real(cmplx(coef1b(j),profx_hel*profyz_hel_coef2b(j))*fxyz2_old)
                 endif
 !
-!  assemble new combination
+!  Assemble new combination (if qforce/=0).
 !
                 if (qforce/=0.) forcing_rhs(:,j) = pforce*forcing_rhs(:,j) + qforce*forcing_rhs_old(:,j)
 !
-! put force into auxiliary variable, if requested
+!  Put force into auxiliary variable, if requested.
+!  Note: iff is not to be confused with ifff. The latter is the variable
+!  that is to be forced.
 !
                 if (lff_as_aux) f(l1:l2,m,n,iff+j-1) = f(l1:l2,m,n,iff+j-1)+forcing_rhs(:,j)
 !
@@ -2193,9 +2213,12 @@ module Forcing
 !  Added possibility of linearly ramping down the forcing in time.
 !
                 if (ifff/=0) then
-
                   jf=j+ifff-1
                   j2f=j+i2fff-1
+!
+!  Save the value of the variable before forcing is applied.
+!
+                  variable_rhs=f(l1:l2,m,n,iffx:iffz)
 !
                   if (lhelical_test) then
                     f(l1:l2,m,n,jf)=forcing_rhs(:,j)
@@ -2208,7 +2231,7 @@ module Forcing
                     endif
 !
 !  Allow here for forcing both in u and in b=curla. In that case one sets
-!  lhydro_forcing=T and lmagnetic_forcing=T.
+!  lhydro_forcing=T and lmagnetic_forcing=T (see above).
 !
                     if (lmhd_forcing) then 
                       f(l1:l2,m,n,j2f)=f(l1:l2,m,n,j2f)+forcing_rhs2(:,j)*force2_scl
@@ -2241,10 +2264,13 @@ module Forcing
                     f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)*force2_scl
                   endif
                 endif
+              else
+                forcing_rhs(:,j)=0.
+                call fatal_error('forcing_hel','AB: remove this if forcing_rhs=0 was indeed needed')
               endif
             enddo
 !
-!  Forcing with enhanced xy correlation.
+!  Forcing with enhanced xy correlation (if lxycorr_forcing=T).
 !  Can only come outside the previous j loop.
 !  This is apparently not yet applied to testfield or testflow forcing.
 !
@@ -2258,7 +2284,7 @@ module Forcing
               enddo
             endif
 !
-!  Sum up.
+!  Diagnostics of forcing correlations with momentum of vector potential (for magnetic forcing)
 !
             if (lout) then
               if (idiag_bfm/=0 .or. idiag_jfm/=0 .or. idiag_rufm/=0 .or. &
@@ -2273,34 +2299,49 @@ module Forcing
                   rho=rho0
                 endif
 !
-!  Evaluate the various choices.
+!  Evaluate the various choices. Note that we are still in the mn loop.
 !
                 if (idiag_rufm/=0) then
 !
 !  Compute rhs.
 !
-                  variable_rhs=f(l1:l2,m,n,iffx:iffz)          !MR: here already updated!
+!                 variable_rhs=f(l1:l2,m,n,iffx:iffz)          !MR: here already updated!
+!AB: the line above should now be deleted, after having added it now just after
+!    my comment "Save the value of the variable before forcing is applied."
+!
                   call multsv_mn(rho/dt,forcing_rhs,force_all)
                   call dot_mn(variable_rhs,force_all,ruf)
                   call sum_mn_name(ruf,idiag_rufm)
                 endif
-
+!
+!  Components of forcing matrix, rho*ui*fj for (i,j)=(1,1), (1,2), (2,2), (3,2), (3,3).
+!  But this matrix is not symmetric, so the remaining 3 components may also be of interest.
+!  Also, of course, actual work terms would need to be divided by dt.
+!
                 if (idiag_ruxfxm/=0) call sum_mn_name(rho*f(l1:l2,m,n,iux)*forcing_rhs(:,1),idiag_ruxfxm)
                 if (idiag_ruxfym/=0) call sum_mn_name(rho*f(l1:l2,m,n,iux)*forcing_rhs(:,2),idiag_ruxfym)
                 if (idiag_ruyfxm/=0) call sum_mn_name(rho*f(l1:l2,m,n,iuy)*forcing_rhs(:,1),idiag_ruyfxm)
                 if (idiag_ruyfym/=0) call sum_mn_name(rho*f(l1:l2,m,n,iuy)*forcing_rhs(:,2),idiag_ruyfym)
                 if (idiag_ruzfzm/=0) call sum_mn_name(rho*f(l1:l2,m,n,iuz)*forcing_rhs(:,3),idiag_ruzfzm)
+!
+!  Compute magnetic helicity injection in cases of magnetic forcing.
+!  Need to divide by dt to get the correct helicity generation term.
+!
                 if (idiag_bfm/=0) then
                   if (iaa==0) call fatal_error('forcing_hel','iaa=0 is not ok for computing bb')
                   call curl(f,iaa,bb)
                   call dot_mn(bb,forcing_rhs,bdotf)
-                  call sum_mn_name(bdotf,idiag_bfm)
+                  call sum_mn_name(bdotf/dt,idiag_bfm)
                 endif
+!
+!  Compute magnetic energy injection in cases of magnetic forcing.
+!  Need to divide by dt to get the correct energy generation term.
+!
                 if (idiag_jfm/=0) then
                   if (iaa==0) call fatal_error('forcing_hel','iaa=0 is not ok for computing jj')
                   call del2v_etc(f,iaa,curlcurl=jj)
                   call dot_mn(jj,forcing_rhs,jdotf)
-                  call sum_mn_name(jdotf,idiag_jfm)
+                  call sum_mn_name(jdotf/dt,idiag_jfm)
                 endif
               endif
             endif
@@ -2564,6 +2605,8 @@ module Forcing
           fz = fz*profz_k
         endif
 !
+!  Debug output for ip<=5.
+!
         if (ip<=5) then
           print*,'forcing_hel_kprof: fx=',fx
           print*,'forcing_hel_kprof: fy=',fy
@@ -2620,6 +2663,7 @@ module Forcing
             endif
             if (lwork_ff) force_ampl=calc_force_ampl(f,fx,fy,fz,profy_ampl(m)*profz_ampl(n) &
                                                      *cmplx(coef1,profy_hel(m)*profz_hel(n)*coef2))
+!
 !  Apply forcing only into direction of an active dimension, unless we have
 !  lforce_always_all_compomemts, in which case we apply forcing anyway.
 !
@@ -2644,8 +2688,10 @@ module Forcing
                   else
                     f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)*force1_scl
 !
-!  allow here for forcing both in u and in b=curla. In that case one sets
-!  lhydro_forcing=T and lmagnetic_forcing=T.
+!  Allow here for forcing both in u and in b=curla. In that case one sets
+!  lhydro_forcing=T and lmagnetic_forcing=T. For lcrosshel_forcing=T, one uses
+!  the same forcing as for u, but for lmhd_forcing=T, one uses a separare one.
+!  In both cases, the index j2f refers to this second vector field.
 !
                     if (lmhd_forcing) then
                       f(l1:l2,m,n,j2f)=f(l1:l2,m,n,j2f)+forcing_rhs2(:,j)*force2_scl
