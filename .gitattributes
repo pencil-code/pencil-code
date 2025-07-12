@@ -2930,6 +2930,14 @@ samples/Pencil-MagIC/xyaver.in -text
 samples/Pencil-MagIC/zaver.in -text
 samples/README -text
 samples/README.md -text
+samples/Schwinger/NEVERLOCK -text
+samples/Schwinger/README.md -text
+samples/Schwinger/print.in -text
+samples/Schwinger/reference.out -text
+samples/Schwinger/run.in -text
+samples/Schwinger/src/Makefile.local -text
+samples/Schwinger/src/cparam.local -text
+samples/Schwinger/start.in -text
 samples/ascalar/.log -text
 samples/ascalar/.pc_build_history -text
 samples/ascalar/k.dat -text

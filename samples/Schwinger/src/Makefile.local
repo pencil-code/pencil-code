@@ -1,0 +1,25 @@
+###                             -*-Makefile-*-
+### Makefile for modular pencil code -- local part
+### Included by `Makefile'
+###
+
+MPICOMM=mpicomm
+GRAVITY=nogravity
+FORCING=noforcing
+ENTROPY=noentropy
+MAGNETIC=magnetic
+VISCOSITY=noviscosity
+HYDRO=nohydro
+EOS=noeos
+DENSITY=nodensity
+FOURIER=fourier_fftpack
+POWER=power_spectrum
+#SPECIAL = special/lorentz_gauge
+#SPECIAL = special/disp_current
+#SPECIAL = special/backreact_infl special/disp_current special/lorentz_gauge
+SPECIAL = special/backreact_infl special/disp_current #special/gravitational_waves_hTXk
+#SPECIAL = special/chiral_mhd special/gravitational_waves_hTXk
+#SPECIAL =  special/backreact_infl special/gravitational_waves_hTXk
+#SPECIAL =  special/gravitational_waves_hTXk
+#SPECIAL = special/lorentz_gauge
+REAL_PRECISION=double
