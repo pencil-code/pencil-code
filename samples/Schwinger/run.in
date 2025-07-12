@@ -18,7 +18,6 @@
 /
 &backreact_infl_run_pars
   lbackreact_infl=T, ldt_backreact_infl=T
-  echarge_type='erun'
 /
 &disp_current_run_pars
   lmass_suppression=T, mass_chi=1e-2
