@@ -19,7 +19,15 @@ succeeds
 
 ## Comments:
 
+On 13 July 2025, the following changes were added:
+  &backreact_infl_init_pars
+    lcompute_dphi0=F
+  &disp_current_run_pars
+    lapply_Gamma_corr=T, lswitch_off_Gamma=T
+
 in preparation
+ AXEL: lcompute_dphi0, dphi0= T  -1.7263955420569839E-007
+ AXEL: lcompute_dphi0, dphi0= F  -1.6899999999999999E-007
 
 ## Links:
 * http://pencil-code.nordita.org/samples/Schwinger

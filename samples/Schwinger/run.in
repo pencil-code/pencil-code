@@ -20,6 +20,7 @@
   lbackreact_infl=T, ldt_backreact_infl=T
 /
 &disp_current_run_pars
+  lapply_Gamma_corr=T, lswitch_off_Gamma=T
   lmass_suppression=T, mass_chi=1e-2
   luse_scale_factor_in_sigma=T
   lnoncollinear_EB=T, sigB_prefactor=1., sigE_prefactor=1.

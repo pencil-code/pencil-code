@@ -12,6 +12,7 @@
   lscale_tobox=F, lvacuum=F, lohm_evolve=F, learly_set_el_pencil=T
 /
 &backreact_infl_init_pars
+  lcompute_dphi0=F
   lscale_tobox=F, lflrw=T, axionmass=1.06e-6, lrho_chi=T
   initspecial='default', 'Bunch-Davies'
   amplphi=5.0210121e-05, amplee_BD_prefactor=8.3775398e-05, kpeak_phi=50e-6
