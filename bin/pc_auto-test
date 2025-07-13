@@ -132,6 +132,8 @@ my %tests = (
                          2d-tests/eccentricity-decay
                          interstellar
                          supernova-driven-turbulence/1Dhd_init_equidistant
+			 backreact_infl
+			 Schwinger
                      )],
              # Level 3 for now contains all non-canonical tests that run
              # successfully
@@ -211,8 +213,6 @@ my %tests = (
                          1d-tests/solar-atmosphere
                          0d-tests/reactive_particles
                          higgsless
-			 backreact_infl
-			 Schwinger
                      )],
              # Level 7 for now contains all non-canonical tests that
              # start, but don't run successfully
