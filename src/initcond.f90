@@ -6191,7 +6191,7 @@ module Initcond
       use General, only: loptest, roptest
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: i, i1a, i1b, i2a, i2b, ikx, iky, ikz, stat, ik, nk
+      integer :: i, i1a, i1b, i2a, i2b, ikx, iky, ikz, stat, ik, nk, ndim_u, ndim_v
       real, dimension (:,:,:,:), allocatable :: u_re, u_im, v_re, v_im
       real, dimension (:,:,:), allocatable :: k1, r
       real, dimension (:), allocatable :: kx, ky, kz
@@ -6214,13 +6214,15 @@ module Initcond
 !
 !  Complex auxiliary arrary (u_re,u_im) and (v_re,v_im) 
 !
-      allocate(u_re(nx,ny,nz,3),stat=stat)
+      ndim_u=i1b-i1a+1
+      ndim_v=i2b-i2a+1
+      allocate(u_re(nx,ny,nz,ndim_u),stat=stat)
       if (stat>0) call fatal_error('bunch_davies','Could not allocate u_re')
-      allocate(u_im(nx,ny,nz,3),stat=stat)
+      allocate(u_im(nx,ny,nz,ndim_u),stat=stat)
       if (stat>0) call fatal_error('bunch_davies','Could not allocate u_im')
-      allocate(v_re(nx,ny,nz,3),stat=stat)
+      allocate(v_re(nx,ny,nz,ndim_v),stat=stat)
       if (stat>0) call fatal_error('bunch_davies','Could not allocate v_re')
-      allocate(v_im(nx,ny,nz,3),stat=stat)
+      allocate(v_im(nx,ny,nz,ndim_v),stat=stat)
       if (stat>0) call fatal_error('bunch_davies','Could not allocate v_im')
 !
 !  One-dimensional wavevector arrays.
@@ -6313,8 +6315,6 @@ module Initcond
         u_im(:,:,:,i)=+ampl*v_im(:,:,:,i)/sqrt(2.*k1)*.5*(1.-tanh(ksteepness*(k1/kpeak-1.)))
         v_re(:,:,:,i)=-k1*u_im(:,:,:,i)
         v_im(:,:,:,i)=+k1*u_re(:,:,:,i)
-print*,'AXEL2a=',iproc,i,sum(u_re(:,:,:,i)**2+u_im(:,:,:,i)**2)
-print*,'AXEL2b=',iproc,i,sum(v_re(:,:,:,i)**2+v_im(:,:,:,i)**2)
       enddo
 !
 !  Fourier transform to real space.
@@ -6322,11 +6322,6 @@ print*,'AXEL2b=',iproc,i,sum(v_re(:,:,:,i)**2+v_im(:,:,:,i)**2)
       do i=1,1+i1b-i1a
         call fft_xyz_parallel(u_re(:,:,:,i),u_im(:,:,:,i),linv=.true.)
         call fft_xyz_parallel(v_re(:,:,:,i),v_im(:,:,:,i),linv=.true.)
-print*,'AXEL3a=',iproc,i,sum(u_re(:,:,:,i)**2+u_im(:,:,:,i)**2)/nwgrid
-print*,'AXEL4a=',iproc,i,sum(u_re(:,:,:,i)**2)/nxgrid
-print*,'AXEL3b=',iproc,i,sum(v_re(:,:,:,i)**2+v_im(:,:,:,i)**2)/nwgrid
-print*,'AXEL4b=',iproc,i,sum(v_re(:,:,:,i)**2)/nxgrid
-print*,'AXEL5 =',iproc,nwgrid
       enddo
 !
 !  Use real parts of u and v for A and E.

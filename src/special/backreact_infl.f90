@@ -108,11 +108,9 @@ module Special
   real, target :: ddotam_all
   real, pointer :: alpf
   real, pointer :: sigE_prefactor, sigB_prefactor, mass_chi
-! real, dimension (:), pointer :: eta_xtdep
   real, dimension (nx) :: dt1_special
-  !logical :: lbackreact_infl=.true., lem_backreact=.true., lzeroHubble=.false.
-!AB: lbackreact_infl is not used!!
-  logical :: lem_backreact=.true., lzeroHubble=.false.
+  logical :: lcompute_dphi0=.true.
+  logical :: lbackreact_infl=.true., lem_backreact=.true., lzeroHubble=.false.
   logical :: lscale_tobox=.true.,ldt_backreact_infl=.true., lconf_time=.true.
   logical :: lskip_projection_phi=.false., lvectorpotential=.false., lflrw=.false.
   logical :: lrho_chi=.false., lno_noise_phi=.false., lno_noise_dphi=.false.
@@ -125,7 +123,8 @@ module Special
 !
   namelist /special_init_pars/ &
       initspecial, phi0, dphi0, axionmass, eps, ascale_ini, &
-      lem_backreact, c_light_axion, lambda_axion, amplphi, ampldphi, lno_noise_phi, lno_noise_dphi, &
+      lcompute_dphi0, lem_backreact, &
+      c_light_axion, lambda_axion, amplphi, ampldphi, lno_noise_phi, lno_noise_dphi, &
       kx_phi, ky_phi, kz_phi, phase_phi, width, offset, &
       initpower_phi, initpower2_phi, cutoff_phi, kgaussian_phi, kpeak_phi, &
       initpower_dphi, initpower2_dphi, cutoff_dphi, kpeak_dphi, &
@@ -135,8 +134,8 @@ module Special
 !
   namelist /special_run_pars/ &
       initspecial, phi0, dphi0, axionmass, eps, ascale_ini, &
-      !lbackreact_infl, lem_backreact, c_light_axion, lambda_axion, Vprime_choice, &
-      lem_backreact, c_light_axion, lambda_axion, Vprime_choice, &
+      lbackreact_infl, lem_backreact, c_light_axion, lambda_axion, Vprime_choice, &
+      !lem_backreact, c_light_axion, lambda_axion, Vprime_choice, &
       lzeroHubble, ldt_backreact_infl, Ndiv, Hscript0, Hscript_choice, infl_v, &
       lflrw, lrho_chi, scale_rho_chi_Heqn, echarge_type
 !
@@ -309,6 +308,7 @@ module Special
             Vpotential=.5*axionmass2*phi0**2
             Hubble_ini=sqrt(8.*pi/3.*(.5*axionmass2*phi0**2*ascale_ini**2))
 !            dphi0=-ascale_ini*sqrt(2*eps/3.*Vpotential)
+            if (lcompute_dphi0) dphi0=-sqrt(1/(12.*pi))*axionmass*ascale_ini
            ! dphi0=-sqrt(1/(12.*pi))*axionmass*ascale_ini
            ! dphi0=-sqrt(16*pi/3)*axionmass*ascale_ini
             tstart=-1/(ascale_ini*Hubble_ini)
@@ -572,7 +572,11 @@ module Special
       if (lflrw) then
         df_ode(iinfl_lna)=df_ode(iinfl_lna)+Hscript
       endif
-      rho_chi=f_ode(iinfl_rho_chi)
+      if (lrho_chi) then
+        rho_chi=f_ode(iinfl_rho_chi)
+      else
+        rho_chi=0.
+      endif
 !
 !  Energy density of the charged particles.
 !  This is currently only done for <sigE>*<E^2>, and not for <sigE*E^2>.

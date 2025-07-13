@@ -49,7 +49,7 @@ module Special
   real :: relhel_a0=0.0, kgaussian_a0=0.0, eta_ee=0.0
   real :: sigE_prefactor=1., sigB_prefactor=1.
   real :: weight_longitudinalE=2.0, mass_chi=0.
-  logical :: luse_scale_factor_in_sigma=.false.
+  logical :: luse_scale_factor_in_sigma=.false., lapply_Gamma_corr=.true.
   logical, pointer :: lohm_evolve
   real, pointer :: eta, Hscript, echarge, sigEm_all, sigBm_all
   integer :: iGamma=0, ia0=0, idiva_name=0, ieedot=0, iedotx=0, iedoty=0, iedotz=0
@@ -65,7 +65,6 @@ module Special
   logical :: lswitch_off_divJ=.false., lswitch_off_Gamma=.false., lmass_suppression=.false.
   character(len=labellen) :: inita0='zero'
   character (len=labellen), dimension(ninit) :: initee='nothing'
-!
   namelist /special_init_pars/ &
     initee, inita0, alpf, &
     ampl_ex, ampl_ey, ampl_ez, ampl_a0, &
@@ -95,7 +94,7 @@ module Special
     lnoncollinear_EB, lnoncollinear_EB_aver, luse_scale_factor_in_sigma, &
     lcollinear_EB, lcollinear_EB_aver, sigE_prefactor, sigB_prefactor, &
     reinitialize_ee, initee, rescale_ee, lmass_suppression, mass_chi, &
-    lallow_bprime_zero
+    lallow_bprime_zero, lapply_Gamma_corr
 !
 ! Declare any index variables necessary for main or
 !
@@ -487,7 +486,10 @@ module Special
 !  Replace p%curlb by the combination -p%del2a+p%gGamma.
 !
       if (llongitudinalE) then
-        p%curlb=-p%del2a+p%gGamma
+        call div(f,iee,p%divE)
+        call grad(f,iGamma,p%gGamma)
+        if (lapply_Gamma_corr) p%curlb=-p%del2a+p%gGamma
+        if (lsolve_chargedensity) p%rhoe=f(l1:l2,m,n,irhoe)
       endif
 !
 ! el and e2 (note that this is called after magnetic, where sigma is computed)
@@ -668,10 +670,14 @@ module Special
       end function get_fppf
 !***********************************************************************
       subroutine calc_axion_term(p,dst)
+!
+!  Compute -(alpha/f)*B.gradphi axion term (when alpha/f/=0).
+!
       use Sub
+!
       type(pencil_case) :: p
       real, dimension(nx), intent(OUT) :: dst
-
+!
       if (lphi_hom) then
         dst=0.
         weight_longitudinalE=0.
@@ -739,16 +745,13 @@ module Special
 !
       call calc_axion_term(p,tmp)
 !
-!  Solve for Gamma and possibly for charge density.
+!  Solve for Gamma (unless lswitch_off_Gamma) and possibly for charge density.
 !  Add to the existing tmp and update df(l1:l2,m,n,irhoe).
 !
       if (llongitudinalE) then
-        if (lsolve_chargedensity) then
-          tmp=tmp+f(l1:l2,m,n,irhoe)
-          if (.not.lswitch_off_Gamma) df(l1:l2,m,n,iGamma)=df(l1:l2,m,n,iGamma) &
-            -(1.-weight_longitudinalE)*p%divE-weight_longitudinalE*tmp
-          df(l1:l2,m,n,irhoe)=df(l1:l2,m,n,irhoe)-p%divJ
-        endif
+        if (lsolve_chargedensity) tmp=tmp+f(l1:l2,m,n,irhoe)
+        if (.not.lswitch_off_Gamma) df(l1:l2,m,n,iGamma)=df(l1:l2,m,n,iGamma) &
+          -(1.-weight_longitudinalE)*p%divE-weight_longitudinalE*tmp
       endif
 !
 !  solve: dE/dt = curlB - ...
