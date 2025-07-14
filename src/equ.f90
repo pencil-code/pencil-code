@@ -1747,7 +1747,9 @@ module Equ
       if(itorder /= 1) then
           call fatal_error('test_rhs_gpu','Need itorder to be 1!')
       endif
+      call copy_farray_from_GPU(f,.true.)
       f_copy = f
+      ldiagnos = .false.
       do itsub = 1,1
         call before_boundary_gpu(f,lrmv,itsub,t)
         call rhs_gpu(f,itsub)
@@ -1770,7 +1772,7 @@ module Equ
         !if (itsub == 5) f_copy(l1:l2,m1:m2,n1:n2,1:mvar) = f_beta(l1:l2,m1:m2,n1:n2,1:mvar)
       enddo
 
-      call copy_farray_from_GPU(f)
+      call copy_farray_from_GPU(f,.true.)
       f_diff = abs((f_copy-f)/(f_copy+tini))
       if (nxgrid == 1 .and. nygrid == 1) then
         print*,"Max diff: ",maxval(f_diff(l1,m1,:,1:mvar))
@@ -1799,7 +1801,7 @@ module Equ
         print*,"Max comp diff: ",maxval(f_diff(l1:l2,m1:m2,n1:n2,1:mvar))
         print*,"Max comp diff loc: ",maxloc(f_diff(l1:l2,m1:m2,n1:n2,1:mvar))
 
-        do i = 1,mfarray
+        do i = 1,mvar
           print*,"Max comp diff for ",i,": ",maxval(f_diff(l1:l2,m1:m2,n1:n2,i))
           print*,"Avg comp diff for ",i,": ",sum(f_diff(l1:l2,m1:m2,n1:n2,i))/(nx*ny*nz)
           print*,"Max comp loc  for ",i,": ",maxloc(f_diff(l1:l2,m1:m2,n1:n2,i))

@@ -6,9 +6,9 @@ Kernel get_current_total_mass(bool lrmv)
 	if(lrmv && AC_lconserve_total_mass__mod__density && AC_total_mass__mod__density > 0.0)
 	{
 		rho = (AC_ldensity_nolog__mod__cdata) ? value(RHO) : exp(LNRHO);
-		integration_weight =  AC_dvol_x[vertexIdx.x]
-			            * AC_dvol_y[vertexIdx.y]
-			            * AC_dvol_z[vertexIdx.z]
+		integration_weight =  AC_dvol_x__mod__cdata[vertexIdx.x]
+			            * AC_dvol_y__mod__cdata[vertexIdx.y]
+			            * AC_dvol_z__mod__cdata[vertexIdx.z]
 		reduce_sum(rho*integration_weight,AC_current_total_mass)
 	}
 }

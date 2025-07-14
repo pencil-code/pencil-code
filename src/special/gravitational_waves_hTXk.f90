@@ -298,25 +298,27 @@ module Special
 !  May want to do this only when Fourier transform is enabled.
 !
       if (lggTX_as_aux) then
-        call farray_register_auxiliary('ggT',iggT)
-        call farray_register_auxiliary('ggX',iggX)
-        call farray_register_auxiliary('ggTim',iggTim)
-        call farray_register_auxiliary('ggXim',iggXim)
+        call farray_register_auxiliary('ggT',iggT,on_gpu=lgpu)
+        call farray_register_auxiliary('ggX',iggX,on_gpu=lgpu)
+        call farray_register_auxiliary('ggTim',iggTim,on_gpu=lgpu)
+        call farray_register_auxiliary('ggXim',iggXim,on_gpu=lgpu)
       endif
 !
       if (lhhTX_as_aux) then
-        call farray_register_auxiliary('hhT',ihhT)
-        call farray_register_auxiliary('hhX',ihhX)
-        call farray_register_auxiliary('hhTim',ihhTim)
-        call farray_register_auxiliary('hhXim',ihhXim)
+        call farray_register_auxiliary('hhT',ihhT,on_gpu=lgpu)
+        call farray_register_auxiliary('hhX',ihhX,on_gpu=lgpu)
+        call farray_register_auxiliary('hhTim',ihhTim,on_gpu=lgpu)
+        call farray_register_auxiliary('hhXim',ihhXim,on_gpu=lgpu)
       endif
 !
       if (lStress_as_aux) then
+        !TP: moved registration of Str first since the other ones are not 
+        !    necessarily used on the GPU side and having it come first helps
+        call farray_register_auxiliary('Str',iStress_ij,array=6,on_gpu=lgpu)
         call farray_register_auxiliary('StT',iStressT)
         call farray_register_auxiliary('StX',iStressX)
         call farray_register_auxiliary('StTim',iStressTim)
         call farray_register_auxiliary('StXim',iStressXim)
-        call farray_register_auxiliary('Str',iStress_ij,array=6)
       endif
 !
 !  To get hT and hX in real space, invoke lreal_space_hTX_as_aux
@@ -3369,9 +3371,6 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
     call copy_addr(delk,p_par(49))
     call copy_addr(tdelk,p_par(50))
     call copy_addr(tau_delk,p_par(51))
-    call copy_addr(horndeski_alpm_eff,p_par(52))
-    call copy_addr(horndeski_alpm_eff2,p_par(53))
-    call copy_addr(horndeski_alpt_eff,p_par(54))
     call copy_addr(slope_linphase_in_stress,p_par(55))
     call copy_addr(appa_om,p_par(56))
     call copy_addr(k_in_stress,p_par(57))
@@ -3380,6 +3379,16 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
     call copy_addr(enum_idelkt,p_par(59)) ! int
     call string_to_enum(enum_ihorndeski_time,ihorndeski_time)
     call copy_addr(enum_ihorndeski_time,p_par(60)) ! int
+    call copy_addr(horndeski_alpt,p_par(61))
+    call copy_addr(horndeski_alpm,p_par(62))
+    call copy_addr(scale_factor0,p_par(63))
+    call copy_addr(horndeski_alpt_exp,p_par(64))
+    call copy_addr(horndeski_alpm_exp,p_par(65))
+    call copy_addr(lread_scl_factor_file_exists,p_par(66)) ! bool
+    call copy_addr(omm0,p_par(67))
+    call copy_addr(h0,p_par(68))
+    call copy_addr(horndeski_alpm_prime,p_par(69))
+
 
     endsubroutine pushpars2c
 !***********************************************************************

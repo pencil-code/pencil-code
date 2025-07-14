@@ -1565,19 +1565,25 @@ call copy_addr(omega_corot,p_par(1283))
 call copy_addr(lambda5,p_par(1284))
 call copy_addr(ipotself,p_par(1285)) ! int
 call copy_addr(igpotselfx,p_par(1286)) ! int
-call copy_addr(ihht,p_par(1287)) ! int
-call copy_addr(ihhx,p_par(1288)) ! int
+
+
 call copy_addr(iggt,p_par(1290)) ! int
 call copy_addr(iggx,p_par(1291)) ! int
-call copy_addr(istresst,p_par(1292)) ! int
-call copy_addr(istressx,p_par(1293)) ! int
-call copy_addr(istress_ij,p_par(1294)) ! int
+call copy_addr(iggtim,p_par(1297)) ! int
+call copy_addr(iggxim,p_par(1298)) ! int
+
+call copy_addr(ihht,p_par(1287)) ! int
+call copy_addr(ihhx,p_par(1288)) ! int
 call copy_addr(ihhtim,p_par(1295)) ! int
 call copy_addr(ihhxim,p_par(1296)) ! int
-call copy_addr(iggtim,p_par(1296)) ! int
-call copy_addr(iggxim,p_par(1297)) ! int
-call copy_addr(istresstim,p_par(1298)) ! int
-call copy_addr(istressxim,p_par(1299)) ! int
+
+call copy_addr(istress_ij,p_par(1294)) ! int
+
+call copy_addr(istresst,p_par(1292)) ! int
+call copy_addr(istressx,p_par(1293)) ! int
+call copy_addr(istresstim,p_par(1299)) ! int
+call copy_addr(istressxim,p_par(1300)) ! int
+
 call copy_addr(tstart,p_par(1302))
 call copy_addr(iunx,p_par(1303)) ! int
 call copy_addr(iuny,p_par(1304)) ! int
@@ -1604,6 +1610,14 @@ else
 endif
 call copy_addr(iglobal_glntt,p_par(1311)) ! int
 call copy_addr(lbidiagonal_derij,p_par(1312)) ! bool
+
+call copy_addr(n_odevars,p_par(1313)) ! int
+call copy_addr(f_ode,p_par(1314)) ! (n_odevars)
+
+call copy_addr(lread_scl_factor_file,p_par(1315)) ! bool
+
+call copy_addr(hp_target,p_par(1316))
+call copy_addr(appa_target,p_par(1317))
 
 endsubroutine pushpars2c
 !***********************************************************************

@@ -1149,6 +1149,18 @@ extern "C" void beforeBoundaryGPU(bool lrmv, int isubstep, double t)
 /***********************************************************************************************/
 extern "C" void afterTimeStepGPU()
 {
+  	if(acDeviceGetInput(acGridGetDevice(), AC_step_num) == PC_FIRST_SUB_STEP)
+	{
+#if LGRAVITATIONAL_WAVES_HTXK
+        	acDeviceFFTR2Planar(acGridGetDevice(), acGetF_STRESS_0(),acGetAC_tpq_re__mod__special_0(),acGetAC_tpq_im__mod__special_0());
+        	acDeviceFFTR2Planar(acGridGetDevice(), acGetF_STRESS_1(),acGetAC_tpq_re__mod__special_1(),acGetAC_tpq_im__mod__special_1());
+        	acDeviceFFTR2Planar(acGridGetDevice(), acGetF_STRESS_2(),acGetAC_tpq_re__mod__special_2(),acGetAC_tpq_im__mod__special_2());
+        	acDeviceFFTR2Planar(acGridGetDevice(), acGetF_STRESS_3(),acGetAC_tpq_re__mod__special_3(),acGetAC_tpq_im__mod__special_3());
+        	acDeviceFFTR2Planar(acGridGetDevice(), acGetF_STRESS_4(),acGetAC_tpq_re__mod__special_4(),acGetAC_tpq_im__mod__special_4());
+        	acDeviceFFTR2Planar(acGridGetDevice(), acGetF_STRESS_5(),acGetAC_tpq_re__mod__special_5(),acGetAC_tpq_im__mod__special_5());
+		acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_gravitational_waves_solve_and_stress),1);
+#endif
+	}
 	acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_after_timestep),1);
 }
 /***********************************************************************************************/
@@ -1249,7 +1261,7 @@ void copyFarray(AcReal* f)
 	  acDeviceStoreVertexBuffer(acGridGetDevice(),STREAM_DEFAULT,VertexBufferHandle(i),dst);
   }
   acGridSynchronizeStream(STREAM_ALL);
-  //TP: Astaroth does allocate ghost zones for 1d simulations, and unlike for xy  we cannot simply offset into the farray so have to manually copy the values
+  //TP: Astaroth does not allocate ghost zones for inactive dimensions for 1d and 2d simulations, and unlike for xy  we cannot simply offset into the farray so have to manually copy the values
   //    This is fine since 1d simulations are anyways mainly for testing
   if(dimensionality == 1)
   {

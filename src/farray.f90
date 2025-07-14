@@ -170,7 +170,7 @@ module FArrayManager
       logical, optional, intent(in) :: on_gpu
 !
       integer :: vartype
-      integer :: vtxbuf_index
+      integer :: vtxbuf_index,i
 !
       if (loptest(communicated)) then
         vartype = iFARRAY_TYPE_COMM_AUXILIARY
@@ -193,6 +193,16 @@ module FArrayManager
           vtxbuf_index = vtxbuf_index+1
         endif
         maux_vtxbuf_index(ivar) = vtxbuf_index
+        if (present(array)) then
+                do i = 1,array-1
+                        maux_vtxbuf_index(ivar+i) = vtxbuf_index+i
+                enddo
+        else if (present(vector)) then
+                do i = 1,vector-1
+                        maux_vtxbuf_index(ivar+i) = vtxbuf_index+i
+                enddo
+        endif
+
       endif
 !
     endsubroutine farray_register_auxiliary
