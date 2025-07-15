@@ -574,7 +574,7 @@ ifneq ($(GPU),nogpu)
       LDFLAGS_LIB = -L astaroth -L astaroth/submodule/build/src/core -L astaroth/submodule/build/src/core/kernels -lastaroth_core -lkernels -l$(LIBGPU_NAME)
       ifneq ($(filter on yes,$(RUNTIME_COMPILATION)),)
         RUNTIME_COMPILATION = on
-        LDFLAGS_LIB += -L astaroth/submodule/build/runtime_compilation -lacc_runtime_compiler
+        LDFLAGS_LIB += -L astaroth/submodule/build/runtime_compilation
       else
         RUNTIME_COMPILATION = off
       endif

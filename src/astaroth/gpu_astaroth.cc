@@ -17,6 +17,7 @@
 #include <sys/resource.h>
 #include <fstream>
 
+
 #define CUDA_ERRCHK(X)
 
 int counter = 0;
@@ -1537,9 +1538,7 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint)
   if (rank==0 && ldebug) printf("memusage after pointer assign= %f MBytes\n", acMemUsage()/1024.);
 #if AC_RUNTIME_COMPILATION
 #include "cmake_options.h"
-  char src_cmake_options[10000];
-  sprintf(src_cmake_options,"%s -DELIMINATE_CONDITIONALS=%s",cmake_options,TRANSPILATION ? "on" : "off");
-  acCompile(src_cmake_options,mesh.info);
+  acCompile(cmake_options,mesh.info);
   acLoadLibrary(rank == 0 ? stderr : NULL,mesh.info);
   acCheckDeviceAvailability();
   acLogFromRootProc(rank, "Done setupConfig && acCompile\n");

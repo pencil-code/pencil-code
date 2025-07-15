@@ -14,6 +14,7 @@ option(SINGLEPASS_INTEGRATION "Enables single pass integration"                 
 option(RUNTIME_COMPILATION    "Enables runtime compilation"                                OFF)
 option(TRANSPILATION          "Tmp flag to make interface compatible with transpiled code" OFF)
 option(TRAINING	              "Using torchfort"						   OFF)
+option(CPU_BUILD              "CPU-only build"                                             OFF)
 
 ## Project settings
 project(astaroth C CXX)
@@ -28,6 +29,12 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # For IDE highlighting (clangd)
+
+if(CPU_BUILD)
+	add_definitions(-DAC_CPU_BUILD=1)
+else()
+	add_definitions(-DAC_CPU_BUILD=0)
+endif()
 
 ## Build type
 if (NOT CMAKE_BUILD_TYPE)
@@ -101,6 +108,7 @@ if (USE_DARDEL)
   include_directories(${MPI_INCLUDE})
   link_directories(${MPI_LIB})
 else()
+  set(MPI_CXX_SKIP_MPICXX ON) # Skip MPI C++ bindings
   find_package(MPI REQUIRED COMPONENTS C)
   include_directories(${MPI_C_INCLUDE_DIRS})
 endif()
