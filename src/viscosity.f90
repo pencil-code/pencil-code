@@ -3040,7 +3040,6 @@ module Viscosity
     use General , only: string_to_enum
 
     integer, parameter :: n_pars=200
-    integer :: i
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call copy_addr(nu,p_par(1))
@@ -3158,9 +3157,7 @@ module Viscosity
     call copy_addr(lvisc_nu_reduce_ddr,p_par(108)) ! bool
     call copy_addr(h_sld_visc,p_par(109))
     call copy_addr(nlf_sld_visc,p_par(110))
-    do i = 1,nvisc_max
-        call string_to_enum(enum_ivisc(i),ivisc(i))
-    enddo
+    call string_to_enum(enum_ivisc,ivisc)
     call copy_addr(enum_ivisc,p_par(111)) ! int (4)
     call copy_addr(lambda_v0b,p_par(112)) 
     call copy_addr(lambda_v1b,p_par(113)) 

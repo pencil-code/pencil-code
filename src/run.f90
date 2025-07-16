@@ -1239,7 +1239,7 @@ subroutine run_start() bind(C)
     integer, pointer :: iglobal_gg_tmp,iglobal_glnTT_tmp
     integer, save :: iglobal_gg,iglobal_glnTT,ierr
     integer(KIND=ikind8), dimension(n_pars) :: p_par
-
+    integer, save, dimension(mcom,2) :: enum_bcx12,enum_bcy12,enum_bcz12
 call copy_addr(ncoarse,p_par(1)) ! int
 call copy_addr(lcoarse,p_par(2)) ! bool
 call copy_addr_dble(unit_magnetic,p_par(4))
@@ -1618,6 +1618,12 @@ call copy_addr(lread_scl_factor_file,p_par(1315)) ! bool
 
 call copy_addr(hp_target,p_par(1316))
 call copy_addr(appa_target,p_par(1317))
+call string_to_enum(enum_bcx12, bcx12)
+call string_to_enum(enum_bcy12, bcy12)
+call string_to_enum(enum_bcz12, bcz12)
+call copy_addr(enum_bcx12,p_par(1318)) ! int (mcom) (2)
+call copy_addr(enum_bcy12,p_par(1319)) ! int (mcom) (2)
+call copy_addr(enum_bcz12,p_par(1320)) ! int (mcom) (2)
 
 endsubroutine pushpars2c
 !***********************************************************************

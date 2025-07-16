@@ -962,6 +962,7 @@ integer, parameter :: enum_dspecial_dt_string = 679
 integer, parameter :: enum_we_need_the_file_a_vs_etaZdat_string = 680
 integer, parameter :: enum_dark_energy_string = 681
 integer, parameter :: enum_no_such_ihorndeski_timeZ__string = 682
+integer, parameter :: enum_pwd = 683
 
 
 endmodule Cparam

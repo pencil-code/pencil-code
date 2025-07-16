@@ -72,6 +72,11 @@ module General
   public :: point_and_get_size, allocate_using_dims
 !$ public :: signal_wait, signal_send, signal_init, get_cpu, set_cpu, omp_single
   public :: string_to_enum
+  interface string_to_enum
+    module procedure string_to_enum_scalar
+    module procedure string_to_enum_1d
+    module procedure string_to_enum_2d 
+  endinterface
 ! 
 !
 !  State and default generator of random numbers.
@@ -6938,7 +6943,7 @@ iloop:do i=1,size(list2)
       end do
     end function
 !***********************************************************************
-    subroutine string_to_enum(dst,src_in)
+    subroutine string_to_enum_scalar(dst,src_in)
 
         integer :: dst
         character(len=*) :: src_in
@@ -8024,11 +8029,35 @@ iloop:do i=1,size(list2)
           dst = enum_dark_energy_string
         case('no such ihorndeski_time: ')
           dst = enum_no_such_ihorndeski_timeZ__string
+        case('pwd')
+          dst = enum_pwd
         case default
           dst = enum_unknown_string_string
         endselect
 
-    endsubroutine string_to_enum
+    endsubroutine string_to_enum_scalar
+!***********************************************************************
+    subroutine string_to_enum_1d(dst,src)
+        integer, dimension(:) :: dst
+        character(len=*), dimension(:) :: src
+
+        integer :: i
+        do i = 1,size(dst)
+                call string_to_enum(dst(i),src(i))
+        enddo
+     endsubroutine string_to_enum_1d
+!***********************************************************************
+    subroutine string_to_enum_2d(dst,src)
+        integer, dimension(:,:) :: dst
+        character(len=*), dimension(:,:) :: src
+
+        integer :: i,j
+        do i = 1,size(dst,1)
+                do j = 1,size(dst,2)
+                        call string_to_enum(dst(i,j),src(i,j))
+                enddo
+        enddo
+     endsubroutine string_to_enum_2d
 !***********************************************************************
 !$  subroutine signal_wait_single(lflag, lvalue)
 !
