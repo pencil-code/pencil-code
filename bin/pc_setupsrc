@@ -450,6 +450,7 @@ link_astaroth_files()
   done
 
   ln -s $srcdir/astaroth/submodule/acc-runtime/stdlib DSL >& /dev/null
+  ln -s $srcdir/astaroth/submodule/acc-runtime/stdlib submodule/acc-runtime >& /dev/null
 
   for file in $to_link
   do

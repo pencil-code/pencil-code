@@ -43,9 +43,9 @@ s/& *$//
 s/dbl_max/DBL_MAX/g 
 s/\.or\./ | /g
 s/\.and\./ & /g
-/const  *int  *nghost *=/ {
+/const *int *nghost *=/ {
 h
-s/const  *int  *nghost *= *\([0-9]*\) *;/#undef NGHOST\n#define NGHOST \1\n#undef STENCIL_ORDER\nhostdefine STENCIL_ORDER (2*NGHOST)\n/
+s/const *int *nghost *= *\([0-9]*\) *;/#undef NGHOST\n#define NGHOST \1\n#undef STENCIL_ORDER\nhostdefine STENCIL_ORDER (2*NGHOST)\n/
 t cont
 b end
 : cont
