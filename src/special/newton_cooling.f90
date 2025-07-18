@@ -142,24 +142,21 @@ module Special
 !
     endsubroutine  init_special
 !***********************************************************************
-    subroutine special_before_boundary(f)
+    subroutine calc_kappar_and_dtau(f)
 !
-!  This subroutine calculates the full potential due to the turbulence.
-!
-!  03-oct-12/wlad: coded
+!  18-jul-25/TP: carved from special_before_boundary
 !
       use EquationOfState, only: cs20,rho0
       use Sub, only: grad,dot
-!
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(nx) :: rho,TT
       real :: TT0,rho01,lnTT0,kappa_cgs,TTdim,rhodim
       integer :: i
+
+      real, dimension(mx,my,mz,mfarray) :: f
 !
       lnTT0=log(cs20*cp1/gamma_m1)
       TT0=exp(lnTT0)
       rho01=1./rho0
-!
       do n=n1,n2; do m=m1,m2
 !
         if (ldensity_nolog) then
@@ -191,6 +188,18 @@ module Special
         dtau(:,m-nghost,n-nghost) = f(l1:l2,m,n,ikappar)*rho*x(l1:l2)/dy_1(m)
 !
       enddo;enddo
+     endsubroutine calc_kappar_and_dtau
+!***********************************************************************
+    subroutine special_before_boundary(f)
+!
+!  This subroutine calculates the full potential due to the turbulence.
+!
+!  03-oct-12/wlad: coded
+!
+!
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+!
+      call calc_kappar_and_dtau(f)
 !
 !  Calculate now opacity
 !
@@ -374,15 +383,10 @@ module Special
       real, intent(out) :: kk
       real :: k,a,b,logkk,logk
 !
-      real, save :: T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11
-      logical, save :: lfirstcall=.true.
+      real, parameter :: T1=132.,T2=170.,T3=375.,T4=390.,&
+                         T5=580. , T6=680. , T7=960. , T8=1570. , T9=3730.,&
+                         T10=1e4, T11=1e5
 !
-      if (lfirstcall) then
-        T1=132. ; T2=170. ; T3=375. ; T4=390.
-        T5=580. ; T6=680. ; T7=960. ; T8=1570. ; T9=3730.
-        T10=1e4; T11=1e5
-        lfirstcall=.false.
-      endif
 !
       if (TT < 0.0)        call inevitably_fatal_error("calc_opacity", "Negative temperature",.true.)
       if (rho < 0.0)       call inevitably_fatal_error("calc_opacity", "Negative density",.true.)
