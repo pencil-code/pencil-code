@@ -30,6 +30,7 @@ module BorderProfiles
   real                :: fac_sqrt_gsum1=1.0
 !
   real, dimension(:,:,:,:), allocatable :: f_init
+  real, dimension (:,:,:),  allocatable :: fsave_init_xy,fsave_init_xz
 !
   logical :: lborder_driving=.false.
   logical :: lborder_quenching=.false.
@@ -242,6 +243,8 @@ module BorderProfiles
       if (lread .and. (border_var=='initial-condition')) then
 
         if (.not.allocated(f_init)) allocate(f_init(mx,my,mz,mvar))
+        if (.not.allocated(fsave_init_xy)) allocate(fsave_init_xy(nx,ny,mvar))
+        if (.not.allocated(fsave_init_xz)) allocate(fsave_init_xz(nx,nz,mvar))
 !
 !  Read the data into an initial condition array f_init that will be saved
 !
@@ -261,6 +264,9 @@ module BorderProfiles
         endif
         call input_snap_finalize
         lread=.false.
+
+        fsave_init_xy(:,:,:)=f_init(l1:l2,m1:m2,npoint,:)
+        fsave_init_xz(:,:,:)=f_init(l1:l2,mpoint,n1:n2,:)
 !
       endif
 !
@@ -343,16 +349,14 @@ module BorderProfiles
 !
 !  28-apr-09/wlad: coded
 !
-      real, dimension (nx,ny,mvar), save :: fsave_init
       real, dimension (nx), intent(out) :: fborder
       integer,intent(in) :: ivar
 !
       if (lfirst .and. it==1) then
-        fsave_init(:,m-m1+1,ivar)=f_init(l1:l2,m,npoint,ivar)
         if (headtt.and.ip <= 6) print*,'saving initial condition for ivar=',ivar
       endif
 !
-      fborder=fsave_init(:,m-m1+1,ivar)
+      fborder=fsave_init_xy(:,m-m1+1,ivar)
 !
     endsubroutine set_border_xy
 !***********************************************************************
@@ -364,16 +368,14 @@ module BorderProfiles
 !
 !  28-apr-09/wlad: coded
 ! 
-      real, dimension (nx,nz,mvar), save :: fsave_init
       real, dimension (nx), intent(out) :: fborder
       integer,intent(in) :: ivar
 !
       if (lfirst .and. it==1) then
-        fsave_init(:,n-n1+1,ivar)=f_init(l1:l2,mpoint,n,ivar)
         if (headtt.and.ip <= 6) print*,'saving initial condition for ivar=',ivar
       endif
 !
-      fborder=fsave_init(:,n-n1+1,ivar)
+      fborder=fsave_init_xz(:,n-n1+1,ivar)
 !
     endsubroutine set_border_xz
 !***********************************************************************
@@ -548,6 +550,8 @@ module BorderProfiles
     call copy_addr(tborder1,p_par(1))
     call copy_addr(fraction_tborder1,p_par(2))
     call copy_addr(fac_sqrt_gsum1,p_par(3))
+    call copy_addr(fsave_init_xy,p_par(4)) ! (nx) (ny) (mvar)
+    call copy_addr(fsave_init_xz,p_par(5)) ! (nx) (nz) (mvar)
    endsubroutine pushpars2c
 !***********************************************************************
 
