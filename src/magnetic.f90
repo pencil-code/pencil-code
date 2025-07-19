@@ -6111,7 +6111,7 @@ print*,'AXEL: should not be here (eta) ... '
 !
 !  Electric field E = -dA/dt, store the Electric field in f-array if asked for.
 !  This line must not be used when the displacement current is being solved for.
-!  But is might actually work correctly.
+!  But it might actually work correctly.
 !
       if (lee_as_aux) then
         if (lroot) print*,'f(l1:l2,m,n,iex:iez)=-dAdt is set'

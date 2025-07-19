@@ -101,7 +101,7 @@ module Special
   real :: sigE1m, sigB1m, sigE1m_all, sigB1m_all, sigEm_all, sigBm_all
   real :: a2rhogphim, a2rhogphim_all
   real :: lnascale, a2, a21, Hscript
-  real :: Hscript0=0., scale_rho_chi_Heqn=1.
+  real :: Hscript0=0., scale_rho_chi_Heqn=1., rho_chi_init=0., cdt_rho_chi=1.
   real :: amplee_BD_prefactor=0., deriv_prefactor_ee=-1.
   real :: echarge=.0, echarge_const=.303
   real :: count_eb0_all=0.
@@ -119,7 +119,7 @@ module Special
   logical, pointer :: lallow_bprime_zero
   character (len=labellen) :: Vprime_choice='quadratic', Hscript_choice='default'
   character (len=labellen), dimension(ninit) :: initspecial='nothing'
-  character (len=50) :: echarge_type='const'
+  character (len=50) :: echarge_type='const', init_rho_chi='zero'
 !
   namelist /special_init_pars/ &
       initspecial, phi0, dphi0, axionmass, eps, ascale_ini, &
@@ -130,14 +130,14 @@ module Special
       initpower_dphi, initpower2_dphi, cutoff_dphi, kpeak_dphi, &
       ncutoff_phi, lscale_tobox, Hscript0, Hscript_choice, infl_v, lflrw, &
       lrho_chi, scale_rho_chi_Heqn, amplee_BD_prefactor, deriv_prefactor_ee, &
-      echarge_type
+      echarge_type, init_rho_chi, rho_chi_init
 !
   namelist /special_run_pars/ &
       initspecial, phi0, dphi0, axionmass, eps, ascale_ini, &
       lbackreact_infl, lem_backreact, c_light_axion, lambda_axion, Vprime_choice, &
       !lem_backreact, c_light_axion, lambda_axion, Vprime_choice, &
       lzeroHubble, ldt_backreact_infl, Ndiv, Hscript0, Hscript_choice, infl_v, &
-      lflrw, lrho_chi, scale_rho_chi_Heqn, echarge_type
+      lflrw, lrho_chi, scale_rho_chi_Heqn, echarge_type, cdt_rho_chi
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -358,10 +358,15 @@ module Special
         endselect
       enddo
 !
-!  energy density of the charged particles
+!  initial condition for energy density of charged particles
 !
       if (lroot .and. lrho_chi) then
-        f_ode(iinfl_rho_chi)=0.
+        select case (init_rho_chi)
+          case ('zero'); f_ode(iinfl_rho_chi)=0.
+          case ('given'); f_ode(iinfl_rho_chi)=rho_chi_init
+          case default
+            call fatal_error("init_special: No such init_rho_chi: ", trim(init_rho_chi))
+        endselect
       endif
 !
       call mpibcast_real(a2)
@@ -531,10 +536,19 @@ module Special
         endif
       endif
 !
-!  Total contribution to the timestep
+!  Total contribution to the timestep.
+!  If Ndiv=0 is set, we compute instead an advective timestep based on the Alfven speed.
 !
       if (lfirst.and.ldt.and.ldt_backreact_infl) then
-        dt1_special = Ndiv*abs(Hscript)
+        if (Ndiv==0.) then
+          if (lrho_chi) then
+            advec2=advec2+(b2m_all/f_ode(iinfl_rho_chi))*dxyz_2/cdt_rho_chi**2
+          else
+            call fatal_error("dspecial_dt", "lrho_chi must be .true. when Ndiv=0")
+          endif
+        else
+          dt1_special = Ndiv*abs(Hscript)
+        endif
         dt1_max=max(dt1_max,dt1_special)
       endif
 !
