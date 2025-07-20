@@ -4121,7 +4121,6 @@ module Hydro
           case ('general'); hubble_factor=(2.-nconformal)*Hubble*ascale**nconformal
         endselect
         df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-hubble_factor*p%uu
-        print*,'AXEL: hubble_factor=',2.-nconformal,hubble_factor
       endif
 !
 !  Boussinesq approximation: -g_z*alpha*(T-T_0) added.

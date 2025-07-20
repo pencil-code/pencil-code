@@ -5079,7 +5079,6 @@ print*,'AXEL: should not be here (eta) ... '
                         case ('default'); df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%jxbr
                         case ('superconformal'); df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+ascale*p%jxbr
                         case ('general'); df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+ascale**(2.*nconformal-3.)*p%jxbr
-                          print*,'AXEL: exponent 2.*nconformal-3.=', 2.*nconformal-3.
                       endselect
                     endif
                   endif
