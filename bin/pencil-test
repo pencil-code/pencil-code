@@ -390,7 +390,7 @@ sub build_remote_cmd {
 	  . $recurse_cmd
           . '    printf "Updated to git revision %s\n" $(git rev-parse HEAD);'
           . 'elif [ -d .svn ]; then'
-          . '    (svn -q update || echo "UPDATE ERROR: svn update failed");'
+          . '    (svn -q --accept=tf update || echo "UPDATE ERROR: svn update failed");'
           . 'else'
           . '    echo "UPDATE ERROR: Neither git nor svn checkout";'
           . '    false;'
