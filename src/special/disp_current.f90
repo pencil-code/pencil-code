@@ -56,6 +56,7 @@ module Special
   integer :: idivE=0, isigE=0, isigB=0
   logical :: llongitudinalE=.true., llorenz_gauge_disp=.false., lskip_projection_ee=.false.
   logical :: lscale_tobox=.true., lskip_projection_a0=.false.
+  logical :: lpower_profile_file=.false.
   logical :: lvectorpotential=.false., lphi_hom=.false., lphi_linear_regime=.false.
   logical :: lno_noise_ee=.false., lnoncollinear_EB=.false., lnoncollinear_EB_aver=.false.
   logical :: lcollinear_EB=.false., lcollinear_EB_aver=.false.
@@ -65,6 +66,8 @@ module Special
   logical :: lswitch_off_divJ=.false., lswitch_off_Gamma=.false., lmass_suppression=.false.
   character(len=labellen) :: inita0='zero'
   character (len=labellen), dimension(ninit) :: initee='nothing'
+  character (len=labellen) :: power_filename='power_profile.dat'
+!
   namelist /special_init_pars/ &
     initee, inita0, alpf, &
     ampl_ex, ampl_ey, ampl_ez, ampl_a0, &
@@ -81,7 +84,7 @@ module Special
     leedot_as_aux, ldivE_as_aux, lsigE_as_aux, lsigB_as_aux, &
     lsolve_chargedensity, weight_longitudinalE, lswitch_off_Gamma, &
     lrandom_ampl_ee, lfixed_phase_ee, lskip_projection_ee, &
-    luse_scale_factor_in_sigma
+    luse_scale_factor_in_sigma, lpower_profile_file, power_filename
 !
   ! run parameters
   real :: beta_inflation=0., rescale_ee=1.
@@ -304,6 +307,7 @@ module Special
             call power_randomphase_hel(amplee(j),initpower_ee,initpower2_ee, &
               cutoff_ee,ncutoff_ee,kpeak_ee,f,iex,iez,relhel_ee,kgaussian_ee, &
               lskip_projection_ee, lvectorpotential, lscale_tobox=lscale_tobox, &
+              lpower_profile_file=lpower_profile_file, power_filename=power_filename, &
               lno_noise=lno_noise_ee, lrandom_ampl=lrandom_ampl_ee, &
               lfixed_phase=lfixed_phase_ee)
           case default

@@ -5311,8 +5311,8 @@ module Initcond
     subroutine power_randomphase_hel(ampl,initpower,initpower2, &
       cutoff,ncutoff,kpeak,f,i1,i2,relhel,kgaussian, &
       lskip_projection,lvectorpotential,lscale_tobox, lsquash, &
-      k1hel, k2hel,lremain_in_fourier,lpower_profile_file,qexp, &
-      lno_noise,nfact0,lfactors0,compk0,llogbranch0,initpower_med0, &
+      k1hel, k2hel,lremain_in_fourier,lpower_profile_file, power_filename, &
+      qexp, lno_noise,nfact0,lfactors0,compk0,llogbranch0,initpower_med0, &
       kpeak_log0,kbreak0,ldouble0,nfactd0,qirro,lsqrt_qirro,time, &
       cs,lreinit,ltime_old,ltime_new,lrho_nonuni,ilnr,l2d, &
       lnot_amp, lrandom_ampl, lfixed_phase)
@@ -5368,6 +5368,8 @@ module Initcond
       real :: kpeak_log, kbreak, kbreak1, kbreak2, kbreak21, initpower_med, initpower_log
       real :: nfactd,nexp3,nexp4
       real :: qexp1, qexp11, qirro1, p, p2, time1, cs1, om, ctime, stime
+      character(len=*), intent(in), optional :: power_filename
+      character(len=labellen) :: power_filename1
 !
       if (ampl==0.) then
         if (lroot) print*,'power_randomphase: set variable to zero; i1,i2=',i1,i2
@@ -5844,9 +5846,16 @@ module Initcond
 !
 !  apply additional profile read from file;
 !  first check whether or not we want to read from file
+!  Ram: check if initial spectra file name (optional) is provided, otherwise
+!  set to default name " power_profile.dat"
 !
       if (loptest(lpower_profile_file)) then
-        open(9,file='power_profile.dat',status='old')
+        if (present(power_filename)) then
+          power_filename1=power_filename
+        else
+          power_filename1='power_profile.dat'
+        endif
+        open(9,file=power_filename1,status='old')
         read(9,*) nk,lgk0,dlgk
         if (lroot) print*,'power_randomphase_hel: nk,lgk0,dlgk=',nk,lgk0,dlgk
         if (allocated(kk)) deallocate(kk,power_factor,lgkk,lgff)
