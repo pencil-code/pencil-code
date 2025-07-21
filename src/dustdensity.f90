@@ -68,7 +68,12 @@ module Dustdensity
   real :: radius_nd=1.0, xblob_nd=0.0, yblob_nd=0.0, zblob_nd=0.0
   real :: Hnd=1.0, Hepsd=1.0, phase_nd=0.0, Ri0=1.0, eps1=0.5
   real :: z0_smooth=0.0, z1_smooth=0.0, epsz1_smooth=0.0
-  real :: ul0=0.0, tl0=0.0, teta=0.0, ueta=0.0, deltavd_imposed=0.0
+  real :: deltavd_imposed=0.0
+  !TP: Made these parameter variable since they are always zero.
+  !    is deltavd_turbu deprecated?
+      
+  real, parameter :: ueta=0.0,teta=0.0,ul0=0.0, tl0=0.0
+  real, parameter :: tl01=tl0/(tl0+tini),teta1=teta/(teta+tini)
   real :: rho_w=1.0, Dwater=22.0784e-2
   real :: delta=1.2, delta0=1.2, deltavd_const=1.
   real :: Rgas=8.31e7
@@ -2696,6 +2701,27 @@ module Dustdensity
 
     endsubroutine dustdensity_after_boundary
 !***********************************************************************
+    subroutine get_deltavd_turbu(deltavd_turbu,l,i,j)
+      real, intent(OUT) :: deltavd_turbu
+      integer, intent(IN) :: l,i,j
+
+      !tl01=1/tl0
+      !teta1=1/teta
+      if ( (tausd1(l,i) > tl01 .and. tausd1(l,j) > tl01) .and. &
+           (tausd1(l,i) < teta1 .and. tausd1(l,j) < teta1)) then
+        deltavd_turbu = ul0*3/(tausd1(l,j)/tausd1(l,i)+1.)*(1/(tl0*tausd1(l,j)))**0.5
+      elseif (tausd1(l,i) < tl01 .and. tausd1(1,j) > tl01 .or. &
+          tausd1(l,i) > tl01 .and. tausd1(l,j) < tl01) then
+        deltavd_turbu = ul0
+      elseif (tausd1(l,i) < tl01 .and. tausd1(l,j) < tl01) then
+        deltavd_turbu = ul0*tl0*0.5*(tausd1(l,j) + tausd1(l,i))
+      elseif (tausd1(l,i) > teta1 .and. tausd1(l,j) > teta1) then
+        deltavd_turbu = ueta/(teta+tini)*(tausd1(l,i)/tausd1(l,j)-1.)
+      else
+        call fatal_error('get_deltavd_turbu','this should never happen')
+      endif
+    endsubroutine get_deltavd_turbu
+!***********************************************************************
     subroutine coag_kernel(f,p)
 !
 !  Calculate kernel of coagulation equation; collision rate = ni*nj*kernel
@@ -2727,8 +2753,6 @@ module Dustdensity
           endif
         else
 !
-          tl01=1/tl0
-          teta1=1/teta
 !
 !  In the following, the "3" should be replaced by nghost,
 !  or one should use l1,l2 etc.
@@ -2798,19 +2822,7 @@ module Dustdensity
 !  Relative turbulent speed depends on stopping time regimes
 !
                 if (ldeltavd_turbulent) then
-                  if ( (tausd1(l,i) > tl01 .and. tausd1(l,j) > tl01) .and. &
-                       (tausd1(l,i) < teta1 .and. tausd1(l,j) < teta1)) then
-                    deltavd_turbu = ul0*3/(tausd1(l,j)/tausd1(l,i)+1.)*(1/(tl0*tausd1(l,j)))**0.5
-                  elseif (tausd1(l,i) < tl01 .and. tausd1(1,j) > tl01 .or. &
-                      tausd1(l,i) > tl01 .and. tausd1(l,j) < tl01) then
-                    deltavd_turbu = ul0
-                  elseif (tausd1(l,i) < tl01 .and. tausd1(l,j) < tl01) then
-                    deltavd_turbu = ul0*tl0*0.5*(tausd1(l,j) + tausd1(l,i))
-                  elseif (tausd1(l,i) > teta1 .and. tausd1(l,j) > teta1) then
-                    deltavd_turbu = ueta/teta*(tausd1(l,i)/tausd1(l,j)-1.)
-                  else
-                    call fatal_error('coag_kernel','this should never happen')
-                  endif
+                  call get_deltavd_turbu(deltavd_turbu,l,i,j)
                 else
                   deltavd_turbu = 0.
                 endif
