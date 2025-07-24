@@ -992,7 +992,6 @@ module Dustvelocity
 !
       real, dimension (nx,3,3) :: tmp_pencil_3x3
       integer :: i,j,k
-      real, dimension (nx) :: dot2_tmp
 !
       intent(in) :: f
       intent(inout) :: p
@@ -1002,8 +1001,7 @@ module Dustvelocity
         if (lpencil(i_uud)) p%uud(:,:,k)=f(l1:l2,m,n,iudx(k):iudz(k))
 ! ud2
         if (lpencil(i_ud2)) then
-          call dot2_mn(p%uud(:,:,k),dot2_tmp)
-          p%ud2(:,k)=dot2_tmp
+          call dot2_mn(p%uud(:,:,k),p%ud2(:,k))
         endif
 ! udij
         if (lpencil(i_udij)) call gij(f,iuud(k),p%udij(:,:,:,k),1)
