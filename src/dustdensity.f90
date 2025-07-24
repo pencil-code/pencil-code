@@ -3403,7 +3403,9 @@ module Dustdensity
         if (ndustspec > 3) then
           kk1=ndustspec-2
           kk2=ndustspec
-          dndr_dr(:,kk1:kk2)=0.
+          do i = kk1,kk2
+                dndr_dr(:,i)=0.
+          enddo
         endif
 !
       endif
@@ -3653,10 +3655,13 @@ module Dustdensity
         call copy_addr(diffmi,p_par(5))
         call copy_addr(ndmin_for_mdvar,p_par(6))
         call copy_addr(dkern_cst,p_par(7))
-        call copy_addr(ul0,p_par(8))
-        call copy_addr(tl0,p_par(9))
-        call copy_addr(teta,p_par(10))
-        call copy_addr(ueta,p_par(11))
+
+        ! these are compile-time params now
+        !call copy_addr(ul0,p_par(8))
+        !call copy_addr(tl0,p_par(9))
+        !call copy_addr(teta,p_par(10))
+        !call copy_addr(ueta,p_par(11))
+
         call copy_addr(deltavd_imposed,p_par(12))
         call copy_addr(rho_w,p_par(13))
         call copy_addr(dwater,p_par(14))
