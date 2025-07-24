@@ -501,7 +501,7 @@ module Dustvelocity
       endselect
 !
       call keep_compiler_quiet(f)
-      tausd1 = tausd1_init
+      tausd1_init = tausd1
 !
     endsubroutine initialize_dustvelocity
 !***********************************************************************
