@@ -38,7 +38,7 @@ module Dustvelocity
   integer, parameter :: nvisc_max=4
   complex, dimension (7) :: coeff=0.
   real, dimension(ndustspec,ndustspec) :: scolld
-  real, dimension(nx,ndustspec) :: tausd1,tausd1_init
+  real, dimension(nx,ndustspec) :: tausd1
   real, dimension(ndustspec) :: md=1.0, mdplus, mdminus, ad=0.
   !$omp threadprivate(md)
   real, dimension(ndustspec) :: surfd, mi, rhodsad1
@@ -501,7 +501,6 @@ module Dustvelocity
       endselect
 !
       call keep_compiler_quiet(f)
-      tausd1_init = tausd1
 !
     endsubroutine initialize_dustvelocity
 !***********************************************************************
@@ -1621,7 +1620,7 @@ module Dustvelocity
         ! Do nothing, initialized in initialize_dustvelocity
         ! If on the gpu have to read it in since having variables sometimes computed
         ! and sometimes not is difficult
-        if (lgpu) tausd1(:,k) = tausd1_init(:,k)
+        if (lgpu) tausd1(:,k) = 1.0/tausd(k)
       case ('epstein_cst_b')
         tausd1(:,k) = betad(k)/rhod
       case ('stokes_cst_tausd')
