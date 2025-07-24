@@ -3403,8 +3403,8 @@ module Dustdensity
         if (ndustspec > 3) then
           kk1=ndustspec-2
           kk2=ndustspec
-          do i = kk1,kk2
-                dndr_dr(:,i)=0.
+          do k = kk1,kk2
+                dndr_dr(:,k)=0.
           enddo
         endif
 !
