@@ -1379,7 +1379,6 @@ call copy_addr(lequidist,p_par(137)) ! bool3
 call copy_addr(xyz0,p_par(138)) ! real3
 call copy_addr(xyz1,p_par(139)) ! real3
 call copy_addr(beta_ts,p_par(141)) ! (5)
-call copy_addr(dt_beta_ts,p_par(142)) ! (5)
 call copy_addr(iglobal_jext,p_par(149)) ! int3
 call copy_addr(iglobal_eext,p_par(150)) ! int3
 call copy_addr(lpencil,p_par(151)) ! bool (npencils)

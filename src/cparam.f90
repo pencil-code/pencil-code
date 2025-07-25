@@ -962,7 +962,11 @@ integer, parameter :: enum_dspecial_dt_string = 679
 integer, parameter :: enum_we_need_the_file_a_vs_etaZdat_string = 680
 integer, parameter :: enum_dark_energy_string = 681
 integer, parameter :: enum_no_such_ihorndeski_timeZ__string = 682
-integer, parameter :: enum_pwd = 683
-
+integer, parameter :: enum_pwd_string = 683
+integer, parameter :: enum_none_string = 684
+integer, parameter :: enum_2nd_string = 685
+integer, parameter :: enum_she_string = 686
+integer, parameter :: enum_p_string = 687
+integer, parameter :: hyper3_rho_nuZconst_symm=688
 
 endmodule Cparam

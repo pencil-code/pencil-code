@@ -6944,7 +6944,7 @@ iloop:do i=1,size(list2)
     end function
 !***********************************************************************
     subroutine string_to_enum_scalar(dst,src_in)
-
+        use Cdata, only: lroot
         integer :: dst
         character(len=*) :: src_in
         character(len(src_in)) :: src
@@ -7411,6 +7411,14 @@ iloop:do i=1,size(list2)
           dst = enum_surface_x_string
         case('two-layer')
           dst = enum_twoZlayer_string
+        case('two-step')
+          dst = enum_twoZstep_string
+        case('fixed_swirl')
+          dst = enum_fixed_swirl_string
+        case('log_mass')
+          dst = enum_log_mass_string
+        case('epstein_cst')
+          dst = enum_epstein_cst_string
         case('square-well')
           dst = enum_squareZwell_string
         case('cubic_step')
@@ -8030,9 +8038,21 @@ iloop:do i=1,size(list2)
         case('no such ihorndeski_time: ')
           dst = enum_no_such_ihorndeski_timeZ__string
         case('pwd')
-          dst = enum_pwd
+          dst = enum_pwd_string
+        case('none')
+          dst = enum_none_string
+        case('2nd')
+          dst = enum_2nd_string
+        case('she')
+          dst = enum_she_string
+        case('p')
+          dst = enum_p_string
+        case('hyper3_rho_nu-const_symm')
+          dst = hyper3_rho_nuZconst_symm
         case default
           dst = enum_unknown_string_string
+          if (lroot) print*, 'No string enum for: ', src
+          STOP 1                ! Return nonzero exit status
         endselect
 
     endsubroutine string_to_enum_scalar

@@ -12,8 +12,8 @@ if(lshear)
 	#if LDUSTDENSITY
 	for k in 0:ndustspec
 	{
-	      DF_DUST_VELOCITY[k]  -= AC_sshear1__mod__shear*uy0*dery(F_DUST_VELOCITY[k])
-	      DF_DUST_DENSITY[k]   -= AC_sshear1__mod__shear*uy0*dery(F_DUST_DENSITY[k])
+	      DF_DUST_VELOCITY[k]  -= uy0*dery(F_DUST_VELOCITY[k])
+	      DF_DUST_DENSITY[k]   -= uy0*dery(F_DUST_DENSITY[k])
 	}
 	#endif
   }
@@ -52,7 +52,7 @@ if(lshear)
   {
 	  for k in 0:ndustspec
 	  {
-		DF_DUST_VELOCITY[k].y  -= AC_sshear1__mod__shear*DF_DUST_VELOCITY[k].x
+		DF_DUST_VELOCITY[k].y  -= AC_sshear1__mod__shear*F_DUST_VELOCITY[k].x
 	  }
   }
   #endif

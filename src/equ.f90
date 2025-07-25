@@ -1755,6 +1755,7 @@ module Equ
         call rhs_gpu(f,itsub)
 
         df_copy = 0.0
+        dt_beta_ts = dt*beta_ts
         call before_boundary_cpu(f_copy)
         !if(itsub == 1) then
         !        f_beta = f_copy

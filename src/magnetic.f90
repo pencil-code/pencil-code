@@ -7701,22 +7701,21 @@ print*,'AXEL2: should not be here (eta) ... '
       type (pencil_case) :: p
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: f_target
-      integer :: ju,j
+      integer :: j
 !
 !  select for different target profiles
 !
       do j=1,3
 !
-        ju=j+iaa-1
         select case (borderaa(j))
 !
         case ('zero','0')
           f_target(:,j)=0.
-          call border_driving(f,df,p,f_target(:,j),ju)
+          call border_driving(f,df,p,f_target(:,j),iaa+j-1)
 !
         case ('initial-condition')
-          call set_border_initcond(f,ju,f_target(:,j))
-          call border_driving(f,df,p,f_target(:,j),ju)
+          call set_border_initcond(f,iaa+j-1,f_target(:,j))
+          call border_driving(f,df,p,f_target(:,j),iaa+j-1)
 !
         case ('nothing')
         endselect
