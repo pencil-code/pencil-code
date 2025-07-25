@@ -4,19 +4,34 @@ if(lshear)
 {
   if(!AC_lshearadvection_as_shift__mod__shear)
   {
-	DF_UU  -= AC_uy0__mod__shear[vertexIdx.x-NGHOST]*dery(UU)
-	DF_AA  -= AC_uy0__mod__shear[vertexIdx.x-NGHOST]*dery(AA)
-	DF_SS  -= AC_uy0__mod__shear[vertexIdx.x-NGHOST]*dery(SS)
-	DF_RHO -= AC_uy0__mod__shear[vertexIdx.x-NGHOST]*dery(RHO)
+        const real uy0 = AC_uy0__mod__shear[vertexIdx.x-NGHOST]
+	DF_UU  -= uy0*dery(UU)
+	DF_AA  -= uy0*dery(AA)
+	DF_SS  -= uy0*dery(SS)
+	DF_RHO -= uy0*dery(RHO)
+	#if LDUSTDENSITY
+	for k in 0:ndustspec
+	{
+	      DF_DUST_VELOCITY[k]  -= AC_sshear1__mod__shear*uy0*dery(F_DUST_VELOCITY[k])
+	      DF_DUST_DENSITY[k]   -= AC_sshear1__mod__shear*uy0*dery(F_DUST_DENSITY[k])
+	}
+	#endif
   }
   if (lhydro && AC_lshear_acceleration__mod__shear) DF_UU.y  -= AC_sshear1__mod__shear * UU.x
   if(AC_lhyper3x_mesh__mod__shear)
   {
-  	d = AC_diff_hyper3x_mesh__mod__shear*abs(AC_sshear__mod__cdata)
+  	const real d = AC_diff_hyper3x_mesh__mod__shear*abs(AC_sshear__mod__cdata)
 	DF_UU  += d*der6x_ignore_spacing(UU)
 	DF_AA  += d*der6x_ignore_spacing(AA)
 	DF_RHO += d*der6x_ignore_spacing(RHO)
 	DF_SS  += d*der6x_ignore_spacing(SS)
+	#if LDUSTDENSITY
+	for k in 0:ndustspec
+	{
+	      DF_DUST_VELOCITY[k]  += d*der6x_ignore_spacing(F_DUST_VELOCITY[k])
+	      DF_DUST_DENSITY[k]   += d*der6x_ignore_spacing(F_DUST_DENSITY[k])
+	}
+        #endif
 	if(AC_lupdate_courant_dt__mod__cdata)
 	{
 		diffus_shear3 = d
@@ -32,16 +47,16 @@ if(lshear)
 	  DF_AVEC.y      += AC_sshear_sini__mod__shear*F_AVEC.y
   	}
   }
-  /**
+  #if LDUSTVELOCITY
   if(ldustvelocity)
   {
 	  for k in 0:ndustspec
 	  {
-		int dust_spec_y = AC_iudy__mod__cdata[k]
-		int dust_spec_x = AC_iudx__mod__cdata[k]
-		shear_rhs[dust_spec_y] -= AC_sshear1__mod__shear*Field(dust_spec_x)
+		DF_DUST_VELOCITY[k].y  -= AC_sshear1__mod__shear*DF_DUST_VELOCITY[k].x
 	  }
   }
+  #endif
+  /**
   if(ltestfield)
   {
 	int j = AC_iaatest__mod__cdata-1

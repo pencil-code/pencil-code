@@ -5699,25 +5699,24 @@ module Hydro
       type (pencil_case) :: p
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: f_target
-      integer :: j,ju
+      integer :: j
 !
       do j=1,3
 
-        ju=j+iuu-1
         select case (borderuu(j))
 !
         case ('nothing');
         case ('zero','0')
           f_target(:,j)=0.
-          call border_driving(f,df,p,f_target(:,j),ju)
+          call border_driving(f,df,p,f_target(:,j),iuu+j-1)
 !
         case ('constant')
           f_target(:,j) = uu_const(j)
-          call border_driving(f,df,p,f_target(:,j),ju)
+          call border_driving(f,df,p,f_target(:,j),iuu+j-1)
 !
         case ('initial-condition')
-          call set_border_initcond(f,ju,f_target(:,j))
-          call border_driving(f,df,p,f_target(:,j),ju)
+          call set_border_initcond(f,iuu+j-1,f_target(:,j))
+          call border_driving(f,df,p,f_target(:,j),iuu+j-1)
 !
         endselect
 !

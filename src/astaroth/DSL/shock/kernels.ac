@@ -9,14 +9,14 @@ Kernel shock_2_max()
 {
   if (AC_lmax_shock__mod__shock)
   {
-    write( SHOCK, max5(SHOCK))
+    write( SHOCK, max5(SHOCK,AC_ishock_max__mod__shock))
   }
 }
 
 Kernel shock_3_smooth()
 {
   smoothed_shock = AC_lgaussian_smooth__mod__shock ? smooth(SHOCK) : binomial_smooth(SHOCK)
-  write( SHOCK, AC_dsmin*AC_dsmin*smoothed_shock)
+  write( SHOCK, AC_dxmin__mod__cdata*AC_dxmin__mod__cdata*smoothed_shock)
 }
 #else
 Kernel shock_1_divu()

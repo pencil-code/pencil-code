@@ -1372,6 +1372,7 @@ module Gravity
     subroutine pushpars2c(p_par)
 
     use Syscalls, only: copy_addr
+    use General,  only: string_to_enum
 
     integer, parameter :: n_pars=20
     integer(KIND=ikind8), dimension(n_pars) :: p_par
@@ -1392,6 +1393,8 @@ module Gravity
     call copy_addr(lcoriolis_force_gravity,p_par(14)) ! bool
     call copy_addr(lcentrifugal_force_gravity,p_par(15)) ! bool
     call copy_addr(t_start_secondary,p_par(16))
+    call string_to_enum(enum_iramp_function,iramp_function)
+    call string_to_enum(enum_ipotential_secondary,ipotential_secondary)
     call copy_addr(enum_iramp_function,p_par(17)) ! int
     call copy_addr(enum_ipotential_secondary,p_par(18)) ! int
 

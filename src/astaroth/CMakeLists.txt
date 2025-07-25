@@ -30,6 +30,11 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # For IDE highlighting (clangd)
 
+if (NOT CPU_BUILD AND DEFINED ENV{AC_CPU_BUILD})
+	set(CPU_BUILD $ENV{AC_CPU_BUILD})
+	message("Set CPU_BUILD=${CPU_BUILD} from ENV value")
+endif()
+
 if(CPU_BUILD)
 	add_definitions(-DAC_CPU_BUILD=1)
 else()
@@ -95,7 +100,6 @@ include(FetchContent)
 ## Global flags
 if (DOUBLE_PRECISION)
   add_definitions(-DAC_DOUBLE_PRECISION=1)
-  add_definitions(-DDOUBLE_PRECISION)
 endif()
 
 if (SINGLEPASS_INTEGRATION)

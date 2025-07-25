@@ -17,6 +17,12 @@
 #include <sys/resource.h>
 #include <fstream>
 
+//TP: defined here since mpi.h can have its own definition of DOUBLE_PRECISION
+//    and we don't want to conflict it with it. This is at least true on my laptop
+#if AC_DOUBLE_PRECISION
+#define DOUBLE_PRECISION 1
+#endif
+
 
 #define CUDA_ERRCHK(X)
 
@@ -803,6 +809,7 @@ void setupConfig(AcMeshInfo& config)
 #undef x
 #undef y
 #undef z
+#undef t
 /***********************************************************************************************/
 std::array<AcReal,3> visc_get_max_diffus()
 {
@@ -1146,6 +1153,9 @@ extern "C" void beforeBoundaryGPU(bool lrmv, int isubstep, double t)
 		acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_calc_final_potential),1);
 	}
 #endif
+#if LNEWTON_COOLING
+	acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_integrate_tau),1);
+#endif
 }
 /***********************************************************************************************/
 extern "C" void afterTimeStepGPU()
@@ -1196,6 +1206,9 @@ extern "C" void substepGPU(int isubstep)
 	  if (ldt) set_dt(dt1_interface);
 	  acDeviceSetInput(acGridGetDevice(), AC_dt,dt);
   }
+#if TRANSPILATION
+  acDeviceSetInput(acGridGetDevice(), AC_t,t__mod__cdata);
+#endif
   //fprintf(stderr,"before acGridExecuteTaskGraph");
   AcTaskGraph *rhs =  acGetOptimizedDSLTaskGraph(AC_rhs);
   auto start = MPI_Wtime();
@@ -1445,12 +1458,16 @@ extern "C" void loadFarray()
     for (int i = 0; i < mvar; ++i)
   	acDeviceLoadVertexBuffer(acGridGetDevice(), STREAM_DEFAULT, src, VertexBufferHandle(i));
 
+    int n_aux_on_gpu = 0;
     for (int i = 0; i < mfarray; ++i)
       if (maux_vtxbuf_index[i])
+      {
+	      n_aux_on_gpu++;
   		acDeviceLoadVertexBuffer(acGridGetDevice(), STREAM_DEFAULT, src, VertexBufferHandle(maux_vtxbuf_index[i]));
-    for(int i = mvar+maux; i < mfarray; ++i)
+      }
+    for(int i = 0; i < mfarray-mvar-maux; ++i)
     {
-  	acDeviceLoadVertexBuffer(acGridGetDevice(), STREAM_DEFAULT, src, VertexBufferHandle(i));
+  	acDeviceLoadVertexBuffer(acGridGetDevice(), STREAM_DEFAULT, src, VertexBufferHandle(mvar+n_aux_on_gpu+i));
     }
   }
   acGridSynchronizeStream(STREAM_ALL);
@@ -1512,16 +1529,18 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint)
       mesh.vertex_buffer[VertexBufferHandle(i)] = &farr[mw*i+ z_offset];
     }
 
+    int n_aux_on_gpu = 0;
     for (int i = 0; i < mfarray; ++i)
     {
       if (maux_vtxbuf_index[i])
       {
+	++n_aux_on_gpu;
         mesh.vertex_buffer[maux_vtxbuf_index[i]] = &farr[mw*i + z_offset];
       }
     }
-    for(int i = mvar+maux; i < mfarray; ++i)
+    for(int i = 0; i < mfarray-mvar-maux; ++i)
     {
-        mesh.vertex_buffer[i] = &farr[mw*i + z_offset];
+        mesh.vertex_buffer[mvar+n_aux_on_gpu+i] = &farr[mw*(mvar+maux+i) + z_offset];
     }
     //TP: for now for training we have all slots filled since we might want to read TAU components to the host for calculating validation error
     if (ltraining)
@@ -1891,9 +1910,9 @@ void testBCs()
   auto end_z =  skip_z ? dims.n1.z : dims.m1.z;
 
   int num_of_points_where_different[NUM_VTXBUF_HANDLES]{};
-  bool different_in[NUM_VTXBUF_HANDLES][6]{};
+  bool different_in[NUM_VTXBUF_HANDLES][27]{};
   //TP: stupid levels of safety
-  memset(different_in,0,NUM_VTXBUF_HANDLES*6*sizeof(bool));
+  memset(different_in,0,NUM_VTXBUF_HANDLES*27*sizeof(bool));
   const int bot_x = 0;
   const int top_x = 1;
 
@@ -1910,15 +1929,21 @@ void testBCs()
     {
       for (size_t k = start_z; k < end_z; k++)
       {
+	const int x_idx = i < NGHOST ? -1 : i >= dims.n1.x ? 1 : 0;
+	const int y_idx = j < NGHOST ? -1 : j >= dims.n1.y ? 1 : 0;
+	const int z_idx = k < NGHOST ? -1 : k >= dims.n1.z ? 1 : 0;
+
+	const bool x_in = i >= NGHOST && i < dims.n1.x;
+	const bool y_in = j >= NGHOST && j < dims.n1.y;
+	const bool z_in = k >= NGHOST && k < dims.n1.z;
 	if (
-	   i >= NGHOST && i < dims.n1.x &&
-	   j >= NGHOST && j < dims.n1.y &&
-	   k >= NGHOST && k < dims.n1.z
+		x_in && y_in && z_in
 	  ) continue;
 	  //if (i < NGHOST | i > dims.n1.x  || j < NGHOST || j > dims.n1.y) continue;
 	++num_of_points;
         for (int ivar = 0; ivar < mvar; ivar++)
         {
+	  const int index = (x_idx+1) + 3*((y_idx+1) + 3*(z_idx+1));
           AcReal out_val = mesh_to_copy.vertex_buffer[ivar][DEVICE_VTXBUF_IDX(i, j, k)];
           AcReal true_val = mesh.vertex_buffer[ivar][DEVICE_VTXBUF_IDX(i, j, k)];
           AcReal abs_diff = fabs(out_val - true_val);
@@ -1926,15 +1951,7 @@ void testBCs()
           if (fabs(true_val) < min_abs_value) min_abs_value = fabs(true_val);
           if (fabs(abs_diff/true_val) > epsilon || (true_val == (AcReal)0.0 && fabs(out_val) > (AcReal)pow(0.1,13)) || (epsilon == (AcReal)0.0 && true_val != out_val))
           {
-	    different_in[ivar][bot_x] |= i < NGHOST;
-	    different_in[ivar][top_x] |= i >= dims.n1.x;
-
-	    different_in[ivar][bot_y] |= j < NGHOST;
-	    different_in[ivar][top_y] |= j >= dims.n1.y;
-
-	    different_in[ivar][bot_z] |= k < NGHOST;
-	    different_in[ivar][top_z] |= k >= dims.n1.z;
-
+	    different_in[ivar][index] |= true;
             passed = false;
             num_of_points_where_different[ivar]++;
             if (max_abs_not_passed_val<abs(out_val)){
@@ -1967,14 +1984,17 @@ void testBCs()
   	for (int ivar=0;ivar<mvar;ivar++)
 	{
     		acLogFromRootProc(0,"ratio of values wrong for field: %s\t %f\n",field_names[ivar],(double)num_of_points_where_different[ivar]/num_of_points);
-		if (different_in[ivar][bot_x]) acLogFromRootProc(0,"different in BOT_X\n");
-		if (different_in[ivar][top_x]) acLogFromRootProc(0,"different in TOP_X\n");
-
-		if (different_in[ivar][bot_y]) acLogFromRootProc(0,"different in BOT_Y\n");
-		if (different_in[ivar][top_y]) acLogFromRootProc(0,"different in TOP_Y\n");
-
-		if (different_in[ivar][bot_z]) acLogFromRootProc(0,"different in BOT_Z\n");
-		if (different_in[ivar][top_z]) acLogFromRootProc(0,"different in TOP_Z\n");
+		for(int x = -1; x <= 1; ++x)
+		{
+			for(int y = -1; y <= 1; ++y)
+			{
+				for(int z = -1; z <= 1; ++z)
+				{
+	  				const int index = (x+1) + 3*((y+1) + 3*(z+1));
+					if(different_in[ivar][index]) acLogFromRootProc(0,"different (%d,%d,%d)\n",x,y,z);
+				}
+			}
+		}
 	}
   	acLogFromRootProc(0,"max abs not passed val: %.7e\t%.7e\n",(double)max_abs_not_passed_val, (double)fabs(true_pair));
   	acLogFromRootProc(0,"max abs relative difference val: %.7e\n",(double)max_abs_relative_difference);

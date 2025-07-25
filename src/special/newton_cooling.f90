@@ -97,8 +97,8 @@ module Special
       if (lroot) call svn_id( &
            "$Id: newton_cooling.f90,v 1.2 2015/12/11 02:56:37 wlyra Exp $")
 !
+      call farray_register_auxiliary('tau',itau,on_gpu=lgpu)
       call farray_register_auxiliary('kappar',ikappar)
-      call farray_register_auxiliary('tau',itau)
 !
       if (lroot) then
         open(4,file=trim(datadir)//'/index_special.pro',status='replace')
@@ -596,6 +596,8 @@ module Special
     call copy_addr(itau,p_par(4)) ! int
     call copy_addr(gamma1,p_par(5))
     call copy_addr(gamma_m1,p_par(6))
+    call copy_addr(cp1,p_par(7))
+    call copy_addr(cv1,p_par(8))
 
     endsubroutine pushpars2c
 !***********************************************************************

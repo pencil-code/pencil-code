@@ -2,7 +2,6 @@
 /^ *#/ b end
 /^ *[A-Z0-9_]* *= *-/ b end
 /io_/ b end
-/BORDER_PROFILES/ b end
 /DEBUG/ b end
 /DERIV/ b end
 /GHOSTFOLD/ b end
