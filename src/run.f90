@@ -1615,8 +1615,6 @@ call copy_addr(f_ode,p_par(1314)) ! (n_odevars)
 
 call copy_addr(lread_scl_factor_file,p_par(1315)) ! bool
 
-call copy_addr(hp_target,p_par(1316))
-call copy_addr(appa_target,p_par(1317))
 call string_to_enum(enum_bcx12, bcx12)
 call string_to_enum(enum_bcy12, bcy12)
 call string_to_enum(enum_bcz12, bcz12)
