@@ -809,7 +809,6 @@ void setupConfig(AcMeshInfo& config)
 #undef x
 #undef y
 #undef z
-#undef t
 /***********************************************************************************************/
 std::array<AcReal,3> visc_get_max_diffus()
 {
@@ -1175,7 +1174,7 @@ extern "C" void afterTimeStepGPU()
 	acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_after_timestep),1);
 }
 /***********************************************************************************************/
-extern "C" void substepGPU(int isubstep)
+extern "C" void substepGPU(int isubstep, double t)
 //
 //  Do the 'isubstep'th integration step on all GPUs on the node and handle boundaries.
 //
@@ -1207,7 +1206,7 @@ extern "C" void substepGPU(int isubstep)
 	  acDeviceSetInput(acGridGetDevice(), AC_dt,dt);
   }
 #if TRANSPILATION
-  acDeviceSetInput(acGridGetDevice(), AC_t,t__mod__cdata);
+  acDeviceSetInput(acGridGetDevice(), AC_t,(AcReal)t);
 #endif
   //fprintf(stderr,"before acGridExecuteTaskGraph");
   AcTaskGraph *rhs =  acGetOptimizedDSLTaskGraph(AC_rhs);

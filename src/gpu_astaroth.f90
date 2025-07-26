@@ -150,7 +150,7 @@ contains
       real, dimension (mx,my,mz,mfarray), intent(INOUT) :: f
       integer,                            intent(IN)    :: isubstep
 !
-      call rhs_gpu_c(isubstep)
+      call rhs_gpu_c(isubstep,t)
 !
     endsubroutine rhs_GPU
 !**************************************************************************

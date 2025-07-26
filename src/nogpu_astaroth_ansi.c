@@ -22,7 +22,7 @@ void FTNIZE(get_farray_ptr_gpu_c)(REAL** p_f_in)
 {
 }
 /* ------------------------------------------------------------------- */
-void FTNIZE(rhs_gpu_c)(FINT *isubstep)
+void FTNIZE(rhs_gpu_c)(FINT *isubstep, double* t)
 {
 }
 /* ------------------------------------------------------------------- */

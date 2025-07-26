@@ -1624,8 +1624,7 @@ call copy_addr(enum_bcx12,p_par(1318)) ! int (mcom) (2)
 call copy_addr(enum_bcy12,p_par(1319)) ! int (mcom) (2)
 call copy_addr(enum_bcz12,p_par(1320)) ! int (mcom) (2)
 call copy_addr(r_ref,p_par(1321)) 
-call copy_addr_dble(t,p_par(1322))
-call copy_addr(dxmin,p_par(1323))
+call copy_addr(dxmin,p_par(1322))
 
 endsubroutine pushpars2c
 !***********************************************************************
