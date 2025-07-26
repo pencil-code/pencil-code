@@ -135,9 +135,8 @@ module Special
 !
   logical :: lread_scl_factor_file_exists, lread_pulsar=.false.
   integer :: npulsar
-  integer :: nt_file, it_file, iTij=0, iinfl_lna=0
+  integer :: nt_file, iTij=0, iinfl_lna=0
   real :: lgt0, dlgt, H0, dummy
-  real :: lgt1, lgt2, lgf1, lgf2, lgf, lgt_current
   real :: lgt_ini, a_ini, Hp_ini, appa_om=0
 ! added variables
   real, dimension (:,:,:,:), allocatable :: Tpq_re, Tpq_im
@@ -366,6 +365,9 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
       !logical :: lread_scl_factor_file_exists
       !integer :: stat, i, nt_file, it_file
+      real :: lgt1, lgt2, lgf1, lgf2, lgf, lgt_current
+
+      integer :: it_file
       integer :: stat, i
 !
 !  set index table, count off-diagonal components cyclicly
@@ -1042,7 +1044,35 @@ module Special
       endif
     endsubroutine compute_scl_factor
 !***********************************************************************
-    subroutine read_scl_factor_etc
+    subroutine read_Hp_and_appa_target
+!
+!   26-jul-2025/TP: carved from dspecial_dt
+! 
+      real :: lgt1, lgt2, lgf1, lgf2, lgf, lgt_current
+      integer :: it_file
+        lgt_current=alog10(real(t))+lgt_ini
+        it_file=int((lgt_current-lgt0)/dlgt)+1
+        if (it_file<1.or.it_file>nt_file) then
+          print*,'=',it_file, t_file(it_file), t, t_file(it_file+1), t_ini
+          call fatal_error('dspecial_dt','it<1.or.it>nt')
+        endif
+        lgt1=lgt_file(it_file)
+        lgt2=lgt_file(it_file+1)
+
+        lgf1=lgff2(it_file)
+        lgf2=lgff2(it_file+1)
+        lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
+        Hp_target=10**lgf/Hp_ini
+
+        lgf1=lgff3(it_file)
+        lgf2=lgff3(it_file+1)
+        lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
+        appa_target=10**lgf/Hp_ini**2
+    endsubroutine read_Hp_and_appa_target
+!***********************************************************************
+    subroutine read_scl_factor
+      real :: lgt1, lgt2, lgf1, lgf2, lgf, lgt_current
+      integer :: it_file
 !
 !   25-jun-2025/TP: carved from dspecial_dt
 ! 
@@ -1052,7 +1082,6 @@ module Special
           print*,'=',it_file, t_file(it_file), t, t_file(it_file+1), t_ini
           call fatal_error('dspecial_dt','it<1.or.it>nt')
         endif
-        !if (ip<14) print*,'ALBERTO: ',it_file, t_file(it_file), t, t_file(it_file)+1, t_ini
         lgt1=lgt_file(it_file)
         lgt2=lgt_file(it_file+1)
         lgf1=lgff(it_file)
@@ -1060,21 +1089,7 @@ module Special
         lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
         scl_factor_target=10**lgf/a_ini
         scale_factor=10**lgf/a_ini
-        !if (ip<14) print*,'ALBERTO, a/a_*: ',scl_factor_target
-        !if (ip<14) print*,'iproc,lgf1,lgf,lgf2=',iproc,lgf1,lgf,lgf2
-        lgf1=lgff2(it_file)
-        lgf2=lgff2(it_file+1)
-        lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
-        Hp_target=10**lgf/Hp_ini
-        !if (ip<14) print*,'ALBERTO HH/HH_*: ',Hp_target
-        !if (ip<14) print*,'iproc,lgt1,lgt,lgt2=',iproc,lgt1,lgt_current,lgt2
-        !if (ip<14) print*,'iproc,lgf1,lgf,lgf2=',iproc,lgf1,lgf,lgf2
-        lgf1=lgff3(it_file)
-        lgf2=lgff3(it_file+1)
-        lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
-        appa_target=10**lgf/Hp_ini**2
-        !if (ip<14) print*,'ALBERTO app/a/HH_*^2: ',appa_target
-    endsubroutine read_scl_factor_etc
+    endsubroutine read_scl_factor
 !***********************************************************************
     subroutine dspecial_dt(f,df,p)
 !
@@ -1129,7 +1144,7 @@ module Special
 !  So, lgt_current is not the log10 of the current time t, but of t/t_ini.
 !  At the end of the run, t=1.5e18, but t/t_ini=3.11900E+13 or so.
 !
-        call read_scl_factor_etc
+        call read_scl_factor
       endif
 !
 !  Possibilty to compensate against the decaying stress in decaying turbulence.
@@ -2396,7 +2411,14 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
 !
 ! alberto (sep 8 2023), added option to solve for \xi in Horndeski theories
 !
-      if (lgpu .and. .not. lread_scl_factor_file) call compute_scl_factor
+      if (lgpu) then
+              if (lread_scl_factor_file) then
+                      call read_scl_factor
+              else
+                      call compute_scl_factor
+              endif
+      endif
+      if (lread_scl_factor_file) call read_Hp_and_appa_target
       if (lhorndeski.or.lhorndeski_xi) then
         select case (ihorndeski_time)
           case ('const')
