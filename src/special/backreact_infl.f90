@@ -739,9 +739,6 @@ module Special
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real :: boost, gam_EB, eprime, bprime, jprime1
       real :: energy_scale, mass_suppression_fact
-!      real, dimension (nx,3) :: el, bb, gphi
-!      real, dimension (nx) :: e2, b2, gphi2, dphi, a21, a2rhop, a2rho
-!      real, dimension (nx) :: ddota, phi, a2, Vpotential, edotb
 !
 !  If requested, calculate here <dphi**2+gphi**2+(4./3.)*(E^2+B^2)/a^2>.
 !  This needs to be done on all processors, because otherwise ascale
@@ -779,13 +776,7 @@ module Special
         call mpiallreduce_sum(edotbm,edotbm_all)
       endif
 !
-!  mean electric energy density
-!
-!  Get eta_xtdep from magnetic.
-!
-!     if (lmagnetic .and. lem_backreact) then
-!       call get_shared_variable('eta_xtdep',eta_xtdep)
-!     endif
+!  Schwinger conductivities:
 !
       if (lrho_chi .or. lnoncollinear_EB .or. lnoncollinear_EB_aver &
         .or. lcollinear_EB .or. lcollinear_EB_aver) then
@@ -811,14 +802,11 @@ module Special
       call mpireduce_sum(a2rhogphim,a2rhogphim_all)
       call mpiallreduce_sum(ddotam,ddotam_all)
 !
-!  Choice of prescription for Hscript
-!  Consider renaming Hscript -> Hscript2
+!  Choice of prescription for Hscript.
 !
       if (lroot .and. lflrw) then
         select case (Hscript_choice)
           case ('default')
-            !Hscript=(8.*pi/3.)*sqrt(a2rhom_all)
-!AB: this version below was the old one, but appears incorrect
             Hscript=sqrt((8.*pi/3.)*a2rhom_all)
           case ('set')
             Hscript=Hscript0
