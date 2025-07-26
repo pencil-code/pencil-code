@@ -45,7 +45,7 @@ module EquationOfState
   real :: cp=impossible, cp1=impossible, cv=impossible, cv1=impossible
   real :: pres_corr=0.1
   real :: cs2bot=impossible, cs2top=impossible
-  real :: fac_cs=1.0, cs20_tdep_rate=1.0
+  real :: fac_cs=1.0, cs20_tdep_rate=1.0, cs_tdep_ascale_power=0.
   real, pointer :: mpoly
   real :: sigmaSBt=1.0
   integer :: isothmid=0
@@ -68,7 +68,7 @@ module EquationOfState
 !
 !  Background stratification data
 !
-  character(len=labellen) :: gztype = 'zero'
+  character(len=labellen) :: gztype = 'zero', cs_tdep='exponential'
   real :: gz_coeff = 0.0
 !
 !  Input parameters.
@@ -77,7 +77,7 @@ module EquationOfState
       xHe, mu, cp, cs0, rho0, gamma, error_cp, &
       sigmaSBt, lanelastic_lin, lcs_as_aux, lcs_as_comaux,&
       fac_cs,isothmid, lstratz, gztype, gz_coeff, lpres_grad, &
-      lcs_tdep, cs20_tdep_rate
+      lcs_tdep, cs20_tdep_rate, cs_tdep, cs_tdep_ascale_power
 !
 !  Run parameters.
 !
@@ -85,7 +85,7 @@ module EquationOfState
       xHe, mu, cp, cs0, rho0, gamma, error_cp, &
       pres_corr, sigmaSBt, &
       lanelastic_lin, lcs_as_aux, lcs_as_comaux, &
-      lcs_tdep, cs20_tdep_rate
+      lcs_tdep, cs20_tdep_rate, cs_tdep, cs_tdep_ascale_power
 !
 !  Module variables
 !
@@ -958,10 +958,19 @@ module EquationOfState
 !
 !  Allow here for the possibility of a time-dependent sound speed
 !
-          if (lcs_tdep) then
-            if (lpenc_loc(i_cs2)) p%cs2=cs20*exp(-cs20_tdep_rate*t)
-          else
-            if (lpenc_loc(i_cs2)) p%cs2=cs20
+          if (lpenc_loc(i_cs2)) then
+            if (lcs_tdep) then
+              select case (cs_tdep)
+              case ('exponential')
+                p%cs2=cs20*exp(-cs20_tdep_rate*t)
+              case ('ascale_power')
+                p%cs2=cs20*ascale**cs_tdep_ascale_power
+              case default
+                call fatal_error('calc_pencils_eos_pencpar','unknown value of cs_tdep')
+              endselect
+            else
+              p%cs2=cs20
+            endif
           endif
           if (lpenc_loc(i_lnTT)) p%lnTT=lnTT0
           if (lpenc_loc(i_glnTT)) p%glnTT=0.0
