@@ -28,8 +28,7 @@ module Viscosity
 !
   integer, parameter :: nvisc_max=4
   character (len=labellen), dimension(nvisc_max) :: ivisc=''
-
-  character (len=labellen) :: lambda_profile='uniform'
+  character (len=labellen) :: lambda_profile='uniform', tdep_nu_type='powerlaw'
   real :: nu=0.0, nu_cspeed=0.5
   real :: nu_tdep=0.0, nu_tdep_exponent=0.0, nu_tdep_t0=0.0, nu_tdep_toffset=0.0
   real :: nu_r_reduce=0.0
@@ -122,7 +121,7 @@ module Viscosity
   logical, pointer :: lcalc_uuavg
   logical :: lvisc_nu_reduce_ddr=.false.
   real :: no_visc_heat_z0=max_real, no_visc_heat_zwidth=0.0
-  real :: damp_sound=0.
+  real :: damp_sound=0., nu_tdep_ascale_power=0.
   real :: h_sld_visc=2.0, nlf_sld_visc=1.0
 !
   namelist /viscosity_run_pars/ &
@@ -141,7 +140,8 @@ module Viscosity
       h_sld_visc,nlf_sld_visc, lnusmag_as_aux, lsld_notensor, &
       lvisc_smag_Ma, nu_smag_Ma2_power, nu_cspeed, lno_visc_heat_zbound, &
       no_visc_heat_z0,no_visc_heat_zwidth, div_sld_visc ,lvisc_forc_as_aux, &
-      lvisc_rho_nu_const_prefact, nu_rcyl_min, nu_r_reduce
+      lvisc_rho_nu_const_prefact, nu_rcyl_min, nu_r_reduce, &
+      tdep_nu_type, nu_tdep_ascale_power
 !
 ! diagnostic variable markers (needs to be consistent with reset list below)
 !
@@ -2385,11 +2385,18 @@ module Viscosity
 !  The default is problematic because then nu_tdep /= nu for t < nu_tdep_t0.
 !
       if (lvisc_nu_tdep .or. lvisc_hyper3_simplified_tdep) then
-        if (lvisc_nu_tdep_t0_norm) then
-          nu_tdep=nu*max(real(t-nu_tdep_toffset)/nu_tdep_t0,1.)**nu_tdep_exponent
-        else
-          nu_tdep=nu*max(real(t-nu_tdep_toffset),nu_tdep_t0)**nu_tdep_exponent
-        endif
+        select case (tdep_nu_type)
+        case ('powerlaw')
+          if (lvisc_nu_tdep_t0_norm) then
+            nu_tdep=nu*max(real(t-nu_tdep_toffset)/nu_tdep_t0,1.)**nu_tdep_exponent
+          else
+            nu_tdep=nu*max(real(t-nu_tdep_toffset),nu_tdep_t0)**nu_tdep_exponent
+          endif
+        case ('ascale_power')
+          nu_tdep=nu*ascale**nu_tdep_ascale_power
+        case default
+          call fatal_error('viscosity_after_boundary','unknown value of tdep_nu_type')
+        endselect
       endif
 !
 !  Slope limited diffusion following Rempel (2014).
