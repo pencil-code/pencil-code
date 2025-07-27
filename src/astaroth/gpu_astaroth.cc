@@ -53,7 +53,8 @@ bool calculated_coeff_scales = false;
   #define nu nu__mod__viscosity
   #define nu_hyper2 nu_hyper2__mod__viscosity
   #define nu_hyper3 nu_hyper3__mod__viscosity
- 
+  #define n_odevars n_odevars__mod__cdata 
+  #define AC_f_ode AC_f_ode__mod__cdata 
   #define gamma gamma__mod__equationofstate
 
   #define eta eta__mod__magnetic
@@ -1195,7 +1196,14 @@ extern "C" void substepGPU(int isubstep, double t)
    }
    if (isubstep == itorder) forcing_params.Update();  // calculate on CPU and load into GPU
 #endif
-
+  //TP: this is simply the initial implementation
+  //TODO: benchmark what is the most efficient way of getting ode array to the GPU each substep
+  if(n_odevars > 0)
+  {
+	  acGridSynchronizeStream(STREAM_DEFAULT);
+	  acDeviceLoad(acGridGetDevice(), STREAM_DEFAULT, mesh.info, AC_f_ode);
+	  acGridSynchronizeStream(STREAM_DEFAULT);
+  }
   acDeviceSetInput(acGridGetDevice(), AC_step_num,(PC_SUB_STEP_NUMBER) (isubstep-1));
   if (lshear && isubstep == 1) acDeviceSetInput(acGridGetDevice(), AC_shear_delta_y, deltay);
   Device dev = acGridGetDevice();
