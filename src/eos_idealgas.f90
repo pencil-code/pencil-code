@@ -45,7 +45,7 @@ module EquationOfState
   real :: cp=impossible, cp1=impossible, cv=impossible, cv1=impossible
   real :: pres_corr=0.1
   real :: cs2bot=impossible, cs2top=impossible
-  real :: fac_cs=1.0, cs20_tdep_rate=1.0
+  real :: fac_cs=1.0, cs20_tdep_rate=1.0, cs2_tdep_ascale_power=0.
   real, pointer :: mpoly
   real :: sigmaSBt=1.0
   integer :: isothmid=0
@@ -54,7 +54,7 @@ module EquationOfState
   logical :: leos_isochoric=.false., leos_isobaric=.false.
   logical :: leos_localisothermal=.false.
   logical :: lanelastic_lin=.false., lcs_as_aux=.false., lcs_as_comaux=.false.
-  logical :: lcs_tdep=.false.
+  logical :: lcs2_tdep=.false.
 !
   character (len=labellen) :: meanfield_Beq_profile
   real, pointer :: meanfield_Beq, chit_quenching, uturb
@@ -68,7 +68,7 @@ module EquationOfState
 !
 !  Background stratification data
 !
-  character(len=labellen) :: gztype = 'zero'
+  character(len=labellen) :: gztype = 'zero', tdep_cs2_type='exponential'
   real :: gz_coeff = 0.0
 !
 !  Input parameters.
@@ -77,7 +77,7 @@ module EquationOfState
       xHe, mu, cp, cs0, rho0, gamma, error_cp, &
       sigmaSBt, lanelastic_lin, lcs_as_aux, lcs_as_comaux,&
       fac_cs,isothmid, lstratz, gztype, gz_coeff, lpres_grad, &
-      lcs_tdep, cs20_tdep_rate
+      lcs2_tdep, cs20_tdep_rate, tdep_cs2_type, cs2_tdep_ascale_power
 !
 !  Run parameters.
 !
@@ -85,7 +85,7 @@ module EquationOfState
       xHe, mu, cp, cs0, rho0, gamma, error_cp, &
       pres_corr, sigmaSBt, &
       lanelastic_lin, lcs_as_aux, lcs_as_comaux, &
-      lcs_tdep, cs20_tdep_rate
+      lcs2_tdep, cs20_tdep_rate, tdep_cs2_type, cs2_tdep_ascale_power
 !
 !  Module variables
 !
@@ -957,11 +957,21 @@ module EquationOfState
         elseif (leos_isothermal) then
 !
 !  Allow here for the possibility of a time-dependent sound speed
+!  Note that we scale here cs^2, not cs. Therefore we use the name XX
 !
-          if (lcs_tdep) then
-            if (lpenc_loc(i_cs2)) p%cs2=cs20*exp(-cs20_tdep_rate*t)
-          else
-            if (lpenc_loc(i_cs2)) p%cs2=cs20
+          if (lpenc_loc(i_cs2)) then
+            if (lcs2_tdep) then
+              select case (tdep_cs2_type)
+              case ('exponential')
+                p%cs2=cs20*exp(-cs20_tdep_rate*t)
+              case ('ascale_power')
+                p%cs2=cs20*ascale**cs2_tdep_ascale_power
+              case default
+                call fatal_error('calc_pencils_eos_pencpar','unknown value of tdep_cs2_type')
+              endselect
+            else
+              p%cs2=cs20
+            endif
           endif
           if (lpenc_loc(i_lnTT)) p%lnTT=lnTT0
           if (lpenc_loc(i_glnTT)) p%glnTT=0.0
@@ -4566,7 +4576,7 @@ module EquationOfState
     call copy_addr(lanelastic_lin,p_par(24)) ! bool
     call copy_addr(lcs_as_aux,p_par(25)) ! bool
     call copy_addr(lcs_as_comaux,p_par(26)) ! bool
-    call copy_addr(lcs_tdep,p_par(27)) ! bool
+    call copy_addr(lcs2_tdep,p_par(27)) ! bool
     call copy_addr(eth0z,p_par(28)) ! (mz)
     call copy_addr(xhe,p_par(29))
     call copy_addr(mu,p_par(30))
