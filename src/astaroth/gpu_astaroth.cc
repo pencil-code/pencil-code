@@ -1278,34 +1278,29 @@ void copyFarray(AcReal* f)
   //    This is fine since 1d simulations are anyways mainly for testing
   if(dimensionality == 1)
   {
- 	if(nxgrid != 1)
-	{
-		for(int x = 0; x < nx; ++x)
+  	for (int i = 0; i < end; ++i)
+  	{
+		if(i >= mvar && maux_vtxbuf_index[i] == -1) continue;
+ 		if(nxgrid != 1)
 		{
-  			for (int i = 0; i < end; ++i)
-  			{
+			for(int x = 0; x < nx; ++x)
+			{
 				const size_t f_index = (NGHOST+x)+ mx*(NGHOST + my*(NGHOST));
 				mesh.vertex_buffer[i][f_index] = dst->vertex_buffer[i][NGHOST+x];
 			}
 		}
-	}
- 	if(nygrid != 1)
-	{
-		for(int y = 0; y < ny; ++y)
+ 		if(nygrid != 1)
 		{
-  			for (int i = 0; i < end; ++i)
-  			{
+			for(int y = 0; y < ny; ++y)
+			{
 				const size_t f_index = (NGHOST)+ mx*((y+NGHOST) + my*(NGHOST));
 				mesh.vertex_buffer[i][f_index] = dst->vertex_buffer[i][NGHOST+y];
 			}
 		}
-	}
- 	if(nzgrid != 1)
-	{
-		for(int z = 0; z < nz; ++z)
+ 		if(nzgrid != 1)
 		{
-  			for (int i = 0; i < end; ++i)
-  			{
+			for(int z = 0; z < nz; ++z)
+			{
 				const size_t f_index = (NGHOST)+ mx*(NGHOST + my*(z+NGHOST));
 				mesh.vertex_buffer[i][f_index] = dst->vertex_buffer[i][NGHOST+z];
 			}
@@ -1414,40 +1409,32 @@ extern "C" void loadFarray()
   {
   	acHostMeshCopy(mesh, &tmp);
 	src = tmp;
- 	if(nxgrid != 1)
-	{
-    		for (int i = 0; i < mfarray; ++i)
-  		{
-			const int index = (i < mvar) ? i :
-					  maux_vtxbuf_index[i] ? maux_vtxbuf_index[i] :
-					  -1;
-			if(index == -1) continue;
+    	for (int i = 0; i < mfarray; ++i)
+  	{
+		const int index = (i < mvar) ? i : maux_vtxbuf_index[i];
+		if(index == -1) continue;
+ 		if(nxgrid != 1)
+		{
 			for(int x = 0; x < nx; ++x)
 			{
 				const size_t f_index = (NGHOST+x)+ mx*(NGHOST + my*(NGHOST));
 				src.vertex_buffer[index][NGHOST+x]  = mesh.vertex_buffer[index][f_index];
 			}
 		}
-	}
-	else if(nygrid != 1)
-	{
-    		for (int i = 0; i < mvar; ++i)
-  		{
+		else if(nygrid != 1)
+		{
 			for(int y = 0; y < ny; ++y)
 			{
 				const size_t f_index = (NGHOST)+ mx*((NGHOST+y) + my*(NGHOST));
-				src.vertex_buffer[i][NGHOST+y]  = mesh.vertex_buffer[i][f_index];
+				src.vertex_buffer[index][NGHOST+y]  = mesh.vertex_buffer[index][f_index];
 			}
 		}
-	}
-	else if(nzgrid != 1)
-	{
-    		for (int i = 0; i < mvar; ++i)
-  		{
+		else if(nzgrid != 1)
+		{
 			for(int z = 0; z < nz; ++z)
 			{
 				const size_t f_index = (NGHOST)+ mx*(NGHOST + my*(z+NGHOST));
-				src.vertex_buffer[i][NGHOST+z]  = mesh.vertex_buffer[i][f_index];
+				src.vertex_buffer[index][NGHOST+z]  = mesh.vertex_buffer[index][f_index];
 			}
 		}
 	}
@@ -1459,7 +1446,7 @@ extern "C" void loadFarray()
 
     int n_aux_on_gpu = 0;
     for (int i = 0; i < mfarray; ++i)
-      if (maux_vtxbuf_index[i])
+      if (maux_vtxbuf_index[i] != -1)
       {
 	      n_aux_on_gpu++;
   		acDeviceLoadVertexBuffer(acGridGetDevice(), STREAM_DEFAULT, src, VertexBufferHandle(maux_vtxbuf_index[i]));
@@ -1531,7 +1518,7 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint)
     int n_aux_on_gpu = 0;
     for (int i = 0; i < mfarray; ++i)
     {
-      if (maux_vtxbuf_index[i])
+      if (maux_vtxbuf_index[i] != -1)
       {
 	++n_aux_on_gpu;
         mesh.vertex_buffer[maux_vtxbuf_index[i]] = &farr[mw*i + z_offset];

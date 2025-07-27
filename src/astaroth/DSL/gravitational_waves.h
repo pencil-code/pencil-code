@@ -112,7 +112,7 @@ Kernel gravitational_waves_solve_and_stress(real AC_t__mod__cdata, real AC_dt__m
     }
     real scale_factor__mod__special
     if (AC_lgpu__mod__cparam) {
-      if (AC_lread_scl_factor_file__mod__cdata) {
+      if (AC_t__mod__cdata > 0. && AC_lread_scl_factor_file__mod__cdata) {
         lgt_current_0=alog10(AC_t__mod__cdata)+AC_lgt_ini__mod__special
         int it_file_0=int((lgt_current_0-AC_lgt0__mod__special)/AC_dlgt__mod__special)+1
         lgt1_0=AC_lgt_file__mod__special[it_file_0-1]
@@ -148,7 +148,7 @@ Kernel gravitational_waves_solve_and_stress(real AC_t__mod__cdata, real AC_dt__m
     }
     real hp_target__mod__cdata
     real appa_target__mod__cdata
-    if (AC_lread_scl_factor_file__mod__cdata) {
+    if (AC_t__mod__cdata > 0.0 && AC_lread_scl_factor_file__mod__cdata) {
       lgt_current_2=alog10(AC_t__mod__cdata)+AC_lgt_ini__mod__special
       int it_file_2=int((lgt_current_2-AC_lgt0__mod__special)/AC_dlgt__mod__special)+1
       lgt1_2=AC_lgt_file__mod__special[it_file_2-1]

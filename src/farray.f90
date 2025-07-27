@@ -184,10 +184,10 @@ module FArrayManager
 
         !TP: first we get the largest non zero index in the index array
         vtxbuf_index = maxval(maux_vtxbuf_index)
-        !TP: if the largest one is zero this is the first one and then we know its index to be 
+        !TP: if the largest one is -1 this is the first one and then we know its index to be 
         !    mvar (because of C's zero-based indexing)
         !    else it should be one more than the largest existing one
-        if (vtxbuf_index == 0) then
+        if (vtxbuf_index == -1) then
           vtxbuf_index = mvar
         else
           vtxbuf_index = vtxbuf_index+1

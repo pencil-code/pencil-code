@@ -847,11 +847,11 @@ module Cdata
   real :: tau_aver1 = 1.0
 !
 !  Info whether maux is needed and used on the GPU
-!  Index for var is non-zero iff var is used on the GPU
+!  Index for var is not -1 iff var is used on the GPU
 !  The index corresponds to the vertex buffer index on Astaroth
-!  Size of mfarray to make sure we can store the handle (for 1 to mvar zero)
+!  Size of mfarray to make sure we can store the handle (for 1 to mvar -1)
 !
-   integer, dimension(mfarray) :: maux_vtxbuf_index = 0
+   integer, dimension(mfarray) :: maux_vtxbuf_index = -1
    integer :: enum_unit_system = 0
 !
 !  Define and initialize lambda5, so that it can be used to tell whether
