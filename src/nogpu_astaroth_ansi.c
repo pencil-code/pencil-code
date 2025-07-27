@@ -6,7 +6,7 @@
 #include "headers_c.h"
 
 /* ------------------------------------------------------------------- */
-void FTNIZE(initialize_gpu_c)(REAL* f, FINT* comm_fint)
+void FTNIZE(initialize_gpu_c)(REAL* f, FINT* comm_fint, double* t)
 {
 }
 /* ------------------------------------------------------------------- */
@@ -72,7 +72,7 @@ void FTNIZE(test_rhs_c)(REAL* f_in, REAL* df_truth)
 {
 }
 /* ------------------------------------------------------------------- */
-void FTNIZE(gpu_set_dt_c)()
+void FTNIZE(gpu_set_dt_c)(double* t)
 {
 }
 /* ------------------------------------------------------------------- */

@@ -98,7 +98,7 @@ contains
                                     trim(str(3:))//'"')
 !
       if (dt<=0.) dt = dtmin
-      call initialize_gpu_c(f,MPI_COMM_PENCIL)
+      call initialize_gpu_c(f,MPI_COMM_PENCIL,t)
 !
 ! Load farray to gpu
 !
@@ -181,7 +181,7 @@ contains
 !**************************************************************************
     subroutine gpu_set_dt
 !
-      call gpu_set_dt_c
+      call gpu_set_dt_c(t)
 !
     endsubroutine gpu_set_dt
 !**************************************************************************

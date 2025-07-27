@@ -24,7 +24,7 @@
 void torch_train_c_api(REAL*); 
 void torch_infer_c_api(int);
 void registerGPU();
-void initializeGPU(REAL*, FINT);
+void initializeGPU(REAL*, FINT, double);
 void finalizeGPU();
 void getFArrayIn(REAL **);
 void substepGPU(int, double);
@@ -39,7 +39,7 @@ int  updateInConfigArrName(char *);
 void updateInConfigScal(int,REAL);
 int  updateInConfigScalName(char *, REAL);
 void testRHS(REAL*,REAL*);
-void gpuSetDt();
+void gpuSetDt(double t);
 void random_initial_condition(void);
 
 // for Gnu Compiler
@@ -66,7 +66,7 @@ void FTNIZE(torchinfer_c)(FINT* itsub)
 	torch_infer_c_api(*itsub);
 }
 /* ---------------------------------------------------------------------- */
-void FTNIZE(initialize_gpu_c)(REAL* f, FINT* comm_fint)
+void FTNIZE(initialize_gpu_c)(REAL* f, FINT* comm_fint, double* t)
 {
 // Initializes GPU.  
   /*
@@ -80,7 +80,7 @@ void FTNIZE(initialize_gpu_c)(REAL* f, FINT* comm_fint)
   //printf("dy = %f\n", __cdata_MOD_dy);
   //printf("dz = %f\n", __cdata_MOD_dz);
 
-  initializeGPU(f, *comm_fint);
+  initializeGPU(f, *comm_fint,*t);
 /*
   printf("xmin = %e\n", x[4]);
   printf("xmax = %e\n", x[nx-1+3]);
@@ -206,9 +206,9 @@ void FTNIZE(test_rhs_c)(REAL* f_in, REAL* df_truth)
   testRHS(f_in,df_truth);
 }
 /* ---------------------------------------------------------------------- */
-void FTNIZE(gpu_set_dt_c)()
+void FTNIZE(gpu_set_dt_c)(double* t)
 {
-  gpuSetDt();
+  gpuSetDt(*t);
 }
 /* ---------------------------------------------------------------------- */
 void FTNIZE(calcq_gpu_c)(int *idir, int3 *dir, int3 *stop, real3 *unit_vec, int *lperiodic){

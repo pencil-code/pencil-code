@@ -3410,10 +3410,10 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
     call copy_addr(h0,p_par(68))
     call copy_addr(horndeski_alpm_prime,p_par(69))
     call copy_addr(nt_file,p_par(70)) ! int
-    if (allocated(lgt_file)) call copy_addr(lgt_file,p_par(71)) ! (nt_file)
-    if (allocated(lgff)) call copy_addr(lgff,p_par(72)) ! (nt_file)
-    if (allocated(lgff2)) call copy_addr(lgff2,p_par(73)) ! (nt_file)
-    if (allocated(lgff3)) call copy_addr(lgff3,p_par(74)) ! (nt_file)
+    if (allocated(lgt_file)) call copy_addr(lgt_file,p_par(71)) ! (nt_file) gmem
+    if (allocated(lgff)) call copy_addr(lgff,p_par(72)) ! (nt_file) gmem
+    if (allocated(lgff2)) call copy_addr(lgff2,p_par(73)) ! (nt_file) gmem
+    if (allocated(lgff3)) call copy_addr(lgff3,p_par(74)) ! (nt_file) gmem
 
 
     endsubroutine pushpars2c

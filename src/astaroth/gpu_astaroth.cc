@@ -862,10 +862,15 @@ AcReal max_diffus(AcReal maxnu_dyn, AcReal maxchi_dyn)
   return max_diffusions[0]*dxyz_vals.x/cdtv + max_diffusions[1]*dxyz_vals.y/cdtv2 + max_diffusions[2]*dxyz_vals.z/cdtv3;
 }
 /***********************************************************************************************/
-AcReal calc_dt1_courant()
+AcReal calc_dt1_courant(const AcReal t)
 {
 #if TRANSPILATION
-      return acDeviceGetOutput(acGridGetDevice(),AC_dt1_max);
+      const AcReal gpu_max_dt1 = acDeviceGetOutput(acGridGetDevice(),AC_dt1_max);
+      if(lfractional_tstep_advance__mod__cdata)
+      {
+	      return std::max(gpu_max_dt1,1./(dt_incr__mod__cdata*t));
+      }
+      return gpu_max_dt1;
 #endif
       AcReal maxadvec = 0.;
 #if LHYDRO
@@ -884,7 +889,7 @@ AcReal calc_dt1_courant()
       return (AcReal)sqrt(pow(maxadvec, 2) + pow(max_diffus(maxnu_dyn,maxchi_dyn), 2));
 }
 /***********************************************************************************************/
-AcReal GpuCalcDt()
+AcReal GpuCalcDt(const AcReal t)
 {
 	acGridSynchronizeStream(STREAM_ALL);
   	acDeviceSetInput(acGridGetDevice(), AC_step_num, (PC_SUB_STEP_NUMBER) 0);
@@ -892,7 +897,7 @@ AcReal GpuCalcDt()
 	acGridExecuteTaskGraph(graph,1);
 	acGridSynchronizeStream(STREAM_ALL);
         acDeviceSwapBuffers(acGridGetDevice());
-	return calc_dt1_courant();
+	return calc_dt1_courant(t);
 }
 /***********************************************************************************************/
 extern "C" void sourceFunctionAndOpacity(int inu)
@@ -1179,7 +1184,6 @@ extern "C" void substepGPU(int isubstep, double t)
 //  Do the 'isubstep'th integration step on all GPUs on the node and handle boundaries.
 //
 {
-   //TP: with on does timestepping the way PC does it
    //TP: logs performance metrics of Astaroth
    const bool log = false;
 #if LFORCING
@@ -1201,13 +1205,11 @@ extern "C" void substepGPU(int isubstep, double t)
   if (isubstep == 1) 
   {
 	  //TP: done to have the same timestep as PC when testing
-	  if (ldt && lcourant_dt && lcpu_timestep_on_gpu) dt1_interface = GpuCalcDt();
+	  if (ldt && lcourant_dt && lcpu_timestep_on_gpu) dt1_interface = GpuCalcDt(AcReal(t));
 	  if (ldt) set_dt(dt1_interface);
 	  acDeviceSetInput(acGridGetDevice(), AC_dt,dt);
   }
-#if TRANSPILATION
   acDeviceSetInput(acGridGetDevice(), AC_t,(AcReal)t);
-#endif
   //fprintf(stderr,"before acGridExecuteTaskGraph");
   AcTaskGraph *rhs =  acGetOptimizedDSLTaskGraph(AC_rhs);
   auto start = MPI_Wtime();
@@ -1244,7 +1246,7 @@ extern "C" void substepGPU(int isubstep, double t)
     }
     else 
     {
-      dt1_ = calc_dt1_courant();
+      dt1_ = calc_dt1_courant(AcReal(t));
     }
     dt1_interface = dt1_;
   }
@@ -1462,7 +1464,7 @@ extern "C" void loadFarray()
 /***********************************************************************************************/
 void testBCs();     // forward declaration
 /***********************************************************************************************/
-extern "C" void initializeGPU(AcReal *farr, int comm_fint)
+extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t)
 {
   //Setup configurations used for initializing and running the GPU code
   comm_pencil = MPI_Comm_f2c(comm_fint);
@@ -1560,6 +1562,7 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint)
   //TP: important to do before autotuning
   acDeviceSetInput(acGridGetDevice(), AC_step_num,(PC_SUB_STEP_NUMBER)0);
   acDeviceSetInput(acGridGetDevice(), AC_dt,dt);
+  acDeviceSetInput(acGridGetDevice(), AC_t,AcReal(t));
   acDeviceSetInput(acGridGetDevice(), AC_shear_delta_y,deltay);
 		
   if (ltest_bcs) testBCs();
@@ -2001,10 +2004,11 @@ void testBCs()
   acHostMeshDestroy(&tmp_mesh_to_store);
 }
 /***********************************************************************************************/
-extern "C" void gpuSetDt()
+extern "C" void gpuSetDt(double t)
 {
 	acGridSynchronizeStream(STREAM_ALL);
-	beforeBoundaryGPU(false,0,0.0);
+ 	acDeviceSetInput(acGridGetDevice(), AC_t,AcReal(t));
+	beforeBoundaryGPU(false,0,t);
 	if (!lcourant_dt)
 	{
 		fprintf(stderr,"gpuSetDt works only for Courant timestep!!\n");
@@ -2016,7 +2020,7 @@ extern "C" void gpuSetDt()
 
 	acGridExecuteTaskGraph(graph,1);
 	acGridSynchronizeStream(STREAM_ALL);
-	AcReal dt1_ = calc_dt1_courant();
+	AcReal dt1_ = calc_dt1_courant(AcReal(t));
 	set_dt(dt1_);
 	dt1_interface = dt1_;
         acDeviceSwapBuffers(acGridGetDevice());

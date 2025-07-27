@@ -97,7 +97,8 @@ if [[ $1 == 'par' ]]; then
             t cont
 	    s/^[^!]*call  *copy_addr[a-zA-Z0-9_]* *( *\([a-zA-Z0-9_]*\) *, *p_par(\([0-9]*\))) *! *\([a-zA-Z][a-zA-Z0-9_]*\) *$/ PCLoad(config,\uA\uC\l_\1__mod__'$modname',\1__mod__'$modname'); \/\/ [\2-1] \1 \3/w tmp1
             t cont
-	    s/^[^!]*call  *copy_addr[a-zA-Z0-9_]* *( *\([a-zA-Z0-9_]*\) *, *p_par(\([0-9]*\))) *! *( *\([a-zA-Z0-9_][a-zA-Z0-9_+\*\/-]*\) *) *$/ PCLoad(config,\uA\uC\l_\1__mod__'$modname',\1__mod__'$modname'); \/\/ [\2-1] \1 real(\3)/w tmp1
+           s/^[^!]*call  *copy_addr[a-zA-Z0-9_]* *( *\([a-zA-Z0-9_]*\) *, *p_par(\([0-9]*\))) *! *( *\([a-zA-Z0-9_][a-zA-Z0-9_+\*\/-]*\) *) *$/ PCLoad(config,\uA\uC\l_\1__mod__'$modname',\1__mod__'$modname'); \/\/ [\2-1] \1 real(\3)/w tmp1
+	    s/^[^!]*call  *copy_addr[a-zA-Z0-9_]* *( *\([a-zA-Z0-9_]*\) *, *p_par(\([0-9]*\))) *! *( *\([a-zA-Z0-9_][a-zA-Z0-9_+\*\/-]*\) *) gmem *$/ PCLoad(config,\uA\uC\l_\1__mod__'$modname',\1__mod__'$modname'); \/\/ [\2-1] \1 real(\3) gmem/w tmp1
 	    s/^[^!]*call  *copy_addr[a-zA-Z0-9_]* *( *\([a-zA-Z0-9_]*\) *, *p_par(\([0-9]*\))) *! bool *( *\([a-zA-Z0-9_][a-zA-Z0-9_+\*\/-]*\) *) *$/ PCLoad(config,\uA\uC\l_\1__mod__'$modname',\1__mod__'$modname'); \/\/ [\2-1] \1 bool(\3)/w tmp1
 	    s/^[^!]*call  *copy_addr[a-zA-Z0-9_]* *( *\([a-zA-Z0-9_]*\) *, *p_par(\([0-9]*\))) *! int *( *\([a-zA-Z0-9_][a-zA-Z0-9_+\*\/-]*\) *) *$/ PCLoad(config,\uA\uC\l_\1__mod__'$modname',\1__mod__'$modname'); \/\/ [\2-1] \1 int(\3)/w tmp1
 	    s/^[^!]*call  *copy_addr[a-zA-Z0-9_]* *( *\([a-zA-Z0-9_]*\) *, *p_par(\([0-9]*\))) *! int *( *\([a-zA-Z0-9_][a-zA-Z0-9_+\*\/-]*\) *) *( *\([a-zA-Z0-9_][a-zA-Z0-9_+\*\/-]*\) *) *$/ PCLoad(config,\uA\uC\l_\1__mod__'$modname',\1__mod__'$modname'); \/\/ [\2-1] \1 int(\3) (\4)/w tmp1
@@ -167,6 +168,7 @@ if [ -f tmp1 ]; then
          b end
          : dimen
          s/^.*\/\/ *\(\[.*\]\) *\([a-zA-Z0-9_]*\)  *\([a-zA-Z0-9_]*\) *\(( *[a-zA-Z0-9_+\*\/-]* *)\) *$/#define \2__mod__'$modname' ((\3 *) p_'$1'_'$modname'\1) \/\/ \4/
+         s/^.*\/\/ *\(\[.*\]\) *\([a-zA-Z0-9_]*\)  *\([a-zA-Z0-9_]*\) *\(( *[a-zA-Z0-9_+\*\/-]* *)\) gmem *$/#define \2__mod__'$modname' ((\3 *) p_'$1'_'$modname'\1) \/\/ \4 gmem/
          s/^.*\/\/ *\(\[.*\]\) *\([a-zA-Z0-9_]*\)  *\([a-zA-Z0-9_]*\) *\(( *[a-zA-Z0-9_+\*\/-]* *)\) *\(( *[a-zA-Z0-9_+\*\/-]* *)\) *$/#define \2__mod__'$modname' ((\3 *) p_'$1'_'$modname'\1) \/\/ \4 \5/ 
          s/^.*\/\/ *\(\[.*\]\) *\([a-zA-Z0-9_]*\)  *\([a-zA-Z0-9_]*\) *\(( *[a-zA-Z0-9_+\*\/-]* *)\) *\(( *[a-zA-Z0-9_+\*\/-]* *)\) *\(( *[a-zA-Z0-9_+\*\/-]* *)\) *$/#define \2__mod__'$modname' ((\3 *) p_'$1'_'$modname'\1) \/\/ \4 \5 \6/
          s/^.*\/\/ *\(\[.*\]\) *\([a-zA-Z0-9_]*\)  *\([a-zA-Z0-9_]*\) *\(( *[a-zA-Z0-9_+\*\/-]* *)\) *\(( *[a-zA-Z0-9_+\*\/-]* *)\) *\(( *[a-zA-Z0-9_+\*\/-]* *)\) *\(( *[a-zA-Z0-9_+\*\/-]* *)\) *$/#define \2__mod__'$modname' ((\3 *) p_'$1'_'$modname'\1) \/\/ \4 \5 \6 \7/
@@ -179,6 +181,7 @@ if [ -f tmp1 ]; then
 	 s/^#define *\([a-zA-Z0-9_]*\) (( *\([a-zA-Z0-9_]*\) \*).*\/\/ *(\(chit_prof_fluct_stored_size\)) *$/gmem \2 AC_\1[chit_prof_fluct_stored_size] \/\/ from '$modname'\n#define \1 \AC_\1/
 
          s/^#define *\([a-zA-Z0-9_]*\) (( *\([a-zA-Z0-9_]*\) \*).*\/\/ *(\([a-zA-Z0-9_][a-zA-Z0-9_+\*\/-]*\)) *$/run_const \2 AC_\1[\3] \/\/ from '$modname'\n#define \1 \AC_\1/
+         s/^#define *\([a-zA-Z0-9_]*\) (( *\([a-zA-Z0-9_]*\) \*).*\/\/ *(\([a-zA-Z0-9_][a-zA-Z0-9_+\*\/-]*\)) gmem *$/gmem \2 AC_\1[\3] \/\/ from '$modname'\n#define \1 \AC_\1/
          s/^#define *\([a-zA-Z0-9_]*\) (( *\([a-zA-Z0-9_]*\) \*).*\/\/ *(\([mn]\)\([xyz]*\)\(grid\)\?) *(\([mn]\)\([xyz]*\)\(grid\)\?) *$/gmem \2 AC_\1[AC_\3\4\5][AC_\6\7\8] \/\/ from '$modname'\n#define \1 \AC_\1/
          s/^#define *\([a-zA-Z0-9_]*\) (( *\([a-zA-Z0-9_]*\) \*).*\/\/ *(\([a-zA-Z0-9_][a-zA-Z0-9_+\*\/-]*\)) *(\([a-zA-Z0-9_][a-zA-Z0-9_+\*\/-]*\)) *$/gmem \2 AC_\1[\3][\4] \/\/ from '$modname'\n#define \1 \AC_\1/
          s/^#define *\([a-zA-Z0-9_]*\) (( *\([a-zA-Z0-9_]*\) \*).*\/\/ *(\([a-zA-Z0-9_][a-zA-Z0-9_+\*\/-]*\)) *(\([a-zA-Z0-9_][a-zA-Z0-9_+\*\/-]*\)) *(\([a-zA-Z0-9_][a-zA-Z0-9_+\*\/-]*\)) *$/gmem \2 AC_\1[\3][\4][\5] \/\/ from '$modname'\n#define \1 \AC_\1/
