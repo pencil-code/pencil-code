@@ -46,7 +46,8 @@ module Special
   ! input parameters
   real :: a, k0=1e-2, dk=1e-2, ascale_ini=1.
   real :: fdecay=.003, g=1.11e-2, lam=500., mu=1.5e-4
-  real :: Q0=3e-4, Qdot0=0., chi_prefactor=.49, chidot0=0., H=1.04e-6,H_init
+  real :: Q0=3e-4, Qdot0=0., chi_prefactor=.49, chidot0=0., H=1.04e-6
+  real :: H_init
   real :: Mpl2=1., Hdot=0., lamf, Hscript, epsilon_sr=0.
   real :: m_inflaton=1.275e-7, m_phi=1.275e-7, inflaton_ini=16., phi_ini=16.
   real :: alpha=0.1, m_alpha=3.285e-11, n_alpha=1.5
@@ -238,8 +239,6 @@ module Special
             call fatal_error("initialize_special: No such V_choice: ", trim(V_choice))
         endselect
         H=sqrt(onethird*(.5*phidot**2+V))
-      else if(lgpu) then
-        H=H_init
       endif
 
       lna=alog(a)
@@ -561,6 +560,8 @@ module Special
         a=exp(f_ode(iaxi_lna))
         phidot=f_ode(iaxi_phidot)
         H=sqrt(onethird*(.5*phidot**2+V+.5*chidot**2+U+1.5*(Qdot+H*Q)**2+1.5*g**2*Q**4))
+      else if (lgpu) then
+        H=H_init
       endif
 !
 !  Possibility of keeping mQ constant, i,e., we keep mQ=g*Q0/H
