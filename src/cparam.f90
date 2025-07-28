@@ -967,6 +967,7 @@ integer, parameter :: enum_none_string = 684
 integer, parameter :: enum_2nd_string = 685
 integer, parameter :: enum_she_string = 686
 integer, parameter :: enum_p_string = 687
-integer, parameter :: hyper3_rho_nuZconst_symm=688
+integer, parameter :: enum_hyper3_rho_nuZconst_symm_string=688
+integer, parameter :: enum_no_string=689
 
 endmodule Cparam

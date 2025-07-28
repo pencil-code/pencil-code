@@ -8048,7 +8048,9 @@ iloop:do i=1,size(list2)
         case('p')
           dst = enum_p_string
         case('hyper3_rho_nu-const_symm')
-          dst = hyper3_rho_nuZconst_symm
+          dst = enum_hyper3_rho_nuZconst_symm_string
+        case('no')
+          dst = enum_no_string
         case default
           dst = enum_unknown_string_string
           if (lroot) print*, 'No string enum for: ', src
