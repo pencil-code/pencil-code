@@ -103,7 +103,7 @@
                            'output_persistent_special    ', &
                            'special_particles_after_dtsub', &
                            'calc_diagnostics_special     ',  &
-                           'calc_ode_diagnostics_special     '  &
+                           'calc_ode_diagnostics_special '  &
                    /)
 
     integer(KIND=ikind8) :: libhandle
@@ -807,7 +807,7 @@
       do i=1,n_special_modules
         call caller1(special_sub_handles(i,I_CALC_ODE_DIAGNOSTICS_SPECIAL),f_ode)
       enddo
-    endsubroutine calc_diagnostics_special
+    endsubroutine calc_ode_diagnostics_special
 !***********************************************************************
     subroutine pushpars2c(p_par)
 

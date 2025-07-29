@@ -423,6 +423,31 @@ module Special
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
+    subroutine get_Hscript_and_a2
+!
+!  Choice of prescription for Hscript
+!
+      select case (Hscript_choice)
+        case ('default')
+          Hscript=sqrt((8.*pi/3.)*a2rhom_all)
+        case ('set')
+          Hscript=Hscript0
+          a2=1.
+          a21=1./a2
+        case default
+          call fatal_error("dspecial_dt: No such Hscript_choice: ", trim(Hscript_choice))
+      endselect
+
+!  Possibility of turning off evolution of scale factor and Hubble parameter
+!  By default, lzeroHubble=F, so we use the calculation from above.
+!
+      if (lzeroHubble) then
+        a2=1.
+        a21=1./a2
+        Hscript=0.
+      endif
+    endsubroutine get_Hscript_and_a2
+!***********************************************************************
     subroutine dspecial_dt(f,df,p)
 !
 !  The entire module could be renamed to Klein-Gordon or Scalar field equation.
@@ -458,28 +483,7 @@ module Special
 !
       phi=f(l1:l2,m,n,iinfl_phi)
       dphi=f(l1:l2,m,n,iinfl_dphi)
-!
-!  Choice of prescription for Hscript
-!
-      select case (Hscript_choice)
-        case ('default')
-          Hscript=sqrt((8.*pi/3.)*a2rhom_all)
-        case ('set')
-          Hscript=Hscript0
-          a2=1.
-          a21=1./a2
-        case default
-          call fatal_error("dspecial_dt: No such Hscript_choice: ", trim(Hscript_choice))
-      endselect
-
-!  Possibility of turning off evolution of scale factor and Hubble parameter
-!  By default, lzeroHubble=F, so we use the calculation from above.
-!
-      if (lzeroHubble) then
-        a2=1.
-        a21=1./a2
-        Hscript=0.
-      endif
+      call get_Hscript_and_a2
 !
 !  Choice of different potentials.
 !  For the 1-cos profile, -Vprime (on the rhs) enters with -sin().
@@ -564,32 +568,19 @@ module Special
 !
 !  Diagnostics
 !
-      if (ldiagnos) then
-        call sum_mn_name(phi,idiag_phim)
-        if (idiag_phi2m/=0) call sum_mn_name(phi**2,idiag_phi2m)
-        if (idiag_phirms/=0) call sum_mn_name(phi**2,idiag_phirms,lsqrt=.true.)
-        call sum_mn_name(dphi,idiag_dphim)
-        if (idiag_dphi2m/=0) call sum_mn_name(dphi**2,idiag_dphi2m)
-        if (idiag_dphirms/=0) call sum_mn_name(dphi**2,idiag_dphirms,lsqrt=.true.)
-      endif
+      call calc_diagnostics_special(f,p)
 !
     endsubroutine dspecial_dt
 !***********************************************************************
     subroutine dspecial_dt_ode
 !
-      use Diagnostics, only: save_name
       use SharedVariables, only: get_shared_variable
 !     use Magnetic, only: eta_xtdep
 !
-      real :: rho_chi
 !
+      call get_Hscript_and_a2
       if (lflrw) then
         df_ode(iinfl_lna)=df_ode(iinfl_lna)+Hscript
-      endif
-      if (lrho_chi) then
-        rho_chi=f_ode(iinfl_rho_chi)
-      else
-        rho_chi=0.
       endif
 !
 !  Energy density of the charged particles.
@@ -607,6 +598,22 @@ module Special
 !
 !  Diagnostics
 !
+!
+    if (.not. lmultithread) call calc_ode_diagnostics_special(f_ode)
+    endsubroutine dspecial_dt_ode
+!***********************************************************************
+    subroutine calc_ode_diagnostics_special(f_ode)
+      use Diagnostics 
+      
+      real, dimension(:), intent(IN) :: f_ode
+      real :: rho_chi
+
+      if (lrho_chi) then
+        rho_chi=f_ode(iinfl_rho_chi)
+      else
+        rho_chi=0.
+      endif
+
       if (ldiagnos) then
         call save_name(Hscript,idiag_Hscriptm)
         call save_name(lnascale,idiag_lnam)
@@ -621,8 +628,7 @@ module Special
         if (lnoncollinear_EB_aver .or. lcollinear_EB_aver) &
           call save_name(count_eb0_all,idiag_count_eb0a)
       endif
-!
-    endsubroutine dspecial_dt_ode
+    endsubroutine calc_ode_diagnostics_special
 !***********************************************************************
     subroutine calc_diagnostics_special(f,p)
       use Diagnostics
@@ -630,14 +636,16 @@ module Special
       type(pencil_case) :: p
       real, dimension(nx) :: dphi,phi
 
-      dphi=f(l1:l2,m,n,iinfl_dphi)
-      phi=f(l1:l2,m,n,iinfl_phi)
-      call sum_mn_name(phi,idiag_phim)
-      if (idiag_phi2m/=0) call sum_mn_name(phi**2,idiag_phi2m)
-      if (idiag_phirms/=0) call sum_mn_name(phi**2,idiag_phirms,lsqrt=.true.)
-      call sum_mn_name(dphi,idiag_dphim)
-      if (idiag_dphi2m/=0) call sum_mn_name(dphi**2,idiag_dphi2m)
-      if (idiag_dphirms/=0) call sum_mn_name(dphi**2,idiag_dphirms,lsqrt=.true.)
+      if (ldiagnos) then
+        dphi=f(l1:l2,m,n,iinfl_dphi)
+        phi=f(l1:l2,m,n,iinfl_phi)
+        call sum_mn_name(phi,idiag_phim)
+        if (idiag_phi2m/=0) call sum_mn_name(phi**2,idiag_phi2m)
+        if (idiag_phirms/=0) call sum_mn_name(phi**2,idiag_phirms,lsqrt=.true.)
+        call sum_mn_name(dphi,idiag_dphim)
+        if (idiag_dphi2m/=0) call sum_mn_name(dphi**2,idiag_dphi2m)
+        if (idiag_dphirms/=0) call sum_mn_name(dphi**2,idiag_dphirms,lsqrt=.true.)
+      endif
     endsubroutine calc_diagnostics_special
 !***********************************************************************
     subroutine read_special_init_pars(iostat)
@@ -735,6 +743,7 @@ module Special
 !
       use Mpicomm, only: mpireduce_sum, mpiallreduce_sum, mpibcast_real
       use Sub, only: dot2_mn, grad, curl, dot_mn
+      
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real :: boost, gam_EB, eprime, bprime, jprime1
@@ -801,20 +810,9 @@ module Special
       call mpireduce_sum(a2rhophim,a2rhophim_all)
       call mpireduce_sum(a2rhogphim,a2rhogphim_all)
       call mpiallreduce_sum(ddotam,ddotam_all)
-!
-!  Choice of prescription for Hscript.
-!
+
       if (lroot .and. lflrw) then
-        select case (Hscript_choice)
-          case ('default')
-            Hscript=sqrt((8.*pi/3.)*a2rhom_all)
-          case ('set')
-            Hscript=Hscript0
-            a2=1.
-            a21=1./a2
-          case default
-            call fatal_error("dspecial_dt: No such Hscript_choice: ", trim(Hscript_choice))
-        endselect
+              call get_Hscript_and_a2
       endif
 !
 !  Broadcast to other processors, and each processor uses put_shared_variable
