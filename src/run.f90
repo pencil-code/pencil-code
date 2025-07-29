@@ -1625,6 +1625,8 @@ call copy_addr(r_ref,p_par(1321))
 call copy_addr(dxmin,p_par(1322))
 call copy_addr(dt_incr,p_par(1323))
 call copy_addr(lfractional_tstep_advance,p_par(1324)) ! bool
+!TP: should not really have to push this but disp_current uses lpenc_requested in place of lpencil
+call copy_addr(lpenc_requested,p_par(1336)) ! bool (npencils)
 
 endsubroutine pushpars2c
 !***********************************************************************
