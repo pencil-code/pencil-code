@@ -209,7 +209,7 @@ $(POWER_OBJ): power_spectrum.h $(POWER_SRC) $(COMMON_DEPS) $(GENERAL_OBJ) $(MAGN
 #
 $(STRUCT_FUNC_OBJ): struct_func.h $(STRUCT_FUNC_SRC) $(COMMON_DEPS) $(GENERAL_OBJ)
 #
-$(SPECIAL_OBJ): special.h $(COMMON_DEPS) $(SYSCALLS_OBJ)
+$(SPECIAL_OBJ): special.h $(COMMON_DEPS) $(SYSCALLS_OBJ) $(GPU_OBJ)
 ifeq ($(SPECIAL),special/NS_polecap)
   physics += special/potekhin_cond.o
   $(SPECIAL_OBJ): $(SPECIAL_SRC) special_dummies.inc $(EOS_OBJ) $(INITCOND_OBJ) $(DEBUG_IO_OBJ) $(GRID_OBJ) $(PARTICLES_CDATA_OBJ) $(SLICES_METHODS_OBJ) special/potekhin_cond.o

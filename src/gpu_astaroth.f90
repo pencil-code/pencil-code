@@ -42,6 +42,7 @@ module GPU
   external torchtrain_c 
   external torchinfer_c
   external calcq_gpu_c
+  external get_gpu_reduced_vars_c
 
   integer, external :: update_on_gpu_arr_by_name_c
   integer, external :: update_on_gpu_scal_by_name_c
@@ -326,5 +327,10 @@ contains
             integer :: inu
             call source_function_and_opacity_gpu_c(inu)
     endsubroutine
+!**************************************************************************
+    subroutine get_gpu_reduced_vars(dst)
+      real, dimension(10) :: dst
+      call get_gpu_reduced_vars_c(dst)
+    endsubroutine get_gpu_reduced_vars
 !**************************************************************************
 endmodule GPU

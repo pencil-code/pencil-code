@@ -60,7 +60,6 @@ module Cdata
   real, dimension (nx,3) :: dline_1
   real, dimension (nx) :: dxyz_2, dxyz_4, dxyz_6, dVol
   real, dimension (nx) :: dxmax_pencil,dxmin_pencil
-!BEGIN C BINDING
 
   integer :: l2i=mx-2*nghost+1
   integer :: m2i=my-2*nghost+1
@@ -376,7 +375,6 @@ module Cdata
 !  functionality extent in entropy.f90.
 !
   logical :: pretend_lnTT=.false.
-!END C BINDING
   logical :: lphase=.false.
 !
 !  Type counters.
@@ -536,7 +534,6 @@ module Cdata
                                          cnamez(:),cnamey(:),cnamex(:),cnamer(:)
   integer, dimension(:), allocatable :: inds_max_diags, inds_sum_diags
 
-!END C BINDING
   integer, target :: m,n
   integer :: nt=10000000, it=0, itorder=3, itsub=0, it_timing=0, it_rmv=0
   logical :: ltiming_io=.false.
@@ -885,10 +882,12 @@ module Cdata
 !$omp threadprivate(lfirstpoint,thread_id)
 !$omp threadprivate(fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz)
 !$omp threadprivate(l1dphiavg, l1davgfirst, l2davgfirst, ldiagnos,lout, l1davg, l2davg, lout_sound, lvideo)
-!$omp threadprivate(tspec,tdiagnos,t1ddiagnos,t2davgfirst,tslice,tsound,itdiagnos,dtdiagnos,eps_rkf_diagnos)
+!$omp threadprivate(t,tspec,tdiagnos,t1ddiagnos,t2davgfirst,tslice,tsound,itdiagnos,dtdiagnos,eps_rkf_diagnos)
 !
 ! For use in offloaded code:
 !!$omp declare target(ldensity_nolog,l2,m2,n2)
 !
 !***********************************************************************
+!BEGIN C BINDING
+!END C BINDING
 endmodule Cdata

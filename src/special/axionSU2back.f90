@@ -48,17 +48,20 @@ module Special
   real :: fdecay=.003, g=1.11e-2, lam=500., mu=1.5e-4
   real :: Q0=3e-4, Qdot0=0., chi_prefactor=.49, chidot0=0., H=1.04e-6
   real :: H_init
-  real :: Mpl2=1., Hdot=0., lamf, Hscript, epsilon_sr=0.
+  real :: Mpl2=1., Hdot=0., lamf, Hscript
   real :: m_inflaton=1.275e-7, m_phi=1.275e-7, inflaton_ini=16., phi_ini=16.
   real :: alpha=0.1, m_alpha=3.285e-11, n_alpha=1.5
   real, dimension (nx) :: grand, grant, dgrant
   real, dimension (nx) :: xmask_axion
   real, dimension (2) :: axion_sum_range=(/0.,1./)
   integer, dimension (nx) :: kindex_array
-  real :: grand_sum, grant_sum, dgrant_sum, inflaton
+  real :: grand_sum, grant_sum, dgrant_sum
   real :: TRdoteff2km_sum, TRdoteff2m_sum, TReff2km_sum, TReff2m_sum
   real :: TLdoteff2km_sum, TLdoteff2m_sum, TLeff2km_sum, TLeff2m_sum
   real :: TRpsim_sum, TRpsikm_sum, TRpsidotm_sum, TRdotpsim_sum
+
+  real :: grand_sum_diagnos,dgrant_sum_diagnos
+
   real :: sbackreact_Q=1., sbackreact_chi=1., tback=1e6, dtback=1e6
   real :: lnkmin0, lnkmin0_dummy, lnkmax0, dlnk
   real :: nmin0=-1., nmax0=3., horizon_factor=0., sgn=1.
@@ -469,6 +472,52 @@ module Special
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
+    subroutine get_Hubble
+    real :: phi,phidot,U,V,beta,chi,chidot,Q,Qdot
+!
+!  29-jul-25/TP: carved from dspecial_dt/dt_ode
+!
+!
+!  Possibility to evolve the Hubble parameter (in cosmic time)
+!
+      if (lhubble) then
+        chi=f_ode(iaxi_chi)
+        chidot=f_ode(iaxi_chidot)
+        Qdot = f_ode(iaxi_Qdot)
+        Q    = f_ode(iaxi_Q)
+        phi=f_ode(iaxi_phi)
+        phidot=f_ode(iaxi_phidot)
+        U=mu**4*(1.+cos(chi/fdecay))
+        select case (V_choice)
+          case ('alpha_attractors')
+            beta=sqrt(2./(3.*alpha))
+            V=alpha*m_alpha*(tanh(beta*phi/2)**2)**n_alpha
+          case ('quadratic') ; V=.5*(m_phi*phi)**2
+          case default
+            call fatal_error("dspecial_dt: No such V_choice: ", trim(V_choice))
+        endselect
+        a=exp(f_ode(iaxi_lna))
+        H=sqrt(onethird*(.5*phidot**2+V+.5*chidot**2+U+1.5*(Qdot+H*Q)**2+1.5*g**2*Q**4))
+      else if (lgpu) then
+        H=H_init
+      endif
+    endsubroutine get_Hubble
+!***********************************************************************
+    subroutine get_analytical_solution(psi_anal,psidot_anal,TR_anal,TRdot_anal)
+      real, dimension(nx), intent(OUT) :: psi_anal,psidot_anal,TR_anal,TRdot_anal
+      if (lconf_time) then
+        psi_anal=(1./sqrt(2.*k))*cos(-k*t)
+        psidot_anal=(k/sqrt(2.*k))*sin(-k*t)
+        TR_anal=(1./sqrt(2.*k))*cos(-k*t)
+        TRdot_anal=(k/sqrt(2.*k))*sin(-k*t)
+      else
+        psi_anal=(1./sqrt(2.*k))*cos(k/(a*H))
+        psidot_anal=(k/sqrt(2.*k))*sin(k/(a*H))
+        TR_anal=(1./sqrt(2.*k))*cos(k/(a*H))
+        TRdot_anal=(k/sqrt(2.*k))*sin(k/(a*H))
+      endif
+    endsubroutine get_analytical_solution
+!***********************************************************************
     subroutine dspecial_dt(f,df,p)
 !
 !  calculate right hand side of ONE OR MORE extra coupled PDEs
@@ -497,8 +546,10 @@ module Special
       real, dimension (nx) :: impsiL, impsiLdot, impsiLddot, imTL, imTLdot, imTLddot
       real, dimension (nx) :: epsQE, epsQB
       real :: Q, Qdot, chi, chidot, phi, phidot
-      real :: U, Uprime, mQ, xi, V, beta
-      real :: fact=1., sign_swap=1.
+      real :: Uprime, mQ, xi
+      real :: sign_swap=1.
+      real, parameter :: fact=1.
+      real :: epsilon_sr,inflaton
       integer :: ik
       type (pencil_case) :: p
 !
@@ -543,26 +594,7 @@ module Special
       Qdot=f_ode(iaxi_Qdot)
       chi=f_ode(iaxi_chi)
       chidot=f_ode(iaxi_chidot)
-!
-!  Possibility to evolve the Hubble parameter (in cosmic time)
-!
-      if (lhubble) then
-        phi=f_ode(iaxi_phi)
-        U=mu**4*(1.+cos(chi/fdecay))
-        select case (V_choice)
-          case ('alpha_attractors')
-            beta=sqrt(2./(3.*alpha))
-            V=alpha*m_alpha*(tanh(beta*phi/2)**2)**n_alpha
-          case ('quadratic') ; V=.5*(m_phi*phi)**2
-          case default
-            call fatal_error("dspecial_dt: No such V_choice: ", trim(V_choice))
-        endselect
-        a=exp(f_ode(iaxi_lna))
-        phidot=f_ode(iaxi_phidot)
-        H=sqrt(onethird*(.5*phidot**2+V+.5*chidot**2+U+1.5*(Qdot+H*Q)**2+1.5*g**2*Q**4))
-      else if (lgpu) then
-        H=H_init
-      endif
+      call get_Hubble
 !
 !  Possibility of keeping mQ constant, i,e., we keep mQ=g*Q0/H
 !  Need to have Q on all processors.
@@ -618,17 +650,7 @@ module Special
 !
 !  analytical solution
 !
-      if (lconf_time) then
-        psi_anal=(1./sqrt(2.*k))*cos(-k*t)
-        psidot_anal=(k/sqrt(2.*k))*sin(-k*t)
-        TR_anal=(1./sqrt(2.*k))*cos(-k*t)
-        TRdot_anal=(k/sqrt(2.*k))*sin(-k*t)
-      else
-        psi_anal=(1./sqrt(2.*k))*cos(k/(a*H))
-        psidot_anal=(k/sqrt(2.*k))*sin(k/(a*H))
-        TR_anal=(1./sqrt(2.*k))*cos(k/(a*H))
-        TRdot_anal=(k/sqrt(2.*k))*sin(k/(a*H))
-      endif
+      call get_analytical_solution(psi_anal,psidot_anal,TR_anal,TRdot_anal)
 !
 !  perturbation: when lwith_eps=T, we replace Q -> sqrt(epsQE)
 !  and mQ*Q -> sqrt(epsQB).
@@ -850,18 +872,37 @@ module Special
 !
 !  diagnostics
 !
+      call calc_diagnostics_special(f,p)
       if (ldiagnos) then
+        !TP: these are here for now since would have to refactor more to get them out of the RHS
+        call sum_mn_name(psiddot,idiag_psiddot)
+        call sum_mn_name(TRddot,idiag_TRddot)
+      endif
+    endsubroutine dspecial_dt
+!***********************************************************************
+    subroutine calc_diagnostics_special(f,p)
+!
+!  29-jul-25/TP: carved from dspecial_dt
+!
+      use Diagnostics
+
+      real, dimension (nx) :: psi_anal, psidot_anal, TR_anal, TRdot_anal
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, parameter :: fact=1.
+      type(pencil_case) :: p
+      if (ldiagnos) then
+
+        call get_analytical_solution(psi_anal,psidot_anal,TR_anal,TRdot_anal)
+
         call sum_mn_name(psi_anal,idiag_psi_anal)
         call sum_mn_name(TR_anal,idiag_TR_anal)
-        call sum_mn_name(psi ,idiag_psi)
-        call sum_mn_name(psiL,idiag_psiL)
-        call sum_mn_name(psidot,idiag_psidot)
-        call sum_mn_name(psiddot,idiag_psiddot)
-        call sum_mn_name(TR,idiag_TR)
-        call sum_mn_name(TL,idiag_TL)
-        call sum_mn_name(TRdot,idiag_TRdot)
-        call sum_mn_name(TRddot,idiag_TRddot)
-        call sum_mn_name(imTR,idiag_imTR)
+        call sum_mn_name(f(l1:l2,m,n,iaxi_psi),idiag_psi)
+        call sum_mn_name(f(l1:l2,m,n,iaxi_psiL),idiag_psiL)
+        call sum_mn_name(f(l1:l2,m,n,iaxi_psidot),idiag_psidot)
+        call sum_mn_name(f(l1:l2,m,n,iaxi_TR),idiag_TR)
+        call sum_mn_name(f(l1:l2,m,n,iaxi_TL),idiag_TL)
+        call sum_mn_name(f(l1:l2,m,n,iaxi_TRdot),idiag_TRdot)
+        call sum_mn_name(f(l1:l2,m,n,iaxi_imTR),idiag_imTR)
         call save_name(TReff2m_sum,idiag_TReff2m)
         call save_name(TReff2km_sum,idiag_TReff2km)
         call save_name(TRdoteff2m_sum,idiag_TRdoteff2m)
@@ -874,8 +915,8 @@ module Special
         call save_name(TLeff2km_sum,idiag_TLeff2km)
         call save_name(TLdoteff2m_sum,idiag_TLdoteff2m)
         call save_name(TLdoteff2km_sum,idiag_TLdoteff2km)
-        call save_name(grand_sum,idiag_grand2)
-        call save_name(dgrant_sum,idiag_dgrant)
+        call save_name(grand_sum_diagnos,idiag_grand2)
+        call save_name(dgrant_sum_diagnos,idiag_dgrant)
         if (idiag_dgrant_up/=0) call sum_mn_name(dgrant*xmask_axion,idiag_dgrant_up,lplain=.true.)
         call save_name(fact,idiag_fact)
         call save_name(k0,idiag_k0)
@@ -887,31 +928,41 @@ module Special
         call zsum_mn_name_xy(grant,idiag_grantxy)
       endif
 !
-    endsubroutine dspecial_dt
+    endsubroutine calc_diagnostics_special
 !***********************************************************************
-    subroutine dspecial_dt_ode
+    function get_mQ(Q)
 !
-!  Calculate right hand side(s) of one or more extra coupled ODEs.
-!  Due to the multi-step Runge Kutta timestepping used one MUST always
-!  add to the present contents of the df_ode array.  NEVER reset it to zero.
+!  29-jul-25/TP: carved from dspecial_dt_ode
 !
-!   2-dec-2022/axel: coded
-!   1-sep-2023/axel: implemented lwith_eps with conformal time.
+      real, intent(IN) :: Q
+      real :: get_mQ
+!
+!  Possibility of keeping mQ constant, i,e., we keep mQ=g*Q0/H
+!
+      if (lkeep_mQ_const) then
+        get_mQ=g*Q0/H
+      else
+        get_mQ=g*Q/H
+      endif
+    endfunction get_mQ
+!***********************************************************************
+    subroutine calc_ode_dt(f_ode,Qddot,chiddot,phiddot,grant_sum,dgrant_sum)
+!
+!  29-jul-25/TP: carved from dspecial_dt_ode
 !
       use General, only: random_number_wrapper
-      use Diagnostics
       use Mpicomm
       use Sub
-!
-      real :: Q, Qdot, Qddot, chi, chidot, chiddot, phi, phidot, phiddot
-      real :: U, Uprime, mQ, xi, V, Vprime, beta
+
+      real, dimension(:), intent(IN) :: f_ode
+      real, intent(OUT) :: Qddot,chiddot,phiddot
+      real, intent(IN) :: grant_sum,dgrant_sum
+      real :: Q, Qdot, chi, chidot, phi, phidot
+      real :: Uprime, mQ, xi, Vprime, beta
       !real :: U, Uprime, mQ, xi, V, Vprime
       real :: fact=1., sign_swap=1.
-!
-!  identify module and boundary conditions
-!
-      if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dSPECIAL_dt'
-!print*,'AXEL: dspecial_dt_ode, bef.', Q, U, V, a, phi, phidot, H, Hdot
+      real :: epsilon_sr,inflaton
+      
 !
 !  Set the all variable
 !
@@ -919,34 +970,15 @@ module Special
       Qdot=f_ode(iaxi_Qdot)
       chi=f_ode(iaxi_chi)
       chidot=f_ode(iaxi_chidot)
-!
-!  Possibility to evolve the Hubble parameter (in cosmic time)
-!
+      phi = f_ode(iaxi_phi)
+      phidot = f_ode(iaxi_phidot)
+
       if (lhubble) then
-        phi=f_ode(iaxi_phi)
-        phidot=f_ode(iaxi_phidot)
-        U=mu**4*(1.+cos(chi/fdecay))
-        select case (V_choice)
-          case ('alpha_attractors')
-            beta=sqrt(2./(3.*alpha))
-            V=alpha*m_alpha*(tanh(beta*phi/2)**2)**n_alpha
-          case ('quadratic') ; V=.5*(m_phi*phi)**2
-          case default
-            call fatal_error("dspecial_dt_ode: No such V_choice: ", trim(V_choice))
-        endselect
-        a=exp(f_ode(iaxi_lna))
-        H=sqrt(onethird*(.5*phidot**2+V+.5*chidot**2+U+1.5*(Qdot+H*Q)**2+1.5*g**2*Q**4))
         Hdot=-.5*phidot**2-.5*chidot**2-((Qdot+H*Q)**2+g**2*Q**4)
-!print*,'AXEL: dspecial_dt_ode, aft.', Q, U, V, a, phi, phidot, H, Hdot
       endif
-!
-!  Possibility of keeping mQ constant, i,e., we keep mQ=g*Q0/H
-!
-      if (lkeep_mQ_const) then
-        mQ=g*Q0/H
-      else
-        mQ=g*Q/H
-      endif
+
+      mQ=get_mQ(Q)
+
 !
 !  Set other parameters
 !
@@ -1000,6 +1032,7 @@ module Special
         endif
 
       endif
+
 !
 !  Optionally, include backreaction
 !
@@ -1023,12 +1056,57 @@ module Special
           chiddot=chiddot-sbackreact_chi*fact*dgrant_sum
         endif
       endif
+    endsubroutine calc_ode_dt
+!***********************************************************************
+    subroutine read_sums_from_device
+      use GPU, only: get_gpu_reduced_vars
+      real, dimension(10) :: tmp
+      call get_gpu_reduced_vars(tmp)
+      grand_sum  = tmp(1)
+      dgrant_sum = tmp(2)
+      if (ldiagnos) then
+              grand_sum_diagnos = grand_sum
+              dgrant_sum_diagnos = dgrant_sum
+              TRdoteff2km_sum = tmp(3)
+              TRdoteff2m_sum =  tmp(4)
+              TReff2km_sum = tmp(5)
+              TReff2m_sum =  tmp(6)
+              TLdoteff2km_sum = tmp(7)
+              TLdoteff2m_sum =  tmp(8)
+              TLeff2km_sum = tmp(9)
+              TLeff2m_sum =  tmp(10)
+      endif
+    endsubroutine read_sums_from_device
+!***********************************************************************
+    subroutine dspecial_dt_ode
+!
+!  Calculate right hand side(s) of one or more extra coupled ODEs.
+!  Due to the multi-step Runge Kutta timestepping used one MUST always
+!  add to the present contents of the df_ode array.  NEVER reset it to zero.
+!
+!   2-dec-2022/axel: coded
+!   1-sep-2023/axel: implemented lwith_eps with conformal time.
+!
+      real ::  Qddot, chiddot, phiddot
+!
+!  identify module and boundary conditions
+!
+      if (lgpu) then
+        call read_sums_from_device
+      endif
+      if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dSPECIAL_dt'
+!print*,'AXEL: dspecial_dt_ode, bef.', Q, U, V, a, phi, phidot, H, Hdot
+!
+!  Set the all variable
+!
+      call get_Hubble
+      call calc_ode_dt(f_ode,Qddot,chiddot,phiddot,grand_sum,dgrant_sum)
 !
 !  Choice whether or not we want to update the background
 !
       if (lupdate_background) then
-        df_ode(iaxi_Q)     =df_ode(iaxi_Q     )+Qdot
-        df_ode(iaxi_chi)   =df_ode(iaxi_chi   )+chidot
+        df_ode(iaxi_Q)     =df_ode(iaxi_Q     )+f_ode(iaxi_Qdot)
+        df_ode(iaxi_chi)   =df_ode(iaxi_chi   )+f_ode(iaxi_chidot)
         df_ode(iaxi_Qdot)  =df_ode(iaxi_Qdot  )+Qddot
         df_ode(iaxi_chidot)=df_ode(iaxi_chidot)+chiddot
 !
@@ -1036,29 +1114,44 @@ module Special
 !
         if (lhubble) then
           df_ode(iaxi_lna)=df_ode(iaxi_lna)+H
-          df_ode(iaxi_phi)=df_ode(iaxi_phi)+phidot
+          df_ode(iaxi_phi)=df_ode(iaxi_phi)+f_ode(iaxi_phidot)
           df_ode(iaxi_phidot)=df_ode(iaxi_phidot)+phiddot
         endif
       endif
 !
 !  diagnostics
 !
-      if (ldiagnos) then
-        call save_name(Q      ,idiag_Q)
-        call save_name(Qdot   ,idiag_Qdot)
-        call save_name(Qddot  ,idiag_Qddot)
-        call save_name(chi    ,idiag_chi)
-        call save_name(chidot ,idiag_chidot)
-        call save_name(chiddot,idiag_chiddot)
-        if (lhubble) then
-          call save_name(a     ,idiag_a)
-          call save_name(phi   ,idiag_phi)
-          call save_name(phidot,idiag_phidot)
-          call save_name(H     ,idiag_H)
-        endif
+      if (ldiagnos .and. .not. lgpu) then
+        grand_sum_diagnos  = grand_sum
+        dgrant_sum_diagnos = dgrant_sum
+        call calc_ode_diagnostics_special(f_ode)
       endif
 !
     endsubroutine dspecial_dt_ode
+!***********************************************************************
+    subroutine     calc_ode_diagnostics_special(f_ode)
+!
+!  29-jul-25/TP: carved from dspecial_dt_ode
+!
+      use Diagnostics
+      real, dimension(:), intent(IN) :: f_ode
+      real :: Qddot,chiddot,phiddot
+
+      call calc_ode_dt(f_ode,Qddot,chiddot,phiddot,grand_sum_diagnos,dgrant_sum_diagnos)
+
+      call save_name(f_ode(iaxi_Q)      ,idiag_Q)
+      call save_name(f_ode(iaxi_Qdot)   ,idiag_Qdot)
+      call save_name(Qddot   ,idiag_Qddot)
+      call save_name(f_ode(iaxi_chi)     ,idiag_chi)
+      call save_name(f_ode(iaxi_chidot)  ,idiag_chidot)
+      call save_name(chiddot ,idiag_chiddot)
+      if (lhubble) then
+        call save_name(a     ,idiag_a)
+        call save_name(f_ode(iaxi_phi)   ,idiag_phi)
+        call save_name(f_ode(iaxi_phidot),idiag_phidot)
+        call save_name(H     ,idiag_H)
+      endif
+    endsubroutine  calc_ode_diagnostics_special 
 !***********************************************************************
     subroutine read_special_init_pars(iostat)
 !
@@ -1156,112 +1249,17 @@ module Special
 !
     endsubroutine special_before_boundary
 !***********************************************************************
-    subroutine special_after_boundary(f)
+    subroutine move_f_array(f,nswitch)
 !
-!  Possibility to modify the f array after the boundaries are
-!  communicated.
+!  29-jul-25/TP: carved from special_after_boundary
 !
-!  07-aug-17/axel: coded
-
-      use Mpicomm, only: mpireduce_sum, mpibcast
-!
-      real, dimension (mx,my,mz,mfarray) :: tmp
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (nx) :: TR, TRdot, imTR, imTRdot, TReff2, TRdoteff2
-      real, dimension (nx) :: TL, TLdot, imTL, imTLdot, TLeff2, TLdoteff2
-      real, dimension (nx) :: psi, psidot, impsi , impsidot
-      real, dimension (nx) :: TRdoteff2km, TRdoteff2m, TReff2km, TReff2m
-      real, dimension (nx) :: TRpsi , TRpsik , TRpsidot , TRdotpsi
-      real, dimension (nx) :: TRpsim, TRpsikm, TRpsidotm, TRdotpsim
-      real, dimension (nx) :: TLdoteff2km, TLdoteff2m, TLeff2km, TLeff2m
+      integer, intent(IN) :: nswitch
+      real, dimension (mx,my,mz,mfarray) :: tmp
       real, dimension (nx) :: tmp_psi , tmp_psidot , tmp_TR, tmp_TRdot
       real, dimension (nx) :: tmp_psiL, tmp_psiLdot, tmp_TL, tmp_TLdot
       real, dimension (nx) :: tmp_impsi, tmp_impsidot, tmp_imTR, tmp_imTRdot
       real, dimension (nx) :: tmp_impsiL, tmp_impsiLdot, tmp_imTL, tmp_imTLdot
-      real :: Q, Qdot, chi, chidot, phi, phidot
-      real :: mQ, xi, U, V, beta
-      real :: lnt, lnH, lna, a, lnkmin, lnkmax
-      integer :: ik, nswitch
-!
-!  make ODE variables available (should exist on all processors)
-!
-      Q=f_ode(iaxi_Q)
-      Qdot=f_ode(iaxi_Qdot)
-      chidot=f_ode(iaxi_chidot)
-!
-!  Possibility to evolve the Hubble parameter (in cosmic time)
-!
-      if (lhubble) then
-        phi=f_ode(iaxi_phi)
-        phidot=f_ode(iaxi_phidot)
-        U=mu**4*(1.+cos(chi/fdecay))
-        select case (V_choice)
-          case ('alpha_attractors')
-            beta=sqrt(2./(3.*alpha))
-            V=alpha*m_alpha*(tanh(beta*phi/2)**2)**n_alpha
-          case ('quadratic') ; V=.5*(m_phi*phi)**2
-          case default
-            call fatal_error("special_after_boundary: No such V_choice: ", trim(V_choice))
-        endselect
-        a=exp(f_ode(iaxi_lna))
-    !   H=sqrt(onethird*(.5*phidot**2+V+.5*chidot**2+U+1.5*(Qdot+H*Q)**2+1.5*g**2*Q**4))
-
-        H=((-Q*Qdot)-sqrt((-Q*Qdot)**2+4.*(1.-.5*Q**2)*(.5*g**2*Q**4+onethird*(U+V) &
-          +.5*Qdot**2+onesixth*(phidot**2+chidot**2))))/(-2.+Q**2)
-        Hdot=-.5*phidot**2-.5*chidot**2-((Qdot+H*Q)**2+g**2*Q**4)
-      endif
-!
-!  Possibility of keeping mQ constant
-!
-      if (lkeep_mQ_const) then
-        mQ=g*Q0/H
-      else
-        mQ=g*Q/H
-      endif
-!
-!  For conformal time, there is a 1/a factor in Qdot/a+H
-!
-      if (lconf_time) then
-        if (lhubble_var) then
-          epsilon_sr=0.8*(1+tanh(0.3*(alog(-1/(H*t))-18)))*0.5
-          a=-1./(H*t*(1-epsilon_sr))
-          xi=lamf*chidot*(0.5/(a*H))
-        else
-          a=-1./(H*t)
-          xi=lamf*chidot*(-0.5*t)
-        endif
-      elseif (lhubble_var) then
-        inflaton=inflaton_ini-sqrt(2./3.)*m_inflaton*t
-        a=exp((inflaton_ini**2-inflaton**2)*0.25)
-        H=0.41*m_inflaton*inflaton
-        xi=lamf*chidot/(2.*H)
-      else
-        if (.not.lhubble) a=exp(H*t)
-        xi=lamf*chidot/(2.*H)
-      endif
-!
-!  decide about revising the k array
-!  a=exp(N), N=H*t (=lna).
-!
-      if (llnk_spacing_adjustable .and. lfirst) then
-        lna=alog(a)
-        lnH=alog(H)
-        lnkmin=nmin0+lnH+lna
-        lnkmax=nmax0+lnH+lna
-        if (lnkmin >= (lnkmin0+dlnk)) then
-          nswitch=int((lnkmin-lnkmin0)/dlnk)
-          if (ip<10) print*,'nswitch: ',a, lnkmin0, nswitch
-          if (nswitch==0) call fatal_error('special_after_boundary','nswitch must not be zero')
-          if (nswitch>1) call fatal_error('special_after_boundary','nswitch must not exceed 1')
-!
-!  calculate new k array (because nswitch=1)
-!
-          if (ldo_adjust_krange) then
-            do ik=1,nx
-              lnk(ik)=lnkmin0+dlnk*(ik-1+ipx*nx+nswitch)
-              k(ik)=exp(lnk(ik))
-            enddo
-            kindex_array=nint((lnk-lnkmin0)/dlnk)
 !
 !  move f array. Compute new initial point for the last entry.
 !
@@ -1322,80 +1320,104 @@ module Special
                 f(l2,m,n,iaxi_imTLdot) =tmp_imTLdot(nx)
               endif
             endif
-          endif
+    endsubroutine move_f_array
+!***********************************************************************
+    subroutine write_backreact(grand,dgrant,nswitch)
 !
-!  output
+!  29-jul-25/TP: carved from special_after_boundary
 !
-          if (lwrite_krange) then
-            open (1, file=trim(directory_snap)//'/krange.dat', form='formatted', position='append')
-            write(1,*) t, lnk, f(l1:l2,m1,n1,iaxi_psi), f(l1:l2,m1,n1,iaxi_impsi), &
-                               f(l1:l2,m1,n1,iaxi_TR), f(l1:l2,m1,n1,iaxi_imTR)
+      real, dimension(nx), intent(IN) :: grand,dgrant
+      integer, intent(IN) :: nswitch
+      if (lwrite_backreact) then
+        if ((llnk_spacing_adjustable.or.llnk_spacing) .and. lfirst) then
+          if (nswitch>0) then
+            open (1, file=trim(directory_snap)//'/backreact.dat', form='formatted', position='append')
+            write(1,*) t, lnk, grand, dgrant
             close(1)
-            open (1, file=trim(directory_snap)//'/krange_deriv.dat', form='formatted', position='append')
-            write(1,*) t, lnk, f(l1:l2,m1,n1,iaxi_psidot), f(l1:l2,m1,n1,iaxi_impsidot), &
-                               f(l1:l2,m1,n1,iaxi_TRdot), f(l1:l2,m1,n1,iaxi_imTRdot)
-            close(1)
-!
-!  output for left-handed modes
-!
-            if (lleft_psiL_TL) then
-              open (1, file=trim(directory_snap)//'/krange_left.dat', form='formatted', position='append')
-              write(1,*) t, lnk, f(l1:l2,m1,n1,iaxi_psiL), f(l1:l2,m1,n1,iaxi_impsiL), &
-                                 f(l1:l2,m1,n1,iaxi_TL),   f(l1:l2,m1,n1,iaxi_imTL)
-              close(1)
-              open (1, file=trim(directory_snap)//'/krange_deriv_left.dat', form='formatted', position='append')
-              write(1,*) t, lnk, f(l1:l2,m1,n1,iaxi_psiLdot), f(l1:l2,m1,n1,iaxi_impsiLdot), &
-                                 f(l1:l2,m1,n1,iaxi_TLdot),   f(l1:l2,m1,n1,iaxi_imTLdot)
-              close(1)
-            endif
           endif
-!
-!  reset lnkmin0
-!
-          lnkmin0=lnkmin0+dlnk
-        else
-          nswitch=0
-        endif
-!
-!  for llnk_spacing=T, we still want output at the same times as in
-!  the adjustable case, so her nswitch means just "output", but no switch
-!
-      elseif (lfirst) then
-        lna=alog(a)
-        lnH=alog(H)
-        lnkmin=nmin0+lnH+lna
-        if (lnkmin >= (lnkmin0_dummy+dlnk)) then
-          nswitch=int((lnkmin-lnkmin0_dummy)/dlnk)
-          if (nswitch==0) call fatal_error('special_after_boundary','nswitch must not be zero')
-          if (nswitch>1) call fatal_error('special_after_boundary','nswitch must not exceed 1')
-          open (1, file=trim(directory_snap)//'/krange.dat', form='formatted', position='append')
-          write(1,*) t, lnk, f(l1:l2,m1,n1,iaxi_psi)
-          close(1)
-!
-!  reset lnkmin0_dummy (but now it is a dummy)
-!
-          lnkmin0_dummy=lnkmin0_dummy+dlnk
-        else
-          nswitch=0
+        elseif (lfirst) then
+          if (nswitch>0) then
+            open (1, file=trim(directory_snap)//'/backreact.dat', form='formatted', position='append')
+            write(1,*) t, k, grand, dgrant
+            close(1)
+          endif
         endif
       endif
+    endsubroutine write_backreact
+!***********************************************************************
+    function get_a() result(a)
+!
+!  29-jul-25/TP: carved from special_after_boundary
+!
+      real :: a
+      real :: epsilon_sr,inflaton
+      if (lconf_time) then
+        if (lhubble_var) then
+          epsilon_sr=0.8*(1+tanh(0.3*(alog(-1/(H*t))-18)))*0.5
+          a=-1./(H*t*(1-epsilon_sr))
+        else
+          a=-1./(H*t)
+        endif
+      elseif (lhubble_var) then
+        inflaton=inflaton_ini-sqrt(2./3.)*m_inflaton*t
+        a=exp((inflaton_ini**2-inflaton**2)*0.25)
+      else
+        if (lhubble) then
+          a = exp(f_ode(iaxi_lna))
+        else
+          a = exp(H*t)
+        endif
+      endif
+    endfunction get_a
+!***********************************************************************
+    subroutine calc_integrand(f,TRpsim,TRpsikm,TRpsidotm,TRdotpsim,&
+                            TRdoteff2km,TRdoteff2m,TReff2km,TReff2m,&
+                            TLdoteff2km,TLdoteff2m,TLeff2km,TLeff2m)
+!
+!  29-jul-25/TP: carved from special_after_boundary
+!
+
+      real, dimension (mx,my,mz,mfarray), intent(IN) :: f
+      real, dimension(nx) ,intent(OUT)  :: TRpsim, TRpsikm, TRpsidotm, TRdotpsim
+      real, dimension(nx) ,intent(OUT)  :: TRdoteff2km, TRdoteff2m, TReff2km, TReff2m
+      real, dimension(nx) ,intent(OUT)  :: TLdoteff2km, TLdoteff2m, TLeff2km, TLeff2m
+
+      real, dimension (nx) :: TR, TRdot, imTR, imTRdot, TReff2, TRdoteff2
+      real, dimension (nx) :: TL, TLdot, imTL, imTLdot, TLeff2, TLdoteff2
+      real, dimension (nx) :: psi, psidot, impsi , impsidot
+      real, dimension (nx) :: TRpsi , TRpsik , TRpsidot , TRdotpsi
+      real :: xi,chidot,mQ,Qdot
+      real :: a
 !
 !  Now set TR, TRdot, and imaginary parts, after they have been updated.
 !
-      n=n1
-      m=m1
+      if (lgpu .and. .not. lhubble) H = H_init
+      a = get_a()
+      chidot=f_ode(iaxi_chidot)
+      Qdot  =f_ode(iaxi_Qdot)
+      if (lconf_time) then
+        if (lhubble_var) then
+          xi=lamf*chidot*(0.5/(a*H))
+        else
+          xi=lamf*chidot*(-0.5*t)
+        endif
+      else
+        xi=lamf*chidot/(2.*H)
+      endif
+
+      mQ = get_mQ(f_ode(iaxi_Q))
+
       psi   =f(l1:l2,m,n,iaxi_psi)
       psidot=f(l1:l2,m,n,iaxi_psidot)
-      TR   =f(l1:l2,m1,n1,iaxi_TR)
-      TRdot=f(l1:l2,m1,n1,iaxi_TRdot)
+      TR   =f(l1:l2,m,n,iaxi_TR)
+      TRdot=f(l1:l2,m,n,iaxi_TRdot)
       if (lim_psi_TR) then
         impsi   =f(l1:l2,m,n,iaxi_impsi)
         impsidot=f(l1:l2,m,n,iaxi_impsidot)
-        imTR   =f(l1:l2,m1,n1,iaxi_imTR)
-        imTRdot=f(l1:l2,m1,n1,iaxi_imTRdot)
+        imTR   =f(l1:l2,m,n,iaxi_imTR)
+        imTRdot=f(l1:l2,m,n,iaxi_imTRdot)
       endif
 !
-!  integrand (for diagnostics)
 !  Here, "eff" refers to either just the real part squared, or the modulus
 !
       TReff2=TR**2
@@ -1439,10 +1461,10 @@ module Special
 !  Same for left-handed modes
 !
       if (lleft_psiL_TL) then
-        TL   =f(l1:l2,m1,n1,iaxi_TL)
-        TLdot=f(l1:l2,m1,n1,iaxi_TLdot)
-        imTL   =f(l1:l2,m1,n1,iaxi_imTL)
-        imTLdot=f(l1:l2,m1,n1,iaxi_imTLdot)
+        TL   =f(l1:l2,m,n,iaxi_TL)
+        TLdot=f(l1:l2,m,n,iaxi_TLdot)
+        imTL   =f(l1:l2,m,n,iaxi_imTL)
+        imTLdot=f(l1:l2,m,n,iaxi_imTLdot)
         TLeff2=TL**2
         TLdoteff2=TL*TLdot
         TLeff2=TLeff2+imTL**2
@@ -1525,24 +1547,159 @@ module Special
           )/twopi**3
         endif
       endif
+    endsubroutine calc_integrand
+!***********************************************************************
+    subroutine special_after_boundary(f)
+!
+!  Possibility to modify the f array after the boundaries are
+!  communicated.
+!
+!  07-aug-17/axel: coded
+
+      use Mpicomm, only: mpireduce_sum, mpibcast
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension(nx) :: TRpsim, TRpsikm, TRpsidotm, TRdotpsim
+      real, dimension(nx) :: TRdoteff2km, TRdoteff2m, TReff2km, TReff2m
+      real, dimension(nx) :: TLdoteff2km, TLdoteff2m, TLeff2km, TLeff2m
+      real :: Q, Qdot, chi, chidot, phi, phidot
+      real :: U, V, beta
+      real :: lnt, lnH, lna, a, lnkmin, lnkmax
+      integer :: ik, nswitch
+      real :: epsilon_sr,inflaton
+!
+!  make ODE variables available (should exist on all processors)
+!
+      Q=f_ode(iaxi_Q)
+      Qdot=f_ode(iaxi_Qdot)
+      chidot=f_ode(iaxi_chidot)
+!
+!  Possibility to evolve the Hubble parameter (in cosmic time)
+!
+      if (lhubble) then
+        phi=f_ode(iaxi_phi)
+        phidot=f_ode(iaxi_phidot)
+        U=mu**4*(1.+cos(chi/fdecay))
+        select case (V_choice)
+          case ('alpha_attractors')
+            beta=sqrt(2./(3.*alpha))
+            V=alpha*m_alpha*(tanh(beta*phi/2)**2)**n_alpha
+          case ('quadratic') ; V=.5*(m_phi*phi)**2
+          case default
+            call fatal_error("special_after_boundary: No such V_choice: ", trim(V_choice))
+        endselect
+    !   H=sqrt(onethird*(.5*phidot**2+V+.5*chidot**2+U+1.5*(Qdot+H*Q)**2+1.5*g**2*Q**4))
+
+        H=((-Q*Qdot)-sqrt((-Q*Qdot)**2+4.*(1.-.5*Q**2)*(.5*g**2*Q**4+onethird*(U+V) &
+          +.5*Qdot**2+onesixth*(phidot**2+chidot**2))))/(-2.+Q**2)
+        Hdot=-.5*phidot**2-.5*chidot**2-((Qdot+H*Q)**2+g**2*Q**4)
+      endif
+
+!
+!
+!  For conformal time, there is a 1/a factor in Qdot/a+H
+!
+      if (.not. lconf_time .and. lhubble_var) then
+        inflaton=inflaton_ini-sqrt(2./3.)*m_inflaton*t
+        H=0.41*m_inflaton*inflaton
+      endif
+
+      a = get_a()
+
+!
+!  decide about revising the k array
+!  a=exp(N), N=H*t (=lna).
+!
+      if (llnk_spacing_adjustable .and. lfirst) then
+        lna=alog(a)
+        lnH=alog(H)
+        lnkmin=nmin0+lnH+lna
+        lnkmax=nmax0+lnH+lna
+        if (lnkmin >= (lnkmin0+dlnk)) then
+          nswitch=int((lnkmin-lnkmin0)/dlnk)
+          if (ip<10) print*,'nswitch: ',a, lnkmin0, nswitch
+          if (nswitch==0) call fatal_error('special_after_boundary','nswitch must not be zero')
+          if (nswitch>1) call fatal_error('special_after_boundary','nswitch must not exceed 1')
+!
+!  calculate new k array (because nswitch=1)
+!
+          if (ldo_adjust_krange) then
+            do ik=1,nx
+              lnk(ik)=lnkmin0+dlnk*(ik-1+ipx*nx+nswitch)
+              k(ik)=exp(lnk(ik))
+            enddo
+            kindex_array=nint((lnk-lnkmin0)/dlnk)
+
+            call move_f_array(f,nswitch)
+          endif
+!
+!  output
+!
+          if (lwrite_krange) then
+            open (1, file=trim(directory_snap)//'/krange.dat', form='formatted', position='append')
+            write(1,*) t, lnk, f(l1:l2,m1,n1,iaxi_psi), f(l1:l2,m1,n1,iaxi_impsi), &
+                               f(l1:l2,m1,n1,iaxi_TR), f(l1:l2,m1,n1,iaxi_imTR)
+            close(1)
+            open (1, file=trim(directory_snap)//'/krange_deriv.dat', form='formatted', position='append')
+            write(1,*) t, lnk, f(l1:l2,m1,n1,iaxi_psidot), f(l1:l2,m1,n1,iaxi_impsidot), &
+                               f(l1:l2,m1,n1,iaxi_TRdot), f(l1:l2,m1,n1,iaxi_imTRdot)
+            close(1)
+!
+!  output for left-handed modes
+!
+            if (lleft_psiL_TL) then
+              open (1, file=trim(directory_snap)//'/krange_left.dat', form='formatted', position='append')
+              write(1,*) t, lnk, f(l1:l2,m1,n1,iaxi_psiL), f(l1:l2,m1,n1,iaxi_impsiL), &
+                                 f(l1:l2,m1,n1,iaxi_TL),   f(l1:l2,m1,n1,iaxi_imTL)
+              close(1)
+              open (1, file=trim(directory_snap)//'/krange_deriv_left.dat', form='formatted', position='append')
+              write(1,*) t, lnk, f(l1:l2,m1,n1,iaxi_psiLdot), f(l1:l2,m1,n1,iaxi_impsiLdot), &
+                                 f(l1:l2,m1,n1,iaxi_TLdot),   f(l1:l2,m1,n1,iaxi_imTLdot)
+              close(1)
+            endif
+          endif
+!
+!  reset lnkmin0
+!
+          lnkmin0=lnkmin0+dlnk
+        else
+          nswitch=0
+        endif
+!
+!  for llnk_spacing=T, we still want output at the same times as in
+!  the adjustable case, so her nswitch means just "output", but no switch
+!
+      elseif (lfirst) then
+        lna=alog(a)
+        lnH=alog(H)
+        lnkmin=nmin0+lnH+lna
+        if (lnkmin >= (lnkmin0_dummy+dlnk)) then
+          nswitch=int((lnkmin-lnkmin0_dummy)/dlnk)
+          if (nswitch==0) call fatal_error('special_after_boundary','nswitch must not be zero')
+          if (nswitch>1) call fatal_error('special_after_boundary','nswitch must not exceed 1')
+          open (1, file=trim(directory_snap)//'/krange.dat', form='formatted', position='append')
+          write(1,*) t, lnk, f(l1:l2,m1,n1,iaxi_psi)
+          close(1)
+!
+!  reset lnkmin0_dummy (but now it is a dummy)
+!
+          lnkmin0_dummy=lnkmin0_dummy+dlnk
+        else
+          nswitch=0
+        endif
+      endif
+!
+!  integrand (for diagnostics)
+!
+      n=n1
+      m=m1
+      call calc_integrand(f,TRpsim,TRpsikm,TRpsidotm,TRdotpsim,&
+                            TRdoteff2km,TRdoteff2m,TReff2km,TReff2m,&
+                            TLdoteff2km,TLdoteff2m,TLeff2km,TLeff2m)
 !
 !  output of integrand
 !
-      if (lwrite_backreact) then
-        if ((llnk_spacing_adjustable.or.llnk_spacing) .and. lfirst) then
-          if (nswitch>0) then
-            open (1, file=trim(directory_snap)//'/backreact.dat', form='formatted', position='append')
-            write(1,*) t, lnk, grand, dgrant
-            close(1)
-          endif
-        elseif (lfirst) then
-          if (nswitch>0) then
-            open (1, file=trim(directory_snap)//'/backreact.dat', form='formatted', position='append')
-            write(1,*) t, k, grand, dgrant
-            close(1)
-          endif
-        endif
-      endif
+      call write_backreact(grand,dgrant,nswitch)
 !
 !  Compute the sum over all processors.
 !  But result is only needed on root processor.
@@ -1719,6 +1876,11 @@ module Special
     call string_to_enum(enum_v_choice,v_choice)
     call copy_addr(enum_v_choice,p_par(48)) ! int
     call copy_addr(h_init,p_par(49))
+    call copy_addr(horizon_factor,p_par(50))
+    call copy_addr(llnk_spacing_adjustable,p_par(51)) ! bool
+    call copy_addr(llnk_spacing,p_par(52)) ! bool
+    call copy_addr(dlnk,p_par(53))
+    call copy_addr(dk,p_par(54))
 
     endsubroutine pushpars2c
 !***********************************************************************

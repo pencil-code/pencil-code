@@ -28,6 +28,7 @@ module Equ
   real, dimension(:,:,:,:), pointer :: p_fnamerz
   integer, dimension(:,:) , pointer :: p_ncountsz
   integer :: n_iterations=0
+  real, allocatable, dimension(:) :: f_ode_diagnostics
 !
   contains
 !***********************************************************************
@@ -300,30 +301,32 @@ module Equ
 !
         call timing('pde','before "after_boundary" calls')
 !
-        if (lhydro)          call hydro_after_boundary(f)
-        if (lviscosity)      call viscosity_after_boundary(f)
-        if (lmagnetic)       call magnetic_after_boundary(f)
-        if (ldustdensity)    call dustdensity_after_boundary(f)
-        if (lenergy)         call energy_after_boundary(f)
-        if (lgrav)           call gravity_after_boundary(f)
-        if (lforcing)        call forcing_after_boundary(f)
-        if (lpolymer)        call calc_polymer_after_boundary(f)
-        if (ltestscalar)     call testscalar_after_boundary(f)
-        if (ltestfield)      call testfield_after_boundary(f)
+        if (.not. lgpu) then
+          if (lhydro)          call hydro_after_boundary(f)
+          if (lviscosity)      call viscosity_after_boundary(f)
+          if (lmagnetic)       call magnetic_after_boundary(f)
+          if (ldustdensity)    call dustdensity_after_boundary(f)
+          if (lenergy)         call energy_after_boundary(f)
+          if (lgrav)           call gravity_after_boundary(f)
+          if (lforcing)        call forcing_after_boundary(f)
+          if (lpolymer)        call calc_polymer_after_boundary(f)
+          if (ltestscalar)     call testscalar_after_boundary(f)
+          if (ltestfield)      call testfield_after_boundary(f)
 !AB: quick fix
-        !if (ltestfield)      call testfield_after_boundary(f,p)
-        if (ldensity)        call density_after_boundary(f)
-        if (lneutraldensity) call neutraldensity_after_boundary(f)
-        if (ltestflow)       call calc_ltestflow_nonlin_terms(f,df)  ! should not use df!
-        if (lmagn_mf)        call meanfield_after_boundary(f)
-        if (lspecial)        call special_after_boundary(f)
-        if (ltraining)       call training_after_boundary(f)
+          !if (ltestfield)      call testfield_after_boundary(f,p)
+          if (ldensity)        call density_after_boundary(f)
+          if (lneutraldensity) call neutraldensity_after_boundary(f)
+          if (ltestflow)       call calc_ltestflow_nonlin_terms(f,df)  ! should not use df!
+          if (lmagn_mf)        call meanfield_after_boundary(f)
+          if (lspecial)        call special_after_boundary(f)
+          if (ltraining)       call training_after_boundary(f)
 !
 !  Calculate quantities for a chemical mixture. This is done after
 !  communication has finalized since many of the arrays set up here
 !  are not communicated, and in this subroutine also ghost zones are calculated.
 !
-        if (lchemistry .and. ldensity) call calc_for_chem_mixture(f)
+          if (lchemistry .and. ldensity) call calc_for_chem_mixture(f)
+        endif
 !      endif
 !
       call timing('pde','after "after_boundary" calls')
@@ -331,8 +334,13 @@ module Equ
       if (lgpu) then
         if (lrhs_diagnostic_output) then
           !wait in case the last diagnostic tasks are not finished
-!         Not done for the first step since we haven't loaded any data to the GPU yet
           call copy_farray_from_GPU(f)
+          if(lode .and. lgpu) then
+                  if (.not. allocated(f_ode_diagnostics)) then
+                          allocate(f_ode_diagnostics(n_odevars))
+                  endif
+                  f_ode_diagnostics = f_ode
+          endif
 !$        lmasterflags(PERF_DIAGS) = .true.
         endif
         start_time = mpiwtime()
@@ -435,27 +443,13 @@ module Equ
 
       endif     ! if (.not. lgpu)
 
-      if (lmultithread) then
-!       Kishore: Is it correct that tdiagnos does not need to be updated
-!       Kishore: when lmultithread=T? If so, please leave a comment
-!       Kishore: explaining why.
-        if (ldiagnos.or.l1davgfirst.or.l1dphiavg.or.l2davgfirst) then
-!         Kishore: is this block supposed to be empty?
-        endif
-      elseif (lfirst) then
-        if (lout.or.l1davgfirst.or.l1dphiavg.or.l2davgfirst) then
-!         Kishore: lout is just
-!         Kishore: `lout = (mod(it-1,it1) == 0) .and. (it > it1start)`.
-!         Kishore: If the user is specifying d1davg or d2davg, this need not
-!         Kishore: coincide with the iterations at which the 1D and 2D
-!         Kishore: averages should be output. write_{1,2}daverages now uses
-!         Kishore: tdiagnos for the timestamp that is written to the average
-!         Kishore: files, and so I have modified the condition to ensure
-!         Kishore: tdiagnos is updated when needed.
-          tdiagnos  = t
-          itdiagnos = it
-          dtdiagnos = dt
-        endif
+      !TP: Update diagnostics controls which is done earlier when multithreading.
+      !    I believe at least itdiagnos and dtdiagnos could be eliminated but not 
+      !    worth the effort right now
+      if (.not. lmultithread .and. lfirst) then
+        tdiagnos  = t
+        itdiagnos = it
+        dtdiagnos = dt
         call finalize_diagnostics
       endif
       !
@@ -649,7 +643,7 @@ module Equ
       call init_reduc_pointers
 
 !$omp parallel if(.not. lsuppress_parallel_reductions) private(p) num_threads(num_helper_threads) &
-!$omp copyin(dxmax_pencil,fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz,phiavg_norm)
+!$omp copyin(t,dxmax_pencil,fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz,phiavg_norm)
 !$    call restore_diagnostic_controls
 
       
@@ -741,12 +735,14 @@ module Equ
       subroutine perform_diagnostics(f,p)
 
 !$    use General, only: signal_send
+      use Special, only: calc_ode_diagnostics_special
 
       real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
       type (pencil_case) :: p
 
         call calc_all_before_boundary_diagnostics(f)
         call calc_all_module_diagnostics(f,p)     ! by all helper threads
+        call calc_ode_diagnostics_special(f_ode_diagnostics)
         call finalize_diagnostics                 ! by diagmaster (MPI comm.)
         call write_diagnostics(f)                 !       ~
 

@@ -139,7 +139,7 @@ module Timestep
 !
 !  Set up ODE derivatives array
 !
-        if (lode .and. .not. lgpu) call ode_timestep_first
+        if (lode) call ode_timestep_first
 !
 !  Set up solid_cells time advance
 !
@@ -149,7 +149,7 @@ module Timestep
 !
         call pde(f,df,p)
 
-        if (lode .and. .not. lgpu) call ode
+        if (lode) call ode
 
         ds=ds+1.0
 !
@@ -178,7 +178,7 @@ module Timestep
 !
 ! Time evolution of ODE variables.
 !
-        if (lode .and. .not. lgpu) call ode_timestep_second
+        if (lode) call ode_timestep_second
 !
 !  Time evolution of solid_cells.
 !

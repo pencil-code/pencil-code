@@ -175,8 +175,13 @@ contains
     endsubroutine calcQ_gpu
 !**************************************************************************
     subroutine source_function_and_opacity_gpu(inu)
-            integer :: inu
-            call keep_compiler_quiet(inu)
+      integer :: inu
+      call keep_compiler_quiet(inu)
     endsubroutine
+!**************************************************************************
+    subroutine get_gpu_reduced_vars(dst)
+      real, dimension(10) :: dst
+      call keep_compiler_quiet(dst)
+    endsubroutine get_gpu_reduced_vars
 !**************************************************************************
 endmodule GPU

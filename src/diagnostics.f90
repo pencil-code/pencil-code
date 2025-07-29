@@ -3950,6 +3950,7 @@ module Diagnostics
     l2davg_save = l2davg
     lout_sound_save = lout_sound
     lvideo_save = lvideo
+    t_save  = t ! (diagnostics are for THIS time)
 !
 !  Record times for diagnostic and 2d average output.
 !
@@ -3958,7 +3959,6 @@ module Diagnostics
     if (lvideo     ) tslice_save=t ! (slices are for THIS time)
     if (lout_sound ) tsound_save=t
     if (ldiagnos) then
-      t_save  = t ! (diagnostics are for THIS time)
       dt_save = dt
       it_save = it
       eps_rkf_save = eps_rkf
@@ -3988,6 +3988,7 @@ module Diagnostics
     t2davgfirst= t2davgfirst_save
     tslice = tslice_save
     tsound = tsound_save
+    t = t_save
 
     if (ldiagnos) then
       tdiagnos  = t_save

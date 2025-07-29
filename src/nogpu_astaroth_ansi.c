@@ -88,4 +88,8 @@ void FTNIZE(calcq_gpu_c)(int *idir, int *dir, int *stop, int *unit_vec, int *lpe
 {
 }
 /* ------------------------------------------------------------------- */
+void FTNIZE(get_gpu_reduced_vars_c)(REAL* dst)
+{
+}
+/* ------------------------------------------------------------------- */
 

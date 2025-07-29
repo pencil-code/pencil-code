@@ -696,6 +696,11 @@ module Special
       call keep_compiler_quiet(p)
     endsubroutine calc_diagnostics_special
 !***********************************************************************
+    subroutine     calc_ode_diagnostics_special(f_ode)
+      real, dimension(:) f_ode
+      call keep_compiler_quiet(f_ode)
+    endsubroutine     calc_ode_diagnostics_special 
+!***********************************************************************
     subroutine pushpars2c(p_par)
 
       integer, parameter :: n_pars=0

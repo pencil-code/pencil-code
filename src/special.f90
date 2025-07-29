@@ -57,9 +57,10 @@
                           I_INPUT_PERSIST_SPECIAL_ID=34, &
                           I_OUTPUT_PERSISTENT_SPECIAL=35, &
                           I_SPECIAL_PARTICLES_AFTER_DTSUB=36, &
-                          I_CALC_DIAGNOSTICS_SPECIAL=37
+                          I_CALC_DIAGNOSTICS_SPECIAL=37, &
+                          I_CALC_ODE_DIAGNOSTICS_SPECIAL=38
     
-    integer, parameter :: n_subroutines=37
+    integer, parameter :: n_subroutines=38
     integer, parameter :: n_special_modules_max=3
 !
     integer :: n_special_modules
@@ -101,7 +102,8 @@
                            'input_persist_special_id     ', &
                            'output_persistent_special    ', &
                            'special_particles_after_dtsub', &
-                           'calc_diagnostics_special     '  &
+                           'calc_diagnostics_special     ',  &
+                           'calc_ode_diagnostics_special     '  &
                    /)
 
     integer(KIND=ikind8) :: libhandle
@@ -796,6 +798,14 @@
       integer :: i
       do i=1,n_special_modules
         call caller2(special_sub_handles(i,I_CALC_DIAGNOSTICS_SPECIAL),f,p)
+      enddo
+    endsubroutine calc_diagnostics_special
+!***********************************************************************
+    subroutine calc_ode_diagnostics_special(f_ode)
+      real, dimension(:) :: f_ode
+      integer :: i
+      do i=1,n_special_modules
+        call caller1(special_sub_handles(i,I_CALC_ODE_DIAGNOSTICS_SPECIAL),f_ode)
       enddo
     endsubroutine calc_diagnostics_special
 !***********************************************************************

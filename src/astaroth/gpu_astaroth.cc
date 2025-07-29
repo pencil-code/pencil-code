@@ -1143,6 +1143,15 @@ void scaling(){
 /***********************************************************************************************/
 extern "C" void beforeBoundaryGPU(bool lrmv, int isubstep, double t)
 {
+        //TP: this is simply the initial implementation
+	//TP: has to be done here since before boundary can use the ode array
+        //TODO: benchmark what is the most efficient way of getting ode array to the GPU each substep
+        if(n_odevars > 0)
+        {
+                acGridSynchronizeStream(STREAM_DEFAULT);
+                acDeviceLoad(acGridGetDevice(), STREAM_DEFAULT, mesh.info, AC_f_ode);
+                acGridSynchronizeStream(STREAM_DEFAULT);
+        }
  	acDeviceSetInput(acGridGetDevice(), AC_lrmv,lrmv);
  	acDeviceSetInput(acGridGetDevice(), AC_t,AcReal(t));
 	acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_before_boundary_steps),1);
@@ -1196,14 +1205,6 @@ extern "C" void substepGPU(int isubstep, double t)
    }
    if (isubstep == itorder) forcing_params.Update();  // calculate on CPU and load into GPU
 #endif
-  //TP: this is simply the initial implementation
-  //TODO: benchmark what is the most efficient way of getting ode array to the GPU each substep
-  if(n_odevars > 0)
-  {
-	  acGridSynchronizeStream(STREAM_DEFAULT);
-	  acDeviceLoad(acGridGetDevice(), STREAM_DEFAULT, mesh.info, AC_f_ode);
-	  acGridSynchronizeStream(STREAM_DEFAULT);
-  }
   acDeviceSetInput(acGridGetDevice(), AC_step_num,(PC_SUB_STEP_NUMBER) (isubstep-1));
   if (lshear && isubstep == 1) acDeviceSetInput(acGridGetDevice(), AC_shear_delta_y, deltay);
   Device dev = acGridGetDevice();
@@ -2034,5 +2035,22 @@ extern "C" void gpuSetDt(double t)
         acDeviceSwapBuffers(acGridGetDevice());
 	loadFarray();
 	//TP: not strictly needed but for extra safety
+}
+/***********************************************************************************************/
+extern "C" void getGPUReducedVars(AcReal* dst)
+{
+	acGridSynchronizeStream(STREAM_ALL);
+#if LAXIONSU2BACK
+	dst[0] = acDeviceGetOutput(acGridGetDevice(), AC_grand_sum);
+	dst[1] = acDeviceGetOutput(acGridGetDevice(), AC_dgrant_sum);
+	dst[2] = acDeviceGetOutput(acGridGetDevice(), AC_trdoteff2km_sum);
+	dst[3] = acDeviceGetOutput(acGridGetDevice(), AC_trdoteff2m_sum);
+	dst[4] = acDeviceGetOutput(acGridGetDevice(), AC_treff2km_sum);
+	dst[5] = acDeviceGetOutput(acGridGetDevice(), AC_treff2m_sum);
+	dst[6] = acDeviceGetOutput(acGridGetDevice(), AC_tldoteff2km_sum);
+	dst[7] = acDeviceGetOutput(acGridGetDevice(), AC_tldoteff2m_sum);
+	dst[8] = acDeviceGetOutput(acGridGetDevice(), AC_tleff2km_sum);
+	dst[9] = acDeviceGetOutput(acGridGetDevice(), AC_tleff2m_sum);
+#endif
 }
 /***********************************************************************************************/
