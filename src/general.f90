@@ -8051,6 +8051,24 @@ iloop:do i=1,size(list2)
           dst = enum_hyper3_rho_nuZconst_symm_string
         case('no')
           dst = enum_no_string
+        case('ascale_power')
+          dst = enum_ascale_power_string
+        case('set')
+          dst = enum_set_string
+        case('dspecial_dt: no such hscript_choice: ')
+          dst = enum_dspecial_dtZ_no_such_hscript_choiceZ__string
+        case('quartic')
+          dst = enum_quartic_string
+        case('cos-profile')
+          dst = enum_cosZprofile_string
+        case('dspecial_dt: no such vprime_choice: ')
+          dst = enum_dspecial_dtZ_no_such_vprime_choiceZ__string
+        case('lrho_chi must be .true. when ndiv=0')
+          dst = enum_lrho_chi_must_be_ZtrueZ_when_ndivZ0_string
+        case('it<1.or.it>nt')
+          dst = enum_itZ1ZorZitZnt_string
+        case('dspecial_dt: dont solve dspecial_dt')
+          dst = enum_dspecial_dtZ_dont_solve_dspecial_dt_string
         case default
           dst = enum_unknown_string_string
           if (lroot) print*, 'No string enum for: ', src

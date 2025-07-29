@@ -970,8 +970,8 @@ module Special
       Qdot=f_ode(iaxi_Qdot)
       chi=f_ode(iaxi_chi)
       chidot=f_ode(iaxi_chidot)
-      phi = f_ode(iaxi_phi)
-      phidot = f_ode(iaxi_phidot)
+      if(iaxi_phi > 0) phi = f_ode(iaxi_phi)
+      if(iaxi_phidot > 0) phidot = f_ode(iaxi_phidot)
 
       if (lhubble) then
         Hdot=-.5*phidot**2-.5*chidot**2-((Qdot+H*Q)**2+g**2*Q**4)

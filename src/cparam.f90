@@ -969,5 +969,14 @@ integer, parameter :: enum_she_string = 686
 integer, parameter :: enum_p_string = 687
 integer, parameter :: enum_hyper3_rho_nuZconst_symm_string=688
 integer, parameter :: enum_no_string=689
+integer, parameter :: enum_ascale_power_string = 690
+integer, parameter :: enum_set_string = 691
+integer, parameter :: enum_dspecial_dtZ_no_such_hscript_choiceZ__string = 692
+integer, parameter :: enum_quartic_string = 693
+integer, parameter :: enum_cosZprofile_string = 694
+integer, parameter :: enum_dspecial_dtZ_no_such_vprime_choiceZ__string = 695
+integer, parameter :: enum_lrho_chi_must_be_ZtrueZ_when_ndivZ0_string = 696
+integer, parameter :: enum_itZ1ZorZitZnt_string = 697
+integer, parameter :: enum_dspecial_dtZ_dont_solve_dspecial_dt_string = 698
 
 endmodule Cparam
