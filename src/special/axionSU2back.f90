@@ -1122,8 +1122,6 @@ module Special
 !  diagnostics
 !
       if (ldiagnos .and. .not. lgpu) then
-        grand_sum_diagnos  = grand_sum
-        dgrant_sum_diagnos = dgrant_sum
         call calc_ode_diagnostics_special(f_ode)
       endif
 !
@@ -1707,6 +1705,10 @@ module Special
       call mpireduce_sum(sum(grand),grand_sum,1)
       call mpireduce_sum(sum(grant),grant_sum,1)
       call mpireduce_sum(sum(dgrant),dgrant_sum,1)
+     if(.not. lmultithread) then
+        grand_sum_diagnos  = grand_sum
+        dgrant_sum_diagnos = dgrant_sum
+      endif
 !
 !  These 8 lines are only needed for diagnostics and could be escaped.
 !
@@ -1817,10 +1819,10 @@ module Special
       enddo
 !
     endsubroutine rprint_special
+!***********************************************************************
     subroutine pushpars2c(p_par)
 
     use Syscalls, only: copy_addr
-!***********************************************************************
     use General , only: string_to_enum
 
     integer, parameter :: n_pars=100
