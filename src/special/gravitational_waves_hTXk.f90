@@ -314,10 +314,10 @@ module Special
         !TP: moved registration of Str first since the other ones are not 
         !    necessarily used on the GPU side and having it come first helps
         call farray_register_auxiliary('Str',iStress_ij,array=6,on_gpu=lgpu)
-        call farray_register_auxiliary('StT',iStressT)
-        call farray_register_auxiliary('StX',iStressX)
-        call farray_register_auxiliary('StTim',iStressTim)
-        call farray_register_auxiliary('StXim',iStressXim)
+        call farray_register_auxiliary('StT',iStressT,on_gpu     = itorder_GW==2 .and. lgpu)
+        call farray_register_auxiliary('StX',iStressX,on_gpu     = itorder_GW==2 .and. lgpu)
+        call farray_register_auxiliary('StTim',iStressTim,on_gpu = itorder_GW==2 .and. lgpu)
+        call farray_register_auxiliary('StXim',iStressXim,on_gpu = itorder_GW==2 .and. lgpu)
       endif
 !
 !  To get hT and hX in real space, invoke lreal_space_hTX_as_aux

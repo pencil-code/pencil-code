@@ -1134,7 +1134,7 @@ module Special
 !  29-jul-25/TP: carved from dspecial_dt_ode
 !
       use Diagnostics
-      real, dimension(:), intent(IN) :: f_ode
+      real, dimension(max_n_odevars), intent(IN) :: f_ode
       real :: Qddot,chiddot,phiddot
 
       call calc_ode_dt(f_ode,Qddot,chiddot,phiddot,grand_sum_diagnos,dgrant_sum_diagnos)

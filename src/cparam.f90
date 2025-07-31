@@ -16,6 +16,7 @@ module Cparam
 !
   include 'cparam.local'
 !
+  integer, parameter :: max_n_odevars = 100
   integer, parameter :: nx=nxgrid/nprocx,ny=nygrid/nprocy,nz=nzgrid/nprocz,nyz=ny*nz
   integer, parameter :: max_n = max(nx,max(ny,nz))
   integer, parameter :: nxygrid=nxgrid*nygrid,nxzgrid=nxgrid*nzgrid,nyzgrid=nygrid*nzgrid
@@ -978,5 +979,6 @@ integer, parameter :: enum_dspecial_dtZ_no_such_vprime_choiceZ__string = 695
 integer, parameter :: enum_lrho_chi_must_be_ZtrueZ_when_ndivZ0_string = 696
 integer, parameter :: enum_itZ1ZorZitZnt_string = 697
 integer, parameter :: enum_dspecial_dtZ_dont_solve_dspecial_dt_string = 698
+integer, parameter :: enum_erun_string = 699
 
 endmodule Cparam

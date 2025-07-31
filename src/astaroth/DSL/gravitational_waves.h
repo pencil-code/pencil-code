@@ -95,53 +95,53 @@ Kernel gravitational_waves_solve_and_stress(real AC_t__mod__cdata, real AC_dt__m
     real DF_GGXIM = value(F_GGXIM)
 
 
-    delkt=AC_delk__mod__special
-    if (AC_ldelkt__mod__special) {
-      if(AC_enum_idelkt__mod__special == AC_enum_jump_string__mod__cparam) {
-        if (AC_t__mod__cdata>AC_tdelk__mod__special) {
+    delkt=AC_delk__mod__gravitational_waves_htxk
+    if (AC_ldelkt__mod__gravitational_waves_htxk) {
+      if(AC_enum_idelkt__mod__gravitational_waves_htxk == AC_enum_jump_string__mod__cparam) {
+        if (AC_t__mod__cdata>AC_tdelk__mod__gravitational_waves_htxk) {
           delkt=0.
         }
       }
-      else if(AC_enum_idelkt__mod__special == AC_enum_exponential_string__mod__cparam) {
-        if (AC_t__mod__cdata>AC_tdelk__mod__special) {
-          delkt=exp(-(AC_t__mod__cdata-AC_tdelk__mod__special)/AC_tau_delk__mod__special)
+      else if(AC_enum_idelkt__mod__gravitational_waves_htxk == AC_enum_exponential_string__mod__cparam) {
+        if (AC_t__mod__cdata>AC_tdelk__mod__gravitational_waves_htxk) {
+          delkt=exp(-(AC_t__mod__cdata-AC_tdelk__mod__gravitational_waves_htxk)/AC_tau_delk__mod__gravitational_waves_htxk)
         }
       }
       else {
       }
     }
-    real scale_factor__mod__special
+    real scale_factor__mod__gravitational_waves_htxk
     if (AC_lgpu__mod__cparam) {
       if (AC_lread_scl_factor_file__mod__cdata) {
-        lgt_current_0=alog10(AC_t__mod__cdata)+AC_lgt_ini__mod__special
-        int it_file_0=int((lgt_current_0-AC_lgt0__mod__special)/AC_dlgt__mod__special)+1
-        lgt1_0=AC_lgt_file__mod__special[it_file_0-1]
-        lgt2_0=AC_lgt_file__mod__special[1+it_file_0-1]
-        lgf1_0=AC_lgff__mod__special[it_file_0-1]
-        lgf2_0=AC_lgff__mod__special[1+it_file_0-1]
+        lgt_current_0=alog10(AC_t__mod__cdata)+AC_lgt_ini__mod__gravitational_waves_htxk
+        int it_file_0=int((lgt_current_0-AC_lgt0__mod__gravitational_waves_htxk)/AC_dlgt__mod__gravitational_waves_htxk)+1
+        lgt1_0=AC_lgt_file__mod__gravitational_waves_htxk[it_file_0-1]
+        lgt2_0=AC_lgt_file__mod__gravitational_waves_htxk[1+it_file_0-1]
+        lgf1_0=AC_lgff__mod__gravitational_waves_htxk[it_file_0-1]
+        lgf2_0=AC_lgff__mod__gravitational_waves_htxk[1+it_file_0-1]
         lgf_0=lgf1_0+(lgt_current_0-lgt1_0)*(lgf2_0-lgf1_0)/(lgt2_0-lgt1_0)
-        scl_factor_target__mod__cdata=pow(10,lgf_0)/AC_a_ini__mod__special
-        scale_factor__mod__special=pow(10,lgf_0)/AC_a_ini__mod__special
+        scl_factor_target__mod__cdata=pow(10,lgf_0)/AC_a_ini__mod__gravitational_waves_htxk
+        scale_factor__mod__gravitational_waves_htxk=pow(10,lgf_0)/AC_a_ini__mod__gravitational_waves_htxk
       }
       else {
-        if (AC_lreheating_gw__mod__special) {
-          scale_factor__mod__special=0.25*((AC_t__mod__cdata+1.)*(AC_t__mod__cdata+1.))
+        if (AC_lreheating_gw__mod__gravitational_waves_htxk) {
+          scale_factor__mod__gravitational_waves_htxk=0.25*((AC_t__mod__cdata+1.)*(AC_t__mod__cdata+1.))
         }
-        else if (AC_lmatter_gw__mod__special) {
-          scale_factor__mod__special=(AC_t__mod__cdata*AC_t__mod__cdata)/AC_t_equality__mod__special
+        else if (AC_lmatter_gw__mod__gravitational_waves_htxk) {
+          scale_factor__mod__gravitational_waves_htxk=(AC_t__mod__cdata*AC_t__mod__cdata)/AC_t_equality__mod__gravitational_waves_htxk
         }
-        else if (AC_ldark_energy_gw__mod__special) {
-          scale_factor__mod__special=(AC_t_acceleration__mod__special*AC_t_acceleration__mod__special*AC_t_acceleration__mod__special)/(AC_t__mod__cdata*AC_t_equality__mod__special)
+        else if (AC_ldark_energy_gw__mod__gravitational_waves_htxk) {
+          scale_factor__mod__gravitational_waves_htxk=(AC_t_acceleration__mod__gravitational_waves_htxk*AC_t_acceleration__mod__gravitational_waves_htxk*AC_t_acceleration__mod__gravitational_waves_htxk)/(AC_t__mod__cdata*AC_t_equality__mod__gravitational_waves_htxk)
         }
-        else if (AC_lscalar__mod__special) {
-          scale_factor__mod__special=exp(AC_f_ode__mod__cdata[AC_iinfl_lna__mod__special-1])
+        else if (AC_lscalar__mod__gravitational_waves_htxk) {
+          scale_factor__mod__gravitational_waves_htxk=exp(AC_f_ode__mod__cdata[AC_iinfl_lna__mod__gravitational_waves_htxk-1])
         }
         else {
-          if (AC_t__mod__cdata+AC_tshift__mod__special==0.) {
-            scale_factor__mod__special=1.
+          if (AC_t__mod__cdata+AC_tshift__mod__gravitational_waves_htxk==0.) {
+            scale_factor__mod__gravitational_waves_htxk=1.
           }
           else {
-            scale_factor__mod__special=pow((AC_t__mod__cdata+AC_tshift__mod__special),AC_nscale_factor_conformal__mod__special)
+            scale_factor__mod__gravitational_waves_htxk=pow((AC_t__mod__cdata+AC_tshift__mod__gravitational_waves_htxk),AC_nscale_factor_conformal__mod__gravitational_waves_htxk)
           }
         }
       }
@@ -149,91 +149,91 @@ Kernel gravitational_waves_solve_and_stress(real AC_t__mod__cdata, real AC_dt__m
     real hp_target__mod__cdata
     real appa_target__mod__cdata
     if (AC_lread_scl_factor_file__mod__cdata) {
-      lgt_current_2=alog10(AC_t__mod__cdata)+AC_lgt_ini__mod__special
-      int it_file_2=int((lgt_current_2-AC_lgt0__mod__special)/AC_dlgt__mod__special)+1
-      lgt1_2=AC_lgt_file__mod__special[it_file_2-1]
-      lgt2_2=AC_lgt_file__mod__special[1+it_file_2-1]
-      lgf1_2=AC_lgff2__mod__special[it_file_2-1]
-      lgf2_2=AC_lgff2__mod__special[1+it_file_2-1]
+      lgt_current_2=alog10(AC_t__mod__cdata)+AC_lgt_ini__mod__gravitational_waves_htxk
+      int it_file_2=int((lgt_current_2-AC_lgt0__mod__gravitational_waves_htxk)/AC_dlgt__mod__gravitational_waves_htxk)+1
+      lgt1_2=AC_lgt_file__mod__gravitational_waves_htxk[it_file_2-1]
+      lgt2_2=AC_lgt_file__mod__gravitational_waves_htxk[1+it_file_2-1]
+      lgf1_2=AC_lgff2__mod__gravitational_waves_htxk[it_file_2-1]
+      lgf2_2=AC_lgff2__mod__gravitational_waves_htxk[1+it_file_2-1]
       lgf_2=lgf1_2+(lgt_current_2-lgt1_2)*(lgf2_2-lgf1_2)/(lgt2_2-lgt1_2)
-      hp_target__mod__cdata=pow(10,lgf_2)/AC_hp_ini__mod__special
-      lgf1_2=AC_lgff3__mod__special[it_file_2-1]
-      lgf2_2=AC_lgff3__mod__special[1+it_file_2-1]
+      hp_target__mod__cdata=pow(10,lgf_2)/AC_hp_ini__mod__gravitational_waves_htxk
+      lgf1_2=AC_lgff3__mod__gravitational_waves_htxk[it_file_2-1]
+      lgf2_2=AC_lgff3__mod__gravitational_waves_htxk[1+it_file_2-1]
       lgf_2=lgf1_2+(lgt_current_2-lgt1_2)*(lgf2_2-lgf1_2)/(lgt2_2-lgt1_2)
-      appa_target__mod__cdata=pow(10,lgf_2)/(AC_hp_ini__mod__special*AC_hp_ini__mod__special)
+      appa_target__mod__cdata=pow(10,lgf_2)/(AC_hp_ini__mod__gravitational_waves_htxk*AC_hp_ini__mod__gravitational_waves_htxk)
     }
-    real horndeski_alpt_eff__mod__special
-    real horndeski_alpm_eff__mod__special
-    real horndeski_alpm_eff2__mod__special
-    real horndeski_alpm_eff3__mod__special
-    if (AC_lhorndeski__mod__special || AC_lhorndeski_xi__mod__special) {
-      if(AC_enum_ihorndeski_time__mod__special == AC_enum_const_string__mod__cparam) {
-        horndeski_alpt_eff__mod__special=AC_horndeski_alpt__mod__special
-        horndeski_alpm_eff__mod__special=AC_horndeski_alpm__mod__special
+    real horndeski_alpt_eff__mod__gravitational_waves_htxk
+    real horndeski_alpm_eff__mod__gravitational_waves_htxk
+    real horndeski_alpm_eff2__mod__gravitational_waves_htxk
+    real horndeski_alpm_eff3__mod__gravitational_waves_htxk
+    if (AC_lhorndeski__mod__gravitational_waves_htxk || AC_lhorndeski_xi__mod__gravitational_waves_htxk) {
+      if(AC_enum_ihorndeski_time__mod__gravitational_waves_htxk == AC_enum_const_string__mod__cparam) {
+        horndeski_alpt_eff__mod__gravitational_waves_htxk=AC_horndeski_alpt__mod__gravitational_waves_htxk
+        horndeski_alpm_eff__mod__gravitational_waves_htxk=AC_horndeski_alpm__mod__gravitational_waves_htxk
       }
-      else if(AC_enum_ihorndeski_time__mod__special == enum_tanh_string) {
-        horndeski_alpt_eff__mod__special=AC_horndeski_alpt__mod__special*tanh(1.-pow((scale_factor__mod__special/AC_scale_factor0__mod__special),AC_horndeski_alpt_exp__mod__special))
+      else if(AC_enum_ihorndeski_time__mod__gravitational_waves_htxk == enum_tanh_string) {
+        horndeski_alpt_eff__mod__gravitational_waves_htxk=AC_horndeski_alpt__mod__gravitational_waves_htxk*tanh(1.-pow((scale_factor__mod__gravitational_waves_htxk/AC_scale_factor0__mod__gravitational_waves_htxk),AC_horndeski_alpt_exp__mod__gravitational_waves_htxk))
       }
-      else if(AC_enum_ihorndeski_time__mod__special == enum_exp_string) {
-        horndeski_alpt_eff__mod__special=AC_horndeski_alpt__mod__special*exp(-pow((scale_factor__mod__special/AC_scale_factor0__mod__special),AC_horndeski_alpt_exp__mod__special))
+      else if(AC_enum_ihorndeski_time__mod__gravitational_waves_htxk == enum_exp_string) {
+        horndeski_alpt_eff__mod__gravitational_waves_htxk=AC_horndeski_alpt__mod__gravitational_waves_htxk*exp(-pow((scale_factor__mod__gravitational_waves_htxk/AC_scale_factor0__mod__gravitational_waves_htxk),AC_horndeski_alpt_exp__mod__gravitational_waves_htxk))
       }
-      else if(AC_enum_ihorndeski_time__mod__special == enum_scale_factor_power_string) {
-        horndeski_alpt_eff__mod__special=AC_horndeski_alpt__mod__special
-        horndeski_alpm_eff__mod__special=AC_horndeski_alpm__mod__special*pow((scale_factor__mod__special*AC_a_ini__mod__special/AC_scale_factor0__mod__special),AC_horndeski_alpm_exp__mod__special)
+      else if(AC_enum_ihorndeski_time__mod__gravitational_waves_htxk == enum_scale_factor_power_string) {
+        horndeski_alpt_eff__mod__gravitational_waves_htxk=AC_horndeski_alpt__mod__gravitational_waves_htxk
+        horndeski_alpm_eff__mod__gravitational_waves_htxk=AC_horndeski_alpm__mod__gravitational_waves_htxk*pow((scale_factor__mod__gravitational_waves_htxk*AC_a_ini__mod__gravitational_waves_htxk/AC_scale_factor0__mod__gravitational_waves_htxk),AC_horndeski_alpm_exp__mod__gravitational_waves_htxk)
       }
-      else if(AC_enum_ihorndeski_time__mod__special == enum_matter_string) {
-        horndeski_alpt_eff__mod__special=AC_horndeski_alpt__mod__special
-        if (AC_lread_scl_factor_file__mod__cdata && AC_lread_scl_factor_file_exists__mod__special) {
-          om_rat_matt=pow((scale_factor__mod__special*AC_a_ini__mod__special/AC_scale_factor0__mod__special),(-3))*AC_omm0__mod__special
-          om_rat_tot1=((AC_a_ini__mod__special*AC_h0__mod__special*scale_factor__mod__special/hp_target__mod__cdata/AC_hp_ini__mod__special)*(AC_a_ini__mod__special*AC_h0__mod__special*scale_factor__mod__special/hp_target__mod__cdata/AC_hp_ini__mod__special))
-          horndeski_alpm_eff__mod__special=AC_horndeski_alpm__mod__special*(1-om_rat_matt*om_rat_tot1)/(1-AC_omm0__mod__special)
+      else if(AC_enum_ihorndeski_time__mod__gravitational_waves_htxk == enum_matter_string) {
+        horndeski_alpt_eff__mod__gravitational_waves_htxk=AC_horndeski_alpt__mod__gravitational_waves_htxk
+        if (AC_lread_scl_factor_file__mod__cdata && AC_lread_scl_factor_file_exists__mod__gravitational_waves_htxk) {
+          om_rat_matt=pow((scale_factor__mod__gravitational_waves_htxk*AC_a_ini__mod__gravitational_waves_htxk/AC_scale_factor0__mod__gravitational_waves_htxk),(-3))*AC_omm0__mod__gravitational_waves_htxk
+          om_rat_tot1=((AC_a_ini__mod__gravitational_waves_htxk*AC_h0__mod__gravitational_waves_htxk*scale_factor__mod__gravitational_waves_htxk/hp_target__mod__cdata/AC_hp_ini__mod__gravitational_waves_htxk)*(AC_a_ini__mod__gravitational_waves_htxk*AC_h0__mod__gravitational_waves_htxk*scale_factor__mod__gravitational_waves_htxk/hp_target__mod__cdata/AC_hp_ini__mod__gravitational_waves_htxk))
+          horndeski_alpm_eff__mod__gravitational_waves_htxk=AC_horndeski_alpm__mod__gravitational_waves_htxk*(1-om_rat_matt*om_rat_tot1)/(1-AC_omm0__mod__gravitational_waves_htxk)
         }
         else {
         }
       }
-      else if(AC_enum_ihorndeski_time__mod__special == enum_dark_energy_string) {
-        horndeski_alpt_eff__mod__special=AC_horndeski_alpt__mod__special
-        if (AC_lread_scl_factor_file__mod__cdata && AC_lread_scl_factor_file_exists__mod__special) {
-          om_rat_tot1=((AC_a_ini__mod__special*AC_h0__mod__special*scale_factor__mod__special/hp_target__mod__cdata/AC_hp_ini__mod__special)*(AC_a_ini__mod__special*AC_h0__mod__special*scale_factor__mod__special/hp_target__mod__cdata/AC_hp_ini__mod__special))
-          horndeski_alpm_eff__mod__special=AC_horndeski_alpm__mod__special*om_rat_tot1
+      else if(AC_enum_ihorndeski_time__mod__gravitational_waves_htxk == enum_dark_energy_string) {
+        horndeski_alpt_eff__mod__gravitational_waves_htxk=AC_horndeski_alpt__mod__gravitational_waves_htxk
+        if (AC_lread_scl_factor_file__mod__cdata && AC_lread_scl_factor_file_exists__mod__gravitational_waves_htxk) {
+          om_rat_tot1=((AC_a_ini__mod__gravitational_waves_htxk*AC_h0__mod__gravitational_waves_htxk*scale_factor__mod__gravitational_waves_htxk/hp_target__mod__cdata/AC_hp_ini__mod__gravitational_waves_htxk)*(AC_a_ini__mod__gravitational_waves_htxk*AC_h0__mod__gravitational_waves_htxk*scale_factor__mod__gravitational_waves_htxk/hp_target__mod__cdata/AC_hp_ini__mod__gravitational_waves_htxk))
+          horndeski_alpm_eff__mod__gravitational_waves_htxk=AC_horndeski_alpm__mod__gravitational_waves_htxk*om_rat_tot1
         }
         else {
         }
       }
       else {
       }
-      if (AC_lread_scl_factor_file__mod__cdata && AC_lread_scl_factor_file_exists__mod__special) {
-        if (AC_lhorndeski__mod__special) {
-          horndeski_alpm_eff__mod__special=horndeski_alpm_eff__mod__special*hp_target__mod__cdata
-          horndeski_alpm_eff2__mod__special=horndeski_alpm_eff__mod__special*hp_target__mod__cdata
+      if (AC_lread_scl_factor_file__mod__cdata && AC_lread_scl_factor_file_exists__mod__gravitational_waves_htxk) {
+        if (AC_lhorndeski__mod__gravitational_waves_htxk) {
+          horndeski_alpm_eff__mod__gravitational_waves_htxk=horndeski_alpm_eff__mod__gravitational_waves_htxk*hp_target__mod__cdata
+          horndeski_alpm_eff2__mod__gravitational_waves_htxk=horndeski_alpm_eff__mod__gravitational_waves_htxk*hp_target__mod__cdata
         }
         else {
-          horndeski_alpm_eff2__mod__special=(1+0.5*horndeski_alpm_eff__mod__special)*(hp_target__mod__cdata*hp_target__mod__cdata)
-          horndeski_alpm_eff2__mod__special=horndeski_alpm_eff2__mod__special*0.5*horndeski_alpm_eff__mod__special
-          horndeski_alpm_eff3__mod__special=0.5*AC_horndeski_alpm_prime__mod__special*hp_target__mod__cdata
-          horndeski_alpm_eff__mod__special=1.+0.5*horndeski_alpm_eff__mod__special
+          horndeski_alpm_eff2__mod__gravitational_waves_htxk=(1+0.5*horndeski_alpm_eff__mod__gravitational_waves_htxk)*(hp_target__mod__cdata*hp_target__mod__cdata)
+          horndeski_alpm_eff2__mod__gravitational_waves_htxk=horndeski_alpm_eff2__mod__gravitational_waves_htxk*0.5*horndeski_alpm_eff__mod__gravitational_waves_htxk
+          horndeski_alpm_eff3__mod__gravitational_waves_htxk=0.5*AC_horndeski_alpm_prime__mod__gravitational_waves_htxk*hp_target__mod__cdata
+          horndeski_alpm_eff__mod__gravitational_waves_htxk=1.+0.5*horndeski_alpm_eff__mod__gravitational_waves_htxk
         }
       }
       else {
-        if (AC_lhorndeski__mod__special) {
-          horndeski_alpm_eff__mod__special=horndeski_alpm_eff__mod__special/scale_factor__mod__special
-          horndeski_alpm_eff2__mod__special=horndeski_alpm_eff__mod__special/scale_factor__mod__special
+        if (AC_lhorndeski__mod__gravitational_waves_htxk) {
+          horndeski_alpm_eff__mod__gravitational_waves_htxk=horndeski_alpm_eff__mod__gravitational_waves_htxk/scale_factor__mod__gravitational_waves_htxk
+          horndeski_alpm_eff2__mod__gravitational_waves_htxk=horndeski_alpm_eff__mod__gravitational_waves_htxk/scale_factor__mod__gravitational_waves_htxk
         }
         else {
-          horndeski_alpm_eff2__mod__special=(1+0.5*horndeski_alpm_eff__mod__special)/(scale_factor__mod__special*scale_factor__mod__special)
-          horndeski_alpm_eff2__mod__special=horndeski_alpm_eff2__mod__special*0.5*horndeski_alpm_eff__mod__special
-          horndeski_alpm_eff3__mod__special=0.5*AC_horndeski_alpm_prime__mod__special/scale_factor__mod__special
-          horndeski_alpm_eff__mod__special=1.+0.5*horndeski_alpm_eff__mod__special
+          horndeski_alpm_eff2__mod__gravitational_waves_htxk=(1+0.5*horndeski_alpm_eff__mod__gravitational_waves_htxk)/(scale_factor__mod__gravitational_waves_htxk*scale_factor__mod__gravitational_waves_htxk)
+          horndeski_alpm_eff2__mod__gravitational_waves_htxk=horndeski_alpm_eff2__mod__gravitational_waves_htxk*0.5*horndeski_alpm_eff__mod__gravitational_waves_htxk
+          horndeski_alpm_eff3__mod__gravitational_waves_htxk=0.5*AC_horndeski_alpm_prime__mod__gravitational_waves_htxk/scale_factor__mod__gravitational_waves_htxk
+          horndeski_alpm_eff__mod__gravitational_waves_htxk=1.+0.5*horndeski_alpm_eff__mod__gravitational_waves_htxk
         }
       }
     }
-    real appa_om__mod__special
-    if (AC_lread_scl_factor_file__mod__cdata && AC_lread_scl_factor_file_exists__mod__special) {
-      appa_om__mod__special=appa_target__mod__cdata
+    real appa_om__mod__gravitational_waves_htxk
+    if (AC_lread_scl_factor_file__mod__cdata && AC_lread_scl_factor_file_exists__mod__gravitational_waves_htxk) {
+      appa_om__mod__gravitational_waves_htxk=appa_target__mod__cdata
     }
-    if (AC_lhorndeski_xi__mod__special) {
-      appa_om__mod__special=appa_om__mod__special*horndeski_alpm_eff__mod__special+horndeski_alpm_eff2__mod__special
-      appa_om__mod__special=appa_om__mod__special+horndeski_alpm_eff3__mod__special
+    if (AC_lhorndeski_xi__mod__gravitational_waves_htxk) {
+      appa_om__mod__gravitational_waves_htxk=appa_om__mod__gravitational_waves_htxk*horndeski_alpm_eff__mod__gravitational_waves_htxk+horndeski_alpm_eff2__mod__gravitational_waves_htxk
+      appa_om__mod__gravitational_waves_htxk=appa_om__mod__gravitational_waves_htxk+horndeski_alpm_eff3__mod__gravitational_waves_htxk
     }
 
     kmin=2*pi/sqrt((AC_lx__mod__cdata*AC_lx__mod__cdata)+(AC_ly__mod__cdata*AC_ly__mod__cdata)+(AC_lz__mod__cdata*AC_lz__mod__cdata))
@@ -264,43 +264,43 @@ Kernel gravitational_waves_solve_and_stress(real AC_t__mod__cdata, real AC_dt__m
     }
     else {
       one_over_k2=1./ksqr
-      if (AC_linflation__mod__special) {
+      if (AC_linflation__mod__gravitational_waves_htxk) {
         om2=4.*ksqr-2./(AC_t__mod__cdata*AC_t__mod__cdata)
         lsign_om2=(om2 >= 0.)
         om=sqrt(abs(om2))
       }
-      else if (AC_lreheating_gw__mod__special) {
+      else if (AC_lreheating_gw__mod__gravitational_waves_htxk) {
         om2=ksqr-2./((AC_t__mod__cdata+1.)*(AC_t__mod__cdata+1.))
         lsign_om2=(om2 >= 0.)
         om=sqrt(abs(om2))
       }
-      else if (AC_lscalar__mod__special) {
+      else if (AC_lscalar__mod__gravitational_waves_htxk) {
         om2=ksqr-0.0
         lsign_om2=(om2 >= 0.)
         om=sqrt(abs(om2))
       }
-      else if (AC_lmatter_gw__mod__special  ||  AC_ldark_energy_gw__mod__special) {
+      else if (AC_lmatter_gw__mod__gravitational_waves_htxk  ||  AC_ldark_energy_gw__mod__gravitational_waves_htxk) {
         om2=ksqr-2./(AC_t__mod__cdata*AC_t__mod__cdata)
         lsign_om2=(om2 >= 0.)
         om=sqrt(abs(om2))
       }
       else {
-        if (delkt!=0.  ||  AC_lhorndeski__mod__special) {
-          if (AC_lhorndeski__mod__special) {
-            om2=(1.+horndeski_alpt_eff__mod__special)*ksqr+(delkt*delkt)-horndeski_alpm_eff2__mod__special-appa_om__mod__special
+        if (delkt!=0.  ||  AC_lhorndeski__mod__gravitational_waves_htxk) {
+          if (AC_lhorndeski__mod__gravitational_waves_htxk) {
+            om2=(1.+horndeski_alpt_eff__mod__gravitational_waves_htxk)*ksqr+(delkt*delkt)-horndeski_alpm_eff2__mod__gravitational_waves_htxk-appa_om__mod__gravitational_waves_htxk
             om_cmplx=sqrt(cmplx(om2,0.))
             om=AC_impossible__mod__cparam
           }
-          else if (AC_lhorndeski_xi__mod__special) {
-            om2=(1.+horndeski_alpt_eff__mod__special)*ksqr+(delkt*delkt)-appa_om__mod__special
+          else if (AC_lhorndeski_xi__mod__gravitational_waves_htxk) {
+            om2=(1.+horndeski_alpt_eff__mod__gravitational_waves_htxk)*ksqr+(delkt*delkt)-appa_om__mod__gravitational_waves_htxk
           }
           else {
-            om2=ksqr+(delkt*delkt)-appa_om__mod__special
+            om2=ksqr+(delkt*delkt)-appa_om__mod__gravitational_waves_htxk
             om=sqrt(om2)
           }
         }
         else {
-          om2=ksqr-appa_om__mod__special
+          om2=ksqr-appa_om__mod__gravitational_waves_htxk
           om=sqrt(om2)
         }
         lsign_om2=true
@@ -333,7 +333,7 @@ Kernel gravitational_waves_solve_and_stress(real AC_t__mod__cdata, real AC_dt__m
       pij[4-1]=-k1*k2*one_over_k2
       pij[5-1]=-k2*k3*one_over_k2
       pij[6-1]=-k3*k1*one_over_k2
-      if (AC_llighthill__mod__special) {
+      if (AC_llighthill__mod__gravitational_waves_htxk) {
         kij[1-1]=-k1sqr
         kij[2-1]=-k2sqr
         kij[3-1]=-k3sqr
@@ -342,34 +342,34 @@ Kernel gravitational_waves_solve_and_stress(real AC_t__mod__cdata, real AC_dt__m
         kij[6-1]=-k3*k1
       }
     }
-    ij=AC_ij_table__mod__special[1-1][1-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[1-1][1-1]
     e_t[ij-1]=e1.x*e1.x-e2.x*e2.x
     e_x[ij-1]=e1.x*e2.x+e2.x*e1.x
-    ij=AC_ij_table__mod__special[2-1][1-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[2-1][1-1]
     e_t[ij-1]=e1.y*e1.x-e2.y*e2.x
     e_x[ij-1]=e1.y*e2.x+e2.y*e1.x
-    ij=AC_ij_table__mod__special[3-1][1-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[3-1][1-1]
     e_t[ij-1]=e1.z*e1.x-e2.z*e2.x
     e_x[ij-1]=e1.z*e2.x+e2.z*e1.x
-    ij=AC_ij_table__mod__special[1-1][2-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[1-1][2-1]
     e_t[ij-1]=e1.x*e1.y-e2.x*e2.y
     e_x[ij-1]=e1.x*e2.y+e2.x*e1.y
-    ij=AC_ij_table__mod__special[2-1][2-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[2-1][2-1]
     e_t[ij-1]=e1.y*e1.y-e2.y*e2.y
     e_x[ij-1]=e1.y*e2.y+e2.y*e1.y
-    ij=AC_ij_table__mod__special[3-1][2-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[3-1][2-1]
     e_t[ij-1]=e1.z*e1.y-e2.z*e2.y
     e_x[ij-1]=e1.z*e2.y+e2.z*e1.y
-    ij=AC_ij_table__mod__special[1-1][3-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[1-1][3-1]
     e_t[ij-1]=e1.x*e1.z-e2.x*e2.z
     e_x[ij-1]=e1.x*e2.z+e2.x*e1.z
-    ij=AC_ij_table__mod__special[2-1][3-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[2-1][3-1]
     e_t[ij-1]=e1.y*e1.z-e2.y*e2.z
     e_x[ij-1]=e1.y*e2.z+e2.y*e1.z
-    ij=AC_ij_table__mod__special[3-1][3-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[3-1][3-1]
     e_t[ij-1]=e1.z*e1.z-e2.z*e2.z
     e_x[ij-1]=e1.z*e2.z+e2.z*e1.z
-    if (AC_lswitch_sign_e_x__mod__special) {
+    if (AC_lswitch_sign_e_x__mod__gravitational_waves_htxk) {
       if (k3<0.) {
         e_x=-e_x
       }
@@ -386,624 +386,624 @@ Kernel gravitational_waves_solve_and_stress(real AC_t__mod__cdata, real AC_dt__m
     }
     sij_re=0.
     sij_im=0.
-    ij=AC_ij_table__mod__special[1-1][1-1]
-    pq=AC_ij_table__mod__special[1-1][1-1]
-    ip=AC_ij_table__mod__special[1-1][1-1]
-    jq=AC_ij_table__mod__special[1-1][1-1]
-    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__special[pq-1]
-    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__special[pq-1]
-    if (AC_lnonlinear_source__mod__special && AC_lnonlinear_tpq_trans__mod__special) {
-      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__special[pq-1]
-      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__special[pq-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[1-1][1-1]
+    pq=AC_ij_table__mod__gravitational_waves_htxk[1-1][1-1]
+    ip=AC_ij_table__mod__gravitational_waves_htxk[1-1][1-1]
+    jq=AC_ij_table__mod__gravitational_waves_htxk[1-1][1-1]
+    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__gravitational_waves_htxk[pq-1]
+    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__gravitational_waves_htxk[pq-1]
+    if (AC_lnonlinear_source__mod__gravitational_waves_htxk && AC_lnonlinear_tpq_trans__mod__gravitational_waves_htxk) {
+      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__gravitational_waves_htxk[pq-1]
+      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__gravitational_waves_htxk[pq-1]
     }
-    ij=AC_ij_table__mod__special[1-1][1-1]
-    pq=AC_ij_table__mod__special[2-1][1-1]
-    ip=AC_ij_table__mod__special[1-1][2-1]
-    jq=AC_ij_table__mod__special[1-1][1-1]
-    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__special[pq-1]
-    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__special[pq-1]
-    if (AC_lnonlinear_source__mod__special && AC_lnonlinear_tpq_trans__mod__special) {
-      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__special[pq-1]
-      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__special[pq-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[1-1][1-1]
+    pq=AC_ij_table__mod__gravitational_waves_htxk[2-1][1-1]
+    ip=AC_ij_table__mod__gravitational_waves_htxk[1-1][2-1]
+    jq=AC_ij_table__mod__gravitational_waves_htxk[1-1][1-1]
+    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__gravitational_waves_htxk[pq-1]
+    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__gravitational_waves_htxk[pq-1]
+    if (AC_lnonlinear_source__mod__gravitational_waves_htxk && AC_lnonlinear_tpq_trans__mod__gravitational_waves_htxk) {
+      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__gravitational_waves_htxk[pq-1]
+      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__gravitational_waves_htxk[pq-1]
     }
-    ij=AC_ij_table__mod__special[1-1][1-1]
-    pq=AC_ij_table__mod__special[3-1][1-1]
-    ip=AC_ij_table__mod__special[1-1][3-1]
-    jq=AC_ij_table__mod__special[1-1][1-1]
-    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__special[pq-1]
-    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__special[pq-1]
-    if (AC_lnonlinear_source__mod__special && AC_lnonlinear_tpq_trans__mod__special) {
-      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__special[pq-1]
-      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__special[pq-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[1-1][1-1]
+    pq=AC_ij_table__mod__gravitational_waves_htxk[3-1][1-1]
+    ip=AC_ij_table__mod__gravitational_waves_htxk[1-1][3-1]
+    jq=AC_ij_table__mod__gravitational_waves_htxk[1-1][1-1]
+    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__gravitational_waves_htxk[pq-1]
+    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__gravitational_waves_htxk[pq-1]
+    if (AC_lnonlinear_source__mod__gravitational_waves_htxk && AC_lnonlinear_tpq_trans__mod__gravitational_waves_htxk) {
+      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__gravitational_waves_htxk[pq-1]
+      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__gravitational_waves_htxk[pq-1]
     }
-    ij=AC_ij_table__mod__special[1-1][1-1]
-    pq=AC_ij_table__mod__special[1-1][2-1]
-    ip=AC_ij_table__mod__special[1-1][1-1]
-    jq=AC_ij_table__mod__special[1-1][2-1]
-    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__special[pq-1]
-    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__special[pq-1]
-    if (AC_lnonlinear_source__mod__special && AC_lnonlinear_tpq_trans__mod__special) {
-      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__special[pq-1]
-      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__special[pq-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[1-1][1-1]
+    pq=AC_ij_table__mod__gravitational_waves_htxk[1-1][2-1]
+    ip=AC_ij_table__mod__gravitational_waves_htxk[1-1][1-1]
+    jq=AC_ij_table__mod__gravitational_waves_htxk[1-1][2-1]
+    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__gravitational_waves_htxk[pq-1]
+    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__gravitational_waves_htxk[pq-1]
+    if (AC_lnonlinear_source__mod__gravitational_waves_htxk && AC_lnonlinear_tpq_trans__mod__gravitational_waves_htxk) {
+      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__gravitational_waves_htxk[pq-1]
+      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__gravitational_waves_htxk[pq-1]
     }
-    ij=AC_ij_table__mod__special[1-1][1-1]
-    pq=AC_ij_table__mod__special[2-1][2-1]
-    ip=AC_ij_table__mod__special[1-1][2-1]
-    jq=AC_ij_table__mod__special[1-1][2-1]
-    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__special[pq-1]
-    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__special[pq-1]
-    if (AC_lnonlinear_source__mod__special && AC_lnonlinear_tpq_trans__mod__special) {
-      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__special[pq-1]
-      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__special[pq-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[1-1][1-1]
+    pq=AC_ij_table__mod__gravitational_waves_htxk[2-1][2-1]
+    ip=AC_ij_table__mod__gravitational_waves_htxk[1-1][2-1]
+    jq=AC_ij_table__mod__gravitational_waves_htxk[1-1][2-1]
+    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__gravitational_waves_htxk[pq-1]
+    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__gravitational_waves_htxk[pq-1]
+    if (AC_lnonlinear_source__mod__gravitational_waves_htxk && AC_lnonlinear_tpq_trans__mod__gravitational_waves_htxk) {
+      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__gravitational_waves_htxk[pq-1]
+      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__gravitational_waves_htxk[pq-1]
     }
-    ij=AC_ij_table__mod__special[1-1][1-1]
-    pq=AC_ij_table__mod__special[3-1][2-1]
-    ip=AC_ij_table__mod__special[1-1][3-1]
-    jq=AC_ij_table__mod__special[1-1][2-1]
-    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__special[pq-1]
-    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__special[pq-1]
-    if (AC_lnonlinear_source__mod__special && AC_lnonlinear_tpq_trans__mod__special) {
-      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__special[pq-1]
-      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__special[pq-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[1-1][1-1]
+    pq=AC_ij_table__mod__gravitational_waves_htxk[3-1][2-1]
+    ip=AC_ij_table__mod__gravitational_waves_htxk[1-1][3-1]
+    jq=AC_ij_table__mod__gravitational_waves_htxk[1-1][2-1]
+    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__gravitational_waves_htxk[pq-1]
+    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__gravitational_waves_htxk[pq-1]
+    if (AC_lnonlinear_source__mod__gravitational_waves_htxk && AC_lnonlinear_tpq_trans__mod__gravitational_waves_htxk) {
+      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__gravitational_waves_htxk[pq-1]
+      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__gravitational_waves_htxk[pq-1]
     }
-    ij=AC_ij_table__mod__special[1-1][1-1]
-    pq=AC_ij_table__mod__special[1-1][3-1]
-    ip=AC_ij_table__mod__special[1-1][1-1]
-    jq=AC_ij_table__mod__special[1-1][3-1]
-    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__special[pq-1]
-    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__special[pq-1]
-    if (AC_lnonlinear_source__mod__special && AC_lnonlinear_tpq_trans__mod__special) {
-      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__special[pq-1]
-      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__special[pq-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[1-1][1-1]
+    pq=AC_ij_table__mod__gravitational_waves_htxk[1-1][3-1]
+    ip=AC_ij_table__mod__gravitational_waves_htxk[1-1][1-1]
+    jq=AC_ij_table__mod__gravitational_waves_htxk[1-1][3-1]
+    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__gravitational_waves_htxk[pq-1]
+    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__gravitational_waves_htxk[pq-1]
+    if (AC_lnonlinear_source__mod__gravitational_waves_htxk && AC_lnonlinear_tpq_trans__mod__gravitational_waves_htxk) {
+      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__gravitational_waves_htxk[pq-1]
+      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__gravitational_waves_htxk[pq-1]
     }
-    ij=AC_ij_table__mod__special[1-1][1-1]
-    pq=AC_ij_table__mod__special[2-1][3-1]
-    ip=AC_ij_table__mod__special[1-1][2-1]
-    jq=AC_ij_table__mod__special[1-1][3-1]
-    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__special[pq-1]
-    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__special[pq-1]
-    if (AC_lnonlinear_source__mod__special && AC_lnonlinear_tpq_trans__mod__special) {
-      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__special[pq-1]
-      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__special[pq-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[1-1][1-1]
+    pq=AC_ij_table__mod__gravitational_waves_htxk[2-1][3-1]
+    ip=AC_ij_table__mod__gravitational_waves_htxk[1-1][2-1]
+    jq=AC_ij_table__mod__gravitational_waves_htxk[1-1][3-1]
+    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__gravitational_waves_htxk[pq-1]
+    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__gravitational_waves_htxk[pq-1]
+    if (AC_lnonlinear_source__mod__gravitational_waves_htxk && AC_lnonlinear_tpq_trans__mod__gravitational_waves_htxk) {
+      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__gravitational_waves_htxk[pq-1]
+      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__gravitational_waves_htxk[pq-1]
     }
-    ij=AC_ij_table__mod__special[1-1][1-1]
-    pq=AC_ij_table__mod__special[3-1][3-1]
-    ip=AC_ij_table__mod__special[1-1][3-1]
-    jq=AC_ij_table__mod__special[1-1][3-1]
-    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__special[pq-1]
-    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__special[pq-1]
-    if (AC_lnonlinear_source__mod__special && AC_lnonlinear_tpq_trans__mod__special) {
-      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__special[pq-1]
-      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__special[pq-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[1-1][1-1]
+    pq=AC_ij_table__mod__gravitational_waves_htxk[3-1][3-1]
+    ip=AC_ij_table__mod__gravitational_waves_htxk[1-1][3-1]
+    jq=AC_ij_table__mod__gravitational_waves_htxk[1-1][3-1]
+    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__gravitational_waves_htxk[pq-1]
+    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__gravitational_waves_htxk[pq-1]
+    if (AC_lnonlinear_source__mod__gravitational_waves_htxk && AC_lnonlinear_tpq_trans__mod__gravitational_waves_htxk) {
+      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__gravitational_waves_htxk[pq-1]
+      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__gravitational_waves_htxk[pq-1]
     }
-    ij=AC_ij_table__mod__special[1-1][2-1]
-    pq=AC_ij_table__mod__special[1-1][1-1]
-    ip=AC_ij_table__mod__special[1-1][1-1]
-    jq=AC_ij_table__mod__special[2-1][1-1]
-    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__special[pq-1]
-    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__special[pq-1]
-    if (AC_lnonlinear_source__mod__special && AC_lnonlinear_tpq_trans__mod__special) {
-      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__special[pq-1]
-      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__special[pq-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[1-1][2-1]
+    pq=AC_ij_table__mod__gravitational_waves_htxk[1-1][1-1]
+    ip=AC_ij_table__mod__gravitational_waves_htxk[1-1][1-1]
+    jq=AC_ij_table__mod__gravitational_waves_htxk[2-1][1-1]
+    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__gravitational_waves_htxk[pq-1]
+    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__gravitational_waves_htxk[pq-1]
+    if (AC_lnonlinear_source__mod__gravitational_waves_htxk && AC_lnonlinear_tpq_trans__mod__gravitational_waves_htxk) {
+      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__gravitational_waves_htxk[pq-1]
+      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__gravitational_waves_htxk[pq-1]
     }
-    ij=AC_ij_table__mod__special[1-1][2-1]
-    pq=AC_ij_table__mod__special[2-1][1-1]
-    ip=AC_ij_table__mod__special[1-1][2-1]
-    jq=AC_ij_table__mod__special[2-1][1-1]
-    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__special[pq-1]
-    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__special[pq-1]
-    if (AC_lnonlinear_source__mod__special && AC_lnonlinear_tpq_trans__mod__special) {
-      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__special[pq-1]
-      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__special[pq-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[1-1][2-1]
+    pq=AC_ij_table__mod__gravitational_waves_htxk[2-1][1-1]
+    ip=AC_ij_table__mod__gravitational_waves_htxk[1-1][2-1]
+    jq=AC_ij_table__mod__gravitational_waves_htxk[2-1][1-1]
+    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__gravitational_waves_htxk[pq-1]
+    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__gravitational_waves_htxk[pq-1]
+    if (AC_lnonlinear_source__mod__gravitational_waves_htxk && AC_lnonlinear_tpq_trans__mod__gravitational_waves_htxk) {
+      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__gravitational_waves_htxk[pq-1]
+      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__gravitational_waves_htxk[pq-1]
     }
-    ij=AC_ij_table__mod__special[1-1][2-1]
-    pq=AC_ij_table__mod__special[3-1][1-1]
-    ip=AC_ij_table__mod__special[1-1][3-1]
-    jq=AC_ij_table__mod__special[2-1][1-1]
-    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__special[pq-1]
-    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__special[pq-1]
-    if (AC_lnonlinear_source__mod__special && AC_lnonlinear_tpq_trans__mod__special) {
-      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__special[pq-1]
-      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__special[pq-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[1-1][2-1]
+    pq=AC_ij_table__mod__gravitational_waves_htxk[3-1][1-1]
+    ip=AC_ij_table__mod__gravitational_waves_htxk[1-1][3-1]
+    jq=AC_ij_table__mod__gravitational_waves_htxk[2-1][1-1]
+    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__gravitational_waves_htxk[pq-1]
+    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__gravitational_waves_htxk[pq-1]
+    if (AC_lnonlinear_source__mod__gravitational_waves_htxk && AC_lnonlinear_tpq_trans__mod__gravitational_waves_htxk) {
+      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__gravitational_waves_htxk[pq-1]
+      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__gravitational_waves_htxk[pq-1]
     }
-    ij=AC_ij_table__mod__special[1-1][2-1]
-    pq=AC_ij_table__mod__special[1-1][2-1]
-    ip=AC_ij_table__mod__special[1-1][1-1]
-    jq=AC_ij_table__mod__special[2-1][2-1]
-    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__special[pq-1]
-    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__special[pq-1]
-    if (AC_lnonlinear_source__mod__special && AC_lnonlinear_tpq_trans__mod__special) {
-      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__special[pq-1]
-      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__special[pq-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[1-1][2-1]
+    pq=AC_ij_table__mod__gravitational_waves_htxk[1-1][2-1]
+    ip=AC_ij_table__mod__gravitational_waves_htxk[1-1][1-1]
+    jq=AC_ij_table__mod__gravitational_waves_htxk[2-1][2-1]
+    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__gravitational_waves_htxk[pq-1]
+    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__gravitational_waves_htxk[pq-1]
+    if (AC_lnonlinear_source__mod__gravitational_waves_htxk && AC_lnonlinear_tpq_trans__mod__gravitational_waves_htxk) {
+      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__gravitational_waves_htxk[pq-1]
+      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__gravitational_waves_htxk[pq-1]
     }
-    ij=AC_ij_table__mod__special[1-1][2-1]
-    pq=AC_ij_table__mod__special[2-1][2-1]
-    ip=AC_ij_table__mod__special[1-1][2-1]
-    jq=AC_ij_table__mod__special[2-1][2-1]
-    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__special[pq-1]
-    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__special[pq-1]
-    if (AC_lnonlinear_source__mod__special && AC_lnonlinear_tpq_trans__mod__special) {
-      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__special[pq-1]
-      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__special[pq-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[1-1][2-1]
+    pq=AC_ij_table__mod__gravitational_waves_htxk[2-1][2-1]
+    ip=AC_ij_table__mod__gravitational_waves_htxk[1-1][2-1]
+    jq=AC_ij_table__mod__gravitational_waves_htxk[2-1][2-1]
+    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__gravitational_waves_htxk[pq-1]
+    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__gravitational_waves_htxk[pq-1]
+    if (AC_lnonlinear_source__mod__gravitational_waves_htxk && AC_lnonlinear_tpq_trans__mod__gravitational_waves_htxk) {
+      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__gravitational_waves_htxk[pq-1]
+      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__gravitational_waves_htxk[pq-1]
     }
-    ij=AC_ij_table__mod__special[1-1][2-1]
-    pq=AC_ij_table__mod__special[3-1][2-1]
-    ip=AC_ij_table__mod__special[1-1][3-1]
-    jq=AC_ij_table__mod__special[2-1][2-1]
-    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__special[pq-1]
-    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__special[pq-1]
-    if (AC_lnonlinear_source__mod__special && AC_lnonlinear_tpq_trans__mod__special) {
-      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__special[pq-1]
-      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__special[pq-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[1-1][2-1]
+    pq=AC_ij_table__mod__gravitational_waves_htxk[3-1][2-1]
+    ip=AC_ij_table__mod__gravitational_waves_htxk[1-1][3-1]
+    jq=AC_ij_table__mod__gravitational_waves_htxk[2-1][2-1]
+    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__gravitational_waves_htxk[pq-1]
+    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__gravitational_waves_htxk[pq-1]
+    if (AC_lnonlinear_source__mod__gravitational_waves_htxk && AC_lnonlinear_tpq_trans__mod__gravitational_waves_htxk) {
+      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__gravitational_waves_htxk[pq-1]
+      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__gravitational_waves_htxk[pq-1]
     }
-    ij=AC_ij_table__mod__special[1-1][2-1]
-    pq=AC_ij_table__mod__special[1-1][3-1]
-    ip=AC_ij_table__mod__special[1-1][1-1]
-    jq=AC_ij_table__mod__special[2-1][3-1]
-    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__special[pq-1]
-    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__special[pq-1]
-    if (AC_lnonlinear_source__mod__special && AC_lnonlinear_tpq_trans__mod__special) {
-      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__special[pq-1]
-      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__special[pq-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[1-1][2-1]
+    pq=AC_ij_table__mod__gravitational_waves_htxk[1-1][3-1]
+    ip=AC_ij_table__mod__gravitational_waves_htxk[1-1][1-1]
+    jq=AC_ij_table__mod__gravitational_waves_htxk[2-1][3-1]
+    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__gravitational_waves_htxk[pq-1]
+    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__gravitational_waves_htxk[pq-1]
+    if (AC_lnonlinear_source__mod__gravitational_waves_htxk && AC_lnonlinear_tpq_trans__mod__gravitational_waves_htxk) {
+      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__gravitational_waves_htxk[pq-1]
+      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__gravitational_waves_htxk[pq-1]
     }
-    ij=AC_ij_table__mod__special[1-1][2-1]
-    pq=AC_ij_table__mod__special[2-1][3-1]
-    ip=AC_ij_table__mod__special[1-1][2-1]
-    jq=AC_ij_table__mod__special[2-1][3-1]
-    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__special[pq-1]
-    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__special[pq-1]
-    if (AC_lnonlinear_source__mod__special && AC_lnonlinear_tpq_trans__mod__special) {
-      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__special[pq-1]
-      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__special[pq-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[1-1][2-1]
+    pq=AC_ij_table__mod__gravitational_waves_htxk[2-1][3-1]
+    ip=AC_ij_table__mod__gravitational_waves_htxk[1-1][2-1]
+    jq=AC_ij_table__mod__gravitational_waves_htxk[2-1][3-1]
+    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__gravitational_waves_htxk[pq-1]
+    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__gravitational_waves_htxk[pq-1]
+    if (AC_lnonlinear_source__mod__gravitational_waves_htxk && AC_lnonlinear_tpq_trans__mod__gravitational_waves_htxk) {
+      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__gravitational_waves_htxk[pq-1]
+      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__gravitational_waves_htxk[pq-1]
     }
-    ij=AC_ij_table__mod__special[1-1][2-1]
-    pq=AC_ij_table__mod__special[3-1][3-1]
-    ip=AC_ij_table__mod__special[1-1][3-1]
-    jq=AC_ij_table__mod__special[2-1][3-1]
-    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__special[pq-1]
-    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__special[pq-1]
-    if (AC_lnonlinear_source__mod__special && AC_lnonlinear_tpq_trans__mod__special) {
-      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__special[pq-1]
-      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__special[pq-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[1-1][2-1]
+    pq=AC_ij_table__mod__gravitational_waves_htxk[3-1][3-1]
+    ip=AC_ij_table__mod__gravitational_waves_htxk[1-1][3-1]
+    jq=AC_ij_table__mod__gravitational_waves_htxk[2-1][3-1]
+    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__gravitational_waves_htxk[pq-1]
+    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__gravitational_waves_htxk[pq-1]
+    if (AC_lnonlinear_source__mod__gravitational_waves_htxk && AC_lnonlinear_tpq_trans__mod__gravitational_waves_htxk) {
+      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__gravitational_waves_htxk[pq-1]
+      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__gravitational_waves_htxk[pq-1]
     }
-    ij=AC_ij_table__mod__special[2-1][2-1]
-    pq=AC_ij_table__mod__special[1-1][1-1]
-    ip=AC_ij_table__mod__special[2-1][1-1]
-    jq=AC_ij_table__mod__special[2-1][1-1]
-    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__special[pq-1]
-    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__special[pq-1]
-    if (AC_lnonlinear_source__mod__special && AC_lnonlinear_tpq_trans__mod__special) {
-      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__special[pq-1]
-      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__special[pq-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[2-1][2-1]
+    pq=AC_ij_table__mod__gravitational_waves_htxk[1-1][1-1]
+    ip=AC_ij_table__mod__gravitational_waves_htxk[2-1][1-1]
+    jq=AC_ij_table__mod__gravitational_waves_htxk[2-1][1-1]
+    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__gravitational_waves_htxk[pq-1]
+    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__gravitational_waves_htxk[pq-1]
+    if (AC_lnonlinear_source__mod__gravitational_waves_htxk && AC_lnonlinear_tpq_trans__mod__gravitational_waves_htxk) {
+      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__gravitational_waves_htxk[pq-1]
+      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__gravitational_waves_htxk[pq-1]
     }
-    ij=AC_ij_table__mod__special[2-1][2-1]
-    pq=AC_ij_table__mod__special[2-1][1-1]
-    ip=AC_ij_table__mod__special[2-1][2-1]
-    jq=AC_ij_table__mod__special[2-1][1-1]
-    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__special[pq-1]
-    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__special[pq-1]
-    if (AC_lnonlinear_source__mod__special && AC_lnonlinear_tpq_trans__mod__special) {
-      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__special[pq-1]
-      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__special[pq-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[2-1][2-1]
+    pq=AC_ij_table__mod__gravitational_waves_htxk[2-1][1-1]
+    ip=AC_ij_table__mod__gravitational_waves_htxk[2-1][2-1]
+    jq=AC_ij_table__mod__gravitational_waves_htxk[2-1][1-1]
+    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__gravitational_waves_htxk[pq-1]
+    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__gravitational_waves_htxk[pq-1]
+    if (AC_lnonlinear_source__mod__gravitational_waves_htxk && AC_lnonlinear_tpq_trans__mod__gravitational_waves_htxk) {
+      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__gravitational_waves_htxk[pq-1]
+      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__gravitational_waves_htxk[pq-1]
     }
-    ij=AC_ij_table__mod__special[2-1][2-1]
-    pq=AC_ij_table__mod__special[3-1][1-1]
-    ip=AC_ij_table__mod__special[2-1][3-1]
-    jq=AC_ij_table__mod__special[2-1][1-1]
-    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__special[pq-1]
-    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__special[pq-1]
-    if (AC_lnonlinear_source__mod__special && AC_lnonlinear_tpq_trans__mod__special) {
-      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__special[pq-1]
-      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__special[pq-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[2-1][2-1]
+    pq=AC_ij_table__mod__gravitational_waves_htxk[3-1][1-1]
+    ip=AC_ij_table__mod__gravitational_waves_htxk[2-1][3-1]
+    jq=AC_ij_table__mod__gravitational_waves_htxk[2-1][1-1]
+    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__gravitational_waves_htxk[pq-1]
+    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__gravitational_waves_htxk[pq-1]
+    if (AC_lnonlinear_source__mod__gravitational_waves_htxk && AC_lnonlinear_tpq_trans__mod__gravitational_waves_htxk) {
+      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__gravitational_waves_htxk[pq-1]
+      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__gravitational_waves_htxk[pq-1]
     }
-    ij=AC_ij_table__mod__special[2-1][2-1]
-    pq=AC_ij_table__mod__special[1-1][2-1]
-    ip=AC_ij_table__mod__special[2-1][1-1]
-    jq=AC_ij_table__mod__special[2-1][2-1]
-    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__special[pq-1]
-    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__special[pq-1]
-    if (AC_lnonlinear_source__mod__special && AC_lnonlinear_tpq_trans__mod__special) {
-      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__special[pq-1]
-      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__special[pq-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[2-1][2-1]
+    pq=AC_ij_table__mod__gravitational_waves_htxk[1-1][2-1]
+    ip=AC_ij_table__mod__gravitational_waves_htxk[2-1][1-1]
+    jq=AC_ij_table__mod__gravitational_waves_htxk[2-1][2-1]
+    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__gravitational_waves_htxk[pq-1]
+    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__gravitational_waves_htxk[pq-1]
+    if (AC_lnonlinear_source__mod__gravitational_waves_htxk && AC_lnonlinear_tpq_trans__mod__gravitational_waves_htxk) {
+      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__gravitational_waves_htxk[pq-1]
+      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__gravitational_waves_htxk[pq-1]
     }
-    ij=AC_ij_table__mod__special[2-1][2-1]
-    pq=AC_ij_table__mod__special[2-1][2-1]
-    ip=AC_ij_table__mod__special[2-1][2-1]
-    jq=AC_ij_table__mod__special[2-1][2-1]
-    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__special[pq-1]
-    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__special[pq-1]
-    if (AC_lnonlinear_source__mod__special && AC_lnonlinear_tpq_trans__mod__special) {
-      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__special[pq-1]
-      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__special[pq-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[2-1][2-1]
+    pq=AC_ij_table__mod__gravitational_waves_htxk[2-1][2-1]
+    ip=AC_ij_table__mod__gravitational_waves_htxk[2-1][2-1]
+    jq=AC_ij_table__mod__gravitational_waves_htxk[2-1][2-1]
+    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__gravitational_waves_htxk[pq-1]
+    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__gravitational_waves_htxk[pq-1]
+    if (AC_lnonlinear_source__mod__gravitational_waves_htxk && AC_lnonlinear_tpq_trans__mod__gravitational_waves_htxk) {
+      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__gravitational_waves_htxk[pq-1]
+      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__gravitational_waves_htxk[pq-1]
     }
-    ij=AC_ij_table__mod__special[2-1][2-1]
-    pq=AC_ij_table__mod__special[3-1][2-1]
-    ip=AC_ij_table__mod__special[2-1][3-1]
-    jq=AC_ij_table__mod__special[2-1][2-1]
-    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__special[pq-1]
-    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__special[pq-1]
-    if (AC_lnonlinear_source__mod__special && AC_lnonlinear_tpq_trans__mod__special) {
-      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__special[pq-1]
-      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__special[pq-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[2-1][2-1]
+    pq=AC_ij_table__mod__gravitational_waves_htxk[3-1][2-1]
+    ip=AC_ij_table__mod__gravitational_waves_htxk[2-1][3-1]
+    jq=AC_ij_table__mod__gravitational_waves_htxk[2-1][2-1]
+    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__gravitational_waves_htxk[pq-1]
+    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__gravitational_waves_htxk[pq-1]
+    if (AC_lnonlinear_source__mod__gravitational_waves_htxk && AC_lnonlinear_tpq_trans__mod__gravitational_waves_htxk) {
+      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__gravitational_waves_htxk[pq-1]
+      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__gravitational_waves_htxk[pq-1]
     }
-    ij=AC_ij_table__mod__special[2-1][2-1]
-    pq=AC_ij_table__mod__special[1-1][3-1]
-    ip=AC_ij_table__mod__special[2-1][1-1]
-    jq=AC_ij_table__mod__special[2-1][3-1]
-    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__special[pq-1]
-    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__special[pq-1]
-    if (AC_lnonlinear_source__mod__special && AC_lnonlinear_tpq_trans__mod__special) {
-      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__special[pq-1]
-      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__special[pq-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[2-1][2-1]
+    pq=AC_ij_table__mod__gravitational_waves_htxk[1-1][3-1]
+    ip=AC_ij_table__mod__gravitational_waves_htxk[2-1][1-1]
+    jq=AC_ij_table__mod__gravitational_waves_htxk[2-1][3-1]
+    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__gravitational_waves_htxk[pq-1]
+    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__gravitational_waves_htxk[pq-1]
+    if (AC_lnonlinear_source__mod__gravitational_waves_htxk && AC_lnonlinear_tpq_trans__mod__gravitational_waves_htxk) {
+      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__gravitational_waves_htxk[pq-1]
+      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__gravitational_waves_htxk[pq-1]
     }
-    ij=AC_ij_table__mod__special[2-1][2-1]
-    pq=AC_ij_table__mod__special[2-1][3-1]
-    ip=AC_ij_table__mod__special[2-1][2-1]
-    jq=AC_ij_table__mod__special[2-1][3-1]
-    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__special[pq-1]
-    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__special[pq-1]
-    if (AC_lnonlinear_source__mod__special && AC_lnonlinear_tpq_trans__mod__special) {
-      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__special[pq-1]
-      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__special[pq-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[2-1][2-1]
+    pq=AC_ij_table__mod__gravitational_waves_htxk[2-1][3-1]
+    ip=AC_ij_table__mod__gravitational_waves_htxk[2-1][2-1]
+    jq=AC_ij_table__mod__gravitational_waves_htxk[2-1][3-1]
+    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__gravitational_waves_htxk[pq-1]
+    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__gravitational_waves_htxk[pq-1]
+    if (AC_lnonlinear_source__mod__gravitational_waves_htxk && AC_lnonlinear_tpq_trans__mod__gravitational_waves_htxk) {
+      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__gravitational_waves_htxk[pq-1]
+      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__gravitational_waves_htxk[pq-1]
     }
-    ij=AC_ij_table__mod__special[2-1][2-1]
-    pq=AC_ij_table__mod__special[3-1][3-1]
-    ip=AC_ij_table__mod__special[2-1][3-1]
-    jq=AC_ij_table__mod__special[2-1][3-1]
-    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__special[pq-1]
-    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__special[pq-1]
-    if (AC_lnonlinear_source__mod__special && AC_lnonlinear_tpq_trans__mod__special) {
-      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__special[pq-1]
-      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__special[pq-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[2-1][2-1]
+    pq=AC_ij_table__mod__gravitational_waves_htxk[3-1][3-1]
+    ip=AC_ij_table__mod__gravitational_waves_htxk[2-1][3-1]
+    jq=AC_ij_table__mod__gravitational_waves_htxk[2-1][3-1]
+    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__gravitational_waves_htxk[pq-1]
+    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__gravitational_waves_htxk[pq-1]
+    if (AC_lnonlinear_source__mod__gravitational_waves_htxk && AC_lnonlinear_tpq_trans__mod__gravitational_waves_htxk) {
+      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__gravitational_waves_htxk[pq-1]
+      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__gravitational_waves_htxk[pq-1]
     }
-    ij=AC_ij_table__mod__special[1-1][3-1]
-    pq=AC_ij_table__mod__special[1-1][1-1]
-    ip=AC_ij_table__mod__special[1-1][1-1]
-    jq=AC_ij_table__mod__special[3-1][1-1]
-    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__special[pq-1]
-    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__special[pq-1]
-    if (AC_lnonlinear_source__mod__special && AC_lnonlinear_tpq_trans__mod__special) {
-      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__special[pq-1]
-      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__special[pq-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[1-1][3-1]
+    pq=AC_ij_table__mod__gravitational_waves_htxk[1-1][1-1]
+    ip=AC_ij_table__mod__gravitational_waves_htxk[1-1][1-1]
+    jq=AC_ij_table__mod__gravitational_waves_htxk[3-1][1-1]
+    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__gravitational_waves_htxk[pq-1]
+    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__gravitational_waves_htxk[pq-1]
+    if (AC_lnonlinear_source__mod__gravitational_waves_htxk && AC_lnonlinear_tpq_trans__mod__gravitational_waves_htxk) {
+      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__gravitational_waves_htxk[pq-1]
+      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__gravitational_waves_htxk[pq-1]
     }
-    ij=AC_ij_table__mod__special[1-1][3-1]
-    pq=AC_ij_table__mod__special[2-1][1-1]
-    ip=AC_ij_table__mod__special[1-1][2-1]
-    jq=AC_ij_table__mod__special[3-1][1-1]
-    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__special[pq-1]
-    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__special[pq-1]
-    if (AC_lnonlinear_source__mod__special && AC_lnonlinear_tpq_trans__mod__special) {
-      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__special[pq-1]
-      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__special[pq-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[1-1][3-1]
+    pq=AC_ij_table__mod__gravitational_waves_htxk[2-1][1-1]
+    ip=AC_ij_table__mod__gravitational_waves_htxk[1-1][2-1]
+    jq=AC_ij_table__mod__gravitational_waves_htxk[3-1][1-1]
+    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__gravitational_waves_htxk[pq-1]
+    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__gravitational_waves_htxk[pq-1]
+    if (AC_lnonlinear_source__mod__gravitational_waves_htxk && AC_lnonlinear_tpq_trans__mod__gravitational_waves_htxk) {
+      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__gravitational_waves_htxk[pq-1]
+      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__gravitational_waves_htxk[pq-1]
     }
-    ij=AC_ij_table__mod__special[1-1][3-1]
-    pq=AC_ij_table__mod__special[3-1][1-1]
-    ip=AC_ij_table__mod__special[1-1][3-1]
-    jq=AC_ij_table__mod__special[3-1][1-1]
-    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__special[pq-1]
-    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__special[pq-1]
-    if (AC_lnonlinear_source__mod__special && AC_lnonlinear_tpq_trans__mod__special) {
-      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__special[pq-1]
-      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__special[pq-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[1-1][3-1]
+    pq=AC_ij_table__mod__gravitational_waves_htxk[3-1][1-1]
+    ip=AC_ij_table__mod__gravitational_waves_htxk[1-1][3-1]
+    jq=AC_ij_table__mod__gravitational_waves_htxk[3-1][1-1]
+    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__gravitational_waves_htxk[pq-1]
+    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__gravitational_waves_htxk[pq-1]
+    if (AC_lnonlinear_source__mod__gravitational_waves_htxk && AC_lnonlinear_tpq_trans__mod__gravitational_waves_htxk) {
+      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__gravitational_waves_htxk[pq-1]
+      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__gravitational_waves_htxk[pq-1]
     }
-    ij=AC_ij_table__mod__special[1-1][3-1]
-    pq=AC_ij_table__mod__special[1-1][2-1]
-    ip=AC_ij_table__mod__special[1-1][1-1]
-    jq=AC_ij_table__mod__special[3-1][2-1]
-    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__special[pq-1]
-    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__special[pq-1]
-    if (AC_lnonlinear_source__mod__special && AC_lnonlinear_tpq_trans__mod__special) {
-      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__special[pq-1]
-      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__special[pq-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[1-1][3-1]
+    pq=AC_ij_table__mod__gravitational_waves_htxk[1-1][2-1]
+    ip=AC_ij_table__mod__gravitational_waves_htxk[1-1][1-1]
+    jq=AC_ij_table__mod__gravitational_waves_htxk[3-1][2-1]
+    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__gravitational_waves_htxk[pq-1]
+    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__gravitational_waves_htxk[pq-1]
+    if (AC_lnonlinear_source__mod__gravitational_waves_htxk && AC_lnonlinear_tpq_trans__mod__gravitational_waves_htxk) {
+      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__gravitational_waves_htxk[pq-1]
+      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__gravitational_waves_htxk[pq-1]
     }
-    ij=AC_ij_table__mod__special[1-1][3-1]
-    pq=AC_ij_table__mod__special[2-1][2-1]
-    ip=AC_ij_table__mod__special[1-1][2-1]
-    jq=AC_ij_table__mod__special[3-1][2-1]
-    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__special[pq-1]
-    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__special[pq-1]
-    if (AC_lnonlinear_source__mod__special && AC_lnonlinear_tpq_trans__mod__special) {
-      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__special[pq-1]
-      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__special[pq-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[1-1][3-1]
+    pq=AC_ij_table__mod__gravitational_waves_htxk[2-1][2-1]
+    ip=AC_ij_table__mod__gravitational_waves_htxk[1-1][2-1]
+    jq=AC_ij_table__mod__gravitational_waves_htxk[3-1][2-1]
+    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__gravitational_waves_htxk[pq-1]
+    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__gravitational_waves_htxk[pq-1]
+    if (AC_lnonlinear_source__mod__gravitational_waves_htxk && AC_lnonlinear_tpq_trans__mod__gravitational_waves_htxk) {
+      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__gravitational_waves_htxk[pq-1]
+      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__gravitational_waves_htxk[pq-1]
     }
-    ij=AC_ij_table__mod__special[1-1][3-1]
-    pq=AC_ij_table__mod__special[3-1][2-1]
-    ip=AC_ij_table__mod__special[1-1][3-1]
-    jq=AC_ij_table__mod__special[3-1][2-1]
-    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__special[pq-1]
-    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__special[pq-1]
-    if (AC_lnonlinear_source__mod__special && AC_lnonlinear_tpq_trans__mod__special) {
-      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__special[pq-1]
-      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__special[pq-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[1-1][3-1]
+    pq=AC_ij_table__mod__gravitational_waves_htxk[3-1][2-1]
+    ip=AC_ij_table__mod__gravitational_waves_htxk[1-1][3-1]
+    jq=AC_ij_table__mod__gravitational_waves_htxk[3-1][2-1]
+    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__gravitational_waves_htxk[pq-1]
+    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__gravitational_waves_htxk[pq-1]
+    if (AC_lnonlinear_source__mod__gravitational_waves_htxk && AC_lnonlinear_tpq_trans__mod__gravitational_waves_htxk) {
+      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__gravitational_waves_htxk[pq-1]
+      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__gravitational_waves_htxk[pq-1]
     }
-    ij=AC_ij_table__mod__special[1-1][3-1]
-    pq=AC_ij_table__mod__special[1-1][3-1]
-    ip=AC_ij_table__mod__special[1-1][1-1]
-    jq=AC_ij_table__mod__special[3-1][3-1]
-    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__special[pq-1]
-    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__special[pq-1]
-    if (AC_lnonlinear_source__mod__special && AC_lnonlinear_tpq_trans__mod__special) {
-      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__special[pq-1]
-      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__special[pq-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[1-1][3-1]
+    pq=AC_ij_table__mod__gravitational_waves_htxk[1-1][3-1]
+    ip=AC_ij_table__mod__gravitational_waves_htxk[1-1][1-1]
+    jq=AC_ij_table__mod__gravitational_waves_htxk[3-1][3-1]
+    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__gravitational_waves_htxk[pq-1]
+    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__gravitational_waves_htxk[pq-1]
+    if (AC_lnonlinear_source__mod__gravitational_waves_htxk && AC_lnonlinear_tpq_trans__mod__gravitational_waves_htxk) {
+      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__gravitational_waves_htxk[pq-1]
+      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__gravitational_waves_htxk[pq-1]
     }
-    ij=AC_ij_table__mod__special[1-1][3-1]
-    pq=AC_ij_table__mod__special[2-1][3-1]
-    ip=AC_ij_table__mod__special[1-1][2-1]
-    jq=AC_ij_table__mod__special[3-1][3-1]
-    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__special[pq-1]
-    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__special[pq-1]
-    if (AC_lnonlinear_source__mod__special && AC_lnonlinear_tpq_trans__mod__special) {
-      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__special[pq-1]
-      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__special[pq-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[1-1][3-1]
+    pq=AC_ij_table__mod__gravitational_waves_htxk[2-1][3-1]
+    ip=AC_ij_table__mod__gravitational_waves_htxk[1-1][2-1]
+    jq=AC_ij_table__mod__gravitational_waves_htxk[3-1][3-1]
+    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__gravitational_waves_htxk[pq-1]
+    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__gravitational_waves_htxk[pq-1]
+    if (AC_lnonlinear_source__mod__gravitational_waves_htxk && AC_lnonlinear_tpq_trans__mod__gravitational_waves_htxk) {
+      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__gravitational_waves_htxk[pq-1]
+      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__gravitational_waves_htxk[pq-1]
     }
-    ij=AC_ij_table__mod__special[1-1][3-1]
-    pq=AC_ij_table__mod__special[3-1][3-1]
-    ip=AC_ij_table__mod__special[1-1][3-1]
-    jq=AC_ij_table__mod__special[3-1][3-1]
-    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__special[pq-1]
-    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__special[pq-1]
-    if (AC_lnonlinear_source__mod__special && AC_lnonlinear_tpq_trans__mod__special) {
-      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__special[pq-1]
-      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__special[pq-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[1-1][3-1]
+    pq=AC_ij_table__mod__gravitational_waves_htxk[3-1][3-1]
+    ip=AC_ij_table__mod__gravitational_waves_htxk[1-1][3-1]
+    jq=AC_ij_table__mod__gravitational_waves_htxk[3-1][3-1]
+    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__gravitational_waves_htxk[pq-1]
+    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__gravitational_waves_htxk[pq-1]
+    if (AC_lnonlinear_source__mod__gravitational_waves_htxk && AC_lnonlinear_tpq_trans__mod__gravitational_waves_htxk) {
+      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__gravitational_waves_htxk[pq-1]
+      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__gravitational_waves_htxk[pq-1]
     }
-    ij=AC_ij_table__mod__special[2-1][3-1]
-    pq=AC_ij_table__mod__special[1-1][1-1]
-    ip=AC_ij_table__mod__special[2-1][1-1]
-    jq=AC_ij_table__mod__special[3-1][1-1]
-    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__special[pq-1]
-    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__special[pq-1]
-    if (AC_lnonlinear_source__mod__special && AC_lnonlinear_tpq_trans__mod__special) {
-      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__special[pq-1]
-      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__special[pq-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[2-1][3-1]
+    pq=AC_ij_table__mod__gravitational_waves_htxk[1-1][1-1]
+    ip=AC_ij_table__mod__gravitational_waves_htxk[2-1][1-1]
+    jq=AC_ij_table__mod__gravitational_waves_htxk[3-1][1-1]
+    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__gravitational_waves_htxk[pq-1]
+    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__gravitational_waves_htxk[pq-1]
+    if (AC_lnonlinear_source__mod__gravitational_waves_htxk && AC_lnonlinear_tpq_trans__mod__gravitational_waves_htxk) {
+      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__gravitational_waves_htxk[pq-1]
+      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__gravitational_waves_htxk[pq-1]
     }
-    ij=AC_ij_table__mod__special[2-1][3-1]
-    pq=AC_ij_table__mod__special[2-1][1-1]
-    ip=AC_ij_table__mod__special[2-1][2-1]
-    jq=AC_ij_table__mod__special[3-1][1-1]
-    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__special[pq-1]
-    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__special[pq-1]
-    if (AC_lnonlinear_source__mod__special && AC_lnonlinear_tpq_trans__mod__special) {
-      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__special[pq-1]
-      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__special[pq-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[2-1][3-1]
+    pq=AC_ij_table__mod__gravitational_waves_htxk[2-1][1-1]
+    ip=AC_ij_table__mod__gravitational_waves_htxk[2-1][2-1]
+    jq=AC_ij_table__mod__gravitational_waves_htxk[3-1][1-1]
+    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__gravitational_waves_htxk[pq-1]
+    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__gravitational_waves_htxk[pq-1]
+    if (AC_lnonlinear_source__mod__gravitational_waves_htxk && AC_lnonlinear_tpq_trans__mod__gravitational_waves_htxk) {
+      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__gravitational_waves_htxk[pq-1]
+      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__gravitational_waves_htxk[pq-1]
     }
-    ij=AC_ij_table__mod__special[2-1][3-1]
-    pq=AC_ij_table__mod__special[3-1][1-1]
-    ip=AC_ij_table__mod__special[2-1][3-1]
-    jq=AC_ij_table__mod__special[3-1][1-1]
-    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__special[pq-1]
-    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__special[pq-1]
-    if (AC_lnonlinear_source__mod__special && AC_lnonlinear_tpq_trans__mod__special) {
-      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__special[pq-1]
-      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__special[pq-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[2-1][3-1]
+    pq=AC_ij_table__mod__gravitational_waves_htxk[3-1][1-1]
+    ip=AC_ij_table__mod__gravitational_waves_htxk[2-1][3-1]
+    jq=AC_ij_table__mod__gravitational_waves_htxk[3-1][1-1]
+    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__gravitational_waves_htxk[pq-1]
+    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__gravitational_waves_htxk[pq-1]
+    if (AC_lnonlinear_source__mod__gravitational_waves_htxk && AC_lnonlinear_tpq_trans__mod__gravitational_waves_htxk) {
+      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__gravitational_waves_htxk[pq-1]
+      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__gravitational_waves_htxk[pq-1]
     }
-    ij=AC_ij_table__mod__special[2-1][3-1]
-    pq=AC_ij_table__mod__special[1-1][2-1]
-    ip=AC_ij_table__mod__special[2-1][1-1]
-    jq=AC_ij_table__mod__special[3-1][2-1]
-    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__special[pq-1]
-    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__special[pq-1]
-    if (AC_lnonlinear_source__mod__special && AC_lnonlinear_tpq_trans__mod__special) {
-      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__special[pq-1]
-      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__special[pq-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[2-1][3-1]
+    pq=AC_ij_table__mod__gravitational_waves_htxk[1-1][2-1]
+    ip=AC_ij_table__mod__gravitational_waves_htxk[2-1][1-1]
+    jq=AC_ij_table__mod__gravitational_waves_htxk[3-1][2-1]
+    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__gravitational_waves_htxk[pq-1]
+    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__gravitational_waves_htxk[pq-1]
+    if (AC_lnonlinear_source__mod__gravitational_waves_htxk && AC_lnonlinear_tpq_trans__mod__gravitational_waves_htxk) {
+      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__gravitational_waves_htxk[pq-1]
+      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__gravitational_waves_htxk[pq-1]
     }
-    ij=AC_ij_table__mod__special[2-1][3-1]
-    pq=AC_ij_table__mod__special[2-1][2-1]
-    ip=AC_ij_table__mod__special[2-1][2-1]
-    jq=AC_ij_table__mod__special[3-1][2-1]
-    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__special[pq-1]
-    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__special[pq-1]
-    if (AC_lnonlinear_source__mod__special && AC_lnonlinear_tpq_trans__mod__special) {
-      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__special[pq-1]
-      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__special[pq-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[2-1][3-1]
+    pq=AC_ij_table__mod__gravitational_waves_htxk[2-1][2-1]
+    ip=AC_ij_table__mod__gravitational_waves_htxk[2-1][2-1]
+    jq=AC_ij_table__mod__gravitational_waves_htxk[3-1][2-1]
+    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__gravitational_waves_htxk[pq-1]
+    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__gravitational_waves_htxk[pq-1]
+    if (AC_lnonlinear_source__mod__gravitational_waves_htxk && AC_lnonlinear_tpq_trans__mod__gravitational_waves_htxk) {
+      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__gravitational_waves_htxk[pq-1]
+      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__gravitational_waves_htxk[pq-1]
     }
-    ij=AC_ij_table__mod__special[2-1][3-1]
-    pq=AC_ij_table__mod__special[3-1][2-1]
-    ip=AC_ij_table__mod__special[2-1][3-1]
-    jq=AC_ij_table__mod__special[3-1][2-1]
-    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__special[pq-1]
-    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__special[pq-1]
-    if (AC_lnonlinear_source__mod__special && AC_lnonlinear_tpq_trans__mod__special) {
-      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__special[pq-1]
-      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__special[pq-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[2-1][3-1]
+    pq=AC_ij_table__mod__gravitational_waves_htxk[3-1][2-1]
+    ip=AC_ij_table__mod__gravitational_waves_htxk[2-1][3-1]
+    jq=AC_ij_table__mod__gravitational_waves_htxk[3-1][2-1]
+    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__gravitational_waves_htxk[pq-1]
+    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__gravitational_waves_htxk[pq-1]
+    if (AC_lnonlinear_source__mod__gravitational_waves_htxk && AC_lnonlinear_tpq_trans__mod__gravitational_waves_htxk) {
+      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__gravitational_waves_htxk[pq-1]
+      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__gravitational_waves_htxk[pq-1]
     }
-    ij=AC_ij_table__mod__special[2-1][3-1]
-    pq=AC_ij_table__mod__special[1-1][3-1]
-    ip=AC_ij_table__mod__special[2-1][1-1]
-    jq=AC_ij_table__mod__special[3-1][3-1]
-    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__special[pq-1]
-    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__special[pq-1]
-    if (AC_lnonlinear_source__mod__special && AC_lnonlinear_tpq_trans__mod__special) {
-      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__special[pq-1]
-      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__special[pq-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[2-1][3-1]
+    pq=AC_ij_table__mod__gravitational_waves_htxk[1-1][3-1]
+    ip=AC_ij_table__mod__gravitational_waves_htxk[2-1][1-1]
+    jq=AC_ij_table__mod__gravitational_waves_htxk[3-1][3-1]
+    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__gravitational_waves_htxk[pq-1]
+    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__gravitational_waves_htxk[pq-1]
+    if (AC_lnonlinear_source__mod__gravitational_waves_htxk && AC_lnonlinear_tpq_trans__mod__gravitational_waves_htxk) {
+      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__gravitational_waves_htxk[pq-1]
+      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__gravitational_waves_htxk[pq-1]
     }
-    ij=AC_ij_table__mod__special[2-1][3-1]
-    pq=AC_ij_table__mod__special[2-1][3-1]
-    ip=AC_ij_table__mod__special[2-1][2-1]
-    jq=AC_ij_table__mod__special[3-1][3-1]
-    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__special[pq-1]
-    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__special[pq-1]
-    if (AC_lnonlinear_source__mod__special && AC_lnonlinear_tpq_trans__mod__special) {
-      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__special[pq-1]
-      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__special[pq-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[2-1][3-1]
+    pq=AC_ij_table__mod__gravitational_waves_htxk[2-1][3-1]
+    ip=AC_ij_table__mod__gravitational_waves_htxk[2-1][2-1]
+    jq=AC_ij_table__mod__gravitational_waves_htxk[3-1][3-1]
+    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__gravitational_waves_htxk[pq-1]
+    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__gravitational_waves_htxk[pq-1]
+    if (AC_lnonlinear_source__mod__gravitational_waves_htxk && AC_lnonlinear_tpq_trans__mod__gravitational_waves_htxk) {
+      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__gravitational_waves_htxk[pq-1]
+      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__gravitational_waves_htxk[pq-1]
     }
-    ij=AC_ij_table__mod__special[2-1][3-1]
-    pq=AC_ij_table__mod__special[3-1][3-1]
-    ip=AC_ij_table__mod__special[2-1][3-1]
-    jq=AC_ij_table__mod__special[3-1][3-1]
-    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__special[pq-1]
-    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__special[pq-1]
-    if (AC_lnonlinear_source__mod__special && AC_lnonlinear_tpq_trans__mod__special) {
-      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__special[pq-1]
-      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__special[pq-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[2-1][3-1]
+    pq=AC_ij_table__mod__gravitational_waves_htxk[3-1][3-1]
+    ip=AC_ij_table__mod__gravitational_waves_htxk[2-1][3-1]
+    jq=AC_ij_table__mod__gravitational_waves_htxk[3-1][3-1]
+    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__gravitational_waves_htxk[pq-1]
+    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__gravitational_waves_htxk[pq-1]
+    if (AC_lnonlinear_source__mod__gravitational_waves_htxk && AC_lnonlinear_tpq_trans__mod__gravitational_waves_htxk) {
+      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__gravitational_waves_htxk[pq-1]
+      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__gravitational_waves_htxk[pq-1]
     }
-    ij=AC_ij_table__mod__special[3-1][3-1]
-    pq=AC_ij_table__mod__special[1-1][1-1]
-    ip=AC_ij_table__mod__special[3-1][1-1]
-    jq=AC_ij_table__mod__special[3-1][1-1]
-    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__special[pq-1]
-    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__special[pq-1]
-    if (AC_lnonlinear_source__mod__special && AC_lnonlinear_tpq_trans__mod__special) {
-      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__special[pq-1]
-      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__special[pq-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[3-1][3-1]
+    pq=AC_ij_table__mod__gravitational_waves_htxk[1-1][1-1]
+    ip=AC_ij_table__mod__gravitational_waves_htxk[3-1][1-1]
+    jq=AC_ij_table__mod__gravitational_waves_htxk[3-1][1-1]
+    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__gravitational_waves_htxk[pq-1]
+    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__gravitational_waves_htxk[pq-1]
+    if (AC_lnonlinear_source__mod__gravitational_waves_htxk && AC_lnonlinear_tpq_trans__mod__gravitational_waves_htxk) {
+      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__gravitational_waves_htxk[pq-1]
+      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__gravitational_waves_htxk[pq-1]
     }
-    ij=AC_ij_table__mod__special[3-1][3-1]
-    pq=AC_ij_table__mod__special[2-1][1-1]
-    ip=AC_ij_table__mod__special[3-1][2-1]
-    jq=AC_ij_table__mod__special[3-1][1-1]
-    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__special[pq-1]
-    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__special[pq-1]
-    if (AC_lnonlinear_source__mod__special && AC_lnonlinear_tpq_trans__mod__special) {
-      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__special[pq-1]
-      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__special[pq-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[3-1][3-1]
+    pq=AC_ij_table__mod__gravitational_waves_htxk[2-1][1-1]
+    ip=AC_ij_table__mod__gravitational_waves_htxk[3-1][2-1]
+    jq=AC_ij_table__mod__gravitational_waves_htxk[3-1][1-1]
+    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__gravitational_waves_htxk[pq-1]
+    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__gravitational_waves_htxk[pq-1]
+    if (AC_lnonlinear_source__mod__gravitational_waves_htxk && AC_lnonlinear_tpq_trans__mod__gravitational_waves_htxk) {
+      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__gravitational_waves_htxk[pq-1]
+      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__gravitational_waves_htxk[pq-1]
     }
-    ij=AC_ij_table__mod__special[3-1][3-1]
-    pq=AC_ij_table__mod__special[3-1][1-1]
-    ip=AC_ij_table__mod__special[3-1][3-1]
-    jq=AC_ij_table__mod__special[3-1][1-1]
-    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__special[pq-1]
-    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__special[pq-1]
-    if (AC_lnonlinear_source__mod__special && AC_lnonlinear_tpq_trans__mod__special) {
-      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__special[pq-1]
-      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__special[pq-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[3-1][3-1]
+    pq=AC_ij_table__mod__gravitational_waves_htxk[3-1][1-1]
+    ip=AC_ij_table__mod__gravitational_waves_htxk[3-1][3-1]
+    jq=AC_ij_table__mod__gravitational_waves_htxk[3-1][1-1]
+    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__gravitational_waves_htxk[pq-1]
+    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__gravitational_waves_htxk[pq-1]
+    if (AC_lnonlinear_source__mod__gravitational_waves_htxk && AC_lnonlinear_tpq_trans__mod__gravitational_waves_htxk) {
+      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__gravitational_waves_htxk[pq-1]
+      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__gravitational_waves_htxk[pq-1]
     }
-    ij=AC_ij_table__mod__special[3-1][3-1]
-    pq=AC_ij_table__mod__special[1-1][2-1]
-    ip=AC_ij_table__mod__special[3-1][1-1]
-    jq=AC_ij_table__mod__special[3-1][2-1]
-    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__special[pq-1]
-    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__special[pq-1]
-    if (AC_lnonlinear_source__mod__special && AC_lnonlinear_tpq_trans__mod__special) {
-      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__special[pq-1]
-      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__special[pq-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[3-1][3-1]
+    pq=AC_ij_table__mod__gravitational_waves_htxk[1-1][2-1]
+    ip=AC_ij_table__mod__gravitational_waves_htxk[3-1][1-1]
+    jq=AC_ij_table__mod__gravitational_waves_htxk[3-1][2-1]
+    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__gravitational_waves_htxk[pq-1]
+    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__gravitational_waves_htxk[pq-1]
+    if (AC_lnonlinear_source__mod__gravitational_waves_htxk && AC_lnonlinear_tpq_trans__mod__gravitational_waves_htxk) {
+      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__gravitational_waves_htxk[pq-1]
+      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__gravitational_waves_htxk[pq-1]
     }
-    ij=AC_ij_table__mod__special[3-1][3-1]
-    pq=AC_ij_table__mod__special[2-1][2-1]
-    ip=AC_ij_table__mod__special[3-1][2-1]
-    jq=AC_ij_table__mod__special[3-1][2-1]
-    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__special[pq-1]
-    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__special[pq-1]
-    if (AC_lnonlinear_source__mod__special && AC_lnonlinear_tpq_trans__mod__special) {
-      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__special[pq-1]
-      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__special[pq-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[3-1][3-1]
+    pq=AC_ij_table__mod__gravitational_waves_htxk[2-1][2-1]
+    ip=AC_ij_table__mod__gravitational_waves_htxk[3-1][2-1]
+    jq=AC_ij_table__mod__gravitational_waves_htxk[3-1][2-1]
+    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__gravitational_waves_htxk[pq-1]
+    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__gravitational_waves_htxk[pq-1]
+    if (AC_lnonlinear_source__mod__gravitational_waves_htxk && AC_lnonlinear_tpq_trans__mod__gravitational_waves_htxk) {
+      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__gravitational_waves_htxk[pq-1]
+      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__gravitational_waves_htxk[pq-1]
     }
-    ij=AC_ij_table__mod__special[3-1][3-1]
-    pq=AC_ij_table__mod__special[3-1][2-1]
-    ip=AC_ij_table__mod__special[3-1][3-1]
-    jq=AC_ij_table__mod__special[3-1][2-1]
-    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__special[pq-1]
-    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__special[pq-1]
-    if (AC_lnonlinear_source__mod__special && AC_lnonlinear_tpq_trans__mod__special) {
-      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__special[pq-1]
-      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__special[pq-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[3-1][3-1]
+    pq=AC_ij_table__mod__gravitational_waves_htxk[3-1][2-1]
+    ip=AC_ij_table__mod__gravitational_waves_htxk[3-1][3-1]
+    jq=AC_ij_table__mod__gravitational_waves_htxk[3-1][2-1]
+    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__gravitational_waves_htxk[pq-1]
+    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__gravitational_waves_htxk[pq-1]
+    if (AC_lnonlinear_source__mod__gravitational_waves_htxk && AC_lnonlinear_tpq_trans__mod__gravitational_waves_htxk) {
+      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__gravitational_waves_htxk[pq-1]
+      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__gravitational_waves_htxk[pq-1]
     }
-    ij=AC_ij_table__mod__special[3-1][3-1]
-    pq=AC_ij_table__mod__special[1-1][3-1]
-    ip=AC_ij_table__mod__special[3-1][1-1]
-    jq=AC_ij_table__mod__special[3-1][3-1]
-    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__special[pq-1]
-    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__special[pq-1]
-    if (AC_lnonlinear_source__mod__special && AC_lnonlinear_tpq_trans__mod__special) {
-      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__special[pq-1]
-      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__special[pq-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[3-1][3-1]
+    pq=AC_ij_table__mod__gravitational_waves_htxk[1-1][3-1]
+    ip=AC_ij_table__mod__gravitational_waves_htxk[3-1][1-1]
+    jq=AC_ij_table__mod__gravitational_waves_htxk[3-1][3-1]
+    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__gravitational_waves_htxk[pq-1]
+    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__gravitational_waves_htxk[pq-1]
+    if (AC_lnonlinear_source__mod__gravitational_waves_htxk && AC_lnonlinear_tpq_trans__mod__gravitational_waves_htxk) {
+      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__gravitational_waves_htxk[pq-1]
+      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__gravitational_waves_htxk[pq-1]
     }
-    ij=AC_ij_table__mod__special[3-1][3-1]
-    pq=AC_ij_table__mod__special[2-1][3-1]
-    ip=AC_ij_table__mod__special[3-1][2-1]
-    jq=AC_ij_table__mod__special[3-1][3-1]
-    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__special[pq-1]
-    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__special[pq-1]
-    if (AC_lnonlinear_source__mod__special && AC_lnonlinear_tpq_trans__mod__special) {
-      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__special[pq-1]
-      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__special[pq-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[3-1][3-1]
+    pq=AC_ij_table__mod__gravitational_waves_htxk[2-1][3-1]
+    ip=AC_ij_table__mod__gravitational_waves_htxk[3-1][2-1]
+    jq=AC_ij_table__mod__gravitational_waves_htxk[3-1][3-1]
+    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__gravitational_waves_htxk[pq-1]
+    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__gravitational_waves_htxk[pq-1]
+    if (AC_lnonlinear_source__mod__gravitational_waves_htxk && AC_lnonlinear_tpq_trans__mod__gravitational_waves_htxk) {
+      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__gravitational_waves_htxk[pq-1]
+      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__gravitational_waves_htxk[pq-1]
     }
-    ij=AC_ij_table__mod__special[3-1][3-1]
-    pq=AC_ij_table__mod__special[3-1][3-1]
-    ip=AC_ij_table__mod__special[3-1][3-1]
-    jq=AC_ij_table__mod__special[3-1][3-1]
-    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__special[pq-1]
-    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__special[pq-1]
-    if (AC_lnonlinear_source__mod__special && AC_lnonlinear_tpq_trans__mod__special) {
-      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__special[pq-1]
-      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__special[pq-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[3-1][3-1]
+    pq=AC_ij_table__mod__gravitational_waves_htxk[3-1][3-1]
+    ip=AC_ij_table__mod__gravitational_waves_htxk[3-1][3-1]
+    jq=AC_ij_table__mod__gravitational_waves_htxk[3-1][3-1]
+    sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_re__mod__gravitational_waves_htxk[pq-1]
+    sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_tpq_im__mod__gravitational_waves_htxk[pq-1]
+    if (AC_lnonlinear_source__mod__gravitational_waves_htxk && AC_lnonlinear_tpq_trans__mod__gravitational_waves_htxk) {
+      sij_re[ij-1]=sij_re[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_re__mod__gravitational_waves_htxk[pq-1]
+      sij_im[ij-1]=sij_im[ij-1]+(pij[ip-1]*pij[jq-1]-0.5*pij[ij-1]*pij[pq-1])*AC_nonlinear_tpq_im__mod__gravitational_waves_htxk[pq-1]
     }
-    ij=AC_ij_table__mod__special[1-1][1-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[1-1][1-1]
     s_t_re=s_t_re+0.5*e_t[ij-1]*sij_re[ij-1]
     s_t_im=s_t_im+0.5*e_t[ij-1]*sij_im[ij-1]
     s_x_re=s_x_re+0.5*e_x[ij-1]*sij_re[ij-1]
     s_x_im=s_x_im+0.5*e_x[ij-1]*sij_im[ij-1]
-    ij=AC_ij_table__mod__special[2-1][1-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[2-1][1-1]
     s_t_re=s_t_re+0.5*e_t[ij-1]*sij_re[ij-1]
     s_t_im=s_t_im+0.5*e_t[ij-1]*sij_im[ij-1]
     s_x_re=s_x_re+0.5*e_x[ij-1]*sij_re[ij-1]
     s_x_im=s_x_im+0.5*e_x[ij-1]*sij_im[ij-1]
-    ij=AC_ij_table__mod__special[3-1][1-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[3-1][1-1]
     s_t_re=s_t_re+0.5*e_t[ij-1]*sij_re[ij-1]
     s_t_im=s_t_im+0.5*e_t[ij-1]*sij_im[ij-1]
     s_x_re=s_x_re+0.5*e_x[ij-1]*sij_re[ij-1]
     s_x_im=s_x_im+0.5*e_x[ij-1]*sij_im[ij-1]
-    ij=AC_ij_table__mod__special[1-1][2-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[1-1][2-1]
     s_t_re=s_t_re+0.5*e_t[ij-1]*sij_re[ij-1]
     s_t_im=s_t_im+0.5*e_t[ij-1]*sij_im[ij-1]
     s_x_re=s_x_re+0.5*e_x[ij-1]*sij_re[ij-1]
     s_x_im=s_x_im+0.5*e_x[ij-1]*sij_im[ij-1]
-    ij=AC_ij_table__mod__special[2-1][2-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[2-1][2-1]
     s_t_re=s_t_re+0.5*e_t[ij-1]*sij_re[ij-1]
     s_t_im=s_t_im+0.5*e_t[ij-1]*sij_im[ij-1]
     s_x_re=s_x_re+0.5*e_x[ij-1]*sij_re[ij-1]
     s_x_im=s_x_im+0.5*e_x[ij-1]*sij_im[ij-1]
-    ij=AC_ij_table__mod__special[3-1][2-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[3-1][2-1]
     s_t_re=s_t_re+0.5*e_t[ij-1]*sij_re[ij-1]
     s_t_im=s_t_im+0.5*e_t[ij-1]*sij_im[ij-1]
     s_x_re=s_x_re+0.5*e_x[ij-1]*sij_re[ij-1]
     s_x_im=s_x_im+0.5*e_x[ij-1]*sij_im[ij-1]
-    ij=AC_ij_table__mod__special[1-1][3-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[1-1][3-1]
     s_t_re=s_t_re+0.5*e_t[ij-1]*sij_re[ij-1]
     s_t_im=s_t_im+0.5*e_t[ij-1]*sij_im[ij-1]
     s_x_re=s_x_re+0.5*e_x[ij-1]*sij_re[ij-1]
     s_x_im=s_x_im+0.5*e_x[ij-1]*sij_im[ij-1]
-    ij=AC_ij_table__mod__special[2-1][3-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[2-1][3-1]
     s_t_re=s_t_re+0.5*e_t[ij-1]*sij_re[ij-1]
     s_t_im=s_t_im+0.5*e_t[ij-1]*sij_im[ij-1]
     s_x_re=s_x_re+0.5*e_x[ij-1]*sij_re[ij-1]
     s_x_im=s_x_im+0.5*e_x[ij-1]*sij_im[ij-1]
-    ij=AC_ij_table__mod__special[3-1][3-1]
+    ij=AC_ij_table__mod__gravitational_waves_htxk[3-1][3-1]
     s_t_re=s_t_re+0.5*e_t[ij-1]*sij_re[ij-1]
     s_t_im=s_t_im+0.5*e_t[ij-1]*sij_im[ij-1]
     s_x_re=s_x_re+0.5*e_x[ij-1]*sij_re[ij-1]
     s_x_im=s_x_im+0.5*e_x[ij-1]*sij_im[ij-1]
-    if (AC_llighthill__mod__special) {
-      ij=AC_ij_table__mod__special[1-1][1-1]
-      s_t_re=s_t_re+kij[ij-1]*AC_tpq_re__mod__special[ij-1]
-      s_t_im=s_t_im+kij[ij-1]*AC_tpq_im__mod__special[ij-1]
-      ij=AC_ij_table__mod__special[2-1][1-1]
-      s_t_re=s_t_re+kij[ij-1]*AC_tpq_re__mod__special[ij-1]
-      s_t_im=s_t_im+kij[ij-1]*AC_tpq_im__mod__special[ij-1]
-      ij=AC_ij_table__mod__special[3-1][1-1]
-      s_t_re=s_t_re+kij[ij-1]*AC_tpq_re__mod__special[ij-1]
-      s_t_im=s_t_im+kij[ij-1]*AC_tpq_im__mod__special[ij-1]
-      ij=AC_ij_table__mod__special[1-1][2-1]
-      s_t_re=s_t_re+kij[ij-1]*AC_tpq_re__mod__special[ij-1]
-      s_t_im=s_t_im+kij[ij-1]*AC_tpq_im__mod__special[ij-1]
-      ij=AC_ij_table__mod__special[2-1][2-1]
-      s_t_re=s_t_re+kij[ij-1]*AC_tpq_re__mod__special[ij-1]
-      s_t_im=s_t_im+kij[ij-1]*AC_tpq_im__mod__special[ij-1]
-      ij=AC_ij_table__mod__special[3-1][2-1]
-      s_t_re=s_t_re+kij[ij-1]*AC_tpq_re__mod__special[ij-1]
-      s_t_im=s_t_im+kij[ij-1]*AC_tpq_im__mod__special[ij-1]
-      ij=AC_ij_table__mod__special[1-1][3-1]
-      s_t_re=s_t_re+kij[ij-1]*AC_tpq_re__mod__special[ij-1]
-      s_t_im=s_t_im+kij[ij-1]*AC_tpq_im__mod__special[ij-1]
-      ij=AC_ij_table__mod__special[2-1][3-1]
-      s_t_re=s_t_re+kij[ij-1]*AC_tpq_re__mod__special[ij-1]
-      s_t_im=s_t_im+kij[ij-1]*AC_tpq_im__mod__special[ij-1]
-      ij=AC_ij_table__mod__special[3-1][3-1]
-      s_t_re=s_t_re+kij[ij-1]*AC_tpq_re__mod__special[ij-1]
-      s_t_im=s_t_im+kij[ij-1]*AC_tpq_im__mod__special[ij-1]
+    if (AC_llighthill__mod__gravitational_waves_htxk) {
+      ij=AC_ij_table__mod__gravitational_waves_htxk[1-1][1-1]
+      s_t_re=s_t_re+kij[ij-1]*AC_tpq_re__mod__gravitational_waves_htxk[ij-1]
+      s_t_im=s_t_im+kij[ij-1]*AC_tpq_im__mod__gravitational_waves_htxk[ij-1]
+      ij=AC_ij_table__mod__gravitational_waves_htxk[2-1][1-1]
+      s_t_re=s_t_re+kij[ij-1]*AC_tpq_re__mod__gravitational_waves_htxk[ij-1]
+      s_t_im=s_t_im+kij[ij-1]*AC_tpq_im__mod__gravitational_waves_htxk[ij-1]
+      ij=AC_ij_table__mod__gravitational_waves_htxk[3-1][1-1]
+      s_t_re=s_t_re+kij[ij-1]*AC_tpq_re__mod__gravitational_waves_htxk[ij-1]
+      s_t_im=s_t_im+kij[ij-1]*AC_tpq_im__mod__gravitational_waves_htxk[ij-1]
+      ij=AC_ij_table__mod__gravitational_waves_htxk[1-1][2-1]
+      s_t_re=s_t_re+kij[ij-1]*AC_tpq_re__mod__gravitational_waves_htxk[ij-1]
+      s_t_im=s_t_im+kij[ij-1]*AC_tpq_im__mod__gravitational_waves_htxk[ij-1]
+      ij=AC_ij_table__mod__gravitational_waves_htxk[2-1][2-1]
+      s_t_re=s_t_re+kij[ij-1]*AC_tpq_re__mod__gravitational_waves_htxk[ij-1]
+      s_t_im=s_t_im+kij[ij-1]*AC_tpq_im__mod__gravitational_waves_htxk[ij-1]
+      ij=AC_ij_table__mod__gravitational_waves_htxk[3-1][2-1]
+      s_t_re=s_t_re+kij[ij-1]*AC_tpq_re__mod__gravitational_waves_htxk[ij-1]
+      s_t_im=s_t_im+kij[ij-1]*AC_tpq_im__mod__gravitational_waves_htxk[ij-1]
+      ij=AC_ij_table__mod__gravitational_waves_htxk[1-1][3-1]
+      s_t_re=s_t_re+kij[ij-1]*AC_tpq_re__mod__gravitational_waves_htxk[ij-1]
+      s_t_im=s_t_im+kij[ij-1]*AC_tpq_im__mod__gravitational_waves_htxk[ij-1]
+      ij=AC_ij_table__mod__gravitational_waves_htxk[2-1][3-1]
+      s_t_re=s_t_re+kij[ij-1]*AC_tpq_re__mod__gravitational_waves_htxk[ij-1]
+      s_t_im=s_t_im+kij[ij-1]*AC_tpq_im__mod__gravitational_waves_htxk[ij-1]
+      ij=AC_ij_table__mod__gravitational_waves_htxk[3-1][3-1]
+      s_t_re=s_t_re+kij[ij-1]*AC_tpq_re__mod__gravitational_waves_htxk[ij-1]
+      s_t_im=s_t_im+kij[ij-1]*AC_tpq_im__mod__gravitational_waves_htxk[ij-1]
     }
-    if (AC_lnophase_in_stress__mod__special) {
-      if (AC_lconstmod_in_stress__mod__special) {
-        s_t_re=exp(-ksqr/(AC_k_in_stress__mod__special*AC_k_in_stress__mod__special))
-        s_x_re=exp(-ksqr/(AC_k_in_stress__mod__special*AC_k_in_stress__mod__special))
+    if (AC_lnophase_in_stress__mod__gravitational_waves_htxk) {
+      if (AC_lconstmod_in_stress__mod__gravitational_waves_htxk) {
+        s_t_re=exp(-ksqr/(AC_k_in_stress__mod__gravitational_waves_htxk*AC_k_in_stress__mod__gravitational_waves_htxk))
+        s_x_re=exp(-ksqr/(AC_k_in_stress__mod__gravitational_waves_htxk*AC_k_in_stress__mod__gravitational_waves_htxk))
       }
       else {
         if (ksqr==0.) {
@@ -1017,11 +1017,11 @@ Kernel gravitational_waves_solve_and_stress(real AC_t__mod__cdata, real AC_dt__m
       }
       s_t_im=0.
       s_x_im=0.
-      if (AC_llinphase_in_stress__mod__special) {
-        s_t_re=s_t_re*cos(AC_slope_linphase_in_stress__mod__special*AC_t__mod__cdata)
-        s_t_im=s_t_re*sin(AC_slope_linphase_in_stress__mod__special*AC_t__mod__cdata)
-        s_x_re=s_x_re*cos(AC_slope_linphase_in_stress__mod__special*AC_t__mod__cdata)
-        s_x_im=s_x_re*sin(AC_slope_linphase_in_stress__mod__special*AC_t__mod__cdata)
+      if (AC_llinphase_in_stress__mod__gravitational_waves_htxk) {
+        s_t_re=s_t_re*cos(AC_slope_linphase_in_stress__mod__gravitational_waves_htxk*AC_t__mod__cdata)
+        s_t_im=s_t_re*sin(AC_slope_linphase_in_stress__mod__gravitational_waves_htxk*AC_t__mod__cdata)
+        s_x_re=s_x_re*cos(AC_slope_linphase_in_stress__mod__gravitational_waves_htxk*AC_t__mod__cdata)
+        s_x_im=s_x_re*sin(AC_slope_linphase_in_stress__mod__gravitational_waves_htxk*AC_t__mod__cdata)
       }
     }
 
@@ -1035,14 +1035,14 @@ Kernel gravitational_waves_solve_and_stress(real AC_t__mod__cdata, real AC_dt__m
     ggxim=value(F_GGXIM)
 
     om12=1./om2
-    if (AC_lhorndeski__mod__special) {
-      discrim2=(horndeski_alpm_eff__mod__special*horndeski_alpm_eff__mod__special)-4.*om2
+    if (AC_lhorndeski__mod__gravitational_waves_htxk) {
+      discrim2=(horndeski_alpm_eff__mod__gravitational_waves_htxk*horndeski_alpm_eff__mod__gravitational_waves_htxk)-4.*om2
       if (discrim2==0.) {
         discrim2=AC_tini__mod__cparam
       }
       discrim=sqrt(cmplx(discrim2,0.))
-      lam1=0.5*(-horndeski_alpm_eff__mod__special+discrim)
-      lam2=0.5*(-horndeski_alpm_eff__mod__special-discrim)
+      lam1=0.5*(-horndeski_alpm_eff__mod__gravitational_waves_htxk+discrim)
+      lam2=0.5*(-horndeski_alpm_eff__mod__gravitational_waves_htxk-discrim)
       explam1t=exp(lam1*AC_dt__mod__cdata)
       explam2t=exp(lam2*AC_dt__mod__cdata)
       det1=1./discrim
@@ -1063,7 +1063,7 @@ Kernel gravitational_waves_solve_and_stress(real AC_t__mod__cdata, real AC_dt__m
         sinot_minus=+sinot
       }
     }
-    if (AC_lhorndeski__mod__special) {
+    if (AC_lhorndeski__mod__gravitational_waves_htxk) {
       coefa=cmplx(hhtre-om12*s_t_re,hhtim-om12*s_t_im)
       coefb=cmplx(ggtre                         ,ggtim    )/om_cmplx
       hcomplex_new= cosoth*coefa+sinoth*coefb+om12*cmplx(s_t_re,s_t_im)
@@ -1083,7 +1083,7 @@ Kernel gravitational_waves_solve_and_stress(real AC_t__mod__cdata, real AC_dt__m
       DF_HHTIM=coefaim*cosot+coefbim*sinot+om12*s_t_im
       DF_GGT=coefbre*cosot*om+coefare*om*sinot_minus
       DF_GGTIM=coefbim*cosot*om+coefaim*om*sinot_minus
-      if (AC_itorder_gw__mod__special==2) {
+      if (AC_itorder_gw__mod__gravitational_waves_htxk==2) {
         if (AC_dt__mod__cdata==0.) {
           dt1=0.
         }
@@ -1092,13 +1092,13 @@ Kernel gravitational_waves_solve_and_stress(real AC_t__mod__cdata, real AC_dt__m
         }
         ds_t_re=s_t_re-value(F_STRESST)
         ds_t_im=s_t_im-value(F_STRESSTIM)
-        DF_HHT=value(F_HHT)     +ds_t_re*om12*(1.-om1*dt1*sinot)
-        DF_HHTIM=value(F_HHTIM) +ds_t_im*om12*(1.-om1*dt1*sinot)
-        DF_GGT=value(F_GGT)     +ds_t_re*om12*dt1*(1.-cosot)
-        DF_GGTIM=value(F_GGTIM) +ds_t_im*om12*dt1*(1.-cosot)
+        DF_HHT   +=   ds_t_re*om12*(1.-om1*dt1*sinot)
+        DF_HHTIM +=   ds_t_im*om12*(1.-om1*dt1*sinot)
+        DF_GGT   +=   ds_t_re*om12*dt1*(1.-cosot)
+        DF_GGTIM +=   ds_t_im*om12*dt1*(1.-cosot)
       }
     }
-    if (AC_lhorndeski__mod__special) {
+    if (AC_lhorndeski__mod__gravitational_waves_htxk) {
       coefa=cmplx(hhxre-om12*s_x_re,hhxim-om12*s_x_im)
       coefb=cmplx(ggxre                         ,ggxim    )/om_cmplx
       hcomplex_new= cosoth*coefa+sinoth*coefb+om12*cmplx(s_x_re,s_x_im)
@@ -1117,13 +1117,13 @@ Kernel gravitational_waves_solve_and_stress(real AC_t__mod__cdata, real AC_dt__m
       DF_HHXIM=coefaim*cosot+coefbim*sinot+om12*s_x_im
       DF_GGX=coefbre*cosot*om+coefare*om*sinot_minus
       DF_GGXIM=coefbim*cosot*om+coefaim*om*sinot_minus
-      if (AC_itorder_gw__mod__special==2) {
+      if (AC_itorder_gw__mod__gravitational_waves_htxk==2) {
         ds_x_re=s_x_re-value(F_STRESSX)
         ds_x_im=s_x_im-value(F_STRESSXIM)
-        DF_HHX=value(F_HHX)      +ds_x_re*om12*(AC_dt__mod__cdata-om1*sinot)
-        DF_HHXIM=value(F_HHXIM)  +ds_x_im*om12*(AC_dt__mod__cdata-om1*sinot)
-        DF_GGX=value(F_GGX)      +ds_x_re*om12*(1.-cosot)
-        DF_GGXIM=value(F_GGXIM)  +ds_x_im*om12*(1.-cosot)
+        DF_HHX    += ds_x_re*om12*(AC_dt__mod__cdata-om1*sinot)
+        DF_HHXIM  += ds_x_im*om12*(AC_dt__mod__cdata-om1*sinot)
+        DF_GGX    += ds_x_re*om12*(1.-cosot)
+        DF_GGXIM  += ds_x_im*om12*(1.-cosot)
       }
     }
     if(om2 <= om2_min)
@@ -1137,10 +1137,13 @@ Kernel gravitational_waves_solve_and_stress(real AC_t__mod__cdata, real AC_dt__m
       DF_GGX    = 0. 
       DF_GGXIM  = 0. 
     }
-    DF_STRESST=s_t_re
-    DF_STRESSTIM=s_t_im
-    DF_STRESSX=s_x_re
-    DF_STRESSXIM=s_x_im
+    if (AC_itorder_gw__mod__gravitational_waves_htxk==2)
+    {
+        write(F_STRESST  ,s_t_re)
+        write(F_STRESSTIM,s_t_im)
+        write(F_STRESSX  ,s_x_re)
+        write(F_STRESSXIM,s_x_im)
+    }
 
     write(F_HHT,DF_HHT)
     write(F_HHX,DF_HHX)

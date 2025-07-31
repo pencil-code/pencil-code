@@ -11783,6 +11783,7 @@ print*,'AXEL2: should not be here (eta) ... '
     call copy_addr(w_sldchar_mag,p_par(265))
     call copy_addr(h_sld_magn,p_par(266))
     call copy_addr(nlf_sld_magn,p_par(267))
+    call copy_addr(eta_tdep_ascale_power,p_par(268))
 
     endsubroutine pushpars2c
 !***********************************************************************

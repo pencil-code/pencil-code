@@ -802,7 +802,7 @@
     endsubroutine calc_diagnostics_special
 !***********************************************************************
     subroutine calc_ode_diagnostics_special(f_ode)
-      real, dimension(:) :: f_ode
+      real, dimension(max_n_odevars), intent(IN) :: f_ode
       integer :: i
       do i=1,n_special_modules
         call caller1(special_sub_handles(i,I_CALC_ODE_DIAGNOSTICS_SPECIAL),f_ode)

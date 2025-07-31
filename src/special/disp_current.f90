@@ -270,6 +270,8 @@ module Special
         enddo
       endif
 !
+      if (lphi_hom) weight_longitudinalE=0.
+!
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_special
@@ -682,9 +684,9 @@ module Special
       type(pencil_case) :: p
       real, dimension(nx), intent(OUT) :: dst
 !
+       
       if (lphi_hom) then
         dst=0.
-        weight_longitudinalE=0.
       else
         if (alpf/=0.) then
           call dot(p%bb,p%gphi,dst)
@@ -1155,6 +1157,9 @@ module Special
     call copy_addr(idiag_bcurlem,p_par(28)) ! int
     call copy_addr(idiag_adphibm,p_par(29)) ! int
     call copy_addr(idiag_johmrms,p_par(30)) ! int
+    call copy_addr(lapply_gamma_corr,p_par(31)) ! bool
+    call copy_addr(lphi_linear_regime,p_par(32)) ! bool
+    call copy_addr(weight_longitudinale,p_par(33))
 
 
     endsubroutine pushpars2c

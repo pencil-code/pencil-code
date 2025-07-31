@@ -228,5 +228,5 @@ Kernel calc_axion_integral(real AC_t__mod__cdata){
   reduce_sum(tleff2m    ,AC_tleff2m_sum)
 }
 #else
-Kernel calc_axion_integrand(real t){suppress_unused_warning(t)}
+Kernel calc_axion_integral(real t){suppress_unused_warning(t)}
 #endif

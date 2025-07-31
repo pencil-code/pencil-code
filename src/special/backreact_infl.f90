@@ -161,6 +161,9 @@ module Special
 !
   integer :: enum_hscript_choice = 0
   integer :: enum_vprime_choice = 0
+  integer :: enum_echarge_type = 0
+
+  real :: a2rhom_all_diagnos, a2rhopm_all_diagnos, a2rhophim_all_diagnos
   contains
 !****************************************************************************
     subroutine register_special
@@ -271,6 +274,7 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
       real :: Vpotential, Hubble_ini, infl_gam, amplphi_BD, amplee_BD, deriv_prefactor
       integer :: j
+      real :: lnascale
 !
       intent(inout) :: f
 !
@@ -425,7 +429,9 @@ module Special
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
-    subroutine get_Hscript_and_a2
+    subroutine get_Hscript_and_a2(Hscript,a2rhom_all)
+      real, intent(OUT) :: Hscript
+      real, intent(IN)  :: a2rhom_all
 !
 !  Choice of prescription for Hscript
 !
@@ -485,7 +491,7 @@ module Special
 !
       phi=f(l1:l2,m,n,iinfl_phi)
       dphi=f(l1:l2,m,n,iinfl_dphi)
-      call get_Hscript_and_a2
+      call get_Hscript_and_a2(Hscript,a2rhom_all)
 !
 !  Choice of different potentials.
 !  For the 1-cos profile, -Vprime (on the rhs) enters with -sin().
@@ -574,13 +580,28 @@ module Special
 !
     endsubroutine dspecial_dt
 !***********************************************************************
+    subroutine read_sums_from_device
+      use GPU, only: get_gpu_reduced_vars
+      real, dimension(10) :: tmp
+      call get_gpu_reduced_vars(tmp)
+      a2rhom_all    = tmp(1)
+      a2rhopm_all   = tmp(2)
+      a2rhophim_all = tmp(3)
+      if (ldiagnos) then
+        a2rhom_all_diagnos    = a2rhom_all 
+        a2rhopm_all_diagnos   = a2rhopm_all 
+        a2rhophim_all_diagnos = a2rhophim_all 
+      endif
+    endsubroutine read_sums_from_device
+!***********************************************************************
     subroutine dspecial_dt_ode
 !
       use SharedVariables, only: get_shared_variable
 !     use Magnetic, only: eta_xtdep
 !
 !
-      call get_Hscript_and_a2
+      if(lgpu) call read_sums_from_device
+      call get_Hscript_and_a2(Hscript,a2rhom_all)
       if (lflrw) then
         df_ode(iinfl_lna)=df_ode(iinfl_lna)+Hscript
       endif
@@ -607,8 +628,9 @@ module Special
     subroutine calc_ode_diagnostics_special(f_ode)
       use Diagnostics 
       
-      real, dimension(:), intent(IN) :: f_ode
-      real :: rho_chi
+      real, dimension(max_n_odevars), intent(IN) :: f_ode
+      real :: rho_chi, lnascale
+      real :: Hscript_diagnos
 
       if (lrho_chi) then
         rho_chi=f_ode(iinfl_rho_chi)
@@ -617,12 +639,14 @@ module Special
       endif
 
       if (ldiagnos) then
-        call save_name(Hscript,idiag_Hscriptm)
+        call get_Hscript_and_a2(Hscript_diagnos,a2rhom_all_diagnos)
+        if(lflrw) lnascale=f_ode(iinfl_lna)
+        call save_name(Hscript_diagnos,idiag_Hscriptm)
         call save_name(lnascale,idiag_lnam)
         call save_name(ddotam_all,idiag_ddotam)
-        call save_name(a2rhopm_all,idiag_a2rhopm)
-        call save_name(a2rhom_all,idiag_a2rhom)
-        call save_name(a2rhophim_all,idiag_a2rhophim)
+        call save_name(a2rhopm_all_diagnos,idiag_a2rhopm)
+        call save_name(a2rhom_all_diagnos,idiag_a2rhom)
+        call save_name(a2rhophim_all_diagnos,idiag_a2rhophim)
         call save_name(a2rhogphim_all,idiag_a2rhogphim)
         call save_name(rho_chi,idiag_rho_chi)
         call save_name(sigEm_all,idiag_sigEma)
@@ -812,9 +836,12 @@ module Special
       call mpireduce_sum(a2rhophim,a2rhophim_all)
       call mpireduce_sum(a2rhogphim,a2rhogphim_all)
       call mpiallreduce_sum(ddotam,ddotam_all)
+      a2rhom_all_diagnos    = a2rhom
+      a2rhopm_all_diagnos   = a2rhopm
+      a2rhophim_all_diagnos = a2rhophim
 
       if (lroot .and. lflrw) then
-              call get_Hscript_and_a2
+              call get_Hscript_and_a2(Hscript,a2rhom_all)
       endif
 !
 !  Broadcast to other processors, and each processor uses put_shared_variable
@@ -1045,6 +1072,30 @@ module Special
     call string_to_enum(enum_vprime_choice,vprime_choice)
     call copy_addr(enum_hscript_choice,p_par(1)) ! int
     call copy_addr(enum_vprime_choice,p_par(2)) ! int
+    call copy_addr(iinfl_phi,p_par(3)) ! int
+    call copy_addr(iinfl_dphi,p_par(4)) ! int
+    call copy_addr(lnoncollinear_eb,p_par(5)) ! bool
+    call copy_addr(lnoncollinear_eb_aver,p_par(6)) ! bool
+    call copy_addr(lcollinear_eb,p_par(7)) ! bool
+    call copy_addr(lcollinear_eb_aver,p_par(8)) ! bool
+    call string_to_enum(enum_echarge_type,echarge_type)
+    call copy_addr(enum_echarge_type,p_par(9)) ! int
+    call copy_addr(echarge_const,p_par(10))
+    call copy_addr(hscript0,p_par(11))
+    call copy_addr(lzerohubble,p_par(12)) ! bool
+    call copy_addr(axionmass2,p_par(13))
+    call copy_addr(lambda_axion,p_par(14))
+    call copy_addr(lconf_time,p_par(15)) ! bool
+    call copy_addr(c_light_axion,p_par(16)) 
+    call copy_addr(lem_backreact,p_par(17))
+    call copy_addr(ldt_backreact_infl,p_par(18)) ! bool
+    call copy_addr(ndiv,p_par(19)) ! int
+    call copy_addr(lrho_chi,p_par(20)) ! bool
+    call copy_addr(iinfl_rho_chi,p_par(21)) ! int
+    call copy_addr(cdt_rho_chi,p_par(22))
+    call copy_addr(lflrw,p_par(23)) ! bool
+    call copy_addr(iinfl_lna,p_par(24)) ! int
+    call copy_addr(scale_rho_chi_heqn,p_par(25))
 
     endsubroutine pushpars2c
 !********************************************************************

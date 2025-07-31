@@ -337,7 +337,7 @@ module Equ
           call copy_farray_from_GPU(f)
           if(lode .and. lgpu) then
                   if (.not. allocated(f_ode_diagnostics)) then
-                          allocate(f_ode_diagnostics(n_odevars))
+                          allocate(f_ode_diagnostics(max_n_odevars))
                   endif
                   f_ode_diagnostics = f_ode
           endif

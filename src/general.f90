@@ -8069,6 +8069,8 @@ iloop:do i=1,size(list2)
           dst = enum_itZ1ZorZitZnt_string
         case('dspecial_dt: dont solve dspecial_dt')
           dst = enum_dspecial_dtZ_dont_solve_dspecial_dt_string
+        case('erun')
+          dst = enum_erun_string
         case default
           dst = enum_unknown_string_string
           if (lroot) print*, 'No string enum for: ', src

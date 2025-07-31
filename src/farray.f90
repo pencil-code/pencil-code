@@ -11,7 +11,7 @@
 !
 module FArrayManager
 !
-  use Cparam, only: mvar,maux,mglobal,maux_com,mscratch
+  use Cparam, only: mvar,maux,mglobal,maux_com,mscratch,max_n_odevars
   use Cdata, only: nvar,naux,nscratch,nglobal,naux_com,datadir,lroot,lwrite_aux,lreloading, &
                    n_odevars,f_ode, df_ode, lode
   use HDF5_IO
@@ -425,9 +425,12 @@ module FArrayManager
 !***********************************************************************
     subroutine farray_finalize_ode
 
+      if (n_odevars > max_n_odevars) then
+          call fatal_error ("farray_finalize_ode", "can have only 100 ode variables at most!")
+      endif
       if (n_odevars>0) then
         lode=.true.
-        allocate(f_ode(n_odevars),df_ode(n_odevars))
+        allocate(f_ode(max_n_odevars),df_ode(n_odevars))
         f_ode=0.
       endif
 
