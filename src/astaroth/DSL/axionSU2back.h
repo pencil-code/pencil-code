@@ -11,6 +11,26 @@ global output real AC_tldoteff2m_sum
 global output real AC_tleff2km_sum
 global output real AC_tleff2m_sum
 
+field_order(AC_iaxi_psi__mod__special-1) Field F_AXI_PSI
+field_order(AC_iaxi_psidot__mod__special-1) Field F_AXI_PSIDOT
+field_order(AC_iaxi_tr__mod__special-1) Field F_AXI_TR
+field_order(AC_iaxi_trdot__mod__special-1) Field F_AXI_TRDOT
+
+field_order(AC_iaxi_impsi__mod__special-1) Field F_AXI_IMPSI
+field_order(AC_iaxi_impsidot__mod__special-1) Field F_AXI_IMPSIDOT
+field_order(AC_iaxi_imtr__mod__special-1) Field F_AXI_IMTR
+field_order(AC_iaxi_imtrdot__mod__special-1) Field F_AXI_IMTRDOT
+
+
+field_order(AC_iaxi_psil__mod__special-1) Field F_AXI_PSIL
+field_order(AC_iaxi_psildot__mod__special-1) Field F_AXI_PSILDOT
+field_order(AC_iaxi_tl__mod__special-1) Field F_AXI_TL
+field_order(AC_iaxi_tldot__mod__special-1) Field F_AXI_TLDOT
+field_order(AC_iaxi_impsil__mod__special-1) Field F_AXI_IMPSIL
+field_order(AC_iaxi_impsildot__mod__special-1) Field F_AXI_IMPSILDOT
+field_order(AC_iaxi_imtl__mod__special-1) Field F_AXI_IMTL
+field_order(AC_iaxi_imtldot__mod__special-1) Field F_AXI_IMTLDOT
+
 Kernel calc_axion_integral(real AC_t__mod__cdata){
   real trdoteff2m
   real trdoteff2km
