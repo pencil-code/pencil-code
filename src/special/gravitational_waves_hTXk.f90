@@ -1145,6 +1145,8 @@ module Special
 !  At the end of the run, t=1.5e18, but t/t_ini=3.11900E+13 or so.
 !
         call read_scl_factor
+        !TP: have to read here in case we use disp_current which uses Hp_target
+        call read_Hp_and_appa_target
       endif
 !
 !  Possibilty to compensate against the decaying stress in decaying turbulence.

@@ -472,6 +472,7 @@ outer:do ikz=1,nz
         a1=f(l1:l2,m1:m2,n1:n2,iux+ivec-1)*exp(f(l1:l2,m1:m2,n1:n2,ilnrho)/3.)
         !$omp end workshare
       elseif (trim(sp)=='v') then
+        if (ivx==0) call fatal_error('power','ivx=0 is not ok')
         !$omp workshare
         a1=f(l1:l2,m1:m2,n1:n2,ivx+ivec-1)
         !$omp end workshare
@@ -480,7 +481,14 @@ outer:do ikz=1,nz
         do n_loc=n1,n2
         do m_loc=m1,m2
           m=m_loc;n=n_loc
-          call curli(f,iuu,a1(:,m-nghost,n-nghost),ivec)
+!
+!  Case distinction, use curl of v in, e.g., the conservative case.
+!
+          if (ivx==0) then
+            call curli(f,iuu,a1(:,m-nghost,n-nghost),ivec)
+          else
+            call curli(f,ivv,a1(:,m-nghost,n-nghost),ivec)
+          endif
         enddo
         enddo
       elseif (trim(sp)=='b') then
@@ -827,7 +835,14 @@ outer:do ikz=1,nz
       do n_loc=n1,n2
       do m_loc=m1,m2
         m=m_loc;n=n_loc
-        call curli(f,iuu,ar(:,m-nghost,n-nghost),ivec)
+!
+!  Case distinction, use curl of v in, e.g., the conservative case.
+!
+        if (ivx==0) then
+          call curli(f,iuu,ar(:,m-nghost,n-nghost),ivec)
+        else
+          call curli(f,ivv,ar(:,m-nghost,n-nghost),ivec)
+        endif
       enddo
       enddo
     else
