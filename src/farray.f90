@@ -425,6 +425,11 @@ module FArrayManager
 !***********************************************************************
     subroutine farray_finalize_ode
 
+      !TP: We unfortunately seem have to know the dimension of f_ode
+      !    for the dispatching functionality of special.f90 to work for calc_ode_diagnostics_special
+      !    (if using (:) dimensions I get segfaults).
+      !    Lying to the compiler that f_ode has dimension of max_n_odevars in
+      !    the appropriate funcs could work but that seems like a more major sin
       if (n_odevars > max_n_odevars) then
           call fatal_error ("farray_finalize_ode", "can have only 100 ode variables at most!")
       endif
