@@ -47,6 +47,7 @@
   public :: calc_diagnostics_special
   public :: calc_ode_diagnostics_special
   public :: pushpars2c
+  public :: prep_rhs_special
 
   interface input_persistent_special
      module procedure input_persist_special_id

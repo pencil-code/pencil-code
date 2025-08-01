@@ -100,7 +100,7 @@ module Special
   real :: edotbm, edotbm_all, e2m, e2m_all, b2m, b2m_all, a2rhophim, a2rhophim_all
   real :: sigE1m_all_nonaver, sigB1m_all_nonaver,sigEm_all,sigBm_all
   real :: a2rhogphim, a2rhogphim_all
-  real :: lnascale, a2, a21, Hscript
+  real :: a2, a21, Hscript
   real :: Hscript0=0., scale_rho_chi_Heqn=1., rho_chi_init=0., cdt_rho_chi=1.
   real :: amplee_BD_prefactor=0., deriv_prefactor_ee=-1.
   real :: echarge=.0, echarge_const=.303
@@ -439,6 +439,7 @@ module Special
       select case (Hscript_choice)
         case ('default')
           Hscript=sqrt((8.*pi/3.)*a2rhom_all)
+          if (lgpu) call get_a2
         case ('set')
           Hscript=Hscript0
           a2=1.
@@ -490,13 +491,8 @@ module Special
 !
       if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dspecial_dt'
 !
-      if (lgpu) then
-              call get_echarge
-              call get_sigE_and_B
-      endif
       phi=f(l1:l2,m,n,iinfl_phi)
       dphi=f(l1:l2,m,n,iinfl_dphi)
-      call get_Hscript_and_a2(Hscript,a2rhom_all)
 !
 !  Choice of different potentials.
 !  For the 1-cos profile, -Vprime (on the rhs) enters with -sin().
@@ -849,6 +845,25 @@ module Special
       endif
     endsubroutine get_sigE_and_B
 !***********************************************************************
+    subroutine prep_rhs_special
+!
+!  1-aug-25/TP: coded
+!
+      call get_Hscript_and_a2(Hscript,a2rhom_all)
+      call get_echarge
+      call get_sigE_and_B
+    endsubroutine prep_rhs_special
+!***********************************************************************
+    subroutine get_a2
+      real :: lnascale
+      if(lflrw) then
+        lnascale=f_ode(iinfl_lna)
+        ascale=exp(lnascale)
+      endif
+      a2=ascale**2
+      a21=1./a2
+    endsubroutine get_a2
+!***********************************************************************
     subroutine special_after_boundary(f)
 !
 !  Possibility to modify the f array after the boundaries are
@@ -867,12 +882,7 @@ module Special
 !  This needs to be done on all processors, because otherwise ascale
 !  is not known on all processors.
 !
-      if(lflrw) then
-        lnascale=f_ode(iinfl_lna)
-        ascale=exp(lnascale)
-      endif
-      a2=ascale**2
-      a21=1./a2
+      call get_a2
       call mpibcast_real(a2)
       call mpibcast_real(a21)
 !
@@ -940,8 +950,6 @@ module Special
       call mpibcast_real(e2m_all)
       call mpibcast_real(b2m_all)
 
-      call get_echarge
-      call get_sigE_and_B
 
     endsubroutine special_after_boundary
 !***********************************************************************
