@@ -836,9 +836,9 @@ module Special
       call mpireduce_sum(a2rhophim,a2rhophim_all)
       call mpireduce_sum(a2rhogphim,a2rhogphim_all)
       call mpiallreduce_sum(ddotam,ddotam_all)
-      a2rhom_all_diagnos    = a2rhom
-      a2rhopm_all_diagnos   = a2rhopm
-      a2rhophim_all_diagnos = a2rhophim
+      a2rhom_all_diagnos    = a2rhom_all
+      a2rhopm_all_diagnos   = a2rhopm_all
+      a2rhophim_all_diagnos = a2rhophim_all
 
       if (lroot .and. lflrw) then
               call get_Hscript_and_a2(Hscript,a2rhom_all)
