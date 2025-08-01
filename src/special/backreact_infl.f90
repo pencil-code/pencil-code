@@ -98,7 +98,7 @@ module Special
   real :: relhel_phi=0.
   real :: ddotam, a2rhopm, a2rhopm_all, a2rhom, a2rhom_all
   real :: edotbm, edotbm_all, e2m, e2m_all, b2m, b2m_all, a2rhophim, a2rhophim_all
-  real :: sigE1m, sigB1m, sigE1m_all, sigB1m_all, sigEm_all, sigBm_all
+  real :: sigE1m_all_nonaver, sigB1m_all_nonaver,sigEm_all,sigBm_all
   real :: a2rhogphim, a2rhogphim_all
   real :: lnascale, a2, a21, Hscript
   real :: Hscript0=0., scale_rho_chi_Heqn=1., rho_chi_init=0., cdt_rho_chi=1.
@@ -164,6 +164,7 @@ module Special
   integer :: enum_echarge_type = 0
 
   real :: a2rhom_all_diagnos, a2rhopm_all_diagnos, a2rhophim_all_diagnos
+  real :: a2rhogphim_all_diagnos
   contains
 !****************************************************************************
     subroutine register_special
@@ -489,6 +490,10 @@ module Special
 !
       if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dspecial_dt'
 !
+      if (lgpu) then
+              call get_echarge
+              call get_sigE_and_B
+      endif
       phi=f(l1:l2,m,n,iinfl_phi)
       dphi=f(l1:l2,m,n,iinfl_dphi)
       call get_Hscript_and_a2(Hscript,a2rhom_all)
@@ -584,14 +589,20 @@ module Special
       use GPU, only: get_gpu_reduced_vars
       real, dimension(10) :: tmp
       call get_gpu_reduced_vars(tmp)
-      a2rhom_all    = tmp(1)
-      a2rhopm_all   = tmp(2)
-      a2rhophim_all = tmp(3)
+      a2rhom_all     = tmp(1)
+      a2rhopm_all    = tmp(2)
+      a2rhophim_all  = tmp(3)
+      a2rhogphim_all = tmp(4)
       if (ldiagnos) then
-        a2rhom_all_diagnos    = a2rhom_all 
-        a2rhopm_all_diagnos   = a2rhopm_all 
-        a2rhophim_all_diagnos = a2rhophim_all 
+        a2rhom_all_diagnos     = a2rhom_all 
+        a2rhopm_all_diagnos    = a2rhopm_all 
+        a2rhophim_all_diagnos  = a2rhophim_all 
+        a2rhogphim_all_diagnos = a2rhogphim_all
       endif
+
+      call get_echarge
+      call get_sigE_and_B
+
     endsubroutine read_sums_from_device
 !***********************************************************************
     subroutine dspecial_dt_ode
@@ -647,7 +658,7 @@ module Special
         call save_name(a2rhopm_all_diagnos,idiag_a2rhopm)
         call save_name(a2rhom_all_diagnos,idiag_a2rhom)
         call save_name(a2rhophim_all_diagnos,idiag_a2rhophim)
-        call save_name(a2rhogphim_all,idiag_a2rhogphim)
+        call save_name(a2rhogphim_all_diagnos,idiag_a2rhogphim)
         call save_name(rho_chi,idiag_rho_chi)
         call save_name(sigEm_all,idiag_sigEma)
         call save_name(sigBm_all,idiag_sigBma)
@@ -760,99 +771,12 @@ module Special
 !!
     endsubroutine rprint_special
 !***********************************************************************
-    subroutine special_after_boundary(f)
-!
-!  Possibility to modify the f array after the boundaries are
-!  communicated.
-!
-!  06-jul-06/tony: coded
-!
-      use Mpicomm, only: mpireduce_sum, mpiallreduce_sum, mpibcast_real
-      use Sub, only: dot2_mn, grad, curl, dot_mn
-      
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real :: boost, gam_EB, eprime, bprime, jprime1
-      real :: energy_scale, mass_suppression_fact
-!
-!  If requested, calculate here <dphi**2+gphi**2+(4./3.)*(E^2+B^2)/a^2>.
-!  This needs to be done on all processors, because otherwise ascale
-!  is not known on all processors.
-!
-      if(lflrw) then
-        lnascale=f_ode(iinfl_lna)
-        ascale=exp(lnascale)
-      endif
-      a2=ascale**2
-      a21=1./a2
-      call mpibcast_real(a2)
-      call mpibcast_real(a21)
-!
-!  In the following loop, go through all penciles and add up results to get e2m, etc.
-!
-      ddotam=0.; a2rhopm=0.; a2rhom=0.; e2m=0; b2m=0; edotbm=0; a2rhophim=0.; a2rhogphim=0.
-      sigE1m=0.; sigB1m=0.
-!
-!  In the following, sum over all mn pencils.
-!
-      do n=n1,n2
-      do m=m1,m2
-        call prep_ode_right(f)
-      enddo
-      enddo
-!
-      a2rhopm=a2rhopm/nwgrid
-      a2rhom=a2rhom/nwgrid
-      a2rhophim=a2rhophim/nwgrid
-      a2rhogphim=a2rhogphim/nwgrid
-      ddotam=(four_pi_over_three/nwgrid)*ddotam
-      if (lphi_hom .or. lrho_chi .or. lnoncollinear_EB .or. lnoncollinear_EB_aver) then
-        edotbm=edotbm/nwgrid
-        call mpiallreduce_sum(edotbm,edotbm_all)
-      endif
-!
-!  Schwinger conductivities:
-!
-      if (lrho_chi .or. lnoncollinear_EB .or. lnoncollinear_EB_aver &
-        .or. lcollinear_EB .or. lcollinear_EB_aver) then
-        e2m=e2m/nwgrid
-        b2m=b2m/nwgrid
-        call mpiallreduce_sum(e2m,e2m_all)
-        call mpiallreduce_sum(b2m,b2m_all)
-!
-!  The following is not done for averages. This is because sigE1m and sigB1m
-!  are calculated in their own section further below in the same routine.
-!
-        if (lrho_chi .or. lnoncollinear_EB .or. lcollinear_EB) then
-          sigE1m=sigE1m/nwgrid
-          sigB1m=sigB1m/nwgrid
-          call mpiallreduce_sum(sigE1m,sigE1m_all)
-          call mpiallreduce_sum(sigB1m,sigB1m_all)
-        endif
-      endif
-!
-      call mpireduce_sum(a2rhopm,a2rhopm_all)
-      call mpiallreduce_sum(a2rhom,a2rhom_all)
-      call mpireduce_sum(a2rhophim,a2rhophim_all)
-      call mpireduce_sum(a2rhogphim,a2rhogphim_all)
-      call mpiallreduce_sum(ddotam,ddotam_all)
-      a2rhom_all_diagnos    = a2rhom_all
-      a2rhopm_all_diagnos   = a2rhopm_all
-      a2rhophim_all_diagnos = a2rhophim_all
-
-      if (lroot .and. lflrw) then
-              call get_Hscript_and_a2(Hscript,a2rhom_all)
-      endif
-!
-!  Broadcast to other processors, and each processor uses put_shared_variable
-!  to get the values to other subroutines.
-!
-      call mpibcast_real(Hscript)
-      call mpibcast_real(e2m_all)
-      call mpibcast_real(b2m_all)
+    subroutine get_echarge
+      real :: energy_scale
 !
 !  Choice of echarge prescription.
 !
+    
       if (lnoncollinear_EB .or. lnoncollinear_EB_aver &
         .or. lcollinear_EB .or. lcollinear_EB_aver) then
         select case (echarge_type)
@@ -865,6 +789,12 @@ module Special
       else
         echarge=echarge_const
       endif
+    endsubroutine get_echarge
+!***********************************************************************
+    subroutine get_sigE_and_B
+      real :: boost, gam_EB, eprime, bprime, jprime1
+      real :: mass_suppression_fact
+      real :: sigE1m_all,sigB1m_all
 !
 !  Compute sigE and sigB from sigE1 and sigB1.
 !  The mean conductivities are also needed in the local cases,
@@ -907,6 +837,9 @@ module Special
             mass_suppression_fact=exp(-pi*mass_chi**2/(Chypercharge**onethird*echarge*eprime))
             sigE1m_all=sigE1m_all*mass_suppression_fact
           endif
+        else
+          sigE1m_all = sigE1m_all_nonaver
+          sigB1m_all = sigB1m_all_nonaver
         endif
 !
 !  Apply Chypercharge, echarge, and Hscript universally for aver and nonaver.
@@ -914,14 +847,110 @@ module Special
         sigEm_all=sigE_prefactor*Chypercharge*echarge**3*sigE1m_all/Hscript
         sigBm_all=sigB_prefactor*Chypercharge*echarge**3*sigB1m_all/Hscript
       endif
+    endsubroutine get_sigE_and_B
+!***********************************************************************
+    subroutine special_after_boundary(f)
 !
+!  Possibility to modify the f array after the boundaries are
+!  communicated.
+!
+!  06-jul-06/tony: coded
+!
+      use Mpicomm, only: mpireduce_sum, mpiallreduce_sum, mpibcast_real
+      use Sub, only: dot2_mn, grad, curl, dot_mn
+      
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real :: sigE1m,sigB1m
+!
+!  If requested, calculate here <dphi**2+gphi**2+(4./3.)*(E^2+B^2)/a^2>.
+!  This needs to be done on all processors, because otherwise ascale
+!  is not known on all processors.
+!
+      if(lflrw) then
+        lnascale=f_ode(iinfl_lna)
+        ascale=exp(lnascale)
+      endif
+      a2=ascale**2
+      a21=1./a2
+      call mpibcast_real(a2)
+      call mpibcast_real(a21)
+!
+!  In the following loop, go through all penciles and add up results to get e2m, etc.
+!
+      ddotam=0.; a2rhopm=0.; a2rhom=0.; e2m=0; b2m=0; edotbm=0; a2rhophim=0.; a2rhogphim=0.
+      sigE1m=0.; sigB1m=0.
+!
+!  In the following, sum over all mn pencils.
+!
+      do n=n1,n2
+      do m=m1,m2
+        call prep_ode_right(f,sigE1m,sigB1m)
+      enddo
+      enddo
+!
+      a2rhopm=a2rhopm/nwgrid
+      a2rhom=a2rhom/nwgrid
+      a2rhophim=a2rhophim/nwgrid
+      a2rhogphim=a2rhogphim/nwgrid
+      ddotam=(four_pi_over_three/nwgrid)*ddotam
+      if (lphi_hom .or. lrho_chi .or. lnoncollinear_EB .or. lnoncollinear_EB_aver) then
+        edotbm=edotbm/nwgrid
+        call mpiallreduce_sum(edotbm,edotbm_all)
+      endif
+!
+!  Schwinger conductivities:
+!
+      if (lrho_chi .or. lnoncollinear_EB .or. lnoncollinear_EB_aver &
+        .or. lcollinear_EB .or. lcollinear_EB_aver) then
+        e2m=e2m/nwgrid
+        b2m=b2m/nwgrid
+        call mpiallreduce_sum(e2m,e2m_all)
+        call mpiallreduce_sum(b2m,b2m_all)
+!
+!  The following is not done for averages. This is because sigE1m and sigB1m
+!  are calculated in their own section further below in the same routine.
+!
+        if (lrho_chi .or. lnoncollinear_EB .or. lcollinear_EB) then
+          sigE1m=sigE1m/nwgrid
+          sigB1m=sigB1m/nwgrid
+          call mpiallreduce_sum(sigE1m,sigE1m_all_nonaver)
+          call mpiallreduce_sum(sigB1m,sigB1m_all_nonaver)
+        endif
+      endif
+!
+      call mpireduce_sum(a2rhopm,a2rhopm_all)
+      call mpiallreduce_sum(a2rhom,a2rhom_all)
+      call mpireduce_sum(a2rhophim,a2rhophim_all)
+      call mpireduce_sum(a2rhogphim,a2rhogphim_all)
+      call mpiallreduce_sum(ddotam,ddotam_all)
+      a2rhom_all_diagnos     = a2rhom_all
+      a2rhopm_all_diagnos    = a2rhopm_all
+      a2rhophim_all_diagnos  = a2rhophim_all
+      a2rhogphim_all_diagnos = a2rhogphim_all
+
+      if (lroot .and. lflrw) then
+              call get_Hscript_and_a2(Hscript,a2rhom_all)
+      endif
+!
+!  Broadcast to other processors, and each processor uses put_shared_variable
+!  to get the values to other subroutines.
+!
+      call mpibcast_real(Hscript)
+      call mpibcast_real(e2m_all)
+      call mpibcast_real(b2m_all)
+
+      call get_echarge
+      call get_sigE_and_B
+
     endsubroutine special_after_boundary
 !***********************************************************************
-    subroutine prep_ode_right(f)
+    subroutine prep_ode_right(f,sigE1m,sigB1m)
 !
       use Sub, only: dot2_mn, grad, curl, dot_mn
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, intent(INOUT) :: sigE1m,sigB1m
       real, dimension (nx,3) :: el, bb, gphi
       real, dimension (nx) :: e2, b2, gphi2, dphi, a2rhop, a2rho
       real, dimension (nx) :: ddota, phi, Vpotential, edotb, sigE1, sigB1
