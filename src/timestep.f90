@@ -307,7 +307,7 @@ module Timestep
 
       use Mpicomm, only: mpibcast
 
-      if (lroot) f_ode = f_ode + dt_beta_ts(itsub)*df_ode
+      if (lroot) f_ode(1:n_odevars) = f_ode(1:n_odevars) + dt_beta_ts(itsub)*df_ode
       call mpibcast(f_ode,n_odevars)
 
     endsubroutine ode_timestep_second
