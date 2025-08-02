@@ -40,7 +40,7 @@ module Forcing
   real :: crosshel=0.
   real :: radius_ff=0., k1_ff=1., kx_ff=1., ky_ff=1., kz_ff=1., z_center=0.
   real :: slope_ff=0., work_ff=0., omega_ff=0., omega_double_ff=0., n_equator_ff=1.
-  real :: ampl_double_ff=0.
+  real :: ampl_double_ff=0., zff_height=1.
   real :: tforce_stop=impossible,tforce_stop2=impossible
   real :: tforce_start=0.,tforce_start2=0.
   real :: wff_ampl=0.,  xff_ampl=0.,  yff_ampl=0.,  zff_ampl=0.
@@ -150,7 +150,7 @@ module Forcing
        location_fixed, lrandom_location, nlocation, &
        lwrite_gausspot_to_file,lwrite_gausspot_to_file_always, &
        wff_ampl, xff_ampl, yff_ampl, zff_ampl, zff_hel, &
-       wff2_ampl, xff2_ampl,yff2_ampl, zff2_ampl, &
+       wff2_ampl, xff2_ampl,yff2_ampl, zff2_ampl, zff_height, &
        lhydro_forcing, lneutral_forcing, lmagnetic_forcing, &
        ltestfield_forcing, ltestflow_forcing, &
        lcrosshel_forcing, lxxcorr_forcing, lxycorr_forcing, &
@@ -540,6 +540,14 @@ module Forcing
         profz_ampl=exp(-(z/width_ff)**2)
         profz_hel=1.
 !
+!  Same as above, but with 1/2 factor in Gaussian
+!
+      elseif (iforce_profile=='exp(-z^2/2H^2)') then
+        profx_ampl=1.; profx_hel=1.
+        profy_ampl=1.; profy_hel=1.
+        profz_ampl=exp(-.5*(z/width_ff)**2)
+        profz_hel=1.
+!
       elseif (iforce_profile=='xybox') then
         profx_ampl=1.; profx_hel=1.
         profy_ampl=1.; profy_hel=1.
@@ -746,7 +754,7 @@ module Forcing
         enddo
         profz_ampl=1.; profz_hel=1.
 !
-!  Just a change in intensity in the z direction.
+!  Cosinosoidal change in intensity in the z direction.
 !  Note that .5+.5*cos(z) = cos^2(z/2).
 !
       elseif (iforce_profile=='intensity') then
@@ -754,7 +762,11 @@ module Forcing
         profy_ampl=1.; profy_hel=1.
         profz_hel=1.
         do n=1,mz
-          profz_ampl(n)=.5+.5*cos(z(n))
+          if (abs(z(n)/zff_height) .le. pi) then
+            profz_ampl(n)=.5+.5*cos(z(n)/zff_height)
+          else
+            profz_ampl(n)=.0
+          endif
         enddo
 !
 !  A steeper change in intensity in the z direction using .5+.5*tanh(5*cos(z))
@@ -764,7 +776,11 @@ module Forcing
         profy_ampl=1.; profy_hel=1.
         profz_hel=1.
         do n=1,mz
-          profz_ampl(n)=.5+.5*tanh(5.*cos(z(n)))
+          if (abs(z(n)/zff_height) .le. pi) then
+            profz_ampl(n)=.5+.5*tanh(5.*cos(z(n)/zff_height))
+          else
+            profz_ampl(n)=.0
+          endif
         enddo
 !
 !  Galactic profile both for intensity and helicity

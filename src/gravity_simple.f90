@@ -658,6 +658,15 @@ module Gravity
             call fatal_error('initialize-gravity','set cs0hs and H0hs in grav_init_pars')
         gravz_zpencil = -z*(cs0hs/H0hs)**2/sqrt(1 + (z/H0hs)**2)
 !
+!  New Galactic hydrostatic equilibrium for which we also have the potential.
+!
+      case ('Galactic-hs2')
+        if (lroot) print*,'modified Galactic hydrostatic equilibrium gravity profile'
+        if (lroot.and.(nu_epicycle2==0.or.H0hs==0)) &
+            call fatal_error('initialize-gravity','set cs0hs and H0hs in grav_init_pars')
+        gravz_zpencil= -nu_epicycle2*z   /(1.+(z/H0hs)**2)**1.5*(1.+.5*(z/H0hs)**2)
+        potz_zpencil=.5*nu_epicycle2*z**2/(1.+(z/H0hs)**2)**0.5
+!
       case ('reduced_top')
         if (lroot) print*,'initialize_gravity: reduced, gravz=',gravz
         if (zgrav==impossible.and.lroot) print*,'zgrav is not set!'
