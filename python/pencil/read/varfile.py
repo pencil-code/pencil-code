@@ -553,7 +553,7 @@ class DataCube(object):
                 if not run2D:
                     f_loc = (infile.read_record(dtype=read_precision)).astype(precision)
                     f_loc = f_loc.reshape((-1, mzloc, myloc, mxloc))
-                    print(proc,f_loc.shape,f_loc.dtype)
+                #    print(proc,f_loc.shape,f_loc.dtype)
                 else:
                     if dim.ny == 1:
                         f_loc = (infile.read_record(dtype=read_precision)).astype(precision)
