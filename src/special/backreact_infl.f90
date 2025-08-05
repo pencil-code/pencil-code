@@ -98,9 +98,9 @@ module Special
   real :: relhel_phi=0.
   real :: ddotam, a2rhopm, a2rhopm_all, a2rhom, a2rhom_all
   real :: edotbm, edotbm_all, e2m, e2m_all, b2m, b2m_all, a2rhophim, a2rhophim_all
-  real :: sigE1m_all_nonaver, sigB1m_all_nonaver,sigEm_all,sigBm_all
+  real :: sigE1m_all_nonaver, sigB1m_all_nonaver,sigEm_all,sigBm_all,sigEm_all_diagnos,sigBm_all_diagnos
   real :: a2rhogphim, a2rhogphim_all
-  real :: lnascale, a2, a21, Hscript
+  real :: a2, a21, Hscript
   real :: Hscript0=0., scale_rho_chi_Heqn=1., rho_chi_init=0., cdt_rho_chi=1.
   real :: amplee_BD_prefactor=0., deriv_prefactor_ee=-1.
   real :: echarge=.0, echarge_const=.303
@@ -164,7 +164,7 @@ module Special
   integer :: enum_echarge_type = 0
 
   real :: a2rhom_all_diagnos, a2rhopm_all_diagnos, a2rhophim_all_diagnos
-  real :: a2rhogphim_all_diagnos
+  real :: a2rhogphim_all_diagnos, ddotam_all_diagnos
   contains
 !****************************************************************************
     subroutine register_special
@@ -439,6 +439,7 @@ module Special
       select case (Hscript_choice)
         case ('default')
           Hscript=sqrt((8.*pi/3.)*a2rhom_all)
+          if (lgpu) call get_a2
         case ('set')
           Hscript=Hscript0
           a2=1.
@@ -593,15 +594,24 @@ module Special
       a2rhopm_all    = tmp(2)
       a2rhophim_all  = tmp(3)
       a2rhogphim_all = tmp(4)
-      if (ldiagnos) then
+      sigE1m_all_nonaver = tmp(5)
+      sigB1m_all_nonaver = tmp(6)
+      ddotam_all         = tmp(7)
+      e2m_all            = tmp(8)
+      b2m_all            = tmp(9)
+      call get_Hscript_and_a2(Hscript,a2rhom_all)
+      call get_echarge
+      call get_sigE_and_B
+      if (lfirst .and. lout) then
         a2rhom_all_diagnos     = a2rhom_all 
         a2rhopm_all_diagnos    = a2rhopm_all 
         a2rhophim_all_diagnos  = a2rhophim_all 
         a2rhogphim_all_diagnos = a2rhogphim_all
+        ddotam_all_diagnos     = ddotam_all
+        sigEm_all_diagnos      = sigEm_all
+        sigBm_all_diagnos      = sigBm_all
       endif
 
-      call get_echarge
-      call get_sigE_and_B
 
     endsubroutine read_sums_from_device
 !***********************************************************************
@@ -633,7 +643,11 @@ module Special
 !  Diagnostics
 !
 !
-    if (.not. lmultithread) call calc_ode_diagnostics_special(f_ode)
+    if (.not. lmultithread) then
+            sigEm_all_diagnos = sigEm_all
+            sigBm_all_diagnos = sigBm_all
+            call calc_ode_diagnostics_special(f_ode)
+    endif
     endsubroutine dspecial_dt_ode
 !***********************************************************************
     subroutine calc_ode_diagnostics_special(f_ode)
@@ -654,14 +668,14 @@ module Special
         if(lflrw) lnascale=f_ode(iinfl_lna)
         call save_name(Hscript_diagnos,idiag_Hscriptm)
         call save_name(lnascale,idiag_lnam)
-        call save_name(ddotam_all,idiag_ddotam)
+        call save_name(ddotam_all_diagnos,idiag_ddotam)
         call save_name(a2rhopm_all_diagnos,idiag_a2rhopm)
         call save_name(a2rhom_all_diagnos,idiag_a2rhom)
         call save_name(a2rhophim_all_diagnos,idiag_a2rhophim)
         call save_name(a2rhogphim_all_diagnos,idiag_a2rhogphim)
         call save_name(rho_chi,idiag_rho_chi)
-        call save_name(sigEm_all,idiag_sigEma)
-        call save_name(sigBm_all,idiag_sigBma)
+        call save_name(sigEm_all_diagnos,idiag_sigEma)
+        call save_name(sigBm_all_diagnos,idiag_sigBma)
         if (lnoncollinear_EB_aver .or. lcollinear_EB_aver) &
           call save_name(count_eb0_all,idiag_count_eb0a)
       endif
@@ -849,6 +863,16 @@ module Special
       endif
     endsubroutine get_sigE_and_B
 !***********************************************************************
+    subroutine get_a2
+      real :: lnascale
+      if(lflrw) then
+        lnascale=f_ode(iinfl_lna)
+        ascale=exp(lnascale)
+      endif
+      a2=ascale**2
+      a21=1./a2
+    endsubroutine get_a2
+!***********************************************************************
     subroutine special_after_boundary(f)
 !
 !  Possibility to modify the f array after the boundaries are
@@ -867,12 +891,7 @@ module Special
 !  This needs to be done on all processors, because otherwise ascale
 !  is not known on all processors.
 !
-      if(lflrw) then
-        lnascale=f_ode(iinfl_lna)
-        ascale=exp(lnascale)
-      endif
-      a2=ascale**2
-      a21=1./a2
+      call get_a2
       call mpibcast_real(a2)
       call mpibcast_real(a21)
 !
@@ -928,6 +947,7 @@ module Special
       a2rhopm_all_diagnos    = a2rhopm_all
       a2rhophim_all_diagnos  = a2rhophim_all
       a2rhogphim_all_diagnos = a2rhogphim_all
+      ddotam_all_diagnos     = ddotam_all
 
       if (lroot .and. lflrw) then
               call get_Hscript_and_a2(Hscript,a2rhom_all)

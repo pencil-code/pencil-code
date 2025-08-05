@@ -2052,10 +2052,16 @@ extern "C" void getGPUReducedVars(AcReal* dst)
 	dst[8] = acDeviceGetOutput(acGridGetDevice(), AC_tleff2km_sum);
 	dst[9] = acDeviceGetOutput(acGridGetDevice(), AC_tleff2m_sum);
 #endif
-#if BACKREACT_INFL
+#if LBACKREACT_INFL
 	dst[0] = acDeviceGetOutput(acGridGetDevice(), AC_a2rhom_all__mod__backreact_infl);
 	dst[1] = acDeviceGetOutput(acGridGetDevice(), AC_a2rhopm_all__mod__backreact_infl);
 	dst[2] = acDeviceGetOutput(acGridGetDevice(), AC_a2rhophim_all__mod__backreact_infl);
+	dst[3] = acDeviceGetOutput(acGridGetDevice(), AC_a2rhogphim_all__mod__backreact_infl);
+	dst[4] = acDeviceGetOutput(acGridGetDevice(), AC_sige1m_all_nonaver__mod__backreact_infl);
+	dst[5] = acDeviceGetOutput(acGridGetDevice(), AC_sigb1m_all_nonaver__mod__backreact_infl);
+	dst[6] = acDeviceGetOutput(acGridGetDevice(), AC_ddotam_all__mod__backreact_infl);
+	dst[7] = acDeviceGetOutput(acGridGetDevice(), AC_e2m_all__mod__backreact_infl);
+	dst[8] = acDeviceGetOutput(acGridGetDevice(), AC_b2m_all__mod__backreact_infl);
 #endif
 }
 /***********************************************************************************************/

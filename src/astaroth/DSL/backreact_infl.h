@@ -1,12 +1,14 @@
-#if BACKREACT_INFL
+#if LBACKREACT_INFL
 output global real AC_e2m_all__mod__backreact_infl
 output global real AC_b2m_all__mod__backreact_infl
-output global real AC_sigem_all__mod__backreact_infl
-output global real AC_sigbm_all__mod__backreact_infl
+output global real AC_sige1m_all_nonaver__mod__backreact_infl
+output global real AC_sigb1m_all_nonaver__mod__backreact_infl
 output global real AC_a2rhom_all__mod__backreact_infl
 output global real AC_a2rhopm_all__mod__backreact_infl
 output global real AC_a2rhophim_all__mod__backreact_infl
+output global real AC_a2rhogphim_all__mod__backreact_infl
 output global real AC_edotbm_all__mod__backreact_infl
+output global real AC_ddotam_all__mod__backreact_infl
 
 field_order(AC_iinfl_phi__mod__backreact_infl-1)  Field F_INFL_PHI
 field_order(AC_iinfl_dphi__mod__backreact_infl-1) Field F_INFL_DPHI
@@ -53,6 +55,7 @@ Kernel prep_ode_right(){
     gphi = gradient(Field(AC_iinfl_phi__mod__backreact_infl-1))
     gphi2 = dot(gphi,gphi)
     a2rhogphim__mod__backreact_infl=0.5*gphi2
+    reduce_sum(a2rhogphim__mod__backreact_infl/nwgrid,AC_a2rhogphim_all__mod__backreact_infl)
     a2rhop=(dphi*dphi)+AC_onethird__mod__cparam*gphi2
     a2rho=0.5*((dphi*dphi)+gphi2)
     a2rhophim__mod__backreact_infl=a2rho
@@ -88,13 +91,13 @@ Kernel prep_ode_right(){
   else {
     ddota=-(dphi*dphi)-gphi2+4.*AC_a2__mod__backreact_infl*vpotential
   }
-  real ddotam__mod__backreact_infl=ddota
+  reduce_sum(ddota*(four_pi_over_three/nwgrid),AC_ddotam_all__mod__backreact_infl)
   a2rho=a2rho+AC_a2__mod__backreact_infl*vpotential
   a2rhom__mod__backreact_infl=a2rho
   if (AC_lmagnetic__mod__cparam  &&  AC_lem_backreact__mod__backreact_infl) {
     if (AC_lphi_hom__mod__disp_current  ||  AC_lrho_chi__mod__backreact_infl  ||  AC_lnoncollinear_eb__mod__disp_current  ||  AC_lnoncollinear_eb_aver__mod__disp_current   ||  AC_lcollinear_eb__mod__disp_current  ||  AC_lcollinear_eb_aver__mod__disp_current) {
       edotb = dot(el,bb)
-      edotbm__mod__backreact_infl=edotb
+      reduce_sum(edotb/nwgrid,AC_edotbm_all__mod__backreact_infl)
       if (AC_lnoncollinear_eb__mod__disp_current) {
         boost=sqrt(((e2-b2)*(e2-b2))+4.*(edotb*edotb))
         gam_eb=AC_sqrt21__mod__cparam*sqrt(1.+(e2+b2)/boost)
@@ -149,7 +152,11 @@ Kernel prep_ode_right(){
       if ((AC_lnoncollinear_eb__mod__disp_current  ||  AC_lcollinear_eb__mod__disp_current)) {
         sige1m__mod__backreact_infl=sige1
         sigb1m__mod__backreact_infl=sigb1
+	reduce_sum(sige1/nwgrid,AC_sige1m_all_nonaver__mod__backreact_infl)
+	reduce_sum(sigb1/nwgrid,AC_sigb1m_all_nonaver__mod__backreact_infl)
       }
+      reduce_sum(e2m__mod__backreact_infl/nwgrid,AC_e2m_all__mod__backreact_infl)
+      reduce_sum(b2m__mod__backreact_infl/nwgrid,AC_b2m_all__mod__backreact_infl)
     }
   }
   a2rhom__mod__backreact_infl    /= nwgrid

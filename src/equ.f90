@@ -51,11 +51,9 @@ module Equ
       use Chiral
       use Chemistry
       use Density
-      use Dustdensity, only: dustdensity_after_boundary
       use Diagnostics
       use Energy
       use EquationOfState
-      use Forcing, only: forcing_after_boundary
 !
 ! To check ghost cell consistency, please uncomment the following line:
 !     use Ghost_check, only: check_ghosts_consistency
@@ -66,9 +64,7 @@ module Equ
       use Magnetic
       use Hypervisc_strict, only: hyperviscosity_strict
       use Hyperresi_strict, only: hyperresistivity_strict
-      use NeutralDensity, only: neutraldensity_after_boundary
       use NSCBC
-      use Magnetic_meanfield, only: meanfield_after_boundary
       use Particles_main
       use Poisson
       use Pscalar
@@ -79,13 +75,10 @@ module Equ
       use Shear
       use Shock, only: calc_shock_profile_simple
       use Solid_Cells, only: update_solid_cells, dsolid_dt_integrate
-      use Special, only: special_after_boundary
       use Sub
       use Testfield
       use Testflow
       use Testscalar
-      use Training, only: training_after_boundary
-      use Viscosity, only: viscosity_after_boundary
       use Grid, only: coarsegrid_interp
 !$    use OMP_lib
       use Mpicomm
@@ -302,30 +295,7 @@ module Equ
         call timing('pde','before "after_boundary" calls')
 !
         if (.not. lgpu) then
-          if (lhydro)          call hydro_after_boundary(f)
-          if (lviscosity)      call viscosity_after_boundary(f)
-          if (lmagnetic)       call magnetic_after_boundary(f)
-          if (ldustdensity)    call dustdensity_after_boundary(f)
-          if (lenergy)         call energy_after_boundary(f)
-          if (lgrav)           call gravity_after_boundary(f)
-          if (lforcing)        call forcing_after_boundary(f)
-          if (lpolymer)        call calc_polymer_after_boundary(f)
-          if (ltestscalar)     call testscalar_after_boundary(f)
-          if (ltestfield)      call testfield_after_boundary(f)
-!AB: quick fix
-          !if (ltestfield)      call testfield_after_boundary(f,p)
-          if (ldensity)        call density_after_boundary(f)
-          if (lneutraldensity) call neutraldensity_after_boundary(f)
-          if (ltestflow)       call calc_ltestflow_nonlin_terms(f,df)  ! should not use df!
-          if (lmagn_mf)        call meanfield_after_boundary(f)
-          if (lspecial)        call special_after_boundary(f)
-          if (ltraining)       call training_after_boundary(f)
-!
-!  Calculate quantities for a chemical mixture. This is done after
-!  communication has finalized since many of the arrays set up here
-!  are not communicated, and in this subroutine also ghost zones are calculated.
-!
-          if (lchemistry .and. ldensity) call calc_for_chem_mixture(f)
+          call after_boundary(f,df)
         endif
 !      endif
 !
@@ -988,6 +958,55 @@ module Equ
       if (lshock)        call shock_before_boundary(f)
 
     endsubroutine before_boundary_cpu
+!***********************************************************************
+    subroutine after_boundary(f,df)
+
+      use Hydro, only: hydro_after_boundary
+      use Viscosity, only: viscosity_after_boundary
+      use Magnetic, only: magnetic_after_boundary
+      use Dustdensity, only: dustdensity_after_boundary
+      use Energy, only: energy_after_boundary
+      use Gravity, only: gravity_after_boundary
+      use Forcing, only: forcing_after_boundary
+      use Polymer, only: calc_polymer_after_boundary
+      use TestScalar, only: testscalar_after_boundary
+      use TestField,  only: testfield_after_boundary
+      use Density, only: density_after_boundary
+      use NeutralDensity, only: neutraldensity_after_boundary
+      use TestFlow, only: calc_ltestflow_nonlin_terms
+      use Magnetic_meanfield, only: meanfield_after_boundary
+      use Special, only: special_after_boundary
+      use Training, only: training_after_boundary
+      use Chemistry, only: calc_for_chem_mixture
+
+      real, intent(INOUT), dimension(mx,my,mz,mfarray) :: f
+      real, intent(INOUT), dimension(mx,my,mz,mvar)    :: df
+
+      if (lhydro)          call hydro_after_boundary(f)
+      if (lviscosity)      call viscosity_after_boundary(f)
+      if (lmagnetic)       call magnetic_after_boundary(f)
+      if (ldustdensity)    call dustdensity_after_boundary(f)
+      if (lenergy)         call energy_after_boundary(f)
+      if (lgrav)           call gravity_after_boundary(f)
+      if (lforcing)        call forcing_after_boundary(f)
+      if (lpolymer)        call calc_polymer_after_boundary(f)
+      if (ltestscalar)     call testscalar_after_boundary(f)
+      if (ltestfield)      call testfield_after_boundary(f)
+!AB: quick fix
+      !if (ltestfield)      call testfield_after_boundary(f,p)
+      if (ldensity)        call density_after_boundary(f)
+      if (lneutraldensity) call neutraldensity_after_boundary(f)
+      if (ltestflow)       call calc_ltestflow_nonlin_terms(f,df)  ! should not use df!
+      if (lmagn_mf)        call meanfield_after_boundary(f)
+      if (lspecial)        call special_after_boundary(f)
+      if (ltraining)       call training_after_boundary(f)
+!
+!  Calculate quantities for a chemical mixture. This is done after
+!  communication has finalized since many of the arrays set up here
+!  are not communicated, and in this subroutine also ghost zones are calculated.
+!
+      if (lchemistry .and. ldensity) call calc_for_chem_mixture(f)
+    endsubroutine after_boundary
 !***********************************************************************
     subroutine rhs_cpu(f,df,p,mass_per_proc,early_finalize)
 !
@@ -1753,6 +1772,7 @@ module Equ
         df_copy = 0.0
         dt_beta_ts = dt*beta_ts
         call before_boundary_cpu(f_copy)
+        call after_boundary(f_copy,df_copy)
         !if(itsub == 1) then
         !        f_beta = f_copy
         !endif
@@ -1771,6 +1791,7 @@ module Equ
 
       call copy_farray_from_GPU(f,.true.)
       f_diff = abs((f_copy-f)/(f_copy+tini))
+
       if (nxgrid == 1 .and. nygrid == 1) then
         print*,"Max diff: ",maxval(f_diff(l1,m1,:,1:mvar))
         print*,"Max diff loc: ",maxloc(f_diff(l1,m1,:,1:mvar))
