@@ -100,6 +100,7 @@ module Particles
   integer :: iffg=0, ifgx=0, ifgy=0, ifgz=0, ibrtime=0
   integer :: istep_dragf=3, istep_pass=3
   integer :: it_insert_nuclei=1
+  integer :: nucl_thr_inc_pow=0
   logical, target :: ldragforce_gas_par=.false.
   logical :: ldragforce_dust_par=.false.
   logical :: ldragforce_stiff=.false., ldragforce_radialonly=.false.
@@ -297,7 +298,7 @@ module Particles
       ascalar_ngp, ascalar_cic, rp_int, rp_ext, rp_ext_width, lnpmin_exclude_zero, &
       lcondensation_rate, vapor_mixing_ratio_qvs, lfollow_gas, &
       ltauascalar, rhoa, G_condensation, lpartnucleation, nucleation_threshold, &
-      redfrac, lset_df_insert_nucleii, it_insert_nuclei
+      redfrac, lset_df_insert_nucleii, it_insert_nuclei, nucl_thr_inc_pow
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0      ! DIAG_DOC: $x_{part}$
   integer :: idiag_xpmin=0, idiag_ypmin=0, idiag_zpmin=0      ! DIAG_DOC: $x_{part}$
@@ -2478,6 +2479,7 @@ module Particles
 !
       logical, save :: linsertmore=.true.
       real :: xx0, yy0, r2, r, mass_nucleii, part_mass, TTp
+      real :: nucl_thr
       integer :: j, k, n_insert, npar_loc_old, iii
       integer :: ii,jj,kk
       integer :: jproc,tag_id,tag0=283
@@ -2528,7 +2530,16 @@ module Particles
                            else
                               mass_nucleii=f(ii,jj,kk,icc)*exp(f(ii,jj,kk,ilnrho))
                            endif
-                           if (mass_nucleii .gt. nucleation_threshold) then
+                           !
+                           ! Set nucleation threshold based on number of particles already in the cell
+                           !
+                           if (nucl_thr_inc_pow .ne. 0) then
+                             nucl_thr=nucleation_threshold*(f(ii,jj,kk,inp)+1.)**nucl_thr_inc_pow
+                           else
+                             nucl_thr=nucleation_threshold                             
+                           endif
+                           !                            
+                           if (mass_nucleii .gt. nucl_thr) then
                               if (1+npar_loc <= mpar_loc) then
                                  linsertmore = .true.
                               else
