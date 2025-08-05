@@ -616,7 +616,7 @@ module Particles_sub
         else
           fname(iname)  =fname(iname)  +sum(a)
           fweight(iname)=fweight(iname)+size(a)
-        endif
+        endif        
 !
 !  Set corresponding entry in itype_name
 !
@@ -637,6 +637,12 @@ module Particles_sub
           print*, 'sum_par_name: Too many particles entered this sub.'
           print*, 'sum_par_name: Can only do statistics on npar_loc particles!'
           call fatal_error('sum_par_name','')
+        endif
+!
+!  Avoid problems when there are no particles
+!
+        if (npar_loc == 0) then
+          fweight(iname)=tini
         endif
 !
       endif
