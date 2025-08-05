@@ -1008,6 +1008,15 @@ module Equ
       if (lchemistry .and. ldensity) call calc_for_chem_mixture(f)
     endsubroutine after_boundary
 !***********************************************************************
+    subroutine prep_rhs
+      use Special, only: prep_rhs_special
+!
+!  Calculation of changing parameters that could happen in e.g. in after_boundary calls 
+!  that we want to happen both on the CPU and GPU should happen here
+!
+    if (lspecial) call prep_rhs_special
+    endsubroutine prep_rhs
+!***********************************************************************
     subroutine rhs_cpu(f,df,p,mass_per_proc,early_finalize)
 !
 !  Calculates rhss of the PDEs.
@@ -1061,6 +1070,8 @@ module Equ
 !
       lfirstpoint=.true.
       lcommunicate=.not.early_finalize
+
+      call prep_rhs
 
       mn_loop: do imn=1,nyz
 

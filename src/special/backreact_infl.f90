@@ -491,13 +491,8 @@ module Special
 !
       if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dspecial_dt'
 !
-      if (lgpu) then
-              call get_echarge
-              call get_sigE_and_B
-      endif
       phi=f(l1:l2,m,n,iinfl_phi)
       dphi=f(l1:l2,m,n,iinfl_dphi)
-      call get_Hscript_and_a2(Hscript,a2rhom_all)
 !
 !  Choice of different potentials.
 !  For the 1-cos profile, -Vprime (on the rhs) enters with -sin().
@@ -863,6 +858,15 @@ module Special
       endif
     endsubroutine get_sigE_and_B
 !***********************************************************************
+    subroutine prep_rhs_special
+!
+!  1-aug-25/TP: coded
+!
+      call get_Hscript_and_a2(Hscript,a2rhom_all)
+      call get_echarge
+      call get_sigE_and_B
+    endsubroutine prep_rhs_special
+!***********************************************************************
     subroutine get_a2
       real :: lnascale
       if(lflrw) then
@@ -960,8 +964,6 @@ module Special
       call mpibcast_real(e2m_all)
       call mpibcast_real(b2m_all)
 
-      call get_echarge
-      call get_sigE_and_B
 
     endsubroutine special_after_boundary
 !***********************************************************************

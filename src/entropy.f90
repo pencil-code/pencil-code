@@ -1297,8 +1297,8 @@ module Energy
         case ('surfcool')
           profz_cool = 1.+tanh((z(n1:n2)-zcool)/(wcool))
         case ('volheat_surfcool')
-          profz_cool = 1.+tanh((z(n1:n2)-zcool)/(wcool))
-          profz1_cool = 1.-(tanh((z(n1:n2)-zcool1)/(wcool1)))**2
+          profz_cool  =  exp(-0.5*((zcool -z(n1:n2))/wcool)**2)
+          profz1_cool = -exp(-0.5*((zcool1-z(n1:n2))/wcool1)**2)
 !
 !  Step-local-patches: add localized cooling patches to launch plume.
 !  With lcooling_to_cs2cool=T, the overall cooling identical to cooling

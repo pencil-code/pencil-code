@@ -708,4 +708,7 @@ module Special
 
     endsubroutine pushpars2c
 !***********************************************************************
+    subroutine prep_rhs_special
+    endsubroutine prep_rhs_special
+!***********************************************************************
 endmodule Special

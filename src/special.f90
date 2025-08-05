@@ -58,10 +58,11 @@
                           I_OUTPUT_PERSISTENT_SPECIAL=35, &
                           I_SPECIAL_PARTICLES_AFTER_DTSUB=36, &
                           I_CALC_DIAGNOSTICS_SPECIAL=37, &
-                          I_CALC_ODE_DIAGNOSTICS_SPECIAL=38
+                          I_CALC_ODE_DIAGNOSTICS_SPECIAL=38, &
+                          I_PREP_RHS_SPECIAL=39
     
-    integer, parameter :: n_subroutines=38
-    integer, parameter :: n_special_modules_max=3
+    integer, parameter :: n_subroutines=39
+    integer, parameter :: n_special_modules_max=2
 !
     integer :: n_special_modules
     character(LEN=256) :: special_modules_list = ''
@@ -103,7 +104,8 @@
                            'output_persistent_special    ', &
                            'special_particles_after_dtsub', &
                            'calc_diagnostics_special     ',  &
-                           'calc_ode_diagnostics_special '  &
+                           'calc_ode_diagnostics_special ',  &
+                           'prep_rhs_special             '  &
                    /)
 
     integer(KIND=ikind8) :: libhandle
@@ -820,4 +822,11 @@
 
     endsubroutine pushpars2c
 !*********************************************************************** 
+    subroutine prep_rhs_special
+      integer :: i
+      do i=1,n_special_modules
+        call caller0(special_sub_handles(i,I_PREP_RHS_SPECIAL))
+      enddo
+    endsubroutine prep_rhs_special
+!***********************************************************************
   endmodule Special
