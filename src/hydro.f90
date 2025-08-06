@@ -5300,8 +5300,8 @@ module Hydro
               if (ibx==0) call fatal_error("hydro_after_boundary","must use lbb_as_comaux=T")
               call dot2(f(:,m,n,ibx:ibz),Bsquared)
               if (m==4.and.n==4) then
-                print*,'AXEL: after hydro: bb(:,1)=', f(:,4,4,ibx)
-                print*,'AXEL: Bsquared=',m,n,Bsquared(:)
+                !print*,'AXEL: after hydro: bb(:,1)=', f(:,4,4,ibx)
+                !print*,'AXEL: Bsquared=',m,n,Bsquared(:)
               endif
               if (B_ext2/=0.) then
                 hydro_energy=f(:,m,n,irho)-.5*B_ext2
