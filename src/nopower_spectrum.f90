@@ -183,7 +183,19 @@ module power_spectrum
       call keep_compiler_quiet(variabl)
 !
     endsubroutine pdf
-!***********************************************************************
+    !***********************************************************************
+    subroutine pdf_2d(f,variabl,pdf_mean,pdf_rms)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real :: pdf_mean,pdf_rms
+      character (len=*) :: variabl
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(pdf_mean,pdf_rms)
+      call keep_compiler_quiet(variabl)
+!
+    endsubroutine pdf_2d
+    !***********************************************************************
     subroutine pdf1d_ang(f,sp)
 !
       real, dimension (mx,my,mz,mfarray) :: f

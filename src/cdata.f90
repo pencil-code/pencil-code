@@ -438,7 +438,7 @@ module Cdata
   integer :: ishock=0,ishock_perp=0
   integer :: iyH=0,ihypvis=0,ihypres=0
   integer :: iecr=0,ismagorinsky,iviscosity=0, inucl=0, inucrate=0
-  integer :: isupsat=0
+  integer :: isupsat=0, iMixFrac, iFlameInd
   integer :: iQrad=0,iSrad=0,ilnTT=0,iTT=0,ikapparho=0
   integer :: iKR_Frad=0,iKR_Fradx=0,iKR_Frady=0, iKR_Fradz=0
   integer :: igpotselfx=0, igpotselfy=0, igpotselfz=0
@@ -673,6 +673,7 @@ module Cdata
   logical :: ab_phispec=.false.,ou_phispec=.false.
   logical :: rhocc_pdf=.false.,cc_pdf=.false.,lncc_pdf=.false.
   logical :: gcc_pdf=.false., lngcc_pdf=.false., lnspecial_pdf=.false., special_pdf=.false.
+  logical :: FI_mixfrac_pdf2d=.false.
   logical :: cosEB_pdf=.false.
   logical :: ang_jb_pdf1d=.false., ang_ub_pdf1d=.false., ang_ou_pdf1d=.false.
   logical :: test_nonblocking=.false.,onedall=.false.

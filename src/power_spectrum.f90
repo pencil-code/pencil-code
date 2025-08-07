@@ -276,6 +276,7 @@ outer:do ikz=1,nz
       enddo
       if (ipz==0) call mpimerge_1d(kshell,nk_xy,12) ! filling of the shell-wavenumber vector
     endif
+    !
   endsubroutine initialize_power_spectrum
 !***********************************************************************
   subroutine read_power_spectrum_run_pars(iostat)
@@ -3787,7 +3788,7 @@ outer:do ikz=1,nz
 !
   endsubroutine pdf
 !***********************************************************************
-  subroutine pdf_2d(f,variabl,pdf_mean,pdf_rms,igrad1,igrad2,iweight,lweight)
+  subroutine pdf_2d(f,variabl,pdf_mean,pdf_rms)
 !
 !  Calculated pdf of scalar field.
 !  This routine is in this module, because it is always called at the
@@ -3799,24 +3800,21 @@ outer:do ikz=1,nz
     use Mpicomm, only: mpireduce_sum_int
     use SharedVariables, only: get_shared_variable
 !
-    integer :: l, i_pdf, i_pdfy
+    integer :: l, i_pdf, i_pdfy, ichem
     integer :: n_pdf=100, n_pdfy=100
     integer :: pdfx_min, pdfx_max, pdfy_min, pdfy_max
     real, allocatable, dimension(:,:) :: pdf_yy, pdf_yy_sum
     real, dimension (mx,my,mz,mfarray) :: f
     real, dimension (nx,3) :: grad1, grad2, gcc
-    real, dimension (nx) :: pdf_var,gcc2
+    real, dimension (nx) :: pdf_var,gcc2, pdfy_var
     integer, dimension (2) :: nreduce
-    real :: pdf_mean, pdf_rms, pdf_dx, pdf_dx1, pdf_scl
-    !real :: pdfy_mean, pdfy_rms, pdf_dy, pdf_dy1, pdfy_scl
+    real :: pdf_mean, pdf_rms, pdf_dx, pdf_dx1, pdf_scl, pdfy_scl
+    !real :: pdfy_mean, pdfy_rms, pdf_dy, pdf_dy1
     real :: pdf_dy, pdf_dy1
     character (len=120) :: pdf_file=''
     character (len=*) :: variabl
     logical :: logscale=.false.
     integer, pointer :: ispecial
-    integer, intent(in), optional :: igrad1, igrad2
-    integer, intent(in), optional :: iweight
-    logical, intent(in), optional :: lweight
 !
     if (variabl=='special' .or. variabl=='lnspecial') &
       call get_shared_variable('ispecial', ispecial, caller='pdf')
@@ -3824,7 +3822,11 @@ outer:do ikz=1,nz
 !  initialize counter and set scaling factor
 !
     pdf_yy=0
-    pdf_scl=1./pdf_rms
+    !pdf_scl=1./pdf_rms
+    !NILS: Setting pdf_scl and pdfy_scl to 1 for now
+    pdf_scl=1.
+    pdfy_scl=1.
+    !
     allocate(pdf_yy(n_pdf,n_pdfy))
     allocate(pdf_yy_sum(n_pdf,n_pdfy))
 !
@@ -3842,39 +3844,10 @@ outer:do ikz=1,nz
 !
 !  select the right variable
 !
-      if (variabl=='rhocc') then
-        pdf_var=exp(f(l1:l2,m,n,ilnrho))*f(l1:l2,m,n,ilncc)-pdf_mean
-        logscale=.false.
-      elseif (variabl=='cc') then
-        pdf_var=f(l1:l2,m,n,ilncc)-pdf_mean
-        logscale=.false.
-      elseif (variabl=='lncc') then
-        pdf_var=abs(f(l1:l2,m,n,ilncc)-pdf_mean)
-        logscale=.true.
-      elseif (variabl=='gcc') then
-        call grad(f,ilncc,gcc)
-        call dot2_mn(gcc,gcc2)
-        pdf_var=sqrt(gcc2)
-        logscale=.false.
-      elseif (variabl=='lngcc') then
-        call grad(f,ilncc,gcc)
-        call dot2_mn(gcc,gcc2)
-        pdf_var=sqrt(gcc2)
-        logscale=.true.
-      elseif (variabl=='cos_grad1_grad2') then
-        call grad(f,igrad1,grad1)
-        call grad(f,igrad2,grad2)
-        pdf_var=(grad1(:,1)*grad2(:,1)+grad1(:,2)*grad2(:,2)+grad1(:,3)*grad2(:,3))/sqrt( &
-                (grad1(:,1)**2+grad1(:,2)**2+grad1(:,3)**2)* &
-                (grad2(:,1)**2+grad2(:,2)**2+grad2(:,3)**2))
-        if (lweight) pdf_var=pdf_var*f(l1:l2,m,n,iweight)
-        logscale=.false.
-      elseif (variabl=='special') then
-        pdf_var=f(l1:l2,m,n,ispecial)
-        logscale=.false.
-      elseif (variabl=='lnspecial') then
-        pdf_var=alog(f(l1:l2,m,n,ispecial))
-        logscale=.false.
+      if (variabl=='FI_mixfrac') then
+        !pdfy_var=f(l1:l2,m,n,iFlameInd)
+        !logscale=.false.
+        !pdf_var=f(l1:l2,m,n,iMixFrac)
       endif
 !
 !  put in the right pdf slot
@@ -3894,7 +3867,7 @@ outer:do ikz=1,nz
         pdf_dy1=1./pdf_dy
         do l=l1,l2
           i_pdf =1+int(pdf_dx1*(pdf_scl*pdf_var(l)-pdf_min))
-          i_pdfy=1+int(pdf_dy1*(pdf_scl*pdf_var(l)-pdfy_min))
+          i_pdfy=1+int(pdf_dy1*(pdfy_scl*pdfy_var(l)-pdfy_min))
           i_pdf =min(max(i_pdf ,1),n_pdf)   !(make sure it's inside array boundries)
           i_pdfy=min(max(i_pdfy,1),n_pdfy)  !(make sure it's inside array boundries)
           pdf_yy(i_pdf,i_pdfy)=pdf_yy(i_pdf,i_pdfy)+1
@@ -3908,16 +3881,16 @@ outer:do ikz=1,nz
 !
     nreduce(1)=n_pdf
     nreduce(2)=n_pdfy
-    !AB: doesn't
-!   call mpireduce_sum_int(pdf_yy,pdf_yy_sum,nreduce)
+    !NILS: Have commented out the line below to make it compile - should be fixed!
+!    call mpireduce_sum_int(pdf_yy,pdf_yy_sum,nreduce)
 
     if (lroot) then
-       pdf_file=trim(datadir)//'/pdf_'//trim(variabl)//'.dat'
+       pdf_file=trim(datadir)//'/pdf2d_'//trim(variabl)//'.dat'
        open(1,file=trim(pdf_file),position='append')
        if (logscale) then
-         write(1,10) t, n_pdf, pdf_dx, pdf_max_logscale, pdf_min_logscale, pdf_mean, pdf_rms
+         write(1,10) t, n_pdf, n_pdfy, pdf_dx, pdf_dy, pdf_max_logscale, pdf_min_logscale, pdf_mean, pdf_rms
        else
-         write(1,10) t, n_pdf, pdf_dx, pdf_max, pdf_min, pdf_mean, pdf_rms
+         write(1,10) t, n_pdf, n_pdfy, pdf_dx, pdf_dy, pdf_max, pdf_min, pdf_mean, pdf_rms
        endif
        write(1,11) pdf_yy_sum
        close(1)

@@ -276,6 +276,7 @@ module Snapshot
       use Sub, only: read_snaptime, update_snaptime
       use Syscalls, only: system_cmd
       use Mpicomm, only: mpibarrier
+      use Chemistry, only: make_flame_index, make_mixture_fraction
 !
 !  The dimension msnap can either be mfarray (for f-array in run.f90)
 !  or just mvar (for f-array in start.f90 or df-array in run.f90
@@ -294,6 +295,11 @@ module Snapshot
       character (len=fnlen) :: file
       character (len=intlen) :: ch
       integer :: nv1_capitalvar
+!
+! Prepare auxilliaries that are used only for later visualization
+!
+      if (iFlameInd .gt. 0) call make_flame_index(a)
+      if (iMixFrac .gt. 0) call make_mixture_fraction(a)
 !
 !  Output snapshot with label in 'tsnap' time intervals.
 !  File keeps the information about number and time of last snapshot.
@@ -831,6 +837,7 @@ module Snapshot
       use Pscalar, only: cc2m, gcc2m, rhoccm
       use Struct_func, only: structure
       use Sub, only: curli
+      use Chemistry, only: make_flame_index, make_mixture_fraction
 !$    use OMP_lib
 
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1053,6 +1060,18 @@ module Snapshot
         if (ang_jb_pdf1d) call pdf1d_ang(f,'jb')
         if (ang_ub_pdf1d) call pdf1d_ang(f,'ub')
         if (ang_ou_pdf1d) call pdf1d_ang(f,'ou')
+        !
+        ! Do 2D pdf
+        !
+        if (FI_mixfrac_pdf2d) then
+          if (iFlameInd == 0 .or. iMixFrac == 0) then
+            call fatal_error(" perform_powersnap",&
+                 "iFlameInd and iMixFrac must be larger than zero")
+          endif
+          call make_flame_index(f)
+          call make_mixture_fraction(f)
+          call pdf_2d(f,"FI_mixfrac",0.,0.)
+        endif
 !
 !  Do pdf for the magnetic field
 !
