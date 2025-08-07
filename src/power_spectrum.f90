@@ -38,6 +38,7 @@ module Power_spectrum
   include 'power_spectrum.h'
 !
   real :: pdf_max=30., pdf_min=-30., pdf_max_logscale=3.0, pdf_min_logscale=-3.
+  real :: pdfy_max=30., pdfy_min=-30., pdfy_max_logscale=3.0, pdfy_min_logscale=-3.
   real :: tout_min=0., tout_max=0.
   real :: specflux_dp=-2., specflux_dq=-2.
   real, allocatable, dimension(:,:) :: legendre_zeros,glq_weight
@@ -65,6 +66,7 @@ module Power_spectrum
   integer :: nk_truebin=0
   logical :: lpowerdat_existed=.false.
   logical :: lcorrect_integer_kcalc=.false.
+  logical :: lpdf_2d_variable_range=.false.
   real :: L_min, L_min_xy
   integer :: nk_xyz, nk_xy, n_loc, m_loc
 !
@@ -87,10 +89,12 @@ module Power_spectrum
       lintegrate_shell, lintegrate_z, lcomplex, ckxrange, ckyrange, czrange, &
       lcylindrical_spectra, inz, n_segment_x, lhalf_factor_in_GW, &
       pdf_max, pdf_min, pdf_min_logscale, pdf_max_logscale, &
+      pdfy_max, pdfy_min, pdfy_min_logscale, pdfy_max_logscale, &
       lread_gauss_quadrature, legendre_lmax, lshear_frame_correlation, &
       power_format, kout_max, tout_min, tout_max, specflux_dp, specflux_dq, &
       lhorizontal_spectra, lvertical_spectra, ltrue_binning, max_k2, &
-      specflux_pmin, specflux_pmax, lzero_spec_zerok, lcorrect_integer_kcalc
+      specflux_pmin, specflux_pmax, lzero_spec_zerok, lcorrect_integer_kcalc, &
+      lpdf_2d_variable_range
 !
 ! real, allocatable, dimension(:,:) :: spectrum_2d, spectrumhel_2d
 ! real, allocatable, dimension(:,:) :: spectrum_2d_sum, spectrumhel_2d_sum
@@ -3797,18 +3801,18 @@ outer:do ikz=1,nz
 !    2-dec-03/axel: coded
 !
     use Sub, only: grad, dot2_mn
-    use Mpicomm, only: mpireduce_sum_int
+    use Mpicomm, only: mpireduce_sum_int, mpiallreduce_min, mpiallreduce_max
     use SharedVariables, only: get_shared_variable
 !
     integer :: l, i_pdf, i_pdfy, ichem
     integer :: n_pdf=100, n_pdfy=100
-    integer :: pdfx_min, pdfx_max, pdfy_min, pdfy_max
-    real, allocatable, dimension(:,:) :: pdf_yy, pdf_yy_sum
+    integer, allocatable, dimension(:,:) :: pdf_yy, pdf_yy_sum
     real, dimension (mx,my,mz,mfarray) :: f
     real, dimension (nx,3) :: grad1, grad2, gcc
     real, dimension (nx) :: pdf_var,gcc2, pdfy_var
     integer, dimension (2) :: nreduce
     real :: pdf_mean, pdf_rms, pdf_dx, pdf_dx1, pdf_scl, pdfy_scl
+    real :: pdf_min_loc, pdf_max_loc, pdfy_min_loc, pdfy_max_loc
     !real :: pdfy_mean, pdfy_rms, pdf_dy, pdf_dy1
     real :: pdf_dy, pdf_dy1
     character (len=120) :: pdf_file=''
@@ -3816,10 +3820,31 @@ outer:do ikz=1,nz
     logical :: logscale=.false.
     integer, pointer :: ispecial
 !
-    if (variabl=='special' .or. variabl=='lnspecial') &
-      call get_shared_variable('ispecial', ispecial, caller='pdf')
+    if (lpdf_2d_variable_range) then
+      if (variabl=='FI_mixfrac') then
+        pdf_min_loc=minval(f(l1:l2,m1:m2,n1:n2,imixfrac))
+        call mpiallreduce_min(pdf_min_loc,pdf_min)
+        pdf_max_loc=maxval(f(l1:l2,m1:m2,n1:n2,imixfrac))
+        call mpiallreduce_max(pdf_max_loc,pdf_max)
+        !
+        pdfy_min_loc=minval(f(l1:l2,m1:m2,n1:n2,iflameind))
+        call mpiallreduce_min(pdfy_min_loc,pdfy_min)
+        pdfy_max_loc=maxval(f(l1:l2,m1:m2,n1:n2,iflameind))
+        call mpiallreduce_max(pdfy_max_loc,pdfy_max)
+      endif
+    endif
+!
+    pdf_dx=(pdf_max-pdf_min)/n_pdf
+    pdf_dy=(pdfy_max-pdfy_min)/n_pdfy
+    pdf_dx1=1./pdf_dx
+    pdf_dy1=1./pdf_dy
+!   if (variabl=='special' .or. variabl=='lnspecial') &
+!     call get_shared_variable('ispecial', ispecial, caller='pdf')
 !
 !  initialize counter and set scaling factor
+!
+    allocate(pdf_yy(n_pdf,n_pdfy))
+    allocate(pdf_yy_sum(n_pdf,n_pdfy))
 !
     pdf_yy=0
     !pdf_scl=1./pdf_rms
@@ -3827,9 +3852,6 @@ outer:do ikz=1,nz
     pdf_scl=1.
     pdfy_scl=1.
     !
-    allocate(pdf_yy(n_pdf,n_pdfy))
-    allocate(pdf_yy_sum(n_pdf,n_pdfy))
-!
     !$omp parallel private(pdf_var,logscale,gcc,gcc2,l,pdf_dx,pdf_dx1,i_pdf) num_threads(num_helper_threads) &
     !$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
     !$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
@@ -3861,10 +3883,6 @@ outer:do ikz=1,nz
           pdf_yy(i_pdf,i_pdfy)=pdf_yy(i_pdf,i_pdfy)+1
         enddo
       else
-        pdf_dx=(pdf_max-pdf_min)/n_pdf
-        pdf_dy=(pdfy_max-pdfy_min)/n_pdfy
-        pdf_dx1=1./pdf_dx
-        pdf_dy1=1./pdf_dy
         do l=l1,l2
           i_pdf =1+int(pdf_dx1*(pdf_scl*pdf_var(l)-pdf_min))
           i_pdfy=1+int(pdf_dy1*(pdfy_scl*pdfy_var(l)-pdfy_min))
@@ -3881,8 +3899,7 @@ outer:do ikz=1,nz
 !
     nreduce(1)=n_pdf
     nreduce(2)=n_pdfy
-    !NILS: Have commented out the line below to make it compile - should be fixed!
-!    call mpireduce_sum_int(pdf_yy,pdf_yy_sum,nreduce)
+    call mpireduce_sum_int(pdf_yy,pdf_yy_sum,nreduce)
 
     if (lroot) then
        pdf_file=trim(datadir)//'/pdf2d_'//trim(variabl)//'.dat'
@@ -3890,13 +3907,13 @@ outer:do ikz=1,nz
        if (logscale) then
          write(1,10) t, n_pdf, n_pdfy, pdf_dx, pdf_dy, pdf_max_logscale, pdf_min_logscale, pdf_mean, pdf_rms
        else
-         write(1,10) t, n_pdf, n_pdfy, pdf_dx, pdf_dy, pdf_max, pdf_min, pdf_mean, pdf_rms
+         write(1,10) t, n_pdf, n_pdfy, pdf_dx, pdf_dy, pdf_max, pdf_min, pdfy_max, pdfy_min, pdf_mean, pdf_rms
        endif
        write(1,11) pdf_yy_sum
        close(1)
     endif
 !
-10 format(1p,e12.5,0p,i6,1p,5e12.4)
+10 format(1p,e12.5,0p,2i6,1p,8e12.4)
 11 format(8i10)
 !
   endsubroutine pdf_2d
