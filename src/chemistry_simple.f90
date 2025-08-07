@@ -46,6 +46,7 @@ module Chemistry
   real :: init_y1=-0.2, init_y2=0.2
   real :: init_z1=-0.2, init_z2=0.2
   real :: init_TT1=298., init_TT2=2400., init_ux=0., init_uy=0., init_uz=0.
+  integer :: imassH=19, imassO=20, imassC=21, imassN=22, imassS=23
   real :: init_zz1=0.01, init_zz2=0.2
   real :: flame_pos=0.
   real :: init_rho2=1.
@@ -130,7 +131,7 @@ module Chemistry
 !
 !   Species constants
 !
-  real, dimension(nchemspec,18), target :: species_constants
+  real, dimension(nchemspec,23), target :: species_constants
 !
 !   Lewis coefficients
 !
@@ -5103,6 +5104,24 @@ module Chemistry
       if (allocated(net_react_p)) p_net_react_p = p_net_react_p + net_react_p
 !
     endsubroutine chemistry_diags_reductions
+!***********************************************************************
+  subroutine make_flame_index(f)
+!
+  real, dimension (mx,my,mz,mfarray) :: f
+!
+  call keep_compiler_quiet(f)
+!
+end subroutine make_flame_index
+!***********************************************************************
+subroutine make_mixture_fraction(f)
+!
+! Calculate Bilger mixture fraction and store in f-array. 
+!
+  real, dimension (mx,my,mz,mfarray) :: f
+!
+  call keep_compiler_quiet(f)
+!
+end subroutine make_mixture_fraction
 !***********************************************************************
     include 'chemistry_common.inc'
 !***********************************************************************

@@ -296,6 +296,11 @@
 !
 ! Find molar mass
 !
+		species_constants(ind_chem,imassH)=0.
+		species_constants(ind_chem,imassO)=0.
+		species_constants(ind_chem,imassC)=0.
+		species_constants(ind_chem,imassN)=0.
+		species_constants(ind_chem,imassS)=0.
                 MolMass=0
                 do iElement=1,4
                   In1=25+(iElement-1)*5
@@ -311,6 +316,11 @@
                     NumberOfElement_string=trim(ChemInpLine(In5:In4))
                     read (unit=NumberOfElement_string,fmt='(I5)') NumberOfElement_i
                     MolMass(iElement)=MolMass(iElement)*NumberOfElement_i
+		    if (element_string=="H") species_constants(ind_chem,imassH)=MolMass(iElement)
+  		    if (element_string=="O") species_constants(ind_chem,imassO)=MolMass(iElement)
+		    if (element_string=="C") species_constants(ind_chem,imassC)=MolMass(iElement)
+		    if (element_string=="N") species_constants(ind_chem,imassN)=MolMass(iElement)
+		    if (element_string=="S") species_constants(ind_chem,imassS)=MolMass(iElement)
                   endif
                 enddo
                 species_constants(ind_chem,imass)=sum(MolMass)

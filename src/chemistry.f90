@@ -63,6 +63,7 @@ module Chemistry
   logical :: lchem_detailed=.true.
   logical :: lgradP_terms=.true.
   character(len=30) :: reac_rate_method = 'chemkin'
+  character(len=1) :: mixture_fraction_element
 ! --AB--  character(len=30) :: inucl_pre_exp="const"
 ! parameters for initial conditions
   real :: init_x1=-0.2, init_x2=0.2
@@ -101,6 +102,7 @@ module Chemistry
   logical :: lSmag_heat_transport=.false.
   logical :: lSmag_diffusion=.false.
   logical :: lnormalize_chemspec=.false., lnormalize_chemspec_N2=.false.
+  logical :: lFlame_index_as_aux=.false., lmixture_fraction_as_aux=.false.
   !
   logical :: lfilter=.false., lupw_chemspec=.false.
   logical :: lkreactions_profile=.false., lkreactions_alpha=.false.
@@ -122,6 +124,7 @@ module Chemistry
   logical :: ldamp_zone_for_NSCBC=.false.
   logical :: linit_temperature=.false., linit_density=.false.
   logical :: lreac_as_aux=.false.
+  integer :: ifuel_flow=0.
 !
 ! 1step_test case
 ! possible, will be removed later
@@ -131,7 +134,7 @@ module Chemistry
   logical :: lFlameMaster=.false.
   integer :: ipr=2
   real :: Tc=440., Tinf=2000., beta=1.09
-  real :: z_cloud=0.
+  real :: z_cloud=0., mix_frac_IH=0.
 !
 !  hydro-related parameters
 !
@@ -167,6 +170,7 @@ module Chemistry
   ! Condensing species parameters
   !
   integer :: i_cond_spec,ichem_cond_spec
+  integer :: imassH=19, imassO=20, imassC=21, imassN=22, imassS=23
   real :: true_density_cond_spec_cgs=2.196, true_density_cond_spec
   real :: gam_surf_energy_cgs=32.
   real :: nucleation_rate_coeff_cgs=1e19
@@ -195,7 +199,7 @@ module Chemistry
 !
 !   Species constants
 !
-  real, dimension(nchemspec,18), target :: species_constants
+  real, dimension(nchemspec,23), target :: species_constants
 !
 !   Lewis coefficients
 !
@@ -223,6 +227,8 @@ module Chemistry
 !
   integer :: mmx=2*nghost*min(1,nx-1)+nx
 !
+  integer, dimension(nchemspec) :: ireaci=0
+!
 ! input parameters
   namelist /chemistry_init_pars/ &
       initchem, amplchem, kx_chem, ky_chem, kz_chem, widthchem, &
@@ -240,7 +246,8 @@ module Chemistry
       reac_rate_method,global_phi, lSmag_heat_transport, Pr_turb, lSmag_diffusion, z_cloud, &
       lhotspot, lchem_detailed, condensing_species, conc_sat_spec_cgs, &
       true_density_cond_spec_cgs, delta_chem, press, init_premixed_fuel, &
-      init_fuel_molar_ratio,init_fuel_O2_demand,init_temp_fuel, init_temp_oxidizer, init_phi
+      init_fuel_molar_ratio,init_fuel_O2_demand,init_temp_fuel, init_temp_oxidizer, init_phi, &
+      lFlame_index_as_aux, lmixture_fraction_as_aux, mixture_fraction_element, ifuel_flow
 !
 !
 ! run parameters
@@ -257,7 +264,8 @@ module Chemistry
       lgradP_terms, lnormalize_chemspec, lnormalize_chemspec_N2, &
       gam_surf_energy_cgs, isurf_energy, iconc_sat_spec, nucleation_rate_coeff_cgs, &
       lnoevap, lnolatentheat, gam_surf_energy_mul_fac, deltaH_cgs,&
-      min_nucl_radius_cgs, lupw_chemspec
+      min_nucl_radius_cgs, lupw_chemspec, &
+      lFlame_index_as_aux, lmixture_fraction_as_aux, mixture_fraction_element
 !
 ! diagnostic variables (need to be consistent with reset list below)
 !
@@ -290,7 +298,6 @@ module Chemistry
 !  Auxiliaries.
 !
   integer :: ireac=0
-  integer, dimension(nchemspec) :: ireaci=0
 !
   integer :: enum_reac_rate_method = 0
   integer, dimension(:), allocatable :: enum_reaction_name
@@ -391,9 +398,10 @@ module Chemistry
       logical :: exist, exist1, exist2
       character(len=15) :: file1='chemistry_m.dat', file2='chemistry_p.dat'
       integer :: ind_glob, ind_chem, stat
-      integer :: i
+      integer :: i, ichem, imass_spec
       logical :: found_specie=.false.
       character(len=2) :: car2
+      real, dimension(nchemspec) :: Y_init_mix_frac=0.
 !
 !  initialize chemistry
       !
@@ -587,6 +595,44 @@ module Chemistry
             call farray_index_append('ireac'//trim(adjustl(car2)),ireaci(i))
           enddo
         endif
+      endif
+!
+! Allocate space for flame index and mixture fraction
+!
+      if (lFlame_index_as_aux) then
+        call farray_register_auxiliary('flame index',iFlameInd,communicated=.false.)
+      endif
+      if (lmixture_fraction_as_aux) then
+        call farray_register_auxiliary('mixture fraction',iMixFrac,communicated=.false.)
+!
+! Define initial mass fraction used to find mixture fractions
+!
+        select case (initchem(1))
+        case ("double_shear_layer", "double_shear_layer_x")
+          if (ifuel_flow == 1) Y_init_mix_frac=amplchemk
+          if (ifuel_flow == 2) Y_init_mix_frac=amplchemk2
+        case default
+          call fatal_error("initialize_chemistry","initial mass fractions are not defined for mixt. frac.")
+        end select
+!
+! Initialize variable used for calculation of Bilger mixture fraction based on Hydrogen
+!
+        mix_frac_IH=0.
+        select case (mixture_fraction_element)
+        case ("H")
+          imass_spec=imassH
+        case ("C")
+          imass_spec=imassC
+        case ("O")
+          imass_spec=imassO
+        case ("S")
+          imass_spec=imassS
+        case default
+          call fatal_error("make_mixture_fraction","No such mixture_fraction_element")
+        end select
+        do ichem=1,nchemspec
+          mix_frac_IH=mix_frac_IH+Y_init_mix_frac(ichem)*species_constants(ichem,imass_spec)/species_constants(ichem,imass)
+        enddo
       endif
       !
       if (leos) then
@@ -5918,7 +5964,7 @@ module Chemistry
       ! Check that the molar ratios of the fuel sums to unity
       !
       if (sum(init_fuel_molar_ratio) .ne. 1.0) then
-        call fatal_error("premixed_equiv_ratio","init_fuel_molar_ratio must sum to unity.")
+        !call fatal_error("premixed_equiv_ratio","init_fuel_molar_ratio must sum to unity.")
       endif
       !
       ! Loop over all species and check which that are present
@@ -5976,6 +6022,14 @@ module Chemistry
           spe="Y("//trim(varname(ichemspec(j)))//")="
           write (*,'(A10,F10.7)') spe,initial_massfractions(j)
         enddo
+        do j=1,nchemspec
+          spe="conc("//trim(varname(ichemspec(j)))//")="
+          write (*,'(A10,F10.7)') spe,conc(j)
+        enddo
+      endif
+      !
+      if (sum(initial_massfractions) .ne. 1.0) then
+        call fatal_error("premixed_equiv_ratio","initial_massfractions must sum to unity.")
       endif
 !
     endsubroutine premixed_equiv_ratio
@@ -7258,6 +7312,79 @@ module Chemistry
     call copy_addr(mo2,p_par(130))
     call copy_addr(mc3h8,p_par(131))
 
-    endsubroutine pushpars2c
+  endsubroutine pushpars2c
+!***********************************************************************
+  subroutine make_flame_index(f)
+!
+    use Sub, only: grad
+!
+! Calculate flame index and store in f-array.
+!
+  real, dimension (mx,my,mz,mfarray) :: f
+  integer :: n_loc, m_loc, igrad1, igrad2, ind_chem_H2, ind_chem_CO2
+  integer :: iweight
+  logical :: lCO2, lH2, lweight
+  real, dimension(nx) :: FI
+  real, dimension(nx,3) :: grad1, grad2
+!
+  call find_species_index("H2",igrad1,ind_chem_H2,lH2)
+  call find_species_index("CO2",igrad2,ind_chem_CO2,lCO2)
+  iweight=ireaci(ind_chem_CO2)
+  lweight=.true.
+!
+! Loop over all pencils
+!
+  do n_loc=n1,n2
+    do m_loc=m1,m2
+      m=m_loc;n=n_loc
+      call grad(f,igrad1,grad1)
+      call grad(f,igrad2,grad2)
+      f(l1:l2,m,n,iFlameInd)=(grad1(:,1)*grad2(:,1)+grad1(:,2)*grad2(:,2)+grad1(:,3)*grad2(:,3))/sqrt( &
+           (grad1(:,1)**2+grad1(:,2)**2+grad1(:,3)**2)* &
+           (grad2(:,1)**2+grad2(:,2)**2+grad2(:,3)**2)+tini)
+      if (lweight) f(l1:l2,m,n,iFlameInd)=f(l1:l2,m,n,iFlameInd)*f(l1:l2,m,n,iweight)
+    enddo
+  enddo
+!
+end subroutine make_flame_index
+!***********************************************************************
+subroutine make_mixture_fraction(f)
+!
+! Calculate Bilger mixture fraction and store in f-array. 
+!
+  real, dimension (mx,my,mz,mfarray) :: f
+  integer :: n_loc, m_loc, ichem, imass_spec
+  real, dimension(nx) :: var
+!
+! Select which element to base the mixture fraction on
+!
+  select case (mixture_fraction_element)
+  case ("H")
+    imass_spec=imassH
+  case ("C")
+    imass_spec=imassC
+  case ("O")
+    imass_spec=imassO
+  case ("S")
+    imass_spec=imassS
+  case default
+    call fatal_error("make_mixture_fraction","No such mixture_fraction_element")
+  end select
+  !
+  ! Loop over all pencils
+  !
+  do n_loc=n1,n2
+    do m_loc=m1,m2
+      m=m_loc;n=n_loc
+      var=0.
+      do ichem=1,nchemspec
+        var=var+species_constants(ichem,imass_spec)*f(l1:l2,m,n,ichemspec(ichem))/ &
+             species_constants(ichem,imass)
+      enddo
+      f(l1:l2,m,n,iMixFrac)=var/mix_frac_IH
+    enddo
+  enddo
+!
+end subroutine make_mixture_fraction
 !***********************************************************************
 endmodule Chemistry

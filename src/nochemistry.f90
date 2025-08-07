@@ -401,9 +401,22 @@ module Chemistry
 
     endsubroutine pushpars2c
 !***********************************************************************
-
-
-
-
-   
+  subroutine make_flame_index(f)
+!
+  real, dimension (mx,my,mz,mfarray) :: f
+!
+  call keep_compiler_quiet(f)
+!
+end subroutine make_flame_index
+!***********************************************************************
+subroutine make_mixture_fraction(f)
+!
+! Calculate Bilger mixture fraction and store in f-array. 
+!
+  real, dimension (mx,my,mz,mfarray) :: f
+!
+  call keep_compiler_quiet(f)
+!
+end subroutine make_mixture_fraction
+!***********************************************************************   
 endmodule Chemistry
