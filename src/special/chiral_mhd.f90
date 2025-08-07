@@ -926,7 +926,8 @@ module Special
           if (t<=t1_source5) then
             source5=0.
           else
-            source5 = source5_input * (t-t1_source5) * exp(-source5_expt2 * ((t-t1_source5)**2))
+            !source5 = source5_input * (t-t1_source5) * exp(-source5_expt2 * ((t-t1_source5)**2))
+            source5 = source5_input * (t-t1_source5)/source5_expt2 * exp(-((t-t1_source5)**2)/source5_expt2**2)
           endif
 !
 !  Time-dependent profile for source of mu5.
