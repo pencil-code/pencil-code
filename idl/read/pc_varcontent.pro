@@ -366,7 +366,9 @@ indices_aux = [ $
   { name:'iughtest', label:'Testflow enthalpy advection', dims:ntestfield }, $
   { name:'inucl_rmin', label:'Radius of nucleating particles', dims:1 }, $
   { name:'inucl_rate', label:'Rate of particle nucleation', dims:1 }, $
-  { name:'isupersat', label:'Supersaturation', dims:1 } $
+  { name:'isupersat', label:'Supersaturation', dims:1 }, $
+  { name:'iMixFrac', label:'Mixture fraction', dims:1 }, $
+  { name:'iFlameInd', label:'Flame index', dims:1 } $
   ; don't forget to add a comma above when extending
 ]
 ;
