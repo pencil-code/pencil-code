@@ -33,6 +33,8 @@ To see several oscillations, one should for 400 steps (0.02*400=8).
   Based on stability alone, the timestep could be 10 times longer [1].
 * Alternatively, can use SPECIAL=special/gravitational_waves_hTXk,
   which solves the GW equatin exactly.
+* Note that lwrite_aux MUST be set to .true.; otherwise the input
+  data for gravitational waves are not written.
 
 ## Links:
 * https://www.nordita.org/~brandenb/projects/GW
