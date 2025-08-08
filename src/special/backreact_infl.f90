@@ -551,6 +551,7 @@ module Special
 !
 !  Total contribution to the timestep.
 !  If Ndiv=0 is set, we compute instead an advective timestep based on the Alfven speed.
+!  vA=B/sqrt(rho_chi), so dt=C_M*dx/vA. In practice, C_M (=cdt_rho_chi) can be 20.
 !
       if (lfirst.and.ldt.and.ldt_backreact_infl) then
         if (Ndiv==0.) then

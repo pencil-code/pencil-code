@@ -918,7 +918,7 @@ module Special
 !***********************************************************************
     subroutine calc_pencils_special(f,p)
 !
-!  Calculate Special pencils.
+!  Calculate Special pencils; especially the unprojected STRESS tensor p%stress_ij.
 !  Most basic pencils should come first, as others may depend on them.
 !
 !  24-aug-17/axel: coded
