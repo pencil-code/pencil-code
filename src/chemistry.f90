@@ -600,10 +600,10 @@ module Chemistry
 ! Allocate space for flame index and mixture fraction
 !
       if (lFlame_index_as_aux) then
-        call farray_register_auxiliary('flame index',iFlameInd,communicated=.false.)
+        call farray_register_auxiliary('flameind',iflameind,communicated=.false.)
       endif
       if (lmixture_fraction_as_aux) then
-        call farray_register_auxiliary('mixture fraction',iMixFrac,communicated=.false.)
+        call farray_register_auxiliary('mixfrac',imixfrac,communicated=.false.)
 !
 ! Define initial mass fraction used to find mixture fractions
 !
@@ -7342,7 +7342,7 @@ module Chemistry
       f(l1:l2,m,n,iFlameInd)=(grad1(:,1)*grad2(:,1)+grad1(:,2)*grad2(:,2)+grad1(:,3)*grad2(:,3))/sqrt( &
            (grad1(:,1)**2+grad1(:,2)**2+grad1(:,3)**2)* &
            (grad2(:,1)**2+grad2(:,2)**2+grad2(:,3)**2)+tini)
-      if (lweight) f(l1:l2,m,n,iFlameInd)=f(l1:l2,m,n,iFlameInd)*f(l1:l2,m,n,iweight)
+      if (lweight) f(l1:l2,m,n,iFlameInd)=f(l1:l2,m,n,iFlameInd)*abs(f(l1:l2,m,n,iweight))
     enddo
   enddo
 !
