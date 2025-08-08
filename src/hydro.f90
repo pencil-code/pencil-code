@@ -814,6 +814,8 @@ module Hydro
   integer :: idiag_ox2mxz=0     ! YAVG_DOC: $\left< \omega_x^2 \right>_{y}$
   integer :: idiag_oy2mxz=0     ! YAVG_DOC: $\left< \omega_y^2 \right>_{y}$
   integer :: idiag_oz2mxz=0     ! YAVG_DOC: $\left< \omega_z^2 \right>_{y}$
+
+  integer :: idiag_oymxz=0     ! YAVG_DOC: $\left< \omega_y \right>_{y}$
 !
 ! z averaged diagnostics given in zaver.in
 !
@@ -2919,7 +2921,8 @@ module Hydro
       if (idiag_oumphi/=0 .or. idiag_oumxy/=0 .or. &
           idiag_oumxz/=0) lpenc_diagnos2d(i_ou)=.true.
       if (idiag_ozmphi/=0 .or. idiag_ox2mxz/=0 .or. &
-          idiag_oy2mxz/=0 .or. idiag_oz2mxz/=0) lpenc_diagnos2d(i_oo)=.true.
+          idiag_oy2mxz/=0 .or. idiag_oz2mxz/=0 .or. &
+          idiag_oymxz/=0 ) lpenc_diagnos2d(i_oo)=.true.
       if (idiag_u2mphi/=0) lpenc_diagnos2d(i_u2)=.true.
       if (idiag_ox2m/=0 .or. idiag_oy2m/=0 .or. idiag_oz2m/=0 .or. &
           idiag_ox3m/=0 .or. idiag_oy3m/=0 .or. idiag_oz3m/=0 .or. &
@@ -5036,6 +5039,8 @@ module Hydro
         call ysum_mn_name_xz(p%oo(:,1)**2,idiag_ox2mxz)
         call ysum_mn_name_xz(p%oo(:,2)**2,idiag_oy2mxz)
         call ysum_mn_name_xz(p%oo(:,3)**2,idiag_oz2mxz)
+
+        call ysum_mn_name_xz(p%oo(:,2),idiag_oymxz)
 !
         call zsum_mn_name_xy(p%uu(:,1),idiag_uxmxy)
 !
@@ -6610,6 +6615,7 @@ module Hydro
         idiag_ox2mxz=0
         idiag_oy2mxz=0
         idiag_oz2mxz=0
+        idiag_oymxz=0
         idiag_uxmxy=0
         idiag_uymxy=0
         idiag_uzmxy=0
@@ -7331,6 +7337,7 @@ module Hydro
         call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'ox2mxz',idiag_ox2mxz)
         call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'oy2mxz',idiag_oy2mxz)
         call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'oz2mxz',idiag_oz2mxz)
+        call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'oymxz',idiag_oymxz)
       enddo
 !
 !  check for those quantities for which we want z-averages
