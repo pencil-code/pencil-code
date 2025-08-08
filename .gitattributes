@@ -1278,6 +1278,7 @@ idl/read/pc_read_ode.pro -text
 idl/read/pc_read_old.pro -text
 idl/read/pc_read_param.pro -text
 idl/read/pc_read_pdf.pro -text
+idl/read/pc_read_pdf2d.pro -text
 idl/read/pc_read_pdim.pro -text
 idl/read/pc_read_penciled.pro -text
 idl/read/pc_read_phiavg.pro -text
