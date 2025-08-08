@@ -295,6 +295,11 @@ module Chemistry
   integer :: idiag_alpham=0,idiag_alphamax=0,idiag_alphamin=0
   integer :: idiag_ffnucl=0, idiag_supersat=0, idiag_latent_heat=0
 !
+  integer :: idiag_mixfracmax=0
+  integer :: idiag_flameindmax=0
+  integer :: idiag_mixfracmin=0
+  integer :: idiag_flameindmin=0
+!
 !  Auxiliaries.
 !
   integer :: ireac=0
@@ -609,10 +614,15 @@ module Chemistry
 !
         select case (initchem(1))
         case ("double_shear_layer", "double_shear_layer_x")
-          if (ifuel_flow == 1) Y_init_mix_frac=amplchemk
-          if (ifuel_flow == 2) Y_init_mix_frac=amplchemk2
+           if (ifuel_flow == 1) then
+              Y_init_mix_frac=amplchemk
+           elseif (ifuel_flow == 2) then
+              Y_init_mix_frac=amplchemk2
+           else
+              call fatal_error("initialize_chemistry","Please specify ifuel_flow!")
+           endif
         case default
-          call fatal_error("initialize_chemistry","initial mass fractions are not defined for mixt. frac.")
+           call fatal_error("initialize_chemistry","initial mass fractions are not defined for mixt. frac.")
         end select
 !
 ! Initialize variable used for calculation of Bilger mixture fraction based on Hydrogen
@@ -632,7 +642,7 @@ module Chemistry
         end select
         do ichem=1,nchemspec
           mix_frac_IH=mix_frac_IH+Y_init_mix_frac(ichem)*species_constants(ichem,imass_spec)/species_constants(ichem,imass)
-        enddo
+       enddo
       endif
       !
       if (leos) then
@@ -3654,6 +3664,10 @@ module Chemistry
         call sum_mn_name(cp_full(l1:l2,m,n),idiag_cpfull)
         call sum_mn_name(cv_full(l1:l2,m,n),idiag_cvfull)
 !
+        if (idiag_mixfracmax/=0) call max_mn_name(f(l1:l2,m,n,imixfrac),idiag_mixfracmax)
+        if (idiag_mixfracmin/=0) call max_mn_name(-f(l1:l2,m,n,imixfrac),idiag_mixfracmin,lneg=.true.)
+        if (idiag_flameindmax/=0) call max_mn_name(f(l1:l2,m,n,iflameind),idiag_flameindmax)
+        if (idiag_flameindmin/=0) call max_mn_name(-f(l1:l2,m,n,iflameind),idiag_flameindmin,lneg=.true.)
         call sum_mn_name(lambda_full(l1:l2,m,n),idiag_lambdam)
         call max_mn_name(lambda_full(l1:l2,m,n),idiag_lambdamax)
         if (idiag_lambdamin/=0) call max_mn_name(-lambda_full(l1:l2,m,n),idiag_lambdamin,lneg=.true.)
@@ -3757,6 +3771,10 @@ module Chemistry
         idiag_e_intm = 0
         idiag_Ymz = 0
 !
+        idiag_mixfracmax = 0
+        idiag_mixfracmin = 0
+        idiag_flameindmax = 0
+        idiag_flameindmin = 0
         idiag_lambdam = 0
         idiag_lambdamax = 0
         idiag_lambdamin = 0
@@ -3812,6 +3830,10 @@ module Chemistry
 !   Sample for hard-coded heat capacity diagnostics
 !
 !        call parse_name(iname,cname(iname),cform(iname),'cp1m',idiag_cp1m)
+        call parse_name(iname,cname(iname),cform(iname),'mixfracmax',idiag_mixfracmax)
+        call parse_name(iname,cname(iname),cform(iname),'mixfracmin',idiag_mixfracmin)
+        call parse_name(iname,cname(iname),cform(iname),'flameindmax',idiag_flameindmax)
+        call parse_name(iname,cname(iname),cform(iname),'flameindmin',idiag_flameindmin)
         call parse_name(iname,cname(iname),cform(iname),'e_intm',idiag_e_intm)
         call parse_name(iname,cname(iname),cform(iname),'lambdam',idiag_lambdam)
         call parse_name(iname,cname(iname),cform(iname),'lambdamax',idiag_lambdamax)
