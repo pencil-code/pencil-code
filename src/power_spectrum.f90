@@ -3867,9 +3867,9 @@ outer:do ikz=1,nz
 !  select the right variable
 !
       if (variabl=='FI_mixfrac') then
-        !pdfy_var=f(l1:l2,m,n,iFlameInd)
-        !logscale=.false.
-        !pdf_var=f(l1:l2,m,n,iMixFrac)
+        pdfy_var=f(l1:l2,m,n,iflameind)
+        logscale=.false.
+        pdf_var=f(l1:l2,m,n,imixfrac)
       endif
 !
 !  put in the right pdf slot
@@ -3884,8 +3884,8 @@ outer:do ikz=1,nz
         enddo
       else
         do l=l1,l2
-          i_pdf =1+int(pdf_dx1*(pdf_scl*pdf_var(l)-pdf_min))
-          i_pdfy=1+int(pdf_dy1*(pdfy_scl*pdfy_var(l)-pdfy_min))
+          i_pdf =1+int(pdf_dx1*(pdf_scl*pdf_var(l-l1+1)-pdf_min))
+          i_pdfy=1+int(pdf_dy1*(pdfy_scl*pdfy_var(l-l1+1)-pdfy_min))
           i_pdf =min(max(i_pdf ,1),n_pdf)   !(make sure it's inside array boundries)
           i_pdfy=min(max(i_pdfy,1),n_pdfy)  !(make sure it's inside array boundries)
           pdf_yy(i_pdf,i_pdfy)=pdf_yy(i_pdf,i_pdfy)+1
@@ -3911,7 +3911,7 @@ outer:do ikz=1,nz
        endif
        write(1,11) pdf_yy_sum
        close(1)
-    endif
+     endif
 !
 10 format(1p,e12.5,0p,2i6,1p,8e12.4)
 11 format(8i10)
