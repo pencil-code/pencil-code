@@ -13,7 +13,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED mf_EMF(3); mf_EMFdotB; jxb_mf(3); jxbr_mf(3); chiB_mf
-! PENCILS PROVIDED mf_qp; mf_Beq21
+! PENCILS PROVIDED mf_qp; mf_Beq21; meanfield_etat
 !
 !***************************************************************
 module Magnetic_meanfield
@@ -65,7 +65,7 @@ module Magnetic_meanfield
   real :: Calp=0.0, alpha_effect=0.0, alpha_quenching=0.0, delta_effect=0.0, alpha_zz=0.
   real :: gamma_effect=0.0, gamma_quenching=0.0
   real :: chit_quenching=0.0, chi_t0=0.0
-  real :: meanfield_etat=0.0, meanfield_etat_height=1., meanfield_pumping=1.
+  real :: meanfield_etat=0.0, meanfield_etat_height=1., meanfield_etat_rmax=1., meanfield_pumping=1.
   real :: meanfield_delta_height=10., meanfield_delta_width=.05
   real :: meanfield_Beq=1.0,meanfield_Beq_height=0., meanfield_Beq2_height=0.
   real :: meanfield_etat_exp=1.0, uturb=.1
@@ -105,7 +105,6 @@ module Magnetic_meanfield
   real :: GWfac1=1., GWfac2=1., GWfac3=1.
   real :: fluc_alp_m=1.0, sigma_alpha=1.0
   real :: b2_to_u2=0.0, shear_current_sh=0.0
-  real :: sigx=0.0, sigz=0.0
   integer :: npatches=1, npatches_actual, seed_magn_mf2=5555, nmultipole=1
   real, dimension(3) :: alpha_aniso=0.
   real, dimension(3,3) :: alpha_tensor=0., eta_tensor=0.
@@ -128,7 +127,7 @@ module Magnetic_meanfield
   logical :: lread_eta_tensor_z=.false., lread_eta_tensor_z_as_y=.false.
   logical :: lshear_current_effect=.false., lalphass_disk=.false.
   logical :: ltest_patches=.false., lOmega_effect_meanfield=.false.
-  real :: ampluu_kinematic=0.
+  real :: ampluu_kinematic=0., roty0=0., b0=0., r0=1.
   real, dimension(:), allocatable :: xcenter, ycenter, zcenter, roty, cy, sy
 !
   namelist /magn_mf_run_pars/ &
@@ -141,9 +140,9 @@ module Magnetic_meanfield
       x_surface, x_surface2, z_surface, &
       alpha_rmin, kx_alpha, &
       qp_model, seed_magn_mf2, &
-      npatches, nmultipole, sigx, sigz, ltest_patches, lOmega_effect_meanfield, ampluu_kinematic, &
+      npatches, nmultipole, ltest_patches, lOmega_effect_meanfield, ampluu_kinematic, &
       ldelta_profile, delta_effect, delta_profile, &
-      meanfield_etat, meanfield_etat_height, meanfield_etat_profile, &
+      meanfield_etat, meanfield_etat_height, meanfield_etat_rmax, meanfield_etat_profile, &
       meanfield_etat_width, meanfield_etat_exp, meanfield_etat_corona, meanfield_Beq_width, &
       meanfield_kf, meanfield_kf_profile, &
       meanfield_kf_width, meanfield_kf_width2, &
@@ -168,7 +167,7 @@ module Magnetic_meanfield
       lrhs_term, lrhs_term2, rhs_term_amplz, rhs_term_amplphi, rhs_term_ampl, &
       Omega_rmax, Omega_rwidth, lread_alpha_tensor_z, lread_eta_tensor_z, &
       lread_alpha_tensor_z_as_y, lread_eta_tensor_z_as_y, &
-      x1_alp, x2_alp, y1_alp, y2_alp, &
+      x1_alp, x2_alp, y1_alp, y2_alp, roty0, r0, b0, &
       lGW_tensor, kx_hij, relhel_hij, hij_ampl, GWfac1, GWfac2, GWfac3
 !
 ! Diagnostic variables (need to be consistent with reset list below)
@@ -272,7 +271,7 @@ module Magnetic_meanfield
       use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: kf_x_tmp, kf_x1_tmp, prof_tmp
+      real, dimension (nx) :: kf_x_tmp, kf_x1_tmp, prof_tmp, rr
       real, dimension (nz) :: rpatches
       real :: kz1, cont_count=0., rpatch_norm
       integer :: ierr, i, j, ipatchz_count, ipatchz, npatchz
@@ -445,6 +444,8 @@ module Magnetic_meanfield
 !
 !  Compute etat profile and share with other routines.
 !  Here we also set the etat_i and getat_i profiles.
+!  Note that, unlike for alpha_tmp, the etat computed here
+!  does already include the meanfield_etat prefactor.
 !
       if (meanfield_etat/=0.0) then
         select case (meanfield_etat_profile)
@@ -529,6 +530,10 @@ module Magnetic_meanfield
           detat_x=2.*sin(x(l1:l2))*cos(x(l1:l2))
           detat_y=0.
           detat_z=-etat_z/meanfield_etat_height
+!
+!  Note that for z > surface_z, etat=0 and finite below (for width>0)
+!  If width<0, etat is finite for z > surface_z and zero below.
+!
         case ('surface_z'); etat_z=0.5 &
           *(1.-erfunc((z-z_surface)/meanfield_etat_width))
           etat_y=meanfield_etat
@@ -537,17 +542,30 @@ module Magnetic_meanfield
             *exp(-((z-z_surface)/meanfield_etat_width)**2)
           detat_y=0.
           detat_x=0.
-        case ('alphass')
 !
 !  etat=meanfield_etat*cs2/Omega in spherical coordinates.
 !  Here the omega part only. The cs2 part will be added later
 !
+        case ('alphass')
           etat_x = x(l1:l2)**1.5
           etat_y = max(0.,sin(y))**1.5
           etat_z = meanfield_etat
           detat_x= 0.
           detat_y= 0.
           detat_z= 0.
+!
+!  Sphere with uniformly distributed etat, but this comes in calc_pencils_magn_mf.
+!
+        case ('sphere')
+          etat_x=0.
+          etat_y=0.
+          etat_z=0.
+          detat_x=0.
+          detat_y=0.
+          detat_z=0.
+!
+!  Defaults.
+!
         case default;
           call inevitably_fatal_error('initialize_magnetic', &
           'no such meanfield_etat_profile: '//trim(meanfield_etat_profile))
@@ -712,22 +730,29 @@ module Magnetic_meanfield
             enddo
           enddo
           npatches_actual=ipatchz_count
+          call random_number_wrapper(roty,CHANNEL=channel_magn_mf2)
+          roty=360.*roty
         else
           !xcenter=xyz0(1)+(xyz1(1)-xyz0(1))*xcenter 
           !ycenter=xyz0(2)+(xyz1(2)-xyz0(2))*ycenter 
           !zcenter=xyz0(3)+(xyz1(3)-xyz0(3))*zcenter 
           xcenter=0.
           ycenter=0.
-          zcenter=0.
+          if (npatches==1) then
+            zcenter=0.
+          else
+            zcenter=-xyz0(3)
+          endif
           npatches_actual=npatches
+          roty=roty0
         endif
         print*,'npatches_actual=',npatches_actual
 !
 !  Assume random orientation angles for all patches.
 !
-        call random_number_wrapper(roty,CHANNEL=channel_magn_mf2)
-        cy=cos(360.*roty*dtor)
-        sy=sin(360.*roty*dtor)
+        if (headtt.or.ldebug) print*,'AXEL: roty=',roty,dtor
+        cy=cos(roty*dtor)
+        sy=sin(roty*dtor)
       endif
     endsubroutine initialize_magn_mf
 !***********************************************************************
@@ -870,6 +895,10 @@ module Magnetic_meanfield
           meanfield_Beq_profile=='fluc-alpha-disk'.or.&
           shear_current_profile=='alphass') lpenc_requested(i_pp)=.true.
 !
+!  In mean-field models with displacement current, we need meanfield_etat
+!
+      if (iex/=0) lpenc_requested(i_meanfield_etat)=.true.
+!
     endsubroutine pencil_criteria_magn_mf
 !***********************************************************************
     subroutine pencil_interdep_magn_mf(lpencil_in)
@@ -973,7 +1002,7 @@ module Magnetic_meanfield
       real, dimension (nx) :: shear_current_sh_tmp, disk_height, z_over_h
       real, dimension (nx,3) :: Bk_Bki, exa_meanfield, glnchit_prof, glnchit, XXj
       real, dimension (nx,3) :: meanfield_getat_tmp, getat_cross_B_tmp, B2glnrho, glnchit2
-      real, dimension (nx) :: r2, x1, y1, z1, x11, y11, z11, radial_func
+      real, dimension (nx) :: r2, x1, y1, z1, x11, y11, z11, radial_func, tmp, gaussian
       real :: kx,fact
       integer :: i, j, k, nn, l, ipatch
 !
@@ -1186,10 +1215,16 @@ module Magnetic_meanfield
             x1=2.*atan(tan(.5*(x(l1:l2)-xcenter(ipatch))))
             y1=2.*atan(tan(.5*(y(m    )-ycenter(ipatch))))
             z1=2.*atan(tan(.5*(z(n    )-zcenter(ipatch))))
+!
+!  Rotation about y axis
+!
             x11=+cy(ipatch)*x1+sy(ipatch)*z1
             z11=-sy(ipatch)*x1+cy(ipatch)*z1
             y11=            y1
-            r2=.5*(x11/sigx)**2+.5*(y11/sigx)**2+.5*(z11/sigz)**2
+!
+!  Rotation about z axis (in 3-D)
+!
+            r2=.5*(x11**2+y11**2+z11**2)
             alpha_tmp=alpha_tmp+z11*exp(-r2)
             if (iux/=0) then
               if (ltest_patches) then
@@ -1201,20 +1236,23 @@ module Magnetic_meanfield
                 p%uu(:,2)=p%uu(:,2)+ampluu_kinematic*x11*exp(-r2)
               endif
             else
-              radial_func=1./sqrt(max(1.,r2))
+              radial_func=1./sqrt(max(r0**2,r2))
               select case (nmultipole)
-                !case (1) p%aa(:,2)=p%aa(:,2)+ampluu_kinematic*x11*radial_func**3
-                !case (2) p%aa(:,2)=p%aa(:,2)+ampluu_kinematic*x11*zz1*radial_func**5
                 case (1)
-                  f(l1:l2,m,n,iay)=f(l1:l2,m,n,iay)+ampluu_kinematic*x11*radial_func**3
+                  f(l1:l2,m,n,iay)=f(l1:l2,m,n,iay)+b0*r0**3*x11*radial_func**3
                 case (2)
-                  f(l1:l2,m,n,iay)=f(l1:l2,m,n,iay)+ampluu_kinematic*x11*z11*radial_func**5
+                  f(l1:l2,m,n,iay)=f(l1:l2,m,n,iay)+b0*r0**3*x11*z11*radial_func**4
                 case default;
                   call inevitably_fatal_error('calc_pencils_magnetic', &
                   'no such value of nmultipole')
               endselect
             endif
           enddo
+!
+!  Sphere with uniformly distributed alpha effect.
+!  In different coordinates, alpha is bounded by an error function
+!  in a sphere with radius alpha_rmax and width alpha_width.
+!
         case ('sphere')
           if (lspherical_coords) then
             rr=x(l1:l2)
@@ -1275,6 +1313,10 @@ module Magnetic_meanfield
                 -step(y(m),pi/2.+alpha_equator_gap,alpha_gap_step) &
                 -step(alpha_cutoff_up,y(m),alpha_gap_step) &
                 +step(y(m),alpha_cutoff_down,alpha_gap_step))
+!
+!  As for meanfield_etat_profile, for z > surface_z, alpha=0 and finite below (for width>0)
+!  If width<0, alpha is finite for z > surface_z and zero below.
+!
         case ('surface_z'); alpha_tmp=0.5*(1.-erfunc((z(n)-z_surface)/alpha_width))
         case ('above_x0'); alpha_tmp=0.5*(1.+erfunc((x(l1:l2)-alpha_rmin)/alpha_width))
         case ('z/H+surface_z'); alpha_tmp=(z(n)/z_surface)*0.5*(1.-erfunc((z(n)-z_surface)/alpha_width))
@@ -1352,8 +1394,10 @@ module Magnetic_meanfield
             'delta_profile no such delta profile')
         endselect
 !
-!  Compute diffusion term.
+!  Compute turbulent diffusion term.
 !  This sets the meanfield_etat_tmp term at each time step.
+!  The values computed as etat_x*etat_y(m)*etat_z(n) are potentially overwritten
+!  in exceptional cases, e.g., when meanfield_etat_profile='sphere'.
 !
         if (meanfield_etat/=0.0) then
           meanfield_etat_tmp=etat_x*etat_y(m)*etat_z(n)
@@ -1384,6 +1428,27 @@ module Magnetic_meanfield
               where (abs(z_over_h)>meanfield_etat_width) &
                 meanfield_etat_tmp = meanfield_etat_corona*x(l1:l2)**meanfield_etat_exp
             endif
+          endif
+!
+!  Sphere with uniformly distributed etat.
+!  In different coordinates, alpha is bounded by an error function
+!  in a sphere with radius alpha_rmax and width alpha_width.
+!  When meanfield_etat_width<0, we have an increase of etat outside.
+!
+          if (meanfield_etat_profile=='sphere') then
+            if (lspherical_coords) then
+              rr=x(l1:l2)
+            elseif (lcylindrical_coords) then
+              rr=sqrt(x(l1:l2)**2+z(n)**2)
+            else
+              rr=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
+            endif
+            meanfield_etat_tmp=meanfield_etat*.5*(1.-erfunc((rr-meanfield_etat_rmax)/meanfield_etat_width))
+            gaussian=exp(-.5*(rr-meanfield_etat_rmax)**2/meanfield_etat_width**2)
+            tmp=-meanfield_etat*.5*gaussian/(rr*meanfield_etat_width)
+            meanfield_getat_tmp(:,1)=tmp*x(l1:l2)
+            meanfield_getat_tmp(:,2)=tmp*y(m)
+            meanfield_getat_tmp(:,3)=tmp*z(n)
           endif
         endif
 !
@@ -1550,13 +1615,18 @@ module Magnetic_meanfield
 !
 !  Apply diffusion term: simple in Weyl gauge, which is not the default!
 !  In diffusive gauge, add (divA) grad(etat) term.
+!  Special treatment with displacement current; use meanfield_etat_tmp separately.
 !
         if (meanfield_etat /= 0.0) then
-          if (lweyl_gauge) then
-            call multsv_mn_add(-meanfield_etat_tmp,p%jj,p%mf_EMF)
+          if (iex/=0) then
+            p%meanfield_etat=meanfield_etat_tmp
           else
-            call multsv_mn_add(meanfield_etat_tmp,p%del2a,p%mf_EMF)
-            call multsv_mn_add(p%diva,meanfield_getat_tmp,p%mf_EMF)
+            if (lweyl_gauge) then
+              call multsv_mn_add(-meanfield_etat_tmp,p%jj,p%mf_EMF)
+            else
+              call multsv_mn_add(meanfield_etat_tmp,p%del2a,p%mf_EMF)
+              call multsv_mn_add(p%diva,meanfield_getat_tmp,p%mf_EMF)
+            endif
           endif
         endif
 !
@@ -1804,6 +1874,12 @@ module Magnetic_meanfield
         maxdiffus=max(maxdiffus,diffus_eta)
       endif
 !
+!  The following is not done if displacement current exists.
+!
+if (iex/=0) then
+if (n==n1) print*,'AXEL2: p%mf_EMF=',p%mf_EMF(1,:)
+endif
+!
 !  Alpha effect.
 !  Additional terms if Mean Field Theory is included.
 !
@@ -1846,6 +1922,7 @@ module Magnetic_meanfield
       endif
 !
 !  Time-advance of secondary mean-field modules.
+!  Not sure (yet) how to deal with the following if there is displacement current.
 !
       if (lmagn_mf_demfdt) call demf_dt_meanfield(f,df,p)
 !
@@ -2195,7 +2272,7 @@ module Magnetic_meanfield
       use Gravity, only: g0
 !
       integer :: i,j
-      real :: r0,s0,pos_tmp,s_tmp
+      real :: s0,pos_tmp,s_tmp
       real :: epsi
 !
 !  determine alpha cells iteratively:
