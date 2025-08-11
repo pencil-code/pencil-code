@@ -109,6 +109,8 @@ module Chemistry
   integer :: nreactions=0, nreactions1=0, nreactions2=0
   integer :: ll1, ll2, mm1, mm2, nn1, nn2
   real, allocatable, dimension(:) :: kreactions_profile_width, kreactions_alpha
+  character(len=5) :: flameind_spec1="H2"
+  character(len=5) :: flameind_spec2="CO2"
 !
   integer :: mreactions, iadv=0
 !
@@ -247,7 +249,7 @@ module Chemistry
       lhotspot, lchem_detailed, condensing_species, conc_sat_spec_cgs, &
       true_density_cond_spec_cgs, delta_chem, press, init_premixed_fuel, &
       init_fuel_molar_ratio,init_fuel_O2_demand,init_temp_fuel, init_temp_oxidizer, init_phi, &
-      lFlame_index_as_aux, lmixture_fraction_as_aux, mixture_fraction_element, ifuel_flow
+      lFlame_index_as_aux, lmixture_fraction_as_aux, mixture_fraction_element, ifuel_flow, flameind_spec1, flameind_spec2
 !
 !
 ! run parameters
@@ -265,7 +267,8 @@ module Chemistry
       gam_surf_energy_cgs, isurf_energy, iconc_sat_spec, nucleation_rate_coeff_cgs, &
       lnoevap, lnolatentheat, gam_surf_energy_mul_fac, deltaH_cgs,&
       min_nucl_radius_cgs, lupw_chemspec, &
-      lFlame_index_as_aux, lmixture_fraction_as_aux, mixture_fraction_element
+      lFlame_index_as_aux, lmixture_fraction_as_aux, mixture_fraction_element, &
+      flameind_spec1, flameind_spec2
 !
 ! diagnostic variables (need to be consistent with reset list below)
 !
@@ -3873,6 +3876,8 @@ module Chemistry
         where(cnamev=='nuclrmin') cformv='DEFINED'
         where(cnamev=='nuclrate') cformv='DEFINED'
         where(cnamev=='supersat') cformv='DEFINED'
+        where(cnamev=='mixfrac') cformv='DEFINED'
+        where(cnamev=='flameind') cformv='DEFINED'
       endif
 
 !
@@ -3923,6 +3928,19 @@ module Chemistry
       if (sname=='supersat') then
         call assign_slices_scal(slices,f,isupsat)
       endif
+!
+!  Mixture fraction
+!
+      if (sname=='mixfrac') then
+        call assign_slices_scal(slices,f,imixfrac)
+      endif
+!
+!  Flame index
+!
+      if (sname=='flameind') then
+        call assign_slices_scal(slices,f,iflameind)
+      endif
+
 !
     endsubroutine get_slices_chemistry
 !***********************************************************************
@@ -7343,15 +7361,23 @@ module Chemistry
 ! Calculate flame index and store in f-array.
 !
   real, dimension (mx,my,mz,mfarray) :: f
-  integer :: n_loc, m_loc, igrad1, igrad2, ind_chem_H2, ind_chem_CO2
+  integer :: n_loc, m_loc, igrad1, igrad2, ind_chem_spec1, ind_chem_spec2
   integer :: iweight
-  logical :: lCO2, lH2, lweight
+  logical :: lspec1, lspec2, lweight
   real, dimension(nx) :: FI
   real, dimension(nx,3) :: grad1, grad2
 !
-  call find_species_index("H2",igrad1,ind_chem_H2,lH2)
-  call find_species_index("CO2",igrad2,ind_chem_CO2,lCO2)
-  iweight=ireaci(ind_chem_CO2)
+  call find_species_index(flameind_spec1,igrad1,ind_chem_spec1,lspec1)
+  if (.not. lspec1) then
+    print*,"flameind_spec1=",flameind_spec1
+    call fatal_error("make_flame_index","did not find spec1")
+  endif
+  call find_species_index(flameind_spec2,igrad2,ind_chem_spec2,lspec2)
+  if (.not. lspec2) then
+    print*,"flameind_spec2=",flameind_spec2
+    call fatal_error("make_flame_index","did not find spec2")
+  endif
+  iweight=ireaci(ind_chem_spec2)
   lweight=.true.
 !
 ! Loop over all pencils
