@@ -769,6 +769,7 @@ module Hydro
 !
 ! yz averaged diagnostics given in yzaver.in
 !
+  integer :: idiag_u2mx=0       ! YZAVG_DOC: $\left< u^2 \right>_{yz}$
   integer :: idiag_uxmx=0       ! YZAVG_DOC: $\left< u_x \right>_{yz}$
   integer :: idiag_uymx=0       ! YZAVG_DOC: $\left< u_y \right>_{yz}$
   integer :: idiag_uzmx=0       ! YZAVG_DOC: $\left< u_z \right>_{yz}$
@@ -2968,7 +2969,7 @@ module Hydro
           if (lgrav) lpenc_diagnos(i_gg)=.true.
       endif
       if (idiag_urms/=0 .or. idiag_durms/=0 .or. &
-          idiag_umax/=0 .or. idiag_rumax/=0 .or. &
+          idiag_umax/=0 .or. idiag_rumax/=0 .or. idiag_u2mx/=0 .or. &
           idiag_fkinzm/=0 .or. idiag_u2m/=0 .or. idiag_um2/=0 .or. idiag_u2mz/=0 .or. &
           idiag_urmsh/=0 .or. idiag_urmsx/=0 .or. idiag_urmsz/=0 .or. idiag_u2sphm/=0) &
           lpenc_diagnos(i_u2)=.true.
@@ -4673,6 +4674,7 @@ module Hydro
         call xzsum_mn_name_y(p%uu(:,1),idiag_uxmy)
         call xzsum_mn_name_y(p%uu(:,2),idiag_uymy)
         call xzsum_mn_name_y(p%uu(:,3),idiag_uzmy)
+        call yzsum_mn_name_x(p%u2,idiag_u2mx)
         call yzsum_mn_name_x(p%uu(:,1),idiag_uxmx)
         call yzsum_mn_name_x(p%uu(:,2),idiag_uymx)
         call yzsum_mn_name_x(p%uu(:,3),idiag_uzmx)
@@ -6447,6 +6449,7 @@ module Hydro
         idiag_T0y2m=0
         idiag_T0z2m=0
         idiag_uduum=0
+        idiag_u2mx=0
         idiag_uxmx=0
         idiag_uymx=0
         idiag_uzmx=0
@@ -7113,6 +7116,7 @@ module Hydro
 !  Check for those quantities for which we want yz-averages.
 !
       do inamex=1,nnamex
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'u2mx',idiag_u2mx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'uxmx',idiag_uxmx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'uymx',idiag_uymx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'uzmx',idiag_uzmx)
