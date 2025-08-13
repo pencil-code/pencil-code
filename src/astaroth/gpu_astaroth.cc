@@ -1141,17 +1141,25 @@ void scaling(){
 #endif
 }
 /***********************************************************************************************/
-extern "C" void beforeBoundaryGPU(bool lrmv, int isubstep, double t)
+void
+load_f_ode()
 {
         //TP: this is simply the initial implementation
-	//TP: has to be done here since before boundary can use the ode array
         //TODO: benchmark what is the most efficient way of getting ode array to the GPU each substep
+#if TRANSPILATION
         if(n_odevars > 0)
         {
                 acGridSynchronizeStream(STREAM_DEFAULT);
                 acDeviceLoad(acGridGetDevice(), STREAM_DEFAULT, mesh.info, AC_f_ode);
                 acGridSynchronizeStream(STREAM_DEFAULT);
         }
+#endif
+}
+/***********************************************************************************************/
+extern "C" void beforeBoundaryGPU(bool lrmv, int isubstep, double t)
+{
+	//TP: has to be done here since before boundary can use the ode array
+	load_f_ode();
  	acDeviceSetInput(acGridGetDevice(), AC_lrmv,lrmv);
  	acDeviceSetInput(acGridGetDevice(), AC_t,AcReal(t));
 	acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_before_boundary_steps),1);
