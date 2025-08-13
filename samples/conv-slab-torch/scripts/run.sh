@@ -25,6 +25,6 @@ ls   data/training
 
 #pc_run start
 #pc_run run
-mpiexec -n 1 --bind-to none --cpus-per-proc 7 ./src/start.x
+#mpiexec -n 1 --bind-to none --cpus-per-proc 7 ./src/start.x
 mpiexec -n 1 --bind-to none --cpus-per-proc 7 ./src/run.x
 #src/read_all_videofiles.x

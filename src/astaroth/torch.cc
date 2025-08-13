@@ -16,8 +16,8 @@ void torch_trainCAPI(int sub_dims[3], float* input, float* label, float* loss_va
 	
 	//printf("This is the name of the model: %s", model);
 	//printf("Calling c API");
-	int64_t input_shape[5] = {1, 3, sub_dims[2], sub_dims[1], sub_dims[0]};
-	int64_t label_shape[5] = {1, 6, sub_dims[2], sub_dims[1], sub_dims[0]};
+	int64_t input_shape[5] = {5, 3, sub_dims[2], sub_dims[1], sub_dims[0]};
+	int64_t label_shape[5] = {5, 6, sub_dims[2], sub_dims[1], sub_dims[0]};
   	torchfort_result_t res = torchfort_train("stationary", input, 5, input_shape, label, 5, label_shape, loss_val, precision, 0);
 
  	if (res != TORCHFORT_RESULT_SUCCESS)

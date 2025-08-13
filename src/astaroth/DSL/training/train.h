@@ -1,7 +1,26 @@
 //#if LTRAINING
-communicated Field3 UUMEAN
-communicated FieldSymmetricTensor TAU
+
+communicated Field3 UUMEANBatch[6]
+
+communicated Field3 UUMEANinf
+
+
+
+// use TAUinf default for inference calls
+communicated FieldSymmetricTensor TAU0
+communicated FieldSymmetricTensor TAU1
+communicated FieldSymmetricTensor TAU2
+communicated FieldSymmetricTensor TAU3
+communicated FieldSymmetricTensor TAU4
+
+
+communicated FieldSymmetricTensor TAUinf
+
 communicated FieldSymmetricTensor TAU_INFERRED
+
+
+global input int ranNum
+global input bool infer
 
 Stencil avgr1
 {
@@ -44,41 +63,51 @@ Stencil avgr1
 	[1][1][1] = 1/27,
 }
 
-Kernel tau_uumean(){
-	write(TAU.xx, UUX*UUX)	
-	write(TAU.yy, UUY*UUY)	
-	write(TAU.zz, UUZ*UUZ)	
-	write(TAU.xy, UUX*UUZ)	
-	write(TAU.yz, UUY*UUZ)	
-	write(TAU.xz, UUX*UUZ)
+Kernel tau_uumean(FieldSymmetricTensor tau, Field3 uumean){
 
-	write(UUMEAN.x, gaussian_smooth(UUX))
-	write(UUMEAN.y, gaussian_smooth(UUY))
-	write(UUMEAN.z, gaussian_smooth(UUZ))
+
+		print("The ran in DSL is: %d\n", ranNum)
+		write(tau.xx, UUX*UUX)	
+		write(tau.yy, UUY*UUY)	
+		write(tau.zz, UUZ*UUZ)	
+		write(tau.xy, UUX*UUY)	
+		write(tau.yz, UUY*UUZ)	
+		write(tau.xz, UUX*UUZ)
+
+
+		write(uumean.x, gaussian_smooth(UUX))
+		write(uumean.y, gaussian_smooth(UUY))
+		write(uumean.z, gaussian_smooth(UUZ))
+
 }
 
-Kernel smooth_tau(){
-	//write(TAU, gaussian_smooth(TAU))
-	write(TAU.xx, gaussian_smooth(TAU.xx))
-	write(TAU.xy, gaussian_smooth(TAU.xy))
-	write(TAU.xz, gaussian_smooth(TAU.xz))
-	write(TAU.yy, gaussian_smooth(TAU.yy))
-	write(TAU.yz, gaussian_smooth(TAU.yz))
-	write(TAU.zz, gaussian_smooth(TAU.zz))
+Kernel smooth_tau(FieldSymmetricTensor tau, Field3 uumean){
+
+	write(tau.xx, gaussian_smooth(tau.xx))
+	write(tau.xy, gaussian_smooth(tau.xy))
+	write(tau.xz, gaussian_smooth(tau.xz))
+	write(tau.yy, gaussian_smooth(tau.yy))
+	write(tau.yz, gaussian_smooth(tau.yz))
+	write(tau.zz, gaussian_smooth(tau.zz))
+
 }
 
-Kernel final_tau(){
-	UX = UUMEAN.x
-	UY = UUMEAN.y
-	UZ = UUMEAN.z
 
-	write(TAU.xx, -(UX*UX) + TAU.xx)
-	write(TAU.yy, -(UY*UY) + TAU.yy)
-	write(TAU.zz, -(UZ*UZ) + TAU.zz)
-	write(TAU.xy, -(UX*UY) + TAU.xy)
-	write(TAU.yz, -(UY*UZ) + TAU.yz)
-	write(TAU.xz, -(UX*UZ) + TAU.xz)
+Kernel final_tau(FieldSymmetricTensor tau, Field3 uumean){
+
+	UX = uumean.x
+	UY = uumean.y
+	UZ = uumean.z
+
+	write(tau.xx, -(UX*UX) + tau.xx)
+	write(tau.yy, -(UY*UY) + tau.yy)
+	write(tau.zz, -(UZ*UZ) + tau.zz)
+	write(tau.xy, -(UX*UY) + tau.xy)
+	write(tau.yz, -(UY*UZ) + tau.yz)
+	write(tau.xz, -(UX*UZ) + tau.xz)
 }
+
+
 
 global output real minTAU
 global output real maxTAU
@@ -86,7 +115,7 @@ global output real maxTAU
 global output real minUUMEAN
 global output real maxUUMEAN
 
-Kernel reduce_uumean_tau(){
+Kernel reduce_uumean_tau(FieldSymmetricTensor TAU, Field3 UUMEAN){
 	real minimumTAU = min(TAU.xx, min(TAU.yy, min(TAU.zz, min(TAU.xy, min(TAU.yz, TAU.xz)))))
 	reduce_min(minimumTAU, minTAU)
 
@@ -106,7 +135,7 @@ global output real maxTAUxx, maxTAUyy, maxTAUzz, maxTAUxy, maxTAUyz, maxTAUxz
 global output real minUUMEANx, minUUMEANy, minUUMEANz
 global output real maxUUMEANx, maxUUMEANy, maxUUMEANz
 
-Kernel component_wise_reduce(){
+Kernel component_wise_reduce(FieldSymmetricTensor TAU, Field3 UUMEAN){
 	reduce_min(TAU.xx, minTAUxx)
 	reduce_min(TAU.yy, minTAUyy)
 	reduce_min(TAU.zz, minTAUzz)
@@ -201,18 +230,20 @@ component_wise_descale_uumean(Field3 f, real minx, real miny, real minz, real ma
 }
 
 global output real AC_l2_sum
-Kernel l2_sum(){
+Kernel l2_sum(FieldSymmetricTensor trueTAU){
+
+
    res = 0.0
-   res +=  (TAU_INFERRED.xx - TAU.xx)*(TAU_INFERRED.xx - TAU.xx)
-   res +=  (TAU_INFERRED.yy - TAU.yy)*(TAU_INFERRED.yy - TAU.yy)
-   res +=  (TAU_INFERRED.zz - TAU.zz)*(TAU_INFERRED.zz - TAU.zz)
-   res +=  (TAU_INFERRED.xy - TAU.xy)*(TAU_INFERRED.xy - TAU.xy)
-   res +=  (TAU_INFERRED.yz - TAU.yz)*(TAU_INFERRED.yz - TAU.yz)
-   res +=  (TAU_INFERRED.xz - TAU.zz)*(TAU_INFERRED.xz - TAU.zz)
+   res +=  (TAU_INFERRED.xx - trueTAU.xx)*(TAU_INFERRED.xx - trueTAU.xx)
+   res +=  (TAU_INFERRED.yy - trueTAU.yy)*(TAU_INFERRED.yy - trueTAU.yy)
+   res +=  (TAU_INFERRED.zz - trueTAU.zz)*(TAU_INFERRED.zz - trueTAU.zz)
+   res +=  (TAU_INFERRED.xy - trueTAU.xy)*(TAU_INFERRED.xy - trueTAU.xy)
+   res +=  (TAU_INFERRED.yz - trueTAU.yz)*(TAU_INFERRED.yz - trueTAU.yz)
+   res +=  (TAU_INFERRED.xz - trueTAU.zz)*(TAU_INFERRED.xz - trueTAU.zz)
    reduce_sum(res,AC_l2_sum)
 }
 
-Kernel scale_kernel(){
+Kernel scale_kernel(FieldSymmetricTensor TAU, Field3 UUMEAN){
 	//write(TAU, component_wise_scale_tau(TAU, minTAUxx, minTAUyy, minTAUzz, minTAUxy, minTAUyz, minTAUxz, maxTAUxx, maxTAUyy, maxTAUzz, maxTAUxy, maxTAUyz, maxTAUxz))
 	//write(UUMEAN, component_wise_scale_uumean(UUMEAN, minUUMEANx, minUUMEANy, minUUMEANz, maxUUMEANx, maxUUMEANy, maxUUMEANz))
 
@@ -220,7 +251,17 @@ Kernel scale_kernel(){
 	write(UUMEAN, train_scale(UUMEAN, minUUMEAN, maxUUMEAN))
 }
 
-Kernel descale_kernel(){
+Kernel scale_kernel_new(FieldSymmetricTensor tau, Field3 uumean){
+	//write(TAU, component_wise_scale_tau(TAU, minTAUxx, minTAUyy, minTAUzz, minTAUxy, minTAUyz, minTAUxz, maxTAUxx, maxTAUyy, maxTAUzz, maxTAUxy, maxTAUyz, maxTAUxz))
+	//write(UUMEAN, component_wise_scale_uumean(UUMEAN, minUUMEANx, minUUMEANy, minUUMEANz, maxUUMEANx, maxUUMEANy, maxUUMEANz))
+
+
+	write(tau, train_scale(tau, minTAU, maxTAU))
+	write(uumean, train_scale(uumean, minUUMEAN, maxUUMEAN))
+}
+
+
+Kernel descale_kernel(FieldSymmetricTensor TAU, Field3 UUMEAN){
 	//write(UUMEAN, component_wise_descale_uumean(UUMEAN, minUUMEANx, minUUMEANy, minUUMEANz, maxUUMEANx, maxUUMEANy, maxUUMEANz))
 	//write(TAU, component_wise_descale_tau(TAU, minTAUxx, minTAUyy, minTAUzz, minTAUxy, minTAUyz, minTAUxz, maxTAUxx, maxTAUyy, maxTAUzz, maxTAUxy, maxTAUyz, maxTAUxz))
 	//write(TAU_INFERRED, component_wise_descale_tau(TAU_INFERRED, minTAUxx, minTAUyy, minTAUzz, minTAUxy, minTAUyz, minTAUxz, maxTAUxx, maxTAUyy, maxTAUzz, maxTAUxy, maxTAUyz, maxTAUxz))
@@ -230,26 +271,137 @@ Kernel descale_kernel(){
 	write(UUMEAN, train_descale(UUMEAN, minUUMEAN, maxUUMEAN))
 }
 
-ComputeSteps calc_validation_loss(boundconds){
-	l2_sum()
+
+Kernel descale_kernel_new(FieldSymmetricTensor TAU, Field3 UUMEAN){
+	//write(TAU, component_wise_scale_tau(TAU, minTAUxx, minTAUyy, minTAUzz, minTAUxy, minTAUyz, minTAUxz, maxTAUxx, maxTAUyy, maxTAUzz, maxTAUxy, maxTAUyz, maxTAUxz))
+	//write(UUMEAN, component_wise_scale_uumean(UUMEAN, minUUMEANx, minUUMEANy, minUUMEANz, maxUUMEANx, maxUUMEANy, maxUUMEANz))
+
+	write(TAU, train_descale(TAU, minTAU, maxTAU))
+	write(UUMEAN, train_descale(UUMEAN, minUUMEAN, maxUUMEAN))
+
+	write(TAU_INFERRED, train_descale(TAU_INFERRED, minTAU, maxTAU))
+}
+
+
+
+ComputeSteps calc_validation_loss0(boundconds){
+	l2_sum(TAU0)
+}
+
+ComputeSteps calc_validation_loss1(boundconds){
+	l2_sum(TAU1)
+}
+
+ComputeSteps calc_validation_loss2(boundconds){
+	l2_sum(TAU2)
+}
+
+ComputeSteps calc_validation_loss3(boundconds){
+	l2_sum(TAU3)
+}
+
+ComputeSteps calc_validation_loss4(boundconds){
+	l2_sum(TAU4)
 }
 
 ComputeSteps calc_scaling(boundconds){
-	reduce_uumean_tau()
+	reduce_uumean_tau(TAU0, UUMEANBatch[0])
 	//component_wise_reduce()
 }
 
-ComputeSteps initialize_uumean_tau(boundconds){
-	tau_uumean()
-	smooth_tau()
-	final_tau()	
+
+ComputeSteps calc_scaling_inf(boundconds){
+	reduce_uumean_tau(TAUinf, UUMEANinf)
+	//component_wise_reduce()
 }
 
-ComputeSteps scale(boundconds){
-	scale_kernel()
+
+ComputeSteps initialize_uumean_tau0(boundconds){
+	tau_uumean(TAU0, UUMEANBatch[0])
+	smooth_tau(TAU0, UUMEANBatch[0])
+	final_tau(TAU0, UUMEANBatch[0])	
 }
 
-ComputeSteps descale(boundconds){
-	descale_kernel()
+
+ComputeSteps initialize_uumean_tau1(boundconds){
+	tau_uumean(TAU1, UUMEANBatch[1])
+	smooth_tau(TAU1, UUMEANBatch[1])
+	final_tau(TAU1, UUMEANBatch[1])	
 }
+
+ComputeSteps initialize_uumean_tau2(boundconds){
+	tau_uumean(TAU2, UUMEANBatch[2])
+	smooth_tau(TAU2, UUMEANBatch[2])
+	final_tau(TAU2, UUMEANBatch[2])	
+}
+
+ComputeSteps initialize_uumean_tau3(boundconds){
+	tau_uumean(TAU3, UUMEANBatch[3])
+	smooth_tau(TAU3, UUMEANBatch[3])
+	final_tau(TAU3, UUMEANBatch[3])	
+}
+
+ComputeSteps initialize_uumean_tau4(boundconds){
+	tau_uumean(TAU4, UUMEANBatch[4])
+	smooth_tau(TAU4, UUMEANBatch[4])
+	final_tau(TAU4, UUMEANBatch[4])	
+}
+
+
+ComputeSteps initialize_uumean_tau_inf(boundconds){
+	tau_uumean(TAUinf, UUMEANinf)
+	smooth_tau(TAUinf, UUMEANinf)
+	final_tau(TAUinf, UUMEANinf)	
+}
+
+
+ComputeSteps scale0(boundconds){
+	scale_kernel_new(TAU0, UUMEANBatch[0])
+}
+
+ComputeSteps scale1(boundconds){
+	scale_kernel_new(TAU1, UUMEANBatch[1])
+}
+
+ComputeSteps scale2(boundconds){
+	scale_kernel_new(TAU2, UUMEANBatch[2])
+}
+
+ComputeSteps scale3(boundconds){
+	scale_kernel_new(TAU3, UUMEANBatch[3])
+}
+
+ComputeSteps scale4(boundconds){
+	scale_kernel_new(TAU4, UUMEANBatch[4])
+}
+
+ComputeSteps scaleinf(boundconds){
+	scale_kernel_new(TAUinf, UUMEANinf)
+}
+
+ComputeSteps descale0(boundconds){
+	descale_kernel_new(TAU0, UUMEANBatch[0])
+}
+
+ComputeSteps descale1(boundconds){
+	descale_kernel_new(TAU1, UUMEANBatch[1])
+}
+
+ComputeSteps descale2(boundconds){
+	descale_kernel_new(TAU2, UUMEANBatch[2])
+}
+
+ComputeSteps descale3(boundconds){
+	descale_kernel_new(TAU3, UUMEANBatch[3])
+}
+
+ComputeSteps descale4(boundconds){
+	descale_kernel_new(TAU4, UUMEANBatch[4])
+}
+
+
+ComputeSteps descaleinf(boundconds){
+	descale_kernel_new(TAUinf, UUMEANinf)
+}
+
 //#endif

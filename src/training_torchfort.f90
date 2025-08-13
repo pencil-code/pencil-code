@@ -100,6 +100,7 @@
         call information('initialize_training','TORCHFORT LIB LOADED SUCCESFULLY')
       endif
 
+!need this to be false for now but should be ltrained
       if (ltrained) then
         istat = torchfort_load_model(trim(model), trim(modelfn))
         if (istat /= TORCHFORT_RESULT_SUCCESS) then
@@ -108,8 +109,8 @@
           call information('initialize_training','TORCHFORT MODEL "'//trim(modelfn)//'" LOADED SUCCESFULLY')
         endif
       else
-        if (file_exists(trim(checkpoint_output_dir)//'/'//trim(model)//'.pt')) then
-          
+        if (file_exists(trim(checkpoint_output_dir)//'/'//trim(model)//'.pt').and.lroot) then
+          print *, 'loadedd checkpoint'
           istat = torchfort_load_checkpoint(trim(model), trim(checkpoint_output_dir), train_step_ckpt, val_step_ckpt)
           if (istat /= TORCHFORT_RESULT_SUCCESS) then
             call fatal_error("initialize_training","when loading checkpoint: istat="//trim(itoa(istat)))
@@ -330,7 +331,7 @@
           if (istat /= TORCHFORT_RESULT_SUCCESS) &
             call fatal_error("train","when saving checkpoint: istat="//trim(itoa(istat)))
           lckpt_written = .true.
-!print*, 'it,it_train_chkpt=', it,it_train_chkpt, trim(model),istat, trim(checkpoint_output_dir), lckpt_written
+          print*, 'it,it_train_chkpt=', it,it_train_chkpt, trim(model),istat, trim(checkpoint_output_dir), lckpt_written
         endif
       endif
 

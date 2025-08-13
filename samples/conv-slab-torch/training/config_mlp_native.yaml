@@ -9,7 +9,7 @@ model:
 #   layer_sizes: [1024, 1024]
   type: torchscript
   parameters:
-    filename: "training/unet_torchscript.pt"
+    filename: "training/unet_torchscript_original.pt"
 
 loss:
   type: MSE
