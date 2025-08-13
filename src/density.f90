@@ -49,7 +49,7 @@ module Density
   real, dimension (mz) :: profz_ffree=1.0, dprofz_ffree=0.0
   real, dimension(mz) :: profz_eos=1.0,dprofz_eos=0.0
   real, target :: mpoly=impossible
-  real, pointer :: mpoly0, mpoly1, mpoly2, eps_hless
+  real, pointer :: mpoly0, mpoly1, mpoly2, eps_hless, width_hless_absolute
   real, dimension(nx) :: xmask_den
   real, dimension(nx) :: fprofile_x=1.
   real, dimension(nz) :: fprofile_z=1.
@@ -1017,7 +1017,10 @@ module Density
         lhiggsless=.false.
       endif
 !
-      if (lhydro.and.lhiggsless) call get_shared_variable('eps_hless',eps_hless)
+      if (lhydro.and.lhiggsless) then
+        call get_shared_variable('eps_hless',eps_hless)
+        if (lrun) call get_shared_variable('width_hless_absolute',width_hless_absolute)
+      endif
 
       if (lcontinuity_gas.and..not.lweno_transport.and.ldensity_nolog.and.lconservative.and..not.lhydro) &
         call fatal_error_local('initialize_density','divss not available without hydro')
@@ -2348,6 +2351,7 @@ module Density
 !                suppressed weno for log density
 !
       use WENO_transport
+      use FArrayManager, only: farray_index_by_name
       use Sub, only: div,grad,dot,dot2,u_dot_grad,del2,del6,multmv,g2ij,dot_mn,h_dot_grad, &
                      del6_strict,calc_del6_for_upwind
 
@@ -2357,9 +2361,9 @@ module Density
       intent(in) :: f
       intent(inout) :: p
       real, dimension(nx) :: tmp
-      integer :: i
+      integer :: i, ihless
 !
-! rho
+! set rho pencil, but it is overwritten in the conservative case.
 !
       p%rho=f(l1:l2,m,n,irho)
       if (lreference_state) p%rho=p%rho+reference_state(:,iref_rho)
@@ -2438,13 +2442,19 @@ module Density
 !
       if (lpenc_loc(i_divss)) call div(f,iux,p%divss)
 !
+!  The following is only needed for diagnostics; it does not enter in
+!  the dynamics, but it could be useful for the nonconservative case.
+!
       if (lconservative) then
         if (lhiggsless) then
-          where(real(t) < p%hless) p%rho=p%rho-eps_hless
-          p%rho=p%rho/(fourthird*p%lorentz*(1.-.25/p%lorentz))
-        else
-          p%rho=p%rho/(fourthird*p%lorentz*(1.-.25/p%lorentz))
+          if (width_hless_absolute==0.) then
+            where(real(t) < p%hless) p%rho=p%rho-eps_hless
+          else
+            ihless=farray_index_by_name('ihless')
+            p%rho=p%rho-eps_hless*max(0.d0, min(1.d0, (f(l1:l2,m,n,ihless)+0.5d0*width_hless_absolute-t)/width_hless_absolute))
+          endif
         endif
+        p%rho=p%rho/(fourthird*p%lorentz*(1.-.25/p%lorentz))
       endif
 !
     endsubroutine calc_pencils_linear_density_pnc

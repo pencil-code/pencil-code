@@ -114,7 +114,7 @@ module Hydro
   real :: z1_uu=0., z2_uu=0.
   real :: ABC_A=1., ABC_B=1., ABC_C=1.
   real :: TG_A=1., TG_B=-1., TG_C=0.
-  real :: vwall=.0, alpha_hless=.0, eps_hless=.0
+  real :: vwall=.0, alpha_hless=.0, eps_hless=.0, width_hless=.0, width_hless_absolute
   real :: xjump_mid=0.,yjump_mid=0.,zjump_mid=0.
   integer :: nb_rings=0
   integer :: neddy=0
@@ -197,7 +197,7 @@ module Hydro
       lvv_as_aux, lvv_as_comaux, &
       lfactors_uu, qirro_uu, lsqrt_qirro_uu, lset_uz_zero, &
       lno_noise_uu, lrho_nonuni_uu, lpower_profile_file_uu, &
-      llorentz_limiter, lhiggsless, lhiggsless_old, vwall, alpha_hless, &
+      llorentz_limiter, lhiggsless, lhiggsless_old, vwall, alpha_hless, width_hless, &
       xjump_mid, yjump_mid, zjump_mid, qini
 !
 !  Run parameters.
@@ -300,7 +300,7 @@ module Hydro
       limpose_only_horizontal_uumz, luu_fluc_as_aux, Om_inner, luu_sph_as_aux, &
       ltime_integrals_always, dtcor, lvart_in_shear_frame, lSchur_3D3D1D_uu, &
       lSchur_2D2D3D_uu, lSchur_2D2D1D_uu, &
-      lhiggsless, vwall, alpha_hless
+      lhiggsless, vwall, alpha_hless, width_hless
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -1083,6 +1083,8 @@ module Hydro
       if (lhiggsless) then
         eps_hless = alpha_hless/(1.+alpha_hless)
         call put_shared_variable ('eps_hless',eps_hless,caller='register_hydro')
+        width_hless_absolute=width_hless*dx/vwall
+        call put_shared_variable ('width_hless_absolute',width_hless_absolute,caller='initialize_hydro')
       endif
 !
 ! If we are to solve for gradient of dust particle velocity, we must store gradient
@@ -1627,7 +1629,7 @@ module Hydro
 !
       if (lhiggsless) then
         if (allocated(thless)) deallocate(thless, xhless, yhless, zhless)
-
+!
         if (lroot) then
           open(1,file='higgsless.dat')
           read(1,*) nhless
@@ -2812,7 +2814,6 @@ module Hydro
 !  Initialize Higgsless field
 !
         if (lhiggsless) then
-          eps_hless = alpha_hless/(1.+alpha_hless)
           if (lhiggsless_old) then
             f(:,:,:,ihless) = eps_hless
           else
@@ -3289,11 +3290,18 @@ module Hydro
             if (lrelativistic_eos) cs201=1.+cs20
             cs2011=1./cs201
 !
-! alberto: tmp_rho is required to be reconstructed for higgsless
+!  alberto: tmp_rho is required to be reconstructed for higgsless.
+!  Unless the p%uu pencil is taken from the ivv chunk of the farray, the
+!  following smoothing is only used for diagnostics.
 !
             tmp_rho=f(l1:l2,m,n,irho)
             if (.not.lhiggsless_old.and.lhiggsless) then
-              where(real(t) < f(l1:l2,m,n,ihless)) tmp_rho=tmp_rho-eps_hless
+              if (width_hless==0.) then
+                where(real(t) < f(l1:l2,m,n,ihless)) tmp_rho=tmp_rho-eps_hless
+              else
+                tmp_rho=tmp_rho-eps_hless &
+                  *max(0.d0, min(1.d0, (f(l1:l2,m,n,ihless)+0.5d0*width_hless_absolute-t)/width_hless_absolute))
+              endif
             else
               if (lhiggsless_old) call warning('calc_pencils_hydro',&
                             'pencil u is not correctly computed for lhiggsless_old')
@@ -5332,7 +5340,13 @@ module Hydro
                   hydro_energy=hydro_energy-f(:,m,n,ihless)
                 enddo
               else
-                where(real(t) < f(:,m,n,ihless)) hydro_energy=hydro_energy-alpha_hless/(1.+alpha_hless)
+                !where(real(t) < f(:,m,n,ihless)) hydro_energy=hydro_energy-alpha_hless/(1.+alpha_hless)
+                if (width_hless==0.) then
+                  where(real(t) < f(:,m,n,ihless)) hydro_energy=hydro_energy-eps_hless
+                else
+                  hydro_energy=hydro_energy-eps_hless &
+                    *max(0.d0, min(1.d0, (f(:,m,n,ihless)+0.5d0*width_hless_absolute-t)/width_hless_absolute))
+                endif
               endif
             endif
             hydro_energy1=1./hydro_energy
@@ -5405,7 +5419,11 @@ module Hydro
               press=rho*cs20-f(:,m,n,ihless)
             else
               press=rho*cs20
-              where(real(t) < f(:,m,n,ihless)) press=press-alpha_hless/(1.+alpha_hless)
+              if (width_hless==0.) then
+                where(real(t) < f(:,m,n,ihless)) press=press-eps_hless
+              else
+                press=press-eps_hless*max(0.d0, min(1.d0, (f(:,m,n,ihless)+0.5d0*width_hless_absolute-t)/width_hless_absolute))
+              endif
             endif
           else
             press=rho*cs20
