@@ -104,6 +104,7 @@ module Energy
   real :: nheat_rho=1.0, nheat_TT=1.0
   real :: xjump_mid=0.0,yjump_mid=0.0,zjump_mid=0.0
   real :: wpatch=0.0, amp_patch=1.0, patch_fac=1.0, coolfac=0.0
+  real :: pp_cool=0.0
   integer, parameter :: nheatc_max=4
   integer :: iglobal_hcond=0
   integer :: iglobal_glhc=0
@@ -169,6 +170,7 @@ module Energy
   real :: w_sldchar_ene_r0=1.0, w_sldchar_ene_p=8.0
   real :: xmid
   logical :: lheat_cool_gravz=.false.
+  real :: tau_cool_pp=0.0
   character (len=labellen), dimension(ninit) :: initss='nothing'
   character (len=labellen) :: borderss='nothing', div_sld_ene='2nd'
   character (len=labellen) :: pertss='zero'
@@ -262,7 +264,8 @@ module Energy
       kx_ss, ky_ss, kz_ss, tau_relax_ss, ampl_imp_ss, TTbot_factor, &
       heattype, nheat_rho, nheat_TT, lrhs_max, &
       wpatch, amp_patch, ncool_patch, &
-      patch_fac, coolfac, lnew_cooling_patches, lcool_prof_as_var
+      patch_fac, coolfac, lnew_cooling_patches, lcool_prof_as_var, &
+      tau_cool_pp,pp_cool
 !
 !  Diagnostic variables for print.in
 !  (need to be consistent with reset list below).
@@ -6292,6 +6295,11 @@ module Energy
           heat=heat-p%rho*(p%cs2-cs2cool)/tau_cool2
         endif
       endif
+!
+!  Cooling/heating with respect to pp-pp_cool
+!
+      if (tau_cool_pp/=0.0) &
+           heat=heat-(p%pp-pp_cool)/(gamma_m1*tau_cool_pp)
 !
 !  Add "coronal" heating (to simulate a hot corona).
 !  AB: I guess this should be disabled soon, in favor of using
