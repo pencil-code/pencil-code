@@ -3216,6 +3216,7 @@ module Energy
       endif
 !
       if (tau_cool2/=0.0) lpenc_requested(i_rho)=.true.
+      if (tau_cool_pp/=0.0) lpenc_requested(i_pp)=.true.
 !
 ! To be used to make the radiative cooling term propto exp(-P/P0), where P is the gas pressure
 !
