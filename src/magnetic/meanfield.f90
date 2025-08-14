@@ -72,7 +72,7 @@ module Magnetic_meanfield
   real :: alpha_eps=0.0, alpha_pom0=0.0
   real :: x_surface=0., x_surface2=0., z_surface=0., qp_width=impossible, qpx_width=impossible
   real :: alpha_equator=impossible, alpha_equator_gap=0.0, alpha_gap_step=0.0
-  real :: alpha_rmin=0.
+  real :: alpha_rmin=0., alpha_height=0.
   real :: alpha_cutoff_up=0.0, alpha_cutoff_down=0.0
   real :: meanfield_qs=0.0, meanfield_qp=0.0, meanfield_qe=0.0, meanfield_qa=0.0
   real :: meanfield_Bs=1.0, meanfield_Bp=1.0, meanfield_Be=1.0, meanfield_Ba=1.0
@@ -138,7 +138,7 @@ module Magnetic_meanfield
       lalpha_profile_total, lmeanfield_noalpm, alpha_profile, &
       chit_quenching, chi_t0, lqp_profile, lqpx_profile, qp_width, qpx_width, &
       x_surface, x_surface2, z_surface, &
-      alpha_rmin, kx_alpha, &
+      alpha_rmin, alpha_height, kx_alpha, &
       qp_model, seed_magn_mf2, &
       npatches, nmultipole, ltest_patches, lOmega_effect_meanfield, ampluu_kinematic, &
       ldelta_profile, delta_effect, delta_profile, &
@@ -564,6 +564,16 @@ module Magnetic_meanfield
           detat_y=0.
           detat_z=0.
 !
+!  Ellipsoid with uniformly distributed etat, but this comes in calc_pencils_magn_mf.
+!
+        case ('ellipsoid')
+          etat_x=0.
+          etat_y=0.
+          etat_z=0.
+          detat_x=0.
+          detat_y=0.
+          detat_z=0.
+!
 !  Defaults.
 !
         case default;
@@ -669,6 +679,14 @@ module Magnetic_meanfield
 !  Determine the coherent cells for fluctuating alpha dynamo
 !
       if (alpha_profile=='fluc-alpha-disk') call calc_fluc_alp_cells
+!
+!  By default (alpha_height=0.), we want to have alpha_height=alpha_rmax.
+!  Otherwise, use value as given.
+!
+      if (alpha_height==0.) then
+        alpha_height=alpha_rmax
+      endif
+print*,'AXEL1: alpha_height,alpha_rmax=',alpha_height,alpha_rmax
 !
 !  Patches allows one to place small dynamos in the domain. Their distribution
 !  may be uniform in space if the file npatchz.txt does not exist.
@@ -1002,7 +1020,7 @@ module Magnetic_meanfield
       real, dimension (nx) :: shear_current_sh_tmp, disk_height, z_over_h
       real, dimension (nx,3) :: Bk_Bki, exa_meanfield, glnchit_prof, glnchit, XXj
       real, dimension (nx,3) :: meanfield_getat_tmp, getat_cross_B_tmp, B2glnrho, glnchit2
-      real, dimension (nx) :: r2, x1, y1, z1, x11, y11, z11, radial_func, tmp, gaussian
+      real, dimension (nx) :: r2, x1, y1, z1, x11, y11, z11, radial_func, tmp, gaussian, zoverh
       real :: kx,fact
       integer :: i, j, k, nn, l, ipatch
 !
@@ -1262,6 +1280,38 @@ module Magnetic_meanfield
             rr=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
           endif
           alpha_tmp=.5*(1.-erfunc((rr-alpha_rmax)/alpha_width))
+!
+!  In preparation for ellipsoids, replace rr -> rr/alpha_rmax, so replace:
+!  (rr-alpha_rmax)/alpha_width = (rr/alpha_rmax-1) * alpha_rmax/alpha_width
+!  By default, alpha_height=alpha_rmax.
+!
+        case ('ellipsoid')
+          if (lspherical_coords) then
+            rr=x(l1:l2)*sqrt((sinth(m)/alpha_rmax)**2+(costh(m)/alpha_height)**2)-1.
+          elseif (lcylindrical_coords) then
+            rr=sqrt((x(l1:l2)/alpha_width)**2+(z(n)/alpha_height)**2)-1.
+          else
+            rr=sqrt((x(l1:l2)**2+y(m)**2)/alpha_width**2+(z(n)/alpha_height)**2)-1.
+          endif
+          alpha_tmp=.5*(1.-erfunc(rr*alpha_rmax/alpha_width))
+!
+!  Ellipsoids, but with additional z factor, so alpha changes sign about equator.
+!
+        case ('ellipsoid-z')
+          if (lspherical_coords) then
+            rr=x(l1:l2)*sqrt((sinth(m)/alpha_rmax)**2+(costh(m)/alpha_height)**2)-1.
+            zoverh=x(l1:l2)*costh(m)/alpha_height
+          elseif (lcylindrical_coords) then
+            rr=sqrt((x(l1:l2)/alpha_width)**2+(z(n)/alpha_height)**2)-1.
+            zoverh=z(n)/alpha_height
+          else
+            rr=sqrt((x(l1:l2)**2+y(m)**2)/alpha_width**2+(z(n)/alpha_height)**2)-1.
+            zoverh=z(n)/alpha_height
+          endif
+          alpha_tmp=.5*(1.-erfunc(rr*alpha_rmax/alpha_width))*zoverh
+!
+!  z case
+!
         case ('z')
           if (alpha_rmax/=0.) then
             rr=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
@@ -1270,6 +1320,9 @@ module Magnetic_meanfield
           else
             alpha_tmp=z(n)
           endif
+!
+!  z/r case
+!
         case ('z/r')
           rr=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
           if (alpha_rmax/=0.) then
@@ -1444,11 +1497,53 @@ module Magnetic_meanfield
               rr=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
             endif
             meanfield_etat_tmp=meanfield_etat*.5*(1.-erfunc((rr-meanfield_etat_rmax)/meanfield_etat_width))
-            gaussian=exp(-.5*(rr-meanfield_etat_rmax)**2/meanfield_etat_width**2)
-            tmp=-meanfield_etat*.5*gaussian/(rr*meanfield_etat_width)
-            meanfield_getat_tmp(:,1)=tmp*x(l1:l2)
-            meanfield_getat_tmp(:,2)=tmp*y(m)
-            meanfield_getat_tmp(:,3)=tmp*z(n)
+            gaussian=.5*exp(-.5*(rr-meanfield_etat_rmax)**2/meanfield_etat_width**2)/meanfield_etat_width
+            if (lspherical_coords) then
+              meanfield_getat_tmp(:,1)=meanfield_etat*gaussian
+              meanfield_getat_tmp(:,2)=0.
+              meanfield_getat_tmp(:,3)=0.
+            elseif (lcylindrical_coords) then
+              tmp=meanfield_etat*gaussian/rr
+              meanfield_getat_tmp(:,1)=tmp*x(l1:l2)
+              meanfield_getat_tmp(:,2)=0.
+              meanfield_getat_tmp(:,3)=tmp*z(n)
+            else
+              tmp=meanfield_etat*gaussian/rr
+              meanfield_getat_tmp(:,1)=tmp*x(l1:l2)
+              meanfield_getat_tmp(:,2)=tmp*y(m)
+              meanfield_getat_tmp(:,3)=tmp*z(n)
+            endif
+          endif
+!
+!  For ellipsoids, replace rr -> rr/alpha_rmax, so replace:
+!  (rr-alpha_rmax)/alpha_width = (rr/alpha_rmax-1) * alpha_rmax/alpha_width
+!  By default, alpha_height=alpha_rmax.
+!
+          if (meanfield_etat_profile=='ellipsoid') then
+            if (lspherical_coords) then
+              rr=x(l1:l2)*sqrt((sinth(m)/meanfield_etat_rmax)**2+(costh(m)/meanfield_etat_height)**2)-1.
+            elseif (lcylindrical_coords) then
+              rr=sqrt((x(l1:l2)/meanfield_etat_width)**2+(z(n)/meanfield_etat_height)**2)-1.
+            else
+              rr=sqrt((x(l1:l2)**2+y(m)**2)/meanfield_etat_width**2+(z(n)/meanfield_etat_height)**2)-1.
+            endif
+            meanfield_etat_tmp=meanfield_etat*.5*(1.-erfunc(rr*meanfield_etat_rmax/meanfield_etat_width))
+            gaussian=.5*exp(-.5*(rr*meanfield_etat_rmax/meanfield_etat_width)**2)/meanfield_etat_width
+            if (lspherical_coords) then
+              meanfield_getat_tmp(:,1)=meanfield_etat*gaussian
+              meanfield_getat_tmp(:,2)=0.
+              meanfield_getat_tmp(:,3)=0.
+            elseif (lcylindrical_coords) then
+              tmp=meanfield_etat*gaussian/rr
+              meanfield_getat_tmp(:,1)=tmp*x(l1:l2)
+              meanfield_getat_tmp(:,2)=0.
+              meanfield_getat_tmp(:,3)=tmp*z(n)*meanfield_etat_rmax/meanfield_etat_height
+            else
+              tmp=meanfield_etat*gaussian/rr
+              meanfield_getat_tmp(:,1)=tmp*x(l1:l2)
+              meanfield_getat_tmp(:,2)=tmp*y(m)
+              meanfield_getat_tmp(:,3)=tmp*z(n)*meanfield_etat_rmax/meanfield_etat_height
+            endif
           endif
         endif
 !
