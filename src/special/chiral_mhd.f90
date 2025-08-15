@@ -930,6 +930,12 @@ module Special
             source5 = source5_input * (t-t1_source5)/source5_expt2 * exp(-((t-t1_source5)**2)/source5_expt2**2)
           endif
 !
+!  Time-dependent profile for source of mu5, derived from Andrew's notes (Updated)
+!
+        case ('smooth_source_new')
+            !source5 = source5_input * (t-t1_source5) * exp(-source5_expt2 * ((t-t1_source5)**2))
+          source5 = source5_input * (t)/source5_expt2 * exp(-((t)**2-source5_expt2**2)/(2*source5_expt2**2))
+!
 !  Time-dependent profile for source of mu5.
 !
         case ('step_decay_linear_ramp')
