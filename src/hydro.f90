@@ -1547,6 +1547,14 @@ module Hydro
         profy_diffrot3=-1.0
         profz_diffrot1=+1.
 !
+      case ('galactic-Brandt-curve')
+        if (.not.lspherical_coords) call warning("initialize_hydro", &
+                       "uuprof='galactic-Brandt-curve' currently only for spherical coordinates")
+        if (.not.lcalc_uumeanxy) &
+          call fatal_error("initialize_hydro","you need lcalc_uumeanxy=T for uuprof='galactic-Brandt-curve'")
+!
+        prof_amp1=ampl1_diffrot*x(l1:l2)/(1.+(x(l1:l2)/uphi_step_width)**3)**onethird
+!
       case ('uumz_profile')
         if (.not.lcalc_uumeanz) then
           call fatal_error("initialize_hydro","you need to set lcalc_uumean=T for uuprof='uumz_profile'")
@@ -3301,6 +3309,8 @@ module Hydro
               else
                 tmp_rho=tmp_rho-eps_hless &
                   *max(0.d0, min(1.d0, (f(l1:l2,m,n,ihless)+0.5d0*width_hless_absolute-t)/width_hless_absolute))
+!print*,'AXEL1'
+!AB: this is never accessed
               endif
             else
               if (lhiggsless_old) call warning('calc_pencils_hydro',&
@@ -8421,6 +8431,18 @@ module Hydro
       case ('spoke-like-NSSL')
         local_Omega=profx_diffrot1*profy_diffrot1(m)+profx_diffrot2*profy_diffrot2(m)+profx_diffrot3*profy_diffrot3(m)
         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*(uumxy(l1:l2,m,3)-prof_amp1*local_Omega*sinth(m))
+!
+!  galactic-Brandt-curve
+!
+      case ('galactic-Brandt-curve')
+!       local_Omega=ampl1_diffrot*x(l1:l2)/(1.+(x(l1:l2)/uphi_step_width)**3)**onethird
+        if (ldiffrot_test) then
+          f(l1:l2,m,n,iux:iuy)=0.
+          f(l1:l2,m,n,iuz)=prof_amp1
+        else
+          !df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*(uumxy(l1:l2,m,3)-prof_amp1*local_Omega*sinth(m))
+          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*(uumxy(l1:l2,m,3)-prof_amp1*sinth(m))
+        endif
 !
 !  Relax toward (1D-z) profile read from file
 !
