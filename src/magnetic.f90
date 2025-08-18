@@ -952,6 +952,7 @@ module Magnetic
   integer :: idiag_bf2mz=0      ! XYAVG_DOC: $\left<\Bv'^2\right>_{xy}$
   integer :: idiag_j2mz=0       ! XYAVG_DOC: $\left<\jv^2\right>_{xy}$
   integer :: idiag_poynzmz=0    ! XYAVG_DOC: Averaged poynting flux in z direction
+  integer :: idiag_bcurlfmz=0    ! XYAVG_DOC: $\left< \Bv \cdot \nabla\times \vec{F}/\mu_0\right>_{xy}$, where $\vec{F}$ is the additional EMF imposed through continuous forcing (lforcing_cont_aa=T)
   integer :: idiag_epsMmz=0     ! XYAVG_DOC: $\left<\eta\mu_0\jv^2\right>_{xy}$
   integer :: idiag_vmagfricmz=0 ! XYAVG_DOC: $\left<1/\nu_{\rm mag}|\jv\times\Bv/\Bv^2|\right>_{xy}$
   integer :: idiag_bxph1mz=0    ! XYAVG_DOC: $\left<{\cal B}_x\right>_{xy}|_{\rm phase 1}$
@@ -7130,11 +7131,12 @@ print*,'AXEL2: should not be here (eta) ... '
 !  Note that this does not necessarily happen with ldiagnos=.true.
 !
       use Diagnostics
-      use Sub, only: dot2_mn, dot
+      use Sub, only: dot2_mn, dot, curl_mn
 
       type(pencil_case) :: p
 
       real, dimension(nx) :: fres2, tmp1, Rmmz, bdel2a, jdel2a
+      real, dimension(nx,3) :: tmp2
 !
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1.
 !
@@ -7342,6 +7344,14 @@ print*,'AXEL2: should not be here (eta) ... '
         if (.not.lmultithread) then
           if (idiag_poynzmz/=0) call xysum_mn_name_z(eta_total*p%jxb(:,3)-mu01* &
             (p%uxb(:,1)*p%bb(:,2)-p%uxb(:,2)*p%bb(:,1)),idiag_poynzmz)
+!
+!  This diagnostic relies upon mn-dependent quantities which are not in the pencil case.
+!
+          if (lforcing_cont_aa) then
+            call curl_mn(p%fcont(:,:,iforcing_cont_aa),tmp2)
+            call dot(p%bb,tmp2,tmp1)
+            call xysum_mn_name_z(ampl_fcont_aa*mu01*tmp1,idiag_bcurlfmz)
+          endif
         endif
         call phizsum_mn_name_r(p%b2,idiag_b2mr)
         if (idiag_brmr/=0) call phizsum_mn_name_r(p%bb(:,1)*p%pomx+p%bb(:,2)*p%pomy,idiag_brmr)
@@ -10334,7 +10344,8 @@ print*,'AXEL2: should not be here (eta) ... '
         idiag_uxbxmz=0; idiag_uybxmz=0; idiag_uzbxmz=0
         idiag_uxbymz=0; idiag_uybymz=0; idiag_uzbymz=0
         idiag_uxbzmz=0; idiag_uybzmz=0; idiag_uzbzmz=0
-        idiag_d6amz3=0; idiag_d6amz2=0; idiag_d6amz1=0; idiag_poynzmz=0
+        idiag_d6amz3=0; idiag_d6amz2=0; idiag_d6amz1=0
+        idiag_poynzmz=0; idiag_bcurlfmz=0
         idiag_bxbym=0; idiag_bxbzm=0; idiag_bybzm=0; idiag_djuidjbim=0
         idiag_axmz=0; idiag_aymz=0; idiag_azmz=0; idiag_bxmz=0; idiag_bymz=0
         idiag_jxmz=0; idiag_jymz=0; idiag_jzmz=0
@@ -10895,6 +10906,7 @@ print*,'AXEL2: should not be here (eta) ... '
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'bf2mz',idiag_bf2mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'j2mz',idiag_j2mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'poynzmz',idiag_poynzmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bcurlfmz',idiag_bcurlfmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'jxbrxmz',idiag_jxbrxmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'jxbrymz',idiag_jxbrymz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'jxbrzmz',idiag_jxbrzmz)
