@@ -3016,40 +3016,35 @@ module Initcond
         nmax = mz
       endif
 !
+      do n=nmin,nmax
+        f(:,:,n,ilnrho)=lnrho0(ipz*nz+n)
+      enddo
+!
+!  Kishore: simplified the below assuming lentropy and ltemperature cannot simultaneously be true.
+!
       if (lentropy) then
         do n=nmin,nmax
-          f(:,:,n,ilnrho)=lnrho0(ipz*nz+n)
           f(:,:,n,iss)=ss0(ipz*nz+n)
         enddo
         call eoscalc(ilnrho_ss, lnrho0(n_top), ss0(n_top), cs2=cs2top)
         call eoscalc(ilnrho_ss, lnrho0(n_bot), ss0(n_bot), cs2=cs2bot)
-      endif
-      if (ltemperature) then
+      elseif (ltemperature.and..not.lascalar) then
         do n=nmin,nmax
-          f(:,:,n,ilnrho)=lnrho0(ipz*nz+n)
           f(:,:,n,ilnTT)=lnTT0(ipz*nz+n)
         enddo
         call eoscalc(ilnrho_TT, lnrho0(n_top), lnTT0(n_top), cs2=cs2top)
         call eoscalc(ilnrho_TT, lnrho0(n_bot), lnTT0(n_bot), cs2=cs2bot)
-      endif
-      if (ltemperature.and.lascalar) then
+      elseif (ltemperature.and.lascalar) then
         do n=nmin,nmax
-          f(:,:,n,ilnrho)=lnrho0(ipz*nz+n)
           f(:,:,n,ilnTT)=lnTT0(ipz*nz+n)
           f(:,:,n,iacc)=acc0(ipz*nz+n)
         enddo
         call warning('stratification', &
           'cs2bot and cs2top are not set according to stratification.dat')
-!         Kishore: leaving this out for now as eoscalc_point is not implemented
-!         Kishore: in eos_idealgas_vapor
-          !call eoscalc(ilnrho_TT, lnrho0(n_top), lnTT0(n_top), cs2=cs2top)
-          !call eoscalc(ilnrho_TT, lnrho0(n_bot), lnTT0(n_bot), cs2=cs2bot)
-      endif
-      if (.not.lentropy.and..not.ltemperature) then
-        do n=nmin,nmax
-          f(:,:,n,ilnrho)=lnrho0(ipz*nz+n)
-        enddo
-!         cs2bot and cs2top don't mean anything in this case
+!  Kishore: leaving this out for now as eoscalc_point is not implemented
+!  Kishore: in eos_idealgas_vapor
+        !call eoscalc(ilnrho_TT, lnrho0(n_top), lnTT0(n_top), cs2=cs2top)
+        !call eoscalc(ilnrho_TT, lnrho0(n_bot), lnTT0(n_bot), cs2=cs2bot)
       endif
 !
 !  occupy profile arrays
