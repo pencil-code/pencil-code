@@ -3032,8 +3032,13 @@ module Initcond
         do n=nmin,nmax
           f(:,:,n,ilnTT)=lnTT0(ipz*nz+n)
         enddo
-        call eoscalc(ilnrho_TT, lnrho0(n_top), lnTT0(n_top), cs2=cs2top)
-        call eoscalc(ilnrho_TT, lnrho0(n_bot), lnTT0(n_bot), cs2=cs2bot)
+        call warning('stratification', &
+          'cs2bot and cs2top are not set according to stratification.dat')
+!  Kishore: since eoscalc_point is not implemented in eos_temperature_ionization,
+!  Kishore: uncommenting the below breaks
+!  Kishore: samples/1d-tests/solar-atmosphere-temperature
+        !call eoscalc(ilnrho_TT, lnrho0(n_top), lnTT0(n_top), cs2=cs2top)
+        !call eoscalc(ilnrho_TT, lnrho0(n_bot), lnTT0(n_bot), cs2=cs2bot)
       elseif (ltemperature.and.lascalar) then
         do n=nmin,nmax
           f(:,:,n,ilnTT)=lnTT0(ipz*nz+n)
