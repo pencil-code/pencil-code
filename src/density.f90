@@ -295,6 +295,7 @@ module Density
   real, dimension(nx) :: diffus_diffrho
   real, dimension(nx) :: diffus_diffrho3
   real :: density_floor_log, density_ceiling_log, wdamp_rho
+  integer :: ihless
 !
   integer :: enum_ieos_profile = 0
   integer :: enum_mass_source_profile = 0
@@ -1017,6 +1018,8 @@ module Density
         lhiggsless=.false.
       endif
 !
+      if (lhiggsless.and.lconservative) ihless=farray_index_by_name('ihless')
+
       if (lhydro.and.lhiggsless) then
         call get_shared_variable('eps_hless',eps_hless)
         if (lrun) call get_shared_variable('width_hless_absolute',width_hless_absolute)
@@ -2360,7 +2363,7 @@ module Density
       intent(in) :: f
       intent(inout) :: p
       real, dimension(nx) :: tmp
-      integer :: i, ihless
+      integer :: i
 !
 ! set rho pencil, but it is overwritten in the conservative case.
 !
@@ -2450,6 +2453,7 @@ module Density
             where(real(t) < p%hless) p%rho=p%rho-eps_hless
           else
             p%rho=p%rho-eps_hless*max(0.d0, min(1.d0, (p%hless+0.5d0*width_hless_absolute-t)/width_hless_absolute))
+            !p%rho=p%rho-eps_hless*max(0.d0, min(1.d0, (f(l1:l2,m,n,ihless)+0.5d0*width_hless_absolute-t)/width_hless_absolute))
           endif
         endif
         p%rho=p%rho/(fourthird*p%lorentz*(1.-.25/p%lorentz))
@@ -4141,7 +4145,7 @@ module Density
     use Syscalls, only: copy_addr
     use General , only: string_to_enum
 
-    integer, parameter :: n_pars=400
+    integer, parameter :: n_pars=100
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call copy_addr(ldiff_shock,p_par(1)) ! bool
@@ -4228,6 +4232,7 @@ module Density
     call copy_addr(lrelativistic_eos_corr,p_par(77)) ! bool
     call copy_addr(lgamma_is_1,p_par(78)) ! bool
     call copy_addr(reference_state_padded,p_par(79)) ! (mx) (9)
+    call copy_addr(ihless,p_par(80))  !  int
 
     endsubroutine pushpars2c
 !***********************************************************************
