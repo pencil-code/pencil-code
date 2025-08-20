@@ -2450,8 +2450,7 @@ module Density
           if (width_hless_absolute==0.) then
             where(real(t) < p%hless) p%rho=p%rho-eps_hless
           else
-            ihless=farray_index_by_name('ihless')
-            p%rho=p%rho-eps_hless*max(0.d0, min(1.d0, (f(l1:l2,m,n,ihless)+0.5d0*width_hless_absolute-t)/width_hless_absolute))
+            p%rho=p%rho-eps_hless*max(0.d0, min(1.d0, (p%hless+0.5d0*width_hless_absolute-t)/width_hless_absolute))
           endif
         endif
         p%rho=p%rho/(fourthird*p%lorentz*(1.-.25/p%lorentz))
