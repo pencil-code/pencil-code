@@ -2874,6 +2874,23 @@ module Initcond
 !
     endsubroutine hawley_etal99a
 !***********************************************************************
+    subroutine error_stratification_dat_size(lnoghost_strati)
+!
+!   For use in subroutine stratification; changes the printed error message
+!   depending on the value of lnoghost_strati
+!
+!   20-Aug-2025/Kishore: coded
+!
+      logical, intent(in) :: lnoghost_strati
+!
+      if (lnoghost_strati) then
+        call fatal_error('stratification','file invalid or too big - ghost cells may have been included')
+      else
+        call fatal_error('stratification','file invalid or too short; ghost cells may be missing')
+      endif
+!
+    endsubroutine error_stratification_dat_size
+!***********************************************************************
     subroutine stratification(f,strati_type)
 !
 !  Read mean stratification from "stratification.dat".
@@ -2883,8 +2900,9 @@ module Initcond
 !  30-apr-16/axel: adapted for polytropic eos
 !  28-jun-19/nishant: added an option to use stratification file without
 !                     the ghost cells; use lnoghost_strati=T in init_pars
+!  20-Aug-2025/Kishore: cleaned up handling of lnoghost_strati (reduced duplicated code)
 !
-      use EquationOfState, only: eoscalc
+      use EquationOfState, only: eoscalc, cs2top, cs2bot
       use Sub, only: write_zprof
       use Cdata, only: lnoghost_strati
 !
@@ -2893,7 +2911,7 @@ module Initcond
       real, dimension (mz) :: lnrho_mz,ss_mz,lnTT_mz
       real :: tmp,var1,var2,var3
       logical :: exist
-      integer :: stat
+      integer :: stat, nmin, nmax, n_top, n_bot
       character (len=labellen) :: strati_type
 !
 !  Read mean stratification and write into array.
@@ -2911,42 +2929,39 @@ module Initcond
         endif
       endif
 !
+      if (lnoghost_strati) then
+        if (lroot) print*,'ghost cells are not needed in stratification.dat'
+        nmin = 1 + nghost
+        nmax = nzgrid + nghost
+      else
+        if (lroot) print*,'ghost cells are needed in stratification.dat'
+        nmin = 1
+        nmax = mzgrid
+      endif
+!
+!     indices of the top/bottom boundary points in an array of size mzgrid
+      n_bot = nghost+1
+      n_top = nzgrid+nghost
+!
 !  Read data - first the entire stratification file.
 !
       select case (strati_type)
 !
       case ('lnrho_ss')
 !
-!NS: added this switch for avoiding ghost cells from stratification file
-!
-       if (lnoghost_strati) then
-          if (lroot) print*,'ghost cells are not needed in stratification.dat'
-          do n=1,nzgrid
-            read(19,*,iostat=stat) tmp,var1,var2
-            if (stat==0) then
-             if (ip<5) print*, 'stratification: z, var1, var2=', tmp, var1, var2
-             if (ldensity) lnrho0(n)=var1
-             if (lentropy) ss0(n)=var2
-            else
-             call fatal_error('stratification','file invalid or too big - ghost cells may have been included')
-            endif
-          enddo
-       else
-          if (lroot) print*,'ghost cells are needed in stratification.dat'
-          do n=1,mzgrid
-            read(19,*,iostat=stat) tmp,var1,var2
-            if (stat==0) then
-             if (ip<5) print*, 'stratification: z, var1, var2=', tmp, var1, var2
-             if (ldensity) lnrho0(n)=var1
-             if (lentropy) ss0(n)=var2
-            else
-             call fatal_error('stratification','file invalid or too short; ghost cells may be missing')
-            endif
-          enddo
-       endif
+      do n=nmin,nmax
+        read(19,*,iostat=stat) tmp,var1,var2
+        if (stat==0) then
+          if (ip<5) print*, 'stratification: z, var1, var2=', tmp, var1, var2
+          if (ldensity) lnrho0(n)=var1
+          if (lentropy) ss0(n)=var2
+        else
+          call error_stratification_dat_size(lnoghost_strati)
+        endif
+      enddo
 !
       case ('lnrho_lnTT')
-        do n=1,mzgrid
+        do n=nmin,nmax
           read(19,*,iostat=stat) tmp,var1,var2
           if (stat==0) then
             if (ip<5) print*, 'stratification: z, var1, var2=', tmp, var1, var2
@@ -2957,12 +2972,12 @@ module Initcond
               ss0(n)=tmp
             endif
           else
-            call fatal_error('stratification','file invalid or too short - ghost cells may be missing')
+            call error_stratification_dat_size(lnoghost_strati)
           endif
         enddo
 !
       case ('lnrho_lnTT_acc')
-        do n=1,mzgrid
+        do n=nmin,nmax
           read(19,*,iostat=stat) tmp,var1,var2,var3
           if (stat==0) then
             if (ip<5) print*, 'stratification: z, var1, var2, var3=', tmp, var1, var2, var3
@@ -2974,19 +2989,18 @@ module Initcond
             endif
             if (lascalar) acc0(n)=var3
           else
-            call fatal_error('stratification','file invalid or too short - ghost cells may be missing')
+            call error_stratification_dat_size(lnoghost_strati)
           endif
         enddo
 !
       case ('lnrho')
-         print*,'NS1:'   !do n=1,nzgrid
-        do n=1,mzgrid
+        do n=nmin,nmax
           read(19,*,iostat=stat) tmp,var1
           if (stat==0) then
             if (ip<5) print*, 'stratification: z, var1=', tmp, var1
             if (ldensity) lnrho0(n)=var1
           else
-            call fatal_error('stratification','file invalid or too short - ghost cells may be missing')
+            call error_stratification_dat_size(lnoghost_strati)
           endif
 !
         enddo
@@ -2994,74 +3008,53 @@ module Initcond
 !
 !  Select the right region for the processor afterwards.
 !
-!--   select case (n)
-!
-!  Without ghost zones.
-!
-!--   case (nzgrid+1)
-      if (n==(nzgrid+1)) then
-        if (lentropy) then
-          do n=n1,n2
-            f(:,:,n,ilnrho)=lnrho0(ipz*nz+(n-nghost))
-            f(:,:,n,iss)=ss0(ipz*nz+(n-nghost))
-          enddo
-        endif
-        if (ltemperature) then
-          do n=n1,n2
-            f(:,:,n,ilnrho)=lnrho0(ipz*nz+(n-nghost))
-            f(:,:,n,ilnTT)=lnTT0(ipz*nz+(n-nghost))
-          enddo
-        endif
-        if (ltemperature.and.lascalar) then
-          do n=n1,n2
-            f(:,:,n,ilnrho)=lnrho0(ipz*nz+(n-nghost))
-            f(:,:,n,ilnTT)=lnTT0(ipz*nz+(n-nghost))
-            f(:,:,n,iacc)=acc0(ipz*nz+(n-nghost))
-          enddo
-        endif
-        if (.not.lentropy.and..not.ltemperature) then
-          do n=n1,n2
-            f(:,:,n,ilnrho)=lnrho0(ipz*nz+(n-nghost))
-          enddo
-        endif
-!
-!  With ghost zones.
-!
-!--   case (mzgrid+1)
-      elseif (n==(mzgrid+1)) then
-        if (lentropy) then
-          do n=1,mz
-            f(:,:,n,ilnrho)=lnrho0(ipz*nz+n)
-            f(:,:,n,iss)=ss0(ipz*nz+n)
-          enddo
-        endif
-        if (ltemperature) then
-          do n=1,mz
-            f(:,:,n,ilnrho)=lnrho0(ipz*nz+n)
-            f(:,:,n,ilnTT)=lnTT0(ipz*nz+n)
-          enddo
-        endif
-        if (.not.lentropy.and..not.ltemperature) then
-          do n=1,mz
-            f(:,:,n,ilnrho)=lnrho0(ipz*nz+n)
-          enddo
-        endif
-!
-!--   case default
+      if (lnoghost_strati) then
+        nmin = n1
+        nmax = n2
       else
-        if (lroot) then
-          print '(A,I4,A,I4,A,I4,A)','ERROR: The stratification file '// &
-                'for this run is allowed to contain either',nzgrid, &
-                ' lines (without ghost zones) or more than',mzgrid, &
-                ' lines (with ghost zones). It does contain',n-1, &
-                ' lines though.'
-        endif
-        call fatal_error('','')
+        nmin = 1
+        nmax = mz
+      endif
 !
-!--   endselect
+      if (lentropy) then
+        do n=nmin,nmax
+          f(:,:,n,ilnrho)=lnrho0(ipz*nz+n)
+          f(:,:,n,iss)=ss0(ipz*nz+n)
+        enddo
+        call eoscalc(ilnrho_ss, lnrho0(n_top), ss0(n_top), cs2=cs2top)
+        call eoscalc(ilnrho_ss, lnrho0(n_bot), ss0(n_bot), cs2=cs2bot)
+      endif
+      if (ltemperature) then
+        do n=nmin,nmax
+          f(:,:,n,ilnrho)=lnrho0(ipz*nz+n)
+          f(:,:,n,ilnTT)=lnTT0(ipz*nz+n)
+        enddo
+        call eoscalc(ilnrho_TT, lnrho0(n_top), lnTT0(n_top), cs2=cs2top)
+        call eoscalc(ilnrho_TT, lnrho0(n_bot), lnTT0(n_bot), cs2=cs2bot)
+      endif
+      if (ltemperature.and.lascalar) then
+        do n=nmin,nmax
+          f(:,:,n,ilnrho)=lnrho0(ipz*nz+n)
+          f(:,:,n,ilnTT)=lnTT0(ipz*nz+n)
+          f(:,:,n,iacc)=acc0(ipz*nz+n)
+        enddo
+        call warning('stratification', &
+          'cs2bot and cs2top are not set according to stratification.dat')
+!         Kishore: leaving this out for now as eoscalc_point is not implemented
+!         Kishore: in eos_idealgas_vapor
+          !call eoscalc(ilnrho_TT, lnrho0(n_top), lnTT0(n_top), cs2=cs2top)
+          !call eoscalc(ilnrho_TT, lnrho0(n_bot), lnTT0(n_bot), cs2=cs2bot)
+      endif
+      if (.not.lentropy.and..not.ltemperature) then
+        do n=nmin,nmax
+          f(:,:,n,ilnrho)=lnrho0(ipz*nz+n)
+        enddo
+!         cs2bot and cs2top don't mean anything in this case
       endif
 !
 !  occupy profile arrays
+!
+!  Kishore: lnrho_mz seems to never be used
 !
       if (lentropy) then
         do n=1,mz
