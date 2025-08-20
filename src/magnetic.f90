@@ -129,8 +129,10 @@ module Magnetic
   real, dimension(3) :: J_ext=(/0.0,0.0,0.0/)
   real, dimension(3) :: eta_aniso_hyper3=0.0
   real, dimension(2) :: magnetic_xaver_range=(/-max_real,max_real/)
+  real, dimension(2) :: magnetic_yaver_range=(/-max_real,max_real/)
   real, dimension(2) :: magnetic_zaver_range=(/-max_real,max_real/)
   real, dimension(nx) :: xmask_mag, xmask1_mag
+  real, dimension(ny) :: ymask_mag
   real, dimension(nz) :: zmask_mag
   real :: B0_ext_z=0.0, B0_ext_z_H=0.0
   real :: sheet_position=1.,sheet_thickness=0.1,sheet_hyp=1.
@@ -285,7 +287,7 @@ module Magnetic
       two_step_factor, th_spot, non_ffree_factor, etaB, ampl_ax, ampl_ay, &
       ampl_az, kx_ax, kx_ay, kx_az, ky_ax, ky_ay, ky_az, kz_ax, kz_ay, kz_az, &
       phase_ax, phase_ay, phase_az, magnetic_xaver_range, amp_relprof, k_relprof, &
-      tau_relprof, znoise_int, znoise_ext, magnetic_zaver_range, &
+      tau_relprof, znoise_int, znoise_ext, magnetic_yaver_range, magnetic_zaver_range, &
       lbx_ext_global,lby_ext_global,lbz_ext_global, dipole_moment, &
       lax_ext_global,lay_ext_global,laz_ext_global, &
       sheet_position,sheet_thickness,sheet_hyp,ll_sh,mm_sh, &
@@ -420,7 +422,7 @@ module Magnetic
       lignore_Bext_in_b2, luse_Bext_in_b2, ampl_fcont_aa, &
       lhalox, vcrit_anom, eta_jump, eta_jump2, lrun_initaa, two_step_factor, &
       magnetic_xaver_range, A_relaxprofile, tau_relprof, amp_relprof, &
-      k_relprof,lmagneto_friction,numag, magnetic_zaver_range,&
+      k_relprof,lmagneto_friction,numag, magnetic_yaver_range, magnetic_zaver_range,&
       lncr_correlated, lncr_anticorrelated, ncr_quench, B0_magfric, ekman_friction_aa, &
       lbx_ext_global,lby_ext_global,lbz_ext_global, &
       lax_ext_global,lay_ext_global,laz_ext_global, &
@@ -1016,6 +1018,7 @@ module Magnetic
 ! yz averaged diagnostics given in yzaver.in
 !
   integer :: idiag_b2mx = 0     ! YZAVG_DOC: $\langle B^2\rangle_{yz}$
+  integer :: idiag_b2mmx = 0    ! YZAVG_DOC: $\langle B^2\rangle_{yz}_\mathrm{mask}$
   integer :: idiag_bxmx=0       ! YZAVG_DOC: $\left< B_x \right>_{yz}$
   integer :: idiag_bymx=0       ! YZAVG_DOC: $\left< B_y \right>_{yz}$
   integer :: idiag_bzmx=0       ! YZAVG_DOC: $\left< B_z \right>_{yz}$
@@ -1414,9 +1417,27 @@ module Magnetic
         endif
       endif
 !
+!  Compute mask for y- or yz-averaging where y is in magnetic_yaver_range.
+!  Normalize such that the average over the full domain gives still unity.
+!  In other words, if range1+range2=fullrange, then
+!  aver(fullrange) = p*aver(range1) + q*aver(range2),
+!  where p=range1/fullrange and q=1-p.
+!
+      if (m1 == m2) then
+        ymask_mag = 1.
+      else
+        where (y(m1:m2) >= magnetic_yaver_range(1) .and. y(m1:m2) <= magnetic_yaver_range(2))
+          ymask_mag = 1.
+        elsewhere
+          ymask_mag = 0.
+        endwhere
+        magnetic_yaver_range(1) = max(magnetic_yaver_range(1), xyz0(2))
+        magnetic_yaver_range(2) = min(magnetic_yaver_range(2), xyz1(2))
+        ymask_mag = ymask_mag*Lxyz(2)/(magnetic_yaver_range(2) - magnetic_yaver_range(1))
+      endif
+!
 !  Compute mask for z-averaging where z is in magnetic_zaver_range.
-!  Normalize such that the average over the full domain
-!  gives still unity.
+!  Normalize the same way as for ymask_mag.
 !
       if (n1 == n2) then
         zmask_mag = 1.
@@ -1434,8 +1455,9 @@ module Magnetic
 !  debug output
 !
       if (lroot.and.ip<14) then
-        print*,'xmask_mag=',xmask_mag
-        print*,'zmask_mag=',zmask_mag
+        print*,'xmask_mag=',iproc,xmask_mag
+        print*,'ymask_mag=',iproc,ymask_mag
+        print*,'zmask_mag=',iproc,zmask_mag
       endif
 !
 !  Precalculate 1/mu (moved here from register.f90)
@@ -3308,7 +3330,7 @@ module Magnetic
           idiag_brmsh/=0 .or. idiag_brmsn/=0 .or. idiag_brmss/=0 .or. &
           idiag_brmsx/=0 .or. idiag_brmsz/=0 .or. &
           idiag_brms/=0 .or. idiag_bmax/=0 .or. idiag_b2sphm/=0 .or. &
-          idiag_emag/=0 .or. idiag_b2mx /= 0 .or. idiag_b2mz/=0 .or. &
+          idiag_emag/=0 .or. idiag_b2mx/=0 .or. idiag_b2mmx/=0 .or. idiag_b2mz/=0 .or. &
           idiag_a2b2m/=0 .or. idiag_j2b2m/=0) &
           lpenc_diagnos(i_b2)=.true.
       if (idiag_b2sphm/=0) lpenc_diagnos(i_r_mn)=.true.
@@ -4407,14 +4429,25 @@ module Magnetic
 !  Whether it works with lohm_evolve needs to be checked.
 !
             if (lresi_eta_tdep .or. lresi_eta_xtdep .or. eta/=0.) then
-print*,'AXEL: should not be here (eta) ... '
+!print*,'AXEL: should not be here (eta) ... '
               if (lohm_evolve) then
                 p%jj_ohm=f(l1:l2,m,n,ijx:ijz)
               else
                 if (learly_set_el_pencil) p%el=f(l1:l2,m,n,iex:iez)
-                do j=1,3
-                  p%jj_ohm(:,j)=(p%el(:,j)+scl_uxb_in_ohm*p%uxb(:,j))*mu01/eta_total
-                enddo
+!
+!  In mean-field theory, add p%mf_EMF(:,j) to EMF for Ohm's current.
+!
+                if (lmagn_mf) then
+!if (n==n1) print*,'AXEL: eta,p%meanfield_etat=',eta,p%meanfield_etat
+                  do j=1,3
+!AXEL-tmp           p%jj_ohm(:,j)=(p%el(:,j)+scl_uxb_in_ohm*(p%uxb(:,j)+p%mf_EMF(:,j)))*mu01/(eta+p%meanfield_etat)
+                  enddo
+                else
+if (n==n1) print*,'AXEL: standard'
+                  do j=1,3
+                    p%jj_ohm(:,j)=(p%el(:,j)+scl_uxb_in_ohm*p%uxb(:,j))*mu01/eta_total
+                  enddo
+                endif
               endif
             endif
 !
@@ -7104,6 +7137,7 @@ print*,'AXEL2: should not be here (eta) ... '
       if (l1davgfirst .or. (ldiagnos .and. ldiagnos_need_zaverages)) then
 
         call yzsum_mn_name_x(p%b2, idiag_b2mx)
+        call yzsum_mn_name_x(p%b2*ymask_mag(m-m1+1), idiag_b2mmx)
         call yzsum_mn_name_x(p%bb(:,1),idiag_bxmx)
         call yzsum_mn_name_x(p%bb(:,2),idiag_bymx)
         call yzsum_mn_name_x(p%bb(:,3),idiag_bzmx)
@@ -10285,7 +10319,7 @@ print*,'AXEL2: should not be here (eta) ... '
         idiag_bxbymx = 0; idiag_bxbzmx = 0; idiag_bybzmx = 0
         idiag_bxbymy=0; idiag_bxbzmy=0; idiag_bybzmy=0; idiag_bxbymz=0
         idiag_aybxmz=0; idiag_ay2mz=0; idiag_bxbzmz=0; idiag_bybzmz=0
-        idiag_b2mx=0; idiag_a2mz=0; idiag_b2mz=0; idiag_bf2mz=0; idiag_j2mz=0
+        idiag_b2mx=0; idiag_b2mmx=0; idiag_a2mz=0; idiag_b2mz=0; idiag_bf2mz=0; idiag_j2mz=0
         idiag_jbmz=0; idiag_bdel2amz=0; idiag_jdel2amz=0; idiag_abmz=0; idiag_ubmz=0; idiag_ujmz=0; idiag_obmz=0
         idiag_uamz=0; idiag_bzuamz=0; idiag_bzaymz=0
         idiag_bzdivamz=0; idiag_bzlammz=0; idiag_divamz=0; idiag_d6abmz=0
@@ -10772,6 +10806,7 @@ print*,'AXEL2: should not be here (eta) ... '
 !
       do inamex=1,nnamex
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'b2mx',idiag_b2mx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'b2mmx',idiag_b2mmx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'bxmx',idiag_bxmx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'bymx',idiag_bymx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'bzmx',idiag_bzmx)

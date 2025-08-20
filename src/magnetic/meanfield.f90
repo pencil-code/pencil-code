@@ -686,7 +686,6 @@ module Magnetic_meanfield
       if (alpha_height==0.) then
         alpha_height=alpha_rmax
       endif
-print*,'AXEL1: alpha_height,alpha_rmax=',alpha_height,alpha_rmax
 !
 !  Patches allows one to place small dynamos in the domain. Their distribution
 !  may be uniform in space if the file npatchz.txt does not exist.
@@ -768,7 +767,7 @@ print*,'AXEL1: alpha_height,alpha_rmax=',alpha_height,alpha_rmax
 !
 !  Assume random orientation angles for all patches.
 !
-        if (headtt.or.ldebug) print*,'AXEL: roty=',roty,dtor
+        if (headtt.or.ldebug) print*,'roty=',roty,dtor
         cy=cos(roty*dtor)
         sy=sin(roty*dtor)
       endif
