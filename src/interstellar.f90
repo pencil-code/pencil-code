@@ -708,7 +708,7 @@ module Interstellar
         lheatcool_shock_cutoff=.false.
       endif
       if (cooling_select=="off".and.heating_select=="off".and..not.lSNI.and..not.lSNII) &
-        lheatcool_shock_cutoff=.false. 
+        lheatcool_shock_cutoff=.false.
 !
 !  Slopeyness used for tanh rounding profiles etc.
 !
@@ -1646,6 +1646,7 @@ module Interstellar
 !
       lpenc_requested(i_heat)=.true.
       lpenc_requested(i_cool)=.true.
+      lpenc_requested(i_heatcool)=.true.
       lpenc_requested(i_lnrho)=.true.
       lpenc_requested(i_lnTT)=.true.
       if (ltemperature.and..not.ltemperature_nolog) lpenc_requested(i_ee)=.true.
@@ -1699,7 +1700,7 @@ module Interstellar
           lpencil_in(i_TT1)=.true.
         endif
         if (ltemperature_nolog) lpencil_in(i_cv1)=.true.
-        if (lheatcool_shock_cutoff) then 
+        if (lheatcool_shock_cutoff) then
           lpencil_in(i_gshock)=.true.
           lpencil_in(i_damping)=.true.
         endif
@@ -1712,20 +1713,44 @@ module Interstellar
 !  Calculate Interstellar pencils.
 !  Most basic pencils should come first, as others may depend on them.
 !
+      use Messages, only: fatal_error
+!
       real, dimension(mx,my,mz,mfarray), intent(IN)   :: f
       type(pencil_case),                 intent(INOUT):: p
 !
-      if (lpencil(i_damping)) then 
+      integer :: i
+!
+!  Not all eos define cv1, and this routine is called after
+!  calc_all_pencils, so p%cv1 cannot be modified here
+!
+      if(ltemperature_nolog) then
+        do i=1,nx
+          if (p%cv1(i) == impossible) &
+            call fatal_error("calc_heat_cool_interstellar","p%cv1 not set by eos")
+        enddo
+      endif
+!
+      if (ltemperature) then
+        if (ltemperature_nolog) then
+          heat_prefactor=p%cv1
+        else
+          heat_prefactor=1/p%ee
+        endif
+      elseif (.not.pretend_lnTT) then
+        heat_prefactor=p%TT1
+      endif
+!
+      if (lpencil(i_damping)) then
         call calc_damping(p%damping,p%gshock)
 !
-        if (lpencil(i_cool)) call calc_cool_func(p%cool,p%lnTT,p%lnrho,damp=p%damping)
+        if (lpencil(i_cool)) call calc_cool_func(p%cool,p%lnTT,p%lnrho,heat_prefactor,damp=p%damping)
 !
-        if (lpencil(i_heat)) call calc_heat(p%heat,p%TT,damp=p%damping)
+        if (lpencil(i_heat)) call calc_heat(p%heat,p%TT,heat_prefactor,damp=p%damping)
       else
 !
-        if (lpencil(i_cool)) call calc_cool_func(p%cool,p%lnTT,p%lnrho)
+        if (lpencil(i_cool)) call calc_cool_func(p%cool,p%lnTT,p%lnrho,heat_prefactor)
 !
-        if (lpencil(i_heat)) call calc_heat(p%heat,p%TT)
+        if (lpencil(i_heat)) call calc_heat(p%heat,p%TT,heat_prefactor)
       endif
 !
       if (lpencil(i_heatcool)) p%heatcool=p%heat-p%cool
@@ -1786,7 +1811,7 @@ module Interstellar
         if (idiag_Hmax_ism/=0) then
           if (ltemperature.and.ltemperature_nolog) then
             call max_mn_name(p%heatcool*p%TT1,idiag_Hmax_ism)
-          elseif (pretend_lnTT) then
+          elseif (pretend_lnTT.or.ltemperature) then
             call max_mn_name(p%heatcool,idiag_Hmax_ism)
           else
             call max_mn_name(p%heatcool*p%TT/p%ee,idiag_Hmax_ism)
@@ -1795,7 +1820,7 @@ module Interstellar
         if (idiag_taucmin/=0) then
           if (ltemperature.and.ltemperature_nolog) then
             call max_mn_name(-p%heatcool*p%TT1,idiag_taucmin,lreciprocal=.true.)
-          elseif (pretend_lnTT) then
+          elseif (pretend_lnTT.or.ltemperature) then
             call max_mn_name(-p%heatcool,idiag_taucmin,lreciprocal=.true.)
           else
             call max_mn_name(-p%heatcool*p%TT/p%ee,idiag_taucmin,lreciprocal=.true.)
@@ -1845,7 +1870,7 @@ module Interstellar
 !  22-mar-10/fred:
 !  adapted from galactic-hs,ferriere-hs
 !  13-jul-15/fred: requires initial_condition/hs_equilibrium_ism.f90
-!  17-jun-25/fred: recommend instead initial_condition/ths_equilibrium_ism.f90 
+!  17-jun-25/fred: recommend instead initial_condition/ths_equilibrium_ism.f90
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mz), intent(out) :: zheat
@@ -1919,60 +1944,31 @@ module Interstellar
 !   3-apr-06/axel: add ltemperature switch
 !  17-jun-25/fred: moved much to pencils to enable GPUs
 !
-      use Messages, only: fatal_error
+!      use Messages, only: fatal_error
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
       real, dimension (nx), intent(inout) :: Hmax
-
-      real, dimension (nx) :: heat,cool,heatcool
-      real, dimension (nx) :: damp_profile, gsh2
-
-      integer :: i
 !
 !  Identifier
 !
       if (headtt) print*,'calc_heat_cool_interstellar: ENTER'
 !
-!  Not all eos define cv1, and this routine is called after
-!  calc_all_pencils, so p%cv1 cannot be modified here
-!
-        
-      if(ltemperature_nolog) then
-        do i=1,nx
-          if (p%cv1(i) == impossible) &
-            call fatal_error("calc_heat_cool_interstellar","p%cv1 not set by eos")
-        enddo
-      endif
-!
-      if (ltemperature) then
-        if (ltemperature_nolog) then
-          heat_prefactor=p%cv1
-        else
-          heat_prefactor=1/p%ee
-        endif
-      elseif (.not.pretend_lnTT) then
-        heat_prefactor=p%TT1
-      endif
-      heat = heat_prefactor*p%heat
-      cool = heat_prefactor*p%cool
-      heatcool = heat-cool
-!
 !  Save result in aux variables
 !  cool=rho*Lambda/TT, heatcool=(Gamma-rho*Lambda)/TT
 !
-      f(l1:l2,m,n,icooling) = cool
-      f(l1:l2,m,n,inetheat) = heatcool
+      f(l1:l2,m,n,icooling) = p%cool
+      f(l1:l2,m,n,inetheat) = p%heatcool
 !
 !  Limit timestep by the cooling time (having subtracted any heating)
 !  dt1_max=max(dt1_max,cdt_tauc*(cool)/ee,cdt_tauc*(heat)/ee)
 !
-      if (ldt.and.lfirst.or.ldiagnos) then
+      if ((ldt.and.lfirst).or.ldiagnos) then
         if (ltemperature.or.pretend_lnTT) then
-          Hmax=Hmax+heatcool
+          Hmax=Hmax+p%heatcool
         else
-          Hmax=Hmax+heatcool*p%TT
+          Hmax=Hmax+p%heatcool*p%TT
         endif
       endif
 !
@@ -1981,14 +1977,14 @@ module Interstellar
 !  Apply heating/cooling to temperature/entropy variable
 !
       if (ltemperature) then
-        df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+heatcool
+        df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+p%heatcool
       else
-        df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+heatcool
+        df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+p%heatcool
       endif
 !
     endsubroutine calc_heat_cool_interstellar
 !*****************************************************************************
-    subroutine calc_cool_func(cool,lnTT,lnrho,damp)
+    subroutine calc_cool_func(cool,lnTT,lnrho,heat_prefactor,damp)
 !
 !  This routine calculates the temperature dependent radiative cooling.
 !  Applies Rosen et al., ApJ, 413, 137, 1993 ('RBN') OR
@@ -2008,7 +2004,7 @@ module Interstellar
 !  17-jun-25/fred: included shock damping to apply directly to pencils
 !
       real, dimension (nx), intent(out) :: cool
-      real, dimension (nx), intent(in) :: lnTT, lnrho
+      real, dimension (nx), intent(in) :: lnTT, lnrho, heat_prefactor
       real, dimension (nx), intent(in), optional :: damp
       integer :: i
 !
@@ -2018,11 +2014,16 @@ module Interstellar
           cool=cool+exp(lncoolH(i)+lnrho+lnTT*coolB(i))
         endwhere
       enddo
+!
+!  apply damping in shock - deprecated
+!
       if (present(damp)) cool = cool*damp
-
+!
+      cool = heat_prefactor*cool
+!
     endsubroutine calc_cool_func
 !*****************************************************************************
-    subroutine calc_heat(heat,TT,damp)
+    subroutine calc_heat(heat,TT,heat_prefactor,damp)
 !
 !  This routine adds UV heating, cf. Wolfire et al., ApJ, 443, 152, 1995
 !  with the values above, this gives about 0.012 erg/g/s (T < ~1.E4 K)
@@ -2035,7 +2036,7 @@ module Interstellar
 !  17-jun-25/fred: moved average heating here to apply directly to pencils
 !
       real, dimension (nx), intent(out) :: heat
-      real, dimension (nx), intent(in) :: TT
+      real, dimension (nx), intent(in) :: TT, heat_prefactor
       real, dimension (nx), intent(in), optional :: damp
 !
 !  Constant heating with a rate heating_rate[erg/g/s].
@@ -2085,13 +2086,17 @@ module Interstellar
         endif
       endif
 !
+!  apply damping in shock - deprecated
+!
       if (present(damp)) heat = heat*damp
+!
+      heat = heat_prefactor*heat
 !
     endsubroutine calc_heat
 !*****************************************************************************
     subroutine calc_damping(damp_profile,gshock)
 !
-!  Prevent unresolved heating/cooling in shocks. 
+!  Prevent unresolved heating/cooling in shocks.
 !  Has become redundant as timestepping and shock controls have improved
 !  Separated to be calculated as pencil following GPU implementation
 !  Early cooling in the shock prematurely inhibits the strength of the
