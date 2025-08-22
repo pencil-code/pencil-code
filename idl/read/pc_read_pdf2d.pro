@@ -1,4 +1,4 @@
-pro pc_read_pdf2d,pdf,x,y,noplot=noplot,datadir=datadir,arr_t=arr_t,arr_pdf_dx=arr_pdf_dx,arr_pdf_dy=arr_pdf_dy,arr_pdf_min=arr_pdf_min,arr_pdf_max=arr_pdf_max,arr_pdfy_min=arr_pdfy_min,arr_pdfy_max=arr_pdfy_max
+pro pc_read_pdf2d,pdf,x,y,noplot=noplot,datadir=datadir,arr_t=arr_t,arr_pdf_dx=arr_pdf_dx,arr_pdf_dy=arr_pdf_dy,arr_pdf_min=arr_pdf_min,arr_pdf_max=arr_pdf_max,arr_pdfy_min=arr_pdfy_min,arr_pdfy_max=arr_pdfy_max,filename=filename
 ;
 ; $Id$
   lnoplot=0 & if (keyword_set(noplot)) then lnoplot=1
@@ -16,9 +16,13 @@ if (keyword_set(datadir)) then begin
 endif else begin
    datadir="data"
 endelse
-filename=datadir+'/pdf2d_FI_mixfrac.dat'
+
+default_filename = 'pdf2d_FI_mixfrac.dat'
+default, filename, default_filename
+
+datafile=datadir+'/'+filename
 close,lun
-openr,lun,filename
+openr,lun,datafile
 ;
 ; Count number of times
 ;
@@ -33,7 +37,7 @@ close,lun
 ;
 ; Store data in arrays of the correct size
 ;
-openr,lun,filename
+openr,lun,datafile
 arr_t=fltarr(nt)
 arr_pdf_dx=fltarr(nt)
 arr_pdf_dy=fltarr(nt)
