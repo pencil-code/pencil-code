@@ -2351,7 +2351,6 @@ module Density
 !                suppressed weno for log density
 !
       use WENO_transport
-      use FArrayManager, only: farray_index_by_name
       use Sub, only: div,grad,dot,dot2,u_dot_grad,del2,del6,multmv,g2ij,dot_mn,h_dot_grad, &
                      del6_strict,calc_del6_for_upwind
 

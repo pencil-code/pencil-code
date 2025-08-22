@@ -1018,6 +1018,8 @@ module Magnetic
 ! yz averaged diagnostics given in yzaver.in
 !
   integer :: idiag_b2mx = 0     ! YZAVG_DOC: $\langle B^2\rangle_{yz}$
+  integer :: idiag_j2mx = 0     ! YZAVG_DOC: $\langle J^2\rangle_{yz}$
+  integer :: idiag_jbmx = 0     ! YZAVG_DOC: $\langle \Jv\cdot\Bv\rangle_{yz}$
   integer :: idiag_b2mmx = 0    ! YZAVG_DOC: $\langle B^2\rangle_{yz}_\mathrm{mask}$
   integer :: idiag_bxmx=0       ! YZAVG_DOC: $\left< B_x \right>_{yz}$
   integer :: idiag_bymx=0       ! YZAVG_DOC: $\left< B_y \right>_{yz}$
@@ -3333,6 +3335,8 @@ module Magnetic
           idiag_emag/=0 .or. idiag_b2mx/=0 .or. idiag_b2mmx/=0 .or. idiag_b2mz/=0 .or. &
           idiag_a2b2m/=0 .or. idiag_j2b2m/=0) &
           lpenc_diagnos(i_b2)=.true.
+      if (idiag_j2mx/=0) lpenc_diagnos(i_j2)=.true.
+      if (idiag_jbmx/=0) lpenc_diagnos(i_jb)=.true.
       if (idiag_b2sphm/=0) lpenc_diagnos(i_r_mn)=.true.
       if (idiag_bfrms/=0 .or.idiag_bf2m/=0 .or.  idiag_bf4m/=0 .or. &
           idiag_bf2mz/=0) lpenc_diagnos(i_bf2)=.true.
@@ -7137,6 +7141,8 @@ print*,'AXEL2: should not be here (eta) ... '
       if (l1davgfirst .or. (ldiagnos .and. ldiagnos_need_zaverages)) then
 
         call yzsum_mn_name_x(p%b2, idiag_b2mx)
+        call yzsum_mn_name_x(p%j2, idiag_j2mx)
+        call yzsum_mn_name_x(p%jb, idiag_jbmx)
         call yzsum_mn_name_x(p%b2*ymask_mag(m-m1+1), idiag_b2mmx)
         call yzsum_mn_name_x(p%bb(:,1),idiag_bxmx)
         call yzsum_mn_name_x(p%bb(:,2),idiag_bymx)
@@ -10319,7 +10325,8 @@ print*,'AXEL2: should not be here (eta) ... '
         idiag_bxbymx = 0; idiag_bxbzmx = 0; idiag_bybzmx = 0
         idiag_bxbymy=0; idiag_bxbzmy=0; idiag_bybzmy=0; idiag_bxbymz=0
         idiag_aybxmz=0; idiag_ay2mz=0; idiag_bxbzmz=0; idiag_bybzmz=0
-        idiag_b2mx=0; idiag_b2mmx=0; idiag_a2mz=0; idiag_b2mz=0; idiag_bf2mz=0; idiag_j2mz=0
+        idiag_b2mx=0; idiag_j2mx=0; idiag_jbmx=0
+        idiag_b2mmx=0; idiag_a2mz=0; idiag_b2mz=0; idiag_bf2mz=0; idiag_j2mz=0
         idiag_jbmz=0; idiag_bdel2amz=0; idiag_jdel2amz=0; idiag_abmz=0; idiag_ubmz=0; idiag_ujmz=0; idiag_obmz=0
         idiag_uamz=0; idiag_bzuamz=0; idiag_bzaymz=0
         idiag_bzdivamz=0; idiag_bzlammz=0; idiag_divamz=0; idiag_d6abmz=0
@@ -10806,6 +10813,8 @@ print*,'AXEL2: should not be here (eta) ... '
 !
       do inamex=1,nnamex
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'b2mx',idiag_b2mx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'j2mx',idiag_j2mx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'jbmx',idiag_jbmx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'b2mmx',idiag_b2mmx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'bxmx',idiag_bxmx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'bymx',idiag_bymx)
