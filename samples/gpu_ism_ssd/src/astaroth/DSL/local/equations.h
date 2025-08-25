@@ -18,9 +18,11 @@ denergy_dt(int step_num){
 #include "../entropy/heat_ss.h"
 }
 
+#if LMAGNETIC
 daa_dt(int step_num){
 #include "../magnetic/induction.h"
 }
+#endif
 
 dlnrhon_dt(int step_num){return 0.}
 
