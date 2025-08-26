@@ -1300,6 +1300,7 @@ idl/read/pc_read_var_time.pro -text
 idl/read/pc_read_var_ts.pro -text
 idl/read/pc_read_varlist.pro -text
 idl/read/pc_read_video.pro -text
+idl/read/pc_read_videoslices.pro -text
 idl/read/pc_read_xyaver.pro -text
 idl/read/pc_read_xyaver_coarsegrain.pro -text
 idl/read/pc_read_xzaver.pro -text
