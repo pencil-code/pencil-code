@@ -63,7 +63,7 @@ module Chemistry
   logical :: lchem_detailed=.true.
   logical :: lgradP_terms=.true.
   character(len=30) :: reac_rate_method = 'chemkin'
-  character(len=1) :: mixture_fraction_element
+  character(len=2) :: mixture_fraction_element
 ! --AB--  character(len=30) :: inucl_pre_exp="const"
 ! parameters for initial conditions
   real :: init_x1=-0.2, init_x2=0.2
@@ -643,6 +643,7 @@ module Chemistry
         case ("TI")
            imass_spec=imassTI
         case default
+          print*,"mixture_fraction_element=",mixture_fraction_element
           call fatal_error("make_mixture_fraction","No such mixture_fraction_element")
         end select
         do ichem=1,nchemspec
@@ -7419,8 +7420,9 @@ subroutine make_mixture_fraction(f)
      imass_spec=imassS
   case ("TI")
      imass_spec=imassTI
-  case default
-    call fatal_error("make_mixture_fraction","No such mixture_fraction_element")
+   case default
+     print*,"mixture_fraction_element=",mixture_fraction_element
+     call fatal_error("make_mixture_fraction","No such mixture_fraction_element")
   end select
   !
   ! Loop over all pencils
