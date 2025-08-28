@@ -289,6 +289,8 @@ module Energy
                                 ! DIAG_DOC:   \quad(mean squared entropy)
   integer :: idiag_eem=0        ! DIAG_DOC: $\left<e\right>$
   integer :: idiag_ppm=0        ! DIAG_DOC: $\left<p\right>$
+  integer :: idiag_ppmax=0      ! DIAG_DOC: $\max(p)$
+  integer :: idiag_ppmin=0      ! DIAG_DOC: $\min(p)$
   integer :: idiag_csm=0        ! DIAG_DOC: $\left<c_{\rm s}\right>$
   integer :: idiag_csmax=0      ! DIAG_DOC: $\max (c_{\rm s})$
   integer :: idiag_cgam=0       ! DIAG_DOC: $\left<c_{\gamma}\right>$
@@ -3265,7 +3267,7 @@ module Energy
       endif
       if (idiag_csm/=0 .or. idiag_csmax/=0) lpenc_diagnos(i_cs2)=.true.
       if (idiag_eem/=0) lpenc_diagnos(i_ee)=.true.
-      if (idiag_ppm/=0) lpenc_diagnos(i_pp)=.true.
+      if (idiag_ppm/=0 .or. idiag_ppmax/=0 .or. idiag_ppmin/=0) lpenc_diagnos(i_pp)=.true.
       if (idiag_pdivum/=0.or.idiag_pdivumz/=0) then
         lpenc_diagnos(i_pp)=.true.
         lpenc_diagnos(i_divu)=.true.
@@ -3847,6 +3849,8 @@ module Energy
         if (idiag_ss2m/=0) call sum_mn_name(p%ss**2,idiag_ss2m)
         call sum_mn_name(p%ee,idiag_eem)
         call sum_mn_name(p%pp,idiag_ppm)
+        if (idiag_ppmax/=0) call max_mn_name( p%pp,idiag_ppmax)
+        if (idiag_ppmin/=0) call max_mn_name(-p%pp,idiag_ppmin,lneg=.true.)
         call sum_mn_name(p%cs2,idiag_csm,lsqrt=.true.)
         call max_mn_name(p%cs2,idiag_csmax,lsqrt=.true.)
         if (idiag_cgam/=0) call sum_mn_name(16.*real(sigmaSB)*p%TT**3*p%cp1*p%rho1,idiag_cgam)
@@ -7083,7 +7087,8 @@ module Energy
         idiag_dtc=0; idiag_ethm=0; idiag_ethdivum=0; idiag_pdivumz=0
         idiag_ssruzm=0; idiag_ssuzm=0; idiag_ssm=0; idiag_ss2m=0
         idiag_ssbycpm=0
-        idiag_eem=0; idiag_ppm=0; idiag_csm=0; idiag_cgam=0; idiag_pdivum=0; idiag_heatm=0
+        idiag_eem=0; idiag_ppm=0; idiag_ppmax=0; idiag_ppmin=0
+        idiag_csm=0; idiag_cgam=0; idiag_pdivum=0; idiag_heatm=0
         idiag_ugradpm=0; idiag_ethtot=0; idiag_dtchi=0; idiag_ssmphi=0; idiag_ss2mphi=0
         idiag_fradbot=0; idiag_fradtop=0; idiag_TTtop=0
         idiag_yHmax=0; idiag_yHm=0; idiag_TTmax=0; idiag_TTmin=0; idiag_TTm=0
@@ -7144,6 +7149,8 @@ module Energy
         call parse_name(iname,cname(iname),cform(iname),'ss2m',idiag_ss2m)
         call parse_name(iname,cname(iname),cform(iname),'eem',idiag_eem)
         call parse_name(iname,cname(iname),cform(iname),'ppm',idiag_ppm)
+        call parse_name(iname,cname(iname),cform(iname),'ppmax',idiag_ppmax)
+        call parse_name(iname,cname(iname),cform(iname),'ppmin',idiag_ppmin)    
         call parse_name(iname,cname(iname),cform(iname),'pdivum',idiag_pdivum)
         call parse_name(iname,cname(iname),cform(iname),'heatm',idiag_heatm)
         call parse_name(iname,cname(iname),cform(iname),'csm',idiag_csm)
