@@ -301,6 +301,7 @@
 		species_constants(ind_chem,imassC)=0.
 		species_constants(ind_chem,imassN)=0.
 		species_constants(ind_chem,imassS)=0.
+		species_constants(ind_chem,imassTI)=0.		
                 MolMass=0
                 do iElement=1,4
                   In1=25+(iElement-1)*5
@@ -321,6 +322,7 @@
 		    if (element_string=="C") species_constants(ind_chem,imassC)=MolMass(iElement)
 		    if (element_string=="N") species_constants(ind_chem,imassN)=MolMass(iElement)
 		    if (element_string=="S") species_constants(ind_chem,imassS)=MolMass(iElement)
+   		    if (element_string=="TI") species_constants(ind_chem,imassTI)=MolMass(iElement)
                   endif
                 enddo
                 species_constants(ind_chem,imass)=sum(MolMass)

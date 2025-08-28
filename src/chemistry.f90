@@ -172,7 +172,7 @@ module Chemistry
   ! Condensing species parameters
   !
   integer :: i_cond_spec,ichem_cond_spec
-  integer :: imassH=19, imassO=20, imassC=21, imassN=22, imassS=23
+  integer :: imassH=19, imassO=20, imassC=21, imassN=22, imassS=23, imassTI=24
   real :: true_density_cond_spec_cgs=2.196, true_density_cond_spec
   real :: gam_surf_energy_cgs=32.
   real :: nucleation_rate_coeff_cgs=1e19
@@ -201,7 +201,7 @@ module Chemistry
 !
 !   Species constants
 !
-  real, dimension(nchemspec,23), target :: species_constants
+  real, dimension(nchemspec,24), target :: species_constants
 !
 !   Lewis coefficients
 !
@@ -639,7 +639,9 @@ module Chemistry
         case ("O")
           imass_spec=imassO
         case ("S")
-          imass_spec=imassS
+           imass_spec=imassS
+        case ("TI")
+           imass_spec=imassTI
         case default
           call fatal_error("make_mixture_fraction","No such mixture_fraction_element")
         end select
@@ -7414,7 +7416,9 @@ subroutine make_mixture_fraction(f)
   case ("O")
     imass_spec=imassO
   case ("S")
-    imass_spec=imassS
+     imass_spec=imassS
+  case ("TI")
+     imass_spec=imassTI
   case default
     call fatal_error("make_mixture_fraction","No such mixture_fraction_element")
   end select
