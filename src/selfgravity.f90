@@ -61,7 +61,7 @@ module Selfgravity
   integer :: idiag_gpotselfx2m=0, idiag_gpotselfy2m=0, idiag_gpotselfz2m=0
   integer :: idiag_gxgym=0, idiag_gxgzm=0, idiag_gygzm=0
   integer :: idiag_grgpm=0, idiag_grgzm=0, idiag_gpgzm=0
-  integer :: idiag_qtoomre=0,idiag_qtoomremin=0
+  integer :: idiag_qtoomre=0,idiag_qtoomremin=0,idiag_qtoomremax=0
   integer :: idiag_jeanslength=0, idiag_ljeans2d=0
   integer :: idiag_rugpotselfm=0 ! DIAG_DOC: $\left<\rho\uv\cdot\nabla\Phi\right>$
   integer :: idiag_gpotself2m=0  ! DIAG_DOC: $\left<(\nabla\Phi)^2\right>$
@@ -233,7 +233,8 @@ module Selfgravity
         lpenc_diagnos(i_phiy)=.true.
       endif
 !
-      if (idiag_qtoomre/=0.or.idiag_qtoomremin/=0.or.idiag_jeanslength/=0.or.idiag_ljeans2d/=0) then
+      if (idiag_qtoomre/=0.or.idiag_qtoomremin/=0.or.idiag_qtoomremax/=0.or. &
+         idiag_jeanslength/=0.or.idiag_ljeans2d/=0) then
         lpenc_diagnos(i_rho)=.true.
         lpenc_diagnos(i_cs2)=.true.
       endif
@@ -473,6 +474,8 @@ module Selfgravity
              call sum_mn_name(kappa*sqrt(p%cs2)/(gravitational_const*pi*p%rho),idiag_qtoomre)
         if (idiag_qtoomremin/=0) call max_mn_name(-kappa*sqrt(p%cs2)/ &
              (gravitational_const*pi*p%rho),idiag_qtoomremin,lneg=.true.)
+        if (idiag_qtoomremax/=0) call max_mn_name( kappa*sqrt(p%cs2)/ &
+             (gravitational_const*pi*p%rho),idiag_qtoomremax)
         if (idiag_jeanslength/=0) call max_mn_name(-sqrt(pi*p%cs2/ &
             (gravitational_const*p%rho)),idiag_jeanslength,lneg=.true.)
         if (idiag_ljeans2d/=0) call max_mn_name(-p%cs2/ &
@@ -580,7 +583,7 @@ module Selfgravity
         idiag_gpotselfx2m=0; idiag_gpotselfy2m=0; idiag_gpotselfz2m=0
         idiag_gxgym=0; idiag_gxgzm=0; idiag_gygzm=0
         idiag_grgpm=0; idiag_grgzm=0; idiag_gpgzm=0
-        idiag_qtoomre=0; idiag_qtoomremin=0
+        idiag_qtoomre=0; idiag_qtoomremin=0; idiag_qtoomremax=0
         idiag_jeanslength=0; idiag_ljeans2d=0
         idiag_rugpotselfm=0; idiag_gpotself2m=0
       endif
@@ -607,6 +610,7 @@ module Selfgravity
         call parse_name(iname,cname(iname),cform(iname),'gpgzm',idiag_gpgzm)
         call parse_name(iname,cname(iname),cform(iname),'qtoomre',idiag_qtoomre)
         call parse_name(iname,cname(iname),cform(iname),'qtoomremin',idiag_qtoomremin)
+        call parse_name(iname,cname(iname),cform(iname),'qtoomremax',idiag_qtoomremax)        
         call parse_name(iname,cname(iname),cform(iname),'jeanslength',idiag_jeanslength)
         call parse_name(iname,cname(iname),cform(iname),'ljeans2d',idiag_ljeans2d)
       enddo
