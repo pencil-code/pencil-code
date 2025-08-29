@@ -104,6 +104,11 @@ module Particles_sink
 !
       if (lroot) print*, 'initialize_particles_sink: sink_radius=', sink_radius
 !
+
+      if (.not.lmpicomm .and. lsink_communication_all_to_all) &
+           call fatal_error("initialize_particles_sink", &
+           "lsink_communication_all_to_all is only for mpi runs")
+!
       call get_shared_variable('tausp_species', tausp_species)
       call get_shared_variable('tausp1_species',tausp1_species)
 !
