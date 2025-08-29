@@ -180,12 +180,19 @@ class __Simulation__(object):
             debug_breakpoint,
         )
         from pencil import is_sim_dir
+        import pathlib
 
         # set up paths
-        if path_root == False or type(path_root) != type("string"):
-            print("! ERROR: No path_root specified to copy the simulation to.")
-            return False
-        path_root = abspath(path_root)  # simulation root dir
+        try:
+            path_root = pathlib.Path(path_root) # simulation root dir
+        except TypeError:
+            # return False # Kishore: I think `return False` is not helpful at all
+            raise TypeError(f"! ERROR: path_root is of invalid type {type(path_root)}.")
+
+        if not path_root.is_dir():
+            raise ValueError(f"Specified path_root ({path_root}) is either non-existent or not a directory")
+
+        path_root = abspath(path_root)
 
         # name and folder of new simulation but keep name of old if sim with old
         # name is NOT existing in NEW directory
