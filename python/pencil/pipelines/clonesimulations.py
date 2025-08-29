@@ -142,6 +142,9 @@ def clone_sims_from_obj(simset, simsdir="..", template_sim=None, specify_nml=Tru
         out = template_sim.copy(path_root=simsdir, name=sim)
         if out is False:
             raise RuntimeError("Copying sim failed")
+        else:
+            #Handle the case where template_sim.copy used a different name due to conflict with a pre-existing directory.
+            newdir = out.path.name
         for filename in simset[sim]:
             if filename == "compile":
                 if simset[sim]["compile"]:
