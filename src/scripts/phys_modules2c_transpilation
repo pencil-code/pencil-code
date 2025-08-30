@@ -96,6 +96,7 @@ if [[ $1 == 'par' ]]; then
 	    s/PCLoad(config,AC_t__mod__cdata,t__mod__cdata);.*//
             t cont
 	    s/^[^!]*call  *copy_addr[a-zA-Z0-9_]* *( *\([a-zA-Z0-9_]*\) *, *p_par(\([0-9]*\))) *! *\([a-zA-Z][a-zA-Z0-9_]*\) *$/ PCLoad(config,\uA\uC\l_\1__mod__'$modname',\1__mod__'$modname'); \/\/ [\2-1] \1 \3/w tmp1
+	    s/^[^!]*call  *copy_addr[a-zA-Z0-9_]* *( *\([a-zA-Z0-9_]*\) *, *p_par(\([0-9]*\))) *! *\([a-zA-Z][a-zA-Z0-9_]*\) *\([a-zA-Z][a-zA-Z0-9_]*\) *$/ PCLoad(config,\uA\uC\l_\1__mod__'$modname',\1__mod__'$modname'); \/\/ [\2-1] \1 \3 \4/w tmp1
             t cont
            s/^[^!]*call  *copy_addr[a-zA-Z0-9_]* *( *\([a-zA-Z0-9_]*\) *, *p_par(\([0-9]*\))) *! *( *\([a-zA-Z0-9_][a-zA-Z0-9_+\*\/-]*\) *) *$/ PCLoad(config,\uA\uC\l_\1__mod__'$modname',\1__mod__'$modname'); \/\/ [\2-1] \1 real(\3)/w tmp1
 	    s/^[^!]*call  *copy_addr[a-zA-Z0-9_]* *( *\([a-zA-Z0-9_]*\) *, *p_par(\([0-9]*\))) *! *( *\([a-zA-Z0-9_][a-zA-Z0-9_+\*\/-]*\) *) gmem *$/ PCLoad(config,\uA\uC\l_\1__mod__'$modname',\1__mod__'$modname'); \/\/ [\2-1] \1 real(\3) gmem/w tmp1
@@ -153,10 +154,12 @@ rm -f tmp
 if [ -f tmp1 ]; then
   sed -n '
          s/^.*\/\/ *\(\[.*\]\) *\([a-zA-Z0-9_]*\)  *\([a-zA-Z0-9_]*\) *$/#define \2__mod__'$modname' to_\3(p_par_'$modname'\1,"p_par_'$modname'\1")/
+         s/^.*\/\/ *\(\[.*\]\) *\([a-zA-Z0-9_]*\)  *\([a-zA-Z0-9_]*\) dconst *$/#define \2__mod__'$modname' to_\3(p_par_'$modname'\1,"p_par_'$modname'\1") \/\/ dconst/
          t cont
          b dimen
          : cont
          p
+         s/^#define *\([a-zA-Z0-9_]*\) to_\([a-zA-Z0-9_]*\).*\/\/ dconst$/dconst \2 AC_\1 \/\/ from '$modname'\n#define \1 \AC_\1/
          s/^#define *\([a-zA-Z0-9_]*\) to_\([a-zA-Z0-9_]*\).*$/run_const \2 AC_\1 \/\/ from '$modname'\n#define \1 \AC_\1/
 	 s/.*run_const real AC_dt //
 	 s/#define dt AC_dt//

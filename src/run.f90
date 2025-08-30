@@ -1582,7 +1582,7 @@ call copy_addr(istressx,p_par(1293)) ! int
 call copy_addr(istresstim,p_par(1299)) ! int
 call copy_addr(istressxim,p_par(1300)) ! int
 
-call copy_addr(tstart,p_par(1302))
+call copy_addr(tstart,p_par(1302)) ! real dconst
 call copy_addr(iunx,p_par(1303)) ! int
 call copy_addr(iuny,p_par(1304)) ! int
 call copy_addr(iunz,p_par(1305)) ! int
