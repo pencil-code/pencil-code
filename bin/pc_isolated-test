@@ -80,6 +80,7 @@ if test -e "$foldername"; then
     cd $foldername
     git fetch --depth=1
     git reset --hard "origin/$branchname"
+    git clean -xf
 else
     git clone --depth=1 --branch "$branchname" "$repo" "$foldername"
     cd "$foldername"
