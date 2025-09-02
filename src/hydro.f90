@@ -5530,19 +5530,17 @@ module Hydro
 !  At the end, we put lorentz_gamma2 into the f array.
 !
         if (ilorentz /= 0) f(:,m,n,ilorentz)=lorentz_gamma2
+        press=rho*cs20
         if (lhiggsless) then
           if (lhiggsless_old) then
-            press=rho*cs20-f(:,m,n,ihless)
+            press=press-f(:,m,n,ihless)
           else
-            press=rho*cs20
             if (width_hless==0.) then
               where(real(t) < f(:,m,n,ihless)) press=press-eps_hless
             else
               press=press-eps_hless*max(0.d0, min(1.d0, (f(:,m,n,ihless)+0.5d0*width_hless_absolute-t)/width_hless_absolute))
             endif
           endif
-        else
-          press=rho*cs20
         endif
 !
 !  Now set the nonmagnetic stresses; begin with the diagonal components:
