@@ -3672,12 +3672,14 @@ module Hydro
         if (ilorentz /= 0) then
           p%lorentz = f(l1:l2,m,n,ilorentz)
         else
-          p%lorentz = 1./(1.-p%u2)
+          ! alberto: compute lorentz factor from velocity
+          ! tini is tiny(1.0), added to avoid division by zero
+          p%lorentz = 1./(1.-min(p%u2,1.-tini))
         endif
       endif
       if (lpenc_loc(i_velx).and.ldensity) then
-        call dot_mn_sv_pencil(p%uu,sqrt(p%rho*cs201),tmp3g)
-        call dot_mn_sv_pencil(tmp3g,sqrt(p%lorentz),p%velx)
+        call dot_mn_sv_pencil(p%uu,sqrt(abs(p%rho*cs201)),tmp3g)
+        call dot_mn_sv_pencil(tmp3g,sqrt(abs(p%lorentz)),p%velx)
       endif
       ! alberto: we might want to consider higgsless also for non-conservative
       if (.not.lhiggsless_old.and.lhiggsless) p%hless = f(l1:l2,m,n,ihless)
