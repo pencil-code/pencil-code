@@ -61,6 +61,7 @@ module Sub
   public :: det3X3mat,Inv2_3X3mat
 !
   public :: dot, dot2, dot_mn, dot_mn_sv, dot_mn_sm, dot2_mn, dot2_mx, dot_add, dot_sub, dot2fj
+  public :: dot_mn_sv_pencil
   public :: dot_mn_vm, dot_mn_vm_trans, div_mn_2tensor, trace_mn
   public :: dyadic2, dyadic2_other
   public :: cross, cross_mn, cross_mixed
@@ -157,6 +158,7 @@ module Sub
 !
   interface dot
     module procedure dot_mn_sv
+    module procedure dot_mn_sv_pencil
     module procedure dot_mn
     module procedure dot_0
   endinterface
@@ -762,6 +764,26 @@ module Sub
       c=a(1)*b(:,1)+a(2)*b(:,2)+a(3)*b(:,3)
 !
     endsubroutine dot_mn_sv
+!***********************************************************************
+    subroutine dot_mn_sv_pencil(a,b,c)
+!
+!  Dot product, c=a.b, between pencilized vector and pencil scalar.
+!
+!  02-sep-2025/alberto: coded
+!
+      real, dimension (nx,3) :: a
+      real, dimension (nx)   :: b
+      real, dimension (nx,3) :: c
+      integer :: i
+!
+      intent(in) :: a,b
+      intent(out) :: c
+!
+      do i=1,3
+        c(:,i)=a(:,i)*b
+      enddo
+!
+    endsubroutine dot_mn_sv_pencil
 !***********************************************************************
     subroutine dot_mn_sm(a,b,c)
 !
