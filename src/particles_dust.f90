@@ -150,7 +150,7 @@ module Particles
   logical :: lnpmin_exclude_zero = .false.
   logical :: ltauascalar = .false., lfollow_gas=.false.
   logical :: lset_df_insert_nucleii=.false.
-  logical, pointer :: lramp_mass, lsecondary_wait
+  logical, pointer :: lramp_mass, lsecondary_wait, lnucl_dynamic
 !
   character(len=labellen) :: interp_pol_uu ='ngp'
   character(len=labellen) :: interp_pol_oo ='ngp'
@@ -479,6 +479,7 @@ module Particles
 !
       if (lchemistry) then
         call put_shared_variable('lpartnucleation',lpartnucleation)
+        call put_shared_variable('it_insert_nuclei',it_insert_nuclei)
       endif
 !
       if (lascalar) call put_shared_variable('G_condensation',G_condensation)
@@ -1003,6 +1004,7 @@ module Particles
                call fatal_error("initialize_particles",&
                "Can not set rhopmat if true_density_cond_spec is given.")
           rhopmat=true_density_cond_spec
+          call get_shared_variable('lnucl_dynamic',lnucl_dynamic)
         endif
       endif
 !
@@ -2617,7 +2619,15 @@ module Particles
                                     df(ii,jj,kk,icc) = df(ii,jj,kk,icc) - redfrac*f(ii,jj,kk,icc)/dt
                                     df(ii,jj,kk,icc+1) = df(ii,jj,kk,icc+1) - redfrac*f(ii,jj,kk,icc+1)/dt
                                  else
-                                    f(ii,jj,kk,icc)   = (1.-redfrac)*f(ii,jj,kk,icc)
+!
+!  The icc+2 corresponds to phi, to check dt**2??
+!
+                                    if (lnucl_dynamic) then
+                                      !f(ii,jj,kk,icc+2)   = (1.-redfrac)*f(ii,jj,kk,icc)
+                                      df(ii,jj,kk,icc+2) = df(ii,jj,kk,icc+2) - f(ii,jj,kk,icc)/(it_insert_nuclei*dt**2)
+                                    else
+                                      f(ii,jj,kk,icc)   = (1.-redfrac)*f(ii,jj,kk,icc)
+                                    endif
                                     f(ii,jj,kk,icc+1) = (1.-redfrac)*f(ii,jj,kk,icc+1)
                                  endif
                               endif

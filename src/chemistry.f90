@@ -59,7 +59,7 @@ module Chemistry
   real :: Cv_const=impossible
   logical :: lfix_Sc=.false., lfix_Pr=.false.
   logical :: init_from_file, reinitialize_chemistry=.false.
-  logical :: lnucleation, lcorr_vel=.false.
+  logical :: lnucleation, lcorr_vel=.false., lnucl_dynamic=.false.
   logical :: lchem_detailed=.true.
   logical :: lgradP_terms=.true.
   character(len=30) :: reac_rate_method = 'chemkin'
@@ -173,6 +173,7 @@ module Chemistry
   !
   integer :: i_cond_spec,ichem_cond_spec
   integer :: imassH=19, imassO=20, imassC=21, imassN=22, imassS=23, imassTI=24
+  integer, pointer :: it_insert_nuclei
   real :: true_density_cond_spec_cgs=2.196, true_density_cond_spec
   real :: gam_surf_energy_cgs=32.
   real :: nucleation_rate_coeff_cgs=1e19
@@ -249,7 +250,8 @@ module Chemistry
       lhotspot, lchem_detailed, condensing_species, conc_sat_spec_cgs, &
       true_density_cond_spec_cgs, delta_chem, press, init_premixed_fuel, &
       init_fuel_molar_ratio,init_fuel_O2_demand,init_temp_fuel, init_temp_oxidizer, init_phi, &
-      lFlame_index_as_aux, lmixture_fraction_as_aux, mixture_fraction_element, ifuel_flow, flameind_spec1, flameind_spec2
+      lFlame_index_as_aux, lmixture_fraction_as_aux, mixture_fraction_element, ifuel_flow, &
+      flameind_spec1, flameind_spec2, lnucl_dynamic
 !
 !
 ! run parameters
@@ -384,6 +386,7 @@ module Chemistry
       call put_shared_variable('species_constants',species_constants,caller='register_chemistry')
       if (lparticles) then
         call put_shared_variable('true_density_cond_spec',true_density_cond_spec)
+        call put_shared_variable('lnucl_dynamic',lnucl_dynamic,caller='register_chemistry')
       endif
 !
     endsubroutine register_chemistry
@@ -688,6 +691,7 @@ module Chemistry
         if  (lparticles_radius) then
           true_density_cond_spec=true_density_cond_spec_cgs/unit_density
         endif
+        call get_shared_variable('it_insert_nuclei',it_insert_nuclei)
       endif
 !
 ! Define some constants used for condensing species
@@ -7078,7 +7082,13 @@ module Chemistry
         !
         ! The mass of the nucleii is added to the passive scalar equation
         !
-        df(l1:l2,m,n,icc) = df(l1:l2,m,n,icc) + p%ff_nucl*(1+p%cc(:,1))*p%rho1
+        if (lnucl_dynamic) then
+          df(l1:l2,m,n,icc+2) = df(l1:l2,m,n,icc+2) &
+            + (p%ff_nucl*(1+p%cc(:,1))*p%rho1 - f(l1:l2,m,n,icc))/(it_insert_nuclei*dt)
+          df(l1:l2,m,n,icc) = df(l1:l2,m,n,icc)     + f(l1:l2,m,n,icc+2)
+        else
+          df(l1:l2,m,n,icc) = df(l1:l2,m,n,icc) + p%ff_nucl*(1+p%cc(:,1))*p%rho1
+        endif
         df(l1:l2,m,n,icc+1) = df(l1:l2,m,n,icc+1) + p%nucl_rmin*p%ff_nucl*(1+p%cc(:,2))*p%rho1
         !
         !  Generating the nucleii consumes the condensing species
