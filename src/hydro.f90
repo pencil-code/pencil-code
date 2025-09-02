@@ -3674,7 +3674,7 @@ module Hydro
         else
           ! alberto: compute lorentz factor from velocity
           ! tini is tiny(1.0), added to avoid division by zero
-          p%lorentz = 1./(1.-min(p%u2,1.-tini))
+          p%lorentz = 1./max(1.-min(p%u2,1.-tini), tini)
         endif
       endif
       if (lpenc_loc(i_velx).and.ldensity) then
