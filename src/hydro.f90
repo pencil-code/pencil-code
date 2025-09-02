@@ -26,6 +26,7 @@
 ! PENCILS PROVIDED del6u_strict(3); del4graddivu(3); uu_sph(3)
 ! PENCILS PROVIDED der6u_res(3,3)
 ! PENCILS PROVIDED lorentz; hless; advec_uu
+! PENCILS PROVIDED T00; T0i(3); Tij(6); velx(3)
 !***************************************************************
 !
 module Hydro
@@ -158,6 +159,7 @@ module Hydro
   logical :: llorentz_limiter=.false., full_3D=.false.
   logical :: lhiggsless=.false., lhiggsless_old=.false.
   logical :: lsqrt_qirro_uu=.false., lset_uz_zero=.false.
+  logical :: lnorm_vw_hless=.false.
   real, pointer :: profx_ffree(:),profy_ffree(:),profz_ffree(:)
   real, pointer :: B_ext2
   real :: incl_alpha = 0.0, rot_rr = 0.0
@@ -198,7 +200,7 @@ module Hydro
       lfactors_uu, qirro_uu, lsqrt_qirro_uu, lset_uz_zero, &
       lno_noise_uu, lrho_nonuni_uu, lpower_profile_file_uu, &
       llorentz_limiter, lhiggsless, lhiggsless_old, vwall, alpha_hless, width_hless, &
-      xjump_mid, yjump_mid, zjump_mid, qini
+      xjump_mid, yjump_mid, zjump_mid, qini, lnorm_vw_hless
 !
 !  Run parameters.
 !
@@ -363,6 +365,10 @@ module Hydro
   integer :: idiag_uxuy2m=0     ! DIAG_DOC: $\left<u_x^2u_y^2\right>$
   integer :: idiag_uyuz2m=0     ! DIAG_DOC: $\left<u_y^2u_z^2\right>$
   integer :: idiag_uzux2m=0     ! DIAG_DOC: $\left<u_z^2u_x^2\right>$
+  integer :: idiag_velxx2m=0    ! DIAG_DOC: $\left<w \gamma^2 u_x^2\right>$
+  integer :: idiag_velxy2m=0    ! DIAG_DOC: $\left<w \gamma^2 u_y^2\right>$
+  integer :: idiag_velxz2m=0    ! DIAG_DOC: $\left<w \gamma^2 u_z^2\right>$
+  integer :: idiag_velxrms=0    ! DIAG_DOC: $\left<\sqrt{w} \gamma^2 u^2 \right>^{1/2}$
   integer :: idiag_T00m=0       ! DIAG_DOC: $\left< T_{00} \right>$
   integer :: idiag_Txxm=0       ! DIAG_DOC: $\left< T_{xx} \right>$
   integer :: idiag_Tyym=0       ! DIAG_DOC: $\left< T_{yy} \right>$
@@ -373,6 +379,7 @@ module Hydro
   integer :: idiag_T0x2m=0      ! DIAG_DOC: $\left< T_{0x}^2 \right>$
   integer :: idiag_T0y2m=0      ! DIAG_DOC: $\left< T_{0y}^2 \right>$
   integer :: idiag_T0z2m=0      ! DIAG_DOC: $\left< T_{0z}^2 \right>$
+  integer :: idiag_T0irms=0     ! DIAG_DOC: $\left< T_{0i}^2 \right>^{1/2}$
   integer :: idiag_ux2ccm=0     ! DIAG_DOC: $\left<u_x^2\cos^2kz\right>$
   integer :: idiag_ux2ssm=0     ! DIAG_DOC: $\left<u_x^2\sin^2kz\right>$
   integer :: idiag_uy2ccm=0     ! DIAG_DOC: $\left<u_y^2\cos^2kz\right>$
@@ -978,13 +985,13 @@ module Hydro
       if (lconservative) then
         call farray_register_auxiliary('Tij',iTij,vector=6,communicated=.true.)
         if (llorentz_as_aux) call register_report_aux('lorentz', ilorentz,communicated=.true.)
-      else
-        if (lrelativistic) then
-          call fatal_error('register_hydro','no lrelativistic without lconservative')
-        else
-          if (llorentz_as_aux) call warning('register_hydro', &
-              'no Lorentz factor without lconservative or lrelativistic')
-        endif
+      ! else
+      !   if (lrelativistic) then
+      !     call fatal_error('register_hydro','no lrelativistic without lconservative')
+      !   else
+      !     if (llorentz_as_aux) call warning('register_hydro', &
+      !         'no Lorentz factor without lconservative or lrelativistic')
+      !   endif
       endif
 !
 !  Define the Higgsless field
@@ -1081,8 +1088,10 @@ module Hydro
       call put_shared_variable('lshear_rateofstrain',lshear_rateofstrain)
       if (lviscosity) call put_shared_variable ('lcalc_uuavg',lcalc_uuavg)
       if (lhiggsless) then
+        ! normalization with T00 at initial time gives bar epsilon = alpha/(1 + alpha)
         eps_hless = alpha_hless/(1.+alpha_hless)
         call put_shared_variable ('eps_hless',eps_hless,caller='register_hydro')
+        ! width_hless is the smoothing in units of grid points
         width_hless_absolute=width_hless*dx/vwall
         call put_shared_variable ('width_hless_absolute',width_hless_absolute,caller='initialize_hydro')
       endif
@@ -1623,6 +1632,7 @@ module Hydro
 !  In the magnetic case, also define Bsquared, if needed and get B_ext2 from magnetic module.
 !
       if (lconservative) then
+        ! alberto: is this needed? if so, why not do it for f(..., ivv)?
         f(:,:,:,iTij:iTij+5)=0.
         if (llorentz_as_aux) f(:,:,:,ilorentz)=0.
         if (lmagnetic) then
@@ -1864,7 +1874,7 @@ module Hydro
       use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (3) :: tmpvec
+      real, dimension (3) :: tmpvec,xhhless
 !
       real, dimension (nx,3) :: tmp_nx3
       real, dimension (mx,3) :: ss
@@ -2827,14 +2837,21 @@ module Hydro
           else
             f(:,:,:,ihless)=huge1
             do jhless=1,nhless
+              xhhless(1)=xhless(jhless)
+              xhhless(2)=yhless(jhless)
+              xhhless(3)=zhless(jhless)
+              if (.not.lnorm_vw_hless) xhhless=xhhless*vwall
               do n=1,mz
               do m=1,my
 !                delx=2.*atan(tan(.5*(x   -xhless(jhless))))
 !                dely=2.*atan(tan(.5*(y(m)-yhless(jhless))))
 !                delz=2.*atan(tan(.5*(z(n)-zhless(jhless))))
-                delx=(Lxyz(1)/pi)*atan(tan(pi/Lxyz(1)*(x   -vwall*xhless(jhless))))
-                dely=(Lxyz(2)/pi)*atan(tan(pi/Lxyz(2)*(y(m)-vwall*yhless(jhless))))
-                delz=(Lxyz(3)/pi)*atan(tan(pi/Lxyz(3)*(z(n)-vwall*zhless(jhless))))
+                ! delx=(Lxyz(1)/pi)*atan(tan(pi/Lxyz(1)*(x   -vwall*xhless(jhless))))
+                ! dely=(Lxyz(2)/pi)*atan(tan(pi/Lxyz(2)*(y(m)-vwall*yhless(jhless))))
+                ! delz=(Lxyz(3)/pi)*atan(tan(pi/Lxyz(3)*(z(n)-vwall*zhless(jhless))))
+                delx=(Lxyz(1)/pi)*atan(tan(pi/Lxyz(1)*(x   -xhhless(1))))
+                dely=(Lxyz(2)/pi)*atan(tan(pi/Lxyz(2)*(y(m)-xhhless(2))))
+                delz=(Lxyz(3)/pi)*atan(tan(pi/Lxyz(3)*(z(n)-xhhless(3))))
                 tau_hless=thless(jhless)+sqrt(delx**2+dely**2+delz**2)/vwall
                 where(tau_hless<f(:,m,n,ihless)) f(:,m,n,ihless)=tau_hless
               enddo
@@ -3050,6 +3067,16 @@ module Hydro
           idiag_ruyuzmxy/=0 .or. idiag_ffdownmxy/=0) then
         lpenc_diagnos2d(i_uu)=.true.
       endif
+!
+! alberto: Diagnostic pencils for X-velocity, T00, T0i and Tij moments
+      if (idiag_velxx2m/=0 .or. idiag_velxy2m/=0 .or. idiag_velxz2m/=0 .or. &
+          idiag_velxrms/=0) lpenc_diagnos(i_velx)=.true.
+      if (idiag_T00m/=0) lpenc_diagnos(i_T00)=.true.
+      if (idiag_Txxm/=0 .or. idiag_Tyym/=0 .or. idiag_Tzzm/=0 .or. idiag_Txym/=0 .or. &
+          idiag_Tyzm/=0 .or. idiag_Tzxm/=0) lpenc_diagnos(i_Tij)=.true.
+      if(idiag_T0x2m/=0 .or. idiag_T0y2m/=0 .or. idiag_T0z2m/=0 &
+         .or. idiag_T0irms/=0) lpenc_diagnos(i_T0i)=.true.
+!
       if (idiag_ruxmxy/=0 .or. idiag_ruymxy/=0 .or. idiag_ruzmxy/=0 .or. &
           idiag_ruxuymxy/=0 .or. idiag_ruxuzmxy/=0 .or. idiag_ruyuzmxy/=0) &
         lpenc_diagnos2d(i_rho)=.true.
@@ -3128,6 +3155,12 @@ module Hydro
 !
       logical, dimension (npencils) :: lpencil_in
 !
+      if (lpencil_in(i_velx)) then
+        lpencil_in(i_uu)=.true.
+        lpencil_in(i_rho)=.true.
+        lpencil_in(i_lorentz)=.true.
+      endif
+      if (lpencil_in(i_lorentz)) lpencil_in(i_u2)=.true.
       if (lpencil_in(i_u2)) lpencil_in(i_uu)=.true.
       if (lpencil_in(i_divu)) lpencil_in(i_uij)=.true.
       if (lpencil_in(i_sij)) then
@@ -3267,7 +3300,7 @@ module Hydro
       use Sub, only: multsv_mn, del2v_etc, gij_etc, u_dot_grad, del6v, &
         dot2_mn, gij, div_mn, traceless_strain, curl_mn, multm2_sym_mn, &
         dot_mn, cross, del4v, del4graddiv, d2fi_dxj, del2fi_dxjk, h_dot_grad, &
-        invmat_DB, multmv
+        invmat_DB, multmv, dot_mn_sv_pencil
       use WENO_transport, only: weno_transp
       use EquationOfState, only: cs20
 !
@@ -3277,7 +3310,7 @@ module Hydro
 !
       real, dimension (nx) :: tmp, DD
       real, dimension (nx) :: tmp_rho
-      real, dimension (nx,3) :: tmp3
+      real, dimension (nx,3) :: tmp3, tmp3g
       real, dimension (nx,3,3) :: tmp33
       real :: cs201=1., cs2011, outest
       integer :: i, j, ju, jj, kk, jk
@@ -3289,20 +3322,21 @@ module Hydro
 !  uu is directly p%uu=f(l1:l2,m,n,iux:iuz), but with lconservative
 !  it is the momentum, or T^{0i} in the relativistic case.
 !
+      if (lrelativistic_eos) cs201=1.+cs20
+      cs2011=1./cs201
       if (lpenc_loc(i_uu)) then
         if (lconservative) then
+          tmp_rho=f(l1:l2,m,n,irho)
+          if (lpenc_loc(i_T00)) p%T00=tmp_rho
           if (lvv_as_aux .or. lvv_as_comaux) then
             p%uu=f(l1:l2,m,n,ivx:ivz)
           else
             tmp3=f(l1:l2,m,n,iux:iuz)
-            if (lrelativistic_eos) cs201=1.+cs20
-            cs2011=1./cs201
 !
 !  alberto: tmp_rho is required to be reconstructed for higgsless.
 !  Unless the p%uu pencil is taken from the ivv chunk of the farray, the
 !  following smoothing is only used for diagnostics.
 !
-            tmp_rho=f(l1:l2,m,n,irho)
             if (.not.lhiggsless_old.and.lhiggsless) then
               if (width_hless==0.) then
                 where(real(t) < f(l1:l2,m,n,ihless)) tmp_rho=tmp_rho-eps_hless
@@ -3327,6 +3361,10 @@ module Hydro
               !if (.not.lhiggsless_old.and.lhiggsless) then
               !  where(real(t) < f(l1:l2,m,n,ihless)) tmp_rho=tmp_rho-eps_hless
               !endif
+              if (.not.llorentz_as_aux) then
+                call fatal_error('calc_pencils_hydro_nonlinear', &
+                                  'llorentz_as_aux should be True to reconstruct p%uu')
+              endif
               if (lmagnetic) then
 !
                 if (full_3D) then
@@ -3345,6 +3383,8 @@ module Hydro
                 tmp=1.-cs20*cs2011/f(l1:l2,m,n,ilorentz)
                 tmp=tmp/tmp_rho
                 call multsv_mn(tmp,tmp3,p%uu)
+                ! alberto: added p%rho1 for conservative and relativistic case
+                p%rho1=(cs201*f(l1:l2,m,n,ilorentz)-cs20)/tmp_rho
               endif
 !print*,'AXEL7: used B_ext2'
 !
@@ -3352,13 +3392,18 @@ module Hydro
 !  so to get the velocity, we have to divide by it.
 !
             else
-              ! corrected when Higgsless is chosen
-              ! p%rho1=1./f(l1:l2,m,n,irho)
               p%rho1=1./tmp_rho
               call multsv_mn(p%rho1,tmp3,p%uu)
-              !p%uu=p%uu*cs2011
+              ! alberto: I commented the line below by mistake, recovered
+              p%uu=p%uu*cs2011
             endif
+            ! alberto: once computed pencil u from f-array, store temporarily
+            ! for all pencils below to be correctly computed, T0i remains
+            ! stored in tmp3
+            f(l1:l2,m,n,iux:iuz)=p%uu
           endif
+          if (lpenc_loc(i_T0i)) p%T0i=f(l1:l2,m,n,iux:iuz)
+          if (lpenc_loc(i_Tij)) p%Tij=f(l1:l2,m,n,iTij:iTij+5)
         else
           p%uu=f(l1:l2,m,n,iux:iuz)
         endif
@@ -3606,8 +3651,8 @@ module Hydro
         do j=1,3
           ! This is calling scalar h_dot_grad, that does not add
           ! the inertial terms. They will be added here.
-          tmp3 = p%uij(:,j,:)
-          call h_dot_grad(p%uu_advec,tmp3,p%uuadvec_guu(:,j))
+          tmp3g = p%uij(:,j,:)
+          call h_dot_grad(p%uu_advec,tmp3g,p%uuadvec_guu(:,j))
         enddo
         if (lcylindrical_coords) then
           p%uuadvec_guu(:,1)=p%uuadvec_guu(:,1)-rcyl_mn1*p%uu(:,2)*p%uu(:,2)
@@ -3621,9 +3666,29 @@ module Hydro
 !
       if (lpenc_loc(i_uu_sph).and.luu_sph_as_aux) p%uu_sph=f(l1:l2,m,n,iuu_sphr:iuu_sphp)
 !
+      ! alberto: lorentz can be computed also when not conservative
+      !if (ilorentz /= 0) p%lorentz = f(l1:l2,m,n,ilorentz)
+      if (lpenc_loc(i_lorentz)) then
+        if (ilorentz /= 0) then
+          p%lorentz = f(l1:l2,m,n,ilorentz)
+        else
+          p%lorentz = 1./(1.-p%u2)
+        endif
+      endif
+      if (lpenc_loc(i_velx).and.ldensity) then
+        call dot_mn_sv_pencil(p%uu,sqrt(p%rho*cs201),tmp3g)
+        call dot_mn_sv_pencil(tmp3g,sqrt(p%lorentz),p%velx)
+      endif
+      ! alberto: we might want to consider higgsless also for non-conservative
+      if (.not.lhiggsless_old.and.lhiggsless) p%hless = f(l1:l2,m,n,ihless)
+!
+! alberto: recover T0i in f-array (temporarily, we have stored the
+!          actual velocity for good reconstruction of all pencils)
+!
       if (lconservative) then
-        if (ilorentz /= 0) p%lorentz = f(l1:l2,m,n,ilorentz)
-        if (.not.lhiggsless_old.and.lhiggsless) p%hless = f(l1:l2,m,n,ihless)
+        if (.not.lvv_as_aux.and..not.lvv_as_comaux) then
+          f(l1:l2,m,n,iux:iuz)=tmp3
+        endif
       endif
 !
     endsubroutine calc_pencils_hydro_nonlinear
@@ -4220,11 +4285,11 @@ module Hydro
            ldiagnos.and.idiag_taufmin/=0 ) then
 
         do j =1,3
-                where (abs(p%uu(:,j))>1)   !MR: What would in general be the significance of 1 here?
-                  uu1(:,j)=1./p%uu(:,j)
-                elsewhere
-                  uu1(:,j)=1.
-                endwhere
+          where (abs(p%uu(:,j))>1)   !MR: What would in general be the significance of 1 here?
+            uu1(:,j)=1./p%uu(:,j)
+          elsewhere
+            uu1(:,j)=1.
+          endwhere
         enddo
         do j=1,3
           ftot=abs(df(l1:l2,m,n,iux+j-1)*uu1(:,j))
@@ -4254,8 +4319,8 @@ module Hydro
       real, dimension (nx) :: space_part_re,space_part_im,u2t,uot,out,fu
       real, dimension (nx) :: odel2um,uref,curlo2,qo,quxo,graddivu2
       real, dimension (nx,Nmodes_SH) :: urlm
-      real, dimension (nx) :: rmask
-      real :: kx,zbot
+      real, dimension (nx) :: rmask, lorr
+      real :: kx,zbot,cs201=1., cs2011
       integer :: k
 !
 !  Calculate maxima and rms values for diagnostic purposes
@@ -4374,20 +4439,39 @@ module Hydro
         if (idiag_rux2m/=0) call sum_mn_name(p%rho*p%uu(:,1)**2,idiag_rux2m)
         if (idiag_ruy2m/=0) call sum_mn_name(p%rho*p%uu(:,2)**2,idiag_ruy2m)
         if (idiag_ruz2m/=0) call sum_mn_name(p%rho*p%uu(:,3)**2,idiag_ruz2m)
-        call sum_mn_name(p%rho,idiag_T00m)
-        call sum_mn_name(p%uu(:,1)**2,idiag_T0x2m)
-        call sum_mn_name(p%uu(:,2)**2,idiag_T0y2m)
-        !Kishore: the below was f(l1:l2,m,n,iuy)**2 (so I changed it to p%uu(:,2)), but from the name it seems that it should be using uz. Axel, please check.
-        call sum_mn_name(p%uu(:,2)**2,idiag_T0z2m)
-        if (iTij/=0) then
-          !Kishore: if iTij==0, we will end up doing an out of bounds access. Ideally, the quantities below would be pencils, but I am just doing a quick fix for now.
-          call sum_mn_name(f(l1:l2,m,n,iTij+0),idiag_Txxm)
-          call sum_mn_name(f(l1:l2,m,n,iTij+1),idiag_Tyym)
-          call sum_mn_name(f(l1:l2,m,n,iTij+2),idiag_Tzzm)
-          call sum_mn_name(f(l1:l2,m,n,iTij+3),idiag_Txym)
-          call sum_mn_name(f(l1:l2,m,n,iTij+4),idiag_Tyzm)
-          call sum_mn_name(f(l1:l2,m,n,iTij+5),idiag_Tzxm)
-        endif
+        ! alberto: needs to be changed as p%rho and p%uu
+        !          contain physical rho and uu (instead of T00 and T0i)
+        ! call sum_mn_name(p%rho,idiag_T00m)
+        ! call sum_mn_name(p%uu(:,1)**2,idiag_T0x2m)
+        ! call sum_mn_name(p%uu(:,2)**2,idiag_T0y2m)
+        ! !Kishore: the below was f(l1:l2,m,n,iuy)**2 (so I changed it to p%uu(:,2)), but from the name it seems that it should be using uz. Axel, please check.
+        ! call sum_mn_name(p%uu(:,2)**2,idiag_T0z2m)
+        if (idiag_T00m/=0) call sum_mn_name(p%T00,idiag_T00m)
+        if (idiag_T0x2m/=0) call sum_mn_name(p%T0i(:,1)**2,idiag_T0x2m)
+        if (idiag_T0y2m/=0) call sum_mn_name(p%T0i(:,2)**2,idiag_T0y2m)
+        if (idiag_T0z2m/=0) call sum_mn_name(p%T0i(:,3)**2,idiag_T0z2m)
+        if (idiag_T0irms/=0) call sum_mn_name(p%T0i(:,1)**2 + p%T0i(:,2)**2 + &
+                                              p%T0i(:,3)**2,idiag_T0irms,lsqrt=.true.)
+        if (idiag_Txxm/=0) call sum_mn_name(p%Tij(:,1),idiag_Txxm)
+        if (idiag_Tyym/=0) call sum_mn_name(p%Tij(:,2),idiag_Tyym)
+        if (idiag_Tzzm/=0) call sum_mn_name(p%Tij(:,3),idiag_Tzzm)
+        if (idiag_Txym/=0) call sum_mn_name(p%Tij(:,4),idiag_Txym)
+        if (idiag_Tyzm/=0) call sum_mn_name(p%Tij(:,5),idiag_Tyzm)
+        if (idiag_Tzxm/=0) call sum_mn_name(p%Tij(:,6),idiag_Tzxm)
+        if (idiag_velxrms/=0) call sum_mn_name(p%velx(:,1)**2 + p%velx(:,2)**2 + p%velx(:,3)**2,&
+                                               idiag_velxrms,lsqrt=.true.)
+        if (idiag_velxx2m/=0) call sum_mn_name(p%velx(:,1)**2,idiag_velxx2m)
+        if (idiag_velxy2m/=0) call sum_mn_name(p%velx(:,2)**2,idiag_velxy2m)
+        if (idiag_velxz2m/=0) call sum_mn_name(p%velx(:,3)**2,idiag_velxz2m)
+        ! if (iTij/=0) then
+        !   !Kishore: if iTij==0, we will end up doing an out of bounds access. Ideally, the quantities below would be pencils, but I am just doing a quick fix for now.
+        !   call sum_mn_name(f(l1:l2,m,n,iTij+0),idiag_Txxm)
+        !   call sum_mn_name(f(l1:l2,m,n,iTij+1),idiag_Tyym)
+        !   call sum_mn_name(f(l1:l2,m,n,iTij+2),idiag_Tzzm)
+        !   call sum_mn_name(f(l1:l2,m,n,iTij+3),idiag_Txym)
+        !   call sum_mn_name(f(l1:l2,m,n,iTij+4),idiag_Tyzm)
+        !   call sum_mn_name(f(l1:l2,m,n,iTij+5),idiag_Tzxm)
+        ! endif
         call sum_mn_name(p%ekin,idiag_ekin)
         call sum_mn_name(p%ekin,idiag_EEK)
         if (idiag_EEK2/=0) call sum_mn_name(p%ekin**2,idiag_EEK2)
@@ -4448,10 +4532,32 @@ module Hydro
 !
 !  Things related to Lorentz gamma; remember that ilorentz is already gamma**2
 !
-        if (ilorentz/=0) then
-          if (idiag_gamm/=0) call sum_mn_name(sqrt(abs(f(l1:l2,m,n,ilorentz))),idiag_gamm)
-          call sum_mn_name(f(l1:l2,m,n,ilorentz),idiag_gamrms,lsqrt=.true.)
-          call max_mn_name(f(l1:l2,m,n,ilorentz),idiag_gammax,lsqrt=.true.)
+        if (idiag_gamm/=0.or.idiag_gamrms/=0.or.idiag_gammax/=0) then
+          if (ilorentz/=0) then
+            lorr = f(l1:l2,m,n,ilorentz)
+          else
+            lorr = 1./(1. - p%uu(:,1)**2 - p%uu(:,2)**2 - p%uu(:,3)**2)
+          endif
+          if (idiag_gamm/=0) call sum_mn_name(sqrt(abs(lorr)),idiag_gamm)
+          if (idiag_gamrms/=0) call sum_mn_name(lorr,idiag_gamrms,lsqrt=.true.)
+          if (idiag_gammax/=0) call max_mn_name(lorr,idiag_gammax,lsqrt=.true.)
+        endif
+!
+!  Variable velx = sqrt(w) gamma v_i
+!
+        if (idiag_velxx2m/=0.or.idiag_velxy2m/=0.or.idiag_velxz2m/=0.or.idiag_velxrms/=0) then
+          if (ldensity) then
+            if (ilorentz/=0) then
+              lorr = f(l1:l2,m,n,ilorentz)
+            else
+              lorr = 1./(1. - p%uu(:,1)**2 - p%uu(:,2)**2 - p%uu(:,3)**2)
+            endif
+            if (idiag_velxx2m/=0) call sum_mn_name(cs201*p%rho*p%uu(:,1)**2,idiag_velxx2m)
+            if (idiag_velxy2m/=0) call sum_mn_name(cs201*p%rho*p%uu(:,2)**2,idiag_velxy2m)
+            if (idiag_velxz2m/=0) call sum_mn_name(cs201*p%rho*p%uu(:,3)**2,idiag_velxz2m)
+            if (idiag_velxrms/=0) call sum_mn_name(cs201*p%rho*(p%uu(:,1)**2+p%uu(:,2)**2 &
+                                     + p%uu(:,3)**2),idiag_velxrms)
+          endif
         endif
 !
 !  Total angular momentum in spherical coordinates
@@ -5289,7 +5395,7 @@ module Hydro
 !  In the conservative case, we calculate the Lorentz gamma squared and Tij here,
 !  rather than in before_boundary, because the B-field is unknown otherwise.
 !  In the non-relativisitic case, then Tij=rho*ui*uj+delij*p,
-!  so with p=cs2*rho/3="press", we have Tij=Ti0*Tj0/rho+cs2*rho*delij/3.
+!  so with p=cs2*rho="press", we have Tij=Ti0*Tj0/rho+cs2*rho*delij.
 !  To deal with truly nonrelativistic eos and conservative formulation,
 !  we need to set rho_gam21=1/rho.
 !  Note that the loop below is over all my and mz, not ny and nz,
@@ -5313,75 +5419,74 @@ module Hydro
       integer ::  iter_relB,i,j,jhless
       real, dimension (mx,3) :: ss
 
-        if (lrelativistic_eos) cs201=1.+cs20
-        cs2011=1./cs201
-        if (iTij==0) call fatal_error("hydro_after_boundary","must compute Tij for lconservative")
-        !cs201=cs20+1.
-        !cs2011=1./cs201
-        do n=1,mz
-        do m=1,my
-          if (ldensity) then
-            if (lmagnetic) then
-              if (ibx==0) call fatal_error("hydro_after_boundary","must use lbb_as_comaux=T")
-              call dot2(f(:,m,n,ibx:ibz),Bsquared)
-              if (m==4.and.n==4) then
-                !print*,'AXEL: after hydro: bb(:,1)=', f(:,4,4,ibx)
-                !print*,'AXEL: Bsquared=',m,n,Bsquared(:)
-              endif
-              if (B_ext2/=0.) then
-                hydro_energy=f(:,m,n,irho)-.5*B_ext2
-              else
-                hydro_energy=f(:,m,n,irho)
-              endif
+      if (lrelativistic_eos) cs201=1.+cs20
+      cs2011=1./cs201
+      if (iTij==0) call fatal_error("hydro_after_boundary","must compute Tij for lconservative")
+      do n=1,mz
+      do m=1,my
+        if (ldensity) then
+          if (lmagnetic) then
+            if (ibx==0) call fatal_error("hydro_after_boundary","must use lbb_as_comaux=T")
+            call dot2(f(:,m,n,ibx:ibz),Bsquared)
+            !if (m==4.and.n==4) then
+              !print*,'AXEL: after hydro: bb(:,1)=', f(:,4,4,ibx)
+              !print*,'AXEL: Bsquared=',m,n,Bsquared(:)
+            !endif
+            if (B_ext2/=0.) then
+              hydro_energy=f(:,m,n,irho)-.5*B_ext2
             else
               hydro_energy=f(:,m,n,irho)
             endif
+          else
+            hydro_energy=f(:,m,n,irho)
+          endif
 !
 !  Higgsless field
 !
-            if (lhiggsless) then
-              if (lhiggsless_old) then
-                do jhless=1,nhless
-                  delx=2.*atan(tan(.5*(x   -xhless(jhless))))
-                  dely=2.*atan(tan(.5*(y(m)-yhless(jhless))))
-                  delz=2.*atan(tan(.5*(z(n)-zhless(jhless))))
-                  where(sqrt(delx**2+dely**2+delz**2) &
-                       < vwall*(max(real(t)-thless(jhless),.0))) f(:,m,n,ihless)=0.
-                  hydro_energy=hydro_energy-f(:,m,n,ihless)
-                enddo
+          if (lhiggsless) then
+            if (lhiggsless_old) then
+              do jhless=1,nhless
+                delx=2.*atan(tan(.5*(x   -xhless(jhless))))
+                dely=2.*atan(tan(.5*(y(m)-yhless(jhless))))
+                delz=2.*atan(tan(.5*(z(n)-zhless(jhless))))
+                where(sqrt(delx**2+dely**2+delz**2) &
+                      < vwall*(max(real(t)-thless(jhless),.0))) f(:,m,n,ihless)=0.
+                hydro_energy=hydro_energy-f(:,m,n,ihless)
+              enddo
+            else
+              !where(real(t) < f(:,m,n,ihless)) hydro_energy=hydro_energy-alpha_hless/(1.+alpha_hless)
+              if (width_hless==0.) then
+                where(real(t) < f(:,m,n,ihless)) hydro_energy=hydro_energy-eps_hless
               else
-                !where(real(t) < f(:,m,n,ihless)) hydro_energy=hydro_energy-alpha_hless/(1.+alpha_hless)
-                if (width_hless==0.) then
-                  where(real(t) < f(:,m,n,ihless)) hydro_energy=hydro_energy-eps_hless
-                else
-                  hydro_energy=hydro_energy-eps_hless &
-                    *max(0.d0, min(1.d0, (f(:,m,n,ihless)+0.5d0*width_hless_absolute-t)/width_hless_absolute))
-                endif
+                hydro_energy=hydro_energy-eps_hless &
+                  *max(0.d0, min(1.d0, (f(:,m,n,ihless)+0.5d0*width_hless_absolute-t)/width_hless_absolute))
               endif
             endif
-            hydro_energy1=1./hydro_energy
-          else
-            hydro_energy=1.
-            hydro_energy1=1.
           endif
+          hydro_energy1=1./hydro_energy
+        else
+          hydro_energy=1.
+          hydro_energy1=1.
+        endif
 !
 !  Compute lorentz_gamma2.
 !
-          if (lrelativistic.or.llorentz_as_aux) then
-            ss=f(:,m,n,iux:iuz)
-            call dot2_mx(ss,ss2)
-            rat0=ss2*hydro_energy1**2
-            if (lmagnetic) then
-              vA2_pseudo=B_ext2*cs2011*hydro_energy1
-              rat=rat0/(1.+vA2_pseudo)**2
-            else
-              rat=rat0
-            endif
-            lorentz_gamma2=1./(1.-rat)
-            if (lrelativistic_eos) &
-                  lorentz_gamma2=lorentz_gamma2*(.5-rat*cs20*cs2011 + &
-                          sqrt(.25-rat*cs20*cs2011**2))
-            !lorentz_gamma2=(.5-rat*cs20*cs2011+sqrt(.25-rat*cs20*cs2011**2))/(1.-rat)
+        if (lrelativistic.or.llorentz_as_aux) then
+          ss=f(:,m,n,iux:iuz)
+          call dot2_mx(ss,ss2)
+          rat0=ss2*hydro_energy1**2
+          if (lmagnetic) then
+            vA2_pseudo=B_ext2*cs2011*hydro_energy1
+            rat=rat0/(1.+vA2_pseudo)**2
+          else
+            rat=rat0
+          endif
+          lorentz_gamma2=1./(1.-rat)
+          if (lrelativistic_eos) &
+                lorentz_gamma2=lorentz_gamma2*(.5-rat*cs20*cs2011 + &
+                        sqrt(.25-rat*cs20*cs2011**2))
+          !lorentz_gamma2=(.5-rat*cs20*cs2011+sqrt(.25-rat*cs20*cs2011**2))/(1.-rat)
+        endif
 !
 !  In the magnetic case, we need to solve lorentz_gamma2 iteratively; first initialize it:
 !  We also don't know rho yet (because it involves gamma^2), so we iterate for that, too.
@@ -5390,80 +5495,81 @@ module Hydro
 !  The expression rho_gam2 means the same as (4/3)*rho*gamma^2, and rho_gam21=1/rho_gam2.
 !  Now iterate (only works if relativistic)
 !
-            if (lmagnetic) then
-              do iter_relB=1,niter_relB
-                if (lrelativistic) then
-                  rho1=(cs201*lorentz_gamma2-cs20)/hydro_energy
-                  rho_gam20=cs2011*rho1/lorentz_gamma2
-                  vA2_pseudo=B_ext2*rho_gam20
-                  rat=rat0/(1.+vA2_pseudo)**2
-                  lorentz_gamma2=(.5-rat*cs20*cs2011+sqrt(.25-rat*cs20*cs2011**2))/(1.-rat)
-                else
-                  if (llorentz_as_aux) lorentz_gamma2=1./(1.-rat)
-                endif
-              enddo
-              rho=hydro_energy/(cs201*lorentz_gamma2-cs20)
-              rho_gam21=1./(cs201*rho*lorentz_gamma2+B_ext2)
+        if (lmagnetic) then
+          do iter_relB=1,niter_relB
+            if (lrelativistic) then
+              rho1=(cs201*lorentz_gamma2-cs20)/hydro_energy
+              rho_gam20=cs2011*rho1/lorentz_gamma2
+              vA2_pseudo=B_ext2*rho_gam20
+              rat=rat0/(1.+vA2_pseudo)**2
+              lorentz_gamma2=(.5-rat*cs20*cs2011+sqrt(.25-rat*cs20*cs2011**2))/(1.-rat)
             else
-              rho=hydro_energy/(cs201*lorentz_gamma2-cs20)
-              rho_gam21=1./(cs201*rho*lorentz_gamma2)
+              if (llorentz_as_aux) lorentz_gamma2=1./(1.-rat)
             endif
+          enddo
+          rho=hydro_energy/(cs201*lorentz_gamma2-cs20)
+          rho_gam21=1./(cs201*rho*lorentz_gamma2+B_ext2)
+        else
+          rho=hydro_energy/(cs201*lorentz_gamma2-cs20)
+          rho_gam21=1./(cs201*rho*lorentz_gamma2)
+        endif
 !
 !  If just conservative and non-relativistic, we just set rho and rho_gam21.
+!  alberto: not needed, as lorentz_gamma2=1 reduces to these expressions
 !
-          else
-            if (lrelativistic_eos) then
-              rho=cs201*hydro_energy
-            else
-              rho=hydro_energy
-            endif
-            rho_gam21=1./(cs201*rho)
-          endif
+          ! else
+          !   if (lrelativistic_eos) then
+          !     rho=cs201*hydro_energy
+          !   else
+          !     rho=hydro_energy
+          !   endif
+          !   rho_gam21=1./(cs201*rho)
+          ! endif
 !if (iproc==1.and.m==m1.and.n==n1) print*,'AXEL: rho_gam2(80:160)=',t,rho_gam2(80:160)
 !
 !  At the end, we put lorentz_gamma2 into the f array.
 !
-          if (ilorentz /= 0) f(:,m,n,ilorentz)=lorentz_gamma2
-          if (lhiggsless) then
-            if (lhiggsless_old) then
-              press=rho*cs20-f(:,m,n,ihless)
-            else
-              press=rho*cs20
-              if (width_hless==0.) then
-                where(real(t) < f(:,m,n,ihless)) press=press-eps_hless
-              else
-                press=press-eps_hless*max(0.d0, min(1.d0, (f(:,m,n,ihless)+0.5d0*width_hless_absolute-t)/width_hless_absolute))
-              endif
-            endif
+        if (ilorentz /= 0) f(:,m,n,ilorentz)=lorentz_gamma2
+        if (lhiggsless) then
+          if (lhiggsless_old) then
+            press=rho*cs20-f(:,m,n,ihless)
           else
             press=rho*cs20
+            if (width_hless==0.) then
+              where(real(t) < f(:,m,n,ihless)) press=press-eps_hless
+            else
+              press=press-eps_hless*max(0.d0, min(1.d0, (f(:,m,n,ihless)+0.5d0*width_hless_absolute-t)/width_hless_absolute))
+            endif
           endif
+        else
+          press=rho*cs20
+        endif
 !
 !  Now set the nonmagnetic stresses; begin with the diagonal components:
 !  Tii=(Ti0)^2/rho or Tii=(Ti0)^2/(4./3.*rho*gamma^2)
 !
 !if (iproc==1.and.m==m1.and.n==n1) print*,'AXEL: f(80:160,m,n,irho)=',t,f(80:160,m,n,irho)
 !if (iproc==1.and.m==m1.and.n==n1) print*,'AXEL: f(80:160,m,n,iuu)=',t,f(80:160,m,n,iuu)
-          do j=0,2
-            f(:,m,n,iTij+j)=rho_gam21*f(:,m,n,iuu+j)**2+press
-          enddo
+        do j=0,2
+          f(:,m,n,iTij+j)=rho_gam21*f(:,m,n,iuu+j)**2+press
+        enddo
 !
 !  off-diagonal terms:
 !  "Tij4" = T12
 !  "Tij5" = T23
 !  "Tij6" = T31
 !
-          f(:,m,n,iTij+3+0)=rho_gam21*f(:,m,n,iuu+0)*f(:,m,n,iuu+1)
-          f(:,m,n,iTij+3+1)=rho_gam21*f(:,m,n,iuu+1)*f(:,m,n,iuu+2)
-          f(:,m,n,iTij+3+2)=rho_gam21*f(:,m,n,iuu+2)*f(:,m,n,iuu+0)
+        f(:,m,n,iTij+3+0)=rho_gam21*f(:,m,n,iuu+0)*f(:,m,n,iuu+1)
+        f(:,m,n,iTij+3+1)=rho_gam21*f(:,m,n,iuu+1)*f(:,m,n,iuu+2)
+        f(:,m,n,iTij+3+2)=rho_gam21*f(:,m,n,iuu+2)*f(:,m,n,iuu+0)
 !
 !  compute velocity, if as comaux
 !
-          if (lvv_as_aux .or. lvv_as_comaux) then
-            do j=0,2
-              f(:,m,n,ivv+j)=rho_gam21*f(:,m,n,iuu+j)
-            enddo
-          endif
+        if (lvv_as_aux .or. lvv_as_comaux) then
+          do j=0,2
+            f(:,m,n,ivv+j)=rho_gam21*f(:,m,n,iuu+j)
+          enddo
+        endif
 !
 !  The following hasn't been prepared yet.
 !
@@ -5476,8 +5582,8 @@ module Hydro
     !       f(:,m,n,iTij+3+1)=muparaB21*f(:,m,n,ibb+1)*f(:,m,n,ibb+2)
     !       f(:,m,n,iTij+3+2)=muparaB21*f(:,m,n,ibb+2)*f(:,m,n,ibb+0)
     !     endif
-        enddo
-        enddo
+      enddo
+      enddo
     endsubroutine hydro_after_boundary_conservative
 !***********************************************************************
     subroutine hydro_after_boundary(f)
@@ -6467,6 +6573,10 @@ module Hydro
         idiag_ruy2m=0
         idiag_ruz2m=0
         idiag_T00m=0
+        idiag_velxx2m=0
+        idiag_velxy2m=0
+        idiag_velxz2m=0
+        idiag_velxrms=0
         idiag_Txxm=0
         idiag_Tyym=0
         idiag_Tzzm=0
@@ -6476,6 +6586,7 @@ module Hydro
         idiag_T0x2m=0
         idiag_T0y2m=0
         idiag_T0z2m=0
+        idiag_T0irms=0
         idiag_uduum=0
         idiag_u2mx=0
         idiag_uxmx=0
@@ -6968,6 +7079,10 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'rux2m',idiag_rux2m)
         call parse_name(iname,cname(iname),cform(iname),'ruy2m',idiag_ruy2m)
         call parse_name(iname,cname(iname),cform(iname),'ruz2m',idiag_ruz2m)
+        call parse_name(iname,cname(iname),cform(iname),'velxx2m',idiag_velxx2m)
+        call parse_name(iname,cname(iname),cform(iname),'velxy2m',idiag_velxy2m)
+        call parse_name(iname,cname(iname),cform(iname),'velxz2m',idiag_velxz2m)
+        call parse_name(iname,cname(iname),cform(iname),'velxrms',idiag_velxrms)
         call parse_name(iname,cname(iname),cform(iname),'T00m',idiag_T00m)
         call parse_name(iname,cname(iname),cform(iname),'Txxm',idiag_Txxm)
         call parse_name(iname,cname(iname),cform(iname),'Tyym',idiag_Tyym)
@@ -6978,6 +7093,7 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'T0x2m',idiag_T0x2m)
         call parse_name(iname,cname(iname),cform(iname),'T0y2m',idiag_T0y2m)
         call parse_name(iname,cname(iname),cform(iname),'T0z2m',idiag_T0z2m)
+        call parse_name(iname,cname(iname),cform(iname),'T0irms',idiag_T0irms)
         call parse_name(iname,cname(iname),cform(iname),'uxuym',idiag_uxuym)
         call parse_name(iname,cname(iname),cform(iname),'uxuzm',idiag_uxuzm)
         call parse_name(iname,cname(iname),cform(iname),'uyuzm',idiag_uyuzm)
