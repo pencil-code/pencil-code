@@ -13,7 +13,7 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED fcont(3,n_forcing_cont_max)
+! PENCILS PROVIDED fcont(3,n_forcing_cont_max); curlfcont(3,n_forcing_cont_max)
 !
 !***************************************************************
 module Forcing
@@ -98,6 +98,7 @@ module Forcing
       type (pencil_case) :: p
 !
       if (lpencil(i_fcont)) p%fcont=0.
+      if (lpencil(i_curlfcont)) p%curlfcont=0.
 !
       call keep_compiler_quiet(f)
 !

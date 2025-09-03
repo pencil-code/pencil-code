@@ -13,7 +13,7 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED fcont(3,n_forcing_cont_max)
+! PENCILS PROVIDED fcont(3,n_forcing_cont_max); curlfcont(3,n_forcing_cont_max)
 !
 !***************************************************************
 module Forcing
@@ -55,6 +55,7 @@ module Forcing
   real, dimension(my) :: profy_ampl=1.,profy_hel=1.
   real, dimension(mz) :: profz_ampl=1.,profz_hel=1.,qdouble_profile=1.
   integer :: kfountain=5,iff,ifx,ify,ifz,ifff,iffx,iffy,iffz,i2fff,i2ffx,i2ffy,i2ffz,iff_aux
+  integer, dimension(n_forcing_cont_max) :: ifcont_aux
   integer :: kzlarge=1
   integer :: iforcing_zsym=0, nlocation=1
   logical :: lwork_ff=.false.,lmomentum_ff=.false.
@@ -68,7 +69,7 @@ module Forcing
   logical :: lscale_kvector_fac=.false.
   logical :: lforce_peri=.false., lforce_cuty=.false.
   logical :: lforcing2_same=.false., lforcing2_curl=.false.
-  logical :: lff_as_aux = .false.
+  logical :: lff_as_aux = .false., lfcont_as_comaux=.false.
   logical :: lforcing_osc = .false., lforcing_osc2 = .false., lforcing_osc_double = .false.
   real :: scale_kvectorx=1.,scale_kvectory=1.,scale_kvectorz=1.
   logical :: old_forcing_evector=.false., lforcing_coefs_hel_double=.false.
@@ -165,6 +166,7 @@ module Forcing
        lforcing_cont,iforcing_cont, z_center_fcont, z_center, &
        lembed, k1_ff, ampl_ff, ampl1_ff, width_fcont, x1_fcont, x2_fcont, &
        kf_fcont, omega_fcont, omegay_fcont, omegaz_fcont, eps_fcont, &
+       lfcont_as_comaux, &
        lsamesign, lshearing_adjust_old, equator, &
        lscale_kvector_fac,scale_kvectorx,scale_kvectory,scale_kvectorz, &
        lforce_peri,lforce_cuty,lforcing2_same,lforcing2_curl, &
@@ -272,7 +274,9 @@ module Forcing
       real :: ang_intv,sthphase,cthphase,costhprime,phprime
 
       integer :: l,m,n,i,ilread,ilm,ckno,ilist,emm,aindex,Legendrel,iangle
+      integer :: ix, iy, iz
       logical :: lk_dot_dat_exists
+      character (len=labellen) :: tmp
 
       cs0=sqrt(cs20)
 !
@@ -1215,6 +1219,16 @@ module Forcing
         endif
       enddo
       if (n_forcing_cont==0) call warning('forcing','no valid continuous iforcing_cont specified')
+!
+!  Note: this must come after the code above that sets n_forcing_cont.
+!
+      if (lfcont_as_comaux) then
+        do i=1,n_forcing_cont
+!  n_forcing_cont_max==2, so a width-1 field should be enough
+          write(tmp,"(I1)") i
+          call register_report_aux('fcont'//trim(tmp), ifcont_aux(i), ix, iy, iz, communicated=.true.)
+        enddo
+      endif
 !
 !  minimal wavenumbers
 !
@@ -5500,14 +5514,15 @@ module Forcing
 !  24-mar-08/axel: adapted from density.f90
 !   6-feb-09/axel: added epsilon factor in ABC flow (eps_fcont=1. -> nocos)
 !
-      use Sub, only: multsv_mn
+      use Sub, only: multsv_mn, gij, curl_mn
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
       intent(inout) :: f,p
 !
-      integer :: i
+      integer :: i,j
+      real, dimension(nx,3,3) :: fij
 !
 !  calculate forcing
 !
@@ -5525,12 +5540,31 @@ module Forcing
             endif
           endif
 !
+          if (lfcont_as_comaux) then
+            j = ifcont_aux(i)
+            f(l1:l2,m,n,j:j+2) = p%fcont(:,:,i)
+          endif
+!
 !  divide by rho if lmomentum_ff=T
 !  MR: better to place it in hydro
 !
           if (i==1 .and. lmomentum_ff) call multsv_mn(p%rho1,p%fcont(:,:,1),p%fcont(:,:,1))
         enddo
       endif
+!
+    if (lpencil(i_curlfcont)) then
+      do i=1,n_forcing_cont
+        if (ifcont_aux(i)/=0) then
+          call gij(f, ifcont_aux(i), fij, 1)
+          call curl_mn(fij, p%curlfcont(:,:,i))
+        else
+!
+!  lfcont_as_comaux is tested for here (and not in, say, initialize_forcing or pencil_interdep_forcing) to prevent out-of-bounds access during the pencil check.
+!
+          call fatal_error('calc_pencils_forcing', 'calculation of pencil curlfcont requires lfcont_as_comaux=T')
+        endif
+      enddo
+    endif
 !
     endsubroutine calc_pencils_forcing
 !***********************************************************************
