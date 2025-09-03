@@ -2616,6 +2616,8 @@ module Particles
                                  ! particle phase
                                  !
                                  if (lset_df_insert_nucleii) then
+                                   if (lnucl_dynamic) call fatal_error("insert_nucleii",&
+                                        "lnucl_dynamic not implemented for lset_df_insert_nucleii!")
                                     df(ii,jj,kk,icc) = df(ii,jj,kk,icc) - redfrac*f(ii,jj,kk,icc)/dt
                                     df(ii,jj,kk,icc+1) = df(ii,jj,kk,icc+1) - redfrac*f(ii,jj,kk,icc+1)/dt
                                  else
@@ -2623,7 +2625,6 @@ module Particles
 !  The icc+2 corresponds to phi, to check dt**2??
 !
                                     if (lnucl_dynamic) then
-                                      !f(ii,jj,kk,icc+2)   = (1.-redfrac)*f(ii,jj,kk,icc)
                                       df(ii,jj,kk,icc+2) = df(ii,jj,kk,icc+2) - f(ii,jj,kk,icc)/(it_insert_nuclei*dt**2)
                                     else
                                       f(ii,jj,kk,icc)   = (1.-redfrac)*f(ii,jj,kk,icc)
