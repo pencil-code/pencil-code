@@ -148,6 +148,8 @@ static AcTaskGraph *rhs_test_rhs_1;
 
 void torch_trainCAPI(int sub_dims[3], float* input, float* label, float* loss_val, bool dble=false);
 void torch_inferCAPI(int sub_dims[3], float* input, float* label, bool dble=false);
+void scaling();
+void print_debug();
 //void torch_createmodel(const char* name, const char* config_fname, MPI_Comm mpi_comm, int device);
 
 extern "C" void copyFarray(AcReal* f);    // ahead declaration
@@ -162,64 +164,6 @@ AcReal cpu_pow(AcReal const val, AcReal exponent)
 AcReal sign(const AcReal a, const AcReal b)
 {
 	return (b < (AcReal)0.0) ? -abs(a) : abs(a);
-}
-/***********************************************************************************************/
-void print_debug() {
-#if TRAINING
-    if (it % 5 !=0) return;
-    #include "user_constants.h"
-		printf("true it is running print");
-		counter = it;
-
-		MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
-
-		std::ofstream myFile;
-		std::string fileString = "slices/snapshot_" + std::to_string(my_rank) + "_" + std::to_string(it) + ".csv";	
-		myFile.open(fileString);
-
-    myFile << "it,TAU_xx,TAU_xx_inferred,TAU_yy,TAU_yy_inferred,TAU_zz,TAU_zz_inferred,"
-           << "TAU_xy,TAU_xy_inferred,TAU_yz,TAU_yz_inferred,TAU_xz,TAU_xz_inferred,UUMEAN_x,UUMEAN_y,UUMEAN_z,"
-           << "UUX,UUY,UUZ,x,y,z\n";
-
-    acGridHaloExchange();
-    copyFarray(NULL);
-
-    const auto DEVICE_VTXBUF_IDX = [&](const int x, const int y, const int z)
-  			{
-  				return acVertexBufferIdx(x,y,z,mesh.info);
-  			};
-
-    AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
-				
-	
-    for (size_t i = dims.n0.x; i < dims.n1.x; i++) {
-        for (size_t j = dims.n0.y; j < dims.n1.y; j++) {
-            for (size_t k = dims.n0.z; k < dims.n1.z; k++) {
-
-                myFile << it << ","
-                       << mesh.vertex_buffer[TAU.xx][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[TAU_INFERRED.xx][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[TAU.yy][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[TAU_INFERRED.yy][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[TAU.zz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[TAU_INFERRED.zz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[TAU.xy][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[TAU_INFERRED.xy][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[TAU.yz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[TAU_INFERRED.yz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[TAU.xz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[TAU_INFERRED.xz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[UUMEAN.x][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[UUMEAN.y][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[UUMEAN.z][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[UUX][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[UUY][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[UUZ][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-											 << i << "," << j << "," << k << "\n";
-            }
-        }
-    }
-	#endif
 }
 /***********************************************************************************************/
 float MSE(){
@@ -249,53 +193,6 @@ float MSE(){
 	return (acDeviceGetOutput(acGridGetDevice(), AC_l2_sum))/(6*nxgrid*nygrid*nzgrid);
 #else
         return 0;
-#endif
-}
-/***********************************************************************************************/
-extern "C" void torch_infer_c_api(int itstub){	
-#if TRAINING
-	#include "user_constants.h"
-
-	auto calc_uumean_tau = acGetOptimizedDSLTaskGraph(initialize_uumean_tau);
-	acGridSynchronizeStream(STREAM_ALL);
-	acGridExecuteTaskGraph(calc_uumean_tau, 1);
-	acGridSynchronizeStream(STREAM_ALL);
-
-  	auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
-	acGridSynchronizeStream(STREAM_ALL);
-	acGridExecuteTaskGraph(bcs,1);
-	acGridSynchronizeStream(STREAM_ALL);
-
-	if (!calculated_coeff_scales){
-		scaling();
-	}
-
-	auto scale_uumean_tau = acGetOptimizedDSLTaskGraph(scale);
-	acGridSynchronizeStream(STREAM_ALL);
-	acGridExecuteTaskGraph(scale_uumean_tau, 1);
-	acGridSynchronizeStream(STREAM_ALL);
-
-  	bcs = acGetOptimizedDSLTaskGraph(boundconds);	
-	acGridSynchronizeStream(STREAM_ALL);
-	acGridExecuteTaskGraph(bcs,1);
-	acGridSynchronizeStream(STREAM_ALL);
-
-	AcReal* out = NULL;
-	AcReal* uumean_ptr = NULL;
-	AcReal* tau_infer_ptr = NULL;
-
-	acDeviceGetVertexBufferPtrs(acGridGetDevice(), TAU_INFERRED.xx, &tau_infer_ptr, &out);
-	acDeviceGetVertexBufferPtrs(acGridGetDevice(), UUMEAN.x, &uumean_ptr, &out);
-		
-	acGridHaloExchange();
-	torch_inferCAPI((int[]){mx,my,mz}, uumean_ptr, tau_infer_ptr, AC_DOUBLE_PRECISION);
-
-	float vloss = MSE();
- 	
-	if (itstub == 1){
-		printf("Validation error is: %f\n", vloss);
-		print_debug();
-	}
 #endif
 }
 /***********************************************************************************************/
@@ -718,24 +615,31 @@ AcReal3 DCONST(const AcReal3Param param)
 #define PCLoad acPushToConfig
 /***********************************************************************************************/
 void setupConfig(AcMeshInfo& config)
-{ 
+{
+
   config = acInitInfo();
+ 
   #include "PC_modulepars.h"
-  
+
+
   PCLoad(config, AC_use_cuda_aware_mpi,lcuda_aware_mpi);
   PCLoad(config, AC_bidiagonal_derij,lbidiagonal_derij);
   //TP: loads for non-Cartesian derivatives
+
+
 #if TRANSPILATION
   PCLoad(config, AC_inv_cyl_r,rcyl_mn1);
   PCLoad(config, AC_inv_r,r1_mn);
   PCLoad(config, AC_inv_sin_theta,sin1th);
   PCLoad(config, AC_cot_theta,cotth);
 
+
   //TP: loads for non-equidistant grids
   PCLoad(config,AC_nonequidistant_grid, (AcBool3){!lequidist.x,!lequidist.y,!lequidist.z});
   PCLoad(config,AC_inv_mapping_func_derivative_x,dx_1);
   PCLoad(config,AC_inv_mapping_func_derivative_y,dy_1);
   PCLoad(config,AC_inv_mapping_func_derivative_z,dz_1);
+
 
   PCLoad(config,AC_mapping_func_tilde_x,dx_tilde);
   PCLoad(config,AC_mapping_func_tilde_y,dy_tilde);
@@ -870,7 +774,7 @@ AcReal calc_dt1_courant(const AcReal t)
       const AcReal gpu_max_dt1 = acDeviceGetOutput(acGridGetDevice(),AC_dt1_max);
       if(lfractional_tstep_advance__mod__cdata)
       {
-	      return std::max(gpu_max_dt1,1./(dt_incr__mod__cdata*t));
+	      return std::max((double)gpu_max_dt1,1./(dt_incr__mod__cdata*t));
       }
       return gpu_max_dt1;
 #endif
@@ -1149,97 +1053,11 @@ extern "C" void initGPU()
 }
 /***********************************************************************************************/
 #define PCLoad acPushToConfig
-MPI_Comm comm_pencil = MPI_COMM_NULL;
+//already defined
+//MPI_Comm comm_pencil = MPI_COMM_NULL;
 void modulepars(AcMeshInfo& config){
   // Enter basic parameters in config.
   #include "PC_modulepars.h"
-}
-void setupConfig(AcMeshInfo& config)
-{ 
-  modulepars(config);
-  PCLoad(config, AC_use_cuda_aware_mpi,lcuda_aware_mpi);
-  //TP: loads for non-cartesian derivatives
-#if TRANSPILATION
-  PCLoad(config, AC_inv_cyl_r,rcyl_mn1);
-  PCLoad(config, AC_inv_r,r1_mn);
-  PCLoad(config, AC_inv_sin_theta,sin1th);
-  PCLoad(config, AC_cot_theta,cotth);
-
-  //TP: loads for non-equidistant grids
-  PCLoad(config,AC_nonequidistant_grid, (AcBool3){!lequidist.x,!lequidist.y,!lequidist.z});
-  PCLoad(config,AC_inv_mapping_func_derivative_x,dx_1);
-  PCLoad(config,AC_inv_mapping_func_derivative_y,dy_1);
-  PCLoad(config,AC_inv_mapping_func_derivative_z,dz_1);
-
-  PCLoad(config,AC_mapping_func_tilde_x,dx_tilde);
-  PCLoad(config,AC_mapping_func_tilde_y,dy_tilde);
-  PCLoad(config,AC_mapping_func_tilde_z,dz_tilde);
-#endif
-
-  PCLoad(config, AC_rk_order, itorder);
-  PCLoad(config, AC_shear,lshear);
-
-  if (lcartesian_coords)
-  {
-          PCLoad(config, AC_coordinate_system, AC_CARTESIAN_COORDINATES);
-  }
-  if (lspherical_coords)
-  {
-          PCLoad(config, AC_coordinate_system, AC_SPHERICAL_COORDINATES);
-  }
-  if (lcylindrical_coords)
-  {
-          PCLoad(config, AC_coordinate_system, AC_CYLINDRICAL_COORDINATES);
-  }
-  PCLoad(config, AC_domain_decomposition, (int3) {nprocx,nprocy,nprocz});
-  PCLoad(config, AC_ngrid, (int3){nxgrid,nygrid,nzgrid});
-  PCLoad(config, AC_skip_single_gpu_optim, true);
-
-  PCLoad(config,AC_decompose_strategy,AC_DECOMPOSE_STRATEGY_EXTERNAL);
-  if (lmorton_curve)
-    PCLoad(config,AC_proc_mapping_strategy,AC_PROC_MAPPING_STRATEGY_MORTON);
-  else
-    PCLoad(config,AC_proc_mapping_strategy,AC_PROC_MAPPING_STRATEGY_LINEAR);
-
-	
-	PCLoad(config, AC_include_3d_halo_corners, ltraining);
-  PCLoad(config,AC_MPI_comm_strategy,AC_MPI_COMM_STRATEGY_DUP_USER);
-  config.comm->handle = comm_pencil;
-
-// grid and geometry related parameters
-
-  PCLoad(config,AC_ds,(AcReal3){dx,dy,dz});
-  PCLoad(config,AC_periodic_grid,lperi);
-  //TP: Astaroth has default formula for AC_len but we want to make sure AC_len = lxyz, in case the Astaroth formula does not cover everything like non-equidistant grids
-  PCLoad(config,AC_len,lxyz);
-
-  PCLoad(config,AC_sparse_autotuning,lac_sparse_autotuning);
-  // Enter physics related parameters in config.
-
-  #if LDENSITY
-    PCLoad(config,AC_ldensity_nolog,ldensity_nolog);
-    //printf("ldensity_nolog is %d \n",config[AC_ldensity_nolog]);//ldensity_nolog);
-  #endif
-  //Device dev = acGridGetDevice();
-#if LHYDRO
-  //dev->output.real_outputs[AC_maxadvec]=0.;
-#endif
-#if LENTROPY
-  //dev->output.real_outputs[AC_maxchi]=0.;
-#endif
-  acHostUpdateParams(&config); 
-  if (!ltraining) config.runtime_compilation_log_dst = "ac_compilation.log";
-  char cwd[9000];
-  cwd[0] = '\0';
-  const char* err = getcwd(cwd, sizeof(cwd));
-  if (err == NULL) 
-  {
-	  fprintf(stderr,"Was not able to get cwd!\n");
-	  exit(EXIT_FAILURE);
-  }
-  char build_path[18000];
-  sprintf(build_path,"%s/src/astaroth/submodule/build",cwd);
-  config.runtime_compilation_build_path = strdup(build_path);
 }
 
 #undef x
@@ -1250,15 +1068,15 @@ void setupConfig(AcMeshInfo& config)
 bool called_training = false;
 int randomNumber;
 /***********************************************************************************************/
-void torch_infer_c_api(int itstub){	
+extern "C" void torch_infer_c_api(int itstub){	
 #if TRAINING
 	#include "user_constants.h"
-	if (it < 5) return;
+	if (train_counter < 5) return;
 	if (!called_training){
 		randomNumber = 5;
-		acDeviceSetInput(acGridGetDevice(), ranNum, randomNumber);
+		acDeviceSetInput(acGridGetDevice(), AC_ranNum, randomNumber);
 
-		auto calc_uumean_tau = acGetOptimizedDSLTaskGraph(initialize_uumean_tau_inf);
+		auto calc_uumean_tau = acGetOptimizedDSLTaskGraph(initialize_uumean_tau);
 		acGridSynchronizeStream(STREAM_ALL);
 		acGridExecuteTaskGraph(calc_uumean_tau, 1);
 		acGridSynchronizeStream(STREAM_ALL);
@@ -1274,7 +1092,7 @@ void torch_infer_c_api(int itstub){
 		}
 
 
-		auto scale_uumean_tau = acGetOptimizedDSLTaskGraph(scaleinf);
+		auto scale_uumean_tau = acGetOptimizedDSLTaskGraph(scale);
 		acGridSynchronizeStream(STREAM_ALL);
 		acGridExecuteTaskGraph(scale_uumean_tau, 1);
 		acGridSynchronizeStream(STREAM_ALL);
@@ -1296,7 +1114,7 @@ void torch_infer_c_api(int itstub){
 	if(randomNumber == 2) acDeviceGetVertexBufferPtrs(acGridGetDevice(), UUMEANBatch[2].x, &uumean_ptr, &out);
 	if(randomNumber == 3) acDeviceGetVertexBufferPtrs(acGridGetDevice(), UUMEANBatch[3].x, &uumean_ptr, &out);
 	if(randomNumber == 4) acDeviceGetVertexBufferPtrs(acGridGetDevice(), UUMEANBatch[4].x, &uumean_ptr, &out);
-	if(randomNumber == 5) acDeviceGetVertexBufferPtrs(acGridGetDevice(), UUMEANinf.x, &uumean_ptr, &out);
+	if(randomNumber == 5) acDeviceGetVertexBufferPtrs(acGridGetDevice(), UUMEANBatch[5].x, &uumean_ptr, &out);
 
 	acDeviceGetVertexBufferPtrs(acGridGetDevice(), TAU_INFERRED.xx, &tau_infer_ptr, &out);
 
@@ -1323,7 +1141,7 @@ void torch_infer_c_api(int itstub){
 #endif
 }
 /***********************************************************************************************/
-void torch_train_c_api(AcReal *loss_val) {
+extern "C" void torch_train_c_api(AcReal *loss_val) {
 #if TRAINING
 	#include "user_constants.h"
 	#include <stdlib.h>
@@ -1352,11 +1170,10 @@ void torch_train_c_api(AcReal *loss_val) {
 	MPI_Barrier(MPI_COMM_WORLD);
 
 
-	acDeviceSetInput(acGridGetDevice(), ranNum, randomNumber);
+	acDeviceSetInput(acGridGetDevice(), AC_ranNum, randomNumber);
 
-	auto initalize_uumean_tau = std::array{initialize_uumean_tau0, initialize_uumean_tau1, initialize_uumean_tau2, initialize_uumean_tau3, initialize_uumean_tau4}	
 
-	auto calc_uumean_tau = acGetOptimizedDSLTaskGraph(initialize_uumean_tau[randomNumber]);
+	auto calc_uumean_tau = acGetOptimizedDSLTaskGraph(initialize_uumean_tau);
 	acGridSynchronizeStream(STREAM_ALL);
 	acGridExecuteTaskGraph(calc_uumean_tau, 1);
 	acGridSynchronizeStream(STREAM_ALL);
@@ -1387,8 +1204,8 @@ void torch_train_c_api(AcReal *loss_val) {
   AcReal* TAU_ptr = NULL;
   *loss_val = 0.1;
   
-  acDeviceGetVertexBufferPtrs(acGridGetDevice(), TAU.xx, &TAU_ptr, &out);
-  acDeviceGetVertexBufferPtrs(acGridGetDevice(), UUMEAN.x, &uumean_ptr, &out);
+  acDeviceGetVertexBufferPtrs(acGridGetDevice(), TAUBatch[0].xx, &TAU_ptr, &out);
+  acDeviceGetVertexBufferPtrs(acGridGetDevice(), UUMEANBatch[0].x, &uumean_ptr, &out);
   
   
   acGridHaloExchange();
@@ -1401,7 +1218,7 @@ void torch_train_c_api(AcReal *loss_val) {
   torch_trainCAPI((int[]){mx,my,mz}, uumean_ptr, TAU_ptr, loss_val, AC_DOUBLE_PRECISION);
   /*
   for (int batch = 0; batch<5; batch++){
-  	torch_trainCAPI((int[]){mx,my,mz}, uumean_ptr, TAU_ptr, loss_val, AC_DOUBLE_PRECISION);
+  	torch_train_CAPI((int[]){mx,my,mz}, uumean_ptr, TAU_ptr, loss_val, AC_DOUBLE_PRECISION);
   	avgloss = avgloss + *loss_val;
   }
   */
@@ -1415,10 +1232,8 @@ void torch_train_c_api(AcReal *loss_val) {
 void scaling(){
 #if LTRAINING
 
-		if(randomNumber == 5){
-			auto calc_scale = acGetOptimizedDSLTaskGraph(calc_scaling_inf);
-		}
 
+		auto calc_scale = acGetOptimizedDSLTaskGraph(calc_scaling);
 		acGridSynchronizeStream(STREAM_ALL);
 		acGridExecuteTaskGraph(calc_scale, 1);
 		acGridSynchronizeStream(STREAM_ALL);
@@ -1473,13 +1288,8 @@ extern "C" void beforeBoundaryGPU(bool lrmv, int isubstep, double t)
 #endif
 }
 /***********************************************************************************************/
-
-
 void print_debug() {
-
-
-
-if(it < 5 and it % 5 !=0) return;
+if(it < 5 and train_counter % 5 !=0) return;
 #if TRAINING
     #include "user_constants.h"
 		counter = it;
@@ -1505,15 +1315,15 @@ if(it < 5 and it % 5 !=0) return;
 
     AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
 		
-		auto taus = std::array{TAU0.xx, TAU1.xx, TAU2.xx, TAU3.xx, TAU4.xx, TAUinf.xx, TAU0.yy, TAU1.yy, TAU2.yy, TAU3.yy, TAU4.yy, TAUinf.yy, TAU0.zz, TAU1.zz, TAU2.zz, TAU3.zz, TAU4.zz, TAUinf.zz, TAU0.xy, TAU1.xy, TAU2.xy, TAU3.xy, TAU4.xy, TAUinf.xy, TAU0.yz, TAU1.yz, TAU2.yz, TAU3.yz, TAU4.yz, TAUinf.yz, TAU0.xz, TAU1.xz, TAU2.xz, TAU3.xz, TAU4.xz, TAUinf.xz};
+		auto taus = std::array{TAUBatch[0].xx, TAUBatch[1].xx, TAUBatch[2].xx, TAUBatch[3].xx, TAUBatch[4].xx, TAUBatch[5].xx, TAUBatch[0].yy, TAUBatch[1].yy, TAUBatch[2].yy, TAUBatch[3].yy, TAUBatch[4].yy, TAUBatch[5].yy, TAUBatch[0].zz, TAUBatch[1].zz, TAUBatch[2].zz, TAUBatch[3].zz, TAUBatch[4].zz, TAUBatch[5].zz, TAUBatch[0].xy, TAUBatch[1].xy, TAUBatch[2].xy, TAUBatch[3].xy, TAUBatch[4].xy, TAUBatch[5].xy, TAUBatch[0].yz, TAUBatch[1].yz, TAUBatch[2].yz, TAUBatch[3].yz, TAUBatch[4].yz, TAUBatch[5].yz, TAUBatch[0].xz, TAUBatch[1].xz, TAUBatch[2].xz, TAUBatch[3].xz, TAUBatch[4].xz, TAUBatch[5].xz};
 
-		auto uumeans = std::array{UUMEANBatch[0].x, UUMEANBatch[1].x, UUMEANBatch[2].x, UUMEANBatch[3]x, UUMEANBatch[4].x, UUMEANinf.x, UUMEANBatch[0].y, UUMEANBatch[1].y, UUMEANBatch[2].y, UUMEANBatch[3].y, UUMEANBatch[4].y, UUMEANinf.y, UUMEANBatch[0].z, UUMEANBatch[1].z, UUMEANBatch[2].z, UUMEANBatch[3].z, UUMEANBatch[4].z, UUMEANinf.z};
+		auto uumeans = std::array{UUMEANBatch[0].x, UUMEANBatch[1].x, UUMEANBatch[2].x, UUMEANBatch[3].x, UUMEANBatch[4].x, UUMEANBatch[5].x, UUMEANBatch[0].y, UUMEANBatch[1].y, UUMEANBatch[2].y, UUMEANBatch[3].y, UUMEANBatch[4].y, UUMEANBatch[5].y, UUMEANBatch[0].z, UUMEANBatch[1].z, UUMEANBatch[2].z, UUMEANBatch[3].z, UUMEANBatch[4].z, UUMEANBatch[5].z};
 
     for (size_t i = dims.n0.x; i < dims.n1.x; i++) {
         for (size_t j = dims.n0.y; j < dims.n1.y; j++) {
             for (size_t k = dims.n0.z; k < dims.n1.z; k++) {
 
-                myFile << it << ","
+                myFile << train_counter << ","
                        << mesh.vertex_buffer[taus[randomNumber]][DEVICE_VTXBUF_IDX(i, j, k)] << ","
                        << mesh.vertex_buffer[TAU_INFERRED.xx][DEVICE_VTXBUF_IDX(i, j, k)] << ","
                        << mesh.vertex_buffer[taus[randomNumber + 5]][DEVICE_VTXBUF_IDX(i, j, k)] << ","
@@ -1923,6 +1733,7 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t)
     	}
     }
   }
+
   if (rank==0 && ldebug) printf("memusage after pointer assign= %f MBytes\n", acMemUsage()/1024.);
 #if AC_RUNTIME_COMPILATION
 #include "cmake_options.h"

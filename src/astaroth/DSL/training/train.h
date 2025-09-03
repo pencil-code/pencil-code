@@ -11,16 +11,15 @@ communicated FieldSymmetricTensor TAU0
 communicated FieldSymmetricTensor TAU1
 communicated FieldSymmetricTensor TAU2
 communicated FieldSymmetricTensor TAU3
-communicated FieldSymmetricTensor TAU4
+communicated FieldSymmetricTensor TAUBatch[6]
 
 
 communicated FieldSymmetricTensor TAUinf
 
 communicated FieldSymmetricTensor TAU_INFERRED
 
+global input int AC_ranNum
 
-global input int ranNum
-global input bool infer
 
 Stencil avgr1
 {
@@ -66,7 +65,6 @@ Stencil avgr1
 Kernel tau_uumean(FieldSymmetricTensor tau, Field3 uumean){
 
 
-		print("The ran in DSL is: %d\n", ranNum)
 		write(tau.xx, UUX*UUX)	
 		write(tau.yy, UUY*UUY)	
 		write(tau.zz, UUZ*UUZ)	
@@ -284,124 +282,30 @@ Kernel descale_kernel_new(FieldSymmetricTensor TAU, Field3 UUMEAN){
 
 
 
-ComputeSteps calc_validation_loss0(boundconds){
-	l2_sum(TAU0)
-}
-
-ComputeSteps calc_validation_loss1(boundconds){
-	l2_sum(TAU1)
-}
-
-ComputeSteps calc_validation_loss2(boundconds){
-	l2_sum(TAU2)
-}
-
-ComputeSteps calc_validation_loss3(boundconds){
-	l2_sum(TAU3)
-}
-
-ComputeSteps calc_validation_loss4(boundconds){
-	l2_sum(TAU4)
+ComputeSteps calc_validation_loss(boundconds){
+	l2_sum(TAUBatch[AC_ranNum])
 }
 
 ComputeSteps calc_scaling(boundconds){
-	reduce_uumean_tau(TAU0, UUMEANBatch[0])
+	reduce_uumean_tau(TAUBatch[AC_ranNum], UUMEANBatch[AC_ranNum])
 	//component_wise_reduce()
 }
 
 
-ComputeSteps calc_scaling_inf(boundconds){
-	reduce_uumean_tau(TAUinf, UUMEANinf)
-	//component_wise_reduce()
+ComputeSteps initialize_uumean_tau(boundconds){
+	tau_uumean(TAUBatch[AC_ranNum], UUMEANBatch[AC_ranNum])
+	smooth_tau(TAUBatch[AC_ranNum], UUMEANBatch[AC_ranNum])
+	final_tau(TAUBatch[AC_ranNum], UUMEANBatch[AC_ranNum])	
 }
 
 
-ComputeSteps initialize_uumean_tau0(boundconds){
-	tau_uumean(TAU0, UUMEANBatch[0])
-	smooth_tau(TAU0, UUMEANBatch[0])
-	final_tau(TAU0, UUMEANBatch[0])	
+ComputeSteps scale(boundconds){
+	scale_kernel_new(TAUBatch[AC_ranNum], UUMEANBatch[AC_ranNum])
 }
 
 
-ComputeSteps initialize_uumean_tau1(boundconds){
-	tau_uumean(TAU1, UUMEANBatch[1])
-	smooth_tau(TAU1, UUMEANBatch[1])
-	final_tau(TAU1, UUMEANBatch[1])	
-}
-
-ComputeSteps initialize_uumean_tau2(boundconds){
-	tau_uumean(TAU2, UUMEANBatch[2])
-	smooth_tau(TAU2, UUMEANBatch[2])
-	final_tau(TAU2, UUMEANBatch[2])	
-}
-
-ComputeSteps initialize_uumean_tau3(boundconds){
-	tau_uumean(TAU3, UUMEANBatch[3])
-	smooth_tau(TAU3, UUMEANBatch[3])
-	final_tau(TAU3, UUMEANBatch[3])	
-}
-
-ComputeSteps initialize_uumean_tau4(boundconds){
-	tau_uumean(TAU4, UUMEANBatch[4])
-	smooth_tau(TAU4, UUMEANBatch[4])
-	final_tau(TAU4, UUMEANBatch[4])	
-}
-
-
-ComputeSteps initialize_uumean_tau_inf(boundconds){
-	tau_uumean(TAUinf, UUMEANinf)
-	smooth_tau(TAUinf, UUMEANinf)
-	final_tau(TAUinf, UUMEANinf)	
-}
-
-
-ComputeSteps scale0(boundconds){
-	scale_kernel_new(TAU0, UUMEANBatch[0])
-}
-
-ComputeSteps scale1(boundconds){
-	scale_kernel_new(TAU1, UUMEANBatch[1])
-}
-
-ComputeSteps scale2(boundconds){
-	scale_kernel_new(TAU2, UUMEANBatch[2])
-}
-
-ComputeSteps scale3(boundconds){
-	scale_kernel_new(TAU3, UUMEANBatch[3])
-}
-
-ComputeSteps scale4(boundconds){
-	scale_kernel_new(TAU4, UUMEANBatch[4])
-}
-
-ComputeSteps scaleinf(boundconds){
-	scale_kernel_new(TAUinf, UUMEANinf)
-}
-
-ComputeSteps descale0(boundconds){
-	descale_kernel_new(TAU0, UUMEANBatch[0])
-}
-
-ComputeSteps descale1(boundconds){
-	descale_kernel_new(TAU1, UUMEANBatch[1])
-}
-
-ComputeSteps descale2(boundconds){
-	descale_kernel_new(TAU2, UUMEANBatch[2])
-}
-
-ComputeSteps descale3(boundconds){
-	descale_kernel_new(TAU3, UUMEANBatch[3])
-}
-
-ComputeSteps descale4(boundconds){
-	descale_kernel_new(TAU4, UUMEANBatch[4])
-}
-
-
-ComputeSteps descaleinf(boundconds){
-	descale_kernel_new(TAUinf, UUMEANinf)
+ComputeSteps descale(boundconds){
+	descale_kernel_new(TAUBatch[AC_ranNum], UUMEANBatch[AC_ranNum])
 }
 
 //#endif
