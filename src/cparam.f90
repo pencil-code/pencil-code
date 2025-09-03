@@ -980,5 +980,6 @@ integer, parameter :: enum_lrho_chi_must_be_ZtrueZ_when_ndivZ0_string = 696
 integer, parameter :: enum_itZ1ZorZitZnt_string = 697
 integer, parameter :: enum_dspecial_dtZ_dont_solve_dspecial_dt_string = 698
 integer, parameter :: enum_erun_string = 699
+integer, parameter :: enum_nuZconst_string = 700
 
 endmodule Cparam
