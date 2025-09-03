@@ -7071,7 +7071,7 @@ module Chemistry
       integer :: ichem, kkk,i
       real, dimension(nx) :: Q_nucl
       !
-      if (lnucleation) then
+      if (lnucleation .and. dt>0) then
         !
         ! Calculate mass flux of nucleii
         !
