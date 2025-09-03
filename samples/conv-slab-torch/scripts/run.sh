@@ -7,6 +7,8 @@ cd $CWD
 export PATH=${PATH}:$PENCIL_HOME/bin:$PENCIL_HOME/utils:$PENCIL_HOME/utils/axel:$PENCIL_HOME/utils/xiangyu:$PENCIL_HOME/remesh/bin:$PENCIL_HOME/src/scripts
 export PATH=${PATH}:./src/astaroth:./src/astaroth/submodule/build/src/core:./src/astaroth/submodule/build/src/core/kernels
 export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:./src/astaroth:./src/astaroth/submodule/build/src/core:./src/astaroth/submodule/build/src/core/kernels
+export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/appl/spack/v018/install-tree/gcc-11.3.0/cuda-11.7.0-zucvj4/lib64/libcufft.so.10
+export PATH=${PATH}:/appl/spack/v018/install-tree/gcc-11.3.0/cuda-11.7.0-zucvj4/lib64/libcufft.so.10
 echo PATH=$PATH
 echo LD_LIB=$LD_LIBRARY_PATH
 ##export OMPI_ALLOW_RUN_AS_ROOT=1
