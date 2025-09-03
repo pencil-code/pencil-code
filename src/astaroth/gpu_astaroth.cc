@@ -512,16 +512,18 @@ AcReal to_real(void* param, const char* name)
 }
 /***********************************************************************************************/
 #if TRANSPILATION
+#if LFORCING
 torus_rect to_torus_rect(void* param, const char* name)
 {
-	if (param == NULL)
-	{
-		fprintf(stderr,"Passed NULL to pushparsc: %s!!\n",name);
-		abort();
-	}
-	//TP: placeholder for now before testing is torus_react being POD sufficient for save access here
-	return (torus_rect){};
+       if (param == NULL)
+       {
+               fprintf(stderr,"Passed NULL to pushparsc: %s!!\n",name);
+               abort();
+       }
+       //TP: placeholder for now before testing is torus_react being POD sufficient for save access here
+       return (torus_rect){};
 }
+#endif
 #endif
 /***********************************************************************************************/
 int to_int(void* param, const char* name)
@@ -777,7 +779,8 @@ AcReal calc_dt1_courant(const AcReal t)
 	      return std::max((double)gpu_max_dt1,1./(dt_incr__mod__cdata*t));
       }
       return gpu_max_dt1;
-#endif
+#else
+
       AcReal maxadvec = 0.;
 #if LHYDRO
       maxadvec = acDeviceGetOutput(acGridGetDevice(), AC_maxadvec)/cdt;
@@ -793,6 +796,8 @@ AcReal calc_dt1_courant(const AcReal t)
 //if (rank==0) printf("maxnu_dyn= %e \n", maxnu_dyn);
 #endif
       return (AcReal)sqrt(pow(maxadvec, 2) + pow(max_diffus(maxnu_dyn,maxchi_dyn), 2));
+
+#endif
 }
 /***********************************************************************************************/
 AcReal GpuCalcDt(const AcReal t)
