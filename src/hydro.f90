@@ -8955,10 +8955,10 @@ module Hydro
     call copy_addr(nhless,p_par(113)) ! int
     call copy_addr(llorentz_as_aux,p_par(114)) ! bool
     call copy_addr(niter_relb,p_par(115)) ! int
-    call copy_addr(thless,p_par(116)) ! (nhless)
-    call copy_addr(xhless,p_par(117)) ! (nhless)
-    call copy_addr(yhless,p_par(118)) ! (nhless)
-    call copy_addr(zhless,p_par(119)) ! (nhless)
+    if(allocated(thless)) call copy_addr(thless,p_par(116)) ! (nhless)
+    if(allocated(xhless)) call copy_addr(xhless,p_par(117)) ! (nhless)
+    if(allocated(yhless)) call copy_addr(yhless,p_par(118)) ! (nhless)
+    if(allocated(zhless)) call copy_addr(zhless,p_par(119)) ! (nhless)
 
     endsubroutine pushpars2c
 !***********************************************************************
