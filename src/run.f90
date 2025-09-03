@@ -1610,7 +1610,7 @@ call copy_addr(iglobal_glntt,p_par(1311)) ! int
 call copy_addr(lbidiagonal_derij,p_par(1312)) ! bool
 
 call copy_addr(n_odevars,p_par(1313)) ! int
-call copy_addr(f_ode,p_par(1314)) ! (n_odevars) dconst
+if(allocated(f_ode)) call copy_addr(f_ode,p_par(1314)) ! (n_odevars) dconst
 
 call copy_addr(lread_scl_factor_file,p_par(1315)) ! bool
 
