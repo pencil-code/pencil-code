@@ -3385,6 +3385,7 @@ module Magnetic
           idiag_jxph2mz/=0 .or. idiag_jyph2mz/=0 .or. idiag_jzph2mz/=0 .or. &
           idiag_jxph3mz/=0 .or. idiag_jyph3mz/=0 .or. idiag_jzph3mz/=0 .or. &
           idiag_abph1mz/=0 .or. idiag_abph2mz/=0 .or. idiag_abph3mz/=0) lpenc_diagnos(i_ss)=.true.
+      if (idiag_bcurlfmz/=0) lpenc_diagnos(i_curlfcont)=.true.
 !
 !  Check whether right variables are set for half-box calculations.
 !
@@ -7130,7 +7131,6 @@ print*,'AXEL2: should not be here (eta) ... '
       type(pencil_case) :: p
 
       real, dimension(nx) :: fres2, tmp1, Rmmz, bdel2a, jdel2a
-      real, dimension(nx,3) :: tmp2
 !
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1.
 !
@@ -7335,18 +7335,13 @@ print*,'AXEL2: should not be here (eta) ... '
         call xysum_mn_name_z(p%b2,idiag_b2mz)
         call xysum_mn_name_z(p%bf2,idiag_bf2mz)
         call xysum_mn_name_z(p%j2,idiag_j2mz)
+        if (lforcing_cont_aa) then
+          call dot(p%bb,p%curlfcont(:,:,iforcing_cont_aa),tmp1)
+          call xysum_mn_name_z(ampl_fcont_aa*mu01*tmp1,idiag_bcurlfmz)
+        endif
         if (.not.lmultithread) then
           if (idiag_poynzmz/=0) call xysum_mn_name_z(eta_total*p%jxb(:,3)-mu01* &
             (p%uxb(:,1)*p%bb(:,2)-p%uxb(:,2)*p%bb(:,1)),idiag_poynzmz)
-!
-!  This diagnostic relies upon mn-dependent quantities which are not in the pencil case.
-!
-          if (lforcing_cont_aa) then
-            !MR: the curl of the emf cannot be calculated this way
-            !call curl_mn(p%fcont(:,:,iforcing_cont_aa),tmp2)
-            !call dot(p%bb,tmp2,tmp1)
-            !call xysum_mn_name_z(ampl_fcont_aa*mu01*tmp1,idiag_bcurlfmz)
-          endif
         endif
         call phizsum_mn_name_r(p%b2,idiag_b2mr)
         if (idiag_brmr/=0) call phizsum_mn_name_r(p%bb(:,1)*p%pomx+p%bb(:,2)*p%pomy,idiag_brmr)
