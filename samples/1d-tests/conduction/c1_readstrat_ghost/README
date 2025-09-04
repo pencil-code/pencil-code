@@ -1,0 +1,13 @@
+Directory:
+    ${PENCIL_HOME}/samples/1d-tests/conduction/c1_readstrat_ghost
+SVN Id:
+    $Id$
+Maintainer:
+    Kishore G <kishore96/gmail[dot]com>
+Added:
+    04-Sep-2025
+Status:
+    succeeds # One of [succeeds|failing since <date>|obsolete| ...]
+Comments:
+    1D run with just thermal conduction; the thermal conductivity is a prescribed profile.
+    This sample tests reading initial conditions from a stratification.dat file with strati_type='lnrho_ss' in the presence of ghost zones.
