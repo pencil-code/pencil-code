@@ -161,6 +161,10 @@ module Shear
         call information('initialize_shear', &
                          'turned shear acceleration off and handed it over to Particles_drag')
       endif
+
+      if (lgpu .and. lshearadvection_as_shift) then
+              call fatal_error('initialize_shear','Shear advection as shift is not yet supported on GPUs!')
+      endif
 !
     endsubroutine initialize_shear
 !***********************************************************************
