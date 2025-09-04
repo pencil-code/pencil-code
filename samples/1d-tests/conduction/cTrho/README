@@ -1,13 +1,13 @@
 Directory:
-    ${PENCIL_HOME}/samples/1d-tests/conduction_cT1
+    ${PENCIL_HOME}/samples/1d-tests/conduction/cTrho
 SVN Id:
     $Id$
 Maintainer:
     Kishore G <kishore96/gmail[dot]com>
 Added:
-    04-Sep-2025
+    27-Nov-2024
 Status:
     succeeds # One of [succeeds|failing since <date>|obsolete| ...]
 Comments:
 	1D run with just thermal conduction; the thermal conductivity is a prescribed profile.
-	This sample tests the implementation of the 'cT1' boundary condition for ss.
+	This sample tests the implementation of the 'cT' boundary condition for the density (subroutine bc_lnrho_temp_z).
