@@ -459,14 +459,12 @@ module Special
 !   4-sep-25/alberto: adapted from backreact_infl
 !
       use Diagnostics, only: sum_mn_name, max_mn_name, save_name
-      use Sub, only: dot_mn, del2, div
-      use Deriv, only: der
+      use Sub, only: dot_mn, del2
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: Vprime
       real, dimension (nx) :: tmp, del2phi
-      integer :: i
       type (pencil_case) :: p
 !
       intent(in) :: f,p
@@ -475,9 +473,6 @@ module Special
 !  Identify module and boundary conditions.
 !
       if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dspecial_dt'
-        
-      !phi=f(l1:l2,m,n,iphi)
-      !dphi=f(l1:l2,m,n,idphi)
 !
 !  Choice of different potentials.
 !  For the 1-cos profile, -Vprime (on the rhs) enters with -sin().
@@ -1107,19 +1102,19 @@ module Special
     call copy_addr(enum_echarge_type,p_par(9)) ! int
     call copy_addr(echarge_const,p_par(10))
     call copy_addr(hscript0,p_par(11))
-    call copy_addr(phimass2,p_par(13))
-    call copy_addr(lambda_phi,p_par(14))
-    call copy_addr(lconf_time,p_par(15)) ! bool
-    call copy_addr(c_phi,p_par(16)) 
-    call copy_addr(lem_backreact,p_par(17))
-    call copy_addr(ldt_klein_gordon,p_par(18)) ! bool
-    call copy_addr(ndiv,p_par(19)) ! int
-    call copy_addr(lrho_chi,p_par(20)) ! bool
-    call copy_addr(iinfl_rho_chi,p_par(21)) ! int
-    call copy_addr(cdt_rho_chi,p_par(22))
-    call copy_addr(lflrw,p_par(23)) ! bool
-    call copy_addr(ilna,p_par(24)) ! int
-    call copy_addr(scale_rho_chi_heqn,p_par(25))
+    call copy_addr(phimass2,p_par(12))
+    call copy_addr(lambda_phi,p_par(13))
+    call copy_addr(lconf_time,p_par(14)) ! bool
+    call copy_addr(c_phi,p_par(15)) 
+    call copy_addr(lem_backreact,p_par(16))
+    call copy_addr(ldt_klein_gordon,p_par(17)) ! bool
+    call copy_addr(ndiv,p_par(18)) ! int
+    call copy_addr(lrho_chi,p_par(19)) ! bool
+    call copy_addr(iinfl_rho_chi,p_par(20)) ! int
+    call copy_addr(cdt_rho_chi,p_par(21))
+    call copy_addr(lflrw,p_par(22)) ! bool
+    call copy_addr(ilna,p_par(23)) ! int
+    call copy_addr(scale_rho_chi_heqn,p_par(24))
 
     endsubroutine pushpars2c
 !********************************************************************
