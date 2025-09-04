@@ -1,0 +1,33 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Initialisation parameters
+!
+&init_pars
+  cvsid="b7d6e59ee"
+  unit_system='set'
+  lwrite_ic=F
+  wav1=4.24e-6
+/
+&magnetic_init_pars
+  initaa='power_randomphase_hel', amplaa=1.67e-10, kpeak_aa=50e-6
+  initpower_aa=1., relhel_aa=0., initpower2_aa=-5.
+  lscale_tobox=F
+  lvacuum=T
+/
+&backreact_infl_init_pars
+  initspecial='default', 'phi_power_randomphase', 'dphi_power_randomphase'
+  phi0=0.7, Hscript_choice='friedmann'
+  amplphi=2.94e-6, initpower_phi=1., kpeak_phi=50e-6   !-> corresponds to k^1
+  initpower2_phi=-5.
+  ampldphi=1.58e-10, initpower_dphi=3., kpeak_dphi=50e-6 !-> corresponds to k^3
+  initpower2_dphi=-3.
+  lscale_tobox=F
+  lflrw=T, lem_backreact=T, phimass=1.06e-6
+/
+&disp_current_init_pars
+  initee='power_randomphase_hel', amplee=1.58e-10, kpeak_ee=50e-6
+  initpower_ee=3., initpower2_ee=-3., relhel_ee=0.
+  lscale_tobox=F
+/
+&gravitational_waves_hTXk_init_pars
+/
