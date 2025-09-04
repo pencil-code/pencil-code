@@ -1,0 +1,15 @@
+Directory:
+    ${PENCIL_HOME}/samples/1d-tests/conduction/cT1_readstrat/
+SVN Id:
+    $Id$
+Maintainer:
+    Kishore G <kishore96/gmail[dot]com>
+Added:
+    04-Sep-2025
+Status:
+    failing # One of [succeeds|failing since <date>|obsolete| ...]
+Comments:
+    1D run with just thermal conduction; the thermal conductivity is a prescribed profile.
+    This sample tests reading initial conditions from a stratification.dat file with strati_type='lnrho_ss'
+    
+    Fails because cs2top, cs2bot are not set in the 'stratification' initial condition.
