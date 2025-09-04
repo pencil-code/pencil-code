@@ -54,8 +54,14 @@ module Forcing
   real, dimension(nx) :: profx_ampl=1.,profx_hel=1., profx_ampl1=0.
   real, dimension(my) :: profy_ampl=1.,profy_hel=1.
   real, dimension(mz) :: profz_ampl=1.,profz_hel=1.,qdouble_profile=1.
-  integer :: kfountain=5,iff,ifx,ify,ifz,ifff,iffx,iffy,iffz,i2fff,i2ffx,i2ffy,i2ffz,iff_aux
-  integer, dimension(n_forcing_cont_max) :: ifcont_aux
+  integer :: kfountain=5,ifx,ify,ifz,ifff,iffx,iffy,iffz,i2fff,i2ffx,i2ffy,i2ffz
+  !Kishore: register_report_aux explicitly assumes that the variable is
+  !Kishore: uninitialized only if the corresponding index is zero. I have now
+  !Kishore: changed iff and iff_aux below to be explicitly initialized to zero
+  !Kishore: (for comparison, other variables used for f-array indices are
+  !Kishore: initialized to zero in cdata.f90).
+  integer :: iff=0, iff_aux=0
+  integer, dimension(n_forcing_cont_max) :: ifcont_aux=0
   integer :: kzlarge=1
   integer :: iforcing_zsym=0, nlocation=1
   logical :: lwork_ff=.false.,lmomentum_ff=.false.
