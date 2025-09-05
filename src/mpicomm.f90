@@ -5537,6 +5537,68 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine check_emergency_brake
 !***********************************************************************
+    subroutine transp_single_proc(a,var)
+!
+!  Doing a transpose (dummy version for single processor).
+!
+!   5-sep-02/axel: adapted from version in mpicomm.f90
+!   5-sep-25/TP:   copied from nompicomm.f90 here to enable the more general transposing
+!                  for a single proc (don't have to have nxgrid == nzgrid) needed for 1d-tests/jeans-x
+!
+      real, dimension(nx,ny,nz) :: a
+      real, dimension(:,:), allocatable :: tmp
+      character :: var
+!
+      integer :: m, n, iy, ibox
+!
+      if (ip<10) print*, 'transp for single processor'
+!
+!  Doing x-y transpose if var='y'
+!
+      if (var=='y') then
+        if (nygrid/=1) then
+!
+          if (mod(nx,ny)/=0) then
+            if (lroot) print*, 'transp: works only if nx is an integer '//&
+                 'multiple of ny!'
+            call stop_it('transp')
+          endif
+!
+          allocate (tmp(nx,ny))
+          do n=1,nz
+            do ibox=0,nx/nygrid-1
+              iy=ibox*ny
+              tmp=transpose(a(iy+1:iy+ny,:,n))
+              a(iy+1:iy+ny,:,n)=tmp
+            enddo
+          enddo
+          deallocate (tmp)
+!
+        endif
+!
+!  Doing x-z transpose if var='z'
+!
+      elseif (var=='z') then
+        if (nzgrid/=1) then
+!
+          if (nx/=nz) then
+            if (lroot) print*, 'transp: works only for nx=nz!'
+            call stop_it('transp')
+          endif
+!
+          allocate (tmp(nx,nz))
+          do m=1,ny
+            tmp=transpose(a(:,m,:))
+            a(:,m,:)=tmp
+          enddo
+          deallocate (tmp)
+!
+        endif
+!
+      endif
+!
+    endsubroutine transp_single_proc
+!***********************************************************************
     subroutine transp(a,var, comm, lsync)
 !
 !  Doing the transpose of information distributed on several processors
@@ -5548,6 +5610,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !  26-oct-02/axel: comments added
 !   6-jun-03/axel: works now also in 2-D (need only nxgrid=nygrid)
 !   5-oct-06/tobi: generalized to nxgrid = n*nygrid
+!   25-sep-25/TP:  added the easy case where we have one proc
 !
 ! TODO: Implement nxgrid = n*nzgrid
 !
@@ -5566,6 +5629,10 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  Doing x-y transpose if var='y'
 !
+      if (nprocx*nprocy*nprocz == 1) then
+              call transp_single_proc(a,var)
+              return
+      endif
       if (loptest(lsync,.true.)) then
         !$omp barrier
       endif
