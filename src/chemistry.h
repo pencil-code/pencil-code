@@ -31,6 +31,7 @@
   public :: get_reac_rate
 
   public :: Rgas
+  public :: lnucleii_generated
 
 !  public :: get_p_infx
 !  public :: get_p_infy

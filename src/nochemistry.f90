@@ -25,6 +25,7 @@ module Chemistry
   real :: Rgas, Rgas_unit_sys
   logical :: lchemistry_diag=.false.
   logical :: lreactions=.false.
+  logical, allocatable, dimension(:,:,:) :: lnucleii_generated
 !
   include 'chemistry.h'
 !

@@ -120,6 +120,7 @@ module Chemistry
   real, allocatable, dimension(:,:) :: kreactions_z
   real, allocatable, dimension(:) :: kreactions_m, kreactions_p
   logical, allocatable, dimension(:) :: back
+  logical, allocatable, dimension(:,:,:) :: lnucleii_generated
   character(len=30), allocatable, dimension(:) :: reaction_name
   character (len=labellen) :: self_collisions='nothing',condensing_species='nothing'
   logical :: lT_tanh=.false.
@@ -173,7 +174,8 @@ module Chemistry
   !
   integer :: i_cond_spec,ichem_cond_spec
   integer :: imassH=19, imassO=20, imassC=21, imassN=22, imassS=23, imassTI=24
-  integer, pointer :: it_insert_nuclei
+  integer, pointer :: it_insert_nuclei, Ntau
+  real, pointer :: redfrac
   real :: true_density_cond_spec_cgs=2.196, true_density_cond_spec
   real :: gam_surf_energy_cgs=32.
   real :: nucleation_rate_coeff_cgs=1e19
@@ -333,7 +335,7 @@ module Chemistry
       use FArrayManager
       use SharedVariables, only: put_shared_variable
 !
-      integer :: k, ichemspec_tmp
+      integer :: k, ichemspec_tmp, stat
       character(len=fnlen) :: input_file
       logical ::  chemin, cheminp
 !
@@ -390,6 +392,13 @@ module Chemistry
         if (lnucl_dynamic .and. npscalar < 3) then
           call fatal_error("register_chemistry",&
                "npscalar must be at least 3 if lnucl_dynamic is true.")
+        endif
+        if (lnucl_dynamic) then
+          if (.not. allocated(lnucleii_generated)) then
+            allocate(lnucleii_generated(nx,ny,nz),STAT=stat)
+            if (stat > 0) call fatal_error("register_chemistry","Couldn't allocate lnucleii_generated!")
+          endif
+!          call put_shared_variable('lnucleii_generated',lnucl_dynamic,caller='register_chemistry')
         endif
       endif
 !
@@ -696,6 +705,8 @@ module Chemistry
           true_density_cond_spec=true_density_cond_spec_cgs/unit_density
         endif
         call get_shared_variable('it_insert_nuclei',it_insert_nuclei)
+        call get_shared_variable('Ntau',Ntau)
+        call get_shared_variable('redfrac',redfrac)
       endif
 !
 ! Define some constants used for condensing species
@@ -7072,7 +7083,7 @@ module Chemistry
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      integer :: ichem, kkk,i
+      integer :: ichem, kkk,i,ii
       real, dimension(nx) :: Q_nucl
       !
       if (lnucleation .and. dt>0) then
@@ -7088,8 +7099,18 @@ module Chemistry
         !
         if (lnucl_dynamic) then
           df(l1:l2,m,n,icc+2) = df(l1:l2,m,n,icc+2) &
-            + (p%ff_nucl*(1+p%cc(:,1))*p%rho1 - f(l1:l2,m,n,icc))/(it_insert_nuclei*dt)
+            + (p%ff_nucl*(1+p%cc(:,1))*p%rho1 - f(l1:l2,m,n,icc))/(Ntau*dt)
           df(l1:l2,m,n,icc) = df(l1:l2,m,n,icc)     + f(l1:l2,m,n,icc+2)
+          !
+          ! Check if nucleii have just be added in particles_dust
+          !
+          do ii=l1,l2
+            if (lnucleii_generated(ii-nghost,m-nghost,n-nghost)) then
+              df(ii,m,n,icc+2) = df(ii,m,n,icc+2) &
+                   - redfrac*f(ii,m,n,icc)/(Ntau*dt**2)
+              !df(ii,m,n,icc+1) = -redfrac*f(ii,m,n,icc+1)/dt
+            endif
+          enddo
         else
           df(l1:l2,m,n,icc) = df(l1:l2,m,n,icc) + p%ff_nucl*(1+p%cc(:,1))*p%rho1
         endif

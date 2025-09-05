@@ -56,6 +56,7 @@ module Chemistry
   real :: global_phi=impossible
 !
   logical :: lfilter_strict=.false.
+  logical, allocatable, dimension(:,:,:) :: lnucleii_generated
 !
 !  parameters related to chemical reactions, diffusion and advection
 !
