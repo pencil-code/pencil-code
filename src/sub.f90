@@ -9073,7 +9073,7 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
       real, save, dimension(:), allocatable :: lgt_file, lgff, lgff2, lgff3, lgff4, lgff5
       logical, save :: lread_scl_factor_file_exists
       integer, save :: idt_file_safety=12
-      integer, save :: nt_file, it_file, iTij=0
+      integer, save :: nt_file, it_file
       real, save :: lgt0, dlgt, H0=1.
       real, save :: lgt1, lgt2, lgf1, lgf2, lgf
       real, save :: lgt_ini, a_ini, Hp_ini, app_om=0
