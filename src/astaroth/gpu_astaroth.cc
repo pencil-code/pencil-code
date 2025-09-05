@@ -1057,19 +1057,6 @@ extern "C" void initGPU()
   //AcResult res = acCheckDeviceAvailability();
 }
 /***********************************************************************************************/
-#define PCLoad acPushToConfig
-//already defined
-//MPI_Comm comm_pencil = MPI_COMM_NULL;
-void modulepars(AcMeshInfo& config){
-  // Enter basic parameters in config.
-  #include "PC_modulepars.h"
-}
-
-#undef x
-#undef y
-#undef z
-
-
 bool called_training = false;
 int randomNumber;
 /***********************************************************************************************/
