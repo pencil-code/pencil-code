@@ -1265,17 +1265,20 @@ extern "C" void beforeBoundaryGPU(bool lrmv, int isubstep, double t)
 #if LSELFGRAVITY
 	if(t>=tstart_selfgrav)
 	{
-    		acDeviceFFTR2C(acGridGetDevice(),RHS_POISSON,RHS_POISSON_COMPLEX);
 		acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_calc_selfgravity_rhs),1);
-    		acDeviceFFTC2R(acGridGetDevice(),SELFGRAVITY_POTENTIAL_COMPLEX,SELFGRAVITY_POTENTIAL);
+    		acDeviceFFTR2C(acGridGetDevice(),acGetRHS_POISSON(),RHS_POISSON_COMPLEX);
+    		AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
+  		acGridLaunchKernel(STREAM_DEFAULT, selfgravity_poisson_solve, dims.n0, dims.n1);
+                acGridSynchronizeStream(STREAM_ALL);
+    		acDeviceFFTC2R(acGridGetDevice(),SELFGRAVITY_POTENTIAL_COMPLEX,acGetSELFGRAVITY_POTENTIAL());
 		//TP: A placeholder for iterative solvers, in the future choose the number of solving steps based on the norm of the residual
 		/**
 		for(int i = 0; i < 100; ++i)
 		{
 			acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_sor_step),1);
 		}
-		acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_calc_final_potential),1);
 		**/
+		acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_calc_final_potential),1);
 	}
 
 #endif

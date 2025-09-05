@@ -90,8 +90,6 @@ contains
       if (ldetonate) str=trim(str)//', '//'detonate'
       if (lopacity) str=trim(str)//', '//'opacity'
       if (lpointmasses) str=trim(str)//', '//'pointmasses'
-      if (lpoisson) str=trim(str)//', '//'poisson'
-      if (lselfgravity) str=trim(str)//', '//'selfgravity'
       if (lsolid_cells) str=trim(str)//', '//'solid_cells'
       if (lparticles) str=trim(str)//', '//'particles'
 
