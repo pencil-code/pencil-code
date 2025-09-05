@@ -962,8 +962,11 @@ module Diagnostics
 !MR: but wastes storage in fnamez
 !
 !   6-jun-02/axel: coded
+!   27-mar-2025/Kishore: handling of itype_name_z
 !
-      real, dimension(nz,nprocz,nnamez) :: fsumz
+      use General, only: itoa
+!
+      real, dimension(nz,nprocz) :: fsumz
       integer, dimension(nz) :: nsum, ncount
       integer, dimension(:,:) :: ncountsz
       real, dimension(:,:,:) :: fnamez
@@ -986,12 +989,15 @@ module Diagnostics
 !
               call mpiallreduce_sum_int(ncount,nsum,nz,IXYPLANE)
 !
+              if(itype_name_z(idiag) == ilabel_sum) then
+!
 !  Form average by dividing by nsum. Dividing by dA_xy_rel1
 !  necessary as below the average is multiplied by that.
 !
-              where (nsum>0) fnamez(:,ipz+1,idiag)=fnamez(:,ipz+1,idiag)/(dA_xy_rel1*nsum)
-              ncountsz(:,idiag)=0
-
+                where (nsum>0) fnamez(:,ipz+1,idiag)=fnamez(:,ipz+1,idiag)/(dA_xy_rel1*nsum)
+                ncountsz(:,idiag)=0
+              endif
+!
             endif
           enddo
         endif
@@ -999,8 +1005,17 @@ module Diagnostics
 !  Communicate over all processors.
 !  The result is only present on the root processor
 !
-        call mpireduce_sum(fnamez,fsumz,(/nz,nprocz,nnamez/))
-        if (lroot) fnamez(:,:,1:nnamez)=fsumz(:,:,1:nnamez)*dA_xy_rel1
+        do idiag=1,nnamez
+          select case(itype_name_z(idiag))
+          case(ilabel_sum)
+            call mpireduce_sum(fnamez(:,:,idiag),fsumz,(/nz,nprocz/))
+            if (lroot) fnamez(:,:,idiag)=fsumz*dA_xy_rel1
+          case default
+            call fatal_error('xyaverages_z', 'itype_name_z has an unhandled value '// &
+            trim(itoa(itype_name_z(idiag)))//' at idiag='//trim(itoa(idiag))// &
+            ' (cnamez='//trim(cnamez(idiag))//')')
+          endselect
+        enddo
       endif
 !
     endsubroutine xyaverages_z
@@ -2294,6 +2309,7 @@ module Diagnostics
     subroutine xysum_mn_name_z(a,iname,mask)
 !
 !   3-sep-13/MR: derived from xysum_mn_name_z
+!   27-mar-2025/Kishore: added ilabel_sum
 !
       use Cdata, only: n
 !
@@ -2316,6 +2332,8 @@ module Diagnostics
       else
         call xysum_mn_name_z_npar(a,n,iname,MASK=lmask)
       endif
+!
+      if (iname/=0) itype_name_z(iname) = ilabel_sum
 !
     endsubroutine xysum_mn_name_z
 !***********************************************************************
@@ -3227,6 +3245,7 @@ module Diagnostics
 !   24-nov-09/anders: copied from allocate_yaverages
 !   11-jan-11/MR: parameter nnamel added
 !   25-mar-25/TP: refactored name allocations to their own function
+!   27-mar-2025/Kishore: added allocation of itype_name_z
 !
       integer, intent(in) :: nnamel
 !
@@ -3247,6 +3266,12 @@ module Diagnostics
       if (ldebug) print*, 'allocate_xyaverages: allocated memory for '// &
                           'ncountsz  with nnamez  =', nnamel
       ncountsz=-1
+!
+      allocate(itype_name_z(nnamel),stat=stat)
+      if (stat>0) call fatal_error('allocate_xyaverages','Could not allocate itype_name_z')
+      if (ldebug) print*, 'allocate_xyaverages    : allocated memory for '// &
+                          'itype_name_z with nname   =', nnamel
+      itype_name_z=ilabel_save
 !
     endsubroutine allocate_xyaverages
 !***********************************************************************

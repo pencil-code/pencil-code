@@ -520,6 +520,7 @@ module Cdata
   real :: tspec,tdiagnos,dtdiagnos,t1ddiagnos,t2davgfirst,eps_rkf_diagnos
   real, dimension (mname) :: fweight=0.0
   integer, dimension(:)   , allocatable :: itype_name
+  integer, dimension(:)   , allocatable :: itype_name_z
   real, dimension(:)      , allocatable, target :: fname,fname_keep
   real, dimension(:,:)    , allocatable, target :: fnamer,fname_sound
   real, dimension(:,:,:)  , allocatable, target :: fnamex, fnamey, fnamez, fnamexy, fnamexz
