@@ -387,6 +387,10 @@ module Chemistry
       if (lparticles) then
         call put_shared_variable('true_density_cond_spec',true_density_cond_spec)
         call put_shared_variable('lnucl_dynamic',lnucl_dynamic,caller='register_chemistry')
+        if (lnucl_dynamic .and. npscalar < 3) then
+          call fatal_error("register_chemistry",&
+               "npscalar must be at least 3 if lnucl_dynamic is true.")
+        endif
       endif
 !
     endsubroutine register_chemistry
