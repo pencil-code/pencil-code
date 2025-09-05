@@ -1195,10 +1195,10 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 ## default settings
 ##
 #FC=gfortran
-#CC=gcc -DFUNDERSC=1
+#CC=gcc
 #F77=$(FC)
 #FFLAGS=-O1
-#CFLAGS=-O1
+#CFLAGS=-O1 -DFUNDERSC=1
 #F90FLAGS=
 #LD_MPI=
 #FFLAGS_DOUBLE=-fdefault-real-8
@@ -1760,7 +1760,7 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #FFLAGS=-O1 -finit-real=nan -fno-underscoring -fbacktrace -g -fcheck=bounds #(norlx51)
 ##FFLAGS=-O0 -Wall -finit-real=sNaN -finit-integer=-2147483648 -g -fbacktrace -fimplicit-none -fcheck=all -ffpe-trap=invalid,zero,overflow #(norlx51)
 #CC=mpicc #(norlx51)
-##CFLAGS=-O1 -DFUNDERSC=1 #(norlx51)
+#CFLAGS=-O1 -DFUNDERSC=0 #(norlx51)
 #LD_MPI= #(norlx51)
 #OMPLFLAGS+= -L/usr/share/doc/ #(norlx51)
 #LDFLAGS+= -L/usr/share/doc/libhdf5-openmpi-1.8.4 #(norlx51)
@@ -3657,7 +3657,11 @@ clean:  slender
 	rm -f $(CUDA_MAKEDIR)/Makefile.module_info
 	rm -f *_c.h && ln -s $(PENCIL_HOME)/src/headers_c.h .
 #done so the interface make can clean after this, otherwise that clean has to come first
-	@if [ -d ./astaroth ]; then touch ./astaroth/PC_modulesources.h; fi
+	@if [ -d ./astaroth ]; then \
+		touch ./astaroth/PC_modulesources.h; \
+	        rm -rf ./astaroth/build; \
+		rm -rf ./astaroth/submodule/build; \
+	fi
 	@printf "# %s\n" "Empty" "(This file was written by 'make')" > Makefile.inc
 	@printf "# %s\n" "Empty" "(This file was written by 'make')" > Makefile-standard.inc
 #
