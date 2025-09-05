@@ -8073,6 +8073,14 @@ iloop:do i=1,size(list2)
           dst = enum_erun_string
         case('nu-const')
           dst = enum_nuZconst_string
+        case('calc_pencils_eos_pencpar')
+          dst = enum_calc_pencils_eos_pencpar_string
+        case('unknown value of tdep_cs2_type')
+          dst = enum_unknown_value_of_tdep_cs2_type_string
+        case('calc_pencils_selfgravity: ')
+          dst = enum_calc_pencils_selfgravityZ__string
+        case('galactic-brandt-curve')
+          dst = enum_galacticZbrandtZcurve_string
         case default
           dst = enum_unknown_string_string
           if (lroot) print*, 'No string enum for: ', src

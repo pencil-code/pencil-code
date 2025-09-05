@@ -981,5 +981,9 @@ integer, parameter :: enum_itZ1ZorZitZnt_string = 697
 integer, parameter :: enum_dspecial_dtZ_dont_solve_dspecial_dt_string = 698
 integer, parameter :: enum_erun_string = 699
 integer, parameter :: enum_nuZconst_string = 700
+integer, parameter :: enum_calc_pencils_eos_pencpar_string = 701
+integer, parameter :: enum_unknown_value_of_tdep_cs2_type_string = 702
+integer, parameter :: enum_calc_pencils_selfgravityZ__string = 703
+integer, parameter :: enum_galacticZbrandtZcurve_string = 704
 
 endmodule Cparam

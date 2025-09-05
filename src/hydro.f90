@@ -8832,7 +8832,7 @@ module Hydro
     use Syscalls, only: copy_addr
     use General , only: string_to_enum
 
-    integer, parameter :: n_pars=120
+    integer, parameter :: n_pars=200
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     integer :: k
@@ -8959,6 +8959,8 @@ module Hydro
     if(allocated(xhless)) call copy_addr(xhless,p_par(117)) ! (nhless__mod__hydro)
     if(allocated(yhless)) call copy_addr(yhless,p_par(118)) ! (nhless__mod__hydro)
     if(allocated(zhless)) call copy_addr(zhless,p_par(119)) ! (nhless__mod__hydro)
+    call copy_addr(width_hless,p_par(120))
+    call copy_addr(width_hless_absolute,p_par(121))
 
     endsubroutine pushpars2c
 !***********************************************************************
