@@ -3056,8 +3056,9 @@ start=$(technical) $(physics) $(GPU_OBJ) nogpu_astaroth_ansi.o $(TRAINING_OBJ)
 #
 run=$(technical) $(physics) $(GPU_OBJ) $(GPU_INTERFACE) $(TIMESTEP_OBJ) $(TRAINING_OBJ) equ.o pencil_check.o
 #Astaroth needs the .o files to be linked to get the pushpars from the special modules
-ifneq ($(SPECIAL_MULT),1)
 ifneq ($(GPU),nogpu)
+run+=$(MAGNETIC_MEANFIELD_OBJ)
+ifneq ($(SPECIAL_MULT),1)
 run+=$(SPECIAL_MODULES:=.o)
 endif
 endif
