@@ -88,7 +88,7 @@ module Pscalar
 !  Diagnostic variables (needs to be consistent with reset list below).
 !
   integer :: idiag_rhoccm=0, idiag_ccmax=0, idiag_ccmin=0, idiag_ccm=0
-  integer :: idiag_mrclncm=0
+  integer :: idiag_mrclncm=0, idiag_rhoccmax=0, idiag_rhoc2m=0, idiag_rhoc3m=0
   integer :: idiag_Qrhoccm=0, idiag_Qpsclm=0, idiag_mcct=0
   integer :: idiag_gcc5m=0, idiag_gcc10m=0
   integer :: idiag_ucm=0, idiag_uudcm=0, idiag_Cz2m=0, idiag_Cz4m=0
@@ -403,7 +403,8 @@ module Pscalar
       lpenc_diagnos(i_cc)=.true.
 !
       if (idiag_rhoccm/=0 .or. idiag_Cz2m/=0 .or. idiag_Cz4m/=0 .or. &
-          idiag_Qrhoccm/=0 .or. idiag_Qpsclm/=0 .or. idiag_mrclncm/=0. ) &
+          idiag_Qrhoccm/=0 .or. idiag_Qpsclm/=0 .or. &
+          idiag_mrclncm/=0. .or. idiag_rhoccmax/=0 .or. idiag_rhoc2m/=0) &
           lpenc_diagnos(i_rho)=.true.
 !
       if (idiag_ucm/=0 .or. idiag_uudcm/=0 .or. idiag_uxcm/=0 .or. &
@@ -772,6 +773,9 @@ module Pscalar
         if (idiag_Qrhoccm/=0) call sum_mn_name(bump*p%rho*p%cc(:,1),idiag_Qrhoccm)
         if (idiag_mcct/=0)    call integrate_mn_name(p%rho*p%cc(:,1),idiag_mcct)
         if (idiag_rhoccm/=0)  call sum_mn_name(p%rho*p%cc(:,1),idiag_rhoccm)
+        if (idiag_rhoc2m/=0)  call sum_mn_name(p%rho*p%cc(:,2),idiag_rhoc2m)
+        if (idiag_rhoc3m/=0)  call sum_mn_name(p%rho*p%cc(:,3),idiag_rhoc3m)
+        if (idiag_rhoccmax/=0)  call max_mn_name(p%rho*p%cc(:,1),idiag_rhoccmax)
         if (idiag_mrclncm/=0) call sum_mn_name(-p%rho*p%cc(:,1)*alog(p%cc(:,1)),idiag_mrclncm)
         call max_mn_name(p%cc(:,1),idiag_ccmax)
         if (idiag_ccmin/=0)   call max_mn_name(-p%cc(:,1),idiag_ccmin,lneg=.true.)
@@ -898,7 +902,7 @@ module Pscalar
 !
       if (lreset) then
         idiag_rhoccm=0; idiag_ccmax=0; idiag_ccmin=0.; idiag_ccm=0
-        idiag_mrclncm=0
+        idiag_mrclncm=0; idiag_rhoccmax=0; idiag_rhoc2m=0; idiag_rhoc3m=0
         idiag_Qrhoccm=0; idiag_Qpsclm=0; idiag_mcct=0
         idiag_ccmz=0; idiag_ccmy=0; idiag_ccmx=0
         idiag_uxcmz=0; idiag_uycmz=0; idiag_uzcmz=0; idiag_cc2mz=0
@@ -920,6 +924,9 @@ module Pscalar
         call parse_name(iname,cname(iname),cform(iname),'Qpsclm',idiag_Qpsclm)
         call parse_name(iname,cname(iname),cform(iname),'Qrhoccm',idiag_Qrhoccm)
         call parse_name(iname,cname(iname),cform(iname),'rhoccm',idiag_rhoccm)
+        call parse_name(iname,cname(iname),cform(iname),'rhoc2m',idiag_rhoc2m)
+        call parse_name(iname,cname(iname),cform(iname),'rhoc3m',idiag_rhoc3m)
+        call parse_name(iname,cname(iname),cform(iname),'rhoccmax',idiag_rhoccmax)
         call parse_name(iname,cname(iname),cform(iname),'mrclncm',idiag_mrclncm)
         call parse_name(iname,cname(iname),cform(iname),'mcct',idiag_mcct)
         call parse_name(iname,cname(iname),cform(iname),'ccmax',idiag_ccmax)
