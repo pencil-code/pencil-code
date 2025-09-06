@@ -409,7 +409,7 @@ module Special
 !
 !  Calculate Special pencils.
 !  Most basic pencils should come first, as others may depend on them.
-!
+! 
 !  24-nov-04/tony: coded
 !
       use Sub, only: grad

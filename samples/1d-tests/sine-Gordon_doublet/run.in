@@ -1,0 +1,17 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+!  sample file for 1-D sound wave
+!
+&run_pars
+  cvsid="a8b0f4c87"
+  nt=20000, it1=1000, isave=50, itorder=3
+  nt=nt=50, it1=5, isave=50, itorder=3
+  dsnap=5e-2, dvid=5e-2, tmax=7e8 !, dtmin=-1e-12
+  lwrite_aux=T
+  lpencil_check=F
+  lpencil_check_small=F
+  dt=.1
+/
+&special_run_pars
+  Vprime_choice='cos-profile', phimass=2., lambda_phi=1.
+/

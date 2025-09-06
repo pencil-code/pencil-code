@@ -40,7 +40,9 @@
 ! MVAR CONTRIBUTION 2
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED phi; dphi; gphi(3)
+! PENCILS PROVIDED phi; dphi; gphi(3); cov_der(4,4)
+! PENCILS PROVIDED phi_doublet(3); dphi_doublet(3), phi_doublet_mod
+! PENCILS PROVIDED Gamma; GammaW(3); WW(9)
 !
 !***************************************************************
 !
@@ -86,7 +88,9 @@ module Special
 !
 ! Declare index of new variables in f array (if any).
 !
-  integer :: iphi=0, idphi=0, ilna=0, Ndiv=100, iinfl_rho_chi=0
+  integer :: iphi=0, idphi=0, ilna=0, Ndiv=100, iinfl_rho_chi=0, iGamma=0, iGammaW=0
+  integer :: iphi_up_re=0, iphi_up_im=0, iphi_down_re=0, iphi_down_im=0
+  integer :: idphi_up_re=0, idphi_up_im=0, idphi_down_re=0, idphi_down_im=0
   real :: ncutoff_phi=1., phi_v=.1
   real :: phimass=1.06e-6, phimass2, ascale_ini=1.
   real :: phi0=.44, dphi0=-1.69e-7, c_phi=1., lambda_phi=0., eps=.01
@@ -95,7 +99,6 @@ module Special
   real :: initpower_dphi=0., cutoff_dphi=0., initpower2_dphi=0.
   real :: kgaussian_phi=0.,kpeak_phi=0., kpeak_dphi=0.
   real :: relhel_phi=0.
-  logical :: lbackreact_infl=.true.
   real :: ddotam, a2rhopm, a2rhopm_all, a2rhom, a2rhom_all
   real :: edotbm, edotbm_all, e2m, e2m_all, b2m, b2m_all, a2rhophim, a2rhophim_all
   real :: sigE1m_all_nonaver, sigB1m_all_nonaver,sigEm_all,sigBm_all,sigEm_all_diagnos,sigBm_all_diagnos
@@ -105,10 +108,13 @@ module Special
   real :: amplee_BD_prefactor=0., deriv_prefactor_ee=-1.
   real :: echarge=.0, echarge_const=.303
   real :: count_eb0_all=0., eta_phi=0.
+  real, pointer :: coupl_gw, coupl_gy
+  logical, pointer :: llongitudinalE, llongitudinalW
   real, target :: ddotam_all
   real, pointer :: alpf
   real, pointer :: sigE_prefactor, sigB_prefactor, mass_chi
   real, dimension (nx) :: dt1_special
+  real, dimension (nx, 4, 3) :: dfdxs=0.
   logical :: lcompute_dphi0=.true., lem_backreact=.false.
   logical :: lscale_tobox=.true., ldt_klein_gordon=.true., lconf_time=.true.
   logical :: lskip_projection_phi=.false., lvectorpotential=.false., lflrw=.false.
@@ -117,6 +123,7 @@ module Special
   logical, pointer :: lphi_linear_regime, lnoncollinear_EB, lnoncollinear_EB_aver
   logical, pointer :: lcollinear_EB, lcollinear_EB_aver, lmass_suppression
   logical, pointer :: lallow_bprime_zero
+  logical :: lphi_doublet=.false., lphi_weakcharge=.true., lphi_hypercharge=.true.
   character (len=labellen) :: Vprime_choice='quadratic', Hscript_choice='set'
   character (len=labellen), dimension(ninit) :: initspecial='nothing'
   character (len=50) :: echarge_type='const', init_rho_chi='zero'
@@ -130,7 +137,8 @@ module Special
       initpower_dphi, initpower2_dphi, cutoff_dphi, kpeak_dphi, &
       ncutoff_phi, lscale_tobox, Hscript0, Hscript_choice, phi_v, lflrw, &
       lrho_chi, scale_rho_chi_Heqn, amplee_BD_prefactor, deriv_prefactor_ee, &
-      echarge_type, init_rho_chi, rho_chi_init, eta_phi
+      echarge_type, init_rho_chi, rho_chi_init, eta_phi, lphi_doublet, &
+      lphi_weakcharge, lphi_hypercharge
 !
   namelist /special_run_pars/ &
       initspecial, phi0, dphi0, phimass, eps, ascale_ini, &
@@ -179,8 +187,24 @@ module Special
       if (lroot) call svn_id( &
            "$Id$")
 !
-      call farray_register_pde('phi',iphi)
-      call farray_register_pde('dphi',idphi)
+      if (lphi_doublet) then
+      ! alberto: register 4 components for the Higgs doublet in phi
+        call farray_register_pde('phi_up_re',iphi_up_re)
+        call farray_register_pde('phi_up_im',iphi_up_im)
+        call farray_register_pde('phi_down_re',iphi_down_re)
+        call farray_register_pde('phi_down_im',iphi_down_im)
+        call farray_register_pde('dphi_up_re',idphi_up_re)
+        call farray_register_pde('dphi_up_im',idphi_up_im)
+        call farray_register_pde('dphi_down_re',idphi_down_re)
+        call farray_register_pde('dphi_down_im',idphi_down_im)
+        iphi=iphi_up_re
+        idphi=idphi_up_re
+      else
+        call farray_register_pde('phi',iphi)
+        call farray_register_pde('dphi',idphi)
+        lphi_weakcharge=.false.
+        lphi_hypercharge=.false.
+      endif
       lklein_gordon=.true.
 !
       if (lflrw) call farray_register_ode('lna',ilna)
@@ -254,6 +278,31 @@ module Special
         lallow_bprime_zero=.false.
         mass_chi=0.
       endif
+
+      ! if iee = 0 then disp_current module is not called
+      if (iee /= 0 .and. lphi_hypercharge) then
+        call get_shared_variable('coupl_gy',coupl_gy)
+        call get_shared_variable('llongitudinalE',llongitudinalE)
+      else
+        if (.not.associated(coupl_gy)) then
+          allocate(coupl_gy, llongitudinalE)
+          coupl_gy=0.
+          llongitudinalE=.false.
+        endif
+        lphi_hypercharge=.false.
+      endif
+      !  if iWW = 0 then electroweaksu2 module is not called
+      if (iWW /= 0 .and. lphi_weakcharge) then
+        call get_shared_variable('coupl_gw',coupl_gw)
+        call get_shared_variable('llongitudinalW',llongitudinalW)
+      else
+        if (.not.associated(coupl_gw)) then
+          allocate(coupl_gw, llongitudinalW)
+          coupl_gw=0.
+          llongitudinalW=.false.
+        endif
+        lphi_weakcharge=.false.
+      endif
 !
       call keep_compiler_quiet(f)
 !
@@ -277,7 +326,6 @@ module Special
 !  SAMPLE IMPLEMENTATION
 !
       do j=1,ninit
-
         select case (initspecial(j))
           case ('nothing'); if (lroot) print*,'init_special: nothing'
           case ('phi=sinkx')
@@ -303,7 +351,7 @@ module Special
             Hubble_ini=sqrt(8.*pi/3.*(.5*dphi0**2+.5*phimass2*phi0**2*ascale_ini**2))
             lnascale=log(ascale_ini)
             if (lroot .and. lflrw) f_ode(ilna)=lnascale
-!
+  !
           case ('default')
             Vpotential=.5*phimass2*phi0**2
             Hubble_ini=sqrt(8.*pi/3.*(.5*phimass2*phi0**2*ascale_ini**2))
@@ -333,10 +381,10 @@ module Special
               cutoff_dphi,ncutoff_phi,kpeak_dphi,f,idphi,idphi, &
               relhel_phi,kgaussian_phi, lskip_projection_phi, lvectorpotential, &
               lscale_tobox, lpower_profile_file=.false., lno_noise=lno_noise_dphi)
-!
-!  For Bunch-Davies, the amplitude Hubble_ini is used.
-!  We apply this optionally here also to the gauge field.
-!
+  !
+  !  For Bunch-Davies, the amplitude Hubble_ini is used.
+  !  We apply this optionally here also to the gauge field.
+  !
           case ('Bunch-Davies')
             if (lroot) print*,'Hubble_ini=',Hubble_ini
             ! alberto: where is Hubble_ini defined for this initial condition?
@@ -349,6 +397,16 @@ module Special
               amplee_BD=amplee_BD_prefactor*Hubble_ini
               call bunch_davies(f,iax,iaz,iex,iez,amplee_BD,kpeak_phi,deriv_prefactor)
             endif
+          case ('phi_doublet')
+            if (.not.lphi_doublet) &
+                call fatal_error("init_special: lphi_doublet=.false. but initspecial='phi_doublet'", &
+                                 trim(initspecial(j)))
+            ! alberto: example initialization of a Higgs doublet with a sine wave in the
+            ! real part of the upper component and the same for the lower component
+            f(:,:,:,iphi_up_re)=f(:,:,:,iphi_up_re) &
+              +spread(spread(amplphi*sin(kx_phi*x),2,my),3,mz)
+            f(:,:,:,iphi_down_re)=f(:,:,:,iphi_down_re) &
+              +spread(spread(amplphi*sin(kx_phi*x),2,my),3,mz)
           case default
             call fatal_error("init_special: No such initspecial: ", trim(initspecial(j)))
         endselect
@@ -371,6 +429,8 @@ module Special
     endsubroutine init_special
 !***********************************************************************
     subroutine pencil_criteria_special
+
+    integer :: i
 !
 !  All pencils that this special module depends on are specified here.
 !
@@ -394,6 +454,23 @@ module Special
 !  Call pencils phi and dphi
       lpenc_requested(i_phi)=.true.
       lpenc_requested(i_dphi)=.true.
+
+      if (lphi_doublet) then
+        lpenc_requested(i_phi_doublet)=.true.
+        lpenc_requested(i_dphi_doublet)=.true.
+        lpenc_requested(i_phi_doublet_mod)=.true.
+        if (lphi_hypercharge .or. lphi_weakcharge) then
+          lpenc_requested(i_cov_der)=.true.
+          if (lphi_hypercharge) then
+            lpenc_requested(i_Gamma)=.true.
+            lpenc_requested(i_aa)=.true.
+          endif
+          if (lphi_weakcharge) then
+            lpenc_requested(i_GammaW)=.true.
+            lpenc_requested(i_WW)=.true.
+          endif
+        endif
+      endif
 !
     endsubroutine pencil_criteria_special
 !***********************************************************************
@@ -404,19 +481,171 @@ module Special
 !
 !  24-nov-04/tony: coded
 !
-      use Sub, only: grad
+      use Sub, only: grad, div
+      use FArrayManager, only: farray_index_by_name
+      use Deriv, only: der
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
+      real, dimension(nx, 4, 4) :: cov_der=0.
 !
       intent(in) :: f
       intent(inout) :: p
+      integer :: ia0, iW0, i, j
+
 ! phi
-      if (lpencil(i_phi)) p%phi=f(l1:l2,m,n,iphi)
+      if (lpencil(i_phi)) p%phi = f(l1:l2,m,n,iphi)
 ! dphi
       if (lpencil(i_dphi)) p%dphi=f(l1:l2,m,n,idphi)
+! phi_doublet (only computes the 3 remaining components, the first is in p%phi)
+      if (lpencil(i_phi_doublet_mod)) then
+        do i=1,3
+          p%phi_doublet(:,i)=f(l1:l2,m,n,iphi+i)
+          p%dphi_doublet(:,i)=f(l1:l2,m,n,idphi+i)
+        enddo
+        p%phi_doublet_mod=sqrt(f(l1:l2,m,n,iphi_up_re)**2 + &
+                               f(l1:l2,m,n,iphi_up_im)**2 + &
+                               f(l1:l2,m,n,iphi_down_re)**2 + &
+                               f(l1:l2,m,n,iphi_down_im)**2)
+      endif
 ! gphi
       if (lpencil(i_gphi)) call grad(f,iphi,p%gphi)
+
+      if (lpencil(i_cov_der)) then
+        do i=0,3
+          cov_der(:, 1, i)=f(l1:l2,m,n,idphi+i)
+          if (.not. lphi_hom) then
+            do j=1,3
+              call der(f, iphi+i, dfdxs(:, i+1, j), j)
+              cov_der(:, j+1, i) = dfdxs(:, i, j)
+            enddo
+          endif
+        enddo
+        ! when lphi_hypercharge is chosen and disp_current.f90 is used
+        ! add terms for hypercharge to covariant derivative
+        if (lphi_hypercharge) then
+          ia0 = farray_index_by_name('a0')
+          if (ia0 > 0) then
+            ! U(1) term (first block), proportional to a0 (Y0)
+            cov_der(:,1,1) = cov_der(:,1,1) + 0.5*coupl_gy*f(l1:l2,m,n,ia0)*f(l1:l2,m,n,iphi_up_im)
+            cov_der(:,1,2) = cov_der(:,1,2) - 0.5*coupl_gy*f(l1:l2,m,n,ia0)*f(l1:l2,m,n,iphi_up_re)
+            cov_der(:,1,3) = cov_der(:,1,3) + 0.5*coupl_gy*f(l1:l2,m,n,ia0)*f(l1:l2,m,n,iphi_down_im)
+            cov_der(:,1,4) = cov_der(:,1,4) - 0.5*coupl_gy*f(l1:l2,m,n,ia0)*f(l1:l2,m,n,iphi_down_re)
+          endif
+          ! Remaining blocks (no Y0, multiply two field components)
+          do i = 1, 3
+            cov_der(:,i+1,1) = cov_der(:,i+1,1) + 0.5*coupl_gy*f(l1:l2,m,n,iaa+i-1)*f(l1:l2,m,n,iphi_up_im)
+            cov_der(:,i+1,2) = cov_der(:,i+1,2) - 0.5*coupl_gy*f(l1:l2,m,n,iaa+i-1)*f(l1:l2,m,n,iphi_up_re)
+            cov_der(:,i+1,3) = cov_der(:,i+1,3) + 0.5*coupl_gy*f(l1:l2,m,n,iaa+i-1)*f(l1:l2,m,n,iphi_down_im)
+            cov_der(:,i+1,4) = cov_der(:,i+1,4) - 0.5*coupl_gy*f(l1:l2,m,n,iaa+i-1)*f(l1:l2,m,n,iphi_down_re)
+          enddo
+        endif
+
+        ! when lphi_hypercharge is chosen and electroweak_su2.f90 is used
+        ! add terms for weakcharge to covariant derivative
+        if (lphi_weakcharge) then
+          iW0 = farray_index_by_name('W0')
+          if (iW0 > 0) then
+            cov_der(:,1,1) = cov_der(:,1,1) + &
+                0.5*coupl_gw*(f(l1:l2,m,n,iW0)*f(l1:l2,m,n,iphi_down_im) - &
+                f(l1:l2,m,n,iW0+1)*f(l1:l2,m,n,iphi_down_re) + f(l1:l2,m,n,iW0+2)*f(l1:l2,m,n,iphi_up_im))
+
+            cov_der(:,1,2) = cov_der(:,1,2) - &
+                  0.5*coupl_gw*(f(l1:l2,m,n,iW0)*f(l1:l2,m,n,iphi_down_re) + &
+                  f(l1:l2,m,n,iW0+1)*f(l1:l2,m,n,iphi_down_im) + f(l1:l2,m,n,iW0+2)*f(l1:l2,m,n,iphi_up_re))
+
+            cov_der(:,1,3) = cov_der(:,1,3) + &
+                  0.5*coupl_gw*(f(l1:l2,m,n,iW0)*f(l1:l2,m,n,iphi_up_im) + &
+                  f(l1:l2,m,n,iW0+1)*f(l1:l2,m,n,iphi_up_re) - f(l1:l2,m,n,iW0+2)*f(l1:l2,m,n,iphi_down_im))
+
+            cov_der(:,1,4) = cov_der(:,1,4) - &
+                  0.5*coupl_gw*(f(l1:l2,m,n,iW0)*f(l1:l2,m,n,iphi_up_re) - &
+                  f(l1:l2,m,n,iW0+1)*f(l1:l2,m,n,iphi_up_im) - f(l1:l2,m,n,iW0+2)*f(l1:l2,m,n,iphi_down_re))
+          endif
+
+          ! iWW:iWW+2 -> W1x:W1z
+          ! iWW+3:iWW+5 -> W2x:W2z
+          ! iWW+6:iWW+8 -> W3x:W3z
+          cov_der(:,2,1) = cov_der(:,2,1) + &
+                0.5*coupl_gw*(f(l1:l2,m,n,iWW)*f(l1:l2,m,n,iphi_down_im) - &
+                f(l1:l2,m,n,iWW+3)*f(l1:l2,m,n,iphi_down_re) + &
+                f(l1:l2,m,n,iWW+6)*f(l1:l2,m,n,iphi_up_im))
+
+          cov_der(:,2,2) = cov_der(:,2,2) - &
+                0.5*coupl_gw*(f(l1:l2,m,n,iWW)*f(l1:l2,m,n,iphi_down_re) + &
+                f(l1:l2,m,n,iWW+3)*f(l1:l2,m,n,iphi_down_im) + &
+                f(l1:l2,m,n,iWW+6)*f(l1:l2,m,n,iphi_up_re))
+
+          cov_der(:,2,3) = cov_der(:,2,3) + &
+                0.5*coupl_gw*(f(l1:l2,m,n,iWW)*f(l1:l2,m,n,iphi_up_im) + &
+                f(l1:l2,m,n,iWW+3)*f(l1:l2,m,n,iphi_up_re) - &
+                f(l1:l2,m,n,iWW+6)*f(l1:l2,m,n,iphi_down_im))
+
+          cov_der(:,2,4) = cov_der(:,2,4) - &
+                0.5*coupl_gw*(f(l1:l2,m,n,iWW)*f(l1:l2,m,n,iphi_up_re) - &
+                f(l1:l2,m,n,iWW+3)*f(l1:l2,m,n,iphi_up_im) - &
+                f(l1:l2,m,n,iWW+6)*f(l1:l2,m,n,iphi_down_re))
+
+          cov_der(:,3,1) = cov_der(:,3,1) + &
+                0.5*coupl_gw*(f(l1:l2,m,n,iWW+1)*f(l1:l2,m,n,iphi_down_im) - &
+                f(l1:l2,m,n,iWW+4)*f(l1:l2,m,n,iphi_down_re) + &
+                f(l1:l2,m,n,iWW+7)*f(l1:l2,m,n,iphi_up_im))
+
+          cov_der(:,3,2) = cov_der(:,3,2) - &
+                0.5*coupl_gw*(f(l1:l2,m,n,iWW+1)*f(l1:l2,m,n,iphi_down_re) + &
+                f(l1:l2,m,n,iWW+4)*f(l1:l2,m,n,iphi_down_im) + &
+                f(l1:l2,m,n,iWW+7)*f(l1:l2,m,n,iphi_up_re))
+
+          cov_der(:,3,3) = cov_der(:,3,3) + &
+                0.5*coupl_gw*(f(l1:l2,m,n,iWW+1)*f(l1:l2,m,n,iphi_up_im) + &
+                f(l1:l2,m,n,iWW+4)*f(l1:l2,m,n,iphi_up_re) - &
+                f(l1:l2,m,n,iWW+7)*f(l1:l2,m,n,iphi_down_im))
+
+          cov_der(:,3,4) = cov_der(:,3,4) - &
+                0.5*coupl_gw*(f(l1:l2,m,n,iWW+1)*f(l1:l2,m,n,iphi_up_re) - &
+                f(l1:l2,m,n,iWW+4)*f(l1:l2,m,n,iphi_up_im) - &
+                f(l1:l2,m,n,iWW+7)*f(l1:l2,m,n,iphi_down_re))
+
+          cov_der(:,4,1) = cov_der(:,4,1) + &
+                0.5*coupl_gw*(f(l1:l2,m,n,iWW+2)*f(l1:l2,m,n,iphi_down_im) - &
+                f(l1:l2,m,n,iWW+5)*f(l1:l2,m,n,iphi_down_re) + &
+                f(l1:l2,m,n,iWW+8)*f(l1:l2,m,n,iphi_up_im))
+
+          cov_der(:,4,2) = cov_der(:,4,2) - &
+                0.5*coupl_gw*(f(l1:l2,m,n,iWW+2)*f(l1:l2,m,n,iphi_down_re) + &
+                f(l1:l2,m,n,iWW+5)*f(l1:l2,m,n,iphi_down_im) + &
+                f(l1:l2,m,n,iWW+8)*f(l1:l2,m,n,iphi_up_re))
+
+          cov_der(:,4,3) = cov_der(:,4,3) + &
+                0.5*coupl_gw*(f(l1:l2,m,n,iWW+2)*f(l1:l2,m,n,iphi_up_im) + &
+                f(l1:l2,m,n,iWW+5)*f(l1:l2,m,n,iphi_up_re) - &
+                f(l1:l2,m,n,iWW+8)*f(l1:l2,m,n,iphi_down_im))
+
+          cov_der(:,4,4) = cov_der(:,4,4) - &
+                0.5*coupl_gw*(f(l1:l2,m,n,iWW+2)*f(l1:l2,m,n,iphi_up_re) - &
+                f(l1:l2,m,n,iWW+5)*f(l1:l2,m,n,iphi_up_im) - &
+                f(l1:l2,m,n,iWW+8)*f(l1:l2,m,n,iphi_down_re))
+        endif
+        p%cov_der = cov_der
+      endif
+
+      if (lpencil(i_Gamma)) then
+        if (llongitudinalE) then
+          p%Gamma=f(l1:l2,m,n,iGamma)
+        else
+          call div(f, iaa, p%Gamma)
+        endif
+      endif
+
+      if (lpencil(i_GammaW)) then
+        if (llongitudinalW) then
+          p%GammaW=f(l1:l2,m,n,iGammaW:iGammaW+2)
+        else
+          do i=1,3
+            call div(f, iWW+3*(i-1), p%GammaW(:,i))
+          enddo
+        endif
+      endif
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
@@ -458,15 +687,20 @@ module Special
 !  06-oct-03/tony: coded
 !   2-nov-21/axel: first set of equations coded
 !   4-sep-25/alberto: adapted from backreact_infl
+!   6-sep-25/alberto: added Higgs doublet case
 !
       use Diagnostics, only: sum_mn_name, max_mn_name, save_name
-      use Sub, only: dot_mn, del2
+      use Sub, only: dot_mn, del2, div
+      use Deriv, only: der
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: Vprime
+      real, dimension (nx) :: Vprime, Vprime_aux
+      real, dimension (nx, 4) :: del2phi_doublet=0.
       real, dimension (nx) :: tmp, del2phi
+      real :: pref_Vprime=1., pref_Hubble=2., pref_del2=1., pref_alpf
       type (pencil_case) :: p
+      integer :: i
 !
       intent(in) :: f,p
       intent(inout) :: df
@@ -474,7 +708,6 @@ module Special
 !  Identify module and boundary conditions.
 !
       if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dspecial_dt'
-!
 !  Choice of different potentials.
 !  For the 1-cos profile, -Vprime (on the rhs) enters with -sin().
 !
@@ -482,6 +715,12 @@ module Special
         case ('quadratic'); Vprime=phimass2*p%phi
         case ('quartic'); Vprime=phimass2*p%phi+(lambda_phi/6.)*p%phi**3
         case ('cos-profile'); Vprime=phimass2*lambda_phi*sin(lambda_phi*p%phi)
+        ! for doublet case, Vprime = (dV/d|Phi|)/|Phi|
+        case ('doublet')
+          if (.not.lphi_doublet) &
+              call fatal_error("dspecial_dt: lphi_doublet=.false. but Vprime_choice='doublet'", &
+                               trim(Vprime_choice))
+          Vprime=2*lambda_phi*(p%phi_doublet_mod**2 - eta_phi**2)*p%phi_doublet_mod
         case default
           call fatal_error("dspecial_dt: No such Vprime_choice: ", trim(Vprime_choice))
       endselect
@@ -489,42 +728,164 @@ module Special
 !  Update df.
 !  dphi/dt = psi
 !  dpsi/dt = - ...
-!  
-      df(l1:l2,m,n,iphi)=df(l1:l2,m,n,iphi)+p%dphi
+!
+! alberto: determine prefactors for the different terms beforehand
+!
       if (lconf_time) then
-        df(l1:l2,m,n,idphi)=df(l1:l2,m,n,idphi)-2.*Hscript*p%dphi-a2*Vprime
+        pref_Vprime=a2; pref_alpf=a21
+      ! alberto: for cosmic time, should coefficient of Hscript be 3?
       else
-        ! alberto: for cosmic time, should coefficient of Hscript be 3?
-        df(l1:l2,m,n,idphi)=df(l1:l2,m,n,idphi)-3.*Hscript*p%dphi-Vprime
+        pref_Hubble=3.; pref_Vprime=1.; pref_del2=a21
+        pref_alpf=a21**2
       endif
 !
-!  speed of light term
+! alberto: right-hand-side for Klein-Gordon equation with Higgs doublet
+!           in presence of U(1) and/or SU(2) gauge fields
 !
-      if (c_phi/=0. .and. .not. lphi_hom) then
-        call del2(f,iphi,del2phi)
-        if (lconf_time) then
-          df(l1:l2,m,n,idphi)=df(l1:l2,m,n,idphi)+c_phi**2*del2phi
-        else
-          df(l1:l2,m,n,idphi)=df(l1:l2,m,n,idphi)+c_phi**2*a21*del2phi
+      if (lphi_doublet) then
+
+        do i=0,3
+          ! dphi/dt = dphi
+          df(l1:l2,m,n,iphi+i)=df(l1:l2,m,n,iphi+i)+f(l1:l2,m,n,idphi+i)
+          ! laplacian of the 4 components of the Higgs doublet
+          if (c_phi/=0. .and. .not. lphi_hom) then
+            call del2(f, iphi+i, del2phi_doublet(:, i+1))
+          endif
+        enddo
+
+        if (c_phi/=0. .and. lphi_hypercharge) then
+          ! terms of the covariant Laplacian from U(1) gauge fields
+          ! note that p%phi = f(l1:l2,m,n,iphi) = phi_up_re,
+          ! p%phi_doublet(:,1) = phi_up_im,
+          ! p%phi_doublet(:,2) = phi_down_re,
+          ! p%phi_doublet(:,3) = phi_down_im
+          ! del2phi_up_re
+          del2phi_doublet(:,1) = del2phi_doublet(:,1) - &
+            0.5*coupl_gy*(-p%aa(:,1)*dfdxs(:,2,1) - p%aa(:,2)*dfdxs(:,2,2) - &
+            p%aa(:,3)*dfdxs(:,2,3) - p%aa(:,1)*p%cov_der(:,2,2) - &
+            p%aa(:,2)*p%cov_der(:,3,2) - p%aa(:,3)*p%cov_der(:,4,2) - &
+            p%Gamma*p%phi_doublet(:,1))
+
+          ! del2phi_up_im
+          del2phi_doublet(:,2) = del2phi_doublet(:,2) + &
+            0.5*coupl_gy*(-p%aa(:,1)*dfdxs(:,1,1) - p%aa(:,2)*dfdxs(:,1,2) - &
+            p%aa(:,3)*dfdxs(:,1,3) - p%aa(:,1)*p%cov_der(:,2,1) - &
+            p%aa(:,2)*p%cov_der(:,3,1) - p%aa(:,3)*p%cov_der(:,4,1) - &
+            p%Gamma*p%phi)
+
+          ! del2phi_down_re
+          del2phi_doublet(:,3) = del2phi_doublet(:,3) - &
+            0.5*coupl_gy*(-p%aa(:,1)*dfdxs(:,4,1) - p%aa(:,2)*dfdxs(:,4,2) - &
+            p%aa(:,3)*dfdxs(:,4,3) - p%aa(:,1)*p%cov_der(:,2,4) - &
+            p%aa(:,2)*p%cov_der(:,3,4) - p%aa(:,3)*p%cov_der(:,4,4) - &
+            p%Gamma*p%phi_doublet(:,3))
+
+          ! del2phi_down_im
+          del2phi_doublet(:,4) = del2phi_doublet(:,4) + &
+            0.5*coupl_gy*(-p%aa(:,1)*dfdxs(:,3,1) - p%aa(:,2)*dfdxs(:,3,2) - &
+            p%aa(:,3)*dfdxs(:,3,3) - p%aa(:,1)*p%cov_der(:,2,3) - &
+            p%aa(:,2)*p%cov_der(:,3,3) - p%aa(:,3)*p%cov_der(:,4,3) - &
+            p%Gamma*p%phi_doublet(:,2))
         endif
-      endif
+        if (c_phi/=0. .and. lphi_weakcharge) then
+          ! terms of the covariant Laplacian from SU(2) gauge fields
+          ! del2phi_up_re
+          del2phi_doublet(:,1) = del2phi_doublet(:,1) - &
+            0.5*coupl_gw*(-p%WW(:,1)*dfdxs(:,4,1) - &
+            p%WW(:,2)*dfdxs(:,4,2) - p%WW(:,3)*dfdxs(:,4,3) + &
+            p%WW(:,4)*dfdxs(:,3,1) + p%WW(:,5)*dfdxs(:,3,2) + &
+            p%WW(:,6)*dfdxs(:,3,3) - p%WW(:,7)*dfdxs(:,2,1) + &
+            p%WW(:,8)*dfdxs(:,2,2) + p%WW(:,9)*dfdxs(:,2,3) - &
+            p%WW(:,1)*p%cov_der(:,2,4) - p%WW(:,2)*p%cov_der(:,3,4) - &
+            p%WW(:,3)*p%cov_der(:,4,4) + p%WW(:,4)*p%cov_der(:,2,3) + &
+            p%WW(:,5)*p%cov_der(:,3,3) + p%WW(:,6)*p%cov_der(:,4,3) - &
+            p%WW(:,7)*p%cov_der(:,2,2) - p%WW(:,8)*p%cov_der(:,3,2) - &
+            p%WW(:,9)*p%cov_der(:,4,2) - p%GammaW(:,3)*p%phi_doublet(:,1) + &
+            p%GammaW(:,2)*p%phi_doublet(:,2) - p%GammaW(:,1)*p%phi_doublet(:,3))
+
+          ! del2phi_up_im
+          del2phi_doublet(:,2) = del2phi_doublet(:,2) + &
+            0.5*coupl_gw*(-p%WW(:,1)*dfdxs(:,3,1) - &
+            p%WW(:,2)*dfdxs(:,3,2) - p%WW(:,3)*dfdxs(:,3,3) - &
+            p%WW(:,4)*dfdxs(:,4,1) - p%WW(:,5)*dfdxs(:,4,2) - &
+            p%WW(:,6)*dfdxs(:,4,3) - p%WW(:,7)*dfdxs(:,1,1) - &
+            p%WW(:,8)*dfdxs(:,1,2) - p%WW(:,9)*dfdxs(:,1,3) - &
+            p%WW(:,1)*p%cov_der(:,2,3) - p%WW(:,2)*p%cov_der(:,3,3) - &
+            p%WW(:,3)*p%cov_der(:,4,3) - p%WW(:,4)*p%cov_der(:,2,4) - &
+            p%WW(:,5)*p%cov_der(:,3,4) - p%WW(:,6)*p%cov_der(:,4,4) - &
+            p%WW(:,7)*p%cov_der(:,2,1) - p%WW(:,8)*p%cov_der(:,3,1) - &
+            p%WW(:,9)*p%cov_der(:,4,1) - p%GammaW(:,3)*p%phi - &
+            p%GammaW(:,1)*p%phi_doublet(:,2) - p%GammaW(:,2)*p%phi_doublet(:,3))
+
+          ! del2phi_down_re
+          del2phi_doublet(:,3) = del2phi_doublet(:,3) - &
+            0.5*coupl_gw*(-p%WW(:,1)*dfdxs(:,2,1) - &
+            p%WW(:,2)*dfdxs(:,2,2) - p%WW(:,3)*dfdxs(:,2,3) - &
+            p%WW(:,4)*dfdxs(:,1,1) - p%WW(:,5)*dfdxs(:,1,2) - &
+            p%WW(:,6)*dfdxs(:,1,3) + p%WW(:,7)*dfdxs(:,4,1) + &
+            p%WW(:,8)*dfdxs(:,4,2) + p%WW(:,9)*dfdxs(:,4,3) - &
+            p%WW(:,1)*p%cov_der(:,2,2) - p%WW(:,2)*p%cov_der(:,3,2) - &
+            p%WW(:,3)*p%cov_der(:,4,2) - p%WW(:,4)*p%cov_der(:,2,1) - &
+            p%WW(:,5)*p%cov_der(:,3,1) - p%WW(:,6)*p%cov_der(:,4,1) + &
+            p%WW(:,7)*p%cov_der(:,2,4) + p%WW(:,8)*p%cov_der(:,3,4) + &
+            p%WW(:,9)*p%cov_der(:,4,4) + p%GammaW(:,3)*p%phi_doublet(:,2) - &
+            p%GammaW(:,2)*p%phi - p%GammaW(:,1)*p%phi_doublet(:,1))
+
+          ! del2phi_down_im
+          del2phi_doublet(:,4) = del2phi_doublet(:,4) + &
+            0.5*coupl_gw*(-p%WW(:,1)*dfdxs(:,1,1) - &
+            p%WW(:,2)*dfdxs(:,1,2) - p%WW(:,3)*dfdxs(:,1,3) + &
+            p%WW(:,4)*dfdxs(:,2,1) + p%WW(:,5)*dfdxs(:,2,2) + &
+            p%WW(:,6)*dfdxs(:,2,3) + p%WW(:,7)*dfdxs(:,3,1) + &
+            p%WW(:,8)*dfdxs(:,3,2) + p%WW(:,9)*dfdxs(:,3,3) - &
+            p%WW(:,1)*p%cov_der(:,2,1) - p%WW(:,2)*p%cov_der(:,3,1) - &
+            p%WW(:,3)*p%cov_der(:,4,1) + p%WW(:,4)*p%cov_der(:,2,2) + &
+            p%WW(:,5)*p%cov_der(:,3,2) + p%WW(:,6)*p%cov_der(:,4,2) + &
+            p%WW(:,7)*p%cov_der(:,2,3) + p%WW(:,8)*p%cov_der(:,3,3) + &
+            p%WW(:,9)*p%cov_der(:,4,3) + p%GammaW(:,3)*p%phi_doublet(:,2) - &
+            p%GammaW(:,1)*p%phi + p%GammaW(:,2)*p%phi_doublet(:,1))
+
+        endif
+        do i=0,3
+          Vprime_aux=0.
+          if (Vprime_choice=='doublet') then
+            Vprime_aux=Vprime*f(l1:l2,m,n,iphi+i)
+          else
+            if (i == 0) Vprime_aux=Vprime
+          endif
+          df(l1:l2,m,n,idphi+i)=df(l1:l2,m,n,idphi+i) - &
+            pref_Hubble*Hscript*f(l1:l2,m,n,idphi+i) - &
+            pref_Vprime*Vprime_aux
+          if (c_phi/=0) &
+            df(l1:l2,m,n,idphi+i)=df(l1:l2,m,n,idphi+i) + &
+                c_phi**2*pref_del2*del2phi_doublet(:,i+1)
+        enddo
+
+      ! end if lphi_doublet
+      else
+        ! dphi/dt = dphi
+        df(l1:l2,m,n,iphi)=df(l1:l2,m,n,iphi)+p%dphi
+        df(l1:l2,m,n,idphi)=df(l1:l2,m,n,idphi) - &
+              pref_Hubble*Hscript*p%dphi-pref_Vprime*Vprime
+        if (c_phi/=0 .and. .not. lphi_hom) then
+          call del2(f, iphi, del2phi)
+          df(l1:l2,m,n,idphi)=df(l1:l2,m,n,idphi) + c_phi**2*pref_del2*del2phi
+        endif
 !
 !  magnetic terms, add (alpf/a^2)*(E.B) to dphi'/dt equation
+!  only if no lphi_doublet
 !
-      if (lmagnetic .and. lem_backreact) then
-        if (lphi_hom .and. .not. lphi_linear_regime) then
-          if (lconf_time) then
-            df(l1:l2,m,n,idphi)=df(l1:l2,m,n,idphi)+alpf*edotbm_all*a21
-          else
-            df(l1:l2,m,n,idphi)=df(l1:l2,m,n,idphi)+alpf*edotbm_all*a21**2
+        if (lmagnetic .and. lem_backreact) then
+          if (lphi_hom .and. .not. lphi_linear_regime) then
+            if (lconf_time) then
+              df(l1:l2,m,n,idphi)=df(l1:l2,m,n,idphi)+alpf*edotbm_all*a21
+            else
+              df(l1:l2,m,n,idphi)=df(l1:l2,m,n,idphi)+alpf*edotbm_all*a21**2
+            endif
           endif
-        endif
-        if (.not. lphi_hom) then
-          call dot_mn(p%el,p%bb,tmp)
-          if (lconf_time) then
-            df(l1:l2,m,n,idphi)=df(l1:l2,m,n,idphi)+alpf*tmp*a21
-          else
-            df(l1:l2,m,n,idphi)=df(l1:l2,m,n,idphi)+alpf*tmp*a21**2
+          if (.not. lphi_hom) then
+            call dot_mn(p%el,p%bb,tmp)
+            df(l1:l2,m,n,idphi)=df(l1:l2,m,n,idphi)+pref_alpf*alpf*tmp
           endif
         endif
       endif
@@ -651,7 +1012,6 @@ module Special
       use Diagnostics
       real, dimension(mx,my,mz,mfarray) :: f
       type(pencil_case) :: p
-      real, dimension(nx) :: dphi,phi
 
       if (ldiagnos) then
         call sum_mn_name(p%phi,idiag_phim)
