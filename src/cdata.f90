@@ -367,6 +367,7 @@ module Cdata
   logical :: lghostfold_usebspline = .false.
   logical :: lcooling_ss_mz = .false.
   logical :: lshock_heat = .true.
+  logical :: lklein_gordon = .false.
   real :: density_scale_factor=impossible
 !
 !  Used together with entropy, turns iss into ilntt (i.e., entropy

@@ -181,6 +181,7 @@ module Special
 !
       call farray_register_pde('phi',iphi)
       call farray_register_pde('dphi',idphi)
+      lklein_gordon=.true.
 !
       if (lflrw) call farray_register_ode('lna',ilna)
       if (lrho_chi) call farray_register_ode('infl_rho_chi',iinfl_rho_chi)

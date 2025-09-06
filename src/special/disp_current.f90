@@ -64,7 +64,6 @@ module Special
   logical :: ldivE_as_aux=.false., lsigE_as_aux=.false., lsigB_as_aux=.false.
   logical :: lrandom_ampl_ee=.false., lfixed_phase_ee=.false., lallow_bprime_zero=.true.
   logical :: lswitch_off_divJ=.false., lswitch_off_Gamma=.false., lmass_suppression=.false.
-  logical :: lklein_gordon=.false.
   character(len=labellen) :: inita0='zero'
   character (len=labellen), dimension(ninit) :: initee='nothing'
   character (len=labellen) :: power_filename='power_profile.dat'
@@ -85,8 +84,7 @@ module Special
     leedot_as_aux, ldivE_as_aux, lsigE_as_aux, lsigB_as_aux, &
     lsolve_chargedensity, weight_longitudinalE, lswitch_off_Gamma, &
     lrandom_ampl_ee, lfixed_phase_ee, lskip_projection_ee, &
-    luse_scale_factor_in_sigma, lpower_profile_file, power_filename, &
-    lklein_gordon
+    luse_scale_factor_in_sigma, lpower_profile_file, power_filename
 !
   ! run parameters
   real :: beta_inflation=0., rescale_ee=1.
