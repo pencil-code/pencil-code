@@ -472,9 +472,9 @@ module Magnetic
   integer :: idiag_EEM2=0       ! DIAG_DOC: $\left<(\Bv^2/2)^2\right>$
   integer :: idiag_EEM3=0       ! DIAG_DOC: $\left<(\Bv^2/2)^3\right>$
   integer :: idiag_EEM4=0       ! DIAG_DOC: $\left<(\Bv^2/2)^4\right>$
-  integer :: idiag_b4m=0        ! DIAG_DOC: $\left<\Bv^4\right>$
-  integer :: idiag_b6m=0        ! DIAG_DOC: $\left<\Bv^6\right>$
-  integer :: idiag_b12m=0       ! DIAG_DOC: $\left<\Bv^12\right>$
+  integer :: idiag_b4m=0        ! DIAG_DOC: $\log_{10}\left<\Bv^4\right>$
+  integer :: idiag_b6m=0        ! DIAG_DOC: $\log_{10}\left<\Bv^6\right>$
+  integer :: idiag_b12m=0       ! DIAG_DOC: $\log_{10}\left<\Bv^12\right>$
   integer :: idiag_bm2=0        ! DIAG_DOC: $\max(\Bv^2)$
   integer :: idiag_j2m=0        ! DIAG_DOC: $\left<\jv^2\right>$
   integer :: idiag_jm2=0        ! DIAG_DOC: $\max(\jv^2)$
