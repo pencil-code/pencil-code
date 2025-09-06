@@ -1023,7 +1023,7 @@ module Magnetic
   integer :: idiag_b2mx = 0     ! YZAVG_DOC: $\langle B^2\rangle_{yz}$
   integer :: idiag_j2mx = 0     ! YZAVG_DOC: $\langle J^2\rangle_{yz}$
   integer :: idiag_jbmx = 0     ! YZAVG_DOC: $\langle \Jv\cdot\Bv\rangle_{yz}$
-  integer :: idiag_b2mmx = 0    ! YZAVG_DOC: $\langle B^2\rangle_{yz}_\mathrm{mask}$
+  integer :: idiag_b2mmx = 0    ! YZAVG_DOC: $\langle B^2\rangle_{yz,\mathrm{mask}}$
   integer :: idiag_bxmx=0       ! YZAVG_DOC: $\left< B_x \right>_{yz}$
   integer :: idiag_bymx=0       ! YZAVG_DOC: $\left< B_y \right>_{yz}$
   integer :: idiag_bzmx=0       ! YZAVG_DOC: $\left< B_z \right>_{yz}$
