@@ -475,7 +475,7 @@ module Magnetic
   integer :: idiag_b4m=0        ! DIAG_DOC: $\log_{10}\left<\Bv^4\right>$
   integer :: idiag_b6m=0        ! DIAG_DOC: $\log_{10}\left<\Bv^6\right>$
   integer :: idiag_b8m=0        ! DIAG_DOC: $\log_{10}\left<\Bv^8\right>$
-  integer :: idiag_b12m=0       ! DIAG_DOC: $\log_{10}\left<\Bv^12\right>$
+  integer :: idiag_b12m=0       ! DIAG_DOC: $\log_{10}\left<\Bv^{12}\right>$
   integer :: idiag_logbm=0      ! DIAG_DOC: $\left<\log B\right>$
   integer :: idiag_bm2=0        ! DIAG_DOC: $\max(\Bv^2)$
   integer :: idiag_j2m=0        ! DIAG_DOC: $\left<\jv^2\right>$
