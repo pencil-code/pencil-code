@@ -78,6 +78,7 @@ my %tests = (
                          1d-tests/rel-shock
                          1d-tests/inflationary-B-genesis
                          1d-tests/axionSU2back
+                         1d-tests/sine-Gordon
                          chiral-diffusion
                          cosmicray
                          1d-tests/sod_10

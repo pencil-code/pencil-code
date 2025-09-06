@@ -20,6 +20,7 @@ succeeds
 ## Comments:
 
 reproduces the analytic solution
+sep-6-2025/alberto: modified to use klein_gordon module
 
 ## Links:
 * http://pencil-code.nordita.org/samples/1d-tests/sine-Gordon
