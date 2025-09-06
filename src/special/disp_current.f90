@@ -17,7 +17,7 @@
 ! PENCILS PROVIDED e2; edot2; el(3); a0; ga0(3); del2ee(3); curlE(3); BcurlE
 ! PENCILS PROVIDED rhoe, divJ, divE, gGamma(3); sigE, sigB; eb; count_eb0
 ! PENCILS PROVIDED boost; gam_EB; eprime; bprime; jprime
-! PENCILS EXPECTED infl_phi, infl_dphi, gphi(3)
+! PENCILS EXPECTED phi, infl_phi, dphi, infl_dphi, gphi(3)
 !***************************************************************
 !
 module Special
@@ -64,6 +64,7 @@ module Special
   logical :: ldivE_as_aux=.false., lsigE_as_aux=.false., lsigB_as_aux=.false.
   logical :: lrandom_ampl_ee=.false., lfixed_phase_ee=.false., lallow_bprime_zero=.true.
   logical :: lswitch_off_divJ=.false., lswitch_off_Gamma=.false., lmass_suppression=.false.
+  logical :: lklein_gordon=.false.
   character(len=labellen) :: inita0='zero'
   character (len=labellen), dimension(ninit) :: initee='nothing'
   character (len=labellen) :: power_filename='power_profile.dat'
@@ -84,7 +85,8 @@ module Special
     leedot_as_aux, ldivE_as_aux, lsigE_as_aux, lsigB_as_aux, &
     lsolve_chargedensity, weight_longitudinalE, lswitch_off_Gamma, &
     lrandom_ampl_ee, lfixed_phase_ee, lskip_projection_ee, &
-    luse_scale_factor_in_sigma, lpower_profile_file, power_filename
+    luse_scale_factor_in_sigma, lpower_profile_file, power_filename, &
+    lklein_gordon
 !
   ! run parameters
   real :: beta_inflation=0., rescale_ee=1.
@@ -375,8 +377,8 @@ module Special
       lpenc_requested(i_aa)=.true.
       if (alpf/=0.) then
         lpenc_requested(i_bb)=.true.
-        lpenc_requested(i_infl_phi)=.true.
-        lpenc_requested(i_infl_dphi)=.true.
+        lpenc_requested(i_phi)=.true.
+        lpenc_requested(i_dphi)=.true.
         lpenc_requested(i_gphi)=.true.
       endif
 !
@@ -647,6 +649,8 @@ module Special
           endif
         endif
       endif
+
+      if (alpf/=0.and..not.lklein_gordon) p%dphi=p%infl_dphi
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
@@ -704,10 +708,10 @@ module Special
           real, dimension(nx,3), intent(OUT) :: gtmp
 
           if (lphi_hom) then
-            call multsv(p%infl_dphi,p%bb,gtmp)
+            call multsv(p%dphi,p%bb,gtmp)
           else
             call cross(p%gphi,p%el,gtmp)
-            call multsv_add(gtmp,p%infl_dphi,p%bb,gtmp)
+            call multsv_add(gtmp,p%dphi,p%bb,gtmp)
           endif
       endsubroutine
 !***********************************************************************
