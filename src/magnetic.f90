@@ -474,6 +474,7 @@ module Magnetic
   integer :: idiag_EEM4=0       ! DIAG_DOC: $\left<(\Bv^2/2)^4\right>$
   integer :: idiag_b4m=0        ! DIAG_DOC: $\log_{10}\left<\Bv^4\right>$
   integer :: idiag_b6m=0        ! DIAG_DOC: $\log_{10}\left<\Bv^6\right>$
+  integer :: idiag_b8m=0        ! DIAG_DOC: $\log_{10}\left<\Bv^8\right>$
   integer :: idiag_b12m=0       ! DIAG_DOC: $\log_{10}\left<\Bv^12\right>$
   integer :: idiag_bm2=0        ! DIAG_DOC: $\max(\Bv^2)$
   integer :: idiag_j2m=0        ! DIAG_DOC: $\left<\jv^2\right>$
@@ -3327,7 +3328,8 @@ module Magnetic
          ) lpenc_diagnos(i_diva)=.true.
       if (idiag_a2mz/=0) lpenc_diagnos(i_a2)=.true.
       if (idiag_b2uzm/=0 .or. idiag_b2ruzm/=0 .or. &
-          idiag_b1m/=0 .or. idiag_b2m/=0 .or. idiag_b4m/=0 .or. idiag_b6m/=0 .or. &
+          idiag_b1m/=0 .or. idiag_b2m/=0 .or. idiag_b4m/=0 .or. &
+          idiag_b6m/=0 .or. idiag_b8m/=0 .or. &
           idiag_b12m/=0 .or. idiag_bm2/=0 .or. idiag_EEM/=0 .or. &
           idiag_EEM2/=0 .or. idiag_EEM3/=0 .or. idiag_EEM4/=0 .or. &
           idiag_brmsh/=0 .or. idiag_brmsn/=0 .or. idiag_brmss/=0 .or. &
@@ -6479,6 +6481,7 @@ print*,'AXEL2: should not be here (eta) ... '
       if (idiag_EEM4/=0) call sum_mn_name((.5*p%b2)**4,idiag_EEM4)
       if (idiag_b4m/=0) call sum_mn_name(p%b2**2,idiag_b4m,llog10=.true.)
       if (idiag_b6m/=0) call sum_mn_name(p%b2**3,idiag_b6m,llog10=.true.)
+      if (idiag_b8m/=0) call sum_mn_name(p%b2**4,idiag_b8m,llog10=.true.)
       if (idiag_b12m/=0) call sum_mn_name(p%b2**6,idiag_b12m,llog10=.true.)
       call max_mn_name(p%b2,idiag_bm2)
       call sum_mn_name(p%b2,idiag_brms,lsqrt=.true.)
@@ -10277,7 +10280,8 @@ print*,'AXEL2: should not be here (eta) ... '
         idiag_ab_int=0; idiag_jb_int=0; idiag_b2tm=0; idiag_bjtm=0; idiag_jbtm=0
         idiag_ubtm=0; idiag_butm=0; idiag_ujtm=0; idiag_jutm=0
         idiag_b2uzm=0; idiag_b2ruzm=0; idiag_ubbzm=0
-        idiag_b1m=0; idiag_b2m=0; idiag_EEM=0; idiag_b4m=0; idiag_b6m=0; idiag_b12m=0
+        idiag_b1m=0; idiag_b2m=0; idiag_EEM=0; idiag_b4m=0
+        idiag_b6m=0; idiag_b8m=0; idiag_b12m=0
         idiag_EEM2=0; idiag_EEM3=0; idiag_EEM4=0
         idiag_bm2=0; idiag_j2m=0; idiag_jm2=0
         idiag_abm=0; idiag_abrms=0; idiag_jbrms=0; idiag_jxbrms=0; idiag_abmh=0
@@ -10525,6 +10529,7 @@ print*,'AXEL2: should not be here (eta) ... '
         call parse_name(iname,cname(iname),cform(iname),'EEM4',idiag_EEM4)
         call parse_name(iname,cname(iname),cform(iname),'b4m',idiag_b4m)
         call parse_name(iname,cname(iname),cform(iname),'b6m',idiag_b6m)
+        call parse_name(iname,cname(iname),cform(iname),'b8m',idiag_b8m)
         call parse_name(iname,cname(iname),cform(iname),'b12m',idiag_b12m)
         call parse_name(iname,cname(iname),cform(iname),'bm2',idiag_bm2)
         call parse_name(iname,cname(iname),cform(iname),'j2m',idiag_j2m)
