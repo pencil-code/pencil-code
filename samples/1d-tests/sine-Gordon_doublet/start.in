@@ -1,0 +1,19 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Initialisation parameters
+!
+&init_pars
+  cvsid="a8b0f4c87"
+  unit_system='set'
+  lperi=F, T, T
+  xyz0=-10, 0.     , 0.
+  xyz1=+10, 1.57080, 1.57080
+  bcx='a2','a2','a2','a2','a2','a2','a2','a2'
+  lwrite_aux=T
+  lread_aux=T
+/
+&special_init_pars
+  initspecial='phi=atan_exp_kx'
+  amplphi=1e-0, kx_phi=2., offset=0., phi_v=.9
+  lphi_doublet=T
+/
