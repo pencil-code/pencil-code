@@ -14,7 +14,7 @@
   lscale_tobox=F
   lvacuum=T
 /
-&backreact_infl_init_pars
+&klein_gordon_init_pars
   initspecial='default', 'phi_power_randomphase', 'dphi_power_randomphase'
   phi0=0.7, Hscript_choice='friedmann'
   amplphi=2.94e-6, initpower_phi=1., kpeak_phi=50e-6   !-> corresponds to k^1

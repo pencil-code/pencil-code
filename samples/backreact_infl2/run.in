@@ -18,9 +18,9 @@
 /
 &power_spectrum_run_pars
 /
-&backreact_infl_run_pars
+&klein_gordon_run_pars
   !lbackreact_infl=T, !Vprime_choice='cos-profile'
-  ldt_backreact_infl=T, Ndiv=2000
+  ldt_klein_gordon=T, Ndiv=2000
 /
 &disp_current_run_pars
   alpf=90.

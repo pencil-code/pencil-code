@@ -11,7 +11,7 @@ Alberto Roper Pol <alberto.roperpol/unige[dot]ch>
 
 ## Status:
 
-succeeds, should imitate backreact_infl
+fails, should imitate backreact_infl
 
 ## Recommended resolution:
 
