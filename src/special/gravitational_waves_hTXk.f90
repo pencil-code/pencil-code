@@ -135,7 +135,7 @@ module Special
 !
   logical :: lread_scl_factor_file_exists, lread_pulsar=.false.
   integer :: npulsar
-  integer :: nt_file, iTij=0, iinfl_lna=0
+  integer :: nt_file, iTij=0, ilna=0
   real :: lgt0, dlgt, H0, dummy
   real :: lgt_ini, a_ini, Hp_ini, appa_om=0
 ! added variables
@@ -349,7 +349,13 @@ module Special
 !
       iTij=farray_index_by_name('Tij')
 !
-      if (lscalar) iinfl_lna=farray_index_by_name_ode('infl_lna')
+      if (lscalar) then
+        if (lklein_gordon) then
+          ilna=farray_index_by_name_ode('ilna')
+        else
+          ilna=farray_index_by_name_ode('infl_lna')
+        endif
+      endif
 !
     endsubroutine register_special
 !***********************************************************************
@@ -977,7 +983,7 @@ module Special
               if (lelectmag) p%stress_ij(:,ij)=p%stress_ij(:,ij)-p%el(:,i)*p%el(:,j)
 !              if (lscalar_phi) p%stress_ij(:,ij)=p%stress_ij(:,ij)+p%infl_a2*p%gphi(:,i)*p%gphi(:,j)
               if (lscalar_phi) p%stress_ij(:,ij)=p%stress_ij(:,ij) &
-                +exp(2*f_ode(iinfl_lna))*p%gphi(:,i)*p%gphi(:,j)
+                +exp(2*f_ode(ilna))*p%gphi(:,i)*p%gphi(:,j)
             endif
 !
 !  Remove trace.
@@ -1034,7 +1040,7 @@ module Special
         scale_factor=t_acceleration**3/(t*t_equality)
       elseif (lscalar) then
 !        scale_factor=sqrt(p%infl_a2(1))
-        scale_factor=exp(f_ode(iinfl_lna))
+        scale_factor=exp(f_ode(ilna))
       else
         if (t+tshift==0.) then
           scale_factor=1.
@@ -3371,7 +3377,7 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
     call copy_addr(tturnoff,p_par(24))
     call copy_addr(t_ini,p_par(25))
     call copy_addr(itij,p_par(26)) ! int
-    call copy_addr(iinfl_lna,p_par(27)) ! int
+    call copy_addr(ilna,p_par(27)) ! int
     call copy_addr(lgt0,p_par(28))
     call copy_addr(dlgt,p_par(29))
     call copy_addr(lgt_ini,p_par(30))
