@@ -13,6 +13,5 @@
   dt=.1
 /
 &special_run_pars
-  lbackreact_infl=T, Hscript_choice='set', Vprime_choice='cos-profile'
-  Hscript0=0., axionmass=2., lambda_axion=1.
+  Vprime_choice='cos-profile', phimass=2., lambda_phi=1.
 /

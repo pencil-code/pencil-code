@@ -247,6 +247,7 @@
   interface mpireduce_max
     module procedure mpireduce_max_scl
     module procedure mpireduce_max_arr
+    module procedure mpireduce_max_arr2
     module procedure mpireduce_max_scl_int
     module procedure mpireduce_max_arr_int
   endinterface

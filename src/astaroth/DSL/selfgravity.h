@@ -1,5 +1,12 @@
 #if LSELFGRAVITY
 #include "../stdlib/poisson.h"
+#include "../stdlib/math/fft.h"
+
+field_order(AC_ipotself__mod__cdata-1) Field SELFGRAVITY_POTENTIAL
+Field RHS_POISSON
+ComplexField SELFGRAVITY_POTENTIAL_COMPLEX
+ComplexField RHS_POISSON_COMPLEX
+
 Kernel selfgravity_calc_rhs()
 {
 	rhs_poisson = 0.0
@@ -29,6 +36,7 @@ Kernel selfgravity_calc_rhs()
 			rhs_poisson += value(Field(AC_ind__mod__cdata[0]))
 		}
 	}
+#if LNEUTRALDENSITY
 	if(lneutraldensity && AC_lselfgravity_neutrals__mod__selfgravity)
 	{
 		if(AC_lneutraldensity_nolog__mod__cdata)
@@ -40,6 +48,7 @@ Kernel selfgravity_calc_rhs()
 			rhs_poisson += exp(RHO_NEUTRAL)
 		}
 	}
+#endif
 	write(RHS_POISSON,rhs_poisson)
 }
 Kernel calc_final_potential(real t)
@@ -58,6 +67,12 @@ Kernel calc_final_potential(real t)
 			AC_rhs_poisson_const__mod__selfgravity*SELFGRAVITY_POTENTIAL
 		)
 	}
+}
+
+
+Kernel selfgravity_poisson_solve()
+{
+        poisson_fft_solve(SELFGRAVITY_POTENTIAL_COMPLEX, RHS_POISSON_COMPLEX)
 }
 Kernel selfgravity_sor_step(int color)
 {

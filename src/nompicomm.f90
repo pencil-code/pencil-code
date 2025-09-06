@@ -1340,6 +1340,17 @@ module Mpicomm
 !
     endsubroutine mpireduce_max_arr
 !***********************************************************************
+    subroutine mpireduce_max_arr2(fmax_tmp,fmax,nreduce,comm)
+!
+      integer, dimension(2) :: nreduce
+      real, dimension(nreduce(1),nreduce(2)) :: fmax_tmp, fmax
+      integer, optional :: comm
+!
+      fmax=fmax_tmp
+      if (ALWAYS_FALSE) print*, present(comm)
+!
+    endsubroutine mpireduce_max_arr2
+!***********************************************************************
     subroutine mpireduce_min_scl(fmin_tmp,fmin,comm)
 !
       real :: fmin_tmp, fmin

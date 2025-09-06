@@ -96,6 +96,7 @@ module EquationOfState
   integer, parameter :: XBOT=1, XTOP=nx
   real, dimension(:,:), pointer :: reference_state
 !
+  integer :: enum_tdep_cs2_type = 0
   contains
 !***********************************************************************
     subroutine register_eos
@@ -4546,6 +4547,7 @@ module EquationOfState
     subroutine pushpars2c(p_par)
 !
     use Syscalls, only: copy_addr
+    use General,  only: string_to_enum
 
     integer, parameter :: n_pars=200
     integer(KIND=ikind8), dimension(n_pars) :: p_par
@@ -4584,6 +4586,9 @@ module EquationOfState
     call copy_addr(ieosvar1,p_par(32)) ! int
     call copy_addr(lpres_grad,p_par(33)) ! bool
     call copy_addr(sigmasbt,p_par(34)) 
+    call string_to_enum(enum_tdep_cs2_type,tdep_cs2_type)
+    call copy_addr(enum_tdep_cs2_type,p_par(35)) ! int
+    call copy_addr(cs2_tdep_ascale_power,p_par(36))
 
     endsubroutine pushpars2c
 !***********************************************************************

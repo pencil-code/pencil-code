@@ -3,7 +3,7 @@
 ### Included by `Makefile'
 ###
 
-MPICOMM=mpicomm
+MPICOMM=nompicomm
 GRAVITY=nogravity
 FORCING=noforcing
 ENTROPY=noentropy
@@ -18,7 +18,7 @@ DENSITY=nodensity
 #SPECIAL = special/disp_current
 #SPECIAL = special/backreact_infl special/disp_current special/lorentz_gauge
 #SPECIAL = special/backreact_infl special/disp_current special/gravitational_waves_hTXk
-SPECIAL = special/backreact_infl
+SPECIAL = special/klein_gordon
 #SPECIAL = special/chiral_mhd special/gravitational_waves_hTXk
 #SPECIAL =  special/backreact_infl special/gravitational_waves_hTXk
 #SPECIAL =  special/gravitational_waves_hTXk

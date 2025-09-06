@@ -17,7 +17,7 @@
 ! PENCILS PROVIDED e2; edot2; el(3); a0; ga0(3); del2ee(3); curlE(3); BcurlE
 ! PENCILS PROVIDED rhoe, divJ, divE, gGamma(3); sigE, sigB; eb; count_eb0
 ! PENCILS PROVIDED boost; gam_EB; eprime; bprime; jprime
-! PENCILS EXPECTED infl_phi, infl_dphi, gphi(3)
+! PENCILS EXPECTED phi, infl_phi, dphi, infl_dphi, gphi(3)
 !***************************************************************
 !
 module Special
@@ -375,8 +375,8 @@ module Special
       lpenc_requested(i_aa)=.true.
       if (alpf/=0.) then
         lpenc_requested(i_bb)=.true.
-        lpenc_requested(i_infl_phi)=.true.
-        lpenc_requested(i_infl_dphi)=.true.
+        lpenc_requested(i_phi)=.true.
+        lpenc_requested(i_dphi)=.true.
         lpenc_requested(i_gphi)=.true.
       endif
 !
@@ -647,6 +647,8 @@ module Special
           endif
         endif
       endif
+
+      if (alpf/=0.and..not.lklein_gordon) p%dphi=p%infl_dphi
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
@@ -704,10 +706,10 @@ module Special
           real, dimension(nx,3), intent(OUT) :: gtmp
 
           if (lphi_hom) then
-            call multsv(p%infl_dphi,p%bb,gtmp)
+            call multsv(p%dphi,p%bb,gtmp)
           else
             call cross(p%gphi,p%el,gtmp)
-            call multsv_add(gtmp,p%infl_dphi,p%bb,gtmp)
+            call multsv_add(gtmp,p%dphi,p%bb,gtmp)
           endif
       endsubroutine
 !***********************************************************************

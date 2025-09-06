@@ -34,3 +34,4 @@ with open(f'{__file__[:-3]}.out', 'w') as f:
     write(f, "av.xy.u2mz[3,:4]")
     write(f, "av.xy.rhoupmz[3,1:5]")
     write(f, "av.xy.ss2downmz[3,1:5]")
+    write(f, "av.xy.dtvmaxz[2,-4:]")

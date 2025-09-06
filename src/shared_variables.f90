@@ -55,6 +55,8 @@ module SharedVariables
     module procedure get_variable_int1d
     module procedure get_variable_logical0d
     module procedure get_variable_logical1d
+    module procedure get_variable_logical2d
+    module procedure get_variable_logical3d
     module procedure get_variable_char0d
   endinterface
 !
@@ -69,6 +71,8 @@ module SharedVariables
     module procedure put_variable_int3d
     module procedure put_variable_logical0d
     module procedure put_variable_logical1d
+    module procedure put_variable_logical2d
+    module procedure put_variable_logical3d
     module procedure put_variable_char0d
   endinterface
 
@@ -93,6 +97,7 @@ module SharedVariables
   integer, parameter :: iSHVAR_TYPE_LOG0D=20
   integer, parameter :: iSHVAR_TYPE_LOG1D=21
   integer, parameter :: iSHVAR_TYPE_LOG2D=22
+  integer, parameter :: iSHVAR_TYPE_LOG3D=23
   integer, parameter :: iSHVAR_TYPE_CHAR0D=30
 !
 ! Some possible error codes when getting a variable
@@ -126,6 +131,8 @@ module SharedVariables
     integer, dimension(:,:,:),pointer :: int3d
     logical,                  pointer :: log0d
     logical, dimension(:),    pointer :: log1d
+    logical, dimension(:,:),  pointer :: log2d
+    logical, dimension(:,:,:),pointer :: log3d
     character(len=linelen),   pointer :: char0D
 !
 ! Linked list link to next list element
@@ -200,6 +207,8 @@ module SharedVariables
               case (iSHVAR_TYPE_INT1D ); lassoc=associated(item%int1d)
               case (iSHVAR_TYPE_LOG0D ); lassoc=associated(item%log0d)
               case (iSHVAR_TYPE_LOG1D ); lassoc=associated(item%log1d)
+              case (iSHVAR_TYPE_LOG2D ); lassoc=associated(item%log2d)
+              case (iSHVAR_TYPE_LOG3D ); lassoc=associated(item%log3d)
               case (iSHVAR_TYPE_CHAR0D); lassoc=associated(item%char0d)
               case default
                 lassoc=.false.
@@ -511,6 +520,54 @@ module SharedVariables
       endif
 !
     endsubroutine get_variable_logical1d
+!***********************************************************************
+    subroutine get_variable_logical2d(varname,variable,ierr,caller)
+!
+!  Comment me.
+!
+!  27-jan-15/MR: adapted to use of 'find_item'
+!     
+      character (len=*) :: varname
+      logical, dimension(:,:), pointer :: variable
+      integer, optional :: ierr
+      character (len=*), optional :: caller
+!
+      intent(in)  :: varname,caller
+      intent(out) :: ierr           !,variable
+!
+      type (shared_variable_list), pointer :: item
+
+      if (find_item(varname,iSHVAR_TYPE_LOG2D,item,ierr,caller)) then
+        variable=>item%log2D
+      else
+        nullify(variable)
+      endif
+!
+    endsubroutine get_variable_logical2d
+!***********************************************************************
+    subroutine get_variable_logical3d(varname,variable,ierr,caller)
+!
+!  Comment me.
+!
+!  27-jan-15/MR: adapted to use of 'find_item'
+!     
+      character (len=*) :: varname
+      logical, dimension(:,:,:), pointer :: variable
+      integer, optional :: ierr
+      character (len=*), optional :: caller
+!
+      intent(in)  :: varname,caller
+      intent(out) :: ierr           !,variable
+!
+      type (shared_variable_list), pointer :: item
+
+      if (find_item(varname,iSHVAR_TYPE_LOG3D,item,ierr,caller)) then
+        variable=>item%log3D
+      else
+        nullify(variable)
+      endif
+!
+    endsubroutine get_variable_logical3d
 !***********************************************************************
     subroutine get_variable_char0d(varname,variable,ierr,caller)
 !
@@ -850,6 +907,64 @@ module SharedVariables
       new%log1D=>variable
 !
     endsubroutine put_variable_logical1d
+!***********************************************************************
+    subroutine put_variable_logical2d(varname,variable,ierr,caller)
+!
+!  Comment me.
+!
+      character (len=*) :: varname
+      logical, dimension(:,:), target :: variable
+      integer, optional :: ierr
+      character (len=*), optional :: caller
+!
+      intent(in)  :: varname,caller
+      intent(out) :: ierr
+!
+      type (shared_variable_list), pointer :: new
+
+      if (present(ierr)) ierr=0
+!
+      new=>find_variable(varname)
+      if (associated(new)) then
+        if (associated(new%log2D,target=variable)) return
+        call put_error(varname,ierr,caller)
+      endif
+!
+      call new_item_atstart(thelist,new=new)
+      new%varname=varname
+      new%vartype=iSHVAR_TYPE_LOG2D
+      new%log2D=>variable
+!
+    endsubroutine put_variable_logical2d
+!***********************************************************************
+    subroutine put_variable_logical3d(varname,variable,ierr,caller)
+!
+!  Comment me.
+!
+      character (len=*) :: varname
+      logical, dimension(:,:,:), target :: variable
+      integer, optional :: ierr
+      character (len=*), optional :: caller
+!
+      intent(in)  :: varname,caller
+      intent(out) :: ierr
+!
+      type (shared_variable_list), pointer :: new
+
+      if (present(ierr)) ierr=0
+!
+      new=>find_variable(varname)
+      if (associated(new)) then
+        if (associated(new%log3D,target=variable)) return
+        call put_error(varname,ierr,caller)
+      endif
+!
+      call new_item_atstart(thelist,new=new)
+      new%varname=varname
+      new%vartype=iSHVAR_TYPE_LOG3D
+      new%log3D=>variable
+!
+    endsubroutine put_variable_logical3d
 !***********************************************************************
     subroutine put_variable_char0d(varname,variable,ierr,caller)
 !

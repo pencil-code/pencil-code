@@ -117,7 +117,7 @@ module Special
   logical :: lscale_tobox=.true., ldt_klein_gordon=.true., lconf_time=.true.
   logical :: lskip_projection_phi=.false., lvectorpotential=.false., lflrw=.false.
   logical :: lrho_chi=.false., lno_noise_phi=.false., lno_noise_dphi=.false.
-  logical :: lphi_hom=.false.
+  logical, pointer :: lphi_hom
   logical, pointer :: lphi_linear_regime, lnoncollinear_EB, lnoncollinear_EB_aver
   logical, pointer :: lcollinear_EB, lcollinear_EB_aver, lmass_suppression
   logical, pointer :: lallow_bprime_zero
@@ -128,7 +128,7 @@ module Special
 !
   namelist /special_init_pars/ &
       initspecial, phi0, dphi0, phimass, eps, ascale_ini, &
-      lcompute_dphi0, lem_backreact, lphi_hom, &
+      lcompute_dphi0, lem_backreact, &
       c_phi, lambda_phi, amplphi, ampldphi, lno_noise_phi, lno_noise_dphi, &
       kx_phi, ky_phi, kz_phi, phase_phi, width_phi, offset, &
       initpower_phi, initpower2_phi, cutoff_phi, kgaussian_phi, kpeak_phi, &
@@ -139,7 +139,7 @@ module Special
       lphi_weakcharge, lphi_hypercharge
 !
   namelist /special_run_pars/ &
-      initspecial, phi0, dphi0, phimass, eps, ascale_ini, lphi_hom, &
+      initspecial, phi0, dphi0, phimass, eps, ascale_ini, &
       lem_backreact, c_phi, lambda_phi, Vprime_choice, &
       ldt_klein_gordon, Ndiv, Hscript0, Hscript_choice, &
       lflrw, lrho_chi, scale_rho_chi_Heqn, echarge_type, cdt_rho_chi, &
@@ -196,6 +196,7 @@ module Special
         lphi_weakcharge=.false.
         lphi_hypercharge=.false.
       endif
+      lklein_gordon=.true.
 !
       if (lflrw) call farray_register_ode('lna',ilna)
       if (lrho_chi) call farray_register_ode('infl_rho_chi',iinfl_rho_chi)
@@ -247,13 +248,14 @@ module Special
         call get_shared_variable('lnoncollinear_EB',lnoncollinear_EB)
         call get_shared_variable('lnoncollinear_EB_aver',lnoncollinear_EB_aver)
         call get_shared_variable('lmass_suppression',lmass_suppression)
+        call get_shared_variable('lphi_hom',lphi_hom)
         call get_shared_variable('lallow_bprime_zero',lallow_bprime_zero)
         call get_shared_variable('mass_chi',mass_chi)
       else
         if (.not.associated(alpf)) allocate(alpf,lphi_linear_regime, &
           sigE_prefactor, sigB_prefactor, lcollinear_EB, lcollinear_EB_aver, &
           lnoncollinear_EB, lnoncollinear_EB_aver, lmass_suppression, &
-          lallow_bprime_zero, mass_chi)
+          lphi_hom, lallow_bprime_zero, mass_chi)
         alpf=0.
         lphi_linear_regime=.false.
         sigE_prefactor=0.
@@ -263,6 +265,7 @@ module Special
         lnoncollinear_EB=.false.
         lnoncollinear_EB_aver=.false.
         lmass_suppression=.false.
+        lphi_hom=.false.
         lallow_bprime_zero=.false.
         mass_chi=0.
       endif
@@ -291,8 +294,6 @@ module Special
         endif
         lphi_weakcharge=.false.
       endif
-
-      call put_shared_variable('lphi_hom',lphi_hom,caller='initialize_klein_gordon')
 !
       call keep_compiler_quiet(f)
 !

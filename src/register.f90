@@ -1078,7 +1078,7 @@ module Register
       use General, only: loptest
       use FArrayManager, only: farray_index_append
 !
-      integer :: iname,irz
+      integer :: iname,irz,inamez
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
@@ -1094,6 +1094,7 @@ module Register
         idiag_rcylmphi=0; idiag_phimphi=0; idiag_zmphi=0; idiag_rmphi=0
         idiag_dtv=0; idiag_dtdiffus=0; idiag_dtdiffus2=0; idiag_dtdiffus3=0; idiag_Rmesh=0; idiag_Rmesh3=0
         idiag_maxadvec=0
+        idiag_dtvmaxz=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in.
@@ -1129,6 +1130,12 @@ module Register
         enddo
 !
       endif
+!
+!  xy-averages
+!
+      do inamez=1,nnamez
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'dtvmaxz',idiag_dtvmaxz)
+      enddo
 !
 !  For compatibility with older IDL scripts.
 !

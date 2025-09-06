@@ -16,7 +16,6 @@ module Solid_Cells
   use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
-  use Messages, only: warning
 !
   implicit none
 !
@@ -192,8 +191,7 @@ module Solid_Cells
 !
     endsubroutine pencil_criteria_solid_cells
 !***********************************************************************
-    subroutine close_interpolation(f,ix0,iy0,iz0,icyl,xxp,f_tmp,&
-        fluid_point)
+    subroutine close_interpolation(f,ix0,iy0,iz0,icyl,xxp,f_tmp,fluid_point)
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       integer, intent(in) :: ix0,iy0,iz0,icyl
@@ -214,11 +212,7 @@ module Solid_Cells
 !***********************************************************************
     subroutine solid_cells_clean_up
 !
-!  This is a dummy routine.
-!
-!  7-oct-2010/dhruba: coded
-!
-      call warning('solid_cells_clean_up','dont call in nosolid_cells')
+!  Dummy routine.
 !
     endsubroutine solid_cells_clean_up
 !***********************************************************************
@@ -268,6 +262,7 @@ module Solid_Cells
         if (present(enum)) print*, enum
         if (present(enum)) print*, flist
       endif
+
     endsubroutine wsnap_ogrid
 !***********************************************************************
     subroutine map_nearest_grid_ogrid(xxp,ineargrid_ogrid,rthz)
@@ -280,7 +275,7 @@ module Solid_Cells
       intent(in)  :: xxp,rthz
       intent(out) :: ineargrid_ogrid
 !      
-      if(ALWAYS_FALSE) print*, xxp,rthz
+      if (ALWAYS_FALSE) print*, xxp,rthz
       ineargrid_ogrid=0
 !      
     endsubroutine map_nearest_grid_ogrid

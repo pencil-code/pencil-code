@@ -99,7 +99,7 @@ module Particles
   integer :: l_hole=0, m_hole=0, n_hole=0
   integer :: iffg=0, ifgx=0, ifgy=0, ifgz=0, ibrtime=0
   integer :: istep_dragf=3, istep_pass=3
-  integer :: it_insert_nuclei=1
+  integer :: it_insert_nuclei=1, ntau=-1
   integer :: nucl_thr_inc_pow=0
   logical, target :: ldragforce_gas_par=.false.
   logical :: ldragforce_dust_par=.false.
@@ -298,7 +298,8 @@ module Particles
       ascalar_ngp, ascalar_cic, rp_int, rp_ext, rp_ext_width, lnpmin_exclude_zero, &
       lcondensation_rate, vapor_mixing_ratio_qvs, lfollow_gas, &
       ltauascalar, rhoa, G_condensation, lpartnucleation, nucleation_threshold, &
-      redfrac, lset_df_insert_nucleii, it_insert_nuclei, nucl_thr_inc_pow
+      redfrac, lset_df_insert_nucleii, it_insert_nuclei, nucl_thr_inc_pow, &
+      Ntau
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0      ! DIAG_DOC: $x_{part}$
   integer :: idiag_xpmin=0, idiag_ypmin=0, idiag_zpmin=0      ! DIAG_DOC: $x_{part}$
@@ -480,6 +481,9 @@ module Particles
       if (lchemistry) then
         call put_shared_variable('lpartnucleation',lpartnucleation)
         call put_shared_variable('it_insert_nuclei',it_insert_nuclei)
+        if (Ntau == -1) Ntau=it_insert_nuclei
+        call put_shared_variable('Ntau',Ntau)
+        call put_shared_variable('redfrac',redfrac)
       endif
 !
       if (lascalar) call put_shared_variable('G_condensation',G_condensation)
@@ -2472,6 +2476,7 @@ module Particles
       use Particles_diagnos_state, only: insert_particles_diagnos_state
       use Mpicomm, only: mpireduce_sum_int, mpibarrier, mpisend_int, mpirecv_int
       use Particles_number, only: set_particle_number
+      use Chemistry, only: lnucleii_generated
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
@@ -2485,6 +2490,8 @@ module Particles
       integer :: j, k, n_insert, npar_loc_old, iii
       integer :: ii,jj,kk
       integer :: jproc,tag_id,tag0=283
+!
+      if (lnucl_dynamic) lnucleii_generated=.false.
 !
 ! In this subroutine we loop over all processors one-by-one. This takes
 ! time. It may therefore be beneficial not to do this at every timestep.
@@ -2584,7 +2591,12 @@ module Particles
                                  !  Initialize particle radius
                                  !
                                  if (lparticles_radius) then
-                                    fp(k,iap)=f(ii,jj,kk,icc+1)/f(ii,jj,kk,icc)
+                                   ! Must set radius based on current nucleation diamter for lnucl_dynamic
+                                   if (lnucl_dynamic) then
+                                     fp(k,iap)=f(ii,jj,kk,inucl)
+                                   else
+                                     fp(k,iap)=f(ii,jj,kk,icc+1)/f(ii,jj,kk,icc)
+                                   endif
                                     if (lparticles_number) then
                                        part_mass=4.*pi*fp(k,iap)**3/3.*true_density_cond_spec
                                        fp(k,inpswarm)=mass_nucleii*redfrac/part_mass
@@ -2622,14 +2634,17 @@ module Particles
                                     df(ii,jj,kk,icc+1) = df(ii,jj,kk,icc+1) - redfrac*f(ii,jj,kk,icc+1)/dt
                                  else
 !
-!  The icc+2 corresponds to phi, to check dt**2??
+!  The icc+2 corresponds to phi. The removal rate is given by f(icc)/dt, while tau=Ntau*dt,
+!  which together gives the quadratic dependency on dt.
 !
-                                    if (lnucl_dynamic) then
-                                      df(ii,jj,kk,icc+2) = df(ii,jj,kk,icc+2) - f(ii,jj,kk,icc)/(it_insert_nuclei*dt**2)
+                                   if (lnucl_dynamic) then
+                                     lnucleii_generated(ii-nghost,jj-nghost,kk-nghost)=.true.
+                                     ! For lnucl_dynamic the df array is modified in chemistry for
+                                     ! those cells where lnucleii_generated is true.
                                     else
                                       f(ii,jj,kk,icc)   = (1.-redfrac)*f(ii,jj,kk,icc)
+                                      f(ii,jj,kk,icc+1) = (1.-redfrac)*f(ii,jj,kk,icc+1)
                                     endif
-                                    f(ii,jj,kk,icc+1) = (1.-redfrac)*f(ii,jj,kk,icc+1)
                                  endif
                               endif
                            endif

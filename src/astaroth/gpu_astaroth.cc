@@ -1057,19 +1057,6 @@ extern "C" void initGPU()
   //AcResult res = acCheckDeviceAvailability();
 }
 /***********************************************************************************************/
-#define PCLoad acPushToConfig
-//already defined
-//MPI_Comm comm_pencil = MPI_COMM_NULL;
-void modulepars(AcMeshInfo& config){
-  // Enter basic parameters in config.
-  #include "PC_modulepars.h"
-}
-
-#undef x
-#undef y
-#undef z
-
-
 bool called_training = false;
 int randomNumber;
 /***********************************************************************************************/
@@ -1086,7 +1073,7 @@ extern "C" void torch_infer_c_api(int itstub){
 		acGridExecuteTaskGraph(calc_uumean_tau, 1);
 		acGridSynchronizeStream(STREAM_ALL);
 
-  	auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
+  	        auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
 		acGridSynchronizeStream(STREAM_ALL);
 		acGridExecuteTaskGraph(bcs,1);
 		acGridSynchronizeStream(STREAM_ALL);
@@ -1102,7 +1089,7 @@ extern "C" void torch_infer_c_api(int itstub){
 		acGridExecuteTaskGraph(scale_uumean_tau, 1);
 		acGridSynchronizeStream(STREAM_ALL);
 
-  	bcs = acGetOptimizedDSLTaskGraph(boundconds);	
+  	        bcs = acGetOptimizedDSLTaskGraph(boundconds);	
 		acGridSynchronizeStream(STREAM_ALL);
 		acGridExecuteTaskGraph(bcs,1);
 		acGridSynchronizeStream(STREAM_ALL);
@@ -1279,11 +1266,18 @@ extern "C" void beforeBoundaryGPU(bool lrmv, int isubstep, double t)
 	if(t>=tstart_selfgrav)
 	{
 		acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_calc_selfgravity_rhs),1);
-		//TP: A placeholder, in the future choose the number of solving steps based on the norm of the residual
+    		acDeviceFFTR2C(acGridGetDevice(),acGetRHS_POISSON(),RHS_POISSON_COMPLEX);
+    		AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
+  		acGridLaunchKernel(STREAM_DEFAULT, selfgravity_poisson_solve, dims.n0, dims.n1);
+                acGridSynchronizeStream(STREAM_ALL);
+    		acDeviceFFTC2R(acGridGetDevice(),SELFGRAVITY_POTENTIAL_COMPLEX,acGetSELFGRAVITY_POTENTIAL());
+		//TP: A placeholder for iterative solvers, in the future choose the number of solving steps based on the norm of the residual
+		/**
 		for(int i = 0; i < 100; ++i)
 		{
 			acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_sor_step),1);
 		}
+		**/
 		acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_calc_final_potential),1);
 	}
 

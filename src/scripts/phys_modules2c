@@ -154,7 +154,7 @@ if [ -f tmp1 ]; then
          b dimen
          : cont
          p
-         s/^#define *\([a-zA-Z0-9_]*\) to_\([a-zA-Z0-9_]*\).*$/run_const \2 AC_\1 \/\/ from '$modname'\n#define \1 \AC_\1\n#define \AC_\1__mod__'$modname' \AC_\1/
+         s/^#define *\([a-zA-Z0-9_]*\) to_\([a-zA-Z0-9_]*\).*$/run_const \2 AC_\1 \/\/ from '$modname'\n#define \1 \AC_\1\n#define \AC_\1__mod__'$modname' \AC_\1\n#define \1__mod__'$modname' \1/
 	 s/.*run_const real AC_dt //
 	 s/#define dt AC_dt//
 	 s/.*run_const real AC_dt__mod__cdata //
