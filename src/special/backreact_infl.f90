@@ -392,6 +392,7 @@ module Special
 !  pencil for gradient of phi
 !
       lpenc_requested(i_gphi)=.true.
+      if (lmagnetic .and. lem_backreact) lpenc_requested(i_infl_phi)=.true.
 !
 !  Magnetic field needed for Maxwell stress
 !
