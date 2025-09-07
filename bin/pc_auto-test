@@ -69,7 +69,6 @@ my %tests = (
                          damped_alfven_waves
                          corona
                          helical-MHDturb
-                         Schwinger2
                      )],
              2 => [qw(
                          0d-tests/heating_ionize
@@ -135,10 +134,9 @@ my %tests = (
                          2d-tests/eccentricity-decay
                          interstellar
                          supernova-driven-turbulence/1Dhd_init_equidistant
-			 backreact_infl
+			             backreact_infl
                          backreact_infl2
-			 Schwinger
-                         Schwinger2
+			             Schwinger
                      )],
              # Level 3 for now contains all non-canonical tests that run
              # successfully
@@ -183,6 +181,7 @@ my %tests = (
              4 => [qw(
                          superparticle-coagulation
                          superparticle-condensation-coagulation
+                         Schwinger2
                      )],
              # Level 5 for now contains overlong tests (e.g. test that
              # compile, start and then run -- but take too long time)
