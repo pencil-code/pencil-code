@@ -351,7 +351,7 @@ module Special
 !
       if (lscalar) then
         if (lklein_gordon) then
-          ilna=farray_index_by_name_ode('ilna')
+          ilna=farray_index_by_name_ode('lna')
         else
           ilna=farray_index_by_name_ode('infl_lna')
         endif
