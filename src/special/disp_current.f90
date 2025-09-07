@@ -446,8 +446,8 @@ module Special
 !
 !  Diagnostics pencils:
 !
-      if (eta_ee/=0.) lpenc_requested(i_del2ee)=.true.
-      if (eta_ee/=0.) lpenc_requested(i_del2ee)=.true.
+      ! if (eta_ee/=0.) lpenc_requested(i_del2ee)=.true.
+      ! if (eta_ee/=0.) lpenc_requested(i_del2ee)=.true.
 
       if (idiag_BcurlEm/=0) then
         lpenc_diagnos(i_curlE)=.true.
@@ -459,8 +459,8 @@ module Special
       if (idiag_grms/=0) lpenc_diagnos(i_diva)=.true.
       if (idiag_edotrms/=0) lpenc_diagnos(i_edot2)=.true.
       if (idiag_EEEM/=0 .or. idiag_erms/=0 .or. idiag_emax/=0) lpenc_diagnos(i_e2)=.true.
-      if (idiag_exmz/=0 .or. idiag_eymz/=0 .or. idiag_ezmz/=0 ) lpenc_diagnos(i_el)=.true.
-      if (idiag_exm/=0 .or. idiag_eym/=0 .or. idiag_ezm/=0 ) lpenc_diagnos(i_el)=.true.
+      ! if (idiag_exmz/=0 .or. idiag_eymz/=0 .or. idiag_ezmz/=0 ) lpenc_diagnos(i_el)=.true.
+      ! if (idiag_exm/=0 .or. idiag_eym/=0 .or. idiag_ezm/=0 ) lpenc_diagnos(i_el)=.true.
 !
     endsubroutine pencil_criteria_special
 !***********************************************************************
@@ -478,7 +478,6 @@ module Special
 !***********************************************************************
     subroutine calc_pencils_special(f,p)
 !
-!  Calculate Hydro pencils.
 !  Most basic pencils should come first, as others may depend on them.
 !
 !   24-nov-04/tony: coded
@@ -509,7 +508,7 @@ module Special
         call div(f,iee,p%divE)
         call grad(f,iGamma,p%gGamma)
         if (lapply_Gamma_corr) p%curlb=-p%del2a+p%gGamma
-        if (lsolve_chargedensity) p%rhoe=f(l1:l2,m,n,irhoe)
+        ! if (lsolve_chargedensity) p%rhoe=f(l1:l2,m,n,irhoe)
       endif
 !
 ! el and e2 (note that this is called after magnetic, where sigma is computed)
@@ -622,10 +621,10 @@ module Special
         call curl(f,iex,p%curle)
         call dot(p%bb,p%curle,p%BcurlE)
       endif
-!
-!  del2ee
-!
-      if (eta_ee/=0.) call del2v(f,iex,p%del2ee)
+! !
+! !  del2ee
+! !
+!       if (eta_ee/=0.) call del2v(f,iex,p%del2ee)
 !
 ! a0 & ga0
 !
@@ -679,7 +678,7 @@ module Special
       real, dimension(nx),intent(IN) :: tmp
       real, dimension(nx), intent(OUT) :: constrainteqn
       real, dimension(nx) :: constrainteqn1
-      constrainteqn1=sqrt(p%divE**2+tmp**2)
+      !constrainteqn1=sqrt(p%divE**2+tmp**2)
 !
 !  in the following, should use "where"
 !
