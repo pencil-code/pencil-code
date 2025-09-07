@@ -69,6 +69,7 @@ my %tests = (
                          damped_alfven_waves
                          corona
                          helical-MHDturb
+                         Schwinger2
                      )],
              2 => [qw(
                          0d-tests/heating_ionize
@@ -79,6 +80,7 @@ my %tests = (
                          1d-tests/inflationary-B-genesis
                          1d-tests/axionSU2back
                          1d-tests/sine-Gordon
+                         1d-tests/sine-Gordon_doublet
                          chiral-diffusion
                          cosmicray
                          1d-tests/sod_10
@@ -136,6 +138,7 @@ my %tests = (
 			 backreact_infl
                          backreact_infl2
 			 Schwinger
+                         Schwinger2
                      )],
              # Level 3 for now contains all non-canonical tests that run
              # successfully
