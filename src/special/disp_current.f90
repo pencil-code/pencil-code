@@ -16,7 +16,7 @@
 !
 ! PENCILS PROVIDED e2; edot2; el(3); a0; ga0(3); del2ee(3); curlE(3); BcurlE
 ! PENCILS PROVIDED rhoe, divJ, divE, gGamma(3); sigE, sigB; eb; count_eb0
-! PENCILS PROVIDED boost; gam_EB; eprime; bprime; jprime
+! PENCILS PROVIDED boost; gam_EB; eprime; bprime; jprime; Gamma
 ! PENCILS EXPECTED phi, infl_phi, dphi, infl_dphi, gphi(3)
 !***************************************************************
 !
@@ -49,8 +49,9 @@ module Special
   real :: relhel_a0=0.0, kgaussian_a0=0.0, eta_ee=0.0
   real :: sigE_prefactor=1., sigB_prefactor=1.
   real :: weight_longitudinalE=2.0, mass_chi=0.
+  real :: coupl_gy=.345 ! electroweak SU(2) x U(1) coupling of Higgs to U(1)
   logical :: luse_scale_factor_in_sigma=.false., lapply_Gamma_corr=.true.
-  logical, pointer :: lohm_evolve
+  logical, pointer :: lohm_evolve, lphi_doublet, lphi_hypercharge
   real, pointer :: eta, Hscript, echarge, sigEm_all, sigBm_all
   integer :: iGamma=0, ia0=0, idiva_name=0, ieedot=0, iedotx=0, iedoty=0, iedotz=0
   integer :: idivE=0, isigE=0, isigB=0
@@ -84,7 +85,8 @@ module Special
     leedot_as_aux, ldivE_as_aux, lsigE_as_aux, lsigB_as_aux, &
     lsolve_chargedensity, weight_longitudinalE, lswitch_off_Gamma, &
     lrandom_ampl_ee, lfixed_phase_ee, lskip_projection_ee, &
-    luse_scale_factor_in_sigma, lpower_profile_file, power_filename
+    luse_scale_factor_in_sigma, lpower_profile_file, power_filename, &
+    coupl_gy
 !
   ! run parameters
   real :: beta_inflation=0., rescale_ee=1.
@@ -97,7 +99,7 @@ module Special
     lnoncollinear_EB, lnoncollinear_EB_aver, luse_scale_factor_in_sigma, &
     lcollinear_EB, lcollinear_EB_aver, sigE_prefactor, sigB_prefactor, &
     reinitialize_ee, initee, rescale_ee, lmass_suppression, mass_chi, &
-    lallow_bprime_zero, lapply_Gamma_corr
+    lallow_bprime_zero, lapply_Gamma_corr, coupl_gy
 !
 ! Declare any index variables necessary for main or
 !
@@ -206,6 +208,8 @@ module Special
       call put_shared_variable('lmass_suppression',lmass_suppression)
       call put_shared_variable('lallow_bprime_zero',lallow_bprime_zero)
       call put_shared_variable('mass_chi',mass_chi)
+      call put_shared_variable('llongitudinalE',llongitudinalE)
+      call put_shared_variable('coupl_gy',coupl_gy)
 !
       if (lroot) call svn_id( &
            "$Id$")
@@ -268,6 +272,16 @@ module Special
           case default
           endselect
         enddo
+      endif
+
+      if (lklein_gordon) then
+        call get_shared_variable('lphi_doublet',lphi_doublet, caller='initialize_disp_current')
+        call get_shared_variable('lphi_hypercharge',lphi_hypercharge, &
+          caller='initialize_disp_current')
+      else
+        if (.not.associated(lphi_doublet)) allocate(lphi_doublet,lphi_hypercharge)
+        lphi_doublet=.false.
+        lphi_hypercharge=.false.
       endif
 !
       if (lphi_hom) weight_longitudinalE=0.
@@ -648,6 +662,14 @@ module Special
         endif
       endif
 
+!  pencils for klein_gordon module
+      if (lpenc_requested(i_Gamma)) then
+        if (llongitudinalE) then
+          p%Gamma=f(l1:l2,m,n,iGamma)
+        else
+          call div(f,iaa,p%Gamma)
+        endif
+      endif
       if (alpf/=0.and..not.lklein_gordon) p%dphi=p%infl_dphi
 !
     endsubroutine calc_pencils_special
@@ -726,6 +748,7 @@ module Special
 !  efficiency.
 !
 !   18-mar-21/axel: coded Faraday displacement current
+!   07-sep-25/alberto: coded charges from Higgs doublet
 !
       use Diagnostics
       use Mpicomm
@@ -831,6 +854,18 @@ module Special
           endif
         endif
         if (eta_ee/=0.) df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)+c_light2*eta_ee*p%del2ee
+!
+!  If Higgs doublet, add charge and current from it
+!
+        if (lphi_doublet .and. lphi_hypercharge) then
+          do i=1,3
+            df(l1:l2,m,n,iex+i-1)=df(l1:l2,m,n,iex+i-1) - &
+                  coupl_gy*(p%phi*p%cov_der(:,i+1,2) - &
+                  p%phi_doublet(:,1)*p%cov_der(:,i+1,1) + &
+                  p%phi_doublet(:,2)*p%cov_der(:,i+1,4) - &
+                  p%phi_doublet(:,3)*p%cov_der(:,i+1,3))
+          enddo
+        endif
       endif
 !
 !  Compute eedot_as_aux; currently ignore alpf/=0.
