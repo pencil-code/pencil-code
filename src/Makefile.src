@@ -571,7 +571,7 @@ ifneq ($(GPU),nogpu)
       LIBGPU = astaroth/lib$(LIBGPU_NAME).so
 
       GPU_DEPS = $(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/Makefile.vendor $(CUDA_MAKEDIR)/PC_modulesources.h $(DSL_WORKDIR)/fieldecs.h $(DSL_WORKDIR)/equations.h $(DSL_WORKDIR)/solve.ac
-      LDFLAGS_LIB = -L astaroth -L astaroth/submodule/build/src/core -L astaroth/submodule/build/src/core/kernels -lastaroth_core -lkernels -l$(LIBGPU_NAME) -lmpi_cxx magnetic.a
+      LDFLAGS_LIB = -L astaroth -L astaroth/submodule/build/src/core -L astaroth/submodule/build/src/core/kernels -lastaroth_core -lkernels -l$(LIBGPU_NAME) magnetic.a
       ifneq ($(filter on yes,$(RUNTIME_COMPILATION)),)
         RUNTIME_COMPILATION = on
       else
