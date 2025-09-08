@@ -325,7 +325,7 @@ module File_io
 !
     endfunction parallel_file_exists
 !***********************************************************************
-    subroutine read_namelist(reader,name,lactive)
+    subroutine read_namelist(reader,name,lactive,optional_namelist)
 !
 !  Encapsulates reading of pars + error handling.
 !
@@ -338,7 +338,7 @@ module File_io
 !  19-aug-15/PABourdin: renamed from 'read_pars' to 'read_namelist'
 !
       use Cdata, only: lnamelist_error, lparam_nml, lstart, lroot
-      use General, only: loptest, itoa
+      use General, only: loptest, itoa, ioptest
       use Messages, only: warning
 !
       interface
@@ -349,11 +349,21 @@ module File_io
 !
       character(len=*), intent(in) :: name
       logical, optional, intent(in) :: lactive
+      integer, optional, intent(in) :: optional_namelist
 !
       integer :: ierr
       logical :: found
+      integer ::  optional_namelist_
+      logical :: need_to_find_namelist,do_not_issue_warning_about_missing_namelist
       character(len=5) :: type, suffix
+      integer, parameter :: need_to_find_namelist_enum = 1
+      integer, parameter :: do_not_issue_warning_about_missing_namelist_enum = 2
 !
+      optional_namelist_ = ioptest(optional_namelist)
+
+      need_to_find_namelist =  IAND(optional_namelist_,need_to_find_namelist_enum) == 0
+      do_not_issue_warning_about_missing_namelist = IAND(optional_namelist_,do_not_issue_warning_about_missing_namelist_enum) /= 0
+
       if (.not. loptest (lactive, .true.)) return
 !
       if (lstart .or. lparam_nml) then
@@ -369,7 +379,8 @@ module File_io
       endif
 !
       !if (.not. find_namelist (trim(name)//trim(type)//trim(suffix))) then
-      call find_namelist (trim(name)//trim(type)//trim(suffix),found)
+      call find_namelist (trim(name)//trim(type)//trim(suffix),found,do_not_issue_warning_about_missing_namelist)
+      if(.not. found .and. .not. need_to_find_namelist) return
 !
       ierr = 0 ! G95 complains 'ierr' is used but not set, even though 'reader' has intent(out).
       call reader(ierr)
