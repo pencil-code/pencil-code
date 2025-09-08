@@ -3403,7 +3403,14 @@ module Hydro
             f(l1:l2,m,n,iux:iuz)=p%uu
           endif
           if (lpenc_loc(i_T0i)) p%T0i=f(l1:l2,m,n,iux:iuz)
-          if (lpenc_loc(i_Tij)) p%Tij=f(l1:l2,m,n,iTij:iTij+5)
+          if (lpenc_loc(i_Tij)) then
+                  p%Tij(:,1) = f(l1:l2,m,n,iTij)
+                  p%Tij(:,2) = f(l1:l2,m,n,iTij+1)
+                  p%Tij(:,3) = f(l1:l2,m,n,iTij+2)
+                  p%Tij(:,4) = f(l1:l2,m,n,iTij+3)
+                  p%Tij(:,5) = f(l1:l2,m,n,iTij+4)
+                  p%Tij(:,6) = f(l1:l2,m,n,iTij+5)
+          endif
         else
           p%uu=f(l1:l2,m,n,iux:iuz)
         endif
