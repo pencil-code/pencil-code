@@ -14,11 +14,11 @@
 		write(F_STRESS_4,DF_STRESS_4)
 		write(F_STRESS_5,DF_STRESS_5)
 	}
+#endif
 	if (AC_lfirst__mod__cdata)
 	{
 		reduce_max(dt1_max_loc,AC_dt1_max)
 	}
-#endif
  }
  else
  {

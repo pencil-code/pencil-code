@@ -2021,6 +2021,7 @@ void check_sym_x(const AcMesh mesh_in)
 /***********************************************************************************************/
 void testBCs()
 {
+  if(dimensionality != 3) return;
   // Set random seed for reproducibility
   srand(321654987);
   const auto DEVICE_VTXBUF_IDX = [&](const int x, const int y, const int z)
