@@ -4451,7 +4451,7 @@ module Magnetic
 !AXEL-tmp           p%jj_ohm(:,j)=(p%el(:,j)+scl_uxb_in_ohm*(p%uxb(:,j)+p%mf_EMF(:,j)))*mu01/(eta+p%meanfield_etat)
                   enddo
                 else
-if (n==n1) print*,'AXEL: standard'
+! if (n==n1) print*,'AXEL: standard'
                   do j=1,3
                     p%jj_ohm(:,j)=(p%el(:,j)+scl_uxb_in_ohm*p%uxb(:,j))*mu01/eta_total
                   enddo
