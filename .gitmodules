@@ -2,3 +2,6 @@
 	path = src/astaroth/submodule
 	url = https://bitbucket.org/jpekkila/astaroth.git
         branch = develop
+[submodule "fortran-parser"]
+	path = fortran-parser
+	url = https://github.com/ToxPuro/fortran-parser.git
