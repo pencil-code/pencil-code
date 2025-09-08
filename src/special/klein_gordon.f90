@@ -124,6 +124,8 @@ module Special
   logical, pointer :: lphi_linear_regime, lnoncollinear_EB, lnoncollinear_EB_aver
   logical, pointer :: lcollinear_EB, lcollinear_EB_aver, lmass_suppression
   logical, pointer :: lallow_bprime_zero
+  logical :: lhiggs_friction=.false.
+  real :: higgs_friction=0.
   logical :: lphi_doublet=.false., lphi_weakcharge=.false., lphi_hypercharge=.false.
   character (len=labellen) :: Vprime_choice='quadratic', Hscript_choice='set'
   character (len=labellen), dimension(ninit) :: initspecial='nothing'
@@ -139,14 +141,14 @@ module Special
       ncutoff_phi, lscale_tobox, Hscript0, Hscript_choice, phi_v, lflrw, &
       lrho_chi, scale_rho_chi_Heqn, amplee_BD_prefactor, deriv_prefactor_ee, &
       echarge_type, init_rho_chi, rho_chi_init, eta_phi, lphi_doublet, &
-      lphi_weakcharge, lphi_hypercharge
+      lphi_weakcharge, lphi_hypercharge, lhiggs_friction, higgs_friction
 !
   namelist /special_run_pars/ &
       initspecial, phi0, dphi0, phimass, eps, ascale_ini, &
       lem_backreact, c_phi, lambda_phi, Vprime_choice, &
       ldt_klein_gordon, Ndiv, Hscript0, Hscript_choice, &
       lflrw, lrho_chi, scale_rho_chi_Heqn, echarge_type, cdt_rho_chi, &
-      phi_v
+      phi_v, lhiggs_friction, higgs_friction
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -685,7 +687,7 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: Vprime, Vprime_aux
+      real, dimension (nx) :: Vprime, Vprime_aux, total_fric
       real, dimension (nx, 4) :: del2phi_doublet=0.
       real, dimension (nx) :: tmp, del2phi
       real :: pref_Vprime=1., pref_Hubble=2., pref_del2=1., pref_alpf
@@ -734,12 +736,24 @@ module Special
 !
       if (lphi_doublet) then
 
+        if (lhiggs_friction) then
+          total_fric=p%phi*p%dphi
+          do i=1,3
+            total_fric=total_fric+p%phi_doublet(:,i)*p%dphi_doublet(:,i)
+          enddo
+          total_fric=total_fric/max(p%phi_doublet_mod**2, 1e-30)
+        endif
         do i=0,3
           ! dphi/dt = dphi
           df(l1:l2,m,n,iphi+i)=df(l1:l2,m,n,iphi+i)+f(l1:l2,m,n,idphi+i)
           ! laplacian of the 4 components of the Higgs doublet
           if (c_phi/=0. .and. .not. lphi_hom) then
             call del2(f, iphi+i, del2phi_doublet(:, i+1))
+          endif
+          ! alberto: added Higgs friction (see eq. 3 in 1902.02751)
+          if (lhiggs_friction) then
+            df(l1:l2,m,n,iphi+i)=df(l1:l2,m,n,iphi+i)- & 
+                higgs_friction*f(l1:l2,m,n,iphi+i)*total_fric
           endif
         enddo
 
