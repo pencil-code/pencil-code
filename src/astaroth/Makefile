@@ -151,6 +151,7 @@ ifeq ($(TRANSPILATION),on)
         for file in $(MODULESOURCES); do echo processing $$file ...; if [[ $$file =~ eos[_.] ]]; \
 	then ../scripts/phys_modules2c_transpilation par $$file equationofstate; \
         else ../scripts/phys_modules2c_transpilation par $$file; fi; done
+	python3 transpile.py
 	@touch .sentinel
 else
 	@export DSL_MODULE_DIR=$(DSL_MODULE_DIR); \

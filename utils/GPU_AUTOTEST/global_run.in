@@ -1,0 +1,3 @@
+&gpu_run_pars
+	lcpu_timestep_on_gpu=T
+/

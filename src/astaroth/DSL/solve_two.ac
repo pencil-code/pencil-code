@@ -1,0 +1,12 @@
+#include "mhdsolver.ac"
+
+fixed_boundary Kernel twopass_solve_final(int step_num)
+{
+	if(AC_lcourant_dt__mod__cdata)
+	{
+		if(AC_iuu__mod__cdata != 0) write(F_UU, rk_final(F_UU,step_num))
+		if(AC_irho__mod__cdata != 0 || AC_ilnrho__mod__cdata != 0) write(F_RHO, rk_final(F_RHO,step_num))
+		if(AC_iaa__mod__cdata != 0) write(F_AA, rk_final(F_AA,step_num))
+	}
+}
+#include "../steps_two.h"
