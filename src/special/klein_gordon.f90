@@ -42,7 +42,7 @@
 !
 ! PENCILS PROVIDED phi; dphi; gphi(3); cov_der(4,4)
 ! PENCILS PROVIDED phi_doublet(3); dphi_doublet(3); phi_doublet_mod
-! PENCILS EXPECTED Gamma, GammaW1, GammaW2, GammaW3
+! PENCILS EXPECTED Gamma_disp, GammaW1, GammaW2, GammaW3
 ! PENCILS EXPECTED W1(3); W2(3); W3(3), aa(3)
 !
 !***************************************************************
@@ -468,7 +468,7 @@ module Special
         if (lphi_hypercharge .or. lphi_weakcharge) then
           lpenc_requested(i_cov_der)=.true.
           if (lphi_hypercharge) then
-            lpenc_requested(i_Gamma)=.true.
+            lpenc_requested(i_Gamma_disp)=.true.
             lpenc_requested(i_aa)=.true.
           endif
           if (lphi_weakcharge) then
@@ -768,28 +768,28 @@ module Special
             0.5*coupl_gy*(-p%aa(:,1)*dfdxs(:,2,1) - p%aa(:,2)*dfdxs(:,2,2) - &
             p%aa(:,3)*dfdxs(:,2,3) - p%aa(:,1)*p%cov_der(:,2,2) - &
             p%aa(:,2)*p%cov_der(:,3,2) - p%aa(:,3)*p%cov_der(:,4,2) - &
-            p%Gamma*p%phi_doublet(:,1))
+            p%Gamma_disp*p%phi_doublet(:,1))
 
           ! del2phi_up_im
           del2phi_doublet(:,2) = del2phi_doublet(:,2) + &
             0.5*coupl_gy*(-p%aa(:,1)*dfdxs(:,1,1) - p%aa(:,2)*dfdxs(:,1,2) - &
             p%aa(:,3)*dfdxs(:,1,3) - p%aa(:,1)*p%cov_der(:,2,1) - &
             p%aa(:,2)*p%cov_der(:,3,1) - p%aa(:,3)*p%cov_der(:,4,1) - &
-            p%Gamma*p%phi)
+            p%Gamma_disp*p%phi)
 
           ! del2phi_down_re
           del2phi_doublet(:,3) = del2phi_doublet(:,3) - &
             0.5*coupl_gy*(-p%aa(:,1)*dfdxs(:,4,1) - p%aa(:,2)*dfdxs(:,4,2) - &
             p%aa(:,3)*dfdxs(:,4,3) - p%aa(:,1)*p%cov_der(:,2,4) - &
             p%aa(:,2)*p%cov_der(:,3,4) - p%aa(:,3)*p%cov_der(:,4,4) - &
-            p%Gamma*p%phi_doublet(:,3))
+            p%Gamma_disp*p%phi_doublet(:,3))
 
           ! del2phi_down_im
           del2phi_doublet(:,4) = del2phi_doublet(:,4) + &
             0.5*coupl_gy*(-p%aa(:,1)*dfdxs(:,3,1) - p%aa(:,2)*dfdxs(:,3,2) - &
             p%aa(:,3)*dfdxs(:,3,3) - p%aa(:,1)*p%cov_der(:,2,3) - &
             p%aa(:,2)*p%cov_der(:,3,3) - p%aa(:,3)*p%cov_der(:,4,3) - &
-            p%Gamma*p%phi_doublet(:,2))
+            p%Gamma_disp*p%phi_doublet(:,2))
         endif
         if (c_phi/=0. .and. lphi_weakcharge) then
           ! terms of the covariant Laplacian from SU(2) gauge fields
