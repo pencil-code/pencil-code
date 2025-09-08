@@ -45,7 +45,7 @@ module Special
 !
 ! input parameters
 !
-  integer :: iGammaW=0, iW0=0, iWW1=0, iWW2=0, iWW3=0, irhoW=0
+  integer :: iGammaW=0, iW0=0, irhoW=0
   integer :: idWW1=0, idWW2=0, idWW3=0, iWW1ddot=0, iWW2ddot=0
   integer :: iWW3ddot=0, idWW=0
   ! Wddot = d^2 W / dt^2 ~ dt E

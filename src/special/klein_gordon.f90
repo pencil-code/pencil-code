@@ -42,8 +42,8 @@
 !
 ! PENCILS PROVIDED phi; dphi; gphi(3); cov_der(4,4)
 ! PENCILS PROVIDED phi_doublet(3); dphi_doublet(3); phi_doublet_mod
-! PENCILS EXPECTED Gamma, GammaW(3), WW(9)
-!!! PENCILS REQUESTED Gamma; GammaW(3); WW(9)
+! PENCILS EXPECTED Gamma, GammaW1, GammaW2, GammaW3
+! PENCILS EXPECTED W1(3); W2(3); W3(3), aa(3)
 !
 !***************************************************************
 !
@@ -470,8 +470,12 @@ module Special
             lpenc_requested(i_aa)=.true.
           endif
           if (lphi_weakcharge) then
-            lpenc_requested(i_GammaW)=.true.
-            lpenc_requested(i_WW)=.true.
+            lpenc_requested(i_GammaW1)=.true.
+            lpenc_requested(i_GammaW2)=.true.
+            lpenc_requested(i_GammaW3)=.true.
+            lpenc_requested(i_W1)=.true.
+            lpenc_requested(i_W2)=.true.
+            lpenc_requested(i_W3)=.true.
           endif
         endif
       endif
@@ -571,85 +575,67 @@ module Special
           ! iWW+3:iWW+5 -> W2x:W2z
           ! iWW+6:iWW+8 -> W3x:W3z
           cov_der(:,2,1) = cov_der(:,2,1) + &
-                0.5*coupl_gw*(f(l1:l2,m,n,iWW)*f(l1:l2,m,n,iphi_down_im) - &
-                f(l1:l2,m,n,iWW+3)*f(l1:l2,m,n,iphi_down_re) + &
-                f(l1:l2,m,n,iWW+6)*f(l1:l2,m,n,iphi_up_im))
+                0.5*coupl_gw*(f(l1:l2,m,n,iWW1)*f(l1:l2,m,n,iphi_down_im) - &
+                f(l1:l2,m,n,iWW2)*f(l1:l2,m,n,iphi_down_re) + &
+                f(l1:l2,m,n,iWW3)*f(l1:l2,m,n,iphi_up_im))
 
           cov_der(:,2,2) = cov_der(:,2,2) - &
-                0.5*coupl_gw*(f(l1:l2,m,n,iWW)*f(l1:l2,m,n,iphi_down_re) + &
-                f(l1:l2,m,n,iWW+3)*f(l1:l2,m,n,iphi_down_im) + &
-                f(l1:l2,m,n,iWW+6)*f(l1:l2,m,n,iphi_up_re))
+                0.5*coupl_gw*(f(l1:l2,m,n,iWW1)*f(l1:l2,m,n,iphi_down_re) + &
+                f(l1:l2,m,n,iWW2)*f(l1:l2,m,n,iphi_down_im) + &
+                f(l1:l2,m,n,iWW3)*f(l1:l2,m,n,iphi_up_re))
 
           cov_der(:,2,3) = cov_der(:,2,3) + &
-                0.5*coupl_gw*(f(l1:l2,m,n,iWW)*f(l1:l2,m,n,iphi_up_im) + &
-                f(l1:l2,m,n,iWW+3)*f(l1:l2,m,n,iphi_up_re) - &
-                f(l1:l2,m,n,iWW+6)*f(l1:l2,m,n,iphi_down_im))
+                0.5*coupl_gw*(f(l1:l2,m,n,iWW1)*f(l1:l2,m,n,iphi_up_im) + &
+                f(l1:l2,m,n,iWW2)*f(l1:l2,m,n,iphi_up_re) - &
+                f(l1:l2,m,n,iWW3)*f(l1:l2,m,n,iphi_down_im))
 
           cov_der(:,2,4) = cov_der(:,2,4) - &
-                0.5*coupl_gw*(f(l1:l2,m,n,iWW)*f(l1:l2,m,n,iphi_up_re) - &
-                f(l1:l2,m,n,iWW+3)*f(l1:l2,m,n,iphi_up_im) - &
-                f(l1:l2,m,n,iWW+6)*f(l1:l2,m,n,iphi_down_re))
+                0.5*coupl_gw*(f(l1:l2,m,n,iWW1)*f(l1:l2,m,n,iphi_up_re) - &
+                f(l1:l2,m,n,iWW2)*f(l1:l2,m,n,iphi_up_im) - &
+                f(l1:l2,m,n,iWW3)*f(l1:l2,m,n,iphi_down_re))
 
           cov_der(:,3,1) = cov_der(:,3,1) + &
-                0.5*coupl_gw*(f(l1:l2,m,n,iWW+1)*f(l1:l2,m,n,iphi_down_im) - &
-                f(l1:l2,m,n,iWW+4)*f(l1:l2,m,n,iphi_down_re) + &
-                f(l1:l2,m,n,iWW+7)*f(l1:l2,m,n,iphi_up_im))
+                0.5*coupl_gw*(f(l1:l2,m,n,iWW1+1)*f(l1:l2,m,n,iphi_down_im) - &
+                f(l1:l2,m,n,iWW2+1)*f(l1:l2,m,n,iphi_down_re) + &
+                f(l1:l2,m,n,iWW3+1)*f(l1:l2,m,n,iphi_up_im))
 
           cov_der(:,3,2) = cov_der(:,3,2) - &
-                0.5*coupl_gw*(f(l1:l2,m,n,iWW+1)*f(l1:l2,m,n,iphi_down_re) + &
-                f(l1:l2,m,n,iWW+4)*f(l1:l2,m,n,iphi_down_im) + &
-                f(l1:l2,m,n,iWW+7)*f(l1:l2,m,n,iphi_up_re))
+                0.5*coupl_gw*(f(l1:l2,m,n,iWW1+1)*f(l1:l2,m,n,iphi_down_re) + &
+                f(l1:l2,m,n,iWW2+1)*f(l1:l2,m,n,iphi_down_im) + &
+                f(l1:l2,m,n,iWW3+1)*f(l1:l2,m,n,iphi_up_re))
 
           cov_der(:,3,3) = cov_der(:,3,3) + &
-                0.5*coupl_gw*(f(l1:l2,m,n,iWW+1)*f(l1:l2,m,n,iphi_up_im) + &
-                f(l1:l2,m,n,iWW+4)*f(l1:l2,m,n,iphi_up_re) - &
-                f(l1:l2,m,n,iWW+7)*f(l1:l2,m,n,iphi_down_im))
+                0.5*coupl_gw*(f(l1:l2,m,n,iWW1+1)*f(l1:l2,m,n,iphi_up_im) + &
+                f(l1:l2,m,n,iWW2+1)*f(l1:l2,m,n,iphi_up_re) - &
+                f(l1:l2,m,n,iWW3+1)*f(l1:l2,m,n,iphi_down_im))
 
           cov_der(:,3,4) = cov_der(:,3,4) - &
-                0.5*coupl_gw*(f(l1:l2,m,n,iWW+1)*f(l1:l2,m,n,iphi_up_re) - &
-                f(l1:l2,m,n,iWW+4)*f(l1:l2,m,n,iphi_up_im) - &
-                f(l1:l2,m,n,iWW+7)*f(l1:l2,m,n,iphi_down_re))
+                0.5*coupl_gw*(f(l1:l2,m,n,iWW1+1)*f(l1:l2,m,n,iphi_up_re) - &
+                f(l1:l2,m,n,iWW2+1)*f(l1:l2,m,n,iphi_up_im) - &
+                f(l1:l2,m,n,iWW3+1)*f(l1:l2,m,n,iphi_down_re))
 
           cov_der(:,4,1) = cov_der(:,4,1) + &
-                0.5*coupl_gw*(f(l1:l2,m,n,iWW+2)*f(l1:l2,m,n,iphi_down_im) - &
-                f(l1:l2,m,n,iWW+5)*f(l1:l2,m,n,iphi_down_re) + &
-                f(l1:l2,m,n,iWW+8)*f(l1:l2,m,n,iphi_up_im))
+                0.5*coupl_gw*(f(l1:l2,m,n,iWW1+2)*f(l1:l2,m,n,iphi_down_im) - &
+                f(l1:l2,m,n,iWW2+2)*f(l1:l2,m,n,iphi_down_re) + &
+                f(l1:l2,m,n,iWW3+2)*f(l1:l2,m,n,iphi_up_im))
 
           cov_der(:,4,2) = cov_der(:,4,2) - &
-                0.5*coupl_gw*(f(l1:l2,m,n,iWW+2)*f(l1:l2,m,n,iphi_down_re) + &
-                f(l1:l2,m,n,iWW+5)*f(l1:l2,m,n,iphi_down_im) + &
-                f(l1:l2,m,n,iWW+8)*f(l1:l2,m,n,iphi_up_re))
+                0.5*coupl_gw*(f(l1:l2,m,n,iWW1+2)*f(l1:l2,m,n,iphi_down_re) + &
+                f(l1:l2,m,n,iWW2+2)*f(l1:l2,m,n,iphi_down_im) + &
+                f(l1:l2,m,n,iWW3+2)*f(l1:l2,m,n,iphi_up_re))
 
           cov_der(:,4,3) = cov_der(:,4,3) + &
-                0.5*coupl_gw*(f(l1:l2,m,n,iWW+2)*f(l1:l2,m,n,iphi_up_im) + &
-                f(l1:l2,m,n,iWW+5)*f(l1:l2,m,n,iphi_up_re) - &
-                f(l1:l2,m,n,iWW+8)*f(l1:l2,m,n,iphi_down_im))
+                0.5*coupl_gw*(f(l1:l2,m,n,iWW1+2)*f(l1:l2,m,n,iphi_up_im) + &
+                f(l1:l2,m,n,iWW2+2)*f(l1:l2,m,n,iphi_up_re) - &
+                f(l1:l2,m,n,iWW3+2)*f(l1:l2,m,n,iphi_down_im))
 
           cov_der(:,4,4) = cov_der(:,4,4) - &
-                0.5*coupl_gw*(f(l1:l2,m,n,iWW+2)*f(l1:l2,m,n,iphi_up_re) - &
-                f(l1:l2,m,n,iWW+5)*f(l1:l2,m,n,iphi_up_im) - &
-                f(l1:l2,m,n,iWW+8)*f(l1:l2,m,n,iphi_down_re))
+                0.5*coupl_gw*(f(l1:l2,m,n,iWW1+2)*f(l1:l2,m,n,iphi_up_re) - &
+                f(l1:l2,m,n,iWW2+2)*f(l1:l2,m,n,iphi_up_im) - &
+                f(l1:l2,m,n,iWW3+2)*f(l1:l2,m,n,iphi_down_re))
         endif
         p%cov_der = cov_der
       endif
-
-      ! if (lpencil(i_Gamma)) then
-      !   if (llongitudinalE) then
-      !     p%Gamma=f(l1:l2,m,n,iGamma)
-      !   else
-      !     call div(f, iaa, p%Gamma)
-      !   endif
-      ! endif
-
-      ! if (lpencil(i_GammaW)) then
-      !   if (llongitudinalW) then
-      !     p%GammaW=f(l1:l2,m,n,iGammaW:iGammaW+2)
-      !   else
-      !     do i=1,3
-      !       call div(f, iWW+3*(i-1), p%GammaW(:,i))
-      !     enddo
-      !   endif
-      ! endif
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
@@ -795,59 +781,59 @@ module Special
           ! terms of the covariant Laplacian from SU(2) gauge fields
           ! del2phi_up_re
           del2phi_doublet(:,1) = del2phi_doublet(:,1) - &
-            0.5*coupl_gw*(-p%WW(:,1)*dfdxs(:,4,1) - &
-            p%WW(:,2)*dfdxs(:,4,2) - p%WW(:,3)*dfdxs(:,4,3) + &
-            p%WW(:,4)*dfdxs(:,3,1) + p%WW(:,5)*dfdxs(:,3,2) + &
-            p%WW(:,6)*dfdxs(:,3,3) - p%WW(:,7)*dfdxs(:,2,1) + &
-            p%WW(:,8)*dfdxs(:,2,2) + p%WW(:,9)*dfdxs(:,2,3) - &
-            p%WW(:,1)*p%cov_der(:,2,4) - p%WW(:,2)*p%cov_der(:,3,4) - &
-            p%WW(:,3)*p%cov_der(:,4,4) + p%WW(:,4)*p%cov_der(:,2,3) + &
-            p%WW(:,5)*p%cov_der(:,3,3) + p%WW(:,6)*p%cov_der(:,4,3) - &
-            p%WW(:,7)*p%cov_der(:,2,2) - p%WW(:,8)*p%cov_der(:,3,2) - &
-            p%WW(:,9)*p%cov_der(:,4,2) - p%GammaW(:,3)*p%phi_doublet(:,1) + &
-            p%GammaW(:,2)*p%phi_doublet(:,2) - p%GammaW(:,1)*p%phi_doublet(:,3))
+            0.5*coupl_gw*(-p%W1(:,1)*dfdxs(:,4,1) - &
+            p%W1(:,2)*dfdxs(:,4,2) - p%W1(:,3)*dfdxs(:,4,3) + &
+            p%W2(:,1)*dfdxs(:,3,1) + p%W2(:,2)*dfdxs(:,3,2) + &
+            p%W2(:,3)*dfdxs(:,3,3) - p%W3(:,1)*dfdxs(:,2,1) + &
+            p%W3(:,2)*dfdxs(:,2,2) + p%W3(:,3)*dfdxs(:,2,3) - &
+            p%W1(:,1)*p%cov_der(:,2,4) - p%W1(:,2)*p%cov_der(:,3,4) - &
+            p%W1(:,3)*p%cov_der(:,4,4) + p%W2(:,1)*p%cov_der(:,2,3) + &
+            p%W2(:,2)*p%cov_der(:,3,3) + p%W2(:,3)*p%cov_der(:,4,3) - &
+            p%W3(:,1)*p%cov_der(:,2,2) - p%W3(:,2)*p%cov_der(:,3,2) - &
+            p%W3(:,3)*p%cov_der(:,4,2) - p%GammaW3*p%phi_doublet(:,1) + &
+            p%GammaW2*p%phi_doublet(:,2) - p%GammaW1*p%phi_doublet(:,3))
 
           ! del2phi_up_im
           del2phi_doublet(:,2) = del2phi_doublet(:,2) + &
-            0.5*coupl_gw*(-p%WW(:,1)*dfdxs(:,3,1) - &
-            p%WW(:,2)*dfdxs(:,3,2) - p%WW(:,3)*dfdxs(:,3,3) - &
-            p%WW(:,4)*dfdxs(:,4,1) - p%WW(:,5)*dfdxs(:,4,2) - &
-            p%WW(:,6)*dfdxs(:,4,3) - p%WW(:,7)*dfdxs(:,1,1) - &
-            p%WW(:,8)*dfdxs(:,1,2) - p%WW(:,9)*dfdxs(:,1,3) - &
-            p%WW(:,1)*p%cov_der(:,2,3) - p%WW(:,2)*p%cov_der(:,3,3) - &
-            p%WW(:,3)*p%cov_der(:,4,3) - p%WW(:,4)*p%cov_der(:,2,4) - &
-            p%WW(:,5)*p%cov_der(:,3,4) - p%WW(:,6)*p%cov_der(:,4,4) - &
-            p%WW(:,7)*p%cov_der(:,2,1) - p%WW(:,8)*p%cov_der(:,3,1) - &
-            p%WW(:,9)*p%cov_der(:,4,1) - p%GammaW(:,3)*p%phi - &
-            p%GammaW(:,1)*p%phi_doublet(:,2) - p%GammaW(:,2)*p%phi_doublet(:,3))
+            0.5*coupl_gw*(-p%W1(:,1)*dfdxs(:,3,1) - &
+            p%W1(:,2)*dfdxs(:,3,2) - p%W1(:,3)*dfdxs(:,3,3) - &
+            p%W2(:,1)*dfdxs(:,4,1) - p%W2(:,2)*dfdxs(:,4,2) - &
+            p%W2(:,3)*dfdxs(:,4,3) - p%W3(:,1)*dfdxs(:,1,1) - &
+            p%W3(:,2)*dfdxs(:,1,2) - p%W3(:,3)*dfdxs(:,1,3) - &
+            p%W1(:,1)*p%cov_der(:,2,3) - p%W1(:,2)*p%cov_der(:,3,3) - &
+            p%W1(:,3)*p%cov_der(:,4,3) - p%W2(:,1)*p%cov_der(:,2,4) - &
+            p%W2(:,2)*p%cov_der(:,3,4) - p%W2(:,3)*p%cov_der(:,4,4) - &
+            p%W3(:,1)*p%cov_der(:,2,1) - p%W3(:,2)*p%cov_der(:,3,1) - &
+            p%W3(:,3)*p%cov_der(:,4,1) - p%gammaW3*p%phi - &
+            p%gammaW1*p%phi_doublet(:,2) - p%gammaW2*p%phi_doublet(:,3))
 
           ! del2phi_down_re
           del2phi_doublet(:,3) = del2phi_doublet(:,3) - &
-            0.5*coupl_gw*(-p%WW(:,1)*dfdxs(:,2,1) - &
-            p%WW(:,2)*dfdxs(:,2,2) - p%WW(:,3)*dfdxs(:,2,3) - &
-            p%WW(:,4)*dfdxs(:,1,1) - p%WW(:,5)*dfdxs(:,1,2) - &
-            p%WW(:,6)*dfdxs(:,1,3) + p%WW(:,7)*dfdxs(:,4,1) + &
-            p%WW(:,8)*dfdxs(:,4,2) + p%WW(:,9)*dfdxs(:,4,3) - &
-            p%WW(:,1)*p%cov_der(:,2,2) - p%WW(:,2)*p%cov_der(:,3,2) - &
-            p%WW(:,3)*p%cov_der(:,4,2) - p%WW(:,4)*p%cov_der(:,2,1) - &
-            p%WW(:,5)*p%cov_der(:,3,1) - p%WW(:,6)*p%cov_der(:,4,1) + &
-            p%WW(:,7)*p%cov_der(:,2,4) + p%WW(:,8)*p%cov_der(:,3,4) + &
-            p%WW(:,9)*p%cov_der(:,4,4) + p%GammaW(:,3)*p%phi_doublet(:,2) - &
-            p%GammaW(:,2)*p%phi - p%GammaW(:,1)*p%phi_doublet(:,1))
+            0.5*coupl_gw*(-p%W1(:,1)*dfdxs(:,2,1) - &
+            p%W1(:,2)*dfdxs(:,2,2) - p%W1(:,3)*dfdxs(:,2,3) - &
+            p%W2(:,1)*dfdxs(:,1,1) - p%W2(:,2)*dfdxs(:,1,2) - &
+            p%W2(:,3)*dfdxs(:,1,3) + p%W3(:,1)*dfdxs(:,4,1) + &
+            p%W3(:,2)*dfdxs(:,4,2) + p%W3(:,3)*dfdxs(:,4,3) - &
+            p%W1(:,1)*p%cov_der(:,2,2) - p%W1(:,2)*p%cov_der(:,3,2) - &
+            p%W1(:,3)*p%cov_der(:,4,2) - p%W2(:,1)*p%cov_der(:,2,1) - &
+            p%W2(:,2)*p%cov_der(:,3,1) - p%W2(:,3)*p%cov_der(:,4,1) + &
+            p%W3(:,1)*p%cov_der(:,2,4) + p%W3(:,2)*p%cov_der(:,3,4) + &
+            p%W3(:,3)*p%cov_der(:,4,4) + p%gammaW3*p%phi_doublet(:,2) - &
+            p%gammaW2*p%phi - p%gammaW1*p%phi_doublet(:,1))
 
           ! del2phi_down_im
           del2phi_doublet(:,4) = del2phi_doublet(:,4) + &
-            0.5*coupl_gw*(-p%WW(:,1)*dfdxs(:,1,1) - &
-            p%WW(:,2)*dfdxs(:,1,2) - p%WW(:,3)*dfdxs(:,1,3) + &
-            p%WW(:,4)*dfdxs(:,2,1) + p%WW(:,5)*dfdxs(:,2,2) + &
-            p%WW(:,6)*dfdxs(:,2,3) + p%WW(:,7)*dfdxs(:,3,1) + &
-            p%WW(:,8)*dfdxs(:,3,2) + p%WW(:,9)*dfdxs(:,3,3) - &
-            p%WW(:,1)*p%cov_der(:,2,1) - p%WW(:,2)*p%cov_der(:,3,1) - &
-            p%WW(:,3)*p%cov_der(:,4,1) + p%WW(:,4)*p%cov_der(:,2,2) + &
-            p%WW(:,5)*p%cov_der(:,3,2) + p%WW(:,6)*p%cov_der(:,4,2) + &
-            p%WW(:,7)*p%cov_der(:,2,3) + p%WW(:,8)*p%cov_der(:,3,3) + &
-            p%WW(:,9)*p%cov_der(:,4,3) + p%GammaW(:,3)*p%phi_doublet(:,2) - &
-            p%GammaW(:,1)*p%phi + p%GammaW(:,2)*p%phi_doublet(:,1))
+            0.5*coupl_gw*(-p%W1(:,1)*dfdxs(:,1,1) - &
+            p%W1(:,2)*dfdxs(:,1,2) - p%W1(:,3)*dfdxs(:,1,3) + &
+            p%W2(:,1)*dfdxs(:,2,1) + p%W2(:,2)*dfdxs(:,2,2) + &
+            p%W2(:,3)*dfdxs(:,2,3) + p%W3(:,1)*dfdxs(:,3,1) + &
+            p%W3(:,2)*dfdxs(:,3,2) + p%W3(:,3)*dfdxs(:,3,3) - &
+            p%W1(:,1)*p%cov_der(:,2,1) - p%W1(:,2)*p%cov_der(:,3,1) - &
+            p%W1(:,3)*p%cov_der(:,4,1) + p%W2(:,1)*p%cov_der(:,2,2) + &
+            p%W2(:,2)*p%cov_der(:,3,2) + p%W2(:,3)*p%cov_der(:,4,2) + &
+            p%W3(:,1)*p%cov_der(:,2,3) + p%W3(:,2)*p%cov_der(:,3,3) + &
+            p%W3(:,3)*p%cov_der(:,4,3) + p%gammaW3*p%phi_doublet(:,2) - &
+            p%gammaW1*p%phi + p%gammaW2*p%phi_doublet(:,1))
 
         endif
         do i=0,3
