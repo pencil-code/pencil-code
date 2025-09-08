@@ -3691,6 +3691,7 @@ module Diagnostics
       if (allocated(cnamez)) deallocate(cnamez)
       if (allocated(cformz)) deallocate(cformz)
       if (allocated(ncountsz)) deallocate(ncountsz)
+      if (allocated(itype_name_z)) deallocate(itype_name_z)
 !
     endsubroutine xyaverages_clean_up
 !***********************************************************************
