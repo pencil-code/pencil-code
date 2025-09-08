@@ -79,6 +79,7 @@ my %tests = (
                          1d-tests/inflationary-B-genesis
                          1d-tests/axionSU2back
                          1d-tests/sine-Gordon
+                         1d-tests/sine-Gordon_doublet
                          chiral-diffusion
                          cosmicray
                          1d-tests/sod_10
@@ -133,9 +134,9 @@ my %tests = (
                          2d-tests/eccentricity-decay
                          interstellar
                          supernova-driven-turbulence/1Dhd_init_equidistant
-			 backreact_infl
+			             backreact_infl
                          backreact_infl2
-			 Schwinger
+			             Schwinger
                      )],
              # Level 3 for now contains all non-canonical tests that run
              # successfully
@@ -180,6 +181,7 @@ my %tests = (
              4 => [qw(
                          superparticle-coagulation
                          superparticle-condensation-coagulation
+                         Schwinger2
                      )],
              # Level 5 for now contains overlong tests (e.g. test that
              # compile, start and then run -- but take too long time)

@@ -1,0 +1,30 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+!  sample file for 1-D sound wave
+!
+&run_pars
+  cvsid="$Id: run.in,v 1.1 2025/06/19 01:50:58 brandenb Exp $"
+  nt=100, it1=10, isave=50000, itorder=3
+  dsnap=1e5, dvid=5e5, tmax=2e6, dtmin=-1e-12
+  dspec=5e3, lspec_start=T, ab_spec=T, ele_spec=T, sp_spec=T, mu_spec=T
+  lwrite_aux=T, lpencil_check=F
+  lpencil_check_small=T
+  dt=1e2
+/
+&magnetic_run_pars
+/
+&power_spectrum_run_pars
+  lcorrect_integer_kcalc=T
+/
+&klein_gordon_run_pars
+  ldt_klein_gordon=T
+/
+&disp_current_run_pars
+  lapply_Gamma_corr=T, lswitch_off_Gamma=T
+  lmass_suppression=T, mass_chi=1e-2
+  luse_scale_factor_in_sigma=T
+  lnoncollinear_EB=T, sigB_prefactor=1., sigE_prefactor=1.
+  lallow_bprime_zero=T
+  lphi_hom=F, lphi_linear_regime=F
+  alpf=60.
+/
