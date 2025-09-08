@@ -182,10 +182,10 @@ const real AC_ascale__mod__cdata = 0.0
 
 #if LDUSTVELOCITY
 #else
-const real AC_reac_dust__mod__cdata = 0.0
+gmem real AC_reac_dust__mod__cdata[1]
 #endif
 
 #if LCHEMISTRY
 #else
-const real AC_reac_chem__mod__cdata = 0.0
+gmem real AC_reac_chem__mod__cdata[1]
 #endif
