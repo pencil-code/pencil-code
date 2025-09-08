@@ -435,7 +435,7 @@ link_astaroth_files()
   old_dir="`pwd`"
   cd $src/astaroth
   to_link=
-  for file in $srcdir/astaroth/*.cc $srcdir/astaroth/*.h $srcdir/astaroth/Makefile* $srcdir/astaroth/*.txt $srcdir/astaroth/*.sed $srcdir/astaroth/DSL/* \
+  for file in $srcdir/astaroth/*.py $srcdir/astaroth/*.cc $srcdir/astaroth/*.h $srcdir/astaroth/Makefile* $srcdir/astaroth/*.txt $srcdir/astaroth/*.sed $srcdir/astaroth/DSL/* \
               $srcdir/astaroth/submodule/CMakeLists.txt $srcdir/astaroth/submodule/include $srcdir/astaroth/submodule/stdlib \
               $srcdir/astaroth/submodule/acc-runtime/CMakeLists.txt \
               $srcdir/astaroth/submodule/acc-runtime/acc \
@@ -648,10 +648,8 @@ if [ -f "$src/Makefile.local" ]; then
     make_initial_condition_dir
     if [ "$link_all" -eq 1 ]; then link_initial_condition_files; fi
   fi
-  if [ "`grep '^[^#]*= *gpu' $src/Makefile.local`" != "" ]; then 
-    make_astaroth_dir
-    if [ "$link_all" -eq 1 ]; then link_astaroth_files; fi
-  fi
+  make_astaroth_dir
+  if [ "$link_all" -eq 1 ]; then link_astaroth_files; fi
 fi
 if [ "$link_all" -eq 1 ]; then create_Makefile_inc; fi
 #copy_local_files
