@@ -5,3 +5,4 @@
 [submodule "fortran-parser"]
 	path = fortran-parser
 	url = https://github.com/ToxPuro/fortran-parser.git
+	branch = main
