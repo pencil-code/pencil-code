@@ -14,7 +14,7 @@ ComputeSteps AC_rhs(boundconds)
 	shock_1_divu()
 	shock_2_max()
 	shock_3_smooth()
-        twopass_solve_intermediate(AC_step_num,AC_dt)
+        twopass_solve_intermediate(AC_step_num,AC_dt,AC_t,AC_lrmv)
         twopass_solve_final(AC_step_num)
 }
 ComputeSteps AC_calculate_timestep(boundconds)
@@ -22,7 +22,7 @@ ComputeSteps AC_calculate_timestep(boundconds)
 	shock_1_divu()
 	shock_2_max()
 	shock_3_smooth()
-	twopass_solve_intermediate(PC_FIRST_SUB_STEP,AC_dt)
+	twopass_solve_intermediate(PC_FIRST_SUB_STEP,AC_dt,AC_t,AC_lrmv)
 }
 
 ComputeSteps AC_calc_selfgravity_rhs(boundconds)
