@@ -41,8 +41,9 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED phi; dphi; gphi(3); cov_der(4,4)
-! PENCILS PROVIDED phi_doublet(3); dphi_doublet(3), phi_doublet_mod
-! PENCILS PROVIDED Gamma; GammaW(3); WW(9)
+! PENCILS PROVIDED phi_doublet(3); dphi_doublet(3); phi_doublet_mod
+! PENCILS EXPECTED Gamma, GammaW(3), WW(9)
+!!! PENCILS REQUESTED Gamma; GammaW(3); WW(9)
 !
 !***************************************************************
 !
@@ -88,7 +89,7 @@ module Special
 !
 ! Declare index of new variables in f array (if any).
 !
-  integer :: iphi=0, idphi=0, ilna=0, Ndiv=100, iinfl_rho_chi=0, iGamma=0, iGammaW=0
+  integer :: iphi=0, idphi=0, ilna=0, Ndiv=100, iinfl_rho_chi=0
   integer :: iphi_up_re=0, iphi_up_im=0, iphi_down_re=0, iphi_down_im=0
   integer :: idphi_up_re=0, idphi_up_im=0, idphi_down_re=0, idphi_down_im=0
   real :: ncutoff_phi=1., phi_v=.1
@@ -123,7 +124,7 @@ module Special
   logical, pointer :: lphi_linear_regime, lnoncollinear_EB, lnoncollinear_EB_aver
   logical, pointer :: lcollinear_EB, lcollinear_EB_aver, lmass_suppression
   logical, pointer :: lallow_bprime_zero
-  logical :: lphi_doublet=.false., lphi_weakcharge=.true., lphi_hypercharge=.true.
+  logical :: lphi_doublet=.false., lphi_weakcharge=.false., lphi_hypercharge=.false.
   character (len=labellen) :: Vprime_choice='quadratic', Hscript_choice='set'
   character (len=labellen), dimension(ninit) :: initspecial='nothing'
   character (len=50) :: echarge_type='const', init_rho_chi='zero'
@@ -223,6 +224,9 @@ module Special
       call put_shared_variable('sigBm_all',sigBm_all,caller='register_klein_gordon')
       call put_shared_variable('echarge',echarge,caller='register_klein_gordon')
       call put_shared_variable('lrho_chi',lrho_chi)
+      call put_shared_variable('lphi_doublet',lphi_doublet)
+      call put_shared_variable('lphi_weakcharge',lphi_weakcharge)
+      call put_shared_variable('lphi_hypercharge',lphi_hypercharge)
 !
     endsubroutine register_special
 !***********************************************************************
@@ -629,23 +633,23 @@ module Special
         p%cov_der = cov_der
       endif
 
-      if (lpencil(i_Gamma)) then
-        if (llongitudinalE) then
-          p%Gamma=f(l1:l2,m,n,iGamma)
-        else
-          call div(f, iaa, p%Gamma)
-        endif
-      endif
+      ! if (lpencil(i_Gamma)) then
+      !   if (llongitudinalE) then
+      !     p%Gamma=f(l1:l2,m,n,iGamma)
+      !   else
+      !     call div(f, iaa, p%Gamma)
+      !   endif
+      ! endif
 
-      if (lpencil(i_GammaW)) then
-        if (llongitudinalW) then
-          p%GammaW=f(l1:l2,m,n,iGammaW:iGammaW+2)
-        else
-          do i=1,3
-            call div(f, iWW+3*(i-1), p%GammaW(:,i))
-          enddo
-        endif
-      endif
+      ! if (lpencil(i_GammaW)) then
+      !   if (llongitudinalW) then
+      !     p%GammaW=f(l1:l2,m,n,iGammaW:iGammaW+2)
+      !   else
+      !     do i=1,3
+      !       call div(f, iWW+3*(i-1), p%GammaW(:,i))
+      !     enddo
+      !   endif
+      ! endif
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
