@@ -100,6 +100,15 @@ endif
 CMAKE_BUILD_TYPE          ?= Debug
 SUPPRESS_COMPILER_WARNINGS ?= off
 
+#TP: mpicc does not work nicely with CMake.
+#    Better to let CMake choose the compiler itself
+ifeq ($(CC),mpicc)
+  override CC = 
+endif
+ifeq ($(CXX),mpicc)
+  override CXX = 
+endif
+
 astaroth_$(PREC).so: $(SOURCES) forcing.h $(AC_HEADERS) $(PC_HEADERS) $(CHEADERS) astaroth_libs
 	mkdir -p build && \
 	echo PRECISION=$(CMAKE_PREC) && \
