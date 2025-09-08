@@ -62,7 +62,7 @@ Andreas Svedin,       andreas/astro.columbia.edu,    ,                     +1 91
 Johannes Tschernitz,  johannes.tschernitz/tu-braunschweig.de,joh-tsch,     ,                  ,                         Technical University of Braunschweig
 Jörn Warnecke,        joern.warnecke/gmail.com,      joern.warnecke,       +49 551 384 979 398, +49 176 31545191,       Max-Planck-Institut für Sonnensystemforschung Göttingen
 Tijmen van Wettum,    ,                              TvanWettum,           ,                  ,                         First8 Conclusion, Netherlands
-Chao-Chin Yang,       ccyang/ua.edu,                 ccyang/ua.edu,        +1 205 348 3792,   ,                         The University of Alabama
+Chao-Chin Yang,       ccyang/ua.edu,                 chaochinyang,         +1 205 348 3792,   ,                         The University of Alabama
 Tarek A. Yousef,      tarek/pvv.org,                 ,                     +44 798 122 8515,  ,                         Norges teknisk-naturvitenskapelige universitet
 Xiang-Yu Li,          xiang.yu.li.phy/gmail.com,     ,                     ,                  +46 73 627 2556,          NORDITA
 Luiz F. S. Rodrigues, luiz.rodrigues/ncl.ac.uk,      ,                     +44 191 208 3560,  ,                         Newcastle University
