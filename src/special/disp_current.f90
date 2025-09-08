@@ -17,7 +17,8 @@
 ! PENCILS PROVIDED e2; edot2; el(3); a0; ga0(3); del2ee(3); curlE(3); BcurlE
 ! PENCILS PROVIDED rhoe, divJ, divE, gGamma(3); sigE, sigB; eb; count_eb0
 ! PENCILS PROVIDED boost; gam_EB; eprime; bprime; jprime; Gamma
-! PENCILS EXPECTED phi, infl_phi, dphi, infl_dphi, gphi(3)
+! PENCILS EXPECTED phi, infl_phi, dphi, infl_dphi, gphi(3); cov_der(4,4)
+! PENCILS EXPECTED curlb(3), jj_ohm(3), phi_doublet(3)
 !***************************************************************
 !
 module Special
@@ -461,6 +462,14 @@ module Special
       if (idiag_EEEM/=0 .or. idiag_erms/=0 .or. idiag_emax/=0) lpenc_diagnos(i_e2)=.true.
       ! if (idiag_exmz/=0 .or. idiag_eymz/=0 .or. idiag_ezmz/=0 ) lpenc_diagnos(i_el)=.true.
       ! if (idiag_exm/=0 .or. idiag_eym/=0 .or. idiag_ezm/=0 ) lpenc_diagnos(i_el)=.true.
+
+      if (lklein_gordon) then
+        if (lphi_doublet .and. lphi_hypercharge) then
+          lpenc_requested(i_phi)=.true.
+          lpenc_requested(i_phi_doublet)=.true.
+          lpenc_requested(i_cov_der)=.true.
+        endif
+      endif
 !
     endsubroutine pencil_criteria_special
 !***********************************************************************
@@ -764,6 +773,7 @@ module Special
 !
       intent(in) :: p
       intent(inout) :: f, df
+      integer :: i
 !
 !  identify module and boundary conditions
 !
