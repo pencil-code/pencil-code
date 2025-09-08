@@ -562,7 +562,7 @@ sub icon_write {
     my $svg = "result.svg";
     if ($log_dir) { $svg = $log_dir."/".$svg; }
     if (!$force && (-e $svg)) {
-        my $current_hash = `md5sum "$svg"`;
+        my $current_hash = `md5sum "$svg" | head -c 32`;
         if ($current_hash ne $icon_hash) { return; }
     }
     open (SVG, ">$svg") or die "Error while writing '$svg' file: $!\n";
