@@ -4829,6 +4829,8 @@ mn_loop:do n=n1,n2
       call copy_addr(heat_z,p_par(21)) ! (mz)
       call string_to_enum(enum_heating_select,heating_select)
       call copy_addr(enum_heating_select,p_par(22)) ! int
+      !call copy_addr(gamma,p_par(19))
+!      call copy_addr(heat_z,p_par(13))   ! (mz)
       call copy_addr(h_sni,p_par(23))
       call copy_addr(h_snii,p_par(24))
       call copy_addr(heatingfunction_scalefactor,p_par(25))
@@ -4836,8 +4838,6 @@ mn_loop:do n=n1,n2
       call copy_addr(lsni,p_par(27)) ! bool
       call copy_addr(lsnii,p_par(28)) ! bool
       call copy_addr(t_interval,p_par(29)) ! (2)
-      !call copy_addr(gamma,p_par(19))
-!      call copy_addr(heat_z,p_par(13))   ! (mz)
 
     endsubroutine pushpars2c
 !*******************************************************************
