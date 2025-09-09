@@ -21,8 +21,8 @@ module Timestep
   include 'timestep.h'
 !
   real, dimension(mvar) :: farraymin
-  real, dimension (:,:,:,:), allocatable, target :: falpha_arr
-  real, dimension (:,:,:,:), pointer :: falpha
+  real, dimension (:,:,:,:), allocatable, target :: f1
+  real, dimension (:,:,:,:), pointer :: farr
   real, dimension (:,:,:,:), allocatable :: errdf
   real, dimension (5) :: beta_hat, dt_beta_hat, dt_alpha_ts
   real            :: dt_increase, dt_decrease, errmax, errmaxs, dt_next
@@ -50,11 +50,6 @@ module Timestep
       use Messages, only: not_implemented, warning
       use General, only: itoa, rtoa
 !
-      if(.not. lgpu) then
-        if(.not. allocated(falpha_arr)) allocate(falpha_arr(mx,my,mz,mfarray))
-        if(.not. allocated(errdf)) allocate(errdf(nx,ny,nz,mvar))
-      endif
-
       if (itorder==1) then
         if (lgpu) then
           if (lroot) call warning("initialize_timestep","itorder 1 not implemented on GPU switched to 4")
@@ -136,11 +131,16 @@ module Timestep
       endif
       lcourant_dt=.false.
       dt_next = dt
+      if (.not. lgpu) then
+        if(.not. allocated(f1)) allocate(f1(mx,my,mz,mfarray))
+        if (ldt.and..not. allocated(errdf)) allocate(errdf(nx,ny,nz,mvar))
+      endif
+
 !
       num_substeps = itter
     endsubroutine initialize_timestep
 !***********************************************************************
-    subroutine time_step(f_arr,df,p)
+    subroutine time_step(f,df,p)
 !
 !  14-oct-24/fred: coded
 !
@@ -157,22 +157,20 @@ module Timestep
           solid_cells_timestep_second
       use Shear, only: advance_shear
 !
-      real, dimension (mx,my,mz,mfarray), target :: f_arr
-      real, dimension (:,:,:,:), pointer :: f
       real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (mx,my,mz,mfarray), target :: f
       real, dimension (nx) :: scal
       type (pencil_case) :: p
-      real :: dtsub, dt_temp
-      integer :: j, iR1, iR2
+      real, dimension(itter) :: dt_beta_ts
+      real :: dt_temp
+      integer :: j
 !
-!  Assign pointers f and falpha to canonical farray
-!
-      f => f_arr
       if (.not. lgpu) dt = dt_next
 !
 !  Determine a lower bound for each variable j by which to normalise the error
 !
-      if (.not.lgpu) then
+      f1 = f
+      if (ldt.and..not.lgpu) then
         do j=1,mvar
           farraymin(j) = max(dt_ratio*maxval(abs(f(l1:l2,m1:m2,n1:n2,j))),dt_epsi)
         enddo
@@ -184,7 +182,7 @@ module Timestep
       if (.not. lgpu) then
         errmax=0.
         errmaxs=0.
-        errdf=0.
+        if (ldt) errdf=0.
       endif
 !
 !  Enter substep loop
@@ -197,45 +195,39 @@ module Timestep
 !
         if (lfirst.and..not.lgpu) then
           df=0.
+          farr => f
         else
           if (.not.lgpu) df=0.
+          farr => f1
           if (it_rmv>0) lrmv=.false.
         endif
 !
-!  Alternate registers for substep advance.
-!
-        if (mod(itsub,2)==0) then
-          falpha => f_arr
-          f => falpha_arr
-        else
-          f => f_arr
-          falpha => falpha_arr
-        endif
-!
-!  Set up particle derivative array.
+!    Set up particle derivative array.
 !
         if (lparticles.and..not.lgpu) then
-          call particles_timestep_first(f,df)
+          call particles_timestep_first(farr,df)
         endif
 !
-!  Set up point masses derivative array
+!    Set up point masses derivative array
 !
         if (lpointmasses.and..not.lgpu) then
-          call pointmasses_timestep_first(f)
+          call pointmasses_timestep_first(farr)
         endif
 !
-!  Set up ODE derivatives array
+!    Set up ODE derivatives array
 !
         if (lode.and..not.lgpu) call ode_timestep_first
 !
-!  Set up solid_cells time advance
+!    Set up solid_cells time advance
 !
-        if (lsolid_cells.and..not.lgpu) call solid_cells_timestep_first(f)
+        if (lsolid_cells.and..not.lgpu) call solid_cells_timestep_first(farr)
 !
-!  Change df according to the chosen physics modules.
+!    Change df according to the chosen physics modules.
 !
-        call pde(f,df,p)
-!  Done here since with GPU dt is set at the first substep of pde
+        call pde(farr,df,p)
+!
+!    Done here since with GPU dt is set at the first substep of pde
+!
         if (lfirst) then
           dt_beta_ts=dt*beta_ts
           dt_beta_hat=dt*(beta_ts-beta_hat)
@@ -244,64 +236,61 @@ module Timestep
 !
         if (lode.and..not.lgpu) call ode
 !
-        dtsub = dt_beta_ts(itsub)
+!    Apply border quenching.
 !
-!  Apply border quenching.
+        if (lborder_profiles.and..not.lgpu) call border_quenching(farr,df,dt_alpha_ts(itsub))
 !
-        if (lborder_profiles.and..not.lgpu) call border_quenching(f,df,dtsub)
+!    Time evolution of grid variables.
 !
-!  Time evolution of point masses.
+        if (.not. lgpu) then
+          if (itorder>2.and.ldt) then
+            errdf = errdf + dt_beta_hat(itsub)*df(l1:l2,m1:m2,n1:n2,1:mvar)
+          endif
+          f1(l1:l2,m1:m2,n1:n2,1:mvar) = f(l1:l2,m1:m2,n1:n2,1:mvar) &
+                                           +  dt_alpha_ts(itsub) * df(l1:l2,m1:m2,n1:n2,1:mvar)
+          f(l1:l2,m1:m2,n1:n2,1:mvar) = f(l1:l2,m1:m2,n1:n2,1:mvar) &
+                                           +  dt_beta_ts(itsub) * df(l1:l2,m1:m2,n1:n2,1:mvar)
+          if (mfarray>mvar) f(l1:l2,m1:m2,n1:n2,mvar+1:mfarray) = farr(l1:l2,m1:m2,n1:n2,mvar+1:mfarray)
+        endif
+!
+!    Time evolution of point masses.
 !
         if (lpointmasses.and..not.lgpu) call pointmasses_timestep_second(f)
 !
-!  Time evolution of particle variables.
+!    Time evolution of particle variables.
 !
         if (lparticles.and..not.lgpu) call particles_timestep_second(f)
 !
-! Time evolution of ODE variables.
+!   Time evolution of ODE variables.
 !
         if (lode.and..not.lgpu) call ode_timestep_second
 !
-!  Time evolution of solid_cells.
-!  Currently this call has only keep_compiler_quiet so set ds=1
+!    Time evolution of solid_cells.
+!    Currently this call has only keep_compiler_quiet so set ds=1
+
+        if (lsolid_cells.and..not.lgpu) call solid_cells_timestep_second(f,dt_beta_ts(itsub),2.)
 !
-        if (lsolid_cells.and..not.lgpu) call solid_cells_timestep_second(f,dtsub,2.)
-!
-!  Advance deltay of the shear (and, optionally, perform shear advection
-!  by shifting all variables and their derivatives).
+!    Advance deltay of the shear (and, optionally, perform shear advection
+!    by shifting all variables and their derivatives).
 !
         if (lshear.and..not.lgpu) then
           call impose_floors_ceilings(f)
           call update_ghosts(f)  ! Necessary for non-FFT advection but unnecessarily overloading FFT advection
-          call advance_shear(f, df, dtsub)
+          call advance_shear(f, df, dt_beta_ts(itsub))
         endif
 !
-        if (.not. lgpu) call update_after_substep(f,df,dtsub,llast)
-!
-!  Time evolution of grid variables.
-!
-        if (.not. lgpu) then
-          if (itorder>2) then
-            errdf = errdf + dt_beta_hat(itsub)*df(l1:l2,m1:m2,n1:n2,1:mvar)
-          endif
-          f(l1:l2,m1:m2,n1:n2,1:mvar) =  f(l1:l2,m1:m2,n1:n2,1:mvar) &
-                                               +  dt_alpha_ts(itsub) * df(l1:l2,m1:m2,n1:n2,1:mvar)
-          falpha(l1:l2,m1:m2,n1:n2,1:mvar) =  f(l1:l2,m1:m2,n1:n2,1:mvar) &
-                                               +  (dtsub - dt_alpha_ts(itsub)) * df(l1:l2,m1:m2,n1:n2,1:mvar)
-          if (mfarray>mvar) falpha(:,:,:,mvar+1:mfarray) = f(:,:,:,mvar+1:mfarray)
-          if (llast.and.mod(itsub,2)==1) f_arr = falpha_arr
-        endif
+        if (.not. lgpu) call update_after_substep(farr,df,dt_beta_ts(itsub),llast)
 !
 !  Increase time.
 !
-        t = t + dtsub
+        t = t + dt_beta_ts(itsub)
 !
       enddo substep_loop
 !
 !  Integrate operator split terms.
 !
       if (.not. lgpu) then
-        call split_update(f_arr)
+        call split_update(f)
 !
 !  Check how much the maximum error satisfies the defined accuracy threshold
 !
@@ -313,13 +302,12 @@ module Timestep
                   !requires initial f state to be stored
                   !depricated
                   if (lroot.and.lfirst.and.it==1) call warning("time_step","recommend 'rel_err' vs 'cons_frac_error'")
-                  scal = max(abs(f_arr(l1:l2,m,n,j))+abs(df(l1:l2,m,n,j)),farraymin(j))
+                  scal = max(abs(f(l1:l2,m,n,j))+abs(df(l1:l2,m,n,j)),farraymin(j))
                   errmaxs = max(maxval(abs(errdf(:,m-nghost,n-nghost,j))/scal),errmaxs)
                 case ('rel_err')
-                  !initial f state can be overwritten
-                  !TP: what is the meaning of taking the initial state into account like this?
-                  !    is it to remove unnecessary low timesteps or something like that?
-                  scal = max(abs(f_arr(l1:l2,m,n,j)),farraymin(j))
+                  !calculate the maximum error relative to f with lower bound of farraymin
+                  !to exclude division by zero/tini and avoid unnecessaruíly low timestep.
+                  scal = max(abs(f(l1:l2,m,n,j)),farraymin(j))
                   errmaxs = max(maxval(abs(errdf(:,m-nghost,n-nghost,j))/scal),errmaxs)
                 case ('abs_err')
                   !initial f state can be overwritten
