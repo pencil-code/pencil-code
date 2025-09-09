@@ -165,6 +165,10 @@ module Shear
       if (lgpu .and. lshearadvection_as_shift) then
               call fatal_error('initialize_shear','Shear advection as shift is not yet supported on GPUs!')
       endif
+
+      if (.not. lcourant_dt .and. lshearadvection_as_shift) then
+              call fatal_error('initialize_shear','Shear advection as shift does not work for RKF or timestep_stiff.f90!')
+      endif
 !
     endsubroutine initialize_shear
 !***********************************************************************
