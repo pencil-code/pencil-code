@@ -1792,7 +1792,8 @@ module Interstellar
           if (laverage_SNII_heating) &
             heatingfunction_scale(SNII)= t_interval(SNII)/(t_interval(SNII)+t*heatingfunction_fadefactor) &
                                         *heatingfunction_scalefactor
-          if (lgpu) call update_on_gpu(ind_scale,'AC_heatingfunction_scale')   ! returns index ind_scale at first call!
+          !TP: Fred or Matthias why was this needed, I don't see where it is used
+          !if (lgpu) call update_on_gpu(ind_scale,'AC_heatingfunction_scale')   ! returns index ind_scale at first call!
         endif
       endif
 
@@ -4810,7 +4811,7 @@ mn_loop:do n=n1,n2
       call copy_addr(t0uv,p_par(3))
       call copy_addr(ncool,p_par(4))                  ! int
 !
-      call copy_addr(heatingfunction_scale,p_par(5))  ! (2)
+      !call copy_addr(heatingfunction_scale,p_par(5))  ! (2)
       call copy_addr(heat_sni_profile,p_par(6))        ! (nz)
       call copy_addr(heat_snii_profile,p_par(7))       ! (nz)
 
@@ -4828,6 +4829,13 @@ mn_loop:do n=n1,n2
       call copy_addr(heat_z,p_par(21)) ! (mz)
       call string_to_enum(enum_heating_select,heating_select)
       call copy_addr(enum_heating_select,p_par(22)) ! int
+      call copy_addr(h_sni,p_par(23))
+      call copy_addr(h_snii,p_par(24))
+      call copy_addr(heatingfunction_scalefactor,p_par(25))
+      call copy_addr(heatingfunction_fadefactor,p_par(26))
+      call copy_addr(lsni,p_par(27)) ! bool
+      call copy_addr(lsnii,p_par(28)) ! bool
+      call copy_addr(t_interval,p_par(29)) ! (2)
       !call copy_addr(gamma,p_par(19))
 !      call copy_addr(heat_z,p_par(13))   ! (mz)
 
