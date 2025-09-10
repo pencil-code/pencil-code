@@ -1015,7 +1015,7 @@ module Equ
 !  are not communicated, and in this subroutine also ghost zones are calculated.
 !
       if (lchemistry .and. ldensity) call calc_for_chem_mixture(f)
-    endsubroutine after_boundary
+    endsubroutine after_boundary_cpu
 !***********************************************************************
     subroutine prep_rhs
       use Special, only: prep_rhs_special
