@@ -112,6 +112,8 @@ if (USE_DARDEL)
   set(MPI_LIB /opt/cray/pe/mpich/8.1.28/ofi/crayclang/17.0/lib)
   include_directories(${MPI_INCLUDE})
   link_directories(${MPI_LIB})
+elseif(CMAKE_CXX_COMPILER MATCHES "mpic\\+\\+$")
+    message(STATUS "Detected mpic++ as the C++ compiler so skipping linking MPI")
 else()
   set(MPI_CXX_SKIP_MPICXX ON) # Skip MPI C++ bindings
   find_package(MPI REQUIRED COMPONENTS C)

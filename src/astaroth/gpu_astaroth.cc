@@ -142,9 +142,6 @@ static MPI_Comm comm_pencil = MPI_COMM_NULL;
 // Astaroth objects instantiation.
 static AcMesh mesh = acInitMesh();
 //static AcMesh test_mesh;
-static AcTaskGraph *randomize_graph;
-static AcTaskGraph *rhs_test_graph;
-static AcTaskGraph *rhs_test_rhs_1;
 
 void torch_trainCAPI(int sub_dims[3], float* input, float* label, float* loss_val, bool dble=false);
 void torch_inferCAPI(int sub_dims[3], float* input, float* label, bool dble=false);
@@ -241,8 +238,6 @@ extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
   // return;
   // make_tasks(diagnostics_func, reduction_func, finalize_func, write_func);
   // thread_pool.WaitAll();
-  constexpr AcReal alpha[3] = {0.0, (AcReal)-(5.0 / 9.0), (AcReal)-(153.0 / 128.0)};
-  constexpr AcReal beta[3] = {(AcReal)(1.0 / 3.0), (AcReal)(15.0 / 16.0), (AcReal)(8.0 / 15.0)};
   constexpr int num_of_steps = 100;
 
   AcMesh mesh_true;
@@ -795,6 +790,7 @@ AcReal calc_dt1_courant(const AcReal t)
       maxnu_dyn = acDeviceGetOutput(acGridGetDevice(), AC_maxnu);
 //if (rank==0) printf("maxnu_dyn= %e \n", maxnu_dyn);
 #endif
+      //fprintf(stderr,"Maxadvec: %14e\n",maxadvec);
       return (AcReal)sqrt(pow(maxadvec, 2) + pow(max_diffus(maxnu_dyn,maxchi_dyn), 2));
 
 #endif
@@ -822,210 +818,6 @@ extern "C" void sourceFunctionAndOpacity(int inu)
 	acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraphWithBounds(get_source_function_and_opacity,start,end),1);
 #endif
 }
-/***********************************************************************************************/
-/*
-extern "C" void substepGPU(int isubstep)
-//
-//  Do the 'isubstep'th integration step on all GPUs on the node and handle boundaries.
-//
-{
-   //TP: with on does timestepping the way PC does it
-   //TP: logs performance metrics of Astaroth
-   const bool log = true;
-#if LFORCING
-  //Update forcing params
-   if (lsecond_force) 
-   {
-	   fprintf(stderr,"Second forcing force not yet implemented on GPU!\n");
-	   exit(EXIT_FAILURE);
-   }
-   if (isubstep == itorder) forcing_params.Update();  // calculate on CPU and load into GPU
-#endif
-
-  acDeviceSetInput(acGridGetDevice(), AC_step_num,(PC_SUB_STEP_NUMBER) (isubstep-1));
-  if (lshear && isubstep == 1) acDeviceSetInput(acGridGetDevice(), AC_shear_delta_y,deltay);
-  Device dev = acGridGetDevice();
-  //TP: done in this more complex manner to ensure the actually integrated time and the time reported by Pencil agree
-  //if we call set_dt after the first timestep there would be slight shift in dt what Pencil sees and what is actually used for time integration
-  
-  if (isubstep == 1) 
-  {
-	  //TP: done to have the same timestep as PC when testing
-	  if (ldt && lcpu_timestep_on_gpu) dt1_interface = GpuCalcDt();
-	  if (ldt) set_dt(dt1_interface);
-	  acDeviceSetInput(acGridGetDevice(), AC_dt,dt);
-  }
-  //fprintf(stderr,"before acGridExecuteTaskGraph");
-  AcTaskGraph *rhs =  acGetOptimizedDSLTaskGraph(AC_rhs);
-  auto start = MPI_Wtime();
-  acGridExecuteTaskGraph(rhs, 1);
-  auto end = MPI_Wtime();
-  if (log && !rank) fprintf(stderr,"RHS TOOK: %14e\n",end-start);
-  if (ldt &&
-        ((isubstep == 5 && !lcourant_dt) 
-        || (isubstep == 1 && lcourant_dt)
-     ))
-  {
-    constexpr AcReal unit = 1.0;
-    AcReal dt1_{};
-    if (!lcourant_dt)
-    {
-      const AcReal maximum_error = acDeviceGetOutput(acGridGetDevice(), AC_maximum_error)/eps_rkf;
-      AcReal dt_{};
-      const AcReal dt_increase=-unit/(itorder+dtinc);
-      const AcReal dt_decrease=-unit/(itorder-dtdec);
-      constexpr AcReal safety=(AcReal)0.95;
-      if (maximum_error > 1)
-      {
-      	// Step above error threshold so decrease the next time step
-      	const AcReal dt_temp = safety*dt*pow(maximum_error,dt_decrease);
-      	// Don't decrease the time step by more than a factor of ten
-        constexpr AcReal decrease_factor = (AcReal)0.1;
-      	dt_ = sign(max(abs(dt_temp), decrease_factor*abs(dt)), dt);
-      } 
-      else
-      {
-      	dt_ = dt*pow(maximum_error,dt_increase);
-      }
-      dt1_ = unit/dt_;
-    }
-    else 
-    {
-      dt1_ = calc_dt1_courant();
-    }
-    dt1_interface = dt1_;
-  }
-  return;
-}
-/***********************************************************************************************/
-/**
-extern "C" void testBcKernel(AcReal *farray_in, AcReal *farray_truth)
-{
-  AcMesh mesh_true;
-  AcMesh mesh_test;
-  AcReal epsilon = 0.00001;
-
-  size_t offset = 0;
-  for (int i = 0; i < NUM_VTXBUF_HANDLES; ++i)
-  {
-    mesh_test.vertex_buffer[VertexBufferHandle(i)] = &farray_in[offset];
-    offset += mw;
-  }
-  offset = 0;
-  for (int i = 0; i < NUM_VTXBUF_HANDLES; ++i)
-  {
-    mesh_true.vertex_buffer[VertexBufferHandle(i)] = &farray_truth[offset];
-    offset += mw;
-  }
-
-  // AcReal cv1 = 1.66666663;
-  // lnrho0 = 0;
-  // cp = 1.0;
-  // AcReal gamma_m1 = 0.666666627;
-
-  //Emulate the gpu code serially
-  int3 dims = {mx, my, 1};
-  for (int i = 0; i < dims.x; i++)
-  {
-    for (int j = 0; j < dims.y; j++)
-    {
-      for (int k = 0; k < dims.z; k++)
-      {
-        //Remember to convert to zero based index :))))))
-        // AcReal ftopktop = 1.0;
-        // AcReal rho_xy=exp(mesh.vertex_buffer[ilnrho-1][DEVICE_VTXBUF_IDX(i,j,n2-1)]);
-        // AcReal cs2_xy = mesh.vertex_buffer[iss-1][DEVICE_VTXBUF_IDX(i,j,n2-1)];
-        // cs2_xy=cs20*exp(gamma_m1*(mesh.vertex_buffer[ilnrho-1][DEVICE_VTXBUF_IDX(i,j,n2-1)]-lnrho0)+cv1*cs2_xy);
-        // AcReal tmp_xy=ftopktop/cs2_xy;
-        // for (int z=1;z<=3;z++){
-        //     rho_xy = mesh.vertex_buffer[ilnrho-1][DEVICE_VTXBUF_IDX(i,j,n2+z-1)]-mesh.vertex_buffer[ilnrho-1][DEVICE_VTXBUF_IDX(i,j,n2-z-1)];
-        //     mesh.vertex_buffer[iss-1][DEVICE_VTXBUF_IDX(i,j,n2+z-1)] = mesh.vertex_buffer[iss-1][DEVICE_VTXBUF_IDX(i,j,n2-z-1)] + cp*(cp-cv)*(-rho_xy-1.0*tmp_xy);
-        // }
-        //#include "res.cuh"
-      }
-    }
-  }
-  bool passed = true;
-  for (int i = 0; i < mx; i++)
-  {
-
-    for (int j = 0; j < my; j++)
-    {
-      for (int k = 0; k < mz; k++)
-      {
-        for (int ivar = 0; ivar < mfarray; ivar++)
-        {
-          AcReal out_val = mesh_test.vertex_buffer[ivar][DEVICE_VTXBUF_IDX(i, j, k)];
-          AcReal true_val = mesh_true.vertex_buffer[ivar][DEVICE_VTXBUF_IDX(i, j, k)];
-          if (fabs(out_val - true_val) > epsilon)
-          {
-            passed = false;
-            acLogFromRootProc(rank,"C val wrong at %d,%d,%d\n", i, j, k);
-            acLogFromRootProc(rank,"field = %d", ivar);
-            acLogFromRootProc(rank,"C val: %f\tF val: %f\n", out_val, true_val);
-          }
-        }
-      }
-    }
-  }
-  if (passed)
-  {
-    acLogFromRootProc(rank,"Passed C test :)\n");
-  }
-  else
-  {
-    acLogFromRootProc(rank,"Did not pass C test :(\n");
-  }
-  if (!passed) return;
-  acLogFromRootProc(rank,"Starting GPUtest\n");
-  fflush(stdout);
-  acGridSynchronizeStream(STREAM_ALL);
-  // acGridLoadMesh(STREAM_DEFAULT,mesh);
-  // acLogFromRootProc(rank,"loaded mesh\n");
-  // acGridTestBCKernel({mx,my,1});
-
-  acGridSynchronizeStream(STREAM_ALL);
-  acLogFromRootProc(rank,"after bc kernel\n");
-  fflush(stdout);
-  acGridStoreMesh(STREAM_DEFAULT, &mesh);
-  acGridSynchronizeStream(STREAM_ALL);
-  acLogFromRootProc(rank,"after store\n");
-  fflush(stdout);
-  AcReal max_abs_not_passed=-1.0;
-  for (int i = 0; i < mx; i++)
-  {
-    for (int j = 0; j < my; j++)
-    {
-      for (int k = 0; k < mz; k++)
-      {
-        for (int ivar = 0; ivar < mfarray; ivar++)
-        {
-          AcReal out_val = mesh.vertex_buffer[ivar][DEVICE_VTXBUF_IDX(i, j, k)];
-          AcReal true_val = mesh_true.vertex_buffer[ivar][DEVICE_VTXBUF_IDX(i, j, k)];
-          if (fabs(out_val - true_val) > epsilon)
-          {
-            passed = false;
-            acLogFromRootProc(rank,"GPU val wrong at %d,%d,%d\n", i, j, k);
-            acLogFromRootProc(rank,"field = %d", ivar);
-            acLogFromRootProc(rank,"GPU val: %f\tTRUE val: %f\tDIFF: %f\n", out_val, true_val, fabs(out_val - true_val));
-            if (fabs(out_val)>max_abs_not_passed) max_abs_not_passed = out_val;
-          }
-        }
-      }
-    }
-  }
-  acLogFromRootProc(rank,"maximum abs incorrect val: %f\n",max_abs_not_passed);
-  if (passed)
-  {
-    acLogFromRootProc(rank,"Passed GPU test :)\n");
-  }
-  else
-  {
-    acLogFromRootProc(rank,"Did not pass GPU test :(\n");
-  }
-  return;
-}
-*/
 /***********************************************************************************************/
 extern "C" void registerGPU()
 {
@@ -2094,14 +1886,6 @@ void testBCs()
   bool different_in[NUM_VTXBUF_HANDLES][27]{};
   //TP: stupid levels of safety
   memset(different_in,0,NUM_VTXBUF_HANDLES*27*sizeof(bool));
-  const int bot_x = 0;
-  const int top_x = 1;
-
-  const int bot_y = 2;
-  const int top_y = 3;
-
-  const int bot_z = 4;
-  const int top_z = 5;
   int num_of_points = 0;
 
   for (size_t i = start_x; i < end_x; i++)
