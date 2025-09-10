@@ -189,3 +189,6 @@ gmem real AC_reac_dust__mod__cdata[1]
 #else
 gmem real AC_reac_chem__mod__cdata[1]
 #endif
+
+#include "../bcs/funcs.h"
+#include "../bcs/funcs_overload.h"
