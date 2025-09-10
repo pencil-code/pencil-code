@@ -94,7 +94,7 @@ module Special
   character (len=labellen) :: aux_stress='stress', idelkt='jump', ihorndeski_time='const'
   real :: amplGW=0., amplGW2=0., amplGWX=0., kpeak_GW=1., initpower_gw=0., initpower2_gw=-4., cutoff_GW=500.
   real :: trace_factor=0., stress_prefactor, fourthird_factor, EGWpref
-  real :: nscale_factor_conformal=1., tshift=0.
+  real :: nscale_factor_conformal=1., tshift=0., om2_min_factor=1e-4
   real :: t_equality=3.789E11, t_acceleration=1.9215E13, t_0=1.3725E13
   real :: k1hel=0., k2hel=1., kgaussian_GW=0., ncutoff_GW=2., relhel_GW=0.
   real, pointer :: ddotam
@@ -111,7 +111,7 @@ module Special
   logical :: linflation=.false., lreheating_GW=.false., lmatter_GW=.false., ldark_energy_GW=.false.
   logical :: lonly_mag=.false.!, lread_scl_factor_file=.false.
   logical :: lstress=.true., lstress_ramp=.false., lstress_upscale=.false.
-  logical :: lturnoff=.false., ldelkt=.false.
+  logical :: lturnoff=.false., ldelkt=.false., lno_switch_om2_min=.false.
   logical :: lnonlinear_source=.false., lnonlinear_Tpq_trans=.true.
   logical :: reinitialize_GW=.false., lboost=.false., lhorndeski=.false., lhorndeski_xi=.false.
   logical :: lscale_tobox=.false., lskip_projection_GW=.false., lvectorpotential=.false.
@@ -157,7 +157,7 @@ module Special
     initGW, amplGW, amplGW2, amplGWX, kpeak_GW, initpower_gw, initpower2_gw, cutoff_GW, &
     lStress_as_aux, lgamma_factor, &
     lreal_space_hTX_as_aux, lreal_space_gTX_as_aux, lreal_space_hij_as_aux, &
-    lscalar, lscalar_phi, &
+    lscalar, lscalar_phi, lno_switch_om2_min, om2_min_factor, &
     lelectmag, lggTX_as_aux, lhhTX_as_aux, linflation, lreheating_GW, lmatter_GW, ldark_energy_GW, &
     lonly_mag, lread_scl_factor_file, t_ini, &
     lno_noise_GW, lrandom_ampl_GW, &
@@ -172,7 +172,7 @@ module Special
     ldebug_print, lswitch_sign_e_X, lswitch_symmetric, lStress_as_aux, &
     lswitch_sign_e_X_boost, &
     nscale_factor_conformal, tshift, cc_light, lgamma_factor, &
-    t_equality, t_acceleration, &
+    t_equality, t_acceleration, lno_switch_om2_min, om2_min_factor, &
     lStress_as_aux, lkinGW, aux_stress, tau_stress_comp, exp_stress_comp, lscalar, lscalar_phi, &
     lelectmag, tau_stress_kick, fac_stress_kick, delk, tdelk, ldelkt, idelkt, tau_delk, &
     lreal_space_hTX_as_aux, lreal_space_gTX_as_aux, lreal_space_hij_as_aux, &
@@ -925,6 +925,7 @@ module Special
     subroutine calc_pencils_special(f,p)
 !
 !  Calculate Special pencils; especially the unprojected STRESS tensor p%stress_ij.
+!  In dspecial_dt, we put the result into the f-array; f(l1:l2,m,n,iStress_ij+ij-1).
 !  Most basic pencils should come first, as others may depend on them.
 !
 !  24-aug-17/axel: coded
@@ -1699,17 +1700,6 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
                   endif
                 endif
 !
-!if ((ikx==2 .or. ikx==nx) .and. iky==1 .and. ikz==1) then
-!  print*,'AXEL: k1,k2,k3=',k1,k2,k3
-!  print*,'AXEL: k1_boost,k2_boost,k3_boost=',k1_boost,k2_boost,k3_boost
-!  print*,'AXEL: hhT,hhTim,hhX,hhXim=', &
-!    f(nghost+ikx,nghost+iky,nghost+ikz,ihhT  ), &
-!    f(nghost+ikx,nghost+iky,nghost+ikz,ihhTim), &
-!    f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  ), &
-!    f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim)
-!  print*,'AXEL: hhT_boost,hhTim_boost,hhX_boost,hhXim_boost=',hhT_boost,hhTim_boost,hhX_boost,hhXim_boost
-!endif
-!
 !  Now do g, but this could also be switcheable
 !
                !if (GWs_spec_boost) then
@@ -1725,7 +1715,7 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
                !endif
 !
 !  end of lboost
-!???
+!
               endif
 !
 !  SVT decomposition (not related to boost).
@@ -1951,13 +1941,6 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
                       enddo
                       enddo
                       fact_boost   =DT_a_sum_boost*DT_b_sum_boost+DX_a_sum_boost*DX_b_sum_boost
-!if (ikx==2 .and. iky==2 .and. ikz==2 .and. ipulsar==1 .and. jpulsar==3) then
-!  print*,'AXEL2: DT_a_sum,DT_b_sum,DX_a_sum,DX_b_sum=',DT_a_sum,DT_b_sum,DX_a_sum,DX_b_sum
-!  print*,'AXEL2: DT_a_sum_boost,DT_b_sum_boost,DX_a_sum_boost,DX_b_sum_boost=', &
-!                 DT_a_sum_boost,DT_b_sum_boost,DX_a_sum_boost,DX_b_sum_boost
-!  print*,'AXEL2: fact,fact_boost=',fact,fact_boost
-!endif
-!if (ikx==2 .and. iky==2 .and. ikz==2 .and. ipulsar=1 .and. jpulsar=3) print*,'AXEL: fact,fact_boost=',fact,fact_boost
                       facthel_boost=DT_a_sum*DX_b_sum-DX_a_sum*DT_b_sum
                       spectra%GWh_Gamma_Bb(ik,ibin_angular)=spectra%GWh_Gamma_Bb(ik,ibin_angular) &
                          +(hhX_boost  **2 &
@@ -2059,9 +2042,7 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
 !
               elseif (ik==0) then
                 spectra%GWhhel_Gamma_ang(ik,:)=spectra%GWhhel_Gamma_ang(ik,:)+1.
-!print*,'AEXEL: test t,ik=',t,ik
               else
-!print*,'AXEL: other test t,ik=',t,ik
               endif
 !
 !  endif from k^2=0
@@ -2502,7 +2483,7 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
 !  Choose 1e-4 arbitrarily.
 !
       kmin=2*pi/sqrt(Lx**2+Ly**2+Lz**2)
-      om2_min=(1e-4*kmin)**2
+      om2_min=(om2_min_factor*kmin)**2
 !
 !  Set ST=SX=0 and reset all spectra.
 !
@@ -2737,8 +2718,9 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
             ggXim=f(nghost+ikx,nghost+iky,nghost+ikz,iggXim)
 !
 !  compute cos(om*dt) and sin(om*dt) to get from one timestep to the next.
+!  Allow this dubious switch to be ignored by putting lno_switch_om2_min=T
 !
-            if (om2>om2_min) then
+            if (lno_switch_om2_min .or. om2>om2_min) then
               om12=1./om2
 !
 !  check whether om^2 is positive. If om^2 is positive, we have the standard
@@ -2922,7 +2904,7 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
 !  It also allows for the inclusion of nonlinear corrections to the wave equation.
 !  Alternatively, we can also solve the Lighthill equation if lLighthill=T.
 !
-!  07-aug-17/axel: coded
+!  07-aug-17/axel: coded (MAIN part doing the TT projection)
 !
       use Fourier, only: fourier_transform, fft_xyz_parallel, kx_fft, ky_fft, kz_fft
       use Diagnostics
@@ -3130,9 +3112,6 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
 !
           call fft_xyz_parallel(hij_re,hij_im,linv=.true.)
           f(l1:l2,m1:m2,n1:n2,ihij)=hij_re
-!print*,'AXEL: =ij,i,j,hij_re=',ij,i,j,hij_re(2,2,2)
-!print*,'AXEL: =ij,i,j,hij_re=',ij,i,j,hij_re(2,1,1)
-!print*,'AXEL: =ij,i,j,hij_im=',ij,i,j,hij_im(2,1,1)
 !
 !  enddo ij loop
 !
