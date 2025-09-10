@@ -294,8 +294,9 @@ module Equ
 !
         call timing('pde','before "after_boundary" calls')
 !
+        call after_boundary_shared(f,df)
         if (.not. lgpu) then
-          call after_boundary(f,df)
+          call after_boundary_cpu(f,df)
         endif
 !      endif
 !
@@ -959,7 +960,17 @@ module Equ
 
     endsubroutine before_boundary_cpu
 !***********************************************************************
-    subroutine after_boundary(f,df)
+    subroutine after_boundary_shared(f,df)
+
+      use Training, only: training_after_boundary
+
+      real, intent(INOUT), dimension(mx,my,mz,mfarray) :: f
+      real, intent(INOUT), dimension(mx,my,mz,mvar)    :: df
+
+      if (ltraining)       call training_after_boundary(f)
+    endsubroutine after_boundary_shared
+!***********************************************************************
+    subroutine after_boundary_cpu(f,df)
 
       use Hydro, only: hydro_after_boundary
       use Viscosity, only: viscosity_after_boundary
@@ -976,7 +987,6 @@ module Equ
       use TestFlow, only: calc_ltestflow_nonlin_terms
       use Magnetic_meanfield, only: meanfield_after_boundary
       use Special, only: special_after_boundary
-      use Training, only: training_after_boundary
       use Chemistry, only: calc_for_chem_mixture
 
       real, intent(INOUT), dimension(mx,my,mz,mfarray) :: f
@@ -999,7 +1009,6 @@ module Equ
       if (ltestflow)       call calc_ltestflow_nonlin_terms(f,df)  ! should not use df!
       if (lmagn_mf)        call meanfield_after_boundary(f)
       if (lspecial)        call special_after_boundary(f)
-      if (ltraining)       call training_after_boundary(f)
 !
 !  Calculate quantities for a chemical mixture. This is done after
 !  communication has finalized since many of the arrays set up here
@@ -1787,7 +1796,7 @@ module Equ
         df_copy = 0.0
         dt_beta_ts = dt*beta_ts
         call before_boundary_cpu(f_copy)
-        call after_boundary(f_copy,df_copy)
+        call after_boundary_cpu(f_copy,df_copy)
         !if(itsub == 1) then
         !        f_beta = f_copy
         !endif
