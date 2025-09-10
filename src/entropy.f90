@@ -8641,6 +8641,8 @@ module Energy
     call copy_addr(nlf_sld_ene,p_par(464))
     call copy_addr(hcondxbot,p_par(465))
     call copy_addr(hcondxtop,p_par(466))
+    call copy_addr(pp_cool,p_par(467))
+    call copy_addr(tau_cool_pp,p_par(468))
 
 
     endsubroutine pushpars2c
