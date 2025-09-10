@@ -86,6 +86,8 @@ const int prof_nz = 150
 //
 #define IN_DSL 1
 #include "cparam.h"
+#undef AC_bot
+#undef AC_top
 #include "../../../cparam_c.h"
 #include "../../../cparam_pencils.inc_c.h"
 #include "PC_modulepardecs.h"
