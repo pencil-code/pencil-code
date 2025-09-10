@@ -7099,8 +7099,8 @@ module Chemistry
         !
         if (lnucl_dynamic) then
           df(l1:l2,m,n,icc+2) = df(l1:l2,m,n,icc+2) &
-            + (p%ff_nucl*(1+p%cc(:,1))*p%rho1 - f(l1:l2,m,n,icc))/(Ntau*dt)
-          df(l1:l2,m,n,icc) = df(l1:l2,m,n,icc)     + f(l1:l2,m,n,icc+2)
+            + (p%ff_nucl*(1+f(l1:l2,m,n,icc))*p%rho1 - f(l1:l2,m,n,icc+2))/(Ntau*dt)
+          df(l1:l2,m,n,icc) = df(l1:l2,m,n,icc) + f(l1:l2,m,n,icc+2)
           !
           ! Check if nucleii have just be added in particles_dust
           !
@@ -7108,7 +7108,6 @@ module Chemistry
             if (lnucleii_generated(ii-nghost,m-nghost,n-nghost)) then
               df(ii,m,n,icc+2) = df(ii,m,n,icc+2) &
                    - redfrac*f(ii,m,n,icc)/(Ntau*dt**2)
-              !df(ii,m,n,icc+1) = -redfrac*f(ii,m,n,icc+1)/dt
             endif
           enddo
         else
