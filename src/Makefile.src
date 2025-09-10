@@ -481,6 +481,11 @@ else
     endif
   endif
 endif
+
+USE_SPECIAL_DISPATCHER=no
+ifneq ($(SPECIAL_MULT),1)
+  USE_SPECIAL_DISPATCHER=yes
+endif
 #
 CUDA_MAKEDIR=astaroth
 CUDA_INCDIR=$(CUDA_MAKEDIR)
@@ -3007,7 +3012,7 @@ endef
 #       python preprocessor.py
 
 special/%.o: special/%.f90
-ifneq ($(SPECIAL_MULT),1)
+ifeq ($(USE_SPECIAL_DISPATCHER),yes)
 	$(FC) $(ALL_COMP_FLAGS) $(FSTD) $(DLL_FFLAGS) -o special/$*.o -c special/$*.f90
 else
 	$(FC) $(ALL_COMP_FLAGS) $(FSTD) -o special/$*.o -c special/$*.f90
@@ -3028,7 +3033,7 @@ default_to_be: Makefile cparam.inc code buildinfo
 #  Please use alphabetical order.
 #
 preprocess=$(ASCALAR_SRC) $(BORDER_PROFILES_SRC) $(CHEMISTRY_SRC) $(CHIRAL_SRC) $(COSMICRAY_SRC) $(COSMICRAYFLUX_SRC) $(DENSITY_SRC) $(DERIV_SRC) $(DETONATE_SRC) $(DUSTDENSITY_SRC) $(DUSTVELOCITY_SRC) $(ENERGY_SRC) $(EOS_SRC) $(FIXED_POINT_SRC) $(FORCING_SRC) $(GRAVITY_SRC) $(GPU_SRC) $(GRID_SRC) $(HEATFLUX_SRC) $(HYDRO_SRC) $(HYPERRESI_STRICT_SRC) $(HYPERVISC_STRICT_SRC) $(IMPLICIT_DIFFUSION_SRC) $(IMPLICIT_PHYSICS_SRC) $(INITIAL_CONDITION_SRC) $(INTERSTELLAR_SRC) $(LORENZ_GAUGE_SRC) $(MAGNETIC_SRC) $(MAGNETIC_MEANFIELD_SRC) $(MAGNETIC_MEANFIELD_DEMFDT_SRC) $(MPICOMM_SRC) $(NEUTRALDENSITY_SRC) $(NEUTRALVELOCITY_SRC) $(NSCBC_SRC) $(OPACITY_SRC) $(PARTICLES_SRC) $(PARTICLES_ADAPTATION_SRC) $(PARTICLES_COAGULATION_SRC) $(PARTICLES_CONDENSATION_SRC)  $(PARTICLES_COLLISIONS_SRC) $(PARTICLES_MAP_SRC) $(PARTICLES_DENSITY_SRC)  $(PARTICLES_MASS_SRC) $(PARTICLES_NUMBER_SRC) $(PARTICLES_RADIUS_SRC) $(PARTICLES_POTENTIAL_SRC) $(PARTICLES_GRAD_SRC) $(PARTICLES_SELFGRAVITY_SRC) $(PARTICLES_SINK_SRC) $(PARTICLES_DRAG_SRC) $(PARTICLES_SPIN_SRC) $(PARTICLES_STALKER_SRC) $(PARTICLES_LYAPUNOV_SRC) $(PARTICLES_CAUSTICS_SRC) $(PARTICLES_TETRAD_SRC) $(PARTICLES_STIRRING_SRC) $(PARTICLES_DIAGNOS_DV_SRC) $(PARTICLES_DIAGNOS_STATE_SRC) $(PARTICLES_PERSISTENCE_SRC) $(PARTICLES_TEMPERATURE_SRC) $(PARTICLES_ADSORBED_SRC) $(PARTICLES_SURFSPEC_SRC) $(PARTICLES_CHEMISTRY_SRC) $(POINTMASSES_SRC) $(POISSON_SRC) $(POLYMER_SRC) $(POWER_SRC) $(PYTHON_SRC) $(PSCALAR_SRC) $(RADIATION_SRC) $(SELFGRAVITY_SRC) $(SGSHYDRO_SRC) $(SHEAR_SRC) $(SHOCK_SRC) $(SIGNAL_HANDLING_SRC) $(SOLID_CELLS_SRC) $(STREAMLINES_SRC) $(TESTFIELD_GENERAL_SRC) $(TESTFIELD_SRC) $(TESTFLOW_SRC) $(TESTSCALAR_SRC) $(TIMEAVG_SRC) $(TRAINING_SRC) $(VISCOSITY_SRC) cparam.local
-ifeq ($(SPECIAL_MULT),1)
+ifeq ($(USE_SPECIAL_DISPATCHER),no)
   preprocess += $(SPECIAL_SRC)
 else
   preprocess += $(SPECIAL_MODULES:=.f90)
@@ -3055,7 +3060,7 @@ run=$(technical) $(physics) $(GPU_OBJ) $(GPU_INTERFACE) $(TIMESTEP_OBJ) $(TRAINI
 #Astaroth needs the .o files to be linked to get the pushpars from the special modules
 ifneq ($(GPU),nogpu)
 #run+=$(MAGNETIC_MEANFIELD_OBJ)
-ifneq ($(SPECIAL_MULT),1)
+ifeq ($(USE_SPECIAL_DISPATCHER),yes)
 run+=$(SPECIAL_MODULES:=.o)
 endif
 endif
@@ -3086,7 +3091,7 @@ $(LIBGPU): $(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/Makefile.vendor
 	cd astaroth && make MPICOMM=$(MPICOMM) RUNTIME_COMPILATION=$(RUNTIME_COMPILATION) TRAINING=$(TRAINING)
 #
 special_preps:
-ifeq ($(SPECIAL_MULT),1)
+ifeq ($(USE_SPECIAL_DISPATCHER),no)
 	@sed -e '/module  *procedure/ ! s/^\( *module  *\)[a-zA-Z0-9_]* */\1Special/' \
              -e 's/^\( *endmodule  *\)[a-zA-Z0-9_]* *$$/\1Special/' \
              -e "s/[a-zA-Z0-9_]*\.inc/special_dummies.inc/" \
@@ -3339,7 +3344,7 @@ geometrical_types.o: geometrical_types.f90
 	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) -c geometrical_types.f90 -o geometrical_types.o
 #
 special/meanfield_e_tensor.o: special/meanfield_e_tensor.f90
-ifneq ($(SPECIAL_MULT),1)
+ifeq ($(USE_SPECIAL_DISPATCHER),yes)
 	$(FC_HDF5) $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) $(DLL_FFLAGS) -c special/meanfield_e_tensor.f90 -o special/meanfield_e_tensor.o
 else
 	$(FC_HDF5) $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) -c special/meanfield_e_tensor.f90 -o special/meanfield_e_tensor.o
@@ -3467,7 +3472,7 @@ else
 endif
 
 special_dummies.inc:  nospecial.f90 $(SPECIAL_MODULES:=.f90) Makefile.local
-ifeq ($(SPECIAL_MULT),1)
+ifeq ($(USE_SPECIAL_DISPATCHER),no)
 	scripts/mkdummyinc -d nospecial.f90 -s $(SPECIAL).f90 -o special_dummies.inc
 else
 	@for file in $(SPECIAL_MODULES); do echo "$$file"_dummies.inc; scripts/mkdummyinc -d nospecial.f90 -s "$$file".f90 -o $${file#*/}_dummies.inc; done
