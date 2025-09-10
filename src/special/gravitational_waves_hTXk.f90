@@ -137,7 +137,7 @@ module Special
   integer :: npulsar
   integer :: nt_file, iTij=0, ilna=0
   real :: lgt0, dlgt, H0, dummy
-  real :: lgt_ini, a_ini, Hp_ini, appa_om=0
+  real :: lgt_ini, a_ini, Hp_ini, appa_om=0,appa_om_init
 ! added variables
   real, dimension (:,:,:,:), allocatable :: Tpq_re, Tpq_im
   real, dimension (:,:,:,:), allocatable :: nonlinear_Tpq_re, nonlinear_Tpq_im
@@ -618,6 +618,7 @@ module Special
 !
       call keep_compiler_quiet(f)
 !
+        appa_om_init = appa_om
     endsubroutine initialize_special
 !***********************************************************************
     subroutine read_pulsar_data
@@ -2478,6 +2479,10 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
         appa_om=appa_om*horndeski_alpM_eff+horndeski_alpM_eff2
         appa_om=appa_om+horndeski_alpM_eff3
       endif
+      if (lgpu .and. .not. (lread_scl_factor_file.and.lread_scl_factor_file_exists) &
+              .and. .not. lhorndeski_xi) then
+              appa_om = appa_om_init
+      endif
 
 !  Compute om2_min, below which no GWs are computed.
 !  Choose 1e-4 arbitrarily.
@@ -3397,10 +3402,11 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
     call copy_addr(h0,p_par(68))
     call copy_addr(horndeski_alpm_prime,p_par(69))
     call copy_addr(nt_file,p_par(70)) ! int
-    if (allocated(lgt_file)) call copy_addr(lgt_file,p_par(71)) ! (nt_file) gmem
-    if (allocated(lgff)) call copy_addr(lgff,p_par(72)) ! (nt_file) gmem
-    if (allocated(lgff2)) call copy_addr(lgff2,p_par(73)) ! (nt_file) gmem
-    if (allocated(lgff3)) call copy_addr(lgff3,p_par(74)) ! (nt_file) gmem
+    if (allocated(lgt_file)) call copy_addr(lgt_file,p_par(71)) ! (nt_file__mod__gravitational_waves_htxk) gmem
+    if (allocated(lgff)) call copy_addr(lgff,p_par(72)) ! (nt_file__mod__gravitational_waves_htxk) gmem
+    if (allocated(lgff2)) call copy_addr(lgff2,p_par(73)) ! (nt_file__mod__gravitational_waves_htxk) gmem
+    if (allocated(lgff3)) call copy_addr(lgff3,p_par(74)) ! (nt_file__mod__gravitational_waves_htxk) gmem
+    call copy_addr(appa_om_init,p_par(75)) 
 
 
     endsubroutine pushpars2c
