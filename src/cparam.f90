@@ -987,5 +987,6 @@ integer, parameter :: enum_calc_pencils_selfgravityZ__string = 703
 integer, parameter :: enum_galacticZbrandtZcurve_string = 704
 integer, parameter :: enum_s_string = 705
 integer, parameter :: enum_a2_string = 706
+integer, parameter :: enum_der_string = 707
 
 endmodule Cparam
