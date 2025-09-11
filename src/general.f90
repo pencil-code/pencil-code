@@ -8083,6 +8083,8 @@ iloop:do i=1,size(list2)
           dst = enum_galacticZbrandtZcurve_string
         case('s')
           dst = enum_s_string
+        case('a2')
+          dst = enum_a2_string
         case default
           dst = enum_unknown_string_string
           if (lroot) print*, 'No string enum for: ', src
