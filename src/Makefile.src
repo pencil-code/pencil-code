@@ -474,17 +474,21 @@ else
     SPECIAL_MULT := $(words $(SPECIAL))
     SPECIAL_MODULES := $(strip $(SPECIAL))
     SPECIAL_DEPS = special_preps
-    ifneq ($(SPECIAL_MULT),1)
-      LDFLAGS_MAIN += -dynamic -Wl,--export-dynamic
-      SPECIAL_DEPS += special.so
-      SPECIAL = special
-    endif
   endif
 endif
 
 USE_SPECIAL_DISPATCHER=no
 ifneq ($(SPECIAL_MULT),1)
   USE_SPECIAL_DISPATCHER=yes
+endif
+ifneq ($(findstring gpu_astaroth, $(GPU)),)
+  USE_SPECIAL_DISPATCHER=yes
+endif
+
+ifeq ($(USE_SPECIAL_DISPATCHER),yes)
+  LDFLAGS_MAIN += -dynamic -Wl,--export-dynamic
+  SPECIAL_DEPS += special.so
+  SPECIAL = special
 endif
 #
 CUDA_MAKEDIR=astaroth
@@ -3103,9 +3107,12 @@ else
 	@for file in $(SPECIAL_MODULES); do sed -e"/module  *procedure/ ! s/^\( *module  *\)[Ss]pecial/\1$${file#*/}/" \
 	                                        -e"s/^\( *endmodule  *\)[Ss]pecial/\1$${file#*/}/" \
 						-e"s/special_dummies\.inc/$${file#*/}_dummies.inc/" \
-                                                -e "s/namelist *\/special_\([ir][a-z]*_pars\)/namelist \/$${file#*/}_\1/" \
-                                                -e"s/NML *= *special_\([ir][a-z]*_pars\)/NML=$${file#*/}_\1/" \
 					 < $$file.f90 > special.tmp; if ! cmp -s special.tmp $(PENCIL_HOME)/src/$$file.f90; then mv -f special.tmp $(PENCIL_HOME)/src/$$file.f90; else rm -f special.tmp; fi ; done
+        ifneq ($(SPECIAL_MULT),1)
+	  @for file in $(SPECIAL_MODULES); do sed -e "s/namelist *\/special_\([ir][a-z]*_pars\)/namelist \/$${file#*/}_\1/" \
+                                                  -e"s/NML *= *special_\([ir][a-z]*_pars\)/NML=$${file#*/}_\1/" \
+
+        endif
 endif
 special.so: $(CPARAM_OBJ) $(CDATA_OBJ) $(SPECIAL_OBJ) special_dummies.inc $(SPECIAL_MODULES:=.o)
 	$(LD) $(SPECIAL_MODULES:=.o) $(DLL_LDFLAGS) -o special.so
@@ -3201,7 +3208,10 @@ endif
 	@echo ' ' >> $(CUDA_MAKEDIR)/PC_modulesources.h
 	@sed -e'1 i RUNTIME_COMPILATION='$(RUNTIME_COMPILATION) -i $(CUDA_MAKEDIR)/PC_modulesources.h
 	@echo ' ' >> $(CUDA_INCDIR)/PC_moduleflags.h
-	@sed -E 's/special\/([^ ]+)/L\U\1/g; s/ /\n/g; 1s/^/#define /; s/$$/ 1/g' <<< $(SPECIAL) >> $(CUDA_INCDIR)/PC_moduleflags.h
+	@for file in $(SPECIAL_MODULES); do \
+    		fname="$$(basename "$$file" | tr '[:lower:]' '[:upper:]')"; \
+    		echo "#define L$$fname 1"; \
+	done >> $(CUDA_INCDIR)/PC_moduleflags.h
 #
 #  Generation of field (PDE variable) declarations for DSL code obeying the registration order: fieldecs.h .
 #  Generation of (empty) RHS functions and integration kernel: equations.h and solve.ac .
