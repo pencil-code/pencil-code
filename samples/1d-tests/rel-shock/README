@@ -9,6 +9,7 @@ Added:
 Status:
     succeeds # One of [succeeds|failing since <date>|obsolete| ...]
     29-May-2025: After Alberto's change, the old data can be reproduced with lrelativistic_eos=T
+    11-Sep-2025: After Alberto's change, the old data can be reproduced with lcorrect_penc_u=F
 Recommended resolution:
     4608x1x1
 References:

@@ -159,7 +159,7 @@ module Hydro
   logical :: llorentz_limiter=.false., full_3D=.false.
   logical :: lhiggsless=.false., lhiggsless_old=.false.
   logical :: lsqrt_qirro_uu=.false., lset_uz_zero=.false.
-  logical :: lnorm_vw_hless=.false.
+  logical :: lnorm_vw_hless=.false., lcorrect_penc_u=.true.
   real, pointer :: profx_ffree(:),profy_ffree(:),profz_ffree(:)
   real, pointer :: B_ext2
   real :: incl_alpha = 0.0, rot_rr = 0.0
@@ -200,7 +200,8 @@ module Hydro
       lfactors_uu, qirro_uu, lsqrt_qirro_uu, lset_uz_zero, &
       lno_noise_uu, lrho_nonuni_uu, lpower_profile_file_uu, &
       llorentz_limiter, lhiggsless, lhiggsless_old, vwall, alpha_hless, width_hless, &
-      xjump_mid, yjump_mid, zjump_mid, qini, lnorm_vw_hless
+      xjump_mid, yjump_mid, zjump_mid, qini, lnorm_vw_hless, &
+      lcorrect_penc_u
 !
 !  Run parameters.
 !
@@ -3400,7 +3401,7 @@ module Hydro
             ! alberto: once computed pencil u from f-array, store temporarily
             ! for all pencils below to be correctly computed, T0i remains
             ! stored in tmp3
-            f(l1:l2,m,n,iux:iuz)=p%uu
+            if (lcorrect_penc_u) f(l1:l2,m,n,iux:iuz)=p%uu
           endif
           if (lpenc_loc(i_T0i)) p%T0i=f(l1:l2,m,n,iux:iuz)
           if (lpenc_loc(i_Tij)) then

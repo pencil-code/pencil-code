@@ -18,6 +18,7 @@
   lconservative=T
   lrelativistic=T
   llorentz_as_aux=T
+  lcorrect_penc_u=F
 /
 &density_init_pars
   initlnrho='nolog-shock-tube', rho_left=1e-1, rho_right=1., widthlnrho=-.01
