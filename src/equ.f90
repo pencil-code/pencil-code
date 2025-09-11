@@ -713,7 +713,7 @@ module Equ
 
         call calc_all_before_boundary_diagnostics(f)
         call calc_all_module_diagnostics(f,p)     ! by all helper threads
-        call calc_ode_diagnostics_special(f_ode_diagnostics)
+        if (lode) call calc_ode_diagnostics_special(f_ode_diagnostics)
         call finalize_diagnostics                 ! by diagmaster (MPI comm.)
         call write_diagnostics(f)                 !       ~
 
