@@ -8081,6 +8081,8 @@ iloop:do i=1,size(list2)
           dst = enum_calc_pencils_selfgravityZ__string
         case('galactic-brandt-curve')
           dst = enum_galacticZbrandtZcurve_string
+        case('s')
+          dst = enum_s_string
         case default
           dst = enum_unknown_string_string
           if (lroot) print*, 'No string enum for: ', src
