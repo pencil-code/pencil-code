@@ -19,6 +19,11 @@
 	{
 		reduce_max(dt1_max_loc,AC_dt1_max)
 	}
+#if LCHIRAL
+  	if (AC_ixx_chiral__mod__chiral != 0) write(F_XX_CHIRAL,rk_intermediate(F_XX_CHIRAL, DF_XX_CHIRAL,  step_num, AC_dt__mod__cdata) )
+  	if (AC_iyy_chiral__mod__chiral != 0) write(F_YY_CHIRAL,rk_intermediate(F_YY_CHIRAL, DF_YY_CHIRAL,  step_num, AC_dt__mod__cdata) )
+  	if (AC_izz_chiral__mod__chiral != 0) write(F_ZZ_CHIRAL,rk_intermediate(F_ZZ_CHIRAL, DF_ZZ_CHIRAL,  step_num, AC_dt__mod__cdata) )
+#endif
  }
  else
  {

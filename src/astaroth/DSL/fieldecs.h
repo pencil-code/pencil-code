@@ -125,9 +125,11 @@ const Field3 F_GLOBAL_EXT_AVEC = {F_GLOBAL_EXT_AX, F_GLOBAL_EXT_AY, F_GLOBAL_EXT
 Field3 F_VVEC
 Field3 F_FVEC
 Field F_ECR
-Field F_XX_CHIRAL
-Field F_YY_CHIRAL
-Field F_ZZ_CHIRAL
+#if LCHIRAL
+field_order(AC_ixx_chiral__mod__chiral-1) Field F_XX_CHIRAL
+field_order(AC_iyy_chiral__mod__chiral-1) Field F_YY_CHIRAL
+field_order(AC_izz_chiral__mod__chiral-1) Field F_ZZ_CHIRAL
+#endif
 
 
 not_implemented(message)
