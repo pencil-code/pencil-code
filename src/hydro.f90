@@ -3695,7 +3695,7 @@ module Hydro
 ! alberto: recover T0i in f-array (temporarily, we have stored the
 !          actual velocity for good reconstruction of all pencils)
 !
-      if (lconservative) then
+      if (lconservative.and.lcorrect_penc_u) then
         if (.not.lvv_as_aux.and..not.lvv_as_comaux) then
           f(l1:l2,m,n,iux:iuz)=tmp3
         endif
