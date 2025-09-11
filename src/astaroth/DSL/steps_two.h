@@ -3,6 +3,7 @@
 #include "../selfgravity.h"
 #include "../magnetic/before_boundary.h"
 #include "../alphadisk/after_timestep.h"
+#include "../gravitational_waves.h"
 
 input real AC_dt
 input PC_SUB_STEP_NUMBER AC_step_num
@@ -49,6 +50,10 @@ ComputeSteps AC_before_boundary_steps(boundconds)
 ComputeSteps AC_after_timestep(boundconds)
 {
 	after_timestep_alphadisk()
+}
+ComputeSteps AC_gravitational_waves_solve_and_stress(boundconds)
+{
+	gravitational_waves_solve_and_stress(AC_t,AC_dt)
 }
 BoundConds boundconds{
   #include "boundconds.h"

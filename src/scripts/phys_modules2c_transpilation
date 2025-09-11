@@ -57,33 +57,69 @@ sed -n '
 #
 rm -f $modheader tmp1
 if [[ $MODULE_NAME_ORDER == 'CRAY' ]]; then
-  sed -n '
-    /parameter/ {
-       h
-       s/^.*parameter *:: *n_'$1's\( *= *[1-9][0-9]*\) *$/const int n_'$1's_'$modname'\1;\n EXTERN '$ptype' *p_'$1'_'$modname'[n_'$1's_'$modname'];\n extern "C" void *'$MODULE_PREFIX'push'$1's2c'$MODULE_INFIX$orig_modname$MODULE_SUFFIX'('$ptype' *(\&p_'$1')[n_'$1's_'$modname']);/
-       t store
-       b cont
-       : store
-       p
-       : cont
-       g
-       s/^.*parameter *:: *n_'$1's\( *= *[1-9][0-9]*\) *$/for (int i=0;i<n_pars_'$modname';i++)p_'$1'_'$modname'[i]=NULL;\n'$MODULE_PREFIX'push'$1's2c'$MODULE_INFIX$orig_modname$MODULE_SUFFIX'(p_'$1'_'$modname');/ w '$modinit'
-    }
-  ' < tmp >> $modfuncs
+  str=$2
+  substr="/special/"
+  if [[ "$str" == *"$substr"* ]] then
+    sed -n '
+      /parameter/ {
+         h
+         s/^.*parameter *:: *n_'$1's\( *= *[1-9][0-9]*\) *$/const int n_'$1's_'$modname'\1;\n EXTERN '$ptype' *p_'$1'_'$modname'[n_'$1's_'$modname'];\n extern "C" void *'$MODULE_PREFIX'push'$1's2c'$MODULE_INFIX$orig_modname$MODULE_SUFFIX'('$ptype' *(\&p_'$1')[n_'$1's_'$modname']);/
+         t store
+         b cont
+         : store
+         p
+         : cont
+         g
+         s/^.*parameter *:: *n_'$1's\( *= *[1-9][0-9]*\) *$/for (int i=0;i<n_pars_'$modname';i++)p_'$1'_'$modname'[i]=NULL;\npushpars_special("'$MODULE_PREFIX'push'$1's2c'$MODULE_INFIX$orig_modname$MODULE_SUFFIX'",p_'$1'_'$modname');/ w '$modinit'
+      }
+    ' < tmp >> $modfuncs
+  else
+    sed -n '
+      /parameter/ {
+         h
+         s/^.*parameter *:: *n_'$1's\( *= *[1-9][0-9]*\) *$/const int n_'$1's_'$modname'\1;\n EXTERN '$ptype' *p_'$1'_'$modname'[n_'$1's_'$modname'];\n extern "C" void *'$MODULE_PREFIX'push'$1's2c'$MODULE_INFIX$orig_modname$MODULE_SUFFIX'('$ptype' *(\&p_'$1')[n_'$1's_'$modname']);/
+         t store
+         b cont
+         : store
+         p
+         : cont
+         g
+         s/^.*parameter *:: *n_'$1's\( *= *[1-9][0-9]*\) *$/for (int i=0;i<n_pars_'$modname';i++)p_'$1'_'$modname'[i]=NULL;\n'$MODULE_PREFIX'push'$1's2c'$MODULE_INFIX$orig_modname$MODULE_SUFFIX'(p_'$1'_'$modname');/ w '$modinit'
+      }
+    ' < tmp >> $modfuncs
+  fi
 else
-  sed -n '
-    /parameter/ {
-       h
-       s/^.*parameter *:: *n_'$1's\( *= *[1-9][0-9]*\) *$/const int n_'$1's_'$modname'\1;\n EXTERN '$ptype' *p_'$1'_'$modname'[n_'$1's_'$modname'];\n extern "C" void *'$MODULE_PREFIX$orig_modname$MODULE_INFIX'push'$1's2c'$MODULE_SUFFIX'('$ptype' *(\&p_'$1')[n_'$1's_'$modname']);/
-       t store
-       b cont
-       : store
-       p
-       : cont
-       g
-       s/^.*parameter *:: *n_'$1's\( *= *[1-9][0-9]*\) *$/for (int i=0;i<n_pars_'$modname';i++)p_'$1'_'$modname'[i]=NULL;\n'$MODULE_PREFIX$orig_modname$MODULE_INFIX'push'$1's2c'$MODULE_SUFFIX'(p_'$1'_'$modname');/ w '$modinit'
-    }
-  ' < tmp >> $modfuncs
+  str=$2
+  substr="/special/"
+  if [[ "$str" == *"$substr"* ]] then
+    sed -n '
+      /parameter/ {
+         h
+         s/^.*parameter *:: *n_'$1's\( *= *[1-9][0-9]*\) *$/const int n_'$1's_'$modname'\1;\n EXTERN '$ptype' *p_'$1'_'$modname'[n_'$1's_'$modname'];\n extern "C" void *'$MODULE_PREFIX$orig_modname$MODULE_INFIX'push'$1's2c'$MODULE_SUFFIX'('$ptype' *(\&p_'$1')[n_'$1's_'$modname']);/
+         t store
+         b cont
+         : store
+         p
+         : cont
+         g
+         s/^.*parameter *:: *n_'$1's\( *= *[1-9][0-9]*\) *$/for (int i=0;i<n_pars_'$modname';i++)p_'$1'_'$modname'[i]=NULL;\npushpars_special("'$MODULE_PREFIX$orig_modname$MODULE_INFIX'push'$1's2c'$MODULE_SUFFIX'",p_'$1'_'$modname');/ w '$modinit'
+      }
+    ' < tmp >> $modfuncs
+  else
+    sed -n '
+      /parameter/ {
+         h
+         s/^.*parameter *:: *n_'$1's\( *= *[1-9][0-9]*\) *$/const int n_'$1's_'$modname'\1;\n EXTERN '$ptype' *p_'$1'_'$modname'[n_'$1's_'$modname'];\n extern "C" void *'$MODULE_PREFIX$orig_modname$MODULE_INFIX'push'$1's2c'$MODULE_SUFFIX'('$ptype' *(\&p_'$1')[n_'$1's_'$modname']);/
+         t store
+         b cont
+         : store
+         p
+         : cont
+         g
+         s/^.*parameter *:: *n_'$1's\( *= *[1-9][0-9]*\) *$/for (int i=0;i<n_pars_'$modname';i++)p_'$1'_'$modname'[i]=NULL;\n'$MODULE_PREFIX$orig_modname$MODULE_INFIX'push'$1's2c'$MODULE_SUFFIX'(p_'$1'_'$modname');/ w '$modinit'
+      }
+    ' < tmp >> $modfuncs
+  fi
 fi
 #
 if [[ $1 == 'par' ]]; then

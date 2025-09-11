@@ -170,17 +170,13 @@ const int AC_0 = 0
 #define AC_impossible__mod__cparam impossible
 #define AC_tini__mod__cparam tini
 
-const int AC_ij_table__mod__special = [
+const int AC_ij_table__mod__gravitational_waves_htxk = [
 					[1,4,6],
 					[4,2,5],
 					[6,5,3]
 				       ]
 gmem real AC_nphis1__mod__cdata[AC_mlocal.y]
 const real AC_arms__mod__magnetic = 0.0
-#if LGRAVITATIONAL_WAVES_HTXK
-#else
-const real AC_ascale__mod__cdata = 0.0
-#endif
 
 #if LDUSTVELOCITY
 #else
@@ -191,6 +187,8 @@ gmem real AC_reac_dust__mod__cdata[1]
 #else
 gmem real AC_reac_chem__mod__cdata[1]
 #endif
+
+const real AC_ascale__mod__cdata = 0.0
 
 #include "../bcs/funcs.h"
 #include "../bcs/funcs_overload.h"

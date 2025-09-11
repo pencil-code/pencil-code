@@ -199,10 +199,10 @@ Field AC_diff_full_add__mod__chemistry[nchemspec]
 Field AC_cp_full__mod__chemistry
 Field AC_lambda_full__mod__chemistry
 Field AC_cv_full__mod__chemistry
-Field AC_tpq_re__mod__special[6]
-Field AC_tpq_im__mod__special[6]
-Field AC_nonlinear_tpq_re__mod__special[6]
-Field AC_nonlinear_tpq_im__mod__special[6]
+Field AC_tpq_re__mod__gravitational_waves_htxk[6]
+Field AC_tpq_im__mod__gravitational_waves_htxk[6]
+Field AC_nonlinear_tpq_re__mod__gravitational_waves_htxk[6]
+Field AC_nonlinear_tpq_im__mod__gravitational_waves_htxk[6]
 
 
 Field SLD_CHAR_SPEED
