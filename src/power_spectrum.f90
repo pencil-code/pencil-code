@@ -227,7 +227,6 @@ outer:do ikz=1,nz
       call quick_sort(k2s(:nk_truebin),order)
 
     endif
-
 !
 !  Define wave vectors, defined here for the *full* mesh.
 !  Each processor will see only part of it.
@@ -260,7 +259,7 @@ outer:do ikz=1,nz
 !
 ! Initialize shell wave-numbers for power_xy
 !
-    if(lintegrate_shell) then
+    if (lintegrate_shell) then
       if (allocated(kshell)) deallocate(kshell)
       allocate( kshell(nk_xy) )
 !
@@ -435,12 +434,10 @@ outer:do ikz=1,nz
   endsubroutine write_power_spectrum_run_pars
 !***********************************************************************
   subroutine power_parallel_portion(f,sp,iapn_index,spectrum,a1,b1,nk)
-
 !
-! This subroutine is needed since OpenMP works weirdly with the ivec index, declaring it inside
+! This subroutine is needed since OpenMP works weirdly with the ivec index: declaring it inside
 ! the parallel region forces it to be private
 !
-
     use Fourier, only: fft_xyz_parallel
     use Mpicomm, only: mpireduce_sum
     use General, only: itoa
@@ -548,7 +545,7 @@ outer:do ikz=1,nz
         enddo
       endif
 !
-    enddo !(loop over ivec)
+    enddo !   do ivec=1,3
 !
   endsubroutine power_parallel_portion
 !***********************************************************************
@@ -588,7 +585,7 @@ outer:do ikz=1,nz
     else
       nk=nk_xyz
     endif
-    if(.not. allocated(spectrum)) allocate(spectrum(nk),spectrum_sum(nk))
+    if (.not. allocated(spectrum)) allocate(spectrum(nk),spectrum_sum(nk))
   
     spectrum=0.
 !
@@ -607,11 +604,9 @@ outer:do ikz=1,nz
 !  The result is available only on root
 !
     call mpireduce_sum(spectrum,spectrum_sum,nk)
-  
 !
 !  on root processor, write global result to file
 !  multiply by 1/2, so \int E(k) dk = (1/2) <u^2>
-!
 !
 !  append to diagnostics file
 !
@@ -717,11 +712,11 @@ outer:do ikz=1,nz
 !
     use Mpicomm, only: mpireduce_sum
 !
-    integer, parameter :: nk=nx/2
     real, dimension (mx,my,mz,mfarray) :: f
-    real, dimension(nk) :: spectrum,spectrum_sum
-    integer :: i,k,ikx,iky,ikz,im,in
     character (len=1) :: sp
+
+    integer, parameter :: nk=nx/2
+    real, dimension(nk) :: spectrum,spectrum_sum
 !
 !  identify version
 !
@@ -735,7 +730,7 @@ outer:do ikz=1,nz
 !  In fft, real and imaginary parts are handled separately.
 !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
 !
-    !$omp parallel private(k) num_threads(num_helper_threads) reduction(+:spectrum) &
+    !$omp parallel num_threads(num_helper_threads) reduction(+:spectrum) &
     !$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
     !$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
     !$ thread_id = omp_get_thread_num()+1
@@ -785,20 +780,10 @@ outer:do ikz=1,nz
     integer :: ind,ivec,i,la,le,ndelx,local_z_position,global_z_position
 !
     ivec = ioptest(ivecp,1)
-    if (sp == 'rho' .and. ivec>1) return
-    if (sp == 's' .and. ivec>1) return
-!
-    !$omp parallel private(i,la,le,ndelx) num_threads(num_helper_threads) &
-    !$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
-    !$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
-    !$ thread_id = omp_get_thread_num()+1
-    if (sp=='u') then
+    if (sp=='u' .or. sp=='o') then
       if (iuu==0) call fatal_error('comp_spectrum_xy','variable "u" not existent')
-      !$omp workshare
-      ar =f(l1:l2,m1:m2,n1:n2,iux+ivec-1)
-      !$omp end workshare
-    elseif (sp=='rho') then
-      !$omp single
+    elseif (sp == 'rho') then
+      if (ivec>1) return
       if ( ldensity_nolog ) then
         if (irho==0) call fatal_error('comp_spectrum_xy','variable "rho" not existent')
         ind = irho
@@ -806,17 +791,32 @@ outer:do ikz=1,nz
         if (ilnrho==0) call fatal_error('comp_spectrum_xy','variable "lnrho" not existent')
         ind = ilnrho
       endif
-      !$omp end single
+    elseif (sp == 's') then
+      if (ivec>1) return
+      if (iss==0) call fatal_error('comp_spectrum_xy','variable "s" not existent')
+    elseif (sp=='b' .or. sp=='a') then
+      if (iaa==0) call fatal_error('comp_spectrum_xy','variable "a" not existent')
+    elseif (sp=='jxb') then
+      if (ijxb==0) call fatal_error('comp_spectrum_xy','variable "jxb" not existent')
+    endif
+!
+    !$omp parallel private(i,la,le,ndelx) num_threads(num_helper_threads) &
+    !$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+    !$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+    !$ thread_id = omp_get_thread_num()+1
+    if (sp=='u') then
+      !$omp workshare
+      ar =f(l1:l2,m1:m2,n1:n2,iux+ivec-1)
+      !$omp end workshare
+    elseif (sp=='rho') then
       !$omp workshare
       ar=f(l1:l2,m1:m2,n1:n2,ind)
       !$omp end workshare
     elseif (sp=='s') then
-      if (iss==0) call fatal_error('comp_spectrum_xy','variable "s" not existent')
       !$omp workshare
       ar =f(l1:l2,m1:m2,n1:n2,iss)
       !$omp end workshare
     elseif (sp=='b') then
-      if (iaa==0) call fatal_error('comp_spectrum_xy','variable "b" not existent')
       !$omp do collapse(2)
       do n_loc=n1,n2      !!! MR: corrected from n1-nghost,n2-nghost
       do m_loc=m1,m2
@@ -825,17 +825,14 @@ outer:do ikz=1,nz
       enddo
       enddo
     elseif (sp=='a') then
-      if (iaa==0) call fatal_error('comp_spectrum_xy','variable "a" not existent')
       !$omp workshare
       ar = f(l1:l2,m1:m2,n1:n2,iax+ivec-1)
       !$omp end workshare
     elseif (sp=='jxb') then
-      if (ijxb==0) call fatal_error('comp_spectrum_xy','variable "jxb" not existent')
       !$omp workshare
       ar = f(l1:l2,m1:m2,n1:n2,ijxbx+ivec-1)
       !$omp end workshare
     elseif (sp=='o') then
-      if (iuu==0) call fatal_error('comp_spectrum','variable "u" not existent')
       !$omp do collapse(2)
       do n_loc=n1,n2
       do m_loc=m1,m2
@@ -855,26 +852,20 @@ outer:do ikz=1,nz
     endif
 !
     !$omp workshare
-    !ai(:,:,n1:n2) = 0.
-!
-! KG: ai has size nx,ny,nz, so the above leads to out-of-bounds access.
-! KG: I'm not sure why the above was being tried, so I'll leave it as a comment for now
-!
     ai = 0.
     !$omp end workshare
 !
 !  Doing the Fourier transform
 !
     if (nygrid/=1) then
-      if(lsplit_power_xy_in_z) then
+      if (lsplit_power_xy_in_z) then
         do i=1,nz_max
           if ( zrange(1,i) > 0 ) then
             do global_z_position=zrange(1,i), zrange(2,i), zrange(3,i)
               local_z_position = global_z_position - ipz*nz
               !TP: if local_z_position is negative the correct position is below this process if greater than nz then above this process
-              if(local_z_position > 0 .and. local_z_position <= nz) then
+              if (local_z_position > 0 .and. local_z_position <= nz) &
                 call fft_xy_parallel(ar(:,:,local_z_position),ai(:,:,local_z_position))
-              endif
             enddo
           endif
         enddo
@@ -1072,7 +1063,7 @@ outer:do ikz=1,nz
 !    Summing up the results from the different processors
 !    The result is available only on root  !!??
 !
-!    Could be multithreaded but now we know power routines anyway spent most of their time in communication
+!    Could be multithreaded but power routines anyway spent most of their time in communication.
 !
       do ikz=1,nz
         if (lintegrate_shell) then
@@ -1188,12 +1179,12 @@ outer:do ikz=1,nz
       if (lintegrate_z) then
         call mpireduce_sum(spectrum1,spectrum1_sum,nk)
       else
-        if(lsplit_power_xy_in_z) then
+        if (lsplit_power_xy_in_z) then
           do i=1,nz_max
             if ( zrange(1,i) > 0 ) then
               do global_z_position=zrange(1,i), zrange(2,i), zrange(3,i)
                 local_z_position = global_z_position - ipz*nz
-                if(local_z_position > 0 .and. local_z_position <= nz) then
+                if (local_z_position > 0 .and. local_z_position <= nz) then
                   call mpireduce_sum(spectrum2(:,local_z_position),spectrum2_sum(:,local_z_position),nk,12)
                 endif
               enddo
@@ -1253,7 +1244,7 @@ outer:do ikz=1,nz
         deallocate(spectrum2,spectrum2_sum,spectrum2_global)
       endif
 !
-    else if (lintegrate_z) then
+    elseif (lintegrate_z) then
       deallocate(spectrum2,spectrum2_sum,spectrum2_global)
     elseif ( lcomplex ) then
       deallocate(spectrum3_cmplx)
@@ -1301,8 +1292,9 @@ outer:do ikz=1,nz
     logical, save :: lwrite_krms=.true.
     logical :: lfirstcall
   
-    if(.not. allocated(cyl_spectrum)) then
-      allocate(cyl_spectrum(nk,nzgrid), cyl_spectrum_sum(nk,nzgrid), cyl_spectrumhel(nk,nzgrid), cyl_spectrumhel_sum(nk,nzgrid))
+    if (lcylindrical_spectra) then
+      if (.not. allocated(cyl_spectrum)) &
+        allocate(cyl_spectrum(nk,nzgrid), cyl_spectrum_sum(nk,nzgrid), cyl_spectrumhel(nk,nzgrid), cyl_spectrumhel_sum(nk,nzgrid))
     endif
 !
 !  identify version
@@ -1320,10 +1312,7 @@ outer:do ikz=1,nz
       call magnetic_calc_spectra(f,spectrum,spectrumhel,lfirstcall,sp)
     else
 !
-    !$omp parallel private(ivec,jji,bb,jj,b2,j2,gtmp1,gtmp2,bbEP,k2,k,jkz) num_threads(num_helper_threads) &
-    !$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
-    !$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
-    !$ thread_id = omp_get_thread_num()+1
+    !$omp parallel num_threads(num_helper_threads)
 !
 !  Initialize power spectrum to zero.
 !  For vectors, this is done only once, namely for the first component.
@@ -1341,10 +1330,15 @@ outer:do ikz=1,nz
       cyl_spectrumhel=0.
       !$omp end workshare
     endif
+    !$omp end parallel
 !
 !  loop over all the components
 !
-    do ivec=1,3
+    do ivec=1,3         !MR: having this loop inside the parallel section makes the code hanging!
+!$omp parallel private(jji,bb,jj,b2,j2,gtmp1,gtmp2,bbEP,hhEP,k2,k,jkz) num_threads(num_helper_threads) &
+!$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+!$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+!$ thread_id = omp_get_thread_num()+1
 !
 !  In fft, real and imaginary parts are handled separately.
 !  For "kin", calculate spectra of <uk^2> and <ok.uk>
@@ -1644,17 +1638,20 @@ outer:do ikz=1,nz
           a_im=0.
           b_im=0.
           !$omp end workshare
+          !$omp single
           if (ncpus==1) then
-            open(1,file=trim(datadir)//'/bEP.dat',form='unformatted',position='append')
+!            open(1,file=trim(datadir)//'/bEP.dat',form='unformatted',position='append')
 !            write(1) bEP,t
-            close(1)
+!            close(1)
           endif
+          !$omp end single
         endif
 !
 !  magnetic helicity variance spectra based on fields with Euler potentials (Higgs case)
 !
       elseif (sp=='hEP') then
         if (iXX2_chiral/=0.and.iYY2_chiral/=0) then
+          !$omp do collapse(2)
           do n_loc=n1,n2
             do m_loc=m1,m2
               m=m_loc;n=n_loc
@@ -1669,26 +1666,34 @@ outer:do ikz=1,nz
               !                 -f(l1:l2,m,n,iYY2_chiral)*gtmp1(:,ivec))
             enddo
           enddo
+          !$omp workshare
           a_im=0.
           b_im=0.
+          !$omp end workshare
+          !$omp single
           if (ncpus==1) then
             open(1,file=trim(datadir)//'/hEP.dat',form='unformatted',position='append')
-            write(1) hEP,t
+            write(1) hEP,t  !MR: only one thread writes data!!!
             close(1)
           endif
+          !$omp end single
         endif
 !
 !  Spectra based on Tanmay's flux method
 !
       elseif (sp=='fEP') then
         if (iXX2_chiral/=0.and.iYY2_chiral/=0) then
+          !$omp workshare
           phi=cmplx(f(l1:l2,m1:m2,n1:n2,iXX2_chiral),f(l1:l2,m1:m2,n1:n2,iXX2_chiral))
+          !$omp end workshare
           if (ivec==1) then
-!         b_re=aimag(cshift(conj(phi),0,0,0)*cshift(phi,0,1,0) &
-!                   +cshift(conj(phi),0,1,0)*cshift(phi,0,1,1) &
-!                   +cshift(conj(phi),0,1,1)*cshift(phi,0,0,1) &
-!                   +cshift(conj(phi),0,0,1)*cshift(phi,0,0,0))
+!           b_re=aimag(cshift(conj(phi),0,0,0)*cshift(phi,0,1,0) &
+!                     +cshift(conj(phi),0,1,0)*cshift(phi,0,1,1) &
+!                     +cshift(conj(phi),0,1,1)*cshift(phi,0,0,1) &
+!                     +cshift(conj(phi),0,0,1)*cshift(phi,0,0,0))
+            !$omp workshare
             a_re=0.
+            !$omp end workshare
           endif
         endif
 !
@@ -1801,9 +1806,8 @@ outer:do ikz=1,nz
           enddo
         enddo
       endif
-      !
-    enddo ! loop over ivec
     !$omp end parallel
+    enddo ! do ivec=1,3
 !
 !  end from communicated versus computed spectra (magnetic)
 !
@@ -1984,9 +1988,7 @@ outer:do ikz=1,nz
       if (stat>0) call fatal_error('powerLor','Cannot allocate c_im')
     endif
   
-    !$omp parallel private(ivec,jxb,bb,jj,bij,aij,aa,k,k2) num_threads(num_helper_threads) &
-    !$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
-    !$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+    !$omp parallel private(jxb,bb,jj,bij,aij,aa) num_threads(num_helper_threads)
     !$ thread_id = omp_get_thread_num()+1
 !
 !  initialize power spectrum to zero
@@ -2019,10 +2021,15 @@ outer:do ikz=1,nz
       endif
     enddo
     enddo
+    !$omp end parallel
 !
 !  loop over all the components
 !
     do ivec=1,3
+    !$omp parallel private(k,k2) num_threads(num_helper_threads) &
+    !$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+    !$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+    !$ thread_id = omp_get_thread_num()+1
 !
 !  Lorentz force spectra (spectra of L*L^*)
 !
@@ -2100,9 +2107,8 @@ outer:do ikz=1,nz
       enddo
       enddo
       enddo
-      !
-    enddo ! loop over ivec
     !$omp end parallel
+    enddo !  do ivec=1,3
 !
 !  Summing up the results from the different processors
 !  The result is available only on root
@@ -2434,9 +2440,7 @@ outer:do ikz=1,nz
 !
 ! KG: See the function get_k2 for an example of how to calculate k2.
 
-    !$omp parallel private(ivec,uu,aa,aij,bij,bb,jj,uxb,uxj,k,k2) num_threads(num_helper_threads) &
-    !$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
-    !$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+    !$omp parallel private(uu,aa,aij,bij,bb,jj,uxb,uxj) num_threads(num_helper_threads)
     !$ thread_id = omp_get_thread_num()+1
 !
 !  initialize power spectrum to zero
@@ -2468,10 +2472,15 @@ outer:do ikz=1,nz
       BBB(l1:l2,m,n,:)=bb
     enddo
     enddo
+    !$omp end parallel
 !
 !  loop over all the components
 !
     do ivec=1,3
+!$omp parallel private(k,k2) num_threads(num_helper_threads) &
+!$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+!$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+!$ thread_id = omp_get_thread_num()+1
 !
 !  Electromotive force spectra (spectra of L*L^*)
 !
@@ -2530,8 +2539,8 @@ outer:do ikz=1,nz
         enddo
       enddo
 !
-    enddo !(from loop over ivec)
-  !$omp end parallel
+    !$omp end parallel
+    enddo !  do ivec=1,3
 !
 !  Summing up the results from the different processors
 !  The result is available only on root
@@ -2626,10 +2635,8 @@ outer:do ikz=1,nz
          "$Id$")
 !
 ! KG: See the function get_k2 for an example of how to calculate k2.
-
-    !$omp parallel private(ivec,uu,aa,uij,aij,bij,divu,bb,bbdivu,ugradb,bgradu,k,k2) num_threads(num_helper_threads) &
-    !$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
-    !$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+!
+    !$omp parallel private(uu,aa,uij,aij,bij,divu,bb,bbdivu,ugradb,bgradu) num_threads(num_helper_threads)
     !$ thread_id = omp_get_thread_num()+1
 !
 !  initialize power spectrum to zero
@@ -2664,10 +2671,15 @@ outer:do ikz=1,nz
       BBB(l1:l2,m,n,:)=bb
     enddo
     enddo
+    !$omp end parallel
 !
 !  loop over all the components
 !
     do ivec=1,3
+!$omp parallel private(k,k2) num_threads(num_helper_threads) &
+!$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+!$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+!$ thread_id = omp_get_thread_num()+1
 !
 !  Electromotive force transfer spectra
 !
@@ -2722,9 +2734,8 @@ outer:do ikz=1,nz
           enddo
         enddo
       enddo
-      !
-    enddo !(from loop over ivec)
     !$omp end parallel
+    enddo !  do ivec=1,3
 !
 !  Summing up the results from the different processors
 !  The result is available only on root
@@ -2914,6 +2925,9 @@ outer:do ikz=1,nz
 !
       if (ip<10) call information('powerGWs','fft done, now integrate over shells')
       !$omp do collapse(3) reduction(+:spectrum,spectrumhel,k2m,nks)
+     !do ikz=1,nz
+     !  do iky=1,ny
+     !    do ikx=1,nx
       do iky=1,nz
         do ikx=1,ny
           do ikz=1,nx
@@ -3340,9 +3354,8 @@ outer:do ikz=1,nz
         fact=1.
       endif
       if (k>=0 .and. k<=(nk-1)) &
-        spectrum(k+1)=spectrum(k+1) &
-           +fact*a_re(ikx,iky,ikz)**2 &
-           +fact*a_im(ikx,iky,ikz)**2
+        spectrum(k+1)=spectrum(k+1)+fact*a_re(ikx,iky,ikz)**2 &
+                                   +fact*a_im(ikx,iky,ikz)**2
       !
       !  integration over the vertical direction
       !
@@ -3350,8 +3363,8 @@ outer:do ikz=1,nz
         k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2
         k=nint(sqrt(k2))
         if (k>=0 .and. k<=(nk-1)) &
-          hor_spectrum(k+1)=hor_spectrum(k+1) &
-           +fact*a_re(ikx,iky,ikz)**2+fact*a_im(ikx,iky,ikz)**2
+          hor_spectrum(k+1) = hor_spectrum(k+1) &
+                             +fact*a_re(ikx,iky,ikz)**2+fact*a_im(ikx,iky,ikz)**2
       endif
       !
       !  integration over the horizontal direction
@@ -3359,8 +3372,8 @@ outer:do ikz=1,nz
       if (lvertical_spectra) then
         k=nint(abs(kz(ikz+ipz*nz)))
         if (k>=0 .and. k<=(nk-1)) &
-          ver_spectrum(k+1)=ver_spectrum(k+1) &
-           +fact*a_re(ikx,iky,ikz)**2+fact*a_im(ikx,iky,ikz)**2
+          ver_spectrum(k+1) = ver_spectrum(k+1) &
+                             +fact*a_re(ikx,iky,ikz)**2+fact*a_im(ikx,iky,ikz)**2
       endif
     enddo
     enddo
@@ -3947,9 +3960,7 @@ outer:do ikz=1,nz
 !
 !    Obtain vector fields
 !
-    !$omp parallel private(bbi,aa,bb,ab,ak,bk,ang,ipdf,kr,ivec,ikx,iky,ikz) num_threads(num_helper_threads) &
-    !$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
-    !$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+    !$omp parallel private(bbi) num_threads(num_helper_threads)
     !$ thread_id = omp_get_thread_num()+1
 
     if (sp=='jb') then
@@ -3990,14 +4001,22 @@ outer:do ikz=1,nz
     !$omp workshare
     pdf_ang=0.
     !$omp end workshare
+    !$omp end parallel
+
     do kr=1,nk-1
 !
 !  initialize a.a, b.b, and a.b, for filtered fields
 !
+      !$omp parallel num_threads(num_helper_threads)
       !$omp workshare
       aa=0.; bb=0.; ab=0.
       !$omp end workshare
+      !$omp end parallel
       do ivec=1,3
+      !$omp parallel num_threads(num_helper_threads) &
+      !$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+      !$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+      !$ thread_id = omp_get_thread_num()+1
 !
 !  Obtain filtered fields.
 !
@@ -4011,10 +4030,13 @@ outer:do ikz=1,nz
         bb = bb+bk**2
         ab = ab+ak*bk
         !$omp end workshare
+      !$omp end parallel
       enddo
 !
 !  compute pdf
 !
+      !$omp parallel private(ang,ipdf) num_threads(num_helper_threads)
+      !$ thread_id = omp_get_thread_num()+1
       !$omp do collapse(3) reduction(+:pdf_ang)
       do ikx=1,nx; do iky=1,ny; do ikz=1,nz
         if (aa(ikx,iky,ikz)==0. .or. bb(ikx,iky,ikz)==0.) then
@@ -4025,8 +4047,8 @@ outer:do ikz=1,nz
           pdf_ang(kr,ipdf) = pdf_ang(kr,ipdf)+1
         endif
       enddo; enddo; enddo
-    enddo  !  do kr
-    !$omp end parallel
+      !$omp end parallel
+    enddo  !  do kr=1,nk-1
 !
 !  sum over processors
 !
@@ -4085,23 +4107,24 @@ outer:do ikz=1,nz
 !  Ignore *2*pi/Lx factor, because later we want k to be integers
 !
     nVol2d=0.
-
-    !$omp parallel private(ivec,ispec,aatemp,aatempy,spectrumy,spectrum,spec_real,spec_imag) num_threads(num_helper_threads) &
-    !$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
-    !$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
-    !$ thread_id = omp_get_thread_num()+1
 !
+    !$omp parallel num_threads(num_helper_threads)
     !$omp workshare
     spectrum=0.
     spectrum_sum=0.
     spectrumy_sum=0.
     !$omp end workshare
+    !$omp end parallel
 !
 !  In fft, real and imaginary parts are handled separately.
 !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
 !  Added power spectra of rho^(1/2)*u and rho^(1/3)*u.
 !
     do ivec=1,3
+    !$omp parallel private(ispec,aatemp,aatempy,spectrumy,spectrum,spec_real,spec_imag) num_threads(num_helper_threads) &
+    !$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+    !$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+    !$ thread_id = omp_get_thread_num()+1
       if (trim(sp)=='u') then
         !$omp workshare
         a1=f(l1:l2,m1:m2,n1:n2,iux+ivec-1)
@@ -4153,8 +4176,8 @@ outer:do ikz=1,nz
             spectrum_sum=spectrum_sum+spectrum
             nVol2d = nVol2d+r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)
           endif
-        enddo ! loop over yproc
-        enddo   ! loop over ny
+        enddo     ! loop over yproc
+        enddo     ! loop over ny
         enddo     ! loop over nx
       elseif (lcylindrical_coords) then
         !$omp do collapse(3) reduction(+:spectrumy_sum,nVol2d)
@@ -4183,15 +4206,15 @@ outer:do ikz=1,nz
             spectrumy_sum=spectrumy_sum+spectrumy
             nVol2d = nVol2d+rcyl_weight(l)
           endif
-        enddo ! loop over zproc
-        enddo   ! loop over nz
+        enddo     ! loop over zproc
+        enddo     ! loop over nz
         enddo     ! loop over nx
       else
         call fatal_error('power_phi','neither spherical nor cylindrical')
       endif
 !
-    enddo   ! (loop over ivec)
     !$omp end parallel
+    enddo   ! (loop over ivec)
 !
 !    append to diagnostics file
 !
@@ -4252,24 +4275,25 @@ outer:do ikz=1,nz
 !  Each processor will see only part of it.
 !  Ignore *2*pi/Lx factor, because later we want k to be integers
 !
-    !$omp parallel private(ivec,spectrum,spectrumhel,aatemp,bbtemp,ispec,spec_reala,spec_imaga,spec_realb,spec_imagb) &
-    !$omp num_threads(num_helper_threads) &
-    !$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
-    !$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
-    !$ thread_id = omp_get_thread_num()+1
+    !$omp parallel num_threads(num_helper_threads)
     !$omp workshare
     spectrum=0.
     spectrum_sum=0.
     spectrumhel=0.
     spectrumhel_sum=0.
     !$omp end workshare
+    !$omp end parallel
 !
 !  In fft, real and imaginary parts are handled separately.
 !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
 !  Added power spectra of rho^(1/2)*u and rho^(1/3)*u.
 !
     do ivec=1,3
-       !
+    !$omp parallel private(spectrum,spectrumhel,aatemp,bbtemp,ispec,spec_reala,spec_imaga,spec_realb,spec_imagb) &
+    !$omp num_threads(num_helper_threads) &
+    !$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+    !$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+    !$ thread_id = omp_get_thread_num()+1
       if (trim(sp)=='kin') then
         !$omp do collapse(2)
         do n_loc=n1,n2
@@ -4337,8 +4361,8 @@ outer:do ikz=1,nz
         enddo   ! loop over ny
       enddo     ! loop over nx
 !
-    enddo ! (loop over ivec)
     !$omp end parallel
+    enddo ! (loop over ivec)
 !
 !  append to diagnostics file
 !
@@ -4392,11 +4416,7 @@ outer:do ikz=1,nz
 !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
 !  Added power spectra of rho^(1/2)*u and rho^(1/3)*u.
 !
-    !$omp parallel private(ivec,k,tmp_a1) num_threads(num_helper_threads) &
-    !$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
-    !$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
-    !$ thread_id = omp_get_thread_num()+1
-
+    !$omp parallel private(tmp_a1) num_threads(num_helper_threads)
     if (trim(sp)=='j') then
       ! compute j = curl(curl(aa))
       !$omp do collapse(2)
@@ -4413,10 +4433,15 @@ outer:do ikz=1,nz
     !$omp workshare
     b1=0.
     !$omp end workshare
+    !$omp end parallel
 !
 !    Doing the Fourier transform
 !
     do ivec=1,3
+    !$omp parallel private(k) num_threads(num_helper_threads) &
+    !$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+    !$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+    !$ thread_id = omp_get_thread_num()+1
       call fourier_transform(a1(:,:,:,ivec),b1(:,:,:,ivec))
 !
 !    integration over shells
@@ -4432,9 +4457,8 @@ outer:do ikz=1,nz
           enddo
         enddo
       enddo
-!
-    enddo !(loop over ivec)
     !$omp end parallel
+    enddo !  do ivec=1,3
 !
 !    Summing up the results from the different processors
 !    The result is available only on root
@@ -4706,18 +4730,21 @@ outer:do ikz=1,nz
       allocate( polar_spechel(nk,nmu(nk)) )
       allocate( polar_spechel_sum(nk,nmu(nk)) )
 
-      !$omp parallel private(k2,ikr,mu,temploc,ikmu) num_threads(num_helper_threads)
-      !$ thread_id = omp_get_thread_num()+1
-
       !  initialize polar spectra and legendre coefficients
+      !$omp parallel num_threads(num_helper_threads)
       !$omp workshare
       polar_spec=0.
       polar_spechel=0.
       legendre_al=0.
       legendre_alhel=0.
       !$omp end workshare
-      !
+      !$omp end parallel
+
       do ivec=1,3
+!$omp parallel private(k2,ikr,mu,temploc,ikmu) num_threads(num_helper_threads) &
+!$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+!$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+!$ thread_id = omp_get_thread_num()+1
         if (sp=='kin_omega') then
           if (iuu==0) call fatal_error('polar_spectrum','iuu=0')
           if (iuut==0) call fatal_error('polar_spectrum','iuut=0')
@@ -4870,13 +4897,14 @@ outer:do ikz=1,nz
         enddo
         enddo
         enddo
-      !  (loop over ivec)
-      enddo
+!$omp end parallel
+      enddo  !  do ivec=1,3
 !
 !  compute legendre coefficients
 !  the ith oder legendre polynomial (i,m=0) is
 !  sqrt(4*pi/(2.*i-1))*plegendre(i-1,0,kmu(ikr,ikmu))
 !
+!$omp parallel num_threads(num_helper_threads)
       !$omp do collapse(2) private(ikmu)
       do ikr=1,nk
       do i=1,legendre_lmax+1
@@ -4894,7 +4922,7 @@ outer:do ikz=1,nz
         endif
       enddo
       enddo
-      !$omp end parallel
+!$omp end parallel
 !
 !  Summing up the results from the different processors.
 !  The result is available only on root.
@@ -4970,10 +4998,7 @@ outer:do ikz=1,nz
 !
     if (lroot .AND. ip<10) call svn_id("$Id$")
 
-    !$omp parallel private(ivec,k3,iky,ikx) num_threads(num_helper_threads) &
-    !$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
-    !$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
-    !$ thread_id = omp_get_thread_num()+1
+    !$omp parallel num_threads(num_helper_threads)
 !
 !  initialize power spectrum to zero
 !
@@ -4981,10 +5006,15 @@ outer:do ikz=1,nz
     spectrum=0.
     spectrumhel=0.
     !$omp end workshare
+    !$omp end parallel
 !
 !  loop over all the components
 !
     do ivec=1,3
+    !$omp parallel private(k3,iky,ikx) num_threads(num_helper_threads) &
+    !$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+    !$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+    !$ thread_id = omp_get_thread_num()+1
 !
 !  In fft, real and imaginary parts are handled separately.
 !  For "kin", calculate spectra of <uk^2> and <ok.uk>
@@ -5052,8 +5082,8 @@ outer:do ikz=1,nz
       spectrum(1)=spectrum(1)/2  !MR: correct? this will be done threee times!
       !$omp end single
       !
-    enddo !(loop over ivec)
     !$omp end parallel
+    enddo !  do ivec=1,3
 !
 !  Summing up the results from the different processors.
 !  The result is available only on root.
@@ -5126,14 +5156,19 @@ outer:do ikz=1,nz
     real, dimension(nk) :: spectrumhel,spectrumhel_sum
     real, dimension(nxgrid) :: correlation,correlation_sum
     real, dimension(nxgrid) :: correlationhel,correlationhel_sum
-    real, save, dimension(nk,nzgrid) :: cyl_spectrum, cyl_spectrum_sum
-    real, save, dimension(nk,nzgrid) :: cyl_spectrumhel, cyl_spectrumhel_sum
+    real, allocatable, dimension(:,:), save :: cyl_spectrum, cyl_spectrum_sum
+    real, allocatable, dimension(:,:), save :: cyl_spectrumhel, cyl_spectrumhel_sum
     character (len=*) :: sp
     logical, save :: lwrite_krms=.true.
 
 !  identify version
 !
     if (lroot .AND. ip<10) call svn_id("$Id$")
+!  
+    if (lcylindrical_spectra) then
+      if (.not. allocated(cyl_spectrum)) &
+        allocate(cyl_spectrum(nk,nzgrid), cyl_spectrum_sum(nk,nzgrid), cyl_spectrumhel(nk,nzgrid), cyl_spectrumhel_sum(nk,nzgrid))
+    endif
 !
 ! KG: added warning about wrong computation of wavenumbers.
 ! KG: See the function get_k2 for an example of how to calculate k2.
@@ -5147,11 +5182,7 @@ outer:do ikz=1,nz
 !
 !  loop over all the components
 !
-    !$omp parallel private(ivec,k,k2,jkx,jkz) num_threads(num_helper_threads) reduction(+:spectrum, &
-    !$omp spectrumhel,correlation,correlationhel,cyl_spectrum,cyl_spectrumhel,k2m,nks) &
-    !$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
-    !$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
-    !$ thread_id = omp_get_thread_num()+1
+    !$omp parallel num_threads(num_helper_threads)
 !
 !  initialize power spectrum to zero
 !
@@ -5170,8 +5201,14 @@ outer:do ikz=1,nz
       cyl_spectrumhel=0.
       !$omp end workshare
     endif
+    !$omp end parallel
 
     do ivec=1,3
+    !$omp parallel private(k,k2,jkx,jkz) num_threads(num_helper_threads) reduction(+:spectrum, &
+    !$omp spectrumhel,correlation,correlationhel,cyl_spectrum,cyl_spectrumhel,k2m,nks) &
+    !$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+    !$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+    !$ thread_id = omp_get_thread_num()+1
 !
 !  Spectrum of iuu.iuut
 !
@@ -5303,9 +5340,8 @@ outer:do ikz=1,nz
         enddo
         enddo
       endif
-      !
-    enddo !(loop over ivec)
     !$omp end parallel
+    enddo !   do ivec=1,3
 !
 !  Summing up the results from the different processors.
 !  The result is available only on root.
@@ -5458,7 +5494,7 @@ outer:do ikz=1,nz
     real, allocatable, dimension(:,:), save :: cyl_spectrumhel, cyl_spectrumhel_sum
     logical :: lconvol
 
-    if(.not. allocated(cyl_spectrum)) then
+    if (.not. allocated(cyl_spectrum)) then
       allocate(cyl_spectrum(nk,nzgrid), cyl_spectrum_sum(nk,nzgrid), cyl_spectrumhel(nk,nzgrid), cyl_spectrumhel_sum(nk,nzgrid))
     endif
 !
@@ -5468,6 +5504,7 @@ outer:do ikz=1,nz
       if (.not. lshear) call fatal_error('power_cor_scl','lshear=F; cannot do frame transform')
       call get_shared_variable('t_cor',t_cor)
     endif
+!
 ! KG: See the function get_k2 for an example of how to calculate k2.
 !
     select case (sp)
@@ -5640,10 +5677,10 @@ outer:do ikz=1,nz
         jkz=nint(kz(ikz+ipz*nz))+nzgrid/2+1
         k=nint(sqrt(k2))
         if (k>=0 .and. k<=(nk-1)) then
-          cyl_spectrum(k+1,jkz)   =cyl_spectrum(k+1,jkz) + b_re(ikx,iky,ikz)**2+b_im(ikx,iky,ikz)**2
-          cyl_spectrumhel(k+1,jkz)=cyl_spectrumhel(k+1,jkz) &
-                 +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
-                 +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
+          cyl_spectrum(k+1,jkz)   = cyl_spectrum(k+1,jkz) + b_re(ikx,iky,ikz)**2+b_im(ikx,iky,ikz)**2
+          cyl_spectrumhel(k+1,jkz)= cyl_spectrumhel(k+1,jkz) &
+                                   +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
+                                   +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
         endif
       enddo; enddo; enddo
     endif
@@ -5731,7 +5768,6 @@ outer:do ikz=1,nz
     real, allocatable, dimension(:) :: Iv
     character (len=*) :: sp
 !
-!
 !  identify version
 !
     if (lroot .AND. ip<10) call svn_id("$Id$")
@@ -5744,24 +5780,26 @@ outer:do ikz=1,nz
       allocate(Iv(nv))
       Iv=0.
     endif
-
-    !$omp parallel private(ivec,im,in,gLam_tmp,ikr,rr,dx_2pi_box) num_threads(num_helper_threads) &
-    !$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
-    !$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
-    !$ thread_id = omp_get_thread_num()+1
 !
 !  initialize
 !
+    !$omp parallel num_threads(num_helper_threads)
     !$omp workshare
     h_re=0.
     h_im=0.
     correl=0.
     spectrum=0.
     !$omp end workshare
+    !$omp end parallel
 !
 !  loop over all the components
 !
     do ivec=1,3
+
+    !$omp parallel private(im,in,gLam_tmp) num_threads(num_helper_threads) &
+    !$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+    !$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+    !$ thread_id = omp_get_thread_num()+1
 
       if (sp=='saffman_ub') then
         if (iaa==0) call fatal_error('quadratic_invariants','iaa=0')
@@ -5861,16 +5899,19 @@ outer:do ikz=1,nz
         call fatal_error('quadratic_invariants','no invariant defined for '//sp)
       endif
 !
-    enddo !(loop over ivec)
+    !$omp end parallel
+    enddo !   do ivec=1,3
 !
 !  the fsum method
 !
     do ikr=nvmin,nv
-      !$omp single
       nsum=2**(ikr-1)  !  sum over nsum grid points along each direction
       nsub=nxgrid/nsum  !  number of subvolumes alrong each direction
-      allocate( hv(nsub,nsub,nsub) ); hv=0.
-      !$omp end single
+      allocate( hv(nsub,nsub,nsub) )
+      !$omp parallel reduction(+:hv) num_threads(num_helper_threads)
+      !$omp workshare
+      hv=0.
+      !$omp end workshare
       !$omp do collapse(3) private(kxx,kyy,kzz) reduction(+:hv)
       do ikx=1,nx; do iky=1,ny; do ikz=1,nz
         kxx = ikx+ipx*nx-1
@@ -5879,31 +5920,32 @@ outer:do ikz=1,nz
         hv(1+kxx/nsum,1+kyy/nsum,1+kzz/nsum) = &
             hv(1+kxx/nsum,1+kyy/nsum,1+kzz/nsum) + h_re(ikx,iky,ikz)*dx*dy*dz
       enddo; enddo; enddo
-      !$omp single
-      !if (lroot) allocate( hv_sum(nsub,nsub,nsub) )
-      allocate( hv_sum(nsub,nsub,nsub) )
-      call mpireduce_sum(hv,hv_sum,(/nsub,nsub,nsub/))
+      !$omp end parallel
       if (lroot) then
-        Iv(ikr)=sum(hv_sum**2)/(Lx*Ly*Lz)
-      !  deallocate(hv_sum)
+        allocate( hv_sum(nsub,nsub,nsub) )
+      else
+        allocate( hv_sum(1,1,1) )
       endif
-      deallocate(hv_sum)
-      deallocate(hv)
-      !$omp end single
+      call mpireduce_sum(hv,hv_sum,(/nsub,nsub,nsub/))
+      if (lroot) Iv(ikr)=sum(hv_sum**2)/(Lx*Ly*Lz)
+      deallocate(hv_sum,hv)
     enddo
 !
 !  the spectral method
 !  Take into account that k is not normalized, so dx -> dx_2pi_box.
 !
+    !$omp parallel num_threads(num_helper_threads)
     call fft_xyz_parallel(h_re,h_im)
     !$omp workshare
     h_re = h_re*h_re + h_im*h_im  !  this is h^*(k) h(k)
     !$omp end workshare
+    !$omp end parallel
 !
     dx_2pi_box=twopi/nxgrid
     do ikr=1,nk
       rr = ikr*dx_2pi_box  !  rr=dx,2dx,...,Lx/2
-      !$omp do collapse(3) private(kxx,kyy,kzz,k2,k,kint,j0x,j0y,j0z,j1,j0,w,icor) reduction(+:spectrum,correl)
+      !$omp parallel private(kxx,kyy,kzz,k2,k,kint,j0x,j0y,j0z,j1,j0,w,icor) num_threads(num_helper_threads)
+      !$omp do collapse(3) reduction(+:spectrum,correl)
       do ikx=1,nx; do iky=1,ny; do ikz=1,nz
         kxx = kx(ikx+ipx*nx)       !  the true kx
         kyy = ky(iky+ipy*ny)       !  the true ky
@@ -5929,8 +5971,8 @@ outer:do ikz=1,nz
           correl(icor,ikr) = correl(icor,ikr) + w(icor) * h_re(ikx,iky,ikz)
         enddo
       enddo; enddo; enddo
-    enddo
-    !$omp end parallel
+      !$omp end parallel
+    enddo !  do ikr=1,nk
 !
     call mpireduce_sum(correl,correl_sum,(/4,nk/))
     call mpireduce_sum(spectrum,spectrum_sum,nk)
@@ -6020,18 +6062,17 @@ outer:do ikz=1,nz
 !
 !  loop over all components
 !
-    !$omp parallel private(ivec,ikx,iky,jkx,jky,jkz) num_threads(num_helper_threads) reduction(+:fft) &
-    !$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
-    !$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
-    !$ thread_id = omp_get_thread_num()+1
     do ivec=1,ncomp
-!
-!  initialize fft(real/imaginary,kx,ky,kz)
-!
+      !$omp parallel private(ikx,iky,jkx,jky,jkz) num_threads(num_helper_threads) reduction(+:fft) &
+      !$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+      !$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+      !$ thread_id = omp_get_thread_num()+1
       !$omp workshare
       fft=0.
       fft_sum=0.
       !$omp end workshare
+!
+!  initialize fft(real/imaginary,kx,ky,kz)
 !
       if (sp=='uu') then
         if (iuu==0)  call fatal_error('power_fft3d_vec','iuu=0')
@@ -6138,8 +6179,7 @@ outer:do ikz=1,nz
 !
 !  Summing up the results from the different processors.
 !
-      !$omp barrier
-      !$omp single
+      !$omp end parallel
       call mpireduce_sum(fft,fft_sum,(/2,kkoutx,kkouty,kkoutz/))
 !
 !  append to diagnostics file
@@ -6160,11 +6200,8 @@ outer:do ikz=1,nz
         write(1,'(1p,8e10.2)') fft_sum(2,:,:,:)
         close(1)
       endif
-      !$omp end single
-      !$omp barrier
 !
-    enddo  ! ivec
-    !$omp end parallel
+    enddo  ! do ivec=1,3
 !
     deallocate(fft,fft_sum)
 !

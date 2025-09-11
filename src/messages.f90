@@ -7,7 +7,6 @@ module Messages
   use Cdata
   use Mpicomm
 !$ use General, only: omp_single
-!$ use OMP_lib
 !
   implicit none
 !
@@ -523,6 +522,7 @@ module Messages
 !
       use General, only: loptest
       use Mpicomm, only: mpiwtime
+!$    use OMP_lib
 
       integer :: lun=9
       character(len=*), optional :: location
@@ -534,7 +534,7 @@ module Messages
       integer :: mul_fac
       logical, save :: opened = .false.
 !
-!$ if (omp_in_parallel()) return
+!$    if (omp_in_parallel()) return
 !
       if (present(location)) scaller=location
 !

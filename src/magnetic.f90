@@ -6574,7 +6574,7 @@ print*,'AXEL2: should not be here (eta) ... '
 !
 !  Mean dot product of forcing and magnetic field, <f.b>.
 !
-      if (idiag_fbm/=0) then
+      if (idiag_fbm/=0.and.lforcing_cont_aa) then
         call dot(p%fcont(:,:,iforcing_cont_aa),p%bb,fb)
         call sum_mn_name(fb,idiag_fbm)
       endif
@@ -7353,9 +7353,10 @@ print*,'AXEL2: should not be here (eta) ... '
 !  This diagnostic relies upon mn-dependent quantities which are not in the pencil case.
 !
           if (lforcing_cont_aa) then
-            call curl_mn(p%fcont(:,:,iforcing_cont_aa),tmp2)
-            call dot(p%bb,tmp2,tmp1)
-            call xysum_mn_name_z(ampl_fcont_aa*mu01*tmp1,idiag_bcurlfmz)
+            !MR: the curl of the emf cannot be calculated this way
+            !call curl_mn(p%fcont(:,:,iforcing_cont_aa),tmp2)
+            !call dot(p%bb,tmp2,tmp1)
+            !call xysum_mn_name_z(ampl_fcont_aa*mu01*tmp1,idiag_bcurlfmz)
           endif
         endif
         call phizsum_mn_name_r(p%b2,idiag_b2mr)
@@ -11166,6 +11167,10 @@ print*,'AXEL2: should not be here (eta) ... '
         endif
         call parse_name(inamev,cnamev(inamev),cformv(inamev),'poynting',ivid_poynting)
       enddo
+      if (idiag_bcurlfmz/=0) then
+         call warning('rprint_magnetic','no valid implementation for diagnostic bcurlfmz')
+         idiag_bcurlfmz=0
+      endif
 !
 !  call corresponding mean-field routine
 !

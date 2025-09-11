@@ -611,7 +611,7 @@ else
   GPU_INTERFACE=
 endif
 #
-ifneq ($(filter openmp OpenMP,$(MULTITHREADING)),)
+ifneq ($(filter openmp OpenMP openMP OPENMP OMP omp,$(MULTITHREADING)),)
 
   $(shell bash -c 'rm -f exit_mn.h; touch exit_mn.h')
   PTHREAD_OBJ=pthread.o
