@@ -478,11 +478,13 @@ else
 endif
 
 USE_SPECIAL_DISPATCHER=no
-ifneq ($(SPECIAL_MULT),1)
-  USE_SPECIAL_DISPATCHER=yes
-endif
-ifneq ($(findstring gpu_astaroth, $(GPU)),)
-  USE_SPECIAL_DISPATCHER=yes
+ifneq ($(SPECIAL),nospecial)
+  ifneq ($(SPECIAL_MULT),1)
+    USE_SPECIAL_DISPATCHER=yes
+  endif
+  ifneq ($(findstring gpu_astaroth, $(GPU)),)
+    USE_SPECIAL_DISPATCHER=yes
+  endif
 endif
 
 ifeq ($(USE_SPECIAL_DISPATCHER),yes)
