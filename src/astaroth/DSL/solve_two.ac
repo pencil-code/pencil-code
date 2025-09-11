@@ -7,6 +7,7 @@ fixed_boundary Kernel twopass_solve_final(int step_num)
 		if(AC_iuu__mod__cdata != 0) write(F_UU, rk_final(F_UU,step_num))
 		if(AC_irho__mod__cdata != 0 || AC_ilnrho__mod__cdata != 0) write(F_RHO, rk_final(F_RHO,step_num))
 		if(AC_iaa__mod__cdata != 0) write(F_AA, rk_final(F_AA,step_num))
+  		if (AC_iss__mod__cdata != 0)  write( F_SS,  rk_final(F_SS, step_num))
 #if LCHIRAL
   	        if (AC_ixx_chiral__mod__chiral != 0) write(F_XX_CHIRAL,rk_final(F_XX_CHIRAL,step_num))
   	        if (AC_iyy_chiral__mod__chiral != 0) write(F_YY_CHIRAL,rk_final(F_YY_CHIRAL,step_num))
