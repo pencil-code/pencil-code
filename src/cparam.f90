@@ -988,5 +988,7 @@ integer, parameter :: enum_galacticZbrandtZcurve_string = 704
 integer, parameter :: enum_s_string = 705
 integer, parameter :: enum_a2_string = 706
 integer, parameter :: enum_der_string = 707
+integer, parameter :: enum_friedmann_string = 708
+integer, parameter :: enum_doublet_string = 709
 
 endmodule Cparam

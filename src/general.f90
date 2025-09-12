@@ -8087,6 +8087,10 @@ iloop:do i=1,size(list2)
           dst = enum_a2_string
         case('der')
           dst = enum_der_string
+        case('friedmann')
+          dst = enum_friedmann_string
+        case('doublet')
+          dst = enum_doublet_string
         case default
           dst = enum_unknown_string_string
           if (lroot) print*, 'No string enum for: ', src
