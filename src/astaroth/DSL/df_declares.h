@@ -30,6 +30,7 @@ real  DF_RUN_AVER      = 0.0
 real DF_PHIUU         = 0.0
 real DF_SS_RUN_AVER    = 0.0
 real DF_RHO            = 0.0
+real DF_RHON            = 0.0
 real3 DF_DUST_VELOCITY[AC_ndustspec__mod__cparam]
 real  DF_DUST_DENSITY[AC_ndustspec__mod__cparam]
 real  DF_DUST_MASS[AC_ndustspec__mod__cparam]
@@ -59,11 +60,18 @@ if(ldustdensity)
 }
 #define DF_LNTT DF_TT
 #define DF_LNRHO DF_RHO
+#define DF_LNRHON DF_RHON
 #define DF_UU DF_UVEC
+#define DF_UUN DF_UNVEC
+
 
 #define DF_UX DF_UU.x
 #define DF_UY DF_UU.y
 #define DF_UZ DF_UU.z
+
+#define DF_UNX DF_UUN.x
+#define DF_UNY DF_UUN.y
+#define DF_UNZ DF_UUN.z
 
 #define DF_AX DF_AA.x
 #define DF_AY DF_AA.y
@@ -76,3 +84,4 @@ real DF_STRESS_2 = 0.0
 real DF_STRESS_3 = 0.0
 real DF_STRESS_4 = 0.0
 real DF_STRESS_5 = 0.0
+dt1_max__mod__cdata = 0.0

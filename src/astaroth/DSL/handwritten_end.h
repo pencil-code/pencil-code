@@ -1,7 +1,9 @@
  if(AC_lcourant_dt__mod__cdata)
  {
   	if (AC_iuu__mod__cdata != 0)    write( F_UU,  rk_intermediate(F_UU , DF_UU,  step_num, AC_dt__mod__cdata) )
+        if (AC_iuun__mod__cdata != 0)   write( F_UUN,  rk_intermediate(F_UUN , DF_UUN,  step_num, AC_dt__mod__cdata) )
   	if ((AC_ilnrho__mod__cdata + AC_irho__mod__cdata) != 0)  write(F_RHO, rk_intermediate(F_RHO, DF_RHO, step_num, AC_dt__mod__cdata) )
+        if ((AC_ilnrhon__mod__cdata + AC_irhon__mod__cdata) != 0)  write(F_RHON, rk_intermediate(F_RHON, DF_RHON, step_num, AC_dt__mod__cdata) )
   	if (AC_iss__mod__cdata != 0)  write( F_SS,  rk_intermediate(F_SS, DF_SS,  step_num, AC_dt__mod__cdata) )
   	if (AC_iaa__mod__cdata != 0) write( F_AA,  rk_intermediate(F_AA , DF_AA,  step_num, AC_dt__mod__cdata) )
 #if LGRAVITATIONAL_WAVES_HTXK
@@ -17,7 +19,7 @@
 #endif
 	if (AC_lfirst__mod__cdata)
 	{
-		reduce_max(dt1_max_loc,AC_dt1_max)
+		reduce_max(dt1_max__mod__cdata,AC_dt1_max)
 	}
 #if LCHIRAL
   	if (AC_ixx_chiral__mod__chiral != 0) write(F_XX_CHIRAL,rk_intermediate(F_XX_CHIRAL, DF_XX_CHIRAL,  step_num, AC_dt__mod__cdata) )

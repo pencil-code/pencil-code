@@ -5,10 +5,22 @@ field_order(AC_iuz__mod__cdata-1) Field UUZ
 #define F_UY UUY
 #define F_UZ UUZ
 
+field_order(AC_iunx__mod__cdata-1) Field UUNX
+field_order(AC_iuny__mod__cdata-1) Field UUNY
+field_order(AC_iunz__mod__cdata-1) Field UUNZ
+#define F_UNX UUNX
+#define F_UNY UUNY
+#define F_UNZ UUNZ
+
 field_order(AC_ilnrho__mod__cdata-1) Field RHO
 #define LNRHO RHO
 #define F_RHO  RHO
 #define F_LNRHO F_RHO
+
+field_order(AC_ilnrhon__mod__cdata-1) Field RHON
+#define LNRHON RHON
+#define F_RHON  RHON
+#define F_LNRHON F_RHON
 
 
 field_order(AC_iax__mod__cdata-1) Field AAX
@@ -103,10 +115,17 @@ const Field3 F_GLOBAL_GLNTVEC = {F_GLOBAL_GLNTX,F_GLOBAL_GLNTY,F_GLOBAL_GLNTZ}
 const Field3 F_AVEC    = {F_AX, F_AY, F_AZ}
 #define F_AA F_AVEC
 #define AA F_AVEC
+
 const Field3 F_UVEC    = {F_UX,F_UY,F_UZ}
 const Field3 F_UU      = {F_UX,F_UY,F_UZ}
 #define F_UU F_UVEC
 #define UU F_UU
+
+const Field3 F_UNVEC    = {F_UNX,F_UNY,F_UNZ}
+const Field3 F_UUN      = {F_UNX,F_UNY,F_UNZ}
+#define F_UUN F_UNVEC
+#define UUN F_UUN
+
 const Field3 F_U0VEC   = {F_U0X, F_U0Y, F_U0Z}
 const Field3 F_OVEC    = {F_OX, F_OY, F_OZ}
 const Field3 F_UU_SPH_VEC  = {F_UU_SPHX, F_UU_SPHY, F_UU_SPHZ}
