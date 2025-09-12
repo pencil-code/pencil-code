@@ -37,7 +37,7 @@ To see several oscillations, one should for 400 steps (0.02*400=8).
   data for gravitational waves are not written.
 
 ## Links:
-* https://www.nordita.org/~brandenb/projects/GW
+* https://norlx65.nordita.org/~brandenb/projects/GW
 
 ## Reference:
 [1] Roper Pol, A., Brandenburg, A., Kahniashvili, T., Kosowsky, A.,
