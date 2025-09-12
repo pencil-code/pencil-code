@@ -42,7 +42,7 @@
 !
 ! PENCILS PROVIDED phi; dphi; gphi(3); cov_der(4,4)
 ! PENCILS PROVIDED phi_doublet(3); dphi_doublet(3); phi_doublet_mod
-! PENCILS EXPECTED Gamma_disp, GammaW1, GammaW2, GammaW3
+! PENCILS EXPECTED GammaY, GammaW1, GammaW2, GammaW3
 ! PENCILS EXPECTED W1(3); W2(3); W3(3), aa(3)
 !
 !***************************************************************
@@ -110,7 +110,7 @@ module Special
   real :: echarge=.0, echarge_const=.303
   real :: count_eb0_all=0., eta_phi=0.
   real, pointer :: coupl_gw, coupl_gy
-  logical, pointer :: llongitudinalE, llongitudinalW
+  ! logical, pointer :: llongitudinalE, llongitudinalW
   real, target :: ddotam_all
   real, pointer :: alpf
   real, pointer :: sigE_prefactor, sigB_prefactor, mass_chi
@@ -290,24 +290,26 @@ module Special
       ! if iee = 0 then disp_current module is not called
       if (iee /= 0 .and. lphi_hypercharge) then
         call get_shared_variable('coupl_gy',coupl_gy)
-        call get_shared_variable('llongitudinalE',llongitudinalE)
+        ! call get_shared_variable('llongitudinalE',llongitudinalE)
       else
         if (.not.associated(coupl_gy)) then
-          allocate(coupl_gy, llongitudinalE)
+          ! allocate(coupl_gy, llongitudinalE)
+          allocate(coupl_gy)
           coupl_gy=0.
-          llongitudinalE=.false.
+          ! llongitudinalE=.false.
         endif
         lphi_hypercharge=.false.
       endif
       !  if iWW = 0 then electroweaksu2 module is not called
       if (iWW /= 0 .and. lphi_weakcharge) then
         call get_shared_variable('coupl_gw',coupl_gw)
-        call get_shared_variable('llongitudinalW',llongitudinalW)
+        ! call get_shared_variable('llongitudinalW',llongitudinalW)
       else
         if (.not.associated(coupl_gw)) then
-          allocate(coupl_gw, llongitudinalW)
+          ! allocate(coupl_gw, llongitudinalW)
+          allocate(coupl_gw)
           coupl_gw=0.
-          llongitudinalW=.false.
+          ! llongitudinalW=.false.
         endif
         lphi_weakcharge=.false.
       endif
@@ -476,7 +478,7 @@ module Special
         if (lphi_hypercharge .or. lphi_weakcharge) then
           lpenc_requested(i_cov_der)=.true.
           if (lphi_hypercharge) then
-            lpenc_requested(i_Gamma_disp)=.true.
+            lpenc_requested(i_GammaY)=.true.
             lpenc_requested(i_aa)=.true.
           endif
           if (lphi_weakcharge) then
@@ -504,7 +506,6 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-      real, dimension(nx, 4, 4) :: cov_der=0.
 !
       intent(in) :: f
       intent(inout) :: p
@@ -528,13 +529,17 @@ module Special
 ! gphi
       if (lpencil(i_gphi)) call grad(f,iphi,p%gphi)
 
+      ! cov_der computation for Higgs doublet with weak and/or hypercharge
+      ! covariant derivative is D_mu = partial_mu - i g W_mu^a tau^a/2 - i g' Y B_mu/2
+      ! where tau^a are the Pauli matrices and Y is the hypercharge
       if (lpencil(i_cov_der)) then
         do i=0,3
-          cov_der(:, 1, i)=f(l1:l2,m,n,idphi+i)
+          p%cov_der(:, 1, i+1)=f(l1:l2,m,n,idphi+i)
+          p%cov_der(:, 1, i+1)=f(l1:l2,m,n,idphi+i)
           if (.not. lphi_hom) then
             do j=1,3
               call der(f, iphi+i, dfdxs(:, i+1, j), j)
-              cov_der(:, j+1, i) = dfdxs(:, i, j)
+              p%cov_der(:, j+1, i+1) = dfdxs(:, i, j)
             enddo
           endif
         enddo
@@ -543,17 +548,17 @@ module Special
         if (lphi_hypercharge) then
           if (ia0 > 0) then
             ! U(1) term (first block), proportional to a0 (Y0)
-            cov_der(:,1,1) = cov_der(:,1,1) + 0.5*coupl_gy*f(l1:l2,m,n,ia0)*f(l1:l2,m,n,iphi_up_im)
-            cov_der(:,1,2) = cov_der(:,1,2) - 0.5*coupl_gy*f(l1:l2,m,n,ia0)*f(l1:l2,m,n,iphi_up_re)
-            cov_der(:,1,3) = cov_der(:,1,3) + 0.5*coupl_gy*f(l1:l2,m,n,ia0)*f(l1:l2,m,n,iphi_down_im)
-            cov_der(:,1,4) = cov_der(:,1,4) - 0.5*coupl_gy*f(l1:l2,m,n,ia0)*f(l1:l2,m,n,iphi_down_re)
+            p%cov_der(:,1,1) = p%cov_der(:,1,1) + 0.5*coupl_gy*f(l1:l2,m,n,ia0)*f(l1:l2,m,n,iphi_up_im)
+            p%cov_der(:,1,2) = p%cov_der(:,1,2) - 0.5*coupl_gy*f(l1:l2,m,n,ia0)*f(l1:l2,m,n,iphi_up_re)
+            p%cov_der(:,1,3) = p%cov_der(:,1,3) + 0.5*coupl_gy*f(l1:l2,m,n,ia0)*f(l1:l2,m,n,iphi_down_im)
+            p%cov_der(:,1,4) = p%cov_der(:,1,4) - 0.5*coupl_gy*f(l1:l2,m,n,ia0)*f(l1:l2,m,n,iphi_down_re)
           endif
           ! Remaining blocks (no Y0, multiply two field components)
           do i = 1, 3
-            cov_der(:,i+1,1) = cov_der(:,i+1,1) + 0.5*coupl_gy*f(l1:l2,m,n,iaa+i-1)*f(l1:l2,m,n,iphi_up_im)
-            cov_der(:,i+1,2) = cov_der(:,i+1,2) - 0.5*coupl_gy*f(l1:l2,m,n,iaa+i-1)*f(l1:l2,m,n,iphi_up_re)
-            cov_der(:,i+1,3) = cov_der(:,i+1,3) + 0.5*coupl_gy*f(l1:l2,m,n,iaa+i-1)*f(l1:l2,m,n,iphi_down_im)
-            cov_der(:,i+1,4) = cov_der(:,i+1,4) - 0.5*coupl_gy*f(l1:l2,m,n,iaa+i-1)*f(l1:l2,m,n,iphi_down_re)
+            p%cov_der(:,i+1,1) = p%cov_der(:,i+1,1) + 0.5*coupl_gy*f(l1:l2,m,n,iaa+i-1)*f(l1:l2,m,n,iphi_up_im)
+            p%cov_der(:,i+1,2) = p%cov_der(:,i+1,2) - 0.5*coupl_gy*f(l1:l2,m,n,iaa+i-1)*f(l1:l2,m,n,iphi_up_re)
+            p%cov_der(:,i+1,3) = p%cov_der(:,i+1,3) + 0.5*coupl_gy*f(l1:l2,m,n,iaa+i-1)*f(l1:l2,m,n,iphi_down_im)
+            p%cov_der(:,i+1,4) = p%cov_der(:,i+1,4) - 0.5*coupl_gy*f(l1:l2,m,n,iaa+i-1)*f(l1:l2,m,n,iphi_down_re)
           enddo
         endif
 
@@ -561,19 +566,19 @@ module Special
         ! add terms for weakcharge to covariant derivative
         if (lphi_weakcharge) then
           if (iW0 > 0) then
-            cov_der(:,1,1) = cov_der(:,1,1) + &
+            p%cov_der(:,1,1) = p%cov_der(:,1,1) + &
                 0.5*coupl_gw*(f(l1:l2,m,n,iW0)*f(l1:l2,m,n,iphi_down_im) - &
                 f(l1:l2,m,n,iW0+1)*f(l1:l2,m,n,iphi_down_re) + f(l1:l2,m,n,iW0+2)*f(l1:l2,m,n,iphi_up_im))
 
-            cov_der(:,1,2) = cov_der(:,1,2) - &
+            p%cov_der(:,1,2) = p%cov_der(:,1,2) - &
                   0.5*coupl_gw*(f(l1:l2,m,n,iW0)*f(l1:l2,m,n,iphi_down_re) + &
                   f(l1:l2,m,n,iW0+1)*f(l1:l2,m,n,iphi_down_im) + f(l1:l2,m,n,iW0+2)*f(l1:l2,m,n,iphi_up_re))
 
-            cov_der(:,1,3) = cov_der(:,1,3) + &
+            p%cov_der(:,1,3) = p%cov_der(:,1,3) + &
                   0.5*coupl_gw*(f(l1:l2,m,n,iW0)*f(l1:l2,m,n,iphi_up_im) + &
                   f(l1:l2,m,n,iW0+1)*f(l1:l2,m,n,iphi_up_re) - f(l1:l2,m,n,iW0+2)*f(l1:l2,m,n,iphi_down_im))
 
-            cov_der(:,1,4) = cov_der(:,1,4) - &
+            p%cov_der(:,1,4) = p%cov_der(:,1,4) - &
                   0.5*coupl_gw*(f(l1:l2,m,n,iW0)*f(l1:l2,m,n,iphi_up_re) - &
                   f(l1:l2,m,n,iW0+1)*f(l1:l2,m,n,iphi_up_im) - f(l1:l2,m,n,iW0+2)*f(l1:l2,m,n,iphi_down_re))
           endif
@@ -581,67 +586,67 @@ module Special
           ! iWW:iWW+2 -> W1x:W1z
           ! iWW+3:iWW+5 -> W2x:W2z
           ! iWW+6:iWW+8 -> W3x:W3z
-          cov_der(:,2,1) = cov_der(:,2,1) + &
+          p%cov_der(:,2,1) = p%cov_der(:,2,1) + &
                 0.5*coupl_gw*(f(l1:l2,m,n,iWW1)*f(l1:l2,m,n,iphi_down_im) - &
                 f(l1:l2,m,n,iWW2)*f(l1:l2,m,n,iphi_down_re) + &
                 f(l1:l2,m,n,iWW3)*f(l1:l2,m,n,iphi_up_im))
 
-          cov_der(:,2,2) = cov_der(:,2,2) - &
+          p%cov_der(:,2,2) = p%cov_der(:,2,2) - &
                 0.5*coupl_gw*(f(l1:l2,m,n,iWW1)*f(l1:l2,m,n,iphi_down_re) + &
                 f(l1:l2,m,n,iWW2)*f(l1:l2,m,n,iphi_down_im) + &
                 f(l1:l2,m,n,iWW3)*f(l1:l2,m,n,iphi_up_re))
 
-          cov_der(:,2,3) = cov_der(:,2,3) + &
+          p%cov_der(:,2,3) = p%cov_der(:,2,3) + &
                 0.5*coupl_gw*(f(l1:l2,m,n,iWW1)*f(l1:l2,m,n,iphi_up_im) + &
                 f(l1:l2,m,n,iWW2)*f(l1:l2,m,n,iphi_up_re) - &
                 f(l1:l2,m,n,iWW3)*f(l1:l2,m,n,iphi_down_im))
 
-          cov_der(:,2,4) = cov_der(:,2,4) - &
+          p%cov_der(:,2,4) = p%cov_der(:,2,4) - &
                 0.5*coupl_gw*(f(l1:l2,m,n,iWW1)*f(l1:l2,m,n,iphi_up_re) - &
                 f(l1:l2,m,n,iWW2)*f(l1:l2,m,n,iphi_up_im) - &
                 f(l1:l2,m,n,iWW3)*f(l1:l2,m,n,iphi_down_re))
 
-          cov_der(:,3,1) = cov_der(:,3,1) + &
+          p%cov_der(:,3,1) = p%cov_der(:,3,1) + &
                 0.5*coupl_gw*(f(l1:l2,m,n,iWW1+1)*f(l1:l2,m,n,iphi_down_im) - &
                 f(l1:l2,m,n,iWW2+1)*f(l1:l2,m,n,iphi_down_re) + &
                 f(l1:l2,m,n,iWW3+1)*f(l1:l2,m,n,iphi_up_im))
 
-          cov_der(:,3,2) = cov_der(:,3,2) - &
+          p%cov_der(:,3,2) = p%cov_der(:,3,2) - &
                 0.5*coupl_gw*(f(l1:l2,m,n,iWW1+1)*f(l1:l2,m,n,iphi_down_re) + &
                 f(l1:l2,m,n,iWW2+1)*f(l1:l2,m,n,iphi_down_im) + &
                 f(l1:l2,m,n,iWW3+1)*f(l1:l2,m,n,iphi_up_re))
 
-          cov_der(:,3,3) = cov_der(:,3,3) + &
+          p%cov_der(:,3,3) = p%cov_der(:,3,3) + &
                 0.5*coupl_gw*(f(l1:l2,m,n,iWW1+1)*f(l1:l2,m,n,iphi_up_im) + &
                 f(l1:l2,m,n,iWW2+1)*f(l1:l2,m,n,iphi_up_re) - &
                 f(l1:l2,m,n,iWW3+1)*f(l1:l2,m,n,iphi_down_im))
 
-          cov_der(:,3,4) = cov_der(:,3,4) - &
+          p%cov_der(:,3,4) = p%cov_der(:,3,4) - &
                 0.5*coupl_gw*(f(l1:l2,m,n,iWW1+1)*f(l1:l2,m,n,iphi_up_re) - &
                 f(l1:l2,m,n,iWW2+1)*f(l1:l2,m,n,iphi_up_im) - &
                 f(l1:l2,m,n,iWW3+1)*f(l1:l2,m,n,iphi_down_re))
 
-          cov_der(:,4,1) = cov_der(:,4,1) + &
+          p%cov_der(:,4,1) = p%cov_der(:,4,1) + &
                 0.5*coupl_gw*(f(l1:l2,m,n,iWW1+2)*f(l1:l2,m,n,iphi_down_im) - &
                 f(l1:l2,m,n,iWW2+2)*f(l1:l2,m,n,iphi_down_re) + &
                 f(l1:l2,m,n,iWW3+2)*f(l1:l2,m,n,iphi_up_im))
 
-          cov_der(:,4,2) = cov_der(:,4,2) - &
+          p%cov_der(:,4,2) = p%cov_der(:,4,2) - &
                 0.5*coupl_gw*(f(l1:l2,m,n,iWW1+2)*f(l1:l2,m,n,iphi_down_re) + &
                 f(l1:l2,m,n,iWW2+2)*f(l1:l2,m,n,iphi_down_im) + &
                 f(l1:l2,m,n,iWW3+2)*f(l1:l2,m,n,iphi_up_re))
 
-          cov_der(:,4,3) = cov_der(:,4,3) + &
+          p%cov_der(:,4,3) = p%cov_der(:,4,3) + &
                 0.5*coupl_gw*(f(l1:l2,m,n,iWW1+2)*f(l1:l2,m,n,iphi_up_im) + &
                 f(l1:l2,m,n,iWW2+2)*f(l1:l2,m,n,iphi_up_re) - &
                 f(l1:l2,m,n,iWW3+2)*f(l1:l2,m,n,iphi_down_im))
 
-          cov_der(:,4,4) = cov_der(:,4,4) - &
+          p%cov_der(:,4,4) = p%cov_der(:,4,4) - &
                 0.5*coupl_gw*(f(l1:l2,m,n,iWW1+2)*f(l1:l2,m,n,iphi_up_re) - &
                 f(l1:l2,m,n,iWW2+2)*f(l1:l2,m,n,iphi_up_im) - &
                 f(l1:l2,m,n,iWW3+2)*f(l1:l2,m,n,iphi_down_re))
         endif
-        p%cov_der = cov_der
+        ! p%cov_der = cov_der
       endif
 !
     endsubroutine calc_pencils_special
@@ -773,28 +778,28 @@ module Special
             0.5*coupl_gy*(-p%aa(:,1)*dfdxs(:,2,1) - p%aa(:,2)*dfdxs(:,2,2) - &
             p%aa(:,3)*dfdxs(:,2,3) - p%aa(:,1)*p%cov_der(:,2,2) - &
             p%aa(:,2)*p%cov_der(:,3,2) - p%aa(:,3)*p%cov_der(:,4,2) - &
-            p%Gamma_disp*p%phi_doublet(:,1))
+            p%GammaY*p%phi_doublet(:,1))
 
           ! del2phi_up_im
           del2phi_doublet(:,2) = del2phi_doublet(:,2) + &
             0.5*coupl_gy*(-p%aa(:,1)*dfdxs(:,1,1) - p%aa(:,2)*dfdxs(:,1,2) - &
             p%aa(:,3)*dfdxs(:,1,3) - p%aa(:,1)*p%cov_der(:,2,1) - &
             p%aa(:,2)*p%cov_der(:,3,1) - p%aa(:,3)*p%cov_der(:,4,1) - &
-            p%Gamma_disp*p%phi)
+            p%GammaY*p%phi)
 
           ! del2phi_down_re
           del2phi_doublet(:,3) = del2phi_doublet(:,3) - &
             0.5*coupl_gy*(-p%aa(:,1)*dfdxs(:,4,1) - p%aa(:,2)*dfdxs(:,4,2) - &
             p%aa(:,3)*dfdxs(:,4,3) - p%aa(:,1)*p%cov_der(:,2,4) - &
             p%aa(:,2)*p%cov_der(:,3,4) - p%aa(:,3)*p%cov_der(:,4,4) - &
-            p%Gamma_disp*p%phi_doublet(:,3))
+            p%GammaY*p%phi_doublet(:,3))
 
           ! del2phi_down_im
           del2phi_doublet(:,4) = del2phi_doublet(:,4) + &
             0.5*coupl_gy*(-p%aa(:,1)*dfdxs(:,3,1) - p%aa(:,2)*dfdxs(:,3,2) - &
             p%aa(:,3)*dfdxs(:,3,3) - p%aa(:,1)*p%cov_der(:,2,3) - &
             p%aa(:,2)*p%cov_der(:,3,3) - p%aa(:,3)*p%cov_der(:,4,3) - &
-            p%Gamma_disp*p%phi_doublet(:,2))
+            p%GammaY*p%phi_doublet(:,2))
         endif
         if (c_phi/=0. .and. lphi_weakcharge) then
           ! terms of the covariant Laplacian from SU(2) gauge fields
