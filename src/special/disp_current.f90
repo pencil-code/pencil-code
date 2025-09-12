@@ -16,7 +16,7 @@
 !
 ! PENCILS PROVIDED e2; edot2; el(3); a0; ga0(3); del2ee(3); curlE(3); BcurlE
 ! PENCILS PROVIDED rhoe, divJ, divE, gGamma(3); sigE, sigB; eb; count_eb0
-! PENCILS PROVIDED boost; gam_EB; eprime; bprime; jprime; Gamma_disp
+! PENCILS PROVIDED boost; gam_EB; eprime; bprime; jprime; GammaY
 ! PENCILS EXPECTED phi, infl_phi, dphi, infl_dphi, gphi(3); cov_der(4,4)
 ! PENCILS EXPECTED curlb(3), jj_ohm(3), phi_doublet(3)
 !***************************************************************
@@ -514,8 +514,8 @@ module Special
 !  Replace p%curlb by the combination -p%del2a+p%gGamma.
 !
       if (llongitudinalE) then
-        call div(f,iee,p%divE)
-        call grad(f,iGamma,p%gGamma)
+        ! call div(f,iee,p%divE)
+        ! call grad(f,iGamma,p%gGamma)
         if (lapply_Gamma_corr) p%curlb=-p%del2a+p%gGamma
         ! if (lsolve_chargedensity) p%rhoe=f(l1:l2,m,n,irhoe)
       endif
@@ -671,11 +671,11 @@ module Special
       endif
 
 !  pencils for klein_gordon module
-      if (lpenc_requested(i_Gamma_disp)) then
+      if (lpenc_requested(i_GammaY)) then
         if (llongitudinalE) then
-          p%Gamma_disp=f(l1:l2,m,n,iGamma)
+          p%GammaY=f(l1:l2,m,n,iGamma)
         else
-          call div(f,iaa,p%Gamma_disp)
+          call div(f,iaa,p%GammaY)
         endif
       endif
       if (alpf/=0.and..not.lklein_gordon) p%dphi=p%infl_dphi
