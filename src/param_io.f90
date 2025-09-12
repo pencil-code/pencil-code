@@ -335,13 +335,14 @@ module Param_IO
 !  18-aug-15/PABourdin: reworked to simplify code and display all errors at once
 !  19-aug-15/PABourdin: renamed from read_startpars to read_all_init_pars
 !
-      use File_io, only: parallel_open, parallel_close, read_namelist
+      use File_io, only: parallel_open, parallel_close, read_namelist, parallel_file_exists
       use Mpicomm, only: stop_it_if_any
       use Particles_main, only: read_all_particles_init_pars
+      use Syscalls, only: get_env_var
 !
       logical, optional, intent(IN) :: print
 !
-      character(len=fnlen) :: file
+      character(len=fnlen) :: file, home, user, host
 !
 !  Set default to shearing sheet if lshear=.true. (even when Sshear==0.).
 !
@@ -350,6 +351,26 @@ module Param_IO
 !  Open namelist file and read through all items that *may* be present in the various modules.
 !
       if (lstart) then
+!
+!  Open global namelist file.
+!
+        call get_env_var ('PENCIL_USER', user)
+        if (user /= '') then
+          call get_env_var ('PENCIL_HOME', home)
+          call get_env_var ('PENCIL_GLOBAL', host)
+          call safe_character_prepend (user, home, '/utils/')
+          call safe_character_append (user, '/')
+          if (host /= '') then
+            call safe_character_append (user, host, '_')
+          endif
+          call safe_character_append (user, 'global_start.in')
+          if (parallel_file_exists (user)) then
+            call parallel_open(user, remove_comments=.true.)
+            call read_all_namelists
+            call parallel_close
+          endif
+        endif
+!
         file = 'start.in'
         call parallel_open(file, remove_comments=.true.)
       else
