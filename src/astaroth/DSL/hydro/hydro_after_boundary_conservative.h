@@ -1,3 +1,4 @@
+#if LHYDRO
 Kernel hydro_after_boundary_conservative(real AC_t__mod__cdata){
   real cs201
   real cs2011
@@ -110,6 +111,7 @@ Kernel hydro_after_boundary_conservative(real AC_t__mod__cdata){
   	}
   	if (AC_ilorentz__mod__cdata != 0) {
   	  DF_LORENTZ=lorentz_gamma2
+	  write(F_LORENTZ,DF_LORENTZ)
   	}
   	if (AC_lhiggsless__mod__hydro) {
   	  if (AC_lhiggsless_old__mod__hydro) {
@@ -144,3 +146,7 @@ Kernel hydro_after_boundary_conservative(real AC_t__mod__cdata){
   	write(F_TIJ_5,DF_TIJ_5)
   }
 }
+#else
+Kernel hydro_after_boundary_conservative(real AC_t__mod__cdata){
+}
+#endif

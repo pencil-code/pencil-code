@@ -984,8 +984,8 @@ module Hydro
 !  Tij and possibly relativistic Lorentz factor as aux
 !
       if (lconservative) then
-        call farray_register_auxiliary('Tij',iTij,vector=6,communicated=.true.)
-        if (llorentz_as_aux) call register_report_aux('lorentz', ilorentz,communicated=.true.)
+        call farray_register_auxiliary('Tij',iTij,vector=6,communicated=.true.,on_gpu=lgpu)
+        if (llorentz_as_aux) call register_report_aux('lorentz', ilorentz,communicated=.true.,on_gpu=lgpu)
       ! else
       !   if (lrelativistic) then
       !     call fatal_error('register_hydro','no lrelativistic without lconservative')

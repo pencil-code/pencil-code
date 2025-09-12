@@ -5,6 +5,15 @@ field_order(AC_iuz__mod__cdata-1) Field UUZ
 #define F_UY UUY
 #define F_UZ UUZ
 
+#if LHYDRO
+field_order(AC_itij__mod__hydro != 0 ? AC_itij__mod__hydro+0-1 : -1) Field F_TIJ_0
+field_order(AC_itij__mod__hydro != 0 ? AC_itij__mod__hydro+1-1 : -1) Field F_TIJ_1
+field_order(AC_itij__mod__hydro != 0 ? AC_itij__mod__hydro+2-1 : -1) Field F_TIJ_2
+field_order(AC_itij__mod__hydro != 0 ? AC_itij__mod__hydro+3-1 : -1) Field F_TIJ_3
+field_order(AC_itij__mod__hydro != 0 ? AC_itij__mod__hydro+4-1 : -1) Field F_TIJ_4
+field_order(AC_itij__mod__hydro != 0 ? AC_itij__mod__hydro+5-1 : -1) Field F_TIJ_5
+#endif
+
 field_order(AC_iunx__mod__cdata-1) Field UUNX
 field_order(AC_iuny__mod__cdata-1) Field UUNY
 field_order(AC_iunz__mod__cdata-1) Field UUNZ
@@ -57,7 +66,7 @@ field_order(AC_istressxim__mod__cdata-1) Field F_STRESSXIM
 #define F_AY AAY
 #define F_AZ AAZ
 
-Field SHOCK // shock
+field_order(AC_ishock__mod__cdata-1) Field SHOCK // shock
 	    //
 
 #define SS F_SS
@@ -69,7 +78,7 @@ Field  F_DUST_ICE_MASS[AC_ndustspec__mod__cparam]
 
 Field F_PHIUU
 Field F_U0X, F_U0Y, F_U0Z
-Field F_LORENTZ
+field_order(AC_ilorentz__mod__cdata-1) Field F_LORENTZ
 Field F_GUIJ11,F_GUIJ21,F_GUIJ31,F_GUIJ12,F_GUIJ22,F_GUIJ32,F_GUIJ13,F_GUIJ23,F_GUIJ33
 Field F_OX, F_OY, F_OZ
 Field F_UU_SPHX, F_UU_SPHY, F_UU_SPHZ

@@ -61,7 +61,7 @@ declare -a fields
 #fields=(`grep 'typedef  *enum.* Field;' ./astaroth/submodule/build/acc-runtime/api/fields_info.h | sed -e's/^.*typedef enum *{\([^}]*\) *} *Field;/\1/' -e' s/,/ /g' -e's/NUM_[A-Z_]*FIELDS *=//g'`)
 fields=(`grep '^ *Field' ./astaroth/DSL/local/fieldecs.h | sed -e's/Field //g' -e's/ *\/\/.*$/ /' -e's/,/ /g' | tr -d '\n'`)
 
-nfields=${#fields[@]}
+#nfields=${#fields[@]}
 #echo FIELDS=${fields[0]}, ${fields[5]}
 #echo FIELDS=$nfields
 
@@ -71,7 +71,7 @@ if [[ ${lperi[0]} == 'T' ]]; then
   echo 'periodic(BOUNDARY_X)' >> astaroth/DSL/local/boundconds.h
 else
   boundcond_sed x
-  for (( i=0; i<$nfields ; i++ )); do 
+  for (( i=0; i<100; i++ )); do 
     #echo ${bot[$i]} ${top[$i]} ${fields[$i]};
     make_ac_bound_cond ${bot[$i]} Field\(${i}\) X BOT
     make_ac_bound_cond ${top[$i]} Field\(${i}\) X TOP

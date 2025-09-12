@@ -21,6 +21,10 @@ struct torus_rect
     real height0
 }
 
+#define AC_n1 n1
+#define AC_m1 m1
+#define AC_l1 l1
+
 #define nhless AC_nhless__mod__hydro
 #define n_odevars AC_n_odevars__mod__cdata
 #define STENCIL_ORDER (6)
@@ -79,6 +83,7 @@ const int prof_nz = 150
 
 #include "../stdlib/math"
 #include "../stdlib/general_derivs.h"
+//#include "../stdlib/pc_derivs.h"
 #include "../stdlib/general_operators.h"
 #define AC_NGHOST__mod__cparam nghost
 #define REAL_MAX AC_REAL_MAX

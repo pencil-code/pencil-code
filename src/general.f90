@@ -8091,6 +8091,14 @@ iloop:do i=1,size(list2)
           dst = enum_friedmann_string
         case('doublet')
           dst = enum_doublet_string
+        case('hyper3-mesh')
+          dst = enum_hyper3Zmesh_string
+        case('shock-simple')
+          dst = enum_shockZsimple_string
+        case('simplified')
+          dst = enum_simplified_string
+        case('a')
+          dst = enum_a_string
         case default
           dst = enum_unknown_string_string
           if (lroot) print*, 'No string enum for: ', src
