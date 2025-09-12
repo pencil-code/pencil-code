@@ -15,6 +15,7 @@ fixed_boundary Kernel twopass_solve_final(int step_num)
   	        if (AC_iyy_chiral__mod__chiral != 0) write(F_YY_CHIRAL,rk_final(F_YY_CHIRAL,step_num))
   	        if (AC_izz_chiral__mod__chiral != 0) write(F_ZZ_CHIRAL,rk_final(F_ZZ_CHIRAL,step_num))
 #endif
+	        if (AC_iecr__mod__cdata != 0) write(F_ECR,rk_final(F_ECR,step_num))
 	}
 }
 #include "../steps_two.h"
