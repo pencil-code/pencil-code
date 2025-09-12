@@ -8969,6 +8969,7 @@ module Hydro
     if(allocated(zhless)) call copy_addr(zhless,p_par(119)) ! (nhless__mod__hydro)
     call copy_addr(width_hless,p_par(120))
     call copy_addr(width_hless_absolute,p_par(121))
+    call copy_addr(lcorrect_penc_u,p_par(122)) ! bool
 
     endsubroutine pushpars2c
 !***********************************************************************
