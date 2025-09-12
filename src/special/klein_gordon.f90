@@ -176,6 +176,8 @@ module Special
 
   real :: a2rhom_all_diagnos, a2rhopm_all_diagnos, a2rhophim_all_diagnos
   real :: a2rhogphim_all_diagnos, ddotam_all_diagnos
+
+  integer :: ia0 = 0, iW0 = 0
   contains
 !****************************************************************************
     subroutine register_special
@@ -239,7 +241,7 @@ module Special
 !  06-oct-03/tony: coded
 !
       use SharedVariables, only: get_shared_variable, put_shared_variable
-      use FArrayManager, only: farray_index_by_name_ode
+      use FArrayManager, only: farray_index_by_name_ode, farray_index_by_name
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: iLCDM_lna
@@ -311,6 +313,12 @@ module Special
       endif
 !
       call keep_compiler_quiet(f)
+      if (lphi_hypercharge) then
+        ia0 = farray_index_by_name('a0')
+      endif
+      if (lphi_weakcharge) then
+        iW0 = farray_index_by_name('W0')
+      endif
 !
     endsubroutine initialize_special
 !***********************************************************************
@@ -492,7 +500,6 @@ module Special
 !  24-nov-04/tony: coded
 !
       use Sub, only: grad, div
-      use FArrayManager, only: farray_index_by_name
       use Deriv, only: der
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -501,7 +508,7 @@ module Special
 !
       intent(in) :: f
       intent(inout) :: p
-      integer :: ia0, iW0, i, j
+      integer ::  i, j
 
 ! phi
       if (lpencil(i_phi)) p%phi = f(l1:l2,m,n,iphi)
@@ -534,7 +541,6 @@ module Special
         ! when lphi_hypercharge is chosen and disp_current.f90 is used
         ! add terms for hypercharge to covariant derivative
         if (lphi_hypercharge) then
-          ia0 = farray_index_by_name('a0')
           if (ia0 > 0) then
             ! U(1) term (first block), proportional to a0 (Y0)
             cov_der(:,1,1) = cov_der(:,1,1) + 0.5*coupl_gy*f(l1:l2,m,n,ia0)*f(l1:l2,m,n,iphi_up_im)
@@ -554,7 +560,6 @@ module Special
         ! when lphi_hypercharge is chosen and electroweak_su2.f90 is used
         ! add terms for weakcharge to covariant derivative
         if (lphi_weakcharge) then
-          iW0 = farray_index_by_name('W0')
           if (iW0 > 0) then
             cov_der(:,1,1) = cov_der(:,1,1) + &
                 0.5*coupl_gw*(f(l1:l2,m,n,iW0)*f(l1:l2,m,n,iphi_down_im) - &
