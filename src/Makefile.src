@@ -3112,7 +3112,7 @@ else
 					 < $$file.f90 > special.tmp; if ! cmp -s special.tmp $(PENCIL_HOME)/src/$$file.f90; then mv -f special.tmp $(PENCIL_HOME)/src/$$file.f90; else rm -f special.tmp; fi ; done
         ifneq ($(SPECIAL_MULT),1)
 	  @for file in $(SPECIAL_MODULES); do sed -e "s/namelist *\/special_\([ir][a-z]*_pars\)/namelist \/$${file#*/}_\1/" \
-                                                  -e"s/NML *= *special_\([ir][a-z]*_pars\)/NML=$${file#*/}_\1/"; \
+                                                  -e"s/NML *= *special_\([ir][a-z]*_pars\)/NML=$${file#*/}_\1/" < $$file.f90 > special.tmp; if ! cmp -s special.tmp $(PENCIL_HOME)/src/$$file.f90; then mv -f special.tmp $(PENCIL_HOME)/src/$$file.f90; else rm -f special.tmp; fi ;\
 	  done
         endif
 endif
