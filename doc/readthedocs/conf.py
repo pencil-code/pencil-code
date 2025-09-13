@@ -34,7 +34,7 @@ print(sys.path)
 # -- Project information -----------------------------------------------------
 
 project = "The Pencil Code"
-copyright = "2021, Illa R. Losada"
+copyright = "2025, Illa R. Losada"
 author = "Illa R. Losada"
 
 # The short X.Y version
