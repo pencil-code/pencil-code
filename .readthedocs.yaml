@@ -12,6 +12,8 @@ build:
     python: "3.10"
   apt_packages:
     - gfortran
+  commands:
+    - pip install setuptools==68.2.2
 
 
 
@@ -29,5 +31,5 @@ python:
    #version: 3.6
    install:
    - requirements: doc/readthedocs/requirements.txt
-   - method: pip
+   - method: setuptools
      path: python
