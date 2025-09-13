@@ -17,6 +17,7 @@
 ! PENCILS PROVIDED e2; edot2; el(3); a0; ga0(3); del2ee(3); curlE(3); BcurlE
 ! PENCILS PROVIDED rhoe, divJ, divE, gGamma(3); sigE, sigB; eb; count_eb0
 ! PENCILS PROVIDED boost; gam_EB; eprime; bprime; jprime; GammaY
+! PENCILS PROVIDED jj_higgsY(3); rhoe_higgsY
 ! PENCILS EXPECTED phi, infl_phi, dphi, infl_dphi, gphi(3); cov_der(4,4)
 ! PENCILS EXPECTED curlb(3), jj_ohm(3), phi_doublet(3)
 !***************************************************************
@@ -463,6 +464,7 @@ module Special
         lpenc_requested(i_phi)=.true.
         lpenc_requested(i_phi_doublet)=.true.
         lpenc_requested(i_cov_der)=.true.
+        lpenc_requested(i_jj_higgsY)=.true.
       endif
 !
 !  Diagnostics pencils:
@@ -817,11 +819,12 @@ module Special
       if (llongitudinalE) then
         if (lsolve_chargedensity) tmp=tmp+f(l1:l2,m,n,irhoe)
         ! add charge from Higgs field to Gauss constraint
-        if (lphi_doublet .and. lphi_hypercharge) then
-          tmp = tmp - coupl_gy*(p%phi*p%cov_der(:,1,2) - &
+        if (lphi_doublet .and. lphi_hypercharge .and. coupl_gy /= 0) then
+          p%rhoe_higgsY=-coupl_gy*(p%phi*p%cov_der(:,1,2) - &
                   p%phi_doublet(:,1)*p%cov_der(:,1,1) + &
                   p%phi_doublet(:,2)*p%cov_der(:,1,4) - &
                   p%phi_doublet(:,3)*p%cov_der(:,1,3))
+          tmp = tmp + p%rhoe_higgsY
         endif
         if (.not.lswitch_off_Gamma) df(l1:l2,m,n,iGamma)=df(l1:l2,m,n,iGamma) &
           -(1.-weight_longitudinalE)*p%divE-weight_longitudinalE*tmp
@@ -909,16 +912,25 @@ module Special
         endif
         if (eta_ee/=0.) df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)+c_light2*eta_ee*p%del2ee
 !
-!  If Higgs doublet, add charge and current from it
+!  If Higgs doublet, add current from Higgs U(1) hypercharge.
 !
-        if (lphi_doublet .and. lphi_hypercharge) then
+        if (lphi_doublet .and. lphi_hypercharge .and. coupl_gy /= 0) then
+          ! compute jj_higgsY pencil (not done in calc_pencils_special as
+          ! pencils from other special modules might not be available there yet)
           do i=1,3
-            df(l1:l2,m,n,iex+i-1)=df(l1:l2,m,n,iex+i-1) - &
-                  coupl_gy*(p%phi*p%cov_der(:,i+1,2) - &
-                  p%phi_doublet(:,1)*p%cov_der(:,i+1,1) + &
-                  p%phi_doublet(:,2)*p%cov_der(:,i+1,4) - &
-                  p%phi_doublet(:,3)*p%cov_der(:,i+1,3))
+            p%jj_higgsY(:,i)=coupl_gy*(p%phi*p%cov_der(:,i+1,2) - &
+                      p%phi_doublet(:,1)*p%cov_der(:,i+1,1) + &
+                      p%phi_doublet(:,2)*p%cov_der(:,i+1,4) - &
+                      p%phi_doublet(:,3)*p%cov_der(:,i+1,3))
           enddo
+          ! do i=1,3
+          !   df(l1:l2,m,n,iex+i-1)=df(l1:l2,m,n,iex+i-1) - &
+          !         coupl_gy*(p%phi*p%cov_der(:,i+1,2) - &
+          !         p%phi_doublet(:,1)*p%cov_der(:,i+1,1) + &
+          !         p%phi_doublet(:,2)*p%cov_der(:,i+1,4) - &
+          !         p%phi_doublet(:,3)*p%cov_der(:,i+1,3))
+          ! enddo
+          df(l1:l2,m,n,iex+i-1)=df(l1:l2,m,n,iex+i-1) - p%jj_higgsY
         endif
       endif
 !
