@@ -790,6 +790,13 @@ module Special
 !
       if (llongitudinalE) then
         if (lsolve_chargedensity) tmp=tmp+f(l1:l2,m,n,irhoe)
+        ! add charge from Higgs field to Gauss constraint
+        if (lphi_doublet .and. lphi_hypercharge) then
+          tmp = tmp - coupl_gy*(p%phi*p%cov_der(:,1,2) - &
+                  p%phi_doublet(:,1)*p%cov_der(:,1,1) + &
+                  p%phi_doublet(:,2)*p%cov_der(:,1,4) - &
+                  p%phi_doublet(:,3)*p%cov_der(:,1,3))
+        endif
         if (.not.lswitch_off_Gamma) df(l1:l2,m,n,iGamma)=df(l1:l2,m,n,iGamma) &
           -(1.-weight_longitudinalE)*p%divE-weight_longitudinalE*tmp
       endif
