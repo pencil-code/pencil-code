@@ -12,8 +12,9 @@ build:
     python: "3.10"
   apt_packages:
     - gfortran
-  commands:
-    - pip install setuptools==68.2.2
+  jobs:
+    install:
+      - pip install setuptools==68.2.2 sphinx
 
 
 
