@@ -12,6 +12,7 @@ build:
     python: "3.10"
   apt_packages:
     - gfortran
+    - libxrender1
   jobs:
     install:
       - pip install setuptools==68.2.2 sphinx

@@ -16,3 +16,8 @@ sphinx-fortran
 sphinxcontrib.images
 GitPython
 sphinx-rtd-theme
+pyvista
+f90nml
+scikit-learn
+pandas
+flatdict
