@@ -564,16 +564,6 @@ module Magnetic_meanfield
           detat_y=0.
           detat_z=0.
 !
-!  Ellipsoid with uniformly distributed etat, but this comes in calc_pencils_magn_mf.
-!
-        case ('ellipsoid')
-          etat_x=0.
-          etat_y=0.
-          etat_z=0.
-          detat_x=0.
-          detat_y=0.
-          detat_z=0.
-!
 !  Defaults.
 !
         case default;
@@ -809,6 +799,8 @@ module Magnetic_meanfield
 !
       lpenc_requested(i_bb)=.true.
 !
+!  This is not needed when the displacement current is solved for.
+!
       if (meanfield_etat/=0.0.or.ietat/=0) &
           lpenc_requested(i_del2a)=.true.
 !
@@ -1002,6 +994,7 @@ module Magnetic_meanfield
       use Sub
       use General, only: bessj
       use Diagnostics, only: sum_mn_name, xysum_mn_name_z, ysum_mn_name_xz
+      use Messages, only: warning
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -1604,7 +1597,7 @@ module Magnetic_meanfield
           alpha_total=alpha_total/(1.+alpha_quenching_tmp*p%b2*Beq21)
         endif
 !
-!  Apply alpha effect; allow for anisotropy
+!  Apply alpha effect; allow for anisotropy. This step initializes p%mf_EMF.
 !
         if (lalpha_aniso) then
           do j=1,3
@@ -1642,8 +1635,12 @@ module Magnetic_meanfield
 !  the r and theta components to zero (in spherical coordinates).
 !  In Cartesian coordinates, we want the x and z components to vanish,
 !  so we keep only the y-components.
+!  Note that here, p%mf_EMF is reinitialized again.
+!  It is unclear whether this is indeed intended.
+!  Apply therefore a warning.
 !
         if (lalpha_Omega_approx) then
+          call warning('calc_pencils_magn_mf','p%mf_EMF is reinitialized. Is this intended?')
           if (lspherical_coords) then
             p%mf_EMF(:,1:2)=0.
             call fatal_error("calc_pencils_magn_mf: ", &
@@ -1654,10 +1651,35 @@ module Magnetic_meanfield
           endif
         endif
 !
+!  apply pumping effect: EMF=...-.5*grad(etat) x B
+!
+        if (lmeanfield_pumping .and. (meanfield_etat /= 0.0)) then
+          fact=.5*meanfield_pumping
+          call cross_mn(meanfield_getat_tmp, p%bb, getat_cross_B_tmp)
+          p%mf_EMF=p%mf_EMF-fact*getat_cross_B_tmp
+        endif
+!
+!  apply pumping effect in spherical coordinates
+!
+        if (gamma_effect/=0.) then
+          fact=gamma_effect
+          p%mf_EMF(:,2)=p%mf_EMF(:,2)-fact*p%bb(:,3)
+          p%mf_EMF(:,3)=p%mf_EMF(:,3)+fact*p%bb(:,2)
+        endif
+!
+!  The following steps would need to be modified if we include the displacement current.
+!
+        if (iex/=0) then
+          do j=1,3
+            p%jj_ohm(:,j)=(p%jj_ohm(:,j)+p%mf_EMF(:,j)*mu01/eta)/(1.+meanfield_etat_tmp/eta)
+          enddo
+        else
+!
 !  Apply eta tensor, but subtract part from etat for stability reasons.
 !  In other words, any constant meanfield_etat should have formally no
 !  effect, but is always needed because the pure Weyl gauge is unstable.
 !
+! begin of to be indented (12-sep-25/axel)
         if (leta_tensor) then
           if (lread_eta_tensor_z_as_y) then
             do i=1,3
@@ -1691,37 +1713,21 @@ module Magnetic_meanfield
           endif
         endif
 !
-!  apply pumping effect: EMF=...-.5*grad(etat) x B
-!
-        if (lmeanfield_pumping .and. (meanfield_etat /= 0.0)) then
-          fact=.5*meanfield_pumping
-          call cross_mn(meanfield_getat_tmp, p%bb, getat_cross_B_tmp)
-          p%mf_EMF=p%mf_EMF-fact*getat_cross_B_tmp
-        endif
-!
-!  apply pumping effect in spherical coordinates
-!
-        if (gamma_effect/=0.) then
-          fact=gamma_effect
-          p%mf_EMF(:,2)=p%mf_EMF(:,2)-fact*p%bb(:,3)
-          p%mf_EMF(:,3)=p%mf_EMF(:,3)+fact*p%bb(:,2)
-        endif
-!
 !  Apply diffusion term: simple in Weyl gauge, which is not the default!
 !  In diffusive gauge, add (divA) grad(etat) term.
 !  Special treatment with displacement current; use meanfield_etat_tmp separately.
 !
         if (meanfield_etat /= 0.0) then
-          if (iex/=0) then
-            p%meanfield_etat=meanfield_etat_tmp
-          else
+   !      if (iex/=0) then
+   !        p%meanfield_etat=meanfield_etat_tmp
+   !      else
             if (lweyl_gauge) then
               call multsv_mn_add(-meanfield_etat_tmp,p%jj,p%mf_EMF)
             else
               call multsv_mn_add(meanfield_etat_tmp,p%del2a,p%mf_EMF)
               call multsv_mn_add(p%diva,meanfield_getat_tmp,p%mf_EMF)
             endif
-          endif
+   !      endif
         endif
 !
 !  Allow for possibility of variable etat from the f-array.
@@ -1731,6 +1737,8 @@ module Magnetic_meanfield
         endif
 !
 !  Possibility of adding contribution from large-scale velocity.
+!  (This looks wrong, because p%uxb has already been included in magnetic. It was added in
+!  r14377 | AxelBrandenburg | 2010-07-30 13:20:35 +0200 (Fri, 30 Jul 2010) by myself (AB).
 !
         if (llarge_scale_velocity) p%mf_EMF=p%mf_EMF+p%uxb
 !
@@ -1758,6 +1766,7 @@ module Magnetic_meanfield
         endif
 !
 !  Possibility of turning EMF to zero in a certain region.
+!  This only works if the displacement current is not being solved for.
 !
         if (lEMF_profile) then
           select case (EMF_profile)
@@ -1773,7 +1782,11 @@ module Magnetic_meanfield
             p%mf_EMF(:,2)=p%mf_EMF(:,2)*EMF_prof(:)
             p%mf_EMF(:,3)=p%mf_EMF(:,3)*EMF_prof(:)
         endif
+! end of to be indented (12-sep-25/axel)
+        endif
       endif
+!
+!  The endif above is from the if (lpencil(i_mf_EMF)) statement.
 !
 !  compute GW part,
 !  Use also indices m and n, which are normally used to address positions in the f-array
@@ -1971,8 +1984,7 @@ module Magnetic_meanfield
 !  The following is not done if displacement current exists.
 !
 if (iex/=0) then
-if (n==n1) print*,'AXEL2: p%mf_EMF=',p%mf_EMF(1,:)
-endif
+!if (n==n1) print*,'AXEL2: p%mf_EMF=',p%mf_EMF(1,:)
 !
 !  Alpha effect.
 !  Additional terms if Mean Field Theory is included.
@@ -2014,6 +2026,7 @@ endif
         call cross_mn(p%uu,p%bb,tmpv)
         df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+tmpv
       endif
+endif
 !
 !  Time-advance of secondary mean-field modules.
 !  Not sure (yet) how to deal with the following if there is displacement current.

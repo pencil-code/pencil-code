@@ -12,7 +12,7 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED mf_EMF(3); mf_EMFdotB
+!! PENCILS PROVIDED mf_EMF(3); mf_EMFdotB
 !
 !***************************************************************
 module Magnetic_meanfield
@@ -83,8 +83,8 @@ module Magnetic_meanfield
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
-      if (lpencil(i_mf_EMF)) p%mf_EMF=0.0
-      if (lpencil(i_mf_EMFdotB)) p%mf_EMFdotB=0.0
+  !   if (lpencil(i_mf_EMF)) p%mf_EMF=0.0
+  !   if (lpencil(i_mf_EMFdotB)) p%mf_EMFdotB=0.0
       call keep_compiler_quiet(f)
 !
     endsubroutine calc_pencils_magn_mf

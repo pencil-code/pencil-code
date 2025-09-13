@@ -4442,20 +4442,9 @@ module Magnetic
                 p%jj_ohm=f(l1:l2,m,n,ijx:ijz)
               else
                 if (learly_set_el_pencil) p%el=f(l1:l2,m,n,iex:iez)
-!
-!  In mean-field theory, add p%mf_EMF(:,j) to EMF for Ohm's current.
-!
-                if (lmagn_mf) then
-!if (n==n1) print*,'AXEL: eta,p%meanfield_etat=',eta,p%meanfield_etat
-                  do j=1,3
-!AXEL-tmp           p%jj_ohm(:,j)=(p%el(:,j)+scl_uxb_in_ohm*(p%uxb(:,j)+p%mf_EMF(:,j)))*mu01/(eta+p%meanfield_etat)
-                  enddo
-                else
-! if (n==n1) print*,'AXEL: standard'
-                  do j=1,3
-                    p%jj_ohm(:,j)=(p%el(:,j)+scl_uxb_in_ohm*p%uxb(:,j))*mu01/eta_total
-                  enddo
-                endif
+                do j=1,3
+                  p%jj_ohm(:,j)=(p%el(:,j)+scl_uxb_in_ohm*p%uxb(:,j))*mu01/eta_total
+                enddo
               endif
             endif
 !
