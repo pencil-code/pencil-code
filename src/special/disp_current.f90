@@ -799,7 +799,7 @@ module Special
       real :: inflation_factor=0., mfpf=0., fppf=0.
       integer :: j
 !
-      intent(in) :: p
+      intent(inout) :: p
       intent(inout) :: f, df
       integer :: i
 !
@@ -930,7 +930,7 @@ module Special
           !         p%phi_doublet(:,2)*p%cov_der(:,i+1,4) - &
           !         p%phi_doublet(:,3)*p%cov_der(:,i+1,3))
           ! enddo
-          df(l1:l2,m,n,iex+i-1)=df(l1:l2,m,n,iex+i-1) - p%jj_higgsY
+          df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez) - p%jj_higgsY
         endif
       endif
 !
