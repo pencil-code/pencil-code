@@ -152,6 +152,10 @@ module Special
   integer :: idiag_eymz=0       ! XYAVG_DOC: $\left<{\cal E}_y\right>_{xy}$
   integer :: idiag_ezmz=0       ! XYAVG_DOC: $\left<{\cal E}_z\right>_{xy}$
 !
+! yz averaged diagnostics given in yzaver.in
+!
+  integer :: idiag_e2mx = 0     ! YZAVG_DOC: $\langle E^2\rangle_{yz}$
+!
   contains
 !
 !***********************************************************************
@@ -414,8 +418,8 @@ module Special
       if (lnoncollinear_EB .or. lnoncollinear_EB_aver &
         .or. lcollinear_EB .or. lcollinear_EB_aver) then
         lpenc_requested(i_bb)=.true.
-        lpenc_requested(i_e2)=.true.
         lpenc_requested(i_b2)=.true.
+        lpenc_requested(i_e2)=.true.
       endif
 !
    !  if (lnoncollinear_EB) then
@@ -475,7 +479,8 @@ module Special
       if (idiag_a0rms/=0) lpenc_diagnos(i_a0)=.true.
       if (idiag_grms/=0) lpenc_diagnos(i_diva)=.true.
       if (idiag_edotrms/=0) lpenc_diagnos(i_edot2)=.true.
-      if (idiag_EEEM/=0 .or. idiag_erms/=0 .or. idiag_emax/=0) lpenc_diagnos(i_e2)=.true.
+      if (idiag_EEEM/=0 .or. idiag_erms/=0 .or. idiag_emax/=0 & 
+        .or. idiag_e2mx/=0) lpenc_diagnos(i_e2)=.true.
       ! if (idiag_exmz/=0 .or. idiag_eymz/=0 .or. idiag_ezmz/=0 ) lpenc_diagnos(i_el)=.true.
       ! if (idiag_exm/=0 .or. idiag_eym/=0 .or. idiag_ezm/=0 ) lpenc_diagnos(i_el)=.true.
 !
@@ -1025,7 +1030,32 @@ module Special
         call calc_constrainteqn(p,tmp,constrainteqn)
         call sum_mn_name(constrainteqn,idiag_constrainteqn)
       endif
+!
+      call calc_1d_diagnostics_special(p)
+!
     endsubroutine calc_diagnostics_special
+!******************************************************************************
+    subroutine calc_1d_diagnostics_special(p)
+!
+!  2-D averages.
+!  Note that this does not necessarily happen with ldiagnos=.true.
+!
+!  13-sep-25/axel: adapted from magnetic
+!
+      use Diagnostics
+!
+      type(pencil_case) :: p
+!
+      real, dimension(nx) :: fres2, tmp1, Rmmz, bdel2a, jdel2a
+      real, dimension(nx,3) :: tmp2
+!
+!  1d-averages. Happens at every it1d timesteps, NOT at every it1.
+!
+      if (l1davgfirst .or. (ldiagnos .and. ldiagnos_need_zaverages)) then
+        call yzsum_mn_name_x(p%e2, idiag_e2mx)
+      endif
+!
+    endsubroutine calc_1d_diagnostics_special
 !***********************************************************************
     subroutine read_special_init_pars(iostat)
 !
@@ -1075,7 +1105,7 @@ module Special
 !
 !  define counters
 !
-      integer :: iname,inamez
+      integer :: iname,inamex,inamez
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
@@ -1094,7 +1124,7 @@ module Special
         idiag_ebm=0; idiag_sigEm=0; idiag_sigBm=0; idiag_sigErms=0; idiag_sigBrms=0
         idiag_Johmrms=0; idiag_adphiBm=0; idiag_sigEE2m=0; idiag_sigBBEm=0
         idiag_eprimerms=0; idiag_bprimerms=0; idiag_jprimerms=0; idiag_gam_EBrms=0; 
-        idiag_boostprms=0; idiag_echarge=0
+        idiag_boostprms=0; idiag_echarge=0; idiag_e2mx=0
         cformv=''
       endif
 !
@@ -1139,6 +1169,14 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'afact',idiag_afact)
         call parse_name(iname,cname(iname),cform(iname),'constrainteqn',idiag_constrainteqn)
       enddo
+!
+!  Check for those quantities for which we want yz-averages.
+!
+      do inamex=1,nnamex
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'e2mx',idiag_e2mx)
+      enddo
+!
+!  Check for those quantities for which we want xy-averages.
 !
       do inamez=1,nnamez
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'exmz',idiag_exmz)
