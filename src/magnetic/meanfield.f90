@@ -564,6 +564,16 @@ module Magnetic_meanfield
           detat_y=0.
           detat_z=0.
 !
+!  Ellipsoid with uniformly distributed etat, but this comes in calc_pencils_magn_mf.
+!
+        case ('ellipsoid')
+          etat_x=0.
+          etat_y=0.
+          etat_z=0.
+          detat_x=0.
+          detat_y=0.
+          detat_z=0.
+!
 !  Defaults.
 !
         case default;
