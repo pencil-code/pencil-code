@@ -387,7 +387,19 @@ module Special
 !
 !  25-feb-07/axel: adapted
 !
+!
+!  compulsory pencils
+!
       lpenc_requested(i_aa)=.true.
+      lpenc_requested(i_el)=.true.
+      ! alberto: should be this pencil only requested if llorenz_gauge_disp=T?
+      !lpenc_requested(i_ga0)=.true.
+      lpenc_requested(i_curlb)=.true.
+      lpenc_requested(i_gGamma)=.true.
+      lpenc_requested(i_jj_ohm)=.true.
+!
+!  Pencils for axion-like coupling alpf * phi F Fdual
+!
       if (alpf/=0.) then
         lpenc_requested(i_bb)=.true.
         lpenc_requested(i_phi)=.true.
@@ -395,12 +407,7 @@ module Special
         lpenc_requested(i_gphi)=.true.
       endif
 !
-!  compulsory pencils
-!
-      lpenc_requested(i_el)=.true.
-      lpenc_requested(i_ga0)=.true.
-      lpenc_requested(i_curlb)=.true.
-      lpenc_requested(i_jj_ohm)=.true.
+      if (llorenz_gauge_disp) lpenc_requested(i_ga0)=.true.
 !
 ! Pencils for lnoncollinear_EB and lcollinear_EB cases.
 !
@@ -416,15 +423,16 @@ module Special
    !  endif
       lpenc_requested(i_eb)=.true.
 !
-      if (llorenz_gauge_disp) then
-        lpenc_requested(i_diva)=.true.
-      endif
+      !if (llorenz_gauge_disp) then
+      !  lpenc_requested(i_diva)=.true.
+      !endif
 !
 !  Terms for Gamma evolution.
 !
       if (llongitudinalE) then
         lpenc_requested(i_divE)=.true.
-        lpenc_requested(i_gGamma)=.true.
+        ! lpenc_requested(i_gGamma)=.true.
+        ! alberto: gGamma is always requested, as curlb depends on it
       endif
 !
       if (idiag_divEm/=0. .or. idiag_divErms/=0.) then
@@ -445,6 +453,14 @@ module Special
 !
       if (eta_ee/=0.) lpenc_requested(i_del2ee)=.true.
 !
+!  Higgs pencils
+!
+      if (lklein_gordon .and. lphi_doublet .and. lphi_hypercharge) then
+        lpenc_requested(i_phi)=.true.
+        lpenc_requested(i_phi_doublet)=.true.
+        lpenc_requested(i_cov_der)=.true.
+      endif
+!
 !  Diagnostics pencils:
 !
       ! if (eta_ee/=0.) lpenc_requested(i_del2ee)=.true.
@@ -462,14 +478,6 @@ module Special
       if (idiag_EEEM/=0 .or. idiag_erms/=0 .or. idiag_emax/=0) lpenc_diagnos(i_e2)=.true.
       ! if (idiag_exmz/=0 .or. idiag_eymz/=0 .or. idiag_ezmz/=0 ) lpenc_diagnos(i_el)=.true.
       ! if (idiag_exm/=0 .or. idiag_eym/=0 .or. idiag_ezm/=0 ) lpenc_diagnos(i_el)=.true.
-
-      if (lklein_gordon) then
-        if (lphi_doublet .and. lphi_hypercharge) then
-          lpenc_requested(i_phi)=.true.
-          lpenc_requested(i_phi_doublet)=.true.
-          lpenc_requested(i_cov_der)=.true.
-        endif
-      endif
 !
     endsubroutine pencil_criteria_special
 !***********************************************************************
@@ -491,7 +499,7 @@ module Special
 !
 !   24-nov-04/tony: coded
 !
-      use Sub, only: grad, div, curl, del2v, dot2_mn, dot, levi_civita
+      use Sub, only: grad, div, curl, del2v, dot2_mn, dot, levi_civita, gij_etc
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -509,16 +517,29 @@ module Special
 !  Terms for Gamma evolution.
 !
       if (lpenc_requested(i_divE)) call div(f,iee,p%divE)
-      if (lpenc_requested(i_gGamma)) call grad(f,iGamma,p%gGamma)
+      if (lpenc_requested(i_gGamma)) then
+        if (llongitudinalE) then
+          call grad(f,iGamma,p%gGamma)
+        ! alberto: when llongitudinalE=F, we should compute
+        ! grad div a from f-array
+        else
+          call gij_etc(f,iaa,GRADDIV=p%gGamma)
+        endif
+      endif
 !
 !  Replace p%curlb by the combination -p%del2a+p%gGamma.
 !
-      if (llongitudinalE) then
-        ! call div(f,iee,p%divE)
-        ! call grad(f,iGamma,p%gGamma)
+      ! alberto: as curlb is always requested, this allows to
+      ! compute curlb also if llongitudinalE=F
+      if (lpenc_requested(i_curlb)) then
         if (lapply_Gamma_corr) p%curlb=-p%del2a+p%gGamma
-        ! if (lsolve_chargedensity) p%rhoe=f(l1:l2,m,n,irhoe)
       endif
+      ! if (llongitudinalE) then
+      !   ! call div(f,iee,p%divE)
+      !   ! call grad(f,iGamma,p%gGamma)
+      !   if (lapply_Gamma_corr) p%curlb=-p%del2a+p%gGamma
+      !   ! if (lsolve_chargedensity) p%rhoe=f(l1:l2,m,n,irhoe)
+      ! endif
 !
 ! el and e2 (note that this is called after magnetic, where sigma is computed)
 !
@@ -844,6 +865,13 @@ module Special
 !  dA0/dt = divA
 !  dAA/dt = ... + gradA0
 !
+        ! alberto: llorenz_gauge_disp can also be considered when
+        ! alpf=0, moved addition of del2a0 from conditions below
+        if (llorenz_gauge_disp) then
+          call del2(f,ia0,del2a0)
+          df(l1:l2,m,n,idiva_name)=df(l1:l2,m,n,idiva_name)+del2a0
+        endif
+
 !  helical term:
 !  dEE/dt = ... -alp/f (dphi*BB + gradphi x E)
 !  Use the combined routine multsv_add if both terms are included.
@@ -853,21 +881,26 @@ module Special
 !          print*,"p%infl_phi",p%infl_phi
 !          print*,"p%infl_dphi",p%infl_dphi
           df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)-alpf*gtmp
-          if (llorenz_gauge_disp) then
-            call del2(f,ia0,del2a0)
-            if (lphi_hom) then
-              df(l1:l2,m,n,idiva_name)=df(l1:l2,m,n,idiva_name)+del2a0
-            else
-              call dot_mn(p%gphi,p%bb,tmp)
-              df(l1:l2,m,n,idiva_name)=df(l1:l2,m,n,idiva_name)+alpf*tmp+del2a0
-            endif
+          if (llorenz_gauge_disp.and. .not. lphi_hom) then
+            ! if (lphi_hom) then
+            !   df(l1:l2,m,n,idiva_name)=df(l1:l2,m,n,idiva_name)+del2a0
+            ! else
+            call dot_mn(p%gphi,p%bb,tmp)
+            df(l1:l2,m,n,idiva_name)=df(l1:l2,m,n,idiva_name)+alpf*tmp
+            !endif
 !
-!  Evolution of the equation for the scalar potential.
+!  Evolution of the equation for the scalar potential, moved below
 !
             !df(l1:l2,m,n,ia0)=df(l1:l2,m,n,ia0)+p%diva
-            df(l1:l2,m,n,ia0)=df(l1:l2,m,n,ia0)+f(l1:l2,m,n,idiva_name)
-            df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+p%ga0
+            !df(l1:l2,m,n,ia0)=df(l1:l2,m,n,ia0)+f(l1:l2,m,n,idiva_name)
+            !df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+p%ga0
           endif
+        endif
+        ! alberto: If llorenz_gauge_disp, add the two terms to the A0 and A equations
+        ! here, so that they are always added, regardless of alpf.
+        if (llorenz_gauge_disp) then
+          df(l1:l2,m,n,ia0)=df(l1:l2,m,n,ia0)+f(l1:l2,m,n,idiva_name)
+          df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+p%ga0
         endif
         if (eta_ee/=0.) df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)+c_light2*eta_ee*p%del2ee
 !
