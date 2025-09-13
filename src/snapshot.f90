@@ -367,7 +367,7 @@ module Snapshot
         call safe_character_assign(file,trim(chsnap))
         if (lbackup_snap .and. .not.lstart .and. .not.(chsnap=='crash.dat' .or. chsnap(1:1)=='d' )) &
             call system_cmd('mv -f '//trim(directory_snap)//'/'//trim(file)//' '// &
-                            trim(directory_snap)//'/'//trim(file)//'.bck '//' >& /dev/null')
+                            trim(directory_snap)//'/'//trim(file)//'.bck '//' > /dev/null 2>&1')
         if (lmultithread.and.nt>0) then
           extpars%ind1=1; extpars%ind2=msnap; extpars%file=file
 !$        lmasterflags(PERF_WSNAP) = .true.

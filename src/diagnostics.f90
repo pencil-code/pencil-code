@@ -403,7 +403,7 @@ module Diagnostics
         write(lun,'(a)') trim(line)
         !flush(lun)               ! this is a F2003 feature...
         close(lun)
-        if (lupdate_cvs) call system_cmd("cvs ci -m 'automatic update' >& /dev/null &")
+        if (lupdate_cvs) call system_cmd("cvs ci -m 'automatic update' > /dev/null 2>&1")
 !
 !  Write to stdout.
 !

@@ -976,7 +976,7 @@ module Messages
 !
         if ( .not.lopen.and..not.lread ) &        ! send mail to user
           call system_cmd( &
-               'echo '//trim(errormsg)//'|'//trim(mailcmd)//"-s 'PencilCode Message' "//trim(mailaddress)//' >& /dev/null')
+               'echo '//trim(errormsg)//'|'//trim(mailcmd)//"-s 'PencilCode Message' "//trim(mailaddress)//' > /dev/null 2>&1')
       endif
     endif
 !

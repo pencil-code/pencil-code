@@ -1576,7 +1576,6 @@ call copy_addr(ihhtim,p_par(1295)) ! int
 call copy_addr(ihhxim,p_par(1296)) ! int
 
 call copy_addr(istress_ij,p_par(1294)) ! int
-
 call copy_addr(istresst,p_par(1292)) ! int
 call copy_addr(istressx,p_par(1293)) ! int
 call copy_addr(istresstim,p_par(1299)) ! int
