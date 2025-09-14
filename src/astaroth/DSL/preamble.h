@@ -3,6 +3,7 @@
 #if LENTROPY
 #define LENERGY 1
 #endif
+
 struct torus_rect
 {
     real3 center
@@ -97,6 +98,7 @@ const int prof_nz = 150
 #undef AC_bot
 #undef AC_top
 #include "../../../cparam_c.h"
+const int AC_xtop__mod__equationofstate=nx
 #include "../../../cparam_pencils.inc_c.h"
 #include "PC_modulepardecs.h"
 #include "../stdlib/optimized_integrators.h"

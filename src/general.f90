@@ -8107,6 +8107,24 @@ iloop:do i=1,size(list2)
           dst = enum_ct_string
         case('c1')
           dst = enum_c1_string
+        case('linear_zdep')
+          dst = enum_linear_zdep_string 
+        case('kepler')
+          dst = enum_kepler_string 
+        case('czbot1')
+          dst = enum_czbot1_string
+        case('czmid1')
+          dst = enum_czmid1_string
+        case('spherical')
+          dst = enum_spherical_string
+        case('linear_xdep')
+          dst = enum_linear_xdep_string
+        case('linear_smoothed')
+          dst = enum_linear_smoothed_string
+        case('nil')
+          dst = enum_nil_string
+        case('hs')
+          dst = enum_hs_string
         case default
           dst = enum_unknown_string_string
           if (lroot) print*, 'No string enum for: ', src

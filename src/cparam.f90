@@ -1001,5 +1001,14 @@ integer, parameter :: enum_a_string = 712
 integer, parameter :: enum_nuZshock_string = 713
 integer, parameter :: enum_c1_string = 714
 integer, parameter :: enum_ct_string = 715
+integer, parameter :: enum_linear_zdep_string = 716
+integer, parameter :: enum_kepler_string = 717
+integer, parameter :: enum_czbot1_string = 718
+integer, parameter :: enum_czmid1_string = 719
+integer, parameter :: enum_spherical_string = 720
+integer, parameter :: enum_linear_xdep_string = 721
+integer, parameter :: enum_linear_smoothed_string = 722
+integer, parameter :: enum_nil_string = 723
+integer, parameter :: enum_hs_string = 724
 
 endmodule Cparam

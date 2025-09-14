@@ -1256,7 +1256,10 @@ void copyFarray(AcReal* f)
 
   AcMesh* dst = &mesh;
   AcMesh tmp;
-  if(dimensionality == 1)
+  if(dimensionality == 1 || 
+     (dimensionality == 2 && nygrid == 1)
+     )
+
   {
   	acHostMeshCopy(mesh, &tmp);
 	dst = &tmp;
@@ -1295,6 +1298,24 @@ void copyFarray(AcReal* f)
 			{
 				const size_t f_index = (NGHOST)+ mx*(NGHOST + my*(z+NGHOST));
 				mesh.vertex_buffer[i][f_index] = dst->vertex_buffer[i][NGHOST+z];
+			}
+		}
+	}
+  	acHostMeshDestroy(&tmp);
+  }
+  if(dimensionality == 2 && nygrid == 1)
+  {
+    	for (int i = 0; i < mfarray; ++i)
+  	{
+		const int index = (i < mvar) ? i : maux_vtxbuf_index[i];
+		if(index == -1) continue;
+		for(int x = 0; x < nx; ++x)
+		{
+			for(int z = 0; z < nz; ++z)
+			{
+				const size_t f_index = (x+NGHOST) + mx*(NGHOST + my*(z+NGHOST));
+				const size_t ac_index = (x+NGHOST) + mx*(z+NGHOST);
+ 				mesh.vertex_buffer[index][f_index] = dst->vertex_buffer[index][ac_index];
 			}
 		}
 	}
@@ -1427,6 +1448,25 @@ extern "C" void loadFarray()
 			{
 				const size_t f_index = (NGHOST)+ mx*(NGHOST + my*(z+NGHOST));
 				src.vertex_buffer[index][NGHOST+z]  = mesh.vertex_buffer[index][f_index];
+			}
+		}
+	}
+  }
+  if(dimensionality == 2 && nygrid == 1)
+  {
+  	acHostMeshCopy(mesh, &tmp);
+	src = tmp;
+    	for (int i = 0; i < mfarray; ++i)
+  	{
+		const int index = (i < mvar) ? i : maux_vtxbuf_index[i];
+		if(index == -1) continue;
+		for(int x = 0; x < nx; ++x)
+		{
+			for(int z = 0; z < nz; ++z)
+			{
+				const size_t f_index = (x+NGHOST) + mx*(NGHOST + my*(z+NGHOST));
+				const size_t ac_index = (x+NGHOST) + mx*(z+NGHOST);
+				src.vertex_buffer[index][ac_index] = mesh.vertex_buffer[index][f_index];
 			}
 		}
 	}
@@ -1821,7 +1861,7 @@ void check_sym_x(const AcMesh mesh_in)
 /***********************************************************************************************/
 void testBCs()
 {
-  if(dimensionality != 3) return;
+  //if(dimensionality != 3) return;
   // Set random seed for reproducibility
   srand(321654987);
   const auto DEVICE_VTXBUF_IDX = [&](const int x, const int y, const int z)
