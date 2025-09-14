@@ -9,7 +9,15 @@ divu_shock()
     //          = 0 discards values which do not contain negative divergence
     //          = 1 absolute divergence applies
     //          < 1 divergence used with reduced factor con_bias**shock_div_pow 
-    divu = divergence(UU)
+    divu = 0.0
+    if(AC_low_order_divu__mod__shock)
+    {
+	divu = divergence_2nd(UU)
+    }
+    else
+    {
+    	divu = divergence(UU)
+    }
 //if (blockIdx.x==0 && blockIdx.y==0 && threadIdx.x==8 && threadIdx.y==8 && threadIdx.z==8) {print("div= %e \n",divu)}
 
     tmp = 0.

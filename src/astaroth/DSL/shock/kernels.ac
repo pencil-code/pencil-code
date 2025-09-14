@@ -1,31 +1,47 @@
 #if LSHOCK
 #include "../shock/highorder.h"
-Kernel shock_1_divu()
+Kernel shock_1_divu(PC_SUB_STEP_NUMBER step_num)
 {
-  write( SHOCK, divu_shock() )
-}
-
-Kernel shock_2_max()
-{
-  if (AC_lmax_shock__mod__shock)
+  if(!AC_lshock_first__mod__shock || step_num == 0)
   {
-    write( SHOCK, max5(SHOCK,AC_ishock_max__mod__shock))
+  	write( SHOCK, divu_shock() )
   }
 }
 
-Kernel shock_3_smooth()
+Kernel shock_2_max(PC_SUB_STEP_NUMBER step_num)
 {
-  smoothed_shock = AC_lgaussian_smooth__mod__shock ? smooth(SHOCK) : binomial_smooth(SHOCK)
-  write( SHOCK, AC_dxmin__mod__cdata*AC_dxmin__mod__cdata*smoothed_shock)
+  if (AC_lmax_shock__mod__shock &&
+	(!AC_lshock_first__mod__shock || step_num == 0)
+     )
+  {
+
+    max_shock = max5(SHOCK,AC_ishock_max__mod__shock)
+    write( SHOCK, max_shock)
+  }
+}
+
+Kernel shock_3_smooth(PC_SUB_STEP_NUMBER step_num)
+{
+  
+  if(!AC_lshock_first__mod__shock || step_num == 0)
+  {
+    smoothed_shock = AC_lgaussian_smooth__mod__shock ? smooth(SHOCK) : 
+                     AC_l121_smooth__mod__shock ? smooth_121(SHOCK) :
+          		binomial_smooth(SHOCK)
+    write( SHOCK, AC_dxmin__mod__cdata*AC_dxmin__mod__cdata*smoothed_shock)
+  }
 }
 #else
-Kernel shock_1_divu()
+Kernel shock_1_divu(PC_SUB_STEP_NUMBER step_num)
 {
+	suppress_unused_warning(step_num)
 }
-Kernel shock_2_max()
+Kernel shock_2_max(PC_SUB_STEP_NUMBER step_num)
 {
+	suppress_unused_warning(step_num)
 }
-Kernel shock_3_smooth()
+Kernel shock_3_smooth(PC_SUB_STEP_NUMBER step_num)
 {
+	suppress_unused_warning(step_num)
 }
 #endif

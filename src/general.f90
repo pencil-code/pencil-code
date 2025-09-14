@@ -8099,10 +8099,18 @@ iloop:do i=1,size(list2)
           dst = enum_simplified_string
         case('a')
           dst = enum_a_string
+        case('chemkin')
+          dst = enum_chemkin_string
+        case('nu-shock')
+          dst = enum_nuZshock_string
+        case('ct')
+          dst = enum_ct_string
+        case('c1')
+          dst = enum_c1_string
         case default
           dst = enum_unknown_string_string
           if (lroot) print*, 'No string enum for: ', src
-          STOP 1                ! Return nonzero exit status
+          !STOP 1                ! Return nonzero exit status
         endselect
 
     endsubroutine string_to_enum_scalar

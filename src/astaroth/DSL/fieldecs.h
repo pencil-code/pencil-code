@@ -1,3 +1,11 @@
+Field F_CHEMISTRY_SPECIES[nchemspec]
+Field F_CHEMISTRY_REACTIONS[nchemspec]
+Field AC_cv_r_spec_full__mod__chemistry[nchemspec]
+Field rhs_y_full__mod__chemistry[nchemspec]
+Field AC_xx_full__mod__chemistry[nchemspec]
+Field AC_diff_full__mod__chemistry[nchemspec]
+Field AC_diff_full_add__mod__chemistry[nchemspec]
+
 field_order(AC_iux__mod__cdata-1) Field UUX
 field_order(AC_iuy__mod__cdata-1) Field UUY
 field_order(AC_iuz__mod__cdata-1) Field UUZ
@@ -20,6 +28,12 @@ field_order(AC_iunz__mod__cdata-1) Field UUNZ
 #define F_UNX UUNX
 #define F_UNY UUNY
 #define F_UNZ UUNZ
+
+field_order(AC_iglobal_gg__mod__cdata != 0 ? AC_iglobal_gg__mod__cdata-1+0 : -1) Field F_GLOBAL_GX
+field_order(AC_iglobal_gg__mod__cdata != 0 ? AC_iglobal_gg__mod__cdata-1+1 : -1) Field F_GLOBAL_GY
+field_order(AC_iglobal_gg__mod__cdata != 0 ? AC_iglobal_gg__mod__cdata-1+2 : -1) Field F_GLOBAL_GZ
+
+const Field3 F_GLOBAL_GVEC = {F_GLOBAL_GX,F_GLOBAL_GY,F_GLOBAL_GZ}
 
 field_order(AC_ilnrho__mod__cdata-1) Field RHO
 #define LNRHO RHO
@@ -108,6 +122,8 @@ Field F_JX,F_JY,F_JZ
 Field F_EDOTX,F_EDOTY,F_EDOTZ
 Field F_LAM
 field_order(AC_itt__mod__cdata-1) Field F_TT
+#define TT F_TT
+#define LNTT F_TT
 Field F_GLOBAL_HCOND
 Field F_SS_RUN_AVER
 Field F_ADV_DERX
@@ -219,13 +235,6 @@ output real AC_maxadvec
 output real AC_maximum_error
 const real tini = AC_REAL_MIN*5
 
-Field F_CHEMISTRY_SPECIES[nchemspec]
-Field F_CHEMISTRY_REACTIONS[nchemspec]
-Field AC_cv_r_spec_full__mod__chemistry[nchemspec]
-Field rhs_y_full__mod__chemistry[nchemspec]
-Field AC_xx_full__mod__chemistry[nchemspec]
-Field AC_diff_full__mod__chemistry[nchemspec]
-Field AC_diff_full_add__mod__chemistry[nchemspec]
 Field AC_cp_full__mod__chemistry
 Field AC_lambda_full__mod__chemistry
 Field AC_cv_full__mod__chemistry

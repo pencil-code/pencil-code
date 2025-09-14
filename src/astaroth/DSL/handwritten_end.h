@@ -1,3 +1,4 @@
+#include "../freeze_df.h"
  if(AC_lcourant_dt__mod__cdata)
  {
   	if (AC_iuu__mod__cdata != 0)    write( F_UU,  rk_intermediate(F_UU , DF_UU,  step_num, AC_dt__mod__cdata) )
@@ -17,6 +18,7 @@
 		write(F_STRESS_5,DF_STRESS_5)
 	}
 #endif
+
 	if (AC_lfirst__mod__cdata)
 	{
 		reduce_max(dt1_max__mod__cdata,AC_dt1_max)
@@ -27,6 +29,13 @@
   	if (AC_izz_chiral__mod__chiral != 0) write(F_ZZ_CHIRAL,rk_intermediate(F_ZZ_CHIRAL, DF_ZZ_CHIRAL,  step_num, AC_dt__mod__cdata) )
 #endif
 	if (AC_iecr__mod__cdata != 0) write(F_ECR,rk_intermediate(F_ECR,DF_ECR,step_num,AC_dt__mod__cdata))
+	if(lchemistry)
+	{
+		for i in 0:nchemspec
+		{
+			write(F_CHEMISTRY_SPECIES[i],rk_intermediate(F_CHEMISTRY_SPECIES[i],DF_CHEMISTRY_SPECIES[i],step_num,AC_dt__mod__cdata))
+		}
+	}
  }
  else
  {

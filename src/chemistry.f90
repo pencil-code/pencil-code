@@ -7362,7 +7362,7 @@ module Chemistry
     call copy_addr(high_coeff,p_par(98)) ! (3) (nreactions)
     call copy_addr(troe_coeff,p_par(99)) ! (3) (nreactions)
     call copy_addr(a_k4,p_par(100)) ! (nchemspec) (nreactions)
-    call copy_addr(mplus_case,p_par(101)) ! bool (nreactions)
+    if(allocated(mplus_case)) call copy_addr(mplus_case,p_par(101)) ! bool (nreactions)
     call copy_addr(lewis_coef1,p_par(102)) ! (nchemspec)
     call string_to_enum(enum_reac_rate_method,reac_rate_method)
     call copy_addr(enum_reac_rate_method,p_par(103)) ! int

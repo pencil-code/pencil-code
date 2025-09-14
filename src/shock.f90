@@ -1780,18 +1780,28 @@ module Shock
 
     use Syscalls, only: copy_addr
     use General , only: string_to_enum
-    integer, parameter :: n_pars=10
+    integer, parameter :: n_pars=100
     integer(KIND=ikind8), dimension(n_pars) :: p_par
-    logical, save :: lconvergence_only = .true.,lmax_shock=.false.
+    logical, save :: lconvergence_only = .true.,lmax_shock=.false.,lgaussian_smooth=.false.
+    logical, save :: lmax_axis_only = .true., l121_smooth = .true.
+    logical,  save :: low_order_divu = .true.
     real, save :: con_bias = 0.1, shock_div_pow=1.0,dt_div_pow=0.
+    integer, save :: ishock_max = 1
 
-    lmax_shock = lshock_max5
+    lmax_shock = .true. 
+    if(lshock_max5) ishock_max = 2
     call copy_addr(lconvergence_only,p_par(1)) ! bool
     call copy_addr(con_bias,p_par(2))
     call copy_addr(shock_div_pow,p_par(3))
     call copy_addr(dt_div_pow,p_par(4))
     call copy_addr(lmax_shock,p_par(5)) ! bool
-
+    call copy_addr(lgaussian_smooth,p_par(6)) ! bool
+    call copy_addr(ishock_max,p_par(7)) ! int
+    call copy_addr(lmax_axis_only,p_par(8)) ! bool
+    call copy_addr(l121_smooth,p_par(9)) ! bool
+    call copy_addr(low_order_divu,p_par(10)) ! bool
+    call copy_addr(lshock_first,p_par(11)) ! bool
+    
     endsubroutine pushpars2c
 !***********************************************************************
 !

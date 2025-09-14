@@ -507,6 +507,7 @@ module Energy
 
   real, dimension (nx) :: Hmax,ssmax,diffus_chi,diffus_chi3,cs2cool_x, &
                           chit_prof,chit_prof_fluct,hcond,K_kramers
+  !$omp threadprivate(diffus_chi)
   real, dimension (nx,3) :: gss1, gss0
   real, dimension (nz) :: profz_cool, profz1_cool, profz_heat
   real, dimension (nx) :: profr_cool, profr1_cool, profr2_cool, profr_heat, profx_heat
@@ -3806,8 +3807,8 @@ module Energy
         uT=1. !(AB: for the time being; to keep compatible with auto-test
 
         if (ldt) then
+          if (idiag_dtchi/=0) call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
           if (.not.lmultithread) then
-            if (idiag_dtchi/=0) call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
             if (idiag_dtH/=0) then
               if (lthdiff_Hmax) then
                 call max_mn_name(ssmax/cdts,idiag_dtH,l_dt=.true.)
@@ -4230,7 +4231,15 @@ module Energy
 
       real, dimension (mx,my,mz,mfarray) :: f
       type(pencil_case) :: p
+      real, dimension(nx) :: thdiff
 
+      !Done since with multithreading RHS is not evaluated
+      if(lmultithread) then
+              diffus_chi = 0.0
+      endif
+      if (lheatc_Kprof .and. lmultithread) then
+        call calc_heatcond_arrays(f,p,thdiff)
+      endif
       call calc_2d_diagnostics_energy(p)
       call calc_1d_diagnostics_energy(f,p)
       call calc_0d_diagnostics_energy(p)
@@ -5709,30 +5718,23 @@ module Energy
 !
     endsubroutine calc_heatcond_smagorinsky
 !***********************************************************************
-    subroutine calc_heatcond(f,df,p)
+    subroutine calc_heatcond_arrays(f,p,thdiff)
 !
-!  In this routine general heat conduction profiles are being provided
-!  and applied to the entropy equation.
+!  Non-mutating calculations of calc_heatcond
 !
-!  17-sep-01/axel: coded
-!  14-jul-05/axel: corrected expression for chi_t diffusion.
-!  30-mar-06/ngrs: simplified calculations using p%glnTT and p%del2lnTT
+!  14-sep-25/TP: carved from calc_heatcond
 !
+
       use Diagnostics
       use Debug_IO, only: output_pencil
       use Sub, only: dot, g2ij
       use General, only: notanumber
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      type (pencil_case) :: p
-!
-      intent(in) :: f,p
-      intent(inout) :: df
 
+      type (pencil_case), intent(IN) :: p
+      real, dimension (mx,my,mz,mfarray), intent(IN) :: f
+      real, dimension (nx), intent(OUT) :: thdiff
       real, dimension (nx,3) :: glnThcond,glhc
-      real, dimension (nx) :: chix
-      real, dimension (nx) :: thdiff,g2,del2ss1
+      real, dimension (nx) :: g2,del2ss1,chix
       real, dimension (nx) :: glnrhoglnT
       real, dimension (nx,3) :: gradchit_prof
       real, dimension (nx,3,3) :: tmp
@@ -5874,6 +5876,15 @@ module Energy
         endif
       endif
 !
+!  Check maximum diffusion from thermal diffusion.
+!  NB: With heat conduction, the second-order term for entropy is
+!    gamma*chix*del2ss.
+!
+      if (lupdate_courant_dt) then
+        if (hcond0/=0..or.lread_hcond) diffus_chi=diffus_chi+chix*dxyz_2
+        if (chi_t/=0.) diffus_chi=diffus_chi+chi_t*chit_prof*dxyz_2
+      endif
+!
 !  Check for NaNs initially.
 !
       if (hcond0/=0..or.lread_hcond.or.chi_t/=0.) then
@@ -5911,23 +5922,40 @@ module Energy
 
         if (headt .and. lfirst .and. ip == 13) call output_pencil('heatcond.dat',thdiff,1)
 !
+        if (headtt) print*,'calc_heatcond: added thdiff'
+!
+      endif
+    endsubroutine calc_heatcond_arrays
+!***********************************************************************
+    subroutine calc_heatcond(f,df,p)
+!
+!  In this routine general heat conduction profiles are being provided
+!  and applied to the entropy equation.
+!
+!  17-sep-01/axel: coded
+!  14-jul-05/axel: corrected expression for chi_t diffusion.
+!  30-mar-06/ngrs: simplified calculations using p%glnTT and p%del2lnTT
+!  14-sep-25/TP:   separated calculation of thdiff and diffus_chi from update of df
+!
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+!
+      intent(in) :: f,p
+      intent(inout) :: df
+      real, dimension (nx) :: thdiff
+
+      call calc_heatcond_arrays(f,p,thdiff)
+      if (hcond0/=0..or.lread_hcond.or.chi_t/=0.) then
+!
 !  At the end of this routine, add all contribution to
 !  thermal diffusion on the rhs of the entropy equation,
 !  so Ds/Dt = ... + thdiff = ... + (...)/(rho*T)
 !
         df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff
-!
         if (headtt) print*,'calc_heatcond: added thdiff'
 !
-      endif
-!
-!  Check maximum diffusion from thermal diffusion.
-!  NB: With heat conduction, the second-order term for entropy is
-!    gamma*chix*del2ss.
-!
-      if (lupdate_courant_dt) then
-        if (hcond0/=0..or.lread_hcond) diffus_chi=diffus_chi+chix*dxyz_2
-        if (chi_t/=0.) diffus_chi=diffus_chi+chi_t*chit_prof*dxyz_2
       endif
 !
     endsubroutine calc_heatcond

@@ -852,6 +852,9 @@ module Shock
 
     integer, parameter :: n_pars=100
     integer(KIND=ikind8), dimension(n_pars) :: p_par
+    logical, save :: lmax_axis_only = .false., l121_smooth = .false.
+    logical, save :: low_order_divu = .false.
+    logical, save :: lshock_first = .false.
 
     call copy_addr(ishock_max   ,p_par(1))  ! int
     call copy_addr(div_threshold,p_par(2))
@@ -862,6 +865,10 @@ module Shock
     call copy_addr(lmax_shock   ,p_par(7)) ! bool
     call copy_addr(lconvergence_only,p_par(8))  ! bool
     call copy_addr(lgaussian_smooth,p_par(9)) ! bool
+    call copy_addr(lmax_axis_only,p_par(10)) ! bool
+    call copy_addr(l121_smooth,p_par(11)) ! bool
+    call copy_addr(low_order_divu,p_par(12)) ! bool
+    call copy_addr(lshock_first,p_par(13)) ! bool
 
     endsubroutine pushpars2c
 !***********************************************************************

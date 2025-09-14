@@ -1240,6 +1240,7 @@ subroutine run_start() bind(C)
     integer, save :: iglobal_gg,iglobal_glnTT,ierr
     integer(KIND=ikind8), dimension(n_pars) :: p_par
     integer, save, dimension(mcom,2) :: enum_bcx12,enum_bcy12,enum_bcz12
+    logical, save :: lfreeze_var_all = .false.
 call copy_addr(ncoarse,p_par(1)) ! int
 call copy_addr(lcoarse,p_par(2)) ! bool
 call copy_addr_dble(unit_magnetic,p_par(4))
@@ -1347,8 +1348,6 @@ call copy_addr(l2davgfirst,p_par(108)) ! bool
 call copy_addr(l1davgfirst,p_par(109)) ! bool
 call copy_addr(xfreeze_square,p_par(110))
 call copy_addr(yfreeze_square,p_par(111))
-call copy_addr(rfreeze_int,p_par(112))
-call copy_addr(rfreeze_ext,p_par(113))
 call copy_addr(lfargo_advection,p_par(114)) ! bool
 call copy_addr(llocal_iso,p_par(115)) ! bool
 call copy_addr(lisotropic_advection,p_par(116)) ! bool
@@ -1625,6 +1624,14 @@ call copy_addr(dt_incr,p_par(1323))
 call copy_addr(lfractional_tstep_advance,p_par(1324)) ! bool
 !TP: should not really have to push this but disp_current uses lpenc_requested in place of lpencil
 call copy_addr(lpenc_requested,p_par(1336)) ! bool (npencils)
+call copy_addr(wfreeze,p_par(1337))
+call copy_addr(wfreeze_int,p_par(1338))
+call copy_addr(wfreeze_ext,p_par(1339))
+call copy_addr(rfreeze_int,p_par(1340))
+call copy_addr(rfreeze_ext,p_par(1341))
+lfreeze_var_all = all(lfreeze_varint(1:mvar))
+call copy_addr(lfreeze_var_all,p_par(1342)) ! bool
+call copy_addr(fshift_int,p_par(1343))
 
 endsubroutine pushpars2c
 !***********************************************************************

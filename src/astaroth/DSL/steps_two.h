@@ -4,6 +4,7 @@
 #include "../magnetic/before_boundary.h"
 #include "../alphadisk/after_timestep.h"
 #include "../gravitational_waves.h"
+#include "../hydro/hydro_after_boundary_conservative.h"
 
 input real AC_dt
 input PC_SUB_STEP_NUMBER AC_step_num
@@ -12,17 +13,17 @@ input real AC_t
 
 ComputeSteps AC_rhs(boundconds)
 {
-	shock_1_divu()
-	shock_2_max()
-	shock_3_smooth()
+	shock_1_divu(AC_step_num)
+	shock_2_max(AC_step_num)
+	shock_3_smooth(AC_step_num)
         twopass_solve_intermediate(AC_step_num,AC_dt,AC_t,AC_lrmv)
         twopass_solve_final(AC_step_num)
 }
 ComputeSteps AC_calculate_timestep(boundconds)
 {
-	shock_1_divu()
-	shock_2_max()
-	shock_3_smooth()
+	shock_1_divu(AC_step_num)
+	shock_2_max(AC_step_num)
+	shock_3_smooth(AC_step_num)
 	twopass_solve_intermediate(PC_FIRST_SUB_STEP,AC_dt,AC_t,AC_lrmv)
 }
 
@@ -46,6 +47,7 @@ ComputeSteps AC_before_boundary_steps(boundconds)
 	get_current_total_mass(AC_lrmv)
 	fix_mass_drift(AC_lrmv)
 	magnetic_before_boundary_reductions()
+	hydro_after_boundary_conservative(AC_t)
 }
 ComputeSteps AC_after_timestep(boundconds)
 {

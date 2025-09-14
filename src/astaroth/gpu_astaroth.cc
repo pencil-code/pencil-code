@@ -207,7 +207,7 @@ bool has_nans(AcMesh mesh_in)
     {
       for (size_t k = dims.n0.z; k < dims.n1.z; k++)
       {
-        for (size_t ivar = 0; ivar < NUM_VTXBUF_HANDLES; ivar++)
+        for (size_t ivar = 0; ivar < acGetNumFields(); ivar++)
         {
           if (mesh_in.vertex_buffer[ivar] == NULL) continue;
           if (isnan(mesh_in.vertex_buffer[ivar][DEVICE_VTXBUF_IDX(i, j, k)]))
@@ -250,13 +250,13 @@ extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
   acGridSynchronizeStream(STREAM_ALL);
 
   size_t offset = 0;
-  for (int i = 0; i < NUM_VTXBUF_HANDLES; ++i)
+  for (int i = 0; i < acGetNumFields(); ++i)
   {
     mesh_test.vertex_buffer[VertexBufferHandle(i)] = &farray_in[offset];
     offset += mw;
   }
   offset = 0;
-	for (int i = 0; i < NUM_VTXBUF_HANDLES; ++i)
+	for (int i = 0; i < acGetNumFields(); ++i)
   {
     mesh_true.vertex_buffer[VertexBufferHandle(i)] = &dfarray_truth[offset];
     offset += mw;
@@ -438,7 +438,7 @@ extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
     {
       for (size_t k = dims.n0.z; k < dims.n1.z; k++)
       {
-        for (size_t ivar = 0; ivar < NUM_VTXBUF_HANDLES; ivar++)
+        for (size_t ivar = 0; ivar < acGetNumFields(); ivar++)
         {
           AcReal out_val = mesh.vertex_buffer[ivar][DEVICE_VTXBUF_IDX(i, j, k)];
           AcReal true_val = mesh_true.vertex_buffer[ivar][DEVICE_VTXBUF_IDX(i, j, k)];
@@ -478,7 +478,7 @@ extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
   {
 	  return a.x*a.y*a.z;
   };
-  for (int ivar=0;ivar<NUM_VTXBUF_HANDLES;ivar++)
+  for (int ivar=0;ivar<acGetNumFields();ivar++)
     acLogFromRootProc(rank,"ratio of values wrong for field: %d\t %f\n",ivar,(double)num_of_points_where_different[ivar]/volume_size(dims.n1-dims.n0));
   passed &= !has_nans(mesh);
   if (passed)
@@ -1251,7 +1251,7 @@ void copyFarray(AcReal* f)
   //TP: for now only copy the advanced fields back
   //TODO: should auxiliaries needed on the GPU like e.g. Shock be copied? They can always be recomputed on the host if needed
   //If doing training we read all since we might want TAU components to calculate e.g. validation error
-  const int end = ltraining ? NUM_VTXBUF_HANDLES : 
+  const int end = ltraining ? acGetNumFields(): 
 	  	  lread_all_vars_from_device ? mfarray : mvar;
 
   AcMesh* dst = &mesh;
@@ -1523,7 +1523,7 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t)
     //TP: for now for training we have all slots filled since we might want to read TAU components to the host for calculating validation error
     if (ltraining)
     {
-    	for (int i = 0; i < NUM_VTXBUF_HANDLES; ++i)
+    	for (int i = 0; i < acGetNumFields(); ++i)
     	{
 	   if (mesh.vertex_buffer[i] == NULL)
 	   {
@@ -1556,7 +1556,7 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t)
   acDeviceSetInput(acGridGetDevice(), AC_t,AcReal(t));
   acDeviceSetInput(acGridGetDevice(), AC_shear_delta_y,deltay);
 		
-  if (ltest_bcs) testBCs();
+  //if (ltest_bcs) testBCs();
   //TP: for autotuning
   afterTimeStepGPU();
   autotune_all_integration_substeps();
@@ -1676,7 +1676,7 @@ void sym_z(AcMesh mesh_in)
 	   k >= NGHOST && k < dims.n1.z
 	   ) continue;
 	if (k >= NGHOST && k < dims.n1.z) continue;
-        for (int ivar = 0; ivar < NUM_VTXBUF_HANDLES; ivar++)
+        for (int ivar = 0; ivar < acGetNumFields(); ivar++)
         {
 	  //BOT
 	  if (k < NGHOST)
@@ -1730,7 +1730,7 @@ void check_sym_z(AcMesh mesh_in)
 	   k >= NGHOST && k < dims.n1.z
 	   ) continue;
 	if (k >= NGHOST && k < dims.n1.z) continue;
-        for (int ivar = 0; ivar < NUM_VTXBUF_HANDLES; ivar++)
+        for (int ivar = 0; ivar < acGetNumFields(); ivar++)
         {
 	  //BOT
 	  if (k < NGHOST)

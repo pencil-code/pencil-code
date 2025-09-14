@@ -37,6 +37,13 @@ real  DF_DUST_MASS[AC_ndustspec__mod__cparam]
 real  DF_DUST_ICE_MASS[AC_ndustspec__mod__cparam]
 real3 DF_UNVEC = real3(0.0,0.0,0.0)
 real DF_CHEMISTRY_SPECIES[nchemspec]
+if(lchemistry)
+{
+	for i in 0:nchemspec
+	{
+		DF_CHEMISTRY_SPECIES[i] = 0.0
+	}
+}
 real DF_CHEMISTRY_REACTIONS[nchemspec]
 real DF_ECR = 0.0
 real DF_XX_CHIRAL = 0.0

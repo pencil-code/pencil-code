@@ -233,6 +233,8 @@ module Viscosity
 !
   real, dimension(mz) :: eth0z = 0.0
   real, dimension(nx) :: diffus_nu, diffus_nu3
+  !$omp threadprivate(diffus_nu,diffus_nu3)
+
 !
   integer :: enum_nnewton_type = 0
   integer :: enum_div_sld_visc = 0
@@ -2325,6 +2327,22 @@ module Viscosity
 !
       if (lvisc_forc_as_aux) f(l1:l2,m,n,ivisc_forcx:ivisc_forcz) = p%fvisc
 !
+!  Calculate max total diffusion coefficient for timestep calculation etc.
+!
+      if (lupdate_courant_dt) then
+
+        diffus_nu = p%diffus_total*dxyz_2
+        if (ldynamical_diffusion .and. lvisc_hyper3_mesh) then
+          diffus_nu3 = p%diffus_total3 * sum(abs(dline_1),2)
+        else
+          diffus_nu3 = p%diffus_total3*dxyz_6
+        endif
+        maxdiffus =max(maxdiffus ,diffus_nu)
+        maxdiffus2=max(maxdiffus2,p%diffus_total2*dxyz_4)
+        maxdiffus3=max(maxdiffus3,diffus_nu3)
+
+      endif
+!
     endsubroutine calc_pencils_viscosity
 !***********************************************************************
     subroutine viscosity_after_boundary(f)
@@ -2614,22 +2632,6 @@ module Viscosity
         enddo
       else
         df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + p%fvisc
-      endif
-!
-!  Calculate max total diffusion coefficient for timestep calculation etc.
-!
-      if (lupdate_courant_dt) then
-
-        diffus_nu = p%diffus_total*dxyz_2
-        if (ldynamical_diffusion .and. lvisc_hyper3_mesh) then
-          diffus_nu3 = p%diffus_total3 * sum(abs(dline_1),2)
-        else
-          diffus_nu3 = p%diffus_total3*dxyz_6
-        endif
-        maxdiffus =max(maxdiffus ,diffus_nu)
-        maxdiffus2=max(maxdiffus2,p%diffus_total2*dxyz_4)
-        maxdiffus3=max(maxdiffus3,diffus_nu3)
-
       endif
 
       call calc_diagnostics_viscosity(p)

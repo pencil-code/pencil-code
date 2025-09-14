@@ -998,5 +998,8 @@ integer, parameter :: enum_doublet_string = 709
 integer, parameter :: enum_hyper3Zmesh_string = 710
 integer, parameter :: enum_shockZsimple_string = 711
 integer, parameter :: enum_a_string = 712
+integer, parameter :: enum_nuZshock_string = 713
+integer, parameter :: enum_c1_string = 714
+integer, parameter :: enum_ct_string = 715
 
 endmodule Cparam

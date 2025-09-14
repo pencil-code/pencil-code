@@ -1,5 +1,8 @@
 #include "../../PC_moduleflags.h"
 
+#if LENTROPY
+#define LENERGY 1
+#endif
 struct torus_rect
 {
     real3 center
@@ -82,8 +85,8 @@ const int prof_nz = 150
 #define AC_m__mod__cdata (vertexIdx.y+1)
 
 #include "../stdlib/math"
-#include "../stdlib/general_derivs.h"
-//#include "../stdlib/pc_derivs.h"
+//#include "../stdlib/general_derivs.h"
+#include "../stdlib/pc_derivs.h"
 #include "../stdlib/general_operators.h"
 #define AC_NGHOST__mod__cparam nghost
 #define REAL_MAX AC_REAL_MAX
@@ -115,7 +118,7 @@ maxval(real x) {return x}
 maxval(real[] arr) 
 {
 	real res = -AC_REAL_MAX
-	for i in 0:len(arr)
+	for i in 0:size(arr)
 	{
 		res = max(res,arr[i])
 	}
@@ -194,6 +197,30 @@ gmem real AC_reac_chem__mod__cdata[1]
 #endif
 
 const real AC_ascale__mod__cdata = 0.0
+
+#define FbotKbot AC_FbotKbot__mod__energy
+#define Fbot AC_Fbot__mod__energy
+#define FtopKtop AC_FtopKtop__mod__energy
+#define Ftop AC_Ftop__mod__energy
+#define AC_ldensity_nolog AC_ldensity_nolog__mod__cdata
+#define AC_cs20 AC_cs20__mod__equationofstate
+#define AC_gamma_m1 AC_gamma_m1__mod__equationofstate
+#define AC_gamma AC_gamma__mod__equationofstate
+#define AC_lnrho0 AC_lnrho0__mod__equationofstate
+#define AC_cv1 AC_cv1__mod__equationofstate
+#define AC_lheatc_chiconst AC_lheatc_chiconst__mod__energy
+#define AC_chi AC_chi__mod__energy
+#define AC_lheatc_kramers AC_lheatc_kramers__mod__energy
+#define nkramers AC_nkramers__mod__energy
+#define AC_cp AC_cp__mod__equationofstate
+#define AC_cv AC_cv__mod__equationofstate
+#define hcond0_kramers  AC_hcond0_kramers__mod__energy
+#define AC_pretend_lntt  AC_pretend_lntt__mod__cdata
+#define AC_cs2bot AC_cs2bot__mod__equationofstate
+#define cs2top AC_cs2top__mod__equationofstate
+#define AC_lreference_state AC_lreference_state__mod__cdata
+#define ltemperature_nolog AC_ltemperature_nolog__mod__cdata
+#define AC_lread_oldsnap AC_lread_oldsnap__mod__cdata
 
 #include "../bcs/funcs.h"
 #include "../bcs/funcs_overload.h"

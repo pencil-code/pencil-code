@@ -100,7 +100,7 @@ module Equ
 !  Print statements when they are first executed.
 !
       headtt = headt .and. lfirst .and. lroot
-      lupdate_courant_dt = lfirst .and. ldt .and. lcourant_dt
+      if (.not. lgpu) lupdate_courant_dt = lfirst .and. ldt .and. lcourant_dt
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call svn_id( &
@@ -183,7 +183,7 @@ module Equ
 !  Call "before_boundary" hooks (for f array precalculation)
 !
         call before_boundary_shared(f)
-        !call test_rhs_gpu(f,df,p,mass_per_proc,early_finalize,rhs_cpu)
+        !if (it == 30) call test_rhs_gpu(f,df,p,mass_per_proc,early_finalize,rhs_cpu)
 
         if (.not. lgpu) then
           call before_boundary_cpu(f)
@@ -607,11 +607,13 @@ module Equ
       real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
       type (pencil_case) :: p
 
-      integer :: imn
+      integer :: imn,i
 !
 !  Parallelization across all helper threads.
 !
+
       call init_reduc_pointers
+      lupdate_courant_dt = ldt .and. lcourant_dt
 
 !$omp parallel if(.not. lsuppress_parallel_reductions) private(p) num_threads(num_helper_threads) &
 !$omp copyin(t,dxmax_pencil,fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz,phiavg_norm)
@@ -690,6 +692,7 @@ module Equ
 !!$      endif
 !!$    enddo
 !$omp barrier
+
 
 !$omp end parallel   ! all helper threads
 
@@ -1758,7 +1761,7 @@ module Equ
       real, dimension(1), intent(inout) :: mass_per_proc
       logical ,intent(in) :: early_finalize
 
-      real, dimension (:,:,:,:), allocatable :: f_copy,f_diff,df_copy,f_beta
+      real, dimension (:,:,:,:), allocatable :: f_copy,f_diff,df_copy,f_beta,f_abs_diff
       real, dimension (nx) :: gss_x
       integer :: i
       interface
@@ -1806,6 +1809,7 @@ module Equ
         call boundconds_y(f_copy)
         call boundconds_z(f_copy)
         call cpu_version(f_copy,df_copy,p,mass_per_proc,early_finalize)
+        call freeze(df_copy,p)
         f_copy(l1:l2,m1:m2,n1:n2,1:mvar) = f_copy(l1:l2,m1:m2,n1:n2,1:mvar) + df_copy(l1:l2,m1:m2,n1:n2,:)*dt
 
         !f_beta(l1:l2,m1:m2,n1:n2,1:mvar) = f_beta(l1:l2,m1:m2,n1:n2,1:mvar) + df_copy(l1:l2,m1:m2,n1:n2,:)*dt*beta_ts(itsub)
@@ -1815,6 +1819,7 @@ module Equ
 
       call copy_farray_from_GPU(f,.true.)
       f_diff = abs((f_copy-f)/(f_copy+tini))
+      f_abs_diff = abs((f_copy-f))
 
       if (nxgrid == 1 .and. nygrid == 1) then
         print*,"Max diff: ",maxval(f_diff(l1,m1,:,1:mvar))
@@ -1843,12 +1848,13 @@ module Equ
         print*,"Max comp diff: ",maxval(f_diff(l1:l2,m1:m2,n1:n2,1:mvar))
         print*,"Max comp diff loc: ",maxloc(f_diff(l1:l2,m1:m2,n1:n2,1:mvar))
 
-        do i = 1,mvar
+        do i = 1,mfarray
           print*,"Max comp diff for ",i,": ",maxval(f_diff(l1:l2,m1:m2,n1:n2,i))
           print*,"Avg comp diff for ",i,": ",sum(f_diff(l1:l2,m1:m2,n1:n2,i))/(nx*ny*nz)
           print*,"Max comp loc  for ",i,": ",maxloc(f_diff(l1:l2,m1:m2,n1:n2,i))
         enddo
       endif
+      print*,"Max comp loc abs diff: ",maxloc(f_abs_diff(l1:l2,m1:m2,n1:n2,1:mvar)),maxval(f_abs_diff(l1:l2,m1:m2,n1:n2,1:mvar))
 
     call die_gracefully
 
