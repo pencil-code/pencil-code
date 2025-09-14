@@ -44,6 +44,7 @@
 ! PENCILS PROVIDED phi_doublet(3); dphi_doublet(3); phi_doublet_mod
 ! PENCILS EXPECTED GammaY, GammaW1, GammaW2, GammaW3
 ! PENCILS EXPECTED W1(3); W2(3); W3(3), aa(3)
+! PENCILS PROVIDED psi; dpsi; gpsi(3)
 !
 !***************************************************************
 !
@@ -90,11 +91,14 @@ module Special
 ! Declare index of new variables in f array (if any).
 !
   integer :: iphi=0, idphi=0, ilna=0, Ndiv=100, iinfl_rho_chi=0
+  integer :: ipsi=0, idpsi=0
   integer :: iphi_up_re=0, iphi_up_im=0, iphi_down_re=0, iphi_down_im=0
   integer :: idphi_up_re=0, idphi_up_im=0, idphi_down_re=0, idphi_down_im=0
   real :: ncutoff_phi=1., phi_v=.1
   real :: phimass=1.06e-6, phimass2, ascale_ini=1.
+  real :: psimass=1., psimass2
   real :: phi0=.44, dphi0=-1.69e-7, c_phi=1., lambda_phi=0., eps=.01
+  real :: lambda_psi=0., coupl_phipsi=0., c_psi=1.
   real :: amplphi=.1, ampldphi=.0, kx_phi=1., ky_phi=0., kz_phi=0., phase_phi=0., width_phi=.1, offset=0.
   real :: initpower_phi=0.,  cutoff_phi=0.,  initpower2_phi=0.
   real :: initpower_dphi=0., cutoff_dphi=0., initpower2_dphi=0.
@@ -104,6 +108,7 @@ module Special
   real :: edotbm, edotbm_all, e2m, e2m_all, b2m, b2m_all, a2rhophim, a2rhophim_all
   real :: sigE1m_all_nonaver, sigB1m_all_nonaver,sigEm_all,sigBm_all,sigEm_all_diagnos,sigBm_all_diagnos
   real :: a2rhogphim, a2rhogphim_all
+  real :: a2rhopsim, a2rhopsim_all, a2rhogpsim, a2rhogpsim_all
   real :: a2, a21, Hscript
   real :: Hscript0=0., scale_rho_chi_Heqn=1., rho_chi_init=0., cdt_rho_chi=1.
   real :: amplee_BD_prefactor=0., deriv_prefactor_ee=-1.
@@ -112,7 +117,7 @@ module Special
   real, pointer :: coupl_gw, coupl_gy
   ! logical, pointer :: llongitudinalE, llongitudinalW
   real, target :: ddotam_all
-  real, pointer :: alpf
+  real, pointer :: alpf, alpfpsi
   real, pointer :: sigE_prefactor, sigB_prefactor, mass_chi
   real, dimension (nx) :: dt1_special
   real, dimension (nx, 4, 3) :: dfdxs=0.
@@ -120,11 +125,11 @@ module Special
   logical :: lscale_tobox=.true., ldt_klein_gordon=.true., lconf_time=.true.
   logical :: lskip_projection_phi=.false., lvectorpotential=.false., lflrw=.false.
   logical :: lrho_chi=.false., lno_noise_phi=.false., lno_noise_dphi=.false.
-  logical, pointer :: lphi_hom
+  logical, pointer :: lphi_hom, lpsi_hom
   logical, pointer :: lphi_linear_regime, lnoncollinear_EB, lnoncollinear_EB_aver
   logical, pointer :: lcollinear_EB, lcollinear_EB_aver, lmass_suppression
   logical, pointer :: lallow_bprime_zero
-  logical :: lhiggs_friction=.false.
+  logical :: lhiggs_friction=.false., lwaterfall=.false.
   real :: higgs_friction=0.
   logical :: lphi_doublet=.false., lphi_weakcharge=.false., lphi_hypercharge=.false.
   character (len=labellen) :: Vprime_choice='quadratic', Hscript_choice='set'
@@ -141,14 +146,16 @@ module Special
       ncutoff_phi, lscale_tobox, Hscript0, Hscript_choice, phi_v, lflrw, &
       lrho_chi, scale_rho_chi_Heqn, amplee_BD_prefactor, deriv_prefactor_ee, &
       echarge_type, init_rho_chi, rho_chi_init, eta_phi, lphi_doublet, &
-      lphi_weakcharge, lphi_hypercharge, lhiggs_friction, higgs_friction
+      lphi_weakcharge, lphi_hypercharge, lhiggs_friction, higgs_friction, &
+      lwaterfall, lambda_psi, coupl_phipsi, c_psi
 !
   namelist /special_run_pars/ &
       initspecial, phi0, dphi0, phimass, eps, ascale_ini, &
       lem_backreact, c_phi, lambda_phi, Vprime_choice, &
       ldt_klein_gordon, Ndiv, Hscript0, Hscript_choice, &
       lflrw, lrho_chi, scale_rho_chi_Heqn, echarge_type, cdt_rho_chi, &
-      phi_v, lhiggs_friction, higgs_friction
+      phi_v, lhiggs_friction, higgs_friction, lwaterfall, lambda_psi, &
+      coupl_phipsi, c_psi
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -158,6 +165,12 @@ module Special
   integer :: idiag_dphim=0      ! DIAG_DOC: $\left<\phi'\right>$
   integer :: idiag_dphi2m=0     ! DIAG_DOC: $\left<(\phi')^2\right>$
   integer :: idiag_dphirms=0    ! DIAG_DOC: $\left<(\phi')^2\right>^{1/2}$
+  integer :: idiag_psim=0       ! DIAG_DOC: $\left<\psi\right>$
+  integer :: idiag_psi2m=0      ! DIAG_DOC: $\left<\psi^2\right>$
+  integer :: idiag_psirms=0     ! DIAG_DOC: $\left<\psi^2\right>^{1/2}$
+  integer :: idiag_dpsim=0      ! DIAG_DOC: $\left<\psi'\right>$
+  integer :: idiag_dpsi2m=0     ! DIAG_DOC: $\left<(\psi')^2\right>$
+  integer :: idiag_dpsirms=0    ! DIAG_DOC: $\left<(\psi')^2\right>^{1/2}$
   integer :: idiag_Hscriptm=0   ! DIAG_DOC: $\left<{\cal a*H}\right>$
   integer :: idiag_lnam=0       ! DIAG_DOC: $\left<\ln a\right>$
   integer :: idiag_ddotam=0     ! DIAG_DOC: $a''/a$
@@ -165,6 +178,8 @@ module Special
   integer :: idiag_a2rhom=0     ! DIAG_DOC: $a^2 rho$
   integer :: idiag_a2rhophim=0  ! DIAG_DOC: $a^2 rho$
   integer :: idiag_a2rhogphim=0 ! DIAG_DOC: $0.5 <grad phi^2>$
+  integer :: idiag_a2rhopsim=0  ! DIAG_DOC: $a^2 rho$
+  integer :: idiag_a2rhogpsim=0 ! DIAG_DOC: $0.5 <grad psi^2>$
   integer :: idiag_rho_chi=0    ! DIAG_DOC: $\rho_\chi$
   integer :: idiag_sigEma=0     ! DIAG_DOC: $\rho_\chi$
   integer :: idiag_sigBma=0     ! DIAG_DOC: $\rho_\chi$
@@ -176,6 +191,7 @@ module Special
 
   real :: a2rhom_all_diagnos, a2rhopm_all_diagnos, a2rhophim_all_diagnos
   real :: a2rhogphim_all_diagnos, ddotam_all_diagnos
+  real :: a2rhopsim_all_diagnos, a2rhogpsim_all_diagnos
 
   integer :: ia0 = 0, iW0 = 0
   contains
@@ -192,6 +208,8 @@ module Special
       if (lroot) call svn_id( &
            "$Id$")
 !
+      lklein_gordon=.true.
+!
       if (lphi_doublet) then
       ! alberto: register 4 components for the Higgs doublet in phi
         call farray_register_pde('phi_up_re',iphi_up_re)
@@ -204,13 +222,17 @@ module Special
         call farray_register_pde('dphi_down_im',idphi_down_im)
         iphi=iphi_up_re
         idphi=idphi_up_re
+        lwaterfall=.false.
       else
         call farray_register_pde('phi',iphi)
         call farray_register_pde('dphi',idphi)
         lphi_weakcharge=.false.
         lphi_hypercharge=.false.
+        if (lwaterfall) then
+          call farray_register_pde('psi',ipsi)
+          call farray_register_pde('dpsi',idpsi)
+        endif
       endif
-      lklein_gordon=.true.
 !
       if (lflrw) call farray_register_ode('lna',ilna)
       if (lrho_chi) call farray_register_ode('infl_rho_chi',iinfl_rho_chi)
@@ -231,6 +253,7 @@ module Special
       call put_shared_variable('lphi_doublet',lphi_doublet)
       call put_shared_variable('lphi_weakcharge',lphi_weakcharge)
       call put_shared_variable('lphi_hypercharge',lphi_hypercharge)
+      call put_shared_variable('lwaterfall',lwaterfall)
 !
     endsubroutine register_special
 !***********************************************************************
@@ -254,9 +277,11 @@ module Special
 !  set phimass**2
 !
       phimass2=phimass**2
+      if (lwaterfall) psimass2=psimass**2
 !
       if (lmagnetic .and. lem_backreact) then
         call get_shared_variable('alpf',alpf,caller='initialize_klein_gordon')
+        call get_shared_variable('alpfpsi',alpfpsi,caller='initialize_klein_gordon')
         call get_shared_variable('lphi_linear_regime',lphi_linear_regime)
         call get_shared_variable('sigE_prefactor',sigE_prefactor)
         call get_shared_variable('sigB_prefactor',sigB_prefactor)
@@ -266,14 +291,16 @@ module Special
         call get_shared_variable('lnoncollinear_EB_aver',lnoncollinear_EB_aver)
         call get_shared_variable('lmass_suppression',lmass_suppression)
         call get_shared_variable('lphi_hom',lphi_hom)
+        call get_shared_variable('lpsi_hom',lpsi_hom)
         call get_shared_variable('lallow_bprime_zero',lallow_bprime_zero)
         call get_shared_variable('mass_chi',mass_chi)
       else
         if (.not.associated(alpf)) allocate(alpf,lphi_linear_regime, &
           sigE_prefactor, sigB_prefactor, lcollinear_EB, lcollinear_EB_aver, &
           lnoncollinear_EB, lnoncollinear_EB_aver, lmass_suppression, &
-          lphi_hom, lallow_bprime_zero, mass_chi)
+          lphi_hom, lpsi_hom, lallow_bprime_zero, mass_chi, alpfpsi)
         alpf=0.
+        alpfpsi=0.
         lphi_linear_regime=.false.
         sigE_prefactor=0.
         sigB_prefactor=0.
@@ -283,6 +310,7 @@ module Special
         lnoncollinear_EB_aver=.false.
         lmass_suppression=.false.
         lphi_hom=.false.
+        lpsi_hom=.false.
         lallow_bprime_zero=.false.
         mass_chi=0.
       endif
@@ -491,6 +519,11 @@ module Special
           endif
         endif
       endif
+
+      if (lwaterfall) then
+        lpenc_requested(i_psi)=.true.
+        lpenc_requested(i_dpsi)=.true.
+      endif
 !
     endsubroutine pencil_criteria_special
 !***********************************************************************
@@ -515,6 +548,10 @@ module Special
       if (lpencil(i_phi)) p%phi = f(l1:l2,m,n,iphi)
 ! dphi
       if (lpencil(i_dphi)) p%dphi=f(l1:l2,m,n,idphi)
+! psi
+      if (lpencil(i_psi)) p%psi = f(l1:l2,m,n,ipsi)
+! dpsi
+      if (lpencil(i_dpsi)) p%dpsi=f(l1:l2,m,n,idpsi)
 ! phi_doublet (only computes the 3 remaining components, the first is in p%phi)
       if (lpencil(i_phi_doublet_mod)) then
         do i=1,3
@@ -528,10 +565,13 @@ module Special
       endif
 ! gphi
       if (lpencil(i_gphi)) call grad(f,iphi,p%gphi)
-
-      ! cov_der computation for Higgs doublet with weak and/or hypercharge
-      ! covariant derivative is D_mu = partial_mu - i g W_mu^a tau^a/2 - i g' Y B_mu/2
-      ! where tau^a are the Pauli matrices and Y is the hypercharge
+! gpsi
+      if (lpencil(i_gpsi)) call grad(f,ipsi,p%gpsi)
+!
+! cov_der computation for Higgs doublet with weak and/or hypercharge
+! covariant derivative is D_mu = partial_mu - i g W_mu^a tau^a/2 - i g' Y B_mu/2
+! where tau^a are the Pauli matrices and Y is the hypercharge
+!
       if (lpencil(i_cov_der)) then
         do i=0,3
           p%cov_der(:, 1, i+1)=f(l1:l2,m,n,idphi+i)
@@ -690,6 +730,7 @@ module Special
 !   2-nov-21/axel: first set of equations coded
 !   4-sep-25/alberto: adapted from backreact_infl
 !   6-sep-25/alberto: added Higgs doublet case
+!   14-sep-25/alberto: added second scalar field psi for waterfall potential
 !
       use Diagnostics, only: sum_mn_name, max_mn_name, save_name
       use Sub, only: dot_mn, del2, div
@@ -697,9 +738,9 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: Vprime, Vprime_aux, total_fric
+      real, dimension (nx) :: Vprime, Vprimepsi, Vprime_aux, total_fric
       real, dimension (nx, 4) :: del2phi_doublet=0.
-      real, dimension (nx) :: tmp, del2phi
+      real, dimension (nx) :: tmp, del2phi, del2psi
       real :: pref_Vprime=1., pref_Hubble=2., pref_del2=1., pref_alpf
       type (pencil_case) :: p
       integer :: i
@@ -723,6 +764,12 @@ module Special
               call fatal_error("dspecial_dt: lphi_doublet=.false. but Vprime_choice='doublet'", &
                                trim(Vprime_choice))
           Vprime=2*lambda_phi*(p%phi_doublet_mod**2 - eta_phi**2)*p%phi_doublet_mod
+        case ('waterfall')
+          if (.not.lwaterfall) &
+              call fatal_error("dspecial_dt: lwaterfall=.false. but Vprime_choice='waterfall'", &
+                               trim(Vprime_choice))
+          Vprime=phimass2*p%phi+coupl_phipsi**2*p%phi*p%psi**2
+          Vprimepsi=lambda_psi*p%psi**3-psimass2*p%psi+coupl_phipsi**2*p%psi*p%phi**2
         case default
           call fatal_error("dspecial_dt: No such Vprime_choice: ", trim(Vprime_choice))
       endselect
@@ -885,21 +932,41 @@ module Special
           call del2(f, iphi, del2phi)
           df(l1:l2,m,n,idphi)=df(l1:l2,m,n,idphi) + c_phi**2*pref_del2*del2phi
         endif
+        ! second scalar if lwaterfall
+        if (lwaterfall) then
+          df(l1:l2,m,n,ipsi)=df(l1:l2,m,n,ipsi)+p%dpsi
+          df(l1:l2,m,n,idpsi)=df(l1:l2,m,n,idpsi) - &
+                pref_Hubble*Hscript*p%dpsi-pref_Vprime*Vprimepsi
+          if (c_psi/=0 .and. .not. lpsi_hom) then
+            call del2(f, ipsi, del2psi)
+            df(l1:l2,m,n,idpsi)=df(l1:l2,m,n,idpsi) + c_psi**2*pref_del2*del2psi
+          endif
+        endif
 !
 !  magnetic terms, add (alpf/a^2)*(E.B) to dphi'/dt equation
 !  only if no lphi_doublet
 !
         if (lmagnetic .and. lem_backreact) then
           if (lphi_hom .and. .not. lphi_linear_regime) then
-            if (lconf_time) then
-              df(l1:l2,m,n,idphi)=df(l1:l2,m,n,idphi)+alpf*edotbm_all*a21
-            else
-              df(l1:l2,m,n,idphi)=df(l1:l2,m,n,idphi)+alpf*edotbm_all*a21**2
-            endif
+            ! if (lconf_time) then
+            !   df(l1:l2,m,n,idphi)=df(l1:l2,m,n,idphi)+alpf*edotbm_all*a21
+            ! else
+            !   df(l1:l2,m,n,idphi)=df(l1:l2,m,n,idphi)+alpf*edotbm_all*a21**2
+            ! endif
+            df(l1:l2,m,n,idphi)=df(l1:l2,m,n,idphi)+pref_alpf*alpf*edotbm_all
           endif
           if (.not. lphi_hom) then
             call dot_mn(p%el,p%bb,tmp)
             df(l1:l2,m,n,idphi)=df(l1:l2,m,n,idphi)+pref_alpf*alpf*tmp
+          endif
+          ! backreaction in second scalar psi if lwaterfall
+          if (lwaterfall) then
+            if (lpsi_hom) then
+              df(l1:l2,m,n,idpsi)=df(l1:l2,m,n,idpsi)+pref_alpf*alpfpsi*edotbm_all
+            else
+              call dot_mn(p%el,p%bb,tmp)
+              df(l1:l2,m,n,idpsi)=df(l1:l2,m,n,idpsi)+pref_alpf*alpfpsi*tmp
+            endif
           endif
         endif
       endif
@@ -1012,6 +1079,8 @@ module Special
         call save_name(a2rhom_all_diagnos,idiag_a2rhom)
         call save_name(a2rhophim_all_diagnos,idiag_a2rhophim)
         call save_name(a2rhogphim_all_diagnos,idiag_a2rhogphim)
+        call save_name(a2rhopsim_all_diagnos,idiag_a2rhopsim)
+        call save_name(a2rhogpsim_all_diagnos,idiag_a2rhogpsim)
         call save_name(rho_chi,idiag_rho_chi)
         call save_name(sigEm_all_diagnos,idiag_sigEma)
         call save_name(sigBm_all_diagnos,idiag_sigBma)
@@ -1034,6 +1103,14 @@ module Special
         call sum_mn_name(p%dphi,idiag_dphim)
         if (idiag_dphi2m/=0) call sum_mn_name(p%dphi**2,idiag_dphi2m)
         if (idiag_dphirms/=0) call sum_mn_name(p%dphi**2,idiag_dphirms,lsqrt=.true.)
+        if (lwaterfall) then
+          call sum_mn_name(p%psi,idiag_psim)
+          if (idiag_psi2m/=0) call sum_mn_name(p%psi**2,idiag_psi2m)
+          if (idiag_psirms/=0) call sum_mn_name(p%psi**2,idiag_psirms,lsqrt=.true.)
+          call sum_mn_name(p%dpsi,idiag_dpsim)
+          if (idiag_dpsi2m/=0) call sum_mn_name(p%dpsi**2,idiag_dpsi2m)
+          if (idiag_dpsirms/=0) call sum_mn_name(p%dpsi**2,idiag_dpsirms,lsqrt=.true.)
+        endif
       endif
 
     endsubroutine calc_diagnostics_special
@@ -1095,6 +1172,9 @@ module Special
         idiag_a2rhopm=0; idiag_a2rhom=0; idiag_a2rhophim=0
         idiag_a2rhogphim=0; idiag_rho_chi=0; idiag_sigEma=0
         idiag_sigBma=0; idiag_count_eb0a=0
+        idiag_psim=0; idiag_psi2m=0; idiag_psirms=0
+        idiag_dpsim=0; idiag_dpsi2m=0; idiag_dpsirms=0
+        idiag_a2rhogpsim=0; idiag_a2rhopsim=0
       endif
 !
       do iname=1,nname
@@ -1115,6 +1195,14 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'sigEma',idiag_sigEma)
         call parse_name(iname,cname(iname),cform(iname),'sigBma',idiag_sigBma)
         call parse_name(iname,cname(iname),cform(iname),'count_eb0a',idiag_count_eb0a)
+        call parse_name(iname,cname(iname),cform(iname),'psim',idiag_psim)
+        call parse_name(iname,cname(iname),cform(iname),'psi2m',idiag_psi2m)
+        call parse_name(iname,cname(iname),cform(iname),'psirms',idiag_psirms)
+        call parse_name(iname,cname(iname),cform(iname),'dpsim',idiag_dpsim)
+        call parse_name(iname,cname(iname),cform(iname),'dpsi2m',idiag_dpsi2m)
+        call parse_name(iname,cname(iname),cform(iname),'dpsirms',idiag_dpsirms)
+        call parse_name(iname,cname(iname),cform(iname),'a2rhopsim',idiag_a2rhopsim)
+        call parse_name(iname,cname(iname),cform(iname),'a2rhogpsim',idiag_a2rhogpsim)
       enddo
 !
     endsubroutine rprint_special
@@ -1246,7 +1334,7 @@ module Special
 !  In the following loop, go through all penciles and add up results to get e2m, etc.
 !
       ddotam=0.; a2rhopm=0.; a2rhom=0.; e2m=0; b2m=0; edotbm=0; a2rhophim=0.; a2rhogphim=0.
-      sigE1m=0.; sigB1m=0.
+      sigE1m=0.; sigB1m=0.; a2rhogpsim=0.; a2rhopsim=0.
 !
 !  In the following, sum over all mn pencils.
 !
@@ -1260,8 +1348,11 @@ module Special
       a2rhom=a2rhom/nwgrid
       a2rhophim=a2rhophim/nwgrid
       a2rhogphim=a2rhogphim/nwgrid
+      a2rhopsim=a2rhopsim/nwgrid
+      a2rhogpsim=a2rhogpsim/nwgrid
       ddotam=(four_pi_over_three/nwgrid)*ddotam
-      if (lphi_hom .or. lrho_chi .or. lnoncollinear_EB .or. lnoncollinear_EB_aver) then
+      if (lphi_hom .or. lrho_chi .or. lnoncollinear_EB .or. &
+          lnoncollinear_EB_aver .or. lpsi_hom) then
         edotbm=edotbm/nwgrid
         call mpiallreduce_sum(edotbm,edotbm_all)
       endif
@@ -1290,11 +1381,15 @@ module Special
       call mpiallreduce_sum(a2rhom,a2rhom_all)
       call mpireduce_sum(a2rhophim,a2rhophim_all)
       call mpireduce_sum(a2rhogphim,a2rhogphim_all)
+      call mpireduce_sum(a2rhopsim,a2rhopsim_all)
+      call mpireduce_sum(a2rhogpsim,a2rhogpsim_all)
       call mpiallreduce_sum(ddotam,ddotam_all)
       a2rhom_all_diagnos     = a2rhom_all
       a2rhopm_all_diagnos    = a2rhopm_all
       a2rhophim_all_diagnos  = a2rhophim_all
+      a2rhopsim_all_diagnos  = a2rhopsim_all
       a2rhogphim_all_diagnos = a2rhogphim_all
+      a2rhogpsim_all_diagnos = a2rhogpsim_all
       ddotam_all_diagnos     = ddotam_all
 
       if (lroot .and. lflrw) then
@@ -1316,10 +1411,11 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, intent(inout) :: sigE1m,sigB1m
-      real, dimension (nx,3) :: el, bb, gphi
+      real, dimension (nx,3) :: el, bb, gphi, gpsi
       real, dimension (nx) :: e2, b2, gphi2, dphi, a2rhop, a2rho
       real, dimension (nx) :: ddota, phi, Vpotential, edotb, sigE1, sigB1
       real, dimension (nx) :: boost, gam_EB, eprime, bprime, jprime1
+      real, dimension (nx) :: psi, dpsi, gpsi2, a2rhopsi_tmp
 !
 !  if requested, calculate here <dphi**2+gphi**2+(4./3.)*(E^2+B^2)/a^2>
 !  rhop is purely an output quantity
@@ -1327,18 +1423,40 @@ module Special
 !
       phi=f(l1:l2,m,n,iphi)
       dphi=f(l1:l2,m,n,idphi)
-      if (lphi_hom) then
-        a2rhop=dphi**2
-        a2rho=0.5*dphi**2
-        a2rhophim=a2rhophim+sum(a2rho)
-      else
+      a2rho=0.5*dphi**2
+      a2rhop=dphi**2
+      ! if (lphi_hom) then
+      !   a2rhop=dphi**2
+      !   !a2rho=0.5*dphi**2
+      !   !a2rhophim=a2rhophim+sum(a2rho)
+      ! else
+      if (.not. lphi_hom) then
         call grad(f,iphi,gphi)    !MR: the ghost zones are not necessarily updated!!!
         ! alberto: this function is called from special_after_boundary so shouldn't have the ghost zones updated?
         call dot2_mn(gphi,gphi2)
         a2rhogphim=a2rhogphim+sum(0.5*gphi2)
-        a2rhop=dphi**2+onethird*gphi2
-        a2rho=0.5*(dphi**2+gphi2)
-        a2rhophim=a2rhophim+sum(a2rho)
+        a2rhop=a2rhop+onethird*gphi2
+        a2rho=a2rho+0.5*gphi2
+        !a2rhophim=a2rhophim+sum(a2rho)
+      endif
+      a2rhophim=a2rhophim+sum(a2rho)
+
+      if (lwaterfall) then
+        psi=f(l1:l2,m,n,ipsi)
+        dpsi=f(l1:l2,m,n,idpsi)
+        a2rhopsi_tmp=0.5*dpsi**2
+        a2rhop=a2rhop+dpsi**2
+
+        if (.not. lpsi_hom) then
+          call grad(f,ipsi,gpsi)
+          call dot2_mn(gpsi,gpsi2)
+          a2rhogpsim=a2rhogpsim+sum(0.5*gpsi2)
+          a2rhop=a2rhop+onethird*gpsi2
+          a2rhopsi_tmp=a2rhopsi_tmp+0.5*gpsi2
+          !a2rhophim=a2rhophim+sum(a2rho)
+        endif
+        a2rhopsim=a2rhopsim+sum(a2rhopsi_tmp)
+        a2rho=a2rho+a2rhopsi_tmp
       endif
 !
 !  Note the .5*fourthird factor in front of (e2+b2)*a21, but that is
@@ -1364,16 +1482,28 @@ module Special
         case ('quadratic')  ; Vpotential=.5*phimass2*phi**2
         case ('quartic')    ; Vpotential=phimass2*phi+(lambda_phi/6.)*phi**3  !(to be corrected)
         case ('cos-profile'); Vpotential=phimass2*lambda_phi*sin(lambda_phi*phi)  !(to be corrected)
+        case ('waterfall')
+          Vpotential=0.5*phimass2*phi**2 + .25*lambda_psi*psi**4
+          if (lambda_psi /= 0.) then
+            Vpotential=Vpotential+.25*psimass2**2/lambda_psi
+          endif
+          Vpotential=Vpotential-0.5*psimass2*psi**2+.5*coupl_phipsi**2*phi**2*psi**2
         case default
           call fatal_error("special_after_boundary: No such Vprime_choice: ",trim(Vprime_choice))
       endselect
 !
 !  compute ddotam = a"/a (needed for GW module)
 !
-      if (lphi_hom) then
-        ddota=-dphi**2+4.*a2*Vpotential
-      else
-        ddota=-dphi**2-gphi2+4.*a2*Vpotential
+      ddota=-dphi**2+4.*a2*Vpotential
+      !if (lphi_hom) then
+      !  ddota=-dphi**2+4.*a2*Vpotential
+      !else
+      if (.not. lphi_hom) ddota=ddota-gphi2
+      !endif
+      ! contribution from second scalar field
+      if (lwaterfall) then
+        ddota=ddota-dpsi**2
+        if (.not. lpsi_hom) ddota=ddota-gpsi2
       endif
       ddotam=ddotam+sum(ddota)
       a2rho=a2rho+a2*Vpotential

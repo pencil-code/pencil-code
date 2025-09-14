@@ -20,6 +20,7 @@
 ! PENCILS PROVIDED jj_higgsY(3); rhoe_higgsY
 ! PENCILS EXPECTED phi, infl_phi, dphi, infl_dphi, gphi(3); cov_der(4,4)
 ! PENCILS EXPECTED curlb(3), jj_ohm(3), phi_doublet(3)
+! PENCILS EXPECTED gpsi(3), dpsi
 !***************************************************************
 !
 module Special
@@ -36,7 +37,7 @@ module Special
 ! input parameters
 !
   real, dimension (ninit) :: amplee=0.0 !, kx_aa=1.0, ky_aa=1.0, kz_aa=1.0
-  real :: alpf=0.
+  real :: alpf=0., alpfpsi=0.
   real :: ampl_ex=0.0, ampl_ey=0.0, ampl_ez=0.0, ampl_a0=0.0
   real :: kx_ex=0.0, kx_ey=0.0, kx_ez=0.0
   real :: ky_ex=0.0, ky_ey=0.0, ky_ez=0.0
@@ -54,6 +55,7 @@ module Special
   real :: coupl_gy=.345 ! electroweak SU(2) x U(1) coupling of Higgs to U(1)
   logical :: luse_scale_factor_in_sigma=.false., lapply_Gamma_corr=.true.
   logical, pointer :: lohm_evolve, lphi_doublet, lphi_hypercharge
+  logical, pointer :: lwaterfall
   real, pointer :: eta, Hscript, echarge, sigEm_all, sigBm_all
   integer :: iGamma=0, ia0=0, idiva_name=0, ieedot=0, iedotx=0, iedoty=0, iedotz=0
   integer :: idivE=0, isigE=0, isigB=0
@@ -61,6 +63,7 @@ module Special
   logical :: lscale_tobox=.true., lskip_projection_a0=.false.
   logical :: lpower_profile_file=.false.
   logical :: lvectorpotential=.false., lphi_hom=.false., lphi_linear_regime=.false.
+  logical :: lpsi_hom=.false.
   logical :: lno_noise_ee=.false., lnoncollinear_EB=.false., lnoncollinear_EB_aver=.false.
   logical :: lcollinear_EB=.false., lcollinear_EB_aver=.false.
   logical :: leedot_as_aux=.false., lcurlyA=.true., lsolve_chargedensity=.false.
@@ -72,7 +75,7 @@ module Special
   character (len=labellen) :: power_filename='power_profile.dat'
 !
   namelist /special_init_pars/ &
-    initee, inita0, alpf, &
+    initee, inita0, alpf, alpfpsi, &
     ampl_ex, ampl_ey, ampl_ez, ampl_a0, &
     kx_ex, kx_ey, kx_ez, &
     ky_ex, ky_ey, ky_ez, &
@@ -88,7 +91,7 @@ module Special
     lsolve_chargedensity, weight_longitudinalE, lswitch_off_Gamma, &
     lrandom_ampl_ee, lfixed_phase_ee, lskip_projection_ee, &
     luse_scale_factor_in_sigma, lpower_profile_file, power_filename, &
-    coupl_gy
+    coupl_gy, lpsi_hom
 !
   ! run parameters
   real :: beta_inflation=0., rescale_ee=1.
@@ -101,7 +104,7 @@ module Special
     lnoncollinear_EB, lnoncollinear_EB_aver, luse_scale_factor_in_sigma, &
     lcollinear_EB, lcollinear_EB_aver, sigE_prefactor, sigB_prefactor, &
     reinitialize_ee, initee, rescale_ee, lmass_suppression, mass_chi, &
-    lallow_bprime_zero, lapply_Gamma_corr, coupl_gy
+    lallow_bprime_zero, lapply_Gamma_corr, coupl_gy, lpsi_hom, alpfpsi
 !
 ! Declare any index variables necessary for main or
 !
@@ -203,7 +206,9 @@ module Special
 !  The following variables are also used in special/backreact_infl.f90
 !
       call put_shared_variable('alpf',alpf,caller='register_disp_current')
+      call put_shared_variable('alpfpsi',alpfpsi)
       call put_shared_variable('lphi_hom',lphi_hom)
+      call put_shared_variable('lpsi_hom',lpsi_hom)
       call put_shared_variable('lphi_linear_regime',lphi_linear_regime)
       call put_shared_variable('sigE_prefactor',sigE_prefactor)
       call put_shared_variable('sigB_prefactor',sigB_prefactor)
@@ -284,10 +289,12 @@ module Special
         call get_shared_variable('lphi_doublet',lphi_doublet, caller='initialize_disp_current')
         call get_shared_variable('lphi_hypercharge',lphi_hypercharge, &
           caller='initialize_disp_current')
+        call get_shared_variable('lwaterfall',lwaterfall, caller='initialize_disp_current')
       else
-        if (.not.associated(lphi_doublet)) allocate(lphi_doublet,lphi_hypercharge)
+        if (.not.associated(lphi_doublet)) allocate(lphi_doublet,lphi_hypercharge,lwaterfall)
         lphi_doublet=.false.
         lphi_hypercharge=.false.
+        lwaterfall=.false.
       endif
 !
       if (lphi_hom) weight_longitudinalE=0.
@@ -407,9 +414,13 @@ module Special
 !
       if (alpf/=0.) then
         lpenc_requested(i_bb)=.true.
-        lpenc_requested(i_phi)=.true.
         lpenc_requested(i_dphi)=.true.
         lpenc_requested(i_gphi)=.true.
+      endif
+      if (alpfpsi/=0. .and. lwaterfall) then
+        lpenc_requested(i_bb)=.true.
+        lpenc_requested(i_dpsi)=.true.
+        lpenc_requested(i_gpsi)=.true.
       endif
 !
       if (llorenz_gauge_disp) lpenc_requested(i_ga0)=.true.
@@ -742,18 +753,26 @@ module Special
       use Sub
 !
       type(pencil_case) :: p
+      real, dimension(nx) :: dst2
       real, dimension(nx), intent(OUT) :: dst
 !
-       
-      if (lphi_hom) then
-        dst=0.
-      else
-        if (alpf/=0.) then
-          call dot(p%bb,p%gphi,dst)
-          dst=-alpf*dst
-        else
-          dst=0.
-        endif
+!   14-sep-25/alberto: added axion coupling for a second scalar field psi
+!
+      !if (lphi_hom) then
+      !  dst=0.
+      !else
+      if (.not. lphi_hom .and. alpf/=0.) then
+        !if (alpf/=0.) then
+        call dot(p%bb,p%gphi,dst2)
+        dst=dst-alpf*dst2
+        !else
+        !  dst=0.
+        !endif
+      endif
+
+      if (.not. lpsi_hom .and. alpfpsi/=0. .and. lwaterfall) then
+        call dot(p%bb,p%gpsi,dst2)
+        dst=dst-alpfpsi*dst2
       endif
 
       endsubroutine calc_axion_term
@@ -761,14 +780,29 @@ module Special
       subroutine calc_helical_term(p,gtmp)
           use Sub
           type(pencil_case), intent(IN) :: p
+          real, dimension(nx, 3) :: gtmp2
           real, dimension(nx,3), intent(OUT) :: gtmp
 
-          if (lphi_hom) then
-            call multsv(p%dphi,p%bb,gtmp)
-          else
-            call cross(p%gphi,p%el,gtmp)
-            call multsv_add(gtmp,p%dphi,p%bb,gtmp)
+          if (alpf/=0.) then
+            if (lphi_hom) then
+              call multsv(p%dphi,p%bb,gtmp2)
+            else
+              call cross(p%gphi,p%el,gtmp2)
+              call multsv_add(gtmp2,p%dphi,p%bb,gtmp2)
+            endif
+            gtmp=gtmp+gtmp2*alpf
           endif
+
+          if (alpfpsi/=0. .and. lwaterfall) then
+            if (lpsi_hom) then
+              call multsv(p%dpsi,p%bb,gtmp2)
+            else
+              call cross(p%gpsi,p%el,gtmp2)
+              call multsv_add(gtmp2,p%dpsi,p%bb,gtmp2)
+            endif
+            gtmp=gtmp+gtmp2*alpfpsi
+          endif
+
       endsubroutine
 !***********************************************************************
     subroutine dspecial_dt(f,df,p)
@@ -794,8 +828,8 @@ module Special
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx,3) :: gtmp, dJdt, del2JJ
-      real, dimension (nx) :: tmp, del2a0, constrainteqn, constrainteqn1
+      real, dimension (nx,3) :: gtmp=0., dJdt, del2JJ
+      real, dimension (nx) :: tmp=0., del2a0, constrainteqn, constrainteqn1
       real :: inflation_factor=0., mfpf=0., fppf=0.
       integer :: j
 !
@@ -884,17 +918,24 @@ module Special
 !  dEE/dt = ... -alp/f (dphi*BB + gradphi x E)
 !  Use the combined routine multsv_add if both terms are included.
 !
-        if (alpf/=0.) then
+        if (alpf/=0. .or. (alpfpsi/=0. .and. lwaterfall)) then
           call calc_helical_term(p,gtmp)
 !          print*,"p%infl_phi",p%infl_phi
 !          print*,"p%infl_dphi",p%infl_dphi
-          df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)-alpf*gtmp
-          if (llorenz_gauge_disp.and. .not. lphi_hom) then
+          !df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)-alpf*gtmp
+          df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)-gtmp
+          if (llorenz_gauge_disp) then
             ! if (lphi_hom) then
             !   df(l1:l2,m,n,idiva_name)=df(l1:l2,m,n,idiva_name)+del2a0
             ! else
-            call dot_mn(p%gphi,p%bb,tmp)
-            df(l1:l2,m,n,idiva_name)=df(l1:l2,m,n,idiva_name)+alpf*tmp
+            if (.not. lphi_hom) then
+              call dot_mn(p%gphi,p%bb,tmp)
+              df(l1:l2,m,n,idiva_name)=df(l1:l2,m,n,idiva_name)+alpf*tmp
+            endif
+            if (.not. lpsi_hom .and. lwaterfall) then
+              call dot_mn(p%gpsi,p%bb,tmp)
+              df(l1:l2,m,n,idiva_name)=df(l1:l2,m,n,idiva_name)+alpfpsi*tmp
+            endif
             !endif
 !
 !  Evolution of the equation for the scalar potential, moved below
@@ -983,7 +1024,7 @@ module Special
 !  diagnostics
 !
       if (ldiagnos) then
-              call calc_diagnostics_special(f,p)
+        call calc_diagnostics_special(f,p)
       endif
 !
     endsubroutine dspecial_dt
@@ -1013,7 +1054,8 @@ module Special
       call sum_mn_name(p%sigB*p%eb,idiag_sigBBEm)
       if (idiag_adphiBm/=0) then
         if (alpf/=0.) call calc_helical_term(p,gtmp)
-        call dot(alpf*gtmp,p%el,tmp)
+        !call dot(alpf*gtmp,p%el,tmp)
+        call dot(gtmp,p%el,tmp)
         call sum_mn_name(tmp,idiag_adphiBm)
       endif
       if (idiag_Johmrms/=0) then
