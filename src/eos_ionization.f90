@@ -1340,7 +1340,9 @@ module EquationOfState
 !      df=dlnTT_*(1.5+TT1_)-1/(1-yH+epsi)-2/yH
       dff=dlnTT_*(1.5+TT1_)-1/(1-yH+epsi)-2/(yH+epsi)
 !
-      do i=1,maxit
+      i = 1
+      do while(i <= maxit .and. .not. all(found))
+        i = i +1
         where (.not.found)
           where (      sign(1.,((yH-yHlow)*dff-ff)) &
                     == sign(1.,((yH-yHhigh)*dff-ff)) &
@@ -1382,7 +1384,6 @@ module EquationOfState
         elsewhere
           found=.true.
         endwhere
-        if (all(found)) return
       enddo
 !
     endsubroutine rtsafe_pencil
