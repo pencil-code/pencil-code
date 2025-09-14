@@ -1567,6 +1567,12 @@ module Gravity
     call copy_addr(cdt_accretor,p_par(22))
     call copy_addr(z1,p_par(23))
     call copy_addr(z2,p_par(24))
+    call copy_addr(kappa_z1,p_par(25))
+    call copy_addr(zclip,p_par(26))
+    call copy_addr(zinfty,p_par(27))
+    call copy_addr(nu_epicycle,p_par(28))
+    call copy_addr(zref,p_par(29))
+    call copy_addr(n_pot,p_par(30))
 
     endsubroutine pushpars2c
 !***********************************************************************

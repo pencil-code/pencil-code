@@ -61,7 +61,7 @@ bc_steady_z(boundary, topbot, VtxBuffer field)
   }
 }
 //TP: old
-#if LENERGY
+#if Leos_idealgas
 bc_ss_flux(boundary, topbot, bool lone_sided)
 {
   suppress_unused_warning(boundary)
@@ -373,7 +373,7 @@ bc_set_der_z(boundary, topbot, VtxBuffer field,val)
   }
 }
 
-#if LENERGY
+#if Leos_idealgas_MODULE
 bc_ss_temp_z(AcBoundary boundary, AC_TOP_BOT topbot,bool lone_sided)
 {
 suppress_unused_warning(boundary)
@@ -1540,3 +1540,1925 @@ bc_ss_flux(AcBoundary boundary, AC_TOP_BOT topbot,bool lone_sided)
   }
 }
 **/
+#if Leos_idealgas_MODULE
+bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
+{
+  suppress_unused_warning(boundary)
+  real cs2
+  real rho
+  real ss
+  real dlnrhodz
+  real dssdz
+  real cs2_point
+  real potp
+  real potm
+  int i
+  real getrho_s_return_value_0
+  real getrho_s_return_value_0
+  real lnrho__1
+  real ss__1
+  real lntt__1
+  real ee__1
+  real pp__1
+  real cs2__1
+  real tt__1
+  real rho_1
+  real eth_1
+  real lnrho__2
+  real ss__2
+  real lntt__2
+  real ee__2
+  real pp__2
+  real cs2__2
+  real tt__2
+  real rho_2
+  real eth_2
+  real lnrho__3
+  real ss__3
+  real lntt__3
+  real ee__3
+  real pp__3
+  real cs2__3
+  real tt__3
+  real rho_3
+  real eth_3
+  real lnrho__4
+  real ss__4
+  real lntt__4
+  real ee__4
+  real pp__4
+  real cs2__4
+  real tt__4
+  real rho_4
+  real eth_4
+  real potx_xpoint_5
+  real poty_ypoint_5
+  real potz_zpoint_5
+  real prof_5
+  real xdep_5
+  real zdep_5
+  real potx_xpoint_6
+  real poty_ypoint_6
+  real potz_zpoint_6
+  real prof_6
+  real xdep_6
+  real zdep_6
+  real getrho_s_return_value_7
+  real getrho_s_return_value_7
+  real lnrho__8
+  real ss__8
+  real lntt__8
+  real ee__8
+  real pp__8
+  real cs2__8
+  real tt__8
+  real rho_8
+  real eth_8
+  real lnrho__9
+  real ss__9
+  real lntt__9
+  real ee__9
+  real pp__9
+  real cs2__9
+  real tt__9
+  real rho_9
+  real eth_9
+  real lnrho__10
+  real ss__10
+  real lntt__10
+  real ee__10
+  real pp__10
+  real cs2__10
+  real tt__10
+  real rho_10
+  real eth_10
+  real potx_xpoint_11
+  real poty_ypoint_11
+  real potz_zpoint_11
+  real prof_11
+  real xdep_11
+  real zdep_11
+  real potx_xpoint_12
+  real poty_ypoint_12
+  real potz_zpoint_12
+  real prof_12
+  real xdep_12
+  real zdep_12
+  if(topbot == AC_bot) {
+    if (AC_lentropy__mod__cparam) {
+      if (AC_ldensity__mod__cparam) {
+        if (AC_ldensity_nolog__mod__cdata) {
+          if (AC_lreference_state__mod__cdata) {
+            getrho_s_return_value_0=LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1]+AC_reference_state__mod__density[l1-l1+1-1][AC_iref_rho__mod__cparam-1]
+          }
+          else {
+            getrho_s_return_value_0=LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1]
+          }
+        }
+        else {
+          getrho_s_return_value_0=exp(LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1])
+        }
+        rho=getrho_s_return_value_0
+        ss=SS[l1-1][m1-1][AC_n1__mod__cparam-1]
+        if (AC_lreference_state__mod__cdata) {
+          ss=ss+AC_reference_state__mod__density[AC_xbot__mod__equationofstate-1][AC_iref_s__mod__cparam-1]
+        }
+        if(AC_irho_ss__mod__equationofstate == AC_ilnrho_ss__mod__equationofstate || AC_irho_ss__mod__equationofstate == AC_irho_ss__mod__equationofstate) {
+          if (AC_lstratz__mod__cdata) {
+          }
+          else if (AC_irho_ss__mod__equationofstate == AC_ilnrho_ss__mod__equationofstate)  {
+            lnrho__1 = rho
+          }
+          else {
+            lnrho__1 = log(rho)
+          }
+          ss__1=ss
+          lntt__1=AC_lntt0__mod__equationofstate+AC_cv1__mod__equationofstate*ss__1+AC_gamma_m1__mod__equationofstate*(lnrho__1-AC_lnrho0__mod__equationofstate)
+          ee__1=AC_cv__mod__equationofstate*exp(lntt__1)
+          pp__1=(AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*exp(lntt__1+lnrho__1)
+          cs2__1=AC_gamma__mod__equationofstate*AC_gamma_m1__mod__equationofstate*ee__1
+        }
+        else if(AC_irho_ss__mod__equationofstate == AC_ilnrho_ee__mod__equationofstate || AC_irho_ss__mod__equationofstate == AC_irho_ee__mod__equationofstate) {
+          ee__1=ss
+          if (AC_irho_ss__mod__equationofstate==AC_ilnrho_ee__mod__equationofstate) {
+            lnrho__1=rho
+            pp__1=AC_gamma_m1__mod__equationofstate*ee__1*exp(rho)
+          }
+          else {
+            lnrho__1=log(rho)
+            pp__1=AC_gamma_m1__mod__equationofstate*ee__1*rho
+          }
+          lntt__1=log(AC_cv1__mod__equationofstate*ee__1)
+          ss__1=AC_cv__mod__equationofstate*(lntt__1-AC_lntt0__mod__equationofstate-AC_gamma_m1__mod__equationofstate*(lnrho__1-AC_lnrho0__mod__equationofstate))
+          cs2__1=AC_gamma__mod__equationofstate*AC_gamma_m1__mod__equationofstate*ee__1
+        }
+        else if(AC_irho_ss__mod__equationofstate == AC_ilnrho_pp__mod__equationofstate || AC_irho_ss__mod__equationofstate == AC_irho_pp__mod__equationofstate) {
+          pp__1=ss
+          if (AC_irho_ss__mod__equationofstate==AC_ilnrho_pp__mod__equationofstate) {
+            lnrho__1=rho
+            ee__1=pp__1*exp(-lnrho__1)/AC_gamma_m1__mod__equationofstate
+            ss__1=AC_cv__mod__equationofstate*(log(pp__1*exp(-lnrho__1)*AC_gamma__mod__equationofstate/AC_cs20__mod__equationofstate)-AC_gamma_m1__mod__equationofstate*(lnrho__1-AC_lnrho0__mod__equationofstate))
+          }
+          else {
+            lnrho__1=log(rho)
+            ee__1=pp__1/rho/AC_gamma_m1__mod__equationofstate
+            ss__1=AC_cv__mod__equationofstate*(log(pp__1/rho*AC_gamma__mod__equationofstate/AC_cs20__mod__equationofstate)-AC_gamma_m1__mod__equationofstate*(lnrho__1-AC_lnrho0__mod__equationofstate))
+          }
+          lntt__1=log(AC_cv1__mod__equationofstate*ee__1)
+          cs2__1=AC_gamma__mod__equationofstate*AC_gamma_m1__mod__equationofstate*ee__1
+        }
+        else if(AC_irho_ss__mod__equationofstate == AC_ilnrho_lntt__mod__equationofstate) {
+          lnrho__1=rho
+          lntt__1=ss
+          ss__1=AC_cv__mod__equationofstate*(lntt__1-AC_lntt0__mod__equationofstate-AC_gamma_m1__mod__equationofstate*(lnrho__1-AC_lnrho0__mod__equationofstate))
+          ee__1=AC_cv__mod__equationofstate*exp(lntt__1)
+          pp__1=ee__1*exp(lnrho__1)*AC_gamma_m1__mod__equationofstate
+          cs2__1=AC_gamma__mod__equationofstate*AC_gamma_m1__mod__equationofstate*ee__1
+        }
+        else if(AC_irho_ss__mod__equationofstate == AC_ilnrho_tt__mod__equationofstate) {
+          lnrho__1=rho
+          tt__1=ss
+          ss__1=AC_cv__mod__equationofstate*(log(tt__1)-AC_lntt0__mod__equationofstate-AC_gamma_m1__mod__equationofstate*(lnrho__1-AC_lnrho0__mod__equationofstate))
+          ee__1=AC_cv__mod__equationofstate*tt__1
+          pp__1=ee__1*exp(lnrho__1)*AC_gamma_m1__mod__equationofstate
+          cs2__1=AC_cp__mod__equationofstate*AC_gamma_m1__mod__equationofstate*tt__1
+        }
+        else if(AC_irho_ss__mod__equationofstate == AC_irho_tt__mod__equationofstate) {
+          lnrho__1=log(rho)
+          tt__1=ss
+          ss__1=AC_cv__mod__equationofstate*(log(tt__1)-AC_lntt0__mod__equationofstate-AC_gamma_m1__mod__equationofstate*(lnrho__1-AC_lnrho0__mod__equationofstate))
+          ee__1=AC_cv__mod__equationofstate*tt__1
+          pp__1=ee__1*rho*AC_gamma_m1__mod__equationofstate
+          cs2__1=AC_cp__mod__equationofstate*AC_gamma_m1__mod__equationofstate*tt__1
+        }
+        else if(AC_irho_ss__mod__equationofstate == AC_ipp_cs2__mod__equationofstate) {
+          if (AC_lanelastic__mod__cparam) {
+            if (AC_lanelastic_lin__mod__equationofstate) {
+              lnrho__1=log(rho)
+              tt__1=exp(AC_lntt0__mod__equationofstate)
+              pp__1=exp(lnrho__1)*AC_cs20__mod__equationofstate/AC_gamma__mod__equationofstate
+            }
+            else {
+              if (AC_leos_isothermal__mod__equationofstate) {
+                pp__1=rho
+                lnrho__1=log(pp__1*AC_cs20__mod__equationofstate)
+                tt__1=exp(AC_lntt0__mod__equationofstate)
+              }
+            }
+          }
+        }
+        else if(AC_irho_ss__mod__equationofstate == AC_ipp_ss__mod__equationofstate) {
+          if (AC_lanelastic__mod__cparam) {
+            if (AC_lanelastic_lin__mod__equationofstate) {
+              lnrho__1=(rho)
+              ss__1=ss
+              cs2__1=exp(AC_gamma__mod__equationofstate*ss__1*AC_cp1__mod__equationofstate+AC_gamma_m1__mod__equationofstate*(lnrho__1-AC_lnrho0__mod__equationofstate))*AC_cs20__mod__equationofstate
+              tt__1=cs2__1/(AC_gamma_m1__mod__equationofstate*AC_cp__mod__equationofstate)
+            }
+            else {
+              pp__1=rho
+              ss__1=ss
+              cs2__1=exp(ss__1*AC_cp1__mod__equationofstate+AC_gamma1__mod__equationofstate*AC_gamma_m1__mod__equationofstate*log(pp__1/AC_pp0__mod__equationofstate))*AC_cs20__mod__equationofstate
+              tt__1=cs2__1/(AC_gamma_m1__mod__equationofstate*AC_cp__mod__equationofstate)
+              lnrho__1=log(AC_gamma__mod__equationofstate*pp__1/cs2__1)
+            }
+          }
+        }
+        else if(AC_irho_ss__mod__equationofstate == AC_irho_eth__mod__equationofstate || AC_irho_ss__mod__equationofstate == AC_ilnrho_eth__mod__equationofstate) {
+          if (AC_lstratz__mod__cdata) {
+          }
+          else {
+            if (AC_ldensity_nolog__mod__cdata) {
+              rho_1 = rho
+              if (false) {
+                lnrho__1 = log(rho)
+              }
+            }
+            else {
+              rho_1 = exp(rho)
+              if (false) {
+                lnrho__1 = rho
+              }
+            }
+            eth_1 = ss
+          }
+          if (false) {
+            lntt__1 = log(AC_cv1__mod__equationofstate * eth_1/ rho_1)
+          }
+          if (false) {
+            ee__1 = eth_1/ rho_1
+          }
+          if (false) {
+            pp__1 = AC_gamma_m1__mod__equationofstate * eth_1
+          }
+          if (present(cs2_point)) {
+            cs2__1 = AC_gamma__mod__equationofstate * AC_gamma_m1__mod__equationofstate * eth_1/ rho_1
+          }
+        }
+        else {
+        }
+        if (present(cs2_point)) {
+          cs2_point=cs2__1
+        }
+        dlnrhodz = AC_gamma__mod__equationofstate *AC_gravz__mod__gravity/cs2_point
+        if (AC_ldensity_nolog__mod__cdata) {
+          dlnrhodz=dlnrhodz*rho
+        }
+        dssdz = -AC_gamma_m1__mod__equationofstate*AC_gravz__mod__gravity/cs2_point
+        LNRHO[vertexIdx.x][vertexIdx.y][AC_n1__mod__cparam-1-1] = LNRHO[vertexIdx.x][vertexIdx.y][1+AC_n1__mod__cparam-1] - AC_dz2_bound__mod__cdata[-1+AC_NGHOST__mod__cparam+1-1]*dlnrhodz
+        SS[vertexIdx.x][vertexIdx.y][AC_n1__mod__cparam-1-1] = SS[vertexIdx.x][vertexIdx.y][1+AC_n1__mod__cparam-1] - AC_dz2_bound__mod__cdata[-1+AC_NGHOST__mod__cparam+1-1]*dssdz
+        LNRHO[vertexIdx.x][vertexIdx.y][AC_n1__mod__cparam-2-1] = LNRHO[vertexIdx.x][vertexIdx.y][2+AC_n1__mod__cparam-1] - AC_dz2_bound__mod__cdata[-2+AC_NGHOST__mod__cparam+1-1]*dlnrhodz
+        SS[vertexIdx.x][vertexIdx.y][AC_n1__mod__cparam-2-1] = SS[vertexIdx.x][vertexIdx.y][2+AC_n1__mod__cparam-1] - AC_dz2_bound__mod__cdata[-2+AC_NGHOST__mod__cparam+1-1]*dssdz
+        LNRHO[vertexIdx.x][vertexIdx.y][AC_n1__mod__cparam-3-1] = LNRHO[vertexIdx.x][vertexIdx.y][3+AC_n1__mod__cparam-1] - AC_dz2_bound__mod__cdata[-3+AC_NGHOST__mod__cparam+1-1]*dlnrhodz
+        SS[vertexIdx.x][vertexIdx.y][AC_n1__mod__cparam-3-1] = SS[vertexIdx.x][vertexIdx.y][3+AC_n1__mod__cparam-1] - AC_dz2_bound__mod__cdata[-3+AC_NGHOST__mod__cparam+1-1]*dssdz
+      }
+      else if (AC_lanelastic__mod__cparam) {
+        if(AC_ipp_ss__mod__equationofstate == AC_ilnrho_ss__mod__equationofstate || AC_ipp_ss__mod__equationofstate == AC_irho_ss__mod__equationofstate) {
+          if (AC_lstratz__mod__cdata) {
+          }
+          else if (AC_ipp_ss__mod__equationofstate == AC_ilnrho_ss__mod__equationofstate)  {
+            lnrho__2 = log(RHO_B[l1-1][m1-1][AC_n1__mod__cparam-1])
+          }
+          else {
+            lnrho__2 = log(log(RHO_B[l1-1][m1-1][AC_n1__mod__cparam-1]))
+          }
+          ss__2=SS_B[l1-1][m1-1][AC_n1__mod__cparam-1]
+          lntt__2=AC_lntt0__mod__equationofstate+AC_cv1__mod__equationofstate*ss__2+AC_gamma_m1__mod__equationofstate*(lnrho__2-AC_lnrho0__mod__equationofstate)
+          ee__2=AC_cv__mod__equationofstate*exp(lntt__2)
+          pp__2=(AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*exp(lntt__2+lnrho__2)
+          cs2__2=AC_gamma__mod__equationofstate*AC_gamma_m1__mod__equationofstate*ee__2
+        }
+        else if(AC_ipp_ss__mod__equationofstate == AC_ilnrho_ee__mod__equationofstate || AC_ipp_ss__mod__equationofstate == AC_irho_ee__mod__equationofstate) {
+          ee__2=SS_B[l1-1][m1-1][AC_n1__mod__cparam-1]
+          if (AC_ipp_ss__mod__equationofstate==AC_ilnrho_ee__mod__equationofstate) {
+            lnrho__2=log(RHO_B[l1-1][m1-1][AC_n1__mod__cparam-1])
+            pp__2=AC_gamma_m1__mod__equationofstate*ee__2*exp(log(RHO_B[l1-1][m1-1][AC_n1__mod__cparam-1]))
+          }
+          else {
+            lnrho__2=log(log(RHO_B[l1-1][m1-1][AC_n1__mod__cparam-1]))
+            pp__2=AC_gamma_m1__mod__equationofstate*ee__2*log(RHO_B[l1-1][m1-1][AC_n1__mod__cparam-1])
+          }
+          lntt__2=log(AC_cv1__mod__equationofstate*ee__2)
+          ss__2=AC_cv__mod__equationofstate*(lntt__2-AC_lntt0__mod__equationofstate-AC_gamma_m1__mod__equationofstate*(lnrho__2-AC_lnrho0__mod__equationofstate))
+          cs2__2=AC_gamma__mod__equationofstate*AC_gamma_m1__mod__equationofstate*ee__2
+        }
+        else if(AC_ipp_ss__mod__equationofstate == AC_ilnrho_pp__mod__equationofstate || AC_ipp_ss__mod__equationofstate == AC_irho_pp__mod__equationofstate) {
+          pp__2=SS_B[l1-1][m1-1][AC_n1__mod__cparam-1]
+          if (AC_ipp_ss__mod__equationofstate==AC_ilnrho_pp__mod__equationofstate) {
+            lnrho__2=log(RHO_B[l1-1][m1-1][AC_n1__mod__cparam-1])
+            ee__2=pp__2*exp(-lnrho__2)/AC_gamma_m1__mod__equationofstate
+            ss__2=AC_cv__mod__equationofstate*(log(pp__2*exp(-lnrho__2)*AC_gamma__mod__equationofstate/AC_cs20__mod__equationofstate)-AC_gamma_m1__mod__equationofstate*(lnrho__2-AC_lnrho0__mod__equationofstate))
+          }
+          else {
+            lnrho__2=log(log(RHO_B[l1-1][m1-1][AC_n1__mod__cparam-1]))
+            ee__2=pp__2/log(RHO_B[l1-1][m1-1][AC_n1__mod__cparam-1])/AC_gamma_m1__mod__equationofstate
+            ss__2=AC_cv__mod__equationofstate*(log(pp__2/log(RHO_B[l1-1][m1-1][AC_n1__mod__cparam-1])*AC_gamma__mod__equationofstate/AC_cs20__mod__equationofstate)-AC_gamma_m1__mod__equationofstate*(lnrho__2-AC_lnrho0__mod__equationofstate))
+          }
+          lntt__2=log(AC_cv1__mod__equationofstate*ee__2)
+          cs2__2=AC_gamma__mod__equationofstate*AC_gamma_m1__mod__equationofstate*ee__2
+        }
+        else if(AC_ipp_ss__mod__equationofstate == AC_ilnrho_lntt__mod__equationofstate) {
+          lnrho__2=log(RHO_B[l1-1][m1-1][AC_n1__mod__cparam-1])
+          lntt__2=SS_B[l1-1][m1-1][AC_n1__mod__cparam-1]
+          ss__2=AC_cv__mod__equationofstate*(lntt__2-AC_lntt0__mod__equationofstate-AC_gamma_m1__mod__equationofstate*(lnrho__2-AC_lnrho0__mod__equationofstate))
+          ee__2=AC_cv__mod__equationofstate*exp(lntt__2)
+          pp__2=ee__2*exp(lnrho__2)*AC_gamma_m1__mod__equationofstate
+          cs2__2=AC_gamma__mod__equationofstate*AC_gamma_m1__mod__equationofstate*ee__2
+        }
+        else if(AC_ipp_ss__mod__equationofstate == AC_ilnrho_tt__mod__equationofstate) {
+          lnrho__2=log(RHO_B[l1-1][m1-1][AC_n1__mod__cparam-1])
+          tt__2=SS_B[l1-1][m1-1][AC_n1__mod__cparam-1]
+          ss__2=AC_cv__mod__equationofstate*(log(tt__2)-AC_lntt0__mod__equationofstate-AC_gamma_m1__mod__equationofstate*(lnrho__2-AC_lnrho0__mod__equationofstate))
+          ee__2=AC_cv__mod__equationofstate*tt__2
+          pp__2=ee__2*exp(lnrho__2)*AC_gamma_m1__mod__equationofstate
+          cs2__2=AC_cp__mod__equationofstate*AC_gamma_m1__mod__equationofstate*tt__2
+        }
+        else if(AC_ipp_ss__mod__equationofstate == AC_irho_tt__mod__equationofstate) {
+          lnrho__2=log(log(RHO_B[l1-1][m1-1][AC_n1__mod__cparam-1]))
+          tt__2=SS_B[l1-1][m1-1][AC_n1__mod__cparam-1]
+          ss__2=AC_cv__mod__equationofstate*(log(tt__2)-AC_lntt0__mod__equationofstate-AC_gamma_m1__mod__equationofstate*(lnrho__2-AC_lnrho0__mod__equationofstate))
+          ee__2=AC_cv__mod__equationofstate*tt__2
+          pp__2=ee__2*log(RHO_B[l1-1][m1-1][AC_n1__mod__cparam-1])*AC_gamma_m1__mod__equationofstate
+          cs2__2=AC_cp__mod__equationofstate*AC_gamma_m1__mod__equationofstate*tt__2
+        }
+        else if(AC_ipp_ss__mod__equationofstate == AC_ipp_cs2__mod__equationofstate) {
+          if (AC_lanelastic__mod__cparam) {
+            if (AC_lanelastic_lin__mod__equationofstate) {
+              lnrho__2=log(log(RHO_B[l1-1][m1-1][AC_n1__mod__cparam-1]))
+              tt__2=exp(AC_lntt0__mod__equationofstate)
+              pp__2=exp(lnrho__2)*AC_cs20__mod__equationofstate/AC_gamma__mod__equationofstate
+            }
+            else {
+              if (AC_leos_isothermal__mod__equationofstate) {
+                pp__2=log(RHO_B[l1-1][m1-1][AC_n1__mod__cparam-1])
+                lnrho__2=log(pp__2*AC_cs20__mod__equationofstate)
+                tt__2=exp(AC_lntt0__mod__equationofstate)
+              }
+            }
+          }
+        }
+        else if(AC_ipp_ss__mod__equationofstate == AC_ipp_ss__mod__equationofstate) {
+          if (AC_lanelastic__mod__cparam) {
+            if (AC_lanelastic_lin__mod__equationofstate) {
+              lnrho__2=(log(RHO_B[l1-1][m1-1][AC_n1__mod__cparam-1]))
+              ss__2=SS_B[l1-1][m1-1][AC_n1__mod__cparam-1]
+              cs2__2=exp(AC_gamma__mod__equationofstate*ss__2*AC_cp1__mod__equationofstate+AC_gamma_m1__mod__equationofstate*(lnrho__2-AC_lnrho0__mod__equationofstate))*AC_cs20__mod__equationofstate
+              tt__2=cs2__2/(AC_gamma_m1__mod__equationofstate*AC_cp__mod__equationofstate)
+            }
+            else {
+              pp__2=log(RHO_B[l1-1][m1-1][AC_n1__mod__cparam-1])
+              ss__2=SS_B[l1-1][m1-1][AC_n1__mod__cparam-1]
+              cs2__2=exp(ss__2*AC_cp1__mod__equationofstate+AC_gamma1__mod__equationofstate*AC_gamma_m1__mod__equationofstate*log(pp__2/AC_pp0__mod__equationofstate))*AC_cs20__mod__equationofstate
+              tt__2=cs2__2/(AC_gamma_m1__mod__equationofstate*AC_cp__mod__equationofstate)
+              lnrho__2=log(AC_gamma__mod__equationofstate*pp__2/cs2__2)
+            }
+          }
+        }
+        else if(AC_ipp_ss__mod__equationofstate == AC_irho_eth__mod__equationofstate || AC_ipp_ss__mod__equationofstate == AC_ilnrho_eth__mod__equationofstate) {
+          if (AC_lstratz__mod__cdata) {
+          }
+          else {
+            if (AC_ldensity_nolog__mod__cdata) {
+              rho_2 = log(RHO_B[l1-1][m1-1][AC_n1__mod__cparam-1])
+              if (false) {
+                lnrho__2 = log(log(RHO_B[l1-1][m1-1][AC_n1__mod__cparam-1]))
+              }
+            }
+            else {
+              rho_2 = exp(log(RHO_B[l1-1][m1-1][AC_n1__mod__cparam-1]))
+              if (false) {
+                lnrho__2 = log(RHO_B[l1-1][m1-1][AC_n1__mod__cparam-1])
+              }
+            }
+            eth_2 = SS_B[l1-1][m1-1][AC_n1__mod__cparam-1]
+          }
+          if (false) {
+            lntt__2 = log(AC_cv1__mod__equationofstate * eth_2/ rho_2)
+          }
+          if (false) {
+            ee__2 = eth_2/ rho_2
+          }
+          if (false) {
+            pp__2 = AC_gamma_m1__mod__equationofstate * eth_2
+          }
+          if (present(cs2_point)) {
+            cs2__2 = AC_gamma__mod__equationofstate * AC_gamma_m1__mod__equationofstate * eth_2/ rho_2
+          }
+        }
+        else {
+        }
+        if (present(cs2_point)) {
+          cs2_point=cs2__2
+        }
+        dlnrhodz = AC_gamma__mod__equationofstate *AC_gravz__mod__gravity/cs2_point
+        dssdz    = AC_gamma_m1__mod__equationofstate*AC_gravz__mod__gravity/cs2_point
+        RHO_B[vertexIdx.x][vertexIdx.y][AC_n1__mod__cparam-1-1] = RHO_B[vertexIdx.x][vertexIdx.y][1+AC_n1__mod__cparam-1] - AC_dz2_bound__mod__cdata[-1+AC_NGHOST__mod__cparam+1-1]*dlnrhodz*RHO_B[vertexIdx.x][vertexIdx.y][1+AC_n1__mod__cparam-1]
+        SS_B[vertexIdx.x][vertexIdx.y][AC_n1__mod__cparam-1-1] = SS_B[vertexIdx.x][vertexIdx.y][1+AC_n1__mod__cparam-1] - AC_dz2_bound__mod__cdata[-1+AC_NGHOST__mod__cparam+1-1]*dssdz
+        RHO_B[vertexIdx.x][vertexIdx.y][AC_n1__mod__cparam-2-1] = RHO_B[vertexIdx.x][vertexIdx.y][2+AC_n1__mod__cparam-1] - AC_dz2_bound__mod__cdata[-2+AC_NGHOST__mod__cparam+1-1]*dlnrhodz*RHO_B[vertexIdx.x][vertexIdx.y][1+AC_n1__mod__cparam-1]
+        SS_B[vertexIdx.x][vertexIdx.y][AC_n1__mod__cparam-2-1] = SS_B[vertexIdx.x][vertexIdx.y][2+AC_n1__mod__cparam-1] - AC_dz2_bound__mod__cdata[-2+AC_NGHOST__mod__cparam+1-1]*dssdz
+        RHO_B[vertexIdx.x][vertexIdx.y][AC_n1__mod__cparam-3-1] = RHO_B[vertexIdx.x][vertexIdx.y][3+AC_n1__mod__cparam-1] - AC_dz2_bound__mod__cdata[-3+AC_NGHOST__mod__cparam+1-1]*dlnrhodz*RHO_B[vertexIdx.x][vertexIdx.y][1+AC_n1__mod__cparam-1]
+        SS_B[vertexIdx.x][vertexIdx.y][AC_n1__mod__cparam-3-1] = SS_B[vertexIdx.x][vertexIdx.y][3+AC_n1__mod__cparam-1] - AC_dz2_bound__mod__cdata[-3+AC_NGHOST__mod__cparam+1-1]*dssdz
+      }
+      else {
+      }
+    }
+    else if (AC_ltemperature__mod__cparam) {
+      if (AC_ltemperature_nolog__mod__cdata) {
+        if(AC_ilnrho_tt__mod__equationofstate == AC_ilnrho_ss__mod__equationofstate || AC_ilnrho_tt__mod__equationofstate == AC_irho_ss__mod__equationofstate) {
+          if (AC_lstratz__mod__cdata) {
+          }
+          else if (AC_ilnrho_tt__mod__equationofstate == AC_ilnrho_ss__mod__equationofstate)  {
+            lnrho__3 = LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1]
+          }
+          else {
+            lnrho__3 = log(LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1])
+          }
+          ss__3=TT[l1-1][m1-1][AC_n1__mod__cparam-1]
+          lntt__3=AC_lntt0__mod__equationofstate+AC_cv1__mod__equationofstate*ss__3+AC_gamma_m1__mod__equationofstate*(lnrho__3-AC_lnrho0__mod__equationofstate)
+          ee__3=AC_cv__mod__equationofstate*exp(lntt__3)
+          pp__3=(AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*exp(lntt__3+lnrho__3)
+          cs2__3=AC_gamma__mod__equationofstate*AC_gamma_m1__mod__equationofstate*ee__3
+        }
+        else if(AC_ilnrho_tt__mod__equationofstate == AC_ilnrho_ee__mod__equationofstate || AC_ilnrho_tt__mod__equationofstate == AC_irho_ee__mod__equationofstate) {
+          ee__3=TT[l1-1][m1-1][AC_n1__mod__cparam-1]
+          if (AC_ilnrho_tt__mod__equationofstate==AC_ilnrho_ee__mod__equationofstate) {
+            lnrho__3=LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1]
+            pp__3=AC_gamma_m1__mod__equationofstate*ee__3*exp(LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1])
+          }
+          else {
+            lnrho__3=log(LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1])
+            pp__3=AC_gamma_m1__mod__equationofstate*ee__3*LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1]
+          }
+          lntt__3=log(AC_cv1__mod__equationofstate*ee__3)
+          ss__3=AC_cv__mod__equationofstate*(lntt__3-AC_lntt0__mod__equationofstate-AC_gamma_m1__mod__equationofstate*(lnrho__3-AC_lnrho0__mod__equationofstate))
+          cs2__3=AC_gamma__mod__equationofstate*AC_gamma_m1__mod__equationofstate*ee__3
+        }
+        else if(AC_ilnrho_tt__mod__equationofstate == AC_ilnrho_pp__mod__equationofstate || AC_ilnrho_tt__mod__equationofstate == AC_irho_pp__mod__equationofstate) {
+          pp__3=TT[l1-1][m1-1][AC_n1__mod__cparam-1]
+          if (AC_ilnrho_tt__mod__equationofstate==AC_ilnrho_pp__mod__equationofstate) {
+            lnrho__3=LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1]
+            ee__3=pp__3*exp(-lnrho__3)/AC_gamma_m1__mod__equationofstate
+            ss__3=AC_cv__mod__equationofstate*(log(pp__3*exp(-lnrho__3)*AC_gamma__mod__equationofstate/AC_cs20__mod__equationofstate)-AC_gamma_m1__mod__equationofstate*(lnrho__3-AC_lnrho0__mod__equationofstate))
+          }
+          else {
+            lnrho__3=log(LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1])
+            ee__3=pp__3/LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1]/AC_gamma_m1__mod__equationofstate
+            ss__3=AC_cv__mod__equationofstate*(log(pp__3/LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1]*AC_gamma__mod__equationofstate/AC_cs20__mod__equationofstate)-AC_gamma_m1__mod__equationofstate*(lnrho__3-AC_lnrho0__mod__equationofstate))
+          }
+          lntt__3=log(AC_cv1__mod__equationofstate*ee__3)
+          cs2__3=AC_gamma__mod__equationofstate*AC_gamma_m1__mod__equationofstate*ee__3
+        }
+        else if(AC_ilnrho_tt__mod__equationofstate == AC_ilnrho_lntt__mod__equationofstate) {
+          lnrho__3=LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1]
+          lntt__3=TT[l1-1][m1-1][AC_n1__mod__cparam-1]
+          ss__3=AC_cv__mod__equationofstate*(lntt__3-AC_lntt0__mod__equationofstate-AC_gamma_m1__mod__equationofstate*(lnrho__3-AC_lnrho0__mod__equationofstate))
+          ee__3=AC_cv__mod__equationofstate*exp(lntt__3)
+          pp__3=ee__3*exp(lnrho__3)*AC_gamma_m1__mod__equationofstate
+          cs2__3=AC_gamma__mod__equationofstate*AC_gamma_m1__mod__equationofstate*ee__3
+        }
+        else if(AC_ilnrho_tt__mod__equationofstate == AC_ilnrho_tt__mod__equationofstate) {
+          lnrho__3=LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1]
+          tt__3=TT[l1-1][m1-1][AC_n1__mod__cparam-1]
+          ss__3=AC_cv__mod__equationofstate*(log(tt__3)-AC_lntt0__mod__equationofstate-AC_gamma_m1__mod__equationofstate*(lnrho__3-AC_lnrho0__mod__equationofstate))
+          ee__3=AC_cv__mod__equationofstate*tt__3
+          pp__3=ee__3*exp(lnrho__3)*AC_gamma_m1__mod__equationofstate
+          cs2__3=AC_cp__mod__equationofstate*AC_gamma_m1__mod__equationofstate*tt__3
+        }
+        else if(AC_ilnrho_tt__mod__equationofstate == AC_irho_tt__mod__equationofstate) {
+          lnrho__3=log(LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1])
+          tt__3=TT[l1-1][m1-1][AC_n1__mod__cparam-1]
+          ss__3=AC_cv__mod__equationofstate*(log(tt__3)-AC_lntt0__mod__equationofstate-AC_gamma_m1__mod__equationofstate*(lnrho__3-AC_lnrho0__mod__equationofstate))
+          ee__3=AC_cv__mod__equationofstate*tt__3
+          pp__3=ee__3*LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1]*AC_gamma_m1__mod__equationofstate
+          cs2__3=AC_cp__mod__equationofstate*AC_gamma_m1__mod__equationofstate*tt__3
+        }
+        else if(AC_ilnrho_tt__mod__equationofstate == AC_ipp_cs2__mod__equationofstate) {
+          if (AC_lanelastic__mod__cparam) {
+            if (AC_lanelastic_lin__mod__equationofstate) {
+              lnrho__3=log(LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1])
+              tt__3=exp(AC_lntt0__mod__equationofstate)
+              pp__3=exp(lnrho__3)*AC_cs20__mod__equationofstate/AC_gamma__mod__equationofstate
+            }
+            else {
+              if (AC_leos_isothermal__mod__equationofstate) {
+                pp__3=LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1]
+                lnrho__3=log(pp__3*AC_cs20__mod__equationofstate)
+                tt__3=exp(AC_lntt0__mod__equationofstate)
+              }
+            }
+          }
+        }
+        else if(AC_ilnrho_tt__mod__equationofstate == AC_ipp_ss__mod__equationofstate) {
+          if (AC_lanelastic__mod__cparam) {
+            if (AC_lanelastic_lin__mod__equationofstate) {
+              lnrho__3=(LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1])
+              ss__3=TT[l1-1][m1-1][AC_n1__mod__cparam-1]
+              cs2__3=exp(AC_gamma__mod__equationofstate*ss__3*AC_cp1__mod__equationofstate+AC_gamma_m1__mod__equationofstate*(lnrho__3-AC_lnrho0__mod__equationofstate))*AC_cs20__mod__equationofstate
+              tt__3=cs2__3/(AC_gamma_m1__mod__equationofstate*AC_cp__mod__equationofstate)
+            }
+            else {
+              pp__3=LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1]
+              ss__3=TT[l1-1][m1-1][AC_n1__mod__cparam-1]
+              cs2__3=exp(ss__3*AC_cp1__mod__equationofstate+AC_gamma1__mod__equationofstate*AC_gamma_m1__mod__equationofstate*log(pp__3/AC_pp0__mod__equationofstate))*AC_cs20__mod__equationofstate
+              tt__3=cs2__3/(AC_gamma_m1__mod__equationofstate*AC_cp__mod__equationofstate)
+              lnrho__3=log(AC_gamma__mod__equationofstate*pp__3/cs2__3)
+            }
+          }
+        }
+        else if(AC_ilnrho_tt__mod__equationofstate == AC_irho_eth__mod__equationofstate || AC_ilnrho_tt__mod__equationofstate == AC_ilnrho_eth__mod__equationofstate) {
+          if (AC_lstratz__mod__cdata) {
+          }
+          else {
+            if (AC_ldensity_nolog__mod__cdata) {
+              rho_3 = LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1]
+              if (false) {
+                lnrho__3 = log(LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1])
+              }
+            }
+            else {
+              rho_3 = exp(LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1])
+              if (false) {
+                lnrho__3 = LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1]
+              }
+            }
+            eth_3 = TT[l1-1][m1-1][AC_n1__mod__cparam-1]
+          }
+          if (false) {
+            lntt__3 = log(AC_cv1__mod__equationofstate * eth_3/ rho_3)
+          }
+          if (false) {
+            ee__3 = eth_3/ rho_3
+          }
+          if (false) {
+            pp__3 = AC_gamma_m1__mod__equationofstate * eth_3
+          }
+          if (present(cs2_point)) {
+            cs2__3 = AC_gamma__mod__equationofstate * AC_gamma_m1__mod__equationofstate * eth_3/ rho_3
+          }
+        }
+        else {
+        }
+        if (present(cs2_point)) {
+          cs2_point=cs2__3
+        }
+      }
+      else {
+        if(AC_ilnrho_lntt__mod__equationofstate == AC_ilnrho_ss__mod__equationofstate || AC_ilnrho_lntt__mod__equationofstate == AC_irho_ss__mod__equationofstate) {
+          if (AC_lstratz__mod__cdata) {
+          }
+          else if (AC_ilnrho_lntt__mod__equationofstate == AC_ilnrho_ss__mod__equationofstate)  {
+            lnrho__4 = LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1]
+          }
+          else {
+            lnrho__4 = log(LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1])
+          }
+          ss__4=LNTT[l1-1][m1-1][AC_n1__mod__cparam-1]
+          lntt__4=AC_lntt0__mod__equationofstate+AC_cv1__mod__equationofstate*ss__4+AC_gamma_m1__mod__equationofstate*(lnrho__4-AC_lnrho0__mod__equationofstate)
+          ee__4=AC_cv__mod__equationofstate*exp(lntt__4)
+          pp__4=(AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*exp(lntt__4+lnrho__4)
+          cs2__4=AC_gamma__mod__equationofstate*AC_gamma_m1__mod__equationofstate*ee__4
+        }
+        else if(AC_ilnrho_lntt__mod__equationofstate == AC_ilnrho_ee__mod__equationofstate || AC_ilnrho_lntt__mod__equationofstate == AC_irho_ee__mod__equationofstate) {
+          ee__4=LNTT[l1-1][m1-1][AC_n1__mod__cparam-1]
+          if (AC_ilnrho_lntt__mod__equationofstate==AC_ilnrho_ee__mod__equationofstate) {
+            lnrho__4=LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1]
+            pp__4=AC_gamma_m1__mod__equationofstate*ee__4*exp(LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1])
+          }
+          else {
+            lnrho__4=log(LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1])
+            pp__4=AC_gamma_m1__mod__equationofstate*ee__4*LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1]
+          }
+          lntt__4=log(AC_cv1__mod__equationofstate*ee__4)
+          ss__4=AC_cv__mod__equationofstate*(lntt__4-AC_lntt0__mod__equationofstate-AC_gamma_m1__mod__equationofstate*(lnrho__4-AC_lnrho0__mod__equationofstate))
+          cs2__4=AC_gamma__mod__equationofstate*AC_gamma_m1__mod__equationofstate*ee__4
+        }
+        else if(AC_ilnrho_lntt__mod__equationofstate == AC_ilnrho_pp__mod__equationofstate || AC_ilnrho_lntt__mod__equationofstate == AC_irho_pp__mod__equationofstate) {
+          pp__4=LNTT[l1-1][m1-1][AC_n1__mod__cparam-1]
+          if (AC_ilnrho_lntt__mod__equationofstate==AC_ilnrho_pp__mod__equationofstate) {
+            lnrho__4=LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1]
+            ee__4=pp__4*exp(-lnrho__4)/AC_gamma_m1__mod__equationofstate
+            ss__4=AC_cv__mod__equationofstate*(log(pp__4*exp(-lnrho__4)*AC_gamma__mod__equationofstate/AC_cs20__mod__equationofstate)-AC_gamma_m1__mod__equationofstate*(lnrho__4-AC_lnrho0__mod__equationofstate))
+          }
+          else {
+            lnrho__4=log(LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1])
+            ee__4=pp__4/LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1]/AC_gamma_m1__mod__equationofstate
+            ss__4=AC_cv__mod__equationofstate*(log(pp__4/LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1]*AC_gamma__mod__equationofstate/AC_cs20__mod__equationofstate)-AC_gamma_m1__mod__equationofstate*(lnrho__4-AC_lnrho0__mod__equationofstate))
+          }
+          lntt__4=log(AC_cv1__mod__equationofstate*ee__4)
+          cs2__4=AC_gamma__mod__equationofstate*AC_gamma_m1__mod__equationofstate*ee__4
+        }
+        else if(AC_ilnrho_lntt__mod__equationofstate == AC_ilnrho_lntt__mod__equationofstate) {
+          lnrho__4=LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1]
+          lntt__4=LNTT[l1-1][m1-1][AC_n1__mod__cparam-1]
+          ss__4=AC_cv__mod__equationofstate*(lntt__4-AC_lntt0__mod__equationofstate-AC_gamma_m1__mod__equationofstate*(lnrho__4-AC_lnrho0__mod__equationofstate))
+          ee__4=AC_cv__mod__equationofstate*exp(lntt__4)
+          pp__4=ee__4*exp(lnrho__4)*AC_gamma_m1__mod__equationofstate
+          cs2__4=AC_gamma__mod__equationofstate*AC_gamma_m1__mod__equationofstate*ee__4
+        }
+        else if(AC_ilnrho_lntt__mod__equationofstate == AC_ilnrho_tt__mod__equationofstate) {
+          lnrho__4=LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1]
+          tt__4=LNTT[l1-1][m1-1][AC_n1__mod__cparam-1]
+          ss__4=AC_cv__mod__equationofstate*(log(tt__4)-AC_lntt0__mod__equationofstate-AC_gamma_m1__mod__equationofstate*(lnrho__4-AC_lnrho0__mod__equationofstate))
+          ee__4=AC_cv__mod__equationofstate*tt__4
+          pp__4=ee__4*exp(lnrho__4)*AC_gamma_m1__mod__equationofstate
+          cs2__4=AC_cp__mod__equationofstate*AC_gamma_m1__mod__equationofstate*tt__4
+        }
+        else if(AC_ilnrho_lntt__mod__equationofstate == AC_irho_tt__mod__equationofstate) {
+          lnrho__4=log(LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1])
+          tt__4=LNTT[l1-1][m1-1][AC_n1__mod__cparam-1]
+          ss__4=AC_cv__mod__equationofstate*(log(tt__4)-AC_lntt0__mod__equationofstate-AC_gamma_m1__mod__equationofstate*(lnrho__4-AC_lnrho0__mod__equationofstate))
+          ee__4=AC_cv__mod__equationofstate*tt__4
+          pp__4=ee__4*LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1]*AC_gamma_m1__mod__equationofstate
+          cs2__4=AC_cp__mod__equationofstate*AC_gamma_m1__mod__equationofstate*tt__4
+        }
+        else if(AC_ilnrho_lntt__mod__equationofstate == AC_ipp_cs2__mod__equationofstate) {
+          if (AC_lanelastic__mod__cparam) {
+            if (AC_lanelastic_lin__mod__equationofstate) {
+              lnrho__4=log(LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1])
+              tt__4=exp(AC_lntt0__mod__equationofstate)
+              pp__4=exp(lnrho__4)*AC_cs20__mod__equationofstate/AC_gamma__mod__equationofstate
+            }
+            else {
+              if (AC_leos_isothermal__mod__equationofstate) {
+                pp__4=LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1]
+                lnrho__4=log(pp__4*AC_cs20__mod__equationofstate)
+                tt__4=exp(AC_lntt0__mod__equationofstate)
+              }
+            }
+          }
+        }
+        else if(AC_ilnrho_lntt__mod__equationofstate == AC_ipp_ss__mod__equationofstate) {
+          if (AC_lanelastic__mod__cparam) {
+            if (AC_lanelastic_lin__mod__equationofstate) {
+              lnrho__4=(LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1])
+              ss__4=LNTT[l1-1][m1-1][AC_n1__mod__cparam-1]
+              cs2__4=exp(AC_gamma__mod__equationofstate*ss__4*AC_cp1__mod__equationofstate+AC_gamma_m1__mod__equationofstate*(lnrho__4-AC_lnrho0__mod__equationofstate))*AC_cs20__mod__equationofstate
+              tt__4=cs2__4/(AC_gamma_m1__mod__equationofstate*AC_cp__mod__equationofstate)
+            }
+            else {
+              pp__4=LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1]
+              ss__4=LNTT[l1-1][m1-1][AC_n1__mod__cparam-1]
+              cs2__4=exp(ss__4*AC_cp1__mod__equationofstate+AC_gamma1__mod__equationofstate*AC_gamma_m1__mod__equationofstate*log(pp__4/AC_pp0__mod__equationofstate))*AC_cs20__mod__equationofstate
+              tt__4=cs2__4/(AC_gamma_m1__mod__equationofstate*AC_cp__mod__equationofstate)
+              lnrho__4=log(AC_gamma__mod__equationofstate*pp__4/cs2__4)
+            }
+          }
+        }
+        else if(AC_ilnrho_lntt__mod__equationofstate == AC_irho_eth__mod__equationofstate || AC_ilnrho_lntt__mod__equationofstate == AC_ilnrho_eth__mod__equationofstate) {
+          if (AC_lstratz__mod__cdata) {
+          }
+          else {
+            if (AC_ldensity_nolog__mod__cdata) {
+              rho_4 = LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1]
+              if (false) {
+                lnrho__4 = log(LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1])
+              }
+            }
+            else {
+              rho_4 = exp(LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1])
+              if (false) {
+                lnrho__4 = LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1]
+              }
+            }
+            eth_4 = LNTT[l1-1][m1-1][AC_n1__mod__cparam-1]
+          }
+          if (false) {
+            lntt__4 = log(AC_cv1__mod__equationofstate * eth_4/ rho_4)
+          }
+          if (false) {
+            ee__4 = eth_4/ rho_4
+          }
+          if (false) {
+            pp__4 = AC_gamma_m1__mod__equationofstate * eth_4
+          }
+          if (present(cs2_point)) {
+            cs2__4 = AC_gamma__mod__equationofstate * AC_gamma_m1__mod__equationofstate * eth_4/ rho_4
+          }
+        }
+        else {
+        }
+        if (present(cs2_point)) {
+          cs2_point=cs2__4
+        }
+      }
+      dlnrhodz = AC_gamma__mod__equationofstate * AC_gravz__mod__gravity/cs2_point
+      LNRHO[vertexIdx.x][vertexIdx.y][AC_n1__mod__cparam-1-1] = LNRHO[vertexIdx.x][vertexIdx.y][1+AC_n1__mod__cparam-1] - AC_dz2_bound__mod__cdata[-1+AC_NGHOST__mod__cparam+1-1]*dlnrhodz
+      LNRHO[vertexIdx.x][vertexIdx.y][AC_n1__mod__cparam-2-1] = LNRHO[vertexIdx.x][vertexIdx.y][2+AC_n1__mod__cparam-1] - AC_dz2_bound__mod__cdata[-2+AC_NGHOST__mod__cparam+1-1]*dlnrhodz
+      LNRHO[vertexIdx.x][vertexIdx.y][AC_n1__mod__cparam-3-1] = LNRHO[vertexIdx.x][vertexIdx.y][3+AC_n1__mod__cparam-1] - AC_dz2_bound__mod__cdata[-3+AC_NGHOST__mod__cparam+1-1]*dlnrhodz
+    }
+    else {
+      potx_xpoint_5=0.0
+      poty_ypoint_5=0.0
+      potz_zpoint_5=0.0
+      if (false) {
+        if(AC_enum_gravx_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_linear_zdep_string__mod__cparam) {
+          zdep_5=(1.+AC_kappa_z1__mod__gravity*AC_z__mod__cdata[AC_n1__mod__cparam-1-1]+0.5*((AC_kappa_z1__mod__gravity*AC_z__mod__cdata[AC_n1__mod__cparam-1-1])*(AC_kappa_z1__mod__gravity*AC_z__mod__cdata[AC_n1__mod__cparam-1-1])))
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_kepler_string__mod__cparam) {
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_czbot1_string__mod__cparam) {
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_czmid1_string__mod__cparam) {
+        }
+        else {
+        }
+      }
+      if (false) {
+        if(AC_enum_gravy_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        }
+        else if(AC_enum_gravy_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+        }
+        else {
+        }
+      }
+      if (present(AC_z__mod__cdata[AC_n1__mod__cparam-1-1])) {
+        if(AC_enum_gravz_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+          if (AC_zclip__mod__gravity==AC_impossible__mod__cparam) {
+            potz_zpoint_5=-AC_gravz__mod__gravity*(AC_z__mod__cdata[AC_n1__mod__cparam-1-1]-AC_zinfty__mod__gravity)
+          }
+          else {
+            potz_zpoint_5=-AC_gravz__mod__gravity*max(AC_z__mod__cdata[AC_n1__mod__cparam-1-1]-AC_zinfty__mod__gravity,AC_zclip__mod__gravity-AC_zinfty__mod__gravity)
+          }
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_linear_string__mod__cparam) {
+          potz_zpoint_5=0.5*((AC_z__mod__cdata[AC_n1__mod__cparam-1-1]*AC_z__mod__cdata[AC_n1__mod__cparam-1-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_spherical_string__mod__cparam) {
+          potz_zpoint_5=0.5*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*(AC_z1__mod__gravity*AC_z1__mod__gravity)*log(1.0+((AC_z__mod__cdata[AC_n1__mod__cparam-1-1]/AC_z1__mod__gravity)*(AC_z__mod__cdata[AC_n1__mod__cparam-1-1]/AC_z1__mod__gravity)))
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_linear_xdep_string__mod__cparam) {
+          potz_zpoint_5=0.5*((AC_z__mod__cdata[AC_n1__mod__cparam-1-1]*AC_z__mod__cdata[AC_n1__mod__cparam-1-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*xdep_5
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_linear_smoothed_string__mod__cparam) {
+          prof_5 = 1. +pow( (AC_z__mod__cdata[AC_n1__mod__cparam-1-1]/AC_zref__mod__gravity),(2*AC_n_pot__mod__gravity))
+          potz_zpoint_5 = 0.5*((AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[AC_n1__mod__cparam-1-1])*(AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[AC_n1__mod__cparam-1-1]))/pow(prof_5,(1./AC_n_pot__mod__gravity))
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_tanh_string__mod__cparam) {
+          potz_zpoint_5=AC_gravz__mod__gravity*AC_zref__mod__gravity*log(cosh(AC_z__mod__cdata[AC_n1__mod__cparam-1-1]/AC_zref__mod__gravity))
+        }
+        else {
+        }
+      }
+      potm = potx_xpoint_5 + poty_ypoint_5 + potz_zpoint_5
+      potx_xpoint_6=0.0
+      poty_ypoint_6=0.0
+      potz_zpoint_6=0.0
+      if (false) {
+        if(AC_enum_gravx_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_linear_zdep_string__mod__cparam) {
+          zdep_6=(1.+AC_kappa_z1__mod__gravity*AC_z__mod__cdata[1+AC_n1__mod__cparam-1]+0.5*((AC_kappa_z1__mod__gravity*AC_z__mod__cdata[1+AC_n1__mod__cparam-1])*(AC_kappa_z1__mod__gravity*AC_z__mod__cdata[1+AC_n1__mod__cparam-1])))
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_kepler_string__mod__cparam) {
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_czbot1_string__mod__cparam) {
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_czmid1_string__mod__cparam) {
+        }
+        else {
+        }
+      }
+      if (false) {
+        if(AC_enum_gravy_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        }
+        else if(AC_enum_gravy_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+        }
+        else {
+        }
+      }
+      if (present(AC_z__mod__cdata[1+AC_n1__mod__cparam-1])) {
+        if(AC_enum_gravz_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+          if (AC_zclip__mod__gravity==AC_impossible__mod__cparam) {
+            potz_zpoint_6=-AC_gravz__mod__gravity*(AC_z__mod__cdata[1+AC_n1__mod__cparam-1]-AC_zinfty__mod__gravity)
+          }
+          else {
+            potz_zpoint_6=-AC_gravz__mod__gravity*max(AC_z__mod__cdata[1+AC_n1__mod__cparam-1]-AC_zinfty__mod__gravity,AC_zclip__mod__gravity-AC_zinfty__mod__gravity)
+          }
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_linear_string__mod__cparam) {
+          potz_zpoint_6=0.5*((AC_z__mod__cdata[1+AC_n1__mod__cparam-1]*AC_z__mod__cdata[1+AC_n1__mod__cparam-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_spherical_string__mod__cparam) {
+          potz_zpoint_6=0.5*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*(AC_z1__mod__gravity*AC_z1__mod__gravity)*log(1.0+((AC_z__mod__cdata[1+AC_n1__mod__cparam-1]/AC_z1__mod__gravity)*(AC_z__mod__cdata[1+AC_n1__mod__cparam-1]/AC_z1__mod__gravity)))
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_linear_xdep_string__mod__cparam) {
+          potz_zpoint_6=0.5*((AC_z__mod__cdata[1+AC_n1__mod__cparam-1]*AC_z__mod__cdata[1+AC_n1__mod__cparam-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*xdep_6
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_linear_smoothed_string__mod__cparam) {
+          prof_6 = 1. +pow( (AC_z__mod__cdata[1+AC_n1__mod__cparam-1]/AC_zref__mod__gravity),(2*AC_n_pot__mod__gravity))
+          potz_zpoint_6 = 0.5*((AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[1+AC_n1__mod__cparam-1])*(AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[1+AC_n1__mod__cparam-1]))/pow(prof_6,(1./AC_n_pot__mod__gravity))
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_tanh_string__mod__cparam) {
+          potz_zpoint_6=AC_gravz__mod__gravity*AC_zref__mod__gravity*log(cosh(AC_z__mod__cdata[1+AC_n1__mod__cparam-1]/AC_zref__mod__gravity))
+        }
+        else {
+        }
+      }
+      potp = potx_xpoint_6 + poty_ypoint_6 + potz_zpoint_6
+      cs2 = AC_cs2bot__mod__equationofstate
+      if (AC_ldensity_nolog__mod__cdata) {
+        RHO[vertexIdx.x][vertexIdx.y][AC_n1__mod__cparam-1-1]   = RHO[vertexIdx.x][vertexIdx.y][1+AC_n1__mod__cparam-1]*exp(-(potm-potp)/cs2)
+      }
+      else {
+        LNRHO[vertexIdx.x][vertexIdx.y][AC_n1__mod__cparam-1-1] = LNRHO[vertexIdx.x][vertexIdx.y][1+AC_n1__mod__cparam-1] - (potm-potp)/cs2
+      }
+      potx_xpoint_5=0.0
+      poty_ypoint_5=0.0
+      potz_zpoint_5=0.0
+      if (false) {
+        if(AC_enum_gravx_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_linear_zdep_string__mod__cparam) {
+          zdep_5=(1.+AC_kappa_z1__mod__gravity*AC_z__mod__cdata[AC_n1__mod__cparam-2-1]+0.5*((AC_kappa_z1__mod__gravity*AC_z__mod__cdata[AC_n1__mod__cparam-2-1])*(AC_kappa_z1__mod__gravity*AC_z__mod__cdata[AC_n1__mod__cparam-2-1])))
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_kepler_string__mod__cparam) {
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_czbot1_string__mod__cparam) {
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_czmid1_string__mod__cparam) {
+        }
+        else {
+        }
+      }
+      if (false) {
+        if(AC_enum_gravy_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        }
+        else if(AC_enum_gravy_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+        }
+        else {
+        }
+      }
+      if (present(AC_z__mod__cdata[AC_n1__mod__cparam-2-1])) {
+        if(AC_enum_gravz_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+          if (AC_zclip__mod__gravity==AC_impossible__mod__cparam) {
+            potz_zpoint_5=-AC_gravz__mod__gravity*(AC_z__mod__cdata[AC_n1__mod__cparam-2-1]-AC_zinfty__mod__gravity)
+          }
+          else {
+            potz_zpoint_5=-AC_gravz__mod__gravity*max(AC_z__mod__cdata[AC_n1__mod__cparam-2-1]-AC_zinfty__mod__gravity,AC_zclip__mod__gravity-AC_zinfty__mod__gravity)
+          }
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_linear_string__mod__cparam) {
+          potz_zpoint_5=0.5*((AC_z__mod__cdata[AC_n1__mod__cparam-2-1]*AC_z__mod__cdata[AC_n1__mod__cparam-2-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_spherical_string__mod__cparam) {
+          potz_zpoint_5=0.5*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*(AC_z1__mod__gravity*AC_z1__mod__gravity)*log(1.0+((AC_z__mod__cdata[AC_n1__mod__cparam-2-1]/AC_z1__mod__gravity)*(AC_z__mod__cdata[AC_n1__mod__cparam-2-1]/AC_z1__mod__gravity)))
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_linear_xdep_string__mod__cparam) {
+          potz_zpoint_5=0.5*((AC_z__mod__cdata[AC_n1__mod__cparam-2-1]*AC_z__mod__cdata[AC_n1__mod__cparam-2-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*xdep_5
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_linear_smoothed_string__mod__cparam) {
+          prof_5 = 1. +pow( (AC_z__mod__cdata[AC_n1__mod__cparam-2-1]/AC_zref__mod__gravity),(2*AC_n_pot__mod__gravity))
+          potz_zpoint_5 = 0.5*((AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[AC_n1__mod__cparam-2-1])*(AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[AC_n1__mod__cparam-2-1]))/pow(prof_5,(1./AC_n_pot__mod__gravity))
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_tanh_string__mod__cparam) {
+          potz_zpoint_5=AC_gravz__mod__gravity*AC_zref__mod__gravity*log(cosh(AC_z__mod__cdata[AC_n1__mod__cparam-2-1]/AC_zref__mod__gravity))
+        }
+        else {
+        }
+      }
+      potm = potx_xpoint_5 + poty_ypoint_5 + potz_zpoint_5
+      potx_xpoint_6=0.0
+      poty_ypoint_6=0.0
+      potz_zpoint_6=0.0
+      if (false) {
+        if(AC_enum_gravx_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_linear_zdep_string__mod__cparam) {
+          zdep_6=(1.+AC_kappa_z1__mod__gravity*AC_z__mod__cdata[2+AC_n1__mod__cparam-1]+0.5*((AC_kappa_z1__mod__gravity*AC_z__mod__cdata[2+AC_n1__mod__cparam-1])*(AC_kappa_z1__mod__gravity*AC_z__mod__cdata[2+AC_n1__mod__cparam-1])))
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_kepler_string__mod__cparam) {
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_czbot1_string__mod__cparam) {
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_czmid1_string__mod__cparam) {
+        }
+        else {
+        }
+      }
+      if (false) {
+        if(AC_enum_gravy_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        }
+        else if(AC_enum_gravy_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+        }
+        else {
+        }
+      }
+      if (present(AC_z__mod__cdata[2+AC_n1__mod__cparam-1])) {
+        if(AC_enum_gravz_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+          if (AC_zclip__mod__gravity==AC_impossible__mod__cparam) {
+            potz_zpoint_6=-AC_gravz__mod__gravity*(AC_z__mod__cdata[2+AC_n1__mod__cparam-1]-AC_zinfty__mod__gravity)
+          }
+          else {
+            potz_zpoint_6=-AC_gravz__mod__gravity*max(AC_z__mod__cdata[2+AC_n1__mod__cparam-1]-AC_zinfty__mod__gravity,AC_zclip__mod__gravity-AC_zinfty__mod__gravity)
+          }
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_linear_string__mod__cparam) {
+          potz_zpoint_6=0.5*((AC_z__mod__cdata[2+AC_n1__mod__cparam-1]*AC_z__mod__cdata[2+AC_n1__mod__cparam-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_spherical_string__mod__cparam) {
+          potz_zpoint_6=0.5*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*(AC_z1__mod__gravity*AC_z1__mod__gravity)*log(1.0+((AC_z__mod__cdata[2+AC_n1__mod__cparam-1]/AC_z1__mod__gravity)*(AC_z__mod__cdata[2+AC_n1__mod__cparam-1]/AC_z1__mod__gravity)))
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_linear_xdep_string__mod__cparam) {
+          potz_zpoint_6=0.5*((AC_z__mod__cdata[2+AC_n1__mod__cparam-1]*AC_z__mod__cdata[2+AC_n1__mod__cparam-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*xdep_6
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_linear_smoothed_string__mod__cparam) {
+          prof_6 = 1. +pow( (AC_z__mod__cdata[2+AC_n1__mod__cparam-1]/AC_zref__mod__gravity),(2*AC_n_pot__mod__gravity))
+          potz_zpoint_6 = 0.5*((AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[2+AC_n1__mod__cparam-1])*(AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[2+AC_n1__mod__cparam-1]))/pow(prof_6,(1./AC_n_pot__mod__gravity))
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_tanh_string__mod__cparam) {
+          potz_zpoint_6=AC_gravz__mod__gravity*AC_zref__mod__gravity*log(cosh(AC_z__mod__cdata[2+AC_n1__mod__cparam-1]/AC_zref__mod__gravity))
+        }
+        else {
+        }
+      }
+      potp = potx_xpoint_6 + poty_ypoint_6 + potz_zpoint_6
+      cs2 = AC_cs2bot__mod__equationofstate
+      if (AC_ldensity_nolog__mod__cdata) {
+        RHO[vertexIdx.x][vertexIdx.y][AC_n1__mod__cparam-2-1]   = RHO[vertexIdx.x][vertexIdx.y][2+AC_n1__mod__cparam-1]*exp(-(potm-potp)/cs2)
+      }
+      else {
+        LNRHO[vertexIdx.x][vertexIdx.y][AC_n1__mod__cparam-2-1] = LNRHO[vertexIdx.x][vertexIdx.y][2+AC_n1__mod__cparam-1] - (potm-potp)/cs2
+      }
+      potx_xpoint_5=0.0
+      poty_ypoint_5=0.0
+      potz_zpoint_5=0.0
+      if (false) {
+        if(AC_enum_gravx_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_linear_zdep_string__mod__cparam) {
+          zdep_5=(1.+AC_kappa_z1__mod__gravity*AC_z__mod__cdata[AC_n1__mod__cparam-3-1]+0.5*((AC_kappa_z1__mod__gravity*AC_z__mod__cdata[AC_n1__mod__cparam-3-1])*(AC_kappa_z1__mod__gravity*AC_z__mod__cdata[AC_n1__mod__cparam-3-1])))
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_kepler_string__mod__cparam) {
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_czbot1_string__mod__cparam) {
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_czmid1_string__mod__cparam) {
+        }
+        else {
+        }
+      }
+      if (false) {
+        if(AC_enum_gravy_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        }
+        else if(AC_enum_gravy_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+        }
+        else {
+        }
+      }
+      if (present(AC_z__mod__cdata[AC_n1__mod__cparam-3-1])) {
+        if(AC_enum_gravz_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+          if (AC_zclip__mod__gravity==AC_impossible__mod__cparam) {
+            potz_zpoint_5=-AC_gravz__mod__gravity*(AC_z__mod__cdata[AC_n1__mod__cparam-3-1]-AC_zinfty__mod__gravity)
+          }
+          else {
+            potz_zpoint_5=-AC_gravz__mod__gravity*max(AC_z__mod__cdata[AC_n1__mod__cparam-3-1]-AC_zinfty__mod__gravity,AC_zclip__mod__gravity-AC_zinfty__mod__gravity)
+          }
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_linear_string__mod__cparam) {
+          potz_zpoint_5=0.5*((AC_z__mod__cdata[AC_n1__mod__cparam-3-1]*AC_z__mod__cdata[AC_n1__mod__cparam-3-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_spherical_string__mod__cparam) {
+          potz_zpoint_5=0.5*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*(AC_z1__mod__gravity*AC_z1__mod__gravity)*log(1.0+((AC_z__mod__cdata[AC_n1__mod__cparam-3-1]/AC_z1__mod__gravity)*(AC_z__mod__cdata[AC_n1__mod__cparam-3-1]/AC_z1__mod__gravity)))
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_linear_xdep_string__mod__cparam) {
+          potz_zpoint_5=0.5*((AC_z__mod__cdata[AC_n1__mod__cparam-3-1]*AC_z__mod__cdata[AC_n1__mod__cparam-3-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*xdep_5
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_linear_smoothed_string__mod__cparam) {
+          prof_5 = 1. +pow( (AC_z__mod__cdata[AC_n1__mod__cparam-3-1]/AC_zref__mod__gravity),(2*AC_n_pot__mod__gravity))
+          potz_zpoint_5 = 0.5*((AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[AC_n1__mod__cparam-3-1])*(AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[AC_n1__mod__cparam-3-1]))/pow(prof_5,(1./AC_n_pot__mod__gravity))
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_tanh_string__mod__cparam) {
+          potz_zpoint_5=AC_gravz__mod__gravity*AC_zref__mod__gravity*log(cosh(AC_z__mod__cdata[AC_n1__mod__cparam-3-1]/AC_zref__mod__gravity))
+        }
+        else {
+        }
+      }
+      potm = potx_xpoint_5 + poty_ypoint_5 + potz_zpoint_5
+      potx_xpoint_6=0.0
+      poty_ypoint_6=0.0
+      potz_zpoint_6=0.0
+      if (false) {
+        if(AC_enum_gravx_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_linear_zdep_string__mod__cparam) {
+          zdep_6=(1.+AC_kappa_z1__mod__gravity*AC_z__mod__cdata[3+AC_n1__mod__cparam-1]+0.5*((AC_kappa_z1__mod__gravity*AC_z__mod__cdata[3+AC_n1__mod__cparam-1])*(AC_kappa_z1__mod__gravity*AC_z__mod__cdata[3+AC_n1__mod__cparam-1])))
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_kepler_string__mod__cparam) {
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_czbot1_string__mod__cparam) {
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_czmid1_string__mod__cparam) {
+        }
+        else {
+        }
+      }
+      if (false) {
+        if(AC_enum_gravy_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        }
+        else if(AC_enum_gravy_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+        }
+        else {
+        }
+      }
+      if (present(AC_z__mod__cdata[3+AC_n1__mod__cparam-1])) {
+        if(AC_enum_gravz_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+          if (AC_zclip__mod__gravity==AC_impossible__mod__cparam) {
+            potz_zpoint_6=-AC_gravz__mod__gravity*(AC_z__mod__cdata[3+AC_n1__mod__cparam-1]-AC_zinfty__mod__gravity)
+          }
+          else {
+            potz_zpoint_6=-AC_gravz__mod__gravity*max(AC_z__mod__cdata[3+AC_n1__mod__cparam-1]-AC_zinfty__mod__gravity,AC_zclip__mod__gravity-AC_zinfty__mod__gravity)
+          }
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_linear_string__mod__cparam) {
+          potz_zpoint_6=0.5*((AC_z__mod__cdata[3+AC_n1__mod__cparam-1]*AC_z__mod__cdata[3+AC_n1__mod__cparam-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_spherical_string__mod__cparam) {
+          potz_zpoint_6=0.5*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*(AC_z1__mod__gravity*AC_z1__mod__gravity)*log(1.0+((AC_z__mod__cdata[3+AC_n1__mod__cparam-1]/AC_z1__mod__gravity)*(AC_z__mod__cdata[3+AC_n1__mod__cparam-1]/AC_z1__mod__gravity)))
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_linear_xdep_string__mod__cparam) {
+          potz_zpoint_6=0.5*((AC_z__mod__cdata[3+AC_n1__mod__cparam-1]*AC_z__mod__cdata[3+AC_n1__mod__cparam-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*xdep_6
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_linear_smoothed_string__mod__cparam) {
+          prof_6 = 1. +pow( (AC_z__mod__cdata[3+AC_n1__mod__cparam-1]/AC_zref__mod__gravity),(2*AC_n_pot__mod__gravity))
+          potz_zpoint_6 = 0.5*((AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[3+AC_n1__mod__cparam-1])*(AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[3+AC_n1__mod__cparam-1]))/pow(prof_6,(1./AC_n_pot__mod__gravity))
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_tanh_string__mod__cparam) {
+          potz_zpoint_6=AC_gravz__mod__gravity*AC_zref__mod__gravity*log(cosh(AC_z__mod__cdata[3+AC_n1__mod__cparam-1]/AC_zref__mod__gravity))
+        }
+        else {
+        }
+      }
+      potp = potx_xpoint_6 + poty_ypoint_6 + potz_zpoint_6
+      cs2 = AC_cs2bot__mod__equationofstate
+      if (AC_ldensity_nolog__mod__cdata) {
+        RHO[vertexIdx.x][vertexIdx.y][AC_n1__mod__cparam-3-1]   = RHO[vertexIdx.x][vertexIdx.y][3+AC_n1__mod__cparam-1]*exp(-(potm-potp)/cs2)
+      }
+      else {
+        LNRHO[vertexIdx.x][vertexIdx.y][AC_n1__mod__cparam-3-1] = LNRHO[vertexIdx.x][vertexIdx.y][3+AC_n1__mod__cparam-1] - (potm-potp)/cs2
+      }
+    }
+  }
+
+  else if(topbot == AC_top) {
+    if (AC_lentropy__mod__cparam) {
+      if (AC_ldensity__mod__cparam) {
+        if (AC_ldensity_nolog__mod__cdata) {
+          if (AC_lreference_state__mod__cdata) {
+            getrho_s_return_value_7=LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]+AC_reference_state__mod__density[nx-1][AC_iref_rho__mod__cparam-1]
+          }
+          else {
+            getrho_s_return_value_7=LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+          }
+        }
+        else {
+          getrho_s_return_value_7=exp(LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
+        }
+        rho=getrho_s_return_value_7
+        ss=SS[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+        if (AC_lreference_state__mod__cdata) {
+          ss=ss+AC_reference_state__mod__density[AC_xtop__mod__equationofstate-1][AC_iref_s__mod__cparam-1]
+        }
+        if(AC_irho_ss__mod__equationofstate == AC_ilnrho_ss__mod__equationofstate || AC_irho_ss__mod__equationofstate == AC_irho_ss__mod__equationofstate) {
+          if (AC_lstratz__mod__cdata) {
+          }
+          else if (AC_irho_ss__mod__equationofstate == AC_ilnrho_ss__mod__equationofstate)  {
+            lnrho__8 = rho
+          }
+          else {
+            lnrho__8 = log(rho)
+          }
+          ss__8=ss
+          lntt__8=AC_lntt0__mod__equationofstate+AC_cv1__mod__equationofstate*ss__8+AC_gamma_m1__mod__equationofstate*(lnrho__8-AC_lnrho0__mod__equationofstate)
+          ee__8=AC_cv__mod__equationofstate*exp(lntt__8)
+          pp__8=(AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*exp(lntt__8+lnrho__8)
+          cs2__8=AC_gamma__mod__equationofstate*AC_gamma_m1__mod__equationofstate*ee__8
+        }
+        else if(AC_irho_ss__mod__equationofstate == AC_ilnrho_ee__mod__equationofstate || AC_irho_ss__mod__equationofstate == AC_irho_ee__mod__equationofstate) {
+          ee__8=ss
+          if (AC_irho_ss__mod__equationofstate==AC_ilnrho_ee__mod__equationofstate) {
+            lnrho__8=rho
+            pp__8=AC_gamma_m1__mod__equationofstate*ee__8*exp(rho)
+          }
+          else {
+            lnrho__8=log(rho)
+            pp__8=AC_gamma_m1__mod__equationofstate*ee__8*rho
+          }
+          lntt__8=log(AC_cv1__mod__equationofstate*ee__8)
+          ss__8=AC_cv__mod__equationofstate*(lntt__8-AC_lntt0__mod__equationofstate-AC_gamma_m1__mod__equationofstate*(lnrho__8-AC_lnrho0__mod__equationofstate))
+          cs2__8=AC_gamma__mod__equationofstate*AC_gamma_m1__mod__equationofstate*ee__8
+        }
+        else if(AC_irho_ss__mod__equationofstate == AC_ilnrho_pp__mod__equationofstate || AC_irho_ss__mod__equationofstate == AC_irho_pp__mod__equationofstate) {
+          pp__8=ss
+          if (AC_irho_ss__mod__equationofstate==AC_ilnrho_pp__mod__equationofstate) {
+            lnrho__8=rho
+            ee__8=pp__8*exp(-lnrho__8)/AC_gamma_m1__mod__equationofstate
+            ss__8=AC_cv__mod__equationofstate*(log(pp__8*exp(-lnrho__8)*AC_gamma__mod__equationofstate/AC_cs20__mod__equationofstate)-AC_gamma_m1__mod__equationofstate*(lnrho__8-AC_lnrho0__mod__equationofstate))
+          }
+          else {
+            lnrho__8=log(rho)
+            ee__8=pp__8/rho/AC_gamma_m1__mod__equationofstate
+            ss__8=AC_cv__mod__equationofstate*(log(pp__8/rho*AC_gamma__mod__equationofstate/AC_cs20__mod__equationofstate)-AC_gamma_m1__mod__equationofstate*(lnrho__8-AC_lnrho0__mod__equationofstate))
+          }
+          lntt__8=log(AC_cv1__mod__equationofstate*ee__8)
+          cs2__8=AC_gamma__mod__equationofstate*AC_gamma_m1__mod__equationofstate*ee__8
+        }
+        else if(AC_irho_ss__mod__equationofstate == AC_ilnrho_lntt__mod__equationofstate) {
+          lnrho__8=rho
+          lntt__8=ss
+          ss__8=AC_cv__mod__equationofstate*(lntt__8-AC_lntt0__mod__equationofstate-AC_gamma_m1__mod__equationofstate*(lnrho__8-AC_lnrho0__mod__equationofstate))
+          ee__8=AC_cv__mod__equationofstate*exp(lntt__8)
+          pp__8=ee__8*exp(lnrho__8)*AC_gamma_m1__mod__equationofstate
+          cs2__8=AC_gamma__mod__equationofstate*AC_gamma_m1__mod__equationofstate*ee__8
+        }
+        else if(AC_irho_ss__mod__equationofstate == AC_ilnrho_tt__mod__equationofstate) {
+          lnrho__8=rho
+          tt__8=ss
+          ss__8=AC_cv__mod__equationofstate*(log(tt__8)-AC_lntt0__mod__equationofstate-AC_gamma_m1__mod__equationofstate*(lnrho__8-AC_lnrho0__mod__equationofstate))
+          ee__8=AC_cv__mod__equationofstate*tt__8
+          pp__8=ee__8*exp(lnrho__8)*AC_gamma_m1__mod__equationofstate
+          cs2__8=AC_cp__mod__equationofstate*AC_gamma_m1__mod__equationofstate*tt__8
+        }
+        else if(AC_irho_ss__mod__equationofstate == AC_irho_tt__mod__equationofstate) {
+          lnrho__8=log(rho)
+          tt__8=ss
+          ss__8=AC_cv__mod__equationofstate*(log(tt__8)-AC_lntt0__mod__equationofstate-AC_gamma_m1__mod__equationofstate*(lnrho__8-AC_lnrho0__mod__equationofstate))
+          ee__8=AC_cv__mod__equationofstate*tt__8
+          pp__8=ee__8*rho*AC_gamma_m1__mod__equationofstate
+          cs2__8=AC_cp__mod__equationofstate*AC_gamma_m1__mod__equationofstate*tt__8
+        }
+        else if(AC_irho_ss__mod__equationofstate == AC_ipp_cs2__mod__equationofstate) {
+          if (AC_lanelastic__mod__cparam) {
+            if (AC_lanelastic_lin__mod__equationofstate) {
+              lnrho__8=log(rho)
+              tt__8=exp(AC_lntt0__mod__equationofstate)
+              pp__8=exp(lnrho__8)*AC_cs20__mod__equationofstate/AC_gamma__mod__equationofstate
+            }
+            else {
+              if (AC_leos_isothermal__mod__equationofstate) {
+                pp__8=rho
+                lnrho__8=log(pp__8*AC_cs20__mod__equationofstate)
+                tt__8=exp(AC_lntt0__mod__equationofstate)
+              }
+            }
+          }
+        }
+        else if(AC_irho_ss__mod__equationofstate == AC_ipp_ss__mod__equationofstate) {
+          if (AC_lanelastic__mod__cparam) {
+            if (AC_lanelastic_lin__mod__equationofstate) {
+              lnrho__8=(rho)
+              ss__8=ss
+              cs2__8=exp(AC_gamma__mod__equationofstate*ss__8*AC_cp1__mod__equationofstate+AC_gamma_m1__mod__equationofstate*(lnrho__8-AC_lnrho0__mod__equationofstate))*AC_cs20__mod__equationofstate
+              tt__8=cs2__8/(AC_gamma_m1__mod__equationofstate*AC_cp__mod__equationofstate)
+            }
+            else {
+              pp__8=rho
+              ss__8=ss
+              cs2__8=exp(ss__8*AC_cp1__mod__equationofstate+AC_gamma1__mod__equationofstate*AC_gamma_m1__mod__equationofstate*log(pp__8/AC_pp0__mod__equationofstate))*AC_cs20__mod__equationofstate
+              tt__8=cs2__8/(AC_gamma_m1__mod__equationofstate*AC_cp__mod__equationofstate)
+              lnrho__8=log(AC_gamma__mod__equationofstate*pp__8/cs2__8)
+            }
+          }
+        }
+        else if(AC_irho_ss__mod__equationofstate == AC_irho_eth__mod__equationofstate || AC_irho_ss__mod__equationofstate == AC_ilnrho_eth__mod__equationofstate) {
+          if (AC_lstratz__mod__cdata) {
+          }
+          else {
+            if (AC_ldensity_nolog__mod__cdata) {
+              rho_8 = rho
+              if (false) {
+                lnrho__8 = log(rho)
+              }
+            }
+            else {
+              rho_8 = exp(rho)
+              if (false) {
+                lnrho__8 = rho
+              }
+            }
+            eth_8 = ss
+          }
+          if (false) {
+            lntt__8 = log(AC_cv1__mod__equationofstate * eth_8/ rho_8)
+          }
+          if (false) {
+            ee__8 = eth_8/ rho_8
+          }
+          if (false) {
+            pp__8 = AC_gamma_m1__mod__equationofstate * eth_8
+          }
+          if (present(cs2_point)) {
+            cs2__8 = AC_gamma__mod__equationofstate * AC_gamma_m1__mod__equationofstate * eth_8/ rho_8
+          }
+        }
+        else {
+        }
+        if (present(cs2_point)) {
+          cs2_point=cs2__8
+        }
+        dlnrhodz = AC_gamma__mod__equationofstate *AC_gravz__mod__gravity/cs2_point
+        if (AC_ldensity_nolog__mod__cdata) {
+          dlnrhodz=dlnrhodz*rho
+        }
+        dssdz    = -AC_gamma_m1__mod__equationofstate*AC_gravz__mod__gravity/cs2_point
+        LNRHO[vertexIdx.x][vertexIdx.y][1+AC_n2__mod__cdata-1] = LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1-1] + AC_dz2_bound__mod__cdata[2+AC_NGHOST__mod__cparam-1]*dlnrhodz
+        SS[vertexIdx.x][vertexIdx.y][1+AC_n2__mod__cdata-1] = SS[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1-1] + AC_dz2_bound__mod__cdata[2+AC_NGHOST__mod__cparam-1]*dssdz
+        LNRHO[vertexIdx.x][vertexIdx.y][2+AC_n2__mod__cdata-1] = LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-2-1] + AC_dz2_bound__mod__cdata[3+AC_NGHOST__mod__cparam-1]*dlnrhodz
+        SS[vertexIdx.x][vertexIdx.y][2+AC_n2__mod__cdata-1] = SS[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-2-1] + AC_dz2_bound__mod__cdata[3+AC_NGHOST__mod__cparam-1]*dssdz
+        LNRHO[vertexIdx.x][vertexIdx.y][3+AC_n2__mod__cdata-1] = LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-3-1] + AC_dz2_bound__mod__cdata[4+AC_NGHOST__mod__cparam-1]*dlnrhodz
+        SS[vertexIdx.x][vertexIdx.y][3+AC_n2__mod__cdata-1] = SS[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-3-1] + AC_dz2_bound__mod__cdata[4+AC_NGHOST__mod__cparam-1]*dssdz
+      }
+      else {
+      }
+    }
+    else if (AC_ltemperature__mod__cparam) {
+      if (AC_ltemperature_nolog__mod__cdata) {
+        if(AC_ilnrho_tt__mod__equationofstate == AC_ilnrho_ss__mod__equationofstate || AC_ilnrho_tt__mod__equationofstate == AC_irho_ss__mod__equationofstate) {
+          if (AC_lstratz__mod__cdata) {
+          }
+          else if (AC_ilnrho_tt__mod__equationofstate == AC_ilnrho_ss__mod__equationofstate)  {
+            lnrho__9 = LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+          }
+          else {
+            lnrho__9 = log(LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
+          }
+          ss__9=TT[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+          lntt__9=AC_lntt0__mod__equationofstate+AC_cv1__mod__equationofstate*ss__9+AC_gamma_m1__mod__equationofstate*(lnrho__9-AC_lnrho0__mod__equationofstate)
+          ee__9=AC_cv__mod__equationofstate*exp(lntt__9)
+          pp__9=(AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*exp(lntt__9+lnrho__9)
+          cs2__9=AC_gamma__mod__equationofstate*AC_gamma_m1__mod__equationofstate*ee__9
+        }
+        else if(AC_ilnrho_tt__mod__equationofstate == AC_ilnrho_ee__mod__equationofstate || AC_ilnrho_tt__mod__equationofstate == AC_irho_ee__mod__equationofstate) {
+          ee__9=TT[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+          if (AC_ilnrho_tt__mod__equationofstate==AC_ilnrho_ee__mod__equationofstate) {
+            lnrho__9=LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+            pp__9=AC_gamma_m1__mod__equationofstate*ee__9*exp(LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
+          }
+          else {
+            lnrho__9=log(LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
+            pp__9=AC_gamma_m1__mod__equationofstate*ee__9*LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+          }
+          lntt__9=log(AC_cv1__mod__equationofstate*ee__9)
+          ss__9=AC_cv__mod__equationofstate*(lntt__9-AC_lntt0__mod__equationofstate-AC_gamma_m1__mod__equationofstate*(lnrho__9-AC_lnrho0__mod__equationofstate))
+          cs2__9=AC_gamma__mod__equationofstate*AC_gamma_m1__mod__equationofstate*ee__9
+        }
+        else if(AC_ilnrho_tt__mod__equationofstate == AC_ilnrho_pp__mod__equationofstate || AC_ilnrho_tt__mod__equationofstate == AC_irho_pp__mod__equationofstate) {
+          pp__9=TT[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+          if (AC_ilnrho_tt__mod__equationofstate==AC_ilnrho_pp__mod__equationofstate) {
+            lnrho__9=LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+            ee__9=pp__9*exp(-lnrho__9)/AC_gamma_m1__mod__equationofstate
+            ss__9=AC_cv__mod__equationofstate*(log(pp__9*exp(-lnrho__9)*AC_gamma__mod__equationofstate/AC_cs20__mod__equationofstate)-AC_gamma_m1__mod__equationofstate*(lnrho__9-AC_lnrho0__mod__equationofstate))
+          }
+          else {
+            lnrho__9=log(LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
+            ee__9=pp__9/LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]/AC_gamma_m1__mod__equationofstate
+            ss__9=AC_cv__mod__equationofstate*(log(pp__9/LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]*AC_gamma__mod__equationofstate/AC_cs20__mod__equationofstate)-AC_gamma_m1__mod__equationofstate*(lnrho__9-AC_lnrho0__mod__equationofstate))
+          }
+          lntt__9=log(AC_cv1__mod__equationofstate*ee__9)
+          cs2__9=AC_gamma__mod__equationofstate*AC_gamma_m1__mod__equationofstate*ee__9
+        }
+        else if(AC_ilnrho_tt__mod__equationofstate == AC_ilnrho_lntt__mod__equationofstate) {
+          lnrho__9=LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+          lntt__9=TT[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+          ss__9=AC_cv__mod__equationofstate*(lntt__9-AC_lntt0__mod__equationofstate-AC_gamma_m1__mod__equationofstate*(lnrho__9-AC_lnrho0__mod__equationofstate))
+          ee__9=AC_cv__mod__equationofstate*exp(lntt__9)
+          pp__9=ee__9*exp(lnrho__9)*AC_gamma_m1__mod__equationofstate
+          cs2__9=AC_gamma__mod__equationofstate*AC_gamma_m1__mod__equationofstate*ee__9
+        }
+        else if(AC_ilnrho_tt__mod__equationofstate == AC_ilnrho_tt__mod__equationofstate) {
+          lnrho__9=LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+          tt__9=TT[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+          ss__9=AC_cv__mod__equationofstate*(log(tt__9)-AC_lntt0__mod__equationofstate-AC_gamma_m1__mod__equationofstate*(lnrho__9-AC_lnrho0__mod__equationofstate))
+          ee__9=AC_cv__mod__equationofstate*tt__9
+          pp__9=ee__9*exp(lnrho__9)*AC_gamma_m1__mod__equationofstate
+          cs2__9=AC_cp__mod__equationofstate*AC_gamma_m1__mod__equationofstate*tt__9
+        }
+        else if(AC_ilnrho_tt__mod__equationofstate == AC_irho_tt__mod__equationofstate) {
+          lnrho__9=log(LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
+          tt__9=TT[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+          ss__9=AC_cv__mod__equationofstate*(log(tt__9)-AC_lntt0__mod__equationofstate-AC_gamma_m1__mod__equationofstate*(lnrho__9-AC_lnrho0__mod__equationofstate))
+          ee__9=AC_cv__mod__equationofstate*tt__9
+          pp__9=ee__9*LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]*AC_gamma_m1__mod__equationofstate
+          cs2__9=AC_cp__mod__equationofstate*AC_gamma_m1__mod__equationofstate*tt__9
+        }
+        else if(AC_ilnrho_tt__mod__equationofstate == AC_ipp_cs2__mod__equationofstate) {
+          if (AC_lanelastic__mod__cparam) {
+            if (AC_lanelastic_lin__mod__equationofstate) {
+              lnrho__9=log(LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
+              tt__9=exp(AC_lntt0__mod__equationofstate)
+              pp__9=exp(lnrho__9)*AC_cs20__mod__equationofstate/AC_gamma__mod__equationofstate
+            }
+            else {
+              if (AC_leos_isothermal__mod__equationofstate) {
+                pp__9=LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+                lnrho__9=log(pp__9*AC_cs20__mod__equationofstate)
+                tt__9=exp(AC_lntt0__mod__equationofstate)
+              }
+            }
+          }
+        }
+        else if(AC_ilnrho_tt__mod__equationofstate == AC_ipp_ss__mod__equationofstate) {
+          if (AC_lanelastic__mod__cparam) {
+            if (AC_lanelastic_lin__mod__equationofstate) {
+              lnrho__9=(LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
+              ss__9=TT[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+              cs2__9=exp(AC_gamma__mod__equationofstate*ss__9*AC_cp1__mod__equationofstate+AC_gamma_m1__mod__equationofstate*(lnrho__9-AC_lnrho0__mod__equationofstate))*AC_cs20__mod__equationofstate
+              tt__9=cs2__9/(AC_gamma_m1__mod__equationofstate*AC_cp__mod__equationofstate)
+            }
+            else {
+              pp__9=LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+              ss__9=TT[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+              cs2__9=exp(ss__9*AC_cp1__mod__equationofstate+AC_gamma1__mod__equationofstate*AC_gamma_m1__mod__equationofstate*log(pp__9/AC_pp0__mod__equationofstate))*AC_cs20__mod__equationofstate
+              tt__9=cs2__9/(AC_gamma_m1__mod__equationofstate*AC_cp__mod__equationofstate)
+              lnrho__9=log(AC_gamma__mod__equationofstate*pp__9/cs2__9)
+            }
+          }
+        }
+        else if(AC_ilnrho_tt__mod__equationofstate == AC_irho_eth__mod__equationofstate || AC_ilnrho_tt__mod__equationofstate == AC_ilnrho_eth__mod__equationofstate) {
+          if (AC_lstratz__mod__cdata) {
+          }
+          else {
+            if (AC_ldensity_nolog__mod__cdata) {
+              rho_9 = LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+              if (false) {
+                lnrho__9 = log(LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
+              }
+            }
+            else {
+              rho_9 = exp(LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
+              if (false) {
+                lnrho__9 = LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+              }
+            }
+            eth_9 = TT[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+          }
+          if (false) {
+            lntt__9 = log(AC_cv1__mod__equationofstate * eth_9/ rho_9)
+          }
+          if (false) {
+            ee__9 = eth_9/ rho_9
+          }
+          if (false) {
+            pp__9 = AC_gamma_m1__mod__equationofstate * eth_9
+          }
+          if (present(cs2_point)) {
+            cs2__9 = AC_gamma__mod__equationofstate * AC_gamma_m1__mod__equationofstate * eth_9/ rho_9
+          }
+        }
+        else {
+        }
+        if (present(cs2_point)) {
+          cs2_point=cs2__9
+        }
+      }
+      else {
+        if(AC_ilnrho_lntt__mod__equationofstate == AC_ilnrho_ss__mod__equationofstate || AC_ilnrho_lntt__mod__equationofstate == AC_irho_ss__mod__equationofstate) {
+          if (AC_lstratz__mod__cdata) {
+          }
+          else if (AC_ilnrho_lntt__mod__equationofstate == AC_ilnrho_ss__mod__equationofstate)  {
+            lnrho__10 = LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+          }
+          else {
+            lnrho__10 = log(LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
+          }
+          ss__10=LNTT[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+          lntt__10=AC_lntt0__mod__equationofstate+AC_cv1__mod__equationofstate*ss__10+AC_gamma_m1__mod__equationofstate*(lnrho__10-AC_lnrho0__mod__equationofstate)
+          ee__10=AC_cv__mod__equationofstate*exp(lntt__10)
+          pp__10=(AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*exp(lntt__10+lnrho__10)
+          cs2__10=AC_gamma__mod__equationofstate*AC_gamma_m1__mod__equationofstate*ee__10
+        }
+        else if(AC_ilnrho_lntt__mod__equationofstate == AC_ilnrho_ee__mod__equationofstate || AC_ilnrho_lntt__mod__equationofstate == AC_irho_ee__mod__equationofstate) {
+          ee__10=LNTT[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+          if (AC_ilnrho_lntt__mod__equationofstate==AC_ilnrho_ee__mod__equationofstate) {
+            lnrho__10=LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+            pp__10=AC_gamma_m1__mod__equationofstate*ee__10*exp(LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
+          }
+          else {
+            lnrho__10=log(LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
+            pp__10=AC_gamma_m1__mod__equationofstate*ee__10*LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+          }
+          lntt__10=log(AC_cv1__mod__equationofstate*ee__10)
+          ss__10=AC_cv__mod__equationofstate*(lntt__10-AC_lntt0__mod__equationofstate-AC_gamma_m1__mod__equationofstate*(lnrho__10-AC_lnrho0__mod__equationofstate))
+          cs2__10=AC_gamma__mod__equationofstate*AC_gamma_m1__mod__equationofstate*ee__10
+        }
+        else if(AC_ilnrho_lntt__mod__equationofstate == AC_ilnrho_pp__mod__equationofstate || AC_ilnrho_lntt__mod__equationofstate == AC_irho_pp__mod__equationofstate) {
+          pp__10=LNTT[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+          if (AC_ilnrho_lntt__mod__equationofstate==AC_ilnrho_pp__mod__equationofstate) {
+            lnrho__10=LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+            ee__10=pp__10*exp(-lnrho__10)/AC_gamma_m1__mod__equationofstate
+            ss__10=AC_cv__mod__equationofstate*(log(pp__10*exp(-lnrho__10)*AC_gamma__mod__equationofstate/AC_cs20__mod__equationofstate)-AC_gamma_m1__mod__equationofstate*(lnrho__10-AC_lnrho0__mod__equationofstate))
+          }
+          else {
+            lnrho__10=log(LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
+            ee__10=pp__10/LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]/AC_gamma_m1__mod__equationofstate
+            ss__10=AC_cv__mod__equationofstate*(log(pp__10/LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]*AC_gamma__mod__equationofstate/AC_cs20__mod__equationofstate)-AC_gamma_m1__mod__equationofstate*(lnrho__10-AC_lnrho0__mod__equationofstate))
+          }
+          lntt__10=log(AC_cv1__mod__equationofstate*ee__10)
+          cs2__10=AC_gamma__mod__equationofstate*AC_gamma_m1__mod__equationofstate*ee__10
+        }
+        else if(AC_ilnrho_lntt__mod__equationofstate == AC_ilnrho_lntt__mod__equationofstate) {
+          lnrho__10=LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+          lntt__10=LNTT[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+          ss__10=AC_cv__mod__equationofstate*(lntt__10-AC_lntt0__mod__equationofstate-AC_gamma_m1__mod__equationofstate*(lnrho__10-AC_lnrho0__mod__equationofstate))
+          ee__10=AC_cv__mod__equationofstate*exp(lntt__10)
+          pp__10=ee__10*exp(lnrho__10)*AC_gamma_m1__mod__equationofstate
+          cs2__10=AC_gamma__mod__equationofstate*AC_gamma_m1__mod__equationofstate*ee__10
+        }
+        else if(AC_ilnrho_lntt__mod__equationofstate == AC_ilnrho_tt__mod__equationofstate) {
+          lnrho__10=LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+          tt__10=LNTT[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+          ss__10=AC_cv__mod__equationofstate*(log(tt__10)-AC_lntt0__mod__equationofstate-AC_gamma_m1__mod__equationofstate*(lnrho__10-AC_lnrho0__mod__equationofstate))
+          ee__10=AC_cv__mod__equationofstate*tt__10
+          pp__10=ee__10*exp(lnrho__10)*AC_gamma_m1__mod__equationofstate
+          cs2__10=AC_cp__mod__equationofstate*AC_gamma_m1__mod__equationofstate*tt__10
+        }
+        else if(AC_ilnrho_lntt__mod__equationofstate == AC_irho_tt__mod__equationofstate) {
+          lnrho__10=log(LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
+          tt__10=LNTT[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+          ss__10=AC_cv__mod__equationofstate*(log(tt__10)-AC_lntt0__mod__equationofstate-AC_gamma_m1__mod__equationofstate*(lnrho__10-AC_lnrho0__mod__equationofstate))
+          ee__10=AC_cv__mod__equationofstate*tt__10
+          pp__10=ee__10*LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]*AC_gamma_m1__mod__equationofstate
+          cs2__10=AC_cp__mod__equationofstate*AC_gamma_m1__mod__equationofstate*tt__10
+        }
+        else if(AC_ilnrho_lntt__mod__equationofstate == AC_ipp_cs2__mod__equationofstate) {
+          if (AC_lanelastic__mod__cparam) {
+            if (AC_lanelastic_lin__mod__equationofstate) {
+              lnrho__10=log(LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
+              tt__10=exp(AC_lntt0__mod__equationofstate)
+              pp__10=exp(lnrho__10)*AC_cs20__mod__equationofstate/AC_gamma__mod__equationofstate
+            }
+            else {
+              if (AC_leos_isothermal__mod__equationofstate) {
+                pp__10=LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+                lnrho__10=log(pp__10*AC_cs20__mod__equationofstate)
+                tt__10=exp(AC_lntt0__mod__equationofstate)
+              }
+            }
+          }
+        }
+        else if(AC_ilnrho_lntt__mod__equationofstate == AC_ipp_ss__mod__equationofstate) {
+          if (AC_lanelastic__mod__cparam) {
+            if (AC_lanelastic_lin__mod__equationofstate) {
+              lnrho__10=(LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
+              ss__10=LNTT[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+              cs2__10=exp(AC_gamma__mod__equationofstate*ss__10*AC_cp1__mod__equationofstate+AC_gamma_m1__mod__equationofstate*(lnrho__10-AC_lnrho0__mod__equationofstate))*AC_cs20__mod__equationofstate
+              tt__10=cs2__10/(AC_gamma_m1__mod__equationofstate*AC_cp__mod__equationofstate)
+            }
+            else {
+              pp__10=LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+              ss__10=LNTT[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+              cs2__10=exp(ss__10*AC_cp1__mod__equationofstate+AC_gamma1__mod__equationofstate*AC_gamma_m1__mod__equationofstate*log(pp__10/AC_pp0__mod__equationofstate))*AC_cs20__mod__equationofstate
+              tt__10=cs2__10/(AC_gamma_m1__mod__equationofstate*AC_cp__mod__equationofstate)
+              lnrho__10=log(AC_gamma__mod__equationofstate*pp__10/cs2__10)
+            }
+          }
+        }
+        else if(AC_ilnrho_lntt__mod__equationofstate == AC_irho_eth__mod__equationofstate || AC_ilnrho_lntt__mod__equationofstate == AC_ilnrho_eth__mod__equationofstate) {
+          if (AC_lstratz__mod__cdata) {
+          }
+          else {
+            if (AC_ldensity_nolog__mod__cdata) {
+              rho_10 = LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+              if (false) {
+                lnrho__10 = log(LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
+              }
+            }
+            else {
+              rho_10 = exp(LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
+              if (false) {
+                lnrho__10 = LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+              }
+            }
+            eth_10 = LNTT[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+          }
+          if (false) {
+            lntt__10 = log(AC_cv1__mod__equationofstate * eth_10/ rho_10)
+          }
+          if (false) {
+            ee__10 = eth_10/ rho_10
+          }
+          if (false) {
+            pp__10 = AC_gamma_m1__mod__equationofstate * eth_10
+          }
+          if (present(cs2_point)) {
+            cs2__10 = AC_gamma__mod__equationofstate * AC_gamma_m1__mod__equationofstate * eth_10/ rho_10
+          }
+        }
+        else {
+        }
+        if (present(cs2_point)) {
+          cs2_point=cs2__10
+        }
+      }
+      dlnrhodz =  AC_gamma__mod__equationofstate *AC_gravz__mod__gravity/cs2_point
+      LNRHO[vertexIdx.x][vertexIdx.y][1+AC_n2__mod__cdata-1] = LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1-1] + AC_dz2_bound__mod__cdata[2+AC_NGHOST__mod__cparam-1]*dlnrhodz
+      LNRHO[vertexIdx.x][vertexIdx.y][2+AC_n2__mod__cdata-1] = LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-2-1] + AC_dz2_bound__mod__cdata[3+AC_NGHOST__mod__cparam-1]*dlnrhodz
+      LNRHO[vertexIdx.x][vertexIdx.y][3+AC_n2__mod__cdata-1] = LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-3-1] + AC_dz2_bound__mod__cdata[4+AC_NGHOST__mod__cparam-1]*dlnrhodz
+    }
+    else {
+      potx_xpoint_11=0.0
+      poty_ypoint_11=0.0
+      potz_zpoint_11=0.0
+      if (false) {
+        if(AC_enum_gravx_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_linear_zdep_string__mod__cparam) {
+          zdep_11=(1.+AC_kappa_z1__mod__gravity*AC_z__mod__cdata[1+AC_n2__mod__cdata-1]+0.5*((AC_kappa_z1__mod__gravity*AC_z__mod__cdata[1+AC_n2__mod__cdata-1])*(AC_kappa_z1__mod__gravity*AC_z__mod__cdata[1+AC_n2__mod__cdata-1])))
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_kepler_string__mod__cparam) {
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_czbot1_string__mod__cparam) {
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_czmid1_string__mod__cparam) {
+        }
+        else {
+        }
+      }
+      if (false) {
+        if(AC_enum_gravy_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        }
+        else if(AC_enum_gravy_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+        }
+        else {
+        }
+      }
+      if (present(AC_z__mod__cdata[1+AC_n2__mod__cdata-1])) {
+        if(AC_enum_gravz_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+          if (AC_zclip__mod__gravity==AC_impossible__mod__cparam) {
+            potz_zpoint_11=-AC_gravz__mod__gravity*(AC_z__mod__cdata[1+AC_n2__mod__cdata-1]-AC_zinfty__mod__gravity)
+          }
+          else {
+            potz_zpoint_11=-AC_gravz__mod__gravity*max(AC_z__mod__cdata[1+AC_n2__mod__cdata-1]-AC_zinfty__mod__gravity,AC_zclip__mod__gravity-AC_zinfty__mod__gravity)
+          }
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_linear_string__mod__cparam) {
+          potz_zpoint_11=0.5*((AC_z__mod__cdata[1+AC_n2__mod__cdata-1]*AC_z__mod__cdata[1+AC_n2__mod__cdata-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_spherical_string__mod__cparam) {
+          potz_zpoint_11=0.5*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*(AC_z1__mod__gravity*AC_z1__mod__gravity)*log(1.0+((AC_z__mod__cdata[1+AC_n2__mod__cdata-1]/AC_z1__mod__gravity)*(AC_z__mod__cdata[1+AC_n2__mod__cdata-1]/AC_z1__mod__gravity)))
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_linear_xdep_string__mod__cparam) {
+          potz_zpoint_11=0.5*((AC_z__mod__cdata[1+AC_n2__mod__cdata-1]*AC_z__mod__cdata[1+AC_n2__mod__cdata-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*xdep_11
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_linear_smoothed_string__mod__cparam) {
+          prof_11 = 1. +pow( (AC_z__mod__cdata[1+AC_n2__mod__cdata-1]/AC_zref__mod__gravity),(2*AC_n_pot__mod__gravity))
+          potz_zpoint_11 = 0.5*((AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[1+AC_n2__mod__cdata-1])*(AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[1+AC_n2__mod__cdata-1]))/pow(prof_11,(1./AC_n_pot__mod__gravity))
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_tanh_string__mod__cparam) {
+          potz_zpoint_11=AC_gravz__mod__gravity*AC_zref__mod__gravity*log(cosh(AC_z__mod__cdata[1+AC_n2__mod__cdata-1]/AC_zref__mod__gravity))
+        }
+        else {
+        }
+      }
+      potp = potx_xpoint_11 + poty_ypoint_11 + potz_zpoint_11
+      potx_xpoint_12=0.0
+      poty_ypoint_12=0.0
+      potz_zpoint_12=0.0
+      if (false) {
+        if(AC_enum_gravx_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_linear_zdep_string__mod__cparam) {
+          zdep_12=(1.+AC_kappa_z1__mod__gravity*AC_z__mod__cdata[AC_n2__mod__cdata-1-1]+0.5*((AC_kappa_z1__mod__gravity*AC_z__mod__cdata[AC_n2__mod__cdata-1-1])*(AC_kappa_z1__mod__gravity*AC_z__mod__cdata[AC_n2__mod__cdata-1-1])))
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_kepler_string__mod__cparam) {
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_czbot1_string__mod__cparam) {
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_czmid1_string__mod__cparam) {
+        }
+        else {
+        }
+      }
+      if (false) {
+        if(AC_enum_gravy_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        }
+        else if(AC_enum_gravy_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+        }
+        else {
+        }
+      }
+      if (present(AC_z__mod__cdata[AC_n2__mod__cdata-1-1])) {
+        if(AC_enum_gravz_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+          if (AC_zclip__mod__gravity==AC_impossible__mod__cparam) {
+            potz_zpoint_12=-AC_gravz__mod__gravity*(AC_z__mod__cdata[AC_n2__mod__cdata-1-1]-AC_zinfty__mod__gravity)
+          }
+          else {
+            potz_zpoint_12=-AC_gravz__mod__gravity*max(AC_z__mod__cdata[AC_n2__mod__cdata-1-1]-AC_zinfty__mod__gravity,AC_zclip__mod__gravity-AC_zinfty__mod__gravity)
+          }
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_linear_string__mod__cparam) {
+          potz_zpoint_12=0.5*((AC_z__mod__cdata[AC_n2__mod__cdata-1-1]*AC_z__mod__cdata[AC_n2__mod__cdata-1-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_spherical_string__mod__cparam) {
+          potz_zpoint_12=0.5*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*(AC_z1__mod__gravity*AC_z1__mod__gravity)*log(1.0+((AC_z__mod__cdata[AC_n2__mod__cdata-1-1]/AC_z1__mod__gravity)*(AC_z__mod__cdata[AC_n2__mod__cdata-1-1]/AC_z1__mod__gravity)))
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_linear_xdep_string__mod__cparam) {
+          potz_zpoint_12=0.5*((AC_z__mod__cdata[AC_n2__mod__cdata-1-1]*AC_z__mod__cdata[AC_n2__mod__cdata-1-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*xdep_12
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_linear_smoothed_string__mod__cparam) {
+          prof_12 = 1. +pow( (AC_z__mod__cdata[AC_n2__mod__cdata-1-1]/AC_zref__mod__gravity),(2*AC_n_pot__mod__gravity))
+          potz_zpoint_12 = 0.5*((AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[AC_n2__mod__cdata-1-1])*(AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[AC_n2__mod__cdata-1-1]))/pow(prof_12,(1./AC_n_pot__mod__gravity))
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_tanh_string__mod__cparam) {
+          potz_zpoint_12=AC_gravz__mod__gravity*AC_zref__mod__gravity*log(cosh(AC_z__mod__cdata[AC_n2__mod__cdata-1-1]/AC_zref__mod__gravity))
+        }
+        else {
+        }
+      }
+      potm = potx_xpoint_12 + poty_ypoint_12 + potz_zpoint_12
+      cs2 = AC_cs2bot__mod__equationofstate
+      if (AC_ldensity_nolog__mod__cdata) {
+        RHO[vertexIdx.x][vertexIdx.y][1+AC_n2__mod__cdata-1]   = RHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1-1]*exp(-(potp-potm)/cs2)
+      }
+      else {
+        LNRHO[vertexIdx.x][vertexIdx.y][1+AC_n2__mod__cdata-1] = LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1-1] - (potp-potm)/cs2
+      }
+      potx_xpoint_11=0.0
+      poty_ypoint_11=0.0
+      potz_zpoint_11=0.0
+      if (false) {
+        if(AC_enum_gravx_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_linear_zdep_string__mod__cparam) {
+          zdep_11=(1.+AC_kappa_z1__mod__gravity*AC_z__mod__cdata[2+AC_n2__mod__cdata-1]+0.5*((AC_kappa_z1__mod__gravity*AC_z__mod__cdata[2+AC_n2__mod__cdata-1])*(AC_kappa_z1__mod__gravity*AC_z__mod__cdata[2+AC_n2__mod__cdata-1])))
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_kepler_string__mod__cparam) {
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_czbot1_string__mod__cparam) {
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_czmid1_string__mod__cparam) {
+        }
+        else {
+        }
+      }
+      if (false) {
+        if(AC_enum_gravy_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        }
+        else if(AC_enum_gravy_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+        }
+        else {
+        }
+      }
+      if (present(AC_z__mod__cdata[2+AC_n2__mod__cdata-1])) {
+        if(AC_enum_gravz_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+          if (AC_zclip__mod__gravity==AC_impossible__mod__cparam) {
+            potz_zpoint_11=-AC_gravz__mod__gravity*(AC_z__mod__cdata[2+AC_n2__mod__cdata-1]-AC_zinfty__mod__gravity)
+          }
+          else {
+            potz_zpoint_11=-AC_gravz__mod__gravity*max(AC_z__mod__cdata[2+AC_n2__mod__cdata-1]-AC_zinfty__mod__gravity,AC_zclip__mod__gravity-AC_zinfty__mod__gravity)
+          }
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_linear_string__mod__cparam) {
+          potz_zpoint_11=0.5*((AC_z__mod__cdata[2+AC_n2__mod__cdata-1]*AC_z__mod__cdata[2+AC_n2__mod__cdata-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_spherical_string__mod__cparam) {
+          potz_zpoint_11=0.5*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*(AC_z1__mod__gravity*AC_z1__mod__gravity)*log(1.0+((AC_z__mod__cdata[2+AC_n2__mod__cdata-1]/AC_z1__mod__gravity)*(AC_z__mod__cdata[2+AC_n2__mod__cdata-1]/AC_z1__mod__gravity)))
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_linear_xdep_string__mod__cparam) {
+          potz_zpoint_11=0.5*((AC_z__mod__cdata[2+AC_n2__mod__cdata-1]*AC_z__mod__cdata[2+AC_n2__mod__cdata-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*xdep_11
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_linear_smoothed_string__mod__cparam) {
+          prof_11 = 1. +pow( (AC_z__mod__cdata[2+AC_n2__mod__cdata-1]/AC_zref__mod__gravity),(2*AC_n_pot__mod__gravity))
+          potz_zpoint_11 = 0.5*((AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[2+AC_n2__mod__cdata-1])*(AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[2+AC_n2__mod__cdata-1]))/pow(prof_11,(1./AC_n_pot__mod__gravity))
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_tanh_string__mod__cparam) {
+          potz_zpoint_11=AC_gravz__mod__gravity*AC_zref__mod__gravity*log(cosh(AC_z__mod__cdata[2+AC_n2__mod__cdata-1]/AC_zref__mod__gravity))
+        }
+        else {
+        }
+      }
+      potp = potx_xpoint_11 + poty_ypoint_11 + potz_zpoint_11
+      potx_xpoint_12=0.0
+      poty_ypoint_12=0.0
+      potz_zpoint_12=0.0
+      if (false) {
+        if(AC_enum_gravx_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_linear_zdep_string__mod__cparam) {
+          zdep_12=(1.+AC_kappa_z1__mod__gravity*AC_z__mod__cdata[AC_n2__mod__cdata-2-1]+0.5*((AC_kappa_z1__mod__gravity*AC_z__mod__cdata[AC_n2__mod__cdata-2-1])*(AC_kappa_z1__mod__gravity*AC_z__mod__cdata[AC_n2__mod__cdata-2-1])))
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_kepler_string__mod__cparam) {
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_czbot1_string__mod__cparam) {
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_czmid1_string__mod__cparam) {
+        }
+        else {
+        }
+      }
+      if (false) {
+        if(AC_enum_gravy_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        }
+        else if(AC_enum_gravy_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+        }
+        else {
+        }
+      }
+      if (present(AC_z__mod__cdata[AC_n2__mod__cdata-2-1])) {
+        if(AC_enum_gravz_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+          if (AC_zclip__mod__gravity==AC_impossible__mod__cparam) {
+            potz_zpoint_12=-AC_gravz__mod__gravity*(AC_z__mod__cdata[AC_n2__mod__cdata-2-1]-AC_zinfty__mod__gravity)
+          }
+          else {
+            potz_zpoint_12=-AC_gravz__mod__gravity*max(AC_z__mod__cdata[AC_n2__mod__cdata-2-1]-AC_zinfty__mod__gravity,AC_zclip__mod__gravity-AC_zinfty__mod__gravity)
+          }
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_linear_string__mod__cparam) {
+          potz_zpoint_12=0.5*((AC_z__mod__cdata[AC_n2__mod__cdata-2-1]*AC_z__mod__cdata[AC_n2__mod__cdata-2-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_spherical_string__mod__cparam) {
+          potz_zpoint_12=0.5*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*(AC_z1__mod__gravity*AC_z1__mod__gravity)*log(1.0+((AC_z__mod__cdata[AC_n2__mod__cdata-2-1]/AC_z1__mod__gravity)*(AC_z__mod__cdata[AC_n2__mod__cdata-2-1]/AC_z1__mod__gravity)))
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_linear_xdep_string__mod__cparam) {
+          potz_zpoint_12=0.5*((AC_z__mod__cdata[AC_n2__mod__cdata-2-1]*AC_z__mod__cdata[AC_n2__mod__cdata-2-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*xdep_12
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_linear_smoothed_string__mod__cparam) {
+          prof_12 = 1. +pow( (AC_z__mod__cdata[AC_n2__mod__cdata-2-1]/AC_zref__mod__gravity),(2*AC_n_pot__mod__gravity))
+          potz_zpoint_12 = 0.5*((AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[AC_n2__mod__cdata-2-1])*(AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[AC_n2__mod__cdata-2-1]))/pow(prof_12,(1./AC_n_pot__mod__gravity))
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_tanh_string__mod__cparam) {
+          potz_zpoint_12=AC_gravz__mod__gravity*AC_zref__mod__gravity*log(cosh(AC_z__mod__cdata[AC_n2__mod__cdata-2-1]/AC_zref__mod__gravity))
+        }
+        else {
+        }
+      }
+      potm = potx_xpoint_12 + poty_ypoint_12 + potz_zpoint_12
+      cs2 = AC_cs2bot__mod__equationofstate
+      if (AC_ldensity_nolog__mod__cdata) {
+        RHO[vertexIdx.x][vertexIdx.y][2+AC_n2__mod__cdata-1]   = RHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-2-1]*exp(-(potp-potm)/cs2)
+      }
+      else {
+        LNRHO[vertexIdx.x][vertexIdx.y][2+AC_n2__mod__cdata-1] = LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-2-1] - (potp-potm)/cs2
+      }
+      potx_xpoint_11=0.0
+      poty_ypoint_11=0.0
+      potz_zpoint_11=0.0
+      if (false) {
+        if(AC_enum_gravx_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_linear_zdep_string__mod__cparam) {
+          zdep_11=(1.+AC_kappa_z1__mod__gravity*AC_z__mod__cdata[3+AC_n2__mod__cdata-1]+0.5*((AC_kappa_z1__mod__gravity*AC_z__mod__cdata[3+AC_n2__mod__cdata-1])*(AC_kappa_z1__mod__gravity*AC_z__mod__cdata[3+AC_n2__mod__cdata-1])))
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_kepler_string__mod__cparam) {
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_czbot1_string__mod__cparam) {
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_czmid1_string__mod__cparam) {
+        }
+        else {
+        }
+      }
+      if (false) {
+        if(AC_enum_gravy_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        }
+        else if(AC_enum_gravy_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+        }
+        else {
+        }
+      }
+      if (present(AC_z__mod__cdata[3+AC_n2__mod__cdata-1])) {
+        if(AC_enum_gravz_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+          if (AC_zclip__mod__gravity==AC_impossible__mod__cparam) {
+            potz_zpoint_11=-AC_gravz__mod__gravity*(AC_z__mod__cdata[3+AC_n2__mod__cdata-1]-AC_zinfty__mod__gravity)
+          }
+          else {
+            potz_zpoint_11=-AC_gravz__mod__gravity*max(AC_z__mod__cdata[3+AC_n2__mod__cdata-1]-AC_zinfty__mod__gravity,AC_zclip__mod__gravity-AC_zinfty__mod__gravity)
+          }
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_linear_string__mod__cparam) {
+          potz_zpoint_11=0.5*((AC_z__mod__cdata[3+AC_n2__mod__cdata-1]*AC_z__mod__cdata[3+AC_n2__mod__cdata-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_spherical_string__mod__cparam) {
+          potz_zpoint_11=0.5*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*(AC_z1__mod__gravity*AC_z1__mod__gravity)*log(1.0+((AC_z__mod__cdata[3+AC_n2__mod__cdata-1]/AC_z1__mod__gravity)*(AC_z__mod__cdata[3+AC_n2__mod__cdata-1]/AC_z1__mod__gravity)))
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_linear_xdep_string__mod__cparam) {
+          potz_zpoint_11=0.5*((AC_z__mod__cdata[3+AC_n2__mod__cdata-1]*AC_z__mod__cdata[3+AC_n2__mod__cdata-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*xdep_11
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_linear_smoothed_string__mod__cparam) {
+          prof_11 = 1. +pow( (AC_z__mod__cdata[3+AC_n2__mod__cdata-1]/AC_zref__mod__gravity),(2*AC_n_pot__mod__gravity))
+          potz_zpoint_11 = 0.5*((AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[3+AC_n2__mod__cdata-1])*(AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[3+AC_n2__mod__cdata-1]))/pow(prof_11,(1./AC_n_pot__mod__gravity))
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_tanh_string__mod__cparam) {
+          potz_zpoint_11=AC_gravz__mod__gravity*AC_zref__mod__gravity*log(cosh(AC_z__mod__cdata[3+AC_n2__mod__cdata-1]/AC_zref__mod__gravity))
+        }
+        else {
+        }
+      }
+      potp = potx_xpoint_11 + poty_ypoint_11 + potz_zpoint_11
+      potx_xpoint_12=0.0
+      poty_ypoint_12=0.0
+      potz_zpoint_12=0.0
+      if (false) {
+        if(AC_enum_gravx_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_linear_zdep_string__mod__cparam) {
+          zdep_12=(1.+AC_kappa_z1__mod__gravity*AC_z__mod__cdata[AC_n2__mod__cdata-3-1]+0.5*((AC_kappa_z1__mod__gravity*AC_z__mod__cdata[AC_n2__mod__cdata-3-1])*(AC_kappa_z1__mod__gravity*AC_z__mod__cdata[AC_n2__mod__cdata-3-1])))
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_kepler_string__mod__cparam) {
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_czbot1_string__mod__cparam) {
+        }
+        else if(AC_enum_gravx_profile__mod__gravity == AC_enum_czmid1_string__mod__cparam) {
+        }
+        else {
+        }
+      }
+      if (false) {
+        if(AC_enum_gravy_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        }
+        else if(AC_enum_gravy_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+        }
+        else {
+        }
+      }
+      if (present(AC_z__mod__cdata[AC_n2__mod__cdata-3-1])) {
+        if(AC_enum_gravz_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+          if (AC_zclip__mod__gravity==AC_impossible__mod__cparam) {
+            potz_zpoint_12=-AC_gravz__mod__gravity*(AC_z__mod__cdata[AC_n2__mod__cdata-3-1]-AC_zinfty__mod__gravity)
+          }
+          else {
+            potz_zpoint_12=-AC_gravz__mod__gravity*max(AC_z__mod__cdata[AC_n2__mod__cdata-3-1]-AC_zinfty__mod__gravity,AC_zclip__mod__gravity-AC_zinfty__mod__gravity)
+          }
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_linear_string__mod__cparam) {
+          potz_zpoint_12=0.5*((AC_z__mod__cdata[AC_n2__mod__cdata-3-1]*AC_z__mod__cdata[AC_n2__mod__cdata-3-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_spherical_string__mod__cparam) {
+          potz_zpoint_12=0.5*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*(AC_z1__mod__gravity*AC_z1__mod__gravity)*log(1.0+((AC_z__mod__cdata[AC_n2__mod__cdata-3-1]/AC_z1__mod__gravity)*(AC_z__mod__cdata[AC_n2__mod__cdata-3-1]/AC_z1__mod__gravity)))
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_linear_xdep_string__mod__cparam) {
+          potz_zpoint_12=0.5*((AC_z__mod__cdata[AC_n2__mod__cdata-3-1]*AC_z__mod__cdata[AC_n2__mod__cdata-3-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*xdep_12
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_linear_smoothed_string__mod__cparam) {
+          prof_12 = 1. +pow( (AC_z__mod__cdata[AC_n2__mod__cdata-3-1]/AC_zref__mod__gravity),(2*AC_n_pot__mod__gravity))
+          potz_zpoint_12 = 0.5*((AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[AC_n2__mod__cdata-3-1])*(AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[AC_n2__mod__cdata-3-1]))/pow(prof_12,(1./AC_n_pot__mod__gravity))
+        }
+        else if(AC_enum_gravz_profile__mod__gravity == AC_enum_tanh_string__mod__cparam) {
+          potz_zpoint_12=AC_gravz__mod__gravity*AC_zref__mod__gravity*log(cosh(AC_z__mod__cdata[AC_n2__mod__cdata-3-1]/AC_zref__mod__gravity))
+        }
+        else {
+        }
+      }
+      potm = potx_xpoint_12 + poty_ypoint_12 + potz_zpoint_12
+      cs2 = AC_cs2bot__mod__equationofstate
+      if (AC_ldensity_nolog__mod__cdata) {
+        RHO[vertexIdx.x][vertexIdx.y][3+AC_n2__mod__cdata-1]   = RHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-3-1]*exp(-(potp-potm)/cs2)
+      }
+      else {
+        LNRHO[vertexIdx.x][vertexIdx.y][3+AC_n2__mod__cdata-1] = LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-3-1] - (potp-potm)/cs2
+      }
+    }
+  }
+  else {
+  }
+}
+#endif

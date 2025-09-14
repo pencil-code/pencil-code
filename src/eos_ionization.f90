@@ -76,9 +76,9 @@ module EquationOfState
 !  Set indices for auxiliary variables.
 !
       !call farray_register_auxiliary('yH',iyH,communicated=.true.)
-      call farray_register_auxiliary('yH',iyH)
+      call farray_register_auxiliary('yH',iyH,on_gpu=lgpu)
       if (.not.ltemperature.or.ltemperature_nolog) &
-        call farray_register_auxiliary('lnTT',ilnTT,communicated=.true.)
+        call farray_register_auxiliary('lnTT',ilnTT,communicated=.true.,on_gpu=lgpu)
 !
 !  Identify version number (generated automatically by SVN).
 !
@@ -2350,6 +2350,8 @@ module EquationOfState
     call copy_addr(lpp_as_aux,p_par(20)) ! bool
     call copy_addr(lcp_as_aux,p_par(21)) ! bool
     call copy_addr(cs2top,p_par(22))
+    call copy_addr(yhmin,p_par(23))
+    call copy_addr(yhmax,p_par(24))
 
     endsubroutine pushpars2c
 !***********************************************************************

@@ -121,9 +121,11 @@ Field3 F_GLOBAL_AX_EXVEC
 Field F_JX,F_JY,F_JZ
 Field F_EDOTX,F_EDOTY,F_EDOTZ
 Field F_LAM
-field_order(AC_itt__mod__cdata-1) Field F_TT
+field_order(AC_itt__mod__cdata != 0 ? AC_itt__mod__cdata : AC_ilntt__mod__cdata-1) Field F_TT
+field_order(AC_iyh__mod__cdata-1) Field F_YH
 #define TT F_TT
 #define LNTT F_TT
+#define F_LNTT F_TT
 Field F_GLOBAL_HCOND
 Field F_SS_RUN_AVER
 Field F_ADV_DERX
@@ -242,6 +244,10 @@ Field AC_tpq_re__mod__gravitational_waves_htxk[6]
 Field AC_tpq_im__mod__gravitational_waves_htxk[6]
 Field AC_nonlinear_tpq_re__mod__gravitational_waves_htxk[6]
 Field AC_nonlinear_tpq_im__mod__gravitational_waves_htxk[6]
+
+
+field_order(AC_irho_b__mod__cdata-1) Field RHO_B
+field_order(AC_iss_b__mod__cdata-1) Field SS_B
 
 
 Field SLD_CHAR_SPEED

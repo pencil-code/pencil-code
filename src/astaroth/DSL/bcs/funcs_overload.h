@@ -38,7 +38,7 @@ bc_sym_z(AcBoundary boundary,AC_TOP_BOT topbot, VtxBuffer field, int sgn, bool r
   }
   bc_sym_z(boundary,topbot,field,sgn,rel)
 }
-#if LENERGY
+#if Leos_idealgas_MODULE
 bc_ss_temp_z(AcBoundary boundary,AC_TOP_BOT topbot)
 {
   bc_ss_temp_z(boundary,topbot,false)

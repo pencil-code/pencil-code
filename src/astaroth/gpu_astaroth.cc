@@ -741,11 +741,15 @@ std::array<AcReal,3> magnetic_get_max_diffus()
 /***********************************************************************************************/
 std::array<AcReal,3> energy_get_max_diffus()
 {
+#if TRANSPILATION
+	return {0.0,0.0,0.0};
+#else
  	constexpr AcReal chi_hyper2=0.;
 #if LENTROPY
 	return {gamma*chi,gamma*chi_hyper2,gamma*chi_hyper3};
 #else
 	return {0.0,0.0,0.0};
+#endif
 #endif
 }
 /***********************************************************************************************/
@@ -1256,7 +1260,7 @@ void copyFarray(AcReal* f)
 
   AcMesh* dst = &mesh;
   AcMesh tmp;
-  if(dimensionality == 1 || 
+  if(dimensionality == 0 || dimensionality == 1 || 
      (dimensionality == 2 && nygrid == 1)
      )
 
@@ -1302,6 +1306,17 @@ void copyFarray(AcReal* f)
 		}
 	}
   	acHostMeshDestroy(&tmp);
+  }
+  if(dimensionality == 0)
+  {
+    	for (int i = 0; i < mfarray; ++i)
+  	{
+		const int index = (i < mvar) ? i : maux_vtxbuf_index[i];
+		if(index == -1) continue;
+		const size_t f_index = (NGHOST) + mx*(NGHOST + my*(NGHOST));
+		const size_t ac_index = 0;
+ 		mesh.vertex_buffer[i][f_index] = dst->vertex_buffer[i][ac_index];
+	}
   }
   if(dimensionality == 2 && nygrid == 1)
   {
@@ -1469,6 +1484,19 @@ extern "C" void loadFarray()
 				src.vertex_buffer[index][ac_index] = mesh.vertex_buffer[index][f_index];
 			}
 		}
+	}
+  }
+  if(dimensionality == 0)
+  {
+  	acHostMeshCopy(mesh, &tmp);
+	src = tmp;
+    	for (int i = 0; i < mfarray; ++i)
+  	{
+		const int index = (i < mvar) ? i : maux_vtxbuf_index[i];
+		if(index == -1) continue;
+		const size_t f_index = (NGHOST) + mx*(NGHOST + my*(NGHOST));
+		const size_t ac_index = 0;
+		src.vertex_buffer[index][ac_index] = mesh.vertex_buffer[index][f_index];
 	}
   }
   acGridSynchronizeStream(STREAM_ALL);

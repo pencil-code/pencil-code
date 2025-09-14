@@ -5,6 +5,7 @@
 #include "../alphadisk/after_timestep.h"
 #include "../gravitational_waves.h"
 #include "../hydro/hydro_after_boundary_conservative.h"
+#include "../ioncalc.h"
 
 input real AC_dt
 input PC_SUB_STEP_NUMBER AC_step_num
@@ -48,6 +49,7 @@ ComputeSteps AC_before_boundary_steps(boundconds)
 	fix_mass_drift(AC_lrmv)
 	magnetic_before_boundary_reductions()
 	hydro_after_boundary_conservative(AC_t)
+	ioncalc()
 }
 ComputeSteps AC_after_timestep(boundconds)
 {
