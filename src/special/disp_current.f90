@@ -506,7 +506,7 @@ module Special
 !
 !   24-nov-04/tony: coded
 !
-      use Sub, only: grad, div, curl, del2v, dot2_mn, dot, levi_civita, gij_etc
+      use Sub, only: grad, div, curl, del2v, dot2_mn, dot, levi_civita, del2v_etc
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -530,7 +530,7 @@ module Special
         ! alberto: when llongitudinalE=F, we should compute
         ! grad div a from f-array
         else
-          call gij_etc(f,iaa,GRADDIV=p%gGamma)
+          call del2v_etc(f,iaa,GRADDIV=p%gGamma)
         endif
       endif
 !
