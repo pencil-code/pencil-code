@@ -19,13 +19,20 @@
 ! PENCILS PROVIDED W1sq; W2sq; W3sq
 ! PENCILS PROVIDED dW1sq; dW2sq; dW3sq
 ! PENCILS PROVIDED rhoW1; rhoW2; rhoW3
+! PENCILS PROVIDED W1ddot_gw(3); W2ddot_gw(3); W3ddot_gw(3)
+! PENCILS PROVIDED W1ddot_gw2(3); W2ddot_gw2(3); W3ddot_gw2(3)
 ! PENCILS PROVIDED divdotW1; divdotW2, divdotW3
 ! PENCILS PROVIDED del2W1(3); del2W2(3); del2W3(3)
-! PENCILS PROVIDED curlcurlW1(3); curlcurlW2(3); curlcurlW3(3)
+! PENCILS PROVIDED W1ij(3,3); W2ij(3,3); W3ij(3,3)
+! PENCILS PROVIDED curlBW1(3); curlBW2(3); curlBW3(3)
 ! PENCILS PROVIDED gGammaW1(3); gGammaW2(3); gGammaW3(3)
-! PENCILS PROVIDED W1dotW1; W2dotW2; W3dotW3
+! PENCILS PROVIDED jj_higgsW1(3); jj_higgsW2(3); jj_higgsW3(3)
+! PENCILS PROVIDED rhoe_higgsW1; rhoe_higgsW2; rhoe_higgsW3
+! PENCILS PROVIDED W1dotW1; W1dotW2; W1dotW3
+! PENCILS PROVIDED W2dotW1; W2dotW2; W2dotW3
+! PENCILS PROVIDED W3dotW1; W3dotW2; W3dotW3
 ! PENCILS PROVIDED W1ddotsq, W2ddotsq, W3ddotsq
-! PENCILS EXPECTED phi, dphi
+! PENCILS EXPECTED phi, dphi, cov_der(4,4), phi_doublet(3)
 !***************************************************************
 !
 !
@@ -73,7 +80,7 @@ module Special
   real :: coupl_gw=.65    ! electroweak SU(2) x U(1) coupling of Higgs to SU(2)
   logical, pointer :: lphi_doublet, lphi_weakcharge, lphi_hom
   logical :: llongitudinalW=.true., lskip_projection_WW=.false.
-  logical :: lWddot_as_aux=.false.,ldivdotW_as_aux=.false., lsolve_chargedensityW=.false.
+  logical :: lWddot_as_aux=.false.,ldivdotW_as_aux=.false. !, lsolve_chargedensityW=.false.
   logical :: lscale_tobox=.true., lpower_profile_file=.false.
   logical :: lno_noise_WW=.false., lno_noise_dWW=.false.
   logical :: lfixed_phase_WW=.false., lfixed_phase_dWW=.false.
@@ -93,7 +100,7 @@ module Special
     ky_dWx, ky_dWy, ky_dWz, &
     kz_dWx, kz_dWy, kz_dWz, &
     phase_Wx, phase_Wy, phase_Wz, phase_dWx, phase_dWy, phase_dWz, &
-    lsolve_chargedensityW, &
+    ! lsolve_chargedensityW, &
     llongitudinalW, amplWW, initpower_WW, initpower2_WW, lscale_tobox, &
     initpower_dWW, initpower2_dWW, &
     cutoff_dWW, ncutoff_dWW, kpeak_dWW, relhel_dWW, kgaussian_dWW, &
@@ -227,8 +234,8 @@ module Special
       if (ldivdotW_as_aux) &
         call farray_register_auxiliary('divdotW', idivdotW, array=3)
 
-      if(lsolve_chargedensityW) &
-        call farray_register_pde('rhoW',irhoW,vector=3)
+      ! if(lsolve_chargedensityW) &
+      !   call farray_register_pde('rhoW',irhoW,vector=3)
       !
       if (llongitudinalW) &
         call farray_register_pde('GammaW',iGammaW,vector=3)
@@ -433,12 +440,12 @@ module Special
 !
 !  Initial condition for rhoW = div dt W
 !
-      if (lsolve_chargedensityW) then
-        do n=n1,n2; do m=m1,m2; do i=0,2
-          call div(f,idWW+3*i,divE)
-          f(l1:l2,m,n,irhoW+i)=divE
-        enddo; enddo; enddo
-      endif
+      ! if (lsolve_chargedensityW) then
+      !   do n=n1,n2; do m=m1,m2; do i=0,2
+      !     call div(f,idWW+3*i,divE)
+      !     f(l1:l2,m,n,irhoW+i)=divE
+      !   enddo; enddo; enddo
+      ! endif
 !
 !  Initialize diva_name if llorenz_gauge_disp=T
 !
@@ -474,35 +481,45 @@ module Special
 !  All pencils that this special module depends on are specified here.
 !
 !  25-feb-07/axel: adapted
-!
-      lpenc_requested(i_W1)=.true.
-      lpenc_requested(i_W2)=.true.
-      lpenc_requested(i_W3)=.true.
-      lpenc_requested(i_dW1)=.true.
-      lpenc_requested(i_dW2)=.true.
-      lpenc_requested(i_dW3)=.true.
+!  12-aug-25/alberto: adapted for SU(2)xU(1) electroweak gauge fields
 !
 !  compulsory pencils
 !
+!   Mandatory pencils
+      ! lpenc_requested(i_W1)=.true.
+      ! lpenc_requested(i_W2)=.true.
+      ! lpenc_requested(i_W3)=.true.
+      ! lpenc_requested(i_dW1)=.true.
+      ! lpenc_requested(i_dW2)=.true.
+      ! lpenc_requested(i_dW3)=.true.
+      ! lpenc_requested(i_gGammaW1)=.true.
+      ! lpenc_requested(i_gGammaW2)=.true.
+      ! lpenc_requested(i_gGammaW3)=.true.
+      ! lpenc_requested(i_curlBW1)=.true.
+      ! lpenc_requested(i_curlBW2)=.true.
+      ! lpenc_requested(i_curlBW3)=.true.
+      ! lpenc_requested(i_del2W1)=.true.
+      ! lpenc_requested(i_del2W2)=.true.
+      ! lpenc_requested(i_del2W3)=.true.
+      ! lpenc_requested(i_W1sq)=.true.
+      ! lpenc_requested(i_W2sq)=.true.
+      ! lpenc_requested(i_W3sq)=.true.
 !
 !  Terms for Gamma evolution.
 !
       if (llongitudinalW) then
-        lpenc_requested(i_GammaW1)=.true.
-        lpenc_requested(i_GammaW2)=.true.
-        lpenc_requested(i_GammaW3)=.true.
         lpenc_requested(i_divdotW1)=.true.
         lpenc_requested(i_divdotW2)=.true.
         lpenc_requested(i_divdotW3)=.true.
-        lpenc_requested(i_gGammaW1)=.true.
-        lpenc_requested(i_gGammaW2)=.true.
-        lpenc_requested(i_gGammaW3)=.true.
-        lpenc_requested(i_del2W1)=.true.
-        lpenc_requested(i_del2W2)=.true.
-        lpenc_requested(i_del2W3)=.true.
-        lpenc_requested(i_curlcurlW1)=.true.
-        lpenc_requested(i_curlcurlW2)=.true.
-        lpenc_requested(i_curlcurlW3)=.true.
+        lpenc_diagnos(i_W1dotW1)=.true.
+        lpenc_diagnos(i_W1dotW2)=.true.
+        lpenc_diagnos(i_W1dotW3)=.true.
+        lpenc_diagnos(i_W2dotW1)=.true.
+        lpenc_diagnos(i_W2dotW2)=.true.
+        lpenc_diagnos(i_W2dotW3)=.true.
+        lpenc_diagnos(i_W3dotW1)=.true.
+        lpenc_diagnos(i_W3dotW2)=.true.
+        lpenc_diagnos(i_W3dotW3)=.true.
       endif
 !
       if (idiag_divW1m/=0. .or. idiag_divW1rms/=0.) then
@@ -541,6 +558,14 @@ module Special
         lpenc_requested(i_del2W1)=.true.
         lpenc_requested(i_del2W2)=.true.
         lpenc_requested(i_del2W3)=.true.
+      endif
+!
+!  Higgs pencils
+!
+      if (lklein_gordon .and. lphi_doublet .and. lphi_weakcharge) then
+        lpenc_requested(i_phi)=.true.
+        lpenc_requested(i_phi_doublet)=.true.
+        lpenc_requested(i_cov_der)=.true.
       endif
 !
 !  Diagnostics pencils:
@@ -590,10 +615,15 @@ module Special
 !
 !   24-nov-04/tony: coded
 !
-      use Sub, only: grad, div, curl, del2v, dot2_mn, dot, levi_civita
+      ! use Sub, only: grad, div, curl, del2v, dot2_mn, dot, levi_civita, gij, &
+      !                del2v_etc, dot_mn_sv_pencil
+      use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
+
+      real, dimension (nx,3) :: tmp1, tmp2
+      real, dimension (nx) :: tmp0
 !
       ! real, dimension (nx) :: tmp
       integer :: i,j,k
@@ -603,25 +633,19 @@ module Special
 !
 !  Pencil for charge density.
 !
-      if (lsolve_chargedensityW) then
-        p%rhoW1=f(l1:l2,m,n,irhoW)
-        p%rhoW2=f(l1:l2,m,n,irhoW+1)
-        p%rhoW3=f(l1:l2,m,n,irhoW+2)
-      endif
+      ! if (lsolve_chargedensityW) then
+      !   p%rhoW1=f(l1:l2,m,n,irhoW)
+      !   p%rhoW2=f(l1:l2,m,n,irhoW+1)
+      !   p%rhoW3=f(l1:l2,m,n,irhoW+2)
+      ! endif
 !
-!  Terms for Gamma evolution.
+!  Terms for Gamma evolution (required if llongitudinalW=T)
 !
-      if (lpenc_requested(i_divdotW1)) then
-        call div(f,idWW1,p%divdotW1)
-      endif
-      if (lpenc_requested(i_divdotW2)) then
-        call div(f,idWW2,p%divdotW2)
-      endif
-      if (lpenc_requested(i_divdotW3)) then
-        call div(f,idWW3,p%divdotW3)
-      endif
+      if (lpenc_requested(i_divdotW1)) call div(f,idWW1,p%divdotW1)
+      if (lpenc_requested(i_divdotW2)) call div(f,idWW2,p%divdotW2)
+      if (lpenc_requested(i_divdotW3)) call div(f,idWW3,p%divdotW3)
 !
-!  GammaW1, GammaW2, GammaW3 pencils
+!  GammaW1, GammaW2, GammaW3 pencils (required from klein_gordon if lphi_weakcharge=T)
 !
       if (lpenc_requested(i_GammaW1)) then
         if (llongitudinalW) then
@@ -645,81 +669,65 @@ module Special
         endif
       endif
 !
-!  Replace p%curlb by the combination -p%del2a+p%gGamma.
+!  Pencils del2W1, del2W2, del2W3 and W1ij, W2ij, W3ij
+!  mandatory for curlBW1, curlBW2, curlBW3
 !
+      call gij(f,iWW1,p%W1ij,1)
+      call gij(f,iWW2,p%W2ij,1)
+      call gij(f,iWW3,p%W3ij,1)
 
-      if (lpenc_requested(i_del2W1)) then
-        call del2v(f,iWW1,p%del2W1)
-      endif
-      if (lpenc_requested(i_del2W2)) then
-        call del2v(f,iWW2,p%del2W2)
-      endif
-      if (lpenc_requested(i_del2W3)) then
-        call del2v(f,iWW3,p%del2W3)
-      endif
-
+      call del2v(f,iWW1,p%del2W1)
+      call del2v(f,iWW2,p%del2W2)
+      call del2v(f,iWW3,p%del2W3)
+!
+! Compute gradient of GammaW (mandatory for curlBW1, curlBW2, curlBW3)
+!
       if (llongitudinalW) then
         call grad(f,iGammaW,p%gGammaW1)
         call grad(f,iGammaW+1,p%gGammaW2)
         call grad(f,iGammaW+2,p%gGammaW3)
-        p%curlcurlW1=-p%del2W1+p%gGammaW1
-        p%curlcurlW2=-p%del2W2+p%gGammaW2
-        p%curlcurlW3=-p%del2W3+p%gGammaW3
+      else
+        call del2v_etc(f,iWW1,GRADDIV=p%gGammaW1)
+        call del2v_etc(f,iWW2,GRADDIV=p%gGammaW2)
+        call del2v_etc(f,iWW3,GRADDIV=p%gGammaW3)
       endif
 !
-! pencils dW1, dW2, dW3, dW1sq, dW2sq, dW3sq
+! Compute curlBW1, curlBW2, curlBW3 as - del2W + grad(divW)
+! (mandatory for EOM)
 !
-      if (lpenc_requested(i_dW1)) then
-        p%dW1=f(l1:l2,m,n,idWW1:idWW1+2)
-        if (lpenc_requested(i_dW1sq)) then
-          call dot2_mn(p%dW1,p%dW1sq)
-        endif
-      endif
-      if (lpenc_requested(i_dW2)) then
-        p%dW2=f(l1:l2,m,n,idWW2:idWW2+2)
-        if (lpenc_requested(i_dW2sq)) then
-          call dot2_mn(p%dW2,p%dW2sq)
-        endif
-      endif
-      if (lpenc_requested(i_dW3)) then
-        p%dW3=f(l1:l2,m,n,idWW3:idWW3+2)
-        if (lpenc_requested(i_dW3sq)) then
-          call dot2_mn(p%dW3,p%dW3sq)
-        endif
-      endif
+      p%curlBW1=-p%del2W1+p%gGammaW1
+      p%curlBW2=-p%del2W2+p%gGammaW2
+      p%curlBW3=-p%del2W3+p%gGammaW3
 !
-! pencils W1, W2, W3, W1sq, W2sq, W3sq
+! pencils dW1, dW2, dW3
 !
-      if (lpenc_requested(i_W1)) then
-        p%W1=f(l1:l2,m,n,iWW1:iWW1+2)
-        if (lpenc_requested(i_W1sq)) then
-          call dot2_mn(p%W1,p%W1sq)
-        endif
-      endif
-      if (lpenc_requested(i_W2)) then
-        p%W2=f(l1:l2,m,n,iWW2:iWW2+2)
-        if (lpenc_requested(i_W2sq)) then
-          call dot2_mn(p%W2,p%W2sq)
-        endif
-      endif
-      if (lpenc_requested(i_W3)) then
-        p%W3=f(l1:l2,m,n,iWW3:iWW3+2)
-        if (lpenc_requested(i_W3sq)) then
-          call dot2_mn(p%W3,p%W3sq)
-        endif
-      endif
+      if (lpenc_requested(i_dW1)) p%dW1=f(l1:l2,m,n,idWW1:idWW1+2)
+      if (lpenc_requested(i_dW1sq)) call dot2_mn(p%dW1,p%dW1sq)
+      if (lpenc_requested(i_dW2)) p%dW2=f(l1:l2,m,n,idWW2:idWW2+2)
+      if (lpenc_requested(i_dW2sq)) call dot2_mn(p%dW2,p%dW2sq)
+      if (lpenc_requested(i_dW3)) p%dW3=f(l1:l2,m,n,idWW3:idWW3+2)
+      if (lpenc_requested(i_dW3sq)) call dot2_mn(p%dW3,p%dW3sq)
 !
-!  WdotW pencils
+! pencils W1, W2, W3, W1sq, W2sq, W3sq (mandatory for EOM)
 !
-      if (lpenc_requested(i_W1dotW1)) then
-        call dot(p%W1,p%dW1,p%W1dotW1)
-      endif
-      if (lpenc_requested(i_W2dotW2)) then
-        call dot(p%W2,p%dW2,p%W2dotW2)
-      endif
-      if (lpenc_requested(i_W3dotW3)) then
-        call dot(p%W3,p%dW3,p%W3dotW3)
-      endif
+      p%W1=f(l1:l2,m,n,iWW1:iWW1+2)
+      call dot2_mn(p%W1,p%W1sq)
+      p%W2=f(l1:l2,m,n,iWW2:iWW2+2)
+      call dot2_mn(p%W2,p%W2sq)
+      p%W3=f(l1:l2,m,n,iWW3:iWW3+2)
+      call dot2_mn(p%W3,p%W3sq)
+!
+!  WdotW pencils (required if llongitudinalW=T)
+!
+      if (lpenc_requested(i_W1dotW1)) call dot(p%W1,p%dW1,p%W1dotW1)
+      if (lpenc_requested(i_W1dotW2)) call dot(p%W1,p%dW2,p%W1dotW2)
+      if (lpenc_requested(i_W1dotW3)) call dot(p%W1,p%dW3,p%W1dotW3)
+      if (lpenc_requested(i_W2dotW1)) call dot(p%W2,p%dW1,p%W2dotW1)
+      if (lpenc_requested(i_W2dotW2)) call dot(p%W2,p%dW2,p%W2dotW2)
+      if (lpenc_requested(i_W2dotW3)) call dot(p%W2,p%dW3,p%W2dotW3)
+      if (lpenc_requested(i_W3dotW1)) call dot(p%W3,p%dW1,p%W3dotW1)
+      if (lpenc_requested(i_W3dotW2)) call dot(p%W3,p%dW2,p%W3dotW2)
+      if (lpenc_requested(i_W3dotW3)) call dot(p%W3,p%dW3,p%W3dotW3)
 !
 ! WWddot2
 !
@@ -732,6 +740,143 @@ module Special
         p%W2ddotsq=0.
         p%W3ddotsq=0.
       endif
+!
+!  Pencils W1ddot_gw, W2ddot_gw, W3ddot_gw (mandatory for EOM)
+!  They correspond to the terms in the EOM of dW1, dW2, dW3 that
+!  are proportional to coupl_gw.
+!  These terms are characteristic of Yang-Mills fields and appear
+!  due to the non-Abelian nature of the gauge group SU(2).
+!
+      if (coupl_gw /= 0) then
+        ! Add terms from coupl_gw x f^{abc} W^b GammaW^c
+        ! Antonino: Tanmay's gauge fixing terms (-gw eps^abc W_c^i GammaW_b)
+        call dot_mn_sv_pencil(p%W2,p%GammaW3,tmp1)
+        call dot_mn_sv_pencil(p%W3,p%GammaW2,tmp2)
+        p%W1ddot_gw=-coupl_gw*(tmp1-tmp2)
+        call dot_mn_sv_pencil(p%W3,p%GammaW1,tmp1)
+        call dot_mn_sv_pencil(p%W1,p%GammaW3,tmp2)
+        p%W2ddot_gw=-coupl_gw*(tmp1-tmp2)
+        call dot_mn_sv_pencil(p%W1,p%GammaW2,tmp1)
+        call dot_mn_sv_pencil(p%W2,p%GammaW1,tmp2)
+        p%W3ddot_gw=-coupl_gw*(tmp1-tmp2)
+        ! Add terms from coupl_gw x f^{abc} d_k W^b W_k^c
+        ! compute terms W3 . grad W2 and W2 . grad W3
+        call u_dot_grad(f,iWW2,p%W2ij,p%W3,tmp1)
+        call u_dot_grad(f,iWW3,p%W3ij,p%W2,tmp2)
+        p%W1ddot_gw=p%W1ddot_gw-2.*coupl_gw*(tmp1-tmp2)
+        ! compute terms W1 . grad W3 and W3 . grad W1
+        call u_dot_grad(f,iWW3,p%W3ij,p%W1,tmp1)
+        call u_dot_grad(f,iWW1,p%W1ij,p%W3,tmp2)
+        p%W2ddot_gw=p%W2ddot_gw-2.*coupl_gw*(tmp1-tmp2)
+        ! compute terms W2 . grad W1 and W1 . grad W2
+        call u_dot_grad(f,iWW1,p%W1ij,p%W2,tmp1)
+        call u_dot_grad(f,iWW2,p%W2ij,p%W1,tmp2)
+        p%W3ddot_gw=p%W3ddot_gw-2.*coupl_gw*(tmp1-tmp2)
+
+        ! two more additional terms come from coupl_gw x f^{abc} W_k^b W_{ik}^c
+        ! the first one is coupl_gw x f^{abc} W_k^b nabla W_k^c
+        do i=1,3; do j=1,3
+        p%W1ddot_gw(:,j)=p%W1ddot_gw(:,j) - &
+            coupl_gw*(p%W2(:,i)*p%W3ij(:,i,j) - p%W3(:,i)*p%W2ij(:,i,j))
+        p%W2ddot_gw(:,j)=p%W2ddot_gw(:,j) - &
+            coupl_gw*(p%W3(:,i)*p%W1ij(:,i,j) - p%W1(:,i)*p%W3ij(:,i,j))
+        p%W3ddot_gw(:,j)=p%W3ddot_gw(:,j) - &
+            coupl_gw*(p%W1(:,i)*p%W2ij(:,i,j) - p%W2(:,i)*p%W1ij(:,i,j))
+        enddo; enddo
+
+        ! the second one is coupl_gw^2 f^{abc} f^{cde} W_k^b W_k^e W_i^d
+        ! which can be split into two parts:
+        ! 1) - coupl_gw^2 (W_b . W_b) W^a
+        ! 2) + coupl_gw^2 (W_a . W_b) W^b
+        tmp0=p%W1sq+p%W2sq+p%W3sq
+        call dot_mn_sv_pencil(p%W1,tmp0,tmp1)
+        p%W1ddot_gw2=-coupl_gw**2*tmp1
+        call dot_mn_sv_pencil(p%W2,tmp0,tmp1)
+        p%W2ddot_gw2=-coupl_gw**2*tmp1
+        call dot_mn_sv_pencil(p%W3,tmp0,tmp1)
+        p%W3ddot_gw2=-coupl_gw**2*tmp1
+        ! df(l1:l2,m,n,idWW1:idWW1+2)=df(l1:l2,m,n,idWW1:idWW1+2) - &
+        !     coupl_gw**2*(p%W1sq+p%W2sq+p%W3sq)*f(l1:l2,m,n,iWW1:iWW1+2)
+        ! df(l1:l2,m,n,idWW2:idWW2+2)=df(l1:l2,m,n,idWW2:idWW2+2) - &
+        !     coupl_gw**2*(p%W1sq+p%W2sq+p%W3sq)*f(l1:l2,m,n,iWW2:iWW2+2)
+        ! df(l1:l2,m,n,idWW3:idWW3+2)=df(l1:l2,m,n,idWW3:idWW3+2) - &
+        !     coupl_gw**2*(p%W1sq+p%W2sq+p%W3sq)*f(l1:l2,m,n,iWW3:iWW3+2)
+        do i=1,3
+          p%W1ddot_gw2(:,i)=p%W1ddot_gw2(:,i) + &
+              coupl_gw**2*p%W1(:,i)*p%W1sq
+          p%W2ddot_gw2(:,i)=p%W2ddot_gw2(:,i) + &
+              coupl_gw**2*p%W2(:,i)*p%W2sq
+          p%W3ddot_gw2(:,i)=p%W3ddot_gw2(:,i) + &
+              coupl_gw**2*p%W3(:,i)*p%W3sq
+          ! df(l1:l2,m,n,idWW1+i)=df(l1:l2,m,n,idWW1+i) + &
+          !     coupl_gw**2*p%W1(:,i+1)*p%W1sq
+          ! df(l1:l2,m,n,idWW2+i)=df(l1:l2,m,n,idWW2+i) + &
+          !     coupl_gw**2*p%W2(:,i+1)*p%W2sq
+          ! df(l1:l2,m,n,idWW3+i)=df(l1:l2,m,n,idWW3+i) + &
+          !     coupl_gw**2*p%W3(:,i+1)*p%W3sq
+        enddo
+        call dot_mn(p%W1,p%W2,tmp0)
+        do i=1,3
+          p%W1ddot_gw2(:,i)=p%W1ddot_gw2(:,i) + &
+              coupl_gw**2*p%W2(:,i)*tmp0
+          p%W2ddot_gw2(:,i)=p%W2ddot_gw2(:,i) + &
+              coupl_gw**2*p%W1(:,i)*tmp0
+          ! df(l1:l2,m,n,idWW1+i)=df(l1:l2,m,n,idWW1+i) + &
+          !     coupl_gw**2*p%W2(:,i+1)*tmp
+          ! df(l1:l2,m,n,idWW2+i)=df(l1:l2,m,n,idWW2+i) + &
+          !     coupl_gw**2*p%W1(:,i+1)*tmp
+        enddo
+        call dot_mn(p%W1,p%W3,tmp0)
+        do i=1,3
+          p%W1ddot_gw2(:,i)=p%W1ddot_gw2(:,i) + &
+              coupl_gw**2*p%W3(:,i)*tmp0
+          p%W3ddot_gw2(:,i)=p%W3ddot_gw2(:,i) + &
+              coupl_gw**2*p%W1(:,i)*tmp0
+          ! df(l1:l2,m,n,idWW1+i)=df(l1:l2,m,n,idWW1+i) + &
+          !     coupl_gw**2*p%W3(:,i+1)*tmp
+          ! df(l1:l2,m,n,idWW3+i)=df(l1:l2,m,n,idWW3+i) + &
+          !     coupl_gw**2*p%W3(:,i+1)*tmp
+        enddo
+        call dot_mn(p%W2,p%W3,tmp0)
+        do i=1,3
+          p%W2ddot_gw2(:,i)=p%W2ddot_gw2(:,i) + &
+              coupl_gw**2*p%W3(:,i)*tmp0
+          p%W3ddot_gw2(:,i)=p%W3ddot_gw2(:,i) + &
+              coupl_gw**2*p%W2(:,i)*tmp0
+          ! df(l1:l2,m,n,idWW2+i)=df(l1:l2,m,n,idWW2+i) + &
+          !     coupl_gw**2*p%W3(:,i+1)*tmp
+          ! df(l1:l2,m,n,idWW3+i)=df(l1:l2,m,n,idWW3+i) + &
+          !     coupl_gw**2*p%W2(:,i+1)*tmp
+        enddo
+      endif
+      !
+
+      ! call u_dot_grad(f,iuu,p%uij,p%oo,p%ogu,UPWIND=lupw_uu)
+      ! compute terms W3 . grad W2 and W2 . grad W3
+      ! call u_dot_grad(f,iWW2,p%W2ij,p%W3,tmp1)
+      ! call u_dot_grad(f,iWW3,p%W3ij,p%W2,tmp2)
+      ! df(l1:l2,m,n,idWW1:idWW1+2)=df(l1:l2,m,n,idWW1:idWW1+2) - &
+      !    2.*coupl_gw*(tmp1-tmp2)
+      ! ! compute terms W1 . grad W3 and W3 . grad W1
+      ! call u_dot_grad(f,iWW3,p%W3ij,p%W1,tmp1)
+      ! call u_dot_grad(f,iWW1,p%W1ij,p%W3,tmp2)
+      ! df(l1:l2,m,n,idWW2:idWW2+2)=df(l1:l2,m,n,idWW2:idWW2+2) - &
+      !    2.*coupl_gw*(tmp1-tmp2)
+      ! ! compute terms W2 . grad W1 and W1 . grad W2
+      ! call u_dot_grad(f,iWW1,p%W1ij,p%W2,tmp1)
+      ! call u_dot_grad(f,iWW2,p%W2ij,p%W1,tmp2)
+      ! df(l1:l2,m,n,idWW3:idWW3+2)=df(l1:l2,m,n,idWW3:idWW3+2) - &
+      !    2.*coupl_gw*(tmp1-tmp2)
+      ! two more additional terms come from coupl_gw x f^{abc} W_k^b W_{ik}^c
+      ! the first one is coupl_gw x f^{abc} W_k^b d_i W_k^c
+      ! do i=1,3; do j=1,3
+      !   df(l1:l2,m,n,idWW1+j-1)=df(l1:l2,m,n,idWW1+j-1) - &
+      !     coupl_gw*(p%W2(:,i)*p%W3ij(:,i,j) - p%W3(:,i)*p%W2ij(:,i,j))
+      !   df(l1:l2,m,n,idWW2+j-1)=df(l1:l2,m,n,idWW2+j-1) - &
+      !     coupl_gw*(p%W3(:,i)*p%W1ij(:,i,j) - p%W1(:,i)*p%W3ij(:,i,j))
+      !   df(l1:l2,m,n,idWW3+j-1)=df(l1:l2,m,n,idWW3+j-1) - &
+      !     coupl_gw*(p%W1(:,i)*p%W2ij(:,i,j) - p%W2(:,i)*p%W1ij(:,i,j))
+      ! enddo; enddo
 !
 ! !  curle
 ! !
@@ -784,24 +929,26 @@ module Special
     subroutine calc_constrainteqn(p,tmp,constrainteqn)
 
       type(pencil_case) :: p
-      real, dimension(nx),intent(IN) :: tmp
-      real, dimension(nx), intent(OUT) :: constrainteqn
-      real, dimension(nx) :: constrainteqn1
+      real, dimension(nx,3),intent(IN) :: tmp
+      real, dimension(nx,3), intent(OUT) :: constrainteqn
+      real, dimension(nx,3) :: constrainteqn1
 
       ! constraint equation to be adapted for WW
       ! constrainteqn1=sqrt(p%divE**2+tmp**2)
-      constrainteqn1=sqrt(p%divdotW1**2 + tmp**2 + &
-                          p%divdotW2**2 + p%divdotW3**2)
+      constrainteqn1(:,1)=sqrt(p%divdotW1**2 + tmp(:,1)**2)
+      constrainteqn1(:,2)=sqrt(p%divdotW2**2 + tmp(:,2)**2)
+      constrainteqn1(:,3)=sqrt(p%divdotW3**2 + tmp(:,3)**2)
 !
 !  in the following, should use "where"
 !
-      constrainteqn1=sqrt(p%divdotW1**2 + tmp**2 + &
-                          p%divdotW2**2 + p%divdotW3**2)
       if (any(constrainteqn1 == 0.)) then
         constrainteqn=0.
       else
         !constrainteqn=(p%divE-tmp)/constrainteqn1
-        constrainteqn=(p%divdotW1+p%divdotW2+p%divdotW3-tmp)/constrainteqn1
+        !constrainteqn=(p%divdotW1+p%divdotW2+p%divdotW3-tmp)/constrainteqn1
+        constrainteqn(:,1)=(p%divdotW1 + tmp(:,1))/constrainteqn1(:,1)
+        constrainteqn(:,2)=(p%divdotW2 + tmp(:,2))/constrainteqn1(:,2)
+        constrainteqn(:,3)=(p%divdotW3 + tmp(:,3))/constrainteqn1(:,3)
       endif
      endsubroutine calc_constrainteqn
 !***********************************************************************
@@ -828,11 +975,11 @@ module Special
       type (pencil_case) :: p
 !
       ! real, dimension (nx,3,3) :: gtmp, dJdt, del2JJ
-      real, dimension (nx,3) :: tmp ! del2a0 !constrainteqn, constrainteqn1
+      real, dimension (nx,3) :: tmp=0. ! del2a0 !constrainteqn, constrainteqn1
       ! real :: inflation_factor=0. ! mfpf=0., fppf=0.
       integer :: j
 !
-      intent(in) :: p
+      intent(inout) :: p
       intent(inout) :: f, df
 !
 !  identify module and boundary conditions
@@ -849,17 +996,43 @@ module Special
 !  Add to the existing tmp and update df(l1:l2,m,n,irhoe).
 !
       if (llongitudinalW) then
-        if (lsolve_chargedensityW) then
-          tmp(:,1)=tmp(:,1)+p%rhoW1
-          tmp(:,2)=tmp(:,2)+p%rhoW2
-          tmp(:,3)=tmp(:,3)+p%rhoW3
+        ! if (lsolve_chargedensityW) then
+        !   tmp(:,1)=tmp(:,1)+p%rhoW1
+        !   tmp(:,2)=tmp(:,2)+p%rhoW2
+        !   tmp(:,3)=tmp(:,3)+p%rhoW3
+        ! endif
+        if (lphi_doublet .and. lphi_weakcharge .and. coupl_gw /= 0) then
+          p%rhoe_higgsW1=-coupl_gw*(p%phi*p%cov_der(:,1,4) - &
+                                p%phi_doublet(:,1)*p%cov_der(:,1,3) + &
+                                p%phi_doublet(:,2)*p%cov_der(:,1,2) - &
+                                p%phi_doublet(:,3)*p%cov_der(:,1,1))
+          p%rhoe_higgsW2=-coupl_gw*(-p%phi*p%cov_der(:,1,3) - &
+                                p%phi_doublet(:,1)*p%cov_der(:,1,4) + &
+                                p%phi_doublet(:,2)*p%cov_der(:,1,1) + &
+                                p%phi_doublet(:,3)*p%cov_der(:,1,2))
+          p%rhoe_higgsW3=-coupl_gw*(p%phi*p%cov_der(:,1,2) - &
+                                p%phi_doublet(:,1)*p%cov_der(:,1,1) - &
+                                p%phi_doublet(:,2)*p%cov_der(:,1,4) + &
+                                p%phi_doublet(:,3)*p%cov_der(:,1,3))
+          !
+          ! add Higgs charge density to tmp
+          !
+          tmp(:,1) = tmp(:,1) - p%rhoe_higgsW1
+          tmp(:,2) = tmp(:,2) - p%rhoe_higgsW2
+          tmp(:,3) = tmp(:,3) - p%rhoe_higgsW3
+        endif
+        ! add coupl_gw x f^{abc} x W_b . dW_b contraction to Gauss constraint
+        if (coupl_gw /= 0) then
+          tmp(:,1) = tmp(:,1) - coupl_gw*(p%W2dotW3 - p%W3dotW2)
+          tmp(:,2) = tmp(:,2) - coupl_gw*(p%W3dotW1 - p%W1dotW3)
+          tmp(:,3) = tmp(:,3) - coupl_gw*(p%W1dotW2 - p%W2dotW1)
         endif
         df(l1:l2,m,n,iGammaW)=df(l1:l2,m,n,iGammaW) &
-            -(1.-weight_longitudinalW)*p%divdotW1-weight_longitudinalW*tmp(:,1)
+            +(1.+weight_longitudinalW)*p%divdotW1+weight_longitudinalW*tmp(:,1)
         df(l1:l2,m,n,iGammaW+1)=df(l1:l2,m,n,iGammaW+1) &
-            -(1.-weight_longitudinalW)*p%divdotW2-weight_longitudinalW*tmp(:,2)
+            +(1.+weight_longitudinalW)*p%divdotW2+weight_longitudinalW*tmp(:,2)
         df(l1:l2,m,n,iGammaW+2)=df(l1:l2,m,n,iGammaW+2) &
-            -(1.-weight_longitudinalW)*p%divdotW3-weight_longitudinalW*tmp(:,3)
+            +(1.+weight_longitudinalW)*p%divdotW3+weight_longitudinalW*tmp(:,3)
       endif
 !
 !  solve: dE/dt = curlB - ...
@@ -869,21 +1042,30 @@ module Special
       ! if (lmagnetic) then
       !   df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-p%el
       df(l1:l2,m,n,iWW1:iWW1+2)= &
-            df(l1:l2,m,n,iWW1:iWW1+2)-p%dW1
+            df(l1:l2,m,n,iWW1:iWW1+2)+p%dW1
       df(l1:l2,m,n,iWW2:iWW2+2)= &
-            df(l1:l2,m,n,iWW2:iWW2+2)-p%dW2
+            df(l1:l2,m,n,iWW2:iWW2+2)+p%dW2
       df(l1:l2,m,n,iWW3:iWW3+2)= &
-            df(l1:l2,m,n,iWW3:iWW3+2)-p%dW3
+            df(l1:l2,m,n,iWW3:iWW3+2)+p%dW3
 
       !  Maxwell equation otherwise the same in both gauges.
       df(l1:l2,m,n,idWW1:idWW1+2)=&
-            df(l1:l2,m,n,idWW1:idWW1+2)+c_light2*p%curlcurlW1
+            df(l1:l2,m,n,idWW1:idWW1+2)-c_light2*p%curlBW1
       df(l1:l2,m,n,idWW2:idWW2+2)=&
-            df(l1:l2,m,n,idWW2:idWW2+2)+c_light2*p%curlcurlW2
+            df(l1:l2,m,n,idWW2:idWW2+2)-c_light2*p%curlBW2
       df(l1:l2,m,n,idWW3:idWW3+2)=&
-            df(l1:l2,m,n,idWW3:idWW3+2)+c_light2*p%curlcurlW3
+            df(l1:l2,m,n,idWW3:idWW3+2)-c_light2*p%curlBW3
 !
-
+!  Add Yang-Mills terms proportional to coupl_gw and coupl_gw^2
+!
+      if (coupl_gw /= 0) then
+        df(l1:l2,m,n,idWW1:idWW1+2)=df(l1:l2,m,n,idWW1:idWW1+2) + &
+              p%W1ddot_gw + p%W1ddot_gw2
+        df(l1:l2,m,n,idWW2:idWW2+2)=df(l1:l2,m,n,idWW2:idWW2+2) + &
+              p%W2ddot_gw + p%W2ddot_gw2
+        df(l1:l2,m,n,idWW3:idWW3+2)=df(l1:l2,m,n,idWW3:idWW3+2) + &
+              p%W3ddot_gw + p%W3ddot_gw2
+      endif
 !
       !   df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)+c_light2*(p%curlb-mu0*p%jj_ohm)
 !
@@ -894,16 +1076,65 @@ module Special
       !   df(l1:l2,m,n,irhow)=df(l1:l2,m,n,irhow)-p%divJ
       ! endif
 !
+! Add diffusion term if eta_WW /= 0
+      if (eta_WW/=0.) then
+        df(l1:l2,m,n,iWW1:iWW1+2)=df(l1:l2,m,n,iWW1:iWW1+2)+c_light2*eta_WW*p%del2W1
+        df(l1:l2,m,n,iWW2:iWW2+2)=df(l1:l2,m,n,iWW2:iWW2+2)+c_light2*eta_WW*p%del2W2
+        df(l1:l2,m,n,iWW3:iWW3+2)=df(l1:l2,m,n,iWW3:iWW3+2)+c_light2*eta_WW*p%del2W3
+      endif
+!
+!  If Higgs doublet, add current from Higgs SU(2) weak charge,
+!  compute pencils p%jj_higgsW1, p%jj_higgsW2, p%jj_higgsW3
+!
+      if (lphi_doublet .and. lphi_weakcharge .and. coupl_gw /= 0) then
+        ! currents from charged Higgs doublet
+        do j=1,3
+          p%jj_higgsW1(:,j)=coupl_gw*(p%phi*p%cov_der(:,j+1,4) - &
+                                p%phi_doublet(:,1)*p%cov_der(:,j+1,3) + &
+                                p%phi_doublet(:,2)*p%cov_der(:,j+1,2) - &
+                                p%phi_doublet(:,3)*p%cov_der(:,j+1,1))
+          p%jj_higgsW2(:,j)=coupl_gw*(-p%phi*p%cov_der(:,j+1,3) - &
+                                p%phi_doublet(:,1)*p%cov_der(:,j+1,4) + &
+                                p%phi_doublet(:,2)*p%cov_der(:,j+1,1) + &
+                                p%phi_doublet(:,3)*p%cov_der(:,j+1,2))
+          p%jj_higgsW3(:,j)=coupl_gw*(p%phi*p%cov_der(:,j+1,2) - &
+                                p%phi_doublet(:,1)*p%cov_der(:,j+1,1) - &
+                                p%phi_doublet(:,2)*p%cov_der(:,j+1,4) + &
+                                p%phi_doublet(:,3)*p%cov_der(:,j+1,3))
+        enddo
+        df(l1:l2,m,n,idWW1:idWW1+2)=df(l1:l2,m,n,idWW1:idWW1+2) + &
+            p%jj_higgsW1
+        df(l1:l2,m,n,idWW2:idWW2+2)=df(l1:l2,m,n,idWW2:idWW2+2) + &
+            p%jj_higgsW2
+        df(l1:l2,m,n,idWW3:idWW3+2)=df(l1:l2,m,n,idWW3:idWW3+2) + &
+            p%jj_higgsW3
+      endif
 !
 !  Compute WWddot_as_aux
 !
       if (lWddot_as_aux) then
-        f(l1:l2,m,n,iWW1ddot:iWW1ddot+2)= &
-            c_light2*p%curlcurlW1
-        f(l1:l2,m,n,iWW2ddot:iWW2ddot+2)= &
-            c_light2*p%curlcurlW2
-        f(l1:l2,m,n,iWW3ddot:iWW3ddot+2)= &
-            c_light2*p%curlcurlW3
+        f(l1:l2,m,n,iWW1ddot:iWW1ddot+2) = - &
+            c_light2*p%curlBW1
+        f(l1:l2,m,n,iWW2ddot:iWW2ddot+2) = - &
+            c_light2*p%curlBW2
+        f(l1:l2,m,n,iWW3ddot:iWW3ddot+2) = - &
+            c_light2*p%curlBW3
+        if (coupl_gw /= 0) then
+          f(l1:l2,m,n,iWW1ddot:iWW1ddot+2)=f(l1:l2,m,n,iWW1ddot:iWW1ddot+2) + &
+                p%W1ddot_gw + p%W1ddot_gw2
+          f(l1:l2,m,n,iWW2ddot:iWW2ddot+2)=f(l1:l2,m,n,iWW2ddot:iWW2ddot+2) + &
+                p%W2ddot_gw + p%W2ddot_gw2
+          f(l1:l2,m,n,iWW3ddot:iWW3ddot+2)=f(l1:l2,m,n,iWW3ddot:iWW3ddot+2) + &
+                p%W3ddot_gw + p%W3ddot_gw2
+          if (lphi_doublet .and. lphi_weakcharge) then
+            f(l1:l2,m,n,iWW1ddot:iWW1ddot+2)=f(l1:l2,m,n,iWW1ddot:iWW1ddot+2) - &
+                p%jj_higgsW1
+            f(l1:l2,m,n,iWW2ddot:iWW2ddot+2)=f(l1:l2,m,n,iWW2ddot:iWW2ddot+2) - &
+                p%jj_higgsW2
+            f(l1:l2,m,n,iWW3ddot:iWW3ddot+2)=f(l1:l2,m,n,iWW3ddot:iWW3ddot+2) - &
+                p%jj_higgsW3
+          endif
+        endif
       endif
 !
 !  If requested, put divE
@@ -931,9 +1162,9 @@ module Special
       use Diagnostics
       real, dimension(mx,my,mz,mfarray) :: f
       type(pencil_case) :: p
-      real, dimension(nx) :: tmp, constrainteqn
+      real, dimension(nx,3) :: tmp, constrainteqn
       ! real :: mfpf=0.,fppf=0.
-      real, dimension(nx,3) :: gtmp
+      ! real, dimension(nx,3) :: gtmp
       integer :: i,j
 
       ! call save_name(get_mfpf(),idiag_mfpf)
