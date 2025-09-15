@@ -754,7 +754,7 @@ module Special
 !
       type(pencil_case) :: p
       real, dimension(nx) :: dst2
-      real, dimension(nx), intent(OUT) :: dst
+      real, dimension(nx), intent(inout) :: dst
 !
 !   14-sep-25/alberto: added axion coupling for a second scalar field psi
 !
@@ -781,7 +781,7 @@ module Special
           use Sub
           type(pencil_case), intent(IN) :: p
           real, dimension(nx, 3) :: gtmp2
-          real, dimension(nx,3), intent(OUT) :: gtmp
+          real, dimension(nx,3), intent(inout) :: gtmp
 
           if (alpf/=0.) then
             if (lphi_hom) then
