@@ -75,7 +75,7 @@ module Special
   character (len=labellen) :: power_filename='power_profile.dat'
 !
   namelist /special_init_pars/ &
-    initee, inita0, alpf, alpfpsi, &
+    initee, inita0, alpf, &
     ampl_ex, ampl_ey, ampl_ez, ampl_a0, &
     kx_ex, kx_ey, kx_ez, &
     ky_ex, ky_ey, ky_ez, &
@@ -91,7 +91,7 @@ module Special
     lsolve_chargedensity, weight_longitudinalE, lswitch_off_Gamma, &
     lrandom_ampl_ee, lfixed_phase_ee, lskip_projection_ee, &
     luse_scale_factor_in_sigma, lpower_profile_file, power_filename, &
-    coupl_gy, lpsi_hom
+    coupl_gy, alpfpsi, lpsi_hom
 !
   ! run parameters
   real :: beta_inflation=0., rescale_ee=1.
@@ -414,6 +414,7 @@ module Special
 !
       if (alpf/=0.) then
         lpenc_requested(i_bb)=.true.
+        lpenc_requested(i_phi)=.true.
         lpenc_requested(i_dphi)=.true.
         lpenc_requested(i_gphi)=.true.
       endif
@@ -788,7 +789,7 @@ module Special
           real, dimension(nx,3), intent(in) :: gphi
 !
           if (lphihom) then
-              call multsv(dphi,p%bb,gtmp)
+            call multsv(dphi,p%bb,gtmp)
           else
             call cross(gphi,p%el,gtmp)
             call multsv_add(gtmp,dphi,p%bb,gtmp)
@@ -925,11 +926,10 @@ module Special
 !  Use the combined routine multsv_add if both terms are included.
 !
         if (alpf/=0.) then
-          call calc_helical_term(p,gtmp,p%dphi*alpf,p%gphi,lphi_hom)
+          call calc_helical_term(p,gtmp,p%dphi,p%gphi,lphi_hom)
 !          print*,"p%infl_phi",p%infl_phi
 !          print*,"p%infl_dphi",p%infl_dphi
-          !df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)-alpf*gtmp
-          df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)-gtmp
+          df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)-alpf*gtmp
           if (llorenz_gauge_disp) then
             ! if (lphi_hom) then
             !   df(l1:l2,m,n,idiva_name)=df(l1:l2,m,n,idiva_name)+del2a0
@@ -941,8 +941,8 @@ module Special
           endif
         endif
         if (lwaterfall .and. alpfpsi/=0.) then
-          call calc_helical_term(p,gtmp,p%dpsi*alpfpsi,p%gpsi,lpsi_hom)
-          df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)-gtmp
+          call calc_helical_term(p,gtmp,p%dpsi,p%gpsi,lpsi_hom)
+          df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)-alpfpsi*gtmp
           if (llorenz_gauge_disp) then
             if (.not. lpsi_hom) then
               call dot_mn(p%gpsi,p%bb,tmp)
