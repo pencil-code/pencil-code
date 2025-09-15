@@ -3063,13 +3063,6 @@ start=$(technical) $(physics) $(GPU_OBJ) nogpu_astaroth_ansi.o $(TRAINING_OBJ)
 #  Short hand notation for run.o dependencies.
 #
 run=$(technical) $(physics) $(GPU_OBJ) $(GPU_INTERFACE) $(TIMESTEP_OBJ) $(TRAINING_OBJ) equ.o pencil_check.o
-#Astaroth needs the .o files to be linked to get the pushpars from the special modules
-ifneq ($(GPU),nogpu)
-#run+=$(MAGNETIC_MEANFIELD_OBJ)
-ifeq ($(USE_SPECIAL_DISPATCHER),yes)
-run+=$(SPECIAL_MODULES:=.o)
-endif
-endif
 #
 #  Rules for compiling start.o, start.x, run.o, run.x.
 #
