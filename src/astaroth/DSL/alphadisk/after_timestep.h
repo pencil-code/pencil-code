@@ -240,7 +240,7 @@ Kernel after_timestep_alphadisk(){
       isig_up_1 =  isig_do_1+1
       sdo_1 = AC_minsigma__mod__alphadisk + (isig_do_1-1)*AC_dsig__mod__alphadisk
       sup_1 = AC_minsigma__mod__alphadisk + (isig_up_1-1)*AC_dsig__mod__alphadisk
-      DF_TMID = AC_dsig1__mod__alphadisk*(AC_tmid1_table__mod__alphadisk[isig_do_1-1][vertexIdx.x]*(sup_1-sig_1)+ AC_tmid1_table__mod__alphadisk[isig_up_1-1][vertexIdx.x]*(sig_1-sdo_1))
+      DF_TMID = AC_dsig1__mod__alphadisk*(AC_tmid1_table__mod__alphadisk[isig_do_1-1][vertexIdx.x-NGHOST]*(sup_1-sig_1)+ AC_tmid1_table__mod__alphadisk[isig_up_1-1][vertexIdx.x-NGHOST]*(sig_1-sdo_1))
     }
     else if ((sig_1>=AC_sigma_floor__mod__alphadisk) && (sig_1<=AC_sigma_middle__mod__alphadisk)) {
       lnsig_1=log(sig_1)
@@ -248,7 +248,7 @@ Kernel after_timestep_alphadisk(){
       isig_up_1 =  isig_do_1+1
       lnsdo_1=AC_minlnsigma__mod__alphadisk+(isig_do_1-1)*AC_dlnsig__mod__alphadisk
       lnsup_1=AC_minlnsigma__mod__alphadisk+(isig_up_1-1)*AC_dlnsig__mod__alphadisk
-      DF_TMID = AC_dlnsig1__mod__alphadisk*(AC_tmid2_table__mod__alphadisk[isig_do_1-1][vertexIdx.x]*(lnsup_1-lnsig_1)+ AC_tmid2_table__mod__alphadisk[isig_up_1-1][vertexIdx.x]*(lnsig_1-lnsdo_1))
+      DF_TMID = AC_dlnsig1__mod__alphadisk*(AC_tmid2_table__mod__alphadisk[isig_do_1-1][vertexIdx.x-NGHOST]*(lnsup_1-lnsig_1)+ AC_tmid2_table__mod__alphadisk[isig_up_1-1][vertexIdx.x-NGHOST]*(lnsig_1-lnsdo_1))
     }
     else {
     }
