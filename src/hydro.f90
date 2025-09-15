@@ -8930,8 +8930,6 @@ module Hydro
     call copy_addr(uumx,p_par(83)) ! (mx) (3)
     if (allocated(uumxy)) call copy_addr(uumxy,p_par(84)) ! (mx) (my) (3)
     call copy_addr(uumxz,p_par(85)) ! (mx) (mz) (3)
-    call copy_addr(uu_average_cyl,p_par(86)) ! (mx) (mz)
-    call copy_addr(uu_average_sph,p_par(87)) ! (mx) (my)
     call copy_addr(profx_diffrot1,p_par(88)) ! (nx)
     call copy_addr(profx_diffrot2,p_par(89)) ! (nx)
     call copy_addr(profx_diffrot3,p_par(90)) ! (nx)
@@ -8970,6 +8968,7 @@ module Hydro
     call copy_addr(width_hless,p_par(120))
     call copy_addr(width_hless_absolute,p_par(121))
     call copy_addr(lcorrect_penc_u,p_par(122)) ! bool
+    call copy_addr(lcalc_uuavg,p_par(123)) ! bool
 
     endsubroutine pushpars2c
 !***********************************************************************

@@ -3205,6 +3205,7 @@ endif
 ifeq ($(ENERGY),noentropy)
 	@grep noentropy\.f90 $(CUDA_MAKEDIR)/PC_modulesources.h > /dev/null || echo $(CUDA_RELPATH)'/$(ENERGY).f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources.h
 endif
+	@grep '[a-zA-Z_]*eos.*f90' $(CUDA_MAKEDIR)/PC_modulesources.h > /dev/null || echo \#define L$(EOS)_MODULE 1 >> $(CUDA_MAKEDIR)/PC_moduleflags.h
 	@grep '[a-zA-Z_]*eos.*f90' $(CUDA_MAKEDIR)/PC_modulesources.h > /dev/null || echo $(CUDA_RELPATH)'/$(EOS).f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources.h
 	@echo $(CUDA_RELPATH)'/run.f90' >> $(CUDA_MAKEDIR)/PC_modulesources.h
 	@echo ' ' >> $(CUDA_MAKEDIR)/PC_modulesources.h
