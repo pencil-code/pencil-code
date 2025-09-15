@@ -3469,3 +3469,25 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
 }
 #endif
 #endif
+
+//These don't actually do anything except set some flags in the CPU code so can be no-ops here
+bc_freeze_var_x(AcBoundary boundary, AC_TOP_BOT topbot, Field f)
+{
+	suppress_unused_warning(boundary)
+	suppress_unused_warning(topbot)
+	suppress_unused_warning(f)
+}
+
+bc_freeze_var_y(AcBoundary boundary, AC_TOP_BOT topbot, Field f)
+{
+	suppress_unused_warning(boundary)
+	suppress_unused_warning(topbot)
+	suppress_unused_warning(f)
+}
+
+bc_freeze_var_z(AcBoundary boundary, AC_TOP_BOT topbot, Field f)
+{
+	suppress_unused_warning(boundary)
+	suppress_unused_warning(topbot)
+	suppress_unused_warning(f)
+}

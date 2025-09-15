@@ -3,7 +3,7 @@
 Profile<XZ> AC_uu_average_cyl__mod__hydro 
 Profile<XY> AC_uu_average_sph__mod__hydro
 
-hydro_before_boundary(PC_SUB_STEP_NUMBER step_num)
+Kernel hydro_before_boundary(PC_SUB_STEP_NUMBER step_num)
 {
 	if((AC_lfargo_advection__mod__cdata && step_num == 0) || AC_lcalc_uuavg__mod__hydro)
 	{
@@ -18,7 +18,7 @@ hydro_before_boundary(PC_SUB_STEP_NUMBER step_num)
 	}
 }
 #else
-hydro_before_boundary(PC_SUB_STEP_NUMBER step_num)
+Kernel hydro_before_boundary(PC_SUB_STEP_NUMBER step_num)
 {
 	suppress_unused_warning(step_num)
 }
