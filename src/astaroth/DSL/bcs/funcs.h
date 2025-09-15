@@ -62,6 +62,7 @@ bc_steady_z(boundary, topbot, VtxBuffer field)
 }
 //TP: old
 #if Leos_idealgas_MODULE
+#if Lentropy_MODULE
 bc_ss_flux(boundary, topbot, bool lone_sided)
 {
   suppress_unused_warning(boundary)
@@ -153,6 +154,7 @@ bc_ss_flux(boundary, topbot, bool lone_sided)
   else {
   }
 }
+#endif
 #endif
 
 bc_copy_x(AcBoundary boundary, AC_TOP_BOT topbot,VtxBuffer j)
@@ -374,6 +376,7 @@ bc_set_der_z(boundary, topbot, VtxBuffer field,val)
 }
 
 #if Leos_idealgas_MODULE
+#if Lentropy_MODULE
 bc_ss_temp_z(AcBoundary boundary, AC_TOP_BOT topbot,bool lone_sided)
 {
 suppress_unused_warning(boundary)
@@ -539,6 +542,8 @@ else {
 }
 }
 #endif
+#endif
+
 #if LVISCOSITY
 #else
 const bool AC_llambda_effect__mod__viscosity = false

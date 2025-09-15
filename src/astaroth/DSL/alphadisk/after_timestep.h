@@ -1,4 +1,7 @@
 #if LALPHADISK
+field_order(AC_isigma__mod__alphadisk-1) Field F_SIGMA
+field_order(AC_imdot__mod__alphadisk-1) Field F_MDOT
+field_order(AC_itmid__mod__alphadisk-1) Field F_TMID
 Kernel after_timestep_alphadisk(){
   real DF_MDOT = 0.0
   real DF_TMID = 0.0
@@ -206,64 +209,64 @@ Kernel after_timestep_alphadisk(){
   real lgsigma2_2
   real lgmdot_2
   int i_2
-  if(enum_temperature_model__mod__special == enum_hayashi_string) {
-    if(enum_temperature_model__mod__special == enum_hayashi_string) {
-      DF_MDOT = 3*pi*AC_nut_global__mod__special[vertexIdx.x-NGHOST_VAL]*value(Field(AC_isigma__mod__special-1))
+  if(enum_temperature_model__mod__alphadisk == enum_hayashi_string) {
+    if(enum_temperature_model__mod__alphadisk == enum_hayashi_string) {
+      DF_MDOT = 3*pi*AC_nut_global__mod__alphadisk[vertexIdx.x-NGHOST_VAL]*value(Field(AC_isigma__mod__alphadisk-1))
     }
-    else if(enum_temperature_model__mod__special == enum_radiative_string) {
-      lgsigma1_0=(AC_c1__mod__special[vertexIdx.x-NGHOST]-AC_cprime__mod__special)/2.1
-      lgsigma2_0=(AC_c3__mod__special[vertexIdx.x-NGHOST]-AC_c2__mod__special[vertexIdx.x-NGHOST])/0.9
-      lgsigma_0=alog10(value(Field(AC_isigma__mod__special-1)))
+    else if(enum_temperature_model__mod__alphadisk == enum_radiative_string) {
+      lgsigma1_0=(AC_c1__mod__alphadisk[vertexIdx.x-NGHOST]-AC_cprime__mod__alphadisk)/2.1
+      lgsigma2_0=(AC_c3__mod__alphadisk[vertexIdx.x-NGHOST]-AC_c2__mod__alphadisk[vertexIdx.x-NGHOST])/0.9
+      lgsigma_0=alog10(value(Field(AC_isigma__mod__alphadisk-1)))
       if (lgsigma_0<=lgsigma1_0) {
-        lgmdot_0=AC_c1__mod__special[vertexIdx.x-NGHOST] + lgsigma_0
+        lgmdot_0=AC_c1__mod__alphadisk[vertexIdx.x-NGHOST] + lgsigma_0
       }
       else if ((lgsigma_0>lgsigma1_0) && (lgsigma_0<lgsigma2_0)) {
-        lgmdot_0=AC_c2__mod__special[vertexIdx.x-NGHOST] + 2.0*lgsigma_0
+        lgmdot_0=AC_c2__mod__alphadisk[vertexIdx.x-NGHOST] + 2.0*lgsigma_0
       }
       else if (lgsigma_0>=lgsigma2_0) {
-        lgmdot_0=AC_c3__mod__special[vertexIdx.x-NGHOST] + 1.1*lgsigma_0
+        lgmdot_0=AC_c3__mod__alphadisk[vertexIdx.x-NGHOST] + 1.1*lgsigma_0
       }
       else {
       }
       DF_MDOT=pow(10,lgmdot_0)
     }
   }
-  else if(enum_temperature_model__mod__special == enum_radiative_string) {
-    sig_1=value(Field(AC_isigma__mod__special-1))
-    if (sig_1>AC_maxsigma__mod__special) {
+  else if(enum_temperature_model__mod__alphadisk == enum_radiative_string) {
+    sig_1=value(Field(AC_isigma__mod__alphadisk-1))
+    if (sig_1>AC_maxsigma__mod__alphadisk) {
     }
-    else if ((sig_1>=AC_sigma_middle__mod__special) && (sig_1<=AC_maxsigma__mod__special)) {
-      isig_do_1 = floor((value(Field(AC_isigma__mod__special-1)) - AC_minsigma__mod__special)*AC_dsig1__mod__special) + 1
+    else if ((sig_1>=AC_sigma_middle__mod__alphadisk) && (sig_1<=AC_maxsigma__mod__alphadisk)) {
+      isig_do_1 = floor((value(Field(AC_isigma__mod__alphadisk-1)) - AC_minsigma__mod__alphadisk)*AC_dsig1__mod__alphadisk) + 1
       isig_up_1 =  isig_do_1+1
-      sdo_1 = AC_minsigma__mod__special + (isig_do_1-1)*AC_dsig__mod__special
-      sup_1 = AC_minsigma__mod__special + (isig_up_1-1)*AC_dsig__mod__special
-      DF_TMID = AC_dsig1__mod__special*(AC_tmid1_table__mod__special[isig_do_1-1][vertexIdx.x]*(sup_1-sig_1)+ AC_tmid1_table__mod__special[isig_up_1-1][vertexIdx.x]*(sig_1-sdo_1))
+      sdo_1 = AC_minsigma__mod__alphadisk + (isig_do_1-1)*AC_dsig__mod__alphadisk
+      sup_1 = AC_minsigma__mod__alphadisk + (isig_up_1-1)*AC_dsig__mod__alphadisk
+      DF_TMID = AC_dsig1__mod__alphadisk*(AC_tmid1_table__mod__alphadisk[isig_do_1-1][vertexIdx.x]*(sup_1-sig_1)+ AC_tmid1_table__mod__alphadisk[isig_up_1-1][vertexIdx.x]*(sig_1-sdo_1))
     }
-    else if ((sig_1>=AC_sigma_floor__mod__special) && (sig_1<=AC_sigma_middle__mod__special)) {
+    else if ((sig_1>=AC_sigma_floor__mod__alphadisk) && (sig_1<=AC_sigma_middle__mod__alphadisk)) {
       lnsig_1=log(sig_1)
-      isig_do_1 = floor((lnsig_1 - AC_minlnsigma__mod__special)*AC_dlnsig1__mod__special) + 1
+      isig_do_1 = floor((lnsig_1 - AC_minlnsigma__mod__alphadisk)*AC_dlnsig1__mod__alphadisk) + 1
       isig_up_1 =  isig_do_1+1
-      lnsdo_1=AC_minlnsigma__mod__special+(isig_do_1-1)*AC_dlnsig__mod__special
-      lnsup_1=AC_minlnsigma__mod__special+(isig_up_1-1)*AC_dlnsig__mod__special
-      DF_TMID = AC_dlnsig1__mod__special*(AC_tmid2_table__mod__special[isig_do_1-1][vertexIdx.x]*(lnsup_1-lnsig_1)+ AC_tmid2_table__mod__special[isig_up_1-1][vertexIdx.x]*(lnsig_1-lnsdo_1))
+      lnsdo_1=AC_minlnsigma__mod__alphadisk+(isig_do_1-1)*AC_dlnsig__mod__alphadisk
+      lnsup_1=AC_minlnsigma__mod__alphadisk+(isig_up_1-1)*AC_dlnsig__mod__alphadisk
+      DF_TMID = AC_dlnsig1__mod__alphadisk*(AC_tmid2_table__mod__alphadisk[isig_do_1-1][vertexIdx.x]*(lnsup_1-lnsig_1)+ AC_tmid2_table__mod__alphadisk[isig_up_1-1][vertexIdx.x]*(lnsig_1-lnsdo_1))
     }
     else {
     }
-    if(enum_temperature_model__mod__special == enum_hayashi_string) {
-      DF_MDOT = 3*pi*AC_nut_global__mod__special[vertexIdx.x-NGHOST_VAL]*value(Field(AC_isigma__mod__special-1))
+    if(enum_temperature_model__mod__alphadisk == enum_hayashi_string) {
+      DF_MDOT = 3*pi*AC_nut_global__mod__alphadisk[vertexIdx.x-NGHOST_VAL]*value(Field(AC_isigma__mod__alphadisk-1))
     }
-    else if(enum_temperature_model__mod__special == enum_radiative_string) {
-      lgsigma1_2=(AC_c1__mod__special[vertexIdx.x-NGHOST]-AC_cprime__mod__special)/2.1
-      lgsigma2_2=(AC_c3__mod__special[vertexIdx.x-NGHOST]-AC_c2__mod__special[vertexIdx.x-NGHOST])/0.9
-      lgsigma_2=alog10(value(Field(AC_isigma__mod__special-1)))
+    else if(enum_temperature_model__mod__alphadisk == enum_radiative_string) {
+      lgsigma1_2=(AC_c1__mod__alphadisk[vertexIdx.x-NGHOST]-AC_cprime__mod__alphadisk)/2.1
+      lgsigma2_2=(AC_c3__mod__alphadisk[vertexIdx.x-NGHOST]-AC_c2__mod__alphadisk[vertexIdx.x-NGHOST])/0.9
+      lgsigma_2=alog10(value(Field(AC_isigma__mod__alphadisk-1)))
       if (lgsigma_2<=lgsigma1_2) {
-        lgmdot_2=AC_c1__mod__special[vertexIdx.x-NGHOST] + lgsigma_2
+        lgmdot_2=AC_c1__mod__alphadisk[vertexIdx.x-NGHOST] + lgsigma_2
       }
       else if ((lgsigma_2>lgsigma1_2) && (lgsigma_2<lgsigma2_2)) {
-        lgmdot_2=AC_c2__mod__special[vertexIdx.x-NGHOST] + 2.0*lgsigma_2
+        lgmdot_2=AC_c2__mod__alphadisk[vertexIdx.x-NGHOST] + 2.0*lgsigma_2
       }
       else if (lgsigma_2>=lgsigma2_2) {
-        lgmdot_2=AC_c3__mod__special[vertexIdx.x-NGHOST] + 1.1*lgsigma_2
+        lgmdot_2=AC_c3__mod__alphadisk[vertexIdx.x-NGHOST] + 1.1*lgsigma_2
       }
       else {
       }

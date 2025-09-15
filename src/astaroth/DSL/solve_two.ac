@@ -23,6 +23,9 @@ fixed_boundary Kernel twopass_solve_final(int step_num)
 	        		write(F_CHEMISTRY_SPECIES[i],rk_final(F_CHEMISTRY_SPECIES[i],step_num))
 	        	}
 	        }
+#if LALPHADISK
+	        write(F_SIGMA,rk_final(F_SIGMA,step_num))
+#endif
 	}
 }
 #include "../steps_two.h"

@@ -36,6 +36,9 @@
 			write(F_CHEMISTRY_SPECIES[i],rk_intermediate(F_CHEMISTRY_SPECIES[i],DF_CHEMISTRY_SPECIES[i],step_num,AC_dt__mod__cdata))
 		}
 	}
+#if LALPHADISK
+	write(F_SIGMA,rk_intermediate(F_SIGMA,DF_SIGMA,step_num,AC_dt__mod__cdata))
+#endif
  }
  else
  {
