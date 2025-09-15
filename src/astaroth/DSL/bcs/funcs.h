@@ -61,7 +61,7 @@ bc_steady_z(boundary, topbot, VtxBuffer field)
   }
 }
 //TP: old
-#if Leos_idealgas
+#if Leos_idealgas_MODULE
 bc_ss_flux(boundary, topbot, bool lone_sided)
 {
   suppress_unused_warning(boundary)
@@ -1541,6 +1541,7 @@ bc_ss_flux(AcBoundary boundary, AC_TOP_BOT topbot,bool lone_sided)
 }
 **/
 #if Leos_idealgas_MODULE
+#if Lgravity_simple_MODULE
 bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
 {
   suppress_unused_warning(boundary)
@@ -3461,4 +3462,5 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
   else {
   }
 }
+#endif
 #endif

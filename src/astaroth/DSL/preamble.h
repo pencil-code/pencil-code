@@ -134,7 +134,10 @@ output real AC_dt1_max
 output real AC_dt1_advec
 output real AC_dt1_diffus
 
+#if Leos_idealgas_MODULE
 #define AC_lntt0__mod__equationofstate AC_lnTT0__mod__equationofstate
+#endif
+
 #define AC_gamma1__mod__energy  AC_gamma1__mod__equationofstate 
 #define AC_gamma1__mod__magnetc AC_gamma1__mod__equationofstate 
 #define AC_lupdate_courant_dt__mod__cdata (AC_lfirst__mod__cdata && AC_lcourant_dt__mod__cdata)
