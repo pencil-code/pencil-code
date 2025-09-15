@@ -8125,6 +8125,8 @@ iloop:do i=1,size(list2)
           dst = enum_nil_string
         case('hs')
           dst = enum_hs_string
+        case('f')
+          dst = enum_f_string
         case default
           dst = enum_unknown_string_string
           if (lroot) print*, 'No string enum for: ', src

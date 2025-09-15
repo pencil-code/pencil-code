@@ -5908,11 +5908,11 @@ outer:do ikz=1,nz
       nsum=2**(ikr-1)  !  sum over nsum grid points along each direction
       nsub=nxgrid/nsum  !  number of subvolumes alrong each direction
       allocate( hv(nsub,nsub,nsub) )
-      !$omp parallel reduction(+:hv) num_threads(num_helper_threads)
-      !$omp workshare
+      !!$omp parallel reduction(+:hv) num_threads(num_helper_threads)
+      !!$omp workshare
       hv=0.
-      !$omp end workshare
-      !$omp do collapse(3) private(kxx,kyy,kzz) reduction(+:hv)
+      !!$omp end workshare
+      !!$omp do collapse(3) private(kxx,kyy,kzz) reduction(+:hv)
       do ikx=1,nx; do iky=1,ny; do ikz=1,nz
         kxx = ikx+ipx*nx-1
         kyy = iky+ipy*ny-1
@@ -5920,7 +5920,7 @@ outer:do ikz=1,nz
         hv(1+kxx/nsum,1+kyy/nsum,1+kzz/nsum) = &
             hv(1+kxx/nsum,1+kyy/nsum,1+kzz/nsum) + h_re(ikx,iky,ikz)*dx*dy*dz
       enddo; enddo; enddo
-      !$omp end parallel
+      !!$omp end parallel
       if (lroot) then
         allocate( hv_sum(nsub,nsub,nsub) )
       else

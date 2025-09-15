@@ -1010,5 +1010,6 @@ integer, parameter :: enum_linear_xdep_string = 721
 integer, parameter :: enum_linear_smoothed_string = 722
 integer, parameter :: enum_nil_string = 723
 integer, parameter :: enum_hs_string = 724
+integer, parameter :: enum_f_string = 725
 
 endmodule Cparam
