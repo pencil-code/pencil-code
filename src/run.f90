@@ -1632,6 +1632,13 @@ call copy_addr(rfreeze_ext,p_par(1341))
 lfreeze_var_all = all(lfreeze_varint(1:mvar))
 call copy_addr(lfreeze_var_all,p_par(1342)) ! bool
 call copy_addr(fshift_int,p_par(1343))
+call copy_addr(lkinflow_as_aux,p_par(1353)) ! bool
+call copy_addr(ampl_kinflow_x,p_par(1354))
+call copy_addr(ampl_kinflow_y,p_par(1355))
+call copy_addr(ampl_kinflow_z,p_par(1356))
+call copy_addr(kx_kinflow,p_par(1357))
+call copy_addr(kz_kinflow,p_par(1358))
+call copy_addr(seed0,p_par(1359)) ! int
 
 endsubroutine pushpars2c
 !***********************************************************************
