@@ -746,7 +746,7 @@ module Special
               get_fppf=beta_inflation*((beta_inflation+1.)*Hp_target**2-appa_target)
       end function get_fppf
 !***********************************************************************
-      subroutine calc_axion_term(p,dst,gphi,alpff)
+      subroutine calc_axion_term(p,dst,gphi,alpff,lphihom)
 !
 !  Compute -(alpha/f)*B.gradphi axion term (when alpha/f/=0).
 !
@@ -754,12 +754,13 @@ module Special
 !
       type(pencil_case) :: p
       real, intent(in) :: alpff
+      logical, intent(in) :: lphihom
       real, dimension(nx), intent(out) :: dst
       real, dimension(nx,3), intent(in) :: gphi
 !
 !   14-sep-25/alberto: added axion coupling for a second scalar field psi
 !
-      if (lphi_hom) then
+      if (lphihom) then
         dst=0.
       else
         if (alpff/=0.) then
@@ -778,31 +779,30 @@ module Special
 
       endsubroutine calc_axion_term
 !***********************************************************************
-      subroutine calc_helical_term(p,gtmp)
+      subroutine calc_helical_term(p,gtmp,dphi,gphi,lphihom)
           use Sub
           type(pencil_case), intent(IN) :: p
-          real, dimension(nx, 3) :: gtmp2
-          real, dimension(nx,3), intent(inout) :: gtmp
-
-          if (alpf/=0.) then
-            if (lphi_hom) then
-              call multsv(p%dphi,p%bb,gtmp2)
-            else
-              call cross(p%gphi,p%el,gtmp2)
-              call multsv_add(gtmp2,p%dphi,p%bb,gtmp2)
-            endif
-            gtmp=gtmp+gtmp2*alpf
+          real, dimension(nx,3), intent(out) :: gtmp
+          logical, intent(in) :: lphihom
+          real, dimension(nx), intent(in) :: dphi
+          real, dimension(nx,3), intent(in) :: gphi
+!
+          if (lphihom) then
+              call multsv(dphi,p%bb,gtmp)
+          else
+            call cross(gphi,p%el,gtmp)
+            call multsv_add(gtmp,dphi,p%bb,gtmp)
           endif
 
-          if (alpfpsi/=0. .and. lwaterfall) then
-            if (lpsi_hom) then
-              call multsv(p%dpsi,p%bb,gtmp2)
-            else
-              call cross(p%gpsi,p%el,gtmp2)
-              call multsv_add(gtmp2,p%dpsi,p%bb,gtmp2)
-            endif
-            gtmp=gtmp+gtmp2*alpfpsi
-          endif
+          ! if (alpfpsi/=0. .and. lwaterfall) then
+          !   if (lpsi_hom) then
+          !     call multsv(p%dpsi,p%bb,gtmp2)
+          !   else
+          !     call cross(p%gpsi,p%el,gtmp2)
+          !     call multsv_add(gtmp2,p%dpsi,p%bb,gtmp2)
+          !   endif
+          !   gtmp=gtmp+gtmp2*alpfpsi
+          ! endif
 
       endsubroutine
 !***********************************************************************
@@ -829,7 +829,7 @@ module Special
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx,3) :: gtmp=0., dJdt, del2JJ
+      real, dimension (nx,3) :: gtmp, dJdt, del2JJ
       real, dimension (nx) :: tmp, tmp2, del2a0, constrainteqn, constrainteqn1
       real :: inflation_factor=0., mfpf=0., fppf=0.
       integer :: j
@@ -847,9 +847,9 @@ module Special
 !  Initialize tmp with axion term.
 !
       ! call calc_axion_term(p,tmp)
-      call calc_axion_term(p,tmp,p%gphi,alpf)
+      call calc_axion_term(p,tmp,p%gphi,alpf,lphi_hom)
       if (lwaterfall) then
-        call calc_axion_term(p,tmp2,p%gpsi,alpfpsi)
+        call calc_axion_term(p,tmp2,p%gpsi,alpfpsi,lpsi_hom)
         tmp=tmp+tmp2
       endif
 !
@@ -924,8 +924,8 @@ module Special
 !  dEE/dt = ... -alp/f (dphi*BB + gradphi x E)
 !  Use the combined routine multsv_add if both terms are included.
 !
-        if (alpf/=0. .or. (alpfpsi/=0. .and. lwaterfall)) then
-          call calc_helical_term(p,gtmp)
+        if (alpf/=0.) then
+          call calc_helical_term(p,gtmp,p%dphi*alpf,p%gphi,lphi_hom)
 !          print*,"p%infl_phi",p%infl_phi
 !          print*,"p%infl_dphi",p%infl_dphi
           !df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)-alpf*gtmp
@@ -938,10 +938,19 @@ module Special
               call dot_mn(p%gphi,p%bb,tmp)
               df(l1:l2,m,n,idiva_name)=df(l1:l2,m,n,idiva_name)+alpf*tmp
             endif
-            if (.not. lpsi_hom .and. lwaterfall) then
+          endif
+        endif
+        if (lwaterfall .and. alpfpsi/=0.) then
+          call calc_helical_term(p,gtmp,p%dpsi*alpfpsi,p%gpsi,lpsi_hom)
+          df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)-gtmp
+          if (llorenz_gauge_disp) then
+            if (.not. lpsi_hom) then
               call dot_mn(p%gpsi,p%bb,tmp)
               df(l1:l2,m,n,idiva_name)=df(l1:l2,m,n,idiva_name)+alpfpsi*tmp
             endif
+          endif
+        endif
+!
             !endif
 !
 !  Evolution of the equation for the scalar potential, moved below
@@ -949,8 +958,8 @@ module Special
             !df(l1:l2,m,n,ia0)=df(l1:l2,m,n,ia0)+p%diva
             !df(l1:l2,m,n,ia0)=df(l1:l2,m,n,ia0)+f(l1:l2,m,n,idiva_name)
             !df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+p%ga0
-          endif
-        endif
+        !   endif
+        ! endif
         ! alberto: If llorenz_gauge_disp, add the two terms to the A0 and A equations
         ! here, so that they are always added, regardless of alpf.
         if (llorenz_gauge_disp) then
@@ -1059,9 +1068,8 @@ module Special
       call sum_mn_name(p%sigE*p%e2,idiag_sigEE2m)
       call sum_mn_name(p%sigB*p%eb,idiag_sigBBEm)
       if (idiag_adphiBm/=0) then
-        if (alpf/=0.) call calc_helical_term(p,gtmp)
-        !call dot(alpf*gtmp,p%el,tmp)
-        call dot(gtmp,p%el,tmp)
+        if (alpf/=0.) call calc_helical_term(p,gtmp,p%dphi,p%gphi,lphi_hom)
+        call dot(alpf*gtmp,p%el,tmp)
         call sum_mn_name(tmp,idiag_adphiBm)
       endif
       if (idiag_Johmrms/=0) then
@@ -1086,7 +1094,7 @@ module Special
   !   endif
       if (idiag_divErms/=0) call sum_mn_name(p%divE**2,idiag_divErms,lsqrt=.true.)
       if(idiag_constrainteqn > 0) then
-        call calc_axion_term(p,tmp,p%gphi,alpf)
+        call calc_axion_term(p,tmp,p%gphi,alpf,lphi_hom)
         call calc_constrainteqn(p,tmp,constrainteqn)
         call sum_mn_name(constrainteqn,idiag_constrainteqn)
       endif
