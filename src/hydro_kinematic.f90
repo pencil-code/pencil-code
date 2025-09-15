@@ -73,7 +73,6 @@ module Hydro
   logical :: lwrite_random_location=.false., lwrite_random_wavenumber=.false.
   logical :: lrandom_wavenumber=.false., lwrite_random_ampl=.false.
   integer :: ll_sh=0, mm_sh=0, n_xprof=-1
-  integer :: pushpars2c  ! should be procedure pointer (F2003)
 !
 !  init parameters
 !  (none)
@@ -169,6 +168,9 @@ module Hydro
   real, dimension(:,:,:,:), allocatable :: uu_2, frgn_buffer, interp_buffer
   real, dimension(:,:,:), allocatable :: smooth_factor
 !
+  integer :: enum_kinematic_flow = 0
+  integer :: enum_wind_profile = 0
+
   contains
 !***********************************************************************
     subroutine register_hydro
@@ -3881,5 +3883,95 @@ module Hydro
                                  ltime_old=ltime_old_kinflow)
 !
     endsubroutine sound3D
+!***********************************************************************
+    subroutine pushpars2c(p_par)
+
+    use Syscalls, only: copy_addr
+    use General , only: string_to_enum
+
+    integer, parameter :: n_pars=200
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+    call copy_addr(phase1,p_par(1))
+    call copy_addr(phase2,p_par(2))
+    call copy_addr(ampl_random,p_par(3))
+    call copy_addr(ks_modes,p_par(4)) ! int
+    call copy_addr(random_ampl,p_par(5))
+    call copy_addr(random_wavenumber,p_par(6))
+    call copy_addr(abc_a,p_par(7))
+    call copy_addr(abc_b,p_par(8))
+    call copy_addr(abc_c,p_par(9))
+    call copy_addr(wind_amp,p_par(10))
+    call copy_addr(wind_rmin,p_par(11))
+    call copy_addr(wind_step_width,p_par(12))
+    call copy_addr(wind_ampz,p_par(13))
+    call copy_addr(wind_z,p_par(14))
+    call copy_addr(wind_radius,p_par(15))
+    call copy_addr(circ_amp,p_par(16))
+    call copy_addr(circ_rmax,p_par(17))
+    call copy_addr(circ_step_width,p_par(18))
+    call copy_addr(kx_uukin1,p_par(19))
+    call copy_addr(ky_uukin1,p_par(20))
+    call copy_addr(kz_uukin1,p_par(21))
+    call copy_addr(kx_uukin,p_par(22))
+    call copy_addr(ky_uukin,p_par(23))
+    call copy_addr(kz_uukin,p_par(24))
+    call copy_addr(cx_uukin,p_par(25))
+    call copy_addr(cy_uukin,p_par(26))
+    call copy_addr(cz_uukin,p_par(27))
+    call copy_addr(phasex_uukin,p_par(28))
+    call copy_addr(phasey_uukin,p_par(29))
+    call copy_addr(phasez_uukin,p_par(30))
+    call copy_addr(uphi_rbot,p_par(31))
+    call copy_addr(gcs_rzero,p_par(32))
+    call copy_addr(gcs_psizero,p_par(33))
+    call copy_addr(kinflow_ck_balpha,p_par(34))
+    call copy_addr(tc_omega_out,p_par(35))
+    call copy_addr(eps_kinflow,p_par(36))
+    call copy_addr(exp_kinflow,p_par(37))
+    call copy_addr(omega_kinflow,p_par(38))
+    call copy_addr(ampl_kinflow,p_par(39))
+    call copy_addr(rp,p_par(40))
+    call copy_addr(gamma_dg11,p_par(41))
+    call copy_addr(relhel_uukin,p_par(42))
+    call copy_addr(chi_uukin,p_par(43))
+    call copy_addr(del_uukin,p_par(44))
+    call copy_addr(lambda_kinflow,p_par(45))
+    call copy_addr(zinfty_kinflow,p_par(46))
+    call copy_addr(sigma_uukin,p_par(47))
+    call copy_addr(tau_uukin,p_par(48))
+    call copy_addr(time_uukin,p_par(49))
+    call copy_addr(sigma1_uukin_scl_yz,p_par(50))
+    call copy_addr(binary_radius,p_par(51))
+    call copy_addr(radius_kinflow,p_par(52))
+    call copy_addr(width_kinflow,p_par(53))
+    call copy_addr(kinflow_ck_ell,p_par(54)) ! int
+    call copy_addr(tree_lmax,p_par(55)) ! int
+    call copy_addr(kappa_kinflow,p_par(56)) ! int
+    call copy_addr(lpressuregradient_gas,p_par(57)) ! bool
+    call copy_addr(lkinflow_as_comaux,p_par(58)) ! bool
+    call copy_addr(coskx,p_par(59)) ! (nx)
+    call copy_addr(sinkx,p_par(60)) ! (nx)
+    call copy_addr(profx_kinflow1,p_par(61)) ! (nx)
+    call copy_addr(profx_kinflow2,p_par(62)) ! (nx)
+    call copy_addr(profx_kinflow3,p_par(63)) ! (nx)
+    call copy_addr(profy_kinflow1,p_par(64)) ! (my)
+    call copy_addr(profy_kinflow2,p_par(65)) ! (my)
+    call copy_addr(profy_kinflow3,p_par(66)) ! (my)
+    call copy_addr(location,p_par(67)) ! real3
+    call copy_addr(ks_k,p_par(68)) ! (3) (ks_modes__mod__hydro)
+    call copy_addr(ks_a,p_par(69)) ! (3) (ks_modes__mod__hydro)
+    call copy_addr(ks_b,p_par(70)) ! (3) (ks_modes__mod__hydro)
+    call copy_addr(ks_omega,p_par(71)) ! (ks_modes__mod__hydro)
+    call string_to_enum(enum_kinematic_flow,kinematic_flow)
+    call string_to_enum(enum_wind_profile,wind_profile)
+    call copy_addr(enum_kinematic_flow,p_par(72)) ! int
+    call copy_addr(enum_wind_profile,p_par(73)) ! int
+    if (allocated(pl)) call copy_addr(pl,p_par(74)) ! (my)
+    if (allocated(zl)) call copy_addr(zl,p_par(75)) ! (mx)
+    if (allocated(dpldtheta)) call copy_addr(dpldtheta,p_par(76)) ! (mx)
+    if (allocated(dzldr)) call copy_addr(dzldr,p_par(77)) ! (my)
+
+    endsubroutine pushpars2c
 !***********************************************************************
 endmodule Hydro

@@ -65,6 +65,8 @@ if(ldustdensity)
 		DF_DUST_ICE_MASS[dustspec] = 0.0
 	}
 }
+
+DF_SIGMA = 0.0
 #define DF_LNTT DF_TT
 #define DF_LNRHO DF_RHO
 #define DF_LNRHON DF_RHON

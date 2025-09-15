@@ -51,7 +51,7 @@ module Equ
       use Chiral
       use Chemistry
       use Density
-      use Diagnostics
+      use Diagnostics, only: save_diagnostic_controls
       use Energy
       use EquationOfState
 !
@@ -630,6 +630,11 @@ module Equ
 !!$    if (omp_get_thread_num() /= 0) call set_cpu(core_ids(omp_get_thread_num()+1))
       !print*,"omp_id,cpu_id,mpi_id: ",omp_get_thread_num(), get_cpu(), iproc
 
+      !Done since with multithreading RHS is not evaluated
+      if(lmultithread) then
+              maxadvec = 0.0
+      endif
+
       !$omp do
       do imn=1,nyz
 
@@ -676,6 +681,7 @@ module Equ
         call calc_diagnostics_training(f)
         call calc_diagnostics_viscosity(p)
         call calc_diagnostics_special(f,p)
+        call timestep_diagnostics
 
         lfirstpoint=.false.
       enddo
@@ -1029,6 +1035,29 @@ module Equ
     if (lspecial) call prep_rhs_special
     endsubroutine prep_rhs
 !***********************************************************************
+    subroutine timestep_diagnostics
+      use Diagnostics
+!
+!  Diagnostics showing how close to advective and diffusive time steps we are
+!
+        if (lupdate_courant_dt.and.(.not.ldt_paronly).and.ldiagnos) then
+          if (idiag_dtv/=0) call max_mn_name(maxadvec/cdt,idiag_dtv,l_dt=.true.)
+          if (idiag_dtdiffus/=0) call max_mn_name(maxdiffus/cdtv,idiag_dtdiffus,l_dt=.true.)
+          if (idiag_dtdiffus2/=0) call max_mn_name(maxdiffus2/cdtv2,idiag_dtdiffus2,l_dt=.true.)
+          if (idiag_dtdiffus3/=0) call max_mn_name(maxdiffus3/cdtv3,idiag_dtdiffus3,l_dt=.true.)
+!
+!  Regular and hyperdiffusive mesh Reynolds numbers
+!
+          if (idiag_Rmesh/=0) call max_mn_name(pi_1*maxadvec/(maxdiffus+tini),idiag_Rmesh)
+          if (idiag_Rmesh3/=0) call max_mn_name(pi5_1*maxadvec/(maxdiffus3+tini),idiag_Rmesh3)
+          call max_mn_name(maxadvec,idiag_maxadvec)
+!
+!  z-dependent timestep constraints
+!
+          call xymax_mn_name_z(maxadvec/cdt,idiag_dtvmaxz,l_dt=.true.)
+        endif
+    endsubroutine timestep_diagnostics
+!***********************************************************************
     subroutine rhs_cpu(f,df,p,mass_per_proc,early_finalize)
 !
 !  Calculates rhss of the PDEs.
@@ -1274,25 +1303,7 @@ module Equ
         endif
 
         call set_dt1_max(p)
-!
-!  Diagnostics showing how close to advective and diffusive time steps we are
-!
-        if (lupdate_courant_dt.and.(.not.ldt_paronly).and.ldiagnos) then
-          if (idiag_dtv/=0) call max_mn_name(maxadvec/cdt,idiag_dtv,l_dt=.true.)
-          if (idiag_dtdiffus/=0) call max_mn_name(maxdiffus/cdtv,idiag_dtdiffus,l_dt=.true.)
-          if (idiag_dtdiffus2/=0) call max_mn_name(maxdiffus2/cdtv2,idiag_dtdiffus2,l_dt=.true.)
-          if (idiag_dtdiffus3/=0) call max_mn_name(maxdiffus3/cdtv3,idiag_dtdiffus3,l_dt=.true.)
-!
-!  Regular and hyperdiffusive mesh Reynolds numbers
-!
-          if (idiag_Rmesh/=0) call max_mn_name(pi_1*maxadvec/(maxdiffus+tini),idiag_Rmesh)
-          if (idiag_Rmesh3/=0) call max_mn_name(pi5_1*maxadvec/(maxdiffus3+tini),idiag_Rmesh3)
-          call max_mn_name(maxadvec,idiag_maxadvec)
-!
-!  z-dependent timestep constraints
-!
-          call xymax_mn_name_z(maxadvec/cdt,idiag_dtvmaxz,l_dt=.true.)
-        endif
+        call timestep_diagnostics
 !
 !  Display derivative info
 !

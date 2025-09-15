@@ -509,9 +509,19 @@ module Special
 !
       intent(inout) :: f
       intent(inout) :: p
+
+      real, dimension(nx) :: nu
 !
-      call keep_compiler_quiet(f)
       call keep_compiler_quiet(p)
+!
+!  Contribution to the time-step from diffusion.
+!  (should the wind also play a role?).
+!
+      if (lupdate_courant_dt) then
+        call get_nu(f,nu)
+        maxdiffus=max(maxdiffus,nu*dxyz_2)
+        if (headtt.or.ldebug) print*,'calc_pencils_special: max(diffus_special) =', maxval(nu*dxyz_2)
+      endif
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
@@ -543,7 +553,7 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: nu,del2sigmanu,gsigmanu
+      real, dimension (nx) :: del2sigmanu,gsigmanu
       real, dimension (nx,3) :: tmp_vec
       type (pencil_case) :: p
 !
@@ -574,15 +584,6 @@ module Special
         df(l1:l2,m,n,isigma) = df(l1:l2,m,n,isigma) - swind
       endif
 
-      if (lfirst.and.ldt) call get_nu(f,nu)
-!
-!  Contribution to the time-step from diffusion.
-!  (should the wind also play a role?).
-!
-      if (lfirst.and.ldt) then
-        maxdiffus=max(maxdiffus,nu*dxyz_2)
-        if (headtt.or.ldebug) print*,'dspecial_dt: max(diffus_special) =', maxval(nu*dxyz_2)
-      endif
 !
 !  Diagnostics.
 !
@@ -596,7 +597,7 @@ module Special
  !
  !  30-jun-25:TP carved from dspecial_dt
  !
-      use Diagnostics, only: sum_mn_name, max_mn_name, yzsum_mn_name_x 
+      use Diagnostics, only: sum_mn_name, max_mn_name, yzsum_mn_name_x, save_name
 
       real, dimension(mx,my,mz,mfarray), intent(IN) :: f
       type(pencil_case), intent(IN) :: p
@@ -619,6 +620,7 @@ module Special
       if (l1davgfirst) then
         call yzsum_mn_name_x(psigma,idiag_sigmamx)
       endif
+      if (lroot.and.ldiagnos.and.idiag_tmyr/=0) call save_name(tdiagnos/myr,idiag_tmyr)
     endsubroutine calc_diagnostics_special
 !***********************************************************************
 !
@@ -724,7 +726,6 @@ module Special
 !
 !  27-nov-08/wlad: coded
 !
-      use Diagnostics, only: save_name
 !
       logical, intent(in) :: llast
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
@@ -752,7 +753,6 @@ module Special
 !
       endselect
 !
-      if (lroot.and.ldiagnos.and.idiag_tmyr/=0) call save_name(tdiagnos/myr,idiag_tmyr)
 !
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(dt_)
@@ -1392,10 +1392,10 @@ module Special
      call copy_addr(itmid,p_par(15)) ! int
      call string_to_enum(enum_temperature_model,temperature_model)
      call copy_addr(enum_temperature_model,p_par(18)) ! int
-     call copy_addr(sigma_table,p_par(20)) !  (nsigma_table)
-     call copy_addr(lnsigma_table,p_par(21)) !  (nsigma_table)
-     call copy_addr(tmid1_table,p_par(22)) ! (nsigma_table) (nx)
-     call copy_addr(tmid2_table,p_par(23)) ! (nsigma_table) (nx)
+     call copy_addr(sigma_table,p_par(20)) !  (nsigma_table__mod__alphadisk)
+     call copy_addr(lnsigma_table,p_par(21)) !  (nsigma_table__mod__alphadisk)
+     call copy_addr(tmid1_table,p_par(22)) ! (nsigma_table__mod__alphadisk) (nx)
+     call copy_addr(tmid2_table,p_par(23)) ! (nsigma_table__mod__alphadisk) (nx)
      call copy_addr(maxsigma,p_par(24)) 
      call copy_addr(minsigma,p_par(25)) 
      call copy_addr(dsig,p_par(26)) 

@@ -31,7 +31,9 @@ struct torus_rect
 
 #define nhless AC_nhless__mod__hydro
 #define n_odevars AC_n_odevars__mod__cdata
-#define STENCIL_ORDER (6)
+
+#include "PC_nghost.h"
+
 const int NGHOST_VAL = 3
 const int prof_nz = 150
 #define mreactions AC_mreactions__mod__chemistry
@@ -86,8 +88,8 @@ const int prof_nz = 150
 #define AC_m__mod__cdata (vertexIdx.y+1)
 
 #include "../stdlib/math"
-//#include "../stdlib/general_derivs.h"
-#include "../stdlib/pc_derivs.h"
+#include "../stdlib/general_derivs.h"
+//#include "../stdlib/pc_derivs.h"
 #include "../stdlib/general_operators.h"
 #define AC_NGHOST__mod__cparam nghost
 #define REAL_MAX AC_REAL_MAX
@@ -230,3 +232,5 @@ const real AC_ascale__mod__cdata = 0.0
 #include "../bcs/funcs.h"
 #include "../bcs/funcs_overload.h"
 #include "../hydro/before_boundary.h"
+
+#define AC_iproc_world__mod__cdata (0)

@@ -1,4 +1,5 @@
 #if LHYDRO
+#if Lhydro_MODULE
 Kernel hydro_after_boundary_conservative(real AC_t__mod__cdata){
   real cs201
   real cs2011
@@ -146,6 +147,10 @@ Kernel hydro_after_boundary_conservative(real AC_t__mod__cdata){
   	write(F_TIJ_5,DF_TIJ_5)
   }
 }
+#else
+Kernel hydro_after_boundary_conservative(real AC_t__mod__cdata){
+}
+#endif
 #else
 Kernel hydro_after_boundary_conservative(real AC_t__mod__cdata){
 }
