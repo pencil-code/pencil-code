@@ -183,7 +183,7 @@ module Equ
 !  Call "before_boundary" hooks (for f array precalculation)
 !
         call before_boundary_shared(f)
-        !if (it == 30) call test_rhs_gpu(f,df,p,mass_per_proc,early_finalize,rhs_cpu)
+        !if (it == 1) call test_rhs_gpu(f,df,p,mass_per_proc,early_finalize,rhs_cpu)
 
         if (.not. lgpu) then
           call before_boundary_cpu(f)
@@ -632,7 +632,7 @@ module Equ
 
       !Done since with multithreading RHS is not evaluated
       if(lmultithread) then
-              maxadvec = 0.0
+              maxdiffus = 0.0
       endif
 
       !$omp do
@@ -1761,8 +1761,10 @@ module Equ
 !
       use MPIcomm
       use Boundcond
-      use Gpu, only: before_boundary_gpu, rhs_gpu, copy_farray_from_GPU, get_farray_ptr_gpu
+      use Gpu, only: before_boundary_gpu, rhs_gpu, copy_farray_from_GPU, get_farray_ptr_gpu,&
+                     after_timestep_gpu
       use Deriv, only: der
+      use Special, only: special_after_timestep
 !$    use ISO_fortran_env, only: stdout => output_unit
 !$    use, intrinsic :: iso_c_binding
 
@@ -1827,13 +1829,15 @@ module Equ
         call copy_farray_from_GPU(f,.true.)
         !if (itsub == 5) f_copy(l1:l2,m1:m2,n1:n2,1:mvar) = f_beta(l1:l2,m1:m2,n1:n2,1:mvar)
       enddo
-
+      if (lspecial) call special_after_timestep(f_copy, df_copy, dt, .true.)
+      call after_timestep_gpu
       call copy_farray_from_GPU(f,.true.)
       f_diff = abs((f_copy-f)/(f_copy+tini))
       f_abs_diff = abs((f_copy-f))
 
       if (nxgrid == 1 .and. nygrid == 1) then
-        print*,"Max diff: ",maxval(f_diff(l1,m1,:,1:mvar))
+        print*,"Max diff all: ",maxval(f_diff(l1,m1,n1:n2,1:mfarray))
+        print*,"Max diff farray: ",maxval(f_diff(l1,m1,:,1:mvar))
         print*,"Max diff loc: ",maxloc(f_diff(l1,m1,:,1:mvar))
 
         print*,"Max comp diff: ",maxval(f_diff(l1,m1,n1:n2,1:mvar))
@@ -1843,7 +1847,30 @@ module Equ
           print*,"Max comp diff for ",i,": ",maxval(f_diff(l1,m1,n1:n2,i))
           print*,"Max comp loc  for ",i,": ",maxloc(f_diff(l1,m1,n1:n2,i))
         enddo
+        do i = 1,mfarray
+          print*,"Max comp diff for ",i,": ",maxval(f_diff(l1,m1,n1:n2,i))
+          print*,"Avg comp diff for ",i,": ",sum(f_diff(l1,m1,n1:n2,i))/(nz)
+          print*,"Max comp loc  for ",i,": ",maxloc(f_diff(l1,m1,n1:n2,i))
+        enddo
+      else if (nygrid == 1 .and. nzgrid == 1) then
+        print*,"Max diff all: ",maxval(f_diff(l1:l2,m1,n1,1:mfarray))
+        print*,"Max diff: ",maxval(f_diff(:,m1,n1,1:mvar))
+        print*,"Max diff loc: ",maxloc(f_diff(:,m1,n1,1:mvar))
+
+        print*,"Max comp diff: ",maxval(f_diff(l1:l2,m1,n1,1:mvar))
+        print*,"Max comp diff loc: ",maxloc(f_diff(l1:l2,m1,n1,1:mvar))
+
+        do i = 1,mvar
+          print*,"Max comp diff for ",i,": ",maxval(f_diff(l1:l2,m1,n1,i))
+          print*,"Max comp loc  for ",i,": ",maxloc(f_diff(l1:l2,m1,n1,i))
+        enddo
+        do i = 1,mfarray
+          print*,"Max comp diff for ",i,": ",maxval(f_diff(l1:l2,m1,n1,i))
+          print*,"Avg comp diff for ",i,": ",sum(f_diff(l1:l2,m1,n1,i))/(nx)
+          print*,"Max comp loc  for ",i,": ",maxloc(f_diff(l1:l2,m1,n1,i))
+        enddo
       else
+        print*,"Max diff all: ",maxval(f_diff(:,:,:,1:mfarray))
         print*,"Max diff: ",maxval(f_diff(:,:,:,1:mvar))
         print*,"Max diff x: ",maxval(f_diff(:,m1:m2,n1:n2,1:mvar))
         print*,"Max diff y: ",maxval(f_diff(l1:l2,:,n1:n2,1:mvar))
