@@ -746,34 +746,35 @@ module Special
               get_fppf=beta_inflation*((beta_inflation+1.)*Hp_target**2-appa_target)
       end function get_fppf
 !***********************************************************************
-      subroutine calc_axion_term(p,dst)
+      subroutine calc_axion_term(p,dst,gphi,alpff)
 !
 !  Compute -(alpha/f)*B.gradphi axion term (when alpha/f/=0).
 !
       use Sub
 !
       type(pencil_case) :: p
-      real, dimension(nx) :: dst2
-      real, dimension(nx), intent(inout) :: dst
+      real, intent(in) :: alpff
+      real, dimension(nx), intent(out) :: dst
+      real, dimension(nx,3), intent(in) :: gphi
 !
 !   14-sep-25/alberto: added axion coupling for a second scalar field psi
 !
-      !if (lphi_hom) then
-      !  dst=0.
-      !else
-      if (.not. lphi_hom .and. alpf/=0.) then
-        !if (alpf/=0.) then
-        call dot(p%bb,p%gphi,dst2)
-        dst=dst-alpf*dst2
-        !else
-        !  dst=0.
-        !endif
+      if (lphi_hom) then
+        dst=0.
+      else
+        if (alpff/=0.) then
+        ! call dot(p%bb,p%gphi,dst2)
+          call dot(p%bb,gphi,dst)
+          dst=-alpff*dst
+        else
+         dst=0.
+        endif
       endif
 
-      if (.not. lpsi_hom .and. alpfpsi/=0. .and. lwaterfall) then
-        call dot(p%bb,p%gpsi,dst2)
-        dst=dst-alpfpsi*dst2
-      endif
+      ! if (.not. lpsi_hom .and. alpfpsi/=0. .and. lwaterfall) then
+      !   call dot(p%bb,p%gpsi,dst2)
+      !   dst=dst-alpfpsi*dst2
+      ! endif
 
       endsubroutine calc_axion_term
 !***********************************************************************
@@ -829,7 +830,7 @@ module Special
       type (pencil_case) :: p
 !
       real, dimension (nx,3) :: gtmp=0., dJdt, del2JJ
-      real, dimension (nx) :: tmp=0., del2a0, constrainteqn, constrainteqn1
+      real, dimension (nx) :: tmp, tmp2, del2a0, constrainteqn, constrainteqn1
       real :: inflation_factor=0., mfpf=0., fppf=0.
       integer :: j
 !
@@ -845,7 +846,12 @@ module Special
 !  Calculate rhs of Gamma equation and update curl
 !  Initialize tmp with axion term.
 !
-      call calc_axion_term(p,tmp)
+      ! call calc_axion_term(p,tmp)
+      call calc_axion_term(p,tmp,p%gphi,alpf)
+      if (lwaterfall) then
+        call calc_axion_term(p,tmp2,p%gpsi,alpfpsi)
+        tmp=tmp+tmp2
+      endif
 !
 !  Solve for Gamma (unless lswitch_off_Gamma) and possibly for charge density.
 !  Add to the existing tmp and update df(l1:l2,m,n,irhoe).
@@ -1080,7 +1086,7 @@ module Special
   !   endif
       if (idiag_divErms/=0) call sum_mn_name(p%divE**2,idiag_divErms,lsqrt=.true.)
       if(idiag_constrainteqn > 0) then
-        call calc_axion_term(p,tmp)
+        call calc_axion_term(p,tmp,p%gphi,alpf)
         call calc_constrainteqn(p,tmp,constrainteqn)
         call sum_mn_name(constrainteqn,idiag_constrainteqn)
       endif
