@@ -59,7 +59,7 @@ rm -f $modheader tmp1
 if [[ $MODULE_NAME_ORDER == 'CRAY' ]]; then
   str=$2
   substr="/special/"
-  if [[ "$str" == *"$substr"* ]] then
+  if [[ "$str" == *"$substr"* ]]; then
     sed -n '
       /parameter/ {
          h
@@ -91,7 +91,7 @@ if [[ $MODULE_NAME_ORDER == 'CRAY' ]]; then
 else
   str=$2
   substr="/special/"
-  if [[ "$str" == *"$substr"* ]] then
+  if [[ "$str" == *"$substr"* ]]; then
     sed -n '
       /parameter/ {
          h
@@ -191,6 +191,7 @@ if [ -f tmp1 ]; then
   sed -n '
          s/^.*\/\/ *\(\[.*\]\) *\([a-zA-Z0-9_]*\)  *\([a-zA-Z0-9_]*\) *$/#define \2__mod__'$modname' to_\3(p_par_'$modname'\1,"p_par_'$modname'\1")/
          s/^.*\/\/ *\(\[.*\]\) *\([a-zA-Z0-9_]*\)  *\([a-zA-Z0-9_]*\) dconst *$/#define \2__mod__'$modname' to_\3(p_par_'$modname'\1,"p_par_'$modname'\1") \/\/ dconst/
+         s/^.*\/\/ *\(\[.*\]\) *\([a-zA-Z0-9_]*\)  *\([a-zA-Z0-9_]*\) run_const *$/#define \2__mod__'$modname' to_\3(p_par_'$modname'\1,"p_par_'$modname'\1")/
          t cont
          b dimen
          : cont

@@ -3158,9 +3158,7 @@ module Viscosity
     call copy_addr(enum_nnewton_type ,p_par(104)) ! int
     call string_to_enum(enum_div_sld_visc,div_sld_visc)
     call copy_addr(enum_div_sld_visc,p_par(105)) ! int
-    !TP: needed for transpilation but name collides with hydro so will not work without
-    !    module qualified name, so to not break handwritten DSL code have it on comment
-    !call copy_addr(eth0z,p_par(106)) ! (mz)
+    call copy_addr(eth0z,p_par(106)) ! (mz) gmem
 
     call copy_addr(nu_r_reduce,p_par(107))
     call copy_addr(lvisc_nu_reduce_ddr,p_par(108)) ! bool

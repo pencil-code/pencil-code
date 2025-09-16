@@ -11793,10 +11793,8 @@ print*,'AXEL2: should not be here (eta) ... '
     call copy_addr(amp_relprof,p_par(258))
     call copy_addr(lhubble_magnetic,p_par(259)) ! bool
     call copy_addr(learly_set_el_pencil,p_par(260)) ! bool
-    !TP: needed for transpilation but name collides with hydro so will not work without
-    !    module qualified name, so to not break handwritten DSL code have it on comment
-    !call copy_addr(lrhs_max,p_par(261)) ! bool
-    !call copy_addr(gamma1,p_par(262))
+    call copy_addr(lrhs_max,p_par(261)) ! bool run_const
+    call copy_addr(gamma1,p_par(262)) ! real run_const
     call copy_addr(k1_ff_mag,p_par(161))
 
     call copy_addr(lrelaxprof_glob_scaled,p_par(263)) ! bool
