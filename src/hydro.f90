@@ -363,6 +363,9 @@ module Hydro
   integer :: idiag_ux4m=0       ! DIAG_DOC: $\left<u_x^4\right>$
   integer :: idiag_uy4m=0       ! DIAG_DOC: $\left<u_y^4\right>$
   integer :: idiag_uz4m=0       ! DIAG_DOC: $\left<u_z^4\right>$
+  integer :: idiag_u4m=0        ! DIAG_DOC: $\left<u^4\right>$
+  integer :: idiag_u6m=0        ! DIAG_DOC: $\left<u^6\right>$
+  integer :: idiag_u8m=0        ! DIAG_DOC: $\left<u^8\right>$
   integer :: idiag_uxuy2m=0     ! DIAG_DOC: $\left<u_x^2u_y^2\right>$
   integer :: idiag_uyuz2m=0     ! DIAG_DOC: $\left<u_y^2u_z^2\right>$
   integer :: idiag_uzux2m=0     ! DIAG_DOC: $\left<u_z^2u_x^2\right>$
@@ -2998,7 +3001,8 @@ module Hydro
       if (idiag_urms/=0 .or. idiag_durms/=0 .or. &
           idiag_umax/=0 .or. idiag_rumax/=0 .or. idiag_u2mx/=0 .or. &
           idiag_fkinzm/=0 .or. idiag_u2m/=0 .or. idiag_um2/=0 .or. idiag_u2mz/=0 .or. &
-          idiag_urmsh/=0 .or. idiag_urmsx/=0 .or. idiag_urmsz/=0 .or. idiag_u2sphm/=0) &
+          idiag_urmsh/=0 .or. idiag_urmsx/=0 .or. idiag_urmsz/=0 .or. idiag_u2sphm/=0 .or. &
+          idiag_u4m/=0 .or. idiag_u6m/=0 .or. idiag_u8m/=0 ) &
           lpenc_diagnos(i_u2)=.true.
       if (idiag_u2sphm/=0 .or. idiag_o2sphm/=0) lpenc_diagnos(i_r_mn)=.true.
       if (idiag_duxdzma/=0 .or. idiag_duydzma/=0 .or. lgradu_as_aux) lpenc_diagnos(i_uij)=.true.
@@ -4389,6 +4393,9 @@ module Hydro
         if (idiag_fkinzm/=0) call sum_mn_name(.5*p%rho*p%u2*p%uu(:,3),idiag_fkinzm)
         call max_mn_name(p%u2,idiag_um2)
         call sum_mn_name(p%u2,idiag_u2m)
+        call sum_mn_name(p%u2**2,idiag_u4m)
+        call sum_mn_name(p%u2**3,idiag_u6m)
+        call sum_mn_name(p%u2**4,idiag_u8m)
         if (idiag_u2sphm/=0 .or. idiag_o2sphm/=0) then
           where (p%r_mn <= radius_diag)
             rmask = 1.
@@ -6569,6 +6576,9 @@ module Hydro
         idiag_ux4m=0
         idiag_uy4m=0
         idiag_uz4m=0
+        idiag_u4m=0
+        idiag_u6m=0
+        idiag_u8m=0
         idiag_uxuy2m=0
         idiag_uyuz2m=0
         idiag_uzux2m=0
@@ -7076,6 +7086,9 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'ux4m',idiag_ux4m)
         call parse_name(iname,cname(iname),cform(iname),'uy4m',idiag_uy4m)
         call parse_name(iname,cname(iname),cform(iname),'uz4m',idiag_uz4m)
+        call parse_name(iname,cname(iname),cform(iname),'u4m',idiag_u4m)
+        call parse_name(iname,cname(iname),cform(iname),'u6m',idiag_u6m)
+        call parse_name(iname,cname(iname),cform(iname),'u8m',idiag_u8m)
         call parse_name(iname,cname(iname),cform(iname),'uxuy2m',idiag_uxuy2m)
         call parse_name(iname,cname(iname),cform(iname),'uyuz2m',idiag_uyuz2m)
         call parse_name(iname,cname(iname),cform(iname),'uzux2m',idiag_uzux2m)
