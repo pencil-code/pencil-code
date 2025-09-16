@@ -620,7 +620,6 @@ module Special
       if (l1davgfirst) then
         call yzsum_mn_name_x(psigma,idiag_sigmamx)
       endif
-      if (lroot.and.ldiagnos.and.idiag_tmyr/=0) call save_name(tdiagnos/myr,idiag_tmyr)
     endsubroutine calc_diagnostics_special
 !***********************************************************************
 !
@@ -727,6 +726,7 @@ module Special
 !  27-nov-08/wlad: coded
 !
 !
+      use Diagnostics, only : save_name
       logical, intent(in) :: llast
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
@@ -757,6 +757,7 @@ module Special
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(dt_)
       call keep_compiler_quiet(llast)
+      if (lroot.and.ldiagnos.and.idiag_tmyr/=0) call save_name(tdiagnos/myr,idiag_tmyr)
 !
     endsubroutine  special_after_timestep
 !***********************************************************************
