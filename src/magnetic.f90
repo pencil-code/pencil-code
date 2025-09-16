@@ -4192,37 +4192,7 @@ module Magnetic
         endif
       endif
 !
-!  bij, del2a, graddiva
-!  For non-cartesian coordinates jj is always required for del2a=graddiva-jj
-!  fred: del2a now calculated directly if required and gradient tensor available
-!  reduced calls to exclude unnecessary calculation of unwanted variables
-!      if (lpenc_loc(i_bij) .or. lpenc_loc(i_del2a) .or. lpenc_loc(i_graddiva) .or. &
-!          lpenc_loc(i_jj) ) then
-!        if (lcartesian_coords) then
-!          call gij_etc(f,iaa,p%aa,p%aij,p%bij,p%del2a,p%graddiva)
-!          if (.not. lpenc_loc(i_bij)) p%bij=0.0      ! Avoid warnings from pencil
-!          if (.not. lpenc_loc(i_del2a)) p%del2a=0.0  ! consistency check...
-!          if (.not. lpenc_loc(i_graddiva)) p%graddiva=0.0
-!!          if (lpenc_loc(i_jj)) call curl_mn(p%bij,p%jj,p%bb)
-!!DM curl in cartesian does not need p%bb, then it is better not
-!! to give it.
-!          if (lpenc_loc(i_jj)) call curl_mn(p%bij,p%jj)
-!        else
-!          call gij_etc(f,iaa,AA=p%aa,AIJ=p%aij,BIJ=p%bij,&
-!                               GRADDIV=p%graddiva,&
-!                               LCOVARIANT_DERIVATIVE=lcovariant_magnetic)
-!          if (.not. lpenc_loc(i_bij)) p%bij=0.0      ! Avoid warnings from pencil
-!          call curl_mn(p%bij,p%jj,A=p%bb,LCOVARIANT_DERIVATIVE=lcovariant_magnetic)            ! consistency check...
-!          if (lpenc_loc(i_del2a)) p%del2a=p%graddiva-p%jj
-!!           if (lpenc_loc(i_del2a)) call del2v(f,iaa,p%del2a,p%aij,p%aa)
-!        endif
-!      endif
-!
-!  In the following, we assume that there is no displacement current,
-!  so curlb=jj, so we should replace p%jj by p%curlb.
-!  2024-06-27/AB: done now
-!
-!  AB: not sure why we have "and.lpenc_loc(i_del2a)"
+!  The following is also computed if there is no displacement current.
 !
       if (lpenc_loc(i_bij).and.lpenc_loc(i_del2a)) then
         if (lcartesian_coords) then
@@ -6319,11 +6289,10 @@ print*,'AXEL2: should not be here (eta) ... '
           endif
         enddo
       endif
-
+!
       call calc_2d_diagnostics_magnetic(p)
       call calc_1d_diagnostics_magnetic(p)
       if (ldiagnos) call calc_0d_diagnostics_magnetic(f,p)
-
 !
 !  Write B-slices for output in wvid in run.f90.
 !  Note: ix_loc is the index with respect to array with ghost zones.
@@ -7135,7 +7104,6 @@ print*,'AXEL2: should not be here (eta) ... '
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1.
 !
       if (l1davgfirst .or. (ldiagnos .and. ldiagnos_need_zaverages)) then
-
         call yzsum_mn_name_x(p%b2, idiag_b2mx)
         call yzsum_mn_name_x(p%j2, idiag_j2mx)
         call yzsum_mn_name_x(p%jb, idiag_jbmx)

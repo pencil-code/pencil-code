@@ -969,7 +969,7 @@ module Hydro
 !  arrays are already allocated and must not be allocated again.
 !
       if (lvv_as_aux .or. lvv_as_comaux) &
-        call register_report_aux('vv', ivv, ivx, ivy, ivz, communicated=lvv_as_comaux)
+        call register_report_aux('vv', ivv, ivx, ivy, ivz, communicated=.true.)
 !
 !  omega as aux
 !

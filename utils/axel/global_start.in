@@ -53,5 +53,13 @@
 /
 &particles_selfgrav_init_pars
 /
+&particles_stalker_init_pars
+/
 &special_init_pars
+/
+&backreact_infl_init_pars
+/
+&disp_current_init_pars
+/
+&gravitational_waves_hTXk_init_pars
 /

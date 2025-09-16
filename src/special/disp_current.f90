@@ -70,6 +70,7 @@ module Special
   logical :: ldivE_as_aux=.false., lsigE_as_aux=.false., lsigB_as_aux=.false.
   logical :: lrandom_ampl_ee=.false., lfixed_phase_ee=.false., lallow_bprime_zero=.true.
   logical :: lswitch_off_divJ=.false., lswitch_off_Gamma=.false., lmass_suppression=.false.
+  logical :: loverride_c_light=.false.
   character(len=labellen) :: inita0='zero'
   character (len=labellen), dimension(ninit) :: initee='nothing'
   character (len=labellen) :: power_filename='power_profile.dat'
@@ -91,7 +92,7 @@ module Special
     lsolve_chargedensity, weight_longitudinalE, lswitch_off_Gamma, &
     lrandom_ampl_ee, lfixed_phase_ee, lskip_projection_ee, &
     luse_scale_factor_in_sigma, lpower_profile_file, power_filename, &
-    coupl_gy, alpfpsi, lpsi_hom
+    coupl_gy, alpfpsi, lpsi_hom, loverride_c_light
 !
   ! run parameters
   real :: beta_inflation=0., rescale_ee=1.
@@ -104,7 +105,8 @@ module Special
     lnoncollinear_EB, lnoncollinear_EB_aver, luse_scale_factor_in_sigma, &
     lcollinear_EB, lcollinear_EB_aver, sigE_prefactor, sigB_prefactor, &
     reinitialize_ee, initee, rescale_ee, lmass_suppression, mass_chi, &
-    lallow_bprime_zero, lapply_Gamma_corr, coupl_gy, lpsi_hom, alpfpsi
+    lallow_bprime_zero, lapply_Gamma_corr, coupl_gy, lpsi_hom, alpfpsi, &
+    loverride_c_light
 !
 ! Declare any index variables necessary for main or
 !
@@ -200,6 +202,9 @@ module Special
         call farray_register_pde('diva_name',idiva_name)
       endif
 !
+!  For llongitudinalE=T, we replace graddiv in curlb by the gradient of Gamma.
+!  According to later work, this does not seem advantageous, however.
+!
       if (llongitudinalE) &
         call farray_register_pde('Gamma',iGamma)
 !
@@ -242,9 +247,10 @@ module Special
 !
 !  Initialize module variables which are parameter dependent
 !  If one really wants to work with c_light /= 1,
-!  then one needs to override this.
+!  then one needs to override this (loverride_c_light=T).
 !
-      if (c_light/=1.) call fatal_error('disp_current', "use unit_system='set'")
+      if (c_light/=1. .and. .not. loverride_c_light) call fatal_error('disp_current', &
+          "use unit_system='set' or put loverride_c_light=T")
       c_light2=c_light**2
 !
       if (lmagnetic .and. .not.lswitch_off_divJ) &
@@ -542,7 +548,9 @@ module Special
         ! alberto: when llongitudinalE=F, we should compute
         ! grad div a from f-array
         else
-          call del2v_etc(f,iaa,GRADDIV=p%gGamma)
+          !call del2v_etc(f,iaa,GRADDIV=p%gGamma)
+          !16-sep-25/axel: but in this case, pGamma should not be needed.
+          call fatal_error("calc_pencils_special","Gamma is not defined")
         endif
       endif
 !
@@ -550,8 +558,15 @@ module Special
 !
       ! alberto: as curlb is always requested, this allows to
       ! compute curlb also if llongitudinalE=F
+      !16-sep-25/axel: but curlb was already computed in calc_pencils_magnetic_pencpar (in magnetic).
       if (lpenc_requested(i_curlb)) then
-        if (lapply_Gamma_corr) p%curlb=-p%del2a+p%gGamma
+        if (lapply_Gamma_corr) then
+          if (llongitudinalE) then
+            p%curlb=-p%del2a+p%gGamma
+          else
+            call fatal_error("calc_pencils_special","Gamma is not defined")
+          endif
+        endif
       endif
       ! if (llongitudinalE) then
       !   ! call div(f,iee,p%divE)
