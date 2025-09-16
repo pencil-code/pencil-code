@@ -114,7 +114,9 @@ enum PC_SUB_STEP_NUMBER
 {
 	PC_FIRST_SUB_STEP,
 	PC_SECOND_SUB_STEP,
-	PC_THIRD_SUB_STEP
+	PC_THIRD_SUB_STEP,
+	PC_FOURTH_SUB_STEP,
+	PC_FIFTH_SUB_STEP
 }
 #define AC_lfirst__mod__cdata (step_num == 0)
 #define AC_llast__mod__cdata (step_num == AC_num_substeps__mod__cdata-1)
