@@ -1,0 +1,38 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+!  Initialisation parameters
+!
+&init_pars
+  cvsid="5a6b5b090"
+  ip = 14,                      ! debugging parameter
+  xyz0  = -1.1,-1.1,-1.1,       ! first corner of box
+  Lxyz  =  2.2 , 2.2 , 2.2,        ! box size
+  lperi =  F  , T  , F,         ! periodic direction?
+  random_gen = 'nr_f90'
+  lsphere_in_a_box = T
+  r_ext = 1.
+  lwrite_aux=T
+  bcx = 'a','s','s','a2','sT','sT','a','s','s'
+  bcz = 's','s','a','a2','sT','sT','s','s','a'
+/
+&eos_init_pars
+  cs0 = 1., rho0 = 1., ! values at r=0
+/
+&hydro_init_pars
+  inituu = 'gaussian-noise-rprof',
+  ampluu = 1e-3
+/
+&density_init_pars
+  initlnrho = 'isentropic-star',
+/
+&grav_init_pars
+  ipotential = 'M5-dwarf'
+/
+&entropy_init_pars
+  initss = 'isentropic-star'
+  lss_running_aver_as_var=T
+/
+&magnetic_init_pars
+  initaa = 'gaussian-noise-rprof'
+  amplaa = 1e-5
+/
