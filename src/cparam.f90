@@ -1202,5 +1202,7 @@ integer, parameter :: enum_ac_transformed_pencil_r_mnZeta_rZgeta_r_string = 913
 integer, parameter :: enum_maxloc_diffusZ__string = 914
 integer, parameter :: enum_imdotZ__string = 915
 integer, parameter :: enum_sigmaZ__string = 916
+integer, parameter :: enum_ferriere_string = 917
+integer, parameter :: enum_hyper3ZnuZconst_string = 918
 
 endmodule Cparam
