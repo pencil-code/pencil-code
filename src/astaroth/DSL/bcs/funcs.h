@@ -1652,7 +1652,7 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
   real zdep_12
   if(topbot == AC_bot) {
     if (AC_lentropy__mod__cparam) {
-      if (AC_ldensity__mod__cparam) {
+      if (ldensity) {
         if (AC_ldensity_nolog__mod__cdata) {
           if (AC_lreference_state__mod__cdata) {
             getrho_s_return_value_0=LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1]+AC_reference_state__mod__density[l1-l1+1-1][AC_iref_rho__mod__cparam-1]
@@ -2633,7 +2633,7 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
 
   else if(topbot == AC_top) {
     if (AC_lentropy__mod__cparam) {
-      if (AC_ldensity__mod__cparam) {
+      if (ldensity) {
         if (AC_ldensity_nolog__mod__cdata) {
           if (AC_lreference_state__mod__cdata) {
             getrho_s_return_value_7=LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]+AC_reference_state__mod__density[nx-1][AC_iref_rho__mod__cparam-1]

@@ -24,6 +24,11 @@ enum PC_SUB_STEP_NUMBER
 
 #include "PC_nghost.h"
 
+#define n__mod__cdata (vertexIdx.z+1)
+#define m__mod__cdata (vertexIdx.y+1)
+#define AC_n__mod__cdata (vertexIdx.z+1)
+#define AC_m__mod__cdata (vertexIdx.y+1)
+
 #define AC_mx AC_mlocal.x
 #define AC_my AC_mlocal.y
 #define AC_mz AC_mlocal.z
@@ -93,6 +98,7 @@ global output  real AC_Arms
 #ifdef LFORCING
   #include "../forcing/pcstyleforcing.h"
 #endif
+
 
 #include "../steps_two.h"
 #include "equations.h"
