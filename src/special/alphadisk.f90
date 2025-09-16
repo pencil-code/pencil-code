@@ -620,6 +620,8 @@ module Special
       if (l1davgfirst) then
         call yzsum_mn_name_x(psigma,idiag_sigmamx)
       endif
+      !TP: correct place to do it for GPU
+      if (lgpu .and. lroot.and.ldiagnos.and.idiag_tmyr/=0) call save_name(tdiagnos/myr,idiag_tmyr)
     endsubroutine calc_diagnostics_special
 !***********************************************************************
 !
