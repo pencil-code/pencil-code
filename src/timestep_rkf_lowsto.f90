@@ -193,11 +193,10 @@ module Timestep
 !
         headtt = headt .and. lfirst .and. lroot
 !
-        if (lfirst.and..not.lgpu) then
-          df=0.
+        if (.not. lgpu) df=0.
+        if (lfirst) then
           farr => f
         else
-          if (.not.lgpu) df=0.
           farr => f1
           if (it_rmv>0) lrmv=.false.
         endif
