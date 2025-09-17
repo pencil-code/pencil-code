@@ -3268,6 +3268,13 @@ module Hydro
         endif
       endif
 !
+!  ``uu/dx'' for timestep
+!
+      if (lupdate_courant_dt.and.ladvection_velocity) then
+        maxadvec=maxadvec+p%advec_uu
+        if (headtt.or.ldebug) print*,'calc_pencils_hydro: max(advec_uu) =',maxval(p%advec_uu)
+      endif
+!
       endsubroutine calc_pencils_hydro_pencpar
 !***********************************************************************
     subroutine calc_pencils_hydro_std(f,p)
@@ -4165,13 +4172,6 @@ module Hydro
 !
       if (lviscosity) call calc_viscous_force(df,p)
       if (lSGS_hydro) call calc_SGS_hydro_force(f,df,p)
-!
-!  ``uu/dx'' for timestep
-!
-      if (lupdate_courant_dt.and.ladvection_velocity) then
-        maxadvec=maxadvec+p%advec_uu
-        if (headtt.or.ldebug) print*,'duu_dt: max(advec_uu) =',maxval(p%advec_uu)
-      endif
 !
 !  Ekman Friction, used only in two dimensional runs.
 !  But it can also be used as photon drag in 3-D, for example.
