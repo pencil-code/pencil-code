@@ -1,3 +1,4 @@
+module swap PrgEnv-gnu PrgEnv-cray
 module load \
 cray-hdf5-parallel \
 CrayEnv \
