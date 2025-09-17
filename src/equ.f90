@@ -632,7 +632,10 @@ module Equ
 
       !Done since with multithreading RHS is not evaluated
       if(lmultithread) then
-              maxdiffus = 0.0
+              maxdiffus    = 0.0
+              maxadvec     = 0.0
+              advec2       = 0.0
+              advec_cs2    = 0.0
       endif
 
       !$omp do
