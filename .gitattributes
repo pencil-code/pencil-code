@@ -3406,6 +3406,8 @@ samples/massively-parallel-compilation/run.in -text
 samples/massively-parallel-compilation/src/Makefile.local -text
 samples/massively-parallel-compilation/src/cparam.local -text
 samples/massively-parallel-compilation/start.in -text
+samples/mdwarf-ss-running-aver/README.md -text
+samples/mdwarf-ss-running-aver/reference.out -text
 samples/mdwarf/NEVERLOCK -text
 samples/mdwarf/README -text
 samples/mdwarf/phiaver.in -text
