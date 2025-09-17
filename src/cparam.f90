@@ -1206,5 +1206,8 @@ integer, parameter :: enum_ferriere_string = 917
 integer, parameter :: enum_hyper3ZnuZconst_string = 918
 integer, parameter :: enum_fgs_string = 919
 integer, parameter :: enum_sfr_string = 920
+integer, parameter :: enum_e3_string = 921
+integer, parameter :: enum_out_string = 922
+integer, parameter :: enum_str_string = 923
 
 endmodule Cparam
