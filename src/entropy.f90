@@ -3572,6 +3572,10 @@ module Energy
       endif
 !
       if (lcooling_patches.and.lpencil(i_cool_prof)) p%cool_prof=f(l1:l2,m,n,icool_prof)
+
+      if (lupdate_courant_dt) then
+        if (lhydro.and.ldensity) advec_cs2=p%advec_cs2
+      endif
 !
     endsubroutine calc_pencils_energy
 !***********************************************************************
@@ -3764,8 +3768,8 @@ module Energy
 !
 !  Enforce maximum heating rate timestep constraint
 !
+
       if (lupdate_courant_dt) then
-        if (lhydro.and.ldensity) advec_cs2=p%advec_cs2
         if (lthdiff_Hmax.or.idiag_dtH/=0) then
           if (lthdiff_Hmax) then
             ssmax=max(ssmax,abs(df(l1:l2,m,n,iss))*p%cv1)
