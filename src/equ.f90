@@ -630,17 +630,17 @@ module Equ
 !!$    if (omp_get_thread_num() /= 0) call set_cpu(core_ids(omp_get_thread_num()+1))
       !print*,"omp_id,cpu_id,mpi_id: ",omp_get_thread_num(), get_cpu(), iproc
 
-      !Done since with multithreading RHS is not evaluated
-      if(lmultithread) then
-              maxdiffus    = 0.0
-              maxadvec     = 0.0
-              advec2       = 0.0
-              advec_cs2    = 0.0
-      endif
 
       !$omp do
       do imn=1,nyz
 
+        !Done since with multithreading RHS is not evaluated
+        if(lmultithread) then
+                maxdiffus    = 0.0
+                maxadvec     = 0.0
+                advec2       = 0.0
+                advec_cs2    = 0.0
+        endif
         n=nn(imn)
         m=mm(imn)
 !

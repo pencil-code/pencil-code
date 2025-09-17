@@ -579,9 +579,9 @@ subroutine timeloop(f,df,p)
 
   enddo Time_loop
 
-!$ lmultithread = .false.
 !$ call signal_wait(lhelper_perf, .false.)
 !$ call signal_send(lhelper_run,.false.)
+!$ lmultithread = .false.
 
 endsubroutine timeloop
 !***********************************************************************
