@@ -1204,5 +1204,7 @@ integer, parameter :: enum_imdotZ__string = 915
 integer, parameter :: enum_sigmaZ__string = 916
 integer, parameter :: enum_ferriere_string = 917
 integer, parameter :: enum_hyper3ZnuZconst_string = 918
+integer, parameter :: enum_fgs_string = 919
+integer, parameter :: enum_sfr_string = 920
 
 endmodule Cparam

@@ -8511,6 +8511,10 @@ iloop:do i=1,size(list2)
           dst = enum_ferriere_string
         case('hyper3-nu-const')
           dst = enum_hyper3ZnuZconst_string
+        case('sfr')
+          dst = enum_sfr_string
+        case('fgs')
+          dst = enum_fgs_string
         case default
           dst = enum_unknown_string_string
           if (lroot) print*, 'No string enum for: ', src
