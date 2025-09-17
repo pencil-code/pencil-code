@@ -11120,10 +11120,6 @@ print*,'AXEL2: should not be here (eta) ... '
         endif
         call parse_name(inamev,cnamev(inamev),cformv(inamev),'poynting',ivid_poynting)
       enddo
-      if (idiag_bcurlfmz/=0) then
-         call warning('rprint_magnetic','no valid implementation for diagnostic bcurlfmz')
-         idiag_bcurlfmz=0
-      endif
 !
 !  call corresponding mean-field routine
 !
