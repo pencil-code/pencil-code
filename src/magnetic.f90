@@ -10334,6 +10334,7 @@ print*,'AXEL2: should not be here (eta) ... '
         idiag_StokesQ1mxy=0; idiag_StokesU1mxy=0
         idiag_bybzmxz=0; idiag_uybxmxz=0; idiag_uybzmxz=0
         idiag_bx1mxz=0; idiag_by1mxz=0; idiag_bz1mxz=0
+        idiag_bx2mxz=0; idiag_by2mxz=0; idiag_bz2mxz=0
         idiag_bxmxz=0; idiag_bymxz=0; idiag_bzmxz=0; idiag_jbmxy=0
         idiag_jxmxz=0; idiag_jymxz=0; idiag_jzmxz=0
         idiag_abmxy=0; idiag_b2mxz=0; idiag_ubmxy=0;
