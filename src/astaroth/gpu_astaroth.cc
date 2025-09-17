@@ -17,6 +17,10 @@
 #include <sys/resource.h>
 #include <fstream>
 
+#if AC_RUNTIME_COMPILATION
+#include <dlfcn.h>
+#endif
+
 //TP: defined here since mpi.h can have its own definition of DOUBLE_PRECISION
 //    and we don't want to conflict it with it. This is at least true on my laptop
 #if AC_DOUBLE_PRECISION
