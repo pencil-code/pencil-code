@@ -9,9 +9,8 @@
   dsnap=100.
   lwrite_aux=T
   tau_aver1=10.
-!  lpencil_check=T
-  lpencil_check=F
-  lpencil_check_small=F
+  lpencil_check=T
+  lpencil_check_small=T
 /
 &eos_run_pars
 /
