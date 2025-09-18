@@ -14,7 +14,8 @@ pro pc_read_pvar, object=object, varfile=varfile_, datadir=datadir, ivar=ivar, $
     npar_max=npar_max, stats=stats, quiet=quiet, swap_endian=swap_endian, $
     rmv=rmv, irmv=irmv, trmv=trmv, oldrmv=oldrmv, $
     solid_object=solid_object, theta_arr=theta_arr, savefile=savefile, help=help, $
-    proc=proc, ipar=ipar, trimxyz=trimxyz, id_proc=id_proc, single=single, array=array
+    proc=proc, ipar=ipar, trimxyz=trimxyz, id_proc=id_proc, single=single, array=array, $
+    lnostoponnopart=lnostoponnopart              
 COMPILE_OPT IDL2,HIDDEN
 common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 
@@ -35,6 +36,9 @@ default, proc, -1
 default, trimxyz, 1
 default, id_proc, 0
 default, single, 0
+default, lnostoponnopart, 0
+if (keyword_set(lnostoponnopart)) then lnostoponnopart=1
+
 objout = not arg_present(array)
 ;
 if (n_elements(ivar) eq 1) then begin
@@ -257,6 +261,11 @@ default, born, 0
 varcontent[born].variable = 'Time of birth (tb)'
 varcontent[born].idlvar   = 'born'
 varcontent[born].idlinit  = INIT_SCALAR
+;
+default, iTp, 0
+varcontent[iTp].variable = 'Particle temperature (Tp)'
+varcontent[iTp].idlvar   = 'Tp'
+varcontent[iTp].idlinit  = INIT_SCALAR
 ;
 default, iup11, 0
 varcontent[iup11].variable = 'grad uu at particle(up11)'
@@ -830,7 +839,9 @@ endelse
 if (execute(makeobject) ne 1) then begin
   message, 'Error: building of object failed, but data locally available as t,x,y,z,dx,dy,dz,npar_found,iipar'+arraytostring(varcontent.idlvar)+'.', /info
   undefine, object
-  stop
+  if (not lnostoponnopart) then begin
+     stop
+  endif
 endif
 ;
 end
