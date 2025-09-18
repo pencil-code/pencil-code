@@ -1,4 +1,4 @@
-Kernel source_function(){
+Kernel source_function(int inu){
   real ac_transformed_pencil_acc
   real ac_transformed_pencil_ssat
   real ac_transformed_pencil_ttc
@@ -236,12 +236,12 @@ Kernel source_function(){
   real o2_5
   if(AC_enum_source_function_type__mod__radiation == AC_enum_lte_string__mod__cparam) {
     if (AC_lcutoff_opticallythin__mod__radiation) {
-      if(AC_mx__mod__cparam == AC_nx__mod__cparam) {
+      if(mx == nx) {
         lnrho__0=value(Field(AC_ilnrho__mod__cdata-1))
         lntt__0=value(Field(AC_ilntt__mod__cdata-1))
         yh__0=value(Field(AC_iyh__mod__cdata-1))
       }
-      else if(AC_mx__mod__cparam == AC_mx__mod__cparam) {
+      else if(mx == mx) {
         lnrho__0=value(Field(AC_ilnrho__mod__cdata-1))
         lntt__0=value(Field(AC_ilntt__mod__cdata-1))
         yh__0=value(Field(AC_iyh__mod__cdata-1))
@@ -269,12 +269,12 @@ Kernel source_function(){
       }
     }
     else {
-      if(AC_mx__mod__cparam == AC_nx__mod__cparam) {
+      if(mx == nx) {
         lnrho__1=value(Field(AC_ilnrho__mod__cdata-1))
         lntt__1=value(Field(AC_ilntt__mod__cdata-1))
         yh__1=value(Field(AC_iyh__mod__cdata-1))
       }
-      else if(AC_mx__mod__cparam == AC_mx__mod__cparam) {
+      else if(mx == mx) {
         lnrho__1=value(Field(AC_ilnrho__mod__cdata-1))
         lntt__1=value(Field(AC_ilntt__mod__cdata-1))
         yh__1=value(Field(AC_iyh__mod__cdata-1))
@@ -300,12 +300,12 @@ Kernel source_function(){
     }
   }
   else if(AC_enum_source_function_type__mod__radiation == AC_enum_twozcolored_string__mod__cparam) {
-    if(AC_mx__mod__cparam == AC_nx__mod__cparam) {
+    if(mx == nx) {
       lnrho__2=value(Field(AC_ilnrho__mod__cdata-1))
       lntt__2=value(Field(AC_ilntt__mod__cdata-1))
       yh__2=value(Field(AC_iyh__mod__cdata-1))
     }
-    else if(AC_mx__mod__cparam == AC_mx__mod__cparam) {
+    else if(mx == mx) {
       lnrho__2=value(Field(AC_ilnrho__mod__cdata-1))
       lntt__2=value(Field(AC_ilntt__mod__cdata-1))
       yh__2=value(Field(AC_iyh__mod__cdata-1))

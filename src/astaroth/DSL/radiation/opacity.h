@@ -1,4 +1,4 @@
-Kernel opacity(){
+Kernel opacity(int inu){
   real ac_transformed_pencil_acc
   real ac_transformed_pencil_ssat
   real ac_transformed_pencil_ttc
@@ -314,12 +314,12 @@ Kernel opacity(){
   real tmpy_12
   real tmpy1_12
   if(AC_enum_opacity_type__mod__radiation == AC_enum_hminus_string__mod__cparam) {
-    if(AC_mx__mod__cparam == AC_nx__mod__cparam) {
+    if(mx == nx) {
       lnrho__0=value(Field(AC_ilnrho__mod__cdata-1))
       lntt__0=value(Field(AC_ilntt__mod__cdata-1))
       yh__0=value(Field(AC_iyh__mod__cdata-1))
     }
-    else if(AC_mx__mod__cparam == AC_mx__mod__cparam) {
+    else if(mx == mx) {
       lnrho__0=value(Field(AC_ilnrho__mod__cdata-1))
       lntt__0=value(Field(AC_ilntt__mod__cdata-1))
       yh__0=value(Field(AC_iyh__mod__cdata-1))
@@ -337,7 +337,7 @@ Kernel opacity(){
         tmp=0.
       }
       else {
-        tmp = (1-yh__0)*AC_kappa0__mod__equationofstate*exp(min(tmp_0,log(AC_huge1__mod__cparam))+log(tmpy_0))
+        tmp = (1-yh__0)*AC_kappa0__mod__equationofstate*exp(min(tmp_0,log(huge1))+log(tmpy_0))
       }
       if (AC_lhminus_opacity_correction__mod__equationofstate) {
         mu1__0 = AC_mu1_0__mod__equationofstate*(1+yh__0+AC_xhe__mod__equationofstate)
@@ -348,12 +348,12 @@ Kernel opacity(){
     DF_KAPPARHO=AC_kapparho_floor__mod__radiation+tmp*AC_scalefactor_kappa__mod__radiation[inu-1]
   }
   else if(AC_enum_opacity_type__mod__radiation == AC_enum_total_rosseland_mean_string__mod__cparam) {
-    if(AC_mx__mod__cparam == AC_nx__mod__cparam) {
+    if(mx == nx) {
       lnrho__1=value(Field(AC_ilnrho__mod__cdata-1))
       lntt__1=value(Field(AC_ilntt__mod__cdata-1))
       yh__1=value(Field(AC_iyh__mod__cdata-1))
     }
-    else if(AC_mx__mod__cparam == AC_mx__mod__cparam) {
+    else if(mx == mx) {
       lnrho__1=value(Field(AC_ilnrho__mod__cdata-1))
       lntt__1=value(Field(AC_ilntt__mod__cdata-1))
       yh__1=value(Field(AC_iyh__mod__cdata-1))
@@ -375,12 +375,12 @@ Kernel opacity(){
         tmpy1_1 = 1./(1+yh__1)
       }
     }
-    if(AC_mx__mod__cparam == AC_nx__mod__cparam) {
+    if(mx == nx) {
       lnrho__2=value(Field(AC_ilnrho__mod__cdata-1))
       lntt__2=value(Field(AC_ilntt__mod__cdata-1))
       yh__2=value(Field(AC_iyh__mod__cdata-1))
     }
-    else if(AC_mx__mod__cparam == AC_mx__mod__cparam) {
+    else if(mx == mx) {
       lnrho__2=value(Field(AC_ilnrho__mod__cdata-1))
       lntt__2=value(Field(AC_ilntt__mod__cdata-1))
       yh__2=value(Field(AC_iyh__mod__cdata-1))
@@ -415,12 +415,12 @@ Kernel opacity(){
     DF_KAPPARHO=exp(lnrho)*kappa_tot*AC_scalefactor_kappa__mod__radiation[inu-1]
   }
   else if(AC_enum_opacity_type__mod__radiation == AC_enum_kappa_es_string__mod__cparam) {
-    if(AC_mx__mod__cparam == AC_nx__mod__cparam) {
+    if(mx == nx) {
       lnrho__3=value(Field(AC_ilnrho__mod__cdata-1))
       lntt__3=value(Field(AC_ilntt__mod__cdata-1))
       yh__3=value(Field(AC_iyh__mod__cdata-1))
     }
-    else if(AC_mx__mod__cparam == AC_mx__mod__cparam) {
+    else if(mx == mx) {
       lnrho__3=value(Field(AC_ilnrho__mod__cdata-1))
       lntt__3=value(Field(AC_ilntt__mod__cdata-1))
       yh__3=value(Field(AC_iyh__mod__cdata-1))
@@ -445,12 +445,12 @@ Kernel opacity(){
     DF_KAPPARHO=AC_kapparho_floor__mod__radiation+AC_kappa_es__mod__cdata*exp(lnrho)
   }
   else if(AC_enum_opacity_type__mod__radiation == AC_enum_kappa_cst_string__mod__cparam) {
-    if(AC_mx__mod__cparam == AC_nx__mod__cparam) {
+    if(mx == nx) {
       lnrho__4=value(Field(AC_ilnrho__mod__cdata-1))
       lntt__4=value(Field(AC_ilntt__mod__cdata-1))
       yh__4=value(Field(AC_iyh__mod__cdata-1))
     }
-    else if(AC_mx__mod__cparam == AC_mx__mod__cparam) {
+    else if(mx == mx) {
       lnrho__4=value(Field(AC_ilnrho__mod__cdata-1))
       lntt__4=value(Field(AC_ilntt__mod__cdata-1))
       yh__4=value(Field(AC_iyh__mod__cdata-1))
@@ -479,12 +479,12 @@ Kernel opacity(){
   }
   else if(AC_enum_opacity_type__mod__radiation == AC_enum_kappa_kconst_string__mod__cparam) {
     kappa0=16./3.*AC_sigmasb__mod__cdata/AC_kappa_kconst__mod__radiation
-    if(AC_mx__mod__cparam == AC_nx__mod__cparam) {
+    if(mx == nx) {
       lnrho__5=value(Field(AC_ilnrho__mod__cdata-1))
       lntt__5=value(Field(AC_ilntt__mod__cdata-1))
       yh__5=value(Field(AC_iyh__mod__cdata-1))
     }
-    else if(AC_mx__mod__cparam == AC_mx__mod__cparam) {
+    else if(mx == mx) {
       lnrho__5=value(Field(AC_ilnrho__mod__cdata-1))
       lntt__5=value(Field(AC_ilntt__mod__cdata-1))
       yh__5=value(Field(AC_iyh__mod__cdata-1))
@@ -510,12 +510,12 @@ Kernel opacity(){
     DF_KAPPARHO=AC_kapparho_floor__mod__radiation+kappa0*(tt*tt*tt)
   }
   else if(AC_enum_opacity_type__mod__radiation == AC_enum_kappa_power_law_string__mod__cparam) {
-    if(AC_mx__mod__cparam == AC_nx__mod__cparam) {
+    if(mx == nx) {
       lnrho__6=value(Field(AC_ilnrho__mod__cdata-1))
       lntt__6=value(Field(AC_ilntt__mod__cdata-1))
       yh__6=value(Field(AC_iyh__mod__cdata-1))
     }
-    else if(AC_mx__mod__cparam == AC_mx__mod__cparam) {
+    else if(mx == mx) {
       lnrho__6=value(Field(AC_ilnrho__mod__cdata-1))
       lntt__6=value(Field(AC_ilntt__mod__cdata-1))
       yh__6=value(Field(AC_iyh__mod__cdata-1))
@@ -560,12 +560,12 @@ Kernel opacity(){
     }
   }
   else if(AC_enum_opacity_type__mod__radiation == AC_enum_kappa_double_power_law_string__mod__cparam) {
-    if(AC_mx__mod__cparam == AC_nx__mod__cparam) {
+    if(mx == nx) {
       lnrho__8=value(Field(AC_ilnrho__mod__cdata-1))
       lntt__8=value(Field(AC_ilntt__mod__cdata-1))
       yh__8=value(Field(AC_iyh__mod__cdata-1))
     }
-    else if(AC_mx__mod__cparam == AC_mx__mod__cparam) {
+    else if(mx == mx) {
       lnrho__8=value(Field(AC_ilnrho__mod__cdata-1))
       lntt__8=value(Field(AC_ilntt__mod__cdata-1))
       yh__8=value(Field(AC_iyh__mod__cdata-1))
@@ -599,12 +599,12 @@ Kernel opacity(){
   else if(AC_enum_opacity_type__mod__radiation == AC_enum_tsquare_string__mod__cparam) {
     kappa0_cgs=2e-4
     kappa0=kappa0_cgs
-    if(AC_mx__mod__cparam == AC_nx__mod__cparam) {
+    if(mx == nx) {
       lnrho__9=value(Field(AC_ilnrho__mod__cdata-1))
       lntt__9=value(Field(AC_ilntt__mod__cdata-1))
       yh__9=value(Field(AC_iyh__mod__cdata-1))
     }
-    else if(AC_mx__mod__cparam == AC_mx__mod__cparam) {
+    else if(mx == mx) {
       lnrho__9=value(Field(AC_ilnrho__mod__cdata-1))
       lntt__9=value(Field(AC_ilntt__mod__cdata-1))
       yh__9=value(Field(AC_iyh__mod__cdata-1))
@@ -634,12 +634,12 @@ Kernel opacity(){
   else if(AC_enum_opacity_type__mod__radiation == AC_enum_kramers_string__mod__cparam) {
     kappa0_cgs=6.6e22
     kappa0=kappa0_cgs
-    if(AC_mx__mod__cparam == AC_nx__mod__cparam) {
+    if(mx == nx) {
       lnrho__10=value(Field(AC_ilnrho__mod__cdata-1))
       lntt__10=value(Field(AC_ilntt__mod__cdata-1))
       yh__10=value(Field(AC_iyh__mod__cdata-1))
     }
-    else if(AC_mx__mod__cparam == AC_mx__mod__cparam) {
+    else if(mx == mx) {
       lnrho__10=value(Field(AC_ilnrho__mod__cdata-1))
       lntt__10=value(Field(AC_ilntt__mod__cdata-1))
       yh__10=value(Field(AC_iyh__mod__cdata-1))
@@ -667,12 +667,12 @@ Kernel opacity(){
     DF_KAPPARHO=AC_kapparho_floor__mod__radiation+kappa0*((exp(lnrho)*exp(lnrho)))*pow((exp(lntt)),(-3.5))
   }
   else if(AC_enum_opacity_type__mod__radiation == AC_enum_dustzinfrared_string__mod__cparam) {
-    if(AC_mx__mod__cparam == AC_nx__mod__cparam) {
+    if(mx == nx) {
       lnrho__11=value(Field(AC_ilnrho__mod__cdata-1))
       lntt__11=value(Field(AC_ilntt__mod__cdata-1))
       yh__11=value(Field(AC_iyh__mod__cdata-1))
     }
-    else if(AC_mx__mod__cparam == AC_mx__mod__cparam) {
+    else if(mx == mx) {
       lnrho__11=value(Field(AC_ilnrho__mod__cdata-1))
       lntt__11=value(Field(AC_ilntt__mod__cdata-1))
       yh__11=value(Field(AC_iyh__mod__cdata-1))
@@ -721,12 +721,12 @@ Kernel opacity(){
     }
   }
   else if(AC_enum_opacity_type__mod__radiation == AC_enum_rad_ionization_string__mod__cparam) {
-    if(AC_mx__mod__cparam == AC_nx__mod__cparam) {
+    if(mx == nx) {
       lnrho__12=value(Field(AC_ilnrho__mod__cdata-1))
       lntt__12=value(Field(AC_ilntt__mod__cdata-1))
       yh__12=value(Field(AC_iyh__mod__cdata-1))
     }
-    else if(AC_mx__mod__cparam == AC_mx__mod__cparam) {
+    else if(mx == mx) {
       lnrho__12=value(Field(AC_ilnrho__mod__cdata-1))
       lntt__12=value(Field(AC_ilntt__mod__cdata-1))
       yh__12=value(Field(AC_iyh__mod__cdata-1))

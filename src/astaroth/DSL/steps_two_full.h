@@ -82,6 +82,7 @@ BoundConds boundconds{
 #endif
 }
 
+#if Lradiation_ray_MODULE
 #include "../radiation/opacity.h"
 #include "../radiation/source_function.h"
 get_source_function_and_opacity(boundconds)
@@ -89,6 +90,7 @@ get_source_function_and_opacity(boundconds)
 	source_function()
 	opacity()
 }
+#endif
 //TP: periodic in XY sym in Z
 //BoundConds boundconds{
 //  periodic(BOUNDARY_XY)

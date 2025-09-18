@@ -822,13 +822,13 @@ AcReal GpuCalcDt(const AcReal t)
 /***********************************************************************************************/
 extern "C" void sourceFunctionAndOpacity(int inu)
 {
-#if LRADIATION
+#if Lradiation_ray_MODULE
   	acDeviceSetInput(acGridGetDevice(), AC_frequency_bin,inu);
 	acGridHaloExchange();
 	const auto info = acDeviceGetLocalConfig(acGridGetDevice());
 	const Volume start = acGetMinNN(info)-(Volume){1,1,1};
 	const Volume end   = acGetMaxNN(info)+(Volume){1,1,1};
-	acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraphWithBounds(get_source_function_and_opacity,start,end),1);
+	acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(get_source_function_and_opacity,start,end),1);
 #endif
 }
 /***********************************************************************************************/
