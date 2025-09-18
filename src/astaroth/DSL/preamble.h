@@ -175,7 +175,7 @@ const real ac_real_unused_scalar = 0.0
 #define maux__mod__cparam maux
 
 global output real AC_Arms
-#include "../forcing/pcstyleforcing.h"
+#include "../forcing"
 #include "../stdlib/grid/funcs.h"
 #define ikx (vertexIdx.x-NGHOST+1)
 #define iky (vertexIdx.y-NGHOST+1)
