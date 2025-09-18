@@ -1209,5 +1209,6 @@ integer, parameter :: enum_sfr_string = 920
 integer, parameter :: enum_e3_string = 921
 integer, parameter :: enum_out_string = 922
 integer, parameter :: enum_str_string = 923
+integer, parameter :: enum_nuZslopeZlimited_string = 924
 
 endmodule Cparam
