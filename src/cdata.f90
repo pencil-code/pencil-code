@@ -368,6 +368,7 @@ module Cdata
   logical :: lcooling_ss_mz = .false.
   logical :: lshock_heat = .true.
   logical :: lklein_gordon = .false.
+  logical :: ldisp_current = .false.
   real :: density_scale_factor=impossible
 !
 !  Used together with entropy, turns iss into ilntt (i.e., entropy

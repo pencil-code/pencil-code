@@ -132,24 +132,23 @@ Field F_GLOBAL_EXT_AX, F_GLOBAL_EXT_AY, F_GLOBAL_EXT_AZ
 Field3 F_GLOBAL_EEXTVEC
 Field3 F_GLOBAL_JEXTVEC
 
-#if LDISP_CURRENT
-field_order(AC_igamma__mod__disp_current-1) Field F_GAMMA
-field_order(AC_irhoe__mod__disp_current-1) Field F_RHOE
-field_order(AC_idiva_name__mod__disp_current-1) Field F_DIVA_NAME
-field_order(AC_ia0__mod__disp_current-1) Field F_A0
-field_order(AC_iex__mod__disp_current-1) Field F_EX
-field_order(AC_iey__mod__disp_current-1) Field F_EY
-field_order(AC_iez__mod__disp_current-1) Field F_EZ
-const Field3 F_EVEC = {F_EX,F_EY,F_EZ}
-field_order(AC_iedotx__mod__disp_current-1) Field F_EDOTX
-field_order(AC_iedoty__mod__disp_current-1) Field F_EDOTY
-field_order(AC_iedotz__mod__disp_current-1) Field F_EDOTZ
+field_order(AC_ldisp_current__mod__cdata ?  AC_igamma__mod__disp_current-1 : -1) Field F_GAMMA
+field_order(AC_ldisp_current__mod__cdata ?  AC_irhoe__mod__disp_current-1 : -1) Field F_RHOE
+field_order(AC_ldisp_current__mod__cdata ?  AC_idiva_name__mod__disp_current-1 : -1) Field F_DIVA_NAME
+field_order(AC_ldisp_current__mod__cdata ?  AC_ia0__mod__disp_current-1 : -1) Field F_A0
+field_order(AC_ldisp_current__mod__cdata ?  AC_iex__mod__disp_current-1 : -1) Field F_EX
+field_order(AC_ldisp_current__mod__cdata ?  AC_iey__mod__disp_current-1 : -1) Field F_EY
+field_order(AC_ldisp_current__mod__cdata ?  AC_iez__mod__disp_current-1 : -1) Field F_EZ
+field_order(AC_ldisp_current__mod__cdata ?  AC_iedotx__mod__disp_current-1 : -1) Field F_EDOTX
+field_order(AC_ldisp_current__mod__cdata ?  AC_iedoty__mod__disp_current-1 : -1) Field F_EDOTY
+field_order(AC_ldisp_current__mod__cdata ?  AC_iedotz__mod__disp_current-1 : -1) Field F_EDOTZ
+field_order(AC_ldisp_current__mod__cdata ?  AC_idive__mod__disp_current-1 : -1) Field F_DIVE
+field_order(AC_ldisp_current__mod__cdata ?  AC_isige__mod__disp_current-1 : -1) Field F_SIGE
+field_order(AC_ldisp_current__mod__cdata ?  AC_isigb__mod__disp_current-1 : -1) Field F_SIGB
+
 const Field3 F_EDOT = {F_EDOTX,F_EDOTY,F_EDOTZ}
-field_order(AC_idive__mod__disp_current-1) Field F_DIVE
-field_order(AC_isige__mod__disp_current-1) Field F_SIGE
-field_order(AC_isigb__mod__disp_current-1) Field F_SIGB
+const Field3 F_EVEC = {F_EX,F_EY,F_EZ}
 const Field3 F_EDOTVEC         = {F_EDOTX,F_EDOTY,F_EDOTZ}
-#endif
 
 Field3 F_GLOBAL_AX_EXVEC
 

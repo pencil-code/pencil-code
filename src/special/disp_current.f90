@@ -175,6 +175,8 @@ module Special
       use FArrayManager
       use Sub, only: register_report_aux
       use SharedVariables, only: put_shared_variable
+
+      ldisp_current =.true.
 !
 !  It would have been more consistent to call the indices to the
 !  three components iex, iey, and iez

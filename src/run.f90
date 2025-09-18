@@ -1641,6 +1641,7 @@ call copy_addr(kz_kinflow,p_par(1358))
 call copy_addr(seed0,p_par(1359)) ! int
 call copy_addr(lklein_gordon,p_par(1360)) ! bool
 call copy_addr(lslope_limit_diff,p_par(1361)) ! bool
+call copy_addr(ldisp_current,p_par(1362)) ! bool
 
 endsubroutine pushpars2c
 !***********************************************************************
