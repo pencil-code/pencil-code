@@ -1570,7 +1570,7 @@ bc_freeze_var_z(AcBoundary boundary, AC_TOP_BOT topbot, Field f)
 
 bc_set_nfr_x(AcBoundary boundary, AC_TOP_BOT topbot,Field j)
 {
-  suppress_unused(boundary)
+  suppress_unused_warning(boundary)
   int k
   if(topbot == AC_bot) {
     j[l1-1-1][vertexIdx.y][vertexIdx.z]= j[1+l1-1][vertexIdx.y][vertexIdx.z]*(AC_x__mod__cdata[1+l1-1]/(AC_x__mod__cdata[1+l1-1]-AC_dx2_bound__mod__cdata[-1+NGHOST+1-1]))
@@ -1589,7 +1589,7 @@ bc_set_nfr_x(AcBoundary boundary, AC_TOP_BOT topbot,Field j)
 bc_set_nfr_y(AcBoundary boundary, AC_TOP_BOT topbot,Field j)
 {
   int k
-  suppress_unused(boundary)
+  suppress_unused_warning(boundary)
   if(topbot == AC_bot) {
     j[vertexIdx.x][m1-1-1][vertexIdx.z]= j[vertexIdx.x][1+m1-1][vertexIdx.z]*(AC_sinth__mod__cdata[1+m1-1]/sin(AC_y__mod__cdata[1+m1-1]-AC_dy2_bound__mod__cdata[-1+NGHOST+1-1]))
     j[vertexIdx.x][m1-2-1][vertexIdx.z]= j[vertexIdx.x][2+m1-1][vertexIdx.z]*(AC_sinth__mod__cdata[2+m1-1]/sin(AC_y__mod__cdata[2+m1-1]-AC_dy2_bound__mod__cdata[-2+NGHOST+1-1]))
