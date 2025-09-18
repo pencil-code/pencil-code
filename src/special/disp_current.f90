@@ -1367,6 +1367,20 @@ module Special
     call copy_addr(lapply_gamma_corr,p_par(31)) ! bool
     call copy_addr(lphi_linear_regime,p_par(32)) ! bool
     call copy_addr(weight_longitudinale,p_par(33))
+    call copy_addr(alpfpsi,p_par(34))
+    call copy_addr(coupl_gy,p_par(35))
+    call copy_addr(lpsi_hom,p_par(36)) ! bool
+    call copy_addr(iex,p_par(37)) ! int
+    call copy_addr(iey,p_par(38)) ! int
+    call copy_addr(iez,p_par(39)) ! int
+    call copy_addr(iedotx,p_par(40)) ! int
+    call copy_addr(iedoty,p_par(41)) ! int
+    call copy_addr(iedotz,p_par(42)) ! int
+    call copy_addr(idive,p_par(43)) ! int
+    call copy_addr(isige,p_par(44)) ! int
+    call copy_addr(isigb,p_par(45)) ! int
+    call copy_addr(irhoe,p_par(46)) ! int
+
 
 
     endsubroutine pushpars2c
