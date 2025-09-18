@@ -58,6 +58,8 @@ module Polymer
   integer :: idiag_polytrm=0     ! DIAG_DOC: $\left\langle Tr[C_{ij}]\right\rangle$
   integer :: idiag_frmax=0       ! DIAG_DOC: $\max(f(r))$
 !
+  integer :: enum_poly_model = 0
+  integer :: enum_poly_algo  = 0
   contains
 !***********************************************************************
     subroutine register_polymer()
@@ -72,7 +74,7 @@ module Polymer
       ip11 = ipoly  ; ip12 = ipoly+1 ; ip13 = ipoly+2
       ip21 = ip12   ; ip22 = ipoly+3 ; ip23 = ipoly+4
       ip31 = ip13   ; ip32 = ip23    ; ip33 = ipoly+5
-      call farray_register_auxiliary('polyfr',ipoly_fr)
+      call farray_register_auxiliary('polyfr',ipoly_fr,on_gpu=lgpu)
 !
       if (lroot) call svn_id( &
           "$Id$")
@@ -262,11 +264,11 @@ module Polymer
 !
 ! poly
       if (lpencil(i_poly)) then
-        ipk=0
+        ipk = 0
         do ipi=1,3
           do ipj=ipi,3
             p%poly(:,ipi,ipj) = f(l1:l2,m,n,ipoly+ipk)
-            ipk=ipk+1
+            ipk = ipk + 1
           enddo
         enddo
       endif
@@ -636,7 +638,7 @@ module Polymer
     use Syscalls, only: copy_addr
     use General , only: string_to_enum
 
-    integer, parameter :: n_pars=10
+    integer, parameter :: n_pars=20
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call copy_addr(lpolyback,p_par(1)) ! bool
@@ -646,6 +648,13 @@ module Polymer
     call copy_addr(tau_poly,p_par(5))
     call copy_addr(tau_poly1,p_par(6))
     call copy_addr(eta_poly,p_par(7))
+    call copy_addr(ip11,p_par(8))  ! int
+    call copy_addr(ip22,p_par(9))  ! int
+    call copy_addr(ip33,p_par(10)) ! int
+    call copy_addr(fenep_l,p_par(11)) ! int
+    call string_to_enum(enum_poly_model,poly_model)
+    call copy_addr(enum_poly_model,p_par(12)) ! int
+    call copy_addr(enum_poly_algo,p_par(13)) ! int
 
     endsubroutine pushpars2c
 !***********************************************************************
