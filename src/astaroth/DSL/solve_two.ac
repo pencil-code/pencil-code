@@ -1,6 +1,6 @@
 #include "mhdsolver.ac"
 
-fixed_boundary Kernel twopass_solve_final(int step_num)
+fixed_boundary Kernel twopass_solve_final(PC_SUB_STEP_NUMBER step_num)
 {
 	if(AC_lcourant_dt__mod__cdata)
 	{
