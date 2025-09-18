@@ -371,6 +371,7 @@ void FTNIZE(sizeof_real_c)
   {
     *dest=src;
   }
+/* ---------------------------------------------------------------------- */
   void FTNIZE(copy_addr_c_bool)(int *src, void **dest, int* n)
   {
      bool* res = malloc(sizeof(bool)*(*n));
