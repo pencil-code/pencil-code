@@ -3171,6 +3171,9 @@ ifeq ($(VISCOSITY),viscosity)
 	@echo '#define LVISCOSITY 1 // '$(CUDA_RELPATH)'/viscosity.f90' >> $(CUDA_INCDIR)/PC_moduleflags.h
 	@grep ' viscosity\.f90' $(CUDA_MAKEDIR)/PC_modulesources.h > /dev/null || echo $(CUDA_RELPATH)'/viscosity.f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources.h
 endif
+ifeq ($(EOS),eos_idealgas)
+	@echo '#define LEOS 1 // '$(CUDA_RELPATH)'/eos_idealgas.f90' >> $(CUDA_INCDIR)/PC_moduleflags.h
+endif
 ifeq ($(TIMESTEP),timestep)
 	@echo $(CUDA_RELPATH)'/timestep.f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources.h
 endif
