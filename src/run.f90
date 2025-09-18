@@ -581,6 +581,7 @@ subroutine timeloop(f,df,p)
 
 !$ call signal_wait(lhelper_perf, .false.)
 !$ call signal_send(lhelper_run,.false.)
+!Important that this comes after synchronization
 !$ lmultithread = .false.
 
 endsubroutine timeloop
@@ -1276,7 +1277,6 @@ call copy_addr(x0,p_par(36))
 call copy_addr(z0,p_par(37))
 call copy_addr(lx,p_par(38))
 call copy_addr(ly,p_par(39))
-call copy_addr(trelax_poly,p_par(40))
 call copy_addr(lmaximal_cdtv,p_par(41)) ! bool
 call copy_addr(lmaximal_cdt,p_par(42)) ! bool
 call copy_addr(llsode,p_par(43)) ! bool
@@ -1639,6 +1639,7 @@ call copy_addr(ampl_kinflow_z,p_par(1356))
 call copy_addr(kx_kinflow,p_par(1357))
 call copy_addr(kz_kinflow,p_par(1358))
 call copy_addr(seed0,p_par(1359)) ! int
+call copy_addr(lklein_gordon,p_par(1360)) ! bool
 
 endsubroutine pushpars2c
 !***********************************************************************
