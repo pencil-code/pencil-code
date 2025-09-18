@@ -8521,6 +8521,8 @@ iloop:do i=1,size(list2)
           dst = enum_out_string
         case('str')
           dst = enum_str_string
+        case('nu-slope-limited')
+          dst = enum_nuZslopeZlimited_string
         case default
           dst = enum_unknown_string_string
           if (lroot) print*, 'No string enum for: ', src
