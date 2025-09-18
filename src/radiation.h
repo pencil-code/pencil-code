@@ -8,7 +8,7 @@
   public :: get_slices_radiation
   public :: pencil_criteria_radiation, pencil_interdep_radiation
   public :: calc_pencils_radiation, calc_diagnostics_radiation
-
+  public :: pushpars2c
   public :: init_rad, radtransfer, dradiation_dt
                                                                                                        
 

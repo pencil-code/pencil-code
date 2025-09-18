@@ -21,6 +21,8 @@ module Radiation
 !
   include 'radiation.h'
 !
+  integer :: pushpars2c        ! should be procedure pointer (F2003)
+
   contains
 !***********************************************************************
     subroutine register_radiation
