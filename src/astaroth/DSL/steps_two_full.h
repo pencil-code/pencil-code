@@ -14,6 +14,7 @@ input PC_SUB_STEP_NUMBER AC_step_num
 input bool AC_lrmv
 input real AC_t
 
+
 ComputeSteps AC_rhs(boundconds)
 {
 	shock_1_divu(AC_step_num)
@@ -79,6 +80,14 @@ BoundConds boundconds{
   ac_const_bc(BOUNDARY_Y_BOT,TAU_BELOW,0.0)
   ac_const_bc(BOUNDARY_Y_TOP,TAU_ABOVE,0.0)
 #endif
+}
+
+#include "../radiation/opacity.h"
+#include "../radiation/source_function.h"
+get_source_function_and_opacity(boundconds)
+{
+	source_function()
+	opacity()
 }
 //TP: periodic in XY sym in Z
 //BoundConds boundconds{
