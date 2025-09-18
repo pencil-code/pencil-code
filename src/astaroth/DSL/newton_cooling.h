@@ -1,6 +1,6 @@
 #if LNEWTON_COOLING
 Field TAU_BELOW,TAU_ABOVE
-field_order(AC_itau__mod__special-1) Field F_TAU
+field_order(AC_itau__mod__newton_cooling-1) Field F_TAU
 //Reuse TAU buffer for DTAU
 #define DTAU F_TAU
 #define TAU F_TAU
@@ -31,7 +31,7 @@ Kernel calc_kappar_and_dtau(){
   const t9_0 = 3730.0
   const t10_0 = 1e4
   const t11_0 = 1e5
-  lntt0=log(AC_cs20__mod__equationofstate*AC_cp1__mod__special/AC_gamma_m1__mod__special)
+  lntt0=log(AC_cs20__mod__equationofstate*AC_cp1__mod__newton_cooling/AC_gamma_m1__mod__newton_cooling)
   tt0=exp(lntt0)
   rho01=1./AC_rho0__mod__equationofstate
   if (AC_ldensity_nolog__mod__cdata) {
@@ -40,7 +40,7 @@ Kernel calc_kappar_and_dtau(){
   else {
     rho=exp(value(Field(AC_ilnrho__mod__cdata-1)))
   }
-  tt = tt0 *pow( (rho*rho01),AC_gamma_m1__mod__special) * exp(value(Field(AC_iss__mod__cdata-1))*AC_cv1__mod__special)
+  tt = tt0 *pow( (rho*rho01),AC_gamma_m1__mod__newton_cooling) * exp(value(Field(AC_iss__mod__cdata-1))*AC_cv1__mod__newton_cooling)
   ttdim=tt*AC_unit_temperature__mod__cdata
   rhodim=rho*AC_unit_density__mod__cdata
   if (ttdim <= t1_0) {

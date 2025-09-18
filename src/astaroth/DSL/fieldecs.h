@@ -75,6 +75,23 @@ field_order(AC_istresstim__mod__cdata-1) Field F_STRESSTIM
 field_order(AC_istressxim__mod__cdata-1) Field F_STRESSXIM
 
 
+field_order(AC_ipoly__mod__cdata != 0 ? AC_ipoly__mod__cdata+0-1 : -1) Field F_POLY_0
+field_order(AC_ipoly__mod__cdata != 0 ? AC_ipoly__mod__cdata+1-1 : -1) Field F_POLY_1
+field_order(AC_ipoly__mod__cdata != 0 ? AC_ipoly__mod__cdata+2-1 : -1) Field F_POLY_2
+field_order(AC_ipoly__mod__cdata != 0 ? AC_ipoly__mod__cdata+3-1 : -1) Field F_POLY_3
+field_order(AC_ipoly__mod__cdata != 0 ? AC_ipoly__mod__cdata+4-1 : -1) Field F_POLY_4
+field_order(AC_ipoly__mod__cdata != 0 ? AC_ipoly__mod__cdata+5-1 : -1) Field F_POLY_5
+
+const Field F_POLY = [
+			F_POLY_0,
+			F_POLY_1,
+			F_POLY_2,
+			F_POLY_3,
+			F_POLY_4,
+			F_POLY_5
+		     ]
+
+field_order(AC_ipoly_fr__mod__cdata-1) Field F_POLY_FR
 
 #define F_AX AAX
 #define F_AY AAY
@@ -114,14 +131,32 @@ Field F_GLOBAL_EXT_AX, F_GLOBAL_EXT_AY, F_GLOBAL_EXT_AZ
 
 Field3 F_GLOBAL_EEXTVEC
 Field3 F_GLOBAL_JEXTVEC
-Field3 F_EVEC
+
+#if LDISP_CURRENT
+field_order(AC_igamma__mod__disp_current-1) Field F_GAMMA
+field_order(AC_irhoe__mod__disp_current-1) Field F_RHOE
+field_order(AC_idiva_name__mod__disp_current-1) Field F_DIVA_NAME
+field_order(AC_ia0__mod__disp_current-1) Field F_A0
+field_order(AC_iex__mod__disp_current-1) Field F_EX
+field_order(AC_iey__mod__disp_current-1) Field F_EY
+field_order(AC_iez__mod__disp_current-1) Field F_EZ
+const Field3 F_EVEC = {F_EX,F_EY,F_EZ}
+field_order(AC_iedotx__mod__disp_current-1) Field F_EDOTX
+field_order(AC_iedoty__mod__disp_current-1) Field F_EDOTY
+field_order(AC_iedotz__mod__disp_current-1) Field F_EDOTZ
+const Field3 F_EDOT = {F_EDOTX,F_EDOTY,F_EDOTZ}
+field_order(AC_idive__mod__disp_current-1) Field F_DIVE
+field_order(AC_isige__mod__disp_current-1) Field F_SIGE
+field_order(AC_isigb__mod__disp_current-1) Field F_SIGB
+const Field3 F_EDOTVEC         = {F_EDOTX,F_EDOTY,F_EDOTZ}
+#endif
+
 Field3 F_GLOBAL_AX_EXVEC
 
 
 Field F_JX,F_JY,F_JZ
-Field F_EDOTX,F_EDOTY,F_EDOTZ
 Field F_LAM
-field_order(AC_itt__mod__cdata != 0 ? AC_itt__mod__cdata : AC_ilntt__mod__cdata-1) Field F_TT
+field_order(AC_itt__mod__cdata != 0 ? AC_itt__mod__cdata-1 : AC_ilntt__mod__cdata-1) Field F_TT
 field_order(AC_iyh__mod__cdata-1) Field F_YH
 #define TT F_TT
 #define LNTT F_TT
@@ -163,7 +198,6 @@ const Field3 F_GLOBAL_GLHVEC = {F_GLOBAL_GLHX,F_GLOBAL_GLHY,F_GLOBAL_GLHZ}
 
 
 const Field3 F_JVEC            = {F_JX,F_JY,F_JZ}
-const Field3 F_EDOTVEC         = {F_EDOTX,F_EDOTY,F_EDOTZ}
 const Field3 F__ADV_DERVEC     = {F_ADV_DERX,F_ADV_DERY,F_ADV_DERZ}
 const Field3 F_HYPREVEC        = {F_HYPREX, F_HYPREY, F_HYPREZ}
 const Field3 F_GLOBAL_EXT_AVEC = {F_GLOBAL_EXT_AX, F_GLOBAL_EXT_AY, F_GLOBAL_EXT_AZ}
@@ -248,7 +282,6 @@ Field AC_nonlinear_tpq_im__mod__gravitational_waves_htxk[6]
 
 field_order(AC_irho_b__mod__cdata-1) Field RHO_B
 field_order(AC_iss_b__mod__cdata-1) Field SS_B
-
 
 Field SLD_CHAR_SPEED
 Field3 BETA_UU

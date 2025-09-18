@@ -11,11 +11,9 @@ real DF_GUIJ33         = 0.0
 real DF_CS             = 0.0
 real DF_VISC_HEAT      = 0.0
 real3 DF_VISC_FORCVEC  = real3(0.0,0.0,0.0)
-real3 DF_DIVA          = real3(0.0,0.0,0.0)
 real3 DF_BVEC          = real3(0.0,0.0,0.0)
 real3 DF_JVEC          = real3(0.0,0.0,0.0)
 real3 DF_AVEC          = real3(0.0,0.0,0.0)
-real3 DF_EVEC          = real3(0.0,0.0,0.0)
 real3 DF_JXBVEC        = real3(0.0,0.0,0.0)
 real3 DF_JXBVEC        = real3(0.0,0.0,0.0)
 real3 DF__ADV_DERVEC   = real3(0.0,0.0,0.0)
@@ -93,4 +91,46 @@ real DF_STRESS_2 = 0.0
 real DF_STRESS_3 = 0.0
 real DF_STRESS_4 = 0.0
 real DF_STRESS_5 = 0.0
+
+
+real DF_AXI_PSI    = 0.0
+real DF_AXI_PSIDOT = 0.0
+real DF_AXI_IMPSI  = 0.0
+real DF_AXI_IMPSIDOT  = 0.0
+
+real DF_AXI_TR    = 0.0
+real DF_AXI_TRDOT = 0.0
+real DF_AXI_IMTR    = 0.0
+real DF_AXI_IMTRDOT = 0.0
+
+real DF_AXI_TL    = 0.0
+real DF_AXI_TLDOT = 0.0
+real DF_AXI_IMTL    = 0.0
+real DF_AXI_IMTLDOT = 0.0
+
+real DF_AXI_PSIL    = 0.0
+real DF_AXI_PSILDOT = 0.0
+real DF_AXI_IMPSIL    = 0.0
+real DF_AXI_IMPSILDOT = 0.0
+
+
+
+real DF_GAMMA = 0.0
+real DF_A0    = 0.0
+real DF_RHOE  = 0.0
+real3 DF_EVEC          = real3(0.0,0.0,0.0)
+real  DF_DIVA_NAME     = 0.0
+#define DF_EX DF_EVEC.x
+#define DF_EY DF_EVEC.y
+#define DF_EZ DF_EVEC.z
+
+real DF_INFL_PHI  = 0.0
+real DF_INFL_DPHI = 0.0
+
+real DF_IPOLY__MOD__CDATA[6]
+if(lpolymer)
+{
+	for i in 0:6 {DF_IPOLY__MOD__CDATA[i] = 0.0}
+}
+
 dt1_max__mod__cdata = 0.0

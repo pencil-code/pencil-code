@@ -49,6 +49,45 @@
 #if LALPHADISK
 	write(F_SIGMA,rk_intermediate(F_SIGMA,DF_SIGMA,step_num,AC_dt__mod__cdata))
 #endif
+#if LAXIONSU2BACK
+	if(AC_iaxi_psi__mod__axionsu2back != 0)    write(F_AXI_PSI     ,rk_intermediate(F_AXI_PSI    ,DF_AXI_PSI   ,step_num,AC_dt__mod__cdata)) 
+	if(AC_iaxi_psidot__mod__axionsu2back != 0) write(F_AXI_PSIDOT  ,rk_intermediate(F_AXI_PSIDOT ,DF_AXI_PSIDOT,step_num,AC_dt__mod__cdata)) 
+	if(AC_iaxi_impsi__mod__axionsu2back != 0)    write(F_AXI_IMPSI   , rk_intermediate(F_AXI_IMPSI    ,DF_AXI_IMPSI    ,step_num,AC_dt__mod__cdata)) 
+	if(AC_iaxi_impsidot__mod__axionsu2back != 0) write(F_AXI_IMPSIDOT, rk_intermediate(F_AXI_IMPSIDOT ,DF_AXI_IMPSIDOT ,step_num,AC_dt__mod__cdata))  
+
+	if(AC_iaxi_tr__mod__axionsu2back != 0)     write(F_AXI_TR      ,rk_intermediate(F_AXI_TR     ,DF_AXI_TR    ,step_num,AC_dt__mod__cdata)) 
+	if(AC_iaxi_trdot__mod__axionsu2back != 0)  write(F_AXI_TRDOT   ,rk_intermediate(F_AXI_TRDOT  ,DF_AXI_TRDOT ,step_num,AC_dt__mod__cdata)) 
+	if(AC_iaxi_imtr__mod__axionsu2back != 0)     write(F_AXI_IMTR    , rk_intermediate(F_AXI_IMTR     ,DF_AXI_IMTR     ,step_num,AC_dt__mod__cdata)) 
+	if(AC_iaxi_imtrdot__mod__axionsu2back != 0)  write(F_AXI_IMTRDOT , rk_intermediate(F_AXI_IMTRDOT  ,DF_AXI_IMTRDOT  ,step_num,AC_dt__mod__cdata)) 
+	
+	if(AC_iaxi_tl__mod__axionsu2back != 0)        write(F_AXI_TL        , rk_intermediate(F_AXI_TL       ,DF_AXI_TL       ,step_num,AC_dt__mod__cdata)) 
+	if(AC_iaxi_tldot__mod__axionsu2back != 0)     write(F_AXI_TLDOT     , rk_intermediate(F_AXI_TLDOT    ,DF_AXI_TLDOT    ,step_num,AC_dt__mod__cdata))
+	if(AC_iaxi_imtl__mod__axionsu2back != 0)      write(F_AXI_IMTL      , rk_intermediate(F_AXI_IMTL     ,DF_AXI_IMTL     ,step_num,AC_dt__mod__cdata))
+	if(AC_iaxi_imtldot__mod__axionsu2back != 0)   write(F_AXI_IMTLDOT   , rk_intermediate(F_AXI_IMTLDOT  ,DF_AXI_IMTLDOT  ,step_num,AC_dt__mod__cdata))
+
+	if(AC_iaxi_psil__mod__axionsu2back != 0)      write(F_AXI_PSIL      , rk_intermediate(F_AXI_PSIL     ,DF_AXI_PSIL     ,step_num,AC_dt__mod__cdata))      
+	if(AC_iaxi_psildot__mod__axionsu2back != 0)   write(F_AXI_PSILDOT   , rk_intermediate(F_AXI_PSILDOT  ,DF_AXI_PSILDOT  ,step_num,AC_dt__mod__cdata))
+	if(AC_iaxi_impsil__mod__axionsu2back != 0)    write(F_AXI_IMPSIL    , rk_intermediate(F_AXI_IMPSIL   ,DF_AXI_IMPSIL   ,step_num,AC_dt__mod__cdata))  
+	if(AC_iaxi_impsildot__mod__axionsu2back != 0) write(F_AXI_IMPSILDOT , rk_intermediate(F_AXI_IMPSILDOT,DF_AXI_IMPSILDOT,step_num,AC_dt__mod__cdata))
+#endif
+#if LBACKREACT_INFL
+	if(AC_iinfl_phi__mod__backreact_infl != 0)  write(F_INFL_PHI ,rk_intermediate(F_INFL_PHI ,DF_INFL_PHI ,step_num,AC_dt__mod__cdata))
+	if(AC_iinfl_dphi__mod__backreact_infl != 0) write(F_INFL_DPHI,rk_intermediate(F_INFL_DPHI,DF_INFL_DPHI,step_num,AC_dt__mod__cdata))
+#endif
+#if LDISP_CURRENT
+	if(AC_igamma__mod__disp_current != 0) write(F_GAMMA,rk_intermediate(F_GAMMA,DF_GAMMA,step_num,AC_dt__mod__cdata)) 
+	if(AC_ia0__mod__disp_current != 0)    write(F_A0   ,rk_intermediate(F_A0   ,DF_A0   ,step_num,AC_dt__mod__cdata))
+	if(AC_irhoe__mod__disp_current  != 0) write(F_RHOE ,rk_intermediate(F_RHOE ,DF_RHOE ,step_num,AC_dt__mod__cdata))
+	if(AC_idiva_name__mod__disp_current  != 0) write(F_DIVA_NAME,rk_intermediate(F_DIVA_NAME,DF_DIVA_NAME,step_num,AC_dt__mod__cdata))
+	if(AC_iex__mod__disp_current != 0)    write(F_EVEC   ,rk_intermediate(F_EVEC   ,DF_EVEC   ,step_num,AC_dt__mod__cdata)) 
+#endif
+	if(lpolymer)
+	{
+		for i in 0:6
+		{
+			write(F_POLY[i],rk_intermediate(F_POLY[i],DF_IPOLY__MOD__CDATA[i],step_num,AC_dt__mod__cdata))
+		}
+	}
  }
  else
  {

@@ -8,7 +8,8 @@ fixed_boundary Kernel twopass_solve_final(int step_num)
 		{
 		  if(!AC_lkinflow_as_aux__mod__cdata)
 		  {
-			write(F_UU, rk_final(F_UU,step_num))
+			const real3 force = get_deltacorr_force(step_num)
+			write(F_UU, rk_final(F_UU,step_num) + force)
 		  }
 		}
 		if(AC_iuu__mod__cdata != 0) write(F_UU, rk_final(F_UU,step_num))
@@ -33,6 +34,49 @@ fixed_boundary Kernel twopass_solve_final(int step_num)
 #if LALPHADISK
 	        write(F_SIGMA,rk_final(F_SIGMA,step_num))
 #endif
+#if LDISP_CURRENT
+		if(AC_iex__mod__disp_current != 0) write(F_EVEC,rk_final(F_EVEC,step_num))
+		if(AC_igamma__mod__disp_current != 0) write(F_GAMMA,rk_final(F_GAMMA,step_num))
+#endif
+#if LAXIONSU2BACK
+		if(AC_iaxi_psi__mod__axionsu2back != 0)    write(F_AXI_PSI     ,rk_final(F_AXI_PSI    ,step_num)) 
+		if(AC_iaxi_psidot__mod__axionsu2back != 0) write(F_AXI_PSIDOT  ,rk_final(F_AXI_PSIDOT ,step_num)) 
+		if(AC_iaxi_impsi__mod__axionsu2back != 0)    write(F_AXI_IMPSI   , rk_final(F_AXI_IMPSI    ,step_num)) 
+		if(AC_iaxi_impsidot__mod__axionsu2back != 0) write(F_AXI_IMPSIDOT, rk_final(F_AXI_IMPSIDOT ,step_num))  
+
+		if(AC_iaxi_tr__mod__axionsu2back != 0)     write(F_AXI_TR      ,rk_final(F_AXI_TR     ,step_num)) 
+		if(AC_iaxi_trdot__mod__axionsu2back != 0)  write(F_AXI_TRDOT   ,rk_final(F_AXI_TRDOT  ,step_num)) 
+		if(AC_iaxi_imtr__mod__axionsu2back != 0)     write(F_AXI_IMTR    , rk_final(F_AXI_IMTR     ,step_num)) 
+		if(AC_iaxi_imtrdot__mod__axionsu2back != 0)  write(F_AXI_IMTRDOT , rk_final(F_AXI_IMTRDOT  ,step_num)) 
+		
+		if(AC_iaxi_tl__mod__axionsu2back != 0)        write(F_AXI_TL        , rk_final(F_AXI_TL       ,step_num)) 
+		if(AC_iaxi_tldot__mod__axionsu2back != 0)     write(F_AXI_TLDOT     , rk_final(F_AXI_TLDOT    ,step_num))
+		if(AC_iaxi_imtl__mod__axionsu2back != 0)      write(F_AXI_IMTL      , rk_final(F_AXI_IMTL     ,step_num))
+		if(AC_iaxi_imtldot__mod__axionsu2back != 0)   write(F_AXI_IMTLDOT   , rk_final(F_AXI_IMTLDOT  ,step_num))
+
+		if(AC_iaxi_psil__mod__axionsu2back != 0)      write(F_AXI_PSIL      , rk_final(F_AXI_PSIL     ,step_num))      
+		if(AC_iaxi_psildot__mod__axionsu2back != 0)   write(F_AXI_PSILDOT   , rk_final(F_AXI_PSILDOT  ,step_num))
+		if(AC_iaxi_impsil__mod__axionsu2back != 0)    write(F_AXI_IMPSIL    , rk_final(F_AXI_IMPSIL   ,step_num))  
+		if(AC_iaxi_impsildot__mod__axionsu2back != 0) write(F_AXI_IMPSILDOT , rk_final(F_AXI_IMPSILDOT,step_num))
+#endif
+#if LBACKREACT_INFL
+		if(AC_iinfl_phi__mod__backreact_infl != 0)  write(F_INFL_PHI ,rk_final(F_INFL_PHI ,step_num))
+		if(AC_iinfl_dphi__mod__backreact_infl != 0) write(F_INFL_DPHI,rk_final(F_INFL_DPHI,step_num))
+#endif
+#if LDISP_CURRENT
+		if(AC_igamma__mod__disp_current != 0) write(F_GAMMA,rk_final(F_GAMMA,step_num)) 
+		if(AC_irhoe__mod__disp_current  != 0) write(F_RHOE ,rk_final(F_RHOE ,step_num))
+		if(AC_idiva_name__mod__disp_current  != 0) write(F_DIVA_NAME ,rk_final(F_DIVA_NAME ,step_num))
+		if(AC_ia0__mod__disp_current != 0)    write(F_A0   ,rk_final(F_A0   ,step_num))
+		if(AC_iex__mod__disp_current != 0)    write(F_EVEC ,rk_final(F_EVEC ,step_num  )) 
+#endif
+		if(lpolymer)
+		{
+			for i in 0:6
+			{
+				write(F_POLY[i],rk_final(F_POLY[i],step_num))
+			}
+		}
 	}
 }
-#include "../steps_two.h"
+#include "../steps_two_full.h"

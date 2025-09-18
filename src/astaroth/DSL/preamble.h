@@ -34,7 +34,7 @@ struct torus_rect
 
 #include "PC_nghost.h"
 
-const int NGHOST_VAL = 3
+#define NGHOST_VAL NGHOST
 const int prof_nz = 150
 #define mreactions AC_mreactions__mod__chemistry
 #define nreactions AC_nreactions__mod__chemistry
@@ -88,8 +88,8 @@ const int prof_nz = 150
 #define AC_m__mod__cdata (vertexIdx.y+1)
 
 #include "../stdlib/math"
-#include "../stdlib/general_derivs.h"
-//#include "../stdlib/pc_derivs.h"
+//#include "../stdlib/general_derivs.h"
+#include "../stdlib/pc_derivs.h"
 #include "../stdlib/general_operators.h"
 #define AC_NGHOST__mod__cparam nghost
 #define REAL_MAX AC_REAL_MAX
@@ -209,6 +209,8 @@ const real AC_ascale__mod__cdata = 0.0
 
 #define FbotKbot AC_FbotKbot__mod__energy
 #define Fbot AC_Fbot__mod__energy
+#define fbot Fbot
+#define ftop Ftop
 #define FtopKtop AC_FtopKtop__mod__energy
 #define Ftop AC_Ftop__mod__energy
 #define AC_ldensity_nolog AC_ldensity_nolog__mod__cdata
@@ -231,8 +233,18 @@ const real AC_ascale__mod__cdata = 0.0
 #define ltemperature_nolog AC_ltemperature_nolog__mod__cdata
 #define AC_lread_oldsnap AC_lread_oldsnap__mod__cdata
 
+#include "../stdlib/bc.h"
 #include "../bcs/funcs.h"
 #include "../bcs/funcs_overload.h"
 #include "../hydro/before_boundary.h"
 
 #define AC_iproc_world__mod__cdata (0)
+#include "../axionSU2back.h"
+#include "../backreact_infl.h"
+
+
+#if LPOLYMER
+#else
+const real AC_trelax_poly__mod__cdata = 0.0
+#endif
+

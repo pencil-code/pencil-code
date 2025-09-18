@@ -6,6 +6,8 @@
 #include "../gravitational_waves.h"
 #include "../hydro/hydro_after_boundary_conservative.h"
 #include "../ioncalc.h"
+#include "../newton_cooling.h"
+#include "../polymer.h"
 
 input real AC_dt
 input PC_SUB_STEP_NUMBER AC_step_num
@@ -50,7 +52,10 @@ ComputeSteps AC_before_boundary_steps(boundconds)
 	magnetic_before_boundary_reductions()
 	hydro_before_boundary(AC_step_num)
 	hydro_after_boundary_conservative(AC_t)
+	calc_axion_integral(AC_t)
 	ioncalc()
+	prep_ode_right()
+	calc_poly_fr()
 }
 ComputeSteps AC_after_timestep(boundconds)
 {
@@ -60,8 +65,20 @@ ComputeSteps AC_gravitational_waves_solve_and_stress(boundconds)
 {
 	gravitational_waves_solve_and_stress(AC_t,AC_dt)
 }
+
+ComputeSteps AC_integrate_tau(boundconds)
+{
+  calc_kappar_and_dtau()
+  integrate_tau_up()
+  integrate_tau_down()
+  calc_tau()
+}
 BoundConds boundconds{
   #include "boundconds.h"
+#if LNEWTON_COOLING
+  ac_const_bc(BOUNDARY_Y_BOT,TAU_BELOW,0.0)
+  ac_const_bc(BOUNDARY_Y_TOP,TAU_ABOVE,0.0)
+#endif
 }
 //TP: periodic in XY sym in Z
 //BoundConds boundconds{
