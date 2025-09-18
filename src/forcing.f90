@@ -6654,7 +6654,7 @@ module Forcing
     call copy_addr(lsecond_force,p_par(81)) ! bool
     call copy_addr(torus,p_par(82)) ! torus_rect
     call copy_addr(lfcont_as_comaux,p_par(83)) ! bool
-    call copy_addr(ifcont_aux,p_par(84)) ! int
+    call copy_addr(ifcont_aux,p_par(84)) ! int (n_forcing_cont_max)
 
     endsubroutine pushpars2c
 !*******************************************************************
