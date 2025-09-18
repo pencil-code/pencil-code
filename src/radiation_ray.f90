@@ -2504,7 +2504,7 @@ module Radiation
             call max_mn_name(dt1_rad,idiag_dtrad,l_dt=.true.)
         endif
 
-        call sum_mn_name(Srad(l1:l2,m,n),idiag_Sradm)
+        if (idiag_Sradm /= 0) call sum_mn_name(Srad(l1:l2,m,n),idiag_Sradm)
         if (idiag_Qradrms/=0 .or. idiag_Qradmax/=0) then
           Qrad2=f(l1:l2,m,n,iQrad)**2
           call sum_mn_name(Qrad2,idiag_Qradrms,lsqrt=.true.)
