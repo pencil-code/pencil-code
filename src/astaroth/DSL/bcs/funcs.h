@@ -1567,3 +1567,39 @@ bc_freeze_var_z(AcBoundary boundary, AC_TOP_BOT topbot, Field f)
 	suppress_unused_warning(topbot)
 	suppress_unused_warning(f)
 }
+
+bc_set_nfr_x(AcBoundary boundary, AC_TOP_BOT topbot,Field j)
+{
+  suppress_unused(boundary)
+  int k
+  if(topbot == AC_bot) {
+    j[l1-1-1][vertexIdx.y][vertexIdx.z]= j[1+l1-1][vertexIdx.y][vertexIdx.z]*(AC_x__mod__cdata[1+l1-1]/(AC_x__mod__cdata[1+l1-1]-AC_dx2_bound__mod__cdata[-1+NGHOST+1-1]))
+    j[l1-2-1][vertexIdx.y][vertexIdx.z]= j[2+l1-1][vertexIdx.y][vertexIdx.z]*(AC_x__mod__cdata[2+l1-1]/(AC_x__mod__cdata[2+l1-1]-AC_dx2_bound__mod__cdata[-2+NGHOST+1-1]))
+    j[l1-3-1][vertexIdx.y][vertexIdx.z]= j[3+l1-1][vertexIdx.y][vertexIdx.z]*(AC_x__mod__cdata[3+l1-1]/(AC_x__mod__cdata[3+l1-1]-AC_dx2_bound__mod__cdata[-3+NGHOST+1-1]))
+  }
+  else if(topbot == AC_top) {
+    j[1+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]= j[AC_l2__mod__cdata-1-1][vertexIdx.y][vertexIdx.z]*(AC_x__mod__cdata[AC_l2__mod__cdata-1-1]/(AC_x__mod__cdata[AC_l2__mod__cdata-1-1]+AC_dx2_bound__mod__cdata[2+NGHOST-1]))
+    j[2+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]= j[AC_l2__mod__cdata-2-1][vertexIdx.y][vertexIdx.z]*(AC_x__mod__cdata[AC_l2__mod__cdata-2-1]/(AC_x__mod__cdata[AC_l2__mod__cdata-2-1]+AC_dx2_bound__mod__cdata[3+NGHOST-1]))
+    j[3+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]= j[AC_l2__mod__cdata-3-1][vertexIdx.y][vertexIdx.z]*(AC_x__mod__cdata[AC_l2__mod__cdata-3-1]/(AC_x__mod__cdata[AC_l2__mod__cdata-3-1]+AC_dx2_bound__mod__cdata[4+NGHOST-1]))
+  }
+  else {
+  }
+}
+
+bc_set_nfr_y(AcBoundary boundary, AC_TOP_BOT topbot,Field j)
+{
+  int k
+  suppress_unused(boundary)
+  if(topbot == AC_bot) {
+    j[vertexIdx.x][m1-1-1][vertexIdx.z]= j[vertexIdx.x][1+m1-1][vertexIdx.z]*(AC_sinth__mod__cdata[1+m1-1]/sin(AC_y__mod__cdata[1+m1-1]-AC_dy2_bound__mod__cdata[-1+NGHOST+1-1]))
+    j[vertexIdx.x][m1-2-1][vertexIdx.z]= j[vertexIdx.x][2+m1-1][vertexIdx.z]*(AC_sinth__mod__cdata[2+m1-1]/sin(AC_y__mod__cdata[2+m1-1]-AC_dy2_bound__mod__cdata[-2+NGHOST+1-1]))
+    j[vertexIdx.x][m1-3-1][vertexIdx.z]= j[vertexIdx.x][3+m1-1][vertexIdx.z]*(AC_sinth__mod__cdata[3+m1-1]/sin(AC_y__mod__cdata[3+m1-1]-AC_dy2_bound__mod__cdata[-3+NGHOST+1-1]))
+  }
+  else if(topbot == AC_top) {
+    j[vertexIdx.x][1+AC_m2__mod__cdata-1][vertexIdx.z]= j[vertexIdx.x][AC_m2__mod__cdata-1-1][vertexIdx.z]*(AC_sinth__mod__cdata[AC_m2__mod__cdata-1-1]/sin(AC_y__mod__cdata[AC_m2__mod__cdata-1-1]+AC_dy2_bound__mod__cdata[2+NGHOST-1]))
+    j[vertexIdx.x][2+AC_m2__mod__cdata-1][vertexIdx.z]= j[vertexIdx.x][AC_m2__mod__cdata-2-1][vertexIdx.z]*(AC_sinth__mod__cdata[AC_m2__mod__cdata-2-1]/sin(AC_y__mod__cdata[AC_m2__mod__cdata-2-1]+AC_dy2_bound__mod__cdata[3+NGHOST-1]))
+    j[vertexIdx.x][3+AC_m2__mod__cdata-1][vertexIdx.z]= j[vertexIdx.x][AC_m2__mod__cdata-3-1][vertexIdx.z]*(AC_sinth__mod__cdata[AC_m2__mod__cdata-3-1]/sin(AC_y__mod__cdata[AC_m2__mod__cdata-3-1]+AC_dy2_bound__mod__cdata[4+NGHOST-1]))
+  }
+  else {
+  }
+}
