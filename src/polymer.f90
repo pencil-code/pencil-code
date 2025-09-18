@@ -651,7 +651,7 @@ module Polymer
     call copy_addr(ip11,p_par(8))  ! int
     call copy_addr(ip22,p_par(9))  ! int
     call copy_addr(ip33,p_par(10)) ! int
-    call copy_addr(fenep_l,p_par(11)) ! int
+    call copy_addr(fenep_l,p_par(11))
     call string_to_enum(enum_poly_model,poly_model)
     call copy_addr(enum_poly_model,p_par(12)) ! int
     call copy_addr(enum_poly_algo,p_par(13)) ! int
