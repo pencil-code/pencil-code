@@ -106,7 +106,7 @@ module EquationOfState
 !
 !  Set indices for auxiliary variables.
 !
-      call farray_register_auxiliary('yH',iyH)
+      call farray_register_auxiliary('yH',iyH,on_gpu=lgpu)
 !
 !  Writing files for use with IDL
 !
@@ -2112,6 +2112,8 @@ module EquationOfState
     call copy_addr(ymetals,p_par(28))
     call copy_addr(lhminus_opacity_correction,p_par(29)) ! bool
     call copy_addr(kappa0,p_par(30))
+    call copy_addr(lconst_yh,p_par(31)) ! bool
+    call copy_addr(yh_const,p_par(32))
 
     endsubroutine pushpars2c
 !***********************************************************************
