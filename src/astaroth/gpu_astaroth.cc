@@ -1053,9 +1053,9 @@ load_f_ode()
 #if TRANSPILATION
         if(n_odevars > 0)
         {
-                acGridSynchronizeStream(STREAM_DEFAULT);
+                acDeviceSynchronizeStream(acGridGetDevice(),STREAM_DEFAULT);
                 acDeviceLoad(acGridGetDevice(), STREAM_DEFAULT, mesh.info, AC_f_ode);
-                acGridSynchronizeStream(STREAM_DEFAULT);
+                acDeviceSynchronizeStream(acGridGetDevice(),STREAM_DEFAULT);
         }
 #endif
 }
@@ -2083,7 +2083,7 @@ extern "C" void gpuSetDt(double t)
 /***********************************************************************************************/
 extern "C" void getGPUReducedVars(AcReal* dst)
 {
-	acGridSynchronizeStream(STREAM_ALL);
+        acDeviceSynchronizeStream(acGridGetDevice(),STREAM_DEFAULT);
 #if LAXIONSU2BACK
 	dst[0] = acDeviceGetOutput(acGridGetDevice(), AC_grand_sum);
 	dst[1] = acDeviceGetOutput(acGridGetDevice(), AC_dgrant_sum);
