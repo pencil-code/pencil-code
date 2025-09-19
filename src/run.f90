@@ -1642,6 +1642,7 @@ call copy_addr(seed0,p_par(1359)) ! int
 call copy_addr(lklein_gordon,p_par(1360)) ! bool
 call copy_addr(lslope_limit_diff,p_par(1361)) ! bool
 call copy_addr(ldisp_current,p_par(1362)) ! bool
+call copy_addr(hp_target,p_par(1363)) ! real dconst
 
 endsubroutine pushpars2c
 !***********************************************************************

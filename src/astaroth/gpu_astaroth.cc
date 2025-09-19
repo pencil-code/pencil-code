@@ -1685,6 +1685,7 @@ extern "C" void updateInConfigArr(int index)
 extern "C" void updateInConfigScal(int index, AcReal value)
 {
      acDeviceLoadScalarUniform(acGridGetDevice(),STREAM_DEFAULT,static_cast<AcRealParam>(index),value);
+     acDeviceSynchronizeStream(acGridGetDevice(),STREAM_DEFAULT);
 }
 /***********************************************************************************************/
 extern "C" int updateInConfigArrName(char *name)

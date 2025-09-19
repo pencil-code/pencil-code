@@ -9068,6 +9068,8 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
       use Cdata, only: lread_scl_factor_file_new, ip, lroot, t, tmax, &
         scl_factor_target, Hp_target, appa_target, wweos_target
       use Messages, only: fatal_error
+
+      use Gpu, only: update_on_gpu
 !
       real, save, dimension(:), allocatable :: t_file, scl_factor, Hp_file, appa_file, wweos_file
       real, save, dimension(:), allocatable :: lgt_file, lgff, lgff2, lgff3, lgff4, lgff5
@@ -9077,10 +9079,12 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
       real, save :: lgt0, dlgt, H0=1.
       real, save :: lgt1, lgt2, lgf1, lgf2, lgf
       real, save :: lgt_ini, a_ini, Hp_ini, app_om=0
+      real :: Hp_target_previous
 !
       real :: lgt_current
       real :: f, f1, f2
       integer, save :: it_called=0
+      integer, save :: index_on_gpu = 0
 !
 ! alberto: t_ini corresponds to the conformal time computed using a_0 = 1 at T_* = 100 GeV, g_S = 103 (EWPT)
 !--   real :: t_ini=60549
@@ -9180,6 +9184,7 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
         endif
         it_called=it_called+1
         if (ip<11.and.lroot) print*,'AXEL: it_called=',it_called
+        Hp_target_previous = Hp_target
 !
 !  Data should have been read now, so we can interpolate:
 !  t is given as t/t_ini by default, so to compare it with
@@ -9237,6 +9242,10 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
         f=f1+(lgt_current-lgt1)*(f2-f1)/(lgt2-lgt1)
         wweos_target=f
         if (ip<14) print*,'AXEL: f1 < ww < f2 ? ',f1, wweos_target, f2
+
+        if(lgpu .and. Hp_target_previous /= Hp_target) then
+          call update_on_gpu(index_on_gpu,'AC_hp_target__mod__cdata',Hp_target)
+        endif
       endif
 !
     endsubroutine calc_scl_factor
