@@ -581,12 +581,16 @@ module Magnetic_meanfield
           'no such meanfield_etat_profile: '//trim(meanfield_etat_profile))
         endselect
 !
+!  Debug output.
+!
         if (lviscosity) then
-          print*,'ipz,z(n),etat_z(n),detat_z(n)'
-          do n=n1,n2
-            print*,ipz,z(n),etat_z(n),detat_z(n)
-          enddo
-          print*
+          if (ip<10) then
+            print*,'ipz,z(n),etat_z(n),detat_z(n)'
+            do n=n1,n2
+              print*,ipz,z(n),etat_z(n),detat_z(n)
+            enddo
+            print*
+          endif
         endif
       endif
 !

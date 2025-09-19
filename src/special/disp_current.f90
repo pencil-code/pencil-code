@@ -407,7 +407,6 @@ module Special
 !
 !  25-feb-07/axel: adapted
 !
-!
 !  compulsory pencils
 !
       lpenc_requested(i_aa)=.true.
@@ -415,8 +414,11 @@ module Special
       ! alberto: should be this pencil only requested if llorenz_gauge_disp=T?
       !lpenc_requested(i_ga0)=.true.
       lpenc_requested(i_curlb)=.true.
-      lpenc_requested(i_gGamma)=.true.
       lpenc_requested(i_jj_ohm)=.true.
+!
+!  The gGamma pencil should only be requested when llongitudinalE is true.
+!
+      if (llongitudinalE) lpenc_requested(i_gGamma)=.true.
 !
 !  Pencils for axion-like coupling alpf * phi F Fdual
 !
@@ -547,11 +549,11 @@ module Special
       if (lpenc_requested(i_gGamma)) then
         if (llongitudinalE) then
           call grad(f,iGamma,p%gGamma)
-        ! alberto: when llongitudinalE=F, we should compute
-        ! grad div a from f-array
+          ! alberto: when llongitudinalE=F, we should compute
+          ! grad div a from f-array
         else
           !call del2v_etc(f,iaa,GRADDIV=p%gGamma)
-          !16-sep-25/axel: but in this case, pGamma should not be needed.
+          !16-sep-25/axel: but in this case, p%gGamma should not be needed.
           call fatal_error("calc_pencils_special","Gamma is not defined")
         endif
       endif
