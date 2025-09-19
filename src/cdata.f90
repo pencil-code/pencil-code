@@ -860,6 +860,8 @@ module Cdata
 !  or not the chiral MHD special module is used.
 !
   real :: lambda5 = 0.0
+
+  logical :: lrhs_test_at_work = .false.
 !
 !  Variables for concurrency
 !
