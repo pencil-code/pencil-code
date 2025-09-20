@@ -824,11 +824,29 @@ extern "C" void sourceFunctionAndOpacity(int inu)
 {
 #if Lradiation_ray_MODULE
   	acDeviceSetInput(acGridGetDevice(), AC_frequency_bin,inu);
+
+//TP: need some fields (like TT) on the boundaries to calculate Srad and kappa_rho
 	acGridHaloExchange();
+  	auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
+	acGridExecuteTaskGraph(bcs,1);
+
 	const auto info = acDeviceGetLocalConfig(acGridGetDevice());
-	const Volume start = acGetMinNN(info)-(Volume){1,1,1};
-	const Volume end   = acGetMaxNN(info)+(Volume){1,1,1};
+	const Volume offsets = (Volume)
+	{
+		(size_t)nxgrid == 1 ? 0 : 1,
+		(size_t)nygrid == 1 ? 0 : 1,
+		(size_t)nzgrid == 1 ? 0 : 1
+	};
+	const Volume start = acGetMinNN(info)-offsets;
+	const Volume end   = acGetMaxNN(info)+offsets;
 	acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(get_source_function_and_opacity,start,end),1);
+//TP: should not do it here but for now for testing do everything together (works only if there is only one frequency)
+//    but this explicit call to calculate sources for radiation is anyways too granular: have just one call to interface to calculate Qrad
+        const auto Qintrinsic_graph = acGetOptimizedDSLTaskGraph(Qintrinsic_steps,true,Qintrinsic_bcs);
+	acGridExecuteTaskGraph(Qintrinsic_graph,1);
+        const auto Qextrinsic_graph = acGetOptimizedDSLTaskGraph(Qextrinsic_steps);
+	acGridExecuteTaskGraph(bcs,1);
+	acGridExecuteTaskGraph(Qextrinsic_graph,1);
 #endif
 }
 /***********************************************************************************************/
@@ -1067,6 +1085,20 @@ extern "C" void beforeBoundaryGPU(bool lrmv, int isubstep, double t)
  	acDeviceSetInput(acGridGetDevice(), AC_lrmv,lrmv);
  	acDeviceSetInput(acGridGetDevice(), AC_t,AcReal(t));
 	acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_before_boundary_steps),1);
+//Some Fields are directly calculated on the halos like yH in ioncalc.
+//Could reformulate the kernels in a way that the bc is simply the same kernel as the normal calculation
+//But don't want to repeat calc too often so this is an somewhat easy to way to do it
+#if TRANSPILATION
+	const auto steps_updating_halos = acGetOptimizedDSLTaskGraph(AC_before_boundary_steps_including_halos
+					,(Volume){0,0,0},acGetLocalMM(acGridGetLocalMeshInfo()));
+	if(!acGridTaskGraphIsEmpty(steps_updating_halos))
+	{
+  		auto bcs = acGetOptimizedDSLTaskGraph(boundconds);
+  		acGridExecuteTaskGraph(bcs,1);
+	  	acGridHaloExchange();
+  		acGridExecuteTaskGraph(steps_updating_halos,1);
+	}
+#endif
 #if LSELFGRAVITY
 	if(t>=tstart_selfgrav)
 	{
@@ -1189,7 +1221,7 @@ extern "C" void substepGPU(int isubstep, double t)
 	   fprintf(stderr,"Second forcing force not yet implemented on GPU!\n");
 	   exit(EXIT_FAILURE);
    }
-   if (isubstep == itorder) forcing_params.Update();  // calculate on CPU and load into GPU
+   if (isubstep == num_substeps) forcing_params.Update();  // calculate on CPU and load into GPU
 #endif
   acDeviceSetInput(acGridGetDevice(), AC_step_num,(PC_SUB_STEP_NUMBER) (isubstep-1));
   if (lshear && isubstep == 1) acDeviceSetInput(acGridGetDevice(), AC_shear_delta_y, deltay);
@@ -1271,6 +1303,7 @@ void copyFarray(AcReal* f)
   }
   for (int i = 0; i < end; ++i)
   {
+          if(!ltraining && i >= mvar && maux_vtxbuf_index[i] == -1) continue;
 	  acDeviceStoreVertexBuffer(acGridGetDevice(),STREAM_DEFAULT,VertexBufferHandle(i),dst);
   }
   acGridSynchronizeStream(STREAM_ALL);
@@ -1428,6 +1461,7 @@ void autotune_all_integration_substeps()
 	acGetOptimizedDSLTaskGraph(AC_rhs);
         if (rank==0 && ldebug) printf("memusage after GetOptimizedDSLTaskGraph= %f MBytes\n", acMemUsage()/1024.);
   }
+  sourceFunctionAndOpacity(0);
 }
 /***********************************************************************************************/
 extern "C" void loadFarray()

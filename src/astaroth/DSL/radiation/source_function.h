@@ -1,4 +1,5 @@
 Kernel source_function(int inu){
+  real srad__mod__radiation
   real ac_transformed_pencil_acc
   real ac_transformed_pencil_ssat
   real ac_transformed_pencil_ttc

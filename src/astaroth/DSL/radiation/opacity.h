@@ -1,4 +1,5 @@
 Kernel opacity(int inu){
+  real DF_KAPPARHO
   real ac_transformed_pencil_acc
   real ac_transformed_pencil_ssat
   real ac_transformed_pencil_ttc
@@ -766,5 +767,7 @@ Kernel opacity(int inu){
   }
   else {
   }
+
   write(F_KAPPARHO,DF_KAPPARHO)
+
 }

@@ -24,6 +24,7 @@ typedef struct ForcingParams{
       	acDeviceLoadVectorUniform(device, STREAM_DEFAULT, AC_coef3, TOACREAL3(coef3));
       	acDeviceLoadVectorUniform(device, STREAM_DEFAULT, AC_fda, TOACREAL3(fda));
       	acDeviceLoadVectorUniform(device, STREAM_DEFAULT, AC_kk, TOACREAL3(kk));
+	acDeviceSynchronizeStream(device, STREAM_DEFAULT);
       }
     }
 } ForcingParams;

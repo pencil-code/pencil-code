@@ -207,8 +207,8 @@ module Radiation
 !
 !  Set indices for auxiliary variables.
 !
-      call farray_register_auxiliary('Qrad',iQrad)
-      call farray_register_auxiliary('kapparho',ikapparho)
+      call farray_register_auxiliary('Qrad',iQrad,on_gpu=lgpu)
+      call farray_register_auxiliary('kapparho',ikapparho,on_gpu=lgpu)
 !
 !  Allocated auxiliary arrays for radiative flux only if lradflux=T
 !  Remember putting "! MAUX CONTRIBUTION 3" (or adding 3) in cparam.local!

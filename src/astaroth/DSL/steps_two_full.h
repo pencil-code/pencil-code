@@ -8,6 +8,7 @@
 #include "../ioncalc.h"
 #include "../newton_cooling.h"
 #include "../polymer.h"
+#include "../sld"
 
 input real AC_dt
 input PC_SUB_STEP_NUMBER AC_step_num
@@ -54,10 +55,15 @@ ComputeSteps AC_before_boundary_steps(boundconds)
 	hydro_before_boundary(AC_step_num)
 	hydro_after_boundary_conservative(AC_t)
 	calc_axion_integral(AC_t)
-	ioncalc()
 	prep_ode_right()
 	calc_poly_fr()
+	sld_calc_char_speed(AC_step_num)
 }
+ComputeSteps AC_before_boundary_steps_including_halos(boundconds)
+{
+	ioncalc()
+}
+
 ComputeSteps AC_after_timestep(boundconds)
 {
 	after_timestep_alphadisk()
@@ -74,23 +80,72 @@ ComputeSteps AC_integrate_tau(boundconds)
   integrate_tau_down()
   calc_tau()
 }
+
+#if Lradiation_ray_MODULE
+#include "../radiation/opacity.h"
+#include "../radiation/source_function.h"
+#include "../radiation/integrate.h"
+#include "../stdlib/radiation_ray.h"
+
+input int AC_frequency_bin
+ComputeSteps get_source_function_and_opacity(boundconds)
+{
+	source_function(AC_frequency_bin)
+	opacity(AC_frequency_bin)
+}
+
+ComputeSteps Qintrinsic_steps(boundconds)
+{
+	integrate_Q_up()
+	integrate_Q_down()
+}
+ComputeSteps Qextrinsic_steps(boundconds)
+{
+	revise_Q_up()
+	revise_Q_down()
+	sum_up_rays()
+}
+
+#endif
+
+#if LRADIATION
+source_function_as_intensity(AcBoundary boundary, Field Q)
+{
+        const int3 normal = get_normal(boundary)
+        const int3 boundary_point = get_boundary(normal)
+        int3 domain = boundary_point
+        int3 ghost  = boundary_point
+        for i in 0:1
+        {
+                domain = domain - normal
+                ghost  = ghost  + normal
+                Q[ghost.x][ghost.y][ghost.z] = -SRAD[ghost.x][ghost.y][ghost.z];
+        }
+}
+BoundConds Qintrinsic_bcs
+{
+  ac_const_bc(BOUNDARY_Z,Q_UP,0.0)
+  ac_const_bc(BOUNDARY_Z,Q_DOWN,0.0)
+  ac_const_bc(BOUNDARY_Z,TAU_UP,0.0)
+  ac_const_bc(BOUNDARY_Z,TAU_DOWN,0.0)
+  ac_fixed_bc(BOUNDARY_XYZ,SRAD)
+  ac_fixed_bc(BOUNDARY_XYZ,F_KAPPARHO)
+}
+#endif
+
 BoundConds boundconds{
   #include "boundconds.h"
 #if LNEWTON_COOLING
   ac_const_bc(BOUNDARY_Y_BOT,TAU_BELOW,0.0)
   ac_const_bc(BOUNDARY_Y_TOP,TAU_ABOVE,0.0)
 #endif
+#if LRADIATION
+//This is not always true but for 1d-tests/solar-atmosphere-magnetic it is!
+  ac_const_bc(BOUNDARY_Z,Q_UP,0.0)
+  source_function_as_intensity(BOUNDARY_Z,Q_DOWN)
+#endif
 }
 
-#if Lradiation_ray_MODULE
-#include "../radiation/opacity.h"
-#include "../radiation/source_function.h"
-get_source_function_and_opacity(boundconds)
-{
-	source_function()
-	opacity()
-}
-#endif
 //TP: periodic in XY sym in Z
 //BoundConds boundconds{
 //  periodic(BOUNDARY_XY)
