@@ -684,6 +684,7 @@ module Equ
         call calc_diagnostics_training(f)
         call calc_diagnostics_viscosity(p)
         call calc_diagnostics_special(f,p)
+        call calc_maxadvec
         call timestep_diagnostics
 
         lfirstpoint=.false.
@@ -1645,6 +1646,19 @@ module Equ
 !
     endsubroutine freeze
 !***********************************************************************
+    subroutine calc_maxadvec
+!
+!  sum or maximum of the advection terms?
+!  (lmaxadvec_sum=.false. by default)
+!
+        advec2=advec2+advec_cs2
+        if (lenergy.or.ldensity.or.lmagnetic.or.lradiation.or.lneutralvelocity.or.lcosmicray.or. &
+            (ltestfield_z.and.iuutest>0)) maxadvec=maxadvec+sqrt(advec2)
+
+        if (ldensity.or.lviscosity.or.lmagnetic.or.lenergy.or.ldustvelocity.or.ldustdensity) &
+            maxadvec=maxadvec+sqrt(advec2_hypermesh)
+    endsubroutine calc_maxadvec
+!***********************************************************************
     subroutine set_dt1_max(p)
 !
 !  In max_mn maximum values of u^2 (etc) are determined sucessively
@@ -1666,16 +1680,7 @@ module Equ
       real :: dt1_preac
 
       if (lupdate_courant_dt.and.(.not.ldt_paronly)) then
-!
-!  sum or maximum of the advection terms?
-!  (lmaxadvec_sum=.false. by default)
-!
-        advec2=advec2+advec_cs2
-        if (lenergy.or.ldensity.or.lmagnetic.or.lradiation.or.lneutralvelocity.or.lcosmicray.or. &
-            (ltestfield_z.and.iuutest>0)) maxadvec=maxadvec+sqrt(advec2)
-
-        if (ldensity.or.lviscosity.or.lmagnetic.or.lenergy.or.ldustvelocity.or.ldustdensity) &
-            maxadvec=maxadvec+sqrt(advec2_hypermesh)
+        call calc_maxadvec
 !
 !  Time step constraints from each module. (At the moment, magnetic and testfield use the same variable.)
 !  cdt, cdtv, and cdtc are empirical non-dimensional coefficients.
