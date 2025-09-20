@@ -4239,7 +4239,7 @@ module Energy
 
       !Done since with multithreading RHS is not evaluated
       if(lmultithread) then
-              diffus_chi = 0.0
+            if (idiag_dtdiffus/=0) diffus_chi = 0.0
       endif
       if (lheatc_Kprof .and. lmultithread) then
         call calc_heatcond_arrays(f,p,thdiff)

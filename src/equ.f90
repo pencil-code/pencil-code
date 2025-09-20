@@ -636,7 +636,7 @@ module Equ
 
         !Done since with multithreading RHS is not evaluated
         if(lmultithread) then
-                maxdiffus    = 0.0
+                if (idiag_dtdiffus/=0)  maxdiffus    = 0.0
                 maxadvec     = 0.0
                 advec2       = 0.0
                 advec_cs2    = 0.0
