@@ -2461,13 +2461,26 @@ module Radiation
 !
 !  21-11-04/anders: coded
 !
+      use General, only: notanumber
+
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
       intent(in) :: f,p
+      real, dimension (nx) :: advec_crad2
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(p)
+!
+!  Include constraint from radiative time step
+!  (has to do with radiation pressure waves).
+!  only advec here rest are in calc_rad_diffusion
+!
+      if (lupdate_courant_dt) then
+        advec_crad2=(16./3.)*p%rho1*(sigmaSB/c_light)*p%TT**4
+        advec2=advec2+advec_crad2
+        if (notanumber(advec_crad2)) print*, 'advec_crad2=',advec_crad2
+      endif
 !
     endsubroutine calc_pencils_radiation
 !***********************************************************************
@@ -2731,7 +2744,7 @@ module Radiation
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       type (pencil_case) :: p
-      real, dimension (nx) :: Krad,chi_rad,g2,advec_crad2
+      real, dimension (nx) :: Krad,chi_rad,g2
       real, dimension (nx) :: local_optical_depth,opt_thin,opt_thick
       real, dimension (nx) :: Qrad_diffus
       real :: fact
@@ -2767,9 +2780,6 @@ module Radiation
 !  (has to do with radiation pressure waves).
 !
       if (lupdate_courant_dt) then
-        advec_crad2=(16./3.)*p%rho1*(sigmaSB/c_light)*p%TT**4
-        advec2=advec2+advec_crad2
-        if (notanumber(advec_crad2)) print*, 'advec_crad2=',advec_crad2
 !
 !  Check maximum diffusion from thermal diffusion.
 !  With heat conduction, the second-order term for leading entropy term
