@@ -508,6 +508,7 @@ AcReal to_real(void* param, const char* name)
 }
 /***********************************************************************************************/
 #if TRANSPILATION
+#if LFORCING
 torus_rect to_torus_rect(void* param, const char* name)
 {
        if (param == NULL)
@@ -518,6 +519,7 @@ torus_rect to_torus_rect(void* param, const char* name)
        //TP: placeholder for now before testing is torus_react being POD sufficient for save access here
        return (torus_rect){};
 }
+#endif
 #endif
 /***********************************************************************************************/
 int to_int(void* param, const char* name)
