@@ -52,6 +52,10 @@ ComputeSteps AC_before_boundary_steps(boundconds)
 	//hydro_after_boundary_conservative(AC_t)
 	//ioncalc()
 }
+
+ComputeSteps AC_before_boundary_steps_including_halos(boundconds)
+{
+}
 ComputeSteps AC_after_timestep(boundconds)
 {
 	after_timestep_alphadisk()
