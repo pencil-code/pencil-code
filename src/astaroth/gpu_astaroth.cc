@@ -173,7 +173,7 @@ float MSE(){
 	acGridExecuteTaskGraph(descale_uumean_tau, 1);
 	acGridSynchronizeStream(STREAM_ALL);
 	
-  	auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
+  auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
 	acGridSynchronizeStream(STREAM_ALL);
 	acGridExecuteTaskGraph(bcs,1);
 	acGridSynchronizeStream(STREAM_ALL);
@@ -183,7 +183,7 @@ float MSE(){
 	acGridExecuteTaskGraph(calc_infered_loss, 1);
 	acGridSynchronizeStream(STREAM_ALL);
 
-  bcs = acGetOptimizedDSLTaskGraph(boundconds);	
+ 	bcs = acGetOptimizedDSLTaskGraph(boundconds);	
 	acGridSynchronizeStream(STREAM_ALL);
 	acGridExecuteTaskGraph(bcs,1);
 	acGridSynchronizeStream(STREAM_ALL);
@@ -898,7 +898,7 @@ extern "C" void torch_infer_c_api(int itstub){
 		acGridExecuteTaskGraph(calc_uumean_tau, 1);
 		acGridSynchronizeStream(STREAM_ALL);
 
-  	        auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
+  	auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
 		acGridSynchronizeStream(STREAM_ALL);
 		acGridExecuteTaskGraph(bcs,1);
 		acGridSynchronizeStream(STREAM_ALL);
@@ -914,7 +914,7 @@ extern "C" void torch_infer_c_api(int itstub){
 		acGridExecuteTaskGraph(scale_uumean_tau, 1);
 		acGridSynchronizeStream(STREAM_ALL);
 
-  	        bcs = acGetOptimizedDSLTaskGraph(boundconds);	
+  	bcs = acGetOptimizedDSLTaskGraph(boundconds);	
 		acGridSynchronizeStream(STREAM_ALL);
 		acGridExecuteTaskGraph(bcs,1);
 		acGridSynchronizeStream(STREAM_ALL);
@@ -925,13 +925,16 @@ extern "C" void torch_infer_c_api(int itstub){
 	AcReal* uumean_ptr = NULL;
 	AcReal* tau_infer_ptr = NULL;
 	
-	
+	/*
 	if(randomNumber == 0) acDeviceGetVertexBufferPtrs(acGridGetDevice(), UUMEANBatch[0].x, &uumean_ptr, &out);
 	if(randomNumber == 1) acDeviceGetVertexBufferPtrs(acGridGetDevice(), UUMEANBatch[1].x, &uumean_ptr, &out);
 	if(randomNumber == 2) acDeviceGetVertexBufferPtrs(acGridGetDevice(), UUMEANBatch[2].x, &uumean_ptr, &out);
 	if(randomNumber == 3) acDeviceGetVertexBufferPtrs(acGridGetDevice(), UUMEANBatch[3].x, &uumean_ptr, &out);
 	if(randomNumber == 4) acDeviceGetVertexBufferPtrs(acGridGetDevice(), UUMEANBatch[4].x, &uumean_ptr, &out);
 	if(randomNumber == 5) acDeviceGetVertexBufferPtrs(acGridGetDevice(), UUMEANBatch[5].x, &uumean_ptr, &out);
+	*/
+
+	acDeviceGetVertexBufferPtrs(acGridGetDevice(), uumean.x, &uumean_ptr, &out);
 
 	acDeviceGetVertexBufferPtrs(acGridGetDevice(), TAU_INFERRED.xx, &tau_infer_ptr, &out);
 
@@ -951,8 +954,9 @@ extern "C" void torch_infer_c_api(int itstub){
 	float vloss = MSE();
  	
 	if(itstub == 1){
-		printf("Validation error is: %f\n", vloss);
-		printf("Validation took %f seconnds\n", (end-start));
+		fprintf(stderr, "Validation error is: %.50f\n", vloss);
+		fprintf(stderr, "Validation took %f seconnds\n", (end-start));
+		fflush(stderr);
 		print_debug();
 	}
 #endif
@@ -969,8 +973,6 @@ extern "C" void torch_train_c_api(AcReal *loss_val) {
 	MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
 	//printf("The random number on c++ is: %d, rank is: %d\n", randomNumber, my_rank);	
 
-	//printf("The iteration number on c++ is: %d, rank is %d\n", it, my_rank);	
-
 
 	if(my_rank == 0){
 		
@@ -982,13 +984,15 @@ extern "C" void torch_train_c_api(AcReal *loss_val) {
 		if(it > 5) randomNumber = rand()%4;
 	}
 
+	fprintf(stderr, "The iteration number on c++ is: %d, ranNum is %d\n", it, randomNumber);	
+	fflush(stderr);
+
 	MPI_Bcast(&randomNumber, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
 	MPI_Barrier(MPI_COMM_WORLD);
 
 
 	acDeviceSetInput(acGridGetDevice(), AC_ranNum, randomNumber);
-
 
 	auto calc_uumean_tau = acGetOptimizedDSLTaskGraph(initialize_uumean_tau);
 	acGridSynchronizeStream(STREAM_ALL);
@@ -1015,14 +1019,15 @@ extern "C" void torch_train_c_api(AcReal *loss_val) {
   acGridExecuteTaskGraph(bcs,1);
   acGridSynchronizeStream(STREAM_ALL);
   
-  AcReal* out = NULL;
+
+	AcReal* out = NULL;
   
   AcReal* uumean_ptr = NULL;
   AcReal* TAU_ptr = NULL;
   *loss_val = 0.1;
   
-  acDeviceGetVertexBufferPtrs(acGridGetDevice(), TAUBatch[0].xx, &TAU_ptr, &out);
-  acDeviceGetVertexBufferPtrs(acGridGetDevice(), UUMEANBatch[0].x, &uumean_ptr, &out);
+  acDeviceGetVertexBufferPtrs(acGridGetDevice(), tau.xx, &TAU_ptr, &out);
+  acDeviceGetVertexBufferPtrs(acGridGetDevice(), uumean.x, &uumean_ptr, &out);
   
   
   acGridHaloExchange();
@@ -1040,8 +1045,9 @@ extern "C" void torch_train_c_api(AcReal *loss_val) {
   }
   */
   end = MPI_Wtime();
-  printf("Time for one time step: %f\n", (end-start));
-  printf("Loss after training: %f\n", *loss_val);
+  fprintf(stderr,"Time for one time step: %f\n", (end-start));
+  fprintf(stderr,"Loss after training: %.50f\n", *loss_val);
+	fflush(stderr);
   train_counter++;
 #endif
 }
@@ -1127,13 +1133,15 @@ extern "C" void beforeBoundaryGPU(bool lrmv, int isubstep, double t)
 }
 /***********************************************************************************************/
 void print_debug() {
-if(it < 5 and train_counter % 5 !=0) return;
+if(train_counter % 5 !=0) return;
 #if TRAINING
     #include "user_constants.h"
 		counter = it;
 
-		printf("The ranNumber is: %d\n", randomNumber);
+		//printf("The ranNumber is: %d\n", randomNumber);
 		MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+
+		acDeviceSetInput(acGridGetDevice(), AC_ranNum, randomNumber);
 
 		std::ofstream myFile;
 		std::string fileString = "snapshots/snapshot_" + std::to_string(my_rank) + "_" + std::to_string(it) + ".csv";	
@@ -1152,31 +1160,33 @@ if(it < 5 and train_counter % 5 !=0) return;
   				};
 
     AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
-		
+	/*	
 		auto taus = std::array{TAUBatch[0].xx, TAUBatch[1].xx, TAUBatch[2].xx, TAUBatch[3].xx, TAUBatch[4].xx, TAUBatch[5].xx, TAUBatch[0].yy, TAUBatch[1].yy, TAUBatch[2].yy, TAUBatch[3].yy, TAUBatch[4].yy, TAUBatch[5].yy, TAUBatch[0].zz, TAUBatch[1].zz, TAUBatch[2].zz, TAUBatch[3].zz, TAUBatch[4].zz, TAUBatch[5].zz, TAUBatch[0].xy, TAUBatch[1].xy, TAUBatch[2].xy, TAUBatch[3].xy, TAUBatch[4].xy, TAUBatch[5].xy, TAUBatch[0].yz, TAUBatch[1].yz, TAUBatch[2].yz, TAUBatch[3].yz, TAUBatch[4].yz, TAUBatch[5].yz, TAUBatch[0].xz, TAUBatch[1].xz, TAUBatch[2].xz, TAUBatch[3].xz, TAUBatch[4].xz, TAUBatch[5].xz};
 
 		auto uumeans = std::array{UUMEANBatch[0].x, UUMEANBatch[1].x, UUMEANBatch[2].x, UUMEANBatch[3].x, UUMEANBatch[4].x, UUMEANBatch[5].x, UUMEANBatch[0].y, UUMEANBatch[1].y, UUMEANBatch[2].y, UUMEANBatch[3].y, UUMEANBatch[4].y, UUMEANBatch[5].y, UUMEANBatch[0].z, UUMEANBatch[1].z, UUMEANBatch[2].z, UUMEANBatch[3].z, UUMEANBatch[4].z, UUMEANBatch[5].z};
 
-    for (size_t i = dims.n0.x; i < dims.n1.x; i++) {
-        for (size_t j = dims.n0.y; j < dims.n1.y; j++) {
-            for (size_t k = dims.n0.z; k < dims.n1.z; k++) {
 
+*/
+
+    for (size_t i = dims.m0.x; i < dims.m1.x; i++) {
+        for (size_t j = dims.m0.y; j < dims.m1.y; j++) {
+            for (size_t k = dims.m0.z; k < dims.m1.z; k++) {
                 myFile << train_counter << ","
-                       << mesh.vertex_buffer[taus[randomNumber]][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[tau.xx][DEVICE_VTXBUF_IDX(i, j, k)] << ","
                        << mesh.vertex_buffer[TAU_INFERRED.xx][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[taus[randomNumber + 5]][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[tau.yy][DEVICE_VTXBUF_IDX(i, j, k)] << ","
                        << mesh.vertex_buffer[TAU_INFERRED.yy][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[taus[randomNumber + (5*2)]][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[tau.zz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
                        << mesh.vertex_buffer[TAU_INFERRED.zz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[taus[randomNumber + (5*3)]][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[tau.xy][DEVICE_VTXBUF_IDX(i, j, k)] << ","
                        << mesh.vertex_buffer[TAU_INFERRED.xy][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[taus[randomNumber + (5*4)]][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[tau.yz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
                        << mesh.vertex_buffer[TAU_INFERRED.yz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[taus[randomNumber + (5*5)]][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[tau.xz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
                        << mesh.vertex_buffer[TAU_INFERRED.xz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[uumeans[randomNumber]][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[uumeans[randomNumber + 5]][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[uumeans[randomNumber + (5*2)]][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[uumean.x][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[uumean.y][DEVICE_VTXBUF_IDX(i, j, k)] << ","
+                       << mesh.vertex_buffer[uumean.z][DEVICE_VTXBUF_IDX(i, j, k)] << ","
                        << mesh.vertex_buffer[UUX][DEVICE_VTXBUF_IDX(i, j, k)] << ","
                        << mesh.vertex_buffer[UUY][DEVICE_VTXBUF_IDX(i, j, k)] << ","
                        << mesh.vertex_buffer[UUZ][DEVICE_VTXBUF_IDX(i, j, k)] << ","
