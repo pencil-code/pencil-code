@@ -671,6 +671,286 @@ module Boundcond
 
     endsubroutine boundconds_x_c
 !***********************************************************************
+    subroutine bc_cT_x(f,topbot,j)
+      use EquationOfState
+      real, dimension(mx,my,mz,mfarray) :: f
+      integer :: topbot,j
+      if (j==iss .or. j==ilnTT) call bc_ss_temp_x(f,topbot)
+    endsubroutine bc_cT_x
+!***********************************************************************
+    subroutine bc_c1_x(f,topbot,j)
+      use EquationOfState
+      real, dimension(mx,my,mz,mfarray) :: f
+      integer :: topbot,j
+      if (j==iss)   call bc_ss_flux_x(f,topbot)
+      if (j==ilnTT) call bc_lnTT_flux_x(f,topbot)
+    endsubroutine bc_c1_x
+!***********************************************************************
+    subroutine bc_Fgs_x(f,topbot,j)
+      use EquationOfState
+      real, dimension(mx,my,mz,mfarray) :: f
+      integer :: topbot,j
+      if (j==iss) call bc_ss_flux_turb_x(f,topbot)
+    endsubroutine bc_Fgs_x
+!***********************************************************************
+    subroutine bc_Fct_x(f,topbot,j)
+      use EquationOfState
+      real, dimension(mx,my,mz,mfarray) :: f
+      integer :: topbot,j
+      if (j==iss) call bc_ss_flux_condturb_x(f,topbot)
+    endsubroutine bc_Fct_x
+!***********************************************************************
+    subroutine bc_Fcm_x(f,topbot,j)
+      use EquationOfState
+      real, dimension(mx,my,mz,mfarray) :: f
+      integer :: topbot,j
+      if (j==iss) call bc_ss_flux_condturb_mean_x(f,topbot)
+    endsubroutine bc_Fcm_x
+!***********************************************************************
+    subroutine bc_sT_x(f,topbot,j)
+      use EquationOfState
+      real, dimension(mx,my,mz,mfarray) :: f
+      integer :: topbot,j
+      if (j==iss) call bc_ss_stemp_x(f,topbot)
+    endsubroutine bc_sT_x
+!***********************************************************************
+    subroutine bc_asT_x(f,topbot,j)
+      use EquationOfState
+      real, dimension(mx,my,mz,mfarray) :: f
+      integer :: topbot,j
+      if (j==iss) call bc_ss_a2stemp_x(f,topbot)
+    endsubroutine bc_asT_x
+!***********************************************************************
+    subroutine bc_d1s_x(f,topbot,j)
+      use EquationOfState
+      real, dimension(mx,my,mz,mfarray) :: f
+      integer :: topbot,j
+      call bc_set_val_x(f,topbot,j,fbcx(j,topbot))
+      call set_ghosts_for_onesided_ders(f,topbot,j,1,.true.)
+    endsubroutine bc_d1s_x
+!***********************************************************************
+    subroutine bc_n1s_x(f,topbot,j)
+      use EquationOfState
+      real, dimension(mx,my,mz,mfarray) :: f
+      integer :: topbot,j
+      call bval_from_neumann(f,topbot,j,1,fbcx(j,topbot))
+      call set_ghosts_for_onesided_ders(f,topbot,j,1,.true.)
+    endsubroutine bc_n1s_x
+!***********************************************************************
+    subroutine bc_cT_y(f,topbot,j)
+      use EquationOfState
+      real, dimension(mx,my,mz,mfarray) :: f
+      integer :: topbot,j
+      if (j==iss) call bc_ss_temp_y(f,topbot)
+    endsubroutine bc_cT_y
+!***********************************************************************
+    subroutine bc_sT_y(f,topbot,j)
+      use EquationOfState
+      real, dimension(mx,my,mz,mfarray) :: f
+      integer :: topbot,j
+      if (j==iss) call bc_ss_stemp_y(f,topbot)
+    endsubroutine bc_sT_y
+!***********************************************************************
+    subroutine bc_asT_y(f,topbot,j)
+      use EquationOfState
+      real, dimension(mx,my,mz,mfarray) :: f
+      integer :: topbot,j
+      if (j==iss) call bc_ss_a2stemp_y(f,topbot)
+    endsubroutine bc_asT_y
+!***********************************************************************
+    subroutine bc_sfr_y(f,topbot,j)
+      use EquationOfState
+      real, dimension(mx,my,mz,mfarray) :: f
+      integer :: topbot,j
+      if (j==iux.or.j==iuy) call fatal_error('boundconds_y', &
+                   'stress-free BC at theta boundary only allowed for uu_phi')
+      call bc_set_sfree_y(f,topbot,j)
+    endsubroutine bc_sfr_y
+!***********************************************************************
+    subroutine bc_c1_z(f,topbot,j)
+      use EquationOfState
+      real, dimension(mx,my,mz,mfarray) :: f
+      integer :: topbot,j
+      if (j==iss) call bc_ss_flux(f,topbot)
+      if (j==iaa) call bc_aa_pot(f,topbot)
+      if (j==ilnTT) call bc_lnTT_flux_z(f,topbot)
+    endsubroutine bc_c1_z
+!***********************************************************************
+    subroutine bc_c1s_z(f,topbot,j)
+      use EquationOfState
+      real, dimension(mx,my,mz,mfarray) :: f
+      integer :: topbot,j
+      if (j==iss) call bc_ss_flux(f,topbot,.true.)
+    endsubroutine bc_c1s_z
+!***********************************************************************
+    subroutine bc_Fgs_z(f,topbot,j)
+      use EquationOfState
+      real, dimension(mx,my,mz,mfarray) :: f
+      integer :: topbot,j
+      if (j==iss) call bc_ss_flux_turb(f,topbot)
+    endsubroutine bc_Fgs_z
+!***********************************************************************
+    subroutine bc_Fct_z(f,topbot,j)
+      use EquationOfState
+      real, dimension(mx,my,mz,mfarray) :: f
+      integer :: topbot,j
+      if (j==iss) call bc_ss_flux_condturb_z(f,topbot)
+    endsubroutine bc_Fct_z
+!***********************************************************************
+    subroutine bc_c3_z(f,topbot,j)
+      use EquationOfState
+      real, dimension(mx,my,mz,mfarray) :: f
+      integer :: topbot,j
+      if (j==ilnTT) call bc_ADI_flux_z(f,topbot)
+    endsubroutine bc_c3_z
+!***********************************************************************
+    subroutine bc_pfe_z(f,topbot,j)
+      use EquationOfState
+      real, dimension(mx,my,mz,mfarray) :: f
+      integer :: topbot,j
+      if (j==iaa) call bc_aa_pot_field_extrapol(f,topbot)
+    endsubroutine bc_pfe_z
+!***********************************************************************
+    subroutine bc_p1D_z(f,topbot,j)
+      use EquationOfState
+      real, dimension(mx,my,mz,mfarray) :: f
+      integer :: topbot,j
+      if (j==iay) call bc_aa_pot_1D(f,topbot)
+    endsubroutine bc_p1D_z
+!***********************************************************************
+    subroutine bc_pot_z(f,topbot,j)
+      use EquationOfState
+      real, dimension(mx,my,mz,mfarray) :: f
+      integer :: topbot,j
+      if (j==iaa) call bc_aa_pot2(f,topbot)
+    endsubroutine bc_pot_z
+!***********************************************************************
+    subroutine bc_pwd_z(f,topbot,j)
+      use EquationOfState
+      real, dimension(mx,my,mz,mfarray) :: f
+      integer :: topbot,j
+      if (j==iaa) call bc_aa_pot3(f,topbot)
+    endsubroutine bc_pwd_z
+!***********************************************************************
+    subroutine bc_cT_z(f,topbot,j)
+      use EquationOfState
+      real, dimension(mx,my,mz,mfarray) :: f
+      integer :: topbot,j
+      if (j==ilnrho) call bc_lnrho_temp_z(f,topbot)
+      if (j==iss.or.j==iTT.or.j==ilnTT) call bc_ss_temp_z(f,topbot)
+    endsubroutine bc_cT_z
+!***********************************************************************
+    subroutine bc_cT2_z(f,topbot,j)
+      use EquationOfState
+      real, dimension(mx,my,mz,mfarray) :: f
+      integer :: topbot,j
+      if (j==iss) call bc_ss_temp2_z(f,topbot)
+    endsubroutine bc_cT2_z
+!***********************************************************************
+    subroutine bc_cT3_z(f,topbot,j)
+      use EquationOfState
+      real, dimension(mx,my,mz,mfarray) :: f
+      integer :: topbot,j
+      if (j==iss) call bc_ss_temp3_z(f,topbot)
+    endsubroutine bc_cT3_z
+!***********************************************************************
+    subroutine bc_hs_z(f,topbot,j)
+      use EquationOfState
+      use Gravity
+      real, dimension(mx,my,mz,mfarray) :: f
+      integer :: topbot,j
+      if (.not. lgrav) call fatal_error('boundconds_z', &
+        'hs boundary condition requires gravity')
+      if ((.not. ltemperature .or. ltemperature_nolog) .and. (gravz_profile /= 'const')) &
+        call fatal_error('boundconds_z', 'hs boundary condition requires a constant gravity profile')
+      if (.not. lequidist(3)) call fatal_error('boundconds_z', &
+        'hs boundary condition requires symmetric grid distances on the z boundary')
+      if ((j==ilnrho) .or. (j==irho_b) .or. (j==iss)) then
+        call bc_lnrho_hds_z_iso(f,topbot)
+      elseif (j==ipp) then
+        call bc_pp_hds_z_iso(f,topbot)
+      else
+        call fatal_error ('boundconds_z', "hs boundary condition requires density or pressure")
+      endif
+    endsubroutine bc_hs_z
+!***********************************************************************
+    subroutine bc_hse_z(f,topbot,j)
+      use EquationOfState
+      real, dimension(mx,my,mz,mfarray) :: f
+      integer :: topbot,j
+      if (.not. lgrav) call fatal_error ('boundconds_z', "'hse' requires gravity")
+      if (.not. leos) call fatal_error ('boundconds_z', "'hse' requires an eos module")
+      if ((ilnrho == 0) .or. (ilnTT == 0)) &
+          call fatal_error ('boundconds_z', "'hse' requires lnrho and lnTT")
+      if (j == ilnTT) then
+        call bcz_hydrostatic_temp(f,topbot)
+      elseif (j == ilnrho) then
+        call bcz_hydrostatic_rho(f,topbot)
+      else
+        call fatal_error ('boundconds_z', "'hse' works only in lnrho or lnTT")
+      endif
+    endsubroutine bc_hse_z
+!***********************************************************************
+    subroutine bc_cp_z(f,topbot,j)
+      use EquationOfState
+      real, dimension(mx,my,mz,mfarray) :: f
+      integer :: topbot,j
+      if (j==ilnrho) call bc_lnrho_pressure_z(f,topbot)
+    endsubroutine bc_cp_z
+!***********************************************************************
+    subroutine bc_sT_z(f,topbot,j)
+      use EquationOfState
+      real, dimension(mx,my,mz,mfarray) :: f
+      integer :: topbot,j
+      if (j==iss) call bc_ss_stemp_z(f,topbot)
+    endsubroutine bc_sT_z
+!***********************************************************************
+    subroutine bc_ctz_z(f,topbot,j)
+      use EquationOfState
+      real, dimension(mx,my,mz,mfarray) :: f
+      integer :: topbot,j
+      if (j==iss) call bc_ctz(f,topbot,iss)
+    endsubroutine bc_ctz_z
+!***********************************************************************
+    subroutine bc_asT_z(f,topbot,j)
+      use EquationOfState
+      real, dimension(mx,my,mz,mfarray) :: f
+      integer :: topbot,j
+      if (j==iss) call bc_ss_a2stemp_z(f,topbot)
+    endsubroutine bc_asT_z
+!***********************************************************************
+    subroutine bc_c2_z(f,topbot,j)
+      use EquationOfState
+      real, dimension(mx,my,mz,mfarray) :: f
+      integer :: topbot,j
+      if (j==iss) call bc_ss_temp_old(f,topbot)
+    endsubroutine bc_c2_z
+!***********************************************************************
+    subroutine bc_ce_z(f,topbot,j)
+      use EquationOfState
+      real, dimension(mx,my,mz,mfarray) :: f
+      integer :: topbot,j
+      if (j==iss) call bc_ss_energy(f,topbot)
+    endsubroutine bc_ce_z
+!***********************************************************************
+    subroutine bc_StS_z(f,topbot,j)
+      use EquationOfState
+      real, dimension(mx,my,mz,mfarray) :: f
+      integer :: topbot,j
+      if (j==ilnrho) call bc_stellar_surface(f,topbot)
+    endsubroutine bc_StS_z
+!***********************************************************************
+    subroutine bc_win_z(f,topbot,j)
+      use EquationOfState
+      real, dimension(mx,my,mz,mfarray) :: f
+      integer :: topbot,j
+      if (j==ilnrho) then
+        call bc_wind_z(f,topbot,fbcz(j,topbot))
+        call bc_sym_z(f,topbot,j,+1)           !  's'
+        call bc_sym_z(f,topbot,iuz,+1)         !  's'
+      endif
+    endsubroutine bc_win_z
+!***********************************************************************
     subroutine boundconds_x(f,ivar1_opt,ivar2_opt)
 !
 !  Boundary conditions in x, except for periodic part handled by communication.
@@ -817,44 +1097,41 @@ module Boundcond
                   call set_ghosts_for_onesided_ders(f,topbot,j,1)
                 case ('d1s')
                   ! BCX_DOC: onesided for 1st/2nd derivative in two first inner points, Dirichlet in boundary point
-                  call bc_set_val_x(f,topbot,j,fbcx(j,topbot))
-                  call set_ghosts_for_onesided_ders(f,topbot,j,1,.true.)
+                  call bc_d1s_x(f,topbot,j)
                 case ('n1s')
                   ! BCX_DOC: onesided for 1st/2nd derivative in two first inner points, Neumann in boundary point
-                  call bval_from_neumann(f,topbot,j,1,fbcx(j,topbot))
-                  call set_ghosts_for_onesided_ders(f,topbot,j,1,.true.)
+                  call bc_n1s_x(f,topbot,j)
                 case ('1so')
                   ! BCX_DOC: onesided
                   call bc_onesided_x_old(f,topbot,j)
                 case ('cT')
                   ! BCX_DOC: constant temperature (implemented as
                   ! BCX_DOC: condition for entropy $s$ or temperature $T$)
-                  if (j==iss .or. j==ilnTT) call bc_ss_temp_x(f,topbot)
+                  call bc_cT_x(f,topbot,j)
                 case ('c1')
                   ! BCX_DOC: constant conductive flux
-                  if (j==iss)   call bc_ss_flux_x(f,topbot)
-                  if (j==ilnTT) call bc_lnTT_flux_x(f,topbot)
+                  call bc_c1_x(f,topbot,j)
                 case ('Fgs')
                   ! BCX_DOC: black body:
                   ! BCX_DOC: - chi_t*rho*T*grad(s) - K*grad(T) = sigmaSBt*T**4
-                  if (j==iss) call bc_ss_flux_turb_x(f,topbot)
+                  call bc_Fgs_x(f,topbot,j)
                 case ('Fct')
                   ! BCX_DOC: Fbot = - K*grad(T) - chi_t*rho*T*grad(s)
-                  if (j==iss) call bc_ss_flux_condturb_x(f,topbot)
+                  call bc_Fct_x(f,topbot,j)
                 case ('Fcm')
                   ! BCX_DOC: $Fbot = - K*grad(\overline{T})$
                   ! BCX_DOC: $       - chi_t*\overline{rho}*\overline{T}*grad(\overline{s})$
-                  if (j==iss) call bc_ss_flux_condturb_mean_x(f,topbot)
+                  call bc_Fcm_x(f,topbot,j)
                 case ('sT')
                   ! BCX_DOC: symmetric temperature, $T_{N-i}=T_{N+i}$;
                   ! BCX_DOC: implies $T'(x_N)=T'''(x_0)=0$
-                  if (j==iss) call bc_ss_stemp_x(f,topbot)
+                  call bc_sT_x(f,topbot,j)
                 case ('asT')
                   ! BCX_DOC: select entropy for uniform ghost temperature
                   ! BCX_DOC: matching fluctuating boundary value,
                   ! BCX_DOC: $T_{N-i}=T_{N}=$;
                   ! BCX_DOC: implies $T'(x_N)=T'(x_0)=0$
-                  if (j==iss) call bc_ss_a2stemp_x(f,topbot)
+                  call bc_asT_x(f,topbot,j)
                 case ('db')
                   ! BCX_DOC: low-order one-sided derivatives (``no boundary
                   ! BCX_DOC: condition'') for density
@@ -1158,16 +1435,16 @@ module Boundcond
                 call set_ghosts_for_onesided_ders(f,topbot,j,2,.true.)
               case ('cT')
                 ! BCY_DOC: constant temp.
-                if (j==iss) call bc_ss_temp_y(f,topbot)
+                call bc_cT_y(f,topbot,j)
               case ('sT')
                 ! BCY_DOC: symmetric temp.
-                if (j==iss) call bc_ss_stemp_y(f,topbot)
+                call bc_sT_y(f,topbot,j)
               case ('asT')
                 ! BCY_DOC: select entropy for uniform ghost temperature
                 ! BCY_DOC: matching fluctuating boundary value,
                 ! BCY_DOC: $T_{N-i}=T_{N}=$;
                 ! BCY_DOC: implies $T'(x_N)=T'(x_0)=0$
-                if (j==iss) call bc_ss_a2stemp_y(f,topbot)
+                call bc_asT_y(f,topbot,j)
               case ('f')
                 ! BCY_DOC: freeze value
                 ! tell other modules not to change boundary value
@@ -1229,9 +1506,7 @@ module Boundcond
               case ('sfr')
                 ! BCY_DOC: stress-free boundary condition for spherical
                 ! BCY_DOC: coordinate system.
-                  if (j==iux.or.j==iuy) call fatal_error('boundconds_y', &
-                             'stress-free BC at theta boundary only allowed for uu_phi')
-                call bc_set_sfree_y(f,topbot,j)
+                call bc_sfr_y(f,topbot,j)
               case ('nfr')
                 ! BCY_DOC: Normal-field bc for spherical coordinate system.
                 ! BCY_DOC: Some people call this the ``(angry) hedgehog bc''.
@@ -1410,34 +1685,32 @@ module Boundcond
                 call bc_freeze_var_z(topbot,j)
               case ('c1')
                 ! BCZ_DOC: special boundary condition for $\ln\rho$ and $s$: constant heat flux through the boundary
-                if (j==iss) call bc_ss_flux(f,topbot)
-                if (j==iaa) call bc_aa_pot(f,topbot)
-                if (j==ilnTT) call bc_lnTT_flux_z(f,topbot)
+                call bc_c1_z(f,topbot,j)
               case ('c1s')
                 ! BCZ_DOC: complex
-                if (j==iss) call bc_ss_flux(f,topbot,.true.)
+                call bc_c1s_z(f,topbot,j)
               case ('Fgs')
                 ! BCZ_DOC: black body:
                 ! BCZ_DOC: - chi_t*rho*T*grad(s) - K*grad(T) = sigmaSBt*T**4
-                if (j==iss) call bc_ss_flux_turb(f,topbot)
+                call bc_Fgs_z(f,topbot,j)
               case ('Fct')
                 ! BCZ_DOC: Fbot = - K*grad(T) - chi_t*rho*T*grad(s)
-                if (j==iss) call bc_ss_flux_condturb_z(f,topbot)
+                call bc_Fct_z(f,topbot,j)
               case ('c3')
                 ! BCZ_DOC: constant flux at the bottom with a variable hcond
-                if (j==ilnTT) call bc_ADI_flux_z(f,topbot)
+                call bc_c3_z(f,topbot,j)
               case ('pfe')
                 ! BCZ_DOC: potential field extrapolation
-                if (j==iaa) call bc_aa_pot_field_extrapol(f,topbot)
+                call bc_pfe_z(f,topbot,j)
               case ('p1D')
                 ! BCZ_DOC: potential field extrapolation in 1D
-                if (j==iay) call bc_aa_pot_1D(f,topbot)
+                call bc_p1D_z(f,topbot,j)
               case ('pot')
                 ! BCZ_DOC: potential magnetic field
-                if (j==iaa) call bc_aa_pot2(f,topbot)
+                call bc_pot_z(f,topbot,j)
               case ('pwd')
                 ! BCZ_DOC: a variant of 'pot' for nprocx=1
-                if (j==iaa) call bc_aa_pot3(f,topbot)
+                call bc_pwd_z(f,topbot,j)
               case ('d2z')
                 ! BCZ_DOC:
                 call bc_del2zero(f,topbot,j)
@@ -1449,58 +1722,35 @@ module Boundcond
                 ! BCZ_DOC: If used for lnrho, sets both lnrho and ss (in
                 ! BCZ_DOC: which case the BC for ss should be set to 'nil')
                 ! BCZ_DOC: If used for ss, sets only ss.
-                if (j==ilnrho) call bc_lnrho_temp_z(f,topbot)
-                if (j==iss.or.j==iTT.or.j==ilnTT) call bc_ss_temp_z(f,topbot)
+                call bc_cT_z(f,topbot,j)
               case ('cT1')
                 ! BCZ_DOC: constant temperature using one-sided derivatives
                 call bc_ss_temp_z(f,topbot,.true.)
               case ('cT2')
                 ! BCZ_DOC: constant temp. (keep lnrho)
-                if (j==iss) call bc_ss_temp2_z(f,topbot)
+                call bc_cT2_z(f,topbot,j)
               case ('cT3')
                 ! BCZ_DOC: constant temp. (keep lnrho)
-                if (j==iss) call bc_ss_temp3_z(f,topbot)
+                call bc_cT3_z(f,topbot,j)
               case ('hs')
                 ! BCZ_DOC: hydrostatic equilibrium
-                if (.not. lgrav) call fatal_error('boundconds_z', &
-                  'hs boundary condition requires gravity')
-                if ((.not. ltemperature .or. ltemperature_nolog) .and. (gravz_profile /= 'const')) &
-                  call fatal_error('boundconds_z', 'hs boundary condition requires a constant gravity profile')
-                if (.not. lequidist(3)) call fatal_error('boundconds_z', &
-                  'hs boundary condition requires symmetric grid distances on the z boundary')
-                if ((j==ilnrho) .or. (j==irho_b) .or. (j==iss)) then
-                  call bc_lnrho_hds_z_iso(f,topbot)
-                elseif (j==ipp) then
-                  call bc_pp_hds_z_iso(f,topbot)
-                else
-                  call fatal_error ('boundconds_z', "hs boundary condition requires density or pressure")
-                endif
+                call bc_hs_z(f,topbot,j)
               case ('hse')
                 ! BCZ_DOC: hydrostatic extrapolation
                 ! BCZ_DOC: rho or lnrho is extrapolated linearily and the
                 ! BCZ_DOC: temperature is calculated in hydrostatic equilibrium.
-                if (.not. lgrav) call fatal_error ('boundconds_z', "'hse' requires gravity")
-                if (.not. leos) call fatal_error ('boundconds_z', "'hse' requires an eos module")
-                if ((ilnrho == 0) .or. (ilnTT == 0)) &
-                    call fatal_error ('boundconds_z', "'hse' requires lnrho and lnTT")
-                if (j == ilnTT) then
-                  call bcz_hydrostatic_temp(f,topbot)
-                elseif (j == ilnrho) then
-                  call bcz_hydrostatic_rho(f,topbot)
-                else
-                  call fatal_error ('boundconds_z', "'hse' works only in lnrho or lnTT")
-                endif
+                call bc_hse_z(f,topbot,j)
               case ('cp')
                 ! BCZ_DOC: constant pressure
                 ! BCZ_DOC:
-                if (j==ilnrho) call bc_lnrho_pressure_z(f,topbot)
+                call bc_cp_z(f,topbot,j)
               case ('sT')
                 ! BCZ_DOC: symmetric temp.
                 ! BCZ_DOC:
-                if (j==iss) call bc_ss_stemp_z(f,topbot)
+                call bc_sT_z(f,topbot,j)
               case ('ctz')
                 ! BCZ_DOC: for interstellar runs copy T
-                if (j==iss) call bc_ctz(f,topbot,iss)
+                call bc_ctz_z(f,topbot,j)
               case ('cdz')
                 ! BCZ_DOC: for interstellar runs limit rho
                 call bc_cdz(f,topbot,j)
@@ -1512,12 +1762,12 @@ module Boundcond
                 ! BCZ_DOC: matching fluctuating boundary value,
                 ! BCZ_DOC: $T_{N-i}=T_{N}=$;
                 ! BCZ_DOC: implies $T'(x_N)=T'(x_0)=0$
-                if (j==iss) call bc_ss_a2stemp_z(f,topbot)
+                call bc_asT_z(f,topbot,j)
               case ('c2')
                 ! BCZ_DOC: special boundary condition for s: constant
                 ! BCZ_DOC: temperature at the boundary --- requires
                 ! BCZ_DOC: boundary condition 'a2' for $\ln\rho$
-                if (j==iss) call bc_ss_temp_old(f,topbot)
+                call bc_c2_z(f,topbot,j)
               case ('db')
                   ! BCZ_DOC: low-order one-sided derivatives (``no boundary
                   ! BCZ_DOC: condition'') for density
@@ -1525,7 +1775,7 @@ module Boundcond
               case ('ce')
                 ! BCZ_DOC: complex
                 ! BCZ_DOC:
-                if (j==iss) call bc_ss_energy(f,topbot)
+                call bc_ce_z(f,topbot,j)
               case ('e1')
                 ! BCZ_DOC: extrapolation
                 call bc_extrap_2_1(f,topbot,j)
@@ -1585,7 +1835,7 @@ module Boundcond
                 call bc_one_z(f,topbot,j)
               case ('StS')
                 ! BCZ_DOC: solar surface boundary conditions
-                if (j==ilnrho) call bc_stellar_surface(f,topbot)
+                call bc_StS_z(f,topbot,j)
               case ('set')
                 ! BCZ_DOC: set boundary value
                 call bc_sym_z(f,topbot,j,-1,REL=.true.,VAL=fbcz(j,topbot))
@@ -1646,11 +1896,7 @@ module Boundcond
               case ('win')
                 ! BCZ_DOC: forces massflux given as
                 ! BCZ_DOC: $\Sigma \rho_i ( u_i + u_0)=\textrm{fbcz1/2}(\rho)$
-                if (j==ilnrho) then
-                  call bc_wind_z(f,topbot,fbcz(j,topbot))
-                  call bc_sym_z(f,topbot,j,+1)           !  's'
-                  call bc_sym_z(f,topbot,iuz,+1)         !  's'
-                endif
+                call bc_win_z(f,topbot,j)
               case ('cop')
                 ! BCZ_DOC: copy value of last physical point to all ghost cells
                 call bc_copy_z(f,topbot,j)
