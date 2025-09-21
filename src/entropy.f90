@@ -4238,7 +4238,7 @@ module Energy
       real, dimension(nx) :: thdiff
 
       !Done since with multithreading RHS is not evaluated
-      if(lmultithread) then
+      if(lmultithread .and. lupdate_courant_dt) then
             if (idiag_dtdiffus/=0) diffus_chi = 0.0
       endif
       if (lheatc_Kprof .and. lmultithread) then

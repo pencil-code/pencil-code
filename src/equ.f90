@@ -613,7 +613,14 @@ module Equ
 !
 
       call init_reduc_pointers
-      lupdate_courant_dt = ldt .and. lcourant_dt
+!  If doing diagnostics together with the GPU lupdate_courant_dt means to calculate some of the timestep diagnostics
+      if (lgpu) then
+        lupdate_courant_dt = lcourant_dt .and. &
+                                (idiag_dtv /= 0 .or. &
+                                 idiag_dtdiffus /= 0 .or. &
+                                 idiag_dtdiffus2 /= 0 .or. &
+                                 idiag_dtdiffus3 /= 0)
+      endif
 
 !$omp parallel if(.not. lsuppress_parallel_reductions) private(p) num_threads(num_helper_threads) &
 !$omp copyin(t,dxmax_pencil,fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz,phiavg_norm)
@@ -633,9 +640,8 @@ module Equ
 
       !$omp do
       do imn=1,nyz
-
         !Done since with multithreading RHS is not evaluated
-        if(lmultithread) then
+        if(lmultithread .and. lupdate_courant_dt) then
                 if (idiag_dtdiffus/=0)  maxdiffus    = 0.0
                 maxadvec     = 0.0
                 advec2       = 0.0
