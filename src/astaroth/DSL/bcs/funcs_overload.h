@@ -40,6 +40,17 @@ bc_sym_z(AcBoundary boundary,AC_TOP_BOT topbot, VtxBuffer field, int sgn, bool r
 }
 #if Leos_idealgas_MODULE
 #if Lentropy_MODULE
+bc_c1_z(AcBoundary boundary,AC_TOP_BOT topbot, Field j)
+{
+	if(j == AC_iss__mod__cdata) bc_ss_flux(boundary,topbot)
+}
+bc_cT_z(AcBoundary boundary,AC_TOP_BOT topbot, Field j)
+{
+      if (j==AC_iss__mod__cdata || j==AC_iTT__mod__cdata || j==AC_ilnTT__mod__cdata) 
+      {
+	bc_ss_temp_z(boundary,topbot)
+      }
+}
 bc_ss_temp_z(AcBoundary boundary,AC_TOP_BOT topbot)
 {
   bc_ss_temp_z(boundary,topbot,false)
@@ -50,3 +61,4 @@ bc_ss_flux(AcBoundary boundary, AC_TOP_BOT topbot)
 }
 #endif
 #endif
+
