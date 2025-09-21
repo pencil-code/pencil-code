@@ -1257,6 +1257,7 @@ module Viscosity
       logical, dimension (npencils) :: lpencil_in
 !
       if (lvisc_simplified .and. lpencil_in(i_visc_heat)) lpencil_in(i_o2)=.true.
+      if(idiag_dtnu/=0) ltimestep_diagnostics=.true.
 !
     endsubroutine pencil_interdep_viscosity
 !***********************************************************************

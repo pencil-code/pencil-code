@@ -3217,6 +3217,8 @@ module Hydro
         lpencil_in(i_uu_advec)=.true.
         lpencil_in(i_uij)=.true.
       endif
+
+      if(idiag_dtu/=0) ltimestep_diagnostics=.true.
 !
     endsubroutine pencil_interdep_hydro
 !***********************************************************************

@@ -3250,7 +3250,10 @@ module Energy
 !
       lpenc_diagnos2d(i_ss)=.true.
 !
-      if (idiag_dtchi/=0) lpenc_diagnos(i_rho1)=.true.
+      if (idiag_dtchi/=0) then
+              lpenc_diagnos(i_rho1)=.true.
+              ltimestep_diagnostics = .true.
+      endif
       if (idiag_dtH/=0) lpenc_diagnos(i_ee)=.true.
       if (idiag_Hmax/=0) lpenc_diagnos(i_ee)=.true.
       if (idiag_tauhmin/=0) then
@@ -3377,7 +3380,10 @@ module Energy
           idiag_uyTTmxy/=0 .or. idiag_uzTTmxy/=0 .or. idiag_ursphTTmphi/=0) &
         lpenc_diagnos2d(i_TT)=.true.
       if (idiag_yHm/=0 .or. idiag_yHmax/=0) lpenc_diagnos(i_yH)=.true.
-      if (idiag_dtc/=0) lpenc_diagnos(i_cs2)=.true.
+      if (idiag_dtc/=0) then
+        ltimestep_diagnostics = .true.
+        lpenc_diagnos(i_cs2)=.true.
+      endif
       if (idiag_TTp/=0) then
         lpenc_diagnos(i_rho)=.true.
         lpenc_diagnos(i_cs2)=.true.
@@ -4241,8 +4247,9 @@ module Energy
       if(lmultithread .and. lupdate_courant_dt) then
             if (idiag_dtdiffus/=0) diffus_chi = 0.0
       endif
-      if (lheatc_Kprof .and. lmultithread) then
-        call calc_heatcond_arrays(f,p,thdiff)
+      if (lmultithread .and. lupdate_courant_dt) then
+        if (lheatc_Kprof)    call calc_heatcond_arrays(f,p,thdiff)
+        if (lheatc_chiconst) call calc_heatcond_constchi_arr(f,p,thdiff)
       endif
       call calc_2d_diagnostics_energy(p)
       call calc_1d_diagnostics_energy(f,p)
@@ -4707,29 +4714,18 @@ module Energy
 !
     endsubroutine set_border_entropy
 !***********************************************************************
-    subroutine calc_heatcond_constchi(f,df,p)
-!
-!  Heat conduction for constant value of chi=K/(rho*cp)
-!  This routine also adds in turbulent diffusion, if chi_t /= 0.
-!  Ds/Dt = ... + 1/(rho*T) grad(flux), where
-!  flux = chi*rho*gradT + chi_t*rho*T*grads
-!  This routine is currently not correct when ionization is used.
-!
-!  29-sep-02/axel: adapted from calc_heatcond_simple
-!  12-mar-06/axel: used p%glnTT and p%del2lnTT, so that general cp work ok
-!
+    subroutine calc_heatcond_constchi_arr(f,p,thdiff)
       use Diagnostics!, only: max_mn_name
       use EquationOfState, only: get_gamma_etc
       use Sub, only: dot, multmv_transp, multsv_mn
-!
+
+      real, dimension (nx), intent(out) :: thdiff
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
+
 !
-      intent(inout) :: df
-      intent(in) :: p
 !
-      real, dimension(nx) :: thdiff, g2
+      real, dimension(nx) :: g2
       real, dimension(nx,3) :: gradchit_prof
       real :: gamma
 !
@@ -4768,11 +4764,6 @@ module Energy
 
       endif
 !
-!  Add heat conduction to entropy equation.
-!
-      df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+thdiff
-      if (headtt) print*,'calc_heatcond_constchi: added thdiff'
-!
 !  Check maximum diffusion from thermal diffusion.
 !  With heat conduction, the second-order term for entropy is
 !  gamma*chi*del2ss.
@@ -4786,7 +4777,39 @@ module Energy
         endif
         if (chi_t/=0.) diffus_chi = diffus_chi+chi_t*chit_prof*dxyz_2
       endif
+    endsubroutine calc_heatcond_constchi_arr
+!***********************************************************************
+    subroutine calc_heatcond_constchi(f,df,p)
 !
+!  Heat conduction for constant value of chi=K/(rho*cp)
+!  This routine also adds in turbulent diffusion, if chi_t /= 0.
+!  Ds/Dt = ... + 1/(rho*T) grad(flux), where
+!  flux = chi*rho*gradT + chi_t*rho*T*grads
+!  This routine is currently not correct when ionization is used.
+!
+!  29-sep-02/axel: adapted from calc_heatcond_simple
+!  12-mar-06/axel: used p%glnTT and p%del2lnTT, so that general cp work ok
+!
+      use Diagnostics!, only: max_mn_name
+      use EquationOfState, only: get_gamma_etc
+      use Sub, only: dot, multmv_transp, multsv_mn
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+!
+      intent(inout) :: df
+      intent(in) :: p
+!
+      real, dimension(nx) :: thdiff
+
+      call calc_heatcond_constchi_arr(f,p,thdiff)
+!
+!  Add heat conduction to entropy equation.
+!
+      df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+thdiff
+      if (headtt) print*,'calc_heatcond_constchi: added thdiff'
+
     endsubroutine calc_heatcond_constchi
 !***********************************************************************
     subroutine calc_heatcond_cspeed_chi(df,p)

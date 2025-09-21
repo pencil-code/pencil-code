@@ -869,6 +869,7 @@ module Cdata
   logical :: l1dphiavg_save, l1davgfirst_save, ldiagnos_save, l2davgfirst_save
   logical :: lout_save, l1davg_save, l2davg_save, lout_sound_save, lvideo_save
   logical :: lchemistry_diag_save
+  logical :: ltimestep_diagnostics = .false.
 
   real(KIND=rkind8) :: t_save,tspec_save
   real :: t1ddiagnos_save,t2davgfirst_save,tslice_save,tsound_save

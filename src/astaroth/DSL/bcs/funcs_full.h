@@ -3948,15 +3948,15 @@ bc_ss_stemp_z(AcBoundary boundary,AC_TOP_BOT topbot)
 
 bc_sT_x(AcBoundary boundary, AC_TOP_BOT topbot, Field j)
 {
-	if(j == AC_iss__mod__cdata) bc_ss_stemp_x(boundary,topbot)
+	if(j == AC_iss__mod__cdata-1) bc_ss_stemp_x(boundary,topbot)
 }
 
 bc_sT_y(AcBoundary boundary, AC_TOP_BOT topbot, Field j)
 {
-	if(j == AC_iss__mod__cdata) bc_ss_stemp_y(boundary,topbot)
+	if(j == AC_iss__mod__cdata-1) bc_ss_stemp_y(boundary,topbot)
 }
 
 bc_sT_z(AcBoundary boundary, AC_TOP_BOT topbot, Field j)
 {
-	if(j == AC_iss__mod__cdata) bc_ss_stemp_z(boundary,topbot)
+	if(j == AC_iss__mod__cdata-1) bc_ss_stemp_z(boundary,topbot)
 }

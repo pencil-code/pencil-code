@@ -614,12 +614,15 @@ module Equ
 
       call init_reduc_pointers
 !  If doing diagnostics together with the GPU lupdate_courant_dt means to calculate some of the timestep diagnostics
+     
       if (lgpu) then
-        lupdate_courant_dt = lcourant_dt .and. &
-                                (idiag_dtv /= 0 .or. &
-                                 idiag_dtdiffus /= 0 .or. &
-                                 idiag_dtdiffus2 /= 0 .or. &
-                                 idiag_dtdiffus3 /= 0)
+        if (idiag_dtv /= 0 .or. &
+            idiag_dtdiffus /= 0 .or. &
+            idiag_dtdiffus2 /= 0 .or. &
+            idiag_dtdiffus3 /= 0) then
+          ltimestep_diagnostics = .true.
+        endif
+        lupdate_courant_dt = lcourant_dt .and. ltimestep_diagnostics
       endif
 
 !$omp parallel if(.not. lsuppress_parallel_reductions) private(p) num_threads(num_helper_threads) &
