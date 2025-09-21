@@ -46,7 +46,7 @@ bc_c1_z(AcBoundary boundary,AC_TOP_BOT topbot, Field j)
 }
 bc_cT_z(AcBoundary boundary,AC_TOP_BOT topbot, Field j)
 {
-      if (j==AC_iss__mod__cdata || j==AC_iTT__mod__cdata || j==AC_ilnTT__mod__cdata) 
+      if (j==AC_iss__mod__cdata || j==AC_itt__mod__cdata || j==AC_ilntt__mod__cdata) 
       {
 	bc_ss_temp_z(boundary,topbot)
       }
