@@ -484,6 +484,7 @@ ifneq ($(SPECIAL),nospecial)
   endif
   ifneq ($(findstring gpu_astaroth, $(GPU)),)
     USE_SPECIAL_DISPATCHER=yes
+    override MULTITHREADING=openmp
   endif
 endif
 
