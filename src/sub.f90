@@ -9079,7 +9079,7 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
       real, save :: lgt0, dlgt, H0=1.
       real, save :: lgt1, lgt2, lgf1, lgf2, lgf
       real, save :: lgt_ini, a_ini, Hp_ini, app_om=0
-      real :: Hp_target_previous
+      real :: Hp_target_previous, appa_target_previous
 !
       real :: lgt_current
       real :: f, f1, f2
@@ -9184,7 +9184,8 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
         endif
         it_called=it_called+1
         if (ip<11.and.lroot) print*,'AXEL: it_called=',it_called
-        Hp_target_previous = Hp_target
+        Hp_target_previous   = Hp_target
+        appa_target_previous = appa_target
 !
 !  Data should have been read now, so we can interpolate:
 !  t is given as t/t_ini by default, so to compare it with
@@ -9245,6 +9246,9 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
 
         if(lgpu .and. Hp_target_previous /= Hp_target) then
           call update_on_gpu(index_on_gpu,'AC_hp_target__mod__cdata',Hp_target)
+        endif
+        if(lgpu .and. appa_target_previous /= appa_target) then
+          call update_on_gpu(index_on_gpu,'AC_appa_target__mod__cdata',Hp_target)
         endif
       endif
 !
