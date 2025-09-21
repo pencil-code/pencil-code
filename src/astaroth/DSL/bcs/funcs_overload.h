@@ -42,11 +42,11 @@ bc_sym_z(AcBoundary boundary,AC_TOP_BOT topbot, VtxBuffer field, int sgn, bool r
 #if Lentropy_MODULE
 bc_c1_z(AcBoundary boundary,AC_TOP_BOT topbot, Field j)
 {
-	if(j == AC_iss__mod__cdata) bc_ss_flux(boundary,topbot)
+	if(j == AC_iss__mod__cdata-1) bc_ss_flux(boundary,topbot)
 }
 bc_cT_z(AcBoundary boundary,AC_TOP_BOT topbot, Field j)
 {
-      if (j==AC_iss__mod__cdata || j==AC_itt__mod__cdata || j==AC_ilntt__mod__cdata) 
+      if (j==AC_iss__mod__cdata-1 || j==AC_itt__mod__cdata-1 || j==AC_ilntt__mod__cdata-1) 
       {
 	bc_ss_temp_z(boundary,topbot)
       }
