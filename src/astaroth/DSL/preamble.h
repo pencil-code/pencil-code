@@ -63,10 +63,10 @@ const int prof_nz = 150
 #define AC_dsy AC_ds.y
 #define AC_dsz AC_ds.z
 
-#define n__mod__cdata (vertexIdx.z+1)
-#define m__mod__cdata (vertexIdx.y+1)
-#define AC_n__mod__cdata (vertexIdx.z+1)
-#define AC_m__mod__cdata (vertexIdx.y+1)
+#define n__mod__cdata ((NGHOST-AC_nmin.z)+vertexIdx.z+1)
+#define m__mod__cdata ((NGHOST-AC_nmin.y)+vertexIdx.y+1)
+#define AC_n__mod__cdata n__mod__cdata
+#define AC_m__mod__cdata m__mod__cdata
 
 #include "../stdlib/math"
 //#include "../stdlib/general_derivs.h"

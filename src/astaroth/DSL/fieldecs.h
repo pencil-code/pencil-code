@@ -259,11 +259,6 @@ tini_sqrt_div_separate(real numerator, real a, real b)
 #define AC_dsy AC_ds.y
 #define AC_dsz AC_ds.z
 
-#define n__mod__cdata (vertexIdx.z+1)
-#define m__mod__cdata (vertexIdx.y+1)
-#define AC_n__mod__cdata (vertexIdx.z+1)
-#define AC_m__mod__cdata (vertexIdx.y+1)
-
 output real AC_df_rho_sum
 Field TEST_1, TEST_2,TEST_3,TEST_4
 output real AC_maxadvec
