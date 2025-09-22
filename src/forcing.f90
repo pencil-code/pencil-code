@@ -1033,6 +1033,18 @@ module Forcing
         endif 
       elseif (iforce=='twist') then
         if (r_ff==0.) call fatal_error('initialize_forcing',"for iforce='twist', r_ff=0 impossible")
+!
+      elseif (iforce=='2drandom_xy') then
+        if (lroot) print*,'forcing_2drandom_xy: selecting k vectors'
+        call get_2dmodes (.true.)
+        allocate(random2d_kmodes (2,random2d_nmodes))
+        call get_2dmodes (.false.)
+        if (lroot) then
+          open(unit=10,file=trim(datadir)//'/2drandomk.out',status='unknown')
+          do i = 1, random2d_nmodes
+            write(10,*) random2d_kmodes(1,i),random2d_kmodes(2,i)
+          enddo
+        endif
       endif
 
       if (lff_as_aux) call register_report_aux('ff', iff, ifx, ify, ifz)
@@ -1350,34 +1362,17 @@ module Forcing
 !  in space.
 !
 !  14-feb-2011/ dhruba : coded
+!  22-Sep-2025/kishore: moved initialization of random2d_kmodes to initialize_forcing (to ensure it is done properly while reloading)
 !
       use General, only: random_number_wrapper
       use EquationOfState, only: cs20
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical, save :: lfirst_call=.true.
-      integer :: ikmodes,iran1,iran2,kx1,ky1,kx2,ky2
+      integer :: iran1,iran2,kx1,ky1,kx2,ky2
       real, dimension(nx,3) :: forcing_rhs
       real, dimension(nx) :: xkx1,xkx2
       real,dimension(4) :: fran
       real :: phase1,phase2,pi_over_Lx,force_norm
-!
-      if (lfirst_call) then
-! If this is the first time this routine is being called select a set of
-! k-vectors in two dimensions according to inputparameters:
-        if (lroot) print*,'forcing_2drandom_xy: selecting k vectors'
-        call get_2dmodes (.true.)
-        allocate(random2d_kmodes (2,random2d_nmodes))
-        call get_2dmodes (.false.)
-        if (lroot) then
-! The root processors also write out the forced modes.
-          open(unit=10,file=trim(datadir)//'/2drandomk.out',status='unknown')
-          do ikmodes = 1, random2d_nmodes
-            write(10,*) random2d_kmodes(1,ikmodes),random2d_kmodes(2,ikmodes)
-          enddo
-        endif
-        lfirst_call=.false.
-      endif
 !
 ! force = xhat [ cos (k_1 x + \phi_1 ) + cos (k_2 y + \phi_1) ] +
 !         yhat [ cos (k_3 x + \phi_2 ) + cos (k_4 y + \phi_2) ]
