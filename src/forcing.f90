@@ -1438,9 +1438,10 @@ module Forcing
 !***********************************************************************
     subroutine get_2dmodes (lonly_total)
 !
+      logical, intent(in) :: lonly_total
+!
       integer :: ik1,ik2,modk
       integer :: imode=1
-      logical :: lonly_total
 !
 !  15-feb-2011/dhruba: coded
 !
