@@ -70,6 +70,10 @@ fixed_boundary Kernel twopass_solve_final(PC_SUB_STEP_NUMBER step_num)
 		if(AC_ia0__mod__disp_current != 0)    write(F_A0   ,rk_final(F_A0   ,step_num))
 		if(AC_iex__mod__disp_current != 0)    write(F_EVEC ,rk_final(F_EVEC ,step_num  )) 
 #endif
+#if LCHIRAL_MHD
+                if(AC_imu5__mod__chiral_mhd != 0) write(F_MU5, rk_final(F_MU5, step_num))
+                if(AC_imus__mod__chiral_mhd != 0) write(F_MUS, rk_final(F_MUS, step_num))
+#endif
 		if(lpolymer)
 		{
 			for i in 0:6

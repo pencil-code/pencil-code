@@ -177,6 +177,14 @@ const Field3 F_AVEC    = {F_AX, F_AY, F_AZ}
 #define F_AA F_AVEC
 #define AA F_AVEC
 
+
+Field F_AXTEST
+Field F_AYTEST
+Field F_AZTEST
+
+const Field3 F_AXTESTVEC = {F_AXTEST,F_AYTEST,F_AZTEST}
+#define F_AXTESVEC F_AXTESTVEC
+
 const Field3 F_UVEC    = {F_UX,F_UY,F_UZ}
 const Field3 F_UU      = {F_UX,F_UY,F_UZ}
 #define F_UU F_UVEC
@@ -284,6 +292,9 @@ field_order(AC_ikapparho__mod__radiation-1) Field F_KAPPARHO
 field_order(AC_iqrad__mod__radiation-1) Field F_QRAD
 
 Field AC_cp_full__mod__equationofstate
+
+field_order(AC_imu5__mod__chiral_mhd-1) Field F_MU5
+field_order(AC_imus__mod__chiral_mhd-1) Field F_MUS
 
 Field3 BETA_UU
 Field3 BETA_AA

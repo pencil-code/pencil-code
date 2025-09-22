@@ -127,6 +127,12 @@ real  DF_DIVA_NAME     = 0.0
 real DF_INFL_PHI  = 0.0
 real DF_INFL_DPHI = 0.0
 
+real3 DF_AXTESTVEC = real3(0.,0.,0.)
+
+real DF_MU5 = 0.0
+real DF_MUS = 0.0
+#define DF_AXTESVEC DF_AXTESTVEC
+
 real DF_IPOLY__MOD__CDATA[6]
 if(lpolymer)
 {

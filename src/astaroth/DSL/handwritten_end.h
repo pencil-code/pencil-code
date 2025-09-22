@@ -82,6 +82,10 @@
 	if(AC_idiva_name__mod__disp_current  != 0) write(F_DIVA_NAME,rk_intermediate(F_DIVA_NAME,DF_DIVA_NAME,step_num,AC_dt__mod__cdata))
 	if(AC_iex__mod__disp_current != 0)    write(F_EVEC   ,rk_intermediate(F_EVEC   ,DF_EVEC   ,step_num,AC_dt__mod__cdata)) 
 #endif
+#if LCHIRAL_MHD
+        if(AC_imu5__mod__chiral_mhd != 0) write(F_MU5, rk_intermediate(F_MU5, DF_MU5, step_num,AC_dt__mod__cdata))
+        if(AC_imus__mod__chiral_mhd != 0) write(F_MUS, rk_intermediate(F_MUS, DF_MUS, step_num,AC_dt__mod__cdata))
+#endif
 	if(lpolymer)
 	{
 		for i in 0:6
