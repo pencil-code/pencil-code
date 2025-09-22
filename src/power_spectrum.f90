@@ -51,6 +51,7 @@ module Power_spectrum
   integer :: firstout = 0
   logical :: lglq_dot_dat_exists=.false.
   logical :: lsplit_power_xy_in_z= .false.
+  logical :: lpowerxy_hdf5=.false.
   integer :: n_glq=1
 !
   character (LEN=linelen) :: ckxrange='', ckyrange='', czrange=''
@@ -94,7 +95,7 @@ module Power_spectrum
       power_format, kout_max, tout_min, tout_max, specflux_dp, specflux_dq, &
       lhorizontal_spectra, lvertical_spectra, ltrue_binning, max_k2, &
       specflux_pmin, specflux_pmax, lzero_spec_zerok, lcorrect_integer_kcalc, &
-      lpdf_2d_variable_range
+      lpdf_2d_variable_range, lpowerxy_hdf5
 !
 ! real, allocatable, dimension(:,:) :: spectrum_2d, spectrumhel_2d
 ! real, allocatable, dimension(:,:) :: spectrum_2d_sum, spectrumhel_2d_sum
@@ -909,6 +910,7 @@ outer:do ikz=1,nz
     use Mpicomm, only: mpireduce_sum, mpigather_xy, mpigather_and_out_real, mpigather_and_out_cmplx, &
                        ipz, mpibarrier, mpigather_z
     use General, only: itoa, write_full_columns, get_range_no, write_by_ranges
+    use Messages, only: not_implemented
     use Fourier, only: kx_fft, ky_fft
 !
     implicit none
@@ -933,6 +935,7 @@ outer:do ikz=1,nz
     character (len=fnlen):: filename
     character (len=3)    :: sp_field
     logical              :: l2nd
+    logical              :: lwrite_metadata
 !
 !  identify version
 !
@@ -1112,28 +1115,35 @@ outer:do ikz=1,nz
 !
     enddo ! do ivec=iveca,iveca+ncomp-1
 !
+!   if lpowerxy_hdf5=T, we need the filename on all processors.
+!
+    if ( len(sp2)==0 ) then
+      filename=trim(datadir)//'/power'//trim(sp)//'_xy.dat'
+    else
+      filename=trim(datadir)//'/power'//trim(sp)//'.'//trim(sp2)//'_xy.dat'
+    endif
+!
     if (lroot) then
 !
 !    on root processor, append global result to diagnostics file "power<field>_xy.dat"
 !
-      if ( len(sp2)==0 ) then
-        filename=trim(datadir)//'/power'//trim(sp)//'_xy.dat'
-      else
-        filename=trim(datadir)//'/power'//trim(sp)//'.'//trim(sp2)//'_xy.dat'
-      endif
-!
       if (ip<10) print*,'Writing power spectra of variable',sp &
            ,'to ',filename
 !
-      inquire(FILE=trim(filename), EXIST=lpowerdat_existed)
-      open(1,file=filename,position='append')
+      if (.not.lpowerxy_hdf5) then
+        inquire(FILE=trim(filename), EXIST=lpowerdat_existed)
+        open(1,file=filename,position='append')
+        lwrite_metadata = .not.lpowerdat_existed
+      else
+        lwrite_metadata = .false.
+      endif
 !
       if (lintegrate_shell) then
         nkl = nk
         if ( kshell(nk) == -1 ) nkl = nk-1
       endif
 !
-      if ( firstout<n_spectra .and. .not. lpowerdat_existed) then
+      if ( firstout<n_spectra .and. lwrite_metadata) then
 !
 !    We only want to write all this metadata the first time this file is created, not every time pencil is run.
 !    MR: Really? some metadata might change between restarts.
@@ -1168,11 +1178,17 @@ outer:do ikz=1,nz
 !
       endif
 !
-      write(1,*) tspec
+      if (.not.lpowerxy_hdf5) write(1,*) tspec
 !
     endif
 !
     firstout = firstout+1
+!
+    if (lpowerxy_hdf5) then
+      if (.not.lcomplex) then
+        call not_implemented('power_xy', 'HDF5 output for lcomplex=F')
+      endif
+    endif
 !
     if (lintegrate_shell) then
 !
@@ -1201,7 +1217,11 @@ outer:do ikz=1,nz
       call mpigather_xy( spectrum2_sum, spectrum2_global, 0 )
 !
     elseif (lcomplex) then
-      call mpigather_and_out_cmplx(spectrum3_cmplx,1,.false.,kxrange,kyrange,zrange)
+      if (lpowerxy_hdf5) then
+        call output_power_complex_hdf5(spectrum3_cmplx, tspec, filename, kxrange, kyrange, zrange)
+      else
+        call mpigather_and_out_cmplx(spectrum3_cmplx,1,.false.,kxrange,kyrange,zrange)
+      endif
     else
       call mpigather_and_out_real(spectrum3,1,.false.,kxrange,kyrange,zrange)
     endif
