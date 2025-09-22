@@ -966,7 +966,7 @@ module Forcing
             enddo
           enddo
         endif 
- 
+!
       elseif (iforce=='chandra_kendall'.or.iforce=='cktest') then 
 !
         if (.not. lspherical_coords) call fatal_error('initialize_forcing', &
@@ -1029,8 +1029,8 @@ module Forcing
               enddo
             enddo
           enddo
-
         endif 
+!
       elseif (iforce=='twist') then
         if (r_ff==0.) call fatal_error('initialize_forcing',"for iforce='twist', r_ff=0 impossible")
 !
