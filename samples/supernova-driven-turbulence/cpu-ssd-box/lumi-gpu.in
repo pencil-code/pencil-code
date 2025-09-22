@@ -1,0 +1,52 @@
+#!/bin/bash
+#####SBATCH -D ./
+#SBATCH --partition=debug
+#SBATCH --partition=standard-g
+#SBATCH --partition=dev-g
+#SBATCH -J gpu512_16      # job name
+#SBATCH -o gpu512_16.o%j  # output and error file name (%j expands to jobID)
+#SBATCH -N 2         # number of nodes, 128 cores per node
+#SBATCH --ntasks-per-node=8
+#SBATCH --cpus-per-task=7
+#SBATCH --gpus-per-node=8
+#SBATCH -t 36:00:00  # run time (hh:mm:ss)
+#SBATCH -t 00:40:00  # run time (hh:mm:ss)
+##SBATCH -t 06:00:00  # run time (hh:mm:ss)
+###SBATCH -t 2:50:00  # run time (hh:mm:ss)
+#SBATCH --mail-user=fred.gent.ncl@gmail.com
+#SBATCH --mail-type=begin  # email me when the job starts
+#SBATCH --mail-type=end    # email me when the job finishes
+#SBATCH --account project_462000968
+
+LOGFILE="test.out"
+
+#export ROMIO_HINTS=./romio_hints
+source src/.moduleinfo
+export OMP_NUM_THREADS=7
+export OMP_PROC_BIND=close,spread
+export OMP_MAX_ACTIVE_LEVELS=2
+export OMP_WAIT_POLICY=PASSIVE
+export MPICH_GPU_SUPPORT_ENABLED=1
+export LD_LIBRARY_PATH=$CRAY_LD_LIBRARY_PATH:$LD_LIBRARY_PATH
+
+
+if [ \( ! -e ERROR \) -a \( ! -e LOCK \) -a \( ! -e RELOAD \) -a \( ! -e STOP \) -a \( ! -e FULLSTOP \) -a \( ! -e ENDTIME \) -a \( \! -e data/proc0/crash.dat \) -a \( ! -e data/allprocs/crash.h5 \) ]
+then
+    if [ ! -e data/param.nml ]
+    then
+       ./start.csh >$LOGFILE 2>&1
+    else
+        echo "Skipping START..." >>$LOGFILE 2>&1
+    fi
+       #srun --cpu-bind=map_cpu:49,47,17,25,1,9,33,41 ./src/run.x >>$LOGFILE 2>&1
+       #./run.csh >$LOGFILE 2>&1
+
+    if [ \( ! -e ERROR \) -a \( ! -e LOCK \) -a \( ! -e RELOAD \) -a \( ! -e STOP \) -a \( ! -e FULLSTOP \) -a \( ! -e ENDTIME \) -a \( ! -e data/proc0/crash.dat \) -a \( \
+! -e data/allprocs/crash.h5 \) ]
+    then
+        echo "new submission ..." >>$LOGFILE 2>&1
+        sleep 5
+#        sbatch mahti-job.in
+    fi
+fi
+
