@@ -1564,7 +1564,7 @@ void testBCs();     // forward declaration
 extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t, int nt_)
 {
   //Setup configurations used for initializing and running the GPU code
-  nt = nt_
+  nt = nt_;
   comm_pencil = MPI_Comm_f2c(comm_fint);
   setupConfig(mesh.info);
 #if TRAINING
