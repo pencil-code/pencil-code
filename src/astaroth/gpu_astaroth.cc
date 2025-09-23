@@ -26,7 +26,7 @@
 
 
 #define CUDA_ERRCHK(X)
-
+int nt = 0;
 int counter = 0;
 int train_counter = 0;
 int done = 0;
@@ -1561,9 +1561,10 @@ extern "C" void loadFarray()
 /***********************************************************************************************/
 void testBCs();     // forward declaration
 /***********************************************************************************************/
-extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t)
+extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t, int nt_)
 {
   //Setup configurations used for initializing and running the GPU code
+  nt = nt_
   comm_pencil = MPI_Comm_f2c(comm_fint);
   setupConfig(mesh.info);
 #if TRAINING
