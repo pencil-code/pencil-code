@@ -1,0 +1,36 @@
+!
+!  Run parameters for shear turbulence
+!
+&run_pars
+  cvsid="28b85393a"
+  nt=300, it1=50, isave=2000, itorder=3
+  dsnap=100,
+  tmax=10000.
+/
+&eos_run_pars
+/
+&hydro_run_pars
+  lupw_uu=T
+  Omega = -0.033333
+/
+&density_run_pars
+  lupw_lnrho=T
+/
+&forcing_run_pars
+  iforce='helical', force=.005, relhel=0.2
+/
+&viscosity_run_pars
+  nu=1e-2
+/
+&testfield_run_pars
+  linit_aatest=T, daainit=100.
+  itestfield='B11-B22'
+  etatest=1e-2
+  lsoca=F
+/
+&magnetic_run_pars
+  eta=1e-2
+  lupw_aa=T
+/
+&shear_run_pars
+/

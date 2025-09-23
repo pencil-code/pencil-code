@@ -1,0 +1,24 @@
+###                             -*-Makefile-*-
+### Makefile for modular pencil code -- local part
+### Included by `Makefile'
+###
+
+MPICOMM   =   mpicomm
+GLOBAL    = noglobal
+FILE_IO   =   file_io_f95
+
+HYDRO     =   hydro
+DENSITY   =   density
+ENTROPY   = noentropy
+MAGNETIC  =   magnetic
+RADIATION = noradiation
+PSCALAR   = nopscalar
+TESTFIELD =   test_methods/testfield_x
+
+GRAVITY   = nogravity
+FORCING   =   forcing
+SHEAR     =   shear
+#POWER     =   power_spectrum
+#FOURIER   =   fourier_fftpack
+
+REAL_PRECISION = double
