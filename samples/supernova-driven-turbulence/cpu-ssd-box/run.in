@@ -1,0 +1,83 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+!  run parameters for interstellar
+!
+&run_pars
+  cvsid="5cad3a769"
+  nt=500, it1=25, isave=5000, itorder=4, tmax=0.04
+  dtmin=1e-13
+  dt_epsi=1e-9, dtdec=0.5, dtinc=0.5, dt_ratio=1e-7
+  eps_rkf0=1e-6
+  leps_fixed=T
+  oned=T, dspec=0.001, ou_spec=T, ab_spec=T
+  timestep_scaling=8*"rel_err"
+  dsnap=0.01, dvid=0.00025, slice_position='p'
+  ip=1963
+  lshock_heat=F
+  lpencil_check=F
+  lpencil_check_small=F
+  lbidiagonal_derij=F  !(use the slightly more accurate formulation for derij)
+  lwrite_ts_hdf5=F
+  max_walltime=128500 !36 hrs
+/
+&eos_run_pars
+/
+&hydro_run_pars
+/
+&viscosity_run_pars
+  ivisc='nu-shock','hyper3-nu-const','nu-const'
+  nu_shock=1., nu_hyper3=7.5e-12, nu=1e-3
+/
+&density_run_pars
+  diffrho_shock=1.
+  lmassdiff_fix=T
+  lgamma_is_1=F
+  idiff='shock',''
+  total_mass=0.016777216
+  lconserve_total_mass=T
+/
+&entropy_run_pars
+  iheatcond='shock','hyper3'
+  chi_shock=1.
+  chi_hyper3=7.5e-12
+  lrhs_max=F
+/
+&magnetic_run_pars
+  iresistivity='hyper3','eta-const'
+  eta_hyper3=7.5e-12,eta=1e-3
+  lrhs_max=F
+/
+&interstellar_run_pars
+!! adjust SN radius above rfactor_SN for diffuse ISM
+  luniform_zdist_SNI=T
+  lSN_scale_rad=T
+  ltrim_profile=F
+  N_mass=120.0
+  width_SN=0.012
+  rfactor_SN=5.0
+  SNI_factor=0.5
+  SNII_factor=0.5
+  lSN_autofrackin=F
+  lSN_coolingmass=F
+!  t_next_SNI=1e-7, l_persist_overwrite_tSNI=T
+!! override persistent variables read in from varfile
+  lSNII=T, l_persist_overwrite_lSNII=T
+  lSNI=T, l_persist_overwrite_lSNI=T
+!  t_next_SNI=9e-4, l_persist_overwrite_tSNI=T
+!  t_next_SNII=9e-4, l_persist_overwrite_tSNII=T
+!! rest random number after crash for new SN site
+!  lreset_ism_seed=T
+!  seed_reset=1245
+/
+&shear_run_pars
+  qshear = 1.0
+/
+&shock_run_pars
+  ishock_max=1
+  lmax_shock=F
+  lgaussian_smooth=T
+  lconvergence_only=F
+  shock_div_pow=1.75
+  dtfactor=0.2!2.5e-2
+  con_bias=0.05
+/

@@ -1,0 +1,43 @@
+#!/bin/bash
+#####SBATCH -D ./
+#SBATCH --partition=small
+#SBATCH -J test      # job name
+#SBATCH -o test.o%j  # output and error file name (%j expands to jobID)
+#SBATCH -n 128       # total number of mpi tasks requested
+#SBATCH -N 1         # number of nodes, 128 cores per node
+#SBATCH --ntasks-per-node=128
+#SBATCH -t 0:40:00  # run time (hh:mm:ss)
+##SBATCH -t 00:15:00  # run time (hh:mm:ss)
+##SBATCH -t 06:00:00  # run time (hh:mm:ss)
+###SBATCH -t 2:50:00  # run time (hh:mm:ss)
+#SBATCH --mail-user=fred.gent.ncl@gmail.com
+#SBATCH --mail-type=begin  # email me when the job starts
+#SBATCH --mail-type=end    # email me when the job finishes
+#SBATCH --account project_462000759
+
+export OMP_NUM_THREADS=1
+
+LOGFILE="test.out"
+
+#export ROMIO_HINTS=./romio_hints
+source src/.moduleinfo
+
+if [ \( ! -e ERROR \) -a \( ! -e LOCK \) -a \( ! -e RELOAD \) -a \( ! -e STOP \) -a \( ! -e FULLSTOP \) -a \( ! -e ENDTIME \) -a \( \! -e data/proc0/crash.dat \) -a \( ! -e data/allprocs/crash.h5 \) ]
+then
+    if [ ! -e data/param.nml ]
+    then
+       ./start.csh >$LOGFILE 2>&1
+    else
+        echo "Skipping START..." >>$LOGFILE 2>&1
+    fi
+       ./run.csh >>$LOGFILE 2>&1
+
+    if [ \( ! -e ERROR \) -a \( ! -e LOCK \) -a \( ! -e RELOAD \) -a \( ! -e STOP \) -a \( ! -e FULLSTOP \) -a \( ! -e ENDTIME \) -a \( ! -e data/proc0/crash.dat \) -a \( \
+! -e data/allprocs/crash.h5 \) ]
+    then
+        echo "new submission ..." >>$LOGFILE 2>&1
+        sleep 5
+#        sbatch mahti-job.in
+    fi
+fi
+

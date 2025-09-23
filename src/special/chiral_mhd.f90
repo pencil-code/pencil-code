@@ -264,6 +264,7 @@ module Special
 !  give eta out as shared_variable
 !
       if (lmagnetic.and.lrun) call get_shared_variable('eta',eta,caller="initialize_special")
+      if (.not. ldiffmu5_tdep) diffmu5_ = diffmu5
 !
     endsubroutine initialize_special
 !***********************************************************************
@@ -1002,13 +1003,13 @@ module Special
     call copy_addr(diffmus_hyper2,p_par(4))
     call copy_addr(diffmu5_hyper3,p_par(5))
     call copy_addr(diffmus_hyper3,p_par(6))
-    call copy_addr(gammaf5,p_par(7))
-    call copy_addr(source5,p_par(8))
+    call copy_addr(gammaf5,p_par(7)) ! real dconst
+    call copy_addr(source5,p_par(8)) ! real dconst
     call copy_addr(t1_gammaf5,p_par(9))
     call copy_addr(coef_mus,p_par(10))
     call copy_addr(coef_mu5,p_par(11))
     call copy_addr(cw,p_par(12))
-    call copy_addr(diffmu5_,p_par(13))
+    call copy_addr(diffmu5_,p_par(13)) ! real dconst
     call copy_addr(cdtchiral,p_par(14))
     call copy_addr(imu5,p_par(15)) ! int
     call copy_addr(imus,p_par(16)) ! int

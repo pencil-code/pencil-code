@@ -234,7 +234,7 @@ module Viscosity
   real, dimension(mz) :: eth0z = 0.0
   real, dimension(nx) :: diffus_nu, diffus_nu3
   !$omp threadprivate(diffus_nu,diffus_nu3)
-
+  real, dimension(my) :: nu_y,gnu_y
 !
   integer :: enum_nnewton_type = 0
   integer :: enum_div_sld_visc = 0
@@ -335,10 +335,11 @@ module Viscosity
       use EquationOfState, only: get_stratz
       use Mpicomm, only: stop_it
       use SharedVariables, only: get_shared_variable
-      use Sub, only: write_zprof, write_yprof, step
+      use Sub, only: write_zprof, write_yprof, step, der_step
       use General, only: itoa
 !
       integer :: i
+      real :: y1, y0
 !
 !  Default viscosity.
 !  nu-const (as opposed to mu=rho*nu=const) may still allow for a profile of nu.
@@ -660,11 +661,21 @@ module Viscosity
 !
       if (lvisc_nu_prof) call write_zprof('visc',nu + (nu*(nu_jump-1.))*step(z(n1:n2),znu,-widthnu))
 !
-!  Write out viscosity y-profile
-!  The actual profile is generated below and written to disk.
+      if (lvisc_nu_profy_bound) then
 !
-      if (lvisc_nu_profy_bound) call write_yprof('visc_profy_bound', nu + (nu*(nu_jump-1.))* &
-               (step(y(m1:m2),xyz1(2)-3*dynu, dynu) + step(y(m1:m2),xyz0(2)+3*dynu, -dynu)))
+!  Precalculate horizontal viscosity profile with two steps
+!  enhancement at the y boundaries; very similar to nu_profr_twosteps
+!  dynu defines how wide the enhanced viscosity layer is.
+!  -- here the viscosity nu_y depends on y; nu_jump=nu2/nu1
+!
+        y1 = xyz1(2); y0=xyz0(2)
+        nu_y = nu + (nu*(nu_jump-1.))*(    step(y,y1-3*dynu,dynu) +     step(y,y0+3*dynu,-dynu))
+        gnu_y=      (nu*(nu_jump-1.))*(der_step(y,y1-3*dynu,dynu) + der_step(y,y0+3*dynu,-dynu))
+
+!  Write out viscosity y-profile.
+
+        call write_yprof('visc_profy_bound', nu_y(m1:m2))
+      endif
 !
 !  Write out shock viscosity z-profile.
 !  At present only correct for Cartesian geometry
@@ -1648,36 +1659,25 @@ module Viscosity
         if (ldiffus_total) p%diffus_total=p%diffus_total+pnu
       endif
 !
-!  horizontal viscosity profile with two steps
-!  enhancement at the y boundaries; very similar to nu_profr_twosteps
-!  dynu define how wide the enhanced viscosity layer is.
-!  Viscous force: nu(y)*(del2u+graddivu/3+2S.glnrho)+2S.gnu
-!  -- here the nu viscosity depends on y; nu_jump=nu2/nu1
-!
       if (lvisc_nu_profy_bound) then
+!
+!  horizontal viscosity profile with two steps
+!
+        gradnu(:,(/1,3/)) = 0.
         if (lspherical_coords.or.lsphere_in_a_box) then
-          tmp3=p%r_mn
-        else if (lcylindrical_coords) then
-          tmp3=p%rcyl_mn
+          gradnu(:,2)=gnu_y(m)/p%r_mn
+        elseif (lcylindrical_coords) then
+          gradnu(:,2)=gnu_y(m)/p%rcyl_mn
         else
-          tmp3=1.0
+          gradnu(:,2)=gnu_y(m)
         endif
 !
-        tmp4    = spread(y(m),1,nx)
-        prof    =     step(tmp4,xyz1(2)-3*dynu,dynu) +     step(tmp4,xyz0(2)+3*dynu,-dynu)
-        derprof = der_step(tmp4,xyz1(2)-3*dynu,dynu) + der_step(tmp4,xyz0(2)+3*dynu,-dynu)
+!  Viscous force: nu(y)*(del2u+graddivu/3+2S.glnrho)+2S.gnu.
 !
-        pnu  = nu + (nu*(nu_jump-1.))*prof
-!
-        gradnu(:,1) = 0.
-        gradnu(:,2) = (nu*(nu_jump-1.))*derprof/tmp3
-        gradnu(:,3) = 0.
-
-        call multmv(p%sij,gradnu,sgradnu)
-        call multsv(pnu,2*p%sglnrho+p%del2u+1./3.*p%graddivu,tmp)
-        p%fvisc=p%fvisc+tmp+2*sgradnu
-        if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+2*pnu*p%sij2
-        if (ldiffus_total) p%diffus_total=p%diffus_total+pnu
+        call multmv(p%sij,gradnu,sgradnu)    ! tb simplified as gradnu has only one component
+        p%fvisc=p%fvisc + nu_y(m)*(2.*p%sglnrho+p%del2u+1./3.*p%graddivu) + 2.*sgradnu
+        if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+2.*nu_y(m)*p%sij2
+        if (ldiffus_total) p%diffus_total=p%diffus_total+nu_y(m)
       endif
 !
 !  turbulent viscosity profile from magnetic
@@ -3171,7 +3171,9 @@ module Viscosity
     call copy_addr(lambda_v1b,p_par(113)) 
     call copy_addr(lambda_v0t,p_par(114)) 
     call copy_addr(lambda_v1t,p_par(115)) 
-    
+    call copy_addr(nu_y,p_par(116))        ! (my)
+    call copy_addr(gnu_y,p_par(117))       ! (my)
+
     endsubroutine pushpars2c
 !***********************************************************************
 endmodule Viscosity

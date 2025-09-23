@@ -648,8 +648,15 @@ if [ -f "$src/Makefile.local" ]; then
     make_initial_condition_dir
     if [ "$link_all" -eq 1 ]; then link_initial_condition_files; fi
   fi
-  make_astaroth_dir
-  if [ "$link_all" -eq 1 ]; then link_astaroth_files; fi
+  if [ "`grep '^[^#]*= *gpu_astaroth' $src/Makefile.local`" != "" ]; then 
+    make_astaroth_dir
+    if [ "$link_all" -eq 1 ]; then link_astaroth_files; fi
+  fi
+  pencil_user=$PENCIL_USER
+  if [ "$pencil_user" = GPU_AUTOTEST ]; then
+    make_astaroth_dir
+    if [ "$link_all" -eq 1 ]; then link_astaroth_files; fi
+  fi
 fi
 if [ "$link_all" -eq 1 ]; then create_Makefile_inc; fi
 #copy_local_files

@@ -1462,6 +1462,8 @@ void autotune_all_integration_substeps()
   	acDeviceSetInput(acGridGetDevice(), AC_lrmv,true);
 	acGetOptimizedDSLTaskGraph(AC_rhs);
         if (rank==0 && ldebug) printf("memusage after GetOptimizedDSLTaskGraph= %f MBytes\n", acMemUsage()/1024.);
+ 	beforeBoundaryGPU(true,i,0.0);
+        beforeBoundaryGPU(false,i,0.0);
   }
   sourceFunctionAndOpacity(0);
 }
