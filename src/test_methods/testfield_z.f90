@@ -1360,7 +1360,7 @@ module Testfield
 !
     endsubroutine testfield_before_boundary
 !***********************************************************************
-    subroutine testfield_after_boundary(f,p)
+    subroutine testfield_after_boundary(f)
 !
 !  calculate <uxb>, which is needed when lsoca=.false.
 !
@@ -1385,9 +1385,7 @@ module Testfield
       integer :: jtest,j,juxb,jjxb, njtest_loc,nl
       logical :: headtt_save
       real :: fac, bcosphz, bsinphz, fac1=0., fac2=1.
-!     type(pencil_case),dimension(:), allocatable :: p          ! vector as scalar quantities not allocatable
-!AB: quick fix ??
-      type (pencil_case) :: p
+      type(pencil_case),dimension(:), allocatable :: p          ! vector as scalar quantities not allocatable
       logical, dimension(:), allocatable :: lpenc_loc
 !
       uxbtestm=0.; jxbtestm=0.
@@ -1415,8 +1413,7 @@ module Testfield
 !
       if ( .not.lsoca .or. liter.and.(t-t_iter_last >= dt_iter) ) then
 
-        !allocate(p(1),lpenc_loc(npencils))
-!AB: quick fix; commented out
+        allocate(p(1),lpenc_loc(npencils))
         lpenc_loc = .false.; lpenc_loc(i_uu)=.true.
 
         do jtest=1,njtest_loc

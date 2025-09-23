@@ -489,8 +489,6 @@ module Testfield
 !
       if (lcalc_uumeanx) then
         do j=1,3
-          !uufluct(:,j)=p%uu(:,j)-uumx(:,j)
-!AB: quick fix
           uufluct(:,j)=p%uu(:,j)-uumx(l1:l2,j)
         enddo
       else
@@ -834,7 +832,7 @@ module Testfield
 !
     endsubroutine testfield_before_boundary
 !***********************************************************************
-    subroutine testfield_after_boundary(f,p)
+    subroutine testfield_after_boundary(f)
 !
 !  calculate <uxb>, which is needed when lsoca=.false.
 !
@@ -853,8 +851,8 @@ module Testfield
       integer :: jtest,j,juxb,jjxb
       logical :: headtt_save
       real :: fac
-      type (pencil_case) :: p
-      logical, dimension(npencils) :: lpenc_loc
+      type(pencil_case),dimension(:), allocatable :: p          ! vector as scalar quantities not allocatable
+      logical, dimension(:), allocatable :: lpenc_loc
 !
 !  In this routine we will reset headtt after the first pencil,
 !  so we need to reset it afterwards.
@@ -869,6 +867,7 @@ module Testfield
       uxbtestm=0.
   
       if (.not.lsoca) then
+        allocate(p(1),lpenc_loc(npencils))
         lpenc_loc = .false.; lpenc_loc(i_uu)=.true.
 
         do jtest=1,njtest
