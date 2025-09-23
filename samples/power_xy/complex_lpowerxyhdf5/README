@@ -1,0 +1,12 @@
+Directory:
+    ${PENCIL_HOME}/samples/power_xy/complex_lpowerxyhdf5
+SVN Id:
+    $Id$
+Maintainer:
+    Kishore G <kishore96/gmail[dot]com>
+Added:
+    23-Sep-2025
+Status:
+    failing (compilation) # One of [succeeds|failing since <date>|obsolete| ...]
+Comments:
+    Variant of samples/powerxy_complex that tests HDF5 output
