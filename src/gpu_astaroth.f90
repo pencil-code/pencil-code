@@ -97,7 +97,7 @@ contains
                                     trim(str(3:))//'"')
 !
       if (dt<=0.) dt = dtmin
-      call initialize_gpu_c(f,MPI_COMM_PENCIL,t)
+      call initialize_gpu_c(f,MPI_COMM_PENCIL,t,nt)
 !
 ! Load farray to gpu
 !
