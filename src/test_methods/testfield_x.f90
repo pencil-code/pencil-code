@@ -876,9 +876,9 @@ module Testfield
           juxb=iuxbtest+3*(jtest-1)
           do n=n1,n2
             do m=m1,m2
-              call calc_pencils_hydro(f,p,lpenc_loc)
+              call calc_pencils_hydro(f,p(1),lpenc_loc)
               call curl(f,iaxtest,bbtest)
-              call cross_mn(p%uu,bbtest,uxbtest)
+              call cross_mn(p(1)%uu,bbtest,uxbtest)
               if (iuxbtest/=0) f(l1:l2,m,n,juxb:juxb+2)=uxbtest
               uxbtestm(:,:,jtest)=uxbtestm(:,:,jtest)+fac*uxbtest
               headtt=.false.
