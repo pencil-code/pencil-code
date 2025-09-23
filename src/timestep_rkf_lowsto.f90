@@ -198,7 +198,7 @@ module Timestep
           farr => f
         else
           farr => f1
-          if (it_rmv>0) lrmv=.false.
+          lrmv=.false.
         endif
 !
 !    Set up particle derivative array.
