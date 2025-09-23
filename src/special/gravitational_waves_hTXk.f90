@@ -103,8 +103,8 @@ module Special
   logical :: lswitch_sign_e_X=.true., lswitch_symmetric=.false., ldebug_print=.false.
   logical :: lswitch_sign_e_X_boost=.false.
   logical :: lStress_as_aux=.true., lreynolds=.false., lkinGW=.true.
-  logical :: lelectmag=.false., lscalar=.false., lscalar_phi=.false.
-  logical :: lggTX_as_aux=.true., lhhTX_as_aux=.true.
+  logical :: lmagstress=.true., lelectmag=.false., lscalar=.false., lscalar_phi=.false.
+  logical :: luse_mag, lggTX_as_aux=.true., lhhTX_as_aux=.true.
   logical :: lremove_mean_hij=.false., lremove_mean_gij=.false.
   logical :: GWs_spec_complex=.true. !(fixed for now)
   logical :: lreal_space_hTX_as_aux=.false., lreal_space_gTX_as_aux=.false., lreal_space_hij_as_aux=.false.
@@ -158,7 +158,7 @@ module Special
     lStress_as_aux, lgamma_factor, &
     lreal_space_hTX_as_aux, lreal_space_gTX_as_aux, lreal_space_hij_as_aux, &
     lscalar, lscalar_phi, lnew_switch_om2_min, om2_min_factor, &
-    lelectmag, lggTX_as_aux, lhhTX_as_aux, linflation, lreheating_GW, lmatter_GW, ldark_energy_GW, &
+    lmagstress, lelectmag, lggTX_as_aux, lhhTX_as_aux, linflation, lreheating_GW, lmatter_GW, ldark_energy_GW, &
     lonly_mag, lread_scl_factor_file, t_ini, &
     lno_noise_GW, lrandom_ampl_GW, &
     lscale_tobox, lfactors_GW, nfact_GWs, nfact_GWh, nfact_GW, &
@@ -174,7 +174,7 @@ module Special
     nscale_factor_conformal, tshift, cc_light, lgamma_factor, &
     t_equality, t_acceleration, lnew_switch_om2_min, om2_min_factor, &
     lStress_as_aux, lkinGW, aux_stress, tau_stress_comp, exp_stress_comp, lscalar, lscalar_phi, &
-    lelectmag, tau_stress_kick, fac_stress_kick, delk, tdelk, ldelkt, idelkt, tau_delk, &
+    lmagstress, lelectmag, tau_stress_kick, fac_stress_kick, delk, tdelk, ldelkt, idelkt, tau_delk, &
     lreal_space_hTX_as_aux, lreal_space_gTX_as_aux, lreal_space_hij_as_aux, &
     initGW, reinitialize_GW, rescale_GW, &
     lggTX_as_aux, lhhTX_as_aux, lremove_mean_hij, lremove_mean_gij, &
@@ -889,10 +889,14 @@ module Special
       endif
 !
 !  Magnetic field needed for Maxwell stress
+!  But only with lmagstress can we suppress it.
 !
-      if (lmagnetic) then
+      if (lmagnetic .and. lmagstress) then
+        luse_mag=.true.
         lpenc_requested(i_bb)=.true.
         if (trace_factor/=0.) lpenc_requested(i_b2)=.true.
+      else
+        luse_mag=.false.
       endif
 !
 !  Electric field needed for Maxwell stress
@@ -981,7 +985,7 @@ module Special
               else
                 if (lreynolds) p%stress_ij(:,ij)=p%stress_ij(:,ij)+p%uu(:,i)*p%uu(:,j)*prefactor*p%rho
               endif
-              if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)-p%bb(:,i)*p%bb(:,j)
+              if (luse_mag)  p%stress_ij(:,ij)=p%stress_ij(:,ij)-p%bb(:,i)*p%bb(:,j)
               if (lelectmag) p%stress_ij(:,ij)=p%stress_ij(:,ij)-p%el(:,i)*p%el(:,j)
 !              if (lscalar_phi) p%stress_ij(:,ij)=p%stress_ij(:,ij)+p%infl_a2*p%gphi(:,i)*p%gphi(:,j)
               if (lscalar_phi) p%stress_ij(:,ij)=p%stress_ij(:,ij) &
@@ -995,7 +999,7 @@ module Special
                 if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)+trace_factor*p%b2
               else
                 if (lreynolds) p%stress_ij(:,ij)=p%stress_ij(:,ij)-trace_factor*p%u2*prefactor*p%rho
-                if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)+trace_factor*p%b2
+                if (luse_mag)  p%stress_ij(:,ij)=p%stress_ij(:,ij)+trace_factor*p%b2
                 if (lelectmag) p%stress_ij(:,ij)=p%stress_ij(:,ij)+trace_factor*p%e2
               endif
             endif

@@ -24,7 +24,7 @@
 void torch_train_c_api(REAL*); 
 void torch_infer_c_api(int);
 void registerGPU();
-void initializeGPU(REAL*, FINT, double);
+void initializeGPU(REAL*, FINT, double, FINT);
 void finalizeGPU();
 void getFArrayIn(REAL **);
 void substepGPU(int, double);
@@ -67,7 +67,7 @@ void FTNIZE(torchinfer_c)(FINT* itsub)
 	torch_infer_c_api(*itsub);
 }
 /* ---------------------------------------------------------------------- */
-void FTNIZE(initialize_gpu_c)(REAL* f, FINT* comm_fint, double* t)
+void FTNIZE(initialize_gpu_c)(REAL* f, FINT* comm_fint, double* t, FINT* nt)
 {
 // Initializes GPU.  
   /*
@@ -81,7 +81,7 @@ void FTNIZE(initialize_gpu_c)(REAL* f, FINT* comm_fint, double* t)
   //printf("dy = %f\n", __cdata_MOD_dy);
   //printf("dz = %f\n", __cdata_MOD_dz);
 
-  initializeGPU(f, *comm_fint,*t);
+  initializeGPU(f, *comm_fint,*t,*nt);
 /*
   printf("xmin = %e\n", x[4]);
   printf("xmax = %e\n", x[nx-1+3]);

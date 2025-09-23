@@ -283,7 +283,7 @@ module Timestep
 !***********************************************************************
     subroutine ode_timestep_first
 
-     if (lroot) then
+     if (lroot .or. lgpu) then
         if (itsub==1) then
           df_ode = 0.0
         else
@@ -297,7 +297,7 @@ module Timestep
 
       use Special, only: dspecial_dt_ode
 
-      if (lroot) then
+      if (lroot .or. lgpu) then
         call dspecial_dt_ode
       endif
 
@@ -307,8 +307,8 @@ module Timestep
 
       use Mpicomm, only: mpibcast
 
-      if (lroot) f_ode(1:n_odevars) = f_ode(1:n_odevars) + dt_beta_ts(itsub)*df_ode
-      call mpibcast(f_ode,n_odevars)
+      if (lroot .or. lgpu) f_ode(1:n_odevars) = f_ode(1:n_odevars) + dt_beta_ts(itsub)*df_ode
+      if (.not. lgpu) call mpibcast(f_ode,n_odevars)
 
     endsubroutine ode_timestep_second
 !***********************************************************************
