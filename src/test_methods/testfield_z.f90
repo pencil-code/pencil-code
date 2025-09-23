@@ -1439,11 +1439,8 @@ module Testfield
             nl=n-n1+1
             do m=m1,m2
 !
-              !call calc_pencils_hydro(f,p(1),lpenc_loc)
-              !call calc_uxb(f,p(1),iaxtest,uxbtest,bbtest)
-!AB: quick fix; commented out
-              call calc_pencils_hydro(f,p,lpenc_loc)
-              call calc_uxb(f,p,iaxtest,uxbtest,bbtest)
+              call calc_pencils_hydro(f,p(1),lpenc_loc)
+              call calc_uxb(f,p(1),iaxtest,uxbtest,bbtest)
               if (lalpha_incoherent) call multsv_mn_add(alpha_tmp,bbtest,uxbtest)
               if (lalpha_incoh_tens) call multmv(alpij_tmp,bbtest,uxbtest,ladd=.true.)
               if (leta_incoh_tensor) call multmv(etaij_tmp,jjtest,uxbtest,ladd=.true.)
