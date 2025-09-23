@@ -1360,7 +1360,7 @@ module Testfield
 !
     endsubroutine testfield_before_boundary
 !***********************************************************************
-    subroutine testfield_after_boundary(f)
+    subroutine testfield_after_boundary(f,p)
 !
 !  calculate <uxb>, which is needed when lsoca=.false.
 !
@@ -1385,7 +1385,9 @@ module Testfield
       integer :: jtest,j,juxb,jjxb, njtest_loc,nl
       logical :: headtt_save
       real :: fac, bcosphz, bsinphz, fac1=0., fac2=1.
-      type(pencil_case),dimension(:), allocatable :: p          ! vector as scalar quantities not allocatable
+!     type(pencil_case),dimension(:), allocatable :: p          ! vector as scalar quantities not allocatable
+!AB: quick fix ??
+      type (pencil_case) :: p
       logical, dimension(:), allocatable :: lpenc_loc
 !
       uxbtestm=0.; jxbtestm=0.
@@ -1413,7 +1415,8 @@ module Testfield
 !
       if ( .not.lsoca .or. liter.and.(t-t_iter_last >= dt_iter) ) then
 
-        allocate(p(1),lpenc_loc(npencils))
+        !allocate(p(1),lpenc_loc(npencils))
+!AB: quick fix; commented out
         lpenc_loc = .false.; lpenc_loc(i_uu)=.true.
 
         do jtest=1,njtest_loc
@@ -1439,8 +1442,11 @@ module Testfield
             nl=n-n1+1
             do m=m1,m2
 !
-              call calc_pencils_hydro(f,p(1),lpenc_loc)
-              call calc_uxb(f,p(1),iaxtest,uxbtest,bbtest)
+              !call calc_pencils_hydro(f,p(1),lpenc_loc)
+              !call calc_uxb(f,p(1),iaxtest,uxbtest,bbtest)
+!AB: quick fix; commented out
+              call calc_pencils_hydro(f,p,lpenc_loc)
+              call calc_uxb(f,p,iaxtest,uxbtest,bbtest)
               if (lalpha_incoherent) call multsv_mn_add(alpha_tmp,bbtest,uxbtest)
               if (lalpha_incoh_tens) call multmv(alpij_tmp,bbtest,uxbtest,ladd=.true.)
               if (leta_incoh_tensor) call multmv(etaij_tmp,jjtest,uxbtest,ladd=.true.)

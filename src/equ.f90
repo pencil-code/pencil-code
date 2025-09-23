@@ -296,7 +296,9 @@ module Equ
 !
         call after_boundary_shared(f,df)
         if (.not. lgpu) then
-          call after_boundary_cpu(f,df)
+!         call after_boundary_cpu(f,df)
+!AB: new quick fix
+          call after_boundary_cpu(f,df,p)
         endif
 !      endif
 !
@@ -992,7 +994,8 @@ module Equ
       if (ltraining)       call training_after_boundary(f)
     endsubroutine after_boundary_shared
 !***********************************************************************
-    subroutine after_boundary_cpu(f,df)
+    subroutine after_boundary_cpu(f,df,p)
+!AB: above quick fix
 
       use Hydro, only: hydro_after_boundary
       use Viscosity, only: viscosity_after_boundary
@@ -1013,6 +1016,8 @@ module Equ
 
       real, intent(INOUT), dimension(mx,my,mz,mfarray) :: f
       real, intent(INOUT), dimension(mx,my,mz,mvar)    :: df
+      type (pencil_case)                ,intent(IN)    :: p
+!AB: above quick fix
 
       if (lhydro)          call hydro_after_boundary(f)
       if (lviscosity)      call viscosity_after_boundary(f)
@@ -1023,9 +1028,9 @@ module Equ
       if (lforcing)        call forcing_after_boundary(f)
       if (lpolymer)        call calc_polymer_after_boundary(f)
       if (ltestscalar)     call testscalar_after_boundary(f)
-      if (ltestfield)      call testfield_after_boundary(f)
+      !if (ltestfield)      call testfield_after_boundary(f)
 !AB: quick fix
-      !if (ltestfield)      call testfield_after_boundary(f,p)
+      if (ltestfield)      call testfield_after_boundary(f,p)
       if (ldensity)        call density_after_boundary(f)
       if (lneutraldensity) call neutraldensity_after_boundary(f)
       if (ltestflow)       call calc_ltestflow_nonlin_terms(f,df)  ! should not use df!
@@ -1829,7 +1834,9 @@ module Equ
         df_copy = 0.0
         dt_beta_ts = dt*beta_ts
         call before_boundary_cpu(f_copy)
-        call after_boundary_cpu(f_copy,df_copy)
+        !call after_boundary_cpu(f_copy,df_copy)
+!AB: new quick fix
+        call after_boundary_cpu(f_copy,df_copy,p)
         !if(itsub == 1) then
         !        f_beta = f_copy
         !endif

@@ -19,6 +19,10 @@
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: ltestfield = .true.
+! CPARAM logical, parameter :: ltestfield_x = .true.
+! CPARAM logical, parameter :: ltestfield_z = .false.
+! CPARAM logical, parameter :: ltestfield_xy = .false.
+! CPARAM logical, parameter :: ltestfield_xz  = .false.
 !
 !***************************************************************
 
@@ -629,6 +633,7 @@ module Testfield
 !  in the following block, we have already swapped the 4-6 entries with 7-9
 !  The g95 compiler doesn't like to see an index that is out of bounds,
 !  so prevent this warning by writing i3=3 and i4=4
+!  Apparently, 1,2 really means 2,3, but it seems to work ok.
 !
       if (ldiagnos) then
           call yzsum_mn_name_x(cx*Eipq(:,2,i1)+sx*Eipq(:,2,i2),idiag_alp11x)
@@ -820,6 +825,8 @@ module Testfield
 !  Actions to take before boundary conditions are set.
 !
 !    4-oct-18/axel+nishant: adapted from testflow
+!
+      use General, only: keep_compiler_quiet
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
