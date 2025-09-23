@@ -100,9 +100,10 @@ program remesh
 
   integer(kind=ikind8) :: mmw=mmx*mmy*mmz, mmw_grid=mmx_grid*mmy_grid*mmz_grid, mwcoll=mxcoll*mycoll*mzcoll
 
-  call mpicomm_init
+  call mpicomm_init_min
+
   if (lroot) print*,'Per process memory for arrays f:',mmw_grid*mvar,', ff:',mmw*mvar*mprocs, &
-             ', acoll:',mvar*mwcoll,' (Multiply with number of bytes per element!)'
+                    ', acoll:',mvar*mwcoll,' (Multiply with number of bytes per element!)'
 
   if (divx<=0) then
     if (lroot) print*, 'Error: divx<=0 not allowed, set it to 1!'
@@ -136,18 +137,19 @@ program remesh
     lstop=.true.
   endif
 
-  if (lstop) then
-    call mpifinalize
-    stop
-  endif
-
   if (lroot) then 
     clperi=get_from_nml_str('LPERI',trim(datadir)//'/param2.nml',lvec=.true.)
     if (clperi=='') then
       print*, 'lperi could not be identified!'
-      stop
+      lstop=.true.
     endif
   endif
+
+  if (lstop) then
+    call mpifinalize_min
+    stop
+  endif
+
   call mpibcast(clperi)
   call convert_nml(trim(clperi),lperi)
 !
@@ -168,6 +170,7 @@ program remesh
       rel_dang=get_from_nml_real('REL_DANG',lexist,trim(datadir)//'/param2.nml')
       if (.not.lexist) then
         print*, 'rel_dang could not be identified!'
+        call mpifinalize_min
         stop
       endif
     endif
@@ -233,7 +236,7 @@ program remesh
       call safe_character_assign(dimfile,trim(datadir)//'/dim.dat')
       if (ip<8) print*,'Reading '//trim(dimfile)
       open(1,FILE=dimfile,FORM='formatted')
-      read(1,*) dummy,dummy,dummy,dummy,dummy
+      read(1,*) dummy
       read(1,*) prec
       close(1)
     endif
@@ -244,17 +247,22 @@ program remesh
    layout_src=(/nprocx,nprocy,nprocz/)
    if (any(mod((/mulx*layout_src(1),muly*layout_src(2),mulz*layout_src(3)/),(/divx,divy,divz/)) /= 0)) then
      if (lroot) print*, 'div[xyz] results in non-integer destination proc number!'
-     call mpibarrier
+     call mpifinalize_min
      stop
    endif
 
    layout_dst=(/mulx*layout_src(1)/divx,muly*layout_src(2)/divy,mulz*layout_src(3)/divz/)
    layout_rem=layout_src/(/divx,divy,divz/)    ! proc layout for remesh.x
    nprocs_rem=product(layout_rem)              ! number of processors for remesh.x
-
+   if (lroot) then
+     print*, 'Processor layouts of source     :', layout_src
+     print*, '                     destination:', layout_dst
+     print*, '                     remesh prog:', layout_rem
+     flush(6)
+   endif
    if (nprocs>1 .and. nprocs/=nprocs_rem) then
      if (lroot) print*, 'Inappropriate number of ranks: nprocs/=nprocs_rem', nprocs,nprocs_rem
-     call mpibarrier
+     call mpifinalize_min
      stop
    endif
 !
@@ -357,23 +365,22 @@ yinyang_loop: &
 !
       ip=10
       call chn(srcproc,ch)
-      call safe_character_assign(file,&
-          trim(datadir)//'/proc'//trim(ch)//'/'//trim(varfile))
+      call safe_character_assign(file,trim(datadir)//'/proc'//trim(ch)//'/'//trim(varfile))
       if (lroot.and.ip<8) print*,'Reading '//trim(file)
 !
 ! Check for existence of varfile.
 !
       inquire(FILE=trim(file),EXIST=lexist)
-!print*,'varfile=',icpu,trim(file)
       if (lexist) then
 !
 !  File found for iyy=ncpus, i.e. iproc=ncpus --> a Yin-Yang grid supposed.
 !
         if (lyinyang.and.iyy==ncpus.and..not.lyang) then
           lyang=.true.
-          print*, 'This run is treated as a Yin-Yang one!'
+          if (lroot) print*, 'This run is treated as a Yin-Yang one!'
           if (muly/=mulz) then
             if (lroot) print*, 'muly/=mulz --> nprocz=3*nprocy violated for new layout!'
+            call mpifinalize_min
             stop
           endif
         endif
@@ -393,7 +400,7 @@ yinyang_loop: &
       endif
 
       !print*,'Remeshing processor',cpu+1,'of',ncpus+iyy,'processors'
-      if (lyang) print*, '(Yang grid)'
+      if (lroot.and.lyang) print*, '(Yang grid)'
 !
 !  Read varfile (this is typically var.dat).
 !
@@ -411,7 +418,7 @@ yinyang_loop: &
       lshort=.not.lshear
       if (lshear) then
         read(1,err=991) t_sp,x,y,z,dx,dy,dz,deltay
-        print*,'read deltay=',deltay
+        if (lroot) print*,'read deltay=',deltay
         goto 993
 !
 !  this is the end of the program.
@@ -429,7 +436,7 @@ yinyang_loop: &
         read(1,err=994,end=994) t_sp,x,y,z,dx,dy,dz
         goto 993
 994     continue
-        print*,'lshear,t_sp=',lshear,t_sp
+        if (lroot) print*,'lshear,t_sp=',lshear,t_sp
         !backspace(1)
         !read(1) t_sp !,x,y,z !,dx,dy,dz
       endif
@@ -775,7 +782,7 @@ yinyang_loop: &
           write(91) ff(:,:,:,:,i)
           if (lshear) then
             write(91) t_sp,rrx(:,i),rry(:,i),rrz(:,i),dx,dy,dz,deltay
-            print*,'wrote deltay=',deltay
+            if (lroot) print*,'wrote deltay=',deltay
           else
             write(91) t_sp,rrx(:,i),rry(:,i),rrz(:,i),dx,dy,dz
           endif
@@ -839,7 +846,7 @@ yinyang_loop: &
   call mpibarrier
   call memory_usage
 
-  call mpifinalize
+  call mpifinalize_min
 !
 endprogram remesh
 !***********************************************************************
@@ -899,7 +906,7 @@ endprogram remesh
 !
       if (explog) then
         f(:,:,:,ivar)=exp(f(:,:,:,ivar))
-        if(lroot) print*,'RMWIG: turn f into exp(f), ivar=',ivar
+        if (lroot) print*,'RMWIG: turn f into exp(f), ivar=',ivar
       endif
 !
 !  x, y, and z directions
@@ -912,7 +919,7 @@ endprogram remesh
 !
       if (explog) then
         f(lll1:lll2,mmm1:mmm2,nnn1:nnn2,ivar)=alog(f(lll1:lll2,mmm1:mmm2,nnn1:nnn2,ivar))
-        if(lroot) print*,'RMWIG: turn f back into alog(f), ivar=',ivar
+        if (lroot) print*,'RMWIG: turn f back into alog(f), ivar=',ivar
       endif
 !
     endsubroutine rmwig

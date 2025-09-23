@@ -165,8 +165,7 @@ module Mpicomm
     real, dimension(:), allocatable :: xgrid,ygrid
     integer, dimension(:,:), allocatable :: xind_rng,yind_rng
     character(LEN=5) :: unit_system
-    real :: unit_length, unit_time, unit_BB, unit_T, &
-            renorm_UU, renorm_t, renorm_L
+    real :: unit_length, unit_time, unit_BB, unit_T, renorm_UU, renorm_t, renorm_L
     real, dimension(mx,2) :: xweights
     real, dimension(my,2) :: yweights
     integer, dimension(mx) :: xinds
@@ -179,6 +178,22 @@ module Mpicomm
 !
   contains
 !
+!***********************************************************************
+    subroutine mpicomm_init_min
+!
+! Minimal initialization: size and rank w.r.t. MPI_COMM_WORLD, and derived communicators.
+!
+!  22-Sep-25/MR: coded
+!
+      call MPI_INIT(mpierr)
+      call MPI_COMM_SIZE(MPI_COMM_WORLD, nprocs, mpierr)
+      call MPI_COMM_RANK(MPI_COMM_WORLD, iproc, mpierr)
+      call MPI_COMM_DUP(MPI_COMM_WORLD,MPI_COMM_PENCIL,mpierr)
+      call MPI_COMM_DUP(MPI_COMM_PENCIL,MPI_COMM_GRID,mpierr)
+
+      lroot = (iproc==root)
+
+    endsubroutine mpicomm_init_min
 !***********************************************************************
     subroutine mpicomm_init
 !
@@ -5335,6 +5350,17 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       call MPI_BARRIER(ioptest(comm,MPI_COMM_PENCIL), mpierr)
 !
     endsubroutine mpibarrier
+!***********************************************************************
+    subroutine mpifinalize_min
+!
+!  Minimal finalizing.
+!
+!  22-Sep-25/MR: coded
+!
+      call MPI_BARRIER(MPI_COMM_WORLD, mpierr)
+      call MPI_FINALIZE(mpierr)
+
+    endsubroutine mpifinalize_min
 !***********************************************************************
     subroutine mpifinalize
 !
