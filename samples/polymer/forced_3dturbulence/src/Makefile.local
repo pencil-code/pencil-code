@@ -3,7 +3,7 @@
 ### Included by `Makefile'
 ###
 
-MPICOMM   = nompicomm
+MPICOMM   = mpicomm
 
 HYDRO     =   hydro
 POLYMER   =   polymer
@@ -14,4 +14,6 @@ PSCALAR   = nopscalar
 VISCOSITY =   viscosity
 FORCING   =   forcing
 SHEAR     = noshear
+GPU = gpu_astaroth
+MULTITHREADING = openmp
 

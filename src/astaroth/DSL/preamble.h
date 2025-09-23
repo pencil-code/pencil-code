@@ -215,7 +215,7 @@ const real AC_ascale__mod__cdata = 0.0
 #define AC_lread_oldsnap AC_lread_oldsnap__mod__cdata
 
 #include "../stdlib/bc.h"
-#include "../bcs/funcs.h"
+#include "../bcs/funcs_full.h"
 #include "../bcs/funcs_overload.h"
 #include "../hydro/before_boundary.h"
 

@@ -24,3 +24,4 @@ GRAVITY   =   gravity_r
 FORCING   = noforcing
 SHEAR     = noshear
 TIMEAVG   =   timeavg
+GPU = gpu_astaroth
