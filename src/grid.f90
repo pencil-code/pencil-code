@@ -127,9 +127,9 @@ module Grid
 !  Not strictly needed but give a slightly
 !  performance boost on equidistant cartesian
 !
-      dx1_scalar = 1./dx
-      dy1_scalar = 1./dy
-      dz1_scalar = 1./dz
+      if(dx /= 0.) dx1_scalar = 1./dx
+      if(dy /= 0.) dy1_scalar = 1./dy
+      if(dz /= 0.) dz1_scalar = 1./dz
 
       dx2_scalar = dx1_scalar*dx1_scalar
       dy2_scalar = dy1_scalar*dy1_scalar

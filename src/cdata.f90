@@ -76,7 +76,7 @@ module Cdata
   real, dimension (mz) :: z,dz_1,dz2,dz_tilde,zprim,dVol_z,dVol1_z
   real, dimension (mz) :: dAyz_z, dAxz_z
   real :: dx,dy,dz,dxmin,dxmax
-  real :: dx1_scalar,dy1_scalar,dz1_scalar
+  real :: dx1_scalar=0.,dy1_scalar=0.,dz1_scalar=0.
   real :: dx2_scalar,dy2_scalar,dz2_scalar
   real :: dx4_scalar,dy4_scalar,dz4_scalar
   real :: dx6_scalar,dy6_scalar,dz6_scalar
