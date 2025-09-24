@@ -1,0 +1,24 @@
+!                              -*-f90-*-     (for emacs)
+!
+! Initialisation parameters for forced turbulence
+!
+&init_pars
+  cvsid="28b85393a"
+/
+&eos_init_pars
+  gamma=1., cs0=3.
+/
+&hydro_init_pars
+/
+&density_init_pars
+/
+&magnetic_init_pars
+  initaa='gaussian-noise', amplaa=1e-8
+/
+&testfield_init_pars
+  luxb_as_aux=T
+/
+&shear_init_pars
+  Sshear=-.05
+/
+

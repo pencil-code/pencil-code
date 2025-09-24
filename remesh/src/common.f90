@@ -13,18 +13,18 @@ module Common
 
   integer, parameter :: mprocs=mulz*muly*mulx
   
-  integer, parameter :: nnx=remesh_parx*nxcoll/mulx
-  integer, parameter :: nny=remesh_pary*nycoll/muly
-  integer, parameter :: nnz=remesh_parz*nzcoll/mulz
-  integer, parameter :: mmx=nnx+2*nghost
-  integer, parameter :: mmy=nny+2*nghost
-  integer, parameter :: mmz=nnz+2*nghost
-  integer, parameter :: nnx_grid=remesh_parx*nxcoll
-  integer, parameter :: nny_grid=remesh_pary*nycoll
-  integer, parameter :: nnz_grid=remesh_parz*nzcoll
-  integer, parameter :: mmx_grid=nnx_grid+2*nghost
-  integer, parameter :: mmy_grid=nny_grid+2*nghost
-  integer, parameter :: mmz_grid=nnz_grid+2*nghost
+  integer(kind=ikind8), parameter :: nnx=remesh_parx*nxcoll/mulx
+  integer(kind=ikind8), parameter :: nny=remesh_pary*nycoll/muly
+  integer(kind=ikind8), parameter :: nnz=remesh_parz*nzcoll/mulz
+  integer(kind=ikind8), parameter :: mmx=nnx+2*nghost
+  integer(kind=ikind8), parameter :: mmy=nny+2*nghost
+  integer(kind=ikind8), parameter :: mmz=nnz+2*nghost
+  integer(kind=ikind8), parameter :: nnx_grid=remesh_parx*nxcoll
+  integer(kind=ikind8), parameter :: nny_grid=remesh_pary*nycoll
+  integer(kind=ikind8), parameter :: nnz_grid=remesh_parz*nzcoll
+  integer(kind=ikind8), parameter :: mmx_grid=nnx_grid+2*nghost
+  integer(kind=ikind8), parameter :: mmy_grid=nny_grid+2*nghost
+  integer(kind=ikind8), parameter :: mmz_grid=nnz_grid+2*nghost
   !
   integer, parameter :: ll1=l1
   integer, parameter :: ll2=nnx_grid+nghost

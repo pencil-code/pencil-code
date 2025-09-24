@@ -9,7 +9,7 @@
 
   public :: update_neighbors, index_to_iproc_comm
 
-  public :: mpicomm_init, initialize_mpicomm, mpifinalize, yyinit
+  public :: mpicomm_init, mpicomm_init_min, initialize_mpicomm, mpifinalize, mpifinalize_min, yyinit
   public :: mpibarrier
   public :: stop_it, stop_it_if_any
   public :: die_gracefully, die_immediately

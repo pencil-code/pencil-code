@@ -97,13 +97,13 @@ end
 #
 #  LINK the necessary files from local src directory
 #
-foreach file ($srcdir/cdata.f90 $srcdir/cparam.f90 $srcdir/syscalls.f90 $srcdir/syscalls_ansi.c $srcdir/messages.f90 $srcdir/mpicomm.f90 $srcdir/mpicomm.h $srcdir/noyinyang.f90 $srcdir/yinyang.h $srcdir/general.f90 $srcdir/general.h $srcdir/pthread.c $srcdir/morton_helper.c $srcdir/headers_c.h $srcdir/scripts)
+foreach file ($srcdir/cdata.f90 $srcdir/cparam.f90 $srcdir/syscalls.f90 $srcdir/syscalls_ansi.c $srcdir/messages.f90 $srcdir/mpicomm.f90 $srcdir/mpicomm.h $srcdir/noyinyang.f90 $srcdir/yinyang.h $srcdir/general.f90 $srcdir/general.h $srcdir/geometrical_types.f90 $srcdir/pthread.c $srcdir/morton_helper.c $srcdir/headers_c.h $srcdir/scripts)
   if (-e $file) then
 echo FILE=$file:t
     if (! -e $file:t) then
       ln -s $file .
     else
-      # echo "$file:t already exists"
+      echo "$file:t already exists"
       set n=`expr $n + 1`
       set existf=$file:t
     endif

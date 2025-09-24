@@ -76,6 +76,10 @@ module Cdata
   real, dimension (mz) :: z,dz_1,dz2,dz_tilde,zprim,dVol_z,dVol1_z
   real, dimension (mz) :: dAyz_z, dAxz_z
   real :: dx,dy,dz,dxmin,dxmax
+  real :: dx1_scalar=0.,dy1_scalar=0.,dz1_scalar=0.
+  real :: dx2_scalar,dy2_scalar,dz2_scalar
+  real :: dx4_scalar,dy4_scalar,dz4_scalar
+  real :: dx6_scalar,dy6_scalar,dz6_scalar
   real, dimension (-nghost:nghost) :: dx2_bound=0., dy2_bound=0., dz2_bound=0.
   real, dimension (nxgrid) :: xgrid, dx1grid, dxtgrid
   real, dimension (nygrid) :: ygrid, dy1grid, dytgrid

@@ -245,7 +245,7 @@ module Particles
       remove_particle_criteria_size, remove_particle_criteria_edtog, &
       lnocollapse_xdir_onecell, lnocollapse_ydir_onecell, &
       lnocollapse_zdir_onecell, qgaussz, r0gaussz, lnp_ap_as_aux,&
-      lpartnucleation
+      lpartnucleation,lcondspec_details
 !
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -411,14 +411,27 @@ module Particles
         iupz = iuup+2
       endif
 !
-!  Register nucleation radius
+!  Register extra slots in the f and p arrays for nucleation purposes
 !
       if (lpartnucleation) then
         call farray_register_auxiliary('nucl_rmin',inucl,communicated=.false.)
         call farray_register_auxiliary('nucl_rate',inucrate,communicated=.false.)
         call farray_register_auxiliary('supersat',isupsat,communicated=.false.)
         call append_npvar('born',iborn)
-     endif
+      endif
+!
+!  Register extra slots in the p-array for more details about the nucleation
+!  and condensation processes
+!
+      if (lcondensing_species .and. lcondspec_details) then
+        call append_npvar('inucl_Se',inucl_Se)
+        call append_npvar('inucl_T',inucl_T)
+        call append_npvar('inucl_mix_frac',inucl_mix_frac)
+        call append_npvar('incol',incol)
+        call append_npvar('iint_Se',iint_Se)
+        call append_npvar('iint_T',iint_T)
+        call append_npvar('iint_mix_frac',iint_mix_frac)
+      endif
 !
 !  Special variable for stiff drag force equations.
 !
@@ -2613,7 +2626,23 @@ module Particles
                                        TTp=exp(TTp)
                                     endif
                                     fp(k,iTp) = TTp
-                                 endif
+                                  endif
+                                  !
+                                  !  Save more data about the conditions surrounding the nucleating particle
+                                  !
+                                  if (lcondensing_species .and. lcondspec_details) then
+                                    fp(k,inucl_Se)=log(f(ii,jj,kk,isupsat))
+                                    if (lparticles_temperature) then
+                                      fp(k,inucl_T)=fp(k,iTp)
+                                    endif
+                                    fp(k,inucl_mix_frac)=f(ii,jj,kk,imixfrac)
+                                    fp(k,incol)=0
+                                    if (lparticles_radius .and. lparticles_number) then
+                                      fp(k,iint_Se)=fp(k,inucl_Se)*part_mass
+                                      fp(k,iint_T)=fp(k,inucl_T)*part_mass
+                                      fp(k,iint_mix_frac)=fp(k,inucl_mix_frac)*part_mass
+                                    endif
+                                  endif                                  
 !
 !  Particles are not allowed to be present in non-existing dimensions.
 !  This would give huge problems with interpolation later.

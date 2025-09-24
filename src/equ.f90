@@ -295,9 +295,7 @@ module Equ
         call timing('pde','before "after_boundary" calls')
 !
         call after_boundary_shared(f,df)
-        if (.not. lgpu) then
-          call after_boundary_cpu(f,df)
-        endif
+        if (.not. lgpu) call after_boundary_cpu(f,df)
 !      endif
 !
       call timing('pde','after "after_boundary" calls')
@@ -306,7 +304,7 @@ module Equ
         if (lrhs_diagnostic_output) then
           !wait in case the last diagnostic tasks are not finished
           call copy_farray_from_GPU(f)
-          if(lode .and. lgpu) then
+          if (lode .and. lgpu) then
                   if (.not. allocated(f_ode_diagnostics)) then
                           allocate(f_ode_diagnostics(max_n_odevars))
                   endif
@@ -611,7 +609,6 @@ module Equ
 !
 !  Parallelization across all helper threads.
 !
-
       call init_reduc_pointers
 !  If doing diagnostics together with the GPU lupdate_courant_dt means to calculate some of the timestep diagnostics
      
@@ -625,7 +622,7 @@ module Equ
         lupdate_courant_dt = lcourant_dt .and. ltimestep_diagnostics
       endif
 
-!$omp parallel if(.not. lsuppress_parallel_reductions) private(p) num_threads(num_helper_threads) &
+!$omp parallel if (.not. lsuppress_parallel_reductions) private(p) num_threads(num_helper_threads) &
 !$omp copyin(t,dxmax_pencil,fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz,phiavg_norm)
 !$    call restore_diagnostic_controls
 
@@ -644,7 +641,7 @@ module Equ
       !$omp do
       do imn=1,nyz
         !Done since with multithreading RHS is not evaluated
-        if(lmultithread .and. lupdate_courant_dt) then
+        if (lmultithread .and. lupdate_courant_dt) then
                 if (idiag_dtdiffus/=0)  maxdiffus    = 0.0
                 maxadvec     = 0.0
                 advec2       = 0.0
@@ -720,7 +717,7 @@ module Equ
       subroutine calc_all_before_boundary_diagnostics(f)
         use Density, only: density_before_boundary_diagnostics
         real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
-        !$omp parallel if(.not. lsuppress_parallel_reductions) num_threads(num_helper_threads)
+        !$omp parallel if (.not. lsuppress_parallel_reductions) num_threads(num_helper_threads)
                 call density_before_boundary_diagnostics(f)
         !$omp end parallel
       endsubroutine calc_all_before_boundary_diagnostics
@@ -989,7 +986,8 @@ module Equ
       real, intent(INOUT), dimension(mx,my,mz,mfarray) :: f
       real, intent(INOUT), dimension(mx,my,mz,mvar)    :: df
 
-      if (ltraining)       call training_after_boundary(f)
+      if (ltraining) call training_after_boundary(f)
+
     endsubroutine after_boundary_shared
 !***********************************************************************
     subroutine after_boundary_cpu(f,df)
@@ -1024,8 +1022,6 @@ module Equ
       if (lpolymer)        call calc_polymer_after_boundary(f)
       if (ltestscalar)     call testscalar_after_boundary(f)
       if (ltestfield)      call testfield_after_boundary(f)
-!AB: quick fix
-      !if (ltestfield)      call testfield_after_boundary(f,p)
       if (ldensity)        call density_after_boundary(f)
       if (lneutraldensity) call neutraldensity_after_boundary(f)
       if (ltestflow)       call calc_ltestflow_nonlin_terms(f,df)  ! should not use df!
@@ -1037,18 +1033,22 @@ module Equ
 !  are not communicated, and in this subroutine also ghost zones are calculated.
 !
       if (lchemistry .and. ldensity) call calc_for_chem_mixture(f)
+
     endsubroutine after_boundary_cpu
 !***********************************************************************
     subroutine prep_rhs
+
       use Special, only: prep_rhs_special
 !
-!  Calculation of changing parameters that could happen in e.g. in after_boundary calls 
+!  Calculation of changing parameters that could happen, e.g. in after_boundary calls 
 !  that we want to happen both on the CPU and GPU should happen here
 !
     if (lspecial) call prep_rhs_special
+
     endsubroutine prep_rhs
 !***********************************************************************
     subroutine timestep_diagnostics
+
       use Diagnostics
 !
 !  Diagnostics showing how close to advective and diffusive time steps we are
@@ -1069,6 +1069,7 @@ module Equ
 !
           call xymax_mn_name_z(maxadvec/cdt,idiag_dtvmaxz,l_dt=.true.)
         endif
+
     endsubroutine timestep_diagnostics
 !***********************************************************************
     subroutine rhs_cpu(f,df,p,mass_per_proc,early_finalize)
@@ -1816,7 +1817,7 @@ module Equ
 
       allocate(f_copy(mx,my,mz,mfarray),f_diff(mx,my,mz,mfarray),df_copy(mx,my,mz,mvar),f_beta(mx,my,mz,mfarray))
 
-      if(itorder /= 1) then
+      if (itorder /= 1) then
           call fatal_error('test_rhs_gpu','Need itorder to be 1!')
       endif
       call copy_farray_from_GPU(f,.true.)
@@ -1830,7 +1831,7 @@ module Equ
         dt_beta_ts = dt*beta_ts
         call before_boundary_cpu(f_copy)
         call after_boundary_cpu(f_copy,df_copy)
-        !if(itsub == 1) then
+        !if (itsub == 1) then
         !        f_beta = f_copy
         !endif
         call boundconds_x(f_copy)

@@ -1004,6 +1004,15 @@ module Particles_coagulation
                     fp(swarm_index1,iap)=((rhopsma+rhopbig)/fp(swarm_index1,inpswarm)/ &
                         four_pi_rhopmat_over_three)**(1.0/3.0)
                     fp(swarm_index2,iap)=-fp(swarm_index2,iap)
+!
+! Update mass-integrated supersaturation, temperature and mixture fraction
+!
+                    if (lcondensing_species .and. lcondspec_details) then
+                      fp(swarm_index1,iint_Se)       = fp(j,iint_Se)       + fp(k,iint_Se)
+                      fp(swarm_index1,iint_T)        = fp(j,iint_T)        + fp(k,iint_T)
+                      fp(swarm_index1,iint_mix_frac) = fp(j,iint_mix_frac) + fp(k,iint_mix_frac)
+                      fp(swarm_index1,incol)         = fp(j,incol)         + fp(k,incol) + 1
+                    endif
                   else
                     fp(swarm_index2,ivpx:ivpz)=(rhopbig*fp(swarm_index2,ivpx:ivpz) + &
                         rhopsma*fp(swarm_index1,ivpx:ivpz))/(rhopsma+rhopbig)
@@ -1011,6 +1020,15 @@ module Particles_coagulation
                     fp(swarm_index2,iap)=((rhopsma+rhopbig)/fp(swarm_index2,inpswarm)/ &
                         four_pi_rhopmat_over_three)**(1.0/3.0)
                     fp(swarm_index1,iap)=-fp(swarm_index1,iap)
+!
+! Update mass-integrated supersaturation, temperature and mixture fraction
+!
+                    if (lcondensing_species .and. lcondspec_details) then
+                      fp(swarm_index2,iint_Se)       = fp(j,iint_Se)       + fp(k,iint_Se)
+                      fp(swarm_index2,iint_T)        = fp(j,iint_T)        + fp(k,iint_T)
+                      fp(swarm_index2,iint_mix_frac) = fp(j,iint_mix_frac) + fp(k,iint_mix_frac)
+                      fp(swarm_index2,incol)         = fp(j,incol)         + fp(k,incol) + 1
+                    endif
                   endif
                 else
 !
@@ -1052,6 +1070,15 @@ module Particles_coagulation
 !
                 vpnew=(fp(j,ivpx:ivpz)*mpj+fp(k,ivpx:ivpz)*mpk)/mpnew
                 fp(swarm_index1,ivpx:ivpz)=vpnew
+!
+! Update mass-integrated supersaturation, temperature and mixture fraction
+!
+                if (lcondensing_species .and. lcondspec_details) then
+                  fp(swarm_index1,iint_Se)       = fp(j,iint_Se)       + fp(k,iint_Se)
+                  fp(swarm_index1,iint_T)        = fp(j,iint_T)        + fp(k,iint_T)
+                  fp(swarm_index1,iint_mix_frac) = fp(j,iint_mix_frac) + fp(k,iint_mix_frac)
+                  fp(swarm_index1,incol)         = fp(j,incol)         + fp(k,incol) + 1
+                endif
               endif
 !
 !11-Feb-20/Xiang-Yu:for the purpose of particle removing scheme, for all cases, not only for "nx=ny".              

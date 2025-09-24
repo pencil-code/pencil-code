@@ -35,6 +35,14 @@ module Mpicomm
 !
   contains
 !***********************************************************************
+    subroutine mpicomm_init_min
+!
+!  22-Sep-25/MR: coded
+!
+      call mpicomm_init
+
+    endsubroutine mpicomm_init_min
+!***********************************************************************
     subroutine mpicomm_init
 !
 !  29-jul-2010/anders: dummy
@@ -1584,6 +1592,10 @@ module Mpicomm
     subroutine mpifinalize
 !
     endsubroutine mpifinalize
+!***********************************************************************
+    subroutine mpifinalize_min
+!
+    endsubroutine mpifinalize_min
 !***********************************************************************
     subroutine mpiabort
 !

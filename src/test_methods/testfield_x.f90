@@ -19,6 +19,10 @@
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: ltestfield = .true.
+! CPARAM logical, parameter :: ltestfield_x = .true.
+! CPARAM logical, parameter :: ltestfield_z = .false.
+! CPARAM logical, parameter :: ltestfield_xy = .false.
+! CPARAM logical, parameter :: ltestfield_xz  = .false.
 !
 !***************************************************************
 
@@ -485,8 +489,6 @@ module Testfield
 !
       if (lcalc_uumeanx) then
         do j=1,3
-          !uufluct(:,j)=p%uu(:,j)-uumx(:,j)
-!AB: quick fix
           uufluct(:,j)=p%uu(:,j)-uumx(l1:l2,j)
         enddo
       else
@@ -629,6 +631,7 @@ module Testfield
 !  in the following block, we have already swapped the 4-6 entries with 7-9
 !  The g95 compiler doesn't like to see an index that is out of bounds,
 !  so prevent this warning by writing i3=3 and i4=4
+!  Apparently, 1,2 really means 2,3, but it seems to work ok.
 !
       if (ldiagnos) then
           call yzsum_mn_name_x(cx*Eipq(:,2,i1)+sx*Eipq(:,2,i2),idiag_alp11x)
@@ -821,13 +824,15 @@ module Testfield
 !
 !    4-oct-18/axel+nishant: adapted from testflow
 !
+      use General, only: keep_compiler_quiet
+!
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       call keep_compiler_quiet(f)
 !
     endsubroutine testfield_before_boundary
 !***********************************************************************
-    subroutine testfield_after_boundary(f,p)
+    subroutine testfield_after_boundary(f)
 !
 !  calculate <uxb>, which is needed when lsoca=.false.
 !
@@ -846,8 +851,8 @@ module Testfield
       integer :: jtest,j,juxb,jjxb
       logical :: headtt_save
       real :: fac
-      type (pencil_case) :: p
-      logical, dimension(npencils) :: lpenc_loc
+      type(pencil_case),dimension(:), allocatable :: p          ! vector as scalar quantities not allocatable
+      logical, dimension(:), allocatable :: lpenc_loc
 !
 !  In this routine we will reset headtt after the first pencil,
 !  so we need to reset it afterwards.
@@ -862,6 +867,7 @@ module Testfield
       uxbtestm=0.
   
       if (.not.lsoca) then
+        allocate(p(1),lpenc_loc(npencils))
         lpenc_loc = .false.; lpenc_loc(i_uu)=.true.
 
         do jtest=1,njtest
@@ -870,9 +876,9 @@ module Testfield
           juxb=iuxbtest+3*(jtest-1)
           do n=n1,n2
             do m=m1,m2
-              call calc_pencils_hydro(f,p,lpenc_loc)
+              call calc_pencils_hydro(f,p(1),lpenc_loc)
               call curl(f,iaxtest,bbtest)
-              call cross_mn(p%uu,bbtest,uxbtest)
+              call cross_mn(p(1)%uu,bbtest,uxbtest)
               if (iuxbtest/=0) f(l1:l2,m,n,juxb:juxb+2)=uxbtest
               uxbtestm(:,:,jtest)=uxbtestm(:,:,jtest)+fac*uxbtest
               headtt=.false.

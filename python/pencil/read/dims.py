@@ -165,14 +165,12 @@ class Dim(object):
             self.nghostx, self.nghosty, self.nghostz = tuple(map(int, lines[2].split()))
             if proc < 0:
                 # Set global parameters.
-                self.nprocx, self.nprocy, self.nprocz, self.iprocz_slowest = tuple(
-                    map(int, lines[3].split())
-                )
+                self.nprocx, self.nprocy, self.nprocz, self.iprocz_slowest = tuple(map(int, lines[3].split()))
                 self.ipx = self.ipy = self.ipz = -1
             else:
                 # Set local parameters to this proc.
-                self.ipx, self.ipy, self.ipz = tuple(map(int, lines[3].split()))
-                self.nprocx = self.nprocy = self.nprocz = self.iprocz_slowest = -1
+                self.ipx, self.ipy, self.ipz, self.iprocz_slowest = tuple(map(int, lines[3].split()))
+                self.nprocx = self.nprocy = self.nprocz = -1
 
             # Add derived quantities to the dim object.
             self.nx = self.mx - (2 * self.nghostx)

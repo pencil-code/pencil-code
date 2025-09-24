@@ -1268,7 +1268,7 @@ module Viscosity
       logical, dimension (npencils) :: lpencil_in
 !
       if (lvisc_simplified .and. lpencil_in(i_visc_heat)) lpencil_in(i_o2)=.true.
-      if(idiag_dtnu/=0) ltimestep_diagnostics=.true.
+      if (idiag_dtnu/=0) ltimestep_diagnostics=.true.
 !
     endsubroutine pencil_interdep_viscosity
 !***********************************************************************
@@ -1665,8 +1665,8 @@ module Viscosity
 !
         gradnu(:,(/1,3/)) = 0.
         if (lspherical_coords.or.lsphere_in_a_box) then
-          gradnu(:,2)=gnu_y(m)/p%r_mn
-        elseif (lcylindrical_coords) then
+          gradnu(:,2)=gnu_y(m)/p%r_mn       !MR: lsphere_in_a_box not really meaningful here as
+        elseif (lcylindrical_coords) then   !    y is still a Cartesian coordinate
           gradnu(:,2)=gnu_y(m)/p%rcyl_mn
         else
           gradnu(:,2)=gnu_y(m)
@@ -2210,7 +2210,7 @@ module Viscosity
               p%fvisc(:,1)=p%fvisc(:,1)+tmp2(:,1)-(d_sld_flux(:,2,2))/x(l1:l2)
               p%fvisc(:,2)=p%fvisc(:,2)+tmp2(:,2)+(d_sld_flux(:,2,1))/x(l1:l2)
               p%fvisc(:,3)=p%fvisc(:,3)+tmp2(:,3)
-            elseif(lspherical_coords) then
+            elseif (lspherical_coords) then
               if (lsld_notensor) then
                 p%fvisc(:,1)=p%fvisc(:,1)+tmp2(:,1)
                 p%fvisc(:,2)=p%fvisc(:,2)+tmp2(:,2)
@@ -2239,7 +2239,7 @@ module Viscosity
               p%fvisc(:,1)=p%fvisc(:,1)+tmp2(:,1)-(d_sld_flux(:,2,2))/x(l1:l2)
               p%fvisc(:,2)=p%fvisc(:,2)+tmp2(:,2)+(d_sld_flux(:,2,1))/x(l1:l2)
               p%fvisc(:,3)=p%fvisc(:,3)+tmp2(:,3)
-            elseif(lspherical_coords) then
+            elseif (lspherical_coords) then
               p%fvisc(:,1)=p%fvisc(:,1)+tmp2(:,1)-(d_sld_flux(:,2,2)+d_sld_flux(:,3,3))/x(l1:l2)
               p%fvisc(:,2)=p%fvisc(:,2)+tmp2(:,2)+(d_sld_flux(:,2,1)-d_sld_flux(:,3,3)*cotth(m))/x(l1:l2)
               p%fvisc(:,3)=p%fvisc(:,3)+tmp2(:,3)+(d_sld_flux(:,3,1)+d_sld_flux(:,3,2)*cotth(m))/x(l1:l2)

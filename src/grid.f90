@@ -49,6 +49,7 @@ module Grid
     module procedure calc_pencils_grid_std
   endinterface calc_pencils_grid
 !
+
   contains
 !***********************************************************************
     !subroutine construct_grid(x,y,z,dx,dy,dz,x00,y00,z00)
@@ -121,6 +122,7 @@ module Grid
       dx = Lx / merge(nxgrid, max(nxgrid-1,1), lperi(1))
       dy = Ly / merge(nygrid, max(nygrid-1,1), (lperi(2).or.lpole(2)))
       dz = Lz / merge(nzgrid, max(nzgrid-1,1), lperi(3))
+
 !
 !  Shift the lower boundary if requested, but only for periodic directions.
 !
@@ -1456,6 +1458,26 @@ module Grid
         call generate_halfgrid(x12,y12,z12)
       endif
 !
+!  Scalar versions of the inverse of dx
+!  Not strictly needed but give a slightly
+!  performance boost on equidistant cartesian
+!
+      dx1_scalar = dx_1(nghost)
+      dy1_scalar = dy_1(nghost)
+      dz1_scalar = dz_1(nghost)
+
+      dx2_scalar = dx1_scalar*dx1_scalar
+      dy2_scalar = dy1_scalar*dy1_scalar
+      dz2_scalar = dz1_scalar*dz1_scalar
+
+      dx4_scalar = dx2_scalar*dx2_scalar
+      dy4_scalar = dy2_scalar*dy2_scalar
+      dz4_scalar = dz2_scalar*dz2_scalar
+
+      dx6_scalar = dx4_scalar*dx2_scalar
+      dy6_scalar = dy4_scalar*dy2_scalar
+      dz6_scalar = dz4_scalar*dz2_scalar
+!
     endsubroutine initialize_grid
 !***********************************************************************
     subroutine coarsegrid_interp(f,ivar1,ivar2)
@@ -2601,9 +2623,21 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
           dline_1(:,2) = rcyl_mn1 * dy_1(m)
           dline_1(:,3) = dz_1(n)
         else if (lcartesian_coords) then
-          dline_1(:,1) = dx_1(l1:l2)
-          dline_1(:,2) = dy_1(m)
-          dline_1(:,3) = dz_1(n)
+          if (lequidist(1)) then 
+                dline_1(:,1) = dx1_scalar
+          else
+                dline_1(:,1) = dx_1(l1:l2)
+          endif
+          if (lequidist(2)) then
+                dline_1(:,2) = dy1_scalar
+          else
+                dline_1(:,2) = dy_1(m)
+          endif
+          if (lequidist(3)) then
+                dline_1(:,3) = dz1_scalar
+          else
+                dline_1(:,3) = dz_1(n)
+          endif
         else if (lpipe_coords) then
           dline_1(:,1) = dx_1(l1:l2)
           dline_1(:,2) = dy_1(m)

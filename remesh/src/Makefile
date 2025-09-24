@@ -264,7 +264,17 @@ include Makefile.inc
 #FC=xlf90
 #FC=mpxlf90 #(Sp[12])
 #FFLAGS=-O5 -qsuffix=f=f90
-
+##
+## Lumi: cray_shasta_c
+##
+#FC=ftn #(uan02*)
+#FSTD_95=-std95 #(uan02*)
+#F90=$(FC) #(uan02*)
+#CC=cc #(uan02*)
+#FFLAGS=-O1 -h pic -Wl,--no-relax #-mcmodel=large #-s integer64 #-march=native   #target-cpu=x86-milan #-fimplicit-none #(uan02*)
+#FFLAGS_DOUBLE=-s real64 #(uan02*)
+#CFLAGS=-DFUNDERSC=1 -O1 #-march=native #(uan02*)
+#
 ### End machine dependent
 
 ifeq ($(REAL_PRECISION),double)
@@ -319,7 +329,7 @@ code:
 	make remesh.x
 #	make remesh.x remesh_ext.x
 
-technical=cparam.o cdata.o common.o messages.o syscalls.o syscalls_ansi.o general.o $(MPICOMM).o noyinyang.o
+technical=cparam.o cdata.o common.o messages.o syscalls.o syscalls_ansi.o general.o $(MPICOMM).o noyinyang.o geometrical_types.o morton_helper.o
 remesh=remesh.o $(technical)
 #remesh_ext=remesh_ext.o $(technical)
 
@@ -340,13 +350,13 @@ cparam.o:    cparam.f90 cparam.local cparam.inc
 cdata.o:     cdata.f90 cparam.o
 common.o:    common.f90 common.local cdata.o cparam.o
 syscalls_ansi.o:  syscalls_ansi.c
-general.o:   general.f90 cdata.o cparam.o syscalls.o
+general.o:   general.f90 cdata.o cparam.o syscalls.o morton_helper.o
 messages.o:  messages.f90 mpicomm.o
 noyinyang.o:  noyinyang.f90 general.o
 #
 #deriv.o:     deriv.f90 cdata.o
 
-syscalls.o: syscalls.f90 syscalls_ansi.o cparam.o
+syscalls.o: syscalls.f90 syscalls_ansi.o cparam.o geometrical_types.o
 	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(ALLOW_ARG_MISMATCH) -o syscalls.o -c syscalls.f90
 $(MPICOMM).o: mpicomm.h $(MPICOMM).f90 noyinyang.o cdata.o
 	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(ALLOW_ARG_MISMATCH) -o $(MPICOMM).o -c $(MPICOMM).f90
