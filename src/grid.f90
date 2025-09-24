@@ -122,26 +122,6 @@ module Grid
       dx = Lx / merge(nxgrid, max(nxgrid-1,1), lperi(1))
       dy = Ly / merge(nygrid, max(nygrid-1,1), (lperi(2).or.lpole(2)))
       dz = Lz / merge(nzgrid, max(nzgrid-1,1), lperi(3))
-!
-!  Scalar versions of the inverse of dx
-!  Not strictly needed but give a slightly
-!  performance boost on equidistant cartesian
-!
-      if(dx /= 0.) dx1_scalar = 1./dx
-      if(dy /= 0.) dy1_scalar = 1./dy
-      if(dz /= 0.) dz1_scalar = 1./dz
-
-      dx2_scalar = dx1_scalar*dx1_scalar
-      dy2_scalar = dy1_scalar*dy1_scalar
-      dz2_scalar = dz1_scalar*dz1_scalar
-
-      dx4_scalar = dx2_scalar*dx2_scalar
-      dy4_scalar = dy2_scalar*dy2_scalar
-      dz4_scalar = dz2_scalar*dz2_scalar
-
-      dx6_scalar = dx4_scalar*dx2_scalar
-      dy6_scalar = dy4_scalar*dy2_scalar
-      dz6_scalar = dz4_scalar*dz2_scalar
 
 !
 !  Shift the lower boundary if requested, but only for periodic directions.
@@ -1477,6 +1457,26 @@ module Grid
         if (lroot) print*,'initialize_grid: Set up half grid x12, y12, z12'
         call generate_halfgrid(x12,y12,z12)
       endif
+!
+!  Scalar versions of the inverse of dx
+!  Not strictly needed but give a slightly
+!  performance boost on equidistant cartesian
+!
+      dx1_scalar = dx_1(nghost)
+      dy1_scalar = dy_1(nghost)
+      dz1_scalar = dz_1(nghost)
+
+      dx2_scalar = dx1_scalar*dx1_scalar
+      dy2_scalar = dy1_scalar*dy1_scalar
+      dz2_scalar = dz1_scalar*dz1_scalar
+
+      dx4_scalar = dx2_scalar*dx2_scalar
+      dy4_scalar = dy2_scalar*dy2_scalar
+      dz4_scalar = dz2_scalar*dz2_scalar
+
+      dx6_scalar = dx4_scalar*dx2_scalar
+      dy6_scalar = dy4_scalar*dy2_scalar
+      dz6_scalar = dz4_scalar*dz2_scalar
 !
     endsubroutine initialize_grid
 !***********************************************************************
