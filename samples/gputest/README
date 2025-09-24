@@ -24,8 +24,6 @@ On Clusters, load appropriate CUDA (for NVIDIA) or HIP (for AMD) and MPI modules
 Set 
 
 GPU            = gpu_astaroth
-GPU_VENDOR     = [nvidia|amd]     # nvidia is default
-MULTITHREADING = openmp
 
 in Makefile.local. At first time, this implies to repeat pc_setupsrc.
 
@@ -159,3 +157,8 @@ brandenb@login1:/cfs/klemming/home/b/brandenb/data/GPU/axel/decay/reconnection/k
 brandenb@login1:/cfs/klemming/home/b/brandenb/data/GPU/axel/decay/reconnection/k600_nu5em7_k4_Pm5_128a> cp ../k600_nu5em7_k4_Pm5/src/astaroth/DSL/local/equations.h src/astaroth/DSL/local/
 brandenb@login1:/cfs/klemming/home/b/brandenb/data/GPU/axel/decay/reconnection/k600_nu5em7_k4_Pm5_128a> ls -l src/astaroth/submodule/acc-runtime/acc/
 
+
+To generate DSL code from the Fortran code:
+--------------------------------------------
+In Makefile.local set TRANSPILATION=on
+And when calling make/pc_build pass GENERATE_DSL_CODE=on
