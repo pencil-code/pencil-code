@@ -13,6 +13,8 @@ export TMPDIR=/opt/tmpdir
 echo $TMPDIR
 #bash
 #pc_build clean -f $PENCIL_HOME/config/compilers/separate/nvidia-fortran.conf TORCHFORT_PATH=/opt/torchfort HDF5_PATH=/opt/hdf5 FFLAGS+="-O0 -g -traceback"
+
+export CUDACXX=/appl/spack/v018/install-tree/gcc-11.3.0/cuda-11.7.0-zucvj4/bin/nvcc
 pc_build -f $PENCIL_HOME/config/compilers/separate/nvidia-fortran.conf TORCHFORT_PATH=/opt/torchfort HDF5_PATH=/opt/hdf5 FFLAGS+="-O0 -g -traceback"
 #cd src/astaroth && make
 #make

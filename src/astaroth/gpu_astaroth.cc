@@ -882,13 +882,28 @@ extern "C" void initGPU()
   //AcResult res = acCheckDeviceAvailability();
 }
 /***********************************************************************************************/
+// used as a flag to check if we need to calcualte the taus & uumean again
 bool called_training = false;
+
+// flags for printing if we are training or infering
+bool calling_train = false;
+bool calling_infer = false;
+
 int randomNumber;
+std::vector<float>val_loss;
+std::vector<float>train_loss;
+std::vector<double>train_time;
+std::vector<double>val_time;
 /***********************************************************************************************/
 extern "C" void torch_infer_c_api(int itstub){	
 #if TRAINING
 	#include "user_constants.h"
-	if (train_counter < 5) return;
+	if(!calling_infer){
+		fprintf(stderr,"Calling infer");
+		fflush(stderr);
+	}
+	calling_infer = true;
+	//if (train_counter < 5) return;
 	if (!called_training){
 		randomNumber = 5;
 		acDeviceSetInput(acGridGetDevice(), AC_ranNum, randomNumber);
@@ -954,9 +969,11 @@ extern "C" void torch_infer_c_api(int itstub){
 	float vloss = MSE();
  	
 	if(itstub == 1){
-		fprintf(stderr, "Validation error is: %.50f\n", vloss);
-		fprintf(stderr, "Validation took %f seconnds\n", (end-start));
-		fflush(stderr);
+		//fprintf(stderr, "Validation error is: %.7f\n", vloss);
+		//fprintf(stderr, "Validation took %f seconnds\n", (end-start));
+		//fflush(stderr);
+		val_time.push_back((end-start));
+		val_loss.push_back(vloss);
 		print_debug();
 	}
 #endif
@@ -967,8 +984,17 @@ extern "C" void torch_train_c_api(AcReal *loss_val) {
 	#include "user_constants.h"
 	#include <stdlib.h>
 
+	if(!calling_train){
+		fprintf(stderr,"Calling training");
+		fflush(stderr);
+	}
+
+	fprintf(stderr,"The value of it: %d", it);
+	fflush(stderr);
+
 	called_training = true;
 
+	calling_train = true;
 
 	MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
 	//printf("The random number on c++ is: %d, rank is: %d\n", randomNumber, my_rank);	
@@ -984,8 +1010,8 @@ extern "C" void torch_train_c_api(AcReal *loss_val) {
 		if(it > 5) randomNumber = rand()%4;
 	}
 
-	fprintf(stderr, "The iteration number on c++ is: %d, ranNum is %d\n", it, randomNumber);	
-	fflush(stderr);
+	//fprintf(stderr, "The iteration number on c++ is: %d, ranNum is %d\n", it, randomNumber);	
+	//fflush(stderr);
 
 	MPI_Bcast(&randomNumber, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
@@ -1035,7 +1061,6 @@ extern "C" void torch_train_c_api(AcReal *loss_val) {
   double start, end;
   
   start = MPI_Wtime();
-  float avgloss = 0;
   
   torch_trainCAPI((int[]){mx,my,mz}, uumean_ptr, TAU_ptr, loss_val, AC_DOUBLE_PRECISION);
   /*
@@ -1045,10 +1070,92 @@ extern "C" void torch_train_c_api(AcReal *loss_val) {
   }
   */
   end = MPI_Wtime();
-  fprintf(stderr,"Time for one time step: %f\n", (end-start));
-  fprintf(stderr,"Loss after training: %.50f\n", *loss_val);
-	fflush(stderr);
+  //fprintf(stderr,"Time for one time step: %f\n", (end-start));
+  //fprintf(stderr,"Loss after training: %.7f\n", *loss_val);
+	//fflush(stderr);
+	train_time.push_back((end-start));
+	train_loss.push_back(*loss_val);
   train_counter++;
+
+	if(it==nt){
+		double total_train_time = 0.0;
+		double total_val_time = 0.0;
+
+		double train_variance = 0.0;
+		double val_variance = 0.0;
+
+		for(int i=0;i<train_time.size();i++){
+			total_train_time += train_time[i];
+		}
+
+		for(int i=0;i<val_time.size();i++){
+			total_val_time += val_time[i];
+		}
+		
+		/*
+		float avg_train_loss = 0.0;
+		float avg_val_loss = 0.0;
+
+		for(int i=0;i<train_loss.size();i++{
+			avg_train_loss += train_loss[i];
+		}
+			
+		avg_train_loss = avg_train_loss / train_loss.size();
+
+		for(int i=0;i<val_loss.size();i++{
+			avg_val_loss += val_loss[i];
+		}
+		
+
+		avg_val_loss = avg_val_loss / val_loss.size();
+
+
+	
+		for(int i=0;i<train_loss.size();i++{
+			train_variance += (train_loss[i] - avg_train_loss) * (train_loss[i] - avg_train_loss);
+		}
+			
+		train_variance = train_variance / train_loss.size();
+
+		for(int i=0;i<val_loss.size();i++{
+			val_variance += (val_loss[i] - avg_val_loss) * (val_loss[i] - avg_val_loss);
+		}
+
+		val_variance = val_variance / val_loss.size();
+		*/
+	
+		fprintf(stderr,"The total time taken for training: %f.7\n", total_train_time);
+		fprintf(stderr,"The average time taken for training: %f.7\n", total_train_time/train_time.size());
+
+		fprintf(stderr,"The total time taken for validation: %f.7\n", total_val_time);
+		fprintf(stderr,"The average time taken for validation: %f.7\n", total_val_time/val_time.size());
+		fflush(stderr);
+
+		
+
+
+		std::ofstream myFile;
+		myFile.open("train_loss.csv");
+
+    myFile << "epoch,train_loss\n";
+
+		for(int i=0;i<train_loss.size();i++){
+			myFile << i << "," << train_loss[i] << "\n";
+		}
+		
+		myFile.close();
+
+		myFile.open("val_loss.csv");
+
+    myFile << "epoch,val_loss\n";
+
+		for(int i=0;i<val_loss.size();i++){
+			myFile << i << "," << val_loss[i] << "\n";
+		}
+
+		myFile.close();
+	}
+
 #endif
 }
 /***********************************************************************************************/
@@ -1133,7 +1240,7 @@ extern "C" void beforeBoundaryGPU(bool lrmv, int isubstep, double t)
 }
 /***********************************************************************************************/
 void print_debug() {
-if(train_counter % 5 !=0) return;
+if(it % 5 !=0) return;
 #if TRAINING
     #include "user_constants.h"
 		counter = it;
@@ -1171,7 +1278,7 @@ if(train_counter % 5 !=0) return;
     for (size_t i = dims.m0.x; i < dims.m1.x; i++) {
         for (size_t j = dims.m0.y; j < dims.m1.y; j++) {
             for (size_t k = dims.m0.z; k < dims.m1.z; k++) {
-                myFile << train_counter << ","
+                myFile << it << ","
                        << mesh.vertex_buffer[tau.xx][DEVICE_VTXBUF_IDX(i, j, k)] << ","
                        << mesh.vertex_buffer[TAU_INFERRED.xx][DEVICE_VTXBUF_IDX(i, j, k)] << ","
                        << mesh.vertex_buffer[tau.yy][DEVICE_VTXBUF_IDX(i, j, k)] << ","
