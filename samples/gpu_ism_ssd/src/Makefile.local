@@ -25,3 +25,4 @@ TIMESTEP = timestep_rkf_lowsto
 POWER        = nopower_spectrum
 REAL_PRECISION = double
 RUNTIME_COMPILATION=on
+TRANSPILATION=on
