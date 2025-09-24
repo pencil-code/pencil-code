@@ -29,6 +29,7 @@
 /MULTITHREADING/ b end
 /GPU_VENDOR/ b end
 /RUNTIME_COMPILATION/ b end
+/TRANSPILATION/ b end
 /FARRAY/ b end
 #s/^ *VISCOSITY *= *noviscosity *$/#undef LVISCOSITY/ 
 t prin
