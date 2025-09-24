@@ -741,7 +741,7 @@ module Particles_radius
       real, dimension(nx) :: total_surface_area, ppsat
       real, dimension(nx) :: rhocond_tot, rhosat, np_total, mfluxcond
       real, dimension(nx) :: tau_phase1, tau_evaporation1, tau_evaporation
-      real :: dapdt, drhocdt, alpha_cond_par,rp
+      real :: dapdt, drhocdt, alpha_cond_par,rp, dmpdt, mp
       integer :: k, ix, ix0, kkk, ichem
 !
       intent(in) :: f, fp
@@ -839,6 +839,7 @@ module Particles_radius
                   endif
                 endif
               elseif (lascalar) then
+                !NILS: It seems to me that for calls to the f-array the x-component should be ix0 - not ix..... 
                 if (ltauascalar) dapdt = G_condensation*f(ix,m,n,iacc)/fp(k,iap)
                 if (lcondensation_rate) dapdt = G_condensation*f(ix,m,n,issat)/fp(k,iap)
                 if (lcondensation_rate .and. lkohler) then
@@ -876,6 +877,24 @@ module Particles_radius
             endif
 !
             dfp(k,iap) = dfp(k,iap)+dapdt
+!
+!  Evolve some variables realted to condensing species
+!
+            if (lcondensing_species .and. lcondspec_details) then
+              if (lparticles_radius .and. lparticles_number) then
+                dmpdt=dapdt*4*pi*fp(k,iap)**2*rhopmat
+                if (dmpdt > 0) then
+                  dfp(k,iint_Se)       = dfp(k,iint_Se)       + log(f(ix0,m,n,isupsat))*dmpdt
+                  dfp(k,iint_T)        = dfp(k,iint_T)        + p%TT(ix)*dmpdt
+                  dfp(k,iint_mix_frac) = dfp(k,iint_mix_frac) + f(ix0,m,n,imixfrac)*dmpdt
+                else
+                  mp=4*pi*fp(k,iap)**3*rhopmat/3.
+                  dfp(k,iint_Se)       = dfp(k,iint_Se)       + fp(k,iint_Se)*dmpdt/mp
+                  dfp(k,iint_T)        = dfp(k,iint_T)        + fp(k,iint_T)*dmpdt/mp
+                  dfp(k,iint_mix_frac) = dfp(k,iint_mix_frac) + fp(k,iint_mix_frac)*dmpdt/mp
+                endif
+              endif
+            endif          
 !
 !  Vapor monomers are added to the gas or removed from the gas.
 !
