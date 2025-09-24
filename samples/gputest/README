@@ -160,5 +160,7 @@ brandenb@login1:/cfs/klemming/home/b/brandenb/data/GPU/axel/decay/reconnection/k
 
 To generate DSL code from the Fortran code:
 --------------------------------------------
+Make sure the fortran-parse submodule is up to date with:
+git submodule update --init --remote
 In Makefile.local set TRANSPILATION=on
 And when calling make/pc_build pass GENERATE_DSL_CODE=on
