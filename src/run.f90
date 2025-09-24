@@ -72,28 +72,28 @@ subroutine helper_loop(f,p)
 !$    if (lhelper_run) call restore_diagnostic_controls
 
 !$    if (lhelper_run) call update_ghosts(f)
-!$    if (lhelper_run .and. lhelperflags(PERF_DIAGS)) then 
+!$    if (lhelper_run .and. lhelperflags(PERF_DIAGS)) then
         !print*,"doing diag"
         call perform_diagnostics(f,p)
-!$    else 
+!$    else
 !$      lhelperflags(PERF_DIAGS) = .false.
 !$    endif
-!$    if (lhelper_run .and. lhelperflags(PERF_WSNAP)) then 
+!$    if (lhelper_run .and. lhelperflags(PERF_WSNAP)) then
         !print*,"doing wsnap"
         call perform_wsnap_ext(f)
-!$    else 
+!$    else
 !$      lhelperflags(PERF_WSNAP) = .false.
 !$    endif
-!$    if (lhelper_run .and. lhelperflags(PERF_WSNAP_DOWN)) then 
+!$    if (lhelper_run .and. lhelperflags(PERF_WSNAP_DOWN)) then
         !print*,"doing down"
         call perform_wsnap_down(f)
-!$    else 
+!$    else
 !$      lhelperflags(PERF_WSNAP_DOWN) = .false.
 !$    endif
-!$    if (lhelper_run .and. lhelperflags(PERF_POWERSNAP)) then 
+!$    if (lhelper_run .and. lhelperflags(PERF_POWERSNAP)) then
 !if (lroot) print*,"doing power", lspec
         call perform_powersnap(f)
-!$    else 
+!$    else
 !$      lhelperflags(PERF_POWERSNAP) = .false.
 !$    endif
 !$    call signal_send(lhelper_perf,.false.)
@@ -132,6 +132,7 @@ subroutine reload(f, lreload_file, lreload_always_file)
     if (lgpu) call copy_farray_from_GPU(f)
 
     if (ldt) then
+      dt0=dt
       dt=0.0
     else
       dtmp=dt
@@ -175,7 +176,7 @@ subroutine gen_output(f)
 !
 ! 5-sep-2024/TP: extracted from timeloop
 !
-    use Equ,             only: write_diagnostics 
+    use Equ,             only: write_diagnostics
     use Snapshot,        only: powersnap, powersnap_prepare, wsnap, wsnap_down, output_form
     use Particles_main,  only: write_snapshot_particles
     use PointMasses,     only: pointmasses_write_snapshot
@@ -290,7 +291,7 @@ subroutine timeloop(f,df,p)
   use Magnetic,        only: rescaling_magnetic
   use Messages,        only: timing, fatal_error_local_collect
   use Mpicomm,         only: mpibcast_logical, mpiwtime, MPI_COMM_WORLD, mpibarrier
-  use Particles_main,  only: particles_rprint_list, particles_initialize_modules, & 
+  use Particles_main,  only: particles_rprint_list, particles_initialize_modules, &
                              particles_load_balance, particles_stochastic
   use Signal_handling, only: emergency_stop
   use Sub,             only: control_file_exists, calc_scl_factor
@@ -1035,7 +1036,7 @@ subroutine run_start() bind(C)
         (.not.lpencil_check.and.lpencil_check_small)) .and. nt>0 ) then
     if (lgpu) then
       call warning('run',"Pencil consistency check not supported on GPUs. You can consider running it with a CPU-only build")
-    else 
+    else
       call pencil_consistency_check(f,df,p)
     endif
   endif
@@ -1051,9 +1052,9 @@ subroutine run_start() bind(C)
 !  Trim 1D-averages for times past the current time.
 !
   call trim_averages
-  
+
   !$ call mpibarrier
-  !$omp parallel 
+  !$omp parallel
   !$    core_ids(omp_get_thread_num()+1) = get_cpu()
   !$omp end parallel
   !$ call mpibarrier
@@ -1472,7 +1473,7 @@ call copy_addr(fbcz_1,p_par(1160)) ! (mcom) (2)
 call copy_addr(fbcx_2,p_par(1161)) ! (mcom) (2)
 call copy_addr(fbcy_2,p_par(1162)) ! (mcom) (2)
 call copy_addr(fbcz_2,p_par(1163)) ! (mcom) (2)
- 
+
 
 call copy_addr(cdtf,p_par(1170))
 
@@ -1527,7 +1528,7 @@ call copy_addr_dble(m_h,p_par(1224))
 call copy_addr_dble(sigmah_,p_par(1225))
 call copy_addr(lcuda_aware_mpi,p_par(1226)) ! bool
 call copy_addr(it,p_par(1227)) ! int
-call copy_addr(nconformal,p_par(1228)) 
+call copy_addr(nconformal,p_par(1228))
 call copy_addr(ifcr,p_par(1233)) ! int
 call copy_addr(iecr,p_par(1234)) ! int
 call copy_addr(ipoly,p_par(1239)) ! int
@@ -1618,7 +1619,7 @@ call string_to_enum(enum_bcz12, bcz12)
 call copy_addr(enum_bcx12,p_par(1318)) ! int (mcom) (2)
 call copy_addr(enum_bcy12,p_par(1319)) ! int (mcom) (2)
 call copy_addr(enum_bcz12,p_par(1320)) ! int (mcom) (2)
-call copy_addr(r_ref,p_par(1321)) 
+call copy_addr(r_ref,p_par(1321))
 call copy_addr(dxmin,p_par(1322))
 call copy_addr(dt_incr,p_par(1323))
 call copy_addr(lfractional_tstep_advance,p_par(1324)) ! bool

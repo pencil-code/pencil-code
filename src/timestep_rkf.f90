@@ -42,6 +42,7 @@ module Timestep
         endif
       endif
       lcourant_dt=.false.
+      dt0 = 0.
 !
       if (eps_rkf0/=0.) eps_rkf=eps_rkf0
 !

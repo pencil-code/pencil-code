@@ -135,6 +135,7 @@ module Timestep
         if(.not. allocated(f1)) allocate(f1(mx,my,mz,mfarray))
         if (ldt.and..not. allocated(errdf)) allocate(errdf(nx,ny,nz,mvar))
       endif
+      dt0=0.
 
 !
       num_substeps = itter
