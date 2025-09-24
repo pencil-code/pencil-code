@@ -23,6 +23,7 @@ GHOSTFOLD          = noghostfold
 GPU                = nogpu
 RUNTIME_COMPILATION = on
 TRANSPILATION       = off
+GENERATE_DSL_CODE   = off
 GRID               =   grid
 GSL                = nogsl
 IMPLICIT_DIFFUSION = noimplicit_diffusion
@@ -3092,7 +3093,7 @@ libPC.so: run.o | $(SPECIAL_DEPS) $(LIBGPU)
 #
 #$(LIBGPU): $(GPU_DEPS)
 $(LIBGPU): $(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/Makefile.vendor
-	cd astaroth && make MPICOMM=$(MPICOMM) RUNTIME_COMPILATION=$(RUNTIME_COMPILATION) TRAINING=$(TRAINING) TRANSPILATION=$(TRANSPILATION)
+	cd astaroth && make MPICOMM=$(MPICOMM) RUNTIME_COMPILATION=$(RUNTIME_COMPILATION) TRAINING=$(TRAINING) TRANSPILATION=$(TRANSPILATION) GENERATE_DSL_CODE=$(GENERATE_DSL_CODE)
 #
 special_preps:
 ifeq ($(USE_SPECIAL_DISPATCHER),no)
