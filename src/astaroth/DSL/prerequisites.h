@@ -89,6 +89,8 @@ global output real AC_maximum_error
 
 output real AC_dt1_max
 global output  real AC_Arms
+const int AC_xbot__mod__equationofstate=1
+const int AC_xtop__mod__equationofstate=nx
 
 #ifdef LDENSITY
   #define LNRHO RHO
