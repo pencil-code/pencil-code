@@ -2009,28 +2009,15 @@ module Interstellar
       integer :: i
 !
       cool=0.0
-      !TP: If we don't do this reformulation we get at worse a 10x slowdown on the GPU!!
-      !    Would be better if we did not have to manually unroll the loop but at the moment
-      !    Have it unrolled here to remember that it is important
-      
-      if (lgpu .and. ncool == 10) then
-            !TODO: test does do loop give same performance as unrolled loop
-            !do i=1,ncool
-            !   cool = cool + merge(1,0,lncoolT(i)  <= lnTT .and. lnTT < lncoolT(i+1)) *(lncoolH(i)+lnrho+lnTT*coolB(i))
-            !enddo
+      if (lgpu) then
+            !TP: If we don't do this reformulation for the GPU we get at worse a 10x slowdown on the GPU!!                    
             !We use the fact that lnTT is only in a single interval so that we can first sum up the exponents (only one has non-zero
             !influence) and then calculate only a single exponential
             !The merge operation is used instead of branching since branching on GPUs is inefficient
-            cool=cool+merge(1,0,lncoolT(1)  <= lnTT .and. lnTT < lncoolT(1+1)) *(lncoolH(1)+lnrho+lnTT*coolB(1))
-            cool=cool+merge(1,0,lncoolT(2)  <= lnTT .and. lnTT < lncoolT(2+1)) *(lncoolH(2)+lnrho+lnTT*coolB(2))
-            cool=cool+merge(1,0,lncoolT(3)  <= lnTT .and. lnTT < lncoolT(3+1)) *(lncoolH(3)+lnrho+lnTT*coolB(3))
-            cool=cool+merge(1,0,lncoolT(4)  <= lnTT .and. lnTT < lncoolT(4+1)) *(lncoolH(4)+lnrho+lnTT*coolB(4))
-            cool=cool+merge(1,0,lncoolT(5)  <= lnTT .and. lnTT < lncoolT(5+1)) *(lncoolH(5)+lnrho+lnTT*coolB(5))
-            cool=cool+merge(1,0,lncoolT(6)  <= lnTT .and. lnTT < lncoolT(6+1)) *(lncoolH(6)+lnrho+lnTT*coolB(6))
-            cool=cool+merge(1,0,lncoolT(7)  <= lnTT .and. lnTT < lncoolT(7+1)) *(lncoolH(7)+lnrho+lnTT*coolB(7))
-            cool=cool+merge(1,0,lncoolT(8)  <= lnTT .and. lnTT < lncoolT(8+1)) *(lncoolH(8)+lnrho+lnTT*coolB(8))
-            cool=cool+merge(1,0,lncoolT(9)  <= lnTT .and. lnTT < lncoolT(9+1)) *(lncoolH(9)+lnrho+lnTT*coolB(9))
-            cool=cool+merge(1,0,lncoolT(10) <= lnTT .and. lnTT < lncoolT(10+1))*(lncoolH(10)+lnrho+lnTT*coolB(10))
+            cool = 0.0
+            do i=1,ncool
+               cool = cool + merge(1,0,lncoolT(i)  <= lnTT .and. lnTT < lncoolT(i+1)) *(lncoolH(i)+lnrho+lnTT*coolB(i))
+            enddo
             cool = exp(cool)
       else
         do i=1,ncool
