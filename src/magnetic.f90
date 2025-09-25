@@ -186,6 +186,7 @@ module Magnetic
   real :: nfact_aa=4.
   real :: r_inner=0., r_outer=0.
   real :: eta_tdep_loverride_ee=0.
+  real :: r_dip=1 , epsi_dip=0.1, angle_dip=0.
   integer, target :: va2power_jxb = 5
   integer :: nbvec, nbvecmax=nx*ny*nz/4, iua=0, iLam=0, idiva=0
   integer :: N_modes_aa=1, naareset
@@ -296,7 +297,7 @@ module Magnetic
       lcoulomb, lcoulomb_apply, learly_set_el_pencil, &
       qexp_aa, nfact_aa, lfactors_aa, lvacuum, l2d_aa, &
       loverride_ee_decide, eta_tdep_loverride_ee, z0_gaussian, width_gaussian, &
-      lnorm_aa_kk, lohm_evolve, lhubble_magnetic
+      lnorm_aa_kk, lohm_evolve, lhubble_magnetic,r_dip, epsi_dip, angle_dip
 !
 ! Run parameters
 !
@@ -442,7 +443,7 @@ module Magnetic
       loverride_ee_decide, eta_tdep_loverride_ee, loverride_ee2, lignore_1rho_in_Lorentz, &
       lbext_moving_layer, zbot_moving_layer, ztop_moving_layer, speed_moving_layer, edge_moving_layer, &
       lno_eta_tdep, luse_scale_factor_in_sigma, ell_jj, tau_jj, lhubble_magnetic, &
-      scl_uxb_in_ohm, eta_tdep_ascale_power
+      scl_uxb_in_ohm, eta_tdep_ascale_power,r_dip, epsi_dip, angle_dip
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -2426,6 +2427,8 @@ module Magnetic
              f(l1:l2,m,n,iaz)=amplaa(j)*sin(y(m))*(xyz0(1)/x(l1:l2))**2.
           enddo; enddo
         case ('dipole_general'); call dipole(f,iax,amplaa(j),r_inner,r_outer)
+        case ('dipoleA'); call dipoleA(f,iax,amplaa(j),r_dip,angle_dip)
+        case ('dipoleB'); call dipoleB(f,iax,amplaa(j),epsi_dip,angle_dip)
         case ('switchback'); call switchback(f,iax,amplaa(j),amplaa2(j),r_inner,r_outer)
         case ('dipole_tor'); call dipole_tor(f,iax,amplaa(j))    !,ladd=.true.)
         case ('linear-zx')

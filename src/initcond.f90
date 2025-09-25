@@ -66,6 +66,7 @@ module Initcond
   public :: strange,phi_siny_over_r2
   public :: ferriere_uniform_x, ferriere_uniform_y
   public :: rotblob, rotblob_yz, pre_stellar_cloud, dipole, dipole_tor, switchback
+  public :: dipoleA, dipoleB
   public :: read_outside_scal_array, read_outside_vec_array
 !
   interface posnoise            ! Overload the `posnoise' function
@@ -7513,6 +7514,63 @@ module Initcond
       endif
 !
     endsubroutine dipole
+!***********************************************************************
+    subroutine dipoleA(f,ix,amp,r,angle)
+!
+!  initial vector potential for dipole A
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: ix
+      real :: amp, rr, r, angle
+!
+      integer :: l,m,n
+!
+      if (lcartesian_coords) then
+        do n=n1,n2
+        do m=m1,m2
+        do l=l1,l2
+          rr=sqrt(x(l)**2+y(m)**2+z(n)**2)
+          if (rr<=r) then
+            f(l,m,n,ix)=f(l,m,n,ix) -(amp*y(m)*cos(angle))
+            f(l,m,n,ix+1)=f(l,m,n,ix+1)+(amp*(x(l)*cos(angle)-z(n)*sin(angle)))
+            f(l,m,n,ix+2)=f(l,m,n,ix+2)+(amp*y(m)*sin(angle))
+          else
+            f(l,m,n,ix)=f(l,m,n,ix)-(amp*y(m)*cos(angle))/(rr)**3
+            f(l,m,n,ix+1)=f(l,m,n,ix+1)+(amp*(x(l)*cos(angle)-z(n)*sin(angle)))/(rr)**3
+            f(l,m,n,ix+2)=f(l,m,n,ix+2)+(amp*y(m)*sin(angle))/(rr)**3
+          endif
+        enddo
+        enddo
+        enddo
+      endif
+!
+    endsubroutine dipoleA
+!
+!***********************************************************************
+    subroutine dipoleB(f,ix,amp,e, angle)
+!
+!  initial vector potential for dipole B
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: ix
+      real :: amp, rr, e, angle
+!
+      integer :: l,m,n
+!
+      if (lcartesian_coords) then
+        do n=n1,n2
+        do m=m1,m2
+        do l=l1,l2
+          rr=sqrt(x(l)**2+y(m)**2+z(n)**2)
+          f(l,m,n,ix)=f(l,m,n,ix)-(amp*y(m)*cos(angle))/(rr+e)**3
+          f(l,m,n,ix+1)=f(l,m,n,ix+1)+(amp*(x(l)*cos(angle)-z(n)*sin(angle)))/(rr+e)**3
+          f(l,m,n,ix+2)=f(l,m,n,ix+2)+(amp*y(m)*sin(angle))/(rr+e)**3
+        enddo
+        enddo
+        enddo
+      endif
+!
+    endsubroutine dipoleB
 !***********************************************************************
     subroutine switchback(f,ix,amp,amp2,r_inner_,r_outer_)
 !
