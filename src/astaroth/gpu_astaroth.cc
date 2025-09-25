@@ -1781,7 +1781,7 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t, int nt_)
   acDeviceSetInput(acGridGetDevice(), AC_t,AcReal(t));
   acDeviceSetInput(acGridGetDevice(), AC_shear_delta_y,deltay);
 		
-  //if (ltest_bcs) testBCs();
+  if (ltest_bcs) testBCs();
   //TP: for autotuning
   afterTimeStepGPU();
   autotune_all_integration_substeps();
@@ -2168,7 +2168,7 @@ void testBCs()
           }
           if (isnan(out_val))
           {
-            acLogFromRootProc(rank,"nan before at %d,%d,%d,%d!\n!",i,j,k,ivar);
+            acLogFromRootProc(rank,"nan before at %d,%d,%d,%s!\n!",i,j,k,acGetFieldName(Field(ivar)));
             acLogFromRootProc(rank,"%.7e\n",(double)out_val);
           }
         }
@@ -2182,7 +2182,7 @@ void testBCs()
   {
   	for (int ivar=0;ivar<mvar;ivar++)
 	{
-    		acLogFromRootProc(0,"ratio of values wrong for field: %s\t %f\n",field_names[ivar],(double)num_of_points_where_different[ivar]/num_of_points);
+    		acLogFromRootProc(0,"ratio of values wrong for field: %s\t %f\n",acGetFieldName(Field(ivar)),(double)num_of_points_where_different[ivar]/num_of_points);
 		for(int x = -1; x <= 1; ++x)
 		{
 			for(int y = -1; y <= 1; ++y)
