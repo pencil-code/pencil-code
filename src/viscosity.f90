@@ -768,7 +768,7 @@ module Viscosity
         call fatal_error("initialize_viscosity",'You are using both radial and horizontal '// &
                          'profiles for a viscosity jump. Likely not reasonable' )
 !
-      do i=1,nvisc_max !not assuming Lapacian is listed first
+      do i=1,nvisc_max !not assuming Laplacian is listed first
         if (index(ivisc(i),"shock")/=0.or.index(ivisc(i),"hyper")/=0) then
           continue
         else
@@ -776,6 +776,7 @@ module Viscosity
           exit
         endif
       enddo
+
     endsubroutine initialize_viscosity
 !***********************************************************************
     subroutine initialize_lambda
@@ -3165,14 +3166,12 @@ module Viscosity
     call copy_addr(lvisc_nu_reduce_ddr,p_par(108)) ! bool
     call copy_addr(h_sld_visc,p_par(109))
     call copy_addr(nlf_sld_visc,p_par(110))
-    call string_to_enum(enum_ivisc,ivisc)
-    call copy_addr(enum_ivisc,p_par(111)) ! int (4)
-    call copy_addr(lambda_v0b,p_par(112)) 
-    call copy_addr(lambda_v1b,p_par(113)) 
-    call copy_addr(lambda_v0t,p_par(114)) 
-    call copy_addr(lambda_v1t,p_par(115)) 
-    call copy_addr(nu_y,p_par(116))        ! (my)
-    call copy_addr(gnu_y,p_par(117))       ! (my)
+    call copy_addr(lambda_v0b,p_par(111))
+    call copy_addr(lambda_v1b,p_par(112))
+    call copy_addr(lambda_v0t,p_par(113))
+    call copy_addr(lambda_v1t,p_par(114))
+    call copy_addr(nu_y,p_par(115))        ! (my)
+    call copy_addr(gnu_y,p_par(116))       ! (my)
 
     endsubroutine pushpars2c
 !***********************************************************************

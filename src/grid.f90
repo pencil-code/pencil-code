@@ -2624,19 +2624,19 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
           dline_1(:,3) = dz_1(n)
         else if (lcartesian_coords) then
           if (lequidist(1)) then 
-                dline_1(:,1) = dx1_scalar
+            dline_1(:,1) = dx1_scalar
           else
-                dline_1(:,1) = dx_1(l1:l2)
+            dline_1(:,1) = dx_1(l1:l2)
           endif
           if (lequidist(2)) then
-                dline_1(:,2) = dy1_scalar
+            dline_1(:,2) = dy1_scalar
           else
-                dline_1(:,2) = dy_1(m)
+            dline_1(:,2) = dy_1(m)
           endif
           if (lequidist(3)) then
-                dline_1(:,3) = dz1_scalar
+            dline_1(:,3) = dz1_scalar
           else
-                dline_1(:,3) = dz_1(n)
+            dline_1(:,3) = dz_1(n)
           endif
         else if (lpipe_coords) then
           dline_1(:,1) = dx_1(l1:l2)
