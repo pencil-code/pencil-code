@@ -3780,6 +3780,7 @@ bc_outflow_x(AcBoundary boundary, AC_TOP_BOT topbot,Field f,bool lforce)
 }
 
 
+#if Lhydro_MODULE
 bc_ss_stemp_x(AcBoundary boundary,AC_TOP_BOT topbot)
 {
   suppress_unused_warning(boundary)
@@ -3960,3 +3961,4 @@ bc_sT_z(AcBoundary boundary, AC_TOP_BOT topbot, Field j)
 {
 	if(j == AC_iss__mod__cdata-1) bc_ss_stemp_z(boundary,topbot)
 }
+#endif
