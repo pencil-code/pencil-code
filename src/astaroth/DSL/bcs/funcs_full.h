@@ -1235,20 +1235,6 @@ bc_ss_flux_turb_x(AcBoundary boundary, AC_TOP_BOT topbot)
         SS[1+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]=SS[AC_l2__mod__cdata-1-1][vertexIdx.y][vertexIdx.z]+AC_dx2_bound__mod__cdata[2+NGHOST-1]*dsdx_yz
         SS[2+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]=SS[AC_l2__mod__cdata-2-1][vertexIdx.y][vertexIdx.z]+AC_dx2_bound__mod__cdata[3+NGHOST-1]*dsdx_yz
         SS[3+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]=SS[AC_l2__mod__cdata-3-1][vertexIdx.y][vertexIdx.z]+AC_dx2_bound__mod__cdata[4+NGHOST-1]*dsdx_yz
-	if(vertexIdx.x == 35 && vertexIdx.y == 8 && vertexIdx.z == 8)
-	{
-		print("GPU dx2_bound: %.14e,%.14e,%.14e\n"
-				,AC_dx2_bound__mod__cdata[1+NGHOST]
-				,AC_dx2_bound__mod__cdata[2+NGHOST]
-				,AC_dx2_bound__mod__cdata[3+NGHOST]
-		     )
-		print("GPU dsdx_yz: %.14e\n",dsdx_yz)
-		print("GPU rho_yz: %.14e\n",rho_yz)
-		print("GPU LNRHO: %.14e\n",LNRHO[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z])
-		print("GPU LNRHO +1: %.14e\n",LNRHO[AC_l2__mod__cdata+1-1][vertexIdx.y][vertexIdx.z])
-		print("GPU LNRHO +2: %.14e\n",LNRHO[AC_l2__mod__cdata+2-1][vertexIdx.y][vertexIdx.z])
-		print("GPU LNRHO +3: %.14e\n",LNRHO[AC_l2__mod__cdata+3-1][vertexIdx.y][vertexIdx.z])
-	}
       }
     }
   }
