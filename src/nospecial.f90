@@ -609,7 +609,7 @@ module Special
 !  06-oct-03/tony: coded
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      type (boundary_condition), intent(in) :: bc
+      type (boundary_condition), intent(inout) :: bc
 !
       call keep_compiler_quiet(f)
       bc%done=.true.
