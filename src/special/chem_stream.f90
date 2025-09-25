@@ -435,9 +435,6 @@ module Special
          bc%done=.true.
       endselect
 !
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(bc%bcname)
-!
     endsubroutine special_boundconds
 !***********************************************************************
 !
