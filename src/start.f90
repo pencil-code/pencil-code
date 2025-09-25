@@ -349,8 +349,8 @@ program start
 !  pre-timestepping setup (must be done before need_XXXX can be used, for
 !  example).
 !
-  call initialize_boundcond
   call initialize_modules(f)
+  call initialize_boundcond(f)
   if (lparticles) call particles_initialize_modules(f)
 !
 !  Initial conditions: by default, we put f=0 (ss=lnrho=uu=0, etc).
