@@ -230,9 +230,9 @@ module Boundcond
 !
       call check_consistency_of_lperi('initialize_boundcond')
       if (nghost>0) then
-        call check_boundconds_x(f)
-        call check_boundconds_y(f)
-        call check_boundconds_z(f)
+        if (.not.lperi(1)) call check_boundconds_x(f)
+        if (.not.lperi(2)) call check_boundconds_y(f)
+        if (.not.lperi(3)) call check_boundconds_z(f)
         !perhaps missing: case igpotselfx/=0
       endif
 !
@@ -1836,7 +1836,6 @@ module Boundcond
         !call boundcond_shear(f,ivar1,ivar2)
       else
         do topbot=BOT,TOP
-!
           do j=ivar1,ivar2
 
             cjvar=itoa(j)

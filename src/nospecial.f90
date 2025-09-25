@@ -612,7 +612,7 @@ module Special
       type (boundary_condition), intent(in) :: bc
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(bc)
+      bc%done=.true.
 !
     endsubroutine special_boundconds
 !***********************************************************************
