@@ -12,7 +12,20 @@ fixed_boundary Kernel twopass_solve_final(PC_SUB_STEP_NUMBER step_num)
 			write(F_UU, rk_final(F_UU,step_num) + force)
 		  }
 		}
-		if(AC_irho__mod__cdata != 0 || AC_ilnrho__mod__cdata != 0) write(F_RHO, rk_final(F_RHO,step_num))
+		if(AC_irho__mod__cdata != 0 || AC_ilnrho__mod__cdata != 0) 
+		{
+			updated_rho = rk_final(F_RHO,step_num)
+#if Ldensity_MODULE
+			if(AC_density_floor__mod__density)
+			{
+				if(!AC_ldensity_nolog__mod__cdata)
+				{
+					updated_rho = max(updated_rho,AC_density_floor_log__mod__density)
+				}
+			}
+#endif
+			write(F_RHO, updated_rho)
+		}
 		if(AC_iaa__mod__cdata != 0) write(F_AA, rk_final(F_AA,step_num))
   		if (AC_itt__mod__cdata != 0 || AC_ilntt__mod__cdata != 0)  write( F_TT,  rk_final(F_TT, step_num))
   		if (AC_iss__mod__cdata != 0)  write( F_SS,  rk_final(F_SS, step_num))
