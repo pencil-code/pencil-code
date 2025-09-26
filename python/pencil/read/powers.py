@@ -106,6 +106,8 @@ class Power(object):
 
             if re.match("power.*_xy.dat", file_name):
                 self._read_power2d(power_name, file_name, datadir)
+            elif re.match("power.*_xy.h5", file_name):
+                self._read_power2d_hdf5(power_name, file_name, datadir)
             elif (
                 file_name == "poweruz_x.dat"
                 or file_name == "powerux_x.dat"
@@ -253,6 +255,52 @@ class Power(object):
 
         self.t = time.astype(np.single)
         self.nzpos = nzpos
+        setattr(self, power_name, power_array)
+
+    def _read_power2d_hdf5(self, power_name, file_name, datadir):
+        """
+        Handles HDF5 output of power_xy subroutine.
+        """
+        import h5py
+
+        param = read.param(datadir=datadir)
+
+        with h5py.File(os.path.join(datadir, file_name)) as f:
+            if param.lintegrate_shell:
+                raise NotImplementedError
+            elif param.lintegrate_z:
+                raise NotImplementedError
+            else:
+                self.kx = f['metadata/kx'][()]
+                self.ky = f['metadata/ky'][()]
+                self.z = f['metadata/z'][()]
+                self.nzpos = len(self.z)
+
+                nt = int(f['last'][()])
+                time = np.empty([nt])
+                power_shape = f[f"{nt}"]['data_re'].shape
+                power_re = np.empty([nt, *power_shape])
+                power_im = np.empty_like(power_re)
+
+                def get(key, it):
+                    try:
+                        val = f[f"{it+1}/{key}"][()]
+                    except KeyError as e:
+                        e.add_note(f"iteration = {it+1}")
+                        raise e
+                    return val
+
+                for it in range(nt):
+                    time[it] = get("time", it)
+                    power_re[it] = get("data_re", it)
+                    power_im[it] = get("data_im", it)
+
+        self.t = time
+
+        power_array = power_re + 1j*power_im
+        np.transpose(power_array, axes=[0,1,4,3,2]) #make the axis order [t,vec,kx,ky,z]
+        if power_array.shape[1] == 1:
+            power_array = np.squeeze(power_array, axis=1)
         setattr(self, power_name, power_array)
 
     def _read_power_1d(self, power_name, file_name, datadir):
