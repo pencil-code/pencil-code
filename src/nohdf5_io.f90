@@ -39,6 +39,7 @@ module HDF5_IO
     module procedure output_hdf5_slice_2D
     module procedure output_local_hdf5_3D
     module procedure output_hdf5_3D
+    module procedure output_local_hdf5_4D
     module procedure output_hdf5_4D
   endinterface
 !
@@ -396,6 +397,22 @@ module HDF5_IO
       call keep_compiler_quiet(data)
 !
     endsubroutine output_hdf5_3D
+!***********************************************************************
+    subroutine output_local_hdf5_4D(name, data, dim1, dim2, dim3, dim4)
+!
+      character (len=*), intent(in) :: name
+      integer, intent(in) :: dim1, dim2, dim3, dim4
+      real, dimension (dim1,dim2,dim3,dim4), intent(in) :: data
+!
+      call fatal_error ('output_local_hdf5_4D', 'You can not use HDF5 without setting an HDF5_IO module.')
+      call keep_compiler_quiet(name)
+      call keep_compiler_quiet(data)
+      call keep_compiler_quiet(dim1)
+      call keep_compiler_quiet(dim2)
+      call keep_compiler_quiet(dim3)
+      call keep_compiler_quiet(dim4)
+!
+    endsubroutine output_local_hdf5_4D
 !***********************************************************************
     subroutine output_hdf5_4D(name, data, nv, compress)
 !
