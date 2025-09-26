@@ -1648,6 +1648,8 @@ endsubroutine helper_loop
     call copy_addr(dx1_scalar,p_par(1366))
     call copy_addr(dy1_scalar,p_par(1367))
     call copy_addr(dz1_scalar,p_par(1368))
+    call copy_addr(y0,p_par(1369))
+    call copy_addr(nzgrid_eff,p_par(1370)) ! int
     
     endsubroutine pushpars2c
 !***********************************************************************

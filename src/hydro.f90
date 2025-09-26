@@ -8984,6 +8984,8 @@ module Hydro
     call copy_addr(width_hless_absolute,p_par(121))
     call copy_addr(lcorrect_penc_u,p_par(122)) ! bool
     call copy_addr(lcalc_uuavg,p_par(123)) ! bool
+    call copy_addr(lremove_mean_angmom,p_par(124)) ! bool
+
 
     endsubroutine pushpars2c
 !***********************************************************************
