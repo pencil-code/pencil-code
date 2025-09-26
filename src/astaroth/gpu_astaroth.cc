@@ -1199,6 +1199,7 @@ extern "C" void beforeBoundaryGPU(bool lrmv, int isubstep, double t)
 	load_f_ode();
  	acDeviceSetInput(acGridGetDevice(), AC_lrmv,lrmv);
  	acDeviceSetInput(acGridGetDevice(), AC_t,AcReal(t));
+	acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_impose_floors_and_ceilings),1);
 	acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_before_boundary_steps),1);
 //Some Fields are directly calculated on the halos like yH in ioncalc.
 //Could reformulate the kernels in a way that the bc is simply the same kernel as the normal calculation
@@ -1237,6 +1238,7 @@ extern "C" void beforeBoundaryGPU(bool lrmv, int isubstep, double t)
 #if LNEWTON_COOLING
 	acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_integrate_tau),1);
 #endif
+
 }
 /***********************************************************************************************/
 void print_debug() {
