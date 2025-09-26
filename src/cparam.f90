@@ -277,3 +277,5 @@ module Cparam
   integer, parameter :: mname_half=20
 
   include 'cparam_enum.h'
+
+endmodule Cparam
