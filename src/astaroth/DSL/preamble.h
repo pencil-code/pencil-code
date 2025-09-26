@@ -224,8 +224,6 @@ const real AC_ascale__mod__cdata = 0.0
 #include "../axionSU2back.h"
 #include "../backreact_infl.h"
 
-const in
-
 #if LPOLYMER
 #else
 const real AC_trelax_poly__mod__cdata = 0.0
