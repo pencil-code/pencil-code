@@ -6953,8 +6953,6 @@ iloop:do i=1,size(list2)
 
       src = to_lower_helper(src_in)
       select case(src)
-      case('pde')
-        dst = enum_pde_string
       case('rhos1')
         dst = enum_rhos1_string
       case('glnrhos')
@@ -6963,8 +6961,6 @@ iloop:do i=1,size(list2)
         dst = enum_carreau_string
       case('step')
         dst = enum_step_string
-      case('del2fjv')
-        dst = enum_del2fjv_string
       case('viscose')
         dst = enum_viscose_string
       case('init_uu')
@@ -6972,18 +6968,8 @@ iloop:do i=1,size(list2)
       case('accretor')
         dst = enum_accretor_string
       case('default')
-        dst = enum_default_string
-      case('entered')
-        dst = enum_entered_string
-      case('ux')
-        dst = enum_ux_string
-      case('uy')
-        dst = enum_uy_string
-      case('uz')
-        dst = enum_uz_string
-      case('sld_char')
-        dst = enum_sld_char_string
-      case('nothing')
+        dst = enum_default_string      !end gravity
+      case('nothing')                  !begin hydro
         dst = enum_nothing_string
       case('linear')
         dst = enum_linear_string
@@ -7048,7 +7034,7 @@ iloop:do i=1,size(list2)
       case('uumz_profile')
         dst = enum_uumz_profile_string
       case('omega_profile')
-        dst = enum_omega_profile_string
+        dst = enum_omega_profile_string     !end hydro
       case('zero')
         dst = enum_zero_string
       case('0')
