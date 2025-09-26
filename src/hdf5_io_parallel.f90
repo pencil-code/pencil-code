@@ -39,6 +39,7 @@ module HDF5_IO
     module procedure output_hdf5_slice_2D
     module procedure output_local_hdf5_3D
     module procedure output_hdf5_3D
+    module procedure output_local_hdf5_4D
     module procedure output_hdf5_4D
     module procedure output_hdf5_torus_rect
   endinterface
@@ -1775,6 +1776,48 @@ module HDF5_IO
       call check_error (h5_err, 'close parameter list', name)
 !
     endsubroutine output_hdf5_3D
+!***********************************************************************
+    subroutine output_local_hdf5_4D(name, data, dim1, dim2, dim3, dim4)
+!
+!  Write HDF5 dataset from a local 4D array.
+!
+!  26-Sep-2025/Kishore: adapted from output_local_hdf5_3D
+!
+      character (len=*), intent(in) :: name
+      integer, intent(in) :: dim1, dim2, dim3, dim4
+      real, dimension (dim1,dim2,dim3,dim4), intent(in) :: data
+!
+      integer(kind=8), dimension(4) :: size
+!
+      if (lcollective) call check_error (1, 'local 4D output requires local file', caller='output_local_hdf5_4D')
+      if (.not. lwrite) return
+!
+      size = (/ dim1, dim2, dim3, dim4 /)
+!
+      ! create data space
+      call h5screate_f (H5S_SIMPLE_F, h5_dspace, h5_err)
+      call check_error (h5_err, 'create simple data space', name, caller='output_local_hdf5_3D')
+      call h5sset_extent_simple_f (h5_dspace, 4, size, size, h5_err)
+      call check_error (h5_err, 'set data space extent', name)
+      if (exists_in_hdf5 (name)) then
+        ! open dataset
+        call h5dopen_f (h5_file, trim (name), h5_dset, h5_err)
+        call check_error (h5_err, 'open dataset', name)
+      else
+        ! create dataset
+        call h5dcreate_f (h5_file, trim (name), h5_ntype, h5_dspace, h5_dset, h5_err)
+        call check_error (h5_err, 'create dataset', name)
+      endif
+      ! write dataset
+      call h5dwrite_f (h5_dset, h5_ntype, data, size, h5_err)
+      call check_error (h5_err, 'write data', name)
+      ! close dataset and data space
+      call h5dclose_f (h5_dset, h5_err)
+      call check_error (h5_err, 'close dataset', name)
+      call h5sclose_f (h5_dspace, h5_err)
+      call check_error (h5_err, 'close data space', name)
+!
+    endsubroutine output_local_hdf5_4D
 !***********************************************************************
     subroutine output_hdf5_4D(name, data, nv, compress)
 !
