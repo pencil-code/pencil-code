@@ -1781,7 +1781,7 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t, int nt_)
   acDeviceSetInput(acGridGetDevice(), AC_t,AcReal(t));
   acDeviceSetInput(acGridGetDevice(), AC_shear_delta_y,deltay);
 		
-  if (ltest_bcs) testBCs();
+  //if (ltest_bcs) testBCs();
   //TP: for autotuning
   afterTimeStepGPU();
   autotune_all_integration_substeps();
@@ -2104,9 +2104,9 @@ void testBCs()
   int3 largest_diff_point{};
   //AcReal epsilon = 0.0;
 
-  auto skip_x = nxgrid == 1;
-  auto skip_y = nygrid == 1;
-  auto skip_z = nzgrid == 1;
+  auto skip_x = nxgrid == 1 || acGridTaskGraphHasPeriodicBoundcondsX(rhs);
+  auto skip_y = nygrid == 1 || acGridTaskGraphHasPeriodicBoundcondsY(rhs);
+  auto skip_z = nzgrid == 1 || acGridTaskGraphHasPeriodicBoundcondsZ(rhs);
 
   auto start_x =  skip_x ? NGHOST : 0;
   auto start_y =  skip_y ? NGHOST : 0;
@@ -2142,6 +2142,7 @@ void testBCs()
 	++num_of_points;
         for (int ivar = 0; ivar < mvar; ivar++)
         {
+	  
 	  const int index = (x_idx+1) + 3*((y_idx+1) + 3*(z_idx+1));
           AcReal out_val = mesh_to_copy.vertex_buffer[ivar][DEVICE_VTXBUF_IDX(i, j, k)];
           AcReal true_val = mesh.vertex_buffer[ivar][DEVICE_VTXBUF_IDX(i, j, k)];
