@@ -1829,6 +1829,7 @@ module Equ
 
         df_copy = 0.0
         dt_beta_ts = dt*beta_ts
+        call impose_floors_ceilings(f_copy) 
         call before_boundary_cpu(f_copy)
         call after_boundary_cpu(f_copy,df_copy)
         !if (itsub == 1) then

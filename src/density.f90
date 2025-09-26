@@ -301,6 +301,7 @@ module Density
   integer :: enum_mass_source_profile = 0
   integer :: enum_div_sld_dens = 0
   integer :: enum_borderlnrho = 0
+  integer :: enum_density_floor_profile = 0
 
   contains
 !***********************************************************************
@@ -4233,6 +4234,10 @@ module Density
     call copy_addr(lgamma_is_1,p_par(78)) ! bool
     call copy_addr(reference_state_padded,p_par(79)) ! (mx) (9)
     !call copy_addr(ihless,p_par(80))  !  int
+    call string_to_enum(enum_density_floor_profile,density_floor_profile)
+    call copy_addr(enum_density_floor_profile,p_par(81)) ! int
+    call copy_addr(density_floor,p_par(82))
+    call copy_addr(density_floor_log,p_par(83))
 
     endsubroutine pushpars2c
 !***********************************************************************

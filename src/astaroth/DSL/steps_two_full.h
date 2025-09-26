@@ -9,6 +9,7 @@
 #include "../newton_cooling.h"
 #include "../polymer.h"
 #include "../sld"
+#include "../floors_and_ceilings.h"
 
 input real AC_dt
 input PC_SUB_STEP_NUMBER AC_step_num
@@ -47,6 +48,10 @@ ComputeSteps AC_sor_step(boundconds)
 	selfgravity_sor_step(1)
 }
 
+ComputeSteps AC_impose_floors_and_ceilings(boundconds)
+{
+	impose_floors_and_ceilings()
+}
 ComputeSteps AC_before_boundary_steps(boundconds)
 {
 	get_current_total_mass(AC_lrmv)
