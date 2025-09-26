@@ -11,3 +11,5 @@ echo '#pragma once' > cparam_pencils.inc_c.h
 sed -f scripts/cparam.sed cparam_pencils.inc >> cparam_pencils.inc_c.h
 echo '#pragma once' > cparam.inc_c.h
 sed -f scripts/cparam.sed cparam.inc >> cparam.inc_c.h
+echo '#pragma once' > cparam_enum_c.h
+sed -f scripts/cparam.sed cparam_enum.h >> cparam_enum_c.h

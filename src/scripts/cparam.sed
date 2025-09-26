@@ -20,6 +20,7 @@ s/\([a-zA-Z0-9_]*\) *\*\* *\([^,]*\) *$/cpu_pow(\1,\2)/g
 #s/\([a-zA-Z0-9_]*\) *\*\* *\([(]?[-]?[a-zA-Z0-9_]*[)]?\)/cpu_pow(\1,\2)/
 s/^ *include *.\([a-z]*\.inc\). *$/#if IN_DSL\n  #include "..\/..\/..\/\1_c.h"\n#else\n  #include "\1_c.h"\n#endif/
 s/^ *include *.\([a-z]*\.local\). *$/#if IN_DSL\n  #include "..\/..\/..\/\1_c.h"\n#else\n  #include "\1_c.h"\n#endif/
+s/^ *include *.\([a-z_]*\)\.h. *$/#if IN_DSL\n  #include "..\/..\/..\/\1_c.h"\n#else\n  #include "\1_c.h"\n#endif/
 s/\([^ ]\) *!.*$/\1/
 s/^ *module .*$/\n#if IN_DSL\n #include "..\/..\/..\/headers_c.h"\n#else\n  \n#include <float.h>\n#include <limits.h>\n #include "headers_c.h"\n#endif\n#define y0 y0_\n/ 
 /end *module / d
