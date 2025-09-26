@@ -594,10 +594,11 @@ ifneq ($(GPU),nogpu)
       else
         RUNTIME_COMPILATION = off
       endif
-      ifneq ($(IS_CRAY),)
-        #TP: mpi_gtl_hsa and pe/lib64 is to enable CUDA_AWARE_MPI on LUMI and Dardel
-        override LDFLAGS_LIB += -L /opt/cray/pe/lib64 -lmpi_gtl_hsa
-      endif
+      #TP: better way on LUMI is to module load craype-accel-amd-gfx90a
+      #ifneq ($(IS_CRAY),)
+      #  #TP: mpi_gtl_hsa and pe/lib64 is to enable CUDA_AWARE_MPI on LUMI and Dardel
+      #  override LDFLAGS_LIB += -L /opt/cray/pe/lib64 -lmpi_gtl_hsa
+      #endif
 #      override LDFLAGS += -l:libmt-fortran.a -l:libmt.a -lstdc++
 #      override LDFLAGS_LIB += -L astaroth/scheduler-build/src
   #   the following needed?
