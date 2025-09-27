@@ -1221,8 +1221,10 @@ module Forcing
           if (allocated(fcont_from_file)) deallocate(fcont_from_file)
           allocate(fcont_from_file_read_input(3,nxgrid,nygrid,nzgrid))
           allocate(fcont_from_file(nx,ny,nz,3))
-          
-          ! To create forcing_cont.dat, see function pc.util.write_forcing_cont in the Python module.
+!
+!         To create forcing_cont.dat, see function pc.util.write_forcing_cont
+!         in the Python module.
+!
           if (lroot.and.ip<14) print*,'initialize_forcing: opening forcing_cont.dat'
           open(1,file='forcing_cont.dat',status='old')
           read(1,*) fcont_from_file_read_input
