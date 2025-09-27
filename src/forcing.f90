@@ -143,7 +143,6 @@ module Forcing
   real, dimension (my,n_forcing_cont_max) :: siny,cosy,sinyt,cosyt,embedy,expmk2y2
   real, dimension (mz,n_forcing_cont_max) :: sinz,cosz,sinzt,coszt,embedz
   real, dimension (100,n_forcing_cont_max) :: xi_GP,eta_GP
-  real, allocatable, dimension (:,:,:,:) :: fcont_from_file_read_input
   real, allocatable, dimension (:,:,:,:) :: fcont_from_file
 !
   namelist /forcing_run_pars/ &
@@ -280,9 +279,10 @@ module Forcing
       real :: ang_intv,sthphase,cthphase,costhprime,phprime
 
       integer :: l,m,n,i,ilread,ilm,ckno,ilist,emm,aindex,Legendrel,iangle
-      integer :: ix, iy, iz
-      logical :: lk_dot_dat_exists
+      integer :: ix, iy, iz, iv, ix_local, iy_local, iz_local
+      logical :: lk_dot_dat_exists, llocal_x, llocal_y, llocal_z
       character (len=labellen) :: tmp
+      real, dimension(3) :: fcont_from_file_read_input
 
       cs0=sqrt(cs20)
 !
@@ -1219,7 +1219,6 @@ module Forcing
           siny(:,i)=sin(2.*pi*y/Lxyz(2))
        elseif (iforcing_cont(i)=='from_file') then
           if (allocated(fcont_from_file)) deallocate(fcont_from_file)
-          allocate(fcont_from_file_read_input(3,nxgrid,nygrid,nzgrid))
           allocate(fcont_from_file(nx,ny,nz,3))
 !
 !         To create forcing_cont.dat, see function pc.util.write_forcing_cont
@@ -1227,15 +1226,34 @@ module Forcing
 !
           if (lroot.and.ip<14) print*,'initialize_forcing: opening forcing_cont.dat'
           open(1,file='forcing_cont.dat',status='old')
-          read(1,*) fcont_from_file_read_input
+!
+!         Since having an array of size (nxgrid,nygrid,nzgrid) is a problem in
+!         large simulations, we read forcing_cont.dat in chunks of 3 elements.
+!
+          do iz=1,nzgrid
+            iz_local = iz - ipz*nz
+            llocal_z = (iz_local > 0 .and. iz_local <= nz)
+            do iy=1,nygrid
+              iy_local = iy - ipy*ny
+              llocal_y = (iy_local > 0 .and. iy_local <= ny)
+              do ix=1,nxgrid
+                ix_local = ix - ipx*nx
+                llocal_x = (ix_local > 0 .and. ix_local <= nx)
+!
+!               It would be better to seek rather than read when (ix,iy,iz) is
+!               outside the current processor, but that does not seem possible
+!               with the input format chosen here.
+!
+                read(1,*) fcont_from_file_read_input
+                if (llocal_x .and. llocal_y .and. llocal_z) then
+                  do iv=1,3
+                    fcont_from_file(ix_local,iy_local,iz_local,iv) = fcont_from_file_read_input(iv)
+                  enddo
+                endif
+              enddo
+            enddo
+          enddo
           close(1)
-          fcont_from_file(:,:,:,1) = fcont_from_file_read_input(1,l1-nghost+ipx*nx:l2-nghost+ipx*nx, &
-            m1-nghost+ipy*ny:m2-nghost+ipy*ny,n1-nghost+ipz*nz:n2-nghost+ipz*nz)
-          fcont_from_file(:,:,:,2) = fcont_from_file_read_input(2,l1-nghost+ipx*nx:l2-nghost+ipx*nx, &
-            m1-nghost+ipy*ny:m2-nghost+ipy*ny,n1-nghost+ipz*nz:n2-nghost+ipz*nz)
-          fcont_from_file(:,:,:,3) = fcont_from_file_read_input(3,l1-nghost+ipx*nx:l2-nghost+ipx*nx, &
-            m1-nghost+ipy*ny:m2-nghost+ipy*ny,n1-nghost+ipz*nz:n2-nghost+ipz*nz)
-          deallocate(fcont_from_file_read_input)
         endif
       enddo
       if (n_forcing_cont==0) call warning('forcing','no valid continuous iforcing_cont specified')
