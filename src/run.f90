@@ -51,6 +51,7 @@ module Run_module
 
     integer :: icount, it_last_diagnostic
     real(KIND=rkind8) :: time1, time_last_diagnostic
+    real :: time_doing_diagnostics = 0., time_in_timestep = 0.
 
 contains
 !***********************************************************************
@@ -61,42 +62,44 @@ subroutine helper_loop(f,p)
   use Diagnostics, only:  restore_diagnostic_controls
 !$ use General, only: signal_wait, signal_send
   use Snapshot, only: perform_powersnap, perform_wsnap_ext, perform_wsnap_down
+  use Mpicomm, only: mpiwtime
 !
   real, dimension (mx,my,mz,mfarray) :: f
   type (pencil_case) :: p
+
+  real :: start_time,end_time
 !
 ! 7-feb-24/TP: coded
 !
 !$  do while(lhelper_run)
 !$    call signal_wait(lhelper_perf,lhelper_run)
+      start_time = mpiwtime()
 !$    if (lhelper_run) call restore_diagnostic_controls
 
 !$    if (lhelper_run) call update_ghosts(f)
 !$    if (lhelper_run .and. lhelperflags(PERF_DIAGS)) then
-        !print*,"doing diag"
         call perform_diagnostics(f,p)
 !$    else
 !$      lhelperflags(PERF_DIAGS) = .false.
 !$    endif
 !$    if (lhelper_run .and. lhelperflags(PERF_WSNAP)) then
-        !print*,"doing wsnap"
         call perform_wsnap_ext(f)
 !$    else
 !$      lhelperflags(PERF_WSNAP) = .false.
 !$    endif
 !$    if (lhelper_run .and. lhelperflags(PERF_WSNAP_DOWN)) then
-        !print*,"doing down"
         call perform_wsnap_down(f)
 !$    else
 !$      lhelperflags(PERF_WSNAP_DOWN) = .false.
 !$    endif
 !$    if (lhelper_run .and. lhelperflags(PERF_POWERSNAP)) then
-!if (lroot) print*,"doing power", lspec
         call perform_powersnap(f)
 !$    else
 !$      lhelperflags(PERF_POWERSNAP) = .false.
 !$    endif
 !$    call signal_send(lhelper_perf,.false.)
+      end_time = mpiwtime()
+      time_doing_diagnostics = time_doing_diagnostics + end_time-start_time
 
 !$  enddo
 
@@ -314,7 +317,7 @@ endsubroutine helper_loop
 !
   logical :: lstop=.false., timeover=.false., resubmit=.false., lreload_file, lreload_always_file, &
              lonemorestep=.false.
-  real :: wall_clock_time=0., time_per_step=0.
+  real :: wall_clock_time=0., time_per_step=0., timer_for_timestep
   real(KIND=rkind8) :: time_this_diagnostic
   integer :: it_this_diagnostic
 !
@@ -469,7 +472,9 @@ endsubroutine helper_loop
 !
 !  Time advance.
 !
+    timer_for_timestep = mpiwtime()
     call time_step(f,df,p)
+    time_in_timestep = time_in_timestep + mpiwtime()-timer_for_timestep
 !    tdiagnos=t
 !
 !  If overlapping grids are used to get body-confined grid around the solids
@@ -599,7 +604,7 @@ endsubroutine helper_loop
   use Boundcond,       only: update_ghosts, initialize_boundcond
   use Chemistry,       only: chemistry_clean_up
   use Diagnostics,     only: phiavg_norm, report_undefined_diagnostics, trim_averages,diagnostics_clean_up
-  use Equ,             only: initialize_pencils, debug_imn_arrays, rhs_sum_time
+  use Equ,             only: initialize_pencils, debug_imn_arrays, rhs_sum_time, before_boundary_sum_time
   use FArrayManager,   only: farray_clean_up
   use Farray_alloc
   use General,         only: random_seed_wrapper, touch_file, itoa
@@ -1187,6 +1192,13 @@ endsubroutine helper_loop
                                wall_clock_time/icount/nw/1.0e-6
         write(*,'(A,1pG14.7)') ' Rhs wall clock time/timestep/local meshpoint [microsec] =', &
                                rhs_sum_time/icount/nw/1.0e-6
+        if (lgpu) write(*,'(A,1pG14.7)') ' Before boundary wall clock time/timestep/local meshpoint [microsec] =', &
+                               before_boundary_sum_time/icount/nw/1.0e-6
+        if (lgpu) write(*,'(A,1pG14.7)') ' Diagnostics wall clock time/timestep/local meshpoint [microsec] =', &
+                               time_doing_diagnostics/icount/nw/1.0e-6
+        if (lgpu) write(*,'(A,1pG14.7)') ' Timestep wall clock time/timestep/local meshpoint [microsec] =', &
+                               time_in_timestep/icount/nw/1.0e-6
+
       endif
     endif
   endif

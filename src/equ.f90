@@ -18,6 +18,7 @@ module Equ
   public :: perform_diagnostics
 !$ public :: write_diagnostics_wrapper
 !
+  real, public    :: before_boundary_sum_time=0.
   real, public    :: rhs_sum_time=0.
 
   private
@@ -27,7 +28,6 @@ module Equ
   real, dimension(:,:,:)  , pointer :: p_fnamex, p_fnamey, p_fnamez, p_fnamexy, p_fnamexz
   real, dimension(:,:,:,:), pointer :: p_fnamerz
   integer, dimension(:,:) , pointer :: p_ncountsz
-  integer :: n_iterations=0
   real, allocatable, dimension(:) :: f_ode_diagnostics
 !
   contains
@@ -172,7 +172,7 @@ module Equ
 !
 !  For debugging purposes impose minimum or maximum value on certain variables.
 !
-        call impose_floors_ceilings(f)   !MR: too early, f modifications come below
+        if(.not. lgpu) call impose_floors_ceilings(f)   !MR: too early, f modifications come below
 !
 !  Apply global boundary conditions to particle positions and communicate
 !  migrating particles between the processors.
@@ -188,7 +188,11 @@ module Equ
         if (.not. lgpu) then
           call before_boundary_cpu(f)
         else
+               
+          start_time = mpiwtime()
           call before_boundary_gpu(f,lrmv,itsub,t)
+          end_time = mpiwtime()
+          before_boundary_sum_time = before_boundary_sum_time + end_time-start_time
         endif
 !
 !  Prepare x-ghost zones; required before f-array communication
@@ -320,7 +324,6 @@ module Equ
         endif
         end_time = mpiwtime()
         rhs_sum_time = rhs_sum_time + end_time-start_time
-        n_iterations = n_iterations + 1
       else
         if (ldiagnos.or.l1davgfirst.or.l1dphiavg.or.l2davgfirst) then
                 !if (lroot) print*,'Diagnostic time - CPU=', t
@@ -329,10 +332,6 @@ module Equ
         call rhs_cpu(f,df,p,mass_per_proc,early_finalize)
         end_time = mpiwtime()
         rhs_sum_time = rhs_sum_time + end_time-start_time
-        !if (lroot) print*,"rhs_cpu took:",end_time-start_time
-        !if (lroot) flush(6)
-        !sum_time = sum_time + end_time-start_time
-        !n_iterations = n_iterations + 1
 !
 !  Doing df-related work which cannot be finished inside the main mn-loop.
 !  (At the moment relevant for anelastic and Schur flows.)
