@@ -1,5 +1,5 @@
 !  -*-f90-*-  (for emacs)    vim:set filetype=fortran:  (for vim)
-  public :: register_magnetic, initialize_magnetic,initialize_magnetic_after_special
+  public :: register_magnetic, initialize_magnetic
   public :: read_magnetic_init_pars, write_magnetic_init_pars
   public :: read_magnetic_run_pars,  write_magnetic_run_pars
   public :: output_persistent_magnetic, input_persistent_magnetic

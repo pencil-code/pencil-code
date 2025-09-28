@@ -41,9 +41,6 @@
   public :: set_init_parameters
   public :: input_persistent_special, output_persistent_special
 
-  public :: scale_height_init_z
-  real, dimension(:), allocatable :: scale_height_init_z
-  
   public :: calc_diagnostics_special
   public :: calc_ode_diagnostics_special
   public :: pushpars2c

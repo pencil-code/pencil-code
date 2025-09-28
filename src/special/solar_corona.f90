@@ -172,6 +172,7 @@ module Special
   integer :: alloc_err
   real, dimension(nx) :: diffus_chi, diffus_chi3
   real :: gamma, gamma1, gamma_m1, cp1
+  real, dimension(:), allocatable :: scale_height_init_z
 !
   contains
 !
@@ -198,9 +199,12 @@ module Special
       use EquationOfState, only: get_gamma_etc
       use File_io, only: parallel_file_exists
       use Slices_methods, only: alloc_slice_buffers
+      use SharedVariables, only: get_shared_variable
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real :: cp
+      real, pointer :: B0_ext_z
+      real, dimension(:), pointer :: Bz_stratified
 !
 ! Consistency checks:
 !
@@ -283,8 +287,19 @@ module Special
       endif
 !
       ! Setup atmosphere stratification for later use
-      call setup_profiles()
+      call setup_profiles
 !
+      if (allocated(scale_height_init_z)) then
+        call get_shared_variable('B0_ext_z',B0_ext_z, caller='initialize_special')
+        if (B0_ext_z /= 0.) then
+          call get_shared_variable('Bz_stratified',Bz_stratified)
+!
+! set up z-stratification
+!
+          Bz_stratified = B0_ext_z * exp(-z/scale_height_init_z)
+        endif
+      endif
+
       if (lslope_limited_special) then
         if (lroot) print*,'initialize_special: Set up half grid x12, y12, z12'
         call generate_halfgrid(x12,y12,z12)
@@ -442,7 +457,7 @@ module Special
       real :: var_lnrho, var_lnTT, var_z
       real, dimension(:), allocatable :: prof_lnrho, prof_lnTT, prof_z
       logical :: lread_prof_uu, lread_prof_lnrho, lread_prof_lnTT, lread_prof_deltaT, lread_prof_deltaE, lread_prof_deltarho, &
-          lread_prof_E,lread_prof_deltaH_part, lread_prof_deltaH_vol, lread_prof_scale_height
+                 lread_prof_E,lread_prof_deltaH_part, lread_prof_deltaH_vol, lread_prof_scale_height
 !
       ! file location settings
       character(len=*), parameter :: stratification_dat = 'stratification.dat'
@@ -3018,8 +3033,7 @@ module Special
 !
       case(2)
         if (lradiation) then
-          call get_shared_variable('z_cutoff',&
-             z_cutoff,ierr)
+          call get_shared_variable('z_cutoff',z_cutoff,ierr)
           if (ierr/=0) call fatal_error('calc_heat_cool_RTV:',&
              'failed to get z_cutoff from radiation_ray')
         rtv_cool = rtv_cool &
@@ -4477,12 +4491,11 @@ module Special
         endif
 
       case default
-        print*, "bc_emf_z: topbot should be TOP"
+        print*, "bc_emf_z: topbot should be TOP or BOT"
       endselect
 !
     endsubroutine bc_emf_z
 !***********************************************************************
-
     subroutine generate_halfgrid(x12,y12,z12)
 !
 ! x[l1:l2]+0.5/dx_1[l1:l2]-0.25*dx_tilde[l1:l2]/dx_1[l1:l2]^2
@@ -4512,6 +4525,7 @@ module Special
     endsubroutine generate_halfgrid
 !*******************************************************************************
     subroutine div_diff_flux(f,j,p,div_flux)
+
       intent(in) :: f,j
       intent(out) :: div_flux
 !
@@ -4527,14 +4541,14 @@ module Special
 !
 ! First set the diffusive flux = cmax*(f_R-f_L) at half grid points
 !
-        fim1=0
-        fip1=0
-        fim12_l=0
-        fim12_r=0
-        fip12_l=0
-        fip12_r=0
-        cmax_ip12=0
-        cmax_im12=0
+      fim1=0
+      fip1=0
+      fim12_l=0
+      fim12_r=0
+      fip12_l=0
+      fip12_r=0
+      cmax_ip12=0
+      cmax_im12=0
 !
 !  Generate halfgrid points
 !
@@ -4589,13 +4603,12 @@ module Special
             +(flux_ip12(:,3)-flux_im12(:,3))/(z12(n)-z12(n-1))
         endif
        else
-         call fatal_error('solar_corona:div_diff_flux','Not coded for cylindrical')
+         call not_implemented('solar_corona','div_diff_flux for cylindrical')
        endif
 !
     endsubroutine div_diff_flux
 !*******************************************************************************
-    subroutine slope_lim_lin_interpol(f,j,fim12_l,fim12_r,fip12_l,fip12_r,fim1,&
-                                     fip1,k)
+    subroutine slope_lim_lin_interpol(f,j,fim12_l,fim12_r,fip12_l,fip12_r,fim1,fip1,k)
 !
 ! Reconstruction of a scalar by slope limited linear interpolation
 ! Get values at half grid points l+1/2,m+1/2,n+1/2 depending on case(k)
@@ -4740,6 +4753,7 @@ module Special
     endsubroutine slope_lim_lin_interpol
 !***********************************************************************
     subroutine characteristic_speed(f,p,cmax_im12,cmax_ip12,k)
+
       intent(in) :: f,k
       intent(out) :: cmax_im12,cmax_ip12
 !
@@ -4805,7 +4819,8 @@ module Special
           endif
           cmax_ip12(:,3)=sqrt(b1_tmp**2+b2_tmp**2+b3_tmp**2)/sqrt(rho_tmp)+sqrt(p%cs2)
         endselect
-    endsubroutine characteristic_speed
+
+endsubroutine characteristic_speed
 !***********************************************************************
     real function minmod_alt(a,b)
 !

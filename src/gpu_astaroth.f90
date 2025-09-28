@@ -51,7 +51,7 @@ module GPU
   type(C_PTR) :: pFarr_GPU_in, pFarr_GPU_out
 
   namelist /gpu_run_pars/ &
-        ltest_bcs,lac_sparse_autotuning,lcpu_timestep_on_gpu,lread_all_vars_from_device,lcuda_aware_mpi
+     ltest_bcs,lac_sparse_autotuning,lcpu_timestep_on_gpu,lread_all_vars_from_device,lcuda_aware_mpi
 
 contains
 !***********************************************************************
@@ -163,9 +163,8 @@ contains
       logical :: lrmv
       integer :: lrmv_int
 !
-      
       !TP: pass int since integers are more compatible with C than logical to booleans
-      if(lrmv) then
+      if (lrmv) then
         lrmv_int = 1
       else
         lrmv_int = 0
@@ -175,7 +174,7 @@ contains
     endsubroutine before_boundary_gpu
 !**************************************************************************
     subroutine after_timestep_gpu
-            call after_timestep_gpu_c
+      call after_timestep_gpu_c
     endsubroutine after_timestep_gpu
 !**************************************************************************
     subroutine gpu_set_dt
@@ -322,8 +321,8 @@ contains
     endsubroutine calcQ_gpu
 !**************************************************************************
     subroutine source_function_and_opacity_gpu(inu)
-            integer :: inu
-            call source_function_and_opacity_gpu_c(inu)
+      integer :: inu
+      call source_function_and_opacity_gpu_c(inu)
     endsubroutine
 !**************************************************************************
     subroutine get_gpu_reduced_vars(dst)

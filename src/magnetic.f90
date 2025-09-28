@@ -47,7 +47,6 @@ module Magnetic
                                 read_magn_mf_run_pars,write_magn_mf_run_pars,pc_aasb_const_alpha,meanfield_after_boundary
 
   use Messages, only: fatal_error,inevitably_fatal_error,warning,svn_id,timing,not_implemented,information
-  use Special, only: scale_height_init_z           !Access the scale height profile from solar_corona.f90
 !
   implicit none
 !
@@ -1324,6 +1323,11 @@ module Magnetic
 !
       call put_shared_variable('B_ext2', B_ext2)
 !
+      if (lspecial) then
+        call put_shared_variable('B0_ext_z', B0_ext_z)
+        call put_shared_variable('Bz_stratified', Bz_stratified)
+      endif
+
     endsubroutine register_magnetic
 !***********************************************************************
     subroutine initialize_magnetic(f)
@@ -1339,7 +1343,7 @@ module Magnetic
 !  24-jun-17/MR: moved calculation of clight2_zdep from calc_pencils to initialize
 !  28-feb-18/piyali: moved back the calculation of clight2_zdep to calc_pencils to use va2 pencil
 !
-      use Sub, only: register_report_aux, write_zprof, step, get_smooth_kernel
+      use Sub, only: register_report_aux, write_zprof, step, get_smooth_kernel   !, coeff_ydep
       use Magnetic_meanfield, only: initialize_magn_mf
       use BorderProfiles, only: request_border_driving
       use FArrayManager
@@ -1683,6 +1687,7 @@ module Magnetic
         case ('ydep','eta-ydep')
           if (lroot) print*, 'resistivity: y-dependent'
           lresi_ydep=.true.
+          !call coeff_ydep(ydep_profile, y, eta, eta_ampl, eta_y, geta_y, eta_jump, eta_ywidth, eta_y0, eta_y1, two_step_factor)
           call eta_ydep(ydep_profile, my, y, eta_y, geta_y)
         case ('zdep','eta-zdep')
           if (lroot) print*, 'resistivity: z-dependent'
@@ -2172,35 +2177,16 @@ module Magnetic
 
      iedotx=farray_index_by_name('eedot')
      iedotz=iedotx+2
-
 !
 ! set up z-stratification
 !
-        if (B0_ext_z_H /= 0.) then
-          do iz = 1, mz
-            Bz_stratified(iz) = B0_ext_z * exp(-z(iz) / B0_ext_z_H)
-          enddo
-        else
-          Bz_stratified = 0.0
-        endif
+     if (B0_ext_z_H /= 0. .and. B0_ext_z /= 0.) then
+       Bz_stratified = B0_ext_z * exp(-z/B0_ext_z_H)
+     else
+       Bz_stratified = 0.
+     endif
 
     endsubroutine initialize_magnetic
-!***********************************************************************
-    subroutine initialize_magnetic_after_special
-!
-! 6-jun-25/TP: Introduced to get rid of this initialization out of the rhs
-!
-      if (B0_ext_z /= 0.0) then
-        if (allocated (scale_height_init_z)) then
-! set up z-stratification
-          do iz = 1, mz
-            Bz_stratified(iz) = B0_ext_z * exp(-z(iz) / scale_height_init_z(iz))
-          enddo
-        else
-          call fatal_error('initialize_magnetic_after_special','scale_height_init_z is not allocated')
-        endif
-      endif
-    endsubroutine initialize_magnetic_after_special
 !***********************************************************************
     subroutine init_aa(f)
 !
@@ -4121,9 +4107,7 @@ module Magnetic
 !
 !  Add Bz stratification.
 !
-      if (B0_ext_z /= 0.0) then
-        p%bb(:,3) = p%bb(:,3) + get_B0_ext_z(n)
-      endif
+      if (B0_ext_z /= 0.0) p%bb(:,3) = p%bb(:,3) + Bz_stratified(n)
 !
 !  b2 now (since 18 June 2013) includes B_ext by default.
 !  This can be changed by setting lignore_Bext_in_b2=T
@@ -11490,17 +11474,6 @@ print*,'AXEL2: should not be here (eta) ... '
       endif addBext
 !
     endsubroutine get_bext
-!***********************************************************************
-    real function get_B0_ext_z(pz)
-!
-!  Get the external magnetic field stratification along z.
-!  vpandey: 2.July.2025
-!
-      integer, intent(in) :: pz
-!
-      get_B0_ext_z = Bz_stratified(pz)
-!
-    endfunction get_B0_ext_z
 !***********************************************************************
     real function beltrami_phase()
 

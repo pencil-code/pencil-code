@@ -185,14 +185,13 @@ module Equ
         call before_boundary_shared(f)
         !if (it == 1) call test_rhs_gpu(f,df,p,mass_per_proc,early_finalize,rhs_cpu)
 
-        if (.not. lgpu) then
-          call before_boundary_cpu(f)
-        else
-               
+        if (lgpu) then
           start_time = mpiwtime()
           call before_boundary_gpu(f,lrmv,itsub,t)
           end_time = mpiwtime()
           before_boundary_sum_time = before_boundary_sum_time + end_time-start_time
+        else
+          call before_boundary_cpu(f)
         endif
 !
 !  Prepare x-ghost zones; required before f-array communication
