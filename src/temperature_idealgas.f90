@@ -256,6 +256,7 @@ module Energy
   real :: gamma, gamma1, gamma_m1, cp1
 !
   integer :: enum_borderss = 0
+!
   contains
 !***********************************************************************
     subroutine register_energy
@@ -1744,7 +1745,6 @@ module Energy
       case ('nothing')
       endselect
 !
-!
     endsubroutine set_border_entropy
 !***********************************************************************
     subroutine energy_before_boundary(f)
@@ -3121,6 +3121,7 @@ module Energy
     subroutine pushpars2c(p_par)
 
     use Syscalls, only: copy_addr
+    use General, only: string_to_enum
 
     integer, parameter :: n_pars=100
     integer(KIND=ikind8), dimension(n_pars) :: p_par
@@ -3185,8 +3186,6 @@ module Energy
     call string_to_enum(enum_borderss,borderss)
     call copy_addr(enum_borderss,p_par(58)) ! int
  
-
-
     endsubroutine pushpars2c
 !***********************************************************************
 !********************************************************************
