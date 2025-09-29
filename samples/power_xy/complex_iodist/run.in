@@ -1,0 +1,60 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Convection in vertically stratified atmosphere/solar convection zone
+! Run parameters
+!
+&run_pars
+  cvsid='$Id$',
+  nt=41
+  it1=10
+  isave=200
+  itorder=3
+  dsnap=20.
+  
+  cdtv=0.30, cdt=0.4
+  
+  bcx = 'p','p','p', 'p',    'p'
+  bcy = 'p','p','p', 'p',    'p'
+  bcz = 's','s','a','a2','c1:cT'
+  
+  lpencil_check=T
+  
+  !spectra
+  dspec=0.05
+  xy_spec='uz'
+  lspec_at_tplusdt=T
+/
+&eos_run_pars
+/
+&hydro_run_pars
+  Omega=0.1
+  theta=0.
+  
+!! uncomment the following block to start without artificial switch-on shocks:
+!  dampu = 0.05
+!  tdamp = 8.0
+!  ldamp_fade = T
+!  tfade_start = 2.0
+/
+&density_run_pars
+  cdiffrho=0.
+  lupw_lnrho=T
+/
+&grav_run_pars
+  gravz_profile='const',gravz=-1.
+/
+&entropy_run_pars
+  Luminosity=0., wheat=0.1, cool=15., wcool=0.2,
+  iheatcond='K-profile', hcond0=8.e-3
+  lupw_ss=T
+/
+&viscosity_run_pars
+  ivisc='nu-const'
+  nu=4e-3
+/
+&power_spectrum_run_pars
+  lintegrate_z=F
+  lintegrate_shell=F
+  lcomplex=T
+/
+
