@@ -166,6 +166,9 @@ my %tests = (
                          coronae_heatflux_boris
                          helical-MHDturb_HDF5
                          power_xy/complex
+                         power_xy/complex_iodist
+                         power_xy/complex_lpowerxyhdf5
+                         power_xy/complex_nprocz_2
                          power_xy/integrate_shell
                          power_xy/integrate_shell_z
                          testfield_nonlin_z
