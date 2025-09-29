@@ -255,6 +255,7 @@ module Energy
   real, dimension(nx) :: diffus_chi,diffus_chi3,hcond,cooling
   real :: gamma, gamma1, gamma_m1, cp1
 !
+  integer :: enum_borderss = 0
   contains
 !***********************************************************************
     subroutine register_energy
@@ -3121,7 +3122,7 @@ module Energy
 
     use Syscalls, only: copy_addr
 
-    integer, parameter :: n_pars=60
+    integer, parameter :: n_pars=100
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call copy_addr(chi,p_par(1))
@@ -3175,6 +3176,16 @@ module Energy
     call copy_addr(lviscosity_heat,p_par(49)) ! bool
     call copy_addr(iglobal_hcond,p_par(50)) ! int
     call copy_addr(iglobal_glhc,p_par(51)) ! int
+    call copy_addr(lenergy_slope_limited,p_par(52)) ! bool
+    call copy_addr(ladi_mixed,p_par(53)) ! bool
+    call copy_addr(gamma,p_par(54))
+    call copy_addr(gamma1,p_par(55))
+    call copy_addr(gamma_m1,p_par(56))
+    call copy_addr(gradtt0,p_par(57)) ! real3
+    call string_to_enum(enum_borderss,borderss)
+    call copy_addr(enum_borderss,p_par(58)) ! int
+ 
+
 
     endsubroutine pushpars2c
 !***********************************************************************

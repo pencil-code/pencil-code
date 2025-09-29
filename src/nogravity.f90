@@ -386,6 +386,8 @@ module Gravity
 
     call copy_addr(zgrav,p_par(1))
     call copy_addr(gravz,p_par(2))
+    call copy_addr(z1,p_par(3))
+    call copy_addr(z2,p_par(4))
 
     endsubroutine pushpars2c
 !***********************************************************************

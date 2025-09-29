@@ -607,6 +607,9 @@ module Equ
 !
 !  Parallelization across all helper threads.
 !
+
+      !TP: if equ had an init phase this would fit there better
+      if(idiag_Rmesh /= 0) ltimestep_diagnostics = .true.
       call init_reduc_pointers
 !  If doing diagnostics together with the GPU lupdate_courant_dt means to calculate some of the timestep diagnostics
      
@@ -640,7 +643,7 @@ module Equ
       do imn=1,nyz
         !Done since with multithreading RHS is not evaluated
         if (lmultithread .and. lupdate_courant_dt) then
-                if (idiag_dtdiffus/=0)  maxdiffus    = 0.0
+                if (idiag_dtdiffus/=0 .or. idiag_Rmesh /= 0)  maxdiffus    = 0.0
                 maxadvec     = 0.0
                 advec2       = 0.0
                 advec_cs2    = 0.0
