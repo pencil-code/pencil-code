@@ -6504,4 +6504,234 @@ outer:do ikz=1,nz
 !
   endfunction get_k2_xy
 !***********************************************************************
+  subroutine output_power_complex_hdf5(data, time, filename, kxrange, kyrange, zrange)
+!
+!   File structure (groups and datasets):
+!     metadata:
+!       output_version: (int, int, int)
+!       kx: 1D array
+!       ky: 1D array
+!       z: 1D array
+!     last: int (latest output number)
+!     '1':
+!       data_re: real part of the 4D data array at first output iteration
+!       data_im: imaginary part ...
+!       time: time at first output iteration
+!     '2':
+!       data_re: ... at second output iteration
+!       data_im: ... at second output iteration
+!       time: time at second output iteration
+!     ...
+!
+!   2025-Sep-23/Kishore: coded
+!
+    use General, only: get_range_no, write_by_ranges
+    use File_io, only: file_exists
+    use Hdf5_io, only: create_group_hdf5, exists_in_hdf5, file_close_hdf5, &
+      file_open_hdf5, input_hdf5, output_hdf5
+    use Fourier, only: kx_fft, ky_fft
+!
+    complex, dimension(:,:,:,:), intent(in) :: data
+    real, intent(in) :: time
+    character(len=fnlen), intent(in) :: filename
+    integer, dimension(:,:), intent(in) :: kxrange, kyrange, zrange
+!
+    integer :: iter,pos,latest
+    character(len=fnlen) :: filename_h5, label
+    logical :: lexists
+!
+    if (lroot) then
+!
+      pos = index(filename, '.dat')
+      if (pos > 1) then
+        filename_h5 = filename(1:pos-1)//'.h5'
+      else
+        filename_h5 = filename//'.h5'
+      endif
+!
+      lexists = file_exists(filename_h5)
+      call file_open_hdf5 (filename_h5, truncate=.not.lexists, global=.false.)
+!
+      if (lexists .and. exists_in_hdf5 ('last')) then
+        call input_hdf5 ('last', latest)
+      else
+        latest = 0
+      endif
+      iter = latest+1
+!
+      call file_open_hdf5(filename_h5, truncate=.false., global=.false.)
+!
+      if (.not.exists_in_hdf5('metadata')) then
+        call create_group_hdf5('metadata')
+        call output_elements_by_range(kx_fft, kxrange, 'metadata/kx')
+        call output_elements_by_range(ky_fft, kyrange, 'metadata/ky')
+        call output_elements_by_range(zgrid, zrange, 'metadata/z')
+!
+!       NOTE: Increment output_version if you make any changes to the output format that would require changes to the reading routines. Format is (major, minor, patch).
+!
+        call output_hdf5('metadata/output_version', (/0,0,0/), 3)
+      endif
+!
+      write (label, '(I0)') iter
+      call create_group_hdf5(label)
+!
+      call output_hdf5(trim(label)//'/time', time)
+      call output_hdf5('last', iter)
+    endif
+!
+    call gather_and_output_by_range(real(data), kxrange, kyrange, zrange, trim(label)//'/data_re')
+    call gather_and_output_by_range(aimag(data), kxrange, kyrange, zrange, trim(label)//'/data_im')
+!
+    if (lroot) then
+      call file_close_hdf5
+    endif
+!
+  endsubroutine output_power_complex_hdf5
+!***********************************************************************
+  subroutine output_elements_by_range(k_full, kxrange, label)
+!
+!   2025-Sep-23/Kishore: coded
+!
+    use General, only: get_range_no, write_by_ranges
+    use Hdf5_io, only: output_hdf5
+!
+    integer, dimension(:,:), intent(in) :: kxrange
+    real, dimension(:), intent(in) :: k_full
+    character (len=*), intent(in) :: label
+!
+    logical :: lexit
+    integer :: n, m, i, irang, i1, i2, i3, ierr
+    real, dimension(:), allocatable :: kx
+!
+    n = get_range_no(kxrange, size(k_full))
+!
+    allocate(kx(n), stat=ierr)
+    if (ierr /= 0) call fatal_error ('output_elements_by_range', &
+      'Failed to allocate memory for kx')
+!
+    i=1
+    do irang=1,size(kxrange,2)
+      call unpack_range(kxrange(:,irang),i1,i2,i3,lexit,m)
+      if (lexit) exit
+      kx(i:i+m-1) = k_full(i1:i2:i3)
+      i = i+m
+    enddo
+!
+    call output_hdf5(trim(label), kx, n)
+!
+    deallocate(kx)
+!
+  endsubroutine output_elements_by_range
+!***********************************************************************
+  subroutine gather_and_output_by_range(data, kxrange, kyrange, zrange, label)
+!
+!   Gather data on root, slice it according to {kx,ky,z}range, and output it to a previously opened HDF5 file.
+!
+!   2025-Sep-23/Kishore: coded by modifying output_elements_by_range
+!
+    use General, only: get_range_no, write_by_ranges
+    use Hdf5_io, only: output_hdf5
+    use Mpicomm, only: mpigather
+!
+    integer, dimension(:,:), intent(in) :: kxrange, kyrange, zrange
+    real, dimension(:,:,:,:), intent(in) :: data
+    character (len=*), intent(in) :: label
+!
+!   We use the name nkx to avoid shadowing nz
+!
+    integer :: nkx, nky, nkz, ncomp, ierr
+    logical :: lexit
+    integer :: icomp, irang, i1, i2, i3, jrang, j1, j2, j3, krang, k1, k2, k3
+    integer :: ix, iy, iz, lx, ly, lz
+    real, dimension(:,:,:,:), allocatable :: data_sliced
+    real, dimension(:,:,:), allocatable :: data_full
+!
+    if (size(data,1) /= nx) call fatal_error('gather_and_output_by_range', &
+      'wrong size along x')
+    if (size(data,2) /= ny) call fatal_error('gather_and_output_by_range', &
+      'wrong size along y')
+    if (size(data,3) /= nz) call fatal_error('gather_and_output_by_range', &
+      'wrong size along z')
+!
+!   Since this is a large array, we keep it allocatable.
+!
+    allocate(data_full(nxgrid,nygrid,nzgrid), stat=ierr)
+    if (ierr /= 0) call fatal_error ('gather_and_output_by_range', &
+      'Failed to allocate memory for data_full')
+!
+    nkx = get_range_no(kxrange, nxgrid)
+    nky = get_range_no(kyrange, nygrid)
+    nkz = get_range_no(zrange, nzgrid)
+    ncomp = size(data,4)
+!
+    if (lroot) then
+      allocate(data_sliced(nkx,nky,nkz,ncomp), stat=ierr)
+      if (ierr /= 0) call fatal_error ('gather_and_output_by_range', &
+        'Failed to allocate memory for data_sliced')
+    else
+      allocate(data_sliced(1,1,1,1)) !dummy
+    endif
+!
+    comp: do icomp=1,ncomp
+      call mpigather(data(:,:,:,icomp), data_full)
+!
+      if (lroot) then
+        ix = 1
+        iy = 1
+        iz = 1
+        do irang=1,size(kxrange,2)
+          call unpack_range(kxrange(:,irang),i1,i2,i3,lexit,lx)
+          if (lexit) exit
+          do jrang=1,size(kyrange,2)
+            call unpack_range(kyrange(:,jrang),j1,j2,j3,lexit,ly)
+            if (lexit) exit
+            do krang=1,size(zrange,2)
+              call unpack_range(zrange(:,krang),k1,k2,k3,lexit,lz)
+              if (lexit) exit
+!
+              data_sliced(ix:ix+lx-1, iy:iy+ly-1, iz:iz+lz-1, icomp) = data_full(i1:i2:i3, j1:j2:j3, k1:k2:k3)
+              ix = ix+lx
+              iy = iy+lz
+              iz = iz+lz
+!
+            enddo
+          enddo
+        enddo
+      endif
+    enddo comp
+!
+    if (lroot) call output_hdf5(trim(label), data_sliced, nkx, nky, nkz, ncomp)
+!
+    deallocate(data_sliced)
+    deallocate(data_full)
+!
+  endsubroutine gather_and_output_by_range
+!***********************************************************************
+  subroutine unpack_range(rang, i1, i2, i3, lempty_range, n)
+!
+!   Unpack the array rang into i1,i2,i3 and optionally calculate the number of
+!   elements that would be selected when using i1:i2:i3 to slice an array.
+!
+!   26-sep-2025/Kishore: coded
+!
+    use General, only: get_range_no
+!
+    integer, dimension(3), intent(in) :: rang
+    integer, intent(out) :: i1,i2,i3
+    logical, intent(out) :: lempty_range
+    integer, optional, intent(out) :: n
+!
+    i1 = rang(1)
+    if (i1 == 0) then
+      lempty_range=.true.
+    else
+      lempty_range=.false.
+    endif
+    i2 = rang(2)
+    i3 = rang(3)
+!
+    if (present(n)) n = get_range_no(spread(rang, 2, 1), 1)
+!
+  endsubroutine unpack_range
+!***********************************************************************
 endmodule Power_spectrum
