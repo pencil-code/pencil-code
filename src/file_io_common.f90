@@ -288,14 +288,14 @@ module File_io
 !  28-May-2015/PABourdin: reworked
 !
       use Cdata, only: lroot
-      use Mpicomm, only: mpibcast_int, MPI_COMM_WORLD
+      use Mpicomm, only: mpibcast_int, MPI_COMM_PENCIL
 !
       integer :: parallel_count_lines
       character (len=*), intent(in) :: file
       logical, optional, intent(in) :: ignore_comments
 !
       if (lroot) parallel_count_lines = count_lines(file,ignore_comments)
-      call mpibcast_int(parallel_count_lines,comm=MPI_COMM_WORLD)
+      call mpibcast_int(parallel_count_lines,comm=MPI_COMM_PENCIL)
 !
     endfunction parallel_count_lines
 !***********************************************************************
@@ -312,7 +312,7 @@ module File_io
 !
       use Cdata, only: lroot
       use General, only: loptest
-      use Mpicomm, only: mpibcast_logical, MPI_COMM_WORLD
+      use Mpicomm, only: mpibcast_logical, MPI_COMM_PENCIL
 !
       logical :: parallel_file_exists
       character (len=*) :: file
@@ -321,7 +321,7 @@ module File_io
       ! Let the root node do the dirty work
       if (lroot) parallel_file_exists = file_exists(file,loptest(delete))
 !
-      call mpibcast_logical(parallel_file_exists,comm=MPI_COMM_WORLD)
+      call mpibcast_logical(parallel_file_exists,comm=MPI_COMM_PENCIL)
 !
     endfunction parallel_file_exists
 !***********************************************************************
