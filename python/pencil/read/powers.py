@@ -68,36 +68,17 @@ class Power(object):
         hel_kin
         """
 
-        power_list = []
-        file_list = []
-
         if file_name is not None:
             if not quiet:
                 print("Reading only ", file_name)
 
             if os.path.isfile(os.path.join(datadir, file_name)):
-                if file_name[:5] == "power" and file_name[-4:] == ".dat":
-                    if file_name[:6] == "power_":
-                        power_list.append(file_name.split(".")[0][6:])
-                        if not quiet:
-                            print("appending", file_name.split(".")[0][6:])
-                    else:
-                        power_list.append(file_name.split(".")[0][5:])
-                        if not quiet:
-                            print("appending", file_name.split(".")[0][5:])
-
-                    file_list.append(file_name)
+                power_list, file_list = self._parse_filelist([file_name], quiet)
             else:
                 raise ValueError(f"File {file_name} does not exist.")
 
         else:
-            for file_name in os.listdir(datadir):
-                if file_name[:5] == "power" and file_name[-4:] == ".dat":
-                    if file_name[:6] == "power_":
-                        power_list.append(file_name.split(".")[0][6:])
-                    else:
-                        power_list.append(file_name.split(".")[0][5:])
-                    file_list.append(file_name)
+            power_list, file_list = self._parse_filelist(os.listdir(datadir), quiet)
 
         # Read the power spectra.
         for power_name, file_name in zip(power_list, file_list):
@@ -437,6 +418,26 @@ class Power(object):
             nk = 1
 
         return int(nk)
+
+    def _parse_filelist(self, file_list_in, quiet):
+        power_list = []
+        file_list = []
+
+        for file_name in file_list_in:
+            fileext = file_name.split('.')[-1]
+            if file_name[:5] == "power" and fileext in ["dat", "h5"]:
+                if file_name[:6] == "power_":
+                    power_name = file_name.split(".")[0][6:]
+                else:
+                    power_name = file_name.split(".")[0][5:]
+
+                if not quiet:
+                    print("appending", power_name)
+
+                power_list.append(power_name)
+                file_list.append(file_name)
+
+        return power_list, file_list
 
 @copy_docstring(Power.read)
 def power(*args, **kwargs):
