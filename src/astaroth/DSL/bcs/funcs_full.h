@@ -3949,6 +3949,8 @@ bc_sT_z(AcBoundary boundary, AC_TOP_BOT topbot, Field j)
 {
 	if(j == AC_iss__mod__cdata-1) bc_ss_stemp_z(boundary,topbot)
 }
+#if Ldensity_MODULE
+#if Lentropy_MODULE
 bc_ss_flux_condturb_x(AcBoundary boundary,AC_TOP_BOT topbot)
 {
   suppress_unused_warning(boundary)
@@ -4028,6 +4030,8 @@ bc_ss_flux_condturb_x(AcBoundary boundary,AC_TOP_BOT topbot)
   else {
   }
 }
+#endif
+#endif
 
 bc_set_nfr_x(AcBoundary boundary, AC_TOP_BOT topbot,Field j)
 {
