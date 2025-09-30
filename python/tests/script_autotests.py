@@ -11,13 +11,17 @@ samples_with_scripttests = [
     #each entry is a string, the path relative to PENCIL_HOME
     #to mark a failing test, use
     ##pytest.param(path, marks=pytest.mark.xfail)
-    "samples/helical-MHDturb",
-    "samples/helical-MHDturb_HDF5",
     "samples/continuous-forcing-from-file",
     "samples/conv-slab-noequi",
-    "samples/power_xy/integrate_shell_z",
-    "samples/power_xy/complex",
+    "samples/helical-MHDturb",
+    "samples/helical-MHDturb_HDF5",
+    "samples/power_xy/complex_iodist",
+    "samples/power_xy/complex_nprocz_2",
+    "samples/power_xy/complex_lpowerxyhdf5/nprocx_2",
+    "samples/power_xy/complex_lpowerxyhdf5/nprocy_2",
     "samples/power_xy/integrate_shell",
+    "samples/power_xy/complex",
+    "samples/power_xy/integrate_shell_z",
     ]
 
 #Assumes sourceme.sh has been run in the current context.
