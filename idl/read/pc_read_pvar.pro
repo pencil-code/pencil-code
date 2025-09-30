@@ -267,6 +267,41 @@ varcontent[iTp].variable = 'Particle temperature (Tp)'
 varcontent[iTp].idlvar   = 'Tp'
 varcontent[iTp].idlinit  = INIT_SCALAR
 ;
+default, incol, 0
+varcontent[incol].variable = 'Number of collisions'
+varcontent[incol].idlvar   = 'ncol'
+varcontent[incol].idlinit  = INIT_SCALAR
+;
+default, inucl_Se, 0
+varcontent[inucl_Se].variable = 'Supersaturation at nucleation'
+varcontent[inucl_Se].idlvar   = 'nucl_Se'
+varcontent[inucl_Se].idlinit  = INIT_SCALAR
+;
+default, iint_Se, 0
+varcontent[iint_Se].variable = 'Mass-integrated supersaturation'
+varcontent[iint_Se].idlvar   = 'int_Se'
+varcontent[iint_Se].idlinit  = INIT_SCALAR
+;
+default, inucl_T, 0
+varcontent[inucl_T].variable = 'Temperature at nucleation'
+varcontent[inucl_T].idlvar   = 'nucl_Temp'
+varcontent[inucl_T].idlinit  = INIT_SCALAR
+;
+default, iint_T, 0
+varcontent[iint_T].variable = 'Mass-integrated temperature'
+varcontent[iint_T].idlvar   = 'int_Temp'
+varcontent[iint_T].idlinit  = INIT_SCALAR
+;
+default, inucl_mix_frac, 0
+varcontent[inucl_mix_frac].variable = 'Mixture fraction at nucleation'
+varcontent[inucl_mix_frac].idlvar   = 'nucl_mixfrac'
+varcontent[inucl_mix_frac].idlinit  = INIT_SCALAR
+;
+default, iint_mix_frac, 0
+varcontent[iint_mix_frac].variable = 'Mass-integrated mixture fraction'
+varcontent[iint_mix_frac].idlvar   = 'int_mixfrac'
+varcontent[iint_mix_frac].idlinit  = INIT_SCALAR
+;
 default, iup11, 0
 varcontent[iup11].variable = 'grad uu at particle(up11)'
 varcontent[iup11].idlvar   = 'up11'
