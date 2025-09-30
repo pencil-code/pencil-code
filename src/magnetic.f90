@@ -7820,7 +7820,7 @@ print*,'AXEL2: should not be here (eta) ... '
 !
 !   6-aug-03/axel: coded
 !
-      use Mpicomm, only: mpibcast_real, MPI_COMM_WORLD
+      use Mpicomm, only: mpibcast_real, MPI_COMM_PENCIL
 
       real :: brms
 !
@@ -7828,7 +7828,7 @@ print*,'AXEL2: should not be here (eta) ... '
 !  broadcast result to other processors
 !
       if (lroot) brms=fname(idiag_brms)
-      call mpibcast_real(brms,comm=MPI_COMM_WORLD)
+      call mpibcast_real(brms,comm=MPI_COMM_PENCIL)
 !
 !  if nvec exceeds nbvecmax (=1/4) of points per processor, then begin to
 !  increase scaling factor on bthresh. These settings will stay in place
@@ -8204,7 +8204,7 @@ print*,'AXEL2: should not be here (eta) ... '
 !
 !  The following calculation involving spatial averages
 !
-      use Mpicomm, only: mpibcast_real,MPI_COMM_WORLD
+      use Mpicomm, only: mpibcast_real,MPI_COMM_PENCIL
       use Diagnostics, only: save_name
 !
       if (idiag_bmx/=0) call calc_bmx

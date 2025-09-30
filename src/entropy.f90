@@ -2643,7 +2643,7 @@ module Energy
 !  AJ: PLEASE IDENTIFY AUTHOR
 !
       use EquationOfState, only: eoscalc
-      use Mpicomm, only: mpibcast_real, MPI_COMM_WORLD
+      use Mpicomm, only: mpibcast_real, MPI_COMM_PENCIL
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension(nx) :: absz
@@ -2710,10 +2710,10 @@ module Energy
           call eoscalc(irho_pp,rho,pp,ss=f(l1:l2,m,n,iss))
 !
           fmpi1=cs2bot
-          call mpibcast_real(fmpi1,0,comm=MPI_COMM_WORLD)
+          call mpibcast_real(fmpi1,0,comm=MPI_COMM_PENCIL)
           cs2bot=fmpi1
           fmpi1=cs2top
-          call mpibcast_real(fmpi1,ncpus-1,comm=MPI_COMM_WORLD)
+          call mpibcast_real(fmpi1,ncpus-1,comm=MPI_COMM_PENCIL)
           cs2top=fmpi1
 !
         endif
@@ -2736,7 +2736,7 @@ module Energy
 !  20-jan-15/MR: changes for use of reference state.
 !
       use EquationOfState , only: eoscalc, getmu, get_gamma_etc
-      use Mpicomm, only: mpibcast_real, MPI_COMM_WORLD
+      use Mpicomm, only: mpibcast_real, MPI_COMM_PENCIL
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension(nx) :: rho,pp
@@ -2783,10 +2783,10 @@ module Energy
         call eoscalc(irho_pp,rho,pp,ss=f(l1:l2,m,n,iss))
 !
         fmpi1=cs2bot
-        call mpibcast_real(fmpi1,0,comm=MPI_COMM_WORLD)
+        call mpibcast_real(fmpi1,0,comm=MPI_COMM_PENCIL)
         cs2bot=fmpi1
         fmpi1=cs2top
-        call mpibcast_real(fmpi1,ncpus-1,comm=MPI_COMM_WORLD)
+        call mpibcast_real(fmpi1,ncpus-1,comm=MPI_COMM_PENCIL)
         cs2top=fmpi1
 !
        enddo
@@ -2808,7 +2808,7 @@ module Energy
 !   20-jan-15/MR: changes for use of reference state.
 !
       use EquationOfState, only: eoscalc
-      use Mpicomm, only: mpibcast_real, MPI_COMM_WORLD
+      use Mpicomm, only: mpibcast_real, MPI_COMM_PENCIL
 !
       real, dimension (mx,my,mz,mfarray) :: f
 
@@ -2838,10 +2838,10 @@ module Energy
         endif
 
         fmpi1=cs2bot
-        call mpibcast_real(fmpi1,0,comm=MPI_COMM_WORLD)
+        call mpibcast_real(fmpi1,0,comm=MPI_COMM_PENCIL)
         cs2bot=fmpi1
         fmpi1=cs2top
-        call mpibcast_real(fmpi1,ncpus-1,comm=MPI_COMM_WORLD)
+        call mpibcast_real(fmpi1,ncpus-1,comm=MPI_COMM_PENCIL)
         cs2top=fmpi1
 !
       enddo
@@ -4368,7 +4368,7 @@ module Energy
 !
       use EquationOfState, only: get_gamma_etc
       use Deriv, only: der_x, der2_x, der_z, der2_z
-      use Mpicomm, only: mpiallreduce_sum, mpibcast_real_arr, MPI_COMM_WORLD
+      use Mpicomm, only: mpiallreduce_sum, mpibcast_real_arr, MPI_COMM_PENCIL
       use Sub, only: finalize_aver,calc_all_diff_fluxes,div,smooth,global_mean
       Use General, only: random_number_wrapper
 !
@@ -7931,7 +7931,7 @@ module Energy
 !
 !  11-dec-2014/pete: aped from read_hcond
 !
-      use Mpicomm, only: mpibcast_real_arr, MPI_COMM_WORLD
+      use Mpicomm, only: mpibcast_real_arr, MPI_COMM_PENCIL
 !
       real, dimension(nx), intent(out) :: cs2cool_x
       real, dimension(nxgrid) :: tmp1
@@ -7967,7 +7967,7 @@ module Energy
 !
       endif
 !
-      call mpibcast_real_arr(tmp1, nxgrid, comm=MPI_COMM_WORLD)  !MR: better scatter
+      call mpibcast_real_arr(tmp1, nxgrid, comm=MPI_COMM_PENCIL)  !MR: better scatter
 !
 !  Assuming no ghost zones in cooling_profile.dat
 !

@@ -176,7 +176,7 @@ contains
       !
       !  open file and set view (specify which file positions we can access)
       !
-      call MPI_FILE_OPEN(MPI_COMM_WORLD, filename, &
+      call MPI_FILE_OPEN(MPI_COMM_PENCIL, filename, &
                ior(MPI_MODE_CREATE,MPI_MODE_WRONLY), &
                MPI_INFO_NULL, fhandle, ierr)
       call MPI_FILE_SET_VIEW(fhandle, data_start, MPI_REAL, io_filetype_v, &
@@ -216,7 +216,7 @@ contains
       !
       !  open file and set view (specify which file positions we can access)
       !
-      call MPI_FILE_OPEN(MPI_COMM_WORLD, filename, &
+      call MPI_FILE_OPEN(MPI_COMM_PENCIL, filename, &
                ior(MPI_MODE_CREATE,MPI_MODE_WRONLY), &
                MPI_INFO_NULL, fhandle, ierr)
       call MPI_FILE_SET_VIEW(fhandle, data_start, MPI_REAL, io_filetype, &
@@ -327,7 +327,7 @@ contains
       inquire (IOLENGTH=byte_per_int) test_int
       inquire (IOLENGTH=byte_per_float) test_float
 !
-      call MPI_FILE_OPEN(MPI_COMM_WORLD, file, & ! MPI_FILE_OPEN is collective
+      call MPI_FILE_OPEN(MPI_COMM_PENCIL, file, & ! MPI_FILE_OPEN is collective
                          ior(MPI_MODE_CREATE,MPI_MODE_WRONLY), &
                          MPI_INFO_NULL, fhandle, ierr)
       if (lroot) then           ! only root writes
@@ -401,7 +401,7 @@ contains
 !
 !  open file and set view (specify which file positions we can access)
 !
-      call MPI_FILE_OPEN(MPI_COMM_WORLD, file, &
+      call MPI_FILE_OPEN(MPI_COMM_PENCIL, file, &
                ior(MPI_MODE_CREATE,MPI_MODE_WRONLY), &
                MPI_INFO_NULL, fhandle, ierr)
 !
@@ -437,7 +437,7 @@ contains
 !
 !  open file and set view (specify which file positions we can access)
 !
-      call MPI_FILE_OPEN(MPI_COMM_WORLD, file, &
+      call MPI_FILE_OPEN(MPI_COMM_PENCIL, file, &
                MPI_MODE_RDONLY, &
                MPI_INFO_NULL, fhandle, ierr)
       call MPI_FILE_SET_VIEW(fhandle, data_start, MPI_REAL, filetype, &

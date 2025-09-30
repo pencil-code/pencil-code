@@ -219,10 +219,10 @@ module HDF5_IO
 !***********************************************************************
     subroutine file_open_hdf5(file, truncate, global, read_only, write, comm)
 !
-!   7-May-2019/MR: added optional par comm for use in h5pset_fapl_mpio_f (default: MPI_COMM_WORLD)
+!   7-May-2019/MR: added optional par comm for use in h5pset_fapl_mpio_f (default: MPI_COMM_PENCIL)
 !
       use General, only: loptest, ioptest
-      use Mpicomm, only: MPI_COMM_WORLD, MPI_INFO_NULL
+      use Mpicomm, only: MPI_COMM_PENCIL, MPI_INFO_NULL
 !
       character (len=*), intent(inout) :: file
       logical, optional, intent(in) :: truncate
@@ -255,7 +255,7 @@ module HDF5_IO
         ! setup file access property list
         call h5pcreate_f (H5P_FILE_ACCESS_F, h5_plist, h5_err)
         call check_error (h5_err, 'create global file access property list', caller='file_open_hdf5')
-        call h5pset_fapl_mpio_f (h5_plist, ioptest(comm,MPI_COMM_WORLD), MPI_INFO_NULL, h5_err)
+        call h5pset_fapl_mpio_f (h5_plist, ioptest(comm,MPI_COMM_PENCIL), MPI_INFO_NULL, h5_err)
         call check_error (h5_err, 'modify global file access property list')
 
         if (ltrunc) then
@@ -2596,7 +2596,7 @@ module HDF5_IO
 !  07-Nov-2018/PABourdin: coded
 !
       use General, only: loptest
-      use Mpicomm, only: mpibcast_real, MPI_COMM_WORLD
+      use Mpicomm, only: mpibcast_real, MPI_COMM_PENCIL
 !
       character (len=*), intent(in) :: name
       character, intent(in) :: type

@@ -148,7 +148,7 @@ module Timestep
       use Boundcond, only: update_ghosts
       use BorderProfiles, only: border_quenching
       use Equ, only: pde, impose_floors_ceilings
-      use Mpicomm, only: mpiallreduce_max,MPI_COMM_WORLD
+      use Mpicomm, only: mpiallreduce_max,MPI_COMM_PENCIL
       use Messages, only: warning
       use Particles_main, only: particles_timestep_first, &
           particles_timestep_second
@@ -323,7 +323,7 @@ module Timestep
 !
           errmaxs=errmaxs/eps_rkf
 !
-          call mpiallreduce_max(errmaxs,errmax,MPI_COMM_WORLD)
+          call mpiallreduce_max(errmaxs,errmax,MPI_COMM_PENCIL)
           if (ldt) then
             if (errmax > 1) then
               ! Step above error threshold so decrease the next time step

@@ -127,7 +127,7 @@ module Yinyang_mpi
 !print*, 'iproc_world, iproc_yin,fnamexy=', iproc_world, iproc_yin,
 !maxval(fnamexy(:,rng(1):rng(2),:)), minval(fnamexy(:,rng(1):rng(2),:))
                 call mpisend_real(arrm(:,:,rng(1):rng(2)),(/sz(1),sz(2),len/), &
-                                  iproc_yin,iproc_world,comm=MPI_COMM_WORLD,nonblock=requests(irequest))
+                                  iproc_yin,iproc_world,comm=MPI_COMM_PENCIL,nonblock=requests(irequest))
                 offset=offset+len   !  Update, as contributions for the <=3 procs are stacked in fnamexy.
               enddo
               do i=1,irequest
@@ -189,7 +189,7 @@ module Yinyang_mpi
                   len=rng(2)-rng(1)+1
                   allocate(buffer(sz(1),sz(2),len))
                   iproc_yang=find_proc(ipx,iprocy,iprocz)+ncpus           ! world rank of source proc
-                  call mpirecv_real(buffer,(/sz(1),sz(2),len/),iproc_yang,iproc_yang,comm=MPI_COMM_WORLD)
+                  call mpirecv_real(buffer,(/sz(1),sz(2),len/),iproc_yang,iproc_yang,comm=MPI_COMM_PENCIL)
 !if (iproc_world==0 .or. iproc_world==1) print'(a,3i3,3e12.5)', 'GAP: RECV:
 !iproc_world, iproc_yang, len=', iproc_world, &
 !iproc_yang, len, sum(buffer),maxval(buffer), minval(buffer)
@@ -345,7 +345,7 @@ print'(a,4(1x,i4))', 'iproc_world,iproc_yin,nok,n_interproc_gap=', iproc_world,i
 !  Tell z-root proc of Yin grid, which of its phi coordinate lines are detected
 !  within executing proc (maybe none).
 !
-            call mpisend_int(rng,2,iproc_yin,iproc_world,MPI_COMM_WORLD)
+            call mpisend_int(rng,2,iproc_yin,iproc_world,MPI_COMM_PENCIL)
 
             if (ifound>3) stop               ! lines from at most 3 Yin procs expected.
 
@@ -495,7 +495,7 @@ print'(a,4(1x,i4))', 'iproc_world,iproc_yin,nok,n_interproc_gap=', iproc_world,i
             iproc_yang=find_proc(ipx,iprocy,iprocz)+ncpus
 !print*, 'RECV: iproc_yang, iproc_world=', iproc_yang, iproc_world
             call mpirecv_int(thranges_gap(:,iprocy,iprocz),2,iproc_yang,iproc_yang, &
-                             MPI_COMM_WORLD,nonblock=requests(irequest))
+                             MPI_COMM_PENCIL,nonblock=requests(irequest))
             irequest=irequest+1
           enddo
         enddo

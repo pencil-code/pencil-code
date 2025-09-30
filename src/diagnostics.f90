@@ -747,7 +747,7 @@ module Diagnostics
 !  The result is present everywhere
 !
       average_density=mass/box_volume
-      call mpibcast_real(average_density,comm=MPI_COMM_WORLD)
+      call mpibcast_real(average_density,comm=MPI_COMM_PENCIL)
 !
     endsubroutine get_average_density
 !**********************************************************************

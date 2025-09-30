@@ -38,7 +38,7 @@ module File_io
 !
       use General, only: loptest
       use Messages, only: fatal_error
-      use Mpicomm, only: mpibcast_int, mpibcast_char, lroot, MPI_COMM_WORLD, stop_it_if_any
+      use Mpicomm, only: mpibcast_int, mpibcast_char, lroot, MPI_COMM_PENCIL, stop_it_if_any
 
       integer :: parallel_read
       character (len=*), intent(in) :: file
@@ -61,7 +61,7 @@ module File_io
       call stop_it_if_any(.false.,'')
 !
       ! Broadcast the file size.
-      call mpibcast_int(bytes,comm=MPI_COMM_WORLD)
+      call mpibcast_int(bytes,comm=MPI_COMM_PENCIL)
       parallel_read = bytes
 !
       ! Allocate temporary memory.
@@ -80,7 +80,7 @@ module File_io
       endif
 !
       ! Broadcast buffer to all MPI ranks.
-      call mpibcast_char(buffer, bytes, comm=MPI_COMM_WORLD)
+      call mpibcast_char(buffer, bytes, comm=MPI_COMM_PENCIL)
 !
     endfunction parallel_read
 !***********************************************************************
@@ -272,7 +272,7 @@ module File_io
 !
       use Cdata, only: comment_char
       use General, only: lower_case, loptest
-      use Mpicomm, only: lroot, mpibcast, MPI_COMM_WORLD
+      use Mpicomm, only: lroot, mpibcast, MPI_COMM_PENCIL
       use Messages, only: warning
 !
       character(len=*), intent(in) :: name
@@ -336,7 +336,7 @@ module File_io
         if (.not. lfound .and. .not. do_not_issue_warning) call warning ('find_namelist', 'namelist "'//trim(name)//'" is missing!')
       endif
 !
-      call mpibcast (lfound,comm=MPI_COMM_WORLD)
+      call mpibcast (lfound,comm=MPI_COMM_PENCIL)
 !
     endsubroutine find_namelist
     !endfunction find_namelist

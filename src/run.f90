@@ -293,7 +293,7 @@ endsubroutine helper_loop
   use IO,              only: output_globals
   use Magnetic,        only: rescaling_magnetic
   use Messages,        only: timing, fatal_error_local_collect
-  use Mpicomm,         only: mpibcast_logical, mpiwtime, MPI_COMM_WORLD, mpibarrier
+  use Mpicomm,         only: mpibcast_logical, mpiwtime, MPI_COMM_PENCIL, mpibarrier
   use Particles_main,  only: particles_rprint_list, particles_initialize_modules, &
                              particles_load_balance, particles_stochastic
   use Signal_handling, only: emergency_stop
@@ -549,7 +549,7 @@ endsubroutine helper_loop
 !
     if (max_walltime>0.0) then
       if (lroot.and.(wall_clock_time>max_walltime)) timeover=.true.
-      call mpibcast_logical(timeover,comm=MPI_COMM_WORLD)
+      call mpibcast_logical(timeover,comm=MPI_COMM_PENCIL)
       if (timeover) then
         if (lroot) then
           print*

@@ -2431,7 +2431,7 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
 !  08-may-12/ccyang: include dx_1, dx_tilde, ... arrays
 !  25-feb-13/ccyang: construct global coordinates including ghost cells.
 !
-      use Mpicomm, only: mpisend_real,mpirecv_real,mpibcast_real, mpiallreduce_sum_int, MPI_COMM_WORLD
+      use Mpicomm, only: mpisend_real,mpirecv_real,mpibcast_real, mpiallreduce_sum_int, MPI_COMM_PENCIL
       use General, only: loptest, find_proc
 !
       logical, optional :: lprecise_symmetry
@@ -2496,9 +2496,9 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
 !
       if (loptest(lprecise_symmetry)) call symmetrize_grid(xgrid,nxgrid,1)
 
-      call mpibcast_real(xgrid,nxgrid,comm=MPI_COMM_WORLD)
-      call mpibcast_real(dx1grid,nxgrid,comm=MPI_COMM_WORLD)
-      call mpibcast_real(dxtgrid,nxgrid,comm=MPI_COMM_WORLD)
+      call mpibcast_real(xgrid,nxgrid,comm=MPI_COMM_PENCIL)
+      call mpibcast_real(dx1grid,nxgrid,comm=MPI_COMM_PENCIL)
+      call mpibcast_real(dxtgrid,nxgrid,comm=MPI_COMM_PENCIL)
 !
 !  Serial y-array
 !

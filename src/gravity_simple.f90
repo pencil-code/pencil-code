@@ -246,7 +246,7 @@ module Gravity
 !
       use General, only: notanumber
       use Sub, only: cubic_step
-      use Mpicomm, only: mpibcast_real, MPI_COMM_WORLD
+      use Mpicomm, only: mpibcast_real, MPI_COMM_PENCIL
       use SharedVariables, only: get_shared_variable
 !
       real, dimension(mx,my,mz,mfarray) :: f
@@ -702,7 +702,7 @@ module Gravity
             if (lroot) call warning('initialize_gravity', 'central body mass is ignored')
           else
             if (ipx==0) gravitational_const = -gravx_xpencil(l1)*x(l1)**2/mass_cent_body
-            if (nprocx>1) call mpibcast_real(gravitational_const,comm=MPI_COMM_WORLD)
+            if (nprocx>1) call mpibcast_real(gravitational_const,comm=MPI_COMM_PENCIL)
           endif
         else
           if (gravitational_const<=0.) &

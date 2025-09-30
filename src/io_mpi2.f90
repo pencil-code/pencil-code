@@ -394,7 +394,7 @@ module Io
       call MPI_TYPE_COMMIT (global_type, mpi_err)
       call check_success ('output', 'commit global type', file)
 !
-      call MPI_FILE_OPEN (MPI_COMM_WORLD, trim (directory_snap)//'/'//file, MPI_MODE_CREATE+MPI_MODE_WRONLY, &
+      call MPI_FILE_OPEN (MPI_COMM_PENCIL, trim (directory_snap)//'/'//file, MPI_MODE_CREATE+MPI_MODE_WRONLY, &
                           io_info, handle, mpi_err)
       call check_success ('output', 'open', trim (directory_snap)//'/'//file)
 !
@@ -519,7 +519,7 @@ module Io
 !  Open average file.
 !
       fpath = trim(directory_snap) // '/' // trim(label) // "averages.dat"
-      call MPI_FILE_OPEN(MPI_COMM_WORLD, fpath, ior(MPI_MODE_CREATE, MPI_MODE_RDWR), io_info, handle, mpi_err)
+      call MPI_FILE_OPEN(MPI_COMM_PENCIL, fpath, ior(MPI_MODE_CREATE, MPI_MODE_RDWR), io_info, handle, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error(rname, "unable to open file '" // trim(fpath) // "'")
 !
 !  Get the file size.
@@ -548,7 +548,7 @@ module Io
 !
 !  Truncate file if needed.
 !
-      call MPI_BCAST(disp, 1, MPI_OFFSET, root, MPI_COMM_WORLD, mpi_err)
+      call MPI_BCAST(disp, 1, MPI_OFFSET, root, MPI_COMM_PENCIL, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error(rname, "unable to broadcast displacement")
 !
       trunc: if (disp < fsize) then
@@ -669,7 +669,7 @@ module Io
 !  Open the slice file for write.
 !
       fpath = trim(directory_snap) // "/slice_" // trim(label) // '.' // trim(suffix)
-      call MPI_FILE_OPEN(MPI_COMM_WORLD, fpath, ior(MPI_MODE_APPEND, ior(MPI_MODE_CREATE, MPI_MODE_RDWR)), io_info, handle, mpi_err)
+      call MPI_FILE_OPEN(MPI_COMM_PENCIL, fpath, ior(MPI_MODE_APPEND, ior(MPI_MODE_CREATE, MPI_MODE_RDWR)), io_info, handle, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error("output_slice", "cannot open file '" // trim(fpath) // "'")
 !
 !  Check the file size.
@@ -697,7 +697,7 @@ module Io
         offset = offset + int(nadd, KIND=MPI_OFFSET_KIND) * size_of_real
       endif master
       call fatal_error_local_collect()
-      call MPI_BCAST(offset, 1, MPI_OFFSET, root, MPI_COMM_WORLD, mpi_err)
+      call MPI_BCAST(offset, 1, MPI_OFFSET, root, MPI_COMM_PENCIL, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error("output_slice", "unable to broadcast offset")
 !
 !  Truncate the slices with later times.
@@ -783,7 +783,7 @@ module Io
 !  Open snapshot file for write.
 !
       fpath = trim(directory_snap) // '/' // file
-      call MPI_FILE_OPEN(MPI_COMM_WORLD, fpath, ior(MPI_MODE_CREATE, MPI_MODE_WRONLY), io_info, handle, mpi_err)
+      call MPI_FILE_OPEN(MPI_COMM_PENCIL, fpath, ior(MPI_MODE_CREATE, MPI_MODE_WRONLY), io_info, handle, mpi_err)
       call check_success("output_part", "open", fpath)
 !
 !  Write total number of particles.
@@ -883,7 +883,7 @@ module Io
 !
       rmv_list = 0
       rmv_list(iproc+1) = nrmv
-      call MPI_ALLREDUCE(MPI_IN_PLACE, rmv_list, ncpus, MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, mpi_err)
+      call MPI_ALLREDUCE(MPI_IN_PLACE, rmv_list, ncpus, MPI_INTEGER, MPI_SUM, MPI_COMM_PENCIL, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error("output_part_rmv", "unable to communicate nrmv")
 !
 !  Create structured MPI type for each removed or sink particle.
@@ -920,7 +920,7 @@ module Io
 !  Open log file.
 !
       fpath = trim(directory_snap) // '/' // "rmv_par.dat"
-      call MPI_FILE_OPEN(MPI_COMM_WORLD, fpath, ior(MPI_MODE_RDWR, ior(MPI_MODE_CREATE, MPI_MODE_APPEND)), io_info, handle, mpi_err)
+      call MPI_FILE_OPEN(MPI_COMM_PENCIL, fpath, ior(MPI_MODE_RDWR, ior(MPI_MODE_CREATE, MPI_MODE_APPEND)), io_info, handle, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error("output_part_rmv", "unable to open file '" // trim(fpath) // "'")
 !
 !  Expand file.
@@ -1091,7 +1091,7 @@ module Io
       call MPI_TYPE_COMMIT (global_type, mpi_err)
       call check_success ('input', 'commit global subarray', file)
 !
-      call MPI_FILE_OPEN (MPI_COMM_WORLD, trim (directory_snap)//'/'//file, MPI_MODE_RDONLY, io_info, handle, mpi_err)
+      call MPI_FILE_OPEN (MPI_COMM_PENCIL, trim (directory_snap)//'/'//file, MPI_MODE_RDONLY, io_info, handle, mpi_err)
       call check_success ('input', 'open', trim (directory_snap)//'/'//file)
 !
 ! Setting file view and read raw binary data, ie. 'native'.
@@ -1127,7 +1127,7 @@ module Io
         else
           call distribute_grid (x, y, z)
         endif
-        call mpibcast_real (t_sp,comm=MPI_COMM_WORLD)
+        call mpibcast_real (t_sp,comm=MPI_COMM_PENCIL)
         t = t_sp
 !
         if (lode) call input_ode(file)
@@ -1230,7 +1230,7 @@ module Io
 !  Open snapshot file for read.
 !
       fpath = trim(directory_snap) // '/' // file
-      call MPI_FILE_OPEN(MPI_COMM_WORLD, fpath, MPI_MODE_RDONLY, io_info, handle, mpi_err)
+      call MPI_FILE_OPEN(MPI_COMM_PENCIL, fpath, MPI_MODE_RDONLY, io_info, handle, mpi_err)
       call check_success("input_part", "open", fpath)
 !
 !  Read total number of particles.
@@ -1240,7 +1240,7 @@ module Io
         call check_success_local("input_part", "read total number of particles")
       endif nptot
       call fatal_error_local_collect()
-      call MPI_BCAST(npar_tot, 1, MPI_INTEGER, root, MPI_COMM_WORLD, mpi_err)
+      call MPI_BCAST(npar_tot, 1, MPI_INTEGER, root, MPI_COMM_PENCIL, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error("input_part", "unable to broadcast total number of particles")
 !
       cknp: if (ceiling(real(npar_tot) / real(ncpus)) > mv) then
@@ -1270,7 +1270,7 @@ module Io
           call check_success_local("input_part", "read xp of")
         endif xp
         call fatal_error_local_collect()
-        call MPI_BCAST(rbuf, npar_tot, mpi_precision, root, MPI_COMM_WORLD, mpi_err)
+        call MPI_BCAST(rbuf, npar_tot, mpi_precision, root, MPI_COMM_PENCIL, mpi_err)
         if (mpi_err /= MPI_SUCCESS) call fatal_error("input_part", "unable to broadcast xp. ")
         lpar_loc = lpar_loc .and. procx_bounds(ipx) <= rbuf(1:npar_tot) .and. rbuf(1:npar_tot) < procx_bounds(ipx+1)
       endif inx
@@ -1281,7 +1281,7 @@ module Io
           call check_success_local("input_part", "read yp of")
         endif yp
         call fatal_error_local_collect()
-        call MPI_BCAST(rbuf, npar_tot, mpi_precision, root, MPI_COMM_WORLD, mpi_err)
+        call MPI_BCAST(rbuf, npar_tot, mpi_precision, root, MPI_COMM_PENCIL, mpi_err)
         if (mpi_err /= MPI_SUCCESS) call fatal_error("input_part", "unable to broadcast yp. ")
         lpar_loc = lpar_loc .and. procy_bounds(ipy) <= rbuf(1:npar_tot) .and. rbuf(1:npar_tot) < procy_bounds(ipy+1)
       endif iny
@@ -1292,7 +1292,7 @@ module Io
           call check_success_local("input_part", "read zp of")
         endif zp
         call fatal_error_local_collect()
-        call MPI_BCAST(rbuf, npar_tot, mpi_precision, root, MPI_COMM_WORLD, mpi_err)
+        call MPI_BCAST(rbuf, npar_tot, mpi_precision, root, MPI_COMM_PENCIL, mpi_err)
         if (mpi_err /= MPI_SUCCESS) call fatal_error("input_part", "unable to broadcast zp. ")
         lpar_loc = lpar_loc .and. procz_bounds(ipz) <= rbuf(1:npar_tot) .and. rbuf(1:npar_tot) < procz_bounds(ipz+1)
       endif inz
@@ -1771,7 +1771,7 @@ module Io
 !
       if (present (file)) then
         if (lroot) init_read_persist = .not. file_exists (trim (directory_snap)//'/'//file)
-        call mpibcast_logical (init_read_persist,comm=MPI_COMM_WORLD)
+        call mpibcast_logical (init_read_persist,comm=MPI_COMM_PENCIL)
         if (init_read_persist) return
       endif
 !
@@ -1826,7 +1826,7 @@ module Io
         endif
       endif
 !
-      call mpibcast_int (id,comm=MPI_COMM_WORLD)
+      call mpibcast_int (id,comm=MPI_COMM_PENCIL)
 !
       read_persist_id = .false.
       if (id == -max_int) read_persist_id = .true.
@@ -2292,12 +2292,12 @@ module Io
         call distribute_grid (dx_tilde, dy_tilde, dz_tilde)
       endif
 !
-      call mpibcast_real (dx,comm=MPI_COMM_WORLD)
-      call mpibcast_real (dy,comm=MPI_COMM_WORLD)
-      call mpibcast_real (dz,comm=MPI_COMM_WORLD)
-      call mpibcast_real (Lx,comm=MPI_COMM_WORLD)
-      call mpibcast_real (Ly,comm=MPI_COMM_WORLD)
-      call mpibcast_real (Lz,comm=MPI_COMM_WORLD)
+      call mpibcast_real (dx,comm=MPI_COMM_PENCIL)
+      call mpibcast_real (dy,comm=MPI_COMM_PENCIL)
+      call mpibcast_real (dz,comm=MPI_COMM_PENCIL)
+      call mpibcast_real (Lx,comm=MPI_COMM_PENCIL)
+      call mpibcast_real (Ly,comm=MPI_COMM_PENCIL)
+      call mpibcast_real (Lz,comm=MPI_COMM_PENCIL)
 !
       if (lroot.and.ip <= 4) then
         print *, 'rgrid: Lx,Ly,Lz=', Lx, Ly, Lz

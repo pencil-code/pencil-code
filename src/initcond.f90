@@ -3256,7 +3256,7 @@ module Initcond
 !  22-feb-03/axel: fixed 3-D background solution for enthalpy
 !  26-Jul-03/anders: Revived from June 1 version
 !
-      use Mpicomm, only: mpireduce_sum, mpibcast_real, MPI_COMM_WORLD
+      use Mpicomm, only: mpireduce_sum, mpibcast_real, MPI_COMM_PENCIL
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: hh, xi
@@ -3370,7 +3370,7 @@ module Initcond
 !  Calculate <rho> and send to all processors
 !
       if (lroot) rho0 = exp(-lnrhosum_wholebox/nwgrid)
-      call mpibcast_real(rho0,comm=MPI_COMM_WORLD)
+      call mpibcast_real(rho0,comm=MPI_COMM_PENCIL)
       if (ip<14) print*,'planet_hc: iproc,rho0=',iproc,rho0
 !
 !  Multiply density by rho0 (divide by <rho>)
@@ -3385,7 +3385,7 @@ module Initcond
 !
 !   jun-03/anders: coded (adapted from old 'planet', now 'planet_hc')
 !
-      use Mpicomm, only: mpireduce_sum, mpibcast_real, MPI_COMM_WORLD
+      use Mpicomm, only: mpireduce_sum, mpibcast_real, MPI_COMM_PENCIL
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: hh, xi, r_ell
@@ -3485,7 +3485,7 @@ module Initcond
 !  Calculate <rho> and send to all processors
 !
       if (lroot) rho0 = exp(-lnrhosum_wholebox/nwgrid)
-      call mpibcast_real(rho0,comm=MPI_COMM_WORLD)
+      call mpibcast_real(rho0,comm=MPI_COMM_PENCIL)
       if (ip<14) print*,'planet_hc: iproc,rho0=',iproc,rho0
 !
 !  Multiply density by rho0 (divide by <rho>)

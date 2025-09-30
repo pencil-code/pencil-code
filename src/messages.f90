@@ -249,7 +249,7 @@ module Messages
 !  4-apr-2025/TP: not done on the GPU since surprisingly expensive: instead MPI_ABORT on any local error immediately
 !
       use General, only: itoa
-      use Mpicomm, only: mpireduce_sum_int, mpibcast_int, mpigather_scl_str, MPI_COMM_WORLD
+      use Mpicomm, only: mpireduce_sum_int, mpibcast_int, mpigather_scl_str, MPI_COMM_PENCIL
       use Mpicomm, only: die_immediately, die_gracefully
 
 
@@ -260,7 +260,7 @@ module Messages
       if (lgpu) return
       if (.not.llife_support) then
 
-        call mpiallreduce_sum_int(fatal_errors,fatal_errors_total,MPI_COMM_WORLD)
+        call mpiallreduce_sum_int(fatal_errors,fatal_errors_total,MPI_COMM_PENCIL)
 !
         if (fatal_errors_total/=0) then
           call mpigather_scl_str(message_stored,messages)
