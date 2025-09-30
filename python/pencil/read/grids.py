@@ -61,6 +61,7 @@ class Grid(object):
 
         import numpy as np
         import os
+        import glob
         from scipy.io import FortranFile
         from pencil import read
 
@@ -115,19 +116,15 @@ class Grid(object):
                 read_precision = "f"
 
             if proc < 0:
-                proc_dirs = list(
-                    filter(
-                        lambda string: string.startswith("proc"), os.listdir(datadir)
-                    )
-                )
-                if proc_dirs.count("proc_bounds.dat") > 0:
-                    proc_dirs.remove("proc_bounds.dat")
                 if param.lcollective_io:
                     # A collective IO strategy is being used
                     proc_dirs = ["allprocs"]
-
-                if len(proc_dirs) == 0:
-                    raise FileNotFoundError("Assumed io_dist, but could not find processor directories")
+                else:
+                    os.chdir(datadir)
+                    proc_dirs = glob.glob('proc*[0-9]')
+                    os.chdir("..")
+                    if len(proc_dirs) == 0:
+                        raise FileNotFoundError("Assumed io_dist, but could not find processor directories")
 
             else:
                 proc_dirs = ["proc" + str(proc)]
