@@ -959,8 +959,8 @@ module Equ
 !  communication in order to be able to take the gradient of the potential
 !  later.
 !
-        
-      call calc_selfpotential(f)
+      if (lselfgravity)  call calc_selfpotential(f)
+!
       if (ldustdensity)  call dustdensity_before_boundary(f)
       if (ldensity .and. ldiagnos) call density_before_boundary_diagnostics(f)
       if (ldensity.or.lboussinesq) call density_before_boundary(f)
