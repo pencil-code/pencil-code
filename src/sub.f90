@@ -3810,7 +3810,7 @@ module Sub
 !   9-sep-01/axel: adapted for MPI
 !  10-sep-15/MR  : tout set to t if file is missing and dtout>0
 !
-      use Mpicomm, only: mpibcast_real, MPI_COMM_WORLD
+      use Mpicomm, only: mpibcast_real, MPI_COMM_PENCIL
 !
       character (len=*), intent(in) :: file
       real, intent(out) :: tout
@@ -3894,7 +3894,7 @@ module Sub
         bcast_array(2) = nout
       endif
 !
-      call mpibcast_real(bcast_array,nbcast_array,comm=MPI_COMM_WORLD)
+      call mpibcast_real(bcast_array,nbcast_array,comm=MPI_COMM_PENCIL)
       tout = bcast_array(1)
       nout = bcast_array(2)
 !
@@ -4078,7 +4078,7 @@ module Sub
 !***********************************************************************
     subroutine set_dt(dt1_)
 
-      use Mpicomm, only: mpiallreduce_max, MPI_COMM_WORLD
+      use Mpicomm, only: mpiallreduce_max, MPI_COMM_PENCIL
 
       real :: dt1_
       real :: dt1, dt1_local
@@ -4089,7 +4089,7 @@ module Sub
       dt1_local=dt1_
       ! Timestep growth limiter
       if (ddt > 0.) dt1_local=max(dt1_local,dt1_last)
-      call mpiallreduce_max(dt1_local,dt1,MPI_COMM_WORLD)
+      call mpiallreduce_max(dt1_local,dt1,MPI_COMM_PENCIL)
 !
 !  now set the actual time step, based on dt1
 !
@@ -7483,7 +7483,7 @@ nameloop: do
 !  19-aug-2011/ccyang: coded
 !  12-sep-2013/MR: outsourced from hydro
 !
-      use Mpicomm, only: mpiallreduce_max, MPI_COMM_WORLD
+      use Mpicomm, only: mpiallreduce_max, MPI_COMM_PENCIL
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       integer, intent(in) :: iv
@@ -7495,7 +7495,7 @@ nameloop: do
       umax1 = sqrt(maxval(  f(l1:l2,m1:m2,n1:n2,iv  )**2 &
                           + f(l1:l2,m1:m2,n1:n2,iv+1)**2 &
                           + f(l1:l2,m1:m2,n1:n2,iv+2)**2  ))
-      call mpiallreduce_max(umax1, find_max_fvec, MPI_COMM_WORLD)
+      call mpiallreduce_max(umax1, find_max_fvec, MPI_COMM_PENCIL)
 !
     endfunction find_max_fvec
 !***********************************************************************

@@ -624,7 +624,7 @@ module Diagnostics
 !  The result is present everywhere
 !
       average_density=mass/box_volume
-      call mpibcast_real(average_density,comm=MPI_COMM_WORLD)
+      call mpibcast_real(average_density,comm=MPI_COMM_PENCIL)
 !
     endsubroutine get_average_density
 !**********************************************************************
@@ -687,9 +687,9 @@ module Diagnostics
 !
 !  Communicate over all processors.
 !
-      call mpireduce_max(fmax_tmp,fmax,nmax_count,MPI_COMM_WORLD)
-      call mpireduce_sum(fsum_tmp,fsum,nsum_count,comm=MPI_COMM_WORLD)                        ! wrong for Yin-Yang due to overlap
-      if (lweight_comm) call mpireduce_sum(fweight_tmp,fweight,nsum_count,comm=MPI_COMM_WORLD)!   ~
+      call mpireduce_max(fmax_tmp,fmax,nmax_count,MPI_COMM_PENCIL)
+      call mpireduce_sum(fsum_tmp,fsum,nsum_count,comm=MPI_COMM_PENCIL)                        ! wrong for Yin-Yang due to overlap
+      if (lweight_comm) call mpireduce_sum(fweight_tmp,fweight,nsum_count,comm=MPI_COMM_PENCIL)!   ~
 !
 !  The result is present only on the root processor.
 !

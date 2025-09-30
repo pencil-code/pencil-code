@@ -185,7 +185,7 @@ module Magnetic
   real :: nfact_aa=4.
   real :: r_inner=0., r_outer=0.
   real :: eta_tdep_loverride_ee=0.
-  real :: r_dip=1 , epsi_dip=0.1, angle_dip=0.
+  real :: r_dip=1 , epsi_dip=0.1, angle_dip=0., je_heating_factor=1.
   integer, target :: va2power_jxb = 5
   integer :: nbvec, nbvecmax=nx*ny*nz/4, iua=0, iLam=0, idiva=0
   integer :: N_modes_aa=1, naareset
@@ -260,7 +260,7 @@ module Magnetic
   logical :: lscale_tobox=.true., lsquash_aa=.false.
   logical :: lbraginsky=.false., l2d_aa=.false.
   logical :: lcoulomb=.false., lcoulomb_apply=.false., learly_set_el_pencil=.false.
-  logical :: lfactors_aa=.false., lvacuum=.false.
+  logical :: lfactors_aa=.false., lvacuum=.false., ldensity_add_je_heating=.false.
   logical :: loverride_ee=.false., loverride_ee2=.false., loverride_ee_decide=.false.
   logical :: lignore_1rho_in_Lorentz=.false., lnorm_aa_kk=.false., lohm_evolve=.false.
 !
@@ -294,7 +294,7 @@ module Magnetic
       source_zav,nzav,indzav,izav_start, k1hel, k2hel, lbb_sph_as_aux, &
       r_inner, r_outer, lpower_profile_file, eta_jump0, eta_jump1, eta_jump2, &
       lcoulomb, lcoulomb_apply, learly_set_el_pencil, &
-      qexp_aa, nfact_aa, lfactors_aa, lvacuum, l2d_aa, &
+      qexp_aa, nfact_aa, lfactors_aa, lvacuum, ldensity_add_je_heating, l2d_aa, &
       loverride_ee_decide, eta_tdep_loverride_ee, z0_gaussian, width_gaussian, &
       lnorm_aa_kk, lohm_evolve, lhubble_magnetic,r_dip, epsi_dip, angle_dip
 !
@@ -438,7 +438,8 @@ module Magnetic
       no_ohmic_heat_z0, no_ohmic_heat_zwidth, alev, lrhs_max, &
       lnoinduction, lA_relprof_global, nlf_sld_magn, fac_sld_magn, div_sld_magn, &
       lbb_sph_as_aux, ltime_integrals_always, dtcor, lvart_in_shear_frame, &
-      lbraginsky, eta_jump0, eta_jump1, lcoulomb, lcoulomb_apply, lvacuum, &
+      lbraginsky, eta_jump0, eta_jump1, lcoulomb, lcoulomb_apply, lvacuum, ldensity_add_je_heating, &
+      je_heating_factor, &
       loverride_ee_decide, eta_tdep_loverride_ee, loverride_ee2, lignore_1rho_in_Lorentz, &
       lbext_moving_layer, zbot_moving_layer, ztop_moving_layer, speed_moving_layer, edge_moving_layer, &
       lno_eta_tdep, luse_scale_factor_in_sigma, ell_jj, tau_jj, lhubble_magnetic, &
@@ -6185,6 +6186,18 @@ module Magnetic
 !
       endif
 !
+!  If ldensity and ldensity_add_je_heating, then compute J.E and add it:
+!
+      if (ldensity .and. ldensity_add_je_heating) then
+        if (iex>0) then
+          call dot(p%jj,p%el,tmp1)
+          if (je_heating_factor/=1.) tmp1=tmp1*je_heating_factor
+          df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)+tmp1*p%rho1
+        else
+          call fatal_error('daa_dt','J.E heating not programmed yet')
+        endif
+      endif
+!
 !  Evolve current density.
 !
       if (lresi_eta_tdep .or. lresi_eta_xtdep .or. eta/=0.) then
@@ -7820,7 +7833,7 @@ print*,'AXEL2: should not be here (eta) ... '
 !
 !   6-aug-03/axel: coded
 !
-      use Mpicomm, only: mpibcast_real, MPI_COMM_WORLD
+      use Mpicomm, only: mpibcast_real, MPI_COMM_PENCIL
 
       real :: brms
 !
@@ -7828,7 +7841,7 @@ print*,'AXEL2: should not be here (eta) ... '
 !  broadcast result to other processors
 !
       if (lroot) brms=fname(idiag_brms)
-      call mpibcast_real(brms,comm=MPI_COMM_WORLD)
+      call mpibcast_real(brms,comm=MPI_COMM_PENCIL)
 !
 !  if nvec exceeds nbvecmax (=1/4) of points per processor, then begin to
 !  increase scaling factor on bthresh. These settings will stay in place
@@ -8204,7 +8217,7 @@ print*,'AXEL2: should not be here (eta) ... '
 !
 !  The following calculation involving spatial averages
 !
-      use Mpicomm, only: mpibcast_real,MPI_COMM_WORLD
+      use Mpicomm, only: mpibcast_real,MPI_COMM_PENCIL
       use Diagnostics, only: save_name
 !
       if (idiag_bmx/=0) call calc_bmx

@@ -774,7 +774,7 @@ module Particles_mpicomm
       integer, dimension (MPI_STATUS_SIZE) :: irecv_stat_fl,irecv_stat_fu,&
            isend_stat_tl,isend_stat_tu
 !---------
-      comm=MPI_COMM_WORLD
+      comm=MPI_COMM_PENCIL
 !
 ! We assume below that send and receive is non-blocking.
 !

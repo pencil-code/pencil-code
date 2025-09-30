@@ -303,7 +303,8 @@ module Energy
       if (lupdate_courant_dt) then
         if (leos.and.ldensity.and.lhydro) then
           p%advec_cs2=p%cs2*dxyz_2
-          advec_cs2 = p%advec_cs2
+          !Not generally true to set it here because of modules like photoelectric_dust
+          if (lmultithread) advec_cs2 = p%advec_cs2
           if (headtt.or.ldebug) print*, 'calc_pencils_energy: max(advec_cs2) =', maxval(p%advec_cs2)
         endif
       endif
@@ -374,6 +375,9 @@ module Energy
           enddo
         endif
       endif
+      !    Have to do this here since important for some modules like photoelectric_dust
+      !    (this overwrites the setting there)
+      if (lupdate_courant_dt .and. leos.and.ldensity.and.lhydro) advec_cs2=p%advec_cs2
 
 
       call calc_diagnostics_energy(f,p)

@@ -384,7 +384,7 @@ module Io
 !   9-mar-2015/MR: backskipping to time record corrected
 !
       use File_io, only: backskip_to_time
-      use Mpicomm, only: localize_xy, mpibcast_real, stop_it_if_any, MPI_COMM_WORLD
+      use Mpicomm, only: localize_xy, mpibcast_real, stop_it_if_any, MPI_COMM_PENCIL
       use Syscalls, only: sizeof_real
 !
       character (len=*) :: file
@@ -463,7 +463,7 @@ module Io
           call distribute_grid (x, y, z)
         endif
 !
-        call mpibcast_real (t_sp,comm=MPI_COMM_WORLD)
+        call mpibcast_real (t_sp,comm=MPI_COMM_PENCIL)
         if (.not. lfirst_proc_xy) t_test = t_sp
         if (t_test /= t_sp) &
             write (*,*) 'ERROR: '//trim(directory_snap)//'/'//trim(file)//' IS INCONSISTENT: t=', t_sp
@@ -919,7 +919,7 @@ module Io
 !  13-Dec-2011/Bourdin.KIS: coded
 !
       use File_io, only: file_exists
-      use Mpicomm, only: mpibcast_logical, MPI_COMM_WORLD
+      use Mpicomm, only: mpibcast_logical, MPI_COMM_PENCIL
 !
       character (len=*), intent(in), optional :: file
 !
@@ -927,7 +927,7 @@ module Io
 !
       if (present (file)) then
         if (lroot) init_read_persist = .not. file_exists (trim (directory_snap)//'/'//file)
-        call mpibcast_logical (init_read_persist,comm=MPI_COMM_WORLD)
+        call mpibcast_logical (init_read_persist,comm=MPI_COMM_PENCIL)
         if (init_read_persist) return
       endif
 !
@@ -961,7 +961,7 @@ module Io
 !
 !  17-Feb-2012/Bourdin.KIS: coded
 !
-      use Mpicomm, only: mpibcast_int, MPI_COMM_WORLD
+      use Mpicomm, only: mpibcast_int, MPI_COMM_PENCIL
 !
       character (len=*), intent(in) :: label
       integer, intent(out) :: id
@@ -985,7 +985,7 @@ module Io
         endif
       endif
 !
-      call mpibcast_int (id,comm=MPI_COMM_WORLD)
+      call mpibcast_int (id,comm=MPI_COMM_PENCIL)
 !
       read_persist_id = .false.
       if (id == -max_int) read_persist_id = .true.
@@ -1418,7 +1418,7 @@ module Io
 !  15-jun-03/axel: Lx,Ly,Lz are now read in from file (Tony noticed the mistake)
 !  10-Feb-2012/Bourdin.KIS: adapted for collective IO
 !
-      use Mpicomm, only: mpibcast_int, mpibcast_real, MPI_COMM_WORLD
+      use Mpicomm, only: mpibcast_int, mpibcast_real, MPI_COMM_PENCIL
 !
       character (len=*) :: file
 !
@@ -1448,12 +1448,12 @@ module Io
         call distribute_grid (dx_tilde, dy_tilde, dz_tilde)
       endif
 !
-      call mpibcast_real (dx,comm=MPI_COMM_WORLD)
-      call mpibcast_real (dy,comm=MPI_COMM_WORLD)
-      call mpibcast_real (dz,comm=MPI_COMM_WORLD)
-      call mpibcast_real (Lx,comm=MPI_COMM_WORLD)
-      call mpibcast_real (Ly,comm=MPI_COMM_WORLD)
-      call mpibcast_real (Lz,comm=MPI_COMM_WORLD)
+      call mpibcast_real (dx,comm=MPI_COMM_PENCIL)
+      call mpibcast_real (dy,comm=MPI_COMM_PENCIL)
+      call mpibcast_real (dz,comm=MPI_COMM_PENCIL)
+      call mpibcast_real (Lx,comm=MPI_COMM_PENCIL)
+      call mpibcast_real (Ly,comm=MPI_COMM_PENCIL)
+      call mpibcast_real (Lz,comm=MPI_COMM_PENCIL)
 !
       if (lroot.and.ip <= 4) then
         print *, 'rgrid: Lx,Ly,Lz=', Lx, Ly, Lz

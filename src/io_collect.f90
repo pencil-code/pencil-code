@@ -466,7 +466,7 @@ module Io
 !  13-jan-2015/MR: avoid use of fseek; if necessary comment the calls to fseek in fseek_pos
 !
       use File_io, only: backskip_to_time
-      use Mpicomm, only: localize_xy, mpibcast_real, MPI_COMM_WORLD
+      use Mpicomm, only: localize_xy, mpibcast_real, MPI_COMM_PENCIL
       use Syscalls, only: sizeof_real
 !
       character (len=*) :: file
@@ -543,7 +543,7 @@ module Io
         else
           call distribute_grid (x, y, z)
         endif
-        call mpibcast_real (t_sp,comm=MPI_COMM_WORLD)
+        call mpibcast_real (t_sp,comm=MPI_COMM_PENCIL)
         t = t_sp
 
         if (lode) call input_ode(file)
@@ -1043,7 +1043,7 @@ module Io
 !  13-Dec-2011/PABourdin: coded
 !
       use File_io, only: file_exists
-      use Mpicomm, only: mpibcast_logical, MPI_COMM_WORLD
+      use Mpicomm, only: mpibcast_logical, MPI_COMM_PENCIL
 !
       character (len=*), intent(in), optional :: file
 !
@@ -1051,7 +1051,7 @@ module Io
 !
       if (present (file)) then
         if (lroot) init_read_persist = .not. file_exists (trim (directory_snap)//'/'//file)
-        call mpibcast_logical (init_read_persist,comm=MPI_COMM_WORLD)
+        call mpibcast_logical (init_read_persist,comm=MPI_COMM_PENCIL)
         if (init_read_persist) return
       endif
 !
@@ -1089,7 +1089,7 @@ module Io
 !
 !  17-Feb-2012/PABourdin: coded
 !
-      use Mpicomm, only: mpibcast_int, MPI_COMM_WORLD
+      use Mpicomm, only: mpibcast_int, MPI_COMM_PENCIL
 !
       character (len=*), intent(in) :: label
       integer, intent(out) :: id
@@ -1113,7 +1113,7 @@ module Io
         endif
       endif
 !
-      call mpibcast_int (id,comm=MPI_COMM_WORLD)
+      call mpibcast_int (id,comm=MPI_COMM_PENCIL)
 !
       read_persist_id = .false.
       if (id == -max_int) read_persist_id = .true.
@@ -1536,7 +1536,7 @@ module Io
 !  15-jun-03/axel: Lx,Ly,Lz are now read in from file (Tony noticed the mistake)
 !  10-Feb-2012/PABourdin: adapted for collective IO
 !
-      use Mpicomm, only: mpibcast_real, MPI_COMM_WORLD
+      use Mpicomm, only: mpibcast_real, MPI_COMM_PENCIL
 !
       character (len=*) :: file
 !
@@ -1566,12 +1566,12 @@ module Io
         call distribute_grid (dx_tilde, dy_tilde, dz_tilde)
       endif
 !
-      call mpibcast_real (dx,comm=MPI_COMM_WORLD)
-      call mpibcast_real (dy,comm=MPI_COMM_WORLD)
-      call mpibcast_real (dz,comm=MPI_COMM_WORLD)
-      call mpibcast_real (Lx,comm=MPI_COMM_WORLD)
-      call mpibcast_real (Ly,comm=MPI_COMM_WORLD)
-      call mpibcast_real (Lz,comm=MPI_COMM_WORLD)
+      call mpibcast_real (dx,comm=MPI_COMM_PENCIL)
+      call mpibcast_real (dy,comm=MPI_COMM_PENCIL)
+      call mpibcast_real (dz,comm=MPI_COMM_PENCIL)
+      call mpibcast_real (Lx,comm=MPI_COMM_PENCIL)
+      call mpibcast_real (Ly,comm=MPI_COMM_PENCIL)
+      call mpibcast_real (Lz,comm=MPI_COMM_PENCIL)
 !
 !  debug output
 !

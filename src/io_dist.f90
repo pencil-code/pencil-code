@@ -909,7 +909,7 @@ module Io
 !  13-Dec-2011/Bourdin.KIS: coded
 !
       use File_io, only: file_exists
-      use Mpicomm, only: mpibcast_logical, MPI_COMM_WORLD
+      use Mpicomm, only: mpibcast_logical, MPI_COMM_PENCIL
 !
       character (len=*), intent(in), optional :: file
 !
@@ -917,7 +917,7 @@ module Io
 !
       if (present (file)) then
         if (lroot) init_read_persist = .not. file_exists (trim (directory_snap)//'/'//file)
-        call mpibcast_logical(init_read_persist,comm=MPI_COMM_WORLD)
+        call mpibcast_logical(init_read_persist,comm=MPI_COMM_PENCIL)
         if (init_read_persist) return
       endif
 !
@@ -952,7 +952,7 @@ module Io
 !
 !  17-Feb-2012/Bourdin.KIS: coded
 !
-      use Mpicomm, only: mpibcast_int, MPI_COMM_WORLD
+      use Mpicomm, only: mpibcast_int, MPI_COMM_PENCIL
 !
       character (len=*), intent(in) :: label
       integer, intent(out) :: id
@@ -972,7 +972,7 @@ module Io
         read (lun_input) id
       endif
 !
-      call mpibcast_int(id,comm=MPI_COMM_WORLD)
+      call mpibcast_int(id,comm=MPI_COMM_PENCIL)
 !
       read_persist_id = .false.
       if (id == -max_int) read_persist_id = .true.

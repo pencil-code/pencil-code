@@ -55,7 +55,7 @@
     subroutine initialize_training
 
       use File_IO, only: file_exists
-      use Mpicomm, only: mpibcast, MPI_COMM_WORLD
+      use Mpicomm, only: mpibcast, MPI_COMM_PENCIL
       use Syscalls, only: system_cmd
 
       character(LEN=fnlen) :: modelfn
@@ -90,7 +90,7 @@
       print*, 'CONFIG FILE=', trim(model_output_dir)//trim(config_file)
       if (lmpicomm) then
         istat = torchfort_create_distributed_model(trim(model), trim(model_output_dir)//trim(config_file), &
-                                                   MPI_COMM_WORLD, mod(iproc,ndevs))
+                                                   MPI_COMM_PENCIL, mod(iproc,ndevs))
       else
         istat = torchfort_create_model(trim(model), trim(model_output_dir)//trim(config_file), model_device)
       endif

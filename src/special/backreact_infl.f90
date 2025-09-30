@@ -114,6 +114,7 @@ module Special
   logical :: lscale_tobox=.true.,ldt_backreact_infl=.true., lconf_time=.true.
   logical :: lskip_projection_phi=.false., lvectorpotential=.false., lflrw=.false.
   logical :: lrho_chi=.false., lno_noise_phi=.false., lno_noise_dphi=.false.
+  logical :: lrho_chi_corrected=.false.
   logical, pointer :: lphi_hom, lphi_linear_regime, lnoncollinear_EB, lnoncollinear_EB_aver
   logical, pointer :: lcollinear_EB, lcollinear_EB_aver, lmass_suppression
   logical, pointer :: lallow_bprime_zero
@@ -137,7 +138,8 @@ module Special
       lbackreact_infl, lem_backreact, c_light_axion, lambda_axion, Vprime_choice, &
       !lem_backreact, c_light_axion, lambda_axion, Vprime_choice, &
       lzeroHubble, ldt_backreact_infl, Ndiv, Hscript0, Hscript_choice, infl_v, &
-      lflrw, lrho_chi, scale_rho_chi_Heqn, echarge_type, cdt_rho_chi
+      lflrw, lrho_chi, scale_rho_chi_Heqn, echarge_type, cdt_rho_chi, &
+      lrho_chi_corrected
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -630,8 +632,13 @@ module Special
       if (lrho_chi) then
         if (lnoncollinear_EB .or. lnoncollinear_EB_aver .or. &
           lcollinear_EB .or. lcollinear_EB_aver) then
-          df_ode(iinfl_rho_chi)=df_ode(iinfl_rho_chi)-4.*Hscript*f_ode(iinfl_rho_chi) &
-            +(sigEm_all*e2m_all+sigBm_all*edotbm_all)/ascale**3
+          if (lrho_chi_corrected) then
+            df_ode(iinfl_rho_chi)=df_ode(iinfl_rho_chi)-4.*Hscript*f_ode(iinfl_rho_chi) &
+              +(sigEm_all*e2m_all+sigBm_all*edotbm_all)/ascale**4
+          else
+            df_ode(iinfl_rho_chi)=df_ode(iinfl_rho_chi)-4.*Hscript*f_ode(iinfl_rho_chi) &
+              +(sigEm_all*e2m_all+sigBm_all*edotbm_all)/ascale**3
+          endif
         else
           df_ode(iinfl_rho_chi)=df_ode(iinfl_rho_chi)-4.*Hscript*f_ode(iinfl_rho_chi)
         endif

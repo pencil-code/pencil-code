@@ -588,7 +588,7 @@ module Io
 !
 !  12-Oct-2019/PABourdin: moved code from 'input_snap'
 !
-      use Mpicomm, only: mpibcast_real, mpibcast_logical, MPI_COMM_WORLD
+      use Mpicomm, only: mpibcast_real, mpibcast_logical, MPI_COMM_PENCIL
       use Syscalls, only: system_cmd
 !
       real :: time
@@ -613,7 +613,7 @@ module Io
           if (lerrcont) call recover_time_from_series(time)
         endif
 !
-        call mpibcast_real (time, comm=MPI_COMM_WORLD)
+        call mpibcast_real (time, comm=MPI_COMM_PENCIL)
         t = time
 !
 !  Read further data if not to be omitted.
@@ -679,15 +679,15 @@ module Io
           endif
           call distribute_grid (dx_tilde, dy_tilde, dz_tilde, gx, gy, gz)
 
-          call mpibcast_real (dx, comm=MPI_COMM_WORLD)
-          call mpibcast_real (dy, comm=MPI_COMM_WORLD)
-          call mpibcast_real (dz, comm=MPI_COMM_WORLD)
-          call mpibcast_real (Lx, comm=MPI_COMM_WORLD)
-          call mpibcast_real (Ly, comm=MPI_COMM_WORLD)
-          call mpibcast_real (Lz, comm=MPI_COMM_WORLD)
+          call mpibcast_real (dx, comm=MPI_COMM_PENCIL)
+          call mpibcast_real (dy, comm=MPI_COMM_PENCIL)
+          call mpibcast_real (dz, comm=MPI_COMM_PENCIL)
+          call mpibcast_real (Lx, comm=MPI_COMM_PENCIL)
+          call mpibcast_real (Ly, comm=MPI_COMM_PENCIL)
+          call mpibcast_real (Lz, comm=MPI_COMM_PENCIL)
 
 100       if (lroot) call file_close_hdf5
-          call mpibcast_logical(lerrcont, comm=MPI_COMM_WORLD)
+          call mpibcast_logical(lerrcont, comm=MPI_COMM_PENCIL)
           if (lerrcont) then
             call warning('input_snap_finalize','grid data corrupted, reading grid from grid.h5')
             call rgrid('')
@@ -1381,7 +1381,7 @@ contains
 !
 !  27-Oct-2018/PABourdin: coded
 !
-      use Mpicomm, only: mpibcast_real, MPI_COMM_WORLD
+      use Mpicomm, only: mpibcast_real, MPI_COMM_PENCIL
 !
       character (len=*) :: file         ! not used
 !
@@ -1420,12 +1420,12 @@ contains
       endif
       call distribute_grid (dx_tilde, dy_tilde, dz_tilde, gx, gy, gz)
 !
-      call mpibcast_real (dx, comm=MPI_COMM_WORLD)
-      call mpibcast_real (dy, comm=MPI_COMM_WORLD)
-      call mpibcast_real (dz, comm=MPI_COMM_WORLD)
-      call mpibcast_real (Lx, comm=MPI_COMM_WORLD)
-      call mpibcast_real (Ly, comm=MPI_COMM_WORLD)
-      call mpibcast_real (Lz, comm=MPI_COMM_WORLD)
+      call mpibcast_real (dx, comm=MPI_COMM_PENCIL)
+      call mpibcast_real (dy, comm=MPI_COMM_PENCIL)
+      call mpibcast_real (dz, comm=MPI_COMM_PENCIL)
+      call mpibcast_real (Lx, comm=MPI_COMM_PENCIL)
+      call mpibcast_real (Ly, comm=MPI_COMM_PENCIL)
+      call mpibcast_real (Lz, comm=MPI_COMM_PENCIL)
 !
       if (lroot.and.ip <= 4) then
         print *, 'rgrid: Lx,Ly,Lz=', Lx, Ly, Lz

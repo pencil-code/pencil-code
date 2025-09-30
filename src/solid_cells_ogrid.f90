@@ -5604,7 +5604,7 @@ module Solid_Cells
 !  21-feb-17/Jorgen: Adapted from io_dist.f90
 !
       use Mpicomm, only: start_serialize, mpibcast_real, mpiallreduce_or, &
-                         stop_it, mpiallreduce_min, mpiallreduce_max, MPI_COMM_WORLD
+                         stop_it, mpiallreduce_min, mpiallreduce_max, MPI_COMM_PENCIL
       use IO, only: lun_input
 !
       character (len=*), intent(in) :: file
@@ -5683,9 +5683,9 @@ module Solid_Cells
         if ((ireset_tstart == 0) .or. (tstart == impossible)) then
 !
           t_test = t_sp
-          call mpibcast_real(t_test,comm=MPI_COMM_WORLD)
+          call mpibcast_real(t_test,comm=MPI_COMM_PENCIL)
           call mpiallreduce_or((t_test /= t_sp) .and. .not. lread_from_other_prec &
-                                .or. (abs(t_test-t_sp) > 1.e-6),ltest,MPI_COMM_WORLD)
+                                .or. (abs(t_test-t_sp) > 1.e-6),ltest,MPI_COMM_PENCIL)
 !
 !  If timestamps deviate at any processor
 !
@@ -5695,11 +5695,11 @@ module Solid_Cells
 !  If reset of tstart enabled and tstart unspecified, use minimum of all t_sp
 !
               if (ireset_tstart == MINT) then
-                call mpiallreduce_min(t_sp,t_sgl,MPI_COMM_WORLD)
+                call mpiallreduce_min(t_sp,t_sgl,MPI_COMM_PENCIL)
                 if (lroot) write (*,*) 'Timestamps in snapshot INCONSISTENT.',&
                                        ' Using (min) t=', t_sgl,'with ireset_tstart=', MINT,'.'
               elseif (ireset_tstart >= MAXT) then
-                call mpiallreduce_max(t_sp,t_sgl,MPI_COMM_WORLD)
+                call mpiallreduce_max(t_sp,t_sgl,MPI_COMM_PENCIL)
                 if (lroot) write (*,*) 'Timestamps in snapshot INCONSISTENT.',&
                                        ' Using (max) t=', t_sgl,'with ireset_tstart=', MAXT,'.'
               endif
@@ -5731,7 +5731,7 @@ module Solid_Cells
 !  21-feb-17/Jorgen: Adapted from io_dist.f90
 !                             
       use Mpicomm, only: start_serialize, mpibcast_real, mpiallreduce_or, &
-                         stop_it, mpiallreduce_min, mpiallreduce_max, MPI_COMM_WORLD
+                         stop_it, mpiallreduce_min, mpiallreduce_max, MPI_COMM_PENCIL
       use IO, only: lun_input
 !
       character (len=*), intent(in) :: file
@@ -5810,9 +5810,9 @@ module Solid_Cells
         if ((ireset_tstart == 0) .or. (tstart == impossible)) then
 !
           t_test = t_sp
-          call mpibcast_real(t_test,comm=MPI_COMM_WORLD)
+          call mpibcast_real(t_test,comm=MPI_COMM_PENCIL)
           call mpiallreduce_or((t_test /= t_sp) .and. .not. lread_from_other_prec &
-                               .or. (abs(t_test-t_sp) > 1.e-6),ltest, MPI_COMM_WORLD)
+                               .or. (abs(t_test-t_sp) > 1.e-6),ltest, MPI_COMM_PENCIL)
 !
 !  If timestamp deviates at any processor
 !
@@ -5822,11 +5822,11 @@ module Solid_Cells
 !  If reset of tstart enabled and tstart unspecified, use minimum of all t_sp
 !
               if (ireset_tstart == MINT) then
-                call mpiallreduce_min(t_sp,t_dbl,MPI_COMM_WORLD)
+                call mpiallreduce_min(t_sp,t_dbl,MPI_COMM_PENCIL)
                 if (lroot) write (*,*) 'Timestamps in snapshot INCONSISTENT.',&
                                        ' Using (min) t=', t_dbl,'with ireset_tstart=', MINT,'.'
               elseif (ireset_tstart >= MAXT) then
-                call mpiallreduce_max(t_sp,t_dbl,MPI_COMM_WORLD)
+                call mpiallreduce_max(t_sp,t_dbl,MPI_COMM_PENCIL)
                 if (lroot) write (*,*) 'Timestamps in snapshot INCONSISTENT.',&
                                        ' Using (max) t=', t_dbl,'with ireset_tstart=', MAXT,'.'
               endif

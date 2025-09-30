@@ -170,7 +170,7 @@ module Timestep
 !
 ! Explicit fifth order Runge--Kutta--Fehlberg time stepping
 !
-      use Mpicomm, only: mpiallreduce_max,MPI_COMM_WORLD
+      use Mpicomm, only: mpiallreduce_max,MPI_COMM_PENCIL
       use Equ, only: pde, impose_floors_ceilings
       use Shear, only: advance_shear
       use Boundcond, only: update_ghosts
@@ -394,7 +394,7 @@ module Timestep
 !
       errmaxs=errmaxs/eps_rkf
 !
-      call mpiallreduce_max(errmaxs,errmax,MPI_COMM_WORLD)
+      call mpiallreduce_max(errmaxs,errmax,MPI_COMM_PENCIL)
 !
     endsubroutine rkck
 !***********************************************************************
@@ -402,7 +402,7 @@ module Timestep
 !
 ! Explicit third order Runge--Kutta--Fehlberg time stepping
 !
-      use Mpicomm, only: mpiallreduce_max,MPI_COMM_WORLD
+      use Mpicomm, only: mpiallreduce_max,MPI_COMM_PENCIL
       use Equ, only: pde, impose_floors_ceilings
       use Shear, only: advance_shear
       use Boundcond, only: update_ghosts
@@ -565,7 +565,7 @@ module Timestep
 !
       errmaxs=errmaxs/eps_rkf
 !
-      call mpiallreduce_max(errmaxs,errmax,MPI_COMM_WORLD)
+      call mpiallreduce_max(errmaxs,errmax,MPI_COMM_PENCIL)
 !
     endsubroutine rkck3
 !***********************************************************************

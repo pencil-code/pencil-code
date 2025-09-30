@@ -5888,7 +5888,7 @@ module Hydro
 !
 !  24-nov-03/axel: adapted from calc_bthresh
 
-      use Mpicomm, only: mpibcast_real, MPI_COMM_WORLD
+      use Mpicomm, only: mpibcast_real, MPI_COMM_PENCIL
 
       real :: orms
 !
@@ -5896,7 +5896,7 @@ module Hydro
 !  broadcast result to other processors
 !
       if (lroot) orms=fname(idiag_orms)
-      call mpibcast_real(orms,comm=MPI_COMM_WORLD)
+      call mpibcast_real(orms,comm=MPI_COMM_PENCIL)
 !
 !  if nvec exceeds novecmax (=1/4) of points per processor, then begin to
 !  increase scaling factor on othresh. These settings will stay in place
@@ -7898,7 +7898,7 @@ module Hydro
 !  24-aug-15/MR: corrected declaration of umx2
 !
       use Diagnostics, only: save_name
-      use Mpicomm, only: mpibcast_real, mpireduce_sum, MPI_COMM_WORLD, IXBEAM,IYBEAM
+      use Mpicomm, only: mpibcast_real, mpireduce_sum, MPI_COMM_PENCIL, IXBEAM,IYBEAM
 !
       logical,save :: first=.true.
       real, dimension (nx,ny) :: fsumxy
