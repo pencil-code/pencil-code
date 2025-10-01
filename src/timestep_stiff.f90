@@ -1,5 +1,8 @@
 ! $Id$
 ! adapted from timestep_rkf, and from numerical recipe stiff algorithm
+!** AUTOMATIC CPARAM.INC GENERATION ****************************
+! CPARAM logical, parameter :: lcourant_dt = .false.
+!***************************************************************
 !
 module Timestep
 !
@@ -68,7 +71,6 @@ module Timestep
     subroutine initialize_timestep
 !
       ldt=.false.
-      lcourant_dt = .false.
 
     endsubroutine initialize_timestep
 !***********************************************************************

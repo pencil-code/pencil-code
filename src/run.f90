@@ -144,6 +144,7 @@ endsubroutine helper_loop
     endif
     call read_all_run_pars
     if (.not.ldt) dt=dtmp
+    if (ldt .and. .not. lcourant_dt) dt0 = dt_next
 !
 !  Before reading the rprint_list deallocate the arrays allocated for
 !  1-D and 2-D diagnostics.

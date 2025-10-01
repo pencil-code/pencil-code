@@ -1,5 +1,9 @@
 ! $Id$
 !
+!** AUTOMATIC CPARAM.INC GENERATION ****************************
+! CPARAM logical, parameter :: lcourant_dt = .true.
+!***************************************************************
+!
 ! Module for the super-time-stepping scheme (STS)
 ! for diffusive terms (Alexiades, V., Amiez, G., &
 ! Gremaud, P. 1996, Commun. Num. Meth. Eng.,  12, 31)
@@ -24,7 +28,6 @@ module Timestep
 
       if (dt0 < 0.) dt = 0
       ldt = (dt==0.)
-      lcourant_dt = .true.
       num_substeps = itorder
 
     endsubroutine initialize_timestep

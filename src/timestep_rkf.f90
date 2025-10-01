@@ -1,5 +1,9 @@
 ! $Id$
 !
+!** AUTOMATIC CPARAM.INC GENERATION ****************************
+! CPARAM logical, parameter :: lcourant_dt = .false.
+!***************************************************************
+!
 module Timestep
 !
   use Cdata
@@ -12,7 +16,7 @@ module Timestep
 !
 ! Parameters for adaptive time stepping
   real, parameter :: safety      =  0.95
-  real            :: errcon, dt_next, dt_increase, dt_decrease
+  real            :: errcon, dt_increase, dt_decrease
   real, dimension(mvar) :: farraymin
 !
   contains
@@ -41,7 +45,6 @@ module Timestep
           dt = dt0
         endif
       endif
-      lcourant_dt=.false.
       dt0 = 0.
 !
       if (eps_rkf0/=0.) eps_rkf=eps_rkf0

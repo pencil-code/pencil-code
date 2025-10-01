@@ -1,10 +1,15 @@
 ! $Id$
 !
+!
 !  Timestepping routine corresponding to the use of LSODE to solve chemistry.
 !  The transport equations are solved as usual using RK methods but the
 !  chemistry ODEs are separated and solved implicitly using LSODE either
 !  following a sequential (1 chemistry step) or symmetric (2 chemistry steps)
 !  splitting scheme.
+!
+!** AUTOMATIC CPARAM.INC GENERATION ****************************
+! CPARAM logical, parameter :: lcourant_dt = .true.
+!***************************************************************
 !
 module Timestep
 !
@@ -44,7 +49,6 @@ module Timestep
 
       if (dt0 < 0.) dt = 0
       ldt = (dt==0.)
-      lcourant_dt = .true.
 
       num_substeps = itorder
 

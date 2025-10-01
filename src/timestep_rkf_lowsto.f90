@@ -1,5 +1,6 @@
 ! $Id$
 !
+!
 !  Runge-Kutta-Fehlberg Low-Storage method
 !  Christopher A. Kennedy, Mark H. Carpenter, R.Michael Lewis,
 !  Low-storage, explicit Runge–Kutta schemes for the compressible Navier–Stokes equations,
@@ -9,6 +10,12 @@
 !  Pages 177-219,
 !  ISSN 0168-9274,
 !  https://doi.org/10.1016/S0168-9274(99)00141-5.
+!
+!** AUTOMATIC CPARAM.INC GENERATION ****************************
+!
+! CPARAM logical, parameter :: lcourant_dt = .false.
+!
+!***************************************************************
 !
 module Timestep
 !
@@ -25,7 +32,7 @@ module Timestep
   real, dimension (:,:,:,:), pointer :: farr
   real, dimension (:,:,:,:), allocatable :: errdf
   real, dimension (5) :: beta_hat, dt_beta_hat, dt_alpha_ts
-  real            :: dt_increase, dt_decrease, errmax, errmaxs, dt_next
+  real            :: dt_increase, dt_decrease, errmax, errmaxs
   real            :: safety=0.95
   integer         :: itter
 !
@@ -129,7 +136,6 @@ module Timestep
           dt = dt0
         endif
       endif
-      lcourant_dt=.false.
       dt_next = dt
       if (.not. lgpu) then
         if(.not. allocated(f1)) allocate(f1(mx,my,mz,mfarray))

@@ -182,12 +182,15 @@ module Cdata
   real :: Area_xy=1., Area_yz=1., Area_xz=1.
   logical :: lfirst=.false.,llast=.false.,ldt_paronly=.false.
   logical :: ldt=.true.
-  logical :: lcourant_dt=.true.
   logical :: lupdate_courant_dt=.false.
 !
 !  Time integration parameters.
 !
   real :: dt=0.0
+  !    dt_next is needed for correct continuation with RKF:
+  !    we store the calculated dt that would have been used for the next timestep
+  !    instead of the currently used one
+  real :: dt_next=0.0
   real :: tmax=1e33, tstart=0.0
   real :: max_walltime=0.0  ! in seconds
   real :: dt_incr=0.0, dt0=0.

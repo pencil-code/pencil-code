@@ -1,4 +1,7 @@
 !
+!** AUTOMATIC CPARAM.INC GENERATION ****************************
+! CPARAM logical, parameter :: lcourant_dt = .true.
+!***************************************************************
 !  [Auto-generated file, so think twice before editing]
 !
 !  A second-order timestepping module similar to RKC (Runge-Kutta-Chebyshev).
@@ -36,7 +39,6 @@ contains
 
       if (dt0 < 0.) dt = 0
       ldt = (dt==0.)
-      lcourant_dt = .true.
 
       num_substeps = 25
 
