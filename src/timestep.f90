@@ -63,7 +63,6 @@ module Timestep
       endif
 
       ldt = (dt==0.)
-      lcourant_dt = .true.
 
       num_substeps = itorder
 
