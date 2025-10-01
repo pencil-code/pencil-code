@@ -283,6 +283,8 @@ module Sub
      module procedure meanyz_s
      module procedure meanyz_v
   endinterface
+
+  public :: check_for_nans_globally
 !
 !  extended intrinsic operators to do some scalar/vector pencil arithmetic
 !  Tobi: Array valued functions do seem to be slower than subroutines,
@@ -9264,5 +9266,23 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
       res%x = dxyz_2(nghost); res%y=dxyz_4(nghost); res%z=dxyz_6(nghost)
   
     endfunction get_dxyzs
+!***********************************************************************    
+    subroutine check_for_nans_globally(f,caller)
+      use Mpicomm, only: mpireduce_max_int
+      use General, only: notanumber
+      real, dimension(:,:,:,:) :: f
+      character (len=*), optional :: caller
+      integer :: has_nan_local,has_nan_global
+
+      has_nan_local = merge(1,0,notanumber(f))
+      call mpireduce_max_int(has_nan_local,has_nan_global)
+      if(has_nan_global == 1) then
+              if(.not. present(caller)) then
+                call fatal_error('check_for_nans_globally','Found nans!!')
+              else
+                call fatal_error('check_for_nans_globally','Found nans: '//caller//' !!')
+              endif
+      endif
+    endsubroutine check_for_nans_globally
 !***********************************************************************    
 endmodule Sub

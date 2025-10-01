@@ -63,6 +63,7 @@ subroutine helper_loop(f,p)
 !$ use General, only: signal_wait, signal_send
   use Snapshot, only: perform_powersnap, perform_wsnap_ext, perform_wsnap_down
   use Mpicomm, only: mpiwtime
+  use Sub, only: check_for_nans_globally
 !
   real, dimension (mx,my,mz,mfarray) :: f
   type (pencil_case) :: p
@@ -73,6 +74,7 @@ subroutine helper_loop(f,p)
 !
 !$  do while(lhelper_run)
 !$    call signal_wait(lhelper_perf,lhelper_run)
+      call check_for_nans_globally(f,'after reading from the GPU')
       start_time = mpiwtime()
 !$    if (lhelper_run) call restore_diagnostic_controls
 
