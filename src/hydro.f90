@@ -449,6 +449,7 @@ module Hydro
                                 ! PHIAVG_DOC: \var{uthmphi} and \var{upmphi}
                                 ! PHIAVG_DOC: together
   integer :: idiag_u2mphi=0     ! PHIAVG_DOC: $\left<\uv^2\right>_\varphi$
+  integer :: idiag_o2mphi=0     ! PHIAVG_DOC: $\left<\boldsymbol{\omega}^2\right>_\varphi$
   integer :: idiag_fkinrsphmphi=0 ! PHIAVG_DOC: $\left<{1\over2}\varrho\uv^2
                                 ! PHIAVG_DOC: u_r\right>_{\varphi}$
   integer :: idiag_u2mr=0       ! DIAG_DOC:
@@ -535,7 +536,9 @@ module Hydro
   integer :: idiag_pvzm=0       ! DIAG_DOC: $\left<\omega_z + 2\Omega/\varrho\right>$
                                 ! DIAG_DOC: \quad(z component of potential vorticity)
   integer :: idiag_oumphi=0     ! DIAG_DOC: $\left<\omv\cdot\uv\right>_\varphi$
-  integer :: idiag_ozmphi=0     ! DIAG_DOC:
+  integer :: idiag_ormphi=0     ! DIAG_DOC: $\left<\omega_r\right>_\varphi$
+  integer :: idiag_opmphi=0     ! DIAG_DOC: $\left<\omega_\phi\right>_\varphi$
+  integer :: idiag_ozmphi=0     ! DIAG_DOC: $\left<\omega_z\right>_\varphi$
   integer :: idiag_ormr=0       ! DIAG_DOC:
   integer :: idiag_opmr=0       ! DIAG_DOC:
   integer :: idiag_ozmr=0       ! DIAG_DOC:
@@ -2951,10 +2954,12 @@ module Hydro
       lpenc_diagnos(i_uu)=.true.
       if (idiag_oumphi/=0 .or. idiag_oumxy/=0 .or. &
           idiag_oumxz/=0) lpenc_diagnos2d(i_ou)=.true.
-      if (idiag_ozmphi/=0 .or. idiag_ox2mxz/=0 .or. &
+      if (idiag_ormphi/=0 .or. idiag_opmphi/=0 .or. &
+          idiag_ozmphi/=0 .or. idiag_ox2mxz/=0 .or. &
           idiag_oy2mxz/=0 .or. idiag_oz2mxz/=0 .or. &
-          idiag_oymxz/=0 ) lpenc_diagnos2d(i_oo)=.true.
+          idiag_oymxz/=0) lpenc_diagnos2d(i_oo)=.true.
       if (idiag_u2mphi/=0) lpenc_diagnos2d(i_u2)=.true.
+      if (idiag_o2mphi/=0) lpenc_diagnos2d(i_o2)=.true.
       if (idiag_ox2m/=0 .or. idiag_oy2m/=0 .or. idiag_oz2m/=0 .or. &
           idiag_ox3m/=0 .or. idiag_oy3m/=0 .or. idiag_oz3m/=0 .or. &
           idiag_ox4m/=0 .or. idiag_oy4m/=0 .or. idiag_oz4m/=0 .or. &
@@ -5149,6 +5154,7 @@ module Hydro
         call phisum_mn_name_rz(p%uu(:,3),idiag_uzmphi)
         call phisum_mn_name_rz(p%uu(:,3)**2,idiag_uz2mphi)
         call phisum_mn_name_rz(p%u2,idiag_u2mphi)
+        call phisum_mn_name_rz(p%o2,idiag_o2mphi)
         if (idiag_urupmphi/=0) &
             call phisum_mn_name_rz((p%uu(:,1)*p%pomx+p%uu(:,2)*p%pomy)*(p%uu(:,1)*p%phix+p%uu(:,2)*p%phiy),idiag_urupmphi)
         if (idiag_uruzmphi/=0) &
@@ -5166,7 +5172,9 @@ module Hydro
         if (idiag_rupmphi/=0) &
             call phisum_mn_name_rz(p%rho*(p%uu(:,1)*p%phix+p%uu(:,2)*p%phiy),idiag_rupmphi)
         if (idiag_rupmphi/=0) call phisum_mn_name_rz(p%rho*p%uu(:,3),idiag_ruzmphi)
-        call phisum_mn_name_rz(p%oo(:,3),idiag_ozmphi)
+        if (idiag_ormphi/=0) call phisum_mn_name_rz(p%oo(:,1)*p%pomx+p%oo(:,2)*p%pomy,idiag_ormphi)
+        if (idiag_opmphi/=0) call phisum_mn_name_rz(p%oo(:,1)*p%phix+p%oo(:,2)*p%phiy,idiag_opmphi)
+        if (idiag_ozmphi/=0) call phisum_mn_name_rz(p%oo(:,3),idiag_ozmphi)
         call phisum_mn_name_rz(p%ou,idiag_oumphi)
         if (idiag_fkinrsphmphi/=0) call phisum_mn_name_rz(p%ekin*(p%uu(:,1)*p%evr(:,1)+ &
               p%uu(:,2)*p%evr(:,2)+p%uu(:,3)*p%evr(:,3)),idiag_fkinrsphmphi)
@@ -6752,6 +6760,7 @@ module Hydro
         idiag_ruruzmphi=0
         idiag_rupuzmphi=0
         idiag_fkinrsphmphi=0
+        idiag_o2mphi=0
         idiag_uxmy=0
         idiag_uymy=0
         idiag_uzmy=0
@@ -6877,6 +6886,8 @@ module Hydro
         idiag_oumxy=0
         idiag_oumxz=0
         idiag_oumphi=0
+        idiag_ormphi=0
+        idiag_opmphi=0
         idiag_ozmphi=0
         idiag_ormr=0
         idiag_opmr=0
@@ -7589,7 +7600,10 @@ module Hydro
         call parse_name(irz,cnamerz(irz),cformrz(irz),'ruruzmphi',idiag_ruruzmphi)
         call parse_name(irz,cnamerz(irz),cformrz(irz),'rupuzmphi',idiag_rupuzmphi)
         call parse_name(irz,cnamerz(irz),cformrz(irz),'oumphi',idiag_oumphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'ormphi',idiag_ormphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'opmphi',idiag_opmphi)
         call parse_name(irz,cnamerz(irz),cformrz(irz),'ozmphi',idiag_ozmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'o2mphi',idiag_o2mphi)
         call parse_name(irz,cnamerz(irz),cformrz(irz),'fkinrsphmphi',idiag_fkinrsphmphi)
       enddo
 !
