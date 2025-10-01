@@ -1,5 +1,9 @@
 ! $Id$
 !
+!** AUTOMATIC CPARAM.INC GENERATION ****************************
+! CPARAM logical, parameter :: lcourant_dt = .true.
+!***************************************************************
+!
 ! MODULE_DOC: This is a highly specified timestep module currently only working
 ! MODULE_DOC: together with the special module coronae.f90.
 !
@@ -34,7 +38,6 @@ module Timestep
 
       if (dt0 < 0.) dt = 0
       ldt = (dt==0.)
-      lcourant_dt = .true.
       num_substeps = 3
 
     endsubroutine initialize_timestep

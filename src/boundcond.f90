@@ -1859,7 +1859,7 @@ module Boundcond
               case ('Fcm')
                 if (j/=iss) then; errmsg=' not allowed for variable no. '//trim(cjvar); goto 10; endif
               case ('sT')
-                if (j/=iss) then; errmsg=' not allowed for variable no. '//trim(cjvar); goto 10; endif
+                if (.not.(j==iss .or. j==iss_run_aver)) then; errmsg=' not allowed for variable no. '//trim(cjvar); goto 10; endif
               case ('asT')
                 if (j/=iss) then; errmsg=' not allowed for variable no. '//trim(cjvar); goto 10; endif
               case ('hat')
@@ -1966,7 +1966,7 @@ module Boundcond
             if (j/=iss) then; errmsg=' not allowed for variable no. '//trim(cjvar); goto 20; endif
           case ('sT')
             ! BCY: symmetric temp.
-            if (j/=iss) then; errmsg=' not allowed for variable no. '//trim(cjvar); goto 20; endif
+            if (.not.(j==iss .or. j==iss_run_aver)) then; errmsg=' not allowed for variable no. '//trim(cjvar); goto 20; endif
           case ('asT')
             ! BCY: select entropy for uniform ghost temperature
             ! BCY: matching fluctuating boundary value,
@@ -2006,7 +2006,7 @@ module Boundcond
               if (.not.bc%done) then; errmsg=" not allowed for varaible no. "//trim(cjvar); goto 20; endif
             endif
           endselect
-  20      if (errmsg/='') call fatal_error('check_bounconds_x',trim(bc_code)//trim(errmsg))
+  20      if (errmsg/='') call fatal_error('check_bounconds_y',trim(bc_code)//trim(errmsg))
         enddo
       enddo
 !
@@ -2121,7 +2121,7 @@ module Boundcond
           case ('cp')
             if (j/=ilnrho) then; errmsg=' not allowed for variable no. '//trim(cjvar); goto 30; endif
           case ('sT')
-            if (j/=iss) then; errmsg=' not allowed for variable no. '//trim(cjvar); goto 30; endif
+            if (.not.(j==iss .or. j==iss_run_aver)) then; errmsg=' not allowed for variable no. '//trim(cjvar); goto 30; endif
           case ('ctz')
             if (j/=iss) then; errmsg=' not allowed for variable no. '//trim(cjvar); goto 30; endif
           case ('cdz')
@@ -2176,7 +2176,7 @@ module Boundcond
               if (.not.bc%done) then; errmsg=" not allowed for variable no. "//trim(cjvar); goto 30; endif
             endif
           endselect
-  30      if (errmsg/='') call fatal_error('check_bounconds_x',trim(bc_code)//trim(errmsg))
+  30      if (errmsg/='') call fatal_error('check_bounconds_z',trim(bc_code)//trim(errmsg))
         enddo
       enddo
 !

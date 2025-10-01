@@ -218,7 +218,7 @@ module Persist
           call warning('input_persist_general_by_label','no persistent value of deltay found')
       endif
 !
-      if (dt0==0.) then
+      if (dt0==0 .or. .not. lcourant_dt) then
         if (read_persist ('TIME_STEP', dtmp)) then
           call warning('input_persist_general_by_label','no persistent value of dt found')
         else
@@ -246,6 +246,8 @@ module Persist
       use Cdata, only: seed, nseed, lshear, deltay
       use General, only: random_seed_wrapper
       use IO, only: write_persist
+
+      real :: dt_save
 !
       output_persistent_general = .false.
 !
@@ -267,9 +269,15 @@ module Persist
             output_persistent_general = .true.
       endif
 !
-      if (.not.lstart.and.(.not.lcourant_dt.or.lgpu)) then
-        if (write_persist ('TIME_STEP', id_record_TIME_STEP, merge(-dt,dt,lgpu.and.ldt))) &
+      if (.not.lstart.and.(.not.lcourant_dt)) then
+        if(ldt .and. .not. lcourant_dt) then
+          dt_save = dt_next
+        else
+          dt_save = dt
+        endif
+        if (write_persist ('TIME_STEP', id_record_TIME_STEP, dt_save)) then
           output_persistent_general = .true.
+        endif
       endif
 !
       if (.not.ldt) then
