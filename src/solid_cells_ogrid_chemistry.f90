@@ -26,7 +26,6 @@
 !***************************************************************
 module solid_cells_ogrid_chemistry
 !
-  use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
   use EquationOfState

@@ -17,7 +17,6 @@
 !***************************************************************
 module Hypervisc_strict
 !
-  use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
 !

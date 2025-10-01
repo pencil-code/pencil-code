@@ -18,7 +18,6 @@
 module Poisson
 !
   use Cdata
-  use Cparam
   use Fourier
   use Messages
 !

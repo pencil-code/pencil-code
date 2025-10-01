@@ -16,9 +16,8 @@
 module PointMasses
 !
   use Cdata
-  use General, only: keep_compiler_quiet, find_proc
   use Messages
-  use Cparam
+  use General, only: keep_compiler_quiet, find_proc
 !
   implicit none
 !

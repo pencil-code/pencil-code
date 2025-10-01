@@ -8,7 +8,7 @@
 !
 module GPU
 !
-  use Cdata
+  use Cparam
   use General, only: keep_compiler_quiet, lpointer, keep_compiler_quiet_dble
 
   implicit none

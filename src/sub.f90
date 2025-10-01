@@ -13,7 +13,6 @@
 module Sub
 !
   use Cdata
-  use Cparam
   use Messages
 !
   implicit none
@@ -83,6 +82,7 @@ module Sub
 !
   public :: max_for_dt,unit_vector
 !
+  public :: coeff_ydep
   public :: write_dx_general, rdim
   public :: write_xprof, write_yprof, write_zprof, remove_prof
 !
@@ -5111,6 +5111,62 @@ module Sub
       sine_step_mn = 0.5*(1+sin(0.5*pi*xi))
 !
     endfunction sine_step_mn
+!***********************************************************************
+    subroutine coeff_ydep(ydep_profile, y, coeff, ampl, coeff_y, gcoeff_y, jump, width, y0, y1, two_step_factor)
+!
+!  creates a z-dependent resistivity for protoplanetary disk studies
+!
+!  19-aug-2013/wlad: adapted from eta_zdep
+!
+      character(len=labellen), intent(in) :: ydep_profile
+!
+      real :: coeff, ampl
+      real, dimension(:), intent(in) :: y
+      real, dimension(size(y)), intent(out) :: coeff_y
+      real, dimension(size(y)), intent(out), optional :: gcoeff_y
+      real, optional :: jump, width, y0, y1, two_step_factor
+!
+      select case (ydep_profile)
+!
+!  cos(y) profile
+!
+        case ('cos(y)')
+          coeff_y=coeff*(1.+ampl*cos(y))
+          if (present(gcoeff_y)) gcoeff_y=-coeff*ampl*sin(y)
+!
+!  Two-step function
+!
+        case ('two-step','two_step')
+!
+!  Default to spread gradient over ~5 grid cells,
+!
+          if (width == 0.) width = 5.*dy
+          coeff_y = coeff*(jump - (jump-two_step_factor)*(step(y,y0,width)-step(y,y1,width)))
+!
+!  ... and its gradient. Note that the sign of the second term enters
+!  with the opposite sign, because we have used negative width.
+!
+          if (present(gcoeff_y)) &
+            gcoeff_y = coeff*(jump-two_step_factor)*(der_step(y,y0,-width)+der_step(y,y1,width))
+!
+        case ('bound')
+!
+!  Similar to two-step case, but fixes the profile to enhancement
+!  near the latitudinal boundary
+!
+!  Default to spread gradient over ~5 grid cells,
+!
+          if (width == 0.) width = 5.*dy
+          coeff_y = coeff*(1. + (jump-1.)*(step(y,xyz1(2)-3.*width,width)+step(y,xyz0(2)+3.*width,-width)))
+!
+!  ... and its gradient.
+!
+          if (present(gcoeff_y)) &
+            gcoeff_y = coeff*(jump-1.)*(der_step(y,xyz1(2)-3.*width,width)+der_step(y,xyz0(2)+3.*width,-width))
+
+      endselect
+!
+    endsubroutine coeff_ydep
 !***********************************************************************
     subroutine nan_inform(f,msg,region,int1,int2,int3,int4,lstop)
 !

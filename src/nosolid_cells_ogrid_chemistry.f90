@@ -8,7 +8,7 @@ module solid_cells_ogrid_chemistry
 implicit none
 !
   contains
-!
+!***********************************************************************
     subroutine calc_pencils_chemistry_ogrid(f)
 !
 !   dummy routine

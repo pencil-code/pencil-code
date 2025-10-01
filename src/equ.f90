@@ -7,7 +7,6 @@ module Equ
   use Cdata
   use Messages
   use Boundcond
-  use Mpicomm
   use Grid, only: calc_pencils_grid, get_grid_mn
 
   implicit none
@@ -172,7 +171,7 @@ module Equ
 !
 !  For debugging purposes impose minimum or maximum value on certain variables.
 !
-        if(.not. lgpu) call impose_floors_ceilings(f)   !MR: too early, f modifications come below
+        if (.not. lgpu) call impose_floors_ceilings(f)   !MR: too early, f modifications come below
 !
 !  Apply global boundary conditions to particle positions and communicate
 !  migrating particles between the processors.
@@ -609,7 +608,7 @@ module Equ
 !
 
       !TP: if equ had an init phase this would fit there better
-      if(idiag_Rmesh /= 0) ltimestep_diagnostics = .true.
+      if (idiag_Rmesh /= 0) ltimestep_diagnostics = .true.
       call init_reduc_pointers
 !  If doing diagnostics together with the GPU lupdate_courant_dt means to calculate some of the timestep diagnostics
      
@@ -907,16 +906,19 @@ module Equ
     endsubroutine calc_all_pencils
 !***********************************************************************
     subroutine check_if_necessary(f,lcommunicate)
-        real, dimension(mx,my,mz,mfarray) :: f
-        logical :: lcommunicate
-        if (lcommunicate) then
-          if (necessary(imn)) then
-            call finalize_isendrcv_bdry(f)
-            call boundconds_y(f)
-            call boundconds_z(f)
-            lcommunicate=.false.
-          endif
+
+      real, dimension(mx,my,mz,mfarray) :: f
+      logical :: lcommunicate
+
+      if (lcommunicate) then
+        if (necessary(imn)) then
+          call finalize_isendrcv_bdry(f)
+          call boundconds_y(f)
+          call boundconds_z(f)
+          lcommunicate=.false.
         endif
+      endif
+
     endsubroutine check_if_necessary
 !***********************************************************************
     subroutine before_boundary_shared(f)
@@ -1778,7 +1780,7 @@ module Equ
 !
 !  13-nov-23/TP: Written
 !
-      use MPIcomm
+      use Mpicomm
       use Boundcond
       use Gpu, only: before_boundary_gpu, rhs_gpu, copy_farray_from_GPU, get_farray_ptr_gpu,&
                      after_timestep_gpu

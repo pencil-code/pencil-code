@@ -51,7 +51,8 @@ module GPU
   type(C_PTR) :: pFarr_GPU_in, pFarr_GPU_out
 
   namelist /gpu_run_pars/ &
-     ltest_bcs,lac_sparse_autotuning,lcpu_timestep_on_gpu,lread_all_vars_from_device,lcuda_aware_mpi
+     ltest_bcs,lac_sparse_autotuning,lcpu_timestep_on_gpu,lread_all_vars_from_device,lcuda_aware_mpi, &
+     lskip_rtime_compilation
 
 contains
 !***********************************************************************

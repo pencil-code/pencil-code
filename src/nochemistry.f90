@@ -193,11 +193,6 @@ module Chemistry
 !***********************************************************************
     subroutine get_mu1_slice(f,slice,grad_slice,index,sgn,direction)
 !
-! For the NSCBC boudary conditions the slice of mu1 at the boundary
-! is required.
-!
-! 2009.12.10: Nils Erland L. Haugen (coded)
-!
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(ny,nz), intent(out) :: slice, grad_slice
       integer, intent(in) :: index, sgn,direction
@@ -210,10 +205,6 @@ module Chemistry
 !***********************************************************************
     subroutine get_gamma_slice(f,slice,index,dir)
 !
-!  Get a 2D slice of gamma
-!
-!  2009.12.10: Nils Erland L. Haugen (coded)
-!
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension (:,:), intent(out)  :: slice
       integer, intent(in) :: index,dir
@@ -225,10 +216,6 @@ module Chemistry
     endsubroutine get_gamma_slice
 !***********************************************************************
     subroutine get_cs2_slice(f,slice,index,dir)
-!
-!  Get a 2D slice of cs2
-!
-!  2009.12.10: Nils Erland L. Haugen (coded)
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension (:,:), intent(out)  :: slice
@@ -293,21 +280,13 @@ module Chemistry
 !***********************************************************************
     subroutine chemistry_init_reduc_pointers
 !
-!    7-feb-24 TP: dummy
-!
     endsubroutine chemistry_init_reduc_pointers
 !***********************************************************************
     subroutine chemistry_diags_reductions
 !
-!    7-feb-24 TP: dummy
-!
     endsubroutine chemistry_diags_reductions 
 !***********************************************************************
    subroutine find_species_index(species_name,ind_glob,ind_chem,found_specie)
-!
-!  Find index in the f array for specie
-!
-!  05-feb-08/nils: coded
 !
       integer, intent(out) :: ind_glob
       integer, intent(inout) :: ind_chem
@@ -393,31 +372,31 @@ module Chemistry
 !***********************************************************************
     subroutine pushpars2c(p_par)
 
-    use Syscalls, only: copy_addr
+      use Syscalls, only: copy_addr
 
-    integer, parameter :: n_pars=1
-    integer(KIND=ikind8), dimension(n_pars) :: p_par
+      integer, parameter :: n_pars=1
+      integer(KIND=ikind8), dimension(n_pars) :: p_par
 
-    call copy_addr(rgas,p_par(1))
+      call copy_addr(rgas,p_par(1))
 
     endsubroutine pushpars2c
 !***********************************************************************
-  subroutine make_flame_index(f)
+    subroutine make_flame_index(f)
 !
-  real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
 !
-  call keep_compiler_quiet(f)
+      call keep_compiler_quiet(f)
 !
-end subroutine make_flame_index
+    endsubroutine make_flame_index
 !***********************************************************************
-subroutine make_mixture_fraction(f)
+    subroutine make_mixture_fraction(f)
 !
 ! Calculate Bilger mixture fraction and store in f-array. 
 !
-  real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
 !
-  call keep_compiler_quiet(f)
+      call keep_compiler_quiet(f)
 !
-end subroutine make_mixture_fraction
+    endsubroutine make_mixture_fraction
 !***********************************************************************   
 endmodule Chemistry

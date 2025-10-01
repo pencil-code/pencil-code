@@ -40,7 +40,7 @@ module Deriv
       if (lroot) print*,'calc_coeffs_1 is not evaluated'
 !--   call fatal_error("calc_coeffs_1","not coded for deriv_2nd")
 ! 
-  endsubroutine calc_coeffs_1
+    endsubroutine calc_coeffs_1
 !***********************************************************************
     subroutine der_main(f, k, df, j, ignoredx)
 !

@@ -23,7 +23,6 @@
 module Ascalar
 !
   use Cdata
-  use Cparam
   use Messages
 !
   implicit none

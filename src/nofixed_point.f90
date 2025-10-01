@@ -7,7 +7,6 @@
 !***************************************************************
 module Fixed_point
 !
-  use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
 !

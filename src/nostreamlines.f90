@@ -9,7 +9,6 @@
 !***************************************************************
 module Streamlines
 !
-  use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
 !
