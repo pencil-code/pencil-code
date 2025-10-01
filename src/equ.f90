@@ -907,6 +907,8 @@ module Equ
 !***********************************************************************
     subroutine check_if_necessary(f,lcommunicate)
 
+      use Mpicomm, only: finalize_isendrcv_bdry
+
       real, dimension(mx,my,mz,mfarray) :: f
       logical :: lcommunicate
 
