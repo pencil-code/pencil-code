@@ -6,7 +6,6 @@
 module Ghost_check
 !
   use Cdata
-  use Cparam
 !
   implicit none
 !

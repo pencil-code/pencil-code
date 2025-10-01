@@ -1500,7 +1500,7 @@ endsubroutine helper_loop
     
     call copy_addr(lperi,p_par(1176)) ! bool3
     call copy_addr(lcpu_timestep_on_gpu,p_par(1177)) ! bool
-    call copy_addr(ac_sparse_autotuning,p_par(1178)) ! bool
+    call copy_addr(lac_sparse_autotuning,p_par(1178)) ! bool
     call copy_addr(lskip_rtime_compilation,p_par(1179)) ! bool
     
     call copy_addr_dble(sigma_thomson,p_par(1185))
