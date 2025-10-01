@@ -16,7 +16,6 @@
 module Particles_temperature
 !
   use Cdata
-  use Cparam
   use General, only: keep_compiler_quiet
   use Messages
   use Particles_cdata

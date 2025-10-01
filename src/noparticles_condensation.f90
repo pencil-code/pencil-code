@@ -15,7 +15,6 @@
 module Particles_condensation
 !
   use Cdata
-  use Cparam
   use Messages
   use Particles_cdata
   use Particles_map

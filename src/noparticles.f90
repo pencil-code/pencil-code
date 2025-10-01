@@ -17,7 +17,7 @@
 !***************************************************************
 module Particles
 !
-  use Cdata
+  use Cparam
   use General, only: keep_compiler_quiet
 !
   implicit none
@@ -28,18 +28,9 @@ module Particles
 !***********************************************************************
     subroutine register_particles
 !
-!  Set up indices for access to the fp and dfp arrays
-!
-!  22-aug-05/anders: dummy
-!
     endsubroutine register_particles
 !***********************************************************************
     subroutine initialize_particles(f,fp)
-!
-!  Perform any post-parameter-read initialization i.e. calculate derived
-!  parameters.
-!
-!  22-aug-05/anders: dummy
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mparray), intent (in) :: fp
@@ -50,10 +41,6 @@ module Particles
     endsubroutine initialize_particles
 !***********************************************************************
     subroutine init_particles(f,fp)
-!
-!  Initial positions and velocities of particles.
-!
-!  22-aug-05/anders: dummy
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mparray) :: fp
@@ -89,18 +76,9 @@ module Particles
 !***********************************************************************
     subroutine pencil_criteria_particles
 !
-!  All pencils that the Particles module depends on are specified here.
-!
-!  20-apr-06/anders: dummy
-!
     endsubroutine pencil_criteria_particles
 !***********************************************************************
     subroutine pencil_interdep_particles(lpencil_in)
-!
-!  Interdependency among pencils provided by the Particles module
-!  is specified here.
-!
-!  16-feb-06/anders: dummy
 !
       logical, dimension(npencils) :: lpencil_in
 !
@@ -109,10 +87,6 @@ module Particles
     endsubroutine pencil_interdep_particles
 !***********************************************************************
     subroutine calc_pencils_particles(f,p)
-!
-!  Calculate particle pencils.
-!
-!  16-feb-06/anders: dummy
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -123,10 +97,6 @@ module Particles
     endsubroutine calc_pencils_particles
 !***********************************************************************
     subroutine dxxp_dt(f,df,fp,dfp,ineargrid)
-!
-!  Evolution of particle position.
-!
-!  22-aug-05/anders: dummy
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -177,10 +147,6 @@ module Particles
 !***********************************************************************
     subroutine dxxp_dt_pencil(f,df,fp,dfp,p,ineargrid)
 !
-!  Evolution of particle position (called from main pencil loop).
-!
-!  25-apr-06/anders: dummy
-!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mparray) :: fp
@@ -220,10 +186,6 @@ module Particles
     endsubroutine dvvp_dt_pencil
 !***********************************************************************
     subroutine dxxp_dt_blocks(f,df,fp,dfp,ineargrid)
-!
-!  Evolution of particle position in blocks.
-!
-!  29-nov-09/anders: dummy
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -301,14 +263,6 @@ module Particles
 !***********************************************************************
     subroutine insert_particles(f,fp,ineargrid)
 !
-! Insert particles continuously (when linsert_particles_continuously == T),
-! i.e. in each timestep. If number of particles to be inserted are less
-! than unity, accumulate number over several timesteps until the integer value
-! is larger than one. Keep the remainder and accumulate this to the next insert.
-!
-! Works only for particles_dust - add neccessary variable
-! declarations in particles_tracers to make it work here.
-!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mparray) :: fp
       integer, dimension (mpar_loc,3)    :: ineargrid
@@ -339,10 +293,6 @@ module Particles
 !***********************************************************************
     subroutine rprint_particles(lreset,lwrite)
 !
-!  Read and register print parameters relevant for particles
-!
-!  22-aug-05/anders: dummy
-!
       logical, optional :: lwrite
 !
       call keep_compiler_quiet(lreset)
@@ -351,8 +301,6 @@ module Particles
     endsubroutine rprint_particles
 !***********************************************************************
     subroutine particles_cleanup
-!
-! dummy subroutine.
 !
     endsubroutine particles_cleanup
 !***********************************************************************

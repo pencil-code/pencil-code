@@ -25,7 +25,6 @@
 module Particles
 !
   use Cdata
-  use Cparam
   use General, only: keep_compiler_quiet, indgen
   use Messages
   use Particles_cdata

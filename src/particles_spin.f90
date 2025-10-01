@@ -22,7 +22,6 @@
 module Particles_spin
 !
   use Cdata
-  use Cparam
   use Messages
   use Particles_cdata
 !

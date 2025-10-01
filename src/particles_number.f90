@@ -13,10 +13,8 @@
 !***************************************************************
 module Particles_number
 !
-  use Cparam
   use Cdata
-  use General, only: keep_compiler_quiet
-  use General, only: itoa
+  use General, only: keep_compiler_quiet, itoa
   use Messages
   use Particles_cdata
   use Particles_sub

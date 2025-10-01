@@ -19,7 +19,6 @@
 module Particles_adaptation
 !
   use Cdata
-  use Cparam
   use General, only: keep_compiler_quiet, notanumber
   use Messages
   use Particles_cdata
