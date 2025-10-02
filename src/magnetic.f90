@@ -11813,6 +11813,9 @@ print*,'AXEL2: should not be here (eta) ... '
     call copy_addr(eta_tdep_ascale_power,p_par(268))
     call copy_addr(lremove_meanaxy,p_par(269)) ! bool
     call copy_addr(tau_remove_meanaxy,p_par(270))
+    call copy_addr(je_heating_factor,p_par(271))
+    call copy_addr(ldensity_add_je_heating,p_par(272)) ! bool
+
 
     endsubroutine pushpars2c
 !***********************************************************************
