@@ -78,6 +78,7 @@ RUNTIME_COMPILATION      ?= off
 TRAINING                 ?= notraining
 CMAKE_TRAINING_VALUE     ?= off
 TRANSPILATION            ?= off
+GENERATE_DSL_CODE        ?= off
 INLINING                 ?= off
 READ_OVERRIDES           ?= off
 ELIMINATE_CONDITIONALS   ?= $(TRANSPILATION)
@@ -161,8 +162,10 @@ ifeq ($(TRANSPILATION),on)
 	then ../scripts/phys_modules2c_transpilation par $$file equationofstate; \
         else ../scripts/phys_modules2c_transpilation par $$file; fi; done
         ifeq ($(GENERATE_DSL_CODE),on)
-	  python3 transpile.py
+	  rm -f PC_modulesources_old.h
         endif
+	python3 transpile.py
+	cp PC_modulesources.h PC_modulesources_old.h
 	@touch .sentinel
 else
 	@export DSL_MODULE_DIR=$(DSL_MODULE_DIR); \
