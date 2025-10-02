@@ -15,7 +15,7 @@ io_dist.o: io_dist.h
 #
 # Explicit dependencies for the different infrastructure modules.
 #
-$(CPARAM_OBJ): $(CPARAM_SRC) cparam.local cparam.inc
+$(CPARAM_OBJ): $(CPARAM_SRC) cparam.local cparam.inc cparam_enum.h
 #
 $(CDATA_OBJ): $(CDATA_SRC) $(CPARAM_OBJ)
 #
