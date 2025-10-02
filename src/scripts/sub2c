@@ -6,9 +6,12 @@ echo '# include "headers_c.h"' >> sub_c.h
 if [[ $MODULE_NAME_ORDER == 'CRAY' ]]; then
   echo '# define set_dt '$MODULE_PREFIX'set_dt'$MODULE_INFIX'sub'$MODULE_SUFFIX >> sub_c.h
   echo '# define get_dxyzs '$MODULE_PREFIX'get_dxyzs'$MODULE_INFIX'sub'$MODULE_SUFFIX >> sub_c.h
+  echo '# define set_next_dt '$MODULE_PREFIX'set_next_dt'$MODULE_INFIX'sub'$MODULE_SUFFIX >> sub_c.h
 else
   echo '# define set_dt '$MODULE_PREFIX'sub'$MODULE_INFIX'set_dt'$MODULE_SUFFIX >> sub_c.h
   echo '# define get_dxyzs '$MODULE_PREFIX'sub'$MODULE_INFIX'get_dxyzs'$MODULE_SUFFIX >> sub_c.h
+  echo '# define set_next_dt '$MODULE_PREFIX'sub'$MODULE_INFIX'set_next_dt'$MODULE_SUFFIX >> sub_c.h
 fi
 echo 'extern "C" void *set_dt(REAL &dt1_);' >> sub_c.h
+echo 'extern "C" void *set_next_dt(REAL &next_dt_);' >> sub_c.h
 echo 'extern "C" AcReal3 get_dxyzs(void);' >> sub_c.h
