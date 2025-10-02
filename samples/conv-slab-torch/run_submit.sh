@@ -26,11 +26,11 @@ rm /scratch/project_2000403/sgiridha/data_conv-slab-torch/data/training/stationa
 
 
 
-apptainer exec --nv -B $PENCIL_HOME:$PENCIL_HOME -B scripts:/opt/scripts -B /scratch/project_2000403/sgiridha/data_conv-slab-torch/data:$PENCIL_HOME/samples/conv-slab-torch/data -B /scratch/project_2000403/sgiridha/data_conv-slab-torch/data:/data -B /scratch/project_2000403/sgiridha/snapshots:/$PENCIL_HOME/samples/conv-slab-torch/snapshots -B /scratch/project_2000403/sgiridha/snapshots:/snapshots torchfort_bisonflex.sif bash rm -rf data bash rm -rf snapshots
+apptainer exec --nv -B $PENCIL_HOME:/users/$USER/pencil-code -B scripts:/opt/scripts -B /scratch/project_2000403/sgiridha/data_conv-slab-torch/data:$PENCIL_HOME/samples/conv-slab-torch/data -B /scratch/project_2000403/sgiridha/data_conv-slab-torch/data:/data -B /scratch/project_2000403/sgiridha/snapshots:/$PENCIL_HOME/samples/conv-slab-torch/snapshots -B /scratch/project_2000403/sgiridha/snapshots:/snapshots torchfort_bisonflex.sif bash rm -rf data bash rm -rf snapshots
 
 
-apptainer exec --nv -B $PENCIL_HOME:$PENCIL_HOME -B scripts:/opt/scripts -B /scratch/project_2000403/sgiridha/data_conv-slab-torch/data:$PENCIL_HOME/samples/conv-slab-torch/data -B /scratch/project_2000403/sgiridha/data_conv-slab-torch/data:/data -B /scratch/project_2000403/sgiridha/snapshots:/$PENCIL_HOME/samples/conv-slab-torch/snapshots -B /scratch/project_2000403/sgiridha/snapshots:/snapshots torchfort_bisonflex.sif bash
+apptainer exec --nv -B $PENCIL_HOME:/users/$USER/pencil-code -B scripts:/opt/scripts -B /scratch/project_2000403/sgiridha/data_conv-slab-torch/data:$PENCIL_HOME/samples/conv-slab-torch/data -B /scratch/project_2000403/sgiridha/data_conv-slab-torch/data:/data -B /scratch/project_2000403/sgiridha/snapshots:/$PENCIL_HOME/samples/conv-slab-torch/snapshots -B /scratch/project_2000403/sgiridha/snapshots:/snapshots torchfort_bisonflex.sif bash
 
 
 
-apptainer exec --nv -B $PENCIL_HOME:$PENCIL_HOME -B /appl:/appl -B scripts:/opt/scripts -B /scratch/project_2000403/sgiridha/data_conv-slab-torch/data:$PENCIL_HOME/samples/conv-slab-torch/data -B /scratch/project_2000403/sgiridha/data_conv-slab-torch/data:/data -B /scratch/project_2000403/sgiridha/snapshots:/$PENCIL_HOME/samples/conv-slab-torch/snapshots -B /scratch/project_2000403/sgiridha/snapshots:/snapshots torchfort_bisonflex.sif bash /opt/scripts/run.sh
+apptainer exec --nv -B $PENCIL_HOME:/users/$USER/pencil-code -B /appl:/appl -B scripts:/opt/scripts -B /scratch/project_2000403/sgiridha/data_conv-slab-torch/data:$PENCIL_HOME/samples/conv-slab-torch/data -B /scratch/project_2000403/sgiridha/data_conv-slab-torch/data:/data -B /scratch/project_2000403/sgiridha/snapshots:/$PENCIL_HOME/samples/conv-slab-torch/snapshots -B /scratch/project_2000403/sgiridha/snapshots:/snapshots torchfort_bisonflex.sif bash /opt/scripts/run.sh
