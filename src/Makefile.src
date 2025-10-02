@@ -3212,6 +3212,7 @@ endif
 	@grep '[a-zA-Z_]*eos.*f90' $(CUDA_MAKEDIR)/PC_modulesources.h > /dev/null || echo $(CUDA_RELPATH)'/$(EOS).f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources.h
 	@echo $(CUDA_RELPATH)'/run.f90' >> $(CUDA_MAKEDIR)/PC_modulesources.h
 	@echo ' ' >> $(CUDA_MAKEDIR)/PC_modulesources.h
+	@sed -e'1 i TRANSPILATION='$(TRANSPILATION) -i $(CUDA_MAKEDIR)/PC_modulesources.h
 	@sed -e'1 i RUNTIME_COMPILATION='$(RUNTIME_COMPILATION) -i $(CUDA_MAKEDIR)/PC_modulesources.h
 	@echo ' ' >> $(CUDA_INCDIR)/PC_moduleflags.h
 	@for file in $(SPECIAL_MODULES); do \
