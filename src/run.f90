@@ -121,6 +121,7 @@ endsubroutine helper_loop
     use HDF5_IO,     only: initialize_hdf5
     use Diagnostics, only: report_undefined_diagnostics,diagnostics_clean_up
     use Particles_main,   only: particles_rprint_list, particles_initialize_modules
+!$ use General, only: signal_wait, signal_send
 
     real, dimension (mx,my,mz,mfarray) :: f
     logical :: lreload_file, lreload_always_file
@@ -135,6 +136,9 @@ endsubroutine helper_loop
 !
 !TP: important for synchronization purposes that this happens before anything else
     if (lgpu) call copy_farray_from_GPU(f)
+! Free the lock as if reloading never happened
+!$  if (lfarray_copied) call signal_send(lhelper_perf,.false.)
+!$  lfarray_copied = .false.
 
     if (ldt) then
       dt0=dt
@@ -163,11 +167,12 @@ endsubroutine helper_loop
     call initialize_modules(f)
     call initialize_boundcond(f)
     if (lparticles) call particles_initialize_modules(f)
+    call choose_pencils
     if (lgpu) then
+      lpencil = lpenc_requested
       call reload_GPU_config
       call load_farray_to_GPU(f)
     endif
-    call choose_pencils
     call write_all_run_pars('IDL')       ! data to param2.nml
     call write_all_run_pars              ! diff data to params.log
 !
@@ -1422,7 +1427,6 @@ endsubroutine helper_loop
     call copy_addr(ldebug,p_par(300)) ! bool
     call copy_addr(ltest_bcs,p_par(337)) ! bool
     call copy_addr(lmorton_curve,p_par(338)) ! bool
-    call copy_addr(lcourant_dt,p_par(342)) ! bool
     call copy_addr(itorder,p_par(343)) ! int
     call copy_addr(dtinc,p_par(344))
     call copy_addr(dtdec,p_par(345))

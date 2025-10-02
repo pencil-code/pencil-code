@@ -125,7 +125,7 @@ output real AC_dt1_diffus
 
 #define AC_gamma1__mod__energy  AC_gamma1__mod__equationofstate 
 #define AC_gamma1__mod__magnetc AC_gamma1__mod__equationofstate 
-#define AC_lupdate_courant_dt__mod__cdata (AC_lfirst__mod__cdata && AC_lcourant_dt__mod__cdata)
+#define AC_lupdate_courant_dt__mod__cdata (AC_lfirst__mod__cdata && lcourant_dt)
 #define lproc_print__mod__cdata (false)
 #define AC_allproc_print__mod__cdata (false)
 #define lfirstpoint__mod__cdata (false)

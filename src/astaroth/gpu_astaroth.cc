@@ -71,7 +71,6 @@ bool calculated_coeff_scales = false;
   #define num_substeps  num_substeps__mod__cdata
   #define maux_vtxbuf_index maux_vtxbuf_index__mod__cdata
   #define ldt ldt__mod__cdata
-  #define lcourant_dt lcourant_dt__mod__cdata
   #define dt dt__mod__cdata
   #define it it__mod__cdata
   #define dx dx__mod__cdata
@@ -1199,7 +1198,6 @@ extern "C" void beforeBoundaryGPU(bool lrmv, int isubstep, double t)
 	load_f_ode();
  	acDeviceSetInput(acGridGetDevice(), AC_lrmv,lrmv);
  	acDeviceSetInput(acGridGetDevice(), AC_t,AcReal(t));
-	acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_impose_floors_and_ceilings),1);
 	acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_before_boundary_steps),1);
 //Some Fields are directly calculated on the halos like yH in ioncalc.
 //Could reformulate the kernels in a way that the bc is simply the same kernel as the normal calculation
@@ -1390,6 +1388,7 @@ extern "C" void substepGPU(int isubstep, double t)
       {
       	dt_ = dt*pow(maximum_error,dt_increase);
       }
+      set_next_dt(dt_);
       dt1_ = unit/dt_;
     }
     else 
@@ -1802,9 +1801,6 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t, int nt_)
 extern "C" void reloadConfig()
 {
   setupConfig(mesh.info);
-  acGridSynchronizeStream(STREAM_ALL);
-  acDeviceUpdate(acGridGetDevice(), mesh.info);
-  acGridSynchronizeStream(STREAM_ALL);
 #if AC_RUNTIME_COMPILATION
   //save the current values of the vtxbufs since the device arrays are freed by acGridQuit
   copyFarray(mesh.vertex_buffer[0]);
@@ -1816,9 +1812,7 @@ extern "C" void reloadConfig()
 	  exit(EXIT_FAILURE);
   }
 #include "cmake_options.h"
-  char src_cmake_options[10000];
-  sprintf(src_cmake_options,"%s -DELIMINATE_CONDITIONALS=%s",cmake_options,TRANSPILATION ? "on" : "off");
-  acCompile(src_cmake_options,mesh.info);
+  acCompile(cmake_options,mesh.info);
   acLoadLibrary(rank == 0 ? stderr : NULL,mesh.info);
   acGridInit(mesh);
   acLogFromRootProc(rank, "Done setupConfig && acCompile\n");
@@ -1828,6 +1822,10 @@ extern "C" void reloadConfig()
   autotune_all_integration_substeps();
   //TP: restore the vtxbuf values before quitting grid
   loadFarray();
+#else
+  acGridSynchronizeStream(STREAM_ALL);
+  acDeviceUpdate(acGridGetDevice(), mesh.info);
+  acGridSynchronizeStream(STREAM_ALL);
 #endif
   acLogFromRootProc(rank, "DONE reloading on GPU\n");
   fflush(stdout);

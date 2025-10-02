@@ -1,5 +1,5 @@
 #include "../freeze_df.h"
- if(AC_lcourant_dt__mod__cdata)
+ if(lcourant_dt)
  {
   	if (AC_iuu__mod__cdata != 0)    
 	{

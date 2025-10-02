@@ -284,6 +284,7 @@ module Sub
      module procedure meanyz_v
   endinterface
 
+  public :: set_next_dt
   public :: check_for_nans_globally
 !
 !  extended intrinsic operators to do some scalar/vector pencil arithmetic
@@ -4077,6 +4078,11 @@ module Sub
       endif
 !
     endsubroutine shift_dt
+!***********************************************************************
+    subroutine set_next_dt(val)
+      real :: val
+      dt_next = val
+    endsubroutine set_next_dt
 !***********************************************************************
     subroutine set_dt(dt1_)
 

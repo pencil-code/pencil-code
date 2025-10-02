@@ -270,7 +270,7 @@ tini_sqrt_div_separate(real numerator, real a, real b)
 output real AC_df_rho_sum
 Field TEST_1, TEST_2,TEST_3,TEST_4
 output real AC_maxadvec
-output real AC_maximum_error
+global output real AC_maximum_error
 const real tini = AC_REAL_MIN*5
 
 Field AC_cp_full__mod__chemistry
