@@ -25,10 +25,10 @@ rm /scratch/project_2000403/$USER/data_conv-slab-torch/data/training/stationary.
 #apptainer exec --nv -B $PENCIL_HOME:$PENCIL_HOME -B scripts:/opt/scripts -B /scratch/project_2000403/$USER/data:$PWD/data -B /scratch/project_2000403/$USER/data:/data torchfort_bisonflex.sif bash /opt/scripts/run.sh
 
 
-apptainer exec --nv -B $PENCIL_HOME:/users/$USER/pencil-code -B scripts:/opt/scripts -B /scratch/project_2000403/$USER/data_conv-slab-torch/data:$PENCIL_HOME/samples/conv-slab-torch/data -B /scratch/project_2000403/$USER/data_conv-slab-torch/data:/data -B /scratch/project_2000403/$USER/snapshots:/$PENCIL_HOME/samples/conv-slab-torch/snapshots -B /scratch/project_2000403/$USER/snapshots:/snapshots torchfort_bisonflex.sif bash rm -rf data bash rm -rf snapshots
+apptainer exec --nv -B $PENCIL_HOME:/users/$USER/pencil-code -B scripts:/opt/scripts -B /scratch/project_2000403/$USER/data_conv-slab-torch/data:/users/$USER/pencil-code/samples/conv-slab-torch/data -B /scratch/project_2000403/$USER/data_conv-slab-torch/data:/data -B /scratch/project_2000403/$USER/snapshots:/users/$USER/pencil-code/samples/conv-slab-torch/snapshots -B /scratch/project_2000403/$USER/snapshots:/snapshots torchfort_bisonflex.sif bash rm -rf data bash rm -rf snapshots
 
 
-apptainer exec --nv -B $PENCIL_HOME:/users/$USER/pencil-code -B scripts:/opt/scripts -B /scratch/project_2000403/$USER/data_conv-slab-torch/data:$PENCIL_HOME/samples/conv-slab-torch/data -B /scratch/project_2000403/$USER/data_conv-slab-torch/data:/data -B /scratch/project_2000403/$USER/snapshots:/$PENCIL_HOME/samples/conv-slab-torch/snapshots -B /scratch/project_2000403/$USER/snapshots:/snapshots torchfort_bisonflex.sif bash
+apptainer exec --nv -B $PENCIL_HOME:/users/$USER/pencil-code -B scripts:/opt/scripts -B /scratch/project_2000403/$USER/data_conv-slab-torch/data:/users/$USER/pencil-code/samples/conv-slab-torch/data -B /scratch/project_2000403/$USER/data_conv-slab-torch/data:/data -B /scratch/project_2000403/$USER/snapshots:/users/$USER/pencil-code/samples/conv-slab-torch/snapshots -B /scratch/project_2000403/$USER/snapshots:/snapshots torchfort_bisonflex.sif bash
 
 
 
