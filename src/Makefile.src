@@ -3094,7 +3094,8 @@ libPC.so: run.o | $(SPECIAL_DEPS) $(LIBGPU)
 #
 #$(LIBGPU): $(GPU_DEPS)
 $(LIBGPU): $(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/Makefile.vendor
-	cd astaroth && make MPICOMM=$(MPICOMM) RUNTIME_COMPILATION=$(RUNTIME_COMPILATION) TRAINING=$(TRAINING) TRANSPILATION=$(TRANSPILATION) GENERATE_DSL_CODE=$(GENERATE_DSL_CODE)
+	@echo "Building Astaroth and interface libraries - see src/astaroth/ac_build.log!"
+	cd astaroth && make MPICOMM=$(MPICOMM) RUNTIME_COMPILATION=$(RUNTIME_COMPILATION) TRAINING=$(TRAINING) TRANSPILATION=$(TRANSPILATION) GENERATE_DSL_CODE=$(GENERATE_DSL_CODE) >& ac_build.log
 #
 special_preps:
 ifeq ($(USE_SPECIAL_DISPATCHER),no)

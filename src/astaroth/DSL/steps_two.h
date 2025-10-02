@@ -27,7 +27,6 @@ ComputeSteps AC_calculate_timestep(boundconds)
 	shock_3_smooth(AC_step_num)
 	twopass_solve_intermediate(PC_FIRST_SUB_STEP,AC_dt)
 }
-
 ComputeSteps AC_calc_selfgravity_rhs(boundconds)
 {
 	selfgravity_calc_rhs()
@@ -36,13 +35,11 @@ ComputeSteps AC_calc_final_potential(boundconds)
 {
 	calc_final_potential(AC_t)
 }
-
 ComputeSteps AC_sor_step(boundconds)
 {
 	selfgravity_sor_step(0)
 	selfgravity_sor_step(1)
 }
-
 ComputeSteps AC_before_boundary_steps(boundconds)
 {
 	get_current_total_mass(AC_lrmv)
@@ -52,7 +49,6 @@ ComputeSteps AC_before_boundary_steps(boundconds)
 	//hydro_after_boundary_conservative(AC_t)
 	//ioncalc()
 }
-
 ComputeSteps AC_before_boundary_steps_including_halos(boundconds)
 {
 }
