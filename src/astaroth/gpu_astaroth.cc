@@ -1727,8 +1727,7 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t, int nt_)  /
   if (rank==0 && ldebug) printf("memusage after pointer assign= %f MBytes\n", acMemUsage()/1024.);
 #if AC_RUNTIME_COMPILATION
 #include "cmake_options.h"
-     acCompile(cmake_options,mesh.info);
-  }
+  acCompile(cmake_options,mesh.info);
   acLoadLibrary(rank == 0 ? stderr : NULL,mesh.info);
   acCheckDeviceAvailability();
   acLogFromRootProc(rank, "Done setupConfig && acCompile\n");
