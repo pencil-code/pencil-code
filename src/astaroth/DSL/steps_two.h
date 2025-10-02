@@ -47,7 +47,7 @@ ComputeSteps AC_before_boundary_steps(boundconds)
 {
 	get_current_total_mass(AC_lrmv)
 	fix_mass_drift(AC_lrmv)
-	magnetic_before_boundary_reductions()
+	magnetic_before_boundary_reductions(AC_lrmv)
 	//hydro_before_boundary(AC_step_num)
 	//hydro_after_boundary_conservative(AC_t)
 	//ioncalc()
