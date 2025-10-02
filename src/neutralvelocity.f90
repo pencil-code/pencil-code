@@ -17,7 +17,6 @@
 !***************************************************************
 module NeutralVelocity
 !
-  use Cparam
   use Cdata
   use Messages
 !

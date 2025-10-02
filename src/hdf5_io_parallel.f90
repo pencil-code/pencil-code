@@ -5,7 +5,6 @@
 !
 module HDF5_IO
 !
-  use Cparam
   use Cdata
   use General, only: loptest, itoa, numeric_precision, keep_compiler_quiet
   use HDF5

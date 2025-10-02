@@ -12,7 +12,6 @@
 
 module Solid_Cells_Mpicomm
 
-  use Cparam
   use Cdata
   use Mpicomm, only: mpisend_nonblock_real, mpirecv_nonblock_real, mpiwait, mpibarrier, &
                      mpisend_real, mpirecv_real, mpibcast_real

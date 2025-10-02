@@ -12,7 +12,6 @@ module Param_IO
   use Chiral
   use Cosmicray
   use CosmicrayFlux
-  use Cparam
 !  use Conductivity
   use Density
   use Detonate

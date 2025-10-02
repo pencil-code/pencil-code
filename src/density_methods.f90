@@ -2,7 +2,6 @@ module DensityMethods
 !
 !  11-mar-15/MR:  Created to avoid circular dependencies with EquationOfState.
 !
-  use Cparam
   use Cdata
 
   implicit none

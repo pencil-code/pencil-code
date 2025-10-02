@@ -24,7 +24,6 @@
 module Hypervisc_strict
 !
   use Cdata
-  use Cparam
   use Fourier
   use Messages
 !

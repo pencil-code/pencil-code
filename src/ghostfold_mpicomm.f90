@@ -11,7 +11,6 @@
 module GhostFold
 !
   use Cdata
-  use Cparam
   use Fourier
   use Messages
   use Mpicomm

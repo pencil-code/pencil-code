@@ -26,7 +26,6 @@
 !***************************************************************
 module Hypervisc_strict
 !
-  use Cparam
   use Cdata
   use Messages
 !

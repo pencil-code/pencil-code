@@ -17,7 +17,6 @@
 module Io
 !
   use Cdata
-  use Cparam, only: intlen, fnlen, max_int
   use File_io, only: delete_file, file_exists
   use Messages, only: fatal_error, warning, svn_id
 !

@@ -11,7 +11,6 @@
 module GhostFold
 !
   use Cdata
-  use Cparam
   use Fourier
 !
   implicit none

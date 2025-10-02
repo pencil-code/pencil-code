@@ -336,9 +336,8 @@ class DataCube(object):
                         tmp_val = infile.read_record(record_types[key][1])
                         pers_obj.__setattr__(key, tmp_val[0])
                         if not quiet:
-                            print(
-                                key, record_types[key][0], record_types[key][1], tmp_val
-                            )
+                            print(key, record_types[key][0], record_types[key][1], tmp_val)
+
             self.__setattr__("persist", pers_obj)
             return self
 
@@ -407,7 +406,6 @@ class DataCube(object):
                         irange_x = (0,tmp["settings/mx"][0])
                     else:
                         irange_x = (max(irange_x[0],0),min(irange_x[1]+1,tmp["settings/mx"][0]))
-                        print("irange_x",type(irange_x), irange_x)
                 mx = irange_x[1]-irange_x[0]
                 x = (tmp["grid/x"][irange_x[0]:irange_x[1]]).astype(precision)
                 if range_y:
@@ -419,7 +417,6 @@ class DataCube(object):
                         irange_y = (0,tmp["settings/my"][0])
                     else:
                         irange_y = (max(irange_y[0],0),min(irange_y[1],tmp["settings/my"][0]))
-                        print("irange_y",type(irange_y), irange_y)
                 my = irange_y[1]-irange_y[0]
                 y = (tmp["grid/y"][irange_y[0]:irange_y[1]]).astype(precision)
 
@@ -527,10 +524,8 @@ class DataCube(object):
                         else:
                             procdim = read.dim(datadir, proc)
                     if not quiet:
-                        print(
-                            "Reading data from processor"
-                            + " {0} of {1} ...".format(proc, len(proc_dirs))
-                        )
+                        print(  "Reading data from processor"
+                              + " {0} of {1} ...".format(proc, len(proc_dirs)))
 
                 else:
                     # A collective IO strategy is being used

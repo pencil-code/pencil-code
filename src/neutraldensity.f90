@@ -19,7 +19,6 @@
 !***************************************************************
 module NeutralDensity
 !
-  use Cparam
   use Cdata
   use Messages
 !

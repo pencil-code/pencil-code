@@ -18,7 +18,6 @@
 !***************************************************************
 module Hyperresi_strict
 !
-  use Cparam
   use Cdata
   use Messages
 !  use Density

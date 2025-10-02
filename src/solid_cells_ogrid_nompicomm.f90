@@ -21,9 +21,6 @@ module Solid_Cells_Mpicomm
 !***********************************************************************
     subroutine initiate_isendrcv_bdry_ogrid(f)
 !
-!  For one processor, use periodic boundary conditions.
-!  Dummy
-!
       real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray) :: f
 !
       if (ALWAYS_FALSE) print*, f
@@ -31,9 +28,6 @@ module Solid_Cells_Mpicomm
     endsubroutine initiate_isendrcv_bdry_ogrid
 !***********************************************************************
     subroutine finalize_isendrcv_bdry_ogrid(f)
-!
-!  Apply boundary conditions.
-!  Dummy
 !
       real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray) :: f
 !
@@ -43,8 +37,6 @@ module Solid_Cells_Mpicomm
 !***********************************************************************
     subroutine isendrcv_bdry_x_ogrid(f)
 !
-!  Dummy
-!
       real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray) :: f
 !
       if (ALWAYS_FALSE) print *, f
@@ -52,8 +44,6 @@ module Solid_Cells_Mpicomm
     endsubroutine isendrcv_bdry_x_ogrid
 !***********************************************************************
     subroutine finalize_isend_init_interpol(ireq1D,ireq2D,nreq1D,nreq2D)
-!
-!  Dummy
 !
       integer :: nreq1D, nreq2D
       integer, dimension(nreq1D) :: ireq1D
