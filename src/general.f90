@@ -7789,6 +7789,10 @@ iloop:do i=1,size(list2)
         dst = enum_st_string
       case('uniform')
         dst = enum_uniform_string
+      case('nfr')
+        dst = enum_nfr_string
+      case('fct')
+        dst = enum_fct_string
       case default
         dst = enum_unknown_string_string
         if (lroot) print*, 'No string enum for: ', src
