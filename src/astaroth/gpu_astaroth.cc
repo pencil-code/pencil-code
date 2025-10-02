@@ -988,8 +988,8 @@ extern "C" void torch_train_c_api(AcReal *loss_val) {
 		fflush(stderr);
 	}
 
-	fprintf(stderr,"The value of it: %d", it);
-	fflush(stderr);
+	//fprintf(stderr,"The value of it: %d\n", it);
+	//fflush(stderr);
 
 	called_training = true;
 
