@@ -146,9 +146,9 @@ module Special
   integer :: idiag_divdotW1rms=0 ! DIAG_DOC: $\left<{\nab\dot{\Wv}_1}^2\right>^{1/2}$
   integer :: idiag_divdotW2rms=0 ! DIAG_DOC: $\left<{\nab\dot{\Wv}_2}^2\right>^{1/2}$
   integer :: idiag_divdotW3rms=0 ! DIAG_DOC: $\left<{\nab\dot{\Wv}_3}^2\right>^{1/2}$
-  integer :: idiag_rhoW1rms=0   ! DIAG_DOC: $\left<{\rho_{\Wv}_1}^2\right>^{1/2}$
-  integer :: idiag_rhoW2rms=0   ! DIAG_DOC: $\left<{\rho_{\Wv}_2}^2\right>^{1/2}$
-  integer :: idiag_rhoW3rms=0   ! DIAG_DOC: $\left<{\rho_{\Wv}_3}^2\right>^{1/2}$
+  integer :: idiag_rhoW1rms=0   ! DIAG_DOC: $\left<{\rho_{\Wv_1}}^2\right>^{1/2}$
+  integer :: idiag_rhoW2rms=0   ! DIAG_DOC: $\left<{\rho_{\Wv_2}}^2\right>^{1/2}$
+  integer :: idiag_rhoW3rms=0   ! DIAG_DOC: $\left<{\rho_{\Wv_3}}^2\right>^{1/2}$
   integer :: idiag_divdotW1m=0   ! DIAG_DOC: $\left<\nab\dot\Wv_1\right>$
   integer :: idiag_divdotW2m=0   ! DIAG_DOC: $\left<\nab\dot\Wv_2\right>$
   integer :: idiag_divdotW3m=0   ! DIAG_DOC: $\left<\nab\dot\Wv_3\right>$
