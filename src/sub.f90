@@ -9332,7 +9332,7 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
     subroutine check_for_nans_globally(f,caller)
       use Mpicomm, only: mpireduce_max_int
       use General, only: notanumber
-      real, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mfarray) :: f
       character (len=*), optional :: caller
       integer :: has_nan_local,has_nan_global
 
