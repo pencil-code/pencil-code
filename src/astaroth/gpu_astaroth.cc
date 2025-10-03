@@ -505,21 +505,6 @@ AcReal to_real(void* param, const char* name)
 	return *((AcReal*)param);
 }
 /***********************************************************************************************/
-#if TRANSPILATION
-#if LFORCING
-torus_rect to_torus_rect(void* param, const char* name)
-{
-       if (param == NULL)
-       {
-               fprintf(stderr,"Passed NULL to pushparsc: %s!!\n",name);
-               abort();
-       }
-       //TP: placeholder for now before testing is torus_react being POD sufficient for save access here
-       return (torus_rect){};
-}
-#endif
-#endif
-/***********************************************************************************************/
 int to_int(void* param, const char* name)
 {
 	if (param == NULL)
@@ -577,6 +562,22 @@ AcBool3 to_bool3(void* param, const char* name)
 /***********************************************************************************************/
 // PC interface headers.
 #include "PC_moduleflags.h"
+
+#if TRANSPILATION
+#if LFORCING
+torus_rect to_torus_rect(void* param, const char* name)
+{
+       if (param == NULL)
+       {
+               fprintf(stderr,"Passed NULL to pushparsc: %s!!\n",name);
+               abort();
+       }
+       //TP: placeholder for now before testing is torus_react being POD sufficient for save access here
+       return (torus_rect){};
+}
+#endif
+#endif
+/***********************************************************************************************/
 //#include "../cdata_c.h"
 #include "../sub_c.h"           // provides set_dt
 #include "../boundcond_c.h"     // provides boundconds[xyz] etc.
