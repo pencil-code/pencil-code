@@ -8696,6 +8696,13 @@ module Energy
     call copy_addr(hcondxtop,p_par(466))
     call copy_addr(pp_cool,p_par(467))
     call copy_addr(tau_cool_pp,p_par(468))
+    call copy_addr(lsld_char_cslimit,p_par(469)) ! bool
+    call copy_addr(w_sldchar_ene2,p_par(470))
+    call copy_addr(lsld_char_wprofr,p_par(471)) ! bool
+    call copy_addr(w_sldchar_ene_r0,p_par(472))
+    call copy_addr(w_sldchar_ene_p,p_par(473))
+    call copy_addr(lsld_char_rholimit,p_par(474)) ! bool
+
 
 
     endsubroutine pushpars2c
