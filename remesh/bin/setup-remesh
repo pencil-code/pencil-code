@@ -117,6 +117,7 @@ ln -s ../src/Makefile.inc .
 ln -s ../src/cparam.local .
 ln -s ../src/cparam.inc .
 ln -s ../src/cparam_pencils.inc .
+ln -s ../src/cparam_enum.h .
 
 #
 if ($n == 1) then

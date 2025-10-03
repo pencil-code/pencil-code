@@ -1501,11 +1501,12 @@ endsubroutine helper_loop
     call copy_addr(dz_tilde,p_par(1173)) ! (mz)
     call copy_addr(lread_oldsnap,p_par(1174))  !  bool
     call copy_addr(lroot,p_par(1175)) ! bool
-    
     call copy_addr(lperi,p_par(1176)) ! bool3
+
     call copy_addr(lcpu_timestep_on_gpu,p_par(1177)) ! bool
     call copy_addr(lac_sparse_autotuning,p_par(1178)) ! bool
     call copy_addr(lskip_rtime_compilation,p_par(1179)) ! bool
+    call copy_addr(lread_all_vars_from_device,p_par(1180)) ! bool
     
     call copy_addr_dble(sigma_thomson,p_par(1185))
     call copy_addr_dble(c_light,p_par(1188))
@@ -1531,7 +1532,6 @@ endsubroutine helper_loop
     call copy_addr(iaztest,p_par(1130)) ! int
     call copy_addr(iuztestpq,p_par(1132)) ! int
     call copy_addr(ihhtestpq,p_par(1133)) ! int
-    call copy_addr(lread_all_vars_from_device,p_par(1134)) ! bool
     
     call string_to_enum(enum_ascale_type,ascale_type)
     call copy_addr(enum_ascale_type,p_par(1135)) ! int
