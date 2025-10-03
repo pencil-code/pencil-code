@@ -1,54 +1,99 @@
-#include "../prerequisites.h"
+#include "mhdsolver.ac"
 
-//MR: needs to be generated automatically depending on the chosen physics
+fixed_boundary Kernel twopass_solve_final(PC_SUB_STEP_NUMBER step_num)
+{
+	if(AC_lcourant_dt__mod__cdata)
+	{
+		if(AC_iuu__mod__cdata != 0) 
+		{
+		  if(!AC_lkinflow_as_aux__mod__cdata)
+		  {
+			const real3 force = get_deltacorr_force(step_num)
+			write(F_UU, rk_final(F_UU,step_num) + force)
+		  }
+		}
+		if(AC_irho__mod__cdata != 0 || AC_ilnrho__mod__cdata != 0) 
+		{
+			updated_rho = rk_final(F_RHO,step_num)
+#if Ldensity_MODULE
+			if(AC_density_floor__mod__density)
+			{
+				if(!AC_ldensity_nolog__mod__cdata)
+				{
+					updated_rho = max(updated_rho,AC_density_floor_log__mod__density)
+				}
+			}
+#endif
+			write(F_RHO, updated_rho)
+		}
+		if(AC_iaa__mod__cdata != 0) write(F_AA, rk_final(F_AA,step_num))
+  		if (AC_itt__mod__cdata != 0 || AC_ilntt__mod__cdata != 0)  write( F_TT,  rk_final(F_TT, step_num))
+  		if (AC_iss__mod__cdata != 0)  write( F_SS,  rk_final(F_SS, step_num))
+                if(AC_iuun__mod__cdata != 0) write(F_UUN, rk_final(F_UUN,step_num))
+                if(AC_irhon__mod__cdata != 0 || AC_ilnrhon__mod__cdata != 0) write(F_RHON, rk_final(F_RHON,step_num))
+#if LCHIRAL
+  	        if (AC_ixx_chiral__mod__chiral != 0) write(F_XX_CHIRAL,rk_final(F_XX_CHIRAL,step_num))
+  	        if (AC_iyy_chiral__mod__chiral != 0) write(F_YY_CHIRAL,rk_final(F_YY_CHIRAL,step_num))
+  	        if (AC_izz_chiral__mod__chiral != 0) write(F_ZZ_CHIRAL,rk_final(F_ZZ_CHIRAL,step_num))
+#endif
+	        if (AC_iecr__mod__cdata != 0) write(F_ECR,rk_final(F_ECR,step_num))
+	        if(lchemistry)
+	        {
+	        	for i in 0:nchemspec
+	        	{
+	        		write(F_CHEMISTRY_SPECIES[i],rk_final(F_CHEMISTRY_SPECIES[i],step_num))
+	        	}
+	        }
+#if LALPHADISK
+	        write(F_SIGMA,rk_final(F_SIGMA,step_num))
+#endif
+#if LDISP_CURRENT
+		if(AC_iex__mod__disp_current != 0) write(F_EVEC,rk_final(F_EVEC,step_num))
+		if(AC_igamma__mod__disp_current != 0) write(F_GAMMA,rk_final(F_GAMMA,step_num))
+#endif
+#if LAXIONSU2BACK
+		if(AC_iaxi_psi__mod__axionsu2back != 0)    write(F_AXI_PSI     ,rk_final(F_AXI_PSI    ,step_num)) 
+		if(AC_iaxi_psidot__mod__axionsu2back != 0) write(F_AXI_PSIDOT  ,rk_final(F_AXI_PSIDOT ,step_num)) 
+		if(AC_iaxi_impsi__mod__axionsu2back != 0)    write(F_AXI_IMPSI   , rk_final(F_AXI_IMPSI    ,step_num)) 
+		if(AC_iaxi_impsidot__mod__axionsu2back != 0) write(F_AXI_IMPSIDOT, rk_final(F_AXI_IMPSIDOT ,step_num))  
 
-auxiliary Field3 BETA_UU
-auxiliary Field3 BETA_AA
-auxiliary Field  BETA_RHO
-auxiliary Field  BETA_SS
+		if(AC_iaxi_tr__mod__axionsu2back != 0)     write(F_AXI_TR      ,rk_final(F_AXI_TR     ,step_num)) 
+		if(AC_iaxi_trdot__mod__axionsu2back != 0)  write(F_AXI_TRDOT   ,rk_final(F_AXI_TRDOT  ,step_num)) 
+		if(AC_iaxi_imtr__mod__axionsu2back != 0)     write(F_AXI_IMTR    , rk_final(F_AXI_IMTR     ,step_num)) 
+		if(AC_iaxi_imtrdot__mod__axionsu2back != 0)  write(F_AXI_IMTRDOT , rk_final(F_AXI_IMTRDOT  ,step_num)) 
+		
+		if(AC_iaxi_tl__mod__axionsu2back != 0)        write(F_AXI_TL        , rk_final(F_AXI_TL       ,step_num)) 
+		if(AC_iaxi_tldot__mod__axionsu2back != 0)     write(F_AXI_TLDOT     , rk_final(F_AXI_TLDOT    ,step_num))
+		if(AC_iaxi_imtl__mod__axionsu2back != 0)      write(F_AXI_IMTL      , rk_final(F_AXI_IMTL     ,step_num))
+		if(AC_iaxi_imtldot__mod__axionsu2back != 0)   write(F_AXI_IMTLDOT   , rk_final(F_AXI_IMTLDOT  ,step_num))
 
-auxiliary Field3 ERROR_UU
-auxiliary Field3 ERROR_AA
-auxiliary Field  ERROR_RHO
-auxiliary Field  ERROR_SS
-
-output real uux_initial_max
-output real uuy_initial_max
-output real uuz_initial_max
-       
-output real aax_initial_max
-output real aay_initial_max
-output real aaz_initial_max
-
-output real rho_initial_max
-output real ss_initial_max
-
-//TP: tested to work on 10-apr-2025
-Kernel twopass_solve_intermediate(PC_SUB_STEP_NUMBER step_num, real dt) {
-  if (lcourant_dt)
-  {
-  	write( UU, rk3_intermediate(previous(UU),   duu_dt(step_num), step_num, dt) )
-  	write( RHO, rk3_intermediate(previous(RHO), drho_dt(step_num), step_num, dt) )
-  	write( SS, rk3_intermediate(previous(SS),   denergy_dt(step_num), step_num, dt) )
-  	write( AA, rk3_intermediate(previous(AA),   daa_dt(step_num), step_num, dt) )
-  }
-  else
-  {
-  	maximum_error = 0.0 
-  	maximum_error = rkf4_update(duu_dt(step_num),step_num,dt,ERROR_UU,BETA_UU,UU,uux_initial_max,uuy_initial_max,uuz_initial_max,maximum_error,AC_dt_ratio,AC_dt_epsi)
-  	maximum_error = rkf4_update(daa_dt(step_num),step_num,dt,ERROR_AA,BETA_AA,AA,aax_initial_max,aay_initial_max,aaz_initial_max,maximum_error,AC_dt_ratio,AC_dt_epsi)
-  	maximum_error = rkf4_update(drho_dt(step_num),step_num,dt,ERROR_RHO,BETA_RHO,RHO,rho_initial_max,maximum_error,AC_dt_ratio,AC_dt_epsi)
-  	maximum_error = rkf4_update(denergy_dt(step_num),step_num,dt,ERROR_SS,BETA_SS,SS,ss_initial_max,maximum_error,AC_dt_ratio,AC_dt_epsi)
-  	if(step_num == 4) reduce_max(maximum_error,AC_maximum_error)
-  }
+		if(AC_iaxi_psil__mod__axionsu2back != 0)      write(F_AXI_PSIL      , rk_final(F_AXI_PSIL     ,step_num))      
+		if(AC_iaxi_psildot__mod__axionsu2back != 0)   write(F_AXI_PSILDOT   , rk_final(F_AXI_PSILDOT  ,step_num))
+		if(AC_iaxi_impsil__mod__axionsu2back != 0)    write(F_AXI_IMPSIL    , rk_final(F_AXI_IMPSIL   ,step_num))  
+		if(AC_iaxi_impsildot__mod__axionsu2back != 0) write(F_AXI_IMPSILDOT , rk_final(F_AXI_IMPSILDOT,step_num))
+#endif
+#if LBACKREACT_INFL
+		if(AC_iinfl_phi__mod__backreact_infl != 0)  write(F_INFL_PHI ,rk_final(F_INFL_PHI ,step_num))
+		if(AC_iinfl_dphi__mod__backreact_infl != 0) write(F_INFL_DPHI,rk_final(F_INFL_DPHI,step_num))
+#endif
+#if LDISP_CURRENT
+		if(AC_igamma__mod__disp_current != 0) write(F_GAMMA,rk_final(F_GAMMA,step_num)) 
+		if(AC_irhoe__mod__disp_current  != 0) write(F_RHOE ,rk_final(F_RHOE ,step_num))
+		if(AC_idiva_name__mod__disp_current  != 0) write(F_DIVA_NAME ,rk_final(F_DIVA_NAME ,step_num))
+		if(AC_ia0__mod__disp_current != 0)    write(F_A0   ,rk_final(F_A0   ,step_num))
+		if(AC_iex__mod__disp_current != 0)    write(F_EVEC ,rk_final(F_EVEC ,step_num  )) 
+#endif
+#if LCHIRAL_MHD
+                if(AC_imu5__mod__chiral_mhd != 0) write(F_MU5, rk_final(F_MU5, step_num))
+                if(AC_imus__mod__chiral_mhd != 0) write(F_MUS, rk_final(F_MUS, step_num))
+#endif
+		if(lpolymer)
+		{
+			for i in 0:6
+			{
+				write(F_POLY[i],rk_final(F_POLY[i],step_num))
+			}
+		}
+	}
 }
-
-fixed_boundary Kernel twopass_solve_final(int step_num){
-  if (lcourant_dt)
-  {
-  	write( UU, rk3_final(previous(UU), value(UU), step_num) )
-  	write( RHO, rk3_final(previous(RHO), value(RHO), step_num) )
-  	write( SS, rk3_final(previous(SS), value(SS), step_num) )
-  	write( AA, rk3_final(previous(AA), value(AA), step_num) ) 
-  }
-}
+#include "../steps_two_full.h"
