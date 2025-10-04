@@ -469,3 +469,7 @@ src/astaroth/PC_*
 !samples/testfield_x/.run_directories.log
 !samples/testfield_x/pc_build_tmp_*
 !samples/testfield_x/.pc_build_history
+#
+# Readthedocs
+doc/readthedocs/_build
+doc/readthedocs/code
