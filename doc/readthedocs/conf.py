@@ -70,6 +70,10 @@ extensions = [
     "docsgit",
 ]
 
+# Make sure the target of the autosection label is unique
+autosectionlabel_prefix_document = True
+
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
 
