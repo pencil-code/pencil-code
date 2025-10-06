@@ -1,0 +1,12 @@
+Directory:
+    ${PENCIL_HOME}/samples/power_xy/complex_lpowerxyhdf5/nprocx_2
+SVN Id:
+    $Id$
+Maintainer:
+    Kishore G <kishore96/gmail[dot]com>
+Added:
+    06-Oct-2025
+Status:
+    failing (running, segmentation fault) # One of [succeeds|failing since <date>|obsolete| ...]
+Comments:
+    Variant of samples/power_xy/complex_lpowerxy_hdf5 with different parallelization
