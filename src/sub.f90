@@ -9335,7 +9335,7 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
       character (len=*), optional :: caller
       integer :: has_nan_local,has_nan_global
 
-      has_nan_local = merge(1,0,notanumber(f))
+      has_nan_local = merge(1,0,any(isnan(f)))
       call mpireduce_max_int(has_nan_local,has_nan_global)
       if(has_nan_global == 1) then
               if(.not. present(caller)) then
