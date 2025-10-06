@@ -1999,6 +1999,7 @@ module Magnetic_meanfield
 !
 if (iex/=0) then
 !if (n==n1) print*,'AXEL2: p%mf_EMF=',p%mf_EMF(1,:)
+endif
 !
 !  Alpha effect.
 !  Additional terms if Mean Field Theory is included.
@@ -2040,7 +2041,6 @@ if (iex/=0) then
         call cross_mn(p%uu,p%bb,tmpv)
         df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+tmpv
       endif
-endif
 !
 !  Time-advance of secondary mean-field modules.
 !  Not sure (yet) how to deal with the following if there is displacement current.
