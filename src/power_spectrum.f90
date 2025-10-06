@@ -280,7 +280,24 @@ outer:do ikz=1,nz
       enddo
       if (ipz==0) call mpimerge_1d(kshell,nk_xy,12) ! filling of the shell-wavenumber vector
     endif
-    !
+!
+!   Check for unsupported configurations of the power_xy subroutine
+!   Kishore: I suppose these should be changed to errors at some point.
+!
+    if (n_spectra>0) then
+      if (lintegrate_z .and. nprocx>1) then
+        call warning('initialize_power_spectrum', &
+          'lintegrate_shell uses mpigather_xy which assumes nprocx==1. ' //&
+          'Your results are most likely garbage.')
+      endif
+!
+      if (lcomplex .and. lpowerxy_hdf5 .and. nprocx>1) then
+        call warning('initialize_power_spectrum', &
+          'HDF5 output for lcomplex=T uses mpigather which assumes nprocx==1. ' //&
+          'Your results are most likely garbage.')
+      endif
+    endif
+!
   endsubroutine initialize_power_spectrum
 !***********************************************************************
   subroutine read_power_spectrum_run_pars(iostat)
