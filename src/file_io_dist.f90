@@ -78,9 +78,9 @@ module File_io
 !   6-oct-2015/MR: turned into subroutine because of CRAY compiler bug;
 !                  easily revertable by shifting comment char at beginning and end.
 !
-      use Cdata, only: comment_char
+      use Cdata, only: lroot, comment_char
       use General, only: lower_case,loptest
-      use Mpicomm, only: lroot, mpibcast, MPI_COMM_PENCIL
+      use Mpicomm, only: mpibcast, MPI_COMM_PENCIL
       use Messages, only: warning
 !
       character(len=*), intent(in) :: name

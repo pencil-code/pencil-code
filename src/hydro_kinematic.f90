@@ -181,7 +181,6 @@ module Hydro
 !   6-nov-01/wolf: coded
 !
       use FArrayManager
-      use Mpicomm, only: lroot
       use SharedVariables, only: put_shared_variable
 !
 !  Identify version number (generated automatically by SVN).

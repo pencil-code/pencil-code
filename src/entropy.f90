@@ -8702,8 +8702,8 @@ module Energy
     call copy_addr(w_sldchar_ene_r0,p_par(472))
     call copy_addr(w_sldchar_ene_p,p_par(473))
     call copy_addr(lsld_char_rholimit,p_par(474)) ! bool
-
-
+    call string_to_enum(enum_div_sld_ene,div_sld_ene)
+    call copy_addr(enum_div_sld_ene,p_par(475)) ! int
 
     endsubroutine pushpars2c
 !***********************************************************************

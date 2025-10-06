@@ -8,7 +8,6 @@ module Slices
 !
   use Cdata
   use Messages
-  use Mpicomm, only: mpiallreduce_or
   use Sub, only: xlocation, zlocation, update_snaptime, read_snaptime, position
 !
   implicit none
@@ -182,8 +181,7 @@ contains
           inamev=inamev+1
         endif
       enddo
-      if (ip<=12.and.lroot) print*,'wvid: written slices in ',&
-                                   mpiwtime()-time1,' seconds'
+      if (ip<=12.and.lroot) print*,'wvid: written slices in ',mpiwtime()-time1,' seconds'
 !
     endsubroutine wvid
 !***********************************************************************

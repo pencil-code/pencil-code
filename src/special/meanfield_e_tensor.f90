@@ -30,7 +30,6 @@
 !
 module Special
 !
-  use Cparam
   use Cdata
   use Diagnostics
   use General, only: keep_compiler_quiet,numeric_precision,itoa

@@ -36,9 +36,10 @@ module File_io
 !
 !  28-May-2015/Bourdin.KIS: implemented
 !
+      use Cdata, only: lroot
       use General, only: loptest
       use Messages, only: fatal_error
-      use Mpicomm, only: mpibcast_int, mpibcast_char, lroot, MPI_COMM_PENCIL, stop_it_if_any
+      use Mpicomm, only: mpibcast_int, mpibcast_char, MPI_COMM_PENCIL, stop_it_if_any
 
       integer :: parallel_read
       character (len=*), intent(in) :: file

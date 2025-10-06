@@ -45,7 +45,6 @@
 !
 module Special
 !
-  use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages

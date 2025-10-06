@@ -935,3 +935,4 @@ integer, parameter :: enum_st_string = 925
 integer, parameter :: enum_uniform_string = 926
 integer, parameter :: enum_nfr_string = 927
 integer, parameter :: enum_fct_string = 928
+integer, parameter :: enum_div_sld_ene_string = 929

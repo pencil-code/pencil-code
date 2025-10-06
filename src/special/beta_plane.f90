@@ -19,7 +19,6 @@
 !
 module Special
 !
-  use Cparam
   use Cdata, Omega_fplane => Omega
   use General, only: keep_compiler_quiet
   use Messages, only: svn_id, fatal_error

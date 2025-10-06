@@ -616,7 +616,6 @@ module Chiral
 !
 !   4-jul-09/axel: coded
 !
-      use Cdata
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f

@@ -18,7 +18,6 @@ module Chiral
 !
   use Cdata
   use General, only: keep_compiler_quiet
-  use Messages
 !
   implicit none
 !
@@ -30,10 +29,9 @@ module Chiral
 !***********************************************************************
     subroutine register_chiral
 !
-!  Initialise variables which should know that we solve for passive
-!  scalar: iXX_chiral and iYY_chiral; increase nvar accordingly
-!
 !  28-may-04/axel: adapted from pscalar
+!
+      use Messages, only: svn_id
 !
 !  Identify version number.
 !
@@ -44,27 +42,15 @@ module Chiral
 !***********************************************************************
     subroutine initialize_chiral(f)
 !
-!  Perform any necessary post-parameter read initialization
-!  Dummy routine
-!
 !  28-may-04/axel: adapted from pscalar
 !
       real, dimension (mx,my,mz,mfarray) :: f
-!
-      EP_spec=.false.
-!
-!  set to zero and then call the same initial condition
-!  that was used in start.csh
 !
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_chiral
 !***********************************************************************
     subroutine init_chiral(f)
-!
-!  initialise passive scalar field; called from start.f90
-!
-!  28-may-04/axel: adapted from pscalar
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -74,16 +60,11 @@ module Chiral
 !***********************************************************************
     subroutine pencil_criteria_chiral
 !
-!  All pencils that the Chiral module depends on are specified here.
-!
 !  21-11-04/anders: coded
 !
     endsubroutine pencil_criteria_chiral
 !***********************************************************************
     subroutine pencil_interdep_chiral(lpencil_in)
-!
-!  Interdependency among pencils provided by the Chiral module
-!  is specified here.
 !
 !  21-11-04/anders: coded
 !
@@ -95,11 +76,7 @@ module Chiral
 !***********************************************************************
     subroutine calc_pencils_chiral(f,p)
 !
-!  Calculate Chiral pencils.
-!  Most basic pencils should come first, as others may depend on them.
-!
 !  21-11-04/anders: coded
-!
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -188,8 +165,6 @@ module Chiral
 !***********************************************************************
     subroutine rprint_chiral(lreset,lwrite)
 !
-!  reads and registers print parameters relevant for chirality
-!
 !  28-may-04/axel: adapted from pscalar
 !
       logical :: lreset
@@ -200,8 +175,6 @@ module Chiral
     endsubroutine rprint_chiral
 !***********************************************************************
     subroutine get_slices_chiral(f,slices)
-!
-!  Write slices for animation of chiral variables.
 !
 !  26-jun-06/tony: dummy
 !

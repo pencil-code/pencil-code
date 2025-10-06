@@ -4648,15 +4648,18 @@ module Sub
     endfunction poly_3
 !***********************************************************************
     subroutine lower_triangular_index(ij,i1,j1)
+!
       integer,intent(out)::ij
       integer,intent(in) :: i1,j1
       integer :: ii,jj
+!
       ii=i1;jj=j1
-      if (i1.lt.j1) then
+      if (i1<j1) then
         ii=j1
         jj=i1
       endif
       ij=ii*(ii-1)/2 + jj
+
     endsubroutine lower_triangular_index
 !***********************************************************************
     function ylm_other(theta,phi,ell,emm,der) result (sph_har)
@@ -5483,7 +5486,6 @@ nameloop: do
 !  Different compilers have different lengths:
 !    NAG: 1, Compaq: 2, Intel: 47, SGI: 64, NEC: 256
 !
-      use Mpicomm, only: lroot
       use General, only: random_seed_wrapper
 !
       integer, intent(out) :: nseed
@@ -7830,7 +7832,6 @@ nameloop: do
       type (pencil_case), intent(in) :: p
       integer :: j,k,ix
       logical :: ldiv_4th
-
 !
 ! First set the diffusive flux = cmax*(f_R-f_L) at half grid points
 !
@@ -7841,8 +7842,6 @@ nameloop: do
         if(present(flux2)) flux2=0.0
         if(present(flux3)) flux3=0.0
         div_flux=0.
-
-
 !
 !  Generate halfgrid points
 !
@@ -7898,7 +7897,7 @@ nameloop: do
 !     imm12
 !
           do ix=1,nx
-            if ((fimm12_r(ix)-fimm12_l(ix))*(fim1(ix)-fimm1(ix)) .le. 0.0) then
+            if ((fimm12_r(ix)-fimm12_l(ix))*(fim1(ix)-fimm1(ix)) <= 0.0) then
               rfac(ix) = 0.0
             else
               rfac(ix)=(fimm12_r(ix)-fimm12_l(ix))/(fim1(ix)-fimm1(ix))
@@ -7915,7 +7914,7 @@ nameloop: do
 !     ipp12
 !
           do ix=1,nx
-            if ((fipp12_r(ix)-fipp12_l(ix))*(fipp1(ix)-fip1(ix)) .le. 0.0) then
+            if ((fipp12_r(ix)-fipp12_l(ix))*(fipp1(ix)-fip1(ix)) <= 0.0) then
               rfac(ix) = 0.0
             else
               rfac(ix)=(fipp12_r(ix)-fipp12_l(ix))/(fipp1(ix)-fip1(ix))
@@ -7943,13 +7942,13 @@ nameloop: do
 !
 ! avoid that the product is 0 or negativ
 !
-          if ((fim12_r(ix)-fim12_l(ix))*fdif .le. 0.0) then
+          if ((fim12_r(ix)-fim12_l(ix))*fdif <= 0.0) then
             rfac(ix) = 0.0
           else
 !
 ! avoid large rfac values, if fdif is small
 !
-            if (abs(fadd)/abs(fdif) .gt. fdif_limit) fdif = sign(fadd,fdif)/fdif_limit
+            if (abs(fadd)/abs(fdif) > fdif_limit) fdif = sign(fadd,fdif)/fdif_limit
 !
             rfac(ix)=(fim12_r(ix)-fim12_l(ix))/fdif
           endif
@@ -7977,13 +7976,13 @@ nameloop: do
 !
 ! avoid that the product is 0 or negativ
 !
-          if ((fip12_r(ix)-fip12_l(ix))*fdif .le. 0.0) then
+          if ((fip12_r(ix)-fip12_l(ix))*fdif <= 0.0) then
             rfac(ix) = 0.0
           else
 !
 ! avoid large rfac values, if fdif is small
 !
-            if (abs(fadd)/abs(fdif) .gt. fdif_limit) fdif = sign(fadd,fdif)/fdif_limit
+            if (abs(fadd)/abs(fdif) > fdif_limit) fdif = sign(fadd,fdif)/fdif_limit
 !
             rfac(ix)=(fip12_r(ix)-fip12_l(ix))/fdif
           endif

@@ -15,7 +15,6 @@ module Heatflux
 !
   use Cdata
   use General, only: keep_compiler_quiet
-  use Messages, only: svn_id, fatal_error
 !
   implicit none
 !
@@ -27,6 +26,8 @@ module Heatflux
 !
 !  6-oct-03/tony: coded
 !
+      use Messages, only: svn_id
+
       if (lroot) call svn_id( &
            "$Id$")
 !
@@ -168,7 +169,7 @@ module Heatflux
     use Syscalls, only: copy_addr
     use General , only: string_to_enum
 
-    integer, parameter :: n_pars=20
+    integer, parameter :: n_pars=1
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     endsubroutine pushpars2c

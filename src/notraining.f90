@@ -3,7 +3,6 @@
 ! CPARAM logical, parameter :: ltraining = .false.
 !
 !***************************************************************
-!
   module Training
 
     use Cparam
