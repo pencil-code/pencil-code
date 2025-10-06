@@ -7,6 +7,6 @@ Maintainer:
 Added:
     23-Sep-2025
 Status:
-    failing (compilation) # One of [succeeds|failing since <date>|obsolete| ...]
+    succeeds # One of [succeeds|failing since <date>|obsolete| ...]
 Comments:
-    Variant of samples/powerxy_complex that tests HDF5 output
+    Variant of samples/power_xy/complex that tests HDF5 output
