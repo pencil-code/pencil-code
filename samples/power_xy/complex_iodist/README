@@ -9,4 +9,4 @@ Added:
 Status:
     succeeds # One of [succeeds|failing since <date>|obsolete| ...]
 Comments:
-    Variant of samples/powerxy_complex that uses io_dist
+    Variant of samples/power_xy/complex that uses io_dist

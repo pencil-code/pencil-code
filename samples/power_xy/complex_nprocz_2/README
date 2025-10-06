@@ -9,4 +9,4 @@ Added:
 Status:
     succeeds # One of [succeeds|failing since <date>|obsolete| ...]
 Comments:
-    Variant of samples/powerxy_complex that tests parallellization along z.
+    Variant of samples/power_xy/complex that tests parallellization along z.
