@@ -59,6 +59,7 @@ Explore the sections below to get started, contribute, or run simulations with P
 
    Using Sphinx <dochowto/sphinx>
    dochowto/usingrst
+   dochowto/doccodetips
 
 .. toctree::
    :maxdepth: 1
