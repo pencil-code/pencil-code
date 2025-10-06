@@ -10,22 +10,34 @@ Whether you are here to **read**, **build**, or **rewrite history one .rst file 
 Why Sphinx (and not PDFs)?
 ==========================
 
+
 *Personal opinion of the writer — not an official stance of the Pencil Code community (yet).*
+
 
 
 PDF manuals were great — in **1983**, when documentation came on **CD-ROMs** and printers made that *satisfying dot-matrix screech*. But this is **2025**:
 
-* Phones and other devices no longer ship with PDF readers by default.
-* Nobody wants to pinch-zoom through a **300-page monolithic scroll of doom**.
-* Sending someone to “page 146 of 274” is not documentation — it’s a *quest*.
 
+**Reasons PDFs no longer cut it:**
 
-Meanwhile, Sphinx + ReadTheDocs behaves like documentation *should* in the modern age:
+- Requires a *separate app* just to open — assuming your phone didn’t uninstall it to free space for cat videos.
+- You can’t bookmark *sections*, only *pages*, and scrolling to “page 146 of 274” isn’t navigation — it’s a *pilgrimage*.
+- *Search* only works if the PDF was exported properly — otherwise **Ctrl+F is just placebo**.
+- You can’t embed GIFs, interactive plots, or collapsible code blocks — unless you print them on paper and *wave them around theatrically*.
+- Every time you update one sentence, you have to re-export and redistribute **the entire file**, like it’s a Soviet-era newspaper.
+- Mobile users must *pinch-zoom like raccoons rummaging through a garbage can*.
+- PDFs don’t do dark mode. They blind you at 2 AM and don’t even apologize.
 
-* **Opens in any browser**, even your fridge if it runs Chromium  
-* **Live search**, not “Ctrl+F and pray”  
-* **Link to specific sections**, not entire tomes  
-* Already used by most major scientific Python projects — so users feel right at home
+**Reasons Sphinx/ReadTheDocs wins by default:**
+
+- Opens in *any browser*, even on smart fridges and game consoles running Chromium.
+- Updates instantly — **no re-uploading 20 MB files just because a comma moved**.
+- URLs link *directly to functions, sections, or parameters*, not the entire Dead Sea Scrolls.
+- Integrates with **copy buttons**, syntax highlighting, collapsible content, math rendering, and *actually clickable links*.
+- Can embed **videos, images, Jupyter notebooks, Mermaid diagrams**, or whatever wizardry you throw at it.
+- Users can switch instantly between **latest**, **stable**, or even **historic “oops” versions**.
+- Feels like part of the internet — not like downloading a legal document from 1997.
+
 
 
 In short: Sphinx + ReadTheDocs = documentation that feels like it belongs in 2025, not the printer era.

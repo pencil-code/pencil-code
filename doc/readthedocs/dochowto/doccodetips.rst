@@ -31,10 +31,10 @@ For a thorough example please see `the napoleon extension website <https://sphin
 
 
 
-Tips for the IDL documentation
-------------------------------
+.. Tips for the IDL documentation
+.. ------------------------------
 
-Not yet available.
+.. Not yet available.
 
 
 Tips for the Fortran documentation
