@@ -5,7 +5,6 @@
 module General
 !
   use Cparam
-  use Cdata, only: n2,m2,l2,n2i,m2i,l2i
 !
   implicit none
 !
@@ -502,7 +501,8 @@ print*, 'rank,ipx,ipy,ipz, find_proc=',rank, ipx,ipy,ipz, find_proc_node_localty
 !
       use Cdata, only: mm,nn,imn_array,necessary,necessary_imn,lroot,ip, &
                        lyinyang,lcutoff_corners,nycut,nzcut, &
-                       lfirst_proc_y, lfirst_proc_z, llast_proc_y, llast_proc_z
+                       lfirst_proc_y, lfirst_proc_z, llast_proc_y, llast_proc_z, &
+                       n2,m2,l2,n2i,m2i,l2i
 !
       integer :: imn,m,n
       integer :: min_m1i_m2,max_m2i_m1
@@ -4827,6 +4827,8 @@ endfunction
 !   9-oct-15/MR: coded
 !  25-oct-16/JW: rewritten
 !
+      use Cdata, only: l2,m2,n2
+
       real, dimension (mx,my,mz,mfarray), intent(inout):: f
       integer,                            intent(in)   :: k,jmean
       real,                               intent(in)   :: weight
@@ -4897,6 +4899,7 @@ endfunction
                       + maxval(abs(f(ll,mm+1,nn+1,k:k+2))))
         enddo; enddo; enddo
       endif
+
     endsubroutine staggered_mean_vec
 !***********************************************************************
     subroutine staggered_mean_scal(f,k,jmean,weight)
@@ -4906,6 +4909,8 @@ endfunction
 !   9-oct-15/MR: coded
 !  25-oct-16/JW: rewritten
 !
+      use Cdata, only: l2,m2,n2
+
       real, dimension (mx,my,mz,mfarray), intent(inout):: f
       integer,                            intent(in)   :: k,jmean
       real,                               intent(in)   :: weight
@@ -4985,6 +4990,8 @@ endfunction
 !
 !   22-dec-15/JW: coded, adapted from staggered_mean_vec
 !
+      use Cdata, only: l2,m2,n2
+
       real, dimension (mx,my,mz,mfarray), intent(inout):: f
       integer,                            intent(in)   :: k,jmax
       real,                               intent(in)   :: weight
@@ -5058,6 +5065,8 @@ endfunction
 !
 !   22-dec-15/JW: coded, adapted from staggered_mean_scal
 !
+      use Cdata, only: l2,m2,n2
+
       real, dimension (mx,my,mz,mfarray), intent(inout):: f
       integer,                            intent(in)   :: k,jmax
       real,                               intent(in)   :: weight
@@ -5321,7 +5330,7 @@ endfunction
 !
 ! 4-dec-2015/MR: coded
 !
-      use Cdata, only: cosph, sinph, costh, sinth
+      use Cdata, only: l2, n2, m2, cosph, sinph, costh, sinth
 
       real, dimension(:,:,:,:), intent(IN) :: f
       integer                 , intent(IN) :: ith1, ith2, iph1, iph2
@@ -5760,7 +5769,7 @@ if (notanumber(source(:,is,js))) print*, 'source(:,is,js): iproc,j=', iproc, ipr
 ! 28-aug-2017/MR: cared for singularity at pole
 ! 30-jan-2019/MR: index bounds now parameters; transferes r component unaltered
 !
-      use Cdata, only: costh, sinth, cosph, sinph
+      use Cdata, only: m2, n2, costh, sinth, cosph, sinph
 
       real, dimension(:,:,:,:), intent(IN) :: vec
       integer,                  intent(IN) :: indthl,indthu,indphl,indphu

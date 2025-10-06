@@ -52,7 +52,8 @@ program remesh
   use Common
   use Mpicomm
   use Syscalls, only: system_cmd
-  use General   !, only: get_from_nml_str,get_from_nml_real,get_from_nml_log,convert_nml
+  use General, only: get_from_nml_str,get_from_nml_real,get_from_nml_log,convert_nml, &
+                     find_proc_general, find_proc_coords_general, itoa
   use Messages, only: memory_usage
   use Posix
 !
@@ -74,9 +75,9 @@ program remesh
   integer, dimension (mprocs) :: cpu_global
 
   real, dimension(:,:,:,:), allocatable :: acoll, a
-  real, dimension(mxcoll) :: xcoll
-  real, dimension(mycoll) :: ycoll
-  real, dimension(mzcoll) :: zcoll
+  real, dimension(mxcoll) :: xcoll,dxcoll_1,dxcoll_tilde
+  real, dimension(mycoll) :: ycoll,dycoll_1,dycoll_tilde
+  real, dimension(mzcoll) :: zcoll,dzcoll_1,dzcoll_tilde
 
 ! SC: added axtra dimension in x direction to 'f' array
   real, dimension (mmx_grid,mmy_grid,mmz_grid,mvar) :: f
@@ -302,21 +303,21 @@ program remesh
       if (lperi(1)) then
         facx=1./remesh_parx
       else
-        facx=(nxgrid-1.)/(remesh_parx*nxgrid-1.)    ! because dx=Lx/(nxgrid-1) !
+        facx=(nxgrid-1)/(remesh_parx*nxgrid-1.)    ! because dx=Lx/(nxgrid-1) !
       endif
     endif
     if (remesh_pary/=1.) then
       if (lperi(2)) then
         facy=1./remesh_pary
       else
-        facy=(nygrid-1.)/(remesh_pary*nygrid-1.)
+        facy=(nygrid-1)/(remesh_pary*nygrid-1.)
       endif
     endif
     if (remesh_parz/=1.) then
       if (lperi(3)) then
         facz=1./remesh_parz
       else
-        facz=(nzgrid-1.)/(remesh_parz*nzgrid-1.)
+        facz=(nzgrid-1)/(remesh_parz*nzgrid-1.)
       endif
     endif
 
@@ -454,11 +455,12 @@ yinyang_loop: &
       read(1) dx,dy,dz
       read(1) Lx,Ly,Lz
       read(1) dx_1,dy_1,dz_1
+      read(1) dx_tilde,dy_tilde,dz_tilde
       close(1)
 
-      xcoll(i1x:i2x)=x
-      ycoll(i1y:i2y)=y
-      zcoll(i1z:i2z)=z
+      xcoll(i1x:i2x)=x; dxcoll_1(i1x:i2x)=dx_1; dxcoll_tilde(i1x:i2x)=dx_tilde
+      ycoll(i1y:i2y)=y; dycoll_1(i1y:i2y)=dy_1; dycoll_tilde(i1y:i2y)=dy_tilde
+      zcoll(i1z:i2z)=z; dzcoll_1(i1z:i2z)=dz_1; dzcoll_tilde(i1z:i2z)=dz_tilde
 
       i1x=i1x+nx; i2x=i2x+nx; 
       enddo
@@ -525,7 +527,7 @@ yinyang_loop: &
           rx(ll2+i)=rx(ll2)+i*dx
         enddo
       else
-        rx(1:mx)=xcoll(1:mx); rdx_1(1:mx)=dx_1; rdx_tilde(1:mx)=dx_tilde
+        rx=xcoll; rdx_1=dxcoll_1; rdx_tilde=dxcoll_tilde
       endif
 !     
       if (remesh_pary/=1.) then
@@ -553,7 +555,7 @@ yinyang_loop: &
           ry(mm2+i)=ry(mm2)+i*dy
         enddo
       else
-        ry(1:my)=ycoll(1:my); rdy_1(1:my)=dy_1; rdy_tilde(1:my)=dy_tilde
+        ry=ycoll; rdy_1=dycoll_1; rdy_tilde=dycoll_tilde
       endif
 !
       if (remesh_parz/=1.) then
@@ -581,7 +583,7 @@ yinyang_loop: &
           rz(nn2+i)=rz(nn2)+i*dz
         enddo
       else
-        rz(1:mz)=zcoll(1:mz); rdz_1(1:mz)=dz_1; rdz_tilde(1:mz)=dz_tilde
+        rz=zcoll; rdz_1=dzcoll_1; rdz_tilde=dzcoll_tilde
       endif
 !
 !  Interpolating f-array to increased number of mesh points if only one
@@ -861,7 +863,6 @@ endprogram remesh
 !  30-Aug-02/wolf: coded
 !  12-nov-02/nils: adapted from equ.f90
 !
-      use Cdata
       use Common
 !
       real, dimension (mmx,mmy,mmz,mvar) :: f,df
@@ -893,7 +894,6 @@ endprogram remesh
 !  30-Aug-02/wolf: coded
 !  12-nov-02/nils: adapted from equ.f90
 !
-      use Cdata
       use Common
 !
       real, dimension (mmx,mmy,mmz,mvar) :: f,df
@@ -936,7 +936,6 @@ endprogram remesh
 !   8-jul-02/wolf: coded
 !  12-nov-02/nils: adapted from deriv.f90
 !
-      use Cdata
       use Common
 !
       real, dimension (mmx,mmy,mmz,mvar) :: f
@@ -993,10 +992,10 @@ endprogram remesh
 !      
 !  12-nov-02/nils: adapted from sub.f90
 !
-      character (len=6)  :: ch
       integer :: cpu
+      character(len=6) :: ch
 !
-      ch='    '
+      ch=''
       if (cpu.lt.0) stop 'chn: lt1'
       if (cpu.lt.10) then
         write(ch(1:1),'(i1)') cpu
