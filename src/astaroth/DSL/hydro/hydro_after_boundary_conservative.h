@@ -1,5 +1,4 @@
-#if LHYDRO
-#if Lhydro_MODULE
+#if Lhydro_MODULE && Ldensity_MODULE
 Kernel hydro_after_boundary_conservative(real AC_t__mod__cdata){
   real cs201
   real cs2011
@@ -149,9 +148,6 @@ Kernel hydro_after_boundary_conservative(real AC_t__mod__cdata){
 }
 #else
 Kernel hydro_after_boundary_conservative(real AC_t__mod__cdata){
-}
-#endif
-#else
-Kernel hydro_after_boundary_conservative(real AC_t__mod__cdata){
+	suppress_unused_warning(AC_t__mod__cdata)
 }
 #endif
