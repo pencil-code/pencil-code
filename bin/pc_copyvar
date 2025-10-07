@@ -155,7 +155,7 @@ if ($execute) echo ""
 #  Only execute the command if -e or -execute=1 is set, to avoid catastrophes.
 #
 if ($execute) then
-  foreach dir ( $source/${data}proc[0-9]* )
+  foreach dir ( $source/${data}proc*[0-9] )
     set procdir=`basename $dir`
     if ($remdest) then
       set res=`ssh $dest:s/:/ ls -d //${data}$procdir`

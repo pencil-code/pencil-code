@@ -24,7 +24,6 @@
   public :: dynamical_resistivity
   public :: split_update_magnetic
   public :: expand_shands_magnetic
-  public :: update_char_vel_magnetic
   public :: magnetic_after_timestep, magnetic_after_mn
   public :: pushpars2c
   public :: calc_diagnostics_magnetic

@@ -75,6 +75,9 @@ module Register
       use Solid_Cells,      only: register_solid_cells
 !
       integer :: ierr
+
+      if (maux_com > maux) call fatal_error('register_modules', &
+        'maux_com > maux: you may have forgotten to set both MAUX and COMMUNICATED AUXILIARIES properly in cparam.local')
 !
 !  Overwrite datadir from datadir.in, if that exists.
 !

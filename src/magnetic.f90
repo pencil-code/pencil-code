@@ -3713,7 +3713,7 @@ module Magnetic
       real, dimension(nx,3) :: aamx,bb,jj
       real, dimension(ny,3) :: aamy
       real, dimension(nx,3,3) :: aij, bij
-      real, dimension(nx) :: rho1, b2, tmp, tmp2
+      real, dimension(nx) :: rho1, b2, tmp
       real, dimension(3) :: B_ext
 !
 !  Compute mean field (xy verage) for each component. Do not include the ghost zones.
@@ -3841,8 +3841,8 @@ module Magnetic
 !
 !  Find bb and jj if as communicated auxiliary.
 !
-      getbb: if (lbb_as_comaux .or. ljj_as_comaux .or. &
-                 lalfven_as_aux.or. (lslope_limit_diff .and. llast)) then
+      if (lbb_as_comaux .or. ljj_as_comaux .or. &
+          lalfven_as_aux.or. (lslope_limit_diff .and. llast)) then
         call zero_ghosts(f, iax, iaz)       !MR: needed given the next statement?
         call update_ghosts(f, iax, iaz)     !MR: only the "real" BCs matter here
 
@@ -3910,16 +3910,12 @@ module Magnetic
             endif
             if (lalfven_as_aux) f(l1:l2,m,n,ialfven)= tmp
             if (lslope_limit_diff .and. llast) then
-              if (lboris_correction .and. va2max_boris>0) then
-                tmp2=tmp*((1+(tmp/va2max_boris)**2.)**(-1.0/2.0))
-                f(l1:l2,m,n,isld_char)=f(l1:l2,m,n,isld_char)+w_sldchar_mag*sqrt(tmp2)
-              else
-                f(l1:l2,m,n,isld_char)=f(l1:l2,m,n,isld_char)+w_sldchar_mag*sqrt(tmp)
-              endif
+              if (lboris_correction .and. va2max_boris>0) tmp=tmp/sqrt(1.+(tmp/va2max_boris)**2.)
+              f(l1:l2,m,n,isld_char)=f(l1:l2,m,n,isld_char)+w_sldchar_mag*sqrt(tmp)
            endif
           endif
         enddo  ! mn_loop
-      endif getbb
+      endif    ! if (lbb_as_comaux ...
 !
 !  Possibility of calculating the magnetic helicity correction for the Coulomb gauge.
 !  Here, no minus sign has been included, so A_Coulomb = A_Weyl - gLambda, and
