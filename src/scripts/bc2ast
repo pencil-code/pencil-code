@@ -47,7 +47,7 @@ else
     bc_file=../start.in
   fi
 fi
-if [[ $bc_file==../start.in ]]; then
+if [[ $bc_file == ../start.in ]]; then
     echo "Boundary conditions encoded for Astaroth from start.in -> later change of them in run.in renders build invalid!"
 fi
 #
