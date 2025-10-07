@@ -61,8 +61,7 @@ bc_steady_z(boundary, topbot, VtxBuffer field)
   }
 }
 //TP: old
-#if Leos_idealgas_MODULE
-#if Lentropy_MODULE
+#if Leos_idealgas_MODULE && Lentropy_MODULE
 bc_ss_flux(boundary, topbot, bool lone_sided)
 {
   suppress_unused_warning(boundary)
@@ -154,7 +153,6 @@ bc_ss_flux(boundary, topbot, bool lone_sided)
   else {
   }
 }
-#endif
 #endif
 
 bc_copy_x(AcBoundary boundary, AC_TOP_BOT topbot,VtxBuffer j)
@@ -375,8 +373,7 @@ bc_set_der_z(boundary, topbot, VtxBuffer field,val)
   }
 }
 
-#if Leos_idealgas_MODULE
-#if Lentropy_MODULE
+#if Leos_idealgas_MODULE && Lentropy_MODULE
 bc_ss_temp_z(AcBoundary boundary, AC_TOP_BOT topbot,bool lone_sided)
 {
 suppress_unused_warning(boundary)
@@ -541,7 +538,6 @@ LNTT[vertexIdx.x][vertexIdx.y][AC_n2+i-1]=2*LNTT[vertexIdx.x][vertexIdx.y][AC_n2
 else {
 }
 }
-#endif
 #endif
 
 #if LVISCOSITY
@@ -873,8 +869,7 @@ bc_set_sfree_y(AcBoundary boundary,AC_TOP_BOT topbot,Field j)
   }
 }
 
-#if Leos_idealgas_MODULE
-#if Lentropy_MODULE
+#if Leos_idealgas_MODULE && Lentropy_MODULE
 bc_ss_flux_x(AcBoundary boundary, AC_TOP_BOT topbot)
 {
   suppress_unused_warning(boundary)
@@ -1120,10 +1115,8 @@ bc_ss_flux_x(AcBoundary boundary, AC_TOP_BOT topbot)
   }
 }
 #endif
-#endif
 
-#if Leos_idealgas_MODULE
-#if Lentropy_MODULE
+#if Leos_idealgas_MODULE && Lentropy_MODULE
 bc_ss_flux_turb_x(AcBoundary boundary, AC_TOP_BOT topbot)
 {
   suppress_unused_warning(boundary)
@@ -1242,7 +1235,6 @@ bc_ss_flux_turb_x(AcBoundary boundary, AC_TOP_BOT topbot)
   else {
   }
 }
-#endif
 #endif
 /**
 
@@ -1555,8 +1547,7 @@ bc_ss_flux(AcBoundary boundary, AC_TOP_BOT topbot,bool lone_sided)
   }
 }
 **/
-#if Leos_idealgas_MODULE
-#if Lgravity_simple_MODULE
+#if Leos_idealgas_MODULE && Lgravity_simple_MODULE
 bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
 {
   suppress_unused_warning(boundary)
@@ -3478,7 +3469,6 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
   }
 }
 #endif
-#endif
 
 //These don't actually do anything except set some flags in the CPU code so can be no-ops here
 bc_freeze_var_x(AcBoundary boundary, AC_TOP_BOT topbot, Field f)
@@ -3767,8 +3757,7 @@ bc_outflow_x(AcBoundary boundary, AC_TOP_BOT topbot,Field f,bool lforce)
 }
 
 
-#if Lhydro_MODULE
-#if Ldensity_MODULE
+#if Lhydro_MODULE && Ldensity_MODULE
 bc_ss_stemp_x(AcBoundary boundary,AC_TOP_BOT topbot)
 {
   suppress_unused_warning(boundary)
@@ -3934,6 +3923,7 @@ bc_ss_stemp_z(AcBoundary boundary,AC_TOP_BOT topbot)
   else {
   }
 }
+#endif
 
 bc_set_nfr_y(AcBoundary boundary, AC_TOP_BOT topbot,Field j)
 {
@@ -3953,8 +3943,7 @@ bc_set_nfr_y(AcBoundary boundary, AC_TOP_BOT topbot,Field j)
   }
 }
 
-#if Ldensity_MODULE
-#if Lentropy_MODULE
+#if Ldensity_MODULE && Lentropy_MODULE
 bc_ss_flux_condturb_x(AcBoundary boundary,AC_TOP_BOT topbot)
 {
   suppress_unused_warning(boundary)
@@ -4032,7 +4021,6 @@ bc_ss_flux_condturb_x(AcBoundary boundary,AC_TOP_BOT topbot)
   else if (topbot == AC_top) {
   }
 }
-#endif
 #endif
 
 bc_set_nfr_x(AcBoundary boundary, AC_TOP_BOT topbot,Field j)
