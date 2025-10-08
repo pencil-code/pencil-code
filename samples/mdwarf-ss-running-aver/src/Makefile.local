@@ -18,6 +18,7 @@ EOS       =   eos_idealgas
 GRAVITY   =   gravity_r
 FORCING   = noforcing
 SHEAR     = noshear
-TIMEAVG   =   timeavg
+TIMEAVG   = notimeavg
+INITIAL_CONDITION = initial_condition/star_in_a_box_poly
 
 REAL_PRECISION = double

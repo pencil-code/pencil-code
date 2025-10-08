@@ -3,36 +3,50 @@
 !  Initialisation parameters
 !
 &init_pars
-  cvsid="5a6b5b090"
-  ip = 14,                      ! debugging parameter
   xyz0  = -1.1,-1.1,-1.1,       ! first corner of box
-  Lxyz  =  2.2 , 2.2 , 2.2,        ! box size
-  lperi =  F  , T  , F,         ! periodic direction?
-  random_gen = 'nr_f90'
+  Lxyz  =  2.2, 2.2, 2.2,       ! box size
+  lperi =  F  , F  , F,         ! periodic direction?
   lsphere_in_a_box = T
+  lwrite_aux = T
   r_ext = 1.
-  lwrite_aux=T
-  bcx = 'a','s','s','a2','sT','sT','a','s','s'
-  bcz = 's','s','a','a2','sT','sT','s','s','a'
+  bcx = 'a','s','s','a2','sT','sT','a','s','s','cop'
+  bcy = 's','a','s','a2','sT','sT','s','a','s','cop'
+  bcz = 's','s','a','a2','sT','sT','s','s','a','cop'
+/
+&initial_condition_pars
+  star_luminosity=1e-4
+  wheat=0.1
+  Rstar=1., nad=1.5
+  npoly1=3.25, npoly2=1.5
+  npolyK1=0, npolyK2=3.25
+  r1_poly=0.1
+  width_npoly=0.05
 /
 &eos_init_pars
-  cs0 = 1., rho0 = 1., ! values at r=0
+!  cs0 = 3.5, rho0 = 1.
+!  cs0 = 3.3, rho0 = 1.
+  cs0 = 3.25, rho0 = 1.
+!  cs0 = 3.2, rho0 = 1.
 /
 &hydro_init_pars
-  inituu = 'gaussian-noise-rprof',
-  ampluu = 1e-3
+ inituu = 'gaussian-noise-rprof',
+ ampluu = 1e-4
 /
 &density_init_pars
-  initlnrho = 'isentropic-star',
 /
 &grav_init_pars
-  ipotential = 'M5-dwarf'
+  ipotential = 'smoothflat-newton'
+  g0 = 1.8337831655437522
+  r1_pot1 = 1.1
+  r0_pot = 0.1
+  n_pot = 4.
 /
 &entropy_init_pars
-  initss = 'isentropic-star'
   lss_running_aver_as_var=T
+  hcond0=0.
 /
 &magnetic_init_pars
   initaa = 'gaussian-noise-rprof'
-  amplaa = 1e-5
+  amplaa = 1e-6
 /
+
