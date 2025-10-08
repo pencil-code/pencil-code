@@ -62,8 +62,8 @@ my %tests = (
                      )],
              1 => [qw(
                          backwards-compatible
-                         mdwarf-ss-running-aver
                          1d-tests/implicit_diffusion
+                         2d-tests/chemistry_GrayScott
                          2d-tests/shearwave-dust-par
                          dust-vortex
                          damped_alfven_waves
@@ -92,7 +92,6 @@ my %tests = (
                          kin-dynamo
                          meissner
                          conv-slab-noequi
-                         2d-tests/chemistry_GrayScott
                          2d-tests/selfgravitating-shearwave
                          2d-tests/streaming_instability/single-species
                          2d-tests/streaming_instability/multi-species
@@ -182,6 +181,7 @@ my %tests = (
              4 => [qw(
                          superparticle-coagulation
                          superparticle-condensation-coagulation
+                         mdwarf-ss-running-aver
                          Schwinger2
                      )],
              # Level 5 for now contains overlong tests (e.g. test that
