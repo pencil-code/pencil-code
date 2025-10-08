@@ -1375,8 +1375,8 @@ endsubroutine helper_loop
     call copy_addr(lisotropic_advection,p_par(116)) ! bool
     call copy_addr(ldynamical_diffusion,p_par(117)) ! bool
     call copy_addr(lstratz,p_par(118)) ! bool
-    call copy_addr(x,p_par(119)) ! (mx)
     
+    call copy_addr(x,p_par(119)) ! (mx)
     call copy_addr(dx_1,p_par(120)) ! (mx)
     call copy_addr(dvol_x,p_par(121)) ! (mx)
     call copy_addr(y,p_par(122)) ! (my)
@@ -1423,6 +1423,10 @@ endsubroutine helper_loop
     call copy_addr(dx,p_par(167))
     call copy_addr(dy,p_par(168))
     call copy_addr(dz,p_par(169))
+    call copy_addr(x12,p_par(170))      !  (mx)
+    call copy_addr(y12,p_par(171))      !  (my)
+    call copy_addr(sinth12,p_par(172))  !  (my)
+    call copy_addr(z12,p_par(173))      !  (mz)
     
     call copy_addr(ldebug,p_par(300)) ! bool
     call copy_addr(ltest_bcs,p_par(337)) ! bool

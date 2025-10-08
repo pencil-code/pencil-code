@@ -8148,7 +8148,7 @@ nameloop: do
                   +(-flux_ipp12(:,2)+27.*flux_ip12(:,2)-27.*flux_im12(:,2)+flux_imm12(:,2))/(dy12*24.)
         else
           if (lspherical_coords) then
-            div_flux=div_flux + (sin(y12(m))*flux_ip12(:,2)-sin(y12(m-1))*flux_im12(:,2)) &
+            div_flux=div_flux + (sinth12(m)*flux_ip12(:,2)-sinth12(m-1)*flux_im12(:,2)) &
                                 /(x(l1:l2)*sinth(m)*dy12)
           elseif (lcylindrical_coords) then
             div_flux=div_flux + (flux_ip12(:,2)-flux_im12(:,2))/(x(l1:l2)*dy12)

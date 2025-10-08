@@ -134,10 +134,10 @@ module Cdata
   real, dimension (nygrid) :: sinth_weight_across_proc
   real, dimension (nx) :: rcyl_mn=1.,rcyl_mn1=1.,rcyl_mn2=1.,rcyl_weight
   real, dimension (nx) :: glnCrossSec
-  real, dimension (nrcyl) :: rcyl  ! used for phi-averages
-  real, dimension (mx) :: x12    ! for slope-limted-diffusion
-  real, dimension (my) :: y12    ! for slope-limted-diffusion
-  real, dimension (mz) :: z12    ! for slope-limted-diffusion
+  real, dimension (nrcyl) :: rcyl        ! used for phi-averages
+  real, dimension (mx) :: x12            ! for slope-limted-diffusion
+  real, dimension (my) :: y12, sinth12   ! for slope-limted-diffusion
+  real, dimension (mz) :: z12            ! for slope-limted-diffusion
 !
 !  Grid parameters.
 !
