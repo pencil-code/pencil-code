@@ -9318,7 +9318,7 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
           call update_on_gpu(Hp_index_on_gpu,'AC_hp_target__mod__cdata',Hp_target)
         endif
         if (lgpu .and. appa_target_previous /= appa_target) then
-          call update_on_gpu(appa_index_on_gpu,'AC_appa_target__mod__cdata',Hp_target)
+          call update_on_gpu(appa_index_on_gpu,'AC_appa_target__mod__cdata',appa_target)
         endif
       endif
 !

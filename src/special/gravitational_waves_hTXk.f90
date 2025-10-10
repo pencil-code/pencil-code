@@ -1092,7 +1092,7 @@ module Special
       endif
 
       if(lgpu .and. appa_old /= appa_target) then
-        call update_on_gpu(appa_index_on_gpu,'AC_appa_target__mod__cdata',Hp_target)
+        call update_on_gpu(appa_index_on_gpu,'AC_appa_target__mod__cdata',appa_target)
       endif
 
       Hp_old = Hp_target
