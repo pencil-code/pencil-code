@@ -18,7 +18,11 @@ fixed_boundary Kernel twopass_solve_final(PC_SUB_STEP_NUMBER step_num)
 #if Ldensity_MODULE
 			if(AC_density_floor__mod__density > 0.0)
 			{
-				if(!AC_ldensity_nolog__mod__cdata)
+				if(AC_ldensity_nolog__mod__cdata)
+				{
+					updated_rho = max(updated_rho,AC_density_floor__mod__density)
+				}
+				else
 				{
 					updated_rho = max(updated_rho,AC_density_floor_log__mod__density)
 				}
