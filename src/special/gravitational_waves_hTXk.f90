@@ -1064,8 +1064,8 @@ module Special
       real :: lgt1, lgt2, lgf1, lgf2, lgf, lgt_current
       integer :: it_file
       real, save :: Hp_old,appa_old
-      integer, save :: Hp_index_on_gpu=0
-      integer, save :: appa_index_on_gpu=0
+      integer, save :: Hp_index_on_gpu=-1
+      integer, save :: appa_index_on_gpu=-1
 
 
       lgt_current=alog10(real(t))+lgt_ini

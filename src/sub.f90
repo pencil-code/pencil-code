@@ -9134,8 +9134,8 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
       real :: lgt_current
       real :: f, f1, f2
       integer, save :: it_called=0
-      integer, save :: Hp_index_on_gpu = 0
-      integer, save :: appa_index_on_gpu = 0
+      integer, save :: Hp_index_on_gpu = -1
+      integer, save :: appa_index_on_gpu = -1
 !
 ! alberto: t_ini corresponds to the conformal time computed using a_0 = 1 at T_* = 100 GeV, g_S = 103 (EWPT)
 !--   real :: t_ini=60549
