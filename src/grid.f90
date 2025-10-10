@@ -1453,10 +1453,7 @@ module Grid
       if (lroot.or..not.lcollective_IO) call remove_prof('z')
       lwrite_prof=.true.
 
-      if (lslope_limit_diff) then
-        if (lroot) print*,'initialize_grid: Set up half grid x12, y12, z12'
-        call generate_halfgrid
-      endif
+      if (lslope_limit_diff) call generate_halfgrid
 !
 !  Scalar versions of the inverse of dx
 !  Not strictly needed but give a slightly
@@ -2774,6 +2771,7 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
 !
 ! x[l1:l2]+0.5/dx_1[l1:l2]-0.25*dx_tilde[l1:l2]/dx_1[l1:l2]^2
 !
+      if (lroot) print*,'initialize_grid: Set up half grid x12, y12, z12'
       if (nxgrid == 1) then
         x12 = x
       else

@@ -31,13 +31,6 @@
 /RUNTIME_COMPILATION/ b end
 /TRANSPILATION/ b end
 /FARRAY/ b end
-#s/^ *VISCOSITY *= *noviscosity *$/#undef LVISCOSITY/ 
-t prin
-b cont0
-: prin
-p
-t end
-: cont0
 /^ *[A-Z0-9_]* *= *no/ b end
 s/^ *REAL_PRECISION *= *double *$/PRECISION=DOUBLE/
 s/^ *REAL_PRECISION *= *8 *$/PRECISION=DOUBLE/

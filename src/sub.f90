@@ -8014,7 +8014,7 @@ nameloop: do
 !           contribution to viscose heating derives from (i: component, j: direction)
 !           rho*u_i*del_j Fij_sld -> del_j (rho*u_i*Fij_sld) - del_j(rho*u_i)*Fij_sld
 !           first term does not contribute to heating
-!           second term correpond to 2nd order gradient of of each rho*u component
+!           second term correponds to 2nd order gradient of each rho*u component
 !
               if (k == 1 .and. nxgrid /= 1) then
                 if (ldensity_nolog) then
@@ -8022,8 +8022,8 @@ nameloop: do
                 else
                   densx=exp(f(l1-1:l2+1,m,n,ilnrho))
                 endif
-                heat=heat+0.5*flux_im12(:,k)*(densx(2:nx+1)*f(l1:l2,m,n,j)-densx(1:nx)*fim1)/(x(l1:l2)-x(l1-1:l2-1)) &
-                         +0.5*flux_ip12(:,k)*(densx(3:nx+2)*fip1-densx(2:nx+1)*f(l1:l2,m,n,j))/(x(l1+1:l2+1)-x(l1:l2))
+                heat=heat+0.5*( flux_im12(:,k)*(densx(2:nx+1)*f(l1:l2,m,n,j)-densx(1:nx)*fim1  )*dx_1(l1:l2) &
+                               +flux_ip12(:,k)*(densx(3:nx+2)*fip1-densx(2:nx+1)*f(l1:l2,m,n,j))*dx_1(l1+1:l2+1))
               endif
 !
               if (k == 2 .and. nygrid /= 1) then
@@ -8037,11 +8037,11 @@ nameloop: do
                   dens_p1=exp(f(l1:l2,m+1,n,ilnrho))
                 endif
                 if (lspherical_coords .or. lcylindrical_coords) then
-                  heat=heat+0.5*( flux_im12(:,k)*(dens*f(l1:l2,m,n,j)-dens_m1*fim1)/(y(m)-y(m-1)) &
-                                 +flux_ip12(:,k)*(dens_p1*fip1-dens*f(l1:l2,m,n,j))/(y(m+1)-y(m)))/x(l1:l2)
+                  heat=heat+0.5*( flux_im12(:,k)*(dens*f(l1:l2,m,n,j)-dens_m1*fim1)*dy_1(m) &
+                                 +flux_ip12(:,k)*(dens_p1*fip1-dens*f(l1:l2,m,n,j))*dy_1(m+1))/x(l1:l2)
                 else
-                  heat=heat+0.5*( flux_im12(:,k)*(dens*f(l1:l2,m,n,j)-dens_m1*fim1)/(y(m)-y(m-1)) &
-                                 +flux_ip12(:,k)*(dens_p1*fip1-dens*f(l1:l2,m,n,j))/(y(m+1)-y(m)))
+                  heat=heat+0.5*( flux_im12(:,k)*(dens*f(l1:l2,m,n,j)-dens_m1*fim1)*dy_1(m) &
+                                 +flux_ip12(:,k)*(dens_p1*fip1-dens*f(l1:l2,m,n,j))*dy_1(m+1))
                 endif
               endif
 !
@@ -8056,11 +8056,11 @@ nameloop: do
                   dens_p1=exp(f(l1:l2,m,n+1,ilnrho))
                 endif
                 if (lspherical_coords) then
-                  heat=heat+0.5*( flux_im12(:,k)*(dens*f(l1:l2,m,n,j)-dens_m1*fim1)/(z(n)-z(n-1)) &
-                                 +flux_ip12(:,k)*(dens_p1*fip1-dens*f(l1:l2,m,n,j))/(z(n+1)-z(n)))/(x(l1:l2)*sinth(m))
+                  heat=heat+0.5*( flux_im12(:,k)*(dens*f(l1:l2,m,n,j)-dens_m1*fim1)*dz_1(n) &
+                                 +flux_ip12(:,k)*(dens_p1*fip1-dens*f(l1:l2,m,n,j))*dz_1(n+1))/(x(l1:l2)*sinth(m))
                 else
-                  heat=heat+0.5*( flux_im12(:,k)*(dens*f(l1:l2,m,n,j)-dens_m1*fim1)/(z(n)-z(n-1)) &
-                                 +flux_ip12(:,k)*(dens_p1*fip1-dens*f(l1:l2,m,n,j))/(z(n+1)-z(n)))
+                  heat=heat+0.5*( flux_im12(:,k)*(dens*f(l1:l2,m,n,j)-dens_m1*fim1)*dz_1(n) &
+                                 +flux_ip12(:,k)*(dens_p1*fip1-dens*f(l1:l2,m,n,j))*dz_1(n+1))
                 endif
               endif
 !
