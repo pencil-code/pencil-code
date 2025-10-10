@@ -1400,8 +1400,9 @@ void copyFarray(AcReal* f)
   }
   for (int i = 0; i < end; ++i)
   {
-          if (!ltraining && i >= mvar && maux_vtxbuf_index[i] == -1) continue;
-	  acDeviceStoreVertexBuffer(acGridGetDevice(),STREAM_DEFAULT,VertexBufferHandle(i),dst);
+	  const int index = i < mvar ? i : maux_vtxbuf_index[i];
+          if (!ltraining && index == -1) continue;
+	  acDeviceStoreVertexBuffer(acGridGetDevice(),STREAM_DEFAULT,VertexBufferHandle(index),dst);
   }
   acGridSynchronizeStream(STREAM_ALL);
   //TP: Astaroth does not allocate ghost zones for inactive dimensions for 1d and 2d simulations, and unlike for xy  we cannot simply offset into the farray so have to manually copy the values
