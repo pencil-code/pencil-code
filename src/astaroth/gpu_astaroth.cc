@@ -1828,6 +1828,11 @@ extern "C" int updateInConfigArrName(char *name)
        if (strcmp(get_array_info(static_cast<AcRealArrayParam>(i)).name,name)==0) index=i;
     }
     if (index>-1) updateInConfigArr(index);
+    else
+    {
+       fprintf(stderr,"Astaroth WARNING: Did not entry named %s in config!!\n",name);
+       fflush(stderr);
+    }
     return index;
 }
 /***********************************************************************************************/
@@ -1838,6 +1843,11 @@ extern "C" int updateInConfigScalName(char *name, AcReal value)
        if (strcmp(realparam_names[i],name)==0) index=i;
     }
     if (index>-1) updateInConfigScal(index, value);
+    else
+    {
+       fprintf(stderr,"Astaroth WARNING: Did not entry named %s in config!!\n",name);
+       fflush(stderr);
+    }
     return index;
 }
 /**********************************************************************************************/
