@@ -59,53 +59,55 @@
                           I_SPECIAL_PARTICLES_AFTER_DTSUB=36, &
                           I_CALC_DIAGNOSTICS_SPECIAL=37, &
                           I_CALC_ODE_DIAGNOSTICS_SPECIAL=38, &
-                          I_PREP_RHS_SPECIAL=39
+                          I_PREP_RHS_SPECIAL=39, &
+                          I_LOAD_VARIABLES_TO_GPU_SPECIAL=40
     
-    integer, parameter :: n_subroutines=39
+    integer, parameter :: n_subroutines=40
     integer, parameter :: n_special_modules_max=2
 !
     integer :: n_special_modules
     character(LEN=256) :: special_modules_list = ''
-    character(LEN=29), dimension(n_subroutines) :: special_subroutines=(/ &
-                           'register_special             ', &
-                           'register_particles_special   ', &
-                           'initialize_special           ', &
-                           'finalize_special             ', &
-                           'read_special_init_pars       ', &
-                           'write_special_init_pars      ', &
-                           'read_special_run_pars        ', &
-                           'write_special_run_pars       ', &
-                           'rprint_special               ', &
-                           'get_slices_special           ', &
-                           'init_special                 ', &
-                           'dspecial_dt                  ', &
-                           'calc_pencils_special         ', &
-                           'pencil_criteria_special      ', &
-                           'pencil_interdep_special      ', &
-                           'special_calc_hydro           ', &
-                           'special_calc_density         ', &
-                           'special_calc_dustdensity     ', &
-                           'special_calc_energy          ', &
-                           'special_calc_magnetic        ', &
-                           'special_calc_pscalar         ', &
-                           'special_calc_particles       ', &
-                           'special_calc_chemistry       ', &
-                           'special_boundconds           ', &
-                           'special_before_boundary      ', &
-                           'special_particles_bfre_bdary ', &
-                           'special_after_boundary       ', &
-                           'special_after_timestep       ', &
-                           'set_init_parameters          ', &
-                           'special_calc_spectra         ', &
-                           'special_calc_spectra_byte    ', &
-                           'dspecial_dt_ode              ', &
-                           'input_persist_special        ', &
-                           'input_persist_special_id     ', &
-                           'output_persistent_special    ', &
-                           'special_particles_after_dtsub', &
-                           'calc_diagnostics_special     ',  &
-                           'calc_ode_diagnostics_special ',  &
-                           'prep_rhs_special             '  &
+    character(LEN=30), dimension(n_subroutines) :: special_subroutines=(/ &
+                           'register_special              ', &
+                           'register_particles_special    ', &
+                           'initialize_special            ', &
+                           'finalize_special              ', &
+                           'read_special_init_pars        ', &
+                           'write_special_init_pars       ', &
+                           'read_special_run_pars         ', &
+                           'write_special_run_pars        ', &
+                           'rprint_special                ', &
+                           'get_slices_special            ', &
+                           'init_special                  ', &
+                           'dspecial_dt                   ', &
+                           'calc_pencils_special          ', &
+                           'pencil_criteria_special       ', &
+                           'pencil_interdep_special       ', &
+                           'special_calc_hydro            ', &
+                           'special_calc_density          ', &
+                           'special_calc_dustdensity      ', &
+                           'special_calc_energy           ', &
+                           'special_calc_magnetic         ', &
+                           'special_calc_pscalar          ', &
+                           'special_calc_particles        ', &
+                           'special_calc_chemistry        ', &
+                           'special_boundconds            ', &
+                           'special_before_boundary       ', &
+                           'special_particles_bfre_bdary  ', &
+                           'special_after_boundary        ', &
+                           'special_after_timestep        ', &
+                           'set_init_parameters           ', &
+                           'special_calc_spectra          ', &
+                           'special_calc_spectra_byte     ', &
+                           'dspecial_dt_ode               ', &
+                           'input_persist_special         ', &
+                           'input_persist_special_id      ', &
+                           'output_persistent_special     ', &
+                           'special_particles_after_dtsub ', &
+                           'calc_diagnostics_special      ',  &
+                           'calc_ode_diagnostics_special  ',  &
+                           'prep_rhs_special              ',  &
+                           'load_variables_to_gpu_special '  &
                    /)
 
     integer(KIND=ikind8) :: libhandle
@@ -802,6 +804,13 @@
         call caller2(special_sub_handles(i,I_CALC_DIAGNOSTICS_SPECIAL),f,p)
       enddo
     endsubroutine calc_diagnostics_special
+!***********************************************************************
+    subroutine load_variables_to_gpu_special
+      integer :: i
+      do i=1,n_special_modules
+        call caller0(special_sub_handles(i,I_LOAD_VARIABLES_TO_GPU_SPECIAL))
+      enddo
+    endsubroutine load_variables_to_gpu_special
 !***********************************************************************
     subroutine calc_ode_diagnostics_special(f_ode)
       real, dimension(max_n_odevars), intent(IN) :: f_ode

@@ -9134,7 +9134,8 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
       real :: lgt_current
       real :: f, f1, f2
       integer, save :: it_called=0
-      integer, save :: index_on_gpu = 0
+      integer, save :: Hp_index_on_gpu = 0
+      integer, save :: appa_index_on_gpu = 0
 !
 ! alberto: t_ini corresponds to the conformal time computed using a_0 = 1 at T_* = 100 GeV, g_S = 103 (EWPT)
 !--   real :: t_ini=60549
@@ -9295,10 +9296,10 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
         if (ip<14) print*,'AXEL: f1 < ww < f2 ? ',f1, wweos_target, f2
 
         if (lgpu .and. Hp_target_previous /= Hp_target) then
-          call update_on_gpu(index_on_gpu,'AC_hp_target__mod__cdata',Hp_target)
+          call update_on_gpu(Hp_index_on_gpu,'AC_hp_target__mod__cdata',Hp_target)
         endif
         if (lgpu .and. appa_target_previous /= appa_target) then
-          call update_on_gpu(index_on_gpu,'AC_appa_target__mod__cdata',Hp_target)
+          call update_on_gpu(appa_index_on_gpu,'AC_appa_target__mod__cdata',Hp_target)
         endif
       endif
 !

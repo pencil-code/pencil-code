@@ -15,7 +15,6 @@ module Equ
   public :: impose_floors_ceilings, finalize_diagnostics
   public :: write_diagnostics
   public :: perform_diagnostics
-!$ public :: write_diagnostics_wrapper
 !
   real, public    :: before_boundary_sum_time=0.
   real, public    :: rhs_sum_time=0.
@@ -109,6 +108,7 @@ module Equ
 !  in offloading, training etc.
 !
       if (lgpu) call get_farray_ptr_gpu
+      call load_variables_to_gpu 
 !
 !  Initialize counter for calculating and communicating print results.
 !  Do diagnostics only in the first of the itorder substeps.
@@ -442,15 +442,11 @@ module Equ
 !
     endsubroutine pde
 !***********************************************************************
-!$   subroutine write_diagnostics_wrapper(f) bind(C)
-!
-!  7-feb-24/TP: needed since can't use bind(C) in general (only for threadpool)
-!
-!$    real, dimension(mx,my,mz,mfarray) :: f
-!
-!$    call write_diagnostics(f)
-!
-!$   endsubroutine write_diagnostics_wrapper
+    subroutine load_variables_to_gpu
+      use Special, only: load_variables_to_gpu_special
+
+      if (lspecial) call load_variables_to_gpu_special
+    endsubroutine
 !***********************************************************************
    subroutine write_diagnostics(f)
 !
