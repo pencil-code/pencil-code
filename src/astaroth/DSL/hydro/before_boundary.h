@@ -1,6 +1,4 @@
-#if LHYDRO
-#if Lhydro_MODULE
-
+#if LHYDRO  && Lhydro_MODULE
 Profile<XZ> AC_uu_average_cyl__mod__hydro 
 Profile<XY> AC_uu_average_sph__mod__hydro
 global output real AC_angmom_global
@@ -48,13 +46,6 @@ Kernel hydro_before_boundary_reductions(bool lrmv)
 {
 	suppress_unused_warning(lrmv)
 }
-Kernel hydro_before_boundary(bool lrmv, PC_SUB_STEP_NUMBER step_num)
-{
-	suppress_unused_warning(lrmv)
-	suppress_unused_warning(step_num)
-}
-#endif
-#else
 Kernel hydro_before_boundary(bool lrmv, PC_SUB_STEP_NUMBER step_num)
 {
 	suppress_unused_warning(lrmv)
