@@ -484,7 +484,7 @@ my $nolock      = (              $opts{'nolock'}          || $opts{'no-lock'} ||
 my $local_lock  = (              $opts{'local-lock'}      || 0    );
 my $fast        = (              $opts{'fast'}            || ''   );
 my $gpu         = (              $opts{'gpu'}             || 0    );
-my $gpu_threads = (              $opts{'gpu-threads'}     || 2    );
+my $gpu_threads = (              $opts{'gpu-threads'}     || 0    );
 my $log_dir     = (              $opts{'log-dir'}         || ''   );
 my $previous_dir = (             $opts{'previous-dir'}    || ''   );
 my $bisect      = (              $opts{'bisect'}          || 0    );
@@ -494,7 +494,8 @@ my $overwrite_fail = (           $opts{'overwrite-fail-info'}  || 0    );
 if (!$pencil_home) { die "ERROR: PENCIL_HOME unknown, please use -D or set the environment variable!\n"; }
 
 if ($gpu) {
-    if ($gpu_threads < 1) { die "ERROR: at least one GPU thread has to be used!\n"; }
+    if ($gpu_threads < 0) { die "ERROR: at least one GPU thread has to be used!\n"; }
+    if ($gpu_threads == 0) { $gpu_threads = 2; }
     if ($gpu_threads) {
         if ($env ne '') { $env .= " "; }
         $env .= "OMP_NUM_THREADS=".$gpu_threads;
