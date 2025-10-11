@@ -489,7 +489,13 @@ my $keep_fail   = (              $opts{'keep-fail-info-on-success'}  || 0    );
 my $overwrite_fail = (           $opts{'overwrite-fail-info'}  || 0    );
 
 if (!$pencil_home) { die "ERROR: PENCIL_HOME unknown, please use -D or environment variable!\n"; }
-if ($gpu && ($gpu_threads < 1)) { die "ERROR: at least one GPU thread has to be used!\n"; }
+
+my $env = "";
+if ($gpu) {
+    if ($gpu_threads < 1) { die "ERROR: at least one GPU thread has to be used!\n"; }
+    $env .= 'PENCIL_USER="GPU_AUTOTEST"';
+}
+if ($env ne '') { $env .= ' && '; }
 
 my %interpreter_map;
 if (defined($script_tests)) {
@@ -1064,25 +1070,25 @@ sub check_cmd_result {
 }
 # ---------------------------------------------------------------------- #
 sub test_shell_cmd {
-# As the name says...
+# Runs a command in a shell environment.
     my $cmd   = shift;
     my $dir   = (shift || "<Unknown directory>");
     my $phase = (shift || "<Unknown phase>");
     my $quiet = (shift || 0);   # flag for suppressing the 'ok'
     my $t_ref = shift;
 
-    print STDERR "\nRunning `$nice $cmd`\n" if ($debug);
+    print STDERR "\nRunning `$env$nice $cmd`\n" if ($debug);
     $! = 0;                     # reset
-    my $res = `$nice $cmd 2>&1`;
+    my $res = `$env$nice $cmd 2>&1`;
     my ($cmdstatus, $cmdmesg) = ($?, $!);
 
     if ($auto_clean && ($phase eq 'compilation') && ($cmdstatus != 0)) {
         # Retry compilation after cleaning
         test_shell_cmd("@pc_build --cleanall", $dir, "cleaning up", QUIET);
         return "ERROR running @pc_build --cleanall" if ($test_status);
-        print STDERR "\nRetrying `$nice $cmd`\n" if ($debug);
+        print STDERR "\nRetrying `$env$nice $cmd`\n" if ($debug);
         $! = 0;                     # reset
-        $res = `$nice $cmd 2>&1`;
+        $res = `$env$nice $cmd 2>&1`;
         ($cmdstatus, $cmdmesg) = ($?, $!);
     }
 
@@ -1091,7 +1097,7 @@ sub test_shell_cmd {
     if ($res ne '') {
         $res .= ' ';
     }
-    $res .= "['$nice $cmd' reported: $cmdmesg]" if ($cmdstatus != 0);
+    $res .= "['$env$nice $cmd' reported: $cmdmesg]" if ($cmdstatus != 0);
 
     print STDERR " ..done \n" if ($debug);
     if (($phase eq 'compilation') && ($postproc ne '')) {
