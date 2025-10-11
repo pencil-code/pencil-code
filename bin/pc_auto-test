@@ -493,6 +493,7 @@ my $overwrite_fail = (           $opts{'overwrite-fail-info'}  || 0    );
 
 if (!$pencil_home) { die "ERROR: PENCIL_HOME unknown, please use -D or set the environment variable!\n"; }
 
+if (!$gpu && $gpu_threads) { $gpu = 1; }
 if ($gpu) {
     if ($gpu_threads < 0) { die "ERROR: at least one GPU thread has to be used!\n"; }
     if ($gpu_threads == 0) { $gpu_threads = 2; }
