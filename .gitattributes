@@ -182,6 +182,7 @@ config/compilers/PGI.conf -text
 config/compilers/PGI_MPI.conf -text
 config/compilers/extensions/Cray_optimal.conf -text
 config/compilers/extensions/G95_debug.conf -text
+config/compilers/extensions/GNU-GCC_GPU.conf -text
 config/compilers/extensions/GNU-GCC_debug.conf -text
 config/compilers/extensions/GNU-GCC_dynamic.conf -text
 config/compilers/extensions/GNU-GCC_large.conf -text
