@@ -334,7 +334,8 @@ Options:
                            \tconfiguration files, rather than trying to find a
                            \tconfig file based on a host ID.
        --host-id=<id>      \tUse the given <id> as host ID.
-       --env=<ENV>         \tRun tests with the environment variable settings in <ENV>
+       --env=<ENV>         \tRun tests with the environment variable settings in <ENV>.
+       --global=<GLOBAL>   \tSet the environment variable PENCIL_USER to <GLOBAL>.
        --list-maintainers  \tPrint maintainer emails for failed tests
        --rsh=RSH-PROG      \tUse the specified program as to get a remote shell
        --nodelist=NODE1,.. \tUse a forked remote shell to parallelize
@@ -421,6 +422,7 @@ GetOptions(\%opts,
                     --config-files=s
                     --host-id=s
                     --env=s
+                    --global=s
                     --list-maintainers
                     --rsh=s
                     --nodelist=s
@@ -474,6 +476,7 @@ my $auto_clean  = (              $opts{'auto-clean'}      || 0    );
 my $config_files = (             $opts{'config-files'}    || ''   );
 my $host_id     = (              $opts{'host-id'}         || ''   );
 my $env         = (              $opts{'env'}             || ''   );
+my $global      = (              $opts{'global'}          || ''   );
 my $list_maint  = (              $opts{'list-maintainers'} || 0   );
 my $rsh         = (              $opts{'rsh'}             || 'ssh');
 my $nodelist    = (              $opts{'nodelist'}        || 0    );
@@ -501,6 +504,11 @@ if ($gpu) {
         if ($env ne '') { $env .= " "; }
         $env .= "OMP_NUM_THREADS=".$gpu_threads;
     }
+}
+
+if ($global ne '') {
+    if ($env ne '') { $env .= " "; }
+    $env .= "PENCIL_USER=".$global;
 }
 
 if ($env ne '') { $env .= ' && '; }
