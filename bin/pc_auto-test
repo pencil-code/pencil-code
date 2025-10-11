@@ -334,6 +334,7 @@ Options:
                            \tconfiguration files, rather than trying to find a
                            \tconfig file based on a host ID.
        --host-id=<id>      \tUse the given <id> as host ID.
+       --env=<ENV>         \tRun tests with the environment variable settings in <ENV>
        --list-maintainers  \tPrint maintainer emails for failed tests
        --rsh=RSH-PROG      \tUse the specified program as to get a remote shell
        --nodelist=NODE1,.. \tUse a forked remote shell to parallelize
@@ -419,6 +420,7 @@ GetOptions(\%opts,
                     --auto-clean
                     --config-files=s
                     --host-id=s
+                    --env=s
                     --list-maintainers
                     --rsh=s
                     --nodelist=s
@@ -471,6 +473,7 @@ my $time_limit  = (              $opts{'time-limit'}      || ''   );
 my $auto_clean  = (              $opts{'auto-clean'}      || 0    );
 my $config_files = (             $opts{'config-files'}    || ''   );
 my $host_id     = (              $opts{'host-id'}         || ''   );
+my $env         = (              $opts{'env'}             || ''   );
 my $list_maint  = (              $opts{'list-maintainers'} || 0   );
 my $rsh         = (              $opts{'rsh'}             || 'ssh');
 my $nodelist    = (              $opts{'nodelist'}        || 0    );
@@ -490,11 +493,8 @@ my $overwrite_fail = (           $opts{'overwrite-fail-info'}  || 0    );
 
 if (!$pencil_home) { die "ERROR: PENCIL_HOME unknown, please use -D or environment variable!\n"; }
 
-my $env = "";
-if ($gpu) {
-    if ($gpu_threads < 1) { die "ERROR: at least one GPU thread has to be used!\n"; }
-    $env .= 'PENCIL_USER="GPU_AUTOTEST"';
-}
+if ($gpu && ($gpu_threads < 1)) { die "ERROR: at least one GPU thread has to be used!\n"; }
+
 if ($env ne '') { $env .= ' && '; }
 
 my %interpreter_map;
