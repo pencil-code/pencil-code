@@ -82,6 +82,7 @@ if (! $?_sourceme) then		# called for the fist time?
       setenv PYTHONPATH "${PENCIL_HOME}/python:${PWD}/python"
     endif
     #  Set library path for linker
+    setenv AC_HOME "${PENCIL_HOME}/src/astaroth/submodule"
     if ($?LD_LIBRARY_PATH) then
       setenv LD_LIBRARY_PATH "${LD_LIBRARY_PATH}:./src:./src/astaroth:./src/astaroth/submodule/build/src/core:./src/astaroth/submodule/build/src/core/kernels:./src/astaroth/submodule/build/src/utils"
     else
