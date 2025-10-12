@@ -611,7 +611,9 @@ ifneq ($(GPU),nogpu)
       ifeq ($(IS_GIT_REPO),true)
         $(shell git submodule update --init --remote && cd .. && pc_setupsrc &> /dev/null)
       else
-        $(error Directory $PENCIL_HOME/src/astaroth/submodule is empty! You need to pull Astaroth as a submodule and apply pc_setupsrc afterwards!)
+	CWD := $(shell pwd)
+        $(shell cd $(PENCIL_HOME)/src/astaroth/submodule && git clone https://bitbucket.org/jpekkila/astaroth.git && git checkout develop && cd $(CWD)/.. && pc_setupsrc &> /dev/null)
+        #$(error Directory $PENCIL_HOME/src/astaroth/submodule is empty! You need to pull Astaroth as a submodule and apply pc_setupsrc afterwards!)
       endif
     endif
   else
