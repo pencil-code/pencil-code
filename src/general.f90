@@ -7804,6 +7804,8 @@ iloop:do i=1,size(list2)
         dst = enum_fct_string
       case('robertsflow')
         dst = enum_robertsflow_string
+      case('1s')
+        dst = enum_1s_string
       case default
         dst = enum_unknown_string_string
         if (lroot) print*, 'No string enum for: ', src
