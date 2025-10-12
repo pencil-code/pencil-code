@@ -274,6 +274,7 @@ my @gpu_tests = qw(
                          1d-tests/alphadisk
                          1d-tests/hyperdiffusion
                          2d-tests/chiral_dynamo
+                         spherical-globaldisk-mhd
                    );
 # ---------------------------------------------------------------------- #
 
