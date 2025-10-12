@@ -607,7 +607,8 @@ ifneq ($(GPU),nogpu)
 
     else
       $(info )
-      $(error Directory $PENCIL_HOME/src/astaroth/submodule is empty! You need to pull Astaroth as a submodule and apply pc_setupsrc afterwards!)
+      $(shell git submodule update --init --remote && cd .. && pc_setupsrc)
+      #$(error Directory $PENCIL_HOME/src/astaroth/submodule is empty! You need to pull Astaroth as a submodule and apply pc_setupsrc afterwards!)
     endif
   else
     $(info )
