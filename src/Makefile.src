@@ -584,6 +584,9 @@ ifneq ($(GPU),nogpu)
       endif
 
     endif
+    ifeq ($(wildcard $(PENCIL_HOME)/fortran-parser/*),)
+      $(shell cd $(PENCIL_HOME) && rm -rf fortran-parser && git clone https://github.com/ToxPuro/fortran-parser.git 2>/dev/null)
+    endif
     ifneq ($(wildcard $(PENCIL_HOME)/src/astaroth/submodule/*),)
       #FFLAGS_GENERAL += -mcmodel=medium
       GPU_INTERFACE = gpu_astaroth_ansi.o
