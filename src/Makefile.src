@@ -564,7 +564,7 @@ ifneq ($(GPU),nogpu)
 #
     LD_LIB_PATH_OK := $(shell (echo $(LD_LIBRARY_PATH) | grep 'src/astaroth') )
     ifeq ($(LD_LIB_PATH_OK),)
-      $(warning Environment variable LD_LIBRARY_PATH doesn't contain paths "src/astaroth" etc!: $(LD_LIBRARY_PATH))
+      $(warning Environment variable LD_LIBRARY_PATH does not contain "src/astaroth":\n\$LD_LIBRARY_PATH=$(LD_LIBRARY_PATH))
       $(info Execution of [start|run].x might fail!)
 
       YESNO := $(shell bash -c 'read -p "Continue? (Y/N) " yesno; echo $$yesno')
