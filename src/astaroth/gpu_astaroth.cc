@@ -1655,6 +1655,34 @@ extern "C" void loadFarray()
   if (dimensionality == 1) acHostMeshDestroy(&tmp);
 }
 /***********************************************************************************************/
+void generate_bcs()
+{
+	if(rank != 0) return;
+	if(system("cd src && scripts/bc2ast 1> ../tmp_bcs 2> /dev/null && cd .."))
+	{
+		fprintf(stderr,"AC Error: Was not able to generate bcs!\n");
+		exit(EXIT_FAILURE);
+	}
+	const int different = system("diff tmp_bcs src/astaroth/DSL/local/boundconds.h");
+	if(different)
+	{
+		if(system("mv tmp_bcs src/astaroth/DSL/local/boundconds.h"))
+		{
+			fprintf(stderr,"AC Error: Was not able move bcs to DSL/local!\n");
+			exit(EXIT_FAILURE);
+		}
+		fprintf(stderr,"BCs different: recompiling!\n");
+	}
+	else
+	{
+		if(system("rm tmp_bcs"))
+		{
+			fprintf(stderr,"AC Error: Was not able to remove tmp_bcs!\n");
+			exit(EXIT_FAILURE);
+		}
+	}
+}
+/***********************************************************************************************/
 void testBCs();     // forward declaration
 /***********************************************************************************************/
 extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t, int nt_)  // MPI_Fint comm_fint
@@ -1740,6 +1768,8 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t, int nt_)  /
   if (rank==0 && ldebug) printf("memusage after pointer assign= %f MBytes\n", acMemUsage()/1024.);
 #if AC_RUNTIME_COMPILATION
 #include "cmake_options.h"
+  generate_bcs();
+  MPI_Barrier(MPI_COMM_WORLD);
   acCompile(cmake_options,mesh.info);
   acLoadLibrary(rank == 0 ? stderr : NULL,mesh.info);
   acCheckDeviceAvailability();
@@ -1790,6 +1820,8 @@ extern "C" void reloadConfig()
 	  exit(EXIT_FAILURE);
   }
 #include "cmake_options.h"
+  generate_bcs();
+  MPI_Barrier(MPI_COMM_WORLD);
   acCompile(cmake_options,mesh.info);
   acLoadLibrary(rank == 0 ? stderr : NULL,mesh.info);
   acGridInit(mesh);

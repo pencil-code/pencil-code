@@ -3285,7 +3285,9 @@ ifeq ($(wildcard $(DSL_WORKDIR)/solve_two.ac),)
     endif
   endif
 endif
-	@scripts/bc2ast
+	rm -f astaroth/DSL/local/boundconds.h
+	touch astaroth/DSL/local/boundconds.h
+	@scripts/bc2ast 1> astaroth/DSL/local/boundconds.h
 
 #	@sed -e':loop' -e'N' -e'$$!b loop' -e's/\#pragma  *once//' -e's/\# *define *\([A-Z0-9_][A-Z0-9_]*\)/..\/..\/\L\1.f90 /g' -e's/\n/ /g' < $(CUDA_INCDIR)/PC_moduleflags.h >> $(CUDA_MAKEDIR)/PC_modulesources.h
 #
