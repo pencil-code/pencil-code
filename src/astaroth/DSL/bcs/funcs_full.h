@@ -3943,7 +3943,7 @@ bc_set_nfr_y(AcBoundary boundary, AC_TOP_BOT topbot,Field j)
   }
 }
 
-#if Ldensity_MODULE && Lentropy_MODULE
+#if Ldensity_MODULE && Lentropy_MODULE && Leos_idealgas_MODULE
 bc_ss_flux_condturb_x(AcBoundary boundary,AC_TOP_BOT topbot)
 {
   suppress_unused_warning(boundary)

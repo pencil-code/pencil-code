@@ -1,4 +1,4 @@
-#if Lentropy_MODULE
+#if Lentropy_MODULE && Leos_idealgas_MODULE
 energy_sld_sound_speed(){
   real cs2
   real prof_cs
