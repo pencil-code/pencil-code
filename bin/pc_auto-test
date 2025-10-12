@@ -245,7 +245,28 @@ my %tests = (
 # list of GPU-capable samples:
 my @gpu_tests = qw(
                          chiral-diffusion
-                         next-GPU-capable-sample
+			 1d-tests/rel-shock
+			 1d-tests/ambipolar_diffusion
+			 cosmicray
+			 interstellar
+                         1d-tests/jeans-x
+                         1d-tests/toomre-x
+                         2d-tests/bubble
+                         conv-slab-noequi
+                         conv-slab
+                         conv-slab_cp_2
+			 conv-slab-flat
+                         0d-tests/heating_ionize
+                         0d-tests/heating_noionize
+                         0d-tests/heating_ionize_planck
+                         continuous-forcing-from-file
+                         1d-tests/sod_10
+                         2d-tests/conv-slab-MLT
+                         1d-tests/conduction/c1_readstrat
+                         1d-tests/conduction/c1_readstrat_ghost
+                         1d-tests/conduction/cT1
+                         1d-tests/conduction/cT1_readstrat
+                         1d-tests/conduction/cTrho
                    );
 # ---------------------------------------------------------------------- #
 
