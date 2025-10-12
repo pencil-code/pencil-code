@@ -607,8 +607,12 @@ ifneq ($(GPU),nogpu)
 
     else
       $(info )
-      $(shell git submodule update --init --remote && cd .. && pc_setupsrc &> /dev/null)
-      #$(error Directory $PENCIL_HOME/src/astaroth/submodule is empty! You need to pull Astaroth as a submodule and apply pc_setupsrc afterwards!)
+      IS_GIT_REPO := $(shell git rev-parse --is-inside-work-tree 2>/dev/null)
+      ifeq ($(IS_GIT_REPO),true)
+        $(shell git submodule update --init --remote && cd .. && pc_setupsrc &> /dev/null)
+      else
+        $(error Directory $PENCIL_HOME/src/astaroth/submodule is empty! You need to pull Astaroth as a submodule and apply pc_setupsrc afterwards!)
+      endif
     endif
   else
     $(info )
@@ -3096,7 +3100,7 @@ libPC.so: run.o | $(SPECIAL_DEPS) $(LIBGPU)
 #$(LIBGPU): $(GPU_DEPS)
 $(LIBGPU): $(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/Makefile.vendor
 	@echo "Building Astaroth and interface libraries - see src/astaroth/ac_build.log!"
-	cd astaroth && make MPICOMM=$(MPICOMM) RUNTIME_COMPILATION=$(RUNTIME_COMPILATION) TRAINING=$(TRAINING) TRANSPILATION=$(TRANSPILATION) GENERATE_DSL_CODE=$(GENERATE_DSL_CODE) >& ac_build.log
+	cd astaroth && make MPICOMM=$(MPICOMM) RUNTIME_COMPILATION=$(RUNTIME_COMPILATION) TRAINING=$(TRAINING) PRECISION=$(REAL_PRECISION) TRANSPILATION=$(TRANSPILATION) GENERATE_DSL_CODE=$(GENERATE_DSL_CODE) >& ac_build.log
 #
 special_preps:
 ifeq ($(USE_SPECIAL_DISPATCHER),no)
