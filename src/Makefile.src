@@ -614,14 +614,15 @@ ifneq ($(GPU),nogpu)
 
     else
       $(info )
-      IS_GIT_REPO := $(shell git rev-parse --is-inside-work-tree 2>/dev/null)
-      ifeq ($(IS_GIT_REPO),true)
-        $(shell git submodule update --init --remote &> /dev/null && cd .. && pc_setupsrc &> /dev/null)
-      else
-	CWD := $(shell pwd)
-        $(shell cd $(PENCIL_HOME)/src/astaroth/submodule && git clone https://bitbucket.org/jpekkila/astaroth.git &> /dev/null && git checkout develop &> /dev/null && cd $(CWD)/.. && pc_setupsrc &> /dev/null)
-        #$(error Directory $PENCIL_HOME/src/astaroth/submodule is empty! You need to pull Astaroth as a submodule and apply pc_setupsrc afterwards!)
-      endif
+      #TP: would do it this cleaner way with git submodules but we have to also support SVN
+      #IS_GIT_REPO := $(shell git rev-parse --is-inside-work-tree 2>/dev/null)
+      #ifeq ($(IS_GIT_REPO),true)
+      #  $(shell git submodule update --init --remote &> /dev/null && cd .. && export PENCIL_USER=GPU_AUTOTEST && pc_setupsrc &> /dev/null)
+      #else
+      CWD := $(shell pwd)
+      $(shell cd $(PENCIL_HOME)/src/astaroth && rm -rf submodule && git clone https://bitbucket.org/jpekkila/astaroth.git &> /dev/null && cd astaroth && git checkout develop &> /dev/null && cd .. && mv astaroth submodule && cd $(CWD)/.. && export PENCIL_USER=GPU_AUTOTEST && pc_setupsrc &> /dev/null)
+      #$(error Directory $PENCIL_HOME/src/astaroth/submodule is empty! You need to pull Astaroth as a submodule and apply pc_setupsrc afterwards!)
+      #endif
     endif
     ifeq ($(wildcard astaroth/*),)
       CATCH := $(shell export PENCIL_USER=GPU_AUTOTEST 2> /dev/null && cd .. 2>/dev/null && pc_setupsrc 2>/dev/null)
