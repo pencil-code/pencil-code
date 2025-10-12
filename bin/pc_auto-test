@@ -332,10 +332,10 @@ Options:
        --config-files=<files>
                            \tUse the given <files> (a comma-separated list) as
                            \tconfiguration files, rather than trying to find a
-                           \tconfig file based on a host ID.
-       --host-id=<id>      \tUse the given <id> as host ID.
-       --env=<ENV>         \tRun tests with the environment variable settings in <ENV>.
-       --global=<GLOBAL>   \tSet the environment variable PENCIL_USER to <GLOBAL>.
+                           \tconfig file based on a host ID
+       --host-id=<id>      \tUse the given <id> as host ID
+       --env=<ENV>         \tRun tests with the environment variable settings in <ENV>
+       --global=<GLOBAL>   \tSet the environment variable PENCIL_USER to <GLOBAL>
        --list-maintainers  \tPrint maintainer emails for failed tests
        --rsh=RSH-PROG      \tUse the specified program as to get a remote shell
        --nodelist=NODE1,.. \tUse a forked remote shell to parallelize
