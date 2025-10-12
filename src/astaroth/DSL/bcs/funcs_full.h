@@ -4040,3 +4040,10 @@ bc_set_nfr_x(AcBoundary boundary, AC_TOP_BOT topbot,Field j)
   else {
   }
 } 
+
+set_ghosts_for_onesided_derivs(AcBoundary boundary,AC_TOP_BOT topbot, Field j, int idir)
+{
+	suppress_unused_warning(topbot)
+	suppress_unused_warning(idir)
+	ac_set_ghosts_for_onesided_derivs(boundary,j)
+}
