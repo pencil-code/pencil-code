@@ -17,12 +17,18 @@ include Makefile.module_info
 ifeq ($(PRECISION),DOUBLE)
   ENVIRON = -DDOUBLE_PRECISION=1
   PREC=dbl
-#  OPTFLAGS += -fsingle-PRECision-constant
   CMAKE_PREC = ON
 else
+ifeq ($(PRECISION),double)
+  ENVIRON = -DDOUBLE_PRECISION=1
+  PREC=dbl
+  CMAKE_PREC = ON
+else
+  CMAKE_PREC = ON
   ENVIRON = -DDOUBLE_PRECISION=0
   PREC=sgl
   CMAKE_PREC = OFF
+endif
 endif
 
 ifeq ($(MPICOMM),nompicomm)

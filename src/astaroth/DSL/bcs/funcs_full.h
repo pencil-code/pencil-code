@@ -3623,7 +3623,7 @@ bc_outflow_y(AcBoundary boundary, AC_TOP_BOT topbot,Field f,bool lforce_ghost)
   }
 }
 
-#if LEOS
+#if Leos_idealgas_MODULE
 bc_stratified_y(AcBoundary boundary, AC_TOP_BOT topbot,Field f)
 {
   suppress_unused_warning(boundary)
@@ -3757,7 +3757,7 @@ bc_outflow_x(AcBoundary boundary, AC_TOP_BOT topbot,Field f,bool lforce)
 }
 
 
-#if Lhydro_MODULE && Ldensity_MODULE
+#if Lhydro_MODULE && Ldensity_MODULE && Leos_idealgas_MODULE
 bc_ss_stemp_x(AcBoundary boundary,AC_TOP_BOT topbot)
 {
   suppress_unused_warning(boundary)
