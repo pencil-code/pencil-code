@@ -23,7 +23,8 @@ function make_ac_bound_cond()
 {
     #echo $1 $2 $3 $4
     sed -e'/case *( *[^ ]'$1'[^ ] *) *$/,/case/ ! d' -e'/case/ d' -e's/^ *if *( *j *== *i'$2' *)//I' -e'/^ *if/ d' -e's/^.* *\(bc_[a-zA-Z_0-9]*\) *( *f *,/\1(/' -e's/,j/,'$2'/' -e's/topbot/BOUNDARY_'$3_$4','$4'/g' -e's/\.\([a-zA-Z]*\)\./\1/' tmp | \
-    sed -e's/\(fbc[xyz][a-zA-Z_0-9]*\) *( *j *,\([^)]*\))/\1['$2']['$4']/' -e's/[A-Za-z0-9_]*=//g'
+    sed -e's/\(fbc[xyz][a-zA-Z_0-9]*\) *( *j *,\([^)]*\))/\1['$2']['$4']/' -e's/[A-Za-z0-9_]*=//g' |
+    sed -e's/(f,/(/'
 }
 #
 bc_file=../run.in
