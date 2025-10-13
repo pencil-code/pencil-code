@@ -630,6 +630,10 @@ ifneq ($(GPU),nogpu)
     ifeq ($(wildcard astaroth/*),)
       CATCH := $(shell export PENCIL_USER=GPU_AUTOTEST 2> /dev/null && cd .. 2>/dev/null && pc_setupsrc 2>/dev/null)
     endif
+    #Make sure the submodules are always up to date
+    CATCH := $(shell cd $(PENCIL_HOME)/src/astaroth/submodule && git pull origin develop 2> /dev/null)
+    CATCH := $(shell cd $(PENCIL_HOME)/fortran-parser && git pull origin main 2> /dev/null)
+
   else
     $(info )
     $(error No other GPU interfaces than gpu_astaroth recently supported!)
