@@ -584,9 +584,6 @@ ifneq ($(GPU),nogpu)
       endif
 
     endif
-    ifeq ($(wildcard $(PENCIL_HOME)/fortran-parser/*),)
-      $(shell cd $(PENCIL_HOME) && rm -rf fortran-parser && git clone https://github.com/ToxPuro/fortran-parser.git 2>/dev/null)
-    endif
     ifneq ($(wildcard $(PENCIL_HOME)/src/astaroth/submodule/*),)
       #FFLAGS_GENERAL += -mcmodel=medium
       GPU_INTERFACE = gpu_astaroth_ansi.o
@@ -617,22 +614,12 @@ ifneq ($(GPU),nogpu)
 
     else
       $(info )
-      #TP: would do it this cleaner way with git submodules but we have to also support SVN
-      #IS_GIT_REPO := $(shell git rev-parse --is-inside-work-tree 2>/dev/null)
-      #ifeq ($(IS_GIT_REPO),true)
-      #  $(shell git submodule update --init --remote &> /dev/null && cd .. && export PENCIL_USER=GPU_AUTOTEST && pc_setupsrc &> /dev/null)
-      #else
-      CWD := $(shell pwd)
-      $(shell cd $(PENCIL_HOME)/src/astaroth && rm -rf submodule && git clone https://bitbucket.org/jpekkila/astaroth.git &> /dev/null && cd astaroth && git checkout develop &> /dev/null && cd .. && mv astaroth submodule && cd $(CWD)/.. && export PENCIL_USER=GPU_AUTOTEST && pc_setupsrc &> /dev/null)
-      #$(error Directory $PENCIL_HOME/src/astaroth/submodule is empty! You need to pull Astaroth as a submodule and apply pc_setupsrc afterwards!)
+      $(error Directory $PENCIL_HOME/src/astaroth/submodule is empty! You need to pull Astaroth as a submodule and apply pc_setupsrc afterwards!)
       #endif
     endif
     ifeq ($(wildcard astaroth/*),)
       CATCH := $(shell export PENCIL_USER=GPU_AUTOTEST 2> /dev/null && cd .. 2>/dev/null && pc_setupsrc 2>/dev/null)
     endif
-    #Make sure the submodules are always up to date
-    CATCH := $(shell cd $(PENCIL_HOME)/src/astaroth/submodule && git pull origin develop 2> /dev/null)
-    CATCH := $(shell cd $(PENCIL_HOME)/fortran-parser && git pull origin main 2> /dev/null)
 
   else
     $(info )
