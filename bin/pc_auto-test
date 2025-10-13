@@ -543,8 +543,9 @@ if (!$pencil_home) { die "ERROR: PENCIL_HOME unknown, please use -D or set the e
 
 if (!$gpu && $omp_threads) { $gpu = 1; }
 if ($gpu) {
-    if ($omp_threads < 1) { die "ERROR: at least one OMP thread has to be used!\n"; }
+    if ($omp_threads == 0) { $omp_threads = 2; }
     if ($omp_threads == 1) { $omp_threads = 2; }
+    if ($omp_threads < 1) { die "ERROR: at least one OMP thread has to be used!\n"; }
     if ($omp_threads) {
         if ($env ne '') { $env .= " "; }
 	$env .= "OMP_NUM_THREADS=".$omp_threads;
