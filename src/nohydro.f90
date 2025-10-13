@@ -1079,5 +1079,8 @@ module Hydro
 
     endsubroutine pushpars2c
 !***********************************************************************
+    subroutine load_variables_to_gpu_hydro
+    endsubroutine load_variables_to_gpu_hydro
+!***********************************************************************
 endmodule Hydro
 

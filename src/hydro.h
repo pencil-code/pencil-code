@@ -23,6 +23,7 @@
   public :: calc_gradu
   public :: pushpars2c
   public :: calc_diagnostics_hydro, df_diagnos_hydro
+  public :: load_variables_to_gpu_hydro
 !
 ! WL: SHOULDN'T BE PUBLIC!
 !

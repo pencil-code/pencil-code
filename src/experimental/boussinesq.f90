@@ -795,6 +795,9 @@ module Density
 
     endsubroutine write_z_stratification
 !***********************************************************************
+    subroutine load_variables_to_gpu_hydro
+    endsubroutine load_variables_to_gpu_hydro
+!***********************************************************************
     subroutine pushpars2c(p_par)
 
     integer, parameter :: n_pars=0

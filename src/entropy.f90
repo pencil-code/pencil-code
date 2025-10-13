@@ -4248,6 +4248,7 @@ module Energy
         if (idiag_dtdiffus/=0 .or. idiag_dtchi/=0) diffus_chi = 0.0
         if (lheatc_Kprof)    call calc_heatcond_arrays(f,p,thdiff)
         if (lheatc_chiconst) call calc_heatcond_constchi_arr(f,p,thdiff)
+        if (lheatc_Kconst)   call calc_heatcond_constK_arrays(p,thdiff)
       endif
       call calc_2d_diagnostics_energy(p)
       call calc_1d_diagnostics_energy(f,p)
@@ -5302,26 +5303,22 @@ module Energy
 !
     endsubroutine calc_heatcond_shock_profr
 !***********************************************************************
-    subroutine calc_heatcond_constK(df,p)
+    subroutine calc_heatcond_constK_arrays(p,thdiff)
 !
 !  Heat conduction.
 !
 !   8-jul-02/axel: adapted from Wolfgang's more complex version
 !  30-mar-06/ngrs: simplified calculations using p%glnTT and p%del2lnTT
 !
+!
       use Diagnostics, only: max_mn_name, yzsum_mn_name_x, phisum_mn_name_rz
       use EquationOfState, only: get_gamma_etc
       use Sub, only: dot
-!
       type (pencil_case) :: p
-      real, dimension (mx,my,mz,mvar) :: df
-!
-      intent(in) :: p
-      intent(inout) :: df
 
-      real, dimension (nx) :: chix
-      real, dimension (nx) :: thdiff,g2
+      real, dimension (nx) :: thdiff
       real :: gamma
+      real, dimension (nx) :: chix,g2
 !
 !  This particular version assumes a simple polytrope, so mpoly is known.
 !
@@ -5359,11 +5356,6 @@ module Energy
         thdiff = p%rho1*hcond_Kconst * (p%del2lnTT + g2)
       endif
 !
-!  Add heat conduction to entropy equation.
-!
-      df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff
-      if (headtt) print*,'calc_heatcond_constK: added thdiff'
-!
 !  Check maximum diffusion from thermal diffusion.
 !  With heat conduction, the second-order term for entropy is
 !  gamma*chix*del2ss.
@@ -5372,6 +5364,30 @@ module Energy
         call get_gamma_etc(gamma)
         diffus_chi=diffus_chi+gamma*chix*dxyz_2
       endif
+    endsubroutine calc_heatcond_constK_arrays
+!***********************************************************************
+    subroutine calc_heatcond_constK(df,p)
+!
+!  Heat conduction.
+!
+!   8-jul-02/axel: adapted from Wolfgang's more complex version
+!  30-mar-06/ngrs: simplified calculations using p%glnTT and p%del2lnTT
+!
+!
+      type (pencil_case) :: p
+      real, dimension (mx,my,mz,mvar) :: df
+!
+      intent(in) :: p
+      intent(inout) :: df
+
+      real, dimension (nx) :: thdiff
+      
+      call calc_heatcond_constK_arrays(p,thdiff)
+!
+!  Add heat conduction to entropy equation.
+!
+      df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff
+      if (headtt) print*,'calc_heatcond_constK: added thdiff'
 !
     endsubroutine calc_heatcond_constK
 !***********************************************************************

@@ -1127,7 +1127,7 @@ module Magnetic
 !
   real, dimension(nx) :: eta_total=0.,eta_smag=0.,Fmax,dAmax,ssmax, &
                          diffus_eta=0.,diffus_eta2=0.,diffus_eta3=0.
-  !$omp threadprivate(eta_total)
+  !$omp threadprivate(eta_total,diffus_eta)
   real, dimension(nx,3) :: fres,forcing_rhs
   real, dimension(nzgrid) :: eta_zgrid=0.0
   real, dimension(mz) :: feta_ztdep=0.0
@@ -4937,6 +4937,17 @@ module Magnetic
       enddo
     endsubroutine calc_aaxyaver
 !***********************************************************************
+    subroutine calc_eta_total(p)
+      type(pencil_case), intent(IN) :: p
+      real, dimension(nx)   :: eta_mn
+      real, dimension(nx,3) :: geta
+      eta_total = 0.0
+      if (lresi_shell) then
+        call eta_shell(p,eta_mn,geta)
+        eta_total = eta_total + eta_mn
+      endif
+    endsubroutine calc_eta_total
+!***********************************************************************
     subroutine daa_dt(f,df,p)
 !
 !  Magnetic field evolution.
@@ -6693,6 +6704,12 @@ print*,'AXEL2: should not be here (eta) ... '
 !
       call integrate_mn_name(p%ab,idiag_ab_int)
       call integrate_mn_name(p%jb,idiag_jb_int)
+
+      if (lmultithread .and. (idiag_epsM /= 0 .or. idiag_epsM2 /= 0 &
+          .or. idiag_epsM3 /= 0 .or. idiag_epsM4 /= 0 .or. idiag_dteta /= 0)) then
+          call calc_eta_total(p)
+          if(idiag_dteta /= 0) diffus_eta =eta_total *dxyz_2
+      endif
 !
 ! <J.B>
 !
@@ -6703,12 +6720,12 @@ print*,'AXEL2: should not be here (eta) ... '
       call sum_mn_name(p%j2,idiag_jrms,lsqrt=.true.)
       call sum_mn_name(p%hj2,idiag_hjrms,lsqrt=.true.)
       call max_mn_name(p%j2,idiag_jmax,lsqrt=.true.)
+      if (ldt) then
+        if (idiag_dteta/=0)  call max_mn_name(diffus_eta/cdtv,idiag_dteta,l_dt=.true.)
+        if (idiag_dteta3/=0)  call max_mn_name(diffus_eta3/cdtv3,idiag_dteta3,l_dt=.true.)
+      endif
       if (.not.lmultithread) then
         if (idiag_epsM_LES/=0) call sum_mn_name(eta_smag*p%j2,idiag_epsM_LES)
-        if (ldt) then
-          if (idiag_dteta/=0)  call max_mn_name(diffus_eta/cdtv,idiag_dteta,l_dt=.true.)
-          if (idiag_dteta3/=0)  call max_mn_name(diffus_eta3/cdtv3,idiag_dteta3,l_dt=.true.)
-        endif
       endif
       call sum_mn_name(p%cosjb,idiag_cosjbm)
       call sum_mn_name(p%coshjb,idiag_coshjbm)
@@ -6733,12 +6750,11 @@ print*,'AXEL2: should not be here (eta) ... '
 !
 !  Not correct for hyperresistivity:
 !
-      if (.not.lmultithread) then
-        if (idiag_epsM/=0) call sum_mn_name(eta_total*mu0*p%j2,idiag_epsM)
-        if (idiag_epsM2/=0) call sum_mn_name((eta_total*mu0*p%j2)**2,idiag_epsM2)
-        if (idiag_epsM3/=0) call sum_mn_name((eta_total*mu0*p%j2)**3,idiag_epsM3)
-        if (idiag_epsM4/=0) call sum_mn_name((eta_total*mu0*p%j2)**4,idiag_epsM4)
-      endif
+      
+      if (idiag_epsM/=0) call sum_mn_name(eta_total*mu0*p%j2,idiag_epsM)
+      if (idiag_epsM2/=0) call sum_mn_name((eta_total*mu0*p%j2)**2,idiag_epsM2)
+      if (idiag_epsM3/=0) call sum_mn_name((eta_total*mu0*p%j2)**3,idiag_epsM3)
+      if (idiag_epsM4/=0) call sum_mn_name((eta_total*mu0*p%j2)**4,idiag_epsM4)
 !
 !  Heating by ion-neutrals friction.
 !

@@ -5844,10 +5844,6 @@ module Hydro
       if (lSGS_hydro) call SGS_hydro_after_boundary(f)
 !
       if (ldiagnos.and.othresh_per_orms/=0) call vecout_initialize(41,trim(directory)//'/ovec',novec)
-!
-!  Prepare damping motions in some regions for some time spans if desired.
-!
-      if (tdamp/=0.or.dampuext/=0.or.dampuint/=0) call update_fade_fact
 
     endsubroutine hydro_after_boundary
 !***********************************************************************
@@ -6295,9 +6291,19 @@ module Hydro
 !
     endsubroutine coriolis_xdep
 !***********************************************************************
+    subroutine load_variables_to_gpu_hydro
+!
+!  Prepare damping motions in some regions for some time spans if desired.
+!
+      if (tdamp/=0.or.dampuext/=0.or.dampuint/=0) call update_fade_fact
+    endsubroutine load_variables_to_gpu_hydro
+!***********************************************************************
     subroutine update_fade_fact
 
+      use GPU, only: update_on_gpu
       real, save :: last_t = -1.0
+      real, save :: fade_fact_old = -1.0
+      integer, save :: fade_fact_index_on_gpu = -1
       real :: tau
 !
 !  damp motion during time interval 0<t<tdamp.
@@ -6361,6 +6367,12 @@ module Hydro
 
         endif
       endif
+
+      if(lgpu .and. fade_fact_old /= fade_fact) then
+        call update_on_gpu(fade_fact_index_on_gpu,'AC_fade_fact__mod__hydro',fade_fact)
+      endif
+
+      fade_fact_old = fade_fact
 
     endsubroutine update_fade_fact
 !***********************************************************************
@@ -8953,7 +8965,7 @@ module Hydro
     call copy_addr(idiag_uduum,p_par(78)) ! int
     call copy_addr(idiag_taufmin,p_par(79)) ! int
     call copy_addr(idiag_dtf,p_par(80)) ! int
-    call copy_addr(fade_fact,p_par(81))
+    call copy_addr(fade_fact,p_par(81)) ! real dconst
     call copy_addr(uumz,p_par(82)) ! (mz) (3)
     call copy_addr(uumx,p_par(83)) ! (mx) (3)
     if (allocated(uumxy)) call copy_addr(uumxy,p_par(84)) ! (mx) (my) (3)

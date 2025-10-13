@@ -3883,6 +3883,9 @@ module Hydro
 !
     endsubroutine sound3D
 !***********************************************************************
+    subroutine load_variables_to_gpu_hydro
+    endsubroutine load_variables_to_gpu_hydro
+!***********************************************************************
     subroutine pushpars2c(p_par)
 
     use Syscalls, only: copy_addr

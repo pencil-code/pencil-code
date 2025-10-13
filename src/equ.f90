@@ -182,7 +182,7 @@ module Equ
 !  Call "before_boundary" hooks (for f array precalculation)
 !
         call before_boundary_shared(f)
-        !if (it == 5) call test_rhs_gpu(f,df,p,mass_per_proc,early_finalize,rhs_cpu)
+        !if (it == 10) call test_rhs_gpu(f,df,p,mass_per_proc,early_finalize,rhs_cpu)
 
         if (lgpu) then
           start_time = mpiwtime()
@@ -444,8 +444,10 @@ module Equ
 !***********************************************************************
     subroutine load_variables_to_gpu
       use Special, only: load_variables_to_gpu_special
+      use Hydro, only: load_variables_to_gpu_hydro
 
       if (lspecial) call load_variables_to_gpu_special
+      if (lhydro)   call load_variables_to_gpu_hydro
     endsubroutine
 !***********************************************************************
    subroutine write_diagnostics(f)
@@ -1851,6 +1853,7 @@ module Equ
       if (lspecial) call special_after_timestep(f_copy, df_copy, dt, .true.)
       call after_timestep_gpu
       call copy_farray_from_GPU(f,.true.)
+
       f_diff = abs((f_copy-f)/(f_copy+tini))
       f_abs_diff = abs((f_copy-f))
 
