@@ -1,7 +1,6 @@
 /*                             gpu_astaroth_ansi.c
                               --------------------
 */
-
 /* Date:   8-Feb-2017
    Author: M. Rheinhardt
    Description:
@@ -42,6 +41,7 @@ void testRHS(REAL*,REAL*);
 void gpuSetDt(double t);
 void random_initial_condition(void);
 void getGPUReducedVars(REAL* dst);
+void testBCs(void);
 
 // for Gnu Compiler
 extern char *__cparam_MOD_coornames;
@@ -225,5 +225,10 @@ void FTNIZE(source_function_and_opacity_gpu_c)(int *inu){
 void FTNIZE(get_gpu_reduced_vars_c)(REAL* dst)
 {
 	getGPUReducedVars(dst);
+}
+/* ------------------------------------------------------------------- */
+void FTNIZE(test_bcs_c)(void)
+{
+	testBCs();
 }
 /* ------------------------------------------------------------------- */

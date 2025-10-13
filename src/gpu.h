@@ -5,6 +5,6 @@
             calcQ_gpu, before_boundary_gpu, &
             after_timestep_gpu, &
             gpu_set_dt, train_gpu, infer_gpu,source_function_and_opacity_gpu, &
-            get_gpu_reduced_vars
+            get_gpu_reduced_vars,test_gpu_bcs
 
   private

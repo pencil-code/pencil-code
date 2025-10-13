@@ -182,7 +182,7 @@ module Equ
 !  Call "before_boundary" hooks (for f array precalculation)
 !
         call before_boundary_shared(f)
-        !if (it == 1) call test_rhs_gpu(f,df,p,mass_per_proc,early_finalize,rhs_cpu)
+        !if (it == 5) call test_rhs_gpu(f,df,p,mass_per_proc,early_finalize,rhs_cpu)
 
         if (lgpu) then
           start_time = mpiwtime()
@@ -1780,7 +1780,7 @@ module Equ
       use Mpicomm
       use Boundcond
       use Gpu, only: before_boundary_gpu, rhs_gpu, copy_farray_from_GPU, get_farray_ptr_gpu,&
-                     after_timestep_gpu
+                     after_timestep_gpu,test_gpu_bcs
       use Deriv, only: der
       use Special, only: special_after_timestep
 !$    use ISO_fortran_env, only: stdout => output_unit
@@ -1912,6 +1912,7 @@ module Equ
         enddo
       endif
       print*,"Max comp loc abs diff: ",maxloc(f_abs_diff(l1:l2,m1:m2,n1:n2,1:mvar)),maxval(f_abs_diff(l1:l2,m1:m2,n1:n2,1:mvar))
+      call test_gpu_bcs
 
     call die_gracefully
 

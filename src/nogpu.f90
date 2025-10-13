@@ -184,4 +184,8 @@ contains
       call keep_compiler_quiet(dst)
     endsubroutine get_gpu_reduced_vars
 !**************************************************************************
+    subroutine test_gpu_bcs
+            call test_bcs_c
+    endsubroutine test_gpu_bcs
+!**************************************************************************
 endmodule GPU

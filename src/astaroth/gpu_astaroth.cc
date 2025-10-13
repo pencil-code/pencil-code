@@ -1683,7 +1683,7 @@ void generate_bcs()
 	}
 }
 /***********************************************************************************************/
-void testBCs();     // forward declaration
+extern "C" void testBCs();     // forward declaration
 /***********************************************************************************************/
 extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t, int nt_)  // MPI_Fint comm_fint
 {
