@@ -386,7 +386,7 @@ Options:
        --no-lock           \tIgnore and don't write lock file
        --local-lock        \tLet multiple auto-tests run in different working copies (default: off)
        --gpu               \tRun only GPU-capable tests
-       --gpu-threads=###   \tRun with ### GPU threads (default: 2)
+       --omp-threads=###   \tRun with ### OMP threads (default: 0)
        --debug             \tPrint lots of debugging output
        --debug             \tPrint lots of debugging output
        --fast              \tShortcut for the option FFLAGS+=-O0 of pc_build
@@ -450,7 +450,7 @@ GetOptions(\%opts,
                     --parallel
                -j=n --jobs=n
                     --gpu
-                    --gpu-threads=i
+                    --omp-threads=i
                -d   --datadir
                -s   --short
                -p=s --postproc=s
