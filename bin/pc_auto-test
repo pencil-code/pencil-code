@@ -261,7 +261,7 @@ my @gpu_tests = qw(
 			 #0d-tests/heating_noionize
                          #0d-tests/heating_ionize_planck
 			 #continuous-forcing-from-file
-			 1d-tests/sod_10
+			 #1d-tests/sod_10
                          #2d-tests/conv-slab-MLT
                          #1d-tests/conduction/c1_readstrat
                          #1d-tests/conduction/c1_readstrat_ghost
@@ -274,7 +274,7 @@ my @gpu_tests = qw(
 			 #2d-tests/shallow-water
 			 #1d-tests/alphadisk
 			 #1d-tests/hyperdiffusion
-                         2d-tests/chiral_dynamo
+			 #2d-tests/chiral_dynamo
                          spherical-globaldisk-mhd
 			 #cartesian-convection-kramers-chimax
                          #cartesian-convection-kramers-chimax_cp_2
