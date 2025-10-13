@@ -18,11 +18,14 @@ def main():
         return
 
     os.system(command)
+    os.system("rm res-inlined.txt")
+    rhs_already_exists = os.path.exists("DSL/local/mhdsolver.ac") and not os.system("diff mhdsolver-rhs.inc DSL/local/mhdsolver.ac")
+    if (rhs_already_exists): 
+        return
     os.system("mv mhdsolver-rhs.inc DSL/local/mhdsolver.ac")
     os.system("mv cparam.h DSL/local")
     os.system("mv static_var_declares.h DSL/local")
     os.system("cp DSL/solve_two.ac DSL/local")
-    os.system("rm res-inlined.txt")
 
 if __name__ == "__main__":
     main()
