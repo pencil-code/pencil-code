@@ -375,12 +375,12 @@ sub build_remote_cmd {
 # Construct the command to send to the remote host
 
     my $remcmd = "";
+    if ($gpu) { 
+      $remcmd .= "((rm -rf '.$pencil_home.'/src/astaroth/submodule && cd '.$pencil_home.'/src/astaroth && git clone https://purotouk@bitbucket.org/jpekkila/astaroth.git > /dev/null 2>&1 && cd astaroth && git checkout develop > /dev/null 2>&1 && cd .. && mv astaroth submodule && cd '.$pencil_home.' && rm -rf fortran-parser && git clone https://github.com/toxpuro/fortran-parser.git > /dev/null 2>&1) || echo "update error: was not able to clone the submodules");";
+    }
     if ($update) {
         my $prev_wd=cwd();
 	my $recurse_cmd = "";
-	if ($gpu) { 
-	  $recurse_cmd = '((rm -rf '.$pencil_home.'/src/astaroth/submodule && cd '.$pencil_home.'/src/astaroth && git clone https://purotouk@bitbucket.org/jpekkila/astaroth.git > /dev/null 2>&1 && cd astaroth && git checkout develop > /dev/null 2>&1 && cd .. && mv astaroth submodule && cd '.$pencil_home.' && rm -rf fortran-parser && git clone https://github.com/toxpuro/fortran-parser.git > /dev/null 2>&1) || echo "update error: was not able to clone the submodules");';
-	}
         $remcmd .= 'cd "'.$pencil_home.'";'
           . 'if [ -e .git ]; then'  # .git can be a directory or a file
           . '    (git stash -q -u || echo "UPDATE ERROR: git stash");'
