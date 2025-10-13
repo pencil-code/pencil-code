@@ -191,8 +191,7 @@ my %tests = (
                          sound-spherical-bufferzone
                          2d-tests/selfgrav-shearwave-dust-par
                      )],
-             # Level 6 for now contains all non-canonical tests that run,
-             # but produce wrong results
+             # Level 6 for now contains all non-canonical tests that run, # but produce wrong results
              6 => [qw(
                          hexagon
                          MHD-ABCforcing
@@ -277,7 +276,17 @@ my @gpu_tests = qw(
                          spherical-globaldisk-mhd
                          cartesian-convection-kramers-chimax
                          cartesian-convection-kramers-chimax_cp_2
+			 spherical-convection
+			 meissner
+                         2d-tests/spherical_viscous_ring
                    );
+		   #Was tested to work but couple of harmful expressions in chemistry need to be refactored 2d-tests/chemistry_GrayScott
+		   #Was tested to work but the fact that the Short stopping time approximation considers the whole pencil will cannot faithfully translate to GPU MRI-turbulence_hyper
+		   #Was tested to work but need multi-gpu Fourier 1d-tests/horndeski_choiceIII
+		   #Was tested to work but need multi-gpu Fourier GravitationalWaves
+		   #Basically works but the autotest requires sums on GPU and cpu to agree to a level that is not achievable: Schwinger
+		   #Basically works but the autotest requires sums on GPU and cpu to agree to a level that is not achievable: 1d-tests/axionSU2back
+		   #Basically works but the autotest requires sums on GPU and cpu to agree to a level that is not achievable: backreact_infl
 # ---------------------------------------------------------------------- #
 
 my $base_URL = 'https://github.com/pencil-code/pencil-code/'; # repository URL
