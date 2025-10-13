@@ -415,7 +415,7 @@ sub build_remote_cmd {
     if ($time_limit ne '')   { $remcmd .= "--time-limit=\"$time_limit\" " };
     if ($timingsfile ne '')  { $remcmd .= "--summarize-times " };
     if ($log_dir)            { $remcmd .= "--log-dir=\"$log_dir\" " };
-    if ($gpu)                { $remcmd .= "--gpu=\"$gpu\" " };
+    if ($gpu)                { $remcmd .= "--gpu " };
     if (@auto_test_options)  { $remcmd .= "@auto_test_options; "};
 
     return $remcmd;
