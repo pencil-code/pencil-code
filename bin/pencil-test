@@ -379,7 +379,7 @@ sub build_remote_cmd {
         my $prev_wd=cwd();
 	my $recurse_cmd = "";
 	if ($submodules) { 
-	    $recurse_cmd = '    (git submodule update --init --recursive || echo "UPDATE ERROR: git submodule");';
+	    $recurse_cmd = '    (git submodule update --init --remote --recursive || echo "UPDATE ERROR: git submodule");';
 	}
         $remcmd .= 'cd "'.$pencil_home.'";'
           . 'if [ -e .git ]; then'  # .git can be a directory or a file
