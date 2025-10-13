@@ -376,7 +376,7 @@ sub build_remote_cmd {
 
     my $remcmd = "";
     if ($gpu) { 
-      $remcmd .= "((rm -rf '.$pencil_home.'/src/astaroth/submodule && cd '.$pencil_home.'/src/astaroth && git clone https://purotouk@bitbucket.org/jpekkila/astaroth.git > /dev/null 2>&1 && cd astaroth && git checkout develop > /dev/null 2>&1 && cd .. && mv astaroth submodule && cd '.$pencil_home.' && rm -rf fortran-parser && git clone https://github.com/toxpuro/fortran-parser.git > /dev/null 2>&1) || echo "update error: was not able to clone the submodules");";
+      $remcmd .= '((rm -rf '.$pencil_home.'/src/astaroth/submodule && cd '.$pencil_home.'/src/astaroth && git clone https://purotouk@bitbucket.org/jpekkila/astaroth.git > /dev/null 2>&1 && cd astaroth && git checkout develop > /dev/null 2>&1 && cd .. && mv astaroth submodule && cd '.$pencil_home.' && rm -rf fortran-parser && git clone https://github.com/toxpuro/fortran-parser.git > /dev/null 2>&1) || echo "update error: was not able to clone the submodules");';
     }
     if ($update) {
         my $prev_wd=cwd();
