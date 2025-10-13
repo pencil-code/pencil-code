@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #! /Good_Path/perl -w
 # line 20
 
-# Name:   pc_build
+# Name:   pc_run
 # Author: wd (wdobler [at] gmail [dot] com)
 # Date:   24-Jul-2009
 # Description:
