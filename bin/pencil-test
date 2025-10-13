@@ -51,7 +51,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #                                'type1:interp1,type2:interp2,...'. Use
 #                                'DEFAULT' to get all configured types
 #                                with their default interpreters
-#       --submodules          -- update all submodules when pulling
+#       --gpu                 -- run the test on GPUs
 #   -t <limit>,
 #       --time-limit=<limit>  -- Limit total time for each {start,run}.x phase
 #   -T <file>,
@@ -114,7 +114,7 @@ GetOptions(\%opts,
                -M=s --Mailer=s
                -p=s --postproc=s
                     --script-tests=s
-                    --submodules
+                    --gpu
                -t=s --time-limit=s
                -T=s --timings-file=s
                     --tag-stable
@@ -142,7 +142,7 @@ my $emails      = ($opts{'m'} || $opts{'mail'}        || '');
 my $mailer      = ($opts{'M'} || $opts{'Mailer'}      || '');
 my $postproc    = ($opts{'p'} || $opts{'postproc'}    || '');
 my $script_tests= (              $opts{'script-tests'}|| '');
-my $submodules  = (              $opts{'submodules'}  || 0 );
+my $gpu         = (              $opts{'gpu'}  || 0 );
 my $time_limit  = ($opts{'t'} || $opts{'time-limit'}  || '');
 my $timingsfile = ($opts{'T'} || $opts{'timings-file'}|| '');
 my $with_xml    = ($opts{'x'} || $opts{'xml'}         || '');
@@ -378,7 +378,7 @@ sub build_remote_cmd {
     if ($update) {
         my $prev_wd=cwd();
 	my $recurse_cmd = "";
-	if ($submodules) { 
+	if ($gpu) { 
 	  $recurse_cmd = '((rm -rf '.$pencil_home.'/src/astaroth/submodule && cd '.$pencil_home.'/src/astaroth && git clone https://purotouk@bitbucket.org/jpekkila/astaroth.git > /dev/null 2>&1 && cd astaroth && git checkout develop > /dev/null 2>&1 && cd .. && mv astaroth submodule && cd '.$pencil_home.' && rm -rf fortran-parser && git clone https://github.com/toxpuro/fortran-parser.git > /dev/null 2>&1) || echo "update error: was not able to clone the submodules");';
 	}
         $remcmd .= 'cd "'.$pencil_home.'";'
