@@ -280,6 +280,7 @@ my @gpu_tests = qw(
                          #cartesian-convection-kramers-chimax_cp_2
 			 #spherical-convection
 			 #meissner
+			 #geodynamo
                          2d-tests/spherical_viscous_ring
                          2d-tests/cylindrical_gdisk
                          small-scale-dynamo_slope-limited-diffusion
