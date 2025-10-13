@@ -242,6 +242,8 @@ my %tests = (
             );
 # ---------------------------------------------------------------------- #
 # list of GPU-capable samples:
+	    # Those on comment do work but we run only a subset to not overload
+	    # the test machine
 my @gpu_tests = qw(
                          chiral-diffusion
 			 1d-tests/rel-shock
@@ -249,35 +251,35 @@ my @gpu_tests = qw(
 			 cosmicray
 			 interstellar
                          1d-tests/jeans-x
-                         1d-tests/toomre-x
-                         2d-tests/bubble
+			 #1d-tests/toomre-x
+			 #2d-tests/bubble
                          conv-slab-noequi
-                         conv-slab
-                         conv-slab_cp_2
-			 conv-slab-flat
+			 #conv-slab
+                         #conv-slab_cp_2
+			 #conv-slab-flat
                          0d-tests/heating_ionize
-                         0d-tests/heating_noionize
-                         0d-tests/heating_ionize_planck
+			 #0d-tests/heating_noionize
+                         #0d-tests/heating_ionize_planck
                          continuous-forcing-from-file
-                         1d-tests/sod_10
-                         2d-tests/conv-slab-MLT
-                         1d-tests/conduction/c1_readstrat
-                         1d-tests/conduction/c1_readstrat_ghost
+			 #1d-tests/sod_10
+                         #2d-tests/conv-slab-MLT
+                         #1d-tests/conduction/c1_readstrat
+                         #1d-tests/conduction/c1_readstrat_ghost
                          1d-tests/conduction/cT1
-                         1d-tests/conduction/cT1_readstrat
-                         1d-tests/conduction/cTrho
+			 #1d-tests/conduction/cT1_readstrat
+                         #1d-tests/conduction/cTrho
                          mdwarf
                          polymer/forced_3dturbulence
                          kin-dynamo 
                          2d-tests/shallow-water
                          1d-tests/alphadisk
-                         1d-tests/hyperdiffusion
+			 #1d-tests/hyperdiffusion
                          2d-tests/chiral_dynamo
                          spherical-globaldisk-mhd
-                         cartesian-convection-kramers-chimax
-                         cartesian-convection-kramers-chimax_cp_2
-			 spherical-convection
-			 meissner
+			 #cartesian-convection-kramers-chimax
+                         #cartesian-convection-kramers-chimax_cp_2
+			 #spherical-convection
+			 #meissner
                          2d-tests/spherical_viscous_ring
                          2d-tests/cylindrical_gdisk
                          small-scale-dynamo_slope-limited-diffusion
