@@ -20,7 +20,6 @@ present(var)
 bc_steady_z(boundary, topbot, VtxBuffer field)
 {
   suppress_unused_warning(boundary)
-  int i;
   if (topbot == AC_bot) {
     if (field[vertexIdx.x][vertexIdx.y][AC_n1-1] <= 0.0) {
       for i in 1:NGHOST+1 {
@@ -868,7 +867,6 @@ bc_ss_flux_x(AcBoundary boundary, AC_TOP_BOT topbot)
   suppress_unused_warning(boundary)
   real work_yz
   real tmp_yz
-  int i
   int stat
   real fac
   real cp_loc
@@ -1113,7 +1111,6 @@ bc_ss_flux_x(AcBoundary boundary, AC_TOP_BOT topbot)
 bc_ss_flux_turb_x(AcBoundary boundary, AC_TOP_BOT topbot)
 {
   suppress_unused_warning(boundary)
-  int i
   real rho_yz
   real cs2_yz
   real dsdx_yz
@@ -1552,7 +1549,6 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
   real cs2_point
   real potp
   real potm
-  int i
   real getrho_s_return_value_0
   real getrho_s_return_value_0
   real lnrho__1
@@ -3488,7 +3484,6 @@ bc_freeze_var_z(AcBoundary boundary, AC_TOP_BOT topbot, Field f)
 bcx_extrap_2_3(AcBoundary boundary, AC_TOP_BOT topbot,Field f)
 {
   suppress_unused_warning(boundary)
-  int i
   real yl1
   real ypi
   real ymi
@@ -3550,7 +3545,6 @@ bcx_extrap_2_3(AcBoundary boundary, AC_TOP_BOT topbot,Field f)
 bc_outflow_y(AcBoundary boundary, AC_TOP_BOT topbot,Field f,bool lforce_ghost)
 {
   suppress_unused_warning(boundary)
-  int i
   int ix
   int iz
   bool lforce
@@ -3754,7 +3748,6 @@ bc_outflow_x(AcBoundary boundary, AC_TOP_BOT topbot,Field f,bool lforce)
 bc_ss_stemp_x(AcBoundary boundary,AC_TOP_BOT topbot)
 {
   suppress_unused_warning(boundary)
-  int i
   int id_1
   int id_3
   real rho_yz
@@ -3847,7 +3840,6 @@ bc_ss_stemp_x(AcBoundary boundary,AC_TOP_BOT topbot)
 bc_ss_stemp_y(AcBoundary boundary,AC_TOP_BOT topbot)
 {
   suppress_unused_warning(boundary)
-  int i
   if (topbot == AC_bot) {
     for i in 1:NGHOST+1 {
       dlnrho = LNRHO[vertexIdx.x][m1+i-1][vertexIdx.z]-LNRHO[vertexIdx.x][m1-i-1][vertexIdx.z]
@@ -3883,7 +3875,6 @@ bc_ss_stemp_y(AcBoundary boundary,AC_TOP_BOT topbot)
 bc_ss_stemp_z(AcBoundary boundary,AC_TOP_BOT topbot)
 {
   suppress_unused_warning(boundary)
-  int i
   real dlnrho
   if (topbot == AC_bot) {
     for i in 1:NGHOST+1 {
@@ -3940,7 +3931,6 @@ bc_set_nfr_y(AcBoundary boundary, AC_TOP_BOT topbot,Field j)
 bc_ss_flux_condturb_x(AcBoundary boundary,AC_TOP_BOT topbot)
 {
   suppress_unused_warning(boundary)
-  int i
   int id_1
   real dsdx_yz
   real tt_yz
