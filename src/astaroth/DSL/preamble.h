@@ -231,4 +231,8 @@ const real AC_ascale__mod__cdata = 0.0
 #else
 const real AC_trelax_poly__mod__cdata = 0.0
 #endif
+#if Leos_ionization_MODULE
+const real yhmin = AC_REAL_MIN
+const real yhmax = 1-AC_REAL_EPSILON
+#endif
 
