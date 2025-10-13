@@ -245,11 +245,11 @@ my %tests = (
 	    # Those on comment do work but we run only a subset to not overload
 	    # the test machine
 my @gpu_tests = qw(
-                         chiral-diffusion
-			 1d-tests/rel-shock
-			 1d-tests/ambipolar_diffusion
-			 cosmicray
 			 interstellar
+                         #chiral-diffusion
+			 #1d-tests/rel-shock
+			 #1d-tests/ambipolar_diffusion
+			 #cosmicray
                          1d-tests/jeans-x
 			 #1d-tests/toomre-x
 			 #2d-tests/bubble
@@ -260,8 +260,8 @@ my @gpu_tests = qw(
                          0d-tests/heating_ionize
 			 #0d-tests/heating_noionize
                          #0d-tests/heating_ionize_planck
-                         continuous-forcing-from-file
-			 #1d-tests/sod_10
+			 #continuous-forcing-from-file
+			 1d-tests/sod_10
                          #2d-tests/conv-slab-MLT
                          #1d-tests/conduction/c1_readstrat
                          #1d-tests/conduction/c1_readstrat_ghost
@@ -270,9 +270,9 @@ my @gpu_tests = qw(
                          #1d-tests/conduction/cTrho
                          mdwarf
                          polymer/forced_3dturbulence
-                         kin-dynamo 
-                         2d-tests/shallow-water
-                         1d-tests/alphadisk
+			 #kin-dynamo 
+			 #2d-tests/shallow-water
+			 #1d-tests/alphadisk
 			 #1d-tests/hyperdiffusion
                          2d-tests/chiral_dynamo
                          spherical-globaldisk-mhd
@@ -283,7 +283,7 @@ my @gpu_tests = qw(
 			 #geodynamo
                          2d-tests/spherical_viscous_ring
                          2d-tests/cylindrical_gdisk
-                         small-scale-dynamo_slope-limited-diffusion
+			 #small-scale-dynamo_slope-limited-diffusion
                    );
 
 		   #Was tested to work but couple of harmful expressions in chemistry need to be refactored 2d-tests/chemistry_GrayScott
