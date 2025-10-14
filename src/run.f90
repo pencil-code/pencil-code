@@ -1510,7 +1510,6 @@ endsubroutine helper_loop
     call copy_addr(lcpu_timestep_on_gpu,p_par(1177)) ! bool
     call copy_addr(lac_sparse_autotuning,p_par(1178)) ! bool
     call copy_addr(lskip_rtime_compilation,p_par(1179)) ! bool
-    call copy_addr(lmultithread,p_par(1180)) ! bool
     call copy_addr(lread_all_vars_from_device,p_par(1181)) ! bool
     
     call copy_addr_dble(sigma_thomson,p_par(1185))
@@ -1676,6 +1675,7 @@ endsubroutine helper_loop
     call copy_addr(y0,p_par(1369))
     call copy_addr(nzgrid_eff,p_par(1370)) ! int
     call copy_addr(isld_char,p_par(1371)) ! int
+    call copy_addr(idiag_dtv,p_par(1372)) ! int
     
     endsubroutine pushpars2c
 !***********************************************************************
