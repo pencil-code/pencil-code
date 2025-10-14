@@ -1018,6 +1018,9 @@ sub my_ok {
         # report only first failure:
         $failed{$dir} = $phase unless defined($failed{$dir});
         mark_failed ($dir);
+	if (($phase eq 'compilation') && $gpu) {
+	    system ('cat '.$log_dir.'/'.$dir.'/build.log ac_compilation.log > '.$log_dir.'/'.$dir.'/build.log');
+	}
     }
 
     # Record time usage in an easily greppable format
