@@ -284,6 +284,8 @@ my @gpu_tests = qw(
                          2d-tests/spherical_viscous_ring
                          2d-tests/cylindrical_gdisk
 			 #small-scale-dynamo_slope-limited-diffusion
+			 #backreact_infl
+			 #1d-tests/axionSU2back
                    );
 
 		   #Was tested to work but couple of harmful expressions in chemistry need to be refactored 2d-tests/chemistry_GrayScott
@@ -291,8 +293,6 @@ my @gpu_tests = qw(
 		   #Was tested to work but need multi-gpu Fourier 1d-tests/horndeski_choiceIII
 		   #Was tested to work but need multi-gpu Fourier GravitationalWaves
 		   #Basically works but the autotest requires sums on GPU and cpu to agree to a level that is not achievable: Schwinger
-		   #Basically works but the autotest requires sums on GPU and cpu to agree to a level that is not achievable: 1d-tests/axionSU2back
-		   #Basically works but the autotest requires sums on GPU and cpu to agree to a level that is not achievable: backreact_infl
 # ---------------------------------------------------------------------- #
 
 my $base_URL = 'https://github.com/pencil-code/pencil-code/'; # repository URL
