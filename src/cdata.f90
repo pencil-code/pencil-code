@@ -219,7 +219,7 @@ module Cdata
   integer :: iproc=0,ipx=0,ipy=0,ipz=0,iproc_world=0,ipatch=0
   logical :: lprocz_slowest=.true.,lzorder=.false.,lmorton_curve=.false.,ltest_bcs=.true.,lcpu_timestep_on_gpu=.false., &
              lsuppress_parallel_reductions=.false.,lread_all_vars_from_device = .false., lcuda_aware_mpi=.true.
-  logical :: lac_sparse_autotuning=.false., lskip_rtime_compilation=.false.
+  logical :: lac_sparse_autotuning=.true., lskip_rtime_compilation=.false.
   integer :: xlneigh,ylneigh,zlneigh ! `lower' processor neighbours
   integer :: xuneigh,yuneigh,zuneigh ! `upper' processor neighbours
   integer :: poleneigh               ! `pole' processor neighbours
