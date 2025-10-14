@@ -643,6 +643,7 @@ module Equ
                 maxadvec     = 0.0
                 advec2       = 0.0
                 advec_cs2    = 0.0
+                advec2_hypermesh  = 0.0
         endif
         n=nn(imn)
         m=mm(imn)
@@ -1663,12 +1664,12 @@ module Equ
 !  sum or maximum of the advection terms?
 !  (lmaxadvec_sum=.false. by default)
 !
-        advec2=advec2+advec_cs2
-        if (lenergy.or.ldensity.or.lmagnetic.or.lradiation.or.lneutralvelocity.or.lcosmicray.or. &
-            (ltestfield_z.and.iuutest>0)) maxadvec=maxadvec+sqrt(advec2)
+      advec2=advec2+advec_cs2
+      if (lenergy.or.ldensity.or.lmagnetic.or.lradiation.or.lneutralvelocity.or.lcosmicray.or. &
+          (ltestfield_z.and.iuutest>0)) maxadvec=maxadvec+sqrt(advec2)
 
-        if (ldensity.or.lviscosity.or.lmagnetic.or.lenergy.or.ldustvelocity.or.ldustdensity) &
-            maxadvec=maxadvec+sqrt(advec2_hypermesh)
+      if (ldensity.or.lviscosity.or.lmagnetic.or.lenergy.or.ldustvelocity.or.ldustdensity) &
+          maxadvec=maxadvec+sqrt(advec2_hypermesh)
     endsubroutine calc_maxadvec
 !***********************************************************************
     subroutine set_dt1_max(p)
