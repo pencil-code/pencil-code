@@ -1443,6 +1443,8 @@ module Chemistry
       endif
 !
       if (lpencil(i_cs2) .and. lcheminp) then
+
+        !TP: any calls across pencil cannot be faithfully transpiled to the GPU
         if (any(p%cv == 0.0)) then
         else
           p%cs2 = p%cp*p%cv1*p%mu1*p%TT*Rgas
@@ -3471,6 +3473,7 @@ module Chemistry
 !
         if (l1step_test) then
           sum_DYDt = 0.
+          !TP: cannot access 1 on the GPU
           do i = 1,nx
             sum_DYDt(i) = -p%rho(1)*(p%TT(i)-Tinf)*p%TT1(i) &
                 *Cp_const/lambda_const*beta*(beta-1.)*f(l1,m,n,iux)*f(l1,m,n,iux)
@@ -5001,6 +5004,7 @@ module Chemistry
 !
       elseif (reac_rate_method == '1step_test') then
         do i = 1,nx
+          !TP: cannot access 1 on GPU
           if (p%TT(i) > Tc) then
             vreact_p(i,reac) = f(l1,m,n,iux)*f(l1,m,n,iux)*p%rho(1)*Cp_const &
                 /lambda_const*beta*(beta-1.)*(1.-f(l1-1+i,m,n,ichemspec(ipr)))
@@ -5174,6 +5178,7 @@ module Chemistry
 !
 !  For diagnostics
 !
+      !TP: cannot sum across nx on GPU: TODO refactor this to happen on calc_diagnostics_chemistry
       if (ldiagnos.and.lchemistry_diag) then
         do k = 1,nchemspec
           do j = 1,nreactions
