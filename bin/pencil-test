@@ -376,7 +376,18 @@ sub build_remote_cmd {
 
     my $remcmd = "";
     if ($gpu) { 
-      $remcmd .= '((rm -rf '.$pencil_home.'/src/astaroth/submodule && cd '.$pencil_home.'/src/astaroth && git clone https://bitbucket.org/jpekkila/astaroth.git > /dev/null 2>&1 && cd astaroth && git checkout develop > /dev/null 2>&1 && cd .. && mv astaroth submodule && cd '.$pencil_home.' && rm -rf fortran-parser && git clone https://github.com/toxpuro/fortran-parser.git > /dev/null 2>&1) || echo "update error: was not able to clone the submodules");';
+	$remcmd .= '(
+	  cd '.$pencil_home.'/src/astaroth &&
+	  if [ -d submodule/.git ]; then
+	    cd submodule &&
+	    git pull origin develop > /dev/null 2>&1 &&
+	    cd '.$pencil_home.'/fortran-parser &&
+	    git pull origin main > /dev/null 2>&1
+	  else
+	    ((rm -rf '.$pencil_home.'/src/astaroth/submodule && cd '.$pencil_home.'/src/astaroth && git clone https://bitbucket.org/jpekkila/astaroth.git > /dev/null 2>&1 && cd astaroth && git checkout develop > /dev/null 2>&1 && cd .. && mv astaroth submodule && cd '.$pencil_home.' && rm -rf fortran-parser && git clone https://github.com/toxpuro/fortran-parser.git > /dev/null 2>&1) || echo "UPDATE ERROR: was not able to clone the submodules")
+	  fi
+	) || echo "UPDATE ERROR: was not able to update or clone the submodules";
+	';
     }
     if ($update) {
         my $prev_wd=cwd();
