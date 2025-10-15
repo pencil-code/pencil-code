@@ -1433,7 +1433,7 @@ module Hydro
           prof_amp1=sin(0.5*pi*((x(l1:l2))-x0)/Lx)**xexp_diffrot
         elseif (uuprof=='BS04c1') then
           prof_amp1=sin(pi*((x(l1:l2))-x0)/Lx)**xexp_diffrot
-        elseif(uuprof=='HP09') then
+        elseif (uuprof=='HP09') then
           prof_amp1=cos(kx_diffrot*x(l1:l2))
 !or       prof_amp1=cos(2.*pi*kx_diffrot*(x(l1:l2)-x0)/Lx)
         endif
@@ -2074,7 +2074,7 @@ module Hydro
           call sinx_cosy_cosz(ampluu(j)*TG_A,f,iux,kx_uu,ky_uu,kz_uu)
           call cosx_siny_cosz(ampluu(j)*TG_B,f,iuy,kx_uu,ky_uu,kz_uu)
           call sinx_siny_cosz(ampluu(j)*TG_C,f,iuz,kx_uu,ky_uu,kz_uu)
-          if(abs(TG_A*kx_uu + TG_B*ky_uu + TG_C*kz_uu) > tini) then
+          if (abs(TG_A*kx_uu + TG_B*ky_uu + TG_C*kz_uu) > tini) then
                 call fatal_error("init_uu", "For Taylor-Green Vortex TG_A*kx_uu + TG_B*ky_uu + TG_C*kz_uu has to be zero!")
           endif
 
@@ -3083,7 +3083,7 @@ module Hydro
       if (idiag_T00m/=0) lpenc_diagnos(i_T00)=.true.
       if (idiag_Txxm/=0 .or. idiag_Tyym/=0 .or. idiag_Tzzm/=0 .or. idiag_Txym/=0 .or. &
           idiag_Tyzm/=0 .or. idiag_Tzxm/=0) lpenc_diagnos(i_Tij)=.true.
-      if(idiag_T0x2m/=0 .or. idiag_T0y2m/=0 .or. idiag_T0z2m/=0 &
+      if (idiag_T0x2m/=0 .or. idiag_T0y2m/=0 .or. idiag_T0z2m/=0 &
          .or. idiag_T0irms/=0) lpenc_diagnos(i_T0i)=.true.
 !
       if (idiag_ruxmxy/=0 .or. idiag_ruymxy/=0 .or. idiag_ruzmxy/=0 .or. &
@@ -3222,7 +3222,7 @@ module Hydro
         lpencil_in(i_uij)=.true.
       endif
 
-      if(idiag_dtu/=0) ltimestep_diagnostics=.true.
+      if (idiag_dtu/=0) ltimestep_diagnostics=.true.
 !
     endsubroutine pencil_interdep_hydro
 !***********************************************************************
@@ -3331,7 +3331,7 @@ module Hydro
       real, dimension (nx,3) :: tmp3, tmp3g
       real, dimension (nx,3,3) :: tmp33
       real :: cs201=1., cs2011, outest
-      integer :: i, j, ju, jj, kk, jk
+      integer :: i, j, ju
       integer :: i_4_49_50, j_4_49_50
 !
       intent(in)   :: lpenc_loc
@@ -3890,7 +3890,6 @@ module Hydro
       real, dimension (mx,mz) :: fsum_tmp_cyl
       real, dimension (mx,my) :: fsum_tmp_sph
       real, dimension (mx) :: uphi
-      integer ::  j
 !
 !  Remove mean momenta or mean flows if desired.
 !  Useful to avoid unphysical winds, for example in shearing box simulations.
@@ -4021,7 +4020,7 @@ module Hydro
       real, dimension (nx) :: arad_normal, pradrc2
       real, dimension (nx,3,3) :: puij_Schur
       real :: hubble_factor
-      integer :: i, j, ju
+      integer :: i,j
 !
       Fmax=1./impossible
       if (lfirstpoint) lproc_print=.true.
@@ -4335,12 +4334,12 @@ module Hydro
       real, dimension(:,:,:,:) :: f
       type(pencil_case), intent(in) :: p
 !
-      real, dimension (nx,3) :: uxo,temp
+      real, dimension (nx,3) :: uxo
       real, dimension (nx) :: space_part_re,space_part_im,u2t,uot,out,fu
       real, dimension (nx) :: odel2um,uref,curlo2,qo,quxo,graddivu2
       real, dimension (nx,Nmodes_SH) :: urlm
       real, dimension (nx) :: rmask, lorr
-      real :: kx,zbot,cs201=1., cs2011
+      real :: kx,cs201=1.
       integer :: k
 !
 !  Calculate maxima and rms values for diagnostic purposes
@@ -5442,7 +5441,7 @@ module Hydro
       real, dimension (mx) :: rho, rho1, press, rho_gam21, rho_gam20, lorentz_gamma2=1.
       real, dimension (mx) :: ss2, hydro_energy, hydro_energy1, rat, rat0, vA2_pseudo
       real :: dely, delz
-      integer ::  iter_relB,i,j,jhless
+      integer ::  iter_relB,j,jhless
       real, dimension (mx,3) :: ss
 
       if (lrelativistic_eos) cs201=1.+cs20
@@ -5926,7 +5925,7 @@ module Hydro
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      integer :: i,j,k
+      integer :: j
 !
 !  info about precession term
 !
@@ -6368,7 +6367,7 @@ module Hydro
         endif
       endif
 
-      if(lgpu .and. fade_fact_old /= fade_fact) then
+      if (lgpu .and. fade_fact_old /= fade_fact) then
         call update_on_gpu(fade_fact_index_on_gpu,'AC_fade_fact__mod__hydro',fade_fact)
       endif
 
@@ -6389,7 +6388,7 @@ module Hydro
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: pdamp,fint_work,fext_work
+      real, dimension (nx) :: pdamp
       integer :: i,j
 !
 !  1. damp motion during time interval 0<t<tdamp.
@@ -7923,7 +7922,7 @@ module Hydro
 !  24-aug-15/MR: corrected declaration of umx2
 !
       use Diagnostics, only: save_name
-      use Mpicomm, only: mpibcast_real, mpireduce_sum, MPI_COMM_PENCIL, IXBEAM,IYBEAM
+      use Mpicomm, only: mpibcast_real, mpireduce_sum, IXBEAM, IYBEAM
 !
       logical,save :: first=.true.
       real, dimension (nx,ny) :: fsumxy
@@ -8212,8 +8211,8 @@ module Hydro
 !
 !  Go through all pencils.
 !
-        !!$omp target if(loffload) data
-        !!$omp target if(loffload) data update(reference_state,iref_rho,n1,n2,m1,m2,l1,l2) map(from: rum) has_device_addr(f)
+        !!$omp target if (loffload) data
+        !!$omp target if (loffload) data update(reference_state,iref_rho,n1,n2,m1,m2,l1,l2) map(from: rum) has_device_addr(f)
         !shared: lref, indrhol
         !!$omp teams distribute parallel do collapse(2) private(rho,mm) reduction(+:rum)
         do n = n1,n2
@@ -8248,7 +8247,7 @@ module Hydro
 !
 !  Compute inverse density, rho1.
 !
-        !!$omp target if(loffload) data map(to: rum) has_device_addr(f) 
+        !!$omp target if (loffload) data map(to: rum) has_device_addr(f) 
         !shared: lref, indrhol
         !!$omp teams distribute parallel do collapse(2) private(rho1)
         do n = n1,n2
@@ -9001,16 +9000,15 @@ module Hydro
     call copy_addr(nhless,p_par(113)) ! int
     call copy_addr(llorentz_as_aux,p_par(114)) ! bool
     call copy_addr(niter_relb,p_par(115)) ! int
-    if(allocated(thless)) call copy_addr(thless,p_par(116)) ! (nhless__mod__hydro)
-    if(allocated(xhless)) call copy_addr(xhless,p_par(117)) ! (nhless__mod__hydro)
-    if(allocated(yhless)) call copy_addr(yhless,p_par(118)) ! (nhless__mod__hydro)
-    if(allocated(zhless)) call copy_addr(zhless,p_par(119)) ! (nhless__mod__hydro)
+    if (allocated(thless)) call copy_addr(thless,p_par(116)) ! (nhless__mod__hydro)
+    if (allocated(xhless)) call copy_addr(xhless,p_par(117)) ! (nhless__mod__hydro)
+    if (allocated(yhless)) call copy_addr(yhless,p_par(118)) ! (nhless__mod__hydro)
+    if (allocated(zhless)) call copy_addr(zhless,p_par(119)) ! (nhless__mod__hydro)
     call copy_addr(width_hless,p_par(120))
     call copy_addr(width_hless_absolute,p_par(121))
     call copy_addr(lcorrect_penc_u,p_par(122)) ! bool
     call copy_addr(lcalc_uuavg,p_par(123)) ! bool
     call copy_addr(lremove_mean_angmom,p_par(124)) ! bool
-
 
     endsubroutine pushpars2c
 !***********************************************************************

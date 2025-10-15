@@ -1066,7 +1066,7 @@ module Density
       real :: lnrhoint,cs2int,pot0
       real :: pot_ext,lnrho_ext,cs2_ext,tmp1,k_j2
       real :: zbot,ztop,haut
-      real, dimension (nx) :: r_mn,lnrho,TT,ss
+      real, dimension (nx) :: r_mn,TT
       real, pointer :: gravx, rhs_poisson_const,fac_cs,cs2cool
       integer, pointer :: isothmid, isothtop
       complex :: omega_jeans

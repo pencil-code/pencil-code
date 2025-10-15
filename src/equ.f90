@@ -166,38 +166,37 @@ module Equ
 !  The user must have set crash_file_dtmin_factor>0.0 in &run_pars for
 !  this to be done.
 !
-!      if (.not. lgpu) then
-        if (crash_file_dtmin_factor > 0.0) call output_crash_files(f)
+      if (crash_file_dtmin_factor > 0.0) call output_crash_files(f)
 !
 !  For debugging purposes impose minimum or maximum value on certain variables.
 !
-        if (.not. lgpu) call impose_floors_ceilings(f)   !MR: too early, f modifications come below
+      if (.not. lgpu) call impose_floors_ceilings(f)   !MR: too early, f modifications come below
 !
 !  Apply global boundary conditions to particle positions and communicate
 !  migrating particles between the processors.
 !
-        if (lparticles) call particles_boundconds(f)
-        if (lpointmasses) call boundconds_pointmasses
+      if (lparticles) call particles_boundconds(f)
+      if (lpointmasses) call boundconds_pointmasses
 !
 !  Call "before_boundary" hooks (for f array precalculation)
 !
-        call before_boundary_shared(f)
-        !if (it == 10) call test_rhs_gpu(f,df,p,mass_per_proc,early_finalize,rhs_cpu)
+      call before_boundary_shared(f)
+      !if (it == 10) call test_rhs_gpu(f,df,p,mass_per_proc,early_finalize,rhs_cpu)
 
-        if (lgpu) then
-          start_time = mpiwtime()
-          call before_boundary_gpu(f,lrmv,itsub,t)
-          end_time = mpiwtime()
-          before_boundary_sum_time = before_boundary_sum_time + end_time-start_time
-        else
-          call before_boundary_cpu(f)
-        endif
+      if (lgpu) then
+        start_time = mpiwtime()
+        call before_boundary_gpu(f,lrmv,itsub,t)
+        end_time = mpiwtime()
+        before_boundary_sum_time = before_boundary_sum_time + end_time-start_time
+      else
+        call before_boundary_cpu(f)
+      endif
 !
 !  Prepare x-ghost zones; required before f-array communication
 !  AND shock calculation
 !
-        if (.not. lgpu) then
-          call boundconds_x(f)
+      if (.not. lgpu) then
+        call boundconds_x(f)
 !
 !  Initiate (non-blocking) communication and do boundary conditions.
 !  Required order:
@@ -205,30 +204,30 @@ module Equ
 !  2. communication
 !  3. y- and z-boundaries
 !
-          if (nghost>0) then
-            if (ldebug) print*,'pde: before initiate_isendrcv_bdry'
-            call initiate_isendrcv_bdry(f)
-            if (early_finalize) then
-              call finalize_isendrcv_bdry(f)
-              if (lcoarse) call coarsegrid_interp(f)   ! after boundconds_x???
-              call boundconds_y(f)
-              call boundconds_z(f)
-            endif
+        if (nghost>0) then
+          if (ldebug) print*,'pde: before initiate_isendrcv_bdry'
+          call initiate_isendrcv_bdry(f)
+          if (early_finalize) then
+            call finalize_isendrcv_bdry(f)
+            if (lcoarse) call coarsegrid_interp(f)   ! after boundconds_x???
+            call boundconds_y(f)
+            call boundconds_z(f)
           endif
         endif
+      endif
 !
 ! update solid cell "ghost points". This must be done in order to get the
 ! correct boundary layer close to the solid geometry, i.e. no-slip conditions.
 !
-        call update_solid_cells(f)
+      call update_solid_cells(f)
 !
 !  For sixth order momentum-conserving, symmetric hyperviscosity with positive
 !  definite heating rate we need to precalculate the viscosity term. The
 !  restivitity term for sixth order hyperresistivity with positive definite
 !  heating rate must also be precalculated.
 !
-        if (lhyperviscosity_strict)   call hyperviscosity_strict(f)
-        if (lhyperresistivity_strict) call hyperresistivity_strict(f)
+      if (lhyperviscosity_strict)   call hyperviscosity_strict(f)
+      if (lhyperresistivity_strict) call hyperresistivity_strict(f)
 !
 !  Dynamically set the (hyper-)diffusion coefficients
 !
@@ -252,35 +251,35 @@ module Equ
 !  derived from the basic thermodynamical variables), we need to fill in the
 !  pressure in the f array.
 !
-        call fill_farray_pressure(f)
+      call fill_farray_pressure(f)
 !
 !  Set inverse timestep to zero before entering loop over m and n.
 !  If we want to have a logarithmic time advance, we want set this here
 !  as the maximum. All other routines can then still make it shorter.
 !
-        if (lupdate_courant_dt) then
-          if (dtmax/=0.0) then
-            if (lfractional_tstep_advance) then
-              dt1_max=1./(dt_incr*t)
-            else
-              dt1_max=1./dtmax
-            endif
+      if (lupdate_courant_dt) then
+        if (dtmax/=0.0) then
+          if (lfractional_tstep_advance) then
+            dt1_max=1./(dt_incr*t)
           else
-            dt1_max=0.0
+            dt1_max=1./dtmax
           endif
+        else
+          dt1_max=0.0
         endif
+      endif
 !
 !  Calculate ionization degree (needed for thermodynamics)
 !  Radiation transport along rays. If lsingle_ray, then this
 !  is only used for visualization and only needed when lvideo
 !  (but this is decided in radtransfer itself)
 !
-        if (leos_ionization.or.leos_temperature_ionization) call ioncalc(f)
-        if (lradiation_ray) call radtransfer(f)     ! -> after_boundary or before_boundary?
+      if (leos_ionization.or.leos_temperature_ionization) call ioncalc(f)
+      if (lradiation_ray) call radtransfer(f)     ! -> after_boundary or before_boundary?
 !
 !  Calculate shock profile (simple).
 !
-        if (lshock) call calc_shock_profile_simple(f)
+      if (lshock) call calc_shock_profile_simple(f)
 !
 !  Call "after" hooks (for f array precalculation). This may imply
 !  calculating averages (some of which may only be required for certain
@@ -293,12 +292,9 @@ module Equ
 !  Use early_finalize in this case.
 !  MR+joern+axel, 8.10.2015
 !
-        call timing('pde','before "after_boundary" calls')
-!
-        call after_boundary_shared(f,df)
-        if (.not. lgpu) call after_boundary_cpu(f,df)
-!      endif
-!
+      call timing('pde','before "after_boundary" calls')
+      call after_boundary_shared(f)
+      if (.not. lgpu) call after_boundary_cpu(f,df)
       call timing('pde','after "after_boundary" calls')
 !
       if (lgpu) then
@@ -306,10 +302,8 @@ module Equ
           !wait in case the last diagnostic tasks are not finished
           call copy_farray_from_GPU(f)
           if (lode .and. lgpu) then
-                  if (.not. allocated(f_ode_diagnostics)) then
-                          allocate(f_ode_diagnostics(max_n_odevars))
-                  endif
-                  f_ode_diagnostics = f_ode
+            if (.not. allocated(f_ode_diagnostics)) allocate(f_ode_diagnostics(max_n_odevars))
+            f_ode_diagnostics = f_ode
           endif
 !$        lmasterflags(PERF_DIAGS) = .true.
         endif
@@ -599,23 +593,22 @@ module Equ
       real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
       type (pencil_case) :: p
 
-      integer :: imn,i
+      integer :: imn
 !
 !  Parallelization across all helper threads.
 !
-
-      !TP: if equ had an init phase this would fit there better
-      if (idiag_Rmesh /= 0) ltimestep_diagnostics = .true.
       call init_reduc_pointers
+
+      !TP: if equ had an initialization routine this would fit there better
+      if (idiag_Rmesh /= 0 .or. idiag_Rmesh3 /=0 ) ltimestep_diagnostics = .true.
+!
 !  If doing diagnostics together with the GPU lupdate_courant_dt means to calculate some of the timestep diagnostics
-     
+!
       if (lgpu) then
         if (idiag_dtv /= 0 .or. &
             idiag_dtdiffus /= 0 .or. &
             idiag_dtdiffus2 /= 0 .or. &
-            idiag_dtdiffus3 /= 0) then
-          ltimestep_diagnostics = .true.
-        endif
+            idiag_dtdiffus3 /= 0) ltimestep_diagnostics = .true.
         lupdate_courant_dt = lcourant_dt .and. ltimestep_diagnostics
       endif
 
@@ -633,7 +626,6 @@ module Equ
       !below
 !!$    if (omp_get_thread_num() /= 0) call set_cpu(core_ids(omp_get_thread_num()+1))
       !print*,"omp_id,cpu_id,mpi_id: ",omp_get_thread_num(), get_cpu(), iproc
-
 
       !$omp do
       do imn=1,nyz
@@ -982,12 +974,11 @@ module Equ
 
     endsubroutine before_boundary_cpu
 !***********************************************************************
-    subroutine after_boundary_shared(f,df)
+    subroutine after_boundary_shared(f)
 
       use Training, only: training_after_boundary
 
       real, intent(INOUT), dimension(mx,my,mz,mfarray) :: f
-      real, intent(INOUT), dimension(mx,my,mz,mvar)    :: df
 
       if (ltraining) call training_after_boundary(f)
 
@@ -1791,13 +1782,14 @@ module Equ
 
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      type (pencil_case) :: p,p_copy
+      type (pencil_case) :: p
       real, dimension(1), intent(inout) :: mass_per_proc
       logical ,intent(in) :: early_finalize
 
       real, dimension (:,:,:,:), allocatable :: f_copy,f_diff,df_copy,f_beta,f_abs_diff
-      real, dimension (nx) :: gss_x
+
       integer :: i
+
       interface
         subroutine cpu_version(f,df,p,mass_per_proc,early_finalize)
           import mx
