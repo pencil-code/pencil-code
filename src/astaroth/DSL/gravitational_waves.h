@@ -146,22 +146,6 @@ Kernel gravitational_waves_solve_and_stress(real AC_t__mod__cdata, real AC_dt__m
         }
       }
     }
-    real hp_target__mod__cdata
-    real appa_target__mod__cdata
-    if (AC_lread_scl_factor_file__mod__cdata) {
-      lgt_current_2=alog10(AC_t__mod__cdata)+AC_lgt_ini__mod__gravitational_waves_htxk
-      int it_file_2=int((lgt_current_2-AC_lgt0__mod__gravitational_waves_htxk)/AC_dlgt__mod__gravitational_waves_htxk)+1
-      lgt1_2=AC_lgt_file__mod__gravitational_waves_htxk[it_file_2-1]
-      lgt2_2=AC_lgt_file__mod__gravitational_waves_htxk[1+it_file_2-1]
-      lgf1_2=AC_lgff2__mod__gravitational_waves_htxk[it_file_2-1]
-      lgf2_2=AC_lgff2__mod__gravitational_waves_htxk[1+it_file_2-1]
-      lgf_2=lgf1_2+(lgt_current_2-lgt1_2)*(lgf2_2-lgf1_2)/(lgt2_2-lgt1_2)
-      hp_target__mod__cdata=pow(10,lgf_2)/AC_hp_ini__mod__gravitational_waves_htxk
-      lgf1_2=AC_lgff3__mod__gravitational_waves_htxk[it_file_2-1]
-      lgf2_2=AC_lgff3__mod__gravitational_waves_htxk[1+it_file_2-1]
-      lgf_2=lgf1_2+(lgt_current_2-lgt1_2)*(lgf2_2-lgf1_2)/(lgt2_2-lgt1_2)
-      appa_target__mod__cdata=pow(10,lgf_2)/(AC_hp_ini__mod__gravitational_waves_htxk*AC_hp_ini__mod__gravitational_waves_htxk)
-    }
     real horndeski_alpt_eff__mod__gravitational_waves_htxk
     real horndeski_alpm_eff__mod__gravitational_waves_htxk
     real horndeski_alpm_eff2__mod__gravitational_waves_htxk
@@ -185,7 +169,7 @@ Kernel gravitational_waves_solve_and_stress(real AC_t__mod__cdata, real AC_dt__m
         horndeski_alpt_eff__mod__gravitational_waves_htxk=AC_horndeski_alpt__mod__gravitational_waves_htxk
         if (AC_lread_scl_factor_file__mod__cdata && AC_lread_scl_factor_file_exists__mod__gravitational_waves_htxk) {
           om_rat_matt=pow((scale_factor__mod__gravitational_waves_htxk*AC_a_ini__mod__gravitational_waves_htxk/AC_scale_factor0__mod__gravitational_waves_htxk),(-3))*AC_omm0__mod__gravitational_waves_htxk
-          om_rat_tot1=((AC_a_ini__mod__gravitational_waves_htxk*AC_h0__mod__gravitational_waves_htxk*scale_factor__mod__gravitational_waves_htxk/hp_target__mod__cdata/AC_hp_ini__mod__gravitational_waves_htxk)*(AC_a_ini__mod__gravitational_waves_htxk*AC_h0__mod__gravitational_waves_htxk*scale_factor__mod__gravitational_waves_htxk/hp_target__mod__cdata/AC_hp_ini__mod__gravitational_waves_htxk))
+          om_rat_tot1=((AC_a_ini__mod__gravitational_waves_htxk*AC_h0__mod__gravitational_waves_htxk*scale_factor__mod__gravitational_waves_htxk/AC_hp_target__mod__cdata/AC_hp_ini__mod__gravitational_waves_htxk)*(AC_a_ini__mod__gravitational_waves_htxk*AC_h0__mod__gravitational_waves_htxk*scale_factor__mod__gravitational_waves_htxk/AC_hp_target__mod__cdata/AC_hp_ini__mod__gravitational_waves_htxk))
           horndeski_alpm_eff__mod__gravitational_waves_htxk=AC_horndeski_alpm__mod__gravitational_waves_htxk*(1-om_rat_matt*om_rat_tot1)/(1-AC_omm0__mod__gravitational_waves_htxk)
         }
         else {
@@ -194,7 +178,7 @@ Kernel gravitational_waves_solve_and_stress(real AC_t__mod__cdata, real AC_dt__m
       else if(AC_enum_ihorndeski_time__mod__gravitational_waves_htxk == enum_dark_energy_string) {
         horndeski_alpt_eff__mod__gravitational_waves_htxk=AC_horndeski_alpt__mod__gravitational_waves_htxk
         if (AC_lread_scl_factor_file__mod__cdata && AC_lread_scl_factor_file_exists__mod__gravitational_waves_htxk) {
-          om_rat_tot1=((AC_a_ini__mod__gravitational_waves_htxk*AC_h0__mod__gravitational_waves_htxk*scale_factor__mod__gravitational_waves_htxk/hp_target__mod__cdata/AC_hp_ini__mod__gravitational_waves_htxk)*(AC_a_ini__mod__gravitational_waves_htxk*AC_h0__mod__gravitational_waves_htxk*scale_factor__mod__gravitational_waves_htxk/hp_target__mod__cdata/AC_hp_ini__mod__gravitational_waves_htxk))
+          om_rat_tot1=((AC_a_ini__mod__gravitational_waves_htxk*AC_h0__mod__gravitational_waves_htxk*scale_factor__mod__gravitational_waves_htxk/AC_hp_target__mod__cdata/AC_hp_ini__mod__gravitational_waves_htxk)*(AC_a_ini__mod__gravitational_waves_htxk*AC_h0__mod__gravitational_waves_htxk*scale_factor__mod__gravitational_waves_htxk/AC_hp_target__mod__cdata/AC_hp_ini__mod__gravitational_waves_htxk))
           horndeski_alpm_eff__mod__gravitational_waves_htxk=AC_horndeski_alpm__mod__gravitational_waves_htxk*om_rat_tot1
         }
         else {
@@ -204,13 +188,13 @@ Kernel gravitational_waves_solve_and_stress(real AC_t__mod__cdata, real AC_dt__m
       }
       if (AC_lread_scl_factor_file__mod__cdata && AC_lread_scl_factor_file_exists__mod__gravitational_waves_htxk) {
         if (AC_lhorndeski__mod__gravitational_waves_htxk) {
-          horndeski_alpm_eff__mod__gravitational_waves_htxk=horndeski_alpm_eff__mod__gravitational_waves_htxk*hp_target__mod__cdata
-          horndeski_alpm_eff2__mod__gravitational_waves_htxk=horndeski_alpm_eff__mod__gravitational_waves_htxk*hp_target__mod__cdata
+          horndeski_alpm_eff__mod__gravitational_waves_htxk=horndeski_alpm_eff__mod__gravitational_waves_htxk*AC_hp_target__mod__cdata
+          horndeski_alpm_eff2__mod__gravitational_waves_htxk=horndeski_alpm_eff__mod__gravitational_waves_htxk*AC_hp_target__mod__cdata
         }
         else {
-          horndeski_alpm_eff2__mod__gravitational_waves_htxk=(1+0.5*horndeski_alpm_eff__mod__gravitational_waves_htxk)*(hp_target__mod__cdata*hp_target__mod__cdata)
+          horndeski_alpm_eff2__mod__gravitational_waves_htxk=(1+0.5*horndeski_alpm_eff__mod__gravitational_waves_htxk)*(AC_hp_target__mod__cdata*AC_hp_target__mod__cdata)
           horndeski_alpm_eff2__mod__gravitational_waves_htxk=horndeski_alpm_eff2__mod__gravitational_waves_htxk*0.5*horndeski_alpm_eff__mod__gravitational_waves_htxk
-          horndeski_alpm_eff3__mod__gravitational_waves_htxk=0.5*AC_horndeski_alpm_prime__mod__gravitational_waves_htxk*hp_target__mod__cdata
+          horndeski_alpm_eff3__mod__gravitational_waves_htxk=0.5*AC_horndeski_alpm_prime__mod__gravitational_waves_htxk*AC_hp_target__mod__cdata
           horndeski_alpm_eff__mod__gravitational_waves_htxk=1.+0.5*horndeski_alpm_eff__mod__gravitational_waves_htxk
         }
       }
@@ -229,7 +213,7 @@ Kernel gravitational_waves_solve_and_stress(real AC_t__mod__cdata, real AC_dt__m
     }
     real appa_om__mod__gravitational_waves_htxk
     if (AC_lread_scl_factor_file__mod__cdata && AC_lread_scl_factor_file_exists__mod__gravitational_waves_htxk) {
-      appa_om__mod__gravitational_waves_htxk=appa_target__mod__cdata
+      appa_om__mod__gravitational_waves_htxk=AC_appa_target__mod__cdata
     }
     if (AC_lhorndeski_xi__mod__gravitational_waves_htxk) {
       appa_om__mod__gravitational_waves_htxk=appa_om__mod__gravitational_waves_htxk*horndeski_alpm_eff__mod__gravitational_waves_htxk+horndeski_alpm_eff2__mod__gravitational_waves_htxk

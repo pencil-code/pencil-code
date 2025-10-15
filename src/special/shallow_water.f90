@@ -45,7 +45,6 @@
 !
 module Special
 !
-  use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
@@ -88,6 +87,7 @@ module Special
 ! Mass relaxation
 !
   real, dimension (nx) :: advec_cg2=0.0
+  !$omp threadprivate(advec_cg2)
   real, dimension (mx,my) :: h0
   real, dimension (nx,ny,2) :: gradh0,ujet
   real, dimension (nx,ny) :: gamma_rr2,eta_relaxation,storm_function_grid,subsidence_grid
@@ -274,6 +274,7 @@ module Special
 !
 !   14-jul-09/wlad: coded
 !
+      use General, only: notanumber
       use Mpicomm
 !
       real, dimension(mx,my,mz,mfarray) :: f
@@ -289,9 +290,15 @@ module Special
         q%uu_jet(:,1) = ujet(:,m-m1+1,1)
         q%uu_jet(:,2) = ujet(:,m-m1+1,2)
       endif
+
+      if (lupdate_courant_dt) then
+        advec_cg2 = (p%rho + h0(l1:l2,m))**2 * dxyz_2
+        if (notanumber(advec_cg2)) print*, 'advec_cg2  =',advec_cg2
+        advec2    = advec2 + advec_cg2
+      endif
 !
-    call keep_compiler_quiet(f)
-    call keep_compiler_quiet(p)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
@@ -437,7 +444,6 @@ module Special
 !***********************************************************************
     subroutine special_calc_hydro(f,df,p)
 !
-      use General, only: notanumber
 !
 !  The momentum equation in shallow water does not have the pressure term. 
 !  Instead, we solve
@@ -478,12 +484,6 @@ module Special
       df(l1:l2,m,n,iuy) =  df(l1:l2,m,n,iuy) - (p%uu(:,2) - q%uu_jet(:,2))*tau_jet1       
     endif
 !    
-    if (lfirst.and.ldt) then
-      advec_cg2 = (p%rho + h0(l1:l2,m))**2 * dxyz_2
-!       
-      if (notanumber(advec_cg2)) print*, 'advec_cg2  =',advec_cg2
-      advec2    = advec2 + advec_cg2
-    endif
 !
     call keep_compiler_quiet(f)
 !

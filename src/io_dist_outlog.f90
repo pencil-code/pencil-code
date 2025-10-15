@@ -64,8 +64,6 @@ module Io
 !
 !  20-sep-02/wolf: coded
 !
-      use Mpicomm, only: lroot
-!
 !  identify version number
 !
       if (lroot) call svn_id("$Id$")

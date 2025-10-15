@@ -4648,15 +4648,18 @@ module Sub
     endfunction poly_3
 !***********************************************************************
     subroutine lower_triangular_index(ij,i1,j1)
+!
       integer,intent(out)::ij
       integer,intent(in) :: i1,j1
       integer :: ii,jj
+!
       ii=i1;jj=j1
-      if (i1.lt.j1) then
+      if (i1<j1) then
         ii=j1
         jj=i1
       endif
       ij=ii*(ii-1)/2 + jj
+
     endsubroutine lower_triangular_index
 !***********************************************************************
     function ylm_other(theta,phi,ell,emm,der) result (sph_har)
@@ -5483,7 +5486,6 @@ nameloop: do
 !  Different compilers have different lengths:
 !    NAG: 1, Compaq: 2, Intel: 47, SGI: 64, NEC: 256
 !
-      use Mpicomm, only: lroot
       use General, only: random_seed_wrapper
 !
       integer, intent(out) :: nseed
@@ -7746,10 +7748,9 @@ nameloop: do
 !  calculate characteristic speed for slope limited diffusion
 !
 !  13-03-2020/Joern: coded, based on similar routine in special/solar_corona.f90
-
+!
       intent(in) :: f,k,ldiv_4th
       intent(out) :: cmax_im12,cmax_ip12
-!
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: cmax_im12,cmax_ip12
@@ -7757,7 +7758,6 @@ nameloop: do
       logical :: ldiv_4th
 !
       real, dimension (nx), optional, intent(out) :: cmax_imm12,cmax_ipp12
-!
 !
       select case (k)
         case(1)
@@ -7799,6 +7799,7 @@ nameloop: do
           endif
 !
         endselect
+
     endsubroutine characteristic_speed
 !***********************************************************************
     subroutine calc_slope_diff_flux(f,j,p,h_slope_limited,nlf,div_flux,div_type, &
@@ -7816,33 +7817,32 @@ nameloop: do
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3) :: flux_im12,flux_imm12,flux_ip12,flux_ipp12
       real, dimension (nx) :: div_flux, dens_m1, dens_p1, dens,rfac,q1
+      real, dimension (nx+2) :: densx
       real, dimension (nx) :: fim12_l,fim12_r,fimm12_l,fimm12_r,fim1,fimm1
       real, dimension (nx) :: fip12_l,fip12_r,fipp12_l,fipp12_r,fip1,fipp1
       real, dimension (nx) :: cmax_im12,cmax_ip12,cmax_imm12,cmax_ipp12
-      real :: fdif, fadd
+      real :: fdif, fadd, tmp
       character(LEN=*) :: div_type
 !
       real, dimension (nx), optional, intent(out) :: heat,flux1, flux2, flux3
       character(LEN=*), optional, intent(in) :: heat_type
 !
-      real :: nlf, h_slope_limited, one_16, fdif_limit
+      real :: nlf, h_slope_limited, one_16, fdif_limit, dy12, dz12
+      real, dimension(nx) :: dx12
       !TP: not used!!
       type (pencil_case), intent(in) :: p
       integer :: j,k,ix
       logical :: ldiv_4th
-
 !
 ! First set the diffusive flux = cmax*(f_R-f_L) at half grid points
 !
         one_16=1./16.
         fdif_limit=60. ! empirical value
-        if(present(heat)) heat=0.0
-        if(present(flux1)) flux1=0.0
-        if(present(flux2)) flux2=0.0
-        if(present(flux3)) flux3=0.0
+        if (present(heat)) heat=0.0
+        if (present(flux1)) flux1=0.0
+        if (present(flux2)) flux2=0.0
+        if (present(flux3)) flux3=0.0
         div_flux=0.
-
-
 !
 !  Generate halfgrid points
 !
@@ -7893,12 +7893,12 @@ nameloop: do
           endif
         endif
 !
-        if(ldiv_4th) then
+        if (ldiv_4th) then
 !
 !     imm12
 !
           do ix=1,nx
-            if ((fimm12_r(ix)-fimm12_l(ix))*(fim1(ix)-fimm1(ix)) .le. 0.0) then
+            if ((fimm12_r(ix)-fimm12_l(ix))*(fim1(ix)-fimm1(ix)) <= 0.0) then
               rfac(ix) = 0.0
             else
               rfac(ix)=(fimm12_r(ix)-fimm12_l(ix))/(fim1(ix)-fimm1(ix))
@@ -7915,7 +7915,7 @@ nameloop: do
 !     ipp12
 !
           do ix=1,nx
-            if ((fipp12_r(ix)-fipp12_l(ix))*(fipp1(ix)-fip1(ix)) .le. 0.0) then
+            if ((fipp12_r(ix)-fipp12_l(ix))*(fipp1(ix)-fip1(ix)) <= 0.0) then
               rfac(ix) = 0.0
             else
               rfac(ix)=(fipp12_r(ix)-fipp12_l(ix))/(fipp1(ix)-fip1(ix))
@@ -7934,8 +7934,9 @@ nameloop: do
 !
         do ix=1,nx
           if (j==ilnrho .or. j==ilnTT) then
-            fdif = exp(f(ix+nghost,m,n,j))-fim1(ix)
-            fadd = exp(f(ix+nghost,m,n,j))+fim1(ix)
+            tmp = exp(f(ix+nghost,m,n,j))
+            fdif = tmp-fim1(ix)
+            fadd = tmp+fim1(ix)
           else
             fdif = f(ix+nghost,m,n,j)-fim1(ix)
             fadd = f(ix+nghost,m,n,j)+fim1(ix)
@@ -7943,13 +7944,13 @@ nameloop: do
 !
 ! avoid that the product is 0 or negativ
 !
-          if ((fim12_r(ix)-fim12_l(ix))*fdif .le. 0.0) then
+          if ((fim12_r(ix)-fim12_l(ix))*fdif <= 0.0) then
             rfac(ix) = 0.0
           else
 !
 ! avoid large rfac values, if fdif is small
 !
-            if (abs(fadd)/abs(fdif) .gt. fdif_limit) fdif = sign(fadd,fdif)/fdif_limit
+            if (abs(fadd)/abs(fdif) > fdif_limit) fdif = sign(fadd,fdif)/fdif_limit
 !
             rfac(ix)=(fim12_r(ix)-fim12_l(ix))/fdif
           endif
@@ -7968,8 +7969,9 @@ nameloop: do
 !
         do ix=1,nx
           if (j==ilnrho .or. j==ilnTT) then
-            fdif = fip1(ix)-exp(f(ix+nghost,m,n,j))
-            fadd = fip1(ix)+exp(f(ix+nghost,m,n,j))
+            tmp = exp(f(ix+nghost,m,n,j))
+            fdif = fip1(ix)-tmp
+            fadd = fip1(ix)+tmp
           else
             fdif = fip1(ix)-f(ix+nghost,m,n,j)
             fadd = fip1(ix)+f(ix+nghost,m,n,j)
@@ -7977,13 +7979,13 @@ nameloop: do
 !
 ! avoid that the product is 0 or negativ
 !
-          if ((fip12_r(ix)-fip12_l(ix))*fdif .le. 0.0) then
+          if ((fip12_r(ix)-fip12_l(ix))*fdif <= 0.0) then
             rfac(ix) = 0.0
           else
 !
 ! avoid large rfac values, if fdif is small
 !
-            if (abs(fadd)/abs(fdif) .gt. fdif_limit) fdif = sign(fadd,fdif)/fdif_limit
+            if (abs(fadd)/abs(fdif) > fdif_limit) fdif = sign(fadd,fdif)/fdif_limit
 !
             rfac(ix)=(fip12_r(ix)-fip12_l(ix))/fdif
           endif
@@ -8001,7 +8003,6 @@ nameloop: do
 !   Flux is defined with a positive sign !!!!
 !   div and heating is then also defined with a positive sign to compensate.
 !
-!
 !   Calculating heating
 !
         if (present(heat)) then
@@ -8010,26 +8011,19 @@ nameloop: do
 
             case('viscose')
 !
-!           contribution to visose heating derives from (i: component, j: direction)
+!           contribution to viscose heating derives from (i: component, j: direction)
 !           rho*u_i*del_j Fij_sld -> del_j (rho*u_i*Fij_sld) - del_j(rho*u_i)*Fij_sld
 !           first term does not contribute to heating
-!           second term correpond to 2nd order gradient of of each rho*u component
+!           second term correponds to 2nd order gradient of each rho*u component
 !
               if (k == 1 .and. nxgrid /= 1) then
                 if (ldensity_nolog) then
-                  dens   =f(l1:l2,m,n,irho)
-                  dens_m1=f(l1-1:l2-1,m,n,irho)
-                  dens_p1=f(l1+1:l2+1,m,n,irho)
+                  densx=f(l1-1:l2+1,m,n,irho)
                 else
-                  dens   =exp(f(l1:l2,m,n,ilnrho))
-                  dens_m1=exp(f(l1-1:l2-1,m,n,ilnrho))
-                  dens_p1=exp(f(l1+1:l2+1,m,n,ilnrho))
+                  densx=exp(f(l1-1:l2+1,m,n,ilnrho))
                 endif
-                heat=heat &
-                       +0.5*flux_im12(:,k)*(dens*f(l1:l2,m,n,j)-dens_m1*fim1) &
-                                           /(x(l1:l2)-x(l1-1:l2-1)) &
-                       +0.5*flux_ip12(:,k)*(dens_p1*fip1-dens*f(l1:l2,m,n,j)) &
-                                          /(x(l1+1:l2+1)-x(l1:l2))
+                heat=heat+0.5*( flux_im12(:,k)*(densx(2:nx+1)*f(l1:l2,m,n,j)-densx(1:nx)*fim1  )*dx_1(l1:l2) &
+                               +flux_ip12(:,k)*(densx(3:nx+2)*fip1-densx(2:nx+1)*f(l1:l2,m,n,j))*dx_1(l1+1:l2+1))
               endif
 !
               if (k == 2 .and. nygrid /= 1) then
@@ -8043,17 +8037,11 @@ nameloop: do
                   dens_p1=exp(f(l1:l2,m+1,n,ilnrho))
                 endif
                 if (lspherical_coords .or. lcylindrical_coords) then
-                  heat=heat &
-                         +0.5*flux_im12(:,k)*(dens*f(l1:l2,m,n,j)-dens_m1*fim1) &
-                                             /(x(l1:l2)*(y(m)-y(m-1))) &
-                         +0.5*flux_ip12(:,k)*(dens_p1*fip1-dens*f(l1:l2,m,n,j)) &
-                                             /(x(l1:l2)*(y(m+1)-y(m)))
+                  heat=heat+0.5*( flux_im12(:,k)*(dens*f(l1:l2,m,n,j)-dens_m1*fim1)*dy_1(m) &
+                                 +flux_ip12(:,k)*(dens_p1*fip1-dens*f(l1:l2,m,n,j))*dy_1(m+1))/x(l1:l2)
                 else
-                  heat=heat &
-                      +0.5*flux_im12(:,k)*(dens*f(l1:l2,m,n,j)-dens_m1*fim1) &
-                                          /(y(m)-y(m-1)) &
-                      +0.5*flux_ip12(:,k)*(dens_p1*fip1-dens*f(l1:l2,m,n,j)) &
-                                          /(y(m+1)-y(m))
+                  heat=heat+0.5*( flux_im12(:,k)*(dens*f(l1:l2,m,n,j)-dens_m1*fim1)*dy_1(m) &
+                                 +flux_ip12(:,k)*(dens_p1*fip1-dens*f(l1:l2,m,n,j))*dy_1(m+1))
                 endif
               endif
 !
@@ -8068,17 +8056,11 @@ nameloop: do
                   dens_p1=exp(f(l1:l2,m,n+1,ilnrho))
                 endif
                 if (lspherical_coords) then
-                  heat=heat &
-                      +0.5*flux_im12(:,k)*(dens*f(l1:l2,m,n,j)-dens_m1*fim1) &
-                                          /(x(l1:l2)*sin(y(m))*(z(n)-z(n-1))) &
-                      +0.5*flux_ip12(:,k)*(dens_p1*fip1-dens*f(l1:l2,m,n,j)) &
-                                          /(x(l1:l2)*sin(y(m))*(z(n+1)-z(n)))
+                  heat=heat+0.5*( flux_im12(:,k)*(dens*f(l1:l2,m,n,j)-dens_m1*fim1)*dz_1(n) &
+                                 +flux_ip12(:,k)*(dens_p1*fip1-dens*f(l1:l2,m,n,j))*dz_1(n+1))/(x(l1:l2)*sinth(m))
                 else
-                  heat=heat &
-                      +0.5*flux_im12(:,k)*(dens*f(l1:l2,m,n,j)-dens_m1*fim1) &
-                                          /(z(n)-z(n-1)) &
-                      +0.5*flux_ip12(:,k)*(dens_p1*fip1-dens*f(l1:l2,m,n,j)) &
-                                          /(z(n+1)-z(n))
+                  heat=heat+0.5*( flux_im12(:,k)*(dens*f(l1:l2,m,n,j)-dens_m1*fim1)*dz_1(n) &
+                                 +flux_ip12(:,k)*(dens_p1*fip1-dens*f(l1:l2,m,n,j))*dz_1(n+1))
                 endif
               endif
 !
@@ -8096,7 +8078,7 @@ nameloop: do
 !    x-direction:
 !
         if (k == 1 .and. nxgrid /= 1 .and. present(flux1)) then
-          if(ldiv_4th) then
+          if (ldiv_4th) then
             flux1=(-1.*flux_ipp12(:,k)+9.*flux_ip12(:,k)+9.*flux_im12(:,k)-1.*flux_imm12(:,k))*one_16
           else
             flux1=0.5*(flux_ip12(:,k) + flux_im12(:,k))
@@ -8106,7 +8088,7 @@ nameloop: do
 !    y-direction:
 !
         if (k == 2 .and. nygrid /= 1 .and. present(flux2)) then
-          if(ldiv_4th) then
+          if (ldiv_4th) then
             flux2=(-1.*flux_ipp12(:,k)+9.*flux_ip12(:,k)+9.*flux_im12(:,k)-1.*flux_imm12(:,k))*one_16
           else
             flux2=0.5*(flux_ip12(:,k) + flux_im12(:,k))
@@ -8116,71 +8098,59 @@ nameloop: do
 !    z-direction:
 !
         if (k == 3 .and. nzgrid /= 1 .and. present(flux3)) then
-          if(ldiv_4th) then
+          if (ldiv_4th) then
             flux3=(-1.*flux_ipp12(:,k)+9.*flux_ip12(:,k)+9.*flux_im12(:,k)-1.*flux_imm12(:,k))*one_16
           else
             flux3=0.5*(flux_ip12(:,k) + flux_im12(:,k))
           endif
         endif
       enddo
-
 !
 ! Now calculate the 2nd and 4th order divergence
 !
       if (nxgrid /= 1) then
-        if(ldiv_4th) then
-          div_flux=div_flux &
-                  +(-flux_ipp12(:,1)+27.*flux_ip12(:,1)-27.*flux_im12(:,1)+flux_imm12(:,1)) &
-                  /(x12(l1:l2)-x12(l1-1:l2-1))/24.
+        dx12 = x12(l1:l2)-x12(l1-1:l2-1)
+        if (ldiv_4th) then
+          div_flux=div_flux + (-flux_ipp12(:,1)+27.*flux_ip12(:,1)-27.*flux_im12(:,1)+flux_imm12(:,1)) &
+                              /(dx12*24.)
         else
           if (lspherical_coords) then
-            div_flux=div_flux &
-                    +(x12(l1:l2)**2*flux_ip12(:,1)-x12(l1-1:l2-1)**2*flux_im12(:,1))&
-                    /(x(l1:l2)**2*(x12(l1:l2)-x12(l1-1:l2-1)))
+            div_flux=div_flux + (x12(l1:l2)**2*flux_ip12(:,1)-x12(l1-1:l2-1)**2*flux_im12(:,1)) &
+                                /(x(l1:l2)**2*dx12)
           elseif (lcylindrical_coords) then
-            div_flux=div_flux &
-                    +(x12(l1:l2)*flux_ip12(:,1)-x12(l1-1:l2-1)*flux_im12(:,1))&
-                    /(x(l1:l2)*(x12(l1:l2)-x12(l1-1:l2-1)))
+            div_flux=div_flux +(x12(l1:l2)*flux_ip12(:,1)-x12(l1-1:l2-1)*flux_im12(:,1))/(x(l1:l2)*dx12)
           else
-            div_flux=div_flux+(flux_ip12(:,1)-flux_im12(:,1))&
-                    /(x12(l1:l2)-x12(l1-1:l2-1))
+            div_flux=div_flux+(flux_ip12(:,1)-flux_im12(:,1))/dx12
           endif
         endif
       endif
 !
       if (nygrid /= 1) then
-        if(ldiv_4th) then
+        dy12 = y12(m)-y12(m-1)
+        if (ldiv_4th) then
           div_flux=div_flux &
-                  +(-flux_ipp12(:,2)+27.*flux_ip12(:,2)-27.*flux_im12(:,2)+flux_imm12(:,2))&
-                  /(y12(m)-y12(m-1))/24.
+                  +(-flux_ipp12(:,2)+27.*flux_ip12(:,2)-27.*flux_im12(:,2)+flux_imm12(:,2))/(dy12*24.)
         else
           if (lspherical_coords) then
-            div_flux=div_flux &
-                    +(sin(y12(m))*flux_ip12(:,2)-sin(y12(m-1))*flux_im12(:,2))&
-                    /(x(l1:l2)*sin(y(m))*(y12(m)-y12(m-1)))
+            div_flux=div_flux + (sinth12(m)*flux_ip12(:,2)-sinth12(m-1)*flux_im12(:,2)) &
+                                /(x(l1:l2)*sinth(m)*dy12)
           elseif (lcylindrical_coords) then
-            div_flux=div_flux &
-                    +(flux_ip12(:,2)-flux_im12(:,2))&
-                    /(x(l1:l2)*(y12(m)-y12(m-1)))
+            div_flux=div_flux + (flux_ip12(:,2)-flux_im12(:,2))/(x(l1:l2)*dy12)
           else
-            div_flux=div_flux &
-                    +(flux_ip12(:,2)-flux_im12(:,2))&
-                    /(y12(m)-y12(m-1))
+            div_flux=div_flux + (flux_ip12(:,2)-flux_im12(:,2))/dy12
           endif
         endif
       endif
       if (nzgrid /= 1) then
-        if(ldiv_4th) then
+        dz12 = z12(n)-z12(n-1)
+        if (ldiv_4th) then
           div_flux=div_flux &
-                  +(-flux_ipp12(:,3)+27.*flux_ip12(:,3)-27.*flux_im12(:,3)+flux_imm12(:,3))&
-                  /(z12(n)-z12(n-1))/24.
+                  +(-flux_ipp12(:,3)+27.*flux_ip12(:,3)-27.*flux_im12(:,3)+flux_imm12(:,3))/(dz12*24.)
         else
           if (lspherical_coords) then
-            div_flux=div_flux+(flux_ip12(:,3)-flux_im12(:,3))&
-                    /(x(l1:l2)*sin(y(m))*(z12(n)-z12(n-1)))
+            div_flux=div_flux+(flux_ip12(:,3)-flux_im12(:,3))/(x(l1:l2)*sinth(m)*dz12)
           else
-            div_flux=div_flux+(flux_ip12(:,3)-flux_im12(:,3))&
-                    /(z12(n)-z12(n-1))
+            div_flux=div_flux+(flux_ip12(:,3)-flux_im12(:,3))/dz12
           endif
         endif
       endif
@@ -8210,6 +8180,7 @@ nameloop: do
       integer :: j,k
       integer :: i,ix
       real :: tmp0,tmp1,tmp2,tmp3,tmp4,tmp5
+      real :: expf, expfm1, expfp1, expfm2, expfp2
       logical :: ldiv_4th
 !
       real, dimension (nx), optional, intent(out) :: fimm12_l,fimm12_r,fimm1
@@ -8220,26 +8191,40 @@ nameloop: do
       select case (k)
         case(1)
           if (j==ilnrho .or. j==ilnTT) then
+            expf   = exp(f(l1-1,m,n,j))
+            expfp1 = exp(f(l1,m,n,j))
             do i=l1-2,l2+2
-              tmp1=exp(f(i,m,n,j)) -exp(f(i-1,m,n,j))
-              tmp2=exp(f(i+1,m,n,j))-exp(f(i,m,n,j))
+              expfm1=expf
+              expf=expfp1
+              expfp1 = exp(f(i+1,m,n,j))
+              tmp1=expf-expfm1
+              tmp2=expfp1-expf
               delfx(i) = minmod_alt(tmp1,tmp2)
             enddo
+            expfm1 = exp(f(l1-2,m,n,j))
+            expf   = exp(f(l1-1,m,n,j))
+            expfp1 = exp(f(l1,m,n,j))
+            expfp2 = exp(f(l1+1,m,n,j))
             do i=l1,l2
               ix=i-nghost
-              fim12_l(ix) = exp(f(i-1,m,n,j))+delfx(i-1)
-              fim12_r(ix) = exp(f(i,m,n,j))-delfx(i)
-              fip12_l(ix) = exp(f(i,m,n,j))+delfx(i)
-              fip12_r(ix) = exp(f(i+1,m,n,j))-delfx(i+1)
-              fim1(ix) = exp(f(i-1,m,n,j))
-              fip1(ix) = exp(f(i+1,m,n,j))
+              expfm2 = expfm1
+              expfm1 = expf
+              expf   = expfp1
+              expfp1 = expfp2
+              expfp2 = exp(f(i+2,m,n,j))
+              fim12_l(ix) = expfm1+delfx(i-1)
+              fim12_r(ix) = expf  -delfx(i)
+              fip12_l(ix) = expf  +delfx(i)
+              fip12_r(ix) = expfp1-delfx(i+1)
+              fim1(ix) = expfm1
+              fip1(ix) = expfp1
               if (ldiv_4th) then
-                fimm12_l(ix) = exp(f(i-2,m,n,j))+delfx(i-2)
-                fimm12_r(ix) = exp(f(i-1,m,n,j))-delfx(i-1)
-                fipp12_l(ix) = exp(f(i+1,m,n,j))+delfx(i+1)
-                fipp12_r(ix) = exp(f(i+2,m,n,j))-delfx(i+2)
-                fimm1(ix) = exp(f(i-2,m,n,j))
-                fipp1(ix) = exp(f(i+2,m,n,j))
+                fimm12_l(ix) = expfm2+delfx(i-2)
+                fimm12_r(ix) = expfm1-delfx(i-1)
+                fipp12_l(ix) = expfp1+delfx(i+1)
+                fipp12_r(ix) = expfp2-delfx(i+2)
+                fimm1(ix) = expfm2
+                fipp1(ix) = expfp2
               endif
             enddo
           else
@@ -8272,36 +8257,46 @@ nameloop: do
         case(2)
           if (j==ilnrho .or. j==ilnTT) then
             do i=l1,l2
+              expfm2 = exp(f(i,m-2,n,j))
+              expfm1 = exp(f(i,m-1,n,j))
+              expf   = exp(f(i,m,n,j))
+              expfp1 = exp(f(i,m+1,n,j))
+              expfp2 = exp(f(i,m+2,n,j))
               ix=i-nghost
-              tmp1=exp(f(i,m-1,n,j))-exp(f(i,m-2,n,j))
-              tmp2=exp(f(i,m,n,j))  -exp(f(i,m-1,n,j))
-              tmp3=exp(f(i,m+1,n,j))-exp(f(i,m,n,j))
-              tmp4=exp(f(i,m+2,n,j))-exp(f(i,m+1,n,j))
+              tmp1=expfm1-expfm2
+              tmp2=expf  -expfm1
+              tmp3=expfp1-expf
+              tmp4=expfp2-expfp1
               delfym1(ix) = minmod_alt(tmp1,tmp2)
               delfy(ix)   = minmod_alt(tmp2,tmp3)
               delfyp1(ix) = minmod_alt(tmp3,tmp4)
-              if(ldiv_4th) then
-                tmp0=exp(f(i,m-2,n,j))-exp(f(i,m-3,n,j))
-                tmp5=exp(f(i,m+3,n,j))-exp(f(i,m+2,n,j))
+              if (ldiv_4th) then
+                tmp0=expfm2-exp(f(i,m-3,n,j))
+                tmp5=exp(f(i,m+3,n,j))-expfp2
                 delfymm1(ix)= minmod_alt(tmp0,tmp1)
                 delfypp1(ix)= minmod_alt(tmp4,tmp5)
               endif
             enddo
             do i=l1,l2
               ix=i-nghost
-              fim12_l(ix) = exp(f(i,m-1,n,j))+delfym1(ix)
-              fim12_r(ix) = exp(f(i,m,n,j))  -delfy(ix)
-              fip12_l(ix) = exp(f(i,m,n,j))  +delfy(ix)
-              fip12_r(ix) = exp(f(i,m+1,n,j))-delfyp1(ix)
-              fim1(ix) = exp(f(i,m-1,n,j))
-              fip1(ix) = exp(f(i,m+1,n,j))
-              if(ldiv_4th) then
-                fimm12_l(ix) = exp(f(i,m-2,n,j))+delfymm1(ix)
-                fimm12_r(ix) = exp(f(i,m-1,n,j))  -delfym1(ix)
-                fipp12_l(ix) = exp(f(i,m+1,n,j)) +delfyp1(ix)
-                fipp12_r(ix) = exp(f(i,m+2,n,j))-delfypp1(ix)
-                fimm1(ix) = exp(f(i,m-2,n,j))
-                fipp1(ix) = exp(f(i,m+2,n,j))
+              expfm1 = exp(f(i,m-1,n,j))
+              expf   = exp(f(i,m,n,j))
+              expfp1 = exp(f(i,m+1,n,j))
+              fim12_l(ix) = expfm1+delfym1(ix)
+              fim12_r(ix) = expf  -delfy(ix)
+              fip12_l(ix) = expf  +delfy(ix)
+              fip12_r(ix) = expfp1-delfyp1(ix)
+              fim1(ix) = expfm1
+              fip1(ix) = expfp1
+              if (ldiv_4th) then
+                expfm2 = exp(f(i,m-2,n,j))
+                expfp2 = exp(f(i,m+2,n,j))
+                fimm12_l(ix) = expfm2+delfymm1(ix)
+                fimm12_r(ix) = expfm1-delfym1(ix)
+                fipp12_l(ix) = expfp1+delfyp1(ix)
+                fipp12_r(ix) = expfp2-delfypp1(ix)
+                fimm1(ix) = expfm2
+                fipp1(ix) = expfp2
               endif
             enddo
           else
@@ -8314,7 +8309,7 @@ nameloop: do
               delfym1(ix) = minmod_alt(tmp1,tmp2)
               delfy(ix) = minmod_alt(tmp2,tmp3)
               delfyp1(ix) = minmod_alt(tmp3,tmp4)
-              if(ldiv_4th) then
+              if (ldiv_4th) then
                 tmp0=f(i,m-2,n,j)-f(i,m-3,n,j)
                 tmp5=f(i,m+3,n,j)-f(i,m+2,n,j)
                 delfymm1(ix) = minmod_alt(tmp0,tmp1)
@@ -8329,7 +8324,7 @@ nameloop: do
               fip12_r(ix) = f(i,m+1,n,j)-delfyp1(ix)
               fim1(ix) = f(i,m-1,n,j)
               fip1(ix) = f(i,m+1,n,j)
-              if(ldiv_4th) then
+              if (ldiv_4th) then
                 fimm12_l(ix) = f(i,m-2,n,j)+delfymm1(ix)
                 fimm12_r(ix) = f(i,m-1,n,j)-delfym1(ix)
                 fipp12_l(ix) = f(i,m+1,n,j)+delfyp1(ix)
@@ -8346,35 +8341,45 @@ nameloop: do
           if (j==ilnrho .or. j==ilnTT) then
             do i=l1,l2
               ix=i-nghost
-              tmp1=exp(f(i,m,n-1,j))-exp(f(i,m,n-2,j))
-              tmp2=exp(f(i,m,n,j))  -exp(f(i,m,n-1,j))
-              tmp3=exp(f(i,m,n+1,j))-exp(f(i,m,n,j))
-              tmp4=exp(f(i,m,n+2,j))-exp(f(i,m,n+1,j))
+              expfm2 = exp(f(i,m,n-2,j))
+              expfm1 = exp(f(i,m,n-1,j))
+              expf   = exp(f(i,m,n,j))
+              expfp1 = exp(f(i,m,n+1,j))
+              expfp2 = exp(f(i,m,n+2,j))
+              tmp1=expfm1-expfm2
+              tmp2=expf  -expfm1
+              tmp3=expfp1-expf
+              tmp4=expfp2-expfp1
               delfzm1(ix) = minmod_alt(tmp1,tmp2)
               delfz(ix) = minmod_alt(tmp2,tmp3)
               delfzp1(ix) = minmod_alt(tmp3,tmp4)
-              if(ldiv_4th) then
-                tmp0=exp(f(i,m,n-2,j))-exp(f(i,m,n-3,j))
-                tmp5=exp(f(i,m,n+3,j))-exp(f(i,m,n+2,j))
+              if (ldiv_4th) then
+                tmp0=expfm2-exp(f(i,m,n-3,j))
+                tmp5=exp(f(i,m,n+3,j))-expfp2
                 delfzmm1(ix) = minmod_alt(tmp0,tmp1)
                 delfzpp1(ix) = minmod_alt(tmp4,tmp5)
               endif
             enddo
             do i=l1,l2
               ix=i-nghost
-              fim12_l(ix) = exp(f(i,m,n-1,j))+delfzm1(ix)
-              fim12_r(ix) = exp(f(i,m,n,j))-delfz(ix)
-              fip12_l(ix) = exp(f(i,m,n,j))+delfz(ix)
-              fip12_r(ix) = exp(f(i,m,n+1,j))-delfzp1(ix)
-              fim1(ix) = exp(f(i,m,n-1,j))
-              fip1(ix) = exp(f(i,m,n+1,j))
-              if(ldiv_4th) then
-                fimm12_l(ix) = exp(f(i,m,n-2,j))+delfzmm1(ix)
-                fimm12_r(ix) = exp(f(i,m,n-1,j))-delfzm1(ix)
-                fipp12_l(ix) = exp(f(i,m,n+1,j))+delfzp1(ix)
-                fipp12_r(ix) = exp(f(i,m,n+2,j))-delfzpp1(ix)
-                fimm1(ix) = exp(f(i,m,n-2,j))
-                fipp1(ix) = exp(f(i,m,n+2,j))
+              expfm1 = exp(f(i,m,n-1,j))
+              expf   = exp(f(i,m,n,j))
+              expfp1 = exp(f(i,m,n+1,j))
+              fim12_l(ix) = expfm1+delfzm1(ix)
+              fim12_r(ix) = expf-delfz(ix)
+              fip12_l(ix) = expf+delfz(ix)
+              fip12_r(ix) = expfp1-delfzp1(ix)
+              fim1(ix) = expfm1
+              fip1(ix) = expfp1
+              if (ldiv_4th) then
+                expfm2 = exp(f(i,m,n-2,j))
+                expfp2 = exp(f(i,m,n+2,j))
+                fimm12_l(ix) = expfm2+delfzmm1(ix)
+                fimm12_r(ix) = expfm1-delfzm1(ix)
+                fipp12_l(ix) = expfp1+delfzp1(ix)
+                fipp12_r(ix) = expfp2-delfzpp1(ix)
+                fimm1(ix) = expfm2
+                fipp1(ix) = expfp2
               endif
             enddo
           else
@@ -8387,7 +8392,7 @@ nameloop: do
               delfzm1(ix) = minmod_alt(tmp1,tmp2)
               delfz(ix)   = minmod_alt(tmp2,tmp3)
               delfzp1(ix) = minmod_alt(tmp3,tmp4)
-              if(ldiv_4th) then
+              if (ldiv_4th) then
                 tmp0=f(i,m,n-2,j)-f(i,m,n-3,j)
                 tmp5=f(i,m,n+3,j)-f(i,m,n+2,j)
                 delfzpp1(ix) = minmod_alt(tmp4,tmp5)
@@ -8402,7 +8407,7 @@ nameloop: do
               fip12_r(ix) = f(i,m,n+1,j)-delfzp1(ix)
               fim1(ix) = f(i,m,n-1,j)
               fip1(ix) = f(i,m,n+1,j)
-              if(ldiv_4th) then
+              if (ldiv_4th) then
                 fimm12_l(ix) = f(i,m,n-2,j)+delfzmm1(ix)
                 fimm12_r(ix) = f(i,m,n-1,j)-delfzm1(ix)
                 fipp12_l(ix) = f(i,m,n+1,j)+delfzp1(ix)
@@ -9148,7 +9153,8 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
       real :: lgt_current
       real :: f, f1, f2
       integer, save :: it_called=0
-      integer, save :: index_on_gpu = 0
+      integer, save :: Hp_index_on_gpu = -1
+      integer, save :: appa_index_on_gpu = -1
 !
 ! alberto: t_ini corresponds to the conformal time computed using a_0 = 1 at T_* = 100 GeV, g_S = 103 (EWPT)
 !--   real :: t_ini=60549
@@ -9308,11 +9314,11 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
         wweos_target=f
         if (ip<14) print*,'AXEL: f1 < ww < f2 ? ',f1, wweos_target, f2
 
-        if(lgpu .and. Hp_target_previous /= Hp_target) then
-          call update_on_gpu(index_on_gpu,'AC_hp_target__mod__cdata',Hp_target)
+        if (lgpu .and. Hp_target_previous /= Hp_target) then
+          call update_on_gpu(Hp_index_on_gpu,'AC_hp_target__mod__cdata',Hp_target)
         endif
-        if(lgpu .and. appa_target_previous /= appa_target) then
-          call update_on_gpu(index_on_gpu,'AC_appa_target__mod__cdata',Hp_target)
+        if (lgpu .and. appa_target_previous /= appa_target) then
+          call update_on_gpu(appa_index_on_gpu,'AC_appa_target__mod__cdata',appa_target)
         endif
       endif
 !
@@ -9330,21 +9336,26 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
     endfunction get_dxyzs
 !***********************************************************************    
     subroutine check_for_nans_globally(f,caller)
+
       use Mpicomm, only: mpireduce_max_int
       use General, only: notanumber
+
       real, dimension(mx,my,mz,mfarray) :: f
       character (len=*), optional :: caller
       integer :: has_nan_local,has_nan_global
 
-      has_nan_local = merge(1,0,notanumber(f))
+      !isnan is written out since we cannot always depend on it
+      has_nan_local = merge(1,0,any(f > huge_real .or. f /= f))
       call mpireduce_max_int(has_nan_local,has_nan_global)
-      if(has_nan_global == 1) then
-              if(.not. present(caller)) then
-                call fatal_error('check_for_nans_globally','Found nans!!')
-              else
-                call fatal_error('check_for_nans_globally','Found nans: '//caller//' !!')
-              endif
+
+      if (has_nan_global == 1) then
+        if (.not. present(caller)) then
+          call fatal_error('check_for_nans_globally','found nans')
+        else
+          call fatal_error('check_for_nans_globally','found nans: '//trim(caller))
+        endif
       endif
+
     endsubroutine check_for_nans_globally
 !***********************************************************************    
 endmodule Sub

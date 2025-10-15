@@ -9,7 +9,7 @@ module HDF5_IO
   use General, only: loptest, itoa, numeric_precision, keep_compiler_quiet
   use HDF5
   use Messages, only: fatal_error, warning
-  use Mpicomm, only: lroot, mpiscan_int, mpibcast_int
+  use Mpicomm, only: mpiscan_int, mpibcast_int
 !
   implicit none
 !

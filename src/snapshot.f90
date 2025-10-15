@@ -421,8 +421,6 @@ module Snapshot
 !
       use General, only: keep_compiler_quiet
 
-      use General, only: keep_compiler_quiet
-
       character(LEN=fnlen) :: file
       real, dimension(:), intent(OUT) :: snaptimes   ! allocatable
       
@@ -442,7 +440,8 @@ module Snapshot
       use IO, only: input_snap, input_snap_finalize
       use Persist, only: input_persistent
       use SharedVariables, only: get_shared_variable
-      use File_io, only: file_exists
+      use File_io, only: file_exists, delete_file
+      use General, only: touch_file
       use Syscalls, only: memusage
 !
 !  The dimension msnap can either be mfarray (for f-array in run.f90)
@@ -471,6 +470,7 @@ module Snapshot
       endif
       file = chsnap
       if (lbackup_snap.and..not. file_exists(trim(directory_snap)//'/'//trim(chsnap))) file = trim(chsnap)//'.bck'
+      if (lroot) call touch_file(trim(workdir)//'/READING')
 !
 !  No need to read maux variables as they will be calculated
 !  at the first time step -- even if lwrite_aux is set.
@@ -693,6 +693,7 @@ module Snapshot
         if (lpersist) call input_persistent(file)
         call input_snap_finalize
       endif
+      if (lroot) call delete_file(trim(workdir)//'/READING')
 !
 !  Read data using lnrho, and now convert to rho.
 !  This assumes that one is now using ldensity_nolog=T.

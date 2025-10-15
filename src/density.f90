@@ -331,7 +331,7 @@ module Density
           call farray_register_auxiliary('sld_char',isld_char,communicated=.true.,on_gpu=lgpu)
           if (lroot) write(15,*) 'sld_char = fltarr(mx,my,mz)*one'
           aux_var(aux_count)=',sld_char'
-          if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=trim(aux_var(aux_count))//' $'
+          if (naux+naux_com < maux+maux_com) aux_var(aux_count)=trim(aux_var(aux_count))//' $'
           aux_count=aux_count+1
         endif
       endif
@@ -347,7 +347,7 @@ module Density
         endif
         if (lroot) write(15,*) 'rho_flucz = fltarr(mx,my,mz)*one'
         aux_var(aux_count)=',rho_flucz'
-        if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=trim(aux_var(aux_count))//' $'
+        if (naux+naux_com < maux+maux_com) aux_var(aux_count)=trim(aux_var(aux_count))//' $'
         aux_count=aux_count+1
       endif
 !
@@ -1066,7 +1066,7 @@ module Density
       real :: lnrhoint,cs2int,pot0
       real :: pot_ext,lnrho_ext,cs2_ext,tmp1,k_j2
       real :: zbot,ztop,haut
-      real, dimension (nx) :: r_mn,lnrho,TT,ss
+      real, dimension (nx) :: r_mn,TT
       real, pointer :: gravx, rhs_poisson_const,fac_cs,cs2cool
       integer, pointer :: isothmid, isothtop
       complex :: omega_jeans
@@ -2307,6 +2307,10 @@ module Density
           p%ekin=0.5*p%rho*p%u2
         endif
       endif
+! Needed to get right maxadvec for diagnostics
+      if (lmultithread .and. ldiff_hyper3_mesh .and. idiag_dtv /= 0) then
+              call calc_advec_hypermesh
+      endif
 !
 !  Dummy pencils.
 !
@@ -2567,6 +2571,22 @@ module Density
 !
     endsubroutine density_after_boundary
 !***********************************************************************
+    subroutine calc_advec_hypermesh
+!
+!   14-oct-25/TP: carved from dlnrho_dt 
+!
+      real, dimension(nx) :: advec_hypermesh_rho
+      if (lupdate_courant_dt) then
+        if (ldynamical_diffusion) then
+          diffus_diffrho3 = diffus_diffrho3 + diffrho_hyper3_mesh
+          advec_hypermesh_rho=0.
+        else
+          advec_hypermesh_rho=diffrho_hyper3_mesh*pi5_1*sqrt(dxyz_2)
+        endif
+        advec2_hypermesh=advec2_hypermesh+advec_hypermesh_rho**2
+      endif
+    endsubroutine calc_advec_hypermesh
+!***********************************************************************
     subroutine dlnrho_dt(f,df,p)
 !
 !  Continuity equation.
@@ -2597,7 +2617,7 @@ module Density
       real :: gamma
       real, dimension (nx) :: tmp
       real, dimension (nx,3) :: tmpv
-      real, dimension (nx) :: density_rhs, density_rhs_tmp, advec_hypermesh_rho
+      real, dimension (nx) :: density_rhs, density_rhs_tmp
       integer :: j
       logical :: ldt_up
       real :: cs201=1., cs20_corr=1.
@@ -2913,15 +2933,7 @@ module Density
             !fdiff = fdiff + diffrho_hyper3_mesh*pi5_1/60.*tmp/dt
           endif
         enddo
-        if (ldt_up) then
-          if (ldynamical_diffusion) then
-            diffus_diffrho3 = diffus_diffrho3 + diffrho_hyper3_mesh
-            advec_hypermesh_rho=0.
-          else
-            advec_hypermesh_rho=diffrho_hyper3_mesh*pi5_1*sqrt(dxyz_2)
-          endif
-          advec2_hypermesh=advec2_hypermesh+advec_hypermesh_rho**2
-        endif
+        call calc_advec_hypermesh
         if (headtt) print*,'dlnrho_dt: diffrho_hyper3_mesh=', diffrho_hyper3_mesh
       endif
 !

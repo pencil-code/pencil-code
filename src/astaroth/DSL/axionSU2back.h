@@ -204,10 +204,6 @@ Kernel calc_axion_integral(real AC_t__mod__cdata){
       tleff2km=(4.*pi*(AC_k__mod__axionsu2back[vertexIdx.x-NGHOST_VAL]*AC_k__mod__axionsu2back[vertexIdx.x-NGHOST_VAL]*AC_k__mod__axionsu2back[vertexIdx.x-NGHOST_VAL])*AC_dlnk__mod__axionsu2back)*tleff2*(AC_k__mod__axionsu2back[vertexIdx.x-NGHOST_VAL]/a)
       tleff2m=(4.*pi*(AC_k__mod__axionsu2back[vertexIdx.x-NGHOST_VAL]*AC_k__mod__axionsu2back[vertexIdx.x-NGHOST_VAL]*AC_k__mod__axionsu2back[vertexIdx.x-NGHOST_VAL])*AC_dlnk__mod__axionsu2back)*tleff2
       grand__mod__axionsu2back=grand__mod__axionsu2back+(4.*pi*(AC_k__mod__axionsu2back[vertexIdx.x-NGHOST_VAL]*AC_k__mod__axionsu2back[vertexIdx.x-NGHOST_VAL]*AC_k__mod__axionsu2back[vertexIdx.x-NGHOST_VAL])*AC_dlnk__mod__axionsu2back)*(xi*h__mod__axionsu2back+AC_k__mod__axionsu2back[vertexIdx.x-NGHOST_VAL]/a)*tleff2*(+   AC_g__mod__axionsu2back/(3.*(a*a)))/(twopi*twopi*twopi)
-      if(vertexIdx.x == 1) print("Q: %.14e\n",AC_f_ode__mod__cdata[AC_iaxi_q__mod__axionsu2back-1]);
-      if(vertexIdx.x == 1) print("Grand: %.14e\n",grand__mod__axionsu2back);
-      if(vertexIdx.x == 1) print("Treff2: %.14e\n",treff2);
-      if(vertexIdx.x == 1) print("Tleff2: %.14e\n",tleff2);
       grant__mod__axionsu2back=grant__mod__axionsu2back+(4.*pi*(AC_k__mod__axionsu2back[vertexIdx.x-NGHOST_VAL]*AC_k__mod__axionsu2back[vertexIdx.x-NGHOST_VAL]*AC_k__mod__axionsu2back[vertexIdx.x-NGHOST_VAL])*AC_dlnk__mod__axionsu2back)*(mq*h__mod__axionsu2back+AC_k__mod__axionsu2back[vertexIdx.x-NGHOST_VAL]/a)*tleff2*(-AC_lamf__mod__axionsu2back/(2.*(a*a)))/(twopi*twopi*twopi)
     }
     if (AC_lconf_time__mod__axionsu2back) {

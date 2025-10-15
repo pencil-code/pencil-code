@@ -700,6 +700,9 @@ module Special
       call keep_compiler_quiet(f_ode)
     endsubroutine     calc_ode_diagnostics_special 
 !***********************************************************************
+    subroutine load_variables_to_gpu_special
+    endsubroutine load_variables_to_gpu_special
+!***********************************************************************
     subroutine pushpars2c(p_par)
 
       integer, parameter :: n_pars=0

@@ -14,7 +14,6 @@
 !***************************************************************
 module Special
 !
-  use Cparam
   use Cdata
   use Initcond
   use General, only: keep_compiler_quiet

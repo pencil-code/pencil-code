@@ -200,7 +200,7 @@ endsubroutine helper_loop
     use Io,              only: output_globals
 
     real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-    integer :: isave_shift=0, i
+    integer :: isave_shift=0
     real :: tvar1
 !
 !  Setting ialive=1 can be useful on flaky machines!
@@ -1375,8 +1375,8 @@ endsubroutine helper_loop
     call copy_addr(lisotropic_advection,p_par(116)) ! bool
     call copy_addr(ldynamical_diffusion,p_par(117)) ! bool
     call copy_addr(lstratz,p_par(118)) ! bool
-    call copy_addr(x,p_par(119)) ! (mx)
     
+    call copy_addr(x,p_par(119)) ! (mx)
     call copy_addr(dx_1,p_par(120)) ! (mx)
     call copy_addr(dvol_x,p_par(121)) ! (mx)
     call copy_addr(y,p_par(122)) ! (my)
@@ -1423,6 +1423,10 @@ endsubroutine helper_loop
     call copy_addr(dx,p_par(167))
     call copy_addr(dy,p_par(168))
     call copy_addr(dz,p_par(169))
+    call copy_addr(x12,p_par(170))      !  (mx)
+    call copy_addr(y12,p_par(171))      !  (my)
+    call copy_addr(sinth12,p_par(172))  !  (my)
+    call copy_addr(z12,p_par(173))      !  (mz)
     
     call copy_addr(ldebug,p_par(300)) ! bool
     call copy_addr(ltest_bcs,p_par(337)) ! bool
@@ -1506,7 +1510,6 @@ endsubroutine helper_loop
     call copy_addr(lcpu_timestep_on_gpu,p_par(1177)) ! bool
     call copy_addr(lac_sparse_autotuning,p_par(1178)) ! bool
     call copy_addr(lskip_rtime_compilation,p_par(1179)) ! bool
-    call copy_addr(lmultithread,p_par(1180)) ! bool
     call copy_addr(lread_all_vars_from_device,p_par(1181)) ! bool
     
     call copy_addr_dble(sigma_thomson,p_par(1185))
@@ -1671,6 +1674,8 @@ endsubroutine helper_loop
     call copy_addr(dz1_scalar,p_par(1368))
     call copy_addr(y0,p_par(1369))
     call copy_addr(nzgrid_eff,p_par(1370)) ! int
+    call copy_addr(isld_char,p_par(1371)) ! int
+    call copy_addr(idiag_dtv,p_par(1372)) ! int
     
     endsubroutine pushpars2c
 !***********************************************************************

@@ -16,7 +16,7 @@
 !***************************************************************
 module Dustdensity
 !
-  use Cdata
+  use Cparam
   use General, only: keep_compiler_quiet
   use Messages
 !
@@ -28,6 +28,8 @@ module Dustdensity
 !***********************************************************************
     subroutine register_dustdensity
 !
+      use Cdata, only: lroot
+
       if (lroot) call svn_id( &
            "$Id$")
 !
@@ -37,7 +39,6 @@ module Dustdensity
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      nd_spec=.false.
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_dustdensity
@@ -64,8 +65,6 @@ module Dustdensity
 !***********************************************************************
     subroutine dustdensity_after_boundary(f)
 !
-      use General, only: keep_compiler_quiet
-
       real, dimension (mx,my,mz,mfarray) :: f
 
       call keep_compiler_quiet(f)
@@ -74,8 +73,6 @@ module Dustdensity
 !***********************************************************************
     subroutine dustdensity_before_boundary(f)
 !
-      use General, only: keep_compiler_quiet
-
       real, dimension (mx,my,mz,mfarray) :: f
 
       call keep_compiler_quiet(f)
@@ -178,9 +175,8 @@ module Dustdensity
     subroutine pushpars2c(p_par)
 
     use Syscalls, only: copy_addr
-    use General , only: string_to_enum
 
-    integer, parameter :: n_pars=10
+    integer, parameter :: n_pars=1
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     logical, save :: lcondensing_species=.false.

@@ -1596,6 +1596,7 @@ module Dustdensity
 !  (Probably) just temporarily for debugging a division-by-zero problem.
 !
 
+        !TP: cannot do any across pencil on GPU
         if (any(p%ppsat==0.) .and. any(p%ppsf(:,:)==0.)) then
           if (.not.lpencil_check_at_work) then
             write(0,*) 'p%ppsat = ', minval(p%ppsat)
@@ -3345,6 +3346,8 @@ module Dustdensity
 !
         if (.not.lsemi_chemistry) then
           do k=1,ndustspec
+            !TP: cannot do any across pencils on GPU
+            !TP: writing this as 1,nx loop would work
             if (any(p%ppsat==0.0) .or. (dsize(k)==0.)) &
               call fatal_error('droplet_redistr','p%pp or dsize has zero value(s)')
           enddo

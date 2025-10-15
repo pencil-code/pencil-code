@@ -1139,6 +1139,7 @@ module Dustvelocity
 !  Short stopping time approximation.
 !  Calculated from master equation d(wx-ux)/dt = A + B*(wx-ux) = 0.
 !
+        !TP: any across pencil cannot be translated to the GPU
         if (ldustvelocity_shorttausd .and. any(tausd1(:,k)>=shorttaus1limit)) then
           call short_stopping_time_approximation(f,df,p,k)
         else

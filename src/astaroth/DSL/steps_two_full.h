@@ -59,10 +59,10 @@ ComputeSteps AC_before_boundary_steps(boundconds)
 	calc_axion_integral(AC_t)
 	prep_ode_right()
 	calc_poly_fr()
+	sld_calc_char_speed(AC_step_num)
 }
 ComputeSteps AC_before_boundary_steps_including_halos(boundconds)
 {
-	sld_calc_char_speed(AC_step_num)
 	ioncalc()
 }
 

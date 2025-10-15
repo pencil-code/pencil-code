@@ -1127,7 +1127,7 @@ module Magnetic
 !
   real, dimension(nx) :: eta_total=0.,eta_smag=0.,Fmax,dAmax,ssmax, &
                          diffus_eta=0.,diffus_eta2=0.,diffus_eta3=0.
-  !$omp threadprivate(eta_total)
+  !$omp threadprivate(eta_total,diffus_eta)
   real, dimension(nx,3) :: fres,forcing_rhs
   real, dimension(nzgrid) :: eta_zgrid=0.0
   real, dimension(mz) :: feta_ztdep=0.0
@@ -2217,7 +2217,7 @@ module Magnetic
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      real, dimension (mz) :: tmp
+      real, dimension (nz) :: tmp
       real, dimension (nx,3) :: bb
       real, dimension (nx) :: b2,fact,cs2,lnrho_old,ssold,cs2old,x1,x2
       real, dimension (nx) :: beq2_pencil, prof, tmpx
@@ -2262,11 +2262,14 @@ module Magnetic
         case ('gaussian-noise-rprof')
           call gaunoise_rprof(amplaa(j),f,iax,iaz,rnoise_int,rnoise_ext)
         case ('gaussian-noise-zprof')
-          tmp=amplaa(1)*0.5*(tanh((z-z1)/0.05)-tanh((z-z2)/0.05))
+          !tmp=amplaa(1)*0.5*(tanh((z-z1)/0.05)-tanh((z-z2)/0.05))
+          !15-10-25/axel: replaced input parameters, e.g., z1_aa=-.5, z2_aa=.5, widthaa=.1
+          tmp=amplaa(1)*.5*(tanh((z(n1:n2)-z1_aa)/widthaa)-tanh((z(n1:n2)-z2_aa)/widthaa))
           call gaunoise(tmp,f,iax,iaz)
         case ('gaussian-noise-zprof2')
-          tmp=amplaa(1)*0.5*(tanh((z-znoise_int)/0.05)-tanh((z-znoise_ext)/0.05))
-          call gaunoise(tmp,f,iax,iaz)
+          call fatal_error("init_aa","use gaussian-noise-zprof with z1_aa, z2_aa, and widthaa")
+          !tmp=amplaa(1)*.5*(tanh((z(n1:n2)-znoise_int)/0.05)-tanh((z(n1:n2)-znoise_ext)/0.05))
+          !call gaunoise(tmp,f,iax,iaz)
 !
 !  ABC field (includes Beltrami fields when only one coefficient /= 0)
 !
@@ -3713,7 +3716,7 @@ module Magnetic
       real, dimension(nx,3) :: aamx,bb,jj
       real, dimension(ny,3) :: aamy
       real, dimension(nx,3,3) :: aij, bij
-      real, dimension(nx) :: rho1, b2, tmp, tmp2
+      real, dimension(nx) :: rho1, b2, tmp
       real, dimension(3) :: B_ext
 !
 !  Compute mean field (xy verage) for each component. Do not include the ghost zones.
@@ -3841,8 +3844,8 @@ module Magnetic
 !
 !  Find bb and jj if as communicated auxiliary.
 !
-      getbb: if (lbb_as_comaux .or. ljj_as_comaux .or. &
-                 lalfven_as_aux.or. (lslope_limit_diff .and. llast)) then
+      if (lbb_as_comaux .or. ljj_as_comaux .or. &
+          lalfven_as_aux.or. (lslope_limit_diff .and. llast)) then
         call zero_ghosts(f, iax, iaz)       !MR: needed given the next statement?
         call update_ghosts(f, iax, iaz)     !MR: only the "real" BCs matter here
 
@@ -3910,16 +3913,12 @@ module Magnetic
             endif
             if (lalfven_as_aux) f(l1:l2,m,n,ialfven)= tmp
             if (lslope_limit_diff .and. llast) then
-              if (lboris_correction .and. va2max_boris>0) then
-                tmp2=tmp*((1+(tmp/va2max_boris)**2.)**(-1.0/2.0))
-                f(l1:l2,m,n,isld_char)=f(l1:l2,m,n,isld_char)+w_sldchar_mag*sqrt(tmp2)
-              else
-                f(l1:l2,m,n,isld_char)=f(l1:l2,m,n,isld_char)+w_sldchar_mag*sqrt(tmp)
-              endif
+              if (lboris_correction .and. va2max_boris>0) tmp=tmp/sqrt(1.+(tmp/va2max_boris)**2.)
+              f(l1:l2,m,n,isld_char)=f(l1:l2,m,n,isld_char)+w_sldchar_mag*sqrt(tmp)
            endif
           endif
         enddo  ! mn_loop
-      endif getbb
+      endif    ! if (lbb_as_comaux ...
 !
 !  Possibility of calculating the magnetic helicity correction for the Coulomb gauge.
 !  Here, no minus sign has been included, so A_Coulomb = A_Weyl - gLambda, and
@@ -4940,6 +4939,17 @@ module Magnetic
         aa_xyaver(:,j)=sum(f(l1:l2,m1:m2,n,j+iax-1))/nxy
       enddo
     endsubroutine calc_aaxyaver
+!***********************************************************************
+    subroutine calc_eta_total(p)
+      type(pencil_case), intent(IN) :: p
+      real, dimension(nx)   :: eta_mn
+      real, dimension(nx,3) :: geta
+      eta_total = 0.0
+      if (lresi_shell) then
+        call eta_shell(p,eta_mn,geta)
+        eta_total = eta_total + eta_mn
+      endif
+    endsubroutine calc_eta_total
 !***********************************************************************
     subroutine daa_dt(f,df,p)
 !
@@ -6697,6 +6707,12 @@ print*,'AXEL2: should not be here (eta) ... '
 !
       call integrate_mn_name(p%ab,idiag_ab_int)
       call integrate_mn_name(p%jb,idiag_jb_int)
+
+      if (lmultithread .and. (idiag_epsM /= 0 .or. idiag_epsM2 /= 0 &
+          .or. idiag_epsM3 /= 0 .or. idiag_epsM4 /= 0 .or. idiag_dteta /= 0)) then
+          call calc_eta_total(p)
+          if(idiag_dteta /= 0) diffus_eta =eta_total *dxyz_2
+      endif
 !
 ! <J.B>
 !
@@ -6707,12 +6723,12 @@ print*,'AXEL2: should not be here (eta) ... '
       call sum_mn_name(p%j2,idiag_jrms,lsqrt=.true.)
       call sum_mn_name(p%hj2,idiag_hjrms,lsqrt=.true.)
       call max_mn_name(p%j2,idiag_jmax,lsqrt=.true.)
+      if (ldt) then
+        if (idiag_dteta/=0)  call max_mn_name(diffus_eta/cdtv,idiag_dteta,l_dt=.true.)
+        if (idiag_dteta3/=0)  call max_mn_name(diffus_eta3/cdtv3,idiag_dteta3,l_dt=.true.)
+      endif
       if (.not.lmultithread) then
         if (idiag_epsM_LES/=0) call sum_mn_name(eta_smag*p%j2,idiag_epsM_LES)
-        if (ldt) then
-          if (idiag_dteta/=0)  call max_mn_name(diffus_eta/cdtv,idiag_dteta,l_dt=.true.)
-          if (idiag_dteta3/=0)  call max_mn_name(diffus_eta3/cdtv3,idiag_dteta3,l_dt=.true.)
-        endif
       endif
       call sum_mn_name(p%cosjb,idiag_cosjbm)
       call sum_mn_name(p%coshjb,idiag_coshjbm)
@@ -6737,12 +6753,11 @@ print*,'AXEL2: should not be here (eta) ... '
 !
 !  Not correct for hyperresistivity:
 !
-      if (.not.lmultithread) then
-        if (idiag_epsM/=0) call sum_mn_name(eta_total*mu0*p%j2,idiag_epsM)
-        if (idiag_epsM2/=0) call sum_mn_name((eta_total*mu0*p%j2)**2,idiag_epsM2)
-        if (idiag_epsM3/=0) call sum_mn_name((eta_total*mu0*p%j2)**3,idiag_epsM3)
-        if (idiag_epsM4/=0) call sum_mn_name((eta_total*mu0*p%j2)**4,idiag_epsM4)
-      endif
+      
+      if (idiag_epsM/=0) call sum_mn_name(eta_total*mu0*p%j2,idiag_epsM)
+      if (idiag_epsM2/=0) call sum_mn_name((eta_total*mu0*p%j2)**2,idiag_epsM2)
+      if (idiag_epsM3/=0) call sum_mn_name((eta_total*mu0*p%j2)**3,idiag_epsM3)
+      if (idiag_epsM4/=0) call sum_mn_name((eta_total*mu0*p%j2)**4,idiag_epsM4)
 !
 !  Heating by ion-neutrals friction.
 !

@@ -195,6 +195,13 @@ endif
 
 DLL_FFLAGS ?= -fPIC
 DLL_LDFLAGS ?= -shared
+
+# useful shortcuts
+define newline
+
+
+endef
+
 #
 # Overwrite settings that are local to each run directory.
 #
@@ -564,7 +571,7 @@ ifneq ($(GPU),nogpu)
 #
     LD_LIB_PATH_OK := $(shell (echo $(LD_LIBRARY_PATH) | grep 'src/astaroth') )
     ifeq ($(LD_LIB_PATH_OK),)
-      $(warning Environment variable LD_LIBRARY_PATH doesn't contain paths "src/astaroth" etc!: $(LD_LIBRARY_PATH))
+      $(warning Environment variable LD_LIBRARY_PATH does not contain "src/astaroth":${newline}LD_LIBRARY_PATH=${LD_LIBRARY_PATH})
       $(info Execution of [start|run].x might fail!)
 
       YESNO := $(shell bash -c 'read -p "Continue? (Y/N) " yesno; echo $$yesno')
@@ -608,7 +615,12 @@ ifneq ($(GPU),nogpu)
     else
       $(info )
       $(error Directory $PENCIL_HOME/src/astaroth/submodule is empty! You need to pull Astaroth as a submodule and apply pc_setupsrc afterwards!)
+      #endif
     endif
+    ifeq ($(wildcard astaroth/*),)
+      CATCH := $(shell export PENCIL_USER=GPU_AUTOTEST 2> /dev/null && cd .. 2>/dev/null && pc_setupsrc 2>/dev/null)
+    endif
+
   else
     $(info )
     $(error No other GPU interfaces than gpu_astaroth recently supported!)
@@ -3095,7 +3107,7 @@ libPC.so: run.o | $(SPECIAL_DEPS) $(LIBGPU)
 #$(LIBGPU): $(GPU_DEPS)
 $(LIBGPU): $(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/Makefile.vendor
 	@echo "Building Astaroth and interface libraries - see src/astaroth/ac_build.log!"
-	cd astaroth && make MPICOMM=$(MPICOMM) RUNTIME_COMPILATION=$(RUNTIME_COMPILATION) TRAINING=$(TRAINING) TRANSPILATION=$(TRANSPILATION) GENERATE_DSL_CODE=$(GENERATE_DSL_CODE) >& ac_build.log
+	cd astaroth && make MPICOMM=$(MPICOMM) RUNTIME_COMPILATION=$(RUNTIME_COMPILATION) TRAINING=$(TRAINING) PRECISION=$(REAL_PRECISION) TRANSPILATION=$(TRANSPILATION) GENERATE_DSL_CODE=$(GENERATE_DSL_CODE) >& ac_build.log
 #
 special_preps:
 ifeq ($(USE_SPECIAL_DISPATCHER),no)
@@ -3284,7 +3296,9 @@ ifeq ($(wildcard $(DSL_WORKDIR)/solve_two.ac),)
     endif
   endif
 endif
-	@scripts/bc2ast
+	rm -f astaroth/DSL/local/boundconds.h
+	touch astaroth/DSL/local/boundconds.h
+	@scripts/bc2ast 1> astaroth/DSL/local/boundconds.h
 
 #	@sed -e':loop' -e'N' -e'$$!b loop' -e's/\#pragma  *once//' -e's/\# *define *\([A-Z0-9_][A-Z0-9_]*\)/..\/..\/\L\1.f90 /g' -e's/\n/ /g' < $(CUDA_INCDIR)/PC_moduleflags.h >> $(CUDA_MAKEDIR)/PC_modulesources.h
 #

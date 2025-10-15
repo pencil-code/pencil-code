@@ -25,7 +25,6 @@
 !
 module Special
 !
-  use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
@@ -157,6 +156,7 @@ module Special
   integer :: idiag_exmz=0       ! XYAVG_DOC: $\left<{\cal E}_x\right>_{xy}$
   integer :: idiag_eymz=0       ! XYAVG_DOC: $\left<{\cal E}_y\right>_{xy}$
   integer :: idiag_ezmz=0       ! XYAVG_DOC: $\left<{\cal E}_z\right>_{xy}$
+  integer :: idiag_e2mz=0       ! XYAVG_DOC: $\left<\bm{E}^2\right>_{xy}$
 !
 ! yz averaged diagnostics given in yzaver.in
 !
@@ -504,7 +504,7 @@ module Special
       if (idiag_grms/=0) lpenc_diagnos(i_diva)=.true.
       if (idiag_edotrms/=0) lpenc_diagnos(i_edot2)=.true.
       if (idiag_EEEM/=0 .or. idiag_erms/=0 .or. idiag_emax/=0 & 
-        .or. idiag_e2mx/=0) lpenc_diagnos(i_e2)=.true.
+        .or. idiag_e2mx/=0 .or. idiag_e2mz/=0 ) lpenc_diagnos(i_e2)=.true.
       ! if (idiag_exmz/=0 .or. idiag_eymz/=0 .or. idiag_ezmz/=0 ) lpenc_diagnos(i_el)=.true.
       ! if (idiag_exm/=0 .or. idiag_eym/=0 .or. idiag_ezm/=0 ) lpenc_diagnos(i_el)=.true.
 !
@@ -1140,6 +1140,7 @@ module Special
 !
       if (l1davgfirst .or. (ldiagnos .and. ldiagnos_need_zaverages)) then
         call yzsum_mn_name_x(p%e2, idiag_e2mx)
+        call xysum_mn_name_z(p%e2, idiag_e2mz)
       endif
 !
     endsubroutine calc_1d_diagnostics_special
@@ -1211,7 +1212,7 @@ module Special
         idiag_ebm=0; idiag_sigEm=0; idiag_sigBm=0; idiag_sigErms=0; idiag_sigBrms=0
         idiag_Johmrms=0; idiag_adphiBm=0; idiag_sigEE2m=0; idiag_sigBBEm=0
         idiag_eprimerms=0; idiag_bprimerms=0; idiag_jprimerms=0; idiag_gam_EBrms=0; 
-        idiag_boostprms=0; idiag_echarge=0; idiag_e2mx=0
+        idiag_boostprms=0; idiag_echarge=0; idiag_e2mx=0; idiag_e2mz=0
         cformv=''
       endif
 !
@@ -1269,6 +1270,7 @@ module Special
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'exmz',idiag_exmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'eymz',idiag_eymz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'ezmz',idiag_ezmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'e2mz',idiag_e2mz)
       enddo
 !
 !  check for those quantities for which we want video slices

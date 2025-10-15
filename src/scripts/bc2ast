@@ -23,13 +23,14 @@ function make_ac_bound_cond()
 {
     #echo $1 $2 $3 $4
     sed -e'/case *( *[^ ]'$1'[^ ] *) *$/,/case/ ! d' -e'/case/ d' -e's/^ *if *( *j *== *i'$2' *)//I' -e'/^ *if/ d' -e's/^.* *\(bc_[a-zA-Z_0-9]*\) *( *f *,/\1(/' -e's/,j/,'$2'/' -e's/topbot/BOUNDARY_'$3_$4','$4'/g' -e's/\.\([a-zA-Z]*\)\./\1/' tmp | \
-    sed -e's/\(fbc[xyz][a-zA-Z_0-9]*\) *( *j *,\([^)]*\))/\1['$2']['$4']/' -e's/[A-Za-z0-9_]*=//g'>> astaroth/DSL/local/boundconds.h
+    sed -e's/\(fbc[xyz][a-zA-Z_0-9]*\) *( *j *,\([^)]*\))/\1['$2']['$4']/' -e's/[A-Za-z0-9_]*=//g' |
+    sed -e's/(f,/(/'
 }
 #
 bc_file=../run.in
 if [ ! -f ../start.in ]; then
   if [ ! -f ../run.in ]; then
-    echo "Neither start.in nor run.in found ->  Boundary conditions cannot be encoded for Astaroth!!!"
+    echo "Neither start.in nor run.in found ->  Boundary conditions cannot be encoded for Astaroth!!!" 1>&2
     exit
   fi
 else
@@ -41,14 +42,14 @@ else
         bc_file=../start.in
       fi
     else
-      echo "Both start.in and run.in found ->  Boundary conditions encoded for Astaroth from run.in!"
+      echo "Both start.in and run.in found ->  Boundary conditions encoded for Astaroth from run.in!" 1>&2
     fi
   else
     bc_file=../start.in
   fi
 fi
-if [[ $bc_file==../start.in ]]; then
-    echo "Boundary conditions encoded for Astaroth from start.in -> later change of them in run.in renders build invalid!"
+if [[ $bc_file == ../start.in ]]; then
+    echo "Boundary conditions encoded for Astaroth from start.in -> later change of them in run.in renders build invalid!" 1>&2
 fi
 #
 declare -a lperi
@@ -84,10 +85,8 @@ fields=(`grep '^ *Field' ./astaroth/DSL/local/fieldecs.h | sed -e's/Field //g' -
 #echo FIELDS=${fields[0]}, ${fields[5]}
 #echo FIELDS=$nfields
 
-rm -f astaroth/DSL/local/boundconds.h
-touch astaroth/DSL/local/boundconds.h
 if [[ ${lperi[0]} == 'T' ]]; then
-  echo 'periodic(BOUNDARY_X)' >> astaroth/DSL/local/boundconds.h
+  echo 'periodic(BOUNDARY_X)'
 else
   boundcond_sed x
   for (( i=0; i<100; i++ )); do 
@@ -99,7 +98,7 @@ else
 fi
 
 if [[ ${lperi[1]} == 'T' ]]; then
-  echo 'periodic(BOUNDARY_Y)' >> astaroth/DSL/local/boundconds.h
+  echo 'periodic(BOUNDARY_Y)'
 else
   boundcond_sed y
   for (( i=0; i<100; i++ )); do 
@@ -110,7 +109,7 @@ else
 fi
 
 if [[ ${lperi[2]} == 'T' ]]; then
-  echo 'periodic(BOUNDARY_Z)' >> astaroth/DSL/local/boundconds.h
+  echo 'periodic(BOUNDARY_Z)'
 else
   boundcond_sed z
   for (( i=0; i<100; i++ )); do 

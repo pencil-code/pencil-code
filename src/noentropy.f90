@@ -208,6 +208,7 @@ module Energy
       endif
 !
       if (idiag_csm/=0) lpenc_diagnos(i_cs2)=.true.
+      if (idiag_dtc/=0) ltimestep_diagnostics=.true.
 !
     endsubroutine pencil_criteria_energy
 !***********************************************************************

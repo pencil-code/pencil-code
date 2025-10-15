@@ -50,8 +50,8 @@ if [ -z $_sourceme ]; then	# called for the first time?
     # remove first all paths, which contain "pencil-code" from PATH, then add (new) PC paths
     PATH=`echo $PATH | sed -e's/[^:]*pencil-code[^:]*://g' -e's/[^:]*pencil-code[^:]* *$//' -e's/:$//'`:$PENCIL_HOME/bin:$PENCIL_HOME/utils:$PENCIL_HOME/utils/axel:$PENCIL_HOME/utils/xiangyu:$PENCIL_HOME/remesh/bin:$PENCIL_HOME/src/scripts
 
+    export AC_HOME=$PENCIL_HOME/src/astaroth/submodule
     if ([ -d $PENCIL_HOME/src/astaroth/submodule/scripts ]); then
-      export AC_HOME=$PENCIL_HOME/src/astaroth/submodule
       PATH=${PATH}:$AC_HOME/scripts/
     fi
 

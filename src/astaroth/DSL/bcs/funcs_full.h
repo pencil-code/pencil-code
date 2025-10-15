@@ -20,7 +20,6 @@ present(var)
 bc_steady_z(boundary, topbot, VtxBuffer field)
 {
   suppress_unused_warning(boundary)
-  int i;
   if (topbot == AC_bot) {
     if (field[vertexIdx.x][vertexIdx.y][AC_n1-1] <= 0.0) {
       for i in 1:NGHOST+1 {
@@ -61,8 +60,7 @@ bc_steady_z(boundary, topbot, VtxBuffer field)
   }
 }
 //TP: old
-#if Leos_idealgas_MODULE
-#if Lentropy_MODULE
+#if Leos_idealgas_MODULE && Lentropy_MODULE
 bc_ss_flux(boundary, topbot, bool lone_sided)
 {
   suppress_unused_warning(boundary)
@@ -70,7 +68,6 @@ bc_ss_flux(boundary, topbot, bool lone_sided)
   real tmp_xy;
   real cs2_xy;
   real rho_xy;
-  int i;
   real lnrho
   lnrho = LNRHO[vertexIdx.x][vertexIdx.y][AC_n1-1]
   if (topbot == AC_bot) {
@@ -101,14 +98,14 @@ bc_ss_flux(boundary, topbot, bool lone_sided)
         tmp_xy=Fbot*pow(rho_xy,(2*nkramers))*pow((AC_cp*AC_gamma_m1),(6.5*nkramers))  /(hcond0_kramers*pow(cs2_xy,(6.5*nkramers+1.)));
       }
       else {
-        tmp_xy=FbotKbot/cs2_xy;
+        tmp_xy=AC_cp__mod__equationofstate*FbotKbot/cs2_xy;
       }
       for i in 1:NGHOST+1 {
         rho_xy = LNRHO[vertexIdx.x][vertexIdx.y][AC_n1+i-1]-LNRHO[vertexIdx.x][vertexIdx.y][AC_n1-i-1];
         if (AC_ldensity_nolog) {
             rho_xy = rho_xy/lnrho;
         }
-        SS[vertexIdx.x][vertexIdx.y][AC_n1-i-1]=SS[vertexIdx.x][vertexIdx.y][AC_n1+i-1]+AC_cp*(AC_cp-AC_cv)*(rho_xy+AC_dz2_bound[-i+NGHOST]*tmp_xy);
+        SS[vertexIdx.x][vertexIdx.y][AC_n1-i-1]=SS[vertexIdx.x][vertexIdx.y][AC_n1+i-1]+(AC_cp-AC_cv)*(rho_xy+AC_dz2_bound[-i+NGHOST]*tmp_xy);
       }
     }
   }
@@ -140,21 +137,20 @@ bc_ss_flux(boundary, topbot, bool lone_sided)
         tmp_xy=Ftop*pow(rho_xy,(2*nkramers))*pow((AC_cp*AC_gamma_m1),(6.5*nkramers))  /(hcond0_kramers*pow(cs2_xy,(6.5*nkramers+1.)));
       }
       else {
-        tmp_xy=FtopKtop/cs2_xy;
+        tmp_xy=AC_cp*FtopKtop/cs2_xy;
       }
       for i in 1:NGHOST+1 {
         rho_xy = LNRHO[vertexIdx.x][vertexIdx.y][AC_n2+i-1]-LNRHO[vertexIdx.x][vertexIdx.y][AC_n2-i-1];
         if (AC_ldensity_nolog) {
             rho_xy = rho_xy/LNRHO[vertexIdx.x][vertexIdx.y][AC_n2-1];
         }
-        SS[vertexIdx.x][vertexIdx.y][AC_n2+i-1]=SS[vertexIdx.x][vertexIdx.y][AC_n2-i-1]+AC_cp*(AC_cp-AC_cv)*(-rho_xy-AC_dz2_bound[i+NGHOST]*tmp_xy);
+        SS[vertexIdx.x][vertexIdx.y][AC_n2+i-1]=SS[vertexIdx.x][vertexIdx.y][AC_n2-i-1]+(AC_cp-AC_cv)*(-rho_xy-AC_dz2_bound[i+NGHOST]*tmp_xy);
       }
     }
   }
   else {
   }
 }
-#endif
 #endif
 
 bc_copy_x(AcBoundary boundary, AC_TOP_BOT topbot,VtxBuffer j)
@@ -210,7 +206,6 @@ bc_copy_z(AcBoundary boundary, AC_TOP_BOT topbot,Field j)
 bc_sym_x(AcBoundary boundary, AC_TOP_BOT topbot, VtxBuffer field,int sgn,bool rel)
 {
   suppress_unused_warning(boundary)
-  int i;
   if (topbot == AC_bot) {
     if (rel) {
       for i in 1:NGHOST+1 {
@@ -248,7 +243,6 @@ bc_sym_x(AcBoundary boundary, AC_TOP_BOT topbot, VtxBuffer field,int sgn,bool re
 bc_sym_y(AcBoundary boundary, AC_TOP_BOT topbot, VtxBuffer field,int sgn,bool rel)
 {
   suppress_unused_warning(boundary)
-  int i;
   if (topbot == AC_bot) {
     if (rel) {
       for i in 1:NGHOST+1 {
@@ -286,7 +280,6 @@ bc_sym_y(AcBoundary boundary, AC_TOP_BOT topbot, VtxBuffer field,int sgn,bool re
 bc_sym_z(AcBoundary boundary, AC_TOP_BOT topbot, VtxBuffer field,int sgn,bool rel)
 {
   suppress_unused_warning(boundary)
-  int i;
   if (topbot == AC_bot) {
     if (rel) {
       for i in 1:NGHOST+1 {
@@ -324,7 +317,6 @@ bc_sym_z(AcBoundary boundary, AC_TOP_BOT topbot, VtxBuffer field,int sgn,bool re
 bc_set_der_x(boundary, topbot, VtxBuffer field,val)
 {
   suppress_unused_warning(boundary)
-  int i;
   if (topbot == AC_bot) {
     for i in 1:NGHOST+1 {
       field[AC_l1-i-1][vertexIdx.y][vertexIdx.z] = field[AC_l1+i-1][vertexIdx.y][vertexIdx.z] - AC_dx2_bound[-i+NGHOST+1-1]*val;
@@ -342,7 +334,6 @@ bc_set_der_x(boundary, topbot, VtxBuffer field,val)
 bc_set_der_y(boundary, topbot, VtxBuffer field,val)
 {
   suppress_unused_warning(boundary)
-  int i;
   if (topbot == AC_bot) {
     for i in 1:NGHOST+1 {
       field[vertexIdx.x][AC_m1-i-1][vertexIdx.z] = field[vertexIdx.x][AC_m1+i-1][vertexIdx.z] - AC_dy2_bound[-i+NGHOST+1-1]*val;
@@ -360,7 +351,6 @@ bc_set_der_y(boundary, topbot, VtxBuffer field,val)
 bc_set_der_z(boundary, topbot, VtxBuffer field,val)
 {
   suppress_unused_warning(boundary)
-  int i;
   if (topbot == AC_bot) {
     for i in 1:NGHOST+1 {
       field[vertexIdx.x][vertexIdx.y][AC_n1-i-1] = field[vertexIdx.x][vertexIdx.y][AC_n1+i-1] - AC_dz2_bound[-i+NGHOST+1-1]*val;
@@ -375,8 +365,7 @@ bc_set_der_z(boundary, topbot, VtxBuffer field,val)
   }
 }
 
-#if Leos_idealgas_MODULE
-#if Lentropy_MODULE
+#if Leos_idealgas_MODULE && Lentropy_MODULE
 bc_ss_temp_z(AcBoundary boundary, AC_TOP_BOT topbot,bool lone_sided)
 {
 suppress_unused_warning(boundary)
@@ -403,7 +392,7 @@ loptest_return_value_1=lone_sided;
 else if (false) {;
 }
 if (loptest_return_value_1) {;
-print("not implemented set_ghosts_for_onesided_ders");
+ac_set_ghosts_for_onesided_derivs(boundary,SS)
 }
 else {
 if (AC_ldensity_nolog) {;
@@ -427,7 +416,7 @@ loptest_return_value_2=lone_sided;
 else if (false) {;
 }
 if (loptest_return_value_2) {;
-print("not implemented set_ghosts_for_onesided_ders");
+ac_set_ghosts_for_onesided_derivs(boundary,SS)
 }
 else {
 for i in 1:NGHOST+1 {
@@ -449,7 +438,7 @@ loptest_return_value_3=lone_sided;
 else if (false) {;
 }
 if (loptest_return_value_3) {;
-print("not implemented set_ghosts_for_onesided_ders");
+ac_set_ghosts_for_onesided_derivs(boundary,LNTT)
 }
 else {
 for i in 1:NGHOST+1 {
@@ -483,7 +472,7 @@ loptest_return_value_5=lone_sided;
 else if (false) {;
 }
 if (loptest_return_value_5) {;
-print("not implemented set_ghosts_for_onesided_ders");
+ac_set_ghosts_for_onesided_derivs(boundary,SS)
 }
 else {
 if (AC_ldensity_nolog) {;
@@ -507,7 +496,7 @@ loptest_return_value_6=lone_sided;
 else if (false) {;
 }
 if (loptest_return_value_6) {;
-print("not implemented set_ghosts_for_onesided_ders");
+ac_set_ghosts_for_onesided_derivs(boundary,SS)
 }
 else {
 for i in 1:NGHOST+1 {
@@ -529,7 +518,7 @@ loptest_return_value_7=lone_sided;
 else if (false) {;
 }
 if (loptest_return_value_7) {;
-print("not implemented set_ghosts_for_onesided_ders");
+ac_set_ghosts_for_onesided_derivs(boundary,LNTT)
 }
 else {
 for i in 1:NGHOST+1 {
@@ -541,7 +530,6 @@ LNTT[vertexIdx.x][vertexIdx.y][AC_n2+i-1]=2*LNTT[vertexIdx.x][vertexIdx.y][AC_n2
 else {
 }
 }
-#endif
 #endif
 
 #if LVISCOSITY
@@ -873,14 +861,12 @@ bc_set_sfree_y(AcBoundary boundary,AC_TOP_BOT topbot,Field j)
   }
 }
 
-#if Leos_idealgas_MODULE
-#if Lentropy_MODULE
+#if Leos_idealgas_MODULE && Lentropy_MODULE
 bc_ss_flux_x(AcBoundary boundary, AC_TOP_BOT topbot)
 {
   suppress_unused_warning(boundary)
   real work_yz
   real tmp_yz
-  int i
   int stat
   real fac
   real cp_loc
@@ -1120,14 +1106,11 @@ bc_ss_flux_x(AcBoundary boundary, AC_TOP_BOT topbot)
   }
 }
 #endif
-#endif
 
-#if Leos_idealgas_MODULE
-#if Lentropy_MODULE
+#if Leos_idealgas_MODULE && Lentropy_MODULE
 bc_ss_flux_turb_x(AcBoundary boundary, AC_TOP_BOT topbot)
 {
   suppress_unused_warning(boundary)
-  int i
   real rho_yz
   real cs2_yz
   real dsdx_yz
@@ -1242,7 +1225,6 @@ bc_ss_flux_turb_x(AcBoundary boundary, AC_TOP_BOT topbot)
   else {
   }
 }
-#endif
 #endif
 /**
 
@@ -1555,8 +1537,7 @@ bc_ss_flux(AcBoundary boundary, AC_TOP_BOT topbot,bool lone_sided)
   }
 }
 **/
-#if Leos_idealgas_MODULE
-#if Lgravity_simple_MODULE
+#if Leos_idealgas_MODULE && Lgravity_simple_MODULE
 bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
 {
   suppress_unused_warning(boundary)
@@ -1568,7 +1549,6 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
   real cs2_point
   real potp
   real potm
-  int i
   real getrho_s_return_value_0
   real getrho_s_return_value_0
   real lnrho__1
@@ -3478,7 +3458,6 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
   }
 }
 #endif
-#endif
 
 //These don't actually do anything except set some flags in the CPU code so can be no-ops here
 bc_freeze_var_x(AcBoundary boundary, AC_TOP_BOT topbot, Field f)
@@ -3505,7 +3484,6 @@ bc_freeze_var_z(AcBoundary boundary, AC_TOP_BOT topbot, Field f)
 bcx_extrap_2_3(AcBoundary boundary, AC_TOP_BOT topbot,Field f)
 {
   suppress_unused_warning(boundary)
-  int i
   real yl1
   real ypi
   real ymi
@@ -3567,7 +3545,6 @@ bcx_extrap_2_3(AcBoundary boundary, AC_TOP_BOT topbot,Field f)
 bc_outflow_y(AcBoundary boundary, AC_TOP_BOT topbot,Field f,bool lforce_ghost)
 {
   suppress_unused_warning(boundary)
-  int i
   int ix
   int iz
   bool lforce
@@ -3633,7 +3610,7 @@ bc_outflow_y(AcBoundary boundary, AC_TOP_BOT topbot,Field f,bool lforce_ghost)
   }
 }
 
-#if LEOS
+#if Leos_idealgas_MODULE
 bc_stratified_y(AcBoundary boundary, AC_TOP_BOT topbot,Field f)
 {
   suppress_unused_warning(boundary)
@@ -3767,12 +3744,10 @@ bc_outflow_x(AcBoundary boundary, AC_TOP_BOT topbot,Field f,bool lforce)
 }
 
 
-#if Lhydro_MODULE
-#if Ldensity_MODULE
+#if Lhydro_MODULE && Ldensity_MODULE && Leos_idealgas_MODULE
 bc_ss_stemp_x(AcBoundary boundary,AC_TOP_BOT topbot)
 {
   suppress_unused_warning(boundary)
-  int i
   int id_1
   int id_3
   real rho_yz
@@ -3865,7 +3840,6 @@ bc_ss_stemp_x(AcBoundary boundary,AC_TOP_BOT topbot)
 bc_ss_stemp_y(AcBoundary boundary,AC_TOP_BOT topbot)
 {
   suppress_unused_warning(boundary)
-  int i
   if (topbot == AC_bot) {
     for i in 1:NGHOST+1 {
       dlnrho = LNRHO[vertexIdx.x][m1+i-1][vertexIdx.z]-LNRHO[vertexIdx.x][m1-i-1][vertexIdx.z]
@@ -3901,7 +3875,6 @@ bc_ss_stemp_y(AcBoundary boundary,AC_TOP_BOT topbot)
 bc_ss_stemp_z(AcBoundary boundary,AC_TOP_BOT topbot)
 {
   suppress_unused_warning(boundary)
-  int i
   real dlnrho
   if (topbot == AC_bot) {
     for i in 1:NGHOST+1 {
@@ -3934,6 +3907,7 @@ bc_ss_stemp_z(AcBoundary boundary,AC_TOP_BOT topbot)
   else {
   }
 }
+#endif
 
 bc_set_nfr_y(AcBoundary boundary, AC_TOP_BOT topbot,Field j)
 {
@@ -3953,12 +3927,10 @@ bc_set_nfr_y(AcBoundary boundary, AC_TOP_BOT topbot,Field j)
   }
 }
 
-#if Ldensity_MODULE
-#if Lentropy_MODULE
+#if Ldensity_MODULE && Lentropy_MODULE && Leos_idealgas_MODULE
 bc_ss_flux_condturb_x(AcBoundary boundary,AC_TOP_BOT topbot)
 {
   suppress_unused_warning(boundary)
-  int i
   int id_1
   real dsdx_yz
   real tt_yz
@@ -4033,7 +4005,6 @@ bc_ss_flux_condturb_x(AcBoundary boundary,AC_TOP_BOT topbot)
   }
 }
 #endif
-#endif
 
 bc_set_nfr_x(AcBoundary boundary, AC_TOP_BOT topbot,Field j)
 {
@@ -4052,3 +4023,10 @@ bc_set_nfr_x(AcBoundary boundary, AC_TOP_BOT topbot,Field j)
   else {
   }
 } 
+
+set_ghosts_for_onesided_ders(AcBoundary boundary,AC_TOP_BOT topbot, Field j, int idir)
+{
+	suppress_unused_warning(topbot)
+	suppress_unused_warning(idir)
+	ac_set_ghosts_for_onesided_derivs(boundary,j)
+}

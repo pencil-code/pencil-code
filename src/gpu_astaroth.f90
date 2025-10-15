@@ -43,6 +43,7 @@ module GPU
   external torchinfer_c
   external calcq_gpu_c
   external get_gpu_reduced_vars_c
+  external test_bcs_c
 
   integer, external :: update_on_gpu_arr_by_name_c
   integer, external :: update_on_gpu_scal_by_name_c
@@ -329,5 +330,9 @@ contains
       real, dimension(10) :: dst
       call get_gpu_reduced_vars_c(dst)
     endsubroutine get_gpu_reduced_vars
+!**************************************************************************
+    subroutine test_gpu_bcs
+            call test_bcs_c
+    endsubroutine test_gpu_bcs
 !**************************************************************************
 endmodule GPU

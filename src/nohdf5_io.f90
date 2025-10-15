@@ -8,7 +8,6 @@ module HDF5_IO
   use Cdata
   use General, only: keep_compiler_quiet, itoa, numeric_precision
   use Messages, only: fatal_error
-  use Mpicomm, only: lroot
 !
   implicit none
 !

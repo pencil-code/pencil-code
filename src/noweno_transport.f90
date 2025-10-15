@@ -15,8 +15,6 @@ module WENO_transport
 !***********************************************************************
     subroutine weno_transp(fq,m,n,iq,iq1,iux,iuy,iuz,dq,dx_1,dy_1,dz_1,ref,ref1)
 !
-!  Solve the equation dq/dt + div(u*q) = 0 using the WENO method.
-!
 !  29-dec-09/evghenii+anders: dummy
 !
       use Cparam, only: impossible
@@ -35,9 +33,7 @@ module WENO_transport
       call keep_compiler_quiet(m,n,iq,iq1)
       call keep_compiler_quiet(iux,iuy,iuz)
       call keep_compiler_quiet(dx_1,dy_1,dz_1)
-      if(present(ref)) then
-        call keep_compiler_quiet(ref,ref1)
-      endif
+      if (present(ref)) call keep_compiler_quiet(ref,ref1)
 !
     endsubroutine weno_transp
 !***********************************************************************

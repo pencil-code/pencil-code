@@ -80,7 +80,6 @@ module Hydro
 !
 !  6-nov-01/wolf: coded
 !
-      use Mpicomm, only: lroot
       use SharedVariables, only: put_shared_variable
 !
 !  Identify version number (generated automatically by SVN).
@@ -1079,6 +1078,9 @@ module Hydro
     call copy_addr(lpressuregradient_gas,p_par(1)) ! bool
 
     endsubroutine pushpars2c
+!***********************************************************************
+    subroutine load_variables_to_gpu_hydro
+    endsubroutine load_variables_to_gpu_hydro
 !***********************************************************************
 endmodule Hydro
 

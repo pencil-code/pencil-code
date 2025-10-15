@@ -195,6 +195,9 @@ const real AC_ascale__mod__cdata = 0.0
 #define ftop Ftop
 #define FtopKtop AC_FtopKtop__mod__energy
 #define Ftop AC_Ftop__mod__energy
+#define fbcx AC_fbcx__mod__cdata
+#define fbcy AC_fbcy__mod__cdata
+#define fbcz AC_fbcz__mod__cdata
 #define AC_ldensity_nolog AC_ldensity_nolog__mod__cdata
 #define AC_cs20 AC_cs20__mod__equationofstate
 #define AC_gamma_m1 AC_gamma_m1__mod__equationofstate
@@ -228,4 +231,10 @@ const real AC_ascale__mod__cdata = 0.0
 #else
 const real AC_trelax_poly__mod__cdata = 0.0
 #endif
+#if Leos_ionization_MODULE
+const real yhmin = AC_REAL_MIN
+const real yhmax = 1-AC_REAL_EPSILON
+#endif
 
+//Crucially lmultithread has to be false from the point of view GPU that we don't do some things twice
+const bool AC_lmultithread__mod__cdata = false

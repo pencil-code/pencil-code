@@ -134,10 +134,10 @@ module Cdata
   real, dimension (nygrid) :: sinth_weight_across_proc
   real, dimension (nx) :: rcyl_mn=1.,rcyl_mn1=1.,rcyl_mn2=1.,rcyl_weight
   real, dimension (nx) :: glnCrossSec
-  real, dimension (nrcyl) :: rcyl  ! used for phi-averages
-  real, dimension (mx) :: x12    ! for slope-limted-diffusion
-  real, dimension (my) :: y12    ! for slope-limted-diffusion
-  real, dimension (mz) :: z12    ! for slope-limted-diffusion
+  real, dimension (nrcyl) :: rcyl        ! used for phi-averages
+  real, dimension (mx) :: x12            ! for slope-limted-diffusion
+  real, dimension (my) :: y12, sinth12   ! for slope-limted-diffusion
+  real, dimension (mz) :: z12            ! for slope-limted-diffusion
 !
 !  Grid parameters.
 !
@@ -219,7 +219,7 @@ module Cdata
   integer :: iproc=0,ipx=0,ipy=0,ipz=0,iproc_world=0,ipatch=0
   logical :: lprocz_slowest=.true.,lzorder=.false.,lmorton_curve=.false.,ltest_bcs=.true.,lcpu_timestep_on_gpu=.false., &
              lsuppress_parallel_reductions=.false.,lread_all_vars_from_device = .false., lcuda_aware_mpi=.true.
-  logical :: lac_sparse_autotuning=.false., lskip_rtime_compilation=.false.
+  logical :: lac_sparse_autotuning=.true., lskip_rtime_compilation=.false.
   integer :: xlneigh,ylneigh,zlneigh ! `lower' processor neighbours
   integer :: xuneigh,yuneigh,zuneigh ! `upper' processor neighbours
   integer :: poleneigh               ! `pole' processor neighbours

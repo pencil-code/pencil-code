@@ -3,42 +3,57 @@
 !  Run parameters
 !
 &run_pars
-  nt=10, it1=1, isave=1000, itorder=3,
+  nt=1, it1=1, isave=500, itorder=1
+  nt=10, it1=1, isave=500, itorder=1
   cdt=0.9, cdtv=0.3, dtmin=1e-6,
-  d2davg=1.
-  dsnap=100.
+  !cdt=0.09, cdtv=0.3, dtmin=1e-6,
+  dsnap=100, d2davg=10, ! time intervals for writing snapshots and phi-averages
+  dsnap=.01, d2davg=.01, ! time intervals for writing snapshots and phi-averages
   lwrite_aux=T
   tau_aver1=10.
-  lpencil_check=T
-  lpencil_check_small=T
+  max_walltime=42000.
+  it_rmv=1
+!  dvid = 10., r_rslice=.9, nth_rslice=50, nph_rslice=50 ! slices from spherical radius r_rslice
+  lpencil_check_small=F
 /
 &eos_run_pars
 /
 &hydro_run_pars
-  dampuext=5, rdampext=1.03, wdamp=0.03,
+  dampuext = 5, rdampext=1.03, wdamp = 0.02,
   lupw_uu=T
+  Omega=1.  ! rotation rate
   luu_sph_as_aux=T
 /
 &density_run_pars
   lupw_lnrho=T
+  lconserve_total_mass=T
+  total_mass=0.212759
+  idiff='density-slope-limited'
+  h_sld_dens = 2.0
 /
 &grav_run_pars
 /
 &entropy_run_pars
-  iheatcond='kramers','chit' 
-  hcond0_kramers=3e-9, nkramers=1.
-  chimax_kramers=1e-5
-  luminosity=5e-5, wheat=0.18,
-  cooltype='cs2-rho', cool=5., rcool=1.03, wcool=0.03,
-  lupw_ss=T
+!  lhcond_global=T
+  iheatcond='kramers','chit'
+  hcond0_kramers=1.6482172068474007e-13, nkramers=1.
+  luminosity = 1e-4, wheat=0.1,
+!  chimax_kramers=1e-3
+  cs2cool=0.740992386700461
+  cooltype='cs2-rho', cool=0.5, rcool=1.03, wcool=0.02,
   lss_running_aver_as_var=T
-  chi_t1=1e-3, lchit_fluct=T, lchit_noT=T
+  lchit_fluct=T
+  lchit_noT=T
+  chi_t1=3e-4
+  chit_fluct_prof1=.1, chit_fluct_prof2=.1, widthss=0.03
+  lupw_ss=T
+/
+&viscosity_run_pars
+  nu=3e-4, ivisc='nu-const',
 /
 &magnetic_run_pars
-  eta=1e-3
+  eta=3e-4
   lupw_aa=T
   lbb_sph_as_aux=T
 /
-&viscosity_run_pars
-  nu=1e-3, ivisc='nu-const'
-/
+

@@ -181,7 +181,6 @@ module Hydro
 !   6-nov-01/wolf: coded
 !
       use FArrayManager
-      use Mpicomm, only: lroot
       use SharedVariables, only: put_shared_variable
 !
 !  Identify version number (generated automatically by SVN).
@@ -3883,6 +3882,9 @@ module Hydro
                                  ltime_old=ltime_old_kinflow)
 !
     endsubroutine sound3D
+!***********************************************************************
+    subroutine load_variables_to_gpu_hydro
+    endsubroutine load_variables_to_gpu_hydro
 !***********************************************************************
     subroutine pushpars2c(p_par)
 

@@ -42,10 +42,10 @@ module File_io
 !                  (seems to be necessary)
 !   6-oct-15/MR: parameter lbinary added for reading data as a byte stream
 !
-      use Mpicomm, only: lroot, mpibcast_int, mpibcast_char, MPI_COMM_PENCIL
+      use Mpicomm, only: mpibcast_int, mpibcast_char, MPI_COMM_PENCIL
       use General, only: loptest, parser
       use Messages, only: fatal_error
-      use Cdata, only: comment_char
+      use Cdata, only: lroot, comment_char
 
       character (len=*), intent(in)            :: file
       logical,           intent(in),  optional :: remove_comments

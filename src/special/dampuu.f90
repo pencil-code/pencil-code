@@ -19,7 +19,6 @@
 !
 module Special
 !
-  use Cparam
   use Cdata
   use Sub, only: step
   use General, only: keep_compiler_quiet

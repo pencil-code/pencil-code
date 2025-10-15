@@ -165,13 +165,15 @@ Field F_SS_RUN_AVER
 Field F_ADV_DERX
 Field F_ADV_DERY
 Field F_ADV_DERZ
-Field F_GLOBAL_GLNTX,F_GLOBAL_GLNTY,F_GLOBAL_GLNTZ
 Field F_GLOBAL_GLHX,F_GLOBAL_GLHY,F_GLOBAL_GLHZ
 Field F_HYPREX, F_HYPREY, F_HYPREZ
 Field F_ETAT
 
 
 
+field_order(AC_iglobal_glntt__mod__equationofstate == 0 ? -1 : 0+AC_iglobal_glntt__mod__equationofstate-1) Field F_GLOBAL_GLNTX
+field_order(AC_iglobal_glntt__mod__equationofstate == 0 ? -1 : 1+AC_iglobal_glntt__mod__equationofstate-1) Field F_GLOBAL_GLNTY
+field_order(AC_iglobal_glntt__mod__equationofstate == 0 ? -1 : 2+AC_iglobal_glntt__mod__equationofstate-1) Field F_GLOBAL_GLNTZ
 const Field3 F_GLOBAL_GLNTVEC = {F_GLOBAL_GLNTX,F_GLOBAL_GLNTY,F_GLOBAL_GLNTZ}
 const Field3 F_AVEC    = {F_AX, F_AY, F_AZ}
 #define F_AA F_AVEC
@@ -285,7 +287,7 @@ Field AC_nonlinear_tpq_im__mod__gravitational_waves_htxk[6]
 field_order(AC_irho_b__mod__cdata-1) Field RHO_B
 field_order(AC_iss_b__mod__cdata-1) Field SS_B
 
-field_order(AC_isld_char__mod__cdata) Field SLD_CHAR_SPEED
+field_order(AC_isld_char__mod__cdata-1) Field SLD_CHAR_SPEED
 Field SRAD
 #define AC_srad__mod__radiation SRAD
 field_order(AC_ikapparho__mod__radiation-1) Field F_KAPPARHO

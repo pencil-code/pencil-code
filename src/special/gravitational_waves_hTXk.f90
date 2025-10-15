@@ -74,7 +74,6 @@
 !
 module Special
 !
-  use Cparam
   use Cdata
   use Initcond
   use General, only: keep_compiler_quiet
@@ -1060,26 +1059,45 @@ module Special
 !
 !   26-jul-2025/TP: carved from dspecial_dt
 ! 
+      use Gpu, only: update_on_gpu
+
       real :: lgt1, lgt2, lgf1, lgf2, lgf, lgt_current
       integer :: it_file
-        lgt_current=alog10(real(t))+lgt_ini
-        it_file=int((lgt_current-lgt0)/dlgt)+1
-        if (it_file<1.or.it_file>nt_file) then
-          print*,'=',it_file, t_file(it_file), t, t_file(it_file+1), t_ini
-          call fatal_error('dspecial_dt','it<1.or.it>nt')
-        endif
-        lgt1=lgt_file(it_file)
-        lgt2=lgt_file(it_file+1)
+      real, save :: Hp_old,appa_old
+      integer, save :: Hp_index_on_gpu=-1
+      integer, save :: appa_index_on_gpu=-1
 
-        lgf1=lgff2(it_file)
-        lgf2=lgff2(it_file+1)
-        lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
-        Hp_target=10**lgf/Hp_ini
 
-        lgf1=lgff3(it_file)
-        lgf2=lgff3(it_file+1)
-        lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
-        appa_target=10**lgf/Hp_ini**2
+      lgt_current=alog10(real(t))+lgt_ini
+      it_file=int((lgt_current-lgt0)/dlgt)+1
+      if (it_file<1.or.it_file>nt_file) then
+        print*,'=',it_file, t_file(it_file), t, t_file(it_file+1), t_ini
+        call fatal_error('dspecial_dt','it<1.or.it>nt')
+      endif
+      lgt1=lgt_file(it_file)
+      lgt2=lgt_file(it_file+1)
+
+      lgf1=lgff2(it_file)
+      lgf2=lgff2(it_file+1)
+      lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
+      Hp_target=10**lgf/Hp_ini
+
+      lgf1=lgff3(it_file)
+      lgf2=lgff3(it_file+1)
+      lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
+      appa_target=10**lgf/Hp_ini**2
+
+      if(lgpu .and. Hp_old /= Hp_target) then
+        call update_on_gpu(Hp_index_on_gpu,'AC_hp_target__mod__cdata',Hp_target)
+      endif
+
+      if(lgpu .and. appa_old /= appa_target) then
+        call update_on_gpu(appa_index_on_gpu,'AC_appa_target__mod__cdata',appa_target)
+      endif
+
+      Hp_old = Hp_target
+      appa_old = appa_target
+      
     endsubroutine read_Hp_and_appa_target
 !***********************************************************************
     subroutine read_scl_factor
@@ -1158,7 +1176,6 @@ module Special
 !
         call read_scl_factor
         !TP: have to read here in case we use disp_current which uses Hp_target
-        call read_Hp_and_appa_target
       endif
 !
 !  Possibilty to compensate against the decaying stress in decaying turbulence.
@@ -2412,7 +2429,6 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
                       call compute_scl_factor
               endif
       endif
-      if (lread_scl_factor_file) call read_Hp_and_appa_target
       if (lhorndeski.or.lhorndeski_xi) then
         select case (ihorndeski_time)
           case ('const')
@@ -3343,6 +3359,12 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
 !
     endsubroutine get_slices_special
 !***********************************************************************
+    subroutine load_variables_to_gpu_special
+        if (lread_scl_factor_file) then
+          call read_Hp_and_appa_target
+        endif
+    endsubroutine load_variables_to_gpu_special
+!***********************************************************************
     subroutine pushpars2c(p_par)
 
     use Syscalls, only: copy_addr
@@ -3423,6 +3445,7 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
     if (allocated(lgff2)) call copy_addr(lgff2,p_par(73)) ! (nt_file__mod__gravitational_waves_htxk) gmem
     if (allocated(lgff3)) call copy_addr(lgff3,p_par(74)) ! (nt_file__mod__gravitational_waves_htxk) gmem
     call copy_addr(appa_om_init,p_par(75)) 
+    call copy_addr(luse_mag,p_par(76)) ! bool
 
 
     endsubroutine pushpars2c

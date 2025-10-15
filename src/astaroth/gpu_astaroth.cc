@@ -166,17 +166,17 @@ float MSE(){
 #if TRAINING
 	#include "user_constants.h"
 
-	auto descale_uumean_tau = acGetOptimizedDSLTaskGraph(descale);
+	AcTaskGraph* descale_uumean_tau = acGetOptimizedDSLTaskGraph(descale);
 	acGridSynchronizeStream(STREAM_ALL);
 	acGridExecuteTaskGraph(descale_uumean_tau, 1);
 	acGridSynchronizeStream(STREAM_ALL);
 	
-  auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
+        AcTaskGraph* bcs = acGetOptimizedDSLTaskGraph(boundconds);
 	acGridSynchronizeStream(STREAM_ALL);
 	acGridExecuteTaskGraph(bcs,1);
 	acGridSynchronizeStream(STREAM_ALL);
 
-	auto calc_infered_loss = acGetOptimizedDSLTaskGraph(calc_validation_loss);
+	AcTaskGraph* calc_infered_loss = acGetOptimizedDSLTaskGraph(calc_validation_loss);
 	acGridSynchronizeStream(STREAM_ALL);
 	acGridExecuteTaskGraph(calc_infered_loss, 1);
 	acGridSynchronizeStream(STREAM_ALL);
@@ -632,22 +632,30 @@ void setupConfig(AcMeshInfo& config)
   //TP: loads for non-Cartesian derivatives
 
 #if TRANSPILATION
+  PCLoad(config, AC_x,x__mod__cdata);
+  PCLoad(config, AC_y,y__mod__cdata);
+  PCLoad(config, AC_z,z__mod__cdata);
+
   PCLoad(config, AC_inv_cyl_r,rcyl_mn1);
   PCLoad(config, AC_inv_r,r1_mn);
   PCLoad(config, AC_inv_sin_theta,sin1th);
   PCLoad(config, AC_cot_theta,cotth);
 
-
-  //TP: loads for non-equidistant grids
+//  loads for non-equidistant grids
   PCLoad(config,AC_nonequidistant_grid, (AcBool3){!lequidist.x,!lequidist.y,!lequidist.z});
   PCLoad(config,AC_inv_mapping_func_derivative_x,dx_1);
   PCLoad(config,AC_inv_mapping_func_derivative_y,dy_1);
   PCLoad(config,AC_inv_mapping_func_derivative_z,dz_1);
 
-
   PCLoad(config,AC_mapping_func_tilde_x,dx_tilde);
   PCLoad(config,AC_mapping_func_tilde_y,dy_tilde);
   PCLoad(config,AC_mapping_func_tilde_z,dz_tilde);
+
+//  loads for slope-limited-diffusion related arrays
+  PCLoad(config, AC_x12,x12__mod__cdata);
+  PCLoad(config, AC_y12,y12__mod__cdata);
+  PCLoad(config, AC_sinth12,sinth12__mod__cdata);
+  PCLoad(config, AC_z12,z12__mod__cdata);
 #endif
 
   PCLoad(config, AC_rk_order, itorder);
@@ -670,24 +678,22 @@ void setupConfig(AcMeshInfo& config)
   PCLoad(config, AC_skip_single_gpu_optim, true);
 
   PCLoad(config,AC_decompose_strategy,AC_DECOMPOSE_STRATEGY_EXTERNAL);
-  if (lmorton_curve)
-    PCLoad(config,AC_proc_mapping_strategy,AC_PROC_MAPPING_STRATEGY_MORTON);
-  else
-    PCLoad(config,AC_proc_mapping_strategy,AC_PROC_MAPPING_STRATEGY_LINEAR);
+  PCLoad(config,AC_proc_mapping_strategy,lmorton_curve ? AC_PROC_MAPPING_STRATEGY_MORTON : AC_PROC_MAPPING_STRATEGY_LINEAR);
 
   PCLoad(config, AC_include_3d_halo_corners, ltraining);
   PCLoad(config,AC_MPI_comm_strategy,AC_MPI_COMM_STRATEGY_DUP_USER);
   config.comm->handle = comm_pencil;
 
-// grid and geometry related parameters
+// Grid and geometry related parameters
 
   PCLoad(config,AC_ds,(AcReal3){dx,dy,dz});
   PCLoad(config,AC_periodic_grid,lperi);
-  //TP: Astaroth has default formula for AC_len but we want to make sure AC_len = lxyz, in case the Astaroth formula does not cover everything like non-equidistant grids
+//  Overwrites Astaroth's default formula for AC_len in case it does not cover everything like non-equidistant grids
   PCLoad(config,AC_len,lxyz);
 
   PCLoad(config,AC_sparse_autotuning,lac_sparse_autotuning);
-  // Enter physics related parameters in config.
+
+//  Enter physics related parameters in config.
 
   #if LDENSITY
     PCLoad(config,AC_ldensity_nolog,ldensity_nolog);
@@ -1168,34 +1174,41 @@ load_f_ode()
 /***********************************************************************************************/
 extern "C" void beforeBoundaryGPU(bool lrmv, int isubstep, double t)
 {
-	//TP: has to be done here since before boundary can use the ode array
+// Load variable values of ODE variables to GPU since before boundary may use them
 	load_f_ode();
- 	acDeviceSetInput(acGridGetDevice(), AC_lrmv,lrmv);
- 	acDeviceSetInput(acGridGetDevice(), AC_t,AcReal(t));
-        acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_before_boundary_steps),1);
+
+// Load those dynamical parameters (those which depend on time) to GPU
+
+ 	acDeviceSetInput(acGridGetDevice(), AC_lrmv, lrmv);
+ 	acDeviceSetInput(acGridGetDevice(), AC_t, AcReal(t));
+
+// Execute all "before-boundary-actions", which do not update the halos, by separate task graph
+
+	acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_before_boundary_steps),1);
+
 //Some Fields are directly calculated on the halos like yH in ioncalc.
 //Could reformulate the kernels in a way that the bc is simply the same kernel as the normal calculation
 //But don't want to repeat calc too often so this is an somewhat easy to way to do it
 #if TRANSPILATION
-	const auto steps_updating_halos = acGetOptimizedDSLTaskGraph(AC_before_boundary_steps_including_halos
-					,(Volume){0,0,0},acGetLocalMM(acGridGetLocalMeshInfo()));
+	const auto steps_updating_halos = acGetOptimizedDSLTaskGraph(AC_before_boundary_steps_including_halos,
+					          (Volume){0,0,0},acGetLocalMM(acGridGetLocalMeshInfo()));
 	if (!acGridTaskGraphIsEmpty(steps_updating_halos))
 	{
-  		auto bcs = acGetOptimizedDSLTaskGraph(boundconds);
-  		acGridExecuteTaskGraph(bcs,1);
-	  	acGridHaloExchange();
-  		acGridExecuteTaskGraph(steps_updating_halos,1);
+		AcTaskGraph* bcs = acGetOptimizedDSLTaskGraph(boundconds);
+		acGridExecuteTaskGraph(bcs,1);                            // apply boundconds
+		acGridHaloExchange();                                     // halo communication
+		acGridExecuteTaskGraph(steps_updating_halos,1);           // f-array update
 	}
 #endif
 #if LSELFGRAVITY
 	if (t>=tstart_selfgrav)
 	{
 		acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_calc_selfgravity_rhs),1);
-    		acDeviceFFTR2C(acGridGetDevice(),acGetRHS_POISSON(),RHS_POISSON_COMPLEX);
+		acDeviceFFTR2C(acGridGetDevice(),acGetRHS_POISSON(),RHS_POISSON_COMPLEX);                     // FFT of rhs of Poisson eq.
     		AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
   		acGridLaunchKernel(STREAM_DEFAULT, selfgravity_poisson_solve, dims.n0, dims.n1);
-                acGridSynchronizeStream(STREAM_ALL);
-    		acDeviceFFTC2R(acGridGetDevice(),SELFGRAVITY_POTENTIAL_COMPLEX,acGetSELFGRAVITY_POTENTIAL());
+		acGridSynchronizeStream(STREAM_ALL);
+		acDeviceFFTC2R(acGridGetDevice(),SELFGRAVITY_POTENTIAL_COMPLEX,acGetSELFGRAVITY_POTENTIAL()); // FFT backtransform. of solution
 		//TP: A placeholder for iterative solvers, in the future choose the number of solving steps based on the norm of the residual
 		/**
 		for (int i = 0; i < 100; ++i)
@@ -1268,28 +1281,26 @@ if (it % 5 !=0) return;
                        << mesh.vertex_buffer[UUX][DEVICE_VTXBUF_IDX(i, j, k)] << ","
                        << mesh.vertex_buffer[UUY][DEVICE_VTXBUF_IDX(i, j, k)] << ","
                        << mesh.vertex_buffer[UUZ][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-											 << i << "," << j << "," << k << "\n";
+		       << i << "," << j << "," << k << "\n";
             }
         }
     }
 	#endif
-	if (called_training){
-		called_training = false;
-	}
+	if (called_training) called_training = false;
 }
 /***********************************************************************************************/
 extern "C" void afterTimeStepGPU()
 {
-  	if (acDeviceGetInput(acGridGetDevice(), AC_step_num) == PC_FIRST_SUB_STEP)
+	if (acDeviceGetInput(acGridGetDevice(), AC_step_num) == PC_FIRST_SUB_STEP)
 	{
 #if LGRAVITATIONAL_WAVES_HTXK
-        	acDeviceFFTR2Planar(acGridGetDevice(), acGetF_STRESS_0(),acGetAC_tpq_re__mod__gravitational_waves_htxk_0(),acGetAC_tpq_im__mod__gravitational_waves_htxk_0());
-        	acDeviceFFTR2Planar(acGridGetDevice(), acGetF_STRESS_1(),acGetAC_tpq_re__mod__gravitational_waves_htxk_1(),acGetAC_tpq_im__mod__gravitational_waves_htxk_1());
-        	acDeviceFFTR2Planar(acGridGetDevice(), acGetF_STRESS_2(),acGetAC_tpq_re__mod__gravitational_waves_htxk_2(),acGetAC_tpq_im__mod__gravitational_waves_htxk_2());
-        	acDeviceFFTR2Planar(acGridGetDevice(), acGetF_STRESS_3(),acGetAC_tpq_re__mod__gravitational_waves_htxk_3(),acGetAC_tpq_im__mod__gravitational_waves_htxk_3());
-        	acDeviceFFTR2Planar(acGridGetDevice(), acGetF_STRESS_4(),acGetAC_tpq_re__mod__gravitational_waves_htxk_4(),acGetAC_tpq_im__mod__gravitational_waves_htxk_4());
-        	acDeviceFFTR2Planar(acGridGetDevice(), acGetF_STRESS_5(),acGetAC_tpq_re__mod__gravitational_waves_htxk_5(),acGetAC_tpq_im__mod__gravitational_waves_htxk_5());
-		acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_gravitational_waves_solve_and_stress),1);
+	    acDeviceFFTR2Planar(acGridGetDevice(), acGetF_STRESS_0(),acGetAC_tpq_re__mod__gravitational_waves_htxk_0(),acGetAC_tpq_im__mod__gravitational_waves_htxk_0());
+	    acDeviceFFTR2Planar(acGridGetDevice(), acGetF_STRESS_1(),acGetAC_tpq_re__mod__gravitational_waves_htxk_1(),acGetAC_tpq_im__mod__gravitational_waves_htxk_1());
+	    acDeviceFFTR2Planar(acGridGetDevice(), acGetF_STRESS_2(),acGetAC_tpq_re__mod__gravitational_waves_htxk_2(),acGetAC_tpq_im__mod__gravitational_waves_htxk_2());
+	    acDeviceFFTR2Planar(acGridGetDevice(), acGetF_STRESS_3(),acGetAC_tpq_re__mod__gravitational_waves_htxk_3(),acGetAC_tpq_im__mod__gravitational_waves_htxk_3());
+	    acDeviceFFTR2Planar(acGridGetDevice(), acGetF_STRESS_4(),acGetAC_tpq_re__mod__gravitational_waves_htxk_4(),acGetAC_tpq_im__mod__gravitational_waves_htxk_4());
+	    acDeviceFFTR2Planar(acGridGetDevice(), acGetF_STRESS_5(),acGetAC_tpq_re__mod__gravitational_waves_htxk_5(),acGetAC_tpq_im__mod__gravitational_waves_htxk_5());
+	    acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_gravitational_waves_solve_and_stress),1);
 #endif
 	}
 	acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_after_timestep),1);
@@ -1389,8 +1400,9 @@ void copyFarray(AcReal* f)
   }
   for (int i = 0; i < end; ++i)
   {
-          if (!ltraining && i >= mvar && maux_vtxbuf_index[i] == -1) continue;
-	  acDeviceStoreVertexBuffer(acGridGetDevice(),STREAM_DEFAULT,VertexBufferHandle(i),dst);
+	  const int index = i < mvar ? i : maux_vtxbuf_index[i];
+          if (!ltraining && index == -1) continue;
+	  acDeviceStoreVertexBuffer(acGridGetDevice(),STREAM_DEFAULT,VertexBufferHandle(index),dst);
   }
   acGridSynchronizeStream(STREAM_ALL);
   //TP: Astaroth does not allocate ghost zones for inactive dimensions for 1d and 2d simulations, and unlike for xy  we cannot simply offset into the farray so have to manually copy the values
@@ -1643,7 +1655,35 @@ extern "C" void loadFarray()
   if (dimensionality == 1) acHostMeshDestroy(&tmp);
 }
 /***********************************************************************************************/
-void testBCs();     // forward declaration
+void generate_bcs()
+{
+	if(rank != 0) return;
+	if(system("cd src && scripts/bc2ast 1> ../tmp_bcs 2> /dev/null && cd .."))
+	{
+		fprintf(stderr,"AC Error: Was not able to generate bcs!\n");
+		exit(EXIT_FAILURE);
+	}
+	const int different = system("diff tmp_bcs src/astaroth/DSL/local/boundconds.h");
+	if(different)
+	{
+		if(system("mv tmp_bcs src/astaroth/DSL/local/boundconds.h"))
+		{
+			fprintf(stderr,"AC Error: Was not able move bcs to DSL/local!\n");
+			exit(EXIT_FAILURE);
+		}
+		fprintf(stderr,"BCs different: recompiling!\n");
+	}
+	else
+	{
+		if(system("rm tmp_bcs"))
+		{
+			fprintf(stderr,"AC Error: Was not able to remove tmp_bcs!\n");
+			exit(EXIT_FAILURE);
+		}
+	}
+}
+/***********************************************************************************************/
+extern "C" void testBCs();     // forward declaration
 /***********************************************************************************************/
 extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t, int nt_)  // MPI_Fint comm_fint
 {
@@ -1728,6 +1768,8 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t, int nt_)  /
   if (rank==0 && ldebug) printf("memusage after pointer assign= %f MBytes\n", acMemUsage()/1024.);
 #if AC_RUNTIME_COMPILATION
 #include "cmake_options.h"
+  generate_bcs();
+  MPI_Barrier(MPI_COMM_WORLD);
   acCompile(cmake_options,mesh.info);
   acLoadLibrary(rank == 0 ? stderr : NULL,mesh.info);
   acCheckDeviceAvailability();
@@ -1778,6 +1820,8 @@ extern "C" void reloadConfig()
 	  exit(EXIT_FAILURE);
   }
 #include "cmake_options.h"
+  generate_bcs();
+  MPI_Barrier(MPI_COMM_WORLD);
   acCompile(cmake_options,mesh.info);
   acLoadLibrary(rank == 0 ? stderr : NULL,mesh.info);
   acGridInit(mesh);
@@ -1817,6 +1861,11 @@ extern "C" int updateInConfigArrName(char *name)
        if (strcmp(get_array_info(static_cast<AcRealArrayParam>(i)).name,name)==0) index=i;
     }
     if (index>-1) updateInConfigArr(index);
+    else
+    {
+       fprintf(stderr,"Astaroth WARNING: Did not entry named %s in config!!\n",name);
+       fflush(stderr);
+    }
     return index;
 }
 /***********************************************************************************************/
@@ -1827,6 +1876,11 @@ extern "C" int updateInConfigScalName(char *name, AcReal value)
        if (strcmp(realparam_names[i],name)==0) index=i;
     }
     if (index>-1) updateInConfigScal(index, value);
+    else
+    {
+       fprintf(stderr,"Astaroth WARNING: Did not entry named %s in config!!\n",name);
+       fflush(stderr);
+    }
     return index;
 }
 /**********************************************************************************************/
