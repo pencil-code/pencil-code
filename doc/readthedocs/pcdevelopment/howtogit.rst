@@ -1,4 +1,5 @@
 .. _howtogit:
+
 ***********************************
 Git: The Time Machine for Your Code
 ***********************************
@@ -77,6 +78,7 @@ This gives you a local copy of the repository, but you **won’t be able to push
 
 
 .. note::
+
 Congratulations, you are now in **Look-but-don’t-touch mode**. Feel free to explore the code, but the timeline is locked until you have write access!
 
 
@@ -138,7 +140,8 @@ Check staged differences:
     $ git diff --staged
 
 .. note::
-Peek into the timeline before changing history
+
+    Peek into the timeline before changing history
 
 
 Pulling & Stashing
@@ -210,7 +213,7 @@ Now you can pull or push safely.
 
 .. note::
 
-Think of stash as hiding experiments in a TARDIS pocket dimension.
+    Think of stash as hiding experiments in a TARDIS pocket dimension.
 
 
 Advanced stash tips:
@@ -235,7 +238,8 @@ Advanced stash tips:
     $ git stash drop stash@{0}
 
 .. note::
-Use stashes wisely—too many, and your TARDIS starts to feel cluttered.
+
+    Use stashes wisely—too many, and your TARDIS starts to feel cluttered.
 
 
 
@@ -252,9 +256,11 @@ Before your changes can travel to the master timeline (the remote repository), G
     $ git add dir_to_add/       # stage all files in a specific folder
 
 .. note::
-Staging lets you **choose exactly which changes** go into your next commit. You can have some edits ready for the next time jump while leaving experimental work behind.
+
+    Staging lets you **choose exactly which changes** go into your next commit. You can have some edits ready for the next time jump while leaving experimental work behind.
 
 .. changed
+
 Pro tip: use `git status` after staging to double-check what’s staged and what’s still wandering in the timeline uncommitted:
 
 .. code:: bash
@@ -262,7 +268,8 @@ Pro tip: use `git status` after staging to double-check what’s staged and what
     $ git status
 
 .. note::
-This prevents “Oops! I committed that half-baked code” moments—every Time Lord needs a careful plan before hopping timelines.
+
+    This prevents “Oops! I committed that half-baked code” moments—every Time Lord needs a careful plan before hopping timelines.
 
 Advanced tip: you can stage multiple sets of changes separately and then commit each with a different message. This lets you break your work into logical, focused commits instead of dumping everything into one messy time capsule.
 
@@ -284,7 +291,8 @@ Advanced tip: you can stage multiple sets of changes separately and then commit 
     $ git commit -m "Updating documentation"
 
 .. note::
-Each `git add` is like sealing a small time capsule, and each `git commit -m` sends all the added files and directories safely into the master timeline. Your commit history will be clean, readable, and easy to navigate.
+
+    Each `git add` is like sealing a small time capsule, and each `git commit -m` sends all the added files and directories safely into the master timeline. Your commit history will be clean, readable, and easy to navigate.
 
 
 Interactive Staging with `git add -p`
@@ -305,9 +313,11 @@ This command will break your changes into **hunks** (chunks of modified lines) a
 * **?** – show help
 
 .. note::
-Think of `git add -p` as using a sonic screwdriver to precisely select which edits travel through time. You can send just the ready parts while leaving experimental changes safely behind.
+
+    Think of `git add -p` as using a sonic screwdriver to precisely select which edits travel through time. You can send just the ready parts while leaving experimental changes safely behind.
 
 .. changed
+
 Pro tip: use this for clean, logical commits. You’ll thank yourself (and future developers) when browsing `git log`.
 
 
@@ -518,7 +528,8 @@ From that moment on, Git will remember the connection between your local ``docum
     $ git push
 
 .. note::
-The first push is like introducing your branch to the server: *"Hello, I exist now!"* — after that, Git will remember the relationship and stop asking awkward questions.
+
+    The first push is like introducing your branch to the server: *"Hello, I exist now!"* — after that, Git will remember the relationship and stop asking awkward questions.
 
 
 History / Log
@@ -565,7 +576,8 @@ A few extra moves that make you feel like a Git Time Lord:
     
 
 .. note::
-Think of it as shielding Daleks and temporary logs from your timeline.
+
+    Think of it as shielding Daleks and temporary logs from your timeline.
 
 * **Undo a commit** (`git reset`) – sometimes past-you made a mistake:
 
@@ -575,7 +587,8 @@ Think of it as shielding Daleks and temporary logs from your timeline.
     $ git reset --hard HEAD~1  # undo last commit and discard changes
 
 .. note::
-Like a mini TARDIS to erase recent misadventures.
+
+    Like a mini TARDIS to erase recent misadventures.
 
 * **Check remotes** (`git remote -v`) – know which time portals your repo talks to:
 
@@ -584,7 +597,8 @@ Like a mini TARDIS to erase recent misadventures.
     $ git remote -v
 
 .. note::
-Useful before pushing to avoid accidentally sending code to a parallel universe.
+
+    Useful before pushing to avoid accidentally sending code to a parallel universe.
 
 
 

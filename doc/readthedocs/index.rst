@@ -19,7 +19,7 @@ Explore the sections below to get started, contribute, or run simulations with P
    :caption: Getting Started Quickly
 
    User Quick Guide <manuals/quick-guide>
-   Full User Manual <manuals/full-manual>
+   Full User Manual <manuals/fmanual-index>
 
 .. toctree::
    :maxdepth: 1
