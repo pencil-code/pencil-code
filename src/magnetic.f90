@@ -2217,7 +2217,7 @@ module Magnetic
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      real, dimension (mz) :: tmp
+      real, dimension (nz) :: tmp
       real, dimension (nx,3) :: bb
       real, dimension (nx) :: b2,fact,cs2,lnrho_old,ssold,cs2old,x1,x2
       real, dimension (nx) :: beq2_pencil, prof, tmpx
@@ -2262,11 +2262,14 @@ module Magnetic
         case ('gaussian-noise-rprof')
           call gaunoise_rprof(amplaa(j),f,iax,iaz,rnoise_int,rnoise_ext)
         case ('gaussian-noise-zprof')
-          tmp=amplaa(1)*0.5*(tanh((z-z1)/0.05)-tanh((z-z2)/0.05))
+          !tmp=amplaa(1)*0.5*(tanh((z-z1)/0.05)-tanh((z-z2)/0.05))
+          !15-10-25/axel: replaced input parameters, e.g., z1_aa=-.5, z2_aa=.5, widthaa=.1
+          tmp=amplaa(1)*.5*(tanh((z(n1:n2)-z1_aa)/widthaa)-tanh((z(n1:n2)-z2_aa)/widthaa))
           call gaunoise(tmp,f,iax,iaz)
         case ('gaussian-noise-zprof2')
-          tmp=amplaa(1)*0.5*(tanh((z-znoise_int)/0.05)-tanh((z-znoise_ext)/0.05))
-          call gaunoise(tmp,f,iax,iaz)
+          call fatal_error("init_aa","use gaussian-noise-zprof with z1_aa, z2_aa, and widthaa")
+          !tmp=amplaa(1)*.5*(tanh((z(n1:n2)-znoise_int)/0.05)-tanh((z(n1:n2)-znoise_ext)/0.05))
+          !call gaunoise(tmp,f,iax,iaz)
 !
 !  ABC field (includes Beltrami fields when only one coefficient /= 0)
 !

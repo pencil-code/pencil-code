@@ -725,11 +725,11 @@ def src2dst_remesh(
         m1in,m2in=srcchunks[1][0], srcchunks[1][1]+2*srcghost
         n1in,n2in=srcchunks[2][0], srcchunks[2][1]+2*srcghost
         xin, yin, zin = (
-          srcsim.ghost_grid.x[l1:l2],
-          srcsim.ghost_grid.y[m1:m2],
-          srcsim.ghost_grid.z[n1:n2]
+          srcsim.ghost_grid.x[l1in:l2in],
+          srcsim.ghost_grid.y[m1in:m2in],
+          srcsim.ghost_grid.z[n1in:n2in]
           )
-        print("start and end values {},{}".format(l1,l2))
+        print("start and end values {},{}".format(l1in,l2in))
     else:
         nxin, nyin, nzin = srcsim.dim.nxgrid, srcsim.dim.nygrid, srcsim.dim.nzgrid
         l1in,l2in=srcsim.dim.l1-srcghost, srcsim.dim.l2+srcghost+1
