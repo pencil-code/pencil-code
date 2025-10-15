@@ -200,7 +200,7 @@ endsubroutine helper_loop
     use Io,              only: output_globals
 
     real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-    integer :: isave_shift=0, i
+    integer :: isave_shift=0
     real :: tvar1
 !
 !  Setting ialive=1 can be useful on flaky machines!

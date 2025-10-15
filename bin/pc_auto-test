@@ -1019,7 +1019,7 @@ sub my_ok {
         $failed{$dir} = $phase unless defined($failed{$dir});
         mark_failed ($dir);
 	if (($phase eq 'compilation') && $gpu) {
-	    system ('cat ac_compilation.log >> '.$log_dir.'/'.$dir.'/build.log');
+	    system ('cat src/astaroth/ac_build.log ac_compilation.log >> '.$log_dir.'/'.$dir.'/build.log');
 	}
     }
 

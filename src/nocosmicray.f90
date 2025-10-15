@@ -16,7 +16,6 @@ module Cosmicray
 !
   use Cdata
   use General, only: keep_compiler_quiet
-  use Messages
 !
   implicit none
 !
@@ -32,6 +31,8 @@ module Cosmicray
 !  09-oct-03/tony: coded
 !
 !  Identify version number.
+!
+      use Messages
 !
       if (lroot) call svn_id( &
           "$Id$")
@@ -102,7 +103,6 @@ module Cosmicray
 !  All pencils that the Cosmicray module depends on are specified here.
 !
 !  20-11-04/anders: coded
-!
 !
     endsubroutine pencil_criteria_cosmicray
 !***********************************************************************
@@ -193,14 +193,10 @@ module Cosmicray
 !
     endsubroutine impose_ecr_floor
 !***********************************************************************
-    subroutine pushpars2c
+    subroutine pushpars2c(p_par)
 
-    use Syscalls, only: copy_addr
-    use General , only: string_to_enum
-
-    integer, parameter :: n_pars=100
-    integer :: i
-    integer(KIND=ikind8), dimension(n_pars) :: p_par
+      integer, parameter :: n_pars=0
+      integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     endsubroutine pushpars2c
 !***********************************************************************
