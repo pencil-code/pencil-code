@@ -4030,7 +4030,3 @@ set_ghosts_for_onesided_ders(AcBoundary boundary,AC_TOP_BOT topbot, Field j, int
 	suppress_unused_warning(idir)
 	ac_set_ghosts_for_onesided_derivs(boundary,j)
 }
-ac_set_ghosts_for_onesided_derivs(AcBoundary boundary, Field j)
-{
-        print("not implemented set_ghosts_for_onesided_ders")
-}
