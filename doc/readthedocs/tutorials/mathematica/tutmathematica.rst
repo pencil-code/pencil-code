@@ -152,7 +152,7 @@ Sometimes the following method is also useful:
 Then ``uu1`` becomes a "function" and its value at ``{x1,y1,z1}`` is simply ``uu1[{x1,y1,z1}]``.
 
 Visualizing slices from VAR files
-================================
+===================================
 
 A quick way to make a density plot from ``data`` is
 
