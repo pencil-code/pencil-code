@@ -4589,7 +4589,6 @@ module EquationOfState
     call string_to_enum(enum_tdep_cs2_type,tdep_cs2_type)
     call copy_addr(enum_tdep_cs2_type,p_par(35)) ! int
     call copy_addr(cs2_tdep_ascale_power,p_par(36))
-    call copy_addr(iglobal_glntt,p_par(37)) ! int
 
     endsubroutine pushpars2c
 !***********************************************************************
