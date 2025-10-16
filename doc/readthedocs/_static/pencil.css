@@ -68,3 +68,9 @@ td div.admonition {
 .icon-home {
     font-size: 24px !important;
 }
+
+/* align math number to the right */
+
+.eqno {
+    float: right;
+}
