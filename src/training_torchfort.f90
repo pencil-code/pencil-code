@@ -41,11 +41,11 @@
 
     namelist /training_run_pars/ config_file, model, it_train, it_train_start, it_train_chkpt, &
                                  luse_trained_tau, lscale, lwrite_sample, max_loss, lroute_via_cpu,&
-                                 it_train_end
+                                 it_train_end, run_epoch
 !
     character(LEN=fnlen) :: model_output_dir, checkpoint_output_dir
     integer :: istat, train_step_ckpt, val_step_ckpt
-    logical :: ltrained=.false., lckpt_written=.false.,lmodel_saved=.false.
+    logical :: ltrained=.false., lckpt_written=.false.,lmodel_saved=.false., run_epoch=.false.
     real, dimension (mx,my,mz,3) :: uumean
     real :: tauerror, input_min, input_max, output_min, output_max
     real, dimension(mx, my, mz, 6) :: tau_pred
@@ -101,7 +101,7 @@
       endif
 
 !need this to be false for now but should be ltrained
-      if (ltrained) then
+      if (ltrained.and..not.run_epoch) then
         istat = torchfort_load_model(trim(model), trim(modelfn))
         if (istat /= TORCHFORT_RESULT_SUCCESS) then
           call fatal_error("initialize_training","when loading model: istat="//trim(itoa(istat)))
@@ -110,7 +110,8 @@
         endif
       else
         if (file_exists(trim(checkpoint_output_dir)//'/'//trim(model)//'.pt').and.lroot) then
-          print *, 'loadedd checkpoint'
+          print *, 'loaded checkpoint'
+          ltrained=.false.
           istat = torchfort_load_checkpoint(trim(model), trim(checkpoint_output_dir), train_step_ckpt, val_step_ckpt)
           if (istat /= TORCHFORT_RESULT_SUCCESS) then
             call fatal_error("initialize_training","when loading checkpoint: istat="//trim(itoa(istat)))
