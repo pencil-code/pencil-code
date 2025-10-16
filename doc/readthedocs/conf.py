@@ -303,7 +303,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, "PCDOC.tex", "PC Documentation", "Illa R. Losada", "manual"),
+    #(master_doc, "PCDOC.tex", "PC Documentation", "Illa R. Losada", "manual"),
     # (
     #    "manuals/quick-guide",
     #    "quickGuide.tex",
