@@ -425,68 +425,72 @@ Basic commands:
 
 * List all local branches:
 
-.. code:: bash
+    .. code:: bash
 
-    $ git branch
+        $ git branch
 
 * Create a new branch:
 
-.. code:: bash 
+    .. code:: bash 
 
-    $ git branch my-branch
+        $ git branch my-branch
 
 * Switch to an existing branch:
 
-.. code:: bash
+    .. code:: bash
 
-    $ git checkout my-branch
+        $ git checkout my-branch
 
-or 
+    or 
 
-.. code:: bash
+    .. code:: bash
 
-    $ git switch my-branch
+        $ git switch my-branch
 
 * Create and switch to a new branch:
 
-.. code:: bash
+    .. code:: bash
 
-    $ git checkout -b my-branch
+        $ git checkout -b my-branch
 
-or
+    or
 
-.. code:: bash
+    .. code:: bash
 
-    $ git switch -c my-branch
+        $ git switch -c my-branch
 
 
 * Rebase onto another branch:
 
-.. code:: bash
+    .. code:: bash
 
-    $ git rebase my-branch
+        $ git rebase my-branch
 
-Careful with this one. Can generate conflicts.
+    Careful with this one. Can generate conflicts.
 
 * Delete a branch, but only if it has been fully merged.
 
-.. code:: bash
+    .. code:: bash
 
-    $ git branch -d my-branch
+        $ git branch -d my-branch
 
 * Forcefully deletes a branch (use with care!)
 
-.. code:: bash
+    .. code:: bash
 
-    $ git branch -D my-branch
+        $ git branch -D my-branch
 
 
 * Merge into ``master``:
 
-.. code:: bash
+    .. code:: bash
 
-    $ git switch master
-    $ git merge my-branch
+        $ git switch master
+        $ git merge my-branch
+
+    .. attention:
+
+        This merge will not work with the |PC|, please check sec :ref:`merge_pencil`
 
 
 .. important::
@@ -498,15 +502,17 @@ Tips for working with Branches
 
 A classic branching horror story goes like this: you create your branch, happily work on your changes for a while, and when you finally try to rebase onto ``master``, you discover that ``master`` has evolved into a completely different timeline. Now you’re staring at a kaiju-sized merge conflict wondering if you should fake your own death and start a new career.
 
-To avoid this future therapy bill, the best practice is to regularly rebase ``master`` into your branch:
+To avoid this future therapy bill, the best practice is to regularly merge ``master`` into your branch:
 
 .. code:: bash
 
-    $ git rebase master
+    $ git switch documentation  # make sure your are on your branch
+    $ git merge master          # merge master into your branch
 
 By doing this often, any conflicts you hit will be smaller, friendlier, and less likely to question your life choices.
 
-If you keep rebasing as you work, merging your branch later will feel less like boss-level combat and more like a polite handshake.
+If you keep merging as you work, merging your branch later will feel less like boss-level combat and more like a polite handshake.
+
 
 
 Pushing branches
@@ -530,6 +536,139 @@ From that moment on, Git will remember the connection between your local ``docum
 .. note::
 
     The first push is like introducing your branch to the server: *"Hello, I exist now!"* — after that, Git will remember the relationship and stop asking awkward questions.
+
+
+.. _merge_pencil:
+
+How to merge your branch with the |PC| master
+----------------------------------------------
+
+
+
+Merging in the |PC| universe isn’t your regular “two lines diverged in a repo” situation.  
+Because |PC| exists in a peculiar hybrid space-time where both ``svn`` and ``git`` coexist (through the miracle—or curse—of SubGit), every interaction with the repository must go through the central server at `https://pencil-code.org`_.  
+
+This means that a normal merge won’t work. You need to follow the proper temporal protocols.
+
+To keep your branch from tearing a hole in the space–code continuum, proceed as follows:
+
+
+
+1. **Synchronize your branch with master — align your timelines**
+
+    .. code:: bash
+
+        $ git switch your-branch   # make sure you are on your branch
+        $ git merge master         # merge latest timeline updates
+
+    Congratulations, your branch is now aligned with the latest master timeline.
+    Reality remains stable—for now.
+
+
+2. **Merge into master — but not the fast-forward kind**
+
+    A fast-forward merge may look tempting: quick, simple, elegant.  
+    Unfortunately, in the |PC| multiverse, it’s also forbidden. SubGit guards the gate and will smite any attempt to rewrite the sacred SVN trunk.
+
+    So instead, perform a :command:`non Fast-Forward merge` — the Git equivalent of gently folding timelines together rather than shoving one into the other.
+
+
+    .. code:: bash
+
+        $ git switch master             # make sure you are on master
+        $ git merge your-branch --no-ff # no Fast forward, no paradoxes
+
+    This will keep the history intact and prevent the repository from imploding into a causal loop.
+
+
+
+3. **Push your changes to the central repository**
+
+    .. code:: bash
+
+        $ git push
+
+    
+    If everything worked, your branch is now part of master, history is safe, and you’ve successfully avoided the “Temporal Merge Conflict of Doom.”
+
+
+
+The merge failed! (or, “I think we broke the timeline...”)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+If you ignored the “no Fast-Forward” prophecy and pushed anyway,  
+Git will retaliate with an ancient curse that looks like this:
+
+
+.. code:: 
+
+    remote: 
+    remote: SubGit ERROR REPORT (SubGit version 3.3.17 ('Bobique') build #4463):
+    remote: 
+    remote: You've received this message because SubGit (http://subgit.com/) is installed in your repository
+    remote: and an error that needs to be dealt with has occurred in SubGit translation engine.
+    remote: 
+    remote: The following ref update is disallowed:
+    remote:   refs/heads/master: leads to replacement of SVN branch 'trunk'
+    remote: 
+    remote: If changes were forcefully pushed to Git repository, try to merge them with the upstream instead;
+    remote: If changes were result of fast-forward merge, retry merge with --no-ff option.
+    remote: 
+    remote: You can allow branch replacements by adjusting SubGit configuration file as follows:
+    remote:   'svn.allowBranchReplacement = true' in remote mirror mode;
+    remote:   'git.<ID>.allowBranchReplacement = true' in local mirror mode.
+    remote: 
+    usage: git credential-cache [<options>] <action>
+
+        --[no-]timeout <n>    number of seconds to cache credentials
+        --[no-]socket <path>  path of cache-daemon socket
+
+    git credential-cache --timeout=9999
+
+     store: 3: store: not found
+    To https://pencil-code.org/git/
+     ! [remote rejected]     master -> master (pre-receive hook declined)
+    error: failed to push some refs to 'https://pencil-code.org/git/'
+
+Don’t panic. The timeline can be repaired.
+
+
+**Steps to fix your mistake and restore the flow of time:**
+
+1. **Rewind to before the paradox**
+
+    First, make sure you’re standing on the ``master`` branch (``git status`` will confirm your position in time).
+
+    .. code:: bash
+
+        $ git reset --hard origin/master  # return to the moment before the merge
+
+2. **Update master — in case someone else tinkered with the timeline**
+
+    .. code:: bash
+
+        $ git pull
+
+3. **Merge again, correctly this time**
+
+    .. code:: bash
+
+        $ git merge your-branch --no-ff
+
+4. **Push, and watch as the timelines gracefully align**
+
+    .. code:: bash
+
+        $ git push
+
+If you followed these steps, the merge should succeed and the repository will continue to exist in a stable reality.  
+
+.. admonition:: Remember: 
+    
+    *merging with care is cheaper than rebuilding the universe.*  
+    And whatever you do—never fast-forward past a fixed point in time.
+
 
 
 History / Log
