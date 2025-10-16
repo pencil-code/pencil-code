@@ -232,7 +232,7 @@ outer:do ikz=1,nz
 !  Each processor will see only part of it.
 !  Ignore *2*pi/Lx factor, because later we want k to be integers.
 !
-    if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
+    if (minval(Lxyz) /= maxval(Lxyz)) &
       call warning("initialize_power_spectrum", "computation of wavevector wrong for non-cubical domains")
 
     if (lcorrect_integer_kcalc) then
@@ -1303,7 +1303,7 @@ outer:do ikz=1,nz
 !
 ! KG: added warning about wrong computation of wavenumbers.
 ! KG: See the function get_k2 for an example of how to calculate k2.
-    if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
+    if (headt .and. (minval(Lxyz) /= maxval(Lxyz))) &
       call warning("powerhel", "computation of wavevector wrong for non-cubical domains")
 !
 ! Select cases where spectra are precomputed
@@ -5172,7 +5172,7 @@ outer:do ikz=1,nz
 !
 ! KG: added warning about wrong computation of wavenumbers.
 ! KG: See the function get_k2 for an example of how to calculate k2.
-    if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
+    if (headt.and.(minval(Lxyz) /= maxval(Lxyz))) &
       call warning("power_cor", "computation of wavevector wrong for non-cubical domains")
 !
     if (lshear_frame_correlation) then
