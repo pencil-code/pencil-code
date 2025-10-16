@@ -6,6 +6,7 @@
   Comments: 
 */
 // General headers.
+#include <sstream>
 #include <math.h>
 #include <algorithm>
 #include <chrono>
@@ -17,6 +18,7 @@
 #include <sys/resource.h>
 #include <fstream>
 #include <dlfcn.h>
+
 
 //TP: defined here since mpi.h can have its own definition of DOUBLE_PRECISION
 //    and we don't want to conflict it with it. This is at least true on my laptop
@@ -150,6 +152,7 @@ void print_debug();
 
 extern "C" void copyFarray(AcReal* f);    // ahead declaration
 
+
 /***********************************************************************************************/
 AcReal cpu_pow(AcReal const val, AcReal exponent)
 {
@@ -166,7 +169,8 @@ float MSE(){
 #if TRAINING
 	#include "user_constants.h"
 
-	AcTaskGraph* descale_uumean_tau = acGetOptimizedDSLTaskGraph(descale);
+/*
+	auto descale_uumean_tau = acGetOptimizedDSLTaskGraph(descale);
 	acGridSynchronizeStream(STREAM_ALL);
 	acGridExecuteTaskGraph(descale_uumean_tau, 1);
 	acGridSynchronizeStream(STREAM_ALL);
@@ -177,11 +181,13 @@ float MSE(){
 	acGridSynchronizeStream(STREAM_ALL);
 
 	AcTaskGraph* calc_infered_loss = acGetOptimizedDSLTaskGraph(calc_validation_loss);
+*/
+	auto calc_infered_loss = acGetOptimizedDSLTaskGraph(calc_validation_loss);
 	acGridSynchronizeStream(STREAM_ALL);
 	acGridExecuteTaskGraph(calc_infered_loss, 1);
 	acGridSynchronizeStream(STREAM_ALL);
 
- 	bcs = acGetOptimizedDSLTaskGraph(boundconds);	
+ 	auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
 	acGridSynchronizeStream(STREAM_ALL);
 	acGridExecuteTaskGraph(bcs,1);
 	acGridSynchronizeStream(STREAM_ALL);
@@ -806,7 +812,7 @@ AcReal calc_dt1_courant(const AcReal t)
       maxnu_dyn = acDeviceGetOutput(acGridGetDevice(), AC_maxnu);
 //if (rank==0) printf("maxnu_dyn= %e \n", maxnu_dyn);
 #endif
-      //fprintf(stderr,"Maxadvec: %14e\n",maxadvec);
+      fprintf(stderr,"Maxadvec: %14e\n",maxadvec);
       return (AcReal)sqrt(pow(maxadvec, 2) + pow(max_diffus(maxnu_dyn,maxchi_dyn), 2));
 #endif
 }
@@ -891,8 +897,8 @@ std::vector<double>val_time;
 extern "C" void torch_infer_c_api(int itstub){	
 #if TRAINING
 	#include "user_constants.h"
-	if (!calling_infer){
-		fprintf(stderr,"Calling infer");
+	if(!calling_infer){
+		fprintf(stderr,"Calling infer\n");
 		fflush(stderr);
 	}
 	calling_infer = true;
@@ -911,8 +917,11 @@ extern "C" void torch_infer_c_api(int itstub){
 		acGridExecuteTaskGraph(bcs,1);
 		acGridSynchronizeStream(STREAM_ALL);
 
+	/*
+		if(!calculated_coeff_scales){
+			scaling();
+		}
 
-		if (!calculated_coeff_scales) scaling();
 
 		auto scale_uumean_tau = acGetOptimizedDSLTaskGraph(scale);
 		acGridSynchronizeStream(STREAM_ALL);
@@ -924,6 +933,8 @@ extern "C" void torch_infer_c_api(int itstub){
 		acGridExecuteTaskGraph(bcs,1);
 		acGridSynchronizeStream(STREAM_ALL);
 	}
+		*/
+		}
 
 	AcReal* out = NULL;
 
@@ -972,12 +983,12 @@ extern "C" void torch_train_c_api(AcReal *loss_val) {
 	#include "user_constants.h"
 	#include <stdlib.h>
 
-	if (!calling_train){
-		fprintf(stderr,"Calling training");
+	if(!calling_train){
+		fprintf(stderr,"Calling training\n");
 		fflush(stderr);
 	}
 
-	//fprintf(stderr,"The value of it: %d\n", it);
+	//fprintf(stderr,"The value of it: %d", it);
 	//fflush(stderr);
 
 	called_training = true;
@@ -1017,7 +1028,8 @@ extern "C" void torch_train_c_api(AcReal *loss_val) {
   acGridSynchronizeStream(STREAM_ALL);
   acGridExecuteTaskGraph(bcs,1);
   acGridSynchronizeStream(STREAM_ALL);
-  
+  	
+	/*
   if (!calculated_coeff_scales){
   	scaling();
   }
@@ -1031,6 +1043,7 @@ extern "C" void torch_train_c_api(AcReal *loss_val) {
   acGridSynchronizeStream(STREAM_ALL);
   acGridExecuteTaskGraph(bcs,1);
   acGridSynchronizeStream(STREAM_ALL);
+  */
 
   AcReal* out = NULL;
   
@@ -1077,47 +1090,59 @@ extern "C" void torch_train_c_api(AcReal *loss_val) {
 			total_val_time += val_time[i];
 		}
 		
-		/*
+		
 		float avg_train_loss = 0.0;
 		float avg_val_loss = 0.0;
 
-		for (int i=0;i<train_loss.size();i++{
+		for(int i=0;i<train_loss.size();i++){
 			avg_train_loss += train_loss[i];
+			avg_val_loss += val_loss[i];
 		}
+
+	/*
+		for(int i=0;i<val_loss.size();i++){
+			avg_val_loss += val_loss[i];
+		}
+
+	*/
 			
 		avg_train_loss = avg_train_loss / train_loss.size();
 
-		for (int i=0;i<val_loss.size();i++{
-			avg_val_loss += val_loss[i];
-		}
-		
-
 		avg_val_loss = avg_val_loss / val_loss.size();
 
-
 	
-		for (int i=0;i<train_loss.size();i++{
+		for(int i=0;i<train_loss.size();i++){
 			train_variance += (train_loss[i] - avg_train_loss) * (train_loss[i] - avg_train_loss);
-		}
-			
-		train_variance = train_variance / train_loss.size();
-
-		for (int i=0;i<val_loss.size();i++{
 			val_variance += (val_loss[i] - avg_val_loss) * (val_loss[i] - avg_val_loss);
 		}
 
+	/*
+		for(int i=0;i<val_loss.size();i++{
+			val_variance += (val_loss[i] - avg_val_loss) * (val_loss[i] - avg_val_loss);
+		}
+	*/
+			
+		train_variance = train_variance / train_loss.size();
+
 		val_variance = val_variance / val_loss.size();
-		*/
+		
 	
 		fprintf(stderr,"The total time taken for training: %f.7\n", total_train_time);
 		fprintf(stderr,"The average time taken for training: %f.7\n", total_train_time/train_time.size());
 
 		fprintf(stderr,"The total time taken for validation: %f.7\n", total_val_time);
 		fprintf(stderr,"The average time taken for validation: %f.7\n", total_val_time/val_time.size());
+
+		
+		fprintf(stderr,"Training loss variance: %f.7\n", train_variance);
+		fprintf(stderr,"Validation loss variance: %f.7\n", val_variance);
+
 		fflush(stderr);
 
 		std::ofstream myFile;
-		myFile.open("train_loss.csv");
+		std::string fileString = "train_loss_" + std::to_string(my_rank)  + ".csv";	
+
+		myFile.open(fileString);
 
     myFile << "epoch,train_loss\n";
 
@@ -1127,7 +1152,12 @@ extern "C" void torch_train_c_api(AcReal *loss_val) {
 		
 		myFile.close();
 
-		myFile.open("val_loss.csv");
+
+
+		fileString = "val_loss_" + std::to_string(my_rank)  + ".csv";	
+
+		myFile.open(fileString);
+
 
     myFile << "epoch,val_loss\n";
 
@@ -1225,17 +1255,103 @@ extern "C" void beforeBoundaryGPU(bool lrmv, int isubstep, double t)
 #endif
 }
 /***********************************************************************************************/
+bool idx_init = false;
+std::vector<size_t> idx_cache;
+
 void print_debug() {
 if (it % 5 !=0) return;
 #if TRAINING
     #include "user_constants.h"
-		counter = it;
+		
+		
+		//std::ifstream infile("snapshots/snapshot_rank" + std::to_string(my_rank) + "_it" + std::to_string(it) + ".bin", std::ios::binary);
 
+		//if (infile.good()) return;
+		
+		counter = it;
+		
 		//printf("The ranNumber is: %d\n", randomNumber);
 		MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
 
 		acDeviceSetInput(acGridGetDevice(), AC_ranNum, randomNumber);
 
+	  acGridHaloExchange();
+
+    copyFarray(NULL);
+
+    AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
+
+  	const auto DEVICE_VTXBUF_IDX = [&](const int x, const int y, const int z)
+  				{
+					return acVertexBufferIdx(x,y,z,mesh.info);
+  				};
+
+		int x_size = (dims.m1.x - dims.m0.x);
+		int y_size = (dims.m1.y - dims.m0.y);
+		int z_size = (dims.m1.z - dims.m0.z);
+
+		const size_t n_points =  x_size * y_size * z_size;
+		const int n_fields = 22;
+		
+		if(!idx_init){
+			idx_cache.reserve(n_points);
+
+    	for (size_t i = dims.m0.x; i < dims.m1.x; i++) {
+      	for (size_t j = dims.m0.y; j < dims.m1.y; j++) {
+        	for (size_t k = dims.m0.z; k < dims.m1.z; k++) {
+						idx_cache.push_back(acVertexBufferIdx(i,j,k,mesh.info));
+					}
+				}
+			}
+			idx_init = true;
+		}
+
+		std::vector<double> buffer;
+		buffer.reserve(n_points * n_fields);
+
+		for(size_t idx_i=0; idx_i < idx_cache.size(); ++idx_i){
+			
+			const size_t idx = idx_cache[idx_i];
+
+			const int i = dims.m0.x + (idx_i / (y_size * z_size));
+			const int j = dims.m0.y + ((idx_i / z_size) % y_size);
+			const int k = dims.m0.z + (idx_i % z_size);
+			
+			 buffer.push_back(static_cast<double>(it));
+
+        buffer.push_back(mesh.vertex_buffer[tau.xx][idx]);
+        buffer.push_back(mesh.vertex_buffer[TAU_INFERRED.xx][idx]);
+        buffer.push_back(mesh.vertex_buffer[tau.yy][idx]);
+        buffer.push_back(mesh.vertex_buffer[TAU_INFERRED.yy][idx]);
+        buffer.push_back(mesh.vertex_buffer[tau.zz][idx]);
+        buffer.push_back(mesh.vertex_buffer[TAU_INFERRED.zz][idx]);
+        buffer.push_back(mesh.vertex_buffer[tau.xy][idx]);
+        buffer.push_back(mesh.vertex_buffer[TAU_INFERRED.xy][idx]);
+        buffer.push_back(mesh.vertex_buffer[tau.yz][idx]);
+        buffer.push_back(mesh.vertex_buffer[TAU_INFERRED.yz][idx]);
+        buffer.push_back(mesh.vertex_buffer[tau.xz][idx]);
+        buffer.push_back(mesh.vertex_buffer[TAU_INFERRED.xz][idx]);
+        buffer.push_back(mesh.vertex_buffer[uumean.x][idx]);
+        buffer.push_back(mesh.vertex_buffer[uumean.y][idx]);
+        buffer.push_back(mesh.vertex_buffer[uumean.z][idx]);
+        buffer.push_back(mesh.vertex_buffer[UUX][idx]);
+        buffer.push_back(mesh.vertex_buffer[UUY][idx]);
+        buffer.push_back(mesh.vertex_buffer[UUZ][idx]);
+
+        buffer.push_back(static_cast<double>(i));
+        buffer.push_back(static_cast<double>(j));
+        buffer.push_back(static_cast<double>(k));
+
+		}
+	
+
+		std::ostringstream fname;
+    fname << "snapshots/snapshot_rank" << my_rank << "_it" << it << ".bin";
+    std::ofstream out(fname.str(), std::ios::binary);
+    out.write(reinterpret_cast<const char*>(buffer.data()), buffer.size() * sizeof(double));
+    out.close();
+
+		/*
 		std::ofstream myFile;
 		std::string fileString = "snapshots/snapshot_" + std::to_string(my_rank) + "_" + std::to_string(it) + ".csv";	
 		myFile.open(fileString);
@@ -1244,20 +1360,13 @@ if (it % 5 !=0) return;
            << "TAU_xy,TAU_xy_inferred,TAU_yz,TAU_yz_inferred,TAU_xz,TAU_xz_inferred,UUMEAN_x,UUMEAN_y,UUMEAN_z,"
            << "UUX,UUY,UUZ,x,y,z\n";
 
-	  acGridHaloExchange();
-    copyFarray(NULL);
 
-  	const auto DEVICE_VTXBUF_IDX = [&](const int x, const int y, const int z)
-  				{
-					return acVertexBufferIdx(x,y,z,mesh.info);
-  				};
-
-    AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
-	/*	
+	
 		auto taus = std::array{TAUBatch[0].xx, TAUBatch[1].xx, TAUBatch[2].xx, TAUBatch[3].xx, TAUBatch[4].xx, TAUBatch[5].xx, TAUBatch[0].yy, TAUBatch[1].yy, TAUBatch[2].yy, TAUBatch[3].yy, TAUBatch[4].yy, TAUBatch[5].yy, TAUBatch[0].zz, TAUBatch[1].zz, TAUBatch[2].zz, TAUBatch[3].zz, TAUBatch[4].zz, TAUBatch[5].zz, TAUBatch[0].xy, TAUBatch[1].xy, TAUBatch[2].xy, TAUBatch[3].xy, TAUBatch[4].xy, TAUBatch[5].xy, TAUBatch[0].yz, TAUBatch[1].yz, TAUBatch[2].yz, TAUBatch[3].yz, TAUBatch[4].yz, TAUBatch[5].yz, TAUBatch[0].xz, TAUBatch[1].xz, TAUBatch[2].xz, TAUBatch[3].xz, TAUBatch[4].xz, TAUBatch[5].xz};
 
 		auto uumeans = std::array{UUMEANBatch[0].x, UUMEANBatch[1].x, UUMEANBatch[2].x, UUMEANBatch[3].x, UUMEANBatch[4].x, UUMEANBatch[5].x, UUMEANBatch[0].y, UUMEANBatch[1].y, UUMEANBatch[2].y, UUMEANBatch[3].y, UUMEANBatch[4].y, UUMEANBatch[5].y, UUMEANBatch[0].z, UUMEANBatch[1].z, UUMEANBatch[2].z, UUMEANBatch[3].z, UUMEANBatch[4].z, UUMEANBatch[5].z};
 */
+
 
     for (size_t i = dims.m0.x; i < dims.m1.x; i++) {
         for (size_t j = dims.m0.y; j < dims.m1.y; j++) {
@@ -1285,8 +1394,13 @@ if (it % 5 !=0) return;
             }
         }
     }
+		*/
+
+
+		
+	
 	#endif
-	if (called_training) called_training = false;
+	if(called_training) called_training = false;
 }
 /***********************************************************************************************/
 extern "C" void afterTimeStepGPU()

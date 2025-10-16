@@ -11,7 +11,7 @@
 	!nt=1200, it1=10, isave=100, itorder=3, dt=1e-4
 
   ! then switch to stationary case
- 	nt=3000, it1=10000, isave=4000, itorder=3, dt=1e-12
+ 	nt=3000, it1=10, isave=1000, itorder=3, dt=1e-3
 
   dsnap=20., dtmin=1e-16
 !! uncomment the following block to see the free evolution of the system:
@@ -65,11 +65,12 @@
 ! tinit    -- initial time for smoothly switching on heating, etc
 &training_run_pars
   lroute_via_cpu=F
-  it_train=1, it_train_chkpt=100000000
-	!it_train_start=12000
+  it_train=1, it_train_chkpt=1000
+	!it_train_start=1200
   luse_trained_tau=F
-  max_loss=1.e-100
+  max_loss=1.e-13
   model='stationary'
-  config_file='config_afno.yaml'
+  config_file='config_fno.yaml'
   it_train_end=3000
+	run_epoch=T
 /

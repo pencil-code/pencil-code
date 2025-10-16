@@ -2200,7 +2200,7 @@ for the existence of two files, :file:`RELOAD`
 and :file:`STOP`, which can be used to trigger certain behavior.
 
 Reloading run parameters
-""""""""""""""""""""""""
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 In the directory where you started the code, create the file
 :file:`RELOAD` with
@@ -2229,7 +2229,7 @@ changes:
 Use the command :command:`summarize-history` to print a history of changes.
 
 Stopping the code
-"""""""""""""""""
+^^^^^^^^^^^^^^^^^^^
 
 In the directory where you started the code, create the file
 :file:`STOP` with
@@ -2244,7 +2244,7 @@ Again, the action will happen the next time the code is writing monitoring
 output.
 
 Saving a snapshot
-"""""""""""""""""
+^^^^^^^^^^^^^^^^^^^^^
 
 In the directory where you started the code, create the file
 :file:`SAVE` with
@@ -3033,6 +3033,7 @@ will read the data written by processor 3.
     Download and install :file:`rlwrap` from `<http://utopia.knoware.nl/~hlub/uck/rlwrap/>`_ (on some systems you just need to run :command:`emerge rlwrap`, or :command:`apt-get install rlwrap`), and alias your :command:`idl` command: 
     
     .. code:: 
+    
         alias idl 'rlwrap -a -c idl'`` (csh)
         alias idl='rlwrap -a -c idl'`` (bash)
         
@@ -3273,7 +3274,7 @@ The standard plots are not perfect and need a little polishing. See the online w
 
   In [1]: plt.savefig('plot.eps')
 
-Reading and Plotting VAR files and slice files"=
+Reading and Plotting VAR files and slice files
 """""""""""""""""""""""""""""""""""""""""""""""
 
 Read var files:
@@ -4088,7 +4089,7 @@ It is worth noting that even without particles, a simulation with 1024^3
 resolution requires at least 512 CPUs to be compiled.
 
 Random number generator
-^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
 There are several methods to generate random number in the code. It is worth
 noting that when simulating coagulation with the super-particle approach, one
@@ -4628,7 +4629,7 @@ see :numref:`S-Ioni` in the appendix.
 Ambipolar diffusion
 -------------------
 
-Another way of dealing with ionization in the :sc:`Pencil code` is
+Another way of dealing with ionization in the |PC| is
 through use of the *neutrals* module. That module solves the
 coupled equations of neutral and ionized gas, in a two-fluid model
 
@@ -5039,7 +5040,7 @@ In electromagnetism, the displacement current is not neglected, and so we solve
 the equation
 
 .. math::
-   :label: dEdt
+   :label: dEvdt
 
    \frac{1}{c^2} \frac{\partial\Ev}{\partial t}=\nabla\times\Bv-\mu_0\Jv 
 
@@ -5307,9 +5308,9 @@ The time dependence of :math:`a` can be modeled as a power law, :math:`a\propto\
    ===========  ================  ================  ================
    :math:`n`    :math:`a`         :math:`{\cal H}`  :math:`H`
    ===========  ================  ================  ================
-   :math:`0`    :math:`1`         :math:`0          :math:`0`
-   :math:`1/2`  :math:`\eta/2`    :math:`1/\eta     :math:`1/\eta`
-   :math:`2/3`  :math:`\eta^2/3`  :math:`2/\eta     :math:`6/\eta^2`
+   :math:`0`    :math:`1`         :math:`0`         :math:`0`
+   :math:`1/2`  :math:`\eta/2`    :math:`1/\eta`    :math:`1/\eta`
+   :math:`2/3`  :math:`\eta^2/3`  :math:`2/\eta`    :math:`6/\eta^2`
    ===========  ================  ================  ================
 
 In the transverse traceless (TT) gauge, the six components of the spatial part of the symmetric tensor characterizing the linearized evolution of the metric perturbations :math:`h_{ij}` reduce to two components which, in the linear polarization basis, are the :math:`+` and :math:`\times` polarizations. However, the projection onto that basis is computationally intensive because it requires nonlocal operations involving Fourier transformations. It is therefore advantageous to evolve instead the perturbation of the metric tensor, :math:`h_{ij}`, in an arbitrary gauge, compute then :math:`h_{ij}^{\rm TT}` in the TT gauge, and perform the decomposition into the linear polarization basis whenever diagnostic quantities such as averages or spectra are computed. Thus, we solve the linearized GW equation in the form :cite:`Dur08`:
@@ -5331,7 +5332,7 @@ In practice, we solve the GW equation for the scaled variable :math:`\tilde{h}_{
    \frac{\partial^2 \tilde{h}_{ij}}{\partial t^2}
    = c^2 \nabla^2 \tilde{h}_{ij} + \frac{16 \pi G}{a c^2} T_{ij}
 
-For the numerical treatment of :math:numref:`d2hdt` or :math:numref:`d2hdt2` and equations :math:numref:`dlnrhodt`  and :math:numref:`mhd3`.
+For the numerical treatment of :math:numref:`d2hdt` or :math:numref:`d2hdt2` and equations :math:numref:`dlnrhodtgrav`  and :math:numref:`mhd3`.
 
 
 The source term is chosen to be the traceless part of the stress tensor:
@@ -5347,14 +5348,14 @@ The removal of the trace is not strictly necessary, but it prevents a continuous
 We compute :math:`T_{ij}` by solving the energy, momentum, and induction equations for an ultrarelativistic gas :cite:`BEO96,BKMRPTV17`:
 
 .. math::
-   :label: dlnrhodt
+   :label: dlnrhodtgrav
 
    \frac{\partial \ln \rho}{\partial t} =
    - \frac{4}{3} \left( \nab \cdot \uv + \uv \cdot \nab \ln \rho \right)
    + \frac{1}{\rho} \left[ \uv \cdot (\Jv \times \Bv) + \eta \Jv^2 \right]
 
 .. math::
-   :label: dudt
+   :label: duvdt
 
    \frac{\DD \uv}{\DD t} =
    \frac{\uv}{3} \left( \nab \cdot \uv + \uv \cdot \nab \ln \rho \right)
@@ -5485,7 +5486,7 @@ Download forbidden
 **A**: Both |GitHub| and `SourceForge <https://sourceforge.net/>`_ are banned from countries on the United States Office of Foreign Assets Control sanction list, including Cuba, Iran, Libya, North Korea, Sudan and Syria; see `<http://de.wikipedia.org/wiki/GitHub>`_ and `<http://en.wikipedia.org/wiki/SourceForge>`_ . As a remedy, you might download a tarball from |pencilweb|. See also Section :ref:`Download`.
 
 When sourcing the ``sourceme.sh``/``sourceme.csh`` file or running :command:`pc_setupsrc`, I get error messages from the shell, like ``if: Expression Syntax.`` or ``set: Variable name must begin with a letter.``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
 
@@ -5555,7 +5556,7 @@ To better diagnose the problem, collect the following information before filing 
 Compilation
 ------------
 
-Error: `relocation truncated to fit'
+Error: `relocation truncated to fit`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 If you get errors while compiling and linking that are similar to:
@@ -5578,14 +5579,14 @@ if you use ``pc_build``, you may simply add the respective extension:
 
   pc_build -f GNU-GCC_MPI,GNU-GCC_medium
 
-or for the ``Intel`` compiler and a `large' memory model you would use:
+or for the ``Intel`` compiler and a `large` memory model you would use:
 
 .. code:: console
 
   pc_build -f Intel_MPI,Intel_large
 
 Linker can't find the syscalls functions:
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. code:: fortran
 
@@ -5606,7 +5607,7 @@ need the option :option:`-qextname`.
 Please refer to Sect. :ref:`S-make-flags`, Table :ref:`Tab-compiler-options`.
 
 Make gives the following error now:
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. code:: fortran
 
@@ -5626,7 +5627,7 @@ case). These files didn't exist before, so you need to say:
 If this does not help, say first :command:`make clean` and then :command:`pc_setupsrc`.
 
 How do I compile the Pencil Code with the Intel (``ifc``) compiler under Linux?
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **A**: The Pencil Code should compile successfully with ``ifc``~6.x,
 ``ifc``~7.0, sufficiently recent versions of ``ifc`` 7.1 (you
@@ -5841,7 +5842,7 @@ This is currently the default compiler setting in ``Makefile``,
 although it has a measurable performance impact (some 8% slowdown).
 
 Assertion failure under SunOS
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Under SunOS, I get an error message like
 
@@ -5883,8 +5884,8 @@ ships with Ubuntu (e.g., 9.04):
   i   openmpi-doc    - high performance message passing library -- man pages
 
 Install that and keep your configuration (Makefile.src and getconf.csh)
-close to that for `frenesi' or `norlx50'. That should work.
-.. index:: Makefile
+close to that for `frenesi` or `norlx50`. That should work.
+
 
 Error: Symbol 'mpi_comm_world' at (1) has no IMPLICIT type
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -5941,7 +5942,7 @@ But since I use :command:`FC=mpif90` I thought I don't need to worry.
 
 **A**: Since you use :code:`FC=mpif90` there must definitely be
 something wrong with their setup.
-Try :command:`mpif90 -showme` or :command:`mpif90 -show`; the `-I' option
+Try :command:`mpif90 -showme` or :command:`mpif90 -show`; the `-I`` option
 should say where it looks for 'mpif.h'.
 If those directories don't exist, it's no wonder that it doesn't work,
 and it is time to complain.
@@ -5988,7 +5989,7 @@ This error has been noticed on systems where people tried to install gfortran us
 Run :code:`conda remove ld64` and use another method, like homebrew, to install gfortran.
 
 Further MacOS tips
-^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^
 
 For further MacOS tips, see also the "Instructions for MacOS installation" on
 `<http://pencil-code.nordita.org/doc.php>`_.
