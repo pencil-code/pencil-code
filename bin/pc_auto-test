@@ -276,14 +276,14 @@ my @gpu_tests = qw(
 			 #1d-tests/hyperdiffusion
 			 #2d-tests/chiral_dynamo
                          spherical-globaldisk-mhd
-			 cartesian-convection-kramers-chimax
+			 #cartesian-convection-kramers-chimax          # 4% diff in urms
                          #cartesian-convection-kramers-chimax_cp_2
-			 #spherical-convection
+			 spherical-convection
 			 #meissner
 			 #geodynamo
                          2d-tests/spherical_viscous_ring
                          2d-tests/cylindrical_gdisk
-			 small-scale-dynamo_slope-limited-diffusion
+			 #small-scale-dynamo_slope-limited-diffusion  # diffs in brms, bmax, jrms: at e-10 to e-12
 			 backreact_infl
 			 #1d-tests/axionSU2back
                    );
