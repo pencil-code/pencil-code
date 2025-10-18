@@ -1022,7 +1022,7 @@ sub my_ok {
 	    if ($phase eq 'compilation') {
 	        system ('cat src/astaroth/ac_build.log >> '.$log_dir.'/'.$dir.'/build.log');
 	    } else {
-	        if ($phase eq 'running') {
+	        if (($phase eq 'running') || ($phase eq 'results')) {
 	            system ('cat ac_compilation.log >> '.$log_dir.'/'.$dir.'/run.log');
 	        }
 	    }
