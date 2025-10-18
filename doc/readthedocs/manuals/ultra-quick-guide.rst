@@ -103,17 +103,11 @@ compilers and packages.
 Stopping the container
 --------------------------
 
-- If you are in the terminal running the ``docker compose up --build`` command (see the note above),
-  just press :kbd:`Ctrl-C`. The container will stop and you will regain control of the terminal.
+- If your terminal is attached to the container (following the ``run_docker`` command, see above),
+  simply press :kbd:`Ctrl-C`. The container will stop and you will return to your terminal
+  session on the host machine.
 
-- If you are in the directory containing the ``docker-compose.yml`` file
-  (``pencil-code/doc/readthedocs/pencil-docker``), execute
-
-  .. code:: bash
-
-     docker compose stop
-
-- From any other location, run the ``docker stop`` command and specify the name of the container:
+- From any other terminal, run the ``docker stop`` command and specify the name of the container:
 
   .. code:: bash
 
@@ -132,7 +126,8 @@ quick test, try:
    xclock
 
 If the window does not appear, you may need to grant X11 access on your host
-before you run the container:
+**before you run the container** (if the container is running, you will have
+to stop it, run the following command, and then restart it):
 
 .. code:: bash
 
@@ -149,9 +144,8 @@ Running a test simulation
 ==========================
 
 To verify that everything works correctly, execute the included test script.
-It compiles and runs the **same sample problem** used in the standard quick
-start example (`samples/conv-slab`), so the output should match what you saw
-earlier.
+It compiles and runs the **same sample problem** used in the :ref:`quick_start_guide` example (`samples/conv-slab`), 
+so the output should be the same as there.
 
 .. code:: bash
 
@@ -266,7 +260,7 @@ You should get something like:
 
 
 Some examples of postprocessing with Python can be found in the
-:ref:` python documentation <modpython>` and in the :ref:` python tutorials <tutpython>`.
+:ref:`python documentation <modpython>` and in the :ref:`python tutorials <tutpython>`.
 
 
 Using IDL
@@ -277,7 +271,7 @@ Prefer IDL? The container includes :abbr:`GDL (GNU Data Language)`, `a free an o
 
 .. code:: idl
 
-     # idl
+     $ idl
      GDL> pc_read_ts, obj=ts
      GDL> help, ts, /structure
      GDL> plot, ts.t, ts.urms,/ynozero

@@ -1,4 +1,4 @@
-.. tutpython:
+.. _tutpython:
 
 ***********************
 Pencil Python Tutorials
