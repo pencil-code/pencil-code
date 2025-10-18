@@ -6,7 +6,7 @@ Ultra quick start guide
 
 Welcome to the **Ultra Quick Start Guide** — the fastest way to run your first
 |PC| simulation *without even getting your hands dirty*. If the Quick Start
-Guide was a coffee, this one is an espresso shot. The Full Manual? That’s your
+Guide was a coffee, this one is an espresso shot. The Full User Manual? That’s your
 five-course meal with footnotes.
 
 This document is for the impatient, the curious, or anyone who just wants to
