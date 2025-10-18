@@ -3101,11 +3101,13 @@ libPCStart.so: start.o | $(SPECIAL_DEPS)
 #
 libPC.so: run.o | $(SPECIAL_DEPS) $(LIBGPU)
 	  $(LD) $(run) run.o $(LDFLAGS) $(LDFLAGS_MAIN) $(LDFLAGS_LIB) $(LD_MPI) $(LD_FOURIER) $(LIBSIG) $(LD_GSL) -shared -o libPC.so
+.PHONY: FORCE_GPU_MAKE
+FORCE_GPU_MAKE:
 #
 #  Rule for building the Astaroth and interface libraries.
 #
 #$(LIBGPU): $(GPU_DEPS)
-$(LIBGPU): $(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/Makefile.vendor
+$(LIBGPU): $(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/Makefile.vendor FORCE_GPU_MAKE
 	@echo "Building Astaroth and interface libraries - see src/astaroth/ac_build.log!"
 	cd astaroth && make MPICOMM=$(MPICOMM) RUNTIME_COMPILATION=$(RUNTIME_COMPILATION) TRAINING=$(TRAINING) PRECISION=$(REAL_PRECISION) TRANSPILATION=$(TRANSPILATION) GENERATE_DSL_CODE=$(GENERATE_DSL_CODE) >& ac_build.log
 #
