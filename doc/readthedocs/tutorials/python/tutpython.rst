@@ -413,16 +413,33 @@ You can save the plot into a file using the GUI or with
 
         plt.savefig('plot.eps')
 
+
+
+
+
 Reading and Plotting VAR files and slice files
 ==============================================
 
-Read var files:
+* Read var files:
 
 .. code:: python
 
         var = pc.read.var()
 
-Read slice files:
+
+* Read slices: before reading slices, you need to assemle gloabl slice files from the different processors with:
+
+.. code:: bash
+
+     $ make read_videofiles
+
+     $ ./src/read_videofiles.x 
+     enter variable (lnrho, uu1, ..., bb3) and stride (e.g. 10): uu1
+
+
+
+
+Now you can read assembled slice files:
 
 .. code:: python
 
