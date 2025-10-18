@@ -1,0 +1,10 @@
+#!/bin/bash
+cd $PENCIL_HOME
+mkdir -p docker-test
+cp -r samples/conv-slab docker-test/
+cd docker-test/conv-slab
+mkdir data
+pc_setupsrc
+pc_build
+pc_start
+pc_run  
