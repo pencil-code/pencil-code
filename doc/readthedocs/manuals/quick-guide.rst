@@ -2,305 +2,332 @@
 Quick start guide
 *****************
 
+The Pencil Code is an open-source simulation code written mainly in Fortran
+and released under the GPL license. General information can be found at our
+official `homepage <http://pencil-code.org/>`__.
+
+This guide is a concise, self-contained introduction to the essentials:
+downloading, compiling, running, and post-processing your first simulation.
+It is designed to get you from zero to scientifically meaningful output with
+as little friction as possible.
+
+For deeper explanations, theoretical background, and the full feature set,
+please refer to the :ref:`manual`.
+
 Required software
 =================
 
-Linux
------
+The Pencil Code runs best on Unix-like systems. Below are brief instructions
+for GNU/Linux and macOS users. Other systems are welcome to join, but results
+may vary depending on compiler mood and cosmic alignment.
 
-A Fortran and a C compiler are needed to compile the code. Both
-compilers should belong to the same distribution package and version
-(e.g. GNU GCC or Intel).
+
+GNU/Linux
+----------
+
+You will need both a Fortran and a C compiler to build the code. They should
+belong to the same distribution and version (for instance, GNU GCC or Intel
+compilers). If you can run ``gfortran --version`` and get a friendly response,
+you are halfway there.
+
 
 MacOS X
 -------
 
-For Mac, you first need to install Xcode from the website
-http://developer.apple.com/, where you have to register as a member.
-Alternatively, an easy to install ``gfortran`` binary package can be
-found at the website http://gcc.gnu.org/wiki/GFortranBinaries. Just
-download the archive and use the installer contained therein. It
-installs into ‘``/usr/local/gfortran``’ with a symbolic link in
-‘``/usr/local/bin/gfortran``’. It might be necessary to add the
-following line to the “``.cshrc``”-file in your ‘``/home``’ folder:
+On macOS, the easiest route is to install Xcode from
+`<http://developer.apple.com/>`_ (registration required). 
+Alternatively, you can
+install a ``gfortran`` binary package from
+http://gcc.gnu.org/wiki/GFortranBinaries. 
+Download the archive and use the
+included installer. It installs into ``/usr/local/gfortran`` and provides a
+symbolic link in ``/usr/local/bin/gfortran``.
 
-::
+You may need to add the following line to your “``.cshrc``” file in your
+``/home`` directory:
+
+.. code:: csh
 
      setenv PATH /usr/local/bin:\$PATH
+
 
 Download the Pencil Code
 ========================
 
-The Pencil Code is an open source code written mainly in Fortran and
-available under GPL. General information can be found at our official
-homepage:
+For full details, see :ref:`download`. The short version: use Git.
 
-http://pencil-code.nordita.org/.
-
-The latest version of the code can be downloaded with ``svn``. In the
-directory where you want to put the code, type:
-
-::
-
-     svn checkout https://github.com/pencil-code/pencil-code/trunk/ pencil-code
-
-Alternatively, you may also use ``git``:
-
-::
+.. code:: bash
 
      git clone https://github.com/pencil-code/pencil-code.git
 
-More details on download options can be found here:
-http://pencil-code.nordita.org/download.php
-
-The downloaded ‘``pencil-code``’ directory contains several
-sub-directories:
-
-#. ‘``doc``’: you may build the latest manual as PDF by issuing the
-   command ``make`` inside this directory
-
-#. ‘``samples``’: contains many sample problems
-
-#. ‘``config``’: has all the configuration files
-
-#. ‘``src``’: the actual source code
-
-#. ‘``bin``’ and ‘``lib``’: supplemental scripts
-
-#. ‘``idl``’, ‘``python``’, ‘``julia``’, etc.: data processing for
-   diverse languages
+That will create a directory named ``pencil-code`` containing everything you
+need. Congratulations — you now own a respectable quantity of Fortran.
 
 Configure the shell environment
 ===============================
 
-You need to load some environment variables into your shell. Please
-change to the freshly downloaded directory:
+Before doing anything else, you need to load the environment variables used by
+the Pencil Code tools. Move into the freshly downloaded directory:
 
-::
+.. code:: bash
 
      cd pencil-code
 
-Probably you use a ``sh``-compatible shell (like the Linux default shell
-``bash``), there you just type:
+If you use a ``sh``-compatible shell (such as ``bash``), simply type:
 
-::
+.. code:: bash
 
-     . sourceme.sh
+     bash sourceme.sh
 
-(In a ``csh``-compatible shell, like ``tcsh``, use this alternative:
-``source sourceme.csh`` )
+For more details, see :ref:`man1_environment_settings`.
+
+
+
+
+Quick look at the code structure
+================================
+
+The downloaded ``pencil-code`` directory contains several subdirectories:
+
+* ``doc`` – Documentation sources, including :file:`manual.pdf` and other
+   supporting material.
+
+* ``samples`` – A collection of ready-to-run example problems.
+
+* ``config`` – Configuration files for compilation and setup.
+
+* ``src`` – The actual source code.
+
+* ``bin`` and ``lib`` – Supplemental scripts and libraries.
+
+* ``idl``, ``python``, ``julia``, etc. – Post-processing tools in various languages.
+
+For a detailed explanation, see :ref:`man1_directory_tree`.
+
+
 
 Your first simulation run
 =========================
 
+Every |PC| simulation requires a set of configuration and source files. Some
+define physical parameters and numerical settings, others handle the Fortran
+source modules. See :ref:`man1_files_in_rundir` for a deeper explanation.
+
+The easiest way to start is by using one of the pre-configured sample problems.
+Here we will use ``pencil-code/samples/conv-slab``.
+
+
 Create a new run-directory
 --------------------------
 
-Now create a run-directory and clone the input and configuration files
-from one of the samples that fits you best to get started quickly (here
-from ‘``pencil-code/samples/1d-tests/jeans-x``’):
+Create a new directory for your simulation and copy the contents of the sample
+setup:
 
-::
+.. code:: bash
 
-     mkdir -p /data/myuser/myrun/src
-     cd /data/myuser/myrun
-     cp $PENCIL_HOME/samples/1d-tests/jeans-x/*.in ./
-     cp $PENCIL_HOME/samples/1d-tests/jeans-x/src/*.local src/
+     mkdir -p myuser/test
+     cd myuser/test
+     cp -r $PENCIL_HOME/samples/conv-slab/* .
 
-Your run should be put outside of your ‘``/home``’ directory, if you
-expect to generate a lot of data and you have a tight storage quota in
-your ‘``/home``’.
+Choose your run directory wisely. Simulations can generate a substantial amount
+of data, so avoid using locations with strict storage quotas, such as your home
+directory on shared systems.
+
 
 Linking to the sources
 ----------------------
 
-One command sets up all needed symbolic links to the original Pencil
-Code directory:
+To connect your run directory with the main Pencil Code source directory, run:
 
-::
+.. code:: bash
 
      pc_setupsrc
+
+This creates the required symbolic links. See
+:ref:`man1_linking_scripts_and_source` for more information.
 
 Makefile and parameters
 -----------------------
 
-Two basic configuration files define a simulation setup:
-“``src/Makefile.local``” contains a list of modules that are being used,
-and “``src/cparam.local``” defines the grid size and the number of
-processors to be used. Take a quick look at these files...
+Two local configuration files define the essential parts of a simulation setup:
+
+* ``src/Makefile.local`` – Lists the modules to be used.
+
+* ``src/cparam.local`` – Defines the grid size and number of processors.
+
+Take a look at these files before running. They are short but powerful.
 
 Single-processor
-~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^
 
-An example “``src/Makefile.local``” using the module for only one
-processor would look like:
+A minimal ``src/Makefile.local`` for a single-processor run could be:
 
-::
+.. code:: fortran
 
      MPICOMM=nompicomm
 
-For most modules there is also a “``no``”-variant which switches that
-functionality off.
+In ``src/cparam.local``, set the number of processors to ``1`` accordingly:
 
-In “``src/cparam.local``” the number of processors needs to be set to
-``1`` accordingly:
-
-::
+.. code:: fortran
 
      integer, parameter :: ncpus=1,nprocx=1,nprocy=1,nprocz=ncpus/(nprocx*nprocy)
-     integer, parameter :: nxgrid=128,nygrid=1,nzgrid=128
+     integer, parameter :: nxgrid=32,nygrid=nxgrid,nzgrid=nxgrid
 
 Multi-processor
-~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^
 
-If you like to use MPI for multi-processor simulations, be sure that you
-have a MPI library installed and change “``src/Makefile.local``” to use
-MPI:
+To use MPI for multi-processor simulations, make sure an MPI library is
+installed and update your configuration in ``src/Makefile.local``:
 
-::
+.. code:: fortran
 
      MPICOMM=mpicomm
 
-Change the ``ncpus`` setting in “``src/cparam.local``”. Think about how
-you want to distribute the volume on the processors — usually, you
-should have 128 grid points in the x-direction to take advantage of the
-SIMD processor unit. For compilation, you have to use a configuration
-file that includes the “``_MPI``” suffix, see below.
+Adjust ``ncpus`` in ``src/cparam.local`` to match your processor layout. A
+good rule of thumb is to keep 32 grid points along the x-direction to make
+efficient use of SIMD units. To compile, use a configuration file with the
+``_MPI`` suffix, as shown below.
 
-Compiling...
+
+
+Compilation
 ------------
 
-In order to compile the code, you can use a pre-defined configuration
-file corresponding to your compiler package. E.g. the default compilers
-are ``gfortran`` together with ``gcc`` and the code is being built with
-default options (not using MPI) by issuing the command:
+To compile the code with default GNU compilers (single processor), simply run[#]_ :
 
-::
+.. code:: bash
 
      pc_build
 
-Alternatively, for multi-processor runs (still using the default GNU-GCC
-compilers):
+For a multi-processor build using MPI:
 
-::
+.. code:: bash
 
      pc_build -f GNU-GCC_MPI
 
+.. note::
+
+     Depending on your system, a simpler :command:`pc_build` can also work for a multi-processor build.
+
+For additional details, see :ref:`man1_quick_instructions`.
+
+.. [#] You can use a pre-defined configuration file corresponding to your compiler package. E.g. the default compilers are ``gfortran`` together with ``gcc`` and the code is being built  with the
+default options (not using MPI)
+
 Using a different compiler (optional)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-If you prefer to use a different compiler package (e.g. with MPI support
-or using ``ifort``), you may try:
+If you wish to use a different compiler package (for example, Intel or Cray),
+try one of the following:
 
-::
+.. code:: bash
 
      pc_build -f Intel
      pc_build -f Intel_MPI
      pc_build -f Cray
      pc_build -f Cray_MPI
 
-More pre-defined configurations are found in the directory
-“``pencil-code/config/compilers/*.conf``”.
+Additional predefined configurations can be found in
+``pencil-code/config/compilers/*.conf``.
 
 Changing compiler options (optional)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Of course you can also create a configuration file in any subdirectory
-of ‘``pencil-code/config/hosts/``’. By default, ``pc_build`` looks for a
-config file that is based on your ``host-ID``, which you may see with
-the command:
+You can also define host-specific configuration files in
+``pencil-code/config/hosts/``. By default, :command:`pc_build` searches for a
+file based on your host ID, which you can view with:
 
-::
+.. code:: bash
 
      pc_build -i
 
-You may add your modified configuration with the filename
-“``host-ID.conf``”, where you can change compiler options according to
-the Pencil Code manual. A good host configuration example, that you may
-clone and adapt according to your needs, is
-“``pencil-code/config/hosts/IWF/host-andromeda-GNU_Linux-Linux.conf``”.
+You may add your own configuration file as ``host-ID.conf`` and adjust compiler
+flags as needed. A good example to adapt is
+``pencil-code/config/hosts/IWF/host-andromeda-GNU_Linux-Linux.conf``.
+
+To clean up all generated files:
+
+.. code:: bash
+
+     pc_build --cleanall
 
 Running...
 ----------
 
-The initial conditions are set in “``start.in``” and the parameters for
-the main simulation run can be found in “``run.in``”. In “``print.in``”
-you can choose which quantities are written to the file
-“``data/time_series.dat``”.
+Set up your simulation by editing the following files:
 
-Be sure you have created an empty ‘``data``’ directory.
+* ``start.in`` – Initial conditions.
 
-::
+* ``run.in`` – Main runtime parameters.
+
+* ``print.in`` – Select which quantities appear in ``data/time_series.dat``.
+
+Make sure an empty ``data/`` directory exists:
+
+.. code:: bash
 
      mkdir data
 
-It is now time to run the code:
+Now, launch the simulation:
 
-::
+.. code:: bash
 
      pc_run
 
-If everything worked well, your output should contain the line
+If everything is working correctly, the output should include:
 
-::
+.. code:: text
 
      start.x has completed successfully
 
-after initializing everything successfully. It would then start running,
-printing in the console the quantities specified in “``print.in``”, for
-instance,
 
-::
+Once initialized, the code will begin printing quantities to the console, such
+as:
 
-   ---it--------t-------dt------rhom------urms------uxpt-----uypt-----uzpt-----
-          0      0.00 4.9E-03 1.000E+00  1.414E+00 2.00E+00 0.00E+00 0.00E+00
-         10      0.05 4.9E-03 1.000E+00  1.401E+00 1.98E+00 0.00E+00 0.00E+00
-         20      0.10 4.9E-03 1.000E+00  1.361E+00 1.88E+00 0.00E+00 0.00E+00 
-         .......
+.. code:: text
 
-ending with
+      --it-----t-------dt------urms----umax----rhom----ssm----dtc---dtu---dtnu-dtchi-
+         0    0.00 6.793E-03  0.0063  0.0956 14.4708 -0.4460 0.978 0.025 0.207 0.345
+        10    0.07 6.793E-03  0.0056  0.0723 14.4708 -0.4464 0.978 0.019 0.207 0.345
+        20    0.14 6.793E-03  0.0053  0.0471 14.4709 -0.4467 0.978 0.019 0.207 0.345
+      .......
 
-::
+When finished, you should see:
+
+.. code:: text
 
      Simulation finished after        xxxx  time-steps
      .....
      Wall clock time/timestep/meshpoint [microsec] = ...
 
-An empty file called “``COMPLETED``” will appear in your run directory
-once the run is finished.
+An empty file named ``COMPLETED`` will appear in your run directory when the
+simulation ends.
 
-If you work with one of the samples or an identical setup in a new
-working directory, you can verify the correctness of the results by
-checking against reference data, delivered with each sample:
+To verify your results against the reference output for this sample, run:
 
-::
+.. code:: bash
 
      diff reference.out data/time_series.dat
 
-Welcome to the world of Pencil Code!
+If they match, congratulations — your setup is alive and calculating.
 
 Troubleshooting...
 ------------------
 
-If compiling fails, please try the following — with or without the
-optional ``_MPI`` for MPI runs:
+If compilation fails, try cleaning and rebuilding (optionally with MPI):
 
-::
+.. code:: bash
 
      pc_build --cleanall
      pc_build -f GNU-GCC_MPI
 
-If some step still fails, you may report to our mailing list:
-http://pencil-code.nordita.org/contact.php. In your report, please state
-the exact point in this quick start guide that fails for you (including
-the full error message) — and be sure you precisely followed all
-non-optional instructions from the beginning.
+If issues persist, please report them on our mailing list:
+http://pencil-code.nordita.org/contact.php. Include the exact step that failed,
+the error message, and confirm that all required steps above were followed.
 
-In addition to that, please report your operating system (if not
-Linux-based) and the shell you use (if not ``bash``). Also please give
-the full output of these commands:
+Also include your operating system, shell type, and the full output of:
 
-::
+.. code:: bash
 
      bash
      cd path/to/your/pencil-code/
@@ -313,13 +340,18 @@ the full output of these commands:
      pc_build --cleanall
      pc_build -d
 
-If you plan to use MPI, please also provide the full output of:
+If using MPI, please also include:
 
-::
+.. code:: bash
 
      mpicc --version
      mpif90 --version
      mpiexec --version
+
+Welcome to the world of Pencil Code — may your runs be stable and your :abbr:`CFL (Courant-Friedrichs-Lewy condition)`
+numbers merciful.
+
+
 
 Data post-processing
 ====================
@@ -328,13 +360,13 @@ IDL visualization (optional,)
 -----------------------------------------
 
 GUI-based visualization (recommended for quick inspection)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The most simple approach to visualize a Cartesian grid setup is to run
 the Pencil Code GUI and to select the files and physical quantities you
 want to see:
 
-::
+.. code:: idl
 
    IDL> .r pc_gui
 
@@ -343,7 +375,7 @@ IDL routines ``pc_get_quantity`` and ``pc_check_quantities``. Anything
 implemented there will be available in the GUI, too.
 
 Command-line based processing of “big data”
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Please check the documentation inside these files:
 
@@ -364,7 +396,7 @@ in order to read data efficiently and compute quantities in physical
 units.
 
 Command-line based data analysis (may be inefficient)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Several idl-procedures have been written (see in ‘``pencil-code/idl``’)
 to facilitate inspecting the data that can be found in raw format in
@@ -433,19 +465,19 @@ feature-rich as for IDL. Furthermore, we move to Python3 in 2020, and
 not all the routines have been updated yet.
 
 Python module requirements
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 In this example we use the modules: ``numpy`` and ``matplotlib``. A
 complete list of required module is included in
 “``pencil-code/python/pencil/README``”.
 
-Using the ’pencil’ module
-~~~~~~~~~~~~~~~~~~~~~~~~~
+Using the ``pencil`` module
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 After sourcing the “``sourceme.sh``” script (see above), you should be
 able to import the ``pencil`` module:
 
-::
+.. code:: python
 
    import pencil as pc
 

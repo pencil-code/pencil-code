@@ -4,6 +4,8 @@
 Part 1: Using the |PC|
 **********************************************************
 
+.. _man1_system_requirements:
+
 System requirements
 ===================
 
@@ -31,6 +33,8 @@ To use the code, you will need the following:
      license will do for many applications)
 
 
+.. _man1_obtaining_the_code:
+
 Otaining the code
 =================
 
@@ -50,6 +54,8 @@ are routinely tested.
 This includes all problems in
 :file:`$PENCIL_HOME/samples`.
 See :ref:`S-Testing` for details.
+
+.. _man1_git_svn:
 
 Obtaining the code via git or svn
 ---------------------------------
@@ -96,6 +102,8 @@ Obtaining the code via git or svn
 See also :ref:`download` for general information on obtaining the code.
 
 
+.. _man1_updating:
+
 Updating via svn or git
 -----------------------
 
@@ -138,6 +146,8 @@ standard coding conventions explained in :ref:`programming-style`.
 There is also a script to check and fix the most common style breaks,
 ``pc_codingstyle``.
 
+.. _man1_getting_last_version:
+
 Getting the last validated version
 ----------------------------------
 
@@ -174,6 +184,9 @@ Your own changes will be merged into this latest version as before.
     The ``pc_svnup -val`` option allows all other people to stay away
     from any trouble.
 
+
+.. _man1_getting_older_versions:
+
 Getting older versions
 ----------------------
 
@@ -186,6 +199,8 @@ back in time is connected with the fact that processor architecture and the
 compiler were different, resulting, e.g., in different rounding errors.
 
 
+.. _man1_getting_started:
+
 Getting started
 ===============
 
@@ -195,8 +210,12 @@ Note that you will only be able to fully assess the numerical solutions if you
 visualize them with IDL, DX, or other tools (see :ref:`visualization`).
 
 
+.. _man1_setup:
+
 Setup
 ----------
+
+.. _man1_environment_settings:
 
 Environment settings
 ^^^^^^^^^^^^^^^^^^^^^
@@ -312,6 +331,8 @@ something like ``./idl:../idl:+$PENCIL_HOME/idl:./data:<IDL_DEFAULT>``.
    This requires version 4.6 of the ``modules`` program.
 
 
+.. _man1_linking_scripts_and_source: 
+
 Linking scripts and source files
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -343,13 +364,14 @@ to that directory:
    start.csh@     run.csh@  getconf.csh@
    start.in       run.in    print.in
 
+.. _man1_makefilesrc: 
 
 Adapting ``Makefile.src``
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
 This step requires some input from you, but you only have to do this once
 for each machine you want to run the code on.
-See :ref:`adapt-mkfile` for a description of the steps you need to
+See :ref:`man1_adapt-mkfile` for a description of the steps you need to
 take here.
 
 .. note::
@@ -358,6 +380,8 @@ take here.
    don't compile, then.
    If not, you can run ``make`` with explicit flags, see
    :ref:`S-make-flags` and in particular Table :ref:`Tab-compiler-options`.
+
+.. _man1_run_make:
 
 Running ``make``
 ^^^^^^^^^^^^^^^^
@@ -374,6 +398,8 @@ Since you are using one of the predefined test problems, the settings in
 
 If you have set up the compiler flags correctly, compilation should
 complete successfully.
+
+.. _man1_choose_datadir:
 
 Choosing a data directory
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -412,6 +438,8 @@ directory path to use. This facility is useful if one wishes to switch
 one run directory between different data directories. It is suggested
 that in such cases symbolic links are again made in the run directory;
 then the :file:`datadir.in` need contain only a short relative path.
+
+.. _man1_run_code: 
 
 Running the code
 ^^^^^^^^^^^^^^^^
@@ -495,11 +523,11 @@ The columns list:
 - ``dtchi``: the time step in units of the conductive time step, ``dtchi = dt / (c_delta_t_v * dx^2 / chi_max)``
 
 The entries in this list can be added, removed or reformatted in the file
-:file:`print.in` (see Sects. :ref:`diagnostic-IO` and :ref:`S-print.in-params`).
+:file:`print.in` (see Sects. :ref:`man1_diagnostic-IO` and :ref:`S-print.in-params`).
 The output is also saved in :file:`data/time_series.dat`
 and should be identical to the content of :file:`reference.out`.
 
-.. _Fig-pvert1:
+.. _manfig-pvert1:
 
 .. figure:: figs/pvert1.png
    :alt: Stratification of three-layer convection
@@ -565,6 +593,8 @@ The same can be achieved using ``Python``
    useful for all your other runs too.
 
 
+.. _man1_further_tests:
+
 Further tests
 --------------
 
@@ -572,9 +602,12 @@ There are a number of other tests in the :file:`samples/` directory.
 You can use the script :file:`bin/auto-test` to automatically run
 these tests and have the output compared to reference results.
 
+.. _man1_code_structure:
 
 Code structure
 ==============
+
+.. _man1_directory_tree:
 
 Directory tree
 --------------
@@ -672,7 +705,7 @@ manually.
 Basic concepts
 ---------------
 
-.. _Pencil_design: 
+.. _man1_Pencil_design: 
 
 Data access in pencils
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -694,7 +727,7 @@ by about 60% in some cases.
 An additional advantage is a drastic reduction in temporary storage for
 auxiliary variables within each time step.
 
-.. _S-modularity:
+.. _man1_modularity:
 
 Modularity
 ^^^^^^^^^^
@@ -747,6 +780,8 @@ modules are not fully orthogonal.
 In such cases, we depend on user feedback for fixing problems
 and documenting the changes for others.
 
+.. _man1_files_in_rundir:
+
 Files in the run directories
 ----------------------------
 
@@ -754,15 +789,15 @@ Files in the run directories
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 These files specify the startup and runtime parameters (see
-Sects. :ref:`S-start-params` and :ref:`S-all-run-params`), and the list of
-diagnostic variables to print (see :ref:`diagnostic-IO`).
+Sects. :ref:`man1_start-params` and :ref:`S-all-run-params`), and the list of
+diagnostic variables to print (see :ref:`man1_diagnostic-IO`).
 They specify the setup of a given simulation and are kept under
 svn :index:`svn` in the individual :file:`samples/` directories.
 
 You may want to check for the correctness of these configuration files by
 issuing the command ``pc_configtest``.
 
-.. _Ss-datadir-in:
+.. _man1_datadir-in:
 
 :file:`datadir.in`
 ^^^^^^^^^^^^^^^^^^
@@ -793,9 +828,9 @@ To see whether the results of your run are OK, compare :file:`time_series.dat` t
   unix> diff data/time_series.dat reference.out
 
 
-.. _start-run-getconf:
+.. _man1_start-run-getconf:
 
-:file:`start.csh`, :file:`run.csh`, :file:`getconf.csh`` [obsolete; see Sect. :ref:`S-configuration`]
+:file:`start.csh`, :file:`run.csh`, :file:`getconf.csh`` [obsolete; see Sect. :ref:`man1_configuration`]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
@@ -816,7 +851,7 @@ executable, MPI options, or the number of processors) are located in
 The :file:`src/` directory contains two local files,
 :file:`src/Makefile.local` and
 :file:`src/cparam.local`, which allow the user to choose
-individual modules (see :ref:`S-modularity`) and to set parameters like the
+individual modules (see :ref:`man1_modularity`) and to set parameters like the
 grid size and the number of processors for each direction.
 These two files are part of the setup of a given simulation and are kept
 under svn in the individual :file:`samples/` directories.
@@ -833,7 +868,7 @@ or object and module files generated by the compiler.
 ^^^^^^^^^^^^^
 
 This directory (the name of which will actually be overwritten by the first
-line of :file:`datadir.in`, if that file is present; see :ref:`Ss-datadir-in`)
+line of :file:`datadir.in`, if that file is present; see :ref:`datadir-in`)
 contains the output from the code:
 
 :file:`data/dim.dat`
@@ -937,7 +972,7 @@ Each of the directories can contain the following files:
 Using the code
 ==============
 
-.. _S-configuration:
+.. _man1_configuration:
 
 Configuring the code to compile and run on your computer
 --------------------------------------------------------
@@ -945,7 +980,9 @@ Configuring the code to compile and run on your computer
 .. note::
 
    We recommend to use the procedure described here, rather than
-   the old method described in Sects. :ref:`adapt-mkfile` and :ref:`start-run-getconf`.
+   the old method described in Sects. :ref:`man1_adapt-mkfile` and :ref:`man1_start-run-getconf`.
+
+.. _man1_quick_instructions:
 
 Quick instructions
 ^^^^^^^^^^^^^^^^^^
@@ -998,31 +1035,31 @@ Locating the configuration file
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Commands like ``pc_build`` and ``pc_run`` use the Perl module
-:file:``Pencil::ConfigFinder`` to locate an appropriate configuration file
-and :file:``Pencil::ConfigParser`` to read and interpret it.
+:file:`Pencil::ConfigFinder` to locate an appropriate configuration file
+and :file:`Pencil::ConfigParser` to read and interpret it.
 When you use ``ConfigFinder`` on a given computer, it constructs a
 *host ID* for the system it is running on, and looks for a file
-:file:``host_ID.conf`` in any subdirectory of :file:``$PENCIL_HOME/config/hosts``.
+:file:`host_ID.conf`` in any subdirectory of :file:`$PENCIL_HOME/config/hosts`.
 
 For example, if the host ID is ``workhorse.pencil.org``, ``ConfigFinder`` would
 consider the file
-:file:``$PENCIL_HOME/config/hosts/pencil.org/workhorse.pencil.org.conf``.
+:file:`$PENCIL_HOME/config/hosts/pencil.org/workhorse.pencil.org.conf`.
 
 .. note::
 
-   The location in the tree under :file:``hosts/`` is irrelevant, which allows
+   The location in the tree under :file:`hosts/` is irrelevant, which allows
    you to group related hosts by institution, owner, hardware, etc.
 
 .. note::
 
    ``ConfigFinder`` actually uses the following search path:
 
-   1. :file:``./config``
-   2. :file:``$PENCIL_HOME/config-local``
-   3. :file:``$HOME/.pencil/config``
-   4. :file:``$PENCIL_HOME/config``
+   1. :file:`./config`
+   2. :file:`$PENCIL_HOME/config-local`
+   3. :file:`$HOME/.pencil/config`
+   4. :file:`$PENCIL_HOME/config`
 
-   This allows you to override part of the :file:``config/`` tree globally on
+   This allows you to override part of the :file:`config/` tree globally on
    the given file system, or locally for a particular run directory, or for
    one given copy of the Pencil Code.
    This search path is used both for locating the configuration file for
@@ -1031,17 +1068,17 @@ consider the file
 The host ID is constructed based on information that is easily available
 for your system. The algorithm is as follows:
 
-1. Most commands using :file:``ConfigFinder`` have a ``--host-id``
+1. Most commands using :file:`ConfigFinder` have a ``--host-id``
    (sometimes abbreviated as ``-H``) option to explicitly set the host ID.
 2. If the environment variable ``PENCIL_HOST_ID`` is set, its value is used.
 3. If any of the files
 
-   - :file:``./host-ID``
-   - :file:``$PENCIL_HOME/host-ID``
-   - :file:``$HOME/.pencil/host-ID``
+   - :file:`./host-ID`
+   - :file:`$PENCIL_HOME/host-ID`
+   - :file:`$HOME/.pencil/host-ID`
 
    exists, its first line is used.
-4. If :file:``ConfigFinder`` can get hold of a fully qualified host name, that is used as host ID.
+4. If :file:`ConfigFinder` can get hold of a fully qualified host name, that is used as host ID.
 5. Else, a combination of host name, operating system name and possibly
    some other information characterizing the system is used.
 6. If no config file for the host ID is found, the current operating
@@ -1115,7 +1152,7 @@ Adding "_MPI" to a compiler suite's name is usually sufficient to use MPI.
    the Intel compiler and '-O3' for all other compilers. Higher optimization
    levels implicate an inadequate loss of precision.
 
-The :file:``.conf`` files consist of the following elements:
+The :file:`.conf` files consist of the following elements:
 
 - **Comments:**  
   A ``#`` sign and any text following it on the same line are ignored.
@@ -1138,8 +1175,8 @@ The :file:``.conf`` files consist of the following elements:
 
     %include os/Unix
 
-  will include the file :file:``os/Unix.conf`` in the search path listed
-  above (typically from :file:``$PENCIL_HOME/config``).  
+  will include the file :file:`os/Unix.conf` in the search path listed
+  above (typically from :file:`$PENCIL_HOME/config`).  
   However, if the included path starts with a dot, it is a relative path, so:
 
   .. code:: 
@@ -1191,7 +1228,7 @@ Use the ``pc_build`` command to compile the code::
 The third example circumvents the whole host ID mechanism by explicitly
 instructing ``pc_build`` which configuration files to use.  
 In the fourth example, ``pc_build`` will apply the same configuration files as in its last invocation.
-They are stored in :file:``src/.config-files``, which is automatically written, but can also be manually modified.  
+They are stored in :file:`src/.config-files`, which is automatically written, but can also be manually modified.  
 The fifth example shows how to define extra variables (``VAR=something``) for the execution of the ``Makefile``.
 
 See ``pc_build --help`` for a complete list of options.
@@ -1241,14 +1278,14 @@ See ``pencil-test --help`` for a complete list of options, and section :numref:`
 
 
 
-.. _adapt-mkfile:
+.. _man1_adapt-mkfile:
 
-Adapting :file:``Makefile.src`` [obsolete; see Sect.:numref:`S-configuration`]
+Adapting :file:`Makefile.src` [obsolete; see Sect.:ref:`man1_configuration`]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 By default, one should use the above described configuration mechanism for
 compilation. If for whatever reason one needs to work with a modified
-:file:``Makefile``, there is a mechanism for picking the right set of compiler
+:command:`Makefile`, there is a mechanism for picking the right set of compiler
 flags based on the hostname.
 
 To give you an idea of how to add your own machines, let us assume you have
@@ -1257,7 +1294,7 @@ several Linux boxes running a compiler ``f95`` that needs the options
 which needs the flags ``-O3`` and requires the additional
 options ``-lmpi -llam`` for *MPI*.
 
-The :file:``Makefile.src`` you need will have the following section:
+The :file:`Makefile.src` you need will have the following section:
 
 .. code:: 
 
@@ -1289,7 +1326,7 @@ The :file:``Makefile.src`` you need will have the following section:
 
 .. note:: 
 
-    There is a script for adapting the Makefile: :file:``adapt-mkfile``.  
+    There is a script for adapting the Makefile: :command:`adapt-mkfile`.  
     In the example above, ``#(Janus)`` is *not* a comment, but marks
     this line to be activated (uncommented) by ``adapt-mkfile`` if your
     hostname (``uname -n``) matches `Janus` or `janus` (capitalization is irrelevant).  
@@ -1300,7 +1337,7 @@ The :file:``Makefile.src`` you need will have the following section:
 
     If you want to experiment with compiler flags, or if you
     want to get things running without setting up the machine-dependent
-    section of the :file:``Makefile``, you can set *make* variables at the
+    section of the :file:`Makefile`, you can set *make* variables at the
     command line in the usual manner:
 
     .. code:: 
@@ -1378,7 +1415,7 @@ Changing the resolution
 
 It is advisable to produce a new run directory each time you run a new case.  
 (This does not include restarts from an old run, of course.)  
-If you have a 32^3 run in some directory :file:``runA_32a``, then go to
+If you have a 32^3 run in some directory :file:`runA_32a`, then go to
 its parent directory, i.e.:
 
 .. code:: 
@@ -1388,7 +1425,7 @@ its parent directory, i.e.:
    forced> cd runA_64a/src
    forced> vi cparam.local
 
-and edit the :file:``cparam.local`` for the new resolution.
+and edit the :file:`cparam.local` for the new resolution.
 
 If you have ever wondered why we don't do dynamic allocation of the
 main variable (f) array, the main reason it that with static allocation
@@ -1428,7 +1465,7 @@ Internally, the code uses the quantities:
    \text{dz_1} \equiv \frac{1}{z'} = \zeta'(z), \qquad
    \tilde{\text{dz}} \equiv -\frac{z''}{z'^2} = \frac{\zeta''}{\zeta'}
 
-and stores them in :file:``data/proc$N$/grid.dat``.
+and stores them in :file:`data/proc$N$/grid.dat`.
 
 The parameters ``lequidist`` (a 3-element logical array), ``grid_func``,
 ``coeff_grid`` (a ≥ 2-element real array) are used to choose a
@@ -1539,8 +1576,8 @@ After rounding up to the next integer value, the truncated condition:
 Example:
 """""""""
 
-To apply the ``sinh`` profile, you can set the following in :file:``start.in`` 
-(this example is from :file:``samples/sound-spherical-noequi/``):
+To apply the ``sinh`` profile, you can set the following in :file:`start.in` 
+(this example is from :file:`samples/sound-spherical-noequi/`):
 
 .. code:: 
 
@@ -1565,7 +1602,7 @@ to -2.
 
 
 
-.. _diagnostic-IO:
+.. _man1_diagnostic-IO:
 
 
 Diagnostic output
@@ -1576,7 +1613,7 @@ Sect. :ref:`S-all-run-params`), the code writes monitoring output to
 :ref:`stdout` and, parallel to this, to the file :file:`data/time_series.dat`.  
 
 The variables that appear in this listing and the output format are
-defined in the file :file:``print.in`` and can be changed without touching
+defined in the file :file:`print.in` and can be changed without touching
 the code (even while it is running).  
 
 A simple example of :file:`print.in` may look like this:
@@ -2044,7 +2081,7 @@ some of which are discussed elsewhere. Here is a list of the more important ones
 
 ``adapt-mkfile``
   Activate the settings in a :file:`Makefile` that apply to the given computer,
-  see :ref:`adapt-mkfile`.
+  see :ref:`man1_adapt-mkfile`.
 
 ``auto-test``
   Verify that the code compiles and runs in a set of run directories and compare
@@ -2091,7 +2128,7 @@ some of which are discussed elsewhere. Here is a list of the more important ones
   the :command:`DX` macros in the :file:`dx/macros` directory.
 
 ``getconf.csh``
-  See :ref:`start-run-getconf`
+  See :ref:`man1_start-run-getconf`
 
 ``gpgrowth``
   Plot simple time evolution with Gnuplot's ASCII graphics for fast orientation via a slow modem line.
@@ -2160,7 +2197,7 @@ some of which are discussed elsewhere. Here is a list of the more important ones
   multi-processor runs.
 
 ``run.csh``
-  The script for producing restart files with the initial condition; see :ref:`start-run-getconf`
+  The script for producing restart files with the initial condition; see :ref:`man1_start-run-getconf`
 
 ``scpdatadir``
   Make a tarball of data directory, :file:`data/` and use ``scp`` to secure copy to copy
@@ -2172,7 +2209,7 @@ some of which are discussed elsewhere. Here is a list of the more important ones
   :file:`$PENCIL_HOME/src` to that directory.
 
 ``start.csh``
-  The script for initializing the code; see :ref:`start-run-getconf`
+  The script for initializing the code; see :ref:`man1_start-run-getconf`
 
 ``summarize-history``
   Evaluate :file:`params.log` and print a history of changes.
@@ -2212,7 +2249,7 @@ In the directory where you started the code, create the file
 to force the code to re-read the runtime parameters from :file:`run.in`.
 This will happen the next time the code is writing monitoring output (the
 frequency of this happening is controlled by the input parameter :file:`it`,
-see :numref:`S-start-params`).
+see :ref:`man1_start-params`).
 
 Each time the parameters are reloaded, the new set of parameters is
 appended (in the form of namelists) to the file
@@ -2293,7 +2330,7 @@ existing run directory paths, so if the new run crashes, the code
 returns safely to the old run directory.
 
 
-.. _S-start-params:
+.. _man1_start-params:
 
 Start and run parameters
 ------------------------

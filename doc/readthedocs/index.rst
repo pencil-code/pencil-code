@@ -18,6 +18,7 @@ Explore the sections below to get started, contribute, or run simulations with P
    :maxdepth: 1
    :caption: Getting Started Quickly
 
+   Ultra Quick Guide <manuals/ultra-quick-guide>
    User Quick Guide <manuals/quick-guide>
    Full User Manual <manuals/fmanual-index>
 
@@ -44,6 +45,7 @@ Explore the sections below to get started, contribute, or run simulations with P
    :caption: Working with Simulations / Extra Tools
 
    CVS guide <tools/howtocvs>
+   tools/howtodocker
 
 .. toctree::
    :maxdepth: 1
