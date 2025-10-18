@@ -276,14 +276,14 @@ my @gpu_tests = qw(
 			 #1d-tests/hyperdiffusion
 			 #2d-tests/chiral_dynamo
                          spherical-globaldisk-mhd
-			 #cartesian-convection-kramers-chimax
+			 #cartesian-convection-kramers-chimax          # 4% diff in urms
                          #cartesian-convection-kramers-chimax_cp_2
-			 #spherical-convection
+			 spherical-convection
 			 #meissner
 			 #geodynamo
                          2d-tests/spherical_viscous_ring
                          2d-tests/cylindrical_gdisk
-			 #small-scale-dynamo_slope-limited-diffusion
+			 #small-scale-dynamo_slope-limited-diffusion  # diffs in brms, bmax, jrms: at e-10 to e-12
 			 backreact_infl
 			 #1d-tests/axionSU2back
                    );
@@ -1018,10 +1018,17 @@ sub my_ok {
         # report only first failure:
         $failed{$dir} = $phase unless defined($failed{$dir});
         mark_failed ($dir);
-	if (($phase eq 'compilation') && $gpu) {
-	    system ('cat src/astaroth/ac_build.log ac_compilation.log >> '.$log_dir.'/'.$dir.'/build.log');
+	if ($gpu) {
+	    if ($phase eq 'compilation') {
+	        system ('cat src/astaroth/ac_build.log >> '.$log_dir.'/'.$dir.'/build.log');
+	    } else {
+	        if (($phase eq 'running') || ($phase eq 'results')) {
+	            system ('cat ac_compilation.log >> '.$log_dir.'/'.$dir.'/run.log');
+	        }
+	    }
 	}
     }
+
 
     # Record time usage in an easily greppable format
     if ($summarize_t) {

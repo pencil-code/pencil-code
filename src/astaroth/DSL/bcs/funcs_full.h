@@ -867,9 +867,9 @@ bc_ss_flux_x(AcBoundary boundary, AC_TOP_BOT topbot)
   suppress_unused_warning(boundary)
   real work_yz
   real tmp_yz
-  int stat
-  real fac
-  real cp_loc
+  int stat
+  real fac
+  real cp_loc
   real get_cp_return_value_0_2
   real get_cv_return_value_1_2
   real get_cp_return_value_0_3

@@ -114,18 +114,6 @@ module Forcing
 !
     endsubroutine calc_diagnostics_forcing
 !***********************************************************************
-    subroutine forcing_continuous(df,p)
-!
-!  dummy routine
-!
-      real, dimension (mx,my,mz,mvar) :: df
-      type (pencil_case) :: p
-!
-      call keep_compiler_quiet(df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine forcing_continuous
-!***********************************************************************
     subroutine forcing_cont(force)
 !
       real, dimension (nx,3), intent(out) :: force

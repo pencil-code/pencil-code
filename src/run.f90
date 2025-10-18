@@ -1628,7 +1628,7 @@ endsubroutine helper_loop
     else
       iglobal_glnTT = iglobal_glnTT_tmp
     endif
-    call copy_addr(iglobal_glntt,p_par(1311)) ! int
+    call copy_addr(iglobal_glnTT,p_par(1311)) ! int
     call copy_addr(lbidiagonal_derij,p_par(1312)) ! bool
     
     call copy_addr(n_odevars,p_par(1313)) ! int

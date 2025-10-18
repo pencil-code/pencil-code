@@ -2410,6 +2410,19 @@ module Hydro
             f(:,:,:,iuz) = 0
           endif
 !
+        case ('omega-gaussian')
+!
+!  Gaussian differential rotation in Cartesian
+!
+          if (lroot) print*,'init_uu: constant angular velocity omega_ini=',omega_ini
+          do m=m1,m2
+            do n=n1,n2
+              tmp=exp(-.5*(x(l1:l2)**2+y(m)**2+z(n)**2)/radiusuu**2)
+              f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux)+omega_ini*y(m    )*tmp
+              f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy)+omega_ini*x(l1:l2)*tmp
+            enddo
+          enddo
+!
         case ('tang-discont-z')
 !
 !  tangential discontinuity: velocity is directed along x,
