@@ -16,6 +16,8 @@ import os
 import sys
 import glob
 import datetime
+sys.path.append(os.getcwd())
+from fortran_rst_generator import create_fortran_modules_rst
 
 # Import all git history
 os.system("git pull --unshallow")
@@ -373,5 +375,8 @@ fortran_src = [
     # "../../src/magnetic.f90"
     "../../src/timestep.f90",
 ]
+#qfortran_src = sorted(list(glob.glob("../../src/*.f90")))
 fortran_ext = ["f90"]
 
+# Create the fortran module rst file
+create_fortran_modules_rst("../../src", "toc/modfortran.rst")

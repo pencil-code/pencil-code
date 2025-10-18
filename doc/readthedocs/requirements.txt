@@ -21,3 +21,4 @@ f90nml
 scikit-learn
 pandas
 flatdict
+rstcloth
