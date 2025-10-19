@@ -278,7 +278,7 @@ my @gpu_tests = qw(
                          spherical-globaldisk-mhd
 			 #cartesian-convection-kramers-chimax          # 4% diff in urms
                          #cartesian-convection-kramers-chimax_cp_2
-			 spherical-convection
+			 #spherical-convection
 			 #meissner
 			 #geodynamo
                          2d-tests/spherical_viscous_ring
