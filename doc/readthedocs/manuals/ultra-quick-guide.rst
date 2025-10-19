@@ -149,7 +149,7 @@ so the output should be the same as there.
 
 .. code:: bash
 
-   /app/pencil-code/docker-test/conv-slab$ execute-test 
+   $ execute-test 
 
 This script creates a :file:`docker-test` directory inside :file:`pencil-code`, copies the example sample, moves there, compiles, and runs the sample problem - producing output similar
 to the following:
@@ -193,7 +193,7 @@ that it works, start Python inside the container and try importing the module:
 
 .. code:: bash
 
-   /app/pencil-code/python# python3
+   $ python3
    Python 3.10.12 (main, Aug 15 2025, 14:32:43) [GCC 11.4.0] on linux
    >>> import pencil
    >>>
@@ -266,7 +266,7 @@ Some examples of postprocessing with Python can be found in the
 Using IDL
 ---------
 
-Prefer IDL? The container includes :abbr:`GDL (GNU Data Language)`, `a free an open-source IDL compiler <https://gnudatalanguage.github.io/>`_,  so you can also run IDL scripts inside the container.
+Prefer IDL? The container includes :abbr:`GDL (GNU Data Language)`, `a free and open-source clone of IDL <https://gnudatalanguage.github.io/>`_,  so you can also run IDL scripts inside the container.
 
 
 .. code:: idl
