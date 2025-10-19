@@ -2,6 +2,8 @@
 !
 ! MODULE_DOC: Runge-Kutta time advance, accurate to order itorder.
 ! MODULE_DOC: At the moment, itorder can be 1, 2, or 3.
+! MODULE_DOC: Split one dt into two dt/2 steps with RK method.
+! MODULE_DOC: Please add documentation on why this is beneficial...
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! CPARAM logical, parameter :: lcourant_dt = .true.
