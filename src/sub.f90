@@ -9343,12 +9343,20 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
       real, dimension(mx,my,mz,mfarray) :: f
       character (len=*), optional :: caller
       integer :: has_nan_local,has_nan_global
+      integer :: i
 
       !isnan is written out since we cannot always depend on it
       has_nan_local = merge(1,0,any(f > huge_real .or. f /= f))
       call mpireduce_max_int(has_nan_local,has_nan_global)
 
       if (has_nan_global == 1) then
+        if (lroot) then
+          do i=1,mvar
+            if(any(f(:,:,:,i) > huge_real .or. f(:,:,:,i) /= f(:,:,:,i))) then
+                print*,"NaN in Field: ",i
+            endif
+          enddo
+        endif
         if (.not. present(caller)) then
           call fatal_error('check_for_nans_globally','found nans')
         else
