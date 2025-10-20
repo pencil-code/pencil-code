@@ -68,7 +68,7 @@
   it_train=1, it_train_chkpt=1000
 	!it_train_start=1200
   luse_trained_tau=F
-  max_loss=1.e-13
+  max_loss=1.e-100
   model='stationary'
   config_file='config_fno.yaml'
   it_train_end=3000

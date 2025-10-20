@@ -147,6 +147,7 @@ void torch_trainCAPI(int sub_dims[3], AcReal* input, AcReal* label, AcReal* loss
 void torch_inferCAPI(int sub_dims[3], AcReal* input, AcReal* label);
 void scaling();
 void print_debug();
+float MSE();
 //void torch_createmodel(const char* name, const char* config_fname, MPI_Comm mpi_comm, int device);
 
 extern "C" void copyFarray(AcReal* f);    // forward declaration
@@ -162,39 +163,6 @@ AcReal cpu_pow(AcReal const val, AcReal exponent)
 AcReal sign(const AcReal a, const AcReal b)
 {
 	return (b < (AcReal)0.0) ? -abs(a) : abs(a);
-}
-/***********************************************************************************************/
-float MSE(){
-#if TRAINING
-	#include "user_constants.h"
-
-/*
-	auto descale_uumean_tau = acGetOptimizedDSLTaskGraph(descale);
-	acGridSynchronizeStream(STREAM_ALL);
-	acGridExecuteTaskGraph(descale_uumean_tau, 1);
-	acGridSynchronizeStream(STREAM_ALL);
-	
-        AcTaskGraph* bcs = acGetOptimizedDSLTaskGraph(boundconds);
-	acGridSynchronizeStream(STREAM_ALL);
-	acGridExecuteTaskGraph(bcs,1);
-	acGridSynchronizeStream(STREAM_ALL);
-
-	AcTaskGraph* calc_infered_loss = acGetOptimizedDSLTaskGraph(calc_validation_loss);
-*/
-	auto calc_infered_loss = acGetOptimizedDSLTaskGraph(calc_validation_loss);
-	acGridSynchronizeStream(STREAM_ALL);
-	acGridExecuteTaskGraph(calc_infered_loss, 1);
-	acGridSynchronizeStream(STREAM_ALL);
-
- 	auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
-	acGridSynchronizeStream(STREAM_ALL);
-	acGridExecuteTaskGraph(bcs,1);
-	acGridSynchronizeStream(STREAM_ALL);
-
-	return (acDeviceGetOutput(acGridGetDevice(), AC_l2_sum))/(6*nxgrid*nygrid*nzgrid);
-#else
-        return 0;
-#endif
 }
 /***********************************************************************************************/
 bool has_nans(AcMesh mesh_in)
@@ -915,7 +883,6 @@ extern "C" void torch_infer_c_api(int itstub){
 		fflush(stderr);
 	}
 	calling_infer = true;
-	//if (train_counter < 5) return;
 	if (!called_training){
 		randomNumber = 5;
 		acDeviceSetInput(acGridGetDevice(), AC_ranNum, randomNumber);
@@ -925,15 +892,10 @@ extern "C" void torch_infer_c_api(int itstub){
 		acGridExecuteTaskGraph(calc_uumean_tau, 1);
 		acGridSynchronizeStream(STREAM_ALL);
 
-  		auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
+  	auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
 		acGridSynchronizeStream(STREAM_ALL);
 		acGridExecuteTaskGraph(bcs,1);
 		acGridSynchronizeStream(STREAM_ALL);
-
-	/*
-		if(!calculated_coeff_scales){
-			scaling();
-		}
 
 
 		auto scale_uumean_tau = acGetOptimizedDSLTaskGraph(scale);
@@ -941,13 +903,12 @@ extern "C" void torch_infer_c_api(int itstub){
 		acGridExecuteTaskGraph(scale_uumean_tau, 1);
 		acGridSynchronizeStream(STREAM_ALL);
 
-  		bcs = acGetOptimizedDSLTaskGraph(boundconds);	
+  	bcs = acGetOptimizedDSLTaskGraph(boundconds);	
 		acGridSynchronizeStream(STREAM_ALL);
 		acGridExecuteTaskGraph(bcs,1);
 		acGridSynchronizeStream(STREAM_ALL);
 	}
-		*/
-		}
+		
 
 	AcReal* out = NULL;
 
@@ -980,12 +941,10 @@ extern "C" void torch_infer_c_api(int itstub){
 
 	float vloss = MSE();
  	
-	if (itstub == 1){
-		//fprintf(stderr, "Validation error is: %.7f\n", vloss);
-		//fprintf(stderr, "Validation took %f seconnds\n", (end-start));
-		//fflush(stderr);
-		val_time.push_back((end-start));
-		val_loss.push_back(vloss);
+	if(itstub == 1){
+		fprintf(stderr, "Validation error is: %.50f\n", vloss);
+		fprintf(stderr, "Validation took %f seconnds\n", (end-start));
+		fflush(stderr);
 		print_debug();
 	}
 #endif
@@ -1009,28 +968,14 @@ extern "C" void torch_train_c_api(AcReal *loss_val) {
 	calling_train = true;
 
 	MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
-	//printf("The random number on c++ is: %d, rank is: %d\n", randomNumber, my_rank);	
-
 
 	if (my_rank == 0){
-		
-		if (it == 1) randomNumber = 0;
-		if (it == 2) randomNumber = 1;
-		if (it == 3) randomNumber = 2;
-		if (it == 4) randomNumber = 3;
-		if (it == 5) randomNumber = 4;
-		if (it > 5) randomNumber = rand()%4;
+		//fprintf(stderr, "The iteration number on c++ is: %d, ranNum is %d\n", it, randomNumber);	
+		//fflush(stderr);
+		MPI_Bcast(&randomNumber, 1, MPI_INT, 0, MPI_COMM_WORLD);
+		MPI_Barrier(MPI_COMM_WORLD);
+		acDeviceSetInput(acGridGetDevice(), AC_ranNum, randomNumber);
 	}
-
-	//fprintf(stderr, "The iteration number on c++ is: %d, ranNum is %d\n", it, randomNumber);	
-	//fflush(stderr);
-
-	MPI_Bcast(&randomNumber, 1, MPI_INT, 0, MPI_COMM_WORLD);
-
-	MPI_Barrier(MPI_COMM_WORLD);
-
-
-	acDeviceSetInput(acGridGetDevice(), AC_ranNum, randomNumber);
 
 	auto calc_uumean_tau = acGetOptimizedDSLTaskGraph(initialize_uumean_tau);
 	acGridSynchronizeStream(STREAM_ALL);
@@ -1042,23 +987,8 @@ extern "C" void torch_train_c_api(AcReal *loss_val) {
   acGridExecuteTaskGraph(bcs,1);
   acGridSynchronizeStream(STREAM_ALL);
   	
-	/*
-  if (!calculated_coeff_scales){
-  	scaling();
-  }
 
-  auto scale_uumean_tau = acGetOptimizedDSLTaskGraph(scale);
-  acGridSynchronizeStream(STREAM_ALL);
-  acGridExecuteTaskGraph(scale_uumean_tau, 1);
-  acGridSynchronizeStream(STREAM_ALL);
-
-  bcs = acGetOptimizedDSLTaskGraph(boundconds);	
-  acGridSynchronizeStream(STREAM_ALL);
-  acGridExecuteTaskGraph(bcs,1);
-  acGridSynchronizeStream(STREAM_ALL);
-  */
-
-  AcReal* out = NULL;
+	AcReal* out = NULL;
   
   AcReal* uumean_ptr = NULL;
   AcReal* TAU_ptr = NULL;
@@ -1073,14 +1003,10 @@ extern "C" void torch_train_c_api(AcReal *loss_val) {
   
   start = MPI_Wtime();
   
-  torch_trainCAPI((int[]){mx,my,mz}, uumean_ptr, TAU_ptr, loss_val);
-  /*
-  for (int batch = 0; batch<5; batch++){
-  	torch_train_CAPI((int[]){mx,my,mz}, uumean_ptr, TAU_ptr, loss_val, AC_DOUBLE_PRECISION);
-  	avgloss = avgloss + *loss_val;
-  }
-  */
+  torch_trainCAPI((int[]){mx,my,mz}, uumean_ptr, TAU_ptr, loss_val, AC_DOUBLE_PRECISION);
+
   end = MPI_Wtime();
+
   //fprintf(stderr,"Time for one time step: %f\n", (end-start));
   //fprintf(stderr,"Loss after training: %.7f\n", *loss_val);
   //fflush(stderr);
@@ -1112,13 +1038,6 @@ extern "C" void torch_train_c_api(AcReal *loss_val) {
 			avg_val_loss += val_loss[i];
 		}
 
-	/*
-		for(int i=0;i<val_loss.size();i++){
-			avg_val_loss += val_loss[i];
-		}
-
-	*/
-			
 		avg_train_loss = avg_train_loss / train_loss.size();
 
 		avg_val_loss = avg_val_loss / val_loss.size();
@@ -1129,11 +1048,6 @@ extern "C" void torch_train_c_api(AcReal *loss_val) {
 			val_variance += (val_loss[i] - avg_val_loss) * (val_loss[i] - avg_val_loss);
 		}
 
-	/*
-		for(int i=0;i<val_loss.size();i++{
-			val_variance += (val_loss[i] - avg_val_loss) * (val_loss[i] - avg_val_loss);
-		}
-	*/
 			
 		train_variance = train_variance / train_loss.size();
 
@@ -1184,19 +1098,24 @@ extern "C" void torch_train_c_api(AcReal *loss_val) {
 #endif
 }
 /***********************************************************************************************/
-void scaling(){
-#if LTRAINING
-	auto calc_scale = acGetOptimizedDSLTaskGraph(calc_scaling);
+float MSE(){
+#if TRAINING
+	#include "user_constants.h"
+
+	auto calc_infered_loss = acGetOptimizedDSLTaskGraph(calc_validation_loss);
 	acGridSynchronizeStream(STREAM_ALL);
-	acGridExecuteTaskGraph(calc_scale, 1);
+	acGridExecuteTaskGraph(calc_infered_loss, 1);
 	acGridSynchronizeStream(STREAM_ALL);
-		
-  	auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
+
+ 	auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
 	acGridSynchronizeStream(STREAM_ALL);
 	acGridExecuteTaskGraph(bcs,1);
 	acGridSynchronizeStream(STREAM_ALL);
 
 	calculated_coeff_scales = true;
+	return (acDeviceGetOutput(acGridGetDevice(), AC_l2_sum))/(6*nxgrid*nygrid*nzgrid);
+#else
+        return 0;
 #endif
 }
 /***********************************************************************************************/
@@ -1277,12 +1196,10 @@ if (it % 5 !=0) return;
 		
 		
 		//std::ifstream infile("snapshots/snapshot_rank" + std::to_string(my_rank) + "_it" + std::to_string(it) + ".bin", std::ios::binary);
-
 		//if (infile.good()) return;
 		
 		counter = it;
 		
-		//printf("The ranNumber is: %d\n", randomNumber);
 		MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
 
 		acDeviceSetInput(acGridGetDevice(), AC_ranNum, randomNumber);
@@ -1353,7 +1270,6 @@ if (it % 5 !=0) return;
         buffer.push_back(static_cast<double>(i));
         buffer.push_back(static_cast<double>(j));
         buffer.push_back(static_cast<double>(k));
-
 		}
 	
 
@@ -1362,52 +1278,6 @@ if (it % 5 !=0) return;
     std::ofstream out(fname.str(), std::ios::binary);
     out.write(reinterpret_cast<const char*>(buffer.data()), buffer.size() * sizeof(double));
     out.close();
-
-		/*
-		std::ofstream myFile;
-		std::string fileString = "snapshots/snapshot_" + std::to_string(my_rank) + "_" + std::to_string(it) + ".csv";	
-		myFile.open(fileString);
-
-    myFile << "it,TAU_xx,TAU_xx_inferred,TAU_yy,TAU_yy_inferred,TAU_zz,TAU_zz_inferred,"
-           << "TAU_xy,TAU_xy_inferred,TAU_yz,TAU_yz_inferred,TAU_xz,TAU_xz_inferred,UUMEAN_x,UUMEAN_y,UUMEAN_z,"
-           << "UUX,UUY,UUZ,x,y,z\n";
-
-
-	
-		auto taus = std::array{TAUBatch[0].xx, TAUBatch[1].xx, TAUBatch[2].xx, TAUBatch[3].xx, TAUBatch[4].xx, TAUBatch[5].xx, TAUBatch[0].yy, TAUBatch[1].yy, TAUBatch[2].yy, TAUBatch[3].yy, TAUBatch[4].yy, TAUBatch[5].yy, TAUBatch[0].zz, TAUBatch[1].zz, TAUBatch[2].zz, TAUBatch[3].zz, TAUBatch[4].zz, TAUBatch[5].zz, TAUBatch[0].xy, TAUBatch[1].xy, TAUBatch[2].xy, TAUBatch[3].xy, TAUBatch[4].xy, TAUBatch[5].xy, TAUBatch[0].yz, TAUBatch[1].yz, TAUBatch[2].yz, TAUBatch[3].yz, TAUBatch[4].yz, TAUBatch[5].yz, TAUBatch[0].xz, TAUBatch[1].xz, TAUBatch[2].xz, TAUBatch[3].xz, TAUBatch[4].xz, TAUBatch[5].xz};
-
-		auto uumeans = std::array{UUMEANBatch[0].x, UUMEANBatch[1].x, UUMEANBatch[2].x, UUMEANBatch[3].x, UUMEANBatch[4].x, UUMEANBatch[5].x, UUMEANBatch[0].y, UUMEANBatch[1].y, UUMEANBatch[2].y, UUMEANBatch[3].y, UUMEANBatch[4].y, UUMEANBatch[5].y, UUMEANBatch[0].z, UUMEANBatch[1].z, UUMEANBatch[2].z, UUMEANBatch[3].z, UUMEANBatch[4].z, UUMEANBatch[5].z};
-*/
-
-
-    /*
-    for (size_t i = dims.m0.x; i < dims.m1.x; i++) {
-        for (size_t j = dims.m0.y; j < dims.m1.y; j++) {
-            for (size_t k = dims.m0.z; k < dims.m1.z; k++) {
-                myFile << it << ","
-                       << mesh.vertex_buffer[tau.xx][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[TAU_INFERRED.xx][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[tau.yy][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[TAU_INFERRED.yy][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[tau.zz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[TAU_INFERRED.zz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[tau.xy][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[TAU_INFERRED.xy][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[tau.yz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[TAU_INFERRED.yz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[tau.xz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[TAU_INFERRED.xz][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[uumean.x][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[uumean.y][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[uumean.z][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[UUX][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[UUY][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-                       << mesh.vertex_buffer[UUZ][DEVICE_VTXBUF_IDX(i, j, k)] << ","
-		       << i << "," << j << "," << k << "\n";
-            }
-        }
-    }
-		*/
 
 	#endif
 	if(called_training) called_training = false;
@@ -1428,6 +1298,74 @@ extern "C" void afterSubStepGPU()
 #endif
 	}
 	acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_after_timestep),1);
+}
+/***********************************************************************************************/
+void
+load_f_ode()
+{
+        //TP: this is simply the initial implementation
+        //TODO: benchmark what is the most efficient way of getting ode array to the GPU each substep
+#if TRANSPILATION
+        if (n_odevars > 0)
+        {
+                acDeviceSynchronizeStream(acGridGetDevice(),STREAM_DEFAULT);
+                acDeviceLoad(acGridGetDevice(), STREAM_DEFAULT, mesh.info, AC_f_ode);
+                acDeviceSynchronizeStream(acGridGetDevice(),STREAM_DEFAULT);
+        }
+#endif
+}
+/***********************************************************************************************/
+extern "C" void beforeBoundaryGPU(bool lrmv, int isubstep, double t)
+{
+// Load variable values of ODE variables to GPU since before boundary may use them
+	load_f_ode();
+
+// Load those dynamical parameters (those which depend on time) to GPU
+
+ 	acDeviceSetInput(acGridGetDevice(), AC_lrmv, lrmv);
+ 	acDeviceSetInput(acGridGetDevice(), AC_t, AcReal(t));
+
+// Execute all "before-boundary-actions", which do not update the halos, by separate task graph
+
+	acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_before_boundary_steps),1);
+
+//Some Fields are directly calculated on the halos like yH in ioncalc.
+//Could reformulate the kernels in a way that the bc is simply the same kernel as the normal calculation
+//But don't want to repeat calc too often so this is an somewhat easy to way to do it
+#if TRANSPILATION
+	const auto steps_updating_halos = acGetOptimizedDSLTaskGraph(AC_before_boundary_steps_including_halos,
+					          (Volume){0,0,0},acGetLocalMM(acGridGetLocalMeshInfo()));
+	if (!acGridTaskGraphIsEmpty(steps_updating_halos))
+	{
+		AcTaskGraph* bcs = acGetOptimizedDSLTaskGraph(boundconds);
+		acGridExecuteTaskGraph(bcs,1);                            // apply boundconds
+		acGridHaloExchange();                                     // halo communication
+		acGridExecuteTaskGraph(steps_updating_halos,1);           // f-array update
+	}
+#endif
+#if LSELFGRAVITY
+	if (t>=tstart_selfgrav)
+	{
+		acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_calc_selfgravity_rhs),1);
+		acDeviceFFTR2C(acGridGetDevice(),acGetRHS_POISSON(),RHS_POISSON_COMPLEX);                     // FFT of rhs of Poisson eq.
+    		AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
+  		acGridLaunchKernel(STREAM_DEFAULT, selfgravity_poisson_solve, dims.n0, dims.n1);
+		acGridSynchronizeStream(STREAM_ALL);
+		acDeviceFFTC2R(acGridGetDevice(),SELFGRAVITY_POTENTIAL_COMPLEX,acGetSELFGRAVITY_POTENTIAL()); // FFT backtransform. of solution
+		//TP: A placeholder for iterative solvers, in the future choose the number of solving steps based on the norm of the residual
+		/**
+		for (int i = 0; i < 100; ++i)
+		{
+			acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_sor_step),1);
+		}
+		**/
+		acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_calc_final_potential),1);
+	}
+
+#endif
+#if LNEWTON_COOLING
+	acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_integrate_tau),1);
+#endif
 }
 /***********************************************************************************************/
 extern "C" void substepGPU(int isubstep, double t)

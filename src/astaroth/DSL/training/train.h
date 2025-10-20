@@ -1,4 +1,4 @@
-//#if LTRAINING
+#if LTRAINING
 
 
 communicated Field3 UUMEANinf
@@ -359,5 +359,4 @@ ComputeSteps descale(boundconds){
 	descale_kernel_new(AC_ranNum)
 }
 
-
-//#endif
+#endif
