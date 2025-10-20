@@ -834,7 +834,7 @@ def src2dst_remesh(
               dsth5["grid/y"][()],
               dsth5["grid/z"][()]
               )
-    dstchunksize = bytesize * nx * ny * nz / 1024 / 1024 / size
+    dstchunksize = float(bytesize)/size * (nx/1024.) * (ny/1024.) * nz
     if rank == 0:
         print("rank {}, nx = {} dstchunksize {} chunksize {}, ncpus {}".format(rank, nx, dstchunksize, chunksize, ncpus))
     lchunks = False
