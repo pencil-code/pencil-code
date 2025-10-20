@@ -53,7 +53,7 @@ from glob import glob
 from numpy.f2py.crackfortran import crackfortran, fortrantypes
 from sphinx.util import logging
 
-from sphinxfortran.fortran_domain import FortranDomain
+from fortran_domain import FortranDomain
 
 
 logger = logging.getLogger(__name__)
@@ -126,7 +126,6 @@ class F90toRst(object):
             #self.src[ff] = [l.decode(encoding) for l in f.read().split('\n')]
 
             f.close()
-
         # Crack files
         global verbose, quiet
         import numpy.f2py.crackfortran
@@ -134,13 +133,20 @@ class F90toRst(object):
         numpy.f2py.crackfortran.quiet = quiet = 1 - verbose
         self.crack = []
         for ff in ffiles:
+            print(ff)
             self.crack.extend(crackfortran(ff))
-
         # Build index
         self.build_index()
 
         # Scan all files to get description, etc
-        self.scan()
+        try:
+            self.scan()
+        except Exception as ex:
+            import traceback
+            import sys
+            print(ex)
+            print(traceback.format_exc())
+            sys.exit(1)
 
         # Add function 'call from' to index
         self.build_callfrom_index()
@@ -183,7 +189,6 @@ class F90toRst(object):
 
         # Loop on all blocks and subblocks
         for block in self.crack:
-
             # Modules
             if block['block'] == 'module':
 
@@ -278,7 +283,7 @@ class F90toRst(object):
                     reversed(sorted(block['sortvars'])))
                 block['vardescsearch'] = re.compile(sreg, re.I).search
             else:
-                block['vardescsearch'] = lambda x: None
+                block['vardescsearch'] = lambda x: []
 
     def build_callfrom_index(self):
         """For each function, index which function call it"""
@@ -344,10 +349,11 @@ class F90toRst(object):
                     for line in modsrc:
                         if line.strip().startswith('!'):
                             continue
-                        m = block['vardescsearch'](line)
-                        if m:
-                            block['vars'][m.group('varname').lower()]['desc'] = m.group(
-                                'vardesc')
+                        if 'vardescsearch' in block:
+                            m = block['vardescsearch'](line)
+                            if m:
+                                block['vars'][m.group('varname').lower()]['desc'] = m.group(
+                                    'vardesc')
                 for bvar in list(block['vars'].values()):
                     bvar.setdefault('desc', '')
 
@@ -443,7 +449,7 @@ class F90toRst(object):
         for bvar in list(block['vars'].values()):
             bvar.setdefault('desc', '')
 
-        del subsrc
+        #del subsrc
 
     # Getting info ---
 
@@ -515,6 +521,12 @@ class F90toRst(object):
                 return
             # Ok, now check
             if rstart(src[ifirst]):
+                # Allow comments before the module start
+                if blocktype == "module":
+                    ifirstnew = ifirst - 1
+                    while ifirstnew >= 0 and (src[ifirstnew].strip().startswith("!") or not src[ifirstnew].strip()):
+                        ifirst = ifirstnew
+                        ifirstnew -= 1
                 break
         else:
             return
@@ -564,13 +576,16 @@ class F90toRst(object):
                 subsrc = self.get_blocksrc(subblock, src=src, getidx=True)
                 if subsrc is None:
                     continue  # Already stripped
-                del src[subsrc[1][0]:subsrc[1][1]]
+                try:
+                    del src[subsrc[1][0]:subsrc[1][1]]
+                except:
+                    continue
                 del subsrc
 
     def get_comment(
             self,
             src,
-            iline=1,
+            iline=0,
             aslist=False,
             stripped=False,
             getilast=False,
@@ -593,6 +608,7 @@ class F90toRst(object):
             - ``scomment``: string or list
             - OR ``scomment,ilast``: if ``getilast is True``
         """
+        initial_iline = iline
         scomment = []
         if src:
             in_a_breaked_line = src[0].strip().endswith('&')
@@ -606,6 +622,9 @@ class F90toRst(object):
                 # Manage no comment line
                 m = self._re_comment_match(line)
                 if m is None:
+
+                    if iline == initial_iline:
+                        continue
 
                     if not scomment:
 
@@ -898,7 +917,7 @@ class F90toRst(object):
             return ':f:func:`%(fname)s`' % locals()
 
         # Remote reference
-        from sphinxfortran.fortran_domain import f_sep
+        from fortran_domain import f_sep
         if falias:
             ':f:func:`%(falias)s<~%(module)s%(f_sep)s%(fname)s>`' % locals()
         return ':f:func:`~%(module)s%(f_sep)s%(fname)s`' % locals()
@@ -1243,7 +1262,7 @@ class F90toRst(object):
 
         # Types
         decs = []
-        tlist = sorted(self.get_blocklist('types', module))
+        tlist = sorted(self.get_blocklist('types', module), key=lambda tt: tt.get('name', ''))
         if tlist:
             decs.append(':Types: ' +
                         ', '.join([':f:type:`%s`' %
@@ -1563,7 +1582,7 @@ class FortranAutoObjectDirective(Directive):
 
         # Check object name
         objname = self.arguments[0].lower()
-        from sphinxfortran.fortran_domain import f_sep
+        from fortran_domain import f_sep
         if f_sep in objname:
             objname = objname.split(f_sep)[-1]  # remove module name
         objects = getattr(f90torst, self._objtype + 's')

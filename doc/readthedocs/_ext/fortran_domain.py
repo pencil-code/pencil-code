@@ -697,12 +697,8 @@ class FortranObject(ObjectDescription):
             self.state.document.note_explicit_target(signode)
             objects = self.env.domaindata['f']['objects']
             if fullname in objects:
-                self.env.warn(
-                    self.env.docname,
-                    'duplicate object description of %s, ' % fullname +
-                    'other instance in ' +
-                    self.env.doc2path(objects[fullname][0]),
-                    self.lineno)
+                pass
+                #print(f"{self.env.docname}: duplicate object description of {fullname} other instance in {self.env.doc2path(objects[fullname][0])}, {self.lineno}")
             objects[fullname] = (self.env.docname, self.objtype)
         indextext = self.get_index_text(modname, fullname)
         if indextext:
@@ -1265,10 +1261,10 @@ class FortranDomain(Domain):
         if not matches:
             return None
         elif len(matches) > 1:
-            env.warn(fromdocname,
-                     'more than one target found for cross-reference '
-                     '%r: %s' % (target,
-                                 ', '.join(match[0] for match in matches)),
+            print(fromdocname,
+                  'more than one target found for cross-reference '
+                  '%r: %s' % (target,
+                              ', '.join(match[0] for match in matches)),
                      node.line)
         name, obj = matches[0]
 
