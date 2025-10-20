@@ -3916,7 +3916,7 @@ module Sub
 !                  is output -> test of NaN in t
 !  30-may-20/axel: new version of log-spaced output by x10^(1/3) for dtout<0
 !
-      use General, only: itoa, notanumber_0d
+      use General, only: itoa, notanumber
 !
       character (len=*), intent(in) :: file
       real, intent(inout) :: tout
@@ -3937,7 +3937,7 @@ module Sub
       real, save :: deltat_threshold
       real, dimension(:), allocatable :: tsnap_list
 !
-      if (notanumber_0d(t)) then
+      if (notanumber(real (t))) then
         lout=.false.
         return
       endif
