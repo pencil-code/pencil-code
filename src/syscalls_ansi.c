@@ -339,12 +339,9 @@ void FTNIZE(is_nan_c)
   if (sizeof (*value) == sizeof (double)) {
     *result = isnan ((double) *value);
   } else if (sizeof (*value) == sizeof (float)) {
-    *result = isnanf ((float) *value);
+    // *result = isnanf ((float) *value);     // isnanf is sometimes not availabel
+    *result = !(*value == *value);            // workaround
   }
-
-/* work around, if isnanf would not be available, which is unlikely nowadays:
-  if (sizeof (*value) == sizeof (float)) *result = !(*value == *value);
-*/
 }
 
 /* ---------------------------------------------------------------------- */
