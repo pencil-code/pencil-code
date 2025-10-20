@@ -50,7 +50,9 @@ enum PC_SUB_STEP_NUMBER
 #include "../stdlib/math"
 #include "../stdlib/grid/funcs.h"
 #include "../stdlib/utils/intrinsics.h"
+#ifndef LTRAINING
 #include "../stdlib/slope_limited_diffusion.h"
+#endif
 
 #include "../../../cparam_c.h"
 #include "../../../cparam_pencils.inc_c.h"

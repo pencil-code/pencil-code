@@ -38,6 +38,7 @@ bc_sym_z(AcBoundary boundary,AC_TOP_BOT topbot, VtxBuffer field, int sgn, bool r
   }
   bc_sym_z(boundary,topbot,field,sgn,rel)
 }
+#ifndef LTRAINING
 #if Leos_idealgas_MODULE
 #if Lentropy_MODULE
 bc_c1_x(AcBoundary boundary, AC_TOP_BOT topbot, Field j )
@@ -75,5 +76,6 @@ bc_hs_z(AcBoundary boundary, AC_TOP_BOT topbot, Field j)
 		bc_lnrho_hds_z_iso(boundary,topbot)
 	}
 }
+#endif
 #endif
 
