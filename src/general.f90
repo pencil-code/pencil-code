@@ -56,7 +56,7 @@ module General
   public :: transform_thph_yy, transform_thph_yy_other, merge_yin_yang
   public :: copy_kinked_strip_z, copy_kinked_strip_y, reset_triangle
   public :: transpose_mn
-  public :: notanumber, notanumber_0d
+  public :: notanumber
   public :: reduce_grad_dim
   public :: meshgrid
   public :: linspace
@@ -5858,19 +5858,6 @@ if (notanumber(source(:,is,js))) print*, 'source(:,is,js): iproc,j=', iproc, ipr
       notanumber_0 = isnan(f)
 !
     endfunction notanumber_0
-!***********************************************************************
-    pure logical function notanumber_0d(f)
-!
-!  Check for NaN or Inf values.
-!
-!  27-Jul-15/MR: adapted
-!  07-oct-20/ccyang: revised
-!
-     real(KIND=rkind8), intent(in) :: f
-!
-     notanumber_0d = f > huge_double .or. f /= f
-!
-    endfunction notanumber_0d
 !***********************************************************************
     pure logical function notanumber_1(f)
 !
