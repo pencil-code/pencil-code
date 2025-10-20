@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import os
 import glob
+import shutil
 from rstcloth import RstCloth
 
 def process_file(file) -> tuple[str, str]:
@@ -72,7 +73,7 @@ def process_file(file) -> tuple[str, str]:
     if not module_started:
         module_comments = ["Not a module"]
 
-    return ("``" + os.path.basename(file).replace(".f90", "") + "``", " ".join(module_comments).replace("_", r"\_"))
+    return (os.path.basename(file).replace(".f90", ""), " ".join(module_comments).replace("_", r"\_"))
 
 def process_directory(path) -> list:
     """
@@ -87,14 +88,42 @@ def process_directory(path) -> list:
         table.append(process_file(file))
     return table
 
-def create_fortran_modules_rst(path_to_src: str,
-                               output_file: str) -> None:
+FILES_THAT_DONT_WORK = [
+    "src/chemistry.f90", # 'ascii' codec can't decode byte 0xcb in position 7543: ordinal not in range(128).
+    "src/diagnostics.f90", # ø character in file
+    "src/diagnostics_outlog.f90", # ø character in file
+    "src/forcing.f90", # ± character in file
+    "src/fourier_fftpack.f90", # § character in file
+    "src/hydro.f90", # UNKNOWN ERROR
+    "src/initcond.f90", # 'ascii' codec can't decode byte 0xe2 in position 6496: ordinal not in range(128).
+    "src/io_dist.f90", # Found non-(space,digit) char in the first column. Are you sure that this code is in fix form? line='kloop:do kk=kka,kke ')
+    "src/nosolid_cells.f90", # ø character in file
+    "src/particles_chemistry.f90", # 'ascii' codec can't decode byte 0xe2 in position 613: ordinal not in range(128).
+    "src/particles_dust.f90", # 'ascii' codec can't decode byte 0xe2 in position 2129: ordinal not in range(128).
+    "src/polynomialroots.f90", # CRITICAL: Unexpected section title or transition.
+    "src/slices.f90", # (exception: '=')
+    "src/solid_cells.f90", # ø character in file
+    "src/solid_cells_ogrid.f90", # ø, é characters in file
+    "src/solid_cells_ogrid_mpicomm.f90", # é character in file
+    "src/sub.f90", # (exception: expected string or bytes-like object, got 'NoneType')
+    "src/timestep_rkf_lowsto.f90", # í character in file
+    "initial_condition/1D_loop_init.f90", # 'ascii' codec can't decode byte 0xc4 in position 6280: ordinal not in range(128).
+    "initial_condition/alfven_wave.f90", # 'ascii' codec can't decode byte 0xc3 in position 39: ordinal not in range(128).
+    "initial_condition/coronae_init.f90", # 'ascii' codec can't decode byte 0xc4 in position 3033: ordinal not in range(128).
+    "special/streamfunction_fullmultigrid.f90", # 'ascii' codec can't decode byte 0xcf in position 5737: ordinal not in range(128).
+    "special/streamfunction_multigrid.f90", # 'ascii' codec can't decode byte 0xe2 in position 4021: ordinal not in range(128).
+    "test_methods/testfield_xy.f90" # 'ascii' codec can't decode byte 0xc3 in position 361: ordinal not in range(128).
+]
+
+def create_fortran_modules_rst(path_to_src: str) -> list[str]:
     """
-    Create the rst file containing the tables with the Fortran modules.
+    Create the rst files containing the tables with the Fortran modules.
 
     :param path_to_src: Relative or absolute path to the Pencil Code src/ directory.
     :param output_file: Output rst file. Will be overwritten if it exists.
+    :return: List of f90 files, to be used in conf.py as fortran_src.
     """
+    retval = []
     modules = {}
     modules["src"] = process_directory(path_to_src)
     for subdir in sorted([p for p in os.scandir(path_to_src) if p.is_dir()], key=lambda x:x.name):
@@ -104,18 +133,57 @@ def create_fortran_modules_rst(path_to_src: str,
         modules[subdir.name] = table
     total_modules = sum(len(val) for val in modules.values())
 
-    with open(output_file, "w") as f:
+    dirshow = lambda module: "src" if module == "src" else f"src/{module}"
+    dirtitle = lambda module: f"Main source files ({dirshow(module)})" if module == "src" else f"{module} source files ({dirshow(module)})"
+
+    # Create the root directory for sourceFortran
+    DOCSROOT = os.path.dirname(__file__)
+    F90ROOT = os.path.join(DOCSROOT, "code/sourceFortran")
+    shutil.rmtree(F90ROOT, ignore_errors=True)
+    os.makedirs(F90ROOT, exist_ok=True)
+    # Make the automodule files
+    parsed_f90 = []
+    for dirname, table in modules.items():
+        os.makedirs(os.path.join(F90ROOT, dirname), exist_ok=True)
+        for module, _ in table:
+            # Modules that won't compile - skip them
+            if f"{dirname}/{module}.f90" in FILES_THAT_DONT_WORK:
+                continue
+            with open(os.path.join(F90ROOT, dirname, f"{module}.rst"), "w") as f:
+                d = RstCloth(f)
+                d.title(module)
+                d.newline()
+                d.directive("f:autosrcfile", arg=f"{module}.f90")
+                actual_path = os.path.join(os.path.dirname(path_to_src), dirshow(dirname), f"{module}.f90")
+                if not os.path.isfile(actual_path):
+                    import sys
+                    print(f"Attention: file {actual_path} does not exist; this is probably a bug in fortran_rst_generator.py!")
+                    sys.exit(1)
+                retval.append(actual_path)
+                parsed_f90.append(f"{dirname}/{module}")
+    # Main index
+    with open(os.path.join(F90ROOT, "index.rst"), "w") as f:
         d = RstCloth(f)
         d.title("Fortran modules")
         d.content(f"Currently, the Pencil Code contains {total_modules} Fortran files.")
         d.newline()
         for dirname, table in modules.items():
-            if dirname == "src":
-                dirshow = "src"
-                d.h2(f"Main source files ({dirshow})")
-            else:
-                dirshow = f"src/{dirname}"
-                d.h2(f"*{dirname}* source files ({dirshow})")
+            d.ref_target(dirname)
+            d.newline()
+            d.h2(dirtitle(dirname))
+            d.newline()
             nmodules = len(table)
-            d.content(f"The *{dirshow}* directory contains {nmodules} Fortran file{'s' if nmodules != 1 else ''}.")
-            d.table(header=["File", "Description"], data=table)
+            d.content(f"The *{dirshow(dirname)}* directory contains {nmodules} Fortran file{'s' if nmodules != 1 else ''}.")
+            table_content = []
+            for it in table:
+                if f"{dirname}/{it[0]}" in parsed_f90:
+                    table_content.append((f":doc:`{dirname}/{it[0]}`", it[1]))
+                else:
+                    table_content.append(it)
+            d.table(header=["File", "Description"], data=table_content)
+            d.directive("toctree", fields=[("hidden", ""), ("maxdepth", "1")], content=[f"{dirname}/{it[0]}" for it in table])
+            d.newline()
+        d.newline()
+        d.directive("toctree", fields=[("hidden", ""), ("titlesonly", ""), ("maxdepth", "2")], content=[f":ref:`{key}`" for key in modules.keys()])
+
+    return retval

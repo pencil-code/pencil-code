@@ -66,8 +66,8 @@ extensions = [
     "sphinx.ext.githubpages",
     "sphinx.ext.napoleon",
     "sphinxcontrib.images",
-    "sphinxfortran.fortran_domain",
-    "sphinxfortran.fortran_autodoc",
+    "fortran_domain",
+    "fortran_autodoc",
     "sphinxgit",
     "docsgit",
     "sphinx.ext.intersphinx",
@@ -367,16 +367,5 @@ epub_exclude_files = ["search.html"]
 todo_include_todos = True
 
 ## Fortran configuration
-fortran_src = [
-    "../../src/ascalar.f90",
-    "../../src/geometrical_types.f90",
-    #"../../src/hydro.f90",
-    #    "../../src/bfield.f90",
-    # "../../src/magnetic.f90"
-    "../../src/timestep.f90",
-]
-#qfortran_src = sorted(list(glob.glob("../../src/*.f90")))
+fortran_src = create_fortran_modules_rst("../../src")
 fortran_ext = ["f90"]
-
-# Create the fortran module rst file
-create_fortran_modules_rst("../../src", "toc/modfortran.rst")

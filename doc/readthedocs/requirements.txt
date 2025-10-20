@@ -12,7 +12,6 @@ pexpect>=4.8.0
 tqdm>=4.60.0
 vtk>=9.0.1
 setuptools==68.2.2
-sphinx-fortran
 sphinxcontrib.images
 GitPython
 sphinx-rtd-theme
