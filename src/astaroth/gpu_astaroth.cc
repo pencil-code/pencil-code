@@ -1368,6 +1368,7 @@ if (it % 5 !=0) return;
 */
 
 
+    /*
     for (size_t i = dims.m0.x; i < dims.m1.x; i++) {
         for (size_t j = dims.m0.y; j < dims.m1.y; j++) {
             for (size_t k = dims.m0.z; k < dims.m1.z; k++) {
@@ -1514,7 +1515,9 @@ void copyFarray(AcReal* f)
   }
   for (int i = 0; i < end; ++i)
   {
-	  const int index = i < mvar ? i : maux_vtxbuf_index[i];
+	  //Have to specialize for training for now since we are reading fields that do not exist in Fortran: TODO: allocate fields on the CPU in Fortran
+	  const int index = ltraining ? i : 
+		  	    i < mvar ? i : maux_vtxbuf_index[i];
           if (!ltraining && index == -1) continue;
 	  acDeviceStoreVertexBuffer(acGridGetDevice(),STREAM_DEFAULT,VertexBufferHandle(index),dst);
   }
