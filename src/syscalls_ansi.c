@@ -29,13 +29,13 @@ void FTNIZE(extract_string_c)(char *extract_cmd, char *result, const FINT *size)
 //  Extracts a string (e.g., from a file) by extract_cmd.
 //  31-mar-21/MR: coded
 
-    FILE *pipe = popen(extract_cmd, "r");
-    if (pipe == NULL) {
-        perror("popen");
-        exit(EXIT_FAILURE);
-    }
-    char* ret=fgets(result, *size, pipe);
-    pclose(pipe);
+  FILE *pipe = popen(extract_cmd, "r");
+  if (pipe == NULL) {
+    perror("popen");
+    exit(EXIT_FAILURE);
+  }
+  char* ret=fgets(result, *size, pipe);
+  pclose(pipe);
 }
 /* ---------------------------------------------------------------------- */
 
@@ -60,7 +60,7 @@ int FTNIZE(islink_c) (char *filename)
   int ret = -1;
 
   if (lstat(filename, &fileStat) == 0) { 
-    ret = (fileStat.st_mode & S_IFMT) == S_IFLNK ? 1 : 0;   
+    ret = (fileStat.st_mode & S_IFMT) == S_IFLNK ? 1 : 0;
   }
   return ret;
 }
@@ -80,10 +80,10 @@ void FTNIZE(file_size_c)
 
   *bytes = -2;
   file = open (filename, O_RDONLY);
-  if(file == -1) return;
+  if (file == -1) return;
 
   *bytes = -1;
-  if(fstat (file, &fileStat) < 0) { close (file); return; }
+  if (fstat (file, &fileStat) < 0) { close (file); return; }
   close (file);
 
   *bytes = fileStat.st_size;
@@ -171,13 +171,13 @@ void FTNIZE(caller)
 
   switch(*npar)
   {
-  case 1: (*func)(va_arg(ap,void*)); break;
-  case 2: (*func)(va_arg(ap,void*),va_arg(ap,void*)); break;
-  //case 2: printf("f,p: %p %p \n",va_arg(ap,void*),va_arg(ap,void*)); break;
-  case 3: (*func)(va_arg(ap,void*),va_arg(ap,void*),va_arg(ap,void*)); break;
-  case 4: (*func)(va_arg(ap,void*),va_arg(ap,void*),va_arg(ap,void*),va_arg(ap,void*)); break;
-  case 5: (*func)(va_arg(ap,void*),va_arg(ap,void*),va_arg(ap,void*),va_arg(ap,void*),va_arg(ap,void*)); break;
-  default: return;
+    case 1: (*func)(va_arg(ap,void*)); break;
+    case 2: (*func)(va_arg(ap,void*),va_arg(ap,void*)); break;
+    //case 2: printf("f,p: %p %p \n",va_arg(ap,void*),va_arg(ap,void*)); break;
+    case 3: (*func)(va_arg(ap,void*),va_arg(ap,void*),va_arg(ap,void*)); break;
+    case 4: (*func)(va_arg(ap,void*),va_arg(ap,void*),va_arg(ap,void*),va_arg(ap,void*)); break;
+    case 5: (*func)(va_arg(ap,void*),va_arg(ap,void*),va_arg(ap,void*),va_arg(ap,void*),va_arg(ap,void*)); break;
+    default: return;
   }
   va_end(ap);
 }
@@ -185,7 +185,7 @@ void FTNIZE(caller)
 void FTNIZE(caller0)
      (void (**func)(void))
 {
-   (*func)(); 
+  (*func)(); 
 }
 /* ---------------------------------------------------------------------- */
 int FTNIZE(func_int_caller0)
@@ -236,14 +236,14 @@ void *FTNIZE(dlsym_c)(void **handle, const char *symbol)
 /* ---------------------------------------------------------------------- */
 void FTNIZE(dlclose_c)(void **handle)
 {
- dlclose(*handle);
+  dlclose(*handle);
 }
 /* ---------------------------------------------------------------------- */
 void FTNIZE(dlerror_c)(void)
 {
- char *error=dlerror();
- printf("error = %s\n", error);
-}       
+  char *error=dlerror();
+  printf("error = %s\n", error);
+}
 /* ---------------------------------------------------------------------- */
 void FTNIZE(write_binary_file_c)
      (char *filename, FINT *bytes, char *buffer, FINT *result)
@@ -260,7 +260,7 @@ void FTNIZE(write_binary_file_c)
   *result = -2;
   file = open (filename, O_WRONLY|O_CREAT|O_TRUNC, S_IRUSR|S_IWUSR);
 
-  if(file == -1) return;
+  if (file == -1) return;
 
   *result = -1;
 
@@ -371,76 +371,77 @@ void FTNIZE(sizeof_real_c)
   *result = sizeof (*value);
 }
 /* ---------------------------------------------------------------------- */
-  void FTNIZE(copy_addr_c)(void *src, void **dest)
-  {
-    *dest=src;
-  }
+void FTNIZE(copy_addr_c)(void *src, void **dest)
+{
+  *dest=src;
+}
 /* ---------------------------------------------------------------------- */
-  void FTNIZE(copy_addr_c_bool)(int *src, void **dest, int* n)
-  {
-     bool* res = malloc(sizeof(bool)*(*n));
-     for(int i = 0; i < (*n); ++i) res[i] = (src[i] > 0);
-     *dest=(void*)res;
-  }
+void FTNIZE(copy_addr_c_bool)(int *src, void **dest, int* n)
+{
+  bool* res = malloc(sizeof(bool)*(*n));
+  for(int i = 0; i < (*n); ++i) res[i] = (src[i] > 0);
+  *dest=(void*)res;
+}
 /* ---------------------------------------------------------------------- */
-  FINT FTNIZE(mem_usage_c)()
-  {
-    #include <sys/resource.h>
+FINT FTNIZE(mem_usage_c)()
+{
+  #include <sys/resource.h>
 
-    struct rusage usage;
-    int res=getrusage(RUSAGE_SELF,&usage);
+  struct rusage usage;
+  int res=getrusage(RUSAGE_SELF,&usage);
 
-    return usage.ru_maxrss;
-  }
+  return usage.ru_maxrss;
+}
 /* ---------------------------------------------------------------------- */
 void FTNIZE(py_init)()
-  {
+{
 #ifdef PYTHONPATH
-    #include <Python.h>
-    Py_Initialize();
+  #include <Python.h>
+  Py_Initialize();
 #endif
-  }
+}
 /* ---------------------------------------------------------------------- */
 void FTNIZE(py_initialize)(const char *pymodule,const char *pyfunction,void *pModule,void *pFunction)
-  {
+{
 #ifdef PYTHONPATH
-    #include <Python.h>
+  #include <Python.h>
 
-    // Import the Python module
-    pModule = (void*) PyImport_ImportModule(pymodule);
-    if (pModule != NULL) {
-        // Get a reference to the Python function
-        pFunction = (void*) PyObject_GetAttrString((PyObject*) pModule,pyfunction);
-    } else {
-        PyErr_Print();
-    }
-#endif
+  // Import the Python module
+  pModule = (void*) PyImport_ImportModule(pymodule);
+  if (pModule != NULL) {
+    // Get a reference to the Python function
+    pFunction = (void*) PyObject_GetAttrString((PyObject*) pModule,pyfunction);
+  } else {
+    PyErr_Print();
   }
+#endif
+}
 /* ---------------------------------------------------------------------- */
 void FTNIZE(py_call)(void *pFunction, int *arg)
-  {
+{
 #ifdef PYTHONPATH
-    #include <Python.h>
+  #include <Python.h>
 
-    // Call the Python function with the provided file path
-    PyObject *pArgs = NULL;  //PyTuple_Pack(1, Py_BuildValue("s", file_path));
-    PyObject_CallObject((PyObject *) pFunction, pArgs);
+  // Call the Python function with the provided file path
+  PyObject *pArgs = NULL;  //PyTuple_Pack(1, Py_BuildValue("s", file_path));
+  PyObject_CallObject((PyObject *) pFunction, pArgs);
 #endif
-  }
+}
 /* ---------------------------------------------------------------------- */
 void FTNIZE(py_finalize)(void *pModule,void *pFunction)
-  {
+{
 #ifdef PYTHONPATH
-    #include <Python.h>
+  #include <Python.h>
 
-    if (pFunction != NULL) Py_XDECREF((PyObject*) pFunction);
-    if (pModule != NULL) Py_XDECREF((PyObject*) pModule);
+  if (pFunction != NULL) Py_XDECREF((PyObject*) pFunction);
+  if (pModule != NULL) Py_XDECREF((PyObject*) pModule);
 
-    Py_Finalize();
+  Py_Finalize();
 #endif
-  }
+}
+/* ---------------------------------------------------------------------- */
 REAL* FTNIZE(pos_real_ptr_c)(REAL* ptr,int ind)
-  {
-    return ptr+ind;
-  }
+{
+  return ptr+ind;
+}
 /* ---------------------------------------------------------------------- */
