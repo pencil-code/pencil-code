@@ -191,8 +191,8 @@ module Energy
 !  xy-averaged field
 !
   real, dimension (mz) :: ssmz,cs2mz
-  real, dimension (nz,3) :: gssmz
-  real, dimension (nz) :: del2ssmz
+  real, dimension (mz,3) :: gssmz
+  real, dimension (mz) :: del2ssmz
   real, dimension (mx) :: ssmx
   real, dimension (nx,3) :: gssmx
   real, dimension (nx) :: cs2mx, del2ssmx
@@ -4404,9 +4404,9 @@ module Energy
 !
 !  Compute first and second derivatives.
 !
-        gssmz(:,1:2)=0.
-        call der_z(ssmz,gssmz(:,3))
-        call der2_z(ssmz,del2ssmz)
+        gssmz(n1:n2,1:2)=0.
+        call der_z(ssmz,gssmz(n1:n2,3))
+        call der2_z(ssmz,del2ssmz(n1:n2))
       endif
 !
 !  Compute yz- and z-averages of entropy.
@@ -5606,8 +5606,8 @@ module Energy
 !
         gss1=p%gss
         if (lcalc_ssmean) then
-          do j=1,3; gss1(:,j)=gss1(:,j)-gssmz(n-n1+1,j); enddo
-          del2ss1=p%del2ss-del2ssmz(n-n1+1)
+          do j=1,3; gss1(:,j)=gss1(:,j)-gssmz(n,j); enddo
+          del2ss1=p%del2ss-del2ssmz(n)
         else if (lcalc_ssmeanxy) then
           do j=1,3; gss1(:,j)=gss1(:,j)-gssmx(:,j); enddo
           del2ss1=p%del2ss-del2ssmx
@@ -5690,8 +5690,8 @@ module Energy
 !     rho*T*Ds/Dt = ... + nab.((nu_smag/Pr_smag)*rho*T*grads),
 !
       if (lcalc_ssmean) then
-        do j=1,3; gss1(:,j)=p%gss(:,j)-gssmz(n-n1+1,j); enddo
-        del2ss1=p%del2ss-del2ssmz(n-n1+1)
+        do j=1,3; gss1(:,j)=p%gss(:,j)-gssmz(n,j); enddo
+        del2ss1=p%del2ss-del2ssmz(n)
       else if (lcalc_ssmeanxy) then
         do j=1,3;gss1(:,j)=p%gss(:,j)-gssmx(:,j); enddo
         del2ss1=p%del2ss-del2ssmx
@@ -5850,8 +5850,8 @@ module Energy
 !
         if (lcalc_ssmean .or. lcalc_ssmeanxy) then
           if (lcalc_ssmean) then
-            do j=1,3; gss1(:,j)=p%gss(:,j)-gssmz(n-n1+1,j); enddo
-            del2ss1=p%del2ss-del2ssmz(n-n1+1)
+            do j=1,3; gss1(:,j)=p%gss(:,j)-gssmz(n,j); enddo
+            del2ss1=p%del2ss-del2ssmz(n)
           else if (lcalc_ssmeanxy) then
             do j=1,3; gss1(:,j)=p%gss(:,j)-gssmx(:,j); enddo
             del2ss1=p%del2ss-del2ssmx
@@ -6031,8 +6031,8 @@ module Energy
 !
         if (lcalc_ssmean .or. lcalc_ssmeanxy) then
           if (lcalc_ssmean) then
-            do j=1,3; gss1(:,j)=p%gss(:,j)-gssmz(n-n1+1,j); enddo
-            del2ss1=p%del2ss-del2ssmz(n-n1+1)
+            do j=1,3; gss1(:,j)=p%gss(:,j)-gssmz(n,j); enddo
+            del2ss1=p%del2ss-del2ssmz(n)
           else if (lcalc_ssmeanxy) then
             do j=1,3; gss1(:,j)=p%gss(:,j)-gssmx(:,j); enddo
             del2ss1=p%del2ss-del2ssmx
@@ -6117,8 +6117,8 @@ module Energy
 !
         if (lchit_mean .and. (lcalc_ssmean .or. lcalc_ssmeanxy)) then
           if (lcalc_ssmean) then
-            do j=1,3; gss0(:,j)=gssmz(n-n1+1,j); enddo
-            del2ss0=del2ssmz(n-n1+1)
+            do j=1,3; gss0(:,j)=gssmz(n,j); enddo
+            del2ss0=del2ssmz(n)
           else if (lcalc_ssmeanxy) then
             do j=1,3; gss0(:,j)=gssmx(:,j); enddo
             del2ss0=del2ssmx
@@ -6150,8 +6150,8 @@ module Energy
         if (lcalc_ssmean .or. lcalc_ssmeanxy) then
 
           if (lcalc_ssmean) then
-            do j=1,3; gss1(:,j)=p%gss(:,j)-gssmz(n-n1+1,j); enddo
-            del2ss1=p%del2ss-del2ssmz(n-n1+1)
+            do j=1,3; gss1(:,j)=p%gss(:,j)-gssmz(n,j); enddo
+            del2ss1=p%del2ss-del2ssmz(n)
           else if (lcalc_ssmeanxy) then
             do j=1,3; gss1(:,j)=p%gss(:,j)-gssmx(:,j); enddo
             del2ss1=p%del2ss-del2ssmx
@@ -8666,8 +8666,8 @@ module Energy
     call copy_addr(dchit_aniso_prof,p_par(176)) ! (nx)
     call copy_addr(ssmz,p_par(177)) ! (mz)
     call copy_addr(cs2mz,p_par(178)) ! (mz)
-    call copy_addr(gssmz,p_par(179)) ! (nz) (3)
-    call copy_addr(del2ssmz,p_par(180)) ! (nz)
+    call copy_addr(gssmz,p_par(179)) ! (mz) (3)
+    call copy_addr(del2ssmz,p_par(180)) ! (mz)
     call copy_addr(ssmx,p_par(181)) ! (mx)
     call copy_addr(gssmx,p_par(182)) ! (nx) (3)
     call copy_addr(cs2mx,p_par(183)) ! (nx)
