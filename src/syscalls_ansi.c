@@ -191,28 +191,29 @@ void FTNIZE(caller0)
 int FTNIZE(func_int_caller0)
      (int (**func)(void))
 {
-   return (*func)(); 
+  return (*func)(); 
 }
 /* ---------------------------------------------------------------------- */
 void *FTNIZE(dlopen_c)(const char *filename, FINT *flag)
 {
- const int ALLNOW=1;
- void *pointer;
- char *error; 
+  const int ALLNOW=1;
+  void *pointer;
+  char *error; 
 
- dlerror();
- if (*flag==ALLNOW)
-   pointer=dlopen(filename, RTLD_GLOBAL|RTLD_NOW); 
- else
-   pointer=dlopen(filename, RTLD_GLOBAL|RTLD_LAZY); 
+  dlerror();
+  if (*flag==ALLNOW) {
+    pointer=dlopen(filename, RTLD_GLOBAL|RTLD_NOW); 
+  } else {
+    pointer=dlopen(filename, RTLD_GLOBAL|RTLD_LAZY); 
+  }
 
- error=dlerror();
- if (error!=NULL) {
-   printf("Error - %s\n", error);
-   return NULL;
- }
+  error=dlerror();
+  if (error!=NULL) {
+    printf("Error - %s\n", error);
+    return NULL;
+  }
 
- return pointer;
+  return pointer;
 }
 /* ---------------------------------------------------------------------- */
 void *FTNIZE(dlsym_c)(void **handle, const char *symbol)
