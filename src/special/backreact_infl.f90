@@ -111,7 +111,7 @@ module Special
   real, dimension (nx) :: dt1_special
   logical :: lcompute_dphi0=.true.
   logical :: lbackreact_infl=.true., lem_backreact=.true., lzeroHubble=.false.
-  logical :: lscale_tobox=.true.,ldt_backreact_infl=.true., lconf_time=.true.
+  logical :: lscale_tobox=.true., ldt_backreact_infl=.true., lconf_time=.true.
   logical :: lskip_projection_phi=.false., lvectorpotential=.false., lflrw=.false.
   logical :: lrho_chi=.false., lno_noise_phi=.false., lno_noise_dphi=.false.
   logical :: lrho_chi_corrected=.false.
@@ -136,24 +136,23 @@ module Special
   namelist /special_run_pars/ &
       initspecial, phi0, dphi0, axionmass, eps, ascale_ini, &
       lbackreact_infl, lem_backreact, c_light_axion, lambda_axion, Vprime_choice, &
-      !lem_backreact, c_light_axion, lambda_axion, Vprime_choice, &
       lzeroHubble, ldt_backreact_infl, Ndiv, Hscript0, Hscript_choice, infl_v, &
       lflrw, lrho_chi, scale_rho_chi_Heqn, echarge_type, cdt_rho_chi, &
       lrho_chi_corrected
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
-  integer :: idiag_phim=0      ! DIAG_DOC: $\left<\phi\right>$
-  integer :: idiag_phi2m=0     ! DIAG_DOC: $\left<\phi^2\right>$
-  integer :: idiag_phirms=0    ! DIAG_DOC: $\left<\phi^2\right>^{1/2}$
-  integer :: idiag_dphim=0     ! DIAG_DOC: $\left<\phi'\right>$
-  integer :: idiag_dphi2m=0    ! DIAG_DOC: $\left<(\phi')^2\right>$
-  integer :: idiag_dphirms=0   ! DIAG_DOC: $\left<(\phi')^2\right>^{1/2}$
+  integer :: idiag_phim=0       ! DIAG_DOC: $\left<\phi\right>$
+  integer :: idiag_phi2m=0      ! DIAG_DOC: $\left<\phi^2\right>$
+  integer :: idiag_phirms=0     ! DIAG_DOC: $\left<\phi^2\right>^{1/2}$
+  integer :: idiag_dphim=0      ! DIAG_DOC: $\left<\phi'\right>$
+  integer :: idiag_dphi2m=0     ! DIAG_DOC: $\left<(\phi')^2\right>$
+  integer :: idiag_dphirms=0    ! DIAG_DOC: $\left<(\phi')^2\right>^{1/2}$
   integer :: idiag_Hscriptm=0   ! DIAG_DOC: $\left<{\cal a*H}\right>$
-  integer :: idiag_lnam=0      ! DIAG_DOC: $\left<\ln a\right>$
-  integer :: idiag_ddotam=0    ! DIAG_DOC: $a''/a$
-  integer :: idiag_a2rhopm=0   ! DIAG_DOC: $a^2 (rho+p)$
-  integer :: idiag_a2rhom=0    ! DIAG_DOC: $a^2 rho$
+  integer :: idiag_lnam=0       ! DIAG_DOC: $\left<\ln a\right>$
+  integer :: idiag_ddotam=0     ! DIAG_DOC: $a''/a$
+  integer :: idiag_a2rhopm=0    ! DIAG_DOC: $a^2 (rho+p)$
+  integer :: idiag_a2rhom=0     ! DIAG_DOC: $a^2 rho$
   integer :: idiag_a2rhophim=0  ! DIAG_DOC: $a^2 rho$
   integer :: idiag_a2rhogphim=0 ! DIAG_DOC: $0.5 <grad phi^2>$
   integer :: idiag_rho_chi=0    ! DIAG_DOC: $\rho_\chi$
@@ -179,19 +178,13 @@ module Special
       use SharedVariables, only: put_shared_variable
 !
       if (lroot) call svn_id( &
-           "$Id$")
+          "$Id$")
 !
       call farray_register_pde('infl_phi',iinfl_phi)
       call farray_register_pde('infl_dphi',iinfl_dphi)
 !
-     if (lflrw) then
-!     call farray_register_ode('infl_hubble',iinfl_hubble)
-       call farray_register_ode('infl_lna',iinfl_lna)
-     endif
-!
-     if (lrho_chi) then
-       call farray_register_ode('infl_rho_chi',iinfl_rho_chi)
-     endif
+     if (lflrw) call farray_register_ode('infl_lna',iinfl_lna)
+     if (lrho_chi) call farray_register_ode('infl_rho_chi',iinfl_rho_chi)
 !
 !  for power spectra, it is convenient to use ispecialvar and
 !
@@ -284,7 +277,6 @@ module Special
 !  SAMPLE IMPLEMENTATION
 !
       do j=1,ninit
-
         select case (initspecial(j))
           case ('nothing'); if (lroot) print*,'init_special: nothing'
           case ('phi=sinkx')
@@ -293,6 +285,7 @@ module Special
           case ('phi=tanhkx')
             f(:,:,:,iinfl_phi)=f(:,:,:,iinfl_phi) &
               +spread(spread(.5*amplphi*(1.+tanh(kx_phi*(x-offset))),2,my),3,mz)
+          ! sine-Gordon solution
           case ('phi=atan_exp_kx')
             infl_gam=1./sqrt(1.-infl_v**2)
             f(:,:,:,iinfl_phi)=f(:,:,:,iinfl_phi) &
@@ -308,18 +301,15 @@ module Special
             t=tstart
             Hubble_ini=sqrt(8.*pi/3.*(.5*dphi0**2+.5*axionmass2*phi0**2*ascale_ini**2))
             lnascale=log(ascale_ini)
-            if (lroot .and. lflrw) then
-              f_ode(iinfl_lna) =lnascale
-!              f(iinfl_hubble) =Hubble_ini
-            endif
+            if (lroot .and. lflrw) f_ode(iinfl_lna)=lnascale
 !
           case ('default')
             Vpotential=.5*axionmass2*phi0**2
             Hubble_ini=sqrt(8.*pi/3.*(.5*axionmass2*phi0**2*ascale_ini**2))
-!            dphi0=-ascale_ini*sqrt(2*eps/3.*Vpotential)
+            ! dphi0=-ascale_ini*sqrt(2*eps/3.*Vpotential)
             if (lcompute_dphi0) dphi0=-sqrt(1/(12.*pi))*axionmass*ascale_ini
-           ! dphi0=-sqrt(1/(12.*pi))*axionmass*ascale_ini
-           ! dphi0=-sqrt(16*pi/3)*axionmass*ascale_ini
+            ! dphi0=-sqrt(1/(12.*pi))*axionmass*ascale_ini
+            ! dphi0=-sqrt(16*pi/3)*axionmass*ascale_ini
             tstart=-1/(ascale_ini*Hubble_ini)
             t=tstart
             lnascale=log(ascale_ini)
@@ -356,7 +346,8 @@ module Special
             if (lroot) print*,'Hubble_ini=',Hubble_ini
             amplphi_BD=amplphi*Hubble_ini
             deriv_prefactor=1.
-            call bunch_davies(f,iinfl_phi,iinfl_phi,iinfl_dphi,iinfl_dphi,amplphi_BD,kpeak_phi,deriv_prefactor)
+            call bunch_davies(f,iinfl_phi,iinfl_phi,iinfl_dphi,iinfl_dphi, &
+                              amplphi_BD,kpeak_phi,deriv_prefactor)
             if (amplee_BD_prefactor/=0.) then
               deriv_prefactor=deriv_prefactor_ee
               amplee_BD=amplee_BD_prefactor*Hubble_ini
@@ -389,21 +380,23 @@ module Special
 !
 !  18-07-06/tony: coded
 !
-!      if (lmagnetic .and. lbackreact_infl) lpenc_requested(i_infl_a21)=.true.
-!
 !  pencil for gradient of phi
 !
-      lpenc_requested(i_gphi)=.true.
-      if (lmagnetic .and. lem_backreact) lpenc_requested(i_infl_dphi)=.true.
+      ! alberto: gphi pencil does not seem to be used anywhere, right?
+      ! lpenc_requested(i_gphi)=.true.
 !
 !  Magnetic field needed for Maxwell stress
 !
-      if (lmagnetic) then
+      if (lmagnetic .and. lem_backreact) then
         lpenc_requested(i_bb)=.true.
         lpenc_requested(i_el)=.true.
-        if (lrho_chi .or. lnoncollinear_EB .or. lnoncollinear_EB_aver .or. &
-          lcollinear_EB .or. lcollinear_EB_aver) lpenc_requested(i_e2)=.true.
+        ! alberto: pencil p%e2 does not seem to be used
+        ! if (lrho_chi .or. lnoncollinear_EB .or. lnoncollinear_EB_aver .or. &
+        !   lcollinear_EB .or. lcollinear_EB_aver) lpenc_requested(i_e2)=.true.
       endif
+      !  Call pencils phi and dphi
+      lpenc_requested(i_infl_phi)=.true.
+      lpenc_requested(i_infl_dphi)=.true.
 !
     endsubroutine pencil_criteria_special
 !***********************************************************************
@@ -428,16 +421,19 @@ module Special
 ! infl_dphi
       if (lpencil(i_infl_dphi)) p%infl_dphi=f(l1:l2,m,n,iinfl_dphi)
 !
-! infl_gphi
+! gphi
       if (lpencil(i_gphi)) call grad(f,iinfl_phi,p%gphi)
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
     subroutine get_Hscript_and_a2(Hscript,a2rhom_all)
-      real, intent(OUT) :: Hscript
-      real, intent(IN)  :: a2rhom_all
+      real, intent(out) :: Hscript
+      real, intent(in), optional :: a2rhom_all
 !
 !  Choice of prescription for Hscript
+!  alberto: to be changed, default to 'set' with Hscript0=0 and remove lzeroHubble
+!           as it trivially corresponds to new default choice
+!           old 'default' should correspond to 'friedmann'
 !
       select case (Hscript_choice)
         case ('default')
@@ -447,6 +443,9 @@ module Special
           Hscript=Hscript0
           a2=1.
           a21=1./a2
+        case ('friedmann')
+          Hscript=sqrt((8.*pi/3.)*a2rhom_all)
+          if (lgpu) call get_a2
         case default
           call fatal_error("dspecial_dt: No such Hscript_choice: ", trim(Hscript_choice))
       endselect
@@ -482,9 +481,9 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: phi, dphi, Vprime
+      real, dimension (nx) :: Vprime
       real, dimension (nx) :: tmp, del2phi
-!      real :: tmp2
+      real :: pref_Vprime=1., pref_Hubble=2., pref_del2=1., pref_alpf
       type (pencil_case) :: p
 !
       intent(in) :: f,p
@@ -494,16 +493,14 @@ module Special
 !
       if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dspecial_dt'
 !
-      phi=f(l1:l2,m,n,iinfl_phi)
-      dphi=f(l1:l2,m,n,iinfl_dphi)
-!
 !  Choice of different potentials.
 !  For the 1-cos profile, -Vprime (on the rhs) enters with -sin().
 !
+! alberto: changed to use the pencils p%infl_phi and p%infl_dphi
       select case (Vprime_choice)
-        case ('quadratic'); Vprime=axionmass2*phi
-        case ('quartic'); Vprime=axionmass2*phi+(lambda_axion/6.)*phi**3
-        case ('cos-profile'); Vprime=axionmass2*lambda_axion*sin(lambda_axion*phi)
+        case ('quadratic'); Vprime=axionmass2*p%infl_phi
+        case ('quartic'); Vprime=axionmass2*p%infl_phi+(lambda_axion/6.)*p%infl_phi**3
+        case ('cos-profile'); Vprime=axionmass2*lambda_axion*sin(lambda_axion*p%infl_phi)
         case default
           call fatal_error("dspecial_dt: No such Vprime_choice: ", trim(Vprime_choice))
       endselect
@@ -512,44 +509,66 @@ module Special
 !  dphi/dt = psi
 !  dpsi/dt = - ...
 !
-        df(l1:l2,m,n,iinfl_phi)=df(l1:l2,m,n,iinfl_phi)+f(l1:l2,m,n,iinfl_dphi)
-        if (lconf_time) then
-          df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)-2.*Hscript*dphi-a2*Vprime
-        else
-          df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)-2.*Hscript*dphi-Vprime
-        endif
+! alberto: determine prefactors for the different terms beforehand
+!
+      if (lconf_time) then
+        pref_Vprime=a2; pref_alpf=a21
+      ! alberto: for cosmic time, coefficient of Hscript should be 3
+      else
+        pref_Hubble=3.; pref_Vprime=1.; pref_del2=a21
+        pref_alpf=a21**2
+      endif
+        ! dphi/dt = dphi
+        df(l1:l2,m,n,iinfl_phi)=df(l1:l2,m,n,iinfl_phi)+p%infl_dphi
+        df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi) - &
+              pref_Hubble*Hscript*p%infl_dphi-pref_Vprime*Vprime
+        ! df(l1:l2,m,n,iinfl_phi)=df(l1:l2,m,n,iinfl_phi)+f(l1:l2,m,n,iinfl_dphi)
+        ! if (lconf_time) then
+        !   df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)-2.*Hscript*dphi-a2*Vprime
+        ! else
+        !   df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)-2.*Hscript*dphi-Vprime
+        ! endif
 !
 !  speed of light term
 !
         if (c_light_axion/=0. .and. .not. lphi_hom) then
           call del2(f,iinfl_phi,del2phi)
-          if (lconf_time) then
-            df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)+c_light_axion**2*del2phi
-          else
-            df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)+c_light_axion**2*a21*del2phi
-          endif
+          df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi) + &
+              c_light_axion**2*pref_del2*del2phi
+          ! if (lconf_time) then
+          !   df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)+c_light_axion**2*del2phi
+          ! else
+          !   df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)+c_light_axion**2*a21*del2phi
+          !endif
         endif
 !
 !  magnetic terms, add (alpf/a^2)*(E.B) to dphi'/dt equation
 !
       if (lmagnetic .and. lem_backreact) then
-        if (lconf_time) then
-          if (lphi_hom) then
-            if (.not. lphi_linear_regime) &
-              df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)+alpf*edotbm_all*a21
-          else
-            call dot_mn(p%el,p%bb,tmp)
-            df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)+alpf*tmp*a21
-          endif
-        else
-          if (lphi_hom) then
-            if (.not. lphi_linear_regime) &
-              df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)+alpf*edotbm_all*a21**2
-          else
-            call dot_mn(p%el,p%bb,tmp)
-            df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)+alpf*tmp*a21**2
-          endif
+        if (lphi_hom .and. .not. lphi_linear_regime) then
+          df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)+pref_alpf*alpf*edotbm_all
         endif
+        if (.not. lphi_hom) then
+            call dot_mn(p%el,p%bb,tmp)
+            df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)+pref_alpf*alpf*tmp
+        endif
+        ! if (lconf_time) then
+        !   if (lphi_hom) then
+        !     if (.not. lphi_linear_regime) &
+        !       df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)+alpf*edotbm_all*a21
+        !   else
+        !     call dot_mn(p%el,p%bb,tmp)
+        !     df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)+alpf*tmp*a21
+        !   endif
+        ! else
+        !   if (lphi_hom) then
+        !     if (.not. lphi_linear_regime) &
+        !       df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)+alpf*edotbm_all*a21**2
+        !   else
+        !     call dot_mn(p%el,p%bb,tmp)
+        !     df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)+alpf*tmp*a21**2
+        !   endif
+        ! endif
       endif
 !
 !  Total contribution to the timestep.
@@ -610,15 +629,12 @@ module Special
         sigEm_all_diagnos      = sigEm_all
         sigBm_all_diagnos      = sigBm_all
       endif
-
-
+!
     endsubroutine read_sums_from_device
 !***********************************************************************
     subroutine dspecial_dt_ode
 !
       use SharedVariables, only: get_shared_variable
-!     use Magnetic, only: eta_xtdep
-!
 !
       if(lgpu) call read_sums_from_device
       call get_Hscript_and_a2(Hscript,a2rhom_all)
@@ -646,18 +662,19 @@ module Special
 !
 !  Diagnostics
 !
-!
     if (.not. lmultithread) then
             sigEm_all_diagnos = sigEm_all
             sigBm_all_diagnos = sigBm_all
             call calc_ode_diagnostics_special(f_ode)
     endif
+!
     endsubroutine dspecial_dt_ode
 !***********************************************************************
     subroutine calc_ode_diagnostics_special(f_ode)
+!
       use Diagnostics 
       
-      real, dimension(max_n_odevars), intent(IN) :: f_ode
+      real, dimension(max_n_odevars), intent(in) :: f_ode
       real :: rho_chi, lnascale
       real :: Hscript_diagnos
 
@@ -683,24 +700,24 @@ module Special
         if (lnoncollinear_EB_aver .or. lcollinear_EB_aver) &
           call save_name(count_eb0_all,idiag_count_eb0a)
       endif
+!
     endsubroutine calc_ode_diagnostics_special
 !***********************************************************************
     subroutine calc_diagnostics_special(f,p)
+!
       use Diagnostics
       real, dimension(mx,my,mz,mfarray) :: f
       type(pencil_case) :: p
-      real, dimension(nx) :: dphi,phi
-
+! alberto: changed to use the pencils p%infl_phi and p%infl_dphi
       if (ldiagnos) then
-        dphi=f(l1:l2,m,n,iinfl_dphi)
-        phi=f(l1:l2,m,n,iinfl_phi)
-        call sum_mn_name(phi,idiag_phim)
-        if (idiag_phi2m/=0) call sum_mn_name(phi**2,idiag_phi2m)
-        if (idiag_phirms/=0) call sum_mn_name(phi**2,idiag_phirms,lsqrt=.true.)
-        call sum_mn_name(dphi,idiag_dphim)
-        if (idiag_dphi2m/=0) call sum_mn_name(dphi**2,idiag_dphi2m)
-        if (idiag_dphirms/=0) call sum_mn_name(dphi**2,idiag_dphirms,lsqrt=.true.)
+        call sum_mn_name(p%infl_phi,idiag_phim)
+        if (idiag_phi2m/=0) call sum_mn_name(p%infl_phi**2,idiag_phi2m)
+        if (idiag_phirms/=0) call sum_mn_name(p%infl_phi**2,idiag_phirms,lsqrt=.true.)
+        call sum_mn_name(p%infl_dphi,idiag_dphim)
+        if (idiag_dphi2m/=0) call sum_mn_name(p%infl_dphi**2,idiag_dphi2m)
+        if (idiag_dphirms/=0) call sum_mn_name(p%infl_dphi**2,idiag_dphirms,lsqrt=.true.)
       endif
+!
     endsubroutine calc_diagnostics_special
 !***********************************************************************
     subroutine read_special_init_pars(iostat)
@@ -781,12 +798,7 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'sigBma',idiag_sigBma)
         call parse_name(iname,cname(iname),cform(iname),'count_eb0a',idiag_count_eb0a)
       enddo
-!!
-!!!  write column where which magnetic variable is stored
-!!      if (lwr) then
-!!        call farray_index_append('idiag_SPECIAL_DIAGNOSTIC',idiag_SPECIAL_DIAGNOSTIC)
-!!      endif
-!!
+!
     endsubroutine rprint_special
 !***********************************************************************
     subroutine get_echarge
@@ -794,7 +806,6 @@ module Special
 !
 !  Choice of echarge prescription.
 !
-    
       if (lnoncollinear_EB .or. lnoncollinear_EB_aver &
         .or. lcollinear_EB .or. lcollinear_EB_aver) then
         select case (echarge_type)
@@ -807,9 +818,11 @@ module Special
       else
         echarge=echarge_const
       endif
+!
     endsubroutine get_echarge
 !***********************************************************************
     subroutine get_sigE_and_B
+!
       real :: boost, gam_EB, eprime, bprime, jprime1
       real :: mass_suppression_fact
       real :: sigE1m_all,sigB1m_all
@@ -865,6 +878,7 @@ module Special
         sigEm_all=sigE_prefactor*Chypercharge*echarge**3*sigE1m_all/Hscript
         sigBm_all=sigB_prefactor*Chypercharge*echarge**3*sigB1m_all/Hscript
       endif
+!
     endsubroutine get_sigE_and_B
 !***********************************************************************
     subroutine prep_rhs_special
@@ -874,9 +888,11 @@ module Special
       call get_Hscript_and_a2(Hscript,a2rhom_all)
       call get_echarge
       call get_sigE_and_B
+!
     endsubroutine prep_rhs_special
 !***********************************************************************
     subroutine get_a2
+!
       real :: lnascale
       if(lflrw) then
         lnascale=f_ode(iinfl_lna)
@@ -884,6 +900,7 @@ module Special
       endif
       a2=ascale**2
       a21=1./a2
+!
     endsubroutine get_a2
 !***********************************************************************
     subroutine special_after_boundary(f)
@@ -895,7 +912,6 @@ module Special
 !
       use Mpicomm, only: mpireduce_sum, mpiallreduce_sum, mpibcast_real
       use Sub, only: dot2_mn, grad, curl, dot_mn
-      
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real :: sigE1m,sigB1m
@@ -972,8 +988,7 @@ module Special
       call mpibcast_real(Hscript)
       call mpibcast_real(e2m_all)
       call mpibcast_real(b2m_all)
-
-
+!
     endsubroutine special_after_boundary
 !***********************************************************************
     subroutine prep_ode_right(f,sigE1m,sigB1m)
@@ -981,7 +996,7 @@ module Special
       use Sub, only: dot2_mn, grad, curl, dot_mn
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, intent(INOUT) :: sigE1m,sigB1m
+      real, intent(inout) :: sigE1m,sigB1m
       real, dimension (nx,3) :: el, bb, gphi
       real, dimension (nx) :: e2, b2, gphi2, dphi, a2rhop, a2rho
       real, dimension (nx) :: ddota, phi, Vpotential, edotb, sigE1, sigB1
@@ -993,18 +1008,22 @@ module Special
 !
       phi=f(l1:l2,m,n,iinfl_phi)
       dphi=f(l1:l2,m,n,iinfl_dphi)
-      if (lphi_hom) then
-        a2rhop=dphi**2
-        a2rho=0.5*dphi**2
-        a2rhophim=a2rhophim+sum(a2rho)
-      else
+      a2rho=0.5*dphi**2
+      a2rhop=dphi**2
+      ! if (lphi_hom) then
+      !   a2rhop=dphi**2
+      !   a2rho=0.5*dphi**2
+      !   a2rhophim=a2rhophim+sum(a2rho)
+      ! else
+      if (.not. lphi_hom) then
         call grad(f,iinfl_phi,gphi)    !MR: the ghost zones are not necessarily updated!!!
+        ! alberto: this function is called from special_after_boundary so shouldn't have the ghost zones updated?
         call dot2_mn(gphi,gphi2)
         a2rhogphim=a2rhogphim+sum(0.5*gphi2)
-        a2rhop=dphi**2+onethird*gphi2
-        a2rho=0.5*(dphi**2+gphi2)
-        a2rhophim=a2rhophim+sum(a2rho)
+        a2rhop=a2rhop+onethird*gphi2
+        a2rho=a2rho+0.5*gphi2
       endif
+      a2rhophim=a2rhophim+sum(a2rho)
 !
 !  Note the .5*fourthird factor in front of (e2+b2)*a21, but that is
 !  just for rhop, which is output quantity.
@@ -1035,11 +1054,13 @@ module Special
 !
 !  compute ddotam = a"/a (needed for GW module)
 !
-      if (lphi_hom) then
-        ddota=-dphi**2+4.*a2*Vpotential
-      else
-        ddota=-dphi**2-gphi2+4.*a2*Vpotential
-      endif
+      ddota=-dphi**2+4.*a2*Vpotential
+      if (.not. lphi_hom) ddota=ddota-gphi2
+      ! if (lphi_hom) then
+      !   ddota=-dphi**2+4.*a2*Vpotential
+      ! else
+      !   ddota=-dphi**2-gphi2+4.*a2*Vpotential
+      ! endif
       ddotam=ddotam+sum(ddota)
       a2rho=a2rho+a2*Vpotential
       a2rhom=a2rhom+sum(a2rho)
@@ -1121,13 +1142,13 @@ module Special
     endsubroutine prep_ode_right
 !********************************************************************
     subroutine pushpars2c(p_par)
-
+!
     use Syscalls, only: copy_addr
     use General , only: string_to_enum
-
+!
     integer, parameter :: n_pars=100
     integer(KIND=ikind8), dimension(n_pars) :: p_par
-
+!
     call string_to_enum(enum_hscript_choice,hscript_choice)
     call string_to_enum(enum_vprime_choice,vprime_choice)
     call copy_addr(enum_hscript_choice,p_par(1)) ! int
