@@ -5834,6 +5834,96 @@ if (notanumber(source(:,is,js))) print*, 'source(:,is,js): iproc,j=', iproc, ipr
 !
     endsubroutine transpose_mn
 !***********************************************************************
+    elemental logical function is_invalid(data)
+!
+!  Check if argument is invalid (sNaN, qNaN, +Inf, or -Inf).
+!
+!  21-Oct-2025/PABourdin: coded
+!
+      use ieee_arithmetic
+!
+      real, intent(in) :: data
+!
+      type(ieee_class_type) :: state
+!
+      state = ieee_class(data)
+      is_invalid = (state == IEEE_NEGATIVE_INF) .or. (state == IEEE_POSITIVE_INF) &
+          .or. (state == IEEE_SIGNALING_NAN) .or. (state == IEEE_QUIET_NAN)
+!
+    endfunction is_invalid
+!***********************************************************************
+    pure logical function invalid_0d(data)
+!
+!  Check if argument is invalid (sNaN, qNaN, +Inf, or -Inf).
+!
+!  21-Oct-2025/PABourdin: coded
+!
+      real, intent(in) :: data
+!
+      invalid_0d = is_invalid(data)
+!
+    endfunction invalid_0d
+!***********************************************************************
+    pure logical function invalid_1d(data)
+!
+!  Check if argument is invalid (sNaN, qNaN, +Inf, or -Inf).
+!
+!  21-Oct-2025/PABourdin: coded
+!
+      real, dimension(:), intent(in) :: data
+!
+      invalid_1d = any(is_invalid(data))
+!
+    endfunction invalid_1d
+!***********************************************************************
+    pure logical function invalid_2d(data)
+!
+!  Check if argument is invalid (sNaN, qNaN, +Inf, or -Inf).
+!
+!  21-Oct-2025/PABourdin: coded
+!
+      real, dimension(:,:), intent(in) :: data
+!
+      invalid_2d = any(is_invalid(data))
+!
+    endfunction invalid_2d
+!***********************************************************************
+    pure logical function invalid_3d(data)
+!
+!  Check if argument is invalid (sNaN, qNaN, +Inf, or -Inf).
+!
+!  21-Oct-2025/PABourdin: coded
+!
+      real, dimension(:,:,:), intent(in) :: data
+!
+      invalid_3d = any(is_invalid(data))
+!
+    endfunction invalid_3d
+!***********************************************************************
+    pure logical function invalid_4d(data)
+!
+!  Check if argument is invalid (sNaN, qNaN, +Inf, or -Inf).
+!
+!  21-Oct-2025/PABourdin: coded
+!
+      real, dimension(:,:,:,:), intent(in) :: data
+!
+      invalid_4d = any(is_invalid(data))
+!
+    endfunction invalid_4d
+!***********************************************************************
+    pure logical function invalid_5d(data)
+!
+!  Check if argument is invalid (sNaN, qNaN, +Inf, or -Inf).
+!
+!  21-Oct-2025/PABourdin: coded
+!
+      real, dimension(:,:,:,:,:), intent(in) :: data
+!
+      invalid_5d = any(is_invalid(data))
+!
+    endfunction invalid_5d
+!***********************************************************************
     elemental logical function isnan(x)
 !
 !  Check if x is Inf or NaN.
