@@ -56,7 +56,7 @@ module General
   public :: transform_thph_yy, transform_thph_yy_other, merge_yin_yang
   public :: copy_kinked_strip_z, copy_kinked_strip_y, reset_triangle
   public :: transpose_mn
-  public :: notanumber
+  public :: invalid, notanumber
   public :: reduce_grad_dim
   public :: meshgrid
   public :: linspace
@@ -189,6 +189,15 @@ module General
   interface operator (.in.)
     module procedure in_array_int
     module procedure in_array_char
+  endinterface
+!
+  interface invalid
+    module procedure invalid_0d
+    module procedure invalid_1d
+    module procedure invalid_2d
+    module procedure invalid_3d
+    module procedure invalid_4d
+    module procedure invalid_5d
   endinterface
 !
   interface notanumber          ! Overload the `notanumber' function
