@@ -149,6 +149,9 @@ def create_fortran_modules_rst(path_to_src: str) -> list[str]:
             # Modules that won't compile - skip them
             if f"{dirname}/{module}.f90" in FILES_THAT_DONT_WORK:
                 continue
+            #Removing some modules for reducing compilation time
+            if dirname != "src":
+                continue
             with open(os.path.join(F90ROOT, dirname, f"{module}.rst"), "w") as f:
                 d = RstCloth(f)
                 d.title(module)
