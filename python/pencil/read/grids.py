@@ -120,9 +120,10 @@ class Grid(object):
                     # A collective IO strategy is being used
                     proc_dirs = ["allprocs"]
                 else:
+                    orig_dir = os.getcwd()
                     os.chdir(datadir)
                     proc_dirs = glob.glob('proc*[0-9]')
-                    os.chdir("..")
+                    os.chdir(orig_dir)
                     if len(proc_dirs) == 0:
                         raise FileNotFoundError("Assumed io_dist, but could not find processor directories")
 
