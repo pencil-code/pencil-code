@@ -18,5 +18,6 @@ EOS       =   eos_idealgas
 #FORCING   =   forcing
 SHEAR     = noshear
 MULTITHREADING = openmp
-
+TRANSPILATION=on
+RUNTIME_COMPILATION=on
 REAL_PRECISION = double
