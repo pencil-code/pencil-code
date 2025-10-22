@@ -916,6 +916,10 @@ module Special
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real :: sigE1m,sigB1m
 !
+! TP: to avoid code duplication could this function not be combined with the copy of it in
+!     klein_gordon.f90? We could make an appropriate module and call it from there
+!
+!
 !  If requested, calculate here <dphi**2+gphi**2+(4./3.)*(E^2+B^2)/a^2>.
 !  This needs to be done on all processors, because otherwise ascale
 !  is not known on all processors.
