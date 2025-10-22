@@ -202,7 +202,7 @@ contains
       use IO, only: output_slice_position
       use Mpicomm, only: set_rslice_communicator
     
-      character(LEN=80) :: text, data
+      character(LEN=80) :: text, datastr
 
       lwrite_slice_xy=.false. 
       lwrite_slice_xz=.false. 
@@ -417,29 +417,29 @@ contains
       if (lroot.and.dvid>0.) then  !MR: tbdone: write global position from all procs
 
         write (*,*)'setup_slices: slice_position = '//slice_position
-        text=''; data=''
+        text=''; datastr=''
         if (lwrite_slice_yz) then
-          text='ix_loc,'; data=itoa(ix_loc)
+          text='ix_loc,'; datastr=itoa(ix_loc)
         endif
         if (lwrite_slice_xz) then
-          text=trim(text)//'iy_loc,'; data=trim(data)//' '//itoa(iy_loc)
+          text=trim(text)//'iy_loc,'; datastr=trim(datastr)//' '//itoa(iy_loc)
         endif
         if (lwrite_slice_xy) then
-          text=trim(text)//'iz_loc,'; data=trim(data)//' '//itoa(iz_loc)
+          text=trim(text)//'iz_loc,'; datastr=trim(datastr)//' '//itoa(iz_loc)
         endif
         if (lwrite_slice_xy2) then
-          text=trim(text)//'iz2_loc,'; data=trim(data)//' '//itoa(iz2_loc)
+          text=trim(text)//'iz2_loc,'; datastr=trim(datastr)//' '//itoa(iz2_loc)
         endif
         if (lwrite_slice_xy3) then
-          text=trim(text)//'iz3_loc,'; data=trim(data)//' '//itoa(iz3_loc)
+          text=trim(text)//'iz3_loc,'; datastr=trim(datastr)//' '//itoa(iz3_loc)
         endif
         if (lwrite_slice_xy4) then
-          text=trim(text)//'iz4_loc,'; data=trim(data)//' '//itoa(iz4_loc)
+          text=trim(text)//'iz4_loc,'; datastr=trim(datastr)//' '//itoa(iz4_loc)
         endif
         if (lwrite_slice_xz2) then
-          text=trim(text)//'iy2_loc,'; data=trim(data)//' '//itoa(iy2_loc)
+          text=trim(text)//'iy2_loc,'; datastr=trim(datastr)//' '//itoa(iy2_loc)
         endif
-        write (*,*) 'setup_slices: '//trim(text)//' (video files) = '//data
+        write (*,*) 'setup_slices: '//trim(text)//' (video files) = '//datastr
       endif
 !
       call alloc_slice_buffers(slice_xy,slice_xz,slice_yz,slice_xy2,slice_xy3,slice_xy4,slice_xz2)

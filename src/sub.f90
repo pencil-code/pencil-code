@@ -5555,7 +5555,7 @@ nameloop: do
       real :: x00,y00,z00
       character (len=*) :: file
       character (len=datelen) :: date
-      character (len=linelen) :: field='',struct='',type='',dep=''
+      character (len=linelen) :: fieldstr='',structstr='',typestr='',depstr=''
 !
 !  This is True for big endian, False of little endian
       logical, parameter :: bigendian = ichar(transfer(1,'a')) == 0
@@ -5565,60 +5565,60 @@ nameloop: do
 !  Accumulate a few lines.
 !
       if (lhydro    ) then
-        call safe_character_append(field,  'uu, '       )
-        call safe_character_append(struct, '3-vector, ' )
-        call safe_character_append(type,   'float, '    )
-        call safe_character_append(dep,    'positions, ')
+        call safe_character_append(fieldstr,  'uu, '       )
+        call safe_character_append(structstr, '3-vector, ' )
+        call safe_character_append(typestr,   'float, '    )
+        call safe_character_append(depstr,    'positions, ')
       endif
       if (ldensity  ) then
-        call safe_character_append(field,  'lnrho, '    )
-        call safe_character_append(struct, 'scalar, '   )
-        call safe_character_append(type,   'float, '    )
-        call safe_character_append(dep,    'positions, ')
+        call safe_character_append(fieldstr,  'lnrho, '    )
+        call safe_character_append(structstr, 'scalar, '   )
+        call safe_character_append(typestr,   'float, '    )
+        call safe_character_append(depstr,    'positions, ')
       endif
       if (lentropy  ) then
-        call safe_character_append(field,  'ss, '       )
-        call safe_character_append(struct, 'scalar, '   )
-        call safe_character_append(type,   'float, '    )
-        call safe_character_append(dep,    'positions, ')
+        call safe_character_append(fieldstr,  'ss, '       )
+        call safe_character_append(structstr, 'scalar, '   )
+        call safe_character_append(typestr,   'float, '    )
+        call safe_character_append(depstr,    'positions, ')
       endif
       if (ltemperature .and. (.not. ltemperature_nolog) ) then
-        call safe_character_append(field,  'lnTT, '       )
-        call safe_character_append(struct, 'scalar, '   )
-        call safe_character_append(type,   'float, '    )
-        call safe_character_append(dep,    'positions, ')
+        call safe_character_append(fieldstr,  'lnTT, '       )
+        call safe_character_append(structstr, 'scalar, '   )
+        call safe_character_append(typestr,   'float, '    )
+        call safe_character_append(depstr,    'positions, ')
       endif
       if (lmagnetic ) then
-        call safe_character_append(field,  'aa, '       )
-        call safe_character_append(struct, '3-vector, ' )
-        call safe_character_append(type,   'float, '    )
-        call safe_character_append(dep,    'positions, ')
+        call safe_character_append(fieldstr,  'aa, '       )
+        call safe_character_append(structstr, '3-vector, ' )
+        call safe_character_append(typestr,   'float, '    )
+        call safe_character_append(depstr,    'positions, ')
       endif
       if (lheatflux ) then
-        call safe_character_append(field,  'qq, '       )
-        call safe_character_append(struct, '3-vector, ' )
-        call safe_character_append(type,   'float, '    )
-        call safe_character_append(dep,    'positions, ')
+        call safe_character_append(fieldstr,  'qq, '       )
+        call safe_character_append(structstr, '3-vector, ' )
+        call safe_character_append(typestr,   'float, '    )
+        call safe_character_append(depstr,    'positions, ')
       endif
       if (lradiation) then
-        call safe_character_append(field,  'e_rad, ff_rad, '       )
-        call safe_character_append(struct, 'scalar, 3-vector, '    )
-        call safe_character_append(type,   'float, float, '        )
-        call safe_character_append(dep,    'positions, positions, ')
+        call safe_character_append(fieldstr,  'e_rad, ff_rad, '       )
+        call safe_character_append(structstr, 'scalar, 3-vector, '    )
+        call safe_character_append(typestr,   'float, float, '        )
+        call safe_character_append(depstr,    'positions, positions, ')
       endif
       if (lpscalar  ) then
-        call safe_character_append(field,  'lncc, '     )
-        call safe_character_append(struct, 'scalar, '   )
-        call safe_character_append(type,   'float, '    )
-        call safe_character_append(dep,    'positions, ')
+        call safe_character_append(fieldstr,  'lncc, '     )
+        call safe_character_append(structstr, 'scalar, '   )
+        call safe_character_append(typestr,   'float, '    )
+        call safe_character_append(depstr,    'positions, ')
       endif
 !
 !  Remove trailing comma.
 !
-      field  = field (1:len(trim(field ))-1)
-      struct = struct(1:len(trim(struct))-1)
-      type   = type  (1:len(trim(type  ))-1)
-      dep    = dep   (1:len(trim(dep   ))-1)
+      fieldstr  = fieldstr (1:len(trim(fieldstr))-1)
+      structstr = structstr(1:len(trim(structstr))-1)
+      typestr   = typestr  (1:len(trim(typestr))-1)
+      depstr    = depstr   (1:len(trim(depstr))-1)
 !
 !  Now write.
 !
@@ -5637,10 +5637,10 @@ nameloop: do
       write(1,'(A,A)') 'header = ', 'bytes 4'
       write(1,'(A,A)') 'interleaving = ', 'record'
       write(1,'(A,A)') 'majority = ', 'column'
-      write(1,'(A,A)') 'field = ', trim(field)
-      write(1,'(A,A)') 'structure = ', trim(struct)
-      write(1,'(A,A)') 'type = ', trim(type)
-      write(1,'(A,A)') 'dependency = ', trim(dep)
+      write(1,'(A,A)') 'field = ', trim(fieldstr)
+      write(1,'(A,A)') 'structure = ', trim(structstr)
+      write(1,'(A,A)') 'type = ', trim(typestr)
+      write(1,'(A,A)') 'dependency = ', trim(depstr)
       write(1,'(A,A,6(", ",1PG12.4))') 'positions = ', &
            'regular, regular, regular', &
            x00, dx, y00, dy, z00, dz

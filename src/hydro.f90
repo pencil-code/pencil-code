@@ -124,8 +124,9 @@ module Hydro
 !
 ! variables for expansion into spherical harmonics
 !
-  integer,parameter :: lSH_max=2
-  integer, parameter :: Nmodes_SH=(lSH_max+1)*(lSH_max+1)
+  integer, parameter :: lSH_max=2
+  integer, parameter :: lSH_max_plus_one=lSH_max+1
+  integer, parameter :: Nmodes_SH=lSH_max_plus_one*lSH_max_plus_one
   integer :: index_rSH=1   !ceiling(nx/2.)
   real, dimension(nx) :: profile_SH=0.
 !

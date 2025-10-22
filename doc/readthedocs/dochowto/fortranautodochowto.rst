@@ -137,7 +137,15 @@ Basic rules
    The autodoc parser associates a comment with the following entity (module,
    function, variable) only if the indentation matches.
 
-See `Optimize the process <https://sphinx-fortran.readthedocs.io/en/latest/user.autodoc.html#optimize-the-process>` for further reference. 
+#. **Avoid using variable names that are Fortran or Python keywords**  
+   (e.g. ``type``, ``data``, ``module``, ``end``, ``contains``).  
+   These may confuse the Sphinx–Fortran parser even if valid in Fortran.
+
+#. **Simplify expressions in parameter declarations.**  
+   Break long or nested expressions into smaller assignments using intermediate parameters.  
+   This helps the parser correctly interpret and document variable dependencies.
+
+See `Optimize the process <https://sphinx-fortran.readthedocs.io/en/latest/user.autodoc.html#optimize-the-process>`__ for further reference. 
 
 
 
@@ -151,7 +159,7 @@ Why is this important?
 Once properly configured, autodocumentation worked for the majority of modules.
 Out of **541** Fortran files, only **24** caused issues — not bad at all!
 
-Here’s the preliminary list of problematic files:
+Here’s the initial list of problematic files:
 
 
 
@@ -190,7 +198,7 @@ Still, this illustrates why having **clear documentation rules** and some
 **preprocessing scripts** is invaluable before attempting automatic
 Fortran documentation.
 
-Removing ascii problems
+Removing ASCII problems
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
 To locate non-ASCII characters within a file, you can use:
@@ -219,7 +227,7 @@ was reduced considerably:
         "src/sub.f90",
     ]
 
-Common Remaining Issues
+Other Issues
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
 
@@ -275,7 +283,7 @@ does not alter semantics but avoids parser confusion.
 *Fix:*
 
 Replace all comment-only separator lines (e.g. long ``-----`` or ``====``)
-with shorter or descriptive comments, for example:
+with shorter or descriptive comments.
 
 Sphinx interprets long punctuation lines in the generated RST
 as section overlines or transitions. If the lengths mismatch or
@@ -299,9 +307,22 @@ Shorter, plain comments prevent RST misinterpretation.
 
 *Fix:*  
 
-Not yet identified. Possibly caused by a malformed type declaration or
-nonstandard Fortran syntax that confuses the parser.
+Naming conflict in variable definitions.
 
+Inside the subroutine ``setup_slices``, the variable ``data`` should be renamed to avoid reserved or ambiguous names.  
+For example:
+
+.. code:: fortran
+
+    character(LEN=80) :: text, data
+
+Rename to:
+
+.. code:: fortran
+
+    character(LEN=80) :: text, datastr
+
+Use the new name consistently throughout the subroutine.
 
 
 
@@ -320,7 +341,25 @@ nonstandard Fortran syntax that confuses the parser.
 
 *Fix:*  
 
-Still under investigation.
+Complex inline expressions can confuse the parser.  
+Split them into smaller expressions and use intermediate parameters:
+
+
+Change:
+
+.. code:: fortran
+
+  integer,parameter :: lSH_max=2
+  integer, parameter :: Nmodes_SH=(lSH_max+1)*(lSH_max+1)
+
+to:
+
+.. code:: fortran
+
+  integer,parameter :: lSH_max=2
+  integer, parameter :: lSH_max_plus_one=lSH_max+1
+  integer, parameter :: Nmodes_SH=lSH_max_plus_one*lSH_max_plus_one
+
 
 
 
@@ -338,10 +377,28 @@ Still under investigation.
     pencil-sphinx | ::real3 <re.Match object; span=(0, 7), match='::real3'>
     pencil-sphinx | make: *** [Makefile:41: html] Error 2
 
-*Fix:*  
-Not yet resolved. 
+*Fix:*   
 
 
-Even with these few stubborn cases, the autodoc coverage rate is above **99%**.
-In other words, most of the universe is in order — only a few
-files still resist documentation, like rogue planets evading a gravity well.
+
+Variable names that shadow Fortran keywords can cause parsing errors.  
+In the subroutine ``write_dx_general(file,x00,y00,z00)``, rename variables such as ``type`` or ``struct`` to avoid keyword clashes.
+
+Change:
+
+.. code:: fortran
+
+    character (len=linelen) :: field='',struct='',type='',dep=''
+
+to
+
+.. code:: fortran
+
+    character (len=linelen) :: fieldstr='',structstr='',typestr='',depstr=''
+
+and update all corresponding references inside the subroutine.
+
+
+
+All the above issues are now fixed — the autodocumentation builds cleanly and without errors.
+

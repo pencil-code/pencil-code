@@ -89,9 +89,6 @@ def process_directory(path) -> list:
     return table
 
 FILES_THAT_DONT_WORK = [
-    "src/hydro.f90", # UNKNOWN ERROR
-    "src/slices.f90", # (exception: '=')
-    "src/sub.f90", # (exception: expected string or bytes-like object, got 'NoneType')
 ]
 
 def create_fortran_modules_rst(path_to_src: str) -> list[str]:
@@ -161,7 +158,8 @@ def create_fortran_modules_rst(path_to_src: str) -> list[str]:
                     table_content.append((f":doc:`{dirname}/{it[0]}`", it[1]))
                 else:
                     table_content.append(it)
-            d.table(header=["File", "Description"], data=table_content)
+            d.newline()
+            d.table_list(headers=["File", "Description"], data=table_content, widths=[25,75])
             d.directive("toctree", fields=[("hidden", ""), ("maxdepth", "1")], content=[f"{dirname}/{it[0]}" for it in table])
             d.newline()
         d.newline()
