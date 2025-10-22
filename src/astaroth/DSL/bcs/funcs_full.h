@@ -1641,23 +1641,23 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
   real xdep_12
   real zdep_12
   if (topbot == AC_bot) {
-    if (AC_lentropy__mod__cparam) {
+    if (lentropy) {
       if (ldensity) {
         if (AC_ldensity_nolog__mod__cdata) {
           if (AC_lreference_state__mod__cdata) {
-            getrho_s_return_value_0=LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1]+AC_reference_state__mod__density[l1-l1+1-1][AC_iref_rho__mod__cparam-1]
+            getrho_s_return_value_0=LNRHO[l1-1][m1-1][n1-1]+AC_reference_state__mod__density[l1-l1+1-1][iref_rho-1]
           }
           else {
-            getrho_s_return_value_0=LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1]
+            getrho_s_return_value_0=LNRHO[l1-1][m1-1][n1-1]
           }
         }
         else {
-          getrho_s_return_value_0=exp(LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1])
+          getrho_s_return_value_0=exp(LNRHO[l1-1][m1-1][n1-1])
         }
         rho=getrho_s_return_value_0
-        ss=SS[l1-1][m1-1][AC_n1__mod__cparam-1]
+        ss=SS[l1-1][m1-1][n1-1]
         if (AC_lreference_state__mod__cdata) {
-          ss=ss+AC_reference_state__mod__density[AC_xbot__mod__equationofstate-1][AC_iref_s__mod__cparam-1]
+          ss=ss+AC_reference_state__mod__density[AC_xbot__mod__equationofstate-1][iref_s-1]
         }
         if (AC_irho_ss__mod__equationofstate == AC_ilnrho_ss__mod__equationofstate || AC_irho_ss__mod__equationofstate == AC_irho_ss__mod__equationofstate) {
           if (AC_lstratz__mod__cdata) {
@@ -1728,7 +1728,7 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
           cs2__1=AC_cp__mod__equationofstate*AC_gamma_m1__mod__equationofstate*tt__1
         }
         else if (AC_irho_ss__mod__equationofstate == AC_ipp_cs2__mod__equationofstate) {
-          if (AC_lanelastic__mod__cparam) {
+          if (lanelastic) {
             if (AC_lanelastic_lin__mod__equationofstate) {
               lnrho__1=log(rho)
               tt__1=exp(AC_lntt0__mod__equationofstate)
@@ -1744,7 +1744,7 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
           }
         }
         else if (AC_irho_ss__mod__equationofstate == AC_ipp_ss__mod__equationofstate) {
-          if (AC_lanelastic__mod__cparam) {
+          if (lanelastic) {
             if (AC_lanelastic_lin__mod__equationofstate) {
               lnrho__1=(rho)
               ss__1=ss
@@ -1801,92 +1801,92 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
           dlnrhodz=dlnrhodz*rho
         }
         dssdz = -AC_gamma_m1__mod__equationofstate*AC_gravz__mod__gravity/cs2_point
-        LNRHO[vertexIdx.x][vertexIdx.y][AC_n1__mod__cparam-1-1] = LNRHO[vertexIdx.x][vertexIdx.y][1+AC_n1__mod__cparam-1] - AC_dz2_bound__mod__cdata[-1+AC_NGHOST__mod__cparam+1-1]*dlnrhodz
-        SS[vertexIdx.x][vertexIdx.y][AC_n1__mod__cparam-1-1] = SS[vertexIdx.x][vertexIdx.y][1+AC_n1__mod__cparam-1] - AC_dz2_bound__mod__cdata[-1+AC_NGHOST__mod__cparam+1-1]*dssdz
-        LNRHO[vertexIdx.x][vertexIdx.y][AC_n1__mod__cparam-2-1] = LNRHO[vertexIdx.x][vertexIdx.y][2+AC_n1__mod__cparam-1] - AC_dz2_bound__mod__cdata[-2+AC_NGHOST__mod__cparam+1-1]*dlnrhodz
-        SS[vertexIdx.x][vertexIdx.y][AC_n1__mod__cparam-2-1] = SS[vertexIdx.x][vertexIdx.y][2+AC_n1__mod__cparam-1] - AC_dz2_bound__mod__cdata[-2+AC_NGHOST__mod__cparam+1-1]*dssdz
-        LNRHO[vertexIdx.x][vertexIdx.y][AC_n1__mod__cparam-3-1] = LNRHO[vertexIdx.x][vertexIdx.y][3+AC_n1__mod__cparam-1] - AC_dz2_bound__mod__cdata[-3+AC_NGHOST__mod__cparam+1-1]*dlnrhodz
-        SS[vertexIdx.x][vertexIdx.y][AC_n1__mod__cparam-3-1] = SS[vertexIdx.x][vertexIdx.y][3+AC_n1__mod__cparam-1] - AC_dz2_bound__mod__cdata[-3+AC_NGHOST__mod__cparam+1-1]*dssdz
+        LNRHO[vertexIdx.x][vertexIdx.y][n1-1-1] = LNRHO[vertexIdx.x][vertexIdx.y][1+n1-1] - AC_dz2_bound__mod__cdata[-1+NGHOST+1-1]*dlnrhodz
+        SS[vertexIdx.x][vertexIdx.y][n1-1-1] = SS[vertexIdx.x][vertexIdx.y][1+n1-1] - AC_dz2_bound__mod__cdata[-1+NGHOST+1-1]*dssdz
+        LNRHO[vertexIdx.x][vertexIdx.y][n1-2-1] = LNRHO[vertexIdx.x][vertexIdx.y][2+n1-1] - AC_dz2_bound__mod__cdata[-2+NGHOST+1-1]*dlnrhodz
+        SS[vertexIdx.x][vertexIdx.y][n1-2-1] = SS[vertexIdx.x][vertexIdx.y][2+n1-1] - AC_dz2_bound__mod__cdata[-2+NGHOST+1-1]*dssdz
+        LNRHO[vertexIdx.x][vertexIdx.y][n1-3-1] = LNRHO[vertexIdx.x][vertexIdx.y][3+n1-1] - AC_dz2_bound__mod__cdata[-3+NGHOST+1-1]*dlnrhodz
+        SS[vertexIdx.x][vertexIdx.y][n1-3-1] = SS[vertexIdx.x][vertexIdx.y][3+n1-1] - AC_dz2_bound__mod__cdata[-3+NGHOST+1-1]*dssdz
       }
-      else if (AC_lanelastic__mod__cparam) {
+      else if (lanelastic) {
         if (AC_ipp_ss__mod__equationofstate == AC_ilnrho_ss__mod__equationofstate || AC_ipp_ss__mod__equationofstate == AC_irho_ss__mod__equationofstate) {
           if (AC_lstratz__mod__cdata) {
           }
           else if (AC_ipp_ss__mod__equationofstate == AC_ilnrho_ss__mod__equationofstate)  {
-            lnrho__2 = log(RHO_B[l1-1][m1-1][AC_n1__mod__cparam-1])
+            lnrho__2 = log(RHO_B[l1-1][m1-1][n1-1])
           }
           else {
-            lnrho__2 = log(log(RHO_B[l1-1][m1-1][AC_n1__mod__cparam-1]))
+            lnrho__2 = log(log(RHO_B[l1-1][m1-1][n1-1]))
           }
-          ss__2=SS_B[l1-1][m1-1][AC_n1__mod__cparam-1]
+          ss__2=SS_B[l1-1][m1-1][n1-1]
           lntt__2=AC_lntt0__mod__equationofstate+AC_cv1__mod__equationofstate*ss__2+AC_gamma_m1__mod__equationofstate*(lnrho__2-AC_lnrho0__mod__equationofstate)
           ee__2=AC_cv__mod__equationofstate*exp(lntt__2)
           pp__2=(AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*exp(lntt__2+lnrho__2)
           cs2__2=AC_gamma__mod__equationofstate*AC_gamma_m1__mod__equationofstate*ee__2
         }
         else if (AC_ipp_ss__mod__equationofstate == AC_ilnrho_ee__mod__equationofstate || AC_ipp_ss__mod__equationofstate == AC_irho_ee__mod__equationofstate) {
-          ee__2=SS_B[l1-1][m1-1][AC_n1__mod__cparam-1]
+          ee__2=SS_B[l1-1][m1-1][n1-1]
           if (AC_ipp_ss__mod__equationofstate==AC_ilnrho_ee__mod__equationofstate) {
-            lnrho__2=log(RHO_B[l1-1][m1-1][AC_n1__mod__cparam-1])
-            pp__2=AC_gamma_m1__mod__equationofstate*ee__2*exp(log(RHO_B[l1-1][m1-1][AC_n1__mod__cparam-1]))
+            lnrho__2=log(RHO_B[l1-1][m1-1][n1-1])
+            pp__2=AC_gamma_m1__mod__equationofstate*ee__2*exp(log(RHO_B[l1-1][m1-1][n1-1]))
           }
           else {
-            lnrho__2=log(log(RHO_B[l1-1][m1-1][AC_n1__mod__cparam-1]))
-            pp__2=AC_gamma_m1__mod__equationofstate*ee__2*log(RHO_B[l1-1][m1-1][AC_n1__mod__cparam-1])
+            lnrho__2=log(log(RHO_B[l1-1][m1-1][n1-1]))
+            pp__2=AC_gamma_m1__mod__equationofstate*ee__2*log(RHO_B[l1-1][m1-1][n1-1])
           }
           lntt__2=log(AC_cv1__mod__equationofstate*ee__2)
           ss__2=AC_cv__mod__equationofstate*(lntt__2-AC_lntt0__mod__equationofstate-AC_gamma_m1__mod__equationofstate*(lnrho__2-AC_lnrho0__mod__equationofstate))
           cs2__2=AC_gamma__mod__equationofstate*AC_gamma_m1__mod__equationofstate*ee__2
         }
         else if (AC_ipp_ss__mod__equationofstate == AC_ilnrho_pp__mod__equationofstate || AC_ipp_ss__mod__equationofstate == AC_irho_pp__mod__equationofstate) {
-          pp__2=SS_B[l1-1][m1-1][AC_n1__mod__cparam-1]
+          pp__2=SS_B[l1-1][m1-1][n1-1]
           if (AC_ipp_ss__mod__equationofstate==AC_ilnrho_pp__mod__equationofstate) {
-            lnrho__2=log(RHO_B[l1-1][m1-1][AC_n1__mod__cparam-1])
+            lnrho__2=log(RHO_B[l1-1][m1-1][n1-1])
             ee__2=pp__2*exp(-lnrho__2)/AC_gamma_m1__mod__equationofstate
             ss__2=AC_cv__mod__equationofstate*(log(pp__2*exp(-lnrho__2)*AC_gamma__mod__equationofstate/AC_cs20__mod__equationofstate)-AC_gamma_m1__mod__equationofstate*(lnrho__2-AC_lnrho0__mod__equationofstate))
           }
           else {
-            lnrho__2=log(log(RHO_B[l1-1][m1-1][AC_n1__mod__cparam-1]))
-            ee__2=pp__2/log(RHO_B[l1-1][m1-1][AC_n1__mod__cparam-1])/AC_gamma_m1__mod__equationofstate
-            ss__2=AC_cv__mod__equationofstate*(log(pp__2/log(RHO_B[l1-1][m1-1][AC_n1__mod__cparam-1])*AC_gamma__mod__equationofstate/AC_cs20__mod__equationofstate)-AC_gamma_m1__mod__equationofstate*(lnrho__2-AC_lnrho0__mod__equationofstate))
+            lnrho__2=log(log(RHO_B[l1-1][m1-1][n1-1]))
+            ee__2=pp__2/log(RHO_B[l1-1][m1-1][n1-1])/AC_gamma_m1__mod__equationofstate
+            ss__2=AC_cv__mod__equationofstate*(log(pp__2/log(RHO_B[l1-1][m1-1][n1-1])*AC_gamma__mod__equationofstate/AC_cs20__mod__equationofstate)-AC_gamma_m1__mod__equationofstate*(lnrho__2-AC_lnrho0__mod__equationofstate))
           }
           lntt__2=log(AC_cv1__mod__equationofstate*ee__2)
           cs2__2=AC_gamma__mod__equationofstate*AC_gamma_m1__mod__equationofstate*ee__2
         }
         else if (AC_ipp_ss__mod__equationofstate == AC_ilnrho_lntt__mod__equationofstate) {
-          lnrho__2=log(RHO_B[l1-1][m1-1][AC_n1__mod__cparam-1])
-          lntt__2=SS_B[l1-1][m1-1][AC_n1__mod__cparam-1]
+          lnrho__2=log(RHO_B[l1-1][m1-1][n1-1])
+          lntt__2=SS_B[l1-1][m1-1][n1-1]
           ss__2=AC_cv__mod__equationofstate*(lntt__2-AC_lntt0__mod__equationofstate-AC_gamma_m1__mod__equationofstate*(lnrho__2-AC_lnrho0__mod__equationofstate))
           ee__2=AC_cv__mod__equationofstate*exp(lntt__2)
           pp__2=ee__2*exp(lnrho__2)*AC_gamma_m1__mod__equationofstate
           cs2__2=AC_gamma__mod__equationofstate*AC_gamma_m1__mod__equationofstate*ee__2
         }
         else if (AC_ipp_ss__mod__equationofstate == AC_ilnrho_tt__mod__equationofstate) {
-          lnrho__2=log(RHO_B[l1-1][m1-1][AC_n1__mod__cparam-1])
-          tt__2=SS_B[l1-1][m1-1][AC_n1__mod__cparam-1]
+          lnrho__2=log(RHO_B[l1-1][m1-1][n1-1])
+          tt__2=SS_B[l1-1][m1-1][n1-1]
           ss__2=AC_cv__mod__equationofstate*(log(tt__2)-AC_lntt0__mod__equationofstate-AC_gamma_m1__mod__equationofstate*(lnrho__2-AC_lnrho0__mod__equationofstate))
           ee__2=AC_cv__mod__equationofstate*tt__2
           pp__2=ee__2*exp(lnrho__2)*AC_gamma_m1__mod__equationofstate
           cs2__2=AC_cp__mod__equationofstate*AC_gamma_m1__mod__equationofstate*tt__2
         }
         else if (AC_ipp_ss__mod__equationofstate == AC_irho_tt__mod__equationofstate) {
-          lnrho__2=log(log(RHO_B[l1-1][m1-1][AC_n1__mod__cparam-1]))
-          tt__2=SS_B[l1-1][m1-1][AC_n1__mod__cparam-1]
+          lnrho__2=log(log(RHO_B[l1-1][m1-1][n1-1]))
+          tt__2=SS_B[l1-1][m1-1][n1-1]
           ss__2=AC_cv__mod__equationofstate*(log(tt__2)-AC_lntt0__mod__equationofstate-AC_gamma_m1__mod__equationofstate*(lnrho__2-AC_lnrho0__mod__equationofstate))
           ee__2=AC_cv__mod__equationofstate*tt__2
-          pp__2=ee__2*log(RHO_B[l1-1][m1-1][AC_n1__mod__cparam-1])*AC_gamma_m1__mod__equationofstate
+          pp__2=ee__2*log(RHO_B[l1-1][m1-1][n1-1])*AC_gamma_m1__mod__equationofstate
           cs2__2=AC_cp__mod__equationofstate*AC_gamma_m1__mod__equationofstate*tt__2
         }
         else if (AC_ipp_ss__mod__equationofstate == AC_ipp_cs2__mod__equationofstate) {
-          if (AC_lanelastic__mod__cparam) {
+          if (lanelastic) {
             if (AC_lanelastic_lin__mod__equationofstate) {
-              lnrho__2=log(log(RHO_B[l1-1][m1-1][AC_n1__mod__cparam-1]))
+              lnrho__2=log(log(RHO_B[l1-1][m1-1][n1-1]))
               tt__2=exp(AC_lntt0__mod__equationofstate)
               pp__2=exp(lnrho__2)*AC_cs20__mod__equationofstate/AC_gamma__mod__equationofstate
             }
             else {
               if (AC_leos_isothermal__mod__equationofstate) {
-                pp__2=log(RHO_B[l1-1][m1-1][AC_n1__mod__cparam-1])
+                pp__2=log(RHO_B[l1-1][m1-1][n1-1])
                 lnrho__2=log(pp__2*AC_cs20__mod__equationofstate)
                 tt__2=exp(AC_lntt0__mod__equationofstate)
               }
@@ -1894,16 +1894,16 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
           }
         }
         else if (AC_ipp_ss__mod__equationofstate == AC_ipp_ss__mod__equationofstate) {
-          if (AC_lanelastic__mod__cparam) {
+          if (lanelastic) {
             if (AC_lanelastic_lin__mod__equationofstate) {
-              lnrho__2=(log(RHO_B[l1-1][m1-1][AC_n1__mod__cparam-1]))
-              ss__2=SS_B[l1-1][m1-1][AC_n1__mod__cparam-1]
+              lnrho__2=(log(RHO_B[l1-1][m1-1][n1-1]))
+              ss__2=SS_B[l1-1][m1-1][n1-1]
               cs2__2=exp(AC_gamma__mod__equationofstate*ss__2*AC_cp1__mod__equationofstate+AC_gamma_m1__mod__equationofstate*(lnrho__2-AC_lnrho0__mod__equationofstate))*AC_cs20__mod__equationofstate
               tt__2=cs2__2/(AC_gamma_m1__mod__equationofstate*AC_cp__mod__equationofstate)
             }
             else {
-              pp__2=log(RHO_B[l1-1][m1-1][AC_n1__mod__cparam-1])
-              ss__2=SS_B[l1-1][m1-1][AC_n1__mod__cparam-1]
+              pp__2=log(RHO_B[l1-1][m1-1][n1-1])
+              ss__2=SS_B[l1-1][m1-1][n1-1]
               cs2__2=exp(ss__2*AC_cp1__mod__equationofstate+AC_gamma1__mod__equationofstate*AC_gamma_m1__mod__equationofstate*log(pp__2/AC_pp0__mod__equationofstate))*AC_cs20__mod__equationofstate
               tt__2=cs2__2/(AC_gamma_m1__mod__equationofstate*AC_cp__mod__equationofstate)
               lnrho__2=log(AC_gamma__mod__equationofstate*pp__2/cs2__2)
@@ -1915,18 +1915,18 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
           }
           else {
             if (AC_ldensity_nolog__mod__cdata) {
-              rho_2 = log(RHO_B[l1-1][m1-1][AC_n1__mod__cparam-1])
+              rho_2 = log(RHO_B[l1-1][m1-1][n1-1])
               if (false) {
-                lnrho__2 = log(log(RHO_B[l1-1][m1-1][AC_n1__mod__cparam-1]))
+                lnrho__2 = log(log(RHO_B[l1-1][m1-1][n1-1]))
               }
             }
             else {
-              rho_2 = exp(log(RHO_B[l1-1][m1-1][AC_n1__mod__cparam-1]))
+              rho_2 = exp(log(RHO_B[l1-1][m1-1][n1-1]))
               if (false) {
-                lnrho__2 = log(RHO_B[l1-1][m1-1][AC_n1__mod__cparam-1])
+                lnrho__2 = log(RHO_B[l1-1][m1-1][n1-1])
               }
             }
-            eth_2 = SS_B[l1-1][m1-1][AC_n1__mod__cparam-1]
+            eth_2 = SS_B[l1-1][m1-1][n1-1]
           }
           if (false) {
             lntt__2 = log(AC_cv1__mod__equationofstate * eth_2/ rho_2)
@@ -1948,96 +1948,96 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
         }
         dlnrhodz = AC_gamma__mod__equationofstate *AC_gravz__mod__gravity/cs2_point
         dssdz    = AC_gamma_m1__mod__equationofstate*AC_gravz__mod__gravity/cs2_point
-        RHO_B[vertexIdx.x][vertexIdx.y][AC_n1__mod__cparam-1-1] = RHO_B[vertexIdx.x][vertexIdx.y][1+AC_n1__mod__cparam-1] - AC_dz2_bound__mod__cdata[-1+AC_NGHOST__mod__cparam+1-1]*dlnrhodz*RHO_B[vertexIdx.x][vertexIdx.y][1+AC_n1__mod__cparam-1]
-        SS_B[vertexIdx.x][vertexIdx.y][AC_n1__mod__cparam-1-1] = SS_B[vertexIdx.x][vertexIdx.y][1+AC_n1__mod__cparam-1] - AC_dz2_bound__mod__cdata[-1+AC_NGHOST__mod__cparam+1-1]*dssdz
-        RHO_B[vertexIdx.x][vertexIdx.y][AC_n1__mod__cparam-2-1] = RHO_B[vertexIdx.x][vertexIdx.y][2+AC_n1__mod__cparam-1] - AC_dz2_bound__mod__cdata[-2+AC_NGHOST__mod__cparam+1-1]*dlnrhodz*RHO_B[vertexIdx.x][vertexIdx.y][1+AC_n1__mod__cparam-1]
-        SS_B[vertexIdx.x][vertexIdx.y][AC_n1__mod__cparam-2-1] = SS_B[vertexIdx.x][vertexIdx.y][2+AC_n1__mod__cparam-1] - AC_dz2_bound__mod__cdata[-2+AC_NGHOST__mod__cparam+1-1]*dssdz
-        RHO_B[vertexIdx.x][vertexIdx.y][AC_n1__mod__cparam-3-1] = RHO_B[vertexIdx.x][vertexIdx.y][3+AC_n1__mod__cparam-1] - AC_dz2_bound__mod__cdata[-3+AC_NGHOST__mod__cparam+1-1]*dlnrhodz*RHO_B[vertexIdx.x][vertexIdx.y][1+AC_n1__mod__cparam-1]
-        SS_B[vertexIdx.x][vertexIdx.y][AC_n1__mod__cparam-3-1] = SS_B[vertexIdx.x][vertexIdx.y][3+AC_n1__mod__cparam-1] - AC_dz2_bound__mod__cdata[-3+AC_NGHOST__mod__cparam+1-1]*dssdz
+        RHO_B[vertexIdx.x][vertexIdx.y][n1-1-1] = RHO_B[vertexIdx.x][vertexIdx.y][1+n1-1] - AC_dz2_bound__mod__cdata[-1+NGHOST+1-1]*dlnrhodz*RHO_B[vertexIdx.x][vertexIdx.y][1+n1-1]
+        SS_B[vertexIdx.x][vertexIdx.y][n1-1-1] = SS_B[vertexIdx.x][vertexIdx.y][1+n1-1] - AC_dz2_bound__mod__cdata[-1+NGHOST+1-1]*dssdz
+        RHO_B[vertexIdx.x][vertexIdx.y][n1-2-1] = RHO_B[vertexIdx.x][vertexIdx.y][2+n1-1] - AC_dz2_bound__mod__cdata[-2+NGHOST+1-1]*dlnrhodz*RHO_B[vertexIdx.x][vertexIdx.y][1+n1-1]
+        SS_B[vertexIdx.x][vertexIdx.y][n1-2-1] = SS_B[vertexIdx.x][vertexIdx.y][2+n1-1] - AC_dz2_bound__mod__cdata[-2+NGHOST+1-1]*dssdz
+        RHO_B[vertexIdx.x][vertexIdx.y][n1-3-1] = RHO_B[vertexIdx.x][vertexIdx.y][3+n1-1] - AC_dz2_bound__mod__cdata[-3+NGHOST+1-1]*dlnrhodz*RHO_B[vertexIdx.x][vertexIdx.y][1+n1-1]
+        SS_B[vertexIdx.x][vertexIdx.y][n1-3-1] = SS_B[vertexIdx.x][vertexIdx.y][3+n1-1] - AC_dz2_bound__mod__cdata[-3+NGHOST+1-1]*dssdz
       }
       else {
       }
     }
-    else if (AC_ltemperature__mod__cparam) {
+    else if (ltemperature) {
       if (AC_ltemperature_nolog__mod__cdata) {
         if (AC_ilnrho_tt__mod__equationofstate == AC_ilnrho_ss__mod__equationofstate || AC_ilnrho_tt__mod__equationofstate == AC_irho_ss__mod__equationofstate) {
           if (AC_lstratz__mod__cdata) {
           }
           else if (AC_ilnrho_tt__mod__equationofstate == AC_ilnrho_ss__mod__equationofstate)  {
-            lnrho__3 = LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1]
+            lnrho__3 = LNRHO[l1-1][m1-1][n1-1]
           }
           else {
-            lnrho__3 = log(LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1])
+            lnrho__3 = log(LNRHO[l1-1][m1-1][n1-1])
           }
-          ss__3=TT[l1-1][m1-1][AC_n1__mod__cparam-1]
+          ss__3=TT[l1-1][m1-1][n1-1]
           lntt__3=AC_lntt0__mod__equationofstate+AC_cv1__mod__equationofstate*ss__3+AC_gamma_m1__mod__equationofstate*(lnrho__3-AC_lnrho0__mod__equationofstate)
           ee__3=AC_cv__mod__equationofstate*exp(lntt__3)
           pp__3=(AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*exp(lntt__3+lnrho__3)
           cs2__3=AC_gamma__mod__equationofstate*AC_gamma_m1__mod__equationofstate*ee__3
         }
         else if (AC_ilnrho_tt__mod__equationofstate == AC_ilnrho_ee__mod__equationofstate || AC_ilnrho_tt__mod__equationofstate == AC_irho_ee__mod__equationofstate) {
-          ee__3=TT[l1-1][m1-1][AC_n1__mod__cparam-1]
+          ee__3=TT[l1-1][m1-1][n1-1]
           if (AC_ilnrho_tt__mod__equationofstate==AC_ilnrho_ee__mod__equationofstate) {
-            lnrho__3=LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1]
-            pp__3=AC_gamma_m1__mod__equationofstate*ee__3*exp(LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1])
+            lnrho__3=LNRHO[l1-1][m1-1][n1-1]
+            pp__3=AC_gamma_m1__mod__equationofstate*ee__3*exp(LNRHO[l1-1][m1-1][n1-1])
           }
           else {
-            lnrho__3=log(LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1])
-            pp__3=AC_gamma_m1__mod__equationofstate*ee__3*LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1]
+            lnrho__3=log(LNRHO[l1-1][m1-1][n1-1])
+            pp__3=AC_gamma_m1__mod__equationofstate*ee__3*LNRHO[l1-1][m1-1][n1-1]
           }
           lntt__3=log(AC_cv1__mod__equationofstate*ee__3)
           ss__3=AC_cv__mod__equationofstate*(lntt__3-AC_lntt0__mod__equationofstate-AC_gamma_m1__mod__equationofstate*(lnrho__3-AC_lnrho0__mod__equationofstate))
           cs2__3=AC_gamma__mod__equationofstate*AC_gamma_m1__mod__equationofstate*ee__3
         }
         else if (AC_ilnrho_tt__mod__equationofstate == AC_ilnrho_pp__mod__equationofstate || AC_ilnrho_tt__mod__equationofstate == AC_irho_pp__mod__equationofstate) {
-          pp__3=TT[l1-1][m1-1][AC_n1__mod__cparam-1]
+          pp__3=TT[l1-1][m1-1][n1-1]
           if (AC_ilnrho_tt__mod__equationofstate==AC_ilnrho_pp__mod__equationofstate) {
-            lnrho__3=LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1]
+            lnrho__3=LNRHO[l1-1][m1-1][n1-1]
             ee__3=pp__3*exp(-lnrho__3)/AC_gamma_m1__mod__equationofstate
             ss__3=AC_cv__mod__equationofstate*(log(pp__3*exp(-lnrho__3)*AC_gamma__mod__equationofstate/AC_cs20__mod__equationofstate)-AC_gamma_m1__mod__equationofstate*(lnrho__3-AC_lnrho0__mod__equationofstate))
           }
           else {
-            lnrho__3=log(LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1])
-            ee__3=pp__3/LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1]/AC_gamma_m1__mod__equationofstate
-            ss__3=AC_cv__mod__equationofstate*(log(pp__3/LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1]*AC_gamma__mod__equationofstate/AC_cs20__mod__equationofstate)-AC_gamma_m1__mod__equationofstate*(lnrho__3-AC_lnrho0__mod__equationofstate))
+            lnrho__3=log(LNRHO[l1-1][m1-1][n1-1])
+            ee__3=pp__3/LNRHO[l1-1][m1-1][n1-1]/AC_gamma_m1__mod__equationofstate
+            ss__3=AC_cv__mod__equationofstate*(log(pp__3/LNRHO[l1-1][m1-1][n1-1]*AC_gamma__mod__equationofstate/AC_cs20__mod__equationofstate)-AC_gamma_m1__mod__equationofstate*(lnrho__3-AC_lnrho0__mod__equationofstate))
           }
           lntt__3=log(AC_cv1__mod__equationofstate*ee__3)
           cs2__3=AC_gamma__mod__equationofstate*AC_gamma_m1__mod__equationofstate*ee__3
         }
         else if (AC_ilnrho_tt__mod__equationofstate == AC_ilnrho_lntt__mod__equationofstate) {
-          lnrho__3=LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1]
-          lntt__3=TT[l1-1][m1-1][AC_n1__mod__cparam-1]
+          lnrho__3=LNRHO[l1-1][m1-1][n1-1]
+          lntt__3=TT[l1-1][m1-1][n1-1]
           ss__3=AC_cv__mod__equationofstate*(lntt__3-AC_lntt0__mod__equationofstate-AC_gamma_m1__mod__equationofstate*(lnrho__3-AC_lnrho0__mod__equationofstate))
           ee__3=AC_cv__mod__equationofstate*exp(lntt__3)
           pp__3=ee__3*exp(lnrho__3)*AC_gamma_m1__mod__equationofstate
           cs2__3=AC_gamma__mod__equationofstate*AC_gamma_m1__mod__equationofstate*ee__3
         }
         else if (AC_ilnrho_tt__mod__equationofstate == AC_ilnrho_tt__mod__equationofstate) {
-          lnrho__3=LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1]
-          tt__3=TT[l1-1][m1-1][AC_n1__mod__cparam-1]
+          lnrho__3=LNRHO[l1-1][m1-1][n1-1]
+          tt__3=TT[l1-1][m1-1][n1-1]
           ss__3=AC_cv__mod__equationofstate*(log(tt__3)-AC_lntt0__mod__equationofstate-AC_gamma_m1__mod__equationofstate*(lnrho__3-AC_lnrho0__mod__equationofstate))
           ee__3=AC_cv__mod__equationofstate*tt__3
           pp__3=ee__3*exp(lnrho__3)*AC_gamma_m1__mod__equationofstate
           cs2__3=AC_cp__mod__equationofstate*AC_gamma_m1__mod__equationofstate*tt__3
         }
         else if (AC_ilnrho_tt__mod__equationofstate == AC_irho_tt__mod__equationofstate) {
-          lnrho__3=log(LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1])
-          tt__3=TT[l1-1][m1-1][AC_n1__mod__cparam-1]
+          lnrho__3=log(LNRHO[l1-1][m1-1][n1-1])
+          tt__3=TT[l1-1][m1-1][n1-1]
           ss__3=AC_cv__mod__equationofstate*(log(tt__3)-AC_lntt0__mod__equationofstate-AC_gamma_m1__mod__equationofstate*(lnrho__3-AC_lnrho0__mod__equationofstate))
           ee__3=AC_cv__mod__equationofstate*tt__3
-          pp__3=ee__3*LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1]*AC_gamma_m1__mod__equationofstate
+          pp__3=ee__3*LNRHO[l1-1][m1-1][n1-1]*AC_gamma_m1__mod__equationofstate
           cs2__3=AC_cp__mod__equationofstate*AC_gamma_m1__mod__equationofstate*tt__3
         }
         else if (AC_ilnrho_tt__mod__equationofstate == AC_ipp_cs2__mod__equationofstate) {
-          if (AC_lanelastic__mod__cparam) {
+          if (lanelastic) {
             if (AC_lanelastic_lin__mod__equationofstate) {
-              lnrho__3=log(LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1])
+              lnrho__3=log(LNRHO[l1-1][m1-1][n1-1])
               tt__3=exp(AC_lntt0__mod__equationofstate)
               pp__3=exp(lnrho__3)*AC_cs20__mod__equationofstate/AC_gamma__mod__equationofstate
             }
             else {
               if (AC_leos_isothermal__mod__equationofstate) {
-                pp__3=LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1]
+                pp__3=LNRHO[l1-1][m1-1][n1-1]
                 lnrho__3=log(pp__3*AC_cs20__mod__equationofstate)
                 tt__3=exp(AC_lntt0__mod__equationofstate)
               }
@@ -2045,16 +2045,16 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
           }
         }
         else if (AC_ilnrho_tt__mod__equationofstate == AC_ipp_ss__mod__equationofstate) {
-          if (AC_lanelastic__mod__cparam) {
+          if (lanelastic) {
             if (AC_lanelastic_lin__mod__equationofstate) {
-              lnrho__3=(LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1])
-              ss__3=TT[l1-1][m1-1][AC_n1__mod__cparam-1]
+              lnrho__3=(LNRHO[l1-1][m1-1][n1-1])
+              ss__3=TT[l1-1][m1-1][n1-1]
               cs2__3=exp(AC_gamma__mod__equationofstate*ss__3*AC_cp1__mod__equationofstate+AC_gamma_m1__mod__equationofstate*(lnrho__3-AC_lnrho0__mod__equationofstate))*AC_cs20__mod__equationofstate
               tt__3=cs2__3/(AC_gamma_m1__mod__equationofstate*AC_cp__mod__equationofstate)
             }
             else {
-              pp__3=LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1]
-              ss__3=TT[l1-1][m1-1][AC_n1__mod__cparam-1]
+              pp__3=LNRHO[l1-1][m1-1][n1-1]
+              ss__3=TT[l1-1][m1-1][n1-1]
               cs2__3=exp(ss__3*AC_cp1__mod__equationofstate+AC_gamma1__mod__equationofstate*AC_gamma_m1__mod__equationofstate*log(pp__3/AC_pp0__mod__equationofstate))*AC_cs20__mod__equationofstate
               tt__3=cs2__3/(AC_gamma_m1__mod__equationofstate*AC_cp__mod__equationofstate)
               lnrho__3=log(AC_gamma__mod__equationofstate*pp__3/cs2__3)
@@ -2066,18 +2066,18 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
           }
           else {
             if (AC_ldensity_nolog__mod__cdata) {
-              rho_3 = LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1]
+              rho_3 = LNRHO[l1-1][m1-1][n1-1]
               if (false) {
-                lnrho__3 = log(LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1])
+                lnrho__3 = log(LNRHO[l1-1][m1-1][n1-1])
               }
             }
             else {
-              rho_3 = exp(LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1])
+              rho_3 = exp(LNRHO[l1-1][m1-1][n1-1])
               if (false) {
-                lnrho__3 = LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1]
+                lnrho__3 = LNRHO[l1-1][m1-1][n1-1]
               }
             }
-            eth_3 = TT[l1-1][m1-1][AC_n1__mod__cparam-1]
+            eth_3 = TT[l1-1][m1-1][n1-1]
           }
           if (false) {
             lntt__3 = log(AC_cv1__mod__equationofstate * eth_3/ rho_3)
@@ -2103,80 +2103,80 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
           if (AC_lstratz__mod__cdata) {
           }
           else if (AC_ilnrho_lntt__mod__equationofstate == AC_ilnrho_ss__mod__equationofstate)  {
-            lnrho__4 = LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1]
+            lnrho__4 = LNRHO[l1-1][m1-1][n1-1]
           }
           else {
-            lnrho__4 = log(LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1])
+            lnrho__4 = log(LNRHO[l1-1][m1-1][n1-1])
           }
-          ss__4=LNTT[l1-1][m1-1][AC_n1__mod__cparam-1]
+          ss__4=LNTT[l1-1][m1-1][n1-1]
           lntt__4=AC_lntt0__mod__equationofstate+AC_cv1__mod__equationofstate*ss__4+AC_gamma_m1__mod__equationofstate*(lnrho__4-AC_lnrho0__mod__equationofstate)
           ee__4=AC_cv__mod__equationofstate*exp(lntt__4)
           pp__4=(AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*exp(lntt__4+lnrho__4)
           cs2__4=AC_gamma__mod__equationofstate*AC_gamma_m1__mod__equationofstate*ee__4
         }
         else if (AC_ilnrho_lntt__mod__equationofstate == AC_ilnrho_ee__mod__equationofstate || AC_ilnrho_lntt__mod__equationofstate == AC_irho_ee__mod__equationofstate) {
-          ee__4=LNTT[l1-1][m1-1][AC_n1__mod__cparam-1]
+          ee__4=LNTT[l1-1][m1-1][n1-1]
           if (AC_ilnrho_lntt__mod__equationofstate==AC_ilnrho_ee__mod__equationofstate) {
-            lnrho__4=LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1]
-            pp__4=AC_gamma_m1__mod__equationofstate*ee__4*exp(LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1])
+            lnrho__4=LNRHO[l1-1][m1-1][n1-1]
+            pp__4=AC_gamma_m1__mod__equationofstate*ee__4*exp(LNRHO[l1-1][m1-1][n1-1])
           }
           else {
-            lnrho__4=log(LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1])
-            pp__4=AC_gamma_m1__mod__equationofstate*ee__4*LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1]
+            lnrho__4=log(LNRHO[l1-1][m1-1][n1-1])
+            pp__4=AC_gamma_m1__mod__equationofstate*ee__4*LNRHO[l1-1][m1-1][n1-1]
           }
           lntt__4=log(AC_cv1__mod__equationofstate*ee__4)
           ss__4=AC_cv__mod__equationofstate*(lntt__4-AC_lntt0__mod__equationofstate-AC_gamma_m1__mod__equationofstate*(lnrho__4-AC_lnrho0__mod__equationofstate))
           cs2__4=AC_gamma__mod__equationofstate*AC_gamma_m1__mod__equationofstate*ee__4
         }
         else if (AC_ilnrho_lntt__mod__equationofstate == AC_ilnrho_pp__mod__equationofstate || AC_ilnrho_lntt__mod__equationofstate == AC_irho_pp__mod__equationofstate) {
-          pp__4=LNTT[l1-1][m1-1][AC_n1__mod__cparam-1]
+          pp__4=LNTT[l1-1][m1-1][n1-1]
           if (AC_ilnrho_lntt__mod__equationofstate==AC_ilnrho_pp__mod__equationofstate) {
-            lnrho__4=LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1]
+            lnrho__4=LNRHO[l1-1][m1-1][n1-1]
             ee__4=pp__4*exp(-lnrho__4)/AC_gamma_m1__mod__equationofstate
             ss__4=AC_cv__mod__equationofstate*(log(pp__4*exp(-lnrho__4)*AC_gamma__mod__equationofstate/AC_cs20__mod__equationofstate)-AC_gamma_m1__mod__equationofstate*(lnrho__4-AC_lnrho0__mod__equationofstate))
           }
           else {
-            lnrho__4=log(LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1])
-            ee__4=pp__4/LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1]/AC_gamma_m1__mod__equationofstate
-            ss__4=AC_cv__mod__equationofstate*(log(pp__4/LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1]*AC_gamma__mod__equationofstate/AC_cs20__mod__equationofstate)-AC_gamma_m1__mod__equationofstate*(lnrho__4-AC_lnrho0__mod__equationofstate))
+            lnrho__4=log(LNRHO[l1-1][m1-1][n1-1])
+            ee__4=pp__4/LNRHO[l1-1][m1-1][n1-1]/AC_gamma_m1__mod__equationofstate
+            ss__4=AC_cv__mod__equationofstate*(log(pp__4/LNRHO[l1-1][m1-1][n1-1]*AC_gamma__mod__equationofstate/AC_cs20__mod__equationofstate)-AC_gamma_m1__mod__equationofstate*(lnrho__4-AC_lnrho0__mod__equationofstate))
           }
           lntt__4=log(AC_cv1__mod__equationofstate*ee__4)
           cs2__4=AC_gamma__mod__equationofstate*AC_gamma_m1__mod__equationofstate*ee__4
         }
         else if (AC_ilnrho_lntt__mod__equationofstate == AC_ilnrho_lntt__mod__equationofstate) {
-          lnrho__4=LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1]
-          lntt__4=LNTT[l1-1][m1-1][AC_n1__mod__cparam-1]
+          lnrho__4=LNRHO[l1-1][m1-1][n1-1]
+          lntt__4=LNTT[l1-1][m1-1][n1-1]
           ss__4=AC_cv__mod__equationofstate*(lntt__4-AC_lntt0__mod__equationofstate-AC_gamma_m1__mod__equationofstate*(lnrho__4-AC_lnrho0__mod__equationofstate))
           ee__4=AC_cv__mod__equationofstate*exp(lntt__4)
           pp__4=ee__4*exp(lnrho__4)*AC_gamma_m1__mod__equationofstate
           cs2__4=AC_gamma__mod__equationofstate*AC_gamma_m1__mod__equationofstate*ee__4
         }
         else if (AC_ilnrho_lntt__mod__equationofstate == AC_ilnrho_tt__mod__equationofstate) {
-          lnrho__4=LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1]
-          tt__4=LNTT[l1-1][m1-1][AC_n1__mod__cparam-1]
+          lnrho__4=LNRHO[l1-1][m1-1][n1-1]
+          tt__4=LNTT[l1-1][m1-1][n1-1]
           ss__4=AC_cv__mod__equationofstate*(log(tt__4)-AC_lntt0__mod__equationofstate-AC_gamma_m1__mod__equationofstate*(lnrho__4-AC_lnrho0__mod__equationofstate))
           ee__4=AC_cv__mod__equationofstate*tt__4
           pp__4=ee__4*exp(lnrho__4)*AC_gamma_m1__mod__equationofstate
           cs2__4=AC_cp__mod__equationofstate*AC_gamma_m1__mod__equationofstate*tt__4
         }
         else if (AC_ilnrho_lntt__mod__equationofstate == AC_irho_tt__mod__equationofstate) {
-          lnrho__4=log(LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1])
-          tt__4=LNTT[l1-1][m1-1][AC_n1__mod__cparam-1]
+          lnrho__4=log(LNRHO[l1-1][m1-1][n1-1])
+          tt__4=LNTT[l1-1][m1-1][n1-1]
           ss__4=AC_cv__mod__equationofstate*(log(tt__4)-AC_lntt0__mod__equationofstate-AC_gamma_m1__mod__equationofstate*(lnrho__4-AC_lnrho0__mod__equationofstate))
           ee__4=AC_cv__mod__equationofstate*tt__4
-          pp__4=ee__4*LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1]*AC_gamma_m1__mod__equationofstate
+          pp__4=ee__4*LNRHO[l1-1][m1-1][n1-1]*AC_gamma_m1__mod__equationofstate
           cs2__4=AC_cp__mod__equationofstate*AC_gamma_m1__mod__equationofstate*tt__4
         }
         else if (AC_ilnrho_lntt__mod__equationofstate == AC_ipp_cs2__mod__equationofstate) {
-          if (AC_lanelastic__mod__cparam) {
+          if (lanelastic) {
             if (AC_lanelastic_lin__mod__equationofstate) {
-              lnrho__4=log(LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1])
+              lnrho__4=log(LNRHO[l1-1][m1-1][n1-1])
               tt__4=exp(AC_lntt0__mod__equationofstate)
               pp__4=exp(lnrho__4)*AC_cs20__mod__equationofstate/AC_gamma__mod__equationofstate
             }
             else {
               if (AC_leos_isothermal__mod__equationofstate) {
-                pp__4=LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1]
+                pp__4=LNRHO[l1-1][m1-1][n1-1]
                 lnrho__4=log(pp__4*AC_cs20__mod__equationofstate)
                 tt__4=exp(AC_lntt0__mod__equationofstate)
               }
@@ -2184,16 +2184,16 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
           }
         }
         else if (AC_ilnrho_lntt__mod__equationofstate == AC_ipp_ss__mod__equationofstate) {
-          if (AC_lanelastic__mod__cparam) {
+          if (lanelastic) {
             if (AC_lanelastic_lin__mod__equationofstate) {
-              lnrho__4=(LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1])
-              ss__4=LNTT[l1-1][m1-1][AC_n1__mod__cparam-1]
+              lnrho__4=(LNRHO[l1-1][m1-1][n1-1])
+              ss__4=LNTT[l1-1][m1-1][n1-1]
               cs2__4=exp(AC_gamma__mod__equationofstate*ss__4*AC_cp1__mod__equationofstate+AC_gamma_m1__mod__equationofstate*(lnrho__4-AC_lnrho0__mod__equationofstate))*AC_cs20__mod__equationofstate
               tt__4=cs2__4/(AC_gamma_m1__mod__equationofstate*AC_cp__mod__equationofstate)
             }
             else {
-              pp__4=LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1]
-              ss__4=LNTT[l1-1][m1-1][AC_n1__mod__cparam-1]
+              pp__4=LNRHO[l1-1][m1-1][n1-1]
+              ss__4=LNTT[l1-1][m1-1][n1-1]
               cs2__4=exp(ss__4*AC_cp1__mod__equationofstate+AC_gamma1__mod__equationofstate*AC_gamma_m1__mod__equationofstate*log(pp__4/AC_pp0__mod__equationofstate))*AC_cs20__mod__equationofstate
               tt__4=cs2__4/(AC_gamma_m1__mod__equationofstate*AC_cp__mod__equationofstate)
               lnrho__4=log(AC_gamma__mod__equationofstate*pp__4/cs2__4)
@@ -2205,18 +2205,18 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
           }
           else {
             if (AC_ldensity_nolog__mod__cdata) {
-              rho_4 = LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1]
+              rho_4 = LNRHO[l1-1][m1-1][n1-1]
               if (false) {
-                lnrho__4 = log(LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1])
+                lnrho__4 = log(LNRHO[l1-1][m1-1][n1-1])
               }
             }
             else {
-              rho_4 = exp(LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1])
+              rho_4 = exp(LNRHO[l1-1][m1-1][n1-1])
               if (false) {
-                lnrho__4 = LNRHO[l1-1][m1-1][AC_n1__mod__cparam-1]
+                lnrho__4 = LNRHO[l1-1][m1-1][n1-1]
               }
             }
-            eth_4 = LNTT[l1-1][m1-1][AC_n1__mod__cparam-1]
+            eth_4 = LNTT[l1-1][m1-1][n1-1]
           }
           if (false) {
             lntt__4 = log(AC_cv1__mod__equationofstate * eth_4/ rho_4)
@@ -2238,65 +2238,65 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
         }
       }
       dlnrhodz = AC_gamma__mod__equationofstate * AC_gravz__mod__gravity/cs2_point
-      LNRHO[vertexIdx.x][vertexIdx.y][AC_n1__mod__cparam-1-1] = LNRHO[vertexIdx.x][vertexIdx.y][1+AC_n1__mod__cparam-1] - AC_dz2_bound__mod__cdata[-1+AC_NGHOST__mod__cparam+1-1]*dlnrhodz
-      LNRHO[vertexIdx.x][vertexIdx.y][AC_n1__mod__cparam-2-1] = LNRHO[vertexIdx.x][vertexIdx.y][2+AC_n1__mod__cparam-1] - AC_dz2_bound__mod__cdata[-2+AC_NGHOST__mod__cparam+1-1]*dlnrhodz
-      LNRHO[vertexIdx.x][vertexIdx.y][AC_n1__mod__cparam-3-1] = LNRHO[vertexIdx.x][vertexIdx.y][3+AC_n1__mod__cparam-1] - AC_dz2_bound__mod__cdata[-3+AC_NGHOST__mod__cparam+1-1]*dlnrhodz
+      LNRHO[vertexIdx.x][vertexIdx.y][n1-1-1] = LNRHO[vertexIdx.x][vertexIdx.y][1+n1-1] - AC_dz2_bound__mod__cdata[-1+NGHOST+1-1]*dlnrhodz
+      LNRHO[vertexIdx.x][vertexIdx.y][n1-2-1] = LNRHO[vertexIdx.x][vertexIdx.y][2+n1-1] - AC_dz2_bound__mod__cdata[-2+NGHOST+1-1]*dlnrhodz
+      LNRHO[vertexIdx.x][vertexIdx.y][n1-3-1] = LNRHO[vertexIdx.x][vertexIdx.y][3+n1-1] - AC_dz2_bound__mod__cdata[-3+NGHOST+1-1]*dlnrhodz
     }
     else {
       potx_xpoint_5=0.0
       poty_ypoint_5=0.0
       potz_zpoint_5=0.0
       if (false) {
-        if (AC_enum_gravx_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        if (AC_enum_gravx_profile__mod__gravity == enum_zero_string) {
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+        else if (AC_enum_gravx_profile__mod__gravity == enum_const_string) {
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_linear_zdep_string__mod__cparam) {
-          zdep_5=(1.+AC_kappa_z1__mod__gravity*AC_z__mod__cdata[AC_n1__mod__cparam-1-1]+0.5*((AC_kappa_z1__mod__gravity*AC_z__mod__cdata[AC_n1__mod__cparam-1-1])*(AC_kappa_z1__mod__gravity*AC_z__mod__cdata[AC_n1__mod__cparam-1-1])))
+        else if (AC_enum_gravx_profile__mod__gravity == enum_linear_zdep_string) {
+          zdep_5=(1.+AC_kappa_z1__mod__gravity*AC_z__mod__cdata[n1-1-1]+0.5*((AC_kappa_z1__mod__gravity*AC_z__mod__cdata[n1-1-1])*(AC_kappa_z1__mod__gravity*AC_z__mod__cdata[n1-1-1])))
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_kepler_string__mod__cparam) {
+        else if (AC_enum_gravx_profile__mod__gravity == enum_kepler_string) {
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_czbot1_string__mod__cparam) {
+        else if (AC_enum_gravx_profile__mod__gravity == enum_czbot1_string) {
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_czmid1_string__mod__cparam) {
+        else if (AC_enum_gravx_profile__mod__gravity == enum_czmid1_string) {
         }
         else {
         }
       }
       if (false) {
-        if (AC_enum_gravy_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        if (AC_enum_gravy_profile__mod__gravity == enum_zero_string) {
         }
-        else if (AC_enum_gravy_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+        else if (AC_enum_gravy_profile__mod__gravity == enum_const_string) {
         }
         else {
         }
       }
-      if (present(AC_z__mod__cdata[AC_n1__mod__cparam-1-1])) {
-        if (AC_enum_gravz_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+      if (present(AC_z__mod__cdata[n1-1-1])) {
+        if (AC_enum_gravz_profile__mod__gravity == enum_zero_string) {
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
-          if (AC_zclip__mod__gravity==AC_impossible__mod__cparam) {
-            potz_zpoint_5=-AC_gravz__mod__gravity*(AC_z__mod__cdata[AC_n1__mod__cparam-1-1]-AC_zinfty__mod__gravity)
+        else if (AC_enum_gravz_profile__mod__gravity == enum_const_string) {
+          if (AC_zclip__mod__gravity==impossible) {
+            potz_zpoint_5=-AC_gravz__mod__gravity*(AC_z__mod__cdata[n1-1-1]-AC_zinfty__mod__gravity)
           }
           else {
-            potz_zpoint_5=-AC_gravz__mod__gravity*max(AC_z__mod__cdata[AC_n1__mod__cparam-1-1]-AC_zinfty__mod__gravity,AC_zclip__mod__gravity-AC_zinfty__mod__gravity)
+            potz_zpoint_5=-AC_gravz__mod__gravity*max(AC_z__mod__cdata[n1-1-1]-AC_zinfty__mod__gravity,AC_zclip__mod__gravity-AC_zinfty__mod__gravity)
           }
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_linear_string__mod__cparam) {
-          potz_zpoint_5=0.5*((AC_z__mod__cdata[AC_n1__mod__cparam-1-1]*AC_z__mod__cdata[AC_n1__mod__cparam-1-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)
+        else if (AC_enum_gravz_profile__mod__gravity == enum_linear_string) {
+          potz_zpoint_5=0.5*((AC_z__mod__cdata[n1-1-1]*AC_z__mod__cdata[n1-1-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_spherical_string__mod__cparam) {
-          potz_zpoint_5=0.5*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*(AC_z1__mod__gravity*AC_z1__mod__gravity)*log(1.0+((AC_z__mod__cdata[AC_n1__mod__cparam-1-1]/AC_z1__mod__gravity)*(AC_z__mod__cdata[AC_n1__mod__cparam-1-1]/AC_z1__mod__gravity)))
+        else if (AC_enum_gravz_profile__mod__gravity == enum_spherical_string) {
+          potz_zpoint_5=0.5*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*(AC_z1__mod__gravity*AC_z1__mod__gravity)*log(1.0+((AC_z__mod__cdata[n1-1-1]/AC_z1__mod__gravity)*(AC_z__mod__cdata[n1-1-1]/AC_z1__mod__gravity)))
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_linear_xdep_string__mod__cparam) {
-          potz_zpoint_5=0.5*((AC_z__mod__cdata[AC_n1__mod__cparam-1-1]*AC_z__mod__cdata[AC_n1__mod__cparam-1-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*xdep_5
+        else if (AC_enum_gravz_profile__mod__gravity == enum_linear_xdep_string) {
+          potz_zpoint_5=0.5*((AC_z__mod__cdata[n1-1-1]*AC_z__mod__cdata[n1-1-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*xdep_5
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_linear_smoothed_string__mod__cparam) {
-          prof_5 = 1. +pow( (AC_z__mod__cdata[AC_n1__mod__cparam-1-1]/AC_zref__mod__gravity),(2*AC_n_pot__mod__gravity))
-          potz_zpoint_5 = 0.5*((AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[AC_n1__mod__cparam-1-1])*(AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[AC_n1__mod__cparam-1-1]))/pow(prof_5,(1./AC_n_pot__mod__gravity))
+        else if (AC_enum_gravz_profile__mod__gravity == enum_linear_smoothed_string) {
+          prof_5 = 1. +pow( (AC_z__mod__cdata[n1-1-1]/AC_zref__mod__gravity),(2*AC_n_pot__mod__gravity))
+          potz_zpoint_5 = 0.5*((AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[n1-1-1])*(AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[n1-1-1]))/pow(prof_5,(1./AC_n_pot__mod__gravity))
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_tanh_string__mod__cparam) {
-          potz_zpoint_5=AC_gravz__mod__gravity*AC_zref__mod__gravity*log(cosh(AC_z__mod__cdata[AC_n1__mod__cparam-1-1]/AC_zref__mod__gravity))
+        else if (AC_enum_gravz_profile__mod__gravity == enum_tanh_string) {
+          potz_zpoint_5=AC_gravz__mod__gravity*AC_zref__mod__gravity*log(cosh(AC_z__mod__cdata[n1-1-1]/AC_zref__mod__gravity))
         }
         else {
         }
@@ -2306,56 +2306,56 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
       poty_ypoint_6=0.0
       potz_zpoint_6=0.0
       if (false) {
-        if (AC_enum_gravx_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        if (AC_enum_gravx_profile__mod__gravity == enum_zero_string) {
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+        else if (AC_enum_gravx_profile__mod__gravity == enum_const_string) {
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_linear_zdep_string__mod__cparam) {
-          zdep_6=(1.+AC_kappa_z1__mod__gravity*AC_z__mod__cdata[1+AC_n1__mod__cparam-1]+0.5*((AC_kappa_z1__mod__gravity*AC_z__mod__cdata[1+AC_n1__mod__cparam-1])*(AC_kappa_z1__mod__gravity*AC_z__mod__cdata[1+AC_n1__mod__cparam-1])))
+        else if (AC_enum_gravx_profile__mod__gravity == enum_linear_zdep_string) {
+          zdep_6=(1.+AC_kappa_z1__mod__gravity*AC_z__mod__cdata[1+n1-1]+0.5*((AC_kappa_z1__mod__gravity*AC_z__mod__cdata[1+n1-1])*(AC_kappa_z1__mod__gravity*AC_z__mod__cdata[1+n1-1])))
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_kepler_string__mod__cparam) {
+        else if (AC_enum_gravx_profile__mod__gravity == enum_kepler_string) {
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_czbot1_string__mod__cparam) {
+        else if (AC_enum_gravx_profile__mod__gravity == enum_czbot1_string) {
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_czmid1_string__mod__cparam) {
+        else if (AC_enum_gravx_profile__mod__gravity == enum_czmid1_string) {
         }
         else {
         }
       }
       if (false) {
-        if (AC_enum_gravy_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        if (AC_enum_gravy_profile__mod__gravity == enum_zero_string) {
         }
-        else if (AC_enum_gravy_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+        else if (AC_enum_gravy_profile__mod__gravity == enum_const_string) {
         }
         else {
         }
       }
-      if (present(AC_z__mod__cdata[1+AC_n1__mod__cparam-1])) {
-        if (AC_enum_gravz_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+      if (present(AC_z__mod__cdata[1+n1-1])) {
+        if (AC_enum_gravz_profile__mod__gravity == enum_zero_string) {
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
-          if (AC_zclip__mod__gravity==AC_impossible__mod__cparam) {
-            potz_zpoint_6=-AC_gravz__mod__gravity*(AC_z__mod__cdata[1+AC_n1__mod__cparam-1]-AC_zinfty__mod__gravity)
+        else if (AC_enum_gravz_profile__mod__gravity == enum_const_string) {
+          if (AC_zclip__mod__gravity==impossible) {
+            potz_zpoint_6=-AC_gravz__mod__gravity*(AC_z__mod__cdata[1+n1-1]-AC_zinfty__mod__gravity)
           }
           else {
-            potz_zpoint_6=-AC_gravz__mod__gravity*max(AC_z__mod__cdata[1+AC_n1__mod__cparam-1]-AC_zinfty__mod__gravity,AC_zclip__mod__gravity-AC_zinfty__mod__gravity)
+            potz_zpoint_6=-AC_gravz__mod__gravity*max(AC_z__mod__cdata[1+n1-1]-AC_zinfty__mod__gravity,AC_zclip__mod__gravity-AC_zinfty__mod__gravity)
           }
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_linear_string__mod__cparam) {
-          potz_zpoint_6=0.5*((AC_z__mod__cdata[1+AC_n1__mod__cparam-1]*AC_z__mod__cdata[1+AC_n1__mod__cparam-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)
+        else if (AC_enum_gravz_profile__mod__gravity == enum_linear_string) {
+          potz_zpoint_6=0.5*((AC_z__mod__cdata[1+n1-1]*AC_z__mod__cdata[1+n1-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_spherical_string__mod__cparam) {
-          potz_zpoint_6=0.5*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*(AC_z1__mod__gravity*AC_z1__mod__gravity)*log(1.0+((AC_z__mod__cdata[1+AC_n1__mod__cparam-1]/AC_z1__mod__gravity)*(AC_z__mod__cdata[1+AC_n1__mod__cparam-1]/AC_z1__mod__gravity)))
+        else if (AC_enum_gravz_profile__mod__gravity == enum_spherical_string) {
+          potz_zpoint_6=0.5*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*(AC_z1__mod__gravity*AC_z1__mod__gravity)*log(1.0+((AC_z__mod__cdata[1+n1-1]/AC_z1__mod__gravity)*(AC_z__mod__cdata[1+n1-1]/AC_z1__mod__gravity)))
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_linear_xdep_string__mod__cparam) {
-          potz_zpoint_6=0.5*((AC_z__mod__cdata[1+AC_n1__mod__cparam-1]*AC_z__mod__cdata[1+AC_n1__mod__cparam-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*xdep_6
+        else if (AC_enum_gravz_profile__mod__gravity == enum_linear_xdep_string) {
+          potz_zpoint_6=0.5*((AC_z__mod__cdata[1+n1-1]*AC_z__mod__cdata[1+n1-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*xdep_6
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_linear_smoothed_string__mod__cparam) {
-          prof_6 = 1. +pow( (AC_z__mod__cdata[1+AC_n1__mod__cparam-1]/AC_zref__mod__gravity),(2*AC_n_pot__mod__gravity))
-          potz_zpoint_6 = 0.5*((AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[1+AC_n1__mod__cparam-1])*(AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[1+AC_n1__mod__cparam-1]))/pow(prof_6,(1./AC_n_pot__mod__gravity))
+        else if (AC_enum_gravz_profile__mod__gravity == enum_linear_smoothed_string) {
+          prof_6 = 1. +pow( (AC_z__mod__cdata[1+n1-1]/AC_zref__mod__gravity),(2*AC_n_pot__mod__gravity))
+          potz_zpoint_6 = 0.5*((AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[1+n1-1])*(AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[1+n1-1]))/pow(prof_6,(1./AC_n_pot__mod__gravity))
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_tanh_string__mod__cparam) {
-          potz_zpoint_6=AC_gravz__mod__gravity*AC_zref__mod__gravity*log(cosh(AC_z__mod__cdata[1+AC_n1__mod__cparam-1]/AC_zref__mod__gravity))
+        else if (AC_enum_gravz_profile__mod__gravity == enum_tanh_string) {
+          potz_zpoint_6=AC_gravz__mod__gravity*AC_zref__mod__gravity*log(cosh(AC_z__mod__cdata[1+n1-1]/AC_zref__mod__gravity))
         }
         else {
         }
@@ -2363,65 +2363,65 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
       potp = potx_xpoint_6 + poty_ypoint_6 + potz_zpoint_6
       cs2 = AC_cs2bot__mod__equationofstate
       if (AC_ldensity_nolog__mod__cdata) {
-        RHO[vertexIdx.x][vertexIdx.y][AC_n1__mod__cparam-1-1]   = RHO[vertexIdx.x][vertexIdx.y][1+AC_n1__mod__cparam-1]*exp(-(potm-potp)/cs2)
+        RHO[vertexIdx.x][vertexIdx.y][n1-1-1]   = RHO[vertexIdx.x][vertexIdx.y][1+n1-1]*exp(-(potm-potp)/cs2)
       }
       else {
-        LNRHO[vertexIdx.x][vertexIdx.y][AC_n1__mod__cparam-1-1] = LNRHO[vertexIdx.x][vertexIdx.y][1+AC_n1__mod__cparam-1] - (potm-potp)/cs2
+        LNRHO[vertexIdx.x][vertexIdx.y][n1-1-1] = LNRHO[vertexIdx.x][vertexIdx.y][1+n1-1] - (potm-potp)/cs2
       }
       potx_xpoint_5=0.0
       poty_ypoint_5=0.0
       potz_zpoint_5=0.0
       if (false) {
-        if (AC_enum_gravx_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        if (AC_enum_gravx_profile__mod__gravity == enum_zero_string) {
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+        else if (AC_enum_gravx_profile__mod__gravity == enum_const_string) {
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_linear_zdep_string__mod__cparam) {
-          zdep_5=(1.+AC_kappa_z1__mod__gravity*AC_z__mod__cdata[AC_n1__mod__cparam-2-1]+0.5*((AC_kappa_z1__mod__gravity*AC_z__mod__cdata[AC_n1__mod__cparam-2-1])*(AC_kappa_z1__mod__gravity*AC_z__mod__cdata[AC_n1__mod__cparam-2-1])))
+        else if (AC_enum_gravx_profile__mod__gravity == enum_linear_zdep_string) {
+          zdep_5=(1.+AC_kappa_z1__mod__gravity*AC_z__mod__cdata[n1-2-1]+0.5*((AC_kappa_z1__mod__gravity*AC_z__mod__cdata[n1-2-1])*(AC_kappa_z1__mod__gravity*AC_z__mod__cdata[n1-2-1])))
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_kepler_string__mod__cparam) {
+        else if (AC_enum_gravx_profile__mod__gravity == enum_kepler_string) {
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_czbot1_string__mod__cparam) {
+        else if (AC_enum_gravx_profile__mod__gravity == enum_czbot1_string) {
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_czmid1_string__mod__cparam) {
+        else if (AC_enum_gravx_profile__mod__gravity == enum_czmid1_string) {
         }
         else {
         }
       }
       if (false) {
-        if (AC_enum_gravy_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        if (AC_enum_gravy_profile__mod__gravity == enum_zero_string) {
         }
-        else if (AC_enum_gravy_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+        else if (AC_enum_gravy_profile__mod__gravity == enum_const_string) {
         }
         else {
         }
       }
-      if (present(AC_z__mod__cdata[AC_n1__mod__cparam-2-1])) {
-        if (AC_enum_gravz_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+      if (present(AC_z__mod__cdata[n1-2-1])) {
+        if (AC_enum_gravz_profile__mod__gravity == enum_zero_string) {
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
-          if (AC_zclip__mod__gravity==AC_impossible__mod__cparam) {
-            potz_zpoint_5=-AC_gravz__mod__gravity*(AC_z__mod__cdata[AC_n1__mod__cparam-2-1]-AC_zinfty__mod__gravity)
+        else if (AC_enum_gravz_profile__mod__gravity == enum_const_string) {
+          if (AC_zclip__mod__gravity==impossible) {
+            potz_zpoint_5=-AC_gravz__mod__gravity*(AC_z__mod__cdata[n1-2-1]-AC_zinfty__mod__gravity)
           }
           else {
-            potz_zpoint_5=-AC_gravz__mod__gravity*max(AC_z__mod__cdata[AC_n1__mod__cparam-2-1]-AC_zinfty__mod__gravity,AC_zclip__mod__gravity-AC_zinfty__mod__gravity)
+            potz_zpoint_5=-AC_gravz__mod__gravity*max(AC_z__mod__cdata[n1-2-1]-AC_zinfty__mod__gravity,AC_zclip__mod__gravity-AC_zinfty__mod__gravity)
           }
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_linear_string__mod__cparam) {
-          potz_zpoint_5=0.5*((AC_z__mod__cdata[AC_n1__mod__cparam-2-1]*AC_z__mod__cdata[AC_n1__mod__cparam-2-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)
+        else if (AC_enum_gravz_profile__mod__gravity == enum_linear_string) {
+          potz_zpoint_5=0.5*((AC_z__mod__cdata[n1-2-1]*AC_z__mod__cdata[n1-2-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_spherical_string__mod__cparam) {
-          potz_zpoint_5=0.5*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*(AC_z1__mod__gravity*AC_z1__mod__gravity)*log(1.0+((AC_z__mod__cdata[AC_n1__mod__cparam-2-1]/AC_z1__mod__gravity)*(AC_z__mod__cdata[AC_n1__mod__cparam-2-1]/AC_z1__mod__gravity)))
+        else if (AC_enum_gravz_profile__mod__gravity == enum_spherical_string) {
+          potz_zpoint_5=0.5*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*(AC_z1__mod__gravity*AC_z1__mod__gravity)*log(1.0+((AC_z__mod__cdata[n1-2-1]/AC_z1__mod__gravity)*(AC_z__mod__cdata[n1-2-1]/AC_z1__mod__gravity)))
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_linear_xdep_string__mod__cparam) {
-          potz_zpoint_5=0.5*((AC_z__mod__cdata[AC_n1__mod__cparam-2-1]*AC_z__mod__cdata[AC_n1__mod__cparam-2-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*xdep_5
+        else if (AC_enum_gravz_profile__mod__gravity == enum_linear_xdep_string) {
+          potz_zpoint_5=0.5*((AC_z__mod__cdata[n1-2-1]*AC_z__mod__cdata[n1-2-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*xdep_5
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_linear_smoothed_string__mod__cparam) {
-          prof_5 = 1. +pow( (AC_z__mod__cdata[AC_n1__mod__cparam-2-1]/AC_zref__mod__gravity),(2*AC_n_pot__mod__gravity))
-          potz_zpoint_5 = 0.5*((AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[AC_n1__mod__cparam-2-1])*(AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[AC_n1__mod__cparam-2-1]))/pow(prof_5,(1./AC_n_pot__mod__gravity))
+        else if (AC_enum_gravz_profile__mod__gravity == enum_linear_smoothed_string) {
+          prof_5 = 1. +pow( (AC_z__mod__cdata[n1-2-1]/AC_zref__mod__gravity),(2*AC_n_pot__mod__gravity))
+          potz_zpoint_5 = 0.5*((AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[n1-2-1])*(AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[n1-2-1]))/pow(prof_5,(1./AC_n_pot__mod__gravity))
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_tanh_string__mod__cparam) {
-          potz_zpoint_5=AC_gravz__mod__gravity*AC_zref__mod__gravity*log(cosh(AC_z__mod__cdata[AC_n1__mod__cparam-2-1]/AC_zref__mod__gravity))
+        else if (AC_enum_gravz_profile__mod__gravity == enum_tanh_string) {
+          potz_zpoint_5=AC_gravz__mod__gravity*AC_zref__mod__gravity*log(cosh(AC_z__mod__cdata[n1-2-1]/AC_zref__mod__gravity))
         }
         else {
         }
@@ -2431,56 +2431,56 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
       poty_ypoint_6=0.0
       potz_zpoint_6=0.0
       if (false) {
-        if (AC_enum_gravx_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        if (AC_enum_gravx_profile__mod__gravity == enum_zero_string) {
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+        else if (AC_enum_gravx_profile__mod__gravity == enum_const_string) {
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_linear_zdep_string__mod__cparam) {
-          zdep_6=(1.+AC_kappa_z1__mod__gravity*AC_z__mod__cdata[2+AC_n1__mod__cparam-1]+0.5*((AC_kappa_z1__mod__gravity*AC_z__mod__cdata[2+AC_n1__mod__cparam-1])*(AC_kappa_z1__mod__gravity*AC_z__mod__cdata[2+AC_n1__mod__cparam-1])))
+        else if (AC_enum_gravx_profile__mod__gravity == enum_linear_zdep_string) {
+          zdep_6=(1.+AC_kappa_z1__mod__gravity*AC_z__mod__cdata[2+n1-1]+0.5*((AC_kappa_z1__mod__gravity*AC_z__mod__cdata[2+n1-1])*(AC_kappa_z1__mod__gravity*AC_z__mod__cdata[2+n1-1])))
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_kepler_string__mod__cparam) {
+        else if (AC_enum_gravx_profile__mod__gravity == enum_kepler_string) {
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_czbot1_string__mod__cparam) {
+        else if (AC_enum_gravx_profile__mod__gravity == enum_czbot1_string) {
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_czmid1_string__mod__cparam) {
+        else if (AC_enum_gravx_profile__mod__gravity == enum_czmid1_string) {
         }
         else {
         }
       }
       if (false) {
-        if (AC_enum_gravy_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        if (AC_enum_gravy_profile__mod__gravity == enum_zero_string) {
         }
-        else if (AC_enum_gravy_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+        else if (AC_enum_gravy_profile__mod__gravity == enum_const_string) {
         }
         else {
         }
       }
-      if (present(AC_z__mod__cdata[2+AC_n1__mod__cparam-1])) {
-        if (AC_enum_gravz_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+      if (present(AC_z__mod__cdata[2+n1-1])) {
+        if (AC_enum_gravz_profile__mod__gravity == enum_zero_string) {
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
-          if (AC_zclip__mod__gravity==AC_impossible__mod__cparam) {
-            potz_zpoint_6=-AC_gravz__mod__gravity*(AC_z__mod__cdata[2+AC_n1__mod__cparam-1]-AC_zinfty__mod__gravity)
+        else if (AC_enum_gravz_profile__mod__gravity == enum_const_string) {
+          if (AC_zclip__mod__gravity==impossible) {
+            potz_zpoint_6=-AC_gravz__mod__gravity*(AC_z__mod__cdata[2+n1-1]-AC_zinfty__mod__gravity)
           }
           else {
-            potz_zpoint_6=-AC_gravz__mod__gravity*max(AC_z__mod__cdata[2+AC_n1__mod__cparam-1]-AC_zinfty__mod__gravity,AC_zclip__mod__gravity-AC_zinfty__mod__gravity)
+            potz_zpoint_6=-AC_gravz__mod__gravity*max(AC_z__mod__cdata[2+n1-1]-AC_zinfty__mod__gravity,AC_zclip__mod__gravity-AC_zinfty__mod__gravity)
           }
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_linear_string__mod__cparam) {
-          potz_zpoint_6=0.5*((AC_z__mod__cdata[2+AC_n1__mod__cparam-1]*AC_z__mod__cdata[2+AC_n1__mod__cparam-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)
+        else if (AC_enum_gravz_profile__mod__gravity == enum_linear_string) {
+          potz_zpoint_6=0.5*((AC_z__mod__cdata[2+n1-1]*AC_z__mod__cdata[2+n1-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_spherical_string__mod__cparam) {
-          potz_zpoint_6=0.5*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*(AC_z1__mod__gravity*AC_z1__mod__gravity)*log(1.0+((AC_z__mod__cdata[2+AC_n1__mod__cparam-1]/AC_z1__mod__gravity)*(AC_z__mod__cdata[2+AC_n1__mod__cparam-1]/AC_z1__mod__gravity)))
+        else if (AC_enum_gravz_profile__mod__gravity == enum_spherical_string) {
+          potz_zpoint_6=0.5*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*(AC_z1__mod__gravity*AC_z1__mod__gravity)*log(1.0+((AC_z__mod__cdata[2+n1-1]/AC_z1__mod__gravity)*(AC_z__mod__cdata[2+n1-1]/AC_z1__mod__gravity)))
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_linear_xdep_string__mod__cparam) {
-          potz_zpoint_6=0.5*((AC_z__mod__cdata[2+AC_n1__mod__cparam-1]*AC_z__mod__cdata[2+AC_n1__mod__cparam-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*xdep_6
+        else if (AC_enum_gravz_profile__mod__gravity == enum_linear_xdep_string) {
+          potz_zpoint_6=0.5*((AC_z__mod__cdata[2+n1-1]*AC_z__mod__cdata[2+n1-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*xdep_6
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_linear_smoothed_string__mod__cparam) {
-          prof_6 = 1. +pow( (AC_z__mod__cdata[2+AC_n1__mod__cparam-1]/AC_zref__mod__gravity),(2*AC_n_pot__mod__gravity))
-          potz_zpoint_6 = 0.5*((AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[2+AC_n1__mod__cparam-1])*(AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[2+AC_n1__mod__cparam-1]))/pow(prof_6,(1./AC_n_pot__mod__gravity))
+        else if (AC_enum_gravz_profile__mod__gravity == enum_linear_smoothed_string) {
+          prof_6 = 1. +pow( (AC_z__mod__cdata[2+n1-1]/AC_zref__mod__gravity),(2*AC_n_pot__mod__gravity))
+          potz_zpoint_6 = 0.5*((AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[2+n1-1])*(AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[2+n1-1]))/pow(prof_6,(1./AC_n_pot__mod__gravity))
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_tanh_string__mod__cparam) {
-          potz_zpoint_6=AC_gravz__mod__gravity*AC_zref__mod__gravity*log(cosh(AC_z__mod__cdata[2+AC_n1__mod__cparam-1]/AC_zref__mod__gravity))
+        else if (AC_enum_gravz_profile__mod__gravity == enum_tanh_string) {
+          potz_zpoint_6=AC_gravz__mod__gravity*AC_zref__mod__gravity*log(cosh(AC_z__mod__cdata[2+n1-1]/AC_zref__mod__gravity))
         }
         else {
         }
@@ -2488,65 +2488,65 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
       potp = potx_xpoint_6 + poty_ypoint_6 + potz_zpoint_6
       cs2 = AC_cs2bot__mod__equationofstate
       if (AC_ldensity_nolog__mod__cdata) {
-        RHO[vertexIdx.x][vertexIdx.y][AC_n1__mod__cparam-2-1]   = RHO[vertexIdx.x][vertexIdx.y][2+AC_n1__mod__cparam-1]*exp(-(potm-potp)/cs2)
+        RHO[vertexIdx.x][vertexIdx.y][n1-2-1]   = RHO[vertexIdx.x][vertexIdx.y][2+n1-1]*exp(-(potm-potp)/cs2)
       }
       else {
-        LNRHO[vertexIdx.x][vertexIdx.y][AC_n1__mod__cparam-2-1] = LNRHO[vertexIdx.x][vertexIdx.y][2+AC_n1__mod__cparam-1] - (potm-potp)/cs2
+        LNRHO[vertexIdx.x][vertexIdx.y][n1-2-1] = LNRHO[vertexIdx.x][vertexIdx.y][2+n1-1] - (potm-potp)/cs2
       }
       potx_xpoint_5=0.0
       poty_ypoint_5=0.0
       potz_zpoint_5=0.0
       if (false) {
-        if (AC_enum_gravx_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        if (AC_enum_gravx_profile__mod__gravity == enum_zero_string) {
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+        else if (AC_enum_gravx_profile__mod__gravity == enum_const_string) {
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_linear_zdep_string__mod__cparam) {
-          zdep_5=(1.+AC_kappa_z1__mod__gravity*AC_z__mod__cdata[AC_n1__mod__cparam-3-1]+0.5*((AC_kappa_z1__mod__gravity*AC_z__mod__cdata[AC_n1__mod__cparam-3-1])*(AC_kappa_z1__mod__gravity*AC_z__mod__cdata[AC_n1__mod__cparam-3-1])))
+        else if (AC_enum_gravx_profile__mod__gravity == enum_linear_zdep_string) {
+          zdep_5=(1.+AC_kappa_z1__mod__gravity*AC_z__mod__cdata[n1-3-1]+0.5*((AC_kappa_z1__mod__gravity*AC_z__mod__cdata[n1-3-1])*(AC_kappa_z1__mod__gravity*AC_z__mod__cdata[n1-3-1])))
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_kepler_string__mod__cparam) {
+        else if (AC_enum_gravx_profile__mod__gravity == enum_kepler_string) {
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_czbot1_string__mod__cparam) {
+        else if (AC_enum_gravx_profile__mod__gravity == enum_czbot1_string) {
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_czmid1_string__mod__cparam) {
+        else if (AC_enum_gravx_profile__mod__gravity == enum_czmid1_string) {
         }
         else {
         }
       }
       if (false) {
-        if (AC_enum_gravy_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        if (AC_enum_gravy_profile__mod__gravity == enum_zero_string) {
         }
-        else if (AC_enum_gravy_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+        else if (AC_enum_gravy_profile__mod__gravity == enum_const_string) {
         }
         else {
         }
       }
-      if (present(AC_z__mod__cdata[AC_n1__mod__cparam-3-1])) {
-        if (AC_enum_gravz_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+      if (present(AC_z__mod__cdata[n1-3-1])) {
+        if (AC_enum_gravz_profile__mod__gravity == enum_zero_string) {
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
-          if (AC_zclip__mod__gravity==AC_impossible__mod__cparam) {
-            potz_zpoint_5=-AC_gravz__mod__gravity*(AC_z__mod__cdata[AC_n1__mod__cparam-3-1]-AC_zinfty__mod__gravity)
+        else if (AC_enum_gravz_profile__mod__gravity == enum_const_string) {
+          if (AC_zclip__mod__gravity==impossible) {
+            potz_zpoint_5=-AC_gravz__mod__gravity*(AC_z__mod__cdata[n1-3-1]-AC_zinfty__mod__gravity)
           }
           else {
-            potz_zpoint_5=-AC_gravz__mod__gravity*max(AC_z__mod__cdata[AC_n1__mod__cparam-3-1]-AC_zinfty__mod__gravity,AC_zclip__mod__gravity-AC_zinfty__mod__gravity)
+            potz_zpoint_5=-AC_gravz__mod__gravity*max(AC_z__mod__cdata[n1-3-1]-AC_zinfty__mod__gravity,AC_zclip__mod__gravity-AC_zinfty__mod__gravity)
           }
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_linear_string__mod__cparam) {
-          potz_zpoint_5=0.5*((AC_z__mod__cdata[AC_n1__mod__cparam-3-1]*AC_z__mod__cdata[AC_n1__mod__cparam-3-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)
+        else if (AC_enum_gravz_profile__mod__gravity == enum_linear_string) {
+          potz_zpoint_5=0.5*((AC_z__mod__cdata[n1-3-1]*AC_z__mod__cdata[n1-3-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_spherical_string__mod__cparam) {
-          potz_zpoint_5=0.5*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*(AC_z1__mod__gravity*AC_z1__mod__gravity)*log(1.0+((AC_z__mod__cdata[AC_n1__mod__cparam-3-1]/AC_z1__mod__gravity)*(AC_z__mod__cdata[AC_n1__mod__cparam-3-1]/AC_z1__mod__gravity)))
+        else if (AC_enum_gravz_profile__mod__gravity == enum_spherical_string) {
+          potz_zpoint_5=0.5*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*(AC_z1__mod__gravity*AC_z1__mod__gravity)*log(1.0+((AC_z__mod__cdata[n1-3-1]/AC_z1__mod__gravity)*(AC_z__mod__cdata[n1-3-1]/AC_z1__mod__gravity)))
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_linear_xdep_string__mod__cparam) {
-          potz_zpoint_5=0.5*((AC_z__mod__cdata[AC_n1__mod__cparam-3-1]*AC_z__mod__cdata[AC_n1__mod__cparam-3-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*xdep_5
+        else if (AC_enum_gravz_profile__mod__gravity == enum_linear_xdep_string) {
+          potz_zpoint_5=0.5*((AC_z__mod__cdata[n1-3-1]*AC_z__mod__cdata[n1-3-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*xdep_5
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_linear_smoothed_string__mod__cparam) {
-          prof_5 = 1. +pow( (AC_z__mod__cdata[AC_n1__mod__cparam-3-1]/AC_zref__mod__gravity),(2*AC_n_pot__mod__gravity))
-          potz_zpoint_5 = 0.5*((AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[AC_n1__mod__cparam-3-1])*(AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[AC_n1__mod__cparam-3-1]))/pow(prof_5,(1./AC_n_pot__mod__gravity))
+        else if (AC_enum_gravz_profile__mod__gravity == enum_linear_smoothed_string) {
+          prof_5 = 1. +pow( (AC_z__mod__cdata[n1-3-1]/AC_zref__mod__gravity),(2*AC_n_pot__mod__gravity))
+          potz_zpoint_5 = 0.5*((AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[n1-3-1])*(AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[n1-3-1]))/pow(prof_5,(1./AC_n_pot__mod__gravity))
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_tanh_string__mod__cparam) {
-          potz_zpoint_5=AC_gravz__mod__gravity*AC_zref__mod__gravity*log(cosh(AC_z__mod__cdata[AC_n1__mod__cparam-3-1]/AC_zref__mod__gravity))
+        else if (AC_enum_gravz_profile__mod__gravity == enum_tanh_string) {
+          potz_zpoint_5=AC_gravz__mod__gravity*AC_zref__mod__gravity*log(cosh(AC_z__mod__cdata[n1-3-1]/AC_zref__mod__gravity))
         }
         else {
         }
@@ -2556,56 +2556,56 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
       poty_ypoint_6=0.0
       potz_zpoint_6=0.0
       if (false) {
-        if (AC_enum_gravx_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        if (AC_enum_gravx_profile__mod__gravity == enum_zero_string) {
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+        else if (AC_enum_gravx_profile__mod__gravity == enum_const_string) {
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_linear_zdep_string__mod__cparam) {
-          zdep_6=(1.+AC_kappa_z1__mod__gravity*AC_z__mod__cdata[3+AC_n1__mod__cparam-1]+0.5*((AC_kappa_z1__mod__gravity*AC_z__mod__cdata[3+AC_n1__mod__cparam-1])*(AC_kappa_z1__mod__gravity*AC_z__mod__cdata[3+AC_n1__mod__cparam-1])))
+        else if (AC_enum_gravx_profile__mod__gravity == enum_linear_zdep_string) {
+          zdep_6=(1.+AC_kappa_z1__mod__gravity*AC_z__mod__cdata[3+n1-1]+0.5*((AC_kappa_z1__mod__gravity*AC_z__mod__cdata[3+n1-1])*(AC_kappa_z1__mod__gravity*AC_z__mod__cdata[3+n1-1])))
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_kepler_string__mod__cparam) {
+        else if (AC_enum_gravx_profile__mod__gravity == enum_kepler_string) {
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_czbot1_string__mod__cparam) {
+        else if (AC_enum_gravx_profile__mod__gravity == enum_czbot1_string) {
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_czmid1_string__mod__cparam) {
+        else if (AC_enum_gravx_profile__mod__gravity == enum_czmid1_string) {
         }
         else {
         }
       }
       if (false) {
-        if (AC_enum_gravy_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        if (AC_enum_gravy_profile__mod__gravity == enum_zero_string) {
         }
-        else if (AC_enum_gravy_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+        else if (AC_enum_gravy_profile__mod__gravity == enum_const_string) {
         }
         else {
         }
       }
-      if (present(AC_z__mod__cdata[3+AC_n1__mod__cparam-1])) {
-        if (AC_enum_gravz_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+      if (present(AC_z__mod__cdata[3+n1-1])) {
+        if (AC_enum_gravz_profile__mod__gravity == enum_zero_string) {
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
-          if (AC_zclip__mod__gravity==AC_impossible__mod__cparam) {
-            potz_zpoint_6=-AC_gravz__mod__gravity*(AC_z__mod__cdata[3+AC_n1__mod__cparam-1]-AC_zinfty__mod__gravity)
+        else if (AC_enum_gravz_profile__mod__gravity == enum_const_string) {
+          if (AC_zclip__mod__gravity==impossible) {
+            potz_zpoint_6=-AC_gravz__mod__gravity*(AC_z__mod__cdata[3+n1-1]-AC_zinfty__mod__gravity)
           }
           else {
-            potz_zpoint_6=-AC_gravz__mod__gravity*max(AC_z__mod__cdata[3+AC_n1__mod__cparam-1]-AC_zinfty__mod__gravity,AC_zclip__mod__gravity-AC_zinfty__mod__gravity)
+            potz_zpoint_6=-AC_gravz__mod__gravity*max(AC_z__mod__cdata[3+n1-1]-AC_zinfty__mod__gravity,AC_zclip__mod__gravity-AC_zinfty__mod__gravity)
           }
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_linear_string__mod__cparam) {
-          potz_zpoint_6=0.5*((AC_z__mod__cdata[3+AC_n1__mod__cparam-1]*AC_z__mod__cdata[3+AC_n1__mod__cparam-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)
+        else if (AC_enum_gravz_profile__mod__gravity == enum_linear_string) {
+          potz_zpoint_6=0.5*((AC_z__mod__cdata[3+n1-1]*AC_z__mod__cdata[3+n1-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_spherical_string__mod__cparam) {
-          potz_zpoint_6=0.5*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*(AC_z1__mod__gravity*AC_z1__mod__gravity)*log(1.0+((AC_z__mod__cdata[3+AC_n1__mod__cparam-1]/AC_z1__mod__gravity)*(AC_z__mod__cdata[3+AC_n1__mod__cparam-1]/AC_z1__mod__gravity)))
+        else if (AC_enum_gravz_profile__mod__gravity == enum_spherical_string) {
+          potz_zpoint_6=0.5*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*(AC_z1__mod__gravity*AC_z1__mod__gravity)*log(1.0+((AC_z__mod__cdata[3+n1-1]/AC_z1__mod__gravity)*(AC_z__mod__cdata[3+n1-1]/AC_z1__mod__gravity)))
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_linear_xdep_string__mod__cparam) {
-          potz_zpoint_6=0.5*((AC_z__mod__cdata[3+AC_n1__mod__cparam-1]*AC_z__mod__cdata[3+AC_n1__mod__cparam-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*xdep_6
+        else if (AC_enum_gravz_profile__mod__gravity == enum_linear_xdep_string) {
+          potz_zpoint_6=0.5*((AC_z__mod__cdata[3+n1-1]*AC_z__mod__cdata[3+n1-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*xdep_6
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_linear_smoothed_string__mod__cparam) {
-          prof_6 = 1. +pow( (AC_z__mod__cdata[3+AC_n1__mod__cparam-1]/AC_zref__mod__gravity),(2*AC_n_pot__mod__gravity))
-          potz_zpoint_6 = 0.5*((AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[3+AC_n1__mod__cparam-1])*(AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[3+AC_n1__mod__cparam-1]))/pow(prof_6,(1./AC_n_pot__mod__gravity))
+        else if (AC_enum_gravz_profile__mod__gravity == enum_linear_smoothed_string) {
+          prof_6 = 1. +pow( (AC_z__mod__cdata[3+n1-1]/AC_zref__mod__gravity),(2*AC_n_pot__mod__gravity))
+          potz_zpoint_6 = 0.5*((AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[3+n1-1])*(AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[3+n1-1]))/pow(prof_6,(1./AC_n_pot__mod__gravity))
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_tanh_string__mod__cparam) {
-          potz_zpoint_6=AC_gravz__mod__gravity*AC_zref__mod__gravity*log(cosh(AC_z__mod__cdata[3+AC_n1__mod__cparam-1]/AC_zref__mod__gravity))
+        else if (AC_enum_gravz_profile__mod__gravity == enum_tanh_string) {
+          potz_zpoint_6=AC_gravz__mod__gravity*AC_zref__mod__gravity*log(cosh(AC_z__mod__cdata[3+n1-1]/AC_zref__mod__gravity))
         }
         else {
         }
@@ -2613,20 +2613,20 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
       potp = potx_xpoint_6 + poty_ypoint_6 + potz_zpoint_6
       cs2 = AC_cs2bot__mod__equationofstate
       if (AC_ldensity_nolog__mod__cdata) {
-        RHO[vertexIdx.x][vertexIdx.y][AC_n1__mod__cparam-3-1]   = RHO[vertexIdx.x][vertexIdx.y][3+AC_n1__mod__cparam-1]*exp(-(potm-potp)/cs2)
+        RHO[vertexIdx.x][vertexIdx.y][n1-3-1]   = RHO[vertexIdx.x][vertexIdx.y][3+n1-1]*exp(-(potm-potp)/cs2)
       }
       else {
-        LNRHO[vertexIdx.x][vertexIdx.y][AC_n1__mod__cparam-3-1] = LNRHO[vertexIdx.x][vertexIdx.y][3+AC_n1__mod__cparam-1] - (potm-potp)/cs2
+        LNRHO[vertexIdx.x][vertexIdx.y][n1-3-1] = LNRHO[vertexIdx.x][vertexIdx.y][3+n1-1] - (potm-potp)/cs2
       }
     }
   }
 
   else if (topbot == AC_top) {
-    if (AC_lentropy__mod__cparam) {
+    if (lentropy) {
       if (ldensity) {
         if (AC_ldensity_nolog__mod__cdata) {
           if (AC_lreference_state__mod__cdata) {
-            getrho_s_return_value_7=LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]+AC_reference_state__mod__density[nx-1][AC_iref_rho__mod__cparam-1]
+            getrho_s_return_value_7=LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]+AC_reference_state__mod__density[nx-1][iref_rho-1]
           }
           else {
             getrho_s_return_value_7=LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
@@ -2638,7 +2638,7 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
         rho=getrho_s_return_value_7
         ss=SS[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
         if (AC_lreference_state__mod__cdata) {
-          ss=ss+AC_reference_state__mod__density[AC_xtop__mod__equationofstate-1][AC_iref_s__mod__cparam-1]
+          ss=ss+AC_reference_state__mod__density[AC_xtop__mod__equationofstate-1][iref_s-1]
         }
         if (AC_irho_ss__mod__equationofstate == AC_ilnrho_ss__mod__equationofstate || AC_irho_ss__mod__equationofstate == AC_irho_ss__mod__equationofstate) {
           if (AC_lstratz__mod__cdata) {
@@ -2709,7 +2709,7 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
           cs2__8=AC_cp__mod__equationofstate*AC_gamma_m1__mod__equationofstate*tt__8
         }
         else if (AC_irho_ss__mod__equationofstate == AC_ipp_cs2__mod__equationofstate) {
-          if (AC_lanelastic__mod__cparam) {
+          if (lanelastic) {
             if (AC_lanelastic_lin__mod__equationofstate) {
               lnrho__8=log(rho)
               tt__8=exp(AC_lntt0__mod__equationofstate)
@@ -2725,7 +2725,7 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
           }
         }
         else if (AC_irho_ss__mod__equationofstate == AC_ipp_ss__mod__equationofstate) {
-          if (AC_lanelastic__mod__cparam) {
+          if (lanelastic) {
             if (AC_lanelastic_lin__mod__equationofstate) {
               lnrho__8=(rho)
               ss__8=ss
@@ -2782,17 +2782,17 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
           dlnrhodz=dlnrhodz*rho
         }
         dssdz    = -AC_gamma_m1__mod__equationofstate*AC_gravz__mod__gravity/cs2_point
-        LNRHO[vertexIdx.x][vertexIdx.y][1+AC_n2__mod__cdata-1] = LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1-1] + AC_dz2_bound__mod__cdata[2+AC_NGHOST__mod__cparam-1]*dlnrhodz
-        SS[vertexIdx.x][vertexIdx.y][1+AC_n2__mod__cdata-1] = SS[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1-1] + AC_dz2_bound__mod__cdata[2+AC_NGHOST__mod__cparam-1]*dssdz
-        LNRHO[vertexIdx.x][vertexIdx.y][2+AC_n2__mod__cdata-1] = LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-2-1] + AC_dz2_bound__mod__cdata[3+AC_NGHOST__mod__cparam-1]*dlnrhodz
-        SS[vertexIdx.x][vertexIdx.y][2+AC_n2__mod__cdata-1] = SS[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-2-1] + AC_dz2_bound__mod__cdata[3+AC_NGHOST__mod__cparam-1]*dssdz
-        LNRHO[vertexIdx.x][vertexIdx.y][3+AC_n2__mod__cdata-1] = LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-3-1] + AC_dz2_bound__mod__cdata[4+AC_NGHOST__mod__cparam-1]*dlnrhodz
-        SS[vertexIdx.x][vertexIdx.y][3+AC_n2__mod__cdata-1] = SS[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-3-1] + AC_dz2_bound__mod__cdata[4+AC_NGHOST__mod__cparam-1]*dssdz
+        LNRHO[vertexIdx.x][vertexIdx.y][1+AC_n2__mod__cdata-1] = LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1-1] + AC_dz2_bound__mod__cdata[2+NGHOST-1]*dlnrhodz
+        SS[vertexIdx.x][vertexIdx.y][1+AC_n2__mod__cdata-1] = SS[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1-1] + AC_dz2_bound__mod__cdata[2+NGHOST-1]*dssdz
+        LNRHO[vertexIdx.x][vertexIdx.y][2+AC_n2__mod__cdata-1] = LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-2-1] + AC_dz2_bound__mod__cdata[3+NGHOST-1]*dlnrhodz
+        SS[vertexIdx.x][vertexIdx.y][2+AC_n2__mod__cdata-1] = SS[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-2-1] + AC_dz2_bound__mod__cdata[3+NGHOST-1]*dssdz
+        LNRHO[vertexIdx.x][vertexIdx.y][3+AC_n2__mod__cdata-1] = LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-3-1] + AC_dz2_bound__mod__cdata[4+NGHOST-1]*dlnrhodz
+        SS[vertexIdx.x][vertexIdx.y][3+AC_n2__mod__cdata-1] = SS[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-3-1] + AC_dz2_bound__mod__cdata[4+NGHOST-1]*dssdz
       }
       else {
       }
     }
-    else if (AC_ltemperature__mod__cparam) {
+    else if (ltemperature) {
       if (AC_ltemperature_nolog__mod__cdata) {
         if (AC_ilnrho_tt__mod__equationofstate == AC_ilnrho_ss__mod__equationofstate || AC_ilnrho_tt__mod__equationofstate == AC_irho_ss__mod__equationofstate) {
           if (AC_lstratz__mod__cdata) {
@@ -2863,7 +2863,7 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
           cs2__9=AC_cp__mod__equationofstate*AC_gamma_m1__mod__equationofstate*tt__9
         }
         else if (AC_ilnrho_tt__mod__equationofstate == AC_ipp_cs2__mod__equationofstate) {
-          if (AC_lanelastic__mod__cparam) {
+          if (lanelastic) {
             if (AC_lanelastic_lin__mod__equationofstate) {
               lnrho__9=log(LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
               tt__9=exp(AC_lntt0__mod__equationofstate)
@@ -2879,7 +2879,7 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
           }
         }
         else if (AC_ilnrho_tt__mod__equationofstate == AC_ipp_ss__mod__equationofstate) {
-          if (AC_lanelastic__mod__cparam) {
+          if (lanelastic) {
             if (AC_lanelastic_lin__mod__equationofstate) {
               lnrho__9=(LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
               ss__9=TT[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
@@ -3002,7 +3002,7 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
           cs2__10=AC_cp__mod__equationofstate*AC_gamma_m1__mod__equationofstate*tt__10
         }
         else if (AC_ilnrho_lntt__mod__equationofstate == AC_ipp_cs2__mod__equationofstate) {
-          if (AC_lanelastic__mod__cparam) {
+          if (lanelastic) {
             if (AC_lanelastic_lin__mod__equationofstate) {
               lnrho__10=log(LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
               tt__10=exp(AC_lntt0__mod__equationofstate)
@@ -3018,7 +3018,7 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
           }
         }
         else if (AC_ilnrho_lntt__mod__equationofstate == AC_ipp_ss__mod__equationofstate) {
-          if (AC_lanelastic__mod__cparam) {
+          if (lanelastic) {
             if (AC_lanelastic_lin__mod__equationofstate) {
               lnrho__10=(LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
               ss__10=LNTT[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
@@ -3072,64 +3072,64 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
         }
       }
       dlnrhodz =  AC_gamma__mod__equationofstate *AC_gravz__mod__gravity/cs2_point
-      LNRHO[vertexIdx.x][vertexIdx.y][1+AC_n2__mod__cdata-1] = LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1-1] + AC_dz2_bound__mod__cdata[2+AC_NGHOST__mod__cparam-1]*dlnrhodz
-      LNRHO[vertexIdx.x][vertexIdx.y][2+AC_n2__mod__cdata-1] = LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-2-1] + AC_dz2_bound__mod__cdata[3+AC_NGHOST__mod__cparam-1]*dlnrhodz
-      LNRHO[vertexIdx.x][vertexIdx.y][3+AC_n2__mod__cdata-1] = LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-3-1] + AC_dz2_bound__mod__cdata[4+AC_NGHOST__mod__cparam-1]*dlnrhodz
+      LNRHO[vertexIdx.x][vertexIdx.y][1+AC_n2__mod__cdata-1] = LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1-1] + AC_dz2_bound__mod__cdata[2+NGHOST-1]*dlnrhodz
+      LNRHO[vertexIdx.x][vertexIdx.y][2+AC_n2__mod__cdata-1] = LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-2-1] + AC_dz2_bound__mod__cdata[3+NGHOST-1]*dlnrhodz
+      LNRHO[vertexIdx.x][vertexIdx.y][3+AC_n2__mod__cdata-1] = LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-3-1] + AC_dz2_bound__mod__cdata[4+NGHOST-1]*dlnrhodz
     }
     else {
       potx_xpoint_11=0.0
       poty_ypoint_11=0.0
       potz_zpoint_11=0.0
       if (false) {
-        if (AC_enum_gravx_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        if (AC_enum_gravx_profile__mod__gravity == enum_zero_string) {
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+        else if (AC_enum_gravx_profile__mod__gravity == enum_const_string) {
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_linear_zdep_string__mod__cparam) {
+        else if (AC_enum_gravx_profile__mod__gravity == enum_linear_zdep_string) {
           zdep_11=(1.+AC_kappa_z1__mod__gravity*AC_z__mod__cdata[1+AC_n2__mod__cdata-1]+0.5*((AC_kappa_z1__mod__gravity*AC_z__mod__cdata[1+AC_n2__mod__cdata-1])*(AC_kappa_z1__mod__gravity*AC_z__mod__cdata[1+AC_n2__mod__cdata-1])))
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_kepler_string__mod__cparam) {
+        else if (AC_enum_gravx_profile__mod__gravity == enum_kepler_string) {
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_czbot1_string__mod__cparam) {
+        else if (AC_enum_gravx_profile__mod__gravity == enum_czbot1_string) {
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_czmid1_string__mod__cparam) {
+        else if (AC_enum_gravx_profile__mod__gravity == enum_czmid1_string) {
         }
         else {
         }
       }
       if (false) {
-        if (AC_enum_gravy_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        if (AC_enum_gravy_profile__mod__gravity == enum_zero_string) {
         }
-        else if (AC_enum_gravy_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+        else if (AC_enum_gravy_profile__mod__gravity == enum_const_string) {
         }
         else {
         }
       }
       if (present(AC_z__mod__cdata[1+AC_n2__mod__cdata-1])) {
-        if (AC_enum_gravz_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        if (AC_enum_gravz_profile__mod__gravity == enum_zero_string) {
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
-          if (AC_zclip__mod__gravity==AC_impossible__mod__cparam) {
+        else if (AC_enum_gravz_profile__mod__gravity == enum_const_string) {
+          if (AC_zclip__mod__gravity==impossible) {
             potz_zpoint_11=-AC_gravz__mod__gravity*(AC_z__mod__cdata[1+AC_n2__mod__cdata-1]-AC_zinfty__mod__gravity)
           }
           else {
             potz_zpoint_11=-AC_gravz__mod__gravity*max(AC_z__mod__cdata[1+AC_n2__mod__cdata-1]-AC_zinfty__mod__gravity,AC_zclip__mod__gravity-AC_zinfty__mod__gravity)
           }
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_linear_string__mod__cparam) {
+        else if (AC_enum_gravz_profile__mod__gravity == enum_linear_string) {
           potz_zpoint_11=0.5*((AC_z__mod__cdata[1+AC_n2__mod__cdata-1]*AC_z__mod__cdata[1+AC_n2__mod__cdata-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_spherical_string__mod__cparam) {
+        else if (AC_enum_gravz_profile__mod__gravity == enum_spherical_string) {
           potz_zpoint_11=0.5*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*(AC_z1__mod__gravity*AC_z1__mod__gravity)*log(1.0+((AC_z__mod__cdata[1+AC_n2__mod__cdata-1]/AC_z1__mod__gravity)*(AC_z__mod__cdata[1+AC_n2__mod__cdata-1]/AC_z1__mod__gravity)))
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_linear_xdep_string__mod__cparam) {
+        else if (AC_enum_gravz_profile__mod__gravity == enum_linear_xdep_string) {
           potz_zpoint_11=0.5*((AC_z__mod__cdata[1+AC_n2__mod__cdata-1]*AC_z__mod__cdata[1+AC_n2__mod__cdata-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*xdep_11
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_linear_smoothed_string__mod__cparam) {
+        else if (AC_enum_gravz_profile__mod__gravity == enum_linear_smoothed_string) {
           prof_11 = 1. +pow( (AC_z__mod__cdata[1+AC_n2__mod__cdata-1]/AC_zref__mod__gravity),(2*AC_n_pot__mod__gravity))
           potz_zpoint_11 = 0.5*((AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[1+AC_n2__mod__cdata-1])*(AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[1+AC_n2__mod__cdata-1]))/pow(prof_11,(1./AC_n_pot__mod__gravity))
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_tanh_string__mod__cparam) {
+        else if (AC_enum_gravz_profile__mod__gravity == enum_tanh_string) {
           potz_zpoint_11=AC_gravz__mod__gravity*AC_zref__mod__gravity*log(cosh(AC_z__mod__cdata[1+AC_n2__mod__cdata-1]/AC_zref__mod__gravity))
         }
         else {
@@ -3140,55 +3140,55 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
       poty_ypoint_12=0.0
       potz_zpoint_12=0.0
       if (false) {
-        if (AC_enum_gravx_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        if (AC_enum_gravx_profile__mod__gravity == enum_zero_string) {
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+        else if (AC_enum_gravx_profile__mod__gravity == enum_const_string) {
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_linear_zdep_string__mod__cparam) {
+        else if (AC_enum_gravx_profile__mod__gravity == enum_linear_zdep_string) {
           zdep_12=(1.+AC_kappa_z1__mod__gravity*AC_z__mod__cdata[AC_n2__mod__cdata-1-1]+0.5*((AC_kappa_z1__mod__gravity*AC_z__mod__cdata[AC_n2__mod__cdata-1-1])*(AC_kappa_z1__mod__gravity*AC_z__mod__cdata[AC_n2__mod__cdata-1-1])))
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_kepler_string__mod__cparam) {
+        else if (AC_enum_gravx_profile__mod__gravity == enum_kepler_string) {
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_czbot1_string__mod__cparam) {
+        else if (AC_enum_gravx_profile__mod__gravity == enum_czbot1_string) {
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_czmid1_string__mod__cparam) {
+        else if (AC_enum_gravx_profile__mod__gravity == enum_czmid1_string) {
         }
         else {
         }
       }
       if (false) {
-        if (AC_enum_gravy_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        if (AC_enum_gravy_profile__mod__gravity == enum_zero_string) {
         }
-        else if (AC_enum_gravy_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+        else if (AC_enum_gravy_profile__mod__gravity == enum_const_string) {
         }
         else {
         }
       }
       if (present(AC_z__mod__cdata[AC_n2__mod__cdata-1-1])) {
-        if (AC_enum_gravz_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        if (AC_enum_gravz_profile__mod__gravity == enum_zero_string) {
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
-          if (AC_zclip__mod__gravity==AC_impossible__mod__cparam) {
+        else if (AC_enum_gravz_profile__mod__gravity == enum_const_string) {
+          if (AC_zclip__mod__gravity==impossible) {
             potz_zpoint_12=-AC_gravz__mod__gravity*(AC_z__mod__cdata[AC_n2__mod__cdata-1-1]-AC_zinfty__mod__gravity)
           }
           else {
             potz_zpoint_12=-AC_gravz__mod__gravity*max(AC_z__mod__cdata[AC_n2__mod__cdata-1-1]-AC_zinfty__mod__gravity,AC_zclip__mod__gravity-AC_zinfty__mod__gravity)
           }
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_linear_string__mod__cparam) {
+        else if (AC_enum_gravz_profile__mod__gravity == enum_linear_string) {
           potz_zpoint_12=0.5*((AC_z__mod__cdata[AC_n2__mod__cdata-1-1]*AC_z__mod__cdata[AC_n2__mod__cdata-1-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_spherical_string__mod__cparam) {
+        else if (AC_enum_gravz_profile__mod__gravity == enum_spherical_string) {
           potz_zpoint_12=0.5*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*(AC_z1__mod__gravity*AC_z1__mod__gravity)*log(1.0+((AC_z__mod__cdata[AC_n2__mod__cdata-1-1]/AC_z1__mod__gravity)*(AC_z__mod__cdata[AC_n2__mod__cdata-1-1]/AC_z1__mod__gravity)))
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_linear_xdep_string__mod__cparam) {
+        else if (AC_enum_gravz_profile__mod__gravity == enum_linear_xdep_string) {
           potz_zpoint_12=0.5*((AC_z__mod__cdata[AC_n2__mod__cdata-1-1]*AC_z__mod__cdata[AC_n2__mod__cdata-1-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*xdep_12
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_linear_smoothed_string__mod__cparam) {
+        else if (AC_enum_gravz_profile__mod__gravity == enum_linear_smoothed_string) {
           prof_12 = 1. +pow( (AC_z__mod__cdata[AC_n2__mod__cdata-1-1]/AC_zref__mod__gravity),(2*AC_n_pot__mod__gravity))
           potz_zpoint_12 = 0.5*((AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[AC_n2__mod__cdata-1-1])*(AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[AC_n2__mod__cdata-1-1]))/pow(prof_12,(1./AC_n_pot__mod__gravity))
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_tanh_string__mod__cparam) {
+        else if (AC_enum_gravz_profile__mod__gravity == enum_tanh_string) {
           potz_zpoint_12=AC_gravz__mod__gravity*AC_zref__mod__gravity*log(cosh(AC_z__mod__cdata[AC_n2__mod__cdata-1-1]/AC_zref__mod__gravity))
         }
         else {
@@ -3206,55 +3206,55 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
       poty_ypoint_11=0.0
       potz_zpoint_11=0.0
       if (false) {
-        if (AC_enum_gravx_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        if (AC_enum_gravx_profile__mod__gravity == enum_zero_string) {
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+        else if (AC_enum_gravx_profile__mod__gravity == enum_const_string) {
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_linear_zdep_string__mod__cparam) {
+        else if (AC_enum_gravx_profile__mod__gravity == enum_linear_zdep_string) {
           zdep_11=(1.+AC_kappa_z1__mod__gravity*AC_z__mod__cdata[2+AC_n2__mod__cdata-1]+0.5*((AC_kappa_z1__mod__gravity*AC_z__mod__cdata[2+AC_n2__mod__cdata-1])*(AC_kappa_z1__mod__gravity*AC_z__mod__cdata[2+AC_n2__mod__cdata-1])))
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_kepler_string__mod__cparam) {
+        else if (AC_enum_gravx_profile__mod__gravity == enum_kepler_string) {
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_czbot1_string__mod__cparam) {
+        else if (AC_enum_gravx_profile__mod__gravity == enum_czbot1_string) {
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_czmid1_string__mod__cparam) {
+        else if (AC_enum_gravx_profile__mod__gravity == enum_czmid1_string) {
         }
         else {
         }
       }
       if (false) {
-        if (AC_enum_gravy_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        if (AC_enum_gravy_profile__mod__gravity == enum_zero_string) {
         }
-        else if (AC_enum_gravy_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+        else if (AC_enum_gravy_profile__mod__gravity == enum_const_string) {
         }
         else {
         }
       }
       if (present(AC_z__mod__cdata[2+AC_n2__mod__cdata-1])) {
-        if (AC_enum_gravz_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        if (AC_enum_gravz_profile__mod__gravity == enum_zero_string) {
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
-          if (AC_zclip__mod__gravity==AC_impossible__mod__cparam) {
+        else if (AC_enum_gravz_profile__mod__gravity == enum_const_string) {
+          if (AC_zclip__mod__gravity==impossible) {
             potz_zpoint_11=-AC_gravz__mod__gravity*(AC_z__mod__cdata[2+AC_n2__mod__cdata-1]-AC_zinfty__mod__gravity)
           }
           else {
             potz_zpoint_11=-AC_gravz__mod__gravity*max(AC_z__mod__cdata[2+AC_n2__mod__cdata-1]-AC_zinfty__mod__gravity,AC_zclip__mod__gravity-AC_zinfty__mod__gravity)
           }
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_linear_string__mod__cparam) {
+        else if (AC_enum_gravz_profile__mod__gravity == enum_linear_string) {
           potz_zpoint_11=0.5*((AC_z__mod__cdata[2+AC_n2__mod__cdata-1]*AC_z__mod__cdata[2+AC_n2__mod__cdata-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_spherical_string__mod__cparam) {
+        else if (AC_enum_gravz_profile__mod__gravity == enum_spherical_string) {
           potz_zpoint_11=0.5*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*(AC_z1__mod__gravity*AC_z1__mod__gravity)*log(1.0+((AC_z__mod__cdata[2+AC_n2__mod__cdata-1]/AC_z1__mod__gravity)*(AC_z__mod__cdata[2+AC_n2__mod__cdata-1]/AC_z1__mod__gravity)))
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_linear_xdep_string__mod__cparam) {
+        else if (AC_enum_gravz_profile__mod__gravity == enum_linear_xdep_string) {
           potz_zpoint_11=0.5*((AC_z__mod__cdata[2+AC_n2__mod__cdata-1]*AC_z__mod__cdata[2+AC_n2__mod__cdata-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*xdep_11
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_linear_smoothed_string__mod__cparam) {
+        else if (AC_enum_gravz_profile__mod__gravity == enum_linear_smoothed_string) {
           prof_11 = 1. +pow( (AC_z__mod__cdata[2+AC_n2__mod__cdata-1]/AC_zref__mod__gravity),(2*AC_n_pot__mod__gravity))
           potz_zpoint_11 = 0.5*((AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[2+AC_n2__mod__cdata-1])*(AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[2+AC_n2__mod__cdata-1]))/pow(prof_11,(1./AC_n_pot__mod__gravity))
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_tanh_string__mod__cparam) {
+        else if (AC_enum_gravz_profile__mod__gravity == enum_tanh_string) {
           potz_zpoint_11=AC_gravz__mod__gravity*AC_zref__mod__gravity*log(cosh(AC_z__mod__cdata[2+AC_n2__mod__cdata-1]/AC_zref__mod__gravity))
         }
         else {
@@ -3265,55 +3265,55 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
       poty_ypoint_12=0.0
       potz_zpoint_12=0.0
       if (false) {
-        if (AC_enum_gravx_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        if (AC_enum_gravx_profile__mod__gravity == enum_zero_string) {
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+        else if (AC_enum_gravx_profile__mod__gravity == enum_const_string) {
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_linear_zdep_string__mod__cparam) {
+        else if (AC_enum_gravx_profile__mod__gravity == enum_linear_zdep_string) {
           zdep_12=(1.+AC_kappa_z1__mod__gravity*AC_z__mod__cdata[AC_n2__mod__cdata-2-1]+0.5*((AC_kappa_z1__mod__gravity*AC_z__mod__cdata[AC_n2__mod__cdata-2-1])*(AC_kappa_z1__mod__gravity*AC_z__mod__cdata[AC_n2__mod__cdata-2-1])))
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_kepler_string__mod__cparam) {
+        else if (AC_enum_gravx_profile__mod__gravity == enum_kepler_string) {
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_czbot1_string__mod__cparam) {
+        else if (AC_enum_gravx_profile__mod__gravity == enum_czbot1_string) {
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_czmid1_string__mod__cparam) {
+        else if (AC_enum_gravx_profile__mod__gravity == enum_czmid1_string) {
         }
         else {
         }
       }
       if (false) {
-        if (AC_enum_gravy_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        if (AC_enum_gravy_profile__mod__gravity == enum_zero_string) {
         }
-        else if (AC_enum_gravy_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+        else if (AC_enum_gravy_profile__mod__gravity == enum_const_string) {
         }
         else {
         }
       }
       if (present(AC_z__mod__cdata[AC_n2__mod__cdata-2-1])) {
-        if (AC_enum_gravz_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        if (AC_enum_gravz_profile__mod__gravity == enum_zero_string) {
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
-          if (AC_zclip__mod__gravity==AC_impossible__mod__cparam) {
+        else if (AC_enum_gravz_profile__mod__gravity == enum_const_string) {
+          if (AC_zclip__mod__gravity==impossible) {
             potz_zpoint_12=-AC_gravz__mod__gravity*(AC_z__mod__cdata[AC_n2__mod__cdata-2-1]-AC_zinfty__mod__gravity)
           }
           else {
             potz_zpoint_12=-AC_gravz__mod__gravity*max(AC_z__mod__cdata[AC_n2__mod__cdata-2-1]-AC_zinfty__mod__gravity,AC_zclip__mod__gravity-AC_zinfty__mod__gravity)
           }
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_linear_string__mod__cparam) {
+        else if (AC_enum_gravz_profile__mod__gravity == enum_linear_string) {
           potz_zpoint_12=0.5*((AC_z__mod__cdata[AC_n2__mod__cdata-2-1]*AC_z__mod__cdata[AC_n2__mod__cdata-2-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_spherical_string__mod__cparam) {
+        else if (AC_enum_gravz_profile__mod__gravity == enum_spherical_string) {
           potz_zpoint_12=0.5*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*(AC_z1__mod__gravity*AC_z1__mod__gravity)*log(1.0+((AC_z__mod__cdata[AC_n2__mod__cdata-2-1]/AC_z1__mod__gravity)*(AC_z__mod__cdata[AC_n2__mod__cdata-2-1]/AC_z1__mod__gravity)))
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_linear_xdep_string__mod__cparam) {
+        else if (AC_enum_gravz_profile__mod__gravity == enum_linear_xdep_string) {
           potz_zpoint_12=0.5*((AC_z__mod__cdata[AC_n2__mod__cdata-2-1]*AC_z__mod__cdata[AC_n2__mod__cdata-2-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*xdep_12
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_linear_smoothed_string__mod__cparam) {
+        else if (AC_enum_gravz_profile__mod__gravity == enum_linear_smoothed_string) {
           prof_12 = 1. +pow( (AC_z__mod__cdata[AC_n2__mod__cdata-2-1]/AC_zref__mod__gravity),(2*AC_n_pot__mod__gravity))
           potz_zpoint_12 = 0.5*((AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[AC_n2__mod__cdata-2-1])*(AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[AC_n2__mod__cdata-2-1]))/pow(prof_12,(1./AC_n_pot__mod__gravity))
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_tanh_string__mod__cparam) {
+        else if (AC_enum_gravz_profile__mod__gravity == enum_tanh_string) {
           potz_zpoint_12=AC_gravz__mod__gravity*AC_zref__mod__gravity*log(cosh(AC_z__mod__cdata[AC_n2__mod__cdata-2-1]/AC_zref__mod__gravity))
         }
         else {
@@ -3331,55 +3331,55 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
       poty_ypoint_11=0.0
       potz_zpoint_11=0.0
       if (false) {
-        if (AC_enum_gravx_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        if (AC_enum_gravx_profile__mod__gravity == enum_zero_string) {
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+        else if (AC_enum_gravx_profile__mod__gravity == enum_const_string) {
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_linear_zdep_string__mod__cparam) {
+        else if (AC_enum_gravx_profile__mod__gravity == enum_linear_zdep_string) {
           zdep_11=(1.+AC_kappa_z1__mod__gravity*AC_z__mod__cdata[3+AC_n2__mod__cdata-1]+0.5*((AC_kappa_z1__mod__gravity*AC_z__mod__cdata[3+AC_n2__mod__cdata-1])*(AC_kappa_z1__mod__gravity*AC_z__mod__cdata[3+AC_n2__mod__cdata-1])))
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_kepler_string__mod__cparam) {
+        else if (AC_enum_gravx_profile__mod__gravity == enum_kepler_string) {
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_czbot1_string__mod__cparam) {
+        else if (AC_enum_gravx_profile__mod__gravity == enum_czbot1_string) {
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_czmid1_string__mod__cparam) {
+        else if (AC_enum_gravx_profile__mod__gravity == enum_czmid1_string) {
         }
         else {
         }
       }
       if (false) {
-        if (AC_enum_gravy_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        if (AC_enum_gravy_profile__mod__gravity == enum_zero_string) {
         }
-        else if (AC_enum_gravy_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+        else if (AC_enum_gravy_profile__mod__gravity == enum_const_string) {
         }
         else {
         }
       }
       if (present(AC_z__mod__cdata[3+AC_n2__mod__cdata-1])) {
-        if (AC_enum_gravz_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        if (AC_enum_gravz_profile__mod__gravity == enum_zero_string) {
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
-          if (AC_zclip__mod__gravity==AC_impossible__mod__cparam) {
+        else if (AC_enum_gravz_profile__mod__gravity == enum_const_string) {
+          if (AC_zclip__mod__gravity==impossible) {
             potz_zpoint_11=-AC_gravz__mod__gravity*(AC_z__mod__cdata[3+AC_n2__mod__cdata-1]-AC_zinfty__mod__gravity)
           }
           else {
             potz_zpoint_11=-AC_gravz__mod__gravity*max(AC_z__mod__cdata[3+AC_n2__mod__cdata-1]-AC_zinfty__mod__gravity,AC_zclip__mod__gravity-AC_zinfty__mod__gravity)
           }
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_linear_string__mod__cparam) {
+        else if (AC_enum_gravz_profile__mod__gravity == enum_linear_string) {
           potz_zpoint_11=0.5*((AC_z__mod__cdata[3+AC_n2__mod__cdata-1]*AC_z__mod__cdata[3+AC_n2__mod__cdata-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_spherical_string__mod__cparam) {
+        else if (AC_enum_gravz_profile__mod__gravity == enum_spherical_string) {
           potz_zpoint_11=0.5*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*(AC_z1__mod__gravity*AC_z1__mod__gravity)*log(1.0+((AC_z__mod__cdata[3+AC_n2__mod__cdata-1]/AC_z1__mod__gravity)*(AC_z__mod__cdata[3+AC_n2__mod__cdata-1]/AC_z1__mod__gravity)))
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_linear_xdep_string__mod__cparam) {
+        else if (AC_enum_gravz_profile__mod__gravity == enum_linear_xdep_string) {
           potz_zpoint_11=0.5*((AC_z__mod__cdata[3+AC_n2__mod__cdata-1]*AC_z__mod__cdata[3+AC_n2__mod__cdata-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*xdep_11
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_linear_smoothed_string__mod__cparam) {
+        else if (AC_enum_gravz_profile__mod__gravity == enum_linear_smoothed_string) {
           prof_11 = 1. +pow( (AC_z__mod__cdata[3+AC_n2__mod__cdata-1]/AC_zref__mod__gravity),(2*AC_n_pot__mod__gravity))
           potz_zpoint_11 = 0.5*((AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[3+AC_n2__mod__cdata-1])*(AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[3+AC_n2__mod__cdata-1]))/pow(prof_11,(1./AC_n_pot__mod__gravity))
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_tanh_string__mod__cparam) {
+        else if (AC_enum_gravz_profile__mod__gravity == enum_tanh_string) {
           potz_zpoint_11=AC_gravz__mod__gravity*AC_zref__mod__gravity*log(cosh(AC_z__mod__cdata[3+AC_n2__mod__cdata-1]/AC_zref__mod__gravity))
         }
         else {
@@ -3390,55 +3390,55 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
       poty_ypoint_12=0.0
       potz_zpoint_12=0.0
       if (false) {
-        if (AC_enum_gravx_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        if (AC_enum_gravx_profile__mod__gravity == enum_zero_string) {
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+        else if (AC_enum_gravx_profile__mod__gravity == enum_const_string) {
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_linear_zdep_string__mod__cparam) {
+        else if (AC_enum_gravx_profile__mod__gravity == enum_linear_zdep_string) {
           zdep_12=(1.+AC_kappa_z1__mod__gravity*AC_z__mod__cdata[AC_n2__mod__cdata-3-1]+0.5*((AC_kappa_z1__mod__gravity*AC_z__mod__cdata[AC_n2__mod__cdata-3-1])*(AC_kappa_z1__mod__gravity*AC_z__mod__cdata[AC_n2__mod__cdata-3-1])))
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_kepler_string__mod__cparam) {
+        else if (AC_enum_gravx_profile__mod__gravity == enum_kepler_string) {
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_czbot1_string__mod__cparam) {
+        else if (AC_enum_gravx_profile__mod__gravity == enum_czbot1_string) {
         }
-        else if (AC_enum_gravx_profile__mod__gravity == AC_enum_czmid1_string__mod__cparam) {
+        else if (AC_enum_gravx_profile__mod__gravity == enum_czmid1_string) {
         }
         else {
         }
       }
       if (false) {
-        if (AC_enum_gravy_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        if (AC_enum_gravy_profile__mod__gravity == enum_zero_string) {
         }
-        else if (AC_enum_gravy_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
+        else if (AC_enum_gravy_profile__mod__gravity == enum_const_string) {
         }
         else {
         }
       }
       if (present(AC_z__mod__cdata[AC_n2__mod__cdata-3-1])) {
-        if (AC_enum_gravz_profile__mod__gravity == AC_enum_zero_string__mod__cparam) {
+        if (AC_enum_gravz_profile__mod__gravity == enum_zero_string) {
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_const_string__mod__cparam) {
-          if (AC_zclip__mod__gravity==AC_impossible__mod__cparam) {
+        else if (AC_enum_gravz_profile__mod__gravity == enum_const_string) {
+          if (AC_zclip__mod__gravity==impossible) {
             potz_zpoint_12=-AC_gravz__mod__gravity*(AC_z__mod__cdata[AC_n2__mod__cdata-3-1]-AC_zinfty__mod__gravity)
           }
           else {
             potz_zpoint_12=-AC_gravz__mod__gravity*max(AC_z__mod__cdata[AC_n2__mod__cdata-3-1]-AC_zinfty__mod__gravity,AC_zclip__mod__gravity-AC_zinfty__mod__gravity)
           }
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_linear_string__mod__cparam) {
+        else if (AC_enum_gravz_profile__mod__gravity == enum_linear_string) {
           potz_zpoint_12=0.5*((AC_z__mod__cdata[AC_n2__mod__cdata-3-1]*AC_z__mod__cdata[AC_n2__mod__cdata-3-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_spherical_string__mod__cparam) {
+        else if (AC_enum_gravz_profile__mod__gravity == enum_spherical_string) {
           potz_zpoint_12=0.5*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*(AC_z1__mod__gravity*AC_z1__mod__gravity)*log(1.0+((AC_z__mod__cdata[AC_n2__mod__cdata-3-1]/AC_z1__mod__gravity)*(AC_z__mod__cdata[AC_n2__mod__cdata-3-1]/AC_z1__mod__gravity)))
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_linear_xdep_string__mod__cparam) {
+        else if (AC_enum_gravz_profile__mod__gravity == enum_linear_xdep_string) {
           potz_zpoint_12=0.5*((AC_z__mod__cdata[AC_n2__mod__cdata-3-1]*AC_z__mod__cdata[AC_n2__mod__cdata-3-1])-(AC_zinfty__mod__gravity*AC_zinfty__mod__gravity))*(AC_nu_epicycle__mod__gravity*AC_nu_epicycle__mod__gravity)*xdep_12
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_linear_smoothed_string__mod__cparam) {
+        else if (AC_enum_gravz_profile__mod__gravity == enum_linear_smoothed_string) {
           prof_12 = 1. +pow( (AC_z__mod__cdata[AC_n2__mod__cdata-3-1]/AC_zref__mod__gravity),(2*AC_n_pot__mod__gravity))
           potz_zpoint_12 = 0.5*((AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[AC_n2__mod__cdata-3-1])*(AC_nu_epicycle__mod__gravity*AC_z__mod__cdata[AC_n2__mod__cdata-3-1]))/pow(prof_12,(1./AC_n_pot__mod__gravity))
         }
-        else if (AC_enum_gravz_profile__mod__gravity == AC_enum_tanh_string__mod__cparam) {
+        else if (AC_enum_gravz_profile__mod__gravity == enum_tanh_string) {
           potz_zpoint_12=AC_gravz__mod__gravity*AC_zref__mod__gravity*log(cosh(AC_z__mod__cdata[AC_n2__mod__cdata-3-1]/AC_zref__mod__gravity))
         }
         else {
@@ -3755,7 +3755,7 @@ bc_ss_stemp_x(AcBoundary boundary,AC_TOP_BOT topbot)
     if (AC_lreference_state__mod__cdata) {
       if (AC_ldensity_nolog__mod__cdata) {
         if (AC_lreference_state__mod__cdata) {
-          rho_yz=LNRHO[l1-1][vertexIdx.y][vertexIdx.z]+reference_state__mod__density[AC_xbot__mod__equationofstate-1][AC_iref_rho-1]
+          rho_yz=LNRHO[l1-1][vertexIdx.y][vertexIdx.z]+reference_state__mod__density[AC_xbot__mod__equationofstate-1][iref_rho-1]
         }
         else {
           rho_yz=LNRHO[l1-1][vertexIdx.y][vertexIdx.z]
@@ -3781,7 +3781,7 @@ bc_ss_stemp_x(AcBoundary boundary,AC_TOP_BOT topbot)
             }
             dlnrho = dlnrho/rho_yz
           }
-          SS[l1-i-1][vertexIdx.y][vertexIdx.z] =  SS[l1+i-1][vertexIdx.y][vertexIdx.z] + dx2_bound__mod__cdata[-i+NGHOST+1-1]*AC_reference_state__mod__density[AC_xbot__mod__equationofstate-1][AC_iref_gs-1]  + (AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*dlnrho
+          SS[l1-i-1][vertexIdx.y][vertexIdx.z] =  SS[l1+i-1][vertexIdx.y][vertexIdx.z] + dx2_bound__mod__cdata[-i+NGHOST+1-1]*AC_reference_state__mod__density[AC_xbot__mod__equationofstate-1][iref_gs-1]  + (AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*dlnrho
         }
         else {
           SS[l1-i-1][vertexIdx.y][vertexIdx.z] =  SS[l1+i-1][vertexIdx.y][vertexIdx.z] + (cp__mod__equationofstate-AC_cv__mod__equationofstate)*(log(RHO[AC_l1+i-1][vertexIdx.y][vertexIdx.z]/RHO[l1-i-1][vertexIdx.y][vertexIdx.z]))
@@ -3796,7 +3796,7 @@ bc_ss_stemp_x(AcBoundary boundary,AC_TOP_BOT topbot)
     if (AC_lreference_state__mod__cdata) {
       if (AC_ldensity_nolog__mod__cdata) {
         if (AC_lreference_state__mod__cdata) {
-          rho_yz=LNRHO[l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]+AC_reference_state__mod__density[AC_xtop__mod__equationofstate-1][AC_iref_rho-1]
+          rho_yz=LNRHO[l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]+AC_reference_state__mod__density[AC_xtop__mod__equationofstate-1][iref_rho-1]
         }
         else {
           rho_yz=LNRHO[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]
@@ -3818,11 +3818,11 @@ bc_ss_stemp_x(AcBoundary boundary,AC_TOP_BOT topbot)
               else {
                 id_3 = i
               }
-              dlnrho = dlnrho + dx2_bound__mod__cdata[id_3+1+NGHOST-1]*AC_reference_state__mod__density[AC_l2__mod__cdata-1][AC_iref_grho-1]
+              dlnrho = dlnrho + dx2_bound__mod__cdata[id_3+1+NGHOST-1]*AC_reference_state__mod__density[AC_l2__mod__cdata-1][iref_grho-1]
             }
             dlnrho = dlnrho/rho_yz
           }
-          SS[l2__mod__cdata+i-1][vertexIdx.y][vertexIdx.z] =  SS[AC_l2__mod__cdata-i-1][vertexIdx.y][vertexIdx.z] - AC_dx2_bound__mod__cdata[i+1+NGHOST-1]*AC_reference_state__mod__density[AC_xtop__mod__equationofstate-1][AC_iref_gs-1]  - (AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*dlnrho
+          SS[l2__mod__cdata+i-1][vertexIdx.y][vertexIdx.z] =  SS[AC_l2__mod__cdata-i-1][vertexIdx.y][vertexIdx.z] - AC_dx2_bound__mod__cdata[i+1+NGHOST-1]*AC_reference_state__mod__density[AC_xtop__mod__equationofstate-1][iref_gs-1]  - (AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*dlnrho
         }
         else {
           SS[AC_l2__mod__cdata+i-1][vertexIdx.y][vertexIdx.z] = SS[AC_l2__mod__cdata-i-1][vertexIdx.y][vertexIdx.z] + (AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*log(RHO[AC_l2__mod__cdata-i-1][vertexIdx.y][vertexIdx.z]/RHO[AC_l2__mod__cdata+i-1][vertexIdx.y][vertexIdx.z])
@@ -3845,7 +3845,7 @@ bc_ss_stemp_y(AcBoundary boundary,AC_TOP_BOT topbot)
       dlnrho = LNRHO[vertexIdx.x][m1+i-1][vertexIdx.z]-LNRHO[vertexIdx.x][m1-i-1][vertexIdx.z]
       if (AC_ldensity_nolog__mod__cdata) {
         if (AC_lreference_state__mod__cdata) {
-          dlnrho = dlnrho/(LNRHO[vertexIdx.x][m1-1][vertexIdx.z]  +reference_state_padded__mod__density[vertexIdx.x][AC_iref_rho-1])
+          dlnrho = dlnrho/(LNRHO[vertexIdx.x][m1-1][vertexIdx.z]  +reference_state_padded__mod__density[vertexIdx.x][iref_rho-1])
         }
         else {
           dlnrho = dlnrho/LNRHO[vertexIdx.x][m1-1][vertexIdx.z]
@@ -3859,7 +3859,7 @@ bc_ss_stemp_y(AcBoundary boundary,AC_TOP_BOT topbot)
       dlnrho = LNRHO[vertexIdx.x][AC_m2__mod__cdata+i-1][vertexIdx.z]-LNRHO[vertexIdx.x][AC_m2__mod__cdata-i-1][vertexIdx.z]
       if (AC_ldensity_nolog__mod__cdata) {
         if (AC_lreference_state__mod__cdata) {
-          dlnrho = dlnrho/(LNRHO[vertexIdx.x][m2__mod__cdata-1][vertexIdx.z]  +AC_reference_state_padded__mod__density[vertexIdx.x][AC_iref_rho-1])
+          dlnrho = dlnrho/(LNRHO[vertexIdx.x][m2__mod__cdata-1][vertexIdx.z]  +AC_reference_state_padded__mod__density[vertexIdx.x][iref_rho-1])
         }
         else {
           dlnrho = dlnrho/LNRHO[vertexIdx.x][AC_m2__mod__cdata-1][vertexIdx.z]
@@ -3881,7 +3881,7 @@ bc_ss_stemp_z(AcBoundary boundary,AC_TOP_BOT topbot)
       dlnrho = LNRHO[vertexIdx.x][vertexIdx.y][n1+i-1]-LNRHO[vertexIdx.x][vertexIdx.y][n1-i-1]
       if (AC_ldensity_nolog__mod__cdata) {
         if (AC_lreference_state__mod__cdata) {
-          dlnrho = dlnrho/(LNRHO[vertexIdx.x][vertexIdx.y][n1-1]  +reference_state_padded__mod__density[vertexIdx.x][AC_iref_rho-1])
+          dlnrho = dlnrho/(LNRHO[vertexIdx.x][vertexIdx.y][n1-1]  +reference_state_padded__mod__density[vertexIdx.x][iref_rho-1])
         }
         else {
           dlnrho = dlnrho/LNRHO[vertexIdx.x][vertexIdx.y][n1-1]
@@ -3895,7 +3895,7 @@ bc_ss_stemp_z(AcBoundary boundary,AC_TOP_BOT topbot)
       dlnrho = LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata+i-1]-LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-i-1]
       if (AC_ldensity_nolog__mod__cdata) {
         if (AC_lreference_state__mod__cdata) {
-          dlnrho = dlnrho/(LNRHO[vertexIdx.x][vertexIdx.y][n2__mod__cdata-1]  +AC_reference_state_padded__mod__density[vertexIdx.x][AC_iref_rho-1])
+          dlnrho = dlnrho/(LNRHO[vertexIdx.x][vertexIdx.y][n2__mod__cdata-1]  +AC_reference_state_padded__mod__density[vertexIdx.x][iref_rho-1])
         }
         else {
           dlnrho = dlnrho/LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]
