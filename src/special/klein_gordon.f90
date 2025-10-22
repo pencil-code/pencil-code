@@ -100,6 +100,7 @@ module Special
   real :: phi0=.44, dphi0=-1.69e-7, c_phi=1., lambda_phi=0., eps=.01
   real :: lambda_psi=0., coupl_phipsi=0., c_psi=1.
   real :: amplphi=.1, ampldphi=.0, kx_phi=1., ky_phi=0., kz_phi=0., phase_phi=0., width_phi=.1, offset=0.
+  real :: amplpsi=0., ampldpsi=0.
   real :: initpower_phi=0.,  cutoff_phi=0.,  initpower2_phi=0.
   real :: initpower_dphi=0., cutoff_dphi=0., initpower2_dphi=0.
   real :: kgaussian_phi=0.,kpeak_phi=0., kpeak_dphi=0.
@@ -147,7 +148,7 @@ module Special
       lrho_chi, scale_rho_chi_Heqn, amplee_BD_prefactor, deriv_prefactor_ee, &
       echarge_type, init_rho_chi, rho_chi_init, eta_phi, lphi_doublet, &
       lphi_weakcharge, lphi_hypercharge, lhiggs_friction, higgs_friction, &
-      lwaterfall, lambda_psi, coupl_phipsi, c_psi
+      lwaterfall, lambda_psi, coupl_phipsi, c_psi, amplpsi, ampldpsi
 !
   namelist /special_run_pars/ &
       initspecial, phi0, dphi0, phimass, eps, ascale_ini, &
@@ -372,6 +373,13 @@ module Special
       do j=1,ninit
         select case (initspecial(j))
           case ('nothing'); if (lroot) print*,'init_special: nothing'
+          case ('constant')
+            f(:,:,:,iphi)=f(:,:,:,iphi)+amplphi
+            f(:,:,:,idphi)=f(:,:,:,idphi)+ampldphi
+            if (lwaterfall) then
+              f(:,:,:,ipsi)=f(:,:,:,ipsi)+amplpsi
+              f(:,:,:,idpsi)=f(:,:,:,idpsi)+ampldpsi
+            endif
           case ('phi=sinkx')
             f(:,:,:,iphi)=f(:,:,:,iphi) &
               +spread(spread(amplphi*sin(kx_phi*x),2,my),3,mz)
