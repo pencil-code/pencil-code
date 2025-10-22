@@ -15,23 +15,22 @@
       if (lserial_io) call start_serialize
 
       readdir = directory_snap
-      lok=.false.; l0=.true.; message=''; lmail=.false.
-      if (ivar_omit(1)>0) then
-        if (ivar_omit(2)<=0) ivar_omit(2)=nv
-      endif
-!
-      if (lzaver_on_input) call prepare_zaver_on_input
-!
-      if (lrepair_snap.or.snaplink/='') then
-        kka=max(0,ipz-1); kke=min(ipz+1,nprocz-1)
-        jja=max(0,ipy-1); jje=min(ipy+1,nprocy-1)
-        iie=1
-      else
-        kka=1; kke=1; jja=1; jje=1
+      lok=.false.;
+l0 =.true.;
+message ='';
+lmail =.false.if (ivar_omit(1) > 0) then if (ivar_omit(2) <= 0) ivar_omit(2) = nv
+    endif !if (lzaver_on_input) call prepare_zaver_on_input !if (lrepair_snap.or.snaplink /='') then
+        kka = max(0, ipz - 1);
+kke = min(ipz + 1, nprocz - 1)
+    jja = max(0, ipy - 1);
+jje = min(ipy + 1, nprocy - 1)
+    iie = 1 else kka = 1;
+kke = 1;
+jja = 1; jje=1
       endif
 
-kloop:do kk=kka,kke
-jloop:  do jj=jja,jje
+ kloop:do kk=kka,kke
+ jloop:  do jj=jja,jje
           iia=max(0,ipx-1)
           if (l0) iia=iia-1                           ! add one iteration for the original path
           if (lrepair_snap.or.snaplink/='') then
@@ -39,7 +38,7 @@ jloop:  do jj=jja,jje
           else
             iie=iia
           endif
-iloop:    do ii=iia,iie
+ iloop:    do ii=iia,iie
             if (.not.l0) then
               iip=find_proc(ii,jj,kk)
               if (iip/=iproc) then
