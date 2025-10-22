@@ -9337,7 +9337,7 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
 !***********************************************************************    
     subroutine check_for_nans_globally(f,caller)
 
-      use Mpicomm, only: mpireduce_max_int
+      use Mpicomm, only: mpireduce_max_int,mpiabort
       use General, only: notanumber
 
       real, dimension(mx,my,mz,mfarray) :: f
@@ -9347,21 +9347,26 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
 
       !isnan is written out since we cannot always depend on it
       has_nan_local = merge(1,0,any(f > huge_real .or. f /= f))
-      call mpireduce_max_int(has_nan_local,has_nan_global)
+      !call mpireduce_max_int(has_nan_local,has_nan_global)
 
-      if (has_nan_global == 1) then
-        if (lroot) then
-          do i=1,mvar
-            if(any(f(:,:,:,i) > huge_real .or. f(:,:,:,i) /= f(:,:,:,i))) then
-                print*,"NaN in Field: ",i
-            endif
-          enddo
-        endif
+      !TP: might as well checkly only locally and then call mpiabort to exit globally
+      !    saves some communication and is maybe a bit simpler
+      if (has_nan_local == 1) then
+
         if (.not. present(caller)) then
-          call fatal_error('check_for_nans_globally','found nans')
+          print*,"check_for_nans_globally: found nans!"
         else
-          call fatal_error('check_for_nans_globally','found nans: '//trim(caller))
+          print*,"check_for_nans_globally: found nans: "//trim(caller)//" !"
         endif
+
+        do i=1,mfarray
+          if(any(f(:,:,:,i) > huge_real .or. f(:,:,:,i) /= f(:,:,:,i))) then
+              print*,"check_for_nans_globally: nan in Field: ",i
+          endif
+        enddo
+
+        flush(10)
+        call mpiabort
       endif
 
     endsubroutine check_for_nans_globally

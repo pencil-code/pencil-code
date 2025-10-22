@@ -11,7 +11,7 @@
 
   cdt=0.4, cdtv=0.3, dtmin=1e-6, dt=1.e-6
 
-  !dspec=2e-5, vel_spec=T, ab_spec=T
+  dspec=2e-5, vel_spec=T, ab_spec=T
 
   dvid=1e-5
 
