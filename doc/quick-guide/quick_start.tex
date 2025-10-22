@@ -62,6 +62,7 @@
 \section{Required software}
 
 \subsection{\name{Linux}}
+If you plan to run serious simulations, you have to familiarize yourself with the Linux shell (or terminal), which is covered in many available online tutorials.
 A \name{Fortran} and a \name{C} compiler are needed to compile the code.
 Both compilers should belong to the same distribution package and version (e.g. GNU GCC or Intel).
 For HDF5 and MPI support, you need to install the package \directory{libhdf5-openmpi-dev} that automatically pulls in the GNU compilers and OpenMPI. On a recent ubuntu system this is done with:
@@ -70,8 +71,12 @@ For HDF5 and MPI support, you need to install the package \directory{libhdf5-ope
 \end{verbatim}
 
 \subsection{\name{MacOS X}}
-WARNING: This section is not up-to-date and not tested!
-For \name{Mac}, you first need to install \name{Xcode} from the
+There is some community to run Pencil Code directly under MacOS, but this is not officially supported. We strongly recommend to use Linux, e.g. on a virtual machine or via dual boot, because all serious scientific computing infrastructures are using Unix variants like Linux.
+
+WARNING: This section is not up-to-date and not tested! Someone needs to fully rewrite this section based on a current MacOS.
+
+Some 5--10 years ago, this was the procedure:
+You first need to install \name{Xcode} from the
 website \url{http://developer.apple.com/}, where you have to register as a member.
 In addition to that it might be necessary to install a \name{fortran} \name{open-mpi} compiler which can be done by first installing \name{homebrew} (available at \url{https://brew.sh}) and then through the terminal command:
 \begin{verbatim}
