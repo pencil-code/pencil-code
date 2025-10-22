@@ -793,45 +793,89 @@ Common Git Conflicts
 Step-by-Step Conflict Resolution
 --------------------------------
 
-* Rebase didn’t go as expected: Git will pause the rebase and prompt you to resolve conflicts.  
 
-    * Resolve conflicts by editing the conflicting files.  
+``Push`` did not work
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-    * Continue the rebase:
+After adding and committing your files, you tried to push your changes
+and got the dreaded error:
+.. code:: bash
+    $ git push
+        To https://pencil-code.org/git/
+         ! [rejected]            master -> master (fetch first)
+        error: failed to push some refs to 'https://pencil-code.org/git/'
+        hint: Updates were rejected because the remote contains work that you do not
+        hint: have locally. This is usually caused by another repository pushing to
+        hint: the same ref. If you want to integrate the remote changes, use
+        hint: 'git pull' before pushing again.
+        hint: See the 'Note about fast-forwards' in 'git push --help' for details.
+This happens when someone else has updated the remote branch since you last
+pulled. Git is politely asking you to reconcile timelines before pushing
+your changes — basically, don’t try to overwrite someone else’s work
+with a vortex manipulator.
+To fix it, pull the remote changes and rebase your commits on top:
+.. code:: bash
+    $ git pull --rebase
+    $ git push
 
-        .. code:: bash
+Example scenario:
+* You added a new function ``compute_flux()`` in ``hydro.f90``.
+* Meanwhile, a colleague added ``update_boundary()`` to the same file
+  and pushed it.
+* ``git push`` will be rejected until you ``git pull --rebase`` and
+  integrate your function with theirs.
+* If both edits touch the same lines, Git will pause and ask you to
+  resolve conflicts manually — the next bullet points will guide you
+  through that process.
+This method works perfectly if your changes don’t overlap with the
+remote edits. Otherwise, brace yourself for some conflict resolution fun.
 
-            $ git rebase --continue
 
-    * Verify your changes:
 
-        .. code:: bash
+Rebase paused due to conflicts (same lines touched)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-            $ git log --oneline
+If your edits overlap with the remote changes — for example, both you
+and a colleague modified the same line in ``hydro.f90`` — Git will
+pause the rebase and flag a conflict:
+.. code:: bash
+    $ git status
+    # both modified: hydro.f90
+Git inserts conflict markers in the file, like this:
+.. code:: text
+    <<<<<<< HEAD
+    your change here
+    =======
+    colleague's change here
+    >>>>>>> branch-to-rebase
+At this point, you have to decide how to merge the two edits. Options:
+* Keep your change, discard theirs.
+* Keep theirs, discard yours.
+* Combine both changes intelligently.
+Once resolved, mark the file as resolved and continue the rebase:
+.. code:: bash
+    $ git add hydro.f90
+    $ git rebase --continue
+Then verify your changes:
+.. code:: bash
+    $ git log --oneline
+And finally, push the integrated timeline:
+.. code:: bash
+    $ git push --force-with-lease origin master
 
-    * Push your changes:
+Resolving conflicts when merging branches
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+* Abort the merge:
+    .. code:: bash 
+        $ git merge --abort
+        $ git status
+* Resolve the conflict by editing files and committing:
+    .. code:: bash
+        $ git add resolved_file
+        $ git commit
 
-        .. code:: bash
 
-            $ git push --force-with-lease origin master
 
-* Resolving conflicts when merging branches:
-
-    * Abort the merge:
-
-        .. code:: bash 
-
-            $ git merge --abort
-            $ git status
-
-    * Resolve the conflict by editing files and committing:
-
-        .. code:: bash
-
-            $ git add resolved_file
-            $ git commit
-
-.. changed
 
 
 .. admonition:: Remember
