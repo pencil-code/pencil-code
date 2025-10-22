@@ -473,3 +473,14 @@ src/astaroth/PC_*
 # Readthedocs
 doc/readthedocs/_build
 doc/readthedocs/code
+!utils/cronjobs/.DS_Store
+!utils/cronjobs/*.directory
+!utils/cronjobs/*.pyc
+!utils/cronjobs/*~
+!utils/cronjobs/.*.swp
+!utils/cronjobs/host-ID
+!utils/cronjobs/revision.txt
+!utils/cronjobs/*-eps-converted-to.pdf
+!utils/cronjobs/.pc_build_history
+!utils/cronjobs/.run_directories.log
+!utils/cronjobs/pc_build_tmp_*
