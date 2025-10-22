@@ -10060,7 +10060,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !  MR: These long integer variables would be necessary for big nxgrid*nygrid,
 !      but there is no MPI_GATHERV which would accept a long int shifts argument.
 !
-      integer(KIND=ikind8) :: nlayer, nshift, nlayer_y
+      integer(KIND=ikind8) :: nlayer, nlayer_y
       integer(KIND=ikind8), dimension(ncpus) :: shifts
       integer, dimension(ncpus) :: counts
 !
