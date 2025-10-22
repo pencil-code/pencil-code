@@ -5053,6 +5053,7 @@ utils/axel/run_background.csh -text
 utils/axel/tsnap-all -text
 utils/axel/tsnap-alld -text
 utils/check-mm-nn -text
+utils/cronjobs/run-test.sh -text
 utils/cvs_tools/conflicts -text
 utils/cvs_tools/emailfromcvs -text
 utils/f90_qnd -text
