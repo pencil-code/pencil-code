@@ -10042,7 +10042,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine mpigather_z
 !***********************************************************************
-    subroutine mpigather( sendbuf, recvbuf , comm)
+    subroutine mpigather(sendbuf, recvbuf, comm)
 !
 !  Gathers the chunks of a 3D array from each processor in a big array at root.
 !
