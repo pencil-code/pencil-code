@@ -102,10 +102,10 @@ field_order(AC_ishock__mod__cdata-1) Field SHOCK // shock
 
 #define SS F_SS
 
-Field3 F_DUST_VELOCITY[AC_ndustspec__mod__cparam]
-Field  F_DUST_DENSITY[AC_ndustspec__mod__cparam]
-Field  F_DUST_MASS[AC_ndustspec__mod__cparam]
-Field  F_DUST_ICE_MASS[AC_ndustspec__mod__cparam]
+Field3 F_DUST_VELOCITY[ndustspec]
+Field  F_DUST_DENSITY[ndustspec]
+Field  F_DUST_MASS[ndustspec]
+Field  F_DUST_ICE_MASS[ndustspec]
 
 Field F_PHIUU
 Field F_U0X, F_U0Y, F_U0Z

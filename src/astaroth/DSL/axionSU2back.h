@@ -80,7 +80,7 @@ Kernel calc_axion_integral(real AC_t__mod__cdata){
     inflaton=AC_inflaton_ini__mod__axionsu2back-sqrt(2./3.)*AC_m_inflaton__mod__axionsu2back*AC_t__mod__cdata
     h__mod__axionsu2back=0.41*AC_m_inflaton__mod__axionsu2back*inflaton
   }
-  else if (AC_lgpu__mod__cparam  &&  ! AC_lhubble__mod__axionsu2back) {
+  else if (lgpu &&  ! AC_lhubble__mod__axionsu2back) {
     h__mod__axionsu2back=AC_h_init__mod__axionsu2back
   }
   if (AC_lconf_time__mod__axionsu2back) {

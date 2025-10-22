@@ -29,10 +29,10 @@ real DF_PHIUU         = 0.0
 real DF_SS_RUN_AVER    = 0.0
 real DF_RHO            = 0.0
 real DF_RHON            = 0.0
-real3 DF_DUST_VELOCITY[AC_ndustspec__mod__cparam]
-real  DF_DUST_DENSITY[AC_ndustspec__mod__cparam]
-real  DF_DUST_MASS[AC_ndustspec__mod__cparam]
-real  DF_DUST_ICE_MASS[AC_ndustspec__mod__cparam]
+real3 DF_DUST_VELOCITY[ndustspec]
+real  DF_DUST_DENSITY[ndustspec]
+real  DF_DUST_MASS[ndustspec]
+real  DF_DUST_ICE_MASS[ndustspec]
 real3 DF_UNVEC = real3(0.0,0.0,0.0)
 real DF_CHEMISTRY_SPECIES[nchemspec]
 if(lchemistry)
@@ -49,14 +49,14 @@ real DF_YY_CHIRAL = 0.0
 real DF_ZZ_CHIRAL = 0.0
 if(ldustvelocity)
 {
-	for dustspec in 0:AC_ndustspec__mod__cparam
+	for dustspec in 0:ndustspec
 	{
 		DF_DUST_VELOCITY[dustspec] = real3(0.0,0.0,0.0)
 	}
 }
 if(ldustdensity)
 {
-	for dustspec in 0:AC_ndustspec__mod__cparam
+	for dustspec in 0:ndustspec
 	{
 		DF_DUST_DENSITY[dustspec]  = 0.0
 		DF_DUST_MASS[dustspec]     = 0.0

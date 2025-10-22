@@ -56,7 +56,7 @@ Kernel prep_ode_right(){
     gphi2 = dot(gphi,gphi)
     a2rhogphim__mod__backreact_infl=0.5*gphi2
     reduce_sum(a2rhogphim__mod__backreact_infl/nwgrid,AC_a2rhogphim_all__mod__backreact_infl)
-    a2rhop=(dphi*dphi)+AC_onethird__mod__cparam*gphi2
+    a2rhop=(dphi*dphi)+onethird*gphi2
     a2rho=0.5*((dphi*dphi)+gphi2)
     a2rhophim__mod__backreact_infl=a2rho
   }
@@ -74,13 +74,13 @@ Kernel prep_ode_right(){
     }
   }
   real a2rhopm__mod__backreact_infl=a2rhop
-  if(AC_enum_vprime_choice__mod__backreact_infl == AC_enum_quadratic_string__mod__cparam) {
+  if(AC_enum_vprime_choice__mod__backreact_infl == enum_quadratic_string) {
     vpotential=0.5*AC_axionmass2__mod__backreact_infl*(phi*phi)
   }
-  else if(AC_enum_vprime_choice__mod__backreact_infl == AC_enum_quartic_string__mod__cparam) {
+  else if(AC_enum_vprime_choice__mod__backreact_infl == enum_quartic_string) {
     vpotential=AC_axionmass2__mod__backreact_infl*phi+(AC_lambda_axion__mod__backreact_infl/6.)*(phi*phi*phi)
   }
-  else if(AC_enum_vprime_choice__mod__backreact_infl == AC_enum_coszprofile_string__mod__cparam) {
+  else if(AC_enum_vprime_choice__mod__backreact_infl == enum_coszprofile_string) {
     vpotential=AC_axionmass2__mod__backreact_infl*AC_lambda_axion__mod__backreact_infl*sin(AC_lambda_axion__mod__backreact_infl*phi)
   }
   else {
@@ -94,22 +94,22 @@ Kernel prep_ode_right(){
   reduce_sum(ddota*(four_pi_over_three/nwgrid),AC_ddotam_all__mod__backreact_infl)
   a2rho=a2rho+AC_a2__mod__backreact_infl*vpotential
   a2rhom__mod__backreact_infl=a2rho
-  if (AC_lmagnetic__mod__cparam  &&  AC_lem_backreact__mod__backreact_infl) {
+  if (lmagnetic &&  AC_lem_backreact__mod__backreact_infl) {
     if (AC_lphi_hom__mod__disp_current  ||  AC_lrho_chi__mod__backreact_infl  ||  AC_lnoncollinear_eb__mod__disp_current  ||  AC_lnoncollinear_eb_aver__mod__disp_current   ||  AC_lcollinear_eb__mod__disp_current  ||  AC_lcollinear_eb_aver__mod__disp_current) {
       edotb = dot(el,bb)
       reduce_sum(edotb/nwgrid,AC_edotbm_all__mod__backreact_infl)
       if (AC_lnoncollinear_eb__mod__disp_current) {
         boost=sqrt(((e2-b2)*(e2-b2))+4.*(edotb*edotb))
-        gam_eb=AC_sqrt21__mod__cparam*sqrt(1.+(e2+b2)/boost)
-        eprime=AC_sqrt21__mod__cparam*sqrt(e2-b2+boost)
-        bprime=AC_sqrt21__mod__cparam*sqrt(b2-e2+boost)*sign(1.,edotb)
+        gam_eb=sqrt21*sqrt(1.+(e2+b2)/boost)
+        eprime=sqrt21*sqrt(e2-b2+boost)
+        bprime=sqrt21*sqrt(b2-e2+boost)*sign(1.,edotb)
         if (AC_lallow_bprime_zero__mod__disp_current) {
           if (eprime!=0.) {
             if (bprime!=0.) {
-              jprime1=1./(6.*(AC_pi__mod__cparam*AC_pi__mod__cparam))*eprime*abs(bprime)/tanh(AC_pi__mod__cparam*abs(bprime)/eprime)
+              jprime1=1./(6.*(pi*pi))*eprime*abs(bprime)/tanh(pi*abs(bprime)/eprime)
             }
             else {
-              jprime1=1./(6.*(AC_pi__mod__cparam*AC_pi__mod__cparam*AC_pi__mod__cparam))*(eprime*eprime)
+              jprime1=1./(6.*(pi*pi*pi))*(eprime*eprime)
             }
             sige1=abs(jprime1)*eprime/(gam_eb*boost)
             sigb1=abs(jprime1)*edotb/(eprime*gam_eb*boost)
@@ -121,7 +121,7 @@ Kernel prep_ode_right(){
         }
         else {
           if (eprime!=0.  &&  bprime!=0.) {
-            jprime1=1./(6.*(AC_pi__mod__cparam*AC_pi__mod__cparam))*eprime*abs(bprime)/tanh(AC_pi__mod__cparam*abs(bprime)/eprime)
+            jprime1=1./(6.*(pi*pi))*eprime*abs(bprime)/tanh(pi*abs(bprime)/eprime)
             sige1=abs(jprime1)*eprime/(gam_eb*boost)
             sigb1=abs(jprime1)*edotb/(eprime*gam_eb*boost)
           }
@@ -135,7 +135,7 @@ Kernel prep_ode_right(){
         eprime=sqrt(e2)
         bprime=sqrt(b2)
         if (eprime!=0.  &&  bprime!=0.) {
-          sige1=1./(6.*(AC_pi__mod__cparam*AC_pi__mod__cparam))*bprime/tanh(AC_pi__mod__cparam*bprime/eprime)
+          sige1=1./(6.*(pi*pi))*bprime/tanh(pi*bprime/eprime)
           sigb1=0.
         }
         else {
@@ -145,7 +145,7 @@ Kernel prep_ode_right(){
       }
     }
   }
-  if ((AC_lmagnetic__mod__cparam  &&  AC_lem_backreact__mod__backreact_infl)  &&  (AC_lrho_chi__mod__backreact_infl)) {
+  if ((lmagnetic && AC_lem_backreact__mod__backreact_infl)  &&  (AC_lrho_chi__mod__backreact_infl)) {
     if (AC_lnoncollinear_eb__mod__disp_current  ||  AC_lnoncollinear_eb_aver__mod__disp_current  ||   AC_lcollinear_eb__mod__disp_current  ||  AC_lcollinear_eb_aver__mod__disp_current) {
       e2m__mod__backreact_infl=e2
       b2m__mod__backreact_infl=b2

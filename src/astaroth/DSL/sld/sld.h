@@ -40,7 +40,7 @@ energy_sld_sound_speed(){
   fact_rho=1.
   fact_wsld=1.
   if (AC_lsld_char_cslimit__mod__energy) {
-    w_sldrat2=pow(AC_w_sldchar_ene2__mod__energy,2.)/(pow(AC_w_sldchar_ene__mod__energy,2.)+AC_tini__mod__cparam)
+    w_sldrat2=pow(AC_w_sldchar_ene2__mod__energy,2.)/(pow(AC_w_sldchar_ene__mod__energy,2.)+tini)
   }
   else {
     w_sldrat2=1.0
@@ -65,7 +65,7 @@ energy_sld_sound_speed(){
       DF_SLD_CHAR_ENTROPY=AC_w_sldchar_ene2__mod__energy*sqrt(AC_cs2top__mod__equationofstate)
     }
     else {
-      step_vector_return_value_3 = 0.5*(1+tanh((cs2-w_sldrat2*AC_cs2top__mod__equationofstate+AC_cs2top__mod__equationofstate/200.)/(AC_cs2top__mod__equationofstate/200.+AC_tini__mod__cparam)))
+      step_vector_return_value_3 = 0.5*(1+tanh((cs2-w_sldrat2*AC_cs2top__mod__equationofstate+AC_cs2top__mod__equationofstate/200.)/(AC_cs2top__mod__equationofstate/200.+tini)))
       prof_cs=step_vector_return_value_3
       DF_SLD_CHAR_ENTROPY =AC_w_sldchar_ene__mod__energy*prof_cs*sqrt(cs2)  + (1.-prof_cs)*AC_w_sldchar_ene2__mod__energy*sqrt(AC_cs2top__mod__equationofstate)
     }
