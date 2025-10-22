@@ -10051,9 +10051,9 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       use General, only: find_proc_coords
 !
-      real, dimension(nx,ny,nz) :: sendbuf
-      real, dimension(:,:,:)    :: recvbuf
-      integer, optional :: comm
+      real, dimension(nx,ny,nz), intent(in) :: sendbuf
+      real, dimension(:,:,:), intent(out) :: recvbuf
+      integer, optional, intent(in) :: comm
 !
       integer :: iy, iz, i, ipx, ipy, ipz
 !
