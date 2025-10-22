@@ -30,8 +30,8 @@
         kka=1; kke=1; jja=1; jje=1
       endif
 
-kloop:do kk=kka,kke
-jloop:  do jj=jja,jje
+ kloop:do kk=kka,kke
+ jloop:  do jj=jja,jje
           iia=max(0,ipx-1)
           if (l0) iia=iia-1                           ! add one iteration for the original path
           if (lrepair_snap.or.snaplink/='') then
@@ -39,7 +39,7 @@ jloop:  do jj=jja,jje
           else
             iie=iia
           endif
-iloop:    do ii=iia,iie
+ iloop:    do ii=iia,iie
             if (.not.l0) then
               iip=find_proc(ii,jj,kk)
               if (iip/=iproc) then

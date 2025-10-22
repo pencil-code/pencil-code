@@ -89,9 +89,7 @@ def process_directory(path) -> list:
     return table
 
 FILES_THAT_DONT_WORK = [
-    "src/io_dist.f90", # Found non-(space,digit) char in the first column. Are you sure that this code is in fix form?  line='kloop:do kk=kka,kke ')
     "src/hydro.f90", # UNKNOWN ERROR
-    "src/polynomialroots.f90", # CRITICAL: Unexpected section title or transition.
     "src/slices.f90", # (exception: '=')
     "src/sub.f90", # (exception: expected string or bytes-like object, got 'NoneType')
 ]

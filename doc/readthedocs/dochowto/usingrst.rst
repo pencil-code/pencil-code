@@ -112,6 +112,8 @@ Keyboard commands
 To semantically markup Python or C++ code objects, refer to the section on :ref:`rst-code-link`.
 
 
+.. _rst-headings:
+
 Headings
 --------
 
