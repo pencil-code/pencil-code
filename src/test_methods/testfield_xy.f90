@@ -5,7 +5,7 @@
 !  routine is used instead which absorbs all the calls to the
 !  testfield relevant subroutines listed in here.
 !
-!  Derived from testfield_xz by P. Käpylä, A. Brandenburg and 
+!  Derived from testfield_xz by P. Kapyla, A. Brandenburg and 
 !  M. Rheinhardt
 !   27-aug-13/pete: adapted from testfield_xz.f90
 !
