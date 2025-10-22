@@ -970,7 +970,7 @@ module Forcing
         if (.not. lspherical_coords) call fatal_error('initialize_forcing', &
                         'Chandrasekhar-Kendall forcing works only in spherical coordinates!')
 !
-        if (abs(helsign)/=1) call fatal_error("initialize_forcing", "CK forcing: helsign must be ±1")
+        if (abs(helsign)/=1) call fatal_error("initialize_forcing", "CK forcing: helsign must be +-1")
 !
         if (iforce=='cktest') then
           lhelical_test=.true.

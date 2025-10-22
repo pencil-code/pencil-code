@@ -3813,7 +3813,7 @@ module Initcond
 !  (for vector potential, or passive scalar)
 !
 !  14-apr-09/axel: adapted from htube, used in paper with Violaine Auger
-!                  in Vermersch & Brandenburg (2009, AN 330, 797–806).
+!                  in Vermersch & Brandenburg (2009, AN 330, 797-806).
 !
       integer :: i1,i2
       real, dimension (mx,my,mz,mfarray) :: f

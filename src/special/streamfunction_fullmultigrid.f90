@@ -1384,7 +1384,7 @@ module Special
     subroutine full_multigrid(f,psi,r,alp,bet,ncycle)
 !
 !  Full Multigrid Algorithm for solution of linear elliptic equations.
-!  On input u contains the right-hand side ρ in an N × N array,
+!  On input u contains the right-hand side rho in an N x N array,
 !  while on output it returns the solution. The dimension N is related
 !  to the number of grid levels used in the solution, ng below, by N = 2**ng+1.
 !  ncycle is the number of V-cycles to be used at each level.
@@ -1621,8 +1621,8 @@ module Special
     function restrict(uf)
 !
 !  Half-weighting restriction. If Nc is the coarse-grid dimension, the
-!  fine-grid solution is input in the (2Nc − 1) × (2Nc − 1) array uf,
-!  the coarse-grid solution is returned in the Nc × Nc array restrict.
+!  fine-grid solution is input in the (2Nc - 1) x (2Nc - 1) array uf,
+!  the coarse-grid solution is returned in the Nc x Nc array restrict.
 !
 !  13-jan-16/wlad: from numerical recipes.
 !
@@ -1659,7 +1659,7 @@ module Special
 !      
 !  Coarse-to-fine prolongation by bilinear interpolation. If Nf is the
 !  fine-grid dimension and Nc the coarse-grid dimension, then
-!  Nf = 2Nc − 1. The coarse-grid solution is input as uc, the fine-grid
+!  Nf = 2Nc - 1. The coarse-grid solution is input as uc, the fine-grid
 !  solution is returned in prolongate.
 !
 !  13-jan-16/wlad: from numerical recipes.

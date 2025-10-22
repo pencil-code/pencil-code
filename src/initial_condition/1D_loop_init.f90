@@ -417,7 +417,7 @@ contains
         endif
       enddo
 !
-!  Fill the lower most ghost celĺs. Can be overriden by standard
+!  Fill the lower most ghost cells. Can be overriden by standard
 !  boundary conditions.
 !
       if (ipx==0) then

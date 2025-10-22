@@ -183,7 +183,7 @@ module Chemistry
   real :: deltaH_cgs = 7.07e12 ! in erg/mol
   !real :: deltaH_cgs = 3.55e12 ! in erg/mol (based on Tboil and 1025C)
   real :: gam_surf_energy_mul_fac=1.0
-  real :: conc_sat_spec_cgs=1e-8 !units of mol/cmˆ3
+  real :: conc_sat_spec_cgs=1e-8 !units of mol/cm^3
   real :: min_nucl_radius_cgs=1e-8 ! units of cm
   logical, pointer :: ldustnucleation, lpartnucleation, lcondensing_species
   character(len=labellen) :: isurf_energy="const"

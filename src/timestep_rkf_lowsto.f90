@@ -3,7 +3,7 @@
 !
 !  Runge-Kutta-Fehlberg Low-Storage method
 !  Christopher A. Kennedy, Mark H. Carpenter, R.Michael Lewis,
-!  Low-storage, explicit Runge–Kutta schemes for the compressible Navier–Stokes equations,
+!  Low-storage, explicit Runge-Kutta schemes for the compressible Navier-Stokes equations,
 !  Applied Numerical Mathematics,
 !  Volume 35, Issue 3,
 !  2000,
@@ -312,7 +312,7 @@ module Timestep
                   errmaxs = max(maxval(abs(errdf(:,m-nghost,n-nghost,j))/scal),errmaxs)
                 case ('rel_err')
                   !calculate the maximum error relative to f with lower bound of farraymin
-                  !to exclude division by zero/tini and avoid unnecessaruíly low timestep.
+                  !to exclude division by zero/tini and avoid unnecessarily low timestep.
                   scal = max(abs(f(l1:l2,m,n,j)),farraymin(j))
                   errmaxs = max(maxval(abs(errdf(:,m-nghost,n-nghost,j))/scal),errmaxs)
                 case ('abs_err')

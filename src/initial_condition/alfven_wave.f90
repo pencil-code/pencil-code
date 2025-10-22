@@ -1,6 +1,6 @@
 ! $Id$
 !
-!  This module sets up an Alfvéén wave of amplitude init_amp0
+!  This module sets up an Alfven wave of amplitude init_amp0
 !  with wave vector init_k0 and an optional phase init_phase0.
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************

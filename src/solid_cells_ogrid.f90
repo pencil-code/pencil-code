@@ -8148,7 +8148,7 @@ module Solid_Cells
 !***********************************************************************
   subroutine initialize_pade_filter(f_og)
 !
-!  Initialization of high order padé filtering of solution array.
+!  Initialization of high order pade filtering of solution array.
 !  10th order filter requires extension of ghost zones in periodic
 !  directions. Extended ghosts zones (halos) allocated here.
 !
@@ -8201,7 +8201,7 @@ module Solid_Cells
     use Solid_cells_Mpicomm, only: cyclic_parallel_y,tridag_parallel_x
     use General, only: cyclic, tridag
 !
-!  high order padé filtering of solution array 
+!  high order pade filtering of solution array 
 !  10th order on interor points, can choose 6th, 8th or 10th order at cylinder
 !  boundary. 
 !

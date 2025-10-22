@@ -1837,7 +1837,7 @@ module Diagnostics
 !  19-jun-11/anders: changed to sum single number of all cores
 !  17-jun-09/ccyang: adapted from max_name
 !  03-sep-09/MR: corrected to real sum
-!  12-apr-16/Jørgen+Nils: overloading with int
+!  12-apr-16/Joergen+Nils: overloading with int
 !
       integer, intent(in) :: a
       integer, intent(in) :: iname

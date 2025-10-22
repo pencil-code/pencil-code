@@ -6701,7 +6701,7 @@ endif
 !      
 !  See A. Li and G. Ahmadi. "Dispersion and Deposition of Spherical
 !      Particles from Point Sources in a Turbulent Channel Flow".
-!      Aerosol Science and Technology. 16. 209–226. 1992.
+!      Aerosol Science and Technology. 16. 209-226. 1992.
 !
 !  28-jul-08/kapelrud: coded
 !  13-nov-24/axel+nils: renamed

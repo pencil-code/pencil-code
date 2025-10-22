@@ -53,7 +53,7 @@ module Solid_Cells_Mpicomm
   integer, parameter :: tolowx=13,touppx=14,tolowy=3,touppy=4,tolowz=5,touppz=6 ! msg. tags
   integer, parameter :: TOll=7,TOul=8,TOuu=9,TOlu=10 ! msg. tags for corners
 
-  ! Padé Filtering
+  ! Pade Filtering
   integer, parameter :: filter_Hsize = 10/2-nghost   ! Also set in solid_cells_ogrid.f90
   real, dimension (:,:,:,:), allocatable :: lbufyi_fi,ubufyi_fi,lbufyo_fi,ubufyo_fi
   real, dimension (:,:,:,:), allocatable :: lbufxi_fi,ubufxi_fi,lbufxo_fi,ubufxo_fi

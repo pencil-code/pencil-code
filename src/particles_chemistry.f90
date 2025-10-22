@@ -14,7 +14,7 @@
 !
 !  The assumptions and equations implemented in this routine are
 !  deduced partially from following papers:
-!  8th US Combustion Meeting – Paper # 070CO-0312
+!  8th US Combustion Meeting - Paper # 070CO-0312
 !  Transient simulations of char gasification     by
 !  Nils Erland L. Haugen
 !  Reginald E. Mitchell

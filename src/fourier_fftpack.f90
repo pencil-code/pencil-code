@@ -3209,7 +3209,7 @@ module Fourier
 !
         call transp_pencil_xy (p_re_3d, t_re_3d )
         call transp_pencil_xy (p_im_3d, t_im_3d )
-!§
+!
         !!$omp parallel num_threads(num_helper_threads) if(.not.omp_in_parallel())
         !$omp do collapse(2)
         do pos_z = 1, inz
