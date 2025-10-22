@@ -89,30 +89,11 @@ def process_directory(path) -> list:
     return table
 
 FILES_THAT_DONT_WORK = [
-    "src/chemistry.f90", # 'ascii' codec can't decode byte 0xcb in position 7543: ordinal not in range(128).
-    "src/diagnostics.f90", # ø character in file
-    "src/diagnostics_outlog.f90", # ø character in file
-    "src/forcing.f90", # ± character in file
-    "src/fourier_fftpack.f90", # § character in file
+    "src/io_dist.f90", # Found non-(space,digit) char in the first column. Are you sure that this code is in fix form?  line='kloop:do kk=kka,kke ')
     "src/hydro.f90", # UNKNOWN ERROR
-    "src/initcond.f90", # 'ascii' codec can't decode byte 0xe2 in position 6496: ordinal not in range(128).
-    "src/io_dist.f90", # Found non-(space,digit) char in the first column. Are you sure that this code is in fix form? line='kloop:do kk=kka,kke ')
-    "src/nosolid_cells.f90", # ø character in file
-    "src/particles_chemistry.f90", # 'ascii' codec can't decode byte 0xe2 in position 613: ordinal not in range(128).
-    "src/particles_dust.f90", # 'ascii' codec can't decode byte 0xe2 in position 2129: ordinal not in range(128).
     "src/polynomialroots.f90", # CRITICAL: Unexpected section title or transition.
     "src/slices.f90", # (exception: '=')
-    "src/solid_cells.f90", # ø character in file
-    "src/solid_cells_ogrid.f90", # ø, é characters in file
-    "src/solid_cells_ogrid_mpicomm.f90", # é character in file
     "src/sub.f90", # (exception: expected string or bytes-like object, got 'NoneType')
-    "src/timestep_rkf_lowsto.f90", # í character in file
-    "initial_condition/1D_loop_init.f90", # 'ascii' codec can't decode byte 0xc4 in position 6280: ordinal not in range(128).
-    "initial_condition/alfven_wave.f90", # 'ascii' codec can't decode byte 0xc3 in position 39: ordinal not in range(128).
-    "initial_condition/coronae_init.f90", # 'ascii' codec can't decode byte 0xc4 in position 3033: ordinal not in range(128).
-    "special/streamfunction_fullmultigrid.f90", # 'ascii' codec can't decode byte 0xcf in position 5737: ordinal not in range(128).
-    "special/streamfunction_multigrid.f90", # 'ascii' codec can't decode byte 0xe2 in position 4021: ordinal not in range(128).
-    "test_methods/testfield_xy.f90" # 'ascii' codec can't decode byte 0xc3 in position 361: ordinal not in range(128).
 ]
 
 def create_fortran_modules_rst(path_to_src: str) -> list[str]:
@@ -147,6 +128,7 @@ def create_fortran_modules_rst(path_to_src: str) -> list[str]:
         os.makedirs(os.path.join(F90ROOT, dirname), exist_ok=True)
         for module, _ in table:
             # Modules that won't compile - skip them
+            # Changed to only do this files for testing.
             if f"{dirname}/{module}.f90" in FILES_THAT_DONT_WORK:
                 continue
             with open(os.path.join(F90ROOT, dirname, f"{module}.rst"), "w") as f:
@@ -164,6 +146,7 @@ def create_fortran_modules_rst(path_to_src: str) -> list[str]:
     # Main index
     with open(os.path.join(F90ROOT, "index.rst"), "w") as f:
         d = RstCloth(f)
+        d.ref_target('fortran_modules')
         d.title("Fortran modules")
         d.content(f"Currently, the Pencil Code contains {total_modules} Fortran files.")
         d.newline()
