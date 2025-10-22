@@ -1146,13 +1146,13 @@ module Special
     endsubroutine prep_ode_right
 !********************************************************************
     subroutine pushpars2c(p_par)
-!
+
     use Syscalls, only: copy_addr
     use General , only: string_to_enum
-!
+
     integer, parameter :: n_pars=100
     integer(KIND=ikind8), dimension(n_pars) :: p_par
-!
+
     call string_to_enum(enum_hscript_choice,hscript_choice)
     call string_to_enum(enum_vprime_choice,vprime_choice)
     call copy_addr(enum_hscript_choice,p_par(1)) ! int
