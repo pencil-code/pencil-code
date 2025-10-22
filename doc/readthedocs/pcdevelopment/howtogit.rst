@@ -124,6 +124,15 @@ It will show:
 * Changes to be committed (in green if any): files staged but not yet committed
 
 
+If you have a bunch of untracked files that you don’t want cluttering your status output,  
+you can ignore them by using:
+
+
+.. code:: bash
+
+    git status -uno
+
+
 Checking Differences
 --------------------
 
