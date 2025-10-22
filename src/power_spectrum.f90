@@ -290,12 +290,6 @@ outer:do ikz=1,nz
           'lintegrate_shell uses mpigather_xy which assumes nprocx==1. ' //&
           'Your results are most likely garbage.')
       endif
-!
-      if (lcomplex .and. lpowerxy_hdf5 .and. nprocx>1) then
-        call warning('initialize_power_spectrum', &
-          'HDF5 output for lcomplex=T uses mpigather which assumes nprocx==1. ' //&
-          'Your results are most likely garbage.')
-      endif
     endif
 !
   endsubroutine initialize_power_spectrum
