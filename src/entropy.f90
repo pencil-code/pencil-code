@@ -507,7 +507,7 @@ module Energy
 
   real, dimension (nx) :: Hmax,ssmax,diffus_chi,diffus_chi3,cs2cool_x, &
                           chit_prof,chit_prof_fluct,hcond,K_kramers
-  !$omp threadprivate(diffus_chi)
+  !$omp threadprivate(diffus_chi,chit_prof_fluct,K_kramers)
   real, dimension (nx,3) :: gss1, gss0
   real, dimension (nz) :: profz_cool, profz1_cool, profz_heat
   real, dimension (nx) :: profr_cool, profr1_cool, profr2_cool, profr_heat, profx_heat
@@ -4242,6 +4242,8 @@ module Energy
       real, dimension (mx,my,mz,mfarray) :: f
       type(pencil_case) :: p
       real, dimension(nx) :: thdiff
+      real, dimension(nx) :: g2,Krho1
+      real, dimension(nx,3) :: dummy
 
       !Done since with multithreading RHS is not evaluated
       if(lmultithread .and. lupdate_courant_dt) then
@@ -4249,6 +4251,16 @@ module Energy
         if (lheatc_Kprof)    call calc_heatcond_arrays(f,p,thdiff)
         if (lheatc_chiconst) call calc_heatcond_constchi_arr(f,p,thdiff)
         if (lheatc_Kconst)   call calc_heatcond_constK_arrays(p,thdiff)
+        if (lheatc_kramers) then
+          call kramers_get_g2(p,g2)
+          call kramers_get_K(p,g2,Krho1)
+          diffus_chi=diffus_chi+(p%cv1*Krho1+chi_t)*dxyz_2
+        endif
+        !TP: a bit ugly that we have this so explicitly here but works for now
+        if (chi_t1/=0..and.lchit_fluct) then
+                call get_chit_prof_fluct(dummy)
+                diffus_chi=diffus_chi+chit_prof_fluct*dxyz_2
+        endif
       endif
       call calc_2d_diagnostics_energy(p)
       call calc_1d_diagnostics_energy(f,p)
@@ -5545,6 +5557,51 @@ module Energy
 !
     endsubroutine calc_heatcond_hubeny
 !***********************************************************************
+    subroutine kramers_get_g2(p,g2)
+!
+!  23-oct-2025/TP: carver from calc_heatcond_kramers
+!
+      use Sub, only: dot
+      
+      type(pencil_case),   intent(IN)   :: p
+      real, dimension(nx), intent(OUT)  :: g2
+!
+      call dot(-2.*nkramers*p%glnrho+(6.5*nkramers+1)*p%glnTT,p%glnTT,g2)
+    endsubroutine kramers_get_g2
+!***********************************************************************
+    subroutine kramers_get_K(p,g2,Krho1)
+!
+!  23-oct-2025/TP: carver from calc_heatcond_kramers
+!
+      use Sub, only: dot
+
+      type(pencil_case),   intent(IN)     :: p
+      real, dimension(nx), intent(INOUT)  :: g2
+      real, dimension(nx), intent(OUT)    :: Krho1
+
+      real, dimension(nx) :: g2_chi
+!
+
+      call dot(p%glnrho+p%glnTT, p%glnTT, g2_chi)
+      K_kramers = hcond0_kramers*p%rho1**(2.*nkramers)*p%TT**(6.5*nkramers)
+      Krho1 = K_kramers*p%rho1   ! = K/rho
+!
+      if (chimax_kramers>0.) then
+        where (Krho1 > chimax_kramers/p%cp1)
+          Krho1 = chimax_kramers/p%cp1
+          K_kramers = chimax_kramers*p%rho/p%cp1
+          g2 = g2_chi
+        endwhere
+      endif
+      if (chimin_kramers>0.) then
+        where (Krho1 < chimin_kramers/p%cp1)
+          Krho1 = chimin_kramers/p%cp1
+          K_kramers = chimin_kramers*p%rho/p%cp1
+          g2 = g2_chi
+        endwhere
+      endif
+    endsubroutine kramers_get_K
+!***********************************************************************
     subroutine calc_heatcond_kramers(f,df,p)
 !
 !  Heat conduction using Kramers' opacity law
@@ -5564,7 +5621,7 @@ module Energy
       intent(in) :: p
       intent(inout) :: df
 !
-      real, dimension(nx) :: thdiff, g2, g2_chi
+      real, dimension(nx) :: thdiff, g2
       real, dimension(nx) :: Krho1, del2ss1
       real, dimension(nx,3) :: gradchit_prof
       integer :: j
@@ -5575,28 +5632,12 @@ module Energy
 !      K = K_0*(T**6.5/rho**2)**n.
 !  In reality n=1, but we may need to use n\=1 for numerical reasons.
 !
-      K_kramers = hcond0_kramers*p%rho1**(2.*nkramers)*p%TT**(6.5*nkramers)
-      Krho1 = K_kramers*p%rho1   ! = K/rho
+
 !
 !  g2 is grad(ln(K) + ln(T)).grad(ln(T))
 !
-      call dot(-2.*nkramers*p%glnrho+(6.5*nkramers+1)*p%glnTT,p%glnTT,g2)
-      call dot(p%glnrho+p%glnTT, p%glnTT, g2_chi)
-!
-      if (chimax_kramers>0.) then
-        where (Krho1 > chimax_kramers/p%cp1)
-          Krho1 = chimax_kramers/p%cp1
-          K_kramers = chimax_kramers*p%rho/p%cp1
-          g2 = g2_chi
-        endwhere
-      endif
-      if (chimin_kramers>0.) then
-        where (Krho1 < chimin_kramers/p%cp1)
-          Krho1 = chimin_kramers/p%cp1
-          K_kramers = chimin_kramers*p%rho/p%cp1
-          g2 = g2_chi
-        endwhere
-      endif
+      call kramers_get_g2(p,g2)
+      call kramers_get_K(p,g2,Krho1)
 !
       thdiff = Krho1*(p%del2lnTT+g2)
 !
@@ -6056,6 +6097,19 @@ module Energy
 !
     endsubroutine calc_heatcond_sfluct
 !***********************************************************************
+    subroutine get_chit_prof_fluct(gradchit_prof_fluct)
+
+        real, dimension(nx,3) :: gradchit_prof_fluct
+        if (lcalc_ssmean .or. lcalc_ssmeanxy .or. lss_running_aver) then
+          if ((lgravr.or.lgravx.or.lgravz).and..not.(lsphere_in_a_box.or.lchi_t1_noprof)) then
+            call get_prof_pencil(chit_prof_fluct,gradchit_prof_fluct,.false., &  ! no 2D/3D profiles of chit_fluct implemented
+                                 stored_prof=chit_prof_fluct_stored,stored_dprof=dchit_prof_fluct_stored)
+          else
+            chit_prof_fluct=chi_t1; gradchit_prof_fluct=0.
+          endif
+        endif
+    endsubroutine get_chit_prof_fluct
+!***********************************************************************
     subroutine calc_heatcond_chit(f,df,p)
 !
 !  Subgrid-scale ("turbulent") diffusion of entropy.
@@ -6138,15 +6192,7 @@ module Energy
 !  lcalc_ssmean=T or lcalc_ssmeanxy=T
 !
       if (lchit_fluct.and.chi_t1/=0.) then
-        if (lcalc_ssmean .or. lcalc_ssmeanxy .or. lss_running_aver) then
-          if ((lgravr.or.lgravx.or.lgravz).and..not.(lsphere_in_a_box.or.lchi_t1_noprof)) then
-            call get_prof_pencil(chit_prof_fluct,gradchit_prof_fluct,.false., &  ! no 2D/3D profiles of chit_fluct implemented
-                                 stored_prof=chit_prof_fluct_stored,stored_dprof=dchit_prof_fluct_stored)
-          else
-            chit_prof_fluct=chi_t1; gradchit_prof_fluct=0.
-          endif
-        endif
-
+        call get_chit_prof_fluct(gradchit_prof_fluct)
         if (lcalc_ssmean .or. lcalc_ssmeanxy) then
 
           if (lcalc_ssmean) then

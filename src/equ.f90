@@ -181,7 +181,7 @@ module Equ
 !  Call "before_boundary" hooks (for f array precalculation)
 !
       call before_boundary_shared(f)
-      !if (it == 10) call test_rhs_gpu(f,df,p,mass_per_proc,early_finalize,rhs_cpu)
+      !if (it == 10 .and. itorder == 1) call test_rhs_gpu(f,df,p,mass_per_proc,early_finalize,rhs_cpu)
 
       if (lgpu) then
         start_time = mpiwtime()
