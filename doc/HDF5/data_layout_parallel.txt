@@ -1,0 +1,15 @@
+Sample layout for a simulation with a grid of [nx,ny,nz] grid points per processor.
+There are (px,py,pz) processors along the x, y, and z direction.
+The number of ghost layers is set here to NG and is of course variable in reality.
+This results in a global grid size of mxgrid=nx*px+2*NG in a monolithic layout.
+The group and dataset structure and dimensions would be as follows:
+
+data/
+	ax	[mxgrid,mygrid,mzgrid]
+	ay	[mxgrid,mygrid,mzgrid]
+	az	[mxgrid,mygrid,mzgrid]
+	lnTT	[mxgrid,mygrid,mzgrid]
+	lnrho	[mxgrid,mygrid,mzgrid]
+	ux	[mxgrid,mygrid,mzgrid]
+	uy	[mxgrid,mygrid,mzgrid]
+	uz	[mxgrid,mygrid,mzgrid]
