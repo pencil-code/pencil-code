@@ -542,6 +542,7 @@ config/queueing-systems/nqs-common.conf -text
 config/runtime-common.conf -text
 doc/.gitignore -text
 doc/ConfigurationDoc.txt -text
+doc/HDF5/data_layout_chunked.txt -text
 doc/Makefile -text
 doc/README -text
 doc/citations/.gitignore -text

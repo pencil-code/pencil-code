@@ -1,0 +1,65 @@
+Sample layout for a simulation with a grid of [nx,ny,nz] grid points per processor.
+There are (px,py,pz) processors along the x, y, and z direction.
+The number of ghost layers is set here to NG and is of course variable in reality.
+The chunk dimensions are denoted in square brackets.
+The group and dataset structure and dimensions would be as follows:
+
+data/
+	ax	[nx,ny,nz],(px,py,pz)
+	ay	[nx,ny,nz],(px,py,pz)
+	az	[nx,ny,nz],(px,py,pz)
+	lnTT	[nx,ny,nz],(px,py,pz)
+	lnrho	[nx,ny,nz],(px,py,pz)
+	ux	[nx,ny,nz],(px,py,pz)
+	uy	[nx,ny,nz],(px,py,pz)
+	uz	[nx,ny,nz],(px,py,pz)
+ghost/
+	ax/
+		x_lower		[ 3,ny,nz],(py,pz)
+		x_upper		[ 3,ny,nz],(py,pz)
+		y_lower		[nx, 3,nz],(px,pz)
+		y_upper		[nx, 3,nz],(px,pz)
+		z_lower		[nx,ny, 3],(px,py)
+		z_upper		[nx,ny, 3],(px,py)
+		x_lower_y_lower	[ 3, 3,nz],(pz)
+		x_upper_y_lower	[ 3, 3,nz],(pz)
+		x_lower_y_upper	[ 3, 3,nz],(pz)
+		x_upper_y_upper	[ 3, 3,nz],(pz)
+		x_lower_z_lower	[ 3,ny, 3],(py)
+		x_upper_z_lower	[ 3,ny, 3],(py)
+		x_lower_z_upper	[ 3,ny, 3],(py)
+		x_upper_z_upper	[ 3,ny, 3],(py)
+		y_lower_z_lower	[nx, 3, 3],(px)
+		y_upper_z_lower	[nx, 3, 3],(px)
+		y_lower_z_upper	[nx, 3, 3],(px)
+		y_upper_z_upper	[nx, 3, 3],(px)
+		x_lower_y_lower_z_lower	[3,3,3]
+		x_upper_y_lower_z_lower	[3,3,3]
+		x_lower_y_upper_z_lower	[3,3,3]
+		x_upper_y_upper_z_lower	[3,3,3]
+		x_lower_y_lower_z_upper	[3,3,3]
+		x_upper_y_lower_z_upper	[3,3,3]
+		x_lower_y_upper_z_upper	[3,3,3]
+		x_upper_y_upper_z_upper	[3,3,3]
+	ay/
+		...
+	.../
+
+
+Alternatively, some of these shapes are geometrically the same and can be combined.
+The chunk size would be the size of the first three dimensions, only.
+Each chunk is a separate write operation, usually issued from a different processor.
+(L=lower, U=upper)
+
+ghost/
+	ax/
+		x	[ 3,ny,nz],(py,pz),2
+		y	[nx, 3,nz],(px,pz),2
+		z	[nx,ny, 3],(px,py),2
+					=> 1=L, 2=U
+		xy	[ 3, 3,nz],(pz),4
+		xz	[ 3,ny, 3],(py),4
+		yz	[nx, 3, 3],(px),4
+					=> 1=LL, 2=UL, 3=LU, 4=UU
+		xyz	[3,3,3],8
+					=> 1=LLL, 2=ULL, 3=LUL, 4=UUL, 5=LLU, 6=ULU, 7=LUU, 8=UUU
