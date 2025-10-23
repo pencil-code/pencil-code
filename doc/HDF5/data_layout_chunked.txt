@@ -1,6 +1,7 @@
 Sample layout for a simulation with a grid of [nx,ny,nz] grid points per processor.
 There are (px,py,pz) processors along the x, y, and z direction.
 The number of ghost layers is set here to NG and is of course variable in reality.
+This results in a global grid size of mxgrid=nx*px+2*NG in a monolithic layout.
 The chunk dimensions are denoted in square brackets.
 The group and dataset structure and dimensions would be as follows:
 
@@ -63,3 +64,14 @@ ghost/
 					=> 1=LL, 2=UL, 3=LU, 4=UU
 		xyz	[3,3,3],8
 					=> 1=LLL, 2=ULL, 3=LUL, 4=UUL, 5=LLU, 6=ULU, 7=LUU, 8=UUU
+	.../
+
+
+One more alternative is to store the ghost layers collectively for each direction,
+because the amount of data is relatively small:
+
+ghost/
+	ax/
+		x	[ 3,ny,nz],(py,pz),2
+		y	[nx, 3,nz],(px,pz),2
+		z	[nx,ny, 3],(px,py),2
