@@ -770,10 +770,6 @@ doc/paper/analysis/line_additions.txt -text
 doc/paper/analysis/pline_additions.pro -text
 doc/paper/paper.bib -text
 doc/paper/paper.md -text
-doc/pc_hdf5/h5ls-frdv_dump -text
-doc/pc_hdf5/hdf5.html -text
-doc/pc_hdf5/pc_hdf5.pdf -text
-doc/pc_hdf5/pc_hdf5.tex -text
 doc/png/weak_scaling_kraken_2012.png -text
 doc/quick-guide/Makefile -text
 doc/quick-guide/README -text
