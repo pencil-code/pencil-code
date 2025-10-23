@@ -593,6 +593,7 @@ module Special
           call get_oogmuS(p,oogmuS)
           call get_oogmu5(p,oogmu5)
           df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) - lambda5*eta*muSmu5*oobb - 2.*Cw*p%muS*oogmuS
+! This is the CVE term in mu evolution, with prefactor assumed to be the same as the AVE term in mu5 evolution:
           df(l1:l2,m,n,imuS) = df(l1:l2,m,n,imuS) - Cw*p%mu5*oogmuS -Cw*p%muS*oogmu5
         endif
 !  Contributions to timestep from muS equation
