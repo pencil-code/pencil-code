@@ -30,8 +30,8 @@
         kka=1; kke=1; jja=1; jje=1
       endif
 
- kloop:do kk=kka,kke
- jloop:  do jj=jja,jje
+      loop: do kk=kka,kke
+        do jj=jja,jje
           iia=max(0,ipx-1)
           if (l0) iia=iia-1                           ! add one iteration for the original path
           if (lrepair_snap.or.snaplink/='') then
@@ -39,7 +39,7 @@
           else
             iie=iia
           endif
- iloop:    do ii=iia,iie
+          do ii=iia,iie
             if (.not.l0) then
               iip=find_proc(ii,jj,kk)
               if (iip/=iproc) then
@@ -51,7 +51,7 @@
                   readdir=directory_snap(:ind+3)//trim(itoa(iip))
                 endif
               else
-                cycle iloop
+                cycle
               endif
             endif
             open (lun_input, FILE=trim(readdir)//'/'//trim(file), FORM='unformatted', status='old', iostat=ios)
@@ -196,7 +196,7 @@
               if (iosr/=0) then
                 close(lun_input)
                 l0=.false.
-                cycle iloop
+                cycle
               endif
               if (ip <= 8) print *, 'read_snap: read ', file
               if (mode == 1) then
@@ -225,7 +225,7 @@
               if (iosr/=0) then
                 close(lun_input)
                 l0=.false.
-                cycle iloop
+                cycle
               endif
               lok=.true.
               if (.not.l0) then
@@ -237,13 +237,13 @@
                 close(11)
                 if (mailaddress/='') lmail=.true.
               endif
-              exit kloop
+              exit loop
             endif
             l0=.false.
-          enddo iloop
-        enddo jloop
-      enddo kloop
- 
+          enddo
+        enddo
+      enddo loop
+
       call mpiallreduce_and(lok,lok_glob,comm=MPI_COMM_PENCIL)
       if (.not.lok_glob) &
         call fatal_error('read_snap','neither '//trim(directory_snap)//'/'//trim(file)// &
