@@ -1,0 +1,51 @@
+Sample layout for a simulation with a grid of [nx,ny,nz] grid points per processor.
+There are (px,py,pz) processors along the x, y, and z direction.
+The number of ghost layers is set here to NG and is of course variable in reality.
+This results in a global grid size of mxgrid=nx*px+2*NG in a monolithic layout.
+Likewise, the global grid size without grid cells is defined as nxgrid=nx*px.
+The chunk dimensions are denoted in square brackets.
+The group and dataset structure and dimensions would be as follows:
+
+
+The main idea in the collect-xy variant is to first combine the data along the x and y directions
+via MPI. This is done on all processors in parallel and it is an independent communication.
+In small setups with px=1 there would be only communication along y with py processors.
+
+We can include the lower and upper x ghost layers in the collection along x and y,
+as this is only a relatively small increase of the communicated data for boundary processors:
+
+data/
+	ax	[mxgrid,mygrid,nz],(pz)
+	ay	[mxgrid,mygrid,nz],(pz)
+	az	[mxgrid,mygrid,nz],(pz)
+	lnTT	[mxgrid,mygrid,nz],(pz)
+	lnrho	[mxgrid,mygrid,nz],(pz)
+	ux	[mxgrid,mygrid,nz],(pz)
+	uy	[mxgrid,mygrid,nz],(pz)
+	uz	[mxgrid,mygrid,nz],(pz)
+ghost/
+	z	=> see "chunked" scheme, but only for the z layer
+
+
+The alternative is not to include x and y layers in the collection:
+
+data/
+	ax	[nxgrid,nygrid,nz],(pz)
+	ay	[nxgrid,nygrid,nz],(pz)
+	az	[nxgrid,nygrid,nz],(pz)
+	lnTT	[nxgrid,nygrid,nz],(pz)
+	lnrho	[nxgrid,nygrid,nz],(pz)
+	ux	[nxgrid,nygrid,nz],(pz)
+	uy	[nxgrid,nygrid,nz],(pz)
+	uz	[nxgrid,nygrid,nz],(pz)
+ghost/
+	x,y,z	=> see "chunked" scheme
+
+
+In summary, one must note that the actual writing (and accessing of the HDF5 libaray)
+is done here from only pz processors, therefore chunks can be much larger.
+The previous collection step might be a bottleneck, because only one processor
+recieves the data from px×py processors, which has to be a sequential communication!
+Only after the collection step has finished, the writing via HDF5 calls may begin.
+
+I wonder if this scheme can at all be more performant than the "collect-x" scheme.
