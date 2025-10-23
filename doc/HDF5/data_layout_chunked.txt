@@ -79,6 +79,7 @@ ghost/
 		y	(nxgrid,     3,mzgrid),2
 		z	[nxgrid,nygrid,     3],2
 					=> 1=L, 2=U
+	.../
 
 The advantage is here that the reading of the ghosts will be faster.
 As a trade-off, x and y have to be non-chunky datasets because the data portion
