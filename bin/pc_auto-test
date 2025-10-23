@@ -280,7 +280,7 @@ my @gpu_tests = qw(
 			 #1d-tests/hyperdiffusion
 			 #2d-tests/chiral_dynamo
                          spherical-globaldisk-mhd
-			 #cartesian-convection-kramers-chimax          # 4% diff in urms
+			 cartesian-convection-kramers-chimax
                          #cartesian-convection-kramers-chimax_cp_2
 			 #spherical-convection
 			 #meissner
