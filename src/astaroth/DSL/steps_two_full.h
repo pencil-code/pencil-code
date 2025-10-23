@@ -9,7 +9,7 @@
 #include "../newton_cooling.h"
 #include "../polymer.h"
 #include "../sld"
-//#include "../entropy/after_boundary.h"
+#include "../entropy/after_boundary.h"
 
 input real AC_dt
 input PC_SUB_STEP_NUMBER AC_step_num
@@ -61,8 +61,8 @@ ComputeSteps AC_before_boundary_steps(boundconds)
 	prep_ode_right()
 	calc_poly_fr()
 	sld_calc_char_speed(AC_step_num)
-	//entropy_reductions()
-	//entropy_mean_derivs()
+	entropy_reductions()
+	entropy_mean_derivs()
 }
 ComputeSteps AC_before_boundary_steps_including_halos(boundconds)
 {

@@ -238,3 +238,7 @@ const real yhmax = 1-AC_REAL_EPSILON
 
 //Crucially lmultithread has to be false from the point of view GPU that we don't do some things twice
 const bool AC_lmultithread__mod__cdata = false
+#if Lentropy_MODULE
+Profile<Z> AC_ssmz__mod__energy
+Profile<Z> AC_del2ssmz__mod__energy
+#endif
