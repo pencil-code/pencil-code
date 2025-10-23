@@ -339,7 +339,10 @@ endsubroutine helper_loop
 
   Time_loop: do while (it<=nt)
 !
-    lout = (mod(it-1,it1) == 0) .and. (it > it1start)
+!  Possibility to turn off logspacing for time series output
+!
+    if (.not.(lit1_logspacing.and.real(t)<tmax_logspacing)) &
+      lout = (mod(it-1,it1) == 0) .and. (it > it1start)
 !
     if (lout .or. emergency_stop) then
 !
@@ -477,6 +480,10 @@ endsubroutine helper_loop
     else
       call powersnap_prepare
     endif
+!
+!  Possibility of logspacing for time series output
+!
+    if (lit1_logspacing.and.real(t)<tmax_logspacing) lout=lspec 
 !
 !  Time advance.
 !

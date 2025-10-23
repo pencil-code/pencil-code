@@ -148,6 +148,7 @@ module Param_IO
       cdtv, cdtv2, cdtv3, cdtsrc, cdts, cdtr, cdtf, &
       cdtc, isave, itorder, dsnap, dsnap_down, mvar_down, maux_down, &
       d1davg, d2davg, dvid, dsound, dtmin, dspec, tmax, toutoff, &
+      lit1_logspacing, tmax_logspacing, &
       iwig, ldivu_perp, allproc_print, ssmask1, ssmask2, &
       dtracers, dfixed_points, unit_system, unit_length, &
       unit_velocity, unit_density, unit_temperature, unit_magnetic, &
