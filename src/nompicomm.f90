@@ -2902,6 +2902,20 @@ module Mpicomm
 !
     endsubroutine mpigather_z
 !***********************************************************************
+    subroutine mpigather(sendbuf,recvbuf,comm)
+!
+!  29-Sep-2025/Kishore: coded by adapting mpigather_z_1D
+!
+      real, dimension(:,:,:), intent(in)  :: sendbuf
+      real, dimension(:,:,:), intent(out) :: recvbuf
+      integer, optional, intent(in) :: comm
+!
+      call keep_compiler_quiet(comm)
+!
+      recvbuf = sendbuf
+!
+    endsubroutine mpigather
+!***********************************************************************
     subroutine mpigather_and_out_real( sendbuf, unit, ltransp, kxrange, kyrange, zrange )
 !
 !  21-dec-10/MR: coded

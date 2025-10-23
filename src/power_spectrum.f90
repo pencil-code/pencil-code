@@ -51,6 +51,7 @@ module Power_spectrum
   integer :: firstout = 0
   logical :: lglq_dot_dat_exists=.false.
   logical :: lsplit_power_xy_in_z= .false.
+  logical :: lpowerxy_hdf5=.false.
   integer :: n_glq=1
 !
   character (LEN=linelen) :: ckxrange='', ckyrange='', czrange=''
@@ -94,7 +95,7 @@ module Power_spectrum
       power_format, kout_max, tout_min, tout_max, specflux_dp, specflux_dq, &
       lhorizontal_spectra, lvertical_spectra, ltrue_binning, max_k2, &
       specflux_pmin, specflux_pmax, lzero_spec_zerok, lcorrect_integer_kcalc, &
-      lpdf_2d_variable_range
+      lpdf_2d_variable_range, lpowerxy_hdf5
 !
 ! real, allocatable, dimension(:,:) :: spectrum_2d, spectrumhel_2d
 ! real, allocatable, dimension(:,:) :: spectrum_2d_sum, spectrumhel_2d_sum
@@ -279,7 +280,18 @@ outer:do ikz=1,nz
       enddo
       if (ipz==0) call mpimerge_1d(kshell,nk_xy,12) ! filling of the shell-wavenumber vector
     endif
-    !
+!
+!   Check for unsupported configurations of the power_xy subroutine
+!   Kishore: I suppose these should be changed to errors at some point.
+!
+    if (n_spectra>0) then
+      if (lintegrate_z .and. nprocx>1) then
+        call warning('initialize_power_spectrum', &
+          'lintegrate_shell uses mpigather_xy which assumes nprocx==1. ' //&
+          'Your results are most likely garbage.')
+      endif
+    endif
+!
   endsubroutine initialize_power_spectrum
 !***********************************************************************
   subroutine read_power_spectrum_run_pars(iostat)
@@ -909,6 +921,7 @@ outer:do ikz=1,nz
     use Mpicomm, only: mpireduce_sum, mpigather_xy, mpigather_and_out_real, mpigather_and_out_cmplx, &
                        ipz, mpibarrier, mpigather_z
     use General, only: itoa, write_full_columns, get_range_no, write_by_ranges
+    use Messages, only: not_implemented
     use Fourier, only: kx_fft, ky_fft
 !
     implicit none
@@ -933,6 +946,7 @@ outer:do ikz=1,nz
     character (len=fnlen):: filename
     character (len=3)    :: sp_field
     logical              :: l2nd
+    logical              :: lwrite_metadata
 !
 !  identify version
 !
@@ -1112,28 +1126,35 @@ outer:do ikz=1,nz
 !
     enddo ! do ivec=iveca,iveca+ncomp-1
 !
+!   if lpowerxy_hdf5=T, we need the filename on all processors.
+!
+    if ( len(sp2)==0 ) then
+      filename=trim(datadir)//'/power'//trim(sp)//'_xy.dat'
+    else
+      filename=trim(datadir)//'/power'//trim(sp)//'.'//trim(sp2)//'_xy.dat'
+    endif
+!
     if (lroot) then
 !
 !    on root processor, append global result to diagnostics file "power<field>_xy.dat"
 !
-      if ( len(sp2)==0 ) then
-        filename=trim(datadir)//'/power'//trim(sp)//'_xy.dat'
-      else
-        filename=trim(datadir)//'/power'//trim(sp)//'.'//trim(sp2)//'_xy.dat'
-      endif
-!
       if (ip<10) print*,'Writing power spectra of variable',sp &
            ,'to ',filename
 !
-      inquire(FILE=trim(filename), EXIST=lpowerdat_existed)
-      open(1,file=filename,position='append')
+      if (.not.lpowerxy_hdf5) then
+        inquire(FILE=trim(filename), EXIST=lpowerdat_existed)
+        open(1,file=filename,position='append')
+        lwrite_metadata = .not.lpowerdat_existed
+      else
+        lwrite_metadata = .false.
+      endif
 !
       if (lintegrate_shell) then
         nkl = nk
         if ( kshell(nk) == -1 ) nkl = nk-1
       endif
 !
-      if ( firstout<n_spectra .and. .not. lpowerdat_existed) then
+      if ( firstout<n_spectra .and. lwrite_metadata) then
 !
 !    We only want to write all this metadata the first time this file is created, not every time pencil is run.
 !    MR: Really? some metadata might change between restarts.
@@ -1168,11 +1189,17 @@ outer:do ikz=1,nz
 !
       endif
 !
-      write(1,*) tspec
+      if (.not.lpowerxy_hdf5) write(1,*) tspec
 !
     endif
 !
     firstout = firstout+1
+!
+    if (lpowerxy_hdf5) then
+      if (.not.lcomplex) then
+        call not_implemented('power_xy', 'HDF5 output for lcomplex=F')
+      endif
+    endif
 !
     if (lintegrate_shell) then
 !
@@ -1201,7 +1228,11 @@ outer:do ikz=1,nz
       call mpigather_xy( spectrum2_sum, spectrum2_global, 0 )
 !
     elseif (lcomplex) then
-      call mpigather_and_out_cmplx(spectrum3_cmplx,1,.false.,kxrange,kyrange,zrange)
+      if (lpowerxy_hdf5) then
+        call output_power_complex_hdf5(spectrum3_cmplx, tspec, filename, kxrange, kyrange, zrange)
+      else
+        call mpigather_and_out_cmplx(spectrum3_cmplx,1,.false.,kxrange,kyrange,zrange)
+      endif
     else
       call mpigather_and_out_real(spectrum3,1,.false.,kxrange,kyrange,zrange)
     endif
@@ -6503,5 +6534,235 @@ outer:do ikz=1,nz
     k2 = (L_min_xy/(2*pi))**2 * ( kx_fft2(ikx) + ky_fft2(iky) )
 !
   endfunction get_k2_xy
+!***********************************************************************
+  subroutine output_power_complex_hdf5(data, time, filename, kxrange, kyrange, zrange)
+!
+!   File structure (groups and datasets):
+!     metadata:
+!       output_version: (int, int, int)
+!       kx: 1D array
+!       ky: 1D array
+!       z: 1D array
+!     last: int (latest output number)
+!     '1':
+!       data_re: real part of the 4D data array at first output iteration
+!       data_im: imaginary part ...
+!       time: time at first output iteration
+!     '2':
+!       data_re: ... at second output iteration
+!       data_im: ... at second output iteration
+!       time: time at second output iteration
+!     ...
+!
+!   2025-Sep-23/Kishore: coded
+!
+    use General, only: get_range_no, write_by_ranges
+    use File_io, only: file_exists
+    use Hdf5_io, only: create_group_hdf5, exists_in_hdf5, file_close_hdf5, &
+      file_open_hdf5, input_hdf5, output_hdf5
+    use Fourier, only: kx_fft, ky_fft
+!
+    complex, dimension(:,:,:,:), intent(in) :: data
+    real, intent(in) :: time
+    character(len=fnlen), intent(in) :: filename
+    integer, dimension(:,:), intent(in) :: kxrange, kyrange, zrange
+!
+    integer :: iter,pos,latest
+    character(len=fnlen) :: filename_h5, label
+    logical :: lexists
+!
+    if (lroot) then
+!
+      pos = index(filename, '.dat')
+      if (pos > 1) then
+        filename_h5 = filename(1:pos-1)//'.h5'
+      else
+        filename_h5 = filename//'.h5'
+      endif
+!
+      lexists = file_exists(filename_h5)
+      call file_open_hdf5 (filename_h5, truncate=.not.lexists, global=.false.)
+!
+      if (lexists .and. exists_in_hdf5 ('last')) then
+        call input_hdf5 ('last', latest)
+      else
+        latest = 0
+      endif
+      iter = latest+1
+!
+      call file_open_hdf5(filename_h5, truncate=.false., global=.false.)
+!
+      if (.not.exists_in_hdf5('metadata')) then
+        call create_group_hdf5('metadata')
+        call output_elements_by_range(kx_fft, kxrange, 'metadata/kx')
+        call output_elements_by_range(ky_fft, kyrange, 'metadata/ky')
+        call output_elements_by_range(zgrid, zrange, 'metadata/z')
+!
+!       NOTE: Increment output_version if you make any changes to the output format that would require changes to the reading routines. Format is (major, minor, patch).
+!
+        call output_hdf5('metadata/output_version', (/0,0,0/), 3)
+      endif
+!
+      write (label, '(I0)') iter
+      call create_group_hdf5(label)
+!
+      call output_hdf5(trim(label)//'/time', time)
+      call output_hdf5('last', iter)
+    endif
+!
+    call gather_and_output_by_range(real(data), kxrange, kyrange, zrange, trim(label)//'/data_re')
+    call gather_and_output_by_range(aimag(data), kxrange, kyrange, zrange, trim(label)//'/data_im')
+!
+    if (lroot) then
+      call file_close_hdf5
+    endif
+!
+  endsubroutine output_power_complex_hdf5
+!***********************************************************************
+  subroutine output_elements_by_range(k_full, kxrange, label)
+!
+!   2025-Sep-23/Kishore: coded
+!
+    use General, only: get_range_no, write_by_ranges
+    use Hdf5_io, only: output_hdf5
+!
+    integer, dimension(:,:), intent(in) :: kxrange
+    real, dimension(:), intent(in) :: k_full
+    character (len=*), intent(in) :: label
+!
+    logical :: lexit
+    integer :: n, m, i, irang, i1, i2, i3, ierr
+    real, dimension(:), allocatable :: kx
+!
+    n = get_range_no(kxrange, size(k_full))
+!
+    allocate(kx(n), stat=ierr)
+    if (ierr /= 0) call fatal_error ('output_elements_by_range', &
+      'Failed to allocate memory for kx')
+!
+    i=1
+    do irang=1,size(kxrange,2)
+      call unpack_range(kxrange(:,irang),i1,i2,i3,lexit,m)
+      if (lexit) exit
+      kx(i:i+m-1) = k_full(i1:i2:i3)
+      i = i+m
+    enddo
+!
+    call output_hdf5(trim(label), kx, n)
+!
+    deallocate(kx)
+!
+  endsubroutine output_elements_by_range
+!***********************************************************************
+  subroutine gather_and_output_by_range(data, kxrange, kyrange, zrange, label)
+!
+!   Gather data on root, slice it according to {kx,ky,z}range, and output it to a previously opened HDF5 file.
+!
+!   2025-Sep-23/Kishore: coded by modifying output_elements_by_range
+!
+    use General, only: get_range_no, write_by_ranges
+    use Hdf5_io, only: output_hdf5
+    use Mpicomm, only: mpigather
+!
+    integer, dimension(:,:), intent(in) :: kxrange, kyrange, zrange
+    real, dimension(:,:,:,:), intent(in) :: data
+    character (len=*), intent(in) :: label
+!
+!   We use the name nkx to avoid shadowing nz
+!
+    integer :: nkx, nky, nkz, ncomp, ierr
+    logical :: lexit
+    integer :: icomp, irang, i1, i2, i3, jrang, j1, j2, j3, krang, k1, k2, k3
+    integer :: ix, iy, iz, lx, ly, lz
+    real, dimension(:,:,:,:), allocatable :: data_sliced
+    real, dimension(:,:,:), allocatable :: data_full
+!
+    if (size(data,1) /= nx) call fatal_error('gather_and_output_by_range', &
+      'wrong size along x')
+    if (size(data,2) /= ny) call fatal_error('gather_and_output_by_range', &
+      'wrong size along y')
+    if (size(data,3) /= nz) call fatal_error('gather_and_output_by_range', &
+      'wrong size along z')
+!
+!   Since this is a large array, we keep it allocatable.
+!
+    allocate(data_full(nxgrid,nygrid,nzgrid), stat=ierr)
+    if (ierr /= 0) call fatal_error ('gather_and_output_by_range', &
+      'Failed to allocate memory for data_full')
+!
+    nkx = get_range_no(kxrange, nxgrid)
+    nky = get_range_no(kyrange, nygrid)
+    nkz = get_range_no(zrange, nzgrid)
+    ncomp = size(data,4)
+!
+    if (lroot) then
+      allocate(data_sliced(nkx,nky,nkz,ncomp), stat=ierr)
+      if (ierr /= 0) call fatal_error ('gather_and_output_by_range', &
+        'Failed to allocate memory for data_sliced')
+    else
+      allocate(data_sliced(1,1,1,1)) !dummy
+    endif
+!
+    comp: do icomp=1,ncomp
+      call mpigather(data(:,:,:,icomp), data_full)
+!
+      if (lroot) then
+        ix = 1
+        iy = 1
+        iz = 1
+        do irang=1,size(kxrange,2)
+          call unpack_range(kxrange(:,irang),i1,i2,i3,lexit,lx)
+          if (lexit) exit
+          do jrang=1,size(kyrange,2)
+            call unpack_range(kyrange(:,jrang),j1,j2,j3,lexit,ly)
+            if (lexit) exit
+            do krang=1,size(zrange,2)
+              call unpack_range(zrange(:,krang),k1,k2,k3,lexit,lz)
+              if (lexit) exit
+!
+              data_sliced(ix:ix+lx-1, iy:iy+ly-1, iz:iz+lz-1, icomp) = data_full(i1:i2:i3, j1:j2:j3, k1:k2:k3)
+              ix = ix+lx
+              iy = iy+lz
+              iz = iz+lz
+!
+            enddo
+          enddo
+        enddo
+      endif
+    enddo comp
+!
+    if (lroot) call output_hdf5(trim(label), data_sliced, nkx, nky, nkz, ncomp)
+!
+    deallocate(data_sliced)
+    deallocate(data_full)
+!
+  endsubroutine gather_and_output_by_range
+!***********************************************************************
+  subroutine unpack_range(rang, i1, i2, i3, lempty_range, n)
+!
+!   Unpack the array rang into i1,i2,i3 and optionally calculate the number of
+!   elements that would be selected when using i1:i2:i3 to slice an array.
+!
+!   26-sep-2025/Kishore: coded
+!
+    use General, only: get_range_no
+!
+    integer, dimension(3), intent(in) :: rang
+    integer, intent(out) :: i1,i2,i3
+    logical, intent(out) :: lempty_range
+    integer, optional, intent(out) :: n
+!
+    i1 = rang(1)
+    if (i1 == 0) then
+      lempty_range=.true.
+    else
+      lempty_range=.false.
+    endif
+    i2 = rang(2)
+    i3 = rang(3)
+!
+    if (present(n)) n = get_range_no(spread(rang, 2, 1), 1)
+!
+  endsubroutine unpack_range
 !***********************************************************************
 endmodule Power_spectrum

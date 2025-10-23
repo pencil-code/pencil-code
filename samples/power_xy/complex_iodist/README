@@ -1,0 +1,12 @@
+Directory:
+    ${PENCIL_HOME}/samples/power_xy/complex_iodist
+SVN Id:
+    $Id$
+Maintainer:
+    Kishore G <kishore96/gmail[dot]com>
+Added:
+    23-Sep-2025
+Status:
+    succeeds # One of [succeeds|failing since <date>|obsolete| ...]
+Comments:
+    Variant of samples/power_xy/complex that uses io_dist

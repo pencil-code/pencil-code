@@ -56,6 +56,5 @@
   lintegrate_z=F
   lintegrate_shell=F
   lcomplex=T
-  lpowerxy_hdf5=F
 /
 

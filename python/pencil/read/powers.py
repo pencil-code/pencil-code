@@ -68,36 +68,17 @@ class Power(object):
         hel_kin
         """
 
-        power_list = []
-        file_list = []
-
         if file_name is not None:
             if not quiet:
                 print("Reading only ", file_name)
 
             if os.path.isfile(os.path.join(datadir, file_name)):
-                if file_name[:5] == "power" and file_name[-4:] == ".dat":
-                    if file_name[:6] == "power_":
-                        power_list.append(file_name.split(".")[0][6:])
-                        if not quiet:
-                            print("appending", file_name.split(".")[0][6:])
-                    else:
-                        power_list.append(file_name.split(".")[0][5:])
-                        if not quiet:
-                            print("appending", file_name.split(".")[0][5:])
-
-                    file_list.append(file_name)
+                power_list, file_list = self._parse_filelist([file_name], quiet)
             else:
                 raise ValueError(f"File {file_name} does not exist.")
 
         else:
-            for file_name in os.listdir(datadir):
-                if file_name[:5] == "power" and file_name[-4:] == ".dat":
-                    if file_name[:6] == "power_":
-                        power_list.append(file_name.split(".")[0][6:])
-                    else:
-                        power_list.append(file_name.split(".")[0][5:])
-                    file_list.append(file_name)
+            power_list, file_list = self._parse_filelist(os.listdir(datadir), quiet)
 
         # Read the power spectra.
         for power_name, file_name in zip(power_list, file_list):
@@ -106,6 +87,8 @@ class Power(object):
 
             if re.match("power.*_xy.dat", file_name):
                 self._read_power2d(power_name, file_name, datadir)
+            elif re.match("power.*_xy.h5", file_name):
+                self._read_power2d_hdf5(power_name, file_name, datadir)
             elif (
                 file_name == "poweruz_x.dat"
                 or file_name == "powerux_x.dat"
@@ -255,6 +238,52 @@ class Power(object):
         self.nzpos = nzpos
         setattr(self, power_name, power_array)
 
+    def _read_power2d_hdf5(self, power_name, file_name, datadir):
+        """
+        Handles HDF5 output of power_xy subroutine.
+        """
+        import h5py
+
+        param = read.param(datadir=datadir)
+
+        with h5py.File(os.path.join(datadir, file_name)) as f:
+            if param.lintegrate_shell:
+                raise NotImplementedError
+            elif param.lintegrate_z:
+                raise NotImplementedError
+            else:
+                self.kx = f['metadata/kx'][()]
+                self.ky = f['metadata/ky'][()]
+                self.z = f['metadata/z'][()]
+                self.nzpos = len(self.z)
+
+                nt = int(f['last'][()])
+                time = np.empty([nt])
+                power_shape = f[f"{nt}"]['data_re'].shape
+                power_re = np.empty([nt, *power_shape])
+                power_im = np.empty_like(power_re)
+
+                def get(key, it):
+                    try:
+                        val = f[f"{it+1}/{key}"][()]
+                    except KeyError as e:
+                        e.add_note(f"iteration = {it+1}")
+                        raise e
+                    return val
+
+                for it in range(nt):
+                    time[it] = get("time", it)
+                    power_re[it] = get("data_re", it)
+                    power_im[it] = get("data_im", it)
+
+        self.t = time
+
+        power_array = power_re + 1j*power_im
+        np.transpose(power_array, axes=[0,1,4,3,2]) #make the axis order [t,vec,kx,ky,z]
+        if power_array.shape[1] == 1:
+            power_array = np.squeeze(power_array, axis=1)
+        setattr(self, power_name, power_array)
+
     def _read_power_1d(self, power_name, file_name, datadir):
         """
         Handle output of subroutine power_1d
@@ -389,6 +418,26 @@ class Power(object):
             nk = 1
 
         return int(nk)
+
+    def _parse_filelist(self, file_list_in, quiet):
+        power_list = []
+        file_list = []
+
+        for file_name in file_list_in:
+            fileext = file_name.split('.')[-1]
+            if file_name[:5] == "power" and fileext in ["dat", "h5"]:
+                if file_name[:6] == "power_":
+                    power_name = file_name.split(".")[0][6:]
+                else:
+                    power_name = file_name.split(".")[0][5:]
+
+                if not quiet:
+                    print("appending", power_name)
+
+                power_list.append(power_name)
+                file_list.append(file_name)
+
+        return power_list, file_list
 
 @copy_docstring(Power.read)
 def power(*args, **kwargs):

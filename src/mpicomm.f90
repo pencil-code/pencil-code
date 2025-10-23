@@ -10042,55 +10042,50 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine mpigather_z
 !***********************************************************************
-    subroutine mpigather( sendbuf, recvbuf , comm)
+    subroutine mpigather(sendbuf, recvbuf, comm)
 !
 !  Gathers the chunks of a 3D array from each processor in a big array at root.
 !
-!  Here no parallelization in x allowed.
-!
 !  19-nov-10/MR: coded
+!  22-Oct-2025/Kishore: support parallelization in x direction.
 !
-      real, dimension(nxgrid,ny,nz):: sendbuf   ! nx=nxgrid !
-      real, dimension(:,:,:)       :: recvbuf
-      integer, optional :: comm
+      use General, only: find_proc_coords
 !
-      integer :: ncnt, i
+      real, dimension(nx,ny,nz), intent(in) :: sendbuf
+      real, dimension(:,:,:), intent(out) :: recvbuf
+      integer, optional, intent(in) :: comm
+!
+      integer :: iy, iz, i, ipx, ipy, ipz
 !
 !  MR: These long integer variables would be necessary for big nxgrid*nygrid,
 !      but there is no MPI_GATHERV which would accept a long int shifts argument.
 !
-      integer(KIND=ikind8) :: nlayer, nshift
+      integer(KIND=ikind8) :: nlayer, nlayer_y
       integer(KIND=ikind8), dimension(ncpus) :: shifts
       integer, dimension(ncpus) :: counts
-!
-      ncnt = nxgrid*ny
 !
       if (lroot) then
 !
         nlayer = nz*int8(nxgrid)*int8(nygrid)
         if (nlayer>max_int) &
           call stop_it("mpigather: integer overflow in shifts")
-        counts = ncnt
 !
-        shifts(1) = 0
-        nshift = nlayer
+        nlayer_y = int8(nxgrid)*ny
+        counts = nx
 !
-        do i=2,ncpus
-!
-          if ( mod(i,nprocy)==1 ) then
-            shifts(i) = nshift
-            nshift = nshift+nlayer
-          else
-            shifts(i) = shifts(i-1)+ncnt
-          endif
-!
+        do i=1,ncpus
+          call find_proc_coords(i-1,ipx,ipy,ipz)
+          shifts(i) = ipz*nlayer + ipy*nlayer_y + ipx*nx
         enddo
 !
       endif
 !
-      do i=1,nz
-        call MPI_GATHERV(sendbuf(1,1,i), ncnt, mpi_precision, recvbuf(1,1,i), counts, int(shifts), &
-                         mpi_precision, root, ioptest(comm,MPI_COMM_GRID), mpierr)
+      do iz=1,nz
+        do iy=1,ny
+          call MPI_GATHERV(sendbuf(1,iy,iz), nx, mpi_precision, &
+            recvbuf(1,iy,iz), counts, int(shifts), mpi_precision, &
+            root, ioptest(comm,MPI_COMM_GRID), mpierr)
+        enddo
       enddo
 !
     endsubroutine mpigather

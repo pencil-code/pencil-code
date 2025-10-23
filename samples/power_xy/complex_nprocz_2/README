@@ -1,0 +1,12 @@
+Directory:
+    ${PENCIL_HOME}/samples/power_xy/complex_nproc_8
+SVN Id:
+    $Id$
+Maintainer:
+    Kishore G <kishore96/gmail[dot]com>
+Added:
+    29-Sep-2025
+Status:
+    succeeds # One of [succeeds|failing since <date>|obsolete| ...]
+Comments:
+    Variant of samples/power_xy/complex that tests parallellization along z.

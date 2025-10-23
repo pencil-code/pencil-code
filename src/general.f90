@@ -364,6 +364,9 @@ module General
 !
       integer, intent(in) :: ipx, ipy, ipz
 !
+!     22-Oct-2025/Kishore: is the below condition not always false? It seems to
+!     have been introduced in commit cc57f8d50dbedf5e45cab7a4336e383985d065b4 by
+!     Touko Puro, in a monster checkin with the description "push to remote".
       if (.false..and.all((/nprocx_node,nprocy_node,nprocz_node/)>0)) then
         find_proc = find_proc_node_localty(ipx, ipy, ipz)
       else

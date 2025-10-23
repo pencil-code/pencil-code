@@ -1,0 +1,41 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Convection in vertically stratified atmosphere/solar convection zone
+! Initialisation parameters
+!
+&init_pars
+  cvsid='$Id$',
+  ip=14,                        ! debugging parameter
+  xyz0  = -0.5, -0.5, -0.68,        ! first corner of box
+  Lxyz  =  1.,   1.,   2.,          ! box size
+  lperi =  T ,   T ,   F,           ! periodic direction?
+  ! Boundary conditions; are overriden by run.in,
+  ! but setting them here may help with interpreting
+  ! the initial structure
+  bcx = 'p','p','p', 'p',    'p'
+  bcy = 'p','p','p', 'p',    'p'
+  bcz = 's','s','a','a2','a2:cT'
+/
+&eos_init_pars
+  cs0=.57735, gamma=1.6666666,
+  rho0=1.
+/
+&hydro_init_pars
+  inituu='up-down',
+  ampluu=1.e-1
+  kx_uu= 6.283185 ! 2*\pi
+  ky_uu=12.566371 ! 4*\pi
+  widthuu=0.1
+  urand=0.
+/
+&density_init_pars
+  initlnrho='piecew-poly', widthlnrho=0.05
+/
+&grav_init_pars
+  gravz_profile='const',z1=0., z2=1., zref=1.32, gravz=-1.,
+/
+&entropy_init_pars
+  initss='piecew-poly', widthss=0.05
+  mpoly0=1., mpoly1=3., mpoly2=0., isothtop=1,
+  cs2cool=0.333333
+/
