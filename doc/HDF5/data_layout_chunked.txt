@@ -77,7 +77,7 @@ ghost/
 	ax/
 		x	(     3,mygrid,mzgrid),2
 		y	(nxgrid,     3,mzgrid),2
-		z	[nxgrid,nygrid,     3],2
+		z	[    nx,    ny,     3],(px,py),2
 					=> 1=L, 2=U
 	.../
 
