@@ -181,7 +181,7 @@ module Equ
 !  Call "before_boundary" hooks (for f array precalculation)
 !
       call before_boundary_shared(f)
-      !if (it == 10 .and. itorder == 1) call test_rhs_gpu(f,df,p,mass_per_proc,early_finalize,rhs_cpu)
+      !if (it == 1 ) call test_rhs_gpu(f,df,p,mass_per_proc,early_finalize,rhs_cpu)
 
       if (lgpu) then
         start_time = mpiwtime()
@@ -1787,6 +1787,8 @@ module Equ
       logical ,intent(in) :: early_finalize
 
       real, dimension (:,:,:,:), allocatable :: f_copy,f_diff,df_copy,f_beta,f_abs_diff
+      real, dimension(5) :: beta_ts,alpha_ts
+
 
       integer :: i
 
@@ -1811,19 +1813,23 @@ module Equ
       endinterface
 
       allocate(f_copy(mx,my,mz,mfarray),f_diff(mx,my,mz,mfarray),df_copy(mx,my,mz,mvar),f_beta(mx,my,mz,mfarray))
+      beta_ts =(/ 1/3.0, 15/16.0,    8/15.0 , 0.0, 0.0 /)
+      alpha_ts=(/   0.0, -5/9.0 , -153/128.0, 0.0, 0.0 /)
 
-      if (itorder /= 1) then
-          call fatal_error('test_rhs_gpu','Need itorder to be 1!')
+      if (itorder /= 1 .and. itorder /= 3) then
+          call fatal_error('test_rhs_gpu','Need itorder to be 1 or 3!')
       endif
       call copy_farray_from_GPU(f,.true.)
       f_copy = f
       ldiagnos = .false.
-      do itsub = 1,1
+      df_copy = 0.0
+      dt_beta_ts = dt*beta_ts
+      do itsub = 1,2
+        lfirst = (itsub == 1)
+        if(.not. lfirst) df_copy = alpha_ts(itsub)*df_copy
         call before_boundary_gpu(f,lrmv,itsub,t)
         call rhs_gpu(f,itsub)
 
-        df_copy = 0.0
-        dt_beta_ts = dt*beta_ts
         call impose_floors_ceilings(f_copy) 
         call before_boundary_cpu(f_copy)
         call after_boundary_cpu(f_copy,df_copy)
@@ -1837,9 +1843,12 @@ module Equ
         call boundconds_z(f_copy)
         call cpu_version(f_copy,df_copy,p,mass_per_proc,early_finalize)
         call freeze(df_copy,p)
-        f_copy(l1:l2,m1:m2,n1:n2,1:mvar) = f_copy(l1:l2,m1:m2,n1:n2,1:mvar) + df_copy(l1:l2,m1:m2,n1:n2,:)*dt
+        if(itorder == 1) then
+                f_copy(l1:l2,m1:m2,n1:n2,1:mvar) = f_copy(l1:l2,m1:m2,n1:n2,1:mvar) + df_copy(l1:l2,m1:m2,n1:n2,:)*dt
+        else
+                f_copy(l1:l2,m1:m2,n1:n2,1:mvar) = f_copy(l1:l2,m1:m2,n1:n2,1:mvar) + dt*beta_ts(itsub)*df_copy(l1:l2,m1:m2,n1:n2,:)
+        endif
 
-        !f_beta(l1:l2,m1:m2,n1:n2,1:mvar) = f_beta(l1:l2,m1:m2,n1:n2,1:mvar) + df_copy(l1:l2,m1:m2,n1:n2,:)*dt*beta_ts(itsub)
         call copy_farray_from_GPU(f,.true.)
         !if (itsub == 5) f_copy(l1:l2,m1:m2,n1:n2,1:mvar) = f_beta(l1:l2,m1:m2,n1:n2,1:mvar)
       enddo
