@@ -10,7 +10,7 @@ The group and dataset structure and dimensions would be as follows:
 This strategy is a variant of the "chunked" layout, where we take advantage of the
 fact that the multiple variables (indices of the f-array) are aligned in memory.
 This leads to typically 8 times larger chunks, which can be either better or worse.
-On the one hand, the number of write requests is strongly reduces,
+On the one hand, the number of write requests is strongly reduced,
 but on the other hand, the larger IO buffers may exhaust the available memory.
 The latter could make it impossible to automatically compress the written data.
 We use NA as the number of components that a full data snapshot contains:
@@ -37,9 +37,9 @@ This reduces the risk to exhaust the memory, but again increases the number of w
 data	[nx,ny,nz],(NA,px,py,pz)
 
 tags/
-	...	=> same as avove
+	...	=> same as above
 
 The big advantage of this strategy is that reading independent quantities from a
-shapshot is indeed possible. For compressed snapshots this means that one would
+snapshot is indeed possible. For compressed snapshots this means that one would
 not need to uncompress the whole file, if one likes to read only the temperature.
 

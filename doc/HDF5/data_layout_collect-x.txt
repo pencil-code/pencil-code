@@ -48,4 +48,4 @@ The previous collection step might be a bottleneck, because only one processor
 recieves the data from px other processors, which is a sequential communication!
 Only after the collection step has finished, the writing via HDF5 calls may begin.
 
-I wonder in how far the above schemes are more performant than the "chunked" scheme.
+I wonder in how far the above schemes perform better than the "chunked" scheme.

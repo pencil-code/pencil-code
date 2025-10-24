@@ -42,10 +42,10 @@ ghost/
 	x,y,z	=> see "chunked" scheme
 
 
-In summary, one must note that the actual writing (and accessing of the HDF5 libaray)
+In summary, one must note that the actual writing (and accessing of the HDF5 library)
 is done here from only pz processors, therefore chunks can be much larger.
 The previous collection step might be a bottleneck, because only one processor
-recieves the data from px×py processors, which has to be a sequential communication!
+receives the data from px×py processors, which has to be a sequential communication!
 Only after the collection step has finished, the writing via HDF5 calls may begin.
 
-I wonder if this scheme can at all be more performant than the "collect-x" scheme.
+I wonder if this scheme can at all perform better than the "collect-x" scheme.
