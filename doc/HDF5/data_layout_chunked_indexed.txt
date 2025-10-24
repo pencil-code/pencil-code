@@ -1,0 +1,45 @@
+Sample layout for a simulation with a grid of [nx,ny,nz] grid points per processor.
+There are (px,py,pz) processors along the x, y, and z direction.
+The number of ghost layers is set here to NG and is of course variable in reality.
+This results in a global grid size of mxgrid=nx*px+2*NG in a monolithic layout.
+Likewise, the global grid size without grid cells is defined as nxgrid=nx*px.
+The chunk dimensions are denoted in square brackets.
+The group and dataset structure and dimensions would be as follows:
+
+
+This strategy is a variant of the "chunked" layout, where we take advantage of the
+fact that the multiple variables (indices of the f-array) are aligned in memory.
+This leads to typically 8 times larger chunks, which can be either better or worse.
+On the one hand, the number of write requests is strongly reduces,
+but on the other hand, the larger IO buffers may exhaust the available memory.
+The latter could make it impossible to automatically compress the written data.
+We use NA as the number of components that a full data snapshot contains:
+
+data	[nx,ny,nz,NA],(px,py,pz)
+
+tags/
+	ax	6
+	ay	7
+	az	8
+	lnTT	5
+	lnrho	4
+	ux	1
+	uy	2
+	uz	3
+
+ghost/
+	x,y,z	=> see "chunked" scheme
+
+
+Alternatively, the chunk size could be reduced to the original [nx,ny,nz] size.
+This reduces the risk to exhaust the memory, but again increases the number of write operations.
+
+data	[nx,ny,nz],(NA,px,py,pz)
+
+tags/
+	...	=> same as avove
+
+The big advantage of this strategy is that reading independent quantities from a
+shapshot is indeed possible. For compressed snapshots this means that one would
+not need to uncompress the whole file, if one likes to read only the temperature.
+
