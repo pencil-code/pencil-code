@@ -9364,8 +9364,6 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
               print*,"check_for_nans_globally: nan in Field: ",i
           endif
         enddo
-
-        flush(10)
         call mpiabort
       endif
 
