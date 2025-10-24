@@ -13,3 +13,10 @@ data/
 	ux	[mxgrid,mygrid,mzgrid]
 	uy	[mxgrid,mygrid,mzgrid]
 	uz	[mxgrid,mygrid,mzgrid]
+
+This strategy is implemented in "hdf5_io_parallel" module.
+Our finding is that this is significantly slower than distributed IO
+because the data needs to get combined in the monolithic snapshot.
+Here, this requires to write non-aligned data into the file, which means
+that each processor writes array stripes of only nx or nx+NG size!
+Of course this striping makes the overall write process very slow.
