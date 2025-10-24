@@ -71,7 +71,7 @@ ghost/
 One more alternative is to store the ghost layers collectively for each direction,
 because the amount of data is relatively small. Note that x means the yz-boundary layer.
 Note also that x contains all the y- and z-edges and all 8 corners, while y contains only
-the x-edges withour any corners. The z (xy-boundary) layer contains only the inner xy-grid:
+the x-edges without any corners. The z (xy-boundary) layer contains only the inner xy-grid:
 
 ghost/
 	ax/
