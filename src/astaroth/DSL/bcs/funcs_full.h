@@ -3545,8 +3545,6 @@ bcx_extrap_2_3(AcBoundary boundary, AC_TOP_BOT topbot,Field f)
 bc_outflow_y(AcBoundary boundary, AC_TOP_BOT topbot,Field f,bool lforce_ghost)
 {
   suppress_unused_warning(boundary)
-  int ix
-  int iz
   bool lforce
   lforce = false
   if (present (lforce_ghost)) {

@@ -150,7 +150,8 @@ void scaling();
 void print_debug();
 //void torch_createmodel(const char* name, const char* config_fname, MPI_Comm mpi_comm, int device);
 
-extern "C" void copyFarray(AcReal* f);    // ahead declaration
+extern "C" void copyFarray(AcReal* f);    // forward declaration
+extern "C" void loadFarray(); // forward declaration
 
 
 /***********************************************************************************************/
@@ -679,6 +680,10 @@ void setupConfig(AcMeshInfo& config)
   {
           PCLoad(config, AC_coordinate_system, AC_CYLINDRICAL_COORDINATES);
   }
+  //TP: this is needed to not run out of memory for spherical-gdisk-planet-thermo on norlx51
+#if LNEWTON_COOLING
+  PCLoad(config,AC_only_default_stream_for_taskgraphs, lcpu_timestep_on_gpu);
+#endif
   PCLoad(config, AC_domain_decomposition, (int3) {nprocx,nprocy,nprocz});
   PCLoad(config, AC_ngrid, (int3){nxgrid,nygrid,nzgrid});
   PCLoad(config, AC_skip_single_gpu_optim, true);
@@ -820,11 +825,13 @@ AcReal calc_dt1_courant(const AcReal t)
 AcReal GpuCalcDt(const AcReal t)
 {
 	acGridSynchronizeStream(STREAM_ALL);
+        copyFarray(NULL);
+	acGridSynchronizeStream(STREAM_ALL);
   	acDeviceSetInput(acGridGetDevice(), AC_step_num, (PC_SUB_STEP_NUMBER) 0);
-	const auto graph = acGetOptimizedDSLTaskGraph(AC_calculate_timestep);
+	const auto graph = acGetOptimizedDSLTaskGraph(AC_rhs);
 	acGridExecuteTaskGraph(graph,1);
 	acGridSynchronizeStream(STREAM_ALL);
-        acDeviceSwapBuffers(acGridGetDevice());
+	loadFarray();
 	return calc_dt1_courant(t);
 }
 /***********************************************************************************************/
@@ -2364,7 +2371,7 @@ extern "C" void gpuSetDt(double t)
 	}
 	//TP: not needed but for extra safety
   	acDeviceSetInput(acGridGetDevice(), AC_step_num, (PC_SUB_STEP_NUMBER) 0);
-	const auto graph = acGetOptimizedDSLTaskGraph(AC_calculate_timestep);
+	const auto graph = acGetOptimizedDSLTaskGraph(AC_rhs);
 
 	acGridExecuteTaskGraph(graph,1);
 	acGridSynchronizeStream(STREAM_ALL);

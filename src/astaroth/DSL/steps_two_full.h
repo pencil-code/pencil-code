@@ -25,13 +25,6 @@ ComputeSteps AC_rhs(boundconds)
         twopass_solve_intermediate(AC_step_num,AC_dt,AC_t,AC_lrmv)
         twopass_solve_final(AC_step_num)
 }
-ComputeSteps AC_calculate_timestep(boundconds)
-{
-	shock_1_divu(AC_step_num)
-	shock_2_max(AC_step_num)
-	shock_3_smooth(AC_step_num)
-	twopass_solve_intermediate(PC_FIRST_SUB_STEP,AC_dt,AC_t,AC_lrmv)
-}
 
 ComputeSteps AC_calc_selfgravity_rhs(boundconds)
 {
@@ -81,8 +74,8 @@ ComputeSteps AC_gravitational_waves_solve_and_stress(boundconds)
 ComputeSteps AC_integrate_tau(boundconds)
 {
   calc_kappar_and_dtau()
-  integrate_tau_up()
   integrate_tau_down()
+  integrate_tau_up()
   calc_tau()
 }
 
