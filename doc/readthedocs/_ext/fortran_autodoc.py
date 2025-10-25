@@ -131,6 +131,9 @@ class F90toRst(object):
         import numpy.f2py.crackfortran
         self._verbose = numpy.f2py.crackfortran.verbose = verbose = vl
         numpy.f2py.crackfortran.quiet = quiet = 1 - verbose
+        # Overwritten the badnames
+        numpy.f2py.crackfortran.badnames = []
+        numpy.f2py.crackfortran.invbadnames = []
         self.crack = []
         for ff in ffiles:
             print(ff)
