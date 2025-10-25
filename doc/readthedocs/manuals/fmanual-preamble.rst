@@ -219,7 +219,7 @@ Copyright and License
 
 .. rubric:: Copyright and License
 
-Copyright |copyright| 2001--2023 Wolfgang Dobler & Axel Brandenburg
+Copyright © 2001--2023 Wolfgang Dobler & Axel Brandenburg
 
 Permission is granted to make and distribute verbatim copies of this manual
 provided the copyright notice and this permission notice are preserved on all copies.
@@ -235,41 +235,41 @@ are under the GNU General Public License
 
 We, the **Pencil Code** community, ask that in publications
 and presentations the use of the code (or parts of it)
-be acknowledged with reference to :cite:`JOSS`
-``Pencil Code Collaboration, *J. Open Source Software*, **6**,
+be acknowledged with reference to [JOSS]_
+Pencil Code Collaboration, *J. Open Source Software*, **6**,
 2807 (2021) The Pencil Code, a modular MPI code for partial differential
-equations and particles: multipurpose and multiuser-maintained.``
+equations and particles: multipurpose and multiuser-maintained.
 This automatically gives a reference to the web sites
 `http://www.nordita.org/software/pencil-code/ <http://www.nordita.org/software/pencil-code/>`_ and
 `https://github.com/pencil-code/pencil-code <https://github.com/pencil-code/pencil-code>`_.
 As a courtesy to the people involved in developing particularly important
-parts of the program (use ``svn annotate src/*.f90`` to find out who did what!)
+parts of the program (use ``svn annotate src/*.f90`` or ``git blame -c src/filename.f90`` to find out who did what!)
 we suggest to give appropriate reference to one or
 several of the following (or other appropriate) papers (listed here in temporal order):
 
 
 - Dobler, W., Haugen, N. E. L., Yousef, T. A., & Brandenburg, A., |yprN|, 2003, E 68, 026304, 1-8, "Bottleneck effect in three-dimensional turbulence simulations", |astroph|{0303324}
-- Haugen, N. E. L., Brandenburg, A., & Dobler, W., |yapjlS|, 2003, 597, L141, L144, "Is nonhelical hydromagnetic turbulence peaked at small scales?", |astroph|{0303372}
-- Brandenburg, A., K\"apyl\"a, P., & Mohammed, A., |ypf|, 2004, 16, 1020, 1027, "Non-Fickian diffusion and tau-approximation from numerical turbulence", |astroph|{0306521}
-- Johansen, A., Andersen, A. C., & Brandenburg, A., |yana|, 2004, 417, 361, 371, "Simulations of dust-trapping vortices in protoplanetary discs", |astroph|{0310059}
+- Haugen, N. E. L., Brandenburg, A., & Dobler, W., |yapjlS|, 2003, 597, L141, L144, "Is nonhelical hydromagnetic turbulence peaked at small scales?", (`astroph/0303372 <http://arxiv.org/abs/astro-ph/0303372>`__)
+- Brandenburg, A., K\"apyl\"a, P., & Mohammed, A., |ypf|, 2004, 16, 1020, 1027, "Non-Fickian diffusion and tau-approximation from numerical turbulence", |astroph| {0306521}
+- Johansen, A., Andersen, A. C., & Brandenburg, A., |yana|, 2004, 417, 361, 371, "Simulations of dust-trapping vortices in protoplanetary discs", |astroph| {0310059}
 - Haugen, N. E. L., Brandenburg, A., & Mee, A. J., |ymn|, 2004, 353, 947, 952, "Mach number dependence of the onset of dynamo action", |astroph|{0405453}
-- Brandenburg, A., & Multam\"aki, T., |yjourS|, 2004, Int. J. Astrobiol., 3, 209, 219, "How long can left and right handed life forms coexist?", |qbio|{0407008}
+- Brandenburg, A., & Multam\"aki, T., |yjourS|, 2004, Int. J. Astrobiol., 3, 209, 219, "How long can left and right handed life forms coexist?", |qbio| {0407008}
 - McMillan, D. G., & Sarson, G. R., |ypepi|, 2005, 153, 124, 135, "Dynamo simulations in a spherical shell of ideal gas using a high-order Cartesian magnetohydrodynamics code"
-- Heinemann, T., Dobler, W., Nordlund, Å., & Brandenburg, A., |yana|, 2006, 448, 731, 737, "Radiative transfer in decomposed domains", |astroph|{0503510}
+- Heinemann, T., Dobler, W., Nordlund, Å., & Brandenburg, A., |yana|, 2006, 448, 731, 737, "Radiative transfer in decomposed domains", |astroph| {0503510}
 - Dobler, W., Stix, M., & Brandenburg, A., |yapj|, 2006, 638, 336, 347, "Convection and magnetic field generation in fully convective spheres", |astroph|{0410645}
-- Snodin, A. P., Brandenburg, A., Mee, A. J., & Shukurov, A., |ymn|, 2006, 373, 643, 652, "Simulating field-aligned diffusion of a cosmic ray gas", |astroph|{0507176}
-- Johansen, A., Klahr, H., & Henning, T., |yapj|, 2006, 636, 1121, 1134, "Dust sedimentation and self-sustained Kelvin-Helmholtz turbulence in protoplanetary disc mid-planes", |astroph|{0512272}
+- Snodin, A. P., Brandenburg, A., Mee, A. J., & Shukurov, A., |ymn|, 2006, 373, 643, 652, "Simulating field-aligned diffusion of a cosmic ray gas", |astroph| {0507176}
+- Johansen, A., Klahr, H., & Henning, T., |yapj|, 2006, 636, 1121, 1134, "Dust sedimentation and self-sustained Kelvin-Helmholtz turbulence in protoplanetary disc mid-planes", |astroph| {0512272}
 - de Val-Borro, M. and 22 coauthors (incl. Lyra, W.), |ymn|, 2006, 370, 529, 558, "A comparative study of disc-planet interaction", |astroph|{0605237}
-- Johansen, A., Oishi, J. S., Mac Low, M. M., Klahr, H., Henning, T., & Youdin, A., |ynat|, 2007, 448, 1022, 1025, "Rapid planetesimal formation in turbulent circumstellar disks", |arXiv|{0708.3890}
+- Johansen, A., Oishi, J. S., Mac Low, M. M., Klahr, H., Henning, T., & Youdin, A., |ynat|, 2007, 448, 1022, 1025, "Rapid planetesimal formation in turbulent circumstellar disks", |arXiv| {0708.3890}
 - Lyra, W., Johansen, A., Klahr, H., & Piskunov, N., |yana|, 2008, 479, 883, 901, "Global magnetohydrodynamical models of turbulence in protoplanetary disks I. A cylindrical potential on a Cartesian grid and transport of solids", |arXiv|{0705.4090}
-- Brandenburg, A., Rädler, K.-H., Rheinhardt, M., & K\"apyl\"a, P. J., |yapj|, 2008, 676, 740, 751, "Magnetic diffusivity tensor and dynamo effects in rotating and shearing turbulence", |arXiv|{0710.4059}
+- Brandenburg, A., Rädler, K.-H., Rheinhardt, M., & K\"apyl\"a, P. J., |yapj|, 2008, 676, 740, 751, "Magnetic diffusivity tensor and dynamo effects in rotating and shearing turbulence", |arXiv| {0710.4059}
 - Lyra, W., Johansen, A., Klahr, H., & Piskunov, N., |yana|, 2008, 491, L41, L44, "Embryos grown in the dead zone. Assembling the first protoplanetary cores in low-mass selfgravitating circumstellar disks of gas and solids"
 - Lyra, W., Johansen, A., Klahr, H., & Piskunov, N., |yana|, 2009, 493, 1125, 1139, "Standing on the shoulders of giants. Trojan Earths and vortex trapping in low-mass selfgravitating protoplanetary disks of gas and solids"
-- Lyra, W., Johansen, A., Zsom, A., Klahr, H., & Piskunov, N., |yana|, 2009, 497, 869, 888, "Planet formation bursts at the borders of the dead zone in 2D numerical simulations of circumstellar disks", |arXiv|{0901.1638}
-- Mitra, D., Tavakol, R., Brandenburg, A., & Moss, D., |yapj|, 2009, 697, 923, 933, "Turbulent dynamos in spherical shell segments of varying geometrical extent", |arXiv|{0812.3106}
+- Lyra, W., Johansen, A., Zsom, A., Klahr, H., & Piskunov, N., |yana|, 2009, 497, 869, 888, "Planet formation bursts at the borders of the dead zone in 2D numerical simulations of circumstellar disks", |arXiv| {0901.1638}
+- Mitra, D., Tavakol, R., Brandenburg, A., & Moss, D., |yapj|, 2009, 697, 923, 933, "Turbulent dynamos in spherical shell segments of varying geometrical extent", |arXiv| {0812.3106}
 - Haugen, N. E. L., & Kragset, S., |yjfm|, 2010, 661, 239, 261, "Particle impaction on a cylinder in a crossflow as function of Stokes and Reynolds numbers"
-- Rheinhardt, M., & Brandenburg, A., |yanaN|, 2010, 520, A28, "Test-field method for mean-field coefficients with MHD background", |arXiv|{1004.0689}
-- Babkovskaia, N., Haugen, N. E. L., Brandenburg, A., |yjour|, 2011, J. Comp. Phys., 230, 1, 12, "A high-order public domain code for direct numerical simulations of turbulent combustion", |arXiv|{1005.5301}
+- Rheinhardt, M., & Brandenburg, A., |yanaN|, 2010, 520, A28, "Test-field method for mean-field coefficients with MHD background", |arXiv| {1004.0689}
+- Babkovskaia, N., Haugen, N. E. L., Brandenburg, A., |yjour|, 2011, J. Comp. Phys., 230, 1, 12, "A high-order public domain code for direct numerical simulations of turbulent combustion", |arXiv| {1005.5301}
 - Johansen, A., Klahr, H., & Henning, Th., |yanaN|, 2011, 529, A62, "High-resolution simulations of planetesimal formation in turbulent protoplanetary discs"
 - Johansen, A., Youdin, A. N., & Lithwick, Y., |yanaN|, 2012, 537, A125, "Adding particle collisions to the formation of asteroids and Kuiper belt objects via streaming instabilities"
 - Lyra, W. & Kuchner, W., |ynat|, 2013, 499, 184, 187, "Formation of sharp eccentric rings in debris disks with gas but without planets"
@@ -290,7 +290,7 @@ instead.
 
 It is also sometimes nice to see that the **Pencil Code** is being
 acknowledged for having *inspired* certain other developments,
-so for example in the ``GALPROP`` program :cite:`Porter+22`.
+so for example in the ``GALPROP`` program [Porter22]_.
 
 Foreword
 ========
@@ -488,3 +488,9 @@ Leicester (Ukaff) is acknowledged.
 We also acknowledge the Danish Center
 for Scientific Computing for granting time on Horseshoe, which is a
 512+140 processor Beowulf cluster in Odense (Horseshoe).
+
+
+
+.. [JOSS] Pencil Code Collaboration, *J. Open Source Software*, **6**, 2807 (2021) The Pencil Code, a modular MPI code for partial differential equations and particles: multipurpose and multiuser-maintained.
+
+.. [Porter22] Porter, T. A., Jóhannesson, G., & Moskalenko, I. V. (2022). *Astrophys. J. Supp.*, 262, 30. “The GALPROP Cosmic-ray Propagation and Nonthermal Emissions Framework: Release v57.”

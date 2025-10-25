@@ -24,7 +24,7 @@
 .. Project and repository info
 .. ==============================
 
-.. |PC| replace:: Pencil Code
+.. |PC| replace:: PENCIL CODE
 .. |Pencil| replace:: Pencil Code
 .. |pencilweb| replace:: `<https://pencil-code.org/>`__
 .. |repo| replace:: `GitHub repository <https://github.com/pencil-code/pencil-code>`__
@@ -46,28 +46,9 @@
 .. |pderiv| replace:: :math:`\frac{\partial}{\partial}`
 .. |de| replace:: :math:`\mathrm{d}`
 .. |Re| replace:: :math:`\mathrm{Re}`
-.. |Rm| replace:: :math:`\mathrm{Rm}`
-.. |Ra| replace:: :math:`\mathrm{Ra}`
 .. |cs| replace:: :math:`c_{\mathrm{s}}`
-.. |vA| replace:: :math:`v_{\mathrm{A}}`
-.. |Heat| replace:: :math:`\mathcal{H}`
-.. |Cool| replace:: :math:`\mathcal{C}`
 
 
-.. ==============================
-.. Common vectors and symbols
-.. ==============================
-
-.. |uv| replace:: :math:`\boldsymbol{u}`
-.. |vv| replace:: :math:`\boldsymbol{v}`
-.. |Bv| replace:: :math:`\boldsymbol{B}`
-.. |Av| replace:: :math:`\boldsymbol{A}`
-.. |Jv| replace:: :math:`\boldsymbol{J}`
-.. |Fv| replace:: :math:`\boldsymbol{F}`
-.. |Ev| replace:: :math:`\boldsymbol{E}`
-.. |xv| replace:: :math:`\boldsymbol{x}`
-.. |ov| replace:: :math:`\boldsymbol{\omega}`
-.. |zerov| replace:: :math:`\boldsymbol{0}`
 
 .. ==============================
 .. Text and references
@@ -80,18 +61,14 @@
 .. Operators
 .. ########################################################
 
-.. |de|       replace:: :math:`\de`
 .. |De|       replace:: :math:`\De`
 .. |artanh|   replace:: :math:`\artanh`
 .. |const|    replace:: :math:`\const`
-.. |grad|     replace:: :math:`\grad`
 .. |Div|      replace:: :math:`\Div`
-.. |curl|     replace:: :math:`\curl`
 .. |rot|      replace:: :math:`\rot`
 .. |Laplace|  replace:: :math:`\Laplace`
 .. |erfc|     replace:: :math:`\erfc`
-.. |erf|      replace:: :math:`\erf`
-.. |pderiv|   replace:: :math:`\pderiv{u}{x}`  .. example usage
+.. |erf|      replace:: :math:`\erf` 
 .. |pderivn|  replace:: :math:`\pderivn{u}{x}{2}`
 
 .. ########################################################
@@ -137,7 +114,6 @@
 .. |Reynolds| replace:: :math:`\Reynolds`
 .. |Rm|       replace:: :math:`\Rm`
 .. |vA|       replace:: :math:`\vA`
-.. |cs|       replace:: :math:`\cs`
 .. |csnull|   replace:: :math:`\csnull`
 .. |Heat|     replace:: :math:`\Heat`
 .. |Cool|     replace:: :math:`\Cool`
@@ -149,10 +125,9 @@
 .. ==================================
 
 .. ArXiv categories
-.. |arXiv|, |astroph|, |condmat|, |physics|, |qbio|
 .. (used for linking preprints, leave these symbolic if not replaced by URLs)
 .. |arXiv| replace:: arXiv preprint
-.. |astroph| replace:: astro-ph preprint
+.. |astroph| replace:: astro-ph preprint 
 .. |condmat| replace:: cond-mat preprint
 .. |physics| replace:: physics preprint
 .. |qbio| replace:: q-bio preprint
@@ -189,8 +164,6 @@
 .. |ycsf| replace:: *Chaos, Solitons & Fractals*
 .. |ycsfS| replace:: *Chaos, Solitons & Fractals*
 .. |ynat| replace:: *Nature*
-.. |ypepi| replace:: *Phys. Earth Planet. Int.*
-.. |yass| replace:: *Astrophys. Spa. Sci.*
 
 .. Submitted / in press / to be submitted versions
 
@@ -207,7 +180,6 @@
 .. |tpr| replace:: *Phys. Rev.* (to be submitted)
 .. |sprl| replace:: *Phys. Rev. Lett.* (submitted)
 .. |pprl| replace:: *Phys. Rev. Lett.* (in press)
-.. |ybif| replace:: *Int. J. Bifurc. Chaos*
 .. |pbif| replace:: *Int. J. Bifurc. Chaos* (in press)
 .. |sbif| replace:: *Int. J. Bifurc. Chaos* (submitted)
 

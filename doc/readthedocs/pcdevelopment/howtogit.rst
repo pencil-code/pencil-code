@@ -24,6 +24,8 @@ Before your computer can communicate with a remote Git host, it needs some form 
 
 For GitHub, SSH keys are the preferred psychic paper: once set up, you can clone, pull, and push without reintroducing yourself every five minutes. Other servers have their own customs, but the idea is the same — prove who you are so your time-traveling code changes don’t get rejected on arrival.
 
+.. _howtogit-github:
+
 GitHub
 ------
 
@@ -79,7 +81,7 @@ This gives you a local copy of the repository, but you **won’t be able to push
 
 .. note::
 
-Congratulations, you are now in **Look-but-don’t-touch mode**. Feel free to explore the code, but the timeline is locked until you have write access!
+    Congratulations, you are now in **Look-but-don’t-touch mode**. Feel free to explore the code, but the timeline is locked until you have write access!
 
 
 If you do have access configured (for example, via SSH keys), you can clone using the SSH URL:
@@ -799,7 +801,9 @@ Step-by-Step Conflict Resolution
 
 After adding and committing your files, you tried to push your changes
 and got the dreaded error:
+
 .. code:: bash
+
     $ git push
         To https://pencil-code.org/git/
          ! [rejected]            master -> master (fetch first)
@@ -809,21 +813,28 @@ and got the dreaded error:
         hint: the same ref. If you want to integrate the remote changes, use
         hint: 'git pull' before pushing again.
         hint: See the 'Note about fast-forwards' in 'git push --help' for details.
+
 This happens when someone else has updated the remote branch since you last
 pulled. Git is politely asking you to reconcile timelines before pushing
 your changes — basically, don’t try to overwrite someone else’s work
 with a vortex manipulator.
 To fix it, pull the remote changes and rebase your commits on top:
+
 .. code:: bash
+
     $ git pull --rebase
     $ git push
 
 Example scenario:
+
 * You added a new function ``compute_flux()`` in ``hydro.f90``.
+
 * Meanwhile, a colleague added ``update_boundary()`` to the same file
   and pushed it.
+
 * ``git push`` will be rejected until you ``git pull --rebase`` and
   integrate your function with theirs.
+
 * If both edits touch the same lines, Git will pause and ask you to
   resolve conflicts manually — the next bullet points will guide you
   through that process.
@@ -838,39 +849,60 @@ Rebase paused due to conflicts (same lines touched)
 If your edits overlap with the remote changes — for example, both you
 and a colleague modified the same line in ``hydro.f90`` — Git will
 pause the rebase and flag a conflict:
+
 .. code:: bash
+
     $ git status
     # both modified: hydro.f90
+
 Git inserts conflict markers in the file, like this:
+
 .. code:: text
+
     <<<<<<< HEAD
     your change here
     =======
     colleague's change here
     >>>>>>> branch-to-rebase
+
 At this point, you have to decide how to merge the two edits. Options:
 * Keep your change, discard theirs.
+
 * Keep theirs, discard yours.
+
 * Combine both changes intelligently.
+
 Once resolved, mark the file as resolved and continue the rebase:
+
 .. code:: bash
+
     $ git add hydro.f90
     $ git rebase --continue
+
 Then verify your changes:
+
 .. code:: bash
+
     $ git log --oneline
+
 And finally, push the integrated timeline:
+
 .. code:: bash
+
     $ git push --force-with-lease origin master
 
 Resolving conflicts when merging branches
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 * Abort the merge:
+
     .. code:: bash 
+
         $ git merge --abort
         $ git status
 * Resolve the conflict by editing files and committing:
+
     .. code:: bash
+
         $ git add resolved_file
         $ git commit
 

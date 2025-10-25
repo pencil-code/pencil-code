@@ -253,14 +253,13 @@ You should get something like:
 
 
 .. figure:: figs/qguide_convlab_turms.png
-  :name: qguide_convlab_turms.png
+  :name: qguide_convlab_turms_py
   :width: 80%
 
   Evolution of the urms in the conv-slab simulation. Python post-processing inside the container. 
 
 
-Some examples of postprocessing with Python can be found in the
-:ref:`python documentation <modpython>` and in the :ref:`python tutorials <tutpython>`.
+Some examples of postprocessing with Python can be found in  the :ref:`python tutorials <tutpython>`.
 
 
 Using IDL
@@ -279,7 +278,7 @@ Prefer IDL? The container includes :abbr:`GDL (GNU Data Language)`, `a free and 
 Which produces:
 
 .. figure:: figs/qguide_convlab_turms_idl.png
-  :name: qguide_convlab_turms.png
+  :name: qguide_convlab_turms_idl
   :width: 80%
 
   Evolution of the urms in the conv-slab simulation.. IDL post-processing inside the container.

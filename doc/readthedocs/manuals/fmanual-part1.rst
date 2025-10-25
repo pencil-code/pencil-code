@@ -345,7 +345,9 @@ For concreteness, let us assume you want to use
 :file:`samples/conv-slab`
 as your **run directory**, i.e., you want to run a three-layer slab model
 of solar convection.
-You then do the following::
+You then do the following:
+
+.. code:: bash
 
    unix> cd samples/conv-slab
    unix> pc_setupsrc
@@ -1332,6 +1334,8 @@ The :file:`Makefile.src` you need will have the following section:
     hostname (``uname -n``) matches `Janus` or `janus` (capitalization is irrelevant).  
     You can combine machine names with a vertical bar: a line containing 
     ``#(onsager|Janus)`` will be activated on both *Janus* and *Onsager*.
+
+.. _man1_makeflags:
 
 .. note:: 
 
@@ -2393,7 +2397,7 @@ The three entries specifying the location, size and periodicity of the box
 are just given for demonstration purposes here --- in fact a periodic box
 from :math:`-\pi` to :math:`-\pi` in all three directions is the default.
 In this run, for reproducibility, we use a random number generator from
-the Numerical Recipes :cite:`NR`, rather than the compiler's built-in
+the Numerical Recipes [NR]_, rather than the compiler's built-in
 generator.
 The adiabatic index :math:`\gamma` is set explicitly to :math:`1` (the default would have
 been 5/3) to achieve an isothermal equation of state.
@@ -3256,7 +3260,7 @@ Pencil Code Commands in General
 
 For a list of all Pencil Code commands start IPython and type :kbd:`pc. <TAB>` (as with auto completion). To access the help of any command just type the command followed by a '?' (no spaces), e.g.,
 
-.. code:: python
+.. code:: console
 
   In [1]: pc.math.dot?
   Signature: pc.math.dot(a, b)
@@ -4163,7 +4167,7 @@ taken with respect to length, and not in a mixed fashion with respect to length
 for :math:`\partial/\partial r` and with respect to angle for
 :math:`\partial/\partial \theta` and :math:`\partial/\partial \phi`.
 The components in the non-coordinate basis are denoted by hats, see, e.g.,
-:cite:`MTW`, p. 213; see also Appendix B of :cite:`MTBM09`.
+[MTW]_, p. 213; see also Appendix B of [MTBM09]_.
 
 For spherical polar coordinates the only nonvanishing Christoffel symbols
 (or connection coefficients) are:
@@ -4743,7 +4747,7 @@ for more details).
 The :file:`chemistry_H2_ignition_rkf` directory, for example, has the file
 :file:`tran.dat`, which contains the parameters characterizing the transport
 properties, and :file:`chem.inp`, which contains the NASA polynomials;
-see Eq. 18 of :cite:`BHB11-18`.
+see Eq. 18 of [BHB11-18]_.
 
 .. _Radiative transfer:
 
@@ -4809,14 +4813,14 @@ that scale, and finally Fourier-transforming back to real space.
 The :math:`x`-direction in the shearing sheet is not strictly periodic, but is rather
 shear periodic with two connected points at the inner and outer boundary
 separated by the distance :math:`\Delta y(t)={\rm mod}[(3/2) \varOmega_0 L_x t,L_y]`
-in the :math:`y`-direction. We follow here the method from :cite:`Gammie2001` to allow
+in the :math:`y`-direction. We follow here the method from [Gammie2001]_ to allow
 for shear-periodic boundaries in the Fourier method for self-gravity. First we
 take the Fourier transform along the periodic :math:`y`-direction. We then shift
 the entire :math:`y`-direction by the amount :math:`\delta y(x)=\Delta y(t) x/L_x` to make
 the :math:`x`-direction periodic. Then we proceed with Fourier transforms along :math:`x`
 and then :math:`z`. After solving the Poisson equation in Fourier space, we transform
 back to real space in the opposite order. We differ here from the method by
-:cite:`Gammie2001` in that we shift in Fourier space rather than in real
+[Gammie2001]_ in that we shift in Fourier space rather than in real
 space [#]_ . The Fourier interpolation formula
 has the advantage over polynomial interpolation in that it is continuous and
 smooth in all its derivatives.
@@ -5334,7 +5338,7 @@ The expansion of the universe with time is described by the scale factor :math:`
 
    t(\tau) = \int_0^\tau \frac{d\tau'}{a(\tau')}
 
-and dependent variables that are appropriately scaled with powers of :math:`a`, the hydromagnetic equations can be expressed completely without scale factor :cite:`BEO96,Dur08`. This is not true, however, for the gravitational wave (GW) equations, where a dependence on :math:`a` remains :cite:`Dur08`.
+and dependent variables that are appropriately scaled with powers of :math:`a`, the hydromagnetic equations can be expressed completely without scale factor [BEO96,Dur08]_. This is not true, however, for the gravitational wave (GW) equations, where a dependence on :math:`a` remains [Dur08]_.
 The time dependence of :math:`a` can be modeled as a power law, :math:`a\propto\tau^n`, where :math:`n=1/2` applies to the radiation-dominated era; see :numref:`ScaleFactor` for the general relationship. To compare with cases where the expansion is ignored, we put :math:`n=0`.
 
 
@@ -5350,7 +5354,7 @@ The time dependence of :math:`a` can be modeled as a power law, :math:`a\propto\
    :math:`2/3`  :math:`\eta^2/3`  :math:`2/\eta`    :math:`6/\eta^2`
    ===========  ================  ================  ================
 
-In the transverse traceless (TT) gauge, the six components of the spatial part of the symmetric tensor characterizing the linearized evolution of the metric perturbations :math:`h_{ij}` reduce to two components which, in the linear polarization basis, are the :math:`+` and :math:`\times` polarizations. However, the projection onto that basis is computationally intensive because it requires nonlocal operations involving Fourier transformations. It is therefore advantageous to evolve instead the perturbation of the metric tensor, :math:`h_{ij}`, in an arbitrary gauge, compute then :math:`h_{ij}^{\rm TT}` in the TT gauge, and perform the decomposition into the linear polarization basis whenever diagnostic quantities such as averages or spectra are computed. Thus, we solve the linearized GW equation in the form :cite:`Dur08`:
+In the transverse traceless (TT) gauge, the six components of the spatial part of the symmetric tensor characterizing the linearized evolution of the metric perturbations :math:`h_{ij}` reduce to two components which, in the linear polarization basis, are the :math:`+` and :math:`\times` polarizations. However, the projection onto that basis is computationally intensive because it requires nonlocal operations involving Fourier transformations. It is therefore advantageous to evolve instead the perturbation of the metric tensor, :math:`h_{ij}`, in an arbitrary gauge, compute then :math:`h_{ij}^{\rm TT}` in the TT gauge, and perform the decomposition into the linear polarization basis whenever diagnostic quantities such as averages or spectra are computed. Thus, we solve the linearized GW equation in the form [Dur08]_:
 
 .. math::
    :label: d2hdt
@@ -5382,7 +5386,7 @@ The source term is chosen to be the traceless part of the stress tensor:
 
 The removal of the trace is not strictly necessary, but it prevents a continuous build-up of a large trace, which would be numerically disadvantageous. Viscous stress is ignored as it is usually small.
 
-We compute :math:`T_{ij}` by solving the energy, momentum, and induction equations for an ultrarelativistic gas :cite:`BEO96,BKMRPTV17`:
+We compute :math:`T_{ij}` by solving the energy, momentum, and induction equations for an ultrarelativistic gas [BEO96]_,[BKMRPTV17]_:
 
 .. math::
    :label: dlnrhodtgrav
@@ -5459,7 +5463,7 @@ where angle brackets denote volume averages.
    :name: pdel 
    :align: center
 
-   Scalings of the relative error in the magnetic field, :math:`(\delta B)_{\rm rms}/B_{\rm rms}`, and the gravitational strain :math:`(\delta h)_{\rm rms}/h_{\rm rms}` for GWs generated by the chiral magnetic effect, which leads to an exponentially increasing magnetic field. Low-resolution (:math:`32^3`) versions of the Runs B4, B7, and B10 of :cite:`BHKRS21`.
+   Scalings of the relative error in the magnetic field, :math:`(\delta B)_{\rm rms}/B_{\rm rms}`, and the gravitational strain :math:`(\delta h)_{\rm rms}/h_{\rm rms}` for GWs generated by the chiral magnetic effect, which leads to an exponentially increasing magnetic field. Low-resolution (:math:`32^3`) versions of the Runs B4, B7, and B10 of [BHKRS21]_.
 
 Analogous to kinetic and magnetic energy and helicity spectra, it is convenient to compute the GW energy and polarization spectra integrated over concentric shells of surface :math:`\int_{4\pi} k^2 d\Omega_\kv` in :math:`\kv` space:
 
@@ -5598,7 +5602,7 @@ Error: `relocation truncated to fit`
 
 If you get errors while compiling and linking that are similar to:
 
-.. code:: fortran
+.. code:: console
 
   density.f90:(.text+0x5e0): relocation truncated to fit: R_X86_64_PC32
   against symbol `cdata_mp_m_' defined in COMMON section in cdata.o
@@ -5608,8 +5612,8 @@ If you get errors while compiling and linking that are similar to:
 
 **A**: Your setup is probably too large to fit a `normal' memory model.
 Please choose a `medium' or `large' memory model by adding one of these
-compiler options to your configuration: :option:`-mcmodel=medium` or :option:`-mcmodel=large`.
-See Sect. :ref:`S-configuration` for configuration details. Alternatively,
+compiler options to your configuration: :command:`-mcmodel=medium` or :command:`-mcmodel=large`.
+See Sect. :ref:`man1_configuration` for configuration details. Alternatively,
 if you use ``pc_build``, you may simply add the respective extension:
 
 .. code:: console
@@ -5639,9 +5643,9 @@ C-compiler. If this is not correctly set up, usually the linker won't find
 the functions inside the ``syscalls`` module. If that happens, either the
 combination of C- and Fortran-compiler is inappropriate (e.g., ``ifort``
 needs ``icc``), or the compiler needs additional flags, like ``g95``
-might need the option :option:`-fno-second-underscore` and ``xlf`` might
-need the option :option:`-qextname`.
-Please refer to Sect. :ref:`S-make-flags`, Table :ref:`Tab-compiler-options`.
+might need the option :command:`-fno-second-underscore` and ``xlf`` might
+need the option :command:`-qextname`.
+Please refer to Sect. :ref:`man1_makeflags`, Table :ref:`Tab-compiler-options`.
 
 Make gives the following error now:
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -5709,7 +5713,7 @@ I keep getting segmentation faults with :command:`start.x` when compiling with :
 Make sure you have the latest patches applied to the compiler.
 A number of things to consider or try are:
 
-1. Compile with the the :option:`-static -nothreads` flags.
+1. Compile with the the :command:`-static -nothreads` flags.
 2. Set your stacksize to a large value (but a far too large value may
    be problematic, too), e.g.
 
@@ -5729,7 +5733,7 @@ When compiling with MPI on a Linux system, the linker complains:
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
-.. code:: fortran
+.. code:: console
 
   mpicomm.o: In function `mpicomm_mpicomm_init_':
   mpicomm.o(.text+0x36): undefined reference to `mpi_init_'
@@ -5739,7 +5743,7 @@ When compiling with MPI on a Linux system, the linker complains:
 
 **A**: This is the infamous ``underscore problem``.
 Your ``MPI`` libraries have been compiled with ``G77`` without the
-option :option:`-fno-second-underscore`, which makes the ``MPI``
+option :command:`-fno-second-underscore`, which makes the ``MPI``
 symbol names incompatible with other Fortran compilers.
 
 As a workaround, use
@@ -5783,7 +5787,7 @@ What is the problem?
 2. One of the variables for ``make`` has a space appended to it,
    e.g., if you use the line
 
-.. code:: text
+.. code:: console
 
      MPICOMM = mpicomm_ 
 
@@ -5796,7 +5800,7 @@ The code doesn't compile,
 
 there is a problem with :command:`mvar`:
 
-.. code:: fortran
+.. code:: console
 
   make start.x run.x
   f95 -O3 -u   -c cdata.f90
@@ -5819,7 +5823,7 @@ Some samples don't even compile,
 As you can see on the web,
 `<http://www.nordita.org/software/pencil-code/tests.html>`_.
 
-.. code:: fortran
+.. code:: console
 
   samples/helical-MHDturb:
       Compiling..           not ok:
@@ -5869,7 +5873,7 @@ The Dec Fortran optimizer has occasional problems with :file:`nompicomm.f90`:
 and the problem never seems to occur with ``mpicomm.f90``,
 except when :code:`ncpus=1`.
 The problem can be avoided by switching off the loop transformation
-optimization (part of the :option:`-O3` optimization), via:
+optimization (part of the :command:`-O3` optimization), via:
 
 .. code:: text
 
@@ -5883,7 +5887,7 @@ Assertion failure under SunOS
 
 Under SunOS, I get an error message like
 
-.. code:: fortran
+.. code:: bash
 
   user@sun> f90 -c param_io.f90
   Assertion failed: at_handle_table[at_idx].tag == VAR_TAG,
@@ -5927,14 +5931,12 @@ close to that for `frenesi` or `norlx50`. That should work.
 Error: Symbol 'mpi_comm_world' at (1) has no IMPLICIT type
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. code:: fortran
+.. code:: console
 
   I installed the pencil code on Ubuntu system and tested "run.csh"
   in ...\samples\conv-slab.  Here the code worked pretty well.
-  Nevertheless, running (auto-test), I found there are some errors.
-
-  The messages are,
-
+  Nevertheless, running (auto-test), I found there are some errors. 
+  The messages are, 
   Error: Symbol 'mpi_comm_world' at (1) has no IMPLICIT type
   Fatal Error: Error count reached limit of 25.
   make[2]: *** [mpicomm_double.o] Error 1
@@ -5943,11 +5945,10 @@ Error: Symbol 'mpi_comm_world' at (1) has no IMPLICIT type
   make[1]: *** [code] Error 2
   make[1]: Leaving directory
   `/home/pkiwan/Desktop/pencil-code/samples/2d-tests/selfgravitating-shearwave/src'
-  make: *** [default] Error 2
+  make: *** [default] Error 2 
+  Finally, ### auto-test failed ### 
 
-  Finally, ### auto-test failed ###
-
-Will it be OK? Or, how can I fix this?
+  Will it be OK? Or, how can I fix this?
 
 **A**: Thanks for letting me know about the status, and congratulations
 on your progress! Those tests that fail are those that use MPI.
@@ -5963,11 +5964,11 @@ Error: Can't open included file 'mpif.h'
 
 It always worked, but now, after some systems upgrade, I get
 
-.. code:: fortran
+.. code:: console
 
-    gfortran -O3 -o mpicomm.o -c mpicomm.f90
+  gfortran -O3 -o mpicomm.o -c mpicomm.f90
 
-    Error: Can't open included file 'mpif.h'
+  Error: Can't open included file 'mpif.h'
 
 When I say :command:`locate mpif.h` I only get things like
 
@@ -6705,3 +6706,87 @@ Again, the answer is yes; just go to:
    cd pencil-code/doc/
    vi manual.tex
    svn ci -m "explanations about a new module in the code"
+
+
+References
+=============
+
+.. Citations:
+
+.. [Abramowitz-Stegun] Abramowitz, A., & Stegun, I. A. (1984). *Pocketbook of Mathematical Functions*. Harri Deutsch, Frankfurt.
+
+.. [BHB11] Babkovskaia, N., Haugen, N. E. L., & Brandenburg, A. (2011). *J. Comp. Phys.*, 230(1), 12. *A high-order public domain code for direct numerical simulations of turbulent combustion*. (arXiv:1005.5301)
+
+.. [BB14] Barekat, A., & Brandenburg, A. (2014). *Astron. Astrophys.*, 571, A68. “Near-polytropic stellar simulations with a radiative surface.”
+
+.. [Ref-2] Brandenburg, A. (2001). *Astrophys. J.*, 550, 824–840. “The inverse cascade and nonlinear alpha-effect in simulations of isotropic helical hydromagnetic turbulence.”
+
+.. [Ref-1] Brandenburg, A. (2003). In *Advances in non-linear dynamos* (A. Ferriz-Mas & M. Núñez Jiménez, Eds.), *The Fluid Mechanics of Astrophysics and Geophysics*, Vol. 9, pp. 269–344. Taylor & Francis, London and New York. Available at http://arXiv.org/abs/astro-ph/0109497
+
+.. [Ref-4] Brandenburg, A., & Dobler, W. (2001). *Astron. Astrophys.*, 369, 329–338. “Large scale dynamos with helicity loss through boundaries.”
+
+.. [BH01] Brandenburg, A., & Hazlehurst, J. (2001). *Astron. Astrophys.*, 370, 1092–1102. “Evolution of highly buoyant thermals in a stratified layer.”
+
+.. [BK17] Brandenburg, A., & Kahniashvili, T. (2017). *Phys. Rev. Lett.*, 118, 055102. “Classes of hydrodynamic and magnetohydrodynamic turbulent decay.”
+
+.. [BHKRS21] Brandenburg, A., He, Y., Kahniashvili, T., Rheinhardt, M., & Schober, J. (2021). *Astrophys. J.*, 911, 110. “Gravitational waves from the chiral magnetic effect.”
+
+.. [BS02] Brandenburg, A., & Sarson, G. R. (2002). *Phys. Rev. Lett.*, 88, 055003. “The effect of hyperdiffusivity on turbulent dynamos with helicity.”
+
+.. [BDS02] Brandenburg, A., Dobler, W., & Subramanian, K. (2002). *Astron. Nachr.*, 323, 99–122. “Magnetic helicity in stellar dynamos: new numerical experiments.”
+
+.. [BEO96] Brandenburg, A., Enqvist, K., & Olesen, P. (1996). *Phys. Rev. D*, 54, 1291–1300. “Large-scale magnetic fields from hydromagnetic turbulence in the very early universe.”
+
+.. [BJNRST96] Brandenburg, A., Jennings, R. L., Nordlund, Å., Rieutord, M., Stein, R. F., & Tuominen, I. (1996). *J. Fluid Mech.*, 306, 325–352. “Magnetic structures in a dynamo simulation.”
+
+.. [BKMRPTV17] Brandenburg, A., Kahniashvili, T., Mandal, S., Roper Pol, A., Tevzadze, A. G., & Vachaspati, T. (2017). *Phys. Rev. D*, 96, 123528. “Evolution of hydromagnetic turbulence from the electroweak phase transition.”
+
+.. [BMS95] Brandenburg, A., Moss, D., & Shukurov, A. (1995). *MNRAS*, 276, 651–662. “Galactic fountains as magnetic pumps.”
+
+.. [BNST95] Brandenburg, A., Nordlund, Å., Stein, R. F., & Torkelsson, U. (1995). *Astrophys. J.*, 446, 741–754. “Dynamo-generated turbulence and large scale magnetic fields in a Keplerian shear flow.”
+
+.. [Collatz66] Collatz, L. (1966). *The numerical treatment of differential equations*. Springer-Verlag, New York, p. 164.
+
+.. [Dobler06] Dobler, W., Stix, M., & Brandenburg, A. (2006). *Astrophys. J.*, 638, 336–347. “Convection and magnetic field generation in fully convective spheres.”
+
+.. [Dur08] Durrer, R. (2008). *The Cosmic Microwave Background*. Cambridge University Press.
+
+.. [Gammie2001] Gammie, C. F. (2001). *Astrophys. J.*, 553, 174–183. “Nonlinear outcome of gravitational instability in cooling, gaseous disks.”
+
+.. [GNG87] Goodman, J., Narayan, R., & Goldreich, P. (1987). *Month. Not. Roy. Soc.*, 225, 695–711. “The stability of accretion tori — II. Nonlinear evolution to discrete planets.”
+
+.. [HB04a] Haugen, N. E. L., & Brandenburg, A. (2004). *Phys. Rev. E*, 70, 026405. “Inertial range scaling in numerical turbulence with hyperviscosity.”
+
+.. [HockneyEastwood1981] Hockney, R. W., & Eastwood, J. W. (1981). *Computer Simulation Using Particles*. McGraw-Hill, New York.
+
+.. [HTM84] Hurlburt, N. E., Toomre, J., & Massaguer, J. M. (1984). *Astrophys. J.*, 282, 557–573. “Two-dimensional compressible convection extending over multiple scale heights.”
+
+.. [kim87] Kim, J., Moin, P., & Moser, R. (1987). *J. Fluid Mech.*, 177, 133. “Turbulence statistics in fully developed channel flow at low Reynolds number.”
+
+.. [KW90] Kippenhahn, R., & Weigert, A. (1990). *Stellar structure and evolution*. Springer, Berlin.
+
+.. [KR80] Krause, F., & Rädler, K.-H. (1980). *Mean-Field Magnetohydrodynamics and Dynamo Theory*. Akademie-Verlag, Berlin; also Pergamon Press, Oxford.
+
+.. [Lele92] Lele, S. K. (1992). *J. Comp. Phys.*, 103, 16–42. “Compact finite difference schemes with spectral-like resolution.”
+
+.. [MTW] Misner, C. W., Thorne, K. S., & Wheeler, J. A. (1973). *Gravitation*. San Francisco: W. H. Freeman and Co., p. 213.
+
+.. [MTBM09] Mitra, D., Tavakol, R., Brandenburg, A., & Moss, D. (2009). *Astrophys. J.*, 697, 923–933. “Turbulent dynamos in spherical shell segments of varying geometrical extent.” (arXiv:0812.3106)
+
+.. [NG95] Nordlund, Å., & Galsgaard, K. (1995). *A 3D MHD code for Parallel Computers*. Available at http://www.astro.ku.dk/~aake/NumericalAstro/papers/kg/mhd.ps.gz
+
+.. [NS90] Nordlund, Å., & Stein, R. F. (1990). *Comput. Phys. Commun.*, 59, 119. “3-D simulations of solar and stellar convection and magnetoconvection.”
+
+.. [Ole97] Olesen, P. (1997). *Phys. Lett. B*, 398, 321. “Inverse cascades and primordial magnetic fields.”
+
+.. [NR] Press, W., Teukolsky, S., Vetterling, W., & Flannery, B. (1996). *Numerical Recipes in Fortran 90* (2nd ed.). Cambridge.
+
+.. [SH88] Stanescu, D., & Habashi, W. G. (1988). *J. Comp. Phys.*, 143, 674. “2N-storage low dissipation and dispersion Runge–Kutta schemes for computational acoustics.”
+
+.. [2Nstorage] Williamson, J. H. (1980). *J. Comp. Phys.*, 35, 48. “Low-storage Runge–Kutta schemes.”
+
+.. [JOSS] Pencil Code Collaboration. (2021). *J. Open Source Software*, 6, 2807. “The Pencil Code, a modular MPI code for partial differential equations and particles: multipurpose and multiuser-maintained.”
+
+.. [Porter22] Porter, T. A., Jóhannesson, G., & Moskalenko, I. V. (2022). *Astrophys. J. Supp.*, 262, 30. “The GALPROP Cosmic-ray Propagation and Nonthermal Emissions Framework: Release v57.”
+
+.. [mcmodel] Intel. *Fortran Compiler Developer Guide and Reference – mcmodel*. https://software.intel.com/en-us/fortran-compiler-developer-guide-and-reference-mcmodel

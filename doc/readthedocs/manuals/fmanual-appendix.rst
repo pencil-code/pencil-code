@@ -6,8 +6,10 @@ Appendix
 
 
 .. toctree::
-    : maxdepth: 2
+    :maxdepth: 2
     :caption: Contents
 
     fmanual-appendixA
+    fmanual-appendixB
+
     

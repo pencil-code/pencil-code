@@ -52,7 +52,7 @@ problems are caused by your changes, or because it wouldn't have worked anyway.
 Also, keep in mind that the code is public, so your changes should make sense
 from a broader perspective and should not only be intended for yourself.
 Regarding more general aspects about coding standards see
-:ref:`CodingStandards`.
+:ref:`manApBCodingStandards`.
 
 .. figure:: figs/psample-timings.png
    :align: center
@@ -307,7 +307,7 @@ usually the easiest way to proceed. In short the most important rules are:
   character.
 
 These and other issues are discussed in more depth and with examples in
-Appendix :ref:`coding-standard`, and in particular in Sect. :ref:`CodingStandards`.
+Appendix :ref:`manualAppendixB`, and in particular in Sect. :ref:`manApBCodingStandard`.
 
 
 .. _S-new-output-diagnostics:
@@ -505,7 +505,7 @@ The df-array
 
 The ‘df’ array is the second largest chunk of data in the |Pencil|.
 By using a 2N storage scheme (see :math:numref:`S-2N-scheme`) after
-Williamson :cite:`2Nstorage` the code only needs one more storage
+Williamson [2Nstorage]_ the code only needs one more storage
 area for each timestepped variable on top of the current state stored in
 the f-array.  As such, and in contrast to the f-array, the df-array is of size
 :math:`\rm{mx}\times\rm{my}\times\rm{mz}\times\rm{mvar}`.  Like the df-array it is
@@ -909,7 +909,7 @@ following steps.
    4. send e-mail (optional, but recommended).
 
    Work host and scheduling host can be the same (in this case, use
-   :command:`pencil-test`'s :option:`-l` option), but often they will
+   :command:`pencil-test`'s :command:`-l` option), but often they will
    be two different computers.
 
 2. [Recommended, but optional:] On the work host, check out a
@@ -920,7 +920,7 @@ following steps.
 
 3. On the work host, make sure that the code finds the correct
    configuration file for the tests you want to carry out.
-   [Elaborate on that: :file:`PENCIL_HOME/local_config` and :option:`-f` option;
+   [Elaborate on that: :file:`PENCIL_HOME/local_config` and :command:`-f` option;
    give explicit example]
 
    Remember that you can set up a custom host ID file for your auto-test
@@ -968,7 +968,7 @@ following steps.
     -Wa,--max-level=3
 
 will run all tests up to (and including) level 3.
-The default corresponds to :option:`-Wa,--max-level=2`.
+The default corresponds to :command:`-Wa,--max-level=2`.
 
 For a complete listing of :command:`pencil-test` options, run
 
@@ -1030,7 +1030,7 @@ Testing the postprocessing modules
 ----------------------------------
 
 Some of the samples contain additional scripts that test the Python and IDL postprocessing modules.
-They are not checked by :command:`pc_auto-test` by default; to include these tests, use the :option:`--script-tests` option, e.g.:
+They are not checked by :command:`pc_auto-test` by default; to include these tests, use the :command:`--script-tests` option, e.g.:
 
 .. code:: console
 
@@ -1135,3 +1135,88 @@ Subroutines and functions
        or of size :command:`nx` :math:`\times`3 (a and b) and nx (c).
    * - :code:`dot2(a,c)`
      - (module Sub): Same as :code:`dot(a,a,c)`.
+
+
+
+References
+=============
+
+.. Citations:
+
+.. [Abramowitz-Stegun] Abramowitz, A., & Stegun, I. A. (1984). *Pocketbook of Mathematical Functions*. Harri Deutsch, Frankfurt.
+
+.. [BHB11] Babkovskaia, N., Haugen, N. E. L., & Brandenburg, A. (2011). *J. Comp. Phys.*, 230(1), 12. *A high-order public domain code for direct numerical simulations of turbulent combustion*. (arXiv:1005.5301)
+
+.. [BB14] Barekat, A., & Brandenburg, A. (2014). *Astron. Astrophys.*, 571, A68. “Near-polytropic stellar simulations with a radiative surface.”
+
+.. [Ref-2] Brandenburg, A. (2001). *Astrophys. J.*, 550, 824–840. “The inverse cascade and nonlinear alpha-effect in simulations of isotropic helical hydromagnetic turbulence.”
+
+.. [Ref-1] Brandenburg, A. (2003). In *Advances in non-linear dynamos* (A. Ferriz-Mas & M. Núñez Jiménez, Eds.), *The Fluid Mechanics of Astrophysics and Geophysics*, Vol. 9, pp. 269–344. Taylor & Francis, London and New York. Available at http://arXiv.org/abs/astro-ph/0109497
+
+.. [Ref-4] Brandenburg, A., & Dobler, W. (2001). *Astron. Astrophys.*, 369, 329–338. “Large scale dynamos with helicity loss through boundaries.”
+
+.. [BH01] Brandenburg, A., & Hazlehurst, J. (2001). *Astron. Astrophys.*, 370, 1092–1102. “Evolution of highly buoyant thermals in a stratified layer.”
+
+.. [BK17] Brandenburg, A., & Kahniashvili, T. (2017). *Phys. Rev. Lett.*, 118, 055102. “Classes of hydrodynamic and magnetohydrodynamic turbulent decay.”
+
+.. [BHKRS21] Brandenburg, A., He, Y., Kahniashvili, T., Rheinhardt, M., & Schober, J. (2021). *Astrophys. J.*, 911, 110. “Gravitational waves from the chiral magnetic effect.”
+
+.. [BS02] Brandenburg, A., & Sarson, G. R. (2002). *Phys. Rev. Lett.*, 88, 055003. “The effect of hyperdiffusivity on turbulent dynamos with helicity.”
+
+.. [BDS02] Brandenburg, A., Dobler, W., & Subramanian, K. (2002). *Astron. Nachr.*, 323, 99–122. “Magnetic helicity in stellar dynamos: new numerical experiments.”
+
+.. [BEO96] Brandenburg, A., Enqvist, K., & Olesen, P. (1996). *Phys. Rev. D*, 54, 1291–1300. “Large-scale magnetic fields from hydromagnetic turbulence in the very early universe.”
+
+.. [BJNRST96] Brandenburg, A., Jennings, R. L., Nordlund, Å., Rieutord, M., Stein, R. F., & Tuominen, I. (1996). *J. Fluid Mech.*, 306, 325–352. “Magnetic structures in a dynamo simulation.”
+
+.. [BKMRPTV17] Brandenburg, A., Kahniashvili, T., Mandal, S., Roper Pol, A., Tevzadze, A. G., & Vachaspati, T. (2017). *Phys. Rev. D*, 96, 123528. “Evolution of hydromagnetic turbulence from the electroweak phase transition.”
+
+.. [BMS95] Brandenburg, A., Moss, D., & Shukurov, A. (1995). *MNRAS*, 276, 651–662. “Galactic fountains as magnetic pumps.”
+
+.. [BNST95] Brandenburg, A., Nordlund, Å., Stein, R. F., & Torkelsson, U. (1995). *Astrophys. J.*, 446, 741–754. “Dynamo-generated turbulence and large scale magnetic fields in a Keplerian shear flow.”
+
+.. [Collatz66] Collatz, L. (1966). *The numerical treatment of differential equations*. Springer-Verlag, New York, p. 164.
+
+.. [Dobler06] Dobler, W., Stix, M., & Brandenburg, A. (2006). *Astrophys. J.*, 638, 336–347. “Convection and magnetic field generation in fully convective spheres.”
+
+.. [Dur08] Durrer, R. (2008). *The Cosmic Microwave Background*. Cambridge University Press.
+
+.. [Gammie2001] Gammie, C. F. (2001). *Astrophys. J.*, 553, 174–183. “Nonlinear outcome of gravitational instability in cooling, gaseous disks.”
+
+.. [GNG87] Goodman, J., Narayan, R., & Goldreich, P. (1987). *Month. Not. Roy. Soc.*, 225, 695–711. “The stability of accretion tori — II. Nonlinear evolution to discrete planets.”
+
+.. [HB04a] Haugen, N. E. L., & Brandenburg, A. (2004). *Phys. Rev. E*, 70, 026405. “Inertial range scaling in numerical turbulence with hyperviscosity.”
+
+.. [HockneyEastwood1981] Hockney, R. W., & Eastwood, J. W. (1981). *Computer Simulation Using Particles*. McGraw-Hill, New York.
+
+.. [HTM84] Hurlburt, N. E., Toomre, J., & Massaguer, J. M. (1984). *Astrophys. J.*, 282, 557–573. “Two-dimensional compressible convection extending over multiple scale heights.”
+
+.. [kim87] Kim, J., Moin, P., & Moser, R. (1987). *J. Fluid Mech.*, 177, 133. “Turbulence statistics in fully developed channel flow at low Reynolds number.”
+
+.. [KW90] Kippenhahn, R., & Weigert, A. (1990). *Stellar structure and evolution*. Springer, Berlin.
+
+.. [KR80] Krause, F., & Rädler, K.-H. (1980). *Mean-Field Magnetohydrodynamics and Dynamo Theory*. Akademie-Verlag, Berlin; also Pergamon Press, Oxford.
+
+.. [Lele92] Lele, S. K. (1992). *J. Comp. Phys.*, 103, 16–42. “Compact finite difference schemes with spectral-like resolution.”
+
+.. [MTW] Misner, C. W., Thorne, K. S., & Wheeler, J. A. (1973). *Gravitation*. San Francisco: W. H. Freeman and Co., p. 213.
+
+.. [MTBM09] Mitra, D., Tavakol, R., Brandenburg, A., & Moss, D. (2009). *Astrophys. J.*, 697, 923–933. “Turbulent dynamos in spherical shell segments of varying geometrical extent.” (arXiv:0812.3106)
+
+.. [NG95] Nordlund, Å., & Galsgaard, K. (1995). *A 3D MHD code for Parallel Computers*. Available at http://www.astro.ku.dk/~aake/NumericalAstro/papers/kg/mhd.ps.gz
+
+.. [NS90] Nordlund, Å., & Stein, R. F. (1990). *Comput. Phys. Commun.*, 59, 119. “3-D simulations of solar and stellar convection and magnetoconvection.”
+
+.. [Ole97] Olesen, P. (1997). *Phys. Lett. B*, 398, 321. “Inverse cascades and primordial magnetic fields.”
+
+.. [NR] Press, W., Teukolsky, S., Vetterling, W., & Flannery, B. (1996). *Numerical Recipes in Fortran 90* (2nd ed.). Cambridge.
+
+.. [SH88] Stanescu, D., & Habashi, W. G. (1988). *J. Comp. Phys.*, 143, 674. “2N-storage low dissipation and dispersion Runge–Kutta schemes for computational acoustics.”
+
+.. [2Nstorage] Williamson, J. H. (1980). *J. Comp. Phys.*, 35, 48. “Low-storage Runge–Kutta schemes.”
+
+.. [JOSS] Pencil Code Collaboration. (2021). *J. Open Source Software*, 6, 2807. “The Pencil Code, a modular MPI code for partial differential equations and particles: multipurpose and multiuser-maintained.”
+
+.. [Porter22] Porter, T. A., Jóhannesson, G., & Moskalenko, I. V. (2022). *Astrophys. J. Supp.*, 262, 30. “The GALPROP Cosmic-ray Propagation and Nonthermal Emissions Framework: Release v57.”
+
+.. [mcmodel] Intel. *Fortran Compiler Developer Guide and Reference – mcmodel*. https://software.intel.com/en-us/fortran-compiler-developer-guide-and-reference-mcmodel

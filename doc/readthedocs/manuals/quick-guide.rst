@@ -195,7 +195,7 @@ efficient use of SIMD units. To compile, use a configuration file with the
 Compilation
 ------------
 
-To compile the code with default GNU compilers (single processor), simply run[#]_ :
+To compile the code with default GNU compilers (single processor), simply run [#]_ :
 
 .. code:: bash
 
@@ -213,8 +213,7 @@ For a multi-processor build using MPI:
 
 For additional details, see :ref:`man1_quick_instructions`.
 
-.. [#] You can use a pre-defined configuration file corresponding to your compiler package. E.g. the default compilers are ``gfortran`` together with ``gcc`` and the code is being built  with the
-default options (not using MPI)
+.. [#] You can use a pre-defined configuration file corresponding to your compiler package. E.g. the default compilers are ``gfortran`` together with ``gcc`` and the code is being built  with the default options (not using MPI)
 
 Using a different compiler (optional)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

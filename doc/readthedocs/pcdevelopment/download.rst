@@ -60,7 +60,7 @@ Write Access (a.k.a. “Let Me In, I Want to Contribute!”)
 
 So you want to **actually contribute**? Excellent — but that means the system must **know who you are**.
 
-Although the repository *lives* on GitHub, the usual GitHub SSH key setup (see :ref:`howtogit:GitHub`) **will NOT work here**.
+Although the repository *lives* on GitHub, the usual GitHub SSH key setup (see :ref:`howtogit-github`) **will NOT work here**.
 
 Instead, follow the official Pencil Code procedure:
 
