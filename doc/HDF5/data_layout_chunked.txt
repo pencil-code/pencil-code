@@ -93,3 +93,7 @@ This means setting H5Pset_dxpl_mpio() to H5FD_MPIO_COLLECTIVE and
 setting H5Pset_dxpl_mpio_collective_opt() to H5FD_MPIO_INDIVIDUAL_IO.
 The reason is that all processors would of course take part in writing the f-array,
 but in fact only one processor writes to each chunk, hence this is individual MPI-IO.
+
+The respective call to activate the chunking should be:
+CALL h5pcreate_f(H5P_DATASET_CREATE_F, param_list_id, h5_error)
+CALL h5pset_chunk_f(param_list_id, dimensionality, chunk_dims, h5_error)
