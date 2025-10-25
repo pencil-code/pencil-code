@@ -532,7 +532,8 @@ module Special
       dmu5=0.
       dmuS=0.
 !
-!  Evolution of mu5
+!
+!**  Evolution of mu5  **
 !  source + gammaf5 (chirality flipping) term
 !
       dmu5 = dmu5 -gammaf5*p%mu5 + source5
@@ -547,7 +548,7 @@ module Special
         dmu5 = dmu5 + diffmu5_*p%del2mu5 
       endif
 !
-! Advection of mu5
+!  Advection of mu5
 
       if (lmu5adv) dmu5 = dmu5 - p%ugmu5 
 !
@@ -556,45 +557,62 @@ module Special
 !
       if (lmu5divu_term) dmu5 = dmu5 - p%mu5*p%divu
 !
-! E.B terms: J.B and CME term
+!  E.B terms: J.B and CME term
       dmu5 = dmu5 + lambda5*eta*(p%jb-p%mu5*p%b2)
 !
-! mu-independent part of AVE term
+!  muS-independent part of AVE term
       if (lCVE) then
         call get_oogmu5(p,oogmu5)
         dmu5 = dmu5 - 2.*Cw*p%mu5*oogmu5
       endif
 !
 !
-!  Evolution of muS
 !
       if (lmuS) then
+!      
         muSmu5 = p%muS*p%mu5
         call dot(p%bb,p%gmu5,bdotgmu5)
         call dot(p%bb,p%gmuS,bdotgmuS)
-        df(l1:l2,m,n,imuS) = df(l1:l2,m,n,imuS) - coef_muS*bdotgmu5
-! 
-        if (lmuSdivu_term) df(l1:l2,m,n,imuS) = df(l1:l2,m,n,imuS) - p%muS*p%divu
 !
-        if (ldiffmuS_hyper2_simplified) then
-           df(l1:l2,m,n,imuS) = df(l1:l2,m,n,imuS) - diffmuS_hyper2*p%del4muS
-        else if (ldiffmuS_hyper3_simplified) then
-           df(l1:l2,m,n,imuS) = df(l1:l2,m,n,imuS) + diffmuS_hyper3*p%del6muS
-        else
-           df(l1:l2,m,n,imuS) = df(l1:l2,m,n,imuS) + diffmuS*p%del2muS
-        endif
-! 
-        if (lmuSadv) df(l1:l2,m,n,imuS) = df(l1:l2,m,n,imuS) - p%ugmuS
-
-        df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) - coef_mu5*bdotgmuS  
+!  CSE term in mu5 evolution
+        dmu5 = dmu5 - coef_mu5*bdotgmuS
+!
+!  CVE term and muS-dependent AVE term in mu5 evolution
         if (lCVE) then   
           call dot(p%oo,p%bb,oobb)
           call get_oogmuS(p,oogmuS)
           call get_oogmu5(p,oogmu5)
-          df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) - lambda5*eta*muSmu5*oobb - 2.*Cw*p%muS*oogmuS
-! This is the CVE term in mu evolution, with prefactor assumed to be the same as the AVE term in mu5 evolution:
-          df(l1:l2,m,n,imuS) = df(l1:l2,m,n,imuS) - Cw*p%mu5*oogmuS -Cw*p%muS*oogmu5
+!
+          dmu5 = dmu5 - lambda5*eta*muSmu5*oobb - 2.*Cw*p%muS*oogmuS
+!
+!**  Evolution of muS  **
+!  CVE term in muS evolution
+          dmuS = dmuS - Cw*p%mu5*oogmuS - Cw*p%muS*oogmu5
         endif
+!
+!  Advection of muS
+        if (lmuSadv) dmuS = dmuS - p%ugmuS
+
+!  Compressibility term similar to the one introduced above for mu5 for total chirality conservation
+        if (lmuSdivu_term) dmuS = dmuS - p%muS*p%divu
+!
+!  Diffusion of muS
+        if (ldiffmuS_hyper2_simplified) then
+           dmuS = dmuS - diffmuS_hyper2*p%del4muS
+        else if (ldiffmuS_hyper3_simplified) then
+           dmuS = dmuS + diffmuS_hyper3*p%del6muS
+        else
+           dmuS = dmuS + diffmuS*p%del2muS
+        endif
+!
+!  CME term
+        dmuS = dmuS - coef_muS*bdotgmu5
+! 
+!
+!  Update df array 
+        df(l1:l2,m,n,imuS) = df(l1:l2,m,n,imuS) + dmuS
+!
+! 
 !  Contributions to timestep from muS equation
         dt1_CMW = sqrt(coef_mu5*coef_muS)*sqrt(p%b2)*sqrt(dxyz_2)
         if (ldiffmuS_hyper2_simplified) then
@@ -605,6 +623,7 @@ module Special
       endif
 !
 !
+!  Update df array 
       df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) + dmu5
 !
 !  Contributions to timestep from mu5 equation
