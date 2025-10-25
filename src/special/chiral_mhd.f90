@@ -516,7 +516,7 @@ module Special
       intent(in) :: f,p
       intent(inout) :: df
 !
-      real, dimension (nx) :: EB, uujj, bdotgmuS, bdotgmu5
+      real, dimension (nx) :: dmu5, dmuS, uujj, bdotgmuS, bdotgmu5
       real, dimension (nx) :: muSmu5, oobb, oogmuS, oogmu5
       real, dimension (nx,3) :: mu5bb, muSmu5oo
 !
@@ -525,47 +525,46 @@ module Special
       if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dspecial_dt'
 !!    if (headtt) call identify_bcs('mu5',imu5)
 !
-!  Compute E.B
+! Removed E.B and collect all changes in mu5 and muS to avoid calling df multiple times
 !
-      EB=eta*(p%jb-p%mu5*p%b2)
+! set dmu5 and dmuS to zero at the beginning of each execution of this routine
+!
+      dmu5=0.
+      dmuS=0.
 !
 !  Evolution of mu5
+!  source + gammaf5 (chirality flipping) term
 !
-      df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) +lambda5*EB-gammaf5*p%mu5+source5
+      dmu5 = dmu5 -gammaf5*p%mu5 + source5
 !
 !  Different diffusion operators.
 !
       if (ldiffmu5_hyper2_simplified) then
-         df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) - diffmu5_hyper2*p%del4mu5
+         dmu5 = dmu5 - diffmu5_hyper2*p%del4mu5
       else if (ldiffmu5_hyper3_simplified) then
-         df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) + diffmu5_hyper3*p%del6mu5
+         dmu5 = dmu5 + diffmu5_hyper3*p%del6mu5
       else
-        df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) + diffmu5_*p%del2mu5 
+        dmu5 = dmu5 + diffmu5_*p%del2mu5 
       endif
-! 
-      if (lmu5adv) df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) - p%ugmu5 
+!
+! Advection of mu5
+
+      if (lmu5adv) dmu5 = dmu5 - p%ugmu5 
 !
 !  Set lmu5divu_term=T to obey total chirality conservation in the compressible case.
 !  This is not the default and was only used since Brandenburg (2021, ApJ 911, 110).
 !
-      if (lmu5divu_term) df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) - p%mu5*p%divu
+      if (lmu5divu_term) dmu5 = dmu5 - p%mu5*p%divu
 !
+! E.B terms: J.B and CME term
+      dmu5 = dmu5 + lambda5*eta*(p%jb-p%mu5*p%b2)
+!
+! mu-independent part of AVE term
       if (lCVE) then
         call get_oogmu5(p,oogmu5)
-        df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) - 2.*Cw*p%mu5*oogmu5
+        dmu5 = dmu5 - 2.*Cw*p%mu5*oogmu5
       endif
 !
-!  Contributions to timestep from mu5 equation
-      dt1_lambda5 = lambda5*eta*p%b2
-      if (lmuS) then
-         dt1_CVE2 = p%muS*lambda5*eta*p%b2
-      endif
-      if (ldiffmu5_hyper2_simplified) then
-         dt1_D5 = diffmu5_hyper2*dxyz_4
-      else
-         dt1_D5 = diffmu5*dxyz_2
-      endif
-      dt1_gammaf5 = gammaf5
 !
 !  Evolution of muS
 !
@@ -604,7 +603,23 @@ module Special
           dt1_Dmu = diffmuS*dxyz_2
         endif
       endif
-!                          
+!
+!
+      df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) + dmu5
+!
+!  Contributions to timestep from mu5 equation
+      dt1_lambda5 = lambda5*eta*p%b2
+      if (lmuS) then
+         dt1_CVE2 = p%muS*lambda5*eta*p%b2
+      endif
+      if (ldiffmu5_hyper2_simplified) then
+         dt1_D5 = diffmu5_hyper2*dxyz_4
+      else
+         dt1_D5 = diffmu5*dxyz_2
+      endif
+      dt1_gammaf5 = gammaf5
+!      
+!
 !  Additions to evolution of bb
 !
       if (lmagnetic) then
