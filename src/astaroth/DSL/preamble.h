@@ -91,7 +91,7 @@ const int AC_xtop__mod__equationofstate=nx
 
 #define AC_itsub__mod__cdata (step_num+1)
 output real AC_maxchi
-#ifdef Ltimestep_rkf_lowsto_MODULE
+#if Ltimestep_rkf_lowsto_MODULE
 enum PC_SUB_STEP_NUMBER
 {
 	PC_FIRST_SUB_STEP,
