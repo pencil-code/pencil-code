@@ -249,6 +249,7 @@ my %tests = (
 	    # Those on comment do work but we run only a subset to not overload
 	    # the test machine
 my @gpu_tests = qw(
+                         spherical-gdisk-planet-thermo
 			 interstellar
                          #chiral-diffusion
 			 #1d-tests/rel-shock
