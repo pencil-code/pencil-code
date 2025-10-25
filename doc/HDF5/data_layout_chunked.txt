@@ -91,3 +91,5 @@ PS: It seems beneficial to do an independent multi-chucked IO to write the f-arr
 See discussion at page 81-86: https://www.alcf.anl.gov/files/Parallel_HDF5_1.pdf
 This means setting H5Pset_dxpl_mpio() to H5FD_MPIO_COLLECTIVE and
 setting H5Pset_dxpl_mpio_collective_opt() to H5FD_MPIO_INDIVIDUAL_IO.
+The reason is that all processors would of course take part in writing the f-array,
+but in fact only one processor writes to each chunk, hence this is individual MPI-IO.
