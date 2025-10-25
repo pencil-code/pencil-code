@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 import os
+import re
 import glob
 import shutil
+import subprocess
 from rstcloth import RstCloth
 
 def process_file(file) -> tuple[str, str]:
@@ -145,6 +147,8 @@ def create_fortran_modules_rst(path_to_src: str) -> list[str]:
         d.title("Fortran modules")
         d.content(f"Currently, the Pencil Code contains {total_modules} Fortran files.")
         d.newline()
+        d.directive("raw", "html", content="<div>Filter: <input type='text' id='custommodsearch' /></div><br/>")
+        d.newline()
         for dirname, table in modules.items():
             d.ref_target(dirname)
             d.newline()
@@ -166,3 +170,111 @@ def create_fortran_modules_rst(path_to_src: str) -> list[str]:
         d.directive("toctree", fields=[("hidden", ""), ("titlesonly", ""), ("maxdepth", "2")], content=[f":ref:`{key}`" for key in modules.keys()])
 
     return retval
+
+
+
+def process_diag(marker: str, in_file: str):
+    files = [it.replace("../../src/", "") for it in glob.glob("../../src/**/*.f90", recursive=True)]
+    files = sorted(files, key=lambda x: (x.count("/"), x))
+    vars = {}
+    total_vars = 0
+    empty_vars = 0
+    unique_vars = set()
+    used_times = {}
+    for file in files:
+        if not os.path.isfile(f"../../src/{file}"):
+            continue
+        try:
+            lines = subprocess.check_output(["grep", "-R", f" {marker}", f"../../src/{file}"]).decode().splitlines()
+        except subprocess.CalledProcessError:
+            continue
+        filevars = {}
+        current_var = None
+        current_comment = ""
+        for line in lines:
+            if matches := re.findall(r":: idiag_(.*?)\s*=", line):
+                if current_var:
+                    filevars[current_var] = current_comment
+                    unique_vars.add(current_var)
+                    total_vars += 1
+                    if current_var in used_times:
+                        used_times[current_var] += 1
+                    else:
+                        used_times[current_var] = 1
+                    if not current_comment.strip():
+                        empty_vars += 1
+                    current_var = None
+                    current_comment = ""
+                current_var = matches[0]
+            if matches := re.findall(rf"!\s*{marker}: (.*)", line):
+                current_comment += matches[0].strip()
+        if current_var:
+            filevars[current_var] = current_comment
+            unique_vars.add(current_var)
+            total_vars += 1
+            if not current_comment.strip():
+                empty_vars += 1
+            if current_var in used_times:
+                used_times[current_var] += 1
+            else:
+                used_times[current_var] = 1
+            current_var = None
+            current_comment = ""
+        if filevars:
+            vars[file] = filevars
+    frac_undoc = int(empty_vars*100/total_vars)
+    if empty_vars > 0 and frac_undoc == 0:
+        frac_undoc = 1 # Don't show 0 if there is at least 1
+    with open(f"code/tables/{in_file}.rst", "w") as f:
+        d = RstCloth(f, line_width=5000)
+        d.title(f"List of parameters for ``{in_file}``")
+        d.content(f"This page lists {total_vars} variables distributed into {len(vars)} files. Of these:")
+        d.newline()
+        d.li(f"{total_vars - empty_vars} ({100 - frac_undoc}%) are documented;")
+        d.li(f"{empty_vars} ({frac_undoc}%) are undocumented.")
+        d.newline()
+        d.content(f"Some of the variable names are shared amongst modules, so there are {len(unique_vars)} unique names:")
+        d.newline()
+        value_counts = {}
+        for v in used_times.values():
+            value_counts[v] = value_counts.get(v, 0) + 1
+        # Sort by the value (the dict key)
+        value_counts = dict(sorted(value_counts.items()))
+        nvc = len(value_counts)
+        for i, (k, v) in enumerate(value_counts.items()):
+            d.li(f"{v} variable{'s' if v != 1 else ''} appear{'s' if v == 1 else ''} {k} time{'s' if k != 1 else ''}{';' if i < nvc - 1 else '.'}")
+        d.newline()
+        d.directive("raw", "html", content="<div>Filter: <input type='text' id='customvarsearch' /></div><br/>")
+        d.newline()
+        for file, filevars in vars.items():
+            d.h3(f"Module *{file}*")
+            table = []
+            for k, v in filevars.items():
+                # MathJax is more picky than LaTeX with spaces and formatting. Fix some common issues...
+                vv = re.sub(r"\$(.*?)\$", r":math:`\1`", v)
+                vv = vv.replace("\\rm", "\\mathrm")
+                vv = vv.replace("\\quad", ":math:`\\quad` ")
+                vv = re.sub(r":math:`(.*?)`", r":math:`\1` ", vv)
+                vv = re.sub(r":math:` ", r":math:`", vv)
+                vv = re.sub(r"(\w):math:", r"\1 :math:", vv)
+                vv = vv.replace(r"} `", r"}`")
+                table.append((f"*{k}*", vv))
+            d.table_list(["Variable", "Meaning"], data=table, widths=[25, 75])
+
+def process_all_idiag():
+    diag_list = [
+        ("DIAG_DOC", "print.in"),
+        ("PHIAVG_DOC", "phiaver.in"),
+        ("XYAVG_DOC", "xyaver.in"),
+        ("XZAVG_DOC", "xzaver.in"),
+        ("YZAVG_DOC", "yzaver.in"),
+        ("YAVG_DOC", "yaver.in"),
+        ("ZAVG_DOC", "zaver.in")
+    ]
+    os.makedirs("code/tables", exist_ok=True)
+    with open(f"code/tables/index.rst", "w") as f:
+        d = RstCloth(f, line_width=5000)
+        d.title(f"Startup and run-time parameters")
+        for pars in diag_list:
+            process_diag(*pars)
+        d.directive("toctree", fields=[("maxdepth", "1")], content=[pars[1] for pars in diag_list])

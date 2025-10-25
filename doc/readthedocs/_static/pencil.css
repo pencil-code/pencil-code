@@ -1,13 +1,14 @@
 .wy-nav-content {
     max-width: 1000px !important;
 }
+
 .wy-table-responsive table td,
 .wy-table-responsive table th {
     white-space: normal !important;
     word-wrap: break-word !important;
 }
 
-.rst-content .toctree-wrapper > p.caption {
+.rst-content .toctree-wrapper>p.caption {
     font-size: 125%;
 }
 
@@ -73,4 +74,11 @@ td div.admonition {
 
 .eqno {
     float: right;
+}
+
+.wy-menu-vertical p.caption {
+    white-space: wrap !important;
+    height: auto !important;
+    margin: 12px 0 6px 0 !important;
+    line-height: 20px !important;
 }

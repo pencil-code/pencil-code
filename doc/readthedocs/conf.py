@@ -17,7 +17,7 @@ import sys
 import glob
 import datetime
 sys.path.append(os.getcwd())
-from fortran_rst_generator import create_fortran_modules_rst
+from fortran_rst_generator import create_fortran_modules_rst, process_all_idiag
 
 # Import all git history
 os.system("git pull --unshallow")
@@ -263,7 +263,7 @@ html_short_title = "PCDOC"
 # html_static_path = ['./pencil/static']
 html_static_path = ["_static"]
 html_css_files = ["pencil.css"]
-html_js_files = ["pencil.js"]
+html_js_files = ["jquery.debounce.min.js", "pencil.js"]
 
 
 # Custom sidebar templates, must be a dictionary that maps document names
@@ -371,3 +371,6 @@ todo_include_todos = True
 ## Fortran configuration
 fortran_src = create_fortran_modules_rst("../../src")
 fortran_ext = ["f90"]
+
+# Generate all rst files for the Fortran parameters table
+process_all_idiag()

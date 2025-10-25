@@ -2,15 +2,15 @@ var Scorer = {
     // Implement the following function to further tweak the score for
     // each result The function takes a result array [filename, title,
     // anchor, descr, score] and returns the new score.
-    score: function(result) {
+    score: function (result) {
         let updated = result[4];
         // Push code documentation down so "regular" docs will show
         // up before them.
         if (result[0].search("code/cpp/") >= 0) {
             updated -= 15;
-        } else if (result[0].search("code/py/")>=0) {
+        } else if (result[0].search("code/py/") >= 0) {
             updated -= 14;
-        } else if (result[0].search("code/js/")>=0) {
+        } else if (result[0].search("code/js/") >= 0) {
             updated -= 13;
         } else if (result[0] == "index") {
             // Index file lists everything; that's probably not very helpful
@@ -29,9 +29,11 @@ var Scorer = {
     // or matches in the last dotted part of the object name
     objPartialMatch: 6,
     // Additive scores depending on the priority of the object
-    objPrio: {0:  15,  // used to be importantResults
-              1:  5,   // used to be objectResults
-              2: -5},  // used to be unimportantResults
+    objPrio: {
+        0: 15,  // used to be importantResults
+        1: 5,   // used to be objectResults
+        2: -5
+    },  // used to be unimportantResults
     //  Used when the priority is not in the mapping.
     objPrioDefault: 0,
 
@@ -77,6 +79,76 @@ $(document).ready(function () {
         }
         return false;
     });
+    $("#customvarsearch").keyup($.debounce(250, function () {
+        const needle = $(this).val().toLowerCase();
+        let hidden = 0, shown = 0;
+        if (!needle) {
+            $('section[id^=module-] table tbody').children("tr").each(function () {
+                $(this).show();
+            });
+            $('section[id^=module-]').each(function (idx, el) {
+                $(this).show();
+            });
+        } else {
+            $('section[id^=module-] table tbody').children("tr").each(function () {
+                let found = false;
+                $(this).children("td:first-child").each(function (idx, el) {
+                    if ($(this).text().toLowerCase().indexOf(needle) > -1) {
+                        found = true;
+                    }
+                });
+                if (found) {
+                    $(this).show();
+                    shown += 1;
+                } else {
+                    $(this).hide();
+                    hidden += 1;
+                }
+            });
+            $('section[id^=module-]').each(function (idx, el) {
+                if ($(`#${el.id} table tbody tr td :visible`).length === 0) {
+                    $(this).hide();
+                } else {
+                    $(this).show();
+                }
+            });
+        }
+    }));
+    $("#custommodsearch").keyup($.debounce(250, function () {
+        const needle = $(this).val().toLowerCase();
+        let hidden = 0, shown = 0;
+        if (!needle) {
+            $('#fortran-modules section table tbody').children("tr").each(function () {
+                $(this).show();
+            });
+            $('#fortran-modules section').each(function (idx, el) {
+                $(this).show();
+            });
+        } else {
+            $('#fortran-modules section table tbody').children("tr").each(function () {
+                let found = false;
+                $(this).children("td").each(function (idx, el) {
+                    if ($(this).text().toLowerCase().indexOf(needle) > -1) {
+                        found = true;
+                    }
+                });
+                if (found) {
+                    $(this).show();
+                    shown += 1;
+                } else {
+                    $(this).hide();
+                    hidden += 1;
+                }
+            });
+            $('#fortran-modules section').each(function (idx, el) {
+                if ($(`#${el.id} table tbody tr td :visible`).length === 0) {
+                    $(this).hide();
+                } else {
+                    $(this).show();
+                }
+            });
+        }
+    }));
 });
 
 /*!
@@ -125,7 +197,7 @@ $(document).ready(function () {
         var win = $(window);
         var isRoot = rootrx.test($element[0].nodeName);
         return {
-            border: isRoot ? { top: 0, left: 0, bottom: 0, right: 0} : borders($element[0]),
+            border: isRoot ? { top: 0, left: 0, bottom: 0, right: 0 } : borders($element[0]),
             scroll: {
                 top: (isRoot ? win : $element).scrollTop(),
                 left: (isRoot ? win : $element).scrollLeft()
@@ -162,8 +234,7 @@ $(document).ready(function () {
             var el = this.eq(0);
             var scroller = el.closest(":scrollable(" + dirStr + ")");
             // check if there's anything to scroll in the first place
-            if (scroller.length > 0)
-            {
+            if (scroller.length > 0) {
                 scroller = scroller.eq(0);
                 var dim = {
                     e: dimensions(el),
@@ -177,34 +248,26 @@ $(document).ready(function () {
                 };
                 var animOptions = {};
                 // vertical scroll
-                if (options.direction.y === true)
-                {
-                    if (rel.top < 0)
-                    {
+                if (options.direction.y === true) {
+                    if (rel.top < 0) {
                         animOptions.scrollTop = dim.s.scroll.top + rel.top;
                     }
-                    else if (rel.top > 0 && rel.bottom < 0)
-                    {
+                    else if (rel.top > 0 && rel.bottom < 0) {
                         animOptions.scrollTop = dim.s.scroll.top + Math.min(rel.top, -rel.bottom);
                     }
                 }
                 // horizontal scroll
-                if (options.direction.x === true)
-                {
-                    if (rel.left < 0)
-                    {
+                if (options.direction.x === true) {
+                    if (rel.left < 0) {
                         animOptions.scrollLeft = dim.s.scroll.left + rel.left;
                     }
-                    else if (rel.left > 0 && rel.right < 0)
-                    {
+                    else if (rel.left > 0 && rel.right < 0) {
                         animOptions.scrollLeft = dim.s.scroll.left + Math.min(rel.left, -rel.right);
                     }
                 }
                 // scroll if needed
-                if (!$.isEmptyObject(animOptions))
-                {
-                    if (rootrx.test(scroller[0].nodeName))
-                    {
+                if (!$.isEmptyObject(animOptions)) {
+                    if (rootrx.test(scroller[0].nodeName)) {
                         scroller = $("html,body");
                     }
                     scroller
@@ -215,8 +278,7 @@ $(document).ready(function () {
                             next();
                         });
                 }
-                else
-                {
+                else {
                     // when there's nothing to scroll, just call the "complete" function
                     $.isFunction(options.complete) && options.complete.call(scroller[0]);
                 }
@@ -241,8 +303,7 @@ $(document).ready(function () {
                 isRoot: rootrx.test(element.nodeName)
             };
             // check if completely unscrollable (exclude HTML element because it's special)
-            if (!overflow.x && !overflow.y && !overflow.isRoot)
-            {
+            if (!overflow.x && !overflow.y && !overflow.isRoot) {
                 return false;
             }
             var size = {
