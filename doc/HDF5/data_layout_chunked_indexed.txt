@@ -46,3 +46,5 @@ not need to uncompress the whole file, if one likes to read only the temperature
 
 PS: It seems beneficial to do an independent multi-chucked IO to write the f-array.
 See discussion at page 81-86: https://www.alcf.anl.gov/files/Parallel_HDF5_1.pdf
+This means setting H5Pset_dxpl_mpio() to H5FD_MPIO_COLLECTIVE and
+setting H5Pset_dxpl_mpio_collective_opt() to H5FD_MPIO_INDIVIDUAL_IO.
