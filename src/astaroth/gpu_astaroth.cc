@@ -825,13 +825,11 @@ AcReal calc_dt1_courant(const AcReal t)
 AcReal GpuCalcDt(const AcReal t)
 {
 	acGridSynchronizeStream(STREAM_ALL);
-        copyFarray(NULL);
-	acGridSynchronizeStream(STREAM_ALL);
   	acDeviceSetInput(acGridGetDevice(), AC_step_num, (PC_SUB_STEP_NUMBER) 0);
-	const auto graph = acGetOptimizedDSLTaskGraph(AC_rhs);
+	const auto graph = acGetOptimizedDSLTaskGraph(AC_calculate_timestep);
 	acGridExecuteTaskGraph(graph,1);
 	acGridSynchronizeStream(STREAM_ALL);
-	loadFarray();
+	acDeviceSwapBuffers(acGridGetDevice());
 	return calc_dt1_courant(t);
 }
 /***********************************************************************************************/
@@ -2371,7 +2369,7 @@ extern "C" void gpuSetDt(double t)
 	}
 	//TP: not needed but for extra safety
   	acDeviceSetInput(acGridGetDevice(), AC_step_num, (PC_SUB_STEP_NUMBER) 0);
-	const auto graph = acGetOptimizedDSLTaskGraph(AC_rhs);
+	const auto graph = acGetOptimizedDSLTaskGraph(AC_calculate_timestep);
 
 	acGridExecuteTaskGraph(graph,1);
 	acGridSynchronizeStream(STREAM_ALL);
