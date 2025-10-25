@@ -43,3 +43,6 @@ The big advantage of this strategy is that reading independent quantities from a
 snapshot is indeed possible. For compressed snapshots this means that one would
 not need to uncompress the whole file, if one likes to read only the temperature.
 
+
+PS: It seems beneficial to do an independent multi-chucked IO to write the f-array.
+See discussion at page 81-86: https://www.alcf.anl.gov/files/Parallel_HDF5_1.pdf

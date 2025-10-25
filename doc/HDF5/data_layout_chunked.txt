@@ -85,3 +85,7 @@ The advantage is here that the reading of the ghosts will be faster.
 As a trade-off, x and y have to be non-chunky datasets because the data portion
 per processor is not the same between outer and inner processors.
 The z layer could be chunky, but the resulting speed-up is probably negligible.
+
+
+PS: It seems beneficial to do an independent multi-chucked IO to write the f-array.
+See discussion at page 81-86: https://www.alcf.anl.gov/files/Parallel_HDF5_1.pdf
