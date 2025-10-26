@@ -264,11 +264,12 @@ module HDF5_IO
           call check_error (h5_err, 'create global file "'//trim (file)//'"')
         else
           ! open existing HDF5 file
-          i=0; h5_err=1
-          do while (h5_err/=0.and.i<ntries)
+          i = 0
+          h5_err = 1
+          do while ((h5_err /= 0) .and. (i < ntries))
             call h5fopen_f (trim (file), h5_read_mode, h5_file, h5_err, access_prp=h5_plist)
-            i=i+1
-            if (h5_err/=0) call sleep(nsleep)
+            i = i + 1
+            if (h5_err /= 0) call sleep (nsleep)
           enddo
           call check_error (h5_err, 'open global file "'//trim (file)//'"')
         endif
@@ -280,12 +281,12 @@ module HDF5_IO
           call h5fcreate_f (trim (file), H5F_ACC_TRUNC_F, h5_file, h5_err)
           call check_error (h5_err, 'create local file "'//trim (file)//'"', caller='file_open_hdf5')
         else
-
-          i=0; h5_err=1
-          do while (h5_err/=0.and.i<ntries)
+          i = 0
+          h5_err = 1
+          do while ((h5_err /= 0) .and. (i < ntries))
             call h5fopen_f (trim (file), h5_read_mode, h5_file, h5_err)
-            i=i+1
-            if (h5_err/=0) call sleep(nsleep)
+            i = i + 1
+            if (h5_err /= 0) call sleep (nsleep)
           enddo
           call check_error (h5_err, 'open local file "'//trim (file)//'"', caller='file_open_hdf5')
         endif
@@ -298,13 +299,13 @@ module HDF5_IO
       integer :: i
 !
       if (.not. (lcollective .or. lwrite)) return
-
-      i=0; h5_err=1
-
-      do while (h5_err/=0.and.i<ntries)
+!
+      i = 0
+      h5_err = 1
+      do while ((h5_err /= 0) .and. (i < ntries))
         call h5fclose_f (h5_file, h5_err)
-        i=i+1
-        if (h5_err/=0) call sleep(nsleep)
+        i = i + 1
+        if (h5_err /= 0) call sleep (nsleep)
       enddo
 !
       call check_error (h5_err, 'close file "'//trim (current)//'"',caller='file_close_hdf5')
@@ -720,7 +721,7 @@ module HDF5_IO
       use General, only: loptest
 
       character (len=*),     intent(in) :: name
-      integer, dimension(2), intent(in) :: gdims, iprocs 
+      integer, dimension(2), intent(in) :: gdims, iprocs
       real, dimension (:,:), intent(out):: data
       logical, optional, intent(INOUT) :: lerrcont
 !
@@ -950,13 +951,13 @@ module HDF5_IO
       use Iso_c_binding
 
       character (len=*), intent(in) :: name
-      type(torus_rect), intent(in) :: data
-      integer(KIND=ikind8) :: ptr
-      integer(SIZE_T) :: offset
+      type (torus_rect), intent(in) :: data
+      integer (KIND=ikind8) :: ptr
+      integer (SIZE_T) :: offset
 
 !
-      integer(HID_T) :: h5_torustype, h5_vec3type
-      integer(HSIZE_T), dimension(1) :: size
+      integer (HID_T) :: h5_torustype, h5_vec3type
+      integer (HSIZE_T), dimension(1) :: size
 
       real :: dummy
 
@@ -1017,11 +1018,11 @@ module HDF5_IO
 
     use Geometrical_types, only: torus_rect
 
-    integer(HSIZE_T) :: offset
-    type(torus_rect) :: base
+    integer (HSIZE_T) :: offset
+    type (torus_rect) :: base
     real :: comp
 
-    offset = loc(comp)-loc(base)
+    offset = loc (comp) - loc (base)
 
     endfunction offsetof
 
@@ -1677,7 +1678,7 @@ module HDF5_IO
 !
       integer(kind=8), dimension(3) :: size
 !
-      if (lcollective) call check_error (1, 'local 3D output requires local file', caller='output_local_hdf5_3D')                       
+      if (lcollective) call check_error (1, 'local 3D output requires local file', caller='output_local_hdf5_3D')
       if (.not. lwrite) return
 !
       size = (/ dim1, dim2, dim3 /)
@@ -2231,7 +2232,7 @@ module HDF5_IO
     endsubroutine output_average_1D_chunked
 !***********************************************************************
     subroutine output_average_phi(path, number, nr, nc, name, data, time, r, dr)
-!       
+!
 !   Output phi average to a file with these records:
 !   1) nr_phiavg, nz_phiavg, nvars, nprocz
 !   2) t, r_phiavg, z_phiavg, dr, dz
@@ -2240,18 +2241,18 @@ module HDF5_IO
 !
 !   27-Nov-2014/PABourdin: cleaned up code from write_phiaverages
 !   25-Nov-2018/PABourdin: coded
-!         
+!
       use File_io, only: file_exists
       use General, only: itoa
 !
       character (len=*), intent(in) :: path, number
       integer, intent(in) :: nr, nc
       character (len=fmtlen), dimension(nc), intent(in) :: name
-      real, dimension(:,:,:,:), intent(in) :: data 
+      real, dimension(:,:,:,:), intent(in) :: data
       real, intent(in) :: time
       real, dimension(nr), intent(in) :: r
-      real, intent(in) :: dr 
-!   
+      real, intent(in) :: dr
+!
       character (len=fnlen) :: filename
       character (len=intlen) :: group
       integer :: last, ia
@@ -2284,35 +2285,35 @@ module HDF5_IO
     endsubroutine output_average_phi
 !***********************************************************************
     subroutine trim_average(path, plane, ngrid, nname)
-!       
+!
 !  Trim a 1D-average file for times past the current time.
-!         
+!
 !  25-apr-16/ccyang: coded
 !  23-Nov-2018/PABourdin: moved to IO module
-!       
+!
       use File_io, only: file_exists, delete_file
       use General, only: itoa
-!         
+!
       character (len=*), intent(in) :: path, plane
       integer, intent(in) :: ngrid, nname
-!         
+!
       character(len=fnlen) :: filename
       real :: time_file, t_sp
       integer :: last, pos
 !
-      if (.not. lroot) return 
-      if ((ngrid <= 0) .or. (nname <= 0)) return 
-!        
+      if (.not. lroot) return
+      if ((ngrid <= 0) .or. (nname <= 0)) return
+!
       filename = trim(datadir)//'/averages/'//trim(plane)//'.h5'
       if (.not. file_exists (filename)) return
-!       
+!
       t_sp = real (t)
       call file_open_hdf5 (filename, global=.false., truncate=.false.)
       if (exists_in_hdf5 ('last')) then
         call input_hdf5 ('last', last)
         call input_hdf5 (trim(itoa(last))//'/time', time_file)
         if (time_file > t_sp) then
-          do pos = last, 0, -1 
+          do pos = last, 0, -1
             if (pos < last) call input_hdf5 (trim(itoa(pos))//'/time', time_file)
             if (time_file < t_sp) then
               if (pos /= last) call output_hdf5 ('last', pos)
@@ -2441,7 +2442,7 @@ module HDF5_IO
         case ('xy'); comm=MPI_COMM_XYPLANE; slice_root=find_proc(0,0,ipz)
         case ('xz'); comm=MPI_COMM_XZPLANE; slice_root=find_proc(0,ipy,0)
         case ('yz'); comm=MPI_COMM_YZPLANE; slice_root=find_proc(ipx,0,0)
-      end select
+      endselect
 !
       filename = trim(datadir)//'/slices/'//trim(label)//'_'//trim(suffix)//'.h5'
       if (iproc == slice_root) then
@@ -2504,13 +2505,13 @@ module HDF5_IO
       integer :: last, slice_root, comm, ndim1, ndim2
       real :: time_last
 !
-      if (.not.(lwrite.and.associated(data))) return
+      if (.not. (lwrite .and. associated(data))) return
 
       select case (suffix(1:2))
         case ('xy'); comm=MPI_COMM_XYPLANE; slice_root=find_proc(0,0,ipz)
         case ('xz'); comm=MPI_COMM_XZPLANE; slice_root=find_proc(0,ipy,0)
         case ('yz'); comm=MPI_COMM_YZPLANE; slice_root=find_proc(ipx,0,0)
-      end select
+      endselect
 
       filename = trim(datadir)//'/slices/'//trim(label)//'_'//trim(suffix)//'.h5'
       if (iproc==slice_root) then
@@ -2524,7 +2525,6 @@ module HDF5_IO
               if (time > time_last) exit
             enddo
             last=last+1
-          else
           endif
         else
           ! create empty file
@@ -2938,7 +2938,7 @@ module HDF5_IO
       real, dimension(:), allocatable :: gx, gy, gz
       integer :: alloc_err, mxgrid_, mygrid_, mzgrid_
 !
-      if (lroot.and.present(time)) call output_hdf5 ('time', time)
+      if (lroot .and. present(time)) call output_hdf5 ('time', time)
       if (loptest(time_only)) return
 !
       mxgrid_=global_size(1); mygrid_=global_size(2); mzgrid_=global_size(3);
