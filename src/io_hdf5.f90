@@ -1403,27 +1403,33 @@ contains
         call input_hdf5 ('grid/x', gx, mxgrid)
         call input_hdf5 ('grid/y', gy, mygrid)
         call input_hdf5 ('grid/z', gz, mzgrid)
+        call distribute_grid (x, y, z, gx, gy, gz)
         call input_hdf5 ('grid/dx', dx)
         call input_hdf5 ('grid/dy', dy)
         call input_hdf5 ('grid/dz', dz)
         call input_hdf5 ('grid/Lx', Lx)
         call input_hdf5 ('grid/Ly', Ly)
         call input_hdf5 ('grid/Lz', Lz)
+      else
+        call distribute_grid (x, y, z)
       endif
-      call distribute_grid (x, y, z, gx, gy, gz)
       if (lroot) then
         call input_hdf5 ('grid/dx_1', gx, mxgrid)
         call input_hdf5 ('grid/dy_1', gy, mygrid)
         call input_hdf5 ('grid/dz_1', gz, mzgrid)
+        call distribute_grid (dx_1, dy_1, dz_1, gx, gy, gz)
+      else
+        call distribute_grid (dx_1, dy_1, dz_1)
       endif
-      call distribute_grid (dx_1, dy_1, dz_1, gx, gy, gz)
       if (lroot) then
         call input_hdf5 ('grid/dx_tilde', gx, mxgrid)
         call input_hdf5 ('grid/dy_tilde', gy, mygrid)
         call input_hdf5 ('grid/dz_tilde', gz, mzgrid)
+        call distribute_grid (dx_tilde, dy_tilde, dz_tilde, gx, gy, gz)
         call file_close_hdf5
+      else
+        call distribute_grid (dx_tilde, dy_tilde, dz_tilde)
       endif
-      call distribute_grid (dx_tilde, dy_tilde, dz_tilde, gx, gy, gz)
 !
       call mpibcast_real (dx, comm=MPI_COMM_PENCIL)
       call mpibcast_real (dy, comm=MPI_COMM_PENCIL)
