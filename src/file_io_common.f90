@@ -374,13 +374,13 @@ module File_io
 !
       !if (.not. find_namelist (trim(name)//trim(type)//trim(suffix))) then
       call find_namelist (trim(name)//trim(type)//trim(suffix), found, lopt)
-!!!      if(.not. found .and. lopt) return
+      if(.not. found .and. lopt) return
 !
       ierr = 0 ! G95 complains 'ierr' is used but not set, even though 'reader' has intent(out).
       call reader(ierr)
 !
       if (ierr /= 0) then
-      
+!
         if (.not.found) then
           if (.not. lparam_nml) lnamelist_error = .true.
           call parallel_rewind
