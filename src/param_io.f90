@@ -555,8 +555,7 @@ module Param_IO
       use Particles_main, only: read_all_particles_init_pars, read_all_particles_run_pars
       use File_io, only: read_namelist
       use General, only: ioptest
-      use Cparam, only: enum_namelist_is_optional, enum_namelist_no_warn_optional,&
-                        enum_namelist_optional_no_warn
+      use Cparam, only: enum_namelist_is_optional, enum_namelist_optional_no_warn
 !
       logical, optional, intent(IN) :: linit_pars
       integer, optional :: allow_missing_namelists
