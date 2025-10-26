@@ -45,7 +45,7 @@ module HDF5_IO
   endinterface
 !
   interface hdf5_input_slice
-    module procedure input_slice_arr
+    module procedure input_slice_2D
     module procedure input_slice_real_arr
     module procedure input_slice_scat
   endinterface
@@ -2117,11 +2117,11 @@ module HDF5_IO
           if (exists_in_hdf5 ('last')) then
             call input_hdf5 ('last', nt)
           else
-            call fatal_error ('input_average_2D', 'no "last" group in HDF5 file '//trim(filename))
+            call fatal_error ('input_average_2D', 'no "last" group in HDF5 file '//trim(filename), .true.)
           endif
           call file_close_hdf5
         else
-          call fatal_error ('input_average_2D', 'no HDF5 file '//trim(filename))
+          call fatal_error ('input_average_2D', 'no HDF5 file '//trim(filename), .true.)
         endif
       endif
 !
@@ -2384,105 +2384,105 @@ module HDF5_IO
 !
       use File_io, only: file_exists
 
-      character (len=*),     intent(in) :: file
-      real,                  intent(out):: time
-      real,                  intent(out):: pos
-      real, dimension(:,:,:),intent(out):: data
+      character (len=*), intent(in) :: file
+      real, intent(out):: time
+      real, intent(out):: pos
+      real, dimension(:,:,:), intent(out):: data
 !
-      call fatal_error('input_slice_real_arr', 'not implemented for HDF5')
+      call fatal_error ('input_slice_real_arr', 'not implemented for HDF5')
 
-      call keep_compiler_quiet(file)
-      call keep_compiler_quiet(pos)
-      call keep_compiler_quiet(time)
-      call keep_compiler_quiet(data)
+      call keep_compiler_quiet (file)
+      call keep_compiler_quiet (pos)
+      call keep_compiler_quiet (time)
+      call keep_compiler_quiet (data)
 
     endsubroutine input_slice_real_arr
 !***********************************************************************
-    subroutine input_slice_scat(file,pos,data,ind,nt)
-!       
+    subroutine input_slice_scat(file, pos, data, ind, nt)
+!
 !  dummy
 !
 !  24-may-19/MR: coded
 !
       use General, only: scattered_array
 
-      character (len=*),   intent(in) :: file
-      real,                intent(out):: pos
-      type(scattered_array),intent(out):: data
-      integer :: ind,nt
-
-      call fatal_error('input_slice_scat', 'Not implemented for HDF5')
-
-      call keep_compiler_quiet(file)
-      call keep_compiler_quiet(pos)
-      call keep_compiler_quiet(ind,nt)
-
+      character (len=*), intent(in) :: file
+      real, intent(out):: pos
+      type (scattered_array), intent(out):: data
+      integer :: ind, nt
+!
+      call fatal_error ('input_slice_scat', 'Not implemented for HDF5')
+!
+      call keep_compiler_quiet (file)
+      call keep_compiler_quiet (pos)
+      call keep_compiler_quiet (ind,nt)
+!
     endsubroutine input_slice_scat
 !***********************************************************************
-    subroutine input_slice_arr(datadir, time, label, suffix, pos, data)
-!       
+    subroutine input_slice_2D(datadir, time, label, suffix, pos, data)
+!
 !  read a slice file
 !
 !  24-may-19/MR: coded
 !
       use File_IO, only: file_exists
-      use Mpicomm, only: MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE,mpibarrier
+      use Mpicomm, only: MPI_COMM_XYPLANE, MPI_COMM_XZPLANE, MPI_COMM_YZPLANE, mpibarrier
       use General, only: find_proc
-
-      character (len=*),     intent(in) :: datadir,label,suffix
-      real, dimension(:),    intent(out):: time
-      real,                  intent(out):: pos
-      real, dimension(:,:,:),intent(out):: data
-!            
+!
+      character (len=*), intent(in) :: datadir, label, suffix
+      real, dimension(:), intent(out) :: time
+      real, intent(out) :: pos
+      real, dimension(:,:,:), intent(out) :: data
+!
       integer :: it, nt, comm, slice_root
-      character(LEN=fnlen) :: filename,group
+      character (len=fnlen) :: filename,group
 !
       select case (suffix(1:2))
         case ('xy'); comm=MPI_COMM_XYPLANE; slice_root=find_proc(0,0,ipz)
         case ('xz'); comm=MPI_COMM_XZPLANE; slice_root=find_proc(0,ipy,0)
         case ('yz'); comm=MPI_COMM_YZPLANE; slice_root=find_proc(ipx,0,0)
       end select
-    
+!
       filename = trim(datadir)//'/slices/'//trim(label)//'_'//trim(suffix)//'.h5'
-      if (iproc==slice_root) then
+      if (iproc == slice_root) then
         if (file_exists (filename)) then
           ! find last written slice
-          call file_open_hdf5 (filename, global=.false., read_only=.true.,write=.false.)
+          call file_open_hdf5 (filename, global=.false., read_only=.true., write=.false.)
           if (exists_in_hdf5 ('last')) then
             call input_hdf5 ('last', nt)
           else
-            call fatal_error('input_slice_arr','no "last" group in HDF5 file '//trim(filename))
+            call fatal_error ('input_slice_2D','no "last" group in HDF5 file '//trim(filename))
           endif
         else
-          call fatal_error('input_slice_arr','no HDF5 file '//trim(filename))
+          call fatal_error ('input_slice_2D','no HDF5 file '//trim(filename))
         endif
         call file_close_hdf5
       endif
 !
-      call mpibarrier(comm)
-      call file_open_hdf5 (filename,truncate=.false.,read_only=.true.,write=.false.,comm=comm)
-
-      do it=1,nt
-        group=itoa(it)
+      call mpibarrier (comm)
+      call file_open_hdf5 (filename, truncate=.false., read_only=.true., write=.false., comm=comm)
+!
+      do it = 1, nt
+        group = itoa(it)
         call input_hdf5 (trim(group)//'/time', time(it))
         call input_hdf5 (trim(group)//'position', pos)
-
-      ! collect data along 'xy', 'xz', or 'yz'
+!
+        ! collect data along 'xy', 'xz', or 'yz'
         select case (suffix(1:2))
         case ('xy')
-          call input_hdf5 (trim(group)//'data', (/nxgrid, nygrid/), (/ipx, ipy/), data(:,:,it))
+          call input_hdf5 (trim(group)//'data', (/ nxgrid, nygrid /), (/ ipx, ipy /), data(:,:,it))
         case ('xz')
-          call input_hdf5 (trim(group)//'data', (/nxgrid, nzgrid/), (/ipx, ipz/), data(:,:,it))
+          call input_hdf5 (trim(group)//'data', (/ nxgrid, nzgrid /), (/ ipx, ipz /), data(:,:,it))
         case ('yz')
-          call input_hdf5 (trim(group)//'data', (/nygrid, nzgrid/), (/ipy, ipz/), data(:,:,it))
+          call input_hdf5 (trim(group)//'data', (/ nygrid, nzgrid /), (/ ipy, ipz /), data(:,:,it))
         case default
           call fatal_error ('input_slice', 'unknown 2D slice "'//trim (suffix)//'"', .true.)
         endselect
       enddo
-
+!
       call file_close_hdf5
 !
-    endsubroutine input_slice_arr
+    endsubroutine input_slice_2D
 !***********************************************************************
     subroutine hdf5_output_slice(lwrite, time, label, suffix, pos, grid_pos, data)
 !
@@ -2492,8 +2492,7 @@ module HDF5_IO
 !
       use File_io, only: file_exists
       use General, only: itoa, find_proc
-      use Mpicomm, only: mpibcast_int, mpibarrier, &
-                         MPI_COMM_XYPLANE, MPI_COMM_XZPLANE, MPI_COMM_YZPLANE
+      use Mpicomm, only: mpibcast_int, mpibarrier, MPI_COMM_XYPLANE, MPI_COMM_XZPLANE, MPI_COMM_YZPLANE
 !
       logical,                        intent(in) :: lwrite
       real,                           intent(in) :: time, pos
