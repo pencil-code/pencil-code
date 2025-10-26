@@ -3146,7 +3146,7 @@ ifneq ($(IO),io_wrapper)
 ifeq ($(IO),io_mpi2)
 	$(FC) $(ALL_COMP_FLAGS) $(ALLOW_ARG_MISMATCH) -o $(IO_OBJ) -c $(IO_SRC)
 else
-	$(FC) $(ALL_COMP_FLAGS) -o $(IO_OBJ) -c $(IO_SRC)
+	$(FC) $(ALL_COMP_FLAGS) $(FSTD_2003) -o $(IO_OBJ) -c $(IO_SRC)
 endif
 endif
 #
@@ -3649,7 +3649,7 @@ diagnostics_outlog.o: diagnostics_outlog.f90
 io_collect_xy_f2003.o: io_collect_xy_f2003.f90
 	$(FC) $(ALL_COMP_FLAGS) $(FSTD_2003) -o io_collect_xy_f2003.o -c io_collect_xy_f2003.f90
 file_io_f95.o: file_io_f95.f90
-	$(FC) $(ALL_COMP_FLAGS) -o file_io_f95.o -c file_io_f95.f90
+	$(FC) $(ALL_COMP_FLAGS) $(FSTD_95) -o file_io_f95.o -c file_io_f95.f90
 file_io_dist.o: file_io_dist.f90
 	$(FC) $(ALL_COMP_FLAGS) -o file_io_dist.o -c file_io_dist.f90
 slices_methods.o: slices_methods.f90
