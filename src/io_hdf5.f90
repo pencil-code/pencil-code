@@ -1049,7 +1049,12 @@ contains
       write_persist_torus_rect = .true.
       if (write_persist_id (label, id)) return
 !
-      call output_hdf5 ('persist/'//lower_case (label), value)
+      call output_hdf5 ('persist/'//lower_case (label)//'_center', value%center(1))
+      call output_hdf5 ('persist/'//lower_case (label)//'_th', value%th)
+      call output_hdf5 ('persist/'//lower_case (label)//'_ph', value%ph)
+      call output_hdf5 ('persist/'//lower_case (label)//'_r_in', value%r_in)
+      call output_hdf5 ('persist/'//lower_case (label)//'_thick', value%thick)
+      call output_hdf5 ('persist/'//lower_case (label)//'_height', value%height)
       write_persist_torus_rect = .false.
 !
     endfunction write_persist_torus_rect
