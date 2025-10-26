@@ -471,7 +471,7 @@ module HDF5_IO
 !
       ! collectively read the data
       call h5dread_f (h5_dset, H5T_NATIVE_INTEGER, data, &
-          global_size_1D, h5_err, file_space_id=h5_fspace, mem_space_id=h5_mspace, xfer_prp=h5_plist)
+          global_size_1D, h5_err, mem_space_id=h5_mspace, file_space_id=h5_fspace, xfer_prp=h5_plist)
       call check_error (h5_err, 'read dataset', name)
 !
       ! close data spaces, dataset, and the property list
@@ -603,7 +603,7 @@ module HDF5_IO
 !
       ! collectively read the data
       call h5dread_f (h5_dset, h5_ntype, data, &
-          global_size_1D, h5_err, file_space_id=h5_fspace, mem_space_id=h5_mspace, xfer_prp=h5_plist)
+          global_size_1D, h5_err, mem_space_id=h5_mspace, file_space_id=h5_fspace, xfer_prp=h5_plist)
       call check_error (h5_err, 'read dataset', name)
 !
       ! close data spaces, dataset, and the property list
@@ -698,7 +698,7 @@ module HDF5_IO
 !
       ! collectively read the data
       call h5dread_f (h5_dset, h5_ntype, data, &
-          glob_dim, h5_err, file_space_id=h5_fspace, mem_space_id=h5_mspace, xfer_prp=h5_plist)
+          glob_dim, h5_err, mem_space_id=h5_mspace, file_space_id=h5_fspace, xfer_prp=h5_plist)
       call check_error (h5_err, 'read dataset', name)
 !
       ! close data spaces, dataset, and the property list
@@ -759,7 +759,7 @@ module HDF5_IO
       ! collectively read the data
       i8dum = gdims
       call h5dread_f (h5_dset, h5_ntype, data, &
-          i8dum, h5_err, file_space_id=h5_fspace, mem_space_id=h5_mspace, xfer_prp=h5_plist)
+          i8dum, h5_err, mem_space_id=h5_mspace, file_space_id=h5_fspace, xfer_prp=h5_plist)
       call check_error (h5_err, 'read dataset', name)
 !
       ! close data spaces, dataset, and the property list
@@ -818,7 +818,7 @@ module HDF5_IO
 !
       ! collectively read the data
       call h5dread_f (h5_dset, h5_ntype, data, &
-          global_size, h5_err, file_space_id=h5_fspace, mem_space_id=h5_mspace, xfer_prp=h5_plist)
+          global_size, h5_err, mem_space_id=h5_mspace, file_space_id=h5_fspace, xfer_prp=h5_plist)
       call check_error (h5_err, 'read dataset', name)
 !
       ! close data spaces, dataset, and the property list
@@ -882,7 +882,7 @@ module HDF5_IO
 !
       ! collectively read the data
       call h5dread_f (h5_dset, h5_ntype, data, &
-          global_size, h5_err, file_space_id=h5_fspace, mem_space_id=h5_mspace, xfer_prp=h5_plist)
+          global_size, h5_err, mem_space_id=h5_mspace, file_space_id=h5_fspace, xfer_prp=h5_plist)
       call check_error (h5_err, 'read dataset', name)
 !
       ! close data spaces, dataset, and the property list
@@ -1167,7 +1167,7 @@ module HDF5_IO
 !
       ! collectively write the data
       call h5dwrite_f (h5_dset, H5T_NATIVE_INTEGER, data, &
-          global_size_1D, h5_err, file_space_id = h5_fspace, mem_space_id = h5_mspace, xfer_prp = h5_plist)
+          global_size_1D, h5_err, mem_space_id=h5_mspace, file_space_id=h5_fspace, xfer_prp=h5_plist)
       call check_error (h5_err, 'write dataset', name)
 !
       ! close data spaces, dataset, and the property list
@@ -1323,7 +1323,7 @@ module HDF5_IO
 !
       ! collectively write the data
       call h5dwrite_f (h5_dset, h5_ntype, data, &
-          global_size_1D, h5_err, file_space_id = h5_fspace, mem_space_id = h5_mspace, xfer_prp = h5_plist)
+          global_size_1D, h5_err, mem_space_id=h5_mspace, file_space_id=h5_fspace, xfer_prp=h5_plist)
       call check_error (h5_err, 'write dataset', name)
 !
       ! close data spaces, dataset, and the property list
@@ -1399,7 +1399,7 @@ module HDF5_IO
 !
       ! collectively write the data
       call h5dwrite_f (h5_dset, h5_ntype, data, &
-          glob_dim, h5_err, file_space_id = h5_fspace, mem_space_id = h5_mspace, xfer_prp = h5_plist)
+          glob_dim, h5_err, mem_space_id=h5_mspace, file_space_id=h5_fspace, xfer_prp=h5_plist)
       call check_error (h5_err, 'write dataset', name)
 !
       ! close data spaces, dataset, and the property list
@@ -1514,7 +1514,7 @@ module HDF5_IO
 !
       ! collectively write the data
       call h5dwrite_f (h5_dset, h5_ntype, data, &
-          glob_dim, h5_err, file_space_id = h5_fspace, mem_space_id = h5_mspace, xfer_prp = h5_plist)
+          glob_dim, h5_err, mem_space_id=h5_mspace, file_space_id=h5_fspace, xfer_prp=h5_plist)
       call check_error (h5_err, 'write dataset', name)
 !
       ! close data spaces, dataset, and the property list
@@ -1650,10 +1650,10 @@ module HDF5_IO
       ! collectively write the data
       if (lhas_data) then
         call h5dwrite_f (h5_dset, h5_ntype, data, &
-            glob_dim, h5_err, file_space_id = h5_fspace, mem_space_id = h5_mspace, xfer_prp = h5_plist)
+            glob_dim, h5_err, mem_space_id=h5_mspace, file_space_id=h5_fspace, xfer_prp=h5_plist)
       else
         call h5dwrite_f (h5_dset, h5_ntype, 0, &
-            glob_dim, h5_err, file_space_id = h5_fspace, mem_space_id = h5_mspace, xfer_prp = h5_plist)
+            glob_dim, h5_err, mem_space_id=h5_mspace, file_space_id=h5_fspace, xfer_prp=h5_plist)
       endif
       call check_error (h5_err, 'write dataset', name)
 !
@@ -1766,7 +1766,7 @@ module HDF5_IO
 !
       ! collectively write the data
       call h5dwrite_f (h5_dset, h5_ntype, data, &
-          global_size, h5_err, file_space_id = h5_fspace, mem_space_id = h5_mspace, xfer_prp = h5_plist)
+          global_size, h5_err, mem_space_id=h5_mspace, file_space_id=h5_fspace, xfer_prp=h5_plist)
       call check_error (h5_err, 'write dataset', name)
 !
       ! close data spaces, dataset, and the property list
@@ -1891,7 +1891,7 @@ module HDF5_IO
 !
       ! collectively write the data
       call h5dwrite_f (h5_dset, h5_ntype, data, &
-          global_size, h5_err, file_space_id = h5_fspace, mem_space_id = h5_mspace, xfer_prp = h5_plist)
+          global_size, h5_err, mem_space_id=h5_mspace, file_space_id=h5_fspace, xfer_prp=h5_plist)
       call check_error (h5_err, 'write dataset', name)
 !
       ! close data spaces, dataset, and the property list
