@@ -293,9 +293,9 @@ my @gpu_tests = qw(
 			 backreact_infl
 			 #1d-tests/axionSU2back
 			 2d-tests/chemistry_GrayScott
+			 MRI-turbulence_hyper
                    );
 
-		   #Was tested to work but the fact that the Short stopping time approximation considers the whole pencil will cannot faithfully translate to GPU MRI-turbulence_hyper
 		   #Was tested to work but need multi-gpu Fourier 1d-tests/horndeski_choiceIII
 		   #Was tested to work but need multi-gpu Fourier GravitationalWaves
 		   #Basically works but the autotest requires sums on GPU and cpu to agree to a level that is not achievable: Schwinger
