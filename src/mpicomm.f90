@@ -9894,37 +9894,18 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real, dimension(mx), intent(out) :: x
       real, dimension(my), intent(out) :: y
       real, dimension(mz), intent(out) :: z
-      real, dimension(mxgrid), intent(in), optional :: gx
-      real, dimension(mygrid), intent(in), optional :: gy
-      real, dimension(mzgrid), intent(in), optional :: gz
+      real, dimension(mxgrid), intent(inout) :: gx
+      real, dimension(mygrid), intent(inout) :: gy
+      real, dimension(mzgrid), intent(inout) :: gz
 !
-      if (lfirst_proc_yz) then    ! x-beam through root
-        if (lroot) then
-          call mpiscatterv_real_plain(gx,spread(mx,1,nprocx),(indgen(nprocx)-1)*nx,x,mx,comm=MPI_COMM_XBEAM)
-        else
-          call mpiscatterv_real_plain(x,(/1/),(/1/),x,mx,comm=MPI_COMM_XBEAM)
-        endif
-      endif
+      call mpibcast_real (gx, mxgrid, comm=MPI_COMM_WORLD)
+      x = gx(1+ipx*nx:nx+2*nghost+ipx*nx)
 !
-      if (lfirst_proc_xz) then    ! y-beam through root
-        if (lroot) then
-          call mpiscatterv_real_plain(gy,spread(my,1,nprocy),(indgen(nprocy)-1)*ny,y,my,comm=MPI_COMM_YBEAM)
-        else
-          call mpiscatterv_real_plain(y,(/1/),(/1/),y,my,comm=MPI_COMM_YBEAM)
-        endif
-      endif
+      call mpibcast_real (gy, mygrid, comm=MPI_COMM_WORLD)
+      y = gy(1+ipy*ny:ny+2*nghost+ipy*ny)
 !
-      if (lfirst_proc_xy) then    ! z-beam through root
-        if (lroot) then
-          call mpiscatterv_real_plain(gz,spread(mz,1,nprocz),(indgen(nprocz)-1)*nz,z,mz,comm=MPI_COMM_ZBEAM)
-        else
-          call mpiscatterv_real_plain(z,(/1/),(/1/),z,mz,comm=MPI_COMM_ZBEAM)
-        endif
-      endif
-
-      call mpibcast_real(x,mx,comm=MPI_COMM_YZPLANE)
-      call mpibcast_real(y,my,comm=MPI_COMM_XZPLANE)
-      call mpibcast_real(z,mz,comm=MPI_COMM_XYPLANE)
+      call mpibcast_real (gz, mzgrid, comm=MPI_COMM_WORLD)
+      z = gz(1+ipz*nz:nz+2*nghost+ipz*nz)
 !
     endsubroutine distribute_grid
 !***********************************************************************
