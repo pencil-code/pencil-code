@@ -484,7 +484,7 @@ module Param_IO
         call safe_character_append (user, 'global_run.in')
         if (parallel_file_exists (user)) then
           call parallel_open(user, remove_comments=.true.)
-          call read_all_namelists(loptional=.true.)
+          call read_all_namelists(loptional=.false.) ! temporary workaround to fix autotests, was .true. before
           call parallel_close
         endif
       endif

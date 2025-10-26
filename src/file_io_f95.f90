@@ -286,6 +286,7 @@ module File_io
       logical :: lwarn
 !
       lwarn = .not. loptest (lno_warning)
+      lwarn = .true. !!! temporary workaround to fix autotests
 !
       if (lroot) then
 !
