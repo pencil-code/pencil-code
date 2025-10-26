@@ -1683,6 +1683,10 @@ endsubroutine helper_loop
     call copy_addr(nzgrid_eff,p_par(1370)) ! int
     call copy_addr(isld_char,p_par(1371)) ! int
     call copy_addr(idiag_dtv,p_par(1372)) ! int
+    call copy_addr(iww1,p_par(1373)) ! int
+    call copy_addr(iww2,p_par(1374)) ! int
+    call copy_addr(iww3,p_par(1375)) ! int
+
     
     endsubroutine pushpars2c
 !***********************************************************************

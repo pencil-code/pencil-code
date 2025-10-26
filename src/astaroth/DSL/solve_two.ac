@@ -80,6 +80,18 @@ fixed_boundary Kernel twopass_solve_final(PC_SUB_STEP_NUMBER step_num)
 		if(AC_iinfl_phi__mod__backreact_infl != 0)  write(F_INFL_PHI ,rk_final(F_INFL_PHI ,step_num))
 		if(AC_iinfl_dphi__mod__backreact_infl != 0) write(F_INFL_DPHI,rk_final(F_INFL_DPHI,step_num))
 #endif
+#if LKLEIN_GORDON
+		if(AC_iphi__mod__klein_gordon != 0)  write(F_PHI ,rk_final(F_PHI ,step_num))
+		if(AC_idphi__mod__klein_gordon != 0) write(F_DPHI,rk_final(F_DPHI,step_num))
+
+		if(AC_iphi_up_im__mod__klein_gordon != 0)   write(F_PHI_UP_IM,rk_final(F_PHI_UP_IM,step_num))
+		if(AC_iphi_down_re__mod__klein_gordon != 0) write(F_PHI_DOWN_RE,rk_final(F_PHI_DOWN_RE,step_num))
+		if(AC_iphi_down_im__mod__klein_gordon != 0) write(F_PHI_DOWN_IM,rk_final(F_PHI_DOWN_IM,step_num))
+
+		if(AC_idphi_up_im__mod__klein_gordon != 0)   write(F_DPHI_UP_IM,rk_final(F_DPHI_UP_IM,    step_num))
+		if(AC_idphi_down_re__mod__klein_gordon != 0) write(F_DPHI_DOWN_RE,rk_final(F_DPHI_DOWN_RE,step_num))
+		if(AC_idphi_down_im__mod__klein_gordon != 0) write(F_DPHI_DOWN_IM,rk_final(F_DPHI_DOWN_IM,step_num))
+#endif
 #if LDISP_CURRENT
 		if(AC_igamma__mod__disp_current != 0) write(F_GAMMA,rk_final(F_GAMMA,step_num)) 
 		if(AC_irhoe__mod__disp_current  != 0) write(F_RHOE ,rk_final(F_RHOE ,step_num))

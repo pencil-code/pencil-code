@@ -938,3 +938,4 @@ integer, parameter :: enum_fct_string = 928
 integer, parameter :: enum_div_sld_ene_string = 929
 integer, parameter :: enum_1s_string = 930
 integer, parameter :: enum_ct1_string = 931
+integer, parameter :: enum_waterfall_string = 932

@@ -127,6 +127,22 @@ real  DF_DIVA_NAME     = 0.0
 real DF_INFL_PHI  = 0.0
 real DF_INFL_DPHI = 0.0
 
+//For klein gordon
+real DF_PHI  = 0.0
+real DF_DPHI = 0.0
+real DF_PSI  = 0.0
+real DF_DPSI  = 0.0
+
+#define DF_PHI_UP_RE DF_PHI
+real DF_PHI_UP_IM = 0.0
+real DF_PHI_DOWN_RE = 0.0
+real DF_PHI_DOWN_IM = 0.0
+
+#define DF_DPHI_UP_RE DF_DPHI
+real DF_DPHI_UP_IM = 0.0
+real DF_DPHI_DOWN_RE = 0.0
+real DF_DPHI_DOWN_IM = 0.0
+
 real3 DF_AXTESTVEC = real3(0.,0.,0.)
 
 real DF_MU5 = 0.0

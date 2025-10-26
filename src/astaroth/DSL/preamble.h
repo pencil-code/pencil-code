@@ -233,8 +233,20 @@ const real AC_ascale__mod__cdata = 0.0
 #include "../bcs/funcs_overload.h"
 #include "../hydro/before_boundary.h"
 
+#ifndef LDISP_CURRENT
+const bool AC_lphi_hom__mod__disp_current = false
+const bool AC_lphi_linear_regime__mod__disp_current = false
+const bool AC_lnoncollinear_eb__mod__disp_current = false
+const bool AC_lnoncollinear_eb_aver__mod__disp_current = false
+const bool AC_lcollinear_eb__mod__disp_current = false
+const bool AC_lcollinear_eb_aver__mod__disp_current = false
+const bool AC_lallow_bprime_zero__mod__disp_current = false
+#endif
+
 #define AC_iproc_world__mod__cdata (0)
 #include "../axionSU2back.h"
+
+
 #include "../backreact_infl.h"
 
 #if LPOLYMER
@@ -252,3 +264,4 @@ const bool AC_lmultithread__mod__cdata = false
 Profile<Z> AC_ssmz__mod__energy
 Profile<Z> AC_del2ssmz__mod__energy
 #endif
+

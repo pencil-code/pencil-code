@@ -1628,6 +1628,30 @@ module Special
     call copy_addr(lflrw,p_par(22)) ! bool
     call copy_addr(ilna,p_par(23)) ! int
     call copy_addr(scale_rho_chi_heqn,p_par(24))
+    call copy_addr(ipsi,p_par(25)) ! int
+    call copy_addr(idpsi,p_par(26)) ! int
+    call copy_addr(iphi_up_re,p_par(27)) ! int
+    call copy_addr(iphi_up_im,p_par(28)) ! int
+    call copy_addr(iphi_down_re,p_par(29)) ! int
+    call copy_addr(iphi_down_im,p_par(30)) ! int
+    call copy_addr(idphi_up_re,p_par(31)) ! int
+    call copy_addr(idphi_up_im,p_par(32)) ! int
+    call copy_addr(idphi_down_re,p_par(33)) ! int
+    call copy_addr(idphi_down_im,p_par(34)) ! int
+    call copy_addr(psimass2,p_par(35))
+    call copy_addr(lambda_psi,p_par(36))
+    call copy_addr(coupl_phipsi,p_par(37))
+    call copy_addr(c_psi,p_par(38))
+    call copy_addr(eta_phi,p_par(45))
+    call copy_addr(lhiggs_friction,p_par(46)) ! bool
+    call copy_addr(lwaterfall,p_par(47)) ! bool
+    call copy_addr(higgs_friction,p_par(48))
+    call copy_addr(lphi_doublet,p_par(49)) ! bool
+    call copy_addr(lphi_weakcharge,p_par(50)) ! bool
+    call copy_addr(lphi_hypercharge,p_par(51)) ! bool
+    call copy_addr(ia0,p_par(52)) ! int
+    call copy_addr(iw0,p_par(53)) ! int
+
 
     endsubroutine pushpars2c
 !********************************************************************

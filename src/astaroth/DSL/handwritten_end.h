@@ -71,10 +71,25 @@
 	if(AC_iaxi_impsil__mod__axionsu2back != 0)    write(F_AXI_IMPSIL    , rk_intermediate(F_AXI_IMPSIL   ,DF_AXI_IMPSIL   ,step_num,AC_dt__mod__cdata))  
 	if(AC_iaxi_impsildot__mod__axionsu2back != 0) write(F_AXI_IMPSILDOT , rk_intermediate(F_AXI_IMPSILDOT,DF_AXI_IMPSILDOT,step_num,AC_dt__mod__cdata))
 #endif
+
 #if LBACKREACT_INFL
 	if(AC_iinfl_phi__mod__backreact_infl != 0)  write(F_INFL_PHI ,rk_intermediate(F_INFL_PHI ,DF_INFL_PHI ,step_num,AC_dt__mod__cdata))
 	if(AC_iinfl_dphi__mod__backreact_infl != 0) write(F_INFL_DPHI,rk_intermediate(F_INFL_DPHI,DF_INFL_DPHI,step_num,AC_dt__mod__cdata))
 #endif
+
+#if LKLEIN_GORDON
+	if(AC_iphi__mod__klein_gordon != 0)  write(F_PHI ,rk_intermediate(F_PHI ,DF_PHI ,step_num,AC_dt__mod__cdata))
+	if(AC_idphi__mod__klein_gordon != 0) write(F_DPHI,rk_intermediate(F_DPHI,DF_DPHI,step_num,AC_dt__mod__cdata))
+
+	if(AC_iphi_up_im__mod__klein_gordon != 0)   write(F_PHI_UP_IM,rk_intermediate(F_PHI_UP_IM,DF_PHI_UP_IM,step_num,AC_dt__mod__cdata))
+	if(AC_iphi_down_re__mod__klein_gordon != 0) write(F_PHI_DOWN_RE,rk_intermediate(F_PHI_DOWN_RE,DF_PHI_DOWN_RE,step_num,AC_dt__mod__cdata))
+	if(AC_iphi_down_im__mod__klein_gordon != 0) write(F_PHI_DOWN_IM,rk_intermediate(F_PHI_DOWN_IM,DF_PHI_DOWN_IM,step_num,AC_dt__mod__cdata))
+
+	if(AC_idphi_up_im__mod__klein_gordon != 0)   write(F_DPHI_UP_IM,rk_intermediate(F_DPHI_UP_IM,    DF_DPHI_UP_IM,step_num,AC_dt__mod__cdata))
+	if(AC_idphi_down_re__mod__klein_gordon != 0) write(F_DPHI_DOWN_RE,rk_intermediate(F_DPHI_DOWN_RE,DF_DPHI_DOWN_RE,step_num,AC_dt__mod__cdata))
+	if(AC_idphi_down_im__mod__klein_gordon != 0) write(F_DPHI_DOWN_IM,rk_intermediate(F_DPHI_DOWN_IM,DF_DPHI_DOWN_IM,step_num,AC_dt__mod__cdata))
+#endif
+
 #if LDISP_CURRENT
 	if(AC_igamma__mod__disp_current != 0) write(F_GAMMA,rk_intermediate(F_GAMMA,DF_GAMMA,step_num,AC_dt__mod__cdata)) 
 	if(AC_ia0__mod__disp_current != 0)    write(F_A0   ,rk_intermediate(F_A0   ,DF_A0   ,step_num,AC_dt__mod__cdata))

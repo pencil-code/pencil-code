@@ -7897,6 +7897,8 @@ iloop:do i=1,size(list2)
         dst = enum_1s_string
       case('ct1')
         dst = enum_ct1_string
+      case('waterfall')
+        dst = enum_waterfall_string
       case default
         dst = enum_unknown_string_string
         if (lroot) print*, 'No string enum for: ', src
