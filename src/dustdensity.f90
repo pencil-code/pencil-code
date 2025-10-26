@@ -3363,7 +3363,7 @@ module Dustdensity
       type (pencil_case) :: p
       real, dimension (nx,ndustspec) :: dndr_dr,ff_tmp
       real, dimension (nx,ndustspec) :: ppsf_full_i, nd_substep,  nd_new
-      integer :: k, i, jj, kk1,kk2 !, ind_tmp=6
+      integer :: k, i, j, jj, kk1,kk2 !, ind_tmp=6
       real :: GS
 !
       intent(in) :: ppsf_full_i, i
@@ -3375,10 +3375,10 @@ module Dustdensity
 !
         if (.not.lsemi_chemistry) then
           do k=1,ndustspec
-            !TP: cannot do any across pencils on GPU
-            !TP: writing this as 1,nx loop would work
-            if (any(p%ppsat==0.0) .or. (dsize(k)==0.)) &
-              call fatal_error('droplet_redistr','p%pp or dsize has zero value(s)')
+            if(dsize(k) == 0.) call fatal_error('droplet_redistr','dsize has zero value(s)')
+            do j = 1,nx
+              if(p%ppsat(j) == 0.0) call fatal_error('droplet_redistr','p%pp has zero value(s)')
+            enddo
           enddo
 !
 !  compute ff_tmp, which is a bit different from the earlier one.
