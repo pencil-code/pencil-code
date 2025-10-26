@@ -113,6 +113,8 @@ module Chemistry
   character(len=5) :: flameind_spec2="CO2"
 !
   integer :: mreactions, iadv=0
+  real, allocatable, dimension(:,:) :: vreactions_p,vreactions_m
+  !$omp threadprivate(vreactions_p,vreactions_m)
 !
 !  The stociometric factors need to be reals for arbitrary reaction orders
 !
@@ -3122,6 +3124,10 @@ module Chemistry
       if (.not. lreloading) then
         allocate(stoichio(nchemspec,mreactions),STAT=stat)
         if (stat > 0) call fatal_error("astrobiology_data","Couldn't allocate stoichio")
+        allocate(vreactions_p(nx,mreactions),STAT=stat)
+        if (stat > 0) call fatal_error("astrobiology_data","Couldn't allocate vreactions_p")
+        allocate(vreactions_m(nx,mreactions),STAT=stat)
+        if (stat > 0) call fatal_error("astrobiology_data","Couldn't allocate vreactions_m")
         allocate(Sijm(nchemspec,mreactions),STAT=stat)
         if (stat > 0) call fatal_error("astrobiology_data","Couldn't allocate Sijm")
         allocate(Sijp(nchemspec,mreactions),STAT=stat)
@@ -3640,8 +3646,17 @@ module Chemistry
       type (pencil_case) :: p
       real, dimension(nx) :: ff_condm,sum_DYDt,sum_hhk_DYDt_reac
 
-      integer :: ii
+      integer :: ii,k,j
 !
+      if (ldiagnos.and.lchemistry_diag) then
+        do k = 1,nchemspec
+          do j = 1,nreactions
+            net_react_p(k,j) = net_react_p(k,j)+stoichio(k,j)*sum(vreactions_p(:,j))
+            net_react_m(k,j) = net_react_m(k,j)+stoichio(k,j)*sum(vreactions_m(:,j))
+          enddo
+        enddo
+      endif
+
       if (lreactions .and. ireac /= 0 .and. ((.not. llsode).or. lchemonly)) then
         !TP: sum_hhk_DYDt_reac is needed only if maux == nchemspec+1
         if (maux == nchemspec+1) call get_sum_DYDts(p,sum_DYDt,sum_hhk_DYDt_reac)
@@ -4243,6 +4258,10 @@ module Chemistry
       if (.not. lreloading) then
         allocate(stoichio(nchemspec,mreactions),STAT=stat)
         if (stat > 0) call fatal_error('chemkin_data',"Couldn't allocate stoichio")
+        allocate(vreactions_p(nx,mreactions),STAT=stat)
+        if (stat > 0) call fatal_error('chemkin_data',"Couldn't allocate vreactions_p")
+        allocate(vreactions_m(nx,mreactions),STAT=stat)
+        if (stat > 0) call fatal_error('chemkin_data',"Couldn't allocate vreactions_m")
         allocate(Sijm(nchemspec,mreactions),STAT=stat)
         if (stat > 0) call fatal_error('chemkin_data',"Couldn't allocate Sijm")
         allocate(Sijp(nchemspec,mreactions),STAT=stat)
@@ -5111,7 +5130,7 @@ module Chemistry
 !
       real :: alpha, eps
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
-      real, dimension(nx,mreactions) :: vreactions, vreactions_p, vreactions_m
+      real, dimension(nx,mreactions) :: vreactions
       real, dimension(nx,nchemspec) :: xdot
       real, dimension(nx) :: rho1
       real, dimension(nx,nchemspec) :: molm
@@ -5175,18 +5194,7 @@ module Chemistry
         enddo
       enddo
       p%DYDt_reac = xdot*unit_time
-!
-!  For diagnostics
-!
-      !TP: cannot sum across nx on GPU: TODO refactor this to happen on calc_diagnostics_chemistry
-      if (ldiagnos.and.lchemistry_diag) then
-        do k = 1,nchemspec
-          do j = 1,nreactions
-            net_react_p(k,j) = net_react_p(k,j)+stoichio(k,j)*sum(vreactions_p(:,j))
-            net_react_m(k,j) = net_react_m(k,j)+stoichio(k,j)*sum(vreactions_m(:,j))
-          enddo
-        enddo
-      endif
+
 
 !
 ! NH:
@@ -6801,6 +6809,8 @@ module Chemistry
 !
       if (allocated(Bin_diff_coef))  deallocate(Bin_diff_coef)
       if (allocated(stoichio))       deallocate(stoichio)
+      if (allocated(vreactions_p))   deallocate(vreactions_p)
+      if (allocated(vreactions_m))   deallocate(vreactions_m)
       if (allocated(Sijm))           deallocate(Sijm)
       if (allocated(Sijp))           deallocate(Sijp)
       if (allocated(kreactions_z))   deallocate(kreactions_z)
