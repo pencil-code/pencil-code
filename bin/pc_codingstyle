@@ -833,7 +833,7 @@ sub parse_file {
 		}
 
 		# line length
-		if (length ($lines[$pos]) >= $max_line_length) {
+		if (length ($lines[$pos]) > $max_line_length) {
 			accumulative_fatal ("line longer than ".$max_line_length." characters (including newline character)");
 		}
 	}
