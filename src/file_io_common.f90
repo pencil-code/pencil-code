@@ -340,7 +340,7 @@ module File_io
       use Cdata, only: lnamelist_error, lparam_nml, lstart, lroot
       use General, only: loptest, itoa, ioptest
       use Messages, only: warning
-      use Cparam, only: namelist_is_optional_enum, do_not_issue_warning_about_missing_namelist_enum 
+      use Cparam, only: namelist_is_optional_enum, allow_missing_namelist_enum
 !
       interface
         subroutine reader(iostat)
@@ -355,13 +355,13 @@ module File_io
       integer :: ierr
       logical :: found
       integer ::  optional_namelist_
-      logical :: need_to_find_namelist,do_not_issue_warning_about_missing_namelist
+      logical :: need_to_find_namelist,lallow_missing_namelist
       character(len=5) :: type, suffix
 !
       optional_namelist_ = ioptest(optional_namelist)
 
       need_to_find_namelist =  IAND(optional_namelist_,namelist_is_optional_enum) == 0
-      do_not_issue_warning_about_missing_namelist = IAND(optional_namelist_,do_not_issue_warning_about_missing_namelist_enum) /= 0
+      lallow_missing_namelist = IAND(optional_namelist_,allow_missing_namelist_enum) /= 0
 
       if (.not. loptest (lactive, .true.)) return
 !
@@ -378,7 +378,7 @@ module File_io
       endif
 !
       !if (.not. find_namelist (trim(name)//trim(type)//trim(suffix))) then
-      call find_namelist (trim(name)//trim(type)//trim(suffix),found,do_not_issue_warning_about_missing_namelist)
+      call find_namelist (trim(name)//trim(type)//trim(suffix),found,lallow_missing_namelist)
       if(.not. found .and. .not. need_to_find_namelist) return
 !
       ierr = 0 ! G95 complains 'ierr' is used but not set, even though 'reader' has intent(out).
