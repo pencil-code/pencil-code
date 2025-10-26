@@ -10,6 +10,7 @@ module HDF5_IO
   use HDF5
   use Messages, only: fatal_error, warning
   use Mpicomm, only: mpiscan_int, mpibcast_int
+  use Syscalls, only: sleep
 !
   implicit none
 !
