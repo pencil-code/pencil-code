@@ -724,7 +724,7 @@ module HDF5_IO
       logical, optional, intent(inout) :: lerrcont
 !
       integer(kind=8), dimension(2), parameter :: h5_stride=1, h5_count=1
-      integer(kind=8), dimension(2) :: ldims, i8dum
+      integer(kind=8), dimension(2) :: ldims, gdims_i8
 !
       ! define 'memory-space' to indicate the local data portion in memory
       ldims = (/size(data,1),size(data,2)/)
@@ -743,8 +743,8 @@ module HDF5_IO
       call check_error (h5_err, 'select hyperslab within file', name)
 !
       ! define local 'hyper-slab' portion in memory
-      i8dum = (/0,0/)
-      call h5sselect_hyperslab_f (h5_mspace, H5S_SELECT_SET_F, i8dum, h5_count, h5_err, h5_stride, ldims)
+      gdims_i8 = (/0,0/)
+      call h5sselect_hyperslab_f (h5_mspace, H5S_SELECT_SET_F, gdims_i8, h5_count, h5_err, h5_stride, ldims)
       call check_error (h5_err, 'select hyperslab within file', name)
 !
       ! prepare data transfer
@@ -754,8 +754,8 @@ module HDF5_IO
       call check_error (h5_err, 'select collective IO', name)
 !
       ! collectively read the data
-      i8dum = gdims
-      call h5dread_f (h5_dset, h5_ntype, data, i8dum, h5_err, h5_mspace, h5_fspace, h5_plist)
+      gdims_i8 = gdims
+      call h5dread_f (h5_dset, h5_ntype, data, gdims_i8, h5_err, h5_mspace, h5_fspace, h5_plist)
       call check_error (h5_err, 'read dataset', name)
 !
       ! close data spaces, dataset, and the property list
