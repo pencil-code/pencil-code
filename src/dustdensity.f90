@@ -1333,6 +1333,96 @@ module Dustdensity
 !
     endsubroutine pencil_interdep_dustdensity
 !***********************************************************************
+    subroutine get_del6nd_via_global_nd(f,p,k)
+
+      use Sub, only: del6
+
+      integer :: mm,nn
+      real, dimension(mx,my,mz,mfarray) :: f
+      type(pencil_case) :: p
+      integer :: k
+      if (iglobal_nd/=0) then
+        if (lfirstpoint) then
+          do mm=1,my; do nn=1,mz
+            f(:,mm,nn,iglobal_nd)=exp(f(:,mm,nn,ilnnd(k)))   !MR: not correct
+          enddo; enddo
+        endif
+        call del6(f,iglobal_nd,p%del6nd(:,k))
+      endif
+    endsubroutine get_del6nd_via_global_nd
+!***********************************************************************
+    subroutine get_ccondens(p,ttt)
+!
+!  26-oct-25/TP: carved form calc_pencils_dustdensity
+!
+      use General, only: spline_integral
+
+      type(pencil_case) :: p
+      real, dimension (ndustspec) :: ttt
+
+      real, dimension (ndustspec) :: ff_tmp
+      real, dimension (nx) :: Imr
+      integer :: i,k
+!
+!  (Probably) just temporarily for debugging a division-by-zero problem.
+!
+
+        !TP: cannot do any across pencil on GPU
+        if (any(p%ppsat==0.) .and. any(p%ppsf(:,:)==0.)) then
+          if (.not.lpencil_check_at_work) then
+            write(0,*) 'p%ppsat = ', minval(p%ppsat)
+            write(0,*) 'p%ppsf = ', minval(p%ppsf)
+            write(0,*) 'p%TT = ', minval(p%TT)
+          endif
+          call fatal_error('calc_pencils_dustdensity','p%ppsat or p%ppsf has zero value(s)')
+        else
+!
+          Imr=Dwater*m_w/Rgas*p%ppsat*p%TT1/rho_w
+          do i=1,nx
+            if (lnoaerosol .or. lnocondens_term) then
+              p%ccondens(i)=0.
+            else
+              if (p%ppsat(i) /= 0.) then
+                do k=1,ndustspec
+!
+!  ldcore means core distribution. (Currently used for fixed core.)
+!  The "difference" is "p%ppwater(i)/p%ppsat(i)-p%ppsf(i,k)/p%ppsat(i)"
+!  "(p%ppwater(i)-p%ppsf(i,k))/p%ppsat(i)", which is the supersaturation ratio
+!
+                  if (ldcore) then
+                    ff_tmp(k)=p%nd(i,k)*dsize(k)*(p%ppwater(i)/p%ppsat(i)-p%ppsf(i,k)/p%ppsat(i))
+                  else
+                    if ((k>1) .and. (k<ndustspec)) then
+!
+!  boundary points
+!
+                     ff_tmp(k)=0.25*(p%nd(i,k-1)*dsize(k-1)  &
+                      *(p%ppwater(i)/p%ppsat(i)-p%ppsf(i,k-1)/p%ppsat(i)))+0.5*(p%nd(i,k)*dsize(k) &
+                      *(p%ppwater(i)/p%ppsat(i)-p%ppsf(i,k)/p%ppsat(i)))+0.25*(p%nd(i,k+1)*dsize(k+1) &
+                      *(p%ppwater(i)/p%ppsat(i)-p%ppsf(i,k+1)/p%ppsat(i)))
+                    else
+!
+!  interior points (important for energy equation)
+!
+                      ff_tmp(k)=p%nd(i,k)*dsize(k)*(p%ppwater(i)/p%ppsat(i)-p%ppsf(i,k)/p%ppsat(i))
+                    endif
+                  endif
+!
+                enddo   ! do k=1,ndustspec
+              endif     ! if (p%ppsat(i) /= 0.)
+!
+              if (any(dsize==0.0)) then
+                ttt=0.0         !fill me in
+              else
+                ttt= spline_integral(dsize,ff_tmp)
+              endif
+              p%ccondens(i)=4.*pi*Imr(i)*rho_w*ttt(ndustspec)
+!
+            endif       ! if (lnoaerosol .or. lnocondens_term)
+          enddo         ! do i=1,nx
+        endif           ! if (any(p%ppsat==0.) .and. any(p%ppsf(:,:)==0.)
+    endsubroutine get_ccondens
+!***********************************************************************
     subroutine calc_pencils_dustdensity(f,p)
 !
 !  Calculate Dustdensity pencils.
@@ -1346,14 +1436,14 @@ module Dustdensity
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: tmp, Imr, T_tmp
+      real, dimension (nx) :: tmp, T_tmp
       real, dimension (nx,3) :: tmp_pencil_3
-      real, dimension (ndustspec) :: ttt, ff_tmp
+      real, dimension (ndustspec) :: ttt
       real, dimension (nx,ndustspec) :: Nd_rho, CoagS
       real, parameter :: aa0= 6.107799961, aa1= 4.436518521e-1
       real, parameter :: aa2= 1.428945805e-2, aa3= 2.650648471e-4
       real, parameter :: aa4= 3.031240396e-6, aa5= 2.034080948e-8, aa6= 6.136820929e-11
-      integer :: i,k,mm,nn
+      integer :: i,k
 !
       intent(inout) :: f,p
 ! nd
@@ -1484,18 +1574,14 @@ module Dustdensity
 ! del6nd
         if (lpencil(i_del6nd)) then
           if (ldustdensity_log) then
-            if (iglobal_nd/=0) then
-              if (lfirstpoint) then
-                do mm=1,my; do nn=1,mz
-                  f(:,mm,nn,iglobal_nd)=exp(f(:,mm,nn,ilnnd(k)))   !MR: not correct
-                enddo; enddo
-              endif
-              call del6(f,iglobal_nd,p%del6nd(:,k))
+            if (.not. lgpu) then
+              call get_del6nd_via_global_nd(f,p,k)
+            else
               !TP: Given the above formulation is incorrect 
               !    (one should not assume the halos to be up to date at least without setting early_finalize)
               !    could we replace it with the one below?
               !    Would make GPU porting easier
-              !call del6_exp(f,ilnnd(k),p%del6nd(:,k))
+              call del6_exp(f,ilnnd(k),p%del6nd(:,k))
             endif
           else
             call del6(f,ind(k),p%del6nd(:,k))
@@ -1592,65 +1678,8 @@ module Dustdensity
 ! ccondens
 !
       if (lpencil(i_ccondens)) then
-!
-!  (Probably) just temporarily for debugging a division-by-zero problem.
-!
-
-        !TP: cannot do any across pencil on GPU
-        if (any(p%ppsat==0.) .and. any(p%ppsf(:,:)==0.)) then
-          if (.not.lpencil_check_at_work) then
-            write(0,*) 'p%ppsat = ', minval(p%ppsat)
-            write(0,*) 'p%ppsf = ', minval(p%ppsf)
-            write(0,*) 'p%TT = ', minval(p%TT)
-          endif
-          call fatal_error('calc_pencils_dustdensity','p%ppsat or p%ppsf has zero value(s)')
-        else
-!
-          Imr=Dwater*m_w/Rgas*p%ppsat*p%TT1/rho_w
-          do i=1,nx
-            if (lnoaerosol .or. lnocondens_term) then
-              p%ccondens(i)=0.
-            else
-              if (p%ppsat(i) /= 0.) then
-                do k=1,ndustspec
-!
-!  ldcore means core distribution. (Currently used for fixed core.)
-!  The "difference" is "p%ppwater(i)/p%ppsat(i)-p%ppsf(i,k)/p%ppsat(i)"
-!  "(p%ppwater(i)-p%ppsf(i,k))/p%ppsat(i)", which is the supersaturation ratio
-!
-                  if (ldcore) then
-                    ff_tmp(k)=p%nd(i,k)*dsize(k)*(p%ppwater(i)/p%ppsat(i)-p%ppsf(i,k)/p%ppsat(i))
-                  else
-                    if ((k>1) .and. (k<ndustspec)) then
-!
-!  boundary points
-!
-                     ff_tmp(k)=0.25*(p%nd(i,k-1)*dsize(k-1)  &
-                      *(p%ppwater(i)/p%ppsat(i)-p%ppsf(i,k-1)/p%ppsat(i)))+0.5*(p%nd(i,k)*dsize(k) &
-                      *(p%ppwater(i)/p%ppsat(i)-p%ppsf(i,k)/p%ppsat(i)))+0.25*(p%nd(i,k+1)*dsize(k+1) &
-                      *(p%ppwater(i)/p%ppsat(i)-p%ppsf(i,k+1)/p%ppsat(i)))
-                    else
-!
-!  interior points (important for energy equation)
-!
-                      ff_tmp(k)=p%nd(i,k)*dsize(k)*(p%ppwater(i)/p%ppsat(i)-p%ppsf(i,k)/p%ppsat(i))
-                    endif
-                  endif
-!
-                enddo   ! do k=1,ndustspec
-              endif     ! if (p%ppsat(i) /= 0.)
-!
-              if (any(dsize==0.0)) then
-                ttt=0.0         !fill me in
-              else
-                ttt= spline_integral(dsize,ff_tmp)
-              endif
-              p%ccondens(i)=4.*pi*Imr(i)*rho_w*ttt(ndustspec)
-!
-            endif       ! if (lnoaerosol .or. lnocondens_term)
-          enddo         ! do i=1,nx
-        endif           ! if (any(p%ppsat==0.) .and. any(p%ppsf(:,:)==0.)
-      endif             ! if (lpencil(i_ccondens))
+        call get_ccondens(p,ttt)
+      endif
 !
 !  dndr means rhs of dn/dt formula.
 !

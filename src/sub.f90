@@ -3052,23 +3052,26 @@ module Sub
       real, dimension(nx), intent(out) :: f_der_exp
       real, dimension(nx) :: f_der1,f_der2,f_der3,f_der4,f_der5,f_der6
 
-      call der(f,k,f_der1,j)
-      call der2(f,k,f_der2,j)
-      call der3(f,k,f_der3,j)
-      call der4(f,k,f_der4,j)
-      call der5(f,k,f_der5,j)
-      call der6(f,k,f_der6,j)
-      f_der_exp = exp(f(l1:l2,m,n,k))*(+f_der1**6 &
-            +10*f_der3**2 &
-            +15*f_der2**3 &
-            +6*f_der1*f_der5 &
-            +15*(f_der1**2)*f_der4 &
-            +15*(f_der1**4)*f_der2 &
-            +15*f_der2*f_der4 &
-            +20*(f_der1**3)*f_der3 &
-            +45*(f_der1**2)*(f_der2**2) &
-            +60*f_der1*f_der2*f_der3 &
-            +f_der6)
+      call der6(exp(f),k,f_der_exp,j)
+
+      !TP: untested analytical expression for now use the non-performant safe way
+      !call der(f,k,f_der1,j)
+      !call der2(f,k,f_der2,j)
+      !call der3(f,k,f_der3,j)
+      !call der4(f,k,f_der4,j)
+      !call der5(f,k,f_der5,j)
+      !call der6(f,k,f_der6,j)
+      !f_der_exp = exp(f(l1:l2,m,n,k))*(+f_der1**6 &
+      !      +10*f_der3**2 &
+      !      +15*f_der2**3 &
+      !      +6*f_der1*f_der5 &
+      !      +15*(f_der1**2)*f_der4 &
+      !      +15*(f_der1**4)*f_der2 &
+      !      +15*f_der2*f_der4 &
+      !      +20*(f_der1**3)*f_der3 &
+      !      +45*(f_der1**2)*(f_der2**2) &
+      !      +60*f_der1*f_der2*f_der3 &
+      !      +f_der6)
     endsubroutine der6_exp
 !***********************************************************************
     subroutine del6(f,k,del6f,ignoredx)
