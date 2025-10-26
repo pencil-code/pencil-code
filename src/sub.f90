@@ -313,13 +313,6 @@ module Sub
 !    module procedure pencil_subtract2
 !  endinterface
 !
-!ajwm Commented pending a C replacement
-!  INTERFACE getenv
-!    SUBROUTINE GETENV (VAR, VALUE)
-!      CHARACTER(LEN=*) VAR, VALUE
-!    endsubroutine
-!  END INTERFACE
-!
   real, dimension(7,7,7), parameter :: smth_kernel = reshape((/ &
  6.03438e-15,9.07894e-11,1.24384e-08,5.46411e-08,1.24384e-08,9.07894e-11,5.03438e-15,9.07894e-11,2.21580e-07,9.14337e-06,&
  2.69243e-05,9.14337e-06,2.21580e-07,9.07894e-11, 1.24384e-08, 9.14337e-06, 0.000183649, 0.000425400, 0.000183649, 9.14337e-06,&
@@ -5420,7 +5413,7 @@ nameloop: do
         if ((nameptr-1) >= inptr) then
          envname=trim(strin(inptr:nameptr-1))
 ! Commented pending a C replacement
-!         call getenv(trim(envname),envvalue)
+!         call get_environment_variable(trim(envname),envvalue)
 !         call safe_character_assign(strout,trim(strout)//trim(envvalue))
         endif
 !
