@@ -263,7 +263,7 @@ module File_io
     endfunction get_tmp_prefix
 !**************************************************************************
     !function find_namelist(name) result(lfound)
-    subroutine find_namelist(name,lfound,lno_warning)
+    subroutine find_namelist(name,lfound,loptional)
 !
 !  Tests if the namelist is present and reports a missing namelist.
 !
@@ -278,15 +278,14 @@ module File_io
 !
       character(len=*), intent(in) :: name
       logical :: lfound
-      logical, optional :: lno_warning
+      logical, optional :: loptional
 !
       integer :: ierr, pos, state, max_len, line_len
       character(len=36000) :: line
       character :: ch
       logical :: lwarn
 !
-      lwarn = .not. loptest (lno_warning)
-      lwarn = .true. !!! temporary workaround to fix autotests
+      lwarn = .not. loptest (loptional)
 !
       if (lroot) then
 !
