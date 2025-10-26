@@ -263,7 +263,7 @@ module File_io
     endfunction get_tmp_prefix
 !**************************************************************************
     !function find_namelist(name) result(lfound)
-    subroutine find_namelist(name,lfound,loptional)
+    subroutine find_namelist(name,lfound,do_not_issue_warning_)
 !
 !  Tests if the namelist is present and reports a missing namelist.
 !
@@ -278,15 +278,15 @@ module File_io
 !
       character(len=*), intent(in) :: name
       logical :: lfound
-      logical, optional :: loptional
+      logical, optional :: do_not_issue_warning_
 !
       integer :: ierr, pos, state, max_len, line_len
       character(len=36000) :: line
       character :: ch
-      logical :: lwarn
+      logical :: do_not_issue_warning
+
 !
-      lwarn = .not. loptest (loptional)
-!
+      do_not_issue_warning = loptest(do_not_issue_warning_)
       if (lroot) then
 !
         lfound = .false.
@@ -334,7 +334,7 @@ module File_io
         enddo
 
         call parallel_rewind
-        if (.not. lfound .and. lwarn) call warning ('find_namelist', 'namelist "'//trim(name)//'" is missing!')
+        if (.not. lfound .and. .not. do_not_issue_warning) call warning ('find_namelist', 'namelist "'//trim(name)//'" is missing!')
       endif
 !
       call mpibcast (lfound,comm=MPI_COMM_PENCIL)

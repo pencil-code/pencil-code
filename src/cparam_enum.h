@@ -1,3 +1,7 @@
+integer, parameter :: namelist_is_optional_enum = 1
+integer, parameter :: do_not_issue_warning_about_missing_namelist_enum = 2
+integer, parameter :: optional_namelists_without_warning_enum = 3
+
 !TP: strings to enums
 
 integer, parameter :: enum_unknown_string_string = 0

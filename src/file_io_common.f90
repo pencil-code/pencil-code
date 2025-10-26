@@ -325,7 +325,7 @@ module File_io
 !
     endfunction parallel_file_exists
 !***********************************************************************
-    subroutine read_namelist(reader,name,lactive,loptional)
+    subroutine read_namelist(reader,name,lactive,optional_namelist)
 !
 !  Encapsulates reading of pars + error handling.
 !
@@ -340,6 +340,7 @@ module File_io
       use Cdata, only: lnamelist_error, lparam_nml, lstart, lroot
       use General, only: loptest, itoa, ioptest
       use Messages, only: warning
+      use Cparam, only: namelist_is_optional_enum, do_not_issue_warning_about_missing_namelist_enum 
 !
       interface
         subroutine reader(iostat)
@@ -349,14 +350,18 @@ module File_io
 !
       character(len=*), intent(in) :: name
       logical, optional, intent(in) :: lactive
-      logical, optional, intent(in) :: loptional
+      integer, optional, intent(in) :: optional_namelist
 !
       integer :: ierr
       logical :: found
-      logical :: lopt
+      integer ::  optional_namelist_
+      logical :: need_to_find_namelist,do_not_issue_warning_about_missing_namelist
       character(len=5) :: type, suffix
 !
-      lopt = loptest(loptional)
+      optional_namelist_ = ioptest(optional_namelist)
+
+      need_to_find_namelist =  IAND(optional_namelist_,namelist_is_optional_enum) == 0
+      do_not_issue_warning_about_missing_namelist = IAND(optional_namelist_,do_not_issue_warning_about_missing_namelist_enum) /= 0
 
       if (.not. loptest (lactive, .true.)) return
 !
@@ -373,14 +378,14 @@ module File_io
       endif
 !
       !if (.not. find_namelist (trim(name)//trim(type)//trim(suffix))) then
-      call find_namelist (trim(name)//trim(type)//trim(suffix), found, lopt)
-      if(.not. found .and. lopt) return
+      call find_namelist (trim(name)//trim(type)//trim(suffix),found,do_not_issue_warning_about_missing_namelist)
+      if(.not. found .and. .not. need_to_find_namelist) return
 !
       ierr = 0 ! G95 complains 'ierr' is used but not set, even though 'reader' has intent(out).
       call reader(ierr)
 !
       if (ierr /= 0) then
-!
+      
         if (.not.found) then
           if (.not. lparam_nml) lnamelist_error = .true.
           call parallel_rewind
