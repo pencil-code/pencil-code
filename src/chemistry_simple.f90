@@ -341,6 +341,9 @@ module Chemistry
 !
     endsubroutine register_chemistry
 !***********************************************************************
+    subroutine chemistry_allocate_rhs_arrays
+    endsubroutine chemistry_allocate_rhs_arrays
+!***********************************************************************
     subroutine read_thermodyn_simple
 
 !   Hard-coded H2_flamespeed mechanism
