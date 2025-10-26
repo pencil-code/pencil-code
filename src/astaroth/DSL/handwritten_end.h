@@ -47,6 +47,20 @@
 			write(F_CHEMISTRY_SPECIES[i],rk_intermediate(F_CHEMISTRY_SPECIES[i],DF_CHEMISTRY_SPECIES[i],step_num,AC_dt__mod__cdata))
 		}
 	}
+	if(ldustvelocity)
+	{
+		for i in 0:ndustspec
+		{
+			write(F_DUST_VELOCITY[i],rk_intermediate(F_DUST_VELOCITY[i],DF_DUST_VELOCITY[i],step_num,AC_dt__mod__cdata))
+		}
+	}
+	if(ldustdensity)
+	{
+		for i in 0:ndustspec
+		{
+			write(F_DUST_DENSITY[i],rk_intermediate(F_DUST_DENSITY[i],DF_DUST_DENSITY[i],step_num,AC_dt__mod__cdata))
+		}
+	}
 #if LALPHADISK
 	write(F_SIGMA,rk_intermediate(F_SIGMA,DF_SIGMA,step_num,AC_dt__mod__cdata))
 #endif

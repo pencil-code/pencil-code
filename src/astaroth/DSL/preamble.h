@@ -89,7 +89,6 @@ const int AC_xtop__mod__equationofstate=nx
 
 #include "../fieldecs.h"
 
-#define AC_itsub__mod__cdata (step_num+1)
 output real AC_maxchi
 #if Ltimestep_rkf_lowsto_MODULE
 enum PC_SUB_STEP_NUMBER
@@ -265,3 +264,11 @@ Profile<Z> AC_ssmz__mod__energy
 Profile<Z> AC_del2ssmz__mod__energy
 #endif
 
+#if LDUSTVELOCITY
+const real ueta = 0.0
+const real teta = 0.0
+const real ul0  = 0.0
+const real tl0  = 0.0
+const real tl01  = tl0/(tl0+tini)
+const real teta1 = teta/(teta+tini)
+#endif

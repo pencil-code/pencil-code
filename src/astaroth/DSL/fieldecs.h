@@ -1,10 +1,32 @@
-Field F_CHEMISTRY_SPECIES[nchemspec]
-Field F_CHEMISTRY_REACTIONS[nchemspec]
-Field AC_cv_r_spec_full__mod__chemistry[nchemspec]
-Field rhs_y_full__mod__chemistry[nchemspec]
-Field AC_xx_full__mod__chemistry[nchemspec]
-Field AC_diff_full__mod__chemistry[nchemspec]
-Field AC_diff_full_add__mod__chemistry[nchemspec]
+#if LCHEMISTRY
+const int chemistry_field_sizes = nchemspec
+#else
+const int chemistry_field_sizes =  0
+#endif
+Field F_CHEMISTRY_SPECIES[chemistry_field_sizes]
+Field F_CHEMISTRY_REACTIONS[chemistry_field_sizes]
+Field AC_cv_r_spec_full__mod__chemistry[chemistry_field_sizes]
+Field rhs_y_full__mod__chemistry[chemistry_field_sizes]
+Field AC_xx_full__mod__chemistry[chemistry_field_sizes]
+Field AC_diff_full__mod__chemistry[chemistry_field_sizes]
+Field AC_diff_full_add__mod__chemistry[chemistry_field_sizes]
+
+#if LDUSTVELOCITY
+const int dust_velocity_size = ndustspec
+#else
+const int dust_velocity_size =  0
+#endif
+
+#if LDUSTDENSITY
+const int dust_density_size = ndustspec
+#else
+const int dust_density_size =  0
+#endif
+
+Field3 F_DUST_VELOCITY[dust_velocity_size]
+Field  F_DUST_DENSITY[dust_density_size]
+Field  F_DUST_MASS[dust_density_size]
+Field  F_DUST_ICE_MASS[dust_density_size]
 
 field_order(AC_iux__mod__cdata-1) Field UUX
 field_order(AC_iuy__mod__cdata-1) Field UUY
@@ -102,10 +124,6 @@ field_order(AC_ishock__mod__cdata-1) Field SHOCK // shock
 
 #define SS F_SS
 
-Field3 F_DUST_VELOCITY[ndustspec]
-Field  F_DUST_DENSITY[ndustspec]
-Field  F_DUST_MASS[ndustspec]
-Field  F_DUST_ICE_MASS[ndustspec]
 
 Field F_PHIUU
 Field F_U0X, F_U0Y, F_U0Z
@@ -118,6 +136,15 @@ Field F_HLESS
 Field F_EOSVAR2
 Field F_GLOBAL_CS2
 Field F_PP
+Field F_CS
+Field F_VISC_HEAT
+Field3 F_VISC_FORCVEC
+Field3 F_JXBVEC
+Field F_UU_SPHR
+Field F_UU_SPHP
+Field  F_NRHO
+Field  F_RUN_AVER
+Field F_U_SPHT
 Field F_SS_B
 Field F_RHO_B
 Field F_ETH
@@ -214,13 +241,12 @@ const Field3 F_GLOBAL_EXT_AVEC = {F_GLOBAL_EXT_AX, F_GLOBAL_EXT_AY, F_GLOBAL_EXT
 Field3 F_VVEC
 Field3 F_FVEC
 field_order(AC_iecr__mod__cdata-1) Field F_ECR
-#if LCHIRAL
+
 field_order(AC_ixx_chiral__mod__chiral-1) Field F_XX_CHIRAL
 field_order(AC_iyy_chiral__mod__chiral-1) Field F_YY_CHIRAL
 field_order(AC_izz_chiral__mod__chiral-1) Field F_ZZ_CHIRAL
-#endif
 
-
+Field F_SIGMA
 not_implemented(message)
 {
     print("NOT IMPLEMENTED: %s\n",message)

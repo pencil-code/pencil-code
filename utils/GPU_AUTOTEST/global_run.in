@@ -2,4 +2,5 @@
 	lcpu_timestep_on_gpu=T
 	lcuda_aware_mpi=F
 	lread_all_vars_from_device=T	
+	lcumulative_df_on_gpu=T
 /

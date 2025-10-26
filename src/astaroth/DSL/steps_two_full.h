@@ -23,7 +23,7 @@ ComputeSteps AC_rhs(boundconds)
 	shock_2_max(AC_step_num)
 	shock_3_smooth(AC_step_num)
         twopass_solve_intermediate(AC_step_num,AC_dt,AC_t,AC_lrmv)
-        twopass_solve_final(AC_step_num)
+        twopass_solve_final(AC_step_num,AC_dt)
 }
 
 ComputeSteps AC_calculate_timestep(boundconds)

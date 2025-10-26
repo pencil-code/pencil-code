@@ -4040,6 +4040,7 @@ module Diagnostics
       eps_rkf_save = eps_rkf
     endif
     lpencil_save = lpencil
+    deltay_save = deltay
 
     endsubroutine save_diagnostic_controls
 !***********************************************************************
@@ -4065,6 +4066,8 @@ module Diagnostics
     tslice = tslice_save
     tsound = tsound_save
     t = t_save
+
+    deltay = deltay_save
 
     if (ldiagnos) then
       tdiagnos  = t_save

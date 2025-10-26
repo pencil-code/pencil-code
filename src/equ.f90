@@ -181,7 +181,7 @@ module Equ
 !  Call "before_boundary" hooks (for f array precalculation)
 !
       call before_boundary_shared(f)
-      !if (it == 1 ) call test_rhs_gpu(f,df,p,mass_per_proc,early_finalize,rhs_cpu)
+      !if (lgpu .and. it == 5) call test_rhs_gpu(f,df,p,mass_per_proc,early_finalize,rhs_cpu)
 
       if (lgpu) then
         start_time = mpiwtime()
@@ -437,11 +437,19 @@ module Equ
     endsubroutine pde
 !***********************************************************************
     subroutine load_variables_to_gpu
+      use GPU, only: update_on_gpu
       use Special, only: load_variables_to_gpu_special
       use Hydro, only: load_variables_to_gpu_hydro
 
+      integer, save :: dt_beta_ts_index = -1
+
       if (lspecial) call load_variables_to_gpu_special
       if (lhydro)   call load_variables_to_gpu_hydro
+      !TP: need to load it on the first substep where it is wrong!
+      !    and the correct one after dt is calculated to be in sync with the CPU
+      if (lgpu .and. (ldustvelocity .or. ldustdensity) .and (itsub <= 2)) then
+        call update_on_gpu(dt_beta_ts_index,'AC_dt_beta_ts__mod__cdata')
+      endif
     endsubroutine
 !***********************************************************************
    subroutine write_diagnostics(f)
@@ -1787,7 +1795,7 @@ module Equ
       real, dimension(1), intent(inout) :: mass_per_proc
       logical ,intent(in) :: early_finalize
 
-      real, dimension (:,:,:,:), allocatable :: f_copy,f_diff,df_copy,f_beta,f_abs_diff
+      real, dimension (:,:,:,:), allocatable :: f_copy,f_diff,df_tmp,df_copy,f_beta,f_abs_diff
       real, dimension(5) :: beta_ts,alpha_ts
 
 
@@ -1813,7 +1821,8 @@ module Equ
         endsubroutine cpu_version
       endinterface
 
-      allocate(f_copy(mx,my,mz,mfarray),f_diff(mx,my,mz,mfarray),df_copy(mx,my,mz,mvar),f_beta(mx,my,mz,mfarray))
+      allocate(f_copy(mx,my,mz,mfarray),f_diff(mx,my,mz,mfarray),df_tmp(mx,my,mz,mvar)&
+               ,df_copy(mx,my,mz,mvar),f_beta(mx,my,mz,mfarray))
       beta_ts =(/ 1/3.0, 15/16.0,    8/15.0 , 0.0, 0.0 /)
       alpha_ts=(/   0.0, -5/9.0 , -153/128.0, 0.0, 0.0 /)
 
@@ -1824,8 +1833,8 @@ module Equ
       f_copy = f
       ldiagnos = .false.
       df_copy = 0.0
-      dt_beta_ts = dt*beta_ts
-      do itsub = 1,2
+      do itsub = 1,num_substeps
+        !df_tmp = 0.0
         lfirst = (itsub == 1)
         if(.not. lfirst) df_copy = alpha_ts(itsub)*df_copy
         call before_boundary_gpu(f,lrmv,itsub,t)
@@ -1843,6 +1852,7 @@ module Equ
         call boundconds_y(f_copy)
         call boundconds_z(f_copy)
         call cpu_version(f_copy,df_copy,p,mass_per_proc,early_finalize)
+        !df_copy = df_copy + df_tmp
         call freeze(df_copy,p)
         if(itorder == 1) then
                 f_copy(l1:l2,m1:m2,n1:n2,1:mvar) = f_copy(l1:l2,m1:m2,n1:n2,1:mvar) + df_copy(l1:l2,m1:m2,n1:n2,:)*dt

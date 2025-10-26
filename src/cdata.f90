@@ -219,6 +219,7 @@ module Cdata
   integer :: iproc=0,ipx=0,ipy=0,ipz=0,iproc_world=0,ipatch=0
   logical :: lprocz_slowest=.true.,lzorder=.false.,lmorton_curve=.false.,ltest_bcs=.true.,lcpu_timestep_on_gpu=.false., &
              lsuppress_parallel_reductions=.false.,lread_all_vars_from_device = .false., lcuda_aware_mpi=.true.
+  logical :: lcumulative_df_on_gpu=.false.
   logical :: lac_sparse_autotuning=.true., lskip_rtime_compilation=.false.
   integer :: xlneigh,ylneigh,zlneigh ! `lower' processor neighbours
   integer :: xuneigh,yuneigh,zuneigh ! `upper' processor neighbours
@@ -334,6 +335,7 @@ module Cdata
 !  Rotation and shear parameters.
 !
   real :: Omega=0.0, theta=0.0, phi=0.0, qshear=0.0, Sshear=0.0, deltay=0.0
+  !$omp threadprivate(deltay)
 !DM : Omega is now used in the viscosity routine too, for Lambda effect in rotating
 ! coordinate. This should be taken care of by 'shared variables' if in future
 ! Omega should be moved from cdata to hydro.
@@ -877,6 +879,7 @@ module Cdata
   logical :: l1dphiavg_save, l1davgfirst_save, ldiagnos_save, l2davgfirst_save
   logical :: lout_save, l1davg_save, l2davg_save, lout_sound_save, lvideo_save
   logical :: lchemistry_diag_save
+  real :: deltay_save
   logical :: ltimestep_diagnostics = .false.
 
   real(KIND=rkind8) :: t_save,tspec_save

@@ -88,6 +88,7 @@ module Timestep
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (mx,my,mz,mvar) :: df_tmp
       type (pencil_case) :: p
       real :: ds, dtsub
 !
@@ -190,9 +191,9 @@ module Timestep
 !  Advance deltay of the shear (and, optionally, perform shear advection
 !  by shifting all variables and their derivatives).
 !
-        if (lshear .and. .not. lgpu) then
-          call impose_floors_ceilings(f)
-          call update_ghosts(f)  ! Necessary for non-FFT advection but unnecessarily overloading FFT advection
+        if (lshear) then
+          if (.not. lgpu) call impose_floors_ceilings(f)
+          if (.not. lgpu) call update_ghosts(f)  ! Necessary for non-FFT advection but unnecessarily overloading FFT advection
           call advance_shear(f, df, dtsub)
         endif
 !

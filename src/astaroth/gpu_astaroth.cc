@@ -52,6 +52,7 @@ bool calculated_coeff_scales = false;
 
 //TP: these are ugly but for the moment we live with these
 #if TRANSPILATION
+  #define lcumulative_df_on_gpu lcumulative_df_on_gpu__mod__cdata
   #define lbidiagonal_derij lbidiagonal_derij__mod__cdata
   #define nu nu__mod__viscosity
   #define nu_hyper2 nu_hyper2__mod__viscosity
@@ -667,6 +668,9 @@ void setupConfig(AcMeshInfo& config)
 
   PCLoad(config, AC_rk_order, itorder);
   PCLoad(config, AC_shear,lshear);
+#if TRANSPILATION
+  PCLoad(config, AC_rk_cumulative_df,lcumulative_df_on_gpu);
+#endif
 
   if (lcartesian_coords)
   {
@@ -1443,7 +1447,10 @@ extern "C" void substepGPU(int isubstep, double t)
    if (isubstep == num_substeps) forcing_params.Update();  // calculate on CPU and load into GPU
 #endif
   acDeviceSetInput(acGridGetDevice(), AC_step_num,(PC_SUB_STEP_NUMBER) (isubstep-1));
-  if (lshear && isubstep == 1) acDeviceSetInput(acGridGetDevice(), AC_shear_delta_y, deltay);
+  if (lshear) 
+  {
+	  acDeviceSetInput(acGridGetDevice(), AC_shear_delta_y, deltay);
+  }
   Device dev = acGridGetDevice();
   //TP: done in this more complex manner to ensure the actually integrated time and the time reported by Pencil agree
   //if we call set_dt after the first timestep there would be slight shift in dt what Pencil sees and what is actually used for time integration
