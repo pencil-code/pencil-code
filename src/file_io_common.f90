@@ -381,7 +381,10 @@ module File_io
       call find_namelist (trim(name)//trim(type)//trim(suffix),found,lno_warning)
       if(.not. found .and. .not. loptional) return
 !
-      ierr = 0 ! G95 complains 'ierr' is used but not set, even though 'reader' has intent(out).
+      ! G95 complains 'ierr' is used but not set, even though 'reader' has intent(out).
+      ! PABourdin:
+      ! Yes, because 'reader' is here a function *pointer* an it can not be verified if the actual reader has intent(out).
+      ierr = 0
       call reader(ierr)
 !
       if (ierr /= 0) then
