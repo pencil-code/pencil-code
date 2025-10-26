@@ -3654,8 +3654,6 @@ file_io_dist.o: file_io_dist.f90
 	$(FC) $(ALL_COMP_FLAGS) -o file_io_dist.o -c file_io_dist.f90
 slices_methods.o: slices_methods.f90
 	$(FC) $(ALL_COMP_FLAGS) -o slices_methods.o -c slices_methods.f90
-general.o: general.f90
-	$(FC) $(ALL_COMP_FLAGS) $(FSTD_2003) -o general.o -c general.f90
 special.o: special_tmp.f90
 	$(FC) $(ALL_COMP_FLAGS) $(ALLOW_ARG_MISMATCH) -o special.o -c special_tmp.f90
 	#@rm -f special_tmp.f90
