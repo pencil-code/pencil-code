@@ -101,7 +101,7 @@ module HDF5_IO
       if (present(nxyz)) then
         local_subsize(1:3) = nxyz
       else
-        local_subsize(1:3) = (/nx,ny,nz/)
+        local_subsize(1:3) = (/ nx, ny, nz /)
       endif
       local_subsize(4:n_dims+1) = 1
 !
@@ -110,7 +110,7 @@ module HDF5_IO
       local_size(4:n_dims+1) = 1
 !
       ! starting position of this processor's data portion in the global file
-      global_start(1:3) = nghost + (/ipx,ipy,ipz/)*local_subsize(1:3)
+      global_start(1:3) = nghost + (/ ipx, ipy, ipz /)*local_subsize(1:3)
       global_start(4:n_dims+1) = 0
 !
       ! include the ghost layers only on the outer box boundaries
@@ -135,9 +135,9 @@ module HDF5_IO
 !
       ! size of the data in the global file
       if (present(ngrid)) then
-        global_size(1:3) = ngrid+2*nghost
+        global_size(1:3) = ngrid + 2*nghost
       else
-        global_size(1:3) = (/mxgrid,mygrid,mzgrid/)
+        global_size(1:3) = (/ mxgrid, mygrid, mzgrid/)
       endif
       global_size(4:n_dims+1) = 1
 !
@@ -727,7 +727,7 @@ module HDF5_IO
       integer(kind=8), dimension(2) :: ldims, gdims_i8
 !
       ! define 'memory-space' to indicate the local data portion in memory
-      ldims = (/size(data,1),size(data,2)/)
+      ldims = (/ size (data,1), size (data,2) /)
       call h5screate_simple_f (n, ldims, h5_mspace, h5_err)
       call check_error (h5_err, 'create local memory space', name, caller='input_hdf5_2D')
 !
@@ -743,7 +743,7 @@ module HDF5_IO
       call check_error (h5_err, 'select hyperslab within file', name)
 !
       ! define local 'hyper-slab' portion in memory
-      gdims_i8 = (/0,0/)
+      gdims_i8 = (/ 0, 0 /)
       call h5sselect_hyperslab_f (h5_mspace, H5S_SELECT_SET_F, gdims_i8, h5_count, h5_err, h5_stride, ldims)
       call check_error (h5_err, 'select hyperslab within file', name)
 !
@@ -1346,10 +1346,10 @@ module HDF5_IO
       if (.not. lcollective) &
           call check_error (1, '1D pencil output requires global file', name, caller='output_hdf5_pencil_1D')
 !
-      loc_dim = (/nx,1,1/)
+      loc_dim = (/ nx, 1, 1 /)
       glob_dim = global_size(1:3) - 2*nghost
       loc_start = 0
-      glob_start = global_start(1:3) - nghost + (/0,py,pz/)
+      glob_start = global_start(1:3) - nghost + (/ 0, py, pz /)
 !
       ! define 'file-space' to indicate the data portion in the global file
       call h5screate_simple_f (n, glob_dim, h5_fspace, h5_err)
@@ -1822,7 +1822,7 @@ module HDF5_IO
       logical, optional, intent(in) :: compress
 !
       integer(kind=8), dimension(n_dims+1) :: h5_stride, h5_count
-      integer(kind=8), dimension(4), parameter :: chunk_dims=(/128,128,128,128/)
+      integer(kind=8), dimension(4), parameter :: chunk_dims=(/ 128, 128, 128, 128 /)
 !
       if (.not. lcollective) &
           call check_error (1, '4D array output requires global file', name, caller='output_hdf5_4D')
