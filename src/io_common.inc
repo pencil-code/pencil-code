@@ -194,7 +194,7 @@
         
           read(lun_input) t_in
           if (t_in/=real(t)) call warning("input_ode","times differ between "//trim(file_)//" and " &
-		                          //trim(file)//": "//trim(rtoa(t_in))//"/="//trim(rtoa(real(t))))
+              //trim(file)//": "//trim(rtoa(t_in))//"/="//trim(rtoa(real(t))))
           close(lun_input) 
         else
           call warning('input_ode','no ODE data available')
