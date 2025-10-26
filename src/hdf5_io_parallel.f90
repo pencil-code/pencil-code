@@ -633,7 +633,7 @@ module HDF5_IO
       character (len=labellen) :: label
 !
       if (.not. lcollective) &
-        call check_error (1, 'particle input requires a global file', name, caller='input_hdf5_part_2D')
+          call check_error (1, 'particle input requires a global file', name, caller='input_hdf5_part_2D')
 !
       ! read components into particle data array
       do pos=1, nc
@@ -661,7 +661,7 @@ module HDF5_IO
       integer(kind=8), dimension (1) :: h5_stride, h5_count, loc_dim, glob_dim, loc_start, glob_start, loc_subdim
 !
       if (.not. lcollective) &
-        call check_error (1, '1D profile input requires global file', name, caller='input_hdf5_part_2D')
+          call check_error (1, '1D profile input requires global file', name, caller='input_hdf5_part_2D')
 !
       loc_dim(1) = ldim
       glob_dim(1) = gdim
@@ -1014,18 +1014,18 @@ module HDF5_IO
 
       contains
 !----------------------------------------------------------------------
-    function offsetof(base,comp) result(offset)
-
-    use Geometrical_types, only: torus_rect
-
-    integer (HSIZE_T) :: offset
-    type (torus_rect) :: base
-    real :: comp
-
-    offset = loc (comp) - loc (base)
-
-    endfunction offsetof
-
+        function offsetof(base,comp) result(offset)
+!
+          use Geometrical_types, only: torus_rect
+!
+          integer (HSIZE_T) :: offset
+          type (torus_rect) :: base
+          real :: comp
+!
+          offset = loc (comp) - loc (base)
+!
+        endfunction offsetof
+!
     endsubroutine output_hdf5_torus_rect
 !***********************************************************************
     subroutine output_hdf5_int_0D(name, data)
@@ -1349,7 +1349,7 @@ module HDF5_IO
       integer(kind=8), dimension (n) :: h5_stride, h5_count, loc_dim, glob_dim, loc_start, glob_start
 !
       if (.not. lcollective) &
-        call check_error (1, '1D pencil output requires global file', name, caller='output_hdf5_pencil_1D')
+          call check_error (1, '1D pencil output requires global file', name, caller='output_hdf5_pencil_1D')
 !
       loc_dim = (/nx,1,1/)
       glob_dim = global_size(1:3) - 2*nghost
@@ -1426,7 +1426,7 @@ module HDF5_IO
       character (len=labellen) :: label
 !
       if (.not. lcollective) &
-        call check_error (1, 'particle output requires a global file', name, caller='output_hdf5_part_2D')
+          call check_error (1, 'particle output requires a global file', name, caller='output_hdf5_part_2D')
 !
       ! write components of particle data array
       do pos=1, nc
@@ -1455,7 +1455,7 @@ module HDF5_IO
       integer(kind=8), dimension (1) :: h5_stride, h5_count, loc_dim, glob_dim, loc_start, glob_start, loc_subdim
 !
       if (.not. lcollective) &
-        call check_error (1, '1D profile output requires global file', name, caller='output_hdf5_profile_1D')
+          call check_error (1, '1D profile output requires global file', name, caller='output_hdf5_profile_1D')
 !
       loc_dim(1) = ldim
       glob_dim(1) = gdim
@@ -1586,7 +1586,7 @@ module HDF5_IO
       logical :: lhas_data
 !
       if (.not. lcollective) &
-        call check_error (1, '2D slice output requires global file', name, caller='output_hdf5_slice_2D')
+          call check_error (1, '2D slice output requires global file', name, caller='output_hdf5_slice_2D')
 !
       lhas_data=loptest(has_data,.true.)
       loc_dim(1) = ldim1
@@ -1647,7 +1647,7 @@ module HDF5_IO
       ! collectively write the data
       if (lhas_data) then
         call h5dwrite_f (h5_dset, h5_ntype, data, &
-             glob_dim, h5_err, file_space_id=h5_fspace, mem_space_id=h5_mspace, xfer_prp=h5_plist)
+            glob_dim, h5_err, file_space_id=h5_fspace, mem_space_id=h5_mspace, xfer_prp=h5_plist)
       else
         call h5dwrite_f (h5_dset, h5_ntype, 0, &
             glob_dim, h5_err, file_space_id=h5_fspace, mem_space_id=h5_mspace, xfer_prp=h5_plist)
@@ -1721,7 +1721,7 @@ module HDF5_IO
       integer, parameter :: n = n_dims
 !
       if (.not. lcollective) &
-        call check_error (1, '3D array output requires global file', name, caller='output_hdf5_3D')
+          call check_error (1, '3D array output requires global file', name, caller='output_hdf5_3D')
 !
       ! define 'file-space' to indicate the data portion in the global file
       call h5screate_simple_f (n, global_size(1:n), h5_fspace, h5_err)
@@ -1835,7 +1835,7 @@ module HDF5_IO
       integer(kind=8), dimension(4), parameter :: chunk_dims=(/128,128,128,128/)
 !
       if (.not. lcollective) &
-        call check_error (1, '4D array output requires global file', name, caller='output_hdf5_4D')
+          call check_error (1, '4D array output requires global file', name, caller='output_hdf5_4D')
 !
       ! write other 4D array
       global_size(n_dims+1) = nv
@@ -2011,9 +2011,9 @@ module HDF5_IO
       call file_close_hdf5
 !
     endsubroutine output_dim
- !***********************************************************************
+!***********************************************************************
     subroutine input_dim(file, mx_in, my_in, mz_in, mvar_in, maux_in, mglobal_in, &
-                         prec_in, nghost_in, nprocx_in, nprocy_in, nprocz_in, local)
+        prec_in, nghost_in, nprocx_in, nprocy_in, nprocz_in, local)
 !
 !  Read dimensions from dim.dat (local or global).
 !
