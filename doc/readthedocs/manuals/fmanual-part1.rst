@@ -735,29 +735,22 @@ Modularity
 ^^^^^^^^^^
 
 Each run directory has a file :file:`src/Makefile.local` in
-which you choose certain ``modules``\footnote{%
-  We stress once more that we are not talking about F90 modules here,
-  although there is some connection, as most of our modules define F90
-  modules:
-  For example each of the modules ``gravity_simple``, ``grav_r`` and
-  ``nogravity`` defines a Fortran module ``Gravity``.
-}, which tell the code whether or not entropy, magnetic fields,
+which you choose certain ``modules`` [#]_, which tell the code whether or not entropy, magnetic fields,
 hydrodynamics, forcing, etc.\ should be invoked.
 For example, the settings for forced turbulent MHD simulations are
 
-.. code-block:: text
+.. code-block:: text  
 
   HYDRO     =   hydro
   DENSITY   =   density
   ENTROPY   = noentropy
   MAGNETIC  =   magnetic
   GRAVITY   = nogravity
-  FORCING   =   forcing
-
+  FORCING   =   forcing 
   MPICOMM   = nompicomm
   GLOBAL    = noglobal
   IO        =   io_dist
-  FOURIER   = nofourier
+  FOURIER   = nofourier 
 
 This file will be processed by ``make`` and the settings are thus
 assignments of ``make`` variables.
@@ -781,6 +774,10 @@ combination which was never tried before and which may not work yet, since the
 modules are not fully orthogonal.
 In such cases, we depend on user feedback for fixing problems
 and documenting the changes for others.
+
+
+.. [#]  We stress once more that we are not talking about F90 modules here, although there is some connection, as most of our modules define F90
+  modules: For example each of the modules ``gravity_simple``, ``grav_r`` and ``nogravity`` defines a Fortran module ``Gravity``.
 
 .. _man1_files_in_rundir:
 
@@ -833,9 +830,7 @@ To see whether the results of your run are OK, compare :file:`time_series.dat` t
 .. _man1_start-run-getconf:
 
 :file:`start.csh`, :file:`run.csh`, :file:`getconf.csh`` [obsolete; see Sect. :ref:`man1_configuration`]
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 These are links to :file:`$PENCIL_HOME/bin`.
 You will be constantly using the scripts :file:`start.csh` and
@@ -1283,7 +1278,7 @@ See ``pencil-test --help`` for a complete list of options, and section :numref:`
 .. _man1_adapt-mkfile:
 
 Adapting :file:`Makefile.src` [obsolete; see Sect.:ref:`man1_configuration`]
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+--------------------------------------------------------------------------------
 
 By default, one should use the above described configuration mechanism for
 compilation. If for whatever reason one needs to work with a modified
@@ -1334,22 +1329,26 @@ The :file:`Makefile.src` you need will have the following section:
     hostname (``uname -n``) matches `Janus` or `janus` (capitalization is irrelevant).  
     You can combine machine names with a vertical bar: a line containing 
     ``#(onsager|Janus)`` will be activated on both *Janus* and *Onsager*.
+  
 
 .. _man1_makeflags:
 
-.. note:: 
+Experimenting with compiler flags
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
-    If you want to experiment with compiler flags, or if you
-    want to get things running without setting up the machine-dependent
-    section of the :file:`Makefile`, you can set *make* variables at the
-    command line in the usual manner:
+If you want to experiment with compiler flags, or if you
+want to get things running without setting up the machine-dependent
+section of the :file:`Makefile`, you can set *make* variables at the
+command line in the usual manner:
 
-    .. code:: 
+.. code:: bash
 
-        src> make FC=f90 FFLAGS='-fast -u'
+    src> make FC=f90 FFLAGS='-fast -u'
 
-    This will use the compiler ``f90`` and the flags ``-fast -u`` for both compilation and linking.  
-    Table :numref:`Tab-compiler-options` summarizes flags we use for common compilers.
+This will use the compiler ``f90`` and the flags ``-fast -u`` for both compilation and linking.  
+Table :numref:`Tab-compiler-options` summarizes flags we use for common compilers.
+
+
 
 .. _Tab-compiler-options:
 
@@ -1716,11 +1715,10 @@ The script :command:`pc_tsnap` allows you to determine the time :math:`t` of a s
 Video files and slices
 ----------------------
 
-
 We use the terms *video files* and *slice files* interchangeably. These
 files contain a time series of values of one variable in a given plane.
 The output frequency of these video snapshots is set by the parameter
-:var:`dvid` (in code time units).
+:command:`dvid` (in code time units).
 
 When output to video files is activated by some settings in
 :file:`run.in` (see example below) and the existence of :file:`video.in`,
@@ -1887,7 +1885,7 @@ the surface. And you can visualize this slices by:
         unix> src/read_videofiles.x
             enter name of variable (lnrho, uu1, ..., bb3):  bb3
 
-#. Start :name:`IDL`, load the slices with :file:`pc_read_video` and plot 
+#. Start :command:`IDL`, load the slices with :file:`pc_read_video` and plot 
    them at some time:
 
    .. code:: bash
@@ -1926,7 +1924,7 @@ One-dimensional output averaged in two dimensions
 
 In the file :file:`xyaver.in`, :math:`z`-dependent (horizontal) averages 
 are listed. They are written to the file :file:`data/xyaverages.dat`. A 
-new line of averages is written every :file:`it1`th time steps.
+new line of averages is written every :file:`it1` th time steps.
 
 There is the possibility to output two-dimensional averages. The result 
 then depends on the remaining dimension. The averages are listed in the 
@@ -1962,6 +1960,7 @@ and :file:`data/phiaverages.dat`.
 See :ref:`S-new-output-diagnostics` on how to add new averages.
 
 .. admonition:: Disadvantage
+
     The output files, e.g., :file:`data/zaverages.dat`, can be rather big because each average is just appended to the file.
 
 
@@ -2585,8 +2584,8 @@ with a memory consumption of two chunks.
 Therefore the 2N in the name.
 
 The time step is normally specified as Courant time step through the
-coefficients :var:`cdt` (:math:`c_{\delta t}`), :var:`cdtv` (:math:`c_{\delta t,{\rm v}}`)
-and :var:`cdts` (:math:`c_{\delta t,{\rm s}}`).
+coefficients :command:`cdt` (:math:`c_{\delta t}`), :command:`cdtv` (:math:`c_{\delta t,{\rm v}}`)
+and :command:`cdts` (:math:`c_{\delta t,{\rm s}}`).
 The resulting Courant step is given by
 
 .. math::
@@ -2653,7 +2652,7 @@ helps to recognize the problem. An example is shown in :numref:`Ftimestepovervis
 Timestepping is accomplished using the Runge-Kutta 2N scheme.
 Regarding details of this scheme see Sect.~:ref:`S-2N-scheme`.
 
-.. _Runge-Kutta-Fehlberg-time-step
+.. _Runge-Kutta-Fehlberg-time-step:
 
 The Runge-Kutta-Fehlberg time step
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -2805,7 +2804,7 @@ Courant condition for the time step.
 
 See *0d, 1d, 2d, and 3d tests* with examples.
 
-.. _S-Visualization: 
+.. _man1-Visualization: 
 
 Visualization
 -------------
@@ -2858,9 +2857,9 @@ From the run directory, start :command:`DX` with
 
   unix> dx -edit $PENCIL_HOME/dx/basic/lnrho
 
-to load the file :file:`dx/basic/lnrho.net`, and execute it with :key:`Ctl-o` or `Execute -> Execute Once`.  
+to load the file :file:`dx/basic/lnrho.net`, and execute it with :kbd:`Ctl-o` or `Execute -> Execute Once`.  
 You will see a set of iso-surfaces of logarithmic density.  
-If the viewport does not fit to your data, you can reset it with :key:`Ctl-f`.  
+If the viewport does not fit to your data, you can reset it with :kbd:`Ctl-f`.  
 To rotate the object, drag the mouse over the Image window with the left or right mouse button pressed.  
 Similar networks are provided for entropy (:file:`ss.net`), velocity (:file:`uu.net`) and magnetic field (:file:`bb.net`).
 
@@ -3013,7 +3012,7 @@ Alternatively, by using the command-line to see the time evolution of e.g., velo
   unix> idl
   IDL>  .run ts
 
-The :command:`IDL` script :file:`ts.pro` script reads the time series data from :file:`data/time_series.dat` and sorts the column into the structure :var:`ts`, with the slot names corresponding to the name of the variables (taken from the header line of :file:`time_series.dat`).  
+The :command:`IDL` script :file:`ts.pro` script reads the time series data from :file:`data/time_series.dat` and sorts the column into the structure :command:`ts`, with the slot names corresponding to the name of the variables (taken from the header line of :file:`time_series.dat`).  
 Thus, you can refer to time as :code:`ts.t`, to the rms velocity as :code:`ts.urms`, and in order to plot the mean density as a function of time, you would simply type:
 
 .. code::
@@ -3057,7 +3056,7 @@ By default one is reading always the current snapshot :file:`data/proc$N$/var.da
   IDL> varfile='VAR2'
   IDL> .r r  (or .r rall)
 
-With :file:`r.pro`, you can switch the part of the domain by changing the variable :var:`datadir`:
+With :file:`r.pro`, you can switch the part of the domain by changing the variable :command:`datadir`:
 
 .. code::
 
@@ -3101,7 +3100,7 @@ e.g., reading data from an :command:`IDL` program where the command :command:`.r
   IDL> bb = pc_get_quantity ('B', var, tags)
   IDL> jj = pc_get_quantity ('j', var, tags)
 
-To read a snapshot :file:`VAR10` into the IDL structure :var:`ff`, type:
+To read a snapshot :file:`VAR10` into the IDL structure :command:`ff`, type:
 
 .. code::
 
@@ -6343,8 +6342,8 @@ Below is a pedagogical response from Wlad Lyra:
     2*cs^2/vA^2). There's a reason why we like dimensionless quantities!
 
 
-Visualization
---------------
+Visualization FAQ
+------------------
 
 ``start.pro`` doesn't work:
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -6359,11 +6358,11 @@ Visualization
 
 **A**: You don't have the subdirectory ``data/`` in your IDL variable :code:`!path`. Make sure you source ``sourceme.csh``/``sourceme.sh`` or set a sufficient IDL path otherwise.
 
-``start.pro`` doesn't work:
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+``start.pro`` doesn't work (2):
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Isn't there some clever (or even trivial) way that one can avoid the
-annoying error messages that one gets, when running e.g., ".r rall" after
+annoying error messages that one gets, when running e.g., :command:`.r rall` after
 a new variable has been introduced in "idl/varcontent.pro"? Ever so
 often there's a new variable that can't be found in my param2.nml --
 this time it was IECR, IGG, and ILNTT that I had to circumvent...
