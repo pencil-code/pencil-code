@@ -42,7 +42,6 @@ module HDF5_IO
     module procedure output_hdf5_3D
     module procedure output_local_hdf5_4D
     module procedure output_hdf5_4D
-    module procedure output_hdf5_torus_rect
   endinterface
 !
   interface hdf5_input_slice
@@ -936,95 +935,6 @@ module HDF5_IO
       call check_error (h5_err, 'close string data space', name)
 !
     endsubroutine output_hdf5_string
-!***********************************************************************
-    subroutine output_hdf5_torus_rect(name, data)
-!
-!  Outputs (potentially) varying parameters of rectangular toroid (persistent data).
-!
-!  16-May-2020/MR: coded
-!
-      use Geometrical_types
-      use Iso_c_binding
-!
-      character(len=*), intent(in) :: name
-      type (torus_rect), intent(in) :: data
-      integer(KIND=ikind8) :: ptr
-      integer(SIZE_T) :: offset
-!
-!
-      integer(HID_T) :: h5_torustype, h5_vec3type
-      integer(HSIZE_T), dimension(1) :: size
-!
-      real :: dummy
-!
-      ! because of problem with compound data type
-      return
-!
-      ! create data type
-      !call h5tcreate_f(H5T_COMPOUND_F, 8*sizeof(dummy), h5_torustype, h5_err)
-      call check_error (h5_err, 'create torus data type', name)
-!
-      size = (/ 3 /)
-      !call h5tarray_create_f (h5_ntype, 1, size, h5_vec3type, h5_err)
-      offset = offset_of (data, data%center(1))
-      !call h5tinsert_f (h5_torustype,"center",offset,h5_vec3type,h5_err)
-      offset = offset_of (data, data%th)
-      !call h5tinsert_f (h5_torustype,"th",offset,h5_ntype,h5_err)
-      offset = offset_of (data, data%ph)
-      !call h5tinsert_f (h5_torustype,"ph",offset,h5_ntype,h5_err)
-      offset = offset_of (data, data%r_in)
-      !call h5tinsert_f (h5_torustype,"r_in",offset,h5_ntype,h5_err)
-      offset = offset_of (data, data%thick)
-      !call h5tinsert_f (h5_torustype,"thick",offset,h5_ntype,h5_err)
-      offset = offset_of (data, data%height)
-      !call h5tinsert_f (h5_torustype,"height",offset,h5_ntype,h5_err)
-      call check_error (h5_err, 'populate torus data type', name)
-!
-      ! create data space
-      size = (/ 1 /)
-      !call h5screate_simple_f (1, size, h5_dspace, h5_err)
-      call check_error (h5_err, 'create torus data space', name)
-!
-      if (exists_in_hdf5 (name)) then
-        ! open dataset
-        call h5dopen_f (h5_file, trim (name), h5_dset, h5_err)
-        call check_error (h5_err, 'open torus dataset', name)
-      else
-        ! create dataset
-        !call h5dcreate_f (h5_file, trim (name), h5_torustype, h5_dspace, h5_dset, h5_err)
-        call check_error (h5_err, 'create torus dataset', name)
-      endif
-!
-      ! [PAB] a pointer is not a valid argument for 'h5dwrite_f':
-      !ptr = C_LOC(data)
-      !call h5dwrite_f(h5_dset, h5_torustype, data(1), size, h5_err) ! was 'ptr' before
-      !call check_error (h5_err, 'write torus dataset', name)
-      ! [PAB] This will not work like this, sorry, we should do this in an easier way.
-      ! Deactivating offending 'h5dwrite_f' line now, so that the autotests work again.
-!
-      ! close dataset and data space
-      call h5dclose_f (h5_dset, h5_err)
-      call check_error (h5_err, 'close torus dataset', name)
-      call h5sclose_f (h5_dspace, h5_err)
-      call check_error (h5_err, 'close torus data space', name)
-      call h5tclose_f (h5_torustype, h5_err)
-      call check_error (h5_err, 'close torus data type', name)
-!
-      contains
-!----------------------------------------------------------------------
-        function offset_of(base, comp)
-!
-          use Geometrical_types, only: torus_rect
-!
-          integer(HSIZE_T) :: offset_of
-          type (torus_rect) :: base
-          real :: comp
-!
-          offset_of = loc (comp) - loc (base)
-!
-        endfunction offset_of
-!
-    endsubroutine output_hdf5_torus_rect
 !***********************************************************************
     subroutine output_hdf5_int_0D(name, data)
 !
