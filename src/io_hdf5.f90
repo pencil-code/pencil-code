@@ -51,13 +51,13 @@ module Io
       if (lroot) call svn_id ("$Id$")
 !
       if (lread_from_other_prec) &
-        call warning('register_io','Reading from other precision not implemented')
+          call warning ('register_io', 'Reading from other precision not implemented')
 !
       lmonolithic_io = .true.
 
-      call getenv('HDF5_USE_FILE_LOCKING',locking)
-      if (trim(locking)/='FALSE') &
-        call warning('register_io','HDF5 files are possibly locked; writing may fail.')
+      call get_environment_variable ('HDF5_USE_FILE_LOCKING', locking)
+      if (trim(locking) /= 'FALSE') &
+          call warning ('register_io', 'HDF5 files are possibly locked; writing may fail.')
 !
     endsubroutine register_io
 !***********************************************************************
