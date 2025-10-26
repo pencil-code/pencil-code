@@ -447,7 +447,7 @@ module Equ
       if (lhydro)   call load_variables_to_gpu_hydro
       !TP: need to load it on the first substep where it is wrong!
       !    and the correct one after dt is calculated to be in sync with the CPU
-      if (lgpu .and. (ldustvelocity .or. ldustdensity) .and (itsub <= 2)) then
+      if (lgpu .and. (ldustvelocity .or. ldustdensity) .and. (itsub <= 2)) then
         call update_on_gpu(dt_beta_ts_index,'AC_dt_beta_ts__mod__cdata')
       endif
     endsubroutine
