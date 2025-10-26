@@ -207,6 +207,8 @@ def process_diag(marker: str, in_file: str):
                     current_comment = ""
                 current_var = matches[0]
             if matches := re.findall(rf"!\s*{marker}: (.*)", line):
+                if current_comment:
+                    current_comment += " "
                 current_comment += matches[0].strip()
         if current_var:
             filevars[current_var] = current_comment
@@ -261,7 +263,111 @@ def process_diag(marker: str, in_file: str):
                 table.append((f"*{k}*", vv))
             d.table_list(["Variable", "Meaning"], data=table, widths=[25, 75])
 
-def process_all_idiag():
+def process_boundary_conditions():
+    search_for = {
+        "BCX_DOC": "Boundary condition bcx",
+        "BCY_DOC": "Boundary condition bcy",
+        "BCZ_DOC": "Boundary condition bcz"
+    }
+    search_keys = list(search_for.keys())
+    estring = [f"-e {it}" for it in search_keys]
+    files = subprocess.check_output(
+        f"grep -rl {' '.join(estring)} ../../src/*.f90",
+        shell=True,
+        text=True
+    ).splitlines()
+    files = [it.replace("../../src/", "") for it in files]
+    files = sorted(files, key=lambda x: (x.count("/"), x))
+    vars = {}
+    current_var = None
+    current_comment = ""
+    current_block = None
+    prev_block = None
+    for file in files:
+        with open(f"../../src/{file}", "r") as fh:
+            lines = [it.strip() for it in fh.readlines()]
+        nlines = len(lines)
+        i = 0
+        while i < nlines:
+            for key in search_keys:
+                if lines[i].startswith(f"! {key}:"):
+                    # Find the beginning of the SELECT statement
+                    j = i-1
+                    while j >= 0 and not lines[j].startswith("select case "): j -= 1
+                    # Loop until the end of the SELECT statement
+                    while j < nlines and (not lines[j].startswith("endselect")) and (not lines[j].startswith("end select")):
+                        if lines[j].startswith("case ("):
+                            current_var = re.findall(r"case \((.*)\)", lines[j])[0]
+                            if "," in current_var:
+                                lst = [it.strip("'") for it in current_var.split(",")]
+                                lst = ["''" if not it else it for it in lst]
+                                current_var = ", ".join(lst)
+                            else:
+                                current_var = current_var.strip("'")
+                        else:
+                            found = False
+                            for key in search_keys:
+                                if lines[j].startswith(f"! {key}:"):
+                                    found = True
+                                    if current_block is None:
+                                        current_block = key.split("_")[0]
+                                    prev_block = current_block
+                                    if matches := re.findall(rf"!\s*{key}: (.*)", lines[j]):
+                                        if current_comment:
+                                            current_comment += " "
+                                        current_comment += matches[0].strip()
+                            if not found:
+                                if current_var:
+                                    if current_block is None:
+                                        current_block = prev_block # uncommented variables
+                                    if current_block not in vars:
+                                        vars[current_block] = {}
+                                    if file not in vars[current_block]:
+                                        vars[current_block][file] = {}
+                                    vars[current_block][file][current_var] = current_comment
+                                    current_var = None
+                                    current_comment = ""
+                                    current_block = None
+                        j += 1
+                    if current_var:
+                        if current_block is None:
+                            current_block = prev_block
+                        if current_block not in vars:
+                            vars[current_block] = {}
+                        if file not in vars[current_block]:
+                            vars[current_block][file] = {}
+                        vars[current_block][file][current_var] = current_comment
+                        current_var = None
+                        current_comment = ""
+                        current_block = None
+                    i = j
+                    continue
+            i += 1
+    with open(f"code/tables/boundary.rst", "w") as f:
+        d = RstCloth(f, line_width=5000)
+        d.title(f"Boundary conditions")
+        d.content("The following tables list all possible boundary condition labels.")
+        d.newline()
+        d.directive("raw", "html", content="<div>Filter: <input type='text' id='custombcsearch' /></div><br/>")
+        d.newline()
+        for block, blockitems in vars.items():
+            d.h2(f"Boundary conditions *{block.lower()}*")
+            for file, fileitems in blockitems.items():
+                d.h3(f"Module *{file}*")
+                table = []
+                for k, v in fileitems.items():
+                    # MathJax is more picky than LaTeX with spaces and formatting. Fix some common issues...
+                    vv = re.sub(r"\$(.*?)\$", r":math:`\1`", v)
+                    vv = vv.replace("\\rm", "\\mathrm")
+                    vv = vv.replace("\\quad", ":math:`\\quad` ")
+                    vv = re.sub(r":math:`(.*?)`", r":math:`\1` ", vv)
+                    vv = re.sub(r":math:` ", r":math:`", vv)
+                    vv = re.sub(r"(\w):math:", r"\1 :math:", vv)
+                    vv = vv.replace(r"} `", r"}`")
+                    table.append((f"*{k}*", vv))
+                d.table_list(["Variable", "Meaning"], data=table, widths=[25, 75])
+
+def process_all_pcparam():
     diag_list = [
         ("DIAG_DOC", "print.in"),
         ("PHIAVG_DOC", "phiaver.in"),
@@ -277,4 +383,7 @@ def process_all_idiag():
         d.title(f"Startup and run-time parameters")
         for pars in diag_list:
             process_diag(*pars)
-        d.directive("toctree", fields=[("maxdepth", "1")], content=[pars[1] for pars in diag_list])
+        process_boundary_conditions()
+        toclist = [pars[1] for pars in diag_list]
+        toclist.append("boundary")
+        d.directive("toctree", fields=[("maxdepth", "1")], content=toclist)

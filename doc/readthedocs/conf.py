@@ -17,7 +17,7 @@ import sys
 import glob
 import datetime
 sys.path.append(os.getcwd())
-from fortran_rst_generator import create_fortran_modules_rst, process_all_idiag
+from fortran_rst_generator import create_fortran_modules_rst, process_all_pcparam
 
 # Import all git history
 os.system("git pull --unshallow")
@@ -373,4 +373,4 @@ fortran_src = create_fortran_modules_rst("../../src")
 fortran_ext = ["f90"]
 
 # Generate all rst files for the Fortran parameters table
-process_all_idiag()
+process_all_pcparam()

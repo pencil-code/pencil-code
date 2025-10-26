@@ -99,6 +99,7 @@ $(document).ready(function () {
                 });
                 if (found) {
                     $(this).show();
+                    $(this).parents('section[id^=module-]').show();
                     shown += 1;
                 } else {
                     $(this).hide();
@@ -107,6 +108,53 @@ $(document).ready(function () {
             });
             $('section[id^=module-]').each(function (idx, el) {
                 if ($(`#${el.id} table tbody tr td :visible`).length === 0) {
+                    $(this).hide();
+                } else {
+                    $(this).show();
+                }
+            });
+        }
+    }));
+    $("#custombcsearch").keyup($.debounce(250, function() {
+        const needle = $(this).val().toLowerCase();
+        let hidden = 0, shown = 0;
+        if (!needle) {
+            $('section[id^=boundary-conditions-] section table tbody').children("tr").each(function() {
+                $(this).show();
+            });
+            $('section[id^=boundary-conditions-] section').each(function() {
+                $(this).show();
+            });
+            $('section[id^=boundary-conditions-]').each(function() {
+                $(this).show();
+            });
+        } else {
+            $('section[id^=boundary-conditions-] section table tbody').children("tr").each(function() {
+                let found = false;
+                $(this).children("td").each(function(idx, el) {
+                    if ($(this).text().toLowerCase().indexOf(needle) > -1) {
+                        found = true;
+                    }
+                });
+                if (found) {
+                    $(this).show();
+                    $(this).parents('section[id^=boundary-conditions-] section').show();
+                    $(this).parents('section[id^=boundary-conditions-]').show();
+                    shown += 1;
+                } else {
+                    $(this).hide();
+                    hidden += 1;
+                }  
+            });
+            $('section[id^=boundary-conditions-]').each(function(idx, el) {
+                $(`#${el.id} section`).each(function() {
+                    if ($(this).find("table tbody tr td :visible").length === 0) {
+                        $(this).hide();
+                    } else {
+                        $(this).show();
+                    }
+                });
+                if ($(`#${el.id} section :visible`).length === 0) {
                     $(this).hide();
                 } else {
                     $(this).show();
@@ -134,6 +182,7 @@ $(document).ready(function () {
                 });
                 if (found) {
                     $(this).show();
+                    $(this).parents('#fortran-modules section').show();
                     shown += 1;
                 } else {
                     $(this).hide();
