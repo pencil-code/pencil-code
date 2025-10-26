@@ -1094,6 +1094,19 @@ module Dustvelocity
           f(l1:l2,m,n,iux:iuz)-f(l1:l2,m,n,iudx(k):iudz(k))-AA_sfta/BB_sfta)
     endsubroutine short_stopping_time_approximation
 !***********************************************************************
+    subroutine add_pseudo_coriolis_force(df,p)
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
+
+      if (Omega_pseudo/=0.0) then
+        df(l1:l2,m,n,iux)  = df(l1:l2,m,n,iux)  - Omega_pseudo*(p%uu(:,1)-u0_gas_pseudo)
+        df(l1:l2,m,n,iudx) = df(l1:l2,m,n,iudx) - Omega_pseudo*p%uud(:,1,:)
+        !TP: seems weird that during the loop over species we loop over them again in the expression above
+        !    would assume it would look like the following?:
+        !    df(l1:l2,m,n,iudx(k)) = df(l1:l2,m,n,iudx(k)) - Omega_pseudo*p%uud(:,1,k)
+      endif
+    endsubroutine add_pseudo_coriolis_force
+!***********************************************************************
     subroutine duud_dt(f,df,p)
 
 !  Dust velocity evolution
@@ -1214,13 +1227,7 @@ module Dustvelocity
 !
 !  Add pseudo Coriolis force (to drive velocity difference between dust and gas)
 !
-          if (Omega_pseudo/=0.0) then
-            df(l1:l2,m,n,iux)  = df(l1:l2,m,n,iux)  - Omega_pseudo*(p%uu(:,1)-u0_gas_pseudo)
-            df(l1:l2,m,n,iudx) = df(l1:l2,m,n,iudx) - Omega_pseudo*p%uud(:,1,:)
-            !TP: seems weird that during the loop over species we loop over them again in the expression above
-            !    would assume it would look like the following?:
-            !    df(l1:l2,m,n,iudx(k)) = df(l1:l2,m,n,iudx(k)) - Omega_pseudo*p%uud(:,1,k)
-          endif
+          call add_pseudo_coriolis_force(df,p)
 !
 !  Add viscosity on dust
 !
