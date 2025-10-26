@@ -1721,7 +1721,7 @@ module HDF5_IO
 !
     endsubroutine output_local_hdf5_4D
 !***********************************************************************
-    subroutine output_hdf5_4D(name, data, nv, compress)
+    subroutine output_hdf5_4D(name, data, nv)
 !
 !  Write HDF5 dataset from a distributed 4D array.
 !
@@ -1730,10 +1730,8 @@ module HDF5_IO
       character(len=*), intent(in) :: name
       integer, intent(in) :: nv
       real, dimension(:,:,:,:), intent(in) :: data
-      logical, optional, intent(in) :: compress
 !
       integer(kind=8), dimension(n_dims+1) :: h5_stride, h5_count
-      integer(kind=8), dimension(4), parameter :: chunk_dims=(/ 128, 128, 128, 128 /)
 !
       if (.not. lcollective) &
           call check_error (1, '4D array output requires global file', name, caller='output_hdf5_4D')
@@ -1750,12 +1748,6 @@ module HDF5_IO
       ! define 'memory-space' to indicate the local data portion in memory
       call h5screate_simple_f (n_dims+1, local_size, h5_mspace, h5_err)
       call check_error (h5_err, 'create local memory space', name)
-!
-      if (loptest (compress)) then
-        ! not yet tested
-        call h5pset_chunk_f(h5_plist, 4, chunk_dims, h5_err)
-        call h5pset_deflate_f(h5_plist, 6, h5_err)
-      endif
 !
       if (exists_in_hdf5 (name)) then
         ! open dataset
