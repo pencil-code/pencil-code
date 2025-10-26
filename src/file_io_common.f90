@@ -325,7 +325,7 @@ module File_io
 !
     endfunction parallel_file_exists
 !***********************************************************************
-    subroutine read_namelist(reader,name,lactive,optional_namelist)
+    subroutine read_namelist(reader,name,lactive,loptional)
 !
 !  Encapsulates reading of pars + error handling.
 !
@@ -340,7 +340,6 @@ module File_io
       use Cdata, only: lnamelist_error, lparam_nml, lstart, lroot
       use General, only: loptest, itoa, ioptest
       use Messages, only: warning
-      use Cparam, only: namelist_is_optional_enum, allow_missing_namelist_enum
 !
       interface
         subroutine reader(iostat)
@@ -350,18 +349,14 @@ module File_io
 !
       character(len=*), intent(in) :: name
       logical, optional, intent(in) :: lactive
-      integer, optional, intent(in) :: optional_namelist
+      logical, optional, intent(in) :: loptional
 !
       integer :: ierr
       logical :: found
-      integer ::  optional_namelist_
-      logical :: need_to_find_namelist,lallow_missing_namelist
+      logical :: lopt
       character(len=5) :: type, suffix
 !
-      optional_namelist_ = ioptest(optional_namelist)
-
-      need_to_find_namelist =  IAND(optional_namelist_,namelist_is_optional_enum) == 0
-      lallow_missing_namelist = IAND(optional_namelist_,allow_missing_namelist_enum) /= 0
+      lopt = loptest(loptional)
 
       if (.not. loptest (lactive, .true.)) return
 !
@@ -378,8 +373,8 @@ module File_io
       endif
 !
       !if (.not. find_namelist (trim(name)//trim(type)//trim(suffix))) then
-      call find_namelist (trim(name)//trim(type)//trim(suffix),found,lallow_missing_namelist)
-      if(.not. found .and. .not. need_to_find_namelist) return
+      call find_namelist (trim(name)//trim(type)//trim(suffix), found, lopt)
+      if(.not. found .and. lopt) return
 !
       ierr = 0 ! G95 complains 'ierr' is used but not set, even though 'reader' has intent(out).
       call reader(ierr)
