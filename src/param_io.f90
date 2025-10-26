@@ -559,7 +559,6 @@ module Param_IO
 !
       logical, optional, intent(IN) :: linit_pars
       integer, optional :: allow_missing_namelists
-                        
 !
 !  Read through all items that *may* be present in the various modules.
 !
