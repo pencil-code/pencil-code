@@ -484,7 +484,7 @@ module Param_IO
         call safe_character_append (user, 'global_run.in')
         if (parallel_file_exists (user)) then
           call parallel_open(user, remove_comments=.true.)
-          call read_all_namelists(allow_missing_namelists=optional_namelists_without_warning_enum)
+          call read_all_namelists(allow_missing_namelists=enum_namelist_optional_no_warn)
           call parallel_close
         endif
       endif
@@ -555,8 +555,8 @@ module Param_IO
       use Particles_main, only: read_all_particles_init_pars, read_all_particles_run_pars
       use File_io, only: read_namelist
       use General, only: ioptest
-      use Cparam, only: namelist_is_optional_enum, do_not_issue_warning_about_missing_namelist_enum,&
-                        optional_namelists_without_warning_enum
+      use Cparam, only: enum_namelist_is_optional, enum_namelist_no_warn_optional,&
+                        enum_namelist_optional_no_warn
 !
       logical, optional, intent(IN) :: linit_pars
       integer, optional :: allow_missing_namelists
@@ -725,7 +725,7 @@ module Param_IO
         call read_namelist(read_training_run_pars       ,'training'          ,ltraining,&
                                                         optional_namelist=allow_missing_namelists)
         call read_namelist(read_gpu_run_pars            ,'gpu'&
-        ,lgpu,optional_namelist=max(ioptest(allow_missing_namelists),namelist_is_optional_enum))
+        ,lgpu,optional_namelist=max(ioptest(allow_missing_namelists),enum_namelist_is_optional))
 !
         call read_all_particles_run_pars
 !

@@ -1,6 +1,6 @@
-integer, parameter :: namelist_is_optional_enum = 1
-integer, parameter :: do_not_issue_warning_about_missing_namelist_enum = 2
-integer, parameter :: optional_namelists_without_warning_enum = 3
+integer, parameter :: enum_namelist_is_optional = 1
+integer, parameter :: enum_namelist_no_warn_optional = 2
+integer, parameter :: enum_namelist_optional_no_warn = 3
 
 !TP: strings to enums
 
