@@ -559,7 +559,7 @@ module Equ
 !  10-sep-2019/MR: coded
 !
       use Ascalar, only: calc_diagnostics_ascalar
-      use Chemistry, only: calc_diagnostics_chemistry
+      use Chemistry, only: calc_diagnostics_chemistry, chemistry_allocate_rhs_arrays
       use Chiral, only: calc_diagnostics_chiral
       use Cosmicray, only: calc_diagnostics_cosmicray
       use Density, only: calc_diagnostics_density
@@ -620,6 +620,7 @@ module Equ
 !     TP: on some nvfortan compilers copyin does not seem to be enough to ensure diagnostic arrays are allocated
 !     TP: not sure was the copyin ever sufficient, but not that important since we can always explicitly check
 !$    if (.not. allocated(fname)) call allocate_diagnostic_arrays
+      if (lchemistry) call chemistry_allocate_rhs_arrays
       lfirstpoint=.true.
       !TP: example code to explicitly set and get cores the thread are running on
       !TP: the flexible way to set this is with OMP_PROC_BIND=close,spread, but in case that fails one can be sure by using the code

@@ -733,7 +733,16 @@ module Chemistry
     if(allocated(low_coeff))  low_coeff_abs_max = maxval(abs(low_coeff),1)
     if(allocated(high_coeff)) high_coeff_abs_max = maxval(abs(high_coeff),1)
     if(allocated(troe_coeff)) troe_coeff_abs_max = maxval(abs(troe_coeff),1)
+    if(.not. lmultithread) call chemistry_allocate_rhs_arrays
+
     endsubroutine initialize_chemistry
+!***********************************************************************
+    subroutine chemistry_allocate_rhs_arrays
+
+    if(.not. allocated(vreactions_p)) allocate(vreactions_p(nx,mreactions))
+    if(.not. allocated(vreactions_m)) allocate(vreactions_m(nx,mreactions))
+
+    endsubroutine chemistry_allocate_rhs_arrays
 !***********************************************************************
     subroutine init_chemistry(f)
 !
@@ -1093,6 +1102,15 @@ module Chemistry
 !
     endsubroutine pencil_interdep_chemistry
 !***********************************************************************
+    subroutine get_cs2_cheminp(p)
+      type(pencil_case) :: p
+      !TP: any calls across pencil cannot be faithfully transpiled to the GPU
+      if (any(p%cv == 0.0)) then
+      else
+        p%cs2 = p%cp*p%cv1*p%mu1*p%TT*Rgas
+      endif
+    endsubroutine get_cs2_cheminp
+!***********************************************************************
     subroutine calc_pencils_chemistry(f,p)
 !
 !  Calculate chemistry pencils.
@@ -1445,12 +1463,7 @@ module Chemistry
       endif
 !
       if (lpencil(i_cs2) .and. lcheminp) then
-
-        !TP: any calls across pencil cannot be faithfully transpiled to the GPU
-        if (any(p%cv == 0.0)) then
-        else
-          p%cs2 = p%cp*p%cv1*p%mu1*p%TT*Rgas
-        endif
+        call get_cs2_cheminp(p)
       endif
 !
       if (lpencil(i_ppwater) .and. .not. lchemonly) then
@@ -3124,10 +3137,6 @@ module Chemistry
       if (.not. lreloading) then
         allocate(stoichio(nchemspec,mreactions),STAT=stat)
         if (stat > 0) call fatal_error("astrobiology_data","Couldn't allocate stoichio")
-        allocate(vreactions_p(nx,mreactions),STAT=stat)
-        if (stat > 0) call fatal_error("astrobiology_data","Couldn't allocate vreactions_p")
-        allocate(vreactions_m(nx,mreactions),STAT=stat)
-        if (stat > 0) call fatal_error("astrobiology_data","Couldn't allocate vreactions_m")
         allocate(Sijm(nchemspec,mreactions),STAT=stat)
         if (stat > 0) call fatal_error("astrobiology_data","Couldn't allocate Sijm")
         allocate(Sijp(nchemspec,mreactions),STAT=stat)
@@ -3323,6 +3332,24 @@ module Chemistry
       enddo
      endsubroutine
 !***********************************************************************
+     subroutine get_1step_test_sum_DYDts(f,p,sum_DYDt)
+!
+!  26-oct-25/TP: carved from dchemistry_dt
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      type(pencil_case), intent(IN) :: p
+      real, dimension(nx), intent(OUT) :: sum_DYDt
+
+      integer :: i
+
+      sum_DYDt = 0.
+      !TP: cannot access 1 on the GPU
+      do i = 1,nx
+        sum_DYDt(i) = -p%rho(1)*(p%TT(i)-Tinf)*p%TT1(i) &
+            *Cp_const/lambda_const*beta*(beta-1.)*f(l1,m,n,iux)*f(l1,m,n,iux)
+      enddo
+     endsubroutine get_1step_test_sum_DYDts
+!***********************************************************************
     subroutine dchemistry_dt(f,df,p)
 !
 !  calculate right hand side of ONE OR MORE extra coupled PDEs
@@ -3478,12 +3505,7 @@ module Chemistry
       if (ldensity .and. lcheminp) then
 !
         if (l1step_test) then
-          sum_DYDt = 0.
-          !TP: cannot access 1 on the GPU
-          do i = 1,nx
-            sum_DYDt(i) = -p%rho(1)*(p%TT(i)-Tinf)*p%TT1(i) &
-                *Cp_const/lambda_const*beta*(beta-1.)*f(l1,m,n,iux)*f(l1,m,n,iux)
-          enddo
+          call get_1step_test_sum_DYDts(f,p,sum_DYDt)
         else
           sum_dk_ghk = 0.
           call get_sum_DYDts(p,sum_DYDt,sum_hhk_DYDt_reac)
@@ -4258,10 +4280,6 @@ module Chemistry
       if (.not. lreloading) then
         allocate(stoichio(nchemspec,mreactions),STAT=stat)
         if (stat > 0) call fatal_error('chemkin_data',"Couldn't allocate stoichio")
-        allocate(vreactions_p(nx,mreactions),STAT=stat)
-        if (stat > 0) call fatal_error('chemkin_data',"Couldn't allocate vreactions_p")
-        allocate(vreactions_m(nx,mreactions),STAT=stat)
-        if (stat > 0) call fatal_error('chemkin_data',"Couldn't allocate vreactions_m")
         allocate(Sijm(nchemspec,mreactions),STAT=stat)
         if (stat > 0) call fatal_error('chemkin_data',"Couldn't allocate Sijm")
         allocate(Sijp(nchemspec,mreactions),STAT=stat)
@@ -4809,6 +4827,29 @@ module Chemistry
 1001 format(i2,20f6.1)
     endsubroutine write_matrices
 !***********************************************************************
+    subroutine get_1step_test_reaction_rate(f,vreact_p,vreact_m,p,reac)
+!
+!  26-oct-25/TP: carved from get_reaction_rate
+!
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      type (pencil_case), intent(in) :: p
+      real, dimension(nx,nreactions), intent(out) :: vreact_p, vreact_m
+      integer, intent(in) :: reac
+
+      integer :: i
+
+      do i = 1,nx
+        !TP: cannot access 1 on GPU
+        if (p%TT(i) > Tc) then
+          vreact_p(i,reac) = f(l1,m,n,iux)*f(l1,m,n,iux)*p%rho(1)*Cp_const &
+              /lambda_const*beta*(beta-1.)*(1.-f(l1-1+i,m,n,ichemspec(ipr)))
+        else
+          vreact_p(i,reac) = 0.
+        endif
+      enddo
+      vreact_m(:,reac) = 0.
+    endsubroutine get_1step_test_reaction_rate
+!***********************************************************************
     subroutine get_reaction_rate(f,vreact_p,vreact_m,p)
 !
 !  This subroutine calculates forward and reverse reaction rates,
@@ -5022,16 +5063,7 @@ module Chemistry
 ! For more details see Doom, et al., J. Comp. Phys., 226, 2007
 !
       elseif (reac_rate_method == '1step_test') then
-        do i = 1,nx
-          !TP: cannot access 1 on GPU
-          if (p%TT(i) > Tc) then
-            vreact_p(i,reac) = f(l1,m,n,iux)*f(l1,m,n,iux)*p%rho(1)*Cp_const &
-                /lambda_const*beta*(beta-1.)*(1.-f(l1-1+i,m,n,ichemspec(ipr)))
-          else
-            vreact_p(i,reac) = 0.
-          endif
-        enddo
-        vreact_m(:,reac) = 0.
+        call get_1step_test_reaction_rate(f,vreact_p,vreact_m,p,reac)
 !
 !  Add alternative method for finding the reaction rates based on work by
 !  Roux et al. (2009)

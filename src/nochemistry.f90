@@ -48,6 +48,9 @@ module Chemistry
 !
     endsubroutine initialize_chemistry
 !*********************************************************************** 
+    subroutine chemistry_allocate_rhs_arrays
+    endsubroutine chemistry_allocate_rhs_arrays
+!***********************************************************************
     subroutine init_chemistry(f)
 !
       real, dimension (mx,my,mz,mfarray) :: f
