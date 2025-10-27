@@ -3157,9 +3157,9 @@ $(IO_IN_OBJ): $(IO_IN_SRC) Makefile.local
 	  $(call sed_follow_link,"s/^\( *[^!]*module  *\)[Ii][Oo].*$$/\1Io_in/",$(IO_IN_SRC)); \
 	fi
 ifeq ($(IO_IN),io_mpi2)
-	$(FC) $(ALL_COMP_FLAGS) $(ALLOW_ARG_MISMATCH) $(FSTD) -o $(IO_IN_OBJ) -c $(IO_IN_SRC)
+	$(FC) $(ALL_COMP_FLAGS) $(ALLOW_ARG_MISMATCH) -o $(IO_IN_OBJ) -c $(IO_IN_SRC)
 else
-	$(FC) $(ALL_COMP_FLAGS) -o $(IO_IN_OBJ) -c $(IO_IN_SRC)
+	$(FC) $(ALL_COMP_FLAGS) $(FSTD_2003) -o $(IO_IN_OBJ) -c $(IO_IN_SRC)
 endif
 	@$(call sed_follow_link,"s/^\( *[^!]*module  *\)Io_in/\1Io/",$(IO_IN_SRC))
 $(IO_OUT_OBJ): $(IO_OUT_SRC) Makefile.local
@@ -3168,9 +3168,9 @@ $(IO_OUT_OBJ): $(IO_OUT_SRC) Makefile.local
 	  $(call sed_follow_link,"s/^\( *[^!]*module  *\)[Ii][Oo].*$$/\1Io_out/",$(IO_OUT_SRC)); \
 	fi
 ifeq ($(IO_OUT),io_mpi2)
-	$(FC) $(ALL_COMP_FLAGS) $(ALLOW_ARG_MISMATCH) $(FSTD) -o $(IO_OUT_OBJ) -c $(IO_OUT_SRC)
+	$(FC) $(ALL_COMP_FLAGS) $(ALLOW_ARG_MISMATCH) -o $(IO_OUT_OBJ) -c $(IO_OUT_SRC)
 else
-	$(FC) $(ALL_COMP_FLAGS) -o $(IO_OUT_OBJ) -c $(IO_OUT_SRC)
+	$(FC) $(ALL_COMP_FLAGS) $(FSTD_2003) -o $(IO_OUT_OBJ) -c $(IO_OUT_SRC)
 endif
 	@$(call sed_follow_link,"s/^\( *[^!]*module  *\)Io_out/\1Io/",$(IO_OUT_SRC))
 endif
