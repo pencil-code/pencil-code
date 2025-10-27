@@ -1,7 +1,3 @@
-integer, parameter :: enum_namelist_is_optional = 1
-integer, parameter :: enum_namelist_no_warn_optional = 2
-integer, parameter :: enum_namelist_optional_no_warn = 3
-
 !TP: strings to enums
 
 integer, parameter :: enum_unknown_string_string = 0

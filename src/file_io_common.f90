@@ -325,7 +325,7 @@ module File_io
 !
     endfunction parallel_file_exists
 !***********************************************************************
-    subroutine read_namelist(reader,name,lactive,optional_namelist)
+    subroutine read_namelist(reader,name,lactive,loptional)
 !
 !  Encapsulates reading of pars + error handling.
 !
@@ -340,7 +340,6 @@ module File_io
       use Cdata, only: lnamelist_error, lparam_nml, lstart, lroot
       use General, only: loptest, itoa, ioptest
       use Messages, only: warning
-      use Cparam, only: enum_namelist_is_optional, enum_namelist_no_warn_optional
 !
       interface
         subroutine reader(iostat)
@@ -350,19 +349,16 @@ module File_io
 !
       character(len=*), intent(in) :: name
       logical, optional, intent(in) :: lactive
-      integer, optional, intent(in) :: optional_namelist
+      logical, optional, intent(in) :: loptional
 !
       integer :: ierr
       logical :: found
       integer :: namelist_mode
-      logical :: loptional, lno_warning
+      logical :: lnamelist_optional, lno_warning
       character(len=5) :: type, suffix
 !
-      namelist_mode = ioptest(optional_namelist)
-
-      loptional = IAND (namelist_mode, enum_namelist_is_optional) == 0
-      lno_warning = IAND (namelist_mode, enum_namelist_no_warn_optional) /= 0
-
+      lnamelist_optional = loptest (loptional)
+!
       if (.not. loptest (lactive, .true.)) return
 !
       if (lstart .or. lparam_nml) then
@@ -378,8 +374,8 @@ module File_io
       endif
 !
       !if (.not. find_namelist (trim(name)//trim(type)//trim(suffix))) then
-      call find_namelist (trim(name)//trim(type)//trim(suffix),found,lno_warning)
-      if(.not. found .and. .not. loptional) return
+      call find_namelist (trim(name)//trim(type)//trim(suffix), found, lnamelist_optional)
+      if(.not. found .and. .not. lnamelist_optional) return
 !
       ! G95 complains 'ierr' is used but not set, even though 'reader' has intent(out).
       ! PABourdin:
