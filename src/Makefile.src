@@ -632,7 +632,6 @@ endif
 #
 ifneq ($(filter openmp OpenMP openMP OPENMP OMP omp,$(MULTITHREADING)),)
 
-  $(shell bash -c 'rm -f exit_mn.h; touch exit_mn.h')
   PTHREAD_OBJ=pthread.o
   PTHREAD_SRC=pthread.c
   OMP_HEADER=omp_init.h
@@ -655,7 +654,6 @@ ifneq ($(filter openmp OpenMP openMP OPENMP OMP omp,$(MULTITHREADING)),)
 else
   PTHREAD_OBJ=
   OMP_HEADER=
-  $(shell bash -c 'echo "exit mn_loop" > exit_mn.h')
 endif
 ifeq ($(MAKECMDGOALS),libPC.so)
   override FFLAGS += -fPIC
@@ -3092,7 +3090,6 @@ start.x: start.o | $(SPECIAL_DEPS)
 run.o: $(run) $(OMP_HEADER) Makefile.local
 run.x: run.o | $(SPECIAL_DEPS) $(LIBGPU)
 	$(LD) $(run) run.o $(LDFLAGS_LIB) $(LDFLAGS) $(LDFLAGS_MAIN) $(LD_MPI) $(LD_FOURIER) $(LIBSIG) $(LD_GSL) -o run.x
-	@rm -f exit_mn.h
 #
 #  Rules for linking start and run as shared libararies.
 #
@@ -3690,7 +3687,7 @@ clean:  slender
 #  (there should be no Makefile_inc; but if there is, `make' just does nothing)
 #
 cleann: clean
-	rm -f Makefile Makefile_inc TAGS exit_mn.h
+	rm -f Makefile Makefile_inc TAGS
 	rm -rf semiauto-conf_tmp f90_qnd_log_dir
 	@for file in *.inc; do \
 	  if [ ! -L $$file ]; then rm -f $$file; fi \

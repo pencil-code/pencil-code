@@ -3256,9 +3256,7 @@ mn_loop:do n=n1,n2
                   endif
                 enddo
                 !$ lfound = .true.
-                !TP: this is not safe!
-                !include 'exit_mn.h' !exits mn_loop if not multi-threaded, otherwise does nothing
-                                    !exit_mn.h is only temporarily created by make!
+                exit mn_loop
               endif
             endif
           enddo
@@ -3738,8 +3736,7 @@ mn_loop:do n=n1,n2
                   ierr=iEXPLOSION_TOO_HOT
                   if (.not.lSN_list) then
                     !$ lfound = .true.
-                    include 'exit_mn.h'  !exits mn_loop if not multi-threaded, otherwise does nothing
-                                         !exit_mn.h is only temporarily created by make!
+                    exit mn_loop
                   endif
                 endif
               endif
@@ -3758,8 +3755,7 @@ mn_loop:do n=n1,n2
                     ierr=iEXPLOSION_TOO_HOT
                     if (.not.lSN_list) then
                       !$ lfound = .true.
-                      include 'exit_mn.h' !exits mn_loop if not multi-threaded, otherwise does nothing
-                                          !exit_mn.h is only temporarily created by make!
+                      exit mn_loop
                     endif
                   endif
                 endif
