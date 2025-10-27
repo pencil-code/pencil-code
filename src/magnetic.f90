@@ -1133,6 +1133,7 @@ module Magnetic
   real, dimension(mz) :: feta_ztdep=0.0
   real :: eta_shock_jump1=1.0, eta_tdep=0.0, Arms=0.0
   real, dimension(nx) :: eta_xtdep=0.0
+  !$omp threadprivate(eta_tdep,eta_xtdep)
   real, dimension(-nghost:nghost,-nghost:nghost,-nghost:nghost) :: kern_jjsmooth
 !
   real, dimension(nz,nprocz) :: z_allprocs
@@ -3997,6 +3998,117 @@ module Magnetic
 !
     endsubroutine calc_pencils_magnetic_std
 !***********************************************************************
+    subroutine get_eta_t_and_xtdep(f,p)
+!
+!  27-oct-2025/TP: carved from daa_dt
+!
+      use SharedVariables, only: get_shared_variable
+
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      type(pencil_case), intent(in) :: p
+
+      real, dimension (nx) :: Eabs, Babs
+      real :: Eaver, Baver !, b2m
+
+      select case (tdep_eta_type)
+        case ('const')
+          eta_tdep=eta
+        case ('standard')
+          if (lresi_eta_tdep_t0_norm) then
+            eta_tdep=eta*max(real(t-eta_tdep_toffset)/eta_tdep_t0,1.)**eta_tdep_exponent
+          else
+            eta_tdep=eta*max(real(t-eta_tdep_toffset),eta_tdep_t0)**eta_tdep_exponent
+          endif
+        case ('standard2')
+          eta_tdep=eta*(1.+max(real(t-eta_tdep_toffset)/eta_tdep_t0,0.))**eta_tdep_exponent
+        case ('log-switch-on')
+          eta_tdep=eta*exp((alog(eta_max)-alog(eta)) &
+                   *max(min((1.-real(t-eta_tdep_toffset)/eta_tdep_t0),1.),0.))
+        case ('linear-sigma')
+          eta_tdep=1./(1./eta_max+(1./eta-1./eta_max) &
+                   *max(min(real(t-eta_tdep_toffset)/eta_tdep_t0,1.),0.))
+        case ('ascale_power')
+          eta_tdep=eta*ascale**eta_tdep_ascale_power
+        case ('eta_table')
+          call fatal_error('magnetic_after_boundary','eta_table not yet completed')
+          eta_tdep=0.
+        case ('mean-field')
+!
+!  eta_tdep (luse_scale_factor_in_sigma=T by default)
+!
+!
+!  get other shared variables
+!
+        call get_shared_variable('lrho_chi',lrho_chi, caller='initialize_magnetic')
+!
+!  need e2m, b2m
+!
+        if (.not. lrho_chi) call fatal_error('calc_pencils_magnetic_pencpar', &
+             'lrho_chi must be true when using mean-field')
+!
+!       if (ncpus>1.or.dimensionality>1) call fatal_error('calc_pencils_magnetic_pencpar', &
+!           'not programmed for multiple procs or more than 1 dimension')
+!       Eaver=sqrt(sum(f(l1:l2,m,n,iex)**2+f(l1:l2,m,n,iey)**2+f(l1:l2,m,n,iez)**2)/nx)
+!       Baver=sqrt(sum(p%b2)/nx+B_ext2)
+!XXX
+        !call get_shared_variable('e2m_all', e2m_all, caller='initialize_magnetic')
+        call get_shared_variable('e2m_all', e2m_all)
+        call get_shared_variable('b2m_all', b2m_all)
+        Eaver=sqrt(e2m_all)
+        Baver=sqrt(b2m_all+B_ext2)
+!
+!  Compute sigmaE. Note that eta_tdep=0 for Baver=0.
+!  By default, lno_eta_tdep is false.
+!
+        if (Eaver<tini .or. lno_eta_tdep) then
+          eta_tdep=eta_huge
+        else
+          if (Baver<tini) then
+            eta_tdep=6.*pi**3*Hscript/echarge**3/Eaver
+          else
+            eta_tdep=6.*pi**2*Hscript/echarge**3*tanh(pi*Baver/Eaver)/Baver
+          endif
+        endif
+!
+!  Compute sigmaB. Note that eta_tdep=0 for Baver=0.
+!
+!           if (lsigmaB_contribution) then
+!             if (Eaver<tini) then
+!               etaB_tdep_B1=eta_huge
+!             else
+!               if (Baver<tini) then
+!                 etaB_tdep_B1=6.*pi**3*Hscript/echarge**3/(Eaver*Baver)
+!               else
+!                 etaB_tdep_B1=6.*pi**2*Hscript/echarge**3*tanh(pi*Baver/Eaver)/(Eaver*Baver)
+!               endif
+!             endif
+!           endif
+!XX
+!  eta_tdep
+!
+        case ('mean-field-local')
+          if (iex>0) then
+            Eabs=sqrt(f(l1:l2,m,n,iex)**2+f(l1:l2,m,n,iey)**2+f(l1:l2,m,n,iez)**2)
+          else
+            call fatal_error('calc_pencils_magnetic_pencpar','electric field must be computed')
+          endif
+          Babs=sqrt(p%b2)
+!
+!  Note that for Babs=0, eta_xtdep=0
+!
+        where (Eabs<tini)
+          eta_xtdep=eta_huge
+        elsewhere
+          where (Babs<tini)
+            eta_xtdep=6.*pi**3*Hscript/echarge**3/Eabs
+          elsewhere
+            eta_xtdep=6.*pi**2*Hscript/echarge**3*tanh(pi*Babs/Eabs)/Babs
+          endwhere
+        endwhere
+          case default
+      endselect
+    endsubroutine get_eta_t_and_xtdep
+!***********************************************************************
     subroutine calc_pencils_magnetic_pencpar(f,p,lpenc_loc)
 !
 !  Calculate Magnetic pencils.
@@ -4011,7 +4123,6 @@ module Magnetic
 !
       use EquationOfState, only: rho0
       use General, only: notanumber
-      use SharedVariables, only: get_shared_variable
       use Sub
 !
       real, dimension (mx,my,mz,mfarray), intent(inout):: f
@@ -4020,13 +4131,12 @@ module Magnetic
 !
       real, dimension (nx,3) :: tmp ! currently unused: bb_ext_pot
       real, dimension (nx) :: rho1_jxb, quench, StokesI_ncr, tmp1, bbgb, va2max_beta
-      real, dimension (nx) :: Eabs, Babs
       real, dimension(3) :: B_ext, j_ext
       real :: c,s
-      real :: Eaver, Baver !, b2m
       integer :: i, j, ix
 
       if (lfirstpoint) lproc_print=.true.
+
 ! aa
       if (lpenc_loc(i_aa)) p%aa=f(l1:l2,m,n,iax:iaz)
 ! a2
@@ -4269,103 +4379,7 @@ module Magnetic
 !  The default is problematic because then eta_tdep /= eta for t < eta_tdep_t0.
 !
           if (lresi_eta_tdep .or. lresi_eta_xtdep .or. lresi_hyper2_tdep .or. lresi_hyper3_tdep) then
-            select case (tdep_eta_type)
-              case ('const')
-                eta_tdep=eta
-              case ('standard')
-                if (lresi_eta_tdep_t0_norm) then
-                  eta_tdep=eta*max(real(t-eta_tdep_toffset)/eta_tdep_t0,1.)**eta_tdep_exponent
-                else
-                  eta_tdep=eta*max(real(t-eta_tdep_toffset),eta_tdep_t0)**eta_tdep_exponent
-                endif
-              case ('standard2')
-                eta_tdep=eta*(1.+max(real(t-eta_tdep_toffset)/eta_tdep_t0,0.))**eta_tdep_exponent
-              case ('log-switch-on')
-                eta_tdep=eta*exp((alog(eta_max)-alog(eta)) &
-                         *max(min((1.-real(t-eta_tdep_toffset)/eta_tdep_t0),1.),0.))
-              case ('linear-sigma')
-                eta_tdep=1./(1./eta_max+(1./eta-1./eta_max) &
-                         *max(min(real(t-eta_tdep_toffset)/eta_tdep_t0,1.),0.))
-              case ('ascale_power')
-                eta_tdep=eta*ascale**eta_tdep_ascale_power
-              case ('eta_table')
-                call fatal_error('magnetic_after_boundary','eta_table not yet completed')
-                eta_tdep=0.
-              case ('mean-field')
-!
-!  eta_tdep (luse_scale_factor_in_sigma=T by default)
-!
-!
-!  get other shared variables
-!
-                call get_shared_variable('lrho_chi',lrho_chi, caller='initialize_magnetic')
-!
-!  need e2m, b2m
-!
-                if (.not. lrho_chi) call fatal_error('calc_pencils_magnetic_pencpar', &
-                    'lrho_chi must be true when using mean-field')
-!
-!           if (ncpus>1.or.dimensionality>1) call fatal_error('calc_pencils_magnetic_pencpar', &
-!               'not programmed for multiple procs or more than 1 dimension')
-!           Eaver=sqrt(sum(f(l1:l2,m,n,iex)**2+f(l1:l2,m,n,iey)**2+f(l1:l2,m,n,iez)**2)/nx)
-!           Baver=sqrt(sum(p%b2)/nx+B_ext2)
-!XXX
-                !call get_shared_variable('e2m_all', e2m_all, caller='initialize_magnetic')
-                call get_shared_variable('e2m_all', e2m_all)
-                call get_shared_variable('b2m_all', b2m_all)
-                Eaver=sqrt(e2m_all)
-                Baver=sqrt(b2m_all+B_ext2)
-!
-!  Compute sigmaE. Note that eta_tdep=0 for Baver=0.
-!  By default, lno_eta_tdep is false.
-!
-                if (Eaver<tini .or. lno_eta_tdep) then
-                  eta_tdep=eta_huge
-                else
-                  if (Baver<tini) then
-                    eta_tdep=6.*pi**3*Hscript/echarge**3/Eaver
-                  else
-                    eta_tdep=6.*pi**2*Hscript/echarge**3*tanh(pi*Baver/Eaver)/Baver
-                  endif
-                endif
-!
-!  Compute sigmaB. Note that eta_tdep=0 for Baver=0.
-!
-!           if (lsigmaB_contribution) then
-!             if (Eaver<tini) then
-!               etaB_tdep_B1=eta_huge
-!             else
-!               if (Baver<tini) then
-!                 etaB_tdep_B1=6.*pi**3*Hscript/echarge**3/(Eaver*Baver)
-!               else
-!                 etaB_tdep_B1=6.*pi**2*Hscript/echarge**3*tanh(pi*Baver/Eaver)/(Eaver*Baver)
-!               endif
-!             endif
-!           endif
-!XX
-!  eta_tdep
-!
-              case ('mean-field-local')
-                if (iex>0) then
-                  Eabs=sqrt(f(l1:l2,m,n,iex)**2+f(l1:l2,m,n,iey)**2+f(l1:l2,m,n,iez)**2)
-                else
-                  call fatal_error('calc_pencils_magnetic_pencpar','electric field must be computed')
-                endif
-                Babs=sqrt(p%b2)
-!
-!  Note that for Babs=0, eta_xtdep=0
-!
-                where (Eabs<tini)
-                  eta_xtdep=eta_huge
-                elsewhere
-                  where (Babs<tini)
-                    eta_xtdep=6.*pi**3*Hscript/echarge**3/Eabs
-                  elsewhere
-                    eta_xtdep=6.*pi**2*Hscript/echarge**3*tanh(pi*Babs/Eabs)/Babs
-                  endwhere
-                endwhere
-              case default
-            endselect
+            call get_eta_t_and_xtdep(f,p)
 !
 !  endif from lresi_eta_tdep
 !
@@ -4928,7 +4942,6 @@ module Magnetic
     endsubroutine diamagnetism
 !***********************************************************************
     subroutine calc_aaxyaver(aa_xyaver,f)
-
 !
 !  12-2-2025/TP: carved from daa_dt to separate average calculations. To get it running on the GPU would have to happen in
 !  before_boundary or after_boundary
@@ -4943,7 +4956,8 @@ module Magnetic
       enddo
     endsubroutine calc_aaxyaver
 !***********************************************************************
-    subroutine calc_eta_total(p)
+    subroutine calc_eta_total(f,p)
+      real, dimension(mx,my,mz,mfarray) :: f
       type(pencil_case), intent(IN) :: p
       real, dimension(nx)   :: eta_mn
       real, dimension(nx,3) :: geta
@@ -4951,6 +4965,12 @@ module Magnetic
       if (lresi_shell) then
         call eta_shell(p,eta_mn,geta)
         eta_total = eta_total + eta_mn
+      endif
+      if (lresi_eta_tdep .or. lresi_eta_xtdep .or. lresi_hyper2_tdep .or. lresi_hyper3_tdep) then
+        call get_eta_t_and_xtdep(f,p)
+        if (iex>0) then
+          if (lresi_eta_tdep) eta_total = eta_tdep
+        endif
       endif
     endsubroutine calc_eta_total
 !***********************************************************************
@@ -6713,7 +6733,7 @@ print*,'AXEL2: should not be here (eta) ... '
 
       if (lmultithread .and. (idiag_epsM /= 0 .or. idiag_epsM2 /= 0 &
           .or. idiag_epsM3 /= 0 .or. idiag_epsM4 /= 0 .or. idiag_dteta /= 0)) then
-          call calc_eta_total(p)
+          call calc_eta_total(f,p)
           if(idiag_dteta /= 0) diffus_eta =eta_total *dxyz_2
       endif
 !

@@ -4042,6 +4042,10 @@ module Diagnostics
     lpencil_save = lpencil
     deltay_save = deltay
 
+    scl_factor_target_save = scl_factor_target
+    Hp_target_save = Hp_target
+    appa_target_save = appa_target
+
     endsubroutine save_diagnostic_controls
 !***********************************************************************
     subroutine restore_diagnostic_controls
@@ -4068,6 +4072,9 @@ module Diagnostics
     t = t_save
 
     deltay = deltay_save
+    scl_factor_target   = scl_factor_target_save
+    Hp_target   = Hp_target_save
+    appa_target = appa_target_save
 
     if (ldiagnos) then
       tdiagnos  = t_save
