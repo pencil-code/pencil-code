@@ -1716,7 +1716,7 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 ##  the -CB options checks for out of bounds arrays
 ##
 #FC=ifort #(nl6)
-#FSTD_95=-std95 #(nl6)
+#FSTD_95=-std=f95 #(nl6)
 #FC=ifort #(nl6)
 #FFLAGS=-O3 -I/usr/lib/openmpi/include -CB #(nl6)
 #FFLAGS=-O3 -I/usr/lib/openmpi/include #(nl6)
