@@ -310,6 +310,7 @@ module Selfgravity
 !  Calculate the potential of the self gravity.
 !
 !  15-may-06/anders+jeff: coded
+!  27-oct-25/axel: added ascale_type with default (from cdata) being the default
 !
       use Particles_main, only: particles_calc_selfpotential
       use FArrayManager
@@ -402,7 +403,11 @@ module Selfgravity
           f(l1:l2,m1:m2,n1:n2,ipotself) = 0.5 * rhs_poisson_const * &
               (1.0 - cos(pi * (t - tstart_selfgrav) / tselfgrav_gentle)) * rhs_poisson
         else
-          f(l1:l2,m1:m2,n1:n2,ipotself) = rhs_poisson_const*rhs_poisson
+          select case (ascale_type)
+            case ('default'); f(l1:l2,m1:m2,n1:n2,ipotself) = rhs_poisson_const*rhs_poisson
+            case ('general'); f(l1:l2,m1:m2,n1:n2,ipotself) = rhs_poisson_const*rhs_poisson*ascale
+          endselect
+
         endif
 !
       endif ! if (t>=tstart_selfgrav) then
