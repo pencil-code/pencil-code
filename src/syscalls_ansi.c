@@ -317,7 +317,7 @@ void FTNIZE(is_nan_c)
    * 0, otherwise
 */
 {
-  // C99 standard uses a macro that is type-agnostic
+  // C99 standard uses a macro that is independent of type
   *result = isnan (*value);
 }
 
