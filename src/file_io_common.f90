@@ -375,7 +375,7 @@ module File_io
 !
       !if (.not. find_namelist (trim(name)//trim(type)//trim(suffix))) then
       call find_namelist (trim(name)//trim(type)//trim(suffix), found, lnamelist_optional)
-      if(.not. found .and. .not. lnamelist_optional) return
+      if(.not. found .and. lnamelist_optional) return
 !
       ! G95 complains 'ierr' is used but not set, even though 'reader' has intent(out).
       ! PABourdin:
