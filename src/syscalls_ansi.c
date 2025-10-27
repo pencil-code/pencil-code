@@ -313,18 +313,12 @@ void FTNIZE(is_nan_c)
      (REAL *value, FINT *result)
 /* Determine if value is not a number.
    Returns:
-   * 1, if value is not a number
-   * 0, if value is a number
-   * -1 on failure (value is neither float or double)
+   * not 0, if value is NaN
+   * 0, otherwise
 */
 {
-  *result = -1;
-
-  if (sizeof (*value) == sizeof (double)) {
-    *result = isnan ((double) *value);
-  } else if (sizeof (*value) == sizeof (float)) {
-    *result = isnanf ((float) *value); // C99 standard
-  }
+  // C99 standard uses a macro that is type-agnostic
+  *result = isnan (*value);
 }
 
 /* ---------------------------------------------------------------------- */
