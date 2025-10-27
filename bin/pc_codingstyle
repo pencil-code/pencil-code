@@ -38,7 +38,7 @@ my @trigger_unindent = ('program', 'module', 'interface', 'type', 'subroutine', 
 my @data_types = ('integer', 'real', 'logical', 'character', 'double precision');
 my %require_separator = ('.and.' => '', '.or.' => '', '.not.' => '', '.true.' => '', '.false.' => '', '.eqv.' => '', '.neqv.' => '', '.in.' => '');
 my $name = 'a-zA-Z0-9_';
-my %require_spaces = ('=' => '<>/=', '>' => '=', '<' => '=', '>=' => '', '<=' => '', '==' => '=', '/=' => '=', 'inquire' => $name.'%', 'open' => $name.'%', 'close' => $name.'%', 'read' => $name.'%', 'write' => $name.'%', '::' => ':');
+my %require_spaces = ('=' => '<>/=', '>' => '=', '<' => '=', '>=' => '', '<=' => '', '==' => '=', '/=' => '=', 'inquire' => $name.'%=,()', 'open' => $name.'%=,()', 'close' => $name.'%=,()', 'read' => $name.'%=,()', 'write' => $name.'%=,()', '::' => ':');
 my @require_declaration_left_space = ('pointer', 'save', 'parameter', 'dimension', 'allocatable');
 my %require_declaration_right_separator = ('dimension' => '(', 'intent' => '(', 'character' => '(', 'integer' => '(', 'real' => '(', 'complex' => '(');
 my %replace = ('.gt.' => ' > ', '.lt.' => ' < ', '.ge.' => ' >= ', '.le.' => ' <= ', '.eq.' => ' == ', '.ne.' => ' /= ', '.AND.' => '.and.', '.OR.' => '.or.', '.NOT.' => '.not.', '.TRUE.' => '.true.', '.FALSE.' => '.false.', '.EQV.' => '.eqv.', '.NEQV.' => '.neqv.', '.IN.' => '.in.');
@@ -1124,7 +1124,9 @@ sub check_new_nesting {
 		my $label = '';
 		if ($trigger eq 'contains') {
 			if ($line =~ /^ *contains$/is) {
-				add_nesting ('');
+				my $nesting_type = '';
+				if ($state{'last_nesting'} eq 'subroutine') { $nesting_type = 'subroutine-contains'; }
+				add_nesting ($nesting_type);
 				last;
 			}
 		}
@@ -1204,6 +1206,9 @@ sub check_closed_nesting {
 			$label =~ s/^ */ /s;
 			$line =~ s/^( *end${trigger}) *${label}/${1}/is;
 			$lines[$pos] =~ s/^( *(?:\{auto-indent} *)?end${trigger}) *${label}/${1}/is;
+		}
+		if (($trigger eq 'subroutine') && ($state{'nesting'} =~ s/(^|\|)subroutine-contains\|$/${1}/s)) {
+			remove_nesting ();
 		}
 		if ($state{'nesting'} !~ s/(^|\|)${trigger}${label}(\|+)$/${1}${2}/is) {
 			if ($verbose) { warn ("NESTING:".$state{'nesting'}." TRIGGER:".$trigger."\n"); }
