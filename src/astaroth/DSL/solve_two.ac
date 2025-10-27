@@ -105,6 +105,9 @@ fixed_boundary Kernel twopass_solve_final(PC_SUB_STEP_NUMBER step_num, real dt)
 		if(AC_idphi_up_im__mod__klein_gordon != 0)   write(F_DPHI_UP_IM,rk_final(F_DPHI_UP_IM,    step_num,dt))
 		if(AC_idphi_down_re__mod__klein_gordon != 0) write(F_DPHI_DOWN_RE,rk_final(F_DPHI_DOWN_RE,step_num,dt))
 		if(AC_idphi_down_im__mod__klein_gordon != 0) write(F_DPHI_DOWN_IM,rk_final(F_DPHI_DOWN_IM,step_num,dt))
+
+		if(AC_ipsi__mod__klein_gordon != 0)  write(F_PSI ,rk_final(F_PSI ,step_num,dt))
+		if(AC_idpsi__mod__klein_gordon != 0) write(F_DPSI,rk_final(F_DPSI,step_num,dt))
 #endif
 #if LDISP_CURRENT
 		if(AC_igamma__mod__disp_current != 0) write(F_GAMMA,rk_final(F_GAMMA,step_num,dt)) 

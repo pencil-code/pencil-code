@@ -192,6 +192,9 @@ field_order(AC_idphi_up_im__mod__klein_gordon-1)   Field F_DPHI_UP_IM
 field_order(AC_idphi_down_re__mod__klein_gordon-1) Field F_DPHI_DOWN_RE
 field_order(AC_idphi_down_im__mod__klein_gordon-1) Field F_DPHI_DOWN_IM
 
+field_order(AC_ipsi__mod__klein_gordon-1)  Field F_PSI
+field_order(AC_idpsi__mod__klein_gordon-1) Field F_DPSI
+
 Kernel prep_ode_right(){
   real AC_a21__mod__klein_gordon
   real AC_a2__mod__klein_gordon

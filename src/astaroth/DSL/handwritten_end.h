@@ -102,6 +102,9 @@
 	if(AC_idphi_up_im__mod__klein_gordon != 0)   write(F_DPHI_UP_IM,rk_intermediate(F_DPHI_UP_IM,    DF_DPHI_UP_IM,step_num,AC_dt__mod__cdata))
 	if(AC_idphi_down_re__mod__klein_gordon != 0) write(F_DPHI_DOWN_RE,rk_intermediate(F_DPHI_DOWN_RE,DF_DPHI_DOWN_RE,step_num,AC_dt__mod__cdata))
 	if(AC_idphi_down_im__mod__klein_gordon != 0) write(F_DPHI_DOWN_IM,rk_intermediate(F_DPHI_DOWN_IM,DF_DPHI_DOWN_IM,step_num,AC_dt__mod__cdata))
+
+	if(AC_ipsi__mod__klein_gordon != 0)  write(F_PSI ,rk_intermediate(F_PSI ,DF_PSI ,step_num,AC_dt__mod__cdata))
+	if(AC_idpsi__mod__klein_gordon != 0) write(F_DPSI,rk_intermediate(F_DPSI,DF_DPSI,step_num,AC_dt__mod__cdata))
 #endif
 
 #if LDISP_CURRENT
