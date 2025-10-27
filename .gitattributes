@@ -2494,7 +2494,6 @@ samples/2d-tests/dark-matter/NEVERLOCK -text
 samples/2d-tests/dark-matter/idl/pvar.pro -text
 samples/2d-tests/dark-matter/print.in -text
 samples/2d-tests/dark-matter/run.in -text
-samples/2d-tests/dark-matter/src/.current-precision -text
 samples/2d-tests/dark-matter/src/Makefile.local -text
 samples/2d-tests/dark-matter/src/cparam.local -text
 samples/2d-tests/dark-matter/start.in -text
