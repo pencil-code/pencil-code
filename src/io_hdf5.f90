@@ -620,10 +620,8 @@ module Io
 !
         if (.not.lomit_add_data) then
 !
-          if (lroot) then
-            allocate (gx(mxgrid), gy(mygrid), gz(mzgrid), stat=alloc_err)
-            if (alloc_err > 0) call fatal_error ('input_snap', 'Could not allocate memory for gx,gy,gz', .true.)
-          endif
+          allocate (gx(mxgrid), gy(mygrid), gz(mzgrid), stat=alloc_err)
+          if (alloc_err > 0) call fatal_error ('input_snap', 'Could not allocate memory for gx,gy,gz', .true.)
 
           lerrcont=.false.
           if (lroot) then
@@ -697,6 +695,8 @@ module Io
             call system_cmd('rm -f '//snaplink)
             snaplink=''
           endif
+!
+          deallocate (gx, gy, gz)
 !
         endif
       endif
