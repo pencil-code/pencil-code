@@ -3634,28 +3634,14 @@ $(SYSCALLS_OBJ): $(SYSCALLS_SRC) syscalls_ansi.o $(CPARAM_OBJ) $(GEOMETRICAL_TYP
 	$(FC) $(ALL_COMP_FLAGS) $(FSTD) $(ALLOW_ARG_MISMATCH) -o $(SYSCALLS_OBJ) -c $(SYSCALLS_SRC)
 $(MPICOMM_OBJ): mpicomm.h $(MPICOMM_SRC) cdata.o
 	$(FC) $(MOST_COMP_FLAGS) $(CONVERSION_RELAXED) $(ALLOW_ARG_MISMATCH) -o $(MPICOMM).o -c $(MPICOMM).f90
-$(STRUCT_FUNC_OBJ): $(STRUCT_FUNC_SRC)
-	$(FC) $(ALL_COMP_FLAGS) -o $(STRUCT_FUNC_OBJ) -c $(STRUCT_FUNC_SRC)
 $(PARTICLES_MPICOMM_OBJ): $(PARTICLES_MPICOMM_SRC)
-	$(FC) $(ALL_COMP_FLAGS) $(ALLOW_ARG_MISMATCH) -o $(PARTICLES_MPICOMM_OBJ) -c $(PARTICLES_MPICOMM_SRC)
+	$(FC) $(ALL_COMP_FLAGS) $(FSTD) $(ALLOW_ARG_MISMATCH) -o $(PARTICLES_MPICOMM_OBJ) -c $(PARTICLES_MPICOMM_SRC)
 fftpack.o: fftpack.f90
 	$(FC) $(ALL_COMP_FLAGS) $(CONVERSION_RELAXED) $(ALLOW_ARG_MISMATCH) -o fftpack.o -c fftpack.f90
-param_io.o: param_io.f90
-	$(FC) $(ALL_COMP_FLAGS) -o param_io.o -c param_io.f90
-diagnostics.o: diagnostics.f90
-	$(FC) $(ALL_COMP_FLAGS) $(FSTD_2003) -o diagnostics.o -c diagnostics.f90
-diagnostics_outlog.o: diagnostics_outlog.f90
-	$(FC) $(ALL_COMP_FLAGS) $(FSTD_2003) -o diagnostics_outlog.o -c diagnostics_outlog.f90
-io_collect_xy_f2003.o: io_collect_xy_f2003.f90
-	$(FC) $(ALL_COMP_FLAGS) $(FSTD_2003) -o io_collect_xy_f2003.o -c io_collect_xy_f2003.f90
 file_io_f95.o: file_io_f95.f90
 	$(FC) $(ALL_COMP_FLAGS) $(FSTD_95) -o file_io_f95.o -c file_io_f95.f90
-file_io_dist.o: file_io_dist.f90
-	$(FC) $(ALL_COMP_FLAGS) -o file_io_dist.o -c file_io_dist.f90
-slices_methods.o: slices_methods.f90
-	$(FC) $(ALL_COMP_FLAGS) -o slices_methods.o -c slices_methods.f90
 special.o: special_tmp.f90
-	$(FC) $(ALL_COMP_FLAGS) $(ALLOW_ARG_MISMATCH) -o special.o -c special_tmp.f90
+	$(FC) $(ALL_COMP_FLAGS) $(FSTD) $(ALLOW_ARG_MISMATCH) -o special.o -c special_tmp.f90
 	#@rm -f special_tmp.f90
 #
 #  TAGS file for Emacs.
