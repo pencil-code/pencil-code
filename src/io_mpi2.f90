@@ -669,7 +669,7 @@ module Io
 !  Open the slice file for write.
 !
       fpath = trim(directory_snap) // "/slice_" // trim(label) // '.' // trim(suffix)
-      call MPI_FILE_OPEN(MPI_COMM_PENCIL, fpath, ior(MPI_MODE_APPEND, ior(MPI_MODE_CREATE, MPI_MODE_RDWR)), io_info, handle, mpi_err)
+      call MPI_FILE_OPEN(MPI_COMM_PENCIL, fpath, ior(MPI_MODE_APPEND,ior(MPI_MODE_CREATE,MPI_MODE_RDWR)), io_info, handle, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error("output_slice", "cannot open file '" // trim(fpath) // "'")
 !
 !  Check the file size.
@@ -920,7 +920,7 @@ module Io
 !  Open log file.
 !
       fpath = trim(directory_snap) // '/' // "rmv_par.dat"
-      call MPI_FILE_OPEN(MPI_COMM_PENCIL, fpath, ior(MPI_MODE_RDWR, ior(MPI_MODE_CREATE, MPI_MODE_APPEND)), io_info, handle, mpi_err)
+      call MPI_FILE_OPEN(MPI_COMM_PENCIL, fpath, ior(MPI_MODE_RDWR,ior(MPI_MODE_CREATE,MPI_MODE_APPEND)), io_info, handle, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error("output_part_rmv", "unable to open file '" // trim(fpath) // "'")
 !
 !  Expand file.
