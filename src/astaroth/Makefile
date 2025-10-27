@@ -136,6 +136,9 @@ endif
 # External sources are provided with absolute pathnames to avoid any trouble with symbolic links.
 #
 astaroth_libs: $(PC_HEADERS)
+ifeq ($(TRANSPILATION),on)
+	cp DSL/solve_two.ac DSL/local
+endif
 	@ext_srcs="`ls -m $$PENCIL_HOME/src/astaroth/DSL/*/*.h \
                           $$PENCIL_HOME/src/astaroth/DSL/*.h \
 		          $$PENCIL_HOME/src/astaroth/submodule/acc-runtime/stdlib/*.h \
