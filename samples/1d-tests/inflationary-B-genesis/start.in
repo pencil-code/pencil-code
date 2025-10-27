@@ -17,6 +17,7 @@
 /
 &magnetic_init_pars
   initaa='sinwave-phase', ampl_az=1e-18, kx_az=1.
+  learly_set_el_pencil=T
 /
 &special_init_pars
 /
