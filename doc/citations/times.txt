@@ -1,8 +1,8 @@
-##  yy com w/o
- 3 2025 14  2
-46 2024 14 35
+##  yy com w/o  (com=comparison [not elsewere included], w/o=without Brandenburg)
+37 2025 15 23
+38 2024 12 35
 39 2023  8 26
-38 2022  4 24
+39 2022  3 24
 48 2021  7 34
 41 2020  7 22
 40 2019  7 28
