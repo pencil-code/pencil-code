@@ -71,7 +71,7 @@ module Special
   real :: rho01,cs201,gammam11,Bshear=0.,p0,p01,nw1
   logical :: lunstratified=.false.,lstratification=.true.
   logical :: lstatic_stratification=.false.
-  real, dimension (nz) :: rtime_strat
+  real, dimension (mz) :: rtime_strat
   real, dimension (nx) :: strat
 !
   namelist /special_run_pars/ Bshear,lunstratified,lstatic_stratification
@@ -177,7 +177,7 @@ module Special
           call potential(x(l1:l2),y(m),z(n),pot=pot)
           strat=exp(-gamma*pot*cs201)
         else
-          strat=rtime_strat(n-n1+1)
+          strat=rtime_strat(n)
         endif
       else !no stratification
         strat=1.
@@ -295,7 +295,7 @@ module Special
 !  the average (pp_sum*nw1). And normalize by the midplane
 !  initial pressure p0=rho0*cs0^2/gamma
 !
-        rtime_strat=pp_sum*nw1*p01
+        rtime_strat(n1:n2)=pp_sum*nw1*p01
 !
       endif
 !
@@ -440,7 +440,6 @@ module Special
     call copy_addr(lstratification,p_par(6)) ! bool
     call copy_addr(lstatic_stratification,p_par(7)) ! bool
     call copy_addr(gamma,p_par(8))
-    call copy_addr(rtime_strat,p_par(9)) ! (nz)
 
     endsubroutine pushpars2c
 !***********************************************************************
