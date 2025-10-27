@@ -3677,13 +3677,15 @@ mn_loop:do n=n1,n2
       SNR%indx%state=SNstate_waiting
       SN_TT_ratio_max = SN_TT_ratio*TT_SN_max
       !$ lfound = .false.
+      !TP: this is not safe to multithread naively
+      !TP: if one want so multithread this then multithread the scan operation to calculate the CDF and after that pick the random
       !!$omp target if(loffload) !map(tofrom: SNR) has_device_addr(f)  ! needs:
       !irho,ilnrho,iss,ilnTT,frac_eth,dr2_SN,rfactor_SN,TT_SN_max, switches FG radius2mass, c_SN, width_energy, width_mass,&
       !irho_lnTT, irho_ss, irho_ee, SN_TT_ratio_max
-      !$omp  parallel do num_threads(num_helper_threads) collapse(2) &
-      !$omp private(dV,rho_old,rho_new,deltarho,deltauu,deltaEE,deltaCR,ee_old,lnTT, &
-      !$omp outward_normal_SN,maxTT,rad_hot,deltarho_hot,ind_maxTT,cmass_tmp) &
-      !$omp reduction(+:site_mass,cum_mm,cum_ee) reduction(max:maxlnTT,max_cmass) firstprivate(lfound)
+      !!$omp  parallel do num_threads(num_helper_threads) collapse(2) &
+      !!$omp private(dV,rho_old,rho_new,deltarho,deltauu,deltaEE,deltaCR,ee_old,lnTT, &
+      !!$omp outward_normal_SN,maxTT,rad_hot,deltarho_hot,ind_maxTT,cmass_tmp) &
+      !!$omp reduction(+:site_mass,cum_mm,cum_ee) reduction(max:maxlnTT,max_cmass) firstprivate(lfound)
 mn_loop:do n=n1,n2
       do m=m1,m2
 !
@@ -3765,7 +3767,7 @@ mn_loop:do n=n1,n2
         endif
       enddo
       enddo mn_loop
-     !$omp end  parallel do
+     !!$omp end  parallel do
      !!$omp end target
       SNR%feat%MM=cum_mm
       SNR%feat%EE=cum_ee
