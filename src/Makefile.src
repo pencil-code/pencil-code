@@ -3507,6 +3507,8 @@ ifeq ($(USE_SPECIAL_DISPATCHER),no)
 	scripts/mkdummyinc -d nospecial.f90 -s $(SPECIAL).f90 -o special_dummies.inc
 else
 	@for file in $(SPECIAL_MODULES); do echo "$$file"_dummies.inc; scripts/mkdummyinc -d nospecial.f90 -s "$$file".f90 -o $${file#*/}_dummies.inc; done
+	#Done to not re-compile
+	touch special_dummies.inc
 endif
 #
 initial_condition_dummies.inc:  Makefile.local noinitial_condition.f90 $(INITIAL_CONDITION).f90

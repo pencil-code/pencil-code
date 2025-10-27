@@ -137,7 +137,9 @@ endif
 #
 astaroth_libs: $(PC_HEADERS)
 ifeq ($(TRANSPILATION),on)
-	cp DSL/solve_two.ac DSL/local
+	@if ! cmp -s DSL/solve_two.ac DSL/local/solve_two.ac; then \
+		cp DSL/solve_two.ac DSL/local/; \
+	fi
 endif
 	@ext_srcs="`ls -m $$PENCIL_HOME/src/astaroth/DSL/*/*.h \
                           $$PENCIL_HOME/src/astaroth/DSL/*.h \
