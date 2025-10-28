@@ -47,8 +47,8 @@ const int prof_nz = 150
 
 #define AC_NGHOST_VAL__mod__cparam NGHOST_VAL
 
-#define AC_mx my 
-#define AC_my mx 
+#define AC_mx mx 
+#define AC_my my 
 #define AC_mz mz 
 
 #define AC_nx nx 
