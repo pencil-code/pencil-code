@@ -603,6 +603,7 @@ doc/figs/pfile-size.ps -text
 doc/figs/phyper.eps -text
 doc/figs/pkeff.ps -text
 doc/figs/ppowercomp2.ps -text
+doc/figs/pprof.eps -text
 doc/figs/psample-timings.ps -text
 doc/figs/pspec-comp-lin.eps -text
 doc/figs/pspec-comp.eps -text
