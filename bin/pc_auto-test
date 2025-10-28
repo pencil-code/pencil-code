@@ -257,6 +257,7 @@ my @gpu_tests = qw(
 			 #1d-tests/rel-shock
 			 #1d-tests/ambipolar_diffusion
 			 #cosmicray
+                         1d-tests/inflationary-B-genesis
                          1d-tests/jeans-x
 			 #1d-tests/toomre-x
 			 #2d-tests/bubble
