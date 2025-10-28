@@ -1,7 +1,7 @@
 #!/bin/bash
 
-export UID=`id -u $USER`
-export GID=`id -g $USER`
-export USER=$USER
+export UID=`id -u`
+export GID=`id -g`
+export USER=`id -un`
 export GROUP=`groups | cut -f 1 -d ' '`
 docker compose run --build pencil 
